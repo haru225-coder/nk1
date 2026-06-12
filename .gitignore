@@ -1,0 +1,16 @@
+# Godot-specific ignores
+.godot/
+*.translation
+
+# Mono-specific ignores
+.mono/
+data_Mono/
+mono_crash*.log
+
+# Python ignores
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS-specific ignores
+.DS_Store

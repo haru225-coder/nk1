@@ -1,0 +1,110 @@
+{
+  "meta": {
+    "title": "东亚海域立志传",
+    "era": "南宋末，约1260-1277",
+    "prototype": "v0.1"
+  },
+  "ports": [
+    {
+      "id": "quanzhou",
+      "name": "泉州",
+      "region": "福建海路",
+      "tags": ["市舶司", "蕃坊", "验引", "抽解", "造船", "海商入口"],
+      "connections": ["xinghua", "ryukyu", "jeju"]
+    },
+    {
+      "id": "xinghua",
+      "name": "兴化",
+      "region": "兴化军 / 兴化海口",
+      "tags": ["起点", "陈子龙", "地方士人", "亲眷书信", "海口压力", "科举期待"],
+      "connections": ["quanzhou"]
+    },
+    {
+      "id": "ryukyu",
+      "name": "南岛海道北口",
+      "region": "流求海面北缘",
+      "tags": ["旧避风澳", "舵手传闻", "未入官图"],
+      "connections": ["quanzhou", "hakata", "kagoshima"]
+    },
+    {
+      "id": "jeju",
+      "name": "耽罗北线",
+      "region": "高丽 / 耽罗北线传闻",
+      "tags": ["传闻", "暂未解锁", "远景"],
+      "connections": ["quanzhou", "hakata"]
+    },
+    {
+      "id": "hakata",
+      "name": "博多唐房",
+      "region": "日本西海道",
+      "distant_hint": "远景账册线索，不作为第一章可稳定抵达港口",
+      "rumor_connections": ["ryukyu", "jeju", "kagoshima"],
+      "tags": ["旧账", "寺社", "远景"],
+      "connections": ["ryukyu", "jeju", "kagoshima"]
+    },
+    {
+      "id": "kagoshima",
+      "name": "南九州",
+      "region": "萨摩外海",
+      "distant_hint": "萨摩外海远景，不作为第一章可用港口",
+      "rumor_connections": ["ryukyu", "hakata"],
+      "tags": ["远景", "边缘航路"],
+      "connections": ["ryukyu", "hakata"]
+    }
+  ],
+  "npcs": [
+    {
+      "id": "chen_wenlong",
+      "name": "陈子龙",
+      "role": "主角档案",
+      "location": "兴化",
+      "function": "玩家当前身份；陈子龙即后来的陈文龙，殿试前初名子龙，咸淳四年唱第日由宋度宗御笔改名文龙",
+      "chapter1_presence": "作为主角登场，处在科举期待与海路诱惑尚未分定的阶段"
+    },
+    {
+      "id": "monk_jinghai",
+      "name": "净海",
+      "role": "寺院学僧",
+      "location": "泉州",
+      "function": "提供碑拓、经卷往来、寺院文书和旧纸线索",
+      "voice": "克制、低声、重字迹、石质和纸背押记，不主动谈政治",
+      "chapter1_function": "用残碑和旧纸把复核线引向旧避风澳"
+    },
+    {
+      "id": "merchant_lin",
+      "name": "林阿舶",
+      "role": "泉州海商",
+      "location": "泉州",
+      "function": "提供唐房寄物、货单、保人和第一笔船资压力",
+      "voice": "现实、精明、以账簿、舱位、脚钱和货损分摊说话",
+      "chapter1_function": "用博多旧账把商业信用和旧泊地复核绑在一起"
+    },
+    {
+      "id": "pilot_ana",
+      "name": "阿那",
+      "role": "南岛海道舵手",
+      "location": "南岛海道北口",
+      "function": "用水文经验帮助复核旧泊地入口",
+      "voice": "用水色、鸟群、潮声、礁线、季风和铅锤水深判断海路，很少讲抽象道理",
+      "chapter1_function": "把旧避风澳从传闻变成可复核的泊地"
+    }
+  ],
+  "discoveries": [
+    {
+      "id": "nameless_shelter_bay",
+      "name": "旧避风澳",
+      "type": "航路复核",
+      "location": "南岛海道北口",
+      "value": 80,
+      "historical_hook": "未入官图的旧泊地，未来可能成为海口通信与避风节点"
+    },
+    {
+      "id": "broken_buddhist_stele",
+      "name": "残裂佛碑",
+      "type": "碑拓证据",
+      "location": "礁口旧泊地",
+      "value": 120,
+      "historical_hook": "寺院网络暗示旧航路或曾被僧侣使用"
+    }
+  ]
+}

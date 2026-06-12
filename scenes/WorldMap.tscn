@@ -1,0 +1,186 @@
+[gd_scene load_steps=8 format=3 uid="uid://world_map_4567"]
+
+[ext_resource type="Script" path="res://scripts/WorldMap.gd" id="1_map"]
+[ext_resource type="PackedScene" uid="uid://ship_node_1234" path="res://scenes/Ship.tscn" id="2_ship"]
+[ext_resource type="Texture2D" uid="uid://ocean_tex_1234" path="res://assets/ocean_water.png" id="3_ocean"]
+[ext_resource type="Shader" path="res://assets/ocean_shader.gdshader" id="4_shader"]
+[ext_resource type="PackedScene" uid="uid://portzone_node_1234" path="res://scenes/PortZone.tscn" id="5_port"]
+[ext_resource type="Script" path="res://scripts/Minimap.gd" id="6_minimap"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
+shader = ExtResource("4_shader")
+shader_parameter/wave_speed = 0.5
+shader_parameter/wave_freq = 15.0
+shader_parameter/wave_amp = 0.02
+shader_parameter/water_color = Color(0.1, 0.4, 0.6, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glass"]
+bg_color = Color(0.1, 0.2, 0.3, 0.7)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5, 0.7, 0.9, 0.5)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="WorldMap" type="Node2D"]
+script = ExtResource("1_map")
+
+[node name="Ocean" type="TextureRect" parent="."]
+material = SubResource("ShaderMaterial_ocean")
+offset_left = -20000.0
+offset_top = -20000.0
+offset_right = 20000.0
+offset_bottom = 20000.0
+texture = ExtResource("3_ocean")
+stretch_mode = 1
+
+[node name="Ports" type="Node2D" parent="."]
+
+[node name="PortQuanzhou" parent="Ports" instance=ExtResource("5_port")]
+position = Vector2(0, 1000)
+port_id = "quanzhou"
+port_name = "泉州港"
+
+[node name="PortQuanzhouLabel" type="Label" parent="Ports/PortQuanzhou"]
+offset_left = -150.0
+offset_top = 100.0
+offset_right = 150.0
+offset_bottom = 140.0
+theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 20
+text = "泉州港 (按 Enter 停靠)"
+horizontal_alignment = 1
+
+[node name="PortXinghua" parent="Ports" instance=ExtResource("5_port")]
+position = Vector2(2000, -1000)
+port_id = "xinghua"
+port_name = "兴化港"
+
+[node name="PortXinghuaLabel" type="Label" parent="Ports/PortXinghua"]
+offset_left = -150.0
+offset_top = 100.0
+offset_right = 150.0
+offset_bottom = 140.0
+theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 20
+text = "兴化港 (按 Enter 停靠)"
+horizontal_alignment = 1
+
+[node name="Ship" parent="." instance=ExtResource("2_ship")]
+position = Vector2(0, 0)
+
+[node name="CanvasModulate" type="CanvasModulate" parent="."]
+color = Color(1, 1, 1, 1)
+
+[node name="RainParticles" type="CPUParticles2D" parent="."]
+emitting = false
+amount = 1500
+lifetime = 1.0
+emission_shape = 3
+emission_rect_extents = Vector2(1500, 1500)
+direction = Vector2(-0.5, 1)
+spread = 5.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 1000.0
+initial_velocity_max = 1500.0
+scale_amount_min = 1.0
+scale_amount_max = 3.0
+color = Color(0.7, 0.8, 0.9, 0.5)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="LightningFlash" type="ColorRect" parent="CanvasLayer"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(1, 1, 1, 0.8)
+
+[node name="HUD" type="MarginContainer" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="LeftPanel" type="PanelContainer" parent="CanvasLayer/HUD"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_glass")
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/HUD/LeftPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="Label" type="RichTextLabel" parent="CanvasLayer/HUD/LeftPanel/Margin"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 18
+bbcode_enabled = true
+text = "当前季风: 北风 (自北向南吹)
+风力强度: 80
+W/S: 升降帆 (当前档位: 0)
+A/D: 操舵
+船体耐久: [color=green]100/100[/color]
+B/Esc: 返回港口"
+fit_content = true
+
+[node name="RightPanel" type="PanelContainer" parent="CanvasLayer/HUD"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_glass")
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/HUD/RightPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="FleetStatus" type="Label" parent="CanvasLayer/HUD/RightPanel/Margin"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
+theme_override_font_sizes/font_size = 18
+text = "【舰队资产】
+金钱: 0
+货舱: 空"
+
+[node name="WeatherStatus" type="Label" parent="CanvasLayer/HUD/RightPanel/Margin"]
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(0.5, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "当前天气: 晴朗"
+
+[node name="MinimapPanel" type="PanelContainer" parent="CanvasLayer/HUD"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+theme_override_styles/panel = SubResource("StyleBoxFlat_glass")
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/HUD/MinimapPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="MinimapRect" type="Control" parent="CanvasLayer/HUD/MinimapPanel/Margin"]
+custom_minimum_size = Vector2(150, 150)
+layout_mode = 2
+script = ExtResource("6_minimap")
+

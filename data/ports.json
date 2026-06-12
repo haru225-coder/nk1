@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "title": "东亚海域立志传",
+    "era": "南宋末，约1260-1277",
+    "prototype": "v0.1"
+  },
+  "ports": [
+    {
+      "id": "quanzhou",
+      "name": "泉州",
+      "region": "福建海路",
+      "status": "main",
+      "tags": [
+        "市舶司",
+        "蕃坊",
+        "验引",
+        "抽解",
+        "造船",
+        "海商入口"
+      ],
+      "connections": [
+        "xinghua",
+        "ryukyu",
+        "jeju"
+      ]
+    },
+    {
+      "id": "xinghua",
+      "name": "兴化",
+      "region": "兴化军 / 兴化海口",
+      "status": "thread",
+      "tags": [
+        "地方士人",
+        "陈子龙",
+        "科举期待",
+        "亲眷书信",
+        "海口压力"
+      ],
+      "connections": [
+        "quanzhou"
+      ]
+    },
+    {
+      "id": "xinghua_harbor",
+      "name": "兴化海口",
+      "region": "兴化军 / 海口酒棚",
+      "status": "thread",
+      "tags": [
+        "酒棚",
+        "渡口",
+        "海口",
+        "序章"
+      ],
+      "connections": [
+        "quanzhou"
+      ]
+    },
+    {
+      "id": "ryukyu",
+      "name": "南岛海道北口",
+      "region": "流求海面北缘",
+      "status": "main",
+      "tags": [
+        "旧避风澳",
+        "舵手传闻",
+        "未入官图"
+      ],
+      "connections": [
+        "quanzhou",
+        "hakata",
+        "kagoshima"
+      ]
+    },
+    {
+      "id": "jeju",
+      "name": "耽罗北线",
+      "region": "高丽 / 耽罗北线传闻",
+      "status": "rumor",
+      "tags": [
+        "传闻",
+        "暂未解锁",
+        "远景"
+      ],
+      "connections": [
+        "quanzhou",
+        "hakata"
+      ]
+    },
+    {
+      "id": "hakata",
+      "name": "博多唐房",
+      "region": "日本西海道",
+      "status": "distant",
+      "distant_hint": "远景账册线索，不作为第一章可稳定抵达港口",
+      "rumor_connections": [
+        "ryukyu",
+        "jeju",
+        "kagoshima"
+      ],
+      "tags": [
+        "旧账",
+        "寺社",
+        "远景"
+      ],
+      "connections": [
+        "ryukyu",
+        "jeju",
+        "kagoshima"
+      ]
+    },
+    {
+      "id": "kagoshima",
+      "name": "南九州",
+      "region": "萨摩外海",
+      "status": "distant",
+      "distant_hint": "萨摩外海远景，不作为第一章可用港口",
+      "rumor_connections": [
+        "ryukyu",
+        "hakata"
+      ],
+      "tags": [
+        "远景",
+        "边缘航路"
+      ],
+      "connections": [
+        "ryukyu",
+        "hakata"
+      ]
+    }
+  ]
+}
