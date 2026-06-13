@@ -141,6 +141,14 @@ func load_scene(scene_id: String) -> void:
 	var scene_data = GameManager.get_scene_by_id(scene_id)
 	
 	if scene_data.is_empty():
+		# Fallback to generic scenes if local ones are missing
+		for suffix in ["_guild", "_residence", "_inn", "_exam"]:
+			if scene_id.ends_with(suffix):
+				var generic_id = "city" + suffix
+				scene_data = GameManager.get_scene_by_id(generic_id)
+				break
+				
+	if scene_data.is_empty():
 		_setup_missing_scene(scene_id)
 		return
 		
@@ -191,7 +199,7 @@ func _setup_missing_scene(scene_id: String) -> void:
 	scene_title.text = "区域施工中..."
 	body_text.text = "该区域（" + scene_id + "）尚未实装，请耐心等待后续版本更新。"
 	
-	var base_loc = "quanzhou" if scene_id.begins_with("quanzhou") else "xinghua"
+	var base_loc = GameState.last_port
 	_add_leave_button(base_loc)
 
 func _setup_dynamic_scene(scene_id: String) -> void:
@@ -205,7 +213,11 @@ func _setup_dynamic_scene(scene_id: String) -> void:
 	choices_label.visible = false
 	npc_mode.visible = false
 	
-	var base_loc = "port_quanzhou" if scene_id.begins_with("quanzhou") else "port_xinghua"
+	var base_loc = scene_id
+	for suffix in ["_market", "_tavern", "_yamen", "_shipyard"]:
+		if base_loc.ends_with(suffix):
+			base_loc = base_loc.replace(suffix, "")
+			break
 	
 	if scene_id.ends_with("_market"):
 		scene_title.text = "市场牙行"
@@ -232,6 +244,18 @@ func _setup_dynamic_scene(scene_id: String) -> void:
 			_add_npc_button("merchant_lin", "林阿舶")
 		elif scene_id.begins_with("ryukyu"):
 			_add_npc_button("pilot_ana", "阿那")
+			
+		# Load the normal interior cards for tavern
+		var s_data = GameManager.get_scene_by_id(scene_id)
+		if s_data.is_empty():
+			s_data = GameManager.get_scene_by_id("city_tavern")
+		if not s_data.is_empty():
+			for inv in s_data.get("investigations", []):
+				var ibtn = Button.new()
+				ibtn.text = "★ " + inv.get("label", "互动")
+				ibtn.pressed.connect(_on_investigate_pressed.bind(inv, ibtn))
+				interactive_container.add_child(ibtn)
+				
 		_add_leave_button(base_loc)
 
 	elif scene_id.ends_with("_yamen"):
@@ -513,12 +537,9 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 
 func _on_facility_pressed(fac: Dictionary) -> void:
 	var target_scene = fac.get("id", "")
-	if target_scene == "city_market":
-		target_scene = current_scene_id + "_market"
-	elif target_scene == "city_yamen":
-		target_scene = current_scene_id + "_yamen"
-	elif target_scene == "city_shipyard":
-		target_scene = current_scene_id + "_shipyard"
+	if target_scene.begins_with("city_"):
+		var suffix = target_scene.replace("city_", "")
+		target_scene = current_scene_id + "_" + suffix
 	if target_scene != "":
 		load_scene(target_scene)
 
@@ -553,6 +574,8 @@ func _on_investigate_pressed(inv_data: Dictionary, btn: Button) -> void:
 	apply_effects(inv_data.get("effects", {}))
 	
 	var next_sc = inv_data.get("next", "")
+	if next_sc == "last_port":
+		next_sc = GameState.last_port
 	if next_sc != "":
 		load_scene(next_sc)
 	else:
@@ -569,6 +592,8 @@ func show_choices(choices: Array) -> void:
 func _on_choice_pressed(choice_data: Dictionary) -> void:
 	apply_effects(choice_data.get("effects", {}))
 	var next_scene = choice_data.get("next", "")
+	if next_scene == "last_port":
+		next_scene = GameState.last_port
 	if next_scene != "": load_scene(next_scene)
 
 func apply_effects(effects: Dictionary) -> void:
