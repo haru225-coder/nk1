@@ -150,7 +150,7 @@ func load_scene(scene_id: String) -> void:
 	var bg_path = "res://assets/bg_sea_route.jpg" # Default
 	
 	if type == "title":
-		bg_path = "res://assets/bg_world_map.jpg"
+		bg_path = "res://assets/bg_world_map.png"
 	elif loc == "xinghua_harbor":
 		bg_path = "res://assets/bg_xinghua_wine_shed.jpg"
 	elif loc == "xinghua":
@@ -244,9 +244,7 @@ func _setup_dynamic_scene(scene_id: String) -> void:
 		btn1.text = "【正规】市舶司验引 (安全放行)"
 		btn1.pressed.connect(func():
 			GameState.has_customs_permit = true
-			message_label.text = "【市舶司】你办理了正规货引，合法离港。
-
-" + message_label.text
+			message_label.text = "【市舶司】你办理了正规货引，合法离港。\n\n" + message_label.text
 			update_status_panel()
 		)
 		choices_container.add_child(btn1)
@@ -255,9 +253,7 @@ func _setup_dynamic_scene(scene_id: String) -> void:
 		btn2.text = "【走私】塞钱走暗关免验 (贿赂 50 钱)"
 		btn2.pressed.connect(func():
 			var res = GameState.customs_inspection()
-			message_label.text = res["msg"] + "
-
-" + message_label.text
+			message_label.text = res["msg"] + "\n\n" + message_label.text
 			update_status_panel()
 		)
 		choices_container.add_child(btn2)
@@ -269,12 +265,40 @@ func _setup_dynamic_scene(scene_id: String) -> void:
 		scene_title.text = "船屋"
 		body_text.text = "船坞里散发着桐油与海水的味道。这是修补海船、补充水手的地方。"
 		
+		var recruit_btn = Button.new()
+		recruit_btn.text = "招募水手 (10钱/人)"
+		recruit_btn.pressed.connect(func():
+			var space = GameState.max_crew - GameState.crew_count
+			if space > 0 and GameState.money >= 10:
+				var cost = min(space * 10, GameState.money - (GameState.money % 10))
+				var amount = cost / 10
+				GameState.money -= cost
+				GameState.crew_count += amount
+				message_label.text = "招募了 %d 名水手！\n\n" % amount + message_label.text
+				update_status_panel()
+			else:
+				message_label.text = "无法招募！钱不够或船只已满员。\n\n" + message_label.text
+		)
+		choices_container.add_child(recruit_btn)
+		
+		var supply_btn = Button.new()
+		supply_btn.text = "补充水粮 (20钱/满载)"
+		supply_btn.pressed.connect(func():
+			if GameState.money >= 20:
+				GameState.money -= 20
+				GameState.food = GameState.max_food
+				GameState.water = GameState.max_water
+				message_label.text = "水粮已全部补满！\n\n" + message_label.text
+				update_status_panel()
+			else:
+				message_label.text = "【补充失败】金钱不足 20！\n\n" + message_label.text
+		)
+		choices_container.add_child(supply_btn)
+		
 		var btn = Button.new()
 		btn.text = "★ 扬帆起航 (进入航海模式)"
 		btn.pressed.connect(func():
-			message_label.text = "【大航海】扬帆起航！目前航海物理核心(WASD)尚未完全接入 Godot 界面，敬请期待！
-
-" + message_label.text
+			message_label.text = "【大航海】扬帆起航！目前航海物理核心(WASD)尚未完全接入 Godot 界面，敬请期待！\n\n" + message_label.text
 		)
 		choices_container.add_child(btn)
 		
@@ -317,8 +341,17 @@ func _add_sell_all_button() -> void:
 			var goods_list = GameManager.goods_data.get("goods", [])
 			for g in goods_list:
 				if g.get("name") == key:
-					# 抛售价格为基础价格的 1.2 倍（模拟异地差价赚取利润）
-					sell_price = int(g.get("base_value", 20) * 1.2)
+					var base = g.get("base_value", 20)
+					var origin = g.get("origin", "")
+					var cur_port = GameState.last_port
+					var is_local = false
+					if cur_port.begins_with("quanzhou") and ("泉州" in origin or "福建" in origin): is_local = true
+					elif cur_port.begins_with("xinghua") and ("兴化" in origin or "福建" in origin): is_local = true
+					
+					if is_local:
+						sell_price = int(base * 1.1)
+					else:
+						sell_price = int(base * 2.5) # 暴利
 					break
 			
 			GameState.sell_goods(key, amt, sell_price)
@@ -342,7 +375,7 @@ func _setup_title_mode(scene_data: Dictionary) -> void:
 	port_mode.visible = false
 	title_mode.visible = true
 	
-	main_title.text = scene_data.get("cg_title", "东亚海域立志传")
+	main_title.text = scene_data.get("cg_title", "南海立志传")
 	sub_title.text = scene_data.get("cg_sub", "")
 	
 	if title_button_connected:
@@ -516,9 +549,7 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 func _on_investigate_pressed(inv_data: Dictionary, btn: Button) -> void:
 	var msg = inv_data.get("text", "")
 	if msg != "":
-		body_text.text += "
-
-" + msg
+		body_text.text += "\n\n" + msg
 	apply_effects(inv_data.get("effects", {}))
 	
 	var next_sc = inv_data.get("next", "")

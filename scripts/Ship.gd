@@ -76,6 +76,10 @@ func _apply_sailing_physics(delta: float) -> void:
 	var turn_efficiency = 1.0
 	if sail_gear == 2: turn_efficiency = 0.4
 	elif sail_gear == 0: turn_efficiency = 0.0
+	
+	if GameState.crew_count <= 0:
+		turn_efficiency *= 0.2
+		sail_gear = 0 # Cannot trim sails without crew
 		
 	rotation += turn_input * base_turn_speed * turn_efficiency * delta
 

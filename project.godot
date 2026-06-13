@@ -10,8 +10,8 @@ config_version=5
 
 [application]
 
-config/name="nk1"
-run/main_scene="res://scenes/WorldMap.tscn"
+config/name="南海立志传"
+run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -24,6 +24,5 @@ GameState="*res://scripts/GameState.gd"
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
-window/size/resizable=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"

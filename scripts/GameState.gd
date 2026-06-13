@@ -104,3 +104,30 @@ func upgrade_sail() -> bool:
 		sail_level += 1
 		return true
 	return false
+
+# 生存与航海补给系统
+var crew_count: int = 30
+var max_crew: int = 50
+var food: float = 30.0
+var max_food: float = 100.0
+var water: float = 30.0
+var max_water: float = 100.0
+
+func process_daily_consumption() -> void:
+	if crew_count <= 0: return
+	
+	# 每10个水手每天消耗1份食物和1份水
+	var daily_consume = float(crew_count) / 10.0
+	
+	food -= daily_consume
+	water -= daily_consume
+	
+	if food < 0: food = 0
+	if water < 0: water = 0
+	
+	if food == 0 or water == 0:
+		# 饥渴状态下，每天饿死或病死 10% 的水手，至少死 1 个
+		var deaths = max(1, int(float(crew_count) * 0.1))
+		crew_count -= deaths
+		if crew_count < 0: crew_count = 0
+		print("补给不足！失去水手：", deaths, " 人，当前剩余水手：", crew_count)

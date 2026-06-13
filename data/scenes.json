@@ -7,16 +7,16 @@
       "title": "",
       "location": "xinghua_harbor",
       "cg": "dark",
-      "cg_title": "东亚海域立志传",
-      "cg_sub": "公元1255年（宋宝祐三年），正值大厦将倾、风云激荡的前夜。\\A整个东亚大陆乃至大洋彼岸，正被一股巨大的、令人窒息的历史引力悄然撕扯。\\A当你在这个世界睁开眼，站在兴化海口的礁石上时，\\A宏观世界的沙盘在四方正呈现出如下的惊人暗流：",
+      "cg_title": "南海立志传",
+      "cg_sub": "南宋宝祐三年（1255）",
       "body": "",
       "choices": [
         {
-          "label": "…………",
-          "next": "cg_world_north",
-          "effects": {}
+          "label": "开始旅程",
+          "next": "prologue_tabletop"
         }
-      ]
+      ],
+      "type": "title"
     },
     {
       "id": "cg_world_north",
@@ -1684,6 +1684,107 @@
         {
           "label": "离开",
           "next": "xinghua"
+        }
+      ]
+    },
+    {
+      "id": "port_quanzhou",
+      "type": "port",
+      "location": "quanzhou",
+      "title": "泉州",
+      "facilities": [
+        {
+          "id": "city_shipyard",
+          "next": "quanzhou_shipyard"
+        },
+        {
+          "id": "city_guild",
+          "next": "quanzhou_guild"
+        },
+        {
+          "id": "city_tavern",
+          "next": "quanzhou_tavern"
+        },
+        {
+          "id": "city_market",
+          "next": "quanzhou_market"
+        },
+        {
+          "id": "city_inn",
+          "next": "quanzhou_inn"
+        },
+        {
+          "id": "city_exam",
+          "next": "quanzhou_exam"
+        },
+        {
+          "id": "city_residence",
+          "next": "quanzhou_residence"
+        },
+        {
+          "id": "city_yamen",
+          "next": "quanzhou_yamen"
+        }
+      ]
+    },
+    {
+      "id": "quanzhou_tavern",
+      "chapter": "quanzhou",
+      "title": "泉州酒馆",
+      "location": "quanzhou",
+      "body": "人声鼎沸的泉州酒馆，角落里坐着几个老兵在喝闷酒。",
+      "investigations": [
+        {
+          "label": "邻桌老兵",
+          "text": "老兵讲北边战局不利。",
+          "effects": {
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开酒馆",
+          "next": "port_quanzhou"
+        }
+      ]
+    },
+    {
+      "id": "prologue_tabletop",
+      "type": "investigation",
+      "location": "tavern",
+      "title": "海口酒棚",
+      "body": "一张油腻的八仙桌，桌上散落着几件引人注目的物件。你必须摸清现在的局势才能出海。",
+      "investigations": [
+        {
+          "label": "边防策草稿",
+          "text": "【边防策草稿】大宋水军疲软，北方战事吃紧。",
+          "effects": {
+            "fame": 5
+          }
+        },
+        {
+          "label": "沾着盐渍的货引",
+          "text": "【沾着盐渍的货引】蒲氏商帮最近正在严查走私，必须小心。",
+          "effects": {
+            "pu_attention": 5
+          }
+        },
+        {
+          "label": "玉湖陈氏族札",
+          "text": "【玉湖陈氏族札】宗族长辈敦促你参加科举，不要出海。",
+          "effects": {
+            "money": -50
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "随阿那去泉州（解锁海路）",
+          "next": "port_quanzhou",
+          "effects": {
+            "pu_attention": 10
+          }
         }
       ]
     }

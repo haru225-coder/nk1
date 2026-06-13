@@ -54,11 +54,13 @@ func _process(delta: float) -> void:
 		for k in GameState.cargo.keys():
 			cargo_str += k + " x" + str(GameState.cargo[k]) + " "
 	
-	fleet_status.text = "【舰队资产】\n金钱: %d\n货舱: %s" % [GameState.money, cargo_str]
+	fleet_status.text = "【舰队资产】\n金钱: %d\n水手: %d/%d\n淡水: %d/%d\n食物: %d/%d\n货舱: %s" % [GameState.money, GameState.crew_count, GameState.max_crew, int(GameState.water), int(GameState.max_water), int(GameState.food), int(GameState.max_food), cargo_str]
 
 func _process_weather_and_time(delta: float) -> void:
 	time_of_day += delta * 0.2
-	if time_of_day >= 24.0: time_of_day -= 24.0
+	if time_of_day >= 24.0: 
+		time_of_day -= 24.0
+		GameState.process_daily_consumption()
 	
 	var light_color = Color(1, 1, 1, 1)
 	if time_of_day < 5.0 or time_of_day > 19.0:
