@@ -1,0 +1,42 @@
+[gd_resource type="Theme" load_steps=5 format=3]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0.25, 0.25, 0.3, 0.8)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2"]
+bg_color = Color(0.1, 0.1, 0.1, 0.6)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.3, 0.3, 0.5)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3"]
+bg_color = Color(0.2, 0.4, 0.6, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4"]
+bg_color = Color(0.8, 0.2, 0.2, 1)
+
+[resource]
+FacilityCardButton/base_type = &"Button"
+FacilityCardButton/styles/hover = SubResource("StyleBoxFlat_1")
+FacilityCardButton/styles/normal = null
+FacilitySubtitle/base_type = &"Label"
+FacilitySubtitle/colors/font_color = Color(0.7, 0.7, 0.7, 1)
+FacilitySubtitle/font_sizes/font_size = 14
+FacilityTitle/base_type = &"Label"
+FacilityTitle/font_sizes/font_size = 22
+NPCButton/base_type = &"Button"
+NPCButton/styles/normal = SubResource("StyleBoxFlat_3")
+PortFacilityCard/base_type = &"PanelContainer"
+PortFacilityCard/styles/panel = SubResource("StyleBoxFlat_2")
+SetSailButton/base_type = &"Button"
+SetSailButton/font_sizes/font_size = 24
+SetSailButton/styles/normal = SubResource("StyleBoxFlat_4")
+FacilityIconMargin/base_type = &"MarginContainer"
+FacilityIconMargin/constants/margin_left = 5
+FacilityIconMargin/constants/margin_right = 5

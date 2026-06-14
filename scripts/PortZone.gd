@@ -8,6 +8,8 @@ var player_in_zone: bool = false
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+	if has_node("Label"):
+		$Label.text = port_name + " (按 Enter 停靠)"
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "Ship":
@@ -21,4 +23,5 @@ func _input(event: InputEvent) -> void:
 	if player_in_zone and event.is_action_pressed("ui_accept"):
 		# Trigger docking
 		GameState.flags["return_to_port"] = true
+		GameState.last_port = port_id
 		get_tree().change_scene_to_file("res://scenes/Main.tscn")

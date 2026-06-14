@@ -14,7 +14,8 @@
       "origin": "兴化莆田",
       "style_name": "初字德刚，改名后赐字君贲",
       "timeline": "1255年（宝祐三年）：游戏开局，在兴化面临海路与科举分叉。1256年（丙辰年）：入临安太学。1268年（咸淳四年）：进士第一，御笔改名陈文龙，赐字君贲。1276年前后：参知政事，抗元，兴化城破，殉节",
-      "chapter1_presence": "作为主角登场，处在科举期待与海路诱惑尚未分定的阶段。叔父遗债是海路选择的现实压力来源"
+      "chapter1_presence": "作为主角登场，处在科举期待与海路诱惑尚未分定的阶段。叔父遗债是海路选择的现实压力来源",
+      "avatar": "res://assets/sprite_chen_wenlong.png"
     },
     {
       "id": "chen_uncle",
@@ -23,7 +24,8 @@
       "location": "泉州（生前活动）",
       "function": "遗债压力来源，为陈子龙接触海路提供现实动因而非浪漫动机。生前借贷蕃商船资，货损未结清，债留给陈子龙承担",
       "voice": "已故，不出场。其存在通过林阿舶账目、阿那台词和兴化亲族闲谈侧写",
-      "chapter1_presence": "作为背景压力，在开场阿那台词中提及叔父旧债，在start场景中以书案现实重量出现"
+      "chapter1_presence": "作为背景压力，在开场阿那台词中提及叔父旧债，在start场景中以书案现实重量出现",
+      "avatar": "res://assets/sprite_chen_uncle.png"
     },
     {
       "id": "xinghua_messenger",
@@ -32,7 +34,8 @@
       "location": "泉州 / 兴化外海",
       "function": "在第一章结尾提出海口通信问题，在第二章以未封口短信测试玩家是否愿意探路送信",
       "voice": "话少、谨慎、避开官名和大话，用陆路不稳、青布缠桅、夜船等具体风险暗示局势",
-      "chapter2_function": "把旧避风澳从账外边记推向海口书信压力"
+      "chapter2_function": "把旧避风澳从账外边记推向海口书信压力",
+      "avatar": "res://assets/sprite_xinghua_messenger.png"
     },
     {
       "id": "monk_jinghai",
@@ -41,7 +44,8 @@
       "location": "泉州",
       "function": "提供碑拓、经卷往来、寺院文书和旧纸线索",
       "voice": "克制、低声、重字迹、石质和纸背押记，不主动谈政治",
-      "chapter1_function": "用残碑和旧纸把复核线引向旧避风澳"
+      "chapter1_function": "用残碑和旧纸把复核线引向旧避风澳",
+      "avatar": "res://assets/sprite_monk_jinghai.png"
     },
     {
       "id": "merchant_lin",
@@ -50,7 +54,8 @@
       "location": "泉州",
       "function": "提供唐房寄物、货单、保人和第一笔船资压力",
       "voice": "现实、精明、以账簿、舱位、脚钱和货损分摊说话",
-      "chapter1_function": "用博多旧账把商业信用和旧泊地复核绑在一起"
+      "chapter1_function": "用博多旧账把商业信用和旧泊地复核绑在一起",
+      "avatar": "res://assets/sprite_lin.png"
     },
     {
       "id": "pilot_ana",
@@ -59,7 +64,16 @@
       "location": "南岛海道北口",
       "function": "用水文经验帮助复核旧泊地入口",
       "voice": "用水色、鸟群、潮声、礁线、季风和铅锤水深判断海路，很少讲抽象道理",
-      "chapter1_function": "把旧避风澳从传闻变成可复核的泊地"
+      "chapter1_function": "把旧避风澳从传闻变成可复核的泊地",
+      "avatar": "res://assets/sprite_ana.png"
+    },
+    {
+      "id": "customs_official",
+      "name": "市舶司小吏",
+      "role": "衙门官差",
+      "location": "各港口衙门",
+      "function": "管理港口出入",
+      "avatar": "res://assets/sprite_customs_official.png"
     }
   ]
 }

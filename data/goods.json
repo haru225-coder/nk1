@@ -13,6 +13,7 @@
       "destination_hint": "蕃坊、近海商路、博多远景",
       "risk": "易碎，受潮后价值下降",
       "base_value": 60,
+      "legality": "legal",
       "historical_note": "泉州海商常见出口货，适合表现货主、舱位和货损分摊。"
     },
     {
@@ -23,6 +24,7 @@
       "destination_hint": "唐房旧账 / 日本寺社远景",
       "risk": "易碎，风暴中最容易产生货损争议",
       "base_value": 90,
+      "legality": "legal",
       "historical_note": "比普通瓷货更牵动账面信用，适合林阿舶线。"
     },
     {
@@ -33,6 +35,7 @@
       "destination_hint": "寺院、医家、远海商路",
       "risk": "怕潮，需油布与干舱",
       "base_value": 70,
+      "legality": "legal",
       "historical_note": "泉州蕃坊气味和贸易质感的代表货物。"
     },
     {
@@ -74,6 +77,17 @@
       "risk": "不问内物，但货损要算在账上",
       "base_value": 80,
       "historical_note": "用于连接泉州海商信用与日本唐房远景。"
+    },
+    {
+      "id": "smuggled_salt",
+      "name": "私盐",
+      "category": "货物",
+      "origin": "沿海盐场",
+      "destination_hint": "黑市、内陆、海贼基地",
+      "risk": "违禁品，被官府查获即刻没收",
+      "base_value": 150,
+      "legality": "contraband",
+      "historical_note": "历代朝廷专卖，利润极高但风险极大。"
     }
   ]
 }

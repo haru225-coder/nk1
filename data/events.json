@@ -1,0 +1,96 @@
+{
+  "events": [
+    {
+      "id": "storm_approaching",
+      "type": "hazard",
+      "title": "风暴降临",
+      "body": "天空瞬间变得阴沉，狂风夹杂着暴雨向船只袭来。海浪如巨兽般拍打着甲板，如果硬抗过去，船只和水手可能会遭受重创；但如果抛弃部分货物减轻重量，或许能逃过一劫。",
+      "conditions": {},
+      "choices": [
+        {
+          "label": "抛弃部分物资（损失水粮）",
+          "effects": {
+            "food": -20,
+            "water": -20
+          }
+        },
+        {
+          "label": "顶着风暴硬抗（水手受伤）",
+          "effects": {
+            "crew_count": -5
+          }
+        }
+      ]
+    },
+    {
+      "id": "shipwreck_rescue",
+      "type": "opportunity",
+      "title": "遇难商船",
+      "body": "在海平面上，你们发现了一艘正在下沉的商船。几名幸存者在海水中挣扎呼救，海面上漂浮着一些物资箱。",
+      "conditions": {},
+      "choices": [
+        {
+          "label": "优先救人（消耗水粮，获得名声）",
+          "effects": {
+            "food": -10,
+            "water": -10,
+            "fame": 20
+          }
+        },
+        {
+          "label": "只捞物资（获得物资，名声受损）",
+          "effects": {
+            "food": 30,
+            "water": 30,
+            "fame": -10
+          }
+        },
+        {
+          "label": "无视他们（离开）",
+          "effects": {}
+        }
+      ]
+    },
+    {
+      "id": "customs_patrol",
+      "type": "encounter",
+      "title": "市舶司巡查船",
+      "body": "一艘挂着大宋水师旗帜的巡防快船靠了过来，要求停船接受市舶司的例行检查。如果你携带了未报备的黑市货物，将面临重罚！",
+      "conditions": {
+        "pu_attention_min": 10
+      },
+      "choices": [
+        {
+          "label": "主动塞钱贿赂（失去 100 钱）",
+          "effects": {
+            "money": -100
+          }
+        },
+        {
+          "label": "接受检查",
+          "special_action": "sea_customs_check"
+        }
+      ]
+    },
+    {
+      "id": "merchant_trade",
+      "type": "encounter",
+      "title": "异国商船",
+      "body": "你们在航线上遇到了一艘载满异国货物的商船。对方船长向你们致意，并表示愿意用他们的香料换取你们的一些硬通货。",
+      "conditions": {},
+      "choices": [
+        {
+          "label": "慷慨交易（失去 200 钱，名声上升）",
+          "effects": {
+            "money": -200,
+            "fame": 10
+          }
+        },
+        {
+          "label": "谢绝交易",
+          "effects": {}
+        }
+      ]
+    }
+  ]
+}

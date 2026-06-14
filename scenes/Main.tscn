@@ -1,7 +1,11 @@
 [gd_scene load_steps=4 format=3 uid="uid://c2g1h8abcxyz"]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
-
+[ext_resource type="Theme" uid="uid://main_theme_placeholder" path="res://assets/main_theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://scripts/TitleScreenController.gd" id="3_title"]
+[ext_resource type="Script" path="res://scripts/FacilityController.gd" id="4_fac"]
+[ext_resource type="Script" path="res://scripts/PortScreenController.gd" id="5_port"]
+[ext_resource type="Script" path="res://scripts/NPCController.gd" id="6_npc"]
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_left"]
 bg_color = Color(0.1, 0.1, 0.1, 0.4)
 border_width_right = 2
@@ -17,6 +21,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_main")
 
 [node name="Background" type="TextureRect" parent="."]
@@ -81,6 +86,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="TitleMode" type="Control" parent="HBoxContainer/CenterArea"]
+script = ExtResource("3_title")
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -130,6 +136,7 @@ theme_override_font_sizes/font_size = 24
 text = "开始游戏"
 
 [node name="InvestigationMode" type="PanelContainer" parent="HBoxContainer/CenterArea"]
+script = ExtResource("4_fac")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -183,6 +190,7 @@ text = "--- 决断 ---"
 layout_mode = 2
 
 [node name="PortMode" type="Control" parent="HBoxContainer/CenterArea"]
+script = ExtResource("5_port")
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -231,6 +239,7 @@ text = "港口名称"
 horizontal_alignment = 1
 
 [node name="NPCMode" type="Control" parent="HBoxContainer/CenterArea"]
+script = ExtResource("6_npc")
 visible = false
 layout_mode = 1
 anchors_preset = 15

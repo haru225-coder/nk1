@@ -1,0 +1,8 @@
+{
+  "meta": {
+    "title": "东亚海域立志传舰队配置",
+    "version": "v0.4",
+    "note": "此文件现仅作为静态特殊舰队或模板参考，常规生态舰队已由 NPCFleetGenerator 动态接管"
+  },
+  "fleets": []
+}

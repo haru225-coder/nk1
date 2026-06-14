@@ -1,0 +1,29 @@
+{
+  "encounter.pirate.extortion.title": "海贼劫掠",
+  "encounter.pirate.extortion.body": "远方升起黑旗，一艘武装船拉响了战斗警报，抛出钩索，明显是冲着你的财物来的！",
+  "choice.pirate.pay": "交出保护费 (损失200钱)",
+  "choice.pirate.attack": "准备战斗 (敌意舰队逼近，暂未实装)",
+  "choice.pirate.escape": "全速逃离 (损失名声与船体耐久)",
+  
+  "encounter.patrol.inspect_pass.title": "大宋巡防检查",
+  "encounter.patrol.inspect_pass.body": "巡防队例行检查文书与货物，一切合法，准备放行。",
+  "choice.patrol.cooperate": "配合检查，道谢离开",
+  
+  "encounter.patrol.illegal_trade.title": "大宋巡防违规",
+  "encounter.patrol.illegal_trade.body": "巡防队查验文书，发现你携带了货物却【没有市舶司合法货引】！属于违规贸易。",
+  "choice.patrol.pay_fine": "缴纳罚款 (损失100钱)",
+  "choice.patrol.resist": "暴力抗法 (敌意舰队逼近，暂未实装)",
+  
+  "encounter.patrol.contraband.title": "大宋巡防缉私",
+  "encounter.patrol.contraband.body": "巡防队登船检查，从底舱搜出了违禁品！对方立刻拔出兵器！",
+  "choice.patrol.bribe": "缴纳天价罚款保平安 (损失500钱并没收违禁品)",
+  
+  "encounter.merchant.trade.title": "商队相遇",
+  "encounter.merchant.trade.body": "对方打出旗语，表明自己是商队，愿意在海上进行物资交换。",
+  "choice.merchant.trade": "发出交易信号 (消耗50钱换取物资)",
+  "choice.merchant.ignore": "擦肩而过 (无视)",
+  
+  "encounter.default.title": "航线相遇",
+  "encounter.default.body": "对方默默航行，没有理会你。",
+  "choice.default.continue": "继续航行"
+}

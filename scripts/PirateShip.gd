@@ -79,11 +79,26 @@ func take_damage(amount: float) -> void:
 		_explode()
 
 func _explode() -> void:
+	var money_gain = randi_range(200, 800)
+	LedgerSystem.apply({"amount": money_gain, "source": "combat", "reason": "sink_pirate", "actor": "Player"})
+	
+	var ft = preload("res://scenes/FloatingText.tscn").instantiate()
+	ft.text = "+%d 钱" % money_gain
+	# 豁免：动态效果，无法在.tres中预先定义
+	ft.modulate = Color(1, 0.9, 0.2)
+	ft.position = position
+	get_parent().call_deferred("add_child", ft)
+	
+	var exp_scene = load("res://scenes/ImpactExplosion.tscn")
+	if exp_scene:
+		var exp = exp_scene.instantiate()
+		exp.position = position
+		get_parent().call_deferred("add_child", exp)
+		
 	# Loot pinata
 	for i in range(5):
 		var crate = crate_scene.instantiate()
 		crate.position = position + Vector2(randf_range(-50, 50), randf_range(-50, 50))
 		get_parent().call_deferred("add_child", crate)
 		
-	# Could add explosion particles here
 	queue_free()

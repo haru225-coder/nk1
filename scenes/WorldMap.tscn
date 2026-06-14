@@ -40,37 +40,7 @@ stretch_mode = 1
 
 [node name="Ports" type="Node2D" parent="." unique_id=1941959593]
 
-[node name="PortQuanzhou" parent="Ports" unique_id=2097163572 instance=ExtResource("5_port")]
-position = Vector2(0, 1000)
 
-[node name="PortQuanzhouLabel" type="Label" parent="Ports/PortQuanzhou" unique_id=745749286]
-offset_left = -150.0
-offset_top = 100.0
-offset_right = 150.0
-offset_bottom = 140.0
-theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
-theme_override_font_sizes/font_size = 20
-text = "泉州港 (按 Enter 停靠)"
-horizontal_alignment = 1
-
-[node name="PortXinghua" parent="Ports" unique_id=1729521399 instance=ExtResource("5_port")]
-position = Vector2(2000, -1000)
-port_id = "xinghua"
-port_name = "兴化港"
-
-[node name="PortXinghuaLabel" type="Label" parent="Ports/PortXinghua" unique_id=223201698]
-offset_left = -150.0
-offset_top = 100.0
-offset_right = 150.0
-offset_bottom = 140.0
-theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
-theme_override_font_sizes/font_size = 20
-text = "兴化港 (按 Enter 停靠)"
-horizontal_alignment = 1
 
 [node name="Ship" parent="." unique_id=1563693613 instance=ExtResource("2_ship")]
 

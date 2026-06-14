@@ -4,6 +4,10 @@ var scenes_data: Dictionary = {}
 var goods_data: Dictionary = {}
 var ports_data: Dictionary = {}
 var npcs_data: Dictionary = {}
+var events_data: Dictionary = {}
+var factions_data: Dictionary = {}
+var fleets_data: Dictionary = {}
+var localization_data: Dictionary = {}
 
 func _ready() -> void:
 	load_data()
@@ -13,6 +17,10 @@ func load_data() -> void:
 	goods_data = _load_json("res://data/goods.json")
 	ports_data = _load_json("res://data/ports.json")
 	npcs_data = _load_json("res://data/npcs.json")
+	events_data = _load_json("res://data/encounters.json")
+	factions_data = _load_json("res://data/factions.json")
+	fleets_data = _load_json("res://data/fleets.json")
+	localization_data = _load_json("res://data/localization/zh_cn.json")
 	
 	if scenes_data.has("scenes"):
 		print("Data loaded successfully. Scenes:", scenes_data.get("scenes", []).size())
@@ -36,3 +44,20 @@ func get_scene_by_id(scene_id: String) -> Dictionary:
 		if s.get("id") == scene_id:
 			return s
 	return {}
+
+func get_port_data(port_id: String) -> Dictionary:
+	var ports = ports_data.get("ports", [])
+	for p in ports:
+		if p.get("id") == port_id:
+			return p
+	return {}
+
+func get_good_data(good_id: String) -> Dictionary:
+	var goods = goods_data.get("goods", [])
+	for g in goods:
+		if g.get("id") == good_id:
+			return g
+	return {}
+
+func get_text(key: String, default_text: String = "") -> String:
+	return localization_data.get(key, default_text)

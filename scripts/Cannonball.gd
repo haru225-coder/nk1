@@ -46,5 +46,6 @@ func _spawn_floating_text(text: String, color: Color) -> void:
 	var ft = floating_text.instantiate()
 	ft.position = position
 	ft.text = text
-	ft.add_theme_color_override("font_color", color)
+	# 使用 modulate 避免破坏主题缓存
+	ft.modulate = color
 	get_parent().call_deferred("add_child", ft)

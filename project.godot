@@ -19,6 +19,9 @@ config/icon="res://icon.svg"
 
 GameManager="*res://scripts/GameManager.gd"
 GameState="*res://scripts/GameState.gd"
+FleetSystem="*res://scripts/systems/FleetSystem.gd"
+LedgerSystem="*res://scripts/systems/LedgerSystem.gd"
+WorldEventTracker="*res://scripts/systems/WorldEventTracker.gd"
 
 [display]
 

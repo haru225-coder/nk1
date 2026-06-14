@@ -21,8 +21,21 @@
       "connections": [
         "xinghua",
         "ryukyu",
-        "jeju"
-      ]
+        "jeju",
+        "penghu",
+        "champa"
+      ],
+      "production": {
+        "fujian_porcelain": 0.8,
+        "aromatic_medicine": 0.8
+      },
+      "demand": {
+        "sutra_scrolls": 1.2
+      },
+      "position": {
+        "x": 0,
+        "y": 1000
+      }
     },
     {
       "id": "xinghua",
@@ -38,7 +51,11 @@
       ],
       "connections": [
         "quanzhou"
-      ]
+      ],
+      "position": {
+        "x": 2000,
+        "y": -1000
+      }
     },
     {
       "id": "xinghua_harbor",
@@ -53,7 +70,11 @@
       ],
       "connections": [
         "quanzhou"
-      ]
+      ],
+      "position": {
+        "x": 2200,
+        "y": -800
+      }
     },
     {
       "id": "ryukyu",
@@ -69,7 +90,15 @@
         "quanzhou",
         "hakata",
         "kagoshima"
-      ]
+      ],
+      "demand": {
+        "fujian_porcelain": 1.5,
+        "qingbai_porcelain": 1.5
+      },
+      "position": {
+        "x": 8000,
+        "y": 3000
+      }
     },
     {
       "id": "jeju",
@@ -84,7 +113,11 @@
       "connections": [
         "quanzhou",
         "hakata"
-      ]
+      ],
+      "position": {
+        "x": 10000,
+        "y": -6000
+      }
     },
     {
       "id": "hakata",
@@ -106,7 +139,11 @@
         "ryukyu",
         "jeju",
         "kagoshima"
-      ]
+      ],
+      "position": {
+        "x": 15000,
+        "y": -8000
+      }
     },
     {
       "id": "kagoshima",
@@ -125,7 +162,45 @@
       "connections": [
         "ryukyu",
         "hakata"
-      ]
+      ],
+      "position": {
+        "x": 13000,
+        "y": -5000
+      }
+    },
+    {
+      "id": "penghu",
+      "name": "澎湖",
+      "region": "福建海路",
+      "status": "main",
+      "tags": [
+        "避风港"
+      ],
+      "connections": [
+        "quanzhou",
+        "ryukyu"
+      ],
+      "position": {
+        "x": 4000,
+        "y": 2500
+      }
+    },
+    {
+      "id": "champa",
+      "name": "占城",
+      "region": "中南半岛",
+      "status": "distant",
+      "tags": [
+        "粮仓",
+        "远航节点"
+      ],
+      "connections": [
+        "quanzhou"
+      ],
+      "position": {
+        "x": -5000,
+        "y": 15000
+      }
     }
   ]
 }

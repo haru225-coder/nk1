@@ -12,7 +12,7 @@ func _on_body_entered(body: Node2D) -> void:
 		
 		if is_money:
 			var amount = randi_range(100, 500)
-			GameState.money += amount
+			LedgerSystem.apply({"amount": amount, "source": "world_event", "reason": "collect_crate", "actor": "Player"})
 			print("打捞到木桶，获得现钱: ", amount)
 			float_str = "+ " + str(amount) + " 钱"
 		else:
@@ -28,7 +28,8 @@ func _on_body_entered(body: Node2D) -> void:
 		var ft = floating_text.instantiate()
 		ft.position = position
 		ft.text = float_str
-		ft.add_theme_color_override("font_color", Color(0.2, 1.0, 0.2))
+		# 使用 modulate 避免破坏主题缓存
+		ft.modulate = Color(0.2, 1.0, 0.2)
 		get_parent().call_deferred("add_child", ft)
 		
 		queue_free()

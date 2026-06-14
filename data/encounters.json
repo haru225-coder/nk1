@@ -1,0 +1,165 @@
+{
+  "encounters": [
+    {
+      "id": "pirate_extortion_001",
+      "conditions": {
+        "behavior": "raid"
+      },
+      "presentation": {
+        "title_key": "encounter.pirate.extortion.title",
+        "body_key": "encounter.pirate.extortion.body"
+      },
+      "choices": [
+        {
+          "id": "pay",
+          "label_key": "choice.pirate.pay",
+          "intent": {
+            "type": "payment",
+            "parameters": {"amount": 200, "currency": "silver"}
+          }
+        },
+        {
+          "id": "fight",
+          "label_key": "choice.pirate.attack",
+          "intent": {
+            "type": "combat_request",
+            "parameters": {}
+          }
+        },
+        {
+          "id": "escape",
+          "label_key": "choice.pirate.escape",
+          "intent": {
+            "type": "escape_attempt",
+            "parameters": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "patrol_contraband_001",
+      "conditions": {
+        "behavior": "inspect",
+        "violation": "contraband"
+      },
+      "presentation": {
+        "title_key": "encounter.patrol.contraband.title",
+        "body_key": "encounter.patrol.contraband.body"
+      },
+      "choices": [
+        {
+          "id": "bribe",
+          "label_key": "choice.patrol.bribe",
+          "intent": {
+            "type": "payment",
+            "parameters": {"amount": 500, "confiscate": true}
+          }
+        },
+        {
+          "id": "resist",
+          "label_key": "choice.patrol.resist",
+          "intent": {
+            "type": "combat_request",
+            "parameters": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "patrol_illegal_trade_001",
+      "conditions": {
+        "behavior": "inspect",
+        "violation": "illegal_trade"
+      },
+      "presentation": {
+        "title_key": "encounter.patrol.illegal_trade.title",
+        "body_key": "encounter.patrol.illegal_trade.body"
+      },
+      "choices": [
+        {
+          "id": "pay_fine",
+          "label_key": "choice.patrol.pay_fine",
+          "intent": {
+            "type": "payment",
+            "parameters": {"amount": 100}
+          }
+        },
+        {
+          "id": "resist",
+          "label_key": "choice.patrol.resist",
+          "intent": {
+            "type": "combat_request",
+            "parameters": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "patrol_pass_001",
+      "conditions": {
+        "behavior": "inspect",
+        "violation": "legal"
+      },
+      "presentation": {
+        "title_key": "encounter.patrol.inspect_pass.title",
+        "body_key": "encounter.patrol.inspect_pass.body"
+      },
+      "choices": [
+        {
+          "id": "cooperate",
+          "label_key": "choice.patrol.cooperate",
+          "intent": {
+            "type": "inspection_pass",
+            "parameters": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "merchant_trade_001",
+      "conditions": {
+        "behavior": "trade"
+      },
+      "presentation": {
+        "title_key": "encounter.merchant.trade.title",
+        "body_key": "encounter.merchant.trade.body"
+      },
+      "choices": [
+        {
+          "id": "trade",
+          "label_key": "choice.merchant.trade",
+          "intent": {
+            "type": "trade_request",
+            "parameters": {"cost": 50, "food": 20, "water": 20}
+          }
+        },
+        {
+          "id": "ignore",
+          "label_key": "choice.merchant.ignore",
+          "intent": {
+            "type": "ignore",
+            "parameters": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "default_encounter",
+      "conditions": {},
+      "presentation": {
+        "title_key": "encounter.default.title",
+        "body_key": "encounter.default.body"
+      },
+      "choices": [
+        {
+          "id": "continue",
+          "label_key": "choice.default.continue",
+          "intent": {
+            "type": "ignore",
+            "parameters": {}
+          }
+        }
+      ]
+    }
+  ]
+}
