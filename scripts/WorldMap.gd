@@ -32,12 +32,37 @@ var last_ship_pos: Vector2 = Vector2.ZERO
 
 var active_fleet_nodes: Dictionary = {}
 
+# AI舰队查询节流 - 每0.5秒查询一次附近舰队
+var _fleet_query_timer: float = 0.0
+var _fleet_query_interval: float = 0.5
+var _cached_nearby_fleets: Array = []
+
+# HUD dirty flag - 仅在数据变化时更新
+var _hud_dirty: bool = true
+var _hud_last_wind_desc: String = ""
+var _hud_last_wind_strength: int = -1
+var _hud_last_sail_gear: int = -1
+var _hud_last_hp: float = -1
+var _hud_last_max_hp: float = -1
+var _hud_last_balance: int = -1
+var _hud_last_crew: int = -1
+var _hud_last_max_crew: int = -1
+var _hud_last_water: float = -1
+var _hud_last_max_water: float = -1
+var _hud_last_food: float = -1
+var _hud_last_max_food: float = -1
+var _hud_last_cargo: String = ""
+var _hud_last_starving: bool = false
+
 func _ready() -> void:
 	randomize()
 	_load_ports()
 	
 	if port_nodes.has(GameState.current_voyage_origin):
 		ship.position = port_nodes[GameState.current_voyage_origin].position + Vector2(0, 100)
+	
+	# 初始化 HUD 脏标记
+	_hud_dirty = true
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
@@ -73,25 +98,68 @@ func _process(delta: float) -> void:
 		if randf() < prob:
 			_try_trigger_event()
 	
-	# Update HUDs
+	# Update HUDs (dirty flag)
+	_check_hud_dirty()
+	if _hud_dirty:
+		_update_hud_labels()
+		_hud_dirty = false
+
+func _check_hud_dirty() -> void:
+	# 风向
 	var wind_desc = "无风"
 	if ship.wind_vector.y > 0: wind_desc = "北风 (自北向南吹)"
 	elif ship.wind_vector.y < 0: wind_desc = "南风 (自南向北吹)"
 	elif ship.wind_vector.x > 0: wind_desc = "西风 (自西向东吹)"
 	elif ship.wind_vector.x < 0: wind_desc = "东风 (自东向西吹)"
 	
+	var wind_str = int(ship.wind_strength)
+	var sail = ship.sail_gear
+	var hp = ship.hull_hp
+	var max_hp = ship.max_hp
+	var balance = LedgerSystem.get_balance()
+	var crew = GameState.crew_count
+	var max_crew = GameState.max_crew
+	var water = GameState.water
+	var max_water = GameState.max_water
+	var food = GameState.food
+	var max_food = GameState.max_food
+	var cargo = CargoSystem.to_display_string(" ")
+	var starving = (food <= 0 or water <= 0)
+	
+	if (wind_desc != _hud_last_wind_desc or wind_str != _hud_last_wind_strength
+		or sail != _hud_last_sail_gear or hp != _hud_last_hp or max_hp != _hud_last_max_hp
+		or balance != _hud_last_balance or crew != _hud_last_crew or max_crew != _hud_last_max_crew
+		or water != _hud_last_water or max_water != _hud_last_max_water
+		or food != _hud_last_food or max_food != _hud_last_max_food
+		or cargo != _hud_last_cargo or starving != _hud_last_starving):
+		_hud_dirty = true
+		_hud_last_wind_desc = wind_desc
+		_hud_last_wind_strength = wind_str
+		_hud_last_sail_gear = sail
+		_hud_last_hp = hp
+		_hud_last_max_hp = max_hp
+		_hud_last_balance = balance
+		_hud_last_crew = crew
+		_hud_last_max_crew = max_crew
+		_hud_last_water = water
+		_hud_last_max_water = max_water
+		_hud_last_food = food
+		_hud_last_max_food = max_food
+		_hud_last_cargo = cargo
+		_hud_last_starving = starving
+
+func _update_hud_labels() -> void:
 	var hp_color = "green"
 	if ship.hull_hp < 50: hp_color = "red"
 	
-	var text = "当前季风: %s\n风力强度: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nJ/K: 左/右舷齐射开炮\n船体耐久: [color=%s]%d/%d[/color]\nB/Esc: 返回港口" % [wind_desc, int(ship.wind_strength), ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp)]
+	var text = "当前季风: %s\n风力强度: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nJ/K: 左/右舷齐射开炮\n船体耐久: [color=%s]%d/%d[/color]\nB/Esc: 返回港口" % [_hud_last_wind_desc, _hud_last_wind_strength, _hud_last_sail_gear, hp_color, int(_hud_last_hp), int(_hud_last_max_hp)]
 	label.text = text
 	
-	var cargo_str = CargoSystem.to_display_string(" ")
+	var cargo_str = _hud_last_cargo
 	if cargo_str == "": cargo_str = "无"
-	fleet_status.text = "【船队状态】\n铜钱: %d\n水手: %d/%d\n淡水: %d/%d\n食物: %d/%d\n货物: %s" % [LedgerSystem.get_balance(), GameState.crew_count, GameState.max_crew, int(GameState.water), int(GameState.max_water), int(GameState.food), int(GameState.max_food), cargo_str]
+	fleet_status.text = "【船队状态】\n铜钱: %d\n水手: %d/%d\n淡水: %d/%d\n食物: %d/%d\n货物: %s" % [_hud_last_balance, _hud_last_crew, _hud_last_max_crew, int(_hud_last_water), int(_hud_last_max_water), int(_hud_last_food), int(_hud_last_max_food), cargo_str]
 	
-	if GameState.food <= 0 or GameState.water <= 0:
-		# 豁免：动态效果，无法在.tres中预先定义
+	if _hud_last_starving:
 		fleet_status.modulate = Color(1, 0.3, 0.3)
 		fleet_status.text += "\n【警告】水尽粮绝！"
 	else:
@@ -158,11 +226,14 @@ func _strike_lightning() -> void:
 	tween.tween_callback(func(): lightning_flash.visible = false)
 
 func _process_ai_fleets(delta: float) -> void:
-	var radius = 3000.0
-	var nearby_fleets = FleetSystem.get_nearby_fleets(ship.position, radius)
+	# 节流：每 0.5 秒才查询一次附近舰队，其余帧使用缓存
+	_fleet_query_timer -= delta
+	if _fleet_query_timer <= 0:
+		_fleet_query_timer = _fleet_query_interval
+		_cached_nearby_fleets = FleetSystem.get_nearby_fleets(ship.position, 3000.0)
 	
 	var current_visible_ids = []
-	for f in nearby_fleets:
+	for f in _cached_nearby_fleets:
 		var f_id = f["id"]
 		current_visible_ids.append(f_id)
 		
@@ -241,17 +312,11 @@ func _spawn_animal() -> void:
 	tween.tween_callback(func(): sprite.queue_free())
 
 func _load_ports() -> void:
-	var file = FileAccess.open("res://data/ports.json", FileAccess.READ)
-	if file:
-		var json = JSON.new()
-		var res = json.parse(file.get_as_text())
-		if res == OK:
-			var data = json.get_data()
-			ports_data = data.get("ports", [])
-			for p in ports_data:
-				_spawn_port(p)
-			queue_redraw()
-		file.close()
+	# 使用 GameManager 已加载的数据，避免重复读取文件
+	ports_data = GameManager.ports_data.get("ports", [])
+	for p in ports_data:
+		_spawn_port(p)
+	queue_redraw()
 
 func _spawn_port(p_data: Dictionary) -> void:
 	var p = port_scene.instantiate()

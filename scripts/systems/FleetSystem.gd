@@ -4,12 +4,24 @@ extends Node
 
 var active_fleets: Array = []
 
+# 港口坐标缓存，避免每帧线性扫描
+var _port_pos_cache: Dictionary = {}
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	# 需要延迟初始化，等待 GameManager 读取数据完成
-	call_deferred("_initialize_fleets")
+	# 等待 GameManager 数据加载完成后初始化
+	if GameManager.data_loaded.is_connected(_initialize_fleets):
+		return
+	GameManager.data_loaded.connect(_initialize_fleets)
 	
 func _initialize_fleets() -> void:
+	# 构建港口坐标缓存
+	var ports = GameManager.ports_data.get("ports", [])
+	for p in ports:
+		var p_id = p.get("id", "")
+		var pos = p.get("position", {"x": 0, "y": 0})
+		_port_pos_cache[p_id] = Vector2(pos.get("x", 0), pos.get("y", 0))
+	
 	# 阶段一：保留 fleets.json 作为初始配置（如果有）
 	var fleets_data = GameManager.fleets_data.get("fleets", [])
 	for fd in fleets_data:
@@ -71,12 +83,7 @@ func _update_fleet_position(fleet: Dictionary, delta: float) -> bool:
 	return false
 
 func _get_port_pos(port_id: String) -> Vector2:
-	var ports = GameManager.ports_data.get("ports", [])
-	for p in ports:
-		if p.get("id") == port_id:
-			var pos = p.get("position", {"x":0, "y":0})
-			return Vector2(pos.get("x", 0), pos.get("y", 0))
-	return Vector2.ZERO
+	return _port_pos_cache.get(port_id, Vector2.ZERO)
 
 func get_nearby_fleets(center: Vector2, radius: float) -> Array:
 	var result = []
