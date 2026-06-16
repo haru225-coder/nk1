@@ -1,0 +1,53 @@
+class_name StoryState extends RefCounted
+
+## 剧情与旗标管理模块
+
+var fame: int = 0
+var flags: Dictionary = {}
+var story_flags: Dictionary = {}
+var story_items: Dictionary = {}
+var linboyuan_relationship: int = 0
+var unlocked_chapters: Array = []
+
+signal flag_set(flag_name: String)
+signal story_flag_set(key: String, value: Variant)
+signal item_acquired(item_id: String)
+signal chapter_unlocked(chapter_id: String)
+
+func set_flag(flag_name: String) -> void:
+	flags[flag_name] = true
+	flag_set.emit(flag_name)
+
+func has_flag(flag_name: String) -> bool:
+	return flags.has(flag_name) and flags[flag_name] == true
+
+func set_story_flag(key: String, value = true) -> void:
+	story_flags[key] = value
+	story_flag_set.emit(key, value)
+
+func get_story_flag(key: String, default = null):
+	return story_flags.get(key, default)
+
+func has_story_flag(key: String) -> bool:
+	if not story_flags.has(key):
+		return false
+	var v = story_flags[key]
+	if v is bool:
+		return v
+	return v != null
+
+func has_story_flag_value(key: String, expected) -> bool:
+	return story_flags.has(key) and story_flags[key] == expected
+
+func acquire_item(item_id: String) -> void:
+	story_items[item_id] = true
+	item_acquired.emit(item_id)
+
+func has_item_flag(item_id: String) -> bool:
+	return story_items.has(item_id) and story_items[item_id] == true
+
+func unlock_chapter(chapter_id: String) -> void:
+	if chapter_id not in unlocked_chapters:
+		unlocked_chapters.append(chapter_id)
+		set_story_flag("chapter_unlock:" + chapter_id, true)
+		chapter_unlocked.emit(chapter_id)

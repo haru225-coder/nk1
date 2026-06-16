@@ -1,298 +1,321 @@
 extends Node
 
-# 玩家基础属性
-var fame: int = 0
+# ═══════════════════════════════════════════════════════════
+# GameState — 全局玩家状态 Autoload
+# 重构版：内部拆分为职责单一的状态模块，外部 API 完全兼容
+# ═══════════════════════════════════════════════════════════
 
-# 走私跑商核心机制 v0.5.3
-var cargo: Dictionary = {}
-var pu_attention: int = 0
-var has_customs_permit: bool = false
-var last_port: String = "quanzhou"
-var current_voyage_origin: String = "quanzhou"
+## ── 状态模块实例 ─────────────────────────────────────────
 
-# 旗标系统
-var flags: Dictionary = {}
+var ship: ShipState = ShipState.new()
+var survival: SurvivalState = SurvivalState.new()
+var trade: TradeState = TradeState.new()
+var story: StoryState = StoryState.new()
+var navigation: NavigationState = NavigationState.new()
 
-func _ready() -> void:
-	pass
+## ── 船只属性代理 ─────────────────────────────────────────
 
-# 购买货物
-@warning_ignore("unused_parameter")
-func buy_goods(item_id: String, amount: int, price_per_unit: int) -> bool:
-	var total_cost = amount * price_per_unit
-	if LedgerSystem.get_balance() >= total_cost:
-		LedgerSystem.apply({"amount": -total_cost, "source": "gameplay", "reason": "buy_goods", "actor": "GameState"})
-		if cargo.has(item_id):
-			cargo[item_id] += amount
-		else:
-			cargo[item_id] = amount
-		return true
-	return false
+var ship_hp: float:
+	get: return ship.hp
+	set(v): ship.hp = v
 
-# 售卖货物 (单件)
-@warning_ignore("unused_parameter")
+var ship_max_hp: float:
+	get: return ship.max_hp
+	set(v): ship.max_hp = v
+
+var armor_level: int:
+	get: return ship.armor_level
+	set(v): ship.armor_level = v
+
+var sail_level: int:
+	get: return ship.sail_level
+	set(v): ship.sail_level = v
+
+## ── 生存属性代理 ─────────────────────────────────────────
+
+var crew_count: int:
+	get: return survival.crew_count
+	set(v): survival.crew_count = v
+
+var max_crew: int:
+	get: return survival.max_crew
+	set(v): survival.max_crew = v
+
+var food: float:
+	get: return survival.food
+	set(v): survival.food = v
+
+var max_food: float:
+	get: return survival.max_food
+	set(v): survival.max_food = v
+
+var water: float:
+	get: return survival.water
+	set(v): survival.water = v
+
+var max_water: float:
+	get: return survival.max_water
+	set(v): survival.max_water = v
+
+var max_cargo: int:
+	get: return survival.max_cargo
+	set(v): survival.max_cargo = v
+
+## ── 贸易属性代理 ─────────────────────────────────────────
+
+var pu_attention: int:
+	get: return trade.pu_attention
+	set(v): trade.pu_attention = v
+
+var has_customs_permit: bool:
+	get: return trade.has_customs_permit
+	set(v): trade.has_customs_permit = v
+
+## ── 剧情属性代理 ─────────────────────────────────────────
+
+var fame: int:
+	get: return story.fame
+	set(v): story.fame = v
+
+var flags: Dictionary:
+	get: return story.flags
+	set(v): story.flags = v
+
+var story_flags: Dictionary:
+	get: return story.story_flags
+	set(v): story.story_flags = v
+
+var story_items: Dictionary:
+	get: return story.story_items
+	set(v): story.story_items = v
+
+var linboyuan_relationship: int:
+	get: return story.linboyuan_relationship
+	set(v): story.linboyuan_relationship = v
+
+var unlocked_chapters: Array:
+	get: return story.unlocked_chapters
+	set(v): story.unlocked_chapters = v
+
+## ── 航行属性代理 ─────────────────────────────────────────
+
+var last_port: String:
+	get: return navigation.last_port
+	set(v): navigation.last_port = v
+
+var current_voyage_origin: String:
+	get: return navigation.current_voyage_origin
+	set(v): navigation.current_voyage_origin = v
+
+var navigation_position: String:
+	get: return navigation.navigation_position
+	set(v): navigation.navigation_position = v
+
+## ── 公开方法（委托给各模块）─────────────────────────────
+
+func process_daily_consumption() -> void:
+	survival.process_daily_consumption()
+
 func sell_goods(item_id: String, amount: int, price_per_unit: int) -> bool:
-	if cargo.has(item_id) and cargo[item_id] >= amount:
-		cargo[item_id] -= amount
-		if cargo[item_id] <= 0:
-			cargo.erase(item_id)
-		LedgerSystem.apply({"amount": amount * price_per_unit, "source": "gameplay", "reason": "sell_goods", "actor": "GameState"})
-		return true
-	return false
+	return trade.sell_goods(item_id, amount, price_per_unit)
 
-# 获取当前港口的商品及价格
-func get_market_prices(port_id: String) -> Array:
-	var goods_list = GameManager.goods_data.get("goods", [])
-	var market_items = []
-	for g in goods_list:
-		if g.get("category") == "货物":
-			var base = g.get("base_value", 20)
-			# 动态波动算法，未来可接入季节、战争等影响
-			var fluctuate = base + (base % 5)
-			market_items.append({
-				"name": g.get("name"),
-				"price": fluctuate,
-				"base_value": base,
-				"origin": g.get("origin", "")
-			})
-	return market_items
-
-# 在指定港口抛售所有货物 (含暴利算法)
 func sell_all_cargo(port_id: String) -> Dictionary:
-	if cargo.is_empty():
-		return {"success": false, "earned": 0, "msg": "船舱空空如也，无货可卖。"}
-		
-	var total_earned = 0
-	var goods_list = GameManager.goods_data.get("goods", [])
-	
-	for key in cargo.keys().duplicate():
-		var amt = cargo[key]
-		var sell_price = 10
-		
-		for g in goods_list:
-			if g.get("name") == key:
-				var base = g.get("base_value", 20)
-				var origin = g.get("origin", "")
-				
-				var is_local = false
-				if port_id.begins_with("quanzhou") and ("泉州" in origin or "福建" in origin): is_local = true
-				elif port_id.begins_with("xinghua") and ("兴化" in origin or "福建" in origin): is_local = true
-				
-				# 暴利规则独立化
-				if is_local:
-					sell_price = int(base * 1.1)
-				else:
-					sell_price = int(base * 2.5)
-				break
-		
-		sell_goods(key, amt, sell_price)
-		total_earned += amt * sell_price
-		
-	return {"success": true, "earned": total_earned, "msg": "全部抛售，获利 %d 钱！" % total_earned}
+	return trade.sell_all_cargo(port_id, _resolve_good_id, _calc_bulk_sell_price)
 
-# 市舶司验引 / 蒲氏抽解 (Customs Inspection)
 func customs_inspection() -> Dictionary:
-	var result = {"passed": true, "msg": "", "confiscated": false, "was_smuggling": false}
-	
-	if has_customs_permit:
-		result["passed"] = true
-		result["msg"] = "【市舶司验引】出示了泉州货引，缴纳了正常抽解，安全放行。"
-		has_customs_permit = false
-	else:
-		result["was_smuggling"] = true
-		if pu_attention > 50:
-			result["passed"] = false
-			result["confiscated"] = true
-			result["msg"] = "【严重警告】蒲氏暗桩早已盯上你！市舶司当场查扣所有无证货物，并处于巨额罚款！"
-			var b = LedgerSystem.get_balance()
-			var fine = min(b, 500)
-			if fine > 0:
-				LedgerSystem.apply({"amount": -fine, "source": "system", "reason": "customs_fine", "actor": "GameState"})
-			cargo.clear()
-		else:
-			if LedgerSystem.get_balance() >= 50:
-				result["passed"] = true
-				result["msg"] = "【惊险过关】没有货引，但蒲氏目前并未留意到你，你塞了 50 钱贿赂小吏，强行出港。"
-				LedgerSystem.apply({"amount": -50, "source": "gameplay", "reason": "bribe", "actor": "GameState"})
-				pu_attention += 20 # 引起了关注
-			else:
-				result["passed"] = false
-				result["msg"] = "【遣返】你不仅没有货引，连塞给小吏的 50 钱都拿不出！小吏毫不客气地把你轰回了港口。"
-			
-			
-	return result
+	return trade.customs_inspection()
 
-# 检查出港资格
 func can_depart_port() -> Dictionary:
-	var res = {"success": false, "msg": ""}
-	
-	if food <= 0 or water <= 0:
-		res["msg"] = "【出港失败】船只水粮耗尽，无法出海！请前往船坞补充。"
-		return res
-		
-	if crew_count <= 0:
-		res["msg"] = "【出港失败】没有足够的水手开船！请前往船坞招募。"
-		return res
-		
+	var survival_check = survival.can_depart()
+	if not survival_check["success"]:
+		return survival_check
 	if not has_customs_permit and not flags.has("smuggled_out"):
-		res["msg"] = "【出港被拒】没有正规市舶司货引，也未打通暗关，海防营拦住了你的去路！"
-		return res
-		
-	res["success"] = true
-	res["msg"] = "【获准出港】"
-	return res
-
-# 统一处理特殊业务请求
-@warning_ignore("unused_parameter")
-func handle_special_action(action: String) -> Dictionary:
-	var res = {"success": false, "msg": ""}
-	
-	if action == "customs_permit":
-		has_customs_permit = true
-		res["success"] = true
-		res["msg"] = "【市舶司】你办理了正规货引，合法离港。"
-		
-	elif action == "bribe_official_50":
-		if LedgerSystem.get_balance() >= 50:
-			LedgerSystem.apply({"amount": -50, "source": "gameplay", "reason": "bribe", "actor": "GameState"})
-			has_customs_permit = true
-			res["success"] = true
-			res["msg"] = "贿赂成功，拿到通关凭证。"
-		else:
-			res["success"] = false
-			res["msg"] = "金钱不足！"
-			
-	elif action == "recruit_crew":
-		var space = max_crew - crew_count
-		var b = LedgerSystem.get_balance()
-		if space > 0 and b >= 10:
-			var cost = min(space * 10, b - (b % 10))
-			var amount = cost / 10
-			LedgerSystem.apply({"amount": -cost, "source": "gameplay", "reason": "recruit_crew", "actor": "GameState"})
-			crew_count += amount
-			res["success"] = true
-			res["msg"] = "招募了 %d 名水手！" % amount
-		else:
-			res["success"] = false
-			res["msg"] = "无法招募！钱不够或船只已满员。"
-			
-	elif action == "supply_ship":
-		if LedgerSystem.get_balance() >= 20:
-			LedgerSystem.apply({"amount": -20, "source": "gameplay", "reason": "supply_ship", "actor": "GameState"})
-			food = max_food
-			water = max_water
-			res["success"] = true
-			res["msg"] = "水粮已全部补满！"
-		else:
-			res["success"] = false
-			res["msg"] = "【补充失败】金钱不足 20！"
-			
-	elif action == "sail_world_map":
-		var check = can_depart_port()
-		if not check["success"]:
-			return check
-			
-		# 出海成功，记录起点，消耗许可
-		current_voyage_origin = last_port
-		if has_customs_permit:
-			has_customs_permit = false
-		if flags.has("smuggled_out"):
-			flags.erase("smuggled_out")
-			
-		res["success"] = true
-		res["msg"] = "【大航海】文牒验讫，扬帆起航！"
-			
-	elif action == "confiscate_contraband":
-		var to_remove = []
-		for good_id in cargo.keys():
-			var g_data = GameManager.get_good_data(good_id)
-			if g_data.get("legality") == "contraband":
-				to_remove.append(good_id)
-		for good_id in to_remove:
-			cargo.erase(good_id)
-		res["success"] = true
-		res["msg"] = "【法网】查获的所有违禁品已被没收！"
-		
-	elif action == "trigger_combat":
-		res["success"] = true
-		res["msg"] = "【战斗暂未实装】敌意舰队逼近！你只能仓皇撤退，付出了惨痛的代价！"
-		fame -= 10
-		crew_count = max(0, crew_count - 5)
-		if LedgerSystem.get_balance() > 100: 
-			LedgerSystem.apply({"amount": -100, "source": "system", "reason": "combat_loss", "actor": "GameState"})
-			
-	return res
+		return {"success": false, "msg": "【出港被拒】没有正规市舶司货引，也未打通暗关，海防营拦住了你的去路！"}
+	return {"success": true, "msg": "【获准出港】"}
 
 func set_flag(flag_name: String) -> void:
-	flags[flag_name] = true
+	story.set_flag(flag_name)
+
+func clear_flag(flag_name: String) -> void:
+	story.flags.erase(flag_name)
+
+func has_flag(flag_name: String) -> bool:
+	return story.has_flag(flag_name)
+
+func set_story_flag(key: String, value = true) -> void:
+	story.set_story_flag(key, value)
+
+func get_story_flag(key: String, default = null):
+	return story.get_story_flag(key, default)
+
+func has_story_flag(key: String) -> bool:
+	return story.has_story_flag(key)
+
+func has_story_flag_value(key: String, expected) -> bool:
+	return story.has_story_flag_value(key, expected)
+
+func acquire_item(item_id: String) -> void:
+	story.acquire_item(item_id)
+
+func has_item_flag(item_id: String) -> bool:
+	return story.has_item_flag(item_id)
+
+## ── 领域操作方法（供 Handlers 调用）─────────────────────
+
+func modify_fame(amount: int) -> void:
+	fame = max(0, fame + amount)
+
+func modify_hp(amount: float) -> void:
+	ship_hp = max(0.0, ship_hp + amount)
+
+func modify_crew(amount: int) -> void:
+	crew_count = max(0, crew_count + amount)
+
+func set_navigation_flag(flag_name: String) -> void:
+	story.set_flag(flag_name)
+
+func set_return_port(port_id: String) -> void:
+	navigation.last_port = port_id
+	story.set_flag("return_to_port")
+
+func set_navigation_locked(locked: bool) -> void:
+	if locked:
+		story.set_flag("navigation_locked")
+	else:
+		story.flags.erase("navigation_locked")
+
+## ── 私有辅助方法 ─────────────────────────────────────────
+
+func _resolve_good_id(key: String) -> Dictionary:
+	var g_data = GameManager.get_good_data(key)
+	if not g_data.is_empty():
+		return g_data
+	for g in GameManager.goods_data.get("goods", []):
+		if g.get("name") == key:
+			return g
+	return {}
+
+func _calc_bulk_sell_price(port_id: String, g_data: Dictionary) -> int:
+	var base = g_data.get("base_value", 20)
+	var origin = g_data.get("origin", "")
+	var is_local = false
+	if port_id.begins_with("quanzhou") and ("泉州" in origin or "福建" in origin):
+		is_local = true
+	elif port_id.begins_with("xinghua") and ("兴化" in origin or "福建" in origin):
+		is_local = true
+	return int(base * 1.1) if is_local else int(base * 2.5)
+
+## ── Dispatchers ───────────────────────────────────────────
+
+func handle_special_action(action: String) -> Dictionary:
+	match action:
+		"customs_permit":       return _do_customs_permit()
+		"sea_customs_check":    return _do_sea_customs_check()
+		"bribe_official_50":    return _do_bribe_official()
+		"recruit_crew":         return _do_recruit_crew()
+		"supply_ship":          return _do_supply_ship()
+		"sail_world_map":       return _do_sail_world_map()
+		"confiscate_contraband":return _do_confiscate_contraband()
+		"trigger_combat":       return _do_trigger_combat()
+		_:
+			return {"success": false, "msg": ""}
 
 func apply_effects(effects: Dictionary) -> void:
 	for key in effects.keys():
 		var val = effects[key]
-		if key == "fame": fame += val
+		match key:
+			"fame":         fame += val
+			"food":         food = clamp(food + float(val), 0.0, max_food)
+			"water":        water = clamp(water + float(val), 0.0, max_water)
+			"crew_count":   crew_count = max(0, crew_count + int(val))
+			"pu_attention": pu_attention += int(val)
+			"flag", "flag2":
+				if val is String:
+					set_flag(val)
+			"story_flag", "story_flag2":
+				if val is String:
+					set_story_flag(val)
+				elif val is Dictionary:
+					for k in val.keys():
+						set_story_flag(str(k), val[k])
+			"item_acquired":
+				if val is String:
+					acquire_item(val)
+			"chapter_unlock":
+				if val is String:
+					story.unlock_chapter(val)
+			"linboyuan_relationship":
+				linboyuan_relationship += int(val)
+			"navigation_position":
+				if val is String:
+					navigation_position = val
+			"smuggled_out": set_flag("smuggled_out")
+			"money":
+				if val != 0:
+					LedgerSystem.apply({"amount": int(val), "source": "scene", "reason": "scene_effect", "actor": "GameState"})
+			"acquire_item":
+				if val is String:
+					acquire_item(val)
+			_:
+				if not key in ["sea_tendency", "scholar_tendency", "merchant_credit", "ledger_note"]:
+					push_warning("[GameState] apply_effects: unknown key '" + key + "'")
 
-func has_flag(flag_name: String) -> bool:
-	return flags.has(flag_name) and flags[flag_name] == true
+## ── Dispatcher 私有实现 ───────────────────────────────────
 
-# 战舰属性
-var ship_hp: float = 100.0
-var ship_max_hp: float = 100.0
-var armor_level: int = 1
-var sail_level: int = 1
+func _do_customs_permit() -> Dictionary:
+	has_customs_permit = true
+	return {"success": true, "msg": "【市舶司】你办理了正规货引，合法离港。"}
 
-func repair_ship() -> bool:
-	var missing_hp = ship_max_hp - ship_hp
-	if missing_hp <= 0: return false
-	
-	var cost = int(missing_hp * 2) # 2钱1血
-	if LedgerSystem.get_balance() >= cost:
-		LedgerSystem.apply({"amount": -cost, "source": "gameplay", "reason": "repair_ship", "actor": "GameState"})
-		ship_hp = ship_max_hp
-		return true
-	return false
+func _do_sea_customs_check() -> Dictionary:
+	var insp = customs_inspection()
+	return {"success": insp["passed"], "msg": insp["msg"]}
 
-func upgrade_armor() -> bool:
-	var cost = armor_level * 500
-	if LedgerSystem.get_balance() >= cost:
-		LedgerSystem.apply({"amount": -cost, "source": "gameplay", "reason": "upgrade_armor", "actor": "GameState"})
-		armor_level += 1
-		ship_max_hp += 50.0
-		ship_hp += 50.0
-		return true
-	return false
+func _do_bribe_official() -> Dictionary:
+	if LedgerSystem.get_balance() >= 50:
+		LedgerSystem.apply({"amount": -50, "source": "gameplay", "reason": "bribe", "actor": "GameState"})
+		has_customs_permit = true
+		return {"success": true, "msg": "贿赂成功，拿到通关凭证。"}
+	return {"success": false, "msg": "金钱不足！"}
 
-func upgrade_sail() -> bool:
-	var cost = sail_level * 600
-	if LedgerSystem.get_balance() >= cost:
-		LedgerSystem.apply({"amount": -cost, "source": "gameplay", "reason": "upgrade_sail", "actor": "GameState"})
-		sail_level += 1
-		return true
-	return false
+func _do_recruit_crew() -> Dictionary:
+	var space = max_crew - crew_count
+	var b = LedgerSystem.get_balance()
+	if space > 0 and b >= 10:
+		var cost = min(space * 10, b - (b % 10))
+		var amount = cost / 10
+		LedgerSystem.apply({"amount": -cost, "source": "gameplay", "reason": "recruit_crew", "actor": "GameState"})
+		crew_count += amount
+		return {"success": true, "msg": "招募了 %d 名水手！" % amount}
+	return {"success": false, "msg": "无法招募！钱不够或船只已满员。"}
 
-# 生存与航海补给系统
-var crew_count: int = 30
-var max_crew: int = 50
-var food: float = 30.0
-var max_food: float = 100.0
-var water: float = 30.0
-var max_water: float = 100.0
-var max_cargo: int = 200
+func _do_supply_ship() -> Dictionary:
+	if LedgerSystem.get_balance() >= 20:
+		LedgerSystem.apply({"amount": -20, "source": "gameplay", "reason": "supply_ship", "actor": "GameState"})
+		food = max_food
+		water = max_water
+		return {"success": true, "msg": "水粮已全部补满！"}
+	return {"success": false, "msg": "【补充失败】金钱不足 20！"}
 
-func process_daily_consumption() -> void:
-	if crew_count <= 0: return
-	
-	# 每10个水手每天消耗1份食物和1份水
-	var daily_consume = float(crew_count) / 10.0
-	
-	food -= daily_consume
-	water -= daily_consume
-	
-	if food < 0: food = 0
-	if water < 0: water = 0
-	
-	if food == 0 or water == 0:
-		# 饥渴状态下，每天饿死或病死 10% 的水手，至少死 1 个
-		var deaths = max(1, int(float(crew_count) * 0.1))
-		crew_count -= deaths
-		if crew_count < 0: crew_count = 0
-		print("补给不足！失去水手：", deaths, " 人，当前剩余水手：", crew_count)
+func _do_sail_world_map() -> Dictionary:
+	var check = can_depart_port()
+	if not check["success"]:
+		return check
+	current_voyage_origin = last_port
+	if has_customs_permit:
+		has_customs_permit = false
+	if flags.has("smuggled_out"):
+		flags.erase("smuggled_out")
+	return {"success": true, "msg": "【大航海】文牒验讫，扬帆起航！"}
+
+func _do_confiscate_contraband() -> Dictionary:
+	var to_remove = CargoSystem.get_contraband_keys()
+	for good_id in to_remove:
+		CargoSystem.remove_all_of(good_id)
+	return {"success": true, "msg": "【法网】查获的所有违禁品已被没收！"}
+
+func _do_trigger_combat() -> Dictionary:
+	modify_fame(-10)
+	modify_crew(-5)
+	if LedgerSystem.get_balance() > 100:
+		LedgerSystem.apply({"amount": -100, "source": "system", "reason": "combat_loss", "actor": "GameState"})
+	return {"success": true, "msg": "【战斗暂未实装】敌意舰队逼近！你只能仓皇撤退，付出了惨痛的代价！"}

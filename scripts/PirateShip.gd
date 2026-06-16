@@ -21,7 +21,9 @@ func _physics_process(delta: float) -> void:
 	if hull_hp <= 0: return
 	
 	var dist = position.distance_to(target.position)
-	if dist > 2500.0: return # Too far, sleep
+	if dist > 2500.0:
+		wake_particles.emitting = false
+		return # Too far, sleep
 	
 	var dir_to_target = (target.position - position).normalized()
 	var ship_dir = Vector2.UP.rotated(rotation)

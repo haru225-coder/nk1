@@ -63,17 +63,15 @@ func _ready() -> void:
 
 func start_game() -> void:
 	if GameState.has_flag("return_to_port"):
-		GameState.flags.erase("return_to_port")
+		GameState.clear_flag("return_to_port")
 		load_scene(GameState.last_port)
 	else:
 		var start_id = GameManager.scenes_data.get("start_scene", "cg_title")
 		load_scene(start_id)
 
 func update_status_panel() -> void:
-	var cargo_str = ""
-	for key in GameState.cargo.keys():
-		cargo_str += key + " x" + str(GameState.cargo[key]) + "\n"
-	if cargo_str == "": cargo_str = "空\n"
+	var cargo_str = CargoSystem.to_display_string()
+	if cargo_str == "": cargo_str = "空"
 		
 	var t = "金钱：%d\n名声：%d\n\n[走私与市舶]\n蒲氏关注度：%d\n市舶司货引：%s\n\n[船舱货物]\n%s" % [
 		LedgerSystem.get_balance(),
@@ -95,8 +93,10 @@ func load_scene(scene_id: String) -> void:
 		var port_to_open = GameState.last_port
 		if port_to_open == "": port_to_open = scene_id.replace("_market", "")
 		market_ui.setup(port_to_open)
-		market_ui.message_logged.connect(_on_message_logged)
-		market_ui.status_updated.connect(_on_status_updated)
+		market_ui.message_logged.connect(func(msg):
+			message_label.text = msg + message_label.text
+		)
+		market_ui.status_updated.connect(update_status_panel)
 		return
 		
 	current_scene_id = scene_id
@@ -116,15 +116,25 @@ func load_scene(scene_id: String) -> void:
 		return
 		
 	# Load visual assets (Background)
-	var bg_path = scene_data.get("bg", "res://assets/bg_sea_route.jpg")
-		
-	var tex = load(bg_path) as Texture2D
-	if tex:
-		background.texture = tex
-	else:
-		if FileAccess.file_exists(bg_path):
-			var img = Image.load_from_file(bg_path)
-			if img != null: background.texture = ImageTexture.create_from_image(img)
+	var bg_path = scene_data.get("bg", "res://assets/bg_sea_route_koei.png")
+	var abs_path: String = ""
+	if bg_path.begins_with("res://"):
+		abs_path = ProjectSettings.globalize_path(bg_path)
+	
+	var loaded := false
+	
+	if abs_path != "" and FileAccess.file_exists(abs_path):
+		var img := Image.load_from_file(abs_path)
+		if img != null:
+			background.texture = ImageTexture.create_from_image(img)
+			loaded = true
+	
+	if not loaded:
+		var tex := load(bg_path) as Texture2D
+		if tex:
+			background.texture = tex
+			loaded = true
+
 	
 	var type = scene_data.get("type", "investigation")
 	
@@ -136,8 +146,8 @@ func load_scene(scene_id: String) -> void:
 		title_mode.visible = true
 		title_mode.setup(scene_data)
 	elif type == "port":
-		GameState.last_port = scene_id
-		left_panel.visible = true
+		GameState.last_port = scene_data.get("location", scene_id.replace("port_", ""))
+		left_panel.visible = false
 		title_mode.visible = false
 		investigation_mode.visible = false
 		npc_mode.visible = false

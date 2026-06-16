@@ -32,7 +32,7 @@ func _draw() -> void:
 			
 	# Draw Pirates
 	for child in root.get_children():
-		if child.name.begins_with("PirateShip"):
+		if "PirateShip" in child.name:
 			_draw_blip(child.global_position, Color.RED)
 
 func _draw_blip(world_pos: Vector2, color: Color) -> void:

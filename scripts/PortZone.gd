@@ -22,6 +22,5 @@ func _on_body_exited(body: Node2D) -> void:
 func _input(event: InputEvent) -> void:
 	if player_in_zone and event.is_action_pressed("ui_accept"):
 		# Trigger docking
-		GameState.flags["return_to_port"] = true
-		GameState.last_port = port_id
+		GameState.set_return_port(port_id)
 		get_tree().change_scene_to_file("res://scenes/Main.tscn")

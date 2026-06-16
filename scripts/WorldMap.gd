@@ -9,7 +9,6 @@ extends Node2D
 @onready var lightning_flash: ColorRect = $CanvasLayer/LightningFlash
 
 var crate_scene = preload("res://scenes/Crate.tscn")
-var pirate_scene = preload("res://scenes/PirateShip.tscn")
 var seagull_tex = preload("res://assets/seagull.png")
 var whale_tex = preload("res://assets/whale_shadow.png")
 
@@ -25,6 +24,7 @@ var lightning_timer: float = 0.0
 var base_wind_strength: float = 80.0
 
 var crate_spawn_timer: float = 5.0
+var animal_spawn_timer: float = 15.0
 var navigation_locked: bool = false
 var distance_since_last_event: float = 0.0
 var event_cooldown_distance: float = 3000.0
@@ -38,6 +38,12 @@ func _ready() -> void:
 	
 	if port_nodes.has(GameState.current_voyage_origin):
 		ship.position = port_nodes[GameState.current_voyage_origin].position + Vector2(0, 100)
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_B or event.keycode == KEY_ESCAPE:
+			GameState.set_navigation_flag("return_to_port")
+			get_tree().change_scene_to_file("res://scenes/Main.tscn")
 
 func _process(delta: float) -> void:
 	if not ship: return
@@ -59,6 +65,9 @@ func _process(delta: float) -> void:
 		distance_since_last_event += dist
 	last_ship_pos = ship.position
 	
+	# Spawn crates and sea creatures
+	_process_spawns(delta)
+	
 	if distance_since_last_event > event_cooldown_distance:
 		var prob = 0.005 + (distance_since_last_event - event_cooldown_distance) / 50000.0
 		if randf() < prob:
@@ -74,15 +83,10 @@ func _process(delta: float) -> void:
 	var hp_color = "green"
 	if ship.hull_hp < 50: hp_color = "red"
 	
-	var text = "当前季风: %s\n风力强度: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nJ/K: 左/右舷齐射开炮\n船体耐久: [color=%s]%d/100[/color]\nB/Esc: 返回港口" % [wind_desc, int(ship.wind_strength), ship.sail_gear, hp_color, int(ship.hull_hp)]
+	var text = "当前季风: %s\n风力强度: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nJ/K: 左/右舷齐射开炮\n船体耐久: [color=%s]%d/%d[/color]\nB/Esc: 返回港口" % [wind_desc, int(ship.wind_strength), ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp)]
 	label.text = text
 	
-	var cargo_str = ""
-	if GameState.cargo.is_empty():
-		cargo_str = "空"
-	else:
-		for k in GameState.cargo.keys():
-			cargo_str += k + " x" + str(GameState.cargo[k]) + " "
+	var cargo_str = CargoSystem.to_display_string(" ")
 	if cargo_str == "": cargo_str = "无"
 	fleet_status.text = "【船队状态】\n铜钱: %d\n水手: %d/%d\n淡水: %d/%d\n食物: %d/%d\n货物: %s" % [LedgerSystem.get_balance(), GameState.crew_count, GameState.max_crew, int(GameState.water), int(GameState.max_water), int(GameState.food), int(GameState.max_food), cargo_str]
 	
@@ -101,7 +105,7 @@ func _process_weather_and_time(delta: float) -> void:
 		GameState.process_daily_consumption()
 		WorldEventTracker.process_day()
 		if GameState.crew_count < old_crew:
-			var ft = preload("res://scenes/FloatingText.tscn").instantiate()
+			var ft = ResourceManager.FloatingText.instantiate()
 			ft.text = "【警告】水尽粮绝！水手减少！"
 			# 豁免：动态效果，无法在.tres中预先定义
 			ft.modulate = Color.RED
@@ -187,11 +191,13 @@ func _on_fleet_encountered(fleet_id: String) -> void:
 	var encounter_data = EncounterSystem.resolve_encounter(fleet_id)
 	if not encounter_data.is_empty():
 		navigation_locked = true
+		GameState.set_navigation_locked(true)
 		distance_since_last_event = 0.0
 		
 		var controller = SeaEventController.trigger_event($CanvasLayer, encounter_data)
 		controller.event_finished.connect(func():
 			navigation_locked = false
+			GameState.set_navigation_locked(false)
 		)
 
 func _process_spawns(delta: float) -> void:
@@ -279,9 +285,11 @@ func _try_trigger_event() -> void:
 	if not evt.is_empty():
 		distance_since_last_event = 0.0
 		navigation_locked = true
+		GameState.set_navigation_locked(true)
 		
 		# 呼出控制器
 		var controller = SeaEventController.trigger_event($CanvasLayer, evt)
 		controller.event_finished.connect(func():
 			navigation_locked = false
+			GameState.set_navigation_locked(false)
 		)

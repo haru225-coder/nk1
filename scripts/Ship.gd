@@ -169,8 +169,8 @@ func _process_storm_damage(delta: float) -> void:
 			hull_hp = 0
 			_sink_ship()
 	elif wind_strength <= 150.0 or sail_gear < 2:
-		if not fire_cooldown > 0: # Hacky way to not disable splinter if hit by cannon
-			pass
+		if fire_cooldown <= 0:
+			splinter_particles.emitting = false
 
 func _sink_ship() -> void:
 	print("船只沉没！失去所有货物！")

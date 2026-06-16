@@ -10,7 +10,7 @@ for s_id, s in scenes.items():
     # Check choices
     for c in s.get('choices', []):
         next_id = c.get('next')
-        if next_id and next_id not in scenes:
+        if next_id and next_id != 'last_port' and next_id not in scenes:
             errors.append(f"Scene '{s_id}' choice '{c.get('label')}' points to missing scene: '{next_id}'")
             
     # Check facilities
