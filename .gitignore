@@ -17,3 +17,8 @@ __pycache__/
 
 # Godot engine logs
 *.log
+
+# Kun agent / orchestration artifacts
+.agents/
+.kunsdd/
+.codex/
