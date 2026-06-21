@@ -65,7 +65,7 @@ var max_cargo: int:
 
 var pu_attention: int:
 	get: return trade.pu_attention
-	set(v): trade.pu_attention = v
+	set(v): trade.pu_attention = clampi(v, 0, 20)
 
 var has_customs_permit: bool:
 	get: return trade.has_customs_permit
@@ -92,6 +92,10 @@ var story_items: Dictionary:
 var linboyuan_relationship: int:
 	get: return story.linboyuan_relationship
 	set(v): story.linboyuan_relationship = v
+
+var jia_relationship: int:
+	get: return story.jia_relationship
+	set(v): story.jia_relationship = v
 
 var unlocked_chapters: Array:
 	get: return story.unlocked_chapters
@@ -123,13 +127,23 @@ func sell_all_cargo(port_id: String) -> Dictionary:
 	return trade.sell_all_cargo(port_id, _resolve_good_id, _calc_bulk_sell_price)
 
 func customs_inspection() -> Dictionary:
-	return trade.customs_inspection()
+	var result := trade.customs_inspection()
+	if result.get("passed", false):
+		if result.get("was_smuggling", false):
+			set_flag("smuggled_out")
+		else:
+			set_flag("departure_authorized")
+	return result
 
 func can_depart_port() -> Dictionary:
 	var survival_check = survival.can_depart()
 	if not survival_check["success"]:
 		return survival_check
-	if not has_customs_permit and not flags.has("smuggled_out"):
+	if (
+		not has_customs_permit
+		and not flags.has("smuggled_out")
+		and not flags.has("departure_authorized")
+	):
 		return {"success": false, "msg": "【出港被拒】没有正规市舶司货引，也未打通暗关，海防营拦住了你的去路！"}
 	return {"success": true, "msg": "【获准出港】"}
 
@@ -167,6 +181,18 @@ func modify_fame(amount: int) -> void:
 
 func modify_hp(amount: float) -> void:
 	ship_hp = max(0.0, ship_hp + amount)
+	_sync_world_map_ship_hp()
+
+func _sync_world_map_ship_hp() -> void:
+	var tree := Engine.get_main_loop()
+	if tree is SceneTree:
+		var scene_tree := tree as SceneTree
+		var ships: Array = scene_tree.get_nodes_in_group("player_ship")
+		if ships.is_empty():
+			return
+		var ship_node: Node = ships[0]
+		if is_instance_valid(ship_node) and "hull_hp" in ship_node:
+			ship_node.hull_hp = ship_hp
 
 func modify_crew(amount: int) -> void:
 	crew_count = max(0, crew_count + amount)
@@ -175,7 +201,7 @@ func set_navigation_flag(flag_name: String) -> void:
 	story.set_flag(flag_name)
 
 func set_return_port(port_id: String) -> void:
-	navigation.last_port = port_id
+	navigation.return_port(port_id)
 	story.set_flag("return_to_port")
 
 func set_navigation_locked(locked: bool) -> void:
@@ -190,10 +216,7 @@ func _resolve_good_id(key: String) -> Dictionary:
 	var g_data = GameManager.get_good_data(key)
 	if not g_data.is_empty():
 		return g_data
-	for g in GameManager.goods_data.get("goods", []):
-		if g.get("name") == key:
-			return g
-	return {}
+	return GameManager.get_good_by_name(key)
 
 func _calc_bulk_sell_price(port_id: String, g_data: Dictionary) -> int:
 	var base = g_data.get("base_value", 20)
@@ -217,6 +240,7 @@ func handle_special_action(action: String) -> Dictionary:
 		"sail_world_map":       return _do_sail_world_map()
 		"confiscate_contraband":return _do_confiscate_contraband()
 		"trigger_combat":       return _do_trigger_combat()
+		"drop_cargo_half":      return _do_drop_cargo_half()
 		_:
 			return {"success": false, "msg": ""}
 
@@ -224,11 +248,12 @@ func apply_effects(effects: Dictionary) -> void:
 	for key in effects.keys():
 		var val = effects[key]
 		match key:
-			"fame":         fame += val
+			"fame":         fame = max(0, fame + int(val))
 			"food":         food = clamp(food + float(val), 0.0, max_food)
 			"water":        water = clamp(water + float(val), 0.0, max_water)
 			"crew_count":   crew_count = max(0, crew_count + int(val))
-			"pu_attention": pu_attention += int(val)
+			"pu_attention":
+				pu_attention = clampi(pu_attention + int(val), 0, 20)
 			"flag", "flag2":
 				if val is String:
 					set_flag(val)
@@ -246,6 +271,11 @@ func apply_effects(effects: Dictionary) -> void:
 					story.unlock_chapter(val)
 			"linboyuan_relationship":
 				linboyuan_relationship += int(val)
+			"jia_relationship":
+				jia_relationship += int(val)
+			"item_removed":
+				if val is String:
+					story.remove_item(val)
 			"navigation_position":
 				if val is String:
 					navigation_position = val
@@ -256,6 +286,13 @@ func apply_effects(effects: Dictionary) -> void:
 			"acquire_item":
 				if val is String:
 					acquire_item(val)
+			"hull_hp":
+				modify_hp(float(val))
+			"cargo":
+				if val is float or val is int:
+					var ratio := absf(float(val))
+					if float(val) < 0.0:
+						CargoSystem.remove_fraction(ratio)
 			_:
 				if not key in ["sea_tendency", "scholar_tendency", "merchant_credit", "ledger_note"]:
 					push_warning("[GameState] apply_effects: unknown key '" + key + "'")
@@ -300,18 +337,26 @@ func _do_sail_world_map() -> Dictionary:
 	var check = can_depart_port()
 	if not check["success"]:
 		return check
-	current_voyage_origin = last_port
+	var depart_result := navigation.depart_port(check)
+	if not depart_result.get("success", false):
+		return depart_result
 	if has_customs_permit:
 		has_customs_permit = false
 	if flags.has("smuggled_out"):
 		flags.erase("smuggled_out")
-	return {"success": true, "msg": "【大航海】文牒验讫，扬帆起航！"}
+	if flags.has("departure_authorized"):
+		flags.erase("departure_authorized")
+	return depart_result
 
 func _do_confiscate_contraband() -> Dictionary:
 	var to_remove = CargoSystem.get_contraband_keys()
 	for good_id in to_remove:
 		CargoSystem.remove_all_of(good_id)
 	return {"success": true, "msg": "【法网】查获的所有违禁品已被没收！"}
+
+func _do_drop_cargo_half() -> Dictionary:
+	CargoSystem.remove_fraction(0.5)
+	return {"success": true, "msg": ""}
 
 func _do_trigger_combat() -> Dictionary:
 	modify_fame(-10)

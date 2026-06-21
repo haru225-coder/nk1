@@ -58,22 +58,21 @@
       }
     },
     {
-      "id": "xinghua_harbor",
-      "name": "兴化海口",
-      "region": "兴化军 / 海口酒棚",
+      "id": "keelung",
+      "name": "基隆海岸",
+      "region": "台湾北部",
       "status": "thread",
       "tags": [
-        "酒棚",
-        "渡口",
-        "海口",
-        "序章"
+        "凯达格兰",
+        "未入官图",
+        "第一章"
       ],
       "connections": [
-        "quanzhou"
+        "penghu"
       ],
       "position": {
-        "x": 2200,
-        "y": -800
+        "x": 5500,
+        "y": 3500
       }
     },
     {
@@ -82,8 +81,8 @@
       "region": "流求海面北缘",
       "status": "main",
       "tags": [
-        "旧避风澳",
         "舵手传闻",
+        "远景",
         "未入官图"
       ],
       "connections": [
@@ -178,7 +177,8 @@
       ],
       "connections": [
         "quanzhou",
-        "ryukyu"
+        "ryukyu",
+        "keelung"
       ],
       "position": {
         "x": 4000,

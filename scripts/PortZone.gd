@@ -12,11 +12,11 @@ func _ready() -> void:
 		$Label.text = port_name + " (按 Enter 停靠)"
 
 func _on_body_entered(body: Node2D) -> void:
-	if body.name == "Ship":
+	if body.is_in_group("player_ship"):
 		player_in_zone = true
 
 func _on_body_exited(body: Node2D) -> void:
-	if body.name == "Ship":
+	if body.is_in_group("player_ship"):
 		player_in_zone = false
 
 func _input(event: InputEvent) -> void:

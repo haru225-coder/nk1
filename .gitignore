@@ -14,3 +14,6 @@ __pycache__/
 
 # OS-specific ignores
 .DS_Store
+
+# Godot engine logs
+*.log

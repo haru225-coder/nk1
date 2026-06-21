@@ -1,6 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://portzone_node_1234"]
 
 [ext_resource type="Script" path="res://scripts/PortZone.gd" id="1_port"]
+[ext_resource type="Theme" path="res://assets/main_theme.tres" id="2_theme"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_port"]
 radius = 150.0
@@ -20,9 +21,7 @@ offset_left = -100.0
 offset_top = -140.0
 offset_right = 100.0
 offset_bottom = -110.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 2
-theme_override_font_sizes/font_size = 24
+theme = ExtResource("2_theme")
+theme_type_variation = &"PortZoneLabel"
 text = "港口"
 horizontal_alignment = 1

@@ -26,7 +26,15 @@ static func validate(intent: Intent) -> IntentResult:
 		"market_buy", "market_sell":
 			if not intent.parameters.has("good_id"):
 				return IntentResult.new(false, "validation_error", "error.intent.market.missing_good")
-			if not intent.parameters.has("amount") or intent.parameters["amount"] <= 0:
+			if str(intent.parameters.get("good_id", "")).is_empty():
+				return IntentResult.new(false, "validation_error", "error.intent.market.missing_good")
+			if not intent.parameters.has("amount") or int(intent.parameters.get("amount", 0)) <= 0:
 				return IntentResult.new(false, "validation_error", "error.intent.market.invalid_amount")
+			if intent.context.get("port_id", "").is_empty():
+				return IntentResult.new(false, "validation_error", "error.market.no_port")
+				
+		"trade_request":
+			if not intent.parameters.has("cost") or int(intent.parameters.get("cost", 0)) <= 0:
+				return IntentResult.new(false, "validation_error", "error.intent.trade.missing_cost")
 				
 	return IntentResult.new(true, "validation_ok")

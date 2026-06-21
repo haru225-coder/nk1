@@ -5,1589 +5,1985 @@
       "id": "cg_title",
       "chapter": "prologue",
       "title": "",
-      "location": "xinghua_harbor",
+      "location": "xinghua",
       "cg": "dark",
-      "cg_title": "南海立志传",
+      "cg_title": "东亚海域立志传",
       "cg_sub": "南宋宝祐三年（1255）",
       "body": "",
       "choices": [
         {
           "label": "开始旅程",
-          "next": "cg_world_view"
+          "next": "scene01_xianghua_school"
         }
       ],
       "type": "title",
-      "bg": "res://assets/bg_world_map.png"
+      "bg": "res://assets/bg_title_visual.png"
     },
     {
-      "id": "cg_world_view",
-      "chapter": "prologue",
-      "title": "天下大势",
-      "location": "xinghua_harbor",
-      "cg": "dark",
-      "body": "北方：大军压境，朝廷最后的暖风\\n蒙哥汗的阴影：北方草原的霸主蒙哥汗正坐在由白骨和铁血筑起的王座上，冷酷地注视着南方的万里江山。此时，蒙古帝国的战略铁钳已经张开。\\A南宋朝廷的偏安：都城临安依然沉浸在西湖的暖风与歌舞中。理宗皇帝耽于声色，朝堂上权臣丁大全等人排斥异己。\\A淮河前线的死寂：42岁的封疆大吏贾似道正在两淮与荆湖一带拥兵自重。边境上虽然没有爆发全面会战，但粮草的征调、逃难的流民、不稳的陆路，无一不在预示着三年后那场由蒙哥汗亲自发动的灭国级三路大捷。\\n\\n东方：日本的“神风”前奏与黄金商路\\n镰仓幕府的铁腕：此时的日本正处于镰仓幕府时代，执权北条时赖用禅宗与武士刀牢牢统治着关东。\\A博多唐房的繁华：九州的博多港正迎来日宋贸易的黄金期。这里的华人聚居区“唐房”彻夜灯火通明。\\A铜钱与物资的疯狂倒卖：日本列岛疯狂迷恋大宋的青瓷、丝绸和宋钱，甚至直接将宋币作为本土的法定货币。而南宋的军工厂则极度依赖从日本博多运来的优质硫磺和日本刀。这里的武士们还不知道，二十年后忽必烈的铁骑会踏上他们的海岸，他们此时正在大宋商船带来的财富中磨砺爪牙。\\n\\n南方：占城粮仓与三佛齐的没落咽喉\\n占城的流亡粮仓：中南半岛的占城和暹罗正处于湿热的平静中。这里的河谷盛产稻米与沉香，是南宋东南沿海商船最喜欢的避风港和补给站。\\A三佛齐的穷途末路：扼守马六甲海峡的三佛齐王国虽然不复当年之勇，内部四分五裂，但它依然死死卡在印度洋与太平洋的咽喉要道。巨港的码头上，阿拉伯海商、印度贩子、大宋走私犯和本土海盗在无主之海上疯狂博弈，是高风险、高回报的法外之地。\\n\\n西方：世界另一端的毁灭序曲\\n旭烈兀的狂飙：就在陈子龙翻阅圣贤书的同时，蒙哥汗的弟弟旭烈兀正率领着遮天蔽日的蒙古铁骑一路向西狂飙。\\A中东的巴格达、大马士革正瑟瑟发抖，再过三年，延续数百年的阿拔斯王朝就将被彻底踏平。\\A整个亚欧大陆都在蒙古马蹄的轰鸣声中战栗。\\n\\n",
-      "choices": [
-        {
-          "label": "继续",
-          "next": "cg_wine_shed_items",
-          "effects": {}
-        }
-      ],
-      "bg": "res://assets/bg_xinghua_wine_shed.jpg"
-    },
-    {
-      "id": "cg_wine_shed_items",
-      "chapter": "prologue",
-      "title": "兴化军 · 海口酒棚",
-      "location": "xinghua_harbor",
-      "cg": "fade",
-      "body": "远处春雷滚滚，仿佛将宏大沙盘上的战火，压缩进了这间漏风的酒棚。\\n酒棚的草帘被海风吹得剧烈拍打着木柱，灶头上的劣质米酒正发出咕嘟咕嘟的酸涩气味。\\n\\n陈子龙坐在靠窗的竹凳上，手指因长年握笔而带着厚茧。桌上摆着三样东西：\\n\\n一叠写了三个月的策论草稿——纸张边缘被海风吹得微潮，透着淡淡的墨香。族里说，写得像这个样子，才算有资格去考。\\n\\n一封族里联名盖印的催试信，从兴化城专程派人送来，信封上沾着还没干透的路泥，散发着一股土腥味。\\n\\n还有一枚货引，是叔父死之前压在书箧底下的。上面有泉州蕃坊番商的押字，朱砂红得刺眼。他不认识那个人，但债是真的。\\n正端详间，旁边突然传来一个粗哑的声音打断了思绪——\\n\\n",
-      "choices": [
-        {
-          "label": "继续",
-          "next": "cg_veteran_dialogue",
-          "effects": {}
-        }
-      ],
-      "bg": "res://assets/bg_xinghua_wine_shed.jpg"
-    },
-    {
-      "id": "cg_veteran_dialogue",
-      "chapter": "prologue",
-      "title": "兴化军 · 海口酒棚",
-      "location": "xinghua_harbor",
-      "cg": "fade",
-      "body": "【断臂老兵】: “公子，别看了，再看这天就要漏了。”\\n\\n柜台后面，一个断了一条胳膊的老兵一边擦酒碗，一边往地上啐了口唾沫。\\n\\n【断臂老兵】: “从北边逃下来的盐商说，襄阳那边早就打起来了。鞑子的马队在汉水边饮马，朝廷今年还在临安修礼法。咱们这地方山高皇帝远……”\\n\\n【断臂老兵】: 老兵压低了声音，用沾水的手指敲了敲桌板：“但市舶司的缉私船这两天巡得紧，海口进出都要验引，抓得很严。”\\n\\n他顿了顿，像是想再说什么，最后只是把酒碗翻过来扣在桌上。\\n\\n【断臂老兵】: “罢了。各人有各人的命。”\\n\\n说完枕着断臂趴下去，片刻便传来鼾声。\\n\\n",
-      "choices": [
-        {
-          "label": "继续",
-          "next": "cg_ana_servant",
-          "effects": {}
-        }
-      ],
-      "bg": "res://assets/bg_xinghua_wine_shed.jpg"
-    },
-    {
-      "id": "cg_ana_servant",
-      "chapter": "prologue",
-      "title": "风起微末",
-      "location": "xinghua_harbor",
-      "cg": "fade",
-      "body": "酒棚里只剩下海浪声和灶头的响声。\\n\\n陈子龙重新看向桌上那三样东西。\\n\\n族里等着他考出一个功名。叔父的债等着他还。今晚子时三刻，林阿舶的船要走。\\n\\n三件事，没有一件可以等到明天。\\n\\n窗外的天色越来越暗。潮，快退了。\\n\\n正说着，酒棚外传来了一阵急促的木屐声。\n皮肤被海风吹得紫黑、腰间掖着一把短刀的年轻水手阿那一把推开草帘，带着满身的雨星子冲了进来。\n他冷冷地看了一眼坐在角落里、穿着一身浆洗儒衫的陈子龙。\\n\\n【阿那】: “陈公子，林老大的福船已经过了验引棚，子时三刻趁着退潮直接拔锚。你若要去，别让林老大等。”\\n\\n【阿那】: 陈子龙看向桌上的策论，阿那冷笑一声：“两条路。要么，你现在带着你的圣贤书跟宗族的家丁回兴化城，去福州考你的状元；要么，今晚拿上这块货引跟我去泉州船厂，林老大的船舱里给你留了‘一铺之地’。”\\n\\n【阿那】: “运去占城的两箱青瓷要是被市舶司当私盐抄了，你叔父留下的债，你这辈子在书斋里抄书也还不完。”阿那盯着他握紧货引的手，语气生硬。\\n\\n阿那的话音刚落，外面猛地劈下一道惊雷！\\n伴随着暴雨中马蹄的长嘶，玉湖陈氏的家丁打着油纸伞，连滚带爬地冲进酒棚，一见到陈子龙便噗通跪倒：\\n\\n【陈氏家丁】: 子龙少爷！老夫人让小的把县学老大人亲批的策问题目送来了！族里的长辈都在祠堂等您的喜报，明年丙辰大考，咱陈家全指望您光宗耀祖了！\\n\\n",
-      "choices": [
-        {
-          "label": "继续",
-          "next": "cg_decision",
-          "effects": {}
-        }
-      ],
-      "bg": "res://assets/bg_xinghua_wine_shed.jpg"
-    },
-    {
-      "id": "cg_decision",
-      "chapter": "prologue",
-      "title": "",
-      "location": "xinghua_harbor",
-      "speaker": "——",
-      "body": "窗外，一道闪电划破长空，将灰色的海面照得一片惨白。\\n北边，是二十年后那座注定要被历史车轮碾碎的孤城与绞索；\\n南边，是一片能让华夏衣冠在海外繁衍不息的庞大新大陆。\\n陈子龙没有说话，他只是缓缓伸手，按住了桌上的两份文书。此时，世界地图的迷雾在他眼前缓缓散开，命运的指针开始转动。",
-      "choices": [
-        {
-          "label": "拿起货引，跟阿那走泉州船厂",
-          "next": "cg_choice_sea",
-          "effects": {
-            "sea_tendency": 4,
-            "flag": "chose_sea_first"
-          }
-        },
-        {
-          "label": "接过策问题目，跟家丁回祠堂",
-          "next": "cg_choice_land",
-          "effects": {
-            "scholar_tendency": 4,
-            "flag": "chose_land_first"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_xinghua_wine_shed.jpg"
-    },
-    {
-      "id": "cg_choice_sea",
-      "chapter": "prologue",
-      "title": "",
-      "location": "xinghua_harbor",
-      "speaker": "阿那",
-      "body": "你拿起那枚朱砂刺眼的货引，手心已被汗水浸湿。听着外面汹涌的潮声，阿那嘴角微微一动，把桌上的罗盘往前推了半寸。\\n‘子时三刻。别让林老大等。’",
-      "choices": [
-        {
-          "label": "…………",
-          "next": "sea_path_start",
-          "effects": {}
-        }
-      ],
-      "bg": "res://assets/bg_xinghua_wine_shed.jpg"
-    },
-    {
-      "id": "cg_choice_land",
-      "chapter": "prologue",
-      "title": "",
-      "location": "xinghua_harbor",
-      "speaker": "陈氏家丁",
-      "body": "你拿起了那叠纸边微硬的策问题目。家丁千恩万谢地爬起来，双手捧住你的衣角。\\n‘少爷，马就在外面。老夫人说——不管海上风多大，玉湖陈家的根在岸上。’伴随着沉闷的马蹄声，你走向雨中。",
-      "choices": [
-        {
-          "label": "…………",
-          "next": "scholar_path_start",
-          "effects": {}
-        }
-      ],
-      "bg": "res://assets/bg_xinghua_wine_shed.jpg"
-    },
-    {
-      "id": "start_dk4_intro",
-      "chapter": "prologue",
-      "title": "兴化海口",
-      "location": "xinghua_harbor",
-      "body": "公元1255年，南宋宝祐三年。\n你站在熟悉的兴化海口，海风带着咸腥味吹过。\n（点击右侧设施自由探索：去【海口酒棚】花点钱打听外面的世界，或者去【渡口】看看海潮）",
-      "choices": [],
-      "deprecated": true,
-      "bg": "res://assets/bg_xinghua_wine_shed.jpg"
-    },
-    {
-      "id": "prologue_wine_shed",
-      "chapter": "prologue",
-      "title": "兴化海口 · 酒棚",
-      "location": "xinghua_harbor",
-      "body": "宋宝祐三年，小暑。\n兴化海口的酒棚里，海风把草帘吹得啪嗒响。\n你坐在靠窗的竹凳上，面前的八仙桌上摆着几样东西——每一件都在问你同一个问题：今晚之后，你往哪走。\n点触桌上物件，自己看。",
-      "choices": [],
-      "bg": "res://assets/bg_xinghua_wine_shed.jpg"
-    },
-    {
-      "id": "prologue_study",
+      "id": "scene01_xianghua_school",
       "chapter": "chapter_1",
-      "title": "兴化城·玉湖书斋",
+      "title": "乡学晨课",
       "location": "xinghua",
-      "objective": "先不要选择道路。在玉湖书斋里点击物件，听见蝉鸣、母亲的规训和远处海风，直到日常被一件小事打破。",
-      "body": "宋宝祐三年，小暑。玉湖书斋里热气压着竹帘，窗外蝉鸣一阵紧过一阵。策问草稿摊在案上，床头书箧扣着旧锁，房门外偶尔传来母亲黄氏让仆妇收线的声音。此刻没有人催你南下或北上；世界只藏在屋中几件寻常物里。",
-      "choices": [],
-      "deprecated": true,
-      "bg": "res://assets/bg_xinghua_study.jpg"
-    },
-    {
-      "id": "prologue_harbor",
-      "chapter": "chapter_1",
-      "title": "序章：长风起于微末",
-      "location": "xinghua",
-      "objective": "在海口酒棚同时面对福州路试与泉州出海，第一次理解抽离一条道路就要付出代价。",
-      "body": "宋宝祐三年，小暑。\n\n兴化军海口的风，总是夹杂着一股挥之不去的鱼腥味与烂泥干涸的焦灼。\n\n陈子龙站在江海交汇的渡口石阶上，浆洗得发白的儒衫被海风吹得猎猎作响。他手里死死攥着两份刚刚收到的书信。这两张纸很轻，但在他手里却像是有千钧之重。\n\n左手那份，是母亲亲手折好的白绫短札。上面的字迹娟秀却冰冷，那是宗族长辈们的联名催促：明年便是宝祐四年的丙辰科大考，玉湖陈氏的子弟必须在秋分前赶到福州，准备路试。为了供他读书，母亲这些年夜夜摇机织布，眼睛都快熬瞎了。族里的人都在看着他，等着他像高祖陈俊卿那样，一举夺魁，光宗耀祖。那是他前半生唯一的轨道，笔直、宽阔，一眼看得见尽头。\n\n而右手那份，则是一张被揉得发皱的泉州期票，上面盖着蕃坊番商的黑墨印章。那是他失踪多年的堂兄托人捎回来的。两箱上好的龙泉青瓷，已经押在了泉州林阿舶的大船上，今晚子时就要趁着退潮扬帆南下。堂兄在信里说，北边的世道要变了，临安的官家和相公们整天在西湖上做梦，但海上的大船却从来不说谎。只要跟着风走，去占城，去三佛齐，一箱瓷器就能换回等重的香料和精米，那是能活命的东西。\n\n“陈公子，船不等人。”\n\n一个沙哑的声音打断了陈子龙的思绪。皮肤被海风吹得黑红、满脸风霜的年轻水手阿那靠在木桩旁，手里摆弄着一根缆绳。他挑了挑眉，看着这个细皮嫩肉的书生：“林老大说了，看在你家叔父当年的情分上，船舱里给你留了一铺之地。你要是上船，今晚就得跟我们去泉州核对引目；你要是不上，这两箱货，市舶司的大人可就当私盐给抄了。”\n\n阿那的话音未落，远处陆路大道上便传来了急促的马蹄声。一个玉湖陈氏的家丁满头大汗地滚下马鞍，远远地便喊道：“子龙少爷！老夫人让小的来迎你回去！县学里的老大人把今年临安太学的策问题目捎回来了，正等着你回去破题呢！”\n\n海浪一下又一下地拍打着长满青苔的码头，发出沉闷的声响。\n\n陈子龙转过身，向北看去，是连绵的群山和通往福州、临安的青石官道，那里有圣贤书、状元及第的荣耀，以及二十年后那座注定要砸下来的孤城；向南看去，是无边无际、波涛汹涌的灰色大洋，那里有海盗、风暴、无主的财富，以及一片能容纳华夏衣冠的崭新大陆。\n\n风大了起来。他按住了头上的儒巾，长长地吐出了一口胸中的闷气。",
+      "time": "宝祐三年六月，晨",
+      "objective": "完成晨课，入城摸清前路",
+      "body": "兴化乡学，宝祐三年六月，晨。\n\n　　晨光透过竹帘，切成细碎的刀锋状落在讲桌上。桌上刻着个半掩在墨迹下的「义」字。先生讲到庆元党禁，声音像被海雾浸透了般低沉。\n\n【先生】：「朱子卒时，天下大雨。朝廷不许送葬，史书只冷冷写下『党禁』二字。可那泥水里跪着的几个学生，史书不记。」\n\n　　门外的汛牌被雨点打湿，字迹晕开：「午後有雷雨」。晨课散了，先生收卷，朝你微微颔首——今夜或许还得再来。",
       "choices": [
         {
-          "label": "跟随家丁回兴化城，准备福州路试",
-          "next": "prologue_return_home",
+          "label": "下学，进入兴化城关",
+          "next": "port_xinghua",
           "effects": {
-            "merchant_credit": -10,
-            "flag": "abandoned_harbor_cargo",
-            "ledger_note": "lin_cargo_defaulted"
-          }
-        },
-        {
-          "label": "跟着阿那连夜去泉州核对引目",
-          "next": "prologue_go_quanzhou",
-          "effects": {
-            "money": -20,
-            "network": -15,
-            "merchant_credit": 5,
-            "flag": "family_defied"
+            "story_flag": "xianghua_morning_done"
           }
         }
       ],
-      "deprecated": true,
-      "bg": "res://assets/bg_xinghua_study.jpg"
-    },
-    {
-      "id": "prologue_return_home",
-      "chapter": "chapter_1",
-      "title": "首次清算：回到举业路",
-      "location": "xinghua",
-      "objective": "放弃海口期票，保住福州路试，也让泉州海商第一次记住你的违约。",
-      "body": "你把泉州期票折回袖中，跟着家丁回到兴化城。母亲没有多问，只让人把书斋的灯添亮。窗外蝉声仍旧刺耳，像什么都没有发生过。\n\n但海口的两箱龙泉青瓷不会等你。林阿舶宣布你单方面违约，牙行里很快有人把这件事写成一条不大不小的闲账：陈家子弟读书有名，押货无信。你保住了福州路试，却把海商世界的第一扇门轻轻合上了。",
-      "choices": [
+      "bg": "res://assets/bg_xinghua_school.png",
+      "investigations": [
         {
-          "label": "收起期票，回玉湖书斋继续温策",
-          "next": "chapter1_scholar_wait",
+          "label": "抚摸讲桌刻痕",
+          "text": "刻痕旁还有一行小字：「礼义廉耻，不在榜上。」像是先生早年用刀尖刻下的旧梦。",
+          "once_flag": "xianghua_desk_mark",
           "effects": {
-            "fame": 5,
-            "flag": "taixue_route_open"
+            "fame": 1
+          }
+        },
+        {
+          "label": "看门外汛牌",
+          "text": "汛吏吐掉嘴里的草根：「两淮战事吃紧，官府正抓壮丁。」你暗自攥紧拳头：出远门，得备足硬通货。",
+          "once_flag": "xianghua_rain_sign",
+          "effects": {
+            "story_flag": "heard_conscription_rumor"
           }
         }
-      ],
-      "bg": "res://assets/bg_xinghua_study.jpg"
+      ]
     },
     {
-      "id": "prologue_go_quanzhou",
-      "chapter": "chapter_1",
-      "title": "首次清算：连夜赴泉州",
-      "location": "quanzhou",
-      "objective": "违背母亲的意愿，换取林舶出海的舱位与泉州账面的第一笔信用。",
-      "body": "你没有回头。阿那把缆绳往肩上一甩，带你绕开官道，沿着潮湿滩岸向南走。身后的马蹄声很快被海风盖住，白绫短札在袖中硌得你手腕发疼。\n\n这一夜之后，玉湖陈氏会说你忤逆，母亲会在书斋里等到灯油见底；福州学宫的大门也会暂时离你远去。可泉州那边，林阿舶的船舱还亮着灯，两箱龙泉青瓷、番商押印和市舶司引目都在等你签下第一个不是策问的名字。",
-      "choices": [
-        {
-          "label": "把白绫短札藏进袖中，先去问净海留下的旧纸",
-          "next": "monk",
-          "effects": {
-            "fame": 3,
-            "flag": "lin_sea_route_open"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "chapter1_scholar_wait",
-      "chapter": "chapter_1",
-      "title": "举业路试",
-      "location": "xinghua",
-      "objective": "北上福州的路已经亮起，但海口违约的代价也会留在账面上。",
-      "body": "县学送来的策问题目压在书案上，福州方向的驿程被族人一站一站写清。你仍能闻到袖中期票的淡淡墨味。它不会立刻改变你的人生，却会提醒你：这个时代没有无代价的选择。",
-      "choices": [],
-      "bg": "res://assets/bg_xinghua_study.jpg"
-    },
-    {
-      "id": "start",
-      "chapter": "chapter_1",
-      "title": "兴化书斋，海风入窗",
-      "location": "xinghua",
-      "objective": "作为尚未中进士的陈子龙，在科举期待与海路诱惑之间听见第一段旧泊地线索。",
-      "body": "兴化莆田的雨从午后落到黄昏，书斋里摊着经义、策问草稿和族中长辈催你赴试的短札。你此时仍叫陈子龙，字德刚，尚未到咸淳四年的殿试，也还没有被御笔改名为陈文龙。叔父生前借贷蕃商船资，货损未结清，债留你一人承担。这不只是远方的诱惑，也是压在书案上的现实重量。\n窗外海风带着盐气，一名从泉州来的牙人把湿油布包放在案边：里面有林阿舶的货单押字、开元寺净海所问的残碑拓影，还有一张只点半粒朱砂的旧海图。南岛海道北口，似有未入官图的旧避风澳。科举的路在纸上，海路却第一次带着账簿、寺院书信和兴化海口的潮声压进你的书斋。",
-      "choices": [
-        {
-          "label": "收起策问草稿，携旧纸赴泉州问净海",
-          "next": "monk",
-          "effects": {
-            "fame": 5,
-            "flag": "tavern_chart_rumor"
-          }
-        },
-        {
-          "label": "付给牙人茶钱，问清林阿舶账房所在",
-          "next": "monk",
-          "effects": {
-            "money": -10,
-            "network": 5,
-            "flag": "sailor_rumor_bought"
-          }
-        },
-        {
-          "label": "不急表态，只把朱砂点、科举日程和北风二字同记一页",
-          "next": "monk",
-          "effects": {
-            "fame": 2,
-            "flag": "kept_rumor_quiet"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_xinghua_study.jpg"
-    },
-    {
-      "id": "monk",
-      "chapter": "chapter_1",
-      "title": "开元寺偏院",
-      "location": "quanzhou",
-      "objective": "从净海处取得旧纸、碑拓与寺院文书线索。",
-      "body": "你到泉州开元寺时，偏院里晒着经卷，纸页被海湿压得微微卷边。净海听见你的兴化口音，只问你读过哪些碑版，不问你为何暂离书斋。这个问题让你稍稍安心：至少在寺门里，文书训练仍派得上用场。他把一方镇纸移开，露出半张发黄旧纸：细墨画着断续海岸，旁边只余四字：“北礁可泊”。他说话很轻，只问字形、石质和纸背押记，不问谁在争路。末了，他把拓包、薄纸和一小块墨递给你：“若见残碑，取字即可。字能留下，旧路便不是酒肆里的空话。”",
-      "choices": [
-        {
-          "label": "收下旧纸和拓包，答应复核残碑",
-          "next": "merchant",
-          "effects": {
-            "fame": 8,
-            "network": 5,
-            "flag": "stele_quest"
-          }
-        },
-        {
-          "label": "请净海写一封给博多寺社的短札",
-          "next": "merchant",
-          "effects": {
-            "fame": 5,
-            "network": 10,
-            "flag": "temple_letter"
-          }
-        },
-        {
-          "label": "请寺院折些米盐作路上供给",
-          "next": "merchant",
-          "effects": {
-            "supplies": 15,
-            "fame": 2,
-            "flag": "temple_supplies"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "merchant",
-      "chapter": "chapter_1",
-      "title": "蕃坊外的海商铺面",
-      "location": "quanzhou",
-      "objective": "权衡林阿舶的博多旧账、唐房寄物与商人信用。",
-      "body": "林阿舶的铺面靠着蕃坊，门口堆着藤篮、铅封瓷箱、待晾的油布和几册货单。你看得懂押字、保人和抽解，却看不懂这些纸背后如何把船、人和风浪拴在一起。算盘声停下时，他才抬眼看你，先问兴化陈家谁肯作保，再问你是真要试海路，还是只替寺里抄一段碑字。他没有让你一口气远航博多，只把普通福建瓷、青白瓷、唐房寄物和一纸硫黄旧账分开推到案边：“这趟先验中继路。货不能潮，信不能皱。风浪不认人，账认人。”",
-      "choices": [
-        {
-          "label": "接青白瓷、唐房寄物和硫黄旧账，少问内情",
-          "next": "dock",
-          "effects": {
-            "money": 60,
-            "fame": 5,
-            "merchant_credit": 10,
-            "cargo": [
-              "qingbai_porcelain",
-              "tangfang_parcel",
-              "sulfur_ledger"
-            ],
-            "ledger_note": "tangfang_parcel_and_sulfur_ledger_received",
-            "flag": "cargo_hakata"
-          }
-        },
-        {
-          "label": "只接普通瓷货，按明账押字，信用稳些",
-          "next": "dock",
-          "effects": {
-            "money": 45,
-            "fame": 5,
-            "merchant_credit": 8,
-            "cargo": [
-              "fujian_porcelain",
-              "cargo_manifest_signature"
-            ],
-            "ledger_note": "ordinary_porcelain_manifest_signed",
-            "flag": "cargo_hakata"
-          }
-        },
-        {
-          "label": "请林阿舶做保人，少带货，换出港便利",
-          "next": "dock",
-          "effects": {
-            "money": 30,
-            "supplies": 10,
-            "fame": 3,
-            "merchant_credit": 6,
-            "network": -3,
-            "cargo": [
-              "sutra_scrolls",
-              "cargo_manifest_signature"
-            ],
-            "ledger_note": "lin_guarantee_for_departure",
-            "flag": "light_cargo"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "dock",
-      "chapter": "chapter_1",
-      "title": "泉州码头验引棚外",
-      "location": "quanzhou",
-      "objective": "向阿那核对旧航路、礁线和水色。",
-      "body": "码头木桩上缠满湿绳，船匠用木槌敲着松动的舷板。验引棚外有人报货，有人催保人押字。你习惯在纸上辨章句，到了这里却要辨绳结、潮声和谁的押字能让船出港。南岛海道舵手阿那蹲在缆影里修一只竹水筒，听你说起旧避风澳，便用刀尖在潮湿木板上划出南岛海道北口：“莫只看远近。水转青白，底下多沙；鸟贴着浪飞，前面有小鱼；潮声若闷，礁线在外头。要带铅锤测深，北风夜里走，别追灯，追水色。”",
-      "choices": [
-        {
-          "label": "雇阿那同行，让他掌一段夜航",
-          "next": "prepare",
-          "effects": {
-            "money": -40,
-            "network": 15,
-            "flag": "ana_hired"
-          }
-        },
-        {
-          "label": "买下他的口述航路，逐字记进海图边",
-          "next": "prepare",
-          "effects": {
-            "money": -15,
-            "network": 5,
-            "flag": "ana_route_notes"
-          }
-        },
-        {
-          "label": "请他看船底、缆索和铅锤，指出险处",
-          "next": "prepare",
-          "effects": {
-            "money": -20,
-            "ship": 8,
-            "flag": "ana_ship_check"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "prepare",
-      "chapter": "chapter_1",
-      "title": "出海前夜",
-      "location": "quanzhou",
-      "objective": "在补给、货物、修船与舱单之间取舍。",
-      "body": "夜潮顶到船腹，舱里依次塞进水瓮、米袋、麻绳、桐油、瓷箱、铅锤和净海的拓包。市舶司方向还有人挑灯验牌，牙人催着把舱单、货单和抽解数目写清。你不是老船主，连每一处舱位该让给水米、瓷箱还是纸卷，都要在林阿舶账房和阿那眼色之间学。少放一瓮水，便能多护一箱货；多钉一块舷板，又要少买几日米。海风吹过来，旧纸边缘轻轻发响，像科场卷面以外的另一种题目。",
-      "choices": [
-        {
-          "label": "补给优先，少带一箱瓷货，舱单写得宽些",
-          "next": "sail",
-          "effects": {
-            "supplies": 20,
-            "money": -30,
-            "flag": "supplies_first"
-          }
-        },
-        {
-          "label": "货物优先，把舱位和脚钱压到最满",
-          "next": "sail",
-          "effects": {
-            "money": 50,
-            "supplies": -10,
-            "flag": "cargo_first"
-          }
-        },
-        {
-          "label": "修船优先，给船匠加钱补缝换索",
-          "next": "sail",
-          "effects": {
-            "ship": 15,
-            "money": -40,
-            "flag": "ship_first"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "sail",
-      "chapter": "chapter_1",
-      "title": "泉州外海",
-      "location": "sea",
-      "objective": "在风暴中取舍保船、保货或保人。",
-      "body": "第三日夜里，东北风忽然压低。雨点打在帆面上，像一把碎砂；帆索绷成硬弦，船头连着三次埋进黑浪。瓷箱在舱底相撞，水瓮滚向舱门，铅锤线被浪打得乱摆。你曾在策问里写过利害轻重，此刻利害却有木箱、湿纸和活人的重量。阿那先前说过的“潮声发闷”正在船外逼近。你必须立刻取舍。",
-      "choices": [
-        {
-          "label": "保船，弃一部分湿货和压舱杂物，回泉州照实入账",
-          "next": "ryukyu",
-          "effects": {
-            "ship": 5,
-            "money": -30,
-            "fame": 5,
-            "merchant_credit": -2,
-            "cargo_loss": "qingbai_porcelain_partial_loss",
-            "ledger_note": "storm_jettison_recorded",
-            "flag": "saved_ship"
-          }
-        },
-        {
-          "label": "保货，硬顶风浪护住瓷箱、寄物和账册",
-          "next": "ryukyu",
-          "effects": {
-            "ship": -25,
-            "money": 80,
-            "merchant_credit": 12,
-            "ledger_note": "cargo_preserved_through_storm",
-            "flag": "saved_cargo"
-          }
-        },
-        {
-          "label": "保人，减帆漂航，先把水手拉回舱内，货损另记",
-          "next": "ryukyu",
-          "effects": {
-            "supplies": -20,
-            "network": 10,
-            "fame": 8,
-            "merchant_credit": -4,
-            "cargo_loss": "tangfang_parcel_water_stain",
-            "ledger_note": "crew_saved_cargo_wet",
-            "flag": "saved_crew"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "ryukyu",
-      "chapter": "chapter_1",
-      "title": "流求海面北缘",
-      "location": "ryukyu",
-      "objective": "抵达流求海面北缘，复核旧避风澳入口。",
-      "body": "天亮后，海面由铁灰转成青白。鸟群低低贴浪，潮声在外礁处发闷，内侧却忽然安静下来。阿那让人抛铅锤，数着水深和沙底手感。礁线后果然有一道弯水，能容小船避北风。岸上草坡被盐雾压低，石缝里露出断碑一角，旁边还有几段带榫眼的旧木。这里不是无人来过的新地，而是僧人、舵手和海商都只肯半句半句传的旧泊地。对你而言，它也是科举之外第一次真正可触的海路。",
-      "choices": [
-        {
-          "label": "测量礁口，记下可泊水深和避风角度",
-          "next": "island",
-          "effects": {
-            "fame": 10,
-            "flag": "bay_surveyed"
-          }
-        },
-        {
-          "label": "先找残碑和旧木，免得涨潮盖住线索",
-          "next": "island",
-          "effects": {
-            "fame": 8,
-            "network": 3,
-            "flag": "stele_found"
-          }
-        },
-        {
-          "label": "不久留，把旧泊地写成博多旧账的远景中继提示",
-          "next": "hakata",
-          "effects": {
-            "money": 120,
-            "fame": 5,
-            "flag": "hakata_first"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_reef_bay.jpg"
-    },
-    {
-      "id": "island",
-      "chapter": "chapter_1",
-      "title": "礁口旧泊地",
-      "location": "ryukyu",
-      "objective": "登陆复核旧泊地，记录碑拓、水深和可泊证据。",
-      "body": "你踏上湿草坡，鞋底立刻沾满盐泥。残碑半埋在坡后，字迹被风盐磨去大半，只剩几行可辨的佛号、年款和“泊舟”二字。旧木并非本地小舟的薄板，榫眼规整，像曾经属于一艘远行船。你把铅锤测得的水深、阿那辨出的水色、净海要的碑字和林阿舶要的账路写在同一张纸上。此地不是新地，只是旧话终于落到纸面；而你第一次发现，自己的笔也可以不只写科举文章。",
-      "choices": [
-        {
-          "label": "拓下碑文，登记“旧避风澳”",
-          "next": "return_quanzhou",
-          "effects": {
-            "fame": 25,
-            "network": 10,
-            "discovery": "旧避风澳",
-            "flag": "route_known"
-          }
-        },
-        {
-          "label": "取旧木样本，带回给泉州船匠判断来路",
-          "next": "return_quanzhou",
-          "effects": {
-            "fame": 18,
-            "money": 40,
-            "discovery": "残裂佛碑",
-            "flag": "shipwood_sample"
-          }
-        },
-        {
-          "label": "把碑文、水深和礁线画在同一张海图上",
-          "next": "return_quanzhou",
-          "effects": {
-            "fame": 22,
-            "network": 8,
-            "discovery": "旧避风澳",
-            "flag": "route_charted"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_reef_bay.jpg"
-    },
-    {
-      "id": "hakata",
-      "chapter": "chapter_1",
-      "title": "博多旧账",
-      "location": "hakata",
-      "objective": "把旧泊地能否提示博多旧账远景写成边记。",
-      "body": "你并未稳稳跑到博多津，只在回程前把中继段的水深、礁口和避风角度写成边记。林阿舶的唐房寄物没有受潮，硫黄旧账只是账册线索，仍可继续往下查，不是这趟船要卖出的泉州货。账房的人看着海图边记，说博多那边若再问，就有了可答的话；寺社网络若追旧碑，也只可暗示旧路或曾有人走过，不必把泊澳名字写进明账。你听着这些话，才明白海商路径不是逃离文字，而是把文字写在货单、边记和不可外泄的账里。",
-      "choices": [
-        {
-          "label": "只交出可接续航路的边记，换取寺社引荐",
-          "next": "return_quanzhou",
-          "effects": {
-            "money": 100,
-            "network": 20,
-            "merchant_credit": -3,
-            "ledger_note": "route_note_shared_with_temple_network",
-            "flag": "japan_temple_network"
-          }
-        },
-        {
-          "label": "保密泊澳入口，只收脚钱和回程口信",
-          "next": "return_quanzhou",
-          "effects": {
-            "money": 150,
-            "fame": 5,
-            "merchant_credit": 6,
-            "ledger_note": "bay_entrance_kept_off_ledger",
-            "flag": "route_kept_secret"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_arab_mosque.jpg"
-    },
-    {
-      "id": "return_quanzhou",
-      "chapter": "chapter_1",
-      "title": "回到泉州",
-      "location": "quanzhou",
-      "objective": "回泉州交付成果，回应兴化来人的试探。",
-      "body": "回泉州时，梅雨又压住城墙。林阿舶先看瓷箱，再看账，问兴化陈家的保人可否继续押字；净海把拓本摊在灯下，只用指腹轻轻按住“泊舟”二字。酒肆角落里有个兴化口音的人，衣摆沾着泥，像是走过很长的陆路。他认得你的族里称呼，却没有当众叫破，只等旁人散去后低声说：“子龙，若陆路近日不稳，海上可否递一封信，验一段海口？”",
-      "choices": [
-        {
-          "label": "答应留意可靠海路，但不在酒肆里多谈",
-          "next": "ending",
-          "effects": {
-            "fame": 15,
-            "network": 10,
-            "merchant_credit": 2,
-            "ledger_note": "lin_account_settled_with_storm_loss",
-            "flag": "chen_line_open"
-          }
-        },
-        {
-          "label": "推说自己还要赴试，只按账面收该收的货款",
-          "next": "ending",
-          "effects": {
-            "money": 80,
-            "fame": -3,
-            "merchant_credit": 6,
-            "ledger_note": "merchant_distance_kept",
-            "flag": "merchant_distance"
-          }
-        },
-        {
-          "label": "追问兴化出了什么事，记下他的姓名和去处",
-          "next": "ending",
-          "effects": {
-            "fame": 10,
-            "network": 15,
-            "merchant_credit": -2,
-            "ledger_note": "xinghua_question_noted_off_ledger",
-            "flag": "history_pressure_seen"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "ending",
-      "chapter": "chapter_1",
-      "title": "第一章结束：海图上的旧泊地",
-      "location": "quanzhou",
-      "objective": "翻开杯底短信，进入兴化来信。",
-      "body": "这一夜之后，旧泊地仍未入官图，你也仍叫陈子龙。科举榜、殿试唱名、御笔改名为陈文龙，以及后来会写进史册的路，都还在前方，没有一笔落定。但泉州已有几个人用另一种方式记住了你：净海记住拓本，林阿舶记住账上的信用，阿那记住你是否听得懂水色。兴化来人离开前，只把一封未封口的短信按在杯底。你尚未决定自己是否会成为那个后来的陈文龙，海路却已经把另一种可能推到手边。",
-      "choices": [
-        {
-          "label": "翻开杯底短信，进入第二章",
-          "next": "chapter2_letter",
-          "effects": {
-            "flag": "history_pressure_seen"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "chapter2_letter",
-      "chapter": "chapter_2",
-      "title": "第二章：兴化来的信",
-      "location": "quanzhou",
-      "objective": "决定是否借旧避风澳探一段兴化海口信路。",
-      "body": "次日清晨，泉州城还罩在细雨里。那张短信只有半幅掌宽，纸角被杯底压出一圈淡痕，字不多：“若旧路可信，烦借一船递至兴化外海。收信人自会以青布缠桅为识。”没有官印，没有姓名，像地方士人或亲眷托出的急信。末尾只补一行小字：陆路近日不稳，勿使闲人知。林阿舶的账房正在等你清点货损，净海也遣小沙弥来问拓本可否入寺；族中催试的短札还压在你的书箱底。知道旧泊地的人越多，这条路越危险，而兴化不是陌生地，是你来处。",
-      "choices": [
-        {
-          "label": "接信，借旧避风澳探送兴化外海",
-          "next": "chapter2_accept",
-          "effects": {
-            "money": -20,
-            "fame": 10,
-            "network": 15,
-            "merchant_credit": -8,
-            "ledger_note": "xinghua_letter_carried_off_manifest",
-            "flag": "letter_to_xinghua"
-          }
-        },
-        {
-          "label": "推辞，只说赴试在近，账面不可再添风险",
-          "next": "chapter2_refuse",
-          "effects": {
-            "money": 40,
-            "fame": -5,
-            "network": -8,
-            "merchant_credit": 8,
-            "ledger_note": "refused_unmanifested_letter",
-            "flag": "merchant_caution"
-          }
-        },
-        {
-          "label": "先试探净海或林阿舶，看这封信会压到谁",
-          "next": "chapter2_probe",
-          "effects": {
-            "network": 5,
-            "merchant_credit": -2,
-            "ledger_note": "letter_delayed_for_account_inquiry",
-            "flag": "letter_delayed"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "chapter2_accept",
-      "chapter": "chapter_2",
-      "title": "第二章结束：夜船不点灯",
-      "location": "xinghua",
-      "objective": "夜船送信，试验旧泊地可否作海口信路。",
-      "body": "你把信塞进油纸，又把油纸缝进一截旧缆皮里。入夜后，船从泉州外水悄悄离岸，不挂灯，也不报货名。阿那看过水色，只说北风还可借半夜；两个水手把米袋压在舱口，没人再问信里写了什么。旧避风澳第一次不再只是账外边记，它成了一段能避开闲眼的海口信路。若陈子龙日后真要成为陈文龙，这一夜不会写在榜上，却会先写进海风里。",
-      "choices": [],
-      "bg": "res://assets/bg_xinghua_study.jpg"
-    },
-    {
-      "id": "chapter2_refuse",
-      "chapter": "chapter_2",
-      "title": "第二章结束：账房里的雨声",
-      "location": "quanzhou",
-      "objective": "保住科举前程与账面距离，暂时远离兴化暗线。",
-      "body": "你把短信按回杯底，只说赴试日近，账重船小，担不起无押信。林阿舶的账房照旧给你结算，算盘珠在雨声里一粒粒落下，像是替你把风险拨到别人的船上。午后，小沙弥来取拓本，听说你不再问兴化事，只合掌退了出去。你的账面信用保住了，科举路也暂时未被海风吹偏；但有些门以后不会再轻易为你开。",
-      "choices": [],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "chapter2_probe",
-      "chapter": "chapter_2",
-      "title": "泉州雨巷，信未封口",
-      "location": "quanzhou",
-      "objective": "先试探净海或林阿舶，判断信会压到谁。",
-      "body": "你没有立刻答应，也没有立刻推辞。短信被夹在海图背面，纸边吸了潮，像随时会烂。若先问净海，寺院书信或许能作遮护；若先问林阿舶，海商账簿会告诉你这趟船会牵连多少信用。两边都不会明说大局，但沉默本身已经有重量。",
-      "choices": [
-        {
-          "label": "先问净海，让寺院判断这封信的去处",
-          "next": "chapter2_temple",
-          "effects": {
-            "fame": 8,
-            "network": 10,
-            "merchant_credit": -5,
-            "ledger_note": "temple_cover_for_letter",
-            "flag": "temple_route"
-          }
-        },
-        {
-          "label": "先问林阿舶，估清商路和账面损失",
-          "next": "chapter2_merchant",
-          "effects": {
-            "money": 50,
-            "fame": -3,
-            "network": -5,
-            "merchant_credit": 8,
-            "ledger_note": "merchant_risk_priced_as_wet_cargo",
-            "flag": "merchant_caution"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "chapter2_temple",
-      "chapter": "chapter_2",
-      "title": "第二章结束：寺门后的短札",
-      "location": "quanzhou",
-      "objective": "借寺院网络提示信的去处。",
-      "body": "净海没有拆信，只把它压在经案边，另写一张给沿海寺社的短札。他仍不谈兵事，只说：“路若真能通，先要知道谁能收，谁不能看。”你带走的不只是兴化信，还有寺院网络给出的暗号提示和一条更窄、更安静的送信路。海商那边会不高兴，但寺门后有人记住了你的谨慎。",
-      "choices": [],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "chapter2_merchant",
-      "chapter": "chapter_2",
-      "title": "第二章结束：货单上的空格",
-      "location": "quanzhou",
-      "objective": "通过海商账面估清送信风险。",
-      "body": "林阿舶看完信皮，没有问内文，只把一张货单推到你面前：“若要走这趟，账上不能写信，只能写湿货、空箱、折损。你自己想清楚。”他说得现实，却没有把信退给你。你的船仍在商路上，账面也留了余地；只是从这一刻起，每一只空箱都可能装着不是货的东西。",
-      "choices": [],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "sea_path_start",
-      "chapter": "chapter_1",
-      "title": "泉州码头，夜潮将至",
-      "location": "quanzhou",
-      "objective": "海商路径入口：从林阿舶的船舱开始你的海路。",
-      "body": "子时三刻，泉州码头的灯笼在夜潮中摇晃。林阿舶的福船已经装好了两箱龙泉青瓷，舱底还压着你叔父当年未清的那笔旧账。\n阿那把缆绳抛给你：‘接住。海上第一条规矩——自己的缆自己系。’\n海风吹过来，带着桐油、咸水和远处蕃坊香料的气味。这不是书斋，但这也是你的路。",
-      "choices": [
-        {
-          "label": "去林阿舶账房打点出港",
-          "next": "start",
-          "effects": {
-            "sea_tendency": 3,
-            "flag": "lin_sea_route_open"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "scholar_path_start",
-      "chapter": "chapter_1",
-      "title": "兴化城，祠堂灯明",
-      "location": "xinghua",
-      "objective": "科举路径入口：回到玉湖书斋，保住福州路试。",
-      "body": "祠堂里的灯还亮着。族中长辈把策问题目摊在你面前，母亲黄氏在隔壁厢房摇着织机，一声声像是催你动笔。\n玉湖陈氏出了陈俊卿那样的宰相，他们指望你成为下一个。福州路试在明年丙辰，临安太学是第一步——中了这一步，你就不再只是陈子龙。\n你把袖中海口带回来的盐渍在桌角擦掉，铺开一张新纸。",
-      "choices": [
-        {
-          "label": "收起策问草稿，开始温书",
-          "next": "start",
-          "effects": {
-            "scholar_tendency": 3,
-            "flag": "taixue_route_open"
-          }
-        }
-      ],
-      "bg": "res://assets/bg_xinghua_study.jpg"
-    },
-    {
-      "id": "prologue_draft",
-      "title": "看稿",
-      "result": [
-        "《平戎复燕策》，这是你耗费三个月写就的科考文章。",
-        "族中长辈断言，此文引经据典，定能博取功名。",
-        "可你每次提笔，手腕便不住发抖。",
-        "你满腹经纶，却连这海口的防波堤都未曾跨出过半步。",
-        "连海风都没吹过的人，靠纸上谈兵，真能救大宋的江山吗？"
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "prologue_ledger",
-      "title": "被催债",
-      "result": [
-        "“砰”的一声，发黄的账簿被重重拍在桌上。",
-        "“陈公子，你叔父跑船遇风，货沉人亡，这是天灾。”",
-        "“但按照行规，他当初是用玉湖陈氏的田产作保，借了蕃商五百贯本钱。”",
-        "“按照大宋律例同居共财，这笔债自然落到了你的名下。”",
-        "“这笔钱若是还不上，你还考什么功名？”"
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "prologue_permit",
-      "title": "端详货引",
-      "result": [
-        "这张被海水泡得发皱的羊皮纸上，盖着大食商人的印章。",
-        "这是叔父遗物中唯一不是催款单的东西——一张南洋货引。",
-        "有了它，你就能顶替叔父的份额，登上阿那的商船逃出兴化。",
-        "只是这一去，大宋再无陈子龙，宗族祠堂里也只会多一个「忤逆子」。"
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "prologue_veteran",
-      "title": "听醉话",
-      "result": [
-        "角落里，几个满身血污的北方溃兵正抱着酒碗发抖。",
-        "“蒙古人的探马赤军，离淮河已经不远了！”",
-        "老兵猛灌了一口浊酒，浑浊的眼里满是绝望与疯狂。",
-        "“可笑临安城里的相公们，还在西湖游船上作诗呢！”",
-        "“你们这些穷酸书生，还指望几篇破文章能退敌？”"
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "prologue_catalyst",
-      "title": "风雨逼近",
-      "result": [
-        "轰隆——！惨白的闪电撕裂了海口的天空。",
-        "造船厂的破木门被猛地撞开，皮肤紫黑的年轻水手阿那站在风雨中。",
-        "他腰间的短刀反着森冷的寒光：“船要开了。”",
-        "与此同时，远处的官道上亮起了密集的火把，急促的马蹄声踏破了雨夜。",
-        "族里派来抓你回去赴考的人，也到了。是去是留，只在这一念之间。"
-      ],
-      "options": [
-        {
-          "label": "踏出酒棚，走入大宋的雨夜"
-        }
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "study_desk",
-      "title": "兴化书斋",
-      "result": "你把策问草稿、科举日程和海图边角压在同一方镇纸下。士人性上升，但海风没有被关在窗外。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "family_house",
-      "title": "亲族宅",
-      "result": "长辈问你何时赴试，也问你为何频频打听海口。乡土性上升，出走的代价更具体。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "city_gate",
-      "title": "兴化城门",
-      "result": "北上福州的路和南下泉州的路在城门外分岔。你尚未选路，却已经开始被两边记住。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "harbor_wine_shed",
-      "title": "兴化海口酒棚",
-      "result": "船户谈潮不谈名姓，只说陆路若不稳，海上总要有人记得暗号。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "ferry_jetty",
-      "title": "兴化渡口",
-      "result": "你看见潮泥、缆桩和小船吃水，明白海路不是传奇，是地方人每日绕不开的边界。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "messenger_post",
-      "title": "信使点",
-      "result": "青布缠桅的暗号被你记下，却没有写进明账。乡土与寺院的线轻轻搭上。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "customs_shed",
-      "title": "市舶司验引棚",
-      "result": "验引、报货、抽解和保人押字把海商世界摆在你面前。海路性与海商信用微涨。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "merchant_house",
-      "title": "林阿舶账房",
-      "result": "林阿舶不讲远方，只讲货损归谁、保人是谁、哪一页账不可外传。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "shipyard",
-      "title": "船匠铺",
-      "result": "桐油味、湿麻绳和铅锤让出海变得具体。你的海路性增加，也更懂船况和补给的重量。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "fuzhou_road",
-      "title": "福州路引",
-      "result": "1256 年北上临安太学的门仍在前方。越靠近它，海路的入口未必关闭，却会更窄。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "recommendation_letter",
-      "title": "举荐书",
-      "result": "举荐书让你更像士人，也让未来离开士人线时多了一件必须清算的物。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "guest_house",
-      "title": "士子客舍",
-      "result": "北上士子谈临安、谈榜名、谈馆阁。你听着他们，也想起兴化海口未封的短札。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "sutra_room",
-      "title": "藏经阁",
-      "result": "净海给你的不是命令，而是可被保存的文书线。寺院性上升。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "stele_walk",
-      "title": "碑廊",
-      "result": "碑文残缺处需要读书人的眼，也需要海上人的脚。士人性与寺院性一同上涨。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "guest_hall",
-      "title": "寺院客堂",
-      "result": "寺院短札只能遮护，不能证明。你学会把话说到可用处，也停在危险前。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "reef_sound",
-      "title": "南岛海道北口",
-      "result": "潮声、鸟群和水色比地图更早告诉你礁线所在。海路性上升。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "lead_line",
-      "title": "铅锤测深",
-      "result": "旧避风澳不是新发现，而是复核。你把水深和沙底写成可回看的边记。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "old_berth_note",
-      "title": "泊澳边记",
-      "result": "你没有把入口写尽。旧路若要救人，先要避免被太多人占有。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "academy_gate",
-      "title": "贡院",
-      "result": "你在题名碑前站了一阵。上榜的名字用朱漆描过，落榜的名字被雨水磨平。士人性明显上升——这条路用名字说话。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "paper_shop",
-      "title": "印书坊",
-      "result": "建本字迹端正，纸墨都比手抄本便宜三成。书贾说临安馆阁定了今年的范文纸样，又说北上的船费比书价还贵。花了一点钱，留了一个印象。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "mulan_bei",
-      "title": "木兰陂",
-      "result": "陂水从闸口分进田渠。老农说今年雨多，怕盐潮倒灌；又说玉湖陈家的田契上还写着这条陂的名字。乡土性显著上升——你知道自己的根长在哪里了。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "yangji_yuan",
-      "title": "养济院",
-      "result": "你帮老先生抄了一张药方，听他讲襄阳逃来的人如何说汉水边的鞑子。他说话慢，但那些地名不是书上的——是人用脚走出来的。乡土与人脉一起涨。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "customs_room",
-      "title": "抽解房",
-      "result": "税率表钉在墙上，但没人照表办事。一个押字可以免一成，一封好引可以免两成。你开始明白——市舶司不是衙门，是一座密码。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "yahang",
-      "title": "牙行",
-      "result": "一个阿拉伯商人用三句话和你对了一船青瓷的价格。他没说官话，你也没说官话——但货价谈成了。海路性与钱一起涨。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "arab_mosque",
-      "title": "清净寺",
-      "result": "石碑上的阿拉伯文你看不懂，但番商指给你看的海路方向，和净海旧纸上画的是一样的。海外的路，原来不只一条。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "beacon_tower",
-      "title": "望海楼",
-      "result": "从楼上望出去，泉州港的船变得很小，博多方向的天际线却变得很清晰。净海说你若真想懂海路，先要习惯站得比船高。寺院性上升，海路性与之一同。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "relay_post",
-      "title": "驿铺",
-      "result": "驿卒不知道信里写了什么，但他知道马跑了多久。从福州到临安是十八驿，从临安到襄阳是二十四驿。你不骑马，但路的长度已经在你脑子里了。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "fuzhou_yamen",
-      "title": "福州衙门",
-      "result": "衙门口的题名碑上有一行空位，是留给丙辰科的。你从上面看见了自己可能的未来——也看见了那些名字后面有时刻着的小字：殉节、投海、不知所终。",
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "xinghua",
+      "id": "port_xinghua",
       "type": "port",
-      "title": "兴化军",
+      "chapter": "chapter_1",
       "location": "xinghua",
-      "facilities": [
-        {
-          "id": "city_shipyard",
-          "title": "船屋",
-          "subtitle": "修船与出海",
-          "body": "停泊着各色海船的船厂。"
-        },
-        {
-          "id": "city_guild",
-          "title": "行会",
-          "subtitle": "商贾云集",
-          "body": "泉州商人与各路掌柜的集会所。"
-        },
-        {
-          "id": "city_tavern",
-          "title": "酒馆",
-          "subtitle": "打听消息",
-          "body": "人多嘴杂的饮酒之处。"
-        },
-        {
-          "id": "city_market",
-          "title": "市场",
-          "subtitle": "奇货交易",
-          "body": "散发着香料与海货腥味的市集。"
-        },
-        {
-          "id": "city_inn",
-          "title": "旅店",
-          "subtitle": "休息住宿",
-          "body": "南来北往的客商落脚点。"
-        },
-        {
-          "id": "city_exam",
-          "title": "贡院",
-          "subtitle": "科考之所",
-          "body": "天下士人求取功名之地。"
-        },
-        {
-          "id": "city_residence",
-          "title": "住宅",
-          "subtitle": "简陋住处",
-          "body": "属于你的一方天地。"
-        },
-        {
-          "id": "city_yamen",
-          "title": "衙门",
-          "subtitle": "官府重地",
-          "body": "市舶司与地方官署。"
-        }
-      ],
-      "bg": "res://assets/bg_xinghua_study.jpg"
-    },
-    {
-      "id": "quanzhou",
-      "type": "port",
-      "title": "泉州",
-      "location": "quanzhou",
-      "facilities": [
-        {
-          "id": "city_shipyard",
-          "title": "船屋",
-          "subtitle": "修船与出海",
-          "body": "停泊着各色海船的船厂。"
-        },
-        {
-          "id": "city_guild",
-          "title": "行会",
-          "subtitle": "商贾云集",
-          "body": "泉州商人与各路掌柜的集会所。"
-        },
-        {
-          "id": "city_tavern",
-          "title": "酒馆",
-          "subtitle": "打听消息",
-          "body": "人多嘴杂的饮酒之处。"
-        },
-        {
-          "id": "city_market",
-          "title": "市场",
-          "subtitle": "奇货交易",
-          "body": "散发着香料与海货腥味的市集。"
-        },
-        {
-          "id": "city_inn",
-          "title": "旅店",
-          "subtitle": "休息住宿",
-          "body": "南来北往的客商落脚点。"
-        },
-        {
-          "id": "city_exam",
-          "title": "贡院",
-          "subtitle": "科考之所",
-          "body": "天下士人求取功名之地。"
-        },
-        {
-          "id": "city_residence",
-          "title": "住宅",
-          "subtitle": "简陋住处",
-          "body": "属于你的一方天地。"
-        },
-        {
-          "id": "city_yamen",
-          "title": "衙门",
-          "subtitle": "官府重地",
-          "body": "市舶司与地方官署。"
-        }
-      ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "penghu",
-      "type": "port",
-      "title": "澎湖",
-      "location": "penghu",
-      "facilities": [
-        {
-          "id": "city_shipyard",
-          "title": "船屋",
-          "subtitle": "修船与出海",
-          "body": "停泊着各色海船的船厂。"
-        },
-        {
-          "id": "city_guild",
-          "title": "行会",
-          "subtitle": "商贾云集",
-          "body": "泉州商人与各路掌柜的集会所。"
-        },
-        {
-          "id": "city_tavern",
-          "title": "酒馆",
-          "subtitle": "打听消息",
-          "body": "人多嘴杂的饮酒之处。"
-        },
-        {
-          "id": "city_market",
-          "title": "市场",
-          "subtitle": "奇货交易",
-          "body": "散发着香料与海货腥味的市集。"
-        },
-        {
-          "id": "city_inn",
-          "title": "旅店",
-          "subtitle": "休息住宿",
-          "body": "南来北往的客商落脚点。"
-        },
-        {
-          "id": "city_exam",
-          "title": "贡院",
-          "subtitle": "科考之所",
-          "body": "天下士人求取功名之地。"
-        },
-        {
-          "id": "city_residence",
-          "title": "住宅",
-          "subtitle": "简陋住处",
-          "body": "属于你的一方天地。"
-        },
-        {
-          "id": "city_yamen",
-          "title": "衙门",
-          "subtitle": "官府重地",
-          "body": "市舶司与地方官署。"
-        }
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "champa",
-      "type": "port",
-      "title": "占城",
-      "location": "champa",
-      "facilities": [
-        {
-          "id": "city_shipyard",
-          "title": "船屋",
-          "subtitle": "修船与出海",
-          "body": "停泊着各色海船的船厂。"
-        },
-        {
-          "id": "city_guild",
-          "title": "行会",
-          "subtitle": "商贾云集",
-          "body": "泉州商人与各路掌柜的集会所。"
-        },
-        {
-          "id": "city_tavern",
-          "title": "酒馆",
-          "subtitle": "打听消息",
-          "body": "人多嘴杂的饮酒之处。"
-        },
-        {
-          "id": "city_market",
-          "title": "市场",
-          "subtitle": "奇货交易",
-          "body": "散发着香料与海货腥味的市集。"
-        },
-        {
-          "id": "city_inn",
-          "title": "旅店",
-          "subtitle": "休息住宿",
-          "body": "南来北往的客商落脚点。"
-        },
-        {
-          "id": "city_exam",
-          "title": "贡院",
-          "subtitle": "科考之所",
-          "body": "天下士人求取功名之地。"
-        },
-        {
-          "id": "city_residence",
-          "title": "住宅",
-          "subtitle": "简陋住处",
-          "body": "属于你的一方天地。"
-        },
-        {
-          "id": "city_yamen",
-          "title": "衙门",
-          "subtitle": "官府重地",
-          "body": "市舶司与地方官署。"
-        }
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "city_tavern",
-      "type": "investigation",
-      "title": "内景",
+      "title": "兴化 · 城关",
       "body": "",
-      "investigations": [
-        {
-          "id": "prologue_veteran",
-          "label": "邻桌老兵",
-          "text": "听邻桌酒客的醉话\n\n听北边逃下来的溃兵讲襄阳战局。",
-          "effects": {},
-          "next": ""
-        },
-        {
-          "id": "prologue_catalyst",
-          "label": "风雨逼近",
-          "text": "等待接头人\n\n外面的风雨越来越大，族里派来的马队也在逼近。",
-          "effects": {},
-          "next": ""
-        }
-      ],
-      "choices": [
-        {
-          "label": "离开",
-          "next": "xinghua"
-        }
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "city_residence",
-      "type": "investigation",
-      "title": "内景",
-      "body": "",
-      "investigations": [
-        {
-          "id": "prologue_draft",
-          "label": "策问草稿",
-          "text": "翻看自己写了三个月的文章\n\n每次写到「边防」两个字，笔就停下来。",
-          "effects": {},
-          "next": ""
-        },
-        {
-          "id": "prologue_ledger",
-          "label": "叔父账簿",
-          "text": "翻看叔父留下的旧账本\n\n账本发黄，每一笔都写着「未清」。",
-          "effects": {},
-          "next": ""
-        }
-      ],
-      "choices": [
-        {
-          "label": "离开",
-          "next": "xinghua"
-        }
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "city_shipyard",
-      "type": "investigation",
-      "title": "内景",
-      "body": "",
-      "investigations": [
-        {
-          "id": "prologue_permit",
-          "label": "泉州货引",
-          "text": "端详那张被海水泡过的凭证\n\n盖着大食商人的印章。有了它，就能登船。",
-          "effects": {},
-          "next": ""
-        }
-      ],
-      "choices": [
-        {
-          "label": "离开",
-          "next": "xinghua"
-        }
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "city_guild",
-      "type": "investigation",
-      "title": "内景",
-      "body": "",
-      "investigations": [
-        {
-          "id": "prologue_ledger",
-          "label": "应对烂账",
-          "text": "商人冷脸\n\n商长抬眼瞥了你一下，原本熟络的笑容瞬间凝固。",
-          "effects": {},
-          "next": ""
-        },
-        {
-          "id": "prologue_permit",
-          "label": "出示货引",
-          "text": "商路通行证\n\n一张盖着番文印章的南洋货引。",
-          "effects": {},
-          "next": ""
-        }
-      ],
-      "choices": [
-        {
-          "label": "离开",
-          "next": "xinghua"
-        }
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "port_quanzhou",
-      "type": "port",
-      "location": "quanzhou",
-      "title": "泉州",
       "facilities": [
         {
-          "id": "city_shipyard",
-          "next": "quanzhou_shipyard"
+          "id": "xinghua_exam",
+          "title": "乡学",
+          "subtitle": {
+            "default": "夜访拿经书",
+            "rules": [
+              {
+                "requires_story_flag": "spring_autumn_scroll",
+                "text": "已访 · 先生安睡",
+                "state": "done"
+              },
+              {
+                "requires_story_flag": "xianghua_morning_done",
+                "unless_story_flag": "spring_autumn_scroll",
+                "text": "★ 夜访拿经书",
+                "state": "quest"
+              }
+            ]
+          },
+          "icon": "res://assets/icon_exam_koei.png",
+          "requires_story_flag": "xianghua_morning_done"
         },
         {
-          "id": "city_guild",
-          "next": "quanzhou_guild"
+          "id": "xinghua_market",
+          "title": "市集",
+          "subtitle": "土产与海味",
+          "icon": "res://assets/icon_market_koei.png"
         },
         {
-          "id": "city_tavern",
-          "next": "quanzhou_tavern"
+          "id": "xinghua_inn",
+          "title": "客栈",
+          "subtitle": "歇脚打尖",
+          "icon": "res://assets/icon_inn_koei.png"
         },
         {
-          "id": "city_market",
-          "next": "quanzhou_market"
+          "id": "xinghua_tavern",
+          "title": "茶馆",
+          "subtitle": "听风言风语",
+          "icon": "res://assets/icon_tavern_koei.png"
         },
         {
-          "id": "city_inn",
-          "next": "quanzhou_inn"
+          "id": "xinghua_temple",
+          "title": "城隍庙",
+          "subtitle": {
+            "default": "贾府踩场",
+            "rules": [
+              {
+                "unless_story_flag": "jia_faction_met",
+                "text": "★ 贾府踩场",
+                "state": "quest"
+              }
+            ]
+          },
+          "icon": "res://assets/icon_residence_koei.png",
+          "requires_story_flag": "xianghua_morning_done"
         },
         {
-          "id": "city_exam",
-          "next": "quanzhou_exam"
-        },
-        {
-          "id": "city_residence",
-          "next": "quanzhou_residence"
-        },
-        {
-          "id": "city_yamen",
-          "next": "quanzhou_yamen"
+          "id": "xinghua_wharf",
+          "title": "海口",
+          "subtitle": {
+            "default": "渡船与脚夫",
+            "rules": [
+              {
+                "unless_story_flag": "quanzhou_travel_prepared",
+                "text": "★ 打听赴泉路程",
+                "state": "quest"
+              }
+            ]
+          },
+          "icon": "res://assets/icon_shipyard_koei.png"
         }
       ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
+      "bg": "res://assets/bg_xinghua_residence.png",
+      "choices": [
+        {
+          "label": "官道往刺桐港（泉州）",
+          "next": "scene02_quanzhou_port",
+          "requires_story_flag": "spring_autumn_scroll",
+          "choice_style": "travel"
+        },
+        {
+          "label": "向脚夫打听路程",
+          "next": "port_xinghua",
+          "unless_story_flag": "quanzhou_travel_prepared",
+          "effects": {
+            "money": -8,
+            "story_flag": "quanzhou_travel_prepared"
+          },
+          "narration": "脚夫搓着手哈气：「陆路两日，水路一日。带足干粮，别走夜路。」"
+        }
+      ],
+      "intro": "雨后的城关，青石板泛着冷光。挑担的、牵骡的各奔门头，没人知你怀里揣着何种心事。"
     },
     {
-      "id": "quanzhou_tavern",
-      "chapter": "quanzhou",
-      "title": "泉州酒馆",
-      "location": "quanzhou",
-      "body": "人声鼎沸的泉州酒馆，角落里坐着几个老兵在喝闷酒。",
+      "id": "xinghua_exam",
+      "chapter": "chapter_1",
+      "title": "乡学夜谈",
+      "location": "xinghua",
+      "body": "入夜，乡学只亮着一盏如豆油灯。雷雨在瓦上乱踩。\n\n【先生】：「这书，替我送到泉州。交给林伯渊，他在东坞三号泊位。记住，夜里离市舶司远点。」\n\n　　他从柜底摸出钱袋，推到你面前。\n\n【先生】：「钱袋拿着。去见见世面……再决定你这辈子，到底要走哪条道。」",
       "investigations": [
         {
-          "label": "邻桌老兵",
-          "text": "老兵讲北边战局不利。",
+          "label": "翻看《春秋》夹页",
+          "text": "批注密如蚁附。末行是林伯渊落脚处，旁注四个字：勿信夜验。",
+          "once_flag": "lin_dock_hint",
           "effects": {
+            "story_flag": "lin_dock_hint"
+          }
+        },
+        {
+          "label": "问先生病情",
+          "text": "先生摆手咳嗽：「老毛病，死不了。倒是你，盯着贾府那群生面孔，别硬碰。」",
+          "once_flag": "asked_teacher_health",
+          "effects": {
+            "story_flag": "teacher_health_asked",
             "fame": 1
           }
         }
       ],
       "choices": [
         {
-          "label": "离开酒馆",
+          "label": "收好经书与路费，回城",
+          "next": "port_xinghua",
+          "effects": {
+            "story_flag": "spring_autumn_scroll",
+            "item_acquired": "spring_autumn_scroll",
+            "money": 120
+          },
+          "narration": "先生给的不仅是路费，更是一条退路。科举若不成，这海便是去处。"
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_school.png"
+    },
+    {
+      "id": "xinghua_temple",
+      "chapter": "chapter_1",
+      "title": "城隍庙",
+      "location": "xinghua",
+      "body": "骤雨砸在城隍庙檐上，香灰被溅成黑斑。\n\n　　马蹄踏碎水洼，锦衣少年带随从闯进来。袖口暗绣贾府标记，他冷笑一声。\n\n【贾府少年】：「太学里缺的不是背书的腐儒。朝廷要的是能退敌的刀，不是能送葬的笔。」\n\n　　庙里无人应声。少年掷下一枚碎银，在供桌上敲出脆响。\n\n【贾府少年】：「记住本公子的脸。下次再见，最好绕道走。」",
+      "investigations": [
+        {
+          "label": "拾起碎银",
+          "text": "银面印着贾府私铸纹。这不是赏钱，是买路钱，也是羞辱。",
+          "once_flag": "jia_silver_taken",
+          "effects": {
+            "money": 5,
+            "story_flag": "jia_silver_taken"
+          }
+        },
+        {
+          "label": "查看供桌敲痕",
+          "text": "敲痕浅而新。庙祝低声道：「这些人常来踩场，别硬顶，风头过了再说。」",
+          "once_flag": "temple_mark_noted",
+          "effects": {
+            "story_flag": "jia_temple_intimidation"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "回城",
+          "next": "port_xinghua",
+          "effects": {
+            "story_flag": "jia_faction_met"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_residence.png"
+    },
+    {
+      "id": "xinghua_market",
+      "chapter": "chapter_1",
+      "title": "兴化市集",
+      "location": "xinghua",
+      "body": "鱼干、粗盐、劣纸摆在檐下。商贩把价钱压得极低，说是战汛来了，货走不出海口，活人也不能等死。",
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_xinghua"
+        }
+      ],
+      "bg": "res://assets/bg_city_market_street.png",
+      "investigations": [
+        {
+          "label": "买一包炊饼路上吃",
+          "text": "炊饼烫手，老板多塞了两块：「读书人，路上别饿肚子。这世道，饿死鬼最多。」",
+          "once_flag": "xinghua_bought_food",
+          "effects": {
+            "money": -6,
+            "food": 10
+          }
+        },
+        {
+          "label": "打听泉州行情",
+          "text": "行商压低声音：「刺桐港番药价涨了三成，没货引寸步难行。水深得很。」",
+          "once_flag": "xinghua_market_intel",
+          "effects": {
+            "story_flag": "quanzhou_market_rumor"
+          }
+        },
+        {
+          "label": "问壮丁去向",
+          "text": "商贩叹气：「抓走的都往两淮去了。读书人走得早，说不定还能剩条命。」",
+          "once_flag": "xinghua_market_conscript",
+          "requires_story_flag": "heard_conscription_rumor",
+          "effects": {
+            "story_flag": "heard_conscription_rumor",
+            "fame": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "xinghua_wharf",
+      "chapter": "chapter_1",
+      "title": "兴化海口",
+      "location": "xinghua",
+      "body": "海口风咸，渔船系成一排。脚夫蹲在避风处赌骰子，远处汛卒敲锣示警，声音被风撕得破碎。",
+      "investigations": [
+        {
+          "label": "看渡船时刻表",
+          "text": "木牌被盐雾侵蚀：往泉州陆路驿二日，水路一日；夜禁后不开渡。海上没有王法，只有潮信。",
+          "once_flag": "xinghua_ferry_schedule",
+          "effects": {
+            "story_flag": "quanzhou_travel_prepared"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_xinghua"
+        }
+      ],
+      "bg": "res://assets/bg_departure.png"
+    },
+    {
+      "id": "xinghua_tavern",
+      "chapter": "chapter_1",
+      "title": "城关茶馆",
+      "location": "xinghua",
+      "body": "茶馆烟雾缭绕。说书人拍响醒木，讲到岳家军旧案，茶客纷纷压低声音，生怕隔墙有耳。",
+      "investigations": [
+        {
+          "label": "请一碗粗茶坐着听",
+          "text": "说书人收尾一句：「陆上容不下的，海里容得下。不在朱子卷里，在风浪里。」众人沉默，只闻雨声。",
+          "once_flag": "xinghua_tea_listened",
+          "effects": {
+            "money": -4,
+            "story_flag": "heard_sea_legend"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_xinghua"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_arab_market.png"
+    },
+    {
+      "id": "xinghua_inn",
+      "chapter": "chapter_1",
+      "title": "兴化客栈",
+      "location": "xinghua",
+      "body": "客栈里挤着赶考举子与贩盐小贩，汗酸与霉味混杂。掌柜拨弄算盘，头也不抬：「住店三十文，热水另算。」",
+      "investigations": [
+        {
+          "label": "租一间通铺歇脚",
+          "text": "你合衣躺了半个时辰，听见隔壁还在背《论语》，声音里透着走投无路的绝望。",
+          "once_flag": "xinghua_inn_rest",
+          "effects": {
+            "money": -30,
+            "fame": 1
+          }
+        },
+        {
+          "label": "听举子议论党禁",
+          "text": "有人叹：「朱子门人连送葬都不敢，还考什么科举？不如出海去。」",
+          "once_flag": "xinghua_inn_gossip",
+          "effects": {
+            "story_flag": "heard_exam_gossip"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_xinghua"
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_residence.png"
+    },
+    {
+      "id": "scene02_quanzhou_port",
+      "chapter": "chapter_1",
+      "title": "刺桐港初见",
+      "location": "quanzhou",
+      "time": "陆路两日后抵达，午后",
+      "objective": "见识刺桐港规矩，别在第一日就惹眼",
+      "body": "{quanzhou_arrival}香料、桐油、血腥与海盐的混合气味先扑入鼻。\n\n　　号子声里，一箱青瓷砸碎在青石板上。货主与小吏扭打——三十税一，已成仇。\n\n【市舶司小吏】：（拍案）「香药三十税一！敢再啰嗦，连人带货给我扣下！」\n\n　　碎瓷下露出的不是瓷，是私盐。\n\n【褐衣汉子】：「看够了吗，秀才？蒲家的人今天也在码头，眼珠子多，嘴巴少。」",
+      "choices": [
+        {
+          "label": "先入城，少惹眼",
+          "next": "port_quanzhou",
+          "effects": {
+            "story_flag": "quanzhou_arrived"
+          }
+        },
+        {
+          "label": "追问蒲氏动向（惹眼）",
+          "next": "port_quanzhou",
+          "effects": {
+            "pu_attention": 5,
+            "fame": -2,
+            "story_flag": "quanzhou_arrived"
+          },
+          "narration": "小吏瞥你一眼，冷冷丢下两个字：「少问。」"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_port.png",
+      "investigations": [
+        {
+          "label": "盯住摔碎的瓷箱",
+          "text": "私盐藏在瓷下。这条船今晚必换泊位，蒲家的规矩，比朝廷大。",
+          "once_flag": "saw_smuggling",
+          "effects": {
+            "pu_attention": 2,
+            "story_flag": "saw_smuggling"
+          }
+        },
+        {
+          "label": "打量褐衣汉子",
+          "text": "袖口有刀痕，说话却像官家耳目。转眼间，他已消失在蕃坊巷口。",
+          "once_flag": "pu_watcher_met",
+          "effects": {
+            "story_flag": "pu_watcher_met"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene03_lin_ship",
+      "chapter": "chapter_1",
+      "title": "林伯渊的船",
+      "location": "quanzhou",
+      "time": "傍晚",
+      "objective": "林伯渊角色定立；海商路线种子种下",
+      "body": "东坞三号泊位，衙役正盘查一艘空船。\n\n【衙役】：「林伯渊？夷册带来没有？」\n\n　　册子摔在案上，衙役翻两页便不耐烦地走了。\n\n【陈子龙】：「林先生？」\n\n【林伯渊】：「包袱别开。这码头上的眼睛，比海里的鲨鱼还多。」\n\n　　舱内，《春秋》摊开。林伯渊指腹停在朱子批注上，久不说话。海风吹得油灯忽明忽暗。\n\n【林伯渊】：「老头子……还能拿得动笔么？」\n\n【陈子龙】：「只能抄，不能讲。」\n\n【林伯渊】：「哼。他让你来，是想让你睁眼看看——读太学卷子的人，到了海上，也得学会怎么活。」\n\n【林伯渊】：「后天起北风，船去澎湖。把命交给我，还是留在岸上等死，今晚想清楚。」",
+      "choices": [
+        {
+          "label": "跟他走，把命交给海",
+          "next": "scene04_departure",
+          "effects": {
+            "linboyuan_relationship": 8,
+            "story_flag": "met_lin_boyuan"
+          }
+        },
+        {
+          "label": "犹豫到最后一刻再上船",
+          "next": "scene04_departure",
+          "effects": {
+            "linboyuan_relationship": 2,
+            "story_flag": "met_lin_boyuan"
+          },
+          "narration": "天亮时，你还是踩上了跳板。鞋底的露水，一夜未干。"
+        }
+      ],
+      "bg": "res://assets/bg_lin_ship.png",
+      "investigations": [
+        {
+          "label": "打量林伯渊的双手",
+          "text": "满手茧子与旧伤，不像握笔的，倒像握刀的。",
+          "once_flag": "noted_lin_hands",
+          "effects": {
+            "story_flag": "noted_lin_hands"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene04_departure",
+      "chapter": "chapter_1",
+      "title": "出港",
+      "location": "sea",
+      "time": "次日清晨",
+      "objective": "航海系统知识展示；世界多样性",
+      "body": "礼炮一响，缆绳齐颤。半个时辰后海雾压来，阿巴斯高喊阿拉伯语，水手齐跪。\n\n【林伯渊】：「在这条水道上，神仙的规矩比官府大。」\n\n　　雾散处，半沉官船横在航道，烧焦的朝廷旗还在滴水。\n\n【林伯渊】：「记下方位。回去报给市舶司，或者装没看见，随你。」\n\n【林伯渊】：「记住了，船舱进水，别的舱不能声张。在海上想活命，靠的是缝补，不是嘴。」",
+      "choices": [
+        {
+          "label": "催促报官",
+          "next": "scene05_penghu_night",
+          "effects": {
+            "fame": 3,
+            "story_flag": "navigation_basics_learned",
+            "water": -2
+          },
+          "narration": "林伯渊记下坐标，却摇头：「海上报官，常常报给错的人。」"
+        },
+        {
+          "label": "沉默，继续北上",
+          "next": "scene05_penghu_night",
+          "effects": {
+            "story_flag": "navigation_basics_learned",
+            "food": -2,
+            "water": -2
+          }
+        }
+      ],
+      "bg": "res://assets/bg_departure.png",
+      "investigations": [
+        {
+          "label": "检查烧焦的官船残骸",
+          "text": "舱里有没验的番药，封条被刀割开。像水师自己凿沉的走私船，黑吃黑罢了。",
+          "once_flag": "saw_sunken_patrol",
+          "effects": {
+            "story_flag": "saw_sunken_patrol",
+            "pu_attention": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene05_penghu_night",
+      "chapter": "chapter_1",
+      "title": "澎湖一夜",
+      "location": "penghu",
+      "time": "抵达当日傍晚至次日清晨",
+      "objective": "展示航线网络；星空下的沉思",
+      "body": "澎湖渔村。半夜有人敲舷卖淡水，水面却漂着破筏与浮尸。\n\n【渔家婆】：「黑水沟昨儿吞了三条船。再不走，台风就来了，连骨头都剩不下。」\n\n【林伯渊】：「澎湖是个十字路口，来来往往；可它也是片坟场，埋的都不留名。」\n\n　　拂晓返航。两时辰后风无缘无故倒转，帆骨吱嘎作响，像在惨叫。\n\n【林伯渊】：（低声）「有人动了江口的浮标……这水道，开始咬人了。」",
+      "choices": [
+        {
+          "label": "命令降帆硬扛",
+          "next": "scene06_black_water",
+          "effects": {
+            "crew_count": -1,
+            "story_flag": "penghu_night",
+            "navigation_position": "penghu",
+            "food": -3,
+            "water": -4
+          },
+          "narration": "主桅帆骨应声断裂，砸中一名水手，惨叫声瞬间被风浪吞没。"
+        },
+        {
+          "label": "听林伯渊切外海",
+          "next": "scene06_black_water",
+          "effects": {
+            "linboyuan_relationship": 3,
+            "story_flag": "penghu_night",
+            "navigation_position": "penghu",
+            "food": -2,
+            "water": -3
+          }
+        }
+      ],
+      "bg": "res://assets/bg_penghu_night.png"
+    },
+    {
+      "id": "scene06_black_water",
+      "chapter": "chapter_1",
+      "title": "黑水沟",
+      "location": "sea",
+      "time": "澎湖出发后约半日",
+      "objective": "展示海洋的非人性；「世界有不由你决定的力量」主题",
+      "body": "林伯渊执意抄黑水沟。船身横移，罗盘狂转，像是被什么怪物攥住了心脏。\n\n【陈子龙】：「改航道！」\n\n【林伯渊】：「晚了。黑水沟已经咬住船底了。」\n\n　　甲板裂缝渗水。你徒手堵缝，血混桐油。有水手在写遗书，阿巴斯仍按时礼拜，面朝西方。\n\n【林伯渊】：「黑水沟不随便吞人——它是在挑人。」\n\n　　水色猛地变深，如墨汁般化不开。远处隐约有船在烧，火光惨绿。",
+      "choices": [
+        {
+          "label": "全力堵漏",
+          "next": "scene07_keelung_coast",
+          "effects": {
+            "fame": 2,
+            "story_flag": "black_water_drift",
+            "food": -2,
+            "water": -5
+          },
+          "narration": "你满手油与血，船还是进了水，但没沉。海神今天没看上你。"
+        },
+        {
+          "label": "捧出《春秋》祈求天候",
+          "next": "scene07_keelung_coast",
+          "effects": {
+            "story_flag": "black_water_drift",
+            "story_flag2": "prayed_at_black_water",
+            "fame": -1
+          },
+          "random_roll": {
+            "chance": 0.1,
+            "success": {
+              "narration": "风忽然倒吹半刻。林伯渊只道：「天意给了一线，别当成常态。」",
+              "effects": {
+                "story_flag": "black_water_wind_shift",
+                "fame": 2
+              }
+            },
+            "fail": {
+              "narration": "阿巴斯停下礼拜，冷冷看了你一眼。浪头灌进舱，淡水又少了一成。",
+              "effects": {
+                "water": -8,
+                "food": -3
+              }
+            }
+          }
+        }
+      ],
+      "bg": "res://assets/bg_black_water.png"
+    },
+    {
+      "id": "scene07_keelung_coast",
+      "chapter": "chapter_1",
+      "title": "基隆海岸",
+      "location": "keelung",
+      "time": "漂流约一日后，黄昏",
+      "objective": "文化冲击；失语的体验",
+      "body": "船被巨浪甩上陌生海岸。夜里犬吠，却不是汉话的命令。\n\n　　羽箭钉在桅杆——没瞄准人，只有警告。\n\n【林伯渊】：「这是凯达格兰人的地界。别碰那支箭，那是土人的见面礼。」\n\n　　孩童跑来摸《春秋》的油布面。老人抬手止住猎户，却收下书角作为交换。\n\n【老人】：（手势）可留可离，但别带走淡水。\n\n　　村中缺盐。你包袱里，却有先生备下的碎银。",
+      "choices": [
+        {
+          "label": "留银换水（示好当地人）",
+          "next": "scene08_return",
+          "effects": {
+            "money": -30,
+            "fame": 5,
+            "story_flag": "taiwan_coast",
+            "story_flag2": "ketagalan_encounter",
+            "item_acquired": "ketagalan_shell"
+          }
+        },
+        {
+          "label": "撕书页换水（林伯渊不喜）",
+          "next": "scene08_return",
+          "effects": {
+            "linboyuan_relationship": -3,
+            "fame": -3,
+            "story_flag": "taiwan_coast",
+            "story_flag2": "ketagalan_encounter",
+            "item_acquired": "ketagalan_shell"
+          },
+          "narration": "林伯渊脸色一沉，却没拦你。书卷在生存面前，连擦屁股都嫌硬。"
+        }
+      ],
+      "bg": "res://assets/bg_keelung_coast.png",
+      "investigations": [
+        {
+          "label": "查看桅杆上的羽箭",
+          "text": "箭羽用火灼过，是猎户的警告，不是战书。这片林子里，藏着比野兽更敏锐的眼睛。",
+          "effects": {
+            "story_flag": "ketagalan_warning"
+          },
+          "once_flag": "ketagalan_warning"
+        }
+      ]
+    },
+    {
+      "id": "scene08_return",
+      "chapter": "chapter_1",
+      "title": "返航与章末",
+      "location": "quanzhou",
+      "time": "数日后",
+      "objective": "第一章结束，伏笔第二章",
+      "body": "返航途中，雾里尾随一艘快船。蒲氏旗号在白雾中一闪即没，像条盯上猎物的鲨鱼{pu_tail_intensity}。\n\n　　泉州码头，林伯渊把一枚铜钱塞进你手心——反面刻着「勿上岸先」。\n\n【林伯渊】：「去临安吧。书留着，命也得留着。」\n\n【陈子龙】：「蒲氏盯上我了？」\n\n【林伯渊】：「从{pu_reason}起，蒲家的眼线就钉在你身上了。」\n\n　　他转身没入人群。海风吹过，《春秋》与异族贝壳同样发烫——像两枚未冷的火炭。",
+      "choices": [
+        {
+          "label": "立刻北上，不等尾巴",
+          "next": "port_quanzhou",
+          "effects": {
+            "story_flag": "chapter1_complete",
+            "story_flag2": {
+              "linboyuan_relationship": "neutral_positive"
+            },
+            "chapter_unlock": "chapter2_linan"
+          }
+        },
+        {
+          "label": "先绕蕃坊甩掉跟踪",
+          "next": "port_quanzhou",
+          "effects": {
+            "story_flag": "chapter1_complete",
+            "story_flag2": {
+              "linboyuan_relationship": "neutral_positive"
+            },
+            "chapter_unlock": "chapter2_linan",
+            "pu_attention": -3,
+            "fame": 2
+          },
+          "narration": "你在蕃坊的巷子里绕了三圈，借阿拉伯人的香料味掩盖了行踪，才回码头。"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_port_sunset.png"
+    },
+    {
+      "id": "port_quanzhou",
+      "type": "port",
+      "chapter": "chapter_1",
+      "location": "quanzhou",
+      "title": "刺桐港 · 泉州",
+      "body": "",
+      "facilities": [
+        {
+          "id": "quanzhou_wharf",
+          "title": "码头",
+          "subtitle": {
+            "default": "验引与潮汛",
+            "rules": [
+              {
+                "unless_story_flag": "saw_smuggling",
+                "text": "★ 码头风波",
+                "state": "quest"
+              }
+            ]
+          },
+          "icon": "res://assets/icon_shipyard_koei.png"
+        },
+        {
+          "id": "city_guild",
+          "title": "工会",
+          "subtitle": "打听航线与传闻",
+          "icon": "res://assets/icon_guild_koei.png"
+        },
+        {
+          "id": "city_tavern",
+          "title": "酒馆",
+          "subtitle": "水手与商旅",
+          "icon": "res://assets/icon_tavern_koei.png"
+        },
+        {
+          "id": "city_market",
+          "title": "市场",
+          "subtitle": "买卖货物",
+          "icon": "res://assets/icon_market_koei.png"
+        },
+        {
+          "id": "city_inn",
+          "title": "旅馆",
+          "subtitle": "休整补给",
+          "icon": "res://assets/icon_inn_koei.png"
+        },
+        {
+          "id": "city_shipyard",
+          "title": "船坞",
+          "subtitle": {
+            "default": "寻林伯渊",
+            "rules": [
+              {
+                "requires_story_flag": "spring_autumn_scroll",
+                "unless_story_flag": "met_lin_boyuan",
+                "text": "★ 寻林伯渊",
+                "state": "quest"
+              }
+            ]
+          },
+          "icon": "res://assets/icon_shipyard_koei.png",
+          "requires_story_flag": "spring_autumn_scroll"
+        },
+        {
+          "id": "city_yamen",
+          "title": "衙门",
+          "subtitle": "市舶验引",
+          "icon": "res://assets/icon_yamen_koei.png"
+        },
+        {
+          "id": "city_residence",
+          "title": "住宅",
+          "subtitle": "安身之处",
+          "icon": "res://assets/icon_residence_koei.png"
+        },
+        {
+          "id": "city_exam",
+          "title": "学院",
+          "subtitle": "科举之路",
+          "icon": "res://assets/icon_exam_koei.png"
+        }
+      ],
+      "town_map": {
+        "bg": "res://assets/bg_quanzhou_citong.png",
+        "hint": "刺桐城里，番货与桐油混在一起——点一处，走进去。",
+        "fallback_mode": "cards",
+        "hotspots": [
+          {
+            "facility_id": "quanzhou_wharf",
+            "label": "码头",
+            "scene_id": "quanzhou_wharf",
+            "rect": [0.04, 0.58, 0.18, 0.16],
+            "hint": "验引与潮汛"
+          },
+          {
+            "facility_id": "city_tavern",
+            "label": "酒馆",
+            "scene_id": "city_tavern",
+            "rect": [0.52, 0.42, 0.16, 0.14],
+            "hint": "水手与商旅"
+          },
+          {
+            "facility_id": "city_market",
+            "label": "市场",
+            "scene_id": "city_market",
+            "rect": [0.34, 0.52, 0.16, 0.13],
+            "hint": "买卖货物"
+          },
+          {
+            "facility_id": "city_inn",
+            "label": "旅馆",
+            "scene_id": "city_inn",
+            "rect": [0.68, 0.28, 0.14, 0.12],
+            "hint": "休整补给"
+          },
+          {
+            "facility_id": "city_shipyard",
+            "label": "船坞",
+            "scene_id": "city_shipyard",
+            "rect": [0.12, 0.38, 0.16, 0.13],
+            "hint": "寻林伯渊"
+          },
+          {
+            "facility_id": "city_yamen",
+            "label": "衙门",
+            "scene_id": "city_yamen",
+            "rect": [0.22, 0.18, 0.14, 0.12],
+            "hint": "市舶验引"
+          },
+          {
+            "facility_id": "city_guild",
+            "label": "工会",
+            "scene_id": "city_guild",
+            "rect": [0.42, 0.22, 0.14, 0.12],
+            "hint": "打听航线与传闻"
+          },
+          {
+            "facility_id": "city_residence",
+            "label": "住宅",
+            "scene_id": "city_residence",
+            "rect": [0.72, 0.48, 0.13, 0.11],
+            "hint": "安身之处"
+          },
+          {
+            "facility_id": "city_exam",
+            "label": "学院",
+            "scene_id": "city_exam",
+            "rect": [0.58, 0.14, 0.13, 0.11],
+            "hint": "科举之路"
+          }
+        ]
+      },
+      "bg": "res://assets/bg_quanzhou_harbor_koei.png",
+      "choices": [
+        {
+          "label": "再赴临安",
+          "next": "chapter2_path_select",
+          "requires_story_flag": "linan_gate_inquiry",
+          "narration": "北风又起。你合上《春秋》，北上。",
+          "choice_style": "travel"
+        },
+        {
+          "label": "北上临安",
+          "next": "chapter2_start",
+          "requires_story_flag": "chapter1_complete",
+          "choice_style": "travel"
+        }
+      ],
+      "intro": "刺桐港门开着，风从四方来。番货、桐油、血腥缠在一处——这里不认籍贯，只认货引与刀子。"
+    },
+    {
+      "id": "quanzhou_wharf",
+      "chapter": "chapter_1",
+      "title": "刺桐码头",
+      "location": "quanzhou",
+      "body": "验引棚前排着长队。番商、汉人、昆仑奴水手挤在一处，各说各话，空气里弥漫着汗臭与香料味。",
+      "investigations": [
+        {
+          "label": "旁观验引",
+          "text": "小吏按箱计税，船主纳钱画圈。你认出这就是《春秋》夹页里警告的「夜验」之地。",
+          "once_flag": "saw_customs_up_close",
+          "requires_story_flag": "lin_dock_hint",
+          "effects": {
+            "pu_attention": 1,
+            "story_flag": "saw_customs_up_close"
+          }
+        },
+        {
+          "label": "寻找碎瓷痕迹",
+          "text": "青石缝里嵌着瓷粉。货主已被带走，只剩血渍与盐粒。蒲家洗地，向来很快。",
+          "once_flag": "saw_smuggling",
+          "unless_story_flag": "saw_smuggling",
+          "effects": {
+            "pu_attention": 2,
+            "story_flag": "saw_smuggling"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
           "next": "port_quanzhou"
         }
       ],
-      "bg": "res://assets/bg_quanzhou_harbor.jpg"
-    },
-    {
-      "id": "prologue_tabletop",
-      "type": "investigation",
-      "location": "tavern",
-      "title": "海口酒棚",
-      "body": "一张油腻的八仙桌，桌上散落着几件引人注目的物件。你必须摸清现在的局势才能出海。",
-      "investigations": [
-        {
-          "label": "边防策草稿",
-          "text": "【边防策草稿】大宋水军疲软，北方战事吃紧。",
-          "effects": {
-            "fame": 5
-          }
-        },
-        {
-          "label": "沾着盐渍的货引",
-          "text": "【沾着盐渍的货引】蒲氏商帮最近正在严查走私，必须小心。",
-          "effects": {
-            "pu_attention": 5
-          }
-        },
-        {
-          "label": "玉湖陈氏族札",
-          "text": "【玉湖陈氏族札】宗族长辈敦促你参加科举，不要出海。",
-          "effects": {
-            "money": -50
-          }
-        }
-      ],
-      "choices": [
-        {
-          "label": "随阿那去泉州（解锁海路）",
-          "next": "port_quanzhou",
-          "effects": {
-            "pu_attention": 10
-          }
-        }
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "city_yamen",
-      "type": "investigation",
-      "title": "市舶司 / 衙门",
-      "body": "官府重地。几名差役正在慵懒地打瞌睡。",
-      "npc_encounter": "customs_official",
-      "choices": [
-        {
-          "label": "【正规】市舶司验引 (安全放行)",
-          "special_action": "customs_permit"
-        },
-        {
-          "label": "【走私】塞钱走暗关免验 (贿赂 50 钱)",
-          "special_action": "bribe_customs"
-        },
-        {
-          "label": "离开",
-          "next": "last_port"
-        }
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
-    },
-    {
-      "id": "city_shipyard",
-      "type": "investigation",
-      "title": "船屋",
-      "body": "船坞里散发着桐油与海水的味道。这是修补海船、补充水手的地方。",
-      "choices": [
-        {
-          "label": "招募水手 (10钱/人)",
-          "special_action": "recruit_crew"
-        },
-        {
-          "label": "补充水粮 (20钱/满载)",
-          "special_action": "supply_ship"
-        },
-        {
-          "label": "★ 扬帆起航 (进入航海模式)",
-          "special_action": "sail_world_map"
-        },
-        {
-          "label": "离开",
-          "next": "last_port"
-        }
-      ],
-      "bg": "res://assets/bg_sea_route.jpg"
+      "bg": "res://assets/bg_quanzhou_port.png"
     },
     {
       "id": "city_market",
-      "type": "investigation",
-      "title": "市场牙行",
-      "body": "蕃坊牙行里挤着各色商人，没有人说官话，只用手势、算筹和一把碎银落地就要捡的速度说话。",
+      "chapter": "chapter_1",
+      "title": "市场",
+      "location": "quanzhou",
+      "body": "市集尽头有人兜售「顺风符」，声称贴于帆上可避黑水沟。符纸下却渗出私盐粉的白末。",
       "choices": [
         {
           "label": "离开",
-          "next": "last_port"
+          "next": "port_quanzhou"
         }
       ],
-      "bg": "res://assets/bg_sea_route.jpg"
+      "bg": "res://assets/bg_city_market_street.png",
+      "investigations": [
+        {
+          "label": "揭穿私盐符",
+          "text": "摊贩拔刀便逃，市役追出三条街。人群反而给你让出路，眼神里既有敬畏，也有灾祸临头的躲闪。",
+          "effects": {
+            "fame": 4,
+            "pu_attention": 1,
+            "story_flag": "exposed_salt_scam"
+          }
+        }
+      ]
     },
     {
-      "id": "quanzhou_tavern",
-      "type": "investigation",
-      "title": "酒馆 (泉州)",
-      "body": "这里充斥着劣质酒水的味道和水手们的大声喧哗。",
-      "npc_encounter": "merchant_lin",
-      "choices": [{"label": "离开", "next": "last_port"}],
-      "bg": "res://assets/bg_sea_route.jpg"
+      "id": "city_shipyard",
+      "chapter": "chapter_1",
+      "title": "船坞",
+      "location": "quanzhou",
+      "body": "船坞里两拨人抢一条旧福船，刀都亮出来了。工头扯着嗓子喊：「蒲氏要，林伯渊也要！」",
+      "choices": [
+        {
+          "label": "前往东坞三号泊位找林伯渊",
+          "next": "scene03_lin_ship",
+          "requires_story_flag": "spring_autumn_scroll",
+          "narration": "你穿过嘈杂的船坞，走向东坞。那艘旧福船，便是归宿。",
+          "unless_story_flag": "met_lin_boyuan"
+        },
+        {
+          "label": "离开",
+          "next": "port_quanzhou"
+        }
+      ],
+      "bg": "res://assets/bg_shipyard.jpg",
+      "investigations": [
+        {
+          "label": "打听争船缘由",
+          "text": "此船昨夜自黑水沟漂回，舱底有烧焦的朝廷旗。谁碰这船，就是跟谁结仇。",
+          "effects": {
+            "story_flag": "ghost_ship_rumor"
+          }
+        }
+      ]
     },
     {
-      "id": "ryukyu_tavern",
-      "type": "investigation",
-      "title": "酒馆 (琉球)",
-      "body": "这里充斥着劣质酒水的味道和水手们的大声喧哗。",
-      "npc_encounter": "pilot_ana",
-      "choices": [{"label": "离开", "next": "last_port"}],
-      "bg": "res://assets/bg_sea_route.jpg"
+      "id": "city_tavern",
+      "chapter": "chapter_1",
+      "title": "酒馆",
+      "location": "quanzhou",
+      "body": "酒馆里摔杯声不断。一名断指水手正赌「黑水沟又吞船」，庄家笑得见牙不见眼，手里骰子像拨浪鼓。",
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_quanzhou"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_arab_market.png",
+      "investigations": [
+        {
+          "label": "买下黑水沟情报",
+          "text": "水手压低嗓子，酒气喷在你脸上：「上月沉的三条船，两条是蒲氏自己凿的。第三条……才是真被海吞了的。」",
+          "once_flag": "black_water_rumor",
+          "effects": {
+            "money": -20,
+            "story_flag": "black_water_rumor"
+          }
+        },
+        {
+          "label": "旁听临安物价",
+          "text": "商人说临安米价是泉州两倍，太学膳银却发不下来。「读书人在那京城，连狗都不如。」",
+          "once_flag": "linan_price_rumor",
+          "effects": {
+            "story_flag": "linan_price_rumor"
+          }
+        },
+        {
+          "label": "出示凯达格兰贝壳",
+          "text": "断指水手愣住，低声道：「北岸有人出五十贯收这种贝壳——别说是我说的。」",
+          "requires_item": "ketagalan_shell",
+          "once_flag": "ketagalan_shell_shown",
+          "effects": {
+            "money": 50,
+            "fame": 2,
+            "story_flag": "ketagalan_route_hint"
+          }
+        },
+        {
+          "label": "打听贾府临安铺子",
+          "text": "酒客道：「河西绸缎铺，门帘绣暗记。城隍庙见过脸的人，才进得去。」",
+          "once_flag": "linan_jia_hint_tavern",
+          "requires_story_flag": "jia_faction_met",
+          "effects": {
+            "story_flag": "linan_jia_hint_tavern"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quanzhou_smuggler_wharf",
+      "chapter": "chapter_1",
+      "title": "走私水沟",
+      "location": "quanzhou",
+      "objective": "正门闭了，只能走暗路",
+      "body": "刺桐正门挂着蒲氏旗号，水师战船在湾口来回。你顺着黑水沟摸进一处野码头，潮臭里夹着桐油与血。\n\n【掮客】：「价要涨五成。蒲帅查得紧，走这一趟，命也卖给你。」",
+      "choices": [
+        {
+          "label": "认下暗路，摸进城关",
+          "next": "port_quanzhou",
+          "effects": {
+            "story_flag": "pu_smuggler_route",
+            "fame": -1
+          },
+          "narration": "你踩着烂木板进了城。没人问货引，只问你能出多少血本。"
+        },
+        {
+          "label": "掉头出海",
+          "next": "world_map",
+          "choice_style": "sail"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_harbor_koei.png"
+    },
+    {
+      "id": "city_yamen",
+      "chapter": "chapter_1",
+      "title": "衙门",
+      "location": "quanzhou",
+      "body": "衙门门前押着一名商人，箱子撬开，全是没验的犀角。围观人群里有人喝彩，有人吐唾沫，各怀鬼胎。",
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_quanzhou"
+        }
+      ],
+      "bg": "res://assets/bg_customs_room.jpg",
+      "investigations": [
+        {
+          "label": "旁观审讯",
+          "text": "商人哭喊是「蒲氏逼货」。小吏只重复一句，像没听见：「三十税一，照例。」",
+          "once_flag": "saw_pu_arrest",
+          "effects": {
+            "pu_attention": 2,
+            "story_flag": "saw_pu_arrest"
+          }
+        }
+      ]
+    },
+    {
+      "id": "city_guild",
+      "chapter": "chapter_1",
+      "title": "工会",
+      "location": "quanzhou",
+      "body": "工会墙上新贴悬赏：寻回澎湖失踪的验引册。赏银五十贯，落款市舶司——底下有人用炭笔添了四个字，字迹潦草如鬼画符：「黑水沟沉」。",
+      "choices": [
+        {
+          "label": "接下寻册悬赏",
+          "next": "port_quanzhou",
+          "unless_story_flag": "guild_bounty_taken",
+          "effects": {
+            "fame": 3,
+            "story_flag": "guild_bounty_taken"
+          },
+          "narration": "登记人提醒你：「册子在海上，不在陆上。别拿命换纸。」"
+        },
+        {
+          "label": "离开",
+          "next": "port_quanzhou"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_office.jpg",
+      "investigations": [
+        {
+          "label": "查看航线备忘",
+          "text": "墨迹旁有人用针尖扎了孔：澎湖—黑水沟—北岸，勿信旧标。这是拿命换来的教训。",
+          "once_flag": "guild_route_hint",
+          "effects": {
+            "story_flag": "guild_route_hint"
+          }
+        },
+        {
+          "label": "打听临安河埠旧部",
+          "text": "工会老客道：「林伯渊在临安有只手，藏在运河埠头。带他的铜钱去。」",
+          "once_flag": "linan_lin_hint_guild",
+          "requires_story_flag": "met_lin_boyuan",
+          "effects": {
+            "story_flag": "linan_lin_hint_guild"
+          }
+        }
+      ]
+    },
+    {
+      "id": "city_inn",
+      "chapter": "chapter_1",
+      "title": "旅馆",
+      "location": "quanzhou",
+      "body": "客栈楼梯吱呀作响。北上明州的水手在厅里赌风向，输了的拿刀鞘敲桌，骂骂咧咧。",
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_quanzhou"
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_residence.png",
+      "investigations": [
+        {
+          "label": "租间上房过夜",
+          "text": "你睡到三更，被码头号子声惊醒——有人在连夜卸货。那声音，像在走私军械。",
+          "once_flag": "quanzhou_inn_rest",
+          "effects": {
+            "money": -45,
+            "water": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": "city_residence",
+      "chapter": "chapter_1",
+      "title": "住宅",
+      "location": "quanzhou",
+      "body": "租住屋舍窄而潮。墙皮里夹着上一任房客没拿走的货引复印件，墨迹模糊，像被眼泪泡过。",
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_quanzhou"
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_residence.png",
+      "investigations": [
+        {
+          "label": "翻看旧货引复印件",
+          "text": "复印件盖着市舶司半枚印。有人用炭笔圈了「夜间验引」四字。这是个死人的遗物。",
+          "once_flag": "found_permit_copy",
+          "effects": {
+            "story_flag": "found_permit_copy",
+            "pu_attention": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "city_exam",
+      "chapter": "chapter_1",
+      "title": "学院",
+      "location": "quanzhou",
+      "body": "地方学舍挂着褪色的太学榜文。学子围看新贴告示：临安招考，须备三倍路费。科举这条路，走到头是金榜，还是绝路？",
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_quanzhou"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg",
+      "investigations": [
+        {
+          "label": "抄录招考条目",
+          "text": "条目里夹着一行小字：「贾府门生优先。」你默默合上纸页，手里捏出了汗。",
+          "once_flag": "copied_exam_notice",
+          "requires_story_flag": "jia_faction_met",
+          "effects": {
+            "story_flag": "saw_jia_exam_privilege",
+            "fame": -1
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter2_start",
+      "chapter": "chapter_2",
+      "title": "第二章：临安在望",
+      "location": "linan",
+      "objective": "抵达临安城外，择路入城",
+      "body": "明州换船，数日水路。晨雾里，临安城墙像一口倒扣的铁锅，压得人喘不过气。\n\n　　城门口贴着太学招考榜文，旁边却贴着海寇悬赏——同一张纸，两个天下。\n\n【守门卒】：「泉州来的？蒲帅最近正查这个。」\n\n　　他打量着你的包袱，眼神像在估价。",
+      "choices": [
+        {
+          "label": "先回刺桐港整备",
+          "next": "port_quanzhou"
+        },
+        {
+          "label": "硬闯城门",
+          "next": "chapter2_linan_blocked",
+          "effects": {
+            "pu_attention": 8,
+            "fame": -5
+          },
+          "narration": "卒子把你轰到一边：「榜文上没你的名字，滚回去练字。」"
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "chapter2_linan_blocked",
+      "chapter": "chapter_2",
+      "title": "城门挡回",
+      "location": "linan",
+      "objective": "择一条入城门路",
+      "body": "卒子把你挡在瓮城外。榜文上没有你的名字——庆元党禁之下，连报名都要人作保。\n\n　　你攥着林伯渊给的铜钱，反面「勿上岸先」硌得手心发疼。京城这口铁锅，盖得住百万人口，盖不住一个无名举子。",
+      "choices": [
+        {
+          "label": "在城外打听入城门路",
+          "next": "chapter2_path_select",
+          "unless_story_flag": "linan_gate_inquiry",
+          "effects": {
+            "story_flag": "linan_gate_inquiry",
+            "fame": 1,
+            "money": -10
+          },
+          "narration": "脚夫只说：「太学门生要贾府作保。没保人，钱再多也进不去。」"
+        },
+        {
+          "label": "打听过了，试一条路",
+          "next": "chapter2_path_select",
+          "requires_story_flag": "linan_gate_inquiry"
+        },
+        {
+          "label": "折回刺桐港整备",
+          "next": "port_quanzhou",
+          "effects": {
+            "story_flag": "linan_gate_turned_back"
+          },
+          "narration": "你在驿馆门口歇了一夜，天明便南下。风里带着运河的腐臭。"
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "chapter2_path_select",
+      "chapter": "chapter_2",
+      "title": "瓮城之外",
+      "location": "linan",
+      "objective": "三条门路，择一而入",
+      "body": "{jia_blocked_preface}临安瓮城外，运河水腥气与炊烟搅在一处。城墙上巡卒走动，鼓声不紧不慢，像在数你的日子。\n\n　　太学在城里，门在别处。你摸了摸怀里——碎银、铜钱、油布书，总有一样能换一条路。",
+      "choices": [
+        {
+          "label": "寻贾府在临安的铺子（作保入城）",
+          "next": "chapter2_jia_approach",
+          "requires_story_flag": "jia_faction_met",
+          "narration": "城隍庙那少年的脸，你还认得。"
+        },
+        {
+          "label": "按铜钱反面的地址找林伯渊旧部",
+          "next": "chapter2_lin_contact",
+          "requires_story_flag": "met_lin_boyuan",
+          "narration": "「勿上岸先」——先找上岸的人。"
+        },
+        {
+          "label": "凭《春秋》寻太学旧门生",
+          "next": "chapter2_scholar_seek",
+          "requires_story_flag": "spring_autumn_scroll",
+          "unless_story_flag": "linan_entry_scholar",
+          "narration": "党禁之下，敢收这本书的人，比敢收你的人还少。"
+        },
+        {
+          "label": "回刺桐港，再备一条路",
+          "next": "port_quanzhou",
+          "narration": "海比城诚实。你转身时，城墙上的影子又长了半寸。"
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "chapter2_jia_approach",
+      "chapter": "chapter_2",
+      "title": "贾府铺子",
+      "location": "linan",
+      "time": "午后",
+      "objective": "贾府作保",
+      "body": "城外河西有家绸缎铺，门帘绣着贾府暗记。伙计打量你许久，才放你入内。\n\n【贾府管事】：「兴化来的读书人？城隍庙见过。」\n\n　　他指尖敲着柜台，像敲你的骨头。\n\n【贾府管事】：「太学保书，贾府能写。代价也简单——替贾府在刺桐港盯一个人：林伯渊。」",
+      "investigations": [
+        {
+          "label": "出示城隍庙碎银",
+          "text": "管事眼角一挑：「捡得倒快。贾府的银子，从来不白给。」",
+          "requires_story_flag": "jia_silver_taken",
+          "once_flag": "jia_linan_silver_shown",
+          "effects": {
+            "fame": -1,
+            "story_flag": "jia_linan_silver_shown"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "答应作保，接下眼线差事",
+          "next": "chapter2_jia_deal",
+          "effects": {
+            "story_flag": "jia_spy_agreed",
+            "pu_attention": 3,
+            "fame": -2
+          }
+        },
+        {
+          "label": "只求保书，不答应盯人",
+          "next": "chapter2_jia_deal",
+          "effects": {
+            "story_flag": "jia_spy_refused",
+            "fame": 1
+          },
+          "narration": "管事冷笑：「读书人，还价？那就多掏三十贯。」"
+        },
+        {
+          "label": "掉头离开",
+          "next": "chapter2_path_select"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_office.jpg"
+    },
+    {
+      "id": "chapter2_jia_deal",
+      "chapter": "chapter_2",
+      "title": "保书与价码",
+      "location": "linan",
+      "objective": "付出代价入城",
+      "body": "管事推来一纸保书，墨迹未干。窗外运河上漕船过，水声像无数牙齿在磨。\n\n【贾府管事】：「明日卯时，西水门有人接你。进了城，太学榜文上才会有你的名字。」\n\n【贾府管事】：「记住——在临安，贾府让你活，也能让你死。」",
+      "choices": [
+        {
+          "label": "交钱，按约入城",
+          "next": "chapter2_jia_enter",
+          "effects": {
+            "money": -30,
+            "story_flag": "jia_brokerage_paid"
+          },
+          "unless_story_flag": "jia_spy_agreed"
+        },
+        {
+          "label": "交钱，按约入城（含眼线差事）",
+          "next": "chapter2_jia_enter",
+          "effects": {
+            "money": -10,
+            "story_flag": "jia_brokerage_paid"
+          },
+          "requires_story_flag": "jia_spy_agreed"
+        },
+        {
+          "label": "撕毁保书，另寻门路",
+          "next": "chapter2_path_select",
+          "effects": {
+            "fame": 2,
+            "pu_attention": 2
+          },
+          "narration": "纸屑落进运河，像一群白蛾。管事没追，只在你背后说了句：「你会回来的。」"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_office.jpg"
+    },
+    {
+      "id": "chapter2_jia_enter",
+      "chapter": "chapter_2",
+      "title": "西水门",
+      "location": "linan",
+      "time": "翌日卯时",
+      "objective": "贾府作保入城",
+      "body": "卯时雾浓。西水门侧门开了一道缝，贾府家丁接过保书，卒子只瞥一眼便挥手。\n\n　　城门在身后合上，像一口棺材盖。城里米价贵得吓人，太学方向的旗杆却矮得可笑。\n\n【家丁】：「进去后别乱说话。临安的风，比刺桐硬。」",
+      "choices": [
+        {
+          "label": "入城关",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "linan_entered",
+            "story_flag2": {
+              "linan_entry_jia": true,
+              "chapter2_route": "jia"
+            }
+          }
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png",
+      "investigations": [
+        {
+          "label": "领取贾府特供文房",
+          "text": "砚台沉手，墨锭带香。管事道：「考场用这套。抄错了字，贾府也保不住你。」",
+          "once_flag": "jia_taixue_supplies",
+          "effects": {
+            "story_flag": "jia_taixue_supplies",
+            "item_acquired": "jia_taixue_inkstone",
+            "fame": -1
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter2_lin_contact",
+      "chapter": "chapter_2",
+      "title": "河埠旧部",
+      "location": "linan",
+      "time": "黄昏",
+      "objective": "林伯渊旧识引路",
+      "body": "铜钱反面的地址，指向运河埠头一间破茶棚。棚里坐着个断眉老汉，正用桐油缝帆。\n\n【断眉老汉】：「林老大的铜钱？」\n\n　　他抬眼看你，目光像验货的秤砣。\n\n【断眉老汉】：「入城容易，活命难。今夜有一批书要进城——没货引，只有命引。你扛不扛？」",
+      "investigations": [
+        {
+          "label": "提起澎湖与黑水沟",
+          "text": "老汉手停了一停：「黑水沟吞船，不吞讲义。林老大说过，你会来。」",
+          "once_flag": "linan_lin_blackwater_mentioned",
+          "effects": {
+            "linboyuan_relationship": 1,
+            "story_flag": "linan_lin_blackwater_mentioned"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "扛。今夜跟你走",
+          "next": "chapter2_lin_run",
+          "effects": {
+            "story_flag": "linan_smuggle_agreed",
+            "fame": -1
+          }
+        },
+        {
+          "label": "不扛。只要入城门路",
+          "next": "chapter2_lin_run",
+          "effects": {
+            "story_flag": "linan_smuggle_refused",
+            "money": -20
+          },
+          "narration": "老汉吐口烟：「那就多掏二十贯买个安静。别问安静是什么。」"
+        },
+        {
+          "label": "回瓮城另谋",
+          "next": "chapter2_path_select"
+        }
+      ],
+      "bg": "res://assets/bg_departure.png"
+    },
+    {
+      "id": "chapter2_lin_run",
+      "chapter": "chapter_2",
+      "title": "夜运无引之书",
+      "location": "linan",
+      "time": "当夜",
+      "objective": "走私书卷入城",
+      "body": "子夜，小舟贴岸滑行。箱里是《春秋》抄本与太学讲义，封条全假。远处巡卒火把移动，像水面漂着的鬼火。\n\n【断眉老汉】：「党禁之下，书比盐更犯忌。抓住，剁的是手，不是指头。」\n\n　　风硬，水冷。你忽然明白林伯渊为何说：海上靠缝补，不靠嘴。",
+      "choices": [
+        {
+          "label": "把箱子扛上肩，低头快走",
+          "next": "chapter2_lin_enter",
+          "effects": {
+            "pu_attention": 2,
+            "story_flag": "linan_night_run",
+            "item_acquired": "unlicensed_sea_chart",
+            "story_flag2": {
+              "linan_carrying_chart": true
+            }
+          }
+        },
+        {
+          "label": "故意落箱，引开巡卒",
+          "next": "chapter2_lin_enter",
+          "effects": {
+            "fame": 3,
+            "pu_attention": 4,
+            "story_flag": "linan_night_run",
+            "item_acquired": "unlicensed_sea_chart",
+            "story_flag2": {
+              "linan_carrying_chart": true
+            }
+          },
+          "narration": "巡卒追向空箱。你扛着真的那本，从暗巷里擦身而过。"
+        }
+      ],
+      "bg": "res://assets/bg_penghu_night.png"
+    },
+    {
+      "id": "chapter2_lin_enter",
+      "chapter": "chapter_2",
+      "title": "水门夜入",
+      "location": "linan",
+      "time": "丑时",
+      "objective": "林伯渊旧部引路入城",
+      "body": "丑时，小水门开。没人查箱，只查脸。断眉老汉替你挡了卒子一眼，像挡一阵风。\n\n　　城里静得反常。太学方向的灯笼灭着——党禁之下，连灯都不敢亮。\n\n【断眉老汉】：「林老大说，书留着，人也要留着。进城了，别信榜文，信潮信。」",
+      "choices": [
+        {
+          "label": "入城关",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "linan_entered",
+            "story_flag2": {
+              "linan_entry_lin": true,
+              "chapter2_route": "lin"
+            }
+          }
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "chapter2_scholar_seek",
+      "chapter": "chapter_2",
+      "title": "义庄旧门生",
+      "location": "linan",
+      "time": "傍晚",
+      "objective": "党禁门生引路",
+      "body": "城外义庄旁有间破书院，门匾被漆糊住，只余「理学」二字隐约。院里老人在晾书，书页像吊死的蝴蝶。\n\n【老人】：「送《春秋》来的？」\n\n　　他并未伸手接，只盯着你的脸。\n\n【老人】：「庆元党禁，朱子门人不送葬，也不入场。你来，是想考功名，还是想给死人上香？」",
+      "investigations": [
+        {
+          "label": "提起兴化乡学先生",
+          "text": "老人沉默良久：「他还活着？那就好。活人比榜文难。」",
+          "requires_story_flag": "teacher_health_asked",
+          "once_flag": "linan_teacher_mentioned",
+          "effects": {
+            "fame": 2,
+            "story_flag": "linan_teacher_mentioned"
+          }
+        },
+        {
+          "label": "提起乡学党禁议论",
+          "text": "老人冷笑：「客栈里敢叹气的，到了门口就哑了。你倒还有声音。」",
+          "requires_story_flag": "heard_exam_gossip",
+          "once_flag": "linan_exam_gossip_mentioned",
+          "effects": {
+            "fame": 1,
+            "story_flag": "linan_exam_gossip_mentioned"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "为上香而来",
+          "next": "chapter2_scholar_vow",
+          "effects": {
+            "story_flag": "scholar_path_mourning"
+          }
+        },
+        {
+          "label": "为科考而来",
+          "next": "chapter2_scholar_vow",
+          "effects": {
+            "story_flag": "scholar_path_exam",
+            "fame": -1
+          },
+          "narration": "老人摇头：「考场要的是名字，不是良心。」"
+        },
+        {
+          "label": "离开",
+          "next": "chapter2_path_select"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "chapter2_scholar_vow",
+      "chapter": "chapter_2",
+      "title": "党禁之誓",
+      "location": "linan",
+      "objective": "抉择：背还是拒",
+      "body": "老人捧出三炷香，指向城里太学方向。\n\n【老人】：「入城之法有一条：明日送葬队伍要过西津门。你替朱子门人捧牌位，就能进。」\n\n【老人】：「但进了太学，考官要你写『斥伪学』。写得出口，才给名籍。」\n\n　　风过义庄，纸钱打着旋。你想起先生讲庆元党禁时，像被海雾浸透的声音。",
+      "choices": [
+        {
+          "label": "发誓：入城后仍护理学",
+          "next": "chapter2_scholar_enter",
+          "effects": {
+            "story_flag": "scholar_vow_protect",
+            "fame": 3,
+            "pu_attention": 2
+          }
+        },
+        {
+          "label": "发誓：先入场，再相机行事",
+          "next": "chapter2_scholar_enter",
+          "effects": {
+            "story_flag": "scholar_vow_pragmatic",
+            "fame": 0
+          }
+        },
+        {
+          "label": "拒绝写斥伪学，另谋",
+          "next": "chapter2_path_select",
+          "effects": {
+            "fame": 4,
+            "story_flag": "scholar_vow_refused"
+          },
+          "narration": "老人收香：「骨气贵。临安更贵。」"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "chapter2_scholar_enter",
+      "chapter": "chapter_2",
+      "title": "送葬入城",
+      "location": "linan",
+      "time": "翌日",
+      "objective": "党禁门生引路入城",
+      "body": "送葬队伍很短，短得像一场谎言。牌位不写名，只写「朱子门人」。卒子让路，不是出于敬意，是怕沾晦气。\n\n　　进城后，太学牌坊在雾中若隐若现。门口贴着告示：斥伪学，立新制。\n\n【老人】：「名籍我给你。考场上写什么，是你自己的命。」",
+      "choices": [
+        {
+          "label": "入城关",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "linan_entered",
+            "story_flag2": {
+              "linan_entry_scholar": true,
+              "chapter2_route": "scholar"
+            }
+          }
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "port_linan",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "linan",
+      "title": "临安 · 城关",
+      "body": "",
+      "facilities": [
+        {
+          "id": "linan_canal",
+          "title": "运河埠",
+          "subtitle": "漕船与消息",
+          "icon": "res://assets/icon_shipyard_koei.png"
+        },
+        {
+          "id": "city_market",
+          "title": "市集",
+          "subtitle": "米价如刀",
+          "icon": "res://assets/icon_market_koei.png"
+        },
+        {
+          "id": "city_inn",
+          "title": "客栈",
+          "subtitle": "歇脚",
+          "icon": "res://assets/icon_inn_koei.png"
+        },
+        {
+          "id": "city_tavern",
+          "title": "茶肆",
+          "subtitle": "风声",
+          "icon": "res://assets/icon_tavern_koei.png"
+        },
+        {
+          "id": "linan_taixue",
+          "title": "太学",
+          "subtitle": "名籍与考场",
+          "icon": "res://assets/icon_exam_koei.png",
+          "requires_story_flag": "linan_entered"
+        }
+      ],
+      "choices": [
+        {
+          "label": "南下刺桐港",
+          "next": "port_quanzhou",
+          "narration": "城门在身后合上。你忽然想起刺桐的海盐味——那味道至少诚实。",
+          "choice_style": "travel"
+        }
+      ],
+      "intro": "临安城关，运河穿城如肠。城里米贵，人心更贵。太学在望，榜文在喉。",
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "linan_canal",
+      "chapter": "chapter_2",
+      "title": "运河埠",
+      "location": "linan",
+      "body": "漕船排队过闸，船工骂娘，官吏拨算盘。运河的水，把江南的米与江北的血运在一处。",
+      "investigations": [
+        {
+          "label": "听漕工议论蒲帅",
+          "text": "漕工啐了一口：「蒲家查船，查到临安城，查到皇帝枕边。」众人噤声。",
+          "once_flag": "linan_canal_pu_rumor",
+          "effects": {
+            "story_flag": "linan_canal_pu_rumor",
+            "pu_attention": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_linan"
+        }
+      ],
+      "bg": "res://assets/bg_departure.png"
+    },
+    {
+      "id": "linan_market",
+      "chapter": "chapter_2",
+      "title": "临安市集",
+      "location": "linan",
+      "body": "{pu_shop_warning}米价牌每日一换，换得比脸还快。临安米价是刺桐两倍——第一章酒馆里听来的话，如今砸在舌头上。{market_gossip}",
+      "investigations": [
+        {
+          "label": "打听太学膳银",
+          "text": "摊主冷笑：「膳银？太学里有人拿俸禄，有人拿脸面。你算哪种？」",
+          "once_flag": "linan_market_taixue_rumor",
+          "effects": {
+            "story_flag": "linan_market_taixue_rumor"
+          }
+        },
+        {
+          "label": "买一袋官米路上吃",
+          "text": "米价是刺桐两倍。掌柜仍多抓了一把：「读书人，别饿死在校门口。」",
+          "once_flag": "linan_bought_food",
+          "effects": {
+            "money": -12,
+            "food": 10
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_linan"
+        }
+      ],
+      "bg": "res://assets/bg_city_market_street.png"
+    },
+    {
+      "id": "linan_inn",
+      "chapter": "chapter_2",
+      "title": "临安客栈",
+      "location": "linan",
+      "body": "客栈里住着赴考举子，有人磨刀，有人磨墨。掌柜道：「住店一百文，热水另算。临安价钱，别拿刺桐比。」",
+      "investigations": [
+        {
+          "label": "租间上房过夜",
+          "text": "三更，隔壁有人在背「斥伪学」范文，背得机械，像念经。",
+          "once_flag": "linan_inn_rest",
+          "effects": {
+            "money": -90,
+            "water": 10
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_linan"
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_residence.png"
+    },
+    {
+      "id": "linan_tavern",
+      "chapter": "chapter_2",
+      "title": "城关茶肆",
+      "location": "linan",
+      "body": "茶肆里论战与论价并行。有人赌太学榜，有人赌蒲氏何时倒。",
+      "investigations": [
+        {
+          "label": "旁听贾府风声",
+          "text": "茶客压低声音：「贾府在临安的手，比市舶司还长。」",
+          "once_flag": "linan_tavern_jia_rumor",
+          "requires_story_flag": "linan_entry_jia",
+          "effects": {
+            "story_flag": "linan_tavern_jia_rumor"
+          }
+        },
+        {
+          "label": "请一碗官茶坐着听",
+          "text": "茶客赌太学榜，也赌蒲氏何时倒。没人提海——临安只有漕，没有潮。",
+          "once_flag": "linan_tea_listened",
+          "effects": {
+            "money": -8,
+            "story_flag": "linan_tavern_gossip"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_linan"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_arab_market.png"
+    },
+    {
+      "id": "linan_taixue",
+      "chapter": "chapter_2",
+      "title": "太学门外",
+      "location": "linan",
+      "objective": "斥伪学考场",
+      "body": "太学牌坊下，新贴告示：招考名籍已录。你的名字在末行{taixue_name_suffix}，小得像一粒盐。\n\n【门吏】：「进场先写『斥伪学』一篇{taixue_exam_suffix}。写不出，名籍作废。」\n\n　　风里带着运河腥气。你想起黑水沟、澎湖、刺桐港——海放你进来，城却要你交稿{taixue_sea_suffix}。",
+      "choices": [
+        {
+          "label": "入考场",
+          "next": "linan_taixue_exam_jia",
+          "requires_story_flag": "linan_entry_jia",
+          "unless_story_flag": "chapter2_exam_done"
+        },
+        {
+          "label": "入考场",
+          "next": "linan_taixue_exam_lin",
+          "requires_story_flag": "linan_entry_lin",
+          "unless_story_flag": "chapter2_exam_done"
+        },
+        {
+          "label": "入考场",
+          "next": "linan_taixue_exam_scholar",
+          "requires_story_flag": "linan_entry_scholar",
+          "unless_story_flag": "chapter2_exam_done"
+        },
+        {
+          "label": "暂离，回城关整备",
+          "next": "port_linan",
+          "unless_story_flag": "chapter2_exam_done",
+          "effects": {
+            "story_flag": "chapter2_taixue_seen"
+          }
+        },
+        {
+          "label": "回城关",
+          "next": "port_linan",
+          "requires_story_flag": "chapter2_exam_done"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "linan_taixue_exam_jia",
+      "chapter": "chapter_2",
+      "title": "太学考场 · 尘埃落定",
+      "location": "linan",
+      "objective": "贾府线考场抉择",
+      "body": "考场肃穆，笔墨摩擦声如春蚕食叶。贾府随从在你桌底塞进一张纸条，上是写好的「斥伪学」策论，下压一枚银豆。\n\n【贾府随从】：（唇语）「抄。顺便看斜对面那个姓赵的写了什么，记下来。」",
+      "investigations": [
+        {
+          "label": "看斜对面的赵学子",
+          "text": "他满头大汗，笔下写的全是朱子旧论，字字泣血。若被贾府知道，必死无疑。",
+          "once_flag": "saw_zhao_student",
+          "effects": {
+            "story_flag": "saw_zhao_student"
+          }
+        },
+        {
+          "label": "摸一摸贾府特供砚台",
+          "text": "砚台温润。你忽然明白那三十贯买的不是墨，是一张入场券。",
+          "requires_story_flag": "jia_taixue_supplies",
+          "once_flag": "jia_inkstone_noted",
+          "effects": {
+            "story_flag": "jia_inkstone_noted"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "照抄范文，并交出赵学子底细",
+          "next": "chapter2_end",
+          "requires_story_flag": "saw_zhao_student",
+          "effects": {
+            "jia_relationship": 10,
+            "fame": -10,
+            "money": 50,
+            "story_flag": "jia_spy_complete",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "jia_black"
+            }
+          },
+          "narration": "你用赵学子的血，染红了贾府递来的顶戴。太学的门，为你敞开了。"
+        },
+        {
+          "label": "照抄范文，但装作没看清赵学子",
+          "next": "chapter2_end",
+          "effects": {
+            "jia_relationship": -2,
+            "money": 20,
+            "story_flag": "jia_exam_pass",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "jia_gray"
+            }
+          },
+          "narration": "随从冷哼一声，夺过银豆。但你保住了学籍，也保住了一条不那么黑的心。"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "linan_taixue_exam_lin",
+      "chapter": "chapter_2",
+      "title": "太学考场 · 查袱",
+      "location": "linan",
+      "objective": "林伯渊线考场抉择",
+      "body": "你混在太学考场末排，替人研墨换一口饭吃。蒲氏巡卒挨桌查袱，靴底沾着刺桐港的盐。\n\n【巡卒】：「包袱打开。无引之物，一律扣下。」\n\n　　你袖里藏着无引海图，折痕硌腕。炉膛里的火还没灭，像一只眼。",
+      "investigations": [
+        {
+          "label": "打量巡卒腰牌",
+          "text": "腰牌刻着蒲氏私印。临安太学，也有海上的眼睛。",
+          "once_flag": "linan_exam_pu_badge",
+          "effects": {
+            "pu_attention": 1,
+            "story_flag": "linan_exam_pu_badge"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "把海图塞进空包袱，引开巡卒",
+          "next": "chapter2_end",
+          "requires_item": "unlicensed_sea_chart",
+          "effects": {
+            "item_removed": "unlicensed_sea_chart",
+            "pu_attention": -4,
+            "fame": 1,
+            "story_flag": "sea_chart_sacrificed",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "lin_sacrifice"
+            }
+          },
+          "narration": "巡卒夺了假包袱追出去。你留住太学名额，也留住一条命——海图没了，路还在记忆里。"
+        },
+        {
+          "label": "把海图塞进炉膛烧毁",
+          "next": "chapter2_end",
+          "requires_item": "unlicensed_sea_chart",
+          "effects": {
+            "item_removed": "unlicensed_sea_chart",
+            "linboyuan_relationship": -8,
+            "pu_attention": -6,
+            "story_flag": "sea_chart_burned",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "lin_burn"
+            }
+          },
+          "narration": "纸灰卷起，像一小片黑水沟。林伯渊若知，怕要骂你胆小——可你太学座次，保住了。"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "linan_taixue_exam_scholar",
+      "chapter": "chapter_2",
+      "title": "太学考场 · 党禁",
+      "location": "linan",
+      "objective": "党禁线考场抉择",
+      "body": "考题正是《论庆元党禁之害》。你手里握着先生的《春秋》，批注密如蚁附。\n\n【考官】：（敲桌）「限时一炷香。斥伪学，立新制。写不出，名籍除。」\n\n　　窗外运河呜咽，像远处有人在送葬——短得像个谎言。",
+      "investigations": [
+        {
+          "label": "翻看《春秋》朱子批注",
+          "text": "批注里夹着一行小字：「礼义廉耻，不在榜上。」你指尖发烫。",
+          "once_flag": "scholar_exam_scroll_read",
+          "effects": {
+            "fame": 1,
+            "story_flag": "scholar_exam_scroll_read"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "慷慨陈词，痛斥党禁",
+          "next": "chapter2_end_exile",
+          "effects": {
+            "fame": 12,
+            "pu_attention": 10,
+            "story_flag": "scholar_exam_outspoken",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "scholar_exile"
+            }
+          },
+          "narration": "你落笔如刀。考官脸色铁青——名籍没你的份了，但朱子门人，或许多记你一个名字。"
+        },
+        {
+          "label": "阳奉阴违，写一篇四平八稳的废话",
+          "next": "chapter2_end",
+          "effects": {
+            "fame": -2,
+            "story_flag": "scholar_exam_pass",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "scholar_pragmatic",
+              "spring_autumn_hidden_note": true
+            }
+          },
+          "narration": "你把真话折进废话里。《春秋》批注在袖中发烫——像一枚还没冷的火。"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "chapter2_end",
+      "chapter": "chapter_2",
+      "title": "第二章 · 收束",
+      "location": "linan",
+      "objective": "太学落定，蒲氏将至",
+      "body": "散场时天色将暮。太学牌坊的灯笼亮起，照见榜末你的名字——小，却还在。\n\n　　运河上传来禁军哨声，紧了一下，又松。像有人在水面下换了一口气。\n\n【门吏】：（低声）「蒲帅的人，午后进了城。你若是聪明，今夜别走单巷。」\n\n　　风从城里来，没有海盐味，只有米价与墨香。第二章落在此处；蒲氏的反击，已在门外。",
+      "choices": [
+        {
+          "label": "回临安城关",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "chapter2_complete",
+            "chapter_unlock": "chapter3_pu_counter"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_port_sunset.png"
+    },
+    {
+      "id": "chapter2_end_exile",
+      "chapter": "chapter_2",
+      "title": "第二章 · 除名",
+      "location": "linan",
+      "objective": "流亡路线开启",
+      "body": "考官当场撕了你的卷子。名籍除，城门闭。\n\n　　太学里有人喝彩，有人低头。你走出牌坊时，身后没有脚步声——只有运河的水，替你把话咽下去。\n\n【老人】：（从人群外递来一只小包袱）「路在城外。海比城诚实。」\n\n　　你忽然想起刺桐港。蒲氏的旗号，或许已在来路上。",
+      "choices": [
+        {
+          "label": "出城，南下刺桐",
+          "next": "port_quanzhou",
+          "effects": {
+            "story_flag": "chapter2_complete",
+            "story_flag2": {
+              "chapter2_exile_route": true
+            },
+            "chapter_unlock": "chapter3_pu_counter",
+            "money": 30
+          },
+          "narration": "城门在身后合上。你成了太学弃子，却未必是死棋。"
+        }
+      ],
+      "bg": "res://assets/bg_departure.png"
     }
   ]
 }

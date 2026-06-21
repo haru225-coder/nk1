@@ -20,7 +20,7 @@ static func is_hostile(faction_id: String) -> bool:
 		
 	# 官军：根据玩家走私状态判定
 	if f_type == "government":
-		if GameState.pu_attention > 50 and not GameState.has_customs_permit:
+		if GameState.pu_attention >= 10 and not GameState.has_customs_permit:
 			return true
 			
 	# 商人：通常非敌对，未来可结合声望系统

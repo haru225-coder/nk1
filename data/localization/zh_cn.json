@@ -25,5 +25,24 @@
   
   "encounter.default.title": "航线相遇",
   "encounter.default.body": "对方默默航行，没有理会你。",
-  "choice.default.continue": "继续航行"
+  "choice.default.continue": "继续航行",
+
+  "intent.market_buy.success": "买入成功。",
+  "intent.market_sell.success": "卖出成功。",
+  "intent.payment.success": "已支付。",
+  "intent.combat.started": "战斗结束，舰队遭受损失。",
+  "intent.escape.success": "成功脱离，但船体与名声受损。",
+  "intent.inspection.cleared": "检查通过，准予放行。",
+  "intent.inspection.fined": "文书略有瑕疵，缴纳三十贯罚款后放行。",
+  "error.inspection.contraband": "【缉私】违禁品无从抵赖，巡防队下令扣押！",
+  "error.inspection.no_funds": "【罚款失败】凑不出三十贯，巡防队将你押回港内。",
+  "error.intent.duplicate": "【系统】该操作已执行，请勿重复提交。",
+  "error.payment.insufficient_funds": "【支付失败】铜钱不足。",
+  "error.market.transaction_failed": "【交易失败】余额不足或货舱已满。",
+  "error.market.missing_goods": "【交易失败】货舱中没有足够货物。",
+  "error.market.no_port": "【交易失败】未指定港口。",
+  "error.market.invalid_good": "【交易失败】无效商品。",
+  "error.market.invalid_amount": "【交易失败】无效数量。",
+  "error.market.invalid_price": "【交易失败】无法定价。",
+  "error.market.cargo_full": "【交易失败】货舱已满。"
 }

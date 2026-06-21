@@ -1,0 +1,33 @@
+{
+  "templates": {
+    "port": {
+      "facility_source": "scene_data.facilities",
+      "facility_filter": "facility_available",
+      "static_actions": [
+        {
+          "id": "log",
+          "type": "open_log",
+          "label": "日志",
+          "icon": "res://assets/icons_stat/icon_stat_location.png",
+          "always_visible": true
+        }
+      ],
+      "choice_source": "scene_data.choices",
+      "choice_filter": "choice_available"
+    },
+    "investigation": {
+      "static_actions": [
+        {
+          "id": "log",
+          "type": "open_log",
+          "label": "日志",
+          "icon": "res://assets/icons_stat/icon_stat_location.png",
+          "always_visible": true
+        }
+      ]
+    },
+    "title": {
+      "static_actions": []
+    }
+  }
+}

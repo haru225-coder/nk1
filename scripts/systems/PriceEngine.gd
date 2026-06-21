@@ -18,8 +18,6 @@ static func calculate_price(base_price: int, prod_mod: float, demand_mod: float,
 	if final_price < 1:
 		final_price = 1
 		
-	print("[PriceEngine] base=%d multiplier=%.2f final=%d" % [base_price, multiplier, final_price])
-		
 	return {
 		"base_price": base_price,
 		"multiplier": multiplier,

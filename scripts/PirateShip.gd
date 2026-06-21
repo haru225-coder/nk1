@@ -20,12 +20,12 @@ func _physics_process(delta: float) -> void:
 	if not is_instance_valid(target): return
 	if hull_hp <= 0: return
 	
-	var dist = position.distance_to(target.position)
+	var dist = global_position.distance_to(target.global_position)
 	if dist > 2500.0:
 		wake_particles.emitting = false
 		return # Too far, sleep
 	
-	var dir_to_target = (target.position - position).normalized()
+	var dir_to_target = (target.global_position - global_position).normalized()
 	var ship_dir = Vector2.UP.rotated(rotation)
 	
 	var angle_diff = ship_dir.angle_to(dir_to_target)
@@ -65,11 +65,13 @@ func _process_firing(delta: float, angle_diff: float, dist: float) -> void:
 		
 		for i in range(3):
 			var cb = cannonball_scene.instantiate()
-			cb.position = position + ship_dir * (i * 20 - 20) + side_dir * 30
+			cb.global_position = global_position + ship_dir * (i * 20 - 20) + side_dir * 30
 			var spread = randf_range(-0.1, 0.1)
 			cb.direction = side_dir.rotated(spread)
 			cb.shooter = self
-			get_parent().add_child(cb)
+			var parent := get_parent()
+			if is_instance_valid(parent):
+				parent.add_child(cb)
 
 func take_damage(amount: float) -> void:
 	hull_hp -= amount
@@ -84,23 +86,26 @@ func _explode() -> void:
 	var money_gain = randi_range(200, 800)
 	LedgerSystem.apply({"amount": money_gain, "source": "combat", "reason": "sink_pirate", "actor": "Player"})
 	
-	var ft = preload("res://scenes/FloatingText.tscn").instantiate()
+	var ft = ResourceManager.FloatingText.instantiate()
 	ft.text = "+%d 钱" % money_gain
 	# 豁免：动态效果，无法在.tres中预先定义
 	ft.modulate = Color(1, 0.9, 0.2)
-	ft.position = position
-	get_parent().call_deferred("add_child", ft)
+	ft.global_position = global_position
+	var parent := get_parent()
+	if is_instance_valid(parent):
+		parent.call_deferred("add_child", ft)
 	
 	var exp_scene = load("res://scenes/ImpactExplosion.tscn")
-	if exp_scene:
+	if exp_scene and is_instance_valid(parent):
 		var exp = exp_scene.instantiate()
-		exp.position = position
-		get_parent().call_deferred("add_child", exp)
+		exp.global_position = global_position
+		parent.call_deferred("add_child", exp)
 		
 	# Loot pinata
-	for i in range(5):
-		var crate = crate_scene.instantiate()
-		crate.position = position + Vector2(randf_range(-50, 50), randf_range(-50, 50))
-		get_parent().call_deferred("add_child", crate)
+	if is_instance_valid(parent):
+		for i in range(5):
+			var crate = crate_scene.instantiate()
+			crate.global_position = global_position + Vector2(randf_range(-50, 50), randf_range(-50, 50))
+			parent.call_deferred("add_child", crate)
 		
 	queue_free()

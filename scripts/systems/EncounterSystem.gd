@@ -19,19 +19,19 @@ static func resolve_encounter(fleet_id: String) -> Dictionary:
 		"aggressor_id": fleet_id,
 		"faction_id": faction_id,
 		"behaviors": behaviors,
-		"violation": _calculate_violation()
+		"violation": calculate_cargo_violation()
 	}
 	
 	# 将状态移交遭遇决议器
 	return EncounterResolver.get_encounter_data(context)
 
-# 货物合法性嗅探
-static func _calculate_violation() -> String:
+# 货物合法性嗅探（海上盘查 / InspectionHandler 共用）
+static func calculate_cargo_violation() -> String:
 	var has_contraband = false
 	var has_goods = false
 	
-	for good_id in GameState.cargo.keys():
-		if GameState.cargo[good_id] > 0:
+	for good_id in CargoSystem.get_keys():
+		if CargoSystem.get_amount(good_id) > 0:
 			has_goods = true
 			var g_data = GameManager.get_good_data(good_id)
 			if g_data.get("legality") == "contraband":

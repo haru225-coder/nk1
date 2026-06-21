@@ -1,10 +1,22 @@
 class_name PaymentHandler extends RefCounted
 
 func execute(intent: Intent) -> IntentResult:
-	print("\n[STUB] PaymentHandler executed.")
-	print("       Intent ID: ", intent.id)
-	print("       Target: ", intent.target)
-	print("       Parameters: ", intent.parameters)
-	print("       Context: ", intent.context)
-	print("       # TODO: 移交 EconomySystem 进行真实扣款或财产转移\n")
+	var amount = int(intent.parameters.get("amount", 0))
+	if amount <= 0:
+		return IntentResult.new(true, "payment", "intent.payment.success")
+	
+	var tx = {
+		"amount": -amount,
+		"source": "encounter",
+		"reason": "payment_" + intent.target,
+		"actor": "PaymentHandler"
+	}
+	if not LedgerSystem.apply(tx, intent.id):
+		return IntentResult.new(false, "payment", "error.payment.insufficient_funds")
+	
+	if intent.parameters.get("confiscate", false):
+		var contraband_ids := CargoSystem.get_contraband_keys()
+		for good_id in contraband_ids:
+			CargoSystem.remove_all_of(good_id)
+	
 	return IntentResult.new(true, "payment", "intent.payment.success")

@@ -1,5 +1,8 @@
 class_name NPCFleetGenerator extends RefCounted
 
+# 遗留逻辑舰队生态生成器。当前海上视觉遭遇由 WorldMap._maintain_fleet_spawns 负责；
+# 本模块保留供日后将 NPCFleetGenerator 与 FleetSystem 逻辑坐标系重新接线。
+
 const MAX_MERCHANTS = 5
 const MAX_PATROLS = 2
 const MAX_PIRATES = 3
@@ -39,7 +42,7 @@ static func _spawn_merchant() -> void:
 	
 	var state = {
 		"id": fleet_id,
-		"faction": "pu_shigeng",
+		"faction": "pu_family_trade",
 		"name": "蒲氏商队 " + str(randi() % 100),
 		"route": r,
 		"speed": randf_range(30.0, 50.0),

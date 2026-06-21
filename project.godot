@@ -19,13 +19,18 @@ config/icon="res://icon.svg"
 
 GameManager="*res://scripts/GameManager.gd"
 GameState="*res://scripts/GameState.gd"
+FleetArchetypes="*res://scripts/FleetArchetypes.gd"
 FleetSystem="*res://scripts/systems/FleetSystem.gd"
 LedgerSystem="*res://scripts/systems/LedgerSystem.gd"
 WorldEventTracker="*res://scripts/systems/WorldEventTracker.gd"
+ResourceManager="*res://autoloads/ResourceManager.gd"
+AssetPlaceholder="*res://scripts/AssetPlaceholder.gd"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/window_width_override=1920
+window/size/window_height_override=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"

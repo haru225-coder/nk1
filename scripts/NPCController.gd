@@ -3,63 +3,84 @@ extends Control
 signal status_updated
 signal npc_finished
 
-@onready var npc_name_lbl: Label = $HBox/DialogPanel/NPCName
-@onready var npc_dialog_lbl: RichTextLabel = $HBox/DialogPanel/NPCDialog
-@onready var npc_actions: VBoxContainer = $HBox/DialogPanel/NPCActions
-@onready var npc_portrait: TextureRect = $HBox/PortraitRect
+var dialogue_box: Control
+
+func bind_dialogue_box(box: Control) -> void:
+	dialogue_box = box
 
 func setup(npc_id: String, fallback_name: String) -> void:
-	var npc_data = {}
-	var npcs = GameManager.npcs_data.get("npcs", [])
-	for n in npcs:
+	if dialogue_box == null:
+		push_warning("[NPCController] dialogue_box 未绑定，无法展示对话。")
+		npc_finished.emit()
+		return
+
+	var npc_data: Dictionary = {}
+	for n in GameManager.npcs_data.get("npcs", []):
 		if n.get("id") == npc_id:
 			npc_data = n
 			break
-			
-	var n_name = npc_data.get("name", fallback_name)
-	npc_name_lbl.text = n_name
-	npc_dialog_lbl.text = npc_data.get("function", "（这人看起来有些眼熟，但什么也没说...）")
-	
-	# Load Portrait safely using JSON data to avoid hardcoded string path construction
-	var tex_path = npc_data.get("avatar", "")
-	if tex_path != "" and FileAccess.file_exists(tex_path):
-		var img = Image.load_from_file(tex_path)
-		if img: npc_portrait.texture = ImageTexture.create_from_image(img)
-	else:
-		npc_portrait.texture = null
-		
-	# Clear previous actions
-	for child in npc_actions.get_children(): 
+
+	var n_name: String = npc_data.get("name", fallback_name)
+	var avatar_path: String = npc_data.get("avatar", "")
+	var intro_text: String = npc_data.get(
+		"function",
+		"（这人看起来有些眼熟，但什么也没说...）"
+	)
+	dialogue_box.show_persistent(n_name, intro_text, avatar_path)
+
+	var actions: HBoxContainer = dialogue_box.get_actions_slot()
+	for child in actions.get_children():
 		child.queue_free()
-	
-	# Action: Gather Intel
-	var intel_btn = Button.new()
+
+	var intel_btn := Button.new()
 	intel_btn.text = "打听情报"
+	intel_btn.theme_type_variation = "ActionButton"
+	intel_btn.custom_minimum_size = Vector2(120, 40)
 	intel_btn.pressed.connect(func():
 		var goods = GameManager.goods_data.get("goods", [])
 		if goods.size() > 0:
 			var random_g = goods[randi() % goods.size()]
-			npc_dialog_lbl.text = n_name + " 压低声音说：“听说最近 %s 的买卖很赚，你要不要试试？”" % random_g.get("name", "这行")
+			dialogue_box.show_persistent(
+				n_name,
+				n_name + " 压低声音说：“听说最近 %s 的买卖很赚，你要不要试试？”" % random_g.get("name", "这行"),
+				avatar_path
+			)
 	)
-	npc_actions.add_child(intel_btn)
-	
-	# Action: Bribe (Only for Yamen official)
+	actions.add_child(intel_btn)
+
 	if npc_id == "customs_official":
-		var bribe_btn = Button.new()
+		var bribe_btn := Button.new()
 		bribe_btn.text = "塞钱买通 (50钱)"
+		bribe_btn.theme_type_variation = "ActionButton"
+		bribe_btn.custom_minimum_size = Vector2(150, 40)
 		bribe_btn.pressed.connect(func():
 			var res = GameState.handle_special_action("bribe_official_50")
 			if res["success"]:
 				status_updated.emit()
-				npc_dialog_lbl.text = n_name + " 颠了颠手里的碎银：“算你懂事。文牒拿好，路上小心。”"
+				dialogue_box.show_persistent(
+					n_name,
+					n_name + " 颠了颠手里的碎银：“算你懂事。文牒拿好，路上小心。”",
+					avatar_path
+				)
 			else:
-				npc_dialog_lbl.text = n_name + " 满脸鄙夷：“就这点钱也想打通关节？滚滚滚！”"
+				dialogue_box.show_persistent(
+					n_name,
+					n_name + " 满脸鄙夷：“就这点钱也想打通关节？滚滚滚！”",
+					avatar_path
+				)
 		)
-		npc_actions.add_child(bribe_btn)
-		
-	var leave_btn = Button.new()
+		actions.add_child(bribe_btn)
+
+	var leave_btn := Button.new()
 	leave_btn.text = "离开"
+	leave_btn.theme_type_variation = "ChoiceButton"
+	leave_btn.custom_minimum_size = Vector2(100, 40)
 	leave_btn.pressed.connect(func():
+		dialogue_box.hide_dialogue()
 		npc_finished.emit()
 	)
-	npc_actions.add_child(leave_btn)
+	actions.add_child(leave_btn)
+
+func _exit_tree() -> void:
+	if dialogue_box and dialogue_box.has_method("hide_dialogue"):
+		dialogue_box.hide_dialogue()

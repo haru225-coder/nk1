@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://dmxg7etse5abg"]
+[gd_scene load_steps=10 format=3 uid="uid://dmxg7etse5abg"]
 
 [ext_resource type="Script" uid="uid://7nxadtrp0p66" path="res://scripts/WorldMap.gd" id="1_map"]
 [ext_resource type="PackedScene" path="res://scenes/Ship.tscn" id="2_ship"]
@@ -6,6 +6,13 @@
 [ext_resource type="Shader" uid="uid://cos70wv0dqt7k" path="res://assets/ocean_shader.gdshader" id="4_shader"]
 [ext_resource type="PackedScene" path="res://scenes/PortZone.tscn" id="5_port"]
 [ext_resource type="Script" uid="uid://8egp03uvyetg" path="res://scripts/Minimap.gd" id="6_minimap"]
+[ext_resource type="Theme" path="res://assets/main_theme.tres" id="7_theme"]
+[ext_resource type="Shader" path="res://assets/ui_vignette.gdshader" id="8_vignette"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("8_vignette")
+shader_parameter/edge_color = Color(0, 0, 0, 0.28)
+shader_parameter/softness = 0.6
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("4_shader")
@@ -13,18 +20,6 @@ shader_parameter/wave_speed = 0.5
 shader_parameter/wave_freq = 15.0
 shader_parameter/wave_amp = 0.02
 shader_parameter/water_color = Color(0.1, 0.4, 0.6, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glass"]
-bg_color = Color(0.1, 0.2, 0.3, 0.7)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.5, 0.7, 0.9, 0.5)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
 
 [node name="WorldMap" type="Node2D" unique_id=630777904]
 script = ExtResource("1_map")
@@ -61,6 +56,15 @@ color = Color(0.7, 0.8, 0.9, 0.5)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=802350788]
 
+[node name="Vignette" type="ColorRect" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+material = SubResource("ShaderMaterial_vignette")
+
 [node name="LightningFlash" type="ColorRect" parent="CanvasLayer" unique_id=423437484]
 visible = false
 anchors_preset = 15
@@ -72,12 +76,13 @@ color = Color(1, 1, 1, 0.8)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 134.0
-offset_top = 121.0
-offset_right = 134.0
-offset_bottom = 121.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("7_theme")
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
@@ -87,7 +92,7 @@ theme_override_constants/margin_bottom = 20
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_glass")
+theme_type_variation = &"SeaHudPanel"
 
 [node name="Margin" type="MarginContainer" parent="CanvasLayer/HUD/LeftPanel" unique_id=254483875]
 layout_mode = 2
@@ -98,7 +103,7 @@ theme_override_constants/margin_bottom = 15
 
 [node name="Label" type="RichTextLabel" parent="CanvasLayer/HUD/LeftPanel/Margin" unique_id=1147916534]
 layout_mode = 2
-theme_override_font_sizes/normal_font_size = 18
+theme_type_variation = &"SeaHudRich"
 bbcode_enabled = true
 text = "当前季风: 北风 (自北向南吹)
 风力强度: 80
@@ -112,7 +117,7 @@ fit_content = true
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_glass")
+theme_type_variation = &"SeaHudPanel"
 
 [node name="Margin" type="MarginContainer" parent="CanvasLayer/HUD/RightPanel" unique_id=1478418627]
 layout_mode = 2
@@ -123,24 +128,22 @@ theme_override_constants/margin_bottom = 15
 
 [node name="FleetStatus" type="Label" parent="CanvasLayer/HUD/RightPanel/Margin" unique_id=1163400464]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
-theme_override_font_sizes/font_size = 18
-text = "【舰队资产】
-金钱: 0
-货舱: 空"
+theme_type_variation = &"SeaHudFleet"
+text = "【船队状态】
+铜钱: 0
+货舱: 无"
 
 [node name="WeatherStatus" type="Label" parent="CanvasLayer/HUD/RightPanel/Margin" unique_id=1981099809]
 layout_mode = 2
 size_flags_vertical = 8
-theme_override_colors/font_color = Color(0.5, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"SeaHudWeather"
 text = "当前天气: 晴朗"
 
 [node name="MinimapPanel" type="PanelContainer" parent="CanvasLayer/HUD" unique_id=26123060]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 8
-theme_override_styles/panel = SubResource("StyleBoxFlat_glass")
+theme_type_variation = &"SeaHudPanel"
 
 [node name="Margin" type="MarginContainer" parent="CanvasLayer/HUD/MinimapPanel" unique_id=1161932785]
 layout_mode = 2

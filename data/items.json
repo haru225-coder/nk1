@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "title": "东亚海域立志传",
+    "era": "南宋末，约1255-1277",
+    "version": "v0.1"
+  },
+  "items": [
+    {
+      "id": "spring_autumn_scroll",
+      "name": "朱熹手批《春秋》",
+      "description": "先生托付给林伯渊的信物，最终由陈子龙保留",
+      "acquired_in": "xinghua_exam",
+      "fate": {
+        "loyalty_ending": "绝食前烧毁",
+        "defection_ending": "某节点静默消失",
+        "overseas_ending": "传给后人"
+      }
+    },
+    {
+      "id": "ketagalan_shell",
+      "name": "凯达格兰贝壳",
+      "description": "基隆海岸的孩子放在《春秋》书页上的贝壳",
+      "acquired_in": "scene07_keelung_coast",
+      "fate": {
+        "all_endings": "全程携带，各结局均有专属处理"
+      }
+    }
+  ]
+}

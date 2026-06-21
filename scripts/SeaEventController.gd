@@ -3,93 +3,217 @@ class_name SeaEventController
 
 signal event_finished
 
+const _THEME_PATH := "res://assets/main_theme.tres"
+const _FRAME_PATH := "res://assets/ui_frame_koei.png"
+const _GRADIENT_SHADER := "res://assets/ui_bottom_gradient.gdshader"
+
 var event_data: Dictionary = {}
-var panel: PanelContainer
 var title_label: Label
 var body_label: RichTextLabel
-var vbox: VBoxContainer
+var _actions: VBoxContainer
+var _root: Control
+var _game_theme: Theme
 
 func _ready() -> void:
-	# 允许在树暂停时继续运行
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 100
-	
-	# 半透明黑色背景遮罩
-	var bg = ColorRect.new()
-	bg.color = Color(0, 0, 0, 0.7)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
-	
-	var center = CenterContainer.new()
+
+	_game_theme = load(_THEME_PATH) as Theme
+	var frame_tex := load(_FRAME_PATH) as Texture2D
+	var gradient_shader := load(_GRADIENT_SHADER) as Shader
+
+	_root = Control.new()
+	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_root)
+
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if gradient_shader:
+		var mat := ShaderMaterial.new()
+		mat.shader = gradient_shader
+		mat.set_shader_parameter("top_color", Color(0.02, 0.02, 0.03, 0.72))
+		mat.set_shader_parameter("bottom_color", Color(0.01, 0.01, 0.02, 0.88))
+		dim.material = mat
+	else:
+		dim.color = Color(0.02, 0.02, 0.02, 0.82)
+	_root.add_child(dim)
+
+	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
-	
-	panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(600, 400)
-	center.add_child(panel)
-	
-	var margin = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 30)
-	margin.add_theme_constant_override("margin_right", 30)
-	margin.add_theme_constant_override("margin_top", 30)
-	margin.add_theme_constant_override("margin_bottom", 30)
-	panel.add_child(margin)
-	
-	vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 20)
-	margin.add_child(vbox)
-	
+	_root.add_child(center)
+
+	var frame := NinePatchRect.new()
+	frame.custom_minimum_size = Vector2(700, 460)
+	frame.texture = frame_tex
+	frame.patch_margin_left = 100
+	frame.patch_margin_top = 56
+	frame.patch_margin_right = 100
+	frame.patch_margin_bottom = 56
+	center.add_child(frame)
+
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 28)
+	margin.add_theme_constant_override("margin_right", 28)
+	margin.add_theme_constant_override("margin_top", 22)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	frame.add_child(margin)
+
+	var inner := PanelContainer.new()
+	inner.theme = _game_theme
+	inner.theme_type_variation = "DialoguePanelInner"
+	margin.add_child(inner)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+	inner.add_child(vbox)
+
 	title_label = Label.new()
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.add_theme_font_size_override("font_size", 28)
+	title_label.theme = _game_theme
+	title_label.theme_type_variation = "EventTitle"
 	vbox.add_child(title_label)
-	
+
 	body_label = RichTextLabel.new()
 	body_label.bbcode_enabled = true
-	body_label.fit_content = true
-	body_label.custom_minimum_size = Vector2(500, 100)
+	body_label.fit_content = false
+	body_label.scroll_active = true
+	body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body_label.custom_minimum_size = Vector2(580, 140)
+	body_label.theme = _game_theme
+	body_label.theme_type_variation = "EventBody"
 	vbox.add_child(body_label)
-	
+
+	_actions = VBoxContainer.new()
+	_actions.add_theme_constant_override("separation", 10)
+	vbox.add_child(_actions)
+
+	_root.modulate.a = 0.0
+	var enter := _root.create_tween()
+	enter.tween_property(_root, "modulate:a", 1.0, 0.22)
+
 	_populate_ui()
 
 func _populate_ui() -> void:
-	if event_data.is_empty(): return
-	
+	if event_data.is_empty():
+		return
+
 	title_label.text = event_data.get("title", "未知遭遇")
 	body_label.text = event_data.get("body", "")
-	
-	var choices = event_data.get("choices", [])
-	
+
+	for child in _actions.get_children():
+		child.queue_free()
+
+	var choices: Array = event_data.get("choices", [])
 	if choices.is_empty():
-		var btn = Button.new()
-		btn.text = "继续"
-		btn.pressed.connect(func(): _on_choice_made({}))
-		vbox.add_child(btn)
+		_actions.add_child(_make_choice_button("继续", func(): _on_choice_made({})))
 	else:
 		for choice in choices:
-			var btn = Button.new()
-			btn.text = choice.get("label", "...")
-			btn.pressed.connect(func(): _on_choice_made(choice))
-			vbox.add_child(btn)
+			var label_text: String = choice.get("label", "...")
+			var btn := _make_choice_button(label_text, _on_choice_made.bind(choice))
+			if choice.has("req_flag") and not FleetArchetypes.check_req_flag(choice["req_flag"]):
+				btn.disabled = true
+				btn.tooltip_text = "条件不足"
+			_actions.add_child(btn)
+
+func _make_choice_button(text: String, callback: Callable) -> Button:
+	var btn := Button.new()
+	btn.text = text
+	btn.custom_minimum_size = Vector2(0, 46)
+	btn.theme = _game_theme
+	btn.theme_type_variation = "ChoiceButton"
+	btn.pressed.connect(callback)
+	return btn
 
 func _on_choice_made(choice: Dictionary) -> void:
+	if choice.has("req_flag") and not FleetArchetypes.check_req_flag(choice["req_flag"]):
+		_show_result(choice.get("msg_fail", "条件不足，无法执行此选项。"))
+		return
+
+	if choice.has("success_chance"):
+		var success := randf() < float(choice.get("success_chance", 1.0))
+		var msg: String = choice.get("msg_ok", "") if success else choice.get("msg_fail", "")
+		var effects: Dictionary = choice.get("effects_ok", {}) if success else choice.get("effects_fail", {})
+		_apply_choice_effects(effects)
+		_show_result(msg if msg != "" else ("行动成功。" if success else "行动失败。"))
+		return
+
 	if choice.has("intent_struct"):
-		var istruct = choice["intent_struct"]
-		var intent = load("res://scripts/systems/Intent.gd").new(
-			istruct.get("type", "ignore"),
+		var istruct: Dictionary = choice["intent_struct"]
+		var intent_type: String = istruct.get("type", "ignore")
+		var intent := Intent.new(
+			intent_type,
 			istruct.get("source", "player_fleet"),
 			istruct.get("target", "unknown_fleet"),
 			istruct.get("parameters", {}),
 			istruct.get("context", {})
 		)
-		IntentResolver.process(intent)
-		
-	event_finished.emit()
-	queue_free()
+		var result = IntentResolver.process(intent)
+		if result == null:
+			_show_result("意图解析失败：未知行为。")
+			return
+		_show_result(_format_intent_result(intent_type, result, istruct))
+		return
+	elif choice.has("effects"):
+		_apply_choice_effects(choice["effects"])
+		var msg := choice.get("msg_ok", choice.get("msg", ""))
+		if msg != "":
+			_show_result(msg)
+			return
+	elif choice.has("special_action"):
+		var res := GameState.handle_special_action(choice.get("special_action", ""))
+		if not res.get("msg", "").is_empty():
+			_show_result(res["msg"])
+			return
 
-# 静态工厂方法，方便直接调用
+	_close_modal()
+
+func _apply_choice_effects(effects: Dictionary) -> void:
+	if effects.is_empty():
+		return
+	if effects.has("special_action"):
+		GameState.handle_special_action(str(effects["special_action"]))
+	var stat_effects := effects.duplicate()
+	stat_effects.erase("special_action")
+	if not stat_effects.is_empty():
+		GameState.apply_effects(stat_effects)
+
+func _format_intent_result(intent_type: String, result: IntentResult, istruct: Dictionary) -> String:
+	if intent_type == "trade_request":
+		if result.success:
+			var params: Dictionary = istruct.get("parameters", {})
+			return "交易成功！花费 %d 钱，获得食物 %d、淡水 %d。" % [
+				int(params.get("cost", 0)), int(params.get("food", 0)), int(params.get("water", 0))
+			]
+		return "金钱不足，无法交易。"
+	var txt := GameManager.get_text(result.message_key, "")
+	if txt != "":
+		return txt
+	return "行动完成。" if result.success else "行动失败，条件不足。"
+
+func _show_result(msg: String) -> void:
+	body_label.text += "\n\n" + msg
+	for child in _actions.get_children():
+		if child is Button:
+			child.queue_free()
+	_actions.add_child(_make_choice_button("确认", _close_modal))
+
+func _close_modal() -> void:
+	if not is_instance_valid(_root):
+		event_finished.emit()
+		queue_free()
+		return
+	var tween := create_tween()
+	tween.tween_property(_root, "modulate:a", 0.0, 0.16)
+	tween.tween_callback(func():
+		event_finished.emit()
+		queue_free()
+	)
+
 static func trigger_event(parent_node: Node, data: Dictionary) -> SeaEventController:
-	var controller = SeaEventController.new()
+	var controller := SeaEventController.new()
 	controller.event_data = data
 	parent_node.add_child(controller)
 	return controller

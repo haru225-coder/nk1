@@ -4,8 +4,6 @@ static func get_market_snapshot(port_id: String) -> Dictionary:
 	var port = GameManager.get_port_data(port_id)
 	if port.is_empty(): return {}
 	
-	WorldEventTracker.print_status()
-	
 	var snapshot = {
 		"port_id": port_id,
 		"goods": []
@@ -16,9 +14,12 @@ static func get_market_snapshot(port_id: String) -> Dictionary:
 		var g_id = g.get("id", "")
 		if g_id.is_empty(): continue
 		
+		# 只展示"货物"类商品（排除文书、账目、寄物等非贸易类）
+		if g.get("category", "") != "货物": continue
+		
 		# MVP: 只展示有合法定价且非隐藏的商品。
 		# 未来：可以只展示港口生产或有库存的商品。
-		var p_price = get_price(port_id, g_id)
+		var p_price = _get_price_with_port(port, g_id)
 		
 		snapshot["goods"].append({
 			"id": g_id,
@@ -32,6 +33,10 @@ static func get_market_snapshot(port_id: String) -> Dictionary:
 
 static func get_price(port_id: String, good_id: String) -> int:
 	var port = GameManager.get_port_data(port_id)
+	return _get_price_with_port(port, good_id)
+
+# 内部方法：接受已查询的 port 数据，避免重复查找
+static func _get_price_with_port(port: Dictionary, good_id: String) -> int:
 	var good = GameManager.get_good_data(good_id)
 	
 	if good.is_empty() or port.is_empty(): return 0
@@ -50,6 +55,7 @@ static func get_price(port_id: String, good_id: String) -> int:
 		demand_mod = float(demand_dict[good_id])
 		
 	var active_events = WorldEventTracker.get_active_events()
+	var port_id = port.get("id", "")
 	var result = PriceEngine.calculate_price(base_price, prod_mod, demand_mod, dist_mod, active_events, port_id, good_id)
 	
 	return result["final_price"]

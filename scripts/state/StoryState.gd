@@ -7,6 +7,7 @@ var flags: Dictionary = {}
 var story_flags: Dictionary = {}
 var story_items: Dictionary = {}
 var linboyuan_relationship: int = 0
+var jia_relationship: int = 0
 var unlocked_chapters: Array = []
 
 signal flag_set(flag_name: String)
@@ -45,6 +46,9 @@ func acquire_item(item_id: String) -> void:
 
 func has_item_flag(item_id: String) -> bool:
 	return story_items.has(item_id) and story_items[item_id] == true
+
+func remove_item(item_id: String) -> void:
+	story_items.erase(item_id)
 
 func unlock_chapter(chapter_id: String) -> void:
 	if chapter_id not in unlocked_chapters:

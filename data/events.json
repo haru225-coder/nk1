@@ -3,21 +3,29 @@
     {
       "id": "storm_approaching",
       "type": "hazard",
-      "title": "风暴降临",
-      "body": "天空瞬间变得阴沉，狂风夹杂着暴雨向船只袭来。海浪如巨兽般拍打着甲板，如果硬抗过去，船只和水手可能会遭受重创；但如果抛弃部分货物减轻重量，或许能逃过一劫。",
+      "title": "台风压顶",
+      "body": "天色铁青，半柱香内海变墨色。桅杆嘎吱作响，水手抓住缆绳大喊：降帆还是硬冲？错一步，船就散架。",
       "conditions": {},
       "choices": [
         {
-          "label": "抛弃部分物资（损失水粮）",
+          "label": "抛货减重（损失水粮）",
           "effects": {
-            "food": -20,
-            "water": -20
+            "food": -25,
+            "water": -25
           }
         },
         {
-          "label": "顶着风暴硬抗（水手受伤）",
+          "label": "硬扛风暴（船损水手伤）",
           "effects": {
-            "crew_count": -5
+            "crew_count": -6,
+            "fame": 3
+          }
+        },
+        {
+          "label": "抢入近岸浅湾",
+          "effects": {
+            "money": -50,
+            "fame": -2
           }
         }
       ]
@@ -25,70 +33,231 @@
     {
       "id": "shipwreck_rescue",
       "type": "opportunity",
-      "title": "遇难商船",
-      "body": "在海平面上，你们发现了一艘正在下沉的商船。几名幸存者在海水中挣扎呼救，海面上漂浮着一些物资箱。",
+      "title": "沉船呼救",
+      "body": "前方漂着断裂的桅杆，三个人扒在翻扣的小艇上，嗓子都哑了。水里还有没打开的货箱，浪头一下下砸过去。",
       "conditions": {},
       "choices": [
         {
-          "label": "优先救人（消耗水粮，获得名声）",
+          "label": "停船救人（耗水粮，扬名）",
           "effects": {
-            "food": -10,
-            "water": -10,
-            "fame": 20
+            "food": -15,
+            "water": -15,
+            "fame": 25
           }
         },
         {
-          "label": "只捞物资（获得物资，名声受损）",
+          "label": "只捞货箱（得补给，名声受损）",
           "effects": {
-            "food": 30,
-            "water": 30,
-            "fame": -10
+            "food": 35,
+            "water": 35,
+            "fame": -15
           }
         },
         {
-          "label": "无视他们（离开）",
-          "effects": {}
+          "label": "全速离开",
+          "effects": {
+            "fame": -5
+          }
         }
       ]
     },
     {
       "id": "customs_patrol",
       "type": "encounter",
-      "title": "市舶司巡查船",
-      "body": "一艘挂着大宋水师旗帜的巡防快船靠了过来，要求停船接受市舶司的例行检查。如果你携带了未报备的黑市货物，将面临重罚！",
+      "title": "水师拦船",
+      "body": "巡防快船横在航道上，旗官举旗喝停：「市舶司夜检！舱单、货引、人头，一样不对就扣船！」",
       "conditions": {
-        "pu_attention_min": 10
+        "pu_attention_min": 5
       },
       "choices": [
         {
-          "label": "主动塞钱贿赂（失去 100 钱）",
+          "label": "塞钱过关（-150钱）",
           "effects": {
-            "money": -100
+            "money": -150,
+            "pu_attention": -2
           }
         },
         {
           "label": "接受检查",
           "special_action": "sea_customs_check"
+        },
+        {
+          "label": "强行冲卡",
+          "effects": {
+            "pu_attention": 10,
+            "crew_count": -3,
+            "fame": -8
+          }
         }
       ]
     },
     {
       "id": "merchant_trade",
       "type": "encounter",
-      "title": "异国商船",
-      "body": "你们在航线上遇到了一艘载满异国货物的商船。对方船长向你们致意，并表示愿意用他们的香料换取你们的一些硬通货。",
+      "title": "番船交易",
+      "body": "一艘高桅番船并行而来，甲板堆满没见过的香料。对方船长举壶致意：「以胡椒换铜钱，各取所需。」",
       "conditions": {},
       "choices": [
         {
-          "label": "慷慨交易（失去 200 钱，名声上升）",
+          "label": "重金换胡椒（-250钱，名声+）",
           "effects": {
-            "money": -200,
-            "fame": 10
+            "money": -250,
+            "fame": 12
           }
         },
         {
-          "label": "谢绝交易",
+          "label": "谢绝",
           "effects": {}
+        }
+      ]
+    },
+    {
+      "id": "pirate_shadow",
+      "type": "hazard",
+      "title": "海盗尾随",
+      "body": "后方始终跟着两艘无旗快艇，不靠近，也不离开。水手压低声音：「蒲氏的人，还是真倭寇？」",
+      "conditions": {},
+      "choices": [
+        {
+          "label": "摆出炮口威慑",
+          "effects": {
+            "fame": 2,
+            "pu_attention": 3
+          }
+        },
+        {
+          "label": "弃货诱敌",
+          "effects": {
+            "food": -20,
+            "water": -10,
+            "fame": -3
+          }
+        },
+        {
+          "label": "加速冲雾区",
+          "effects": {
+            "crew_count": -2,
+            "fame": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "floating_fire",
+      "type": "hazard",
+      "title": "海上浮火",
+      "body": "夜海里忽然亮起一团火，像有人在水面烧船。靠近才发现是漂流的油布与残帆——方才这里发生过厮杀。",
+      "conditions": {},
+      "choices": [
+        {
+          "label": "打捞残货",
+          "effects": {
+            "money": 80,
+            "pu_attention": 4,
+            "fame": -5
+          }
+        },
+        {
+          "label": "绕开，当作没看见",
+          "effects": {}
+        },
+        {
+          "label": "鸣炮示警",
+          "effects": {
+            "fame": 6,
+            "pu_attention": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "jia_tail",
+      "type": "encounter",
+      "title": "贾府眼线",
+      "body": "官道驿站外，两名锦衣随从拦住去路，笑问：「陈秀才，《春秋》可还温热？」风一紧，袖口的贾府暗纹便露出来。",
+      "conditions": {
+        "requires_story_flag": "jia_faction_met",
+        "unless_story_flag": "met_lin_boyuan"
+      },
+      "choices": [
+        {
+          "label": "拱手让路，不辩一字",
+          "effects": {
+            "fame": -2,
+            "pu_attention": 2
+          }
+        },
+        {
+          "label": "亮出先生路费袋示好",
+          "effects": {
+            "money": -15,
+            "story_flag": "jia_bribed_tail"
+          },
+          "narration": "随从掂了掂钱袋，竟真让开了路。"
+        },
+        {
+          "label": "反问：「送葬的人，也怕党禁？」",
+          "effects": {
+            "fame": 3,
+            "pu_attention": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "black_water_echo",
+      "type": "hazard",
+      "title": "黑水沟余波",
+      "body": "海色忽然变深，罗盘针乱颤。水手惊呼：「黑水沟的余流还在拽船！」浪头像有人在水下拽缆。",
+      "conditions": {
+        "requires_story_flag": "penghu_night"
+      },
+      "choices": [
+        {
+          "label": "听林伯渊降帆外绕",
+          "effects": {
+            "linboyuan_relationship": 2,
+            "food": -10
+          }
+        },
+        {
+          "label": "硬冲过去",
+          "effects": {
+            "crew_count": -3,
+            "fame": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "north_refugees",
+      "type": "opportunity",
+      "title": "北来难民筏",
+      "body": "破筏上挤着一家五口，孩子说两淮已在打仗。母亲怀里抱着空米袋，眼神却死死盯着你的粮舱。",
+      "conditions": {
+        "fame_min": 0
+      },
+      "choices": [
+        {
+          "label": "分粮分水",
+          "effects": {
+            "food": -20,
+            "water": -20,
+            "fame": 15
+          }
+        },
+        {
+          "label": "给点钱打发",
+          "effects": {
+            "money": -30,
+            "fame": 3
+          }
+        },
+        {
+          "label": "驱离",
+          "effects": {
+            "fame": -10
+          }
         }
       ]
     }

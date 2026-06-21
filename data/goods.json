@@ -88,6 +88,50 @@
       "base_value": 150,
       "legality": "contraband",
       "historical_note": "历代朝廷专卖，利润极高但风险极大。"
+    },
+    {
+      "id": "sulfur",
+      "name": "硫黄",
+      "category": "货物",
+      "origin": "日本",
+      "destination_hint": "军火、火药、军工",
+      "risk": "易燃，需远离火源存放",
+      "base_value": 80,
+      "legality": "legal",
+      "historical_note": "南宋军工厂依赖从日本博多运来的优质硫磺。"
+    },
+    {
+      "id": "japanese_swords",
+      "name": "日本刀",
+      "category": "货物",
+      "origin": "博多",
+      "destination_hint": "军将、武人、寺院",
+      "risk": "锋利，需油布包裹防锈",
+      "base_value": 120,
+      "legality": "legal",
+      "historical_note": "日本刀在南宋极受追捧，武士们在大宋商船带来的财富中磨砺爪牙。"
+    },
+    {
+      "id": "rice",
+      "name": "占城稻米",
+      "category": "货物",
+      "origin": "占城",
+      "destination_hint": "军粮、沿海补给",
+      "risk": "怕潮，长途运输损耗大",
+      "base_value": 25,
+      "legality": "legal",
+      "historical_note": "占城河谷盛产稻米，是南宋东南沿海商船最喜欢的避风港和补给站。"
+    },
+    {
+      "id": "horses",
+      "name": "占城马",
+      "category": "货物",
+      "origin": "占城",
+      "destination_hint": "军将、骑兵、马贩",
+      "risk": "活物运输需专用船舱",
+      "base_value": 200,
+      "legality": "legal",
+      "historical_note": "南洋马种虽不及蒙古马，但对缺乏马匹的南宋仍是珍贵的战略物资。"
     }
   ]
 }

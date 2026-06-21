@@ -8,72 +8,77 @@
     {
       "id": "chen_wenlong",
       "name": "陈子龙",
-      "role": "主角档案",
+      "role": "主角",
       "location": "兴化",
-      "function": "玩家当前身份；陈子龙即后来的陈文龙，殿试前初名子龙，咸淳四年唱第日由宋度宗御笔改名文龙",
       "origin": "兴化莆田",
-      "style_name": "初字德刚，改名后赐字君贲",
-      "timeline": "1255年（宝祐三年）：游戏开局，在兴化面临海路与科举分叉。1256年（丙辰年）：入临安太学。1268年（咸淳四年）：进士第一，御笔改名陈文龙，赐字君贲。1276年前后：参知政事，抗元，兴化城破，殉节",
-      "chapter1_presence": "作为主角登场，处在科举期待与海路诱惑尚未分定的阶段。叔父遗债是海路选择的现实压力来源",
-      "avatar": "res://assets/sprite_chen_wenlong.png"
+      "timeline": "1255年开局。1256年入临安太学。1268年进士第一，御笔改名陈文龙。1276年殉节",
+      "chapter1_presence": "乡学学生，在义利之辨中第一次沉默。受先生托付送《春秋》赴泉州，与林伯渊出海至澎湖、基隆海岸，第一次看见书本之外的世界。",
+      "avatar": "res://assets/portraits/portrait_chen_wenlong.png"
     },
     {
-      "id": "chen_uncle",
-      "name": "陈氏叔父",
-      "role": "已故海商",
-      "location": "泉州（生前活动）",
-      "function": "遗债压力来源，为陈子龙接触海路提供现实动因而非浪漫动机。生前借贷蕃商船资，货损未结清，债留给陈子龙承担",
-      "voice": "已故，不出场。其存在通过林阿舶账目、阿那台词和兴化亲族闲谈侧写",
-      "chapter1_presence": "作为背景压力，在开场阿那台词中提及叔父旧债，在start场景中以书案现实重量出现",
-      "avatar": "res://assets/sprite_chen_uncle.png"
+      "id": "teacher",
+      "name": "先生",
+      "role": "兴化乡学先生",
+      "location": "兴化",
+      "voice": "缓慢、沉稳，讲典故时声音会低下去。",
+      "chapter1_function": "Scene 01 讲朱熹送葬往事、义利之辨，托付《春秋》，引出林伯渊。",
+      "avatar": "res://assets/portraits/portrait_teacher.png"
     },
     {
-      "id": "xinghua_messenger",
-      "name": "兴化来人",
-      "role": "地方士人 / 亲眷信使",
-      "location": "泉州 / 兴化外海",
-      "function": "在第一章结尾提出海口通信问题，在第二章以未封口短信测试玩家是否愿意探路送信",
-      "voice": "话少、谨慎、避开官名和大话，用陆路不稳、青布缠桅、夜船等具体风险暗示局势",
-      "chapter2_function": "把旧避风澳从账外边记推向海口书信压力",
-      "avatar": "res://assets/sprite_xinghua_messenger.png"
+      "id": "jia_disciple",
+      "name": "贾府门生",
+      "role": "贾似道门下士人",
+      "location": "兴化乡学",
+      "voice": "傲慢但有理据，引陈亮语，轻笑收场。",
+      "chapter1_function": "Scene 01 路过避雨，引发辩论，陈子龙沉默。",
+      "avatar": "res://assets/portraits/portrait_jia_disciple.png"
     },
     {
-      "id": "monk_jinghai",
-      "name": "净海",
-      "role": "寺院学僧",
-      "location": "泉州",
-      "function": "提供碑拓、经卷往来、寺院文书和旧纸线索",
-      "voice": "克制、低声、重字迹、石质和纸背押记，不主动谈政治",
-      "chapter1_function": "用残碑和旧纸把复核线引向旧避风澳",
-      "avatar": "res://assets/sprite_monk_jinghai.png"
+      "id": "lin_boyuan",
+      "name": "林伯渊",
+      "role": "泉州海商，朱熹私淑弟子",
+      "age": "约五十五岁（1255年）",
+      "origin": "泉州晋江",
+      "background": "早年入太学，中途弃学出海。先生旧友，三十年未见。曾到基隆海岸远望，未登岸。",
+      "voice": "话少，判断准，不解释自己的决定。用船体结构和洋流说话。",
+      "appearance": "海风晒黑的脸，手指粗壮，袖口藏一本翻烂的《论语》",
+      "philosophy": "海上自有道，非朝廷一家之道。不反儒，但不以朝廷为唯一标尺。",
+      "attitude_to_player": "第一眼看见三十年前的自己。不动声色，但多留了他一天。",
+      "chapter1_function": "Scene 03 递《春秋》定交；Scene 04 演示水密隔舱和指南针；Scene 05 讲航线网络；Scene 06 黑水沟判断失误；Scene 07 基隆海岸同行；Scene 08 留下《春秋》。",
+      "avatar": "res://assets/portraits/portrait_lin_boyuan.png"
     },
     {
-      "id": "merchant_lin",
-      "name": "林阿舶",
-      "role": "泉州海商",
-      "location": "泉州",
-      "function": "提供唐房寄物、货单、保人和第一笔船资压力",
-      "voice": "现实、精明、以账簿、舱位、脚钱和货损分摊说话",
-      "chapter1_function": "用博多旧账把商业信用和旧泊地复核绑在一起",
-      "avatar": "res://assets/sprite_lin.png"
-    },
-    {
-      "id": "pilot_ana",
-      "name": "阿那",
-      "role": "南岛海道舵手",
-      "location": "南岛海道北口",
-      "function": "用水文经验帮助复核旧泊地入口",
-      "voice": "用水色、鸟群、潮声、礁线、季风和铅锤水深判断海路，很少讲抽象道理",
-      "chapter1_function": "把旧避风澳从传闻变成可复核的泊地",
-      "avatar": "res://assets/sprite_ana.png"
+      "id": "abbas",
+      "name": "阿巴斯",
+      "role": "泉州蕃商后裔",
+      "location": "林伯渊船上",
+      "voice": "沉默，虔诚，按自己的节奏祈祷。",
+      "chapter1_function": "Scene 04 甲板祈祷，展示世界多样性。",
+      "avatar": "res://assets/portraits/portrait_abbas.png"
     },
     {
       "id": "customs_official",
       "name": "市舶司小吏",
       "role": "衙门官差",
-      "location": "各港口衙门",
-      "function": "管理港口出入",
-      "avatar": "res://assets/sprite_customs_official.png"
+      "location": "泉州港",
+      "chapter1_function": "Scene 02 验引棚前抽税：三十税一，香药。照例。",
+      "avatar": "res://assets/portraits/portrait_customs_official.png"
+    },
+    {
+      "id": "ketagalan_elder",
+      "name": "凯达格兰老人",
+      "role": "基隆海岸原住民",
+      "location": "台湾北部海岸",
+      "chapter1_function": "Scene 07 整理渔网，做出可以留下或离开的手势。",
+      "avatar": "res://assets/portraits/portrait_ketagalan_elder.png"
+    },
+    {
+      "id": "ketagalan_child",
+      "name": "凯达格兰孩子",
+      "role": "基隆海岸原住民孩童",
+      "location": "台湾北部海岸",
+      "chapter1_function": "Scene 07 好奇看《春秋》，放贝壳，跑开。",
+      "avatar": "res://assets/portraits/portrait_ketagalan_child.png"
     }
   ]
 }

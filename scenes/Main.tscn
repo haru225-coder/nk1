@@ -1,18 +1,21 @@
-[gd_scene load_steps=4 format=3 uid="uid://c2g1h8abcxyz"]
+[gd_scene load_steps=12 format=3 uid="uid://c2g1h8abcxyz"]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/GameShell.gd" id="11_shell"]
 [ext_resource type="Theme" uid="uid://main_theme_placeholder" path="res://assets/main_theme.tres" id="2_theme"]
+[ext_resource type="Shader" path="res://assets/ui_vignette.gdshader" id="8_vignette"]
 [ext_resource type="Script" path="res://scripts/TitleScreenController.gd" id="3_title"]
 [ext_resource type="Script" path="res://scripts/FacilityController.gd" id="4_fac"]
 [ext_resource type="Script" path="res://scripts/PortScreenController.gd" id="5_port"]
 [ext_resource type="Script" path="res://scripts/NPCController.gd" id="6_npc"]
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_left"]
-bg_color = Color(0.1, 0.1, 0.1, 0.4)
-border_width_right = 2
-border_color = Color(0.3, 0.3, 0.3, 1)
+[ext_resource type="PackedScene" path="res://scenes/DialogueBox.tscn" id="9_dialogue"]
+[ext_resource type="PackedScene" path="res://scenes/PortStatusBar.tscn" id="7_status_bar"]
+[ext_resource type="PackedScene" path="res://scenes/TownMapView.tscn" id="10_town_map"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_right"]
-bg_color = Color(0.1, 0.1, 0.1, 0.2)
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("8_vignette")
+shader_parameter/edge_color = Color(0, 0, 0, 0.32)
+shader_parameter/softness = 0.58
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -24,7 +27,25 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_main")
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="GameShell" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("11_shell")
+
+[node name="BackgroundLayer" type="Control" parent="GameShell"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Background" type="TextureRect" parent="GameShell/BackgroundLayer"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -34,7 +55,34 @@ grow_vertical = 2
 expand_mode = 1
 stretch_mode = 6
 
-[node name="HBoxContainer" type="HBoxContainer" parent="."]
+[node name="VignetteLayer" type="Control" parent="GameShell"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Vignette" type="ColorRect" parent="GameShell/VignetteLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+material = SubResource("ShaderMaterial_vignette")
+
+[node name="ContentLayer" type="Control" parent="GameShell"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="GameShell/ContentLayer"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -43,49 +91,55 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0
 
-[node name="LeftPanel" type="PanelContainer" parent="HBoxContainer"]
-custom_minimum_size = Vector2(300, 0)
+[node name="LeftPanel" type="PanelContainer" parent="GameShell/ContentLayer/HBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(380, 0)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_left")
+theme_type_variation = &"SidePanel"
 
-[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/LeftPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="GameShell/ContentLayer/HBoxContainer/LeftPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 15
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
 
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/LeftPanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="GameShell/ContentLayer/HBoxContainer/LeftPanel/MarginContainer"]
 layout_mode = 2
+theme_override_constants/separation = 12
 
-[node name="TitleLabel" type="Label" parent="HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="GameShell/ContentLayer/HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "情报与状态"
+theme_type_variation = &"SidePanelTitle"
+text = "◆ 情报札记"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="GameShell/ContentLayer/HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 8
 
-[node name="StatusLabel" type="RichTextLabel" parent="HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
+[node name="StatusLabel" type="RichTextLabel" parent="GameShell/ContentLayer/HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
+theme_type_variation = &"SidePanelStatus"
 text = "金钱：0
-海路倾向：0
-士人倾向：0"
+名声：0"
 
-[node name="MessageLabel" type="RichTextLabel" parent="HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 150)
+[node name="MessageLabel" type="RichTextLabel" parent="GameShell/ContentLayer/HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/default_color = Color(0.9, 0.4, 0.4, 1)
+size_flags_vertical = 3
+theme_type_variation = &"SidePanelMessage"
+bbcode_enabled = true
+scroll_active = true
 text = "系统提示将在这里显示..."
 
-[node name="CenterArea" type="Control" parent="HBoxContainer"]
+[node name="CenterArea" type="Control" parent="GameShell/ContentLayer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="TitleMode" type="Control" parent="HBoxContainer/CenterArea"]
+[node name="TitleMode" type="Control" parent="GameShell/ContentLayer/HBoxContainer/CenterArea"]
 script = ExtResource("3_title")
 visible = false
 layout_mode = 1
@@ -95,47 +149,46 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/CenterArea/TitleMode"]
+[node name="TitlePanel" type="PanelContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/TitleMode"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -150.0
-offset_right = 300.0
-offset_bottom = 150.0
+offset_left = -340.0
+offset_top = -200.0
+offset_right = 340.0
+offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 40
+theme_type_variation = &"TitlePanel"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/TitleMode/TitlePanel"]
+layout_mode = 2
+theme_override_constants/separation = 28
 alignment = 1
 
-[node name="MainTitle" type="Label" parent="HBoxContainer/CenterArea/TitleMode/VBoxContainer"]
+[node name="MainTitle" type="Label" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/TitleMode/TitlePanel/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 64
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_y = 4
-theme_override_constants/shadow_outline_size = 4
+theme_type_variation = &"TitleMain"
 text = "东亚海域立志传"
 horizontal_alignment = 1
 
-[node name="SubTitle" type="Label" parent="HBoxContainer/CenterArea/TitleMode/VBoxContainer"]
+[node name="SubTitle" type="Label" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/TitleMode/TitlePanel/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_y = 2
+theme_type_variation = &"TitleSub"
 text = "副标题"
 horizontal_alignment = 1
 
-[node name="StartButton" type="Button" parent="HBoxContainer/CenterArea/TitleMode/VBoxContainer"]
-custom_minimum_size = Vector2(200, 60)
+[node name="ButtonContainer" type="VBoxContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/TitleMode/TitlePanel/VBoxContainer"]
+custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 24
-text = "开始游戏"
+theme_override_constants/separation = 12
+alignment = 1
 
-[node name="InvestigationMode" type="PanelContainer" parent="HBoxContainer/CenterArea"]
+[node name="InvestigationMode" type="PanelContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea"]
 script = ExtResource("4_fac")
 layout_mode = 1
 anchors_preset = 15
@@ -143,53 +196,84 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_right")
+theme_type_variation = &"InvestigationContent"
 
-[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/CenterArea/InvestigationMode"]
+[node name="MarginContainer" type="MarginContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode"]
 layout_mode = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 40
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 40
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
 
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 15
+theme_override_constants/separation = 12
 
-[node name="SceneTitle" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+[node name="SceneTitle" type="Label" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_type_variation = &"SceneTitle"
 text = "地点标题"
 
-[node name="HSeparator" type="HSeparator" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
 layout_mode = 2
+modulate = Color(0.72, 0.55, 0.22, 0.5)
 
-[node name="BodyText" type="RichTextLabel" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 200)
+[node name="CityNavPanel" type="PanelContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
-size_flags_vertical = 3
-theme_override_font_sizes/normal_font_size = 18
+theme_type_variation = &"PortFacilityCard"
+
+[node name="CityNavMargin" type="MarginContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/CityNavPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="CityNavVBox" type="VBoxContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/CityNavPanel/CityNavMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CityNavLabel" type="Label" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/CityNavPanel/CityNavMargin/CityNavVBox"]
+layout_mode = 2
+theme_type_variation = &"SectionLabel"
+text = "▸ 前往其他地点"
+
+[node name="CityNavFlow" type="HFlowContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/CityNavPanel/CityNavMargin/CityNavVBox"]
+layout_mode = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="BodyText" type="RichTextLabel" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(0, 0)
+layout_mode = 2
+size_flags_vertical = 0
+theme_type_variation = &"SidePanelStatus"
 bbcode_enabled = true
-text = "环境描述文本"
+text = ""
 
-[node name="InteractiveLabel" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+[node name="InteractiveLabel" type="Label" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-text = "--- 桌面可调查物 ---"
+theme_type_variation = &"SectionLabel"
+text = "▸ 可调查"
 
-[node name="InteractiveContainer" type="HFlowContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 100)
+[node name="InteractiveContainer" type="HFlowContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 8
 
-[node name="ChoicesLabel" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+[node name="ChoicesLabel" type="Label" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-text = "--- 决断 ---"
+theme_type_variation = &"SectionLabel"
+text = "▸ 决断"
 
-[node name="ChoicesContainer" type="VBoxContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+[node name="ChoicesContainer" type="VBoxContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="PortMode" type="Control" parent="HBoxContainer/CenterArea"]
+[node name="PortMode" type="Control" parent="GameShell/ContentLayer/HBoxContainer/CenterArea"]
 script = ExtResource("5_port")
 visible = false
 layout_mode = 1
@@ -199,46 +283,110 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="LeftFacilities" type="VBoxContainer" parent="HBoxContainer/CenterArea/PortMode"]
-layout_mode = 1
-anchors_preset = 9
-anchor_bottom = 1.0
-offset_left = 30.0
-offset_right = 130.0
-grow_vertical = 2
-alignment = 1
-theme_override_constants/separation = 20
-
-[node name="RightFacilities" type="VBoxContainer" parent="HBoxContainer/CenterArea/PortMode"]
-layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -130.0
-offset_right = -30.0
-grow_horizontal = 0
-grow_vertical = 2
-alignment = 1
-theme_override_constants/separation = 20
-
-[node name="PortTitle" type="Label" parent="HBoxContainer/CenterArea/PortMode"]
+[node name="TitleBanner" type="PanelContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode"]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -100.0
-offset_top = 20.0
-offset_right = 100.0
-offset_bottom = 60.0
+offset_left = -360.0
+offset_top = 88.0
+offset_right = 360.0
+offset_bottom = 160.0
 grow_horizontal = 2
-theme_override_font_sizes/font_size = 36
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_y = 2
+theme_type_variation = &"PortTitleBanner"
+z_index = 2
+
+[node name="PortTitle" type="Label" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode/TitleBanner"]
+layout_mode = 2
+theme_type_variation = &"PortTitleLarge"
 text = "港口名称"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="NPCMode" type="Control" parent="HBoxContainer/CenterArea"]
+[node name="FacilityHub" type="PanelContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 172.0
+offset_right = -20.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"InvestigationContent"
+z_index = 1
+
+[node name="Margin" type="MarginContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode/FacilityHub"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode/FacilityHub/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="FacilityHint" type="Label" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode/FacilityHub/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"SectionLabel"
+text = "▸ 点击建筑进入地点"
+horizontal_alignment = 1
+
+[node name="TownMapView" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode/FacilityHub/Margin/VBox" instance=ExtResource("10_town_map")]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FacilityGrid" type="HBoxContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode/FacilityHub/Margin/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="LeftColumn" type="VBoxContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode/FacilityHub/Margin/VBox/FacilityGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="RightColumn" type="VBoxContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode/FacilityHub/Margin/VBox/FacilityGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="PortActionsLabel" type="Label" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode/FacilityHub/Margin/VBox"]
+visible = false
+layout_mode = 2
+theme_type_variation = &"SectionLabel"
+text = "▸ 城关行动"
+horizontal_alignment = 1
+
+[node name="PortChoicesContainer" type="VBoxContainer" parent="GameShell/ContentLayer/HBoxContainer/CenterArea/PortMode/FacilityHub/Margin/VBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CommandBarHost" type="PanelContainer" parent="GameShell"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -88.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_type_variation = &"StatusBarPanel"
+
+[node name="StatusLayer" type="CanvasLayer" parent="."]
+layer = 55
+
+[node name="PortStatusBar" parent="StatusLayer" instance=ExtResource("7_status_bar")]
+
+[node name="NPCMode" type="Control" parent="GameShell/ContentLayer/HBoxContainer/CenterArea"]
 script = ExtResource("6_npc")
 visible = false
 layout_mode = 1
@@ -248,35 +396,13 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="HBox" type="HBoxContainer" parent="HBoxContainer/CenterArea/NPCMode"]
+[node name="DialogueLayer" type="CanvasLayer" parent="."]
+layer = 60
+
+[node name="DialogueBox" parent="DialogueLayer" instance=ExtResource("9_dialogue")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme_override_constants/separation = 20
-
-[node name="DialogPanel" type="VBoxContainer" parent="HBoxContainer/CenterArea/NPCMode/HBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="NPCName" type="Label" parent="HBoxContainer/CenterArea/NPCMode/HBox/DialogPanel"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 32
-theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
-text = "NPC Name"
-
-[node name="NPCDialog" type="RichTextLabel" parent="HBoxContainer/CenterArea/NPCMode/HBox/DialogPanel"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_font_sizes/normal_font_size = 20
-text = "NPC Dialog text goes here..."
-
-[node name="NPCActions" type="VBoxContainer" parent="HBoxContainer/CenterArea/NPCMode/HBox/DialogPanel"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="PortraitRect" type="TextureRect" parent="HBoxContainer/CenterArea/NPCMode/HBox"]
-custom_minimum_size = Vector2(300, 0)
-layout_mode = 2
-expand_mode = 1
-stretch_mode = 5
+grow_horizontal = 2
+grow_vertical = 2

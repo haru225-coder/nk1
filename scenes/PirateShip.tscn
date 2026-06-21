@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://pirateship_node_123"]
+[gd_scene load_steps=3 format=3 uid="uid://pirateship_node_123"]
 
 [ext_resource type="Script" path="res://scripts/PirateShip.gd" id="1_pirate"]
 [ext_resource type="Texture2D" uid="uid://ship_tex_1234" path="res://assets/ship_topdown.png" id="2_ship_tex"]

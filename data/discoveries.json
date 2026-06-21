@@ -1,25 +1,33 @@
 {
   "meta": {
     "title": "东亚海域立志传",
-    "era": "南宋末，约1260-1277",
-    "prototype": "v0.1"
+    "era": "南宋末，约1255-1277",
+    "prototype": "v0.3.1"
   },
   "discoveries": [
     {
-      "id": "nameless_shelter_bay",
-      "name": "旧避风澳",
-      "type": "航路复核",
-      "location": "南岛海道北口",
-      "value": 80,
-      "historical_hook": "未入官图的旧泊地，未来可能成为海口通信与避风节点"
+      "id": "penghu_anchorage",
+      "name": "澎湖锚地",
+      "type": "航路节点",
+      "location": "澎湖",
+      "value": 60,
+      "historical_hook": "福建海路避风枢纽，林伯渊在此讲航线网络"
     },
     {
-      "id": "broken_buddhist_stele",
-      "name": "残裂佛碑",
-      "type": "碑拓证据",
-      "location": "礁口旧泊地",
-      "value": 120,
-      "historical_hook": "寺院网络暗示旧航路或曾被僧侣使用"
+      "id": "black_water_gutter",
+      "name": "黑水沟",
+      "type": "洋流险段",
+      "location": "台湾海峡中部",
+      "value": 80,
+      "historical_hook": "洋流接管航向，展示海洋的非人性"
+    },
+    {
+      "id": "keelung_coast",
+      "name": "基隆海岸",
+      "type": "未知陆地",
+      "location": "台湾北部",
+      "value": 100,
+      "historical_hook": "无汉字、无路标的世界；凯达格兰人赠贝壳"
     }
   ]
 }
