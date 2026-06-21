@@ -1,0 +1,526 @@
+[gd_scene load_steps=13 format=3 uid="uid://port_status_bar_scene"]
+
+[ext_resource type="Script" path="res://scripts/PortStatusBar.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/icons_stat/icon_stat_location.png" id="2_loc"]
+[ext_resource type="Texture2D" path="res://assets/ui_status_divider.png" id="3_div"]
+[ext_resource type="Texture2D" path="res://assets/icons_stat/icon_stat_money.png" id="4_money"]
+[ext_resource type="Texture2D" path="res://assets/icons_stat/icon_stat_fame.png" id="5_fame"]
+[ext_resource type="Texture2D" path="res://assets/icons_stat/icon_stat_permit.png" id="6_permit"]
+[ext_resource type="Texture2D" path="res://assets/icons_stat/icon_stat_pu.png" id="7_pu"]
+[ext_resource type="Texture2D" path="res://assets/icons_stat/icon_stat_cargo.png" id="8_cargo"]
+[ext_resource type="Texture2D" path="res://assets/icons_stat/icon_stat_crew.png" id="9_crew"]
+[ext_resource type="Texture2D" path="res://assets/icons_stat/icon_stat_food.png" id="10_food"]
+[ext_resource type="Texture2D" path="res://assets/icons_stat/icon_stat_water.png" id="11_water"]
+[ext_resource type="Texture2D" path="res://assets/icons_stat/icon_stat_ship.png" id="12_ship"]
+
+[node name="PortStatusBar" type="Control"]
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 88.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("1_script")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"StatusBarPanel"
+
+[node name="Body" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 2
+theme_override_constants/margin_bottom = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Body"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="PrimaryRow" type="HBoxContainer" parent="Panel/Body/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="Location" type="PanelContainer" parent="Panel/Body/VBox/PrimaryRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_type_variation = &"PortStatChipWide"
+
+[node name="Margin" type="MarginContainer" parent="Panel/Body/VBox/PrimaryRow/Location"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 2
+
+[node name="Row" type="HBoxContainer" parent="Panel/Body/VBox/PrimaryRow/Location/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Icon" type="TextureRect" parent="Panel/Body/VBox/PrimaryRow/Location/Margin/Row"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("2_loc")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Body/VBox/PrimaryRow/Location/Margin/Row"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Caption" type="Label" parent="Panel/Body/VBox/PrimaryRow/Location/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatLabel"
+text = "所在"
+
+[node name="Value" type="Label" parent="Panel/Body/VBox/PrimaryRow/Location/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatValueLocation"
+text = "城关"
+clip_text = true
+
+[node name="DividerA" type="TextureRect" parent="Panel/Body/VBox/PrimaryRow"]
+custom_minimum_size = Vector2(6, 36)
+layout_mode = 2
+texture = ExtResource("3_div")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Money" type="PanelContainer" parent="Panel/Body/VBox/PrimaryRow"]
+layout_mode = 2
+theme_type_variation = &"PortStatChip"
+
+[node name="Margin" type="MarginContainer" parent="Panel/Body/VBox/PrimaryRow/Money"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 2
+
+[node name="Row" type="HBoxContainer" parent="Panel/Body/VBox/PrimaryRow/Money/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Icon" type="TextureRect" parent="Panel/Body/VBox/PrimaryRow/Money/Margin/Row"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("4_money")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Body/VBox/PrimaryRow/Money/Margin/Row"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Caption" type="Label" parent="Panel/Body/VBox/PrimaryRow/Money/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatLabel"
+text = "金钱"
+
+[node name="Value" type="Label" parent="Panel/Body/VBox/PrimaryRow/Money/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatValue"
+text = "0"
+
+[node name="Fame" type="PanelContainer" parent="Panel/Body/VBox/PrimaryRow"]
+layout_mode = 2
+theme_type_variation = &"PortStatChip"
+
+[node name="Margin" type="MarginContainer" parent="Panel/Body/VBox/PrimaryRow/Fame"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 2
+
+[node name="Row" type="HBoxContainer" parent="Panel/Body/VBox/PrimaryRow/Fame/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Icon" type="TextureRect" parent="Panel/Body/VBox/PrimaryRow/Fame/Margin/Row"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("5_fame")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Body/VBox/PrimaryRow/Fame/Margin/Row"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Caption" type="Label" parent="Panel/Body/VBox/PrimaryRow/Fame/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatLabel"
+text = "名声"
+
+[node name="Value" type="Label" parent="Panel/Body/VBox/PrimaryRow/Fame/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatValue"
+text = "0"
+
+[node name="Permit" type="PanelContainer" parent="Panel/Body/VBox/PrimaryRow"]
+layout_mode = 2
+theme_type_variation = &"PortStatChip"
+
+[node name="Margin" type="MarginContainer" parent="Panel/Body/VBox/PrimaryRow/Permit"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 2
+
+[node name="Row" type="HBoxContainer" parent="Panel/Body/VBox/PrimaryRow/Permit/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Icon" type="TextureRect" parent="Panel/Body/VBox/PrimaryRow/Permit/Margin/Row"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("6_permit")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Body/VBox/PrimaryRow/Permit/Margin/Row"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Caption" type="Label" parent="Panel/Body/VBox/PrimaryRow/Permit/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatLabel"
+text = "货引"
+
+[node name="Value" type="Label" parent="Panel/Body/VBox/PrimaryRow/Permit/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatValue"
+text = "无引"
+
+[node name="PuAttention" type="PanelContainer" parent="Panel/Body/VBox/PrimaryRow"]
+layout_mode = 2
+theme_type_variation = &"PortStatChip"
+
+[node name="Margin" type="MarginContainer" parent="Panel/Body/VBox/PrimaryRow/PuAttention"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 2
+
+[node name="Row" type="HBoxContainer" parent="Panel/Body/VBox/PrimaryRow/PuAttention/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Icon" type="TextureRect" parent="Panel/Body/VBox/PrimaryRow/PuAttention/Margin/Row"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("7_pu")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Body/VBox/PrimaryRow/PuAttention/Margin/Row"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Caption" type="Label" parent="Panel/Body/VBox/PrimaryRow/PuAttention/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatLabel"
+text = "蒲氏"
+
+[node name="Value" type="Label" parent="Panel/Body/VBox/PrimaryRow/PuAttention/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatValue"
+text = "0"
+
+[node name="DividerB" type="TextureRect" parent="Panel/Body/VBox/PrimaryRow"]
+custom_minimum_size = Vector2(6, 36)
+layout_mode = 2
+texture = ExtResource("3_div")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Cargo" type="PanelContainer" parent="Panel/Body/VBox/PrimaryRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"PortStatChipWide"
+
+[node name="Margin" type="MarginContainer" parent="Panel/Body/VBox/PrimaryRow/Cargo"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 2
+
+[node name="Row" type="HBoxContainer" parent="Panel/Body/VBox/PrimaryRow/Cargo/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Icon" type="TextureRect" parent="Panel/Body/VBox/PrimaryRow/Cargo/Margin/Row"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("8_cargo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Body/VBox/PrimaryRow/Cargo/Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="Caption" type="Label" parent="Panel/Body/VBox/PrimaryRow/Cargo/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatLabel"
+text = "货舱"
+
+[node name="Value" type="Label" parent="Panel/Body/VBox/PrimaryRow/Cargo/Margin/Row/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"PortStatValue"
+text = "空"
+clip_text = true
+
+[node name="VoyageRow" type="HBoxContainer" parent="Panel/Body/VBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="VoyageTag" type="Label" parent="Panel/Body/VBox/VoyageRow"]
+layout_mode = 2
+theme_type_variation = &"PortStatLabel"
+text = "▸ 船队"
+
+[node name="Crew" type="PanelContainer" parent="Panel/Body/VBox/VoyageRow"]
+layout_mode = 2
+theme_type_variation = &"PortStatChip"
+
+[node name="Margin" type="MarginContainer" parent="Panel/Body/VBox/VoyageRow/Crew"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 2
+
+[node name="Row" type="HBoxContainer" parent="Panel/Body/VBox/VoyageRow/Crew/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Icon" type="TextureRect" parent="Panel/Body/VBox/VoyageRow/Crew/Margin/Row"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("9_crew")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Body/VBox/VoyageRow/Crew/Margin/Row"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="Caption" type="Label" parent="Panel/Body/VBox/VoyageRow/Crew/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatLabel"
+text = "水手"
+
+[node name="Value" type="Label" parent="Panel/Body/VBox/VoyageRow/Crew/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatValue"
+text = "30/30"
+
+[node name="MeterTrack" type="Control" parent="Panel/Body/VBox/VoyageRow/Crew/Margin/Row/VBox"]
+custom_minimum_size = Vector2(40, 4)
+layout_mode = 2
+
+[node name="MeterBg" type="ColorRect" parent="Panel/Body/VBox/VoyageRow/Crew/Margin/Row/VBox/MeterTrack"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.08, 0.06, 0.04, 0.8)
+
+[node name="MeterFill" type="ColorRect" parent="Panel/Body/VBox/VoyageRow/Crew/Margin/Row/VBox/MeterTrack"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 4.0
+mouse_filter = 2
+color = Color(0.82, 0.62, 0.24, 1)
+
+[node name="Food" type="PanelContainer" parent="Panel/Body/VBox/VoyageRow"]
+layout_mode = 2
+theme_type_variation = &"PortStatChip"
+
+[node name="Margin" type="MarginContainer" parent="Panel/Body/VBox/VoyageRow/Food"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 2
+
+[node name="Row" type="HBoxContainer" parent="Panel/Body/VBox/VoyageRow/Food/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Icon" type="TextureRect" parent="Panel/Body/VBox/VoyageRow/Food/Margin/Row"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("10_food")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Body/VBox/VoyageRow/Food/Margin/Row"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="Caption" type="Label" parent="Panel/Body/VBox/VoyageRow/Food/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatLabel"
+text = "粮食"
+
+[node name="Value" type="Label" parent="Panel/Body/VBox/VoyageRow/Food/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatValue"
+text = "100"
+
+[node name="MeterTrack" type="Control" parent="Panel/Body/VBox/VoyageRow/Food/Margin/Row/VBox"]
+custom_minimum_size = Vector2(40, 4)
+layout_mode = 2
+
+[node name="MeterBg" type="ColorRect" parent="Panel/Body/VBox/VoyageRow/Food/Margin/Row/VBox/MeterTrack"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.08, 0.06, 0.04, 0.8)
+
+[node name="MeterFill" type="ColorRect" parent="Panel/Body/VBox/VoyageRow/Food/Margin/Row/VBox/MeterTrack"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 4.0
+mouse_filter = 2
+color = Color(0.82, 0.62, 0.24, 1)
+
+[node name="Water" type="PanelContainer" parent="Panel/Body/VBox/VoyageRow"]
+layout_mode = 2
+theme_type_variation = &"PortStatChip"
+
+[node name="Margin" type="MarginContainer" parent="Panel/Body/VBox/VoyageRow/Water"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 2
+
+[node name="Row" type="HBoxContainer" parent="Panel/Body/VBox/VoyageRow/Water/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Icon" type="TextureRect" parent="Panel/Body/VBox/VoyageRow/Water/Margin/Row"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("11_water")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Body/VBox/VoyageRow/Water/Margin/Row"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="Caption" type="Label" parent="Panel/Body/VBox/VoyageRow/Water/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatLabel"
+text = "淡水"
+
+[node name="Value" type="Label" parent="Panel/Body/VBox/VoyageRow/Water/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatValue"
+text = "100"
+
+[node name="MeterTrack" type="Control" parent="Panel/Body/VBox/VoyageRow/Water/Margin/Row/VBox"]
+custom_minimum_size = Vector2(40, 4)
+layout_mode = 2
+
+[node name="MeterBg" type="ColorRect" parent="Panel/Body/VBox/VoyageRow/Water/Margin/Row/VBox/MeterTrack"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.08, 0.06, 0.04, 0.8)
+
+[node name="MeterFill" type="ColorRect" parent="Panel/Body/VBox/VoyageRow/Water/Margin/Row/VBox/MeterTrack"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 4.0
+mouse_filter = 2
+color = Color(0.82, 0.62, 0.24, 1)
+
+[node name="Ship" type="PanelContainer" parent="Panel/Body/VBox/VoyageRow"]
+layout_mode = 2
+theme_type_variation = &"PortStatChip"
+
+[node name="Margin" type="MarginContainer" parent="Panel/Body/VBox/VoyageRow/Ship"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 2
+
+[node name="Row" type="HBoxContainer" parent="Panel/Body/VBox/VoyageRow/Ship/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Icon" type="TextureRect" parent="Panel/Body/VBox/VoyageRow/Ship/Margin/Row"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("12_ship")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Body/VBox/VoyageRow/Ship/Margin/Row"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="Caption" type="Label" parent="Panel/Body/VBox/VoyageRow/Ship/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatLabel"
+text = "船体"
+
+[node name="Value" type="Label" parent="Panel/Body/VBox/VoyageRow/Ship/Margin/Row/VBox"]
+layout_mode = 2
+theme_type_variation = &"PortStatValue"
+text = "100/100"
+
+[node name="MeterTrack" type="Control" parent="Panel/Body/VBox/VoyageRow/Ship/Margin/Row/VBox"]
+custom_minimum_size = Vector2(40, 4)
+layout_mode = 2
+
+[node name="MeterBg" type="ColorRect" parent="Panel/Body/VBox/VoyageRow/Ship/Margin/Row/VBox/MeterTrack"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.08, 0.06, 0.04, 0.8)
+
+[node name="MeterFill" type="ColorRect" parent="Panel/Body/VBox/VoyageRow/Ship/Margin/Row/VBox/MeterTrack"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 4.0
+mouse_filter = 2
+color = Color(0.82, 0.62, 0.24, 1)

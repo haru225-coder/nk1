@@ -1,0 +1,89 @@
+[gd_scene load_steps=2 format=3 uid="uid://port_facility_card"]
+
+[ext_resource type="Script" path="res://scripts/PortFacilityCard.gd" id="1_script"]
+
+[node name="PortFacilityCard" type="Control"]
+custom_minimum_size = Vector2(176, 212)
+size_flags_horizontal = 0
+script = ExtResource("1_script")
+
+[node name="CardPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_right = 176.0
+offset_bottom = 212.0
+theme_type_variation = &"PortFacilityCard"
+clip_contents = true
+
+[node name="Margin" type="MarginContainer" parent="CardPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="CardPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="IconRow" type="CenterContainer" parent="CardPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 92)
+layout_mode = 2
+
+[node name="IconFrame" type="PanelContainer" parent="CardPanel/Margin/VBox/IconRow"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+theme_type_variation = &"FacilityIconFrame"
+
+[node name="IconCenter" type="CenterContainer" parent="CardPanel/Margin/VBox/IconRow/IconFrame"]
+layout_mode = 2
+
+[node name="IconTexture" type="TextureRect" parent="CardPanel/Margin/VBox/IconRow/IconFrame/IconCenter"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(76, 76)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TitleLabel" type="Label" parent="CardPanel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"FacilityTitle"
+text = "地点"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="CardPanel/Margin/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(148, 0)
+layout_mode = 2
+theme_type_variation = &"FacilitySubtitle"
+text = "副标题"
+horizontal_alignment = 1
+autowrap_mode = 3
+max_lines_visible = 2
+
+[node name="HitButton" type="Button" parent="."]
+layout_mode = 0
+offset_right = 176.0
+offset_bottom = 212.0
+mouse_default_cursor_shape = 2
+theme_type_variation = &"FacilityCardButton"
+flat = true
+
+[node name="QuestBadge" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 118.0
+offset_top = 8.0
+offset_right = 166.0
+offset_bottom = 30.0
+mouse_filter = 2
+theme_type_variation = &"FacilityQuestBadge"
+
+[node name="BadgeLabel" type="Label" parent="QuestBadge"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.98, 0.88, 0.55, 1)
+theme_override_font_sizes/font_size = 13
+text = "主线"
+horizontal_alignment = 1
+vertical_alignment = 1

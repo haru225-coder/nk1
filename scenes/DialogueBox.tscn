@@ -1,0 +1,177 @@
+[gd_scene load_steps=5 format=3 uid="uid://dialogue_box_scene"]
+
+[ext_resource type="Script" path="res://scripts/DialogueBox.gd" id="1_script"]
+[ext_resource type="Theme" path="res://assets/main_theme.tres" id="2_theme"]
+[ext_resource type="Texture2D" uid="uid://cs4687cvtaf4x" path="res://assets/ui_frame_koei.png" id="3_frame"]
+[ext_resource type="Shader" path="res://assets/ui_bottom_gradient.gdshader" id="4_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dim"]
+shader = ExtResource("4_shader")
+shader_parameter/top_color = Color(0, 0, 0, 0)
+shader_parameter/bottom_color = Color(0, 0, 0, 0.5)
+
+[node name="DialogueBox" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="ClickCatcher" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 0)
+
+[node name="DimLayer" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+material = SubResource("ShaderMaterial_dim")
+
+[node name="Frame" type="NinePatchRect" parent="."]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -392.0
+offset_right = -20.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+texture = ExtResource("3_frame")
+patch_margin_left = 72
+patch_margin_top = 56
+patch_margin_right = 72
+patch_margin_bottom = 72
+
+[node name="Margin" type="MarginContainer" parent="Frame"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 88
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 88
+theme_override_constants/margin_bottom = 22
+
+[node name="HBox" type="HBoxContainer" parent="Frame/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="PortraitPanel" type="PanelContainer" parent="Frame/Margin/HBox"]
+custom_minimum_size = Vector2(160, 196)
+layout_mode = 2
+theme_type_variation = &"DialoguePortrait"
+
+[node name="PortraitStack" type="Control" parent="Frame/Margin/HBox/PortraitPanel"]
+layout_mode = 2
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Portrait" type="TextureRect" parent="Frame/Margin/HBox/PortraitPanel/PortraitStack"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Placeholder" type="Label" parent="Frame/Margin/HBox/PortraitPanel/PortraitStack"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"DialoguePortraitPlaceholder"
+text = "？"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NamePlate" type="PanelContainer" parent="Frame/Margin/HBox/PortraitPanel/PortraitStack"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_type_variation = &"DialogueNamePlate"
+
+[node name="SpeakerName" type="Label" parent="Frame/Margin/HBox/PortraitPanel/PortraitStack/NamePlate"]
+layout_mode = 2
+theme_type_variation = &"DialogueNameSpeaker"
+text = "林伯渊"
+horizontal_alignment = 1
+
+[node name="TextPanel" type="VBoxContainer" parent="Frame/Margin/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="StageDirection" type="Label" parent="Frame/Margin/HBox/TextPanel"]
+visible = false
+layout_mode = 2
+theme_type_variation = &"DialogueStageDirection"
+text = "（……）"
+
+[node name="DialogueText" type="Label" parent="Frame/Margin/HBox/TextPanel"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+size_flags_vertical = 3
+theme_type_variation = &"DialogueNarrationText"
+text = "对话文字将在这里逐字显示……"
+autowrap_mode = 3
+clip_text = true
+max_lines_visible = 3
+
+[node name="HintRow" type="HBoxContainer" parent="Frame/Margin/HBox/TextPanel"]
+layout_mode = 2
+alignment = 2
+
+[node name="Spacer" type="Control" parent="Frame/Margin/HBox/TextPanel/HintRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HintLabel" type="Label" parent="Frame/Margin/HBox/TextPanel/HintRow"]
+layout_mode = 2
+theme_type_variation = &"DialogueHint"
+text = "▼"
+
+[node name="ActionsSlot" type="HBoxContainer" parent="Frame/Margin/HBox/TextPanel"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="BlipPlayer" type="AudioStreamPlayer" parent="."]
+volume_db = -18.0
+bus = &"Master"

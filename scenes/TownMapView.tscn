@@ -1,0 +1,70 @@
+[gd_scene load_steps=3 format=3 uid="uid://town_map_view"]
+
+[ext_resource type="Script" path="res://scripts/TownMapView.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cs4687cvtaf4x" path="res://assets/ui_frame_koei.png" id="2_frame"]
+
+[node name="TownMapView" type="Control"]
+custom_minimum_size = Vector2(0, 360)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_script")
+
+[node name="MapHint" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 28.0
+grow_horizontal = 2
+theme_type_variation = &"SectionLabel"
+text = "▸ 点击地图上的建筑进入"
+horizontal_alignment = 1
+
+[node name="MapFrame" type="NinePatchRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 28.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("2_frame")
+patch_margin_left = 72
+patch_margin_top = 56
+patch_margin_right = 72
+patch_margin_bottom = 72
+mouse_filter = 2
+clip_contents = true
+
+[node name="MapClip" type="Control" parent="MapFrame"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 72
+offset_top = 56
+offset_right = -72
+offset_bottom = -72
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MapTexture" type="TextureRect" parent="MapFrame/MapClip"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="HotspotLayer" type="Control" parent="MapFrame/MapClip"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
