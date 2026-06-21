@@ -1,0 +1,22 @@
+{
+  "scenes": [
+    {
+      "id": "cg_title",
+      "chapter": "prologue",
+      "title": "",
+      "location": "xinghua",
+      "cg": "dark",
+      "cg_title": "东亚海域立志传",
+      "cg_sub": "南宋宝祐三年（1255）",
+      "body": "",
+      "choices": [
+        {
+          "label": "开始旅程",
+          "next": "scene01_xianghua_school"
+        }
+      ],
+      "type": "title",
+      "bg": "res://assets/bg_title_visual.png"
+    }
+  ]
+}

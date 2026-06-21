@@ -1,0 +1,175 @@
+{
+  "scenes": [
+    {
+      "id": "scene04_departure",
+      "chapter": "chapter_1",
+      "title": "出港",
+      "location": "sea",
+      "time": "次日清晨",
+      "objective": "航海系统知识展示；世界多样性",
+      "body": "礼炮一响，缆绳齐颤。半个时辰后海雾压来，阿巴斯高喊阿拉伯语，水手齐跪。\n\n【林伯渊】：「在这条水道上，神仙的规矩比官府大。」\n\n　　雾散处，半沉官船横在航道，烧焦的朝廷旗还在滴水。\n\n【林伯渊】：「记下方位。回去报给市舶司，或者装没看见，随你。」\n\n【林伯渊】：「记住了，船舱进水，别的舱不能声张。在海上想活命，靠的是缝补，不是嘴。」",
+      "choices": [
+        {
+          "label": "催促报官",
+          "next": "scene05_penghu_night",
+          "effects": {
+            "fame": 3,
+            "story_flag": "navigation_basics_learned",
+            "water": -2
+          },
+          "narration": "林伯渊记下坐标，却摇头：「海上报官，常常报给错的人。」"
+        },
+        {
+          "label": "沉默，继续北上",
+          "next": "scene05_penghu_night",
+          "effects": {
+            "story_flag": "navigation_basics_learned",
+            "food": -2,
+            "water": -2
+          }
+        }
+      ],
+      "bg": "res://assets/bg_departure.png",
+      "investigations": [
+        {
+          "label": "检查烧焦的官船残骸",
+          "text": "舱里有没验的番药，封条被刀割开。像水师自己凿沉的走私船，黑吃黑罢了。",
+          "once_flag": "saw_sunken_patrol",
+          "effects": {
+            "story_flag": "saw_sunken_patrol",
+            "pu_attention": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene05_penghu_night",
+      "chapter": "chapter_1",
+      "title": "澎湖一夜",
+      "location": "penghu",
+      "time": "抵达当日傍晚至次日清晨",
+      "objective": "展示航线网络；星空下的沉思",
+      "body": "澎湖渔村。半夜有人敲舷卖淡水，水面却漂着破筏与浮尸。\n\n【渔家婆】：「黑水沟昨儿吞了三条船。再不走，台风就来了，连骨头都剩不下。」\n\n【林伯渊】：「澎湖是个十字路口，来来往往；可它也是片坟场，埋的都不留名。」\n\n　　拂晓返航。两时辰后风无缘无故倒转，帆骨吱嘎作响，像在惨叫。\n\n【林伯渊】：（低声）「有人动了江口的浮标……这水道，开始咬人了。」",
+      "choices": [
+        {
+          "label": "命令降帆硬扛",
+          "next": "scene06_black_water",
+          "effects": {
+            "crew_count": -1,
+            "story_flag": "penghu_night",
+            "navigation_position": "penghu",
+            "food": -3,
+            "water": -4
+          },
+          "narration": "主桅帆骨应声断裂，砸中一名水手，惨叫声瞬间被风浪吞没。"
+        },
+        {
+          "label": "听林伯渊切外海",
+          "next": "scene06_black_water",
+          "effects": {
+            "linboyuan_relationship": 3,
+            "story_flag": "penghu_night",
+            "navigation_position": "penghu",
+            "food": -2,
+            "water": -3
+          }
+        }
+      ],
+      "bg": "res://assets/bg_penghu_night.png"
+    },
+    {
+      "id": "scene06_black_water",
+      "chapter": "chapter_1",
+      "title": "黑水沟",
+      "location": "sea",
+      "time": "澎湖出发后约半日",
+      "objective": "展示海洋的非人性；「世界有不由你决定的力量」主题",
+      "body": "林伯渊执意抄黑水沟。船身横移，罗盘狂转，像是被什么怪物攥住了心脏。\n\n【陈子龙】：「改航道！」\n\n【林伯渊】：「晚了。黑水沟已经咬住船底了。」\n\n　　甲板裂缝渗水。你徒手堵缝，血混桐油。有水手在写遗书，阿巴斯仍按时礼拜，面朝西方。\n\n【林伯渊】：「黑水沟不随便吞人——它是在挑人。」\n\n　　水色猛地变深，如墨汁般化不开。远处隐约有船在烧，火光惨绿。",
+      "choices": [
+        {
+          "label": "全力堵漏",
+          "next": "scene07_keelung_coast",
+          "effects": {
+            "fame": 2,
+            "story_flag": "black_water_drift",
+            "food": -2,
+            "water": -5
+          },
+          "narration": "你满手油与血，船还是进了水，但没沉。海神今天没看上你。"
+        },
+        {
+          "label": "捧出《春秋》祈求天候",
+          "next": "scene07_keelung_coast",
+          "effects": {
+            "story_flag": "black_water_drift",
+            "story_flag2": "prayed_at_black_water",
+            "fame": -1
+          },
+          "random_roll": {
+            "chance": 0.1,
+            "success": {
+              "narration": "风忽然倒吹半刻。林伯渊只道：「天意给了一线，别当成常态。」",
+              "effects": {
+                "story_flag": "black_water_wind_shift",
+                "fame": 2
+              }
+            },
+            "fail": {
+              "narration": "阿巴斯停下礼拜，冷冷看了你一眼。浪头灌进舱，淡水又少了一成。",
+              "effects": {
+                "water": -8,
+                "food": -3
+              }
+            }
+          }
+        }
+      ],
+      "bg": "res://assets/bg_black_water.png"
+    },
+    {
+      "id": "scene07_keelung_coast",
+      "chapter": "chapter_1",
+      "title": "基隆海岸",
+      "location": "keelung",
+      "time": "漂流约一日后，黄昏",
+      "objective": "文化冲击；失语的体验",
+      "body": "船被巨浪甩上陌生海岸。夜里犬吠，却不是汉话的命令。\n\n　　羽箭钉在桅杆——没瞄准人，只有警告。\n\n【林伯渊】：「这是凯达格兰人的地界。别碰那支箭，那是土人的见面礼。」\n\n　　孩童跑来摸《春秋》的油布面。老人抬手止住猎户，却收下书角作为交换。\n\n【老人】：（手势）可留可离，但别带走淡水。\n\n　　村中缺盐。你包袱里，却有先生备下的碎银。",
+      "choices": [
+        {
+          "label": "留银换水（示好当地人）",
+          "next": "scene08_return",
+          "effects": {
+            "money": -30,
+            "fame": 5,
+            "story_flag": "taiwan_coast",
+            "story_flag2": "ketagalan_encounter",
+            "item_acquired": "ketagalan_shell"
+          }
+        },
+        {
+          "label": "撕书页换水（林伯渊不喜）",
+          "next": "scene08_return",
+          "effects": {
+            "linboyuan_relationship": -3,
+            "fame": -3,
+            "story_flag": "taiwan_coast",
+            "story_flag2": "ketagalan_encounter",
+            "item_acquired": "ketagalan_shell"
+          },
+          "narration": "林伯渊脸色一沉，却没拦你。书卷在生存面前，连擦屁股都嫌硬。"
+        }
+      ],
+      "bg": "res://assets/bg_keelung_coast.png",
+      "investigations": [
+        {
+          "label": "查看桅杆上的羽箭",
+          "text": "箭羽用火灼过，是猎户的警告，不是战书。这片林子里，藏着比野兽更敏锐的眼睛。",
+          "effects": {
+            "story_flag": "ketagalan_warning"
+          },
+          "once_flag": "ketagalan_warning"
+        }
+      ]
+    }
+  ]
+}

@@ -27,7 +27,10 @@ func set_input_locked(locked: bool) -> void:
 	input_locked = locked
 
 func load_data() -> void:
-	scenes_data = _load_json("res://data/scenes.json")
+	scenes_data = _load_scenes_from_directory("res://data/scenes/")
+	if scenes_data.is_empty():
+		# 向后兼容：如果分片目录不存在，回退到单文件
+		scenes_data = _load_json("res://data/scenes.json")
 	goods_data = _load_json("res://data/goods.json")
 	ports_data = _load_json("res://data/ports.json")
 	npcs_data = _load_json("res://data/npcs.json")
@@ -79,6 +82,30 @@ func _load_json(path: String) -> Dictionary:
 	else:
 		push_error("[GameManager] JSON Parse Error in " + path + ": " + json.get_error_message())
 	return {}
+
+## 从分片目录 data/scenes/ 加载并合并所有场景 JSON
+func _load_scenes_from_directory(dir_path: String) -> Dictionary:
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return {}
+	var all_scenes: Array = []
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir() and file_name.ends_with(".json"):
+			var file_path := dir_path + file_name
+			var chunk := _load_json(file_path)
+			if chunk.has("scenes"):
+				all_scenes.append_array(chunk["scenes"])
+			else:
+				push_warning("[GameManager] scenes chunk missing 'scenes' key: " + file_path)
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	if all_scenes.is_empty():
+		return {}
+	var result := {"start_scene": "cg_title", "scenes": all_scenes}
+	print("[GameManager] Loaded %d scenes from %s" % [all_scenes.size(), dir_path])
+	return result
 
 func get_scene_by_id(scene_id: String) -> Dictionary:
 	return _scenes_by_id.get(scene_id, {})

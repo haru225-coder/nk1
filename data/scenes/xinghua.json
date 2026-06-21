@@ -1,0 +1,342 @@
+{
+  "scenes": [
+    {
+      "id": "scene01_xianghua_school",
+      "chapter": "chapter_1",
+      "title": "乡学晨课",
+      "location": "xinghua",
+      "time": "宝祐三年六月，晨",
+      "objective": "完成晨课，入城摸清前路",
+      "body": "兴化乡学，宝祐三年六月，晨。\n\n　　晨光透过竹帘，切成细碎的刀锋状落在讲桌上。桌上刻着个半掩在墨迹下的「义」字。先生讲到庆元党禁，声音像被海雾浸透了般低沉。\n\n【先生】：「朱子卒时，天下大雨。朝廷不许送葬，史书只冷冷写下『党禁』二字。可那泥水里跪着的几个学生，史书不记。」\n\n　　门外的汛牌被雨点打湿，字迹晕开：「午後有雷雨」。晨课散了，先生收卷，朝你微微颔首——今夜或许还得再来。",
+      "choices": [
+        {
+          "label": "下学，进入兴化城关",
+          "next": "port_xinghua",
+          "effects": {
+            "story_flag": "xianghua_morning_done"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_school.png",
+      "investigations": [
+        {
+          "label": "抚摸讲桌刻痕",
+          "text": "刻痕旁还有一行小字：「礼义廉耻，不在榜上。」像是先生早年用刀尖刻下的旧梦。",
+          "once_flag": "xianghua_desk_mark",
+          "effects": {
+            "fame": 1
+          }
+        },
+        {
+          "label": "看门外汛牌",
+          "text": "汛吏吐掉嘴里的草根：「两淮战事吃紧，官府正抓壮丁。」你暗自攥紧拳头：出远门，得备足硬通货。",
+          "once_flag": "xianghua_rain_sign",
+          "effects": {
+            "story_flag": "heard_conscription_rumor"
+          }
+        }
+      ]
+    },
+    {
+      "id": "port_xinghua",
+      "type": "port",
+      "chapter": "chapter_1",
+      "location": "xinghua",
+      "title": "兴化 · 城关",
+      "body": "",
+      "facilities": [
+        {
+          "id": "xinghua_exam",
+          "title": "乡学",
+          "subtitle": {
+            "default": "夜访拿经书",
+            "rules": [
+              {
+                "requires_story_flag": "spring_autumn_scroll",
+                "text": "已访 · 先生安睡",
+                "state": "done"
+              },
+              {
+                "requires_story_flag": "xianghua_morning_done",
+                "unless_story_flag": "spring_autumn_scroll",
+                "text": "★ 夜访拿经书",
+                "state": "quest"
+              }
+            ]
+          },
+          "icon": "res://assets/icon_exam_koei.png",
+          "requires_story_flag": "xianghua_morning_done"
+        },
+        {
+          "id": "xinghua_market",
+          "title": "市集",
+          "subtitle": "土产与海味",
+          "icon": "res://assets/icon_market_koei.png"
+        },
+        {
+          "id": "xinghua_inn",
+          "title": "客栈",
+          "subtitle": "歇脚打尖",
+          "icon": "res://assets/icon_inn_koei.png"
+        },
+        {
+          "id": "xinghua_tavern",
+          "title": "茶馆",
+          "subtitle": "听风言风语",
+          "icon": "res://assets/icon_tavern_koei.png"
+        },
+        {
+          "id": "xinghua_temple",
+          "title": "城隍庙",
+          "subtitle": {
+            "default": "贾府踩场",
+            "rules": [
+              {
+                "unless_story_flag": "jia_faction_met",
+                "text": "★ 贾府踩场",
+                "state": "quest"
+              }
+            ]
+          },
+          "icon": "res://assets/icon_residence_koei.png",
+          "requires_story_flag": "xianghua_morning_done"
+        },
+        {
+          "id": "xinghua_wharf",
+          "title": "海口",
+          "subtitle": {
+            "default": "渡船与脚夫",
+            "rules": [
+              {
+                "unless_story_flag": "quanzhou_travel_prepared",
+                "text": "★ 打听赴泉路程",
+                "state": "quest"
+              }
+            ]
+          },
+          "icon": "res://assets/icon_shipyard_koei.png"
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_residence.png",
+      "choices": [
+        {
+          "label": "官道往刺桐港（泉州）",
+          "next": "scene02_quanzhou_port",
+          "requires_story_flag": "spring_autumn_scroll",
+          "choice_style": "travel"
+        },
+        {
+          "label": "向脚夫打听路程",
+          "next": "port_xinghua",
+          "unless_story_flag": "quanzhou_travel_prepared",
+          "effects": {
+            "money": -8,
+            "story_flag": "quanzhou_travel_prepared"
+          },
+          "narration": "脚夫搓着手哈气：「陆路两日，水路一日。带足干粮，别走夜路。」"
+        }
+      ],
+      "intro": "雨后的城关，青石板泛着冷光。挑担的、牵骡的各奔门头，没人知你怀里揣着何种心事。"
+    },
+    {
+      "id": "xinghua_exam",
+      "chapter": "chapter_1",
+      "title": "乡学夜谈",
+      "location": "xinghua",
+      "body": "入夜，乡学只亮着一盏如豆油灯。雷雨在瓦上乱踩。\n\n【先生】：「这书，替我送到泉州。交给林伯渊，他在东坞三号泊位。记住，夜里离市舶司远点。」\n\n　　他从柜底摸出钱袋，推到你面前。\n\n【先生】：「钱袋拿着。去见见世面……再决定你这辈子，到底要走哪条道。」",
+      "investigations": [
+        {
+          "label": "翻看《春秋》夹页",
+          "text": "批注密如蚁附。末行是林伯渊落脚处，旁注四个字：勿信夜验。",
+          "once_flag": "lin_dock_hint",
+          "effects": {
+            "story_flag": "lin_dock_hint"
+          }
+        },
+        {
+          "label": "问先生病情",
+          "text": "先生摆手咳嗽：「老毛病，死不了。倒是你，盯着贾府那群生面孔，别硬碰。」",
+          "once_flag": "asked_teacher_health",
+          "effects": {
+            "story_flag": "teacher_health_asked",
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "收好经书与路费，回城",
+          "next": "port_xinghua",
+          "effects": {
+            "story_flag": "spring_autumn_scroll",
+            "item_acquired": "spring_autumn_scroll",
+            "money": 120
+          },
+          "narration": "先生给的不仅是路费，更是一条退路。科举若不成，这海便是去处。"
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_school.png"
+    },
+    {
+      "id": "xinghua_temple",
+      "chapter": "chapter_1",
+      "title": "城隍庙",
+      "location": "xinghua",
+      "body": "骤雨砸在城隍庙檐上，香灰被溅成黑斑。\n\n　　马蹄踏碎水洼，锦衣少年带随从闯进来。袖口暗绣贾府标记，他冷笑一声。\n\n【贾府少年】：「太学里缺的不是背书的腐儒。朝廷要的是能退敌的刀，不是能送葬的笔。」\n\n　　庙里无人应声。少年掷下一枚碎银，在供桌上敲出脆响。\n\n【贾府少年】：「记住本公子的脸。下次再见，最好绕道走。」",
+      "investigations": [
+        {
+          "label": "拾起碎银",
+          "text": "银面印着贾府私铸纹。这不是赏钱，是买路钱，也是羞辱。",
+          "once_flag": "jia_silver_taken",
+          "effects": {
+            "money": 5,
+            "story_flag": "jia_silver_taken"
+          }
+        },
+        {
+          "label": "查看供桌敲痕",
+          "text": "敲痕浅而新。庙祝低声道：「这些人常来踩场，别硬顶，风头过了再说。」",
+          "once_flag": "temple_mark_noted",
+          "effects": {
+            "story_flag": "jia_temple_intimidation"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "回城",
+          "next": "port_xinghua",
+          "effects": {
+            "story_flag": "jia_faction_met"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_residence.png"
+    },
+    {
+      "id": "xinghua_market",
+      "chapter": "chapter_1",
+      "title": "兴化市集",
+      "location": "xinghua",
+      "body": "鱼干、粗盐、劣纸摆在檐下。商贩把价钱压得极低，说是战汛来了，货走不出海口，活人也不能等死。",
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_xinghua"
+        }
+      ],
+      "bg": "res://assets/bg_city_market_street.png",
+      "investigations": [
+        {
+          "label": "买一包炊饼路上吃",
+          "text": "炊饼烫手，老板多塞了两块：「读书人，路上别饿肚子。这世道，饿死鬼最多。」",
+          "once_flag": "xinghua_bought_food",
+          "effects": {
+            "money": -6,
+            "food": 10
+          }
+        },
+        {
+          "label": "打听泉州行情",
+          "text": "行商压低声音：「刺桐港番药价涨了三成，没货引寸步难行。水深得很。」",
+          "once_flag": "xinghua_market_intel",
+          "effects": {
+            "story_flag": "quanzhou_market_rumor"
+          }
+        },
+        {
+          "label": "问壮丁去向",
+          "text": "商贩叹气：「抓走的都往两淮去了。读书人走得早，说不定还能剩条命。」",
+          "once_flag": "xinghua_market_conscript",
+          "requires_story_flag": "heard_conscription_rumor",
+          "effects": {
+            "story_flag": "heard_conscription_rumor",
+            "fame": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "xinghua_wharf",
+      "chapter": "chapter_1",
+      "title": "兴化海口",
+      "location": "xinghua",
+      "body": "海口风咸，渔船系成一排。脚夫蹲在避风处赌骰子，远处汛卒敲锣示警，声音被风撕得破碎。",
+      "investigations": [
+        {
+          "label": "看渡船时刻表",
+          "text": "木牌被盐雾侵蚀：往泉州陆路驿二日，水路一日；夜禁后不开渡。海上没有王法，只有潮信。",
+          "once_flag": "xinghua_ferry_schedule",
+          "effects": {
+            "story_flag": "quanzhou_travel_prepared"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_xinghua"
+        }
+      ],
+      "bg": "res://assets/bg_departure.png"
+    },
+    {
+      "id": "xinghua_tavern",
+      "chapter": "chapter_1",
+      "title": "城关茶馆",
+      "location": "xinghua",
+      "body": "茶馆烟雾缭绕。说书人拍响醒木，讲到岳家军旧案，茶客纷纷压低声音，生怕隔墙有耳。",
+      "investigations": [
+        {
+          "label": "请一碗粗茶坐着听",
+          "text": "说书人收尾一句：「陆上容不下的，海里容得下。不在朱子卷里，在风浪里。」众人沉默，只闻雨声。",
+          "once_flag": "xinghua_tea_listened",
+          "effects": {
+            "money": -4,
+            "story_flag": "heard_sea_legend"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_xinghua"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_arab_market.png"
+    },
+    {
+      "id": "xinghua_inn",
+      "chapter": "chapter_1",
+      "title": "兴化客栈",
+      "location": "xinghua",
+      "body": "客栈里挤着赶考举子与贩盐小贩，汗酸与霉味混杂。掌柜拨弄算盘，头也不抬：「住店三十文，热水另算。」",
+      "investigations": [
+        {
+          "label": "租一间通铺歇脚",
+          "text": "你合衣躺了半个时辰，听见隔壁还在背《论语》，声音里透着走投无路的绝望。",
+          "once_flag": "xinghua_inn_rest",
+          "effects": {
+            "money": -30,
+            "fame": 1
+          }
+        },
+        {
+          "label": "听举子议论党禁",
+          "text": "有人叹：「朱子门人连送葬都不敢，还考什么科举？不如出海去。」",
+          "once_flag": "xinghua_inn_gossip",
+          "effects": {
+            "story_flag": "heard_exam_gossip"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_xinghua"
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_residence.png"
+    }
+  ]
+}

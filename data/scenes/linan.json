@@ -1,0 +1,853 @@
+{
+  "scenes": [
+    {
+      "id": "chapter2_start",
+      "chapter": "chapter_2",
+      "title": "第二章：临安在望",
+      "location": "linan",
+      "objective": "抵达临安城外，择路入城",
+      "body": "明州换船，数日水路。晨雾里，临安城墙像一口倒扣的铁锅，压得人喘不过气。\n\n　　城门口贴着太学招考榜文，旁边却贴着海寇悬赏——同一张纸，两个天下。\n\n【守门卒】：「泉州来的？蒲帅最近正查这个。」\n\n　　他打量着你的包袱，眼神像在估价。",
+      "choices": [
+        {
+          "label": "先回刺桐港整备",
+          "next": "port_quanzhou"
+        },
+        {
+          "label": "硬闯城门",
+          "next": "chapter2_linan_blocked",
+          "effects": {
+            "pu_attention": 8,
+            "fame": -5
+          },
+          "narration": "卒子把你轰到一边：「榜文上没你的名字，滚回去练字。」"
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "chapter2_linan_blocked",
+      "chapter": "chapter_2",
+      "title": "城门挡回",
+      "location": "linan",
+      "objective": "择一条入城门路",
+      "body": "卒子把你挡在瓮城外。榜文上没有你的名字——庆元党禁之下，连报名都要人作保。\n\n　　你攥着林伯渊给的铜钱，反面「勿上岸先」硌得手心发疼。京城这口铁锅，盖得住百万人口，盖不住一个无名举子。",
+      "choices": [
+        {
+          "label": "在城外打听入城门路",
+          "next": "chapter2_path_select",
+          "unless_story_flag": "linan_gate_inquiry",
+          "effects": {
+            "story_flag": "linan_gate_inquiry",
+            "fame": 1,
+            "money": -10
+          },
+          "narration": "脚夫只说：「太学门生要贾府作保。没保人，钱再多也进不去。」"
+        },
+        {
+          "label": "打听过了，试一条路",
+          "next": "chapter2_path_select",
+          "requires_story_flag": "linan_gate_inquiry"
+        },
+        {
+          "label": "折回刺桐港整备",
+          "next": "port_quanzhou",
+          "effects": {
+            "story_flag": "linan_gate_turned_back"
+          },
+          "narration": "你在驿馆门口歇了一夜，天明便南下。风里带着运河的腐臭。"
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "chapter2_path_select",
+      "chapter": "chapter_2",
+      "title": "瓮城之外",
+      "location": "linan",
+      "objective": "三条门路，择一而入",
+      "body": "{jia_blocked_preface}临安瓮城外，运河水腥气与炊烟搅在一处。城墙上巡卒走动，鼓声不紧不慢，像在数你的日子。\n\n　　太学在城里，门在别处。你摸了摸怀里——碎银、铜钱、油布书，总有一样能换一条路。",
+      "choices": [
+        {
+          "label": "寻贾府在临安的铺子（作保入城）",
+          "next": "chapter2_jia_approach",
+          "requires_story_flag": "jia_faction_met",
+          "narration": "城隍庙那少年的脸，你还认得。"
+        },
+        {
+          "label": "按铜钱反面的地址找林伯渊旧部",
+          "next": "chapter2_lin_contact",
+          "requires_story_flag": "met_lin_boyuan",
+          "narration": "「勿上岸先」——先找上岸的人。"
+        },
+        {
+          "label": "凭《春秋》寻太学旧门生",
+          "next": "chapter2_scholar_seek",
+          "requires_story_flag": "spring_autumn_scroll",
+          "unless_story_flag": "linan_entry_scholar",
+          "narration": "党禁之下，敢收这本书的人，比敢收你的人还少。"
+        },
+        {
+          "label": "回刺桐港，再备一条路",
+          "next": "port_quanzhou",
+          "narration": "海比城诚实。你转身时，城墙上的影子又长了半寸。"
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "chapter2_jia_approach",
+      "chapter": "chapter_2",
+      "title": "贾府铺子",
+      "location": "linan",
+      "time": "午后",
+      "objective": "贾府作保",
+      "body": "城外河西有家绸缎铺，门帘绣着贾府暗记。伙计打量你许久，才放你入内。\n\n【贾府管事】：「兴化来的读书人？城隍庙见过。」\n\n　　他指尖敲着柜台，像敲你的骨头。\n\n【贾府管事】：「太学保书，贾府能写。代价也简单——替贾府在刺桐港盯一个人：林伯渊。」",
+      "investigations": [
+        {
+          "label": "出示城隍庙碎银",
+          "text": "管事眼角一挑：「捡得倒快。贾府的银子，从来不白给。」",
+          "requires_story_flag": "jia_silver_taken",
+          "once_flag": "jia_linan_silver_shown",
+          "effects": {
+            "fame": -1,
+            "story_flag": "jia_linan_silver_shown"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "答应作保，接下眼线差事",
+          "next": "chapter2_jia_deal",
+          "effects": {
+            "story_flag": "jia_spy_agreed",
+            "pu_attention": 3,
+            "fame": -2
+          }
+        },
+        {
+          "label": "只求保书，不答应盯人",
+          "next": "chapter2_jia_deal",
+          "effects": {
+            "story_flag": "jia_spy_refused",
+            "fame": 1
+          },
+          "narration": "管事冷笑：「读书人，还价？那就多掏三十贯。」"
+        },
+        {
+          "label": "掉头离开",
+          "next": "chapter2_path_select"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_office.jpg"
+    },
+    {
+      "id": "chapter2_jia_deal",
+      "chapter": "chapter_2",
+      "title": "保书与价码",
+      "location": "linan",
+      "objective": "付出代价入城",
+      "body": "管事推来一纸保书，墨迹未干。窗外运河上漕船过，水声像无数牙齿在磨。\n\n【贾府管事】：「明日卯时，西水门有人接你。进了城，太学榜文上才会有你的名字。」\n\n【贾府管事】：「记住——在临安，贾府让你活，也能让你死。」",
+      "choices": [
+        {
+          "label": "交钱，按约入城",
+          "next": "chapter2_jia_enter",
+          "effects": {
+            "money": -30,
+            "story_flag": "jia_brokerage_paid"
+          },
+          "unless_story_flag": "jia_spy_agreed"
+        },
+        {
+          "label": "交钱，按约入城（含眼线差事）",
+          "next": "chapter2_jia_enter",
+          "effects": {
+            "money": -10,
+            "story_flag": "jia_brokerage_paid"
+          },
+          "requires_story_flag": "jia_spy_agreed"
+        },
+        {
+          "label": "撕毁保书，另寻门路",
+          "next": "chapter2_path_select",
+          "effects": {
+            "fame": 2,
+            "pu_attention": 2
+          },
+          "narration": "纸屑落进运河，像一群白蛾。管事没追，只在你背后说了句：「你会回来的。」"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_office.jpg"
+    },
+    {
+      "id": "chapter2_jia_enter",
+      "chapter": "chapter_2",
+      "title": "西水门",
+      "location": "linan",
+      "time": "翌日卯时",
+      "objective": "贾府作保入城",
+      "body": "卯时雾浓。西水门侧门开了一道缝，贾府家丁接过保书，卒子只瞥一眼便挥手。\n\n　　城门在身后合上，像一口棺材盖。城里米价贵得吓人，太学方向的旗杆却矮得可笑。\n\n【家丁】：「进去后别乱说话。临安的风，比刺桐硬。」",
+      "choices": [
+        {
+          "label": "入城关",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "linan_entered",
+            "story_flag2": {
+              "linan_entry_jia": true,
+              "chapter2_route": "jia"
+            }
+          }
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png",
+      "investigations": [
+        {
+          "label": "领取贾府特供文房",
+          "text": "砚台沉手，墨锭带香。管事道：「考场用这套。抄错了字，贾府也保不住你。」",
+          "once_flag": "jia_taixue_supplies",
+          "effects": {
+            "story_flag": "jia_taixue_supplies",
+            "item_acquired": "jia_taixue_inkstone",
+            "fame": -1
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter2_lin_contact",
+      "chapter": "chapter_2",
+      "title": "河埠旧部",
+      "location": "linan",
+      "time": "黄昏",
+      "objective": "林伯渊旧识引路",
+      "body": "铜钱反面的地址，指向运河埠头一间破茶棚。棚里坐着个断眉老汉，正用桐油缝帆。\n\n【断眉老汉】：「林老大的铜钱？」\n\n　　他抬眼看你，目光像验货的秤砣。\n\n【断眉老汉】：「入城容易，活命难。今夜有一批书要进城——没货引，只有命引。你扛不扛？」",
+      "investigations": [
+        {
+          "label": "提起澎湖与黑水沟",
+          "text": "老汉手停了一停：「黑水沟吞船，不吞讲义。林老大说过，你会来。」",
+          "once_flag": "linan_lin_blackwater_mentioned",
+          "effects": {
+            "linboyuan_relationship": 1,
+            "story_flag": "linan_lin_blackwater_mentioned"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "扛。今夜跟你走",
+          "next": "chapter2_lin_run",
+          "effects": {
+            "story_flag": "linan_smuggle_agreed",
+            "fame": -1
+          }
+        },
+        {
+          "label": "不扛。只要入城门路",
+          "next": "chapter2_lin_run",
+          "effects": {
+            "story_flag": "linan_smuggle_refused",
+            "money": -20
+          },
+          "narration": "老汉吐口烟：「那就多掏二十贯买个安静。别问安静是什么。」"
+        },
+        {
+          "label": "回瓮城另谋",
+          "next": "chapter2_path_select"
+        }
+      ],
+      "bg": "res://assets/bg_departure.png"
+    },
+    {
+      "id": "chapter2_lin_run",
+      "chapter": "chapter_2",
+      "title": "夜运无引之书",
+      "location": "linan",
+      "time": "当夜",
+      "objective": "走私书卷入城",
+      "body": "子夜，小舟贴岸滑行。箱里是《春秋》抄本与太学讲义，封条全假。远处巡卒火把移动，像水面漂着的鬼火。\n\n【断眉老汉】：「党禁之下，书比盐更犯忌。抓住，剁的是手，不是指头。」\n\n　　风硬，水冷。你忽然明白林伯渊为何说：海上靠缝补，不靠嘴。",
+      "choices": [
+        {
+          "label": "把箱子扛上肩，低头快走",
+          "next": "chapter2_lin_enter",
+          "effects": {
+            "pu_attention": 2,
+            "story_flag": "linan_night_run",
+            "item_acquired": "unlicensed_sea_chart",
+            "story_flag2": {
+              "linan_carrying_chart": true
+            }
+          }
+        },
+        {
+          "label": "故意落箱，引开巡卒",
+          "next": "chapter2_lin_enter",
+          "effects": {
+            "fame": 3,
+            "pu_attention": 4,
+            "story_flag": "linan_night_run",
+            "item_acquired": "unlicensed_sea_chart",
+            "story_flag2": {
+              "linan_carrying_chart": true
+            }
+          },
+          "narration": "巡卒追向空箱。你扛着真的那本，从暗巷里擦身而过。"
+        }
+      ],
+      "bg": "res://assets/bg_penghu_night.png"
+    },
+    {
+      "id": "chapter2_lin_enter",
+      "chapter": "chapter_2",
+      "title": "水门夜入",
+      "location": "linan",
+      "time": "丑时",
+      "objective": "林伯渊旧部引路入城",
+      "body": "丑时，小水门开。没人查箱，只查脸。断眉老汉替你挡了卒子一眼，像挡一阵风。\n\n　　城里静得反常。太学方向的灯笼灭着——党禁之下，连灯都不敢亮。\n\n【断眉老汉】：「林老大说，书留着，人也要留着。进城了，别信榜文，信潮信。」",
+      "choices": [
+        {
+          "label": "入城关",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "linan_entered",
+            "story_flag2": {
+              "linan_entry_lin": true,
+              "chapter2_route": "lin"
+            }
+          }
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "chapter2_scholar_seek",
+      "chapter": "chapter_2",
+      "title": "义庄旧门生",
+      "location": "linan",
+      "time": "傍晚",
+      "objective": "党禁门生引路",
+      "body": "城外义庄旁有间破书院，门匾被漆糊住，只余「理学」二字隐约。院里老人在晾书，书页像吊死的蝴蝶。\n\n【老人】：「送《春秋》来的？」\n\n　　他并未伸手接，只盯着你的脸。\n\n【老人】：「庆元党禁，朱子门人不送葬，也不入场。你来，是想考功名，还是想给死人上香？」",
+      "investigations": [
+        {
+          "label": "提起兴化乡学先生",
+          "text": "老人沉默良久：「他还活着？那就好。活人比榜文难。」",
+          "requires_story_flag": "teacher_health_asked",
+          "once_flag": "linan_teacher_mentioned",
+          "effects": {
+            "fame": 2,
+            "story_flag": "linan_teacher_mentioned"
+          }
+        },
+        {
+          "label": "提起乡学党禁议论",
+          "text": "老人冷笑：「客栈里敢叹气的，到了门口就哑了。你倒还有声音。」",
+          "requires_story_flag": "heard_exam_gossip",
+          "once_flag": "linan_exam_gossip_mentioned",
+          "effects": {
+            "fame": 1,
+            "story_flag": "linan_exam_gossip_mentioned"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "为上香而来",
+          "next": "chapter2_scholar_vow",
+          "effects": {
+            "story_flag": "scholar_path_mourning"
+          }
+        },
+        {
+          "label": "为科考而来",
+          "next": "chapter2_scholar_vow",
+          "effects": {
+            "story_flag": "scholar_path_exam",
+            "fame": -1
+          },
+          "narration": "老人摇头：「考场要的是名字，不是良心。」"
+        },
+        {
+          "label": "离开",
+          "next": "chapter2_path_select"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "chapter2_scholar_vow",
+      "chapter": "chapter_2",
+      "title": "党禁之誓",
+      "location": "linan",
+      "objective": "抉择：背还是拒",
+      "body": "老人捧出三炷香，指向城里太学方向。\n\n【老人】：「入城之法有一条：明日送葬队伍要过西津门。你替朱子门人捧牌位，就能进。」\n\n【老人】：「但进了太学，考官要你写『斥伪学』。写得出口，才给名籍。」\n\n　　风过义庄，纸钱打着旋。你想起先生讲庆元党禁时，像被海雾浸透的声音。",
+      "choices": [
+        {
+          "label": "发誓：入城后仍护理学",
+          "next": "chapter2_scholar_enter",
+          "effects": {
+            "story_flag": "scholar_vow_protect",
+            "fame": 3,
+            "pu_attention": 2
+          }
+        },
+        {
+          "label": "发誓：先入场，再相机行事",
+          "next": "chapter2_scholar_enter",
+          "effects": {
+            "story_flag": "scholar_vow_pragmatic",
+            "fame": 0
+          }
+        },
+        {
+          "label": "拒绝写斥伪学，另谋",
+          "next": "chapter2_path_select",
+          "effects": {
+            "fame": 4,
+            "story_flag": "scholar_vow_refused"
+          },
+          "narration": "老人收香：「骨气贵。临安更贵。」"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "chapter2_scholar_enter",
+      "chapter": "chapter_2",
+      "title": "送葬入城",
+      "location": "linan",
+      "time": "翌日",
+      "objective": "党禁门生引路入城",
+      "body": "送葬队伍很短，短得像一场谎言。牌位不写名，只写「朱子门人」。卒子让路，不是出于敬意，是怕沾晦气。\n\n　　进城后，太学牌坊在雾中若隐若现。门口贴着告示：斥伪学，立新制。\n\n【老人】：「名籍我给你。考场上写什么，是你自己的命。」",
+      "choices": [
+        {
+          "label": "入城关",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "linan_entered",
+            "story_flag2": {
+              "linan_entry_scholar": true,
+              "chapter2_route": "scholar"
+            }
+          }
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "port_linan",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "linan",
+      "title": "临安 · 城关",
+      "body": "",
+      "facilities": [
+        {
+          "id": "linan_canal",
+          "title": "运河埠",
+          "subtitle": "漕船与消息",
+          "icon": "res://assets/icon_shipyard_koei.png"
+        },
+        {
+          "id": "city_market",
+          "title": "市集",
+          "subtitle": "米价如刀",
+          "icon": "res://assets/icon_market_koei.png"
+        },
+        {
+          "id": "city_inn",
+          "title": "客栈",
+          "subtitle": "歇脚",
+          "icon": "res://assets/icon_inn_koei.png"
+        },
+        {
+          "id": "city_tavern",
+          "title": "茶肆",
+          "subtitle": "风声",
+          "icon": "res://assets/icon_tavern_koei.png"
+        },
+        {
+          "id": "linan_taixue",
+          "title": "太学",
+          "subtitle": "名籍与考场",
+          "icon": "res://assets/icon_exam_koei.png",
+          "requires_story_flag": "linan_entered"
+        }
+      ],
+      "choices": [
+        {
+          "label": "南下刺桐港",
+          "next": "port_quanzhou",
+          "narration": "城门在身后合上。你忽然想起刺桐的海盐味——那味道至少诚实。",
+          "choice_style": "travel"
+        }
+      ],
+      "intro": "临安城关，运河穿城如肠。城里米贵，人心更贵。太学在望，榜文在喉。",
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "linan_canal",
+      "chapter": "chapter_2",
+      "title": "运河埠",
+      "location": "linan",
+      "body": "漕船排队过闸，船工骂娘，官吏拨算盘。运河的水，把江南的米与江北的血运在一处。",
+      "investigations": [
+        {
+          "label": "听漕工议论蒲帅",
+          "text": "漕工啐了一口：「蒲家查船，查到临安城，查到皇帝枕边。」众人噤声。",
+          "once_flag": "linan_canal_pu_rumor",
+          "effects": {
+            "story_flag": "linan_canal_pu_rumor",
+            "pu_attention": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_linan"
+        }
+      ],
+      "bg": "res://assets/bg_departure.png"
+    },
+    {
+      "id": "linan_market",
+      "chapter": "chapter_2",
+      "title": "临安市集",
+      "location": "linan",
+      "body": "{pu_shop_warning}米价牌每日一换，换得比脸还快。临安米价是刺桐两倍——第一章酒馆里听来的话，如今砸在舌头上。{market_gossip}",
+      "investigations": [
+        {
+          "label": "打听太学膳银",
+          "text": "摊主冷笑：「膳银？太学里有人拿俸禄，有人拿脸面。你算哪种？」",
+          "once_flag": "linan_market_taixue_rumor",
+          "effects": {
+            "story_flag": "linan_market_taixue_rumor"
+          }
+        },
+        {
+          "label": "买一袋官米路上吃",
+          "text": "米价是刺桐两倍。掌柜仍多抓了一把：「读书人，别饿死在校门口。」",
+          "once_flag": "linan_bought_food",
+          "effects": {
+            "money": -12,
+            "food": 10
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_linan"
+        }
+      ],
+      "bg": "res://assets/bg_city_market_street.png"
+    },
+    {
+      "id": "linan_inn",
+      "chapter": "chapter_2",
+      "title": "临安客栈",
+      "location": "linan",
+      "body": "客栈里住着赴考举子，有人磨刀，有人磨墨。掌柜道：「住店一百文，热水另算。临安价钱，别拿刺桐比。」",
+      "investigations": [
+        {
+          "label": "租间上房过夜",
+          "text": "三更，隔壁有人在背「斥伪学」范文，背得机械，像念经。",
+          "once_flag": "linan_inn_rest",
+          "effects": {
+            "money": -90,
+            "water": 10
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_linan"
+        }
+      ],
+      "bg": "res://assets/bg_xinghua_residence.png"
+    },
+    {
+      "id": "linan_tavern",
+      "chapter": "chapter_2",
+      "title": "城关茶肆",
+      "location": "linan",
+      "body": "茶肆里论战与论价并行。有人赌太学榜，有人赌蒲氏何时倒。",
+      "investigations": [
+        {
+          "label": "旁听贾府风声",
+          "text": "茶客压低声音：「贾府在临安的手，比市舶司还长。」",
+          "once_flag": "linan_tavern_jia_rumor",
+          "requires_story_flag": "linan_entry_jia",
+          "effects": {
+            "story_flag": "linan_tavern_jia_rumor"
+          }
+        },
+        {
+          "label": "请一碗官茶坐着听",
+          "text": "茶客赌太学榜，也赌蒲氏何时倒。没人提海——临安只有漕，没有潮。",
+          "once_flag": "linan_tea_listened",
+          "effects": {
+            "money": -8,
+            "story_flag": "linan_tavern_gossip"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开",
+          "next": "port_linan"
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_arab_market.png"
+    },
+    {
+      "id": "linan_taixue",
+      "chapter": "chapter_2",
+      "title": "太学门外",
+      "location": "linan",
+      "objective": "斥伪学考场",
+      "body": "太学牌坊下，新贴告示：招考名籍已录。你的名字在末行{taixue_name_suffix}，小得像一粒盐。\n\n【门吏】：「进场先写『斥伪学』一篇{taixue_exam_suffix}。写不出，名籍作废。」\n\n　　风里带着运河腥气。你想起黑水沟、澎湖、刺桐港——海放你进来，城却要你交稿{taixue_sea_suffix}。",
+      "choices": [
+        {
+          "label": "入考场",
+          "next": "linan_taixue_exam_jia",
+          "requires_story_flag": "linan_entry_jia",
+          "unless_story_flag": "chapter2_exam_done"
+        },
+        {
+          "label": "入考场",
+          "next": "linan_taixue_exam_lin",
+          "requires_story_flag": "linan_entry_lin",
+          "unless_story_flag": "chapter2_exam_done"
+        },
+        {
+          "label": "入考场",
+          "next": "linan_taixue_exam_scholar",
+          "requires_story_flag": "linan_entry_scholar",
+          "unless_story_flag": "chapter2_exam_done"
+        },
+        {
+          "label": "暂离，回城关整备",
+          "next": "port_linan",
+          "unless_story_flag": "chapter2_exam_done",
+          "effects": {
+            "story_flag": "chapter2_taixue_seen"
+          }
+        },
+        {
+          "label": "回城关",
+          "next": "port_linan",
+          "requires_story_flag": "chapter2_exam_done"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "linan_taixue_exam_jia",
+      "chapter": "chapter_2",
+      "title": "太学考场 · 尘埃落定",
+      "location": "linan",
+      "objective": "贾府线考场抉择",
+      "body": "考场肃穆，笔墨摩擦声如春蚕食叶。贾府随从在你桌底塞进一张纸条，上是写好的「斥伪学」策论，下压一枚银豆。\n\n【贾府随从】：（唇语）「抄。顺便看斜对面那个姓赵的写了什么，记下来。」",
+      "investigations": [
+        {
+          "label": "看斜对面的赵学子",
+          "text": "他满头大汗，笔下写的全是朱子旧论，字字泣血。若被贾府知道，必死无疑。",
+          "once_flag": "saw_zhao_student",
+          "effects": {
+            "story_flag": "saw_zhao_student"
+          }
+        },
+        {
+          "label": "摸一摸贾府特供砚台",
+          "text": "砚台温润。你忽然明白那三十贯买的不是墨，是一张入场券。",
+          "requires_story_flag": "jia_taixue_supplies",
+          "once_flag": "jia_inkstone_noted",
+          "effects": {
+            "story_flag": "jia_inkstone_noted"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "照抄范文，并交出赵学子底细",
+          "next": "chapter2_end",
+          "requires_story_flag": "saw_zhao_student",
+          "effects": {
+            "jia_relationship": 10,
+            "fame": -10,
+            "money": 50,
+            "story_flag": "jia_spy_complete",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "jia_black"
+            }
+          },
+          "narration": "你用赵学子的血，染红了贾府递来的顶戴。太学的门，为你敞开了。"
+        },
+        {
+          "label": "照抄范文，但装作没看清赵学子",
+          "next": "chapter2_end",
+          "effects": {
+            "jia_relationship": -2,
+            "money": 20,
+            "story_flag": "jia_exam_pass",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "jia_gray"
+            }
+          },
+          "narration": "随从冷哼一声，夺过银豆。但你保住了学籍，也保住了一条不那么黑的心。"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "linan_taixue_exam_lin",
+      "chapter": "chapter_2",
+      "title": "太学考场 · 查袱",
+      "location": "linan",
+      "objective": "林伯渊线考场抉择",
+      "body": "你混在太学考场末排，替人研墨换一口饭吃。蒲氏巡卒挨桌查袱，靴底沾着刺桐港的盐。\n\n【巡卒】：「包袱打开。无引之物，一律扣下。」\n\n　　你袖里藏着无引海图，折痕硌腕。炉膛里的火还没灭，像一只眼。",
+      "investigations": [
+        {
+          "label": "打量巡卒腰牌",
+          "text": "腰牌刻着蒲氏私印。临安太学，也有海上的眼睛。",
+          "once_flag": "linan_exam_pu_badge",
+          "effects": {
+            "pu_attention": 1,
+            "story_flag": "linan_exam_pu_badge"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "把海图塞进空包袱，引开巡卒",
+          "next": "chapter2_end",
+          "requires_item": "unlicensed_sea_chart",
+          "effects": {
+            "item_removed": "unlicensed_sea_chart",
+            "pu_attention": -4,
+            "fame": 1,
+            "story_flag": "sea_chart_sacrificed",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "lin_sacrifice"
+            }
+          },
+          "narration": "巡卒夺了假包袱追出去。你留住太学名额，也留住一条命——海图没了，路还在记忆里。"
+        },
+        {
+          "label": "把海图塞进炉膛烧毁",
+          "next": "chapter2_end",
+          "requires_item": "unlicensed_sea_chart",
+          "effects": {
+            "item_removed": "unlicensed_sea_chart",
+            "linboyuan_relationship": -8,
+            "pu_attention": -6,
+            "story_flag": "sea_chart_burned",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "lin_burn"
+            }
+          },
+          "narration": "纸灰卷起，像一小片黑水沟。林伯渊若知，怕要骂你胆小——可你太学座次，保住了。"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "linan_taixue_exam_scholar",
+      "chapter": "chapter_2",
+      "title": "太学考场 · 党禁",
+      "location": "linan",
+      "objective": "党禁线考场抉择",
+      "body": "考题正是《论庆元党禁之害》。你手里握着先生的《春秋》，批注密如蚁附。\n\n【考官】：（敲桌）「限时一炷香。斥伪学，立新制。写不出，名籍除。」\n\n　　窗外运河呜咽，像远处有人在送葬——短得像个谎言。",
+      "investigations": [
+        {
+          "label": "翻看《春秋》朱子批注",
+          "text": "批注里夹着一行小字：「礼义廉耻，不在榜上。」你指尖发烫。",
+          "once_flag": "scholar_exam_scroll_read",
+          "effects": {
+            "fame": 1,
+            "story_flag": "scholar_exam_scroll_read"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "慷慨陈词，痛斥党禁",
+          "next": "chapter2_end_exile",
+          "effects": {
+            "fame": 12,
+            "pu_attention": 10,
+            "story_flag": "scholar_exam_outspoken",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "scholar_exile"
+            }
+          },
+          "narration": "你落笔如刀。考官脸色铁青——名籍没你的份了，但朱子门人，或许多记你一个名字。"
+        },
+        {
+          "label": "阳奉阴违，写一篇四平八稳的废话",
+          "next": "chapter2_end",
+          "effects": {
+            "fame": -2,
+            "story_flag": "scholar_exam_pass",
+            "story_flag2": {
+              "chapter2_exam_done": true,
+              "chapter2_exam_outcome": "scholar_pragmatic",
+              "spring_autumn_hidden_note": true
+            }
+          },
+          "narration": "你把真话折进废话里。《春秋》批注在袖中发烫——像一枚还没冷的火。"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "chapter2_end",
+      "chapter": "chapter_2",
+      "title": "第二章 · 收束",
+      "location": "linan",
+      "objective": "太学落定，蒲氏将至",
+      "body": "散场时天色将暮。太学牌坊的灯笼亮起，照见榜末你的名字——小，却还在。\n\n　　运河上传来禁军哨声，紧了一下，又松。像有人在水面下换了一口气。\n\n【门吏】：（低声）「蒲帅的人，午后进了城。你若是聪明，今夜别走单巷。」\n\n　　风从城里来，没有海盐味，只有米价与墨香。第二章落在此处；蒲氏的反击，已在门外。",
+      "choices": [
+        {
+          "label": "回临安城关",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "chapter2_complete",
+            "chapter_unlock": "chapter3_pu_counter"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_quanzhou_port_sunset.png"
+    },
+    {
+      "id": "chapter2_end_exile",
+      "chapter": "chapter_2",
+      "title": "第二章 · 除名",
+      "location": "linan",
+      "objective": "流亡路线开启",
+      "body": "考官当场撕了你的卷子。名籍除，城门闭。\n\n　　太学里有人喝彩，有人低头。你走出牌坊时，身后没有脚步声——只有运河的水，替你把话咽下去。\n\n【老人】：（从人群外递来一只小包袱）「路在城外。海比城诚实。」\n\n　　你忽然想起刺桐港。蒲氏的旗号，或许已在来路上。",
+      "choices": [
+        {
+          "label": "出城，南下刺桐",
+          "next": "port_quanzhou",
+          "effects": {
+            "story_flag": "chapter2_complete",
+            "story_flag2": {
+              "chapter2_exile_route": true
+            },
+            "chapter_unlock": "chapter3_pu_counter",
+            "money": 30
+          },
+          "narration": "城门在身后合上。你成了太学弃子，却未必是死棋。"
+        }
+      ],
+      "bg": "res://assets/bg_departure.png"
+    }
+  ]
+}
