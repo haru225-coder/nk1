@@ -4,25 +4,29 @@
       "id": "song_maritime_office",
       "name": "大宋市舶司",
       "type": "government",
-      "behavior": ["patrol", "inspect", "tax"]
+      "behavior": ["patrol", "inspect", "tax"],
+      "combat_preference": "gunner"
     },
     {
       "id": "pu_family_trade",
       "name": "蒲氏海商",
       "type": "merchant",
-      "behavior": ["trade", "escort", "expand"]
+      "behavior": ["trade", "escort", "expand"],
+      "combat_preference": "balanced"
     },
     {
       "id": "lin_pirates",
       "name": "林氏海贼",
       "type": "pirate",
-      "behavior": ["raid", "ambush", "hide"]
+      "behavior": ["raid", "ambush", "hide"],
+      "combat_preference": "boarder"
     },
     {
       "id": "south_sea_merchants",
       "name": "南洋商团",
       "type": "foreign_trade",
-      "behavior": ["trade", "migrate"]
+      "behavior": ["trade", "migrate"],
+      "combat_preference": "balanced"
     }
   ]
 }

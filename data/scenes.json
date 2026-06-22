@@ -13,7 +13,7 @@
       "choices": [
         {
           "label": "开始旅程",
-          "next": "scene01_xianghua_school"
+          "next": "prologue_tabletop"
         }
       ],
       "type": "title",
@@ -744,63 +744,108 @@
             "facility_id": "quanzhou_wharf",
             "label": "码头",
             "scene_id": "quanzhou_wharf",
-            "rect": [0.04, 0.58, 0.18, 0.16],
+            "rect": [
+              0.04,
+              0.58,
+              0.18,
+              0.16
+            ],
             "hint": "验引与潮汛"
           },
           {
             "facility_id": "city_tavern",
             "label": "酒馆",
             "scene_id": "city_tavern",
-            "rect": [0.52, 0.42, 0.16, 0.14],
+            "rect": [
+              0.52,
+              0.42,
+              0.16,
+              0.14
+            ],
             "hint": "水手与商旅"
           },
           {
             "facility_id": "city_market",
             "label": "市场",
             "scene_id": "city_market",
-            "rect": [0.34, 0.52, 0.16, 0.13],
+            "rect": [
+              0.34,
+              0.52,
+              0.16,
+              0.13
+            ],
             "hint": "买卖货物"
           },
           {
             "facility_id": "city_inn",
             "label": "旅馆",
             "scene_id": "city_inn",
-            "rect": [0.68, 0.28, 0.14, 0.12],
+            "rect": [
+              0.68,
+              0.28,
+              0.14,
+              0.12
+            ],
             "hint": "休整补给"
           },
           {
             "facility_id": "city_shipyard",
             "label": "船坞",
             "scene_id": "city_shipyard",
-            "rect": [0.12, 0.38, 0.16, 0.13],
+            "rect": [
+              0.12,
+              0.38,
+              0.16,
+              0.13
+            ],
             "hint": "寻林伯渊"
           },
           {
             "facility_id": "city_yamen",
             "label": "衙门",
             "scene_id": "city_yamen",
-            "rect": [0.22, 0.18, 0.14, 0.12],
+            "rect": [
+              0.22,
+              0.18,
+              0.14,
+              0.12
+            ],
             "hint": "市舶验引"
           },
           {
             "facility_id": "city_guild",
             "label": "工会",
             "scene_id": "city_guild",
-            "rect": [0.42, 0.22, 0.14, 0.12],
+            "rect": [
+              0.42,
+              0.22,
+              0.14,
+              0.12
+            ],
             "hint": "打听航线与传闻"
           },
           {
             "facility_id": "city_residence",
             "label": "住宅",
             "scene_id": "city_residence",
-            "rect": [0.72, 0.48, 0.13, 0.11],
+            "rect": [
+              0.72,
+              0.48,
+              0.13,
+              0.11
+            ],
             "hint": "安身之处"
           },
           {
             "facility_id": "city_exam",
             "label": "学院",
             "scene_id": "city_exam",
-            "rect": [0.58, 0.14, 0.13, 0.11],
+            "rect": [
+              0.58,
+              0.14,
+              0.13,
+              0.11
+            ],
             "hint": "科举之路"
           }
         ]
@@ -1984,6 +2029,192 @@
         }
       ],
       "bg": "res://assets/bg_departure.png"
+    },
+    {
+      "id": "port_quanzhou",
+      "type": "port",
+      "location": "quanzhou",
+      "title": "泉州",
+      "facilities": [
+        {
+          "id": "city_shipyard",
+          "next": "quanzhou_shipyard"
+        },
+        {
+          "id": "city_guild",
+          "next": "quanzhou_guild"
+        },
+        {
+          "id": "city_tavern",
+          "next": "quanzhou_tavern"
+        },
+        {
+          "id": "city_market",
+          "next": "quanzhou_market"
+        },
+        {
+          "id": "city_inn",
+          "next": "quanzhou_inn"
+        },
+        {
+          "id": "city_exam",
+          "next": "quanzhou_exam"
+        },
+        {
+          "id": "city_residence",
+          "next": "quanzhou_residence"
+        },
+        {
+          "id": "city_yamen",
+          "next": "quanzhou_yamen"
+        }
+      ]
+    },
+    {
+      "id": "quanzhou_tavern",
+      "chapter": "quanzhou",
+      "title": "泉州酒馆",
+      "location": "quanzhou",
+      "body": "人声鼎沸的泉州酒馆，角落里坐着几个老兵在喝闷酒。",
+      "investigations": [
+        {
+          "label": "邻桌老兵",
+          "text": "老兵讲北边战局不利。",
+          "effects": {
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开酒馆",
+          "next": "port_quanzhou"
+        }
+      ]
+    },
+    {
+      "id": "port_quanzhou",
+      "type": "port",
+      "location": "quanzhou",
+      "title": "泉州",
+      "facilities": [
+        {
+          "id": "city_shipyard",
+          "next": "quanzhou_shipyard"
+        },
+        {
+          "id": "city_guild",
+          "next": "quanzhou_guild"
+        },
+        {
+          "id": "city_tavern",
+          "next": "quanzhou_tavern"
+        },
+        {
+          "id": "city_market",
+          "next": "quanzhou_market"
+        },
+        {
+          "id": "city_inn",
+          "next": "quanzhou_inn"
+        },
+        {
+          "id": "city_exam",
+          "next": "quanzhou_exam"
+        },
+        {
+          "id": "city_residence",
+          "next": "quanzhou_residence"
+        },
+        {
+          "id": "city_yamen",
+          "next": "quanzhou_yamen"
+        }
+      ]
+    },
+    {
+      "id": "quanzhou_tavern",
+      "chapter": "quanzhou",
+      "title": "泉州酒馆",
+      "location": "quanzhou",
+      "body": "人声鼎沸的泉州酒馆，角落里坐着几个老兵在喝闷酒。",
+      "investigations": [
+        {
+          "label": "邻桌老兵",
+          "text": "老兵讲北边战局不利。",
+          "effects": {
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开酒馆",
+          "next": "port_quanzhou"
+        }
+      ]
+    },
+    {
+      "id": "port_quanzhou",
+      "type": "port",
+      "location": "quanzhou",
+      "title": "泉州",
+      "facilities": [
+        {
+          "id": "city_shipyard",
+          "next": "quanzhou_shipyard"
+        },
+        {
+          "id": "city_guild",
+          "next": "quanzhou_guild"
+        },
+        {
+          "id": "city_tavern",
+          "next": "quanzhou_tavern"
+        },
+        {
+          "id": "city_market",
+          "next": "quanzhou_market"
+        },
+        {
+          "id": "city_inn",
+          "next": "quanzhou_inn"
+        },
+        {
+          "id": "city_exam",
+          "next": "quanzhou_exam"
+        },
+        {
+          "id": "city_residence",
+          "next": "quanzhou_residence"
+        },
+        {
+          "id": "city_yamen",
+          "next": "quanzhou_yamen"
+        }
+      ]
+    },
+    {
+      "id": "quanzhou_tavern",
+      "chapter": "quanzhou",
+      "title": "泉州酒馆",
+      "location": "quanzhou",
+      "body": "人声鼎沸的泉州酒馆，角落里坐着几个老兵在喝闷酒。",
+      "investigations": [
+        {
+          "label": "邻桌老兵",
+          "text": "老兵讲北边战局不利。",
+          "effects": {
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开酒馆",
+          "next": "port_quanzhou"
+        }
+      ]
     }
   ]
 }

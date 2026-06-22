@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-# 核心航海物理 v4.0 (火炮海战版)
+# 核心航海物理 v4.0 (火炮海战版 + 物理引擎版)
 
 ## ── 物理常量 ─────────────────────────────────────────────
 const BASE_MAX_SPEED := 300.0
@@ -9,11 +9,6 @@ const BASE_TURN_SPEED_DEFAULT := 1.8
 const TURN_PER_SAIL := 0.2
 const TURN_EFFICIENCY_FULL_SAIL := 0.4
 const TURN_EFFICIENCY_NO_CREW := 0.2
-const BASE_DRIVE_FORCE := 60.0
-const UPWIND_BASE_FORCE := 40.0
-const MIN_DRIVE_FORCE := 10.0
-const UPWIND_PENALTY_FACTOR := 30.0
-const WIND_DRIFT_FACTOR := 0.4
 const VELOCITY_LERP_SPEED := 2.0
 
 ## ── 火炮常量 ─────────────────────────────────────────────
@@ -133,7 +128,6 @@ func _physics_process(delta: float) -> void:
 	_process_storm_damage(delta)
 
 func _apply_sailing_physics(delta: float) -> void:
-	var ship_dir = Vector2.UP.rotated(rotation)
 	var turn_input = Input.get_axis("ui_left", "ui_right")
 	
 	var turn_efficiency = 1.0
@@ -145,26 +139,20 @@ func _apply_sailing_physics(delta: float) -> void:
 		if sail_gear != 0:
 			sail_gear = 0
 			_notify_hud_stats()
-		
+			
 	rotation += turn_input * base_turn_speed * turn_efficiency * delta
 
-	var wind_dot = ship_dir.dot(wind_vector)
-	var drive_force = 0.0
+	# 刷新 ship_dir
+	var ship_dir = Vector2.UP.rotated(rotation)
+
+	var phys = SailPhysicsEngine.calculate(velocity, ship_dir, wind_vector, wind_strength, sail_gear, max_speed, GameState.sail_type, delta)
+	velocity = phys.new_velocity
 	
-	if sail_gear > 0:
-		if wind_dot > 0:
-			drive_force = (BASE_DRIVE_FORCE * sail_gear) + (wind_strength * wind_dot * sail_gear)
-		else:
-			var penalty = abs(wind_dot) * UPWIND_PENALTY_FACTOR
-			drive_force = max(MIN_DRIVE_FORCE, (UPWIND_BASE_FORCE * sail_gear) - penalty)
-	
-	var target_velocity = (ship_dir * drive_force)
-	
-	if sail_gear > 0:
-		var drift = wind_vector * wind_strength * WIND_DRIFT_FACTOR
-		target_velocity += drift
-		
-	velocity = velocity.lerp(target_velocity, VELOCITY_LERP_SPEED * delta)
+	# 阻断器惩罚：完全逆风却满帆强行航行，造成极度劳累扣减水手
+	if phys.is_dead_wind and sail_gear > 0:
+		if randf() < 0.2 * delta:
+			GameState.apply_effects({"crew_count": -1})
+			_notify_hud_stats()
 
 func _update_visuals(delta: float) -> void:
 	var current_speed = velocity.length()
@@ -218,7 +206,7 @@ func take_damage(amount: float) -> void:
 	)
 
 	hull_hp -= amount
-	GameState.ship_hp = hull_hp
+	GameState.modify_hp(-amount)
 	_last_reported_hp = int(hull_hp)
 	_notify_hud_stats()
 	var dropped = CargoSystem.remove_random_item()
@@ -237,8 +225,9 @@ func take_damage(amount: float) -> void:
 func _process_storm_damage(delta: float) -> void:
 	if wind_strength > STORM_WIND_THRESHOLD and sail_gear == 2:
 		splinter_particles.emitting = true
-		hull_hp -= STORM_DAMAGE_PER_SEC * delta
-		GameState.ship_hp = hull_hp
+		var dmg = STORM_DAMAGE_PER_SEC * delta
+		hull_hp -= dmg
+		GameState.modify_hp(-dmg)
 		var hp_int := int(hull_hp)
 		if hp_int != _last_reported_hp:
 			_last_reported_hp = hp_int

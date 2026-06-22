@@ -205,6 +205,29 @@ func _setup_shipyard_options() -> void:
 		interactive_container.add_child(lin_btn)
 		interactive_label.visible = true
 
+	var refit_btn = Button.new()
+	var current_type = GameState.sail_type
+	var cost = 500
+	if current_type == "square":
+		refit_btn.text = "💰 500 改装为纵帆 (提升逆风/侧风机动，降低顺风极速)"
+	else:
+		refit_btn.text = "💰 500 改装为横帆 (极大提升顺风航速，但逆风寸步难行)"
+	refit_btn.custom_minimum_size = Vector2(0, 52)
+	refit_btn.theme_type_variation = "ActionButton"
+	refit_btn.pressed.connect(func():
+		if LedgerSystem.get_balance() >= cost:
+			LedgerSystem.apply({"amount": -cost, "source": "gameplay", "reason": "refit_sail", "actor": "FacilityController"})
+			GameState.sail_type = "lateen" if current_type == "square" else "square"
+			message_logged.emit("【造船厂】改装完毕！你的船现在挂起了" + ("纵帆" if GameState.sail_type == "lateen" else "横帆") + "。\n\n")
+			# 刷新菜单自身以更新按钮文本
+			for child in choices_container.get_children():
+				child.queue_free()
+			_setup_shipyard_options()
+		else:
+			message_logged.emit("【造船厂】金钱不足！需要 %d 铜钱。\n\n" % cost)
+	)
+	choices_container.add_child(refit_btn)
+
 	var set_sail_btn = Button.new()
 	set_sail_btn.text = "🚢 升帆出港 (出海)"
 	set_sail_btn.custom_minimum_size = Vector2(0, 60)

@@ -23,7 +23,22 @@
           "label_key": "choice.pirate.attack",
           "intent": {
             "type": "combat_request",
-            "parameters": {}
+            "parameters": {
+              "combat_enemy": {
+                "name": "林氏海贼",
+                "faction": "lin_pirates",
+                "combat_preference": "boarder",
+                "ship": {
+                  "durability": 70.0,
+                  "crew": 40,
+                  "artillery": 3,
+                  "swordplay": 4,
+                  "maneuverability": 5
+                },
+                "loot_money": 80,
+                "loot_cargo": []
+              }
+            }
           }
         },
         {
@@ -60,7 +75,22 @@
           "label_key": "choice.patrol.resist",
           "intent": {
             "type": "combat_request",
-            "parameters": {}
+            "parameters": {
+              "combat_enemy": {
+                "name": "大宋水师巡船",
+                "faction": "song_maritime_office",
+                "combat_preference": "gunner",
+                "ship": {
+                  "durability": 90.0,
+                  "crew": 45,
+                  "artillery": 5,
+                  "swordplay": 3,
+                  "maneuverability": 4
+                },
+                "loot_money": 30,
+                "loot_cargo": []
+              }
+            }
           }
         }
       ]
@@ -89,7 +119,22 @@
           "label_key": "choice.patrol.resist",
           "intent": {
             "type": "combat_request",
-            "parameters": {}
+            "parameters": {
+              "combat_enemy": {
+                "name": "大宋缉私官船",
+                "faction": "song_maritime_office",
+                "combat_preference": "gunner",
+                "ship": {
+                  "durability": 80.0,
+                  "crew": 40,
+                  "artillery": 4,
+                  "swordplay": 3,
+                  "maneuverability": 4
+                },
+                "loot_money": 20,
+                "loot_cargo": []
+              }
+            }
           }
         }
       ]

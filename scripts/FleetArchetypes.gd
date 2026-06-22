@@ -31,12 +31,31 @@ const FLEET_TEMPLATES: Array[Dictionary] = [
 		"hostility": 1.0,
 		"options": [
 			{
-				"label": "右舷齐射，准备接舷战",
-				"success_chance": 0.7,
-				"msg_ok": "一轮炮击逼退敌船，缴获少许银两。",
-				"effects_ok": {"money": 30},
-				"msg_fail": "接舷战损失惨重，勉强脱离。",
-				"effects_fail": {"crew_count": -5, "hull_hp": -30},
+				"label": "应战！",
+				"launch_combat": true,
+				"combat_enemy": {
+					"name": "倭寇快船",
+					"faction": "lin_pirates",
+					"combat_preference": "boarder",
+					"ships": [
+						{
+							"durability": 60.0,
+							"crew": 35,
+							"artillery": 2,
+							"swordplay": 4,
+							"maneuverability": 6
+						},
+						{
+							"durability": 40.0,
+							"crew": 20,
+							"artillery": 1,
+							"swordplay": 2,
+							"maneuverability": 5
+						}
+					],
+					"loot_money": 40,
+					"loot_cargo": [{"id": "misc_goods", "name": "杂物", "amount": 5}]
+				}
 			},
 			{
 				"label": "抛货逃生",

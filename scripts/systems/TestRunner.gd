@@ -19,6 +19,9 @@ func _run() -> void:
 	print("")
 	_test_price_engine()
 	_test_idempotency_guard()
+	_test_market_state()
+	_test_pricing_integration()
+	_test_safety_valve()
 	_print_summary()
 	quit(PASS if _failures.is_empty() else FAIL)
 
@@ -163,6 +166,128 @@ func _print_summary() -> void:
 		for f in _failures:
 			print("  - ", f)
 
+
+# ── MarketState 单元测试 ─────────────────────────────────
+
+func _test_market_state() -> void:
+	print("[MarketState]")
+
+	var market := MarketState.new()
+	var mock_ports: Array = [
+		{"id": "quanzhou", "production": {"fujian_porcelain": 0.6}, "demand": {}},
+		{"id": "liuqiu",   "production": {},                         "demand": {"fujian_porcelain": 1.5}},
+	]
+	var mock_goods: Array = [
+		{"id": "fujian_porcelain", "category": "货物", "base_value": 50},
+	]
+	market.init_from_ports(mock_ports, mock_goods)
+
+	# 初始库存分配
+	var producer_base := 50 * 15
+	var consumer_base := 50 * 3
+	_assert_eq(market.get_base_stock("quanzhou", "fujian_porcelain"), producer_base, "产地 base_stock = base_value × 15")
+	_assert_eq(market.get_base_stock("liuqiu",   "fujian_porcelain"), consumer_base, "需求地 base_stock = base_value × 3")
+
+	# 买入使库存减少
+	market.adjust_stock("quanzhou", "fujian_porcelain", -100)
+	_assert_eq(market.get_stock("quanzhou", "fujian_porcelain"), producer_base - 100, "买入后库存减 100")
+
+	# 库存不低于 0
+	market.adjust_stock("quanzhou", "fujian_porcelain", -99999)
+	_assert_eq(market.get_stock("quanzhou", "fujian_porcelain"), 0, "库存不低于 0")
+
+	# stock=0 时 ratio 返回 5.0（最高价保底）
+	_assert_eq(market.get_stock_ratio("quanzhou", "fujian_porcelain"), 5.0, "stock=0 → ratio=5.0")
+
+	# reset_stock 恢复 base_stock
+	market.reset_stock("quanzhou", "fujian_porcelain")
+	_assert_eq(market.get_stock("quanzhou", "fujian_porcelain"), producer_base, "reset_stock 恢复 base_stock")
+
+	# 卖出使库存增加
+	market.adjust_stock("liuqiu", "fujian_porcelain", 200)
+	_assert_eq(market.get_stock("liuqiu", "fujian_porcelain"), consumer_base + 200, "卖出后库存增 200")
+
+	# ratio clamp min（极度过剩）
+	market.adjust_stock("liuqiu", "fujian_porcelain", 999999)
+	var ratio_low := market.get_stock_ratio("liuqiu", "fujian_porcelain")
+	_assert_true(ratio_low >= 0.2, "极度过剩: ratio clamp 下限 >= 0.2")
+	_assert_eq(ratio_low, 0.2, "极度过剩: ratio 精确 clamp 至 0.2")
+
+	print("")
+
+# ── 库存-定价集成测试 ────────────────────────────────────
+
+func _test_pricing_integration() -> void:
+	print("[Pricing Integration: stock_ratio → prod_mod → price]")
+
+	var events_empty: Array[BaseEconomicEvent] = []
+
+	# 库存减半 → ratio=2.0 → prod_mod=2.0 → 价格翻倍
+	var r1 = PriceEngine.calculate_price(100, 1.0 * 2.0, 1.0, 1.0, events_empty, "quanzhou", "silk")
+	_assert_eq(r1["final_price"], 200, "库存减半(ratio=2.0): 100 → 200")
+
+	# 库存翻倍 → ratio=0.5 → prod_mod=0.5 → 价格减半
+	var r2 = PriceEngine.calculate_price(100, 1.0 * 0.5, 1.0, 1.0, events_empty, "quanzhou", "silk")
+	_assert_eq(r2["final_price"], 50, "库存翻倍(ratio=0.5): 100 → 50")
+
+	# ratio 上限 5.0 → 最高 5 倍价格
+	var r3 = PriceEngine.calculate_price(100, 1.0 * 5.0, 1.0, 1.0, events_empty, "quanzhou", "silk")
+	_assert_eq(r3["final_price"], 500, "ratio 上限 5.0: 100 → 500")
+
+	# ratio 下限 0.2 → 最低 20% 价格
+	var r4 = PriceEngine.calculate_price(100, 1.0 * 0.2, 1.0, 1.0, events_empty, "quanzhou", "silk")
+	_assert_eq(r4["final_price"], 20, "ratio 下限 0.2: 100 → 20")
+
+	# 事件 × 库存叠加：ratio=2.0 × disaster_mod=2.5 → ×5
+	var disaster := MockPriceEvent.new("test_disaster", "quanzhou", 5, 2.5)
+	var events_with: Array[BaseEconomicEvent] = [disaster]
+	var r5 = PriceEngine.calculate_price(100, 1.0 * 2.0, 1.0, 1.0, events_with, "quanzhou", "silk")
+	_assert_eq(r5["final_price"], 500, "库存减半 + 灾害事件: 100 × 2.0 × 2.5 = 500")
+
+	print("")
+
+# ── 安全阀阈值测试 ────────────────────────────────────────
+
+func _test_safety_valve() -> void:
+	print("[Safety Valve: avg_ratio threshold detection]")
+
+	var market := MarketState.new()
+	var mock_ports: Array = [
+		{"id": "p1", "production": {"g1": 1.0}, "demand": {}},
+		{"id": "p2", "production": {},          "demand": {"g1": 1.5}},
+	]
+	var mock_goods: Array = [{"id": "g1", "category": "货物", "base_value": 100}]
+	market.init_from_ports(mock_ports, mock_goods)
+
+	# 正常状态：avg_ratio ≈ 1.0，不触发安全阀
+	var r1 := market.get_stock_ratio("p1", "g1")
+	var r2 := market.get_stock_ratio("p2", "g1")
+	var avg_normal := (r1 + r2) / 2.0
+	_assert_true(avg_normal >= 0.3, "正常库存: avg_ratio >= 0.3，不触发安全阀")
+
+	# 极度过剩状态：ratio 被 clamp 至 0.2，avg < 0.3 → 安全阀条件满足
+	market.adjust_stock("p1", "g1", 999999)
+	market.adjust_stock("p2", "g1", 999999)
+	var r3 := market.get_stock_ratio("p1", "g1")
+	var r4 := market.get_stock_ratio("p2", "g1")
+	_assert_eq(r3, 0.2, "p1 极度过剩: ratio clamp 至 0.2")
+	_assert_eq(r4, 0.2, "p2 极度过剩: ratio clamp 至 0.2")
+	var avg_collapse := (r3 + r4) / 2.0
+	_assert_true(avg_collapse < 0.3, "全港口崩盘: avg_ratio=0.2 < 0.3，安全阀触发条件满足")
+
+	# 库存枯竭状态：ratio=5.0，avg >> 0.3，不会误触安全阀
+	market.reset_stock("p1", "g1")
+	market.reset_stock("p2", "g1")
+	market.adjust_stock("p1", "g1", -999999)
+	market.adjust_stock("p2", "g1", -999999)
+	var r5 := market.get_stock_ratio("p1", "g1")
+	var r6 := market.get_stock_ratio("p2", "g1")
+	_assert_eq(r5, 5.0, "p1 库存枯竭: ratio=5.0")
+	_assert_eq(r6, 5.0, "p2 库存枯竭: ratio=5.0")
+	var avg_shortage := (r5 + r6) / 2.0
+	_assert_true(avg_shortage >= 0.3, "库存枯竭: avg_ratio=5.0，不误触安全阀")
+
+	print("")
 
 # ═══════════════════════════════════════════════════════════
 # Mock 事件 — 用于测试 PriceEngine 事件修正逻辑

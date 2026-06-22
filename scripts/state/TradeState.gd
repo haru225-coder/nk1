@@ -30,6 +30,7 @@ func sell_all_cargo(port_id: String, resolve_good_func: Callable, calc_price_fun
 		var sell_price = calc_price_func.call(port_id, g_data)
 		if sell_goods(key, amt, sell_price):
 			total_earned += amt * sell_price
+			GameManager.state.market.adjust_stock(port_id, key, amt)
 			any_sold = true
 	if any_sold:
 		return {"success": true, "earned": total_earned, "msg": "全部抛售，获利 %d 钱！" % total_earned}

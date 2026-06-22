@@ -13,6 +13,7 @@ var body_label: RichTextLabel
 var _actions: VBoxContainer
 var _root: Control
 var _game_theme: Theme
+var _pending_enemy_data: Dictionary = {}  ## 战斗结束后用于 LootResolver 结算
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -132,6 +133,12 @@ func _on_choice_made(choice: Dictionary) -> void:
 		_show_result(choice.get("msg_fail", "条件不足，无法执行此选项。"))
 		return
 
+	# ── FleetArchetypes 战斗路由：直接移交 CombatSessionController ──
+	if choice.has("launch_combat") and choice["launch_combat"]:
+		var enemy_data: Dictionary = choice.get("combat_enemy", {})
+		_launch_combat(enemy_data)
+		return
+
 	if choice.has("success_chance"):
 		var success := randf() < float(choice.get("success_chance", 1.0))
 		var msg: String = choice.get("msg_ok", "") if success else choice.get("msg_fail", "")
@@ -143,6 +150,15 @@ func _on_choice_made(choice: Dictionary) -> void:
 	if choice.has("intent_struct"):
 		var istruct: Dictionary = choice["intent_struct"]
 		var intent_type: String = istruct.get("type", "ignore")
+
+		# ── 战斗拦截：移交 CombatSessionController ──
+		if intent_type == "combat_request":
+			var enemy_data: Dictionary = istruct.get("parameters", {}).get("combat_enemy", {})
+			if enemy_data.is_empty():
+				enemy_data = istruct.get("context", {}).get("combat_enemy", {})
+			_launch_combat(enemy_data)
+			return
+
 		var intent := Intent.new(
 			intent_type,
 			istruct.get("source", "player_fleet"),
@@ -199,6 +215,34 @@ func _show_result(msg: String) -> void:
 		if child is Button:
 			child.queue_free()
 	_actions.add_child(_make_choice_button("确认", _close_modal))
+
+## ── 战斗移交 ─────────────────────────────────────────────
+## 关闭当前 SeaEvent，启动 CombatSessionController 多回合战斗。
+func _launch_combat(enemy_data: Dictionary) -> void:
+	var parent := get_parent()
+	# 保存敌方数据供战斗结束后使用
+	_pending_enemy_data = enemy_data
+	# 立即隐藏当前模态，避免叠影
+	if is_instance_valid(_root):
+		_root.visible = false
+
+	var ctrl := CombatSessionController.start_combat(parent, enemy_data)
+	ctrl.combat_finished.connect(_on_combat_over)
+
+func _on_combat_over(result: Dictionary) -> void:
+	var victory_type: int = result.get("victory_type", 0)
+	var is_player_win := victory_type in [
+		CombatState.VictoryType.SUNK,
+		CombatState.VictoryType.CAPTURED,
+		CombatState.VictoryType.DUEL_VICTORY,
+	]
+	if is_player_win:
+		# 战利品结算
+		var loot := LootResolver.resolve(victory_type, _pending_enemy_data, null)
+		LootResolver.apply_loot(loot)
+	# 关闭本 SeaEvent
+	event_finished.emit()
+	queue_free()
 
 func _close_modal() -> void:
 	if not is_instance_valid(_root):
