@@ -30,7 +30,8 @@
         "aromatic_medicine": 0.8
       },
       "demand": {
-        "sutra_scrolls": 1.2
+        "sutra_scrolls": 1.2,
+        "sulfur": 1.2
       },
       "position": {
         "x": 0,
@@ -139,6 +140,10 @@
         "jeju",
         "kagoshima"
       ],
+      "production": {
+        "sulfur": 0.9,
+        "japanese_swords": 0.8
+      },
       "position": {
         "x": 15000,
         "y": -8000
@@ -197,6 +202,10 @@
       "connections": [
         "quanzhou"
       ],
+      "production": {
+        "rice": 1.5,
+        "horses": 0.7
+      },
       "position": {
         "x": -5000,
         "y": 15000

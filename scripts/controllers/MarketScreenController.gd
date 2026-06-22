@@ -16,6 +16,7 @@ var _selected_action: String = ""
 var _trade_amount: int = DEFAULT_TRADE_AMOUNT
 
 var title_label: Label
+var stock_alert_label: Label
 var money_value: Label
 var cargo_value: Label
 var inventory_container: VBoxContainer
@@ -60,6 +61,12 @@ func _ready() -> void:
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.theme_type_variation = "MarketTitle"
 	vbox.add_child(title_label)
+
+	stock_alert_label = Label.new()
+	stock_alert_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stock_alert_label.theme_type_variation = "MarketAlert"
+	stock_alert_label.visible = false
+	vbox.add_child(stock_alert_label)
 
 	var info_hbox := HBoxContainer.new()
 	info_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -236,6 +243,22 @@ func refresh_ui() -> void:
 		market_container.add_child(btn)
 	if mkt_empty:
 		market_container.add_child(_make_empty_label("今日港口暂无特产上架"))
+
+	_check_stock_alert()
+
+func _check_stock_alert() -> void:
+	var all_goods: Array = GameManager.goods_data.get("goods", [])
+	var alert := false
+	for g in all_goods:
+		var g_id: String = g.get("id", "")
+		if g.get("category", "") != "货物" or g_id.is_empty():
+			continue
+		var ratio: float = GameManager.state.market.get_stock_ratio(port_id, g_id)
+		if ratio > 2.5:
+			alert = true
+			break
+	stock_alert_label.text = "【市集异动】此港部分商品库存紧张，价格已有明显波动。"
+	stock_alert_label.visible = alert
 
 func _make_item_button(text: String, kind: String) -> Button:
 	var btn := Button.new()

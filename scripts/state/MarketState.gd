@@ -3,6 +3,10 @@ class_name MarketState extends RefCounted
 # port_stocks[port_id][good_id] = {"stock": 800, "base_stock": 1000}
 var port_stocks: Dictionary = {}
 
+# 预告池：尚未爆发、正在倒计时的贸易事件
+# 元素结构：{"event": BaseEconomicEvent, "days_left": int}
+var upcoming_events: Array[Dictionary] = []
+
 func init_from_ports(ports: Array, goods: Array) -> void:
 	for port in ports:
 		var port_id = port.get("id", "")

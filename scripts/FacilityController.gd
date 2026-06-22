@@ -100,6 +100,9 @@ func _setup_post_dialogue_content() -> void:
 	if _pending_scene_id.ends_with("_shipyard") or scene_data.get("id", "") == "city_shipyard":
 		_setup_shipyard_options()
 
+	if _pending_scene_id.ends_with("_tavern") or scene_data.get("id", "").ends_with("_tavern"):
+		_setup_tavern_rumors()
+
 	if scene_data.has("npc_encounter"):
 		var npc_id = scene_data.get("npc_encounter")
 		var fallback_name = "神秘人物"
@@ -470,3 +473,56 @@ func _on_set_sail_pressed(set_sail_btn: Button) -> void:
 		)
 		return
 	scene_requested.emit("world_map")
+
+func _setup_tavern_rumors() -> void:
+	var rumor = TradeEventGenerator.get_random_rumor()
+	if rumor.is_empty():
+		return
+	interactive_label.visible = true
+	_add_rumor_btn(rumor, 1, "★ 小道消息 (💰 20)")
+	_add_rumor_btn(rumor, 2, "★★ 酒馆传言 (💰 50)")
+	_add_rumor_btn(rumor, 3, "★★★ 商人情报 (💰 120)")
+
+func _add_rumor_btn(rumor: Dictionary, tier: int, label: String) -> void:
+	var btn = Button.new()
+	btn.text = label
+	_style_action_button(btn)
+	btn.pressed.connect(_on_rumor_pressed.bind(rumor, tier, btn))
+	interactive_container.add_child(btn)
+
+func _on_rumor_pressed(rumor: Dictionary, tier: int, btn: Button) -> void:
+	if GameManager.input_locked:
+		return
+	var prices := [20, 50, 120]
+	var cost: int = prices[tier - 1]
+	if LedgerSystem.get_balance() < cost:
+		message_logged.emit("【酒馆】你摸遍口袋也凑不出 %d 钱。\n\n" % cost)
+		return
+	LedgerSystem.apply({"amount": -cost, "source": "gameplay", "reason": "tavern_rumor", "actor": "FacilityController"})
+	rumor["purchased"] = true
+	# 禁用所有档位按钮
+	for child in interactive_container.get_children():
+		if child is Button and (child.text.contains("小道消息") or child.text.contains("酒馆传言") or child.text.contains("商人情报")):
+			child.disabled = true
+	var narration := _build_rumor_narration(rumor, tier)
+	var beat = DialogueParser.beat_from_text(narration)
+	dialogue_box.show_single_beat(beat)
+	status_updated.emit()
+
+func _build_rumor_narration(rumor: Dictionary, tier: int) -> String:
+	match tier:
+		1:
+			return "喝醉的水手凑过来低声说：「听说最近某个方向的港口有点不寻常……要留心。」"
+		2:
+			var days_left: int = rumor.get("days_left", 7)
+			var days_low: int = days_left - 2
+			var days_high: int = days_left + 3
+			return "老水手压低声音：「南边某港，大约 %d 到 %d 天内会有变故。你懂的。」" % [maxi(1, days_low), days_high]
+		3:
+			var port_name: String = rumor.get("port_name", "某港")
+			var days_left: int = rumor.get("days_left", 7)
+			var days_low: int = days_left - 1
+			var days_high: int = days_left + 2
+			return "商人凑近低声道：「%s那边，听说大约 %d 到 %d 天内会有大事，你自己掂量。」" % [port_name, maxi(1, days_low), days_high]
+		_:
+			return ""

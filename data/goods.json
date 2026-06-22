@@ -46,6 +46,7 @@
       "destination_hint": "寺院网络 / 博多寺社远景",
       "risk": "怕潮，不宜写入明账",
       "base_value": 40,
+      "legality": "legal",
       "historical_note": "不是普通买卖货，更多用于寺院网络与遮护。"
     },
     {
@@ -56,6 +57,7 @@
       "destination_hint": "账房、保人、货主",
       "risk": "押字不清会牵连保人与船主信用",
       "base_value": 0,
+      "legality": "legal",
       "historical_note": "用于表现验引、报货、抽解和风险分摊。"
     },
     {
@@ -66,6 +68,7 @@
       "destination_hint": "博多唐房旧账线索",
       "risk": "不宜外泄，丢失会损伤海商信用",
       "base_value": 120,
+      "legality": "legal",
       "historical_note": "仅为账册线索，非泉州出口货；作为远景钩子，不等于第一章直接远航博多。"
     },
     {
@@ -76,6 +79,7 @@
       "destination_hint": "博多唐房远景",
       "risk": "不问内物，但货损要算在账上",
       "base_value": 80,
+      "legality": "legal",
       "historical_note": "用于连接泉州海商信用与日本唐房远景。"
     },
     {

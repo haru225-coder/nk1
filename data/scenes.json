@@ -13,7 +13,11 @@
       "choices": [
         {
           "label": "开始旅程",
-          "next": "prologue_tabletop"
+          "next": "scene01_xianghua_school"
+        },
+        {
+          "label": "跳过序章：直接进入泉州港",
+          "next": "port_quanzhou"
         }
       ],
       "type": "title",
