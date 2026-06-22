@@ -7,39 +7,58 @@ extends Node
 
 ## ── 状态模块实例 ─────────────────────────────────────────
 
-var ship: ShipState = ShipState.new()
+var fleet: FleetState = FleetState.new()
 var survival: SurvivalState = SurvivalState.new()
 var trade: TradeState = TradeState.new()
 var story: StoryState = StoryState.new()
 var navigation: NavigationState = NavigationState.new()
+var market: MarketState = MarketState.new()
 
 ## ── 船只属性代理 ─────────────────────────────────────────
 
 var ship_hp: float:
-	get: return ship.hp
-	set(v): ship.hp = v
+	get: return fleet.get_flagship().hp
+	set(v): fleet.get_flagship().hp = v
 
 var ship_max_hp: float:
-	get: return ship.max_hp
-	set(v): ship.max_hp = v
+	get: return fleet.get_flagship().max_hp
+	set(v): fleet.get_flagship().max_hp = v
 
 var armor_level: int:
-	get: return ship.armor_level
-	set(v): ship.armor_level = v
+	get: return fleet.get_flagship().armor_level
+	set(v): fleet.get_flagship().armor_level = v
 
 var sail_level: int:
-	get: return ship.sail_level
-	set(v): ship.sail_level = v
+	get: return fleet.get_flagship().sail_level
+	set(v): fleet.get_flagship().sail_level = v
+
+var sail_type: String:
+	get: return fleet.get_flagship().sail_type
+	set(v): fleet.get_flagship().sail_type = v
+
+var artillery: int:
+	get: return fleet.get_flagship().artillery
+	set(v): fleet.get_flagship().artillery = v
+
+var swordplay: int:
+	get: return fleet.get_flagship().swordplay
+	set(v): fleet.get_flagship().swordplay = v
+
+var maneuverability: int:
+	get: return fleet.get_flagship().maneuverability
+	set(v): fleet.get_flagship().maneuverability = v
 
 ## ── 生存属性代理 ─────────────────────────────────────────
 
 var crew_count: int:
-	get: return survival.crew_count
-	set(v): survival.crew_count = v
+	get: return fleet.get_total_crew()
+	set(v): 
+		var diff = v - fleet.get_total_crew()
+		fleet.modify_crew(diff)
 
 var max_crew: int:
-	get: return survival.max_crew
-	set(v): survival.max_crew = v
+	get: return fleet.get_max_crew()
+	set(v): fleet.get_flagship().max_crew = v
 
 var food: float:
 	get: return survival.food
@@ -118,7 +137,9 @@ var navigation_position: String:
 ## ── 公开方法（委托给各模块）─────────────────────────────
 
 func process_daily_consumption() -> void:
-	survival.process_daily_consumption()
+	var deaths = survival.process_daily_consumption(crew_count)
+	if deaths > 0:
+		modify_crew(-deaths)
 
 func sell_goods(item_id: String, amount: int, price_per_unit: int) -> bool:
 	return trade.sell_goods(item_id, amount, price_per_unit)
@@ -136,7 +157,7 @@ func customs_inspection() -> Dictionary:
 	return result
 
 func can_depart_port() -> Dictionary:
-	var survival_check = survival.can_depart()
+	var survival_check = survival.can_depart(crew_count)
 	if not survival_check["success"]:
 		return survival_check
 	if (
@@ -219,14 +240,7 @@ func _resolve_good_id(key: String) -> Dictionary:
 	return GameManager.get_good_by_name(key)
 
 func _calc_bulk_sell_price(port_id: String, g_data: Dictionary) -> int:
-	var base = g_data.get("base_value", 20)
-	var origin = g_data.get("origin", "")
-	var is_local = false
-	if port_id.begins_with("quanzhou") and ("泉州" in origin or "福建" in origin):
-		is_local = true
-	elif port_id.begins_with("xinghua") and ("兴化" in origin or "福建" in origin):
-		is_local = true
-	return int(base * 1.1) if is_local else int(base * 2.5)
+	return EconomySystem.get_price(port_id, g_data.get("id", ""))
 
 ## ── Dispatchers ───────────────────────────────────────────
 
@@ -293,7 +307,13 @@ func apply_effects(effects: Dictionary) -> void:
 					var ratio := absf(float(val))
 					if float(val) < 0.0:
 						CargoSystem.remove_fraction(ratio)
-			_:
+			"artillery":
+				artillery = max(0, artillery + int(val))
+			"swordplay":
+				swordplay = max(0, swordplay + int(val))
+			"maneuverability":
+				maneuverability = max(0, maneuverability + int(val))
+			_: 
 				if not key in ["sea_tendency", "scholar_tendency", "merchant_credit", "ledger_note"]:
 					push_warning("[GameState] apply_effects: unknown key '" + key + "'")
 
@@ -359,8 +379,6 @@ func _do_drop_cargo_half() -> Dictionary:
 	return {"success": true, "msg": ""}
 
 func _do_trigger_combat() -> Dictionary:
-	modify_fame(-10)
-	modify_crew(-5)
-	if LedgerSystem.get_balance() > 100:
-		LedgerSystem.apply({"amount": -100, "source": "system", "reason": "combat_loss", "actor": "GameState"})
-	return {"success": true, "msg": "【战斗暂未实装】敌意舰队逼近！你只能仓皇撤退，付出了惨痛的代价！"}
+	# 旧 stub 已退役：战斗现由 SeaEventController → CombatSessionController 接管。
+	# 保留此方法作为安全兜底，不再扣减玩家资源。
+	return {"success": true, "msg": "【警告】战斗应通过遭遇系统的 launch_combat 路径触发。"}

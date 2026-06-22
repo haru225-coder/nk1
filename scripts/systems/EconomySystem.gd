@@ -26,7 +26,7 @@ static func get_market_snapshot(port_id: String) -> Dictionary:
 			"name": g.get("name", ""),
 			"base_value": g.get("base_value", 50),
 			"price": p_price,
-			"available": 999 # MVP 暂时无限库存
+			"available": GameManager.state.market.get_stock(port_id, g_id)
 		})
 	
 	return snapshot
@@ -54,8 +54,11 @@ static func _get_price_with_port(port: Dictionary, good_id: String) -> int:
 	if demand_dict.has(good_id):
 		demand_mod = float(demand_dict[good_id])
 		
-	var active_events = WorldEventTracker.get_active_events()
 	var port_id = port.get("id", "")
+	var stock_ratio = GameManager.state.market.get_stock_ratio(port_id, good_id)
+	prod_mod *= stock_ratio
+		
+	var active_events = WorldEventTracker.get_active_events()
 	var result = PriceEngine.calculate_price(base_price, prod_mod, demand_mod, dist_mod, active_events, port_id, good_id)
 	
 	return result["final_price"]

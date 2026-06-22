@@ -143,6 +143,7 @@ func _process_weather_and_time(delta: float) -> void:
 		var old_crew = GameState.crew_count
 		GameState.process_daily_consumption()
 		WorldEventTracker.process_day()
+		TradeEventGenerator.try_generate()
 		if GameState.crew_count < old_crew:
 			var ft = ResourceManager.FloatingText.instantiate()
 			ft.text = "【警告】水尽粮绝！水手减少！"

@@ -42,6 +42,10 @@ func load_data() -> void:
 	ui_commands_data = _load_json("res://data/ui_commands.json")
 	
 	_build_lookup_dictionaries()
+	
+	if GameState.market:
+		GameState.market.init_from_ports(ports_data.get("ports", []), goods_data.get("goods", []))
+		
 	data_loaded.emit()
 
 func _build_lookup_dictionaries() -> void:

@@ -36,6 +36,7 @@ func execute(intent: Intent) -> IntentResult:
 		if not LedgerSystem.apply(tx, intent.id):
 			return IntentResult.new(false, type, "error.market.transaction_failed")
 		if CargoSystem.add_item(good_id, amount):
+			GameManager.state.market.adjust_stock(port_id, good_id, -amount)
 			return IntentResult.new(true, type, "intent.market_buy.success")
 		LedgerSystem.apply({
 			"amount": total_cost,
@@ -66,6 +67,7 @@ func execute(intent: Intent) -> IntentResult:
 		}
 		if LedgerSystem.apply(tx, intent.id):
 			CargoSystem.remove_item(good_id, amount)
+			GameManager.state.market.adjust_stock(port_id, good_id, amount)
 			return IntentResult.new(true, type, "intent.market_sell.success")
 		else:
 			return IntentResult.new(false, type, "error.market.transaction_failed")
