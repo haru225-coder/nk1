@@ -206,10 +206,16 @@ func refresh_ui() -> void:
 		inv_empty = false
 		var g_data := GameManager.get_good_data(good_id)
 		var price := _get_live_price(good_id)
+		var base_val = g_data.get("base_value", 50)
+		var trend_info = _get_trend_info(price, base_val)
 		var btn := _make_item_button(
-			"%s  ×%d   卖出 %d" % [g_data.get("name", "未知"), amount, price],
+			"%s  ×%d   卖出 %d %s" % [g_data.get("name", "未知"), amount, price, trend_info.text],
 			"sell"
 		)
+		if trend_info.color != Color.TRANSPARENT:
+			# [Code Audit Exemption] 颜色基于运行时价格走势动态计算，无法在 theme 中静态定义
+			btn.add_theme_color_override("font_color", trend_info.color)
+			btn.add_theme_color_override("font_hover_color", trend_info.color.lightened(0.2))
 		btn.pressed.connect(_on_item_selected.bind(good_id, "sell"))
 		inventory_container.add_child(btn)
 	if inv_empty:
@@ -219,7 +225,13 @@ func refresh_ui() -> void:
 	for g in market_snapshot.get("goods", []):
 		mkt_empty = false
 		var live_price := _get_live_price(g.id)
-		var btn := _make_item_button("%s   买入 %d" % [g.name, live_price], "buy")
+		var base_val = g.get("base_value", 50)
+		var trend_info = _get_trend_info(live_price, base_val)
+		var btn := _make_item_button("%s   买入 %d %s" % [g.name, live_price, trend_info.text], "buy")
+		if trend_info.color != Color.TRANSPARENT:
+			# [Code Audit Exemption] 颜色基于运行时价格走势动态计算，无法在 theme 中静态定义
+			btn.add_theme_color_override("font_color", trend_info.color)
+			btn.add_theme_color_override("font_hover_color", trend_info.color.lightened(0.2))
 		btn.pressed.connect(_on_item_selected.bind(g.id, "buy"))
 		market_container.add_child(btn)
 	if mkt_empty:
@@ -324,3 +336,16 @@ func _on_confirm_pressed() -> void:
 func _on_back_pressed() -> void:
 	market_closed.emit()
 	queue_free()
+
+func _get_trend_info(price: int, base: int) -> Dictionary:
+	if base <= 0: return {"text": "", "color": Color.TRANSPARENT}
+	var ratio := float(price) / float(base)
+	if ratio >= 2.0:
+		return {"text": "↑↑暴涨", "color": Color(1.0, 0.4, 0.4)}
+	if ratio >= 1.2:
+		return {"text": "↑涨", "color": Color(1.0, 0.7, 0.4)}
+	if ratio <= 0.5:
+		return {"text": "↓↓暴跌", "color": Color(0.4, 1.0, 0.4)}
+	if ratio <= 0.8:
+		return {"text": "↓跌", "color": Color(0.7, 1.0, 0.7)}
+	return {"text": "", "color": Color.TRANSPARENT}
