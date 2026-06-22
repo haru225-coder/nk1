@@ -4,6 +4,9 @@ extends Node2D
 @onready var label: RichTextLabel = $CanvasLayer/HUD/LeftPanel/Margin/Label
 @onready var fleet_status: Label = $CanvasLayer/HUD/RightPanel/Margin/FleetStatus
 @onready var weather_status: Label = $CanvasLayer/HUD/RightPanel/Margin/WeatherStatus
+@onready var _left_panel: PanelContainer = $CanvasLayer/HUD/LeftPanel
+@onready var _right_panel: PanelContainer = $CanvasLayer/HUD/RightPanel
+@onready var _minimap_panel: PanelContainer = $CanvasLayer/HUD/MinimapPanel
 @onready var canvas_modulate: CanvasModulate = $CanvasModulate
 @onready var rain_particles: CPUParticles2D = $RainParticles
 @onready var lightning_flash: ColorRect = $CanvasLayer/LightningFlash
@@ -46,6 +49,8 @@ func _ready() -> void:
 		ship.add_to_group("player_ship")
 
 	_update_hud_labels()
+	await get_tree().process_frame
+	_animate_hud_entrance()
 
 func _input(event: InputEvent) -> void:
 	if navigation_locked:
@@ -332,3 +337,15 @@ func _draw() -> void:
 					var dist := int(p_node.position.distance_to(target_node.position) / 10.0)
 					var mid_pos := (p_node.position + target_node.position) / 2.0
 					draw_string(ThemeDB.fallback_font, mid_pos, str(dist) + " 海里", HORIZONTAL_ALIGNMENT_CENTER, -1, 32, Color(0.8, 0.8, 0.8, 0.8))
+
+func _animate_hud_entrance() -> void:
+	var panels := [_left_panel, _right_panel, _minimap_panel]
+	for panel in panels:
+		panel.scale = Vector2(0.88, 0.88)
+		panel.modulate.a = 0.0
+		panel.pivot_offset = panel.size * 0.5
+	var tw := create_tween().set_parallel(true)
+	tw.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	for panel in panels:
+		tw.tween_property(panel, "scale", Vector2.ONE, 0.6)
+		tw.tween_property(panel, "modulate:a", 1.0, 0.5)
