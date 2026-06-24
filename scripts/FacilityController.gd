@@ -191,8 +191,88 @@ func _on_sell_all_pressed() -> void:
 
 # ======== 码头功能 ========
 
+const SHIPYARD_REPAIR_COST_PER_HP := 2.0
+
 func _resolve_scene_variant(scene_data: Dictionary, scene_id: String) -> Dictionary:
 	return SceneVariantResolver.resolve(scene_data, scene_id)
+
+func _refresh_shipyard_options() -> void:
+	for child in choices_container.get_children():
+		child.queue_free()
+	_setup_shipyard_options()
+
+func _estimate_repair_cost(ship_index: int, repair_ratio: float) -> int:
+	var ship: ShipState = GameState.fleet.ships[ship_index]
+	var missing_hp: float = ship.max_hp - ship.hp
+	if missing_hp <= 0.0:
+		return 0
+	return ceili(missing_hp * repair_ratio * SHIPYARD_REPAIR_COST_PER_HP)
+
+func _format_intent_failure(result: IntentResult, fallback: String) -> String:
+	if result.error_code == IntentErrorCodes.INSUFFICIENT_FUNDS:
+		return GameManager.get_text(result.message_key, "【金钱不足】余额不足以完成此操作。")
+	var txt := GameManager.get_text(result.message_key, "")
+	return txt if txt != "" else fallback
+
+func _on_repair_ship_pressed(ship_index: int, repair_ratio: float) -> void:
+	var intent := Intent.new(
+		"repair_ship", "player", "shipyard",
+		{
+			"ship_index": ship_index,
+			"repair_ratio": repair_ratio,
+			"cost_per_hp": SHIPYARD_REPAIR_COST_PER_HP,
+		}
+	)
+	var result := IntentResolver.resolve(intent)
+	if result.success:
+		var ship: ShipState = GameState.fleet.ships[ship_index]
+		var repaired := float(result.data.get("repaired", 0.0))
+		if repaired > 0.0:
+			message_logged.emit(
+				"【造船厂】%s 修理完成，恢复 %.0f 点耐久，花费 %d 钱。\n\n" % [
+					ship.name, repaired, int(result.data.get("cost", 0))
+				]
+			)
+		else:
+			message_logged.emit("【造船厂】%s 船体完好，无需修理。\n\n" % ship.name)
+		status_updated.emit()
+		_refresh_shipyard_options()
+	else:
+		message_logged.emit(_format_intent_failure(result, "【造船厂】修理失败。") + "\n\n")
+
+func _on_refit_ship_pressed(cost: int) -> void:
+	var result := IntentResolver.resolve(Intent.new(
+		"refit_ship", "player", "shipyard", {"cost": cost}
+	))
+	if result.success:
+		var sail_name := "纵帆" if GameState.sail_type == "lateen" else "横帆"
+		message_logged.emit("【造船厂】改装完毕！你的船现在挂起了%s。\n\n" % sail_name)
+		status_updated.emit()
+		_refresh_shipyard_options()
+	else:
+		message_logged.emit(_format_intent_failure(result, "【造船厂】改装失败。") + "\n\n")
+
+func _setup_shipyard_repair_options() -> void:
+	var fleet := GameState.fleet
+	for i in range(fleet.ships.size()):
+		var ship: ShipState = fleet.ships[i]
+		if ship.hp >= ship.max_hp:
+			continue
+		var hp_pct := int(ship.hp / ship.max_hp * 100.0) if ship.max_hp > 0.0 else 0
+		for ratio in [0.5, 1.0]:
+			var cost := _estimate_repair_cost(i, ratio)
+			if cost <= 0:
+				continue
+			var ratio_label := "半数" if is_equal_approx(ratio, 0.5) else "全量"
+			var repair_gain := int((ship.max_hp - ship.hp) * ratio)
+			var repair_btn := Button.new()
+			repair_btn.text = "🔧 %s 修理%s (耐久 %d%% → +%d HP, %d 钱)" % [
+				ship.name, ratio_label, hp_pct, repair_gain, cost
+			]
+			repair_btn.custom_minimum_size = Vector2(0, 52)
+			repair_btn.theme_type_variation = "ActionButton"
+			repair_btn.pressed.connect(_on_repair_ship_pressed.bind(i, ratio))
+			choices_container.add_child(repair_btn)
 
 func _setup_shipyard_options() -> void:
 	if GameState.last_port == "quanzhou" \
@@ -208,6 +288,8 @@ func _setup_shipyard_options() -> void:
 		interactive_container.add_child(lin_btn)
 		interactive_label.visible = true
 
+	_setup_shipyard_repair_options()
+
 	var refit_btn = Button.new()
 	var current_type = GameState.sail_type
 	var cost = 500
@@ -217,18 +299,7 @@ func _setup_shipyard_options() -> void:
 		refit_btn.text = "💰 500 改装为横帆 (极大提升顺风航速，但逆风寸步难行)"
 	refit_btn.custom_minimum_size = Vector2(0, 52)
 	refit_btn.theme_type_variation = "ActionButton"
-	refit_btn.pressed.connect(func():
-		if LedgerSystem.get_balance() >= cost:
-			LedgerSystem.apply({"amount": -cost, "source": "gameplay", "reason": "refit_sail", "actor": "FacilityController"})
-			GameState.sail_type = "lateen" if current_type == "square" else "square"
-			message_logged.emit("【造船厂】改装完毕！你的船现在挂起了" + ("纵帆" if GameState.sail_type == "lateen" else "横帆") + "。\n\n")
-			# 刷新菜单自身以更新按钮文本
-			for child in choices_container.get_children():
-				child.queue_free()
-			_setup_shipyard_options()
-		else:
-			message_logged.emit("【造船厂】金钱不足！需要 %d 铜钱。\n\n" % cost)
-	)
+	refit_btn.pressed.connect(_on_refit_ship_pressed.bind(cost))
 	choices_container.add_child(refit_btn)
 
 	var set_sail_btn = Button.new()

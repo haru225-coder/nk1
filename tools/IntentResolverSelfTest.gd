@@ -11,6 +11,7 @@ func _ready() -> void:
 	ok = ok and IntentResolver.has_handler("market_sell")
 	ok = ok and IntentResolver.has_handler("bribe")
 	ok = ok and IntentResolver.has_handler("repair_ship")
+	ok = ok and IntentResolver.has_handler("refit_ship")
 	ok = ok and IntentResolver.has_handler("trade_request")
 
 	# PaymentHandler
@@ -102,6 +103,31 @@ func _ready() -> void:
 	))
 	ok = ok and not broke_repair.success
 	ok = ok and broke_repair.error_code == IntentErrorCodes.INSUFFICIENT_FUNDS
+
+	# 海上巡逻贿赂 + 没收违禁品
+	IdempotencyGuard.processed_intents.clear()
+	LedgerSystem.from_save_dict({"balance": 1000})
+	CargoSystem.from_save_dict({"cargo": {"smuggled_salt": 2}, "total": 2})
+	GameState.pu_attention = 0
+	var patrol_bribe := IntentResolver.resolve(Intent.new(
+		"bribe", "player_fleet", "song_patrol",
+		{"amount": 500, "attention_delta": 0, "confiscate_contraband": true}
+	))
+	ok = ok and patrol_bribe.success
+	ok = ok and LedgerSystem.get_balance() == 500
+	ok = ok and CargoSystem.get_amount("smuggled_salt") == 0
+	ok = ok and GameState.pu_attention == 0
+
+	# RefitHandler — 横帆改纵帆
+	IdempotencyGuard.processed_intents.clear()
+	LedgerSystem.from_save_dict({"balance": 1000})
+	GameState.sail_type = "square"
+	var refit_result := IntentResolver.resolve(Intent.new(
+		"refit_ship", "player", "shipyard", {"cost": 500}
+	))
+	ok = ok and refit_result.success
+	ok = ok and GameState.sail_type == "lateen"
+	ok = ok and LedgerSystem.get_balance() == 500
 
 	# TradeHandler market_buy
 	IdempotencyGuard.processed_intents.clear()

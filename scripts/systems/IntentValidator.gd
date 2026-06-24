@@ -24,6 +24,8 @@ static func validate(intent: Intent) -> IntentResult:
 			return _validate_bribe(intent)
 		"repair_ship":
 			return _validate_repair_ship(intent)
+		"refit_ship":
+			return _validate_refit_ship(intent)
 		"inspection_pass":
 			return _validate_inspection_pass(intent)
 
@@ -123,6 +125,22 @@ static func _validate_repair_ship(intent: Intent) -> IntentResult:
 		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "error.repair.invalid_cost", intent.type)
 	if LedgerSystem.get_balance() < cost:
 		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "error.repair.insufficient_funds", intent.type)
+	return IntentResult.new(true, "validation_ok")
+
+static func _validate_refit_ship(intent: Intent) -> IntentResult:
+	var cost := int(intent.parameters.get("cost", 500))
+	if cost <= 0:
+		return _validation_error(intent, "error.refit.invalid_cost")
+	if LedgerSystem.get_balance() < cost:
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "error.refit.insufficient_funds", intent.type)
+	var current_type := GameState.sail_type
+	var new_type := str(intent.parameters.get("sail_type", ""))
+	if new_type.is_empty():
+		new_type = "lateen" if current_type == "square" else "square"
+	if new_type == current_type:
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "error.refit.same_sail", intent.type)
+	if new_type not in ["square", "lateen"]:
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "error.refit.invalid_sail", intent.type)
 	return IntentResult.new(true, "validation_ok")
 
 static func _validate_inspection_pass(intent: Intent) -> IntentResult:

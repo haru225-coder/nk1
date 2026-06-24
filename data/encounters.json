@@ -66,8 +66,8 @@
           "id": "bribe",
           "label_key": "choice.patrol.bribe",
           "intent": {
-            "type": "payment",
-            "parameters": {"amount": 500, "confiscate": true}
+            "type": "bribe",
+            "parameters": {"amount": 500, "attention_delta": 0, "confiscate_contraband": true}
           }
         },
         {
