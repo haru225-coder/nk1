@@ -67,6 +67,29 @@ func _ready() -> void:
 	
 	call_deferred("start_game")
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F5:
+			_save_game()
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_F9:
+			_load_game()
+			get_viewport().set_input_as_handled()
+
+func _save_game() -> void:
+	if SaveManager.save_game(current_scene_id):
+		_prepend_event_log("【存档】进度已保存。\n")
+	else:
+		_prepend_event_log("【存档】保存失败！\n")
+
+func _load_game() -> void:
+	var result = SaveManager.load_game()
+	if result["success"]:
+		load_scene(result["scene_id"])
+		_prepend_event_log("【读档】进度已恢复。\n")
+	else:
+		_prepend_event_log("【读档】" + result.get("msg", "无存档。") + "\n")
+
 func start_game() -> void:
 	if GameState.has_flag("return_to_port"):
 		GameState.clear_flag("return_to_port")

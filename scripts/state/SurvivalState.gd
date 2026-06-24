@@ -8,6 +8,14 @@ var water: float = 30.0
 var max_water: float = 100.0
 var max_cargo: int = 200
 
+func to_dict() -> Dictionary:
+	return {"food": food, "max_food": max_food, "water": water, "max_water": max_water, "max_cargo": max_cargo}
+
+func from_dict(d: Dictionary) -> void:
+	food = d.get("food", 30.0); max_food = d.get("max_food", 100.0)
+	water = d.get("water", 30.0); max_water = d.get("max_water", 100.0)
+	max_cargo = int(d.get("max_cargo", 200))
+
 signal crew_lost(amount: int)
 signal resource_depleted(resource: String)
 

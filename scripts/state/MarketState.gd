@@ -64,3 +64,9 @@ func reset_stock(port_id: String, good_id: String) -> void:
 	if not port_stocks.has(port_id) or not port_stocks[port_id].has(good_id):
 		return
 	port_stocks[port_id][good_id]["stock"] = port_stocks[port_id][good_id]["base_stock"]
+
+func to_dict() -> Dictionary:
+	return {"port_stocks": port_stocks}
+
+func from_dict(d: Dictionary) -> void:
+	port_stocks = d.get("port_stocks", {})

@@ -55,3 +55,19 @@ func unlock_chapter(chapter_id: String) -> void:
 		unlocked_chapters.append(chapter_id)
 		set_story_flag("chapter_unlock:" + chapter_id, true)
 		chapter_unlocked.emit(chapter_id)
+
+func to_dict() -> Dictionary:
+	return {
+		"fame": fame, "flags": flags, "story_flags": story_flags,
+		"story_items": story_items, "linboyuan_relationship": linboyuan_relationship,
+		"jia_relationship": jia_relationship, "unlocked_chapters": unlocked_chapters,
+	}
+
+func from_dict(d: Dictionary) -> void:
+	fame = int(d.get("fame", 0))
+	flags = d.get("flags", {})
+	story_flags = d.get("story_flags", {})
+	story_items = d.get("story_items", {})
+	linboyuan_relationship = int(d.get("linboyuan_relationship", 0))
+	jia_relationship = int(d.get("jia_relationship", 0))
+	unlocked_chapters = d.get("unlocked_chapters", [])

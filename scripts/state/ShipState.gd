@@ -18,3 +18,23 @@ var artillery: int = 3
 var swordplay: int = 2
 ## 机动性：船只操控能力，影响T字战法判定与撤退成功率
 var maneuverability: int = 5
+
+func to_dict() -> Dictionary:
+	return {
+		"name": name, "hp": hp, "max_hp": max_hp,
+		"crew": crew, "max_crew": max_crew,
+		"armor_level": armor_level, "sail_level": sail_level, "sail_type": sail_type,
+		"artillery": artillery, "swordplay": swordplay, "maneuverability": maneuverability,
+	}
+
+func from_dict(d: Dictionary) -> void:
+	name = d.get("name", "未命名船只")
+	hp = d.get("hp", 100.0); max_hp = d.get("max_hp", 100.0)
+	crew = int(d.get("crew", 30))
+	max_crew = int(d.get("max_crew", 50))
+	armor_level = int(d.get("armor_level", 1))
+	sail_level = int(d.get("sail_level", 1))
+	sail_type = d.get("sail_type", "square")
+	artillery = int(d.get("artillery", 3))
+	swordplay = int(d.get("swordplay", 2))
+	maneuverability = int(d.get("maneuverability", 5))

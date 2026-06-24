@@ -40,3 +40,13 @@ func modify_crew(amount: int) -> void:
 		var diff = mini(s.max_crew - s.crew if is_add else s.crew, rem)
 		s.crew += diff if is_add else -diff
 		rem -= diff
+
+func to_dict() -> Dictionary:
+	return {"ships": ships.map(func(s): return s.to_dict())}
+
+func from_dict(d: Dictionary) -> void:
+	ships.clear()
+	for sd in d.get("ships", []):
+		var s = ShipState.new()
+		s.from_dict(sd)
+		ships.append(s)

@@ -5,6 +5,13 @@ class_name TradeState extends RefCounted
 var pu_attention: int = 0
 var has_customs_permit: bool = false
 
+func to_dict() -> Dictionary:
+	return {"pu_attention": pu_attention, "has_customs_permit": has_customs_permit}
+
+func from_dict(d: Dictionary) -> void:
+	pu_attention = int(d.get("pu_attention", 0))
+	has_customs_permit = d.get("has_customs_permit", false)
+
 signal inspection_result(result: Dictionary)
 
 func sell_goods(item_id: String, amount: int, price_per_unit: int) -> bool:

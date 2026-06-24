@@ -111,3 +111,10 @@ static func get_contraband_keys() -> Array:
 			if g_data.get("legality") == "contraband":
 				result.append(good_id)
 	return result
+
+static func to_dict() -> Dictionary:
+	return {"cargo": _cargo.duplicate(), "total": _total}
+
+static func from_dict(d: Dictionary) -> void:
+	_cargo = d.get("cargo", {}).duplicate()
+	_total = int(d.get("total", 0))

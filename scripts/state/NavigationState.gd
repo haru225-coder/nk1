@@ -19,3 +19,11 @@ func depart_port(can_depart_result: Dictionary) -> Dictionary:
 func return_port(port_id: String) -> void:
 	last_port = port_id
 	returned_to_port.emit(port_id)
+
+func to_dict() -> Dictionary:
+	return {"last_port": last_port, "current_voyage_origin": current_voyage_origin, "navigation_position": navigation_position}
+
+func from_dict(d: Dictionary) -> void:
+	last_port = d.get("last_port", "quanzhou")
+	current_voyage_origin = d.get("current_voyage_origin", "quanzhou")
+	navigation_position = d.get("navigation_position", "")
