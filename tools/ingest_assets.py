@@ -14,6 +14,7 @@ def main() -> None:
     for script in (
         "ingest_portraits.py",
         "ingest_backgrounds.py",
+        "ingest_port_art.py",
         "generate_status_bar_assets.py",
         "finish_assets.py",
     ):

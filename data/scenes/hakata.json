@@ -1,0 +1,216 @@
+{
+  "scenes": [
+    {
+      "id": "port_hakata",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "hakata",
+      "title": "博多唐房",
+      "body": "",
+      "facilities": [
+        {
+          "id": "hakata_tavern",
+          "title": "居酒屋",
+          "subtitle": "打听消息",
+          "icon": "res://assets/icon_tavern_koei.png"
+        },
+        {
+          "id": "hakata_market",
+          "title": "唐房市集",
+          "subtitle": "买卖货物",
+          "icon": "res://assets/icon_market_koei.png"
+        },
+        {
+          "id": "hakata_temple",
+          "title": "博多寺社",
+          "subtitle": "祈福与情报",
+          "icon": "res://assets/icon_residence_koei.png"
+        }
+      ],
+      "town_map": {
+        "bg": "res://assets/bg_hakata_map.png",
+        "hint": "唐房聚落夹在寺社之间，硫黄气味弥漫街巷",
+        "fallback_mode": "cards",
+        "hotspots": []
+      },
+      "bg": "res://assets/bg_hakata_port.png",
+      "intro": "唐房聚落夹在寺社之间，硫黄气味弥漫。账册上记着日宋贸易的每一笔，武士在街角巡视。"
+    },
+    {
+      "id": "hakata_arrival",
+      "chapter": "chapter_2",
+      "title": "到港",
+      "location": "hakata",
+      "body": "博多港的栈桥比泉州的窄，但木料新得多。船一靠岸，硫黄的气味便钻进鼻腔——码头上堆着成箱的硫黄，木箱上烙着「博多」二字的火印。\n\n　　岸上聚落的屋舍低矮，屋檐下挂着汉字招牌：「陈记」「林氏」「德兴号」。这里是唐房——宋商在日本的落脚地。几个穿着宋式短衫的汉人在门口晒太阳，见你来了，眼皮也没抬。\n\n　　街角站着两个日本武士，腰间别着长刀，目光冷淡地扫过每一个行人。其中一个朝你点了点头——不是友好，是警告：我在看着你。\n\n　　远处寺社的钟声传来，沉闷而悠长。一个老僧从寺门走出，手里捻着念珠，朝唐房的方向看了一眼，又低头走开了。",
+      "choices": [
+        {
+          "label": "进入唐房",
+          "next": "port_hakata",
+          "effects": {
+            "story_flag": "hakata_arrived"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_hakata_port.png",
+      "investigations": [
+        {
+          "label": "看那批硫黄",
+          "text": "硫黄装在密封的木箱里，缝隙处渗出淡黄色的粉末。一个脚夫低声抱怨：「这东西易燃，搬的时候得小心。一点火星，整条船就炸了。」箱上的火印显示这批货要运往泉州。",
+          "once_flag": "hakata_sulfur_cargo",
+          "effects": {
+            "story_flag": "hakata_sulfur_trade_seen"
+          }
+        },
+        {
+          "label": "看唐房招牌",
+          "text": "招牌大多是泉州和明州的商号，也有几家广州的。门框上贴着褪色的春联，写的还是宋朝年号。一个汉子见你盯着看，哼了一声：「年号是旧的，银子是新的。」",
+          "once_flag": "hakata_signs_read",
+          "effects": {
+            "story_flag": "hakata_merchant_roster"
+          }
+        },
+        {
+          "label": "观察武士的巡逻路线",
+          "text": "两个武士沿街走了一个来回，每隔半炷香便折返。他们不干涉唐房的买卖，但眼神始终盯着——尤其是那些和日本人说话的宋商。这是监视，不是保护。",
+          "once_flag": "hakata_samurai_patrol",
+          "effects": {
+            "story_flag": "hakata_surveillance_noted",
+            "fame": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hakata_tavern",
+      "chapter": "chapter_2",
+      "title": "居酒屋",
+      "location": "hakata",
+      "body": "居酒屋在唐房尽头，低矮的门帘上画着一朵歪歪扭扭的樱花。里面烟雾弥漫，几张矮桌旁坐着宋商和日本商人，各自用各自的语言低声交谈，偶尔蹦出几句对方的话。\n\n　　角落里一个明州商人独坐，面前摆着一壶清酒和一本账册。账册翻开，上面密密麻麻记着货物和银钱。他见你来了，合上账册，笑道：\n\n【明州商人】：「新来的？坐。博多这地方，规矩不多——但有一条：别得罪寺社的人。」",
+      "investigations": [
+        {
+          "label": "问硫黄贸易",
+          "text": "明州商人压低声音：「硫黄是博多最值钱的货。日本产硫黄，大宋要火药——这笔买卖，利润十倍。但量太大，武士盯得紧。上次有人偷运，被砍了手。」他指了指账册上的一个名字，上面画了个叉。",
+          "once_flag": "hakata_sulfur_trade_info",
+          "effects": {
+            "story_flag": "hakata_sulfur_economics"
+          }
+        },
+        {
+          "label": "打听唐房的生存规矩",
+          "text": "商人道：「唐房的人，两头不靠。日本人不把你当自己人，宋朝那边……你也回不去了。能做的就是买卖，赚够了钱，买条船，回泉州养老。可大多数人，赚的钱都花在打点武士和寺社上了。」",
+          "once_flag": "hakata_tangfang_rules",
+          "effects": {
+            "story_flag": "hakata_tangfang_survival"
+          }
+        },
+        {
+          "label": "问寺社的势力",
+          "text": "商人指了指远处的钟声方向：「博多寺社管着半个港。船进港要给寺社交钱，卸货要给寺社交钱，连晾鱼干都要给寺社交钱。武士管刀，寺社管钱——你品品，谁说了算？」",
+          "once_flag": "hakata_temple_power",
+          "effects": {
+            "story_flag": "hakata_temple_authority",
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开居酒屋",
+          "next": "port_hakata",
+          "effects": {
+            "story_flag": "hakata_tavern_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_hakata_tavern.png"
+    },
+    {
+      "id": "hakata_market",
+      "chapter": "chapter_2",
+      "title": "唐房市集",
+      "location": "hakata",
+      "body": "唐房市集夹在两排木屋之间，窄得只容两人并肩。摊位上摆着宋瓷、丝绸、药材，对面是日本的漆器、折扇、刀剑。两种货物隔街相望，价格却天差地别——一匹宋绸能换十把日本刀。\n\n　　一个日本小贩用生硬的汉话喊道：「好刀！好刀！便宜卖！」旁边宋商嗤笑道：「便宜？那是铁匠铺的下脚料，削苹果都嫌钝。」",
+      "investigations": [
+        {
+          "label": "看宋瓷的行情",
+          "text": "一个泉州商人摆着几件青瓷，釉色温润。他叹道：「这在泉州值五贯，在博多值五十贯。可运费、关税、打点费扣下来……能剩十贯就不错了。」",
+          "once_flag": "hakata_porcelain_price",
+          "effects": {
+            "story_flag": "hakata_porcelain_economics"
+          }
+        },
+        {
+          "label": "看日本刀",
+          "text": "刀的品质参差不齐。好的刀刃口如秋水，差的刀锈迹斑斑。一个日本刀匠站在角落，不吆喝，只等识货的人来。他的刀上刻着「备前」二字——那是日本最好的刀产地。",
+          "once_flag": "hakata_sword_quality",
+          "effects": {
+            "story_flag": "hakata_sword_market"
+          }
+        },
+        {
+          "label": "打听账册上的暗语",
+          "text": "一个老商人看你盯着账册，低声道：「账册上的『茶』是丝绸，『药』是硫黄，『香』是铜钱。这是唐房的暗语——官府查账时用的。你要是做买卖，得先学这套。」",
+          "once_flag": "hakata_code_learned",
+          "effects": {
+            "story_flag": "hakata_merchant_code",
+            "fame": 2
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开市集",
+          "next": "port_hakata",
+          "effects": {
+            "story_flag": "hakata_market_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_hakata_market.png"
+    },
+    {
+      "id": "hakata_temple",
+      "chapter": "chapter_2",
+      "title": "博多寺社",
+      "location": "hakata",
+      "body": "寺社的山门比唐房的任何建筑都高。石阶两旁立着石灯笼，青苔爬满基座。一个老僧站在门口，手里捻着念珠，看见你来，微微一笑。\n\n【老僧】：「宋地来的施主，请进。佛前不问出身——但寺外的人，不一定这么想。」\n\n　　正殿里供着一尊铜佛，佛前的香炉里插着几炷线香。殿角放着一只木箱，箱盖半开，里面是成卷的账册——寺社的账册。",
+      "investigations": [
+        {
+          "label": "看寺社的账册",
+          "text": "账册上记着每一艘进港船的货物、税银和去向。最后一栏写着「奉献」——那是给寺社的「香火钱」，实际上就是过路费。金额不小，但没人敢不交。",
+          "once_flag": "hakata_temple_accounts",
+          "effects": {
+            "story_flag": "hakata_temple_finances"
+          }
+        },
+        {
+          "label": "和老僧交谈",
+          "text": "老僧道：「博多的寺社，管的不只是佛事。港口的税、码头的地、商人的纠纷——都归寺社管。武士管刀，我们管账。施主，你若想在这儿做买卖，得先拜佛。」他指了指功德箱，笑容慈祥。",
+          "once_flag": "hakata_monk_talk",
+          "effects": {
+            "story_flag": "hakata_temple_politics",
+            "fame": 1
+          }
+        },
+        {
+          "label": "看殿角的宋式佛像",
+          "text": "角落里有一尊小佛像，风格明显是宋式的——衣纹流畅，面容圆润。老僧道：「这是百年前从明州请来的。那时候，日宋之间还没有这么多规矩。」他叹了口气，眼神有些怀念。",
+          "once_flag": "hakata_buddha_statue",
+          "effects": {
+            "story_flag": "hakata_buddhist_connection"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开寺社",
+          "next": "port_hakata",
+          "effects": {
+            "story_flag": "hakata_temple_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_hakata_temple.png"
+    }
+  ]
+}

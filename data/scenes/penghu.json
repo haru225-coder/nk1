@@ -1,0 +1,217 @@
+{
+  "scenes": [
+    {
+      "id": "port_penghu",
+      "type": "port",
+      "chapter": "chapter_1",
+      "location": "penghu",
+      "title": "澎湖",
+      "body": "",
+      "facilities": [
+        {
+          "id": "penghu_tavern",
+          "title": "渔民棚屋",
+          "subtitle": "打听消息",
+          "icon": "res://assets/icon_tavern_koei.png"
+        },
+        {
+          "id": "penghu_market",
+          "title": "鱼市",
+          "subtitle": "买卖渔获",
+          "icon": "res://assets/icon_market_koei.png"
+        },
+        {
+          "id": "penghu_wharf",
+          "title": "避风锚地",
+          "subtitle": "船只与航路",
+          "icon": "res://assets/icon_shipyard_koei.png"
+        }
+      ],
+      "town_map": {
+        "bg": "res://assets/bg_penghu_map.png",
+        "hint": "群岛环绕的避风港，渔船桅杆如林",
+        "fallback_mode": "cards",
+        "hotspots": []
+      },
+      "bg": "res://assets/bg_penghu_port.png",
+      "intro": "渔船避风锚地，渔民聚落简朴。黑水沟在南面沉默，空旷感令人不安。"
+    },
+    {
+      "id": "penghu_arrival",
+      "chapter": "chapter_1",
+      "title": "到港",
+      "location": "penghu",
+      "body": "船绕过最后一座礁石，眼前豁然开朗——几十艘渔船泊在环形的避风锚地里，桅杆如林，帆布收成一团团白影。岛屿低矮，像一群趴在海面上的老龟，挡住外海的风浪。\n\n　　岸边的聚落简陋得令人心酸：石墙矮屋，屋顶压着石头防风。几个渔民蹲在岸边补网，手上的茧比铜钱还厚。他们看你一眼，又低头干活——来来去去的船太多了，不值得抬头。\n\n　　一个老渔民坐在礁石上，嘴里叼着旱烟杆，望着南面的海。他的眼神里有种说不出的东西——不是恐惧，是敬畏。\n\n【老渔民】：「你是要往南去的？小心黑水沟。那水，下去了就上不来。」",
+      "choices": [
+        {
+          "label": "进入聚落",
+          "next": "port_penghu",
+          "effects": {
+            "story_flag": "penghu_arrived"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_penghu_port.png",
+      "investigations": [
+        {
+          "label": "问黑水沟的事",
+          "text": "老渔民磕了磕烟杆：「黑水沟在南面，海面看着平静，水下是深渊。船到了那儿，罗盘会乱转，水色变黑——那就是死路。老辈人说，沟里住着龙，不信你去试试。」他说完，又望向南面，不再开口。",
+          "once_flag": "penghu_black_ditch",
+          "effects": {
+            "story_flag": "penghu_black_ditch_known"
+          }
+        },
+        {
+          "label": "看渔民补网",
+          "text": "网眼很小，专捕近海的小鱼。渔民道：「大鱼在深水，可深水太危险。我们只敢在外海打转——够吃就行，不贪。」他指了指远处：「那边的渔场，三年前沉过两条船。」",
+          "once_flag": "penghu_net_watching",
+          "effects": {
+            "story_flag": "penghu_fishing_danger"
+          }
+        },
+        {
+          "label": "数锚地里的船",
+          "text": "大大小小四十余艘，大多是近海渔船，吃水浅。只有三艘是远洋船，帆布补了又补。一个船老大蹲在船头，用油布擦着舵柄——他的船刚从外面回来，舵柄上还带着咸腥味。",
+          "once_flag": "penghu_ship_count",
+          "effects": {
+            "story_flag": "penghu_fleet_size",
+            "fame": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "penghu_tavern",
+      "chapter": "chapter_1",
+      "title": "渔民棚屋",
+      "location": "penghu",
+      "body": "棚屋用珊瑚石垒墙，棕榈叶盖顶，风一吹便哗哗作响。里面没有酒——只有鱼干和淡水。几个渔民围坐在火堆旁，用贝壳当碗，喝着煮开的海水（滤掉盐分的那种）。\n\n　　一个独臂渔民用仅剩的手夹着鱼干，朝你扬了扬下巴：\n\n【独臂渔民】：「坐。没什么好招待的，鱼干管够。你要打听什么，我听着——反正闲着也是闲着。」",
+      "investigations": [
+        {
+          "label": "问独臂的来历",
+          "text": "渔民看了看空荡荡的袖子：「三年前，黑水沟。船被卷进去，我抱着一块船板漂了两天。手是被礁石割断的——能活着回来就不错了。」他咬了一口鱼干，嚼得很用力。",
+          "once_flag": "penghu_arm_story",
+          "effects": {
+            "story_flag": "penghu_black_ditch_survivor"
+          }
+        },
+        {
+          "label": "打听渔民的日子",
+          "text": "渔民道：「官府不管我们，税吏也不来——太远了。可也意味着没人管你死活。病了自己扛，沉了自己捞。这儿的人，活到四十就算长寿。」他笑了笑，露出几颗被海风侵蚀的黄牙。",
+          "once_flag": "penghu_fisher_life",
+          "effects": {
+            "story_flag": "penghu_hard_life"
+          }
+        },
+        {
+          "label": "问避风的诀窍",
+          "text": "渔民指了指棚屋外的礁石群：「看那些礁石。浪打在礁石上的声音变了，就知道风要来了。声音闷，风还远；声音尖，赶紧收帆。这本事，海图上写不了，得用命去换。」",
+          "once_flag": "penghu_wind_skill",
+          "effects": {
+            "story_flag": "penghu_wind_reading",
+            "fame": 2
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开棚屋",
+          "next": "port_penghu",
+          "effects": {
+            "story_flag": "penghu_tavern_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_penghu_tavern.png"
+    },
+    {
+      "id": "penghu_market",
+      "chapter": "chapter_1",
+      "title": "鱼市",
+      "location": "penghu",
+      "body": "鱼市不过是一片沙滩，渔民把渔获摊在草席上晒。鱼干、虾干、海藻，偶尔有几只活蹦乱跳的螃蟹。没有秤——用手掂，用眼看，用鼻子闻。\n\n　　一个妇人守着一堆银色的小鱼干，见你来了，露出缺了门牙的笑：\n\n【妇人】：「买鱼干不？新鲜的，昨天晒的。拿盐换最好——盐比钱金贵。」",
+      "investigations": [
+        {
+          "label": "用盐换鱼干",
+          "text": "妇人接过盐，眼睛亮了：「好盐！够我腌半个月的鱼了。」她多抓了一把鱼干塞给你，又低声问：「外头的盐，多少钱一斤？我们这儿买不到——官盐太贵，私盐又断了。」",
+          "once_flag": "penghu_salt_trade",
+          "effects": {
+            "money": -4,
+            "food": 12,
+            "story_flag": "penghu_salt_shortage"
+          }
+        },
+        {
+          "label": "看那些活螃蟹",
+          "text": "螃蟹装在竹篓里，吐着沫。渔民道：「这蟹叫青蟳，秋天最肥。活的卖不出去——没法运，只能自己吃。你要是有钱，今晚煮一锅，请你喝蟹粥。」",
+          "once_flag": "penghu_crab_seen",
+          "effects": {
+            "story_flag": "penghu_crab_local"
+          }
+        },
+        {
+          "label": "问附近有没有宋船经过",
+          "text": "妇人想了想：「泉州的船偶尔来，补给淡水和鱼干。上个月来了一艘，船上的人脸色不好——说是在黑水沟边上差点翻了。他们补了水就走，连鱼干都没买。」",
+          "once_flag": "penghu_song_ship_info",
+          "effects": {
+            "story_flag": "penghu_song_ship_sighting"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开鱼市",
+          "next": "port_penghu",
+          "effects": {
+            "story_flag": "penghu_market_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_penghu_market.png"
+    },
+    {
+      "id": "penghu_wharf",
+      "chapter": "chapter_1",
+      "title": "避风锚地",
+      "location": "penghu",
+      "body": "锚地的水面平静如镜，倒映着低矮的岛屿和收起的帆。几艘渔船在补给淡水，木桶在栈桥上排成一排。一个船老大蹲在船头，用油布擦着罗盘——罗盘的指针微微颤动，指向南面。\n\n　　远处海面上，天际线的颜色有些不对——不是蓝色，是墨黑色，像被泼了一层墨汁。",
+      "investigations": [
+        {
+          "label": "看船老大的罗盘",
+          "text": "罗盘老旧，铜壳上刻着「泉州制造」。船老大指了指南面：「你看到那条黑线没有？那就是黑水沟的边。罗盘到了那儿就乱转——磁石不骗人，可到了那儿，连磁石都信不过。」",
+          "once_flag": "penghu_compass_checked",
+          "effects": {
+            "story_flag": "penghu_compass_anomaly"
+          }
+        },
+        {
+          "label": "打听往南的航路",
+          "text": "船老大摇头：「往南？你得绕开黑水沟。走西线，沿着礁石群往南，虽然慢，但安全。东线快，可那是黑水沟的正上方——没几个人敢走。」他看了你一眼：「你是去流求？还是更远？」",
+          "once_flag": "penghu_south_route",
+          "effects": {
+            "story_flag": "penghu_safe_route"
+          }
+        },
+        {
+          "label": "看那条墨黑色的海面",
+          "text": "墨黑色的区域在缓慢移动，像是活的。船老大低声道：「那不是水色——是鱼群。深海的鱼浮上来，说明下面有东西在追。什么东西……我也不知道。反正不是好事。」",
+          "once_flag": "penghu_deep_sea_fish",
+          "effects": {
+            "story_flag": "penghu_deep_sea_mystery",
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开锚地",
+          "next": "port_penghu",
+          "effects": {
+            "story_flag": "penghu_wharf_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_penghu_wharf.png"
+    }
+  ]
+}

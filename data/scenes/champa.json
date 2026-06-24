@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_champa",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "champa",
+      "title": "占城港",
+      "body": "",
+      "facilities": [
+        {"id": "champa_hut", "title": "椰林酒棚", "subtitle": "椰酒与传闻", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "champa_rice_market", "title": "米市", "subtitle": "稻米与香料", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "champa_temple", "title": "占婆神塔", "subtitle": "异教与祈祷", "icon": "res://assets/icon_residence_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_champa_map.png", "hint": "稻田、棕榈、占婆塔寺", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_champa_port.png",
+      "intro": "热浪扑面，稻田与棕榈交替。占婆塔寺的尖顶在阳光下闪着金光，像一根刺进蓝天的针。"
+    },
+    {
+      "id": "champa_arrival",
+      "chapter": "chapter_2",
+      "title": "占城靠岸",
+      "location": "champa",
+      "time": "正午，酷热",
+      "objective": "了解占城局势与蒙古威胁",
+      "body": "热。比泉州热十倍。汗水从额头流进眼睛，盐得生疼。\n\n　　码头上米船云集，麻袋堆成小山。占婆人肤色深棕，缠着腰布，说话快得像吵架。一个戴金耳环的商人朝你招手，汉话流利：「宋人？买米还是买命？」\n\n　　远处棕榈林后有烟尘——不是炊烟，是兵马过境的扬尘。蒙古使者已到占城王廷。",
+      "choices": [
+        {"label": "跟金耳环商人走", "next": "port_champa", "effects": {"story_flag": "champa_arrived"}},
+        {"label": "先找个阴凉处歇脚", "next": "port_champa", "effects": {"story_flag": "champa_arrived"}}
+      ],
+      "bg": "res://assets/bg_champa_port.png",
+      "investigations": [
+        {"label": "看米船数量", "text": "大大小小二十几条船，装的全是稻米。占城是南洋粮仓，蒙古人要征日本，军粮从这里出。米价已经涨了两成。", "once_flag": "champa_rice_ships", "effects": {"story_flag": "saw_rice_fleet"}},
+        {"label": "问金耳环商人蒙古的事", "text": "商人收起笑容：「蒙古使者要占城王称臣，王还在犹豫。但使者带了三千兵，不像是来谈的。」", "once_flag": "champa_mongol_envoy", "effects": {"story_flag": "mongol_champa_threat"}}
+      ]
+    },
+    {
+      "id": "champa_hut",
+      "chapter": "chapter_2",
+      "title": "椰林酒棚",
+      "location": "champa",
+      "body": "棕榈叶搭的棚子，阴凉。酒是椰子酿的，甜中带酸。几个占婆水手蹲着喝酒，用你听不懂的语言争论什么。",
+      "investigations": [
+        {"label": "要一碗椰子酒", "text": "酒味清淡，但解暑。酒棚主人是个华裔老太，泉州话说得比你好：「这里以前是三佛齐的地盘，现在归占城。明天归谁，天知道。」", "once_flag": "champa_hut_drink", "effects": {"story_flag": "champa_history_hint"}},
+        {"label": "听水手争论", "text": "你听不懂，但能猜——他们在说蒙古。一个水手拍桌子站起来，指着北面骂。酒棚主人摇头：「年轻人，骂有什么用。」", "once_flag": "champa_hut_argument", "effects": {"story_flag": "champa_anti_mongol"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_champa"}
+      ],
+      "bg": "res://assets/bg_champa_hut.png"
+    },
+    {
+      "id": "champa_rice_market",
+      "chapter": "chapter_2",
+      "title": "占城米市",
+      "location": "champa",
+      "body": "米市在棕榈林间，麻袋堆成墙。占婆妇女头顶米箩，走得稳当。空气里全是米糠的味道，黏在皮肤上。",
+      "investigations": [
+        {"label": "问米价", "text": "米贩说：「一石米两贯，比去年贵三成。蒙古人要的多，剩下的才卖。你要买？先付定金。」", "once_flag": "champa_rice_price", "effects": {"story_flag": "rice_price_champa"}},
+        {"label": "看蒙古军粮装船", "text": "码头那边，占婆苦力在给蒙古兵装米。苦力光着膀子，汗如雨下。蒙古兵坐在阴凉处磨刀，不帮忙。", "once_flag": "champa_mongol_loading", "effects": {"story_flag": "saw_mongol_grain_seizure"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_champa"}
+      ],
+      "bg": "res://assets/bg_champa_market.png"
+    },
+    {
+      "id": "champa_temple",
+      "chapter": "chapter_2",
+      "title": "占婆神塔",
+      "location": "champa",
+      "body": "红砖垒成的神塔，尖顶直指天空。塔壁上刻着舞者和神像，风格完全不同于中土。一个占婆祭司坐在塔前，面前摆着鲜花和米团。",
+      "investigations": [
+        {"label": "看塔壁雕刻", "text": "舞者姿态扭曲，像是在痛苦中舞蹈。神像有四只手，各持不同法器。占婆人信的神，和中土的完全不同。", "once_flag": "champa_temple_carving", "effects": {"story_flag": "saw_champa_art"}},
+        {"label": "和祭司交谈", "text": "祭司不会汉话，但用手势告诉你：塔是给海神建的。他指指大海，又指指塔尖——海神住在天上，也住在水里。", "once_flag": "champa_temple_priest", "effects": {"story_flag": "champa_sea_god"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_champa"}
+      ],
+      "bg": "res://assets/bg_champa_temple.png"
+    }
+  ]
+}

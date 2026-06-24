@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_byland",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "byland",
+      "title": "高丽西岸",
+      "body": "",
+      "facilities": [
+        {"id": "byland_tavern", "title": "高丽酒肆", "subtitle": "蒙古阴影", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "byland_market", "title": "军需市集", "subtitle": "造船与征粮", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "byland_wharf", "title": "造船场", "subtitle": "远征日本", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_byland_map.png", "hint": "蒙古驻军、造船场、远征阴影", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_byland_port.png",
+      "intro": "蒙古驻军监督造船。高丽商人夹在蒙古与日本之间，左右为难。远征日本的传闻令港口笼罩在战争阴影下。"
+    },
+    {
+      "id": "byland_arrival",
+      "chapter": "chapter_2",
+      "title": "高丽西岸靠岸",
+      "location": "byland",
+      "time": "清晨，阴天",
+      "objective": "了解蒙古造船计划与高丽民间态度",
+      "body": "船靠岸时，第一眼看到的是造船场。几十条半成品的船搁在岸上，桅杆还没装，船身涂着桐油。蒙古骑兵在岸边巡视，马蹄声哒哒作响。\n\n　　高丽渔民蹲在远处补网，不敢靠近。一个老渔民低声说：「蒙古人要打日本，征了我们的船、我们的粮、我们的儿子。你说，我们能怎么办？」\n\n　　远处城墙上有蒙古旗，旗角被风撕得破破烂烂。",
+      "choices": [
+        {"label": "去造船场看看", "next": "port_byland", "effects": {"story_flag": "goryeo_arrived"}},
+        {"label": "先和渔民搭话", "next": "port_byland", "effects": {"story_flag": "goryeo_arrived"}}
+      ],
+      "bg": "res://assets/bg_byland_port.png",
+      "investigations": [
+        {"label": "看造船场规模", "text": "至少三十条船在造，最大的能载三百石。蒙古人要的不是商船，是战船——船头装着铁锥，专门用来撞敌船。", "once_flag": "goryeo_shipyard", "effects": {"story_flag": "saw_invasion_fleet"}},
+        {"label": "听渔民的抱怨", "text": "渔民说：「蒙古人征粮征船征人，高丽王不敢说不。去年征了三千人去造船，回来的不到一半。」", "once_flag": "goryeo_fisher_complaint", "effects": {"story_flag": "goryeo_conscription"}}
+      ]
+    },
+    {
+      "id": "byland_tavern",
+      "chapter": "chapter_2",
+      "title": "高丽酒肆",
+      "location": "byland",
+      "body": "酒肆在码头附近，高丽式建筑，矮小。酒是高丽烧酒，辣得呛喉。几个高丽商人蹲着喝酒，低声议论。",
+      "investigations": [
+        {"label": "要一壶烧酒坐下", "text": "酒辣得呛喉。邻桌商人说：「蒙古人要打日本，高丽出船出粮出人。打赢了，功劳是蒙古的；打输了，死的是高丽人。」", "once_flag": "goryeo_wine", "effects": {"story_flag": "goryeo_war_burden"}},
+        {"label": "打听远征传闻", "text": "商人压低声音：「蒙古人说秋天出海，十万大军，三千条船。高丽人造船，蒙古人打仗。你说，这仗打得赢吗？」", "once_flag": "goryeo_invasion_rumor", "effects": {"story_flag": "mongol_invasion_plan"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_byland"}
+      ],
+      "bg": "res://assets/bg_byland_tavern.png"
+    },
+    {
+      "id": "byland_market",
+      "chapter": "chapter_2",
+      "title": "高丽军需市集",
+      "location": "byland",
+      "body": "市集在造船场旁，摊子上摆满军需品——麻绳、桐油、铁钉、帆布。摊主都是高丽人，买家都是蒙古兵。",
+      "investigations": [
+        {"label": "问麻绳价", "text": "麻绳一捆三百文，比泉州贵两倍。摊主说：「蒙古人征走了好绳子，剩下的才卖。你要买，得找军需官批条子。」", "once_flag": "goryeo_rope_price", "effects": {"story_flag": "goryeo_military_shortage"}},
+        {"label": "看蒙古兵买东西", "text": "蒙古兵买东西不给钱，打个白条就走。摊主敢怒不敢言。一个蒙古兵拿起一捆桐油，扔下一张纸：「记账。」", "once_flag": "goryeo_mongol_buying", "effects": {"story_flag": "mongol_exploitation"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_byland"}
+      ],
+      "bg": "res://assets/bg_byland_market.png"
+    },
+    {
+      "id": "byland_wharf",
+      "chapter": "chapter_2",
+      "title": "高丽造船场",
+      "location": "byland",
+      "body": "造船场在岸边，几十条半成品的船搁在岸上。高丽工匠蹲在船底敲敲打打，蒙古监工站在旁边看。一个老工匠抬头看你，眼神空洞。",
+      "investigations": [
+        {"label": "和老工匠搭话", "text": "老工匠说：「我造了三十年船，从没造过战船。蒙古人要的船，船头装铁锥，专门撞人。我不想造，但不造就砍头。」", "once_flag": "goryeo_boatmaker", "effects": {"story_flag": "goryeo_forced_labor"}},
+        {"label": "看战船结构", "text": "战船比商船宽，船头装着铁锥，船身包着铁皮。蒙古人要的不是速度，是撞击力——专门用来撞日本船。", "once_flag": "goryeo_warship", "effects": {"story_flag": "saw_warship_design"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_byland"}
+      ],
+      "bg": "res://assets/bg_byland_wharf.png"
+    }
+  ]
+}

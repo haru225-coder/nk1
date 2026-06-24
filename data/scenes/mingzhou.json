@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_mingzhou",
+      "type": "port",
+      "chapter": "chapter_1",
+      "location": "mingzhou",
+      "title": "明州",
+      "body": "",
+      "facilities": [
+        {"id": "mingzhou_riverside", "title": "河畔酒楼", "subtitle": "运河消息", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "mingzhou_market", "title": "河运市集", "subtitle": "内河货物", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "mingzhou_wharf", "title": "运河码头", "subtitle": "换船与盘查", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_mingzhou_map.png", "hint": "运河码头、海河换船、监视哨", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_mingzhou_port.png",
+      "intro": "内河与海船在此换乘，运河码头繁忙。官府监视哨密布，盘查过往商旅。"
+    },
+    {
+      "id": "mingzhou_arrival",
+      "chapter": "chapter_1",
+      "title": "明州换船",
+      "location": "mingzhou",
+      "time": "上午，晴",
+      "objective": "换船北上，打听临安消息",
+      "body": "海船进不了运河，得在明州换内河船。码头上乱成一锅粥——海船的货卸到河船上，脚夫扛着箱子跑来跑去。\n\n　　岸边立着监视哨，哨兵眼睛盯着每一条船。一个书吏坐在棚子里翻账册，头也不抬：「引凭拿来。」\n\n　　远处运河消失在芦苇丛中，北面就是临安。",
+      "choices": [
+        {"label": "出示引凭过关", "next": "port_mingzhou", "effects": {"story_flag": "mingzhou_arrived"}},
+        {"label": "找别的路绕过盘查", "next": "port_mingzhou", "effects": {"story_flag": "mingzhou_arrived", "fame": -3}}
+      ],
+      "bg": "res://assets/bg_mingzhou_port.png",
+      "investigations": [
+        {"label": "看监视哨规模", "text": "三个哨位，每个配两名弓手。比泉州严——明州是通往临安的咽喉，朝廷不敢松。", "once_flag": "mingzhou_guard_count", "effects": {"story_flag": "mingzhou_strict_guard"}},
+        {"label": "听书吏和商贩对话", "text": "商贩塞了个荷包，书吏不露声色收下，盖了章放行。明州的规矩和泉州一样——银子比引凭管用。", "once_flag": "mingzhou_bribe_seen", "effects": {"story_flag": "mingzhou_corruption"}}
+      ]
+    },
+    {
+      "id": "mingzhou_riverside",
+      "chapter": "chapter_1",
+      "title": "河畔酒楼",
+      "location": "mingzhou",
+      "body": "酒楼临河而建，窗户开着，能看见运河上的船。菜是浙菜，甜腻。几个商人边吃边算账，算盘声叮叮当当。",
+      "investigations": [
+        {"label": "点一壶黄酒坐下听", "text": "邻桌商人说：「临安的太学又招人了，但得有贾府作保。没保人，钱再多也进不去。」你默默记下。", "once_flag": "mingzhou_academy_rumor", "effects": {"story_flag": "heard_academy_requirement"}},
+        {"label": "问船去临安多少钱", "text": "船夫伸出三根手指：「三百文，包饭。不包饭两百。走运河两天，比走路快。」", "once_flag": "mingzhou_boat_price", "effects": {"story_flag": "mingzhou_boat_fare"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_mingzhou"}
+      ],
+      "bg": "res://assets/bg_mingzhou_tavern.png"
+    },
+    {
+      "id": "mingzhou_market",
+      "chapter": "chapter_1",
+      "title": "河运市集",
+      "location": "mingzhou",
+      "body": "市集沿河展开，摊子上摆满内河货物——丝绸、茶叶、瓷器、纸张。和泉州不同，这里没有蕃货，全是中土出产。",
+      "investigations": [
+        {"label": "问丝绸价", "text": "湖州丝绸一匹五贯，到临安能卖八贯。商人说：「运河运费便宜，但关税重。算下来，一匹赚不了多少。」", "once_flag": "mingzhou_silk_price", "effects": {"story_flag": "silk_trade_mingzhou"}},
+        {"label": "看纸钞行情", "text": "会子贬值得厉害，一贯只值三百文铜钱。商人摇头：「朝廷印得太多，纸不如铜。」", "once_flag": "mingzhou_paper_money", "effects": {"story_flag": "paper_money_crisis"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_mingzhou"}
+      ],
+      "bg": "res://assets/bg_mingzhou_market.png"
+    },
+    {
+      "id": "mingzhou_wharf",
+      "chapter": "chapter_1",
+      "title": "运河码头",
+      "location": "mingzhou",
+      "body": "码头上泊着几十条内河船，船身狭长，吃水浅。船夫蹲在船头抽烟，等客人。一个老船夫在船帮上刻字，刻的是「顺风」。",
+      "investigations": [
+        {"label": "和老船夫搭话", "text": "老船夫说：「走运河去临安，两天。路上有两道关卡，每道要查引凭。没引凭的，得另想办法。」", "once_flag": "mingzhou_old_boatman", "effects": {"story_flag": "mingzhou_route_info"}},
+        {"label": "看船帮刻字", "text": "「顺风」旁边还刻着一行小字：「宝祐三年秋」。三年前的字，船还在跑，人还在等。", "once_flag": "mingzhou_boat_carving", "effects": {"story_flag": "saw_old_carving"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_mingzhou"}
+      ],
+      "bg": "res://assets/bg_mingzhou_wharf.png"
+    }
+  ]
+}

@@ -1,0 +1,217 @@
+{
+  "scenes": [
+    {
+      "id": "port_ryukyu",
+      "type": "port",
+      "chapter": "chapter_1",
+      "location": "ryukyu",
+      "title": "南岛海道",
+      "body": "",
+      "facilities": [
+        {
+          "id": "ryukyu_tavern",
+          "title": "船上酒摊",
+          "subtitle": "听舵手闲话",
+          "icon": "res://assets/icon_tavern_koei.png"
+        },
+        {
+          "id": "ryukyu_wharf",
+          "title": "锚地",
+          "subtitle": "船只与补给",
+          "icon": "res://assets/icon_shipyard_koei.png"
+        },
+        {
+          "id": "ryukyu_lookout",
+          "title": "了望台",
+          "subtitle": "观察洋流与天象",
+          "icon": "res://assets/icon_exam_koei.png"
+        }
+      ],
+      "town_map": {
+        "bg": "res://assets/bg_ryukyu_map.png",
+        "hint": "洋流交汇处的岛链，棋子般散落在靛蓝海面上",
+        "fallback_mode": "cards",
+        "hotspots": []
+      },
+      "bg": "res://assets/bg_ryukyu_port.png",
+      "intro": "洋流在此交汇，海水忽蓝忽绿。岛屿如棋子散布，无人管辖，只有潮汐知道归处。"
+    },
+    {
+      "id": "ryukyu_arrival",
+      "chapter": "chapter_1",
+      "title": "到港",
+      "location": "ryukyu",
+      "body": "船驶入洋流交汇处，海水的颜色骤然分裂——左舷是深靛蓝，右舷是浊绿色，仿佛两条河在海面相撞而不相融。舵手紧握舵柄，额头渗出细汗。\n\n【舵手】：「这就是黑潮与亲潮的分界。再往南，便是流求海面。水下暗流能把船拖出百里——老手才敢在这儿停船。」\n\n　　远处几座岛屿低伏在海平面上，像被浪花啃剩的残骨。没有灯塔，没有旗号，甚至没有炊烟。海图上这一带只潦草写着「海道」二字，再无他注。\n\n　　一艘破旧的商船泊在锚地，桅杆上挂着褪色的旗——旗上的字已经认不清了。甲板上有人朝你招手，喊的不是汉话。",
+      "choices": [
+        {
+          "label": "驶入锚地",
+          "next": "port_ryukyu",
+          "effects": {
+            "story_flag": "ryukyu_arrived"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_ryukyu_port.png",
+      "investigations": [
+        {
+          "label": "观察洋流分界线",
+          "text": "两色海水相撞处泛起细碎的白沫，像一锅沸水。舵手说：「这里鱼群最多，但也最险。船要是被卷进去，三天都转不出来。」",
+          "once_flag": "ryukyu_current_observed",
+          "effects": {
+            "story_flag": "ryukyu_current_knowledge"
+          }
+        },
+        {
+          "label": "看那面褪色旗",
+          "text": "旗上隐约是个「陈」字——泉州陈氏的旗号。这船怕是迷航了很久，旗都晒白了。船上的人还在招手，声音被海风撕碎。",
+          "once_flag": "ryukyu_flag_identified",
+          "effects": {
+            "story_flag": "ryukyu_chen_ship_spotted"
+          }
+        },
+        {
+          "label": "掏出海图对比",
+          "text": "海图上这一带只有几条模糊的虚线，标注着「风信不定，慎行」。有人用朱笔在旁边添了一行小字：「流求无主，海图之边。」笔迹已经褪色，不知是何时所写。",
+          "once_flag": "ryukyu_chart_checked",
+          "effects": {
+            "story_flag": "ryukyu_chart_edge",
+            "fame": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ryukyu_tavern",
+      "chapter": "chapter_1",
+      "title": "船上酒摊",
+      "location": "ryukyu",
+      "body": "锚地那艘破船的甲板上，几张草席铺开便成了酒摊。酒是椰子酿的，酸涩刺喉，但舵手们喝得痛快。\n\n　　一个晒得黝黑的老舵手盘腿坐在席上，面前摆着一只裂了口的陶碗。他看你走近，咧嘴一笑，露出几颗被槟榔染红的牙。\n\n【老舵手】：「新面孔。你是从北边来的？泉州？兴化？——都一样，到了这儿，就只认水路，不认官路。」",
+      "investigations": [
+        {
+          "label": "问流求的传闻",
+          "text": "老舵手压低声音：「流求岛大得很，上面有人，但不是汉人。他们造船比我们小，但跑得快。有人说他们是秦时逃出去的——你信不信？」他灌了一口酒，嘿嘿笑。",
+          "once_flag": "ryukyu_ryukyu_legend",
+          "effects": {
+            "story_flag": "ryukyu_island_rumor"
+          }
+        },
+        {
+          "label": "请教洋流规律",
+          "text": "老舵手用手指蘸酒在席上画了几道线：「黑潮从南往北，冬天往东偏；亲潮从北往南，夏天最猛。两条潮撞在一起，就看你站哪边——站错了，船能漂到倭国去。」",
+          "once_flag": "ryukyu_current_teaching",
+          "effects": {
+            "story_flag": "ryukyu_current_mastered",
+            "fame": 2
+          }
+        },
+        {
+          "label": "打听有没有回泉州的船",
+          "text": "老舵手摇头：「回泉州？看风向。南风天走内线，十日能到；北风天……那就得绕远路，或者等。这里什么都缺，就是不缺等风的人。」",
+          "once_flag": "ryukyu_return_info",
+          "effects": {
+            "story_flag": "ryukyu_return_route"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开酒摊",
+          "next": "port_ryukyu",
+          "effects": {
+            "story_flag": "ryukyu_tavern_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_ryukyu_tavern.png"
+    },
+    {
+      "id": "ryukyu_wharf",
+      "chapter": "chapter_1",
+      "title": "锚地",
+      "location": "ryukyu",
+      "body": "锚地泊着七八艘船，大小不一。有泉州的福船，有广南的乌艚，还有一艘船型陌生——船身窄长，帆如三角，像是南洋番舶。\n\n　　几个水手蹲在船舷上修补渔网，见你来了，用闽南话喊道：「兄弟，有没有盐？我们拿鱼干换。」",
+      "investigations": [
+        {
+          "label": "看那艘南洋番舶",
+          "text": "船身刻着你认不出的文字，甲板上堆着成捆的香料。一个卷发黑肤的商人坐在船尾，朝你点点头，用手指比了个价——他以为你是来做买卖的。",
+          "once_flag": "ryukyu_foreign_ship",
+          "effects": {
+            "story_flag": "ryukyu_foreign_trade_seen"
+          }
+        },
+        {
+          "label": "打听各船去向",
+          "text": "修网的水手道：「那艘福船要去高丽，那艘乌艚去占城。我们……我们困在这儿等风，已经半个月了。粮食快见底了。」",
+          "once_flag": "ryukyu_ship_destinations",
+          "effects": {
+            "story_flag": "ryukyu_fleet_info"
+          }
+        },
+        {
+          "label": "用盐换鱼干",
+          "text": "水手接过盐，眼睛亮了：「好东西！海上最金贵的就是盐——有了盐，鱼干能存三个月。」他多塞了两条鱼干给你：「兄弟，够意思。」",
+          "once_flag": "ryukyu_trade_salt",
+          "effects": {
+            "money": -5,
+            "food": 15,
+            "story_flag": "ryukyu_salt_trade"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开锚地",
+          "next": "port_ryukyu",
+          "effects": {
+            "story_flag": "ryukyu_wharf_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_ryukyu_wharf.png"
+    },
+    {
+      "id": "ryukyu_lookout",
+      "chapter": "chapter_1",
+      "title": "了望台",
+      "location": "ryukyu",
+      "body": "岛上最高处搭着一座简陋的了望台，几根木头架成三角形，上面铺着草席遮阳。一个少年坐在台顶，手里握着一只螺号，百无聊赖地望着海面。\n\n　　从这里望去，洋流的分界线清晰可见——一条深色的线把海面切成两半。远处的岛屿连成弧形，像是海面上的一串念珠。",
+      "investigations": [
+        {
+          "label": "看少年手里的螺号",
+          "text": "螺号很大，壳面磨得光滑。少年道：「有船来了就吹一声，有海盗来了吹三声。不过这半年，吹得最多的是——有船迷路了。」",
+          "once_flag": "ryukyu_shell_horn",
+          "effects": {
+            "story_flag": "ryukyu_lookout_system"
+          }
+        },
+        {
+          "label": "细看洋流分界线",
+          "text": "分界线不是直的，而是蜿蜒如蛇。少年指道：「线往东移，说明黑潮强，南风天；往西移，亲潮强，北风天。看这条线，比看什么海图都准。」",
+          "once_flag": "ryukyu_current_line",
+          "effects": {
+            "story_flag": "ryukyu_current_reading",
+            "fame": 1
+          }
+        },
+        {
+          "label": "问少年岛屿的名字",
+          "text": "少年摇头：「我们不给岛起名字。水到哪里，哪里就是家。你们汉人喜欢画图、起名、定界——海上没有界，只有浪。」",
+          "once_flag": "ryukyu_island_names",
+          "effects": {
+            "story_flag": "ryukyu_no_borders_philosophy"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "下了望台",
+          "next": "port_ryukyu",
+          "effects": {
+            "story_flag": "ryukyu_lookout_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_ryukyu_lookout.png"
+    }
+  ]
+}

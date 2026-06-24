@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_zhangzhou",
+      "type": "port",
+      "chapter": "chapter_1",
+      "location": "zhangzhou",
+      "title": "漳州月港",
+      "body": "",
+      "facilities": [
+        {"id": "zhangzhou_den", "title": "月港暗馆", "subtitle": "地下交易", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "zhangzhou_black_market", "title": "黑市", "subtitle": "无税之货", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "zhangzhou_pier", "title": "私泊", "subtitle": "月光装卸", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_zhangzhou_map.png", "hint": "月光码头、无税黑市、礁石隐蔽", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_zhangzhou_port.png",
+      "intro": "月港在漳州外海，月光下货船悄悄靠岸。没有市舶司，没有税引，只有胆量和银子。"
+    },
+    {
+      "id": "zhangzhou_arrival",
+      "chapter": "chapter_1",
+      "title": "月夜入港",
+      "location": "zhangzhou",
+      "time": "子时，月明",
+      "objective": "进入私港，了解走私网络",
+      "body": "月光把海面染成银色。船熄了灯，沿着礁石间的窄道慢慢滑进去。\n\n　　岸边泊着七八条船，都没有旗号。人在月光下搬运货物，动作轻而快，没有号子声，只有箱子落地的闷响。\n\n　　一个黑影从礁石后闪出来，声音低沉：「哪家的船？报字号。」",
+      "choices": [
+        {"label": "报字号（如有）", "next": "port_zhangzhou", "effects": {"story_flag": "zhangzhou_arrived"}},
+        {"label": "装哑巴", "next": "port_zhangzhou", "effects": {"story_flag": "zhangzhou_arrived", "pu_attention": 2}}
+      ],
+      "bg": "res://assets/bg_zhangzhou_port.png",
+      "investigations": [
+        {"label": "看月光下的货物", "text": "瓷器、丝绸、铜钱——全是禁运品。月港不走官货，只走私货。每一件都是朝廷不让卖的。", "once_flag": "zhangzhou_moon_cargo", "effects": {"story_flag": "saw_contraband"}},
+        {"label": "数船的数量", "text": "八条船，最大的能载百石。这个规模，不是散户——是有组织的走私网络。", "once_flag": "zhangzhou_ship_count", "effects": {"story_flag": "zhangzhou_scale"}}
+      ]
+    },
+    {
+      "id": "zhangzhou_den",
+      "chapter": "chapter_1",
+      "title": "月港暗馆",
+      "location": "zhangzhou",
+      "body": "暗馆在礁石洞里，入口窄得只能侧身过。里面点着油灯，几个汉子蹲着喝酒。墙上挂着刀和弓。",
+      "investigations": [
+        {"label": "坐下喝酒", "text": "酒是地瓜烧，辣得呛喉。一个汉子说：「泉州的蒲家管不到这里。月港只认银子，不认人。」", "once_flag": "zhangzhou_den_drink", "effects": {"story_flag": "zhangzhou_independent"}},
+        {"label": "看墙上的刀", "text": "刀有七八把，制式各异——有宋刀，有日本刀，还有弯刀。月港的人什么都用，只要能杀人。", "once_flag": "zhangzhou_den_weapons", "effects": {"story_flag": "zhangzhou_armed"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_zhangzhou"}
+      ],
+      "bg": "res://assets/bg_zhangzhou_den.png"
+    },
+    {
+      "id": "zhangzhou_black_market",
+      "chapter": "chapter_1",
+      "title": "月港黑市",
+      "location": "zhangzhou",
+      "body": "黑市在礁石间的空地上，月光就是灯。货物摊在布上，没有叫卖——买家看货，出价，成交，全程不说话。",
+      "investigations": [
+        {"label": "看瓷器", "text": "青瓷、白瓷、影青——全是私窑烧的，没有官窑款。质量不差，但卖不上价。走私的瓷器，只值官货的六成。", "once_flag": "zhangzhou_market_porcelain", "effects": {"story_flag": "zhangzhou_porcelain_intel"}},
+        {"label": "问铜钱行情", "text": "铜钱走私到日本，能换三倍的硫黄。月港的人说：「朝廷禁铜出海，但铜钱自己会游泳。」", "once_flag": "zhangzhou_market_copper", "effects": {"story_flag": "copper_smuggle_intel"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_zhangzhou"}
+      ],
+      "bg": "res://assets/bg_zhangzhou_market.png"
+    },
+    {
+      "id": "zhangzhou_pier",
+      "chapter": "chapter_1",
+      "title": "月港私泊",
+      "location": "zhangzhou",
+      "body": "私泊在礁石凹处，三面挡风。船靠岸不用缆绳——用铁钩挂在礁石上。一个独眼老头蹲在岸边，手里攥着根烟杆。",
+      "investigations": [
+        {"label": "和独眼老头搭话", "text": "老头吐口烟：「月港开了二十年，没被抓过一次。你知道为什么？因为水军也来买货。」他嘿嘿笑。", "once_flag": "zhangzhou_pier_oldman", "effects": {"story_flag": "water_army_corrupt"}},
+        {"label": "看铁钩泊船", "text": "铁钩是特制的，能挂在任何礁石上。这种泊法不怕潮——船随潮涨落，永远不会搁浅。", "once_flag": "zhangzhou_pier_hook", "effects": {"story_flag": "learned_hook_mooring"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_zhangzhou"}
+      ],
+      "bg": "res://assets/bg_zhangzhou_pier.png"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_yeshou",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "yeshou",
+      "title": "爪哇港",
+      "body": "",
+      "facilities": [
+        {"id": "yeshou_tavern", "title": "爪哇酒屋", "subtitle": "热带风味", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "yeshou_market", "title": "香料市集", "subtitle": "丁香豆蔻", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "yeshou_wharf", "title": "热带码头", "subtitle": "猴子与桅杆", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_yeshou_map.png", "hint": "香料堆积、热带雨林、猴群跳跃", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_yeshou_port.png",
+      "intro": "香料堆积如山，末罗瑜商人精明狡黠。热带雨林逼近港口，猴群在桅杆上跳跃。"
+    },
+    {
+      "id": "yeshou_arrival",
+      "chapter": "chapter_2",
+      "title": "爪哇靠岸",
+      "location": "yeshou",
+      "time": "清晨，闷热",
+      "objective": "了解香料贸易与末罗瑜势力",
+      "body": "船还未靠稳，香料味已扑面而来——丁香、豆蔻、胡椒，三种气味混在一起，浓得能呛出眼泪。\n\n　　码头上堆着成山的麻袋，末罗瑜商人穿梭其间。他们肤色深棕，缠着花布，说话快得像吵架。一个戴金耳环的商人朝你招手，汉话流利：「宋人？第一次来爪哇？」\n\n　　猴子在桅杆上跳来跳去，偷吃船上的水果。水手骂骂咧咧地赶，猴子吱吱叫着躲进雨林。",
+      "choices": [
+        {"label": "跟金耳环商人走", "next": "port_yeshou", "effects": {"story_flag": "java_arrived"}},
+        {"label": "先在码头转转", "next": "port_yeshou", "effects": {"story_flag": "java_arrived"}}
+      ],
+      "bg": "res://assets/bg_yeshou_port.png",
+      "investigations": [
+        {"label": "看香料堆规模", "text": "丁香装在麻袋里，堆成小山。至少五千斤，够装三条大船。末罗瑜商人说：「这些要运到泉州，价翻二十倍。」", "once_flag": "java_spice_heap", "effects": {"story_flag": "saw_spice_volume"}},
+        {"label": "看猴子", "text": "猴子不怕人，跳到船舷上盯着你看。水手说：「爪哇的猴子比人精，会偷东西还会开锁。」", "once_flag": "java_monkeys", "effects": {"story_flag": "java_monkey_hustle"}}
+      ]
+    },
+    {
+      "id": "yeshou_tavern",
+      "chapter": "chapter_2",
+      "title": "爪哇酒屋",
+      "location": "yeshou",
+      "body": "酒屋在棕榈林里，竹楼架空。酒是棕榈酿的，甜而烈。几个末罗瑜商人蹲着喝酒，用你听不懂的语言争论什么。",
+      "investigations": [
+        {"label": "要一碗棕榈酒", "text": "酒甜得发腻，但后劲大。酒屋主人是个华裔老太，泉州话说得字正腔圆：「末罗瑜人精明，但讲信用。和他们做生意，比和蒲家做安全。」", "once_flag": "java_wine", "effects": {"story_flag": "majapahit_trustworthy"}},
+        {"label": "听商人争论", "text": "你听不懂，但能猜——他们在说价格。一个商人拍桌子站起来，指着码头的货。另一个摇头叹气。香料生意不好做。", "once_flag": "java_merchant_argue", "effects": {"story_flag": "java_trade_tension"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_yeshou"}
+      ],
+      "bg": "res://assets/bg_yeshou_tavern.png"
+    },
+    {
+      "id": "yeshou_market",
+      "chapter": "chapter_2",
+      "title": "爪哇香料市",
+      "location": "yeshou",
+      "body": "市集在雨林边，摊子上堆满香料。丁香、豆蔻、胡椒、肉桂——空气里辣得发苦。摊主多是末罗瑜妇女，头上顶着竹箩。",
+      "investigations": [
+        {"label": "问丁香价", "text": "丁香一斤五十文，是泉州价的二十分之一。摊主说：「运费贵，海盗多。能活着到泉州的丁香，才是好丁香。」", "once_flag": "java_clove_price", "effects": {"story_flag": "clove_price_java"}},
+        {"label": "看豆蔻", "text": "豆蔻装在竹篓里，散发着刺鼻的香气。商人说：「豆蔻只有爪哇有，别处种不活。物以稀为贵。」", "once_flag": "java_nutmeg", "effects": {"story_flag": "nutmeg_monopoly"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_yeshou"}
+      ],
+      "bg": "res://assets/bg_yeshou_market.png"
+    },
+    {
+      "id": "yeshou_wharf",
+      "chapter": "chapter_2",
+      "title": "爪哇码头",
+      "location": "yeshou",
+      "body": "码头在雨林边缘，棕榈树遮天蔽日。猴子在桅杆上跳来跳去，偷吃船上的水果。一个老船匠蹲在岸边修船桨，猴子蹲在旁边看。",
+      "investigations": [
+        {"label": "和船匠搭话", "text": "船匠抬头：「宋人？泉州的蒲家每年都来，买走一半的香料。你认识蒲家的人？」他继续磨桨，不再看你。", "once_flag": "java_boatmaker", "effects": {"story_flag": "pu_java_influence"}},
+        {"label": "看猴子开锁", "text": "一只猴子跳到货箱上，用手指拨弄锁扣。水手骂着赶走它，猴子吱吱叫着躲进雨林。船匠说：「爪哇的猴子比人精。」", "once_flag": "java_monkey_lock", "effects": {"story_flag": "java_monkey_smart"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_yeshou"}
+      ],
+      "bg": "res://assets/bg_yeshou_wharf.png"
+    }
+  ]
+}

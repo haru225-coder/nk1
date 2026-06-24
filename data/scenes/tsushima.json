@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_tsushima",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "tsushima",
+      "title": "对马岛",
+      "body": "",
+      "facilities": [
+        {"id": "tsushima_tavern", "title": "岛上酒屋", "subtitle": "边境传闻", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "tsushima_market", "title": "马铁市集", "subtitle": "日朝贸易", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "tsushima_wharf", "title": "边境码头", "subtitle": "倭寇与商人", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_tsushima_map.png", "hint": "孤岛、马匹交易、倭寇巡逻", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_tsushima_port.png",
+      "intro": "对马岛孤悬海上，是日朝贸易中转站。马匹与铁器在此交易，倭寇与高丽商人共处一岛。"
+    },
+    {
+      "id": "tsushima_arrival",
+      "chapter": "chapter_2",
+      "title": "对马靠岸",
+      "location": "tsushima",
+      "time": "傍晚，风大",
+      "objective": "摸清日朝贸易与倭寇动向",
+      "body": "对马岛像一块浮在海上的礁石，光秃秃的，没有树。码头上拴着几匹马，马鬃被海风吹得乱七八糟。\n\n　　几个倭寇蹲在岸边磨刀，刀是日本刀，刀鞘上有血迹。他们看你一眼，不说话，继续磨。\n\n　　一个高丽商人从船舱里钻出来，朝你招手：「宋人？来做生意的？对马的马和铁，比高丽便宜一半。」",
+      "choices": [
+        {"label": "跟高丽商人走", "next": "port_tsushima", "effects": {"story_flag": "tsushima_arrived"}},
+        {"label": "先观察倭寇", "next": "port_tsushima", "effects": {"story_flag": "tsushima_arrived"}}
+      ],
+      "bg": "res://assets/bg_tsushima_port.png",
+      "investigations": [
+        {"label": "看倭寇的刀", "text": "刀是好刀，钢口极硬。倭寇说：「这刀，砍高丽人的头，一刀一个。」他嘿嘿笑，继续磨刀。", "once_flag": "tsushima_blade", "effects": {"story_flag": "saw_wako_blade"}},
+        {"label": "数码头上的马", "text": "八匹马，全是高丽矮脚马。倭寇用铁器换马，马贩子用马换铁器。对马就是个中转站。", "once_flag": "tsushima_horses", "effects": {"story_flag": "tsushima_horse_trade"}}
+      ]
+    },
+    {
+      "id": "tsushima_tavern",
+      "chapter": "chapter_2",
+      "title": "对马酒屋",
+      "location": "tsushima",
+      "body": "酒屋是石头房子，窗户极小。角落里坐着个倭寇头目，正用小刀削马鞭。高丽酒壶端上来，酒味辛辣。",
+      "investigations": [
+        {"label": "和倭寇头目搭话", "text": "头目抬头看你，汉话流利：「泉州来的？蒲家的人前月也来过。你认识？」他削马鞭的动作没停，刀锋离你的手指只有一寸。", "once_flag": "tsushima_wako_talk", "effects": {"story_flag": "pu_visited_tsushima", "pu_attention": 3}},
+        {"label": "打听倭寇动向", "text": "头目说：「蒙古要打日本，倭寇也怕。我们不抢蒙古的船，只抢高丽的。你要是宋人，安全。」", "once_flag": "tsushima_wako_intel", "effects": {"story_flag": "wako_mongol_fear"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_tsushima"}
+      ],
+      "bg": "res://assets/bg_tsushima_tavern.png"
+    },
+    {
+      "id": "tsushima_market",
+      "chapter": "chapter_2",
+      "title": "对马马铁市",
+      "location": "tsushima",
+      "body": "市集在码头边，摊子上摆满马匹和铁器。马是高丽马，铁是日本铁。倭寇和高丽商人混在一起交易，眼神警惕。",
+      "investigations": [
+        {"label": "问马价", "text": "高丽马一匹三贯，比耽罗便宜。马贩子说：「对马的马不经查，蒙古人不要。但倭寇喜欢——便宜，能驮货。」", "once_flag": "tsushima_horse_price", "effects": {"story_flag": "tsushima_horse_price"}},
+        {"label": "看铁器", "text": "铁锅、铁钉、铁刀——全是日本货。高丽商人说：「日本的铁比高丽好，倭寇用铁换马，我们用马换铁。」", "once_flag": "tsushima_iron_goods", "effects": {"story_flag": "tsushima_iron_trade"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_tsushima"}
+      ],
+      "bg": "res://assets/bg_tsushima_market.png"
+    },
+    {
+      "id": "tsushima_wharf",
+      "chapter": "chapter_2",
+      "title": "对马码头",
+      "location": "tsushima",
+      "body": "码头在礁石凹处，三面挡风。船靠岸不用缆绳——用铁钩挂在礁石上。一个独眼老头蹲在岸边，手里攥着根烟杆。",
+      "investigations": [
+        {"label": "和独眼老头搭话", "text": "老头吐口烟：「对马开了二十年，倭寇和高丽人各管一半。你要是宋人，两头都别得罪。」他嘿嘿笑。", "once_flag": "tsushima_wharf_oldman", "effects": {"story_flag": "tsushima_balance_of_power"}},
+        {"label": "看铁钩泊船", "text": "铁钩是特制的，能挂在任何礁石上。这种泊法不怕潮——船随潮涨落，永远不会搁浅。", "once_flag": "tsushima_wharf_hook", "effects": {"story_flag": "learned_hook_mooring_tsushima"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_tsushima"}
+      ],
+      "bg": "res://assets/bg_tsushima_wharf.png"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_qiongzhou",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "qiongzhou",
+      "title": "琼州",
+      "body": "",
+      "facilities": [
+        {"id": "qiongzhou_li_hut", "title": "黎寨酒棚", "subtitle": "山兰酒", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "qiongzhou_market", "title": "山货市集", "subtitle": "槟榔沉香", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "qiongzhou_temple", "title": "贬官祠堂", "subtitle": "流放之地", "icon": "res://assets/icon_residence_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_qiongzhou_map.png", "hint": "热带丛林、黎寨、槟榔林", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_qiongzhou_port.png",
+      "intro": "热带丛林逼近海岸，槟榔树高耸。空气黏稠得像粥，蝉鸣震耳。这是贬谪之地，也是化外之境。"
+    },
+    {
+      "id": "qiongzhou_arrival",
+      "chapter": "chapter_2",
+      "title": "琼州靠岸",
+      "location": "qiongzhou",
+      "time": "午后，闷热",
+      "objective": "了解琼州局势与物产",
+      "body": "热。比占城还热。汗水把衣服黏在身上，像穿了一层皮。\n\n　　码头简陋，几根木桩插在泥里。黎族人在远处棕榈林里观望，肤色深棕，腰间别着砍刀。一个穿破旧官服的老者蹲在码头边钓鱼，见你来，抬头苦笑。\n\n　　「又来一个？是得罪了谁，被贬到这个鬼地方？」",
+      "choices": [
+        {"label": "和老者搭话", "next": "port_qiongzhou", "effects": {"story_flag": "qiongzhou_arrived"}},
+        {"label": "先去黎寨看看", "next": "port_qiongzhou", "effects": {"story_flag": "qiongzhou_arrived"}}
+      ],
+      "bg": "res://assets/bg_qiongzhou_port.png",
+      "investigations": [
+        {"label": "看老者的官服", "text": "官服破旧但料子不差——是个被贬的文官。袖口磨破了，补丁是黎族的织布。他在这里很久了。", "once_flag": "qiongzhou_official_look", "effects": {"story_flag": "met_exiled_official"}},
+        {"label": "看黎族人", "text": "他们不靠近，但也不躲。腰间的砍刀是防身用的——琼州不只有贬官，还有土匪。", "once_flag": "qiongzhou_li_people", "effects": {"story_flag": "saw_li_tribe"}}
+      ]
+    },
+    {
+      "id": "qiongzhou_li_hut",
+      "chapter": "chapter_2",
+      "title": "黎寨酒棚",
+      "location": "qiongzhou",
+      "body": "黎寨在棕榈林深处，竹楼架空，下面养着猪和鸡。酒棚用芭蕉叶搭成，酒是山兰米酿的，甜而烈。",
+      "investigations": [
+        {"label": "要一碗山兰酒", "text": "酒甜得发腻，但后劲大。黎族汉子用手势问你从哪来，你指指北面，他点头——宋人，他们见过。", "once_flag": "qiongzhou_li_wine", "effects": {"story_flag": "tasted_shanlan"}},
+        {"label": "看黎族织布", "text": "妇女在竹楼下织布，图案复杂得像迷宫。她们用植物染料，颜色鲜艳得刺眼。这种布在外面能卖好价钱。", "once_flag": "qiongzhou_li_weaving", "effects": {"story_flag": "saw_li_textile"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_qiongzhou"}
+      ],
+      "bg": "res://assets/bg_qiongzhou_li_hut.png"
+    },
+    {
+      "id": "qiongzhou_market",
+      "chapter": "chapter_2",
+      "title": "琼州山货市",
+      "location": "qiongzhou",
+      "body": "市集在码头附近，摊子上摆满热带物产——槟榔、椰子、沉香、玳瑁。摊主有黎族人，也有被贬的汉人。",
+      "investigations": [
+        {"label": "问沉香价", "text": "沉香一两银子，比泉州便宜一半。摊主说：「琼州的沉香是最好的，但运不出去——海盗太多。」", "once_flag": "qiongzhou_agarwood", "effects": {"story_flag": "agarwood_price"}},
+        {"label": "买槟榔", "text": "槟榔五文一颗，嚼起来头晕。黎族人说槟榔能驱瘴气——在琼州，不嚼槟榔活不长。", "once_flag": "qiongzhou_betel", "effects": {"money": -10, "story_flag": "chewed_betel"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_qiongzhou"}
+      ],
+      "bg": "res://assets/bg_qiongzhou_market.png"
+    },
+    {
+      "id": "qiongzhou_temple",
+      "chapter": "chapter_2",
+      "title": "贬官祠堂",
+      "location": "qiongzhou",
+      "body": "祠堂在山坡上，供着几个贬官的牌位。最显眼的是苏东坡——他也被贬到过这里。牌位前有香灰，有人常来祭拜。",
+      "investigations": [
+        {"label": "看苏东坡牌位", "text": "牌位上写着「宋端明殿学士苏轼」。旁边有后人题的诗：「九死南荒吾不恨，兹游奇绝冠平生。」字迹潦草，像是醉后所书。", "once_flag": "qiongzhou_sushi_tablet", "effects": {"story_flag": "saw_sushi_exile"}},
+        {"label": "和祠堂守祠人交谈", "text": "守祠人是个老书生，也被贬来的：「琼州贬官，十个里死九个。活下来的那个，不是命大，是想开了。」", "once_flag": "qiongzhou_keeper_talk", "effects": {"story_flag": "exile_wisdom"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_qiongzhou"}
+      ],
+      "bg": "res://assets/bg_qiongzhou_temple.png"
+    }
+  ]
+}

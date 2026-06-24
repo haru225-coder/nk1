@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_bugan",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "bugan",
+      "title": "蒲甘海岸",
+      "body": "",
+      "facilities": [
+        {"id": "bugan_tavern", "title": "难民棚屋", "subtitle": "废墟中的酒", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "bugan_market", "title": "废墟市集", "subtitle": "玉石与柚木", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "bugan_wharf", "title": "残破码头", "subtitle": "战火余生", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_bugan_map.png", "hint": "废墟、难民、玉石散落", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_bugan_port.png",
+      "intro": "蒲甘已亡于蒙古，海岸上满是战争难民。废墟与希望并存，玉石散落在泥地里。"
+    },
+    {
+      "id": "bugan_arrival",
+      "chapter": "chapter_2",
+      "title": "蒲甘废墟",
+      "location": "bugan",
+      "time": "黄昏，阴天",
+      "objective": "了解蒲甘亡国后的局势",
+      "body": "船靠岸时，第一眼看到的是废墟。佛塔被烧了一半，砖石散落一地。难民在废墟间搭起棚子，炊烟从破墙后升起。\n\n　　一个蓬头垢面的老者蹲在码头边，手里攥着块绿色的石头。他抬头看你，眼神空洞：「宋人？买玉吗？蒲甘的玉，现在不值钱了。」\n\n　　远处有马蹄声——蒙古巡逻队还在搜山。",
+      "choices": [
+        {"label": "和老者搭话", "next": "port_bugan", "effects": {"story_flag": "pagan_arrived"}},
+        {"label": "先躲起来观察", "next": "port_bugan", "effects": {"story_flag": "pagan_arrived"}}
+      ],
+      "bg": "res://assets/bg_bugan_port.png",
+      "investigations": [
+        {"label": "看老者的玉石", "text": "玉石翠绿，透光看没有裂纹——是好玉。老者说：「以前一两金子换一两玉，现在一斤米换一斤玉。蒙古人不要玉，只要命。」", "once_flag": "pagan_jade", "effects": {"story_flag": "jade_price_collapse"}},
+        {"label": "听马蹄声", "text": "马蹄声从东面来，又往西面去。蒙古巡逻队不多，但难民怕得要命。一个妇女抱着孩子钻进废墟，不敢出声。", "once_flag": "pagan_hoofbeats", "effects": {"story_flag": "mongol_patrol_pagan"}}
+      ]
+    },
+    {
+      "id": "bugan_tavern",
+      "chapter": "chapter_2",
+      "title": "难民棚屋",
+      "location": "bugan",
+      "body": "棚屋用佛塔的砖和棕榈叶搭成，歪歪斜斜。里面挤着十几个人，有缅甸人，也有逃来的宋商。角落里有人在哭。",
+      "investigations": [
+        {"label": "蹲下喝碗米汤", "text": "米汤稀得能照出人影。一个宋商说：「蒙古人破蒲甘那天，我躲在佛塔里，听着外面杀人。三天三夜。」他不再说话。", "once_flag": "pagan_hut_soup", "effects": {"story_flag": "heard_pagan_massacre"}},
+        {"label": "看角落哭泣的人", "text": "是个年轻女人，怀里抱着个布包。布包里是玉石——她的嫁妆。蒙古人杀了她丈夫，她带着玉逃到海边。", "once_flag": "pagan_hut_woman", "effects": {"story_flag": "pagan_tragedy"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_bugan"}
+      ],
+      "bg": "res://assets/bg_bugan_hut.png"
+    },
+    {
+      "id": "bugan_market",
+      "chapter": "chapter_2",
+      "title": "废墟市集",
+      "location": "bugan",
+      "body": "市集在佛塔废墟间，摊子上摆着玉石、柚木、漆器。卖家都是难民，价格低得离谱——他们只要米和盐。",
+      "investigations": [
+        {"label": "问柚木价", "text": "柚木一丈只要五十文，是泉州价的十分之一。难民说：「柚木沉，运不出去。你要买，自己扛。」", "once_flag": "pagan_teak", "effects": {"story_flag": "teak_bargain"}},
+        {"label": "看漆器", "text": "漆器是蒲甘特产，金漆描花，精致得不像难民卖的。一个老工匠说：「手艺还在，但没人买了。蒙古人只要木头，不要漆器。」", "once_flag": "pagan_lacquer", "effects": {"story_flag": "pagan_craft_surviving"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_bugan"}
+      ],
+      "bg": "res://assets/bg_bugan_market.png"
+    },
+    {
+      "id": "bugan_wharf",
+      "chapter": "chapter_2",
+      "title": "残破码头",
+      "location": "bugan",
+      "body": "码头被烧了一半，木板焦黑。几条破船搁浅在滩涂上，桅杆断了。一个独臂老头蹲在废木头上抽烟。",
+      "investigations": [
+        {"label": "和老头搭话", "text": "老头吐口烟：「蒙古人来那天，码头上全是船。他们一把火烧了，船和人一起烧。我这条胳膊也是那天丢的。」", "once_flag": "pagan_wharf_oldman", "effects": {"story_flag": "pagan_wharf_horror"}},
+        {"label": "看破船", "text": "船身被烧穿，但船底还有货——柚木和玉石。没人敢捞，说是死人的东西，沾了晦气。", "once_flag": "pagan_wharf_wreck", "effects": {"story_flag": "sunken_cargo_pagan"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_bugan"}
+      ],
+      "bg": "res://assets/bg_bugan_wharf.png"
+    }
+  ]
+}

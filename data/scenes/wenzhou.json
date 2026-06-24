@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_wenzhou",
+      "type": "port",
+      "chapter": "chapter_1",
+      "location": "wenzhou",
+      "title": "温州",
+      "body": "",
+      "facilities": [
+        {"id": "wenzhou_tavern", "title": "温州酒楼", "subtitle": "商帮消息", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "wenzhou_market", "title": "商帮市集", "subtitle": "丝绸与会子", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "wenzhou_wharf", "title": "商船码头", "subtitle": "浙商集散", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_wenzhou_map.png", "hint": "商帮林立、会子贬值、浙商家族", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_wenzhou_port.png",
+      "intro": "温州海商云集，浙商家族势力庞大。会子贬值引发纸钞危机，民间私铸铜钱成风。"
+    },
+    {
+      "id": "wenzhou_arrival",
+      "chapter": "chapter_1",
+      "title": "温州靠岸",
+      "location": "wenzhou",
+      "time": "上午，晴",
+      "objective": "了解浙商势力与会子危机",
+      "body": "温州码头比泉州小，但更热闹。商船挤着船靠岸，脚夫扛着箱子跑来跑去。招牌上写着「浙商总会」「温州丝绸」「会子兑换」。\n\n　　一个穿绸衫的中年人站在码头边，手里攥着一叠纸钞，脸色铁青。他朝地上啐了一口：「会子又跌了！一贯只值两百文，朝廷印得太多，纸不如铜！」\n\n　　旁边几个商人围着他，七嘴八舌地骂。",
+      "choices": [
+        {"label": "加入议论", "next": "port_wenzhou", "effects": {"story_flag": "wenzhou_arrived"}},
+        {"label": "先去酒楼打听", "next": "port_wenzhou", "effects": {"story_flag": "wenzhou_arrived"}}
+      ],
+      "bg": "res://assets/bg_wenzhou_port.png",
+      "investigations": [
+        {"label": "看那叠会子", "text": "纸钞印得粗糙，墨迹模糊。商人说：「朝廷一年印三百万贯，会子能不跌？铜钱都私铸了，谁还要纸？」", "once_flag": "wenzhou_paper_money", "effects": {"story_flag": "saw_worthless_paper"}},
+        {"label": "听商人们骂什么", "text": "一个商人说：「朝廷加税，会子贬值，两头割肉。温州的丝绸卖不出去，米价倒涨了三成。」另一个说：「不如出海去。」", "once_flag": "wenzhou_merchant_anger", "effects": {"story_flag": "wenzhou_economic_crisis"}}
+      ]
+    },
+    {
+      "id": "wenzhou_tavern",
+      "chapter": "chapter_1",
+      "title": "温州酒楼",
+      "location": "wenzhou",
+      "body": "酒楼在码头边，窗户开着，能看见港口。菜是浙菜，甜腻。几个商人边吃边算账，算盘声叮叮当当。",
+      "investigations": [
+        {"label": "点一壶黄酒坐下听", "text": "邻桌商人说：「温州的丝绸以前走运河北上，现在运河堵了，只好出海。但出海要引凭，引凭要钱。」", "once_flag": "wenzhou_wine", "effects": {"story_flag": "wenzhou_silk_route"}},
+        {"label": "问浙商家族的情况", "text": "商人压低声音：「温州有三大家族，陈、林、张。他们控制丝绸和铜钱，官府都怕他们。你要做生意，得找他们。」", "once_flag": "wenzhou_family_info", "effects": {"story_flag": "wenzhou_three_families"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_wenzhou"}
+      ],
+      "bg": "res://assets/bg_wenzhou_tavern.png"
+    },
+    {
+      "id": "wenzhou_market",
+      "chapter": "chapter_1",
+      "title": "温州商帮市集",
+      "location": "wenzhou",
+      "body": "市集在主街上，摊子上摆满丝绸、茶叶、瓷器、纸张。和泉州不同，这里没有蕃货，全是浙东出产。",
+      "investigations": [
+        {"label": "问丝绸价", "text": "湖州丝绸一匹五贯，到泉州能卖八贯。商人说：「运费便宜，但关税重。算下来，一匹赚不了多少。」", "once_flag": "wenzhou_silk_price", "effects": {"story_flag": "silk_trade_wenzhou"}},
+        {"label": "看私铸铜钱", "text": "角落里有人偷偷卖私铸铜钱，轻而薄，一捏就弯。商人说：「官钱不够用，私钱凑合。朝廷管不了。」", "once_flag": "wenzhou_fake_coins", "effects": {"story_flag": "saw_private_minting"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_wenzhou"}
+      ],
+      "bg": "res://assets/bg_wenzhou_market.png"
+    },
+    {
+      "id": "wenzhou_wharf",
+      "chapter": "chapter_1",
+      "title": "温州商船码头",
+      "location": "wenzhou",
+      "body": "码头上泊着几十条商船，船身狭长，吃水浅。船夫蹲在船头抽烟，等客人。一个老船夫在船帮上刻字，刻的是「顺风」。",
+      "investigations": [
+        {"label": "和老船夫搭话", "text": "老船夫说：「温州的船走两条路，一条去泉州，一条去明州。去泉州的船大多走私，去明州的船走官道。你走哪条？」", "once_flag": "wenzhou_boatman", "effects": {"story_flag": "wenzhou_route_info"}},
+        {"label": "看船帮刻字", "text": "「顺风」旁边还刻着一行小字：「宝祐三年秋」。三年前的字，船还在跑，人还在等。", "once_flag": "wenzhou_boat_carving", "effects": {"story_flag": "saw_old_carving_wenzhou"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_wenzhou"}
+      ],
+      "bg": "res://assets/bg_wenzhou_wharf.png"
+    }
+  ]
+}

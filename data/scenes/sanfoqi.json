@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_sanfoqi",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "sanfoqi",
+      "title": "三佛齐",
+      "body": "",
+      "facilities": [
+        {"id": "sanfoqi_tavern", "title": "马来酒屋", "subtitle": "椰酒与故事", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "sanfoqi_market", "title": "香料宝石市", "subtitle": "南洋枢纽", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "sanfoqi_wharf", "title": "旧港泊位", "subtitle": "遗迹与贸易", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_sanfoqi_map.png", "hint": "旧港遗迹、马来商人、香料堆积", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_sanfoqi_port.png",
+      "intro": "三佛齐旧都遗迹仍在，马来商人穿梭其间。香料、宝石、象牙在此集散。昔日海上王国的余晖。"
+    },
+    {
+      "id": "sanfoqi_arrival",
+      "chapter": "chapter_2",
+      "title": "旧港入泊",
+      "location": "sanfoqi",
+      "time": "傍晚，闷热",
+      "objective": "探访三佛齐遗迹与贸易",
+      "body": "河口宽阔，船驶入时两岸是密不透风的丛林。远处有石塔的轮廓——三佛齐的遗迹，被藤蔓缠得只剩尖顶。\n\n　　码头上马来商人忙碌，肤色比占城人更深。香料味从仓库里渗出来，浓得能呛出眼泪。一个戴金链的商人朝你招手，汉话流利：「宋人？买香料还是买故事？」\n\n　　河面上漂着花瓣和落叶，像一条铺满碎锦的路。",
+      "choices": [
+        {"label": "跟金链商人走", "next": "port_sanfoqi", "effects": {"story_flag": "sanfoqi_arrived"}},
+        {"label": "先看石塔遗迹", "next": "port_sanfoqi", "effects": {"story_flag": "sanfoqi_arrived"}}
+      ],
+      "bg": "res://assets/bg_sanfoqi_port.png",
+      "investigations": [
+        {"label": "看石塔遗迹", "text": "塔是砖砌的，风格不像中土。壁上刻着梵文和飞天——三佛齐信佛，但和中土的佛不一样。藤蔓把雕刻勒出裂纹。", "once_flag": "sanfoqi_stupa", "effects": {"story_flag": "saw_srivijaya遗迹"}},
+        {"label": "闻仓库里的气味", "text": "丁香、豆蔻、胡椒——三种气味混在一起，辣得鼻子发酸。这些香料要运到泉州，价翻十倍。", "once_flag": "sanfoqi_smell", "effects": {"story_flag": "smelled_spices"}}
+      ]
+    },
+    {
+      "id": "sanfoqi_tavern",
+      "chapter": "chapter_2",
+      "title": "马来酒屋",
+      "location": "sanfoqi",
+      "body": "酒屋在河边，竹楼架空。酒是棕榈酿的，甜而烈。几个马来商人蹲着喝酒，用你听不懂的语言争论。",
+      "investigations": [
+        {"label": "要一碗棕榈酒", "text": "酒甜得发腻，但后劲大。酒屋主人是个华裔老太，泉州话说得字正腔圆：「三佛齐以前管整个南洋，现在只剩旧港了。」", "once_flag": "sanfoqi_palm_wine", "effects": {"story_flag": "srivijaya_decline"}},
+        {"label": "听商人争论", "text": "你听不懂，但能猜——他们在说价格。一个商人拍桌子站起来，指着河面的船。另一个摇头叹气。生意不好做。", "once_flag": "sanfoqi_merchant_argue", "effects": {"story_flag": "trade_tension"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_sanfoqi"}
+      ],
+      "bg": "res://assets/bg_sanfoqi_tavern.png"
+    },
+    {
+      "id": "sanfoqi_market",
+      "chapter": "chapter_2",
+      "title": "香料宝石市",
+      "location": "sanfoqi",
+      "body": "市集在码头边，摊子上堆满香料和宝石。丁香装在麻袋里，胡椒堆成小山。宝石是红宝石和蓝宝石，闪着暗光。",
+      "investigations": [
+        {"label": "问丁香价", "text": "丁香一斤两贯，比泉州便宜十倍。摊主说：「运费贵，海盗多。能活着到泉州的丁香，才是好丁香。」", "once_flag": "sanfoqi_clove_price", "effects": {"story_flag": "clove_price_intel"}},
+        {"label": "看红宝石", "text": "宝石暗红，透光看像凝固的血。商人说：「这种宝石从锡兰来的，三佛齐只是中转。你要买大的，得去锡兰。」", "once_flag": "sanfoqi_ruby", "effects": {"story_flag": "ruby_source"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_sanfoqi"}
+      ],
+      "bg": "res://assets/bg_sanfoqi_market.png"
+    },
+    {
+      "id": "sanfoqi_wharf",
+      "chapter": "chapter_2",
+      "title": "旧港泊位",
+      "location": "sanfoqi",
+      "body": "泊位在石塔旁，石阶长满青苔。船靠着石壁系缆，缆绳勒进石缝——这泊位用了几百年。一个老船匠蹲在石阶上修船桨。",
+      "investigations": [
+        {"label": "和船匠搭话", "text": "船匠抬头：「宋人？泉州的蒲家每年都来，买走一半的香料。你认识蒲家的人？」他继续磨桨，不再看你。", "once_flag": "sanfoqi_boatmaker", "effects": {"story_flag": "pu_sanfoqi_influence"}},
+        {"label": "看石阶磨损", "text": "石阶被磨得光滑如镜——几百年来无数人踩过。三佛齐的辉煌就刻在这些石头上，比任何史书都真实。", "once_flag": "sanfoqi_stone_steps", "effects": {"story_flag": "saw_srivijaya_wear"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_sanfoqi"}
+      ],
+      "bg": "res://assets/bg_sanfoqi_wharf.png"
+    }
+  ]
+}

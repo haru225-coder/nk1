@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_ganpu",
+      "type": "port",
+      "chapter": "chapter_1",
+      "location": "ganpu",
+      "title": "杭州湾",
+      "body": "",
+      "facilities": [
+        {"id": "ganpu_shack", "title": "潮边酒棚", "subtitle": "等潮与喝酒", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "ganpu_salt", "title": "盐市", "subtitle": "私盐与官盐", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "ganpu_smuggler", "title": "走私泊位", "subtitle": "月黑风高", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_ganpu_map.png", "hint": "钱塘潮、盐船、水军巡逻", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_ganpu_port.png",
+      "intro": "钱塘潮声如雷，盐船在潮汐间隙走私。朝廷水军巡逻，但走私者总有办法。"
+    },
+    {
+      "id": "ganpu_arrival",
+      "chapter": "chapter_1",
+      "title": "潮声入港",
+      "location": "ganpu",
+      "time": "潮退时分",
+      "objective": "摸清潮汐规律与走私门道",
+      "body": "船还未靠岸，潮声已如万马奔腾。钱塘江潮从天边涌来，白线一瞬变成水墙，砸在岸上，碎成漫天飞沫。\n\n　　潮退后，滩涂上露出几条搁浅的船——是盐船，船底刻着暗号。几个黑衣人从芦苇丛里钻出来，扛着麻袋往岸上跑。\n\n　　远处水军哨船的灯笼在雾中晃动，像鬼火。",
+      "choices": [
+        {"label": "在岸上等潮退再靠", "next": "port_ganpu", "effects": {"story_flag": "ganpu_arrived"}},
+        {"label": "跟黑衣人去看看", "next": "port_ganpu", "effects": {"story_flag": "ganpu_arrived", "pu_attention": 3}}
+      ],
+      "bg": "res://assets/bg_ganpu_port.png",
+      "investigations": [
+        {"label": "看潮汐时间", "text": "潮每日两次，午时和子时最大。走私船在潮退后的两个时辰内装卸——水军那时换班，有空隙。", "once_flag": "ganpu_tide_time", "effects": {"story_flag": "learned_tide_schedule"}},
+        {"label": "看盐船暗号", "text": "船底刻着一朵梅花——是私盐帮的记号。官盐不敢走这条路，走私的才敢赌命。", "once_flag": "ganpu_salt_mark", "effects": {"story_flag": "saw_salt_mark"}}
+      ]
+    },
+    {
+      "id": "ganpu_shack",
+      "chapter": "chapter_1",
+      "title": "潮边酒棚",
+      "location": "ganpu",
+      "body": "酒棚搭在堤坝上，用破渔网遮风。酒是黄酒，浑浊。几个盐贩子蹲着喝酒，衣服上全是盐渍。",
+      "investigations": [
+        {"label": "要一碗黄酒坐下", "text": "酒味咸——是用海水酿的？盐贩子笑：「杭州湾的酒，喝的就是这个味。你要是怕咸，去临安喝龙井。」", "once_flag": "ganpu_wine", "effects": {"story_flag": "bay_salt_wine"}},
+        {"label": "听盐贩子讲走私", "text": "盐贩子压低声音：「一船盐，官价三贯，私价一贯。但被水军抓到，脑袋就没了。你赌不赌？」", "once_flag": "ganpu_smuggle_talk", "effects": {"story_flag": "salt_smuggle_intel"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_ganpu"}
+      ],
+      "bg": "res://assets/bg_ganpu_shack.png"
+    },
+    {
+      "id": "ganpu_salt",
+      "chapter": "chapter_1",
+      "title": "杭州湾盐市",
+      "location": "ganpu",
+      "body": "盐市在芦苇丛后的村子里，隐蔽。盐堆成白色小山，空气里咸得发苦。买家都是附近村民，用米换盐。",
+      "investigations": [
+        {"label": "问盐价", "text": "私盐一斤十五文，官盐四十文。村民说：「官盐买不起，私盐才活得下去。朝廷不管我们死活。」", "once_flag": "ganpu_salt_price", "effects": {"story_flag": "salt_price_crisis"}},
+        {"label": "看盐堆规模", "text": "至少五百斤，够一个村子吃一年。盐贩子说这是小的——大的在海上，船上万斤。", "once_flag": "ganpu_salt_scale", "effects": {"story_flag": "saw_large_salt_operation"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_ganpu"}
+      ],
+      "bg": "res://assets/bg_ganpu_salt.png"
+    },
+    {
+      "id": "ganpu_smuggler",
+      "chapter": "chapter_1",
+      "title": "走私泊位",
+      "location": "ganpu",
+      "body": "泊位在芦苇深处，从外面看不见。三条船泊着，船上的人在卸货。一个独臂汉子站在船头，目光警惕。",
+      "investigations": [
+        {"label": "和独臂汉子搭话", "text": "汉子上下打量你：「读书人？这里不是你来的地方。」他指指远处：「水军的灯看到了？半个时辰后他们就过来。你要买东西，快点。」", "once_flag": "ganpu_smuggler_talk", "effects": {"story_flag": "met_smuggler"}},
+        {"label": "看卸的是什么", "text": "除了盐，还有丝绸和瓷器——走私的不止盐。这些东西要运到海上，卖给外商。", "once_flag": "ganpu_smuggler_cargo", "effects": {"story_flag": "saw_multi_smuggle"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_ganpu"}
+      ],
+      "bg": "res://assets/bg_ganpu_smuggler.png"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_xuwen",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "xuwen",
+      "title": "徐闻港",
+      "body": "",
+      "facilities": [
+        {"id": "xuwen_tavern", "title": "驿亭", "subtitle": "荒凉歇脚", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "xuwen_market", "title": "补给市", "subtitle": "淡水与干粮", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "xuwen_wharf", "title": "古港码头", "subtitle": "南下中南半岛", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_xuwen_map.png", "hint": "汉代遗风、荒凉海岸、南下最后补给", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_xuwen_port.png",
+      "intro": "汉代大港的余晖，如今只剩荒凉。南下中南半岛的最后补给点，风沙与海盐混在一起。"
+    },
+    {
+      "id": "xuwen_arrival",
+      "chapter": "chapter_2",
+      "title": "徐闻靠岸",
+      "location": "xuwen",
+      "time": "午后，风沙",
+      "objective": "补给淡水，了解南下航路",
+      "body": "船靠岸时，风沙扑面。码头是汉代留下的石阶，被海浪啃得坑坑洼洼。几间破旧的驿亭立在岸边，屋顶的茅草被风吹得七零八落。\n\n　　一个老渔民蹲在石阶上晒网，见你来，抬了抬眼皮：「南下的？徐闻是最后一个能补淡水的地方。再往南，三天没有淡水。」\n\n　　远处海面上，天际线模糊——那是中南半岛的方向。汉代的楼船从这里出发，载着丝绸和黄金，去换香料和象牙。如今只剩风沙和回忆。",
+      "choices": [
+        {"label": "上岸补给", "next": "port_xuwen", "effects": {"story_flag": "xuwen_arrived"}},
+        {"label": "先在码头转转", "next": "port_xuwen", "effects": {"story_flag": "xuwen_arrived"}}
+      ],
+      "bg": "res://assets/bg_xuwen_port.png",
+      "investigations": [
+        {"label": "看汉代石阶", "text": "石阶被磨得光滑，缝隙里长出杂草。老渔民说：「这码头有几百年了，汉代就有。以前这里停满大船，现在只剩我们这些打鱼的。」", "once_flag": "xuwen_han_stone", "effects": {"story_flag": "saw_han_dynasty遗迹"}},
+        {"label": "问南下航路", "text": "老渔民用树枝在地上画：「往南，三天到占城。但要看风——北风天走，顺风；南风天走，逆风。你等得起就等。」", "once_flag": "xuwen_south_route", "effects": {"story_flag": "xuwen_route_hint"}}
+      ]
+    },
+    {
+      "id": "xuwen_tavern",
+      "chapter": "chapter_2",
+      "title": "徐闻驿亭",
+      "location": "xuwen",
+      "body": "驿亭用石头垒成，屋顶的茅草漏光。角落里有个火堆，锅里煮着鱼粥。几个南下的商贩蹲着歇脚，脸上全是风沙。",
+      "investigations": [
+        {"label": "蹲下喝碗鱼粥", "text": "鱼粥咸得发苦，但热。商贩说：「徐闻什么都没有，只有淡水和风。你要南下，带足干粮——海上没有补给。」", "once_flag": "xuwen_porch_rice", "effects": {"food": 5, "story_flag": "xuwen_hospitality"}},
+        {"label": "听商贩讲南洋", "text": "商贩说：「占城有米，三佛齐有香料，阇婆有宝石。但海盗也多——你有命去，没命回。」", "once_flag": "xuwen_merchant_tales", "effects": {"story_flag": "xuwen_nanyang_warning"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_xuwen"}
+      ],
+      "bg": "res://assets/bg_xuwen_tavern.png"
+    },
+    {
+      "id": "xuwen_market",
+      "chapter": "chapter_2",
+      "title": "徐闻补给市",
+      "location": "xuwen",
+      "body": "市集在驿亭旁，摊子上摆着淡水、干粮、粗盐。没有蕃货，只有最基础的补给。摊主是个老妇人，见你来，露出缺了门牙的笑。",
+      "investigations": [
+        {"label": "买淡水", "text": "淡水一桶三十文，比泉州贵三倍。老妇人说：「徐闻的水都是从山里挑来的，贵得有道理。你要南下，多买几桶。」", "once_flag": "xuwen_water_price", "effects": {"money": -30, "story_flag": "xuwen_water_bought"}},
+        {"label": "买干粮", "text": "干粮是鱼干和炊饼，能放半个月。商贩说：「海上没有吃的，全靠这些。你带够了吗？」", "once_flag": "xuwen_dry_food", "effects": {"money": -20, "food": 20}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_xuwen"}
+      ],
+      "bg": "res://assets/bg_xuwen_market.png"
+    },
+    {
+      "id": "xuwen_wharf",
+      "chapter": "chapter_2",
+      "title": "徐闻古港码头",
+      "location": "xuwen",
+      "body": "古港码头在礁石凹处，汉代石阶长满青苔。几条破船搁浅在滩涂上，桅杆断了。一个老船匠蹲在废木头上抽烟。",
+      "investigations": [
+        {"label": "和老船匠搭话", "text": "老船匠吐口烟：「徐闻以前是大港，汉代的楼船从这里出发。现在？只剩下我们这些等死的老骨头。」", "once_flag": "xuwen_wharf_oldman", "effects": {"story_flag": "xuwen_decline"}},
+        {"label": "看破船", "text": "船身被海浪啃得只剩骨架。老船匠说：「这些船没人修，也没人要。你要南下，用自己的船——别指望徐闻有好船。」", "once_flag": "xuwen_wharf_wreck", "effects": {"story_flag": "xuwen_no_ships"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_xuwen"}
+      ],
+      "bg": "res://assets/bg_xuwen_wharf.png"
+    }
+  ]
+}

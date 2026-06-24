@@ -1,0 +1,67 @@
+{
+  "scenes": [
+    {
+      "id": "port_longyamen",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "longyamen",
+      "title": "马六甲海峡入口",
+      "body": "",
+      "facilities": [
+        {"id": "longyamen_lookout", "title": "海峡哨所", "subtitle": "海盗情报", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "longyamen_anchor", "title": "入口锚地", "subtitle": "结伴等风", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_longyamen_map.png", "hint": "海峡咽喉、暗礁、海盗出没", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_longyamen_port.png",
+      "intro": "海峡狭窄如咽喉，东西方船只必经此地。水流湍急，暗礁密布。海盗旗在远处桅杆上若隐若现。"
+    },
+    {
+      "id": "longyamen_arrival",
+      "chapter": "chapter_2",
+      "title": "海峡入口",
+      "location": "longyamen",
+      "time": "清晨，有雾",
+      "objective": "安全通过海峡",
+      "body": "海峡入口像张开的嘴。两岸山影逼近，水流突然变急，船被推着往前冲。\n\n　　锚地里泊着十几条船，都在等结伴。独船过海峡等于送死——海盗专挑落单的下手。一个黝黑的船老大站在岸边喊：「往西的船，明日卯时走！要结伴的来报名！」\n\n　　远处礁石上有条搁浅的船，桅杆断了，船身被凿穿——海盗干的。",
+      "choices": [
+        {"label": "报名结伴", "next": "port_longyamen", "effects": {"story_flag": "malacca_arrived"}},
+        {"label": "先在锚地打听情报", "next": "port_longyamen", "effects": {"story_flag": "malacca_arrived"}}
+      ],
+      "bg": "res://assets/bg_longyamen_port.png",
+      "investigations": [
+        {"label": "看搁浅的船", "text": "船身被凿了三个洞，货物被搬空。桅杆上挂着一面破旗——是三佛齐的商船。海盗不留活口。", "once_flag": "malacca_wreck", "effects": {"story_flag": "saw_pirate_wreck"}},
+        {"label": "问船老大海盗情况", "text": "船老大说：「海盗有三股，最大的那股在海峡中段。他们有快船二十条，官兵打不过。结伴走，他们不敢动。」", "once_flag": "malacca_pirate_info", "effects": {"story_flag": "pirate_intel"}}
+      ]
+    },
+    {
+      "id": "longyamen_lookout",
+      "chapter": "chapter_2",
+      "title": "海峡哨所",
+      "location": "longyamen",
+      "body": "哨所是石头垒的，建在崖顶。里面蹲着几个马来哨兵，用望远镜盯着海峡。望远镜是宋人造的，镜片花了。",
+      "investigations": [
+        {"label": "用望远镜看海峡", "text": "海峡中段有三条快船在游弋，桅杆上挂着黑旗——海盗在巡逻。他们专等落单的商船。", "once_flag": "malacca_lookout_view", "effects": {"story_flag": "saw_pirate_patrol"}},
+        {"label": "和哨兵交谈", "text": "哨兵说：「海盗和官兵有默契——官兵收税，海盗收命。你要过海峡，两条路：结伴，或者贿赂。」", "once_flag": "malacca_guard_talk", "effects": {"story_flag": "strait_bribery_hint"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_longyamen"}
+      ],
+      "bg": "res://assets/bg_longyamen_lookout.png"
+    },
+    {
+      "id": "longyamen_anchor",
+      "chapter": "chapter_2",
+      "title": "海峡锚地",
+      "location": "longyamen",
+      "body": "锚地在山崖后面，风进不来。十几条船泊着，船上的人在修补船帆，等明日结伴出发。一个宋商蹲在甲板上算账。",
+      "investigations": [
+        {"label": "和宋商搭话", "text": "宋商抬头：「泉州来的？我也泉州的。走海峡三次了，每次都是赌命。」他指指船上的货物：「这一船胡椒，到泉州能翻十倍。值。」", "once_flag": "malacca_song_merchant", "effects": {"story_flag": "met_strait_trader"}},
+        {"label": "看船队规模", "text": "十二条船，最大的能载三百石。结伴走，海盗不敢动——但万一海盗倾巢而出呢？", "once_flag": "malacca_fleet_size", "effects": {"story_flag": "assessed_fleet"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_longyamen"}
+      ],
+      "bg": "res://assets/bg_longyamen_anchor.png"
+    }
+  ]
+}

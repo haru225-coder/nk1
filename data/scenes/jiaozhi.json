@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_jiaozhi",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "jiaozhi",
+      "title": "安南港口",
+      "body": "",
+      "facilities": [
+        {"id": "jiaozhi_tavern", "title": "宋商酒楼", "subtitle": "异乡故味", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "jiaozhi_market", "title": "中越市集", "subtitle": "汉字招牌", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "jiaozhi_temple", "title": "文庙", "subtitle": "汉字文化圈", "icon": "res://assets/icon_residence_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_jiaozhi_map.png", "hint": "汉字招牌、宋商聚落、战后重建", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_jiaozhi_port.png",
+      "intro": "汉字招牌随处可见，但已是异国。陈朝刚击退蒙古，港口百废待兴。"
+    },
+    {
+      "id": "jiaozhi_arrival",
+      "chapter": "chapter_2",
+      "title": "安南靠岸",
+      "location": "jiaozhi",
+      "time": "午后，雨后",
+      "objective": "了解安南局势与宋商社区",
+      "body": "船靠岸时，雨刚停。码头上湿漉漉的，石板缝里长出草来。招牌上写着汉字——「陈记米行」「李家绸缎」——但旁边多了一行你不认得的文字。\n\n　　几个宋人打扮的商贩蹲在屋檐下避雨，见你下船，眼睛一亮。一个穿绸衫的中年人迎上来，拱手道：「泉州来的？安南的宋商，好久没见新人了。」\n\n　　远处城墙上有修补的痕迹——蒙古人打到这里过，但没打下来。陈朝的旗帜在城楼上飘着，旗角被风撕得破破烂烂。",
+      "choices": [
+        {"label": "跟宋商去聚落", "next": "port_jiaozhi", "effects": {"story_flag": "annam_arrived"}},
+        {"label": "先在码头转转", "next": "port_jiaozhi", "effects": {"story_flag": "annam_arrived"}}
+      ],
+      "bg": "res://assets/bg_jiaozhi_port.png",
+      "investigations": [
+        {"label": "看城墙上修补痕迹", "text": "新砖和旧砖颜色不同，修补处像伤疤。守城的士兵在城楼上巡逻，盔甲是宋式的——陈朝用宋制练兵。", "once_flag": "annam_wall_damage", "effects": {"story_flag": "saw_mongol_siege痕迹"}},
+        {"label": "听宋商口音", "text": "宋商说的是泉州话，但夹杂着越南词。他们在这里住了三代，根已经扎下来了。", "once_flag": "annam_accent", "effects": {"story_flag": "annam_diaspora"}}
+      ]
+    },
+    {
+      "id": "jiaozhi_tavern",
+      "chapter": "chapter_2",
+      "title": "宋商酒楼",
+      "location": "jiaozhi",
+      "body": "酒楼是宋式建筑，门口挂着红灯笼。菜是闽南菜，但多了股鱼露的腥味。几个老宋商蹲着喝酒，说的是三十年前的泉州旧事。",
+      "investigations": [
+        {"label": "点一壶米酒坐下", "text": "酒味淡而甜。邻桌老宋商说：「蒙古人打了三次，都没打下来。陈朝命硬，但我们宋商夹在中间，两头受气。」", "once_flag": "annam_wine", "effects": {"story_flag": "annam_mongol_wars"}},
+        {"label": "问宋商为何不回泉州", "text": "老宋商苦笑：「回去？泉州的田早没了。这里虽然苦，但至少没人管你。蒙古人来了，我们是宋人；陈朝赢了，我们是安南人。」", "once_flag": "annam_return_question", "effects": {"story_flag": "annam_identity_crisis"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_jiaozhi"}
+      ],
+      "bg": "res://assets/bg_jiaozhi_tavern.png"
+    },
+    {
+      "id": "jiaozhi_market",
+      "chapter": "chapter_2",
+      "title": "中越市集",
+      "location": "jiaozhi",
+      "body": "市集在主街上，摊子上既有宋货也有越货。汉字招牌和越南文并列，像两个世界挤在一条巷子里。",
+      "investigations": [
+        {"label": "问丝绸价", "text": "泉州丝绸在这里价翻五倍，但卖不动——安南人买不起。倒是越南的丝麻便宜，宋商收了运回泉州卖。", "once_flag": "annam_silk_price", "effects": {"story_flag": "annam_trade_pattern"}},
+        {"label": "看越南物产", "text": "大米、槟榔、沉香、象牙——安南物产丰富，但运不出去。蒙古人封锁了海路，只有走私船敢走。", "once_flag": "annam_products", "effects": {"story_flag": "annam_blockade"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_jiaozhi"}
+      ],
+      "bg": "res://assets/bg_jiaozhi_market.png"
+    },
+    {
+      "id": "jiaozhi_temple",
+      "chapter": "chapter_2",
+      "title": "安南文庙",
+      "location": "jiaozhi",
+      "body": "文庙供着孔子，牌位上用汉字写着「至圣先师」。庙祝是个安南人，汉话说得字正腔圆。院中有棵老榕树，根须垂到地面，像老人的胡须。",
+      "investigations": [
+        {"label": "看碑刻", "text": "碑上刻着科举进士名单——安南也开科举，用的是朱子注的四书。汉字文化圈的边界，就刻在这块石头上。", "once_flag": "annam_stele", "effects": {"story_flag": "saw_vietnam_exam_system"}},
+        {"label": "和庙祝交谈", "text": "庙祝说：「安南的书生也读《春秋》，也考科举。但蒙古人来了以后，书生都去当兵了。」他叹了口气：「笔杆子打不过刀把子。」", "once_flag": "annam_priest_talk", "effects": {"story_flag": "annam_scholar_soldiers"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_jiaozhi"}
+      ],
+      "bg": "res://assets/bg_jiaozhi_temple.png"
+    }
+  ]
+}

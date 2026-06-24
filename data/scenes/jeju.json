@@ -1,0 +1,215 @@
+{
+  "scenes": [
+    {
+      "id": "port_jeju",
+      "type": "port",
+      "chapter": "chapter_2",
+      "location": "jeju",
+      "title": "耽罗岛",
+      "body": "",
+      "facilities": [
+        {
+          "id": "jeju_tavern",
+          "title": "驿站",
+          "subtitle": "打听消息",
+          "icon": "res://assets/icon_tavern_koei.png"
+        },
+        {
+          "id": "jeju_market",
+          "title": "马市",
+          "subtitle": "马匹与牲畜",
+          "icon": "res://assets/icon_market_koei.png"
+        },
+        {
+          "id": "jeju_temple",
+          "title": "山神庙",
+          "subtitle": "祈福与情报",
+          "icon": "res://assets/icon_residence_koei.png"
+        }
+      ],
+      "town_map": {
+        "bg": "res://assets/bg_jeju_map.png",
+        "hint": "火山岛的海岸线，马场占据大半，驿站冒着炊烟",
+        "fallback_mode": "cards",
+        "hotspots": []
+      },
+      "bg": "res://assets/bg_jeju_port.png",
+      "intro": "蒙古马场占据海岸，高丽官员低眉顺眼。风吹过草原，带着马粪和压抑的气息。"
+    },
+    {
+      "id": "jeju_arrival",
+      "chapter": "chapter_2",
+      "title": "到港",
+      "location": "jeju",
+      "body": "船尚未靠稳，马嘶声便从岸上扑来。海岸线被木栅栏隔成一段一段，里面是望不到头的马场。蒙古骑兵骑在矮壮的蒙古马上巡视，皮帽下的脸被海风吹得通红。\n\n　　栈桥旁站着两个高丽官员，穿着洗得发白的官服，对蒙古人点头哈腰。见你的船靠近，其中一个皱眉道：\n\n【高丽官员】：「耽罗岛如今是大汗的牧马场。商船靠岸须验引，没有引的——」他瞟了一眼旁边的蒙古骑兵，声音压低，「……自己小心。」\n\n　　远处火山锥的轮廓沉在云层下，山顶隐约有积雪。草原上马群如黑点般移动，偶尔传来牧马人的吆喝声——不是高丽话，是蒙古话。",
+      "choices": [
+        {
+          "label": "递上引文靠岸",
+          "next": "port_jeju",
+          "effects": {
+            "story_flag": "jeju_arrived"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_jeju_port.png",
+      "investigations": [
+        {
+          "label": "看蒙古骑兵的马",
+          "text": "马矮壮结实，鬃毛被编成辫子，蹄铁是铁制的——比高丽本地的马讲究得多。骑兵腰间挂着弯刀和皮鞭，眼神扫过你时像在估量猎物。",
+          "once_flag": "jeju_mongol_horses",
+          "effects": {
+            "story_flag": "jeju_mongol_horse_breed"
+          }
+        },
+        {
+          "label": "听高丽官员的低语",
+          "text": "两个官员退到角落，用极低的声音交谈：「今年的马税又加了三成……再这么下去，岛上的人都要逃光了。」一个看见你在听，立刻闭嘴，眼神闪过一丝恐惧。",
+          "once_flag": "jeju_official_whisper",
+          "effects": {
+            "story_flag": "jeju_horse_tax_burden",
+            "fame": 1
+          }
+        },
+        {
+          "label": "望向火山锥",
+          "text": "火山锥沉静如睡兽，山顶的积雪在暮色中泛着青光。一个渔民模样的老人低声道：「山神在看着呢。蒙古人不信山神，可山神信不信他们——你等着瞧。」",
+          "once_flag": "jeju_volcano_gaze",
+          "effects": {
+            "story_flag": "jeju_mountain_spirit_rumor"
+          }
+        }
+      ]
+    },
+    {
+      "id": "jeju_tavern",
+      "chapter": "chapter_2",
+      "title": "驿站",
+      "location": "jeju",
+      "body": "驿站是岛上唯一的砖石建筑，门口挂着蒙古文和汉文并列的牌匾。里面烟熏火燎，几张条凳上坐着蒙古骑兵和高丽渔民，中间隔着一张空桌——没人愿意坐到对方那边去。\n\n　　角落里一个高丽老人独坐，面前摆着一碗浊酒。他看你走近，抬了抬眼皮。\n\n【老人】：「你也是来做生意的？这岛上的生意，只有一种——马。可马是大汗的，人也是大汗的。」",
+      "investigations": [
+        {
+          "label": "问蒙古马政的详情",
+          "text": "老人压低声音：「耽罗岛每年要往大都送三千匹马。送不够数，高丽王要挨训；马死了，养马的渔民要抵命。三年前有家人逃了，被追回来，当着全村的面打了五十鞭。」",
+          "once_flag": "jeju_horse_policy_detail",
+          "effects": {
+            "story_flag": "jeju_horse_policy_known"
+          }
+        },
+        {
+          "label": "打听驿站消息",
+          "text": "老人道：「驿站是蒙古人的耳目。有什么消息，蒙古人比高丽王知道得还快。你要是想打听什么……别在这儿问。去山神庙，那儿的庙祝是个聋子——蒙古人懒得管他。」",
+          "once_flag": "jeju_inn_intel",
+          "effects": {
+            "story_flag": "jeju_intel_channel"
+          }
+        },
+        {
+          "label": "观察蒙古骑兵的对话",
+          "text": "几个骑兵用蒙古话大声说笑，偶尔蹦出几个高丽词。你听不太懂，但「大都」「征日本」「造船」这几个词反复出现。一个骑兵醉了，拍着桌子喊：「早晚把那些矮子都赶下海！」",
+          "once_flag": "jeju_mongol_conversation",
+          "effects": {
+            "story_flag": "jeju_invasion_rumor"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开驿站",
+          "next": "port_jeju",
+          "effects": {
+            "story_flag": "jeju_tavern_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_jeju_tavern.png"
+    },
+    {
+      "id": "jeju_market",
+      "chapter": "chapter_2",
+      "title": "马市",
+      "location": "jeju",
+      "body": "马市在海岸边的空地上，几十匹马被拴在木桩上，鬃毛在海风中飘飞。蒙古马贩子坐在马鞍上，用皮鞭指着马的牙齿给买家看。高丽买主大多畏畏缩缩，不敢还价。\n\n　　一个马贩子见你走近，咧嘴一笑，露出被奶茶染黄的牙：\n\n【马贩子】：「南边来的？买马？好马不卖——那是大汗的。但次马……你出得起价，倒是可以商量。」",
+      "investigations": [
+        {
+          "label": "看马的品质",
+          "text": "马分三等：上等的膘肥体壮，是给蒙古骑兵的；中等的毛色杂乱，卖给高丽贵族；下等的老弱病残，才轮到外来的商人。马贩子指了指一匹瘸腿的老马：「这匹便宜，还能驮货。」",
+          "once_flag": "jeju_horse_grades",
+          "effects": {
+            "story_flag": "jeju_horse_grading"
+          }
+        },
+        {
+          "label": "问马价",
+          "text": "马贩子伸出三根手指：「三匹上等丝绸，或者五十斤铁。铜钱不要——在这岛上，铜钱擦不了屁股。」他嘿嘿笑了，旁边几个蒙古人也跟着笑。",
+          "once_flag": "jeju_horse_price",
+          "effects": {
+            "story_flag": "jeju_horse_price_known"
+          }
+        },
+        {
+          "label": "观察高丽买主",
+          "text": "一个高丽小吏牵着一匹瘦马，低声对同伴说：「官府摊派的，不买不行。可买了又养不起——草料都被蒙古马场占了。」他叹了口气，摸了摸马的脖子，眼里有些不忍。",
+          "once_flag": "jeju_korean_buyer",
+          "effects": {
+            "story_flag": "jeju_korean_hardship",
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开马市",
+          "next": "port_jeju",
+          "effects": {
+            "story_flag": "jeju_market_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_jeju_market.png"
+    },
+    {
+      "id": "jeju_temple",
+      "chapter": "chapter_2",
+      "title": "山神庙",
+      "location": "jeju",
+      "body": "山神庙藏在火山锥的半山腰，石阶长满青苔。庙很小，只有两间屋子，供着一块未经雕琢的黑色火山石——那就是山神。\n\n　　庙祝是个白发老人，耳朵确实聋了，但眼睛极亮。他见你上山，也不说话，只是用手指蘸着供桌上的灰，在地上写了几个字：\n\n「你是来找路的？」",
+      "investigations": [
+        {
+          "label": "看供桌上的刻痕",
+          "text": "供桌边缘刻满了密密麻麻的字——有高丽文，有汉字，还有几种你不认识的文字。庙祝写道：「每一代都有迷路的人来。」",
+          "once_flag": "jeju_altar_marks",
+          "effects": {
+            "story_flag": "jeju_altar_history"
+          }
+        },
+        {
+          "label": "问岛上渔民的苦况",
+          "text": "庙祝写道：「蒙古人来之前，岛上打鱼种橘，日子清苦但安稳。现在渔民要养马、造船、运粮——马比人金贵。逃不掉，海都被封了。」他写完，用袖子把字抹掉。",
+          "once_flag": "jeju_fisher_hardship",
+          "effects": {
+            "story_flag": "jeju_fisher_plight"
+          }
+        },
+        {
+          "label": "打听往南的航路",
+          "text": "庙祝想了很久，写道：「往南，过黑水沟，便是宋地。但蒙古水师巡海，夜里走才安全。月圆之夜，从西岸出发——那里的水师换防，有个空档。」他写完迅速抹去，眼神紧张。",
+          "once_flag": "jeju_south_route",
+          "effects": {
+            "story_flag": "jeju_escape_route",
+            "fame": 2
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "下山回港",
+          "next": "port_jeju",
+          "effects": {
+            "story_flag": "jeju_temple_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_jeju_temple.png"
+    }
+  ]
+}

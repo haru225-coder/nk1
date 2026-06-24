@@ -36,7 +36,8 @@
       "position": {
         "x": 0,
         "y": 1000
-      }
+      },
+      "bg": "res://assets/bg_quanzhou_port.png"
     },
     {
       "id": "xinghua",
@@ -56,7 +57,8 @@
       "position": {
         "x": 2000,
         "y": -1000
-      }
+      },
+      "bg": "res://assets/bg_xinghua_harbor.jpg"
     },
     {
       "id": "keelung",
@@ -74,7 +76,8 @@
       "position": {
         "x": 5500,
         "y": 3500
-      }
+      },
+      "bg": "res://assets/bg_keelung_port.png"
     },
     {
       "id": "ryukyu",
@@ -98,7 +101,8 @@
       "position": {
         "x": 8000,
         "y": 3000
-      }
+      },
+      "bg": "res://assets/bg_penghu_port.png"
     },
     {
       "id": "jeju",
@@ -117,7 +121,8 @@
       "position": {
         "x": 10000,
         "y": -6000
-      }
+      },
+      "bg": "res://assets/bg_jeju_port.png"
     },
     {
       "id": "hakata",
@@ -147,7 +152,8 @@
       "position": {
         "x": 15000,
         "y": -8000
-      }
+      },
+      "bg": "res://assets/bg_hakata_port.png"
     },
     {
       "id": "kagoshima",
@@ -170,7 +176,8 @@
       "position": {
         "x": 13000,
         "y": -5000
-      }
+      },
+      "bg": "res://assets/bg_hakata_port.png"
     },
     {
       "id": "penghu",
@@ -188,7 +195,8 @@
       "position": {
         "x": 4000,
         "y": 2500
-      }
+      },
+      "bg": "res://assets/bg_penghu_port.png"
     },
     {
       "id": "champa",
@@ -209,7 +217,313 @@
       "position": {
         "x": -5000,
         "y": 15000
-      }
+      },
+      "bg": "res://assets/bg_champa_port.png"
+    },
+    {
+      "id": "guangzhou",
+      "name": "广州",
+      "region": "广东",
+      "status": "main",
+      "tags": [
+        "蕃坊",
+        "市舶旧都",
+        "阿拉伯穆斯林",
+        "岭南政治"
+      ],
+      "connections": [
+        "quanzhou",
+        "zhangzhou",
+        "tunmen",
+        "qiongzhou"
+      ],
+      "position": {
+        "x": -4000,
+        "y": 3000
+      },
+      "bg": "res://assets/bg_guangzhou_port.png"
+    },
+    {
+      "id": "mingzhou",
+      "name": "明州",
+      "region": "浙江",
+      "status": "main",
+      "tags": [
+        "运河北口",
+        "内河换船",
+        "监视哨",
+        "通往临安"
+      ],
+      "connections": [
+        "quanzhou",
+        "ganpu",
+        "wenzhou"
+      ],
+      "position": {
+        "x": 5000,
+        "y": -3000
+      },
+      "bg": "res://assets/bg_mingzhou_port.png"
+    },
+    {
+      "id": "ganpu",
+      "name": "澉浦",
+      "region": "杭州湾",
+      "status": "thread",
+      "tags": [
+        "嘉兴海关",
+        "盐私",
+        "临安门户"
+      ],
+      "connections": [
+        "mingzhou",
+        "linan"
+      ],
+      "position": {
+        "x": 6000,
+        "y": -5000
+      },
+      "bg": "res://assets/bg_ganpu_port.png"
+    },
+    {
+      "id": "zhangzhou",
+      "name": "漳州月港",
+      "region": "福建",
+      "status": "thread",
+      "tags": [
+        "私港萌芽",
+        "月光装卸",
+        "非法贸易"
+      ],
+      "connections": [
+        "quanzhou",
+        "guangzhou"
+      ],
+      "position": {
+        "x": -1000,
+        "y": 2000
+      },
+      "bg": "res://assets/bg_zhangzhou_port.png"
+    },
+    {
+      "id": "qiongzhou",
+      "name": "琼州",
+      "region": "海南岛",
+      "status": "distant",
+      "tags": [
+        "黎族风情",
+        "贬官流放",
+        "珍珠沉香"
+      ],
+      "connections": [
+        "guangzhou",
+        "champa"
+      ],
+      "position": {
+        "x": -6000,
+        "y": 8000
+      },
+      "bg": "res://assets/bg_qiongzhou_port.png"
+    },
+    {
+      "id": "sanfoqi",
+      "name": "三佛齐",
+      "region": "苏门答腊",
+      "status": "distant",
+      "tags": [
+        "马六甲咽喉",
+        "马来商人",
+        "胡椒香料"
+      ],
+      "connections": [
+        "champa",
+        "longyamen",
+        "yeshou"
+      ],
+      "position": {
+        "x": -10000,
+        "y": 18000
+      },
+      "bg": "res://assets/bg_sanfoqi_port.png"
+    },
+    {
+      "id": "longyamen",
+      "name": "龙牙门",
+      "region": "新加坡海峡",
+      "status": "distant",
+      "tags": [
+        "海盗如麻",
+        "险恶航道",
+        "东西方咽喉"
+      ],
+      "connections": [
+        "sanfoqi",
+        "champa"
+      ],
+      "position": {
+        "x": -12000,
+        "y": 16000
+      },
+      "bg": "res://assets/bg_longyamen_port.png"
+    },
+    {
+      "id": "bugan",
+      "name": "蒲甘",
+      "region": "缅甸",
+      "status": "distant",
+      "tags": [
+        "佛塔林立",
+        "蒙古铁骑",
+        "象牙玉石"
+      ],
+      "connections": [
+        "champa",
+        "longyamen"
+      ],
+      "position": {
+        "x": -14000,
+        "y": 12000
+      },
+      "bg": "res://assets/bg_bugan_port.png"
+    },
+    {
+      "id": "jiaozhi",
+      "name": "交趾",
+      "region": "安南",
+      "status": "distant",
+      "tags": [
+        "汉字文化圈边缘",
+        "南宋遗民避难"
+      ],
+      "connections": [
+        "quanzhou",
+        "champa"
+      ],
+      "position": {
+        "x": -8000,
+        "y": 12000
+      },
+      "bg": "res://assets/bg_jiaozhi_port.png"
+    },
+    {
+      "id": "yeshou",
+      "name": "阇婆",
+      "region": "爪哇岛",
+      "status": "distant",
+      "tags": [
+        "印度教风情",
+        "火山岛",
+        "远洋终点"
+      ],
+      "connections": [
+        "sanfoqi",
+        "champa"
+      ],
+      "position": {
+        "x": -12000,
+        "y": 20000
+      },
+      "bg": "res://assets/bg_yeshou_port.png"
+    },
+    {
+      "id": "tunmen",
+      "name": "屯门寨",
+      "region": "珠江口",
+      "status": "thread",
+      "tags": [
+        "避风港",
+        "海盗",
+        "水军哨所"
+      ],
+      "connections": [
+        "guangzhou",
+        "zhangzhou"
+      ],
+      "position": {
+        "x": -3500,
+        "y": 3500
+      },
+      "bg": "res://assets/bg_tunmen_port.png"
+    },
+    {
+      "id": "wenzhou",
+      "name": "温州",
+      "region": "浙南",
+      "status": "main",
+      "tags": [
+        "海商集散",
+        "纸钞危机",
+        "浙商家族"
+      ],
+      "connections": [
+        "mingzhou",
+        "quanzhou"
+      ],
+      "position": {
+        "x": 3500,
+        "y": -1500
+      },
+      "bg": "res://assets/bg_wenzhou_port.png"
+    },
+    {
+      "id": "tsushima",
+      "name": "对马岛",
+      "region": "日本对马",
+      "status": "rumor",
+      "tags": [
+        "日朝中转",
+        "马匹与铁器",
+        "边境感"
+      ],
+      "connections": [
+        "hakata",
+        "jeju"
+      ],
+      "position": {
+        "x": 12000,
+        "y": -7000
+      },
+      "bg": "res://assets/bg_tsushima_port.png"
+    },
+    {
+      "id": "byland",
+      "name": "碧澜渡",
+      "region": "高丽西京",
+      "status": "rumor",
+      "tags": [
+        "高丽青瓷",
+        "冷冽海风",
+        "蒙古驻军"
+      ],
+      "connections": [
+        "jeju",
+        "tsushima"
+      ],
+      "position": {
+        "x": 10000,
+        "y": -8000
+      },
+      "bg": "res://assets/bg_byland_port.png"
+    },
+    {
+      "id": "xuwen",
+      "name": "徐闻港",
+      "region": "雷州半岛",
+      "status": "distant",
+      "tags": [
+        "汉代大港遗风",
+        "南下最后补给",
+        "荒凉感"
+      ],
+      "connections": [
+        "champa",
+        "qiongzhou"
+      ],
+      "position": {
+        "x": -7000,
+        "y": 10000
+      },
+      "bg": "res://assets/bg_xuwen_port.png"
     }
   ]
 }

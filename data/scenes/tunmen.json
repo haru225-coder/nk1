@@ -1,0 +1,83 @@
+{
+  "scenes": [
+    {
+      "id": "port_tunmen",
+      "type": "port",
+      "chapter": "chapter_1",
+      "location": "tunmen",
+      "title": "珠江口野港",
+      "body": "",
+      "facilities": [
+        {"id": "tunmen_tavern", "title": "匪窝酒馆", "subtitle": "刀口舔血", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "tunmen_market", "title": "黑市", "subtitle": "无税之货", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "tunmen_wharf", "title": "走私泊位", "subtitle": "月黑风高", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_tunmen_map.png", "hint": "礁石嶙峋、匪帮出没、走私基地", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_tunmen_port.png",
+      "intro": "珠江口外的无名野港，礁石嶙峋。走私者与匪帮在此交易，官府鞭长莫及。"
+    },
+    {
+      "id": "tunmen_arrival",
+      "chapter": "chapter_1",
+      "title": "野港入泊",
+      "location": "tunmen",
+      "time": "子时，月黑",
+      "objective": "摸清匪帮势力与走私门道",
+      "body": "月黑风高。船熄了灯，沿着礁石间的窄道慢慢滑进去。\n\n　　岸边泊着五六条船，都没有旗号。人在黑暗中搬运货物，动作轻而快，没有号子声，只有箱子落地的闷响。\n\n　　一个黑影从礁石后闪出来，手里攥着把刀，声音低沉：「哪家的船？报字号。」",
+      "choices": [
+        {"label": "报字号（如有）", "next": "port_tunmen", "effects": {"story_flag": "pearl_arrived"}},
+        {"label": "装哑巴", "next": "port_tunmen", "effects": {"story_flag": "pearl_arrived", "pu_attention": 2}}
+      ],
+      "bg": "res://assets/bg_tunmen_port.png",
+      "investigations": [
+        {"label": "看黑影的刀", "text": "刀是日本刀，刀鞘上有血迹。这不是普通走私客——是海盗。", "once_flag": "pearl_pirate_blade", "effects": {"story_flag": "saw_pirate_weapon"}},
+        {"label": "数船的数量", "text": "六条船，最大的能载两百石。船上的人动作训练有素——这是有组织的匪帮。", "once_flag": "pearl_ship_count", "effects": {"story_flag": "pearl_gang_scale"}}
+      ]
+    },
+    {
+      "id": "tunmen_tavern",
+      "chapter": "chapter_1",
+      "title": "匪窝酒馆",
+      "location": "tunmen",
+      "body": "酒馆在礁石洞里，入口窄得只能侧身过。里面点着油灯，几个汉子蹲着喝酒。墙上挂着刀和弓，角落里堆着赃物。",
+      "investigations": [
+        {"label": "坐下喝酒", "text": "酒是地瓜烧，辣得呛喉。一个汉子说：「泉州的蒲家管不到这里。野港只认银子，不认人。」", "once_flag": "pearl_den_drink", "effects": {"story_flag": "pearl_independent"}},
+        {"label": "看墙上的赃物", "text": "丝绸、瓷器、铜钱——全是抢来的。一个汉子说：「这些货，官府查不到。你要买，半价。」", "once_flag": "pearl_den_loot", "effects": {"story_flag": "pearl_loot_trade"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_tunmen"}
+      ],
+      "bg": "res://assets/bg_tunmen_tavern.png"
+    },
+    {
+      "id": "tunmen_market",
+      "chapter": "chapter_1",
+      "title": "珠江口黑市",
+      "location": "tunmen",
+      "body": "黑市在礁石间的空地上，月光就是灯。货物摊在布上，没有叫卖——买家看货，出价，成交，全程不说话。",
+      "investigations": [
+        {"label": "看瓷器", "text": "青瓷、白瓷、影青——全是抢来的官货。质量不差，但卖不上价。走私的瓷器，只值官货的六成。", "once_flag": "pearl_market_porcelain", "effects": {"story_flag": "pearl_porcelain_intel"}},
+        {"label": "问铜钱行情", "text": "铜钱走私到日本，能换三倍的硫黄。匪帮说：「朝廷禁铜出海，但铜钱自己会游泳。」", "once_flag": "pearl_market_copper", "effects": {"story_flag": "copper_smuggle_pearl"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_tunmen"}
+      ],
+      "bg": "res://assets/bg_tunmen_market.png"
+    },
+    {
+      "id": "tunmen_wharf",
+      "chapter": "chapter_1",
+      "title": "珠江口走私泊位",
+      "location": "tunmen",
+      "body": "泊位在礁石凹处，三面挡风。船靠岸不用缆绳——用铁钩挂在礁石上。一个独眼老头蹲在岸边，手里攥着根烟杆。",
+      "investigations": [
+        {"label": "和独眼老头搭话", "text": "老头吐口烟：「野港开了十年，没被抓过一次。你知道为什么？因为水军也来买货。」他嘿嘿笑。", "once_flag": "pearl_wharf_oldman", "effects": {"story_flag": "water_army_corrupt_pearl"}},
+        {"label": "看铁钩泊船", "text": "铁钩是特制的，能挂在任何礁石上。这种泊法不怕潮——船随潮涨落，永远不会搁浅。", "once_flag": "pearl_wharf_hook", "effects": {"story_flag": "learned_hook_mooring_pearl"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_tunmen"}
+      ],
+      "bg": "res://assets/bg_tunmen_wharf.png"
+    }
+  ]
+}

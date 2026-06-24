@@ -1,0 +1,84 @@
+{
+  "scenes": [
+    {
+      "id": "port_guangzhou",
+      "type": "port",
+      "chapter": "chapter_1",
+      "location": "guangzhou",
+      "title": "广州",
+      "body": "",
+      "facilities": [
+        {"id": "guangzhou_fanfang_tavern", "title": "蕃坊酒肆", "subtitle": "异域风情", "icon": "res://assets/icon_tavern_koei.png"},
+        {"id": "guangzhou_spice_market", "title": "珠宝香药市", "subtitle": "蕃商遗货", "icon": "res://assets/icon_market_koei.png"},
+        {"id": "guangzhou_mosque", "title": "怀圣寺", "subtitle": "光塔与礼拜", "icon": "res://assets/icon_residence_koei.png"},
+        {"id": "guangzhou_wharf", "title": "黄埔古港", "subtitle": "市舶旧都", "icon": "res://assets/icon_shipyard_koei.png"}
+      ],
+      "town_map": {"bg": "res://assets/bg_guangzhou_map.png", "hint": "蕃坊遗迹、清真寺尖塔、岭南骑楼", "fallback_mode": "cards", "hotspots": []},
+      "bg": "res://assets/bg_guangzhou_port.png",
+      "intro": "昔日蕃坊虽已式微，清真寺尖塔仍立。空气里混着香料、油烟和珠江的腥气。"
+    },
+    {
+      "id": "guangzhou_arrival",
+      "chapter": "chapter_1",
+      "title": "蕃坊旧地",
+      "location": "guangzhou",
+      "time": "午后，闷热",
+      "objective": "探访蕃坊遗迹，搜集市舶旧档",
+      "body": "珠江水黄浊，船挤着船靠岸。码头上堆着木箱和麻袋，搬运工光膀子喊号子，汗珠甩成线。\n\n　　远处清真寺的光塔刺入闷热的天空，像一根被遗忘的桅杆。蕃坊的巷子还在，但招牌上的阿拉伯文褪了色，只剩几个老妪在门口乘凉。\n\n　　一个穿绸衫的中年人凑过来，压低声音：「泉州来的？市舶司旧档在蕃坊深处，想看？」",
+      "choices": [
+        {"label": "跟他去蕃坊深处", "next": "port_guangzhou", "effects": {"story_flag": "guangzhou_arrived"}},
+        {"label": "先在码头转转", "next": "port_guangzhou", "effects": {"story_flag": "guangzhou_arrived"}}
+      ],
+      "bg": "res://assets/bg_guangzhou_port.png",
+      "investigations": [
+        {"label": "看清真寺光塔", "text": "光塔是砖砌的，顶上有小亭。每逢礼拜，阿訇登塔唤拜——声音曾传遍蕃坊，如今只剩回声。", "once_flag": "guangzhou_minaret", "effects": {"story_flag": "saw_guangzhou_minaret"}},
+        {"label": "看码头货箱", "text": "箱上写着「香药」「象牙」「珍珠」——都是蕃商旧货。市舶司撤了，但货还在流。", "once_flag": "guangzhou_cargo", "effects": {"story_flag": "guangzhou_trade_intel"}}
+      ]
+    },
+    {
+      "id": "guangzhou_fanfang_tavern",
+      "chapter": "chapter_1",
+      "title": "蕃坊酒肆",
+      "location": "guangzhou",
+      "body": "酒肆藏在蕃坊巷子深处，门帘上绣着阿拉伯文。里面烟雾缭绕，几个肤色各异的商人蹲着喝酒，说的语言你听不懂。酒是葡萄酿的，酸甜。",
+      "investigations": [
+        {"label": "要一杯葡萄酒", "text": "酒味酸甜，不像泉州的烈酒。酒肆主人是个波斯后裔，汉话说得字正腔圆：「蕃坊以前有三千户，现在只剩三百。世道变了。」", "once_flag": "guangzhou_fan_wine", "effects": {"story_flag": "fanfang_decline"}},
+        {"label": "听商人议论", "text": "一个阿拉伯商人用汉话说：「泉州蒲家势力大，广州的蕃商都被挤走了。你要做香药生意，去泉州。这里只剩回忆。」", "once_flag": "guangzhou_fan_gossip", "effects": {"story_flag": "pu_guangzhou_influence"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_guangzhou"}
+      ],
+      "bg": "res://assets/bg_guangzhou_tavern.png"
+    },
+    {
+      "id": "guangzhou_spice_market",
+      "chapter": "chapter_1",
+      "title": "珠宝香药市",
+      "location": "guangzhou",
+      "body": "市集在蕃坊入口，摊子上摆满香料、宝石、象牙。摊主多是阿拉伯人后裔，肤色深棕，眼窝凹陷。叫卖声用汉话和阿拉伯语交替。",
+      "investigations": [
+        {"label": "问乳香价", "text": "乳香一两银子，比泉州便宜三成。摊主说：「泉州有关税，这里没有。走私的都走广州。」", "once_flag": "guangzhou_frankincense", "effects": {"story_flag": "guangzhou_smuggler_hint"}},
+        {"label": "看象牙雕工", "text": "象牙上刻着细密的花纹，是阿拉伯风格。工匠说：「这种手艺，广州只剩三家了。年轻人都去泉州了。」", "once_flag": "guangzhou_ivory", "effects": {"story_flag": "guangzhou_craft_decline"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_guangzhou"}
+      ],
+      "bg": "res://assets/bg_guangzhou_market.png"
+    },
+    {
+      "id": "guangzhou_mosque",
+      "chapter": "chapter_1",
+      "title": "怀圣寺",
+      "location": "guangzhou",
+      "body": "怀圣寺隐在巷子尽头，门楼上的阿拉伯文被风雨侵蚀。院中光塔高耸，塔身有修补痕迹。一个老阿訇在廊下读经，见你来，抬头合掌。",
+      "investigations": [
+        {"label": "看光塔基座", "text": "基座砖上刻着「大食」二字——这是唐代大食人建的，几百年了。砖缝里长出草来，像老人的白发。", "once_flag": "guangzhou_tower_base", "effects": {"story_flag": "saw_tang_arab遗迹"}},
+        {"label": "和阿訇交谈", "text": "阿訇说：「蕃坊的子孙散了，寺还在。泉州的蒲家每年都捐银子修寺——他们是真主的仆人，也是海上的王。」", "once_flag": "guangzhou_imam_talk", "effects": {"story_flag": "pu_religious_influence"}}
+      ],
+      "choices": [
+        {"label": "离开", "next": "port_guangzhou"}
+      ],
+      "bg": "res://assets/bg_guangzhou_mosque.png"
+    }
+  ]
+}

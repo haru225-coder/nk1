@@ -1,0 +1,214 @@
+{
+  "scenes": [
+    {
+      "id": "port_keelung",
+      "type": "port",
+      "chapter": "chapter_1",
+      "location": "keelung",
+      "title": "基隆海岸",
+      "body": "",
+      "facilities": [
+        {
+          "id": "keelung_tavern",
+          "title": "棚屋",
+          "subtitle": "打听消息",
+          "icon": "res://assets/icon_tavern_koei.png"
+        },
+        {
+          "id": "keelung_market",
+          "title": "贝壳市集",
+          "subtitle": "以物易物",
+          "icon": "res://assets/icon_market_koei.png"
+        },
+        {
+          "id": "keelung_wharf",
+          "title": "独木舟码头",
+          "subtitle": "船只与航路",
+          "icon": "res://assets/icon_shipyard_koei.png"
+        }
+      ],
+      "town_map": {
+        "bg": "res://assets/bg_keelung_map.png",
+        "hint": "雾气笼罩的海岸线，几缕炊烟标记着聚落所在",
+        "fallback_mode": "cards",
+        "hotspots": []
+      },
+      "bg": "res://assets/bg_keelung_port.png",
+      "intro": "雾散处，贝壳铺成的滩涂反射着碎光。远处山岳隐入云中，仿佛天地初开。"
+    },
+    {
+      "id": "keelung_arrival",
+      "chapter": "chapter_1",
+      "title": "到港",
+      "location": "keelung",
+      "body": "船头劈开灰白的雾幕，基隆海岸在雾中浮现——不是港口，更像是一道被遗忘的伤口。\n\n　　沙滩上贝壳散落如碎银，潮水退去后留下密密麻麻的纹路。远处山岳的轮廓被浓雾吞噬，只余几缕青烟从林间升起，不知是炊烟还是信号。\n\n　　岸边站着几个凯达格兰人，赤足踩在湿沙上，目光平静而警惕。为首者颈上挂着一串贝壳项链，在雾气中发出细碎的响声。他们不说话，只是看着你的船缓缓靠近。\n\n　　这里没有市舶司的旗号，没有税吏的算盘，甚至没有像样的栈桥。官图上找不到这个地方——这是化外之地。",
+      "choices": [
+        {
+          "label": "靠岸登陆",
+          "next": "port_keelung",
+          "effects": {
+            "story_flag": "keelung_arrived"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_keelung_port.png",
+      "investigations": [
+        {
+          "label": "观察岸边烟柱",
+          "text": "三缕青烟，两短一长，像是某种信号。凯达格兰人见你注视，微微摇头——那不是给你的。",
+          "once_flag": "keelung_smoke_noticed",
+          "effects": {
+            "story_flag": "keelung_smoke_signal_seen"
+          }
+        },
+        {
+          "label": "拾起一枚贝壳",
+          "text": "贝壳内侧刻着细密的纹路，不像是天然的。翻过来，背面磨得光滑——这是货币，不是装饰。",
+          "once_flag": "keelung_shell_picked",
+          "effects": {
+            "story_flag": "keelung_shell_currency_known"
+          }
+        },
+        {
+          "label": "望向山中青烟",
+          "text": "青烟不像是炊烟——太直，太规律。老舵手低声道：「那是烽烟。山里有人在报信，说有外人来了。」",
+          "once_flag": "keelung_mountain_smoke",
+          "effects": {
+            "story_flag": "keelung_being_watched"
+          }
+        }
+      ]
+    },
+    {
+      "id": "keelung_tavern",
+      "chapter": "chapter_1",
+      "title": "海岸棚屋",
+      "location": "keelung",
+      "body": "棚屋用竹竿和芭蕉叶搭成，风一吹便嘎吱作响。角落里燃着一堆湿柴，烟雾弥漫，熏得人睁不开眼。\n\n　　一个凯达格兰老者蹲在火堆旁，用贝壳刮着鱼鳞。他抬头看你一眼，用生硬的汉话道：\n\n【老者】：「外头来的人……你们的船，吃水深。装的什么？」\n\n　　火光映在他脸上的刺青上，那是两道从额角延伸到下巴的平行线。",
+      "investigations": [
+        {
+          "label": "问刺青的含义",
+          "text": "老者摸了摸脸上的线：「这是猎过山猪的人才有。我年轻时，山里有野猪、有鹿、有熊。现在……只有烟。」",
+          "once_flag": "keelung_tattoo_asked",
+          "effects": {
+            "story_flag": "keelung_tattoo_meaning",
+            "fame": 1
+          }
+        },
+        {
+          "label": "打听附近航路",
+          "text": "老者用鱼骨在地上画了几道线：「往北，大浪；往东，更深的海。往南……有你们汉人的船。这条水路，我们走了几百年，不画在纸上。」",
+          "once_flag": "keelung_route_hint",
+          "effects": {
+            "story_flag": "keelung_oral_routes"
+          }
+        },
+        {
+          "label": "问烟雾信号的规矩",
+          "text": "老者压低声音：「一缕烟，有客来。两缕烟，有敌来。三缕……是叫山里的人下来。你们是客，不是敌——但别走太深。」",
+          "once_flag": "keelung_smoke_customs",
+          "effects": {
+            "story_flag": "keelung_smoke_customs_known"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开棚屋",
+          "next": "port_keelung",
+          "effects": {
+            "story_flag": "keelung_tavern_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_keelung_tavern.png"
+    },
+    {
+      "id": "keelung_market",
+      "chapter": "chapter_1",
+      "title": "贝壳市集",
+      "location": "keelung",
+      "body": "市集不过是沙滩上铺开的几片草席，上面摆着贝壳、鱼干、兽皮和几块不知名的矿石。没有招牌，没有秤——交易全凭手势和眼神。\n\n　　一个年轻女子用贝壳串成的项链换了一小袋粗盐，双方各取所需，点头便散。旁边的老妇人守着一堆晒干的海藻，见你走近，指了指你的包袱——她想看看你有什么可换的。",
+      "investigations": [
+        {
+          "label": "用铜钱买贝壳",
+          "text": "老妇人摇头，指着你腰间的布袋——她要的不是铜钱，是盐或者铁器。贝壳在这里才是通货，铜钱只是外人的玩具。",
+          "once_flag": "keelung_shell_trade_attempt",
+          "effects": {
+            "story_flag": "keelung_shell_economy"
+          }
+        },
+        {
+          "label": "看那块矿石",
+          "text": "矿石呈暗绿色，拿在手里沉甸甸的。卖矿的汉子比划着：这东西从山里挖来，可以磨成颜料，也能入药。你隐约觉得这像是某种铜矿。",
+          "once_flag": "keelung_ore_examined",
+          "effects": {
+            "story_flag": "keelung_copper_ore_found"
+          }
+        },
+        {
+          "label": "观察交易方式",
+          "text": "没有讨价还价，没有争执。双方把手伸出来比划几下，点头便成。一个老者用三串贝壳换了一把铁刀，面露喜色——铁器在这里比金子还珍贵。",
+          "once_flag": "keelung_trade_observed",
+          "effects": {
+            "story_flag": "keelung_trade_customs",
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开市集",
+          "next": "port_keelung",
+          "effects": {
+            "story_flag": "keelung_market_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_keelung_market.png"
+    },
+    {
+      "id": "keelung_wharf",
+      "chapter": "chapter_1",
+      "title": "独木舟码头",
+      "location": "keelung",
+      "body": "所谓码头，不过是几块大石头垒成的简易栈桥。十几艘独木舟用藤蔓系在岸边，随浪起伏。最大的一艘能坐六七人，船身用火烧法掏空，外侧刻着波浪纹。\n\n　　一个年轻人正在给独木舟涂树脂，见你来了，停下手里的活，用手指了指海面——远处有几艘更大的船影，帆形陌生。",
+      "investigations": [
+        {
+          "label": "看独木舟的结构",
+          "text": "船身是一整根树干掏空的，接缝处用树脂封死。年轻人拍了拍船帮，比划着说这船能扛住近海的浪——但远海不行。要远航，得有更大的船。",
+          "once_flag": "keelung_canoe_inspected",
+          "effects": {
+            "story_flag": "keelung_canoe_knowledge"
+          }
+        },
+        {
+          "label": "望远处帆影",
+          "text": "帆影像是南洋的样式，三角形，吃风极深。年轻人摇头：「那不是我们的船。他们来过，抢了些东西就走了。」",
+          "once_flag": "keelung_far_ships",
+          "effects": {
+            "story_flag": "keelung_pirate_rumor"
+          }
+        },
+        {
+          "label": "打听附近岛屿",
+          "text": "年轻人用树枝在沙上画了几个圈：「北边有小岛，渔季有人去；东边的岛……老人说去不得，浪太大。南边，你们汉人的船常走。」",
+          "once_flag": "keelung_island_info",
+          "effects": {
+            "story_flag": "keelung_island_routes"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "离开码头",
+          "next": "port_keelung",
+          "effects": {
+            "story_flag": "keelung_wharf_visited"
+          }
+        }
+      ],
+      "bg": "res://assets/bg_keelung_wharf.png"
+    }
+  ]
+}
