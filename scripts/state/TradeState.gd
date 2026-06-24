@@ -60,13 +60,21 @@ func customs_inspection() -> Dictionary:
 			if fine > 0:
 				LedgerSystem.apply({"amount": -fine, "source": "system", "reason": "customs_fine", "actor": "GameState"})
 			CargoSystem.clear_all()
-		elif LedgerSystem.get_balance() >= 50:
-			result["passed"] = true
-			result["msg"] = "【惊险过关】没有货引，你塞了五十贯给小吏，趁盘查间隙摸出港。"
-			LedgerSystem.apply({"amount": -50, "source": "gameplay", "reason": "bribe", "actor": "GameState"})
-			pu_attention = clampi(pu_attention + 3, 0, 20)
 		else:
-			result["passed"] = false
-			result["msg"] = "【遣返】你不仅没有货引，连塞给小吏的五十贯都拿不出！小吏把你轰回了港口。"
+			var bribe_intent := Intent.new(
+				"bribe", "player", "customs_officer",
+				{"amount": 50, "attention_delta": 3, "smuggling_departure": true},
+				{"customs_departure": true}
+			)
+			var bribe_result := IntentResolver.resolve(bribe_intent)
+			if bribe_result.success:
+				result["passed"] = true
+				result["msg"] = "【惊险过关】没有货引，你塞了五十贯给小吏，趁盘查间隙摸出港。"
+			else:
+				result["passed"] = false
+				if bribe_result.error_code == IntentErrorCodes.INSUFFICIENT_FUNDS:
+					result["msg"] = "【遣返】你不仅没有货引，连塞给小吏的五十贯都拿不出！小吏把你轰回了港口。"
+				else:
+					result["msg"] = "【遣返】市舶司验引未通过，无法出港。"
 	inspection_result.emit(result)
 	return result

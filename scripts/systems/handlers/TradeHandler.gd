@@ -32,7 +32,7 @@ func _execute_market_buy(intent: Intent, port_id: String, good_id: String, amoun
 	if price <= 0:
 		return IntentResult.error("error.market.invalid_price", "", type)
 	if not CargoSystem.has_space_for(amount):
-		return IntentResult.error("error.market.cargo_full", "", type)
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_CARGO, "", type)
 
 	var total_cost := price * amount
 	var tx := {
@@ -42,7 +42,7 @@ func _execute_market_buy(intent: Intent, port_id: String, good_id: String, amoun
 		"actor": "TradeHandler",
 	}
 	if not LedgerSystem.apply(tx, intent.id):
-		return IntentResult.error("error.market.transaction_failed", "", type)
+		return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", type)
 	if CargoSystem.add_item(good_id, amount):
 		GameState.market.adjust_stock(port_id, good_id, -amount)
 		var r := IntentResult.ok({"good_id": good_id, "amount": amount, "cost": total_cost}, "intent.market_buy.success")
@@ -54,7 +54,7 @@ func _execute_market_buy(intent: Intent, port_id: String, good_id: String, amoun
 		"reason": "market_buy_rollback_%s_%d" % [good_id, amount],
 		"actor": "TradeHandler",
 	}, intent.id + ":rollback")
-	return IntentResult.error("error.market.cargo_full", "", type)
+	return IntentResult.error(IntentErrorCodes.INSUFFICIENT_CARGO, "", type)
 
 func _execute_market_sell(intent: Intent, port_id: String, good_id: String, amount: int, type: String) -> IntentResult:
 	if good_id.is_empty() or amount <= 0:
@@ -64,7 +64,7 @@ func _execute_market_sell(intent: Intent, port_id: String, good_id: String, amou
 	if price <= 0:
 		return IntentResult.error("error.market.invalid_price", "", type)
 	if not CargoSystem.has_item(good_id, amount):
-		return IntentResult.error("error.market.missing_goods", "", type)
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_CARGO, "", type)
 
 	var total_revenue := price * amount
 	var tx := {
@@ -101,4 +101,4 @@ func _execute_sea_trade(intent: Intent) -> IntentResult:
 		var r := IntentResult.ok({"cost": cost, "food": food_gain, "water": water_gain}, "intent.trade_request.success")
 		r.type = "trade_request"
 		return r
-	return IntentResult.error("error.trade.insufficient_funds", "", "trade_request")
+	return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", "trade_request")

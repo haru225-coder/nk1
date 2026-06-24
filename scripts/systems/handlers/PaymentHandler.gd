@@ -17,7 +17,7 @@ func execute(intent: Intent) -> IntentResult:
 		"actor": "PaymentHandler",
 	}
 	if not LedgerSystem.apply(tx, intent.id):
-		return IntentResult.error("error.payment.insufficient_funds", "", "payment")
+		return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", "payment")
 
 	if intent.parameters.get("confiscate", false):
 		for good_id in CargoSystem.get_contraband_keys():

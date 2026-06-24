@@ -6,6 +6,7 @@ const _BribeHandler = preload("res://scripts/systems/handlers/BribeHandler.gd")
 const _CombatHandler = preload("res://scripts/systems/handlers/CombatHandler.gd")
 const _InspectionHandler = preload("res://scripts/systems/handlers/InspectionHandler.gd")
 const _EscapeHandler = preload("res://scripts/systems/handlers/EscapeHandler.gd")
+const _RepairHandler = preload("res://scripts/systems/handlers/RepairHandler.gd")
 
 static var _handlers: Dictionary = {}
 static var _handler_instances: Array = []
@@ -41,6 +42,7 @@ static func _ensure_bootstrapped() -> void:
 	register_handler("market_buy", trade_callable)
 	register_handler("market_sell", trade_callable)
 	_bind_handler("bribe", _BribeHandler.new())
+	_bind_handler("repair_ship", _RepairHandler.new())
 	_bind_handler("combat_request", _CombatHandler.new())
 	_bind_handler("inspection_pass", _InspectionHandler.new())
 	_bind_handler("escape_attempt", _EscapeHandler.new())
@@ -66,11 +68,11 @@ static func resolve(intent: Intent) -> IntentResult:
 
 	if not _handlers.has(intent.type):
 		push_warning("[IntentResolver] No handler for: " + intent.type)
-		return IntentResult.error("NO_HANDLER", "未找到对应的 Handler: " + intent.type, intent.type)
+		return IntentResult.error(IntentErrorCodes.NO_HANDLER, "未找到对应的 Handler: " + intent.type, intent.type)
 
 	var handler: Callable = _handlers[intent.type]
 	var result: Variant = handler.call(intent)
 	if result is IntentResult:
 		return result
 	push_error("[IntentResolver] Handler returned invalid result for: " + intent.type)
-	return IntentResult.error("HANDLER_ERROR", "Handler 返回无效结果", intent.type)
+	return IntentResult.error(IntentErrorCodes.HANDLER_ERROR, "Handler 返回无效结果", intent.type)

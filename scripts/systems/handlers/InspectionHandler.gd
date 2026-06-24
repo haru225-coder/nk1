@@ -5,15 +5,13 @@ func handle(intent: Intent) -> IntentResult:
 
 func execute(intent: Intent) -> IntentResult:
 	if not IdempotencyGuard.check_and_record(intent.id):
-		return IntentResult.error("error.intent.duplicate", "", "inspection_pass")
+		return IntentResult.error(IntentErrorCodes.DUPLICATE_INTENT, "", "inspection_pass")
 
 	var violation := EncounterSystem.calculate_cargo_violation()
 	match violation:
 		"contraband":
-			return IntentResult.error("error.inspection.contraband", "", "inspection_pass")
+			return IntentResult.error(IntentErrorCodes.INVALID_STATE, "", "inspection_pass")
 		"illegal_trade":
-			if LedgerSystem.get_balance() < 30:
-				return IntentResult.error("error.inspection.no_funds", "", "inspection_pass")
 			LedgerSystem.apply({
 				"amount": -30,
 				"source": "encounter",

@@ -328,11 +328,26 @@ func _do_sea_customs_check() -> Dictionary:
 	return {"success": insp["passed"], "msg": insp["msg"]}
 
 func _do_bribe_official() -> Dictionary:
-	if LedgerSystem.get_balance() >= 50:
-		LedgerSystem.apply({"amount": -50, "source": "gameplay", "reason": "bribe", "actor": "GameState"})
-		has_customs_permit = true
+	var intent := Intent.new(
+		"bribe", "player", "customs_officer",
+		{"amount": 50, "attention_delta": 0, "grant_permit": true}
+	)
+	var result := IntentResolver.resolve(intent)
+	if result.success:
 		return {"success": true, "msg": "贿赂成功，拿到通关凭证。"}
-	return {"success": false, "msg": "金钱不足！"}
+	if result.error_code == IntentErrorCodes.INSUFFICIENT_FUNDS:
+		return {"success": false, "msg": "金钱不足！"}
+	return {"success": false, "msg": "贿赂失败。"}
+
+func repair_ship_via_intent(
+	ship_index: int = 0,
+	repair_ratio: float = 1.0,
+	cost_per_hp: float = 1.0
+) -> IntentResult:
+	return IntentResolver.resolve(Intent.new(
+		"repair_ship", "player", "shipyard",
+		{"ship_index": ship_index, "repair_ratio": repair_ratio, "cost_per_hp": cost_per_hp}
+	))
 
 func _do_recruit_crew() -> Dictionary:
 	var space = max_crew - crew_count
