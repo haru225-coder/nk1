@@ -26,6 +26,10 @@ static func validate(intent: Intent) -> IntentResult:
 			return _validate_repair_ship(intent)
 		"refit_ship":
 			return _validate_refit_ship(intent)
+		"hire_crew":
+			return _validate_hire_crew(intent)
+		"buy_supplies":
+			return _validate_buy_supplies(intent)
 		"inspection_pass":
 			return _validate_inspection_pass(intent)
 
@@ -142,6 +146,93 @@ static func _validate_refit_ship(intent: Intent) -> IntentResult:
 	if new_type not in ["square", "lateen"]:
 		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "error.refit.invalid_sail", intent.type)
 	return IntentResult.new(true, "validation_ok")
+
+static func _validate_hire_crew(intent: Intent) -> IntentResult:
+	var port_id := str(intent.context.get("port_id", ""))
+	if port_id.is_empty():
+		return IntentResult.error(IntentErrorCodes.PORT_RECRUIT_BLOCKED, "error.hire_crew.no_port", intent.type)
+
+	var cost_per_crew := int(intent.parameters.get("cost_per_crew", 10))
+	if cost_per_crew <= 0:
+		return _validation_error(intent, "error.hire_crew.invalid_cost")
+
+	var space := GameState.max_crew - GameState.crew_count
+	if space <= 0:
+		return IntentResult.error(IntentErrorCodes.CREW_LIMIT_REACHED, "error.hire_crew.full", intent.type)
+
+	var crew_count := int(intent.parameters.get("crew_count", 0))
+	if crew_count <= 0 or intent.parameters.get("recruit_max", false):
+		if LedgerSystem.get_balance() < cost_per_crew:
+			return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "error.hire_crew.insufficient_funds", intent.type)
+	else:
+		crew_count = mini(crew_count, space)
+		if crew_count <= 0:
+			return IntentResult.error(IntentErrorCodes.CREW_LIMIT_REACHED, "error.hire_crew.full", intent.type)
+		var total_cost := int(intent.parameters.get("total_cost", crew_count * cost_per_crew))
+		if LedgerSystem.get_balance() < total_cost:
+			return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "error.hire_crew.insufficient_funds", intent.type)
+
+	return IntentResult.new(true, "validation_ok")
+
+static func _validate_buy_supplies(intent: Intent) -> IntentResult:
+	var supply_type := str(intent.parameters.get("supply_type", ""))
+	if supply_type.is_empty():
+		return _validation_error(intent, "error.buy_supplies.missing_type")
+
+	var fill_to_max := bool(intent.parameters.get("fill_to_max", false))
+	var amount := float(intent.parameters.get("amount", 0.0))
+	var total_cost := int(intent.parameters.get("total_cost", 0))
+	var unit_price := float(intent.parameters.get("unit_price", 0.0))
+
+	match supply_type:
+		"food":
+			if not _has_supply_headroom("food", amount, fill_to_max):
+				return IntentResult.error(IntentErrorCodes.SUPPLY_LIMIT_REACHED, "error.buy_supplies.food_full", intent.type)
+		"water":
+			if not _has_supply_headroom("water", amount, fill_to_max):
+				return IntentResult.error(IntentErrorCodes.SUPPLY_LIMIT_REACHED, "error.buy_supplies.water_full", intent.type)
+		"food_water":
+			if fill_to_max:
+				if GameState.food >= GameState.max_food and GameState.water >= GameState.max_water:
+					return IntentResult.error(IntentErrorCodes.SUPPLY_LIMIT_REACHED, "error.buy_supplies.full", intent.type)
+			elif amount <= 0.0:
+				return _validation_error(intent, "error.buy_supplies.invalid_amount")
+			else:
+				if GameState.food >= GameState.max_food and GameState.water >= GameState.max_water:
+					return IntentResult.error(IntentErrorCodes.SUPPLY_LIMIT_REACHED, "error.buy_supplies.full", intent.type)
+		"ammo":
+			if int(intent.parameters.get("amount", amount)) <= 0:
+				return _validation_error(intent, "error.buy_supplies.invalid_amount")
+		_:
+			return _validation_error(intent, "error.buy_supplies.invalid_type")
+
+	if total_cost <= 0:
+		if unit_price > 0.0 and amount > 0.0:
+			total_cost = ceili(amount * unit_price)
+		elif fill_to_max and supply_type == "food_water":
+			total_cost = 20
+		else:
+			return _validation_error(intent, "error.buy_supplies.invalid_cost")
+
+	if LedgerSystem.get_balance() < total_cost:
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "error.buy_supplies.insufficient_funds", intent.type)
+
+	return IntentResult.new(true, "validation_ok")
+
+static func _has_supply_headroom(resource: String, amount: float, fill_to_max: bool) -> bool:
+	if fill_to_max:
+		if resource == "food":
+			return GameState.food < GameState.max_food
+		if resource == "water":
+			return GameState.water < GameState.max_water
+		return false
+	if amount <= 0.0:
+		return false
+	if resource == "food":
+		return GameState.food < GameState.max_food
+	if resource == "water":
+		return GameState.water < GameState.max_water
+	return false
 
 static func _validate_inspection_pass(intent: Intent) -> IntentResult:
 	var violation := EncounterSystem.calculate_cargo_violation()

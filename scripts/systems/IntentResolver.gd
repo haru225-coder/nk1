@@ -8,6 +8,8 @@ const _InspectionHandler = preload("res://scripts/systems/handlers/InspectionHan
 const _EscapeHandler = preload("res://scripts/systems/handlers/EscapeHandler.gd")
 const _RepairHandler = preload("res://scripts/systems/handlers/RepairHandler.gd")
 const _RefitHandler = preload("res://scripts/systems/handlers/RefitHandler.gd")
+const _HireCrewHandler = preload("res://scripts/systems/handlers/HireCrewHandler.gd")
+const _BuySuppliesHandler = preload("res://scripts/systems/handlers/BuySuppliesHandler.gd")
 
 static var _handlers: Dictionary = {}
 static var _handler_instances: Array = []
@@ -45,6 +47,8 @@ static func _ensure_bootstrapped() -> void:
 	_bind_handler("bribe", _BribeHandler.new())
 	_bind_handler("repair_ship", _RepairHandler.new())
 	_bind_handler("refit_ship", _RefitHandler.new())
+	_bind_handler("hire_crew", _HireCrewHandler.new())
+	_bind_handler("buy_supplies", _BuySuppliesHandler.new())
 	_bind_handler("combat_request", _CombatHandler.new())
 	_bind_handler("inspection_pass", _InspectionHandler.new())
 	_bind_handler("escape_attempt", _EscapeHandler.new())

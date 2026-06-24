@@ -192,6 +192,10 @@ func _on_sell_all_pressed() -> void:
 # ======== 码头功能 ========
 
 const SHIPYARD_REPAIR_COST_PER_HP := 2.0
+const HIRE_CREW_COST_PER := 10
+const SUPPLY_FULL_COST := 20
+const SUPPLY_PARTIAL_AMOUNT := 20.0
+const SUPPLY_PARTIAL_COST := 10
 
 func _resolve_scene_variant(scene_data: Dictionary, scene_id: String) -> Dictionary:
 	return SceneVariantResolver.resolve(scene_data, scene_id)
@@ -239,6 +243,103 @@ func _on_repair_ship_pressed(ship_index: int, repair_ratio: float) -> void:
 		_refresh_shipyard_options()
 	else:
 		message_logged.emit(_format_intent_failure(result, "【造船厂】修理失败。") + "\n\n")
+
+func _shipyard_context() -> Dictionary:
+	return {"port_id": GameState.last_port}
+
+func _on_hire_crew_pressed(crew_count: int, recruit_max: bool) -> void:
+	var params := {"cost_per_crew": HIRE_CREW_COST_PER}
+	if recruit_max:
+		params["recruit_max"] = true
+	else:
+		params["crew_count"] = crew_count
+		params["total_cost"] = crew_count * HIRE_CREW_COST_PER
+	var result := IntentResolver.resolve(Intent.new(
+		"hire_crew", "player", "shipyard", params, _shipyard_context()
+	))
+	if result.success:
+		message_logged.emit(
+			"【船坞】招募了 %d 名水手，当前船员 %d/%d。\n\n" % [
+				int(result.data.get("crew_count", 0)),
+				GameState.crew_count,
+				GameState.max_crew,
+			]
+		)
+		status_updated.emit()
+		_refresh_shipyard_options()
+	else:
+		message_logged.emit(_format_intent_failure(result, "【船坞】招募失败。") + "\n\n")
+
+func _on_buy_supplies_pressed(
+	supply_type: String,
+	amount: float,
+	total_cost: int,
+	fill_to_max: bool
+) -> void:
+	var params := {
+		"supply_type": supply_type,
+		"total_cost": total_cost,
+		"fill_to_max": fill_to_max,
+	}
+	if not fill_to_max and amount > 0.0:
+		params["amount"] = amount
+	var result := IntentResolver.resolve(Intent.new(
+		"buy_supplies", "player", "shipyard", params, _shipyard_context()
+	))
+	if result.success:
+		if supply_type == "food_water" and fill_to_max:
+			message_logged.emit("【船坞】水粮已全部补满！\n\n")
+		elif supply_type == "food":
+			message_logged.emit("【船坞】购入粮食，当前存粮 %.0f/%.0f。\n\n" % [GameState.food, GameState.max_food])
+		elif supply_type == "water":
+			message_logged.emit("【船坞】购入淡水，当前蓄水 %.0f/%.0f。\n\n" % [GameState.water, GameState.max_water])
+		else:
+			message_logged.emit("【船坞】补给购买成功。\n\n")
+		status_updated.emit()
+		_refresh_shipyard_options()
+	else:
+		message_logged.emit(_format_intent_failure(result, "【船坞】补给购买失败。") + "\n\n")
+
+func _setup_shipyard_crew_supply_options() -> void:
+	var space := GameState.max_crew - GameState.crew_count
+	if space > 0:
+		var max_btn := Button.new()
+		max_btn.text = "👥 招募水手 (尽可能多, %d钱/人, 空位%d)" % [HIRE_CREW_COST_PER, space]
+		max_btn.custom_minimum_size = Vector2(0, 52)
+		max_btn.theme_type_variation = "ActionButton"
+		max_btn.pressed.connect(_on_hire_crew_pressed.bind(0, true))
+		choices_container.add_child(max_btn)
+
+		var one_btn := Button.new()
+		one_btn.text = "👤 招募 1 名水手 (%d 钱)" % HIRE_CREW_COST_PER
+		one_btn.custom_minimum_size = Vector2(0, 52)
+		one_btn.theme_type_variation = "ActionButton"
+		one_btn.pressed.connect(_on_hire_crew_pressed.bind(1, false))
+		choices_container.add_child(one_btn)
+
+	if GameState.food < GameState.max_food or GameState.water < GameState.max_water:
+		var supply_btn := Button.new()
+		supply_btn.text = "🍚 补满水粮 (%d 钱)" % SUPPLY_FULL_COST
+		supply_btn.custom_minimum_size = Vector2(0, 52)
+		supply_btn.theme_type_variation = "ActionButton"
+		supply_btn.pressed.connect(_on_buy_supplies_pressed.bind("food_water", 0.0, SUPPLY_FULL_COST, true))
+		choices_container.add_child(supply_btn)
+
+	if GameState.max_food - GameState.food >= SUPPLY_PARTIAL_AMOUNT:
+		var food_btn := Button.new()
+		food_btn.text = "🌾 购买粮食 (+%.0f, %d 钱)" % [SUPPLY_PARTIAL_AMOUNT, SUPPLY_PARTIAL_COST]
+		food_btn.custom_minimum_size = Vector2(0, 52)
+		food_btn.theme_type_variation = "ActionButton"
+		food_btn.pressed.connect(_on_buy_supplies_pressed.bind("food", SUPPLY_PARTIAL_AMOUNT, SUPPLY_PARTIAL_COST, false))
+		choices_container.add_child(food_btn)
+
+	if GameState.max_water - GameState.water >= SUPPLY_PARTIAL_AMOUNT:
+		var water_btn := Button.new()
+		water_btn.text = "💧 购买淡水 (+%.0f, %d 钱)" % [SUPPLY_PARTIAL_AMOUNT, SUPPLY_PARTIAL_COST]
+		water_btn.custom_minimum_size = Vector2(0, 52)
+		water_btn.theme_type_variation = "ActionButton"
+		water_btn.pressed.connect(_on_buy_supplies_pressed.bind("water", SUPPLY_PARTIAL_AMOUNT, SUPPLY_PARTIAL_COST, false))
+		choices_container.add_child(water_btn)
 
 func _on_refit_ship_pressed(cost: int) -> void:
 	var result := IntentResolver.resolve(Intent.new(
@@ -289,6 +390,7 @@ func _setup_shipyard_options() -> void:
 		interactive_label.visible = true
 
 	_setup_shipyard_repair_options()
+	_setup_shipyard_crew_supply_options()
 
 	var refit_btn = Button.new()
 	var current_type = GameState.sail_type
@@ -482,6 +584,12 @@ func _handle_special_action(action: String) -> void:
 		var res = GameState.customs_inspection()
 		message_logged.emit(res["msg"] + "\n\n")
 		status_updated.emit()
+		return
+	if action == "recruit_crew":
+		_on_hire_crew_pressed(0, true)
+		return
+	if action == "supply_ship":
+		_on_buy_supplies_pressed("food_water", 0.0, SUPPLY_FULL_COST, true)
 		return
 	var res = GameState.handle_special_action(action)
 	message_logged.emit(res["msg"] + "\n\n")

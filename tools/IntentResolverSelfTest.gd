@@ -12,6 +12,8 @@ func _ready() -> void:
 	ok = ok and IntentResolver.has_handler("bribe")
 	ok = ok and IntentResolver.has_handler("repair_ship")
 	ok = ok and IntentResolver.has_handler("refit_ship")
+	ok = ok and IntentResolver.has_handler("hire_crew")
+	ok = ok and IntentResolver.has_handler("buy_supplies")
 	ok = ok and IntentResolver.has_handler("trade_request")
 
 	# PaymentHandler
@@ -128,6 +130,60 @@ func _ready() -> void:
 	ok = ok and refit_result.success
 	ok = ok and GameState.sail_type == "lateen"
 	ok = ok and LedgerSystem.get_balance() == 500
+
+	# HireCrewHandler — 招募 3 名
+	IdempotencyGuard.processed_intents.clear()
+	LedgerSystem.from_save_dict({"balance": 500})
+	GameState.crew_count = 10
+	GameState.max_crew = 50
+	var hire_result := IntentResolver.resolve(Intent.new(
+		"hire_crew", "player", "shipyard",
+		{"crew_count": 3, "cost_per_crew": 10, "total_cost": 30},
+		{"port_id": "quanzhou"}
+	))
+	ok = ok and hire_result.success
+	ok = ok and GameState.crew_count == 13
+	ok = ok and LedgerSystem.get_balance() == 470
+
+	# HireCrew 满员
+	IdempotencyGuard.processed_intents.clear()
+	GameState.crew_count = 50
+	var full_crew := IntentResolver.resolve(Intent.new(
+		"hire_crew", "player", "shipyard",
+		{"crew_count": 1, "cost_per_crew": 10},
+		{"port_id": "quanzhou"}
+	))
+	ok = ok and not full_crew.success
+	ok = ok and full_crew.error_code == IntentErrorCodes.CREW_LIMIT_REACHED
+
+	# BuySupplies — 补满水粮
+	IdempotencyGuard.processed_intents.clear()
+	LedgerSystem.from_save_dict({"balance": 200})
+	GameState.food = 10.0
+	GameState.water = 10.0
+	GameState.max_food = 100.0
+	GameState.max_water = 100.0
+	var supply_result := IntentResolver.resolve(Intent.new(
+		"buy_supplies", "player", "shipyard",
+		{"supply_type": "food_water", "total_cost": 20, "fill_to_max": true},
+		{"port_id": "quanzhou"}
+	))
+	ok = ok and supply_result.success
+	ok = ok and GameState.food == 100.0
+	ok = ok and GameState.water == 100.0
+	ok = ok and LedgerSystem.get_balance() == 180
+
+	# BuySupplies 资金不足
+	IdempotencyGuard.processed_intents.clear()
+	LedgerSystem.from_save_dict({"balance": 5})
+	GameState.food = 10.0
+	var broke_supply := IntentResolver.resolve(Intent.new(
+		"buy_supplies", "player", "shipyard",
+		{"supply_type": "food", "amount": 20.0, "total_cost": 10},
+		{"port_id": "quanzhou"}
+	))
+	ok = ok and not broke_supply.success
+	ok = ok and broke_supply.error_code == IntentErrorCodes.INSUFFICIENT_FUNDS
 
 	# TradeHandler market_buy
 	IdempotencyGuard.processed_intents.clear()

@@ -350,23 +350,33 @@ func repair_ship_via_intent(
 	))
 
 func _do_recruit_crew() -> Dictionary:
-	var space = max_crew - crew_count
-	var b = LedgerSystem.get_balance()
-	if space > 0 and b >= 10:
-		var cost = min(space * 10, b - (b % 10))
-		var amount = cost / 10
-		LedgerSystem.apply({"amount": -cost, "source": "gameplay", "reason": "recruit_crew", "actor": "GameState"})
-		crew_count += amount
-		return {"success": true, "msg": "招募了 %d 名水手！" % amount}
-	return {"success": false, "msg": "无法招募！钱不够或船只已满员。"}
+	return _intent_action_to_dict(IntentResolver.resolve(Intent.new(
+		"hire_crew", "player", "shipyard",
+		{"cost_per_crew": 10, "recruit_max": true},
+		{"port_id": last_port}
+	)), "招募了 %d 名水手！" % 0, "无法招募！钱不够或船只已满员。")
 
 func _do_supply_ship() -> Dictionary:
-	if LedgerSystem.get_balance() >= 20:
-		LedgerSystem.apply({"amount": -20, "source": "gameplay", "reason": "supply_ship", "actor": "GameState"})
-		food = max_food
-		water = max_water
-		return {"success": true, "msg": "水粮已全部补满！"}
-	return {"success": false, "msg": "【补充失败】金钱不足 20！"}
+	return _intent_action_to_dict(IntentResolver.resolve(Intent.new(
+		"buy_supplies", "player", "shipyard",
+		{"supply_type": "food_water", "total_cost": 20, "fill_to_max": true},
+		{"port_id": last_port}
+	)), "水粮已全部补满！", "【补充失败】金钱不足 20！")
+
+func _intent_action_to_dict(result: IntentResult, ok_msg: String, fail_msg: String) -> Dictionary:
+	if result.success:
+		if result.type == "hire_crew":
+			return {"success": true, "msg": "招募了 %d 名水手！" % int(result.data.get("crew_count", 0))}
+		return {"success": true, "msg": ok_msg}
+	if result.error_code == IntentErrorCodes.INSUFFICIENT_FUNDS:
+		return {"success": false, "msg": fail_msg}
+	if result.error_code == IntentErrorCodes.CREW_LIMIT_REACHED:
+		return {"success": false, "msg": "无法招募！船只已满员。"}
+	if result.error_code == IntentErrorCodes.SUPPLY_LIMIT_REACHED:
+		return {"success": false, "msg": "【补充失败】水粮已满，无需购买。"}
+	if result.error_code == IntentErrorCodes.PORT_RECRUIT_BLOCKED:
+		return {"success": false, "msg": "【招募失败】当前港口无法招募水手。"}
+	return {"success": false, "msg": fail_msg}
 
 func _do_sail_world_map() -> Dictionary:
 	var check = can_depart_port()
