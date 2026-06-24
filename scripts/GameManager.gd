@@ -14,6 +14,10 @@ var localization_data: Dictionary = {}
 var ui_commands_data: Dictionary = {}
 var input_locked: bool = false
 
+## 兼容旧引用：GameManager.state → GameState autoload
+var state:
+	get: return GameState
+
 # O(1) 查找缓存字典
 var _scenes_by_id: Dictionary = {}
 var _ports_by_id: Dictionary = {}

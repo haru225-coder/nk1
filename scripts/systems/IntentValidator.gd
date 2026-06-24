@@ -36,5 +36,11 @@ static func validate(intent: Intent) -> IntentResult:
 		"trade_request":
 			if not intent.parameters.has("cost") or int(intent.parameters.get("cost", 0)) <= 0:
 				return IntentResult.new(false, "validation_error", "error.intent.trade.missing_cost")
-				
+
+		"bribe":
+			if not intent.parameters.has("amount"):
+				return IntentResult.new(false, "validation_error", "error.bribe.missing_amount")
+			if int(intent.parameters.get("amount", 0)) <= 0:
+				return IntentResult.new(false, "validation_error", "error.bribe.invalid_amount")
+
 	return IntentResult.new(true, "validation_ok")

@@ -1,22 +1,28 @@
 class_name PaymentHandler extends RefCounted
 
+func handle(intent: Intent) -> IntentResult:
+	return execute(intent)
+
 func execute(intent: Intent) -> IntentResult:
-	var amount = int(intent.parameters.get("amount", 0))
+	var amount := int(intent.parameters.get("amount", 0))
 	if amount <= 0:
-		return IntentResult.new(true, "payment", "intent.payment.success")
-	
-	var tx = {
+		var r := IntentResult.ok({}, "intent.payment.success")
+		r.type = "payment"
+		return r
+
+	var tx := {
 		"amount": -amount,
 		"source": "encounter",
 		"reason": "payment_" + intent.target,
-		"actor": "PaymentHandler"
+		"actor": "PaymentHandler",
 	}
 	if not LedgerSystem.apply(tx, intent.id):
-		return IntentResult.new(false, "payment", "error.payment.insufficient_funds")
-	
+		return IntentResult.error("error.payment.insufficient_funds", "", "payment")
+
 	if intent.parameters.get("confiscate", false):
-		var contraband_ids := CargoSystem.get_contraband_keys()
-		for good_id in contraband_ids:
+		for good_id in CargoSystem.get_contraband_keys():
 			CargoSystem.remove_all_of(good_id)
-	
-	return IntentResult.new(true, "payment", "intent.payment.success")
+
+	var ok := IntentResult.ok({"amount": amount, "balance": LedgerSystem.get_balance()}, "intent.payment.success")
+	ok.type = "payment"
+	return ok
