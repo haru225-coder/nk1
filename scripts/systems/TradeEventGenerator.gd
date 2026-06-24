@@ -1,6 +1,7 @@
 class_name TradeEventGenerator extends RefCounted
 
 const DAILY_EVENT_CHANCE := 0.08  # 每天 8% 概率触发贸易事件
+const INTEL_TIER_COSTS := [20, 50, 120]
 
 static func try_generate() -> void:
 	_try_safety_valve()
@@ -86,12 +87,43 @@ static func process_day() -> void:
 			remaining.append(item)
 	GameManager.state.market.upcoming_events = remaining
 
+static func get_tier_cost(tier: int) -> int:
+	if tier < 1 or tier > INTEL_TIER_COSTS.size():
+		return 0
+	return INTEL_TIER_COSTS[tier - 1]
+
 static func get_random_rumor() -> Dictionary:
+	var entry := get_random_rumor_entry()
+	return entry.get("rumor", {})
+
+static func get_random_rumor_entry() -> Dictionary:
 	var events = GameManager.state.market.upcoming_events
-	var available: Array[Dictionary] = []
-	for item in events:
+	var candidates: Array[Dictionary] = []
+	for i in range(events.size()):
+		var item: Dictionary = events[i]
 		if not item.get("purchased", false):
-			available.append(item)
-	if available.is_empty():
+			candidates.append({"index": i, "rumor": item})
+	if candidates.is_empty():
 		return {}
-	return available[randi() % available.size()]
+	return candidates[randi() % candidates.size()]
+
+static func get_event_at(index: int) -> Dictionary:
+	var events = GameManager.state.market.upcoming_events
+	if index < 0 or index >= events.size():
+		return {}
+	return events[index]
+
+static func is_rumor_purchased(index: int) -> bool:
+	var event := get_event_at(index)
+	if event.is_empty():
+		return false
+	return bool(event.get("purchased", false))
+
+static func mark_rumor_purchased(index: int) -> bool:
+	var events = GameManager.state.market.upcoming_events
+	if index < 0 or index >= events.size():
+		return false
+	if events[index].get("purchased", false):
+		return false
+	events[index]["purchased"] = true
+	return true

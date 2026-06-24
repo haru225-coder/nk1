@@ -14,30 +14,34 @@ func from_dict(d: Dictionary) -> void:
 
 signal inspection_result(result: Dictionary)
 
-func sell_goods(item_id: String, amount: int, price_per_unit: int) -> bool:
-	if not CargoSystem.has_item(item_id, amount):
-		return false
-	var tx = {"amount": amount * price_per_unit, "source": "gameplay", "reason": "sell_goods", "actor": "GameState"}
-	if LedgerSystem.apply(tx):
-		return CargoSystem.remove_item(item_id, amount)
-	return false
+func sell_goods(item_id: String, amount: int, _price_per_unit: int) -> bool:
+	var result: IntentResult = IntentResolver.resolve(Intent.new(
+		"market_sell", "player", "market",
+		{"good_id": item_id, "amount": amount},
+		{"port_id": GameState.last_port}
+	))
+	return result.success
 
-func sell_all_cargo(port_id: String, resolve_good_func: Callable, calc_price_func: Callable) -> Dictionary:
+func sell_all_cargo(port_id: String, resolve_good_func: Callable, _calc_price_func: Callable) -> Dictionary:
 	if CargoSystem.is_empty():
 		return {"success": false, "earned": 0, "msg": "船舱空空如也，无货可卖。"}
-	var total_earned = 0
+	var total_earned: int = 0
 	var any_sold := false
-	for key in CargoSystem.get_keys():
-		var amt = CargoSystem.get_amount(key)
+	for key in CargoSystem.get_keys().duplicate():
+		var amt := CargoSystem.get_amount(key)
 		if amt <= 0:
 			continue
-		var g_data = resolve_good_func.call(key)
+		var g_data: Dictionary = resolve_good_func.call(key)
 		if g_data.is_empty():
 			continue
-		var sell_price = calc_price_func.call(port_id, g_data)
-		if sell_goods(key, amt, sell_price):
-			total_earned += amt * sell_price
-			GameManager.state.market.adjust_stock(port_id, key, amt)
+		var good_id: String = g_data.get("id", key)
+		var result: IntentResult = IntentResolver.resolve(Intent.new(
+			"market_sell", "player", "market",
+			{"good_id": good_id, "amount": amt},
+			{"port_id": port_id}
+		))
+		if result.success:
+			total_earned += int(result.data.get("revenue", 0))
 			any_sold = true
 	if any_sold:
 		return {"success": true, "earned": total_earned, "msg": "全部抛售，获利 %d 钱！" % total_earned}
@@ -58,6 +62,7 @@ func customs_inspection() -> Dictionary:
 			var b = LedgerSystem.get_balance()
 			var fine = min(b, 200)
 			if fine > 0:
+				# INTENT_DEFERRED: 严重走私海关罚款 — 非贿赂路径，暂不迁移至 Intent
 				LedgerSystem.apply({"amount": -fine, "source": "system", "reason": "customs_fine", "actor": "GameState"})
 			CargoSystem.clear_all()
 		else:

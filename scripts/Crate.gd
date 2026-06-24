@@ -19,6 +19,7 @@ func _on_body_entered(body: Node2D) -> void:
 		
 		if is_money:
 			var amount = randi_range(100, 500)
+			# INTENT_DEFERRED: 海上宝箱金钱奖励 — 世界事件拾取，暂不迁移至 Intent
 			LedgerSystem.apply({"amount": amount, "source": "world_event", "reason": "collect_crate", "actor": "Player"})
 			float_str = "+ " + str(amount) + " 钱"
 		else:

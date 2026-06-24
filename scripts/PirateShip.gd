@@ -84,6 +84,7 @@ func take_damage(amount: float) -> void:
 
 func _explode() -> void:
 	var money_gain = randi_range(200, 800)
+	# INTENT_DEFERRED: 击沉海盗即时赏金 — 战斗结算路径，暂不迁移至 Intent
 	LedgerSystem.apply({"amount": money_gain, "source": "combat", "reason": "sink_pirate", "actor": "Player"})
 	
 	var ft = ResourceManager.FloatingText.instantiate()

@@ -296,6 +296,7 @@ func apply_effects(effects: Dictionary) -> void:
 			"smuggled_out": set_flag("smuggled_out")
 			"money":
 				if val != 0:
+					# INTENT_DEFERRED: 剧情 apply_effects 金钱变动 — 场景脚本副作用，保留直连 Ledger
 					LedgerSystem.apply({"amount": int(val), "source": "scene", "reason": "scene_effect", "actor": "GameState"})
 			"acquire_item":
 				if val is String:

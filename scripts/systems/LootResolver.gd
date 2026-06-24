@@ -175,6 +175,7 @@ static func apply_loot(loot: Dictionary) -> void:
 	# 资金
 	var money: int = loot.get("money", 0)
 	if money > 0:
+		# INTENT_DEFERRED: 战斗战利品金钱 — 战斗结算路径，暂不迁移至 Intent
 		LedgerSystem.apply({
 			"amount": money,
 			"source": "combat_loot",
@@ -198,6 +199,7 @@ static func apply_loot(loot: Dictionary) -> void:
 	# 战败惩罚：如果 loot 中有负值说明己方被拿捕
 	var lost_money: int = loot.get("lost_money", 0)
 	if lost_money > 0:
+		# INTENT_DEFERRED: 战斗战败罚金 — 战斗结算路径，暂不迁移至 Intent
 		LedgerSystem.apply({
 			"amount": -lost_money,
 			"source": "combat_defeat",

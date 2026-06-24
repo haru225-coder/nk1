@@ -654,32 +654,39 @@ func _on_set_sail_pressed(set_sail_btn: Button) -> void:
 	scene_requested.emit("world_map")
 
 func _setup_tavern_rumors() -> void:
-	var rumor = TradeEventGenerator.get_random_rumor()
-	if rumor.is_empty():
+	var entry := TradeEventGenerator.get_random_rumor_entry()
+	if entry.is_empty():
 		return
 	interactive_label.visible = true
-	_add_rumor_btn(rumor, 1, "★ 小道消息 (💰 20)")
-	_add_rumor_btn(rumor, 2, "★★ 酒馆传言 (💰 50)")
-	_add_rumor_btn(rumor, 3, "★★★ 商人情报 (💰 120)")
+	var rumor: Dictionary = entry.get("rumor", {})
+	var event_index: int = int(entry.get("index", -1))
+	_add_rumor_btn(rumor, event_index, 1, "★ 小道消息 (💰 20)")
+	_add_rumor_btn(rumor, event_index, 2, "★★ 酒馆传言 (💰 50)")
+	_add_rumor_btn(rumor, event_index, 3, "★★★ 商人情报 (💰 120)")
 
-func _add_rumor_btn(rumor: Dictionary, tier: int, label: String) -> void:
+func _add_rumor_btn(rumor: Dictionary, event_index: int, tier: int, label: String) -> void:
 	var btn = Button.new()
 	btn.text = label
 	_style_action_button(btn)
-	btn.pressed.connect(_on_rumor_pressed.bind(rumor, tier, btn))
+	btn.pressed.connect(_on_rumor_pressed.bind(rumor, event_index, tier, btn))
 	btn.add_to_group("rumor_buttons")
 	interactive_container.add_child(btn)
 
-func _on_rumor_pressed(rumor: Dictionary, tier: int, btn: Button) -> void:
+func _on_rumor_pressed(rumor: Dictionary, event_index: int, tier: int, _btn: Button) -> void:
 	if GameManager.input_locked:
 		return
-	var prices := [20, 50, 120]
-	var cost: int = prices[tier - 1]
-	if LedgerSystem.get_balance() < cost:
-		message_logged.emit("【酒馆】你摸遍口袋也凑不出 %d 钱。\n\n" % cost)
+	var cost := TradeEventGenerator.get_tier_cost(tier)
+	var result := IntentResolver.resolve(Intent.new(
+		"buy_intel", "player", "tavern",
+		{"tier": tier, "total_cost": cost, "event_index": event_index},
+		{"port_id": GameState.last_port}
+	))
+	if not result.success:
+		if result.error_code == IntentErrorCodes.INSUFFICIENT_FUNDS:
+			message_logged.emit("【酒馆】你摸遍口袋也凑不出 %d 钱。\n\n" % cost)
+		else:
+			message_logged.emit(_format_intent_failure(result, "【酒馆】情报购买失败。") + "\n\n")
 		return
-	LedgerSystem.apply({"amount": -cost, "source": "gameplay", "reason": "tavern_rumor", "actor": "FacilityController"})
-	rumor["purchased"] = true
 	get_tree().call_group("rumor_buttons", "set_disabled", true)
 	var narration := _build_rumor_narration(rumor, tier)
 	var beat = DialogueParser.beat_from_text(narration)

@@ -1,5 +1,11 @@
 class_name IntentResolver extends RefCounted
 
+## Intent 类型与 Handler 对照（动态注册于 _ensure_bootstrapped）：
+## payment→PaymentHandler | market_buy/market_sell/trade_request→TradeHandler
+## bribe→BribeHandler | repair_ship→RepairHandler | refit_ship→RefitHandler
+## hire_crew→HireCrewHandler | buy_supplies→BuySuppliesHandler | buy_intel→BuyIntelHandler
+## combat_request→CombatHandler | inspection_pass→InspectionHandler | escape_attempt→EscapeHandler
+
 const _PaymentHandler = preload("res://scripts/systems/handlers/PaymentHandler.gd")
 const _TradeHandler = preload("res://scripts/systems/handlers/TradeHandler.gd")
 const _BribeHandler = preload("res://scripts/systems/handlers/BribeHandler.gd")
@@ -10,6 +16,7 @@ const _RepairHandler = preload("res://scripts/systems/handlers/RepairHandler.gd"
 const _RefitHandler = preload("res://scripts/systems/handlers/RefitHandler.gd")
 const _HireCrewHandler = preload("res://scripts/systems/handlers/HireCrewHandler.gd")
 const _BuySuppliesHandler = preload("res://scripts/systems/handlers/BuySuppliesHandler.gd")
+const _BuyIntelHandler = preload("res://scripts/systems/handlers/BuyIntelHandler.gd")
 
 static var _handlers: Dictionary = {}
 static var _handler_instances: Array = []
@@ -49,6 +56,7 @@ static func _ensure_bootstrapped() -> void:
 	_bind_handler("refit_ship", _RefitHandler.new())
 	_bind_handler("hire_crew", _HireCrewHandler.new())
 	_bind_handler("buy_supplies", _BuySuppliesHandler.new())
+	_bind_handler("buy_intel", _BuyIntelHandler.new())
 	_bind_handler("combat_request", _CombatHandler.new())
 	_bind_handler("inspection_pass", _InspectionHandler.new())
 	_bind_handler("escape_attempt", _EscapeHandler.new())

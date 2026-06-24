@@ -30,6 +30,8 @@ static func validate(intent: Intent) -> IntentResult:
 			return _validate_hire_crew(intent)
 		"buy_supplies":
 			return _validate_buy_supplies(intent)
+		"buy_intel":
+			return _validate_buy_intel(intent)
 		"inspection_pass":
 			return _validate_inspection_pass(intent)
 
@@ -233,6 +235,23 @@ static func _has_supply_headroom(resource: String, amount: float, fill_to_max: b
 	if resource == "water":
 		return GameState.water < GameState.max_water
 	return false
+
+static func _validate_buy_intel(intent: Intent) -> IntentResult:
+	var tier := int(intent.parameters.get("tier", 0))
+	if tier < 1 or tier > 3:
+		return _validation_error(intent, "error.buy_intel.invalid_tier")
+	var expected_cost := TradeEventGenerator.get_tier_cost(tier)
+	var total_cost := int(intent.parameters.get("total_cost", 0))
+	if total_cost != expected_cost:
+		return _validation_error(intent, "error.buy_intel.invalid_cost")
+	var event_index := int(intent.parameters.get("event_index", -1))
+	if TradeEventGenerator.get_event_at(event_index).is_empty():
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "error.buy_intel.invalid_event", intent.type)
+	if TradeEventGenerator.is_rumor_purchased(event_index):
+		return IntentResult.error(IntentErrorCodes.INTEL_ALREADY_PURCHASED, "error.buy_intel.already_purchased", intent.type)
+	if LedgerSystem.get_balance() < total_cost:
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "error.buy_intel.insufficient_funds", intent.type)
+	return IntentResult.new(true, "validation_ok")
 
 static func _validate_inspection_pass(intent: Intent) -> IntentResult:
 	var violation := EncounterSystem.calculate_cargo_violation()

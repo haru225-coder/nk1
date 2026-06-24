@@ -14,6 +14,7 @@ func _ready() -> void:
 	ok = ok and IntentResolver.has_handler("refit_ship")
 	ok = ok and IntentResolver.has_handler("hire_crew")
 	ok = ok and IntentResolver.has_handler("buy_supplies")
+	ok = ok and IntentResolver.has_handler("buy_intel")
 	ok = ok and IntentResolver.has_handler("trade_request")
 
 	# PaymentHandler
@@ -184,6 +185,45 @@ func _ready() -> void:
 	))
 	ok = ok and not broke_supply.success
 	ok = ok and broke_supply.error_code == IntentErrorCodes.INSUFFICIENT_FUNDS
+
+	# BuyIntelHandler — 成功购买 tier 2
+	IdempotencyGuard.processed_intents.clear()
+	LedgerSystem.from_save_dict({"balance": 100})
+	GameState.market.upcoming_events.clear()
+	GameState.market.upcoming_events.append({
+		"days_left": 10, "type": "disaster", "port_name": "泉州", "purchased": false,
+	})
+	var intel_result := IntentResolver.resolve(Intent.new(
+		"buy_intel", "player", "tavern",
+		{"tier": 2, "total_cost": 50, "event_index": 0},
+		{"port_id": "quanzhou"}
+	))
+	ok = ok and intel_result.success
+	ok = ok and LedgerSystem.get_balance() == 50
+	ok = ok and GameState.market.upcoming_events[0].get("purchased", false)
+
+	# BuyIntel 已购买
+	IdempotencyGuard.processed_intents.clear()
+	LedgerSystem.from_save_dict({"balance": 200})
+	var dup_intel := IntentResolver.resolve(Intent.new(
+		"buy_intel", "player", "tavern",
+		{"tier": 3, "total_cost": 120, "event_index": 0},
+		{"port_id": "quanzhou"}
+	))
+	ok = ok and not dup_intel.success
+	ok = ok and dup_intel.error_code == IntentErrorCodes.INTEL_ALREADY_PURCHASED
+
+	# BuyIntel 资金不足（重置传闻为可购买）
+	IdempotencyGuard.processed_intents.clear()
+	GameState.market.upcoming_events[0]["purchased"] = false
+	LedgerSystem.from_save_dict({"balance": 5})
+	var broke_intel := IntentResolver.resolve(Intent.new(
+		"buy_intel", "player", "tavern",
+		{"tier": 1, "total_cost": 20, "event_index": 0},
+		{"port_id": "quanzhou"}
+	))
+	ok = ok and not broke_intel.success
+	ok = ok and broke_intel.error_code == IntentErrorCodes.INSUFFICIENT_FUNDS
 
 	# TradeHandler market_buy
 	IdempotencyGuard.processed_intents.clear()
