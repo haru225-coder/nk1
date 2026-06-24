@@ -47,8 +47,5 @@ func setup(scene_data: Dictionary) -> void:
 			button_container.add_child(btn)
 
 func _on_continue_pressed() -> void:
-	var info: Dictionary = SaveManager.get_save_info(0)
-	if SaveManager.load_game(0):
-		scene_requested.emit(info.get("current_scene_id", "cg_title"))
-	else:
+	if not SaveManager.load_game(0):
 		push_warning("[TitleScreen] 读档失败")

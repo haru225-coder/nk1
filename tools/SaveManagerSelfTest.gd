@@ -30,5 +30,18 @@ func _ready() -> void:
 	ok = ok and SaveManager.has_save(0)
 	ok = ok and SaveManager.get_save_info(0).get("balance", -1) == 2500
 
+	# 模拟标题页「继续旅程」：仅 load_game(0)，靠 load_completed 跳转（不 emit scene_requested）
+	var load_hits: Array = [0]
+	var load_scene: Array = [""]
+	var on_load := func(_slot: int, success: bool, data: Dictionary) -> void:
+		if success:
+			load_hits[0] += 1
+			load_scene[0] = data.get("current_scene_id", "")
+	SaveManager.load_completed.connect(on_load)
+	var reload_ok := SaveManager.load_game(0)
+	ok = ok and reload_ok
+	ok = ok and load_hits[0] == 1
+	ok = ok and load_scene[0] == "port_quanzhou"
+	SaveManager.load_completed.disconnect(on_load)
 	print("[SaveManagerSelfTest] %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
