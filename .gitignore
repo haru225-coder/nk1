@@ -22,3 +22,10 @@ __pycache__/
 .agents/
 .kunsdd/
 .codex/
+
+# Local diff / comparison artifacts (not for version control)
+diff_*.txt
+
+# Accidental Windows path artifacts
+%USERPROFILE%/
+%USERP~1/
