@@ -382,3 +382,29 @@ func _do_trigger_combat() -> Dictionary:
 	# 旧 stub 已退役：战斗现由 SeaEventController → CombatSessionController 接管。
 	# 保留此方法作为安全兜底，不再扣减玩家资源。
 	return {"success": true, "msg": "【警告】战斗应通过遭遇系统的 launch_combat 路径触发。"}
+
+## ── 存档序列化 ───────────────────────────────────────────
+
+func to_save_dict() -> Dictionary:
+	return {
+		"fleet": fleet.to_dict() if fleet else {},
+		"survival": survival.to_dict() if survival else {},
+		"trade": trade.to_dict() if trade else {},
+		"story": story.to_dict() if story else {},
+		"navigation": navigation.to_dict() if navigation else {},
+		"market": market.to_dict() if market else {},
+	}
+
+func from_save_dict(data: Dictionary) -> void:
+	if data.has("fleet") and fleet:
+		fleet.from_dict(data["fleet"])
+	if data.has("survival") and survival:
+		survival.from_dict(data["survival"])
+	if data.has("trade") and trade:
+		trade.from_dict(data["trade"])
+	if data.has("story") and story:
+		story.from_dict(data["story"])
+	if data.has("navigation") and navigation:
+		navigation.from_dict(data["navigation"])
+	if data.has("market") and market:
+		market.from_dict(data["market"])

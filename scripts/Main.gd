@@ -64,31 +64,32 @@ func _ready() -> void:
 	npc_mode.bind_dialogue_box(dialogue_box)
 	if status_bar.has_signal("layout_changed"):
 		status_bar.layout_changed.connect(_on_status_bar_layout_changed)
+
+	SaveManager.save_completed.connect(_on_save_completed)
+	SaveManager.load_completed.connect(_on_load_completed)
 	
 	call_deferred("start_game")
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_F5:
-			_save_game()
-			get_viewport().set_input_as_handled()
-		elif event.keycode == KEY_F9:
-			_load_game()
-			get_viewport().set_input_as_handled()
+	if event.is_action_pressed("quick_save"):
+		SaveManager.quick_save()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("quick_load"):
+		SaveManager.quick_load()
+		get_viewport().set_input_as_handled()
 
-func _save_game() -> void:
-	if SaveManager.save_game(current_scene_id):
+func _on_save_completed(_slot: int, success: bool) -> void:
+	if success:
 		_prepend_event_log("【存档】进度已保存。\n")
 	else:
 		_prepend_event_log("【存档】保存失败！\n")
 
-func _load_game() -> void:
-	var result = SaveManager.load_game()
-	if result["success"]:
-		load_scene(result["scene_id"])
+func _on_load_completed(_slot: int, success: bool, data: Dictionary) -> void:
+	if success:
+		load_scene(data.get("current_scene_id", "cg_title"))
 		_prepend_event_log("【读档】进度已恢复。\n")
 	else:
-		_prepend_event_log("【读档】" + result.get("msg", "无存档。") + "\n")
+		_prepend_event_log("【读档】" + data.get("msg", "无存档。") + "\n")
 
 func start_game() -> void:
 	if GameState.has_flag("return_to_port"):
@@ -145,6 +146,7 @@ func load_scene(scene_id: String) -> void:
 			_prepend_event_log(sail_res["msg"] + "\n\n")
 		if not sail_res.get("success", false):
 			return
+		SaveManager.set_current_scene_id("world_map")
 		get_tree().change_scene_to_file("res://scenes/WorldMap.tscn")
 		return
 		
@@ -163,6 +165,7 @@ func load_scene(scene_id: String) -> void:
 		return
 		
 	current_scene_id = scene_id
+	SaveManager.set_current_scene_id(scene_id)
 	
 	var scene_data = GameManager.get_scene_by_id(scene_id)
 	

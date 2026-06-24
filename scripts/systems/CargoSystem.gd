@@ -112,9 +112,15 @@ static func get_contraband_keys() -> Array:
 				result.append(good_id)
 	return result
 
-static func to_dict() -> Dictionary:
+static func to_save_dict() -> Dictionary:
 	return {"cargo": _cargo.duplicate(), "total": _total}
 
+static func from_save_dict(data: Dictionary) -> void:
+	_cargo = data.get("cargo", {}).duplicate()
+	_total = int(data.get("total", 0))
+
+static func to_dict() -> Dictionary:
+	return to_save_dict()
+
 static func from_dict(d: Dictionary) -> void:
-	_cargo = d.get("cargo", {}).duplicate()
-	_total = int(d.get("total", 0))
+	from_save_dict(d)

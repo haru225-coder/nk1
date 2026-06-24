@@ -14,9 +14,15 @@ func setup(scene_data: Dictionary) -> void:
 		child.queue_free()
 
 	# 继续旅程（有存档时显示）
-	if SaveManager.has_save():
+	if SaveManager.has_save(0):
+		var info: Dictionary = SaveManager.get_save_info(0)
 		var continue_btn = Button.new()
-		continue_btn.text = "继续旅程"
+		var ts: String = info.get("timestamp", "")
+		var balance: int = info.get("balance", 0)
+		if ts != "":
+			continue_btn.text = "继续旅程（%s · %d贯）" % [ts, balance]
+		else:
+			continue_btn.text = "继续旅程"
 		continue_btn.custom_minimum_size = Vector2(240, 48)
 		continue_btn.theme_type_variation = "TitleMenuButton"
 		continue_btn.pressed.connect(_on_continue_pressed)
@@ -41,9 +47,8 @@ func setup(scene_data: Dictionary) -> void:
 			button_container.add_child(btn)
 
 func _on_continue_pressed() -> void:
-	var result = SaveManager.load_game()
-	if result["success"]:
-		scene_requested.emit(result["scene_id"])
+	var info: Dictionary = SaveManager.get_save_info(0)
+	if SaveManager.load_game(0):
+		scene_requested.emit(info.get("current_scene_id", "cg_title"))
 	else:
-		# 加载失败，静默忽略（按钮下次会隐藏）
-		push_warning("[TitleScreen] 读档失败: " + result.get("msg", ""))
+		push_warning("[TitleScreen] 读档失败")

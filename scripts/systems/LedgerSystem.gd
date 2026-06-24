@@ -39,8 +39,14 @@ func apply(transaction: Dictionary, intent_id: String = "") -> bool:
 
 	return true
 
-func to_dict() -> Dictionary:
+func to_save_dict() -> Dictionary:
 	return {"balance": _balance}
 
+func from_save_dict(data: Dictionary) -> void:
+	_balance = int(data.get("balance", STARTING_BALANCE))
+
+func to_dict() -> Dictionary:
+	return to_save_dict()
+
 func from_dict(d: Dictionary) -> void:
-	_balance = int(d.get("balance", STARTING_BALANCE))
+	from_save_dict(d)
