@@ -42,7 +42,9 @@ def collect_images(pool_name: str) -> list[Path]:
     for base in (SRC / pool_name, SRC / "_review" / pool_name):
         if not base.is_dir():
             continue
-        paths.extend(sorted(base.glob("*.jpg")))
+        for pattern in ("*.jpg", "*.jpeg", "*.png", "*.webp"):
+            paths.extend(base.glob(pattern))
+    paths.sort(key=lambda p: p.name.lower())
     # stable dedupe by resolved path
     seen: set[str] = set()
     out: list[Path] = []
@@ -70,14 +72,18 @@ def main() -> None:
         pool_dir = DST_ROOT / pool_name
         if not images:
             if pool_dir.is_dir():
-                print(f"{pool_name}: keep existing {len(list(pool_dir.glob('*.jpg')))} (no new source)")
+                kept = len(list(pool_dir.glob("*.jpg"))) + len(list(pool_dir.glob("*.png")))
+                print(f"{pool_name}: keep existing {kept} (no new source)")
             continue
         if pool_dir.exists():
             shutil.rmtree(pool_dir)
         pool_dir.mkdir(parents=True)
         rel_paths: list[str] = []
         for i, src in enumerate(images, start=1):
-            dest = pool_dir / f"{i:03d}.jpg"
+            ext = src.suffix.lower() if src.suffix else ".jpg"
+            if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
+                ext = ".jpg"
+            dest = pool_dir / f"{i:03d}{ext}"
             shutil.copy2(src, dest)
             rel_paths.append(f"res://assets/port_pools/{pool_name}/{dest.name}")
 

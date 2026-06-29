@@ -133,7 +133,12 @@ func _list_pool_files(pool_dir: String) -> Array:
 		dir.list_dir_begin()
 		var entry := dir.get_next()
 		while entry != "":
-			if not dir.current_is_dir() and (entry.ends_with(".jpg") or entry.ends_with(".png")):
+			if not dir.current_is_dir() and (
+				entry.ends_with(".jpg")
+				or entry.ends_with(".jpeg")
+				or entry.ends_with(".png")
+				or entry.ends_with(".webp")
+			):
 				files.append(pool_dir + entry)
 			entry = dir.get_next()
 		dir.list_dir_end()

@@ -1783,22 +1783,23 @@ func _test_asset_placeholder_json() -> void:
 	_assert_eq(mapped_path, "res://assets/bg_northern_fortress_snow.png", "reload 后映射仍正确")
 
 	# 验证剩余别名都能查询（无图池港口仍走 fallback）
-	var expected_count := 0
 	var known_aliases: Array[String] = [
 		"res://assets/bg_xinghua_school.png", "res://assets/bg_lin_ship.png",
 		"res://assets/bg_departure.png", "res://assets/bg_black_water.png",
-		"res://assets/bg_sea_route_aligned.png", "res://assets/bg_keelung_coast.png",
-		"res://assets/bg_keelung_port.png", "res://assets/bg_hakata_port.png",
-		"res://assets/bg_champa_port.png", "res://assets/bg_qiongzhou_port.png",
-		"res://assets/bg_sanfoqi_port.png", "res://assets/bg_longyamen_port.png",
-		"res://assets/bg_bugan_port.png", "res://assets/bg_jiaozhi_port.png",
-		"res://assets/bg_yeshou_port.png", "res://assets/bg_tsushima_port.png",
-		"res://assets/bg_byland_port.png", "res://assets/bg_xuwen_port.png",
+		"res://assets/bg_sea_route_aligned.png", "res://assets/bg_hakata_port.png",
+		"res://assets/bg_qiongzhou_port.png", "res://assets/bg_sanfoqi_port.png",
+		"res://assets/bg_longyamen_port.png", "res://assets/bg_jiaozhi_port.png",
+		"res://assets/bg_yeshou_port.png", "res://assets/bg_byland_port.png",
+		"res://assets/bg_xuwen_port.png",
 	]
+	var alias_hits := 0
 	for key in known_aliases:
 		if ap.get_background_path(key) != key:
-			expected_count += 1
-	_assert_eq(expected_count, known_aliases.size(), "fallback 别名都正确加载")
+			alias_hits += 1
+	_assert_eq(alias_hits, known_aliases.size(), "fallback 别名都正确加载")
+
+	var pool_pick: String = ap.pick_background_path("res://assets/bg_keelung_port.png")
+	_assert_true(pool_pick.begins_with("res://assets/port_pools/keelung/"), "keelung pool deployed")
 
 	# 清理
 	ap.queue_free()
