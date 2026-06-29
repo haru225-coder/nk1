@@ -206,3 +206,25 @@ static func apply_loot(loot: Dictionary) -> void:
 			"reason": "combat_defeat",
 			"actor": "LootResolver",
 		}, "")
+
+## ── 世界事件拾取（非战斗）──────────────────────────────────
+##
+## 海上宝箱、漂流物等非战斗世界事件的资源结算。
+## 与 apply_loot 共用 LedgerSystem/CargoSystem 底层，但 source 标记为 world_event，
+## 便于审计区分战斗战利品与世界拾取。
+
+static func apply_world_pickup(money: int, cargo_good_id: String = "", cargo_amount: int = 0) -> Dictionary:
+	var result := {"money": 0, "cargo": ""}
+	if money > 0:
+		# INTENT_DEFERRED: 世界事件拾取金钱 — 非战斗路径，暂不迁移至 Intent
+		LedgerSystem.apply({
+			"amount": money,
+			"source": "world_event",
+			"reason": "world_pickup",
+			"actor": "LootResolver",
+		}, "")
+		result["money"] = money
+	if cargo_good_id != "" and cargo_amount > 0:
+		if CargoSystem.add_item(cargo_good_id, cargo_amount):
+			result["cargo"] = cargo_good_id
+	return result

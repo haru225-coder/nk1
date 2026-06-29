@@ -21,6 +21,10 @@ const INTENT_HIRE_CREW_SUCCESS := "intent.hire_crew.success"
 const INTENT_BUY_SUPPLIES_SUCCESS := "intent.buy_supplies.success"
 const INTENT_BUY_INTEL_SUCCESS := "intent.buy_intel.success"
 const INTENT_BRIBE_SUCCESS := "intent.bribe.success"
+const INTENT_INVEST_SUCCESS := "intent.invest_port.success"
+const INTENT_GIFT_SUCCESS := "intent.gift_npc.success"
+const INTENT_STUDY_SUCCESS := "intent.study_skill.success"
+const INTENT_STUDY_FAIL := "intent.study_skill.fail"
 const INTENT_COMBAT_STARTED := "intent.combat.started"
 const INTENT_INSPECTION_FINED := "intent.inspection.fined"
 const INTENT_INSPECTION_CLEARED := "intent.inspection.cleared"
@@ -43,6 +47,21 @@ const ERROR_BRIBE_MISSING_AMOUNT := "error.bribe.missing_amount"
 const ERROR_BRIBE_INVALID_AMOUNT := "error.bribe.invalid_amount"
 const ERROR_BRIBE_CUSTOMS_BLOCKED := "error.bribe.customs_blocked"
 const ERROR_BRIBE_INSUFFICIENT_FUNDS := "error.bribe.insufficient_funds"
+
+const ERROR_INVEST_NO_PORT := "error.invest.no_port"
+const ERROR_INVEST_INVALID_TIER := "error.invest.invalid_tier"
+const ERROR_INVEST_INSUFFICIENT_FUNDS := "error.invest.insufficient_funds"
+const ERROR_INVEST_COOLDOWN := "error.invest.cooldown"
+
+const ERROR_GIFT_NO_NPC := "error.gift.no_npc"
+const ERROR_GIFT_UNKNOWN_NPC := "error.gift.unknown_npc"
+const ERROR_GIFT_NO_ITEM := "error.gift.no_item"
+
+const ERROR_STUDY_NO_NPC := "error.study.no_npc"
+const ERROR_STUDY_UNKNOWN_NPC := "error.study.unknown_npc"
+const ERROR_STUDY_INVALID_SKILL := "error.study.invalid_skill"
+const ERROR_STUDY_ALREADY_LEARNED := "error.study.already_learned"
+const ERROR_STUDY_AFFINITY_LOW := "error.study.affinity_low"
 
 const ERROR_MARKET_NO_PORT := "error.market.no_port"
 const ERROR_MARKET_INVALID_PRICE := "error.market.invalid_price"
@@ -103,7 +122,8 @@ static func all_intent_success_keys() -> Array[String]:
 		INTENT_MARKET_BUY_SUCCESS, INTENT_MARKET_SELL_SUCCESS, INTENT_TRADE_REQUEST_SUCCESS,
 		INTENT_REPAIR_ALREADY_FULL, INTENT_REPAIR_SUCCESS, INTENT_REFIT_SUCCESS,
 		INTENT_HIRE_CREW_SUCCESS, INTENT_BUY_SUPPLIES_SUCCESS, INTENT_BUY_INTEL_SUCCESS,
-		INTENT_BRIBE_SUCCESS, INTENT_COMBAT_STARTED,
+		INTENT_BRIBE_SUCCESS, INTENT_INVEST_SUCCESS, INTENT_GIFT_SUCCESS,
+		INTENT_STUDY_SUCCESS, INTENT_STUDY_FAIL, INTENT_COMBAT_STARTED,
 		INTENT_INSPECTION_FINED, INTENT_INSPECTION_CLEARED,
 	]
 

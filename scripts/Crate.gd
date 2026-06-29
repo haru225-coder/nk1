@@ -1,5 +1,8 @@
 extends Area2D
 
+## 海上宝箱/漂流物 — 非战斗世界事件拾取
+## 资源结算统一通过 LootResolver.apply_world_pickup（不直接操作 LedgerSystem）。
+
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 
@@ -16,11 +19,10 @@ func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player_ship"):
 		var is_money = randf() > 0.5
 		var float_str = ""
-		
+
 		if is_money:
 			var amount = randi_range(100, 500)
-			# INTENT_DEFERRED: 海上宝箱金钱奖励 — 世界事件拾取，暂不迁移至 Intent
-			LedgerSystem.apply({"amount": amount, "source": "world_event", "reason": "collect_crate", "actor": "Player"})
+			LootResolver.apply_world_pickup(amount)
 			float_str = "+ " + str(amount) + " 钱"
 		else:
 			var good = _pick_random_cargo_good()
@@ -29,15 +31,16 @@ func _on_body_entered(body: Node2D) -> void:
 				return
 			var good_id = good.get("id", "")
 			var amount = randi_range(1, 3)
-			if CargoSystem.add_item(good_id, amount):
+			var result = LootResolver.apply_world_pickup(0, good_id, amount)
+			if result.get("cargo", "") != "":
 				float_str = "+ " + good.get("name", good_id) + " x" + str(amount)
 			else:
 				float_str = "货舱已满"
-		
+
 		var ft = ResourceManager.FloatingText.instantiate()
-		ft.global_position = global_position
+		ft.global_position = global_position + FloatingTextConfig.OFFSET_PICKUP
 		ft.text = float_str
-		ft.modulate = Color(0.2, 1.0, 0.2)
+		ft.modulate = GameColors.FLOATING_PICKUP
 		get_parent().call_deferred("add_child", ft)
-		
+
 		queue_free()

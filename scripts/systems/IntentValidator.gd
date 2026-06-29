@@ -32,6 +32,12 @@ static func validate(intent: Intent) -> IntentResult:
 			return _validate_buy_supplies(intent)
 		IntentTypes.BUY_INTEL:
 			return _validate_buy_intel(intent)
+		IntentTypes.INVEST_PORT:
+			return _validate_invest_port(intent)
+		IntentTypes.GIFT_NPC:
+			return _validate_gift_npc(intent)
+		IntentTypes.STUDY_SKILL:
+			return _validate_study_skill(intent)
 		IntentTypes.INSPECTION_PASS:
 			return _validate_inspection_pass(intent)
 
@@ -282,6 +288,60 @@ static func _validate_buy_intel(intent: Intent) -> IntentResult:
 		return IntentResult.error(IntentErrorCodes.INTEL_ALREADY_PURCHASED, TextKeys.ERROR_BUY_INTEL_ALREADY_PURCHASED, intent.type)
 	if LedgerSystem.get_balance() < total_cost:
 		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, TextKeys.ERROR_BUY_INTEL_INSUFFICIENT_FUNDS, intent.type)
+	return IntentResult.new(true, "validation_ok")
+
+static func _validate_invest_port(intent: Intent) -> IntentResult:
+	var port_id := str(intent.target)
+	if port_id.is_empty():
+		port_id = str(intent.context.get("port_id", ""))
+	if port_id.is_empty():
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_INVEST_NO_PORT, intent.type)
+
+	var tier_key := str(intent.parameters.get("tier", ""))
+	if tier_key.is_empty() or not InvestPortHandler.INVEST_TIERS.has(tier_key):
+		return _validation_error(intent, TextKeys.ERROR_INVEST_INVALID_TIER)
+
+	var amount: int = int(InvestPortHandler.INVEST_TIERS[tier_key]["amount"])
+	if LedgerSystem.get_balance() < amount:
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, TextKeys.ERROR_INVEST_INSUFFICIENT_FUNDS, intent.type)
+
+	var cooldown_key := InvestPortHandler.INVEST_COOLDOWN_FLAG_PREFIX + port_id
+	if GameState.has_story_flag(cooldown_key):
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_INVEST_COOLDOWN, intent.type)
+
+	return IntentResult.new(true, "validation_ok")
+
+static func _validate_gift_npc(intent: Intent) -> IntentResult:
+	var npc_id := str(intent.target)
+	if npc_id.is_empty():
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_GIFT_NO_NPC, intent.type)
+	var npc_data := GameManager.get_npc_data(npc_id)
+	if npc_data.is_empty():
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_GIFT_UNKNOWN_NPC, intent.type)
+	var item_id := str(intent.parameters.get("item_id", ""))
+	if item_id.is_empty():
+		item_id = GiftNPCHandler._pick_best_gift(npc_data)
+	if item_id.is_empty() or not GiftNPCHandler._player_has_item(item_id):
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_GIFT_NO_ITEM, intent.type)
+	return IntentResult.new(true, "validation_ok")
+
+static func _validate_study_skill(intent: Intent) -> IntentResult:
+	var npc_id := str(intent.target)
+	if npc_id.is_empty():
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_STUDY_NO_NPC, intent.type)
+	var npc_data := GameManager.get_npc_data(npc_id)
+	if npc_data.is_empty():
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_STUDY_UNKNOWN_NPC, intent.type)
+	var skill_id := str(intent.parameters.get("skill_id", npc_data.get("skill_to_teach", "")))
+	if skill_id.is_empty() or not StudySkillHandler.SKILL_EFFECTS.has(skill_id):
+		return _validation_error(intent, TextKeys.ERROR_STUDY_INVALID_SKILL)
+	var effects: Dictionary = StudySkillHandler.SKILL_EFFECTS[skill_id]
+	var learned_flag := str(effects.get("story_flag", ""))
+	if learned_flag != "" and GameState.has_story_flag(learned_flag):
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_STUDY_ALREADY_LEARNED, intent.type)
+	var threshold: int = int(npc_data.get("affinity_threshold", 30))
+	if GameState.story.get_npc_affinity(npc_id) < threshold:
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_STUDY_AFFINITY_LOW, intent.type)
 	return IntentResult.new(true, "validation_ok")
 
 static func _validate_inspection_pass(intent: Intent) -> IntentResult:

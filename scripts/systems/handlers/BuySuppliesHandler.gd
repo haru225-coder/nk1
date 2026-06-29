@@ -1,5 +1,8 @@
 class_name BuySuppliesHandler extends RefCounted
 
+## ── 补给默认值常量 ───────────────────────────────────────
+const SUPPLY_FILL_FLAT_COST := 20         ## 补满水粮的固定费用
+
 func handle(intent: Intent) -> IntentResult:
 	var supply_type := str(intent.parameters.get("supply_type", "food_water"))
 	var fill_to_max := bool(intent.parameters.get("fill_to_max", false))
@@ -9,7 +12,7 @@ func handle(intent: Intent) -> IntentResult:
 	var applied := _preview_supply(supply_type, amount, fill_to_max)
 
 	if applied.is_empty():
-		return IntentResult.error(IntentErrorCodes.SUPPLY_LIMIT_REACHED, "", "buy_supplies")
+		return IntentResult.error(IntentErrorCodes.SUPPLY_LIMIT_REACHED, "", IntentTypes.BUY_SUPPLIES)
 
 	if total_cost <= 0:
 		if unit_price > 0.0:
@@ -18,10 +21,10 @@ func handle(intent: Intent) -> IntentResult:
 				units = float(applied.get("food_added", 0.0)) + float(applied.get("water_added", 0.0))
 			total_cost = ceili(units * unit_price)
 		elif fill_to_max and supply_type == "food_water":
-			total_cost = 20
+			total_cost = SUPPLY_FILL_FLAT_COST
 
 	if total_cost <= 0:
-		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "", "buy_supplies")
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "", IntentTypes.BUY_SUPPLIES)
 
 	var tx := {
 		"amount": -total_cost,
@@ -30,7 +33,7 @@ func handle(intent: Intent) -> IntentResult:
 		"actor": "BuySuppliesHandler",
 	}
 	if not LedgerSystem.apply(tx, intent.id):
-		return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", "buy_supplies")
+		return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", IntentTypes.BUY_SUPPLIES)
 
 	_commit_supply(supply_type, amount, fill_to_max, applied)
 
@@ -41,8 +44,8 @@ func handle(intent: Intent) -> IntentResult:
 		"food": GameState.food,
 		"water": GameState.water,
 		"balance": LedgerSystem.get_balance(),
-	}, "intent.buy_supplies.success")
-	r.type = "buy_supplies"
+	}, TextKeys.INTENT_BUY_SUPPLIES_SUCCESS)
+	r.type = IntentTypes.BUY_SUPPLIES
 	return r
 
 func _preview_supply(supply_type: String, amount: float, fill_to_max: bool) -> Dictionary:

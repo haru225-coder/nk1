@@ -35,17 +35,17 @@ func setup(fac: Dictionary, display: Dictionary, icon: Texture2D) -> void:
 	subtitle_label.text = text.replace("★ ", "")
 	icon_texture.texture = icon
 	if is_done:
-		icon_texture.modulate = Color(0.72, 0.72, 0.72, 1)
+		icon_texture.modulate = GameColors.TEXT_ICON_DIM
 	else:
 		icon_texture.modulate = Color.WHITE
 
-	card_panel.theme_type_variation = "PortFacilityCardQuest" if is_quest else "PortFacilityCard"
+	card_panel.theme_type_variation = UITheme.CARD_FACILITY_QUEST if is_quest else UITheme.CARD_FACILITY
 	quest_badge.visible = is_quest
 
 	if is_quest:
-		subtitle_label.add_theme_color_override("font_color", Color(0.98, 0.84, 0.42, 1))
+		subtitle_label.add_theme_color_override("font_color", GameColors.TEXT_GOLD)
 	elif is_done:
-		subtitle_label.add_theme_color_override("font_color", Color(0.62, 0.6, 0.52, 1))
+		subtitle_label.add_theme_color_override("font_color", GameColors.TEXT_DIM)
 	else:
 		subtitle_label.remove_theme_color_override("font_color")
 

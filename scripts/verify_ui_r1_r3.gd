@@ -25,7 +25,7 @@ func _pass(msg: String) -> void:
 	print("PASS: ", msg)
 
 func _verify_r3_theme() -> void:
-	var theme: Theme = load("res://assets/main_theme.tres")
+	var theme: Theme = load(ResourcePaths.THEME_MAIN)
 	if theme == null:
 		_fail("main_theme.tres failed to load")
 		return
@@ -57,7 +57,7 @@ func _verify_r3_theme() -> void:
 		_pass("StatusBarPanel has gold top border color")
 
 func _verify_r3_status_bar_scene() -> void:
-	var scene: PackedScene = load("res://scenes/PortStatusBar.tscn")
+	var scene: PackedScene = load(ResourcePaths.SCENE_PORT_STATUS_BAR)
 	if scene == null:
 		_fail("PortStatusBar.tscn failed to load")
 		return
@@ -83,7 +83,7 @@ func _verify_r3_status_bar_scene() -> void:
 	bar.queue_free()
 
 func _verify_r1_main_scene_nodes() -> void:
-	var main_scene: PackedScene = load("res://scenes/Main.tscn")
+	var main_scene: PackedScene = load(ResourcePaths.SCENE_MAIN)
 	if main_scene == null:
 		_fail("Main.tscn failed to load")
 		return
@@ -123,7 +123,7 @@ func _verify_r1_main_scene_nodes() -> void:
 	main.free()
 
 func _verify_r1_port_grid_runtime() -> void:
-	var main_scene: PackedScene = load("res://scenes/Main.tscn")
+	var main_scene: PackedScene = load(ResourcePaths.SCENE_MAIN)
 	var main: Node = main_scene.instantiate()
 	root.add_child(main)
 	await process_frame
@@ -292,7 +292,7 @@ func _node_has_texture_rect(node: Node) -> bool:
 	return false
 
 func _node_has_facility_title(node: Node) -> bool:
-	if node is Label and node.theme_type_variation == &"FacilityTitle":
+	if node is Label and node.theme_type_variation == UITheme.TITLE_FACILITY:
 		return true
 	for child in node.get_children():
 		if _node_has_facility_title(child):

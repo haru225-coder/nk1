@@ -3,10 +3,12 @@ class_name CommandBar
 
 signal command_pressed(action: Dictionary)
 
-const BUTTON_MIN_SIZE := Vector2(68, 72)
-const ICON_SIZE := 36
+const BUTTON_MIN_SIZE := Vector2(78, 80)
+const ICON_SIZE := 44
+const ICON_BASE := "res://assets/ui/icons/icon_%s.png"
+const ICON_FALLBACK_DIR := "res://assets/icons_128/"
 
-@onready var _flow: HBoxContainer = $Margin/Scroll/Flow
+@onready var _flow: HBoxContainer = $Background/Margin/Scroll/Flow
 
 var _templates: Dictionary = {}
 
@@ -25,10 +27,12 @@ func build(command_spec: Dictionary) -> void:
 	var port_location: String = command_spec.get("port_location", "")
 	var town_map: Dictionary = scene_data.get("town_map", {})
 	var hotspot_by_facility := _hotspot_index(town_map)
+	var scene_type: String = scene_data.get("type", template_key)
 
 	_add_facility_buttons(template, scene_data, port_location, hotspot_by_facility)
-	_add_static_actions(template.get("static_actions", []))
+	_add_static_actions(template.get("static_actions", []), scene_type)
 	_add_choice_buttons(template, scene_data)
+	_add_mode_actions(scene_type, port_location)
 
 	visible = _flow.get_child_count() > 0
 
@@ -64,27 +68,32 @@ func _add_facility_buttons(
 		var label: String = fac.get("title", "地点")
 		if is_quest:
 			label = "★ " + label
+		var icon := _resolve_command_icon(fac_id, fac)
 		_add_button(
 			label,
-			GameManager.resolve_facility_icon(fac),
+			icon,
 			{"type": "navigate", "target": target},
 			is_quest,
 		)
 
-func _add_static_actions(actions: Array) -> void:
+func _add_static_actions(actions: Array, scene_type: String) -> void:
 	for raw: Dictionary in actions:
 		if not raw.get("always_visible", true):
 			continue
+		var id: String = raw.get("id", "")
 		var icon_path: String = raw.get("icon", "")
 		var tex: Texture2D = null
 		if icon_path != "":
 			tex = AssetPlaceholder.load_texture(icon_path, "texture")
+		if tex == null and id != "":
+			tex = _resolve_command_icon(id, {})
+		var label: String = raw.get("label", "")
 		_add_button(
-			raw.get("label", ""),
+			label,
 			tex,
 			{
 				"type": raw.get("type", "navigate"),
-				"id": raw.get("id", ""),
+				"id": id,
 				"target": raw.get("target", ""),
 			},
 			false,
@@ -108,16 +117,66 @@ func _add_choice_buttons(template: Dictionary, scene_data: Dictionary) -> void:
 		}
 		_add_button(label, null, action, style == "sail")
 
+## 根据当前场景模式追加常用操作（如返回港口）
+func _add_mode_actions(scene_type: String, port_location: String) -> void:
+	if scene_type == "investigation" or scene_type == "facility":
+		var return_target := ""
+		if GameState.last_port != "":
+			return_target = GameManager.get_port_scene_id(GameState.last_port)
+		if return_target == "":
+			return_target = "port_quanzhou"
+		_add_button(
+			"返港",
+			_resolve_command_icon("return", {}),
+			{"type": "navigate", "target": return_target},
+			false,
+		)
+
+func _resolve_command_icon(id: String, fac: Dictionary) -> Texture2D:
+	# 1. 新 UI 图标目录
+	var tex := AssetPlaceholder.load_texture(ICON_BASE % id, "texture")
+	if tex:
+		return tex
+
+	# 2. 设施显式配置
+	var configured: String = fac.get("icon", "") if fac else ""
+	if configured != "":
+		tex = AssetPlaceholder.load_texture(configured, "texture")
+		if tex:
+			return tex
+
+	# 3. 128x128 KOEI 风格图标目录
+	var fallback_path: String = ICON_FALLBACK_DIR + "icon_" + id + "_koei.png"
+	tex = AssetPlaceholder.load_texture(fallback_path, "texture")
+	if tex:
+		return tex
+
+	# 4. 静态图标兜底（地图、返回等）
+	var static_paths := {
+		"log": "res://assets/icons_stat/icon_stat_location.png",
+		"sail": "res://assets/icon_shipyard_koei.png",
+		"return": "res://assets/icon_wharf_koei.png",
+	}
+	if static_paths.has(id):
+		tex = AssetPlaceholder.load_texture(static_paths[id], "texture")
+		if tex:
+			return tex
+
+	return null
+
 func _add_button(label_text: String, icon: Texture2D, action: Dictionary, highlight: bool) -> void:
-	var btn := Button.new()
+	var btn := UIBuilder.make_button("", UITheme.BTN_COMMAND)
 	btn.custom_minimum_size = BUTTON_MIN_SIZE
-	btn.theme_type_variation = "SetSailButton" if highlight else "ChoiceButton"
 	btn.tooltip_text = label_text
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+
+	if highlight:
+		btn.modulate = Color(1.15, 1.08, 0.88, 1.0)
 
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_theme_constant_override("separation", 2)
+	vbox.add_theme_constant_override("separation", 3)
 
 	if icon:
 		var icon_rect := TextureRect.new()
@@ -132,10 +191,10 @@ func _add_button(label_text: String, icon: Texture2D, action: Dictionary, highli
 	caption.text = label_text
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	caption.add_theme_font_size_override("font_size", 11)
+	caption.add_theme_font_size_override("font_size", 12)
 	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if highlight:
-		caption.add_theme_color_override("font_color", Color(0.98, 0.84, 0.42, 1))
+		caption.add_theme_color_override("font_color", GameColors.TEXT_GOLD)
 	vbox.add_child(caption)
 
 	btn.add_child(vbox)

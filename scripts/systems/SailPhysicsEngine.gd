@@ -8,7 +8,7 @@ class_name SailPhysicsEngine extends RefCounted
 static func calculate(current_velocity: Vector2, heading: Vector2, wind_vector: Vector2, wind_strength: float, sail_gear: int, base_speed: float, sail_type: String, delta: float) -> Dictionary:
 	if sail_gear <= 0:
 		return {
-			"new_velocity": current_velocity.lerp(Vector2.ZERO, 3.0 * delta),
+			"new_velocity": current_velocity.lerp(Vector2.ZERO, 2.0 * delta),
 			"is_dead_wind": false,
 			"efficiency": 0.0
 		}
@@ -40,7 +40,8 @@ static func calculate(current_velocity: Vector2, heading: Vector2, wind_vector: 
 	var target_velocity = heading * final_speed
 	
 	# 惯性平滑（船的质量极大，加速慢，停船也慢）
-	var lerp_weight = 0.8 * delta if not is_dead_wind else 0.4 * delta
+	# NK1-P6: 提升响应感 — 加速更跟手，减速更干脆
+	var lerp_weight = 1.5 * delta if not is_dead_wind else 0.8 * delta
 	var new_velocity = current_velocity.lerp(target_velocity, lerp_weight)
 	
 	return {

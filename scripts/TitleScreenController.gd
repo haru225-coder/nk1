@@ -23,11 +23,11 @@ func _build_save_list() -> void:
 	var header := Label.new()
 	header.text = "航行记录"
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.theme_type_variation = "TitleSub"
+	header.theme_type_variation = UITheme.TEXT_TITLE_SUB
 	button_container.add_child(header)
 
 	var save_list := VBoxContainer.new()
-	save_list.theme_override_constants["separation"] = 8
+	save_list.add_theme_constant_override("separation", 8)
 	save_list.alignment = BoxContainer.ALIGNMENT_CENTER
 	button_container.add_child(save_list)
 
@@ -37,7 +37,7 @@ func _build_save_list() -> void:
 func _make_save_row(info: Dictionary) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.theme_override_constants["separation"] = 8
+	row.add_theme_constant_override("separation", 8)
 
 	var slot: int = info.get("slot", 0)
 	var slot_label := "存档 %d" % (slot + 1)
@@ -46,19 +46,16 @@ func _make_save_row(info: Dictionary) -> HBoxContainer:
 		var loc: String = info.get("current_location_name", info.get("current_scene_id", ""))
 		var balance: int = info.get("balance", 0)
 		var ts: String = info.get("timestamp", "")
-		var load_btn := Button.new()
-		load_btn.text = "%s · %s · %d贯" % [slot_label, loc, balance]
+		var load_btn_text := "%s · %s · %d贯" % [slot_label, loc, balance]
 		if ts != "":
-			load_btn.text += " · %s" % ts
+			load_btn_text += " · %s" % ts
+		var load_btn := UIBuilder.make_button(load_btn_text, UITheme.BTN_TITLE_MENU, 44)
 		load_btn.custom_minimum_size = Vector2(360, 44)
-		load_btn.theme_type_variation = "TitleMenuButton"
 		load_btn.pressed.connect(func(): _on_load_slot(slot))
 		row.add_child(load_btn)
 
-		var del_btn := Button.new()
-		del_btn.text = "删"
+		var del_btn := UIBuilder.make_button("删", UITheme.BTN_TITLE_MENU, 44)
 		del_btn.custom_minimum_size = Vector2(44, 44)
-		del_btn.theme_type_variation = "TitleMenuButton"
 		del_btn.pressed.connect(func(): _on_delete_slot(slot))
 		row.add_child(del_btn)
 	else:
@@ -66,7 +63,7 @@ func _make_save_row(info: Dictionary) -> HBoxContainer:
 		empty_label.text = "%s · 空存档" % slot_label
 		empty_label.custom_minimum_size = Vector2(360, 44)
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty_label.theme_type_variation = "TitleSub"
+		empty_label.theme_type_variation = UITheme.TEXT_TITLE_SUB
 		row.add_child(empty_label)
 
 	return row
@@ -94,18 +91,15 @@ func _add_choices(scene_data: Dictionary) -> void:
 
 	var choices = scene_data.get("choices", [])
 	if choices.is_empty():
-		var btn := Button.new()
-		btn.text = "开始旅程"
+		var btn := UIBuilder.make_button("开始旅程", UITheme.BTN_TITLE_MENU, 52)
 		btn.custom_minimum_size = Vector2(280, 52)
-		btn.theme_type_variation = "TitleMenuButton"
 		btn.pressed.connect(func(): scene_requested.emit("scene01_xianghua_school"))
 		button_container.add_child(btn)
 	else:
 		for choice in choices:
-			var btn := Button.new()
-			btn.text = choice.get("label", "继续")
+			var label_text = choice.get("label", "继续")
+			var btn := UIBuilder.make_button(label_text, UITheme.BTN_TITLE_MENU, 48)
 			btn.custom_minimum_size = Vector2(280, 48)
-			btn.theme_type_variation = "TitleMenuButton"
 			var next = choice.get("next", "scene01_xianghua_school")
 			btn.pressed.connect(func(): scene_requested.emit(next))
 			button_container.add_child(btn)

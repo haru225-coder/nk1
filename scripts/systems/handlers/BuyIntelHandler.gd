@@ -12,7 +12,7 @@ func handle(intent: Intent) -> IntentResult:
 		"actor": "BuyIntelHandler",
 	}
 	if not LedgerSystem.apply(tx, intent.id):
-		return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", "buy_intel")
+		return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", IntentTypes.BUY_INTEL)
 
 	if not TradeEventGenerator.mark_rumor_purchased(event_index):
 		LedgerSystem.apply({
@@ -21,7 +21,7 @@ func handle(intent: Intent) -> IntentResult:
 			"reason": "tavern_rumor_rollback",
 			"actor": "BuyIntelHandler",
 		}, intent.id + ":rollback")
-		return IntentResult.error(IntentErrorCodes.INTEL_ALREADY_PURCHASED, "", "buy_intel")
+		return IntentResult.error(IntentErrorCodes.INTEL_ALREADY_PURCHASED, "", IntentTypes.BUY_INTEL)
 
 	var rumor := TradeEventGenerator.get_event_at(event_index)
 	var r := IntentResult.ok({
@@ -31,6 +31,6 @@ func handle(intent: Intent) -> IntentResult:
 		"port_name": rumor.get("port_name", ""),
 		"days_left": rumor.get("days_left", 0),
 		"balance": LedgerSystem.get_balance(),
-	}, "intent.buy_intel.success")
-	r.type = "buy_intel"
+	}, TextKeys.INTENT_BUY_INTEL_SUCCESS)
+	r.type = IntentTypes.BUY_INTEL
 	return r

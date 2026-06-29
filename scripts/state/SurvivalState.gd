@@ -2,26 +2,35 @@ class_name SurvivalState extends RefCounted
 
 ## 生存资源管理模块
 
-var food: float = 30.0
-var max_food: float = 100.0
-var water: float = 30.0
-var max_water: float = 100.0
-var max_cargo: int = 200
+## ── 资源常量 ─────────────────────────────────────────────
+const DEFAULT_FOOD := 30.0           ## 初始粮食
+const DEFAULT_WATER := 30.0          ## 初始淡水
+const MAX_FOOD := 100.0              ## 粮食上限
+const MAX_WATER := 100.0             ## 淡水上限
+const MAX_CARGO := 200               ## 货舱上限
+const DAILY_CONSUME_DIVISOR := 10.0  ## 每日消耗除数（crew ÷ 此值）
+const STARVATION_DEATH_RATIO := 0.1  ## 断粮/断水时水手死亡率
+
+var food: float = DEFAULT_FOOD
+var max_food: float = MAX_FOOD
+var water: float = DEFAULT_WATER
+var max_water: float = MAX_WATER
+var max_cargo: int = MAX_CARGO
 
 func to_dict() -> Dictionary:
 	return {"food": food, "max_food": max_food, "water": water, "max_water": max_water, "max_cargo": max_cargo}
 
 func from_dict(d: Dictionary) -> void:
-	food = d.get("food", 30.0); max_food = d.get("max_food", 100.0)
-	water = d.get("water", 30.0); max_water = d.get("max_water", 100.0)
-	max_cargo = int(d.get("max_cargo", 200))
+	food = d.get("food", DEFAULT_FOOD); max_food = d.get("max_food", MAX_FOOD)
+	water = d.get("water", DEFAULT_WATER); max_water = d.get("max_water", MAX_WATER)
+	max_cargo = int(d.get("max_cargo", MAX_CARGO))
 
 signal crew_lost(amount: int)
 signal resource_depleted(resource: String)
 
 func process_daily_consumption(total_crew: int) -> int:
 	if total_crew <= 0: return 0
-	var daily_consume = float(total_crew) / 10.0
+	var daily_consume = float(total_crew) / DAILY_CONSUME_DIVISOR
 	food -= daily_consume
 	water -= daily_consume
 	if food < 0: food = 0
@@ -29,7 +38,7 @@ func process_daily_consumption(total_crew: int) -> int:
 	
 	var deaths = 0
 	if food == 0 or water == 0:
-		deaths = max(1, int(float(total_crew) * 0.1))
+		deaths = max(1, int(float(total_crew) * STARVATION_DEATH_RATIO))
 		crew_lost.emit(deaths)
 		if food == 0:
 			resource_depleted.emit("food")

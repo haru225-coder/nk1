@@ -6,7 +6,7 @@ signal status_updated
 signal message_logged(msg: String)
 signal market_closed
 
-const _THEME_PATH := "res://assets/main_theme.tres"
+const _THEME_PATH := ResourcePaths.THEME_MAIN
 const DEFAULT_TRADE_AMOUNT := 10
 
 var port_id: String = ""
@@ -17,6 +17,7 @@ var _trade_amount: int = DEFAULT_TRADE_AMOUNT
 
 var title_label: Label
 var stock_alert_label: Label
+var economy_info_label: Label
 var money_value: Label
 var cargo_value: Label
 var inventory_container: VBoxContainer
@@ -40,7 +41,7 @@ func _ready() -> void:
 	z_index = 50
 
 	var bg := ColorRect.new()
-	bg.color = Color(0.02, 0.02, 0.02, 0.88)
+	bg.color = GameColors.MARKET_BG
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -50,7 +51,7 @@ func _ready() -> void:
 
 	var shell := PanelContainer.new()
 	shell.custom_minimum_size = Vector2(1100, 680)
-	shell.theme_type_variation = "MarketShell"
+	shell.theme_type_variation = UITheme.MARKET_SHELL
 	center.add_child(shell)
 
 	var vbox := VBoxContainer.new()
@@ -59,14 +60,22 @@ func _ready() -> void:
 
 	title_label = Label.new()
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.theme_type_variation = "MarketTitle"
+	title_label.theme_type_variation = UITheme.MARKET_TITLE
 	vbox.add_child(title_label)
 
 	stock_alert_label = Label.new()
 	stock_alert_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stock_alert_label.theme_type_variation = "MarketAlert"
+	stock_alert_label.theme_type_variation = UITheme.MARKET_ALERT
 	stock_alert_label.visible = false
 	vbox.add_child(stock_alert_label)
+
+	# NK1-P5-ECON-002: 经济信息栏 — 显示事件影响原因与经济动态
+	economy_info_label = Label.new()
+	economy_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	economy_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	economy_info_label.theme_type_variation = UITheme.MARKET_PREVIEW
+	economy_info_label.visible = false
+	vbox.add_child(economy_info_label)
 
 	var info_hbox := HBoxContainer.new()
 	info_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -88,7 +97,7 @@ func _ready() -> void:
 	preview_label = Label.new()
 	preview_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	preview_label.theme_type_variation = "MarketPreview"
+	preview_label.theme_type_variation = UITheme.MARKET_PREVIEW
 	vbox.add_child(preview_label)
 
 	amount_row = HBoxContainer.new()
@@ -98,23 +107,19 @@ func _ready() -> void:
 	vbox.add_child(amount_row)
 	var amount_caption := Label.new()
 	amount_caption.text = "数量"
-	amount_caption.theme_type_variation = "MarketPreview"
+	amount_caption.theme_type_variation = UITheme.MARKET_PREVIEW
 	amount_row.add_child(amount_caption)
-	var minus_btn := Button.new()
-	minus_btn.text = "－"
+	var minus_btn := UIBuilder.make_button("－", UITheme.BTN_CHOICE, 36)
 	minus_btn.custom_minimum_size = Vector2(40, 36)
-	minus_btn.theme_type_variation = "ChoiceButton"
 	minus_btn.pressed.connect(func(): _adjust_trade_amount(-1))
 	amount_row.add_child(minus_btn)
 	amount_value_label = Label.new()
 	amount_value_label.custom_minimum_size = Vector2(64, 0)
 	amount_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	amount_value_label.theme_type_variation = "MarketPreview"
+	amount_value_label.theme_type_variation = UITheme.MARKET_PREVIEW
 	amount_row.add_child(amount_value_label)
-	var plus_btn := Button.new()
-	plus_btn.text = "＋"
+	var plus_btn := UIBuilder.make_button("＋", UITheme.BTN_CHOICE, 36)
 	plus_btn.custom_minimum_size = Vector2(40, 36)
-	plus_btn.theme_type_variation = "ChoiceButton"
 	plus_btn.pressed.connect(func(): _adjust_trade_amount(1))
 	amount_row.add_child(plus_btn)
 
@@ -123,33 +128,29 @@ func _ready() -> void:
 	btn_hbox.add_theme_constant_override("separation", 16)
 	vbox.add_child(btn_hbox)
 
-	confirm_button = Button.new()
-	confirm_button.text = "确认交易"
+	confirm_button = UIBuilder.make_button("确认交易", UITheme.BTN_SET_SAIL, 48)
 	confirm_button.custom_minimum_size = Vector2(180, 48)
-	confirm_button.theme_type_variation = "SetSailButton"
 	confirm_button.pressed.connect(_on_confirm_pressed)
 	btn_hbox.add_child(confirm_button)
-
-	back_button = Button.new()
-	back_button.text = "离开市集"
+ 
+	back_button = UIBuilder.make_button("离开市集", UITheme.BTN_CHOICE, 48)
 	back_button.custom_minimum_size = Vector2(180, 48)
-	back_button.theme_type_variation = "ChoiceButton"
 	back_button.pressed.connect(_on_back_pressed)
 	btn_hbox.add_child(back_button)
 
 func _make_stat_chip(caption: String, value: String, id: String) -> PanelContainer:
 	var chip := PanelContainer.new()
-	chip.theme_type_variation = "PortStatChip"
+	chip.theme_type_variation = UITheme.CHIP_PORT_STAT
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 0)
 	chip.add_child(col)
 	var cap_lbl := Label.new()
 	cap_lbl.text = caption
-	cap_lbl.theme_type_variation = "PortStatLabel"
+	cap_lbl.theme_type_variation = UITheme.LABEL_PORT_STAT
 	col.add_child(cap_lbl)
 	var val_lbl := Label.new()
 	val_lbl.text = value
-	val_lbl.theme_type_variation = "PortStatValue"
+	val_lbl.theme_type_variation = UITheme.VALUE_PORT_STAT
 	col.add_child(val_lbl)
 	if id == "money":
 		money_value = val_lbl
@@ -160,13 +161,13 @@ func _make_stat_chip(caption: String, value: String, id: String) -> PanelContain
 func _make_market_column(section_title: String) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.theme_type_variation = "MarketPanel"
+	panel.theme_type_variation = UITheme.MARKET_PANEL
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 8)
 	panel.add_child(col)
 	var header := Label.new()
 	header.text = section_title
-	header.theme_type_variation = "SectionLabel"
+	header.theme_type_variation = UITheme.SECTION_LABEL
 	col.add_child(header)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -245,6 +246,7 @@ func refresh_ui() -> void:
 		market_container.add_child(_make_empty_label("今日港口暂无特产上架"))
 
 	_check_stock_alert()
+	_update_economy_info()
 
 func _check_stock_alert() -> void:
 	var all_goods: Array = GameManager.goods_data.get("goods", [])
@@ -260,17 +262,56 @@ func _check_stock_alert() -> void:
 	stock_alert_label.text = "【市集异动】此港部分商品库存紧张，价格已有明显波动。"
 	stock_alert_label.visible = alert
 
+## NK1-P5-ECON-002: 更新经济信息栏 — 显示事件影响原因 + 最近经济动态
+## NK1-P5-ECON-003: 新增繁荣度/好感度状态显示
+func _update_economy_info() -> void:
+	var lines: Array[String] = []
+
+	# 1. 显示当前活跃事件对该港货物的影响
+	var market = GameManager.state.market
+	if market != null:
+		var all_goods: Array = GameManager.goods_data.get("goods", [])
+		for g in all_goods:
+			var g_id: String = g.get("id", "")
+			if g.get("category", "") != "货物" or g_id.is_empty():
+				continue
+			var reasons = market.get_active_event_reasons(port_id, g_id, WorldEventTracker.get_active_events())
+			for r in reasons:
+				lines.append(r)
+
+	# 2. NK1-P5-ECON-003: 显示港口经济状态（繁荣度+好感度）
+	if market != null:
+		var prosperity: float = market.get_prosperity(port_id)
+		var affinity_label: String = market.get_affinity_label(port_id)
+		var prosperity_str := "平稳"
+		if prosperity > 1.1:
+			prosperity_str = "繁荣"
+		elif prosperity < 0.9:
+			prosperity_str = "萧条"
+		lines.append("港市：%s · 声誉：%s" % [prosperity_str, affinity_label])
+
+	# 3. 显示最近的经济动态日志
+	if GameState.economy_log != null:
+		var latest = GameState.economy_log.get_latest()
+		if not latest.is_empty():
+			lines.append(latest)
+
+	if lines.is_empty():
+		economy_info_label.visible = false
+	else:
+		# 最多显示 3 行，避免占太多空间
+		var display = lines.slice(-3)
+		economy_info_label.text = "  ".join(display)
+		economy_info_label.visible = true
+
 func _make_item_button(text: String, kind: String) -> Button:
-	var btn := Button.new()
-	btn.text = text
-	btn.custom_minimum_size = Vector2(0, 40)
-	btn.theme_type_variation = "ActionButton" if kind == "buy" else "ChoiceButton"
-	return btn
+	var theme_var = UITheme.BTN_ACTION if kind == "buy" else UITheme.BTN_CHOICE
+	return UIBuilder.make_button(text, theme_var, 40)
 
 func _make_empty_label(text: String) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
-	lbl.theme_type_variation = "MarketPreview"
+	lbl.theme_type_variation = UITheme.MARKET_PREVIEW
 	return lbl
 
 func _get_price_from_snapshot(good_id: String) -> int:
@@ -327,7 +368,7 @@ func _update_trade_preview() -> void:
 			_trade_amount, g_data.get("name", _selected_good_id), total, LedgerSystem.get_balance() - total
 		]
 		pending_intent = Intent.new(
-			"market_buy", "player", "market",
+			IntentTypes.MARKET_BUY, "player", "market",
 			{"good_id": _selected_good_id, "amount": _trade_amount},
 			{"port_id": port_id}
 		)
@@ -336,7 +377,7 @@ func _update_trade_preview() -> void:
 			_trade_amount, g_data.get("name", _selected_good_id), total, LedgerSystem.get_balance() + total
 		]
 		pending_intent = Intent.new(
-			"market_sell", "player", "market",
+			IntentTypes.MARKET_SELL, "player", "market",
 			{"good_id": _selected_good_id, "amount": _trade_amount},
 			{"port_id": port_id}
 		)
@@ -366,9 +407,9 @@ func _get_trend_info(price: int, base: int) -> Dictionary:
 	if ratio >= 2.0:
 		return {"text": "↑↑暴涨", "color": Color(1.0, 0.4, 0.4)}
 	if ratio >= 1.2:
-		return {"text": "↑涨", "color": Color(1.0, 0.7, 0.4)}
+		return {"text": "↑涨", "color": GameColors.WARNING_SOFT}
 	if ratio <= 0.5:
-		return {"text": "↓↓暴跌", "color": Color(0.4, 1.0, 0.4)}
+		return {"text": "↓↓暴跌", "color": GameColors.PRICE_CRASH}
 	if ratio <= 0.8:
-		return {"text": "↓跌", "color": Color(0.7, 1.0, 0.7)}
+		return {"text": "↓跌", "color": GameColors.PRICE_DROP}
 	return {"text": "", "color": Color.TRANSPARENT}

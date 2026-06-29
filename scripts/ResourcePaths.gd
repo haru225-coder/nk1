@@ -1,0 +1,69 @@
+class_name ResourcePaths extends RefCounted
+
+## NK1-P6-POLISH-002: 统一资源路径常量
+## 集中管理常用 res:// 路径，便于资源迁移/重命名/打包
+
+## ── 主题与样式 ──────────────────────────────────────────
+const THEME_MAIN := "res://assets/main_theme.tres"
+const FRAME_KOEI := "res://assets/ui_frame_koei.png"
+const GRADIENT_SHADER := "res://assets/ui_bottom_gradient.gdshader"
+
+## ── 纹理资源 ────────────────────────────────────────────
+const TEX_SHIP_TOPDOWN := "res://assets/ship_topdown.png"
+const TEX_SEAGULL := "res://assets/seagull.png"
+const TEX_WHALE_SHADOW := "res://assets/whale_shadow.png"
+const TEX_MAP_NANHAI := "res://assets/map_nanhai.png"
+const TEX_ICON_MARKET := "res://assets/icon_market_koei.png"
+const BG_DEFAULT := "res://assets/bg_sea_route_koei.png"
+
+## ── 场景文件 ────────────────────────────────────────────
+const SCENE_MAIN := "res://scenes/Main.tscn"
+const SCENE_WORLD_MAP := "res://scenes/WorldMap.tscn"
+const SCENE_FLOATING_TEXT := "res://scenes/FloatingText.tscn"
+const SCENE_CRATE := "res://scenes/Crate.tscn"
+const SCENE_PORT_ZONE := "res://scenes/PortZone.tscn"
+const SCENE_MAP_FLEET := "res://scenes/MapFleetNode.tscn"
+const SCENE_COMMAND_BAR := "res://scenes/CommandBar.tscn"
+const SCENE_TOWN_MAP_HOTSPOT := "res://scenes/TownMapHotspot.tscn"
+const SCENE_PORT_STATUS_BAR := "res://scenes/PortStatusBar.tscn"
+const SCENE_CUTSCENE_PLAYER := "res://scenes/CutscenePlayer.tscn"
+
+## ── 事件脚本路径 ────────────────────────────────────────
+const SCRIPT_PIRATE_ATTACK := "res://scripts/events/PirateAttackEvent.gd"
+const SCRIPT_TRADE_DISASTER := "res://scripts/events/TradeDisasterEvent.gd"
+const SCRIPT_TRADE_RECOVERY := "res://scripts/events/TradeRecoveryEvent.gd"
+const SCRIPT_SUPPLY_SHORTAGE := "res://scripts/events/SupplyShortageEvent.gd"
+const SCRIPT_TRADE_BOOM := "res://scripts/events/TradeBoomEvent.gd"
+const SCRIPT_ECONOMIC_RIPPLE := "res://scripts/events/EconomicRippleEvent.gd"
+const SCRIPT_BASE_EVENT := "res://scripts/events/BaseEconomicEvent.gd"
+
+## ── Intent Handler 脚本路径 ─────────────────────────────
+const SCRIPT_HANDLER_PAYMENT := "res://scripts/systems/handlers/PaymentHandler.gd"
+const SCRIPT_HANDLER_TRADE := "res://scripts/systems/handlers/TradeHandler.gd"
+const SCRIPT_HANDLER_BRIBE := "res://scripts/systems/handlers/BribeHandler.gd"
+const SCRIPT_HANDLER_COMBAT := "res://scripts/systems/handlers/CombatHandler.gd"
+const SCRIPT_HANDLER_INSPECTION := "res://scripts/systems/handlers/InspectionHandler.gd"
+const SCRIPT_HANDLER_ESCAPE := "res://scripts/systems/handlers/EscapeHandler.gd"
+const SCRIPT_HANDLER_REPAIR := "res://scripts/systems/handlers/RepairHandler.gd"
+const SCRIPT_HANDLER_REFIT := "res://scripts/systems/handlers/RefitHandler.gd"
+const SCRIPT_HANDLER_HIRE_CREW := "res://scripts/systems/handlers/HireCrewHandler.gd"
+const SCRIPT_HANDLER_BUY_SUPPLIES := "res://scripts/systems/handlers/BuySuppliesHandler.gd"
+const SCRIPT_HANDLER_BUY_INTEL := "res://scripts/systems/handlers/BuyIntelHandler.gd"
+const SCRIPT_HANDLER_INVEST_PORT := "res://scripts/systems/handlers/InvestPortHandler.gd"
+const SCRIPT_HANDLER_GIFT_NPC := "res://scripts/systems/handlers/GiftNPCHandler.gd"
+const SCRIPT_HANDLER_STUDY_SKILL := "res://scripts/systems/handlers/StudySkillHandler.gd"
+
+## ── 资源目录 ────────────────────────────────────────────
+const DIR_ASSETS := "res://assets/"
+const DIR_PORTRAITS := "res://assets/portraits/"
+const DIR_PLACEHOLDERS := "res://assets/placeholders/"
+const DIR_ICONS_128 := "res://assets/icons_128/"
+const DIR_ICONS_STAT := "res://assets/icons_stat/"
+
+## ── 数据文件 ────────────────────────────────────────────
+const DATA_EVENTS_CONFIG := "res://data/events_config.json"
+const DATA_GOODS := "res://data/goods.json"
+const DATA_PORTS := "res://data/ports.json"
+const DATA_SHIPS := "res://data/ships.json"
+const DATA_CUTSCENES := "res://data/cutscenes.json"
+const DATA_STORY_EVENT_CHAINS := "res://data/story_event_chains.json"

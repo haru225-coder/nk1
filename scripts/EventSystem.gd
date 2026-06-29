@@ -20,20 +20,4 @@ static func get_random_event() -> Dictionary:
 	}
 
 static func _check_conditions(conds: Dictionary) -> bool:
-	if conds.has("pu_attention_min"):
-		if GameState.pu_attention < conds["pu_attention_min"]:
-			return false
-		
-	if conds.has("fame_min"):
-		if GameState.fame < conds["fame_min"]:
-			return false
-
-	var req_flag: String = conds.get("requires_story_flag", "")
-	if req_flag != "" and not GameState.has_story_flag(req_flag):
-		return false
-
-	var unless_flag: String = conds.get("unless_story_flag", "")
-	if unless_flag != "" and GameState.has_story_flag(unless_flag):
-		return false
-
-	return true
+	return ConditionEvaluator.matches(conds)

@@ -50,7 +50,7 @@ static func _build_event_data(enc: Dictionary, context: Dictionary) -> Dictionar
 		event_data["choices"].append({
 			"label": GameManager.get_text(c.get("label_key", "")),
 			"intent_struct": {
-				"type": intent_data.get("type", "ignore"),
+				"type": intent_data.get("type", IntentTypes.IGNORE),
 				"source": "player_fleet",
 				"target": context.get("aggressor_id", ""),
 				"parameters": intent_data.get("parameters", {}),

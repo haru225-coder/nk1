@@ -4,7 +4,7 @@ func handle(intent: Intent) -> IntentResult:
 	var ship_index: int = int(intent.parameters.get("ship_index", 0))
 	var fleet := GameState.fleet
 	if ship_index < 0 or ship_index >= fleet.ships.size():
-		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "无效的船只索引", "repair_ship")
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "无效的船只索引", IntentTypes.REPAIR_SHIP)
 
 	var ship: ShipState = fleet.ships[ship_index]
 	var missing_hp: float = ship.max_hp - ship.hp
@@ -14,8 +14,8 @@ func handle(intent: Intent) -> IntentResult:
 			"hp": ship.hp,
 			"repaired": 0.0,
 			"cost": 0,
-		}, "intent.repair.already_full")
-		full.type = "repair_ship"
+		}, TextKeys.INTENT_REPAIR_ALREADY_FULL)
+		full.type = IntentTypes.REPAIR_SHIP
 		return full
 
 	var repair_amount: float
@@ -25,7 +25,7 @@ func handle(intent: Intent) -> IntentResult:
 		repair_amount = float(intent.parameters.get("repair_amount", missing_hp))
 	repair_amount = minf(repair_amount, missing_hp)
 	if repair_amount <= 0.0:
-		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "修理量为零", "repair_ship")
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "修理量为零", IntentTypes.REPAIR_SHIP)
 
 	var cost: int
 	if intent.parameters.has("cost"):
@@ -34,7 +34,7 @@ func handle(intent: Intent) -> IntentResult:
 		var cost_per_hp: float = float(intent.parameters.get("cost_per_hp", 1.0))
 		cost = ceili(repair_amount * cost_per_hp)
 	if cost <= 0:
-		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "修理费用无效", "repair_ship")
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "修理费用无效", IntentTypes.REPAIR_SHIP)
 
 	var tx := {
 		"amount": -cost,
@@ -43,7 +43,7 @@ func handle(intent: Intent) -> IntentResult:
 		"actor": "RepairHandler",
 	}
 	if not LedgerSystem.apply(tx, intent.id):
-		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "", "repair_ship")
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "", IntentTypes.REPAIR_SHIP)
 
 	ship.hp = minf(ship.hp + repair_amount, ship.max_hp)
 	if ship_index == 0:
@@ -55,6 +55,6 @@ func handle(intent: Intent) -> IntentResult:
 		"repaired": repair_amount,
 		"cost": cost,
 		"balance": LedgerSystem.get_balance(),
-	}, "intent.repair.success")
-	r.type = "repair_ship"
+	}, TextKeys.INTENT_REPAIR_SUCCESS)
+	r.type = IntentTypes.REPAIR_SHIP
 	return r

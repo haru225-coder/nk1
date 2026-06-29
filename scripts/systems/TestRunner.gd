@@ -37,6 +37,12 @@ func _run() -> void:
 	_test_trade_boom_event()
 	_test_economic_ripple_event()
 	_test_port_affinity()
+	_test_port_specialty_unlock()
+	_test_condition_evaluator()
+	_test_invest_port_handler()
+	_test_npc_affinity_handlers()
+	_test_duel_action_matrix()
+	_test_story_event_chains()
 	_test_event_economy_integration()
 	_test_polish_constants()
 	_test_game_log()
@@ -1058,6 +1064,171 @@ func _test_port_affinity() -> void:
 
 	print("")
 
+# ── NK1-P6: 港口特产解锁测试 ─────────────────────────────
+
+func _test_port_specialty_unlock() -> void:
+	print("[Port Specialty Unlock]")
+
+	var market := MarketState.new()
+	_assert_true(not market.is_specialty_unlocked("quanzhou", "fujian_porcelain"), "初始未解锁特产")
+	market.unlock_specialty("quanzhou", "fujian_porcelain")
+	_assert_true(market.is_specialty_unlocked("quanzhou", "fujian_porcelain"), "解锁后 is_specialty_unlocked=true")
+	market.unlock_specialty("quanzhou", "fujian_porcelain")
+	var list: Array = market.unlocked_specialties.get("quanzhou", [])
+	_assert_eq(list.size(), 1, "重复解锁不追加")
+
+	var saved := market.to_dict()
+	var restored := MarketState.new()
+	restored.from_dict(saved)
+	_assert_true(restored.is_specialty_unlocked("quanzhou", "fujian_porcelain"), "存档往返: 特产解锁保留")
+
+	print("")
+
+# ── NK1-P6: ConditionEvaluator 测试 ───────────────────────
+
+func _test_condition_evaluator() -> void:
+	print("[ConditionEvaluator]")
+
+	_assert_true(ConditionEvaluator.matches({}), "空条件 => true")
+	_assert_true(ConditionEvaluator.matches({"story_flags_required": []}), "空 required 列表 => true")
+
+	var story := StoryState.new()
+	story.set_story_flag("test_cond_flag", true)
+	story.adjust_npc_affinity("test_npc", 10)
+	_assert_eq(story.get_npc_affinity("test_npc"), 10, "StoryState: npc 好感 +10")
+	story.adjust_npc_affinity("test_npc", 5)
+	_assert_eq(story.get_npc_affinity("test_npc"), 15, "StoryState: npc 好感累加")
+
+	print("")
+
+# ── NK1-P6: 港口投资 Handler 测试 ─────────────────────────
+
+func _test_invest_port_handler() -> void:
+	print("[InvestPortHandler]")
+
+	_assert_eq(InvestPortHandler.INVEST_TIERS["small"]["amount"], 100, "小额投资 100")
+	_assert_eq(InvestPortHandler.INVEST_TIERS["medium"]["amount"], 500, "中额投资 500")
+	_assert_eq(InvestPortHandler.INVEST_TIERS["large"]["amount"], 2000, "大额投资 2000")
+	_assert_true(InvestPortHandler.SPECIALTY_UNLOCK_RULES.has("quanzhou"), "泉州解锁规则已定义")
+
+	var msg := EconomyLog.make_port_invest("泉州", "大额", 2000)
+	_assert_true(msg.contains("泉州"), "EconomyLog: 投资消息含港口名")
+	var unlock_msg := EconomyLog.make_specialty_unlock("泉州", "福建瓷")
+	_assert_true(unlock_msg.contains("福建瓷"), "EconomyLog: 解锁消息含特产名")
+
+	_assert_eq(TextKeys.INTENT_INVEST_SUCCESS, "intent.invest_port.success", "TextKeys.INTENT_INVEST_SUCCESS")
+	_assert_eq(TextKeys.ERROR_INVEST_COOLDOWN, "error.invest.cooldown", "TextKeys.ERROR_INVEST_COOLDOWN")
+
+	print("")
+
+# ── NK1-P6: NPC 好感 / 送礼 / 求教测试 ───────────────────
+
+func _test_npc_affinity_handlers() -> void:
+	print("[NPC Affinity Handlers]")
+
+	_assert_eq(GiftNPCHandler.DEFAULT_PREFERRED_DELTA, 10, "GiftNPCHandler: 偏好礼物默认 +10")
+	_assert_true(StudySkillHandler.SKILL_EFFECTS.has("skill_boarding_tactics"), "StudySkillHandler: 接舷战术已定义")
+
+	var lin := _load_npc_fixture("lin_boyuan")
+	_assert_true(not lin.is_empty(), "lin_boyuan NPC 数据可读")
+	_assert_eq(int(lin.get("affinity_threshold", 0)), 30, "lin_boyuan: 好感阈值 30")
+	var prefs: Array = lin.get("gift_preferences", [])
+	_assert_true("spring_autumn_scroll" in prefs, "lin_boyuan: 偏好《春秋》")
+
+	_assert_eq(TextKeys.INTENT_GIFT_SUCCESS, "intent.gift_npc.success", "TextKeys.INTENT_GIFT_SUCCESS")
+	_assert_eq(TextKeys.ERROR_STUDY_AFFINITY_LOW, "error.study.affinity_low", "TextKeys.ERROR_STUDY_AFFINITY_LOW")
+	_assert_eq(ResourcePaths.SCRIPT_HANDLER_GIFT_NPC, "res://scripts/systems/handlers/GiftNPCHandler.gd", "ResourcePaths.GIFT_NPC")
+	_assert_eq(ResourcePaths.SCRIPT_HANDLER_STUDY_SKILL, "res://scripts/systems/handlers/StudySkillHandler.gd", "ResourcePaths.STUDY_SKILL")
+
+	var story := StoryState.new()
+	story.acquire_item("spring_autumn_scroll")
+	_assert_true(story.has_item_flag("spring_autumn_scroll"), "story item 可持有")
+
+	print("")
+
+# ── NK1-P6: 决斗克制矩阵测试 ─────────────────────────────
+
+func _test_duel_action_matrix() -> void:
+	print("[Duel Action Matrix]")
+
+	_assert_eq(CombatState.DUEL_KI_MAX, 3, "CombatState: 气力上限 3")
+	_assert_eq(CombatState.DUEL_KI_SPECIAL_COST, 3, "CombatState: 必杀消耗 3")
+	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.SLASH, CombatState.DuelAction.DODGE), 1, "猛攻克闪避")
+	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.DODGE, CombatState.DuelAction.PARRY), 1, "闪避克招架")
+	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.PARRY, CombatState.DuelAction.SLASH), 1, "招架克猛攻")
+	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.SLASH, CombatState.DuelAction.PARRY), -1, "猛攻被招架")
+	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.DODGE, CombatState.DuelAction.SLASH), -1, "闪避败于猛攻")
+	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.SLASH, CombatState.DuelAction.SLASH), 0, "同招平局")
+	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.SPECIAL, CombatState.DuelAction.SLASH), 1, "必杀克猛攻")
+	_assert_eq(CombatState.get_duel_action_name(CombatState.DuelAction.PARRY), "招架", "决斗出招名称")
+
+	var combat := _make_duel_test_combat()
+	combat.phase = CombatState.Phase.BOARDING
+	var enter := combat.execute_round(CombatState.Tactic.DUEL, CombatState.Tactic.BOARD)
+	_assert_eq(combat.phase, CombatState.Phase.DUEL, "发起单挑进入 DUEL 阶段")
+	_assert_true(not enter.get("is_over", true), "进入决斗不立即结束")
+
+	combat.ki_points = 0
+	var clash := combat.execute_duel_action(CombatState.DuelAction.SLASH, CombatState.DuelAction.DODGE)
+	_assert_eq(int(clash.get("clash_winner", 0)), 1, "交互决斗：玩家克制获胜")
+	_assert_eq(combat.ki_points, 1, "克制获胜积攒气力 +1")
+
+	combat.ki_points = 3
+	var special := combat.execute_duel_action(CombatState.DuelAction.SPECIAL, CombatState.DuelAction.PARRY)
+	_assert_eq(int(special.get("clash_winner", 0)), 1, "必杀克制招架")
+	_assert_eq(combat.ki_points, 1, "必杀后剩余气力（获胜+1）")
+
+	print("")
+
+func _load_npc_fixture(npc_id: String) -> Dictionary:
+	var file := FileAccess.open("res://data/npcs.json", FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed = JSON.parse_string(file.get_as_text())
+	if parsed is Dictionary:
+		for n in parsed.get("npcs", []):
+			if str(n.get("id", "")) == npc_id:
+				return n
+	return {}
+
+func _make_duel_test_combat() -> CombatState:
+	var combat := CombatState.new()
+	combat.player_fleet = FleetState.new()
+	combat.enemy_fleet = FleetState.new()
+	combat.player_fleet.ships[0].crew = 40
+	combat.player_fleet.ships[0].max_crew = 40
+	combat.enemy_fleet.ships[0].name = "敌旗舰"
+	combat.enemy_fleet.ships[0].crew = 40
+	combat.enemy_fleet.ships[0].max_crew = 40
+	return combat
+
+# ── NK1-P6: 配置化事件链测试 ───────────────────────────────
+
+func _test_story_event_chains() -> void:
+	print("[Story Event Chains]")
+
+	StoryEventChainEngine.reload()
+	var ids: Array = StoryEventChainEngine.get_chain_ids()
+	_assert_true(ids.size() >= 2, "story_event_chains: 至少 2 条链")
+
+	var lin_chain: Dictionary = StoryEventChainEngine.get_chain("ev_lin_boyuan_formal_quanzhou")
+	_assert_true(not lin_chain.is_empty(), "林伯渊正式会面链存在")
+	var triggers: Array = lin_chain.get("trigger_on", [])
+	_assert_true("enter_port" in triggers, "林伯渊链: enter_port 触发")
+	var conds: Dictionary = lin_chain.get("conditions", {})
+	_assert_eq(str(conds.get("port_id", "")), "quanzhou", "林伯渊链: 泉州条件")
+
+	var rumor_chain: Dictionary = StoryEventChainEngine.get_chain("ev_post_chapter1_pu_rumor")
+	_assert_true("day_advance" in rumor_chain.get("trigger_on", []), "蒲氏传闻链: day_advance 触发")
+
+	_assert_eq(
+		ResourcePaths.DATA_STORY_EVENT_CHAINS,
+		"res://data/story_event_chains.json",
+		"ResourcePaths.DATA_STORY_EVENT_CHAINS"
+	)
+
+	print("")
+
 # ── NK1-P5-ECON-003: 事件与经济系统集成测试 ───────────────
 
 func _test_event_economy_integration() -> void:
@@ -1355,6 +1526,7 @@ func _test_resource_paths() -> void:
 	_assert_eq(ResourcePaths.SCRIPT_HANDLER_REPAIR, "res://scripts/systems/handlers/RepairHandler.gd", "ResourcePaths.SCRIPT_HANDLER_REPAIR")
 	_assert_eq(ResourcePaths.SCRIPT_HANDLER_BUY_SUPPLIES, "res://scripts/systems/handlers/BuySuppliesHandler.gd", "ResourcePaths.SCRIPT_HANDLER_BUY_SUPPLIES")
 	_assert_eq(ResourcePaths.SCRIPT_HANDLER_BUY_INTEL, "res://scripts/systems/handlers/BuyIntelHandler.gd", "ResourcePaths.SCRIPT_HANDLER_BUY_INTEL")
+	_assert_eq(ResourcePaths.SCRIPT_HANDLER_INVEST_PORT, "res://scripts/systems/handlers/InvestPortHandler.gd", "ResourcePaths.SCRIPT_HANDLER_INVEST_PORT")
 
 	# 资源目录
 	_assert_eq(ResourcePaths.DIR_ASSETS, "res://assets/", "ResourcePaths.DIR_ASSETS")
@@ -1644,6 +1816,9 @@ func _test_intent_types() -> void:
 	_assert_eq(IntentTypes.HIRE_CREW, "hire_crew", "IntentTypes.HIRE_CREW")
 	_assert_eq(IntentTypes.BUY_SUPPLIES, "buy_supplies", "IntentTypes.BUY_SUPPLIES")
 	_assert_eq(IntentTypes.BUY_INTEL, "buy_intel", "IntentTypes.BUY_INTEL")
+	_assert_eq(IntentTypes.INVEST_PORT, "invest_port", "IntentTypes.INVEST_PORT")
+	_assert_eq(IntentTypes.GIFT_NPC, "gift_npc", "IntentTypes.GIFT_NPC")
+	_assert_eq(IntentTypes.STUDY_SKILL, "study_skill", "IntentTypes.STUDY_SKILL")
 
 	# 战斗/海战类
 	_assert_eq(IntentTypes.COMBAT_REQUEST, "combat_request", "IntentTypes.COMBAT_REQUEST")
@@ -1658,12 +1833,15 @@ func _test_intent_types() -> void:
 	_assert_true(IntentTypes.is_known("bribe"), "is_known: bribe")
 	_assert_true(IntentTypes.is_known("combat_request"), "is_known: combat_request")
 	_assert_true(IntentTypes.is_known("ignore"), "is_known: ignore")
+	_assert_true(IntentTypes.is_known("invest_port"), "is_known: invest_port")
+	_assert_true(IntentTypes.is_known("gift_npc"), "is_known: gift_npc")
+	_assert_true(IntentTypes.is_known("study_skill"), "is_known: study_skill")
 	_assert_true(not IntentTypes.is_known("unknown_type"), "is_known: unknown_type 不存在")
 	_assert_true(not IntentTypes.is_known(""), "is_known: 空字符串不存在")
 
-	# all_types 返回 14 个
+	# all_types 返回 17 个
 	var all_types: Array = IntentTypes.all_types()
-	_assert_eq(all_types.size(), 14, "IntentTypes.all_types: 共 14 个类型")
+	_assert_eq(all_types.size(), 17, "IntentTypes.all_types: 共 17 个类型")
 
 	print("")
 
@@ -1838,8 +2016,8 @@ func _test_text_keys() -> void:
 	_assert_true(TextKeys.is_error("error.combat.no_fleet"), "is_error: combat")
 	_assert_true(not TextKeys.is_error("intent.payment.success"), "is_error: intent.* 不属于 error")
 
-	# all_intent_success_keys 返回 16 个
-	_assert_eq(TextKeys.all_intent_success_keys().size(), 16, "all_intent_success_keys: 16 个")
+	# all_intent_success_keys 返回 20 个
+	_assert_eq(TextKeys.all_intent_success_keys().size(), 20, "all_intent_success_keys: 20 个")
 
 	# all_error_keys 返回 50+ 个
 	var err_count: int = TextKeys.all_error_keys().size()

@@ -15,7 +15,7 @@ func _init(_success: bool = false, _type: String = "", _message_key: String = ""
 	error_code = "" if _success else _message_key
 	data = _data
 
-static func ok(data: Dictionary = {}, message_key: String = "intent.ok") -> IntentResult:
+static func ok(data: Dictionary = {}, message_key: String = TextKeys.INTENT_OK) -> IntentResult:
 	var r := IntentResult.new()
 	r.success = true
 	r.message_key = message_key

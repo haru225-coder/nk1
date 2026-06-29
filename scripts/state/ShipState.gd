@@ -2,6 +2,7 @@ class_name ShipState extends RefCounted
 
 ## 船只状态管理模块
 
+var hull_id: String = "fujian_merchant"
 var name: String = "未命名船只"
 var hp: float = 100.0
 var max_hp: float = 100.0
@@ -21,13 +22,14 @@ var maneuverability: int = 5
 
 func to_dict() -> Dictionary:
 	return {
-		"name": name, "hp": hp, "max_hp": max_hp,
+		"hull_id": hull_id, "name": name, "hp": hp, "max_hp": max_hp,
 		"crew": crew, "max_crew": max_crew,
 		"armor_level": armor_level, "sail_level": sail_level, "sail_type": sail_type,
 		"artillery": artillery, "swordplay": swordplay, "maneuverability": maneuverability,
 	}
 
 func from_dict(d: Dictionary) -> void:
+	hull_id = d.get("hull_id", "fujian_merchant")
 	name = d.get("name", "未命名船只")
 	hp = d.get("hp", 100.0); max_hp = d.get("max_hp", 100.0)
 	crew = int(d.get("crew", 30))

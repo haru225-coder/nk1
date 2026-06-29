@@ -8,9 +8,9 @@ class_name FleetState extends RefCounted
 var ships: Array[ShipState] = []
 
 func _init() -> void:
-	# 默认初始有一艘旗舰
-	var flagship = ShipState.new()
-	flagship.name = "旗舰"
+	var flagship := ShipState.new()
+	flagship.hull_id = "fujian_merchant"
+	flagship.name = "福船"
 	ships.append(flagship)
 
 func get_flagship() -> ShipState:

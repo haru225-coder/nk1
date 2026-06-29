@@ -45,7 +45,42 @@
       "philosophy": "海上自有道，非朝廷一家之道。不反儒，但不以朝廷为唯一标尺。",
       "attitude_to_player": "第一眼看见三十年前的自己。不动声色，但多留了他一天。",
       "chapter1_function": "Scene 03 递《春秋》定交；Scene 04 演示水密隔舱和指南针；Scene 05 讲航线网络；Scene 06 黑水沟判断失误；Scene 07 基隆海岸同行；Scene 08 留下《春秋》。",
-      "avatar": "res://assets/portraits/portrait_lin_boyuan.png"
+      "avatar": "res://assets/portraits/portrait_lin_boyuan.png",
+      "affinity_threshold": 30,
+      "skill_to_teach": "skill_boarding_tactics",
+      "gift_preferences": ["spring_autumn_scroll", "ketagalan_shell", "aromatic_medicine"],
+      "gift_affinity": {
+        "spring_autumn_scroll": 15,
+        "ketagalan_shell": 8,
+        "aromatic_medicine": 10
+      },
+      "special_actions": [
+        {
+          "action_id": "gift",
+          "label": "送礼",
+          "intent_type": "gift_npc",
+          "intent_target": "lin_boyuan",
+          "parameters": {},
+          "success_dialogue": "收下了你的%s，神色缓和了几分。",
+          "failure_dialogue": "你手头没有他看得上眼的东西。",
+          "enabled_when": {}
+        },
+        {
+          "action_id": "study",
+          "label": "求教接舷战术",
+          "intent_type": "study_skill",
+          "intent_target": "lin_boyuan",
+          "parameters": {"skill_id": "skill_boarding_tactics"},
+          "success_dialogue": "在甲板上比划了几招接舷要点，你铭记于心。",
+          "failure_dialogue": "今日心绪不宁，求教未成，改日再来。",
+          "disabled_label": "求教 (需好感30)",
+          "show_when_unmet": true,
+          "enabled_when": {
+            "npc_affinity_min": 30,
+            "story_flags_absent": ["learned_skill_boarding_tactics"]
+          }
+        }
+      ]
     },
     {
       "id": "abbas",
@@ -62,7 +97,23 @@
       "role": "衙门官差",
       "location": "泉州港",
       "chapter1_function": "Scene 02 验引棚前抽税：三十税一，香药。照例。",
-      "avatar": "res://assets/portraits/portrait_customs_official.png"
+      "avatar": "res://assets/portraits/portrait_customs_official.png",
+      "special_actions": [
+        {
+          "action_id": "bribe",
+          "label": "塞钱买通 (50钱)",
+          "intent_type": "bribe",
+          "intent_target": "customs_official",
+          "parameters": {
+            "amount": 50,
+            "attention_delta": 0,
+            "grant_permit": true
+          },
+          "success_dialogue": "颠了颠手里的碎银：“算你懂事。文牒拿好，路上小心。”",
+          "failure_dialogue": "满脸鄙夷：“就这点钱也想打通关节？滚滚滚！”",
+          "enabled_when": {}
+        }
+      ]
     },
     {
       "id": "ketagalan_elder",
@@ -79,6 +130,216 @@
       "location": "台湾北部海岸",
       "chapter1_function": "Scene 07 好奇看《春秋》，放贝壳，跑开。",
       "avatar": "res://assets/portraits/portrait_ketagalan_child.png"
+    },
+    {
+      "id": "broken_eyebrow_old_man",
+      "name": "断眉老汉",
+      "role": "运河埠补网人、林氏秘密联络暗哨",
+      "location": "临安运河埠",
+      "voice": "冷硬嘶哑，吐字极少。灯光照亮他脸上的深疤时显得格外威严。",
+      "appearance": "粗布麻衣，手上有极厚的网茧，脸上有一道贯穿右眼的陈旧刀疤。",
+      "chapter1_presence": "在临安运河埠缝帆补网。第二章和第三章中，作为海商林伯渊的密探，接引陈子龙运送理学禁书入城，并提供澎湖防风、潮信等海路生存警示。",
+      "avatar": "res://assets/portraits/portrait_broken_eyebrow.png"
+    },
+    {
+      "id": "innkeeper",
+      "name": "客栈掌柜",
+      "role": "临安/兴化客栈与米铺掌柜",
+      "location": "兴化 / 临安",
+      "voice": "市侩而碎嘴，算盘拨得啪啪响，说起价格来毫不留情，但低语时透着市井人情味。",
+      "appearance": "头戴儒巾但油渍斑斑，手持木算盘，身穿半旧的绸衫。",
+      "chapter1_presence": "在兴化和临安为赴考举子与小贩提供食宿。会在主角购买高昂米粮时多抓一把，透漏“临安物价是刺桐两倍”的黑市变动风声。",
+      "avatar": "res://assets/portraits/portrait_innkeeper.png"
+    },
+    {
+      "id": "one_finger_sailor",
+      "name": "断指水手",
+      "role": "泉州酒客、退役老水手",
+      "location": "泉州酒馆",
+      "voice": "浑身酒气，咧着嘴大笑，但在说关键情报时会猛地凑近你，声音压得极低。",
+      "appearance": "左手缺了两指，脖子上挂着海兽牙，皮肤被海风吹成黑铜色，常抱着酒壶。",
+      "chapter1_presence": "常驻泉州酒馆。为主角提供黑水沟的阴谋真相与海航避险技巧，并提示主角如何通过凯达格兰贝壳在北岸商人处换得五十贯巨款。",
+      "avatar": "res://assets/portraits/portrait_one_finger_sailor.png"
+    },
+    {
+      "id": "hakata_old_monk",
+      "name": "老僧",
+      "role": "博多寺社住持",
+      "location": "日本博多",
+      "voice": "温和、平静，带有参透世事的禅意。",
+      "appearance": "身披青灰色僧袍，手捻佛珠，站在长满青苔的石灯笼旁。",
+      "chapter1_presence": "在博多山门迎接宋地海商，保管着博多地方寺社的经商账册，暗中指点主角如何在博多的“寺社规矩”与宋商内斗中抽身。",
+      "avatar": "res://assets/portraits/portrait_old_monk.png"
+    },
+    {
+      "id": "jeju_official",
+      "name": "高丽官员",
+      "role": "耽罗岛栈桥官差",
+      "location": "高丽济州",
+      "voice": "焦虑而颤抖，四下张望，生怕被旁边的蒙古骑兵听去。",
+      "appearance": "穿着洗得发白、带褶皱的高丽官服，手里颤巍巍地拿着账册。",
+      "chapter1_presence": "在耽罗岛马场栈桥查验“引凭”。如果主角没有引凭，他会暗中示意蒙古骑兵的动向，并教主角避开蒙古马贩子的盘剥。",
+      "avatar": "res://assets/portraits/portrait_jeju_official.png"
+    },
+    {
+      "id": "guangzhou_persian_tavernkeeper",
+      "name": "波斯酒家",
+      "role": "广州蕃坊酒肆老板",
+      "location": "广州蕃坊",
+      "voice": "汉话说得字正腔圆，带有一点异域颤音。语气里有种旧地贵族的落寞。",
+      "appearance": "高鼻深目，微卷的灰白络腮胡，包着精致的白色缠头，倒着波斯葡萄酒。",
+      "chapter1_presence": "在广州蕃坊开设酒肆。感叹广州蕃坊的衰退（三千户仅剩三百），并向主角提供“走私关税比泉州便宜三成”的华南海岸黑市线索。",
+      "avatar": "res://assets/portraits/portrait_persian_tavernkeeper.png"
+    },
+    {
+      "id": "guangzhou_old_imam",
+      "name": "老阿訇",
+      "role": "广州怀圣寺住持",
+      "location": "广州怀圣寺",
+      "voice": "缓慢而平静，合掌作礼，诵读经文时声音有一种穿越数百年的沧桑感。",
+      "appearance": "身穿宽大的阿拉伯式白色长袍，胡须纯白，眼神深邃慈祥，廊下放着古老的大食教典。",
+      "chapter1_presence": "常驻广州怀圣寺，看守唐代砖砌光塔。向主角透露“泉州蒲家每年大捐修寺”的政商图景，点明蒲氏“既是真主的仆人，也是海上的王”的统治本质。",
+      "avatar": "res://assets/portraits/portrait_old_imam.png"
+    },
+    {
+      "id": "champa_earring_merchant",
+      "name": "金耳环商客",
+      "role": "占城大米行商",
+      "location": "占城港口",
+      "voice": "汉话极其流利、油腔滑调。笑声爽朗但带着商人的狡黠，对兵灾局势异常敏感。",
+      "appearance": "肤色深棕，左耳挂着大金耳环，头上缠着南洋腰布，赤着脚，手里捏着一颗稻谷。",
+      "chapter1_presence": "在占城码头向海商兜售稻米。在局势紧张时，低声问主角“买米还是买命”，透露蒙古军队征调三千兵马逼降占城王的军情风声。",
+      "avatar": "res://assets/portraits/portrait_champa_earring_merchant.png"
+    },
+    {
+      "id": "champa_chinese_grandmother",
+      "name": "华裔老妪",
+      "role": "占城椰林酒棚主人",
+      "location": "占城椰林",
+      "voice": "地道的泉州闽南语，亲切但语气带着世事无常的哀伤，笑声温和而看透风雨。",
+      "appearance": "身穿洗得发白的中式大襟衫，满头银丝，用棕榈叶在酒棚下扇风。",
+      "chapter1_presence": "在占城椰林酒棚酿椰子酒。给落脚海商提供椰酒解暑，并能讲出“这里以前是三佛齐的地盘，现在归占城”的南洋地缘沧桑史。",
+      "avatar": "res://assets/portraits/portrait_champa_grandmother.png"
+    },
+    {
+      "id": "penghu_old_fisherman",
+      "name": "老渔民",
+      "role": "澎湖老艄公、渔夫",
+      "location": "澎湖港",
+      "voice": "沧桑、低沉。言语中透着对海洋的敬畏，总爱含着烟杆含糊地嘟囔。",
+      "appearance": "满脸风霜，戴着斗笠，身上挂着旧网，手里捏着一杆竹制旱烟斗，眼神深邃地望着黑水沟方向。",
+      "chapter1_presence": "常驻澎湖避风锚地。在第一章中，警告主角黑水沟洋流的险恶（“那水，下去了就上不来”），并提示台风及沉船的避风时机。",
+      "avatar": "res://assets/portraits/portrait_penghu_fisherman.png"
+    },
+    {
+      "id": "hakata_mingzhou_merchant",
+      "name": "明州客商",
+      "role": "博多唐房大宋商人",
+      "location": "日本博多",
+      "voice": "客套而世故，笑声温和但时刻保持警惕，打算盘时手指翻飞极快。",
+      "appearance": "身穿宋地绸缎衣衫，但在袖口处有些磨损。面前摆着厚厚的宋日贸易账册与一壶清酒，眼神透着精明。",
+      "chapter1_presence": "在博多唐房居酒屋为主角提供引路。向主角传授日本博多商贸的潜规则（“别得罪寺社的人”），并透露福州与日本之间的宋钱流向。",
+      "avatar": "res://assets/portraits/portrait_mingzhou_merchant.png"
+    },
+    {
+      "id": "jeju_mongol_horse_dealer",
+      "name": "马贩子",
+      "role": "耽罗岛马市商贩",
+      "location": "高丽济州",
+      "voice": "豪迈、粗狂，说话大嗓门，笑起来露出被奶茶染黄的牙齿，习惯用马鞭比画。",
+      "appearance": "身材魁梧，头戴毛皮毡帽，身穿沾有草屑的蒙古袍。手里挥舞着马鞭，坐在马鞍上打量过往商客。",
+      "chapter1_presence": "在耽罗岛沿岸马市倒买倒卖。私下里向主角提供非军用的“次等马”交易，并用粗鲁的语气透露蒙古骑兵大批集结的动态。",
+      "avatar": "res://assets/portraits/portrait_mongol_horse_dealer.png"
+    },
+    {
+      "id": "ryukyu_old_pilot",
+      "name": "老舵手",
+      "role": "琉球海面领航员",
+      "location": "流求海面",
+      "voice": "爽朗大笑，口齿因嚼槟榔而略显黏糊，用沙哑的嗓音大声断定洋流方向。",
+      "appearance": "皮肤被海风和烈日晒得黑里透红，露出几颗被槟榔染红的牙齿。手里握着裂口的陶碗，赤膊盘腿坐在草席上。",
+      "chapter1_presence": "在流求海面锚地及破旧商船上出没。向主角传授黑潮与亲潮的分界线知识（“到了这儿，就只认水路，不认官路”），能帮主角在恶劣洋流中稳定航线。",
+      "avatar": "res://assets/portraits/portrait_ryukyu_pilot.png"
+    },
+    {
+      "id": "jiaozhi_temple_keeper",
+      "name": "文庙老者",
+      "role": "安南文庙守门人、学者",
+      "location": "交趾港文庙",
+      "voice": "儒雅而清虚，汉话字正腔圆，说起兴亡时面色宁静，带有些许凄凉。",
+      "appearance": "身穿陈旧的青色儒服，白发苍苍，拿着扫帚站在刻有科举金榜的榕树石碑旁。",
+      "chapter1_presence": "常驻安南文庙。在第二章剧情中，向主角阐释汉字文化圈与文人风骨的边界，并感叹战乱中“笔杆子打不过刀把子”、书生尽去当兵的悲壮。",
+      "avatar": "res://assets/portraits/portrait_jiaozhi_temple_keeper.png"
+    },
+    {
+      "id": "sanfoqi_old_shipwright",
+      "name": "老船匠",
+      "role": "三佛齐泊位修理匠",
+      "location": "三佛齐古渡",
+      "voice": "沙哑、冷漠，只顾专注于手头的活计，说话时不看人，声音随磨刀石咔咔作响。",
+      "appearance": "赤膊上身，布满厚重的老茧和木屑，蹲在生满青苔的古老石阶上，身旁放着砍刀与船桨。",
+      "chapter1_presence": "在三佛齐泊位修补风帆与划桨。通过冷淡的对话透露“泉州蒲家每年买走巨港一半香料”的情报，揭示蒲家在南洋的经济渗透。",
+      "avatar": "res://assets/portraits/portrait_sanfoqi_shipwright.png"
+    },
+    {
+      "id": "longyamen_captain",
+      "name": "船老大",
+      "role": "马六甲海峡航线领队",
+      "location": "龙牙门海峡",
+      "voice": "大嗓门，中气十足，常在港口海风中呼喊，为人泼辣豪迈，十分务实。",
+      "appearance": "皮肤因常年在海峡暴晒而黝黑发亮，身强体壮，腰间插着防身短刀，指向远方搁浅的沉船遗骸。",
+      "chapter1_presence": "在马六甲海峡入口招揽结伴船只。指引主角避开海峡中段的黑旗海盗，并提供结伴出航与海防哨兵的通路策略。",
+      "avatar": "res://assets/portraits/portrait_longyamen_captain.png"
+    },
+    {
+      "id": "jiaozhi_old_merchant",
+      "name": "老华商",
+      "role": "安南流寓老宋商",
+      "location": "交趾港酒楼",
+      "voice": "满口三十年前的泉州土音，叹息多于言语，酒后常抱怨“两头受气”的尴尬遭遇。",
+      "appearance": "头戴旧幞头，身着洗淡了的圆领袍，面前摆着鱼露调味的闽南家乡菜 and 一碗淡米酒。",
+      "chapter1_presence": "在安南宋商酒楼中出没。为主角讲述华商在交趾与蒙古战火夹缝中求生的心酸历史（“蒙古人来了，我们是宋人；陈朝赢了，我们是安南人”）。",
+      "avatar": "res://assets/portraits/portrait_jiaozhi_old_merchant.png"
+    },
+    {
+      "id": "inn_scholar",
+      "name": "举子",
+      "role": "赶考士子、太学同学",
+      "location": "兴化 / 临安客栈",
+      "voice": "焦虑、愁闷。说话爱咬文嚼字，常在考场上长吁短叹。",
+      "appearance": "身穿略带补丁的灰色青衿儒服，头发用发带系住，面容有些疲倦，手里常捏着毛笔或草纸。",
+      "chapter1_presence": "在兴化和临安客栈、考场中活动。与主角分享考场风云、互相交流理学旧闻，或在斜对面抄卷子时被监考官盯上。",
+      "avatar": "res://assets/portraits/portrait_inn_scholar.png"
+    },
+    {
+      "id": "linan_passerby",
+      "name": "路人",
+      "role": "临安街巷百姓",
+      "location": "临安街巷",
+      "voice": "压低声音，说话小心翼翼，极其提防周围官差，语速极快。",
+      "appearance": "头戴破旧粗布方巾，身穿棕褐色麻布衣裤，神色惊恐，行色匆匆，经常在暗巷拐角出没。",
+      "chapter1_presence": "在临安及蒲府外活动。对刚走出蒲府的主角进行低声警告（“蒲府出来的人，都走得快些”），提示主角临安街头的危险耳目。",
+      "avatar": "res://assets/portraits/portrait_linan_passerby.png"
+    },
+    {
+      "id": "tavern_guest",
+      "name": "酒客",
+      "role": "酒肆茶馆闲聊小贩",
+      "location": "泉州 / 临安酒馆",
+      "voice": "高谈阔论，吐字清晰，喝了酒后喜欢说一些江湖奇闻或官商内幕。",
+      "appearance": "身穿普通短打，胸前挂着毛巾，面露微醺红晕，手里比画着酒杯，绘声绘色地讲暗记暗语。",
+      "chapter1_presence": "在各地酒馆、茶铺活动。向主角透露“河西绸缎铺门帘暗记”或“贾府眼线”的情报线索。",
+      "avatar": "res://assets/portraits/portrait_tavern_guest.png"
+    },
+    {
+      "id": "patrol_soldier",
+      "name": "巡卒",
+      "role": "禁军兵卒、查关差役",
+      "location": "泉州码头 / 临安城门",
+      "voice": "凶狠冷酷，开口即是呵斥盘查之语，公事公办，不留任何情面。",
+      "appearance": "身穿铁黑色鳞甲或步卒罩甲，头戴铁盔，手里按着配刀，眼神锐利在街头扫视。",
+      "chapter1_presence": "在各港口检查卡点和城防活动。盘查主角包袱是否有无引海图或理学禁书，并在蒲帅下令时带人破门缉拿主角。",
+      "avatar": "res://assets/portraits/portrait_patrol_soldier.png"
     }
   ]
 }

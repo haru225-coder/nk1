@@ -6,10 +6,12 @@ var scenes_data: Dictionary = {}
 var goods_data: Dictionary = {}
 var ports_data: Dictionary = {}
 var npcs_data: Dictionary = {}
+var items_data: Dictionary = {}
 var events_data: Dictionary = {}
 var world_events_data: Dictionary = {}
 var factions_data: Dictionary = {}
 var fleets_data: Dictionary = {}
+var ships_data: Dictionary = {}
 var localization_data: Dictionary = {}
 var ui_commands_data: Dictionary = {}
 var input_locked: bool = false
@@ -23,6 +25,8 @@ var _scenes_by_id: Dictionary = {}
 var _ports_by_id: Dictionary = {}
 var _goods_by_id: Dictionary = {}
 var _goods_by_name: Dictionary = {}
+var _npcs_by_id: Dictionary = {}
+var _items_by_id: Dictionary = {}
 
 func _ready() -> void:
 	load_data()
@@ -38,10 +42,12 @@ func load_data() -> void:
 	goods_data = _load_json("res://data/goods.json")
 	ports_data = _load_json("res://data/ports.json")
 	npcs_data = _load_json("res://data/npcs.json")
+	items_data = _load_json("res://data/items.json")
 	events_data = _load_json("res://data/encounters.json")
 	world_events_data = _load_json("res://data/events.json")
 	factions_data = _load_json("res://data/factions.json")
 	fleets_data = _load_json("res://data/fleets.json")
+	ships_data = _load_json("res://data/ships.json")
 	localization_data = _load_json("res://data/localization/zh_cn.json")
 	ui_commands_data = _load_json("res://data/ui_commands.json")
 	
@@ -49,7 +55,6 @@ func load_data() -> void:
 	
 	if GameState.market:
 		GameState.market.init_from_ports(ports_data.get("ports", []), goods_data.get("goods", []))
-		
 	data_loaded.emit()
 
 func _build_lookup_dictionaries() -> void:
@@ -74,6 +79,18 @@ func _build_lookup_dictionaries() -> void:
 			_goods_by_id[gid] = g
 		if gname != "":
 			_goods_by_name[gname] = g
+
+	_npcs_by_id.clear()
+	for n in npcs_data.get("npcs", []):
+		var nid = n.get("id", "")
+		if nid != "":
+			_npcs_by_id[nid] = n
+
+	_items_by_id.clear()
+	for item in items_data.get("items", []):
+		var iid = item.get("id", "")
+		if iid != "":
+			_items_by_id[iid] = item
 
 func _load_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
@@ -211,7 +228,9 @@ func resolve_facility_icon(fac: Dictionary) -> Texture2D:
 		keys.append("exam")
 	if fac_id.contains("temple"):
 		keys.append("residence")
-	if fac_id.contains("wharf") or fac_id.contains("ship") or fac_id.contains("canal"):
+	if fac_id.contains("wharf"):
+		keys.append("wharf")
+	elif fac_id.contains("ship") or fac_id.contains("canal"):
 		keys.append("shipyard")
 	if fac_id.contains("market"):
 		keys.append("market")
@@ -232,13 +251,14 @@ func resolve_facility_icon(fac: Dictionary) -> Texture2D:
 		if key == "" or seen.has(key):
 			continue
 		seen[key] = true
+		# 优先查找 128x128 缩略图目录（文件集中在此处），再回退根目录
 		for folder: String in [_FACILITY_ICON_THUMB_DIR, "res://assets/"]:
 			var path: String = folder + "icon_" + key + "_koei.png"
 			var tex := AssetPlaceholder.load_texture(path, "texture")
 			if tex:
 				return tex
 
-	return AssetPlaceholder.load_texture("res://assets/icon_market_koei.png", "texture")
+	return AssetPlaceholder.load_texture(ResourcePaths.TEX_ICON_MARKET, "texture")
 
 func get_port_data(port_id: String) -> Dictionary:
 	return _ports_by_id.get(port_id, {})
@@ -246,8 +266,24 @@ func get_port_data(port_id: String) -> Dictionary:
 func get_good_data(good_id: String) -> Dictionary:
 	return _goods_by_id.get(good_id, {})
 
+func get_npc_data(npc_id: String) -> Dictionary:
+	return _npcs_by_id.get(npc_id, {})
+
+func get_item_data(item_id: String) -> Dictionary:
+	return _items_by_id.get(item_id, {})
+
 func get_good_by_name(good_name: String) -> Dictionary:
 	return _goods_by_name.get(good_name, {})
 
 func get_text(key: String, default_text: String = "") -> String:
 	return localization_data.get(key, default_text)
+
+func get_npc_name(npc_id: String, fallback: String = "神秘人物") -> String:
+	var npc: Dictionary = _npcs_by_id.get(npc_id, {})
+	if not npc.is_empty():
+		return npc.get("name", fallback)
+	# 子串兜底：npc_id 可能是 "lin_boyuan_ship" 等变体
+	for nid in _npcs_by_id:
+		if nid in npc_id:
+			return _npcs_by_id[nid].get("name", fallback)
+	return fallback

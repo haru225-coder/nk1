@@ -2,6 +2,13 @@ class_name TradeState extends RefCounted
 
 ## 贸易与海关管理模块
 
+## ── 海关检查常量 ─────────────────────────────────────────
+## 蒲氏暗桩警戒值达到此阈值时，海关查扣走私并重罚（验证器与海关检查共享）
+const CUSTOMS_BLOCKED_ATTENTION := 15
+const CUSTOMS_FINE_MAX := 200             ## 海关走私最大罚款金额
+const CUSTOMS_BRIBE_AMOUNT := 50          ## 无货引时塞给小吏的贿赂金额
+const CUSTOMS_BRIBE_ATTENTION_DELTA := 3  ## 贿赂带来的蒲氏关注度增量
+
 var pu_attention: int = 0
 var has_customs_permit: bool = false
 
@@ -16,7 +23,7 @@ signal inspection_result(result: Dictionary)
 
 func sell_goods(item_id: String, amount: int, _price_per_unit: int) -> bool:
 	var result: IntentResult = IntentResolver.resolve(Intent.new(
-		"market_sell", "player", "market",
+		IntentTypes.MARKET_SELL, "player", "market",
 		{"good_id": item_id, "amount": amount},
 		{"port_id": GameState.last_port}
 	))
@@ -36,7 +43,7 @@ func sell_all_cargo(port_id: String, resolve_good_func: Callable, _calc_price_fu
 			continue
 		var good_id: String = g_data.get("id", key)
 		var result: IntentResult = IntentResolver.resolve(Intent.new(
-			"market_sell", "player", "market",
+			IntentTypes.MARKET_SELL, "player", "market",
 			{"good_id": good_id, "amount": amt},
 			{"port_id": port_id}
 		))
@@ -55,20 +62,20 @@ func customs_inspection() -> Dictionary:
 		has_customs_permit = false
 	else:
 		result["was_smuggling"] = true
-		if pu_attention >= 15:
+		if pu_attention >= CUSTOMS_BLOCKED_ATTENTION:
 			result["passed"] = false
 			result["confiscated"] = true
 			result["msg"] = "【严重警告】蒲氏暗桩早已盯上你！市舶司当场查扣所有无证货物，并处以巨额罚款！"
 			var b = LedgerSystem.get_balance()
-			var fine = min(b, 200)
+			var fine = min(b, CUSTOMS_FINE_MAX)
 			if fine > 0:
 				# INTENT_DEFERRED: 严重走私海关罚款 — 非贿赂路径，暂不迁移至 Intent
 				LedgerSystem.apply({"amount": -fine, "source": "system", "reason": "customs_fine", "actor": "GameState"})
 			CargoSystem.clear_all()
 		else:
 			var bribe_intent := Intent.new(
-				"bribe", "player", "customs_officer",
-				{"amount": 50, "attention_delta": 3, "smuggling_departure": true},
+				IntentTypes.BRIBE, "player", "customs_officer",
+				{"amount": CUSTOMS_BRIBE_AMOUNT, "attention_delta": CUSTOMS_BRIBE_ATTENTION_DELTA, "smuggling_departure": true},
 				{"customs_departure": true}
 			)
 			var bribe_result := IntentResolver.resolve(bribe_intent)

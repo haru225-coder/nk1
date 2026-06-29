@@ -62,6 +62,12 @@ func _process(delta: float) -> void:
 			_type_accum -= _char_interval
 			_char_index += 1
 			dialogue_label.text = _full_text.substr(0, _char_index)
+			
+			# 标点符号额外停顿，模拟口语自然节奏
+			var current_char := _full_text.substr(_char_index - 1, 1)
+			if current_char in ["，", "。", "！", "？", "；", "：", "…"]:
+				_type_accum -= _char_interval * 4.0
+				
 			if _is_speech_line and _char_index % BLIP_EVERY_N_CHARS == 0:
 				_play_blip()
 		if _char_index >= _full_text.length():
@@ -177,7 +183,7 @@ func _show_current_line() -> void:
 	_type_accum = 0.0
 	_char_interval = CHAR_INTERVAL_NARRATION if is_narration else CHAR_INTERVAL_SPEECH
 	dialogue_label.text = ""
-	dialogue_label.theme_type_variation = &"DialogueNarrationText" if is_narration else &"DialogueSpeechText"
+	dialogue_label.theme_type_variation = UITheme.TEXT_DIALOGUE_NARRATION if is_narration else UITheme.TEXT_DIALOGUE_SPEECH
 	_is_typing = _full_text.length() > 0
 	_show_hint(false)
 
@@ -202,11 +208,19 @@ func _apply_speech_presentation(
 	_set_portrait(avatar_path)
 
 func _animate_speaker_change() -> void:
-	portrait_panel.modulate.a = 0.45
-	portrait_panel.scale = Vector2(0.96, 0.96)
-	var tween := portrait_panel.create_tween().set_parallel(true)
-	tween.tween_property(portrait_panel, "modulate:a", 1.0, 0.14)
-	tween.tween_property(portrait_panel, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	# 设定头像框的缩放轴心为中心，避免缩放抖动
+	portrait_panel.pivot_offset = portrait_panel.size / 2
+	portrait_panel.scale = Vector2(0.97, 0.97)
+	
+	# 立绘透明度及侧滑初态（从左侧 -10px 处平滑滑入）
+	portrait.modulate.a = 0.0
+	portrait.position.x = -10.0
+	
+	var tween := create_tween().set_parallel(true)
+	tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(portrait_panel, "scale", Vector2.ONE, 0.22)
+	tween.tween_property(portrait, "modulate:a", 1.0, 0.2)
+	tween.tween_property(portrait, "position:x", 0.0, 0.24)
 
 func _on_typing_finished() -> void:
 	if _display_mode == DisplayMode.PERSISTENT:

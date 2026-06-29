@@ -183,6 +183,7 @@ func _process_weather_and_time(delta: float) -> void:
 		TradeEventGenerator.process_day()
 		# NK1-P5-ECON-002: 每日经济处理（繁荣度回归+贸易历史衰减）
 		GameState.market.process_daily_economy()
+		StoryEventChainEngine.check_triggers("day_advance", {})
 		if GameState.crew_count < old_crew:
 			var ft = ResourceManager.FloatingText.instantiate()
 			ft.text = "【警告】水尽粮绝！水手减少！"

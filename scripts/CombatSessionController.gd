@@ -167,16 +167,28 @@ func _format_fleet(fleet: FleetState, show_hull_detail: bool = false) -> String:
 	return "\n".join(lines)
 
 func _refresh_status() -> void:
+	var phase_line := "[color=#808080]当前阶段：%s[/color]" % combat.get_phase_label()
+	if combat.phase == CombatState.Phase.DUEL:
+		phase_line += " · 气力 %d/%d · 决斗第 %d/%d 招" % [
+			combat.ki_points,
+			CombatState.DUEL_KI_MAX,
+			combat.duel_action_round,
+			CombatState.DUEL_ROUNDS,
+		]
 	_status_label.text = (
 		"[color=#66ccff]【我方舰队】[/color]\n" + _format_fleet(combat.player_fleet, true) + "\n" +
 		"[color=#ff6666]【%s】[/color]\n" % combat.enemy_name + _format_fleet(combat.enemy_fleet) +
-		"\n[color=#808080]当前阶段：%s[/color]" % combat.get_phase_label()
+		"\n" + phase_line
 	)
 
 ## ── 战术按钮 ─────────────────────────────────────────────
 
 func _show_tactic_buttons() -> void:
 	_clear_actions()
+
+	if combat.phase == CombatState.Phase.DUEL:
+		_show_duel_action_buttons()
+		return
 
 	var tactics := combat.get_available_tactics()
 	for tactic in tactics:
@@ -188,6 +200,43 @@ func _show_tactic_buttons() -> void:
 		if tactic == CombatState.Tactic.FLEE:
 			btn.modulate = Color(0.7, 0.7, 0.7)
 		_actions.add_child(btn)
+
+func _show_duel_action_buttons() -> void:
+	_clear_actions()
+
+	for action in combat.get_available_duel_actions():
+		var label := CombatState.get_duel_action_name(action)
+		var is_special := action == CombatState.DuelAction.SPECIAL
+		if is_special:
+			label = "必杀 (%d/%d 气力)" % [combat.ki_points, CombatState.DUEL_KI_SPECIAL_COST]
+		var btn := _make_button(label, _on_duel_action_chosen.bind(action), is_special)
+		if is_special and not combat.can_use_duel_special(true):
+			btn.disabled = true
+			btn.modulate = Color(0.55, 0.55, 0.55)
+		_actions.add_child(btn)
+
+func _on_duel_action_chosen(action: CombatState.DuelAction) -> void:
+	if not is_instance_valid(_root):
+		return
+	if action == CombatState.DuelAction.SPECIAL and not combat.can_use_duel_special(true):
+		return
+
+	for child in _actions.get_children():
+		if child is Button:
+			child.disabled = true
+
+	var enemy_action := combat.choose_enemy_duel_action()
+	var result := combat.execute_duel_action(action, enemy_action)
+	_append_round_narration(result, "决斗")
+
+	_refresh_status()
+
+	if result.get("is_over", false):
+		_on_combat_over(result)
+	else:
+		await get_tree().create_timer(0.4).timeout
+		if is_instance_valid(_root):
+			_show_duel_action_buttons()
 
 func _on_tactic_chosen(tactic: CombatState.Tactic) -> void:
 	if not is_instance_valid(_root):
@@ -203,26 +252,25 @@ func _on_tactic_chosen(tactic: CombatState.Tactic) -> void:
 
 	# 执行回合结算
 	var result := combat.execute_round(tactic, enemy_tactic)
-
-	# 追加播报
-	var narration: String = result.get("narration", "")
-	if narration != "":
-		_body_label.text += "\n\n[color=#e0d0a0]── 第 %d 回合 ──[/color]\n%s" % [
-			result.get("round", 0), narration
-		]
-	# 自动滚动到底部
-	_body_label.scroll_to_line(_body_label.get_line_count())
+	_append_round_narration(result, "回合")
 
 	_refresh_status()
 
-	# 判断是否结束
 	if result.get("is_over", false):
 		_on_combat_over(result)
 	else:
-		# 延迟一小段时间后刷新按钮，避免太快
 		await get_tree().create_timer(0.4).timeout
 		if is_instance_valid(_root):
 			_show_tactic_buttons()
+
+func _append_round_narration(result: Dictionary, label: String) -> void:
+	var narration: String = result.get("narration", "")
+	if narration == "":
+		return
+	_body_label.text += "\n\n[color=#e0d0a0]── 第 %d %s ──[/color]\n%s" % [
+		result.get("round", 0), label, narration
+	]
+	_body_label.scroll_to_line(_body_label.get_line_count())
 
 ## ── 战斗结束 ─────────────────────────────────────────────
 

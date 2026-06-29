@@ -3,7 +3,7 @@ extends Node
 signal save_completed(slot: int, success: bool)
 signal load_completed(slot: int, success: bool, data: Dictionary)
 
-const CURRENT_VERSION := 1
+const CURRENT_VERSION := 2
 const MAX_SLOTS := 4
 const QUICK_SLOT := 0
 const SAVE_PATH_TEMPLATE := "user://nk1_save_%d.json"
@@ -39,6 +39,7 @@ func save_game(slot: int = 0) -> bool:
 		"game_state": GameState.to_save_dict(),
 		"ledger": LedgerSystem.to_save_dict(),
 		"cargo": CargoSystem.to_save_dict(),
+		"world_events": WorldEventTracker.to_save_dict(),
 	}
 
 	var json_str := JSON.stringify(data, "\t")
@@ -58,6 +59,9 @@ func load_game(slot: int = 0) -> bool:
 		load_completed.emit(slot, false, {"msg": "无效存档槽。"})
 		return false
 
+	# 读档时清空幂等守卫，避免旧记录干扰新存档
+	IdempotencyGuard.clear_all()
+
 	var data := _read_save_file(slot)
 	if data.is_empty():
 		load_completed.emit(slot, false, {"msg": "无存档。"})
@@ -71,6 +75,14 @@ func load_game(slot: int = 0) -> bool:
 	GameState.from_save_dict(data.get("game_state", {}))
 	LedgerSystem.from_save_dict(data.get("ledger", {}))
 	CargoSystem.from_save_dict(data.get("cargo", {}))
+	WorldEventTracker.from_save_dict(data.get("world_events", {}))
+
+	# strengthen consistency after load (for old saves and state sync)
+	var m = GameState.market
+	if m:
+		if m.port_stocks.is_empty() and GameManager.ports_data and GameManager.goods_data:
+			m.init_from_ports(GameManager.ports_data.get("ports", []), GameManager.goods_data.get("goods", []))
+		_validate_and_sync_world_events()
 
 	var scene_id: String = data.get("current_scene_id", "cg_title")
 	_current_scene_id = scene_id
@@ -174,7 +186,47 @@ func _format_timestamp(ts: String) -> String:
 
 func _migrate_save_data(data: Dictionary) -> Dictionary:
 	var version := int(data.get("save_version", 0))
-	if version < CURRENT_VERSION:
-		# Reserved for future version upgrades (e.g. 1 -> 2).
-		pass
+	if version < 2:
+		# Add world_events for pre full world event saves (compatibility)
+		if not data.has("world_events"):
+			data["world_events"] = {
+				"active_events": [],
+				"triggered_events": {},
+				"port_triggered": {},
+				"cooldowns": {},
+				"version": 1
+			}
+		# Ensure game_state.market.upcoming_events exists for old saves
+		var gs = data.get("game_state", {})
+		if not gs.has("market") or not gs["market"] is Dictionary:
+			gs["market"] = {
+				"port_stocks": {},
+				"upcoming_events": []
+			}
+		else:
+			var market_dict: Dictionary = gs["market"]
+			if not market_dict.has("upcoming_events") or not market_dict["upcoming_events"] is Array:
+				market_dict["upcoming_events"] = []
+			gs["market"] = market_dict
+		data["game_state"] = gs
 	return data
+
+
+func _validate_and_sync_world_events() -> void:
+	var m = GameState.market
+	if m == null:
+		return
+	var active_list = WorldEventTracker.get_active_events()
+	var clean_upcoming: Array[Dictionary] = []
+	for item in m.upcoming_events:
+		var e = item.get("event") as BaseEconomicEvent
+		if e == null:
+			continue
+		var is_duplicate := false
+		for ae in active_list:
+			if ae != null and ae.event_id == e.event_id and ae.target_port == e.target_port:
+				is_duplicate = true
+				break
+		if not is_duplicate:
+			clean_upcoming.append(item)
+	m.upcoming_events = clean_upcoming

@@ -15,6 +15,9 @@ func _ready() -> void:
 	ok = ok and IntentResolver.has_handler("hire_crew")
 	ok = ok and IntentResolver.has_handler("buy_supplies")
 	ok = ok and IntentResolver.has_handler("buy_intel")
+	ok = ok and IntentResolver.has_handler("invest_port")
+	ok = ok and IntentResolver.has_handler("gift_npc")
+	ok = ok and IntentResolver.has_handler("study_skill")
 	ok = ok and IntentResolver.has_handler("trade_request")
 
 	# PaymentHandler
@@ -261,6 +264,50 @@ func _ready() -> void:
 	ok = ok and buy_result.success
 	ok = ok and CargoSystem.get_amount("fujian_porcelain") == 1
 	ok = ok and LedgerSystem.get_balance() < 10000
+
+	# InvestPortHandler
+	IdempotencyGuard.processed_intents.clear()
+	LedgerSystem.from_save_dict({"balance": 5000})
+	GameState.market = MarketState.new()
+	GameState.market.init_from_ports(
+		[{"id": "quanzhou", "production": {"fujian_porcelain": 1.0}, "demand": {}}],
+		[{"id": "fujian_porcelain", "category": "货物", "base_value": 100}]
+	)
+	GameState.set_story_flag(InvestPortHandler.INVEST_COOLDOWN_FLAG_PREFIX + "quanzhou", false)
+	var invest_intent := Intent.new(IntentTypes.INVEST_PORT, "player", "quanzhou", {"tier": "large"})
+	var invest_result := IntentResolver.resolve(invest_intent)
+	ok = ok and invest_result.success
+	ok = ok and GameState.market.get_affinity("quanzhou") > 0.0
+	ok = ok and GameState.market.is_specialty_unlocked("quanzhou", "fujian_porcelain")
+	IdempotencyGuard.processed_intents.clear()
+	var invest_dup := IntentResolver.resolve(Intent.new(IntentTypes.INVEST_PORT, "player", "quanzhou", {"tier": "small"}))
+	ok = ok and not invest_dup.success
+	ok = ok and invest_dup.error_code == IntentErrorCodes.INVALID_STATE
+
+	# GiftNPCHandler
+	IdempotencyGuard.processed_intents.clear()
+	GameState.story_items = {}
+	GameState.acquire_item("spring_autumn_scroll")
+	var gift_result := IntentResolver.resolve(Intent.new(IntentTypes.GIFT_NPC, "player", "lin_boyuan", {}))
+	ok = ok and gift_result.success
+	ok = ok and gift_result.data.get("affinity_delta", 0) == 15
+	ok = ok and GameState.story.get_npc_affinity("lin_boyuan") == 15
+	ok = ok and not GameState.has_item_flag("spring_autumn_scroll")
+
+	# StudySkillHandler（高好感保证学成）
+	IdempotencyGuard.processed_intents.clear()
+	GameState.story.adjust_npc_affinity("lin_boyuan", 85)
+	var study_result := IntentResolver.resolve(Intent.new(
+		IntentTypes.STUDY_SKILL, "player", "lin_boyuan",
+		{"skill_id": "skill_boarding_tactics", "difficulty": 0}
+	))
+	ok = ok and study_result.success
+	ok = ok and GameState.has_story_flag("learned_skill_boarding_tactics")
+	var study_dup := IntentResolver.resolve(Intent.new(
+		IntentTypes.STUDY_SKILL, "player", "lin_boyuan",
+		{"skill_id": "skill_boarding_tactics"}
+	))
+	ok = ok and not study_dup.success
 
 	# 未知类型走 NO_HANDLER
 	var unknown := IntentResolver.resolve(Intent.new("unknown_type", "a", "b"))

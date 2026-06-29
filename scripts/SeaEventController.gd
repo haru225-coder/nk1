@@ -3,9 +3,9 @@ class_name SeaEventController
 
 signal event_finished
 
-const _THEME_PATH := "res://assets/main_theme.tres"
-const _FRAME_PATH := "res://assets/ui_frame_koei.png"
-const _GRADIENT_SHADER := "res://assets/ui_bottom_gradient.gdshader"
+const _THEME_PATH := ResourcePaths.THEME_MAIN
+const _FRAME_PATH := ResourcePaths.FRAME_KOEI
+const _GRADIENT_SHADER := ResourcePaths.GRADIENT_SHADER
 
 var event_data: Dictionary = {}
 var title_label: Label
@@ -13,7 +13,8 @@ var body_label: RichTextLabel
 var _actions: VBoxContainer
 var _root: Control
 var _game_theme: Theme
-var _pending_enemy_data: Dictionary = {}  ## 战斗结束后用于 LootResolver 结算
+var _pending_enemy_data: Dictionary = {}  ## 战斗结束后用于结算
+var _pending_combat_state: CombatState = null  ## 战斗结束后用于结算
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -34,11 +35,11 @@ func _ready() -> void:
 	if gradient_shader:
 		var mat := ShaderMaterial.new()
 		mat.shader = gradient_shader
-		mat.set_shader_parameter("top_color", Color(0.02, 0.02, 0.03, 0.72))
-		mat.set_shader_parameter("bottom_color", Color(0.01, 0.01, 0.02, 0.88))
+		mat.set_shader_parameter("top_color", GameColors.MODAL_TOP)
+		mat.set_shader_parameter("bottom_color", GameColors.MODAL_BOTTOM)
 		dim.material = mat
 	else:
-		dim.color = Color(0.02, 0.02, 0.02, 0.82)
+		dim.color = GameColors.MODAL_DIM
 	_root.add_child(dim)
 
 	var center := CenterContainer.new()
@@ -64,7 +65,7 @@ func _ready() -> void:
 
 	var inner := PanelContainer.new()
 	inner.theme = _game_theme
-	inner.theme_type_variation = "DialoguePanelInner"
+	inner.theme_type_variation = UITheme.PANEL_DIALOGUE_INNER
 	margin.add_child(inner)
 
 	var vbox := VBoxContainer.new()
@@ -74,7 +75,7 @@ func _ready() -> void:
 	title_label = Label.new()
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.theme = _game_theme
-	title_label.theme_type_variation = "EventTitle"
+	title_label.theme_type_variation = UITheme.TITLE_EVENT
 	vbox.add_child(title_label)
 
 	body_label = RichTextLabel.new()
@@ -84,7 +85,7 @@ func _ready() -> void:
 	body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body_label.custom_minimum_size = Vector2(580, 140)
 	body_label.theme = _game_theme
-	body_label.theme_type_variation = "EventBody"
+	body_label.theme_type_variation = UITheme.BODY_EVENT
 	vbox.add_child(body_label)
 
 	_actions = VBoxContainer.new()
@@ -120,11 +121,8 @@ func _populate_ui() -> void:
 			_actions.add_child(btn)
 
 func _make_choice_button(text: String, callback: Callable) -> Button:
-	var btn := Button.new()
-	btn.text = text
-	btn.custom_minimum_size = Vector2(0, 46)
+	var btn := UIBuilder.make_button(text, UITheme.BTN_CHOICE, 46)
 	btn.theme = _game_theme
-	btn.theme_type_variation = "ChoiceButton"
 	btn.pressed.connect(callback)
 	return btn
 
@@ -133,10 +131,16 @@ func _on_choice_made(choice: Dictionary) -> void:
 		_show_result(choice.get("msg_fail", "条件不足，无法执行此选项。"))
 		return
 
-	# ── FleetArchetypes 战斗路由：直接移交 CombatSessionController ──
+	# ── FleetArchetypes 战斗路由：通过 Intent 管道 ──
 	if choice.has("launch_combat") and choice["launch_combat"]:
 		var enemy_data: Dictionary = choice.get("combat_enemy", {})
-		_launch_combat(enemy_data)
+		var intent := Intent.new(IntentTypes.COMBAT_REQUEST, "player_fleet", "enemy_fleet",
+			{"combat_enemy": enemy_data})
+		var result := IntentResolver.resolve(intent)
+		if result.success:
+			_launch_combat_from_result(result)
+		else:
+			_show_result("战斗启动失败：" + result.message)
 		return
 
 	if choice.has("success_chance"):
@@ -149,14 +153,22 @@ func _on_choice_made(choice: Dictionary) -> void:
 
 	if choice.has("intent_struct"):
 		var istruct: Dictionary = choice["intent_struct"]
-		var intent_type: String = istruct.get("type", "ignore")
+		var intent_type: String = istruct.get("type", IntentTypes.IGNORE)
 
-		# ── 战斗拦截：移交 CombatSessionController ──
-		if intent_type == "combat_request":
-			var enemy_data: Dictionary = istruct.get("parameters", {}).get("combat_enemy", {})
-			if enemy_data.is_empty():
-				enemy_data = istruct.get("context", {}).get("combat_enemy", {})
-			_launch_combat(enemy_data)
+		# ── 战斗请求：通过 Intent 管道 → CombatHandler ──
+		if intent_type == IntentTypes.COMBAT_REQUEST:
+			var combat_intent := Intent.new(
+				intent_type,
+				istruct.get("source", "player_fleet"),
+				istruct.get("target", "unknown_fleet"),
+				istruct.get("parameters", {}),
+				istruct.get("context", {})
+			)
+			var combat_result := IntentResolver.resolve(combat_intent)
+			if combat_result.success:
+				_launch_combat_from_result(combat_result)
+			else:
+				_show_result("战斗启动失败：" + combat_result.message)
 			return
 
 		var intent := Intent.new(
@@ -174,7 +186,7 @@ func _on_choice_made(choice: Dictionary) -> void:
 		return
 	elif choice.has("effects"):
 		_apply_choice_effects(choice["effects"])
-		var msg := choice.get("msg_ok", choice.get("msg", ""))
+		var msg: String = str(choice.get("msg_ok", choice.get("msg", "")))
 		if msg != "":
 			_show_result(msg)
 			return
@@ -197,7 +209,7 @@ func _apply_choice_effects(effects: Dictionary) -> void:
 		GameState.apply_effects(stat_effects)
 
 func _format_intent_result(intent_type: String, result: IntentResult, istruct: Dictionary) -> String:
-	if intent_type == "trade_request":
+	if intent_type == IntentTypes.TRADE_REQUEST:
 		if result.success:
 			var params: Dictionary = istruct.get("parameters", {})
 			return "交易成功！花费 %d 钱，获得食物 %d、淡水 %d。" % [
@@ -217,29 +229,30 @@ func _show_result(msg: String) -> void:
 	_actions.add_child(_make_choice_button("确认", _close_modal))
 
 ## ── 战斗移交 ─────────────────────────────────────────────
-## 关闭当前 SeaEvent，启动 CombatSessionController 多回合战斗。
-func _launch_combat(enemy_data: Dictionary) -> void:
+## 从 IntentResult 中读取 combat_state + enemy_data，启动 CombatSessionController。
+func _launch_combat_from_result(result: IntentResult) -> void:
 	var parent := get_parent()
-	# 保存敌方数据供战斗结束后使用
-	_pending_enemy_data = enemy_data
+	var data: Dictionary = result.data
+	_pending_enemy_data = data.get("enemy_data", {})
+	_pending_combat_state = data.get("combat_state", null)
+
 	# 立即隐藏当前模态，避免叠影
 	if is_instance_valid(_root):
 		_root.visible = false
 
-	var ctrl := CombatSessionController.start_combat(parent, enemy_data)
+	var ctrl := CombatSessionController.start_combat(parent, _pending_enemy_data)
 	ctrl.combat_finished.connect(_on_combat_over)
 
-func _on_combat_over(result: Dictionary) -> void:
-	var victory_type: int = result.get("victory_type", 0)
-	var is_player_win := victory_type in [
-		CombatState.VictoryType.SUNK,
-		CombatState.VictoryType.CAPTURED,
-		CombatState.VictoryType.DUEL_VICTORY,
-	]
-	if is_player_win:
-		# 战利品结算
-		var loot := LootResolver.resolve(victory_type, _pending_enemy_data, null)
-		LootResolver.apply_loot(loot)
+func _on_combat_over(result: Dictionary, combat_state: CombatState = null) -> void:
+	if result.is_empty():
+		# 战斗被取消（如 UI 关闭）
+		event_finished.emit()
+		queue_free()
+		return
+	# 使用 CombatHandler 统一结算（战利品 + 惩罚）
+	var actual_state := combat_state if combat_state != null else _pending_combat_state
+	if actual_state != null:
+		CombatHandler.resolve_combat_result(actual_state, _pending_enemy_data)
 	# 关闭本 SeaEvent
 	event_finished.emit()
 	queue_free()

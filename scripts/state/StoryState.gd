@@ -40,6 +40,14 @@ func has_story_flag(key: String) -> bool:
 func has_story_flag_value(key: String, expected) -> bool:
 	return story_flags.has(key) and story_flags[key] == expected
 
+func get_npc_affinity(npc_id: String) -> int:
+	return int(story_flags.get("npc_affinity_" + npc_id, 0))
+
+func adjust_npc_affinity(npc_id: String, delta: int) -> void:
+	var key := "npc_affinity_" + npc_id
+	var current := get_npc_affinity(npc_id)
+	set_story_flag(key, current + delta)
+
 func acquire_item(item_id: String) -> void:
 	story_items[item_id] = true
 	item_acquired.emit(item_id)

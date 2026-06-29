@@ -5,7 +5,7 @@ signal navigation_requested(scene_id: String)
 signal log_requested
 signal message_logged(msg: String)
 
-const COMMAND_BAR_SCENE := preload("res://scenes/CommandBar.tscn")
+const COMMAND_BAR_SCENE := preload(ResourcePaths.SCENE_COMMAND_BAR)
 
 @onready var background_layer: Control = $BackgroundLayer
 @onready var background: TextureRect = $BackgroundLayer/Background

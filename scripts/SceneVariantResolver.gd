@@ -34,6 +34,12 @@ static func resolve(scene_data: Dictionary, scene_id: String) -> Dictionary:
 			return _variant_linan_market(scene_data)
 		"linan_canal":
 			return _variant_linan_canal(scene_data)
+		"chapter3_pu_summon":
+			return _variant_chapter3_pu_summon(scene_data)
+		"chapter3_comply_audit":
+			return _variant_chapter3_comply_audit(scene_data)
+		"chapter3_burn_arrest":
+			return _variant_chapter3_burn_arrest(scene_data)
 		_:
 			return scene_data.duplicate(true)
 
@@ -303,4 +309,80 @@ static func _variant_linan_canal(scene_data: Dictionary) -> Dictionary:
 		"漕船排队过闸。禁军挎刀立在桥头，目光像秤——称的不是货，是人。\n\n"
 		+ data.get("body", "")
 	)
+	return data
+
+static func _variant_chapter3_pu_summon(scene_data: Dictionary) -> Dictionary:
+	var data := _dup(scene_data)
+	var route := str(GameState.get_story_flag("chapter2_route", ""))
+	if GameState.has_story_flag("chapter2_exile_route"):
+		data["body"] = (
+			"府外早有甲士候着。进门先搜身，《春秋》被抽走翻过，又塞回你怀里。\n\n"
+			+ data.get("body", "")
+		)
+	elif route == "lin":
+		data["body"] = (
+			"帘后翻文牍的手顿了一下：「林伯渊那条线的人，也敢进京城考科举？」\n\n"
+			+ data.get("body", "")
+		)
+	elif route == "scholar":
+		data["body"] = (
+			"蒲帅从帘后走出，把你那本《春秋》推到你面前：「义庄的批注，写得不错。」\n\n"
+			+ data.get("body", "")
+		)
+	elif route == "jia":
+		data["body"] = (
+			"蒲帅掀帘出来，看着你的眼神像看自家走失的狗：「贾府的人，怎么不直接送你进来？」\n\n"
+			+ data.get("body", "")
+		)
+	return data
+
+static func _variant_chapter3_comply_audit(scene_data: Dictionary) -> Dictionary:
+	var data := _dup(scene_data)
+	if GameState.has_story_flag("chapter2_exile_route"):
+		data["body"] = (
+			"监试官把腰牌推回来：「名籍里没你这号人。再递牌，连考场都不用进。」\n\n"
+			+ data.get("body", "")
+		)
+	elif GameState.pu_attention > 10:
+		data["body"] = (
+			"屏风后坐着的，是蒲帅本人。茶已经沏好。他在等你抬头。\n\n"
+			+ data.get("body", "")
+		)
+	elif GameState.pu_attention <= 5:
+		data["body"] = (
+			"屏风后无人。监试官独自翻名册，比预想的松。\n\n"
+			+ data.get("body", "")
+		)
+	return data
+
+static func _variant_chapter3_burn_arrest(scene_data: Dictionary) -> Dictionary:
+	var data := _dup(scene_data)
+	if GameState.has_story_flag("chapter2_exile_route"):
+		data["body"] = (
+			"门被踢开时，禁军没说话。校尉刀已出鞘。\n\n"
+			+ data.get("body", "")
+		)
+	elif GameState.has_story_flag("chapter3_burn_took_guard_badge"):
+		data["body"] = (
+			"校尉看了一眼你手里的腰牌，抬手让另两人退后：「自己人？」\n\n"
+			+ data.get("body", "")
+		)
+	else:
+		var route := str(GameState.get_story_flag("chapter2_route", ""))
+		match route:
+			"jia":
+				data["body"] = (
+					"校尉认得「贾府保举」四字，话缓了半拍：「蒲帅的令，我们也得听。走一趟。」\n\n"
+					+ data.get("body", "")
+				)
+			"lin":
+				data["body"] = (
+					"校尉翻完箱笼，又翻了一遍窗台：「林伯渊的线，今夜拨了三拨人。」\n\n"
+					+ data.get("body", "")
+				)
+			"scholar":
+				data["body"] = (
+					"校尉在门口顿了一下：「太学的人，也闹到这一步？」他没拔刀，只抬手。\n\n"
+					+ data.get("body", "")
+				)
 	return data

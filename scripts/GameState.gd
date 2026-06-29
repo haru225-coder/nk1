@@ -311,6 +311,7 @@ func _init_effect_handlers() -> void:
 		"artillery":                _apply_artillery,
 		"swordplay":                _apply_swordplay,
 		"maneuverability":          _apply_maneuverability,
+		"npc_affinity":             _apply_npc_affinity,
 	}
 
 const _SILENT_KEYS := ["sea_tendency", "scholar_tendency", "merchant_credit", "ledger_note"]
@@ -400,6 +401,13 @@ func _apply_swordplay(val) -> void:
 
 func _apply_maneuverability(val) -> void:
 	maneuverability = max(0, maneuverability + int(val))
+
+func _apply_npc_affinity(val) -> void:
+	if val is Dictionary:
+		var npc_id := str(val.get("npc_id", ""))
+		if npc_id.is_empty():
+			return
+		story.adjust_npc_affinity(npc_id, int(val.get("delta", 0)))
 
 ## ── Dispatcher 私有实现 ───────────────────────────────────
 
