@@ -24,11 +24,16 @@ POOL_TO_BG: dict[str, str] = {
     "ganpu": "res://assets/bg_ganpu_port.png",
     "guangzhou": "res://assets/bg_guangzhou_port.png",
     "penghu_night": "res://assets/bg_penghu_night.png",
+    "keelung": "res://assets/bg_keelung_port.png",
+    "champa": "res://assets/bg_champa_port.png",
+    "bugan": "res://assets/bg_bugan_port.png",
+    "tsushima": "res://assets/bg_tsushima_port.png",
 }
 
-# penghu day scenes share night pool when no dedicated day pool exists
+# Additional scene bg keys that share the same image pool.
 POOL_EXTRA_BG: dict[str, list[str]] = {
     "penghu_night": ["res://assets/bg_penghu_port.png"],
+    "keelung": ["res://assets/bg_keelung_coast.png"],
 }
 
 
@@ -54,18 +59,21 @@ def main() -> None:
     if not SRC.is_dir():
         raise SystemExit(f"Source not found: {SRC}")
 
-    if DST_ROOT.exists():
-        shutil.rmtree(DST_ROOT)
-    DST_ROOT.mkdir(parents=True)
+    DST_ROOT.mkdir(parents=True, exist_ok=True)
 
-    bg_pools: dict[str, str] = {}
+    data = json.loads(CONFIG.read_text(encoding="utf-8"))
+    bg_pools: dict[str, str] = dict(data.get("bg_pools", {}))
     summary: dict[str, int] = {}
 
     for pool_name, bg_key in POOL_TO_BG.items():
         images = collect_images(pool_name)
-        if not images:
-            continue
         pool_dir = DST_ROOT / pool_name
+        if not images:
+            if pool_dir.is_dir():
+                print(f"{pool_name}: keep existing {len(list(pool_dir.glob('*.jpg')))} (no new source)")
+            continue
+        if pool_dir.exists():
+            shutil.rmtree(pool_dir)
         pool_dir.mkdir(parents=True)
         rel_paths: list[str] = []
         for i, src in enumerate(images, start=1):
@@ -77,9 +85,8 @@ def main() -> None:
         for key in [bg_key, *POOL_EXTRA_BG.get(pool_name, [])]:
             bg_pools[key] = pool_res_dir
         summary[pool_name] = len(rel_paths)
-        print(f"{pool_name}: {len(rel_paths)} -> {bg_key}")
+        print(f"{pool_name}: deployed {len(rel_paths)} -> {bg_key}")
 
-    data = json.loads(CONFIG.read_text(encoding="utf-8"))
     aliases: dict[str, str] = data.get("bg_aliases", {})
 
     # Pools replace single-file aliases for covered ports.

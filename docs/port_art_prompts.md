@@ -6,9 +6,16 @@
 - 风格：**90年代写实油画** + **KOEI 系历史游戏**（大航海时代4 / 三国志）+ **IMAX 电影级构图** + **赛璐璐人物** + 历史向暖色调
 
 ### 风格后缀（每条提示词末尾必加）
-```
-1990s realistic oil painting style, Koei historical simulation game aesthetic like Romance of the Three Kingdoms and Uncharted Waters IV. IMAX cinematic ultra-wide composition, epic scale, dramatic atmospheric depth. Historical maritime oil painting with rich brushstrokes, cel-shaded anime character rendering, warm historical palette. 16:9 landscape. No text, no signage, no readable letters or characters anywhere.
-```
+见 `docs/port_prompts/_STYLE_SUFFIX.txt`（全港口共用）。
+
+### 图池四港（多变体提示词）
+无图池港口的新版多变体提示词见：
+- `docs/port_prompts/keelung.md`
+- `docs/port_prompts/champa.md`
+- `docs/port_prompts/bugan.md`
+- `docs/port_prompts/tsushima.md`
+
+入库：`grok-images-classified/{港口}/` → `python3 tools/deploy_port_bg_pools.py`
 
 ---
 
@@ -83,12 +90,9 @@ Xinghua harbor, Fujian, Song Dynasty. Small provincial port with scholarly atmos
 ---
 
 ## 8. 基隆海岸 (keelung_port)
-**文件**: `bg_keelung_port.png`
-**场景描述**: 基隆海岸 - 台湾北部，凯达格兰，未入官图
-**提示词**:
-```
-Keelung coast, northern Taiwan, 13th century. Indigenous Ketagalan settlement near rocky coastline. outrigger canoes and small fishing boats. Volcanic rocks and lush tropical vegetation. No Chinese architecture yet - wild, untamed coastline. Misty mountains in background. Art style: classic JRPG background, natural wilderness feel. Color palette: ocean blues, volcanic grays, tropical greens, mist whites.
-```
+**文件**: `bg_keelung_port.png`, `bg_keelung_coast.png`（共用图池）
+**场景描述**: 贝壳滩涂、浓雾、凯达格兰、无栈桥、化外之地
+**提示词**: → `docs/port_prompts/keelung.md`（4 变体）
 
 ---
 
@@ -114,11 +118,8 @@ Hakata port, Japan (Dazaifu), 13th century. Chinese merchant quarter (Tobou) wit
 
 ## 11. 占城港 (champa_port)
 **文件**: `bg_champa_port.png`
-**场景描述**: 占城 - 中南半岛，粮仓，远航节点
-**提示词**:
-```
-Champa port, central Vietnam, 13th century. Southeast Asian trading hub. Hindu temple towers (Cham architecture) in background. Rice paddies near the coast. Ships loading rice and tropical goods. Cham merchants in traditional dress. Tropical vegetation, palm trees. Art style: classic JRPG background, Southeast Asian aesthetic. Color palette: rice paddy greens, temple sandstone, tropical brights, ocean blues.
-```
+**场景描述**: 正午酷热、米船、占婆塔、蒙古扬尘
+**提示词**: → `docs/port_prompts/champa.md`（4 变体）
 
 ---
 
@@ -183,12 +184,9 @@ Longyamen (Dragon's Teeth Gate), Singapore Strait, 13th century. Dangerous narro
 ---
 
 ## 18. 蒲甘港 (bugan_port)
-**文件**: `bg_bugan_port.png`
-**场景描述**: 蒲甘 - 缅甸，佛塔林立，蒙古铁骑，象牙玉石
-**提示词**:
-```
-Pagan (Bagan) port, Burma, 13th century. River port on Irrawaddy River. Thousands of Buddhist pagodas and temples in background. Mongol soldiers patrolling. Ivory and jade being loaded onto boats. Burmese merchants and monks. Art style: classic JRPG background, Southeast Asian Buddhist aesthetic. Color palette: temple golds, jade greens, ivory whites, river browns.
-```
+**文件**: `bg_bugan_port.png`（游戏 ID `bugan`，非「博干」）
+**场景描述**: 亡国废墟、海岸难民、黄昏阴天、泥地散玉
+**提示词**: → `docs/port_prompts/bugan.md`（5 变体，含黄昏废墟主锚）
 
 ---
 
@@ -224,11 +222,8 @@ Tunmen fortress, Pearl River estuary, Song Dynasty. Military outpost guarding Gu
 
 ## 22. 对马岛 (tsushima_port)
 **文件**: `bg_tsushima_port.png`
-**场景描述**: 对马岛 - 日本对马，日朝中转，马匹与铁器，边境感
-**提示词**:
-```
-Tsushima Island, Japan, 13th century. Strategic island between Japan and Korea. Japanese-Korean trading post. Ships from both cultures. Mountainous terrain with pine forests. Harsh winter atmosphere. Military outpost feel. Art style: classic JRPG background, Japanese island aesthetic. Color palette: pine greens, winter grays, ocean blues, military browns.
-```
+**场景描述**: 光秃无树、拴马、倭寇磨刀、马铁交易、铁钩泊船
+**提示词**: → `docs/port_prompts/tsushima.md`（4 变体，无松树）
 
 ---
 
@@ -266,5 +261,5 @@ Xuwen port, Leizhou Peninsula, Song Dynasty. Ancient port with Han Dynasty ruins
 - 可添加参数：`--ar 16:9 --style raw --v 6`
 - 建议先生成基础版本，再进行细节调整
 - **禁止画面文字**：提示词末尾务必加 `No text, no signage, no readable letters or characters`——AI 生成的中文/阿拉伯文招牌极易错字
-- 入库：`python3 tools/deploy_port_art.py`（session 图）→ `python3 tools/ingest_port_art.py`（校验归一化）
+- 入库：`grok-images-classified/{港口}/` → `python3 tools/deploy_port_bg_pools.py`（图池轮换）
 - 回退链：见 `scripts/AssetPlaceholder.gd` 的 `BG_ALIASES`
