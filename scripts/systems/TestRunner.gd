@@ -2071,6 +2071,30 @@ func _test_ship_system() -> void:
 
 	var has_ch1 := func(flag: String) -> bool: return flag == "chapter1_complete"
 	_assert_true(ShipSystem.is_hull_unlocked(patrol_hull, 30, has_ch1), "warship unlocked with fame+flag")
+
+	var fujian_hull: Dictionary = ShipSystem.get_hull("fujian_merchant")
+	_assert_true(not fujian_hull.get("visual", {}).is_empty(), "福船 visual block in ships.json")
+	_assert_eq(fujian.hull_id, "fujian_merchant", "JSON model hull_id")
+	_assert_eq(fujian.hull_points.size(), 6, "JSON 福船 hull_points count")
+
+	var combat_detail: String = ShipSystem.format_combat_ship_detail(ship)
+	_assert_true(combat_detail.contains("福船"), "combat detail hull name")
+	_assert_true(combat_detail.contains("横帆"), "combat detail sail")
+	_assert_true(combat_detail.contains("炮2"), "combat detail artillery")
+	_assert_true(combat_detail.contains("机动5"), "combat detail maneuver")
+
+	var nav := NavigationState.new()
+	nav.save_world_map_pose(Vector2(1200.5, -800.25), 1.57)
+	_assert_true(nav.world_map_pose_saved, "nav pose saved flag")
+	_assert_eq(nav.world_map_position, Vector2(1200.5, -800.25), "nav pose position")
+	var nav_dict: Dictionary = nav.to_dict()
+	var nav2 := NavigationState.new()
+	nav2.from_dict(nav_dict)
+	_assert_true(nav2.world_map_pose_saved, "nav pose round-trip saved")
+	_assert_eq(nav2.world_map_position, Vector2(1200.5, -800.25), "nav pose round-trip position")
+	_assert_lt(absf(nav2.world_map_rotation - 1.57), 0.001, "nav pose round-trip rotation")
+	nav2.clear_world_map_pose()
+	_assert_true(not nav2.world_map_pose_saved, "nav pose cleared")
 	print("")
 
 # ═══════════════════════════════════════════════════════════

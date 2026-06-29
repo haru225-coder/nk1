@@ -21,6 +21,8 @@ func _on_body_exited(body: Node2D) -> void:
 
 func _input(event: InputEvent) -> void:
 	if player_in_zone and event.is_action_pressed("ui_accept"):
-		# Trigger docking
+		var player_ship := get_tree().get_first_node_in_group("player_ship") as Node2D
+		if player_ship:
+			GameState.save_world_map_ship_pose(player_ship.position, player_ship.rotation)
 		GameState.set_return_port(port_id)
-		get_tree().change_scene_to_file("res://scenes/Main.tscn")
+		get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)

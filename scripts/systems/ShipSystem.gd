@@ -207,6 +207,19 @@ static func format_ship_summary(ship: ShipState) -> String:
 	]
 
 
+static func format_combat_ship_detail(ship: ShipState) -> String:
+	if ship == null or ship.hull_id.is_empty():
+		return ""
+	var hull := get_hull(ship.hull_id)
+	var hull_name := str(hull.get("name", ship.name))
+	return "%s·%s 炮%d 机动%d" % [
+		hull_name,
+		sail_type_label(ship.sail_type),
+		ship.artillery,
+		ship.maneuverability,
+	]
+
+
 static func format_hull_change_delta(ship: ShipState, target_hull_id: String) -> String:
 	if ship == null:
 		return ""

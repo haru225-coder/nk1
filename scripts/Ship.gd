@@ -182,6 +182,7 @@ func _sink_ship() -> void:
 
 
 func _finish_sink() -> void:
+	GameState.clear_world_map_ship_pose()
 	CargoSystem.clear_all()
 	GameManager.set_input_locked(false)
 	get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)

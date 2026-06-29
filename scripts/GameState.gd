@@ -241,6 +241,15 @@ func set_return_port(port_id: String) -> void:
 	navigation.return_port(port_id)
 	story.set_flag("return_to_port")
 
+func save_world_map_ship_pose(pos: Vector2, rot: float) -> void:
+	navigation.save_world_map_pose(pos, rot)
+
+func clear_world_map_ship_pose() -> void:
+	navigation.clear_world_map_pose()
+
+func has_world_map_ship_pose() -> bool:
+	return navigation.world_map_pose_saved
+
 func set_navigation_locked(locked: bool) -> void:
 	if locked:
 		story.set_flag("navigation_locked")

@@ -6,11 +6,11 @@ class_name CombatSessionController
 ## 复用 SeaEventController 的视觉语言，支持战术选择多轮刷新。
 ## ═══════════════════════════════════════════════════════════
 
-signal combat_finished(result: Dictionary)
+signal combat_finished(result: Dictionary, combat_state: CombatState)
 
-const _THEME_PATH := "res://assets/main_theme.tres"
-const _FRAME_PATH := "res://assets/ui_frame_koei.png"
-const _GRADIENT_SHADER := "res://assets/ui_bottom_gradient.gdshader"
+const _THEME_PATH := ResourcePaths.THEME_MAIN
+const _FRAME_PATH := ResourcePaths.FRAME_KOEI
+const _GRADIENT_SHADER := ResourcePaths.GRADIENT_SHADER
 
 var combat: CombatState
 var enemy_data: Dictionary = {}
@@ -49,11 +49,11 @@ func _build_ui() -> void:
 	if gradient_shader:
 		var mat := ShaderMaterial.new()
 		mat.shader = gradient_shader
-		mat.set_shader_parameter("top_color", Color(0.02, 0.02, 0.03, 0.72))
-		mat.set_shader_parameter("bottom_color", Color(0.01, 0.01, 0.02, 0.88))
+		mat.set_shader_parameter("top_color", GameColors.MODAL_TOP)
+		mat.set_shader_parameter("bottom_color", GameColors.MODAL_BOTTOM)
 		dim.material = mat
 	else:
-		dim.color = Color(0.02, 0.02, 0.02, 0.82)
+		dim.color = GameColors.MODAL_DIM
 	_root.add_child(dim)
 
 	var center := CenterContainer.new()
@@ -80,7 +80,7 @@ func _build_ui() -> void:
 
 	var inner := PanelContainer.new()
 	inner.theme = _game_theme
-	inner.theme_type_variation = "DialoguePanelInner"
+	inner.theme_type_variation = UITheme.PANEL_DIALOGUE_INNER
 	margin.add_child(inner)
 
 	var vbox := VBoxContainer.new()
@@ -91,7 +91,7 @@ func _build_ui() -> void:
 	_title_label = Label.new()
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.theme = _game_theme
-	_title_label.theme_type_variation = "EventTitle"
+	_title_label.theme_type_variation = UITheme.TITLE_EVENT
 	vbox.add_child(_title_label)
 
 	# 双方状态条（HP / Crew）
@@ -101,7 +101,7 @@ func _build_ui() -> void:
 	_status_label.scroll_active = false
 	_status_label.custom_minimum_size = Vector2(700, 0)
 	_status_label.theme = _game_theme
-	_status_label.theme_type_variation = "EventBody"
+	_status_label.theme_type_variation = UITheme.BODY_EVENT
 	vbox.add_child(_status_label)
 
 	# 分割线
@@ -116,7 +116,7 @@ func _build_ui() -> void:
 	_body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_body_label.custom_minimum_size = Vector2(700, 160)
 	_body_label.theme = _game_theme
-	_body_label.theme_type_variation = "EventBody"
+	_body_label.theme_type_variation = UITheme.BODY_EVENT
 	vbox.add_child(_body_label)
 
 	# 战术按钮区
@@ -142,18 +142,33 @@ func _init_combat() -> void:
 
 ## ── 状态条刷新 ───────────────────────────────────────────
 
-func _format_fleet(fleet: FleetState) -> String:
+func _format_fleet(fleet: FleetState, show_hull_detail: bool = false) -> String:
 	var lines: PackedStringArray = []
 	for s in fleet.ships:
+		var detail := ""
+		if show_hull_detail:
+			detail = ShipSystem.format_combat_ship_detail(s)
+			if not detail.is_empty():
+				detail += " "
 		if s.hp > 0:
-			lines.append("  [b]%s[/b] 耐久%d/%d (%d%%) 水手%d/%d" % [s.name, int(s.hp), int(s.max_hp), int(s.hp / s.max_hp * 100) if s.max_hp > 0 else 0, s.crew, s.max_crew])
+			lines.append(
+				"  [b]%s[/b] %s耐久%d/%d (%d%%) 水手%d/%d" % [
+					s.name,
+					detail,
+					int(s.hp),
+					int(s.max_hp),
+					int(s.hp / s.max_hp * 100) if s.max_hp > 0 else 0,
+					s.crew,
+					s.max_crew,
+				]
+			)
 		else:
 			lines.append("  [color=#ff4444][b]%s[/b] (沉没)[/color]" % s.name)
 	return "\n".join(lines)
 
 func _refresh_status() -> void:
 	_status_label.text = (
-		"[color=#66ccff]【我方舰队】[/color]\n" + _format_fleet(combat.player_fleet) + "\n" +
+		"[color=#66ccff]【我方舰队】[/color]\n" + _format_fleet(combat.player_fleet, true) + "\n" +
 		"[color=#ff6666]【%s】[/color]\n" % combat.enemy_name + _format_fleet(combat.enemy_fleet) +
 		"\n[color=#808080]当前阶段：%s[/color]" % combat.get_phase_label()
 	)
@@ -225,7 +240,7 @@ func _on_combat_over(result: Dictionary) -> void:
 		button_text = "搜刮战利品"
 
 	var btn := _make_button(button_text, func():
-		combat_finished.emit(result)
+		combat_finished.emit(result, combat)
 		_close_modal()
 	, false)
 	_actions.add_child(btn)
@@ -233,11 +248,9 @@ func _on_combat_over(result: Dictionary) -> void:
 ## ── 工具方法 ─────────────────────────────────────────────
 
 func _make_button(text: String, callback: Callable, highlight: bool) -> Button:
-	var btn := Button.new()
-	btn.text = text
-	btn.custom_minimum_size = Vector2(0, 46)
+	var theme_var = UITheme.BTN_SET_SAIL if highlight else UITheme.BTN_CHOICE
+	var btn := UIBuilder.make_button(text, theme_var, 46)
 	btn.theme = _game_theme
-	btn.theme_type_variation = "SetSailButton" if highlight else "ChoiceButton"
 	btn.pressed.connect(callback)
 	return btn
 
@@ -247,7 +260,7 @@ func _clear_actions() -> void:
 
 func _close_modal() -> void:
 	if not is_instance_valid(_root):
-		combat_finished.emit({})
+		combat_finished.emit({}, null)
 		queue_free()
 		return
 	var tween := create_tween()

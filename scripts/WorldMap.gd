@@ -47,7 +47,9 @@ func _ready() -> void:
 	randomize()
 	_load_ports()
 
-	if port_nodes.has(GameState.current_voyage_origin):
+	if GameState.has_world_map_ship_pose():
+		_restore_ship_pose()
+	elif port_nodes.has(GameState.current_voyage_origin):
 		_place_ship_at_port(GameState.current_voyage_origin)
 
 	if not ship.is_in_group("player_ship"):
@@ -66,6 +68,7 @@ func _input(event: InputEvent) -> void:
 			var nearest_port := _get_nearest_port_id()
 			if nearest_port != "":
 				GameState.last_port = nearest_port
+			_save_ship_pose()
 			GameState.set_navigation_flag("return_to_port")
 			get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)
 
@@ -344,6 +347,22 @@ func _place_ship_at_port(port_id: String) -> void:
 	var flagship := GameState.fleet.get_flagship()
 	var hull_id := flagship.hull_id if flagship else ShipSystem.DEFAULT_HULL_ID
 	ship.position = port_nodes[port_id].position + ShipModelLibrary.get_port_spawn_offset(hull_id)
+	ship.rotation = 0.0
+	if ship.has_method("_sync_from_flagship"):
+		ship._sync_from_flagship()
+
+
+func _save_ship_pose() -> void:
+	if not ship:
+		return
+	GameState.save_world_map_ship_pose(ship.position, ship.rotation)
+
+
+func _restore_ship_pose() -> void:
+	if not ship:
+		return
+	ship.position = GameState.navigation.world_map_position
+	ship.rotation = GameState.navigation.world_map_rotation
 	if ship.has_method("_sync_from_flagship"):
 		ship._sync_from_flagship()
 

@@ -19,7 +19,26 @@
       "swordplay": 2,
       "maneuverability": 5,
       "speed_per_sail_level": 50,
-      "turn_per_sail_level": 0.2
+      "turn_per_sail_level": 0.2,
+      "visual": {
+        "display_scale": 1.0,
+        "collision_radius": 28.0,
+        "hull_points": [[0, -36], [-22, 4], [-24, 30], [0, 34], [24, 30], [22, 4]],
+        "deck_points": [[-12, -10], [12, -10], [10, 20], [-10, 20]],
+        "rail_points": [[-22, -2], [-24, 30], [24, 30], [22, -2], [-22, -2]],
+        "keel_band": [[-8, 24], [8, 24], [6, 32], [-6, 32]],
+        "plank_lines": [[[-9, -2], [9, -2]], [[-9, 6], [9, 6]], [[-8, 14], [8, 14]]],
+        "hull_color": [0.42, 0.26, 0.13, 1.0],
+        "hull_shadow_color": [0.22, 0.14, 0.08, 0.45],
+        "deck_color": [0.56, 0.38, 0.22, 1.0],
+        "rail_color": [0.74, 0.56, 0.32, 1.0],
+        "keel_color": [0.28, 0.18, 0.1, 0.85],
+        "flag_color": [0.78, 0.18, 0.12, 1.0],
+        "flag_pole": [0, -20],
+        "bow_marker": [0, -38],
+        "wake_offset": [0, 42],
+        "bow_wave_offsets": [[-18, -38], [18, -38]]
+      }
     },
     {
       "id": "guangzhou_trader",
@@ -40,7 +59,26 @@
       "swordplay": 2,
       "maneuverability": 6,
       "speed_per_sail_level": 45,
-      "turn_per_sail_level": 0.25
+      "turn_per_sail_level": 0.25,
+      "visual": {
+        "display_scale": 1.06,
+        "collision_radius": 26.0,
+        "hull_points": [[0, -40], [-14, -8], [-16, 18], [-10, 34], [10, 34], [16, 18], [14, -8]],
+        "deck_points": [[-7, -12], [7, -12], [6, 22], [-6, 22]],
+        "rail_points": [[-14, -4], [-16, 18], [-10, 34], [10, 34], [16, 18], [14, -4], [-14, -4]],
+        "keel_band": [[-5, 26], [5, 26], [4, 34], [-4, 34]],
+        "plank_lines": [[[-5, -4], [5, -4]], [[-5, 4], [5, 4]], [[-5, 12], [5, 12]], [[-4, 20], [4, 20]]],
+        "hull_color": [0.34, 0.28, 0.16, 1.0],
+        "hull_shadow_color": [0.16, 0.14, 0.08, 0.5],
+        "deck_color": [0.48, 0.4, 0.24, 1.0],
+        "rail_color": [0.62, 0.52, 0.3, 1.0],
+        "keel_color": [0.2, 0.16, 0.1, 0.9],
+        "flag_color": [0.2, 0.55, 0.35, 1.0],
+        "flag_pole": [2, -22],
+        "bow_marker": [0, -42],
+        "wake_offset": [0, 44],
+        "bow_wave_offsets": [[-14, -42], [14, -42]]
+      }
     },
     {
       "id": "warship_patrol",
@@ -66,7 +104,28 @@
       "swordplay": 3,
       "maneuverability": 4,
       "speed_per_sail_level": 40,
-      "turn_per_sail_level": 0.15
+      "turn_per_sail_level": 0.15,
+      "visual": {
+        "display_scale": 1.14,
+        "collision_radius": 32.0,
+        "hull_points": [[0, -34], [-26, 2], [-28, 28], [0, 36], [28, 28], [26, 2]],
+        "deck_points": [[-14, -8], [14, -8], [12, 18], [-12, 18]],
+        "rail_points": [[-26, -2], [-28, 28], [28, 28], [26, -2], [-26, -2]],
+        "keel_band": [[-10, 24], [10, 24], [8, 34], [-8, 34]],
+        "armor_band": [[-24, 6], [24, 6], [22, 14], [-22, 14]],
+        "plank_lines": [[[-11, 0], [11, 0]], [[-11, 8], [11, 8]]],
+        "gun_ports": [[-24, 10], [-24, 18], [24, 10], [24, 18], [-20, 22], [20, 22]],
+        "hull_color": [0.3, 0.28, 0.26, 1.0],
+        "hull_shadow_color": [0.12, 0.12, 0.14, 0.55],
+        "deck_color": [0.42, 0.38, 0.34, 1.0],
+        "rail_color": [0.55, 0.52, 0.48, 1.0],
+        "keel_color": [0.18, 0.18, 0.2, 0.95],
+        "flag_color": [0.15, 0.35, 0.72, 1.0],
+        "flag_pole": [-4, -18],
+        "bow_marker": [0, -36],
+        "wake_offset": [0, 46],
+        "bow_wave_offsets": [[-22, -36], [22, -36]]
+      }
     }
   ]
 }

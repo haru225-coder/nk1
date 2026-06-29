@@ -28,6 +28,10 @@ class ShipModel:
 
 
 static func get_model(hull_id: String) -> ShipModel:
+	var hull := ShipSystem.get_hull(hull_id)
+	var visual: Dictionary = hull.get("visual", {})
+	if not visual.is_empty():
+		return _model_from_visual(hull_id, visual, str(hull.get("sail_type", "square")))
 	match hull_id:
 		"guangzhou_trader":
 			return _guangzhou_trader()
@@ -35,6 +39,75 @@ static func get_model(hull_id: String) -> ShipModel:
 			return _warship_patrol()
 		_:
 			return _fujian_merchant()
+
+
+static func _model_from_visual(hull_id: String, visual: Dictionary, sail_type: String) -> ShipModel:
+	var m := ShipModel.new()
+	m.hull_id = hull_id
+	m.display_scale = float(visual.get("display_scale", 1.0))
+	m.sail_type = sail_type
+	m.hull_points = _parse_points(visual.get("hull_points", []))
+	m.deck_points = _parse_points(visual.get("deck_points", []))
+	m.rail_points = _parse_points(visual.get("rail_points", []))
+	m.keel_band = _parse_points(visual.get("keel_band", []))
+	m.armor_band = _parse_points(visual.get("armor_band", []))
+	m.gun_ports = _parse_points(visual.get("gun_ports", []))
+	m.plank_lines = _parse_plank_lines(visual.get("plank_lines", []))
+	m.hull_color = _parse_color(visual.get("hull_color", []), Color.WHITE)
+	m.hull_shadow_color = _parse_color(visual.get("hull_shadow_color", []), Color(0, 0, 0, 0.4))
+	m.deck_color = _parse_color(visual.get("deck_color", []), Color.WHITE)
+	m.rail_color = _parse_color(visual.get("rail_color", []), Color.WHITE)
+	m.keel_color = _parse_color(visual.get("keel_color", []), Color.WHITE)
+	m.flag_color = _parse_color(visual.get("flag_color", []), Color.WHITE)
+	m.flag_pole = _parse_vec2(visual.get("flag_pole", []), Vector2.ZERO)
+	m.bow_marker = _parse_vec2(visual.get("bow_marker", []), Vector2.ZERO)
+	m.wake_offset = _parse_vec2(visual.get("wake_offset", [0, 42]), Vector2(0, 42))
+	m.bow_wave_offsets = _parse_vec2_array(visual.get("bow_wave_offsets", []))
+	m.collision_radius = float(visual.get("collision_radius", 28.0))
+	return m
+
+
+static func _parse_points(arr: Array) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for item in arr:
+		if item is Array and item.size() >= 2:
+			pts.append(Vector2(float(item[0]), float(item[1])))
+	return pts
+
+
+static func _parse_vec2(arr: Array, fallback: Vector2) -> Vector2:
+	if arr.size() >= 2:
+		return Vector2(float(arr[0]), float(arr[1]))
+	return fallback
+
+
+static func _parse_vec2_array(arr: Array) -> Array:
+	var out: Array = []
+	for item in arr:
+		if item is Array and item.size() >= 2:
+			out.append(Vector2(float(item[0]), float(item[1])))
+	return out
+
+
+static func _parse_color(arr: Array, fallback: Color) -> Color:
+	if arr.size() >= 3:
+		var alpha := float(arr[3]) if arr.size() >= 4 else 1.0
+		return Color(float(arr[0]), float(arr[1]), float(arr[2]), alpha)
+	return fallback
+
+
+static func _parse_plank_lines(arr: Array) -> Array:
+	var lines: Array = []
+	for line in arr:
+		if line is Array and line.size() >= 2:
+			var start: Array = line[0]
+			var end: Array = line[1]
+			if start is Array and end is Array and start.size() >= 2 and end.size() >= 2:
+				lines.append([
+					Vector2(float(start[0]), float(start[1])),
+					Vector2(float(end[0]), float(end[1])),
+				])
+	return lines
 
 
 static func get_minimap_hull(hull_id: String, scale: float = 0.11) -> PackedVector2Array:
