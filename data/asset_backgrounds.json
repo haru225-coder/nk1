@@ -1,0 +1,49 @@
+{
+  "_comment": "NK1-P6-POLISH-004: 资产背景别名映射。键=缺失/不存在的资产路径，值=回退到的可用资产路径。修改此文件调整背景映射，无需改代码。",
+  "version": 2,
+  "bg_aliases": {
+    "res://assets/bg_xinghua_school.png": "res://assets/bg_xinghua_residence.png",
+    "res://assets/bg_lin_ship.png": "res://assets/bg_shipyard.jpg",
+    "res://assets/bg_departure.png": "res://assets/bg_sea_route_ship.png",
+    "res://assets/bg_black_water.png": "res://assets/bg_departure.png",
+    "res://assets/bg_sea_route_aligned.png": "res://assets/bg_black_water.png",
+    "res://assets/bg_keelung_coast.png": "res://assets/bg_keelung_port.png",
+    "res://assets/bg_keelung_port.png": "res://assets/bg_keelung_coast.png",
+    "res://assets/bg_hakata_port.png": "res://assets/bg_western_port.png",
+    "res://assets/bg_champa_port.png": "res://assets/bg_arab_desert_pass.png",
+    "res://assets/bg_qiongzhou_port.png": "res://assets/bg_reef_bay_koei.png",
+    "res://assets/bg_sanfoqi_port.png": "res://assets/bg_arab_mosque.jpg",
+    "res://assets/bg_longyamen_port.png": "res://assets/bg_black_water.png",
+    "res://assets/bg_bugan_port.png": "res://assets/bg_temple_gate.jpg",
+    "res://assets/bg_jiaozhi_port.png": "res://assets/bg_quanzhou_arab_market.png",
+    "res://assets/bg_yeshou_port.png": "res://assets/bg_temple_library.jpg",
+    "res://assets/bg_tsushima_port.png": "res://assets/bg_northern_fortress_snow.png",
+    "res://assets/bg_byland_port.png": "res://assets/bg_northern_fortress_snow.png",
+    "res://assets/bg_xuwen_port.png": "res://assets/bg_reef_bay.jpg"
+  },
+  "legacy_avatars": {
+    "chen_wenlong": "res://assets/placeholders/avatar_chen.png",
+    "teacher": "res://assets/placeholders/avatar_teacher.png",
+    "jia_disciple": "res://assets/placeholders/avatar_jia.png",
+    "lin_boyuan": "res://assets/placeholders/avatar_lin.png",
+    "abbas": "res://assets/placeholders/avatar_abbas.png",
+    "customs_official": "res://assets/placeholders/avatar_official.png",
+    "ketagalan_elder": "res://assets/placeholders/avatar_elder.png",
+    "ketagalan_child": "res://assets/placeholders/avatar_child.png"
+  },
+  "bg_pools": {
+    "res://assets/bg_quanzhou_port.png": "res://assets/port_pools/quanzhou/",
+    "res://assets/bg_quanzhou_port_sunset.png": "res://assets/port_pools/quanzhou_sunset/",
+    "res://assets/bg_xinghua_harbor.jpg": "res://assets/port_pools/xinghua/",
+    "res://assets/bg_mingzhou_port.png": "res://assets/port_pools/mingzhou/",
+    "res://assets/bg_jeju_port.png": "res://assets/port_pools/jeju/",
+    "res://assets/bg_tunmen_port.png": "res://assets/port_pools/tunmen/",
+    "res://assets/bg_zhangzhou_port.png": "res://assets/port_pools/zhangzhou/",
+    "res://assets/bg_wenzhou_port.png": "res://assets/port_pools/wenzhou/",
+    "res://assets/bg_ganpu_port.png": "res://assets/port_pools/ganpu/",
+    "res://assets/bg_guangzhou_port.png": "res://assets/port_pools/guangzhou/",
+    "res://assets/bg_penghu_night.png": "res://assets/port_pools/penghu_night/",
+    "res://assets/bg_penghu_port.png": "res://assets/port_pools/penghu_night/"
+  },
+  "_comment_pools": "进港背景轮换：bg_pools 键=场景 bg 路径，值=图池目录；AssetPlaceholder.pick_background_path() 按序轮播目录内 jpg。"
+}

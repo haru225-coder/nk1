@@ -1746,9 +1746,9 @@ func _test_asset_placeholder_json() -> void:
 	ap.set_script(load("res://scripts/AssetPlaceholder.gd"))
 	_assert_not_null(ap, "AssetPlaceholder 实例化成功")
 
-	# 加载配置后查询别名
+	# 有图池的港口不再走单图别名
 	var mapped_path: String = ap.get_background_path("res://assets/bg_quanzhou_port.png")
-	_assert_eq(mapped_path, "res://assets/bg_quanzhou_harbor_koei.png", "bg_quanzhou_port -> bg_quanzhou_harbor_koei")
+	_assert_eq(mapped_path, "res://assets/bg_quanzhou_port.png", "bg_quanzhou_port passthrough (pool)")
 
 	mapped_path = ap.get_background_path("res://assets/bg_byland_port.png")
 	_assert_eq(mapped_path, "res://assets/bg_northern_fortress_snow.png", "bg_byland_port -> bg_northern_fortress_snow")
@@ -1770,34 +1770,35 @@ func _test_asset_placeholder_json() -> void:
 	avatar_path = ap.get_legacy_avatar_path("unknown_npc")
 	_assert_eq(avatar_path, "", "不存在 NPC: 空字符串")
 
+	# 进港图池轮换
+	var pick1: String = ap.pick_background_path("res://assets/bg_tunmen_port.png")
+	var pick2: String = ap.pick_background_path("res://assets/bg_tunmen_port.png")
+	_assert_true(pick1.begins_with("res://assets/port_pools/tunmen/"), "tunmen pool pick1")
+	_assert_true(pick2.begins_with("res://assets/port_pools/tunmen/"), "tunmen pool pick2")
+	_assert_true(pick1 != pick2, "tunmen pool rotates")
+
 	# 热重载（应仍返回同样的映射）
 	ap.reload_config()
-	mapped_path = ap.get_background_path("res://assets/bg_quanzhou_port.png")
-	_assert_eq(mapped_path, "res://assets/bg_quanzhou_harbor_koei.png", "reload 后映射仍正确")
+	mapped_path = ap.get_background_path("res://assets/bg_byland_port.png")
+	_assert_eq(mapped_path, "res://assets/bg_northern_fortress_snow.png", "reload 后映射仍正确")
 
-	# 验证所有 29 个别名都能查询
+	# 验证剩余别名都能查询（无图池港口仍走 fallback）
 	var expected_count := 0
 	var known_aliases: Array[String] = [
-		"res://assets/bg_xinghua_school.png", "res://assets/bg_quanzhou_port.png",
-		"res://assets/bg_quanzhou_port_sunset.png", "res://assets/bg_lin_ship.png",
-		"res://assets/bg_departure.png", "res://assets/bg_penghu_night.png",
-		"res://assets/bg_black_water.png", "res://assets/bg_sea_route_aligned.png",
-		"res://assets/bg_keelung_coast.png", "res://assets/bg_guangzhou_port.png",
-		"res://assets/bg_mingzhou_port.png", "res://assets/bg_wenzhou_port.png",
-		"res://assets/bg_keelung_port.png", "res://assets/bg_penghu_port.png",
-		"res://assets/bg_hakata_port.png", "res://assets/bg_champa_port.png",
-		"res://assets/bg_jeju_port.png", "res://assets/bg_ganpu_port.png",
-		"res://assets/bg_zhangzhou_port.png", "res://assets/bg_qiongzhou_port.png",
+		"res://assets/bg_xinghua_school.png", "res://assets/bg_lin_ship.png",
+		"res://assets/bg_departure.png", "res://assets/bg_black_water.png",
+		"res://assets/bg_sea_route_aligned.png", "res://assets/bg_keelung_coast.png",
+		"res://assets/bg_keelung_port.png", "res://assets/bg_hakata_port.png",
+		"res://assets/bg_champa_port.png", "res://assets/bg_qiongzhou_port.png",
 		"res://assets/bg_sanfoqi_port.png", "res://assets/bg_longyamen_port.png",
 		"res://assets/bg_bugan_port.png", "res://assets/bg_jiaozhi_port.png",
-		"res://assets/bg_yeshou_port.png", "res://assets/bg_tunmen_port.png",
-		"res://assets/bg_tsushima_port.png", "res://assets/bg_byland_port.png",
-		"res://assets/bg_xuwen_port.png",
+		"res://assets/bg_yeshou_port.png", "res://assets/bg_tsushima_port.png",
+		"res://assets/bg_byland_port.png", "res://assets/bg_xuwen_port.png",
 	]
 	for key in known_aliases:
-		if ap.get_background_path(key) != key:  # 表示有别名
+		if ap.get_background_path(key) != key:
 			expected_count += 1
-	_assert_eq(expected_count, 29, "29 个别名都正确加载")
+	_assert_eq(expected_count, known_aliases.size(), "fallback 别名都正确加载")
 
 	# 清理
 	ap.queue_free()
@@ -1979,9 +1980,9 @@ func _test_cutscene_player() -> void:
 	_assert_eq(alias, "res://assets/bg_quanzhou_harbor_koei.png", "cg_alias 字段正确")
 	var resolved: String = ap.get_background_path(alias)
 	_assert_eq(resolved, "res://assets/bg_quanzhou_harbor_koei.png", "CG 路径经 get_background_path 解析（passthrough）")
-	# 验证别名映射确实会触发（替换为别名映射的另一项）
-	var mapped: String = ap.get_background_path("res://assets/bg_quanzhou_port.png")
-	_assert_eq(mapped, "res://assets/bg_quanzhou_harbor_koei.png", "get_background_path 别名映射生效")
+	# 验证别名映射确实会触发（无图池港口）
+	var mapped: String = ap.get_background_path("res://assets/bg_byland_port.png")
+	_assert_eq(mapped, "res://assets/bg_northern_fortress_snow.png", "get_background_path 别名映射生效")
 	ap.queue_free()
 
 	# panels 中的 cg_alias 同样走解析路径

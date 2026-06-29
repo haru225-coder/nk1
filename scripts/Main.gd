@@ -16,6 +16,7 @@ extends Control
 
 @onready var npc_mode: Control = $GameShell/ContentLayer/HBoxContainer/CenterArea/NPCMode
 @onready var dialogue_box: Control = $DialogueLayer/DialogueBox
+@onready var cutscene_player: CutscenePlayer = $CutsceneLayer/CutscenePlayer
 
 const MAX_BG_CACHE_SIZE := 10
 const MAX_LOG_LENGTH := 1000
@@ -28,9 +29,7 @@ var current_scene_id: String = ""
 var _market_ui: MarketScreenController = null
 
 func _ready() -> void:
-	if OS.is_debug_build() and WorldEventTracker.get_active_events().size() == 0:
-		WorldEventTracker.add_event(PirateAttackEvent.new("quanzhou", 3))
-	
+	# NK1-P6-POLISH: debug event spawning cleaned up — no hardcoded test events
 	left_panel.visible = false
 	message_label.text = ""
 	message_label.meta_clicked.connect(_on_guide_link_clicked)
@@ -147,7 +146,7 @@ func load_scene(scene_id: String) -> void:
 		if not sail_res.get("success", false):
 			return
 		SaveManager.set_current_scene_id("world_map")
-		get_tree().change_scene_to_file("res://scenes/WorldMap.tscn")
+		get_tree().change_scene_to_file(ResourcePaths.SCENE_WORLD_MAP)
 		return
 		
 	if scene_id.ends_with("_market"):
@@ -180,7 +179,9 @@ func load_scene(scene_id: String) -> void:
 		_setup_missing_scene(scene_id)
 		return
 		
-	var bg_path: String = scene_data.get("bg", "res://assets/bg_sea_route_koei.png")
+	var bg_path: String = scene_data.get("bg", ResourcePaths.BG_DEFAULT)
+	if scene_data.get("type", "") == "port":
+		bg_path = AssetPlaceholder.pick_background_path(bg_path)
 	if _bg_cache.has(bg_path):
 		background.texture = _bg_cache[bg_path]
 		_touch_bg_cache(bg_path)
@@ -207,7 +208,9 @@ func load_scene(scene_id: String) -> void:
 	elif type == "port":
 		GameState.last_port = scene_data.get("location", scene_id.replace("port_", ""))
 		_set_status_bar_visible(true)
+		# NK1-P6: 左侧信息面板改为日志弹窗，不再常驻
 		left_panel.visible = false
+		left_title.text = "◆ 情报札记"
 		title_mode.visible = false
 		investigation_mode.visible = false
 		npc_mode.visible = false
@@ -217,7 +220,9 @@ func load_scene(scene_id: String) -> void:
 		_set_port_guide(scene_data)
 	else:
 		_set_status_bar_visible(true)
+		# NK1-P6: 左侧信息面板改为日志弹窗，不再常驻
 		left_panel.visible = false
+		left_title.text = "◆ 情报札记"
 		title_mode.visible = false
 		port_mode.visible = false
 		npc_mode.visible = false
@@ -238,6 +243,17 @@ func _on_log_requested() -> void:
 
 func _set_port_guide(scene_data: Dictionary) -> void:
 	_guide_text = ""
+	# NK1-P6: 港口引导信息 — 显示经济状态
+	var market = GameState.market
+	if market != null:
+		var port_id: String = scene_data.get("location", "")
+		if not port_id.is_empty():
+			var prosperity: float = market.get_prosperity(port_id)
+			var aff_label: String = market.get_affinity_label(port_id)
+			var p_str := "平稳"
+			if prosperity > 1.1: p_str = "繁荣"
+			elif prosperity < 0.9: p_str = "萧条"
+			_guide_text = "[color=#3d1f0a]港市状况：[/color] %s · [color=#3d1f0a]声誉：[/color] %s" % [p_str, aff_label]
 	_refresh_message_panel()
 
 func _set_investigation_guide(_scene_data: Dictionary, _scene_id: String) -> void:
@@ -252,6 +268,11 @@ func _refresh_message_panel() -> void:
 	var parts: PackedStringArray = PackedStringArray()
 	if _guide_text != "":
 		parts.append(_guide_text)
+	# NK1-P5-ECON-002: 显示最近经济动态
+	if GameState.economy_log != null:
+		var latest = GameState.economy_log.get_latest()
+		if not latest.is_empty():
+			parts.append(latest)
 	if _event_log != "":
 		if parts.size() > 0:
 			parts.append("")
@@ -267,10 +288,18 @@ func _show_port_intro_if_needed(scene_data: Dictionary, scene_id: String) -> voi
 		return
 	GameState.set_story_flag(flag)
 	_prepend_event_log("【抵达】%s\n\n" % intro)
+	# P7-X: 港口抵达过场（可选，数据驱动，缺失则静默）
+	if cutscene_player == null:
+		return
+	var port_id: String = scene_data.get("location", scene_id.replace("port_", ""))
+	var cs_id: String = cutscene_player.get_cutscene_id_for("port_arrival", port_id)
+	if cs_id != "":
+		cutscene_player.play(cs_id)
 
 func _setup_missing_scene(scene_id: String) -> void:
 	_set_status_bar_visible(true)
 	left_panel.visible = false
+	left_title.text = "◆ 情报札记"
 	title_mode.visible = false
 	port_mode.visible = false
 	npc_mode.visible = false
