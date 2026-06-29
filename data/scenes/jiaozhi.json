@@ -8,9 +8,9 @@
       "title": "安南港口",
       "body": "",
       "facilities": [
-        {"id": "jiaozhi_tavern", "title": "宋商酒楼", "subtitle": "异乡故味", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "jiaozhi_market", "title": "中越市集", "subtitle": "汉字招牌", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "jiaozhi_temple", "title": "文庙", "subtitle": "汉字文化圈", "icon": "res://assets/icon_residence_koei.png"}
+        {"id": "jiaozhi_tavern", "title": "宋商酒楼", "subtitle": "异乡故味", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "jiaozhi_market", "title": "中越市集", "subtitle": "汉字招牌", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "jiaozhi_temple", "title": "文庙", "subtitle": "汉字文化圈", "icon": "res://assets/icons_128/icon_residence_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_jiaozhi_map.png", "hint": "汉字招牌、宋商聚落、战后重建", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_jiaozhi_port.png",

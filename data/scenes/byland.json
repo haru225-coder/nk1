@@ -8,9 +8,9 @@
       "title": "高丽西岸",
       "body": "",
       "facilities": [
-        {"id": "byland_tavern", "title": "高丽酒肆", "subtitle": "蒙古阴影", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "byland_market", "title": "军需市集", "subtitle": "造船与征粮", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "byland_wharf", "title": "造船场", "subtitle": "远征日本", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "byland_tavern", "title": "高丽酒肆", "subtitle": "蒙古阴影", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "byland_market", "title": "军需市集", "subtitle": "造船与征粮", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "byland_wharf", "title": "造船场", "subtitle": "远征日本", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_byland_map.png", "hint": "蒙古驻军、造船场、远征阴影", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_byland_port.png",

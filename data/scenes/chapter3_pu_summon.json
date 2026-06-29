@@ -1,0 +1,75 @@
+{
+  "scenes": [
+    {
+      "id": "chapter3_pu_summon",
+      "chapter": "chapter_3",
+      "title": "蒲府偏厅",
+      "location": "linan",
+      "time": "宝祐三年八月，黄昏",
+      "objective": "应召入蒲府，识破召见之意",
+      "body": "临安城北，蒲府偏厅，黄昏。\n\n　　灯笼只点了一盏。你被引入厅中，帘后有人翻动文牍，良久才抬眼。茶未上，先奉了名帖——那是昨夜有人塞进客栈门缝的那一张。\n\n【蒲帅】：（声音从帘后）「泉州来的人，都带着海盐味。你是来考试，还是来探路？」\n\n　　厅里只有一椅。你站着，看见他手边搁着一本《春秋》——和你怀里那本，刻痕竟有几分相似。\n\n【蒲帅】：「把书留下，我替你换一个名籍。三甲之内，殿试不黜落。」\n\n　　他抬眼。火光在他脸上没烧出半点温度。",
+      "investigations": [
+        {
+          "label": "翻看蒲帅手边那本《春秋》",
+          "text": "书页磨损比你的还深。批注笔迹不像蒲氏——是朱子门生的手迹，被人用朱笔圈点过。",
+          "once_flag": "chapter3_pu_summon_scroll_inspected",
+          "effects": {
+            "story_flag": "chapter3_pu_summon_scroll_inspected",
+            "fame": 1
+          }
+        },
+        {
+          "label": "看名帖背面的字",
+          "text": "极小一行：「阅后即焚，焚前记牢。」字迹与乡学先生托书时落下的笔迹，有三分相似。",
+          "once_flag": "chapter3_pu_summon_card_back",
+          "effects": {
+            "story_flag": "chapter3_pu_summon_card_back"
+          }
+        },
+        {
+          "label": "数厅外甲士的步子",
+          "text": "四步一岗，靴底磨得发亮。退路被堵在左手边那条窄巷，巷口有人抱着刀打盹。",
+          "once_flag": "chapter3_pu_summon_guards_counted",
+          "effects": {
+            "story_flag": "chapter3_pu_summon_guards_counted"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "留下书，换名籍",
+          "next": "chapter3_after_summon_comply",
+          "effects": {
+            "story_flag": "chapter3_pu_deal_accepted",
+            "pu_attention": -3,
+            "jia_relationship": 2,
+            "fame": -2,
+            "item_removed": "spring_autumn_scroll"
+          },
+          "narration": "蒲帅把书收进袖中，像收一枚用旧的棋子。"
+        },
+        {
+          "label": "把书收好，告退",
+          "next": "chapter3_after_summon_refuse",
+          "effects": {
+            "story_flag": "chapter3_pu_deal_refused",
+            "pu_attention": 5,
+            "fame": 2
+          },
+          "narration": "你抱着《春秋》走出偏厅。身后帘子没动，茶也始终没上。"
+        },
+        {
+          "label": "撕名帖，当场烧掉",
+          "next": "chapter3_after_summon_burn",
+          "effects": {
+            "story_flag": "chapter3_pu_card_burned",
+            "pu_attention": 12,
+            "fame": 4
+          },
+          "narration": "纸灰落进空茶碗。蒲帅从帘后笑了一声：「有种。」"
+        }
+      ],
+      "bg": "res://assets/bg_fuzhou_yamen.jpg"
+    }
+  ]
+}

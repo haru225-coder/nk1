@@ -12,19 +12,19 @@
           "id": "ryukyu_tavern",
           "title": "船上酒摊",
           "subtitle": "听舵手闲话",
-          "icon": "res://assets/icon_tavern_koei.png"
+          "icon": "res://assets/icons_128/icon_tavern_koei.png"
         },
         {
           "id": "ryukyu_wharf",
           "title": "锚地",
           "subtitle": "船只与补给",
-          "icon": "res://assets/icon_shipyard_koei.png"
+          "icon": "res://assets/icons_128/icon_shipyard_koei.png"
         },
         {
           "id": "ryukyu_lookout",
           "title": "了望台",
           "subtitle": "观察洋流与天象",
-          "icon": "res://assets/icon_exam_koei.png"
+          "icon": "res://assets/icons_128/icon_exam_koei.png"
         }
       ],
       "town_map": {

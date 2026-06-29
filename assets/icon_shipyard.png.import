@@ -3,11 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cm7orluwcddmp"
-valid=false
+path="res://.godot/imported/icon_shipyard.png-1fe3fb8325772809e2110e137479859c.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/icon_shipyard.png"
+dest_files=["res://.godot/imported/icon_shipyard.png-1fe3fb8325772809e2110e137479859c.ctex"]
 
 [params]
 

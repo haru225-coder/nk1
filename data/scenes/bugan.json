@@ -8,9 +8,9 @@
       "title": "蒲甘海岸",
       "body": "",
       "facilities": [
-        {"id": "bugan_tavern", "title": "难民棚屋", "subtitle": "废墟中的酒", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "bugan_market", "title": "废墟市集", "subtitle": "玉石与柚木", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "bugan_wharf", "title": "残破码头", "subtitle": "战火余生", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "bugan_tavern", "title": "难民棚屋", "subtitle": "废墟中的酒", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "bugan_market", "title": "废墟市集", "subtitle": "玉石与柚木", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "bugan_wharf", "title": "残破码头", "subtitle": "战火余生", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_bugan_map.png", "hint": "废墟、难民、玉石散落", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_bugan_port.png",

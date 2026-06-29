@@ -3,11 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cu5glpejejt5e"
-valid=false
+path="res://.godot/imported/icon_residence.png-44242c62d4034268f387c97063d4952f.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/icon_residence.png"
+dest_files=["res://.godot/imported/icon_residence.png-44242c62d4034268f387c97063d4952f.ctex"]
 
 [params]
 

@@ -12,19 +12,19 @@
           "id": "jeju_tavern",
           "title": "驿站",
           "subtitle": "打听消息",
-          "icon": "res://assets/icon_tavern_koei.png"
+          "icon": "res://assets/icons_128/icon_tavern_koei.png"
         },
         {
           "id": "jeju_market",
           "title": "马市",
           "subtitle": "马匹与牲畜",
-          "icon": "res://assets/icon_market_koei.png"
+          "icon": "res://assets/icons_128/icon_market_koei.png"
         },
         {
           "id": "jeju_temple",
           "title": "山神庙",
           "subtitle": "祈福与情报",
-          "icon": "res://assets/icon_residence_koei.png"
+          "icon": "res://assets/icons_128/icon_residence_koei.png"
         }
       ],
       "town_map": {

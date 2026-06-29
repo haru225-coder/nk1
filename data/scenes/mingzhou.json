@@ -8,9 +8,9 @@
       "title": "明州",
       "body": "",
       "facilities": [
-        {"id": "mingzhou_riverside", "title": "河畔酒楼", "subtitle": "运河消息", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "mingzhou_market", "title": "河运市集", "subtitle": "内河货物", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "mingzhou_wharf", "title": "运河码头", "subtitle": "换船与盘查", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "mingzhou_riverside", "title": "河畔酒楼", "subtitle": "运河消息", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "mingzhou_market", "title": "河运市集", "subtitle": "内河货物", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "mingzhou_wharf", "title": "运河码头", "subtitle": "换船与盘查", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_mingzhou_map.png", "hint": "运河码头、海河换船、监视哨", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_mingzhou_port.png",

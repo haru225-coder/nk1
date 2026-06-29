@@ -8,9 +8,9 @@
       "title": "爪哇港",
       "body": "",
       "facilities": [
-        {"id": "yeshou_tavern", "title": "爪哇酒屋", "subtitle": "热带风味", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "yeshou_market", "title": "香料市集", "subtitle": "丁香豆蔻", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "yeshou_wharf", "title": "热带码头", "subtitle": "猴子与桅杆", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "yeshou_tavern", "title": "爪哇酒屋", "subtitle": "热带风味", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "yeshou_market", "title": "香料市集", "subtitle": "丁香豆蔻", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "yeshou_wharf", "title": "热带码头", "subtitle": "猴子与桅杆", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_yeshou_map.png", "hint": "香料堆积、热带雨林、猴群跳跃", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_yeshou_port.png",

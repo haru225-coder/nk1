@@ -8,9 +8,9 @@
       "title": "杭州湾",
       "body": "",
       "facilities": [
-        {"id": "ganpu_shack", "title": "潮边酒棚", "subtitle": "等潮与喝酒", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "ganpu_salt", "title": "盐市", "subtitle": "私盐与官盐", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "ganpu_smuggler", "title": "走私泊位", "subtitle": "月黑风高", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "ganpu_shack", "title": "潮边酒棚", "subtitle": "等潮与喝酒", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "ganpu_salt", "title": "盐市", "subtitle": "私盐与官盐", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "ganpu_smuggler", "title": "走私泊位", "subtitle": "月黑风高", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_ganpu_map.png", "hint": "钱塘潮、盐船、水军巡逻", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_ganpu_port.png",

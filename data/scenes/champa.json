@@ -8,9 +8,9 @@
       "title": "占城港",
       "body": "",
       "facilities": [
-        {"id": "champa_hut", "title": "椰林酒棚", "subtitle": "椰酒与传闻", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "champa_rice_market", "title": "米市", "subtitle": "稻米与香料", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "champa_temple", "title": "占婆神塔", "subtitle": "异教与祈祷", "icon": "res://assets/icon_residence_koei.png"}
+        {"id": "champa_hut", "title": "椰林酒棚", "subtitle": "椰酒与传闻", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "champa_rice_market", "title": "米市", "subtitle": "稻米与香料", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "champa_temple", "title": "占婆神塔", "subtitle": "异教与祈祷", "icon": "res://assets/icons_128/icon_residence_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_champa_map.png", "hint": "稻田、棕榈、占婆塔寺", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_champa_port.png",

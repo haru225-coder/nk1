@@ -8,9 +8,9 @@
       "title": "漳州月港",
       "body": "",
       "facilities": [
-        {"id": "zhangzhou_den", "title": "月港暗馆", "subtitle": "地下交易", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "zhangzhou_black_market", "title": "黑市", "subtitle": "无税之货", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "zhangzhou_pier", "title": "私泊", "subtitle": "月光装卸", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "zhangzhou_den", "title": "月港暗馆", "subtitle": "地下交易", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "zhangzhou_black_market", "title": "黑市", "subtitle": "无税之货", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "zhangzhou_pier", "title": "私泊", "subtitle": "月光装卸", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_zhangzhou_map.png", "hint": "月光码头、无税黑市、礁石隐蔽", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_zhangzhou_port.png",

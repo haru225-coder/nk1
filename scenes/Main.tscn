@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://c2g1h8abcxyz"]
+[gd_scene load_steps=13 format=3 uid="uid://c2g1h8abcxyz"]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/GameShell.gd" id="11_shell"]
@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/DialogueBox.tscn" id="9_dialogue"]
 [ext_resource type="PackedScene" path="res://scenes/PortStatusBar.tscn" id="7_status_bar"]
 [ext_resource type="PackedScene" path="res://scenes/TownMapView.tscn" id="10_town_map"]
+[ext_resource type="PackedScene" uid="uid://cutscene_player_scene" path="res://scenes/CutscenePlayer.tscn" id="12_cutscene"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("8_vignette")
@@ -379,7 +380,7 @@ offset_top = -88.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
-theme_type_variation = &"StatusBarPanel"
+theme_type_variation = &"CommandBarPanel"
 
 [node name="StatusLayer" type="CanvasLayer" parent="."]
 layer = 55
@@ -406,3 +407,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="CutsceneLayer" type="CanvasLayer" parent="."]
+layer = 100
+
+[node name="CutscenePlayer" parent="CutsceneLayer" instance=ExtResource("12_cutscene")]

@@ -8,9 +8,9 @@
       "title": "温州",
       "body": "",
       "facilities": [
-        {"id": "wenzhou_tavern", "title": "温州酒楼", "subtitle": "商帮消息", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "wenzhou_market", "title": "商帮市集", "subtitle": "丝绸与会子", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "wenzhou_wharf", "title": "商船码头", "subtitle": "浙商集散", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "wenzhou_tavern", "title": "温州酒楼", "subtitle": "商帮消息", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "wenzhou_market", "title": "商帮市集", "subtitle": "丝绸与会子", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "wenzhou_wharf", "title": "商船码头", "subtitle": "浙商集散", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_wenzhou_map.png", "hint": "商帮林立、会子贬值、浙商家族", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_wenzhou_port.png",

@@ -12,19 +12,19 @@
           "id": "hakata_tavern",
           "title": "居酒屋",
           "subtitle": "打听消息",
-          "icon": "res://assets/icon_tavern_koei.png"
+          "icon": "res://assets/icons_128/icon_tavern_koei.png"
         },
         {
           "id": "hakata_market",
           "title": "唐房市集",
           "subtitle": "买卖货物",
-          "icon": "res://assets/icon_market_koei.png"
+          "icon": "res://assets/icons_128/icon_market_koei.png"
         },
         {
           "id": "hakata_temple",
           "title": "博多寺社",
           "subtitle": "祈福与情报",
-          "icon": "res://assets/icon_residence_koei.png"
+          "icon": "res://assets/icons_128/icon_residence_koei.png"
         }
       ],
       "town_map": {

@@ -8,9 +8,9 @@
       "title": "珠江口野港",
       "body": "",
       "facilities": [
-        {"id": "tunmen_tavern", "title": "匪窝酒馆", "subtitle": "刀口舔血", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "tunmen_market", "title": "黑市", "subtitle": "无税之货", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "tunmen_wharf", "title": "走私泊位", "subtitle": "月黑风高", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "tunmen_tavern", "title": "匪窝酒馆", "subtitle": "刀口舔血", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "tunmen_market", "title": "黑市", "subtitle": "无税之货", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "tunmen_wharf", "title": "走私泊位", "subtitle": "月黑风高", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_tunmen_map.png", "hint": "礁石嶙峋、匪帮出没、走私基地", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_tunmen_port.png",

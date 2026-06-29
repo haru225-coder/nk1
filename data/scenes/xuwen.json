@@ -8,9 +8,9 @@
       "title": "徐闻港",
       "body": "",
       "facilities": [
-        {"id": "xuwen_tavern", "title": "驿亭", "subtitle": "荒凉歇脚", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "xuwen_market", "title": "补给市", "subtitle": "淡水与干粮", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "xuwen_wharf", "title": "古港码头", "subtitle": "南下中南半岛", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "xuwen_tavern", "title": "驿亭", "subtitle": "荒凉歇脚", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "xuwen_market", "title": "补给市", "subtitle": "淡水与干粮", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "xuwen_wharf", "title": "古港码头", "subtitle": "南下中南半岛", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_xuwen_map.png", "hint": "汉代遗风、荒凉海岸、南下最后补给", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_xuwen_port.png",

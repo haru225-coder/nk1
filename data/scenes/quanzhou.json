@@ -145,31 +145,31 @@
               }
             ]
           },
-          "icon": "res://assets/icon_shipyard_koei.png"
+          "icon": "res://assets/icons_128/icon_shipyard_koei.png"
         },
         {
           "id": "city_guild",
           "title": "工会",
           "subtitle": "打听航线与传闻",
-          "icon": "res://assets/icon_guild_koei.png"
+          "icon": "res://assets/icons_128/icon_guild_koei.png"
         },
         {
           "id": "city_tavern",
           "title": "酒馆",
           "subtitle": "水手与商旅",
-          "icon": "res://assets/icon_tavern_koei.png"
+          "icon": "res://assets/icons_128/icon_tavern_koei.png"
         },
         {
           "id": "city_market",
           "title": "市场",
           "subtitle": "买卖货物",
-          "icon": "res://assets/icon_market_koei.png"
+          "icon": "res://assets/icons_128/icon_market_koei.png"
         },
         {
           "id": "city_inn",
           "title": "旅馆",
           "subtitle": "休整补给",
-          "icon": "res://assets/icon_inn_koei.png"
+          "icon": "res://assets/icons_128/icon_inn_koei.png"
         },
         {
           "id": "city_shipyard",
@@ -185,26 +185,26 @@
               }
             ]
           },
-          "icon": "res://assets/icon_shipyard_koei.png",
+          "icon": "res://assets/icons_128/icon_shipyard_koei.png",
           "requires_story_flag": "spring_autumn_scroll"
         },
         {
           "id": "city_yamen",
           "title": "衙门",
           "subtitle": "市舶验引",
-          "icon": "res://assets/icon_yamen_koei.png"
+          "icon": "res://assets/icons_128/icon_yamen_koei.png"
         },
         {
           "id": "city_residence",
           "title": "住宅",
           "subtitle": "安身之处",
-          "icon": "res://assets/icon_residence_koei.png"
+          "icon": "res://assets/icons_128/icon_residence_koei.png"
         },
         {
           "id": "city_exam",
           "title": "学院",
           "subtitle": "科举之路",
-          "icon": "res://assets/icon_exam_koei.png"
+          "icon": "res://assets/icons_128/icon_exam_koei.png"
         }
       ],
       "town_map": {

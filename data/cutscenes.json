@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "cutscenes": {
+    "quanzhou_arrival": {
+      "hook": "port_arrival",
+      "port_id": "quanzhou",
+      "cg_alias": "res://assets/bg_quanzhou_harbor_koei.png",
+      "caption": "[b]刺桐港[/b]\n宋元第一大港，万国商舶云集之地。",
+      "panels": []
+    },
+    "ch3_start": {
+      "hook": "chapter_change",
+      "chapter_id": "chapter3_pu_counter",
+      "cg_alias": "res://assets/bg_quanzhou_arab_market.png",
+      "caption": "[b]第三章 · 蒲氏反击[/b]",
+      "panels": [
+        {"cg_alias": "res://assets/bg_quanzhou_arab_market.png", "caption": "蒲寿庚召你入府...", "duration": 3.0},
+        {"cg_alias": "res://assets/bg_customs_patrol.png", "caption": "市舶司的暗流涌动。", "duration": 2.5}
+      ]
+    },
+    "rank_up_1": {
+      "hook": "rank_up",
+      "rank": 1,
+      "cg_alias": "res://assets/bg_quanzhou_harbor_koei.png",
+      "caption": "你升任 [b]副纲首[/b]。",
+      "panels": []
+    },
+    "ending_loyalty": {
+      "hook": "ending",
+      "ending_id": "loyalty_ending",
+      "cg_alias": "res://assets/bg_sea_route_koei.png",
+      "caption": "[b]结局 · 忠义[/b]\n你选择了与陈文龙共存亡...",
+      "panels": []
+    }
+  }
+}

@@ -8,8 +8,8 @@
       "title": "马六甲海峡入口",
       "body": "",
       "facilities": [
-        {"id": "longyamen_lookout", "title": "海峡哨所", "subtitle": "海盗情报", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "longyamen_anchor", "title": "入口锚地", "subtitle": "结伴等风", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "longyamen_lookout", "title": "海峡哨所", "subtitle": "海盗情报", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "longyamen_anchor", "title": "入口锚地", "subtitle": "结伴等风", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_longyamen_map.png", "hint": "海峡咽喉、暗礁、海盗出没", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_longyamen_port.png",

@@ -8,10 +8,10 @@
       "title": "广州",
       "body": "",
       "facilities": [
-        {"id": "guangzhou_fanfang_tavern", "title": "蕃坊酒肆", "subtitle": "异域风情", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "guangzhou_spice_market", "title": "珠宝香药市", "subtitle": "蕃商遗货", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "guangzhou_mosque", "title": "怀圣寺", "subtitle": "光塔与礼拜", "icon": "res://assets/icon_residence_koei.png"},
-        {"id": "guangzhou_wharf", "title": "黄埔古港", "subtitle": "市舶旧都", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "guangzhou_fanfang_tavern", "title": "蕃坊酒肆", "subtitle": "异域风情", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "guangzhou_spice_market", "title": "珠宝香药市", "subtitle": "蕃商遗货", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "guangzhou_mosque", "title": "怀圣寺", "subtitle": "光塔与礼拜", "icon": "res://assets/icons_128/icon_residence_koei.png"},
+        {"id": "guangzhou_wharf", "title": "黄埔古港", "subtitle": "市舶旧都", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_guangzhou_map.png", "hint": "蕃坊遗迹、清真寺尖塔、岭南骑楼", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_guangzhou_port.png",

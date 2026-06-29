@@ -444,31 +444,31 @@
           "id": "linan_canal",
           "title": "运河埠",
           "subtitle": "漕船与消息",
-          "icon": "res://assets/icon_shipyard_koei.png"
+          "icon": "res://assets/icons_128/icon_shipyard_koei.png"
         },
         {
           "id": "city_market",
           "title": "市集",
           "subtitle": "米价如刀",
-          "icon": "res://assets/icon_market_koei.png"
+          "icon": "res://assets/icons_128/icon_market_koei.png"
         },
         {
           "id": "city_inn",
           "title": "客栈",
           "subtitle": "歇脚",
-          "icon": "res://assets/icon_inn_koei.png"
+          "icon": "res://assets/icons_128/icon_inn_koei.png"
         },
         {
           "id": "city_tavern",
           "title": "茶肆",
           "subtitle": "风声",
-          "icon": "res://assets/icon_tavern_koei.png"
+          "icon": "res://assets/icons_128/icon_tavern_koei.png"
         },
         {
           "id": "linan_taixue",
           "title": "太学",
           "subtitle": "名籍与考场",
-          "icon": "res://assets/icon_exam_koei.png",
+          "icon": "res://assets/icons_128/icon_exam_koei.png",
           "requires_story_flag": "linan_entered"
         }
       ],

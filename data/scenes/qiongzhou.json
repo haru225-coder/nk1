@@ -8,9 +8,9 @@
       "title": "琼州",
       "body": "",
       "facilities": [
-        {"id": "qiongzhou_li_hut", "title": "黎寨酒棚", "subtitle": "山兰酒", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "qiongzhou_market", "title": "山货市集", "subtitle": "槟榔沉香", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "qiongzhou_temple", "title": "贬官祠堂", "subtitle": "流放之地", "icon": "res://assets/icon_residence_koei.png"}
+        {"id": "qiongzhou_li_hut", "title": "黎寨酒棚", "subtitle": "山兰酒", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "qiongzhou_market", "title": "山货市集", "subtitle": "槟榔沉香", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "qiongzhou_temple", "title": "贬官祠堂", "subtitle": "流放之地", "icon": "res://assets/icons_128/icon_residence_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_qiongzhou_map.png", "hint": "热带丛林、黎寨、槟榔林", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_qiongzhou_port.png",

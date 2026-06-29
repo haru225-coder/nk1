@@ -2,7 +2,16 @@
   "meta": {
     "title": "南海立志传",
     "era": "南宋末，约1260-1277",
-    "prototype": "v0.1"
+    "prototype": "v0.1",
+    "map_layout": {
+      "texture": "res://assets/map_nanhai.png",
+      "world_bounds": {
+        "x_min": -15000,
+        "x_max": 16000,
+        "y_min": -9000,
+        "y_max": 21000
+      }
+    }
   },
   "ports": [
     {
@@ -34,10 +43,14 @@
         "sulfur": 1.2
       },
       "position": {
-        "x": 0,
-        "y": 1000
+        "x": 5460,
+        "y": 2400
       },
-      "bg": "res://assets/bg_quanzhou_port.png"
+      "bg": "res://assets/bg_quanzhou_port.png",
+      "map_pos": {
+        "u": 0.66,
+        "v": 0.38
+      }
     },
     {
       "id": "xinghua",
@@ -55,10 +68,14 @@
         "quanzhou"
       ],
       "position": {
-        "x": 2000,
-        "y": -1000
+        "x": 6080,
+        "y": 1200
       },
-      "bg": "res://assets/bg_xinghua_harbor.jpg"
+      "bg": "res://assets/bg_xinghua_harbor.jpg",
+      "map_pos": {
+        "u": 0.68,
+        "v": 0.34
+      }
     },
     {
       "id": "keelung",
@@ -74,10 +91,14 @@
         "penghu"
       ],
       "position": {
-        "x": 5500,
-        "y": 3500
+        "x": 9180,
+        "y": 1500
       },
-      "bg": "res://assets/bg_keelung_port.png"
+      "bg": "res://assets/bg_keelung_port.png",
+      "map_pos": {
+        "u": 0.78,
+        "v": 0.35
+      }
     },
     {
       "id": "ryukyu",
@@ -99,10 +120,14 @@
         "qingbai_porcelain": 1.5
       },
       "position": {
-        "x": 8000,
+        "x": 11040,
         "y": 3000
       },
-      "bg": "res://assets/bg_penghu_port.png"
+      "bg": "res://assets/bg_penghu_port.png",
+      "map_pos": {
+        "u": 0.84,
+        "v": 0.4
+      }
     },
     {
       "id": "jeju",
@@ -119,10 +144,14 @@
         "hakata"
       ],
       "position": {
-        "x": 10000,
-        "y": -6000
+        "x": 11040,
+        "y": -3000
       },
-      "bg": "res://assets/bg_jeju_port.png"
+      "bg": "res://assets/bg_jeju_port.png",
+      "map_pos": {
+        "u": 0.84,
+        "v": 0.2
+      }
     },
     {
       "id": "hakata",
@@ -150,10 +179,14 @@
         "japanese_swords": 0.8
       },
       "position": {
-        "x": 15000,
-        "y": -8000
+        "x": 13520,
+        "y": 0
       },
-      "bg": "res://assets/bg_hakata_port.png"
+      "bg": "res://assets/bg_hakata_port.png",
+      "map_pos": {
+        "u": 0.92,
+        "v": 0.3
+      }
     },
     {
       "id": "kagoshima",
@@ -174,10 +207,14 @@
         "hakata"
       ],
       "position": {
-        "x": 13000,
-        "y": -5000
+        "x": 12900,
+        "y": 1800
       },
-      "bg": "res://assets/bg_hakata_port.png"
+      "bg": "res://assets/bg_hakata_port.png",
+      "map_pos": {
+        "u": 0.9,
+        "v": 0.36
+      }
     },
     {
       "id": "penghu",
@@ -193,10 +230,14 @@
         "keelung"
       ],
       "position": {
-        "x": 4000,
-        "y": 2500
+        "x": 7940,
+        "y": 2400
       },
-      "bg": "res://assets/bg_penghu_port.png"
+      "bg": "res://assets/bg_penghu_port.png",
+      "map_pos": {
+        "u": 0.74,
+        "v": 0.38
+      }
     },
     {
       "id": "champa",
@@ -215,10 +256,14 @@
         "horses": 0.7
       },
       "position": {
-        "x": -5000,
-        "y": 15000
+        "x": -6320,
+        "y": 8400
       },
-      "bg": "res://assets/bg_champa_port.png"
+      "bg": "res://assets/bg_champa_port.png",
+      "map_pos": {
+        "u": 0.28,
+        "v": 0.58
+      }
     },
     {
       "id": "guangzhou",
@@ -238,10 +283,14 @@
         "qiongzhou"
       ],
       "position": {
-        "x": -4000,
-        "y": 3000
+        "x": 1740,
+        "y": 4800
       },
-      "bg": "res://assets/bg_guangzhou_port.png"
+      "bg": "res://assets/bg_guangzhou_port.png",
+      "map_pos": {
+        "u": 0.54,
+        "v": 0.46
+      }
     },
     {
       "id": "mingzhou",
@@ -260,10 +309,14 @@
         "wenzhou"
       ],
       "position": {
-        "x": 5000,
-        "y": -3000
+        "x": 7320,
+        "y": -1200
       },
-      "bg": "res://assets/bg_mingzhou_port.png"
+      "bg": "res://assets/bg_mingzhou_port.png",
+      "map_pos": {
+        "u": 0.72,
+        "v": 0.26
+      }
     },
     {
       "id": "ganpu",
@@ -280,10 +333,14 @@
         "linan"
       ],
       "position": {
-        "x": 6000,
-        "y": -5000
+        "x": 6700,
+        "y": -600
       },
-      "bg": "res://assets/bg_ganpu_port.png"
+      "bg": "res://assets/bg_ganpu_port.png",
+      "map_pos": {
+        "u": 0.7,
+        "v": 0.28
+      }
     },
     {
       "id": "zhangzhou",
@@ -300,10 +357,14 @@
         "guangzhou"
       ],
       "position": {
-        "x": -1000,
-        "y": 2000
+        "x": 4840,
+        "y": 3600
       },
-      "bg": "res://assets/bg_zhangzhou_port.png"
+      "bg": "res://assets/bg_zhangzhou_port.png",
+      "map_pos": {
+        "u": 0.64,
+        "v": 0.42
+      }
     },
     {
       "id": "qiongzhou",
@@ -320,10 +381,14 @@
         "champa"
       ],
       "position": {
-        "x": -6000,
-        "y": 8000
+        "x": -2600,
+        "y": 7800
       },
-      "bg": "res://assets/bg_qiongzhou_port.png"
+      "bg": "res://assets/bg_qiongzhou_port.png",
+      "map_pos": {
+        "u": 0.4,
+        "v": 0.56
+      }
     },
     {
       "id": "sanfoqi",
@@ -341,10 +406,14 @@
         "yeshou"
       ],
       "position": {
-        "x": -10000,
-        "y": 18000
+        "x": -11900,
+        "y": 13200
       },
-      "bg": "res://assets/bg_sanfoqi_port.png"
+      "bg": "res://assets/bg_sanfoqi_port.png",
+      "map_pos": {
+        "u": 0.1,
+        "v": 0.74
+      }
     },
     {
       "id": "longyamen",
@@ -361,10 +430,14 @@
         "champa"
       ],
       "position": {
-        "x": -12000,
-        "y": 16000
+        "x": -11280,
+        "y": 11400
       },
-      "bg": "res://assets/bg_longyamen_port.png"
+      "bg": "res://assets/bg_longyamen_port.png",
+      "map_pos": {
+        "u": 0.12,
+        "v": 0.68
+      }
     },
     {
       "id": "bugan",
@@ -381,10 +454,14 @@
         "longyamen"
       ],
       "position": {
-        "x": -14000,
-        "y": 12000
+        "x": -9420,
+        "y": 7200
       },
-      "bg": "res://assets/bg_bugan_port.png"
+      "bg": "res://assets/bg_bugan_port.png",
+      "map_pos": {
+        "u": 0.18,
+        "v": 0.54
+      }
     },
     {
       "id": "jiaozhi",
@@ -400,10 +477,14 @@
         "champa"
       ],
       "position": {
-        "x": -8000,
-        "y": 12000
+        "x": -4460,
+        "y": 6600
       },
-      "bg": "res://assets/bg_jiaozhi_port.png"
+      "bg": "res://assets/bg_jiaozhi_port.png",
+      "map_pos": {
+        "u": 0.34,
+        "v": 0.52
+      }
     },
     {
       "id": "yeshou",
@@ -420,10 +501,14 @@
         "champa"
       ],
       "position": {
-        "x": -12000,
-        "y": 20000
+        "x": -12520,
+        "y": 15000
       },
-      "bg": "res://assets/bg_yeshou_port.png"
+      "bg": "res://assets/bg_yeshou_port.png",
+      "map_pos": {
+        "u": 0.08,
+        "v": 0.8
+      }
     },
     {
       "id": "tunmen",
@@ -440,10 +525,14 @@
         "zhangzhou"
       ],
       "position": {
-        "x": -3500,
-        "y": 3500
+        "x": 1120,
+        "y": 5400
       },
-      "bg": "res://assets/bg_tunmen_port.png"
+      "bg": "res://assets/bg_tunmen_port.png",
+      "map_pos": {
+        "u": 0.52,
+        "v": 0.48
+      }
     },
     {
       "id": "wenzhou",
@@ -460,10 +549,14 @@
         "quanzhou"
       ],
       "position": {
-        "x": 3500,
-        "y": -1500
+        "x": 7940,
+        "y": 0
       },
-      "bg": "res://assets/bg_wenzhou_port.png"
+      "bg": "res://assets/bg_wenzhou_port.png",
+      "map_pos": {
+        "u": 0.74,
+        "v": 0.3
+      }
     },
     {
       "id": "tsushima",
@@ -480,10 +573,14 @@
         "jeju"
       ],
       "position": {
-        "x": 12000,
-        "y": -7000
+        "x": 12280,
+        "y": -2400
       },
-      "bg": "res://assets/bg_tsushima_port.png"
+      "bg": "res://assets/bg_tsushima_port.png",
+      "map_pos": {
+        "u": 0.88,
+        "v": 0.22
+      }
     },
     {
       "id": "byland",
@@ -500,10 +597,14 @@
         "tsushima"
       ],
       "position": {
-        "x": 10000,
-        "y": -8000
+        "x": 10420,
+        "y": -4200
       },
-      "bg": "res://assets/bg_byland_port.png"
+      "bg": "res://assets/bg_byland_port.png",
+      "map_pos": {
+        "u": 0.82,
+        "v": 0.16
+      }
     },
     {
       "id": "xuwen",
@@ -520,10 +621,14 @@
         "qiongzhou"
       ],
       "position": {
-        "x": -7000,
-        "y": 10000
+        "x": -3840,
+        "y": 7200
       },
-      "bg": "res://assets/bg_xuwen_port.png"
+      "bg": "res://assets/bg_xuwen_port.png",
+      "map_pos": {
+        "u": 0.36,
+        "v": 0.54
+      }
     }
   ]
 }

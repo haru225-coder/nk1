@@ -8,7 +8,15 @@
           "id": "log",
           "type": "open_log",
           "label": "日志",
-          "icon": "res://assets/icons_stat/icon_stat_location.png",
+          "icon": "res://assets/ui/icons/icon_log.png",
+          "always_visible": true
+        },
+        {
+          "id": "depart",
+          "type": "navigate",
+          "label": "出港",
+          "icon": "res://assets/ui/icons/icon_sail.png",
+          "target": "world_map",
           "always_visible": true
         }
       ],
@@ -21,13 +29,30 @@
           "id": "log",
           "type": "open_log",
           "label": "日志",
-          "icon": "res://assets/icons_stat/icon_stat_location.png",
+          "icon": "res://assets/ui/icons/icon_log.png",
           "always_visible": true
         }
       ]
     },
     "title": {
-      "static_actions": []
+      "static_actions": [
+        {
+          "id": "start",
+          "type": "navigate",
+          "label": "开始",
+          "icon": "res://assets/ui/icons/icon_start.png",
+          "target": "port_quanzhou",
+          "always_visible": true
+        },
+        {
+          "id": "continue",
+          "type": "navigate",
+          "label": "继续",
+          "icon": "res://assets/ui/icons/icon_continue.png",
+          "target": "port_quanzhou",
+          "always_visible": true
+        }
+      ]
     }
   }
 }

@@ -1,0 +1,558 @@
+{
+  "scenes": [
+    {
+      "id": "chapter3_after_summon_comply",
+      "chapter": "chapter_3",
+      "title": "蒲府门外 · 名帖在手",
+      "location": "linan",
+      "time": "宝祐三年八月，黄昏",
+      "objective": "名帖到手，择路回城关",
+      "body": "临安城北，蒲府门外，黄昏。\n\n　　名帖捏在手里，比你预想的薄。偏厅里蒲帅收书的动作却很慢——慢到像在替那本《春秋》守丧。\n\n【门吏】：「车在巷口。名籍三日内入册，误了时辰，蒲帅不认。」\n\n　　你抬头看天。云缝里漏下最后一线光，照在府门匾额上，「节钺」二字被人用朱砂描过。\n\n　　怀里那本《春秋》的位置空着，像少了一颗牙。",
+      "investigations": [
+        {
+          "label": "看「节钺」匾额",
+          "text": "匾额右下角刻着小字：「咸淳七年贾府重修」。朱砂描得勤，木纹已看不见。",
+          "once_flag": "chapter3_comply_yamen_plaque_read",
+          "effects": {
+            "story_flag": "chapter3_comply_yamen_plaque_read",
+            "fame": 1
+          }
+        },
+        {
+          "label": "摸怀里空位",
+          "text": "布料上还有墨香，混着一丝朱批的焦味——像被火舔过，又被人按住。",
+          "once_flag": "chapter3_comply_empty_lap",
+          "effects": {
+            "story_flag": "chapter3_comply_empty_lap"
+          }
+        },
+        {
+          "label": "数门吏靴底的泥",
+          "text": "泥色发红，不是京城的灰，是郊外义庄的土。门吏却一脸不在乎，像是踩惯了的。",
+          "once_flag": "chapter3_comply_guard_mud",
+          "effects": {
+            "story_flag": "chapter3_comply_guard_mud",
+            "pu_attention": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "乘蒲府车回城关",
+          "next": "chapter3_comply_taixue_register",
+          "effects": {
+            "story_flag": "chapter3_comply_rode_pu_carriage",
+            "jia_relationship": 1,
+            "pu_attention": -2
+          },
+          "narration": "车帘低垂。赶车的也不回头，只说一句：「别出声。」"
+        },
+        {
+          "label": "步行，趁夜色去太学",
+          "next": "chapter3_comply_taixue_register",
+          "effects": {
+            "story_flag": "chapter3_comply_walked_to_taixue",
+            "jia_relationship": -1,
+            "pu_attention": 1
+          },
+          "narration": "你避开蒲府车，自己走。夜色把名帖藏在袖里，像藏一段不该写下的罪。"
+        },
+        {
+          "label": "折回客栈，缓一日",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "chapter3_comply_delayed_one_day"
+          },
+          "narration": "你把名帖压在枕下。第三日仍得动身——但今夜，得先把自己安抚下来。"
+        }
+      ],
+      "bg": "res://assets/bg_fuzhou_yamen.jpg"
+    },
+    {
+      "id": "chapter3_comply_taixue_register",
+      "chapter": "chapter_3",
+      "title": "太学名籍房",
+      "location": "linan",
+      "time": "宝祐三年八月廿一，午",
+      "objective": "名籍入册，验引复试",
+      "body": "临安太学，名籍房，宝祐三年八月廿一。\n\n　　名籍官接过名帖，眼皮都没抬。验过印，蘸朱笔，在你名字上画了一个圈。\n\n【名籍官】：「礼部复试，三日后。届时持名帖与腰牌，验引而入。」\n\n　　他把腰牌推过来。铜面刻着「贾府保举」四字——名帖上原本没有，是官现补的。\n\n　　你握住腰牌，铜的冷一直凉到掌心。",
+      "investigations": [
+        {
+          "label": "看名籍簿上别人的名字",
+          "text": "前十名都被墨涂过，原字看不见。名籍官头也不抬：「涂掉的都是没来考的，省纸。」",
+          "once_flag": "chapter3_comply_roll_names_seen",
+          "effects": {
+            "story_flag": "chapter3_comply_roll_names_seen",
+            "fame": 1
+          }
+        },
+        {
+          "label": "翻看腰牌背面",
+          "text": "背刻一行小字：「咸淳七年重铸」。腰牌不是今岁新发的，是贾府库存的旧物。",
+          "once_flag": "chapter3_comply_badge_back",
+          "effects": {
+            "story_flag": "chapter3_comply_badge_back"
+          }
+        },
+        {
+          "label": "问保举细节",
+          "text": "名籍官摆手：「名帖是蒲帅的，牌是贾府的。我只管画圈，不问来路。」",
+          "once_flag": "chapter3_comply_asked_guarantee",
+          "effects": {
+            "story_flag": "chapter3_comply_asked_guarantee",
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "收牌，告退",
+          "next": "chapter3_comply_audit",
+          "effects": {
+            "story_flag": "chapter3_comply_taixue_registered"
+          },
+          "narration": "你攥着腰牌走出名籍房。背后朱笔落纸的声音停了片刻，又起。"
+        },
+        {
+          "label": "问可否改作「礼部直举」",
+          "next": "chapter3_comply_audit",
+          "effects": {
+            "story_flag": "chapter3_comply_questioned_guarantee",
+            "jia_relationship": -1,
+            "fame": 1
+          },
+          "narration": "名籍官抬眼看了你一瞬，又低下去：「你倒是有骨头。骨头在这儿不值钱。」"
+        },
+        {
+          "label": "留在名籍房翻前几届名册",
+          "next": "chapter3_comply_audit",
+          "effects": {
+            "story_flag": "chapter3_comply_browsed_old_rolls",
+            "fame": 2,
+            "pu_attention": 1
+          },
+          "narration": "前几届名册上多是被涂的名字。你没翻到想找的那一个。"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "chapter3_comply_audit",
+      "chapter": "chapter_3",
+      "title": "礼部考棚外",
+      "location": "linan",
+      "time": "宝祐三年八月廿四，辰",
+      "objective": "礼部复试，临场择路",
+      "body": "临安礼部，考棚外，宝祐三年八月廿四。\n\n　　考棚外排着三十余人，腰牌颜色不一。蒲氏保举的人被另开一队，验牌更慢。\n\n【监试官】：「蒲帅点过名的，先入内。」\n\n　　他眼皮都不抬，把你的腰牌搁在案上。铜面「贾府保举」四字朝上，旁边有人挪开半步。\n\n　　考题挂在棚内。你没看题，先看监试官身后那面屏风——屏风后，似有人影。",
+      "investigations": [
+        {
+          "label": "看屏风后的人影",
+          "text": "人影不动，茶杯也未端。监试官偶尔侧身让出半步，像是替那影子留位。",
+          "once_flag": "chapter3_comply_saw_screen_shadow",
+          "effects": {
+            "story_flag": "chapter3_comply_saw_screen_shadow",
+            "pu_attention": 2
+          }
+        },
+        {
+          "label": "问排队的举子打听考题",
+          "text": "一老者压低声音：「今年考『义利之辨』。蒲帅点了名的，多半是写利。」",
+          "once_flag": "chapter3_comply_heard_exam_topic",
+          "effects": {
+            "story_flag": "chapter3_comply_heard_exam_topic",
+            "fame": 1
+          }
+        },
+        {
+          "label": "翻看腰牌背面的刻字",
+          "text": "背刻一行小字。你已看过一遍。",
+          "once_flag": "chapter3_comply_rechecked_badge",
+          "effects": {
+            "story_flag": "chapter3_comply_badge_back"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "闭门应试，规规矩矩答",
+          "next": "chapter3_after_summon_comply_audit_done",
+          "effects": {
+            "story_flag": "chapter3_comply_audit_passed",
+            "fame": 2,
+            "pu_attention": 1
+          },
+          "narration": "你写「义」字时手心出汗。交卷后无人说话，屏风后的影子也未动。"
+        },
+        {
+          "label": "故意错一处，看蒲氏反应",
+          "next": "chapter3_after_summon_comply_audit_done",
+          "effects": {
+            "story_flag": "chapter3_comply_audit_sabotaged",
+            "fame": -2,
+            "pu_attention": 3
+          },
+          "narration": "你把「利」字写错半笔。屏风后传来一声极轻的咳——监试官立刻收卷。"
+        },
+        {
+          "label": "临场告病，弃考",
+          "next": "chapter3_after_summon_comply_audit_done",
+          "effects": {
+            "story_flag": "chapter3_comply_audit_sick",
+            "fame": -1,
+            "pu_attention": -1,
+            "hull_hp": -3
+          },
+          "narration": "你扶着案角起身。监试官只问一句：「明日可补考？」你摇头，被人扶出。"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "chapter3_after_summon_refuse",
+      "chapter": "chapter_3",
+      "title": "蒲府门外 · 抱书而出",
+      "location": "linan",
+      "time": "宝祐三年八月，黄昏",
+      "objective": "抱书出府，择路脱身",
+      "body": "临安城北，蒲府门外，黄昏。\n\n　　《春秋》还在怀里。帘后那句「把书留下」像没听见，蒲帅也没追——他比你想的沉得住。\n\n【路人】：（低声）「蒲府出来的人，都走得快些。」\n\n　　你加快脚步。巷口无车，灯笼也未点。身后有靴声，不止一人。\n\n　　怀里的书贴着肋骨，刻痕硌出一道红印。",
+      "investigations": [
+        {
+          "label": "数身后的靴声",
+          "text": "三双。一双布底软，两双皮底硬。软的在左前，硬的在右后。",
+          "once_flag": "chapter3_refuse_boots_counted",
+          "effects": {
+            "story_flag": "chapter3_refuse_boots_counted"
+          }
+        },
+        {
+          "label": "翻看《春秋》夹页先生批注",
+          "text": "夹页还在。末行「勿信夜验」四字，今夜更比哪夜都重。",
+          "once_flag": "chapter3_refuse_checked_annotation",
+          "effects": {
+            "story_flag": "chapter3_refuse_checked_annotation",
+            "fame": 1
+          }
+        },
+        {
+          "label": "看巷口的地形",
+          "text": "巷口接正街。正街尽头是瓮城，瓮城左拐有窄弄。弄口有人蹲着抽旱烟，烟不散。",
+          "once_flag": "chapter3_refuse_looked_alley",
+          "effects": {
+            "story_flag": "chapter3_refuse_looked_alley"
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "快步走正街，回城关客栈",
+          "next": "chapter3_refuse_linan_back_alley",
+          "effects": {
+            "story_flag": "chapter3_refuse_took_main_street",
+            "pu_attention": 1
+          },
+          "narration": "你压住步子，假装看摊。身后的靴声始终没甩掉。"
+        },
+        {
+          "label": "钻暗巷，绕到河埠",
+          "next": "chapter3_refuse_linan_back_alley",
+          "effects": {
+            "story_flag": "chapter3_refuse_took_back_alley",
+            "pu_attention": -2
+          },
+          "narration": "你在瓮城左拐钻进了窄弄。烟气里有人咳了一声，像是让道。"
+        },
+        {
+          "label": "驻足回头看蒲府门",
+          "next": "chapter3_refuse_linan_back_alley",
+          "effects": {
+            "story_flag": "chapter3_refuse_glanced_back",
+            "pu_attention": 3,
+            "fame": 1
+          },
+          "narration": "你只回看一眼。府门半掩，灯笼未点。身后的靴声反而更重。"
+        }
+      ],
+      "bg": "res://assets/bg_fuzhou_yamen.jpg"
+    },
+    {
+      "id": "chapter3_refuse_linan_back_alley",
+      "chapter": "chapter_3",
+      "title": "临安暗巷",
+      "location": "linan",
+      "time": "宝祐三年八月，暮",
+      "objective": "暗巷接头，循指点去河埠",
+      "body": "临安城南，暗巷，宝祐三年八月，暮。\n\n　　巷子窄得只能侧身。墙上贴着劝农榜，纸已发黄，底下有人用炭笔写「贾府夜禁」。\n\n【脚夫】：（从檐下递来一只破筐）「筐底有水，干粮在油纸里。运河埠有人在等。」\n\n　　他抬眼，目光只在你脸上停了一瞬。筐里是寻常货色，油纸里裹的却是咸鱼——那条腥味，跟澎湖的没两样。",
+      "investigations": [
+        {
+          "label": "看墙上炭笔字",
+          "text": "「贾府夜禁」四字旁边又添一行：「夜禁归夜禁，渡船归渡船。」字比前一行新。",
+          "once_flag": "chapter3_refuse_alley_wall_read",
+          "effects": {
+            "story_flag": "chapter3_refuse_alley_wall_read"
+          }
+        },
+        {
+          "label": "翻油纸里的咸鱼",
+          "text": "咸鱼是塞在《春秋》夹页里的备用。脚夫没用筐递过东西，倒像是把书先递出来。",
+          "once_flag": "chapter3_refuse_salted_fish",
+          "effects": {
+            "story_flag": "chapter3_refuse_salted_fish",
+            "linboyuan_relationship": 1
+          }
+        },
+        {
+          "label": "问脚夫运河埠等候的人是谁",
+          "text": "脚夫摇头：「只说姓断眉。你去了便知。」他不收钱，把筐推过来。",
+          "once_flag": "chapter3_refuse_asked_porter",
+          "effects": {
+            "story_flag": "chapter3_refuse_asked_porter",
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "收筐，循指点去河埠",
+          "next": "chapter3_refuse_seek_lin",
+          "effects": {
+            "story_flag": "chapter3_refuse_back_alley_safe"
+          },
+          "narration": "你把筐挂在肘下，假装买菜。脚夫没回头，已在巷尾。"
+        },
+        {
+          "label": "拒筐，自寻出路",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "chapter3_refuse_back_alley_refused",
+            "fame": -1,
+            "pu_attention": 2
+          },
+          "narration": "脚夫把筐收回去。你转身时，墙上那行新字被人用袖子擦掉了一半。"
+        },
+        {
+          "label": "追问脚夫来历",
+          "next": "chapter3_refuse_seek_lin",
+          "effects": {
+            "story_flag": "chapter3_refuse_back_alley_questioned",
+            "fame": 1,
+            "pu_attention": 1
+          },
+          "narration": "脚夫只答一句：「林老大的路，不问名。」他没等你回话，已让开半步。"
+        }
+      ],
+      "bg": "res://assets/bg_city_market_street.png"
+    },
+    {
+      "id": "chapter3_refuse_seek_lin",
+      "chapter": "chapter_3",
+      "title": "运河埠 · 断眉老汉",
+      "location": "linan",
+      "time": "宝祐三年八月，当夜",
+      "objective": "接头断眉老汉，定海陆二途",
+      "body": "临安运河埠，茶棚，宝祐三年八月，当夜。\n\n　　断眉老汉还在那里。上次来，他缝帆；今夜他补网，桐油味未散。\n\n【断眉老汉】：「书还在？」\n\n　　他抬眼。灯火在他脸上画了一道疤——比上次更深，像是新添的。\n\n【断眉老汉】：「林老大在澎湖。走海路，三日；走陆，半月。官府的眼线，今夜换了。」",
+      "investigations": [
+        {
+          "label": "翻看老汉补丁下的网",
+          "text": "网眼间夹着几粒盐。盐粒不化，是海盐，不是运河边的井盐。",
+          "once_flag": "chapter3_refuse_net_salt",
+          "effects": {
+            "story_flag": "chapter3_refuse_net_salt"
+          }
+        },
+        {
+          "label": "问老汉脸上的新疤",
+          "text": "老汉摸了疤一下：「昨夜换的眼线，比上一拨识货。」他没再往下说。",
+          "once_flag": "chapter3_refuse_asked_scar",
+          "effects": {
+            "story_flag": "chapter3_refuse_asked_scar",
+            "linboyuan_relationship": 1
+          }
+        },
+        {
+          "label": "听运河埠船工的对话",
+          "text": "船工压低声音：「蒲帅在临安设了三道关。走海路的，得先骗过第一道。」",
+          "once_flag": "chapter3_refuse_heard_barge_talk",
+          "effects": {
+            "story_flag": "chapter3_refuse_heard_barge_talk",
+            "pu_attention": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "走海路，即刻南下",
+          "next": "chapter3_refuse_sea_route",
+          "effects": {
+            "story_flag": "chapter3_refuse_sea_route_chosen",
+            "linboyuan_relationship": 2,
+            "pu_attention": -3,
+            "money": -20
+          },
+          "narration": "老汉点头：「今夜子时，南码头，第三条乌篷。」他递来一只油纸包，里面是干粮与一枚铜钱。"
+        },
+        {
+          "label": "走陆路，缓一日再发",
+          "next": "chapter3_refuse_sea_route",
+          "effects": {
+            "story_flag": "chapter3_refuse_land_route_chosen",
+            "linboyuan_relationship": 1,
+            "pu_attention": -1,
+            "money": -10
+          },
+          "narration": "老汉只说一句：「陆路慢，蒲帅的人未必慢。」他把桐油灯推过来，让你看清桌上的渡口图。"
+        },
+        {
+          "label": "暂留临安，先探太学",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "chapter3_refuse_stayed_linan",
+            "fame": 1,
+            "linboyuan_relationship": -1,
+            "pu_attention": 2
+          },
+          "narration": "老汉不再说话。网补完，他收摊时把桐油灯吹灭——像替这段路收了尾。"
+        }
+      ],
+      "bg": "res://assets/bg_departure.png"
+    },
+    {
+      "id": "chapter3_after_summon_burn",
+      "chapter": "chapter_3",
+      "title": "蒲府门外 · 名帖成灰",
+      "location": "linan",
+      "time": "宝祐三年八月，黄昏",
+      "objective": "名帖成灰，择路出城",
+      "body": "临安城北，蒲府门外，黄昏。\n\n　　纸灰从指缝落进袖口。蒲帅那句「有种」还在偏厅里回响，你人已站在门外。\n\n【门吏】：（低声）「你这一走，城门即刻挂像。」\n\n　　他没拦，也没让开。府门半掩，灯笼仍未点。\n\n　　街上没人知道蒲府今夜发生了什么。知道的人，已不在街上。",
+      "investigations": [
+        {
+          "label": "抖袖口纸灰",
+          "text": "灰里还剩半截朱字，看不清。你把袖口拍净，朱迹已印在布料上。",
+          "once_flag": "chapter3_burn_ash_dusted",
+          "effects": {
+            "story_flag": "chapter3_burn_ash_dusted"
+          }
+        },
+        {
+          "label": "看门吏腰牌",
+          "text": "门吏腰牌刻着「蒲府外班」。这牌是官造的，不是私铸——你撕不动。",
+          "once_flag": "chapter3_burn_saw_guard_badge",
+          "effects": {
+            "story_flag": "chapter3_burn_saw_guard_badge"
+          }
+        },
+        {
+          "label": "听府内动静",
+          "text": "厅内有人咳了一声。帘子未动，靴声却已散开——蒲帅在派人。",
+          "once_flag": "chapter3_burn_heard_inside",
+          "effects": {
+            "story_flag": "chapter3_burn_heard_inside",
+            "pu_attention": 2
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "立刻走正街，出城门",
+          "next": "chapter3_burn_arrest",
+          "effects": {
+            "story_flag": "chapter3_burn_took_main_gate",
+            "pu_attention": 5
+          },
+          "narration": "你不再回头。门吏看着你走，没追，也没让人开路。"
+        },
+        {
+          "label": "走暗巷绕行",
+          "next": "chapter3_burn_arrest",
+          "effects": {
+            "story_flag": "chapter3_burn_took_back_alley",
+            "pu_attention": 2,
+            "fame": 1
+          },
+          "narration": "瓮城左拐的窄弄，今夜烟气更浓。你钻进去时，烟气里有人咳了一声。"
+        },
+        {
+          "label": "抢门吏的腰牌",
+          "next": "chapter3_burn_arrest",
+          "effects": {
+            "story_flag": "chapter3_burn_took_guard_badge",
+            "pu_attention": 8,
+            "fame": 2
+          },
+          "narration": "你在他转身那一瞬夺牌。门吏没喊，只把手按在刀柄上——让你跑。"
+        }
+      ],
+      "bg": "res://assets/bg_fuzhou_yamen.jpg"
+    },
+    {
+      "id": "chapter3_burn_arrest",
+      "chapter": "chapter_3",
+      "title": "客栈 · 禁军搜捕",
+      "location": "linan",
+      "time": "宝祐三年八月，子时",
+      "objective": "拒捕、应付、拔刀，三择其一",
+      "body": "临安城关，客栈，宝祐三年八月，子时。\n\n　　门被踢开时，你正坐在窗前。禁军三人，先翻箱笼，再按你肩。\n\n【禁军校尉】：「名帖已销。蒲帅有令：活口回府，尸首也回府。」\n\n　　他抬手。窗外的更鼓敲到第二下，像替整条街的人睡死了。",
+      "investigations": [
+        {
+          "label": "看禁军校尉腰间的刀",
+          "text": "刀鞘是蒲氏内班的制式。鞘上刻「监斩」二字，今夜已磨亮。",
+          "once_flag": "chapter3_burn_saw_captain_blade",
+          "effects": {
+            "story_flag": "chapter3_burn_saw_captain_blade",
+            "pu_attention": 1
+          }
+        },
+        {
+          "label": "听窗外更鼓方向",
+          "text": "更鼓从西边来，鼓手走得不慢。街尾有马蹄——不止一匹。",
+          "once_flag": "chapter3_burn_heard_drum",
+          "effects": {
+            "story_flag": "chapter3_burn_heard_drum"
+          }
+        },
+        {
+          "label": "翻枕头下的暗格",
+          "text": "暗格里的《春秋》还在，夹页未动。窗外的人没搜到这里。",
+          "once_flag": "chapter3_burn_checked_hide",
+          "effects": {
+            "story_flag": "chapter3_burn_checked_hide",
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "拒捕，跳窗",
+          "next": "chapter3_burn_flee",
+          "effects": {
+            "story_flag": "chapter3_burn_jumped_window",
+            "pu_attention": 3,
+            "fame": 1
+          },
+          "narration": "你从窗台翻下。脚踝一疼，没停。巷子里有更鼓声替了你半口气。"
+        },
+        {
+          "label": "开门应付，等天明",
+          "next": "chapter3_burn_flee",
+          "effects": {
+            "story_flag": "chapter3_burn_talked_out",
+            "pu_attention": 1,
+            "fame": -1
+          },
+          "narration": "你坐回窗前，校尉把刀收回鞘里：「天明再走。走时记得把书留下。」"
+        },
+        {
+          "label": "拔刀相向",
+          "next": "chapter3_burn_flee",
+          "effects": {
+            "story_flag": "chapter3_burn_drew_blade",
+            "pu_attention": 5,
+            "fame": 3,
+            "crew_count": -1
+          },
+          "narration": "你把枕下短刀抽出。校尉退半步——他没想到你手边有刃。"
+        }
+      ],
+      "bg": "res://assets/bg_northern_fortress_snow.png"
+    }
+  ]
+}

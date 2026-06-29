@@ -64,26 +64,26 @@
               }
             ]
           },
-          "icon": "res://assets/icon_exam_koei.png",
+          "icon": "res://assets/icons_128/icon_exam_koei.png",
           "requires_story_flag": "xianghua_morning_done"
         },
         {
           "id": "xinghua_market",
           "title": "市集",
           "subtitle": "土产与海味",
-          "icon": "res://assets/icon_market_koei.png"
+          "icon": "res://assets/icons_128/icon_market_koei.png"
         },
         {
           "id": "xinghua_inn",
           "title": "客栈",
           "subtitle": "歇脚打尖",
-          "icon": "res://assets/icon_inn_koei.png"
+          "icon": "res://assets/icons_128/icon_inn_koei.png"
         },
         {
           "id": "xinghua_tavern",
           "title": "茶馆",
           "subtitle": "听风言风语",
-          "icon": "res://assets/icon_tavern_koei.png"
+          "icon": "res://assets/icons_128/icon_tavern_koei.png"
         },
         {
           "id": "xinghua_temple",
@@ -98,7 +98,7 @@
               }
             ]
           },
-          "icon": "res://assets/icon_residence_koei.png",
+          "icon": "res://assets/icons_128/icon_residence_koei.png",
           "requires_story_flag": "xianghua_morning_done"
         },
         {
@@ -114,7 +114,7 @@
               }
             ]
           },
-          "icon": "res://assets/icon_shipyard_koei.png"
+          "icon": "res://assets/icons_128/icon_shipyard_koei.png"
         }
       ],
       "bg": "res://assets/bg_xinghua_residence.png",

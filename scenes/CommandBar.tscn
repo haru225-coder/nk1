@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/CommandBar.gd" id="1_script"]
 
 [node name="CommandBar" type="Control"]
-layout_mode = 1
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -11,28 +11,32 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="Background" type="PanelContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 4
-theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 4
+theme_type_variation = &"CommandBarPanel"
 
-[node name="Scroll" type="ScrollContainer" parent="Margin"]
+[node name="Margin" type="MarginContainer" parent="Background"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
+
+[node name="Scroll" type="ScrollContainer" parent="Background/Margin"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 2
 vertical_scroll_mode = 0
 
-[node name="Flow" type="HBoxContainer" parent="Margin/Scroll"]
+[node name="Flow" type="HBoxContainer" parent="Background/Margin/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 alignment = 1
-theme_override_constants/separation = 6
+theme_override_constants/separation = 8

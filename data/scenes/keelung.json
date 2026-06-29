@@ -12,19 +12,19 @@
           "id": "keelung_tavern",
           "title": "棚屋",
           "subtitle": "打听消息",
-          "icon": "res://assets/icon_tavern_koei.png"
+          "icon": "res://assets/icons_128/icon_tavern_koei.png"
         },
         {
           "id": "keelung_market",
           "title": "贝壳市集",
           "subtitle": "以物易物",
-          "icon": "res://assets/icon_market_koei.png"
+          "icon": "res://assets/icons_128/icon_market_koei.png"
         },
         {
           "id": "keelung_wharf",
           "title": "独木舟码头",
           "subtitle": "船只与航路",
-          "icon": "res://assets/icon_shipyard_koei.png"
+          "icon": "res://assets/icons_128/icon_shipyard_koei.png"
         }
       ],
       "town_map": {

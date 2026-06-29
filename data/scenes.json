@@ -87,26 +87,26 @@
               }
             ]
           },
-          "icon": "res://assets/icon_exam_koei.png",
+          "icon": "res://assets/icons_128/icon_exam_koei.png",
           "requires_story_flag": "xianghua_morning_done"
         },
         {
           "id": "xinghua_market",
           "title": "市集",
           "subtitle": "土产与海味",
-          "icon": "res://assets/icon_market_koei.png"
+          "icon": "res://assets/icons_128/icon_market_koei.png"
         },
         {
           "id": "xinghua_inn",
           "title": "客栈",
           "subtitle": "歇脚打尖",
-          "icon": "res://assets/icon_inn_koei.png"
+          "icon": "res://assets/icons_128/icon_inn_koei.png"
         },
         {
           "id": "xinghua_tavern",
           "title": "茶馆",
           "subtitle": "听风言风语",
-          "icon": "res://assets/icon_tavern_koei.png"
+          "icon": "res://assets/icons_128/icon_tavern_koei.png"
         },
         {
           "id": "xinghua_temple",
@@ -121,7 +121,7 @@
               }
             ]
           },
-          "icon": "res://assets/icon_residence_koei.png",
+          "icon": "res://assets/icons_128/icon_residence_koei.png",
           "requires_story_flag": "xianghua_morning_done"
         },
         {
@@ -137,7 +137,7 @@
               }
             ]
           },
-          "icon": "res://assets/icon_shipyard_koei.png"
+          "icon": "res://assets/icons_128/icon_shipyard_koei.png"
         }
       ],
       "bg": "res://assets/bg_xinghua_residence.png",
@@ -677,31 +677,31 @@
               }
             ]
           },
-          "icon": "res://assets/icon_shipyard_koei.png"
+          "icon": "res://assets/icons_128/icon_shipyard_koei.png"
         },
         {
           "id": "city_guild",
           "title": "工会",
           "subtitle": "打听航线与传闻",
-          "icon": "res://assets/icon_guild_koei.png"
+          "icon": "res://assets/icons_128/icon_guild_koei.png"
         },
         {
           "id": "city_tavern",
           "title": "酒馆",
           "subtitle": "水手与商旅",
-          "icon": "res://assets/icon_tavern_koei.png"
+          "icon": "res://assets/icons_128/icon_tavern_koei.png"
         },
         {
           "id": "city_market",
           "title": "市场",
           "subtitle": "买卖货物",
-          "icon": "res://assets/icon_market_koei.png"
+          "icon": "res://assets/icons_128/icon_market_koei.png"
         },
         {
           "id": "city_inn",
           "title": "旅馆",
           "subtitle": "休整补给",
-          "icon": "res://assets/icon_inn_koei.png"
+          "icon": "res://assets/icons_128/icon_inn_koei.png"
         },
         {
           "id": "city_shipyard",
@@ -717,26 +717,26 @@
               }
             ]
           },
-          "icon": "res://assets/icon_shipyard_koei.png",
+          "icon": "res://assets/icons_128/icon_shipyard_koei.png",
           "requires_story_flag": "spring_autumn_scroll"
         },
         {
           "id": "city_yamen",
           "title": "衙门",
           "subtitle": "市舶验引",
-          "icon": "res://assets/icon_yamen_koei.png"
+          "icon": "res://assets/icons_128/icon_yamen_koei.png"
         },
         {
           "id": "city_residence",
           "title": "住宅",
           "subtitle": "安身之处",
-          "icon": "res://assets/icon_residence_koei.png"
+          "icon": "res://assets/icons_128/icon_residence_koei.png"
         },
         {
           "id": "city_exam",
           "title": "学院",
           "subtitle": "科举之路",
-          "icon": "res://assets/icon_exam_koei.png"
+          "icon": "res://assets/icons_128/icon_exam_koei.png"
         }
       ],
       "town_map": {
@@ -785,7 +785,7 @@
             "label": "旅馆",
             "scene_id": "city_inn",
             "rect": [
-              0.68,
+              0.63,
               0.28,
               0.14,
               0.12
@@ -833,7 +833,7 @@
             "label": "住宅",
             "scene_id": "city_residence",
             "rect": [
-              0.72,
+              0.77,
               0.48,
               0.13,
               0.11
@@ -1629,31 +1629,31 @@
           "id": "linan_canal",
           "title": "运河埠",
           "subtitle": "漕船与消息",
-          "icon": "res://assets/icon_shipyard_koei.png"
+          "icon": "res://assets/icons_128/icon_shipyard_koei.png"
         },
         {
           "id": "city_market",
           "title": "市集",
           "subtitle": "米价如刀",
-          "icon": "res://assets/icon_market_koei.png"
+          "icon": "res://assets/icons_128/icon_market_koei.png"
         },
         {
           "id": "city_inn",
           "title": "客栈",
           "subtitle": "歇脚",
-          "icon": "res://assets/icon_inn_koei.png"
+          "icon": "res://assets/icons_128/icon_inn_koei.png"
         },
         {
           "id": "city_tavern",
           "title": "茶肆",
           "subtitle": "风声",
-          "icon": "res://assets/icon_tavern_koei.png"
+          "icon": "res://assets/icons_128/icon_tavern_koei.png"
         },
         {
           "id": "linan_taixue",
           "title": "太学",
           "subtitle": "名籍与考场",
-          "icon": "res://assets/icon_exam_koei.png",
+          "icon": "res://assets/icons_128/icon_exam_koei.png",
           "requires_story_flag": "linan_entered"
         }
       ],

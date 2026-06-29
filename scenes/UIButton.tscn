@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8ui1btn0001"]
+
+[ext_resource type="Script" path="res://scripts/UIButton.gd" id="1"]
+
+[node name="UIButton" type="Button"]
+custom_minimum_size = Vector2(0, 52)
+offset_right = 200.0
+offset_bottom = 52.0
+mouse_default_cursor_shape = 2
+theme_type_variation = "ActionButton"
+script = ExtResource("1")

@@ -8,9 +8,9 @@
       "title": "对马岛",
       "body": "",
       "facilities": [
-        {"id": "tsushima_tavern", "title": "岛上酒屋", "subtitle": "边境传闻", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "tsushima_market", "title": "马铁市集", "subtitle": "日朝贸易", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "tsushima_wharf", "title": "边境码头", "subtitle": "倭寇与商人", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "tsushima_tavern", "title": "岛上酒屋", "subtitle": "边境传闻", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "tsushima_market", "title": "马铁市集", "subtitle": "日朝贸易", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "tsushima_wharf", "title": "边境码头", "subtitle": "倭寇与商人", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_tsushima_map.png", "hint": "孤岛、马匹交易、倭寇巡逻", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_tsushima_port.png",

@@ -8,9 +8,9 @@
       "title": "三佛齐",
       "body": "",
       "facilities": [
-        {"id": "sanfoqi_tavern", "title": "马来酒屋", "subtitle": "椰酒与故事", "icon": "res://assets/icon_tavern_koei.png"},
-        {"id": "sanfoqi_market", "title": "香料宝石市", "subtitle": "南洋枢纽", "icon": "res://assets/icon_market_koei.png"},
-        {"id": "sanfoqi_wharf", "title": "旧港泊位", "subtitle": "遗迹与贸易", "icon": "res://assets/icon_shipyard_koei.png"}
+        {"id": "sanfoqi_tavern", "title": "马来酒屋", "subtitle": "椰酒与故事", "icon": "res://assets/icons_128/icon_tavern_koei.png"},
+        {"id": "sanfoqi_market", "title": "香料宝石市", "subtitle": "南洋枢纽", "icon": "res://assets/icons_128/icon_market_koei.png"},
+        {"id": "sanfoqi_wharf", "title": "旧港泊位", "subtitle": "遗迹与贸易", "icon": "res://assets/icons_128/icon_shipyard_koei.png"}
       ],
       "town_map": {"bg": "res://assets/bg_sanfoqi_map.png", "hint": "旧港遗迹、马来商人、香料堆积", "fallback_mode": "cards", "hotspots": []},
       "bg": "res://assets/bg_sanfoqi_port.png",

@@ -1,0 +1,119 @@
+{
+  "_comment": "NK1-P6-POLISH-002: 世界事件配置外化。修改此文件调整事件参数，无需改代码。",
+  "version": 1,
+  "events": {
+    "pirate_attack": {
+      "base_weight": 0.8,
+      "cooldown_days": 30,
+      "use_global_cooldown": false,
+      "max_triggers": -1,
+      "initial_duration": 5,
+      "peak_local_mod": 1.5,
+      "peak_neighbor_mod": 1.15,
+      "neighbor_decay": 0.5,
+      "activate_prosperity_shock": 0.10,
+      "expire_prosperity_boost": 0.05,
+      "expire_chain_bias": {
+        "trade_recovery": 2.0
+      }
+    },
+    "trade_disaster": {
+      "base_weight": 1.0,
+      "cooldown_days": 25,
+      "use_global_cooldown": false,
+      "max_triggers": -1,
+      "initial_duration": 10,
+      "peak_local_mod": 2.5,
+      "peak_neighbor_mod": 1.3,
+      "neighbor_decay": 0.6,
+      "activate_prosperity_shock": 0.15,
+      "expire_partial_recovery": 0.8,
+      "expire_prosperity_boost": 0.08,
+      "expire_chain_bias": {
+        "trade_recovery": 3.0
+      }
+    },
+    "trade_recovery": {
+      "base_weight": 1.1,
+      "cooldown_days": 15,
+      "use_global_cooldown": false,
+      "max_triggers": -1,
+      "initial_duration": 10,
+      "peak_local_mod": 0.8,
+      "peak_neighbor_mod": 0.9,
+      "neighbor_decay": 0.5,
+      "activate_prosperity_boost": 0.05,
+      "expire_prosperity_boost": 0.02
+    },
+    "supply_shortage": {
+      "base_weight": 0.7,
+      "cooldown_days": 35,
+      "use_global_cooldown": false,
+      "max_triggers": -1,
+      "initial_duration": 8,
+      "peak_local_mod": 2.0,
+      "peak_regional_mod": 1.4,
+      "shortage_ratio": 0.25,
+      "regional_shortage_multiplier": 1.8,
+      "regional_decay_multiplier": 0.6,
+      "activate_prosperity_shock": 0.08,
+      "expire_partial_recovery": 0.7,
+      "expire_prosperity_boost": 0.04,
+      "expire_chain_bias": {
+        "trade_recovery": 2.0
+      }
+    },
+    "trade_boom": {
+      "base_weight": 0.6,
+      "cooldown_days": 40,
+      "use_global_cooldown": false,
+      "max_triggers": -1,
+      "initial_duration": 12,
+      "peak_local_mod": 0.85,
+      "peak_regional_mod": 0.92,
+      "boom_prosperity_gain": 0.12,
+      "boom_stock_replenish": 1.3,
+      "post_boom_saturation": 300,
+      "regional_prosperity_gain_factor": 0.5,
+      "regional_stock_replenish_factor": 0.8,
+      "regional_decay_multiplier": 0.5,
+      "expire_prosperity_shock": 0.06
+    },
+    "economic_ripple": {
+      "base_weight": 0.5,
+      "cooldown_days": 50,
+      "use_global_cooldown": false,
+      "max_triggers": -1,
+      "initial_duration": 8,
+      "peak_local_mod": 1.8,
+      "peak_regional_mod": 1.25,
+      "ripple_stock_cut": 0.3,
+      "ripple_regional_cut": 0.6,
+      "regional_decay_multiplier": 0.7,
+      "activate_prosperity_shock": 0.12,
+      "activate_regional_prosperity_shock": 0.04,
+      "activate_chain_bias": {
+        "trade_recovery": 2.5
+      },
+      "expire_partial_recovery": 0.75,
+      "expire_prosperity_boost": 0.06,
+      "expire_regional_partial_recovery": 0.9
+    }
+  },
+  "generator": {
+    "daily_event_chance": 0.08,
+    "intel_tier_costs": [20, 50, 120],
+    "rumor_delay_min": 5,
+    "rumor_delay_max": 15,
+    "safety_valve_capped_stock_mult": 4.0,
+    "safety_valve_ratio_min": 0.2,
+    "safety_valve_ratio_max": 5.0,
+    "safety_valve_threshold": 0.3,
+    "safety_valve_min_recovery_weight": 0.1,
+    "safety_valve_recovery_duration": 10,
+    "safety_valve_recovery_rumor_min": 1,
+    "safety_valve_recovery_rumor_max": 3,
+    "valid_port_statuses": ["main", "thread"],
+    "good_category": "货物"
+  }
+}
