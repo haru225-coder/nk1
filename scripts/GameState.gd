@@ -13,6 +13,18 @@ var trade: TradeState = TradeState.new()
 var story: StoryState = StoryState.new()
 var navigation: NavigationState = NavigationState.new()
 var market: MarketState = MarketState.new()
+var economy_log: EconomyLog = EconomyLog.new()
+var game_log: GameLog = GameLog.new()
+
+## ── 幂等守卫定期清理 ─────────────────────────────────────
+
+var _last_cleanup := 0
+
+func _process(_delta: float) -> void:
+	var now := Time.get_ticks_msec()
+	if now - _last_cleanup > 60000:
+		IdempotencyGuard.cleanup_old_records()
+		_last_cleanup = now
 
 ## ── 船只属性代理 ─────────────────────────────────────────
 
@@ -212,8 +224,12 @@ func _sync_world_map_ship_hp() -> void:
 		if ships.is_empty():
 			return
 		var ship_node: Node = ships[0]
-		if is_instance_valid(ship_node) and "hull_hp" in ship_node:
+		if not is_instance_valid(ship_node):
+			return
+		if "hull_hp" in ship_node:
 			ship_node.hull_hp = ship_hp
+		if ship_node.has_method("_sync_from_flagship"):
+			ship_node._sync_from_flagship()
 
 func modify_crew(amount: int) -> void:
 	crew_count = max(0, crew_count + amount)
@@ -258,65 +274,123 @@ func handle_special_action(action: String) -> Dictionary:
 		_:
 			return {"success": false, "msg": ""}
 
+## ── 效果处理器映射表 ───────────────────────────────────────
+var _effect_handlers: Dictionary = {}
+
+func _init_effect_handlers() -> void:
+	_effect_handlers = {
+		"fame":                     _apply_fame,
+		"food":                     _apply_food,
+		"water":                    _apply_water,
+		"crew_count":               _apply_crew_count,
+		"pu_attention":             _apply_pu_attention,
+		"flag":                     _apply_flag,
+		"flag2":                    _apply_flag,
+		"story_flag":               _apply_story_flag,
+		"story_flag2":              _apply_story_flag,
+		"item_acquired":            _apply_item_acquired,
+		"acquire_item":             _apply_item_acquired,
+		"chapter_unlock":           _apply_chapter_unlock,
+		"linboyuan_relationship":   _apply_linboyuan_rel,
+		"jia_relationship":         _apply_jia_rel,
+		"item_removed":             _apply_item_removed,
+		"navigation_position":      _apply_nav_position,
+		"smuggled_out":             _apply_smuggled_out,
+		"money":                    _apply_money,
+		"hull_hp":                  _apply_hull_hp,
+		"cargo":                    _apply_cargo,
+		"artillery":                _apply_artillery,
+		"swordplay":                _apply_swordplay,
+		"maneuverability":          _apply_maneuverability,
+	}
+
+const _SILENT_KEYS := ["sea_tendency", "scholar_tendency", "merchant_credit", "ledger_note"]
+
 func apply_effects(effects: Dictionary) -> void:
+	if _effect_handlers.is_empty():
+		_init_effect_handlers()
 	for key in effects.keys():
 		var val = effects[key]
-		match key:
-			"fame":         fame = max(0, fame + int(val))
-			"food":         food = clamp(food + float(val), 0.0, max_food)
-			"water":        water = clamp(water + float(val), 0.0, max_water)
-			"crew_count":   crew_count = max(0, crew_count + int(val))
-			"pu_attention":
-				pu_attention = clampi(pu_attention + int(val), 0, 20)
-			"flag", "flag2":
-				if val is String:
-					set_flag(val)
-			"story_flag", "story_flag2":
-				if val is String:
-					set_story_flag(val)
-				elif val is Dictionary:
-					for k in val.keys():
-						set_story_flag(str(k), val[k])
-			"item_acquired":
-				if val is String:
-					acquire_item(val)
-			"chapter_unlock":
-				if val is String:
-					story.unlock_chapter(val)
-			"linboyuan_relationship":
-				linboyuan_relationship += int(val)
-			"jia_relationship":
-				jia_relationship += int(val)
-			"item_removed":
-				if val is String:
-					story.remove_item(val)
-			"navigation_position":
-				if val is String:
-					navigation_position = val
-			"smuggled_out": set_flag("smuggled_out")
-			"money":
-				if val != 0:
-					# INTENT_DEFERRED: 剧情 apply_effects 金钱变动 — 场景脚本副作用，保留直连 Ledger
-					LedgerSystem.apply({"amount": int(val), "source": "scene", "reason": "scene_effect", "actor": "GameState"})
-			"acquire_item":
-				if val is String:
-					acquire_item(val)
-			"hull_hp":
-				modify_hp(float(val))
-			"cargo":
-				if val is float or val is int:
-					var ratio := absf(float(val))
-					if float(val) < 0.0:
-						CargoSystem.remove_fraction(ratio)
-			"artillery":
-				artillery = max(0, artillery + int(val))
-			"swordplay":
-				swordplay = max(0, swordplay + int(val))
-			"maneuverability":
-				maneuverability = max(0, maneuverability + int(val))
-			_: 
-				if not key in ["sea_tendency", "scholar_tendency", "merchant_credit", "ledger_note"]:
-					push_warning("[GameState] apply_effects: unknown key '" + key + "'")
+		if _effect_handlers.has(key):
+			_effect_handlers[key].call(val)
+		elif not key in _SILENT_KEYS:
+			push_warning("[GameState] apply_effects: unknown key '" + key + "'")
+
+## ── 各效果处理器 ───────────────────────────────────────────
+
+func _apply_fame(val) -> void:
+	fame = max(0, fame + int(val))
+
+func _apply_food(val) -> void:
+	food = clamp(food + float(val), 0.0, max_food)
+
+func _apply_water(val) -> void:
+	water = clamp(water + float(val), 0.0, max_water)
+
+func _apply_crew_count(val) -> void:
+	crew_count = max(0, crew_count + int(val))
+
+func _apply_pu_attention(val) -> void:
+	pu_attention = clampi(pu_attention + int(val), 0, 20)
+
+func _apply_flag(val) -> void:
+	if val is String:
+		set_flag(val)
+
+func _apply_story_flag(val) -> void:
+	if val is String:
+		set_story_flag(val)
+	elif val is Dictionary:
+		for k in val.keys():
+			set_story_flag(str(k), val[k])
+
+func _apply_item_acquired(val) -> void:
+	if val is String:
+		acquire_item(val)
+
+func _apply_chapter_unlock(val) -> void:
+	if val is String:
+		story.unlock_chapter(val)
+
+func _apply_linboyuan_rel(val) -> void:
+	linboyuan_relationship += int(val)
+
+func _apply_jia_rel(val) -> void:
+	jia_relationship += int(val)
+
+func _apply_item_removed(val) -> void:
+	if val is String:
+		story.remove_item(val)
+
+func _apply_nav_position(val) -> void:
+	if val is String:
+		navigation_position = val
+
+func _apply_smuggled_out(_val) -> void:
+	set_flag("smuggled_out")
+
+func _apply_money(val) -> void:
+	if val != 0:
+		# INTENT_DEFERRED: 剧情 apply_effects 金钱变动 — 场景脚本副作用，保留直连 Ledger
+		LedgerSystem.apply({"amount": int(val), "source": "scene", "reason": "scene_effect", "actor": "GameState"})
+
+func _apply_hull_hp(val) -> void:
+	modify_hp(float(val))
+
+func _apply_cargo(val) -> void:
+	if val is float or val is int:
+		var ratio := absf(float(val))
+		if float(val) < 0.0:
+			CargoSystem.remove_fraction(ratio)
+
+func _apply_artillery(val) -> void:
+	artillery = max(0, artillery + int(val))
+
+func _apply_swordplay(val) -> void:
+	swordplay = max(0, swordplay + int(val))
+
+func _apply_maneuverability(val) -> void:
+	maneuverability = max(0, maneuverability + int(val))
 
 ## ── Dispatcher 私有实现 ───────────────────────────────────
 
@@ -330,7 +404,7 @@ func _do_sea_customs_check() -> Dictionary:
 
 func _do_bribe_official() -> Dictionary:
 	var intent := Intent.new(
-		"bribe", "player", "customs_officer",
+		IntentTypes.BRIBE, "player", "customs_officer",
 		{"amount": 50, "attention_delta": 0, "grant_permit": true}
 	)
 	var result := IntentResolver.resolve(intent)
@@ -346,27 +420,27 @@ func repair_ship_via_intent(
 	cost_per_hp: float = 1.0
 ) -> IntentResult:
 	return IntentResolver.resolve(Intent.new(
-		"repair_ship", "player", "shipyard",
+		IntentTypes.REPAIR_SHIP, "player", "shipyard",
 		{"ship_index": ship_index, "repair_ratio": repair_ratio, "cost_per_hp": cost_per_hp}
 	))
 
 func _do_recruit_crew() -> Dictionary:
 	return _intent_action_to_dict(IntentResolver.resolve(Intent.new(
-		"hire_crew", "player", "shipyard",
+		IntentTypes.HIRE_CREW, "player", "shipyard",
 		{"cost_per_crew": 10, "recruit_max": true},
 		{"port_id": last_port}
 	)), "招募了 %d 名水手！" % 0, "无法招募！钱不够或船只已满员。")
 
 func _do_supply_ship() -> Dictionary:
 	return _intent_action_to_dict(IntentResolver.resolve(Intent.new(
-		"buy_supplies", "player", "shipyard",
+		IntentTypes.BUY_SUPPLIES, "player", "shipyard",
 		{"supply_type": "food_water", "total_cost": 20, "fill_to_max": true},
 		{"port_id": last_port}
 	)), "水粮已全部补满！", "【补充失败】金钱不足 20！")
 
 func _intent_action_to_dict(result: IntentResult, ok_msg: String, fail_msg: String) -> Dictionary:
 	if result.success:
-		if result.type == "hire_crew":
+		if result.type == IntentTypes.HIRE_CREW:
 			return {"success": true, "msg": "招募了 %d 名水手！" % int(result.data.get("crew_count", 0))}
 		return {"success": true, "msg": ok_msg}
 	if result.error_code == IntentErrorCodes.INSUFFICIENT_FUNDS:
@@ -405,9 +479,9 @@ func _do_drop_cargo_half() -> Dictionary:
 	return {"success": true, "msg": ""}
 
 func _do_trigger_combat() -> Dictionary:
-	# 旧 stub 已退役：战斗现由 SeaEventController → CombatSessionController 接管。
+	# INTENT_DEFERRED: 旧 stub — 战斗现由 IntentResolver → CombatHandler → CombatSessionController 统一管理。
 	# 保留此方法作为安全兜底，不再扣减玩家资源。
-	return {"success": true, "msg": "【警告】战斗应通过遭遇系统的 launch_combat 路径触发。"}
+	return {"success": true, "msg": "【警告】战斗应通过 Intent 管道（combat_request）触发。"}
 
 ## ── 存档序列化 ───────────────────────────────────────────
 
@@ -419,6 +493,8 @@ func to_save_dict() -> Dictionary:
 		"story": story.to_dict() if story else {},
 		"navigation": navigation.to_dict() if navigation else {},
 		"market": market.to_dict() if market else {},
+		"economy_log": economy_log.to_dict() if economy_log else {},
+		"game_log": game_log.to_dict() if game_log else {},
 	}
 
 func from_save_dict(data: Dictionary) -> void:
@@ -434,3 +510,7 @@ func from_save_dict(data: Dictionary) -> void:
 		navigation.from_dict(data["navigation"])
 	if data.has("market") and market:
 		market.from_dict(data["market"])
+	if data.has("economy_log") and economy_log:
+		economy_log.from_dict(data["economy_log"])
+	if data.has("game_log") and game_log:
+		game_log.from_dict(data["game_log"])

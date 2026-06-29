@@ -11,16 +11,16 @@ extends Node2D
 @onready var rain_particles: CPUParticles2D = $RainParticles
 @onready var lightning_flash: ColorRect = $CanvasLayer/LightningFlash
 
-var crate_scene = preload("res://scenes/Crate.tscn")
-var seagull_tex = preload("res://assets/seagull.png")
-var whale_tex = preload("res://assets/whale_shadow.png")
+var crate_scene = preload(ResourcePaths.SCENE_CRATE)
+var seagull_tex = preload(ResourcePaths.TEX_SEAGULL)
+var whale_tex = preload(ResourcePaths.TEX_WHALE_SHADOW)
 
 @onready var ports_node: Node2D = $Ports
-var port_scene = preload("res://scenes/PortZone.tscn")
+var port_scene = preload(ResourcePaths.SCENE_PORT_ZONE)
 var ports_data: Array = []
 var port_nodes: Dictionary = {}
 
-const FLEET_NODE_SCENE := preload("res://scenes/MapFleetNode.tscn")
+const FLEET_NODE_SCENE := preload(ResourcePaths.SCENE_MAP_FLEET)
 var active_fleets: Array[Node2D] = []
 const MAX_FLEETS_ON_MAP: int = 5
 const FLEET_SPAWN_RADIUS: float = 1200.0
@@ -37,13 +37,18 @@ var animal_spawn_timer: float = 15.0
 var navigation_locked: bool = false
 
 var _hud_update_timer: float = 0.0
+var _voyage_log_timer: float = 25.0  ## NK1-P6: 航海日志周期
+var _economy_log_timer: float = 15.0  ## NK1-P6: 经济动态检查周期
+var _near_port_id: String = ""       ## NK1-P6: 当前最近港口（用于进港提示）
+
+## NK1-P6: 航海风景描述池（NK1-P6-POLISH-004: 已迁移到 FloatingTextConfig.VOYAGE_SCENERY）
 
 func _ready() -> void:
 	randomize()
 	_load_ports()
 
 	if port_nodes.has(GameState.current_voyage_origin):
-		ship.position = port_nodes[GameState.current_voyage_origin].position + Vector2(0, 100)
+		_place_ship_at_port(GameState.current_voyage_origin)
 
 	if not ship.is_in_group("player_ship"):
 		ship.add_to_group("player_ship")
@@ -62,7 +67,7 @@ func _input(event: InputEvent) -> void:
 			if nearest_port != "":
 				GameState.last_port = nearest_port
 			GameState.set_navigation_flag("return_to_port")
-			get_tree().change_scene_to_file("res://scenes/Main.tscn")
+			get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)
 
 func _get_nearest_port_id() -> String:
 	if not ship or port_nodes.is_empty():
@@ -99,6 +104,21 @@ func _process(delta: float) -> void:
 		_update_hud_labels()
 		_hud_update_timer = 0.2
 
+	# NK1-P6: 航海风景日志 — 长航时定期弹出风景描述
+	_voyage_log_timer -= delta
+	if _voyage_log_timer <= 0.0:
+		_voyage_log_timer = randf_range(25.0, 45.0)
+		_show_voyage_scenery()
+
+	# NK1-P6: 经济动态检查 — 航行中发现经济变化
+	_economy_log_timer -= delta
+	if _economy_log_timer <= 0.0:
+		_economy_log_timer = 20.0
+		_check_economy_updates()
+
+	# NK1-P6: 港口接近提示
+	_check_port_proximity()
+
 func _update_hud_labels() -> void:
 	if not ship:
 		return
@@ -117,8 +137,16 @@ func _update_hud_labels() -> void:
 	if ship.hull_hp < 50:
 		hp_color = "red"
 
-	label.text = "当前季风: %s\n风力强度: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nJ/K: 左/右舷齐射开炮\n船体耐久: [color=%s]%d/%d[/color]\nB/Esc: 返回港口" % [
-		wind_desc, int(ship.wind_strength), ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp)
+	# NK1-P6: 显示航速和风向角度
+	var current_speed := int(ship.velocity.length())
+	var wind_angle := rad_to_deg(ship.wind_vector.angle_to(Vector2.UP.rotated(ship.rotation)))
+	var wind_dir_label := "顺风" if abs(wind_angle) < 45 else ("逆风" if abs(wind_angle) > 135 else "侧风")
+
+	var flagship := GameState.fleet.get_flagship()
+	var ship_name := flagship.name if flagship else "旗舰"
+	var sail_label := "纵帆" if GameState.sail_type == "lateen" else "横帆"
+	label.text = "旗舰: %s (%s)\n当前季风: %s\n风力强度: %d (%s)\n航速: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\n船体耐久: [color=%s]%d/%d[/color]\nB/Esc: 返回港口" % [
+		ship_name, sail_label, wind_desc, int(ship.wind_strength), wind_dir_label, current_speed, ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp)
 	]
 
 	var cargo_str := CargoSystem.to_display_string(" ")
@@ -135,7 +163,7 @@ func _update_hud_labels() -> void:
 	]
 
 	if starving:
-		fleet_status.modulate = Color(1, 0.3, 0.3)
+		fleet_status.modulate = GameColors.WARNING
 		fleet_status.text += "\n【警告】水尽粮绝！"
 	else:
 		fleet_status.modulate = Color(1, 1, 1)
@@ -150,24 +178,28 @@ func _process_weather_and_time(delta: float) -> void:
 		WorldEventTracker.process_day()
 		TradeEventGenerator.try_generate()
 		TradeEventGenerator.process_day()
+		# NK1-P5-ECON-002: 每日经济处理（繁荣度回归+贸易历史衰减）
+		GameState.market.process_daily_economy()
 		if GameState.crew_count < old_crew:
 			var ft = ResourceManager.FloatingText.instantiate()
 			ft.text = "【警告】水尽粮绝！水手减少！"
-			ft.modulate = Color.RED
-			ft.global_position = ship.global_position + Vector2(-100, -100)
+			ft.modulate = GameColors.FLOATING_CREW_LOSS
+			ft.global_position = ship.global_position + FloatingTextConfig.OFFSET_CREW_LOSS
 			add_child(ft)
-			get_tree().create_timer(2.0, false).timeout.connect(func():
+			get_tree().create_timer(FloatingTextConfig.LIFETIME_CREW_LOSS, false).timeout.connect(func():
 				if is_instance_valid(ft):
 					ft.queue_free()
 			)
+			# NK1-P6-POLISH: 分类日志
+			GameState.game_log.warning(GameLog.Category.VOYAGE, "水尽粮绝，水手减少 %d 人" % (old_crew - GameState.crew_count))
 
-	var light_color := Color(1, 1, 1, 1)
+	var light_color := GameColors.LIGHT_NOON
 	if time_of_day < 5.0 or time_of_day > 19.0:
-		light_color = Color(0.2, 0.2, 0.4, 1.0)
+		light_color = GameColors.LIGHT_NIGHT
 	elif time_of_day >= 5.0 and time_of_day < 7.0:
-		light_color = Color(0.8, 0.5, 0.4, 1.0)
+		light_color = GameColors.LIGHT_DAWN
 	elif time_of_day > 17.0 and time_of_day <= 19.0:
-		light_color = Color(0.8, 0.4, 0.2, 1.0)
+		light_color = GameColors.LIGHT_DUSK
 
 	storm_timer -= delta
 	if storm_timer <= 0:
@@ -175,21 +207,22 @@ func _process_weather_and_time(delta: float) -> void:
 		if is_storm:
 			storm_timer = randf_range(20.0, 40.0)
 			weather_status.text = "当前天气: 狂风骤雨 (极其危险!)"
-			weather_status.modulate = Color(1, 0.3, 0.3)
+			weather_status.modulate = GameColors.WARNING
 			rain_particles.emitting = true
 			ship.wind_strength = base_wind_strength * randf_range(2.0, 3.5)
 			var angle = randf() * TAU
 			ship.wind_vector = Vector2(cos(angle), sin(angle))
+			GameState.game_log.warning(GameLog.Category.VOYAGE, "风暴来袭！风力 %.0f" % ship.wind_strength)
 		else:
 			storm_timer = randf_range(40.0, 80.0)
 			weather_status.text = "当前天气: 晴朗"
-			weather_status.modulate = Color(0.5, 0.8, 1)
+			weather_status.modulate = GameColors.INFO
 			rain_particles.emitting = false
 			ship.wind_strength = base_wind_strength
 			ship.wind_vector = Vector2(0, 1)
 
 	if is_storm:
-		light_color = light_color.lerp(Color(0.3, 0.3, 0.4, 1.0), 0.8)
+		light_color = light_color.lerp(GameColors.LIGHT_STORM, 0.8)
 		lightning_timer -= delta
 		if lightning_timer <= 0:
 			_strike_lightning()
@@ -305,6 +338,16 @@ func _spawn_animal() -> void:
 	tween.tween_property(sprite, "position", target_pos, 20.0)
 	tween.tween_callback(func(): sprite.queue_free())
 
+func _place_ship_at_port(port_id: String) -> void:
+	if not ship or not port_nodes.has(port_id):
+		return
+	var flagship := GameState.fleet.get_flagship()
+	var hull_id := flagship.hull_id if flagship else ShipSystem.DEFAULT_HULL_ID
+	ship.position = port_nodes[port_id].position + ShipModelLibrary.get_port_spawn_offset(hull_id)
+	if ship.has_method("_sync_from_flagship"):
+		ship._sync_from_flagship()
+
+
 func _load_ports() -> void:
 	ports_data = GameManager.ports_data.get("ports", [])
 	for p in ports_data:
@@ -316,8 +359,7 @@ func _spawn_port(p_data: Dictionary) -> void:
 	p.port_id = p_data.get("id", "")
 	p.port_name = p_data.get("name", "")
 
-	var pos_data = p_data.get("position", {"x": 0, "y": 0})
-	p.position = Vector2(pos_data.get("x", 0), pos_data.get("y", 0))
+	p.position = MapLayout.port_world_position(p_data)
 
 	ports_node.add_child(p)
 	port_nodes[p.port_id] = p
@@ -349,3 +391,60 @@ func _animate_hud_entrance() -> void:
 	for panel in panels:
 		tw.tween_property(panel, "scale", Vector2.ONE, 0.6)
 		tw.tween_property(panel, "modulate:a", 1.0, 0.5)
+
+## ── NK1-P6: 航海反馈增强 ────────────────────────────────
+
+## 航海风景日志：长航时弹出风景描述浮文
+func _show_voyage_scenery() -> void:
+	if navigation_locked:
+		return
+	var idx: int = randi() % FloatingTextConfig.VOYAGE_SCENERY.size()
+	var scenery: String = FloatingTextConfig.VOYAGE_SCENERY[idx]
+	var ft = ResourceManager.FloatingText.instantiate()
+	ft.text = scenery
+	ft.modulate = GameColors.SCENERY
+	ft.global_position = ship.global_position + FloatingTextConfig.OFFSET_SCENERY
+	add_child(ft)
+	get_tree().create_timer(FloatingTextConfig.LIFETIME_SCENERY, false).timeout.connect(func():
+		if is_instance_valid(ft):
+			ft.queue_free()
+	)
+
+## 经济动态检查：航行中检测经济事件变化并提示
+func _check_economy_updates() -> void:
+	if GameState.economy_log == null:
+		return
+	var latest: String = GameState.economy_log.get_latest()
+	if latest.is_empty():
+		return
+	var ft = ResourceManager.FloatingText.instantiate()
+	ft.text = latest
+	ft.modulate = GameColors.FLOATING_ECONOMY
+	ft.global_position = ship.global_position + FloatingTextConfig.OFFSET_ECONOMY
+	add_child(ft)
+	get_tree().create_timer(FloatingTextConfig.LIFETIME_ECONOMY, false).timeout.connect(func():
+		if is_instance_valid(ft):
+			ft.queue_free()
+	)
+
+## 港口接近提示：靠近港口时显示港口名
+func _check_port_proximity() -> void:
+	var nearest_id := _get_nearest_port_id()
+	if nearest_id.is_empty() or not port_nodes.has(nearest_id):
+		_near_port_id = ""
+		return
+	var dist: float = ship.position.distance_to(port_nodes[nearest_id].position)
+	if dist < 300.0 and _near_port_id != nearest_id:
+		_near_port_id = nearest_id
+		var port_name: String = port_nodes[nearest_id].port_name
+		var ft = ResourceManager.FloatingText.instantiate()
+		ft.text = "【抵达】%s — 按 B/Esc 入港" % port_name
+		ft.modulate = GameColors.FLOATING_PORT_NEAR
+		ft.global_position = ship.global_position + FloatingTextConfig.OFFSET_PORT_NEAR
+		add_child(ft)
+		get_tree().create_timer(FloatingTextConfig.LIFETIME_PORT_NEAR, false).timeout.connect(func():
+			if is_instance_valid(ft):
+				ft.queue_free()
+	)
+	elif dist > 500.0:
+		_near_port_id = ""

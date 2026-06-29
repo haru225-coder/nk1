@@ -44,5 +44,13 @@
   "error.market.invalid_good": "【交易失败】无效商品。",
   "error.market.invalid_amount": "【交易失败】无效数量。",
   "error.market.invalid_price": "【交易失败】无法定价。",
-  "error.market.cargo_full": "【交易失败】货舱已满。"
+  "error.market.cargo_full": "【交易失败】货舱已满。",
+
+  "intent.refit.success": "【造船厂】改装完成。",
+  "error.refit.invalid_cost": "【改装失败】费用无效。",
+  "error.refit.insufficient_funds": "【改装失败】金钱不足。",
+  "error.refit.same_sail": "【改装失败】已是当前帆型，无需重复改装。",
+  "error.refit.invalid_sail": "【改装失败】无效的帆型。",
+  "error.refit.same_hull": "【换船失败】已是当前船型。",
+  "error.refit.invalid_hull": "【换船失败】该船型不可更换。"
 }

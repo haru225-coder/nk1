@@ -1,21 +1,25 @@
 extends Area2D
 class_name AIFleetNode
 
-const _THEME_PATH := "res://assets/main_theme.tres"
+const _THEME_PATH := ResourcePaths.THEME_MAIN
 
 var fleet_id: String = ""
 var fleet_name: String = ""
-var sprite: Sprite2D
+var sprite: Node2D
 var label: Label
 
 signal player_encountered(fleet_id: String)
 
 func _ready() -> void:
-	# Visual Sprite
-	sprite = Sprite2D.new()
-	var tex = load("res://assets/ship_topdown.png") as Texture2D
-	sprite.texture = tex
-	sprite.scale = Vector2(0.5, 0.5)
+	var visual_script: Script = load("res://scripts/ships/ShipVisual.gd") as Script
+	var visual := Node2D.new()
+	visual.set_script(visual_script)
+	visual.scale = Vector2(0.75, 0.75)
+	if visual.has_method("set_hull"):
+		visual.set_hull("fujian_merchant")
+	if "sail_gear" in visual:
+		visual.sail_gear = 1
+	sprite = visual
 	add_child(sprite)
 	
 	# Physical Collision
@@ -31,7 +35,7 @@ func _ready() -> void:
 	label.position = Vector2(-50, -60)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.theme = load(_THEME_PATH) as Theme
-	label.theme_type_variation = "SeaHudFleet"
+	label.theme_type_variation = UITheme.LABEL_SEA_HUD_FLEET
 	add_child(label)
 	
 	body_entered.connect(_on_body_entered)

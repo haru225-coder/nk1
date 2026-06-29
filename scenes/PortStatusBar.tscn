@@ -36,10 +36,10 @@ theme_type_variation = &"StatusBarPanel"
 
 [node name="Body" type="MarginContainer" parent="Panel"]
 layout_mode = 2
-theme_override_constants/margin_left = 2
-theme_override_constants/margin_top = 2
-theme_override_constants/margin_right = 2
-theme_override_constants/margin_bottom = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 6
 
 [node name="VBox" type="VBoxContainer" parent="Panel/Body"]
 layout_mode = 2
@@ -47,11 +47,11 @@ theme_override_constants/separation = 4
 
 [node name="PrimaryRow" type="HBoxContainer" parent="Panel/Body/VBox"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 10
 alignment = 1
 
 [node name="Location" type="PanelContainer" parent="Panel/Body/VBox/PrimaryRow"]
-custom_minimum_size = Vector2(120, 0)
+custom_minimum_size = Vector2(132, 0)
 layout_mode = 2
 theme_type_variation = &"PortStatChipWide"
 
@@ -497,7 +497,7 @@ theme_override_constants/separation = 1
 [node name="Caption" type="Label" parent="Panel/Body/VBox/VoyageRow/Ship/Margin/Row/VBox"]
 layout_mode = 2
 theme_type_variation = &"PortStatLabel"
-text = "船体"
+text = "旗舰"
 
 [node name="Value" type="Label" parent="Panel/Body/VBox/VoyageRow/Ship/Margin/Row/VBox"]
 layout_mode = 2

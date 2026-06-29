@@ -3,12 +3,12 @@ extends Control
 signal layout_changed(height: float)
 
 const ICON_DIR := "res://assets/icons_stat/"
-const VALUE_COLOR_NORMAL := Color(0.98, 0.92, 0.72, 1)
-const VALUE_COLOR_WARN := Color(1.0, 0.75, 0.4, 1)
-const VALUE_COLOR_DANGER := Color(0.95, 0.45, 0.42, 1)
-const METER_COLOR_NORMAL := Color(0.82, 0.62, 0.24, 1)
-const METER_COLOR_WARN := Color(0.95, 0.72, 0.28, 1)
-const METER_COLOR_DANGER := Color(0.92, 0.38, 0.32, 1)
+const VALUE_COLOR_NORMAL := GameColors.TEXT_GOLD_BRIGHT
+const VALUE_COLOR_WARN := GameColors.TEXT_WARN
+const VALUE_COLOR_DANGER := GameColors.METER_DANGER
+const METER_COLOR_NORMAL := GameColors.METER_NORMAL
+const METER_COLOR_WARN := GameColors.METER_WARN
+const METER_COLOR_DANGER := GameColors.METER_DANGER
 
 @onready var voyage_row: HBoxContainer = $Panel/Body/VBox/VoyageRow
 @onready var location_value: Label = $Panel/Body/VBox/PrimaryRow/Location/Margin/Row/VBox/Value
@@ -28,6 +28,7 @@ const METER_COLOR_DANGER := Color(0.92, 0.38, 0.32, 1)
 @onready var water_value: Label = $Panel/Body/VBox/VoyageRow/Water/Margin/Row/VBox/Value
 @onready var water_icon: TextureRect = $Panel/Body/VBox/VoyageRow/Water/Margin/Row/Icon
 @onready var water_meter: ColorRect = $Panel/Body/VBox/VoyageRow/Water/Margin/Row/VBox/MeterTrack/MeterFill
+@onready var ship_caption: Label = $Panel/Body/VBox/VoyageRow/Ship/Margin/Row/VBox/Caption
 @onready var ship_value: Label = $Panel/Body/VBox/VoyageRow/Ship/Margin/Row/VBox/Value
 @onready var ship_icon: TextureRect = $Panel/Body/VBox/VoyageRow/Ship/Margin/Row/Icon
 @onready var ship_meter: ColorRect = $Panel/Body/VBox/VoyageRow/Ship/Margin/Row/VBox/MeterTrack/MeterFill
@@ -66,7 +67,7 @@ func _bind_tooltips() -> void:
 	_set_chip_tooltip($Panel/Body/VBox/VoyageRow/Crew, "船员人数 / 载员上限")
 	_set_chip_tooltip($Panel/Body/VBox/VoyageRow/Food, "粮食储备")
 	_set_chip_tooltip($Panel/Body/VBox/VoyageRow/Water, "淡水储备")
-	_set_chip_tooltip($Panel/Body/VBox/VoyageRow/Ship, "船体耐久")
+	_set_chip_tooltip($Panel/Body/VBox/VoyageRow/Ship, "旗舰船型与船体耐久")
 
 func _set_chip_tooltip(chip: Node, text: String) -> void:
 	if chip:
@@ -89,7 +90,7 @@ func refresh(_port_title: String = "") -> void:
 	_set_value_with_pulse("permit", permit_value, permit_text)
 	permit_value.add_theme_color_override(
 		"font_color",
-		Color(0.55, 0.95, 0.7) if has_permit else Color(0.95, 0.55, 0.45)
+		GameColors.PERMIT_OK if has_permit else GameColors.DANGER_TEXT
 	)
 	if permit_icon:
 		permit_icon.texture = _icon_cache.get("permit_ok" if has_permit else "permit")
@@ -121,6 +122,10 @@ func _refresh_voyage_stats() -> void:
 	_set_value_with_pulse("water", water_value, water_text)
 	_apply_ratio_style(water_value, water_icon, water_meter, GameState.water, GameState.max_water)
 
+	var flagship := GameState.fleet.get_flagship()
+	var hull_name := flagship.name if flagship else "旗舰"
+	if ship_caption:
+		ship_caption.text = hull_name
 	var ship_text := "%d/%d" % [int(GameState.ship_hp), int(GameState.ship_max_hp)]
 	_set_value_with_pulse("ship", ship_value, ship_text)
 	_apply_ratio_style(ship_value, ship_icon, ship_meter, GameState.ship_hp, GameState.ship_max_hp)

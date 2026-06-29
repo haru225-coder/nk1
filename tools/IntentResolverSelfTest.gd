@@ -132,6 +132,28 @@ func _ready() -> void:
 	ok = ok and GameState.sail_type == "lateen"
 	ok = ok and LedgerSystem.get_balance() == 500
 
+	# RefitHandler — 福船换广船
+	IdempotencyGuard.processed_intents.clear()
+	LedgerSystem.from_save_dict({"balance": 2000})
+	var flagship := GameState.fleet.get_flagship()
+	flagship.hull_id = "fujian_merchant"
+	flagship.name = "福船"
+	flagship.sail_type = "square"
+	flagship.hp = 80.0
+	flagship.max_hp = 100.0
+	flagship.crew = 30
+	flagship.max_crew = 50
+	var hull_result := IntentResolver.resolve(Intent.new(
+		"refit_ship", "player", "shipyard",
+		{"refit_mode": "hull", "hull_id": "guangzhou_trader", "cost": 800}
+	))
+	ok = ok and hull_result.success
+	ok = ok and flagship.hull_id == "guangzhou_trader"
+	ok = ok and flagship.name == "广船"
+	ok = ok and flagship.sail_type == "lateen"
+	ok = ok and is_equal_approx(flagship.hp, 88.0)
+	ok = ok and LedgerSystem.get_balance() == 1200
+
 	# HireCrewHandler — 招募 3 名
 	IdempotencyGuard.processed_intents.clear()
 	LedgerSystem.from_save_dict({"balance": 500})

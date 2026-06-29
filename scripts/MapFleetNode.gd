@@ -2,14 +2,12 @@ extends Area2D
 
 signal encounter_triggered(data: Dictionary, node: Node2D)
 
-const _SHIP_TEX: Texture2D = preload("res://assets/ship_topdown.png")
-
 var encounter_data: Dictionary = {}
 var move_dir: Vector2 = Vector2.ZERO
 var move_speed: float = 50.0
 var _triggered: bool = false
 
-@onready var sprite: Sprite2D = $Sprite2D
+@onready var _visual: Node2D = $ShipVisual
 
 
 func _ready() -> void:
@@ -24,6 +22,9 @@ func _process(delta: float) -> void:
 	if _triggered:
 		return
 	position += move_dir * move_speed * delta
+	if _visual != null and "sail_gear" in _visual:
+		_visual.sail_gear = 1 if move_speed > 0.0 else 0
+		_visual.queue_redraw()
 
 
 func setup(data: Dictionary) -> void:
@@ -32,21 +33,32 @@ func setup(data: Dictionary) -> void:
 
 
 func _apply_visuals(archetype_id: String) -> void:
-	if sprite == null:
+	if _visual == null:
 		return
-	sprite.texture = _SHIP_TEX
+	var hull_id := "fujian_merchant"
+	var tint := GameColors.FLEET_DEFAULT
 	match archetype_id:
 		"pirate_wokou":
-			sprite.modulate = Color(1.0, 0.45, 0.4)
+			hull_id = "fujian_merchant"
+			tint = GameColors.PIRATE_RED
 			move_speed = 65.0
 		"patrol_song":
-			sprite.modulate = Color(0.55, 0.75, 1.0)
+			hull_id = "warship_patrol"
+			tint = GameColors.PATROL_BLUE
 			move_speed = 45.0
 		"merchant_arab":
-			sprite.modulate = Color(0.95, 0.85, 0.5)
+			hull_id = "guangzhou_trader"
+			tint = GameColors.TEXT_GOLD
 			move_speed = 40.0
 		_:
-			sprite.modulate = Color(0.85, 0.85, 0.9)
+			hull_id = "fujian_merchant"
+			tint = GameColors.FLEET_DEFAULT
+	if _visual.has_method("set_hull"):
+		_visual.set_hull(hull_id)
+	if "sail_gear" in _visual:
+		_visual.sail_gear = 1
+	_visual.modulate = tint
+	_visual.queue_redraw()
 
 
 func _on_body_entered(body: Node2D) -> void:
