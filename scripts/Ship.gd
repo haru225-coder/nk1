@@ -19,6 +19,7 @@ var max_hp: float = 100.0
 
 var crate_scene = preload(ResourcePaths.SCENE_CRATE)
 var _last_reported_hp: int = -1
+var _sinking: bool = false
 
 
 func _ready() -> void:
@@ -87,7 +88,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if hull_hp <= 0:
+	if _sinking or hull_hp <= 0:
 		return
 
 	var sail_result := ShipSystem.step_sailing(
@@ -166,5 +167,21 @@ func _process_storm_damage(delta: float) -> void:
 
 
 func _sink_ship() -> void:
+	if _sinking:
+		return
+	_sinking = true
+	velocity = Vector2.ZERO
+	set_physics_process(false)
+	set_process_input(false)
+	GameManager.set_input_locked(true)
+	GameState.game_log.warning(GameLog.Category.VOYAGE, "旗舰沉没，货物尽失。")
+	if _effects.has_method("play_sink"):
+		_effects.play_sink(_visual, _finish_sink)
+	else:
+		_finish_sink()
+
+
+func _finish_sink() -> void:
 	CargoSystem.clear_all()
+	GameManager.set_input_locked(false)
 	get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)

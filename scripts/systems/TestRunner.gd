@@ -2028,7 +2028,7 @@ func _test_ship_system() -> void:
 	_assert_eq(flagship.hp, 55.0, "hp ratio preserved")
 	_assert_eq(flagship.crew, 28, "crew ratio preserved")
 
-	var options: Array = ShipSystem.list_shipyard_hulls("fujian_merchant")
+	var options: Array = ShipSystem.list_shipyard_hulls("fujian_merchant", 0)
 	_assert_eq(options.size(), 1, "one shipyard hull from 福船")
 	_assert_eq(str(options[0].get("id", "")), "guangzhou_trader", "shipyard offers 广船")
 
@@ -2057,6 +2057,20 @@ func _test_ship_system() -> void:
 
 	var mini_hull: PackedVector2Array = ShipModelLibrary.get_minimap_hull("fujian_merchant")
 	_assert_gt(mini_hull.size(), 4, "minimap hull points")
+
+	var patrol_hull := ShipSystem.get_hull("warship_patrol")
+	var no_flags := func(_flag: String) -> bool: return false
+	_assert_true(not ShipSystem.is_hull_unlocked(patrol_hull, 0, no_flags), "warship locked by default")
+	var hull_offers: Array = ShipSystem.list_shipyard_hull_offers("fujian_merchant", 0, no_flags)
+	var has_locked_warship := false
+	for offer in hull_offers:
+		if str(offer.get("hull", {}).get("id", "")) == "warship_patrol":
+			has_locked_warship = true
+			_assert_true(offer.get("locked", false), "warship offer shown locked")
+	_assert_true(has_locked_warship, "warship in shipyard offers")
+
+	var has_ch1 := func(flag: String) -> bool: return flag == "chapter1_complete"
+	_assert_true(ShipSystem.is_hull_unlocked(patrol_hull, 30, has_ch1), "warship unlocked with fame+flag")
 	print("")
 
 # ═══════════════════════════════════════════════════════════

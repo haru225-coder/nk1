@@ -52,5 +52,6 @@
   "error.refit.same_sail": "【改装失败】已是当前帆型，无需重复改装。",
   "error.refit.invalid_sail": "【改装失败】无效的帆型。",
   "error.refit.same_hull": "【换船失败】已是当前船型。",
-  "error.refit.invalid_hull": "【换船失败】该船型不可更换。"
+  "error.refit.invalid_hull": "【换船失败】该船型不可更换。",
+  "error.refit.hull_locked": "【换船失败】船型尚未解锁，需满足名声与剧情条件。"
 }

@@ -28,6 +28,37 @@ func set_splinters(active: bool) -> void:
 		splinter_particles.emitting = active
 
 
+func play_sink(visual: Node2D, on_finished: Callable) -> void:
+	_stop_wake()
+	if splinter_particles:
+		splinter_particles.emitting = true
+	if visual == null or not is_instance_valid(visual):
+		if on_finished.is_valid():
+			on_finished.call()
+		return
+	var tw := create_tween().set_parallel(true)
+	tw.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(visual, "position:y", visual.position.y + 90.0, 2.0)
+	tw.tween_property(visual, "modulate:a", 0.0, 2.0)
+	tw.tween_property(visual, "rotation", visual.rotation + deg_to_rad(32.0), 2.0)
+	if is_instance_valid(camera):
+		tw.tween_property(camera, "zoom", camera.zoom * 0.6, 2.0)
+		tw.tween_property(camera, "offset", Vector2.ZERO, 2.0)
+	tw.chain().tween_callback(func():
+		if on_finished.is_valid():
+			on_finished.call()
+	)
+
+
+func _stop_wake() -> void:
+	if is_instance_valid(wake_particles):
+		wake_particles.emitting = false
+	if is_instance_valid(bow_wave_left):
+		bow_wave_left.emitting = false
+	if is_instance_valid(bow_wave_right):
+		bow_wave_right.emitting = false
+
+
 func flash_splinters(duration: float = 0.5) -> void:
 	set_splinters(true)
 	get_tree().create_timer(duration, false).timeout.connect(func():

@@ -124,19 +124,29 @@ func _setup_shipyard_hull_options(choices_container: VBoxContainer) -> void:
 	var flagship := GameState.fleet.get_flagship()
 	if flagship == null:
 		return
-	for hull in ShipSystem.list_shipyard_hulls(flagship.hull_id):
+	for offer in ShipSystem.list_shipyard_hull_offers(
+		flagship.hull_id, GameState.fame, GameState.has_story_flag
+	):
+		var hull: Dictionary = offer.get("hull", {})
+		var locked: bool = offer.get("locked", false)
 		var hull_id := str(hull.get("id", ""))
 		var hull_name := str(hull.get("name", hull_id))
 		var cost := int(hull.get("change_cost", ShipSystem.get_hull_change_cost(hull_id)))
 		var desc := str(hull.get("description", ""))
 		var delta := ShipSystem.format_hull_change_delta(flagship, hull_id)
 		var label := "🛠 换%s (%d 钱)" % [hull_name, cost]
-		if not delta.is_empty():
+		if locked:
+			var hint := str(offer.get("unlock_hint", ""))
+			label = "🔒 换%s — %s" % [hull_name, hint]
+		elif not delta.is_empty():
 			label += " [%s]" % delta
 		elif not desc.is_empty():
 			label += " — %s" % desc
 		var hull_btn := UIBuilder.make_action_button(label)
-		hull_btn.pressed.connect(_on_change_hull_pressed.bind(hull_id, cost))
+		if locked:
+			hull_btn.disabled = true
+		else:
+			hull_btn.pressed.connect(_on_change_hull_pressed.bind(hull_id, cost))
 		choices_container.add_child(hull_btn)
 
 

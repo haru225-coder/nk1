@@ -48,6 +48,11 @@
       "class": "military",
       "shipyard_available": false,
       "change_cost": 1500,
+      "unlock": {
+        "fame_min": 25,
+        "requires_story_flag": "chapter1_complete"
+      },
+      "unlock_hint": "名声达二十五且完成第一章后，市舶司准改装巡船",
       "description": "市舶司巡船改装，炮位多，帆幅保守。",
       "max_hp": 130,
       "max_crew": 60,

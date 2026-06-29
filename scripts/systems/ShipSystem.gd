@@ -66,17 +66,75 @@ static func get_hull_change_cost(hull_id: String) -> int:
 	return int(hull.get("change_cost", 0))
 
 
-static func list_shipyard_hulls(current_hull_id: String) -> Array:
-	var options: Array = []
+static func is_hull_unlocked(
+	hull: Dictionary,
+	fame: int,
+	has_story_flag: Callable = Callable()
+) -> bool:
+	var unlock: Dictionary = hull.get("unlock", {})
+	if unlock.is_empty():
+		return bool(hull.get("shipyard_available", true))
+	if fame < int(unlock.get("fame_min", 0)):
+		return false
+	var req_flag := str(unlock.get("requires_story_flag", ""))
+	if not req_flag.is_empty():
+		if not has_story_flag.is_valid() or not bool(has_story_flag.call(req_flag)):
+			return false
+	return true
+
+
+static func get_hull_unlock_hint(hull: Dictionary) -> String:
+	var hint := str(hull.get("unlock_hint", ""))
+	if not hint.is_empty():
+		return hint
+	var unlock: Dictionary = hull.get("unlock", {})
+	var parts: Array[String] = []
+	if unlock.has("fame_min"):
+		parts.append("名声≥%d" % int(unlock.fame_min))
+	if unlock.has("requires_story_flag"):
+		parts.append("需完成前置剧情")
+	return "，".join(parts)
+
+
+static func _is_shipyard_candidate(hull: Dictionary) -> bool:
+	if bool(hull.get("shipyard_available", false)):
+		return true
+	return not hull.get("unlock", {}).is_empty()
+
+
+static func list_shipyard_hull_offers(
+	current_hull_id: String,
+	fame: int,
+	has_story_flag: Callable = Callable()
+) -> Array:
+	var offers: Array = []
 	for hull in _ships_data().get("hulls", []):
 		if not hull is Dictionary:
 			continue
 		var hull_id := str(hull.get("id", ""))
 		if hull_id.is_empty() or hull_id == current_hull_id:
 			continue
-		if not bool(hull.get("shipyard_available", true)):
+		if not _is_shipyard_candidate(hull):
 			continue
-		options.append(hull)
+		var locked := not is_hull_unlocked(hull, fame, has_story_flag)
+		offers.append({
+			"hull": hull,
+			"locked": locked,
+			"unlock_hint": get_hull_unlock_hint(hull) if locked else "",
+		})
+	return offers
+
+
+static func list_shipyard_hulls(
+	current_hull_id: String,
+	fame: int,
+	has_story_flag: Callable = Callable()
+) -> Array:
+	var options: Array = []
+	for offer in list_shipyard_hull_offers(current_hull_id, fame, has_story_flag):
+		if offer.get("locked", false):
+			continue
+		options.append(offer.get("hull", {}))
 	return options
 
 

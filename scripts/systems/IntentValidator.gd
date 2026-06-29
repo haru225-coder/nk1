@@ -164,8 +164,10 @@ static func _validate_hull_change(intent: Intent) -> IntentResult:
 	var hull := ShipSystem.get_hull(hull_id)
 	if hull.is_empty():
 		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_REFIT_INVALID_HULL, intent.type)
-	if not bool(hull.get("shipyard_available", true)):
+	if not ShipSystem._is_shipyard_candidate(hull):
 		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_REFIT_INVALID_HULL, intent.type)
+	if not ShipSystem.is_hull_unlocked(hull, GameState.fame, GameState.has_story_flag):
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_REFIT_HULL_LOCKED, intent.type)
 
 	var flagship := GameState.fleet.get_flagship()
 	if flagship != null and hull_id == flagship.hull_id:
