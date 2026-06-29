@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "title": "对话说话人 → npc_id 别名",
+    "version": 1,
+    "note": "剧本里显示名与 npcs.json name 不一致时使用；精确匹配 name 的无需重复登记"
+  },
+  "aliases": {
+    "老人": "ketagalan_elder",
+    "老者": "jiaozhi_temple_keeper",
+    "明州商人": "hakata_mingzhou_merchant",
+    "独臂渔民": "penghu_old_fisherman",
+    "渔家婆": "champa_chinese_grandmother",
+    "褐衣汉子": "one_finger_sailor",
+    "掮客": "tavern_guest",
+    "门吏": "patrol_soldier",
+    "守门卒": "patrol_soldier",
+    "衙役": "patrol_soldier",
+    "考官": "inn_scholar",
+    "监试官": "inn_scholar",
+    "名籍官": "inn_scholar",
+    "妇人": "champa_chinese_grandmother",
+    "脚夫": "linan_passerby",
+    "家丁": "patrol_soldier",
+    "贾府随从": "jia_disciple",
+    "贾府少年": "jia_disciple",
+    "贾府管事": "jia_disciple",
+    "蒲帅": "customs_official",
+    "禁军校尉": "patrol_soldier",
+    "舵手": "ryukyu_old_pilot"
+  }
+}

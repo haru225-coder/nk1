@@ -1,5 +1,7 @@
 class_name DialogueParser extends RefCounted
 
+const SPEAKER_ALIASES_PATH := "res://data/npc_speaker_aliases.json"
+
 const SPEAKER_TO_NPC: Dictionary = {
 	"先生": "teacher",
 	"陈子龙": "chen_wenlong",
@@ -13,7 +15,9 @@ const SPEAKER_TO_NPC: Dictionary = {
 
 static var _npc_by_id: Dictionary = {}
 static var _npc_by_name: Dictionary = {}
+static var _speaker_aliases: Dictionary = {}
 static var _npc_cache_generation: int = -1
+static var _aliases_loaded := false
 
 static func parse_body(body: String) -> Array:
 	var beats: Array = []
@@ -79,7 +83,7 @@ static func _parse_speaker_line(line: String) -> Array:
 		if close_idx > 0:
 			stage_direction = remainder.substr(1, close_idx - 1).strip_edges()
 			remainder = remainder.substr(close_idx + 1).strip_edges()
-	var npc_id: String = SPEAKER_TO_NPC.get(speaker, "")
+	var npc_id: String = _resolve_speaker_npc_id(speaker)
 	var clauses := _split_speech_clauses(remainder)
 	if clauses.is_empty():
 		clauses = [format_speech(remainder)]
@@ -152,6 +156,30 @@ static func beat_from_text(text: String, speaker: String = "", npc_id: String = 
 		"npc_id": npc_id,
 		"stage_direction": "",
 	}
+
+static func _load_speaker_aliases() -> void:
+	if _aliases_loaded:
+		return
+	_aliases_loaded = true
+	var file := FileAccess.open(SPEAKER_ALIASES_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if parsed is Dictionary:
+		var raw = parsed.get("aliases", {})
+		if raw is Dictionary:
+			_speaker_aliases = raw
+
+static func _resolve_speaker_npc_id(speaker: String) -> String:
+	_ensure_npc_cache()
+	_load_speaker_aliases()
+	if SPEAKER_TO_NPC.has(speaker):
+		return SPEAKER_TO_NPC[speaker]
+	if _speaker_aliases.has(speaker):
+		return str(_speaker_aliases[speaker])
+	if _npc_by_name.has(speaker):
+		return str(_npc_by_name[speaker].get("id", ""))
+	return ""
 
 static func _ensure_npc_cache() -> void:
 	var gen := GameManager.npcs_data.hash()

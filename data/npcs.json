@@ -48,7 +48,11 @@
       "avatar": "res://assets/portraits/portrait_lin_boyuan.png",
       "affinity_threshold": 30,
       "skill_to_teach": "skill_boarding_tactics",
-      "gift_preferences": ["spring_autumn_scroll", "ketagalan_shell", "aromatic_medicine"],
+      "gift_preferences": [
+        "spring_autumn_scroll",
+        "ketagalan_shell",
+        "aromatic_medicine"
+      ],
       "gift_affinity": {
         "spring_autumn_scroll": 15,
         "ketagalan_shell": 8,
@@ -70,14 +74,18 @@
           "label": "求教接舷战术",
           "intent_type": "study_skill",
           "intent_target": "lin_boyuan",
-          "parameters": {"skill_id": "skill_boarding_tactics"},
+          "parameters": {
+            "skill_id": "skill_boarding_tactics"
+          },
           "success_dialogue": "在甲板上比划了几招接舷要点，你铭记于心。",
           "failure_dialogue": "今日心绪不宁，求教未成，改日再来。",
           "disabled_label": "求教 (需好感30)",
           "show_when_unmet": true,
           "enabled_when": {
             "npc_affinity_min": 30,
-            "story_flags_absent": ["learned_skill_boarding_tactics"]
+            "story_flags_absent": [
+              "learned_skill_boarding_tactics"
+            ]
           }
         }
       ]

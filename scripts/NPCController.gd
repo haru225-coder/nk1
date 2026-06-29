@@ -14,14 +14,10 @@ func setup(npc_id: String, fallback_name: String) -> void:
 		npc_finished.emit()
 		return
 
-	var npc_data: Dictionary = {}
-	for n in GameManager.npcs_data.get("npcs", []):
-		if n.get("id") == npc_id:
-			npc_data = n
-			break
+	var npc_data := GameManager.get_npc_data(npc_id)
 
 	var n_name: String = npc_data.get("name", fallback_name)
-	var avatar_path: String = npc_data.get("avatar", "")
+	var avatar_path := AssetPlaceholder.resolve_avatar(npc_id, str(npc_data.get("avatar", "")))
 	var intro_text: String = npc_data.get(
 		"function",
 		"（这人看起来有些眼熟，但什么也没说...）"

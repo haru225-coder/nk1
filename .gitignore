@@ -9,6 +9,8 @@ mono_crash*.log
 
 # Python ignores
 __pycache__/
+tools/.venv-taiko5/
+assets/_taiko5_ref/
 *.py[cod]
 *$py.class
 
@@ -22,6 +24,14 @@ __pycache__/
 .agents/
 .kunsdd/
 .codex/
+
+# Loose AI art sources (ingested into portraits/ or _ingested/)
+assets/grok-*.jpg
+assets/grok-*.jpg.import
+assets/_ingested/
+
+# QA reports (local only)
+.gstack/
 
 # Local diff / comparison artifacts (not for version control)
 diff_*.txt

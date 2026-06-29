@@ -169,6 +169,9 @@ func _portrait_path(npc_id: String) -> String:
 	return PORTRAIT_DIR + "portrait_" + npc_id + ".png"
 
 func resolve_avatar(npc_id: String, configured_path: String = "") -> String:
+	if configured_path == "" and npc_id != "":
+		var npc := GameManager.get_npc_data(npc_id)
+		configured_path = str(npc.get("avatar", ""))
 	if configured_path != "" and _exists(configured_path):
 		return configured_path
 	if npc_id != "":

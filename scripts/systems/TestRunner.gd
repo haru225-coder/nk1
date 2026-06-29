@@ -1940,10 +1940,10 @@ func _test_asset_placeholder_json() -> void:
 
 	# Legacy avatar 查询
 	var avatar_path: String = ap.get_legacy_avatar_path("chen_wenlong")
-	_assert_eq(avatar_path, "res://assets/placeholders/avatar_chen.png", "legacy avatar: chen_wenlong")
+	_assert_eq(avatar_path, "res://assets/portraits/portrait_chen_wenlong.png", "legacy avatar: chen_wenlong")
 
 	avatar_path = ap.get_legacy_avatar_path("customs_official")
-	_assert_eq(avatar_path, "res://assets/placeholders/avatar_official.png", "legacy avatar: customs_official")
+	_assert_eq(avatar_path, "res://assets/portraits/portrait_customs_official.png", "legacy avatar: customs_official")
 
 	avatar_path = ap.get_legacy_avatar_path("unknown_npc")
 	_assert_eq(avatar_path, "", "不存在 NPC: 空字符串")
