@@ -5,6 +5,7 @@
     "prototype": "v0.1",
     "map_layout": {
       "texture": "res://assets/map_nanhai.png",
+      "sea_mask": "res://assets/map_nanhai_sea_mask.png",
       "world_bounds": {
         "x_min": -15000,
         "x_max": 16000,

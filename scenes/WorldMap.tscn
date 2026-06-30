@@ -1,39 +1,52 @@
-[gd_scene load_steps=10 format=3 uid="uid://dmxg7etse5abg"]
+[gd_scene load_steps=14 format=3 uid="uid://dmxg7etse5abg"]
 
 [ext_resource type="Script" uid="uid://7nxadtrp0p66" path="res://scripts/WorldMap.gd" id="1_map"]
 [ext_resource type="PackedScene" path="res://scenes/Ship.tscn" id="2_ship"]
+[ext_resource type="Texture2D" path="res://assets/map_nanhai.png" id="2_map_tex"]
 [ext_resource type="Texture2D" uid="uid://xnp7vjyfjnp1" path="res://assets/ocean_water.png" id="3_ocean"]
-[ext_resource type="Shader" uid="uid://cos70wv0dqt7k" path="res://assets/ocean_shader.gdshader" id="4_shader"]
+[ext_resource type="Shader" path="res://assets/ocean_masked_shader.gdshader" id="4_ocean_masked"]
 [ext_resource type="PackedScene" path="res://scenes/PortZone.tscn" id="5_port"]
 [ext_resource type="Script" uid="uid://8egp03uvyetg" path="res://scripts/Minimap.gd" id="6_minimap"]
 [ext_resource type="Theme" path="res://assets/main_theme.tres" id="7_theme"]
 [ext_resource type="Shader" path="res://assets/ui_vignette.gdshader" id="8_vignette"]
+[ext_resource type="Script" path="res://scripts/RouteLayer.gd" id="9_route"]
+[ext_resource type="Texture2D" uid="uid://cs4687cvtaf4x" path="res://assets/ui_frame_koei.png" id="10_frame"]
+[ext_resource type="PackedScene" path="res://scenes/StrategicMapOverlay.tscn" id="11_overlay"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("8_vignette")
 shader_parameter/edge_color = Color(0, 0, 0, 0.28)
 shader_parameter/softness = 0.6
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
-shader = ExtResource("4_shader")
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean_masked"]
+shader = ExtResource("4_ocean_masked")
 shader_parameter/wave_speed = 0.5
 shader_parameter/wave_freq = 15.0
 shader_parameter/wave_amp = 0.02
 shader_parameter/water_color = Color(0.1, 0.4, 0.6, 1)
+shader_parameter/shore_fade = 0.08
 
 [node name="WorldMap" type="Node2D" unique_id=630777904]
 script = ExtResource("1_map")
 
-[node name="Ocean" type="TextureRect" parent="." unique_id=2020827918]
-material = SubResource("ShaderMaterial_ocean")
-offset_left = -20000.0
-offset_top = -20000.0
-offset_right = 20000.0
-offset_bottom = 20000.0
+[node name="StrategicMapRoot" type="Node2D" parent="."]
+
+[node name="StrategicMap" type="Sprite2D" parent="StrategicMapRoot"]
+z_index = 0
+texture = ExtResource("2_map_tex")
+
+[node name="OceanOverlay" type="Sprite2D" parent="StrategicMapRoot"]
+z_index = 1
+texture_repeat = 2
+material = SubResource("ShaderMaterial_ocean_masked")
 texture = ExtResource("3_ocean")
-stretch_mode = 1
+
+[node name="RouteLayer" type="Node2D" parent="."]
+z_index = 2
+script = ExtResource("9_route")
 
 [node name="Ports" type="Node2D" parent="." unique_id=1941959593]
+z_index = 3
 
 
 
@@ -139,20 +152,42 @@ size_flags_vertical = 8
 theme_type_variation = &"SeaHudWeather"
 text = "当前天气: 晴朗"
 
-[node name="MinimapPanel" type="PanelContainer" parent="CanvasLayer/HUD" unique_id=26123060]
+[node name="MinimapPanel" type="MarginContainer" parent="CanvasLayer/HUD" unique_id=26123060]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 8
-theme_type_variation = &"SeaHudPanel"
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
 
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/HUD/MinimapPanel" unique_id=1161932785]
+[node name="MinimapFrame" type="NinePatchRect" parent="CanvasLayer/HUD/MinimapPanel"]
+custom_minimum_size = Vector2(268, 208)
 layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
+texture = ExtResource("10_frame")
+patch_margin_left = 22
+patch_margin_top = 18
+patch_margin_right = 22
+patch_margin_bottom = 18
 
-[node name="MinimapRect" type="Control" parent="CanvasLayer/HUD/MinimapPanel/Margin" unique_id=2102428675]
-custom_minimum_size = Vector2(240, 180)
-layout_mode = 2
+[node name="MinimapRect" type="Control" parent="CanvasLayer/HUD/MinimapPanel/MinimapFrame" unique_id=2102428675]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = 12.0
+offset_right = -14.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("6_minimap")
+
+[node name="StrategicMapOverlay" parent="CanvasLayer/HUD" instance=ExtResource("11_overlay")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

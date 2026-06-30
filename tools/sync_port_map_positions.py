@@ -9,7 +9,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PORTS = ROOT / "data" / "ports.json"
 
-# Refined geographic pins (u=west→east, v=north→south)
+# Dev-only geographic pins (u=west→east, v=north→south).
+# Runtime + map generation read ports[].map_pos from ports.json — keep this table
+# in sync when adding ports, then run this script to write JSON.
 MAP_POS: dict[str, tuple[float, float]] = {
     "mingzhou": (0.72, 0.26),
     "ganpu": (0.70, 0.28),

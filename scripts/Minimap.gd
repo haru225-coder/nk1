@@ -10,12 +10,7 @@ var _last_map_size := Vector2.ZERO
 var _last_hull_id := ""
 
 const _INSET := 6.0
-const _ROUTE_COLOR := Color(0.82, 0.68, 0.38, 0.55)
-const _PORT_MAIN := Color(0.45, 0.92, 0.52, 1.0)
-const _PORT_THREAD := Color(0.55, 0.78, 0.62, 0.85)
-const _PORT_DISTANT := Color(0.55, 0.72, 0.82, 0.55)
 const _SHIP_COLOR := Color(1.0, 0.94, 0.58, 1.0)
-const _LABEL_COLOR := Color(0.95, 0.9, 0.72, 1.0)
 
 
 func _ready() -> void:
@@ -93,7 +88,7 @@ func _draw() -> void:
 	if MAP_TEXTURE:
 		draw_texture_rect(MAP_TEXTURE, rect, false)
 
-	_draw_routes(rect)
+	MapRoutePainter.draw_uv_routes(self, rect)
 	_draw_ports(rect)
 
 	if is_instance_valid(ship):
@@ -118,26 +113,6 @@ func _draw_ship_icon(center: Vector2, rot: float, hull_id: String) -> void:
 	draw_polyline(outline + PackedVector2Array([outline[0]]), Color(0.25, 0.18, 0.08, 0.85), 1.0, true)
 
 
-func _draw_routes(rect: Rect2) -> void:
-	var drawn: Dictionary = {}
-	for port_data in MapLayout.get_ports_data():
-		var from_id: String = port_data.get("id", "")
-		if not MapLayout.has_map_pos(from_id):
-			continue
-		var from_uv: Vector2 = MapLayout.get_map_pos(from_id)
-		var from_px := MapLayout.uv_to_pixel(from_uv, rect.size) + rect.position
-		for conn_id in port_data.get("connections", []):
-			if not MapLayout.has_map_pos(conn_id):
-				continue
-			var key := _route_key(from_id, conn_id)
-			if drawn.has(key):
-				continue
-			drawn[key] = true
-			var to_uv: Vector2 = MapLayout.get_map_pos(conn_id)
-			var to_px := MapLayout.uv_to_pixel(to_uv, rect.size) + rect.position
-			draw_line(from_px, to_px, _ROUTE_COLOR, 1.5)
-
-
 func _draw_ports(rect: Rect2) -> void:
 	var nearest := _nearest_port_id()
 	for port_data in MapLayout.get_ports_data():
@@ -147,8 +122,8 @@ func _draw_ports(rect: Rect2) -> void:
 		var uv: Vector2 = MapLayout.get_map_pos(port_id)
 		var px := MapLayout.uv_to_pixel(uv, rect.size) + rect.position
 		var status: String = port_data.get("status", "")
-		var radius := 4.0 if status == "main" else 3.0
-		var color := _port_color(status)
+		var radius := MapPortStyle.dot_radius(status)
+		var color := MapPortStyle.port_color(status)
 		if port_id == nearest:
 			draw_circle(px, radius + 2.0, Color(color.r, color.g, color.b, 0.35))
 		draw_circle(px, radius, color)
@@ -160,19 +135,9 @@ func _draw_ports(rect: Rect2) -> void:
 			var label_pos := px + Vector2(-text_size.x * 0.5, -radius - text_size.y - 2.0)
 			draw_rect(
 				Rect2(label_pos - Vector2(2, 1), text_size + Vector2(4, 2)),
-				Color(0.12, 0.1, 0.06, 0.82)
+				MapPortStyle.LABEL_BG
 			)
-			draw_string(font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, _LABEL_COLOR)
-
-
-func _port_color(status: String) -> Color:
-	match status:
-		"main":
-			return _PORT_MAIN
-		"distant", "rumor":
-			return _PORT_DISTANT
-		_:
-			return _PORT_THREAD
+			draw_string(font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, MapPortStyle.LABEL_COLOR)
 
 
 func _nearest_port_id() -> String:
@@ -191,7 +156,3 @@ func _nearest_port_id() -> String:
 			best_dist = dist
 			best_id = port.port_id
 	return best_id
-
-
-static func _route_key(a: String, b: String) -> String:
-	return a + "|" + b if a < b else b + "|" + a

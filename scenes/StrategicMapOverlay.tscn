@@ -1,0 +1,138 @@
+[gd_scene load_steps=4 format=3 uid="uid://strategic_map_overlay"]
+
+[ext_resource type="Script" path="res://scripts/StrategicMapOverlay.gd" id="1_overlay"]
+[ext_resource type="Texture2D" uid="uid://cs4687cvtaf4x" path="res://assets/ui_frame_koei.png" id="2_frame"]
+[ext_resource type="Script" path="res://scripts/StrategicMapView.gd" id="3_mapview"]
+
+[node name="StrategicMapOverlay" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_overlay")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.02, 0.04, 0.08, 0.62)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MapFrame" type="NinePatchRect" parent="Center"]
+custom_minimum_size = Vector2(920, 700)
+layout_mode = 2
+texture = ExtResource("2_frame")
+patch_margin_left = 72
+patch_margin_top = 56
+patch_margin_right = 72
+patch_margin_bottom = 72
+
+[node name="Margin" type="MarginContainer" parent="Center/MapFrame"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = 24.0
+offset_right = -28.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="Center/MapFrame/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Center/MapFrame/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"SectionLabel"
+text = "東南海圖"
+horizontal_alignment = 1
+
+[node name="MapView" type="Control" parent="Center/MapFrame/Margin/VBox"]
+custom_minimum_size = Vector2(820, 560)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 0
+script = ExtResource("3_mapview")
+
+[node name="Summary" type="Label" parent="Center/MapFrame/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"SeaHudFleet"
+text = "摘要"
+autowrap_mode = 2
+
+[node name="PortActionPopup" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -120.0
+offset_right = 180.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_type_variation = &"SeaHudPanel"
+
+[node name="Margin" type="MarginContainer" parent="PortActionPopup"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="PortActionPopup/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="PortActionPopup/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"SectionLabel"
+text = "港口"
+horizontal_alignment = 1
+
+[node name="Info" type="Label" parent="PortActionPopup/Margin/VBox"]
+layout_mode = 2
+autowrap_mode = 2
+text = "信息"
+
+[node name="Actions" type="HBoxContainer" parent="PortActionPopup/Margin/VBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="SetDestination" type="Button" parent="PortActionPopup/Margin/VBox/Actions"]
+layout_mode = 2
+text = "设为航行目标"
+
+[node name="Info" type="Button" parent="PortActionPopup/Margin/VBox/Actions"]
+layout_mode = 2
+text = "查看港口信息"
+
+[node name="Cancel" type="Button" parent="PortActionPopup/Margin/VBox/Actions"]
+layout_mode = 2
+text = "取消"

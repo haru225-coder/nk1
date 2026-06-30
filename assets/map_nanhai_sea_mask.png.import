@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://x3w20jclrq2s"
-valid=false
+uid="uid://bpowwdvg7080r"
+path="res://.godot/imported/map_nanhai_sea_mask.png-778eade0d31f51dce584c5c785dcd26c.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
-source_file="res://assets/icon_wharf_koei.png"
+source_file="res://assets/map_nanhai_sea_mask.png"
+dest_files=["res://.godot/imported/map_nanhai_sea_mask.png-778eade0d31f51dce584c5c785dcd26c.ctex"]
 
 [params]
 

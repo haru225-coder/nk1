@@ -58,6 +58,8 @@ func _run() -> void:
 	_test_floating_text_config()
 	_test_cutscene_player()
 	_test_ship_system()
+	_test_map_layout()
+	_test_map_visual_style()
 	_print_summary()
 	quit(PASS if _failures.is_empty() else FAIL)
 
@@ -1499,12 +1501,19 @@ func _test_resource_paths() -> void:
 	_assert_eq(ResourcePaths.TEX_SHIP_TOPDOWN, "res://assets/ship_topdown.png", "ResourcePaths.TEX_SHIP_TOPDOWN")
 	_assert_eq(ResourcePaths.TEX_SEAGULL, "res://assets/seagull.png", "ResourcePaths.TEX_SEAGULL")
 	_assert_eq(ResourcePaths.TEX_WHALE_SHADOW, "res://assets/whale_shadow.png", "ResourcePaths.TEX_WHALE_SHADOW")
+	_assert_eq(ResourcePaths.TEX_MAP_NANHAI, "res://assets/map_nanhai.png", "ResourcePaths.TEX_MAP_NANHAI")
+	_assert_eq(ResourcePaths.TEX_MAP_SEA_MASK, "res://assets/map_nanhai_sea_mask.png", "ResourcePaths.TEX_MAP_SEA_MASK")
+	_assert_eq(ResourcePaths.TEX_ICON_PORT, "res://assets/icons_128/icon_shipyard_koei.png", "ResourcePaths.TEX_ICON_PORT")
+	_assert_eq(ResourcePaths.TEX_UI_FRAME_KOEI, "res://assets/ui_frame_koei.png", "ResourcePaths.TEX_UI_FRAME_KOEI")
+	_assert_eq(ResourcePaths.TEX_OCEAN_WATER, "res://assets/ocean_water.png", "ResourcePaths.TEX_OCEAN_WATER")
+	_assert_eq(ResourcePaths.SHADER_OCEAN_MASKED, "res://assets/ocean_masked_shader.gdshader", "ResourcePaths.SHADER_OCEAN_MASKED")
 	_assert_eq(ResourcePaths.TEX_ICON_MARKET, "res://assets/icon_market_koei.png", "ResourcePaths.TEX_ICON_MARKET")
 	_assert_eq(ResourcePaths.BG_DEFAULT, "res://assets/bg_sea_route_koei.png", "ResourcePaths.BG_DEFAULT")
 
 	# 场景
 	_assert_eq(ResourcePaths.SCENE_MAIN, "res://scenes/Main.tscn", "ResourcePaths.SCENE_MAIN")
 	_assert_eq(ResourcePaths.SCENE_WORLD_MAP, "res://scenes/WorldMap.tscn", "ResourcePaths.SCENE_WORLD_MAP")
+	_assert_eq(ResourcePaths.SCENE_STRATEGIC_MAP_OVERLAY, "res://scenes/StrategicMapOverlay.tscn", "ResourcePaths.SCENE_STRATEGIC_OVERLAY")
 	_assert_eq(ResourcePaths.SCENE_FLOATING_TEXT, "res://scenes/FloatingText.tscn", "ResourcePaths.SCENE_FLOATING_TEXT")
 	_assert_eq(ResourcePaths.SCENE_CRATE, "res://scenes/Crate.tscn", "ResourcePaths.SCENE_CRATE")
 	_assert_eq(ResourcePaths.SCENE_PORT_ZONE, "res://scenes/PortZone.tscn", "ResourcePaths.SCENE_PORT_ZONE")
@@ -2275,6 +2284,127 @@ func _test_ship_system() -> void:
 	_assert_lt(absf(nav2.world_map_rotation - 1.57), 0.001, "nav pose round-trip rotation")
 	nav2.clear_world_map_pose()
 	_assert_true(not nav2.world_map_pose_saved, "nav pose cleared")
+	_assert_true(nav2.set_voyage_destination("guangzhou"), "voyage destination set accepts valid port")
+	_assert_eq(nav2.voyage_destination_id, "guangzhou", "voyage destination stored")
+	_assert_true(not nav2.set_voyage_destination("not_a_port"), "voyage destination rejects invalid port")
+	_assert_eq(nav2.voyage_destination_id, "guangzhou", "voyage destination unchanged after reject")
+	var nav3 := NavigationState.new()
+	nav3.from_dict(nav2.to_dict())
+	_assert_eq(nav3.voyage_destination_id, "guangzhou", "voyage destination round-trip")
+	nav3.clear_voyage_destination()
+	_assert_eq(nav3.voyage_destination_id, "", "voyage destination cleared")
+	print("")
+
+# ── MapLayout / 战略地图坐标 ─────────────────────────────
+
+func _test_map_layout() -> void:
+	print("--- MapLayout ---")
+	var bounds := MapLayout.get_world_bounds()
+	_assert_eq(bounds.size, Vector2(31000.0, 30000.0), "world_bounds size")
+	_assert_lt(absf(MapLayout.world_bounds_aspect() - 1.0333333333333334), 0.0001, "world_bounds aspect")
+
+	var tex := MapLayout.get_map_texture()
+	_assert_not_null(tex, "map texture loads")
+	if tex != null:
+		var tex_size := Vector2(tex.get_width(), tex.get_height())
+		_assert_true(
+			MapLayout.texture_matches_world_bounds(tex_size),
+			"map texture aspect matches world_bounds"
+		)
+		var xform := MapLayout.map_sprite_transform(tex_size)
+		_assert_eq(xform.origin, bounds.get_center(), "map sprite transform origin")
+		_assert_eq(tex_size, Vector2(4096.0, 3964.0), "map texture 4K size matches world_bounds aspect")
+
+	var mask := MapLayout.get_sea_mask_texture()
+	_assert_not_null(mask, "sea mask texture loads")
+	if tex != null and mask != null:
+		var mask_size := Vector2(mask.get_width(), mask.get_height())
+		_assert_eq(mask_size, Vector2(tex.get_width(), tex.get_height()), "sea mask size matches map texture")
+		_assert_true(
+			MapLayout.texture_matches_world_bounds(mask_size),
+			"sea mask aspect matches world_bounds"
+		)
+	_assert_eq(
+		MapLayout.get_sea_mask_path(),
+		"res://assets/map_nanhai_sea_mask.png",
+		"sea_mask path from ports.json meta"
+	)
+
+	var ports: Array = MapLayout.get_ports_data()
+	var with_map_pos := 0
+	for port_data in ports:
+		var port_id: String = port_data.get("id", "")
+		_assert_true(MapLayout.has_map_pos(port_id), "port has map_pos: %s" % port_id)
+		with_map_pos += 1
+
+		var uv := MapLayout.get_map_pos(port_id)
+		var world_from_uv := MapLayout.map_to_world(uv)
+		var world_from_port := MapLayout.port_world_position(port_data)
+		_assert_eq(world_from_uv, world_from_port, "map_pos uv matches port world position: %s" % port_id)
+
+		var roundtrip := MapLayout.world_to_map(world_from_uv)
+		_assert_lt((roundtrip - uv).length(), 0.0001, "world/map uv roundtrip: %s" % port_id)
+
+		_assert_true(bounds.has_point(world_from_uv), "port inside world_bounds: %s" % port_id)
+
+		var pos_data: Dictionary = port_data.get("position", {})
+		if pos_data.has("x") and pos_data.has("y"):
+			var json_pos := Vector2(float(pos_data.x), float(pos_data.y))
+			_assert_lt(
+				json_pos.distance_to(world_from_uv),
+				1.0,
+				"ports.json position synced with map_pos: %s" % port_id
+			)
+
+	_assert_eq(with_map_pos, 24, "all 24 ports have map_pos")
+
+	var minimap_rect := Rect2(Vector2.ZERO, Vector2(240.0, 180.0))
+	var minimap_inset := 6.0
+	var inner := Rect2(
+		Vector2(minimap_inset, minimap_inset),
+		minimap_rect.size - Vector2(minimap_inset * 2.0, minimap_inset * 2.0)
+	)
+	for port_data in ports:
+		var port_id: String = port_data.get("id", "")
+		var uv: Vector2 = MapLayout.get_map_pos(port_id)
+		var px := MapLayout.uv_to_pixel(uv, inner.size) + inner.position
+		_assert_true(inner.has_point(px), "minimap pixel inside inner rect: %s" % port_id)
+	print("")
+
+# ── 太阁风地图视觉 / 航线样式 ────────────────────────────
+
+func _test_map_visual_style() -> void:
+	print("--- MapVisualStyle ---")
+	_assert_eq(MapRoutePainter.route_key("quanzhou", "guangzhou"), "guangzhou|quanzhou", "route_key sorted")
+	_assert_eq(MapRoutePainter.ROUTE_COLOR, Color(0.77, 0.66, 0.36, 0.55), "shared route color")
+	_assert_eq(MapRoutePainter.ROUTE_WIDTH_WORLD, 4.0, "world route width")
+	_assert_eq(MapRoutePainter.ROUTE_WIDTH_MINIMAP, 1.5, "minimap route width")
+	_assert_eq(MapPortStyle.port_color("main"), MapPortStyle.PORT_MAIN, "main port color")
+	_assert_eq(MapPortStyle.port_color("distant"), MapPortStyle.PORT_DISTANT, "distant port color")
+
+	var port_zone: Node = load(ResourcePaths.SCENE_PORT_ZONE).instantiate()
+	_assert_true(port_zone.has_node("Visual/Icon"), "PortZone has koei icon")
+	_assert_true(port_zone.has_node("Visual/NameLabel"), "PortZone has name label")
+	_assert_true(not port_zone.has_node("Polygon2D"), "PortZone removed yellow diamond")
+	_assert_true(port_zone.has_method("setup"), "PortZone setup()")
+
+	var world_map: PackedScene = load(ResourcePaths.SCENE_WORLD_MAP)
+	_assert_not_null(world_map, "WorldMap scene loads")
+	var wm: Node = world_map.instantiate()
+	_assert_true(wm.has_node("RouteLayer"), "WorldMap has RouteLayer")
+	_assert_true(wm.get_node("RouteLayer").has_method("set_port_nodes"), "RouteLayer API")
+	_assert_true(wm.has_node("CanvasLayer/HUD/MinimapPanel/MinimapFrame"), "Minimap koei frame")
+	_assert_true(wm.has_node("CanvasLayer/HUD/StrategicMapOverlay"), "WorldMap strategic overlay")
+	wm.free()
+
+	var overlay_scene: PackedScene = load(ResourcePaths.SCENE_STRATEGIC_MAP_OVERLAY)
+	_assert_not_null(overlay_scene, "StrategicMapOverlay scene loads")
+	var overlay: Node = overlay_scene.instantiate()
+	_assert_true(overlay.has_method("open"), "overlay open()")
+	_assert_true(overlay.has_method("close"), "overlay close()")
+	_assert_true(overlay.has_method("is_open"), "overlay is_open()")
+	_assert_true(overlay.has_node("Center/MapFrame/Margin/VBox/MapView"), "overlay map view")
+	overlay.free()
 	print("")
 
 # ═══════════════════════════════════════════════════════════

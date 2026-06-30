@@ -8,6 +8,7 @@ var navigation_position: String = ""
 var world_map_pose_saved: bool = false
 var world_map_position: Vector2 = Vector2.ZERO
 var world_map_rotation: float = 0.0
+var voyage_destination_id: String = ""
 
 signal departed_port(port_id: String)
 signal returned_to_port(port_id: String)
@@ -23,6 +24,18 @@ func clear_world_map_pose() -> void:
 	world_map_pose_saved = false
 	world_map_position = Vector2.ZERO
 	world_map_rotation = 0.0
+
+
+func set_voyage_destination(port_id: String) -> bool:
+	if port_id == "" or not MapLayout.has_map_pos(port_id):
+		return false
+	voyage_destination_id = port_id
+	return true
+
+
+func clear_voyage_destination() -> void:
+	voyage_destination_id = ""
+
 
 func depart_port(can_depart_result: Dictionary) -> Dictionary:
 	if not can_depart_result["success"]:
@@ -43,6 +56,7 @@ func to_dict() -> Dictionary:
 		"world_map_pose_saved": world_map_pose_saved,
 		"world_map_position": {"x": world_map_position.x, "y": world_map_position.y},
 		"world_map_rotation": world_map_rotation,
+		"voyage_destination_id": voyage_destination_id,
 	}
 
 func from_dict(d: Dictionary) -> void:
@@ -54,3 +68,4 @@ func from_dict(d: Dictionary) -> void:
 	if pos is Dictionary:
 		world_map_position = Vector2(float(pos.get("x", 0.0)), float(pos.get("y", 0.0)))
 	world_map_rotation = float(d.get("world_map_rotation", 0.0))
+	voyage_destination_id = d.get("voyage_destination_id", "")

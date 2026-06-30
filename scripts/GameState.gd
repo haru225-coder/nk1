@@ -146,6 +146,10 @@ var navigation_position: String:
 	get: return navigation.navigation_position
 	set(v): navigation.navigation_position = v
 
+var voyage_destination_id: String:
+	get: return navigation.voyage_destination_id
+	set(v): navigation.voyage_destination_id = v
+
 ## ── 公开方法（委托给各模块）─────────────────────────────
 
 func process_daily_consumption() -> void:
@@ -249,6 +253,12 @@ func clear_world_map_ship_pose() -> void:
 
 func has_world_map_ship_pose() -> bool:
 	return navigation.world_map_pose_saved
+
+func set_voyage_destination(port_id: String) -> bool:
+	return navigation.set_voyage_destination(port_id)
+
+func clear_voyage_destination() -> void:
+	navigation.clear_voyage_destination()
 
 func set_navigation_locked(locked: bool) -> void:
 	if locked:

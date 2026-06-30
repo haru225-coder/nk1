@@ -6,7 +6,8 @@ extends Node2D
 @onready var weather_status: Label = $CanvasLayer/HUD/RightPanel/Margin/WeatherStatus
 @onready var _left_panel: PanelContainer = $CanvasLayer/HUD/LeftPanel
 @onready var _right_panel: PanelContainer = $CanvasLayer/HUD/RightPanel
-@onready var _minimap_panel: PanelContainer = $CanvasLayer/HUD/MinimapPanel
+@onready var _minimap_panel: MarginContainer = $CanvasLayer/HUD/MinimapPanel
+@onready var _strategic_overlay: StrategicMapOverlay = $CanvasLayer/HUD/StrategicMapOverlay
 @onready var canvas_modulate: CanvasModulate = $CanvasModulate
 @onready var rain_particles: CPUParticles2D = $RainParticles
 @onready var lightning_flash: ColorRect = $CanvasLayer/LightningFlash
@@ -16,6 +17,12 @@ var seagull_tex = preload(ResourcePaths.TEX_SEAGULL)
 var whale_tex = preload(ResourcePaths.TEX_WHALE_SHADOW)
 
 @onready var ports_node: Node2D = $Ports
+@onready var _route_layer: RouteLayer = $RouteLayer
+@onready var _strategic_map: Sprite2D = $StrategicMapRoot/StrategicMap
+@onready var _ocean_overlay: Sprite2D = $StrategicMapRoot/OceanOverlay
+@onready var _ocean_material: ShaderMaterial = $StrategicMapRoot/OceanOverlay.material as ShaderMaterial
+
+const _OCEAN_TEX := preload(ResourcePaths.TEX_OCEAN_WATER)
 var port_scene = preload(ResourcePaths.SCENE_PORT_ZONE)
 var ports_data: Array = []
 var port_nodes: Dictionary = {}
@@ -35,6 +42,7 @@ var base_wind_strength: float = 80.0
 var crate_spawn_timer: float = 5.0
 var animal_spawn_timer: float = 15.0
 var navigation_locked: bool = false
+var _overlay_open: bool = false
 
 var _hud_update_timer: float = 0.0
 var _voyage_log_timer: float = 25.0  ## NK1-P6: 航海日志周期
@@ -45,6 +53,7 @@ var _near_port_id: String = ""       ## NK1-P6: 当前最近港口（用于进�
 
 func _ready() -> void:
 	randomize()
+	_setup_strategic_map()
 	_load_ports()
 
 	if GameState.has_world_map_ship_pose():
@@ -55,15 +64,28 @@ func _ready() -> void:
 	if not ship.is_in_group("player_ship"):
 		ship.add_to_group("player_ship")
 
+	_strategic_overlay.closed.connect(_on_strategic_overlay_closed)
+	_strategic_overlay.destination_set.connect(_on_voyage_destination_set)
 	_update_hud_labels()
 	await get_tree().process_frame
 	_animate_hud_entrance()
 
 func _input(event: InputEvent) -> void:
+	if _strategic_overlay.is_open():
+		if event is InputEventKey and event.pressed:
+			if event.keycode == KEY_M or event.keycode == KEY_ESCAPE:
+				_strategic_overlay.close()
+				get_viewport().set_input_as_handled()
+		return
+
 	if navigation_locked:
 		return
 
 	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_M:
+			_open_strategic_overlay()
+			get_viewport().set_input_as_handled()
+			return
 		if event.keycode == KEY_B or event.keycode == KEY_ESCAPE:
 			var nearest_port := _get_nearest_port_id()
 			if nearest_port != "":
@@ -89,7 +111,7 @@ func _process(delta: float) -> void:
 	if not ship:
 		return
 
-	if navigation_locked:
+	if navigation_locked or _overlay_open:
 		ship.process_mode = Node.PROCESS_MODE_DISABLED
 		return
 	else:
@@ -148,8 +170,11 @@ func _update_hud_labels() -> void:
 	var flagship := GameState.fleet.get_flagship()
 	var ship_name := flagship.name if flagship else "旗舰"
 	var sail_label := "纵帆" if GameState.sail_type == "lateen" else "横帆"
-	label.text = "旗舰: %s (%s)\n当前季风: %s\n风力强度: %d (%s)\n航速: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\n船体耐久: [color=%s]%d/%d[/color]\nB/Esc: 返回港口" % [
-		ship_name, sail_label, wind_desc, int(ship.wind_strength), wind_dir_label, current_speed, ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp)
+	var dest_line := ""
+	if GameState.voyage_destination_id != "":
+		dest_line = "\n航行目标: %s" % _port_display_name(GameState.voyage_destination_id)
+	label.text = "旗舰: %s (%s)\n当前季风: %s\n风力强度: %d (%s)\n航速: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nM: 战略地图\n船体耐久: [color=%s]%d/%d[/color]%s\nB/Esc: 返回港口" % [
+		ship_name, sail_label, wind_desc, int(ship.wind_strength), wind_dir_label, current_speed, ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), dest_line
 	]
 
 	var cargo_str := CargoSystem.to_display_string(" ")
@@ -368,37 +393,36 @@ func _restore_ship_pose() -> void:
 		ship._sync_from_flagship()
 
 
+func _setup_strategic_map() -> void:
+	if not MapLayout.apply_strategic_map_sprite(_strategic_map):
+		push_warning("WorldMap: strategic map texture missing (%s)" % MapLayout.get_map_texture_path())
+		_strategic_map.visible = false
+		_ocean_overlay.visible = false
+		return
+	_strategic_map.visible = true
+	if MapLayout.apply_ocean_overlay(_ocean_overlay, _OCEAN_TEX, _ocean_material):
+		_ocean_overlay.visible = true
+	else:
+		push_warning("WorldMap: sea mask missing (%s)" % MapLayout.get_sea_mask_path())
+		_ocean_overlay.visible = false
+
+
 func _load_ports() -> void:
 	ports_data = GameManager.ports_data.get("ports", [])
 	for p in ports_data:
 		_spawn_port(p)
-	queue_redraw()
+	_route_layer.set_port_nodes(port_nodes)
 
 func _spawn_port(p_data: Dictionary) -> void:
 	var p = port_scene.instantiate()
-	p.port_id = p_data.get("id", "")
-	p.port_name = p_data.get("name", "")
-
+	if p.has_method("setup"):
+		p.setup(p_data)
+	else:
+		p.port_id = p_data.get("id", "")
+		p.port_name = p_data.get("name", "")
 	p.position = MapLayout.port_world_position(p_data)
-
 	ports_node.add_child(p)
 	port_nodes[p.port_id] = p
-
-func _draw() -> void:
-	for p in ports_data:
-		var p_id = p.get("id", "")
-		if not port_nodes.has(p_id):
-			continue
-		var p_node: Node2D = port_nodes[p_id]
-
-		for conn_id in p.get("connections", []):
-			if port_nodes.has(conn_id):
-				var target_node: Node2D = port_nodes[conn_id]
-				if p_id < conn_id:
-					draw_line(p_node.position, target_node.position, Color(1, 1, 1, 0.3), 10.0)
-					var dist := int(p_node.position.distance_to(target_node.position) / 10.0)
-					var mid_pos := (p_node.position + target_node.position) / 2.0
-					draw_string(ThemeDB.fallback_font, mid_pos, str(dist) + " 海里", HORIZONTAL_ALIGNMENT_CENTER, -1, 32, Color(0.8, 0.8, 0.8, 0.8))
 
 func _animate_hud_entrance() -> void:
 	var panels := [_left_panel, _right_panel, _minimap_panel]
@@ -416,7 +440,7 @@ func _animate_hud_entrance() -> void:
 
 ## 航海风景日志：长航时弹出风景描述浮文
 func _show_voyage_scenery() -> void:
-	if navigation_locked:
+	if navigation_locked or _overlay_open:
 		return
 	var idx: int = randi() % FloatingTextConfig.VOYAGE_SCENERY.size()
 	var scenery: String = FloatingTextConfig.VOYAGE_SCENERY[idx]
@@ -468,3 +492,41 @@ func _check_port_proximity() -> void:
 	)
 	elif dist > 500.0:
 		_near_port_id = ""
+
+
+func _open_strategic_overlay() -> void:
+	if not ship:
+		return
+	_overlay_open = true
+	ports_node.process_mode = Node.PROCESS_MODE_DISABLED
+	_strategic_overlay.open(
+		ship,
+		time_of_day,
+		weather_status.text,
+		int(ship.hull_hp),
+		int(ship.max_hp)
+	)
+
+
+func _on_strategic_overlay_closed() -> void:
+	_overlay_open = false
+	ports_node.process_mode = Node.PROCESS_MODE_INHERIT
+
+
+func _on_voyage_destination_set(_port_id: String) -> void:
+	_update_hud_labels()
+	if not ship or not _strategic_overlay.is_open():
+		return
+	_strategic_overlay.refresh_destination(
+		time_of_day,
+		weather_status.text,
+		int(ship.hull_hp),
+		int(ship.max_hp)
+	)
+
+
+func _port_display_name(port_id: String) -> String:
+	for port_data in ports_data:
+		if port_data.get("id", "") == port_id:
+			return port_data.get("name", port_id)
+	return port_id
