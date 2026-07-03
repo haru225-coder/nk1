@@ -9,6 +9,8 @@ var world_map_pose_saved: bool = false
 var world_map_position: Vector2 = Vector2.ZERO
 var world_map_rotation: float = 0.0
 var voyage_destination_id: String = ""
+var world_day: int = 1
+var world_month: int = 1
 
 signal departed_port(port_id: String)
 signal returned_to_port(port_id: String)
@@ -57,6 +59,8 @@ func to_dict() -> Dictionary:
 		"world_map_position": {"x": world_map_position.x, "y": world_map_position.y},
 		"world_map_rotation": world_map_rotation,
 		"voyage_destination_id": voyage_destination_id,
+		"world_day": world_day,
+		"world_month": world_month,
 	}
 
 func from_dict(d: Dictionary) -> void:
@@ -69,3 +73,5 @@ func from_dict(d: Dictionary) -> void:
 		world_map_position = Vector2(float(pos.get("x", 0.0)), float(pos.get("y", 0.0)))
 	world_map_rotation = float(d.get("world_map_rotation", 0.0))
 	voyage_destination_id = d.get("voyage_destination_id", "")
+	world_day = int(d.get("world_day", 1))
+	world_month = int(d.get("world_month", 1))

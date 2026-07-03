@@ -22,7 +22,7 @@
           "narration": "卒子把你轰到一边：「榜文上没你的名字，滚回去练字。」"
         }
       ],
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "chapter2_linan_blocked",
@@ -57,7 +57,7 @@
           "narration": "你在驿馆门口歇了一夜，天明便南下。风里带着运河的腐臭。"
         }
       ],
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "chapter2_path_select",
@@ -92,7 +92,7 @@
           "narration": "海比城诚实。你转身时，城墙上的影子又长了半寸。"
         }
       ],
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "chapter2_jia_approach",
@@ -255,7 +255,7 @@
           "next": "chapter2_path_select"
         }
       ],
-      "bg": "res://assets/bg_departure.png"
+      "bg": "res://assets/bg_linan_canal_pier.png"
     },
     {
       "id": "chapter2_lin_run",
@@ -293,7 +293,7 @@
           "narration": "巡卒追向空箱。你扛着真的那本，从暗巷里擦身而过。"
         }
       ],
-      "bg": "res://assets/bg_penghu_night.png"
+      "bg": "res://assets/bg_linan_smuggle_night.png"
     },
     {
       "id": "chapter2_lin_enter",
@@ -316,7 +316,7 @@
           }
         }
       ],
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "chapter2_scholar_seek",
@@ -370,7 +370,7 @@
           "next": "chapter2_path_select"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "chapter2_scholar_vow",
@@ -407,7 +407,7 @@
           "narration": "老人收香：「骨气贵。临安更贵。」"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "chapter2_scholar_enter",
@@ -430,7 +430,7 @@
           }
         }
       ],
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "port_linan",
@@ -481,7 +481,7 @@
         }
       ],
       "intro": "临安城关，运河穿城如肠。城里米贵，人心更贵。太学在望，榜文在喉。",
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "linan_canal",
@@ -640,7 +640,7 @@
           "requires_story_flag": "chapter2_exam_done"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "linan_taixue_exam_jia",
@@ -700,7 +700,7 @@
           "narration": "随从冷哼一声，夺过银豆。但你保住了学籍，也保住了一条不那么黑的心。"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "linan_taixue_exam_lin",
@@ -754,7 +754,7 @@
           "narration": "纸灰卷起，像一小片黑水沟。林伯渊若知，怕要骂你胆小——可你太学座次，保住了。"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "linan_taixue_exam_scholar",
@@ -804,7 +804,7 @@
           "narration": "你把真话折进废话里。《春秋》批注在袖中发烫——像一枚还没冷的火。"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "chapter2_end",

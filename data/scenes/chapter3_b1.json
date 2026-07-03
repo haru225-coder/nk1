@@ -66,7 +66,7 @@
           "narration": "你把名帖压在枕下。第三日仍得动身——但今夜，得先把自己安抚下来。"
         }
       ],
-      "bg": "res://assets/bg_fuzhou_yamen.jpg"
+      "bg": "res://assets/bg_pu_mansion_hall.png"
     },
     {
       "id": "chapter3_comply_taixue_register",
@@ -272,7 +272,7 @@
           "narration": "你只回看一眼。府门半掩，灯笼未点。身后的靴声反而更重。"
         }
       ],
-      "bg": "res://assets/bg_fuzhou_yamen.jpg"
+      "bg": "res://assets/bg_linan_escape_night.png"
     },
     {
       "id": "chapter3_refuse_linan_back_alley",
@@ -340,7 +340,7 @@
           "narration": "脚夫只答一句：「林老大的路，不问名。」他没等你回话，已让开半步。"
         }
       ],
-      "bg": "res://assets/bg_city_market_street.png"
+      "bg": "res://assets/bg_linan_escape_night.png"
     },
     {
       "id": "chapter3_refuse_seek_lin",
@@ -553,6 +553,129 @@
         }
       ],
       "bg": "res://assets/bg_northern_fortress_snow.png"
+    },
+    {
+      "id": "chapter3_after_summon_comply_audit_done",
+      "chapter": "chapter_3",
+      "title": "礼部后巷 · 卷封既定",
+      "location": "linan",
+      "time": "宝祐三年八月廿四，午后",
+      "objective": "复试已毕，带着蒲府名帖退回城关",
+      "body": "礼部后巷，午后。\n\n　　封卷的红绳一圈圈绕紧，像把你的名字也捆进去。廊下有人低声报数：「蒲府荐卷，一人。」\n\n【监试官】：「三日后听榜。榜前莫远行，榜后也莫乱说话。」\n\n　　你把名帖收回袖中。纸边被汗水浸软，朱印却更红，像一小块干了的血。",
+      "investigations": [
+        {
+          "label": "看封卷红绳",
+          "text": "红绳绕过卷角，压住你的姓名。你忽然明白：入册不是被看见，而是被牵住。",
+          "once_flag": "chapter3_comply_saw_sealed_roll",
+          "effects": {
+            "story_flag": "chapter3_comply_saw_sealed_roll",
+            "fame": 1
+          }
+        },
+        {
+          "label": "听廊下小吏报数",
+          "text": "小吏念到「蒲府荐卷」时刻意压低声音。旁人不看你，却都知道你在这里。",
+          "once_flag": "chapter3_comply_heard_recommend_roll",
+          "effects": {
+            "story_flag": "chapter3_comply_heard_recommend_roll",
+            "pu_attention": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "回临安城关，等榜前风声",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "chapter3_comply_audit_done",
+            "jia_relationship": 1
+          },
+          "narration": "你没有再回头。礼部的门在身后合上，像一只木匣扣住了三日后的命数。"
+        }
+      ],
+      "bg": "res://assets/bg_academy.jpg"
+    },
+    {
+      "id": "chapter3_refuse_sea_route",
+      "chapter": "chapter_3",
+      "title": "南码头 · 乌篷夜发",
+      "location": "linan",
+      "time": "宝祐三年八月，子夜后",
+      "objective": "借雾脱离临安，带书转进澎湖接头处",
+      "body": "南码头雾气压得很低。\n\n　　第三条乌篷船没有挂灯，船尾只留一截湿绳。断眉老汉把油纸包塞进你怀里，低声道：「到澎湖前，不要回头。」\n\n　　船娘不问姓名，只用篙尖敲水。每一声都像在问：你手里那本书，值不值得这条命？",
+      "investigations": [
+        {
+          "label": "摸油纸包里的铜钱",
+          "text": "铜钱只一枚，穿绳已旧。断眉老汉说这是林伯渊留的信物，见钱如见人。",
+          "once_flag": "chapter3_refuse_checked_coin",
+          "effects": {
+            "story_flag": "chapter3_refuse_checked_coin",
+            "linboyuan_relationship": 1
+          }
+        },
+        {
+          "label": "回望临安灯火",
+          "text": "灯火被雾切成碎片。你分不清哪一盏是太学，哪一盏是蒲府。",
+          "once_flag": "chapter3_refuse_looked_back_linan",
+          "effects": {
+            "story_flag": "chapter3_refuse_looked_back_linan",
+            "fame": 1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "登船南下，先避澎湖",
+          "next": "port_penghu",
+          "effects": {
+            "story_flag": "chapter3_refuse_escape_done",
+            "pu_attention": -2
+          },
+          "narration": "潮声盖过人声。天亮前，临安已在雾后。"
+        }
+      ],
+      "bg": "res://assets/bg_linan_canal_pier.png"
+    },
+    {
+      "id": "chapter3_burn_flee",
+      "chapter": "chapter_3",
+      "title": "临安夜逃",
+      "location": "linan",
+      "time": "宝祐三年八月，五更",
+      "objective": "摆脱搜捕，暂回临安港市藏身",
+      "body": "五更，城门未开，巷口先亮。\n\n　　不是天光，是蒲府方向的火。风把灰烬卷到瓦上，细得像雪。你贴着墙根穿过两条暗巷，身后的火把忽明忽暗。\n\n【更夫】：「别往北。北边都是马。」\n\n　　等临安港市的水气扑到脸上，你才发现手心全是冷汗。",
+      "investigations": [
+        {
+          "label": "拾起落在袖上的灰",
+          "text": "灰里有朱砂味。蒲府烧的未必只是名帖，也许还有一整册不该见人的名籍。",
+          "once_flag": "chapter3_burn_checked_ash",
+          "effects": {
+            "story_flag": "chapter3_burn_checked_ash",
+            "fame": 1
+          }
+        },
+        {
+          "label": "问更夫北边动静",
+          "text": "更夫不看你，只把梆子往南一指：「南门水关，趁潮。」",
+          "once_flag": "chapter3_burn_asked_watchman",
+          "effects": {
+            "story_flag": "chapter3_burn_asked_watchman",
+            "pu_attention": -1
+          }
+        }
+      ],
+      "choices": [
+        {
+          "label": "回临安港市，藏入人潮",
+          "next": "port_linan",
+          "effects": {
+            "story_flag": "chapter3_burn_escape_done",
+            "pu_attention": 2
+          },
+          "narration": "你混进水门边的脚夫队伍。更鼓终于慢了一拍。"
+        }
+      ],
+      "bg": "res://assets/bg_linan_escape_night.png"
     }
   ]
 }

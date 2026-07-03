@@ -79,6 +79,23 @@
         {"label": "离开", "next": "port_guangzhou"}
       ],
       "bg": "res://assets/bg_guangzhou_mosque.png"
+    },
+    {
+      "id": "guangzhou_wharf",
+      "chapter": "chapter_1",
+      "title": "黄埔古港",
+      "location": "guangzhou",
+      "time": "午后，潮平",
+      "objective": "查看广州旧港，确认南海旧航线仍可借用",
+      "body": "黄埔古港潮水平，旧木桩半截泡在江里。\n\n　　这里曾是蕃舶入广州的喉口，如今大船多往泉州，剩下修船匠、脚夫和几家不肯搬走的香药铺。\n\n【老船匠】：「泉州热闹，是新王气。广州安静，是旧路熟。真要避眼线，旧路比新港好走。」",
+      "investigations": [
+        {"label": "看旧木桩上的刻痕", "text": "木桩上刻着占城、三佛齐、交趾的船记。刀痕很旧，路却还在。", "once_flag": "guangzhou_wharf_route_marks", "effects": {"story_flag": "guangzhou_wharf_route_marks", "fame": 1}},
+        {"label": "问老船匠修船价", "text": "老船匠伸出三根手指：「不问来路，只看船板。泉州那边查得紧，就从广州补。」", "once_flag": "guangzhou_wharf_shipwright", "effects": {"story_flag": "guangzhou_wharf_shipwright", "pu_attention": -1}}
+      ],
+      "choices": [
+        {"label": "回广州城内", "next": "port_guangzhou"}
+      ],
+      "bg": "res://assets/bg_guangzhou_port.png"
     }
   ]
 }

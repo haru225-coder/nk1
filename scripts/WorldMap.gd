@@ -202,13 +202,20 @@ func _process_weather_and_time(delta: float) -> void:
 	while time_of_day >= 24.0:
 		time_of_day -= 24.0
 		var old_crew = GameState.crew_count
+		var advance_result: Dictionary = GameState.advance_world_day()
 		GameState.process_daily_consumption()
 		WorldEventTracker.process_day()
 		TradeEventGenerator.try_generate()
 		TradeEventGenerator.process_day()
 		# NK1-P5-ECON-002: 每日经济处理（繁荣度回归+贸易历史衰减）
 		GameState.market.process_daily_economy()
-		StoryEventChainEngine.check_triggers("day_advance", {})
+		var tick_ctx := {
+			"world_day": GameState.navigation.world_day,
+			"world_month": GameState.navigation.world_month,
+		}
+		StoryEventChainEngine.check_triggers("day_advance", tick_ctx)
+		if advance_result.get("month_advance", false):
+			StoryEventChainEngine.check_triggers("month_advance", tick_ctx)
 		if GameState.crew_count < old_crew:
 			var ft = ResourceManager.FloatingText.instantiate()
 			ft.text = "【警告】水尽粮绝！水手减少！"

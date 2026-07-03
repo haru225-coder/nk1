@@ -381,7 +381,23 @@ func _update_trade_preview() -> void:
 			{"good_id": _selected_good_id, "amount": _trade_amount},
 			{"port_id": port_id}
 		)
+	var effect_preview := _build_trade_effect_preview_text()
+	if effect_preview != "":
+		preview_label.text += "\n" + effect_preview
 	confirm_button.disabled = false
+
+func _build_trade_effect_preview_text() -> String:
+	if _selected_good_id.is_empty() or _selected_action.is_empty() or _trade_amount <= 0:
+		return ""
+	var intent_type := IntentTypes.MARKET_BUY if _selected_action == "buy" else IntentTypes.MARKET_SELL
+	return StoryEventChainEngine.build_trigger_preview_text("trade_completed", {
+		"port_id": port_id,
+		"trade_action": _selected_action,
+		"good_id": _selected_good_id,
+		"amount": _trade_amount,
+		"intent_type": intent_type,
+		"game_state": GameState,
+	})
 
 func _on_confirm_pressed() -> void:
 	if pending_intent == null or confirm_button.disabled:

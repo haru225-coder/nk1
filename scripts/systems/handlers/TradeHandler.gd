@@ -45,6 +45,7 @@ func _handle_market_buy(intent: Intent, port_id: String, good_id: String, amount
 		_check_dump_economy_log(port_id, good_id, -amount)
 		var r := IntentResult.ok({"good_id": good_id, "amount": amount, "cost": total_cost}, TextKeys.INTENT_MARKET_BUY_SUCCESS)
 		r.type = type
+		_emit_trade_completed(port_id, "buy", good_id, amount, r)
 		return r
 	LedgerSystem.apply({
 		"amount": total_cost,
@@ -77,6 +78,7 @@ func _handle_market_sell(intent: Intent, port_id: String, good_id: String, amoun
 		_check_dump_economy_log(port_id, good_id, amount)
 		var r := IntentResult.ok({"good_id": good_id, "amount": amount, "revenue": total_revenue}, TextKeys.INTENT_MARKET_SELL_SUCCESS)
 		r.type = type
+		_emit_trade_completed(port_id, "sell", good_id, amount, r)
 		return r
 	return IntentResult.error(TextKeys.ERROR_MARKET_TRANSACTION_FAILED, "", type)
 
@@ -99,8 +101,19 @@ func _handle_sea_trade(intent: Intent) -> IntentResult:
 		GameState.apply_effects({"food": food_gain, "water": water_gain})
 		var r := IntentResult.ok({"cost": cost, "food": food_gain, "water": water_gain}, TextKeys.INTENT_TRADE_REQUEST_SUCCESS)
 		r.type = IntentTypes.TRADE_REQUEST
+		_emit_trade_completed(str(intent.context.get("port_id", "")), "sea_trade", "", 0, r)
 		return r
 	return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", IntentTypes.TRADE_REQUEST)
+
+func _emit_trade_completed(port_id: String, action: String, good_id: String, amount: int, result: IntentResult) -> void:
+	StoryEventChainEngine.check_triggers("trade_completed", {
+		"port_id": port_id,
+		"trade_action": action,
+		"good_id": good_id,
+		"amount": amount,
+		"intent_type": result.type,
+		"result": result,
+	})
 
 ## NK1-P5-ECON-002: 检测大量倾销并记录经济日志
 ## delta > 0 = 卖出（倾销），delta < 0 = 买入

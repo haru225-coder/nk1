@@ -198,7 +198,7 @@
           "narration": "先生给的不仅是路费，更是一条退路。科举若不成，这海便是去处。"
         }
       ],
-      "bg": "res://assets/bg_xinghua_school.png"
+      "bg": "res://assets/bg_xinghua_school_night.png"
     },
     {
       "id": "xinghua_temple",
@@ -234,7 +234,7 @@
           }
         }
       ],
-      "bg": "res://assets/bg_xinghua_residence.png"
+      "bg": "res://assets/bg_xinghua_temple.png"
     },
     {
       "id": "xinghua_market",
@@ -326,7 +326,7 @@
           "next": "port_xinghua"
         }
       ],
-      "bg": "res://assets/bg_quanzhou_arab_market.png"
+      "bg": "res://assets/bg_xinghua_tavern.png"
     },
     {
       "id": "xinghua_inn",
@@ -654,7 +654,7 @@
           "narration": "你在蕃坊的巷子里绕了三圈，借阿拉伯人的香料味掩盖了行踪，才回码头。"
         }
       ],
-      "bg": "res://assets/bg_quanzhou_port_sunset.png"
+      "bg": "res://assets/bg_sea_route_fog.png"
     },
     {
       "id": "port_quanzhou",
@@ -1013,6 +1013,23 @@
           "effects": {
             "story_flag": "linan_jia_hint_tavern"
           }
+        },
+        {
+          "label": "打听刺桐商路",
+          "text": "你摊开「刺桐商路札」，酒客终于改口：真正赚钱的是番货回流，不是码头短买短卖。",
+          "once_flag": "zaitong_trade_route_asked",
+          "conditions": {
+            "effects_required": [
+              "unlock:zaitong_trade_route_asked"
+            ]
+          },
+          "effects": {
+            "story_flag": "zaitong_trade_route_asked",
+            "npc_relationship": {
+              "npc_id": "lin_boyuan",
+              "delta": 1
+            }
+          }
         }
       ]
     },
@@ -1053,7 +1070,7 @@
           "next": "port_quanzhou"
         }
       ],
-      "bg": "res://assets/bg_customs_room.jpg",
+      "bg": "res://assets/bg_customs_patrol.png",
       "investigations": [
         {
           "label": "旁观审讯",
@@ -1062,6 +1079,20 @@
           "effects": {
             "pu_attention": 2,
             "story_flag": "saw_pu_arrest"
+          }
+        },
+        {
+          "label": "以海商称号递话",
+          "text": "小吏听见你已有「初露锋芒的海商」名声，态度缓下来，低声提醒你别在蒲氏货引上签名。",
+          "once_flag": "rookie_merchant_yamen_recognized",
+          "conditions": {
+            "effects_required": [
+              "unlock:rookie_merchant_yamen_recognized"
+            ]
+          },
+          "effects": {
+            "story_flag": "rookie_merchant_yamen_recognized",
+            "fame": 1
           }
         }
       ]
@@ -1082,6 +1113,21 @@
             "story_flag": "guild_bounty_taken"
           },
           "narration": "登记人提醒你：「册子在海上，不在陆上。别拿命换纸。」"
+        },
+        {
+          "label": "顺着验引册追查蒲氏私库",
+          "next": "scene_quanzhou_pu_private_store_hint",
+          "conditions": {
+            "story_flags_required": [
+              "lin_boyuan_customs_deep_hint"
+            ],
+            "relationship_npc_id": "lin_boyuan",
+            "npc_relationship_min": 10
+          },
+          "effects": {
+            "story_flag": "pu_private_store_branch_opened"
+          },
+          "narration": "林伯渊把验引册三个字压得极低：蒲氏私库不在码头，在城北旧盐仓后墙。"
         },
         {
           "label": "离开",
@@ -1106,6 +1152,94 @@
           "effects": {
             "story_flag": "linan_lin_hint_guild"
           }
+        },
+        {
+          "label": "借林伯渊关系追问市舶司",
+          "text": "林伯渊愿意透露更深的市舶司消息：工会悬赏只是明账，真正的验引册在蒲氏私库里。",
+          "once_flag": "lin_boyuan_customs_deep_hint",
+          "conditions": {
+            "effects_required": [
+              "unlock:lin_boyuan_customs_deep_hint"
+            ]
+          },
+          "effects": {
+            "story_flag": "lin_boyuan_customs_deep_hint"
+          }
+        },
+        {
+          "id": "lin_boyuan_visit_guild",
+          "label": "拜访林伯渊",
+          "text": "林伯渊把旧海图压在案上，只问你一句：「今日海色如何？」你照实回答，他点了点头。",
+          "once_flag": "lin_boyuan_visit_guild",
+          "requires_story_flag": "met_lin_boyuan",
+          "effects": {
+            "npc_relationship": {
+              "npc_id": "lin_boyuan",
+              "delta": 2
+            },
+            "story_flag": "lin_boyuan_visit_guild"
+          }
+        },
+        {
+          "id": "lin_boyuan_gift_spring_autumn",
+          "label": "送还《春秋》",
+          "text": "你把朱熹手批《春秋》推还给林伯渊。他沉默许久，只说：「这本书，不该只压在岸上。」",
+          "once_flag": "lin_boyuan_gift_spring_autumn",
+          "requires_item": "spring_autumn_scroll",
+          "effects": {
+            "item_removed": "spring_autumn_scroll",
+            "npc_relationship": {
+              "npc_id": "lin_boyuan",
+              "delta": 6
+            },
+            "story_flag": "lin_boyuan_gift_spring_autumn"
+          }
+        },
+        {
+          "id": "lin_boyuan_study_boarding",
+          "label": "请教接舷战术",
+          "text": "林伯渊在甲板图上划出三条线：贴舷、压风、断索。你第一次明白，接舷不是勇，是算。",
+          "once_flag": "learned_skill_boarding_tactics",
+          "conditions": {
+            "relationship_npc_id": "lin_boyuan",
+            "npc_relationship_min": 15,
+            "story_flags_absent": [
+              "learned_skill_boarding_tactics"
+            ]
+          },
+          "effects": {
+            "story_flag": "learned_skill_boarding_tactics",
+            "swordplay": 2,
+            "npc_relationship": {
+              "npc_id": "lin_boyuan",
+              "delta": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene_quanzhou_pu_private_store_hint",
+      "chapter": "chapter_2_seed",
+      "title": "蒲氏私库的影子",
+      "location": "quanzhou",
+      "time": "入夜后",
+      "objective": "把林伯渊透露的验引册线索转化为下一段追查目标",
+      "body": "城北旧盐仓背后，墙灰被潮气泡开。你摸到一枚暗钉，钉帽上刻着蒲氏商号的细纹。\n\n【陈子龙】：验引册若真在这里，工会悬赏就只是明账。\n\n风从仓缝里钻出，带着纸墨和海盐味。有人比你先来一步，又刻意留下了一截断封。",
+      "bg": "res://assets/bg_quanzhou_office.jpg",
+      "choices": [
+        {
+          "label": "记下旧盐仓线索，返回工会",
+          "next": "city_guild",
+          "effects": {
+            "story_flag": "pu_private_store_hint_seen",
+            "pu_attention": 1
+          },
+          "narration": "你把断封塞进袖中。蒲氏的账，已经不只是海上的账。"
+        },
+        {
+          "label": "先撤回港口",
+          "next": "port_quanzhou"
         }
       ]
     },
@@ -1207,7 +1341,7 @@
           "narration": "卒子把你轰到一边：「榜文上没你的名字，滚回去练字。」"
         }
       ],
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "chapter2_linan_blocked",
@@ -1242,7 +1376,7 @@
           "narration": "你在驿馆门口歇了一夜，天明便南下。风里带着运河的腐臭。"
         }
       ],
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "chapter2_path_select",
@@ -1277,7 +1411,7 @@
           "narration": "海比城诚实。你转身时，城墙上的影子又长了半寸。"
         }
       ],
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "chapter2_jia_approach",
@@ -1440,7 +1574,7 @@
           "next": "chapter2_path_select"
         }
       ],
-      "bg": "res://assets/bg_departure.png"
+      "bg": "res://assets/bg_linan_canal_pier.png"
     },
     {
       "id": "chapter2_lin_run",
@@ -1478,7 +1612,7 @@
           "narration": "巡卒追向空箱。你扛着真的那本，从暗巷里擦身而过。"
         }
       ],
-      "bg": "res://assets/bg_penghu_night.png"
+      "bg": "res://assets/bg_linan_smuggle_night.png"
     },
     {
       "id": "chapter2_lin_enter",
@@ -1501,7 +1635,7 @@
           }
         }
       ],
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "chapter2_scholar_seek",
@@ -1555,7 +1689,7 @@
           "next": "chapter2_path_select"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "chapter2_scholar_vow",
@@ -1592,7 +1726,7 @@
           "narration": "老人收香：「骨气贵。临安更贵。」"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "chapter2_scholar_enter",
@@ -1615,7 +1749,7 @@
           }
         }
       ],
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "port_linan",
@@ -1666,7 +1800,7 @@
         }
       ],
       "intro": "临安城关，运河穿城如肠。城里米贵，人心更贵。太学在望，榜文在喉。",
-      "bg": "res://assets/bg_northern_fortress_snow.png"
+      "bg": "res://assets/bg_linan_city_gate.png"
     },
     {
       "id": "linan_canal",
@@ -1825,7 +1959,7 @@
           "requires_story_flag": "chapter2_exam_done"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "linan_taixue_exam_jia",
@@ -1885,7 +2019,7 @@
           "narration": "随从冷哼一声，夺过银豆。但你保住了学籍，也保住了一条不那么黑的心。"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "linan_taixue_exam_lin",
@@ -1939,7 +2073,7 @@
           "narration": "纸灰卷起，像一小片黑水沟。林伯渊若知，怕要骂你胆小——可你太学座次，保住了。"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "linan_taixue_exam_scholar",
@@ -1989,7 +2123,7 @@
           "narration": "你把真话折进废话里。《春秋》批注在袖中发烫——像一枚还没冷的火。"
         }
       ],
-      "bg": "res://assets/bg_academy.jpg"
+      "bg": "res://assets/bg_linan_academy_ruins.png"
     },
     {
       "id": "chapter2_end",
@@ -2033,192 +2167,6 @@
         }
       ],
       "bg": "res://assets/bg_departure.png"
-    },
-    {
-      "id": "port_quanzhou",
-      "type": "port",
-      "location": "quanzhou",
-      "title": "泉州",
-      "facilities": [
-        {
-          "id": "city_shipyard",
-          "next": "quanzhou_shipyard"
-        },
-        {
-          "id": "city_guild",
-          "next": "quanzhou_guild"
-        },
-        {
-          "id": "city_tavern",
-          "next": "quanzhou_tavern"
-        },
-        {
-          "id": "city_market",
-          "next": "quanzhou_market"
-        },
-        {
-          "id": "city_inn",
-          "next": "quanzhou_inn"
-        },
-        {
-          "id": "city_exam",
-          "next": "quanzhou_exam"
-        },
-        {
-          "id": "city_residence",
-          "next": "quanzhou_residence"
-        },
-        {
-          "id": "city_yamen",
-          "next": "quanzhou_yamen"
-        }
-      ]
-    },
-    {
-      "id": "quanzhou_tavern",
-      "chapter": "quanzhou",
-      "title": "泉州酒馆",
-      "location": "quanzhou",
-      "body": "人声鼎沸的泉州酒馆，角落里坐着几个老兵在喝闷酒。",
-      "investigations": [
-        {
-          "label": "邻桌老兵",
-          "text": "老兵讲北边战局不利。",
-          "effects": {
-            "fame": 1
-          }
-        }
-      ],
-      "choices": [
-        {
-          "label": "离开酒馆",
-          "next": "port_quanzhou"
-        }
-      ]
-    },
-    {
-      "id": "port_quanzhou",
-      "type": "port",
-      "location": "quanzhou",
-      "title": "泉州",
-      "facilities": [
-        {
-          "id": "city_shipyard",
-          "next": "quanzhou_shipyard"
-        },
-        {
-          "id": "city_guild",
-          "next": "quanzhou_guild"
-        },
-        {
-          "id": "city_tavern",
-          "next": "quanzhou_tavern"
-        },
-        {
-          "id": "city_market",
-          "next": "quanzhou_market"
-        },
-        {
-          "id": "city_inn",
-          "next": "quanzhou_inn"
-        },
-        {
-          "id": "city_exam",
-          "next": "quanzhou_exam"
-        },
-        {
-          "id": "city_residence",
-          "next": "quanzhou_residence"
-        },
-        {
-          "id": "city_yamen",
-          "next": "quanzhou_yamen"
-        }
-      ]
-    },
-    {
-      "id": "quanzhou_tavern",
-      "chapter": "quanzhou",
-      "title": "泉州酒馆",
-      "location": "quanzhou",
-      "body": "人声鼎沸的泉州酒馆，角落里坐着几个老兵在喝闷酒。",
-      "investigations": [
-        {
-          "label": "邻桌老兵",
-          "text": "老兵讲北边战局不利。",
-          "effects": {
-            "fame": 1
-          }
-        }
-      ],
-      "choices": [
-        {
-          "label": "离开酒馆",
-          "next": "port_quanzhou"
-        }
-      ]
-    },
-    {
-      "id": "port_quanzhou",
-      "type": "port",
-      "location": "quanzhou",
-      "title": "泉州",
-      "facilities": [
-        {
-          "id": "city_shipyard",
-          "next": "quanzhou_shipyard"
-        },
-        {
-          "id": "city_guild",
-          "next": "quanzhou_guild"
-        },
-        {
-          "id": "city_tavern",
-          "next": "quanzhou_tavern"
-        },
-        {
-          "id": "city_market",
-          "next": "quanzhou_market"
-        },
-        {
-          "id": "city_inn",
-          "next": "quanzhou_inn"
-        },
-        {
-          "id": "city_exam",
-          "next": "quanzhou_exam"
-        },
-        {
-          "id": "city_residence",
-          "next": "quanzhou_residence"
-        },
-        {
-          "id": "city_yamen",
-          "next": "quanzhou_yamen"
-        }
-      ]
-    },
-    {
-      "id": "quanzhou_tavern",
-      "chapter": "quanzhou",
-      "title": "泉州酒馆",
-      "location": "quanzhou",
-      "body": "人声鼎沸的泉州酒馆，角落里坐着几个老兵在喝闷酒。",
-      "investigations": [
-        {
-          "label": "邻桌老兵",
-          "text": "老兵讲北边战局不利。",
-          "effects": {
-            "fame": 1
-          }
-        }
-      ],
-      "choices": [
-        {
-          "label": "离开酒馆",
-          "next": "port_quanzhou"
-        }
-      ]
     }
   ]
 }

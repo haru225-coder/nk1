@@ -44,8 +44,8 @@ func _ready() -> void:
 func bind_dialogue_box(box: Control) -> void:
 	_investigation.bind_dialogue_box(box)
 
-func setup_investigation(scene_data: Dictionary, scene_id: String) -> void:
-	_investigation.setup_investigation(scene_data, scene_id)
+func setup_investigation(scene_data: Dictionary, scene_id: String, focus_action_id: String = "") -> void:
+	_investigation.setup_investigation(scene_data, scene_id, focus_action_id)
 
 func setup_missing(scene_id: String) -> void:
 	_investigation.setup_missing(scene_id)

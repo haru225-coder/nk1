@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://crate_node_1234"]
 
 [ext_resource type="Script" path="res://scripts/Crate.gd" id="1_crate"]
-[ext_resource type="Texture2D" uid="uid://crate_tex_1234" path="res://assets/crate_barrel.png" id="2_crate_tex"]
+[ext_resource type="Texture2D" uid="uid://dsf4jjmq7pck6" path="res://assets/crate_barrel.png" id="2_crate_tex"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_crate"]
 radius = 20.0

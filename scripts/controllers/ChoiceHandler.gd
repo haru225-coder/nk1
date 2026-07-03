@@ -21,24 +21,31 @@ func bind_dialogue_box(box: Control) -> void:
 
 ## ── 选择支可用性 ──────────────────────────────────────────
 
-func _choice_available(choice: Dictionary) -> bool:
+func _choice_available(choice: Dictionary, ctx: Dictionary = {}) -> bool:
+	var game_state = ctx.get("game_state", _game_state())
 	var req: String = choice.get("requires_story_flag", "")
-	if req != "" and not GameState.has_story_flag(req):
+	if req != "" and (game_state == null or not game_state.has_story_flag(req)):
 		return false
 	var unless: String = choice.get("unless_story_flag", "")
-	if unless != "" and GameState.has_story_flag(unless):
+	if unless != "" and game_state != null and game_state.has_story_flag(unless):
 		return false
 	var req_item: String = choice.get("requires_item", "")
-	if req_item != "" and not GameState.has_item_flag(req_item):
+	if req_item != "" and (game_state == null or not game_state.has_item_flag(req_item)):
 		return false
+	if choice.has("conditions"):
+		var eval_ctx := ctx.duplicate()
+		if not eval_ctx.has("game_state"):
+			eval_ctx["game_state"] = game_state
+		if not ConditionEvaluator.matches(choice.get("conditions", {}), eval_ctx):
+			return false
 	return true
 
 ## ── 选择支显示 ────────────────────────────────────────────
 
-func show_choices(choices: Array) -> void:
+func show_choices(choices: Array, ctx: Dictionary = {}) -> void:
 	var added := 0
 	for choice in choices:
-		if not _choice_available(choice):
+		if not _choice_available(choice, ctx):
 			continue
 		if added == 0:
 			_choices_label.visible = true
@@ -52,7 +59,8 @@ func show_choices(choices: Array) -> void:
 ## ── 选择支处理 ────────────────────────────────────────────
 
 func _on_choice_pressed(choice_data: Dictionary) -> void:
-	if GameManager.input_locked:
+	var game_manager = _game_manager()
+	if game_manager != null and game_manager.input_locked:
 		return
 	_lock_cb.call(true)
 	if choice_data.has("random_roll"):
@@ -74,7 +82,9 @@ func _on_choice_pressed(choice_data: Dictionary) -> void:
 
 	var next_scene = choice_data.get("next", "")
 	if next_scene == "last_port":
-		next_scene = GameManager.get_port_scene_id(GameState.last_port)
+		var game_state = _game_state()
+		if game_state != null and game_manager != null:
+			next_scene = game_manager.get_port_scene_id(game_state.last_port)
 	if next_scene != "":
 		_lock_cb.call(false)
 		scene_requested.emit(next_scene)
@@ -88,15 +98,21 @@ func _handle_special_action(action: String) -> void:
 		scene_requested.emit("world_map")
 		return
 	if action == "bribe_customs":
-		var res = GameState.customs_inspection()
+		var game_state = _game_state()
+		if game_state == null:
+			return
+		var res = game_state.customs_inspection()
 		message_logged.emit(res["msg"] + "\n\n")
 		status_updated.emit()
 		return
 	if action == "recruit_crew":
+		var game_state = _game_state()
+		if game_state == null:
+			return
 		var result := IntentResolver.resolve(Intent.new(
 			IntentTypes.HIRE_CREW, "player", "shipyard",
 			{"cost_per_crew": 10, "recruit_max": true},
-			{"port_id": GameState.last_port}
+			{"port_id": game_state.last_port}
 		))
 		if result.success:
 			message_logged.emit("招募了 %d 名水手！\n\n" % int(result.data.get("crew_count", 0)))
@@ -105,10 +121,13 @@ func _handle_special_action(action: String) -> void:
 			message_logged.emit("无法招募！钱不够或船只已满员。\n\n")
 		return
 	if action == "supply_ship":
+		var game_state = _game_state()
+		if game_state == null:
+			return
 		var result := IntentResolver.resolve(Intent.new(
 			IntentTypes.BUY_SUPPLIES, "player", "shipyard",
 			{"supply_type": "food_water", "total_cost": 20, "fill_to_max": true},
-			{"port_id": GameState.last_port}
+			{"port_id": game_state.last_port}
 		))
 		if result.success:
 			message_logged.emit("水粮已全部补满！\n\n")
@@ -116,7 +135,10 @@ func _handle_special_action(action: String) -> void:
 		else:
 			message_logged.emit("【补充失败】金钱不足 20！\n\n")
 		return
-	var res = GameState.handle_special_action(action)
+	var game_state = _game_state()
+	if game_state == null:
+		return
+	var res = game_state.handle_special_action(action)
 	message_logged.emit(res["msg"] + "\n\n")
 	if res["success"]:
 		status_updated.emit()
@@ -142,7 +164,10 @@ func _resolve_random_roll_choice(choice_data: Dictionary) -> void:
 			return
 	var next_scene: String = choice_data.get("next", "")
 	if next_scene == "last_port":
-		next_scene = GameManager.get_port_scene_id(GameState.last_port)
+		var game_state = _game_state()
+		var game_manager = _game_manager()
+		if game_state != null and game_manager != null:
+			next_scene = game_manager.get_port_scene_id(game_state.last_port)
 	if next_scene != "":
 		scene_requested.emit(next_scene)
 
@@ -157,3 +182,15 @@ func set_callbacks(apply_effects: Callable, lock: Callable) -> void:
 
 func _is_valid() -> bool:
 	return is_instance_valid(self) and dialogue_box != null and is_instance_valid(dialogue_box)
+
+func _game_state():
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return null
+	return tree.root.get_node_or_null("/root/GameState")
+
+func _game_manager():
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return null
+	return tree.root.get_node_or_null("/root/GameManager")

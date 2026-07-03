@@ -100,4 +100,10 @@ static func resolve_combat_result(combat_state: CombatState, enemy_data: Diction
 			CombatState.VictoryType.FLED:
 				GameState.modify_fame(FAME_PENALTY_FLED)
 
+	StoryEventChainEngine.check_triggers("battle_end", {
+		"victory_type": victory_type,
+		"is_player_win": is_player_win,
+		"battle_result": result,
+		"enemy_data": enemy_data,
+	})
 	return result

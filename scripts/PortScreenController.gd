@@ -215,6 +215,15 @@ func _show_quick_actions() -> void:
 		port_choices_container.add_child(repair_btn)
 		has_actions = true
 
+	# 太阁式月历：休整至下月
+	var calendar = GameState.get("calendar")
+	if calendar != null and calendar.has_method("days_until_next_month"):
+		var days_to_next := int(calendar.days_until_next_month())
+		var rest_btn := UIBuilder.make_button("🗓 休整至下月 (%d日)" % days_to_next, UITheme.BTN_ACTION, 44)
+		rest_btn.pressed.connect(_on_rest_to_next_month)
+		port_choices_container.add_child(rest_btn)
+		has_actions = true
+
 	# 港口投资按钮（三档）
 	for tier_key in ["small", "medium", "large"]:
 		var tier: Dictionary = InvestPortHandler.INVEST_TIERS[tier_key]
@@ -329,6 +338,23 @@ func _clear_port_invest_cooldown(port_id: String) -> void:
 	var cooldown_key := InvestPortHandler.INVEST_COOLDOWN_FLAG_PREFIX + port_id
 	if GameState.has_story_flag(cooldown_key):
 		GameState.set_story_flag(cooldown_key, false)
+
+## 太阁式月历：在港休整至下月
+func _on_rest_to_next_month() -> void:
+	if GameManager.input_locked:
+		return
+	if not GameState.has_method("rest_to_next_month"):
+		return
+	var days := int(GameState.rest_to_next_month())
+	var calendar = GameState.get("calendar")
+	var date_text: String = "下月"
+	if calendar != null and calendar.has_method("date_key"):
+		date_text = str(calendar.date_key())
+	message_logged.emit("【休整】在港中休整 %d 日，已至 %s。\n" % [days, date_text])
+	status_updated.emit()
+	_show_economy_summary()
+	_show_quick_actions()
+	# P7-S: CalendarEventScheduler 通过 CalendarState.month_changed 自动调度
 
 ## 快捷投资：调用 InvestPortHandler
 func _on_quick_invest(tier_key: String) -> void:
