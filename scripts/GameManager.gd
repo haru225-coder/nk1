@@ -166,51 +166,7 @@ func resolve_facility_subtitle(fac: Dictionary) -> Dictionary:
 	return FacilityResolverScript.resolve_facility_subtitle(fac)
 
 func resolve_facility_icon(fac: Dictionary) -> Texture2D:
-	var configured: String = fac.get("icon", "")
-	if configured != "":
-		var tex := AssetPlaceholder.load_texture(configured, "texture")
-		if tex:
-			return tex
-
-	var fac_id: String = fac.get("id", "")
-	var keys: Array[String] = []
-	if fac_id.begins_with("city_"):
-		keys.append(fac_id.replace("city_", ""))
-	if fac_id.contains("exam") or fac_id.contains("school"):
-		keys.append("exam")
-	if fac_id.contains("temple"):
-		keys.append("residence")
-	if fac_id.contains("wharf"):
-		keys.append("wharf")
-	elif fac_id.contains("ship") or fac_id.contains("canal"):
-		keys.append("shipyard")
-	if fac_id.contains("market"):
-		keys.append("market")
-	if fac_id.contains("inn"):
-		keys.append("inn")
-	if fac_id.contains("tavern") or fac_id.contains("tea"):
-		keys.append("tavern")
-	if fac_id.contains("guild"):
-		keys.append("guild")
-	if fac_id.contains("yamen"):
-		keys.append("yamen")
-	if fac_id.contains("taixue"):
-		keys.append("exam")
-	keys.append(fac_id)
-
-	var seen: Dictionary = {}
-	for key in keys:
-		if key == "" or seen.has(key):
-			continue
-		seen[key] = true
-		# 优先查找 128x128 缩略图目录（文件集中在此处），再回退根目录
-		for folder: String in [ResourcePaths.DIR_ICONS_128, ResourcePaths.DIR_ASSETS]:
-			var path: String = folder + "icon_" + key + "_koei.png"
-			var tex := AssetPlaceholder.load_texture(path, "texture")
-			if tex:
-				return tex
-
-	return AssetPlaceholder.load_texture(ResourcePaths.TEX_ICON_MARKET, "texture")
+	return FacilityResolverScript.resolve_facility_icon(fac)
 
 func get_port_data(port_id: String) -> Dictionary:
 	return _ports_by_id.get(port_id, {})

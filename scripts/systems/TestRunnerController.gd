@@ -178,6 +178,7 @@ func _test_facility_resolver_rules() -> void:
 	_assert_eq(display.get("text", ""), "开启", "resolve_facility_subtitle: rule text")
 	_assert_eq(display.get("state", ""), "quest", "resolve_facility_subtitle: rule state")
 	_assert_eq(GameManager.resolve_facility_scene({"id": "city_inn"}, "keelung"), "keelung_inn", "GameManager delegates facility resolver")
+	_assert_true(GameManager.resolve_facility_icon({"id": "city_market"}) != null, "GameManager delegates facility icon resolver")
 
 	GameState.set_story_flag(unlock_flag, false)
 	GameState.set_story_flag(block_flag, false)
