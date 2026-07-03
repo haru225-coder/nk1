@@ -12,7 +12,7 @@ func get_balance() -> int:
 	return _balance
 
 func apply(transaction: Dictionary, intent_id: String = "") -> bool:
-	if not IdempotencyGuard.check_and_record(intent_id):
+	if IdempotencyGuard.is_processed(intent_id):
 		push_error("[LedgerSystem] 幂等性拦截: 拒绝重复执行 -> intent_id: " + intent_id)
 		return false
 
@@ -31,6 +31,7 @@ func apply(transaction: Dictionary, intent_id: String = "") -> bool:
 		return false
 
 	_balance += amount
+	IdempotencyGuard.mark_processed(intent_id)
 
 	if OS.is_debug_build():
 		print("[Ledger] amount=%+d source=%s reason=%s actor=%s balance=%d" % [

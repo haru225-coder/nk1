@@ -19,6 +19,7 @@ func _run() -> void:
 	print("")
 	_test_price_engine()
 	_test_idempotency_guard()
+	_test_ledger_failed_debit_retry_intent()
 	_test_intent_id_format()
 	_test_event_registry()
 	_test_market_state()
@@ -351,6 +352,41 @@ func _test_idempotency_guard() -> void:
 	# 清理
 	IdempotencyGuard.processed_intents.clear()
 
+	print("")
+
+# ── LedgerSystem 幂等测试 ────────────────────────────────
+
+func _test_ledger_failed_debit_retry_intent() -> void:
+	print("[LedgerSystem idempotency]")
+
+	var tree := Engine.get_main_loop() as SceneTree
+	var ledger = tree.root.get_node_or_null("/root/LedgerSystem") if tree != null else null
+	_assert_not_null(ledger, "LedgerSystem autoload 可取得")
+	if ledger == null:
+		return
+
+	IdempotencyGuard.clear_all()
+	ledger.from_save_dict({"balance": 10})
+	var retry_intent_id := "ledger_retry_after_insufficient_funds"
+	var expensive_tx := {
+		"amount": -20,
+		"source": "test",
+		"reason": "retry_after_insufficient_funds",
+		"actor": "TestRunner",
+	}
+
+	var first_attempt: bool = bool(ledger.apply(expensive_tx, retry_intent_id))
+	_assert_true(not first_attempt, "failed debit: insufficient funds returns false")
+	_assert_true(not IdempotencyGuard.is_processed(retry_intent_id), "failed debit: intent id not consumed")
+
+	ledger.from_save_dict({"balance": 25})
+	var retry_attempt: bool = bool(ledger.apply(expensive_tx, retry_intent_id))
+	_assert_true(retry_attempt, "retry: same intent succeeds after balance changes")
+	_assert_eq(ledger.get_balance(), 5, "retry: balance debited once")
+	_assert_true(IdempotencyGuard.is_processed(retry_intent_id), "success: intent id consumed")
+
+	ledger.from_save_dict({})
+	IdempotencyGuard.clear_all()
 	print("")
 
 # ── Intent ID 格式测试 ───────────────────────────────────
