@@ -58,6 +58,12 @@ const SCRIPT_HANDLER_BUY_INTEL := "res://scripts/systems/handlers/BuyIntelHandle
 const SCRIPT_HANDLER_INVEST_PORT := "res://scripts/systems/handlers/InvestPortHandler.gd"
 const SCRIPT_HANDLER_GIFT_NPC := "res://scripts/systems/handlers/GiftNPCHandler.gd"
 const SCRIPT_HANDLER_STUDY_SKILL := "res://scripts/systems/handlers/StudySkillHandler.gd"
+const SCRIPT_CALENDAR_EVENT_SCHEDULER := "res://scripts/systems/CalendarEventScheduler.gd"
+const SCRIPT_CAREER_STATE := "res://scripts/state/CareerState.gd"
+const SCRIPT_CONDITION_EVALUATOR := "res://scripts/systems/ConditionEvaluator.gd"
+const SCRIPT_STORY_TABLE_REGISTRY := "res://scripts/systems/StoryTableRegistry.gd"
+const SCRIPT_STORYBOOK_PRESENTER := "res://scripts/systems/StorybookPresenter.gd"
+const SCRIPT_STORYBOOK_VIEW_BUILDER := "res://scripts/systems/StorybookViewBuilder.gd"
 
 ## ── 资源目录 ────────────────────────────────────────────
 const DIR_ASSETS := "res://assets/"
@@ -68,8 +74,15 @@ const DIR_ICONS_STAT := "res://assets/icons_stat/"
 
 ## ── 数据文件 ────────────────────────────────────────────
 const DATA_EVENTS_CONFIG := "res://data/events_config.json"
+const DATA_SCENES := "res://data/scenes.json"
+const DIR_DATA_SCENES := "res://data/scenes/"
 const DATA_GOODS := "res://data/goods.json"
 const DATA_PORTS := "res://data/ports.json"
+const DATA_NPCS := "res://data/npcs.json"
 const DATA_SHIPS := "res://data/ships.json"
 const DATA_CUTSCENES := "res://data/cutscenes.json"
+const DATA_CALENDAR_ERAS := "res://data/calendar_eras.json"
+const DATA_CALENDAR_EVENTS := "res://data/calendar_events.json"
+const DATA_CAREER := "res://data/career.json"
 const DATA_STORY_EVENT_CHAINS := "res://data/story_event_chains.json"
+const DATA_STORY_TABLES := "res://data/story_tables.json"

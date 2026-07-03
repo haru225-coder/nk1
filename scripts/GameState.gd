@@ -1,5 +1,7 @@
 extends Node
 
+signal story_unlock_notified(msg: String)
+
 # ═══════════════════════════════════════════════════════════
 # GameState — 全局玩家状态 Autoload
 # 重构版：内部拆分为职责单一的状态模块，外部 API 完全兼容
@@ -7,18 +9,39 @@ extends Node
 
 ## ── 状态模块实例 ─────────────────────────────────────────
 
+const DAYS_PER_WORLD_MONTH := 30
+const CalendarStateScript := preload("res://scripts/state/CalendarState.gd")
+const CalendarEventSchedulerScript := preload(ResourcePaths.SCRIPT_CALENDAR_EVENT_SCHEDULER)
+const CareerStateScript := preload(ResourcePaths.SCRIPT_CAREER_STATE)
+
 var fleet: FleetState = FleetState.new()
 var survival: SurvivalState = SurvivalState.new()
 var trade: TradeState = TradeState.new()
 var story: StoryState = StoryState.new()
+var career = CareerStateScript.new()
 var navigation: NavigationState = NavigationState.new()
 var market: MarketState = MarketState.new()
+var calendar = CalendarStateScript.new()
+var calendar_scheduler = CalendarEventSchedulerScript.new()
 var economy_log: EconomyLog = EconomyLog.new()
 var game_log: GameLog = GameLog.new()
 
 ## ── 幂等守卫定期清理 ─────────────────────────────────────
 
 var _last_cleanup := 0
+
+func _ready() -> void:
+	if career != null and career.has_method("load_defs"):
+		career.load_defs()
+	bind_calendar_scheduler()
+
+func bind_calendar_scheduler(base_ctx: Dictionary = {}) -> void:
+	if calendar_scheduler == null:
+		return
+	if calendar_scheduler.has_method("load_events"):
+		calendar_scheduler.load_events()
+	if calendar_scheduler.has_method("bind_calendar"):
+		calendar_scheduler.bind_calendar(calendar, self, base_ctx)
 
 func _process(_delta: float) -> void:
 	var now := Time.get_ticks_msec()
@@ -64,7 +87,7 @@ var maneuverability: int:
 
 var crew_count: int:
 	get: return fleet.get_total_crew()
-	set(v): 
+	set(v):
 		var diff = v - fleet.get_total_crew()
 		fleet.modify_crew(diff)
 
@@ -120,6 +143,18 @@ var story_items: Dictionary:
 	get: return story.story_items
 	set(v): story.story_items = v
 
+var cards: Dictionary:
+	get: return story.cards
+	set(v): story.cards = v
+
+var titles: Dictionary:
+	get: return story.titles
+	set(v): story.titles = v
+
+var npc_relationships: Dictionary:
+	get: return story.npc_relationships
+	set(v): story.npc_relationships = v
+
 var linboyuan_relationship: int:
 	get: return story.linboyuan_relationship
 	set(v): story.linboyuan_relationship = v
@@ -152,10 +187,32 @@ var voyage_destination_id: String:
 
 ## ── 公开方法（委托给各模块）─────────────────────────────
 
+func advance_world_day() -> Dictionary:
+	navigation.world_day += 1
+	var month_advance := navigation.world_day % DAYS_PER_WORLD_MONTH == 0
+	if month_advance:
+		navigation.world_month += 1
+	return {
+		"day_advance": true,
+		"month_advance": month_advance,
+		"world_day": navigation.world_day,
+		"world_month": navigation.world_month,
+	}
+
 func process_daily_consumption() -> void:
 	var deaths = survival.process_daily_consumption(crew_count)
 	if deaths > 0:
 		modify_crew(-deaths)
+	if calendar:
+		calendar.advance_days(1)
+
+func rest_to_next_month() -> int:
+	if not calendar or not calendar.has_method("days_until_next_month"):
+		return 0
+	var days := int(calendar.days_until_next_month())
+	for _i in range(days):
+		process_daily_consumption()
+	return days
 
 func sell_goods(item_id: String, amount: int, price_per_unit: int) -> bool:
 	return trade.sell_goods(item_id, amount, price_per_unit)
@@ -210,6 +267,89 @@ func acquire_item(item_id: String) -> void:
 
 func has_item_flag(item_id: String) -> bool:
 	return story.has_item_flag(item_id)
+
+func grant_card(card_id: String) -> void:
+	var was_owned := story.has_card(card_id)
+	story.grant_card(card_id)
+	if not was_owned:
+		_log_card_unlock(card_id)
+
+func has_card(card_id: String) -> bool:
+	return story.has_card(card_id)
+
+func grant_title(title_id: String) -> void:
+	var was_owned := story.has_title(title_id)
+	story.grant_title(title_id)
+	if not was_owned:
+		_log_title_unlock(title_id)
+
+func has_title(title_id: String) -> bool:
+	return story.has_title(title_id)
+
+func get_npc_relationship(npc_id: String) -> int:
+	return story.get_npc_relationship(npc_id)
+
+func adjust_npc_relationship(npc_id: String, delta: int) -> void:
+	var before := story.get_npc_relationship(npc_id)
+	story.adjust_npc_relationship(npc_id, delta)
+	var after := story.get_npc_relationship(npc_id)
+	_log_relationship_breakthrough(npc_id, before, after)
+
+func _log_card_unlock(card_id: String) -> void:
+	var entry := _get_story_table_entry("cards", card_id)
+	var name := str(entry.get("name", card_id))
+	var unlock_text := str(entry.get("unlock_text", ""))
+	_log_story_unlock("获得札「%s」%s" % [name, "：" + unlock_text if unlock_text != "" else ""])
+
+func _log_title_unlock(title_id: String) -> void:
+	var entry := _get_story_table_entry("titles", title_id)
+	var name := str(entry.get("name", title_id))
+	var unlock_text := str(entry.get("unlock_text", ""))
+	_log_story_unlock("获得称号「%s」%s" % [name, "：" + unlock_text if unlock_text != "" else ""])
+
+func _log_relationship_breakthrough(npc_id: String, before: int, after: int) -> void:
+	if after <= before:
+		return
+	var entry := _get_story_table_entry("relationships", npc_id)
+	if entry.is_empty():
+		return
+	var before_level := _relationship_level_name(entry, before)
+	var after_level := _relationship_level_name(entry, after)
+	if after_level == "" or after_level == before_level:
+		return
+	var label := str(entry.get("label", npc_id))
+	var unlock_text := str(entry.get("unlock_text", ""))
+	_log_story_unlock("关系突破「%s」→ %s%s" % [label, after_level, "：" + unlock_text if unlock_text != "" else ""])
+
+func _relationship_level_name(entry: Dictionary, value: int) -> String:
+	var current := ""
+	for raw_level in entry.get("levels", []):
+		if not raw_level is Dictionary:
+			continue
+		if value >= int(raw_level.get("min", 0)):
+			current = str(raw_level.get("name", current))
+	return current
+
+func _get_story_table_entry(section: String, entry_id: String) -> Dictionary:
+	var registry = load(ResourcePaths.SCRIPT_STORY_TABLE_REGISTRY)
+	if registry == null:
+		return {}
+	match section:
+		"cards":
+			return registry.get_card(entry_id)
+		"titles":
+			return registry.get_title(entry_id)
+		"relationships":
+			return registry.get_relationship(entry_id)
+		_:
+			return {}
+
+func _log_story_unlock(text: String) -> void:
+	if text == "":
+		return
+	if game_log != null:
+		game_log.info(GameLog.Category.EVENT, text)
+	story_unlock_notified.emit("【解锁】" + text + "\n\n")
 
 ## ── 领域操作方法（供 Handlers 调用）─────────────────────
 
@@ -310,8 +450,15 @@ func _init_effect_handlers() -> void:
 		"item_acquired":            _apply_item_acquired,
 		"acquire_item":             _apply_item_acquired,
 		"chapter_unlock":           _apply_chapter_unlock,
+		"card":                     _apply_card,
+		"card_acquired":            _apply_card,
+		"grant_card":               _apply_card,
+		"title":                    _apply_title,
+		"title_granted":            _apply_title,
+		"grant_title":              _apply_title,
 		"linboyuan_relationship":   _apply_linboyuan_rel,
 		"jia_relationship":         _apply_jia_rel,
+		"npc_relationship":         _apply_npc_relationship,
 		"item_removed":             _apply_item_removed,
 		"navigation_position":      _apply_nav_position,
 		"smuggled_out":             _apply_smuggled_out,
@@ -372,11 +519,31 @@ func _apply_chapter_unlock(val) -> void:
 	if val is String:
 		story.unlock_chapter(val)
 
+func _apply_card(val) -> void:
+	if val is String:
+		grant_card(val)
+	elif val is Array:
+		for card_id in val:
+			grant_card(str(card_id))
+
+func _apply_title(val) -> void:
+	if val is String:
+		grant_title(val)
+	elif val is Array:
+		for title_id in val:
+			grant_title(str(title_id))
+
 func _apply_linboyuan_rel(val) -> void:
 	linboyuan_relationship += int(val)
 
 func _apply_jia_rel(val) -> void:
 	jia_relationship += int(val)
+
+func _apply_npc_relationship(val) -> void:
+	if val is Dictionary:
+		var npc_id := str(val.get("npc_id", ""))
+		if npc_id != "":
+			adjust_npc_relationship(npc_id, int(val.get("delta", 0)))
 
 func _apply_item_removed(val) -> void:
 	if val is String:
@@ -487,6 +654,7 @@ func _do_sail_world_map() -> Dictionary:
 	var depart_result := navigation.depart_port(check)
 	if not depart_result.get("success", false):
 		return depart_result
+	StoryEventChainEngine.check_triggers("leave_port", {"port_id": navigation.current_voyage_origin})
 	if has_customs_permit:
 		has_customs_permit = false
 	if flags.has("smuggled_out"):
@@ -518,8 +686,11 @@ func to_save_dict() -> Dictionary:
 		"survival": survival.to_dict() if survival else {},
 		"trade": trade.to_dict() if trade else {},
 		"story": story.to_dict() if story else {},
+		"career": career.to_dict() if career else {},
 		"navigation": navigation.to_dict() if navigation else {},
 		"market": market.to_dict() if market else {},
+		"calendar": calendar.to_dict() if calendar else {},
+		"calendar_scheduler": calendar_scheduler.to_dict() if calendar_scheduler else {},
 		"economy_log": economy_log.to_dict() if economy_log else {},
 		"game_log": game_log.to_dict() if game_log else {},
 	}
@@ -533,10 +704,17 @@ func from_save_dict(data: Dictionary) -> void:
 		trade.from_dict(data["trade"])
 	if data.has("story") and story:
 		story.from_dict(data["story"])
+	if data.has("career") and career:
+		career.from_dict(data["career"])
 	if data.has("navigation") and navigation:
 		navigation.from_dict(data["navigation"])
 	if data.has("market") and market:
 		market.from_dict(data["market"])
+	if data.has("calendar") and calendar:
+		calendar.from_dict(data["calendar"])
+	if data.has("calendar_scheduler") and calendar_scheduler:
+		calendar_scheduler.from_dict(data["calendar_scheduler"])
+	bind_calendar_scheduler()
 	if data.has("economy_log") and economy_log:
 		economy_log.from_dict(data["economy_log"])
 	if data.has("game_log") and game_log:

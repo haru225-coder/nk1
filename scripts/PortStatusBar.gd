@@ -58,7 +58,7 @@ func _preload_icons() -> void:
 			_icon_cache[key] = load(path)
 
 func _bind_tooltips() -> void:
-	_set_chip_tooltip($Panel/Body/VBox/PrimaryRow/Location, "当前所在城关或地点")
+	_set_chip_tooltip($Panel/Body/VBox/PrimaryRow/Location, "当前所在城关或地点 / 年月")
 	_set_chip_tooltip($Panel/Body/VBox/PrimaryRow/Money, "所持金钱（文）")
 	_set_chip_tooltip($Panel/Body/VBox/PrimaryRow/Fame, "名声：影响招募与事件")
 	_set_chip_tooltip($Panel/Body/VBox/PrimaryRow/Permit, "市舶货引：无引时出海风险极高")
@@ -214,9 +214,16 @@ func _pu_attention_color(level: int) -> Color:
 
 func _resolve_location_name() -> String:
 	var port_id: String = GameState.last_port
-	if port_id == "":
-		return "海上"
-	var port_data := GameManager.get_port_data(port_id)
-	if not port_data.is_empty():
-		return port_data.get("name", port_id)
-	return port_id
+	var place := "海上" if port_id == "" else port_id
+	if port_id != "":
+		var port_data := GameManager.get_port_data(port_id)
+		if not port_data.is_empty():
+			place = str(port_data.get("name", port_id))
+	var parts: Array[String] = [place]
+	var cal = GameState.get("calendar")
+	if cal != null and cal.has_method("date_key"):
+		parts.append(str(cal.date_key()))
+	var career = GameState.get("career")
+	if career != null and career.has_method("get_title"):
+		parts.append(str(career.get_title()))
+	return " · ".join(parts)

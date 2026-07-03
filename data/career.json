@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "tiers": [
+    {"rank": 0, "title": "商船水手", "req": {"fame": 0}},
+    {
+      "rank": 1,
+      "title": "副纲首",
+      "req": {"fame": 50, "flag": "chapter1_complete"},
+      "mandate": {
+        "id": "m1_trade_name",
+        "deadline_months": 3,
+        "objective": "三月内跑成一条稳定商路，积累海商名声。",
+        "on_complete": "promote",
+        "on_fail_effects": {"fame": -5}
+      }
+    },
+    {
+      "rank": 2,
+      "title": "纲首",
+      "req": {"fame": 120, "flag": "chapter1_complete", "relationship": {"lin_boyuan": 10}}
+    },
+    {
+      "rank": 3,
+      "title": "海商头目",
+      "req": {"fame": 220, "flag": "chapter2_complete"}
+    },
+    {
+      "rank": 4,
+      "title": "市舶司纲首",
+      "req": {"fame": 300, "flag": "chapter2_complete"},
+      "mandate": {
+        "id": "m4_pu_counter",
+        "deadline_months": 6,
+        "objective": "在蒲氏反击前稳住官面与海商网络。",
+        "on_complete": "promote",
+        "on_fail_effects": {"fame": -10, "npc_relationship": {"npc_id": "lin_boyuan", "delta": -1}}
+      }
+    },
+    {"rank": 5, "title": "市舶司都纲", "req": {"fame": 400, "flag": "chapter2_complete"}, "apex": true}
+  ]
+}

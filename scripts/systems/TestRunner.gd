@@ -38,11 +38,10 @@ func _run() -> void:
 	_test_economic_ripple_event()
 	_test_port_affinity()
 	_test_port_specialty_unlock()
-	_test_condition_evaluator()
-	_test_invest_port_handler()
-	_test_npc_affinity_handlers()
-	_test_duel_action_matrix()
-	_test_story_event_chains()
+	_run_calendar_tests()
+	_test_career_state()
+	_run_controller_tests()
+	_run_story_tests()
 	_test_event_economy_integration()
 	_test_polish_constants()
 	_test_game_log()
@@ -112,6 +111,76 @@ func _assert_not_null(value, msg: String) -> void:
 	else:
 		_failures.append("%s (value is null)" % msg)
 		print("  FAIL: ", msg, " (value is null)")
+
+func _load_script_or_fail(path: String, msg: String, count_pass := true):
+	var script = load(path)
+	var ok := script is Script
+	if ok:
+		ok = (script as Script).can_instantiate()
+	if count_pass:
+		_assert_true(ok, msg)
+	elif not ok:
+		_fail(msg)
+	return script if ok else null
+
+func _run_calendar_tests() -> void:
+	var calendar_tests_script = _load_script_or_fail("res://scripts/systems/TestRunnerCalendar.gd", "TestRunnerCalendar 脚本可加载", false)
+	if calendar_tests_script == null:
+		return
+	var calendar_tests = calendar_tests_script.new(self)
+	if calendar_tests == null or not calendar_tests.has_method("run"):
+		_fail("TestRunnerCalendar: run() 可调用")
+		return
+	calendar_tests.run()
+
+func _run_story_tests() -> void:
+	var story_tests_script = _load_script_or_fail("res://scripts/systems/TestRunnerStory.gd", "TestRunnerStory 脚本可加载", false)
+	if story_tests_script == null:
+		return
+	var story_tests = story_tests_script.new(self)
+	if story_tests == null or not story_tests.has_method("run"):
+		_fail("TestRunnerStory: run() 可调用")
+		return
+	story_tests.run()
+
+func _run_controller_tests() -> void:
+	var controller_tests_script = _load_script_or_fail("res://scripts/systems/TestRunnerController.gd", "TestRunnerController script loads", false)
+	if controller_tests_script == null:
+		return
+	var controller_tests = controller_tests_script.new(self)
+	if controller_tests == null or not controller_tests.has_method("run"):
+		_fail("TestRunnerController: run() callable")
+		return
+	controller_tests.run()
+
+class KernelFakeState:
+	var fame: int = 0
+	var market = null
+	var _story_flags: Dictionary = {}
+	var _flags: Dictionary = {}
+	var _npc_relationships: Dictionary = {}
+
+	func has_story_flag(key: String) -> bool:
+		return bool(_story_flags.get(key, false))
+
+	func set_story_flag(key: String, value = true) -> void:
+		_story_flags[key] = value
+
+	func has_flag(key: String) -> bool:
+		return bool(_flags.get(key, false))
+
+	func get_npc_relationship(npc_id: String) -> int:
+		return int(_npc_relationships.get(npc_id, 0))
+
+	func adjust_npc_relationship(npc_id: String, delta: int) -> void:
+		_npc_relationships[npc_id] = get_npc_relationship(npc_id) + delta
+
+	func apply_effects(effects: Dictionary) -> void:
+		if effects.has("fame"):
+			fame += int(effects["fame"])
+		if effects.has("npc_relationship"):
+			var payload: Dictionary = effects["npc_relationship"]
+			adjust_npc_relationship(str(payload.get("npc_id", "")), int(payload.get("delta", 0)))
 
 # ── PriceEngine 测试 ─────────────────────────────────────
 
@@ -1086,152 +1155,124 @@ func _test_port_specialty_unlock() -> void:
 
 	print("")
 
+
+# ── P7-C: CareerState 秩禄阶梯测试 ───────────────────────
+
+func _test_career_state() -> void:
+	print("[Career]")
+
+	var career_script = _load_script_or_fail(ResourcePaths.SCRIPT_CAREER_STATE, "CareerState 脚本可加载")
+	if career_script == null:
+		print("")
+		return
+	_assert_true(ResourcePaths.DATA_CAREER != "", "ResourcePaths.DATA_CAREER")
+
+	var career = career_script.new()
+	_assert_true(career.has_method("load_from_data"), "CareerState: 支持测试数据加载")
+	_assert_true(career.has_method("check_promotion"), "CareerState: 暴露 check_promotion")
+	_assert_true(career.has_method("promote"), "CareerState: 暴露 promote")
+	_assert_true(career.has_method("mandate_expired"), "CareerState: 暴露 mandate_expired")
+	_assert_true(career.has_method("is_apex"), "CareerState: 暴露 is_apex")
+
+	var fixture := {
+		"version": 1,
+		"tiers": [
+			{"rank": 0, "title": "商船水手", "req": {"fame": 0}},
+			{
+				"rank": 1,
+				"title": "副纲首",
+				"req": {"fame": 50, "flag": "chapter1_complete"},
+				"mandate": {
+					"id": "m1",
+					"deadline_months": 3,
+					"objective": "三月内扩大名声",
+					"on_complete": "promote",
+					"on_fail_effects": {"fame": -5}
+				}
+			},
+			{
+				"rank": 2,
+				"title": "都纲",
+				"req": {"fame": 120, "flag": "chapter2_complete", "relationship": {"lin_boyuan": 10}},
+				"apex": true
+			}
+		]
+	}
+	career.load_from_data(fixture)
+	_assert_eq(career.get_rank(), 0, "CareerState: 初始 rank=0")
+	_assert_eq(career.get_title(), "商船水手", "CareerState: 初始头衔来自配置")
+
+	var fake_state := KernelFakeState.new()
+	fake_state.fame = 49
+	fake_state.set_story_flag("chapter1_complete", true)
+	_assert_true(not career.check_promotion(fake_state), "CareerState: fame 不足不可升秩")
+	fake_state.fame = 50
+	_assert_true(career.check_promotion(fake_state), "CareerState: 满足 fame+flag 可升秩")
+
+	var calendar_script = _load_script_or_fail("res://scripts/state/CalendarState.gd", "CalendarState 脚本可加载")
+	if calendar_script == null:
+		print("")
+		return
+	var calendar = calendar_script.new()
+	calendar.from_dict({"year": 1255, "month": 2, "day": 1})
+	var changed_ranks: Array = []
+	career.rank_changed.connect(func(new_rank: int): changed_ranks.append(new_rank))
+	_assert_true(career.promote(fake_state, calendar), "CareerState: promote 成功")
+	_assert_eq(career.get_rank(), 1, "CareerState: 升至 rank 1")
+	_assert_eq(changed_ranks[0], 1, "CareerState: rank_changed 发出新 rank")
+	_assert_eq(career.get_title(), "副纲首", "CareerState: 升秩后头衔更新")
+	_assert_eq(str(career.current_mandate.get("id", "")), "m1", "CareerState: 升秩后分配 mandate")
+	_assert_eq(career.mandate_deadline_month, calendar.months_elapsed() + 3, "CareerState: mandate 截止月按当前月+期限")
+
+	calendar.from_dict({"year": 1255, "month": 4, "day": 1})
+	_assert_true(not career.mandate_expired(calendar, fake_state), "CareerState: 未过截止月不惩罚")
+	calendar.from_dict({"year": 1255, "month": 6, "day": 1})
+	var fame_before_penalty := fake_state.fame
+	_assert_true(career.mandate_expired(calendar, fake_state), "CareerState: 过截止月触发惩罚")
+	_assert_eq(fake_state.fame, fame_before_penalty - 5, "CareerState: mandate 惩罚走 apply_effects 已知 key")
+	_assert_true(career.current_mandate.is_empty(), "CareerState: 过期后清空当前 mandate 防重复惩罚")
+	_assert_true(not career.mandate_expired(calendar, fake_state), "CareerState: mandate 惩罚不重复触发")
+
+	fake_state.fame = 120
+	fake_state.set_story_flag("chapter2_complete", true)
+	fake_state.adjust_npc_relationship("lin_boyuan", 10)
+	_assert_true(career.check_promotion(fake_state), "CareerState: relationship req 满足可升 apex")
+	_assert_true(career.promote(fake_state, calendar), "CareerState: promote 至 apex 成功")
+	_assert_true(career.is_apex(), "CareerState: apex 可达")
+
+	var saved: Dictionary = career.to_dict()
+	var restored = career_script.new()
+	restored.load_from_data(fixture)
+	restored.from_dict(saved)
+	_assert_eq(restored.get_rank(), career.get_rank(), "CareerState: rank 存档恢复")
+	_assert_eq(restored.mandate_deadline_month, career.mandate_deadline_month, "CareerState: deadline 存档恢复")
+
+	var game_state = root.get_node_or_null("/root/GameState")
+	_assert_true(game_state != null, "CareerState: GameState autoload 可取得")
+	if game_state != null:
+		_assert_true(game_state.get("career") != null, "GameState: career 模块已挂接")
+		var gs_saved: Dictionary = game_state.to_save_dict()
+		_assert_true(gs_saved.has("career"), "GameState: 存档包含 career")
+
+		var status_scene: PackedScene = load(ResourcePaths.SCENE_PORT_STATUS_BAR) as PackedScene
+		_assert_true(status_scene != null, "CareerState UI: PortStatusBar 可加载")
+		if status_scene != null:
+			var before_state: Dictionary = game_state.to_save_dict()
+			var gs_career = game_state.get("career")
+			if gs_career != null and gs_career.has_method("load_from_data"):
+				gs_career.load_from_data(fixture)
+				gs_career.from_dict({"rank": 1})
+			var status_bar = status_scene.instantiate()
+			root.add_child(status_bar)
+			status_bar.refresh()
+			var location_label: Label = status_bar.get_node("Panel/Body/VBox/PrimaryRow/Location/Margin/Row/VBox/Value") as Label
+			_assert_true(location_label.text.contains("副纲首"), "PortStatusBar: 所在 chip 显示秩禄头衔")
+			status_bar.queue_free()
+			game_state.from_save_dict(before_state)
+
+	print("")
+
 # ── NK1-P6: ConditionEvaluator 测试 ───────────────────────
-
-func _test_condition_evaluator() -> void:
-	print("[ConditionEvaluator]")
-
-	_assert_true(ConditionEvaluator.matches({}), "空条件 => true")
-	_assert_true(ConditionEvaluator.matches({"story_flags_required": []}), "空 required 列表 => true")
-
-	var story := StoryState.new()
-	story.set_story_flag("test_cond_flag", true)
-	story.adjust_npc_affinity("test_npc", 10)
-	_assert_eq(story.get_npc_affinity("test_npc"), 10, "StoryState: npc 好感 +10")
-	story.adjust_npc_affinity("test_npc", 5)
-	_assert_eq(story.get_npc_affinity("test_npc"), 15, "StoryState: npc 好感累加")
-
-	print("")
-
-# ── NK1-P6: 港口投资 Handler 测试 ─────────────────────────
-
-func _test_invest_port_handler() -> void:
-	print("[InvestPortHandler]")
-
-	_assert_eq(InvestPortHandler.INVEST_TIERS["small"]["amount"], 100, "小额投资 100")
-	_assert_eq(InvestPortHandler.INVEST_TIERS["medium"]["amount"], 500, "中额投资 500")
-	_assert_eq(InvestPortHandler.INVEST_TIERS["large"]["amount"], 2000, "大额投资 2000")
-	_assert_true(InvestPortHandler.SPECIALTY_UNLOCK_RULES.has("quanzhou"), "泉州解锁规则已定义")
-
-	var msg := EconomyLog.make_port_invest("泉州", "大额", 2000)
-	_assert_true(msg.contains("泉州"), "EconomyLog: 投资消息含港口名")
-	var unlock_msg := EconomyLog.make_specialty_unlock("泉州", "福建瓷")
-	_assert_true(unlock_msg.contains("福建瓷"), "EconomyLog: 解锁消息含特产名")
-
-	_assert_eq(TextKeys.INTENT_INVEST_SUCCESS, "intent.invest_port.success", "TextKeys.INTENT_INVEST_SUCCESS")
-	_assert_eq(TextKeys.ERROR_INVEST_COOLDOWN, "error.invest.cooldown", "TextKeys.ERROR_INVEST_COOLDOWN")
-
-	print("")
-
-# ── NK1-P6: NPC 好感 / 送礼 / 求教测试 ───────────────────
-
-func _test_npc_affinity_handlers() -> void:
-	print("[NPC Affinity Handlers]")
-
-	_assert_eq(GiftNPCHandler.DEFAULT_PREFERRED_DELTA, 10, "GiftNPCHandler: 偏好礼物默认 +10")
-	_assert_true(StudySkillHandler.SKILL_EFFECTS.has("skill_boarding_tactics"), "StudySkillHandler: 接舷战术已定义")
-
-	var lin := _load_npc_fixture("lin_boyuan")
-	_assert_true(not lin.is_empty(), "lin_boyuan NPC 数据可读")
-	_assert_eq(int(lin.get("affinity_threshold", 0)), 30, "lin_boyuan: 好感阈值 30")
-	var prefs: Array = lin.get("gift_preferences", [])
-	_assert_true("spring_autumn_scroll" in prefs, "lin_boyuan: 偏好《春秋》")
-
-	_assert_eq(TextKeys.INTENT_GIFT_SUCCESS, "intent.gift_npc.success", "TextKeys.INTENT_GIFT_SUCCESS")
-	_assert_eq(TextKeys.ERROR_STUDY_AFFINITY_LOW, "error.study.affinity_low", "TextKeys.ERROR_STUDY_AFFINITY_LOW")
-	_assert_eq(ResourcePaths.SCRIPT_HANDLER_GIFT_NPC, "res://scripts/systems/handlers/GiftNPCHandler.gd", "ResourcePaths.GIFT_NPC")
-	_assert_eq(ResourcePaths.SCRIPT_HANDLER_STUDY_SKILL, "res://scripts/systems/handlers/StudySkillHandler.gd", "ResourcePaths.STUDY_SKILL")
-
-	var story := StoryState.new()
-	story.acquire_item("spring_autumn_scroll")
-	_assert_true(story.has_item_flag("spring_autumn_scroll"), "story item 可持有")
-
-	print("")
-
-# ── NK1-P6: 决斗克制矩阵测试 ─────────────────────────────
-
-func _test_duel_action_matrix() -> void:
-	print("[Duel Action Matrix]")
-
-	_assert_eq(CombatState.DUEL_KI_MAX, 3, "CombatState: 气力上限 3")
-	_assert_eq(CombatState.DUEL_KI_SPECIAL_COST, 3, "CombatState: 必杀消耗 3")
-	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.SLASH, CombatState.DuelAction.DODGE), 1, "猛攻克闪避")
-	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.DODGE, CombatState.DuelAction.PARRY), 1, "闪避克招架")
-	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.PARRY, CombatState.DuelAction.SLASH), 1, "招架克猛攻")
-	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.SLASH, CombatState.DuelAction.PARRY), -1, "猛攻被招架")
-	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.DODGE, CombatState.DuelAction.SLASH), -1, "闪避败于猛攻")
-	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.SLASH, CombatState.DuelAction.SLASH), 0, "同招平局")
-	_assert_eq(CombatState.resolve_duel_clash(CombatState.DuelAction.SPECIAL, CombatState.DuelAction.SLASH), 1, "必杀克猛攻")
-	_assert_eq(CombatState.get_duel_action_name(CombatState.DuelAction.PARRY), "招架", "决斗出招名称")
-
-	var combat := _make_duel_test_combat()
-	combat.phase = CombatState.Phase.BOARDING
-	var enter := combat.execute_round(CombatState.Tactic.DUEL, CombatState.Tactic.BOARD)
-	_assert_eq(combat.phase, CombatState.Phase.DUEL, "发起单挑进入 DUEL 阶段")
-	_assert_true(not enter.get("is_over", true), "进入决斗不立即结束")
-
-	combat.ki_points = 0
-	var clash := combat.execute_duel_action(CombatState.DuelAction.SLASH, CombatState.DuelAction.DODGE)
-	_assert_eq(int(clash.get("clash_winner", 0)), 1, "交互决斗：玩家克制获胜")
-	_assert_eq(combat.ki_points, 1, "克制获胜积攒气力 +1")
-
-	combat.ki_points = 3
-	var special := combat.execute_duel_action(CombatState.DuelAction.SPECIAL, CombatState.DuelAction.PARRY)
-	_assert_eq(int(special.get("clash_winner", 0)), 1, "必杀克制招架")
-	_assert_eq(combat.ki_points, 1, "必杀后剩余气力（获胜+1）")
-
-	print("")
-
-func _load_npc_fixture(npc_id: String) -> Dictionary:
-	var file := FileAccess.open("res://data/npcs.json", FileAccess.READ)
-	if file == null:
-		return {}
-	var parsed = JSON.parse_string(file.get_as_text())
-	if parsed is Dictionary:
-		for n in parsed.get("npcs", []):
-			if str(n.get("id", "")) == npc_id:
-				return n
-	return {}
-
-func _make_duel_test_combat() -> CombatState:
-	var combat := CombatState.new()
-	combat.player_fleet = FleetState.new()
-	combat.enemy_fleet = FleetState.new()
-	combat.player_fleet.ships[0].crew = 40
-	combat.player_fleet.ships[0].max_crew = 40
-	combat.enemy_fleet.ships[0].name = "敌旗舰"
-	combat.enemy_fleet.ships[0].crew = 40
-	combat.enemy_fleet.ships[0].max_crew = 40
-	return combat
-
-# ── NK1-P6: 配置化事件链测试 ───────────────────────────────
-
-func _test_story_event_chains() -> void:
-	print("[Story Event Chains]")
-
-	StoryEventChainEngine.reload()
-	var ids: Array = StoryEventChainEngine.get_chain_ids()
-	_assert_true(ids.size() >= 2, "story_event_chains: 至少 2 条链")
-
-	var lin_chain: Dictionary = StoryEventChainEngine.get_chain("ev_lin_boyuan_formal_quanzhou")
-	_assert_true(not lin_chain.is_empty(), "林伯渊正式会面链存在")
-	var triggers: Array = lin_chain.get("trigger_on", [])
-	_assert_true("enter_port" in triggers, "林伯渊链: enter_port 触发")
-	var conds: Dictionary = lin_chain.get("conditions", {})
-	_assert_eq(str(conds.get("port_id", "")), "quanzhou", "林伯渊链: 泉州条件")
-
-	var rumor_chain: Dictionary = StoryEventChainEngine.get_chain("ev_post_chapter1_pu_rumor")
-	_assert_true("day_advance" in rumor_chain.get("trigger_on", []), "蒲氏传闻链: day_advance 触发")
-
-	_assert_eq(
-		ResourcePaths.DATA_STORY_EVENT_CHAINS,
-		"res://data/story_event_chains.json",
-		"ResourcePaths.DATA_STORY_EVENT_CHAINS"
-	)
-
-	print("")
-
-# ── NK1-P5-ECON-003: 事件与经济系统集成测试 ───────────────
 
 func _test_event_economy_integration() -> void:
 	print("[Event-Economy Integration]")
@@ -1299,28 +1340,44 @@ func _test_event_economy_integration() -> void:
 func _test_polish_constants() -> void:
 	print("[Polish Constants]")
 
+	var combat_state = _load_script_or_fail("res://scripts/state/CombatState.gd", "CombatState 脚本可加载")
+	var trade_state = _load_script_or_fail("res://scripts/state/TradeState.gd", "TradeState 脚本可加载")
+	var bribe_handler = _load_script_or_fail(ResourcePaths.SCRIPT_HANDLER_BRIBE, "BribeHandler 脚本可加载")
+	var buy_supplies_handler = _load_script_or_fail(ResourcePaths.SCRIPT_HANDLER_BUY_SUPPLIES, "BuySuppliesHandler 脚本可加载")
+	var hire_crew_handler = _load_script_or_fail(ResourcePaths.SCRIPT_HANDLER_HIRE_CREW, "HireCrewHandler 脚本可加载")
+	var inspection_handler = _load_script_or_fail(ResourcePaths.SCRIPT_HANDLER_INSPECTION, "InspectionHandler 脚本可加载")
+	_assert_true(combat_state != null, "CombatState 常量脚本可加载")
+	_assert_true(trade_state != null, "TradeState 常量脚本可加载")
+	_assert_true(bribe_handler != null, "BribeHandler 常量脚本可加载")
+	_assert_true(buy_supplies_handler != null, "BuySuppliesHandler 常量脚本可加载")
+	_assert_true(hire_crew_handler != null, "HireCrewHandler 常量脚本可加载")
+	_assert_true(inspection_handler != null, "InspectionHandler 常量脚本可加载")
+	if combat_state == null or trade_state == null or bribe_handler == null or buy_supplies_handler == null or hire_crew_handler == null or inspection_handler == null:
+		print("")
+		return
+
 	# 1. CombatState 常量值与原硬编码一致
-	_assert_eq(CombatState.BASE_CANNON_DAMAGE_PER_ARTILLERY, 8.0, "CombatState: 炮基础伤害 8.0")
-	_assert_eq(CombatState.DODGE_PER_MANEUVER, 0.04, "CombatState: 闪避系数 0.04")
-	_assert_eq(CombatState.SWORDPLAY_POWER_COEFF, 0.15, "CombatState: 剑术加成 0.15")
-	_assert_eq(CombatState.DAMAGE_CREW_LOSS_RATIO, 0.05, "CombatState: 伤害→水手比例 0.05")
-	_assert_eq(CombatState.MANEUVER_SUCCESS_THRESHOLD, 0.6, "CombatState: 机动成功阈值 0.6")
-	_assert_eq(CombatState.MANEUVER_PARTIAL_THRESHOLD, 0.3, "CombatState: 机动部分阈值 0.3")
-	_assert_eq(CombatState.MANEUVER_WIN_PLAYER_MULT, 1.5, "CombatState: 机动成功玩家倍率 1.5")
-	_assert_eq(CombatState.FLEE_SUCCESS_THRESHOLD, 0.5, "CombatState: 撤退成功阈值 0.5")
-	_assert_eq(CombatState.DUEL_ROUNDS, 3, "CombatState: 单挑回合 3")
-	_assert_eq(CombatState.DUEL_WIN_THRESHOLD, 0.6, "CombatState: 单挑胜阈值 0.6")
-	_assert_eq(CombatState.DEFAULT_ENEMY_DURABILITY, 80.0, "CombatState: 敌方默认耐久 80")
-	_assert_eq(CombatState.DEFAULT_ENEMY_CREW, 40, "CombatState: 敌方默认船员 40")
-	_assert_eq(CombatState.DEFAULT_ENEMY_ARTILLERY, 3, "CombatState: 敌方默认炮数 3")
-	_assert_eq(CombatState.DEFAULT_ENEMY_SWORDPLAY, 2, "CombatState: 敌方默认剑术 2")
-	_assert_eq(CombatState.DEFAULT_ENEMY_MANEUVER, 4, "CombatState: 敌方默认机动 4")
+	_assert_eq(combat_state.BASE_CANNON_DAMAGE_PER_ARTILLERY, 8.0, "CombatState: 炮基础伤害 8.0")
+	_assert_eq(combat_state.DODGE_PER_MANEUVER, 0.04, "CombatState: 闪避系数 0.04")
+	_assert_eq(combat_state.SWORDPLAY_POWER_COEFF, 0.15, "CombatState: 剑术加成 0.15")
+	_assert_eq(combat_state.DAMAGE_CREW_LOSS_RATIO, 0.05, "CombatState: 伤害→水手比例 0.05")
+	_assert_eq(combat_state.MANEUVER_SUCCESS_THRESHOLD, 0.6, "CombatState: 机动成功阈值 0.6")
+	_assert_eq(combat_state.MANEUVER_PARTIAL_THRESHOLD, 0.3, "CombatState: 机动部分阈值 0.3")
+	_assert_eq(combat_state.MANEUVER_WIN_PLAYER_MULT, 1.5, "CombatState: 机动成功玩家倍率 1.5")
+	_assert_eq(combat_state.FLEE_SUCCESS_THRESHOLD, 0.5, "CombatState: 撤退成功阈值 0.5")
+	_assert_eq(combat_state.DUEL_ROUNDS, 3, "CombatState: 单挑回合 3")
+	_assert_eq(combat_state.DUEL_WIN_THRESHOLD, 0.6, "CombatState: 单挑胜阈值 0.6")
+	_assert_eq(combat_state.DEFAULT_ENEMY_DURABILITY, 80.0, "CombatState: 敌方默认耐久 80")
+	_assert_eq(combat_state.DEFAULT_ENEMY_CREW, 40, "CombatState: 敌方默认船员 40")
+	_assert_eq(combat_state.DEFAULT_ENEMY_ARTILLERY, 3, "CombatState: 敌方默认炮数 3")
+	_assert_eq(combat_state.DEFAULT_ENEMY_SWORDPLAY, 2, "CombatState: 敌方默认剑术 2")
+	_assert_eq(combat_state.DEFAULT_ENEMY_MANEUVER, 4, "CombatState: 敌方默认机动 4")
 
 	# 2. TradeState 常量
-	_assert_eq(TradeState.CUSTOMS_BLOCKED_ATTENTION, 15, "TradeState: 海关封锁阈值 15")
-	_assert_eq(TradeState.CUSTOMS_FINE_MAX, 200, "TradeState: 海关罚款上限 200")
-	_assert_eq(TradeState.CUSTOMS_BRIBE_AMOUNT, 50, "TradeState: 海关贿赂金额 50")
-	_assert_eq(TradeState.CUSTOMS_BRIBE_ATTENTION_DELTA, 3, "TradeState: 海关贿赂关注度增量 3")
+	_assert_eq(trade_state.CUSTOMS_BLOCKED_ATTENTION, 15, "TradeState: 海关封锁阈值 15")
+	_assert_eq(trade_state.CUSTOMS_FINE_MAX, 200, "TradeState: 海关罚款上限 200")
+	_assert_eq(trade_state.CUSTOMS_BRIBE_AMOUNT, 50, "TradeState: 海关贿赂金额 50")
+	_assert_eq(trade_state.CUSTOMS_BRIBE_ATTENTION_DELTA, 3, "TradeState: 海关贿赂关注度增量 3")
 
 	# 3. SurvivalState 常量
 	_assert_eq(SurvivalState.DEFAULT_FOOD, 30.0, "SurvivalState: 初始粮食 30")
@@ -1330,12 +1387,12 @@ func _test_polish_constants() -> void:
 	_assert_eq(SurvivalState.STARVATION_DEATH_RATIO, 0.1, "SurvivalState: 断粮死亡率 0.1")
 
 	# 4. Handler 常量
-	_assert_eq(BribeHandler.DEFAULT_BRIBE_AMOUNT, 50, "BribeHandler: 默认贿赂 50")
-	_assert_eq(BribeHandler.DEFAULT_ATTENTION_DELTA, 3, "BribeHandler: 默认关注度增量 3")
-	_assert_eq(BribeHandler.PU_ATTENTION_MAX, 20, "BribeHandler: 关注度上限 20")
-	_assert_eq(BuySuppliesHandler.SUPPLY_FILL_FLAT_COST, 20, "BuySuppliesHandler: 补满固定费用 20")
-	_assert_eq(HireCrewHandler.DEFAULT_COST_PER_CREW, 10, "HireCrewHandler: 默认招募费用 10")
-	_assert_eq(InspectionHandler.ILLEGAL_TRADE_FINE, 30, "InspectionHandler: 走私罚款 30")
+	_assert_eq(bribe_handler.DEFAULT_BRIBE_AMOUNT, 50, "BribeHandler: 默认贿赂 50")
+	_assert_eq(bribe_handler.DEFAULT_ATTENTION_DELTA, 3, "BribeHandler: 默认关注度增量 3")
+	_assert_eq(bribe_handler.PU_ATTENTION_MAX, 20, "BribeHandler: 关注度上限 20")
+	_assert_eq(buy_supplies_handler.SUPPLY_FILL_FLAT_COST, 20, "BuySuppliesHandler: 补满固定费用 20")
+	_assert_eq(hire_crew_handler.DEFAULT_COST_PER_CREW, 10, "HireCrewHandler: 默认招募费用 10")
+	_assert_eq(inspection_handler.ILLEGAL_TRADE_FINE, 30, "InspectionHandler: 走私罚款 30")
 
 	# 5. PriceEngine 常量
 	_assert_eq(PriceEngine.PRICE_FLOOR, 1, "PriceEngine: 价格下限 1")
@@ -1536,6 +1593,15 @@ func _test_resource_paths() -> void:
 	_assert_eq(ResourcePaths.SCRIPT_HANDLER_BUY_SUPPLIES, "res://scripts/systems/handlers/BuySuppliesHandler.gd", "ResourcePaths.SCRIPT_HANDLER_BUY_SUPPLIES")
 	_assert_eq(ResourcePaths.SCRIPT_HANDLER_BUY_INTEL, "res://scripts/systems/handlers/BuyIntelHandler.gd", "ResourcePaths.SCRIPT_HANDLER_BUY_INTEL")
 	_assert_eq(ResourcePaths.SCRIPT_HANDLER_INVEST_PORT, "res://scripts/systems/handlers/InvestPortHandler.gd", "ResourcePaths.SCRIPT_HANDLER_INVEST_PORT")
+	_assert_eq(ResourcePaths.SCRIPT_CONDITION_EVALUATOR, "res://scripts/systems/ConditionEvaluator.gd", "ResourcePaths.SCRIPT_CONDITION_EVALUATOR")
+	_assert_eq(ResourcePaths.SCRIPT_STORY_TABLE_REGISTRY, "res://scripts/systems/StoryTableRegistry.gd", "ResourcePaths.SCRIPT_STORY_TABLE_REGISTRY")
+	_assert_eq(ResourcePaths.SCRIPT_STORYBOOK_PRESENTER, "res://scripts/systems/StorybookPresenter.gd", "ResourcePaths.SCRIPT_STORYBOOK_PRESENTER")
+	_assert_eq(ResourcePaths.SCRIPT_STORYBOOK_VIEW_BUILDER, "res://scripts/systems/StorybookViewBuilder.gd", "ResourcePaths.SCRIPT_STORYBOOK_VIEW_BUILDER")
+
+	# 数据文件
+	_assert_eq(ResourcePaths.DATA_SCENES, "res://data/scenes.json", "ResourcePaths.DATA_SCENES")
+	_assert_eq(ResourcePaths.DIR_DATA_SCENES, "res://data/scenes/", "ResourcePaths.DIR_DATA_SCENES")
+	_assert_eq(ResourcePaths.DATA_NPCS, "res://data/npcs.json", "ResourcePaths.DATA_NPCS")
 
 	# 资源目录
 	_assert_eq(ResourcePaths.DIR_ASSETS, "res://assets/", "ResourcePaths.DIR_ASSETS")
@@ -1707,6 +1773,14 @@ func _test_ui_builder() -> void:
 	var npc_btn := UIBuilder.make_npc_button("对话")
 	_assert_eq(npc_btn.theme_type_variation, UITheme.BTN_NPC, "NPC 按钮主题")
 	_assert_eq(int(npc_btn.custom_minimum_size.y), 48, "NPC 按钮高度=48")
+
+	for node in [
+		btn, choice_btn, sail_btn, custom_btn, npc_btn,
+		lbl, alert_lbl, title_lbl, section_lbl,
+		panel, shell, card, quest_card, chip, rtl,
+	]:
+		if node != null and is_instance_valid(node):
+			node.free()
 
 	print("")
 
@@ -1930,7 +2004,12 @@ func _test_asset_placeholder_json() -> void:
 
 	# 实例化 AssetPlaceholder（extends Node）
 	var ap: Node = Node.new()
-	ap.set_script(load("res://scripts/AssetPlaceholder.gd"))
+	var asset_placeholder_script = _load_script_or_fail("res://scripts/AssetPlaceholder.gd", "AssetPlaceholder 脚本可加载")
+	if asset_placeholder_script == null:
+		ap.free()
+		print("")
+		return
+	ap.set_script(asset_placeholder_script)
 	_assert_not_null(ap, "AssetPlaceholder 实例化成功")
 
 	# 有图池的港口不再走单图别名
@@ -2162,7 +2241,13 @@ func _test_cutscene_player() -> void:
 	# 9. CG 路径经 AssetPlaceholder.get_background_path 解析别名（验证调用，非实际加载）
 	# 实例化 AssetPlaceholder（autoload，避免编译期依赖）
 	var ap: Node = Node.new()
-	ap.set_script(load("res://scripts/AssetPlaceholder.gd"))
+	var asset_placeholder_script = _load_script_or_fail("res://scripts/AssetPlaceholder.gd", "AssetPlaceholder 脚本可加载")
+	if asset_placeholder_script == null:
+		ap.free()
+		player.queue_free()
+		print("")
+		return
+	ap.set_script(asset_placeholder_script)
 	var entry: Dictionary = player._data["quanzhou_arrival"]
 	var alias: String = entry.get("cg_alias", "")
 	_assert_eq(alias, "res://assets/bg_quanzhou_harbor_koei.png", "cg_alias 字段正确")
@@ -2387,6 +2472,7 @@ func _test_map_visual_style() -> void:
 	_assert_true(port_zone.has_node("Visual/NameLabel"), "PortZone has name label")
 	_assert_true(not port_zone.has_node("Polygon2D"), "PortZone removed yellow diamond")
 	_assert_true(port_zone.has_method("setup"), "PortZone setup()")
+	port_zone.free()
 
 	var world_map: PackedScene = load(ResourcePaths.SCENE_WORLD_MAP)
 	_assert_not_null(world_map, "WorldMap scene loads")
