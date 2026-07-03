@@ -39,6 +39,50 @@
             "story_flag": "saw_sunken_patrol",
             "pu_attention": 3
           }
+        },
+        {
+          "label": "按海商合股重核货本",
+          "text": "你把合股契压在海图边，重新核一遍货本。船舱里每一袋货都变成了会漏水、会发霉、会被人盯上的风险。",
+          "requires_story_flag": "nav_path_sea_merchant",
+          "once_flag": "nav_path_sea_merchant_manifest_checked",
+          "effects": {
+            "story_flag": "nav_path_sea_merchant_manifest_checked",
+            "fame": 1,
+            "money": 20
+          }
+        },
+        {
+          "label": "按私人舰队护航契清点器械",
+          "text": "你跟船头清点弓弩、火油与破旧盾牌。阿巴斯笑道：「护航不是把船开快，是让别人觉得撞你会疼。」",
+          "requires_story_flag": "nav_path_private_fleet",
+          "once_flag": "nav_path_private_fleet_arms_checked",
+          "effects": {
+            "story_flag": "nav_path_private_fleet_arms_checked",
+            "artillery": 1,
+            "fame": 1
+          }
+        },
+        {
+          "label": "按贸易商人账册抄录澎湖商价",
+          "text": "你把淡水、鱼干、木材与瓷器的价差抄成一页。林伯渊扫了一眼：「记住，第一笔利润往往不是买卖，是知道哪里缺什么。」",
+          "requires_story_flag": "nav_path_trade_merchant",
+          "once_flag": "nav_path_trade_merchant_prices_logged",
+          "effects": {
+            "story_flag": "nav_path_trade_merchant_prices_logged",
+            "fame": 1,
+            "money": 10
+          }
+        },
+        {
+          "label": "按船员换班绞紧主缆",
+          "text": "粗缆磨破掌心，你才知道一艘船不是靠舵走，是靠几十双手同时用力不松。",
+          "requires_story_flag": "nav_path_crewman",
+          "once_flag": "nav_path_crewman_rope_watch",
+          "effects": {
+            "story_flag": "nav_path_crewman_rope_watch",
+            "maneuverability": 1,
+            "water": -1
+          }
         }
       ]
     },

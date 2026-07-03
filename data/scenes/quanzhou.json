@@ -59,7 +59,7 @@
       "choices": [
         {
           "label": "跟他走，把命交给海",
-          "next": "scene04_departure",
+          "next": "scene03b_navigation_line_hook",
           "effects": {
             "linboyuan_relationship": 8,
             "story_flag": "met_lin_boyuan"
@@ -67,7 +67,7 @@
         },
         {
           "label": "犹豫到最后一刻再上船",
-          "next": "scene04_departure",
+          "next": "scene03b_navigation_line_hook",
           "effects": {
             "linboyuan_relationship": 2,
             "story_flag": "met_lin_boyuan"
@@ -83,6 +83,86 @@
           "once_flag": "noted_lin_hands",
           "effects": {
             "story_flag": "noted_lin_hands"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene03b_navigation_line_hook",
+      "chapter": "chapter_1",
+      "title": "海上立身",
+      "location": "quanzhou",
+      "time": "出港前夜",
+      "objective": "航海线 hook：用第一章确认玩家的海上身份，并把后续海上危机转成身份试炼。",
+      "body": "舱门关上，码头声被木板挡在外面。\n\n林伯渊把四份契纸排在油灯下：一份合股，一份护航，一份账册，一份水手押名。\n\n【林伯渊】：「这趟去澎湖，不是带你看海。你想在海上活下去，先决定自己按什么身份活。」\n\n【林伯渊】：「海商押货，私人舰队押刀，贸易商人押账，船员押命。选了，后面的浪就按这个名字打在你身上。」\n\n陈子龙看着纸上的墨，第一次明白：出海不是离开陆地，而是换一套规矩活。",
+      "choices": [
+        {
+          "label": "以海商身份入股此航",
+          "next": "scene04_departure",
+          "effects": {
+            "story_flag": "chapter1_navigation_identity_chosen",
+            "story_flag2": {
+              "nav_path_sea_merchant": true
+            },
+            "money": -40,
+            "fame": 2,
+            "linboyuan_relationship": 2
+          },
+          "narration": "你把钱袋推到灯下。林伯渊只点了一遍：「会赔，也会赚。海商先学会认亏。」"
+        },
+        {
+          "label": "以私人舰队名义接护航契",
+          "next": "scene04_departure",
+          "effects": {
+            "story_flag": "chapter1_navigation_identity_chosen",
+            "story_flag2": {
+              "nav_path_private_fleet": true
+            },
+            "money": -60,
+            "fame": 1,
+            "crew_count": 1,
+            "artillery": 1,
+            "pu_attention": 2
+          },
+          "narration": "你认下护航契。林伯渊把一柄短刀压在纸角：「从今天起，别人看你不只看货，也看你敢不敢护货。」"
+        },
+        {
+          "label": "以贸易商人身份随船记账",
+          "next": "scene04_departure",
+          "effects": {
+            "story_flag": "chapter1_navigation_identity_chosen",
+            "story_flag2": {
+              "nav_path_trade_merchant": true
+            },
+            "money": 20,
+            "fame": 1,
+            "linboyuan_relationship": 1
+          },
+          "narration": "你收起账册。林伯渊道：「货价会骗人，账不会。能把账看明白的人，才有资格谈商路。」"
+        },
+        {
+          "label": "以船员身份签押上船",
+          "next": "scene04_departure",
+          "effects": {
+            "story_flag": "chapter1_navigation_identity_chosen",
+            "story_flag2": {
+              "nav_path_crewman": true
+            },
+            "money": 10,
+            "swordplay": 1,
+            "maneuverability": 1
+          },
+          "narration": "你在水手押名簿上按下手印。老水手丢来一卷缆绳：「先别问海有多大，先学会别被绳子拖死。」"
+        }
+      ],
+      "bg": "res://assets/bg_lin_ship.png",
+      "investigations": [
+        {
+          "label": "翻看四份契纸",
+          "text": "合股契写着亏损同担；护航契写着失船赔命；账册写满泉州、澎湖、北岸的价差；水手押名簿最短，只写今日上船，明日听令。",
+          "once_flag": "navigation_hook_contracts_seen",
+          "effects": {
+            "story_flag": "navigation_hook_contracts_seen"
           }
         }
       ]

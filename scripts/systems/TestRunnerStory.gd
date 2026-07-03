@@ -16,6 +16,7 @@ func run() -> void:
 	_test_story_tables()
 	_test_storybook_presenter()
 	_test_story_unlock_gates()
+	_test_chapter1_navigation_line_hook()
 	_test_story_branch_unlock_choices()
 	_test_story_relationship_depth()
 	_test_trade_effect_preview()
@@ -369,6 +370,85 @@ func _test_story_unlock_gates() -> void:
 	print("")
 
 # ── 太阁式剧情分支解锁测试 ───────────────────────────────
+
+func _test_chapter1_navigation_line_hook() -> void:
+	print("[Chapter1 Navigation Line Hook]")
+
+	var gm: Variant = root.get_node_or_null("/root/GameManager")
+	_assert_true(gm != null, "航海线 hook: GameManager autoload 存在")
+	if gm == null:
+		print("")
+		return
+
+	var lin_ship: Dictionary = gm.get_scene_by_id("scene03_lin_ship")
+	var hook: Dictionary = gm.get_scene_by_id("scene03b_navigation_line_hook")
+	var departure: Dictionary = gm.get_scene_by_id("scene04_departure")
+	_assert_true(not lin_ship.is_empty(), "航海线 hook: 林伯渊登船场景存在")
+	_assert_true(not hook.is_empty(), "航海线 hook: 海上立身场景存在")
+	_assert_true(not departure.is_empty(), "航海线 hook: 出港场景存在")
+	if lin_ship.is_empty() or hook.is_empty() or departure.is_empty():
+		print("")
+		return
+
+	for raw_choice in lin_ship.get("choices", []):
+		if not raw_choice is Dictionary:
+			continue
+		var choice: Dictionary = raw_choice
+		_assert_eq(str(choice.get("next", "")), "scene03b_navigation_line_hook", "航海线 hook: 林伯渊选择先进入身份 hook")
+
+	var path_specs := {
+		"nav_path_sea_merchant": "海商",
+		"nav_path_private_fleet": "私人舰队",
+		"nav_path_trade_merchant": "贸易商人",
+		"nav_path_crewman": "船员",
+	}
+	var hook_choices: Array = hook.get("choices", [])
+	_assert_eq(hook_choices.size(), path_specs.size(), "航海线 hook: 提供四个身份选择")
+
+	var flags_by_choice := {}
+	for raw_choice in hook_choices:
+		if not raw_choice is Dictionary:
+			continue
+		var choice: Dictionary = raw_choice
+		var effects: Dictionary = choice.get("effects", {})
+		_assert_eq(str(choice.get("next", "")), "scene04_departure", "航海线 hook: 身份选择后进入出港")
+		_assert_true(_effects_contain_story_flag(effects, "chapter1_navigation_identity_chosen"), "航海线 hook: 身份选择写入通用旗标")
+		for flag in path_specs.keys():
+			if _effects_contain_story_flag(effects, str(flag)):
+				flags_by_choice[str(flag)] = choice
+
+	var departure_inv_flags := {}
+	for raw_inv in departure.get("investigations", []):
+		if raw_inv is Dictionary:
+			var inv: Dictionary = raw_inv
+			var req := str(inv.get("requires_story_flag", ""))
+			if req != "":
+				departure_inv_flags[req] = inv
+
+	for flag in path_specs.keys():
+		var flag_text := str(flag)
+		var label_part := str(path_specs[flag])
+		_assert_true(flags_by_choice.has(flag_text), "航海线 hook: 写入身份旗标 %s" % flag_text)
+		if flags_by_choice.has(flag_text):
+			_assert_true(str(flags_by_choice[flag_text].get("label", "")).contains(label_part), "航海线 hook: %s 选择文案可识别" % label_part)
+		_assert_true(departure_inv_flags.has(flag_text), "航海线 hook: 出港场景有 %s 身份回响" % label_part)
+
+	print("")
+
+
+func _effects_contain_story_flag(effects: Dictionary, flag: String) -> bool:
+	for key in ["story_flag", "story_flag2", "story_flag3"]:
+		if not effects.has(key):
+			continue
+		var raw = effects[key]
+		if raw is String and raw == flag:
+			return true
+		if raw is Dictionary and bool((raw as Dictionary).get(flag, false)):
+			return true
+		if raw is Array and raw.has(flag):
+			return true
+	return false
+
 
 func _test_story_branch_unlock_choices() -> void:
 	print("[Story Branch Unlock Choices]")

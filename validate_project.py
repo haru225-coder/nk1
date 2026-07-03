@@ -26,6 +26,15 @@ DYNAMIC_SUFFIXES = (
 errors: list[str] = []
 warnings: list[str] = []
 
+NAVIGATION_HOOK_SCENE = "scene03b_navigation_line_hook"
+NAVIGATION_HOOK_NEXT = "scene04_departure"
+NAVIGATION_PATH_FLAGS = {
+    "nav_path_sea_merchant": "海商",
+    "nav_path_private_fleet": "私人舰队",
+    "nav_path_trade_merchant": "贸易商人",
+    "nav_path_crewman": "船员",
+}
+
 
 def load_json(path: Path) -> dict:
     try:
@@ -89,6 +98,86 @@ def check_scenes(data: dict) -> None:
         bg = str(scene.get("bg", ""))
         if bg.startswith("res://") and not res_to_path(bg).exists():
             warnings.append(f"scene {scene_id}: missing bg resource '{bg}'")
+
+    check_navigation_hook(scenes_by_id)
+
+
+def story_flags_from_effects(effects: object) -> set[str]:
+    flags: set[str] = set()
+    if not isinstance(effects, dict):
+        return flags
+    for key in ("story_flag", "story_flag2", "story_flag3"):
+        raw = effects.get(key)
+        if isinstance(raw, str) and raw:
+            flags.add(raw)
+        elif isinstance(raw, dict):
+            flags.update(str(flag) for flag, enabled in raw.items() if enabled)
+        elif isinstance(raw, list):
+            flags.update(str(flag) for flag in raw if str(flag))
+    return flags
+
+
+def check_navigation_hook(scenes_by_id: dict[str, dict]) -> None:
+    lin_ship = scenes_by_id.get("scene03_lin_ship")
+    if not isinstance(lin_ship, dict):
+        return
+
+    lin_choices = [choice for choice in lin_ship.get("choices", []) if isinstance(choice, dict)]
+    if not lin_choices:
+        errors.append("navigation hook: scene03_lin_ship has no choices")
+    for choice in lin_choices:
+        if str(choice.get("next", "")) != NAVIGATION_HOOK_SCENE:
+            errors.append(
+                "navigation hook: scene03_lin_ship choice "
+                f"'{choice.get('label', '')}' must route to {NAVIGATION_HOOK_SCENE}"
+            )
+
+    hook = scenes_by_id.get(NAVIGATION_HOOK_SCENE)
+    if not isinstance(hook, dict):
+        errors.append(f"navigation hook: missing scene '{NAVIGATION_HOOK_SCENE}'")
+        return
+
+    hook_choices = [choice for choice in hook.get("choices", []) if isinstance(choice, dict)]
+    if len(hook_choices) != len(NAVIGATION_PATH_FLAGS):
+        errors.append(
+            f"navigation hook: {NAVIGATION_HOOK_SCENE} must expose "
+            f"{len(NAVIGATION_PATH_FLAGS)} identity choices"
+        )
+
+    flags_by_choice: dict[str, dict] = {}
+    for choice in hook_choices:
+        if str(choice.get("next", "")) != NAVIGATION_HOOK_NEXT:
+            errors.append(
+                "navigation hook: identity choice "
+                f"'{choice.get('label', '')}' must route to {NAVIGATION_HOOK_NEXT}"
+            )
+        for flag in story_flags_from_effects(choice.get("effects", {})):
+            if flag in NAVIGATION_PATH_FLAGS:
+                flags_by_choice[flag] = choice
+
+    for flag, label_part in NAVIGATION_PATH_FLAGS.items():
+        choice = flags_by_choice.get(flag)
+        if choice is None:
+            errors.append(f"navigation hook: missing identity flag '{flag}'")
+            continue
+        if label_part not in str(choice.get("label", "")):
+            errors.append(
+                f"navigation hook: choice for '{flag}' must include label text '{label_part}'"
+            )
+
+    departure = scenes_by_id.get(NAVIGATION_HOOK_NEXT)
+    if not isinstance(departure, dict):
+        return
+    inv_flags = {
+        str(inv.get("requires_story_flag", ""))
+        for inv in departure.get("investigations", [])
+        if isinstance(inv, dict)
+    }
+    for flag in NAVIGATION_PATH_FLAGS:
+        if flag not in inv_flags:
+            errors.append(
+                f"navigation hook: {NAVIGATION_HOOK_NEXT} missing route investigation for '{flag}'"
+            )
 
 
 def res_to_path(uri: str) -> Path:
