@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "eras": [
+    {
+      "name": "宝祐",
+      "start_year": 1253,
+      "end_year": 1259,
+      "start_era_year": 1
+    },
+    {
+      "name": "开庆",
+      "start_year": 1259,
+      "end_year": 1260,
+      "start_era_year": 1
+    },
+    {
+      "name": "景定",
+      "start_year": 1260,
+      "end_year": 1265,
+      "start_era_year": 1
+    },
+    {
+      "name": "咸淳",
+      "start_year": 1265,
+      "end_year": 1275,
+      "start_era_year": 1
+    },
+    {
+      "name": "德祐",
+      "start_year": 1275,
+      "end_year": 1276,
+      "start_era_year": 1
+    },
+    {
+      "name": "景炎",
+      "start_year": 1276,
+      "end_year": 1278,
+      "start_era_year": 1
+    },
+    {
+      "name": "祥兴",
+      "start_year": 1278,
+      "end_year": 1280,
+      "start_era_year": 1
+    }
+  ]
+}

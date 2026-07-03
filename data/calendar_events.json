@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "events": [
+    {
+      "id": "ch3_pu_summon",
+      "fire": {"month_offset": 7},
+      "condition": {"flag": "chapter2_complete", "rank_gte": 4},
+      "action": {"type": "scene", "target": "chapter3_pu_summon"},
+      "priority": 10,
+      "once": true
+    }
+  ]
+}
