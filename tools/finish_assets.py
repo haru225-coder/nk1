@@ -22,7 +22,7 @@ CHAPTER1_BG: dict[str, str] = {
     "scene05_penghu_night": "res://assets/bg_penghu_night.png",
     "scene06_black_water": "res://assets/bg_black_water.png",
     "scene07_keelung_coast": "res://assets/bg_keelung_coast.png",
-    "scene08_return": "res://assets/bg_quanzhou_port_sunset.png",
+    "scene08_return": "res://assets/bg_sea_route_fog.png",
 }
 
 COMPAT_COPIES: dict[str, str] = {
@@ -152,7 +152,7 @@ def main() -> None:
     make_portrait_fallback(dest)
     print(f"OK  {dest.relative_to(ROOT)} ({dest.stat().st_size} bytes)")
 
-    print("\nDone. Run: python3 debug_all.py")
+    print("\nDone. Run: python3 validate_project.py")
 
 
 if __name__ == "__main__":

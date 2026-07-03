@@ -32,6 +32,7 @@ assets/_ingested/
 
 # QA reports (local only)
 .gstack/
+.godot-tools/
 
 # Local diff / comparison artifacts (not for version control)
 diff_*.txt
