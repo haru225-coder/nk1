@@ -175,7 +175,7 @@
           "narration": "先生给的不仅是路费，更是一条退路。科举若不成，这海便是去处。"
         }
       ],
-      "bg": "res://assets/bg_xinghua_school.png"
+      "bg": "res://assets/bg_xinghua_school_night.png"
     },
     {
       "id": "xinghua_temple",
@@ -211,7 +211,7 @@
           }
         }
       ],
-      "bg": "res://assets/bg_xinghua_residence.png"
+      "bg": "res://assets/bg_xinghua_temple.png"
     },
     {
       "id": "xinghua_market",
@@ -303,7 +303,7 @@
           "next": "port_xinghua"
         }
       ],
-      "bg": "res://assets/bg_quanzhou_arab_market.png"
+      "bg": "res://assets/bg_xinghua_tavern.png"
     },
     {
       "id": "xinghua_inn",

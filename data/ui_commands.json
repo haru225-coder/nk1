@@ -12,6 +12,13 @@
           "always_visible": true
         },
         {
+          "id": "storybook",
+          "type": "open_storybook",
+          "label": "札册",
+          "icon": "res://assets/ui/icons/icon_log.png",
+          "always_visible": true
+        },
+        {
           "id": "depart",
           "type": "navigate",
           "label": "出港",
@@ -29,6 +36,13 @@
           "id": "log",
           "type": "open_log",
           "label": "日志",
+          "icon": "res://assets/ui/icons/icon_log.png",
+          "always_visible": true
+        },
+        {
+          "id": "storybook",
+          "type": "open_storybook",
+          "label": "札册",
           "icon": "res://assets/ui/icons/icon_log.png",
           "always_visible": true
         }

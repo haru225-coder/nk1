@@ -1,0 +1,254 @@
+{
+  "meta": {
+    "title": "太阁式札/称号/人物关系/设施触发表",
+    "version": 1,
+    "notes": "只存配置与说明；实际授予由 story_event_chains.json 的 effects 驱动。"
+  },
+  "cards": {
+    "card_zaitong_trade_intro": {
+      "name": "刺桐商路札",
+      "category": "trade",
+      "rank": 1,
+      "description": "熟悉泉州酒馆商路传闻后获得。用于解锁早期行商分支。",
+      "unlock_text": "解锁泉州酒馆行动「打听刺桐商路」。",
+      "source_event": "ev_quanzhou_tavern_trade_card",
+      "source_text": "泉州酒馆传闻整理成札。",
+      "route_scene_id": "city_tavern",
+      "route_label": "前往泉州酒馆",
+      "route_focus_action_id": "zaitong_trade_route_asked",
+      "task_chain": [
+        {
+          "id": "acquire_card_zaitong_trade_intro",
+          "phase": "前置",
+          "label": "获得刺桐商路札",
+          "completed_by": "acquired",
+          "source_event": "ev_quanzhou_tavern_trade_card",
+          "source_text": "泉州酒馆传闻整理成札。"
+        },
+        {
+          "id": "zaitong_trade_route_asked",
+          "phase": "后续",
+          "label": "打听刺桐商路",
+          "completed_by": "story_flag",
+          "story_flag": "zaitong_trade_route_asked",
+          "scene_id": "city_tavern",
+          "focus_action_id": "zaitong_trade_route_asked",
+          "source_event": "zaitong_trade_route_asked",
+          "source_text": "在泉州酒馆追问刺桐商路。"
+        }
+      ],
+      "effects": [
+        {
+          "id": "unlock:zaitong_trade_route_asked",
+          "type": "unlock_action",
+          "label": "解锁泉州酒馆行动「打听刺桐商路」",
+          "target_scene_id": "city_tavern",
+          "target_action_id": "zaitong_trade_route_asked"
+        },
+        {
+          "id": "bonus:zaitong_trade_fame",
+          "type": "fame_bonus",
+          "label": "完成商路交易时名声额外+1",
+          "trigger_on": "trade_completed",
+          "target_stat": "fame",
+          "delta": 1
+        }
+      ],
+      "auto_grant": {
+        "trigger_on": "enter_facility",
+        "conditions": {
+          "port_id": "quanzhou",
+          "facility_id": "city_tavern",
+          "story_flags_required": [
+            "chapter1_complete"
+          ],
+          "cards_absent": [
+            "card_zaitong_trade_intro"
+          ]
+        }
+      }
+    },
+    "card_quanzhou_customs_whisper": {
+      "name": "市舶司耳语札",
+      "category": "intel",
+      "rank": 1,
+      "description": "记录泉州市舶司、蒲氏与海商之间的暗线。"
+    }
+  },
+  "titles": {
+    "title_rookie_merchant": {
+      "name": "初露锋芒的海商",
+      "rank": 1,
+      "description": "完成第一笔有名有姓的商路交易后授予。",
+      "unlock_text": "解锁市舶司身份行动「以海商称号递话」。",
+      "source_event": "ev_rookie_merchant_title",
+      "source_text": "完成第一笔有名有姓的商路交易。",
+      "route_scene_id": "city_yamen",
+      "route_label": "前往市舶司/衙门",
+      "route_focus_action_id": "rookie_merchant_yamen_recognized",
+      "task_chain": [
+        {
+          "id": "acquire_title_rookie_merchant",
+          "phase": "前置",
+          "label": "获得初露锋芒的海商",
+          "completed_by": "acquired",
+          "source_event": "ev_rookie_merchant_title",
+          "source_text": "完成第一笔有名有姓的商路交易。"
+        },
+        {
+          "id": "rookie_merchant_yamen_recognized",
+          "phase": "后续",
+          "label": "以海商称号递话",
+          "completed_by": "story_flag",
+          "story_flag": "rookie_merchant_yamen_recognized",
+          "scene_id": "city_yamen",
+          "focus_action_id": "rookie_merchant_yamen_recognized",
+          "source_event": "rookie_merchant_yamen_recognized",
+          "source_text": "在市舶司/衙门以海商称号递话。"
+        }
+      ],
+      "effects": [
+        {
+          "id": "unlock:rookie_merchant_yamen_recognized",
+          "type": "unlock_action",
+          "label": "解锁市舶司身份行动「以海商称号递话」",
+          "target_scene_id": "city_yamen",
+          "target_action_id": "rookie_merchant_yamen_recognized"
+        },
+        {
+          "id": "bonus:rookie_merchant_money",
+          "type": "money_bonus",
+          "label": "完成商路交易时银两额外+50",
+          "trigger_on": "trade_completed",
+          "target_stat": "money",
+          "delta": 50
+        },
+        {
+          "id": "bonus:rookie_merchant_port_affinity",
+          "type": "port_affinity_bonus",
+          "label": "完成泉州商路交易时港口好感额外+0.5",
+          "trigger_on": "trade_completed",
+          "target_stat": "port_affinity",
+          "target_port_id": "quanzhou",
+          "delta": 0.5
+        }
+      ],
+      "auto_grant": {
+        "trigger_on": "trade_completed",
+        "conditions": {
+          "trade_action": "sell",
+          "amount_min": 3,
+          "cards_required": [
+            "card_zaitong_trade_intro"
+          ],
+          "titles_absent": [
+            "title_rookie_merchant"
+          ]
+        }
+      }
+    }
+  },
+  "relationships": {
+    "lin_boyuan": {
+      "npc_id": "lin_boyuan",
+      "label": "林伯渊",
+      "portrait": "res://assets/portraits/portrait_lin_boyuan.png",
+      "levels": [
+        {
+          "min": 0,
+          "name": "初识"
+        },
+        {
+          "min": 10,
+          "name": "赏识"
+        },
+        {
+          "min": 30,
+          "name": "信任"
+        }
+      ],
+      "unlock_text": "关系达到赏识后，解锁更深的市舶司消息。",
+      "source_event": "ev_quanzhou_tavern_trade_card",
+      "source_text": "泉州酒馆商路传闻推动林伯渊关系。",
+      "route_scene_id": "city_guild",
+      "route_label": "前往泉州工会",
+      "route_focus_action_id": "lin_boyuan_customs_deep_hint",
+      "task_chain": [
+        {
+          "id": "relationship_lin_boyuan_10",
+          "phase": "前置",
+          "label": "关系达到赏识",
+          "completed_by": "relationship_min",
+          "relationship_min": 10,
+          "source_event": "ev_quanzhou_tavern_trade_card",
+          "source_text": "泉州酒馆商路传闻推动林伯渊关系。"
+        },
+        {
+          "id": "lin_boyuan_customs_deep_hint",
+          "phase": "后续",
+          "label": "借林伯渊关系追问市舶司",
+          "completed_by": "story_flag",
+          "story_flag": "lin_boyuan_customs_deep_hint",
+          "scene_id": "city_guild",
+          "focus_action_id": "lin_boyuan_customs_deep_hint",
+          "source_event": "lin_boyuan_customs_deep_hint",
+          "source_text": "在泉州工会追问更深的市舶司消息。"
+        }
+      ],
+      "effects": [
+        {
+          "id": "unlock:lin_boyuan_customs_deep_hint",
+          "type": "unlock_action",
+          "label": "关系达到赏识后解锁工会行动「借林伯渊关系追问市舶司」",
+          "relationship_min": 10,
+          "target_scene_id": "city_guild",
+          "target_action_id": "lin_boyuan_customs_deep_hint"
+        },
+        {
+          "id": "bonus:lin_boyuan_trade_relationship",
+          "type": "npc_relationship_bonus",
+          "label": "完成商路交易时林伯渊关系额外+1",
+          "trigger_on": "trade_completed",
+          "target_stat": "npc_relationship",
+          "target_npc_id": "lin_boyuan",
+          "relationship_min": 10,
+          "delta": 1
+        }
+      ],
+      "actions": [
+        {
+          "id": "lin_boyuan_visit_guild",
+          "label": "拜访林伯渊",
+          "scene_id": "city_guild",
+          "relationship_delta": 2,
+          "story_flag": "lin_boyuan_visit_guild"
+        },
+        {
+          "id": "lin_boyuan_gift_spring_autumn",
+          "label": "送还《春秋》",
+          "scene_id": "city_guild",
+          "requires_item": "spring_autumn_scroll",
+          "relationship_delta": 6,
+          "story_flag": "lin_boyuan_gift_spring_autumn"
+        },
+        {
+          "id": "lin_boyuan_study_boarding",
+          "label": "请教接舷战术",
+          "scene_id": "city_guild",
+          "relationship_min": 15,
+          "story_flag": "learned_skill_boarding_tactics"
+        }
+      ]
+    }
+  },
+  "facility_triggers": {
+    "quanzhou_tavern_trade_intro": {
+      "trigger_on": "enter_facility",
+      "port_id": "quanzhou",
+      "facility_id": "city_tavern",
+      "scene_id": "city_tavern",
+      "chain_id": "ev_quanzhou_tavern_trade_card",
+      "description": "进入泉州酒馆时授予早期商路札，并提高林伯渊关系。"
+    }
+  }
+}

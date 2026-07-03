@@ -5,36 +5,127 @@
   },
   "chains": {
     "ev_lin_boyuan_formal_quanzhou": {
-      "trigger_on": ["enter_port"],
+      "trigger_on": [
+        "enter_port"
+      ],
       "once": true,
       "trigger_flag": "chain_ev_lin_boyuan_formal_fired",
       "conditions": {
         "port_id": "quanzhou",
-        "story_flags_required": ["chapter1_complete", "met_lin_boyuan"],
-        "story_flags_absent": ["met_lin_boyuan_formal"]
+        "story_flags_required": [
+          "chapter1_complete",
+          "met_lin_boyuan"
+        ],
+        "story_flags_absent": [
+          "met_lin_boyuan_formal"
+        ]
       },
       "effects": [
-        { "type": "set_story_flag", "key": "met_lin_boyuan_formal" },
-        { "type": "npc_affinity", "npc_id": "lin_boyuan", "delta": 5 },
-        { "type": "set_story_flag", "key": "lin_dock_hint" },
+        {
+          "type": "set_story_flag",
+          "key": "met_lin_boyuan_formal"
+        },
+        {
+          "type": "npc_affinity",
+          "npc_id": "lin_boyuan",
+          "delta": 5
+        },
+        {
+          "type": "set_story_flag",
+          "key": "lin_dock_hint"
+        },
         {
           "type": "play_dialogue",
           "body": "【林伯渊】：「年轻人，我们又见面了。」\n\n林伯渊在刺桐港正式引你入行商会圈子，诸商投来审视的目光。\n\n【林伯渊】：「海上靠缝补，不靠嘴——这话，到了岸上也要记着。」"
         },
-        { "type": "log_message", "text": "【泉州】林伯渊正式引见你入行商会圈子。" }
+        {
+          "type": "log_message",
+          "text": "【泉州】林伯渊正式引见你入行商会圈子。"
+        }
       ]
     },
     "ev_post_chapter1_pu_rumor": {
-      "trigger_on": ["day_advance"],
+      "trigger_on": [
+        "day_advance"
+      ],
       "once": true,
       "trigger_flag": "chain_ev_pu_rumor_fired",
       "conditions": {
-        "story_flags_required": ["chapter1_complete"],
-        "story_flags_absent": ["heard_pu_rumor"]
+        "story_flags_required": [
+          "chapter1_complete"
+        ],
+        "story_flags_absent": [
+          "heard_pu_rumor"
+        ]
       },
       "effects": [
-        { "type": "set_story_flag", "key": "heard_pu_rumor" },
-        { "type": "log_message", "text": "【传闻】蒲氏在蕃坊的动作越来越大了，市舶司的眼线也忙了起来。" }
+        {
+          "type": "set_story_flag",
+          "key": "heard_pu_rumor"
+        },
+        {
+          "type": "log_message",
+          "text": "【传闻】蒲氏在蕃坊的动作越来越大了，市舶司的眼线也忙了起来。"
+        }
+      ]
+    },
+    "ev_quanzhou_tavern_trade_card": {
+      "trigger_on": [
+        "enter_facility"
+      ],
+      "once": true,
+      "trigger_flag": "chain_ev_quanzhou_tavern_trade_card_fired",
+      "conditions": {
+        "port_id": "quanzhou",
+        "facility_id": "city_tavern",
+        "story_flags_required": [
+          "chapter1_complete"
+        ],
+        "cards_absent": [
+          "card_zaitong_trade_intro"
+        ]
+      },
+      "effects": [
+        {
+          "type": "npc_relationship",
+          "npc_id": "lin_boyuan",
+          "delta": 3
+        },
+        {
+          "type": "set_story_flag",
+          "key": "heard_quanzhou_trade_gossip"
+        },
+        {
+          "type": "log_message",
+          "text": "【札】你整理出「刺桐商路札」，泉州酒馆的传闻成为可追踪的线索。"
+        }
+      ]
+    },
+    "ev_rookie_merchant_title": {
+      "trigger_on": [
+        "trade_completed"
+      ],
+      "once": true,
+      "trigger_flag": "chain_ev_rookie_merchant_title_fired",
+      "conditions": {
+        "trade_action": "sell",
+        "amount_min": 3,
+        "cards_required": [
+          "card_zaitong_trade_intro"
+        ],
+        "titles_absent": [
+          "title_rookie_merchant"
+        ]
+      },
+      "effects": [
+        {
+          "type": "fame",
+          "delta": 1
+        },
+        {
+          "type": "log_message",
+          "text": "【称号】商路上的第一批利润传开，你获得「初露锋芒的海商」。"
+        }
       ]
     }
   }

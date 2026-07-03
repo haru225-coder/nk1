@@ -122,7 +122,7 @@
           "narration": "你在蕃坊的巷子里绕了三圈，借阿拉伯人的香料味掩盖了行踪，才回码头。"
         }
       ],
-      "bg": "res://assets/bg_quanzhou_port_sunset.png"
+      "bg": "res://assets/bg_sea_route_fog.png"
     },
     {
       "id": "port_quanzhou",
@@ -481,6 +481,23 @@
           "effects": {
             "story_flag": "linan_jia_hint_tavern"
           }
+        },
+        {
+          "label": "打听刺桐商路",
+          "text": "你摊开「刺桐商路札」，酒客终于改口：真正赚钱的是番货回流，不是码头短买短卖。",
+          "once_flag": "zaitong_trade_route_asked",
+          "conditions": {
+            "effects_required": [
+              "unlock:zaitong_trade_route_asked"
+            ]
+          },
+          "effects": {
+            "story_flag": "zaitong_trade_route_asked",
+            "npc_relationship": {
+              "npc_id": "lin_boyuan",
+              "delta": 1
+            }
+          }
         }
       ]
     },
@@ -521,7 +538,7 @@
           "next": "port_quanzhou"
         }
       ],
-      "bg": "res://assets/bg_customs_room.jpg",
+      "bg": "res://assets/bg_customs_patrol.png",
       "investigations": [
         {
           "label": "旁观审讯",
@@ -530,6 +547,20 @@
           "effects": {
             "pu_attention": 2,
             "story_flag": "saw_pu_arrest"
+          }
+        },
+        {
+          "label": "以海商称号递话",
+          "text": "小吏听见你已有「初露锋芒的海商」名声，态度缓下来，低声提醒你别在蒲氏货引上签名。",
+          "once_flag": "rookie_merchant_yamen_recognized",
+          "conditions": {
+            "effects_required": [
+              "unlock:rookie_merchant_yamen_recognized"
+            ]
+          },
+          "effects": {
+            "story_flag": "rookie_merchant_yamen_recognized",
+            "fame": 1
           }
         }
       ]
@@ -550,6 +581,21 @@
             "story_flag": "guild_bounty_taken"
           },
           "narration": "登记人提醒你：「册子在海上，不在陆上。别拿命换纸。」"
+        },
+        {
+          "label": "顺着验引册追查蒲氏私库",
+          "next": "scene_quanzhou_pu_private_store_hint",
+          "conditions": {
+            "story_flags_required": [
+              "lin_boyuan_customs_deep_hint"
+            ],
+            "relationship_npc_id": "lin_boyuan",
+            "npc_relationship_min": 10
+          },
+          "effects": {
+            "story_flag": "pu_private_store_branch_opened"
+          },
+          "narration": "林伯渊把验引册三个字压得极低：蒲氏私库不在码头，在城北旧盐仓后墙。"
         },
         {
           "label": "离开",
@@ -574,6 +620,94 @@
           "effects": {
             "story_flag": "linan_lin_hint_guild"
           }
+        },
+        {
+          "label": "借林伯渊关系追问市舶司",
+          "text": "林伯渊愿意透露更深的市舶司消息：工会悬赏只是明账，真正的验引册在蒲氏私库里。",
+          "once_flag": "lin_boyuan_customs_deep_hint",
+          "conditions": {
+            "effects_required": [
+              "unlock:lin_boyuan_customs_deep_hint"
+            ]
+          },
+          "effects": {
+            "story_flag": "lin_boyuan_customs_deep_hint"
+          }
+        },
+        {
+          "id": "lin_boyuan_visit_guild",
+          "label": "拜访林伯渊",
+          "text": "林伯渊把旧海图压在案上，只问你一句：「今日海色如何？」你照实回答，他点了点头。",
+          "once_flag": "lin_boyuan_visit_guild",
+          "requires_story_flag": "met_lin_boyuan",
+          "effects": {
+            "npc_relationship": {
+              "npc_id": "lin_boyuan",
+              "delta": 2
+            },
+            "story_flag": "lin_boyuan_visit_guild"
+          }
+        },
+        {
+          "id": "lin_boyuan_gift_spring_autumn",
+          "label": "送还《春秋》",
+          "text": "你把朱熹手批《春秋》推还给林伯渊。他沉默许久，只说：「这本书，不该只压在岸上。」",
+          "once_flag": "lin_boyuan_gift_spring_autumn",
+          "requires_item": "spring_autumn_scroll",
+          "effects": {
+            "item_removed": "spring_autumn_scroll",
+            "npc_relationship": {
+              "npc_id": "lin_boyuan",
+              "delta": 6
+            },
+            "story_flag": "lin_boyuan_gift_spring_autumn"
+          }
+        },
+        {
+          "id": "lin_boyuan_study_boarding",
+          "label": "请教接舷战术",
+          "text": "林伯渊在甲板图上划出三条线：贴舷、压风、断索。你第一次明白，接舷不是勇，是算。",
+          "once_flag": "learned_skill_boarding_tactics",
+          "conditions": {
+            "relationship_npc_id": "lin_boyuan",
+            "npc_relationship_min": 15,
+            "story_flags_absent": [
+              "learned_skill_boarding_tactics"
+            ]
+          },
+          "effects": {
+            "story_flag": "learned_skill_boarding_tactics",
+            "swordplay": 2,
+            "npc_relationship": {
+              "npc_id": "lin_boyuan",
+              "delta": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene_quanzhou_pu_private_store_hint",
+      "chapter": "chapter_2_seed",
+      "title": "蒲氏私库的影子",
+      "location": "quanzhou",
+      "time": "入夜后",
+      "objective": "把林伯渊透露的验引册线索转化为下一段追查目标",
+      "body": "城北旧盐仓背后，墙灰被潮气泡开。你摸到一枚暗钉，钉帽上刻着蒲氏商号的细纹。\n\n【陈子龙】：验引册若真在这里，工会悬赏就只是明账。\n\n风从仓缝里钻出，带着纸墨和海盐味。有人比你先来一步，又刻意留下了一截断封。",
+      "bg": "res://assets/bg_quanzhou_office.jpg",
+      "choices": [
+        {
+          "label": "记下旧盐仓线索，返回工会",
+          "next": "city_guild",
+          "effects": {
+            "story_flag": "pu_private_store_hint_seen",
+            "pu_attention": 1
+          },
+          "narration": "你把断封塞进袖中。蒲氏的账，已经不只是海上的账。"
+        },
+        {
+          "label": "先撤回港口",
+          "next": "port_quanzhou"
         }
       ]
     },

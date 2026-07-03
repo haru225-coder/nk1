@@ -2,10 +2,12 @@ extends Control
 class_name GameShell
 
 signal navigation_requested(scene_id: String)
+signal storybook_route_requested(scene_id: String, focus_action_id: String)
 signal log_requested
 signal message_logged(msg: String)
 
 const COMMAND_BAR_SCENE := preload(ResourcePaths.SCENE_COMMAND_BAR)
+const STORYBOOK_VIEW_BUILDER := preload(ResourcePaths.SCRIPT_STORYBOOK_VIEW_BUILDER)
 
 @onready var background_layer: Control = $BackgroundLayer
 @onready var background: TextureRect = $BackgroundLayer/Background
@@ -16,6 +18,7 @@ const COMMAND_BAR_SCENE := preload(ResourcePaths.SCENE_COMMAND_BAR)
 var _command_bar: CommandBar
 var _hotspot_source: TownMapView
 var _log_popup: AcceptDialog
+var _storybook_popup: AcceptDialog
 
 const COMMAND_BAR_HEIGHT := 88.0
 
@@ -50,6 +53,39 @@ func show_log(text: String) -> void:
 		add_child(_log_popup)
 	_log_popup.dialog_text = text if text != "" else "（尚无记录）"
 	_log_popup.popup_centered()
+
+func show_storybook(initial_tab: int = 0, focus_id: String = "") -> void:
+	if _storybook_popup == null:
+		_storybook_popup = AcceptDialog.new()
+		_storybook_popup.title = "情报札记"
+		_storybook_popup.dialog_hide_on_ok = true
+		_storybook_popup.min_size = Vector2(860, 620)
+		add_child(_storybook_popup)
+		var label := _storybook_popup.get_label()
+		if label != null:
+			label.visible = false
+	_storybook_popup.dialog_text = ""
+	_clear_storybook_content()
+	_storybook_popup.add_child(STORYBOOK_VIEW_BUILDER.build(GameState.story, initial_tab, focus_id, _on_storybook_route_requested))
+	_storybook_popup.popup_centered()
+
+func _clear_storybook_content() -> void:
+	if _storybook_popup == null:
+		return
+	for child in _storybook_popup.get_children():
+		if child.name == "StorybookTabs":
+			_storybook_popup.remove_child(child)
+			child.free()
+
+func _on_storybook_route_requested(scene_id: String, focus_action_id: String = "") -> void:
+	if scene_id == "":
+		return
+	if _storybook_popup != null and is_instance_valid(_storybook_popup):
+		_storybook_popup.hide()
+	if focus_action_id != "":
+		storybook_route_requested.emit(scene_id, focus_action_id)
+	else:
+		navigation_requested.emit(scene_id)
 
 func _setup_command_bar() -> void:
 	for child in command_bar_host.get_children():
@@ -104,6 +140,8 @@ func _on_command_pressed(action: Dictionary) -> void:
 	match action.get("type", ""):
 		"open_log":
 			log_requested.emit()
+		"open_storybook":
+			show_storybook()
 		"navigate":
 			var effects: Dictionary = action.get("effects", {})
 			if not effects.is_empty():

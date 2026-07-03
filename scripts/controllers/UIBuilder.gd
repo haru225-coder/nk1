@@ -24,28 +24,35 @@ static func apply_button_polishes(btn: Button) -> void:
 		_setup_hover_breath_effect(btn)
 
 static func _setup_hover_breath_effect(btn: Button) -> void:
+	var btn_ref: WeakRef = weakref(btn)
 	btn.mouse_entered.connect(func():
-		if btn.has_meta("hover_tween"):
-			var old_tween = btn.get_meta("hover_tween")
+		var target: Button = btn_ref.get_ref() as Button
+		if target == null or not is_instance_valid(target):
+			return
+		if target.has_meta("hover_tween"):
+			var old_tween = target.get_meta("hover_tween")
 			if old_tween and old_tween.is_valid():
 				old_tween.kill()
 		
-		var tween := btn.create_tween()
-		btn.set_meta("hover_tween", tween)
+		var tween: Tween = target.create_tween()
+		target.set_meta("hover_tween", tween)
 		tween.set_loops()
-		tween.tween_property(btn, "modulate", Color(1.08, 1.04, 0.82, 1.0), 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		tween.tween_property(btn, "modulate", Color.WHITE, 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tween.tween_property(target, "modulate", Color(1.08, 1.04, 0.82, 1.0), 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tween.tween_property(target, "modulate", Color.WHITE, 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	)
 	
 	btn.mouse_exited.connect(func():
-		if btn.has_meta("hover_tween"):
-			var old_tween = btn.get_meta("hover_tween")
+		var target: Button = btn_ref.get_ref() as Button
+		if target == null or not is_instance_valid(target):
+			return
+		if target.has_meta("hover_tween"):
+			var old_tween = target.get_meta("hover_tween")
 			if old_tween and old_tween.is_valid():
 				old_tween.kill()
-			btn.remove_meta("hover_tween")
+			target.remove_meta("hover_tween")
 		
-		var tween := btn.create_tween()
-		tween.tween_property(btn, "modulate", Color.WHITE, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		var tween: Tween = target.create_tween()
+		tween.tween_property(target, "modulate", Color.WHITE, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	)
 
 ## 创建操作按钮（ActionButton 主题，52 高度）

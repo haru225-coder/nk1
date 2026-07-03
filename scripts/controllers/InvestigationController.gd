@@ -11,10 +11,16 @@ signal status_updated
 signal message_logged(msg: String)
 signal show_npc_requested(npc_id: String, fallback_name: String)
 
+const ROUTE_FOCUS_PULSE_COUNT := 2
+const ROUTE_FOCUS_PULSE_SCALE := Vector2(1.07, 1.07)
+const ROUTE_FOCUS_PULSE_DURATION := 0.14
+
 var dialogue_box: Control
 var _pending_scene_data: Dictionary = {}
 var _pending_scene_id: String = ""
 var _dialogue_done: bool = false
+var _focus_action_id: String = ""
+var _route_focus_pulse_tween: Tween
 
 var _choice_handler: ChoiceHandler
 var _market_ctrl: PortMarketController
@@ -88,20 +94,52 @@ func _on_dialogue_active_changed(is_active: bool) -> void:
 
 ## ── Investigation 入口 ────────────────────────────────────
 
-func setup_investigation(scene_data: Dictionary, scene_id: String) -> void:
+func setup_investigation(scene_data: Dictionary, scene_id: String, focus_action_id: String = "") -> void:
 	scene_data = SceneVariantResolver.resolve(scene_data, scene_id)
 	_pending_scene_data = scene_data
 	_pending_scene_id = scene_id
+	_focus_action_id = focus_action_id
 	_dialogue_done = false
 	_scene_title.text = scene_data.get("title", "未命名地点")
 	_body_text.text = ""
 	hide_post_dialogue_ui()
 	clear_containers()
-	var beats: Array = DialogueParser.parse_body(scene_data.get("body", ""))
+	_check_facility_event_chains(scene_data, scene_id)
+	var body := str(scene_data.get("body", ""))
+	var beats: Array = []
+	if body.strip_edges() != "":
+		beats = DialogueParser.parse_body(body)
 	if beats.is_empty():
 		_on_dialogue_sequence_finished()
 	else:
 		dialogue_box.start_sequence(beats)
+
+func _check_facility_event_chains(scene_data: Dictionary, scene_id: String) -> void:
+	var ctx := {
+		"port_id": scene_data.get("location", GameState.last_port),
+		"scene_id": scene_data.get("id", scene_id),
+		"route_scene_id": scene_id,
+		"facility_id": _resolve_facility_id(scene_data, scene_id),
+		"dialogue_box": dialogue_box,
+		"message_callback": Callable(self, "_on_chain_log_message"),
+	}
+	var fired: Array = StoryEventChainEngine.check_triggers("enter_facility", ctx)
+	if not fired.is_empty():
+		status_updated.emit()
+
+func _resolve_facility_id(scene_data: Dictionary, scene_id: String) -> String:
+	var explicit := str(scene_data.get("facility_id", ""))
+	if explicit != "":
+		return explicit
+	var data_id := str(scene_data.get("id", scene_id))
+	if data_id.begins_with("city_"):
+		return data_id
+	if scene_id.begins_with("city_"):
+		return scene_id
+	return data_id
+
+func _on_chain_log_message(text: String) -> void:
+	message_logged.emit(text)
 
 func _on_dialogue_sequence_finished() -> void:
 	if _dialogue_done or _pending_scene_data.is_empty():
@@ -124,7 +162,12 @@ func _setup_post_dialogue_content() -> void:
 			continue
 		if added_inv == 0:
 			_interactive_label.visible = true
+		var action_id := _resolve_investigation_action_id(inv)
 		var btn = UIBuilder.make_button("★ " + inv.get("label", "互动"), UITheme.BTN_ACTION, 40)
+		btn.name = "InvestigationAction_" + _safe_node_id(action_id)
+		btn.set_meta("action_id", action_id)
+		if action_id != "" and action_id == _focus_action_id:
+			_apply_route_focus_to_action_button(btn)
 		btn.pressed.connect(_on_investigate_pressed.bind(inv, btn))
 		_interactive_container.add_child(btn)
 		added_inv += 1
@@ -138,7 +181,70 @@ func _setup_post_dialogue_content() -> void:
 	_add_npc_button_if_needed(scene_data)
 
 	# 选择支（委托给 ChoiceHandler）
-	_choice_handler.show_choices(scene_data.get("choices", []))
+	_choice_handler.show_choices(scene_data.get("choices", []), {
+		"game_state": GameState,
+		"port_id": scene_data.get("location", GameState.last_port),
+		"scene_id": scene_data.get("id", _pending_scene_id),
+		"route_scene_id": _pending_scene_id,
+		"facility_id": _resolve_facility_id(scene_data, _pending_scene_id),
+	})
+
+func _resolve_investigation_action_id(inv: Dictionary) -> String:
+	var explicit := str(inv.get("id", ""))
+	if explicit != "":
+		return explicit
+	var once_flag := str(inv.get("once_flag", ""))
+	if once_flag != "":
+		return once_flag
+	return str(inv.get("label", "")).strip_edges()
+
+func _apply_route_focus_to_action_button(btn: Button) -> void:
+	btn.set_meta("route_focus_target", true)
+	btn.set_meta("route_focus_pulse_pending", true)
+	btn.set_meta("route_focus_scroll_target", true)
+	btn.theme_type_variation = UITheme.BTN_SET_SAIL
+	btn.modulate = GameColors.TEXT_GOLD_BRIGHT
+	if _interactive_container != null:
+		_interactive_container.set_meta("route_focus_target_node_name", btn.name)
+		_interactive_container.set_meta("route_focus_target_action_id", str(btn.get_meta("action_id", "")))
+	btn.call_deferred("grab_focus")
+	call_deferred("_ensure_route_focus_action_visible", btn)
+	call_deferred("_start_route_focus_pulse", btn)
+
+func _ensure_route_focus_action_visible(btn: Button) -> void:
+	if btn == null or not is_instance_valid(btn):
+		return
+	var node := btn.get_parent()
+	while node != null:
+		if node is ScrollContainer:
+			node.set_meta("route_focus_target_node_name", btn.name)
+			node.call_deferred("ensure_control_visible", btn)
+			return
+		node = node.get_parent()
+
+func _start_route_focus_pulse(btn: Button) -> void:
+	if btn == null or not is_instance_valid(btn):
+		return
+	btn.set_meta("route_focus_pulse_started", true)
+	if btn.pivot_offset == Vector2.ZERO:
+		btn.pivot_offset = btn.size * 0.5
+	if not is_inside_tree():
+		return
+	if _route_focus_pulse_tween != null and _route_focus_pulse_tween.is_valid():
+		_route_focus_pulse_tween.kill()
+	btn.scale = Vector2.ONE
+	_route_focus_pulse_tween = create_tween()
+	for _i in range(ROUTE_FOCUS_PULSE_COUNT):
+		_route_focus_pulse_tween.tween_property(btn, "scale", ROUTE_FOCUS_PULSE_SCALE, ROUTE_FOCUS_PULSE_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		_route_focus_pulse_tween.tween_property(btn, "scale", Vector2.ONE, ROUTE_FOCUS_PULSE_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	_route_focus_pulse_tween.tween_callback(func():
+		if is_instance_valid(btn):
+			btn.scale = Vector2.ONE
+			btn.set_meta("route_focus_pulse_pending", false)
+	)
+
+func _safe_node_id(value: String) -> String:
+	return value.replace(":", "_").replace("/", "_").replace(".", "_").replace(" ", "_")
 
 ## ── 领域子控制器挂载 ──────────────────────────────────────
 ## 根据场景 ID 直接创建对应领域控制器，连接信号，调用 setup。
@@ -207,6 +313,17 @@ func _investigation_available(inv: Dictionary) -> bool:
 	var req_item: String = inv.get("requires_item", "")
 	if req_item != "" and not GameState.has_item_flag(req_item):
 		return false
+	if inv.has("conditions"):
+		var conditions: Dictionary = inv.get("conditions", {})
+		var ctx := {
+			"game_state": GameState,
+			"port_id": _pending_scene_data.get("location", GameState.last_port),
+			"scene_id": _pending_scene_data.get("id", _pending_scene_id),
+			"route_scene_id": _pending_scene_id,
+			"facility_id": _resolve_facility_id(_pending_scene_data, _pending_scene_id),
+		}
+		if not ConditionEvaluator.matches(conditions, ctx):
+			return false
 	return true
 
 func _on_investigate_pressed(inv_data: Dictionary, btn: Button) -> void:
@@ -241,6 +358,7 @@ func setup_missing(scene_id: String) -> void:
 	clear_containers()
 	hide_post_dialogue_ui()
 	_dialogue_done = false
+	_focus_action_id = ""
 	_scene_title.text = "区域施工中..."
 	var beat := DialogueParser.beat_from_text(
 		"该区域（" + scene_id + "）尚未实装，请耐心等待后续版本更新。"
@@ -275,10 +393,19 @@ func hide_post_dialogue_ui() -> void:
 
 func clear_containers() -> void:
 	_clear_domain_controllers()
+	_clear_route_focus_guidance()
 	for child in _interactive_container.get_children():
-		child.queue_free()
+		child.free()
 	for child in _choices_container.get_children():
-		child.queue_free()
+		child.free()
+
+func _clear_route_focus_guidance() -> void:
+	if _route_focus_pulse_tween != null and _route_focus_pulse_tween.is_valid():
+		_route_focus_pulse_tween.kill()
+	_route_focus_pulse_tween = null
+	if _interactive_container != null:
+		_interactive_container.set_meta("route_focus_target_node_name", "")
+		_interactive_container.set_meta("route_focus_target_action_id", "")
 
 func set_interaction_locked(locked: bool) -> void:
 	GameManager.set_input_locked(locked)
