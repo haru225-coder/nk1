@@ -396,7 +396,7 @@ func load_scene(scene_id: String) -> void:
 		title_mode.visible = true
 		title_mode.setup(scene_data)
 	elif type == "port":
-		GameState.last_port = scene_data.get("location", scene_id.replace("port_", ""))
+		GameState.set_last_port(scene_data.get("location", scene_id.replace("port_", "")))
 		_set_status_bar_visible(true)
 		# NK1-P6: 左侧信息面板改为日志弹窗，不再常驻
 		left_panel.visible = false

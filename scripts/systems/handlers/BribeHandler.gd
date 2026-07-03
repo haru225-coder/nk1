@@ -22,10 +22,10 @@ func handle(intent: Intent) -> IntentResult:
 			CargoSystem.remove_all_of(good_id)
 
 	var attention_delta: int = int(intent.parameters.get("attention_delta", DEFAULT_ATTENTION_DELTA))
-	GameState.pu_attention = clampi(GameState.pu_attention + attention_delta, 0, PU_ATTENTION_MAX)
+	GameState.modify_pu_attention(attention_delta)
 
 	if intent.parameters.get("grant_permit", false):
-		GameState.has_customs_permit = true
+		GameState.set_customs_permit(true)
 
 	if intent.parameters.get("grant_departure", false):
 		GameState.set_flag("departure_authorized")

@@ -23,7 +23,7 @@ func _handle_sail_change(intent: Intent) -> IntentResult:
 	if not LedgerSystem.apply(tx, intent.id):
 		return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", IntentTypes.REFIT_SHIP)
 
-	GameState.sail_type = new_type
+	GameState.set_sail_type(new_type)
 	var r := IntentResult.ok({
 		"refit_mode": "sail",
 		"cost": cost,

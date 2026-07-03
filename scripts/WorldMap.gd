@@ -89,7 +89,7 @@ func _input(event: InputEvent) -> void:
 		if event.keycode == KEY_B or event.keycode == KEY_ESCAPE:
 			var nearest_port := _get_nearest_port_id()
 			if nearest_port != "":
-				GameState.last_port = nearest_port
+				GameState.set_last_port(nearest_port)
 			_save_ship_pose()
 			GameState.set_navigation_flag("return_to_port")
 			get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)

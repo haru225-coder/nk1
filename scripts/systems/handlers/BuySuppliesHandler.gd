@@ -86,7 +86,7 @@ func _commit_supply(supply_type: String, amount: float, fill_to_max: bool, appli
 				_apply_food(amount, false)
 				_apply_water(amount, false)
 		"ammo":
-			GameState.artillery = maxi(0, GameState.artillery + int(applied.get("ammo_added", 0)))
+			GameState.modify_artillery(int(applied.get("ammo_added", 0)))
 
 func _preview_food(amount: float, fill_to_max: bool) -> Dictionary:
 	if fill_to_max:
@@ -118,12 +118,12 @@ func _preview_food_water_fill() -> Dictionary:
 
 func _apply_food(amount: float, fill_to_max: bool) -> void:
 	if fill_to_max:
-		GameState.food = GameState.max_food
+		GameState.set_food_amount(GameState.max_food)
 	elif amount > 0.0:
-		GameState.food = minf(GameState.food + amount, GameState.max_food)
+		GameState.modify_food(amount)
 
 func _apply_water(amount: float, fill_to_max: bool) -> void:
 	if fill_to_max:
-		GameState.water = GameState.max_water
+		GameState.set_water_amount(GameState.max_water)
 	elif amount > 0.0:
-		GameState.water = minf(GameState.water + amount, GameState.max_water)
+		GameState.modify_water(amount)

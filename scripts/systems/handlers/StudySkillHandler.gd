@@ -47,9 +47,9 @@ func handle(intent: Intent) -> IntentResult:
 		if learned_flag != "":
 			GameState.set_story_flag(learned_flag, true)
 		if effects.has("swordplay"):
-			GameState.swordplay += int(effects["swordplay"])
+			GameState.modify_swordplay(int(effects["swordplay"]))
 		if effects.has("maneuverability"):
-			GameState.maneuverability += int(effects["maneuverability"])
+			GameState.modify_maneuverability(int(effects["maneuverability"]))
 
 	var data := {
 		"npc_id": npc_id,

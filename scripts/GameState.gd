@@ -378,6 +378,39 @@ func _sync_world_map_ship_hp() -> void:
 func modify_crew(amount: int) -> void:
 	crew_count = max(0, crew_count + amount)
 
+func set_last_port(port_id: String) -> void:
+	navigation.last_port = port_id
+
+func modify_food(amount: float) -> void:
+	food = clamp(food + amount, 0.0, max_food)
+
+func set_food_amount(value: float) -> void:
+	food = clamp(value, 0.0, max_food)
+
+func modify_water(amount: float) -> void:
+	water = clamp(water + amount, 0.0, max_water)
+
+func set_water_amount(value: float) -> void:
+	water = clamp(value, 0.0, max_water)
+
+func modify_pu_attention(amount: int) -> void:
+	pu_attention = clampi(pu_attention + amount, 0, 20)
+
+func set_customs_permit(enabled: bool) -> void:
+	has_customs_permit = enabled
+
+func modify_artillery(amount: int) -> void:
+	artillery = max(0, artillery + amount)
+
+func set_sail_type(new_type: String) -> void:
+	sail_type = new_type
+
+func modify_swordplay(amount: int) -> void:
+	swordplay = max(0, swordplay + amount)
+
+func modify_maneuverability(amount: int) -> void:
+	maneuverability = max(0, maneuverability + amount)
+
 func set_navigation_flag(flag_name: String) -> void:
 	story.set_flag(flag_name)
 

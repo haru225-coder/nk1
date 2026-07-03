@@ -2,6 +2,8 @@ extends Node
 
 signal data_loaded
 
+const FacilityResolverScript := preload(ResourcePaths.SCRIPT_FACILITY_RESOLVER)
+
 var scenes_data: Dictionary = {}
 var goods_data: Dictionary = {}
 var ports_data: Dictionary = {}
@@ -35,21 +37,21 @@ func set_input_locked(locked: bool) -> void:
 	input_locked = locked
 
 func load_data() -> void:
-	scenes_data = _load_scenes_from_directory("res://data/scenes/")
+	scenes_data = _load_scenes_from_directory(ResourcePaths.DIR_DATA_SCENES)
 	if scenes_data.is_empty():
 		# 向后兼容：如果分片目录不存在，回退到单文件
-		scenes_data = _load_json("res://data/scenes.json")
-	goods_data = _load_json("res://data/goods.json")
-	ports_data = _load_json("res://data/ports.json")
-	npcs_data = _load_json("res://data/npcs.json")
-	items_data = _load_json("res://data/items.json")
-	events_data = _load_json("res://data/encounters.json")
-	world_events_data = _load_json("res://data/events.json")
-	factions_data = _load_json("res://data/factions.json")
-	fleets_data = _load_json("res://data/fleets.json")
-	ships_data = _load_json("res://data/ships.json")
-	localization_data = _load_json("res://data/localization/zh_cn.json")
-	ui_commands_data = _load_json("res://data/ui_commands.json")
+		scenes_data = _load_json(ResourcePaths.DATA_SCENES)
+	goods_data = _load_json(ResourcePaths.DATA_GOODS)
+	ports_data = _load_json(ResourcePaths.DATA_PORTS)
+	npcs_data = _load_json(ResourcePaths.DATA_NPCS)
+	items_data = _load_json(ResourcePaths.DATA_ITEMS)
+	events_data = _load_json(ResourcePaths.DATA_ENCOUNTERS)
+	world_events_data = _load_json(ResourcePaths.DATA_WORLD_EVENTS)
+	factions_data = _load_json(ResourcePaths.DATA_FACTIONS)
+	fleets_data = _load_json(ResourcePaths.DATA_FLEETS)
+	ships_data = _load_json(ResourcePaths.DATA_SHIPS)
+	localization_data = _load_json(ResourcePaths.DATA_LOCALIZATION_ZH_CN)
+	ui_commands_data = _load_json(ResourcePaths.DATA_UI_COMMANDS)
 	
 	_build_lookup_dictionaries()
 	
@@ -145,73 +147,23 @@ func get_port_scene_id(port_id: String) -> String:
 	return port_id
 
 func facility_available(fac: Dictionary) -> bool:
-	var req: String = fac.get("requires_story_flag", "")
-	if req != "" and not GameState.has_story_flag(req):
-		return false
-	var unless: String = fac.get("unless_story_flag", "")
-	if unless != "" and GameState.has_story_flag(unless):
-		return false
-	return true
+	return FacilityResolverScript.facility_available(fac)
 
 func resolve_facility_scene(fac: Dictionary, port_location: String) -> String:
-	var target_scene: String = fac.get("id", "")
-	if target_scene.begins_with("city_"):
-		var suffix := target_scene.replace("city_", "")
-		target_scene = port_location + "_" + suffix
-	return target_scene
+	return FacilityResolverScript.resolve_facility_scene(fac, port_location)
 
 func resolve_hotspot_scene(hotspot: Dictionary, fac: Dictionary, port_location: String) -> String:
-	var explicit: String = hotspot.get("scene_id", "")
-	if explicit != "":
-		return explicit
-	return resolve_facility_scene(fac, port_location)
+	return FacilityResolverScript.resolve_hotspot_scene(hotspot, fac, port_location)
 
 func choice_available(choice: Dictionary) -> bool:
-	var req: String = choice.get("requires_story_flag", "")
-	if req != "" and not GameState.has_story_flag(req):
-		return false
-	var unless: String = choice.get("unless_story_flag", "")
-	if unless != "" and GameState.has_story_flag(unless):
-		return false
-	return true
+	return FacilityResolverScript.choice_available(choice)
 
 func resolve_choice_style(choice: Dictionary) -> String:
-	var style: String = choice.get("choice_style", "")
-	if style != "":
-		return style
-	if choice.get("next", "") == "world_map":
-		return "sail"
-	return "default"
+	return FacilityResolverScript.resolve_choice_style(choice)
 
 ## 返回 { text, state }，state: default | quest | done
 func resolve_facility_subtitle(fac: Dictionary) -> Dictionary:
-	var subtitle = fac.get("subtitle", "点击进入")
-	if subtitle is String:
-		return {"text": subtitle, "state": "default"}
-	if subtitle is Dictionary:
-		var default_text: String = subtitle.get("default", "点击进入")
-		for rule in subtitle.get("rules", []):
-			if _subtitle_rule_matches(rule):
-				return {
-					"text": rule.get("text", default_text),
-					"state": rule.get("state", "default"),
-				}
-		return {
-			"text": default_text,
-			"state": subtitle.get("state", "default"),
-		}
-	return {"text": str(subtitle), "state": "default"}
-
-func _subtitle_rule_matches(rule: Dictionary) -> bool:
-	var req: String = rule.get("requires_story_flag", "")
-	if req != "" and not GameState.has_story_flag(req):
-		return false
-	var unless: String = rule.get("unless_story_flag", "")
-	if unless != "" and GameState.has_story_flag(unless):
-		return false
-	return true
-
-const _FACILITY_ICON_THUMB_DIR := "res://assets/icons_128/"
+	return FacilityResolverScript.resolve_facility_subtitle(fac)
 
 func resolve_facility_icon(fac: Dictionary) -> Texture2D:
 	var configured: String = fac.get("icon", "")
@@ -252,7 +204,7 @@ func resolve_facility_icon(fac: Dictionary) -> Texture2D:
 			continue
 		seen[key] = true
 		# 优先查找 128x128 缩略图目录（文件集中在此处），再回退根目录
-		for folder: String in [_FACILITY_ICON_THUMB_DIR, "res://assets/"]:
+		for folder: String in [ResourcePaths.DIR_ICONS_128, ResourcePaths.DIR_ASSETS]:
 			var path: String = folder + "icon_" + key + "_koei.png"
 			var tex := AssetPlaceholder.load_texture(path, "texture")
 			if tex:

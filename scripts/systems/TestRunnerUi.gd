@@ -139,6 +139,7 @@ func _test_resource_paths() -> void:
 	_assert_eq(ResourcePaths.SCRIPT_HANDLER_BUY_INTEL, "res://scripts/systems/handlers/BuyIntelHandler.gd", "ResourcePaths.SCRIPT_HANDLER_BUY_INTEL")
 	_assert_eq(ResourcePaths.SCRIPT_HANDLER_INVEST_PORT, "res://scripts/systems/handlers/InvestPortHandler.gd", "ResourcePaths.SCRIPT_HANDLER_INVEST_PORT")
 	_assert_eq(ResourcePaths.SCRIPT_CONDITION_EVALUATOR, "res://scripts/systems/ConditionEvaluator.gd", "ResourcePaths.SCRIPT_CONDITION_EVALUATOR")
+	_assert_eq(ResourcePaths.SCRIPT_FACILITY_RESOLVER, "res://scripts/FacilityResolver.gd", "ResourcePaths.SCRIPT_FACILITY_RESOLVER")
 	_assert_eq(ResourcePaths.SCRIPT_STORY_TABLE_REGISTRY, "res://scripts/systems/StoryTableRegistry.gd", "ResourcePaths.SCRIPT_STORY_TABLE_REGISTRY")
 	_assert_eq(ResourcePaths.SCRIPT_STORYBOOK_PRESENTER, "res://scripts/systems/StorybookPresenter.gd", "ResourcePaths.SCRIPT_STORYBOOK_PRESENTER")
 	_assert_eq(ResourcePaths.SCRIPT_STORYBOOK_VIEW_BUILDER, "res://scripts/systems/StorybookViewBuilder.gd", "ResourcePaths.SCRIPT_STORYBOOK_VIEW_BUILDER")
@@ -146,11 +147,22 @@ func _test_resource_paths() -> void:
 	# 数据文件
 	_assert_eq(ResourcePaths.DATA_SCENES, "res://data/scenes.json", "ResourcePaths.DATA_SCENES")
 	_assert_eq(ResourcePaths.DIR_DATA_SCENES, "res://data/scenes/", "ResourcePaths.DIR_DATA_SCENES")
+	_assert_eq(ResourcePaths.DATA_GOODS, "res://data/goods.json", "ResourcePaths.DATA_GOODS")
+	_assert_eq(ResourcePaths.DATA_PORTS, "res://data/ports.json", "ResourcePaths.DATA_PORTS")
 	_assert_eq(ResourcePaths.DATA_NPCS, "res://data/npcs.json", "ResourcePaths.DATA_NPCS")
+	_assert_eq(ResourcePaths.DATA_ITEMS, "res://data/items.json", "ResourcePaths.DATA_ITEMS")
+	_assert_eq(ResourcePaths.DATA_ENCOUNTERS, "res://data/encounters.json", "ResourcePaths.DATA_ENCOUNTERS")
+	_assert_eq(ResourcePaths.DATA_WORLD_EVENTS, "res://data/events.json", "ResourcePaths.DATA_WORLD_EVENTS")
+	_assert_eq(ResourcePaths.DATA_FACTIONS, "res://data/factions.json", "ResourcePaths.DATA_FACTIONS")
+	_assert_eq(ResourcePaths.DATA_FLEETS, "res://data/fleets.json", "ResourcePaths.DATA_FLEETS")
+	_assert_eq(ResourcePaths.DATA_SHIPS, "res://data/ships.json", "ResourcePaths.DATA_SHIPS")
+	_assert_eq(ResourcePaths.DATA_LOCALIZATION_ZH_CN, "res://data/localization/zh_cn.json", "ResourcePaths.DATA_LOCALIZATION_ZH_CN")
+	_assert_eq(ResourcePaths.DATA_UI_COMMANDS, "res://data/ui_commands.json", "ResourcePaths.DATA_UI_COMMANDS")
 
 	# 资源目录
 	_assert_eq(ResourcePaths.DIR_ASSETS, "res://assets/", "ResourcePaths.DIR_ASSETS")
 	_assert_eq(ResourcePaths.DIR_PORTRAITS, "res://assets/portraits/", "ResourcePaths.DIR_PORTRAITS")
+	_assert_eq(ResourcePaths.DIR_ICONS_128, "res://assets/icons_128/", "ResourcePaths.DIR_ICONS_128")
 	_assert_eq(ResourcePaths.DIR_ICONS_STAT, "res://assets/icons_stat/", "ResourcePaths.DIR_ICONS_STAT")
 
 	print("")
