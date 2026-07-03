@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
+import argparse
 from pathlib import Path
 
 from PIL import Image, ImageEnhance, ImageFilter
@@ -41,15 +43,69 @@ def missing_asset_uris(refresh_generated: bool = True) -> list[str]:
     return sorted(uris)
 
 
+def untracked_generated_asset_uris() -> list[str]:
+    try:
+        output = subprocess.check_output(
+            [
+                "git",
+                "-c",
+                f"safe.directory={ROOT.as_posix()}",
+                "status",
+                "--porcelain",
+                "--",
+                "assets",
+            ],
+            cwd=ROOT,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return []
+
+    uris: set[str] = set()
+    for line in output.splitlines():
+        if not line.startswith("?? "):
+            continue
+        rel = line[3:].strip().replace("\\", "/")
+        path = ROOT / rel
+        if path.parent == ASSETS and path.name.startswith("bg_") and path.suffix.lower() == ".png":
+            uris.add("res://" + rel)
+    return sorted(uris)
+
+
+def port_backgrounds_by_id() -> dict[str, str]:
+    path = ROOT / "data" / "ports.json"
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    out: dict[str, str] = {}
+    for port in data.get("ports", []):
+        if not isinstance(port, dict):
+            continue
+        port_id = str(port.get("id", ""))
+        bg = str(port.get("bg", ""))
+        if port_id and bg.startswith("res://assets/"):
+            out[port_id] = bg
+    return out
+
+
 def existing_image(path: Path) -> bool:
     return path.suffix.lower() in {".png", ".jpg", ".jpeg"} and path.exists()
 
 
 def pool_images(port: str) -> list[Path]:
-    pool = ASSETS / "port_pools" / port
-    if not pool.is_dir():
-        return []
-    return [p for p in sorted(pool.iterdir()) if p.suffix.lower() in {".png", ".jpg", ".jpeg"}]
+    pools = [ASSETS / "port_pools" / port]
+    if port == "penghu":
+        pools.append(ASSETS / "port_pools" / "penghu_night")
+    images: list[Path] = []
+    for pool in pools:
+        if pool.is_dir():
+            images.extend(p for p in sorted(pool.iterdir()) if p.suffix.lower() in {".png", ".jpg", ".jpeg"})
+    return images
 
 
 def seed_index(name: str, count: int) -> int:
@@ -95,6 +151,22 @@ def candidates_for(uri: str) -> list[Path]:
     port_first = {"map", "port", "wharf", "pier"}
 
     candidates: list[Path] = []
+    port_backgrounds = port_backgrounds_by_id()
+
+    specific_fallbacks = {
+        "bg_linan_academy_ruins.png": ["bg_academy.jpg"],
+        "bg_linan_canal_pier.png": ["bg_departure.png", "bg_sea_route_ship.png"],
+        "bg_linan_city_gate.png": ["bg_northern_fortress_snow.png", "bg_fuzhou_yamen.jpg"],
+        "bg_linan_escape_night.png": ["bg_black_water.png", "bg_penghu_night.png"],
+        "bg_linan_smuggle_night.png": ["bg_black_water.png", "bg_sea_route_fog.png", "bg_penghu_night.png"],
+        "bg_pu_mansion_hall.png": ["bg_fuzhou_yamen.jpg", "bg_quanzhou_office.jpg"],
+        "bg_sea_route_fog.png": ["bg_sea_route_koei.png", "bg_black_water.png", "bg_departure.png"],
+    }
+
+    for fallback in specific_fallbacks.get(name, []):
+        p = ASSETS / fallback
+        if existing_image(p):
+            candidates.append(p)
 
     def add_role_fallbacks() -> None:
         for fallback in role_fallbacks.get(role, []):
@@ -103,6 +175,11 @@ def candidates_for(uri: str) -> list[Path]:
                 candidates.append(p)
 
     def add_port_fallbacks() -> None:
+        configured_bg = port_backgrounds.get(port, "")
+        if configured_bg:
+            p = ROOT / configured_bg.removeprefix("res://")
+            if existing_image(p):
+                candidates.append(p)
         for pattern in [
         f"bg_{port}_port.png",
         f"bg_{port}_port.jpg",
@@ -118,13 +195,13 @@ def candidates_for(uri: str) -> list[Path]:
         if pool:
             candidates.append(pool[seed_index(role, len(pool))])
 
-    if role in role_first:
+    if role in port_first:
+        add_port_fallbacks()
+        add_pool_fallback()
         add_role_fallbacks()
-        add_port_fallbacks()
+    elif role in role_first:
         add_pool_fallback()
-    elif role in port_first:
         add_port_fallbacks()
-        add_pool_fallback()
         add_role_fallbacks()
     else:
         add_pool_fallback()
@@ -150,9 +227,35 @@ def crop_cover(image: Image.Image) -> Image.Image:
 
 def transform(image: Image.Image, uri: str) -> Image.Image:
     digest = hashlib.sha1(uri.encode("utf-8")).digest()
+    role = Path(uri).stem.split("_")[-1]
+    zoom = 1.02 + (digest[4] % 5) * 0.012
+    if zoom > 1.0:
+        w, h = image.size
+        zw, zh = round(w * zoom), round(h * zoom)
+        image = image.resize((zw, zh), Image.Resampling.LANCZOS)
+        max_x = zw - w
+        max_y = zh - h
+        left = int(max_x * (digest[5] / 255.0))
+        top = int(max_y * (digest[6] / 255.0))
+        image = image.crop((left, top, left + w, top + h))
     brightness = 0.92 + digest[0] / 255 * 0.18
     contrast = 0.95 + digest[1] / 255 * 0.14
     color = 0.92 + digest[2] / 255 * 0.16
+    if role in {"tavern", "den", "smuggler"}:
+        brightness *= 0.82
+        contrast *= 1.08
+        color *= 0.92
+    elif role in {"market", "salt"}:
+        brightness *= 1.03
+        contrast *= 1.04
+        color *= 1.10
+    elif role in {"temple", "mosque"}:
+        brightness *= 0.94
+        contrast *= 0.98
+        color *= 0.88
+    elif role in {"wharf", "pier", "anchor", "lookout"}:
+        brightness *= 1.02
+        color *= 1.04
     image = ImageEnhance.Brightness(image).enhance(brightness)
     image = ImageEnhance.Contrast(image).enhance(contrast)
     image = ImageEnhance.Color(image).enhance(color)
@@ -170,9 +273,20 @@ def save_image(image: Image.Image, path: Path) -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--refresh-untracked",
+        action="store_true",
+        help="Regenerate untracked generated background PNGs in assets/.",
+    )
+    args = parser.parse_args()
+
     made: list[str] = []
     skipped: list[str] = []
-    for uri in missing_asset_uris():
+    target_uris = set(missing_asset_uris())
+    if args.refresh_untracked:
+        target_uris.update(untracked_generated_asset_uris())
+    for uri in sorted(target_uris):
         out = ROOT / uri.removeprefix("res://")
         candidates = [p for p in candidates_for(uri) if p.resolve() != out.resolve()]
         if not candidates:
