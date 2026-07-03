@@ -395,9 +395,9 @@ func clear_containers() -> void:
 	_clear_domain_controllers()
 	_clear_route_focus_guidance()
 	for child in _interactive_container.get_children():
-		child.free()
+		child.queue_free()
 	for child in _choices_container.get_children():
-		child.free()
+		child.queue_free()
 
 func _clear_route_focus_guidance() -> void:
 	if _route_focus_pulse_tween != null and _route_focus_pulse_tween.is_valid():

@@ -7,6 +7,8 @@ func _init(runner = null) -> void:
 
 func run() -> void:
 	_test_condition_evaluator()
+	_test_facility_resolver_rules()
+	_test_investigation_clear_containers_signal_safe()
 	_test_invest_port_handler()
 	_test_npc_affinity_handlers()
 	_test_duel_action_matrix()
@@ -19,6 +21,67 @@ func _assert_eq(actual, expected, msg: String) -> void:
 
 func _load_script_or_fail(path: String, msg: String):
 	return _runner._load_script_or_fail(path, msg)
+
+func _test_investigation_clear_containers_signal_safe() -> void:
+	print("[InvestigationController cleanup]")
+
+	var host := Node.new()
+	_runner.root.add_child(host)
+
+	var controller := InvestigationController.new()
+	host.add_child(controller)
+
+	var scene_title := Label.new()
+	var body_text := RichTextLabel.new()
+	var interactive_container := HFlowContainer.new()
+	var interactive_label := Label.new()
+	var choices_container := VBoxContainer.new()
+	var choices_label := Label.new()
+	var city_nav_panel := PanelContainer.new()
+	var city_nav_label := Label.new()
+	var city_nav_flow := HFlowContainer.new()
+	var content_root := MarginContainer.new()
+
+	for node in [
+		scene_title,
+		body_text,
+		interactive_container,
+		interactive_label,
+		choices_container,
+		choices_label,
+		city_nav_panel,
+		city_nav_label,
+		city_nav_flow,
+		content_root,
+	]:
+		host.add_child(node)
+
+	controller.bind_ui(
+		scene_title,
+		body_text,
+		interactive_container,
+		interactive_label,
+		choices_container,
+		choices_label,
+		city_nav_panel,
+		city_nav_label,
+		city_nav_flow,
+		content_root,
+	)
+
+	var signal_button := Button.new()
+	var choice_button := Button.new()
+	interactive_container.add_child(signal_button)
+	choices_container.add_child(choice_button)
+
+	signal_button.pressed.connect(Callable(controller, "clear_containers"))
+	signal_button.emit_signal("pressed")
+
+	_assert_true(signal_button.is_queued_for_deletion(), "clear_containers: signal sender queued for deletion")
+	_assert_true(choice_button.is_queued_for_deletion(), "clear_containers: choice child queued for deletion")
+
+	host.queue_free()
+	print("")
 
 class KernelFakeState:
 	var fame: int = 0
@@ -71,6 +134,53 @@ func _test_condition_evaluator() -> void:
 	_assert_true(ConditionEvaluator.matches({"port_affinity_min": 5.0}, {"port_id": "quanzhou", "game_state": affinity_state}), "ConditionEvaluator: port_affinity_min 支持自动获得条件")
 	_assert_true(not ConditionEvaluator.matches({"port_affinity_min": 6.0}, {"port_id": "quanzhou", "game_state": affinity_state}), "ConditionEvaluator: port_affinity_min 未达标时失败")
 
+	print("")
+
+# ── FacilityResolver tests ────────────────────────────────
+
+func _test_facility_resolver_rules() -> void:
+	print("[FacilityResolver]")
+
+	var resolver = _load_script_or_fail(ResourcePaths.SCRIPT_FACILITY_RESOLVER, "FacilityResolver script loads")
+	if resolver == null:
+		print("")
+		return
+
+	var unlock_flag := "facility_resolver_test_unlock"
+	var block_flag := "facility_resolver_test_block"
+	GameState.set_story_flag(unlock_flag, false)
+	GameState.set_story_flag(block_flag, false)
+
+	var gated_fac := {"requires_story_flag": unlock_flag}
+	_assert_true(not resolver.facility_available(gated_fac), "facility_available: requires flag blocks when absent")
+	GameState.set_story_flag(unlock_flag, true)
+	_assert_true(resolver.facility_available(gated_fac), "facility_available: requires flag opens when present")
+
+	var blocked_choice := {"unless_story_flag": block_flag}
+	_assert_true(resolver.choice_available(blocked_choice), "choice_available: unless flag absent")
+	GameState.set_story_flag(block_flag, true)
+	_assert_true(not resolver.choice_available(blocked_choice), "choice_available: unless flag blocks")
+
+	_assert_eq(resolver.resolve_facility_scene({"id": "city_market"}, "quanzhou"), "quanzhou_market", "resolve_facility_scene: city_ prefix")
+	_assert_eq(resolver.resolve_facility_scene({"id": "custom_scene"}, "quanzhou"), "custom_scene", "resolve_facility_scene: explicit id passthrough")
+	_assert_eq(resolver.resolve_hotspot_scene({"scene_id": "hotspot_scene"}, {"id": "city_market"}, "quanzhou"), "hotspot_scene", "resolve_hotspot_scene: explicit scene_id")
+	_assert_eq(resolver.resolve_hotspot_scene({}, {"id": "city_market"}, "quanzhou"), "quanzhou_market", "resolve_hotspot_scene: fallback facility scene")
+	_assert_eq(resolver.resolve_choice_style({"next": "world_map"}), "sail", "resolve_choice_style: world_map sail")
+	_assert_eq(resolver.resolve_choice_style({"choice_style": "quest", "next": "world_map"}), "quest", "resolve_choice_style: configured style wins")
+
+	var display: Dictionary = resolver.resolve_facility_subtitle({
+		"subtitle": {
+			"default": "默认",
+			"state": "default",
+			"rules": [{"requires_story_flag": unlock_flag, "text": "开启", "state": "quest"}],
+		},
+	})
+	_assert_eq(display.get("text", ""), "开启", "resolve_facility_subtitle: rule text")
+	_assert_eq(display.get("state", ""), "quest", "resolve_facility_subtitle: rule state")
+	_assert_eq(GameManager.resolve_facility_scene({"id": "city_inn"}, "keelung"), "keelung_inn", "GameManager delegates facility resolver")
+
+	GameState.set_story_flag(unlock_flag, false)
+	GameState.set_story_flag(block_flag, false)
 	print("")
 
 # ── NK1-P6: 港口投资 Handler 测试 ─────────────────────────
