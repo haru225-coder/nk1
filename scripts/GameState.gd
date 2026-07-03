@@ -13,6 +13,7 @@ const DAYS_PER_WORLD_MONTH := 30
 const CalendarStateScript := preload("res://scripts/state/CalendarState.gd")
 const CalendarEventSchedulerScript := preload(ResourcePaths.SCRIPT_CALENDAR_EVENT_SCHEDULER)
 const CareerStateScript := preload(ResourcePaths.SCRIPT_CAREER_STATE)
+const EndingResolverScript := preload(ResourcePaths.SCRIPT_ENDING_RESOLVER)
 
 var fleet: FleetState = FleetState.new()
 var survival: SurvivalState = SurvivalState.new()
@@ -23,6 +24,7 @@ var navigation: NavigationState = NavigationState.new()
 var market: MarketState = MarketState.new()
 var calendar = CalendarStateScript.new()
 var calendar_scheduler = CalendarEventSchedulerScript.new()
+var ending_resolver = EndingResolverScript.new()
 var economy_log: EconomyLog = EconomyLog.new()
 var game_log: GameLog = GameLog.new()
 
@@ -34,6 +36,7 @@ func _ready() -> void:
 	if career != null and career.has_method("load_defs"):
 		career.load_defs()
 	bind_calendar_scheduler()
+	bind_ending_resolver()
 
 func bind_calendar_scheduler(base_ctx: Dictionary = {}) -> void:
 	if calendar_scheduler == null:
@@ -42,6 +45,24 @@ func bind_calendar_scheduler(base_ctx: Dictionary = {}) -> void:
 		calendar_scheduler.load_events()
 	if calendar_scheduler.has_method("bind_calendar"):
 		calendar_scheduler.bind_calendar(calendar, self, base_ctx)
+
+func bind_ending_resolver(cutscene_player = null) -> void:
+	if ending_resolver == null:
+		return
+	if ending_resolver.has_method("load_defs"):
+		ending_resolver.load_defs()
+	if ending_resolver.has_method("bind"):
+		ending_resolver.bind(self, cutscene_player)
+	if career != null and career.has_signal("rank_changed"):
+		var cb := Callable(self, "_on_career_rank_changed")
+		if not career.rank_changed.is_connected(cb):
+			career.rank_changed.connect(cb)
+
+func _on_career_rank_changed(_new_rank: int) -> void:
+	if career == null or not career.has_method("is_apex") or not career.is_apex():
+		return
+	if ending_resolver != null and ending_resolver.has_method("evaluate"):
+		ending_resolver.evaluate(self)
 
 func _process(_delta: float) -> void:
 	var now := Time.get_ticks_msec()
@@ -498,6 +519,7 @@ func _init_effect_handlers() -> void:
 		"money":                    _apply_money,
 		"hull_hp":                  _apply_hull_hp,
 		"cargo":                    _apply_cargo,
+		"career_promote":           _apply_career_promote,
 		"artillery":                _apply_artillery,
 		"swordplay":                _apply_swordplay,
 		"maneuverability":          _apply_maneuverability,
@@ -509,12 +531,18 @@ const _SILENT_KEYS := ["sea_tendency", "scholar_tendency", "merchant_credit", "l
 func apply_effects(effects: Dictionary) -> void:
 	if _effect_handlers.is_empty():
 		_init_effect_handlers()
+	var pending_career_promote = null
 	for key in effects.keys():
 		var val = effects[key]
+		if key == "career_promote":
+			pending_career_promote = val
+			continue
 		if _effect_handlers.has(key):
 			_effect_handlers[key].call(val)
 		elif not key in _SILENT_KEYS:
 			push_warning("[GameState] apply_effects: unknown key '" + key + "'")
+	if pending_career_promote != null:
+		_apply_career_promote(pending_career_promote)
 
 ## ── 各效果处理器 ───────────────────────────────────────────
 
@@ -602,6 +630,12 @@ func _apply_cargo(val) -> void:
 		var ratio := absf(float(val))
 		if float(val) < 0.0:
 			CargoSystem.remove_fraction(ratio)
+
+func _apply_career_promote(val) -> void:
+	if not bool(val):
+		return
+	if career != null and career.has_method("promote"):
+		career.promote(self, calendar)
 
 func _apply_artillery(val) -> void:
 	artillery = max(0, artillery + int(val))

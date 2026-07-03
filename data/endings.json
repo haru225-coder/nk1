@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "endings": [
+    {
+      "id": "loyalty_ending",
+      "condition": {"rank_apex": true, "flag": "spring_autumn_scroll", "linboyuan_gte": 50},
+      "cutscene": "ending_loyalty",
+      "terminal_state": "completed_loyalty",
+      "priority": 30
+    },
+    {
+      "id": "defection_ending",
+      "condition": {"rank_apex": true, "jia_gte": 50},
+      "cutscene": "ending_defection",
+      "terminal_state": "completed_defection",
+      "priority": 20
+    },
+    {
+      "id": "overseas_ending",
+      "condition": {"rank_apex": true, "flag": "overseas_voyage"},
+      "cutscene": "ending_overseas",
+      "terminal_state": "completed_overseas",
+      "priority": 10
+    }
+  ]
+}

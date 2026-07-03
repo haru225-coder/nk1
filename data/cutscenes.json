@@ -31,6 +31,20 @@
       "cg_alias": "res://assets/bg_sea_route_koei.png",
       "caption": "[b]结局 · 忠义[/b]\n你选择了与陈文龙共存亡...",
       "panels": []
+    },
+    "ending_defection": {
+      "hook": "ending",
+      "ending_id": "defection_ending",
+      "cg_alias": "res://assets/bg_pu_mansion_hall.png",
+      "caption": "[b]结局 · 投附[/b]\n你在风暴将至前转身，换得一线生路。",
+      "panels": []
+    },
+    "ending_overseas": {
+      "hook": "ending",
+      "ending_id": "overseas_ending",
+      "cg_alias": "res://assets/bg_sea_route_fog.png",
+      "caption": "[b]结局 · 远航[/b]\n你离开旧港与旧朝，驶向更远的海面。",
+      "panels": []
     }
   }
 }

@@ -694,31 +694,34 @@ func _test_story_unlock_toast_feedback() -> void:
 
 	var main_file := FileAccess.open("res://scripts/Main.gd", FileAccess.READ)
 	var main_text := main_file.get_as_text() if main_file != null else ""
-	_assert_true(main_text.contains("STORY_UNLOCK_TOAST_NAME"), "解锁Toast: Main 定义 Toast 节点常量")
+	var toast_file := FileAccess.open(ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER, FileAccess.READ)
+	var toast_text := toast_file.get_as_text() if toast_file != null else ""
+	_assert_true(main_text.contains("StoryUnlockToastControllerScript"), "解锁Toast: Main 创建 Toast 控制器")
 	_assert_true(main_text.contains("_setup_story_unlock_toast()"), "解锁Toast: Main ready 阶段创建 Toast 层")
 	_assert_true(main_text.contains("story_unlock_notified.connect(_show_story_unlock_toast"), "解锁Toast: 解锁信号接入 Toast 动画")
-	_assert_true(main_text.contains("StoryUnlockToastLabel"), "解锁Toast: Toast 含专用文本 Label")
-	_assert_true(main_text.contains("theme_type_variation = &\"PortTitleBanner\""), "解锁Toast: 面板复用主题变体")
-	_assert_true(main_text.contains("theme_type_variation = &\"MarketTitle\""), "解锁Toast: 文本复用高亮标题主题")
-	_assert_true(main_text.contains("create_tween()"), "解锁Toast: 使用 Tween 播放短暂高亮")
-	_assert_true(main_text.contains("modulate:a"), "解锁Toast: Tween 包含淡入淡出")
-	_assert_true(main_text.contains("tween_interval(STORY_UNLOCK_TOAST_HOLD"), "解锁Toast: Toast 保持短暂停留")
+	_assert_true(toast_text.contains("STORY_UNLOCK_TOAST_NAME"), "解锁Toast: 控制器定义 Toast 节点常量")
+	_assert_true(toast_text.contains("StoryUnlockToastLabel"), "解锁Toast: Toast 含专用文本 Label")
+	_assert_true(toast_text.contains("theme_type_variation = &\"PortTitleBanner\""), "解锁Toast: 面板复用主题变体")
+	_assert_true(toast_text.contains("theme_type_variation = &\"MarketTitle\""), "解锁Toast: 文本复用高亮标题主题")
+	_assert_true(toast_text.contains("create_tween()"), "解锁Toast: 使用 Tween 播放短暂高亮")
+	_assert_true(toast_text.contains("modulate:a"), "解锁Toast: Tween 包含淡入淡出")
+	_assert_true(toast_text.contains("tween_interval(STORY_UNLOCK_TOAST_HOLD"), "解锁Toast: Toast 保持短暂停留")
 
-	var main_script = _load_script_or_fail("res://scripts/Main.gd", "Main 脚本可加载")
-	var main = main_script.new() if main_script != null else null
-	_assert_true(main != null, "解锁Toast: Main 脚本可实例化")
-	if main != null and main.has_method("_setup_story_unlock_toast"):
-		main.call("_setup_story_unlock_toast")
-		var toast = main.get_node_or_null("StoryUnlockToast")
+	var toast_script = _load_script_or_fail(ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER, "StoryUnlockToastController 脚本可加载")
+	var toast_controller = toast_script.new() if toast_script != null else null
+	_assert_true(toast_controller != null, "解锁Toast: 控制器脚本可实例化")
+	if toast_controller != null and toast_controller.has_method("_setup_story_unlock_toast"):
+		toast_controller.call("_setup_story_unlock_toast")
+		var toast = toast_controller.get_node_or_null("StoryUnlockToast")
 		_assert_true(toast is PanelContainer, "解锁Toast: 创建 PanelContainer Toast 节点")
 		_assert_true(toast != null and toast.visible == false, "解锁Toast: 初始隐藏")
 		_assert_true(toast != null and toast.mouse_filter == Control.MOUSE_FILTER_STOP, "解锁Toast: 可点击并拦截鼠标")
 		var label = toast.find_child("StoryUnlockToastLabel", true, false) if toast != null else null
 		_assert_true(label is Label, "解锁Toast: 创建文本 Label")
 	else:
-		_assert_true(false, "解锁Toast: Main 暴露 _setup_story_unlock_toast")
-	if main != null:
-		main.free()
+		_assert_true(false, "解锁Toast: 控制器暴露 _setup_story_unlock_toast")
+	if toast_controller != null:
+		toast_controller.free()
 
 	print("")
 
@@ -727,46 +730,46 @@ func _test_story_unlock_toast_feedback() -> void:
 func _test_story_unlock_toast_categories() -> void:
 	print("[Story Unlock Toast Categories]")
 
-	var main_script = _load_script_or_fail("res://scripts/Main.gd", "Main 脚本可加载")
-	var main = main_script.new() if main_script != null else null
-	_assert_true(main != null, "分类Toast: Main 脚本可实例化")
-	if main == null:
+	var toast_script = _load_script_or_fail(ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER, "StoryUnlockToastController 脚本可加载")
+	var toast_controller = toast_script.new() if toast_script != null else null
+	_assert_true(toast_controller != null, "分类Toast: 控制器脚本可实例化")
+	if toast_controller == null:
 		print("")
 		return
 
-	_assert_true(main.has_method("_format_story_unlock_toast"), "分类Toast: Main 暴露 Toast 分类格式化")
-	if main.has_method("_format_story_unlock_toast"):
-		var card: Dictionary = main.call("_format_story_unlock_toast", "【解锁】获得札「刺桐商路札」：打听刺桐商路")
+	_assert_true(toast_controller.has_method("_format_story_unlock_toast"), "分类Toast: 控制器暴露 Toast 分类格式化")
+	if toast_controller.has_method("_format_story_unlock_toast"):
+		var card: Dictionary = toast_controller.call("_format_story_unlock_toast", "【解锁】获得札「刺桐商路札」：打听刺桐商路")
 		_assert_eq(card.get("badge", ""), "札入手", "分类Toast: 获得札显示札入手")
 		_assert_eq(card.get("icon", ""), "◆", "分类Toast: 札使用札图标")
 		_assert_true(str(card.get("text", "")).contains("刺桐商路札"), "分类Toast: 札正文保留札名")
 		_assert_true(not str(card.get("text", "")).contains("【解锁】"), "分类Toast: 正文移除通用解锁前缀")
 
-		var title: Dictionary = main.call("_format_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
+		var title: Dictionary = toast_controller.call("_format_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
 		_assert_eq(title.get("badge", ""), "称号获得", "分类Toast: 获得称号显示称号获得")
 		_assert_eq(title.get("icon", ""), "★", "分类Toast: 称号使用星标图标")
 
-		var relationship: Dictionary = main.call("_format_story_unlock_toast", "【解锁】关系突破「林伯渊」→ 赏识：更深的市舶司消息")
+		var relationship: Dictionary = toast_controller.call("_format_story_unlock_toast", "【解锁】关系突破「林伯渊」→ 赏识：更深的市舶司消息")
 		_assert_eq(relationship.get("badge", ""), "关系进展", "分类Toast: 关系突破显示关系进展")
 		_assert_eq(relationship.get("icon", ""), "◎", "分类Toast: 关系使用环形图标")
 
-		var fallback: Dictionary = main.call("_format_story_unlock_toast", "【解锁】新的剧情线索")
+		var fallback: Dictionary = toast_controller.call("_format_story_unlock_toast", "【解锁】新的剧情线索")
 		_assert_eq(fallback.get("badge", ""), "解锁", "分类Toast: 未知解锁使用默认分类")
 		_assert_eq(fallback.get("icon", ""), "◇", "分类Toast: 未知解锁使用默认图标")
 
-	main.call("_setup_story_unlock_toast")
-	var toast = main.get_node_or_null("StoryUnlockToast")
+	toast_controller.call("_setup_story_unlock_toast")
+	var toast = toast_controller.get_node_or_null("StoryUnlockToast")
 	var badge = toast.find_child("StoryUnlockToastBadge", true, false) if toast != null else null
 	var label = toast.find_child("StoryUnlockToastLabel", true, false) if toast != null else null
 	_assert_true(badge is Label, "分类Toast: Toast 创建分类徽标 Label")
-	if main.has_method("_show_story_unlock_toast"):
-		main.call("_show_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
+	if toast_controller.has_method("_show_story_unlock_toast"):
+		toast_controller.call("_show_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
 		_assert_true(badge != null and str(badge.text).contains("称号获得"), "分类Toast: 徽标显示称号分类")
 		_assert_true(badge != null and str(badge.text).contains("★"), "分类Toast: 徽标显示称号图标")
 		_assert_true(label != null and str(label.text).contains("初露锋芒的海商"), "分类Toast: 正文显示称号名")
 		_assert_true(label != null and not str(label.text).contains("【解锁】"), "分类Toast: 正文不重复通用前缀")
 
-	main.free()
+	toast_controller.free()
 	print("")
 
 # ── 太阁式解锁 Toast 点击札册跳转测试 ─────────────────────
@@ -776,34 +779,37 @@ func _test_story_unlock_toast_storybook_jump() -> void:
 
 	var main_file := FileAccess.open("res://scripts/Main.gd", FileAccess.READ)
 	var main_text := main_file.get_as_text() if main_file != null else ""
-	_assert_true(main_text.contains("_unlock_toast_tab"), "Toast跳札册: Main 保存目标页签")
-	_assert_true(main_text.contains("gui_input.connect(_on_story_unlock_toast_gui_input"), "Toast跳札册: Toast 接入点击事件")
-	_assert_true(main_text.contains("game_shell.show_storybook(_unlock_toast_tab"), "Toast跳札册: 点击后调用札册目标页签")
+	var toast_file := FileAccess.open(ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER, FileAccess.READ)
+	var toast_text := toast_file.get_as_text() if toast_file != null else ""
+	_assert_true(main_text.contains("StoryUnlockToastControllerScript"), "Toast跳札册: Main 使用 Toast 控制器")
+	_assert_true(toast_text.contains("_unlock_toast_tab"), "Toast跳札册: 控制器保存目标页签")
+	_assert_true(toast_text.contains("gui_input.connect(_on_story_unlock_toast_gui_input"), "Toast跳札册: Toast 接入点击事件")
+	_assert_true(toast_text.contains("_game_shell.show_storybook(_unlock_toast_tab"), "Toast跳札册: 点击后调用札册目标页签")
 
 	var shell_file := FileAccess.open("res://scripts/GameShell.gd", FileAccess.READ)
 	var shell_text := shell_file.get_as_text() if shell_file != null else ""
 	_assert_true(shell_text.contains("func show_storybook(initial_tab: int = 0"), "Toast跳札册: GameShell 支持指定页签打开札册")
 	_assert_true(shell_text.contains("STORYBOOK_VIEW_BUILDER.build(GameState.story, initial_tab"), "Toast跳札册: GameShell 将目标页签传给札册 UI")
 
-	var main_script = _load_script_or_fail("res://scripts/Main.gd", "Main 脚本可加载")
-	var main = main_script.new() if main_script != null else null
-	_assert_true(main != null, "Toast跳札册: Main 脚本可实例化")
-	if main != null and main.has_method("_format_story_unlock_toast"):
-		var card: Dictionary = main.call("_format_story_unlock_toast", "【解锁】获得札「刺桐商路札」：打听刺桐商路")
-		var title: Dictionary = main.call("_format_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
-		var relationship: Dictionary = main.call("_format_story_unlock_toast", "【解锁】关系突破「林伯渊」→ 赏识：更深的市舶司消息")
+	var toast_script = _load_script_or_fail(ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER, "StoryUnlockToastController 脚本可加载")
+	var toast_controller = toast_script.new() if toast_script != null else null
+	_assert_true(toast_controller != null, "Toast跳札册: 控制器脚本可实例化")
+	if toast_controller != null and toast_controller.has_method("_format_story_unlock_toast"):
+		var card: Dictionary = toast_controller.call("_format_story_unlock_toast", "【解锁】获得札「刺桐商路札」：打听刺桐商路")
+		var title: Dictionary = toast_controller.call("_format_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
+		var relationship: Dictionary = toast_controller.call("_format_story_unlock_toast", "【解锁】关系突破「林伯渊」→ 赏识：更深的市舶司消息")
 		_assert_eq(card.get("tab", -1), 0, "Toast跳札册: 札入手跳到札页")
 		_assert_eq(title.get("tab", -1), 1, "Toast跳札册: 称号获得跳到称号页")
 		_assert_eq(relationship.get("tab", -1), 2, "Toast跳札册: 关系进展跳到人物关系页")
-		main.call("_setup_story_unlock_toast")
-		var toast = main.get_node_or_null("StoryUnlockToast")
+		toast_controller.call("_setup_story_unlock_toast")
+		var toast = toast_controller.get_node_or_null("StoryUnlockToast")
 		_assert_true(toast != null and toast.mouse_filter == Control.MOUSE_FILTER_STOP, "Toast跳札册: Toast 可点击且拦截鼠标")
-		main.call("_show_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
-		_assert_eq(main.get("_unlock_toast_tab"), 1, "Toast跳札册: 显示称号 Toast 后保存称号页签")
+		toast_controller.call("_show_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
+		_assert_eq(toast_controller.get("_unlock_toast_tab"), 1, "Toast跳札册: 显示称号 Toast 后保存称号页签")
 	else:
-		_assert_true(false, "Toast跳札册: Main 暴露 Toast 格式化")
-	if main != null:
-		main.free()
+		_assert_true(false, "Toast跳札册: 控制器暴露 Toast 格式化")
+	if toast_controller != null:
+		toast_controller.free()
 
 	var builder = _load_script_or_fail(ResourcePaths.SCRIPT_STORYBOOK_VIEW_BUILDER, "StorybookViewBuilder 脚本可加载")
 	if builder != null:
@@ -824,34 +830,37 @@ func _test_story_unlock_toast_storybook_focus() -> void:
 
 	var main_file := FileAccess.open("res://scripts/Main.gd", FileAccess.READ)
 	var main_text := main_file.get_as_text() if main_file != null else ""
-	_assert_true(main_text.contains("_unlock_toast_target_id"), "Toast定位: Main 保存札册目标条目 id")
-	_assert_true(main_text.contains("game_shell.show_storybook(_unlock_toast_tab, _unlock_toast_target_id"), "Toast定位: 点击后传递目标条目 id")
+	var toast_file := FileAccess.open(ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER, FileAccess.READ)
+	var toast_text := toast_file.get_as_text() if toast_file != null else ""
+	_assert_true(main_text.contains("StoryUnlockToastControllerScript"), "Toast定位: Main 使用 Toast 控制器")
+	_assert_true(toast_text.contains("_unlock_toast_target_id"), "Toast定位: 控制器保存札册目标条目 id")
+	_assert_true(toast_text.contains("_game_shell.show_storybook(_unlock_toast_tab, _unlock_toast_target_id"), "Toast定位: 点击后传递目标条目 id")
 
 	var shell_file := FileAccess.open("res://scripts/GameShell.gd", FileAccess.READ)
 	var shell_text := shell_file.get_as_text() if shell_file != null else ""
 	_assert_true(shell_text.contains("func show_storybook(initial_tab: int = 0, focus_id: String = \"\")"), "Toast定位: GameShell 支持指定札册聚焦条目")
 	_assert_true(shell_text.contains("STORYBOOK_VIEW_BUILDER.build(GameState.story, initial_tab, focus_id"), "Toast定位: GameShell 将聚焦条目传给札册 UI")
 
-	var main_script = _load_script_or_fail("res://scripts/Main.gd", "Main 脚本可加载")
-	var main = main_script.new() if main_script != null else null
-	_assert_true(main != null, "Toast定位: Main 脚本可实例化")
-	if main != null and main.has_method("_format_story_unlock_toast"):
-		var card: Dictionary = main.call("_format_story_unlock_toast", "【解锁】获得札「刺桐商路札」：打听刺桐商路")
-		var title: Dictionary = main.call("_format_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
-		var relationship: Dictionary = main.call("_format_story_unlock_toast", "【解锁】关系突破「林伯渊」→ 赏识：更深的市舶司消息")
+	var toast_script = _load_script_or_fail(ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER, "StoryUnlockToastController 脚本可加载")
+	var toast_controller = toast_script.new() if toast_script != null else null
+	_assert_true(toast_controller != null, "Toast定位: 控制器脚本可实例化")
+	if toast_controller != null and toast_controller.has_method("_format_story_unlock_toast"):
+		var card: Dictionary = toast_controller.call("_format_story_unlock_toast", "【解锁】获得札「刺桐商路札」：打听刺桐商路")
+		var title: Dictionary = toast_controller.call("_format_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
+		var relationship: Dictionary = toast_controller.call("_format_story_unlock_toast", "【解锁】关系突破「林伯渊」→ 赏识：更深的市舶司消息")
 		_assert_eq(str(card.get("target_id", "")), "card_zaitong_trade_intro", "Toast定位: 札消息解析到札 id")
 		_assert_eq(str(title.get("target_id", "")), "title_rookie_merchant", "Toast定位: 称号消息解析到称号 id")
 		_assert_eq(str(relationship.get("target_id", "")), "lin_boyuan", "Toast定位: 关系消息解析到人物 id")
-		if main_text.contains("_unlock_toast_target_id") and main.has_method("_show_story_unlock_toast"):
-			main.call("_setup_story_unlock_toast")
-			main.call("_show_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
-			_assert_eq(str(main.get("_unlock_toast_target_id")), "title_rookie_merchant", "Toast定位: 显示称号 Toast 后保存目标称号 id")
+		if toast_text.contains("_unlock_toast_target_id") and toast_controller.has_method("_show_story_unlock_toast"):
+			toast_controller.call("_setup_story_unlock_toast")
+			toast_controller.call("_show_story_unlock_toast", "【解锁】获得称号「初露锋芒的海商」：可向市舶司递话")
+			_assert_eq(str(toast_controller.get("_unlock_toast_target_id")), "title_rookie_merchant", "Toast定位: 显示称号 Toast 后保存目标称号 id")
 		else:
-			_assert_true(false, "Toast定位: Main 暴露并保存目标条目 id")
+			_assert_true(false, "Toast定位: 控制器暴露并保存目标条目 id")
 	else:
-		_assert_true(false, "Toast定位: Main 暴露 Toast 格式化")
-	if main != null:
-		main.free()
+		_assert_true(false, "Toast定位: 控制器暴露 Toast 格式化")
+	if toast_controller != null:
+		toast_controller.free()
 
 	var builder = _load_script_or_fail(ResourcePaths.SCRIPT_STORYBOOK_VIEW_BUILDER, "StorybookViewBuilder 脚本可加载")
 	if builder != null and shell_text.contains("focus_id"):

@@ -41,6 +41,8 @@ func _run() -> void:
 	_test_port_specialty_unlock()
 	_run_calendar_tests()
 	_test_career_state()
+	_test_ending_resolver()
+	_test_chapter3_ending_bridge()
 	_run_controller_tests()
 	_run_story_tests()
 	_test_event_economy_integration()
@@ -187,8 +189,10 @@ func _run_world_test(method_name: String) -> void:
 class KernelFakeState:
 	var fame: int = 0
 	var market = null
+	var career = null
 	var _story_flags: Dictionary = {}
 	var _flags: Dictionary = {}
+	var _story_items: Dictionary = {}
 	var _npc_relationships: Dictionary = {}
 
 	func has_story_flag(key: String) -> bool:
@@ -197,8 +201,17 @@ class KernelFakeState:
 	func set_story_flag(key: String, value = true) -> void:
 		_story_flags[key] = value
 
+	func get_story_flag(key: String, default = null):
+		return _story_flags.get(key, default)
+
 	func has_flag(key: String) -> bool:
 		return bool(_flags.get(key, false))
+
+	func has_item_flag(item_id: String) -> bool:
+		return bool(_story_items.get(item_id, false))
+
+	func acquire_item(item_id: String) -> void:
+		_story_items[item_id] = true
 
 	func get_npc_relationship(npc_id: String) -> int:
 		return int(_npc_relationships.get(npc_id, 0))
@@ -212,6 +225,18 @@ class KernelFakeState:
 		if effects.has("npc_relationship"):
 			var payload: Dictionary = effects["npc_relationship"]
 			adjust_npc_relationship(str(payload.get("npc_id", "")), int(payload.get("delta", 0)))
+
+class EndingFakeCareer:
+	var apex: bool = false
+
+	func is_apex() -> bool:
+		return apex
+
+class EndingFakeCutscenePlayer:
+	var played: Array[String] = []
+
+	func play(cutscene_id: String) -> void:
+		played.append(cutscene_id)
 
 # ── PriceEngine 测试 ─────────────────────────────────────
 
@@ -1320,6 +1345,18 @@ func _test_career_state() -> void:
 		var gs_saved: Dictionary = game_state.to_save_dict()
 		_assert_true(gs_saved.has("career"), "GameState: 存档包含 career")
 
+		var before_promotion_state: Dictionary = game_state.to_save_dict()
+		var promotion_career = game_state.get("career")
+		if promotion_career != null and promotion_career.has_method("load_defs"):
+			promotion_career.load_defs()
+			promotion_career.from_dict({"rank": 4})
+			game_state.fame = 0
+			game_state.set_story_flag("chapter2_complete", true)
+			game_state.apply_effects({"career_promote": true, "fame": 400})
+			_assert_eq(promotion_career.get_rank(), 5, "GameState effects: career_promote 在 fame 后升至 apex rank")
+			_assert_true(promotion_career.is_apex(), "GameState effects: career_promote 可触发 apex")
+		game_state.from_save_dict(before_promotion_state)
+
 		var status_scene: PackedScene = load(ResourcePaths.SCENE_PORT_STATUS_BAR) as PackedScene
 		_assert_true(status_scene != null, "CareerState UI: PortStatusBar 可加载")
 		if status_scene != null:
@@ -1337,6 +1374,140 @@ func _test_career_state() -> void:
 			game_state.from_save_dict(before_state)
 
 	print("")
+
+# ── P7-E: EndingResolver 结局判定测试 ─────────────────────
+
+func _test_ending_resolver() -> void:
+	print("[Endings]")
+
+	var resolver_script = _load_script_or_fail(ResourcePaths.SCRIPT_ENDING_RESOLVER, "EndingResolver 脚本可加载")
+	if resolver_script == null:
+		print("")
+		return
+	_assert_true(ResourcePaths.DATA_ENDINGS != "", "ResourcePaths.DATA_ENDINGS")
+
+	var fixture := {
+		"version": 1,
+		"endings": [
+			{
+				"id": "loyalty_ending",
+				"condition": {"rank_apex": true, "flag": "spring_autumn_scroll", "linboyuan_gte": 50},
+				"cutscene": "ending_loyalty",
+				"terminal_state": "completed_loyalty",
+				"priority": 30,
+			},
+			{
+				"id": "defection_ending",
+				"condition": {"rank_apex": true, "jia_gte": 50},
+				"cutscene": "ending_defection",
+				"terminal_state": "completed_defection",
+				"priority": 20,
+			},
+			{
+				"id": "overseas_ending",
+				"condition": {"rank_apex": true, "flag": "overseas_voyage"},
+				"cutscene": "ending_overseas",
+				"terminal_state": "completed_overseas",
+				"priority": 10,
+			},
+		],
+	}
+
+	var resolver = resolver_script.new()
+	_assert_true(resolver.has_method("load_from_data"), "EndingResolver: 支持测试数据加载")
+	_assert_true(resolver.has_method("evaluate"), "EndingResolver: 暴露 evaluate")
+	resolver.load_from_data(fixture)
+	_assert_eq(resolver.get_ending_count(), 3, "EndingResolver: 载入3条结局")
+
+	var fake_state := KernelFakeState.new()
+	fake_state.career = EndingFakeCareer.new()
+	fake_state.acquire_item("spring_autumn_scroll")
+	fake_state.adjust_npc_relationship("lin_boyuan", 50)
+	var not_apex := resolver.evaluate(fake_state)
+	_assert_true(not not_apex.success, "EndingResolver: 非 apex 不触发结局")
+
+	fake_state.career.apex = true
+	fake_state.adjust_npc_relationship("jia", 50)
+	var player := EndingFakeCutscenePlayer.new()
+	resolver.bind(fake_state, player)
+	var result := resolver.evaluate()
+	_assert_true(result.success, "EndingResolver: apex 且条件满足可触发")
+	_assert_eq(result.data.get("ending_id", ""), "loyalty_ending", "EndingResolver: 多结局同时满足按 priority 选忠义")
+	_assert_eq(player.played[0], "ending_loyalty", "EndingResolver: 播放所选结局过场")
+	_assert_true(fake_state.has_story_flag("game_completed"), "EndingResolver: 写入 game_completed")
+	_assert_true(fake_state.has_story_flag("ending:loyalty_ending"), "EndingResolver: 写入具体 ending flag")
+	_assert_true(fake_state.has_story_flag("completed_loyalty"), "EndingResolver: 写入 terminal_state")
+
+	var defection_state := KernelFakeState.new()
+	defection_state.career = EndingFakeCareer.new()
+	defection_state.career.apex = true
+	defection_state.adjust_npc_relationship("jia", 50)
+	var defection := resolver.evaluate(defection_state, EndingFakeCutscenePlayer.new())
+	_assert_eq(defection.data.get("ending_id", ""), "defection_ending", "EndingResolver: 贾氏线可触发投附结局")
+
+	var no_match_state := KernelFakeState.new()
+	no_match_state.career = EndingFakeCareer.new()
+	no_match_state.career.apex = true
+	var no_match := resolver.evaluate(no_match_state)
+	_assert_true(not no_match.success, "EndingResolver: apex 但无分支条件时不误判通关")
+	_assert_true(not no_match_state.has_story_flag("game_completed"), "EndingResolver: 无匹配不写终局 flag")
+
+	var game_state = root.get_node_or_null("/root/GameState")
+	_assert_true(game_state != null, "EndingResolver: GameState autoload 可取得")
+	if game_state != null:
+		_assert_true(game_state.get("ending_resolver") != null, "GameState: ending_resolver 模块已挂接")
+
+	print("")
+
+func _test_chapter3_ending_bridge() -> void:
+	print("[Chapter3 Ending Bridge]")
+
+	var game_manager = root.get_node_or_null("/root/GameManager")
+	_assert_true(game_manager != null, "Chapter3: GameManager autoload 可取得")
+	if game_manager == null:
+		print("")
+		return
+
+	var comply := game_manager.get_scene_by_id("chapter3_after_summon_comply_audit_done")
+	var refuse := game_manager.get_scene_by_id("chapter3_refuse_sea_route")
+	var burn := game_manager.get_scene_by_id("chapter3_burn_flee")
+	_assert_true(not comply.is_empty(), "Chapter3: 投附收束场景存在")
+	_assert_true(not refuse.is_empty(), "Chapter3: 忠义收束场景存在")
+	_assert_true(not burn.is_empty(), "Chapter3: 远航收束场景存在")
+
+	var comply_effects := _first_choice_effects(comply)
+	var refuse_effects := _first_choice_effects(refuse)
+	var burn_effects := _first_choice_effects(burn)
+	_assert_true(bool(comply_effects.get("career_promote", false)), "Chapter3: 投附收束触发 career_promote")
+	_assert_true(int(comply_effects.get("jia_relationship", 0)) >= 50, "Chapter3: 投附收束满足 defection_ending 条件")
+	_assert_true(bool(refuse_effects.get("career_promote", false)), "Chapter3: 忠义收束触发 career_promote")
+	_assert_true(int(refuse_effects.get("linboyuan_relationship", 0)) >= 50, "Chapter3: 忠义收束满足 loyalty_ending 关系条件")
+	_assert_true(bool(burn_effects.get("career_promote", false)), "Chapter3: 远航收束触发 career_promote")
+	_assert_true(_effects_set_story_flag(burn_effects, "overseas_voyage"), "Chapter3: 远航收束写入 overseas_voyage")
+
+	print("")
+
+func _first_choice_effects(scene_data: Dictionary) -> Dictionary:
+	var choices: Array = scene_data.get("choices", [])
+	if choices.is_empty():
+		return {}
+	var first_choice = choices[0]
+	if not first_choice is Dictionary:
+		return {}
+	var choice: Dictionary = first_choice
+	var effects = choice.get("effects", {})
+	return effects if effects is Dictionary else {}
+
+func _effects_set_story_flag(effects: Dictionary, flag: String) -> bool:
+	for key in ["story_flag", "story_flag2"]:
+		if not effects.has(key):
+			continue
+		var raw = effects[key]
+		if raw is String and raw == flag:
+			return true
+		if raw is Dictionary and bool((raw as Dictionary).get(flag, false)):
+			return true
+	return false
 
 # ── NK1-P6: ConditionEvaluator 测试 ───────────────────────
 

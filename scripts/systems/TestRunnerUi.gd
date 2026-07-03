@@ -139,10 +139,43 @@ func _test_resource_paths() -> void:
 	_assert_eq(ResourcePaths.SCRIPT_HANDLER_BUY_INTEL, "res://scripts/systems/handlers/BuyIntelHandler.gd", "ResourcePaths.SCRIPT_HANDLER_BUY_INTEL")
 	_assert_eq(ResourcePaths.SCRIPT_HANDLER_INVEST_PORT, "res://scripts/systems/handlers/InvestPortHandler.gd", "ResourcePaths.SCRIPT_HANDLER_INVEST_PORT")
 	_assert_eq(ResourcePaths.SCRIPT_CONDITION_EVALUATOR, "res://scripts/systems/ConditionEvaluator.gd", "ResourcePaths.SCRIPT_CONDITION_EVALUATOR")
+	_assert_eq(ResourcePaths.SCRIPT_ENDING_RESOLVER, "res://scripts/systems/EndingResolver.gd", "ResourcePaths.SCRIPT_ENDING_RESOLVER")
 	_assert_eq(ResourcePaths.SCRIPT_FACILITY_RESOLVER, "res://scripts/FacilityResolver.gd", "ResourcePaths.SCRIPT_FACILITY_RESOLVER")
+	_assert_eq(ResourcePaths.SCRIPT_MAIN_MESSAGE_PANEL, "res://scripts/MainMessagePanel.gd", "ResourcePaths.SCRIPT_MAIN_MESSAGE_PANEL")
+	_assert_eq(ResourcePaths.SCRIPT_MAIN_SCENE_PRESENTER, "res://scripts/MainScenePresenter.gd", "ResourcePaths.SCRIPT_MAIN_SCENE_PRESENTER")
+	_assert_eq(ResourcePaths.SCRIPT_PORT_INTRO_PLAYER, "res://scripts/PortIntroPlayer.gd", "ResourcePaths.SCRIPT_PORT_INTRO_PLAYER")
+	_assert_eq(ResourcePaths.SCRIPT_SCENE_BACKGROUND_LOADER, "res://scripts/SceneBackgroundLoader.gd", "ResourcePaths.SCRIPT_SCENE_BACKGROUND_LOADER")
 	_assert_eq(ResourcePaths.SCRIPT_STORY_TABLE_REGISTRY, "res://scripts/systems/StoryTableRegistry.gd", "ResourcePaths.SCRIPT_STORY_TABLE_REGISTRY")
+	_assert_eq(ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER, "res://scripts/StoryUnlockToastController.gd", "ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER")
 	_assert_eq(ResourcePaths.SCRIPT_STORYBOOK_PRESENTER, "res://scripts/systems/StorybookPresenter.gd", "ResourcePaths.SCRIPT_STORYBOOK_PRESENTER")
 	_assert_eq(ResourcePaths.SCRIPT_STORYBOOK_VIEW_BUILDER, "res://scripts/systems/StorybookViewBuilder.gd", "ResourcePaths.SCRIPT_STORYBOOK_VIEW_BUILDER")
+	var scene_background_loader_script = load(ResourcePaths.SCRIPT_SCENE_BACKGROUND_LOADER)
+	var scene_background_loader_ok := scene_background_loader_script is Script
+	if scene_background_loader_ok:
+		scene_background_loader_ok = (scene_background_loader_script as Script).can_instantiate()
+	_assert_true(scene_background_loader_ok, "SceneBackgroundLoader script loads")
+	var scene_background_loader = scene_background_loader_script.new() if scene_background_loader_ok else null
+	_assert_true(scene_background_loader != null and scene_background_loader.has_method("apply_background"), "SceneBackgroundLoader exposes apply_background")
+	if scene_background_loader != null and scene_background_loader.has_method("resolve_scene_background_path"):
+		var resolved_bg: String = scene_background_loader.call("resolve_scene_background_path", {"bg": ResourcePaths.BG_DEFAULT, "type": "investigation"})
+		_assert_eq(resolved_bg, ResourcePaths.BG_DEFAULT, "SceneBackgroundLoader keeps non-port bg path")
+	var main_message_panel_script = load(ResourcePaths.SCRIPT_MAIN_MESSAGE_PANEL)
+	var main_message_panel_ok := main_message_panel_script is Script
+	if main_message_panel_ok:
+		main_message_panel_ok = (main_message_panel_script as Script).can_instantiate()
+	_assert_true(main_message_panel_ok, "MainMessagePanel script loads")
+	var main_message_panel = main_message_panel_script.new() if main_message_panel_ok else null
+	_assert_true(main_message_panel != null and main_message_panel.has_method("prepend_event_log"), "MainMessagePanel exposes prepend_event_log")
+	var main_scene_presenter_script = load(ResourcePaths.SCRIPT_MAIN_SCENE_PRESENTER)
+	var main_scene_presenter_ok := main_scene_presenter_script is Script
+	if main_scene_presenter_ok:
+		main_scene_presenter_ok = (main_scene_presenter_script as Script).can_instantiate()
+	_assert_true(main_scene_presenter_ok, "MainScenePresenter script loads")
+	var port_intro_player_script = load(ResourcePaths.SCRIPT_PORT_INTRO_PLAYER)
+	var port_intro_player_ok := port_intro_player_script is Script
+	if port_intro_player_ok:
+		port_intro_player_ok = (port_intro_player_script as Script).can_instantiate()
+	_assert_true(port_intro_player_ok, "PortIntroPlayer script loads")
 
 	# 数据文件
 	_assert_eq(ResourcePaths.DATA_SCENES, "res://data/scenes.json", "ResourcePaths.DATA_SCENES")
@@ -157,6 +190,7 @@ func _test_resource_paths() -> void:
 	_assert_eq(ResourcePaths.DATA_FLEETS, "res://data/fleets.json", "ResourcePaths.DATA_FLEETS")
 	_assert_eq(ResourcePaths.DATA_SHIPS, "res://data/ships.json", "ResourcePaths.DATA_SHIPS")
 	_assert_eq(ResourcePaths.DATA_LOCALIZATION_ZH_CN, "res://data/localization/zh_cn.json", "ResourcePaths.DATA_LOCALIZATION_ZH_CN")
+	_assert_eq(ResourcePaths.DATA_ENDINGS, "res://data/endings.json", "ResourcePaths.DATA_ENDINGS")
 	_assert_eq(ResourcePaths.DATA_UI_COMMANDS, "res://data/ui_commands.json", "ResourcePaths.DATA_UI_COMMANDS")
 
 	# 资源目录

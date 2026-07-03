@@ -588,7 +588,10 @@
           "next": "port_linan",
           "effects": {
             "story_flag": "chapter3_comply_audit_done",
-            "jia_relationship": 1
+            "story_flag2": {"chapter3_complete": true},
+            "fame": 120,
+            "jia_relationship": 50,
+            "career_promote": true
           },
           "narration": "你没有再回头。礼部的门在身后合上，像一只木匣扣住了三日后的命数。"
         }
@@ -629,7 +632,11 @@
           "next": "port_penghu",
           "effects": {
             "story_flag": "chapter3_refuse_escape_done",
-            "pu_attention": -2
+            "story_flag2": {"chapter3_complete": true},
+            "fame": 120,
+            "linboyuan_relationship": 50,
+            "pu_attention": -2,
+            "career_promote": true
           },
           "narration": "潮声盖过人声。天亮前，临安已在雾后。"
         }
@@ -670,7 +677,10 @@
           "next": "port_linan",
           "effects": {
             "story_flag": "chapter3_burn_escape_done",
-            "pu_attention": 2
+            "story_flag2": {"chapter3_complete": true, "overseas_voyage": true},
+            "fame": 120,
+            "pu_attention": 2,
+            "career_promote": true
           },
           "narration": "你混进水门边的脚夫队伍。更鼓终于慢了一拍。"
         }
