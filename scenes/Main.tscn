@@ -15,8 +15,8 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("8_vignette")
-shader_parameter/edge_color = Color(0, 0, 0, 0.32)
-shader_parameter/softness = 0.58
+shader_parameter/edge_color = Color(0.02, 0.025, 0.02, 0.48)
+shader_parameter/softness = 0.52
 
 [node name="Main" type="Control"]
 layout_mode = 3

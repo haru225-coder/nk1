@@ -425,6 +425,27 @@ func _test_floating_text_config() -> void:
 
 func _test_map_visual_style() -> void:
 	print("--- MapVisualStyle ---")
+	var theme: Theme = load(ResourcePaths.THEME_MAIN)
+	_assert_not_null(theme, "main theme loads")
+	if theme != null:
+		var sea_hud := theme.get_stylebox("panel", "SeaHudPanel") as StyleBoxFlat
+		_assert_not_null(sea_hud, "SeaHudPanel style exists")
+		if sea_hud != null:
+			_assert_true(sea_hud.bg_color.a >= 0.88, "SeaHudPanel uses opaque nautical HUD surface")
+			_assert_true(sea_hud.bg_color.r < 0.2 and sea_hud.bg_color.g < 0.22 and sea_hud.bg_color.b < 0.28, "SeaHudPanel uses deep sea ink color")
+			_assert_true(sea_hud.border_width_left >= 3 and sea_hud.border_width_top >= 3, "SeaHudPanel has brass frame weight")
+
+		var market_shell := theme.get_stylebox("panel", "MarketShell") as StyleBoxFlat
+		_assert_not_null(market_shell, "MarketShell style exists")
+		if market_shell != null:
+			_assert_true(market_shell.border_width_left >= 3, "MarketShell brass frame has weight")
+			_assert_true(market_shell.corner_radius_top_left <= 8 and market_shell.corner_radius_top_right <= 8, "MarketShell keeps strategy-panel radius")
+
+		var title_panel := theme.get_stylebox("panel", "TitlePanel") as StyleBoxFlat
+		_assert_not_null(title_panel, "TitlePanel style exists")
+		if title_panel != null:
+			_assert_true(title_panel.corner_radius_top_left <= 8 and title_panel.corner_radius_top_right <= 8, "TitlePanel keeps hard nautical frame corners")
+
 	_assert_eq(MapRoutePainter.route_key("quanzhou", "guangzhou"), "guangzhou|quanzhou", "route_key sorted")
 	_assert_eq(MapRoutePainter.ROUTE_COLOR, Color(0.65, 0.15, 0.15, 0.75), "shared route color")
 	_assert_eq(MapRoutePainter.ROUTE_WIDTH_WORLD, 3.0, "world route width")

@@ -15,15 +15,15 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("8_vignette")
-shader_parameter/edge_color = Color(0.3, 0.15, 0.05, 0.75)
-shader_parameter/softness = 0.6
+shader_parameter/edge_color = Color(0.02, 0.025, 0.02, 0.82)
+shader_parameter/softness = 0.54
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean_masked"]
 shader = ExtResource("4_ocean_masked")
 shader_parameter/wave_speed = 0.5
 shader_parameter/wave_freq = 15.0
 shader_parameter/wave_amp = 0.02
-shader_parameter/water_color = Color(0.25, 0.55, 0.50, 1)
+shader_parameter/water_color = Color(0.04, 0.26, 0.32, 1)
 shader_parameter/shore_fade = 0.08
 
 [node name="WorldMap" type="Node2D" unique_id=630777904]
