@@ -24,6 +24,10 @@ MAP_SEA_MASK = "res://assets/map_east_asia_sea_mask.png"
 # port_id -> (lat, lon). ponytail: hardcoded pins, one game, no config file.
 MAP_POS: dict[str, tuple[float, float]] = {
     "byland":     (39.0,  125.7),   # 平壤
+    "byland_goryeo": (37.84, 125.6), # 碧澜渡/开城门户
+    "dengzhou":   (36.8,  120.56),  # 登州
+    "mizhou":     (34.72, 119.3),   # 板桥镇/密州
+    "hirado":     (35.24, 128.12),  # 平户
     "jeju":       (33.5,  126.5),   # 济州
     "tsushima":   (34.3,  129.3),   # 对马
     "hakata":     (33.6,  130.4),   # 博多

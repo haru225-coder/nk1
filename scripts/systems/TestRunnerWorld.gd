@@ -137,6 +137,13 @@ func _test_ship_system() -> void:
 	nav3.clear_voyage_destination()
 	_assert_eq(nav3.voyage_destination_id, "", "voyage destination cleared")
 
+	GameState.set_voyage_destination("guangzhou")
+	var auto_ship: Variant = load("res://scenes/Ship.tscn").instantiate()
+	auto_ship.set_auto_sailing(PackedVector2Array([Vector2.ZERO]))
+	auto_ship._advance_auto_waypoint()
+	_assert_eq(GameState.voyage_destination_id, "", "auto sailing completion clears voyage destination")
+	auto_ship.free()
+
 	var weather_map := Node2D.new()
 	var weather_canvas := CanvasModulate.new()
 	var weather_rain := CPUParticles2D.new()
@@ -164,6 +171,12 @@ func _test_map_layout() -> void:
 	var bounds := MapLayout.get_world_bounds()
 	_assert_eq(bounds.size, Vector2(26000.0, 32200.0), "world_bounds size")
 	_assert_lt(absf(MapLayout.world_bounds_aspect() - (26000.0 / 32200.0)), 0.0001, "world_bounds aspect")
+
+	var grid := MapGridPainter.new()
+	_assert_true(grid.has_method("grid_rect"), "MapGridPainter exposes grid_rect")
+	if grid.has_method("grid_rect"):
+		_assert_eq(grid.grid_rect(), bounds, "MapGridPainter grid covers world_bounds")
+	grid.free()
 
 	var tex := MapLayout.get_map_texture()
 	_assert_not_null(tex, "map texture loads")

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import ast
 import json
 import re
 import sys
@@ -10,6 +11,7 @@ ROOT = Path(__file__).resolve().parent
 SCENE_DIR = ROOT / "data" / "scenes"
 SCENE_FALLBACK = ROOT / "data" / "scenes.json"
 PORTS_JSON = ROOT / "data" / "ports.json"
+SYNC_PORT_POSITIONS = ROOT / "tools" / "sync_port_map_positions.py"
 
 SPECIAL_TARGETS = {"last_port", "world_map"}
 DYNAMIC_SUFFIXES = (
@@ -227,6 +229,43 @@ def check_ports() -> None:
             uri = str(layout.get(key, ""))
             if uri.startswith("res://") and not res_to_path(uri).exists():
                 errors.append(f"ports.json: map_layout.{key} missing resource '{uri}'")
+
+    check_port_sync_source(ports)
+
+
+def check_port_sync_source(ports: list[dict]) -> None:
+    if not SYNC_PORT_POSITIONS.exists():
+        errors.append(f"{SYNC_PORT_POSITIONS.relative_to(ROOT)} is missing")
+        return
+    try:
+        tree = ast.parse(SYNC_PORT_POSITIONS.read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"{SYNC_PORT_POSITIONS.relative_to(ROOT)}: failed to parse: {exc}")
+        return
+
+    map_pos_ids: set[str] = set()
+    for node in tree.body:
+        if not isinstance(node, ast.AnnAssign):
+            continue
+        if not isinstance(node.target, ast.Name) or node.target.id != "MAP_POS":
+            continue
+        if not isinstance(node.value, ast.Dict):
+            errors.append(f"{SYNC_PORT_POSITIONS.relative_to(ROOT)}: MAP_POS must be a dict literal")
+            return
+        for key in node.value.keys:
+            if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                map_pos_ids.add(key.value)
+
+    if not map_pos_ids:
+        errors.append(f"{SYNC_PORT_POSITIONS.relative_to(ROOT)}: MAP_POS is empty or missing")
+        return
+
+    for port in ports:
+        if not isinstance(port, dict):
+            continue
+        port_id = str(port.get("id", "")).strip()
+        if port_id and port_id not in map_pos_ids:
+            errors.append(f"{SYNC_PORT_POSITIONS.relative_to(ROOT)}: MAP_POS missing port '{port_id}'")
 
 
 def res_to_path(uri: str) -> Path:

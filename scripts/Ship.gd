@@ -146,6 +146,7 @@ func _advance_auto_waypoint() -> void:
 	if _auto_waypoint_idx >= _auto_waypoints.size():
 		is_auto_sailing = false
 		sail_gear = 0
+		GameState.clear_voyage_destination()
 		hud_stats_changed.emit()
 
 
