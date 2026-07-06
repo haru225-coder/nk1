@@ -43,6 +43,9 @@ func _test_ui_theme_constants() -> void:
 	_assert_eq(UITheme.BTN_SET_SAIL, "SetSailButton", "UITheme.BTN_SET_SAIL")
 	_assert_eq(UITheme.BTN_TITLE_MENU, "TitleMenuButton", "UITheme.BTN_TITLE_MENU")
 	_assert_eq(UITheme.BTN_NPC, "NPCButton", "UITheme.BTN_NPC")
+	_assert_eq(UITheme.BTN_COMMAND, "CommandBarButton", "UITheme.BTN_COMMAND")
+	_assert_eq(UITheme.LABEL_COMMAND_CAPTION, "CommandBarCaption", "UITheme.LABEL_COMMAND_CAPTION")
+	_assert_eq(UITheme.LABEL_COMMAND_CAPTION_HIGHLIGHT, "CommandBarCaptionHighlight", "UITheme.LABEL_COMMAND_CAPTION_HIGHLIGHT")
 
 	# 市集常量
 	_assert_eq(UITheme.MARKET_SHELL, "MarketShell", "UITheme.MARKET_SHELL")
@@ -73,7 +76,8 @@ func _test_ui_theme_constants() -> void:
 	# 总数验证（28 个唯一常量）
 	var known_count := 0
 	var all_themes := [
-		UITheme.BTN_ACTION, UITheme.BTN_CHOICE, UITheme.BTN_SET_SAIL, UITheme.BTN_TITLE_MENU, UITheme.BTN_NPC,
+		UITheme.BTN_ACTION, UITheme.BTN_CHOICE, UITheme.BTN_SET_SAIL, UITheme.BTN_TITLE_MENU, UITheme.BTN_NPC, UITheme.BTN_COMMAND,
+		UITheme.LABEL_COMMAND_CAPTION, UITheme.LABEL_COMMAND_CAPTION_HIGHLIGHT,
 		UITheme.MARKET_SHELL, UITheme.MARKET_TITLE, UITheme.MARKET_ALERT, UITheme.MARKET_PANEL, UITheme.MARKET_PREVIEW,
 		UITheme.CARD_FACILITY, UITheme.CARD_FACILITY_QUEST, UITheme.TITLE_FACILITY, UITheme.SUBTITLE_FACILITY,
 		UITheme.BTN_FACILITY_CARD, UITheme.BADGE_FACILITY_QUEST, UITheme.FRAME_FACILITY_ICON,
@@ -85,7 +89,7 @@ func _test_ui_theme_constants() -> void:
 	for t in all_themes:
 		if UITheme.assert_all_known(t):
 			known_count += 1
-	_assert_eq(known_count, 28, "UITheme: 共 28 个唯一常量")
+	_assert_eq(known_count, 31, "UITheme: 共 31 个唯一常量")
 
 	print("")
 
@@ -445,6 +449,41 @@ func _test_map_visual_style() -> void:
 		_assert_not_null(title_panel, "TitlePanel style exists")
 		if title_panel != null:
 			_assert_true(title_panel.corner_radius_top_left <= 8 and title_panel.corner_radius_top_right <= 8, "TitlePanel keeps hard nautical frame corners")
+
+		var facility_card := theme.get_stylebox("panel", "PortFacilityCard") as StyleBoxFlat
+		_assert_not_null(facility_card, "PortFacilityCard uses a direct nautical stylebox")
+		if facility_card != null:
+			_assert_true(facility_card.bg_color.a >= 0.88, "PortFacilityCard uses an opaque port-ledger surface")
+			_assert_true(facility_card.bg_color.r < 0.08 and facility_card.bg_color.g < 0.09 and facility_card.bg_color.b < 0.11, "PortFacilityCard uses deep sea ink color")
+			_assert_true(facility_card.border_width_left >= 3 and facility_card.border_width_bottom >= 3, "PortFacilityCard has weighted brass framing")
+
+		var facility_quest := theme.get_stylebox("panel", "PortFacilityCardQuest") as StyleBoxFlat
+		_assert_not_null(facility_quest, "PortFacilityCardQuest style exists")
+		if facility_quest != null:
+			_assert_true(facility_quest.border_width_left >= 4, "Quest facility card gets a stronger left rail")
+			_assert_true(facility_quest.bg_color.r > facility_quest.bg_color.g, "Quest facility card keeps red wax emphasis")
+
+		var facility_icon := theme.get_stylebox("panel", "FacilityIconFrame") as StyleBoxFlat
+		_assert_not_null(facility_icon, "FacilityIconFrame uses a framed stylebox")
+		if facility_icon != null:
+			_assert_true(facility_icon.border_width_left >= 2 and facility_icon.corner_radius_top_left <= 4, "FacilityIconFrame is a compact brass icon frame")
+
+		var command_button := theme.get_stylebox("normal", "CommandBarButton") as StyleBoxFlat
+		_assert_not_null(command_button, "CommandBarButton normal style exists")
+		if command_button != null:
+			_assert_true(command_button.bg_color.a >= 0.9, "CommandBarButton reads as a solid deck control")
+			_assert_true(command_button.content_margin_top >= 6.0 and command_button.content_margin_bottom >= 6.0, "CommandBarButton has stable vertical padding")
+
+	_assert_true(CommandBar.BUTTON_MIN_SIZE == Vector2(88, 84), "CommandBar buttons keep fixed deck-control size")
+	_assert_eq(GameShell.COMMAND_BAR_HEIGHT, 104.0, "GameShell command bar inset matches taller dock")
+	var command_bar_scene: PackedScene = load(ResourcePaths.SCENE_COMMAND_BAR)
+	_assert_not_null(command_bar_scene, "CommandBar scene loads")
+	if command_bar_scene != null:
+		var command_bar := command_bar_scene.instantiate() as Control
+		_assert_not_null(command_bar, "CommandBar scene instantiates")
+		if command_bar != null:
+			_assert_eq(int(command_bar.custom_minimum_size.y), 104, "CommandBar scene minimum height matches shell inset")
+			command_bar.free()
 
 	_assert_eq(MapRoutePainter.route_key("quanzhou", "guangzhou"), "guangzhou|quanzhou", "route_key sorted")
 	_assert_eq(MapRoutePainter.ROUTE_COLOR, Color(0.65, 0.15, 0.15, 0.75), "shared route color")

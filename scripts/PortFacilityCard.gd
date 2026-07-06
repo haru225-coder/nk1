@@ -6,6 +6,7 @@ signal facility_pressed
 const CARD_MIN_SIZE := Vector2(176, 212)
 
 @onready var card_panel: PanelContainer = $CardPanel
+@onready var icon_frame: PanelContainer = $CardPanel/Margin/VBox/IconRow/IconFrame
 @onready var icon_texture: TextureRect = %IconTexture
 @onready var title_label: Label = %TitleLabel
 @onready var subtitle_label: Label = %SubtitleLabel
@@ -40,6 +41,7 @@ func setup(fac: Dictionary, display: Dictionary, icon: Texture2D) -> void:
 		icon_texture.modulate = Color.WHITE
 
 	card_panel.theme_type_variation = UITheme.CARD_FACILITY_QUEST if is_quest else UITheme.CARD_FACILITY
+	icon_frame.theme_type_variation = &"FacilityIconFrameQuest" if is_quest else UITheme.FRAME_FACILITY_ICON
 	quest_badge.visible = is_quest
 
 	if is_quest:

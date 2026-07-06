@@ -219,12 +219,28 @@ func _exists(path: String) -> bool:
 func _load_texture_from_disk(path: String) -> Texture2D:
 	if not _exists(path):
 		return null
+	var abs_path := ProjectSettings.globalize_path(path)
+	if FileAccess.file_exists(abs_path):
+		if _has_invalid_import_cache(path):
+			var direct_tex := _load_image_file(abs_path)
+			if direct_tex:
+				return direct_tex
 	var tex := load(path) as Texture2D
 	if tex:
 		return tex
-	var abs_path := ProjectSettings.globalize_path(path)
 	if FileAccess.file_exists(abs_path):
-		var img := Image.load_from_file(abs_path)
-		if img:
-			return ImageTexture.create_from_image(img)
+		return _load_image_file(abs_path)
+	return null
+
+func _has_invalid_import_cache(path: String) -> bool:
+	var import_path := ProjectSettings.globalize_path(path + ".import")
+	if not FileAccess.file_exists(import_path):
+		return false
+	var import_text := FileAccess.get_file_as_string(import_path)
+	return import_text.contains("valid=false")
+
+func _load_image_file(abs_path: String) -> Texture2D:
+	var img := Image.load_from_file(abs_path)
+	if img:
+		return ImageTexture.create_from_image(img)
 	return null

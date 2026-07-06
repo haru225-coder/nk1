@@ -3,8 +3,8 @@ class_name CommandBar
 
 signal command_pressed(action: Dictionary)
 
-const BUTTON_MIN_SIZE := Vector2(78, 80)
-const ICON_SIZE := 44
+const BUTTON_MIN_SIZE := Vector2(88, 84)
+const ICON_SIZE := 42
 const ICON_BASE := "res://assets/ui/icons/icon_%s.png"
 const ICON_FALLBACK_DIR := "res://assets/icons_128/"
 
@@ -169,6 +169,7 @@ func _add_button(label_text: String, icon: Texture2D, action: Dictionary, highli
 	btn.custom_minimum_size = BUTTON_MIN_SIZE
 	btn.tooltip_text = label_text
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	if highlight:
 		btn.modulate = Color(1.15, 1.08, 0.88, 1.0)
@@ -184,17 +185,20 @@ func _add_button(label_text: String, icon: Texture2D, action: Dictionary, highli
 		icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon_rect.texture = icon
+		icon_rect.modulate = Color(1.0, 0.96, 0.82, 1.0) if highlight else Color(0.94, 0.9, 0.78, 1.0)
 		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		vbox.add_child(icon_rect)
 
 	var caption := Label.new()
+	caption.custom_minimum_size = Vector2(BUTTON_MIN_SIZE.x - 14.0, 28.0)
 	caption.text = label_text
+	caption.theme_type_variation = UITheme.LABEL_COMMAND_CAPTION_HIGHLIGHT if highlight else UITheme.LABEL_COMMAND_CAPTION
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	caption.add_theme_font_size_override("font_size", 12)
+	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	caption.clip_text = true
+	caption.max_lines_visible = 2
 	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if highlight:
-		caption.add_theme_color_override("font_color", GameColors.TEXT_GOLD)
 	vbox.add_child(caption)
 
 	btn.add_child(vbox)

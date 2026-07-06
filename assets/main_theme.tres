@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=41 format=3]
+[gd_resource type="Theme" load_steps=42 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui_card_ninepatch.png" id="1_card"]
 [ext_resource type="Texture2D" path="res://assets/ui/command_dock/dock_wood_gold_ninepatch.png" id="2_command_dock"]
@@ -45,31 +45,54 @@ texture_margin_bottom = 40.0
 modulate_color = Color(1, 1, 1, 0.98)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_facility"]
-bg_color = Color(0.08, 0.06, 0.05, 0.72)
-border_width_left = 2
+bg_color = Color(0.035, 0.055, 0.066, 0.9)
+border_width_left = 3
 border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.72, 0.55, 0.22, 0.9)
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.78, 0.58, 0.24, 0.95)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
-shadow_color = Color(0, 0, 0, 0.35)
-shadow_size = 3
-shadow_offset = Vector2(0, 2)
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_size = 5
+shadow_offset = Vector2(1, 3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_facility_quest"]
+bg_color = Color(0.16, 0.052, 0.042, 0.92)
+border_width_left = 4
+border_width_top = 2
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.98, 0.76, 0.32, 0.98)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+shadow_color = Color(0, 0, 0, 0.56)
+shadow_size = 6
+shadow_offset = Vector2(1, 3)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_facility_icon"]
-bg_color = Color(0.04, 0.035, 0.03, 0.85)
+bg_color = Color(0.012, 0.026, 0.034, 0.92)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.72, 0.55, 0.22, 0.9)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
+border_color = Color(0.72, 0.55, 0.24, 0.96)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 content_margin_left = 6.0
 content_margin_top = 6.0
 content_margin_right = 6.0
@@ -79,16 +102,16 @@ shadow_size = 4
 shadow_offset = Vector2(0, 2)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_facility_icon_quest"]
-bg_color = Color(0.26, 0.06, 0.04, 0.88)
+bg_color = Color(0.24, 0.055, 0.042, 0.92)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.76, 0.58, 0.26, 0.95)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
+border_color = Color(0.98, 0.76, 0.32, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 content_margin_left = 6.0
 content_margin_top = 6.0
 content_margin_right = 6.0
@@ -98,7 +121,7 @@ shadow_size = 4
 shadow_offset = Vector2(0, 2)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_command_btn"]
-bg_color = Color(0.055, 0.085, 0.105, 0.92)
+bg_color = Color(0.035, 0.06, 0.078, 0.94)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -108,16 +131,16 @@ corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
-content_margin_left = 6.0
-content_margin_top = 5.0
-content_margin_right = 6.0
-content_margin_bottom = 5.0
+content_margin_left = 7.0
+content_margin_top = 6.0
+content_margin_right = 7.0
+content_margin_bottom = 6.0
 shadow_color = Color(0, 0, 0, 0.4)
 shadow_size = 3
 shadow_offset = Vector2(0, 2)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_command_btn_hover"]
-bg_color = Color(0.1, 0.14, 0.18, 0.98)
+bg_color = Color(0.085, 0.125, 0.155, 0.99)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -127,10 +150,10 @@ corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
-content_margin_left = 6.0
-content_margin_top = 5.0
-content_margin_right = 6.0
-content_margin_bottom = 5.0
+content_margin_left = 7.0
+content_margin_top = 6.0
+content_margin_right = 7.0
+content_margin_bottom = 6.0
 shadow_color = Color(0.9, 0.72, 0.28, 0.35)
 shadow_size = 5
 shadow_offset = Vector2(0, 2)
@@ -687,9 +710,9 @@ FacilityCardButton/styles/normal = null
 FacilityCardPanel/base_type = &"PanelContainer"
 FacilityCardPanel/styles/panel = SubResource("StyleBoxTexture_card")
 FacilityIconFrame/base_type = &"PanelContainer"
-FacilityIconFrame/styles/panel = SubResource("StyleBoxTexture_card")
+FacilityIconFrame/styles/panel = SubResource("StyleBoxFlat_facility_icon")
 FacilityIconFrameQuest/base_type = &"PanelContainer"
-FacilityIconFrameQuest/styles/panel = SubResource("StyleBoxTexture_card_quest")
+FacilityIconFrameQuest/styles/panel = SubResource("StyleBoxFlat_facility_icon_quest")
 FacilityQuestBadge/base_type = &"PanelContainer"
 FacilityQuestBadge/styles/panel = SubResource("StyleBoxFlat_quest_badge")
 FacilityIconMargin/base_type = &"MarginContainer"
@@ -733,9 +756,9 @@ NPCButton/font_sizes/font_size = 19
 NPCButton/styles/hover = SubResource("StyleBoxFlat_npc_hover")
 NPCButton/styles/normal = SubResource("StyleBoxFlat_npc_normal")
 PortFacilityCard/base_type = &"PanelContainer"
-PortFacilityCard/styles/panel = SubResource("StyleBoxTexture_card")
+PortFacilityCard/styles/panel = SubResource("StyleBoxFlat_facility")
 PortFacilityCardQuest/base_type = &"PanelContainer"
-PortFacilityCardQuest/styles/panel = SubResource("StyleBoxTexture_card_quest")
+PortFacilityCardQuest/styles/panel = SubResource("StyleBoxFlat_facility_quest")
 PortNameChip/base_type = &"PanelContainer"
 PortNameChip/styles/panel = SubResource("StyleBoxFlat_port_name_chip")
 PortStatChip/base_type = &"PanelContainer"
@@ -834,6 +857,16 @@ CommandBarButton/font_sizes/font_size = 11
 CommandBarButton/styles/hover = SubResource("StyleBoxFlat_command_btn_hover")
 CommandBarButton/styles/normal = SubResource("StyleBoxFlat_command_btn")
 CommandBarButton/styles/pressed = SubResource("StyleBoxFlat_command_btn_pressed")
+CommandBarCaption/base_type = &"Label"
+CommandBarCaption/colors/font_color = Color(0.98, 0.92, 0.72, 1)
+CommandBarCaption/colors/font_shadow_color = Color(0, 0, 0, 0.65)
+CommandBarCaption/constants/shadow_offset_y = 1
+CommandBarCaption/font_sizes/font_size = 12
+CommandBarCaptionHighlight/base_type = &"Label"
+CommandBarCaptionHighlight/colors/font_color = Color(0.98, 0.84, 0.42, 1)
+CommandBarCaptionHighlight/colors/font_shadow_color = Color(0, 0, 0, 0.72)
+CommandBarCaptionHighlight/constants/shadow_offset_y = 1
+CommandBarCaptionHighlight/font_sizes/font_size = 12
 CommandBarPanel/base_type = &"PanelContainer"
 CommandBarPanel/styles/panel = SubResource("StyleBoxTexture_command_dock")
 TitleSub/font_sizes/font_size = 22

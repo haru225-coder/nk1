@@ -50,12 +50,12 @@ func _ready() -> void:
 	add_child(center)
 
 	var shell := PanelContainer.new()
-	shell.custom_minimum_size = Vector2(1100, 680)
+	shell.custom_minimum_size = Vector2(1040, 640)
 	shell.theme_type_variation = UITheme.MARKET_SHELL
 	center.add_child(shell)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 16)
+	vbox.add_theme_constant_override("separation", 14)
 	shell.add_child(vbox)
 
 	title_label = Label.new()
@@ -73,6 +73,8 @@ func _ready() -> void:
 	economy_info_label = Label.new()
 	economy_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	economy_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	economy_info_label.custom_minimum_size = Vector2(0, 38)
+	economy_info_label.max_lines_visible = 2
 	economy_info_label.theme_type_variation = UITheme.MARKET_PREVIEW
 	economy_info_label.visible = false
 	vbox.add_child(economy_info_label)
@@ -95,8 +97,11 @@ func _ready() -> void:
 	split.add_child(right_panel)
 
 	preview_label = Label.new()
+	preview_label.custom_minimum_size = Vector2(0, 56)
 	preview_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	preview_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	preview_label.max_lines_visible = 3
 	preview_label.theme_type_variation = UITheme.MARKET_PREVIEW
 	vbox.add_child(preview_label)
 
@@ -171,7 +176,7 @@ func _make_market_column(section_title: String) -> PanelContainer:
 	col.add_child(header)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 320)
+	scroll.custom_minimum_size = Vector2(0, 340)
 	col.add_child(scroll)
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -306,12 +311,20 @@ func _update_economy_info() -> void:
 
 func _make_item_button(text: String, kind: String) -> Button:
 	var theme_var = UITheme.BTN_ACTION if kind == "buy" else UITheme.BTN_CHOICE
-	return UIBuilder.make_button(text, theme_var, 40)
+	var btn := UIBuilder.make_button(text, theme_var, 44)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.tooltip_text = text
+	btn.clip_text = true
+	return btn
 
 func _make_empty_label(text: String) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
+	lbl.custom_minimum_size = Vector2(0, 48)
 	lbl.theme_type_variation = UITheme.MARKET_PREVIEW
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return lbl
 
 func _get_price_from_snapshot(good_id: String) -> int:

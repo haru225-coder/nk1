@@ -11,6 +11,8 @@ const BTN_SET_SAIL := "SetSailButton"        ## 升帆/出港/确认出航（红
 const BTN_TITLE_MENU := "TitleMenuButton"     ## 标题界面菜单按钮
 const BTN_NPC := "NPCButton"                 ## NPC 交互按钮
 const BTN_COMMAND := "CommandBarButton"       ## 快捷指令底栏按钮
+const LABEL_COMMAND_CAPTION := "CommandBarCaption"
+const LABEL_COMMAND_CAPTION_HIGHLIGHT := "CommandBarCaptionHighlight"
 
 
 ## ── 市集 UI ──────────────────────────────────────────────
@@ -57,6 +59,7 @@ const LABEL_SEA_HUD_FLEET := "SeaHudFleet"     ## 航行舰队标签
 static func assert_all_known(theme_name: String) -> bool:
 	var known := [
 		BTN_ACTION, BTN_CHOICE, BTN_SET_SAIL, BTN_TITLE_MENU, BTN_NPC, BTN_COMMAND,
+		LABEL_COMMAND_CAPTION, LABEL_COMMAND_CAPTION_HIGHLIGHT,
 		MARKET_SHELL, MARKET_TITLE, MARKET_ALERT, MARKET_PANEL, MARKET_PREVIEW,
 		CARD_FACILITY, CARD_FACILITY_QUEST, TITLE_FACILITY, SUBTITLE_FACILITY,
 		BTN_FACILITY_CARD, BADGE_FACILITY_QUEST, FRAME_FACILITY_ICON,

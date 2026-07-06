@@ -20,7 +20,7 @@ var _hotspot_source: TownMapView
 var _log_popup: AcceptDialog
 var _storybook_popup: AcceptDialog
 
-const COMMAND_BAR_HEIGHT := 88.0
+const COMMAND_BAR_HEIGHT := 104.0
 
 func _ready() -> void:
 	_apply_content_insets()
