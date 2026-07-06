@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 SCENE_DIR = ROOT / "data" / "scenes"
 SCENE_FALLBACK = ROOT / "data" / "scenes.json"
+PORTS_JSON = ROOT / "data" / "ports.json"
 
 SPECIAL_TARGETS = {"last_port", "world_map"}
 DYNAMIC_SUFFIXES = (
@@ -180,6 +181,54 @@ def check_navigation_hook(scenes_by_id: dict[str, dict]) -> None:
             )
 
 
+def check_ports() -> None:
+    data = load_json(PORTS_JSON)
+    ports = data.get("ports", [])
+    if not isinstance(ports, list):
+        errors.append("ports.json: ports must be a list")
+        return
+
+    ids: set[str] = set()
+    for index, port in enumerate(ports):
+        if not isinstance(port, dict):
+            errors.append(f"ports.json: port index {index} must be an object")
+            continue
+        port_id = str(port.get("id", "")).strip()
+        if not port_id:
+            errors.append(f"ports.json: port index {index} missing id")
+            continue
+        if port_id in ids:
+            errors.append(f"ports.json: duplicate port id '{port_id}'")
+        ids.add(port_id)
+
+    for port in ports:
+        if not isinstance(port, dict):
+            continue
+        port_id = str(port.get("id", "")).strip()
+        for key in ("connections", "rumor_connections"):
+            for target in port.get(key, []):
+                target_id = str(target)
+                if target_id not in ids:
+                    errors.append(f"ports.json: {port_id}.{key} points to missing port '{target_id}'")
+        for route in port.get("river_routes", []):
+            if not isinstance(route, dict):
+                errors.append(f"ports.json: {port_id}.river_routes entry must be an object")
+                continue
+            target_id = str(route.get("to", ""))
+            if target_id not in ids:
+                errors.append(f"ports.json: {port_id}.river_routes points to missing port '{target_id}'")
+            waypoints = route.get("waypoints", [])
+            if not isinstance(waypoints, list) or not waypoints:
+                errors.append(f"ports.json: {port_id}->{target_id} river route must have waypoints")
+
+    layout = data.get("meta", {}).get("map_layout", {})
+    if isinstance(layout, dict):
+        for key in ("texture", "sea_mask"):
+            uri = str(layout.get(key, ""))
+            if uri.startswith("res://") and not res_to_path(uri).exists():
+                errors.append(f"ports.json: map_layout.{key} missing resource '{uri}'")
+
+
 def res_to_path(uri: str) -> Path:
     return ROOT / uri.removeprefix("res://")
 
@@ -217,6 +266,7 @@ def print_items(label: str, items: list[str], limit: int = 40) -> None:
 def main() -> int:
     data = load_scene_data()
     check_scenes(data)
+    check_ports()
     check_autoloads()
 
     deduped_warnings = unique(warnings)

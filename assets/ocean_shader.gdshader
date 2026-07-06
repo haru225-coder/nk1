@@ -3,7 +3,7 @@ shader_type canvas_item;
 uniform float wave_speed : hint_range(0.1, 5.0) = 1.0;
 uniform float wave_freq : hint_range(0.1, 20.0) = 10.0;
 uniform float wave_amp : hint_range(0.001, 0.1) = 0.01;
-uniform vec4 water_color : source_color = vec4(0.1, 0.4, 0.6, 1.0);
+uniform vec4 water_color : source_color = vec4(0.3, 0.35, 0.32, 0.8);
 
 void fragment() {
     vec2 uv = UV;

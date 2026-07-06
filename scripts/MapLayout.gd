@@ -1,11 +1,13 @@
 class_name MapLayout
 extends RefCounted
 
-const _DEFAULT_BOUNDS := Rect2(-15000.0, -9000.0, 31000.0, 30000.0)
+const _DEFAULT_BOUNDS := Rect2(-13000.0, -5000.0, 26000.0, 32200.0)
+const _TERRAIN_SHADER = preload("res://assets/map_terrain_detail.gdshader")
 const TEXTURE_ASPECT_TOLERANCE := 0.02
 const _PORTS_JSON := "res://data/ports.json"
 
 static var _ports_data_cache: Dictionary = {}
+static var _cached_astar_graph: AStarGraph = null
 
 
 static func _ports_root() -> Dictionary:
@@ -31,12 +33,19 @@ static func get_ports_data() -> Array:
 	return _ports_root().get("ports", [])
 
 
+static func get_astar_graph() -> AStarGraph:
+	if _cached_astar_graph == null:
+		_cached_astar_graph = AStarGraph.new()
+		_cached_astar_graph.build_graph(get_ports_data())
+	return _cached_astar_graph
+
+
 static func get_map_layout() -> Dictionary:
 	return _ports_root().get("meta", {}).get("map_layout", {})
 
 
 static func get_map_texture_path() -> String:
-	return str(get_map_layout().get("texture", ResourcePaths.TEX_MAP_NANHAI))
+	return str(get_map_layout().get("texture", ResourcePaths.TEX_MAP_EAST_ASIA))
 
 
 static func get_map_texture() -> Texture2D:
@@ -44,7 +53,7 @@ static func get_map_texture() -> Texture2D:
 
 
 static func get_sea_mask_path() -> String:
-	return str(get_map_layout().get("sea_mask", ResourcePaths.TEX_MAP_SEA_MASK))
+	return str(get_map_layout().get("sea_mask", ResourcePaths.TEX_MAP_EAST_ASIA_SEA_MASK))
 
 
 static func get_sea_mask_texture() -> Texture2D:
@@ -108,6 +117,11 @@ static func apply_strategic_map_sprite(sprite: Sprite2D) -> bool:
 	if tex == null:
 		return false
 	apply_strategic_map_layer(sprite, tex)
+
+	var mat := ShaderMaterial.new()
+	mat.shader = _TERRAIN_SHADER
+	sprite.material = mat
+
 	return true
 
 

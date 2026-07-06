@@ -4,13 +4,13 @@
     "era": "南宋末，约1260-1277",
     "prototype": "v0.1",
     "map_layout": {
-      "texture": "res://assets/map_nanhai.png",
-      "sea_mask": "res://assets/map_nanhai_sea_mask.png",
+      "texture": "res://assets/map_east_asia.png",
+      "sea_mask": "res://assets/map_east_asia_sea_mask.png",
       "world_bounds": {
-        "x_min": -15000,
-        "x_max": 16000,
-        "y_min": -9000,
-        "y_max": 21000
+        "x_min": -13000,
+        "x_max": 13000,
+        "y_min": -5000,
+        "y_max": 27200
       }
     }
   },
@@ -44,13 +44,13 @@
         "sulfur": 1.2
       },
       "position": {
-        "x": 5460,
-        "y": 2400
+        "x": 3458,
+        "y": 5593
       },
       "bg": "res://assets/bg_quanzhou_port.png",
       "map_pos": {
-        "u": 0.66,
-        "v": 0.38
+        "u": 0.633,
+        "v": 0.329
       }
     },
     {
@@ -69,13 +69,13 @@
         "quanzhou"
       ],
       "position": {
-        "x": 6080,
-        "y": 1200
+        "x": 3718,
+        "y": 5271
       },
       "bg": "res://assets/bg_xinghua_harbor.jpg",
       "map_pos": {
-        "u": 0.68,
-        "v": 0.34
+        "u": 0.643,
+        "v": 0.319
       }
     },
     {
@@ -92,13 +92,13 @@
         "penghu"
       ],
       "position": {
-        "x": 9180,
-        "y": 1500
+        "x": 5382,
+        "y": 5465
       },
       "bg": "res://assets/bg_keelung_port.png",
       "map_pos": {
-        "u": 0.78,
-        "v": 0.35
+        "u": 0.707,
+        "v": 0.325
       }
     },
     {
@@ -121,13 +121,13 @@
         "qingbai_porcelain": 1.5
       },
       "position": {
-        "x": 11040,
-        "y": 3000
+        "x": 9230,
+        "y": 4724
       },
       "bg": "res://assets/bg_penghu_port.png",
       "map_pos": {
-        "u": 0.84,
-        "v": 0.4
+        "u": 0.855,
+        "v": 0.302
       }
     },
     {
@@ -142,16 +142,18 @@
       ],
       "connections": [
         "quanzhou",
-        "hakata"
+        "hakata",
+        "dengzhou",
+        "byland_goryeo"
       ],
       "position": {
-        "x": 11040,
-        "y": -3000
+        "x": 8346,
+        "y": 248
       },
       "bg": "res://assets/bg_jeju_port.png",
       "map_pos": {
-        "u": 0.84,
-        "v": 0.2
+        "u": 0.821,
+        "v": 0.163
       }
     },
     {
@@ -173,20 +175,21 @@
       "connections": [
         "ryukyu",
         "jeju",
-        "kagoshima"
+        "kagoshima",
+        "hirado"
       ],
       "production": {
         "sulfur": 0.9,
         "japanese_swords": 0.8
       },
       "position": {
-        "x": 13520,
-        "y": 0
+        "x": 10764,
+        "y": 216
       },
       "bg": "res://assets/bg_hakata_port.png",
       "map_pos": {
-        "u": 0.92,
-        "v": 0.3
+        "u": 0.914,
+        "v": 0.162
       }
     },
     {
@@ -208,13 +211,13 @@
         "hakata"
       ],
       "position": {
-        "x": 12900,
-        "y": 1800
+        "x": 10894,
+        "y": 1440
       },
       "bg": "res://assets/bg_hakata_port.png",
       "map_pos": {
-        "u": 0.9,
-        "v": 0.36
+        "u": 0.919,
+        "v": 0.2
       }
     },
     {
@@ -231,13 +234,13 @@
         "keelung"
       ],
       "position": {
-        "x": 7940,
-        "y": 2400
+        "x": 4082,
+        "y": 6398
       },
       "bg": "res://assets/bg_penghu_port.png",
       "map_pos": {
-        "u": 0.74,
-        "v": 0.38
+        "u": 0.657,
+        "v": 0.354
       }
     },
     {
@@ -257,13 +260,13 @@
         "horses": 0.7
       },
       "position": {
-        "x": -6320,
-        "y": 8400
+        "x": -2912,
+        "y": 11164
       },
       "bg": "res://assets/bg_champa_port.png",
       "map_pos": {
-        "u": 0.28,
-        "v": 0.58
+        "u": 0.388,
+        "v": 0.502
       }
     },
     {
@@ -284,13 +287,13 @@
         "qiongzhou"
       ],
       "position": {
-        "x": 1740,
-        "y": 4800
+        "x": 182,
+        "y": 6688
       },
       "bg": "res://assets/bg_guangzhou_port.png",
       "map_pos": {
-        "u": 0.54,
-        "v": 0.46
+        "u": 0.507,
+        "v": 0.363
       }
     },
     {
@@ -307,16 +310,17 @@
       "connections": [
         "quanzhou",
         "ganpu",
-        "wenzhou"
+        "wenzhou",
+        "mizhou"
       ],
       "position": {
-        "x": 7320,
-        "y": -1200
+        "x": 5330,
+        "y": 2502
       },
       "bg": "res://assets/bg_mingzhou_port.png",
       "map_pos": {
-        "u": 0.72,
-        "v": 0.26
+        "u": 0.705,
+        "v": 0.233
       }
     },
     {
@@ -330,17 +334,16 @@
         "临安门户"
       ],
       "connections": [
-        "mingzhou",
-        "linan"
+        "mingzhou"
       ],
       "position": {
-        "x": 6700,
-        "y": -600
+        "x": 5018,
+        "y": 2180
       },
       "bg": "res://assets/bg_ganpu_port.png",
       "map_pos": {
-        "u": 0.7,
-        "v": 0.28
+        "u": 0.693,
+        "v": 0.223
       }
     },
     {
@@ -358,13 +361,13 @@
         "guangzhou"
       ],
       "position": {
-        "x": 4840,
-        "y": 3600
+        "x": 2912,
+        "y": 5851
       },
       "bg": "res://assets/bg_zhangzhou_port.png",
       "map_pos": {
-        "u": 0.64,
-        "v": 0.42
+        "u": 0.612,
+        "v": 0.337
       }
     },
     {
@@ -382,13 +385,13 @@
         "champa"
       ],
       "position": {
-        "x": -2600,
-        "y": 7800
+        "x": -1664,
+        "y": 8620
       },
       "bg": "res://assets/bg_qiongzhou_port.png",
       "map_pos": {
-        "u": 0.4,
-        "v": 0.56
+        "u": 0.436,
+        "v": 0.423
       }
     },
     {
@@ -407,13 +410,13 @@
         "yeshou"
       ],
       "position": {
-        "x": -11900,
-        "y": 13200
+        "x": -5070,
+        "y": 22853
       },
       "bg": "res://assets/bg_sanfoqi_port.png",
       "map_pos": {
-        "u": 0.1,
-        "v": 0.74
+        "u": 0.305,
+        "v": 0.865
       }
     },
     {
@@ -431,13 +434,13 @@
         "champa"
       ],
       "position": {
-        "x": -11280,
-        "y": 11400
+        "x": -5694,
+        "y": 20213
       },
       "bg": "res://assets/bg_longyamen_port.png",
       "map_pos": {
-        "u": 0.12,
-        "v": 0.68
+        "u": 0.281,
+        "v": 0.783
       }
     },
     {
@@ -451,18 +454,45 @@
         "象牙玉石"
       ],
       "connections": [
-        "champa",
-        "longyamen"
+        "bassein"
       ],
       "position": {
-        "x": -9420,
-        "y": 7200
+        "x": -11206,
+        "y": 7880
       },
       "bg": "res://assets/bg_bugan_port.png",
       "map_pos": {
-        "u": 0.18,
-        "v": 0.54
-      }
+        "u": 0.069,
+        "v": 0.4
+      },
+      "river_routes": [
+        {
+          "to": "bassein",
+          "type": "river",
+          "waypoints": [
+            {
+              "u": 0.068,
+              "v": 0.406
+            },
+            {
+              "u": 0.07,
+              "v": 0.42
+            },
+            {
+              "u": 0.067,
+              "v": 0.445
+            },
+            {
+              "u": 0.082,
+              "v": 0.463
+            },
+            {
+              "u": 0.073,
+              "v": 0.483
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "jiaozhi",
@@ -478,13 +508,13 @@
         "champa"
       ],
       "position": {
-        "x": -4460,
-        "y": 6600
+        "x": -4394,
+        "y": 8073
       },
       "bg": "res://assets/bg_jiaozhi_port.png",
       "map_pos": {
-        "u": 0.34,
-        "v": 0.52
+        "u": 0.331,
+        "v": 0.406
       }
     },
     {
@@ -502,13 +532,13 @@
         "champa"
       ],
       "position": {
-        "x": -12520,
-        "y": 15000
+        "x": -1612,
+        "y": 25654
       },
       "bg": "res://assets/bg_yeshou_port.png",
       "map_pos": {
-        "u": 0.08,
-        "v": 0.8
+        "u": 0.438,
+        "v": 0.952
       }
     },
     {
@@ -526,13 +556,13 @@
         "zhangzhou"
       ],
       "position": {
-        "x": 1120,
-        "y": 5400
+        "x": 546,
+        "y": 7203
       },
       "bg": "res://assets/bg_tunmen_port.png",
       "map_pos": {
-        "u": 0.52,
-        "v": 0.48
+        "u": 0.521,
+        "v": 0.379
       }
     },
     {
@@ -550,13 +580,13 @@
         "quanzhou"
       ],
       "position": {
-        "x": 7940,
-        "y": 0
+        "x": 4758,
+        "y": 3661
       },
       "bg": "res://assets/bg_wenzhou_port.png",
       "map_pos": {
-        "u": 0.74,
-        "v": 0.3
+        "u": 0.683,
+        "v": 0.269
       }
     },
     {
@@ -574,13 +604,13 @@
         "jeju"
       ],
       "position": {
-        "x": 12280,
-        "y": -2400
+        "x": 10088,
+        "y": -234
       },
       "bg": "res://assets/bg_tsushima_port.png",
       "map_pos": {
-        "u": 0.88,
-        "v": 0.22
+        "u": 0.888,
+        "v": 0.148
       }
     },
     {
@@ -598,13 +628,13 @@
         "tsushima"
       ],
       "position": {
-        "x": 10420,
-        "y": -4200
+        "x": 7852,
+        "y": -3132
       },
       "bg": "res://assets/bg_byland_port.png",
       "map_pos": {
-        "u": 0.82,
-        "v": 0.16
+        "u": 0.802,
+        "v": 0.058
       }
     },
     {
@@ -622,13 +652,257 @@
         "qiongzhou"
       ],
       "position": {
-        "x": -3840,
-        "y": 7200
+        "x": -1742,
+        "y": 8427
       },
       "bg": "res://assets/bg_xuwen_port.png",
       "map_pos": {
-        "u": 0.36,
-        "v": 0.54
+        "u": 0.433,
+        "v": 0.417
+      }
+    },
+    {
+      "id": "bassein",
+      "name": "勃生",
+      "region": "缅甸海口",
+      "status": "distant",
+      "tags": [
+        "河海中转",
+        "象牙玉石",
+        "驳船"
+      ],
+      "connections": [
+        "bugan",
+        "champa",
+        "longyamen"
+      ],
+      "bg": "res://assets/bg_bugan_port.png",
+      "map_pos": {
+        "u": 0.065,
+        "v": 0.485
+      },
+      "position": {
+        "x": -11310,
+        "y": 10617
+      }
+    },
+    {
+      "id": "zhenla",
+      "name": "真腊",
+      "region": "中南半岛",
+      "status": "distant",
+      "tags": [
+        "吴哥",
+        "湄公河",
+        "象牙",
+        "沉香"
+      ],
+      "connections": [
+        "champa",
+        "jiaozhi",
+        "xianluo"
+      ],
+      "bg": "res://assets/bg_champa_port.png",
+      "map_pos": {
+        "u": 0.357,
+        "v": 0.606
+      },
+      "position": {
+        "x": -3718,
+        "y": 14513
+      }
+    },
+    {
+      "id": "xianluo",
+      "name": "暹罗",
+      "region": "中南半岛",
+      "status": "distant",
+      "tags": [
+        "素可泰",
+        "湄南河",
+        "象牙",
+        "犀角"
+      ],
+      "connections": [
+        "zhenla",
+        "champa",
+        "longyamen"
+      ],
+      "bg": "res://assets/bg_champa_port.png",
+      "map_pos": {
+        "u": 0.205,
+        "v": 0.525
+      },
+      "position": {
+        "x": -7670,
+        "y": 11905
+      }
+    },
+    {
+      "id": "mayi",
+      "name": "麻逸",
+      "region": "吕宋海面",
+      "status": "distant",
+      "tags": [
+        "菲律宾",
+        "吕宋",
+        "珍珠",
+        "槟榔"
+      ],
+      "connections": [
+        "keelung",
+        "boni",
+        "quanzhou"
+      ],
+      "bg": "res://assets/bg_keelung_port.png",
+      "map_pos": {
+        "u": 0.679,
+        "v": 0.558
+      },
+      "position": {
+        "x": 4654,
+        "y": 12967
+      }
+    },
+    {
+      "id": "boni",
+      "name": "渤泥",
+      "region": "婆罗洲",
+      "status": "distant",
+      "tags": [
+        "文莱",
+        "婆罗洲",
+        "龙脑",
+        "胡椒"
+      ],
+      "connections": [
+        "mayi",
+        "yeshou",
+        "longyamen"
+      ],
+      "bg": "res://assets/bg_yeshou_map.png",
+      "map_pos": {
+        "u": 0.545,
+        "v": 0.713
+      },
+      "position": {
+        "x": 1170,
+        "y": 17958
+      }
+    },
+    {
+      "id": "mizhou",
+      "name": "板桥镇",
+      "region": "密州 / 山东半岛",
+      "status": "main",
+      "tags": [
+        "北方大港",
+        "市舶司",
+        "丝路"
+      ],
+      "connections": [
+        "mingzhou",
+        "dengzhou"
+      ],
+      "production": {
+        "silk": 1.2,
+        "soybeans": 1.5
+      },
+      "demand": {
+        "spices": 1.8,
+        "incense": 1.5
+      },
+      "bg": "res://assets/bg_mingzhou_port.png",
+      "map_pos": {
+        "u": 0.65,
+        "v": 0.14
+      }
+    },
+    {
+      "id": "dengzhou",
+      "name": "登州",
+      "region": "山东半岛",
+      "status": "distant",
+      "distant_hint": "高丽航线的中转跳板",
+      "tags": [
+        "中转",
+        "跨海"
+      ],
+      "connections": [
+        "mizhou",
+        "byland_goryeo",
+        "jeju"
+      ],
+      "production": {
+        "salt": 1.5,
+        "apples": 1.2
+      },
+      "demand": {
+        "fujian_porcelain": 1.5
+      },
+      "bg": "res://assets/bg_quanzhou_port.png",
+      "map_pos": {
+        "u": 0.68,
+        "v": 0.1
+      }
+    },
+    {
+      "id": "byland_goryeo",
+      "name": "碧澜渡",
+      "region": "高丽 / 开城门户",
+      "status": "main",
+      "tags": [
+        "高丽国都",
+        "国际都会",
+        "海商聚集"
+      ],
+      "connections": [
+        "dengzhou",
+        "jeju",
+        "hirado"
+      ],
+      "production": {
+        "ginseng": 2.0,
+        "celadon": 1.5,
+        "copperware": 1.2
+      },
+      "demand": {
+        "silk": 1.5,
+        "tea": 1.5,
+        "books": 1.8
+      },
+      "bg": "res://assets/bg_mingzhou_port.png",
+      "map_pos": {
+        "u": 0.8,
+        "v": 0.08
+      }
+    },
+    {
+      "id": "hirado",
+      "name": "平户",
+      "region": "日本 / 九州西北",
+      "status": "distant",
+      "distant_hint": "日本西海贸易门户",
+      "tags": [
+        "遣唐使",
+        "海商"
+      ],
+      "connections": [
+        "byland_goryeo",
+        "hakata"
+      ],
+      "production": {
+        "sulfur": 1.2,
+        "japanese_swords": 1.5
+      },
+      "demand": {
+        "fujian_porcelain": 1.5,
+        "silk": 1.2
+      },
+      "bg": "res://assets/bg_hakata_port.png",
+      "map_pos": {
+        "u": 0.86,
+        "v": 0.13
       }
     }
   ]

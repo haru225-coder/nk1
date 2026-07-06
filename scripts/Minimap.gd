@@ -1,7 +1,5 @@
 extends Control
 
-const MAP_TEXTURE := preload(ResourcePaths.TEX_MAP_NANHAI)
-
 var ship: Node2D
 var _last_ship_pos := Vector2.INF
 var _last_ship_rot := INF
@@ -10,7 +8,8 @@ var _last_map_size := Vector2.ZERO
 var _last_hull_id := ""
 
 const _INSET := 6.0
-const _SHIP_COLOR := Color(1.0, 0.94, 0.58, 1.0)
+const _SHIP_COLOR := Color(0.75, 0.18, 0.18, 1.0) # 朱砂红的船只标识
+const _BG_COLOR := Color(0.85, 0.78, 0.65, 1.0) # 羊皮纸底色
 
 
 func _ready() -> void:
@@ -84,9 +83,11 @@ func _draw() -> void:
 	if rect.size.x <= 1.0 or rect.size.y <= 1.0:
 		return
 
-	draw_rect(rect, Color(0.1, 0.16, 0.22, 1.0))
-	if MAP_TEXTURE:
-		draw_texture_rect(MAP_TEXTURE, rect, false)
+	draw_rect(rect, _BG_COLOR)
+	var tex := MapLayout.get_map_texture()  # 数据驱动，跟随 meta.map_layout.texture
+	if tex:
+		# ponytail: 拉伸填满 rect，竖图进方形会横向拉伸；后续改 MinimapPanel 为竖向 0.808 比例即可无畸变
+		draw_texture_rect(tex, rect, false)
 
 	MapRoutePainter.draw_uv_routes(self, rect)
 	_draw_ports(rect)

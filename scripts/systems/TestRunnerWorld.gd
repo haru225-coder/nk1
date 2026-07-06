@@ -136,6 +136,25 @@ func _test_ship_system() -> void:
 	_assert_eq(nav3.voyage_destination_id, "guangzhou", "voyage destination round-trip")
 	nav3.clear_voyage_destination()
 	_assert_eq(nav3.voyage_destination_id, "", "voyage destination cleared")
+
+	var weather_map := Node2D.new()
+	var weather_canvas := CanvasModulate.new()
+	var weather_rain := CPUParticles2D.new()
+	var weather_flash := ColorRect.new()
+	var weather_label := Label.new()
+	var weather_ship := Node2D.new()
+	var weather := WorldWeatherTime.new(weather_map, weather_canvas, weather_rain, weather_flash, weather_label, weather_ship)
+	weather.paused = true
+	var before_time := weather.time_of_day
+	weather._process(100.0)
+	_assert_eq(weather.time_of_day, before_time, "WorldWeatherTime paused does not advance time")
+	weather.free()
+	weather_map.free()
+	weather_canvas.free()
+	weather_rain.free()
+	weather_flash.free()
+	weather_label.free()
+	weather_ship.free()
 	print("")
 
 # ── MapLayout / 战略地图坐标 ─────────────────────────────
@@ -143,8 +162,8 @@ func _test_ship_system() -> void:
 func _test_map_layout() -> void:
 	print("--- MapLayout ---")
 	var bounds := MapLayout.get_world_bounds()
-	_assert_eq(bounds.size, Vector2(31000.0, 30000.0), "world_bounds size")
-	_assert_lt(absf(MapLayout.world_bounds_aspect() - 1.0333333333333334), 0.0001, "world_bounds aspect")
+	_assert_eq(bounds.size, Vector2(26000.0, 32200.0), "world_bounds size")
+	_assert_lt(absf(MapLayout.world_bounds_aspect() - (26000.0 / 32200.0)), 0.0001, "world_bounds aspect")
 
 	var tex := MapLayout.get_map_texture()
 	_assert_not_null(tex, "map texture loads")
@@ -156,7 +175,7 @@ func _test_map_layout() -> void:
 		)
 		var xform := MapLayout.map_sprite_transform(tex_size)
 		_assert_eq(xform.origin, bounds.get_center(), "map sprite transform origin")
-		_assert_eq(tex_size, Vector2(4096.0, 3964.0), "map texture 4K size matches world_bounds aspect")
+		_assert_eq(tex_size, Vector2(8192.0, 10145.0), "map texture size matches world_bounds aspect")
 
 	var mask := MapLayout.get_sea_mask_texture()
 	_assert_not_null(mask, "sea mask texture loads")
@@ -169,7 +188,7 @@ func _test_map_layout() -> void:
 		)
 	_assert_eq(
 		MapLayout.get_sea_mask_path(),
-		"res://assets/map_nanhai_sea_mask.png",
+		"res://assets/map_east_asia_sea_mask.png",
 		"sea_mask path from ports.json meta"
 	)
 
@@ -179,6 +198,12 @@ func _test_map_layout() -> void:
 		var port_id: String = port_data.get("id", "")
 		_assert_true(MapLayout.has_map_pos(port_id), "port has map_pos: %s" % port_id)
 		with_map_pos += 1
+		for conn_id in port_data.get("connections", []):
+			var conn_str := str(conn_id)
+			_assert_true(
+				MapLayout.has_map_pos(conn_str),
+				"connection target exists: %s -> %s" % [port_id, conn_str]
+			)
 
 		var uv := MapLayout.get_map_pos(port_id)
 		var world_from_uv := MapLayout.map_to_world(uv)
@@ -199,7 +224,11 @@ func _test_map_layout() -> void:
 				"ports.json position synced with map_pos: %s" % port_id
 			)
 
-	_assert_eq(with_map_pos, 24, "all 24 ports have map_pos")
+	_assert_eq(with_map_pos, ports.size(), "all ports have map_pos")
+	_assert_true(
+		MapRoutePainter.river_route_keys().has(MapRoutePainter.route_key("bugan", "bassein")),
+		"bugan-bassein river route suppresses plain route"
+	)
 
 	var minimap_rect := Rect2(Vector2.ZERO, Vector2(240.0, 180.0))
 	var minimap_inset := 6.0

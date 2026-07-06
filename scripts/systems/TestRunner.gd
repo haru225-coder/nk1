@@ -1423,14 +1423,14 @@ func _test_ending_resolver() -> void:
 	fake_state.career = EndingFakeCareer.new()
 	fake_state.acquire_item("spring_autumn_scroll")
 	fake_state.adjust_npc_relationship("lin_boyuan", 50)
-	var not_apex := resolver.evaluate(fake_state)
+	var not_apex = resolver.evaluate(fake_state)
 	_assert_true(not not_apex.success, "EndingResolver: 非 apex 不触发结局")
 
 	fake_state.career.apex = true
 	fake_state.adjust_npc_relationship("jia", 50)
 	var player := EndingFakeCutscenePlayer.new()
 	resolver.bind(fake_state, player)
-	var result := resolver.evaluate()
+	var result = resolver.evaluate()
 	_assert_true(result.success, "EndingResolver: apex 且条件满足可触发")
 	_assert_eq(result.data.get("ending_id", ""), "loyalty_ending", "EndingResolver: 多结局同时满足按 priority 选忠义")
 	_assert_eq(player.played[0], "ending_loyalty", "EndingResolver: 播放所选结局过场")
@@ -1442,13 +1442,13 @@ func _test_ending_resolver() -> void:
 	defection_state.career = EndingFakeCareer.new()
 	defection_state.career.apex = true
 	defection_state.adjust_npc_relationship("jia", 50)
-	var defection := resolver.evaluate(defection_state, EndingFakeCutscenePlayer.new())
+	var defection = resolver.evaluate(defection_state, EndingFakeCutscenePlayer.new())
 	_assert_eq(defection.data.get("ending_id", ""), "defection_ending", "EndingResolver: 贾氏线可触发投附结局")
 
 	var no_match_state := KernelFakeState.new()
 	no_match_state.career = EndingFakeCareer.new()
 	no_match_state.career.apex = true
-	var no_match := resolver.evaluate(no_match_state)
+	var no_match = resolver.evaluate(no_match_state)
 	_assert_true(not no_match.success, "EndingResolver: apex 但无分支条件时不误判通关")
 	_assert_true(not no_match_state.has_story_flag("game_completed"), "EndingResolver: 无匹配不写终局 flag")
 
@@ -1468,9 +1468,9 @@ func _test_chapter3_ending_bridge() -> void:
 		print("")
 		return
 
-	var comply := game_manager.get_scene_by_id("chapter3_after_summon_comply_audit_done")
-	var refuse := game_manager.get_scene_by_id("chapter3_refuse_sea_route")
-	var burn := game_manager.get_scene_by_id("chapter3_burn_flee")
+	var comply = game_manager.get_scene_by_id("chapter3_after_summon_comply_audit_done")
+	var refuse = game_manager.get_scene_by_id("chapter3_refuse_sea_route")
+	var burn = game_manager.get_scene_by_id("chapter3_burn_flee")
 	_assert_true(not comply.is_empty(), "Chapter3: 投附收束场景存在")
 	_assert_true(not refuse.is_empty(), "Chapter3: 忠义收束场景存在")
 	_assert_true(not burn.is_empty(), "Chapter3: 远航收束场景存在")

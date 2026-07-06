@@ -288,7 +288,7 @@
         }
       ],
       "town_map": {
-        "bg": "res://assets/bg_quanzhou_citong.png",
+        "bg": "res://assets/bg_quanzhou_citong_ink.png",
         "hint": "刺桐城里，番货与桐油混在一起——点一处，走进去。",
         "fallback_mode": "cards",
         "hotspots": [

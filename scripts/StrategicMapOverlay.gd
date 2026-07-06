@@ -1,6 +1,8 @@
 extends Control
 class_name StrategicMapOverlay
 
+const _MAP_UI_THEME := preload("res://scripts/MapUiTheme.gd")
+
 signal opened
 signal closed
 signal destination_set(port_id: String)
@@ -26,6 +28,17 @@ func _ready() -> void:
 	_btn_set_dest.pressed.connect(_on_set_destination)
 	_btn_info.pressed.connect(_on_show_port_info)
 	_btn_cancel.pressed.connect(_hide_popup)
+
+	_apply_classical_ui_theme()
+
+
+func _apply_classical_ui_theme() -> void:
+	_MAP_UI_THEME.apply_strategic_popup(
+		_popup,
+		_popup_title,
+		_popup_info,
+		[_btn_set_dest, _btn_info, _btn_cancel]
+	)
 
 
 func is_open() -> bool:

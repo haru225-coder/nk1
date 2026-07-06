@@ -34,7 +34,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="MapFrame" type="NinePatchRect" parent="Center"]
-custom_minimum_size = Vector2(920, 700)
+custom_minimum_size = Vector2(708, 868)
 layout_mode = 2
 texture = ExtResource("2_frame")
 patch_margin_left = 72
@@ -69,7 +69,7 @@ text = "東南海圖"
 horizontal_alignment = 1
 
 [node name="MapView" type="Control" parent="Center/MapFrame/Margin/VBox"]
-custom_minimum_size = Vector2(820, 560)
+custom_minimum_size = Vector2(560, 694)
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 0

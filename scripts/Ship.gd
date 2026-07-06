@@ -21,6 +21,12 @@ var crate_scene = preload(ResourcePaths.SCENE_CRATE)
 var _last_reported_hp: int = -1
 var _sinking: bool = false
 
+# 自动航行 (Auto-sailing)
+var is_auto_sailing: bool = false
+var _auto_waypoints: PackedVector2Array = PackedVector2Array()
+var _auto_waypoint_idx: int = 0
+const WAYPOINT_RADIUS: float = 400.0 # 接近距离阈值
+
 
 func _ready() -> void:
 	if not is_in_group("player_ship"):
@@ -81,33 +87,80 @@ func _sync_particle_layout() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_left") or event.is_action_pressed("ui_right") or event.is_action_pressed("ui_up") or event.is_action_pressed("ui_down"):
+		is_auto_sailing = false
+
 	var new_gear := ShipSystem.handle_sail_input(event, sail_gear, max_gear)
 	if new_gear != sail_gear:
 		sail_gear = new_gear
 		hud_stats_changed.emit()
 
 
+func set_auto_sailing(path: PackedVector2Array) -> void:
+	if path.size() > 0:
+		_auto_waypoints = path
+		_auto_waypoint_idx = 0
+		is_auto_sailing = true
+		if sail_gear == 0:
+			sail_gear = 1
+			hud_stats_changed.emit()
+
 func _physics_process(delta: float) -> void:
 	if _sinking or hull_hp <= 0:
 		return
+
+	var turn_input := _auto_sailing_turn_input()
+	if not is_auto_sailing:
+		turn_input = Input.get_axis("ui_left", "ui_right")
 
 	var sail_result := ShipSystem.step_sailing(
 		self,
 		delta,
 		GameState.crew_count,
 		GameState.sail_type,
+		turn_input,
 		func(): GameState.apply_effects({"crew_count": -1})
 	)
 	if sail_result.stats_changed:
 		hud_stats_changed.emit()
 
 	move_and_slide()
-	_update_visuals(delta, sail_result)
+	_update_visuals(delta, sail_result, turn_input)
 	_process_storm_damage(delta)
 
 
-func _update_visuals(delta: float, sail_result: Dictionary) -> void:
-	var turn_input := Input.get_axis("ui_left", "ui_right")
+func _auto_sailing_turn_input() -> float:
+	if not is_auto_sailing or _auto_waypoint_idx >= _auto_waypoints.size():
+		return 0.0
+
+	var target_pos: Vector2 = _auto_waypoints[_auto_waypoint_idx]
+	if global_position.distance_to(target_pos) < WAYPOINT_RADIUS:
+		_advance_auto_waypoint()
+		return 0.0
+
+	return _turn_input_toward(target_pos)
+
+
+func _advance_auto_waypoint() -> void:
+	_auto_waypoint_idx += 1
+	if _auto_waypoint_idx >= _auto_waypoints.size():
+		is_auto_sailing = false
+		sail_gear = 0
+		hud_stats_changed.emit()
+
+
+func _turn_input_toward(target_pos: Vector2) -> float:
+	var dir_to_target := global_position.direction_to(target_pos)
+	var current_heading := Vector2.UP.rotated(rotation)
+	var cross := current_heading.cross(dir_to_target)
+	if cross > 0.05:
+		return 1.0
+	if cross < -0.05:
+		return -1.0
+	return 0.0
+
+
+func _update_visuals(delta: float, sail_result: Dictionary, turn_input: float) -> void:
 	if _visual.has_method("update_motion"):
 		_visual.update_motion(
 			sail_gear,

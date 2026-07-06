@@ -34,12 +34,26 @@ func _apply_visuals() -> void:
 		_icon.modulate = MapPortStyle.port_modulate(port_status)
 	if _name_label:
 		_name_label.text = port_name
-		_name_label.visible = false
+		_name_label.visible = true
+
+		# 古风书法印章/竹简样式 (Red/Cyan Stamp)
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.6, 0.15, 0.15, 0.85) if port_status == "main" else Color(0.2, 0.3, 0.25, 0.85)
+		style.border_color = Color(0.1, 0.1, 0.05, 0.9)
+		style.set_border_width_all(2)
+		style.corner_radius_top_left = 4
+		style.corner_radius_bottom_right = 4
+		style.expand_margin_left = 8
+		style.expand_margin_right = 8
+		_name_label.add_theme_stylebox_override("normal", style)
+		_name_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8, 1.0))
+		_name_label.add_theme_font_size_override("font_size", 22)
+		_name_label.z_index = 50
 
 
 func _process(_delta: float) -> void:
 	if _name_label:
-		_name_label.visible = player_in_zone
+		_name_label.visible = true
 	queue_redraw()
 
 
@@ -53,7 +67,8 @@ func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player_ship"):
 		player_in_zone = true
 		if _name_label:
-			_name_label.text = port_name + " (按 Enter 停靠)"
+			_name_label.text = port_name + " (Enter 停靠)"
+			_name_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2, 1.0))
 
 
 func _on_body_exited(body: Node2D) -> void:
@@ -61,6 +76,7 @@ func _on_body_exited(body: Node2D) -> void:
 		player_in_zone = false
 		if _name_label:
 			_name_label.text = port_name
+			_name_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8, 1.0))
 
 
 func _input(event: InputEvent) -> void:

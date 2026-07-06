@@ -13,6 +13,11 @@ func refresh() -> void:
 	queue_redraw()
 
 
+func _process(_delta: float) -> void:
+	if not port_nodes.is_empty():
+		queue_redraw()
+
+
 func _draw() -> void:
 	if port_nodes.is_empty():
 		return

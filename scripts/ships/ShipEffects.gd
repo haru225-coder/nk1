@@ -73,13 +73,14 @@ func _update_wake(current_speed: float, max_speed: float) -> void:
 		wake_particles.emitting = true
 		wake_particles.initial_velocity_min = 20.0 + speed_ratio * 80.0
 		wake_particles.initial_velocity_max = 40.0 + speed_ratio * 120.0
-		wake_particles.scale_amount_max = 4.0 + speed_ratio * 6.0
+		# 微调水花粒子的缩放上限以提升质感
+		wake_particles.scale_amount_max = 2.0 + speed_ratio * 3.0
 		var bow_emit := current_speed > BOW_WAVE_THRESHOLD
 		bow_wave_left.emitting = bow_emit
 		bow_wave_right.emitting = bow_emit
 		if bow_emit:
-			bow_wave_left.scale_amount_max = 2.0 + speed_ratio * 4.0
-			bow_wave_right.scale_amount_max = 2.0 + speed_ratio * 4.0
+			bow_wave_left.scale_amount_max = 1.5 + speed_ratio * 2.0
+			bow_wave_right.scale_amount_max = 1.5 + speed_ratio * 2.0
 	else:
 		wake_particles.emitting = false
 		bow_wave_left.emitting = false
@@ -87,11 +88,8 @@ func _update_wake(current_speed: float, max_speed: float) -> void:
 
 
 func _update_camera(current_speed: float, max_speed: float, wind_strength: float, delta: float) -> void:
-	var speed_ratio := current_speed / maxf(max_speed * ZOOM_BASE, 1.0)
-	var zoom_val := clampf(ZOOM_BASE - speed_ratio * ZOOM_REDUCTION, 0.5, ZOOM_BASE)
-	camera.zoom = camera.zoom.lerp(Vector2(zoom_val, zoom_val), ZOOM_LERP_SPEED * delta)
 	if current_speed > SHAKE_SPEED_THRESHOLD or wind_strength > SHAKE_WIND_THRESHOLD:
 		var shake := clampf(current_speed / 400.0, 0.0, 1.0) * SHAKE_MAX_INTENSITY
-		camera.offset = Vector2(randf_range(-shake, shake), randf_range(-shake, shake))
+		camera.position = Vector2(randf_range(-shake, shake), randf_range(-shake, shake))
 	else:
-		camera.offset = Vector2.ZERO
+		camera.position = Vector2.ZERO

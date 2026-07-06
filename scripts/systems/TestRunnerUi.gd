@@ -103,6 +103,8 @@ func _test_resource_paths() -> void:
 	_assert_eq(ResourcePaths.TEX_SHIP_TOPDOWN, "res://assets/ship_topdown.png", "ResourcePaths.TEX_SHIP_TOPDOWN")
 	_assert_eq(ResourcePaths.TEX_SEAGULL, "res://assets/seagull.png", "ResourcePaths.TEX_SEAGULL")
 	_assert_eq(ResourcePaths.TEX_WHALE_SHADOW, "res://assets/whale_shadow.png", "ResourcePaths.TEX_WHALE_SHADOW")
+	_assert_eq(ResourcePaths.TEX_MAP_EAST_ASIA, "res://assets/map_east_asia.png", "ResourcePaths.TEX_MAP_EAST_ASIA")
+	_assert_eq(ResourcePaths.TEX_MAP_EAST_ASIA_SEA_MASK, "res://assets/map_east_asia_sea_mask.png", "ResourcePaths.TEX_MAP_EAST_ASIA_SEA_MASK")
 	_assert_eq(ResourcePaths.TEX_MAP_NANHAI, "res://assets/map_nanhai.png", "ResourcePaths.TEX_MAP_NANHAI")
 	_assert_eq(ResourcePaths.TEX_MAP_SEA_MASK, "res://assets/map_nanhai_sea_mask.png", "ResourcePaths.TEX_MAP_SEA_MASK")
 	_assert_eq(ResourcePaths.TEX_ICON_PORT, "res://assets/icons_128/icon_shipyard_koei.png", "ResourcePaths.TEX_ICON_PORT")
@@ -424,8 +426,8 @@ func _test_floating_text_config() -> void:
 func _test_map_visual_style() -> void:
 	print("--- MapVisualStyle ---")
 	_assert_eq(MapRoutePainter.route_key("quanzhou", "guangzhou"), "guangzhou|quanzhou", "route_key sorted")
-	_assert_eq(MapRoutePainter.ROUTE_COLOR, Color(0.77, 0.66, 0.36, 0.55), "shared route color")
-	_assert_eq(MapRoutePainter.ROUTE_WIDTH_WORLD, 4.0, "world route width")
+	_assert_eq(MapRoutePainter.ROUTE_COLOR, Color(0.65, 0.15, 0.15, 0.75), "shared route color")
+	_assert_eq(MapRoutePainter.ROUTE_WIDTH_WORLD, 3.0, "world route width")
 	_assert_eq(MapRoutePainter.ROUTE_WIDTH_MINIMAP, 1.5, "minimap route width")
 	_assert_eq(MapPortStyle.port_color("main"), MapPortStyle.PORT_MAIN, "main port color")
 	_assert_eq(MapPortStyle.port_color("distant"), MapPortStyle.PORT_DISTANT, "distant port color")
@@ -444,7 +446,30 @@ func _test_map_visual_style() -> void:
 	_assert_true(wm.get_node("RouteLayer").has_method("set_port_nodes"), "RouteLayer API")
 	_assert_true(wm.has_node("CanvasLayer/HUD/MinimapPanel/MinimapFrame"), "Minimap koei frame")
 	_assert_true(wm.has_node("CanvasLayer/HUD/StrategicMapOverlay"), "WorldMap strategic overlay")
+	_runner.root.add_child(wm)
+	_assert_true(wm.has_node("WorldWeatherTime"), "WorldMap instantiates weather-time controller")
+	var has_wind_source := false
+	for child in wm.get_children():
+		if child is MapWindCurrents and child.wind_source == wm.get_node("Ship"):
+			has_wind_source = true
+	_assert_true(has_wind_source, "WorldMap wind currents use ship wind source")
 	wm.free()
+
+	var currents := MapWindCurrents.new()
+	_runner.root.add_child(currents)
+	var generic_wind_source := Node2D.new()
+	currents.wind_source = generic_wind_source
+	currents._update_wind_direction()
+	var current_particles := currents.get_child(0) as CPUParticles2D
+	_assert_not_null(current_particles, "MapWindCurrents particles created")
+	if current_particles:
+		_assert_eq(current_particles.direction, Vector2(0, 1), "MapWindCurrents falls back without wind_vector")
+	currents.free()
+	generic_wind_source.free()
+
+	var terrain_shader_text := FileAccess.get_file_as_string("res://assets/map_terrain_detail.gdshader")
+	var forbidden_fragment_return := "return" + ";"
+	_assert_true(not terrain_shader_text.contains(forbidden_fragment_return), "terrain detail shader has no fragment return")
 
 	var overlay_scene: PackedScene = load(ResourcePaths.SCENE_STRATEGIC_MAP_OVERLAY)
 	_assert_not_null(overlay_scene, "StrategicMapOverlay scene loads")

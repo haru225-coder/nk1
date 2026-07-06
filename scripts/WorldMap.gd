@@ -23,6 +23,8 @@ var whale_tex = preload(ResourcePaths.TEX_WHALE_SHADOW)
 @onready var _ocean_material: ShaderMaterial = $StrategicMapRoot/OceanOverlay.material as ShaderMaterial
 
 const _OCEAN_TEX := preload(ResourcePaths.TEX_OCEAN_WATER)
+const _CLOUD_SHADOW_SHADER := preload("res://assets/cloud_shadows.gdshader")
+const _MAP_UI_THEME := preload("res://scripts/MapUiTheme.gd")
 var port_scene = preload(ResourcePaths.SCENE_PORT_ZONE)
 var ports_data: Array = []
 var port_nodes: Dictionary = {}
@@ -33,11 +35,7 @@ const MAX_FLEETS_ON_MAP: int = 5
 const FLEET_SPAWN_RADIUS: float = 1200.0
 const FLEET_DESPAWN_RADIUS: float = 3000.0
 
-var time_of_day: float = 12.0
-var is_storm: bool = false
-var storm_timer: float = 0.0
-var lightning_timer: float = 0.0
-var base_wind_strength: float = 80.0
+var _weather_time: WorldWeatherTime
 
 var crate_spawn_timer: float = 5.0
 var animal_spawn_timer: float = 15.0
@@ -48,12 +46,16 @@ var _hud_update_timer: float = 0.0
 var _voyage_log_timer: float = 25.0  ## NK1-P6: 航海日志周期
 var _economy_log_timer: float = 15.0  ## NK1-P6: 经济动态检查周期
 var _near_port_id: String = ""       ## NK1-P6: 当前最近港口（用于进港提示）
+var _zoom_tween: Tween
 
 ## NK1-P6: 航海风景描述池（NK1-P6-POLISH-004: 已迁移到 FloatingTextConfig.VOYAGE_SCENERY）
 
 func _ready() -> void:
 	randomize()
+	_weather_time = WorldWeatherTime.new(self, canvas_modulate, rain_particles, lightning_flash, weather_status, ship)
+	add_child(_weather_time)
 	_setup_strategic_map()
+	_setup_cloud_shadows()
 	_load_ports()
 
 	if GameState.has_world_map_ship_pose():
@@ -61,14 +63,40 @@ func _ready() -> void:
 	elif port_nodes.has(GameState.current_voyage_origin):
 		_place_ship_at_port(GameState.current_voyage_origin)
 
+	# 添加二十四向古法罗盘
+	var compass_node = MapCompassRose.new()
+	# 将罗盘锚定到右下角，避开右上角的小地图
+	compass_node.anchor_left = 1.0
+	compass_node.anchor_top = 1.0
+	compass_node.anchor_right = 1.0
+	compass_node.anchor_bottom = 1.0
+	compass_node.offset_left = -300
+	compass_node.offset_top = -300
+	compass_node.offset_right = -100
+	compass_node.offset_bottom = -100
+	$CanvasLayer.add_child(compass_node)
+
 	if not ship.is_in_group("player_ship"):
 		ship.add_to_group("player_ship")
 
 	_strategic_overlay.closed.connect(_on_strategic_overlay_closed)
 	_strategic_overlay.destination_set.connect(_on_voyage_destination_set)
+
+	for panel in [_left_panel, _right_panel, _minimap_panel]:
+		panel.mouse_entered.connect(func(): _fade_panel(panel, 0.15))
+		panel.mouse_exited.connect(func(): _fade_panel(panel, 1.0))
+
+	_apply_classical_ui_theme()
 	_update_hud_labels()
+
+	if GameState.voyage_destination_id != "":
+		_on_voyage_destination_set(GameState.voyage_destination_id)
+
 	await get_tree().process_frame
 	_animate_hud_entrance()
+
+func _apply_classical_ui_theme() -> void:
+	_MAP_UI_THEME.apply_world_map_hud(_left_panel, _right_panel, label, fleet_status, weather_status)
 
 func _input(event: InputEvent) -> void:
 	if _strategic_overlay.is_open():
@@ -80,6 +108,30 @@ func _input(event: InputEvent) -> void:
 
 	if navigation_locked:
 		return
+
+	if event is InputEventMouseButton and event.pressed:
+		var camera: Camera2D = null
+		for child in ship.get_children():
+			if child is Camera2D:
+				camera = child
+				break
+		if camera:
+			var target_zoom := camera.zoom.x
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+				target_zoom = minf(2.5, target_zoom + 0.1)
+			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+				target_zoom = maxf(0.5, target_zoom - 0.1)
+			if target_zoom != camera.zoom.x:
+				if _zoom_tween and _zoom_tween.is_valid():
+					_zoom_tween.kill()
+				_zoom_tween = create_tween()
+				_zoom_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE).set_parallel(true)
+				_zoom_tween.tween_property(camera, "zoom", Vector2(target_zoom, target_zoom), 0.25)
+
+				# 方案 B: 自适应偏移算法
+				var t = (target_zoom - 0.5) / 2.0  # t 归一化到 [0, 1]
+				var target_offset_y = lerp(0.0, -180.0, t)
+				_zoom_tween.tween_property(camera, "offset:y", target_offset_y, 0.25)
 
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_M:
@@ -110,15 +162,15 @@ func _get_nearest_port_id() -> String:
 func _process(delta: float) -> void:
 	if not ship:
 		return
-
-	if navigation_locked or _overlay_open:
+	var world_paused := navigation_locked or _overlay_open
+	_set_world_time_paused(world_paused)
+	if world_paused:
 		ship.process_mode = Node.PROCESS_MODE_DISABLED
 		return
 	else:
 		if ship.process_mode == Node.PROCESS_MODE_DISABLED:
 			ship.process_mode = Node.PROCESS_MODE_INHERIT
 
-	_process_weather_and_time(delta)
 	rain_particles.global_position = ship.global_position
 
 	_process_spawns(delta)
@@ -196,82 +248,6 @@ func _update_hud_labels() -> void:
 	else:
 		fleet_status.modulate = Color(1, 1, 1)
 
-func _process_weather_and_time(delta: float) -> void:
-	time_of_day += delta * 0.2
-
-	while time_of_day >= 24.0:
-		time_of_day -= 24.0
-		var old_crew = GameState.crew_count
-		var advance_result: Dictionary = GameState.advance_world_day()
-		GameState.process_daily_consumption()
-		WorldEventTracker.process_day()
-		TradeEventGenerator.try_generate()
-		TradeEventGenerator.process_day()
-		# NK1-P5-ECON-002: 每日经济处理（繁荣度回归+贸易历史衰减）
-		GameState.market.process_daily_economy()
-		var tick_ctx := {
-			"world_day": GameState.navigation.world_day,
-			"world_month": GameState.navigation.world_month,
-		}
-		StoryEventChainEngine.check_triggers("day_advance", tick_ctx)
-		if advance_result.get("month_advance", false):
-			StoryEventChainEngine.check_triggers("month_advance", tick_ctx)
-		if GameState.crew_count < old_crew:
-			var ft = ResourceManager.FloatingText.instantiate()
-			ft.text = "【警告】水尽粮绝！水手减少！"
-			ft.modulate = GameColors.FLOATING_CREW_LOSS
-			ft.global_position = ship.global_position + FloatingTextConfig.OFFSET_CREW_LOSS
-			add_child(ft)
-			get_tree().create_timer(FloatingTextConfig.LIFETIME_CREW_LOSS, false).timeout.connect(func():
-				if is_instance_valid(ft):
-					ft.queue_free()
-			)
-			# NK1-P6-POLISH: 分类日志
-			GameState.game_log.warning(GameLog.Category.VOYAGE, "水尽粮绝，水手减少 %d 人" % (old_crew - GameState.crew_count))
-
-	var light_color := GameColors.LIGHT_NOON
-	if time_of_day < 5.0 or time_of_day > 19.0:
-		light_color = GameColors.LIGHT_NIGHT
-	elif time_of_day >= 5.0 and time_of_day < 7.0:
-		light_color = GameColors.LIGHT_DAWN
-	elif time_of_day > 17.0 and time_of_day <= 19.0:
-		light_color = GameColors.LIGHT_DUSK
-
-	storm_timer -= delta
-	if storm_timer <= 0:
-		is_storm = not is_storm
-		if is_storm:
-			storm_timer = randf_range(20.0, 40.0)
-			weather_status.text = "当前天气: 狂风骤雨 (极其危险!)"
-			weather_status.modulate = GameColors.WARNING
-			rain_particles.emitting = true
-			ship.wind_strength = base_wind_strength * randf_range(2.0, 3.5)
-			var angle = randf() * TAU
-			ship.wind_vector = Vector2(cos(angle), sin(angle))
-			GameState.game_log.warning(GameLog.Category.VOYAGE, "风暴来袭！风力 %.0f" % ship.wind_strength)
-		else:
-			storm_timer = randf_range(40.0, 80.0)
-			weather_status.text = "当前天气: 晴朗"
-			weather_status.modulate = GameColors.INFO
-			rain_particles.emitting = false
-			ship.wind_strength = base_wind_strength
-			ship.wind_vector = Vector2(0, 1)
-
-	if is_storm:
-		light_color = light_color.lerp(GameColors.LIGHT_STORM, 0.8)
-		lightning_timer -= delta
-		if lightning_timer <= 0:
-			_strike_lightning()
-			lightning_timer = randf_range(2.0, 8.0)
-
-	canvas_modulate.color = canvas_modulate.color.lerp(light_color, 2.0 * delta)
-
-func _strike_lightning() -> void:
-	lightning_flash.visible = true
-	lightning_flash.color.a = 0.8
-	var tween := create_tween()
-	tween.tween_property(lightning_flash, "color:a", 0.0, 0.3)
-	tween.tween_callback(func(): lightning_flash.visible = false)
 
 func _maintain_fleet_spawns() -> void:
 	for i in range(active_fleets.size() - 1, -1, -1):
@@ -317,6 +293,7 @@ func _on_fleet_encountered(encounter_data: Dictionary, fleet_node: Node2D) -> vo
 
 	navigation_locked = true
 	GameState.set_navigation_locked(true)
+	_set_world_time_paused(true)
 
 	var event_data: Dictionary
 	if encounter_data.get("id", "") == "patrol_song":
@@ -331,6 +308,7 @@ func _on_fleet_encountered(encounter_data: Dictionary, fleet_node: Node2D) -> vo
 			fleet_node.queue_free()
 		navigation_locked = false
 		GameState.set_navigation_locked(false)
+		_set_world_time_paused(_overlay_open)
 	)
 
 func _process_spawns(delta: float) -> void:
@@ -413,6 +391,30 @@ func _setup_strategic_map() -> void:
 		push_warning("WorldMap: sea mask missing (%s)" % MapLayout.get_sea_mask_path())
 		_ocean_overlay.visible = false
 
+	var grid_node = MapGridPainter.new()
+	add_child(grid_node)
+
+	var labels_node = MapRegionLabels.new()
+	add_child(labels_node)
+
+	var wind_node = MapWindCurrents.new()
+	wind_node.wind_source = ship
+	add_child(wind_node)
+
+
+func _setup_cloud_shadows() -> void:
+	var shadow := ColorRect.new()
+	shadow.name = "CloudShadows"
+	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shadow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shadow.color = Color.WHITE
+	var mat := ShaderMaterial.new()
+	mat.shader = _CLOUD_SHADOW_SHADER
+	mat.set_shader_parameter("noise_tex", _OCEAN_TEX)
+	shadow.material = mat
+	$CanvasLayer.add_child(shadow)
+	$CanvasLayer.move_child(shadow, 0)
+
 
 func _load_ports() -> void:
 	ports_data = GameManager.ports_data.get("ports", [])
@@ -442,6 +444,10 @@ func _animate_hud_entrance() -> void:
 	for panel in panels:
 		tw.tween_property(panel, "scale", Vector2.ONE, 0.6)
 		tw.tween_property(panel, "modulate:a", 1.0, 0.5)
+
+func _fade_panel(panel: Control, target_alpha: float) -> void:
+	var tw = create_tween()
+	tw.tween_property(panel, "modulate:a", target_alpha, 0.2)
 
 ## ── NK1-P6: 航海反馈增强 ────────────────────────────────
 
@@ -505,10 +511,11 @@ func _open_strategic_overlay() -> void:
 	if not ship:
 		return
 	_overlay_open = true
+	_set_world_time_paused(true)
 	ports_node.process_mode = Node.PROCESS_MODE_DISABLED
 	_strategic_overlay.open(
 		ship,
-		time_of_day,
+		_weather_time.time_of_day if is_instance_valid(_weather_time) else 12.0,
 		weather_status.text,
 		int(ship.hull_hp),
 		int(ship.max_hp)
@@ -517,15 +524,27 @@ func _open_strategic_overlay() -> void:
 
 func _on_strategic_overlay_closed() -> void:
 	_overlay_open = false
+	_set_world_time_paused(navigation_locked)
 	ports_node.process_mode = Node.PROCESS_MODE_INHERIT
 
 
-func _on_voyage_destination_set(_port_id: String) -> void:
+func _set_world_time_paused(paused: bool) -> void:
+	if is_instance_valid(_weather_time):
+		_weather_time.paused = paused
+
+
+func _on_voyage_destination_set(port_id: String) -> void:
 	_update_hud_labels()
+
+	if ship and ship.has_method("set_auto_sailing"):
+		var graph = MapLayout.get_astar_graph()
+		var path = graph.get_path_from_pos(ship.global_position, port_id)
+		ship.set_auto_sailing(path)
+
 	if not ship or not _strategic_overlay.is_open():
 		return
 	_strategic_overlay.refresh_destination(
-		time_of_day,
+		_weather_time.time_of_day if is_instance_valid(_weather_time) else 12.0,
 		weather_status.text,
 		int(ship.hull_hp),
 		int(ship.max_hp)

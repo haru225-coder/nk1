@@ -3,13 +3,13 @@ class_name StrategicMapView
 
 signal port_clicked(port_id: String)
 
-const MAP_TEXTURE := preload(ResourcePaths.TEX_MAP_NANHAI)
 const PORT_ICON: Texture2D = preload("res://assets/icons_128/icon_shipyard_koei.png")
 
 const _INSET := 12.0
 const _PORT_HIT_RADIUS := 18.0
-const _SHIP_COLOR := Color(1.0, 0.94, 0.58, 1.0)
-const _DEST_COLOR := Color(0.95, 0.45, 0.35, 0.9)
+const _SHIP_COLOR := Color(0.75, 0.18, 0.18, 1.0) # 朱砂红
+const _DEST_COLOR := Color(0.8, 0.2, 0.2, 0.9) # 深朱砂红
+const _BG_COLOR := Color(0.85, 0.78, 0.65, 1.0) # 羊皮纸底色
 
 var ship: Node2D
 var destination_port_id: String = ""
@@ -19,9 +19,11 @@ func _draw() -> void:
 	var rect := _map_rect()
 	if rect.size.x <= 1.0 or rect.size.y <= 1.0:
 		return
-	draw_rect(rect, Color(0.1, 0.16, 0.22, 1.0))
-	if MAP_TEXTURE:
-		draw_texture_rect(MAP_TEXTURE, rect, false)
+	draw_rect(rect, _BG_COLOR)
+	var tex := MapLayout.get_map_texture()  # 数据驱动，跟随 meta.map_layout.texture
+	if tex:
+		# ponytail: 拉伸填满 rect；后续 rect 改 0.808 竖向比例可无畸变
+		draw_texture_rect(tex, rect, false)
 	MapRoutePainter.draw_uv_routes(self, rect)
 	_draw_destination_marker(rect)
 	_draw_port_icons(rect)

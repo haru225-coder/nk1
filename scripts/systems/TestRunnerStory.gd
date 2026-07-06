@@ -1104,7 +1104,11 @@ func _test_storybook_route_action_focus() -> void:
 	_assert_true(main_text.contains("_pending_route_focus_action_id"), "札册直达行动: Main 暂存目标行动焦点")
 	_assert_true(main_text.contains("storybook_route_requested.connect(_on_storybook_route_requested)"), "札册直达行动: Main 连接札册直达信号")
 	_assert_true(main_text.contains("func _on_storybook_route_requested(scene_id: String, focus_action_id: String)"), "札册直达行动: Main 接收场景+行动焦点")
-	_assert_true(main_text.contains("setup_investigation(scene_data, scene_id, focus_action_id)"), "札册直达行动: Main 将行动焦点传给调查设施")
+	_assert_true(main_text.contains("present_scene(scene_data, scene_id, focus_action_id)"), "札册直达行动: Main 将行动焦点交给场景呈现器")
+
+	var presenter_file := FileAccess.open("res://scripts/MainScenePresenter.gd", FileAccess.READ)
+	var presenter_text := presenter_file.get_as_text() if presenter_file != null else ""
+	_assert_true(presenter_text.contains("setup_investigation\", scene_data, scene_id, focus_action_id"), "札册直达行动: 场景呈现器将行动焦点传给调查设施")
 
 	var facility_file := FileAccess.open("res://scripts/FacilityController.gd", FileAccess.READ)
 	var facility_text := facility_file.get_as_text() if facility_file != null else ""

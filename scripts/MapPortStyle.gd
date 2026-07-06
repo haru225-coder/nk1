@@ -1,13 +1,13 @@
 class_name MapPortStyle
 extends RefCounted
 
-const PORT_MAIN := Color(0.45, 0.92, 0.52, 1.0)
-const PORT_THREAD := Color(0.55, 0.78, 0.62, 0.85)
-const PORT_DISTANT := Color(0.55, 0.72, 0.82, 0.55)
-const PORT_LOCKED := Color(0.42, 0.42, 0.46, 0.55)
-const HOVER_RING := Color(0.77, 0.66, 0.36, 0.85)
-const LABEL_COLOR := Color(0.95, 0.9, 0.72, 1.0)
-const LABEL_BG := Color(0.12, 0.1, 0.06, 0.82)
+const PORT_MAIN := Color(0.65, 0.15, 0.15, 0.95) # 朱砂红
+const PORT_THREAD := Color(0.3, 0.25, 0.2, 0.85) # 浓墨
+const PORT_DISTANT := Color(0.4, 0.4, 0.4, 0.6)  # 淡墨
+const PORT_LOCKED := Color(0.5, 0.5, 0.45, 0.4)  # 枯墨
+const HOVER_RING := Color(0.8, 0.2, 0.2, 0.8)    # 朱砂圈
+const LABEL_COLOR := Color(0.1, 0.08, 0.05, 1.0) # 墨黑字
+const LABEL_BG := Color(0.85, 0.8, 0.7, 0.85)    # 旧纸黄
 
 const ICON_SCALE_WORLD := 0.42
 const ICON_SCALE_MINIMAP := 1.0

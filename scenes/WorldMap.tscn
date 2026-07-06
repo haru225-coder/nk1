@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://7nxadtrp0p66" path="res://scripts/WorldMap.gd" id="1_map"]
 [ext_resource type="PackedScene" path="res://scenes/Ship.tscn" id="2_ship"]
-[ext_resource type="Texture2D" path="res://assets/map_nanhai.png" id="2_map_tex"]
+[ext_resource type="Texture2D" path="res://assets/map_east_asia.png" id="2_map_tex"]
 [ext_resource type="Texture2D" uid="uid://xnp7vjyfjnp1" path="res://assets/ocean_water.png" id="3_ocean"]
 [ext_resource type="Shader" path="res://assets/ocean_masked_shader.gdshader" id="4_ocean_masked"]
 [ext_resource type="PackedScene" path="res://scenes/PortZone.tscn" id="5_port"]
@@ -15,7 +15,7 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("8_vignette")
-shader_parameter/edge_color = Color(0, 0, 0, 0.28)
+shader_parameter/edge_color = Color(0.3, 0.15, 0.05, 0.75)
 shader_parameter/softness = 0.6
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean_masked"]
@@ -23,7 +23,7 @@ shader = ExtResource("4_ocean_masked")
 shader_parameter/wave_speed = 0.5
 shader_parameter/wave_freq = 15.0
 shader_parameter/wave_amp = 0.02
-shader_parameter/water_color = Color(0.1, 0.4, 0.6, 1)
+shader_parameter/water_color = Color(0.25, 0.55, 0.50, 1)
 shader_parameter/shore_fade = 0.08
 
 [node name="WorldMap" type="Node2D" unique_id=630777904]
@@ -162,7 +162,7 @@ theme_override_constants/margin_right = 0
 theme_override_constants/margin_bottom = 0
 
 [node name="MinimapFrame" type="NinePatchRect" parent="CanvasLayer/HUD/MinimapPanel"]
-custom_minimum_size = Vector2(268, 208)
+custom_minimum_size = Vector2(184, 228)
 layout_mode = 2
 texture = ExtResource("10_frame")
 patch_margin_left = 22

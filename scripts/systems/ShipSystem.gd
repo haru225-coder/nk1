@@ -299,9 +299,9 @@ static func step_sailing(
 	delta: float,
 	crew_count: int,
 	sail_type: String,
+	turn_input: float,
 	on_crew_loss: Callable
 ) -> Dictionary:
-	var turn_input := Input.get_axis("ui_left", "ui_right")
 	var sail_gear: int = ship_node.sail_gear
 	var max_gear: int = ship_node.max_gear
 	var stats_changed := false
