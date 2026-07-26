@@ -1,106 +1,224 @@
 extends Node
+## 玩家身份状态：钱、名声、章节、旗标、市舶司关系。
+## 船与货已迁往 Fleet，时间迁往 Calendar，行情迁往 Economy。
 
-# 玩家基础属性
+signal money_changed(amount: int)
+
 var money: int = 1000
 var fame: int = 0
 
-# 走私跑商核心机制 v0.5.3
-var cargo: Dictionary = {}
+## 蕃商赊贷。海商借贷是宋代常态——叔父正是借贷船资、货损未结才留下这笔债。
+## 它同时是破产保底：一次查扣把本钱清空后，玩家仍有翻身的路。
+var debt: int = 0
+const DEBT_CEILING := 3000
+const DEBT_MONTHLY_RATE := 0.03
+
+## 剧情章节，决定港口与船种解锁
+var chapter: int = 1
+
+## 走私与市舶
 var pu_attention: int = 0
 var has_customs_permit: bool = false
 var last_port: String = "quanzhou"
 
-# 旗标系统
+## 剧情旗标
 var flags: Dictionary = {}
 
-func _ready() -> void:
-	pass
+## 已上报的发现物 id
+var discoveries_reported: Array = []
 
-# 购买货物
-func buy_goods(item_id: String, amount: int, price_per_unit: int) -> bool:
-	var total_cost = amount * price_per_unit
-	if money >= total_cost:
-		money -= total_cost
-		if cargo.has(item_id):
-			cargo[item_id] += amount
-		else:
-			cargo[item_id] = amount
+
+# ── 钱 ────────────────────────────────────────────────
+
+## 金钱不落负数——罚没一律以现有资金为上限，欠款走 debt 而非负余额
+func add_money(amount: int) -> void:
+	money = maxi(0, money + amount)
+	money_changed.emit(money)
+
+
+# ── 赊贷 ──────────────────────────────────────────────
+
+func borrow_limit() -> int:
+	return maxi(0, DEBT_CEILING - debt)
+
+
+func borrow(amount: int) -> bool:
+	if amount <= 0 or amount > borrow_limit():
+		return false
+	debt += amount
+	add_money(amount)
+	return true
+
+
+func repay(amount: int) -> int:
+	var actual: int = mini(mini(amount, debt), money)
+	if actual <= 0:
+		return 0
+	debt -= actual
+	add_money(-actual)
+	return actual
+
+
+## 每月结息，由 GameManager 在月份翻页时调用
+func accrue_interest() -> int:
+	if debt <= 0:
+		return 0
+	var interest := int(ceil(debt * DEBT_MONTHLY_RATE))
+	debt += interest
+	return interest
+
+
+func spend_money(amount: int) -> bool:
+	if money < amount:
+		return false
+	money -= amount
+	money_changed.emit(money)
+	return true
+
+
+# ── 章节 ──────────────────────────────────────────────
+
+## unlock 形如 "ch2"
+func is_chapter_reached(unlock: String) -> bool:
+	if not unlock.begins_with("ch"):
 		return true
-	return false
+	return chapter >= int(unlock.substr(2))
 
-# 售卖货物
-func sell_goods(item_id: String, amount: int, price_per_unit: int) -> bool:
-	if cargo.has(item_id) and cargo[item_id] >= amount:
-		cargo[item_id] -= amount
-		if cargo[item_id] <= 0:
-			cargo.erase(item_id)
-		money += amount * price_per_unit
-		return true
-	return false
 
-# 市舶司验引 / 蒲氏抽解 (Customs Inspection)
-func customs_inspection() -> Dictionary:
-	var result = {"passed": true, "msg": "", "confiscated": false}
-	
-	if has_customs_permit:
-		result["passed"] = true
-		result["msg"] = "【市舶司验引】出示了泉州货引，缴纳了正常抽解，安全放行。"
-	else:
-		if pu_attention > 50:
-			result["passed"] = false
-			result["confiscated"] = true
-			result["msg"] = "【严重警告】蒲氏暗桩早已盯上你！市舶司当场查扣所有无证货物，并处于巨额罚款！"
-			money = max(0, money - 500)
-			cargo.clear()
-		else:
-			if money >= 50:
-				result["passed"] = true
-				result["msg"] = "【惊险过关】没有货引，但蒲氏目前并未留意到你，你塞了 50 钱贿赂小吏，强行出港。"
-				money -= 50
-				pu_attention += 20 # 引起了关注
-			else:
-				result["passed"] = false
-				result["msg"] = "【遣返】你不仅没有货引，连塞给小吏的 50 钱都拿不出！小吏毫不客气地把你轰回了港口。"
-			
-	return result
+func advance_chapter() -> void:
+	chapter += 1
+
+
+# ── 旗标 ──────────────────────────────────────────────
 
 func set_flag(flag_name: String) -> void:
 	flags[flag_name] = true
 
+
 func has_flag(flag_name: String) -> bool:
-	return flags.has(flag_name) and flags[flag_name] == true
+	return flags.get(flag_name, false) == true
 
-# 战舰属性
-var ship_hp: float = 100.0
-var ship_max_hp: float = 100.0
-var armor_level: int = 1
-var sail_level: int = 1
 
-func repair_ship() -> bool:
-	var missing_hp = ship_max_hp - ship_hp
-	if missing_hp <= 0: return false
-	
-	var cost = int(missing_hp * 2) # 2钱1血
-	if money >= cost:
-		money -= cost
-		ship_hp = ship_max_hp
-		return true
-	return false
+# ── 市舶司 ────────────────────────────────────────────
 
-func upgrade_armor() -> bool:
-	var cost = armor_level * 500
-	if money >= cost:
-		money -= cost
-		armor_level += 1
-		ship_max_hp += 50.0
-		ship_hp += 50.0
-		return true
-	return false
+## 舱内违禁货（宋钱、铁器等）总量
+func contraband_units() -> int:
+	var n := 0
+	for gid in Fleet.cargo.keys():
+		if GameManager.get_good_by_id(gid).get("contraband", false):
+			n += Fleet.cargo[gid].get("qty", 0)
+	return n
 
-func upgrade_sail() -> bool:
-	var cost = sail_level * 600
-	if money >= cost:
-		money -= cost
-		sail_level += 1
-		return true
-	return false
+
+## 按当前舱货估算抽解税额（办正规货引的花费）
+func customs_duty() -> int:
+	var total := 0.0
+	for gid in Fleet.cargo.keys():
+		var g := GameManager.get_good_by_id(gid)
+		if g.get("contraband", false):
+			continue  # 违禁货无法报关，不计入
+		var qty: int = Fleet.cargo[gid].get("qty", 0)
+		total += float(g.get("base_value", 0)) * qty * Economy.tariff_rate
+	return maxi(20, int(round(total)))
+
+
+## 办理正规货引。返回 {ok, msg}
+func apply_for_permit() -> Dictionary:
+	var duty := customs_duty()
+	if not spend_money(duty):
+		return {"ok": false, "msg": "【市舶司】抽解需 %d 钱，你囊中不足，小吏把货单推了回来。" % duty}
+	has_customs_permit = true
+	# 走正门会稍微降低蒲氏的疑心
+	pu_attention = maxi(0, pu_attention - 5)
+	var msg := "【市舶司验引】按舱货抽解 %d 钱，货引到手。" % duty
+	if contraband_units() > 0:
+		msg += "\n只是舱底那批违禁货并未报入明账——验引护得了正货，护不了它。"
+	return {"ok": true, "msg": msg}
+
+
+## 出港查验。返回 {passed, msg, confiscated}
+func customs_inspection() -> Dictionary:
+	var result := {"passed": true, "msg": "", "confiscated": false}
+	var contraband := contraband_units()
+
+	if has_customs_permit:
+		if contraband > 0:
+			# 有引也压不住违禁货，只是查出的概率低一些
+			var risk := 0.25 + float(pu_attention) / 400.0
+			if randf() < risk:
+				result["passed"] = false
+				result["confiscated"] = true
+				# 罚金以现有资金为比例，不把玩家一次罚到无法翻身
+				var fine: int = mini(300, maxi(50, int(money * 0.4)))
+				result["msg"] = "【查扣】货引虽全，抽查却翻到了舱底。%d 件违禁之物当场起获，罚钱 %d，货引作废。" % [contraband, fine]
+				_confiscate_contraband()
+				add_money(-fine)
+				pu_attention += 30
+				has_customs_permit = false
+				return result
+			result["msg"] = "【市舶司验引】货引齐备，小吏草草点过舱面便放行。舱底那批东西没人去翻。"
+			pu_attention += 8
+			return result
+		result["msg"] = "【市舶司验引】出示了泉州货引，缴过抽解，安全放行。"
+		return result
+
+	# 无引
+	if pu_attention > 50:
+		var fine: int = mini(500, maxi(50, int(money * 0.4)))
+		result["passed"] = false
+		result["confiscated"] = true
+		result["msg"] = "【严重警告】蒲氏暗桩早已盯上你。市舶司当场查扣所有无证货物，罚钱 %d。" % fine
+		Fleet.clear_cargo()
+		add_money(-fine)
+		return result
+
+	var bribe := 50 + contraband * 10
+	if money >= bribe:
+		result["passed"] = true
+		result["msg"] = "【惊险过关】没有货引，蒲氏眼下还未留意到你。塞了 %d 钱给小吏，强行出港。" % bribe
+		add_money(-bribe)
+		pu_attention += 20 + contraband * 2
+	else:
+		result["passed"] = false
+		result["msg"] = "【遣返】没有货引，连塞给小吏的 %d 钱都拿不出。小吏毫不客气地把你轰回港内。" % bribe
+	return result
+
+
+func _confiscate_contraband() -> void:
+	for gid in Fleet.cargo.keys().duplicate():
+		if GameManager.get_good_by_id(gid).get("contraband", false):
+			Fleet.remove_cargo(gid, Fleet.cargo_qty(gid))
+
+
+## 出港后消耗货引（一引一航次）
+func consume_permit() -> void:
+	has_customs_permit = false
+
+
+# ── 存档 ──────────────────────────────────────────────
+
+func to_dict() -> Dictionary:
+	return {
+		"money": money,
+		"debt": debt,
+		"fame": fame,
+		"chapter": chapter,
+		"pu_attention": pu_attention,
+		"has_customs_permit": has_customs_permit,
+		"last_port": last_port,
+		"flags": flags,
+		"discoveries_reported": discoveries_reported,
+	}
+
+
+func from_dict(d: Dictionary) -> void:
+	money = d.get("money", 1000)
+	debt = d.get("debt", 0)
+	fame = d.get("fame", 0)
+	chapter = d.get("chapter", 1)
+	pu_attention = d.get("pu_attention", 0)
+	has_customs_permit = d.get("has_customs_permit", false)
+	last_port = d.get("last_port", "quanzhou")
+	flags = d.get("flags", {})
+	discoveries_reported = d.get("discoveries_reported", [])
+	money_changed.emit(money)

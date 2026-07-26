@@ -17,8 +17,14 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+; 顺序即初始化顺序：GameManager 必须最先加载 JSON，Economy/Fleet 的 _ready 依赖它。
 GameManager="*res://scripts/GameManager.gd"
+Calendar="*res://scripts/core/Calendar.gd"
+Economy="*res://scripts/core/Economy.gd"
+Fleet="*res://scripts/core/Fleet.gd"
+Voyage="*res://scripts/core/Voyage.gd"
 GameState="*res://scripts/GameState.gd"
+SaveLoad="*res://scripts/core/SaveLoad.gd"
 
 [display]
 

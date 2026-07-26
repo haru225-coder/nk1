@@ -26,10 +26,13 @@ var cannonball_scene = preload("res://scenes/Cannonball.tscn")
 var fire_cooldown: float = 0.0
 
 func _ready() -> void:
-	max_hp = GameState.ship_max_hp
-	hull_hp = GameState.ship_hp
-	max_speed = 300.0 + (GameState.sail_level - 1) * 50.0
-	base_turn_speed = 1.8 + (GameState.sail_level - 1) * 0.2
+	# 战术场景反映旗舰状态；舰队数据以 Fleet 为准
+	var fs: Dictionary = Fleet.flagship()
+	max_hp = float(fs.get("max_durability", 100.0))
+	hull_hp = float(fs.get("durability", max_hp))
+	var sail_lv: int = int(fs.get("sail_level", 1))
+	max_speed = 300.0 + (sail_lv - 1) * 50.0
+	base_turn_speed = 1.8 + (sail_lv - 1) * 0.2
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_up"):
@@ -143,15 +146,13 @@ func take_damage(amount: float) -> void:
 	tween.tween_callback(func(): splinter_particles.emitting = false).set_delay(0.5)
 	
 	hull_hp -= amount
-	GameState.ship_hp = hull_hp
-	# 爆金币惩罚
-	if not GameState.cargo.is_empty():
-		var keys = GameState.cargo.keys()
+	Fleet.damage_fleet(amount)
+	# 中弹会颠掉舱面货
+	if not Fleet.cargo.is_empty():
+		var keys = Fleet.cargo.keys()
 		var key = keys[randi() % keys.size()]
-		GameState.cargo[key] -= 1
-		if GameState.cargo[key] <= 0: GameState.cargo.erase(key)
-		print("被炮弹击中！掉落了货物：", key)
-	
+		Fleet.remove_cargo(key, 1)
+
 	if hull_hp <= 0:
 		hull_hp = 0
 		_sink_ship()
@@ -160,7 +161,7 @@ func _process_storm_damage(delta: float) -> void:
 	if wind_strength > 150.0 and sail_gear == 2:
 		splinter_particles.emitting = true
 		hull_hp -= 5.0 * delta
-		GameState.ship_hp = hull_hp
+		Fleet.damage_fleet(5.0 * delta)
 		if hull_hp <= 0:
 			hull_hp = 0
 			_sink_ship()
@@ -169,6 +170,6 @@ func _process_storm_damage(delta: float) -> void:
 			pass
 
 func _sink_ship() -> void:
-	print("船只沉没！失去所有货物！")
-	GameState.cargo.clear()
+	Fleet.clear_cargo()
+	GameState.set_flag("return_to_port")
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")

@@ -12,18 +12,21 @@ func _on_body_entered(body: Node2D) -> void:
 		
 		if is_money:
 			var amount = randi_range(100, 500)
-			GameState.money += amount
-			print("打捞到木桶，获得现钱: ", amount)
+			GameState.add_money(amount)
 			float_str = "+ " + str(amount) + " 钱"
 		else:
-			var items = ["私盐", "生丝", "胡椒"]
+			var items = ["sea_salt", "raw_silk", "pepper"]
 			var item = items[randi() % items.size()]
 			var amount = randi_range(1, 3)
-			if not GameState.cargo.has(item):
-				GameState.cargo[item] = 0
-			GameState.cargo[item] += amount
-			print("打捞到木桶，获得货物: ", item, " x", amount)
-			float_str = "+ " + item + " x" + str(amount)
+			var good_name = GameManager.get_good_name(item)
+			# 舱满则折成现钱，避免捞到的货凭空消失
+			if Fleet.add_cargo(item, amount, 0.0):
+				float_str = "+ " + good_name + " x" + str(amount)
+			else:
+				var g = GameManager.get_good_by_id(item)
+				var fallback = int(g.get("base_value", 20)) * amount
+				GameState.add_money(fallback)
+				float_str = "舱满，折钱 +" + str(fallback)
 		
 		var ft = floating_text.instantiate()
 		ft.position = position

@@ -48,11 +48,11 @@ func _process(delta: float) -> void:
 	label.text = text
 	
 	var cargo_str = ""
-	if GameState.cargo.is_empty():
+	if Fleet.cargo.is_empty():
 		cargo_str = "空"
 	else:
-		for k in GameState.cargo.keys():
-			cargo_str += k + " x" + str(GameState.cargo[k]) + " "
+		for k in Fleet.cargo.keys():
+			cargo_str += GameManager.get_good_name(k) + " x" + str(Fleet.cargo[k].get("qty", 0)) + " "
 	
 	fleet_status.text = "【舰队资产】\n金钱: %d\n货舱: %s" % [GameState.money, cargo_str]
 
