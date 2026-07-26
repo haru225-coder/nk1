@@ -184,14 +184,9 @@ func _apply_background(type: String, loc: String) -> void:
 
 
 func _set_background_file(file_name: String) -> void:
-	var bg_path := "res://assets/" + file_name
-	var tex = load(bg_path) as Texture2D
-	if tex:
+	var tex := GameManager.load_texture("res://assets/" + file_name)
+	if tex != null:
 		background.texture = tex
-	elif FileAccess.file_exists(bg_path):
-		var img = Image.load_from_file(bg_path)
-		if img != null:
-			background.texture = ImageTexture.create_from_image(img)
 
 
 func _enter_panel_mode() -> void:
@@ -777,12 +772,7 @@ func _show_npc_mode(npc_id: String, fallback_name: String) -> void:
 	npc_dialog_lbl.text = npc_data.get("function", "（这人看起来有些眼熟，但什么也没说...）")
 
 	var tex_path = "res://assets/sprite_" + npc_id.replace("pilot_", "").replace("merchant_", "") + ".png"
-	if FileAccess.file_exists(tex_path):
-		var img = Image.load_from_file(tex_path)
-		if img:
-			npc_portrait.texture = ImageTexture.create_from_image(img)
-	else:
-		npc_portrait.texture = null
+	npc_portrait.texture = GameManager.load_texture(tex_path)
 
 	for child in npc_actions.get_children():
 		child.queue_free()
@@ -900,12 +890,8 @@ func _make_facility_card(fac: Dictionary) -> Control:
 	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 
-	var icon_tex = load(icon_path) as Texture2D
-	if not icon_tex and FileAccess.file_exists(icon_path):
-		var img = Image.load_from_file(icon_path)
-		if img:
-			icon_tex = ImageTexture.create_from_image(img)
-	if icon_tex:
+	var icon_tex := GameManager.load_texture(icon_path)
+	if icon_tex != null:
 		tex_rect.texture = icon_tex
 
 	var icon_margin = MarginContainer.new()

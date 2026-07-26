@@ -45,14 +45,7 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	var bg_path := "res://assets/bg_world_map.jpg"
-	if FileAccess.file_exists(bg_path):
-		var tex = load(bg_path) as Texture2D
-		if tex == null:
-			var img = Image.load_from_file(bg_path)
-			if img:
-				tex = ImageTexture.create_from_image(img)
-		bg.texture = tex
+	bg.texture = GameManager.load_texture("res://assets/bg_world_map.jpg")
 	bg.modulate = Color(0.55, 0.6, 0.7, 1.0)
 	add_child(bg)
 
