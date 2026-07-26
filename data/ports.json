@@ -2,14 +2,80 @@
   "meta": {
     "title": "东亚海域立志传",
     "era": "南宋末，约1260-1277",
-    "prototype": "v0.1"
+    "prototype": "v1.0-uw",
+    "note": "market 中 origin=产地(价低) / consumer=消费地(价高) / normal=普通。lat/lon 为真实经纬度，用于计算航段里程。depth 为市场深度，越大越抗砸盘。unlock 为解锁章节。"
   },
   "ports": [
+    {
+      "id": "xinghua",
+      "name": "兴化",
+      "region": "兴化军",
+      "status": "main",
+      "lat": 25.43,
+      "lon": 119.01,
+      "depth": 120,
+      "unlock": "ch1",
+      "tags": [
+        "起点",
+        "地方士人",
+        "陈子龙",
+        "科举期待",
+        "亲眷书信"
+      ],
+      "connections": [
+        "xinghua_harbor",
+        "quanzhou",
+        "fuzhou"
+      ],
+      "market": {
+        "grain": "origin",
+        "sea_salt": "origin",
+        "raw_silk": "origin",
+        "tea": "normal",
+        "fujian_porcelain": "normal",
+        "aromatic_medicine": "consumer",
+        "korean_ginseng": "consumer",
+        "japanese_sword": "consumer",
+        "sable_fur": "consumer",
+        "lacquerware": "consumer"
+      }
+    },
+    {
+      "id": "xinghua_harbor",
+      "name": "兴化海口",
+      "region": "兴化军 / 海口酒棚",
+      "status": "main",
+      "lat": 25.35,
+      "lon": 119.2,
+      "depth": 100,
+      "unlock": "ch1",
+      "tags": [
+        "酒棚",
+        "渡口",
+        "海口",
+        "序章"
+      ],
+      "connections": [
+        "xinghua",
+        "quanzhou"
+      ],
+      "market": {
+        "grain": "origin",
+        "sea_salt": "origin",
+        "deer_hide": "normal",
+        "fujian_porcelain": "normal",
+        "aromatic_medicine": "consumer"
+      }
+    },
     {
       "id": "quanzhou",
       "name": "泉州",
       "region": "福建海路",
       "status": "main",
+      "lat": 24.87,
+      "lon": 118.68,
+      "depth": 400,
+      "unlock": "ch1",
       "tags": [
         "市舶司",
         "蕃坊",
@@ -20,113 +86,417 @@
       ],
       "connections": [
         "xinghua",
+        "xinghua_harbor",
+        "fuzhou",
+        "zhangzhou",
+        "penghu",
         "ryukyu",
-        "jeju"
-      ]
+        "wenzhou"
+      ],
+      "market": {
+        "fujian_porcelain": "origin",
+        "qingbai_porcelain": "origin",
+        "tea": "origin",
+        "raw_silk": "origin",
+        "silk_fabric": "origin",
+        "sea_salt": "origin",
+        "ironware": "origin",
+        "sutra_scrolls": "origin",
+        "grain": "normal",
+        "aromatic_medicine": "normal",
+        "pepper": "normal",
+        "sappanwood": "normal",
+        "ivory": "normal",
+        "coral": "normal",
+        "song_coin": "origin",
+        "lacquerware": "normal",
+        "japanese_copper": "consumer",
+        "sulfur": "consumer",
+        "japanese_sword": "consumer",
+        "placer_gold": "consumer",
+        "korean_ginseng": "consumer",
+        "sable_fur": "consumer",
+        "korean_paper": "consumer",
+        "mother_of_pearl": "consumer",
+        "japanese_fan": "consumer",
+        "deer_hide": "consumer"
+      }
     },
     {
-      "id": "xinghua",
-      "name": "兴化",
-      "region": "兴化军 / 兴化海口",
-      "status": "thread",
+      "id": "fuzhou",
+      "name": "福州",
+      "region": "福建路首府",
+      "status": "main",
+      "lat": 26.08,
+      "lon": 119.3,
+      "depth": 250,
+      "unlock": "ch1",
       "tags": [
-        "起点",
-        "地方士人",
-        "陈子龙",
-        "科举期待",
-        "亲眷书信",
-        "海口压力"
+        "首府",
+        "官仓",
+        "茶市",
+        "漆坊"
       ],
       "connections": [
-        "quanzhou"
-      ]
+        "xinghua",
+        "quanzhou",
+        "wenzhou"
+      ],
+      "market": {
+        "tea": "origin",
+        "lacquerware": "origin",
+        "grain": "origin",
+        "raw_silk": "normal",
+        "fujian_porcelain": "normal",
+        "sea_salt": "normal",
+        "sutra_scrolls": "normal",
+        "japanese_copper": "consumer",
+        "sulfur": "consumer",
+        "aromatic_medicine": "consumer",
+        "korean_paper": "consumer",
+        "japanese_fan": "consumer"
+      }
     },
     {
-      "id": "xinghua_harbor",
-      "name": "兴化海口",
-      "region": "兴化军 / 海口酒棚",
-      "status": "thread",
+      "id": "zhangzhou",
+      "name": "漳州",
+      "region": "福建路南",
+      "status": "main",
+      "lat": 24.51,
+      "lon": 117.65,
+      "depth": 150,
+      "unlock": "ch1",
       "tags": [
-        "酒棚",
-        "渡口",
-        "海口",
-        "序章"
+        "漳窑",
+        "盐场",
+        "私商"
       ],
       "connections": [
-        "quanzhou"
-      ]
+        "quanzhou",
+        "penghu"
+      ],
+      "market": {
+        "sea_salt": "origin",
+        "fujian_porcelain": "origin",
+        "sappanwood": "normal",
+        "tea": "normal",
+        "grain": "consumer",
+        "ironware": "normal",
+        "aromatic_medicine": "consumer",
+        "japanese_copper": "consumer"
+      }
+    },
+    {
+      "id": "wenzhou",
+      "name": "温州",
+      "region": "两浙路",
+      "status": "main",
+      "lat": 28.0,
+      "lon": 120.7,
+      "depth": 200,
+      "unlock": "ch1",
+      "tags": [
+        "漆器",
+        "织坊",
+        "北路"
+      ],
+      "connections": [
+        "fuzhou",
+        "quanzhou",
+        "mingzhou"
+      ],
+      "market": {
+        "lacquerware": "origin",
+        "silk_fabric": "origin",
+        "raw_silk": "origin",
+        "tea": "normal",
+        "grain": "normal",
+        "sulfur": "consumer",
+        "japanese_copper": "consumer",
+        "aromatic_medicine": "consumer",
+        "pepper": "consumer",
+        "deer_hide": "consumer"
+      }
+    },
+    {
+      "id": "penghu",
+      "name": "澎湖",
+      "region": "澎湖巡检 / 外海屿",
+      "status": "main",
+      "lat": 23.57,
+      "lon": 119.59,
+      "depth": 110,
+      "unlock": "ch1",
+      "tags": [
+        "屿寨",
+        "渔汛",
+        "补水",
+        "私泊"
+      ],
+      "connections": [
+        "quanzhou",
+        "zhangzhou",
+        "ryukyu"
+      ],
+      "market": {
+        "deer_hide": "origin",
+        "sea_salt": "origin",
+        "grain": "consumer",
+        "ironware": "consumer",
+        "fujian_porcelain": "consumer",
+        "tea": "consumer",
+        "lacquerware": "consumer"
+      }
     },
     {
       "id": "ryukyu",
       "name": "南岛海道北口",
       "region": "流求海面北缘",
       "status": "main",
+      "lat": 25.13,
+      "lon": 121.74,
+      "depth": 110,
+      "unlock": "ch1",
       "tags": [
         "旧避风澳",
         "舵手传闻",
-        "未入官图"
+        "未入官图",
+        "岛夷互市"
       ],
       "connections": [
         "quanzhou",
+        "penghu",
         "hakata",
-        "kagoshima"
-      ]
+        "jeju"
+      ],
+      "market": {
+        "deer_hide": "origin",
+        "sulfur": "origin",
+        "ironware": "consumer",
+        "sea_salt": "consumer",
+        "grain": "consumer",
+        "fujian_porcelain": "consumer",
+        "song_coin": "consumer",
+        "lacquerware": "consumer"
+      }
+    },
+    {
+      "id": "mingzhou",
+      "name": "明州",
+      "region": "两浙路 / 庆元市舶司",
+      "status": "main",
+      "lat": 29.87,
+      "lon": 121.55,
+      "depth": 350,
+      "unlock": "ch2",
+      "tags": [
+        "市舶司",
+        "对日口岸",
+        "高丽使馆",
+        "寺社往来"
+      ],
+      "connections": [
+        "wenzhou",
+        "jeju",
+        "hakata"
+      ],
+      "market": {
+        "raw_silk": "origin",
+        "silk_fabric": "origin",
+        "tea": "origin",
+        "qingbai_porcelain": "origin",
+        "sutra_scrolls": "origin",
+        "lacquerware": "normal",
+        "grain": "normal",
+        "song_coin": "origin",
+        "japanese_copper": "consumer",
+        "placer_gold": "consumer",
+        "sulfur": "consumer",
+        "japanese_sword": "consumer",
+        "korean_ginseng": "consumer",
+        "sable_fur": "consumer",
+        "mother_of_pearl": "consumer"
+      }
     },
     {
       "id": "jeju",
-      "name": "耽罗北线",
-      "region": "高丽 / 耽罗北线传闻",
-      "status": "rumor",
+      "name": "耽罗",
+      "region": "高丽 / 耽罗",
+      "status": "main",
+      "lat": 33.5,
+      "lon": 126.53,
+      "depth": 180,
+      "unlock": "ch2",
       "tags": [
-        "传闻",
-        "暂未解锁",
-        "远景"
+        "高丽",
+        "牧马",
+        "转口",
+        "北线"
       ],
       "connections": [
-        "quanzhou",
+        "mingzhou",
+        "ryukyu",
         "hakata"
-      ]
+      ],
+      "market": {
+        "korean_ginseng": "origin",
+        "korean_paper": "origin",
+        "sable_fur": "origin",
+        "grain": "normal",
+        "sea_salt": "normal",
+        "fujian_porcelain": "consumer",
+        "qingbai_porcelain": "consumer",
+        "tea": "consumer",
+        "silk_fabric": "consumer",
+        "aromatic_medicine": "consumer",
+        "song_coin": "consumer",
+        "sappanwood": "consumer"
+      }
     },
     {
       "id": "hakata",
       "name": "博多唐房",
       "region": "日本西海道",
-      "status": "distant",
-      "distant_hint": "远景账册线索，不作为第一章可稳定抵达港口",
-      "rumor_connections": [
-        "ryukyu",
-        "jeju",
-        "kagoshima"
-      ],
+      "status": "main",
+      "lat": 33.59,
+      "lon": 130.4,
+      "depth": 300,
+      "unlock": "ch2",
       "tags": [
         "旧账",
         "寺社",
-        "远景"
+        "唐房",
+        "对宋贸易"
       ],
       "connections": [
-        "ryukyu",
+        "mingzhou",
         "jeju",
+        "ryukyu",
         "kagoshima"
-      ]
+      ],
+      "market": {
+        "japanese_copper": "origin",
+        "sulfur": "origin",
+        "japanese_sword": "origin",
+        "mother_of_pearl": "origin",
+        "japanese_fan": "origin",
+        "placer_gold": "origin",
+        "grain": "normal",
+        "deer_hide": "normal",
+        "qingbai_porcelain": "consumer",
+        "fujian_porcelain": "consumer",
+        "raw_silk": "consumer",
+        "silk_fabric": "consumer",
+        "sutra_scrolls": "consumer",
+        "tea": "consumer",
+        "aromatic_medicine": "consumer",
+        "song_coin": "consumer",
+        "pepper": "consumer",
+        "sappanwood": "consumer",
+        "ivory": "consumer"
+      }
+    },
+    {
+      "id": "guangzhou",
+      "name": "广州",
+      "region": "广南东路 / 市舶司",
+      "status": "main",
+      "lat": 23.13,
+      "lon": 113.26,
+      "depth": 400,
+      "unlock": "ch3",
+      "tags": [
+        "市舶司",
+        "蕃坊",
+        "南洋门户",
+        "怀远驿"
+      ],
+      "connections": [
+        "zhangzhou",
+        "quanzhou",
+        "champa"
+      ],
+      "market": {
+        "aromatic_medicine": "origin",
+        "pepper": "origin",
+        "ivory": "origin",
+        "coral": "origin",
+        "sappanwood": "origin",
+        "sea_salt": "normal",
+        "song_coin": "origin",
+        "grain": "normal",
+        "fujian_porcelain": "consumer",
+        "qingbai_porcelain": "consumer",
+        "raw_silk": "consumer",
+        "tea": "consumer",
+        "ironware": "normal",
+        "japanese_copper": "consumer",
+        "placer_gold": "consumer"
+      }
     },
     {
       "id": "kagoshima",
       "name": "南九州",
       "region": "萨摩外海",
-      "status": "distant",
-      "distant_hint": "萨摩外海远景，不作为第一章可用港口",
-      "rumor_connections": [
-        "ryukyu",
-        "hakata"
-      ],
+      "status": "main",
+      "lat": 31.6,
+      "lon": 130.55,
+      "depth": 130,
+      "unlock": "ch3",
       "tags": [
-        "远景",
-        "边缘航路"
+        "萨摩",
+        "火山",
+        "边缘航路",
+        "私贸"
       ],
       "connections": [
-        "ryukyu",
-        "hakata"
-      ]
+        "hakata",
+        "ryukyu"
+      ],
+      "market": {
+        "sulfur": "origin",
+        "placer_gold": "origin",
+        "deer_hide": "normal",
+        "japanese_sword": "normal",
+        "fujian_porcelain": "consumer",
+        "raw_silk": "consumer",
+        "tea": "consumer",
+        "song_coin": "consumer",
+        "grain": "consumer"
+      }
+    },
+    {
+      "id": "champa",
+      "name": "占城",
+      "region": "南海 / 占婆",
+      "status": "main",
+      "lat": 13.77,
+      "lon": 109.22,
+      "depth": 200,
+      "unlock": "ch4",
+      "tags": [
+        "南洋",
+        "香料",
+        "转口",
+        "远航"
+      ],
+      "connections": [
+        "guangzhou"
+      ],
+      "market": {
+        "pepper": "origin",
+        "sappanwood": "origin",
+        "ivory": "origin",
+        "coral": "origin",
+        "aromatic_medicine": "origin",
+        "fujian_porcelain": "consumer",
+        "qingbai_porcelain": "consumer",
+        "raw_silk": "consumer",
+        "silk_fabric": "consumer",
+        "ironware": "consumer",
+        "song_coin": "consumer",
+        "tea": "consumer"
+      }
     }
   ]
 }
