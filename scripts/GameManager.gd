@@ -4,6 +4,7 @@ var scenes_data: Dictionary = {}
 var goods_data: Dictionary = {}
 var ports_data: Dictionary = {}
 var npcs_data: Dictionary = {}
+var discoveries_data: Dictionary = {}
 
 func _ready() -> void:
 	load_data()
@@ -13,7 +14,8 @@ func load_data() -> void:
 	goods_data = _load_json("res://data/goods.json")
 	ports_data = _load_json("res://data/ports.json")
 	npcs_data = _load_json("res://data/npcs.json")
-	
+	discoveries_data = _load_json("res://data/discoveries.json")
+
 	if scenes_data.has("scenes"):
 		print("Data loaded successfully. Scenes:", scenes_data.get("scenes", []).size())
 
@@ -35,4 +37,12 @@ func get_scene_by_id(scene_id: String) -> Dictionary:
 	for s in scenes:
 		if s.get("id") == scene_id:
 			return s
+	return {}
+
+# 按 id 查询发现物（航路复核、碑拓证据等）
+func get_discovery_by_id(discovery_id: String) -> Dictionary:
+	var discoveries = discoveries_data.get("discoveries", [])
+	for d in discoveries:
+		if d.get("id") == discovery_id:
+			return d
 	return {}

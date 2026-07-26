@@ -29,6 +29,7 @@ extends Control
 @onready var npc_portrait: TextureRect = $HBoxContainer/CenterArea/NPCMode/HBox/PortraitRect
 
 var current_scene_id: String = ""
+var previous_scene_id: String = ""  # 死胡同场景兜底用：只记一层，不做完整历史栈
 var items_investigated: int = 0
 var total_items_to_investigate: int = 0
 var title_button_connected: bool = false
@@ -89,8 +90,8 @@ func _show_npc_mode(npc_id: String, fallback_name: String) -> void:
 		var bribe_btn = Button.new()
 		bribe_btn.text = "塞钱买通 (50钱)"
 		bribe_btn.pressed.connect(func():
-			if GameState.cargo.get("金钱", 0) >= 50:
-				GameState.cargo["金钱"] -= 50
+			if GameState.money >= 50:
+				GameState.money -= 50
 				GameState.has_customs_permit = true
 				update_status_panel()
 				npc_dialog_lbl.text = n_name + " 颠了颠手里的碎银：“算你懂事。文牒拿好，路上小心。”"
@@ -131,8 +132,11 @@ func update_status_panel() -> void:
 	status_label.text = t
 
 func load_scene(scene_id: String) -> void:
+	# 进入新场景前记下当前场景，供死胡同场景的"返回上一处"兜底使用
+	if current_scene_id != "" and current_scene_id != scene_id:
+		previous_scene_id = current_scene_id
 	current_scene_id = scene_id
-	
+
 	# === 动态场景拦截 (动态市场、动态衙门) ===
 	if scene_id.ends_with("_market") or scene_id.ends_with("_yamen") or scene_id.ends_with("_shipyard") or scene_id.ends_with("_tavern"):
 		_setup_dynamic_scene(scene_id)
@@ -191,7 +195,10 @@ func _setup_missing_scene(scene_id: String) -> void:
 	scene_title.text = "区域施工中..."
 	body_text.text = "该区域（" + scene_id + "）尚未实装，请耐心等待后续版本更新。"
 	
-	var base_loc = "quanzhou" if scene_id.begins_with("quanzhou") else "xinghua"
+	# 回退到玩家最后停靠的港口；没有记录时才按场景名前缀猜
+	var base_loc = GameState.last_port
+	if base_loc == "" or base_loc == scene_id:
+		base_loc = "quanzhou" if scene_id.begins_with("quanzhou") else "xinghua"
 	_add_leave_button(base_loc)
 
 func _setup_dynamic_scene(scene_id: String) -> void:
@@ -205,7 +212,14 @@ func _setup_dynamic_scene(scene_id: String) -> void:
 	choices_label.visible = false
 	npc_mode.visible = false
 	
-	var base_loc = "port_quanzhou" if scene_id.begins_with("quanzhou") else "port_xinghua"
+	# 由 "<港口id>_market" 这类场景名反推所属港口，直接截掉设施后缀。
+	# 旧写法硬编码成 "port_quanzhou"/"port_xinghua"，而 scenes.json 里并无 port_ 前缀的 id，
+	# 会导致点"离开"掉进"区域施工中"，再被前缀判断误甩到兴化。
+	var base_loc = scene_id
+	for suffix in ["_market", "_yamen", "_shipyard", "_tavern"]:
+		if scene_id.ends_with(suffix):
+			base_loc = scene_id.trim_suffix(suffix)
+			break
 	
 	if scene_id.ends_with("_market"):
 		scene_title.text = "市场牙行"
@@ -238,8 +252,7 @@ func _setup_dynamic_scene(scene_id: String) -> void:
 		scene_title.text = "市舶司 / 衙门"
 		body_text.text = "官府重地。几名差役正在慵懒地打瞌睡。"
 		_add_npc_button("customs_official", "市舶司小吏")
-		_add_leave_button(base_loc)
-		
+
 		var btn1 = Button.new()
 		btn1.text = "【正规】市舶司验引 (安全放行)"
 		btn1.pressed.connect(func():
@@ -511,7 +524,26 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 			interactive_container.add_child(btn)
 			
 	# Always show choices
-	show_choices(scene_data.get("choices", []))
+	var choices = scene_data.get("choices", [])
+	show_choices(choices)
+
+	# 死胡同兜底：没有任何调查点也没有任何选项时，补一个返回按钮，避免玩家卡死
+	if investigations.size() == 0 and choices.size() == 0:
+		_add_fallback_return_button()
+
+# 死胡同场景的兜底出口：优先回上一处，其次回最后停靠的港口，都没有就不加按钮
+func _add_fallback_return_button() -> void:
+	var target = previous_scene_id
+	if target == "":
+		target = GameState.last_port
+	if target == "" or target == current_scene_id:
+		return
+
+	var btn = Button.new()
+	btn.text = "返回上一处"
+	btn.pressed.connect(func(): load_scene(target))
+	choices_container.add_child(btn)
+	choices_label.visible = true
 
 func _on_investigate_pressed(inv_data: Dictionary, btn: Button) -> void:
 	var msg = inv_data.get("text", "")
