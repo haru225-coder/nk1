@@ -15,6 +15,7 @@ def load(n):
 goods = {g["id"]: g for g in load("goods.json")["goods"]}
 ports = {p["id"]: p for p in load("ports.json")["ports"]}
 ships = {s["id"]: s for s in load("ships.json")["ships"]}
+chapters = {int(c["id"]): c for c in load("chapters.json")["chapters"]}
 
 ROLE_MOD = {"origin": 0.65, "normal": 1.0, "consumer": 1.75}
 TARIFF, BROKER = 0.10, 0.05
@@ -39,6 +40,9 @@ class G:
     durability = 120.0
     at_sea = False
     debt = 0
+    chapter = 1
+    visited = ['quanzhou']
+    peak_money = 1000
 
 def cap():          return ships[G.ship]["capacity"]
 def bulk(gid):      return goods[gid]["bulk"]
@@ -115,6 +119,26 @@ def advance(n):
         else:
             if G.morale < 75: G.morale = min(100, G.morale + 1)
 
+def ch_num(u): return int(u[2:]) if isinstance(u,str) and u.startswith("ch") else 1
+
+def open_ports():
+    """当前章节可抵达的港口"""
+    return [pid for pid,p in ports.items() if ch_num(p.get("unlock","ch1")) <= G.chapter]
+
+def visit(pid):
+    if pid not in G.visited: G.visited.append(pid)
+
+def try_advance():
+    req = chapters.get(G.chapter, {}).get("next_requires")
+    if not req: return None
+    if G.peak_money < req.get("peak_money", 0): return None
+    if len(G.visited) < req.get("visited_count", 0): return None
+    for m in req.get("must_visit", []):
+        if m not in G.visited: return None
+    title = chapters[G.chapter].get("advance_title","")
+    G.chapter += 1
+    return title
+
 def role(pid, gid): return ports[pid]["market"].get(gid)
 def uval(pid, gid): return goods[gid]["base_value"] * ROLE_MOD[role(pid,gid)] * rates[pid][gid]
 def buy_p(pid,gid):  return round(uval(pid,gid)*(1+TARIFF))
@@ -151,6 +175,7 @@ def do_sell(gid, qty):
         G.cargo[gid][0] -= 1
         if G.cargo[gid][0] == 0: del G.cargo[gid]
     G.money += rev
+    G.peak_money = max(G.peak_money, G.money)
     return rev
 
 def buy_supplies(days_needed):
@@ -173,6 +198,7 @@ def sail(dst):
                 G.crew = max(1, G.crew - max(1, int(G.crew*0.03)))
     G.at_sea = False
     G.port = dst
+    visit(dst)
     return days
 
 def best_trade(src, dsts):
@@ -202,16 +228,16 @@ print(f"  起始舱位占用 {used():.0f} / {cap()} 料，可装货 {free():.0f}
 check(free() > cap()*0.5, "开局补给未占满舱（仍有一半以上可装货）")
 
 # 第一章全部已解锁港口——真实玩家会轮换航线，避免把某一条线跑疲
-NEAR = [pid for pid, p in ports.items() if p.get("unlock") == "ch1"]
+NEAR = None  # 改为每趟按当前章节动态取
 history = []
 print()
-print(f"  ── 近海跑商 24 趟（第一章可选港口 {len(NEAR)} 个）──")
+print(f"  ── 跑商 24 趟（起始第 {G.chapter} 章，可达 {len(open_ports())} 港）──")
 waits = 0
 for trip in range(1, 25):
     # 商路被自己跑疲时，真人玩家会在店里等行情回升，而不是硬亏本买
     qty = 0
     for attempt in range(6):
-        bt = best_trade(G.port, [p for p in NEAR if p != G.port])
+        bt = best_trade(G.port, [p for p in open_ports() if p != G.port])
         if bt is None:
             gid = dst = None
         else:
@@ -254,7 +280,9 @@ for trip in range(1, 25):
     rev = 0 if seized else do_sell(gid, qty)
     profit = rev - spent - (fine if seized else 0)
     history.append(profit)
+    promoted = try_advance()
     tag = "　[走私]" + ("　✗查扣" if seized else "") if smuggle else ""
+    if promoted: tag += f"　★进第{G.chapter}章「{promoted}」"
     print(f"    第{trip:>2}趟 {ports[src]['name']:<5}→{ports[dst]['name']:<7} "
           f"{goods[gid]['name']:<5}×{qty:<3} 本{spent:>5} 得{rev:>6} 净{profit:>+6}  "
           f"{days:>2}日  {G.year}年{G.month:>2}月  存银 {G.money:>6}{tag}")
@@ -270,6 +298,11 @@ ry = rates.get("ryukyu", {})
 low = [(gid, r) for gid, r in ry.items() if r < 0.75]
 print(f"    流求被压低的货：{[(goods[g]['name'], round(r,2)) for g,r in low] or '无'}")
 check(True, "行情随交易变动（低于 0.75 表示已被砸盘，需换港或候其回升）")
+
+print()
+check(G.chapter >= 2, f"24 趟内晋升至第 {G.chapter} 章（起始第 1 章）")
+check("hakata" in open_ports(), "晋升后博多唐房已可抵达——核心商路不再是死内容")
+print(f"    资金峰值 {G.peak_money}　走通港口 {len(G.visited)} 处：{'、'.join(ports[p]['name'] for p in G.visited)}")
 
 print()
 print("="*70)

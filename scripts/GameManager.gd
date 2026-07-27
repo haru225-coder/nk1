@@ -10,6 +10,7 @@ var ports_data: Dictionary = {}
 var npcs_data: Dictionary = {}
 var discoveries_data: Dictionary = {}
 var ships_data: Dictionary = {}
+var chapters_data: Dictionary = {}
 
 
 func _ready() -> void:
@@ -23,6 +24,7 @@ func load_data() -> void:
 	npcs_data = _load_json("res://data/npcs.json")
 	discoveries_data = _load_json("res://data/discoveries.json")
 	ships_data = _load_json("res://data/ships.json")
+	chapters_data = _load_json("res://data/chapters.json")
 
 	if scenes_data.has("scenes"):
 		print("Data loaded. Scenes:%d Goods:%d Ports:%d Ships:%d" % [

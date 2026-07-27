@@ -105,6 +105,21 @@ func update_status_panel() -> void:
 		t += "[color=orange]舱底违禁：%d 件[/color]\n" % contraband
 	t += "\n[u]船舱[/u]\n%s" % cargo_str
 
+	# 章节目标：不写出来玩家不会知道怎样才能开出下一片海
+	var prog := GameState.chapter_progress()
+	t += "\n[u]第%s章・%s[/u]\n" % [
+		_cn_chapter(GameState.chapter), GameState.chapter_def().get("name", ""),
+	]
+	if prog.get("final", false):
+		t += "[color=gray]已至最后一章[/color]\n"
+	else:
+		for it in prog.get("items", []):
+			var mark: String = "[color=lime]✓[/color]" if it["done"] else "・"
+			if int(it["need"]) > 1:
+				t += "%s %s %d/%d\n" % [mark, it["label"], it["current"], it["need"]]
+			else:
+				t += "%s %s\n" % [mark, it["label"]]
+
 	status_label.text = t
 
 
@@ -134,6 +149,7 @@ func load_scene(scene_id: String) -> void:
 				"title": pdef.get("name", scene_id),
 				"facilities": GENERIC_FACILITIES,
 			})
+			_on_enter_port(scene_id)
 			return
 		_setup_missing_scene(scene_id)
 		return
@@ -147,6 +163,7 @@ func load_scene(scene_id: String) -> void:
 	elif type == "port":
 		GameState.last_port = scene_id
 		_setup_port_mode(scene_data)
+		_on_enter_port(scene_id)
 	else:
 		_setup_investigation_mode(scene_data)
 
@@ -1006,6 +1023,63 @@ func _show_save_dialog() -> void:
 
 	add_child(dlg)
 	dlg.popup_centered()
+
+
+# ══════════════════════════════════════════════════════
+#  章节推进
+# ══════════════════════════════════════════════════════
+
+## 入港结算：记下走过的港口，够条件就开下一章。
+## 只有 ports.json 里登记的港口算数——剧情场景不是港口。
+func _on_enter_port(port_id: String) -> void:
+	if GameManager.get_port_by_id(port_id).is_empty():
+		return
+	GameState.visit_port(port_id)
+	var res := GameState.try_advance_chapter()
+	if res.get("advanced", false):
+		_show_chapter_dialog(res)
+
+
+func _show_chapter_dialog(res: Dictionary) -> void:
+	var dlg := AcceptDialog.new()
+	dlg.title = "第 %s 章・%s" % [
+		_cn_chapter(GameState.chapter), GameState.chapter_def().get("name", ""),
+	]
+	dlg.ok_button_text = "承此一路"
+
+	var m := MarginContainer.new()
+	m.add_theme_constant_override("margin_left", 18)
+	m.add_theme_constant_override("margin_right", 18)
+	m.add_theme_constant_override("margin_top", 12)
+	m.add_theme_constant_override("margin_bottom", 12)
+
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	m.add_child(v)
+
+	var head := Label.new()
+	head.text = res.get("title", "")
+	head.add_theme_font_size_override("font_size", 26)
+	v.add_child(head)
+
+	var body := RichTextLabel.new()
+	body.bbcode_enabled = false
+	body.fit_content = true
+	body.custom_minimum_size = Vector2(520, 200)
+	body.text = res.get("text", "")
+	v.add_child(body)
+
+	dlg.add_child(m)
+	add_child(dlg)
+	dlg.popup_centered()
+	dlg.confirmed.connect(func(): load_scene(current_scene_id))
+
+	update_status_panel()
+
+
+func _cn_chapter(n: int) -> String:
+	var cn := ["", "一", "二", "三", "四", "五", "六"]
+	return cn[n] if n < cn.size() else str(n)
 
 
 func _on_facility_pressed(fac: Dictionary) -> void:

@@ -119,6 +119,41 @@ for chapter in ("ch1", "ch2"):
 
 print()
 print("=" * 68)
+print("一之二、章节晋升链是否可达（防死锁）")
+print("=" * 68)
+
+chapters = load("chapters.json")["chapters"]
+def ch_num(u):  # "ch2" -> 2
+    return int(u[2:]) if isinstance(u, str) and u.startswith("ch") else 1
+
+for c in chapters:
+    n = int(c["id"])
+    req = c.get("next_requires")
+    if not req:
+        print(f"  · 第{n}章「{c['name']}」为最终章，无晋升条件")
+        continue
+    # 该章可抵达的港口
+    avail = [p for p in ports.values() if ch_num(p.get("unlock", "ch1")) <= n]
+    ok_count = len(avail) >= req.get("visited_count", 0)
+    check(ok_count,
+          f"第{n}章需走通 {req.get('visited_count',0)} 港，该章实际可达 {len(avail)} 港")
+    for pid in req.get("must_visit", []):
+        reachable = pid in ports and ch_num(ports[pid].get("unlock", "ch1")) <= n
+        check(reachable,
+              f"第{n}章要求亲至「{ports.get(pid,{}).get('name',pid)}」，该港在本章"
+              + ("可达" if reachable else "尚未解锁——死锁"))
+
+# 每一章都必须能通向下一章
+max_ch = max(int(c["id"]) for c in chapters)
+declared = {ch_num(p.get("unlock", "ch1")) for p in ports.values()}
+check(declared <= set(range(1, max_ch + 1)),
+      f"ports.json 引用的章节号 {sorted(declared)} 均在 chapters.json 定义范围内(1-{max_ch})")
+ship_ch = {ch_num(s.get("unlock", "ch1")) for s in ships.values()}
+check(ship_ch <= set(range(1, max_ch + 1)),
+      f"ships.json 引用的章节号 {sorted(ship_ch)} 均在定义范围内")
+
+print()
+print("=" * 68)
 print("二、核心贸易循环：泉州 ⇄ 博多 往返是否双向盈利")
 print("=" * 68)
 

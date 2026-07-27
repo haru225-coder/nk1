@@ -27,12 +27,18 @@ var flags: Dictionary = {}
 ## 已上报的发现物 id
 var discoveries_reported: Array = []
 
+## 走通过的港口 id。章节晋升要看走过多少地方，不只是攒了多少钱。
+var visited_ports: Array = []
+## 资金历史峰值。用峰值而非当前值判定晋升，否则买条船就把进度买没了。
+var peak_money: int = 1000
+
 
 # ── 钱 ────────────────────────────────────────────────
 
 ## 金钱不落负数——罚没一律以现有资金为上限，欠款走 debt 而非负余额
 func add_money(amount: int) -> void:
 	money = maxi(0, money + amount)
+	peak_money = maxi(peak_money, money)
 	money_changed.emit(money)
 
 
@@ -85,8 +91,69 @@ func is_chapter_reached(unlock: String) -> bool:
 	return chapter >= int(unlock.substr(2))
 
 
-func advance_chapter() -> void:
+func visit_port(port_id: String) -> void:
+	if port_id != "" and not (port_id in visited_ports):
+		visited_ports.append(port_id)
+
+
+func chapter_def(n: int = -1) -> Dictionary:
+	var target: int = chapter if n < 0 else n
+	for c in GameManager.chapters_data.get("chapters", []):
+		if int(c.get("id", 0)) == target:
+			return c
+	return {}
+
+
+## 当前章节晋升进度。返回 {ready, items:[{label, done, current, need}], hint}
+func chapter_progress() -> Dictionary:
+	var req = chapter_def().get("next_requires", null)
+	if req == null or typeof(req) != TYPE_DICTIONARY:
+		return {"ready": false, "items": [], "hint": "", "final": true}
+
+	var items := []
+
+	var need_money: int = int(req.get("peak_money", 0))
+	if need_money > 0:
+		items.append({
+			"label": "本钱", "current": peak_money, "need": need_money,
+			"done": peak_money >= need_money,
+		})
+
+	var need_count: int = int(req.get("visited_count", 0))
+	if need_count > 0:
+		items.append({
+			"label": "走通港口", "current": visited_ports.size(), "need": need_count,
+			"done": visited_ports.size() >= need_count,
+		})
+
+	for pid in req.get("must_visit", []):
+		items.append({
+			"label": "亲至 " + GameManager.get_port_name(pid),
+			"current": 1 if pid in visited_ports else 0, "need": 1,
+			"done": pid in visited_ports,
+		})
+
+	var ready := true
+	for it in items:
+		if not it["done"]:
+			ready = false
+			break
+
+	return {"ready": ready, "items": items, "hint": req.get("hint", ""), "final": false}
+
+
+## 条件达成则进下一章。返回 {advanced, title, text}
+func try_advance_chapter() -> Dictionary:
+	var prog := chapter_progress()
+	if prog.get("final", false) or not prog.get("ready", false):
+		return {"advanced": false}
+	var cur := chapter_def()
 	chapter += 1
+	return {
+		"advanced": true,
+		"title": cur.get("advance_title", "新的一章"),
+		"text": cur.get("advance_text", ""),
+	}
 
 
 # ── 旗标 ──────────────────────────────────────────────
@@ -208,6 +275,8 @@ func to_dict() -> Dictionary:
 		"last_port": last_port,
 		"flags": flags,
 		"discoveries_reported": discoveries_reported,
+		"visited_ports": visited_ports,
+		"peak_money": peak_money,
 	}
 
 
@@ -221,4 +290,6 @@ func from_dict(d: Dictionary) -> void:
 	last_port = d.get("last_port", "quanzhou")
 	flags = d.get("flags", {})
 	discoveries_reported = d.get("discoveries_reported", [])
+	visited_ports = d.get("visited_ports", [])
+	peak_money = d.get("peak_money", money)
 	money_changed.emit(money)
