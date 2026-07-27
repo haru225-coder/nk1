@@ -1,10 +1,6 @@
 extends Node
-## 历法与季风。游戏的时间基准，一切消耗与行情回归都挂在 day_passed 上。
+## 历法与季风。游戏的时间基准；日推进的唯一入口是 GameManager.advance_days()。
 ## 采用农历简化历：每月 30 日，每年 12 月。
-
-signal day_passed(y: int, m: int, d: int)
-signal month_changed(y: int, m: int)
-signal year_changed(y: int)
 
 const DAYS_PER_MONTH := 30
 const MONTHS_PER_YEAR := 12
@@ -47,9 +43,6 @@ func _advance_one_day() -> void:
 		if month > MONTHS_PER_YEAR:
 			month = 1
 			year += 1
-			year_changed.emit(year)
-		month_changed.emit(year, month)
-	day_passed.emit(year, month, day)
 
 
 # ── 季风 ──────────────────────────────────────────────
@@ -82,15 +75,6 @@ func get_wind_bearing() -> float:
 	elif m == Monsoon.SOUTHWEST:
 		return SW_MONSOON_BEARING
 	return -1.0
-
-
-func get_monsoon_name() -> String:
-	var m := get_monsoon()
-	if m == Monsoon.NORTHEAST:
-		return "东北季风"
-	elif m == Monsoon.SOUTHWEST:
-		return "西南季风"
-	return "季风转换期"
 
 
 func get_monsoon_desc() -> String:

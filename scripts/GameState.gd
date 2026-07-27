@@ -2,8 +2,6 @@ extends Node
 ## 玩家身份状态：钱、名声、章节、旗标、市舶司关系。
 ## 船与货已迁往 Fleet，时间迁往 Calendar，行情迁往 Economy。
 
-signal money_changed(amount: int)
-
 var money: int = 1000
 var fame: int = 0
 
@@ -41,7 +39,6 @@ var peak_money: int = 1000
 func add_money(amount: int) -> void:
 	money = maxi(0, money + amount)
 	peak_money = maxi(peak_money, money)
-	money_changed.emit(money)
 
 
 # ── 赊贷 ──────────────────────────────────────────────
@@ -80,7 +77,6 @@ func spend_money(amount: int) -> bool:
 	if money < amount:
 		return false
 	money -= amount
-	money_changed.emit(money)
 	return true
 
 
@@ -329,4 +325,3 @@ func from_dict(d: Dictionary) -> void:
 	discoveries_reported = d.get("discoveries_reported", [])
 	visited_ports = d.get("visited_ports", [])
 	peak_money = d.get("peak_money", money)
-	money_changed.emit(money)

@@ -2,9 +2,6 @@ extends Node
 ## 舰队：船只、舱位、货物、补给、士气。
 ## 货舱为全队共用，载重上限是各船之和——简化自大航海时代的分船装载。
 
-signal cargo_changed()
-signal supplies_critical(kind: String)
-
 ## 每条船：{type, name, durability, max_durability, crew, sail_level, armor_level}
 var ships: Array = []
 
@@ -69,11 +66,6 @@ func add_ship(type_id: String, ship_name: String = "") -> bool:
 	return true
 
 
-func remove_ship(index: int) -> void:
-	if index >= 0 and index < ships.size() and ships.size() > 1:
-		ships.remove_at(index)
-
-
 func flagship() -> Dictionary:
 	return ships[0] if not ships.is_empty() else {}
 
@@ -129,7 +121,6 @@ func add_cargo(good_id: String, qty: int, unit_cost: float) -> bool:
 		e["qty"] = new_qty
 	else:
 		cargo[good_id] = {"qty": qty, "avg_cost": unit_cost}
-	cargo_changed.emit()
 	return true
 
 
@@ -142,7 +133,6 @@ func remove_cargo(good_id: String, qty: int) -> bool:
 	e["qty"] -= qty
 	if e["qty"] <= 0:
 		cargo.erase(good_id)
-	cargo_changed.emit()
 	return true
 
 
@@ -168,7 +158,6 @@ func lose_cargo_ratio(ratio: float) -> Dictionary:
 
 func clear_cargo() -> void:
 	cargo.clear()
-	cargo_changed.emit()
 
 
 # ── 船员与补给 ────────────────────────────────────────
@@ -242,10 +231,6 @@ func on_day_passed() -> void:
 	var starving := water <= 0 or food <= 0
 	if starving:
 		morale = maxi(0, morale - 6)
-		if water <= 0:
-			supplies_critical.emit("water")
-		if food <= 0:
-			supplies_critical.emit("food")
 		# 断水断粮开始死人；医人能压住一部分
 		if randf() < 0.4 * Crew.crew_loss_factor():
 			_lose_crew(maxi(1, int(crew * 0.03)))
@@ -351,4 +336,3 @@ func from_dict(d: Dictionary) -> void:
 	food = d.get("food", 0)
 	morale = d.get("morale", 70)
 	at_sea = false  # 只在港内存档，读档必定停泊
-	cargo_changed.emit()

@@ -82,13 +82,6 @@ func get_rate(port_id: String, good_id: String) -> float:
 	return rates.get(port_id, {}).get(good_id, 1.0)
 
 
-func _unit_value(port_id: String, good_id: String) -> float:
-	var base: float = float(_good_def(good_id).get("base_value", 0))
-	var role: String = get_role(port_id, good_id)
-	var mod: float = ROLE_MOD.get(role, 1.0)
-	return base * mod * get_rate(port_id, good_id)
-
-
 ## 杂事压低抽解与佣金；通事在异国港口另有议价之利
 func _effective_tariff() -> float:
 	return tariff_rate * Crew.trade_cost_factor()

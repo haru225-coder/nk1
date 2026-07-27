@@ -8,9 +8,6 @@ extends Node
 ##   通事 → Economy 在异国港口的价差
 ##   医人 → Fleet.on_day_passed() 的减员与士气
 
-signal roster_changed()
-signal wages_unpaid(months: int)
-
 ## {role_id: candidate_dict}
 var hired: Dictionary = {}
 
@@ -54,13 +51,6 @@ func candidates_at(port_id: String) -> Array:
 	return out
 
 
-func is_hired(cand_id: String) -> bool:
-	for r in hired.keys():
-		if hired[r].get("id", "") == cand_id:
-			return true
-	return false
-
-
 func signing_fee(cand_id: String) -> int:
 	return int(candidate_def(cand_id).get("wage", 0)) * SIGNING_MULTIPLIER
 
@@ -77,7 +67,6 @@ func hire(cand_id: String) -> Dictionary:
 	if not GameState.spend_money(fee):
 		return {"ok": false, "msg": "入伙钱要 %d，你拿不出。" % fee}
 	hired[role_id] = c
-	roster_changed.emit()
 	return {"ok": true, "msg": "%s 入伙，付入伙钱 %d，月俸 %d。" % [
 		c.get("name", "此人"), fee, c.get("wage", 0),
 	]}
@@ -88,7 +77,6 @@ func dismiss(role_id: String) -> Dictionary:
 		return {"ok": false, "msg": ""}
 	var name: String = hired[role_id].get("name", "此人")
 	hired.erase(role_id)
-	roster_changed.emit()
 	return {"ok": true, "msg": "%s 卷了铺盖上岸。" % name}
 
 
@@ -163,7 +151,6 @@ func pay_wages() -> String:
 
 	unpaid_months += 1
 	Fleet.morale = maxi(0, Fleet.morale - 8)
-	wages_unpaid.emit(unpaid_months)
 
 	if unpaid_months >= 3 and not hired.is_empty():
 		# 欠饷三月，俸最高者先走
@@ -177,7 +164,6 @@ func pay_wages() -> String:
 		var who: String = hired[quitter].get("name", "有人")
 		hired.erase(quitter)
 		unpaid_months = 0
-		roster_changed.emit()
 		return "【欠饷】已拖欠三月工食，%s 不告而别。" % who
 
 	return "【欠饷】这月的工食 %d 钱发不出，船上人心浮动。" % due
@@ -192,4 +178,3 @@ func to_dict() -> Dictionary:
 func from_dict(d: Dictionary) -> void:
 	hired = d.get("hired", {})
 	unpaid_months = d.get("unpaid_months", 0)
-	roster_changed.emit()

@@ -183,6 +183,29 @@ if miss_count == 0:
 
 print()
 print("=" * 68)
+print("二之二、emit 的信号是否都还存在")
+print("=" * 68)
+print("  删掉 signal 却漏了某处 emit，只有跑到那一行才炸。")
+orphan_total = 0
+for dirpath, _, files in os.walk(SCRIPTS):
+    for fn in sorted(files):
+        if not fn.endswith(".gd"):
+            continue
+        path = os.path.join(dirpath, fn)
+        with open(path, encoding="utf-8") as f:
+            src = f.read()
+        declared = set(re.findall(r'^\s*signal\s+([A-Za-z_]\w*)', src, re.M))
+        # 前面带点的是跨对象 emit（Autoload.sig.emit），不归本文件管
+        emitted = set(re.findall(r'(?<![.\w])([A-Za-z_]\w*)\.emit\s*\(', src))
+        for o in sorted(emitted - declared):
+            print(f"  ✗ {os.path.relpath(path, ROOT)}: {o}.emit() 但本文件无此 signal")
+            problems.append(f"{os.path.relpath(path, ROOT)} emit 已删除的 {o}")
+            orphan_total += 1
+if orphan_total == 0:
+    print("  ✓ 所有 emit 都有对应的 signal 声明")
+
+print()
+print("=" * 68)
 print("三、缩进与括号一致性")
 print("=" * 68)
 for dirpath, _, files in os.walk(SCRIPTS):

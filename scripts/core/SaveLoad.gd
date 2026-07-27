@@ -81,7 +81,3 @@ func save_label(slot: int) -> String:
 		return "（损坏）"
 	return json.data.get("label", "（无标签）")
 
-
-func delete_save(slot: int) -> void:
-	if has_save(slot):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(_path(slot)))
