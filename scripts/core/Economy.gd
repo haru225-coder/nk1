@@ -89,14 +89,34 @@ func _unit_value(port_id: String, good_id: String) -> float:
 	return base * mod * get_rate(port_id, good_id)
 
 
+## 杂事压低抽解与佣金；通事在异国港口另有议价之利
+func _effective_tariff() -> float:
+	return tariff_rate * Crew.trade_cost_factor()
+
+
+func _effective_broker() -> float:
+	return broker_fee * Crew.trade_cost_factor()
+
+
+## 定价的唯一出处。estimate_* 逐单位推演时也走这里，避免公式分叉。
+func price_at_rate(port_id: String, good_id: String, rate: float, is_buy: bool) -> int:
+	var base: float = float(_good_def(good_id).get("base_value", 0))
+	var mod: float = ROLE_MOD.get(get_role(port_id, good_id), 1.0)
+	var edge := Crew.interpreter_edge(port_id)
+	var v := base * mod * rate
+	if is_buy:
+		return int(round(v * (1.0 + _effective_tariff()) * (1.0 - edge)))
+	return int(round(v * (1.0 - _effective_broker()) * (1.0 + edge)))
+
+
 ## 玩家买入单价（含抽解）
 func buy_price(port_id: String, good_id: String) -> int:
-	return int(round(_unit_value(port_id, good_id) * (1.0 + tariff_rate)))
+	return price_at_rate(port_id, good_id, get_rate(port_id, good_id), true)
 
 
 ## 玩家卖出单价（扣牙人佣金）
 func sell_price(port_id: String, good_id: String) -> int:
-	return int(round(_unit_value(port_id, good_id) * (1.0 - broker_fee)))
+	return price_at_rate(port_id, good_id, get_rate(port_id, good_id), false)
 
 
 ## 给玩家看的行情标签
@@ -150,14 +170,11 @@ func apply_sell_impact(port_id: String, good_id: String, amount: int) -> void:
 
 ## 预估卖出总收入，逐单位结算以体现砸盘效应
 func estimate_sell_revenue(port_id: String, good_id: String, amount: int) -> int:
-	var saved: float = get_rate(port_id, good_id)
 	var total := 0
 	var depth := _depth(port_id)
-	var r := saved
+	var r := get_rate(port_id, good_id)
 	for i in range(amount):
-		var base: float = float(_good_def(good_id).get("base_value", 0))
-		var mod: float = ROLE_MOD.get(get_role(port_id, good_id), 1.0)
-		total += int(round(base * mod * r * (1.0 - broker_fee)))
+		total += price_at_rate(port_id, good_id, r, false)
 		r = clampf(r - 1.0 / depth, RATE_MIN, RATE_MAX)
 	return total
 
@@ -168,9 +185,7 @@ func estimate_buy_cost(port_id: String, good_id: String, amount: int) -> int:
 	var depth := _depth(port_id)
 	var r := get_rate(port_id, good_id)
 	for i in range(amount):
-		var base: float = float(_good_def(good_id).get("base_value", 0))
-		var mod: float = ROLE_MOD.get(get_role(port_id, good_id), 1.0)
-		total += int(round(base * mod * r * (1.0 + tariff_rate)))
+		total += price_at_rate(port_id, good_id, r, true)
 		r = clampf(r + 1.0 / depth, RATE_MIN, RATE_MAX)
 	return total
 

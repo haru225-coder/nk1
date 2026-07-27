@@ -24,6 +24,7 @@ func save_game(slot: int, current_scene: String = "") -> bool:
 		"calendar": Calendar.to_dict(),
 		"economy": Economy.to_dict(),
 		"fleet": Fleet.to_dict(),
+		"crew": Crew.to_dict(),
 		"state": GameState.to_dict(),
 		"scene": current_scene,
 		"label": "%s・%s・%d钱" % [
@@ -56,6 +57,7 @@ func load_game(slot: int) -> bool:
 	Calendar.from_dict(data.get("calendar", {}))
 	Economy.from_dict(data.get("economy", {}))
 	Fleet.from_dict(data.get("fleet", {}))
+	Crew.from_dict(data.get("crew", {}))
 	GameState.from_dict(data.get("state", {}))
 	return true
 

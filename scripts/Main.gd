@@ -46,8 +46,14 @@ const GENERIC_FACILITIES := [
 
 func _ready() -> void:
 	message_label.text = ""
+	GameManager.monthly_notice.connect(_on_monthly_notice)
 	update_status_panel()
 	call_deferred("start_game")
+
+
+func _on_monthly_notice(text: String) -> void:
+	log_msg(text)
+	update_status_panel()
 
 
 func start_game() -> void:
@@ -99,7 +105,22 @@ func update_status_panel() -> void:
 		int(Fleet.total_durability()), int(Fleet.total_max_durability()),
 		Fleet.morale,
 	]
-	t += "水：%d　粮：%d　[color=%s]（足 %d 日）[/color]\n\n" % [Fleet.water, Fleet.food, supply_color, supply_d]
+	t += "水：%d　粮：%d　[color=%s]（足 %d 日）[/color]\n" % [Fleet.water, Fleet.food, supply_color, supply_d]
+
+	if not Crew.hired.is_empty():
+		t += "\n[u]职事[/u]\n"
+		for c in Crew.roster():
+			t += "%s %s%s\n" % [
+				Crew.role_def(c.get("role", "")).get("name", ""),
+				c.get("name", ""), _stars(int(c.get("level", 1))),
+			]
+		var wage := Crew.monthly_wage()
+		var wage_color := "orange" if Crew.unpaid_months > 0 else "white"
+		t += "[color=%s]月俸共 %d" % [wage_color, wage]
+		if Crew.unpaid_months > 0:
+			t += "　已欠 %d 月" % Crew.unpaid_months
+		t += "[/color]\n"
+	t += "\n"
 	t += "[u]市舶[/u]\n蒲氏关注：%d\n货引：%s\n" % [GameState.pu_attention, permit_str]
 	if contraband > 0:
 		t += "[color=orange]舱底违禁：%d 件[/color]\n" % contraband
@@ -470,6 +491,8 @@ func _setup_yamen(port_id: String) -> void:
 		warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		choices_container.add_child(warn)
 
+	_setup_reporting()
+
 	var att := Label.new()
 	att.text = "蒲氏关注度 %d　%s" % [GameState.pu_attention, _attention_desc()]
 	att.add_theme_font_size_override("font_size", 13)
@@ -477,6 +500,38 @@ func _setup_yamen(port_id: String) -> void:
 
 	choices_label.visible = true
 	_add_leave_button(port_id)
+
+
+## 上报发现：航中勘见的东西要回衙门报了才换得赏格与名声
+func _setup_reporting() -> void:
+	var pending := GameState.unreported_discoveries()
+	if pending.is_empty():
+		return
+
+	var sep := Label.new()
+	sep.text = "── 呈报所见 ──"
+	sep.add_theme_font_size_override("font_size", 13)
+	choices_container.add_child(sep)
+
+	for did in pending:
+		var d := GameManager.get_discovery_by_id(did)
+		if d.is_empty():
+			continue
+		var value: int = int(d.get("value", 50))
+		var btn := Button.new()
+		btn.text = "呈报「%s」　赏格 %d 钱・名声 +%d" % [
+			d.get("name", did), value, maxi(1, value / 10),
+		]
+		btn.tooltip_text = "%s\n%s" % [d.get("location", ""), d.get("historical_hook", "")]
+		btn.pressed.connect(func():
+			var res: Dictionary = GameState.report_discovery(did)
+			if not res.is_empty():
+				log_msg("【呈报】%s 录入案册，赏钱 %d，名声 +%d。" % [
+					res["name"], res["gold"], res["fame"],
+				])
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(btn)
 
 
 func _attention_desc() -> String:
@@ -655,8 +710,74 @@ func _setup_tavern(port_id: String) -> void:
 	)
 	choices_container.add_child(intel)
 
+	_setup_hiring(port_id)
+
 	choices_label.visible = true
 	_add_leave_button(port_id)
+
+
+## 酒馆募人。每种职事至多一人，故已雇之职不再列出候选。
+func _setup_hiring(port_id: String) -> void:
+	var sep := Label.new()
+	sep.text = "── 募人（月俸按月支给，欠饷三月则去）──"
+	sep.add_theme_font_size_override("font_size", 13)
+	choices_container.add_child(sep)
+
+	# 在船的人
+	if not Crew.hired.is_empty():
+		for c in Crew.roster():
+			var row := HBoxContainer.new()
+			var lbl := Label.new()
+			var rname: String = Crew.role_def(c.get("role", "")).get("name", "")
+			lbl.text = "在船：%s（%s %s）月俸 %d" % [
+				c.get("name", ""), rname, _stars(int(c.get("level", 1))), c.get("wage", 0),
+			]
+			lbl.custom_minimum_size = Vector2(400, 0)
+			lbl.add_theme_color_override("font_color", Color(0.65, 0.9, 0.7))
+			row.add_child(lbl)
+
+			var d := Button.new()
+			d.text = "辞退"
+			var rid: String = c.get("role", "")
+			d.pressed.connect(func():
+				var res: Dictionary = Crew.dismiss(rid)
+				if res.get("ok", false):
+					log_msg(res["msg"])
+				load_scene(current_scene_id)
+			)
+			row.add_child(d)
+			choices_container.add_child(row)
+
+	var cands := Crew.candidates_at(port_id)
+	if cands.is_empty():
+		var none := Label.new()
+		none.text = "此处无人可用。"
+		none.add_theme_font_size_override("font_size", 13)
+		none.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+		choices_container.add_child(none)
+		return
+
+	for c in cands:
+		var cid: String = c.get("id", "")
+		var role: Dictionary = Crew.role_def(c.get("role", ""))
+		var btn := Button.new()
+		btn.text = "雇 %s　%s %s　入伙 %d・月俸 %d" % [
+			c.get("name", ""), role.get("name", ""), _stars(int(c.get("level", 1))),
+			Crew.signing_fee(cid), c.get("wage", 0),
+		]
+		btn.tooltip_text = "%s\n\n%s\n%s" % [
+			c.get("bio", ""), role.get("desc", ""), role.get("effect_hint", ""),
+		]
+		btn.pressed.connect(func():
+			var res: Dictionary = Crew.hire(cid)
+			log_msg(res["msg"])
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(btn)
+
+
+func _stars(n: int) -> String:
+	return "★".repeat(maxi(0, n))
 
 
 ## 旅店：候风。季风按月转向，等到对的月份再发舶是这个游戏最要紧的判断之一。

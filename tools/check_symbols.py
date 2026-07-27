@@ -13,6 +13,7 @@ AUTOLOADS = {
     "Calendar":    "scripts/core/Calendar.gd",
     "Economy":     "scripts/core/Economy.gd",
     "Fleet":       "scripts/core/Fleet.gd",
+    "Crew":        "scripts/core/Crew.gd",
     "Voyage":      "scripts/core/Voyage.gd",
     "GameState":   "scripts/GameState.gd",
     "SaveLoad":    "scripts/core/SaveLoad.gd",
@@ -74,6 +75,57 @@ if "GameManager" in order:
     print(f"\n  加载顺序: {' → '.join(order)}")
     print(f"  {'✓' if all(order.index(d) > gm_idx for d in ('Economy','Fleet','Voyage') if d in order) else '✗'}"
           f" GameManager 先于 Economy/Fleet/Voyage")
+
+print()
+print("=" * 68)
+print("一之二、_ready 期间的 autoload 依赖顺序")
+print("=" * 68)
+print("  autoload 按注册顺序逐个 _ready；在 _ready 里碰排在自己后面的 autoload 会拿到 null。")
+
+def func_bodies(src):
+    """粗略切分出每个 func 的函数体（按缩进）"""
+    out, cur, body = {}, None, []
+    for ln in src.split("\n"):
+        m = re.match(r'^func\s+([A-Za-z_]\w*)', ln)
+        if m:
+            if cur: out[cur] = "\n".join(body)
+            cur, body = m.group(1), []
+        elif cur is not None:
+            if ln and not ln[0].isspace() and not ln.startswith(("#", ")")):
+                out[cur] = "\n".join(body); cur, body = None, []
+            else:
+                body.append(ln)
+    if cur: out[cur] = "\n".join(body)
+    return out
+
+order_idx = {name: i for i, name in enumerate(order)}
+ready_problems = []
+for name, rel in AUTOLOADS.items():
+    with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
+        src = f.read()
+    bodies = func_bodies(src)
+    if "_ready" not in bodies:
+        continue
+    # 从 _ready 出发展开本地调用链，直到不动点——两层以上的间接依赖同样会崩
+    seen_fn = {"_ready"}
+    frontier = ["_ready"]
+    while frontier:
+        fn = frontier.pop()
+        for local in re.findall(r'\b([a-z_]\w*)\s*\(', bodies.get(fn, "")):
+            if local in bodies and local not in seen_fn:
+                seen_fn.add(local)
+                frontier.append(local)
+    reach = "\n".join(bodies.get(fn, "") for fn in seen_fn)
+    touched = {o for o in AUTOLOADS if o != name and re.search(rf'\b{o}\.', reach)}
+    for t in touched:
+        if order_idx.get(t, 99) > order_idx.get(name, 99):
+            ready_problems.append(f"{name}._ready 触及 {t}，但 {t} 注册在其之后")
+            print(f"  ✗ {name}._ready → {t}（{t} 排在后面，此时尚未就绪）")
+        else:
+            print(f"  ✓ {name}._ready → {t}（已就绪）")
+if not ready_problems:
+    print("  ✓ 无 _ready 期的逆序依赖")
+problems.extend(ready_problems)
 
 print()
 print("=" * 68)

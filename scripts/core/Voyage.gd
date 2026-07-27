@@ -67,7 +67,8 @@ func wind_factor(course_bearing: float) -> float:
 	# 季风强度弱时向 1.0 收敛
 	var strength := Calendar.get_monsoon_strength()
 	raw = 1.0 + (raw - 1.0) * strength
-	return clampf(raw, WIND_MIN, WIND_MAX)
+	# 舵工抢风，抬高逆风时的下限
+	return clampf(raw, Crew.wind_floor(), WIND_MAX)
 
 
 func wind_desc(course_bearing: float) -> String:
@@ -118,7 +119,8 @@ func is_known_route(from_id: String, to_id: String) -> bool:
 # ── 逐日事件 ──────────────────────────────────────────
 
 ## 推演一日，返回事件字典 {kind, title, text, ...}
-func roll_day_event(course_bearing: float) -> Dictionary:
+## from_id / to_id 用于把发现物限定在本航段沿途
+func roll_day_event(course_bearing: float, from_id: String = "", to_id: String = "") -> Dictionary:
 	var r := randf()
 	var monsoon_strength := Calendar.get_monsoon_strength()
 
@@ -136,7 +138,7 @@ func roll_day_event(course_bearing: float) -> Dictionary:
 	elif r < storm_chance + 0.21:
 		return _merchant_event()
 	elif r < storm_chance + 0.24:
-		return _discovery_event()
+		return _discovery_event(from_id, to_id)
 	return {"kind": EventKind.NONE}
 
 
@@ -155,7 +157,8 @@ func _storm_event() -> Dictionary:
 		if frag <= 0.0:
 			continue
 		var q: int = Fleet.cargo[gid]["qty"]
-		var l := mini(int(ceil(q * frag * severity * 0.5)), q)
+		# 总管分舱理货，风涛中的折损随之减轻
+		var l := mini(int(ceil(q * frag * severity * 0.5 * Crew.cargo_loss_factor())), q)
 		if l > 0:
 			Fleet.remove_cargo(gid, l)
 			lost[gid] = l
@@ -212,15 +215,25 @@ func _merchant_event() -> Dictionary:
 	}
 
 
-func _discovery_event() -> Dictionary:
-	var discoveries: Array = GameManager.discoveries_data.get("discoveries", [])
-	if discoveries.is_empty():
+## 只抽当前航段沿途可能有的、且尚未勘见的发现物
+func _discovery_event(from_id: String = "", to_id: String = "") -> Dictionary:
+	var pool := []
+	for d in GameManager.discoveries_data.get("discoveries", []):
+		var did: String = d.get("id", "")
+		if GameState.has_found(did):
+			continue
+		var near: Array = d.get("near_ports", [])
+		# 未标注海域的算通用；标注了则须与本航段两端有交集
+		if near.is_empty() or from_id in near or to_id in near:
+			pool.append(d)
+	if pool.is_empty():
 		return {"kind": EventKind.NONE}
-	var d = discoveries[randi() % discoveries.size()]
+
+	var d = pool[randi() % pool.size()]
 	return {
 		"kind": EventKind.DISCOVERY,
 		"title": "岸影",
-		"text": "左舷远处露出一线陆影，海图上此处应是空白。舵手说，那可能就是老辈人讲的%s。" % d.get("name", "旧泊地"),
+		"text": "左舷远处露出一线陆影，海图上此处应是空白。舵手眯眼看了半晌，说那多半就是老辈人讲的%s。" % d.get("name", "旧泊地"),
 		"discovery_id": d.get("id", ""),
 	}
 

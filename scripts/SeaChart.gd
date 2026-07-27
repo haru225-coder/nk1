@@ -29,6 +29,8 @@ func _ready() -> void:
 	origin_port = GameState.last_port
 	selected_port = ""
 	_build_ui()
+	# 连接放在 _build_ui 之后：_log 依赖其中创建的 log_label
+	GameManager.monthly_notice.connect(_log)
 	_refresh_ports()
 	_refresh_status()
 	_log("【发舶】自 %s 起锚。%s。" % [GameManager.get_port_name(origin_port), Calendar.get_monsoon_desc()])
@@ -276,10 +278,18 @@ func _refresh_detail() -> void:
 		return
 
 	var plan := Voyage.plan(origin_port, selected_port)
+	var crew_note := ""
+	var hz := Crew.level_of("huozhang")
+	var dg := Crew.level_of("duogong")
+	if hz > 0:
+		crew_note += "　火长 +%d%%" % int(round((Crew.speed_factor() - 1.0) * 100))
+	if dg > 0 and plan["wind_desc"] in ["斜逆风", "顶头逆风"]:
+		crew_note += "　舵工抢风"
+
 	var lines := [
 		"目的：%s" % GameManager.get_port_name(selected_port),
 		"航程：%d 里　方位 %d°" % [int(plan["distance"]), int(plan["bearing"])],
-		"风信：%s（日速 %d 里）" % [plan["wind_desc"], int(plan["speed"])],
+		"风信：%s（日速 %d 里）%s" % [plan["wind_desc"], int(plan["speed"]), crew_note],
 		"预计：%d 日　水粮足 %d 日" % [plan["days"], plan["supply_days"]],
 	]
 	for l in lines:
@@ -335,7 +345,7 @@ func _sail_next_day() -> void:
 	GameManager.advance_days(1)
 	days_elapsed += 1
 
-	var event := Voyage.roll_day_event(course_bearing)
+	var event := Voyage.roll_day_event(course_bearing, origin_port, selected_port)
 	var kind: int = event.get("kind", Voyage.EventKind.NONE)
 	var wf := Voyage.wind_factor(course_bearing)
 	var progress := Fleet.fleet_speed() * wf
@@ -493,14 +503,10 @@ func _on_investigate_discovery() -> void:
 	days_elapsed += 1
 	var did: String = pending_event.get("discovery_id", "")
 	var d := GameManager.get_discovery_by_id(did)
-	if did != "" and not (did in GameState.discoveries_reported):
-		GameState.discoveries_reported.append(did)
-		GameState.fame += int(d.get("value", 50)) / 10
-		_log("[color=lime]近岸细看，果然是%s。记入海图，名声+%d。[/color]" % [
-			d.get("name", "旧泊地"), int(d.get("value", 50)) / 10,
-		])
+	if GameState.record_discovery(did):
+		_log("[color=lime]近岸细看，果然是%s。记入册子——回港上报市舶司，当有赏格。[/color]" % d.get("name", "旧泊地"))
 	else:
-		_log("绕过去看了一圈，与海图上所记并无出入。")
+		_log("绕过去看了一圈，与册上所记并无出入。")
 	_refresh_status()
 	_on_event_continue()
 

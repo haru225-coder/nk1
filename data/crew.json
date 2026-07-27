@@ -1,0 +1,224 @@
+{
+  "meta": {
+    "title": "东亚海域立志传船上职事",
+    "era": "南宋末，约1255-1277",
+    "prototype": "v1.0-uw",
+    "note": "职名取南宋海船实际编制。《萍洲可谈》记「舶船…纲首、副纲首、杂事，市舶司给朱记」，《宣和奉使高丽图经》记火长掌针路。每种职事至多雇一人，加成不叠加。月俸按月结算，欠饷则士气下降、久之求去。"
+  },
+  "roles": [
+    {
+      "id": "huozhang",
+      "name": "火长",
+      "desc": "掌罗盘针路，夜观星斗定方位",
+      "effect_hint": "日行更远，不易失道",
+      "source": "《宣和奉使高丽图经》：「惟视星斗前迈，若晦冥则用指南浮针以揆南北。」"
+    },
+    {
+      "id": "duogong",
+      "name": "舵工",
+      "desc": "把舵抢风，逆风时见真章",
+      "effect_hint": "顶头逆风的折损减轻",
+      "source": "宋人海船设正副舵，遇恶风则换大小舵。"
+    },
+    {
+      "id": "zongguan",
+      "name": "总管",
+      "desc": "分舱理货，油布干舱皆其所司",
+      "effect_hint": "货物腐损与风涛货损减少",
+      "source": "海船水密隔舱分贮众商之货，货损须按舱分摊。"
+    },
+    {
+      "id": "zashi",
+      "name": "杂事",
+      "desc": "掌算筹账簿，与牙人论价不落下风",
+      "effect_hint": "买卖价差改善",
+      "source": "《萍洲可谈》：「纲首、副纲首、杂事，市舶司给朱记。」"
+    },
+    {
+      "id": "tongshi",
+      "name": "通事",
+      "desc": "通蕃语，蕃坊与异国港市的门路",
+      "effect_hint": "在异国港口买卖更划算",
+      "source": "泉州蕃坊聚大食、占城、日本诸国商旅，非通事不能成交。"
+    },
+    {
+      "id": "yiren",
+      "name": "医人",
+      "desc": "备药石，防瘴疠与坏血之疾",
+      "effect_hint": "断粮时减员更少，士气回复更快",
+      "source": "远洋久航，水手多病脚气、齿血之症。"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "wu_zhen",
+      "name": "吴针",
+      "role": "huozhang",
+      "level": 1,
+      "wage": 60,
+      "port": "quanzhou",
+      "unlock": "ch1",
+      "bio": "泉州本地舟师，跑惯了泉漳澎湖一线。针路记得牢，再远的就说不准了。"
+    },
+    {
+      "id": "cai_qixing",
+      "name": "蔡七星",
+      "role": "huozhang",
+      "level": 3,
+      "wage": 200,
+      "port": "mingzhou",
+      "unlock": "ch2",
+      "bio": "曾随纲首三度往返博多，能在阴晦天里只凭浪势与鸟群判位。要价不低，也不还价。"
+    },
+    {
+      "id": "ana_tongxiang",
+      "name": "阿那同乡",
+      "role": "huozhang",
+      "level": 2,
+      "wage": 120,
+      "port": "ryukyu",
+      "unlock": "ch1",
+      "bio": "南岛海道上的舵手，与阿那同出一寨。看水色辨深浅，礁线在他眼里是明的。"
+    },
+    {
+      "id": "lin_awu",
+      "name": "林阿五",
+      "role": "duogong",
+      "level": 1,
+      "wage": 60,
+      "port": "xinghua_harbor",
+      "unlock": "ch1",
+      "bio": "海口渡船上的舵手，手上有力气，风大时不慌。没跑过远洋。"
+    },
+    {
+      "id": "chen_laodao",
+      "name": "陈老舵",
+      "role": "duogong",
+      "level": 2,
+      "wage": 120,
+      "port": "fuzhou",
+      "unlock": "ch1",
+      "bio": "在福州港口把了三十年舵。他说顶风走不是硬顶，是要跟风讨价还价。"
+    },
+    {
+      "id": "he_wenzhou",
+      "name": "何抢风",
+      "role": "duogong",
+      "level": 3,
+      "wage": 200,
+      "port": "wenzhou",
+      "unlock": "ch1",
+      "bio": "温州人，据说曾在逆季风里把一条广船从耽罗带回明州。船主没敢再用他第二次。"
+    },
+    {
+      "id": "wang_zhiku",
+      "name": "王直库",
+      "role": "zongguan",
+      "level": 1,
+      "wage": 60,
+      "port": "quanzhou",
+      "unlock": "ch1",
+      "bio": "管过几年货舱，知道瓷器该垫什么、香药该收在哪一层。"
+    },
+    {
+      "id": "shi_naowei",
+      "name": "施那帏",
+      "role": "zongguan",
+      "level": 3,
+      "wage": 200,
+      "port": "guangzhou",
+      "unlock": "ch3",
+      "bio": "蕃客后裔，祖上在广州怀远驿理过货。他分舱的法子，风涛里也少见倾折。"
+    },
+    {
+      "id": "zhou_suanchou",
+      "name": "周算筹",
+      "role": "zashi",
+      "level": 1,
+      "wage": 60,
+      "port": "xinghua",
+      "unlock": "ch1",
+      "bio": "落第的士人，字写得好，算盘打得更好。不大瞧得起海商，但要吃饭。"
+    },
+    {
+      "id": "huang_zhangfang",
+      "name": "黄账房",
+      "role": "zashi",
+      "level": 2,
+      "wage": 120,
+      "port": "quanzhou",
+      "unlock": "ch1",
+      "bio": "在牙行做过中人，两头的价都摸得清。用他之后你才知道从前被吃了多少。"
+    },
+    {
+      "id": "ye_shibo",
+      "name": "叶市舶",
+      "role": "zashi",
+      "level": 3,
+      "wage": 200,
+      "port": "mingzhou",
+      "unlock": "ch2",
+      "bio": "从庆元市舶司退下来的老吏。抽解的门道他比谁都熟，只是不肯多说来历。"
+    },
+    {
+      "id": "pu_alie",
+      "name": "蒲阿烈",
+      "role": "tongshi",
+      "level": 2,
+      "wage": 120,
+      "port": "quanzhou",
+      "unlock": "ch1",
+      "bio": "蕃坊长大的少年，大食话、占城话都能应付。姓蒲，但与那位提举市舶的蒲家早出了五服。"
+    },
+    {
+      "id": "kondo_saburo",
+      "name": "近藤三郎",
+      "role": "tongshi",
+      "level": 3,
+      "wage": 200,
+      "port": "hakata",
+      "unlock": "ch2",
+      "bio": "博多唐房里长大的日本人，汉话说得比许多唐人还清楚。寺社与商家两头都认他。"
+    },
+    {
+      "id": "jin_tanluo",
+      "name": "金耽罗",
+      "role": "tongshi",
+      "level": 1,
+      "wage": 60,
+      "port": "jeju",
+      "unlock": "ch2",
+      "bio": "耽罗牧场上的高丽人，会几句汉话与倭语，够在市上讨价。"
+    },
+    {
+      "id": "monk_puji",
+      "name": "普济",
+      "role": "yiren",
+      "level": 2,
+      "wage": 120,
+      "port": "quanzhou",
+      "unlock": "ch1",
+      "bio": "开元寺的医僧，随船是为了施药，不全为钱。见不得人死在舱里。"
+    },
+    {
+      "id": "wu_yiren",
+      "name": "吴医人",
+      "role": "yiren",
+      "level": 1,
+      "wage": 60,
+      "port": "zhangzhou",
+      "unlock": "ch1",
+      "bio": "漳州的走方郎中，备得几味防瘴的药。手艺一般，胜在便宜。"
+    },
+    {
+      "id": "sun_qiaoshou",
+      "name": "孙巧手",
+      "role": "yiren",
+      "level": 3,
+      "wage": 200,
+      "port": "wenzhou",
+      "unlock": "ch2",
+      "bio": "随过官船去过高丽，见识过整船人烂了牙床的样子。他说那病吃菜蔬就能压住，没人信。"
+    }
+  ]
+}

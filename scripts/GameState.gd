@@ -24,7 +24,9 @@ var last_port: String = "quanzhou"
 ## 剧情旗标
 var flags: Dictionary = {}
 
-## 已上报的发现物 id
+## 已勘见但未上报的发现物 id
+var discoveries_found: Array = []
+## 已向市舶司上报、领过赏格的发现物 id
 var discoveries_reported: Array = []
 
 ## 走通过的港口 id。章节晋升要看走过多少地方，不只是攒了多少钱。
@@ -89,6 +91,39 @@ func is_chapter_reached(unlock: String) -> bool:
 	if not unlock.begins_with("ch"):
 		return true
 	return chapter >= int(unlock.substr(2))
+
+
+# ── 发现录 ────────────────────────────────────────────
+
+func has_found(did: String) -> bool:
+	return did in discoveries_found or did in discoveries_reported
+
+
+func record_discovery(did: String) -> bool:
+	if did == "" or has_found(did):
+		return false
+	discoveries_found.append(did)
+	return true
+
+
+## 尚可上报的发现（已勘见、未领赏）
+func unreported_discoveries() -> Array:
+	return discoveries_found.duplicate()
+
+
+## 上报一件，返回 {gold, fame, name}
+func report_discovery(did: String) -> Dictionary:
+	if not (did in discoveries_found):
+		return {}
+	var d := GameManager.get_discovery_by_id(did)
+	var value: int = int(d.get("value", 50))
+	discoveries_found.erase(did)
+	discoveries_reported.append(did)
+	var gold := value
+	var fame_gain: int = maxi(1, value / 10)
+	add_money(gold)
+	fame += fame_gain
+	return {"gold": gold, "fame": fame_gain, "name": d.get("name", "所见")}
 
 
 func visit_port(port_id: String) -> void:
@@ -274,6 +309,7 @@ func to_dict() -> Dictionary:
 		"has_customs_permit": has_customs_permit,
 		"last_port": last_port,
 		"flags": flags,
+		"discoveries_found": discoveries_found,
 		"discoveries_reported": discoveries_reported,
 		"visited_ports": visited_ports,
 		"peak_money": peak_money,
@@ -289,6 +325,7 @@ func from_dict(d: Dictionary) -> void:
 	has_customs_permit = d.get("has_customs_permit", false)
 	last_port = d.get("last_port", "quanzhou")
 	flags = d.get("flags", {})
+	discoveries_found = d.get("discoveries_found", [])
 	discoveries_reported = d.get("discoveries_reported", [])
 	visited_ports = d.get("visited_ports", [])
 	peak_money = d.get("peak_money", money)

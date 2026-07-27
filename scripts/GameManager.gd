@@ -3,6 +3,8 @@ extends Node
 ## 时间推进走 advance_days() 这一个入口，避免各系统各自监听信号导致结算顺序不确定。
 
 signal day_advanced(y: int, m: int, d: int)
+## 月结产生的通知（欠饷等），供 UI 显示
+signal monthly_notice(text: String)
 
 var scenes_data: Dictionary = {}
 var goods_data: Dictionary = {}
@@ -11,6 +13,7 @@ var npcs_data: Dictionary = {}
 var discoveries_data: Dictionary = {}
 var ships_data: Dictionary = {}
 var chapters_data: Dictionary = {}
+var crew_data: Dictionary = {}
 
 
 func _ready() -> void:
@@ -25,6 +28,7 @@ func load_data() -> void:
 	discoveries_data = _load_json("res://data/discoveries.json")
 	ships_data = _load_json("res://data/ships.json")
 	chapters_data = _load_json("res://data/chapters.json")
+	crew_data = _load_json("res://data/crew.json")
 
 	if scenes_data.has("scenes"):
 		print("Data loaded. Scenes:%d Goods:%d Ports:%d Ships:%d" % [
@@ -58,6 +62,9 @@ func advance_days(n: int) -> void:
 		Calendar.advance_days(1)
 		if Calendar.month != prev_month:
 			GameState.accrue_interest()
+			var notice := Crew.pay_wages()
+			if notice != "":
+				monthly_notice.emit(notice)
 		Economy.on_day_passed()
 		Fleet.on_day_passed()
 		day_advanced.emit(Calendar.year, Calendar.month, Calendar.day)

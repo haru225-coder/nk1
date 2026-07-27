@@ -154,6 +154,68 @@ check(ship_ch <= set(range(1, max_ch + 1)),
 
 print()
 print("=" * 68)
+print("一之三、船上职事的加成边界（防数值失控）")
+print("=" * 68)
+
+crew = load("crew.json")
+roles = {r["id"]: r for r in crew["roles"]}
+cands = crew["candidates"]
+
+# 复现 Crew.gd 的加成公式
+def speed_factor(lv):      return 1.0 + 0.06 * lv
+def wind_floor(lv):        return 0.40 + 0.05 * lv
+def cargo_loss(lv):        return max(0.0, 1.0 - 0.17 * lv)
+def trade_cost(lv):        return max(0.0, 1.0 - 0.12 * lv)
+def interp_edge(lv):       return 0.07 * lv
+def crew_loss(lv):         return max(0.0, 1.0 - 0.23 * lv)
+
+MAXLV = 3
+check(wind_floor(MAXLV) < 1.0,
+      f"满级舵工的逆风下限 {wind_floor(MAXLV):.2f} 仍 < 1.0——逆风始终不利，季风机制不被架空")
+check(trade_cost(MAXLV) > 0.0,
+      f"满级杂事后抽解仍余 {trade_cost(MAXLV)*100:.0f}%——交易成本不会归零")
+check(cargo_loss(MAXLV) > 0.0,
+      f"满级总管后货损仍余 {cargo_loss(MAXLV)*100:.0f}%——风涛依旧要命")
+check(crew_loss(MAXLV) > 0.0,
+      f"满级医人后断粮减员仍余 {crew_loss(MAXLV)*100:.0f}%——补给依旧不能不管")
+
+# 每种职事至多一人，故最强组合是各职事取最高级
+best_lv = {}
+for c in cands:
+    r = c["role"]
+    best_lv[r] = max(best_lv.get(r, 0), c["level"])
+print(f"\n  各职事可得的最高等级：{ {roles[r]['name']: v for r, v in best_lv.items()} }")
+
+# 满编后的核心商路利润膨胀幅度
+def price_with_crew(pid, gid, is_buy, zashi=0, tongshi=0):
+    v = goods[gid]["base_value"] * ROLE_MOD[role(pid, gid)]
+    edge = interp_edge(tongshi) if pid in ("hakata","kagoshima","jeju","champa") else 0.0
+    if is_buy:
+        return round(v * (1 + TARIFF * trade_cost(zashi)) * (1 - edge))
+    return round(v * (1 - BROKER * trade_cost(zashi)) * (1 + edge))
+
+gid = "qingbai_porcelain"
+bare = sell_price("hakata", gid) - buy_price("quanzhou", gid)
+full = (price_with_crew("hakata", gid, False, best_lv.get("zashi",0), best_lv.get("tongshi",0))
+        - price_with_crew("quanzhou", gid, True, best_lv.get("zashi",0), best_lv.get("tongshi",0)))
+infl = (full / bare - 1) * 100 if bare else 0
+print(f"  泉州→博多 青白瓷单件利润：无职事 {bare} → 满编 {full}（+{infl:.0f}%）")
+check(infl < 60, f"满编职事使核心商路利润膨胀 {infl:.0f}%，未失控（阈值 60%）")
+
+# 月俸负担应该是真实约束
+total_wage = sum(max(c["wage"] for c in cands if c["role"] == r) for r in best_lv)
+print(f"  满编月俸合计 {total_wage} 钱/月")
+check(total_wage > 500, f"满编月俸 {total_wage}，构成实际经营压力")
+
+# 每种职事都要有可雇之人，且首章就得有起步人选
+ch1_roles = {c["role"] for c in cands if c.get("unlock","ch1") == "ch1"}
+check(len(ch1_roles) >= 5,
+      f"第一章可雇到 {len(ch1_roles)}/{len(roles)} 种职事——开局不至于无人可用")
+missing = set(roles) - {c["role"] for c in cands}
+check(not missing, f"每种职事都有候选人（缺：{[roles[m]['name'] for m in missing] or '无'}）")
+
+print()
+print("=" * 68)
 print("二、核心贸易循环：泉州 ⇄ 博多 往返是否双向盈利")
 print("=" * 68)
 

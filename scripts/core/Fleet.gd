@@ -231,7 +231,7 @@ func on_day_passed() -> void:
 	if not at_sea:
 		# 泊港期间水手上岸，船上水粮不动；士气缓慢回升
 		if morale < 75:
-			morale = mini(MORALE_MAX, morale + 1)
+			morale = mini(MORALE_MAX, morale + 1 + Crew.morale_bonus())
 		_apply_perishable()
 		return
 
@@ -246,12 +246,12 @@ func on_day_passed() -> void:
 			supplies_critical.emit("water")
 		if food <= 0:
 			supplies_critical.emit("food")
-		# 断水断粮开始死人
-		if randf() < 0.4:
+		# 断水断粮开始死人；医人能压住一部分
+		if randf() < 0.4 * Crew.crew_loss_factor():
 			_lose_crew(maxi(1, int(crew * 0.03)))
 	else:
 		if morale < 70:
-			morale = mini(MORALE_MAX, morale + 1)
+			morale = mini(MORALE_MAX, morale + 1 + Crew.morale_bonus())
 
 	_apply_perishable()
 
@@ -277,8 +277,8 @@ func _apply_perishable() -> void:
 		if rate <= 0.0:
 			continue
 		var q: int = cargo[gid]["qty"]
-		# 概率化，避免小批量货物永远不腐
-		if randf() < rate * q:
+		# 概率化，避免小批量货物永远不腐；总管理货可减损
+		if randf() < rate * q * Crew.cargo_loss_factor():
 			remove_cargo(gid, 1)
 
 
@@ -320,7 +320,7 @@ func repair_all() -> void:
 		s["durability"] = s["max_durability"]
 
 
-## 舰队日速（里/日），取最慢一艘并计入士气
+## 舰队日速（里/日），取最慢一艘，计入士气与火长
 func fleet_speed() -> float:
 	if ships.is_empty():
 		return 0.0
@@ -329,7 +329,7 @@ func fleet_speed() -> float:
 		var d := ship_def(s.get("type", ""))
 		var spd := float(d.get("base_speed", 100)) * (1.0 + 0.12 * (int(s.get("sail_level", 1)) - 1))
 		slowest = minf(slowest, spd)
-	return slowest * morale_factor()
+	return slowest * morale_factor() * Crew.speed_factor()
 
 
 # ── 存档 ──────────────────────────────────────────────
