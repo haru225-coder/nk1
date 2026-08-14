@@ -15,6 +15,7 @@ var pending_event: Dictionary = {}
 
 # UI
 var status_label: RichTextLabel
+var chart: Control
 var port_list: VBoxContainer
 var detail_box: VBoxContainer
 var log_label: RichTextLabel
@@ -92,9 +93,17 @@ func _build_ui() -> void:
 	hint.add_theme_color_override("font_color", Color(0.75, 0.78, 0.82))
 	center_v.add_child(hint)
 
+	# 真正的图。数据用 ports.json 的经纬度，CanvasItem.draw 信号接 lambda，
+	# 不另建节点树——一张静态海图不需要缩放拖拽。
+	chart = Control.new()
+	chart.custom_minimum_size = Vector2(0, 250)
+	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chart.draw.connect(func(): _draw_chart(chart))
+	center_v.add_child(chart)
+
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 240)
+	scroll.custom_minimum_size = Vector2(0, 150)
 	center_v.add_child(scroll)
 	port_list = VBoxContainer.new()
 	port_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -230,6 +239,9 @@ func _refresh_status() -> void:
 	]
 	t += "水：%d　粮：%d　[color=%s]（足 %d 日）[/color]\n" % [Fleet.water, Fleet.food, supply_color, supply_d]
 	status_label.text = t
+	# 日期推进会改季风，图上的风向箭头与航段配色随之变
+	if chart:
+		chart.queue_redraw()
 
 
 func _refresh_ports() -> void:
@@ -268,6 +280,8 @@ func _on_port_selected(pid: String) -> void:
 	selected_port = pid
 	_refresh_ports()
 	_refresh_detail()
+	if chart:
+		chart.queue_redraw()
 
 
 func _refresh_detail() -> void:
@@ -310,6 +324,124 @@ func _refresh_detail() -> void:
 		detail_box.add_child(w)
 
 	sail_button.disabled = false
+
+
+# ══════════════════════════════════════════════════════
+#  海图绘制
+# ══════════════════════════════════════════════════════
+
+## 等比投影已解锁港口的经纬度。经度按平均纬度收窄，否则高纬处会被拉宽。
+func _draw_chart(c: Control) -> void:
+	var pts: Array = GameManager.unlocked_ports()
+	if pts.size() < 2:
+		return
+
+	var lat_min := 999.0
+	var lat_max := -999.0
+	var lon_min := 999.0
+	var lon_max := -999.0
+	for p in pts:
+		lat_min = minf(lat_min, float(p.get("lat", 0.0)))
+		lat_max = maxf(lat_max, float(p.get("lat", 0.0)))
+		lon_min = minf(lon_min, float(p.get("lon", 0.0)))
+		lon_max = maxf(lon_max, float(p.get("lon", 0.0)))
+
+	var mean_lat := (lat_min + lat_max) * 0.5
+	var mean_lon := (lon_min + lon_max) * 0.5
+	var kx := cos(deg_to_rad(mean_lat))
+	var span_x := maxf(0.5, (lon_max - lon_min) * kx)
+	var span_y := maxf(0.5, lat_max - lat_min)
+
+	var size := c.size
+	var scale := minf(size.x / span_x, size.y / span_y) * 0.78
+	var mid := size * 0.5
+
+	var proj := func(lat: float, lon: float) -> Vector2:
+		return mid + Vector2((lon - mean_lon) * kx * scale, -(lat - mean_lat) * scale)
+
+	c.draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.11, 0.17, 0.75))
+
+	_draw_monsoon(c, size)
+
+	# 已知航路：淡线勾出港口间的连接关系
+	for p in pts:
+		var a: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
+		for cid in p.get("connections", []):
+			var q := GameManager.get_port_by_id(cid)
+			if q.is_empty() or not GameState.is_chapter_reached(q.get("unlock", "ch1")):
+				continue
+			var b: Vector2 = proj.call(float(q.get("lat", 0.0)), float(q.get("lon", 0.0)))
+			c.draw_line(a, b, Color(1, 1, 1, 0.10), 1.0)
+
+	# 当前航段
+	if selected_port != "":
+		var o := GameManager.get_port_by_id(origin_port)
+		var d := GameManager.get_port_by_id(selected_port)
+		if not o.is_empty() and not d.is_empty():
+			var a: Vector2 = proj.call(float(o.get("lat", 0.0)), float(o.get("lon", 0.0)))
+			var b: Vector2 = proj.call(float(d.get("lat", 0.0)), float(d.get("lon", 0.0)))
+			var wf := Voyage.wind_factor(Voyage.bearing(origin_port, selected_port))
+			# 顺风泛绿、逆风泛红——季风是否有利，一眼能看出来
+			var col := Color(0.45, 0.95, 0.6) if wf >= 1.15 else (
+				Color(1.0, 0.5, 0.42) if wf <= 0.75 else Color(0.95, 0.85, 0.5))
+			c.draw_line(a, b, col, 2.5)
+
+	var font := ThemeDB.fallback_font
+	for p in pts:
+		var pid: String = p.get("id", "")
+		var v: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
+		var visited: bool = pid in GameState.visited_ports
+		var is_here := pid == origin_port
+		var is_target := pid == selected_port
+
+		var col := Color(0.55, 0.6, 0.68)
+		if visited:
+			col = Color(0.85, 0.88, 0.92)
+		if is_target:
+			col = Color(1.0, 0.85, 0.35)
+		if is_here:
+			col = Color(0.5, 0.95, 1.0)
+
+		c.draw_circle(v, 4.0 if (is_here or is_target) else 3.0, col)
+		if is_here:
+			c.draw_arc(v, 8.0, 0, TAU, 20, col, 1.5)
+
+		var label: String = p.get("name", pid)
+		c.draw_string(font, v + Vector2(7, 4), label,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col)
+
+
+## 季风方向：全图统一的斜箭头。风信是大尺度的，不必逐点画。
+func _draw_monsoon(c: Control, size: Vector2) -> void:
+	var wb := Calendar.get_wind_bearing()
+	if wb < 0.0:
+		c.draw_string(ThemeDB.fallback_font, Vector2(10, 18),
+			"季风转换期・风微而多变", HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
+			Color(0.7, 0.72, 0.75, 0.9))
+		return
+
+	# 方位角 → 屏幕向量（y 轴向下，故取负 cos）
+	var dir := Vector2(sin(deg_to_rad(wb)), -cos(deg_to_rad(wb)))
+	var col := Color(0.45, 0.7, 0.95, 0.22)
+	var step := 62.0
+	var arrow := 7.0
+	var y := step * 0.5
+	while y < size.y:
+		var x := step * 0.5
+		while x < size.x:
+			var mid := Vector2(x, y)
+			var a := mid - dir * 13.0
+			var b := mid + dir * 13.0
+			c.draw_line(a, b, col, 1.0)
+			var perp := Vector2(-dir.y, dir.x)
+			c.draw_line(b, b - dir * arrow + perp * arrow * 0.5, col, 1.0)
+			c.draw_line(b, b - dir * arrow - perp * arrow * 0.5, col, 1.0)
+			x += step
+		y += step
+
+	c.draw_string(ThemeDB.fallback_font, Vector2(10, 18),
+		Calendar.get_monsoon_desc(), HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
+		Color(0.6, 0.8, 1.0, 0.9))
 
 
 func _log(text: String) -> void:

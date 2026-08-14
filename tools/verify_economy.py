@@ -216,6 +216,65 @@ check(not missing, f"每种职事都有候选人（缺：{[roles[m]['name'] for 
 
 print()
 print("=" * 68)
+print("一之四、海图投影（SeaChart._draw_chart 的等比投影）")
+print("=" * 68)
+
+W, H = 560.0, 250.0
+def project(subset):
+    """复现 _draw_chart 的投影，返回 {pid: (x, y)}"""
+    lats = [p["lat"] for p in subset]; lons = [p["lon"] for p in subset]
+    mean_lat, mean_lon = (min(lats)+max(lats))/2, (min(lons)+max(lons))/2
+    kx = math.cos(math.radians(mean_lat))
+    span_x = max(0.5, (max(lons)-min(lons))*kx)
+    span_y = max(0.5, max(lats)-min(lats))
+    scale = min(W/span_x, H/span_y) * 0.78
+    return {p["id"]: (W/2 + (p["lon"]-mean_lon)*kx*scale,
+                      H/2 - (p["lat"]-mean_lat)*scale) for p in subset}, scale, kx
+
+allp = list(ports.values())
+pos, scale, kx = project(allp)
+
+oob = [pid for pid,(x,y) in pos.items() if not (0 <= x <= W and 0 <= y <= H)]
+check(not oob, f"全部 {len(pos)} 个港口都落在画布内（越界：{oob or '无'}）")
+
+# 相对方位必须与真实地理一致（屏幕 y 轴向下，故北 = y 更小）
+def rel(a, b):
+    return ("东" if pos[b][0] > pos[a][0] else "西") + ("北" if pos[b][1] < pos[a][1] else "南")
+cases = [("quanzhou","hakata","东北"), ("quanzhou","guangzhou","西南"),
+         ("quanzhou","jeju","东北"), ("quanzhou","champa","西南"),
+         ("mingzhou","hakata","东北"), ("wenzhou","zhangzhou","西南"),
+         # 鹿儿岛 130.55°E 略东于福冈 130.40°E，故为东南而非想当然的西南
+         ("hakata","kagoshima","东南")]
+for a,b,want in cases:
+    got = rel(a,b)
+    check(got == want, f"{ports[a]['name']} → {ports[b]['name']} 在图上位于{got}（实际{want}）")
+
+# 等比：屏幕距离之比应贴合真实里程之比，地图不能被拉伸变形
+pairs = [("quanzhou","hakata"), ("quanzhou","penghu"), ("quanzhou","guangzhou"),
+         ("mingzhou","hakata"), ("guangzhou","champa")]
+ratios = []
+for a,b in pairs:
+    sd = math.dist(pos[a], pos[b])
+    rd = distance_li(a,b)
+    ratios.append(sd/rd)
+spread = max(ratios)/min(ratios)
+print(f"\n  屏幕距离/实际里程 之比：{min(ratios):.4f} ~ {max(ratios):.4f}（离散度 {spread:.3f}）")
+check(spread < 1.12, f"各航段的图上比例一致，离散度 {spread:.3f} < 1.12（地图未失真）")
+
+# 只解锁第一章时也要成图
+ch1 = [p for p in allp if p.get("unlock","ch1") == "ch1"]
+pos1, _, _ = project(ch1)
+oob1 = [pid for pid,(x,y) in pos1.items() if not (0 <= x <= W and 0 <= y <= H)]
+check(not oob1, f"仅第一章 {len(ch1)} 港时同样全部在画布内")
+
+# 季风箭头方向：方位角 → 屏幕向量（y 向下取负 cos）
+for name, bearing_deg, want in [("西南季风(吹向东北)", 45.0, "右上"), ("东北季风(吹向西南)", 225.0, "左下")]:
+    dx, dy = math.sin(math.radians(bearing_deg)), -math.cos(math.radians(bearing_deg))
+    got = ("右" if dx > 0 else "左") + ("上" if dy < 0 else "下")
+    check(got == want, f"{name} 的箭头指向{got}")
+
+print()
+print("=" * 68)
 print("二、核心贸易循环：泉州 ⇄ 博多 往返是否双向盈利")
 print("=" * 68)
 
