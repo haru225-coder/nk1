@@ -362,7 +362,7 @@ check(wind_factor(crs_back, NE, 1.0) > wind_factor(crs_back, SW, 1.0),
 
 print()
 print("=" * 68)
-print("五、航段天数与补给消耗是否可行")
+print("五、航段天数与补给消耗是否可行（单船舰队口径）")
 print("=" * 68)
 
 def voyage_days(src, dst, ship_id, wind_b, strength=1.0, morale=70):
@@ -416,7 +416,7 @@ check(days0 > d_penghu * 2, "起步船的补给足以往返近海港口")
 
 print()
 print("=" * 68)
-print("六、起步可行性：1000 钱能否启动第一笔生意")
+print("六、起步可行性：1000 钱能否启动第一笔生意（单船舰队口径）")
 print("=" * 68)
 
 start_money = 1000
@@ -452,6 +452,63 @@ check(len(best_start) > 0, "开局存在可盈利的贸易路线")
 if best_start:
     check(best_start[0][0] > 100, f"最佳开局生意净利 {best_start[0][0]} 钱（足以滚动起来）")
     check(best_start[0][0] < start_money * 3, "开局单笔利润未失衡（不会一趟暴富）")
+
+print()
+print("=" * 68)
+print("六之二、多船分船装载的账目核算（复现 Fleet 分舱 API）")
+print("=" * 68)
+print("  Fleet 已改为货分船：每船独立 cargo，水/粮全队共用。")
+print("  单船空舱按载重比例分摊水粮份额，须保证 Σ ship_free == free 恒成立。")
+
+SUPPLY_BULK_M = 0.25  # 与 Fleet.SUPPLY_BULK 一致
+
+def fleet_account(ship_ids, water, food, per_ship_cargo):
+    """复现 Fleet 的聚合账目，返回 (cap_total, used, free, [ship_free...])"""
+    caps = [ships[sid]["capacity"] for sid in ship_ids]
+    cap_total = sum(caps)
+    cargo_bulk = [sum(q * goods[gid]["bulk"] for gid, q in sc.items()) for sc in per_ship_cargo]
+    used = (water + food) * SUPPLY_BULK_M + sum(cargo_bulk)
+    free_total = max(0.0, cap_total - used)
+    wf = (water + food) * SUPPLY_BULK_M
+    ship_free = []
+    for i in range(len(caps)):
+        share = wf * (caps[i] / cap_total) if cap_total > 0 else wf / max(1, len(caps))
+        ship_free.append(max(0.0, caps[i] - cargo_bulk[i] - share))
+    return cap_total, used, free_total, ship_free
+
+# 场景一：开局小艍船，水粮 60/60
+cap_t, used_t, free_t, sfree = fleet_account(
+    ["sampan"], 60, 60, [{}])
+check(abs(sum(sfree) - free_t) < 1e-3,
+      f"单船空舱与全队空舱一致（{sum(sfree):.2f} == {free_t:.2f}）")
+check(used_t <= cap_t + 1e-6, f"开局账目未溢出（{used_t:.2f} <= {cap_t} 料）")
+
+# 场景二：小艍 + 福船（中），水粮全队 100/100，货分船
+cap_t, used_t, free_t, sfree = fleet_account(
+    ["sampan", "fu_ship_medium"], 100, 100,
+    [{"fujian_porcelain": 20}, {"qingbai_porcelain": 60}])
+check(abs(sum(sfree) - free_t) < 1e-3,
+      f"2 船时 Σ ship_free({sum(sfree):.2f}) == free({free_t:.2f})")
+print(f"    小艍(200料)+福船中(800料)，水粮100/100，小艍装瓷20 福船装瓷60")
+print(f"    全队 {cap_t} 料，占 {used_t:.1f} 料，空舱 {free_t:.1f} 料，各船空舱 {[round(x,1) for x in sfree]}")
+
+# 场景三：三船异构 + 少量货 + 重补给——满载边界
+cap_t, used_t, free_t, sfree = fleet_account(
+    ["sampan", "fu_ship_medium", "fu_ship_large"], 300, 300,
+    [{"raw_silk": 10}, {"fujian_porcelain": 5}, {"qingbai_porcelain": 8}])
+check(used_t <= cap_t + 1e-6, f"三船满载边界账目未溢出（{used_t:.2f} <= {cap_t} 料）")
+check(all(x >= 0 for x in sfree), "各船空舱不为负（单船不超载）")
+check(abs(sum(sfree) - free_t) < 1e-3,
+      f"三船时 Σ ship_free({sum(sfree):.2f}) == free({free_t:.2f})")
+
+# 场景四：刻意塞爆一艘——验证 add_cargo 的守卫确实必要（原始未钳制账目会溢出）
+def raw_ship_bulk(sc):
+    return sum(q * goods[gid]["bulk"] for gid, q in sc.items())
+over_cap = 200      # 小艍载重
+raw_bulk = raw_ship_bulk({"fujian_porcelain": 300})   # 300 件瓷，每件 1 料
+check(raw_bulk > over_cap,
+      f"超载意图原始占用 {raw_bulk} 料 > 单船载重 {over_cap} 料——"
+      "若无 add_cargo 守卫，账目必然溢出，故守卫必不可少")
 
 print()
 print("=" * 68)

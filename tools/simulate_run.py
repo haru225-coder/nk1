@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """端到端模拟一局：从开局 1000 钱、一条小艍船出发，跑近海商路攒钱换船。
-完整复现 Fleet 的舱位/补给、Economy 的行情冲击与回归、Voyage 的季风与航速。
+完整复现 Fleet 的舱位/补给（多船分装）、Economy 的行情冲击与回归、Voyage 的季风与航速。
 目的是找出设计死锁（卡补给、卡舱位、卡钱），而不是验证单条公式。"""
 import json, math, os, sys, random
 
@@ -28,30 +28,52 @@ INN_RATE = 15
 
 rates = {pid: {gid: 1.0 for gid in p.get("market", {})} for pid, p in ports.items()}
 
+# ── 多船舰队模型 ──────────────────────────────────────
+# 复刻 Fleet.gd 的分船装载：每船独立 cargo，水/粮全队共用，
+# 单船空舱预扣按载重比例分摊的水粮份额，Σ ship_free == free 恒成立。
 class G:
     money = 1000
     year, month, day = 1255, 3, 1
     port = "quanzhou"
-    ship = "sampan"
-    crew = 6
+    ships = [{"type": "sampan", "name": "无名小艍", "crew": 6,
+              "durability": 120.0, "cargo": {}}]
     water, food = 60, 60
     morale = 70
-    cargo = {}          # gid -> [qty, avg_cost]
-    durability = 120.0
     at_sea = False
     debt = 0
     chapter = 1
     visited = ['quanzhou']
     peak_money = 1000
 
-def cap():          return ships[G.ship]["capacity"]
-def bulk(gid):      return goods[gid]["bulk"]
-def used():
-    return (G.water + G.food) * SUPPLY_BULK + sum(q * bulk(g) for g, (q, _) in G.cargo.items())
-def free():         return max(0.0, cap() - used())
-def daily_use():    return math.ceil(G.crew / CREW_DAYS_PER_SUPPLY) if G.crew else 0
-def supply_days():  return int(min(G.water, G.food) / daily_use()) if G.crew else 999
-def morale_f():     return 0.6 + 0.4 * (G.morale / 100)
+def cap_total():  return sum(ships[s["type"]]["capacity"] for s in G.ships)
+def bulk(gid):    return goods[gid]["bulk"]
+def ship_cap(i):  return ships[G.ships[i]["type"]]["capacity"]
+def ship_bulk(i): return sum(q*bulk(g) for g,(q,_) in G.ships[i]["cargo"].items())
+def ship_free(i):
+    """单船空舱（含水粮按载重比例分摊）——与 Fleet.ship_free_capacity 一致"""
+    tc = cap_total()
+    wf = (G.water + G.food) * SUPPLY_BULK
+    share = wf * (ship_cap(i)/tc) if tc > 0 else wf / max(1, len(G.ships))
+    return max(0.0, ship_cap(i) - ship_bulk(i) - share)
+def used():         return (G.water+G.food)*SUPPLY_BULK + sum(ship_bulk(i) for i in range(len(G.ships)))
+def free():         return max(0.0, cap_total() - used())
+def total_crew():   return sum(s["crew"] for s in G.ships)
+def daily_use():    return math.ceil(total_crew()/CREW_DAYS_PER_SUPPLY) if total_crew() else 0
+def supply_days():  return int(min(G.water,G.food)/daily_use()) if total_crew() else 999
+def morale_f():     return 0.6 + 0.4*(G.morale/100)
+
+def verify_invariants():
+    """分船装载的账目不变量——每步操作后都应成立"""
+    ok = True
+    for i in range(len(G.ships)):
+        if ship_bulk(i) > ship_cap(i) + 1e-6:
+            print(f"    ✗ 船{i}({G.ships[i]['type']}) 货物 {ship_bulk(i):.1f} 料 > 载重 {ship_cap(i)} 料"); ok = False
+    if used() > cap_total() + 1e-6:
+        print(f"    ✗ 全队 {used():.1f} > {cap_total()} 料"); ok = False
+    sf = sum(ship_free(i) for i in range(len(G.ships)))
+    if abs(sf - free()) > 1e-3:
+        print(f"    ✗ Σ ship_free {sf:.3f} != free {free():.3f}"); ok = False
+    return ok
 
 def monsoon(m=None):
     m = m or G.month
@@ -91,7 +113,10 @@ def wind_factor(course):
     raw = 1.0 + (raw-1.0)*monsoon_strength()
     return max(0.40, min(1.60, raw))
 
-def speed(course): return ships[G.ship]["base_speed"] * morale_f() * wind_factor(course)
+def speed(course):
+    """舰队日速取最慢一艘（Fleet.fleet_speed 语义）"""
+    spd = min(ships[s["type"]]["base_speed"] for s in G.ships)
+    return spd * morale_f() * wind_factor(course)
 
 DEBT_CEILING, DEBT_RATE = 3000, 0.03
 
@@ -101,6 +126,15 @@ def borrow(amount):
     if amount <= 0: return 0
     G.debt += amount; G.money += amount
     return amount
+
+def lose_crew(n):
+    """断粮减员跨船分摊，保证至少留 1 人"""
+    left = n
+    for s in G.ships:
+        if left <= 0: break
+        take = min(left, s["crew"] - 1) if s["crew"] > 1 else 0
+        s["crew"] -= take; left -= take
+    # 若所有船都只剩 1 人但仍有减员需求，就不减了（保留火种）
 
 def advance(n):
     for _ in range(n):
@@ -144,36 +178,50 @@ def uval(pid, gid): return goods[gid]["base_value"] * ROLE_MOD[role(pid,gid)] * 
 def buy_p(pid,gid):  return round(uval(pid,gid)*(1+TARIFF))
 def sell_p(pid,gid): return round(uval(pid,gid)*(1-BROKER))
 
+def _best_free_ship():
+    """空舱最大的船（模拟理性玩家选舱装货）"""
+    return max(range(len(G.ships)), key=lambda i: ship_free(i))
+
 def do_buy(gid, want, floor_price=None, budget=None):
-    """理性买入：逐件推高行情，一旦买价逼近目标港卖价就收手。
+    """理性买入：逐件推高行情，装到空舱最大的船（多船分装），
+    一旦买价逼近目标港卖价就收手。
     budget 限制本次投入——真人玩家不会把全部身家押在一船违禁货上。"""
     depth = ports[G.port]["depth"]
     if budget is None: budget = G.money
     got, spent = 0, 0
-    for _ in range(want):
-        if free() < bulk(gid): break
+    while got < want:
+        idx = _best_free_ship()
+        if ship_free(idx) < bulk(gid): break
         p = buy_p(G.port, gid)
         if G.money - spent < p or spent + p > budget: break
         # 留 25% 安全边际，覆盖卖出侧的砸盘损耗
         if floor_price is not None and p >= floor_price * 0.75: break
         spent += p; got += 1
         rates[G.port][gid] = min(2.2, rates[G.port][gid] + 1.0/depth)
-        if gid in G.cargo: G.cargo[gid][0] += 1
-        else: G.cargo[gid] = [1, 0]
+        c = G.ships[idx]["cargo"]
+        if gid in c:
+            c[gid][0] += 1
+            c[gid][1] = (c[gid][1]*(c[gid][0]-1) + p) / c[gid][0]
+        else:
+            c[gid] = [1, p]
     if got:
         G.money -= spent
-        G.cargo[gid][1] = spent/got if G.cargo[gid][0] == got else G.cargo[gid][1]
     return got, spent
 
 def do_sell(gid, qty):
+    """跨船卖出：优先从货最多的船扣（模拟玩家清仓）"""
     depth = ports[G.port]["depth"]
-    rev = 0
-    for _ in range(qty):
-        if G.cargo.get(gid, [0])[0] <= 0: break
+    rev, sold = 0, 0
+    while sold < qty:
+        cands = [i for i in range(len(G.ships)) if G.ships[i]["cargo"].get(gid, [0])[0] > 0]
+        if not cands: break
+        idx = max(cands, key=lambda i: G.ships[i]["cargo"][gid][0])
         rev += sell_p(G.port, gid)
         rates[G.port][gid] = max(0.4, rates[G.port][gid] - 1.0/depth)
-        G.cargo[gid][0] -= 1
-        if G.cargo[gid][0] == 0: del G.cargo[gid]
+        c = G.ships[idx]["cargo"]
+        c[gid][0] -= 1
+        if c[gid][0] == 0: del c[gid]
+        sold += 1
     G.money += rev
     G.peak_money = max(G.peak_money, G.money)
     return rev
@@ -195,7 +243,7 @@ def sail(dst):
         rem -= speed(crs)
         if G.water <= 0 or G.food <= 0:
             if random.random() < 0.4:
-                G.crew = max(1, G.crew - max(1, int(G.crew*0.03)))
+                lose_crew(max(1, int(total_crew()*0.03)))
     G.at_sea = False
     G.port = dst
     visit(dst)
@@ -223,12 +271,12 @@ def check(c, m):
 print("="*70)
 print("端到端模拟：开局 1000 钱 / 小艍船 / 泉州")
 print("="*70)
-print(f"  载重 {cap()} 料　水手 {G.crew}　水粮 {G.water}/{G.food}（足 {supply_days()} 日）")
-print(f"  起始舱位占用 {used():.0f} / {cap()} 料，可装货 {free():.0f} 料")
-check(free() > cap()*0.5, "开局补给未占满舱（仍有一半以上可装货）")
+print(f"  舰队 {len(G.ships)} 船　载重 {cap_total()} 料　水手 {total_crew()}　水粮 {G.water}/{G.food}（足 {supply_days()} 日）")
+print(f"  起始舱位占用 {used():.0f} / {cap_total()} 料，可装货 {free():.0f} 料")
+check(free() > cap_total()*0.5, "开局补给未占满舱（仍有一半以上可装货）")
+check(verify_invariants(), "开局分船账目不变量成立")
 
 # 第一章全部已解锁港口——真实玩家会轮换航线，避免把某一条线跑疲
-NEAR = None  # 改为每趟按当前章节动态取
 history = []
 print()
 print(f"  ── 跑商 24 趟（起始第 {G.chapter} 章，可达 {len(open_ports())} 港）──")
@@ -273,7 +321,8 @@ for trip in range(1, 25):
         # 违禁货出港查扣风险（游戏内由 GameState.customs_inspection 判定）
         if random.random() < 0.28:
             seized = True
-            del G.cargo[gid]
+            for s in G.ships:
+                if gid in s["cargo"]: del s["cargo"][gid]
             fine = min(300, max(50, int(G.money*0.4)))
             G.money = max(0, G.money - fine)
     days = sail(dst)
@@ -286,6 +335,8 @@ for trip in range(1, 25):
     print(f"    第{trip:>2}趟 {ports[src]['name']:<5}→{ports[dst]['name']:<7} "
           f"{goods[gid]['name']:<5}×{qty:<3} 本{spent:>5} 得{rev:>6} 净{profit:>+6}  "
           f"{days:>2}日  {G.year}年{G.month:>2}月  存银 {G.money:>6}{tag}")
+    if not verify_invariants():
+        check(False, f"第{trip}趟后分船账目不变量被破坏")
 
 check(len(history) >= 20, f"连跑 {len(history)} 趟未卡死")
 check(G.money > 1000, f"{len(history)} 趟后资金 {G.money}（开局 1000）")
@@ -306,13 +357,15 @@ print(f"    资金峰值 {G.peak_money}　走通港口 {len(G.visited)} 处：{'
 
 print()
 print("="*70)
-print("远洋检验：候西南季风北上博多")
+print("远洋检验：候西南季风北上博多（多船舰队）")
 print("="*70)
 G.port = "quanzhou"
 if G.money >= ships["fu_ship_medium"]["price"]:
-    G.money -= ships["fu_ship_medium"]["price"]; G.ship = "fu_ship_medium"; G.crew = 20
-    G.durability = 300.0
-    print(f"  已购福船（中），余银 {G.money}，载重 {cap()} 料")
+    G.money -= ships["fu_ship_medium"]["price"]
+    G.ships.append({"type": "fu_ship_medium", "name": "福船", "crew": 20,
+                    "durability": 300.0, "cargo": {}})
+    print(f"  已购福船（中），余银 {G.money}，舰队 {len(G.ships)} 船，载重 {cap_total()} 料")
+    check(verify_invariants(), "购船后分船账目不变量成立")
 else:
     print(f"  资金 {G.money} 不足以购福船（{ships['fu_ship_medium']['price']}），以小艍船试航")
 
@@ -332,23 +385,29 @@ check(waited*INN_RATE < 3000, f"候风成本 {waited*INN_RATE} 钱，未压垮�
 
 d = dist("quanzhou","hakata")
 est = math.ceil(d/speed(crs))
-print(f"\n  预计航程 {est} 日，需水粮 {est*G.crew} 份")
+print(f"\n  预计航程 {est} 日，需水粮 {est*total_crew()} 份")
 bought = buy_supplies(est + 6)
 print(f"  补给后：水 {G.water} 粮 {G.food}（足 {supply_days()} 日），空舱 {free():.0f} 料")
 check(supply_days() >= est, f"补给足以支撑 {est} 日航程")
+check(verify_invariants(), "补给后分船账目不变量成立")
 
 bt = best_trade("quanzhou", ["hakata"])
 if bt:
     _, gid, _, margin = bt
     qty, spent = do_buy(gid, 9999, floor_price=sell_p("hakata", gid))
-    print(f"  装载 {goods[gid]['name']} ×{qty}（本 {spent}），空舱剩 {free():.0f} 料")
+    # 分船装货分布展示
+    distr = "　".join(f"{G.ships[i]['name']}×{G.ships[i]['cargo'].get(gid,[0])[0]}"
+                      for i in range(len(G.ships)) if G.ships[i]["cargo"].get(gid,[0])[0] > 0)
+    print(f"  装载 {goods[gid]['name']} ×{qty}（本 {spent}），分船：{distr}，空舱剩 {free():.0f} 料")
     days = sail("hakata")
     rev = do_sell(gid, qty)
     print(f"  历 {days} 日抵博多，售得 {rev}，净赚 {rev-spent:+}")
-    print(f"  抵港时：水 {G.water} 粮 {G.food}，士气 {G.morale}，水手 {G.crew}")
+    print(f"  抵港时：水 {G.water} 粮 {G.food}，士气 {G.morale}，水手 {total_crew()}")
     check(G.water > 0 and G.food > 0, "远洋抵港时水粮未耗尽")
     check(rev - spent > 0, f"远洋单程盈利 {rev-spent}")
-    check(G.crew == 20 or G.ship == "sampan", "航程中未因断粮损失水手")
+    check(verify_invariants(), "远洋后分船账目不变量成立")
+    crew_after = total_crew()
+    check(crew_after >= 20, f"航程后水手 {crew_after} 人，未因断粮损失殆尽")
 
 print()
 print("="*70)
@@ -356,4 +415,4 @@ if fails:
     print(f"结果：{len(fails)} 项未通过")
     for f in fails: print("   ✗", f)
     sys.exit(1)
-print("结果：全部通过　—— 核心循环可闭合，无死锁")
+print("结果：全部通过　—— 核心循环可闭合，无死锁，分船账目自洽")

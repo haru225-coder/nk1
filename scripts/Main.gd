@@ -31,6 +31,8 @@ extends Control
 var current_scene_id: String = ""
 var previous_scene_id: String = ""  # 死胡同场景兜底用：只记一层，不做完整历史栈
 var title_button_connected: bool = false
+## 牙行当前选中的船 index（多船分装用），进牙行时重置为旗舰
+var _market_ship: int = 0
 
 const FACILITY_SUFFIXES := ["_market", "_yamen", "_shipyard", "_tavern", "_inn"]
 
@@ -125,6 +127,22 @@ func update_status_panel() -> void:
 	if contraband > 0:
 		t += "[color=orange]舱底违禁：%d 件[/color]\n" % contraband
 	t += "\n[u]船舱[/u]\n%s" % cargo_str
+
+	# 多船时追加每船明细
+	if Fleet.ships.size() > 1:
+		for i in range(Fleet.ships.size()):
+			var s: Dictionary = Fleet.ships[i]
+			var per_ship := ""
+			var sc: Dictionary = s.get("cargo", {})
+			if sc.is_empty():
+				per_ship = "空"
+			else:
+				for gid in sc.keys():
+					per_ship += "%s ×%d　" % [GameManager.get_good_name(gid), sc[gid].get("qty", 0)]
+			t += "[i]└ %s（%s）%d/%d 料　%s[/i]\n" % [
+				s.get("name", ""), Fleet.ship_def(s.get("type", "")).get("name", ""),
+				int(Fleet.ship_cargo_bulk(i)), int(Fleet.ship_capacity(i)), per_ship,
+			]
 
 	# 章节目标：不写出来玩家不会知道怎样才能开出下一片海
 	var prog := GameState.chapter_progress()
@@ -312,6 +330,30 @@ func _setup_market(port_id: String) -> void:
 	# 按买价排序，便宜的在前
 	goods_ids.sort_custom(func(a, b): return Economy.buy_price(port_id, a) < Economy.buy_price(port_id, b))
 
+	# 多船时选船装货；重置到旗舰
+	_market_ship = 0
+	if Fleet.ships.size() > 1:
+		var sel := HBoxContainer.new()
+		sel.add_theme_constant_override("separation", 6)
+		var lbl := Label.new()
+		lbl.text = "装至："
+		lbl.custom_minimum_size = Vector2(44, 0)
+		sel.add_child(lbl)
+		var opt := OptionButton.new()
+		for i in range(Fleet.ships.size()):
+			var s: Dictionary = Fleet.ships[i]
+			opt.add_item("%s（%s）　空 %d 料" % [
+				s.get("name", ""), Fleet.ship_def(s.get("type", "")).get("name", ""),
+				int(Fleet.ship_free_capacity(i)),
+			])
+			opt.set_item_metadata(i, i)
+		opt.selected = _market_ship
+		opt.item_selected.connect(func(idx: int):
+			_market_ship = int(opt.get_item_metadata(idx))
+			load_scene(current_scene_id))
+		sel.add_child(opt)
+		choices_container.add_child(sel)
+
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(0, 300)
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -336,7 +378,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	var g := GameManager.get_good_by_id(good_id)
 	var buy_p := Economy.buy_price(port_id, good_id)
 	var sell_p := Economy.sell_price(port_id, good_id)
-	var held := Fleet.cargo_qty(good_id)
+	var held := Fleet.cargo_qty(good_id, _market_ship)
 	var role := Economy.get_role(port_id, good_id)
 
 	var name_lbl := Label.new()
@@ -371,36 +413,36 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	for n in [1, 10]:
 		var b := Button.new()
 		b.text = "买%d" % n
-		b.pressed.connect(_on_buy.bind(port_id, good_id, n))
+		b.pressed.connect(_on_buy.bind(port_id, good_id, n, _market_ship))
 		row.add_child(b)
 
 	var bmax := Button.new()
 	bmax.text = "买满"
-	bmax.pressed.connect(_on_buy_max.bind(port_id, good_id))
+	bmax.pressed.connect(_on_buy_max.bind(port_id, good_id, _market_ship))
 	row.add_child(bmax)
 
 	for n in [1, 10]:
 		var s := Button.new()
 		s.text = "卖%d" % n
 		s.disabled = held < n
-		s.pressed.connect(_on_sell.bind(port_id, good_id, n))
+		s.pressed.connect(_on_sell.bind(port_id, good_id, n, _market_ship))
 		row.add_child(s)
 
 	var sall := Button.new()
 	sall.text = "全卖"
 	sall.disabled = held <= 0
-	sall.pressed.connect(_on_sell.bind(port_id, good_id, held))
+	sall.pressed.connect(_on_sell.bind(port_id, good_id, held, _market_ship))
 	row.add_child(sall)
 
 	return row
 
 
-func _on_buy(port_id: String, good_id: String, amount: int) -> void:
+func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> void:
 	if amount <= 0:
 		return
-	var loadable := Fleet.max_loadable(good_id)
+	var loadable := Fleet.max_loadable(good_id, ship_index)
 	if loadable <= 0:
-		log_msg("【舱满】再塞不下了。得先卖掉些货，或者换条大船。")
+		log_msg("【舱满】这艘船塞不下了。换一艘船，或先卖掉些货。")
 		return
 	var actual := mini(amount, loadable)
 	var cost := Economy.estimate_buy_cost(port_id, good_id, actual)
@@ -416,7 +458,7 @@ func _on_buy(port_id: String, good_id: String, amount: int) -> void:
 		cost = Economy.estimate_buy_cost(port_id, good_id, actual)
 
 	GameState.spend_money(cost)
-	Fleet.add_cargo(good_id, actual, float(cost) / float(actual))
+	Fleet.add_cargo(good_id, actual, float(cost) / float(actual), ship_index)
 	Economy.apply_buy_impact(port_id, good_id, actual)
 
 	var note := ""
@@ -426,10 +468,10 @@ func _on_buy(port_id: String, good_id: String, amount: int) -> void:
 	load_scene(current_scene_id)
 
 
-func _on_buy_max(port_id: String, good_id: String) -> void:
-	var by_hold := Fleet.max_loadable(good_id)
+func _on_buy_max(port_id: String, good_id: String, ship_index: int) -> void:
+	var by_hold := Fleet.max_loadable(good_id, ship_index)
 	if by_hold <= 0:
-		log_msg("【舱满】再塞不下了。")
+		log_msg("【舱满】这艘船塞不下了。换一艘船，或先卖掉些货。")
 		return
 	var n := by_hold
 	while n > 0 and Economy.estimate_buy_cost(port_id, good_id, n) > GameState.money:
@@ -437,18 +479,18 @@ func _on_buy_max(port_id: String, good_id: String) -> void:
 	if n <= 0:
 		log_msg("【钱不够】连一件也买不起。")
 		return
-	_on_buy(port_id, good_id, n)
+	_on_buy(port_id, good_id, n, ship_index)
 
 
-func _on_sell(port_id: String, good_id: String, amount: int) -> void:
-	var held := Fleet.cargo_qty(good_id)
+func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) -> void:
+	var held := Fleet.cargo_qty(good_id, ship_index)
 	var actual := mini(amount, held)
 	if actual <= 0:
 		return
 	var revenue := Economy.estimate_sell_revenue(port_id, good_id, actual)
-	var cost_basis := Fleet.cargo_cost(good_id) * actual
+	var cost_basis := Fleet.cargo_cost(good_id, ship_index) * actual
 
-	Fleet.remove_cargo(good_id, actual)
+	Fleet.remove_cargo(good_id, actual, ship_index)
 	GameState.add_money(revenue)
 	Economy.apply_sell_impact(port_id, good_id, actual)
 

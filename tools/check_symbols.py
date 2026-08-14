@@ -267,6 +267,56 @@ for dirpath, _, files in os.walk(SCRIPTS):
 
 print()
 print("=" * 68)
+print("五、Fleet.cargo 只读（分船装载的聚合 getter 禁止赋值）")
+print("=" * 68)
+print("  Fleet.cargo 已改为只读聚合 getter，数据源在 ships[i].cargo。")
+print("  任何 Fleet.cargo = / Fleet.cargo[...] = / Fleet.cargo.xxx = 都会炸或静默无效。")
+
+fleet_rel = AUTOLOADS["Fleet"].replace(os.sep, "/")
+cargo_writes = []
+for dirpath, _, files in os.walk(SCRIPTS):
+    for fn in sorted(files):
+        if not fn.endswith(".gd"):
+            continue
+        path = os.path.join(dirpath, fn)
+        rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+        if rel == fleet_rel:
+            continue  # Fleet.gd 内部只走 ships[i]["cargo"]
+        with open(path, encoding="utf-8") as f:
+            src = f.read()
+        src_nc = "\n".join(re.sub(r'#.*$', '', ln) for ln in src.split("\n"))
+        # 跳过链式访问片段（[..] / .ident），再看是否落到赋值符
+        for m in re.finditer(r'\bFleet\.cargo', src_nc):
+            pos = m.end()
+            while True:
+                seg = re.match(r'\s*(\[[^\]]*\]|\.[A-Za-z_]\w*)', src_nc[pos:])
+                if not seg:
+                    break
+                pos += seg.end()
+            stripped = src_nc[pos:].lstrip()
+            if stripped.startswith("=") and not stripped.startswith(("==", "=>")):
+                line = src_nc[:m.start()].count("\n") + 1
+                cargo_writes.append((rel, line))
+
+if not cargo_writes:
+    print("  ✓ 全 scripts 无 Fleet.cargo 写入")
+else:
+    for rel, line in sorted(set(cargo_writes)):
+        print(f"  ✗ {rel}:L{line} 对 Fleet.cargo 赋值——只读 getter，请改用 add_cargo/remove_cargo")
+        problems.append(f"{rel}:{line} Fleet.cargo 只读被违例")
+
+# add_ship 必须为每艘新船初始化独立货舱
+with open(os.path.join(ROOT, AUTOLOADS["Fleet"]), encoding="utf-8") as f:
+    fleet_src = f.read()
+add_ship_body = func_bodies(fleet_src).get("add_ship", "")
+if '"cargo"' in add_ship_body:
+    print("  ✓ Fleet.add_ship 的船 dict 含独立 cargo 货舱")
+else:
+    print('  ✗ Fleet.add_ship 的船 dict 缺少 "cargo": {} —— 新船没有独立货舱')
+    problems.append("Fleet.add_ship 缺少 cargo 字段")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:
