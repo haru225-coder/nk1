@@ -11,6 +11,7 @@ signal combat_finished(result: Dictionary, combat_state: CombatState)
 const _THEME_PATH := ResourcePaths.THEME_MAIN
 const _FRAME_PATH := ResourcePaths.FRAME_KOEI
 const _GRADIENT_SHADER := ResourcePaths.GRADIENT_SHADER
+const ModeStackScript := preload(ResourcePaths.SCRIPT_MODE_STACK)
 
 var combat: CombatState
 var enemy_data: Dictionary = {}
@@ -64,10 +65,10 @@ func _build_ui() -> void:
 	var frame := NinePatchRect.new()
 	frame.custom_minimum_size = Vector2(800, 540)
 	frame.texture = frame_tex
-	frame.patch_margin_left = 100
-	frame.patch_margin_top = 56
-	frame.patch_margin_right = 100
-	frame.patch_margin_bottom = 56
+	frame.patch_margin_left = 40
+	frame.patch_margin_top = 40
+	frame.patch_margin_right = 40
+	frame.patch_margin_bottom = 40
 	center.add_child(frame)
 
 	var margin := MarginContainer.new()
@@ -137,7 +138,7 @@ func _init_combat() -> void:
 
 	_title_label.text = "⚓ 海战：%s" % combat.enemy_name
 	_refresh_status()
-	_body_label.text = "[color=#c0a060]【接敌！】%s 出现在视野中，距离尚远。[/color]" % combat.enemy_name
+	_body_label.text = SeaFeedback.contact_engage_bbcode(combat.enemy_name)
 	_show_tactic_buttons()
 
 ## ── 状态条刷新 ───────────────────────────────────────────
@@ -167,17 +168,18 @@ func _format_fleet(fleet: FleetState, show_hull_detail: bool = false) -> String:
 	return "\n".join(lines)
 
 func _refresh_status() -> void:
-	var phase_line := "[color=#808080]当前阶段：%s[/color]" % combat.get_phase_label()
+	var extra := ""
 	if combat.phase == CombatState.Phase.DUEL:
-		phase_line += " · 气力 %d/%d · 决斗第 %d/%d 招" % [
+		extra = "气力 %d/%d · 决斗第 %d/%d 招" % [
 			combat.ki_points,
 			CombatState.DUEL_KI_MAX,
 			combat.duel_action_round,
 			CombatState.DUEL_ROUNDS,
 		]
+	var phase_line := SeaFeedback.phase_status_bbcode(combat.get_phase_label(), extra)
 	_status_label.text = (
-		"[color=#66ccff]【我方舰队】[/color]\n" + _format_fleet(combat.player_fleet, true) + "\n" +
-		"[color=#ff6666]【%s】[/color]\n" % combat.enemy_name + _format_fleet(combat.enemy_fleet) +
+		"[color=%s]【我方舰队】[/color]\n" % SeaFeedback.COLOR_PLAYER + _format_fleet(combat.player_fleet, true) + "\n" +
+		"[color=%s]【%s】[/color]\n" % [SeaFeedback.COLOR_ENEMY, combat.enemy_name] + _format_fleet(combat.enemy_fleet) +
 		"\n" + phase_line
 	)
 
@@ -267,8 +269,9 @@ func _append_round_narration(result: Dictionary, label: String) -> void:
 	var narration: String = result.get("narration", "")
 	if narration == "":
 		return
-	_body_label.text += "\n\n[color=#e0d0a0]── 第 %d %s ──[/color]\n%s" % [
-		result.get("round", 0), label, narration
+	_body_label.text += "\n\n%s\n%s" % [
+		SeaFeedback.round_header_bbcode(int(result.get("round", 0)), label),
+		narration,
 	]
 	_body_label.scroll_to_line(_body_label.get_line_count())
 
@@ -278,14 +281,18 @@ func _on_combat_over(result: Dictionary) -> void:
 	_clear_actions()
 
 	var victory_narration := combat.get_victory_narration()
-	_body_label.text += "\n\n[color=#ffd700]%s[/color]" % victory_narration
+	_body_label.text += "\n\n" + SeaFeedback.victory_bbcode(victory_narration)
 	_body_label.scroll_to_line(_body_label.get_line_count())
 
 	# 决定按钮文字
 	var button_text := "确认"
 	var victory_type: int = result.get("victory_type", 0)
-	if victory_type == CombatState.VictoryType.SUNK or victory_type == CombatState.VictoryType.CAPTURED or victory_type == CombatState.VictoryType.DUEL_VICTORY:
+	if SeaFeedback.is_player_victory(victory_type) and victory_type != SeaFeedback.VT_FLED:
 		button_text = "搜刮战利品"
+	elif victory_type == SeaFeedback.VT_FLED:
+		button_text = "收帆回航"
+	elif victory_type == SeaFeedback.VT_DEFEATED_SUNK or victory_type == SeaFeedback.VT_DEFEATED_CAPTURED:
+		button_text = "残局收束"
 
 	var btn := _make_button(button_text, func():
 		combat_finished.emit(result, combat)
@@ -318,9 +325,20 @@ func _close_modal() -> void:
 	)
 
 ## ── 静态入口（与 SeaEventController.trigger_event 对齐）──
+## P8-3: 优先挂到 AppRoot（ModeStack），避免战斗 UI 挂在 WorldMap 子树。
 
 static func start_combat(parent_node: Node, enemy: Dictionary) -> CombatSessionController:
+	if parent_node != null:
+		var tree := parent_node.get_tree()
+		if tree != null:
+			var host := ModeStackScript.find_host(tree)
+			# host != parent_node：避免 AppRoot.show_combat 内递归
+			if host != null and host != parent_node and host.has_method("show_combat"):
+				var mounted = host.call("show_combat", enemy)
+				if mounted is CombatSessionController:
+					return mounted as CombatSessionController
 	var ctrl := CombatSessionController.new()
 	ctrl.enemy_data = enemy
-	parent_node.add_child(ctrl)
+	if parent_node != null:
+		parent_node.add_child(ctrl)
 	return ctrl

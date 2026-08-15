@@ -3,21 +3,43 @@
   "endings": [
     {
       "id": "loyalty_ending",
-      "condition": {"rank_apex": true, "flag": "spring_autumn_scroll", "linboyuan_gte": 50},
+      "title": "忠义",
+      "subtitle": "与故人同袍",
+      "summary": "你守住了《春秋》与林伯渊的托付，在乱局里选择与陈文龙共担风雨。",
+      "epilogue": "潮声未歇，义旗仍在。后世或许只记一笔「纲首未降」，而你记得船上的灯火。",
+      "condition": {
+        "rank_apex": true,
+        "flag": "spring_autumn_scroll",
+        "linboyuan_gte": 50
+      },
       "cutscene": "ending_loyalty",
       "terminal_state": "completed_loyalty",
       "priority": 30
     },
     {
       "id": "defection_ending",
-      "condition": {"rank_apex": true, "jia_gte": 50},
+      "title": "投附",
+      "subtitle": "岸上的灯",
+      "summary": "你在风暴将至前转身，换得官籍与一线生路。海路与官路从此分叉。",
+      "epilogue": "蒲府的名帖尚温。有人骂你识时务，有人说你断了脊梁——你只答：还能活，便还能改。",
+      "condition": {
+        "rank_apex": true,
+        "jia_gte": 50
+      },
       "cutscene": "ending_defection",
       "terminal_state": "completed_defection",
       "priority": 20
     },
     {
       "id": "overseas_ending",
-      "condition": {"rank_apex": true, "flag": "overseas_voyage"},
+      "title": "远航",
+      "subtitle": "旧港之外",
+      "summary": "你烧去旧帖，离开旧港与旧朝，把航线指向更远的海面。",
+      "epilogue": "星图在潮湿的舱壁上模糊又清晰。故国渐远，潮声却越来越像归途。",
+      "condition": {
+        "rank_apex": true,
+        "flag": "overseas_voyage"
+      },
       "cutscene": "ending_overseas",
       "terminal_state": "completed_overseas",
       "priority": 10

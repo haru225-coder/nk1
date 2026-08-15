@@ -2,6 +2,8 @@ extends CharacterBody2D
 
 ## 玩家旗舰场景节点 — 委托 ShipSystem 航行/同步，ShipVisual 绘制船体。
 
+const ModeStackScript := preload(ResourcePaths.SCRIPT_MODE_STACK)
+
 signal hud_stats_changed
 
 @export var wind_vector: Vector2 = Vector2(0, 1).normalized()
@@ -239,4 +241,9 @@ func _finish_sink() -> void:
 	GameState.clear_world_map_ship_pose()
 	CargoSystem.clear_all()
 	GameManager.set_input_locked(false)
-	get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)
+	# P8: 沉船回标题/开场；无 ModeStack 宿主时回退 change_scene
+	var title_id := "cg_title"
+	if GameManager.scenes_data is Dictionary:
+		title_id = str(GameManager.scenes_data.get("start_scene", "cg_title"))
+	if not ModeStackScript.go_narrative(get_tree(), title_id):
+		get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)

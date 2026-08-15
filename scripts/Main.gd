@@ -17,6 +17,8 @@ extends Control
 const MainMessagePanelScript := preload(ResourcePaths.SCRIPT_MAIN_MESSAGE_PANEL)
 const MainScenePresenterScript := preload(ResourcePaths.SCRIPT_MAIN_SCENE_PRESENTER)
 const PortIntroPlayerScript := preload(ResourcePaths.SCRIPT_PORT_INTRO_PLAYER)
+const SceneRouterScript := preload(ResourcePaths.SCRIPT_SCENE_ROUTER)
+const ModeStackScript := preload(ResourcePaths.SCRIPT_MODE_STACK)
 const SceneBackgroundLoaderScript := preload(ResourcePaths.SCRIPT_SCENE_BACKGROUND_LOADER)
 const StoryUnlockToastControllerScript := preload(ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER)
 
@@ -71,6 +73,7 @@ func _ready() -> void:
 	if status_bar.has_signal("layout_changed"):
 		status_bar.layout_changed.connect(_on_status_bar_layout_changed)
 	_bind_calendar_scheduler()
+	_bind_game_state_cutscene_request()
 
 	SaveManager.save_completed.connect(_on_save_completed)
 	SaveManager.load_completed.connect(_on_load_completed)
@@ -85,10 +88,48 @@ func _bind_calendar_scheduler() -> void:
 		var scene_cb := Callable(self, "load_scene")
 		if not scheduler.scene_requested.is_connected(scene_cb):
 			scheduler.scene_requested.connect(scene_cb)
+	var cs_player := _resolve_cutscene_player()
 	if scheduler.has_method("bind_calendar"):
-		scheduler.bind_calendar(GameState.calendar, GameState, {"cutscene_player": cutscene_player})
+		scheduler.bind_calendar(GameState.calendar, GameState, {"cutscene_player": cs_player})
 	if GameState.has_method("bind_ending_resolver"):
-		GameState.bind_ending_resolver(cutscene_player)
+		GameState.bind_ending_resolver(cs_player)
+	# P8-4: 月历 cutscene action 也可经壳层 ModeStack
+	if scheduler.has_signal("cutscene_requested"):
+		var cs_cb := Callable(self, "_on_scheduler_cutscene_requested")
+		if not scheduler.cutscene_requested.is_connected(cs_cb):
+			scheduler.cutscene_requested.connect(cs_cb)
+
+
+func _resolve_cutscene_player() -> Node:
+	var host = ModeStackScript.find_host(get_tree())
+	if host != null and host.has_method("get_cutscene_player"):
+		var shell_cs = host.call("get_cutscene_player")
+		if shell_cs != null:
+			return shell_cs
+	return cutscene_player
+
+
+func _on_scheduler_cutscene_requested(cutscene_id: String) -> void:
+	if cutscene_id == "":
+		return
+	if ModeStackScript.play_cutscene(get_tree(), cutscene_id):
+		return
+	var cs := _resolve_cutscene_player()
+	if cs != null and cs.has_method("play"):
+		cs.call("play", cutscene_id)
+
+
+func _bind_game_state_cutscene_request() -> void:
+	# AppRoot 存在时由壳层唯一消费，避免 Main 与壳层重复播放。
+	if ModeStackScript.find_host(get_tree()) != null:
+		return
+	var cb := Callable(self, "_on_game_state_cutscene_requested")
+	if not GameState.cutscene_requested.is_connected(cb):
+		GameState.cutscene_requested.connect(cb)
+
+
+func _on_game_state_cutscene_requested(cutscene_id: String) -> void:
+	_on_scheduler_cutscene_requested(cutscene_id)
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("quick_save"):
@@ -140,6 +181,11 @@ func update_status_panel() -> void:
 func _prepend_event_log(msg: String) -> void:
 	_message_panel.prepend_event_log(msg)
 
+
+## P8: AppRoot / 航海壳写入同一消息栏（出海时 Main 可能被禁用，回港仍可见记录）
+func append_shell_log(msg: String) -> void:
+	_prepend_event_log(msg)
+
 func _setup_story_unlock_toast() -> void:
 	if _story_unlock_toast != null and is_instance_valid(_story_unlock_toast):
 		return
@@ -166,58 +212,67 @@ func _on_storybook_route_requested(scene_id: String, focus_action_id: String) ->
 func load_scene(scene_id: String) -> void:
 	var focus_action_id := _pending_route_focus_action_id
 	_pending_route_focus_action_id = ""
-	if not scene_id.ends_with("_market"):
-		if _market_ui and is_instance_valid(_market_ui):
-			_market_ui.queue_free()
-			_market_ui = null
+	# preload 保证 headless 无 class cache 时也能解析
+	var kind: String = SceneRouterScript.classify(scene_id)
 
-	if scene_id == "world_map":
-		var sail_res = GameState.handle_special_action("sail_world_map")
-		if sail_res.get("msg", "") != "":
-			_prepend_event_log(sail_res["msg"] + "\n\n")
-		if not sail_res.get("success", false):
-			return
-		SaveManager.set_current_scene_id("world_map")
+	# 离开市场时清掉市场 overlay（进入市场本身由 market 分支处理）
+	if kind != SceneRouterScript.KIND_MARKET:
+		_close_market_ui()
+
+	match kind:
+		SceneRouterScript.KIND_WORLD_MAP:
+			_route_world_map()
+		SceneRouterScript.KIND_MARKET:
+			_route_market(scene_id)
+		_:
+			_route_narrative(scene_id, focus_action_id)
+
+
+func _close_market_ui() -> void:
+	if _market_ui and is_instance_valid(_market_ui):
+		_market_ui.queue_free()
+	_market_ui = null
+
+
+func _route_world_map() -> void:
+	var sail_res = GameState.handle_special_action("sail_world_map")
+	if sail_res.get("msg", "") != "":
+		_prepend_event_log(sail_res["msg"] + "\n\n")
+	if not sail_res.get("success", false):
+		return
+	SaveManager.set_current_scene_id("world_map")
+	# P8: 优先 ModeStack（保留港内壳）；无 AppRoot 时回退 change_scene
+	if not ModeStackScript.go_voyage(get_tree()):
 		get_tree().change_scene_to_file(ResourcePaths.SCENE_WORLD_MAP)
-		return
-		
-	if scene_id.ends_with("_market"):
-		if _market_ui and is_instance_valid(_market_ui):
-			_market_ui.queue_free()
-		var market_ui = MarketScreenController.new()
-		_market_ui = market_ui
-		add_child(market_ui)
-		var port_to_open = GameState.last_port
-		if port_to_open == "": port_to_open = scene_id.replace("_market", "")
-		market_ui.setup(port_to_open)
-		market_ui.message_logged.connect(_prepend_event_log)
-		market_ui.status_updated.connect(update_status_panel)
-		market_ui.market_closed.connect(func(): _market_ui = null)
-		return
-		
+
+
+func _route_market(scene_id: String) -> void:
+	_close_market_ui()
+	var market_ui = MarketScreenController.new()
+	_market_ui = market_ui
+	add_child(market_ui)
+	market_ui.setup(SceneRouterScript.market_port_id(scene_id))
+	market_ui.message_logged.connect(_prepend_event_log)
+	market_ui.status_updated.connect(update_status_panel)
+	market_ui.market_closed.connect(func(): _market_ui = null)
+
+
+func _route_narrative(scene_id: String, focus_action_id: String) -> void:
 	current_scene_id = scene_id
 	SaveManager.set_current_scene_id(scene_id)
-	
-	var scene_data = GameManager.get_scene_by_id(scene_id)
-	
-	if scene_data.is_empty():
-		for suffix: String in ["_guild", "_residence", "_inn", "_exam", "_tavern", "_yamen", "_shipyard", "_temple"]:
-			if scene_id.ends_with(suffix):
-				var generic_id: String = "city" + suffix
-				scene_data = GameManager.get_scene_by_id(generic_id)
-				break
-				
+
+	var scene_data: Dictionary = SceneRouterScript.resolve_scene_data(scene_id)
 	if scene_data.is_empty():
 		_scene_presenter.present_missing(scene_id)
 		update_status_panel()
 		return
-		
-	_scene_background_loader.apply_background(background, scene_data)
 
+	_scene_background_loader.apply_background(background, scene_data)
 	var type := str(scene_data.get("type", "investigation"))
 	var mode_node := _scene_presenter.present_scene(scene_data, scene_id, focus_action_id)
 	if type == "port":
-		_port_intro_player.show_if_needed(scene_data, scene_id, cutscene_player, Callable(self, "_prepend_event_log"))
+		var cs_player := _resolve_cutscene_player()
+		_port_intro_player.show_if_needed(scene_data, scene_id, cs_player, Callable(self, "_prepend_event_log"))
 	game_shell.apply_scene(scene_id, scene_data, mode_node)
 	update_status_panel()
 

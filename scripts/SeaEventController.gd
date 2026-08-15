@@ -49,10 +49,10 @@ func _ready() -> void:
 	var frame := NinePatchRect.new()
 	frame.custom_minimum_size = Vector2(700, 460)
 	frame.texture = frame_tex
-	frame.patch_margin_left = 100
-	frame.patch_margin_top = 56
-	frame.patch_margin_right = 100
-	frame.patch_margin_bottom = 56
+	frame.patch_margin_left = 40
+	frame.patch_margin_top = 40
+	frame.patch_margin_right = 40
+	frame.patch_margin_bottom = 40
 	center.add_child(frame)
 
 	var margin := MarginContainer.new()
@@ -104,6 +104,7 @@ func _populate_ui() -> void:
 
 	title_label.text = event_data.get("title", "未知遭遇")
 	body_label.text = event_data.get("body", "")
+	SeaFeedback.push_shell(SeaFeedback.event_open_log(title_label.text))
 
 	for child in _actions.get_children():
 		child.queue_free()
@@ -223,6 +224,7 @@ func _format_intent_result(intent_type: String, result: IntentResult, istruct: D
 
 func _show_result(msg: String) -> void:
 	body_label.text += "\n\n" + msg
+	SeaFeedback.push_shell(SeaFeedback.event_result_log(title_label.text if title_label else "", msg))
 	for child in _actions.get_children():
 		if child is Button:
 			child.queue_free()
@@ -235,6 +237,8 @@ func _launch_combat_from_result(result: IntentResult) -> void:
 	var data: Dictionary = result.data
 	_pending_enemy_data = data.get("enemy_data", {})
 	_pending_combat_state = data.get("combat_state", null)
+	var enemy_name := str(_pending_enemy_data.get("name", _pending_enemy_data.get("id", "敌舰")))
+	SeaFeedback.push_shell(SeaFeedback.event_to_combat_log(enemy_name))
 
 	# 立即隐藏当前模态，避免叠影
 	if is_instance_valid(_root):

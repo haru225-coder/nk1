@@ -7,6 +7,7 @@ var player_in_zone: bool = false
 var port_status: String = "main"
 
 const _ICON_TEX: Texture2D = preload("res://assets/icons_128/icon_shipyard_koei.png")
+const ModeStackScript := preload(ResourcePaths.SCRIPT_MODE_STACK)
 const _HOVER_RADIUS := 92.0
 
 @onready var _icon: Sprite2D = $Visual/Icon
@@ -85,4 +86,6 @@ func _input(event: InputEvent) -> void:
 		if player_ship:
 			GameState.save_world_map_ship_pose(player_ship.position, player_ship.rotation)
 		GameState.set_return_port(port_id)
-		get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)
+		# P8: ModeStack 回港（保留 Main 壳）；无宿主时回退 change_scene
+		if not ModeStackScript.go_narrative(get_tree()):
+			get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)

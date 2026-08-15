@@ -165,10 +165,10 @@ theme_override_constants/margin_bottom = 0
 custom_minimum_size = Vector2(184, 228)
 layout_mode = 2
 texture = ExtResource("10_frame")
-patch_margin_left = 22
-patch_margin_top = 18
-patch_margin_right = 22
-patch_margin_bottom = 18
+patch_margin_left = 40
+patch_margin_top = 40
+patch_margin_right = 40
+patch_margin_bottom = 40
 
 [node name="MinimapRect" type="Control" parent="CanvasLayer/HUD/MinimapPanel/MinimapFrame" unique_id=2102428675]
 layout_mode = 1

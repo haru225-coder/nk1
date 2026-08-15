@@ -4,6 +4,7 @@ extends Node2D
 @onready var label: RichTextLabel = $CanvasLayer/HUD/LeftPanel/Margin/Label
 @onready var fleet_status: Label = $CanvasLayer/HUD/RightPanel/Margin/FleetStatus
 @onready var weather_status: Label = $CanvasLayer/HUD/RightPanel/Margin/WeatherStatus
+@onready var _hud_root: MarginContainer = $CanvasLayer/HUD
 @onready var _left_panel: PanelContainer = $CanvasLayer/HUD/LeftPanel
 @onready var _right_panel: PanelContainer = $CanvasLayer/HUD/RightPanel
 @onready var _minimap_panel: MarginContainer = $CanvasLayer/HUD/MinimapPanel
@@ -15,6 +16,7 @@ extends Node2D
 var crate_scene = preload(ResourcePaths.SCENE_CRATE)
 var seagull_tex = preload(ResourcePaths.TEX_SEAGULL)
 var whale_tex = preload(ResourcePaths.TEX_WHALE_SHADOW)
+const ModeStackScript := preload(ResourcePaths.SCRIPT_MODE_STACK)
 
 @onready var ports_node: Node2D = $Ports
 @onready var _route_layer: RouteLayer = $RouteLayer
@@ -87,16 +89,44 @@ func _ready() -> void:
 		panel.mouse_exited.connect(func(): _fade_panel(panel, 1.0))
 
 	_apply_classical_ui_theme()
+	_apply_shell_chrome_layout()
 	_update_hud_labels()
 
 	if GameState.voyage_destination_id != "":
 		_on_voyage_destination_set(GameState.voyage_destination_id)
 
 	await get_tree().process_frame
+	_apply_shell_chrome_layout()
 	_animate_hud_entrance()
 
 func _apply_classical_ui_theme() -> void:
 	_MAP_UI_THEME.apply_world_map_hud(_left_panel, _right_panel, label, fleet_status, weather_status)
+
+
+## P8-5: 壳层 PortStatusBar 存在时为 HUD 让顶边；无宿主则保持默认边距
+func _has_shell_chrome() -> bool:
+	var host := _app_host()
+	if host == null or not host.has_method("get_status_bar"):
+		return false
+	var bar = host.call("get_status_bar")
+	return bar != null and is_instance_valid(bar)
+
+
+func _shell_status_bar_height() -> float:
+	var host := _app_host()
+	if host == null or not host.has_method("get_status_bar"):
+		return GameUILayout.STATUS_BAR_HEIGHT_FULL
+	var bar = host.call("get_status_bar")
+	if bar != null and is_instance_valid(bar) and bar.has_method("get_layout_height"):
+		return float(bar.call("get_layout_height"))
+	return GameUILayout.STATUS_BAR_HEIGHT_FULL
+
+
+func _apply_shell_chrome_layout() -> void:
+	if _hud_root == null:
+		return
+	var top := GameUILayout.sea_hud_top_margin(_has_shell_chrome(), _shell_status_bar_height())
+	_hud_root.add_theme_constant_override("margin_top", int(top))
 
 func _input(event: InputEvent) -> void:
 	if _strategic_overlay.is_open():
@@ -144,7 +174,9 @@ func _input(event: InputEvent) -> void:
 				GameState.set_last_port(nearest_port)
 			_save_ship_pose()
 			GameState.set_navigation_flag("return_to_port")
-			get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)
+			# P8: ModeStack 回港；无宿主时回退 change_scene
+			if not ModeStackScript.go_narrative(get_tree()):
+				get_tree().change_scene_to_file(ResourcePaths.SCENE_MAIN)
 
 func _get_nearest_port_id() -> String:
 	if not ship or port_nodes.is_empty():
@@ -199,6 +231,8 @@ func _process(delta: float) -> void:
 func _update_hud_labels() -> void:
 	if not ship:
 		return
+	_refresh_app_chrome()
+	_apply_shell_chrome_layout()
 
 	var wind_desc := "无风"
 	if ship.wind_vector.y > 0:
@@ -225,28 +259,44 @@ func _update_hud_labels() -> void:
 	var dest_line := ""
 	if GameState.voyage_destination_id != "":
 		dest_line = "\n航行目标: %s" % _port_display_name(GameState.voyage_destination_id)
-	label.text = "旗舰: %s (%s)\n当前季风: %s\n风力强度: %d (%s)\n航速: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nM: 战略地图\n船体耐久: [color=%s]%d/%d[/color]%s\nB/Esc: 返回港口" % [
-		ship_name, sail_label, wind_desc, int(ship.wind_strength), wind_dir_label, current_speed, ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), dest_line
-	]
+
+	var shell_chrome := _has_shell_chrome()
+	if shell_chrome:
+		# P8-5: 船体/水粮/金钱由壳层 PortStatusBar 承担，左侧只保留舵法与气象
+		label.text = "旗舰: %s (%s)\n季风: %s\n风力: %d (%s)  航速: %d\nW/S 升降帆 (档 %d) · A/D 操舵\nM 战略地图 · B/Esc 回港%s" % [
+			ship_name, sail_label, wind_desc, int(ship.wind_strength), wind_dir_label, current_speed, ship.sail_gear, dest_line
+		]
+	else:
+		label.text = "旗舰: %s (%s)\n当前季风: %s\n风力强度: %d (%s)\n航速: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nM: 战略地图\n船体耐久: [color=%s]%d/%d[/color]%s\nB/Esc: 返回港口" % [
+			ship_name, sail_label, wind_desc, int(ship.wind_strength), wind_dir_label, current_speed, ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), dest_line
+		]
 
 	var cargo_str := CargoSystem.to_display_string(" ")
 	if cargo_str == "":
 		cargo_str = "无"
 	var starving := GameState.food <= 0 or GameState.water <= 0
 
-	fleet_status.text = "【船队状态】\n铜钱: %d\n水手: %d/%d\n淡水: %d/%d\n食物: %d/%d\n货物: %s" % [
-		LedgerSystem.get_balance(),
-		GameState.crew_count, GameState.max_crew,
-		int(GameState.water), int(GameState.max_water),
-		int(GameState.food), int(GameState.max_food),
-		cargo_str,
-	]
-
-	if starving:
-		fleet_status.modulate = GameColors.WARNING
-		fleet_status.text += "\n【警告】水尽粮绝！"
+	if shell_chrome:
+		# 右侧只保留天气 + 货物摘要（状态条已有水粮/船员）
+		fleet_status.text = "【船货】\n%s" % cargo_str
+		if starving:
+			fleet_status.modulate = GameColors.WARNING
+			fleet_status.text += "\n【警告】水尽粮绝！"
+		else:
+			fleet_status.modulate = Color(1, 1, 1)
 	else:
-		fleet_status.modulate = Color(1, 1, 1)
+		fleet_status.text = "【船队状态】\n铜钱: %d\n水手: %d/%d\n淡水: %d/%d\n食物: %d/%d\n货物: %s" % [
+			LedgerSystem.get_balance(),
+			GameState.crew_count, GameState.max_crew,
+			int(GameState.water), int(GameState.max_water),
+			int(GameState.food), int(GameState.max_food),
+			cargo_str,
+		]
+		if starving:
+			fleet_status.modulate = GameColors.WARNING
+			fleet_status.text += "\n【警告】水尽粮绝！"
+		else:
+			fleet_status.modulate = Color(1, 1, 1)
 
 
 func _maintain_fleet_spawns() -> void:
@@ -300,6 +350,8 @@ func _on_fleet_encountered(encounter_data: Dictionary, fleet_node: Node2D) -> vo
 		event_data = _resolve_patrol_encounter(encounter_data)
 	else:
 		event_data = FleetArchetypes.to_event_data(encounter_data)
+	var ev_title := str(event_data.get("title", encounter_data.get("name", "海上遭遇")))
+	_shell_log("【海遇】接近：%s\n" % ev_title)
 	var controller := SeaEventController.trigger_event($CanvasLayer, event_data)
 
 	controller.event_finished.connect(func():
@@ -309,6 +361,7 @@ func _on_fleet_encountered(encounter_data: Dictionary, fleet_node: Node2D) -> vo
 		navigation_locked = false
 		GameState.set_navigation_locked(false)
 		_set_world_time_paused(_overlay_open)
+		_shell_log("【海遇】%s — 航线恢复。\n" % ev_title)
 	)
 
 func _process_spawns(delta: float) -> void:
@@ -449,6 +502,23 @@ func _fade_panel(panel: Control, target_alpha: float) -> void:
 	var tw = create_tween()
 	tw.tween_property(panel, "modulate:a", target_alpha, 0.2)
 
+
+## P8: 共用港内状态条 / 消息栏
+func _app_host() -> Node:
+	return ModeStackScript.find_host(get_tree())
+
+
+func _refresh_app_chrome() -> void:
+	var host := _app_host()
+	if host != null and host.has_method("refresh_chrome"):
+		host.call("refresh_chrome")
+
+
+func _shell_log(msg: String) -> void:
+	var host := _app_host()
+	if host != null and host.has_method("log_event"):
+		host.call("log_event", msg)
+
 ## ── NK1-P6: 航海反馈增强 ────────────────────────────────
 
 ## 航海风景日志：长航时弹出风景描述浮文
@@ -466,6 +536,7 @@ func _show_voyage_scenery() -> void:
 		if is_instance_valid(ft):
 			ft.queue_free()
 	)
+	_shell_log("【海景】%s\n" % scenery)
 
 ## 经济动态检查：航行中检测经济事件变化并提示
 func _check_economy_updates() -> void:
@@ -483,6 +554,7 @@ func _check_economy_updates() -> void:
 		if is_instance_valid(ft):
 			ft.queue_free()
 	)
+	_shell_log(latest if latest.ends_with("\n") else latest + "\n")
 
 ## 港口接近提示：靠近港口时显示港口名
 func _check_port_proximity() -> void:
@@ -494,15 +566,17 @@ func _check_port_proximity() -> void:
 	if dist < 300.0 and _near_port_id != nearest_id:
 		_near_port_id = nearest_id
 		var port_name: String = port_nodes[nearest_id].port_name
+		var near_msg := "【抵达】%s — 按 B/Esc 入港" % port_name
 		var ft = ResourceManager.FloatingText.instantiate()
-		ft.text = "【抵达】%s — 按 B/Esc 入港" % port_name
+		ft.text = near_msg
 		ft.modulate = GameColors.FLOATING_PORT_NEAR
 		ft.global_position = ship.global_position + FloatingTextConfig.OFFSET_PORT_NEAR
 		add_child(ft)
 		get_tree().create_timer(FloatingTextConfig.LIFETIME_PORT_NEAR, false).timeout.connect(func():
 			if is_instance_valid(ft):
 				ft.queue_free()
-	)
+		)
+		_shell_log(near_msg + "\n")
 	elif dist > 500.0:
 		_near_port_id = ""
 

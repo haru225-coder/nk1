@@ -38,12 +38,22 @@ var _prev_text: Dictionary = {}
 var _pulse_tweens: Dictionary = {}
 var _last_height: float = -1.0
 var _ready_done: bool = false
+## P8: 出海时强制显示航程行（水粮/船员/船体），不依赖剧情 flag
+var _sea_mode: bool = false
 
 func _ready() -> void:
 	_preload_icons()
 	_bind_tooltips()
 	_ready_done = true
 	_apply_layout_height()
+
+
+func set_sea_mode(on: bool) -> void:
+	if _sea_mode == on:
+		return
+	_sea_mode = on
+	if _ready_done:
+		refresh()
 
 func get_layout_height() -> float:
 	return GameUILayout.STATUS_BAR_HEIGHT_FULL if _show_voyage_stats() else GameUILayout.STATUS_BAR_HEIGHT_COMPACT
@@ -131,6 +141,8 @@ func _refresh_voyage_stats() -> void:
 	_apply_ratio_style(ship_value, ship_icon, ship_meter, GameState.ship_hp, GameState.ship_max_hp)
 
 func _show_voyage_stats() -> bool:
+	if _sea_mode:
+		return true
 	return GameState.has_story_flag("met_lin_boyuan") \
 		or GameState.has_story_flag("chapter1_complete")
 
@@ -214,11 +226,18 @@ func _pu_attention_color(level: int) -> Color:
 
 func _resolve_location_name() -> String:
 	var port_id: String = GameState.last_port
-	var place := "海上" if port_id == "" else port_id
-	if port_id != "":
+	var place := "海上"
+	if _sea_mode:
+		place = "海上"
+		if GameState.voyage_destination_id != "":
+			var dest := GameManager.get_port_data(GameState.voyage_destination_id)
+			if not dest.is_empty():
+				place = "航向·%s" % str(dest.get("name", GameState.voyage_destination_id))
+			else:
+				place = "航向·%s" % GameState.voyage_destination_id
+	elif port_id != "":
 		var port_data := GameManager.get_port_data(port_id)
-		if not port_data.is_empty():
-			place = str(port_data.get("name", port_id))
+		place = str(port_data.get("name", port_id)) if not port_data.is_empty() else port_id
 	var parts: Array[String] = [place]
 	var cal = GameState.get("calendar")
 	if cal != null and cal.has_method("date_key"):

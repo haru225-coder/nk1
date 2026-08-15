@@ -8,6 +8,7 @@ class_name CutscenePlayer extends CanvasLayer
 ##       / rank_up（监听 career.rank_changed，P7-C）/ ending（由 P7-E EndingResolver 直调 play）。
 
 signal finished(cutscene_id: String)
+signal started(cutscene_id: String)
 
 const FADE_DURATION := 0.4
 const PANEL_DURATION := 2.5
@@ -24,9 +25,13 @@ var _current_id: String = ""
 var _tween: Tween = null
 var _panels: Array = []
 var _panel_index: int = 0
+## 排队：章三收束过场与结局 CG 同帧触发时串播
+var _queue: Array[String] = []
 
 func _ready() -> void:
 	layer = LAYER
+	# P8-4: 壳层托管后即使 Main 禁用仍可播
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
 	_load_data()
 	_connect_signals()
@@ -34,28 +39,34 @@ func _ready() -> void:
 		_skip_hint.text = "按 空格 或 点击 跳过"
 
 ## 公开 API：播放过场。cutscene_id 不存在则静默返回（降级，不崩）。
-func play(cutscene_id: String) -> void:
-	if _playing:
-		return
-	var entry: Dictionary = _data.get(cutscene_id, {})
+## 正在播放时入队，结束后自动串播（章三收束 + 结局可同帧）。
+func play(cutscene_id: String) -> bool:
+	var id := cutscene_id.strip_edges()
+	if id == "":
+		return false
+	var entry: Dictionary = _data.get(id, {})
 	if entry.is_empty():
-		return
-	_current_id = cutscene_id
-	_panels = entry.get("panels", [])
-	_panel_index = 0
-	_playing = true
-	visible = true
-	if _skip_hint:
-		_skip_hint.visible = true
-	if _panels.is_empty():
-		_play_single(entry)
-	else:
-		_play_panel(_panels[0])
+		return false
+	if _playing:
+		if id != _current_id and id not in _queue:
+			_queue.append(id)
+		return id == _current_id or id in _queue
+	_start_play(id, entry)
+	return true
 
-## 跳过当前过场
+
+func is_playing() -> bool:
+	return _playing
+
+
+func get_current_id() -> String:
+	return _current_id
+
+## 跳过当前过场（并清空排队，避免连跳多段）
 func skip() -> void:
 	if not _playing:
 		return
+	_queue.clear()
 	_end()
 
 ## 查询某 hook+id 是否有对应过场（供调用方决定是否播）
@@ -117,6 +128,21 @@ func _on_panel_done() -> void:
 		_tween.parallel().tween_property(_caption, "modulate:a", 0.0, FADE_DURATION)
 		_tween.tween_callback(_end)
 
+func _start_play(cutscene_id: String, entry: Dictionary) -> void:
+	_current_id = cutscene_id
+	_panels = entry.get("panels", [])
+	_panel_index = 0
+	_playing = true
+	visible = true
+	if _skip_hint:
+		_skip_hint.visible = true
+	started.emit(cutscene_id)
+	if _panels.is_empty():
+		_play_single(entry)
+	else:
+		_play_panel(_panels[0])
+
+
 func _end() -> void:
 	if _tween:
 		_tween.kill()
@@ -127,6 +153,12 @@ func _end() -> void:
 	var id: String = _current_id
 	_current_id = ""
 	finished.emit(id)
+	# 串播队列中的下一段
+	if not _queue.is_empty():
+		var next_id: String = str(_queue.pop_front())
+		var entry: Dictionary = _data.get(next_id, {})
+		if not entry.is_empty():
+			_start_play(next_id, entry)
 
 func _load_data() -> void:
 	# 读 ResourcePaths.DATA_CUTSCENES，JSON 解析，缓存到 _data {id: entry}

@@ -37,10 +37,10 @@ mouse_filter = 2
 custom_minimum_size = Vector2(708, 868)
 layout_mode = 2
 texture = ExtResource("2_frame")
-patch_margin_left = 72
-patch_margin_top = 56
-patch_margin_right = 72
-patch_margin_bottom = 72
+patch_margin_left = 40
+patch_margin_top = 40
+patch_margin_right = 40
+patch_margin_bottom = 40
 
 [node name="Margin" type="MarginContainer" parent="Center/MapFrame"]
 layout_mode = 1
