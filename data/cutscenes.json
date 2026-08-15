@@ -45,6 +45,60 @@
       "cg_alias": "res://assets/bg_sea_route_fog.png",
       "caption": "[b]结局 · 远航[/b]\n你离开旧港与旧朝，驶向更远的海面。",
       "panels": []
+    },
+    "ch3_end_comply": {
+      "hook": "chapter3_end",
+      "branch": "comply",
+      "cg_alias": "res://assets/bg_academy.jpg",
+      "caption": "[b]第三章 · 投附收束[/b]\n名籍入册，榜前风声已定。",
+      "panels": [
+        {
+          "cg_alias": "res://assets/bg_academy.jpg",
+          "caption": "礼部的红绳捆住了卷角，也捆住了你的姓氏。\n蒲府的名帖尚温，像一枚尚未冷的火印。",
+          "duration": 3.0
+        },
+        {
+          "cg_alias": "res://assets/bg_pu_mansion_hall.png",
+          "caption": "你换得一线官途。\n海路与官路从此分叉——你选了岸上的灯。",
+          "duration": 2.8
+        }
+      ]
+    },
+    "ch3_end_refuse": {
+      "hook": "chapter3_end",
+      "branch": "refuse",
+      "cg_alias": "res://assets/bg_linan_canal_pier.png",
+      "caption": "[b]第三章 · 拒召收束[/b]\n书在怀里，雾在船头。",
+      "panels": [
+        {
+          "cg_alias": "res://assets/bg_linan_canal_pier.png",
+          "caption": "乌篷无灯，潮声盖过人声。\n断眉老汉说：到澎湖前，不要回头。",
+          "duration": 3.0
+        },
+        {
+          "cg_alias": "res://assets/bg_sea_route_fog.png",
+          "caption": "你把《春秋》抱得更紧。\n忠义不是口号——是雾里那一截湿绳。",
+          "duration": 2.8
+        }
+      ]
+    },
+    "ch3_end_burn": {
+      "hook": "chapter3_end",
+      "branch": "burn",
+      "cg_alias": "res://assets/bg_linan_escape_night.png",
+      "caption": "[b]第三章 · 烧帖收束[/b]\n纸灰落进空茶碗。",
+      "panels": [
+        {
+          "cg_alias": "res://assets/bg_linan_escape_night.png",
+          "caption": "蒲府方向的火光像雪。\n你撕名帖、钻暗巷，把旧朝的门槛踩在身后。",
+          "duration": 3.0
+        },
+        {
+          "cg_alias": "res://assets/bg_sea_route_koei.png",
+          "caption": "远航不是逃——是另起一行。\n海比城诚实，也比榜更远。",
+          "duration": 2.8
+        }
+      ]
     }
   }
 }
