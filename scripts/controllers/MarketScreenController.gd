@@ -71,10 +71,10 @@ func _ready() -> void:
 
 	# NK1-P5-ECON-002: 经济信息栏 — 显示事件影响原因与经济动态
 	economy_info_label = Label.new()
-	economy_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	economy_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	economy_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	economy_info_label.custom_minimum_size = Vector2(0, 38)
-	economy_info_label.max_lines_visible = 2
+	economy_info_label.custom_minimum_size = Vector2(960, 110)
+	economy_info_label.max_lines_visible = 7
 	economy_info_label.theme_type_variation = UITheme.MARKET_PREVIEW
 	economy_info_label.visible = false
 	vbox.add_child(economy_info_label)
@@ -267,24 +267,12 @@ func _check_stock_alert() -> void:
 	stock_alert_label.text = "【市集异动】此港部分商品库存紧张，价格已有明显波动。"
 	stock_alert_label.visible = alert
 
-## NK1-P5-ECON-002: 更新经济信息栏 — 显示事件影响原因 + 最近经济动态
-## NK1-P5-ECON-003: 新增繁荣度/好感度状态显示
+## 经济信息栏：港情 + 三策（稳/赌/搬）+ 最近动态
 func _update_economy_info() -> void:
 	var lines: Array[String] = []
 
-	# 1. 显示当前活跃事件对该港货物的影响
+	# 1. 港口经济状态（繁荣度+好感度）
 	var market = GameManager.state.market
-	if market != null:
-		var all_goods: Array = GameManager.goods_data.get("goods", [])
-		for g in all_goods:
-			var g_id: String = g.get("id", "")
-			if g.get("category", "") != "货物" or g_id.is_empty():
-				continue
-			var reasons = market.get_active_event_reasons(port_id, g_id, WorldEventTracker.get_active_events())
-			for r in reasons:
-				lines.append(r)
-
-	# 2. NK1-P5-ECON-003: 显示港口经济状态（繁荣度+好感度）
 	if market != null:
 		var prosperity: float = market.get_prosperity(port_id)
 		var affinity_label: String = market.get_affinity_label(port_id)
@@ -295,18 +283,50 @@ func _update_economy_info() -> void:
 			prosperity_str = "萧条"
 		lines.append("港市：%s · 声誉：%s" % [prosperity_str, affinity_label])
 
-	# 3. 显示最近的经济动态日志
-	if GameState.economy_log != null:
-		var latest = GameState.economy_log.get_latest()
-		if not latest.is_empty():
-			lines.append(latest)
+	# 2. 三策（时间/空间/风险 — fun-economy 可感知）
+	var Feel = load(ResourcePaths.SCRIPT_ECONOMY_FEEL)
+	if Feel != null and Feel.has_method("strategy_triad"):
+		for tip in Feel.strategy_triad(port_id):
+			lines.append(str(tip))
+
+	# 3. 活跃事件原因（最多 1 条，避免淹没三策）
+	if market != null:
+		var all_goods: Array = GameManager.goods_data.get("goods", [])
+		var event_added := false
+		for g in all_goods:
+			if event_added:
+				break
+			var g_id: String = g.get("id", "")
+			if g.get("category", "") != "货物" or g_id.is_empty():
+				continue
+			var reasons = market.get_active_event_reasons(port_id, g_id, WorldEventTracker.get_active_events())
+			for r in reasons:
+				lines.append(str(r))
+				event_added = true
+				break
+
+	# 4. 已购情报（信息差资产）
+	if GameState.intel_notes != null and GameState.intel_notes.has_method("list_recent"):
+		var notes: Array = GameState.intel_notes.list_recent(2)
+		if notes.size() > 0:
+			var block: String = IntelNotes.format_notes_block(notes, 2)
+			if block != "":
+				for line in block.split("\n"):
+					if str(line).strip_edges() != "":
+						lines.append(str(line))
+
+	# 5. 最近经济动态（1 条）
+	if GameState.economy_log != null and GameState.economy_log.has_method("get_entries"):
+		var recent: Array = GameState.economy_log.get_entries(1)
+		for line in recent:
+			var s := str(line).strip_edges()
+			if s != "":
+				lines.append(s)
 
 	if lines.is_empty():
 		economy_info_label.visible = false
 	else:
-		# 最多显示 3 行，避免占太多空间
-		var display = lines.slice(-3)
-		economy_info_label.text = "  ".join(display)
+		economy_info_label.text = "\n".join(lines)
 		economy_info_label.visible = true
 
 func _make_item_button(text: String, kind: String) -> Button:
@@ -397,6 +417,12 @@ func _update_trade_preview() -> void:
 	var effect_preview := _build_trade_effect_preview_text()
 	if effect_preview != "":
 		preview_label.text += "\n" + effect_preview
+	# 商策：稳/赌/搬 针对当前选货
+	var Feel = load(ResourcePaths.SCRIPT_ECONOMY_FEEL)
+	if Feel != null and Feel.has_method("trade_decision_hint"):
+		var hint: String = Feel.trade_decision_hint(port_id, _selected_good_id, _selected_action, _trade_amount)
+		if hint != "":
+			preview_label.text += "\n" + hint
 	confirm_button.disabled = false
 
 func _build_trade_effect_preview_text() -> String:

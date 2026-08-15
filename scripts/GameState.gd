@@ -1,11 +1,21 @@
 extends Node
 
 signal story_unlock_notified(msg: String)
+signal cutscene_requested(cutscene_id: String)
+## 结局判定成功（通关 UX 接线）
+signal ending_resolved(result: Dictionary)
 
 # ═══════════════════════════════════════════════════════════
 # GameState — 全局玩家状态 Autoload
 # 重构版：内部拆分为职责单一的状态模块，外部 API 完全兼容
 # ═══════════════════════════════════════════════════════════
+#
+# 【P7-B 边界冻结 — 阶段 B】
+# - 新领域逻辑写在 scripts/state/* 或 systems/*，不要继续堆顶层代理属性
+# - 调用侧优先 GameState.career / .calendar / .market / .story
+# - 禁止在此文件塞 UI / 场景路由（见 SceneRouter）
+# - 大瘦身推迟到 P8（单根壳稳定之后）
+#
 
 ## ── 状态模块实例 ─────────────────────────────────────────
 
@@ -27,6 +37,7 @@ var calendar_scheduler = CalendarEventSchedulerScript.new()
 var ending_resolver = EndingResolverScript.new()
 var economy_log: EconomyLog = EconomyLog.new()
 var game_log: GameLog = GameLog.new()
+var intel_notes: IntelNotes = IntelNotes.new()
 
 ## ── 幂等守卫定期清理 ─────────────────────────────────────
 
@@ -61,8 +72,12 @@ func bind_ending_resolver(cutscene_player = null) -> void:
 func _on_career_rank_changed(_new_rank: int) -> void:
 	if career == null or not career.has_method("is_apex") or not career.is_apex():
 		return
+	if has_story_flag("game_completed"):
+		return
 	if ending_resolver != null and ending_resolver.has_method("evaluate"):
-		ending_resolver.evaluate(self)
+		var result = ending_resolver.evaluate(self)
+		if result != null and result.success:
+			ending_resolved.emit(result.data if result.data is Dictionary else {})
 
 func _process(_delta: float) -> void:
 	var now := Time.get_ticks_msec()
@@ -524,6 +539,9 @@ func _init_effect_handlers() -> void:
 		"swordplay":                _apply_swordplay,
 		"maneuverability":          _apply_maneuverability,
 		"npc_affinity":             _apply_npc_affinity,
+		"shell_log":                _apply_shell_log,
+		"economy_pulse":            _apply_economy_pulse,
+		"play_cutscene":            _apply_play_cutscene,
 	}
 
 const _SILENT_KEYS := ["sea_tendency", "scholar_tendency", "merchant_credit", "ledger_note"]
@@ -532,15 +550,23 @@ func apply_effects(effects: Dictionary) -> void:
 	if _effect_handlers.is_empty():
 		_init_effect_handlers()
 	var pending_career_promote = null
+	var pending_play_cutscene = null
 	for key in effects.keys():
 		var val = effects[key]
 		if key == "career_promote":
 			pending_career_promote = val
 			continue
+		# 过场放在升秩之后：先 apex/结局入队，再播章三收束，CutscenePlayer 会串播
+		if key == "play_cutscene":
+			pending_play_cutscene = val
+			continue
 		if _effect_handlers.has(key):
 			_effect_handlers[key].call(val)
 		elif not key in _SILENT_KEYS:
 			push_warning("[GameState] apply_effects: unknown key '" + key + "'")
+	# 先章三收束过场，再升秩（结局 CG 入队串播）
+	if pending_play_cutscene != null:
+		_apply_play_cutscene(pending_play_cutscene)
 	if pending_career_promote != null:
 		_apply_career_promote(pending_career_promote)
 
@@ -596,9 +622,12 @@ func _apply_title(val) -> void:
 
 func _apply_linboyuan_rel(val) -> void:
 	linboyuan_relationship += int(val)
+	# 同步 npc_relationships，供 CareerState / 通用关系查询
+	story.set_npc_relationship("lin_boyuan", linboyuan_relationship)
 
 func _apply_jia_rel(val) -> void:
 	jia_relationship += int(val)
+	story.set_npc_relationship("jia", jia_relationship)
 
 func _apply_npc_relationship(val) -> void:
 	if val is Dictionary:
@@ -634,7 +663,10 @@ func _apply_cargo(val) -> void:
 func _apply_career_promote(val) -> void:
 	if not bool(val):
 		return
-	if career != null and career.has_method("promote"):
+	# 章末一次 career_promote：在已满足条件的阶梯上连升，避免只 +1 永远到不了 apex
+	if career != null and career.has_method("promote_while_eligible"):
+		career.promote_while_eligible(self, calendar)
+	elif career != null and career.has_method("promote"):
 		career.promote(self, calendar)
 
 func _apply_artillery(val) -> void:
@@ -652,6 +684,36 @@ func _apply_npc_affinity(val) -> void:
 		if npc_id.is_empty():
 			return
 		story.adjust_npc_affinity(npc_id, int(val.get("delta", 0)))
+
+
+## 内容/体验：月历与场景可写玩家可见日志（接入 Main 消息栏）
+func _apply_shell_log(val) -> void:
+	var msg := str(val).strip_edges()
+	if msg == "":
+		return
+	if not msg.ends_with("\n"):
+		msg += "\n"
+	story_unlock_notified.emit(msg)
+
+
+## 章三收束等：场景 effects 可触发壳层过场
+func _apply_play_cutscene(val) -> void:
+	var cutscene_id := str(val).strip_edges()
+	if cutscene_id == "":
+		return
+	cutscene_requested.emit(cutscene_id)
+
+
+## 每月商情脉搏：写入 EconomyLog 并推到消息栏，增强经济可感知
+func _apply_economy_pulse(_val) -> void:
+	var msg := EconomyFeel.monthly_pulse_message(str(last_port), market)
+	if msg == "":
+		return
+	if economy_log != null:
+		economy_log.log(msg)
+	if game_log != null and game_log.has_method("info"):
+		game_log.info(GameLog.Category.ECONOMY, msg)
+	story_unlock_notified.emit(msg + "\n")
 
 ## ── Dispatcher 私有实现 ───────────────────────────────────
 
@@ -760,7 +822,44 @@ func to_save_dict() -> Dictionary:
 		"calendar_scheduler": calendar_scheduler.to_dict() if calendar_scheduler else {},
 		"economy_log": economy_log.to_dict() if economy_log else {},
 		"game_log": game_log.to_dict() if game_log else {},
+		"intel_notes": intel_notes.to_dict() if intel_notes else {},
 	}
+
+
+## 通关后「再启航程」：重置玩家状态，保留 EndingResolver 定义缓存
+func begin_new_run() -> void:
+	fleet = FleetState.new()
+	survival = SurvivalState.new()
+	trade = TradeState.new()
+	story = StoryState.new()
+	career = CareerStateScript.new()
+	if career != null and career.has_method("load_defs"):
+		career.load_defs()
+	navigation = NavigationState.new()
+	market = MarketState.new()
+	calendar = CalendarStateScript.new()
+	calendar_scheduler = CalendarEventSchedulerScript.new()
+	economy_log = EconomyLog.new()
+	game_log = GameLog.new()
+	intel_notes = IntelNotes.new()
+	if ending_resolver != null:
+		ending_resolver.last_result = {}
+	CargoSystem.clear_all()
+	var ledger = get_node_or_null("/root/LedgerSystem")
+	if ledger != null and ledger.has_method("from_save_dict"):
+		ledger.from_save_dict({})
+	var wet = get_node_or_null("/root/WorldEventTracker")
+	if wet != null and wet.has_method("from_save_dict"):
+		wet.from_save_dict({})
+	bind_calendar_scheduler()
+	bind_ending_resolver()
+
+
+## 结算屏展示数据
+func build_ending_display() -> Dictionary:
+	if ending_resolver != null and ending_resolver.has_method("build_display"):
+		return ending_resolver.build_display(self)
+	return {}
 
 func from_save_dict(data: Dictionary) -> void:
 	if data.has("fleet") and fleet:
@@ -786,3 +885,7 @@ func from_save_dict(data: Dictionary) -> void:
 		economy_log.from_dict(data["economy_log"])
 	if data.has("game_log") and game_log:
 		game_log.from_dict(data["game_log"])
+	if intel_notes == null:
+		intel_notes = IntelNotes.new()
+	if data.has("intel_notes") and intel_notes:
+		intel_notes.from_dict(data["intel_notes"])

@@ -24,6 +24,11 @@ func handle(intent: Intent) -> IntentResult:
 		return IntentResult.error(IntentErrorCodes.INTEL_ALREADY_PURCHASED, "", IntentTypes.BUY_INTEL)
 
 	var rumor := TradeEventGenerator.get_event_at(event_index)
+	# 写入玩家情报账本（信息差资产）
+	var note: Dictionary = IntelNotes.build_from_rumor(rumor, tier)
+	note["cost"] = total_cost
+	if GameState != null and GameState.get("intel_notes") != null:
+		GameState.intel_notes.record(note)
 	var r := IntentResult.ok({
 		"tier": tier,
 		"total_cost": total_cost,
@@ -31,6 +36,8 @@ func handle(intent: Intent) -> IntentResult:
 		"port_name": rumor.get("port_name", ""),
 		"days_left": rumor.get("days_left", 0),
 		"balance": LedgerSystem.get_balance(),
+		"intel_summary": str(note.get("summary", "")),
+		"intel_tier": tier,
 	}, TextKeys.INTENT_BUY_INTEL_SUCCESS)
 	r.type = IntentTypes.BUY_INTEL
 	return r

@@ -15,7 +15,7 @@
           "id": "storybook",
           "type": "open_storybook",
           "label": "札册",
-          "icon": "res://assets/ui/icons/icon_log.png",
+          "icon": "res://assets/ui/icons/icon_storybook.png",
           "always_visible": true
         },
         {
@@ -43,27 +43,7 @@
           "id": "storybook",
           "type": "open_storybook",
           "label": "札册",
-          "icon": "res://assets/ui/icons/icon_log.png",
-          "always_visible": true
-        }
-      ]
-    },
-    "title": {
-      "static_actions": [
-        {
-          "id": "start",
-          "type": "navigate",
-          "label": "开始",
-          "icon": "res://assets/ui/icons/icon_start.png",
-          "target": "port_quanzhou",
-          "always_visible": true
-        },
-        {
-          "id": "continue",
-          "type": "navigate",
-          "label": "继续",
-          "icon": "res://assets/ui/icons/icon_continue.png",
-          "target": "port_quanzhou",
+          "icon": "res://assets/ui/icons/icon_storybook.png",
           "always_visible": true
         }
       ]

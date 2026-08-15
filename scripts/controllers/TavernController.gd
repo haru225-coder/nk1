@@ -8,15 +8,22 @@ signal message_logged(msg: String)
 signal status_updated
 
 func setup(interactive_container: HFlowContainer, interactive_label: Label, dialogue_box: Control) -> void:
+	# 无潜伏传闻时试生成一次，保证「信息可买」路径常在
 	var entry := TradeEventGenerator.get_random_rumor_entry()
 	if entry.is_empty():
+		TradeEventGenerator.try_generate()
+		entry = TradeEventGenerator.get_random_rumor_entry()
+	if entry.is_empty():
+		interactive_label.visible = true
+		interactive_label.text = "今夜酒馆无人谈买卖——海上一时平静。"
 		return
 	interactive_label.visible = true
+	interactive_label.text = "有人压低声音谈市舶……情报越贵，说得越准。"
 	var rumor: Dictionary = entry.get("rumor", {})
 	var event_index: int = int(entry.get("index", -1))
-	_add_rumor_btn(rumor, event_index, 1, "★ 小道消息 (💰 20)", interactive_container, dialogue_box)
-	_add_rumor_btn(rumor, event_index, 2, "★★ 酒馆传言 (💰 50)", interactive_container, dialogue_box)
-	_add_rumor_btn(rumor, event_index, 3, "★★★ 商人情报 (💰 120)", interactive_container, dialogue_box)
+	_add_rumor_btn(rumor, event_index, 1, "★ 小道消息 (20 钱) · 模糊", interactive_container, dialogue_box)
+	_add_rumor_btn(rumor, event_index, 2, "★★ 酒馆传言 (50 钱) · 有窗口", interactive_container, dialogue_box)
+	_add_rumor_btn(rumor, event_index, 3, "★★★ 商人情报 (120 钱) · 点名港口", interactive_container, dialogue_box)
 
 func _add_rumor_btn(rumor: Dictionary, event_index: int, tier: int, label: String, container: HFlowContainer, dialogue_box: Control) -> void:
 	var btn = UIBuilder.make_action_button(label)
@@ -42,12 +49,30 @@ func _on_rumor_pressed(rumor: Dictionary, event_index: int, tier: int, dialogue_
 		return
 	# 禁用所有传闻按钮
 	get_tree().call_group("rumor_buttons", "set_disabled", true)
-	var narration := _build_rumor_narration(rumor, tier)
+	var narration := _build_rumor_narration(rumor, tier, result)
 	var beat = DialogueParser.beat_from_text(narration)
 	dialogue_box.show_single_beat(beat)
+	var summary := str(result.data.get("intel_summary", ""))
+	if summary != "":
+		message_logged.emit("【情报】已记入札记（%s 档）。\n%s\n\n" % ["★".repeat(tier), summary])
+	else:
+		message_logged.emit("【情报】已记入札记。\n\n")
 	status_updated.emit()
 
-func _build_rumor_narration(rumor: Dictionary, tier: int) -> String:
+func _build_rumor_narration(rumor: Dictionary, tier: int, result: IntentResult = null) -> String:
+	# 优先用 IntelNotes 生成的摘要（与账本一致）
+	if result != null and result.data.get("intel_summary", "") != "":
+		var lead := ""
+		match tier:
+			1:
+				lead = "喝醉的水手凑过来低声说："
+			2:
+				lead = "老水手压低声音："
+			3:
+				lead = "商人凑近低声道："
+			_:
+				lead = "有人低声说："
+		return "%s「%s」" % [lead, str(result.data.get("intel_summary", ""))]
 	var days_left: int = rumor.get("days_left", 7)
 	match tier:
 		1:
@@ -60,6 +85,10 @@ func _build_rumor_narration(rumor: Dictionary, tier: int) -> String:
 			var port_name: String = rumor.get("port_name", "某港")
 			var days_low: int = days_left - 1
 			var days_high: int = days_left + 2
-			return "商人凑近低声道：「%s那边，听说大约 %d 到 %d 天内会有大事，你自己掂量。」" % [port_name, maxi(1, days_low), days_high]
+			var etype := str(rumor.get("type", ""))
+			var label := IntelNotes.event_type_label(etype)
+			return "商人凑近低声道：「%s那边，大约 %d 到 %d 天内会有「%s」，你自己掂量。」" % [
+				port_name, maxi(1, days_low), days_high, label
+			]
 		_:
 			return ""
