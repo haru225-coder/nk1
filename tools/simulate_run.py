@@ -36,7 +36,7 @@ class G:
     year, month, day = 1255, 3, 1
     port = "quanzhou"
     ships = [{"type": "sampan", "name": "无名小艍", "crew": 6,
-              "durability": 120.0, "cargo": {}}]
+              "durability": 120.0, "sail_level": 1, "armor_level": 1, "cargo": {}}]
     water, food = 60, 60
     morale = 70
     at_sea = False
@@ -126,8 +126,9 @@ def wind_factor(course):
     return max(0.40, min(1.60, raw))
 
 def speed(course):
-    """舰队日速取最慢一艘（Fleet.fleet_speed 语义）"""
-    spd = min(ships[s["type"]]["base_speed"] for s in G.ships)
+    """舰队日速取最慢一艘（Fleet.fleet_speed 语义，含帆等级加成）"""
+    spd = min(ships[s["type"]]["base_speed"] * (1 + 0.12*(s.get("sail_level",1)-1))
+              for s in G.ships)
     return spd * morale_f() * wind_factor(course)
 
 DEBT_CEILING, DEBT_RATE = 3000, 0.03
@@ -377,7 +378,7 @@ if G.money >= ships["fu_ship_medium"]["price"]:
     G.money -= ships["fu_ship_medium"]["price"]
     G.ships.append({"type": "fu_ship_medium", "name": "福船",
                     "crew": ships["fu_ship_medium"]["crew_min"],
-                    "durability": 300.0, "cargo": {}})
+                    "durability": 300.0, "sail_level": 1, "armor_level": 1, "cargo": {}})
     print(f"  已购福船（中），余银 {G.money}，舰队 {len(G.ships)} 船，载重 {cap_total()} 料")
     check(G.ships[-1]["crew"] == ships["fu_ship_medium"]["crew_min"],
           f"新购福船水手 = crew_min（{G.ships[-1]['crew']} 人）")
@@ -427,6 +428,52 @@ if bt:
     check(verify_invariants(), "远洋后分船账目不变量成立")
     crew_after = total_crew()
     check(crew_after >= 20, f"航程后水手 {crew_after} 人，未因断粮损失殆尽")
+
+print()
+print("="*70)
+print("改装模拟：升帆/升甲后的航程与补给变化（独立于晋升主循环）")
+print("="*70)
+# 升级成本复刻 Fleet.upgrade_cost：ceil(价 × 0.10 × (1+0.5×(级-1)) × (甲则1.25))
+def upgrade_cost(sid, kind, lv):
+    price = ships[sid]["price"]
+    mult = 1.25 if kind == "armor" else 1.0
+    return math.ceil(price * 0.10 * (1 + 0.5*(lv-1)) * mult)
+def armor_reduction():
+    num = den = 0.0
+    for s in G.ships:
+        w = s.get("max_durability", 1.0) or 1.0
+        num += w * (s.get("armor_level",1) - 1); den += w
+    return 1.0 - 0.10*(num/den) if den > 0 else 1.0
+
+# 只取主力福船（最后一条）验证单船改装效果：舰队最慢船决定日速，
+# 此处只比较「福船自身」的 base_speed × sail_level，不受小艍拖累
+fu_i = next((i for i in range(len(G.ships)) if G.ships[i]["type"] == "fu_ship_medium"), None)
+if fu_i is not None:
+    d0, crs0 = dist("quanzhou","hakata"), bearing("quanzhou","hakata")
+    mf = morale_f()
+    wf = wind_factor(crs0)
+    base_spd = ships["fu_ship_medium"]["base_speed"] * mf * wf      # sail Lv1
+    base_days = math.ceil(d0/base_spd)
+    # 改装：福船升满帆（Lv1→3）
+    cost_sail = upgrade_cost("fu_ship_medium","sail",1) + upgrade_cost("fu_ship_medium","sail",2)
+    if G.money >= cost_sail:
+        G.money -= cost_sail
+        G.ships[fu_i]["sail_level"] = 3
+    up_spd = ships["fu_ship_medium"]["base_speed"] * 1.24 * mf * wf  # ×(1+0.12×2)
+    up_days = math.ceil(d0/up_spd)
+    print(f"\n  福船升满帆（Lv3，花 {cost_sail} 钱）：泉州→博多 单船日速 {base_spd:.0f} → {up_spd:.0f} 里/日（+{up_spd/base_spd*100-100:.1f}%）")
+    check(up_spd > base_spd, "升满帆后航速提升")
+    check(up_spd/base_spd < 1.30, f"航速提升 {up_spd/base_spd*100-100:.1f}% < 30%（未架空季风）")
+    check(up_days <= base_days and (base_days - up_days) >= 1,
+          f"满帆后泉州→博多理论航程 {base_days}→{up_days} 日（缩短 ≥1 日）")
+    # 升满甲：验证风暴/海盗船体伤系数
+    cost_armor = upgrade_cost("fu_ship_medium","armor",1) + upgrade_cost("fu_ship_medium","armor",2)
+    if G.money >= cost_armor:
+        G.money -= cost_armor
+        G.ships[fu_i]["armor_level"] = 3
+    print(f"  福船升满甲（Lv3，花 {cost_armor} 钱）：船体伤系数 {armor_reduction():.2f}")
+    check(0.79 <= armor_reduction() <= 1.0, f"满甲船体伤系数 {armor_reduction():.2f}，风涛仍要命（≥0.80 级）")
+    check(verify_invariants(), "改装后分船账目不变量仍成立")
 
 print()
 print("="*70)

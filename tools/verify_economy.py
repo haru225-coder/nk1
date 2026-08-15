@@ -530,6 +530,96 @@ check(crew_ok([sampan, fu], [ships[sampan]["crew_min"], ships[fu]["crew_min"]]),
 
 print()
 print("=" * 68)
+print("六之四、船体改装系统（复刻 Fleet.upgrade_cost / armor_damage_reduction）")
+print("=" * 68)
+print("  改装通修所有船，帆 Lv 决定航速（0.12/级），甲 Lv 减免风暴/海盗船体伤。")
+print("  成本 = ceil(船价 × 10% × (1+0.5×(级-1)) × (甲则1.25))，上限 3 级。")
+
+def upgrade_cost(sid, kind, lv):
+    price = ships[sid]["price"]
+    mult = 1.25 if kind == "armor" else 1.0
+    if lv >= 3:
+        return 0  # 满级守卫，与 Fleet.upgrade_cost 一致
+    return math.ceil(price * 0.10 * (1 + 0.5 * (lv - 1)) * mult)
+
+# 1) 成本随级、随船价严格递增（跨船可比、单调）
+increasing = all(upgrade_cost(sid, "sail", 1) < upgrade_cost(sid, "sail", 2)
+                 for sid in ships)
+check(increasing, "升帆成本随级递增（L1→2 < L2→3）")
+# 更稳健：价低的船单级成本不高于价高的
+price_ordered2 = all(upgrade_cost(a, "sail", 1) <= upgrade_cost(b, "sail", 1)
+                     for a, b in [(x, y) for x in ships for y in ships
+                                  if ships[x]["price"] <= ships[y]["price"]])
+check(price_ordered2, "升帆成本随船价单调不减（贵船改更贵，跨船可比）")
+
+# 2) 满级返回 0（上限生效）
+all_full_cost0 = all(upgrade_cost(sid, "sail", 3) == 0 and upgrade_cost(sid, "armor", 3) == 0
+                     for sid in ships)
+check(all_full_cost0, "满级（Lv3）后升级成本为 0——上限 3 级生效")
+
+# 3) armor 满级船体伤系数 = 0.80 > 0——风暴依旧要命，不能归零
+def armor_reduction(max_durabilities, armor_levels):
+    num = sum(w * (a - 1) for w, a in zip(max_durabilities, armor_levels))
+    den = sum(max_durabilities)
+    return 1.0 - 0.10 * (num / den)
+
+full_armor = armor_reduction([ships[sid]["durability"] for sid in ships],
+                             [3] * len(ships))
+check(full_armor == 0.80, f"全队满甲船体伤系数 {full_armor:.2f}，风暴仍要命（未归零）")
+base_armor = armor_reduction([ships[sid]["durability"] for sid in ships],
+                             [1] * len(ships))
+check(base_armor == 1.0, f"未改装船体伤系数 {base_armor:.2f}（甲 Lv1 无减免）")
+
+# 4) 帆满级航程缩短 ≤20%（确定性：×1.24 → ÷1.24；远洋 13 日 → 10.5 日）
+import math as _math
+def trip_days(d, spd):
+    return _math.ceil(d / spd)
+d_hakata = distance_li("quanzhou", "hakata")
+d_base = trip_days(d_hakata, ships["fu_ship_medium"]["base_speed"] * (0.6 + 0.4 * 0.7))
+d_full = trip_days(d_hakata, ships["fu_ship_medium"]["base_speed"] * 1.24 * (0.6 + 0.4 * 0.7))
+shrink = (1 - d_full / d_base) * 100
+print(f"  福船(中) 泉州→博多 理论航程：帆Lv1 {d_base} 日 → 帆满级 {d_full} 日（缩短 {shrink:.1f}%）")
+check(shrink <= 20, f"帆满级航程缩短 {shrink:.1f}% ≤ 20%（未架空季风候风）")
+check(d_full < d_base, "帆满级确实缩短航程")
+
+# 5) armor 满级使舰队战力提升 ≤25%（相对 0.5×耐久 + 4×水手 + 25×炮 + 30×armor 基线）
+# 用一艘福船(中) 为例（水手取 crew_min，士气 70）
+def fp_one(cid, armor_lv):
+    s = ships[cid]
+    durab = s["durability"]
+    crew = s["crew_min"]
+    return (durab * 0.5 + crew * 4.0 + s["cannon_slots"] * 25.0 + armor_lv * 30.0) * (0.6 + 0.4 * 0.7)
+fp1, fp3 = fp_one("fu_ship_medium", 1), fp_one("fu_ship_medium", 3)
+fp_gain = (fp3 / fp1 - 1) * 100
+print(f"  福船(中) 战力：甲Lv1 {fp1:.0f} → 甲满级 {fp3:.0f}（+{fp_gain:.1f}%）")
+check(fp_gain <= 25, f"甲满级战力提升 {fp_gain:.1f}% ≤ 25%（未使海战胜负失衡）")
+
+# 6) 单船升满帆甲总成本 ≤ 该船价 60%——改装不喧宾夺主
+def full_upgrade_cost(cid):
+    s = ships[cid]
+    sail = upgrade_cost(cid, "sail", 1) + upgrade_cost(cid, "sail", 2)
+    armor = upgrade_cost(cid, "armor", 1) + upgrade_cost(cid, "armor", 2)
+    return sail + armor
+full_costs = {cid: full_upgrade_cost(cid) for cid in ships}
+check(all(full_costs[cid] <= ships[cid]["price"] * 0.6 for cid in ships),
+      f"单船升满帆甲成本 ≤ 船价 60%（最贵 {max(full_costs.values())} 钱）")
+
+# 7) 全船队升满总成本 ≥ 舰队船价总和 15%——真实资金沉淀
+fleet_total = sum(s["price"] for s in ships.values())
+fleet_full = sum(full_costs.values())
+print(f"  全船队升满帆甲总成本 {fleet_full} 钱，船价总和 {fleet_total} 钱（占比 {fleet_full/fleet_total*100:.1f}%）")
+check(fleet_full >= fleet_total * 0.15,
+      f"全船队升满总成本占船价 {fleet_full/fleet_total*100:.1f}% ≥ 15%（改装是真实资金沉淀）")
+
+# 8) 最贵单级升级（神舟甲 L2→3）> 开局单趟净利量级（verify 六节实测上限 3000）且 ≥ 神舟价 18%
+divine = ships["divine_ship"]
+divine_armor_max = upgrade_cost("divine_ship", "armor", 2)
+check(divine_armor_max > 3000, f"神舟甲 L2→3 成本 {divine_armor_max} > 开局单趟净利上限 3000（远期投资）")
+check(divine_armor_max >= divine["price"] * 0.18,
+      f"神舟甲 L2→3 成本 {divine_armor_max} ≥ 神舟价 {divine['price']} 的 18%（{int(divine['price']*0.18)}）")
+
+print()
+print("=" * 68)
 print("七、违禁品走私的风险回报")
 print("=" * 68)
 

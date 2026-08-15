@@ -549,12 +549,12 @@ func _on_event_continue() -> void:
 
 # ── 海盗 ────────────────────────────────────────────
 
-## 舰队战力：耐久 + 水手 + 炮位，计入士气
+## 舰队战力：耐久 + 水手 + 炮位 + 甲级，计入士气
 func _fleet_power() -> float:
 	var cannons := 0
 	for s in Fleet.ships:
 		cannons += int(Fleet.ship_def(s.get("type", "")).get("cannon_slots", 0))
-	return (Fleet.total_durability() * 0.5 + Fleet.total_crew() * 4.0 + cannons * 25.0) * Fleet.morale_factor()
+	return (Fleet.total_durability() * 0.5 + Fleet.total_crew() * 4.0 + cannons * 25.0 + Fleet.fleet_armor_level() * 30.0) * Fleet.morale_factor()
 
 
 func _on_fight_pirates() -> void:
@@ -565,12 +565,12 @@ func _on_fight_pirates() -> void:
 		var spoil := int(randf_range(150, 600))
 		GameState.add_money(spoil)
 		GameState.fame += 3
-		var dmg := enemy * 0.06
+		var dmg := enemy * 0.06 * Fleet.armor_damage_reduction()
 		Fleet.damage_fleet(dmg)
 		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 5)
 		_log("[color=lime]击退海盗，夺得财货 %d 钱。船体受损 %d。[/color]" % [spoil, int(dmg)])
 	else:
-		var dmg := enemy * 0.16
+		var dmg := enemy * 0.16 * Fleet.armor_damage_reduction()
 		Fleet.damage_fleet(dmg)
 		Fleet.morale = maxi(0, Fleet.morale - 12)
 		var lost := Fleet.lose_cargo_ratio(0.25)
@@ -594,7 +594,7 @@ func _on_flee_pirates() -> void:
 		var lost_str := ""
 		for gid in lost.keys():
 			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-		Fleet.damage_fleet(30.0)
+		Fleet.damage_fleet(30.0 * Fleet.armor_damage_reduction())
 		_log("[color=red]没能甩脱，被追上跳帮，抢走了货。%s[/color]" % lost_str)
 	_refresh_status()
 	_after_combat()

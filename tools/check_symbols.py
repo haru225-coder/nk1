@@ -336,6 +336,82 @@ for f in ("ship_crew", "ship_crew_min", "ship_crew_max", "ship_crew_room",
 
 print()
 print("=" * 68)
+print("五之三、船体改装契约")
+print("=" * 68)
+print("  改装：sail_level/armor_level 字段已就绪，须有完整的升级 API 与消费方。")
+
+upgrade_funcs = ("upgrade_sail", "upgrade_armor", "sail_level", "armor_level",
+                 "upgrade_cost", "is_sail_max", "is_armor_max",
+                 "armor_damage_reduction", "fleet_armor_level")
+for f in upgrade_funcs:
+    if f in defined["Fleet"]:
+        print(f"  ✓ Fleet.{f} 已定义")
+    else:
+        print(f"  ✗ Fleet.{f} 未定义")
+        problems.append(f"Fleet.{f} 未定义")
+
+for c in ("SAIL_LEVEL_MAX", "ARMOR_LEVEL_MAX", "UPGRADE_BASE_RATIO"):
+    if c in defined["Fleet"]:
+        print(f"  ✓ Fleet.{c} 常量已定义")
+    else:
+        print(f"  ✗ Fleet.{c} 常量未定义")
+        problems.append(f"Fleet.{c} 未定义")
+
+main_src = ""
+for dirpath, _, files in os.walk(SCRIPTS):
+    for fn in files:
+        if fn == "Main.gd":
+            with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
+                main_src = f.read()
+if re.search(r'^func\s+_on_upgrade\b', main_src, re.M):
+    print("  ✓ Main._on_upgrade 已定义（船屋升级按钮 connect 目标）")
+else:
+    print("  ✗ Main._on_upgrade 未定义")
+    problems.append("Main._on_upgrade 未定义")
+
+# armor 消费方：风暴与海盗船体伤都须经 armor_damage_reduction
+voyage_src = ""
+for dirpath, _, files in os.walk(SCRIPTS):
+    for fn in files:
+        if fn == "Voyage.gd":
+            with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
+                voyage_src = f.read()
+if "armor_damage_reduction" in voyage_src:
+    print("  ✓ Voyage 风暴伤害已乘 armor_damage_reduction")
+else:
+    print("  ✗ Voyage 风暴伤害未乘 armor_damage_reduction——甲等级无消费点")
+    problems.append("Voyage 风暴未消费 armor")
+
+seachart_src = ""
+for dirpath, _, files in os.walk(SCRIPTS):
+    for fn in files:
+        if fn == "SeaChart.gd":
+            with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
+                seachart_src = f.read()
+uses_in_power = "fleet_armor_level" in seachart_src
+uses_in_dmg = seachart_src.count("armor_damage_reduction") >= 3
+if uses_in_power:
+    print("  ✓ SeaChart 战力已计入 fleet_armor_level")
+else:
+    print("  ✗ SeaChart 战力未计入 fleet_armor_level")
+    problems.append("SeaChart 战力未计入 armor")
+if uses_in_dmg:
+    print("  ✓ SeaChart 海盗三处船体伤已乘 armor_damage_reduction")
+else:
+    print(f"  ✗ SeaChart armor_damage_reduction 使用次数不足（期望 ≥3，实际 {seachart_src.count('armor_damage_reduction')}）")
+    problems.append("SeaChart 海盗伤害未消费 armor")
+
+# 升级 API 满级防御：upgrade_* 应返回 bool 且只在非满级时改写等级
+for f in ("upgrade_sail", "upgrade_armor"):
+    body = func_bodies(fleet_src).get(f, "")
+    if "return false" in body and "return true" in body:
+        print(f"  ✓ Fleet.{f} 有满级返回 false 的守卫")
+    else:
+        print(f"  ✗ Fleet.{f} 缺少满级守卫（应满级返回 false）")
+        problems.append(f"Fleet.{f} 无满级守卫")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:

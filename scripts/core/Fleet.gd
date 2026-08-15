@@ -44,6 +44,12 @@ const SUPPLY_BULK := 0.25
 ## 一份水/粮可供几人日。设为 1 时补给开销会吞掉近海跑商的全部利润，形成衰竭螺旋。
 const CREW_DAYS_PER_SUPPLY := 2.0
 
+## 改装上限。sail 满级航速 ×1.24，再高会架空季风候风；甲满级船体伤 ×0.80，风涛仍要命。
+const SAIL_LEVEL_MAX := 3
+const ARMOR_LEVEL_MAX := 3
+## 升级成本 = ceil(船价 × 本比例 × 级数递增系数 × (甲则 ×1.25))，与每级 10% 加成同量级
+const UPGRADE_BASE_RATIO := 0.10
+
 
 ## 当前船员每日消耗的水（或粮）份数
 func daily_supply_use() -> int:
@@ -519,6 +525,88 @@ func repair_cost() -> int:
 func repair_all() -> void:
 	for s in ships:
 		s["durability"] = s["max_durability"]
+
+
+# ── 改装 ──────────────────────────────────────────────
+
+## 指定船帆等级（越界返回 0）
+func sail_level(i: int) -> int:
+	if i < 0 or i >= ships.size():
+		return 0
+	return int(ships[i].get("sail_level", 1))
+
+
+## 指定船甲等级（越界返回 0）
+func armor_level(i: int) -> int:
+	if i < 0 or i >= ships.size():
+		return 0
+	return int(ships[i].get("armor_level", 1))
+
+
+func is_sail_max(i: int) -> bool:
+	return i < 0 or i >= ships.size() or sail_level(i) >= SAIL_LEVEL_MAX
+
+
+func is_armor_max(i: int) -> bool:
+	return i < 0 or i >= ships.size() or armor_level(i) >= ARMOR_LEVEL_MAX
+
+
+## 指定船升级指定项到下一级的花费。满级返回 0（防御——调用方应先看 is_*_max）。
+func upgrade_cost(i: int, kind: String) -> int:
+	if i < 0 or i >= ships.size():
+		return 0
+	var lv := armor_level(i) if kind == "armor" else sail_level(i)
+	var mx := ARMOR_LEVEL_MAX if kind == "armor" else SAIL_LEVEL_MAX
+	if lv >= mx:
+		return 0
+	var price := float(ship_def(ships[i].get("type", "")).get("price", 0))
+	var armor_mult := 1.25 if kind == "armor" else 1.0
+	return int(ceil(price * UPGRADE_BASE_RATIO * (1.0 + 0.5 * float(lv - 1)) * armor_mult))
+
+
+## 升帆。满级返回 false；只改等级不碰钱（钱由调用方先扣）。
+func upgrade_sail(i: int) -> bool:
+	if is_sail_max(i):
+		return false
+	ships[i]["sail_level"] = sail_level(i) + 1
+	return true
+
+
+## 升甲。满级返回 false；只改等级不碰钱。
+func upgrade_armor(i: int) -> bool:
+	if is_armor_max(i):
+		return false
+	ships[i]["armor_level"] = armor_level(i) + 1
+	return true
+
+
+## 全队甲等级按 max_durability 加权的均值（≥1），供战力计算用。
+## 加权避免「旗舰满甲 + 一群小艍」被简单平均稀释；空舰队返回 1。
+func fleet_armor_level() -> int:
+	var num := 0.0
+	var den := 0.0
+	for s in ships:
+		var w := float(s.get("max_durability", 1.0))
+		num += w * float(int(s.get("armor_level", 1)) - 1)
+		den += w
+	if den <= 0.0:
+		return 1
+	return 1 + int(round(num / den))
+
+
+## 全队船体伤害系数：满甲 0.80（最多减 20% 船体伤），Lv1 为 1.0。
+## 风暴与海盗船体伤都乘此系数。加权口径同上，防除零。
+func armor_damage_reduction() -> float:
+	var num := 0.0
+	var den := 0.0
+	for s in ships:
+		var w := float(s.get("max_durability", 1.0))
+		num += w * float(int(s.get("armor_level", 1)) - 1)
+		den += w
+	if den <= 0.0:
+		return 1.0
+	var avg := num / den
+	return clampf(1.0 - 0.10 * avg, 0.0, 1.0)
 
 
 ## 舰队日速（里/日），取最慢一艘，计入士气与火长

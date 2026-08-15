@@ -144,7 +144,7 @@ func roll_day_event(course_bearing: float, from_id: String = "", to_id: String =
 
 func _storm_event() -> Dictionary:
 	var severity := randf_range(0.3, 1.0)
-	var hull_dmg := 12.0 * severity * Fleet.ships.size()
+	var hull_dmg := 12.0 * severity * Fleet.ships.size() * Fleet.armor_damage_reduction()
 	Fleet.damage_fleet(hull_dmg)
 	# 易碎货按 fragile 系数受损
 	var lost := {}

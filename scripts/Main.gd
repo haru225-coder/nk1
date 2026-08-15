@@ -144,9 +144,10 @@ func update_status_panel() -> void:
 			if Fleet.ship_crew(i) < Fleet.ship_crew_min(i):
 				crew_color = "red"
 				crew_str += "（缺 %d 人）" % (Fleet.ship_crew_min(i) - Fleet.ship_crew(i))
-			t += "[i]└ %s（%s）%d/%d 料　[color=%s]%s[/color]　%s[/i]\n" % [
+			t += "[i]└ %s（%s）%d/%d 料　帆Lv%d/甲Lv%d　[color=%s]%s[/color]　%s[/i]\n" % [
 				s.get("name", ""), Fleet.ship_def(s.get("type", "")).get("name", ""),
 				int(Fleet.ship_cargo_bulk(i)), int(Fleet.ship_capacity(i)),
+				Fleet.sail_level(i), Fleet.armor_level(i),
 				crew_color, crew_str, per_ship,
 			]
 
@@ -703,6 +704,46 @@ func _setup_shipyard(port_id: String) -> void:
 		)
 		choices_container.add_child(rb2)
 
+	# 改装：帆 Lv 决定航速，甲 Lv 减免风暴/海盗船体伤。逐船两按钮（.bind 传 index 防闭包陷阱）
+	var up_lbl := Label.new()
+	up_lbl.text = "── 船体改装（帆 Lv 决定航速，甲 Lv 减免风暴/海盗船体伤）──"
+	up_lbl.add_theme_font_size_override("font_size", 13)
+	choices_container.add_child(up_lbl)
+
+	for i in range(Fleet.ships.size()):
+		var s: Dictionary = Fleet.ships[i]
+		var sname: String = s.get("name", "船")
+		var slv: int = Fleet.sail_level(i)
+		var alv: int = Fleet.armor_level(i)
+
+		if Fleet.is_sail_max(i):
+			var fsat := Button.new()
+			fsat.text = "「%s」帆已满级（Lv%d）" % [sname, Fleet.SAIL_LEVEL_MAX]
+			fsat.disabled = true
+			choices_container.add_child(fsat)
+		else:
+			var scost: int = Fleet.upgrade_cost(i, "sail")
+			var fb := Button.new()
+			fb.text = "改「%s」帆 Lv%d→%d　航速 ×%.2f（%d 钱）" % [
+				sname, slv, slv + 1, 1.0 + 0.12 * slv, scost,
+			]
+			fb.pressed.connect(_on_upgrade.bind(i, "sail", scost))
+			choices_container.add_child(fb)
+
+		if Fleet.is_armor_max(i):
+			var asat := Button.new()
+			asat.text = "「%s」甲已满级（Lv%d）" % [sname, Fleet.ARMOR_LEVEL_MAX]
+			asat.disabled = true
+			choices_container.add_child(asat)
+		else:
+			var acost: int = Fleet.upgrade_cost(i, "armor")
+			var ab := Button.new()
+			ab.text = "改「%s」甲 Lv%d→%d　船体伤 ×%.2f（%d 钱）" % [
+				sname, alv, alv + 1, 1.0 - 0.10 * alv, acost,
+			]
+			ab.pressed.connect(_on_upgrade.bind(i, "armor", acost))
+			choices_container.add_child(ab)
+
 	# 买船
 	var ship_lbl := Label.new()
 	ship_lbl.text = "── 船行 ──"
@@ -742,6 +783,20 @@ func _on_hire_crew(ship_index: int, hire_n: int, hire_cost: int) -> void:
 		log_msg("码头上招了 %d 个水手，上了「%s」。" % [got, s.get("name", "")])
 	else:
 		log_msg("【钱不够】没人肯赊帐上船。")
+	load_scene(current_scene_id)
+
+
+func _on_upgrade(ship_index: int, kind: String, cost: int) -> void:
+	if not GameState.spend_money(cost):
+		log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
+	elif kind == "armor":
+		Fleet.upgrade_armor(ship_index)
+		var s: Dictionary = Fleet.ships[ship_index]
+		log_msg("「%s」加厚了船壳，甲升至 Lv%d。" % [s.get("name", "船"), Fleet.armor_level(ship_index)])
+	else:
+		Fleet.upgrade_sail(ship_index)
+		var s2: Dictionary = Fleet.ships[ship_index]
+		log_msg("「%s」换了新帆，帆升至 Lv%d。" % [s2.get("name", "船"), Fleet.sail_level(ship_index)])
 	load_scene(current_scene_id)
 
 
