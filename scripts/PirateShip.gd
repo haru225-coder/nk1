@@ -16,6 +16,10 @@ var crate_scene = preload("res://scenes/Crate.tscn")
 
 var fire_timer: float = 0.0
 
+## P4-3 齐射弹数：默认 3 覆盖自由航行刷出的海盗（_process_spawns 不设此字段）；
+## 海战由 _spawn_enemy 按 scale 写入 2~9。
+var cannon_count: int = 3
+
 ## P4-2 接舷：被玩家钩住后停止航行/开炮，进入白刃判定
 var grappled: bool = false
 ## 敌船型号（_spawn_enemy 传入；白刃夺船时 Fleet.add_ship 用）
@@ -81,9 +85,9 @@ func _process_firing(delta: float, angle_diff: float, dist: float) -> void:
 		var side_dir = Vector2.RIGHT.rotated(rotation)
 		if angle_diff < 0: side_dir = Vector2.LEFT.rotated(rotation)
 		
-		for i in range(3):
+		for i in range(cannon_count):
 			var cb = cannonball_scene.instantiate()
-			cb.position = position + ship_dir * (i * 20 - 20) + side_dir * 30
+			cb.position = position + ship_dir * (i - (cannon_count - 1) * 0.5) * 20 + side_dir * 30
 			var spread = randf_range(-0.1, 0.1)
 			cb.direction = side_dir.rotated(spread)
 			cb.shooter = self

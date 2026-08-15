@@ -1,3 +1,4 @@
+class_name Ship
 extends CharacterBody2D
 
 # 核心航海物理 v4.0 (火炮海战版)
@@ -62,9 +63,13 @@ func _fire_broadside(side: int) -> void:
 	var ship_dir = Vector2.UP.rotated(rotation)
 	var side_dir = Vector2.RIGHT.rotated(rotation) if side == 1 else Vector2.LEFT.rotated(rotation)
 	
-	for i in range(3):
+	# P4-3：齐射弹数挂钩旗舰炮位（保底 1 发），排布居中不随炮位前移
+	var flagship := Fleet.flagship()
+	var slots := int(Fleet.ship_def(flagship.get("type", "")).get("cannon_slots", 0))
+	var shots := maxi(1, slots)
+	for i in range(shots):
 		var cb = cannonball_scene.instantiate()
-		cb.position = position + ship_dir * (i * 20 - 20) + side_dir * 30
+		cb.position = position + ship_dir * (i - (shots - 1) * 0.5) * 20 + side_dir * 30
 		var spread = randf_range(-0.1, 0.1)
 		cb.direction = side_dir.rotated(spread)
 		cb.shooter = self

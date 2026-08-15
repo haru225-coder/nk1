@@ -377,6 +377,7 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary) -> void:
 		p.crew = randi_range(crew_low, crew_high)
 		p.enemy_morale = randi_range(50, 75)
 		p.captain_force = 1.0 + 0.3 * float(scale - 1.0)  # 强敌水手多，头目更悍
+		p.cannon_count = maxi(1, int(round(3.0 * scale)))  # P4-3：敌船弹数随战力比温和缩放（0.8~3.0 → 2~9 发）
 		add_child(p)
 		total_enemies += 1
 

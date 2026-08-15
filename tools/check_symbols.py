@@ -441,6 +441,12 @@ for dirpath, _, files in os.walk(SCRIPTS):
         if fn == "PirateShip.gd":
             with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
                 pirate_src = f.read()
+cannonball_src = ""
+for dirpath, _, files in os.walk(SCRIPTS):
+    for fn in files:
+        if fn == "Cannonball.gd":
+            with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
+                cannonball_src = f.read()
 
 # 1. GameManager.pending_battle 上下文
 if "pending_battle" in defined["GameManager"]:
@@ -581,6 +587,40 @@ if '"martial"' in gs_src:
 else:
     print("  ✗ GameState 存档缺 martial")
     problems.append("GameState 存档缺 martial")
+
+print()
+print("=" * 68)
+print("八、海战契约（P4-3：Cannonball 弹数挂炮位 + 伤害乘甲）")
+print("=" * 68)
+print("  玩家齐射弹数挂钩旗舰 cannon_slots；敌船弹数按 scale 缩放；玩家船受击乘甲。")
+
+# 1. Ship：不再写死 range(3) 齐射，且引用 cannon_slots
+if "cannon_slots" in ship_src and "range(3)" not in ship_src:
+    print("  ✓ Ship 齐射弹数已挂钩 cannon_slots（无 range(3) 写死）")
+else:
+    print("  ✗ Ship 齐射弹数未挂钩 cannon_slots 或仍写死 range(3)")
+    problems.append("Ship 齐射未挂 cannon_slots")
+
+# 2. PirateShip：声明 cannon_count 字段，且 _process_firing 用 range(cannon_count)
+if "cannon_count" in pirate_src and "range(cannon_count)" in pirate_src:
+    print("  ✓ PirateShip 声明 cannon_count 且 _process_firing 用 range(cannon_count)")
+else:
+    print("  ✗ PirateShip 缺 cannon_count 字段或未用 range(cannon_count)")
+    problems.append("PirateShip 弹数未挂 cannon_count")
+
+# 3. WorldMap：_spawn_enemy 写入 cannon_count
+if "cannon_count" in wm_src:
+    print("  ✓ WorldMap._spawn_enemy 写入 cannon_count")
+else:
+    print("  ✗ WorldMap 未写入 cannon_count")
+    problems.append("WorldMap 未写 cannon_count")
+
+# 4. Cannonball：引用 armor_damage_reduction（玩家船受击乘甲）
+if "armor_damage_reduction" in cannonball_src:
+    print("  ✓ Cannonball 伤害已乘 armor_damage_reduction")
+else:
+    print("  ✗ Cannonball 未引用 armor_damage_reduction——甲等级无实时消费点")
+    problems.append("Cannonball 未乘 armor")
 
 print()
 print("=" * 68)
