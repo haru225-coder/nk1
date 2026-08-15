@@ -232,5 +232,25 @@ func _test_calendar_event_scheduler() -> void:
 		var scheduler_saved: Dictionary = game_state.to_save_dict()
 		_assert_true(scheduler_saved.has("calendar_scheduler"), "GameState: 存档包含 calendar_scheduler")
 
+	# unless_flag：已完成章三时不再拉回召见
+	var unless_scheduler = scheduler_script.new()
+	unless_scheduler.load_from_data({
+		"version": 1,
+		"events": [{
+			"id": "blocked_summon",
+			"fire": {"month_offset": 0},
+			"condition": {"flag": "chapter2_complete", "unless_flag": "chapter3_complete"},
+			"action": {"type": "scene", "target": "should_not_fire"},
+			"priority": 1,
+			"once": true,
+		}]
+	})
+	IdempotencyGuard.clear_all()
+	var blocked_state := CalendarFakeState.new()
+	blocked_state.set_story_flag("chapter2_complete", true)
+	blocked_state.set_story_flag("chapter3_complete", true)
+	var blocked_fire: Array = unless_scheduler.check_and_fire({"calendar": calendar_script.new(), "state": blocked_state, "rank": 5})
+	_assert_eq(blocked_fire.size(), 0, "CalendarScheduler: unless_flag 阻止已完成事件")
+
 	IdempotencyGuard.clear_all()
 	print("")

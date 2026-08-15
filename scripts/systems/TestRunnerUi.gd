@@ -150,6 +150,7 @@ func _test_resource_paths() -> void:
 	_assert_eq(ResourcePaths.SCRIPT_MAIN_MESSAGE_PANEL, "res://scripts/MainMessagePanel.gd", "ResourcePaths.SCRIPT_MAIN_MESSAGE_PANEL")
 	_assert_eq(ResourcePaths.SCRIPT_MAIN_SCENE_PRESENTER, "res://scripts/MainScenePresenter.gd", "ResourcePaths.SCRIPT_MAIN_SCENE_PRESENTER")
 	_assert_eq(ResourcePaths.SCRIPT_PORT_INTRO_PLAYER, "res://scripts/PortIntroPlayer.gd", "ResourcePaths.SCRIPT_PORT_INTRO_PLAYER")
+	_assert_eq(ResourcePaths.SCRIPT_SCENE_ROUTER, "res://scripts/SceneRouter.gd", "ResourcePaths.SCRIPT_SCENE_ROUTER")
 	_assert_eq(ResourcePaths.SCRIPT_SCENE_BACKGROUND_LOADER, "res://scripts/SceneBackgroundLoader.gd", "ResourcePaths.SCRIPT_SCENE_BACKGROUND_LOADER")
 	_assert_eq(ResourcePaths.SCRIPT_STORY_TABLE_REGISTRY, "res://scripts/systems/StoryTableRegistry.gd", "ResourcePaths.SCRIPT_STORY_TABLE_REGISTRY")
 	_assert_eq(ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER, "res://scripts/StoryUnlockToastController.gd", "ResourcePaths.SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER")
@@ -449,6 +450,9 @@ func _test_map_visual_style() -> void:
 		_assert_not_null(title_panel, "TitlePanel style exists")
 		if title_panel != null:
 			_assert_true(title_panel.corner_radius_top_left <= 8 and title_panel.corner_radius_top_right <= 8, "TitlePanel keeps hard nautical frame corners")
+			_assert_true(title_panel.border_width_left >= 4 and title_panel.border_width_top >= 4, "TitlePanel brass frame has weight")
+			_assert_true(title_panel.bg_color.r < 0.06 and title_panel.bg_color.b < 0.12, "TitlePanel uses deep sea ink color")
+			_assert_true(title_panel.content_margin_left >= 36.0, "TitlePanel has roomy content margins")
 
 		var facility_card := theme.get_stylebox("panel", "PortFacilityCard") as StyleBoxFlat
 		_assert_not_null(facility_card, "PortFacilityCard uses a direct nautical stylebox")

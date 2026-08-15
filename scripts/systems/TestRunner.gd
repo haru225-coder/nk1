@@ -43,6 +43,20 @@ func _run() -> void:
 	_test_career_state()
 	_test_ending_resolver()
 	_test_chapter3_ending_bridge()
+	_test_completion_vertical_slice()
+	_test_ending_ux()
+	_test_scene_router()
+	_test_mode_stack()
+	_test_sea_hud_layout()
+	_test_content_experience_hooks()
+	_test_ui_icon_resolution()
+	_test_facility_column_split()
+	_test_sea_feedback()
+	_test_economy_feel()
+	_test_intel_notes()
+	_test_title_and_hotspot_visual()
+	_test_p9a_first_hour_ux()
+	_test_p9c_architecture_boundaries()
 	_run_controller_tests()
 	_run_story_tests()
 	_test_event_economy_integration()
@@ -1459,6 +1473,98 @@ func _test_ending_resolver() -> void:
 
 	print("")
 
+
+## 通关后 UX：结算文案 + 回标题 / 新航程
+func _test_ending_ux() -> void:
+	print("[Ending UX]")
+	_assert_eq(ResourcePaths.SCRIPT_ENDING_SETTLEMENT, "res://scripts/EndingSettlementController.gd", "ResourcePaths.SCRIPT_ENDING_SETTLEMENT")
+	var settle_script: GDScript = load(ResourcePaths.SCRIPT_ENDING_SETTLEMENT) as GDScript
+	_assert_true(settle_script != null, "EndingUX: EndingSettlementController 可加载")
+
+	# endings.json 展示字段
+	var f := FileAccess.open(ResourcePaths.DATA_ENDINGS, FileAccess.READ)
+	_assert_true(f != null, "EndingUX: endings.json 可读")
+	if f != null:
+		var parsed = JSON.parse_string(f.get_as_text())
+		f.close()
+		_assert_true(parsed is Dictionary, "EndingUX: endings 根对象")
+		if parsed is Dictionary:
+			var list: Array = parsed.get("endings", [])
+			_assert_true(list.size() >= 3, "EndingUX: 至少三结局")
+			for eid in ["loyalty_ending", "defection_ending", "overseas_ending"]:
+				var found := false
+				for raw in list:
+					if str(raw.get("id", "")) != eid:
+						continue
+					found = true
+					_assert_true(str(raw.get("title", "")) != "", "EndingUX: %s 有 title" % eid)
+					_assert_true(str(raw.get("summary", "")) != "", "EndingUX: %s 有 summary" % eid)
+					_assert_true(str(raw.get("epilogue", "")) != "", "EndingUX: %s 有 epilogue" % eid)
+				_assert_true(found, "EndingUX: 含 %s" % eid)
+
+	var resolver_script = load(ResourcePaths.SCRIPT_ENDING_RESOLVER)
+	_assert_true(resolver_script != null, "EndingUX: EndingResolver 可加载")
+	if resolver_script != null:
+		var resolver = resolver_script.new()
+		resolver.load_defs()
+		var def_l: Dictionary = resolver.get_ending_def("loyalty_ending")
+		_assert_eq(str(def_l.get("title", "")), "忠义", "EndingUX: loyalty title=忠义")
+		var def_d: Dictionary = resolver.get_ending_def("defection_ending")
+		_assert_eq(str(def_d.get("title", "")), "投附", "EndingUX: defection title=投附")
+		var def_o: Dictionary = resolver.get_ending_def("overseas_ending")
+		_assert_eq(str(def_o.get("title", "")), "远航", "EndingUX: overseas title=远航")
+
+	# 结算 UI 节点树
+	if settle_script != null:
+		var layer: CanvasLayer = settle_script.new() as CanvasLayer
+		root.add_child(layer)
+		if layer.has_method("present"):
+			layer.call("present", {
+				"ending_id": "loyalty_ending",
+				"title": "忠义",
+				"subtitle": "测",
+				"summary": "摘要",
+				"epilogue": "后记",
+				"rank_title": "市舶司都纲",
+				"date_key": "宝祐三年正月",
+			})
+		_assert_true(layer.get_node_or_null("SettlementRoot") != null, "EndingUX: SettlementRoot 存在")
+		var title_lbl := layer.find_child("Title", true, false) as Label
+		_assert_true(title_lbl != null and "忠义" in title_lbl.text, "EndingUX: 标题含结局名")
+		var actions := layer.find_child("Actions", true, false)
+		_assert_true(actions != null and actions.get_child_count() >= 3, "EndingUX: 三个操作按钮")
+		layer.queue_free()
+
+	# begin_new_run 清通关标记
+	var gs = root.get_node_or_null("/root/GameState")
+	_assert_true(gs != null, "EndingUX: GameState 可取得")
+	if gs != null and gs.has_method("begin_new_run"):
+		var before: Dictionary = gs.to_save_dict()
+		gs.set_story_flag("game_completed", true)
+		gs.set_story_flag("ending_id", "loyalty_ending")
+		gs.begin_new_run()
+		_assert_true(not gs.has_story_flag("game_completed"), "EndingUX: begin_new_run 清除 game_completed")
+		_assert_true(gs.has_signal("ending_resolved"), "EndingUX: GameState.ending_resolved 信号")
+		gs.from_save_dict(before)
+		if gs.has_method("bind_ending_resolver"):
+			gs.bind_ending_resolver()
+
+	# build_display 走真实 defs
+	if gs != null and gs.has_method("build_ending_display"):
+		var er = gs.get("ending_resolver")
+		if er != null:
+			er.last_result = {
+				"ending_id": "overseas_ending",
+				"title": "远航",
+				"summary": "x",
+			}
+			var disp: Dictionary = gs.build_ending_display()
+			_assert_eq(str(disp.get("ending_id", "")), "overseas_ending", "EndingUX: build_display ending_id")
+			_assert_true(str(disp.get("title", "")) != "", "EndingUX: build_display 有 title")
+			er.last_result = {}
+	print("")
+
+
 func _test_chapter3_ending_bridge() -> void:
 	print("[Chapter3 Ending Bridge]")
 
@@ -1480,12 +1586,1006 @@ func _test_chapter3_ending_bridge() -> void:
 	var burn_effects := _first_choice_effects(burn)
 	_assert_true(bool(comply_effects.get("career_promote", false)), "Chapter3: 投附收束触发 career_promote")
 	_assert_true(int(comply_effects.get("jia_relationship", 0)) >= 50, "Chapter3: 投附收束满足 defection_ending 条件")
+	_assert_true(int(comply_effects.get("fame", 0)) >= 150, "Chapter3: 投附收束 fame 足以连升 apex")
+	_assert_eq(str(comply_effects.get("play_cutscene", "")), "ch3_end_comply", "Chapter3: 投附收束过场")
 	_assert_true(bool(refuse_effects.get("career_promote", false)), "Chapter3: 忠义收束触发 career_promote")
 	_assert_true(int(refuse_effects.get("linboyuan_relationship", 0)) >= 50, "Chapter3: 忠义收束满足 loyalty_ending 关系条件")
+	_assert_true(int(refuse_effects.get("fame", 0)) >= 150, "Chapter3: 忠义收束 fame 足以连升 apex")
+	_assert_eq(str(refuse_effects.get("play_cutscene", "")), "ch3_end_refuse", "Chapter3: 拒召收束过场")
 	_assert_true(bool(burn_effects.get("career_promote", false)), "Chapter3: 远航收束触发 career_promote")
 	_assert_true(_effects_set_story_flag(burn_effects, "overseas_voyage"), "Chapter3: 远航收束写入 overseas_voyage")
+	_assert_true(int(burn_effects.get("fame", 0)) >= 150, "Chapter3: 远航收束 fame 足以连升 apex")
+	_assert_eq(str(burn_effects.get("play_cutscene", "")), "ch3_end_burn", "Chapter3: 烧帖收束过场")
+
+	# cutscenes.json 含三条章三收束
+	var cs_path := ResourcePaths.DATA_CUTSCENES
+	var cs_file := FileAccess.open(cs_path, FileAccess.READ)
+	_assert_true(cs_file != null, "Chapter3: cutscenes.json 可读")
+	if cs_file != null:
+		var cs_data = JSON.parse_string(cs_file.get_as_text())
+		cs_file.close()
+		_assert_true(cs_data is Dictionary, "Chapter3: cutscenes 根对象")
+		if cs_data is Dictionary:
+			var bag: Dictionary = cs_data.get("cutscenes", {})
+			_assert_true(bag.has("ch3_end_comply"), "Chapter3: 有 ch3_end_comply")
+			_assert_true(bag.has("ch3_end_refuse"), "Chapter3: 有 ch3_end_refuse")
+			_assert_true(bag.has("ch3_end_burn"), "Chapter3: 有 ch3_end_burn")
+			for key in ["ch3_end_comply", "ch3_end_refuse", "ch3_end_burn"]:
+				var entry: Dictionary = bag.get(key, {})
+				_assert_true(entry.get("panels", []).size() >= 2, "Chapter3: %s 至少 2 镜" % key)
 
 	print("")
+
+## P7-A：章一/二/三 effects 串联后应可触发结局（三条分支）
+func _test_completion_vertical_slice() -> void:
+	print("[Completion Vertical Slice]")
+	var game_state = root.get_node_or_null("/root/GameState")
+	_assert_true(game_state != null, "Completion: GameState autoload 可取得")
+	if game_state == null:
+		print("")
+		return
+
+	var before: Dictionary = game_state.to_save_dict()
+	var career = game_state.get("career")
+	_assert_true(career != null, "Completion: career 已挂接")
+	if career == null:
+		print("")
+		return
+	if career.has_method("load_defs"):
+		career.load_defs()
+
+	# 忠义线：拒蒲府 → linboyuan + 春秋 → loyalty_ending
+	_reset_completion_state(game_state, career)
+	game_state.acquire_item("spring_autumn_scroll")
+	game_state.apply_effects({
+		"story_flag": "chapter1_complete",
+		"fame": 80,
+		"linboyuan_relationship": 10,
+		"career_promote": true,
+	})
+	game_state.apply_effects({
+		"story_flag": "chapter2_complete",
+		"fame": 180,
+		"career_promote": true,
+	})
+	_assert_true(int(career.get_rank()) >= 3, "Completion: 章二后至少 rank3")
+	game_state.apply_effects({
+		"story_flag": "chapter3_refuse_escape_done",
+		"story_flag2": {"chapter3_complete": true},
+		"fame": 150,
+		"linboyuan_relationship": 50,
+		"career_promote": true,
+	})
+	_assert_true(career.is_apex(), "Completion loyalty: 抵达 apex")
+	_assert_true(game_state.has_story_flag("game_completed"), "Completion loyalty: 写入 game_completed")
+	_assert_true(game_state.has_story_flag("completed_loyalty") or str(game_state.get_story_flag("ending_id", "")) == "loyalty_ending",
+		"Completion loyalty: 忠义结局成立")
+
+	# 投附线：交书换籍 → jia_relationship → defection_ending
+	_reset_completion_state(game_state, career)
+	game_state.apply_effects({
+		"story_flag": "chapter1_complete",
+		"fame": 80,
+		"linboyuan_relationship": 10,
+		"career_promote": true,
+	})
+	game_state.apply_effects({
+		"story_flag": "chapter2_complete",
+		"fame": 180,
+		"career_promote": true,
+	})
+	game_state.apply_effects({
+		"story_flag": "chapter3_comply_audit_done",
+		"story_flag2": {"chapter3_complete": true},
+		"fame": 150,
+		"jia_relationship": 50,
+		"career_promote": true,
+	})
+	_assert_true(career.is_apex(), "Completion defection: 抵达 apex")
+	_assert_true(game_state.has_story_flag("game_completed"), "Completion defection: 写入 game_completed")
+	_assert_true(game_state.has_story_flag("completed_defection") or str(game_state.get_story_flag("ending_id", "")) == "defection_ending",
+		"Completion defection: 投附结局成立")
+
+	# 远航线：烧帖出走 → overseas_voyage → overseas_ending
+	_reset_completion_state(game_state, career)
+	game_state.apply_effects({
+		"story_flag": "chapter1_complete",
+		"fame": 80,
+		"linboyuan_relationship": 10,
+		"career_promote": true,
+	})
+	game_state.apply_effects({
+		"story_flag": "chapter2_complete",
+		"fame": 180,
+		"career_promote": true,
+	})
+	game_state.apply_effects({
+		"story_flag": "chapter3_burn_escape_done",
+		"story_flag2": {"chapter3_complete": true, "overseas_voyage": true},
+		"fame": 150,
+		"career_promote": true,
+	})
+	_assert_true(career.is_apex(), "Completion overseas: 抵达 apex")
+	_assert_true(game_state.has_story_flag("game_completed"), "Completion overseas: 写入 game_completed")
+	_assert_true(game_state.has_story_flag("completed_overseas") or str(game_state.get_story_flag("ending_id", "")) == "overseas_ending",
+		"Completion overseas: 远航结局成立")
+
+	# 月历数据：章三召见条件不再锁死 rank4
+	var cal_path := ResourcePaths.DATA_CALENDAR_EVENTS
+	var cal_file := FileAccess.open(cal_path, FileAccess.READ)
+	_assert_true(cal_file != null, "Completion: calendar_events.json 可读")
+	if cal_file != null:
+		var parsed = JSON.parse_string(cal_file.get_as_text())
+		cal_file.close()
+		_assert_true(parsed is Dictionary, "Completion: calendar_events 为对象")
+		if parsed is Dictionary:
+			var events: Array = (parsed as Dictionary).get("events", [])
+			_assert_true(events.size() >= 5, "Completion: 月历事件 ≥5 条节拍")
+			var summon_ok := false
+			for raw in events:
+				if not raw is Dictionary:
+					continue
+				var ev: Dictionary = raw
+				if str(ev.get("id", "")) != "ch3_pu_summon":
+					continue
+				var cond: Dictionary = ev.get("condition", {})
+				summon_ok = int(cond.get("rank_gte", 99)) <= 1 and str(cond.get("flag", "")) == "chapter2_complete"
+			_assert_true(summon_ok, "Completion: ch3_pu_summon 仅需 chapter2 + rank≥1")
+
+	game_state.from_save_dict(before)
+	print("")
+
+func _reset_completion_state(game_state, career) -> void:
+	if career != null and career.has_method("from_dict"):
+		career.from_dict({"rank": 0, "current_mandate": {}, "mandate_deadline_month": -1})
+	if game_state.story != null and game_state.story.has_method("from_dict"):
+		game_state.story.from_dict({
+			"fame": 0,
+			"flags": {},
+			"story_flags": {},
+			"story_items": {},
+			"cards": {},
+			"titles": {},
+			"npc_relationships": {},
+			"linboyuan_relationship": 0,
+			"jia_relationship": 0,
+			"unlocked_chapters": [],
+		})
+	game_state.fame = 0
+	if game_state.has_method("bind_ending_resolver"):
+		game_state.bind_ending_resolver(null)
+
+
+## P7-B：SceneRouter 分类/解析（行为等价于旧 Main.load_scene 分支）
+func _test_scene_router() -> void:
+	print("[SceneRouter]")
+	var SR = load(ResourcePaths.SCRIPT_SCENE_ROUTER)
+	_assert_true(SR != null, "SceneRouter script 可加载")
+	if SR == null:
+		print("")
+		return
+	_assert_eq(SR.classify("world_map"), SR.KIND_WORLD_MAP, "SceneRouter: world_map")
+	_assert_eq(SR.classify("quanzhou_market"), SR.KIND_MARKET, "SceneRouter: *_market")
+	_assert_eq(SR.classify("port_linan"), SR.KIND_NARRATIVE, "SceneRouter: narrative port")
+	_assert_eq(SR.classify("chapter3_pu_summon"), SR.KIND_NARRATIVE, "SceneRouter: narrative story")
+	_assert_true(SR.is_world_map("world_map"), "SceneRouter.is_world_map")
+	_assert_true(SR.is_market("x_market"), "SceneRouter.is_market")
+	_assert_true(not SR.is_market("port_x"), "SceneRouter: port 不是 market")
+
+	var gm = root.get_node_or_null("/root/GameManager")
+	_assert_true(gm != null, "SceneRouter: GameManager 可取得")
+	if gm != null:
+		var port_data: Dictionary = SR.resolve_scene_data("port_linan")
+		_assert_true(not port_data.is_empty(), "SceneRouter: port_linan 可解析")
+		var missing: Dictionary = SR.resolve_scene_data("definitely_missing_scene_xyz")
+		_assert_true(missing.is_empty(), "SceneRouter: 缺失场景返回空")
+		# 设施后缀回退：若存在 city_tavern，则 foo_tavern 应解析到它
+		var city_tavern: Dictionary = gm.get_scene_by_id("city_tavern")
+		if not city_tavern.is_empty():
+			var fallback: Dictionary = SR.resolve_scene_data("unknown_port_tavern")
+			_assert_true(not fallback.is_empty(), "SceneRouter: *_tavern 回退 city_tavern")
+			_assert_eq(str(fallback.get("id", "")), "city_tavern", "SceneRouter: 回退 id=city_tavern")
+
+	var gs = root.get_node_or_null("/root/GameState")
+	if gs != null:
+		var before_port := str(gs.last_port)
+		gs.last_port = "quanzhou"
+		_assert_eq(SR.market_port_id("linan_market"), "quanzhou", "SceneRouter: market 优先 last_port")
+		gs.last_port = ""
+		_assert_eq(SR.market_port_id("linan_market"), "linan", "SceneRouter: market 回退 scene_id")
+		gs.last_port = before_port
+
+	_assert_eq(ResourcePaths.SCRIPT_SCENE_ROUTER, "res://scripts/SceneRouter.gd", "ResourcePaths.SCRIPT_SCENE_ROUTER")
+	print("")
+
+
+## 视觉 UI：设施/指令栏图标关键字解析
+func _test_ui_icon_resolution() -> void:
+	print("[UI Icon Resolution]")
+	var FR = load(ResourcePaths.SCRIPT_FACILITY_RESOLVER)
+	_assert_true(FR != null, "UI: FacilityResolver 可加载")
+	if FR == null:
+		print("")
+		return
+	_assert_true(FR.has_method("icon_keys_for"), "UI: icon_keys_for 存在")
+	var keys_market: Array = FR.icon_keys_for("keelung_market", "市集")
+	_assert_true("market" in keys_market, "UI: keelung_market → market")
+	var keys_wharf: Array = FR.icon_keys_for("quanzhou_wharf", "码头")
+	_assert_true("wharf" in keys_wharf, "UI: wharf 关键字")
+	var keys_taixue: Array = FR.icon_keys_for("linan_taixue", "太学")
+	_assert_true("exam" in keys_taixue, "UI: taixue → exam")
+	var keys_temple: Array = FR.icon_keys_for("xinghua_temple", "寺庙")
+	_assert_true("temple" in keys_temple or "residence" in keys_temple, "UI: temple 关键字")
+	# 贴图可加载（autoload AssetPlaceholder 经 root 取）
+	var ap = root.get_node_or_null("/root/AssetPlaceholder")
+	_assert_true(ap != null, "UI: AssetPlaceholder autoload")
+	if ap != null:
+		var tex_market = ap.load_texture("res://assets/ui/icons/icon_market.png", "texture")
+		_assert_true(tex_market != null, "UI: icon_market.png 可加载")
+		var tex_story = ap.load_texture("res://assets/ui/icons/icon_storybook.png", "texture")
+		_assert_true(tex_story != null, "UI: icon_storybook.png 可加载")
+	var fac_tex: Texture2D = FR.resolve_facility_icon({"id": "bugan_tavern", "title": "酒肆"})
+	_assert_true(fac_tex != null, "UI: bugan_tavern 解析到图标")
+	var fac_look: Texture2D = FR.resolve_facility_icon({"id": "ryukyu_lookout", "title": "望台"})
+	_assert_true(fac_look != null, "UI: lookout 解析到图标")
+	print("")
+
+
+## 无城镇图港口：双列设施分类（R1）
+func _test_facility_column_split() -> void:
+	print("[Facility Column Split]")
+	var FR = load(ResourcePaths.SCRIPT_FACILITY_RESOLVER)
+	_assert_true(FR != null and FR.has_method("split_facility_columns"), "Col: split_facility_columns 存在")
+	if FR == null:
+		print("")
+		return
+	_assert_eq(FR.column_side_for({"id": "city_tavern", "title": "酒肆"}), "left", "Col: tavern → left")
+	_assert_eq(FR.column_side_for({"id": "xinghua_exam", "title": "县学"}), "left", "Col: exam → left")
+	_assert_eq(FR.column_side_for({"id": "xinghua_temple", "title": "寺庙"}), "left", "Col: temple → left")
+	_assert_eq(FR.column_side_for({"id": "city_market", "title": "市集"}), "right", "Col: market → right")
+	_assert_eq(FR.column_side_for({"id": "linan_canal", "title": "运河"}), "right", "Col: canal → right")
+	_assert_eq(FR.column_side_for({"id": "xinghua_wharf", "title": "码头"}), "right", "Col: wharf → right")
+
+	var sample: Array = [
+		{"id": "xinghua_exam", "title": "县学"},
+		{"id": "xinghua_market", "title": "市集"},
+		{"id": "xinghua_inn", "title": "客栈"},
+		{"id": "xinghua_tavern", "title": "酒肆"},
+		{"id": "xinghua_temple", "title": "寺庙"},
+		{"id": "xinghua_wharf", "title": "码头"},
+	]
+	var split: Dictionary = FR.split_facility_columns(sample)
+	var left_ids: Array = []
+	var right_ids: Array = []
+	for f in split.get("left", []):
+		left_ids.append(str(f.get("id", "")))
+	for f in split.get("right", []):
+		right_ids.append(str(f.get("id", "")))
+	_assert_true("xinghua_tavern" in left_ids or "xinghua_inn" in left_ids, "Col: 社交设施进左列")
+	_assert_true("xinghua_exam" in left_ids or "xinghua_temple" in left_ids, "Col: 学/寺进左列")
+	_assert_true("xinghua_market" in right_ids, "Col: 市集进右列")
+	_assert_true("xinghua_wharf" in right_ids, "Col: 码头进右列")
+	_assert_eq(left_ids.size() + right_ids.size(), sample.size(), "Col: 设施不丢不重")
+
+	# 临安样例
+	var linan: Array = [
+		{"id": "linan_canal", "title": "运河"},
+		{"id": "city_market", "title": "市集"},
+		{"id": "city_inn", "title": "客栈"},
+		{"id": "city_tavern", "title": "酒肆"},
+		{"id": "linan_taixue", "title": "太学"},
+	]
+	var ls: Dictionary = FR.split_facility_columns(linan)
+	var l_left: Array = []
+	var l_right: Array = []
+	for f in ls.get("left", []):
+		l_left.append(str(f.get("id", "")))
+	for f in ls.get("right", []):
+		l_right.append(str(f.get("id", "")))
+	_assert_true("city_tavern" in l_left and "city_inn" in l_left, "Col: 临安社交在左")
+	_assert_true("linan_taixue" in l_left, "Col: 太学在左")
+	_assert_true("city_market" in l_right and "linan_canal" in l_right, "Col: 市集/运河在右")
+
+	# builder 脚本路径（避免 headless 下 class_name 静态链编译问题）
+	_assert_true(
+		ResourceLoader.exists("res://scripts/controllers/FacilitySlotBuilder.gd"),
+		"Col: FacilitySlotBuilder 脚本存在"
+	)
+	print("")
+
+
+## 航海/海战壳层文案
+func _test_sea_feedback() -> void:
+	print("[Sea Feedback]")
+	_assert_eq(ResourcePaths.SCRIPT_SEA_FEEDBACK, "res://scripts/SeaFeedback.gd", "SeaFB: ResourcePaths")
+	var SF = load(ResourcePaths.SCRIPT_SEA_FEEDBACK)
+	_assert_true(SF != null, "SeaFB: 脚本可加载")
+	if SF == null:
+		print("")
+		return
+	_assert_true("遭遇" in SF.combat_start_log("倭寇"), "SeaFB: 开战日志含遭遇")
+	_assert_true(SF.combat_start_log("").find("未知") >= 0 or SF.combat_start_log("").find("敌") >= 0, "SeaFB: 空敌名有兜底")
+	var end_sunk: String = SF.combat_end_log({
+		"victory_type": SF.VT_SUNK,
+		"round": 3,
+	})
+	_assert_true("击沉" in end_sunk, "SeaFB: 击沉摘要")
+	_assert_true("第3回合" in end_sunk, "SeaFB: 含回合")
+	var end_empty: String = SF.combat_end_log({})
+	_assert_true("中止" in end_empty, "SeaFB: 空结果=中止")
+	_assert_eq(SF.victory_short(SF.VT_FLED), "成功撤退", "SeaFB: 撤退短文案")
+	_assert_eq(SF.victory_short(SF.VT_DUEL_VICTORY), "单挑获胜", "SeaFB: 单挑短文案")
+	_assert_true(SF.is_player_victory(SF.VT_SUNK), "SeaFB: 击沉算我方胜")
+	_assert_true(not SF.is_player_victory(SF.VT_DEFEATED_SUNK), "SeaFB: 沉没算败")
+	# 序值与 CombatState.VictoryType 对齐（运行时校验）
+	var CS = load("res://scripts/state/CombatState.gd")
+	if CS != null:
+		_assert_eq(SF.VT_SUNK, int(CS.VictoryType.SUNK), "SeaFB: VT_SUNK 对齐 CombatState")
+		_assert_eq(SF.VT_FLED, int(CS.VictoryType.FLED), "SeaFB: VT_FLED 对齐 CombatState")
+	_assert_true("海遇" in SF.event_open_log("台风压顶"), "SeaFB: 海遇开场")
+	_assert_true("台风" in SF.event_result_log("台风压顶", "损失淡水。"), "SeaFB: 海遇结果")
+	_assert_true("开战" in SF.event_to_combat_log("水师"), "SeaFB: 升级开战")
+	_assert_true("接敌" in SF.contact_engage_bbcode("海盗"), "SeaFB: 接敌 bbcode")
+	_assert_true("远距离" in SF.phase_status_bbcode("远距离对峙"), "SeaFB: 阶段 bbcode")
+	_assert_true("第 2" in SF.round_header_bbcode(2, "回合"), "SeaFB: 回合头")
+	print("")
+
+
+## 经济手感：三策可感知
+func _test_economy_feel() -> void:
+	print("[Economy Feel]")
+	_assert_eq(ResourcePaths.SCRIPT_ECONOMY_FEEL, "res://scripts/EconomyFeel.gd", "EconFeel: ResourcePaths")
+	var EF = load(ResourcePaths.SCRIPT_ECONOMY_FEEL)
+	_assert_true(EF != null, "EconFeel: 脚本可加载")
+	if EF == null:
+		print("")
+		return
+	var triad: Array = EF.strategy_triad("quanzhou")
+	_assert_eq(triad.size(), 3, "EconFeel: 三策恒为 3 条")
+	_assert_true("稳" in str(triad[0]), "EconFeel: 第1条为稳策")
+	_assert_true("赌" in str(triad[1]), "EconFeel: 第2条为赌策")
+	_assert_true("搬" in str(triad[2]), "EconFeel: 第3条为搬策")
+	var block: String = EF.format_triad_block("quanzhou")
+	_assert_true(block.find("\n") >= 0, "EconFeel: format 多行")
+	# 交易提示非空
+	var buy_h: String = EF.trade_decision_hint("quanzhou", "fujian_porcelain", "buy", 5)
+	_assert_true(buy_h != "" and "商策" in buy_h, "EconFeel: 买入商策")
+	var sell_h: String = EF.trade_decision_hint("quanzhou", "fujian_porcelain", "sell", 5)
+	_assert_true(sell_h != "" and "商策" in sell_h, "EconFeel: 卖出商策")
+	# arbitrage 结构（可能为空字典，但应可调用）
+	var arb: Dictionary = EF.best_arbitrage("quanzhou")
+	_assert_true(arb is Dictionary, "EconFeel: best_arbitrage 返回字典")
+	if not arb.is_empty():
+		_assert_true(str(arb.get("good_id", "")) != "", "EconFeel: 差价含 good_id")
+		_assert_true(str(arb.get("direction", "")) != "", "EconFeel: 差价含方向")
+	# 空 port 不崩
+	var empty_triad: Array = EF.strategy_triad("")
+	_assert_eq(empty_triad.size(), 3, "EconFeel: 空 port 仍给三策")
+	print("")
+
+
+## 情报账本：信息差可购可记
+func _test_intel_notes() -> void:
+	print("[Intel Notes]")
+	_assert_eq(ResourcePaths.SCRIPT_INTEL_NOTES, "res://scripts/IntelNotes.gd", "Intel: ResourcePaths")
+	var IN = load(ResourcePaths.SCRIPT_INTEL_NOTES)
+	_assert_true(IN != null, "Intel: 脚本可加载")
+	if IN == null:
+		print("")
+		return
+	_assert_eq(IN.event_type_label("disaster"), "市舶灾变", "Intel: disaster 标签")
+	_assert_eq(IN.event_type_label("boom"), "贸易繁荣", "Intel: boom 标签")
+	var rumor := {
+		"port_name": "泉州",
+		"days_left": 8,
+		"type": "shortage",
+		"event": {"target_port": "quanzhou", "event_id": "supply_shortage"},
+	}
+	var n1: Dictionary = IN.build_from_rumor(rumor, 1)
+	_assert_true("变故" in str(n1.get("summary", "")) or "不寻常" in str(n1.get("summary", "")) or "风闻" in str(n1.get("summary", "")), "Intel: t1 模糊")
+	_assert_eq(str(n1.get("port_id", "")), "", "Intel: t1 不点名 port_id")
+	var n2: Dictionary = IN.build_from_rumor(rumor, 2)
+	_assert_true("日" in str(n2.get("summary", "")), "Intel: t2 有时间窗")
+	var n3: Dictionary = IN.build_from_rumor(rumor, 3)
+	_assert_true("泉州" in str(n3.get("summary", "")), "Intel: t3 点名港口")
+	_assert_true("确报" in str(n3.get("summary", "")), "Intel: t3 确报")
+	_assert_eq(str(n3.get("port_id", "")), "quanzhou", "Intel: t3 port_id")
+
+	var book = IN.new()
+	book.record(n3)
+	var n3b: Dictionary = n3.duplicate(true)
+	n3b["summary"] = "【确报】升级版摘要"
+	n3b["tier"] = 3
+	book.record(n3b)
+	_assert_true(book.has_any(), "Intel: 有记录")
+	_assert_eq(book.list_recent(5).size(), 1, "Intel: 同 port+type 覆盖不叠两条")
+	_assert_true("升级版" in str(book.list_recent(1)[0].get("summary", "")), "Intel: 覆盖为更高摘要")
+	# 不同 type 并存
+	var n_other: Dictionary = IN.build_from_rumor({
+		"port_name": "琉球", "days_left": 5, "type": "pirate",
+		"event": {"target_port": "ryukyu", "event_id": "pirate_attack"},
+	}, 3)
+	book.record(n_other)
+	_assert_eq(book.list_recent(5).size(), 2, "Intel: 不同类型并存")
+	var block: String = IN.format_notes_block(book.list_recent(3), 3)
+	_assert_true("已知情报" in block, "Intel: 格式块标题")
+	# 存档往返
+	var d: Dictionary = book.to_dict()
+	var book2 = IN.new()
+	book2.from_dict(d)
+	_assert_eq(book2.list_recent(5).size(), 2, "Intel: 反序列化条数")
+
+	var gs = root.get_node_or_null("/root/GameState")
+	_assert_true(gs != null and gs.get("intel_notes") != null, "Intel: GameState.intel_notes")
+	if gs != null and gs.intel_notes != null:
+		var before_n: int = gs.intel_notes.list_recent(20).size()
+		gs.intel_notes.record(n3)
+		_assert_true(gs.intel_notes.list_recent(20).size() >= before_n, "Intel: GameState 可记")
+		# 三策应能读到情报（赌线）
+		var EF = load(ResourcePaths.SCRIPT_ECONOMY_FEEL)
+		if EF != null:
+			var triad: Array = EF.strategy_triad("quanzhou")
+			_assert_true(triad.size() == 3, "Intel: 三策仍 3 条")
+	print("")
+
+
+const P9A_KOEI_PATCH := 40
+
+## 标题 KOEI 外框 + 城镇热区图标板
+func _test_title_and_hotspot_visual() -> void:
+	print("[Title + Hotspot Visual]")
+	var frame_tex: Texture2D = load(ResourcePaths.FRAME_KOEI) as Texture2D
+	_assert_true(frame_tex != null, "Visual: ui_frame_koei.png 可加载")
+	if frame_tex != null:
+		_assert_true(frame_tex.get_width() > P9A_KOEI_PATCH * 2, "Visual: 框纹理宽 > 2*patch")
+		_assert_true(frame_tex.get_height() > P9A_KOEI_PATCH * 2, "Visual: 框纹理高 > 2*patch")
+
+	var title_script: GDScript = load("res://scripts/TitleScreenController.gd") as GDScript
+	_assert_true(title_script != null, "Visual: TitleScreenController 可加载")
+	if title_script != null:
+		var host := Control.new()
+		host.set_script(title_script)
+		host.size = Vector2(1280, 720)
+		var panel := PanelContainer.new()
+		panel.name = "TitlePanel"
+		panel.set_anchors_preset(Control.PRESET_CENTER)
+		panel.offset_left = -380
+		panel.offset_top = -280
+		panel.offset_right = 380
+		panel.offset_bottom = 280
+		host.add_child(panel)
+		var vbox := VBoxContainer.new()
+		vbox.name = "VBoxContainer"
+		panel.add_child(vbox)
+		var mt := Label.new()
+		mt.name = "MainTitle"
+		vbox.add_child(mt)
+		var st := Label.new()
+		st.name = "SubTitle"
+		vbox.add_child(st)
+		var bc := VBoxContainer.new()
+		bc.name = "ButtonContainer"
+		vbox.add_child(bc)
+		root.add_child(host)
+		# setup 内会 _ensure_koei_chrome / _ensure_title_divider
+		if host.has_method("setup"):
+			host.call("setup", {
+				"cg_title": "测",
+				"cg_sub": "副",
+				"choices": [
+					{"label": "开始旅程", "next": "scene01_xianghua_school"},
+					{"label": "跳过序章：直接进入泉州港", "next": "port_quanzhou"},
+				],
+			})
+		_assert_true(host.has_node("KoeiOuterFrame"), "Visual: 标题有 KoeiOuterFrame")
+		if host.has_node("KoeiOuterFrame"):
+			var fr := host.get_node("KoeiOuterFrame") as NinePatchRect
+			_assert_true(fr != null and fr.texture != null, "Visual: KOEI 框贴图就绪")
+			_assert_true(fr.patch_margin_left == P9A_KOEI_PATCH, "Visual: KOEI patch margin 对齐 DialogueBox")
+		var has_div := panel.get_node_or_null("VBoxContainer/TitleDivider") != null \
+			or panel.get_node_or_null("VBoxContainer/TitleDividerWrap/TitleDivider") != null
+		_assert_true(has_div, "Visual: 副标题下有金线分隔")
+		# 标题页保留两个剧情选择，不出现假“继续”
+		var choice_labels: Array[String] = []
+		for child in bc.get_children():
+			if child is Button:
+				choice_labels.append(str((child as Button).text))
+		_assert_true(choice_labels.has("开始旅程"), "Visual: 标题有开始旅程")
+		_assert_true(choice_labels.has("跳过序章：直接进入泉州港"), "Visual: 标题有跳过序章")
+		var fake_continue := false
+		for lab in choice_labels:
+			if lab == "继续" or lab == "开始":
+				fake_continue = true
+		_assert_true(not fake_continue, "Visual: 标题无 CommandBar 假入口文案")
+		host.queue_free()
+
+	var hs_scene: PackedScene = load(ResourcePaths.SCENE_TOWN_MAP_HOTSPOT) as PackedScene
+	_assert_true(hs_scene != null, "Visual: TownMapHotspot 场景可加载")
+	if hs_scene != null:
+		var hs_parent := Control.new()
+		hs_parent.size = Vector2(1280, 720)
+		root.add_child(hs_parent)
+		var hs: Control = hs_scene.instantiate() as Control
+		hs_parent.add_child(hs)
+		if hs.has_method("setup"):
+			hs.call("setup",
+				{"rect": [0.1, 0.1, 0.2, 0.2], "label": "市集", "hint": "买卖"},
+				{"state": "default", "text": ""},
+				"keelung_market",
+				{"id": "keelung_market", "title": "市集"}
+			)
+			# setup 里 call_deferred；测试直接 finalize，避免 await 打断 _run
+			if hs.has_method("_finalize_icon_layout"):
+				hs.call("_finalize_icon_layout")
+			var icon := hs.get_node_or_null("IconRect") as TextureRect
+			_assert_true(icon != null, "Visual: Hotspot 有 IconRect")
+			if icon != null:
+				_assert_true(icon.visible and icon.texture != null, "Visual: Hotspot 图标已解析显示")
+			var plate := hs.get_node_or_null("IconPlate") as PanelContainer
+			_assert_true(plate != null and plate.visible, "Visual: Hotspot 有黄铜 IconPlate")
+		hs_parent.queue_free()
+
+	var tmv_scene: PackedScene = load("res://scenes/TownMapView.tscn") as PackedScene
+	_assert_true(tmv_scene != null, "Visual: TownMapView 场景可加载")
+	if tmv_scene != null:
+		var tmv: Control = tmv_scene.instantiate() as Control
+		root.add_child(tmv)
+		_assert_true(tmv.has_node("MapFrame"), "Visual: TownMapView 有 MapFrame")
+		var map_frame := tmv.get_node_or_null("MapFrame") as NinePatchRect
+		_assert_true(map_frame != null, "Visual: MapFrame 为 NinePatchRect")
+		if map_frame != null:
+			_assert_true(map_frame.texture != null, "Visual: MapFrame 木框贴图就绪")
+			_assert_true(map_frame.patch_margin_left == P9A_KOEI_PATCH and map_frame.patch_margin_top == P9A_KOEI_PATCH, "Visual: MapFrame patch 对齐 DialogueBox")
+			_assert_true(map_frame.patch_margin_right == P9A_KOEI_PATCH and map_frame.patch_margin_bottom == P9A_KOEI_PATCH, "Visual: MapFrame patch 右下对齐")
+			_assert_true(map_frame.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Visual: MapFrame 不抢热区点击")
+		_assert_true(tmv.has_node("MapFrame/MapClip/HotspotLayer"), "Visual: HotspotLayer 在 MapClip 内")
+		_assert_true(tmv.has_node("MapFrame/MapClip/MapTexture"), "Visual: MapTexture 在 MapClip 内")
+		var clip := tmv.get_node_or_null("MapFrame/MapClip") as Control
+		if clip != null:
+			_assert_true(clip.clip_contents, "Visual: MapClip 裁切地图内容")
+		# setup 后 _ready 已跑 → HintPlaque 应存在
+		if tmv.has_method("_ensure_hint_plaque"):
+			tmv.call("_ensure_hint_plaque")
+		_assert_true(
+			tmv.has_node("MapFrame/MapClip/HintPlaque") or tmv.get_node_or_null("MapFrame/MapClip/MapHint") != null,
+			"Visual: 地图提示牌或 MapHint 存在"
+		)
+		if tmv.has_node("MapFrame/MapClip/HintPlaque"):
+			var plaque := tmv.get_node("MapFrame/MapClip/HintPlaque") as PanelContainer
+			_assert_true(plaque != null, "Visual: HintPlaque 为 PanelContainer")
+		# 新图标 import 后可 ResourceLoader
+		var market_ok := ResourceLoader.exists("res://assets/ui/icons/icon_market.png") \
+			or FileAccess.file_exists("res://assets/ui/icons/icon_market.png")
+		_assert_true(market_ok, "Visual: icon_market.png 资源可访问")
+		tmv.queue_free()
+	print("")
+
+
+## P9-A：标题单一导航 + KOEI 边框消费者 patch 统一
+func _test_p9a_first_hour_ux() -> void:
+	print("[P9-A First Hour UX]")
+	var ui_file := FileAccess.open("res://data/ui_commands.json", FileAccess.READ)
+	var ui_data = JSON.parse_string(ui_file.get_as_text()) if ui_file != null else {}
+	if ui_file != null:
+		ui_file.close()
+	var templates: Dictionary = ui_data.get("templates", {}) if ui_data is Dictionary else {}
+	_assert_true(not templates.has("title"), "P9-A: ui_commands templates 不含 title 假入口")
+
+	var shell_script: GDScript = load("res://scripts/GameShell.gd") as GDScript
+	_assert_true(shell_script != null, "P9-A: GameShell 可加载")
+	if shell_script != null:
+		var shell := Control.new()
+		shell.set_script(shell_script)
+		shell.size = Vector2(1280, 720)
+		var background_layer := Control.new()
+		background_layer.name = 'BackgroundLayer'
+		var background := TextureRect.new()
+		background.name = 'Background'
+		background_layer.add_child(background)
+		shell.add_child(background_layer)
+		var vignette_layer := Control.new()
+		vignette_layer.name = 'VignetteLayer'
+		shell.add_child(vignette_layer)
+		var content := Control.new()
+		content.name = "ContentLayer"
+		content.set_anchors_preset(Control.PRESET_FULL_RECT)
+		shell.add_child(content)
+		var host := PanelContainer.new()
+		host.name = "CommandBarHost"
+		host.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		host.offset_top = -104.0
+		shell.add_child(host)
+		root.add_child(shell)
+		# 手动注入 onready 依赖后走 apply_scene
+		shell.set("content_layer", content)
+		shell.set("command_bar_host", host)
+		shell.set("_command_bar", null)
+		if shell.has_method("_set_command_bar_active"):
+			shell.call("_set_command_bar_active", false)
+		_assert_true(not host.visible, "P9-A: type=title 时 CommandBarHost 隐藏")
+		_assert_eq(content.offset_bottom, 0.0, "P9-A: 标题页不保留底部 104px 空间")
+		_assert_eq(host.offset_top, 0.0, "P9-A: CommandBarHost 折叠 offset_top=0")
+		if shell.has_method("_set_command_bar_active"):
+			shell.call("_set_command_bar_active", true)
+		_assert_true(host.visible, "P9-A: 游戏模式 CommandBarHost 可见")
+		_assert_eq(content.offset_bottom, -104.0, "P9-A: 游戏模式保留 CommandBar 高度")
+		if shell.has_method("_resolve_command_spec"):
+			var spec: Dictionary = shell.call("_resolve_command_spec", "title", {"type": "title"})
+			_assert_eq(str(spec.get("template", "x")), "", "P9-A: title 解析为空 template")
+		shell.queue_free()
+
+	# 有存档槽走真实 load；空槽不显示“继续”
+	var title_script: GDScript = load("res://scripts/TitleScreenController.gd") as GDScript
+	if title_script != null:
+		var host2 := Control.new()
+		host2.set_script(title_script)
+		var panel2 := PanelContainer.new()
+		panel2.name = "TitlePanel"
+		host2.add_child(panel2)
+		var vbox2 := VBoxContainer.new()
+		vbox2.name = "VBoxContainer"
+		panel2.add_child(vbox2)
+		var mt2 := Label.new()
+		mt2.name = "MainTitle"
+		vbox2.add_child(mt2)
+		var st2 := Label.new()
+		st2.name = "SubTitle"
+		vbox2.add_child(st2)
+		var bc2 := VBoxContainer.new()
+		bc2.name = "ButtonContainer"
+		vbox2.add_child(bc2)
+		root.add_child(host2)
+		if host2.has_method("setup"):
+			host2.call("setup", {"cg_title": "t", "cg_sub": "s", "choices": []})
+		var has_continue_btn := _tree_has_continue_button(bc2)
+		# 空存档行是 Label「空存档」，不应出现独立“继续”按钮
+		_assert_true(not has_continue_btn, "P9-A: 无存档时不显示继续按钮")
+		var src := FileAccess.get_file_as_string("res://scripts/TitleScreenController.gd")
+		_assert_true(src.contains("SaveManager.load_game(slot)"), "P9-A: 槽位按钮走真实 load_game")
+		host2.queue_free()
+
+	# KOEI 消费者：可实例化且 patch < 纹理半宽
+	var frame_tex2: Texture2D = load(ResourcePaths.FRAME_KOEI) as Texture2D
+	var half_w := frame_tex2.get_width() / 2 if frame_tex2 != null else 0
+	var half_h := frame_tex2.get_height() / 2 if frame_tex2 != null else 0
+	_assert_true(P9A_KOEI_PATCH < half_w and P9A_KOEI_PATCH < half_h, "P9-A: patch margin < 纹理半宽高")
+
+	var consumers: Array = [
+		"res://scenes/DialogueBox.tscn",
+		"res://scenes/TownMapView.tscn",
+		"res://scenes/WorldMap.tscn",
+		"res://scenes/StrategicMapOverlay.tscn",
+	]
+	for path in consumers:
+		var ps: PackedScene = load(path) as PackedScene
+		_assert_true(ps != null, "P9-A: 可加载 %s" % path.get_file())
+		if ps == null:
+			continue
+		var node: Node = ps.instantiate()
+		root.add_child(node)
+		_assert_koei_patch_on_tree(node, path.get_file())
+		node.queue_free()
+
+	# DialogueBox Frame 高度范围：1280x720 / 1920x1080 不盖顶栏
+	var dlg_ps: PackedScene = load("res://scenes/DialogueBox.tscn") as PackedScene
+	if dlg_ps != null:
+		for size_value in [Vector2(1280, 720), Vector2(1920, 1080)]:
+			var sz: Vector2 = size_value
+			var dlg: Control = dlg_ps.instantiate() as Control
+			dlg.set_anchors_preset(Control.PRESET_TOP_LEFT)
+			dlg.size = sz
+			root.add_child(dlg)
+			var frame := dlg.get_node_or_null("Frame") as NinePatchRect
+			_assert_true(frame != null, "P9-A: DialogueBox 有 Frame @%dx%d" % [int(sz.x), int(sz.y)])
+			if frame != null:
+				var frame_h := absf(frame.offset_top - frame.offset_bottom)
+				_assert_true(frame_h >= 200.0 and frame_h <= 480.0, "P9-A: Frame 高度在设计范围 @%dx%d (h=%.0f)" % [int(sz.x), int(sz.y), frame_h])
+				# 底锚 + offset_top 负值 → 顶部应低于状态栏区域（约 80px）
+				var top_y: float = sz.y + frame.offset_top
+				var margin = frame.get_node_or_null('Margin')
+				_assert_true(margin != null, 'P9-A: DialogueBox margin exists')
+				if margin != null:
+					var top_margin: int = margin.get_theme_constant('margin_top')
+					_assert_true(top_margin >= 48, 'P9-A: content clears frame ornament')
+				_assert_true(top_y > 80.0, "P9-A: Frame 不覆盖顶部状态栏 @%dx%d" % [int(sz.x), int(sz.y)])
+				_assert_eq(frame.patch_margin_left, P9A_KOEI_PATCH, "P9-A: DialogueBox patch L")
+				_assert_eq(frame.patch_margin_top, P9A_KOEI_PATCH, "P9-A: DialogueBox patch T")
+			dlg.queue_free()
+	print("")
+
+
+## P9-C：GameState 只聚合状态，过场交给壳层，经济文案交给 EconomyFeel。
+func _test_p9c_architecture_boundaries() -> void:
+	print("[P9-C Architecture Boundaries]")
+	var game_state_source := FileAccess.get_file_as_string("res://scripts/GameState.gd")
+	_assert_true(game_state_source.contains("signal cutscene_requested"), "P9-C: GameState 暴露过场请求信号")
+	_assert_true(not game_state_source.contains("ShellCutscenePlayer"), "P9-C: GameState 不查找 ShellCutscenePlayer")
+	_assert_true(not game_state_source.contains('find_child("CutscenePlayer"'), "P9-C: GameState 不遍历查找 CutscenePlayer")
+	_assert_true(not game_state_source.contains("SCRIPT_MODE_STACK"), "P9-C: GameState 不动态加载 ModeStack")
+	_assert_true(not game_state_source.contains("func _compose_economy_pulse_message"), "P9-C: GameState 不组合经济月报文案")
+
+	var economy_source := FileAccess.get_file_as_string(ResourcePaths.SCRIPT_ECONOMY_FEEL)
+	_assert_true(economy_source.contains("func monthly_pulse_message"), "P9-C: EconomyFeel 接管经济月报文案")
+	var app_root_source := FileAccess.get_file_as_string("res://scripts/AppRoot.gd")
+	var main_source := FileAccess.get_file_as_string("res://scripts/Main.gd")
+	_assert_true(app_root_source.contains("cutscene_requested.is_connected"), "P9-C: AppRoot 防重复绑定过场请求")
+	_assert_true(main_source.contains("cutscene_requested.is_connected"), "P9-C: Main 兼容入口防重复绑定过场请求")
+
+	var theme: Theme = load("res://assets/main_theme.tres") as Theme
+	var required_variations := [
+		UITheme.ENDING_KICKER, UITheme.ENDING_TITLE, UITheme.ENDING_SUBTITLE,
+		UITheme.ENDING_META, UITheme.ENDING_SUMMARY, UITheme.ENDING_EPILOGUE,
+		UITheme.TOWN_HOTSPOT_PANEL, UITheme.TOWN_HOTSPOT_TITLE,
+		UITheme.TOWN_HINT_PANEL, UITheme.TOWN_HINT_LABEL,
+		UITheme.PORT_COLUMN_HEADER, UITheme.PORT_COLUMN_HEADER_LABEL,
+		UITheme.TEXT_TITLE_SAVE_HEADER, UITheme.PORT_FACILITY_HINT,
+		UITheme.MAP_STRATEGIC_POPUP, UITheme.MAP_STRATEGIC_TITLE,
+		UITheme.MAP_STRATEGIC_INFO, UITheme.MAP_STRATEGIC_BUTTON,
+	]
+	for variation in required_variations:
+		_assert_true(UITheme.assert_all_known(variation), "P9-C: UITheme 登记 %s" % variation)
+		_assert_true(theme != null and theme.get_type_variation_base(variation) != &"", "P9-C: main_theme 定义 %s" % variation)
+	var ending_source := FileAccess.get_file_as_string("res://scripts/EndingSettlementController.gd")
+	_assert_true(not ending_source.contains("add_theme_color_override"), "P9-C: EndingSettlement 无固定颜色 override")
+	_assert_true(not ending_source.contains("add_theme_font_size_override"), "P9-C: EndingSettlement 无固定字号 override")
+	print("")
+
+
+func _tree_has_continue_button(node: Node) -> bool:
+	if node is Button:
+		var t := str((node as Button).text)
+		if t == "继续" or t.begins_with("继续"):
+			return true
+	for child in node.get_children():
+		if _tree_has_continue_button(child):
+			return true
+	return false
+
+
+func _assert_koei_patch_on_tree(node: Node, label: String) -> void:
+	if node is NinePatchRect:
+		var np := node as NinePatchRect
+		if np.texture != null and str(np.texture.resource_path).ends_with("ui_frame_koei.png"):
+			_assert_eq(np.patch_margin_left, P9A_KOEI_PATCH, "P9-A: %s/%s patch L" % [label, np.name])
+			_assert_eq(np.patch_margin_top, P9A_KOEI_PATCH, "P9-A: %s/%s patch T" % [label, np.name])
+			_assert_eq(np.patch_margin_right, P9A_KOEI_PATCH, "P9-A: %s/%s patch R" % [label, np.name])
+			_assert_eq(np.patch_margin_bottom, P9A_KOEI_PATCH, "P9-A: %s/%s patch B" % [label, np.name])
+	for child in node.get_children():
+		_assert_koei_patch_on_tree(child, label)
+
+
+## 内容/体验：章三续进 + shell_log / economy_pulse
+func _test_content_experience_hooks() -> void:
+	print("[Content Experience]")
+	var game_state = root.get_node_or_null("/root/GameState")
+	_assert_true(game_state != null, "ContentExp: GameState 可取得")
+	if game_state == null:
+		print("")
+		return
+	var before: Dictionary = game_state.to_save_dict()
+	var noticed: Array = []
+	var cb := func(msg: String): noticed.append(msg)
+	if not game_state.story_unlock_notified.is_connected(cb):
+		game_state.story_unlock_notified.connect(cb)
+
+	# shell_log
+	game_state.apply_effects({"shell_log": "【测试】时局提示一条"})
+	_assert_true(noticed.size() >= 1, "ContentExp: shell_log 触发 story_unlock_notified")
+	_assert_true(str(noticed[-1]).contains("时局提示"), "ContentExp: shell_log 文案透传")
+
+	# economy_pulse
+	var econ_before := 0
+	if game_state.economy_log != null:
+		econ_before = game_state.economy_log.get_entries().size()
+	game_state.apply_effects({"economy_pulse": true})
+	if game_state.economy_log != null:
+		_assert_true(game_state.economy_log.get_entries().size() > econ_before, "ContentExp: economy_pulse 写入 EconomyLog")
+	_assert_true(noticed.size() >= 2, "ContentExp: economy_pulse 推消息栏")
+
+	# chapter3 resume resolver
+	var C3 = load(ResourcePaths.SCRIPT_CHAPTER3_FLOW)
+	_assert_true(C3 != null, "ContentExp: Chapter3Flow 可加载")
+	if C3 != null:
+		game_state.story.from_dict({
+			"fame": 0, "flags": {}, "story_flags": {}, "story_items": {},
+			"cards": {}, "titles": {}, "npc_relationships": {},
+			"linboyuan_relationship": 0, "jia_relationship": 0, "unlocked_chapters": [],
+		})
+		_assert_eq(C3.resolve_resume_scene(), "", "ContentExp: 无章二不可续")
+		game_state.set_story_flag("chapter2_complete", true)
+		_assert_eq(C3.resolve_resume_scene(), "chapter3_pu_summon", "ContentExp: 章二后应召")
+		game_state.set_story_flag("chapter3_pu_deal_accepted", true)
+		_assert_eq(C3.resolve_resume_scene(), "chapter3_after_summon_comply", "ContentExp: 投附后续")
+		game_state.set_story_flag("chapter3_comply_taixue_registered", true)
+		_assert_eq(C3.resolve_resume_scene(), "chapter3_comply_audit", "ContentExp: 名籍后续试")
+		game_state.set_story_flag("chapter3_complete", true)
+		_assert_eq(C3.resolve_resume_scene(), "", "ContentExp: 章三完结不续")
+
+	# 月历节拍数量
+	var cal_path := ResourcePaths.DATA_CALENDAR_EVENTS
+	var f := FileAccess.open(cal_path, FileAccess.READ)
+	_assert_true(f != null, "ContentExp: calendar_events 可读")
+	if f != null:
+		var parsed = JSON.parse_string(f.get_as_text())
+		f.close()
+		if parsed is Dictionary:
+			var events: Array = parsed.get("events", [])
+			_assert_true(events.size() >= 8, "ContentExp: 月历节拍 ≥8")
+			var has_pulse := false
+			var has_rumor := false
+			for raw in events:
+				if not raw is Dictionary:
+					continue
+				var eid := str(raw.get("id", ""))
+				if eid == "econ_gossip_pulse":
+					has_pulse = true
+				if eid == "ch3_street_rumor":
+					has_rumor = true
+			_assert_true(has_pulse, "ContentExp: 含月报商情脉搏")
+			_assert_true(has_rumor, "ContentExp: 含章三城中风声")
+
+	if game_state.story_unlock_notified.is_connected(cb):
+		game_state.story_unlock_notified.disconnect(cb)
+	game_state.from_save_dict(before)
+	print("")
+
+
+## P8-5：WorldMap HUD 顶边避让公式
+func _test_sea_hud_layout() -> void:
+	print("[SeaHudLayout]")
+	_assert_eq(GameUILayout.SEA_HUD_MARGIN_DEFAULT, 20.0, "SEA_HUD_MARGIN_DEFAULT")
+	_assert_eq(GameUILayout.sea_hud_top_margin(false), 20.0, "无壳层: top=20")
+	_assert_eq(
+		GameUILayout.sea_hud_top_margin(true, GameUILayout.STATUS_BAR_HEIGHT_FULL),
+		GameUILayout.STATUS_BAR_HEIGHT_FULL + GameUILayout.SEA_HUD_MARGIN_BELOW_CHROME,
+		"有壳层 FULL: top=bar+8"
+	)
+	_assert_eq(
+		GameUILayout.sea_hud_top_margin(true, GameUILayout.STATUS_BAR_HEIGHT_COMPACT),
+		GameUILayout.STATUS_BAR_HEIGHT_COMPACT + 8.0,
+		"有壳层 COMPACT: top=bar+8"
+	)
+	print("")
+
+
+## P8：ModeStack / AppRoot API（无宿主回退；轻量 stub 宿主）
+func _test_mode_stack() -> void:
+	print("[ModeStack]")
+	var MS = load(ResourcePaths.SCRIPT_MODE_STACK)
+	_assert_true(MS != null, "ModeStack script 可加载")
+	if MS == null:
+		print("")
+		return
+	_assert_eq(MS.MODE_NARRATIVE, "narrative", "ModeStack.MODE_NARRATIVE")
+	_assert_eq(MS.MODE_VOYAGE, "voyage", "ModeStack.MODE_VOYAGE")
+	_assert_eq(MS.MODE_COMBAT, "combat", "ModeStack.MODE_COMBAT")
+	_assert_eq(MS.MODE_CUTSCENE, "cutscene", "ModeStack.MODE_CUTSCENE")
+	# TestRunner 作为 SceneTree 通常无 AppRoot 宿主
+	_assert_true(not MS.go_voyage(self), "ModeStack: 无宿主 go_voyage=false（调用方应回退 change_scene）")
+	_assert_true(not MS.go_narrative(self, "port_linan"), "ModeStack: 无宿主 go_narrative=false")
+	_assert_eq(MS.current_mode(self), "", "ModeStack: 无宿主 current_mode 空")
+	_assert_true(MS.start_combat(self, {"id": "x"}) == null, "ModeStack: 无宿主 start_combat=null")
+	_assert_true(not MS.is_combat(self), "ModeStack: 无宿主 is_combat=false")
+	_assert_true(not MS.play_cutscene(self, "any"), "ModeStack: 无宿主 play_cutscene=false")
+	_assert_true(MS.get_cutscene_player(self) == null, "ModeStack: 无宿主 get_cutscene_player=null")
+	_assert_true(not MS.is_cutscene(self), "ModeStack: 无宿主 is_cutscene=false")
+
+	# 轻量 stub 宿主（不实例化 Main/WorldMap）
+	var stub_gd := GDScript.new()
+	stub_gd.source_code = """
+extends Node
+var voyage_hits: int = 0
+var narrative_hits: int = 0
+var combat_hits: int = 0
+var cutscene_hits: int = 0
+var last_scene: String = \"\"
+var last_enemy: Dictionary = {}
+var last_cutscene: String = \"\"
+var _mode: String = \"narrative\"
+var _cs: Node = null
+func show_voyage() -> void:
+	voyage_hits += 1
+	_mode = \"voyage\"
+func show_narrative(scene_id: String = \"\") -> void:
+	narrative_hits += 1
+	last_scene = scene_id
+	_mode = \"narrative\"
+func show_combat(enemy: Dictionary) -> Node:
+	combat_hits += 1
+	last_enemy = enemy
+	_mode = \"combat\"
+	return Node.new()
+func play_cutscene(cutscene_id: String) -> bool:
+	cutscene_hits += 1
+	last_cutscene = cutscene_id
+	_mode = \"cutscene\"
+	return cutscene_id != \"\"
+func get_cutscene_player() -> Node:
+	if _cs == null:
+		_cs = Node.new()
+		add_child(_cs)
+	return _cs
+func get_mode() -> String:
+	return _mode
+"""
+	var reload_err := stub_gd.reload()
+	_assert_eq(reload_err, OK, "ModeStack stub GDScript reload OK")
+	var stub := Node.new()
+	stub.set_script(stub_gd)
+	root.add_child(stub)
+	_assert_true(MS.find_host(self) == stub, "ModeStack.find_host 找到 stub 宿主")
+	_assert_true(MS.go_voyage(self), "ModeStack.go_voyage 经 stub 成功")
+	_assert_eq(stub.get("voyage_hits"), 1, "ModeStack: stub.show_voyage 被调用")
+	_assert_true(MS.go_narrative(self, "port_linan"), "ModeStack.go_narrative 经 stub 成功")
+	_assert_eq(stub.get("narrative_hits"), 1, "ModeStack: stub.show_narrative 被调用")
+	_assert_eq(str(stub.get("last_scene")), "port_linan", "ModeStack: scene_id 透传")
+	_assert_eq(MS.current_mode(self), "narrative", "ModeStack.current_mode 读 stub")
+	var combat_node = MS.start_combat(self, {"id": "pirate_junk", "name": "海寇"})
+	_assert_true(combat_node != null, "ModeStack.start_combat 经 stub 返回节点")
+	_assert_eq(stub.get("combat_hits"), 1, "ModeStack: stub.show_combat 被调用")
+	_assert_eq(str((stub.get("last_enemy") as Dictionary).get("id", "")), "pirate_junk", "ModeStack: enemy 透传")
+	_assert_true(MS.is_combat(self), "ModeStack.is_combat 在 stub 战斗中")
+	if combat_node != null and is_instance_valid(combat_node):
+		combat_node.free()
+	_assert_true(MS.play_cutscene(self, "ending_loyalty"), "ModeStack.play_cutscene 经 stub 成功")
+	_assert_eq(stub.get("cutscene_hits"), 1, "ModeStack: stub.play_cutscene 被调用")
+	_assert_eq(str(stub.get("last_cutscene")), "ending_loyalty", "ModeStack: cutscene_id 透传")
+	_assert_true(MS.is_cutscene(self), "ModeStack.is_cutscene 在 stub 过场中")
+	_assert_true(MS.get_cutscene_player(self) != null, "ModeStack.get_cutscene_player 经 stub")
+	stub.free()
+
+	var app_scr = load(ResourcePaths.SCRIPT_APP_ROOT)
+	_assert_true(app_scr != null and app_scr is Script, "AppRoot script 可加载")
+	if app_scr != null and app_scr is Script:
+		_assert_true((app_scr as Script).can_instantiate(), "AppRoot 可实例化")
+		var app: Node = (app_scr as Script).new()
+		_assert_true(app.has_method("show_voyage"), "AppRoot.show_voyage")
+		_assert_true(app.has_method("show_narrative"), "AppRoot.show_narrative")
+		_assert_true(app.has_method("show_combat"), "AppRoot.show_combat")
+		_assert_true(app.has_method("get_combat"), "AppRoot.get_combat")
+		_assert_true(app.has_method("play_cutscene"), "AppRoot.play_cutscene")
+		_assert_true(app.has_method("get_cutscene_player"), "AppRoot.get_cutscene_player")
+		_assert_true(app.has_method("get_mode"), "AppRoot.get_mode")
+		app.free()
+
+	# CutscenePlayer API
+	var cs_scene: PackedScene = load(ResourcePaths.SCENE_CUTSCENE_PLAYER) as PackedScene
+	_assert_true(cs_scene != null, "CutscenePlayer scene 可加载")
+	if cs_scene != null:
+		var cs = cs_scene.instantiate()
+		root.add_child(cs)
+		_assert_true(cs.has_method("is_playing"), "CutscenePlayer.is_playing")
+		_assert_true(cs.has_signal("started"), "CutscenePlayer.started 信号")
+		_assert_true(cs.has_signal("finished"), "CutscenePlayer.finished 信号")
+		_assert_true(not bool(cs.call("is_playing")), "CutscenePlayer: 初始未播放")
+		cs.queue_free()
+
+	_assert_eq(ResourcePaths.SCENE_APP_ROOT, "res://scenes/AppRoot.tscn", "ResourcePaths.SCENE_APP_ROOT")
+	_assert_eq(ResourcePaths.SCRIPT_MODE_STACK, "res://scripts/ModeStack.gd", "ResourcePaths.SCRIPT_MODE_STACK")
+	_assert_eq(ResourcePaths.SCRIPT_APP_ROOT, "res://scripts/AppRoot.gd", "ResourcePaths.SCRIPT_APP_ROOT")
+
+	# P8-2: AppRoot chrome API + PortStatusBar sea_mode
+	var app_scr2 = load(ResourcePaths.SCRIPT_APP_ROOT)
+	if app_scr2 != null and app_scr2 is Script:
+		var app2: Node = (app_scr2 as Script).new()
+		_assert_true(app2.has_method("refresh_chrome"), "AppRoot.refresh_chrome")
+		_assert_true(app2.has_method("log_event"), "AppRoot.log_event")
+		_assert_true(app2.has_method("get_status_bar"), "AppRoot.get_status_bar")
+		app2.free()
+	var status_scene: PackedScene = load(ResourcePaths.SCENE_PORT_STATUS_BAR) as PackedScene
+	_assert_true(status_scene != null, "PortStatusBar scene 可加载 (chrome)")
+	if status_scene != null:
+		var bar = status_scene.instantiate()
+		root.add_child(bar)
+		_assert_true(bar.has_method("set_sea_mode"), "PortStatusBar.set_sea_mode")
+		if bar.has_method("set_sea_mode"):
+			bar.call("set_sea_mode", true)
+			_assert_true(bool(bar.get("_sea_mode")), "PortStatusBar: sea_mode 开启")
+			bar.call("set_sea_mode", false)
+			_assert_true(not bool(bar.get("_sea_mode")), "PortStatusBar: sea_mode 关闭")
+		bar.queue_free()
+	print("")
+
 
 func _first_choice_effects(scene_data: Dictionary) -> Dictionary:
 	var choices: Array = scene_data.get("choices", [])

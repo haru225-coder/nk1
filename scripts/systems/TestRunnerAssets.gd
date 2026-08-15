@@ -173,7 +173,7 @@ func _test_cutscene_player() -> void:
 	_assert_eq(int(player._data["rank_up_1"]["rank"]), 1, "rank_up_1.rank=1（JSON 解析为 float 但数值正确）")
 
 	# 1. play("不存在") 静默返回，_playing 保持 false
-	player.play("nonexistent_id_xyz")
+	_assert_true(not player.play("nonexistent_id_xyz"), "play(不存在 id): 返回 false")
 	_assert_true(not player._playing, "play(不存在 id): _playing 保持 false")
 	_assert_true(not player.visible, "play(不存在 id): visible 保持 false")
 
@@ -197,10 +197,15 @@ func _test_cutscene_player() -> void:
 	_assert_true(not player.has_cutscene("port_arrival", "不存在的港"), "has_cutscene(不存在) -> false")
 
 	# 2. play("quanzhou_arrival") 后 _playing=true，visible=true
-	player.play("quanzhou_arrival")
+	_assert_true(player.play("quanzhou_arrival"), "play(quanzhou_arrival): 返回 true")
 	_assert_true(player._playing, "play(quanzhou_arrival): _playing=true")
 	_assert_true(player.visible, "play(quanzhou_arrival): visible=true")
 	_assert_eq(player._current_id, "quanzhou_arrival", "play: _current_id 正确")
+	_assert_true(player.play("ending_loyalty"), "播放中请求有效过场: 成功入队")
+	_assert_eq(player._queue.size(), 1, "播放中请求有效过场: 队列新增一段")
+	_assert_eq(player._queue[0], "ending_loyalty", "播放中请求有效过场: 保持请求顺序")
+	_assert_true(not player.play("nonexistent_id_xyz"), "播放中请求无效过场: 返回 false")
+	_assert_eq(player._queue.size(), 1, "播放中请求无效过场: 不污染队列")
 
 	# 3. skip() 后 _playing=false, visible=false, finished 信号发出
 	var finished_emitted: Array = [false]
@@ -268,5 +273,4 @@ func _test_cutscene_player() -> void:
 
 	player.queue_free()
 	print("")
-
 

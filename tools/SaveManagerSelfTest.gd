@@ -7,6 +7,7 @@ const BaseEconomicEvent = preload(ResourcePaths.SCRIPT_BASE_EVENT)
 
 func _ready() -> void:
 	var ok := true
+	SaveManager._set_test_path_stem('nk1_selftest_save')
 	GameState.fame = 42
 	GameState.navigation.last_port = "quanzhou"
 	LedgerSystem.from_save_dict({"balance": 2500})
@@ -25,7 +26,7 @@ func _ready() -> void:
 	WorldEventTracker.add_event(PirateAttackEvent.new("quanzhou", 2))  # 应刷新为 max(5,2) = 5
 
 	ok = ok and SaveManager.save_game(0)
-	var path := "user://nk1_save_0.json"
+	var path := "user://nk1_selftest_save_0.json"
 	ok = ok and FileAccess.file_exists(path)
 
 	var raw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -93,7 +94,7 @@ func _ready() -> void:
 	var hist_slot := 2
 	var save_ok := SaveManager.save_game(hist_slot)
 	ok = ok and save_ok
-	var hist_path := "user://nk1_save_%d.json" % hist_slot
+	var hist_path := "user://nk1_selftest_save_%d.json" % hist_slot
 	var file_content := FileAccess.get_file_as_string(hist_path)
 	var raw2: Dictionary = JSON.parse_string(file_content) if not file_content.is_empty() else {}
 	var we2: Dictionary = raw2.get("world_events", {})
@@ -222,7 +223,12 @@ func _ready() -> void:
 
 	# quick_save 仍写 slot 0
 	ok = ok and SaveManager.quick_save()
-	ok = ok and FileAccess.file_exists("user://nk1_save_0.json")
+	ok = ok and FileAccess.file_exists("user://nk1_selftest_save_0.json")
+
+	ok = _test_atomic_save_protocol() and ok
+	for cleanup_slot in range(4):
+		ok = SaveManager.delete_save(cleanup_slot) and ok
+	SaveManager._reset_path_templates()
 
 	if not ok:
 		print("[SaveManagerSelfTest] FAIL - dumping WE state:")
@@ -232,6 +238,125 @@ func _ready() -> void:
 		print("  active count=", WorldEventTracker.get_active_events().size())
 	print("[SaveManagerSelfTest] %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
+
+
+func _test_atomic_save_protocol() -> bool:
+	print('[SaveManagerSelfTest] Atomic protocol')
+	var ok := true
+	var slot := 3
+	var final_path := 'user://nk1_selftest_save_3.json'
+	var temp_path := 'user://nk1_selftest_save_3.tmp'
+	var backup_path := 'user://nk1_selftest_save_3.bak'
+	_cleanup_atomic_paths(final_path, temp_path, backup_path)
+
+	LedgerSystem.from_save_dict({'balance': 3100})
+	var save_started_us := Time.get_ticks_usec()
+	var first_save_ok := SaveManager.save_game(slot)
+	var save_elapsed_us := Time.get_ticks_usec() - save_started_us
+	ok = _check_atomic(first_save_ok, 'first atomic save succeeds') and ok
+	ok = _check_atomic(save_elapsed_us < 100_000, 'atomic save completes under 100ms') and ok
+	LedgerSystem.from_save_dict({'balance': 3200})
+	ok = _check_atomic(SaveManager.save_game(slot), 'second atomic save succeeds') and ok
+	var final_data := _read_json_dict(final_path)
+	var backup_data := _read_json_dict(backup_path)
+	ok = _check_atomic(int(final_data.get('ledger', {}).get('balance', 0)) == 3200, 'final contains newest save') and ok
+	ok = _check_atomic(int(backup_data.get('ledger', {}).get('balance', 0)) == 3100, 'backup keeps previous readable save') and ok
+	ok = _check_atomic(not FileAccess.file_exists(temp_path), 'temp removed after successful save') and ok
+
+	ok = _check_atomic(_write_text_file(final_path, '{'), 'truncated final fixture written') and ok
+	LedgerSystem.from_save_dict({'balance': 0})
+	ok = _check_atomic(SaveManager.load_game(slot), 'truncated final recovers from backup') and ok
+	ok = _check_atomic(LedgerSystem.get_balance() == 3100, 'backup state loaded after recovery') and ok
+	ok = _check_atomic(not _read_json_dict(final_path).is_empty(), 'recovered final is readable') and ok
+
+	_cleanup_atomic_paths(final_path, temp_path, backup_path)
+	LedgerSystem.from_save_dict({'balance': 3300})
+	ok = _check_atomic(SaveManager.save_game(slot), 'valid final created for backup precedence') and ok
+	ok = _check_atomic(_write_text_file(backup_path, 'not-json'), 'invalid backup fixture written') and ok
+	LedgerSystem.from_save_dict({'balance': 0})
+	ok = _check_atomic(SaveManager.load_game(slot), 'valid final wins over invalid backup') and ok
+	ok = _check_atomic(LedgerSystem.get_balance() == 3300, 'valid final state preserved') and ok
+
+	var final_before_failure := FileAccess.get_file_as_string(final_path)
+	_cleanup_temp_path(temp_path)
+	var temp_global := ProjectSettings.globalize_path(temp_path)
+	var mkdir_err := DirAccess.make_dir_absolute(temp_global)
+	ok = _check_atomic(mkdir_err == OK, 'blocking temp directory created') and ok
+	ok = _check_atomic(_write_text_file(temp_path + '/blocker', 'blocked'), 'blocking temp child created') and ok
+	LedgerSystem.from_save_dict({'balance': 3400})
+	ok = _check_atomic(not SaveManager.save_game(slot), 'failed temp write reports false') and ok
+	ok = _check_atomic(FileAccess.get_file_as_string(final_path) == final_before_failure, 'failed temp write preserves final') and ok
+	_cleanup_temp_path(temp_path)
+
+	_cleanup_atomic_paths(final_path, temp_path, backup_path)
+	var legacy_game_state: Dictionary = GameState.to_save_dict()
+	legacy_game_state.erase('market')
+	var legacy := {
+		'save_version': 1,
+		'timestamp': '2026-01-01T00:00:00',
+		'current_scene_id': 'port_quanzhou',
+		'game_state': legacy_game_state,
+		'ledger': {'balance': 3500},
+		'cargo': {'cargo': {}, 'total': 0},
+	}
+	ok = _check_atomic(_write_text_file(final_path, JSON.stringify(legacy)), 'legacy v1 fixture written') and ok
+	LedgerSystem.from_save_dict({'balance': 0})
+	ok = _check_atomic(SaveManager.load_game(slot), 'legacy v1 save still loads') and ok
+	ok = _check_atomic(LedgerSystem.get_balance() == 3500, 'legacy v1 ledger restored') and ok
+
+	_cleanup_atomic_paths(final_path, temp_path, backup_path)
+	LedgerSystem.from_save_dict({'balance': 3600})
+	ok = _check_atomic(SaveManager.save_game(slot), 'delete fixture final created') and ok
+	ok = _check_atomic(_write_text_file(backup_path, FileAccess.get_file_as_string(final_path)), 'delete fixture backup created') and ok
+	var delete_temp_global := ProjectSettings.globalize_path(temp_path)
+	DirAccess.make_dir_absolute(delete_temp_global)
+	_write_text_file(temp_path + '/blocker', 'blocked')
+	ok = _check_atomic(not SaveManager.delete_save(slot), 'partial delete failure reports false') and ok
+	ok = _check_atomic(not FileAccess.file_exists(final_path), 'delete removes final despite partial failure') and ok
+	ok = _check_atomic(not FileAccess.file_exists(backup_path), 'delete removes backup despite partial failure') and ok
+	_cleanup_temp_path(temp_path)
+	_cleanup_atomic_paths(final_path, temp_path, backup_path)
+	return ok
+
+
+func _check_atomic(condition: bool, label: String) -> bool:
+	print('  %s: %s' % ['PASS' if condition else 'FAIL', label])
+	return condition
+
+
+func _write_text_file(path: String, text: String) -> bool:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_string(text)
+	file.flush()
+	file.close()
+	return true
+
+
+func _read_json_dict(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var raw: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return raw as Dictionary if raw is Dictionary else {}
+
+
+func _cleanup_atomic_paths(final_path: String, temp_path: String, backup_path: String) -> void:
+	_cleanup_temp_path(temp_path)
+	for path in [final_path, backup_path]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+func _cleanup_temp_path(temp_path: String) -> void:
+	var blocker := temp_path + '/blocker'
+	if FileAccess.file_exists(blocker):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(blocker))
+	if FileAccess.file_exists(temp_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(temp_path))
+	var global_path := ProjectSettings.globalize_path(temp_path)
+	if DirAccess.dir_exists_absolute(global_path):
+		DirAccess.remove_absolute(global_path)
 
 
 func _find_event(events: Array, event_id: String, target_port: String) -> BaseEconomicEvent:
