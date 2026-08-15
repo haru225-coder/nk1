@@ -53,43 +53,129 @@ static func resolve_facility_icon(fac: Dictionary) -> Texture2D:
 			return tex
 
 	var fac_id: String = fac.get("id", "")
+	var title: String = str(fac.get("title", ""))
+	for key in icon_keys_for(fac_id, title):
+		for folder: String in ["res://assets/ui/icons/", ResourcePaths.DIR_ICONS_128, ResourcePaths.DIR_ASSETS]:
+			for path: String in [
+				folder + "icon_" + key + ".png",
+				folder + "icon_" + key + "_koei.png",
+			]:
+				var tex := AssetPlaceholder.load_texture(path, "texture")
+				if tex:
+					return tex
+
+	return AssetPlaceholder.load_texture(ResourcePaths.TEX_ICON_MARKET, "texture")
+
+
+## 设施 id / 标题 → 图标关键字（CommandBar / 设施卡共用）
+static func icon_keys_for(fac_id: String, title: String = "") -> Array[String]:
 	var keys: Array[String] = []
+	var blob := (fac_id + " " + title).to_lower()
 	if fac_id.begins_with("city_"):
 		keys.append(fac_id.replace("city_", ""))
-	if fac_id.contains("exam") or fac_id.contains("school"):
+	# 英文关键词
+	if "exam" in blob or "school" in blob or "taixue" in blob or "学" in title or "考" in title:
 		keys.append("exam")
-	if fac_id.contains("temple"):
+	if "temple" in blob or "mosque" in blob or "寺" in title or "庙" in title or "观" in title:
+		keys.append("temple")
 		keys.append("residence")
-	if fac_id.contains("wharf"):
+	if "wharf" in blob or "pier" in blob or "anchor" in blob or "码头" in title or "埠" in title:
 		keys.append("wharf")
-	elif fac_id.contains("ship") or fac_id.contains("canal"):
+	if "ship" in blob or "canal" in blob or "船坞" in title or "河" in title:
 		keys.append("shipyard")
-	if fac_id.contains("market"):
+	if "market" in blob or "spice" in blob or "salt" in blob or "rice" in blob \
+			or "smuggler" in blob or "den" in blob or "black" in blob \
+			or "市" in title or "集" in title or "盐" in title or "米" in title:
 		keys.append("market")
-	if fac_id.contains("inn"):
+	if "inn" in blob or "hut" in blob or "shack" in blob or "馆" in title or "舍" in title:
 		keys.append("inn")
-	if fac_id.contains("tavern") or fac_id.contains("tea"):
+	if "tavern" in blob or "tea" in blob or "酒" in title or "茶" in title:
 		keys.append("tavern")
-	if fac_id.contains("guild"):
+	if "guild" in blob or "会馆" in title or "行" in title:
 		keys.append("guild")
-	if fac_id.contains("yamen"):
+	if "yamen" in blob or "衙" in title or "司" in title:
 		keys.append("yamen")
-	if fac_id.contains("taixue"):
-		keys.append("exam")
+	if "lookout" in blob or "beacon" in blob or "ruins" in blob or "望" in title or "烽" in title:
+		keys.append("lookout")
+		keys.append("ruins")
+	if "residence" in blob or "宅" in title or "府" in title:
+		keys.append("residence")
 	keys.append(fac_id)
-
+	# 去重保序
 	var seen: Dictionary = {}
+	var out: Array[String] = []
 	for key in keys:
 		if key == "" or seen.has(key):
 			continue
 		seen[key] = true
-		for folder: String in [ResourcePaths.DIR_ICONS_128, ResourcePaths.DIR_ASSETS]:
-			var path: String = folder + "icon_" + key + "_koei.png"
-			var tex := AssetPlaceholder.load_texture(path, "texture")
-			if tex:
-				return tex
+		out.append(key)
+	return out
 
-	return AssetPlaceholder.load_texture(ResourcePaths.TEX_ICON_MARKET, "texture")
+
+## 双列设施：左=社交/情报，右=海洋/贸易（R1 KOEI 港内入口）
+const COLUMN_LEFT_KEYS: Array[String] = [
+	"tavern", "inn", "guild", "yamen", "exam", "temple", "residence", "school",
+]
+const COLUMN_RIGHT_KEYS: Array[String] = [
+	"market", "shipyard", "wharf", "ruins", "lookout", "canal", "pier",
+]
+
+
+static func column_side_for(fac: Dictionary) -> String:
+	var fac_id := str(fac.get("id", ""))
+	var title := str(fac.get("title", fac.get("name", "")))
+	var keys := icon_keys_for(fac_id, title)
+	for key in keys:
+		if key in COLUMN_LEFT_KEYS:
+			return "left"
+		if key in COLUMN_RIGHT_KEYS:
+			return "right"
+	# id 字面子串兜底
+	var blob := (fac_id + " " + title).to_lower()
+	for key in COLUMN_LEFT_KEYS:
+		if key in blob:
+			return "left"
+	for key in COLUMN_RIGHT_KEYS:
+		if key in blob:
+			return "right"
+	return "rest"
+
+
+## 将设施分成左右列；rest 交错补齐；列内按关键字优先级排序
+static func split_facility_columns(facilities: Array) -> Dictionary:
+	var left_facs: Array = []
+	var right_facs: Array = []
+	var rest_facs: Array = []
+	for raw in facilities:
+		if not raw is Dictionary:
+			continue
+		var fac: Dictionary = raw
+		var side := column_side_for(fac)
+		match side:
+			"left":
+				left_facs.append(fac)
+			"right":
+				right_facs.append(fac)
+			_:
+				rest_facs.append(fac)
+	for i in rest_facs.size():
+		if i % 2 == 0:
+			left_facs.append(rest_facs[i])
+		else:
+			right_facs.append(rest_facs[i])
+	left_facs.sort_custom(func(a, b): return _column_sort_key(a, true) < _column_sort_key(b, true))
+	right_facs.sort_custom(func(a, b): return _column_sort_key(a, false) < _column_sort_key(b, false))
+	return {"left": left_facs, "right": right_facs}
+
+
+static func _column_sort_key(fac: Dictionary, is_left: bool) -> int:
+	var order: Array[String] = COLUMN_LEFT_KEYS if is_left else COLUMN_RIGHT_KEYS
+	var keys := icon_keys_for(str(fac.get("id", "")), str(fac.get("title", fac.get("name", ""))))
+	for i in order.size():
+		if order[i] in keys:
+			return i
+	return 100
+
 
 static func _story_rule_available(rule: Dictionary) -> bool:
 	var req: String = rule.get("requires_story_flag", "")

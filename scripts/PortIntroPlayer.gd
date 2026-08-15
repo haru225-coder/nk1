@@ -1,6 +1,6 @@
 class_name PortIntroPlayer extends RefCounted
 
-func show_if_needed(scene_data: Dictionary, scene_id: String, cutscene_player: CutscenePlayer, log_message: Callable) -> void:
+func show_if_needed(scene_data: Dictionary, scene_id: String, cutscene_player: Node, log_message: Callable) -> void:
 	var intro := str(scene_data.get("intro", ""))
 	if intro == "":
 		return

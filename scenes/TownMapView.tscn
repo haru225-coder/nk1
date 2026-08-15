@@ -1,15 +1,45 @@
-[gd_scene load_steps=2 format=3 uid="uid://town_map_view"]
+[gd_scene load_steps=3 format=3 uid="uid://town_map_view"]
 
 [ext_resource type="Script" path="res://scripts/TownMapView.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cs4687cvtaf4x" path="res://assets/ui_frame_koei.png" id="2_frame"]
 
 [node name="TownMapView" type="Control"]
 custom_minimum_size = Vector2(0, 360)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+mouse_filter = 0
 script = ExtResource("1_script")
 
-[node name="MapTexture" type="TextureRect" parent="."]
+[node name="MapFrame" type="NinePatchRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_frame")
+patch_margin_left = 40
+patch_margin_top = 40
+patch_margin_right = 40
+patch_margin_bottom = 40
+
+[node name="MapClip" type="Control" parent="MapFrame"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 36.0
+offset_top = 36.0
+offset_right = -36.0
+offset_bottom = -36.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="MapTexture" type="TextureRect" parent="MapFrame/MapClip"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,7 +50,7 @@ expand_mode = 1
 stretch_mode = 5
 mouse_filter = 2
 
-[node name="HotspotLayer" type="Control" parent="."]
+[node name="HotspotLayer" type="Control" parent="MapFrame/MapClip"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -29,16 +59,16 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
 
-[node name="MapHint" type="Label" parent="."]
+[node name="MapHint" type="Label" parent="MapFrame/MapClip"]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -120.0
-offset_top = -34.0
-offset_right = 120.0
+offset_left = -140.0
+offset_top = -36.0
+offset_right = 140.0
 offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 0

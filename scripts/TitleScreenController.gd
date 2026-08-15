@@ -5,13 +5,21 @@ signal scene_requested(scene_id: String)
 @onready var main_title: Label = $TitlePanel/VBoxContainer/MainTitle
 @onready var sub_title: Label = $TitlePanel/VBoxContainer/SubTitle
 @onready var button_container: VBoxContainer = $TitlePanel/VBoxContainer/ButtonContainer
+@onready var title_panel: PanelContainer = $TitlePanel
 
 var _scene_data: Dictionary = {}
+var _koei_frame: NinePatchRect = null
+var _title_divider: ColorRect = null
+
+func _ready() -> void:
+	_ensure_koei_chrome()
 
 func setup(scene_data: Dictionary) -> void:
 	_scene_data = scene_data
+	_ensure_koei_chrome()
 	main_title.text = scene_data.get("cg_title", "南海立志传")
 	sub_title.text = scene_data.get("cg_sub", "")
+	_ensure_title_divider()
 
 	for child in button_container.get_children():
 		child.queue_free()
@@ -19,11 +27,89 @@ func setup(scene_data: Dictionary) -> void:
 	_build_save_list()
 	_add_choices(scene_data)
 
+func _ensure_koei_chrome() -> void:
+	if _koei_frame != null and is_instance_valid(_koei_frame):
+		return
+	if has_node("KoeiOuterFrame"):
+		_koei_frame = $KoeiOuterFrame as NinePatchRect
+		return
+
+	var frame_tex: Texture2D = load(ResourcePaths.FRAME_KOEI) as Texture2D
+	if frame_tex == null:
+		return
+
+	_koei_frame = NinePatchRect.new()
+	_koei_frame.name = "KoeiOuterFrame"
+	_koei_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_koei_frame.texture = frame_tex
+	# 与 DialogueBox / TownMap 同款 patch（源资源九宫格 margin）
+	_koei_frame.patch_margin_left = 40
+	_koei_frame.patch_margin_top = 40
+	_koei_frame.patch_margin_right = 40
+	_koei_frame.patch_margin_bottom = 40
+	_koei_frame.layout_mode = 1
+	_koei_frame.anchors_preset = Control.PRESET_CENTER
+	_koei_frame.anchor_left = 0.5
+	_koei_frame.anchor_top = 0.5
+	_koei_frame.anchor_right = 0.5
+	_koei_frame.anchor_bottom = 0.5
+	# 比 TitlePanel（±380×±280）略大，露出木框外缘
+	_koei_frame.offset_left = -408.0
+	_koei_frame.offset_top = -308.0
+	_koei_frame.offset_right = 408.0
+	_koei_frame.offset_bottom = 308.0
+	_koei_frame.z_index = -1
+	add_child(_koei_frame)
+	move_child(_koei_frame, 0)
+
+	# 内层 TitlePanel 略抬高，压在木框中心
+	if title_panel:
+		title_panel.z_index = 0
+
+func _ensure_title_divider() -> void:
+	var vbox := title_panel.get_node_or_null("VBoxContainer") as VBoxContainer
+	if vbox == null:
+		return
+	if vbox.has_node("TitleDivider"):
+		_title_divider = vbox.get_node("TitleDivider") as ColorRect
+		return
+
+	# 主金线 + 两侧淡入感：中心亮、两端略短（用三截近似）
+	var wrap := HBoxContainer.new()
+	wrap.name = "TitleDividerWrap"
+	wrap.alignment = BoxContainer.ALIGNMENT_CENTER
+	wrap.add_theme_constant_override("separation", 0)
+	wrap.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var left := ColorRect.new()
+	left.custom_minimum_size = Vector2(48, 1)
+	left.color = Color(0.88, 0.68, 0.28, 0.25)
+	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrap.add_child(left)
+
+	_title_divider = ColorRect.new()
+	_title_divider.name = "TitleDivider"
+	_title_divider.custom_minimum_size = Vector2(160, 2)
+	_title_divider.color = Color(0.92, 0.74, 0.32, 0.88)
+	_title_divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrap.add_child(_title_divider)
+
+	var right := ColorRect.new()
+	right.custom_minimum_size = Vector2(48, 1)
+	right.color = Color(0.88, 0.68, 0.28, 0.25)
+	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrap.add_child(right)
+
+	var sub_idx := sub_title.get_index() if sub_title else 1
+	vbox.add_child(wrap)
+	vbox.move_child(wrap, sub_idx + 1)
+
 func _build_save_list() -> void:
 	var header := Label.new()
-	header.text = "航行记录"
+	header.text = "— 航行记录 —"
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.theme_type_variation = UITheme.TEXT_TITLE_SUB
+	header.theme_type_variation = UITheme.TEXT_TITLE_SAVE_HEADER
 	button_container.add_child(header)
 
 	var save_list := VBoxContainer.new()

@@ -1,4 +1,5 @@
 extends Control
+class_name PortScreenController
 
 signal scene_requested(scene_id: String)
 signal status_updated
@@ -24,9 +25,11 @@ var _use_town_map: bool = false
 func _ready() -> void:
 	port_actions_label.visible = false
 	port_choices_container.visible = false
-	# 为设施提示文本加入呼吸灯效果，提示玩家点击交互
+	# 提示字用铜金，呼吸灯引导点击
+	if facility_hint:
+		facility_hint.theme_type_variation = UITheme.PORT_FACILITY_HINT
 	var tween := create_tween().set_loops()
-	tween.tween_property(facility_hint, "modulate:a", 0.45, 1.2).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(facility_hint, "modulate:a", 0.5, 1.2).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(facility_hint, "modulate:a", 1.0, 1.2).set_trans(Tween.TRANS_SINE)
 
 ## ── 港口入口 ─────────────────────────────────────────────
@@ -52,6 +55,9 @@ func setup(scene_data: Dictionary, port_id: String) -> void:
 
 	# NK1-P6: 显示港口经济状态摘要
 	_show_economy_summary()
+
+	# 内容/体验：章三时局提示
+	_show_chapter3_urgency()
 
 	_clear_port_choices()
 	_check_story_event_chains()
@@ -83,76 +89,79 @@ func _show_town_map(town_map: Dictionary, facilities: Array) -> int:
 
 func _show_facility_grid(facilities: Array) -> void:
 	_use_town_map = false
-	# 恢复卡片模式布局
+	# 恢复卡片模式布局（深海铜框港内壳）
 	title_banner.visible = true
-	facility_hub.theme_type_variation = &"InvestigationContent"
+	facility_hub.theme_type_variation = &"MarketShell"
 	facility_hub.offset_left = 20.0
 	facility_hub.offset_top = 172.0
 	facility_hub.offset_right = -20.0
 	facility_hub.offset_bottom = -24.0
-	facility_margin.add_theme_constant_override("margin_left", 16)
-	facility_margin.add_theme_constant_override("margin_top", 12)
-	facility_margin.add_theme_constant_override("margin_right", 16)
-	facility_margin.add_theme_constant_override("margin_bottom", 12)
+	facility_margin.add_theme_constant_override("margin_left", 18)
+	facility_margin.add_theme_constant_override("margin_top", 14)
+	facility_margin.add_theme_constant_override("margin_right", 18)
+	facility_margin.add_theme_constant_override("margin_bottom", 14)
 	facility_grid.visible = true
 	facility_hint.visible = true
-	facility_hint.text = "▸ 点击建筑进入地点"
+	facility_hint.text = "▸ 左·社交情报　右·海洋贸易"
 
 	for child in left_column.get_children():
 		child.queue_free()
 	for child in right_column.get_children():
 		child.queue_free()
 
-	const LEFT_IDS := ["tavern", "inn", "guild", "yamen"]
-	const RIGHT_IDS := ["market", "shipyard", "wharf", "ruins"]
+	var FR = load(ResourcePaths.SCRIPT_FACILITY_RESOLVER)
+	var split: Dictionary = {"left": [], "right": []}
+	if FR != null and FR.has_method("split_facility_columns"):
+		split = FR.split_facility_columns(facilities)
+	else:
+		# 兜底：简单对半
+		for i in facilities.size():
+			if i % 2 == 0:
+				split["left"].append(facilities[i])
+			else:
+				split["right"].append(facilities[i])
 
-	var left_facs: Array = []
-	var right_facs: Array = []
-	var rest_facs: Array = []
+	_populate_column(left_column, split.get("left", []), "社交 · 情报")
+	_populate_column(right_column, split.get("right", []), "海洋 · 贸易")
 
-	for fac in facilities:
-		var fid: String = fac.get("id", "")
-		var matched := false
-		for key in LEFT_IDS:
-			if fid.contains(key):
-				left_facs.append(fac)
-				matched = true
-				break
-		if matched:
-			continue
-		for key in RIGHT_IDS:
-			if fid.contains(key):
-				right_facs.append(fac)
-				matched = true
-				break
-		if not matched:
-			rest_facs.append(fac)
-
-	for i in rest_facs.size():
-		if i % 2 == 0:
-			left_facs.append(rest_facs[i])
-		else:
-			right_facs.append(rest_facs[i])
-
-	_populate_column(left_column, left_facs)
-	_populate_column(right_column, right_facs)
-
-	# 出场瀑布交错依次滑入动效
+	# 出场瀑布交错依次滑入动效（跳过列标题）
 	var index := 0
 	var delay_step := 0.05
-	var max_rows: int = int(max(left_column.get_child_count(), right_column.get_child_count()))
+	var left_slots := _column_slot_nodes(left_column)
+	var right_slots := _column_slot_nodes(right_column)
+	var max_rows: int = int(max(left_slots.size(), right_slots.size()))
 	for i in max_rows:
-		if i < left_column.get_child_count():
-			_animate_slot_entry(left_column.get_child(i), index * delay_step)
+		if i < left_slots.size():
+			_animate_slot_entry(left_slots[i], index * delay_step)
 			index += 1
-		if i < right_column.get_child_count():
-			_animate_slot_entry(right_column.get_child(i), index * delay_step)
+		if i < right_slots.size():
+			_animate_slot_entry(right_slots[i], index * delay_step)
 			index += 1
 
-func _populate_column(column: VBoxContainer, facs: Array) -> void:
+func _populate_column(column: VBoxContainer, facs: Array, header_text: String = "") -> void:
+	if header_text != "":
+		column.add_child(_make_column_header(header_text))
 	for fac in facs:
 		var slot := FacilitySlotBuilder.make_slot(fac, _on_facility_pressed)
 		column.add_child(slot)
+
+func _make_column_header(text: String) -> Control:
+	var wrap := PanelContainer.new()
+	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrap.theme_type_variation = UITheme.PORT_COLUMN_HEADER
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.theme_type_variation = UITheme.PORT_COLUMN_HEADER_LABEL
+	wrap.add_child(lbl)
+	return wrap
+
+func _column_slot_nodes(column: VBoxContainer) -> Array:
+	var out: Array = []
+	for child in column.get_children():
+		if child is Control and child.get_node_or_null("CardPanel") != null:
+			out.append(child)
+	return out
 
 func _animate_slot_entry(slot: Control, delay: float) -> void:
 	var panel = slot.get_node_or_null("CardPanel")
@@ -222,6 +231,32 @@ func _show_quick_actions() -> void:
 		var rest_btn := UIBuilder.make_button("🗓 休整至下月 (%d日)" % days_to_next, UITheme.BTN_ACTION, 44)
 		rest_btn.pressed.connect(_on_rest_to_next_month)
 		port_choices_container.add_child(rest_btn)
+		has_actions = true
+
+	# P7-A：满足秩禄条件时请旨升秩（不依赖章末自动触发）
+	var career = GameState.get("career")
+	if career != null and career.has_method("check_promotion") and career.check_promotion(GameState):
+		var title_hint := ""
+		if career.has_method("get_title"):
+			title_hint = str(career.get_title())
+		var promote_label := "🎖 请旨升秩"
+		if title_hint != "":
+			promote_label = "🎖 请旨升秩（现：%s）" % title_hint
+		var promote_btn := UIBuilder.make_button(promote_label, UITheme.BTN_ACTION, 44)
+		promote_btn.pressed.connect(_on_career_promote)
+		port_choices_container.add_child(promote_btn)
+		has_actions = true
+
+	# P7-A / 内容体验：章三入口与中途续进
+	var ch3_resume := Chapter3Flow.resolve_resume_scene()
+	if ch3_resume != "":
+		var already_in := GameState.has_story_flag("chapter3_pu_deal_accepted") \
+			or GameState.has_story_flag("chapter3_pu_deal_refused") \
+			or GameState.has_story_flag("chapter3_pu_card_burned")
+		var ch3_label := "📜 续·章三线" if already_in else "📜 应召入蒲府"
+		var ch3_btn := UIBuilder.make_button(ch3_label, UITheme.BTN_ACTION, 44)
+		ch3_btn.pressed.connect(_on_chapter3_resume.bind(ch3_resume))
+		port_choices_container.add_child(ch3_btn)
 		has_actions = true
 
 	# 港口投资按钮（三档）
@@ -351,10 +386,65 @@ func _on_rest_to_next_month() -> void:
 	if calendar != null and calendar.has_method("date_key"):
 		date_text = str(calendar.date_key())
 	message_logged.emit("【休整】在港中休整 %d 日，已至 %s。\n" % [days, date_text])
+	# 内容/体验：休整后立刻看见商情（经济可感知）
+	if GameState.economy_log != null and GameState.economy_log.has_method("get_entries"):
+		var econ_lines: Array = GameState.economy_log.get_entries(2)
+		for line in econ_lines:
+			var s := str(line).strip_edges()
+			if s != "":
+				message_logged.emit(s + "\n")
 	status_updated.emit()
 	_show_economy_summary()
 	_show_quick_actions()
 	# P7-S: CalendarEventScheduler 通过 CalendarState.month_changed 自动调度
+
+func _on_career_promote() -> void:
+	if GameManager.input_locked:
+		return
+	var career = GameState.get("career")
+	if career == null or not career.has_method("check_promotion"):
+		return
+	if not career.check_promotion(GameState):
+		message_logged.emit("【秩禄】条件未满，尚不可升秩。\n")
+		return
+	var before_rank := int(career.get_rank()) if career.has_method("get_rank") else 0
+	GameState.apply_effects({"career_promote": true})
+	var after_rank := int(career.get_rank()) if career.has_method("get_rank") else before_rank
+	var title := str(career.get_title()) if career.has_method("get_title") else ""
+	if after_rank > before_rank:
+		message_logged.emit("【秩禄】升至第 %d 阶「%s」。\n" % [after_rank, title])
+	else:
+		message_logged.emit("【秩禄】未能升秩。\n")
+	status_updated.emit()
+	_show_quick_actions()
+
+func _on_chapter3_summon() -> void:
+	if GameManager.input_locked:
+		return
+	scene_requested.emit("chapter3_pu_summon")
+
+
+func _on_chapter3_resume(scene_id: String) -> void:
+	if GameManager.input_locked:
+		return
+	if scene_id != "":
+		scene_requested.emit(scene_id)
+
+
+func _show_chapter3_urgency() -> void:
+	if not GameState.has_story_flag("chapter2_complete"):
+		return
+	if GameState.has_story_flag("chapter3_complete"):
+		return
+	if GameState.has_story_flag("chapter3_pu_deal_accepted") \
+			or GameState.has_story_flag("chapter3_pu_deal_refused") \
+			or GameState.has_story_flag("chapter3_pu_card_burned"):
+		message_logged.emit("【时局】章三未结。港市可歇脚，但蒲府与榜期都不会等你。\n")
+	elif GameState.has_story_flag("calendar_ch3_street_rumor") \
+			or GameState.has_story_flag("calendar_ch3_mandate_pressure"):
+		message_logged.emit("【时局】城中都在传蒲府夜召泉州人。码头按钮「应召入蒲府」可直入偏厅。\n")
+	else:
+		message_logged.emit("【时局】临安风声渐紧。休整跨月，或会等来蒲府的名帖。\n")
 
 ## 快捷投资：调用 InvestPortHandler
 func _on_quick_invest(tier_key: String) -> void:

@@ -12,23 +12,8 @@ const CHART_TEXT := Color(0.92, 0.86, 0.68, 1.0)
 const WEATHER_BLUE := Color(0.55, 0.86, 0.95, 1.0)
 
 
-static func parchment_panel_style(alpha: float) -> StyleBoxFlat:
-	# Runtime style: strategic map popup alpha depends on overlay context.
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(PAPER.r, PAPER.g, PAPER.b, alpha)
-	style.border_color = WOOD_BORDER
-	style.set_border_width_all(3)
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	style.shadow_color = Color(0, 0, 0, 0.3)
-	style.shadow_size = 6
-	return style
-
-
 static func nautical_hud_style(alpha: float) -> StyleBoxFlat:
-	# Runtime style: world-map HUD alpha must animate separately from main_theme.tres.
+	# [豁免] WorldMap HUD alpha 随壳层上下文变化，需从共享样式派生运行时透明度。
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(DEEP_SEA.r, DEEP_SEA.g, DEEP_SEA.b, alpha)
 	style.border_color = BRASS
@@ -57,11 +42,11 @@ static func apply_world_map_hud(
 	var style := nautical_hud_style(0.93)
 	for panel in [left_panel, right_panel]:
 		if panel:
-			# Runtime override: world map HUD fades independently of the shared Theme.
+			# [豁免] WorldMap HUD 透明度随壳层变化，无法由静态 variation 表达。
 			panel.add_theme_stylebox_override("panel", style)
 
 	if main_label:
-		# Runtime override: RichTextLabel needs map-only chart text contrast.
+		# [豁免] RichTextLabel 由地图模式在运行时注入，对比色随底图消费者切换。
 		main_label.add_theme_color_override("default_color", CHART_TEXT)
 	if fleet_label:
 		fleet_label.add_theme_color_override("font_color", CHART_TEXT)
@@ -77,33 +62,14 @@ static func apply_strategic_popup(
 	info: Label,
 	buttons: Array
 ) -> void:
-	var panel_style := parchment_panel_style(0.95)
 	if popup:
-		# Runtime override: popup reuses map-only parchment over the strategic chart.
-		popup.add_theme_stylebox_override("panel", panel_style)
+		popup.theme_type_variation = UITheme.MAP_STRATEGIC_POPUP
 	if title:
-		# Runtime override: popup title is selected-port state, not a global label class.
-		title.add_theme_color_override("font_color", CINNABAR)
+		title.theme_type_variation = UITheme.MAP_STRATEGIC_TITLE
 	if info:
-		info.add_theme_color_override("font_color", INK)
+		info.theme_type_variation = UITheme.MAP_STRATEGIC_INFO
 
 	for button in buttons:
 		if not (button is Button):
 			continue
-		_apply_button_theme(button, panel_style)
-
-
-static func _apply_button_theme(button: Button, panel_style: StyleBoxFlat) -> void:
-	var normal := panel_style.duplicate() as StyleBoxFlat
-	normal.bg_color = Color(PAPER_DARK.r, PAPER_DARK.g, PAPER_DARK.b, 0.95)
-	# Runtime override: strategic map popup buttons inherit the popup frame color.
-	button.add_theme_stylebox_override("normal", normal)
-
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = PAPER
-	hover.border_color = CINNABAR
-	# Runtime override: these buttons only exist inside the map popup.
-	button.add_theme_stylebox_override("hover", hover)
-	button.add_theme_stylebox_override("pressed", hover)
-	button.add_theme_color_override("font_color", INK)
-	button.add_theme_color_override("font_hover_color", CINNABAR)
+		button.theme_type_variation = UITheme.MAP_STRATEGIC_BUTTON

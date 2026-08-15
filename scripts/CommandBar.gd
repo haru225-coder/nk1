@@ -68,7 +68,10 @@ func _add_facility_buttons(
 		var label: String = fac.get("title", "地点")
 		if is_quest:
 			label = "★ " + label
-		var icon := _resolve_command_icon(fac_id, fac)
+		# 与设施卡同一套图标解析，避免指令栏大量空图标
+		var icon: Texture2D = GameManager.resolve_facility_icon(fac)
+		if icon == null:
+			icon = _resolve_command_icon(fac_id, fac)
 		_add_button(
 			label,
 			icon,
@@ -115,7 +118,12 @@ func _add_choice_buttons(template: Dictionary, scene_data: Dictionary) -> void:
 			"effects": choice.get("effects", {}),
 			"narration": choice.get("narration", ""),
 		}
-		_add_button(label, null, action, style == "sail")
+		var choice_icon: Texture2D = null
+		if style == "sail" or style == "travel":
+			choice_icon = _resolve_command_icon("sail", {})
+		else:
+			choice_icon = _resolve_command_icon("continue", {})
+		_add_button(label, choice_icon, action, style == "sail" or style == "travel")
 
 ## 根据当前场景模式追加常用操作（如返回港口）
 func _add_mode_actions(scene_type: String, port_location: String) -> void:
@@ -138,31 +146,45 @@ func _resolve_command_icon(id: String, fac: Dictionary) -> Texture2D:
 	if tex:
 		return tex
 
-	# 2. 设施显式配置
-	var configured: String = fac.get("icon", "") if fac else ""
-	if configured != "":
-		tex = AssetPlaceholder.load_texture(configured, "texture")
+	# 2. 设施字典：关键字解析（keelung_market → market 等）
+	if fac != null and not fac.is_empty():
+		tex = FacilityResolver.resolve_facility_icon(fac)
+		if tex:
+			return tex
+		var configured: String = str(fac.get("icon", ""))
+		if configured != "":
+			tex = AssetPlaceholder.load_texture(configured, "texture")
+			if tex:
+				return tex
+
+	# 3. id 关键字扩展
+	for key in FacilityResolver.icon_keys_for(id, ""):
+		tex = AssetPlaceholder.load_texture(ICON_BASE % key, "texture")
+		if tex:
+			return tex
+		tex = AssetPlaceholder.load_texture(ICON_FALLBACK_DIR + "icon_" + key + "_koei.png", "texture")
+		if tex:
+			return tex
+		tex = AssetPlaceholder.load_texture("res://assets/icon_" + key + "_koei.png", "texture")
 		if tex:
 			return tex
 
-	# 3. 128x128 KOEI 风格图标目录
-	var fallback_path: String = ICON_FALLBACK_DIR + "icon_" + id + "_koei.png"
-	tex = AssetPlaceholder.load_texture(fallback_path, "texture")
-	if tex:
-		return tex
-
-	# 4. 静态图标兜底（地图、返回等）
+	# 4. 静态图标兜底
 	var static_paths := {
-		"log": "res://assets/icons_stat/icon_stat_location.png",
-		"sail": "res://assets/icon_shipyard_koei.png",
-		"return": "res://assets/icon_wharf_koei.png",
+		"log": "res://assets/ui/icons/icon_log.png",
+		"storybook": "res://assets/ui/icons/icon_storybook.png",
+		"sail": "res://assets/ui/icons/icon_sail.png",
+		"depart": "res://assets/ui/icons/icon_sail.png",
+		"return": "res://assets/ui/icons/icon_return.png",
+		"start": "res://assets/ui/icons/icon_start.png",
+		"continue": "res://assets/ui/icons/icon_continue.png",
 	}
 	if static_paths.has(id):
 		tex = AssetPlaceholder.load_texture(static_paths[id], "texture")
 		if tex:
 			return tex
 
-	return null
+	return AssetPlaceholder.load_texture(ResourcePaths.TEX_ICON_MARKET, "texture")
 
 func _add_button(label_text: String, icon: Texture2D, action: Dictionary, highlight: bool) -> void:
 	var btn := UIBuilder.make_button("", UITheme.BTN_COMMAND)

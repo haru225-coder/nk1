@@ -6,19 +6,78 @@ signal hotspot_pressed(scene_id: String)
 const HOTSPOT_SCENE := preload(ResourcePaths.SCENE_TOWN_MAP_HOTSPOT)
 const ENTRY_STAGGER := 0.045  ## 太阁风格：建筑依次淡入的时间间隔
 
-@onready var _map_texture: TextureRect = $MapTexture
-@onready var _hotspot_layer: Control = $HotspotLayer
-@onready var _hint_label: Label = $MapHint
+@onready var _map_frame: NinePatchRect = $MapFrame
+@onready var _map_clip: Control = $MapFrame/MapClip
+@onready var _map_texture: TextureRect = $MapFrame/MapClip/MapTexture
+@onready var _hotspot_layer: Control = $MapFrame/MapClip/HotspotLayer
+@onready var _hint_label: Label = $MapFrame/MapClip/MapHint
+
+var _hint_plaque: PanelContainer = null
 
 func _ready() -> void:
+	_ensure_koei_frame()
+	_ensure_hint_plaque()
 	call_deferred("_start_hint_pulse")
 
-func _start_hint_pulse() -> void:
+## 运行时兜底：保证木框贴图与 DialogueBox 同款 patch
+func _ensure_koei_frame() -> void:
+	if _map_frame == null:
+		return
+	if _map_frame.texture == null:
+		_map_frame.texture = load(ResourcePaths.FRAME_KOEI) as Texture2D
+	_map_frame.patch_margin_left = 40
+	_map_frame.patch_margin_top = 40
+	_map_frame.patch_margin_right = 40
+	_map_frame.patch_margin_bottom = 40
+	_map_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if _map_clip:
+		_map_clip.clip_contents = true
+
+## 底部提示改朱砂/铜框小牌，避免白字贴在地图上发虚
+func _ensure_hint_plaque() -> void:
 	if _hint_label == null:
 		return
+	if _hint_plaque != null and is_instance_valid(_hint_plaque):
+		return
+	if _map_clip.has_node("HintPlaque"):
+		_hint_plaque = _map_clip.get_node("HintPlaque") as PanelContainer
+		return
+
+	_hint_plaque = PanelContainer.new()
+	_hint_plaque.name = "HintPlaque"
+	_hint_plaque.theme_type_variation = UITheme.TOWN_HINT_PANEL
+	_hint_plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint_plaque.layout_mode = 1
+	_hint_plaque.anchors_preset = Control.PRESET_CENTER_BOTTOM
+	_hint_plaque.anchor_left = 0.5
+	_hint_plaque.anchor_top = 1.0
+	_hint_plaque.anchor_right = 0.5
+	_hint_plaque.anchor_bottom = 1.0
+	_hint_plaque.offset_left = -150.0
+	_hint_plaque.offset_top = -42.0
+	_hint_plaque.offset_right = 150.0
+	_hint_plaque.offset_bottom = -8.0
+	_hint_plaque.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_hint_plaque.grow_vertical = Control.GROW_DIRECTION_BEGIN
+
+	# 把原 MapHint 挪进牌匾
+	var parent := _hint_label.get_parent()
+	if parent:
+		parent.remove_child(_hint_label)
+	_hint_label.layout_mode = 2
+	_hint_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hint_label.theme_type_variation = UITheme.TOWN_HINT_LABEL
+	_hint_plaque.add_child(_hint_label)
+	_map_clip.add_child(_hint_plaque)
+
+func _start_hint_pulse() -> void:
+	if _hint_plaque == null and _hint_label == null:
+		return
+	var target: CanvasItem = _hint_plaque if _hint_plaque else _hint_label
 	var tween := create_tween().set_loops()
-	tween.tween_property(_hint_label, "modulate:a", 0.35, 1.4).set_trans(Tween.TRANS_SINE)
-	tween.tween_property(_hint_label, "modulate:a", 0.85, 1.4).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(target, "modulate:a", 0.55, 1.5).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(target, "modulate:a", 1.0, 1.5).set_trans(Tween.TRANS_SINE)
 
 func setup(town_map: Dictionary, facilities: Array, port_location: String) -> int:
 	_clear_hotspots()

@@ -41,6 +41,11 @@ func set_status_bar_offset(offset_top: float) -> void:
 
 func apply_scene(scene_id: String, scene_data: Dictionary, mode_node: Node = null) -> void:
 	_bind_hotspot_listener(mode_node)
+	# 标题页动作唯一所有者是 TitleScreenController；不构建 CommandBar，也不占底部空间。
+	if str(scene_data.get("type", "")) == "title":
+		_set_command_bar_active(false)
+		return
+	_set_command_bar_active(true)
 	var command_spec := _resolve_command_spec(scene_id, scene_data)
 	_command_bar.build(command_spec)
 
@@ -102,13 +107,33 @@ func _resolve_command_spec(scene_id: String, scene_data: Dictionary) -> Dictiona
 		"port":
 			template = "port"
 		"title":
-			template = "title"
+			# 标题页不使用 CommandBar 模板；返回空 template 作为防御。
+			template = ""
 	return {
 		"template": template,
 		"scene_id": scene_id,
 		"scene_data": scene_data,
 		"port_location": scene_data.get("location", scene_id.replace("port_", "")),
 	}
+
+func _set_command_bar_active(active: bool) -> void:
+	if command_bar_host == null:
+		return
+	command_bar_host.visible = active
+	command_bar_host.mouse_filter = Control.MOUSE_FILTER_STOP if active else Control.MOUSE_FILTER_IGNORE
+	if active:
+		content_layer.offset_bottom = -COMMAND_BAR_HEIGHT
+		command_bar_host.offset_top = -COMMAND_BAR_HEIGHT
+		command_bar_host.offset_bottom = 0.0
+	else:
+		# 折叠 Host：不占 104px 底部交互空间。
+		content_layer.offset_bottom = 0.0
+		command_bar_host.offset_top = 0.0
+		command_bar_host.offset_bottom = 0.0
+		if _command_bar != null and is_instance_valid(_command_bar):
+			_command_bar.visible = false
+			if _command_bar.has_method("build"):
+				_command_bar.build({"template": ""})
 
 func _bind_hotspot_listener(mode_node: Node) -> void:
 	_unbind_hotspot_listener()

@@ -12,8 +12,9 @@ static func make_slot(fac: Dictionary, on_pressed: Callable) -> Control:
 	var is_done := state == "done"
 
 	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(0, 98)
+	wrapper.custom_minimum_size = Vector2(0, 104)
 	wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wrapper.set_meta("facility_id", fac.get("id", ""))
 
 	var panel := PanelContainer.new()
 	panel.name = "CardPanel"
@@ -27,23 +28,23 @@ static func make_slot(fac: Dictionary, on_pressed: Callable) -> Control:
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_top", 9)
+	margin.add_theme_constant_override("margin_top", 10)
 	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_bottom", 9)
+	margin.add_theme_constant_override("margin_bottom", 10)
 
 	var hbox := HBoxContainer.new()
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox.add_theme_constant_override("separation", 10)
+	hbox.add_theme_constant_override("separation", 12)
 	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var accent := ColorRect.new()
-	accent.custom_minimum_size = Vector2(4, 0)
+	accent.custom_minimum_size = Vector2(5, 0)
 	accent.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	accent.color = GameColors.TEXT_GOLD if is_quest else Color(0.52, 0.38, 0.16, 0.92)
+	accent.color = GameColors.TEXT_GOLD if is_quest else Color(0.72, 0.54, 0.22, 0.92)
 	accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var icon_frame := PanelContainer.new()
-	icon_frame.custom_minimum_size = Vector2(70, 70)
+	icon_frame.custom_minimum_size = Vector2(74, 74)
 	icon_frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	icon_frame.theme_type_variation = &"FacilityIconFrameQuest" if is_quest else UITheme.FRAME_FACILITY_ICON
 	icon_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -52,12 +53,12 @@ static func make_slot(fac: Dictionary, on_pressed: Callable) -> Control:
 	icon_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var tex_rect := TextureRect.new()
-	tex_rect.custom_minimum_size = Vector2(54, 54)
+	tex_rect.custom_minimum_size = Vector2(56, 56)
 	tex_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	tex_rect.texture = icon
 	if available:
-		tex_rect.modulate = GameColors.TEXT_ICON_DIM if is_done else Color(1, 1, 1, 1.0)
+		tex_rect.modulate = GameColors.TEXT_ICON_DIM if is_done else Color(1.0, 0.97, 0.88, 1.0)
 	else:
 		tex_rect.modulate = GameColors.TEXT_ICON_AVAILABLE
 	tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -70,16 +71,34 @@ static func make_slot(fac: Dictionary, on_pressed: Callable) -> Control:
 	vbox.add_theme_constant_override("separation", 4)
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 6)
+	title_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
 	var title_lbl := Label.new()
 	title_lbl.theme_type_variation = UITheme.TITLE_FACILITY
 	title_lbl.text = fac.get("name", fac.get("title", fac.get("id", "")))
 	title_lbl.clip_text = true
 	title_lbl.max_lines_visible = 1
+	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_row.add_child(title_lbl)
+
+	if is_quest:
+		var badge := Label.new()
+		badge.text = "★"
+		badge.add_theme_color_override("font_color", GameColors.TEXT_GOLD)
+		badge.add_theme_font_size_override("font_size", 18)
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		title_row.add_child(badge)
 
 	var sub_lbl := Label.new()
 	sub_lbl.theme_type_variation = UITheme.SUBTITLE_FACILITY
 	sub_lbl.text = display.get("text", "").replace("★ ", "")
+	if sub_lbl.text == "" and is_done:
+		sub_lbl.text = "已探访"
+	elif sub_lbl.text == "":
+		sub_lbl.text = "点击进入"
 	sub_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sub_lbl.max_lines_visible = 2
 	sub_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -88,7 +107,7 @@ static func make_slot(fac: Dictionary, on_pressed: Callable) -> Control:
 	elif is_done:
 		sub_lbl.add_theme_color_override("font_color", GameColors.TEXT_DIM)
 
-	vbox.add_child(title_lbl)
+	vbox.add_child(title_row)
 	vbox.add_child(sub_lbl)
 	hbox.add_child(accent)
 	hbox.add_child(icon_frame)
@@ -102,6 +121,7 @@ static func make_slot(fac: Dictionary, on_pressed: Callable) -> Control:
 	hit_button.theme_type_variation = UITheme.BTN_FACILITY_CARD
 	hit_button.disabled = not available
 	hit_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	hit_button.tooltip_text = title_lbl.text + (" — " + sub_lbl.text if sub_lbl.text != "" else "")
 	hit_button.pressed.connect(on_pressed.bind(fac))
 
 	wrapper.add_child(panel)

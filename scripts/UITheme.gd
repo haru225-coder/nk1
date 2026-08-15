@@ -50,6 +50,29 @@ const TEXT_DIALOGUE_SPEECH := "DialogueSpeechText"       ## 对话文字
 
 ## ── 标题界面 ─────────────────────────────────────────────
 const TEXT_TITLE_SUB := "TitleSub"            ## 标题副标题
+const TEXT_TITLE_SAVE_HEADER := "TitleSaveHeader"
+
+## ── 发布路径收口（P9-C）────────────────────────────────
+const ENDING_KICKER := "EndingKicker"
+const ENDING_TITLE := "EndingTitle"
+const ENDING_SUBTITLE := "EndingSubtitle"
+const ENDING_META := "EndingMeta"
+const ENDING_SUMMARY := "EndingSummary"
+const ENDING_EPILOGUE := "EndingEpilogue"
+const TOWN_HOTSPOT_PANEL := "TownHotspotPanel"
+const TOWN_HOTSPOT_PANEL_QUEST := "TownHotspotPanelQuest"
+const TOWN_HOTSPOT_TITLE := "TownHotspotTitle"
+const TOWN_HOTSPOT_TITLE_QUEST := "TownHotspotTitleQuest"
+const TOWN_HOTSPOT_TITLE_DONE := "TownHotspotTitleDone"
+const TOWN_HINT_PANEL := "TownHintPanel"
+const TOWN_HINT_LABEL := "TownHintLabel"
+const PORT_COLUMN_HEADER := "PortColumnHeader"
+const PORT_COLUMN_HEADER_LABEL := "PortColumnHeaderLabel"
+const PORT_FACILITY_HINT := "PortFacilityHint"
+const MAP_STRATEGIC_POPUP := "MapStrategicPopup"
+const MAP_STRATEGIC_TITLE := "MapStrategicTitle"
+const MAP_STRATEGIC_INFO := "MapStrategicInfo"
+const MAP_STRATEGIC_BUTTON := "MapStrategicButton"
 
 ## ── 航行 HUD ─────────────────────────────────────────────
 const LABEL_SEA_HUD_FLEET := "SeaHudFleet"     ## 航行舰队标签
@@ -65,7 +88,14 @@ static func assert_all_known(theme_name: String) -> bool:
 		BTN_FACILITY_CARD, BADGE_FACILITY_QUEST, FRAME_FACILITY_ICON,
 		CHIP_PORT_STAT, LABEL_PORT_STAT, VALUE_PORT_STAT,
 		SECTION_LABEL, TITLE_EVENT, BODY_EVENT, PANEL_DIALOGUE_INNER,
-		TEXT_DIALOGUE_NARRATION, TEXT_DIALOGUE_SPEECH, TEXT_TITLE_SUB,
+		TEXT_DIALOGUE_NARRATION, TEXT_DIALOGUE_SPEECH, TEXT_TITLE_SUB, TEXT_TITLE_SAVE_HEADER,
+		ENDING_KICKER, ENDING_TITLE, ENDING_SUBTITLE, ENDING_META,
+		ENDING_SUMMARY, ENDING_EPILOGUE,
+		TOWN_HOTSPOT_PANEL, TOWN_HOTSPOT_PANEL_QUEST,
+		TOWN_HOTSPOT_TITLE, TOWN_HOTSPOT_TITLE_QUEST, TOWN_HOTSPOT_TITLE_DONE,
+		TOWN_HINT_PANEL, TOWN_HINT_LABEL, PORT_COLUMN_HEADER, PORT_COLUMN_HEADER_LABEL,
+		PORT_FACILITY_HINT, MAP_STRATEGIC_POPUP, MAP_STRATEGIC_TITLE,
+		MAP_STRATEGIC_INFO, MAP_STRATEGIC_BUTTON,
 		LABEL_SEA_HUD_FLEET,
 	]
 	return theme_name in known

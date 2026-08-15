@@ -56,10 +56,10 @@ grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
 texture = ExtResource("3_frame")
-patch_margin_left = 72
-patch_margin_top = 56
-patch_margin_right = 72
-patch_margin_bottom = 72
+patch_margin_left = 40
+patch_margin_top = 40
+patch_margin_right = 40
+patch_margin_bottom = 40
 
 [node name="Margin" type="MarginContainer" parent="Frame"]
 layout_mode = 1
@@ -69,10 +69,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_constants/margin_left = 88
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_right = 88
-theme_override_constants/margin_bottom = 22
+theme_override_constants/margin_left = 52
+theme_override_constants/margin_top = 48
+theme_override_constants/margin_right = 52
+theme_override_constants/margin_bottom = 24
 
 [node name="HBox" type="HBoxContainer" parent="Frame/Margin"]
 layout_mode = 2
