@@ -3,8 +3,8 @@
 > 项目：南海立志传 (nk1) — Godot 4 / GDScript
 > 引擎：Godot 4.6.3 stable (Forward Plus)
 > 起始基线：commit `54e4b75` (2026-06-24) — 86 个测试断言
-> 截至：2026-06-26 — 563 个测试断言
-> 主线剧情任务：NK1-P2 ~ NK1-P6（经济系统深化 + 玩法体验优化 + 技术债务清理）
+> 截至：2026-07-09 — 情报账本信息差（2019 断言）
+> 主线剧情任务：NK1-P2 ~ P7-A（经济深化 + polish + 月历秩禄 + **可通关竖切**）
 
 ---
 
@@ -19,8 +19,522 @@
 | 6 | NK1-P6-POLISH-002 | 技术债务清理 #2（Theme/Path/事件配置外部化） | 357 | 357 | 0 (重构) |
 | 6 | NK1-P6-POLISH-003 | 技术债务清理 #3（颜色/Intent 类型/UI 预制体） | 357 | 515 | +158 |
 | 6 | NK1-P6-POLISH-004 | 技术债务清理 #4（AssetPlaceholder/TextKeys/浮文参数） | 515 | 563 | +48 |
+| 7 | P7-A 通关竖切 | 章一/二/三→三结局可闭合；秩禄连升；月历节拍 | ~P7 中间 | 1785 | 全绿 |
+| 7 | P7-B SceneRouter | 路由抽离 + 边界冻结 + ARCHITECTURE 一页 | 1785 | 1802 | +17 |
+| 8 | P8 ModeStack 首刀 | AppRoot 单根壳，出海/回港不 change_scene | 1802 | 1824 | +22 |
+| 8 | P8-2 共用 Chrome | 状态条抬升 + 航海日志回写 | 1824 | 1831 | +7 |
+| 8 | P8-3 Combat 壳 | 海战挂 AppRoot / ModeStack | 1831 | 1840 | +9 |
+| 8 | P8-4 Cutscene 壳 | 过场抬升 AppRoot / MODE_CUTSCENE | 1840 | 1856 | +16 |
+| 8 | P8-5 HUD 对齐 | WorldMap 避让状态条 + 精简重复 | 1856 | 1860 | +4 |
+| 9 | 内容体验 | 章三续进 + 月历风声 + 经济月报 | 1860 | 1875 | +15 |
+| 9 | 章三收束过场 | 三线短 CG + play_cutscene 串播 | 1875 | 1886 | +11 |
+| 9 | 视觉 UI 补齐 | 指令栏图标 + 过场字幕 + 市集信息 | 1886 | 1897 | +11 |
+| 9 | 视觉 UI 续 | 城镇热区图标板 + 标题 KOEI 外框 | 1897 | 1910 | +13 |
+| 9 | 视觉 UI 续2 | TownMapView 木框 NinePatch | 1910 | 1920 | +10 |
+| 9 | 视觉细节 | 热区/提示牌/标题金线/图标 import | 1920 | 1923 | +3 |
+| 10 | Ending UX | 结算屏 + 回标题/再启航程 | 1923 | 1952 | +29 |
+| 10 | 设施双列 | 无城镇图港口 KOEI 左右列 | 1952 | 1968 | +16 |
+| 10 | 航海反馈 | SeaFeedback 海战/海遇壳层文案 | 1968 | 1987 | +19 |
+| 10 | 经济手感 | 市集三策 + 邻港差价可感知 | 1987 | 2000 | +13 |
+| 10 | 情报账本 | 付费信息差 IntelNotes | 2000 | **2019** | +19 |
 
-测试断言增长曲线：86 → 193 → 261 → 357 → 515 → 563 (+477 总)
+测试断言增长曲线：86 → … → 1987 → 2000 → **2019**
+
+---
+
+## P7-A — 可通关竖切（2026-07-09）
+
+**焦点**：打通「章一 → 章二 → 月历/应召章三 → 三结局」主路径，不重做架构。
+
+### 盘点出的阻断点（已修）
+
+1. **秩禄无自然入口**：`career.promote` 几乎只被 `career_promote` 调用，且每次只 +1 阶 → 永远到不了 apex  
+2. **章一错误写关系**：`story_flag2.linboyuan_relationship = "neutral_positive"` 未进整数关系字段 → rank2 条件永假  
+3. **月历章三锁 rank≥4**：玩家在章二后通常 rank 不够 → 召见永不触发  
+4. **章末 fame 不足连升**：章一/二几乎不给升秩 fame；章三 +120 不够 400 门槛  
+
+### 落地改动
+
+| 层 | 改动 |
+|----|------|
+| CareerState | `promote_while_eligible`；关系读取对齐 `linboyuan_relationship`/`jia_relationship` |
+| GameState | `career_promote` 连升；`linboyuan`/`jia` 同步 `npc_relationships` |
+| 场景 JSON | 章一/二收束 fame+promote；章三三结局 fame≥150 |
+| calendar_events | 6 条节拍；召见 rank≥1 + `unless_flag`；迟到召见备份 |
+| PortScreen | 「请旨升秩」「应召入蒲府」备份入口 |
+| CalendarScheduler | 支持 `unless_flag` |
+| 测试 | `[Completion Vertical Slice]` 三结局串联；unless_flag 断言 |
+
+### 手玩通关路径（最小）
+
+1. 打完章一 `scene08_return` → 自动升秩 + 林伯渊关系  
+2. 进临安走章二至 `chapter2_end` → 再升秩  
+3. 在港「应召入蒲府」或休整跨月触发月历  
+4. 三选一：交书（投附）/ 拒召（忠义，需仍持《春秋》）/ 烧帖（远航）  
+5. 收束 choice 触发 `career_promote` 连升 apex → `EndingResolver` 写 `game_completed`
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1785 assertions)
+```
+
+---
+
+## P7-B — SceneRouter + 边界冻结（2026-07-09）
+
+**焦点**：行为不变，消除 `Main.load_scene` if 链惯性；文档对齐。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `scripts/SceneRouter.gd` | classify / resolve_scene_data / market_port_id |
+| `Main.gd` | load_scene → match Kind → `_route_*` |
+| GameState / MarketState | 边界冻结注释 |
+| `docs/ARCHITECTURE.md` | 一页架构 |
+| 测试 | `[SceneRouter]` 分类与回退 |
+
+### 约束
+
+- 新场景形态先加 SceneRouter Kind，禁止把 if 写回 Main
+- GameState 少加顶层代理；MarketState 字段冻结
+- 双根并壳仍属 P8，本阶段不动
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1802 assertions)
+```
+
+---
+
+## P8 — ModeStack 首刀（2026-07-09）
+
+**焦点**：Main ↔ WorldMap 不再 `change_scene` 互撕；AppRoot 常驻。
+
+### 改动
+
+| 文件 | 说明 |
+|------|------|
+| `scripts/AppRoot.gd` + `scenes/AppRoot.tscn` | 单根壳：NarrativeMain / VoyageWorldMap |
+| `scripts/ModeStack.gd` | find_host / go_voyage / go_narrative |
+| `project.godot` | main_scene → AppRoot.tscn |
+| Main / PortZone / WorldMap / Ship | 优先 ModeStack，失败回退 change_scene |
+| 测试 | `[ModeStack]` stub 宿主 |
+
+### 行为
+
+- 出港：隐藏 Main（`PROCESS_MODE_DISABLED`），挂 WorldMap  
+- 回港：释放 WorldMap，恢复 Main，按 `return_to_port` 进港  
+- 沉船：回 `start_scene`（默认 cg_title）  
+- 无 AppRoot 时（旧入口/测试）仍 `change_scene`，不炸  
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1824 assertions)
+```
+
+### 未做（后续）
+
+- ~~出海共用 PortStatusBar / 消息栏~~ → P8-2  
+- 战斗/过场进 ModeStack  
+
+---
+
+## P8-2 — 共用状态条与消息栏（2026-07-09）
+
+**焦点**：出海时仍显示同一 `PortStatusBar`；航海日志回写港内消息栏。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| AppRoot.ChromeLayer | 出海抬升 StatusBar，layer=90 压在 WorldMap 上 |
+| PortStatusBar.set_sea_mode | 强制航程行；位置显示「海上/航向」 |
+| WorldMap | `_refresh_app_chrome` / `_shell_log`（风景·经济·近港） |
+| Main.append_shell_log | 供壳层写入 |
+
+### 行为
+
+- 出港：状态条不销毁，从 Main 挪到 AppRoot  
+- 回港：状态条归还 Main.StatusLayer，sea_mode 关  
+- 海景/经济/近港提示 → 回港后左栏仍可见  
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1831 assertions)
+```
+
+---
+
+## P8-3 — Combat 进 ModeStack（2026-07-09）
+
+**焦点**：海战 UI 挂到 AppRoot，不再依赖 WorldMap 子树；战斗中暂停航海。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| ModeStack | `MODE_COMBAT` / `start_combat` / `is_combat` |
+| AppRoot.show_combat | 挂 CombatSessionController，voyage `PROCESS_MODE_DISABLED` |
+| CombatSessionController.start_combat | 优先路由到 AppRoot（防递归） |
+| 日志 | 开战/结束写入壳层消息栏 |
+
+### 流程
+
+```
+遭遇 → SeaEvent → Intent combat_request
+  → CombatSessionController.start_combat
+  → AppRoot.show_combat（壳层 CanvasLayer）
+  → 结束 combat_finished → 恢复 voyage process
+  → SeaEvent 结算 LootResolver
+```
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1840 assertions)
+```
+
+### 未做
+
+- ~~Cutscene 进 ModeStack~~ → P8-4  
+
+---
+
+## P8-4 — Cutscene 进 ModeStack（2026-07-09）
+
+**焦点**：CutscenePlayer 抬到 AppRoot；出海/Main 禁用时仍可播；过场中暂停航海。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| ModeStack | `MODE_CUTSCENE` / `play_cutscene` / `get_cutscene_player` / `is_cutscene` |
+| AppRoot | 从 Main 收养 CutscenePlayer；`play_cutscene`；started/finished 管模式 |
+| CutscenePlayer | `process_mode=ALWAYS`；`is_playing`；`started` 信号 |
+| Main | 解析壳层 cutscene；月历 `cutscene_requested` 走 ModeStack |
+
+### 行为
+
+- 港内/结局/升秩/进港 intro：仍可 `player.play`，壳监听 `started` 进入 cutscene 模式  
+- 出海：Cutscene 不随 Main 禁用  
+- 结束：`finished` → 恢复 voyage process  
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1856 assertions)
+```
+
+---
+
+## P8-5 — WorldMap HUD 与壳层对齐（2026-07-09）
+
+**焦点**：有 PortStatusBar 壳层时，航海 HUD 不压状态条；去掉重复的水粮/金钱面板。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `GameUILayout.sea_hud_top_margin` | 有 chrome 时 top = 状态条高 + 8 |
+| WorldMap | `_apply_shell_chrome_layout`；壳层模式下精简左右 HUD 文案 |
+
+### 行为
+
+- **有 AppRoot 状态条**：左=舵法/气象，右=船货+天气；顶边下移  
+- **无壳（旧 change_scene）**：完整旧 HUD，边距 20  
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1860 assertions)
+```
+
+---
+
+## 内容/体验 — 章三节奏 + 经济可感知（2026-07-09）
+
+**焦点**：章三中途可续进、月历有风声；休整/市集/月报能看见经济。
+
+### 章三节奏
+
+| 项 | 说明 |
+|----|------|
+| `resolve_chapter3_resume_scene` | 按 flag 回到投附/拒召/烧帖最近节点 |
+| 港口按钮 | 「应召入蒲府」/「续·章三线」 |
+| 进港时局提示 | 未完结章三时刷【时局】文案 |
+| 月历 | 城中风声、榜前压力、分支催促 + shell_log |
+
+### 经济可感知
+
+| 项 | 说明 |
+|----|------|
+| `shell_log` effect | 场景/月历写入消息栏 |
+| `economy_pulse` | 跨月商情 → EconomyLog + 消息栏 |
+| 休整 | 展示最近 2 条经济日志 |
+| 市集 | 最近 3 条经济动态分行显示 |
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1875 assertions)
+```
+
+---
+
+## 章三收束短过场（2026-07-09）
+
+**焦点**：三条章三终点各一段 2 镜短 CG，并可与结局 CG 串播。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `cutscenes.json` | `ch3_end_comply` / `refuse` / `burn` 各 2 镜 |
+| 章三终点 effects | `play_cutscene` + `shell_log` |
+| `GameState.play_cutscene` | 走 ModeStack / CutscenePlayer |
+| `CutscenePlayer` 队列 | 播放中再 `play` 则入队串播 |
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1886 assertions)
+```
+
+---
+
+## 视觉 UI 补齐（2026-07-09）
+
+**焦点**：指令栏空图标、过场字幕、市集经济信息可读性。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `FacilityResolver.icon_keys_for` | id/标题 → market/tavern/wharf/temple… |
+| `CommandBar` | 设施按钮复用 `resolve_facility_icon`；选择支带 sail/continue 图标 |
+| `assets/ui/icons/*` | 新生成 KOEI 圆盘金字图标（札/寺/望/津…） |
+| `CutscenePlayer.tscn` | 宋体、铜框字幕条、跳过提示 |
+| 市集经济栏 | 4 行、加宽，分行显示商情 |
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1897 assertions)
+```
+
+---
+
+## 视觉 UI 续 — 城镇热区 + 标题 KOEI 框（2026-07-09）
+
+**焦点**：城镇地图热区可见设施图标；标题屏木框 chrome 对齐 DialogueBox。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `TownMapHotspot.gd` | 延迟布局后贴图标；黄铜 `IconPlate` 圆盘；悬停缩放/高亮 |
+| `TitleScreenController.gd` | `KoeiOuterFrame` NinePatch（`ui_frame_koei.png`，patch 72/56）；副标题下金线分隔 |
+| `main_theme.tres` TitlePanel | 清理重复键；深海底 + 铜边 4px + 圆角 ≤8 |
+| 测试 | `[Title + Hotspot Visual]`；MapVisualStyle 补 TitlePanel 边重/色相断言 |
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1910 assertions)
+```
+
+---
+
+## 视觉 UI 续2 — TownMapView 木框（2026-07-09）
+
+**焦点**：港口城镇地图外缘对齐 DialogueBox KOEI 木框（R4）。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `TownMapView.tscn` | `MapFrame` NinePatch（`ui_frame_koei.png`，patch 72/56/72/72） |
+| 结构 | `MapFrame` → `MapClip`（裁切+内边距）→ MapTexture / HotspotLayer / MapHint |
+| `TownMapView.gd` | 节点路径更新；`_ensure_koei_frame` 兜底 patch / 不抢点击 |
+| 测试 | MapFrame 贴图、patch、mouse_filter、层级断言 |
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1920 assertions)
+```
+
+---
+
+## 视觉细节打磨（2026-07-09）
+
+**焦点**：热区层级/状态色、地图底提示牌、标题金线、设施图标 import。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `TownMapHotspot` | 牌匾阴影；任务加粗铜边；完成态图标压暗；图标略收；悬停微调 |
+| `TownMapView` | `HintPlaque` 深海铜框底条；提示字铜金呼吸 |
+| `TitleScreenController` | 三段金线分隔；「— 航行记录 —」铜金标题 |
+| `PortScreenController` | FacilityHint 铜金色 |
+| `assets/ui/icons/*` | 补 `.import` 并 reimport（消除 No loader 报错） |
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1923 assertions)
+```
+
+---
+
+## Ending UX — 通关结算与回标题（2026-07-09）
+
+**焦点**：apex 后不只写 flag，还有结算屏与回环。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `data/endings.json` | 三结局 `title` / `subtitle` / `summary` / `epilogue` |
+| `EndingResolver` | `last_result`、`get_ending_def`、`build_display` |
+| `GameState` | `ending_resolved` 信号；`begin_new_run`；`build_ending_display` |
+| `EndingSettlementController` | KOEI 木框结算：摘要 + 回标题 / 再启航程 / 保存终局 |
+| `AppRoot` | 过场空闲且 `game_completed` → 弹出结算；接线三按钮 |
+
+### 流程
+
+```
+career apex → evaluate → 结局 CG（可与章三串播）
+  → 过场结束且无排队 → 结算屏
+  → 回标题 | 再启航程(reset) | 保存终局
+```
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1952 assertions)
+```
+
+---
+
+## 设施双列 KOEI（2026-07-09）
+
+**焦点**：无城镇地图港口（兴化/临安等）设施入口按太阁左右列分类与视觉统一。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `FacilityResolver.split_facility_columns` | 左=社交/情报，右=海洋/贸易；rest 交错；列内排序 |
+| `PortScreenController` | 用 resolver 分列；列头「社交·情报 / 海洋·贸易」；壳用 MarketShell |
+| `FacilitySlotBuilder` | 更大图标、任务 ★、默认副文案、tooltip |
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1968 assertions)
+```
+
+---
+
+## 航海反馈 — SeaFeedback（2026-07-09）
+
+**焦点**：海遇/海战结果写回港内消息栏，战斗 UI 文案统一铜金可读。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `SeaFeedback.gd` | 开战/结束摘要、海遇开闭、bbcode 接敌/阶段/回合 |
+| `AppRoot` | 海战 start/finish 用 SeaFeedback |
+| `CombatSessionController` | 接敌/阶段色/胜负按钮文案 |
+| `SeaEventController` | 开场/结果/升级开战 → push_shell |
+| `WorldMap` | 接近遭遇 + 航线恢复日志 |
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (1987 assertions)
+```
+
+---
+
+## 经济手感 — 市集三策（2026-07-09）
+
+**焦点**：不改计价公式；让玩家在市集里**看见**稳/赌/搬三条合理路径。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `EconomyFeel.gd` | `strategy_triad` / `best_arbitrage` / `trade_decision_hint` |
+| `MarketScreenController` | 信息栏展示三策；选货预览附商策 |
+| `GameState.economy_pulse` | 月报可带邻港差价耳语 |
+
+### 三策（fun-economy 对齐）
+
+1. **稳** — 本港即买即卖，锁定当前价  
+2. **赌** — 事件/库存窗口，等或不等  
+3. **搬** — 邻港差价，利润来自航线  
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (2000 assertions)
+```
+
+---
+
+## 情报账本 — 信息差（2026-07-09）
+
+**焦点**：情报是可买资产；三档清晰度不同，写入账本并在市集/三策可见。
+
+### 改动
+
+| 项 | 说明 |
+|----|------|
+| `IntelNotes.gd` | 账本 + 档位摘要（t1 模糊 / t2 窗口 / t3 点名） |
+| `GameState.intel_notes` | 存档字段；`begin_new_run` 清空 |
+| `BuyIntelHandler` | 购买成功 → `record` |
+| `TavernController` | 按钮文案标清晰度；空池 `try_generate`；消息栏回写 |
+| `MarketScreenController` | 【已知情报】块 |
+| `EconomyFeel` | 【赌】优先读玩家情报 |
+
+### 三档
+
+1. ★ 20 — 有变故，不点名  
+2. ★★ 50 — 时间窗 + 类型感  
+3. ★★★ 120 — 港口 + 事件标签 + 布局/观望提示  
+
+### 验收
+
+```
+godot --headless -s scripts/systems/TestRunner.gd
+→ ALL TESTS PASSED (2019 assertions)
+```
 
 ---
 

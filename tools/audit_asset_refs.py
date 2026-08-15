@@ -49,6 +49,9 @@ def main() -> int:
         except OSError:
             continue
         for match in ASSET_RE.finditer(text):
+            tail = text[match.end() : match.end() + 16]
+            if re.match(r'["\']\s*\+', tail):
+                continue
             refs.append((str(path.relative_to(ROOT)), match.group(0)))
 
     missing = sorted(

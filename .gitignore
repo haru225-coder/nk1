@@ -1,5 +1,6 @@
 # Godot-specific ignores
 .godot/
+.godot-user/
 *.translation
 
 # Mono-specific ignores
@@ -19,6 +20,7 @@ assets/_taiko5_ref/
 
 # Godot engine logs
 *.log
+build/
 
 # Kun agent / orchestration artifacts
 .agents/

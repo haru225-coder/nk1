@@ -1,0 +1,68 @@
+name: Validate
+
+'on':
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    env:
+      GODOT_VERSION: '4.6.3'
+      GODOT_STATUS: 'stable'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download Godot 4.6.3
+        shell: pwsh
+        run: |
+          $archive = 'godot-windows.zip'
+          $url = 'https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_win64.exe.zip'
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          Expand-Archive -LiteralPath $archive -DestinationPath '.godot-ci' -Force
+          $godot = (Resolve-Path '.godot-ci\Godot_v4.6.3-stable_win64_console.exe').Path
+          'GODOT_PATH={0}' -f $godot | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Install export templates for release jobs
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        run: |
+          $archive = 'godot-export-templates.tpz'
+          $zip = 'godot-export-templates.zip'
+          $url = 'https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_export_templates.tpz'
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          Copy-Item -LiteralPath $archive -Destination $zip
+          Expand-Archive -LiteralPath $zip -DestinationPath '.godot-ci\templates' -Force
+          $source = (Resolve-Path '.godot-ci\templates\templates').Path
+          $destination = Join-Path $env:APPDATA 'Godot\export_templates\4.6.3.stable'
+          New-Item -ItemType Directory -Force -Path $destination | Out-Null
+          Copy-Item -Path (Join-Path $source '*') -Destination $destination -Recurse -Force
+
+      - name: Validate project and tests
+        if: ${{ !(startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') }}
+        shell: pwsh
+        run: ./tools/verify_release.ps1 -GodotPath $env:GODOT_PATH -SkipExport
+
+      - name: Verify release build
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        run: ./tools/verify_release.ps1 -GodotPath $env:GODOT_PATH
+
+      - name: Upload Windows release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: NanhaiLizhiZhuan-windows
+          path: build/windows/
+          if-no-files-found: error
