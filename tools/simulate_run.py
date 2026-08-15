@@ -58,6 +58,18 @@ def ship_free(i):
 def used():         return (G.water+G.food)*SUPPLY_BULK + sum(ship_bulk(i) for i in range(len(G.ships)))
 def free():         return max(0.0, cap_total() - used())
 def total_crew():   return sum(s["crew"] for s in G.ships)
+def crew_min_ok():
+    """每船都达到各自 crew_min（复刻 Fleet.can_sail 的逐船门槛）"""
+    return all(s["crew"] >= ships[s["type"]]["crew_min"] for s in G.ships)
+def top_up_crew():
+    """出港前补足各船最低水手（模拟玩家在船屋补员；模型里基线免费用人）"""
+    hired = 0
+    for s in G.ships:
+        need = ships[s["type"]]["crew_min"] - s["crew"]
+        if need > 0:
+            s["crew"] += need
+            hired += need
+    return hired
 def daily_use():    return math.ceil(total_crew()/CREW_DAYS_PER_SUPPLY) if total_crew() else 0
 def supply_days():  return int(min(G.water,G.food)/daily_use()) if total_crew() else 999
 def morale_f():     return 0.6 + 0.4*(G.morale/100)
@@ -236,6 +248,7 @@ def buy_supplies(days_needed):
 
 def sail(dst):
     d, crs = dist(G.port, dst), bearing(G.port, dst)
+    top_up_crew()  # 出港前玩家会在船屋补足各船最低水手
     G.at_sea = True
     rem, days = d, 0
     while rem > 0 and days < 200:
@@ -362,9 +375,12 @@ print("="*70)
 G.port = "quanzhou"
 if G.money >= ships["fu_ship_medium"]["price"]:
     G.money -= ships["fu_ship_medium"]["price"]
-    G.ships.append({"type": "fu_ship_medium", "name": "福船", "crew": 20,
+    G.ships.append({"type": "fu_ship_medium", "name": "福船",
+                    "crew": ships["fu_ship_medium"]["crew_min"],
                     "durability": 300.0, "cargo": {}})
     print(f"  已购福船（中），余银 {G.money}，舰队 {len(G.ships)} 船，载重 {cap_total()} 料")
+    check(G.ships[-1]["crew"] == ships["fu_ship_medium"]["crew_min"],
+          f"新购福船水手 = crew_min（{G.ships[-1]['crew']} 人）")
     check(verify_invariants(), "购船后分船账目不变量成立")
 else:
     print(f"  资金 {G.money} 不足以购福船（{ships['fu_ship_medium']['price']}），以小艍船试航")
@@ -399,6 +415,9 @@ if bt:
     distr = "　".join(f"{G.ships[i]['name']}×{G.ships[i]['cargo'].get(gid,[0])[0]}"
                       for i in range(len(G.ships)) if G.ships[i]["cargo"].get(gid,[0])[0] > 0)
     print(f"  装载 {goods[gid]['name']} ×{qty}（本 {spent}），分船：{distr}，空舱剩 {free():.0f} 料")
+    # 出港前玩家在船屋补足各船最低水手（sail() 内部也会补，此处先补以便检查可观测）
+    top_up_crew()
+    check(crew_min_ok(), "出航前每船水手达下限（逐船门槛）")
     days = sail("hakata")
     rev = do_sell(gid, qty)
     print(f"  历 {days} 日抵博多，售得 {rev}，净赚 {rev-spent:+}")

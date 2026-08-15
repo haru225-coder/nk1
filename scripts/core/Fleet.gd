@@ -294,27 +294,120 @@ func clear_cargo() -> void:
 
 func total_crew() -> int:
 	var c := 0
-	for s in ships:
-		c += int(s.get("crew", 0))
+	for i in range(ships.size()):
+		c += ship_crew(i)
 	return c
 
 
 func crew_min_required() -> int:
 	var m := 0
-	for s in ships:
-		m += int(ship_def(s.get("type", "")).get("crew_min", 0))
+	for i in range(ships.size()):
+		m += ship_crew_min(i)
 	return m
 
 
 func crew_max() -> int:
 	var m := 0
-	for s in ships:
-		m += int(ship_def(s.get("type", "")).get("crew_max", 0))
+	for i in range(ships.size()):
+		m += ship_crew_max(i)
 	return m
 
 
+# ── 分船水手 ──────────────────────────────────────────
+
+## 指定船现有水手（越界返回 0）
+func ship_crew(i: int) -> int:
+	if i < 0 or i >= ships.size():
+		return 0
+	return int(ships[i].get("crew", 0))
+
+
+## 指定船最低水手（低于此数无法出海）
+func ship_crew_min(i: int) -> int:
+	if i < 0 or i >= ships.size():
+		return 0
+	return int(ship_def(ships[i].get("type", "")).get("crew_min", 0))
+
+
+## 指定船满编水手
+func ship_crew_max(i: int) -> int:
+	if i < 0 or i >= ships.size():
+		return 0
+	return int(ship_def(ships[i].get("type", "")).get("crew_max", 0))
+
+
+## 指定船还可雇几人（crew_max - 现有，负数钳 0）
+func ship_crew_room(i: int) -> int:
+	if i < 0 or i >= ships.size():
+		return 0
+	return maxi(0, ship_crew_max(i) - ship_crew(i))
+
+
+## 全队距离「各船 crew_min」还缺多少人（已达/超标计 0）
+func crew_to_min_needed() -> int:
+	var need := 0
+	for i in range(ships.size()):
+		need += maxi(0, ship_crew_min(i) - ship_crew(i))
+	return need
+
+
+## 把每艘低于 crew_min 的船补到 crew_min。返回补入人数。费用由调用方计算。
+func hire_to_min() -> int:
+	var total := 0
+	for i in range(ships.size()):
+		var need := ship_crew_min(i) - ship_crew(i)
+		if need > 0:
+			ships[i]["crew"] = ship_crew(i) + need
+			total += need
+	return total
+
+
+## 缺员船列表：[{index, name, crew, crew_min}, ...]，供出海拦截提示
+func crew_shortfall() -> Array:
+	var bad := []
+	for i in range(ships.size()):
+		if ship_crew(i) < ship_crew_min(i):
+			bad.append({
+				"index": i,
+				"name": ships[i].get("name", ""),
+				"crew": ship_crew(i),
+				"crew_min": ship_crew_min(i),
+			})
+	return bad
+
+
+## 每船都必须达到各自 crew_min 才能出海（不能全队够数但某船空船）
 func can_sail() -> bool:
-	return total_crew() >= crew_min_required() and not ships.is_empty()
+	if ships.is_empty():
+		return false
+	for i in range(ships.size()):
+		if ship_crew(i) < ship_crew_min(i):
+			return false
+	return true
+
+
+## 雇水手。ship_index >= 0：只雇进指定船（上限该船 crew_max）；
+## == -1：按数组顺序逐船填满（旧聚合语义）。返回实际雇到人数。
+func hire_crew(n: int, ship_index: int = -1) -> int:
+	if n <= 0:
+		return 0
+	if ship_index >= 0:
+		if ship_index >= ships.size():
+			return 0
+		var take := mini(n, ship_crew_room(ship_index))
+		if take > 0:
+			ships[ship_index]["crew"] = ship_crew(ship_index) + take
+		return take
+	# 聚合：逐船填满
+	var actual := mini(n, crew_max() - total_crew())
+	var left := actual
+	for i in range(ships.size()):
+		if left <= 0:
+			break
+		var take := mini(left, ship_crew_room(i))
+		ships[i]["crew"] = ship_crew(i) + take
+		left -= take
+	return actual
 
 
 ## 按当前船员数，现有补给还够几日
@@ -325,20 +418,6 @@ func supply_days() -> int:
 	if per_day <= 0:
 		return 999
 	return int(floor(minf(float(water), float(food)) / float(per_day)))
-
-
-func hire_crew(n: int) -> int:
-	var room := crew_max() - total_crew()
-	var actual := mini(n, room)
-	var left := actual
-	for s in ships:
-		var cap: int = int(ship_def(s.get("type", "")).get("crew_max", 0)) - int(s.get("crew", 0))
-		var take: int = mini(left, cap)
-		s["crew"] = int(s.get("crew", 0)) + take
-		left -= take
-		if left <= 0:
-			break
-	return actual
 
 
 ## 每日结算：消耗水粮、货物损耗、士气变动
@@ -371,15 +450,19 @@ func on_day_passed() -> void:
 	_apply_perishable()
 
 
+## 断粮减员跨船分摊：每船至少留 1 人（保留火种），与 simulate_run.lose_crew 一致。
+## 否则一艘船被扣到 0 人会永久卡死该船出海。
 func _lose_crew(n: int) -> void:
 	var left := n
 	for s in ships:
-		var c: int = int(s.get("crew", 0))
-		var take: int = mini(left, c)
-		s["crew"] = c - take
-		left -= take
 		if left <= 0:
 			break
+		var c := int(s.get("crew", 0))
+		if c > 1:
+			var take := mini(left, c - 1)
+			s["crew"] = c - take
+			left -= take
+		# c <= 1：不扣（至少留 1 人）
 
 
 func _apply_perishable() -> void:

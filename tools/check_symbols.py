@@ -315,6 +315,25 @@ else:
     print('  ✗ Fleet.add_ship 的船 dict 缺少 "cargo": {} —— 新船没有独立货舱')
     problems.append("Fleet.add_ship 缺少 cargo 字段")
 
+# 分船船员配置：hire_crew 带 ship_index 默认参数 + 单船 crew 接口契约
+print()
+print("=" * 68)
+print("五之二、分船船员配置契约")
+print("=" * 68)
+hire_sig = re.search(r'func hire_crew\(([^)]*)\)', fleet_src)
+if hire_sig and "ship_index" in hire_sig.group(1):
+    print("  ✓ Fleet.hire_crew 带 ship_index 默认参数（-1 聚合 / >=0 指定船）")
+else:
+    print("  ✗ Fleet.hire_crew 缺少 ship_index 参数")
+    problems.append("Fleet.hire_crew 缺少 ship_index")
+for f in ("ship_crew", "ship_crew_min", "ship_crew_max", "ship_crew_room",
+          "crew_shortfall", "crew_to_min_needed", "hire_to_min"):
+    if f in defined["Fleet"]:
+        print(f"  ✓ Fleet.{f} 已定义")
+    else:
+        print(f"  ✗ Fleet.{f} 未定义")
+        problems.append(f"Fleet.{f} 未定义")
+
 print()
 print("=" * 68)
 if problems:

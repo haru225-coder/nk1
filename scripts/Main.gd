@@ -139,9 +139,15 @@ func update_status_panel() -> void:
 			else:
 				for gid in sc.keys():
 					per_ship += "%s ×%d　" % [GameManager.get_good_name(gid), sc[gid].get("qty", 0)]
-			t += "[i]└ %s（%s）%d/%d 料　%s[/i]\n" % [
+			var crew_str := "水手 %d/%d" % [Fleet.ship_crew(i), Fleet.ship_crew_max(i)]
+			var crew_color := "white"
+			if Fleet.ship_crew(i) < Fleet.ship_crew_min(i):
+				crew_color = "red"
+				crew_str += "（缺 %d 人）" % (Fleet.ship_crew_min(i) - Fleet.ship_crew(i))
+			t += "[i]└ %s（%s）%d/%d 料　[color=%s]%s[/color]　%s[/i]\n" % [
 				s.get("name", ""), Fleet.ship_def(s.get("type", "")).get("name", ""),
-				int(Fleet.ship_cargo_bulk(i)), int(Fleet.ship_capacity(i)), per_ship,
+				int(Fleet.ship_cargo_bulk(i)), int(Fleet.ship_capacity(i)),
+				crew_color, crew_str, per_ship,
 			]
 
 	# 章节目标：不写出来玩家不会知道怎样才能开出下一片海
@@ -625,21 +631,34 @@ func _setup_shipyard(port_id: String) -> void:
 		)
 		choices_container.add_child(rb)
 
-	# 雇水手
-	var room := Fleet.crew_max() - Fleet.total_crew()
-	if room > 0:
-		var hire_n: int = mini(10, room)
-		var hire_cost := hire_n * 20
-		var hb := Button.new()
-		hb.text = "雇水手 %d 人（%d 钱，可容 %d）" % [hire_n, hire_cost, room]
-		hb.pressed.connect(func():
-			if GameState.spend_money(hire_cost):
-				var got: int = Fleet.hire_crew(hire_n)
-				log_msg("码头上招了 %d 个水手。" % got)
+	# 雇水手：缺员时先提供「补足各船最低水手」聚合按钮，再逐船独立雇佣
+	var below_min: int = Fleet.crew_to_min_needed()
+	if below_min > 0:
+		var top_cost := below_min * 20
+		var tb := Button.new()
+		tb.text = "补足各船最低水手 %d 人（%d 钱）" % [below_min, top_cost]
+		tb.pressed.connect(func():
+			if GameState.spend_money(top_cost):
+				var got: int = Fleet.hire_to_min()
+				log_msg("码头上凑齐了 %d 个水手，各船补至最低人手。" % got)
 			else:
 				log_msg("【钱不够】没人肯赊帐上船。")
 			load_scene(current_scene_id)
 		)
+		choices_container.add_child(tb)
+
+	for i in range(Fleet.ships.size()):
+		var room: int = Fleet.ship_crew_room(i)
+		if room <= 0:
+			continue  # 满员船不显示按钮（0 金额按钮会让人误以为免费雇人）
+		var s: Dictionary = Fleet.ships[i]
+		var hire_n: int = mini(10, room)
+		var hire_cost := hire_n * 20
+		var hb := Button.new()
+		hb.text = "雇 %d 人 → %s（%d 钱，该船可容 %d，现有 %d）" % [
+			hire_n, s.get("name", ""), hire_cost, room, Fleet.ship_crew(i),
+		]
+		hb.pressed.connect(_on_hire_crew.bind(i, hire_n, hire_cost))
 		choices_container.add_child(hb)
 
 	# 赊贷：本钱被查扣清空后仍有翻身的路
@@ -714,6 +733,16 @@ func _setup_shipyard(port_id: String) -> void:
 
 	choices_label.visible = true
 	_add_leave_button(port_id)
+
+
+func _on_hire_crew(ship_index: int, hire_n: int, hire_cost: int) -> void:
+	if GameState.spend_money(hire_cost):
+		var got: int = Fleet.hire_crew(hire_n, ship_index)
+		var s: Dictionary = Fleet.ships[ship_index]
+		log_msg("码头上招了 %d 个水手，上了「%s」。" % [got, s.get("name", "")])
+	else:
+		log_msg("【钱不够】没人肯赊帐上船。")
+	load_scene(current_scene_id)
 
 
 func _on_buy_supplies(n: int, wp: int, gp: int) -> void:
@@ -1122,7 +1151,14 @@ func _add_sail_button() -> void:
 
 func _on_set_sail() -> void:
 	if not Fleet.can_sail():
-		log_msg("【无法出海】水手不足 %d 人，船开不动。先去船屋雇人。" % Fleet.crew_min_required())
+		var bad := Fleet.crew_shortfall()
+		if bad.is_empty():
+			log_msg("【无法出海】水手不足，船开不动。先去船屋雇人。")
+		else:
+			var parts := PackedStringArray()
+			for b in bad:
+				parts.append("%s（%d/%d）" % [b["name"], b["crew"], b["crew_min"]])
+			log_msg("【无法出海】下列船水手不足：%s。先去船屋雇人。" % "、".join(parts))
 		update_status_panel()
 		return
 	if Fleet.supply_days() < 2:

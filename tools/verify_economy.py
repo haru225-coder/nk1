@@ -512,6 +512,24 @@ check(raw_bulk > over_cap,
 
 print()
 print("=" * 68)
+print("六之三、每船水手下限（can_sail 逐船门槛）")
+print("=" * 68)
+print("  can_sail 已改为逐船 crew >= crew_min。聚合口径会漏判「一条船 0 人」。")
+
+def crew_ok(ship_ids, crews):
+    return all(c >= ships[sid]["crew_min"] for sid, c in zip(ship_ids, crews))
+
+sampan, fu = "sampan", "fu_ship_medium"
+min_total = ships[sampan]["crew_min"] + ships[fu]["crew_min"]
+crews = [0, min_total]  # 26 人全塞福船：聚合够，但小艍 0 人
+check(sum(crews) >= min_total, "聚合口径：总水手达全队下限")
+check(not crew_ok([sampan, fu], crews),
+      "逐船口径：小艍 0 人不能出海 → can_sail 必须逐船判")
+check(crew_ok([sampan, fu], [ships[sampan]["crew_min"], ships[fu]["crew_min"]]),
+      "逐船口径：两船均达标可出海")
+
+print()
+print("=" * 68)
 print("七、违禁品走私的风险回报")
 print("=" * 68)
 
