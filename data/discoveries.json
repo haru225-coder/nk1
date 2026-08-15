@@ -1,8 +1,9 @@
 {
   "meta": {
-    "title": "东亚海域立志传",
-    "era": "南宋末，约1260-1277",
-    "prototype": "v0.1"
+    "title": "东亚海域立志传发现录",
+    "era": "南宋末，约1255-1277",
+    "prototype": "v1.0-uw",
+    "note": "near_ports 决定该发现可能在哪些航段附近出现——航线经过其中任一港口才有机会撞见。发现只是记下，须回市舶司或寺观上报才换得赏格与名声。"
   },
   "discoveries": [
     {
@@ -11,6 +12,7 @@
       "type": "航路复核",
       "location": "南岛海道北口",
       "value": 80,
+      "near_ports": ["ryukyu", "penghu"],
       "historical_hook": "未入官图的旧泊地，未来可能成为海口通信与避风节点"
     },
     {
@@ -19,7 +21,116 @@
       "type": "碑拓证据",
       "location": "礁口旧泊地",
       "value": 120,
+      "near_ports": ["ryukyu", "hakata"],
       "historical_hook": "寺院网络暗示旧航路或曾被僧侣使用"
+    },
+    {
+      "id": "heishui_gou",
+      "name": "黑水沟",
+      "type": "水文",
+      "location": "泉州外海东行水道",
+      "value": 150,
+      "near_ports": ["penghu", "ryukyu", "quanzhou"],
+      "historical_hook": "海面色深如墨，流急而不测。舟人相戒，谓过此沟者十去六还。摸清其流向与宽窄，往流求的航期可缩短数日。"
+    },
+    {
+      "id": "penghu_stone_wall",
+      "name": "屿寨石垣",
+      "type": "遗迹",
+      "location": "澎湖诸屿",
+      "value": 90,
+      "near_ports": ["penghu", "zhangzhou"],
+      "historical_hook": "岛上有石垣旧基，非近岁所筑。泉人徙居澎湖已久，官府未尽知其数。"
+    },
+    {
+      "id": "meizhou_shrine",
+      "name": "湄洲神女祠",
+      "type": "祠庙",
+      "location": "兴化外海湄洲屿",
+      "value": 110,
+      "near_ports": ["xinghua", "xinghua_harbor", "quanzhou"],
+      "historical_hook": "祀林氏女，舟人遇风涛辄呼之。自宣和赐额以来，香火沿海路而南北，凡海商未有不奉者。"
+    },
+    {
+      "id": "lingshan_tombs",
+      "name": "灵山蕃客墓",
+      "type": "碑拓证据",
+      "location": "泉州东郊",
+      "value": 130,
+      "near_ports": ["quanzhou"],
+      "historical_hook": "碑石作蕃字，不可辨识。蕃坊人云其中葬有唐时远来的圣门弟子，年代已不可考。"
+    },
+    {
+      "id": "beacon_ruin",
+      "name": "废烽堠",
+      "type": "航标",
+      "location": "福建海岸北段",
+      "value": 70,
+      "near_ports": ["fuzhou", "wenzhou", "xinghua"],
+      "historical_hook": "旧时守海的烽堠，如今无人执守，却仍是夜航辨岸的好记认。"
+    },
+    {
+      "id": "whale_route",
+      "name": "鲸鱼回游道",
+      "type": "物产",
+      "location": "东海北缘",
+      "value": 100,
+      "near_ports": ["mingzhou", "jeju", "hakata"],
+      "historical_hook": "每岁春末，巨鱼成群北去。舟人以其行止验水温与洋流，比针路还准。"
+    },
+    {
+      "id": "sulfur_vent",
+      "name": "硫磺喷气口",
+      "type": "物产",
+      "location": "南岛火山岸",
+      "value": 160,
+      "near_ports": ["ryukyu", "kagoshima"],
+      "historical_hook": "岸石作黄色，气腥而热，掘之得硫。此物北输入宋，军中所急。"
+    },
+    {
+      "id": "tangfang_stele",
+      "name": "唐房旧碑",
+      "type": "碑拓证据",
+      "location": "博多唐房",
+      "value": 200,
+      "near_ports": ["hakata", "kagoshima"],
+      "historical_hook": "碑记宋商某氏施钱建寺，年月剥蚀。唐房宋人聚居已数世，其间账目往来，远非一船一货之事。"
+    },
+    {
+      "id": "tamna_pasture",
+      "name": "耽罗牧马场",
+      "type": "物产",
+      "location": "耽罗岛中",
+      "value": 140,
+      "near_ports": ["jeju", "mingzhou"],
+      "historical_hook": "岛中广野牧马成群。高丽以此贡马，北人亦觊觎之。"
+    },
+    {
+      "id": "coral_shoal",
+      "name": "珊瑚礁盘",
+      "type": "水文",
+      "location": "南海北缘",
+      "value": 120,
+      "near_ports": ["guangzhou", "champa"],
+      "historical_hook": "水清见底，礁色斑斓。美则美矣，触之则舟裂。标定其界，往南洋者可免覆溺。"
+    },
+    {
+      "id": "monsoon_marker",
+      "name": "候风石",
+      "type": "航路复核",
+      "location": "广州外海屿上",
+      "value": 180,
+      "near_ports": ["guangzhou", "zhangzhou", "champa"],
+      "historical_hook": "屿上立石，刻历代舟师所记发舶日月。累世所积，竟成一部候风之书。"
+    },
+    {
+      "id": "champa_old_port",
+      "name": "占城故港",
+      "type": "遗迹",
+      "location": "占婆海岸",
+      "value": 220,
+      "near_ports": ["champa"],
+      "historical_hook": "港已淤塞，砖塔犹存。土人云昔年蕃舶云集，今则移泊他处矣。"
     }
   ]
 }

@@ -11,14 +11,21 @@ config_version=5
 [application]
 
 config/name="nk1"
-run/main_scene="res://scenes/WorldMap.tscn"
+run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
+; 顺序即初始化顺序：GameManager 必须最先加载 JSON，Economy/Fleet 的 _ready 依赖它。
 GameManager="*res://scripts/GameManager.gd"
+Calendar="*res://scripts/core/Calendar.gd"
+Economy="*res://scripts/core/Economy.gd"
+Fleet="*res://scripts/core/Fleet.gd"
+Crew="*res://scripts/core/Crew.gd"
+Voyage="*res://scripts/core/Voyage.gd"
 GameState="*res://scripts/GameState.gd"
+SaveLoad="*res://scripts/core/SaveLoad.gd"
 
 [display]
 

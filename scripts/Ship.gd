@@ -1,3 +1,4 @@
+class_name Ship
 extends CharacterBody2D
 
 # 核心航海物理 v4.0 (火炮海战版)
@@ -26,10 +27,13 @@ var cannonball_scene = preload("res://scenes/Cannonball.tscn")
 var fire_cooldown: float = 0.0
 
 func _ready() -> void:
-	max_hp = GameState.ship_max_hp
-	hull_hp = GameState.ship_hp
-	max_speed = 300.0 + (GameState.sail_level - 1) * 50.0
-	base_turn_speed = 1.8 + (GameState.sail_level - 1) * 0.2
+	# 战术场景反映旗舰状态；舰队数据以 Fleet 为准
+	var fs: Dictionary = Fleet.flagship()
+	max_hp = float(fs.get("max_durability", 100.0))
+	hull_hp = float(fs.get("durability", max_hp))
+	var sail_lv: int = int(fs.get("sail_level", 1))
+	max_speed = 300.0 + (sail_lv - 1) * 50.0
+	base_turn_speed = 1.8 + (sail_lv - 1) * 0.2
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_up"):
@@ -39,19 +43,33 @@ func _input(event: InputEvent) -> void:
 	
 	if fire_cooldown <= 0:
 		if event is InputEventKey and event.pressed:
+			if not _can_fire():
+				return
 			if event.keycode == KEY_J:
 				_fire_broadside(-1) # Left
 			elif event.keycode == KEY_K:
 				_fire_broadside(1) # Right
+
+
+## P4-2 接舷：白刃阶段禁炮击（敌船已钩住，甲板上是白刃不是炮战）
+func _can_fire() -> bool:
+	var parent := get_parent()
+	if parent and parent.get("boarding", false):
+		return false
+	return true
 
 func _fire_broadside(side: int) -> void:
 	fire_cooldown = 2.0
 	var ship_dir = Vector2.UP.rotated(rotation)
 	var side_dir = Vector2.RIGHT.rotated(rotation) if side == 1 else Vector2.LEFT.rotated(rotation)
 	
-	for i in range(3):
+	# P4-3：齐射弹数挂钩旗舰炮位（保底 1 发），排布居中不随炮位前移
+	var flagship := Fleet.flagship()
+	var slots := int(Fleet.ship_def(flagship.get("type", "")).get("cannon_slots", 0))
+	var shots := maxi(1, slots)
+	for i in range(shots):
 		var cb = cannonball_scene.instantiate()
-		cb.position = position + ship_dir * (i * 20 - 20) + side_dir * 30
+		cb.position = position + ship_dir * (i - (shots - 1) * 0.5) * 20 + side_dir * 30
 		var spread = randf_range(-0.1, 0.1)
 		cb.direction = side_dir.rotated(spread)
 		cb.shooter = self
@@ -143,15 +161,13 @@ func take_damage(amount: float) -> void:
 	tween.tween_callback(func(): splinter_particles.emitting = false).set_delay(0.5)
 	
 	hull_hp -= amount
-	GameState.ship_hp = hull_hp
-	# 爆金币惩罚
-	if not GameState.cargo.is_empty():
-		var keys = GameState.cargo.keys()
+	Fleet.damage_fleet(amount)
+	# 中弹会颠掉舱面货
+	if not Fleet.cargo.is_empty():
+		var keys = Fleet.cargo.keys()
 		var key = keys[randi() % keys.size()]
-		GameState.cargo[key] -= 1
-		if GameState.cargo[key] <= 0: GameState.cargo.erase(key)
-		print("被炮弹击中！掉落了货物：", key)
-	
+		Fleet.remove_cargo(key, 1)
+
 	if hull_hp <= 0:
 		hull_hp = 0
 		_sink_ship()
@@ -160,7 +176,7 @@ func _process_storm_damage(delta: float) -> void:
 	if wind_strength > 150.0 and sail_gear == 2:
 		splinter_particles.emitting = true
 		hull_hp -= 5.0 * delta
-		GameState.ship_hp = hull_hp
+		Fleet.damage_fleet(5.0 * delta)
 		if hull_hp <= 0:
 			hull_hp = 0
 			_sink_ship()
@@ -169,6 +185,10 @@ func _process_storm_damage(delta: float) -> void:
 			pass
 
 func _sink_ship() -> void:
-	print("船只沉没！失去所有货物！")
-	GameState.cargo.clear()
+	Fleet.clear_cargo()
+	GameState.set_flag("return_to_port")
+	# 海战（P4-1）：旗舰在 WorldMap 战斗中沉没 → 由 WorldMap 结算败局，不切场景
+	if GameManager.pending_battle.get("battle", false):
+		get_parent()._battle_player_sunk()
+		return
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")

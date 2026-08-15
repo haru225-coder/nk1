@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "title": "东亚海域立志传船种",
+    "era": "南宋末，约1260-1277",
+    "prototype": "v1.0-uw",
+    "note": "capacity 载重以宋制「料」计；base_speed 为无风修正时的日行里数（宋里，1里约576米）；crew_min 低于此数无法出海。"
+  },
+  "ships": [
+    {
+      "id": "sampan",
+      "name": "小艍船",
+      "class": "近海小船",
+      "capacity": 200,
+      "crew_min": 6,
+      "crew_max": 15,
+      "durability": 120,
+      "cannon_slots": 0,
+      "base_speed": 120,
+      "price": 1200,
+      "unlock": "ch1",
+      "historical_note": "福建沿海常见小型尖底船，只堪近岸转运与渔汛，出远洋是拿命赌。"
+    },
+    {
+      "id": "keel_boat",
+      "name": "客舟",
+      "class": "中型客货",
+      "capacity": 600,
+      "crew_min": 15,
+      "crew_max": 40,
+      "durability": 240,
+      "cannon_slots": 2,
+      "base_speed": 160,
+      "price": 5200,
+      "unlock": "ch1",
+      "historical_note": "徐兢《宣和奉使高丽图经》所记客舟，载人载货兼可，是使节与海商的通用船。"
+    },
+    {
+      "id": "fu_ship_medium",
+      "name": "福船（中）",
+      "class": "远洋商船",
+      "capacity": 800,
+      "crew_min": 20,
+      "crew_max": 50,
+      "durability": 300,
+      "cannon_slots": 4,
+      "base_speed": 150,
+      "price": 6800,
+      "unlock": "ch1",
+      "historical_note": "尖底高舷、水密隔舱，泉州海商的主力船型。舱多则货损可分摊。"
+    },
+    {
+      "id": "canton_ship",
+      "name": "广船",
+      "class": "远洋耐波",
+      "capacity": 1500,
+      "crew_min": 35,
+      "crew_max": 90,
+      "durability": 480,
+      "cannon_slots": 6,
+      "base_speed": 145,
+      "price": 12000,
+      "unlock": "ch2",
+      "historical_note": "以铁力木造，坚重耐波，走南洋深水航路优于福船。"
+    },
+    {
+      "id": "sea_falcon",
+      "name": "海鹘",
+      "class": "战船",
+      "capacity": 500,
+      "crew_min": 40,
+      "crew_max": 100,
+      "durability": 700,
+      "cannon_slots": 12,
+      "base_speed": 170,
+      "price": 15000,
+      "unlock": "ch2",
+      "historical_note": "两侧置浮板如鹘翼，遇风涛不易倾侧。宋水军战船，商人得之多为护航。"
+    },
+    {
+      "id": "fu_ship_large",
+      "name": "福船（大）",
+      "class": "远洋巨舶",
+      "capacity": 2000,
+      "crew_min": 45,
+      "crew_max": 110,
+      "durability": 550,
+      "cannon_slots": 8,
+      "base_speed": 140,
+      "price": 20000,
+      "unlock": "ch3",
+      "historical_note": "「舶船深阔各数十丈，商人分占贮货」——《萍洲可谈》。一船即一市。"
+    },
+    {
+      "id": "divine_ship",
+      "name": "神舟",
+      "class": "官式巨舰",
+      "capacity": 4000,
+      "crew_min": 90,
+      "crew_max": 220,
+      "durability": 900,
+      "cannon_slots": 14,
+      "base_speed": 120,
+      "price": 52000,
+      "unlock": "ch4",
+      "historical_note": "神宗遣使高丽所造巨舰，「巍如山岳，浮动波上」。非有官身与巨资不可得。"
+    }
+  ]
+}
