@@ -135,7 +135,7 @@ text = "当前季风: 北风 (自北向南吹)
 W/S: 升降帆 (当前档位: 0)
 A/D: 操舵
 船体耐久: [color=green]100/100[/color]
-B/Esc: 返回港口"
+B/Esc: 弃战逃走"
 fit_content = true
 
 [node name="RightPanel" type="PanelContainer" parent="CanvasLayer/HUD"]

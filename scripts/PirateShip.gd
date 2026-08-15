@@ -11,6 +11,9 @@ var target: Node2D = null
 var cannonball_scene = preload("res://scenes/Cannonball.tscn")
 var crate_scene = preload("res://scenes/Crate.tscn")
 
+## 击沉后是否掉宝箱（战斗模式下由 WorldMap 置 false，赏金走 SeaChart 结算）
+@export var drops_loot: bool = true
+
 var fire_timer: float = 0.0
 
 func _ready() -> void:
@@ -79,11 +82,12 @@ func take_damage(amount: float) -> void:
 		_explode()
 
 func _explode() -> void:
-	# Loot pinata
-	for i in range(5):
-		var crate = crate_scene.instantiate()
-		crate.position = position + Vector2(randf_range(-50, 50), randf_range(-50, 50))
-		get_parent().call_deferred("add_child", crate)
-		
+	# Loot pinata（战斗模式下关闭：赏金由 SeaChart 结算）
+	if drops_loot:
+		for i in range(5):
+			var crate = crate_scene.instantiate()
+			crate.position = position + Vector2(randf_range(-50, 50), randf_range(-50, 50))
+			get_parent().call_deferred("add_child", crate)
+
 	# Could add explosion particles here
 	queue_free()

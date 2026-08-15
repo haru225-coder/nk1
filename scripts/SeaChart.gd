@@ -561,23 +561,52 @@ func _on_fight_pirates() -> void:
 	event_panel.visible = false
 	var power := _fleet_power()
 	var enemy := randf_range(180.0, 520.0)
-	if power >= enemy:
+	# P4-1 海战接入：构造战斗上下文，切 WorldMap 炮击分胜负
+	GameManager.pending_battle = {
+		"battle": true,
+		"power": enemy,
+		"player_power": power,
+		"enemy": [{"type": "sea_falcon", "count": 2, "hull_hp": 100.0}],
+		"source": {"scene": "SeaChart", "event": "pirate"},
+	}
+	_enter_battle()
+
+
+## 实例化 WorldMap 叠加到 SeaChart 上（add_child 保留航行状态，战斗结束 queue_free 即回）
+func _enter_battle() -> void:
+	var wm := preload("res://scenes/WorldMap.tscn").instantiate()
+	wm.battle_finished.connect(_on_battle_result)
+	add_child(wm)
+
+
+## 战斗结果写回：对齐现有文本结算公式（逐字保留），再续航行
+func _on_battle_result(outcome: String, data: Dictionary) -> void:
+	var dmg := float(data.get("player_damage", 0.0))
+	if outcome == "win":
 		var spoil := int(randf_range(150, 600))
 		GameState.add_money(spoil)
 		GameState.fame += 3
-		var dmg := enemy * 0.06 * Fleet.armor_damage_reduction()
-		Fleet.damage_fleet(dmg)
 		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 5)
-		_log("[color=lime]击退海盗，夺得财货 %d 钱。船体受损 %d。[/color]" % [spoil, int(dmg)])
-	else:
-		var dmg := enemy * 0.16 * Fleet.armor_damage_reduction()
-		Fleet.damage_fleet(dmg)
+		_log("[color=lime]击退海盗，夺得财货 %d 钱。战损 %d。[/color]" % [spoil, int(dmg)])
+	elif outcome == "lose":
 		Fleet.morale = maxi(0, Fleet.morale - 12)
 		var lost := Fleet.lose_cargo_ratio(0.25)
 		var lost_str := ""
 		for gid in lost.keys():
 			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
 		_log("[color=red]接舷失利，被夺去部分货物。%s船体受损 %d。[/color]" % [lost_str, int(dmg)])
+	else:  # flee
+		if data.get("flee_ok", false):
+			remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
+			_log("[color=lime]转舵抢上风头，把那两条快船甩在了后面（绕了些路）。[/color]")
+		else:
+			Fleet.damage_fleet(30.0 * Fleet.armor_damage_reduction())
+			var lost := Fleet.lose_cargo_ratio(0.18)
+			var lost_str := ""
+			for gid in lost.keys():
+				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
+			_log("[color=red]没能甩脱，被追上跳帮，抢走了货。%s[/color]" % lost_str)
+	GameManager.pending_battle = {}
 	_refresh_status()
 	_after_combat()
 

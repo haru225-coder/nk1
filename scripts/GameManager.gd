@@ -5,6 +5,9 @@ extends Node
 ## 月结产生的通知（欠饷等），供 UI 显示
 signal monthly_notice(text: String)
 
+## 海战上下文。SeaChart 开战前写入；WorldMap._ready 读取；SeaChart 结算后清空。
+var pending_battle: Dictionary = {}
+
 var scenes_data: Dictionary = {}
 var goods_data: Dictionary = {}
 var ports_data: Dictionary = {}

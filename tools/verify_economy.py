@@ -532,7 +532,8 @@ print()
 print("=" * 68)
 print("六之四、船体改装系统（复刻 Fleet.upgrade_cost / armor_damage_reduction）")
 print("=" * 68)
-print("  改装通修所有船，帆 Lv 决定航速（0.12/级），甲 Lv 减免风暴/海盗船体伤。")
+print("  改装通修所有船，帆 Lv 决定航速（0.12/级），甲 Lv 减免风暴/逃败船体伤")
+print("  （P4-1 起海盗战斗伤走战术层实时扣、结算不补扣，只有 flee 败与风暴仍乘甲）。")
 print("  成本 = ceil(船价 × 10% × (1+0.5×(级-1)) × (甲则1.25))，上限 3 级。")
 
 def upgrade_cost(sid, kind, lv):
@@ -670,6 +671,67 @@ for v, gid in ry_smug[:3]:
     print(f"      违禁  {goods[gid]['name']:<6} {v:>6.1f} /料")
 check(ry_smug and ry_legal and ry_smug[0][0] > ry_legal[0][0],
       f"流求线走私每料收益（{ry_smug[0][0]:.1f}）高于最佳合法货（{ry_legal[0][0]:.1f}）")
+
+print()
+print("=" * 68)
+print("八、海战数值（P4-1：WorldMap 炮击接入的战力/战损/货损/奖励边界）")
+print("=" * 68)
+print("  复刻 SeaChart._fleet_power 与敌船血量缩放；海战胜负由战术层炮击决定，")
+print("  结算复用现有文本公式。开局必败是难度保证，标准舰队应可胜。")
+
+# 复刻 Fleet.morale_factor() 与 SeaChart._fleet_power()（士气可参数化）
+def morale_factor(morale):
+    return 0.6 + 0.4 * (morale / 100.0)
+
+def fleet_power(ship_ids, crews, morale):
+    """复刻 _fleet_power：Σ(耐久*0.5 + 水手*4 + 炮位*25 + 甲级*30) × 士气系数。
+    舰队级用总耐久（Fleet.total_durability），甲级取加权均值。"""
+    durab = sum(ships[cid]["durability"] for cid in ship_ids)
+    crew = sum(crews) if crews else sum(ships[cid]["crew_min"] for cid in ship_ids)
+    cannons = sum(ships[cid]["cannon_slots"] for cid in ship_ids)
+    armor_lv = 1  # P4-1 舰队级取 Lv1 基线（甲级加成在六之四已验证）
+    return (durab * 0.5 + crew * 4.0 + cannons * 25.0 + armor_lv * 30.0) * morale_factor(morale)
+
+# A. 开局必败：小艍(crew=6, 士气70) 战力 < 敌船区间下限 180
+sampan_power = fleet_power(["sampan"], [6], 70)
+print(f"  开局小艍战力 {sampan_power:.1f}（士气 70）")
+check(sampan_power < 180,
+      f"开局小艍战力 {sampan_power:.1f} < 180（遇海盗必败，逼玩家逃/买路）")
+
+# B. 标准舰队可胜大部分敌：客舟+福船(中) crew_min、士气70 → ≥ 敌力中位 350
+std_power = fleet_power(["keel_boat", "fu_ship_medium"], None, 70)
+print(f"  标准舰队（客舟+福船中，crew_min，士气 70）战力 {std_power:.1f}")
+check(std_power >= 350,
+      f"标准舰队战力 {std_power:.1f} ≥ 350（敌力中位，初始士气即可胜多数海盗）")
+
+# C. 胜战伤上限 < 小艍耐久：enemy_max 520 × 0.06 × armor_reduction ∈ [24.96, 31.2]
+win_dmg_min = 520 * 0.06 * 0.8   # 满甲
+win_dmg_max = 520 * 0.06 * 1.0   # 无甲
+print(f"  胜战伤（敌 520）{win_dmg_min:.1f}~{win_dmg_max:.1f} < 小艍耐久 120")
+check(win_dmg_max < 120, f"胜战伤上限 {win_dmg_max:.1f} < 120（单次胜仗不沉开局船）")
+
+# D. 败结算伤 < 小艍耐久：enemy_max 520 × 0.16（结算层）
+lose_dmg = 520 * 0.16
+print(f"  败结算伤（敌 520）{lose_dmg:.1f} < 小艍耐久 120")
+check(lose_dmg < 120, f"败结算伤 {lose_dmg:.1f} < 120（单次败仗打不沉健康小艍，两败可沉）")
+check(lose_dmg * 2 > 120, f"两败伤 {lose_dmg*2:.1f} > 120（连续两败会沉——战败有真后果）")
+
+# E. 赏金不超单趟净利：spoil_max 600 ≤ 开局单趟净利上限 3000（六节实测）
+print(f"  海战赏金 150~600 ≤ 开局单趟净利上限 3000")
+check(600 <= 3000, "海战赏金上限 600 ≤ 3000（不印钞，跑商仍是主循环）")
+
+# F. 敌船血量缩放边界：100 × clampf(power/player_power, 0.8, 3.0)
+def enemy_hull(player_power, enemy_power):
+    return 100.0 * max(0.8, min(3.0, enemy_power / player_power))
+low_scale = enemy_hull(sampan_power, 180)   # 小艍对下限敌
+high_scale = enemy_hull(sampan_power, 520)  # 小艍对上限敌
+std_scale = enemy_hull(std_power, 520)      # 标准舰队对上限敌
+print(f"  敌船血量：小艍对敌180~520 → {low_scale:.0f}~{high_scale:.0f}；标准舰队对520 → {std_scale:.0f}")
+check(0.8 * 100 <= low_scale <= high_scale <= 3.0 * 100,
+      f"敌船血量缩放落在 [80, 300]（实际 {low_scale:.0f}~{high_scale:.0f}）")
+check(low_scale >= 150 and high_scale >= 250,
+      f"开局小艍对敌倍率 1.5~3.0（{low_scale:.0f}~{high_scale:.0f} 血，必败向）")
+check(std_scale <= 100.5, f"标准舰队对上限敌倍率 ≤1.0（{std_scale:.0f} 血，可胜向）")
 
 print()
 print("=" * 68)

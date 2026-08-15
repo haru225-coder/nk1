@@ -172,4 +172,8 @@ func _process_storm_damage(delta: float) -> void:
 func _sink_ship() -> void:
 	Fleet.clear_cargo()
 	GameState.set_flag("return_to_port")
+	# 海战（P4-1）：旗舰在 WorldMap 战斗中沉没 → 由 WorldMap 结算败局，不切场景
+	if GameManager.pending_battle.get("battle", false):
+		get_parent()._battle_player_sunk()
+		return
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")

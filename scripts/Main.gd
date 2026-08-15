@@ -48,6 +48,8 @@ const GENERIC_FACILITIES := [
 
 func _ready() -> void:
 	message_label.text = ""
+	# 防御：异常路径可能残留未清理的海战上下文，回港时清空
+	GameManager.pending_battle = {}
 	GameManager.monthly_notice.connect(_on_monthly_notice)
 	update_status_panel()
 	call_deferred("start_game")

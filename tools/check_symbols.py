@@ -389,16 +389,16 @@ for dirpath, _, files in os.walk(SCRIPTS):
             with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
                 seachart_src = f.read()
 uses_in_power = "fleet_armor_level" in seachart_src
-uses_in_dmg = seachart_src.count("armor_damage_reduction") >= 3
+uses_in_dmg = seachart_src.count("armor_damage_reduction") >= 1
 if uses_in_power:
     print("  ✓ SeaChart 战力已计入 fleet_armor_level")
 else:
     print("  ✗ SeaChart 战力未计入 fleet_armor_level")
     problems.append("SeaChart 战力未计入 armor")
 if uses_in_dmg:
-    print("  ✓ SeaChart 海盗三处船体伤已乘 armor_damage_reduction")
+    print("  ✓ SeaChart 海盗船体伤已乘 armor_damage_reduction（P4-1 起结算不补扣耐久，保底 flee 仍乘）")
 else:
-    print(f"  ✗ SeaChart armor_damage_reduction 使用次数不足（期望 ≥3，实际 {seachart_src.count('armor_damage_reduction')}）")
+    print(f"  ✗ SeaChart armor_damage_reduction 使用次数不足（期望 ≥1，实际 {seachart_src.count('armor_damage_reduction')}）")
     problems.append("SeaChart 海盗伤害未消费 armor")
 
 # 升级 API 满级防御：upgrade_* 应返回 bool 且只在非满级时改写等级
@@ -409,6 +409,109 @@ for f in ("upgrade_sail", "upgrade_armor"):
     else:
         print(f"  ✗ Fleet.{f} 缺少满级守卫（应满级返回 false）")
         problems.append(f"Fleet.{f} 无满级守卫")
+
+print()
+print("=" * 68)
+print("六、海战契约（P4-1：WorldMap 战斗接入）")
+print("=" * 68)
+print("  add_child 叠加方案：SeaChart 保留航行状态，WorldMap 战斗专用化。")
+
+# 读取相关脚本源码
+wm_src = ""
+for dirpath, _, files in os.walk(SCRIPTS):
+    for fn in files:
+        if fn == "WorldMap.gd":
+            with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
+                wm_src = f.read()
+ship_src = ""
+for dirpath, _, files in os.walk(SCRIPTS):
+    for fn in files:
+        if fn == "Ship.gd":
+            with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
+                ship_src = f.read()
+minimap_src = ""
+for dirpath, _, files in os.walk(SCRIPTS):
+    for fn in files:
+        if fn == "Minimap.gd":
+            with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
+                minimap_src = f.read()
+pirate_src = ""
+for dirpath, _, files in os.walk(SCRIPTS):
+    for fn in files:
+        if fn == "PirateShip.gd":
+            with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
+                pirate_src = f.read()
+
+# 1. GameManager.pending_battle 上下文
+if "pending_battle" in defined["GameManager"]:
+    print("  ✓ GameManager.pending_battle 已声明（海战上下文）")
+else:
+    print("  ✗ GameManager.pending_battle 未声明")
+    problems.append("GameManager.pending_battle 未声明")
+
+# 2. SeaChart 接入点 + WorldMap preload
+for f in ("_enter_battle", "_on_battle_result"):
+    if re.search(rf'^func\s+{f}\b', seachart_src, re.M):
+        print(f"  ✓ SeaChart.{f} 已定义")
+    else:
+        print(f"  ✗ SeaChart.{f} 未定义")
+        problems.append(f"SeaChart.{f} 未定义")
+if "WorldMap.tscn" in seachart_src:
+    print("  ✓ SeaChart preload WorldMap.tscn（叠加进入战斗）")
+else:
+    print("  ✗ SeaChart 未 preload WorldMap.tscn")
+    problems.append("SeaChart 未 preload WorldMap.tscn")
+
+# 3. WorldMap 战斗核心
+wm_need = ("combat_mode", "_setup_combat", "_spawn_enemy", "_battle_exit",
+           "_battle_player_sunk", "_unhandled_input", "_enemies_alive")
+wm_members = set(re.findall(r'^func\s+([A-Za-z_]\w*)', wm_src, re.M))
+wm_vars = set(re.findall(r'^\s*var\s+([A-Za-z_]\w*)', wm_src, re.M))
+for f in wm_need:
+    if f in wm_members or f in wm_vars:
+        print(f"  ✓ WorldMap.{f} 已定义")
+    else:
+        print(f"  ✗ WorldMap.{f} 未定义")
+        problems.append(f"WorldMap.{f} 未定义")
+if "signal battle_finished" in wm_src:
+    print("  ✓ WorldMap.battle_finished 信号已声明")
+else:
+    print("  ✗ WorldMap.battle_finished 信号未声明")
+    problems.append("WorldMap.battle_finished 信号未声明")
+
+# 4. Ship._sink_ship 战斗守卫
+if "pending_battle" in ship_src and "_battle_player_sunk" in ship_src:
+    print("  ✓ Ship._sink_ship 含战斗守卫（战斗期不切场景）")
+else:
+    print("  ✗ Ship._sink_ship 缺少战斗守卫")
+    problems.append("Ship._sink_ship 缺少战斗守卫")
+
+# 5. Minimap 不再依赖 current_scene（add_child 方案必需）——只查非注释行
+minimap_nc = "\n".join(re.sub(r'#.*$', '', ln) for ln in minimap_src.split("\n"))
+if "current_scene" in minimap_nc:
+    print("  ✗ Minimap 仍用 get_tree().current_scene——add_child 方案下会解析到 SeaChart")
+    problems.append("Minimap 仍依赖 current_scene")
+else:
+    print("  ✓ Minimap 已改用父链查找（add_child 兼容）")
+
+# 6. WorldMap 战斗模式：禁停靠 + 禁自动刷怪
+if "PROCESS_MODE_DISABLED" in wm_src:
+    print("  ✓ WorldMap 战斗模式禁用 Ports（停靠出口关闭）")
+else:
+    print("  ✗ WorldMap 未禁用 Ports（战斗可误停靠）")
+    problems.append("WorldMap 未禁用 Ports")
+if "combat_mode" in wm_src and "_process_spawns" in wm_src:
+    print("  ✓ WorldMap 战斗模式短路自动刷怪")
+else:
+    print("  ✗ WorldMap 未短路自动刷怪")
+    problems.append("WorldMap 未短路自动刷怪")
+
+# 7. PirateShip.drops_loot 开关
+if "drops_loot" in pirate_src and "if drops_loot" in pirate_src:
+    print("  ✓ PirateShip.drops_loot 开关已定义（战斗不掉宝箱）")
+else:
+    print("  ✗ PirateShip.drops_loot 开关缺失")
+    problems.append("PirateShip.drops_loot 缺失")
 
 print()
 print("=" * 68)

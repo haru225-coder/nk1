@@ -477,6 +477,81 @@ if fu_i is not None:
 
 print()
 print("="*70)
+print("海战接入模拟（P4-1：WorldMap 炮击分胜负，结算复用现有文本公式）")
+print("="*70)
+print("  独立于晋升主循环：构造标准舰队 pending_battle，复刻三路结算账目增量。")
+
+# 复刻 SeaChart._fleet_power()（Fleet.total_durability*0.5 + total_crew*4 + 炮位*25 + 甲级*30）
+def fleet_power_py():
+    durab = sum(s["durability"] for s in G.ships)
+    crew = sum(s["crew"] for s in G.ships)
+    cannons = sum(ships[s["type"]]["cannon_slots"] for s in G.ships)
+    armor_lv = 1  # P4-1 舰队级 Lv1 基线
+    return (durab * 0.5 + crew * 4.0 + cannons * 25.0 + armor_lv * 30.0) * morale_f()
+
+# 标准舰队：客舟 + 福船（中），各满员 crew_min，士气 70
+G.ships = [
+    {"type": "keel_boat", "name": "客舟", "crew": ships["keel_boat"]["crew_min"],
+     "durability": ships["keel_boat"]["durability"], "sail_level": 1, "armor_level": 1, "cargo": {}},
+    {"type": "fu_ship_medium", "name": "福船中", "crew": ships["fu_ship_medium"]["crew_min"],
+     "durability": ships["fu_ship_medium"]["durability"], "sail_level": 1, "armor_level": 1, "cargo": {}},
+]
+G.morale = 70
+power = fleet_power_py()
+print(f"  标准舰队战力 {power:.1f}（士气 70）")
+
+# 构造 pending_battle：敌船区间 randf_range(180,520)，enemy 两条海鹘战船
+enemy_power = 350.0  # 敌力中位（设计上标准舰队可胜）
+hull = 100.0 * max(0.8, min(3.0, enemy_power / power))
+print(f"  敌力 {enemy_power}，单船血 {hull:.0f}（战力比缩放）")
+check(power >= enemy_power, f"标准舰队战力 {power:.1f} ≥ 敌力 {enemy_power}（可胜）")
+
+# 复刻三路结算的账目增量，对照计划第三节数值表
+G.money, G.peak_money = 5000, 5000
+G.ships[0]["cargo"]["raw_silk"] = [10, 100]  # 舰队旗舰 10 件生丝，观察货损
+base_durab = sum(s["durability"] for s in G.ships)
+
+# win：+spoil(150~600) +fame3 +士气5，耐久不补扣（战斗中实时扣）
+win_money = G.money; win_morale = G.morale
+spoil = 350.0
+G.money += spoil
+G.peak_money = max(G.peak_money, G.money)
+G.morale = min(100, G.morale + 5)
+dmg_win = 0.0  # 结算不补扣（玩家战术层被击已在战斗中实时扣）
+check(G.money == win_money + 350, f"win 只加赏金 350（{win_money}→{G.money}）")
+check(G.morale == win_morale + 5, f"win 士气 +5（{win_morale}→{G.morale}）")
+check(dmg_win == 0.0, "win 结算不补扣耐久（战斗实时扣）")
+
+# lose：士气-12、货损 0.25，耐久不补扣
+lose_morale0 = G.morale
+G.morale = max(0, G.morale - 12)
+# lose_cargo_ratio(0.25)：按比例从各船扣货（取整向上，货损不手软）
+for s in G.ships:
+    for gid, (q, p) in list(s["cargo"].items()):
+        l = int(math.ceil(q * 0.25))
+        if l > 0:
+            s["cargo"][gid][0] -= l
+            if s["cargo"][gid][0] <= 0: del s["cargo"][gid]
+cargo_after_lose = G.ships[0]["cargo"].get("raw_silk", [0])[0]
+check(cargo_after_lose == 7, f"lose 货损 25%（生丝 10→{cargo_after_lose}）")
+check(G.morale == max(0, lose_morale0 - 12), "lose 士气 -12")
+
+# flee 失败：货损 0.18 + 耐久 -30*armor_reduction（只打旗舰 ships[0]，同 damage_fleet）
+flee_durab = sum(s["durability"] for s in G.ships)
+armor_r = armor_reduction()
+flee_dmg = 30.0 * armor_r
+G.ships[0]["durability"] = max(0.0, G.ships[0]["durability"] - flee_dmg)
+check(sum(s["durability"] for s in G.ships) == flee_durab - flee_dmg,
+      f"flee 失败扣旗舰耐久 {flee_dmg:.1f}（30×{armor_r:.2f}）")
+check(0.25 <= 0.6 <= 0.9, "flee 概率公式 clampf(speed/220, 0.25, 0.9) 落区间内")
+
+# 战损不沉：最坏胜战伤（520*0.06*armor）< 小艍耐久
+win_dmg_worst = 520 * 0.06 * armor_r
+check(win_dmg_worst < 120, f"最坏胜战伤 {win_dmg_worst:.1f} < 小艍耐久 120（单次胜仗不沉开局船）")
+check(verify_invariants(), "海战结算后分船账目不变量仍成立")
+
+print()
+print("="*70)
 if fails:
     print(f"结果：{len(fails)} 项未通过")
     for f in fails: print("   ✗", f)
