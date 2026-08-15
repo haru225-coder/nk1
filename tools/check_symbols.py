@@ -515,6 +515,75 @@ else:
 
 print()
 print("=" * 68)
+print("七、海战契约（P4-2：接舷/白刃/夺船并入舰队）")
+print("=" * 68)
+print("  白刃按 水手数 × 士气 × 将领武力 判定；胜方夺船并入舰队。")
+
+# 1. GameState.martial 主角武力（白刃将领武力数据源）
+if "martial" in defined.get("GameState", set()):
+    print("  ✓ GameState.martial 已声明（主角武力，白刃输入）")
+else:
+    print("  ✗ GameState.martial 未声明")
+    problems.append("GameState.martial 未声明")
+
+# 2. Fleet.captain_power / lose_crew_random
+for f in ("captain_power", "lose_crew_random"):
+    if f in defined.get("Fleet", set()):
+        print(f"  ✓ Fleet.{f} 已定义")
+    else:
+        print(f"  ✗ Fleet.{f} 未定义")
+        problems.append(f"Fleet.{f} 未定义")
+
+# 3. PirateShip 接舷/白刃状态与战力
+for f in ("grappled", "ship_type", "ship_name", "crew", "enemy_morale", "captain_force", "combat_strength"):
+    if f in set(re.findall(r'^\s*(?:var|func)\s+([A-Za-z_]\w*)', pirate_src, re.M)):
+        print(f"  ✓ PirateShip.{f} 已定义")
+    else:
+        print(f"  ✗ PirateShip.{f} 未定义")
+        problems.append(f"PirateShip.{f} 未定义")
+
+# 4. WorldMap 接舷/白刃
+wm_need4 = ("BOARD_DISTANCE", "boarding", "boarding_target", "_board_enemy",
+            "_nearest_enemy", "_boarding_target_valid", "_show_combat_notice")
+wm_all = wm_vars | wm_members | set(re.findall(r'^const\s+([A-Za-z_]\w*)', wm_src, re.M))
+for f in wm_need4:
+    if f in wm_all:
+        print(f"  ✓ WorldMap.{f} 已定义")
+    else:
+        print(f"  ✗ WorldMap.{f} 未定义")
+        problems.append(f"WorldMap.{f} 未定义")
+
+# 5. Ship 白刃禁炮击
+if "_can_fire" in ship_src and "boarding" in ship_src:
+    print("  ✓ Ship._can_fire 已定义（白刃阶段禁炮击）")
+else:
+    print("  ✗ Ship._can_fire 缺失（白刃禁炮击）")
+    problems.append("Ship._can_fire 缺失")
+
+# 6. 主角武力数据源
+with open(os.path.join(ROOT, "data", "npcs.json"), encoding="utf-8") as f:
+    npc_src = f.read()
+if '"force"' in npc_src and '"chen_wenlong"' in npc_src:
+    print("  ✓ npcs.json 主角陈子龙含 force 字段（武力数据源）")
+else:
+    print("  ✗ npcs.json 主角缺 force 字段")
+    problems.append("npcs.json 主角缺 force")
+
+# 7. GameState 存档序列化含 martial
+gs_src = ""
+for dirpath, _, files in os.walk(SCRIPTS):
+    for fn in files:
+        if fn == "GameState.gd":
+            with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
+                gs_src = f.read()
+if '"martial"' in gs_src:
+    print("  ✓ GameState.to_dict/from_dict 含 martial 存档字段")
+else:
+    print("  ✗ GameState 存档缺 martial")
+    problems.append("GameState 存档缺 martial")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:

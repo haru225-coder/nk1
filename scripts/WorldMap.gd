@@ -41,6 +41,13 @@ const ENEMY_HULL_BASE := 100.0
 const ENEMY_SCALE_MIN := 0.8
 const ENEMY_SCALE_MAX := 3.0
 
+## P4-2 接舷距离：低于此距离可按 G 钩住敌船进入白刃
+const BOARD_DISTANCE := 140.0
+## 白刃阶段（接舷中）：玩家已钩住某船，停炮击、禁逃离，只等白刃判定
+var boarding: bool = false
+## 接舷白刃的目标敌船（P4-2）
+var boarding_target: Node2D = null
+
 func _ready() -> void:
 	randomize()
 	var pb: Dictionary = GameManager.pending_battle
@@ -62,9 +69,16 @@ func _process(delta: float) -> void:
 	if combat_mode:
 		player_damage = combat_start_durability - Fleet.total_durability()
 
-	# 敌全灭 → 获胜
+	# P4-2 接舷：boarding 阶段检测白刃目标是否存活（敌被打沉/脱钩则退出）
 	if combat_mode and not resolved:
-		if _enemies_alive() == 0:
+		if boarding:
+			if not _boarding_target_valid():
+				boarding = false
+				boarding_target = null
+
+	# 敌全灭 → 获胜（接舷中不判定：白刃还没分出胜负）
+	if combat_mode and not resolved:
+		if not boarding and _enemies_alive() == 0:
 			_battle_exit("win", {})
 
 	_update_hud()
@@ -79,6 +93,99 @@ func _enemies_alive() -> int:
 	return n
 
 
+## P4-2 接舷：返回最近存活敌船 [Node, 距离]；无存活敌船返回 []
+func _nearest_enemy() -> Array:
+	var best: Node2D = null
+	var best_d := 1e9
+	for child in get_children():
+		if child.name.begins_with("PirateShip") and float(child.get("hull_hp", 0.0)) > 0.0:
+			var d := child.position.distance_to(ship.position)
+			if d < best_d:
+				best_d = d
+				best = child
+	if best == null:
+		return []
+	return [best, best_d]
+
+
+## P4-2 接舷：白刃目标是否仍存活（board_target 未被打沉）
+func _boarding_target_valid() -> bool:
+	if boarding_target == null:
+		return false
+	if not is_instance_valid(boarding_target):
+		boarding_target = null
+		return false
+	return float(boarding_target.get("hull_hp", 0.0)) > 0.0
+
+
+## P4-2 白刃判定：按 水手数 × 士气 × 将领武力 对比双方，胜则夺船并入舰队。
+## 玩家战力 = Fleet.total_crew × morale_factor × captain_power
+## 敌战力 = 敌船.combat_strength（水手 × 士气 × 敌将）
+## 胜率 = 玩家战力 / (玩家 + 敌)；均势 50%，一方压倒则趋近 1。
+func _board_enemy(enemy: Node2D) -> void:
+	if not is_instance_valid(enemy):
+		return
+	boarding = true
+	boarding_target = enemy
+	enemy.set("grappled", true)  # 敌船停航停炮
+
+	var player_board := Fleet.total_crew() * Fleet.morale_factor() * Fleet.captain_power()
+	var enemy_board: float = enemy.combat_strength()
+	if player_board + enemy_board <= 0.0:
+		player_board = 1.0
+		enemy_board = 1.0
+
+	var p_win := player_board / (player_board + enemy_board)
+	var win := randf() < p_win
+
+	# 白刃必死人：胜方损失 8%-15%，负方损失 20%-30%（下限 1，保火种）
+	var lose_n := maxi(1, int(Fleet.total_crew() * (0.08 + randf() * 0.07)))
+	if win:
+		var type_id: String = enemy.get("ship_type", "sea_falcon")
+		var ship_name: String = enemy.get("ship_name", "")
+		Fleet.lose_crew_random(lose_n)
+		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 4)
+		# 主角武力成长：白刃夺船历练（上限 100）
+		GameState.martial = mini(100, GameState.martial + 1)
+		# 夺船并入舰队：add_ship 自动初始化 sail_level/armor_level/cargo
+		var ok := Fleet.add_ship(type_id, ship_name)
+		var msg := "接舷白刃，夺下敌船「%s」！" % (Fleet.ships[Fleet.ships.size() - 1].get("name", "敌船") if ok else "敌船")
+		_show_combat_notice(msg)
+		enemy.queue_free()
+		boarding = false
+		boarding_target = null
+		if _enemies_alive() == 0:
+			_battle_exit("win", {})
+	else:
+		var lose_n2 := maxi(1, int(Fleet.total_crew() * (0.20 + randf() * 0.10)))
+		Fleet.lose_crew_random(lose_n2)
+		Fleet.morale = maxi(0, Fleet.morale - 10)
+		enemy.set("grappled", false)  # 敌船脱钩，继续炮击/逃逸
+		boarding = false
+		boarding_target = null
+		_show_combat_notice("白刃失利，死了 %d 名水手，敌船脱钩。" % lose_n2)
+
+
+## 战斗通知浮字：在屏幕中央短暂显示（复用 FloatingText 场景），3 秒后淡出
+var _notice: Label = null
+func _show_combat_notice(text: String) -> void:
+	if not is_instance_valid(_notice):
+		_notice = Label.new()
+		_notice.set_anchors_preset(Control.PRESET_CENTER)
+		_notice.add_theme_font_size_override("font_size", 28)
+		_notice.add_theme_color_override("font_color", Color(1, 0.95, 0.6))
+		_notice.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		_notice.add_theme_constant_override("outline_size", 4)
+		$CanvasLayer.add_child(_notice)
+	_notice.text = text
+	_notice.visible = true
+	_notice.modulate.a = 1.0
+	var tween := create_tween()
+	tween.tween_interval(1.5)
+	tween.tween_property(_notice, "modulate:a", 0.0, 1.0)
+	tween.tween_callback(func(): _notice.visible = false)
+
+
 func _update_hud() -> void:
 	var wind_desc = "无风"
 	if ship.wind_vector.y > 0: wind_desc = "北风 (自北向南吹)"
@@ -91,8 +198,18 @@ func _update_hud() -> void:
 
 	var tail := "B/Esc: 弃战逃走"
 	var mission := "敌船 %d 艘　存活 %d\n" % [total_enemies, _enemies_alive()] if combat_mode else ""
-	var text = "%s当前季风: %s\n风力强度: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nJ/K: 左/右舷齐射开炮\n船体耐久: [color=%s]%d/%d[/color]\n%s" % [
-		mission, wind_desc, int(ship.wind_strength), ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), tail,
+	var boarding_hint := ""
+	if combat_mode and not resolved:
+		if boarding:
+			tail = "白刃判定中…"
+			boarding_hint = "[color=yellow]已钩住敌船，白刃战定生死！[/color]\n"
+		else:
+			var ne := _nearest_enemy()
+			if ne.size() == 2 and ne[1] < BOARD_DISTANCE:
+				tail = "G: 接舷　B/Esc: 逃走"
+				boarding_hint = "[color=yellow]敌船就在舷边，按 G 钩住白刃！[/color]\n"
+	var text = "%s%s当前季风: %s\n风力强度: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nJ/K: 左/右舷齐射开炮\n船体耐久: [color=%s]%d/%d[/color]\n%s%s" % [
+		mission, boarding_hint, wind_desc, int(ship.wind_strength), ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), tail,
 	]
 	label.text = text
 
@@ -240,6 +357,11 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary) -> void:
 		player_power = 1.0
 	var scale := clampf(enemy_power / player_power, ENEMY_SCALE_MIN, ENEMY_SCALE_MAX)
 	var hull: float = ENEMY_HULL_BASE * scale
+	var d := Fleet.ship_def(type_id)
+	# 敌船水手数：按船型满编区间随机取（白刃判定输入，夺船后并入舰队）
+	var crew_low: int = int(d.get("crew_min", 20))
+	var crew_high: int = int(d.get("crew_max", crew_low + 10))
+	var type_name: String = d.get("name", "敌船")
 	for i in range(count):
 		var p := pirate_scene.instantiate()
 		var angle := randf() * TAU
@@ -248,16 +370,33 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary) -> void:
 		p.target = ship
 		p.hull_hp = hull
 		p.drops_loot = false  # 战斗中不掉宝箱，赏金走 SeaChart 结算
+		# P4-2：白刃/夺船输入。节点名保持 "PirateShip" 前缀（_enemies_alive 依赖），
+		# 夺船后的船名另存 ship_name（沿用敌船名，如「海鹘」）。
+		p.ship_name = "%s" % type_name
+		p.ship_type = type_id
+		p.crew = randi_range(crew_low, crew_high)
+		p.enemy_morale = randi_range(50, 75)
+		p.captain_force = 1.0 + 0.3 * float(scale - 1.0)  # 强敌水手多，头目更悍
 		add_child(p)
 		total_enemies += 1
 
 
 ## B/Esc：弃战逃走。成败都退出战斗，写回由 SeaChart 结算
+## G：接舷白刃（P4-2）。贴近敌船时按 G 钩住进入白刃判定
 func _unhandled_input(event: InputEvent) -> void:
 	if not combat_mode or resolved:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_B or event.keycode == KEY_ESCAPE:
+		if event.keycode == KEY_G:
+			if boarding or _nearest_enemy().size() != 2:
+				return
+			var ne := _nearest_enemy()
+			if ne[1] < BOARD_DISTANCE:
+				get_viewport().set_input_as_handled()
+				_board_enemy(ne[0])
+		elif event.keycode == KEY_B or event.keycode == KEY_ESCAPE:
+			if boarding:
+				return # 白刃已钩住，不能逃
 			get_viewport().set_input_as_handled()
 			var chance := clampf(Fleet.fleet_speed() / 220.0, 0.25, 0.9)
 			var ok := randf() < chance

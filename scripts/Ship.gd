@@ -42,10 +42,20 @@ func _input(event: InputEvent) -> void:
 	
 	if fire_cooldown <= 0:
 		if event is InputEventKey and event.pressed:
+			if not _can_fire():
+				return
 			if event.keycode == KEY_J:
 				_fire_broadside(-1) # Left
 			elif event.keycode == KEY_K:
 				_fire_broadside(1) # Right
+
+
+## P4-2 接舷：白刃阶段禁炮击（敌船已钩住，甲板上是白刃不是炮战）
+func _can_fire() -> bool:
+	var parent := get_parent()
+	if parent and parent.get("boarding", false):
+		return false
+	return true
 
 func _fire_broadside(side: int) -> void:
 	fire_cooldown = 2.0

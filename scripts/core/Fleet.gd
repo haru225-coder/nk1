@@ -471,6 +471,14 @@ func _lose_crew(n: int) -> void:
 		# c <= 1：不扣（至少留 1 人）
 
 
+## 白刃战等随机减员：跨船摊扣（每船至少留 1 人保火种），返回实际死亡数。
+## 与 _lose_crew 同口径，但由战斗场景显式调用（不再走 randf 概率）。
+func lose_crew_random(n: int) -> int:
+	var before := total_crew()
+	_lose_crew(n)
+	return before - total_crew()
+
+
 func _apply_perishable() -> void:
 	for i in range(ships.size()):
 		var sc: Dictionary = _ship_cargo(i)
@@ -492,6 +500,11 @@ func _apply_perishable() -> void:
 ## 士气系数，影响航速与白刃战
 func morale_factor() -> float:
 	return 0.6 + 0.4 * (float(morale) / float(MORALE_MAX))
+
+
+## 将领系数（主角武力）：白刃战判定输入之一。满值 100 → ×1.5，越高越强。
+func captain_power() -> float:
+	return 1.0 + 0.5 * (float(GameState.martial) / 100.0)
 
 
 # ── 船体 ──────────────────────────────────────────────

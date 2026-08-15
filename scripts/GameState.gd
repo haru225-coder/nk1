@@ -4,6 +4,8 @@ extends Node
 
 var money: int = 1000
 var fame: int = 0
+## 主角武力（陈子龙）。白刃战判定输入之一；打赢海盗、夺船等会成长。
+var martial: int = 50
 
 ## 蕃商赊贷。海商借贷是宋代常态——叔父正是借贷船资、货损未结才留下这笔债。
 ## 它同时是破产保底：一次查扣把本钱清空后，玩家仍有翻身的路。
@@ -300,6 +302,7 @@ func to_dict() -> Dictionary:
 		"money": money,
 		"debt": debt,
 		"fame": fame,
+		"martial": martial,
 		"chapter": chapter,
 		"pu_attention": pu_attention,
 		"has_customs_permit": has_customs_permit,
@@ -316,6 +319,7 @@ func from_dict(d: Dictionary) -> void:
 	money = d.get("money", 1000)
 	debt = d.get("debt", 0)
 	fame = d.get("fame", 0)
+	martial = int(d.get("martial", 50))
 	chapter = d.get("chapter", 1)
 	pu_attention = d.get("pu_attention", 0)
 	has_customs_permit = d.get("has_customs_permit", false)
