@@ -1,5 +1,9 @@
 class_name MarketState extends RefCounted
 
+## 【P7-B 边界冻结】字段集冻结。
+## 新经济机制进 EconomySystem / PriceEngine / events/*，
+## 不要再往 MarketState 加第三类字典（库存/繁荣/好感/特产已够）。
+
 # port_stocks[port_id][good_id] = {"stock": 800, "base_stock": 1000}
 var port_stocks: Dictionary = {}
 

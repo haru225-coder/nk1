@@ -9,6 +9,8 @@ var _endings: Array = []
 var _state = null
 var _cutscene_player = null
 var _loaded: bool = false
+## 最近一次成功 evaluate 的结果（供结算屏读取）
+var last_result: Dictionary = {}
 
 
 func load_defs(path: String = DATA_PATH) -> void:
@@ -72,14 +74,82 @@ func evaluate(state = null, cutscene_player = null) -> IntentResult:
 
 	var player = cutscene_player if cutscene_player != null else _cutscene_player
 	var cutscene_id := str(selected.get("cutscene", "")).strip_edges()
+	var played := false
 	if cutscene_id != "" and player != null and player.has_method("play"):
 		player.play(cutscene_id)
+		played = true
 
-	return IntentResult.ok({
+	last_result = {
 		"ending_id": str(selected.get("id", "")),
 		"cutscene": cutscene_id,
 		"terminal_state": str(selected.get("terminal_state", "")),
-	}, "ending.completed")
+		"cutscene_played": played,
+		"title": str(selected.get("title", "")),
+		"subtitle": str(selected.get("subtitle", "")),
+		"summary": str(selected.get("summary", "")),
+		"epilogue": str(selected.get("epilogue", "")),
+	}
+	return IntentResult.ok(last_result.duplicate(true), "ending.completed")
+
+
+func get_last_result() -> Dictionary:
+	return last_result.duplicate(true)
+
+
+func get_ending_def(ending_id: String) -> Dictionary:
+	_ensure_loaded()
+	var id := ending_id.strip_edges()
+	if id == "":
+		return {}
+	for raw in _endings:
+		if not raw is Dictionary:
+			continue
+		if str(raw.get("id", "")) == id:
+			return (raw as Dictionary).duplicate(true)
+	return {}
+
+
+## 供结算屏：合并 defs + 状态上的秩禄/日期
+func build_display(state = null, ending_id: String = "") -> Dictionary:
+	_ensure_loaded()
+	var target_state = state if state != null else _get_state()
+	var id := ending_id.strip_edges()
+	if id == "" and not last_result.is_empty():
+		id = str(last_result.get("ending_id", ""))
+	if id == "" and target_state != null and target_state.has_method("get_story_flag"):
+		var raw_id = target_state.get_story_flag("ending_id", "")
+		if raw_id != null and str(raw_id) != "true" and str(raw_id) != "1":
+			id = str(raw_id)
+	var def := get_ending_def(id)
+	var display: Dictionary = {}
+	if not last_result.is_empty() and (id == "" or str(last_result.get("ending_id", "")) == id):
+		display = last_result.duplicate(true)
+		id = str(display.get("ending_id", id))
+	if display.is_empty() and not def.is_empty():
+		display = {
+			"ending_id": id,
+			"title": str(def.get("title", "")),
+			"subtitle": str(def.get("subtitle", "")),
+			"summary": str(def.get("summary", "")),
+			"epilogue": str(def.get("epilogue", "")),
+			"cutscene": str(def.get("cutscene", "")),
+			"terminal_state": str(def.get("terminal_state", "")),
+		}
+	elif not def.is_empty():
+		for k in ["title", "subtitle", "summary", "epilogue"]:
+			if str(display.get(k, "")) == "" and def.has(k):
+				display[k] = def[k]
+	display["ending_id"] = id
+	if str(display.get("title", "")) == "":
+		display["title"] = id if id != "" else "终章"
+	if target_state != null:
+		var career = target_state.get("career")
+		if career != null and career.has_method("get_title"):
+			display["rank_title"] = str(career.get_title())
+		var calendar = target_state.get("calendar")
+		if calendar != null and calendar.has_method("date_key"):
+			display["date_key"] = str(calendar.date_key())
+	return display
 
 
 func _ensure_loaded() -> void:

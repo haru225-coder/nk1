@@ -589,9 +589,11 @@
           "effects": {
             "story_flag": "chapter3_comply_audit_done",
             "story_flag2": {"chapter3_complete": true},
-            "fame": 120,
+            "fame": 150,
             "jia_relationship": 50,
-            "career_promote": true
+            "career_promote": true,
+            "play_cutscene": "ch3_end_comply",
+            "shell_log": "【章三】投附线收束：名籍入册，榜前静待风声。"
           },
           "narration": "你没有再回头。礼部的门在身后合上，像一只木匣扣住了三日后的命数。"
         }
@@ -633,10 +635,12 @@
           "effects": {
             "story_flag": "chapter3_refuse_escape_done",
             "story_flag2": {"chapter3_complete": true},
-            "fame": 120,
+            "fame": 150,
             "linboyuan_relationship": 50,
             "pu_attention": -2,
-            "career_promote": true
+            "career_promote": true,
+            "play_cutscene": "ch3_end_refuse",
+            "shell_log": "【章三】拒召线收束：乌篷南下，书在怀里。"
           },
           "narration": "潮声盖过人声。天亮前，临安已在雾后。"
         }
@@ -678,9 +682,11 @@
           "effects": {
             "story_flag": "chapter3_burn_escape_done",
             "story_flag2": {"chapter3_complete": true, "overseas_voyage": true},
-            "fame": 120,
+            "fame": 150,
             "pu_attention": 2,
-            "career_promote": true
+            "career_promote": true,
+            "play_cutscene": "ch3_end_burn",
+            "shell_log": "【章三】烧帖线收束：纸灰未冷，海路另起一行。"
           },
           "narration": "你混进水门边的脚夫队伍。更鼓终于慢了一拍。"
         }

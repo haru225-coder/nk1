@@ -72,6 +72,16 @@ func promote(state = null, calendar = null) -> bool:
 	return true
 
 
+## 连续升秩直到下一阶条件不满足（章末 career_promote 用）
+func promote_while_eligible(state = null, calendar = null, max_steps: int = 8) -> int:
+	var steps := 0
+	while steps < max_steps and check_promotion(state):
+		if not promote(state, calendar):
+			break
+		steps += 1
+	return steps
+
+
 func mandate_expired(calendar, state = null) -> bool:
 	if current_mandate.is_empty() or mandate_deadline_month < 0:
 		return false
@@ -174,9 +184,22 @@ func _relationship_req_met(raw_req, state) -> bool:
 func _get_relationship(state, npc_id: String) -> int:
 	if state == null or npc_id == "":
 		return 0
+	var value := 0
 	if state.has_method("get_npc_relationship"):
-		return int(state.get_npc_relationship(npc_id))
-	return 0
+		value = int(state.get_npc_relationship(npc_id))
+	# 与 EndingResolver 对齐：剧情常用 linboyuan_relationship / jia_relationship 字段
+	if npc_id == "lin_boyuan":
+		value = maxi(value, _get_int_prop(state, "linboyuan_relationship"))
+	elif npc_id == "jia":
+		value = maxi(value, _get_int_prop(state, "jia_relationship"))
+	return value
+
+
+func _get_int_prop(obj, property_name: String) -> int:
+	if obj == null:
+		return 0
+	var raw = obj.get(property_name)
+	return int(raw) if raw != null else 0
 
 
 func _assign_mandate(calendar) -> void:

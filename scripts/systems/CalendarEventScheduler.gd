@@ -138,9 +138,14 @@ func _conditions_met(event: Dictionary, ctx: Dictionary) -> bool:
 	if not cond is Dictionary:
 		return true
 	var condition: Dictionary = cond
+	var state = _get_state(ctx)
 	if condition.has("flag"):
 		var flag := str(condition.get("flag", "")).strip_edges()
-		if flag != "" and not _state_has_flag(_get_state(ctx), flag):
+		if flag != "" and not _state_has_flag(state, flag):
+			return false
+	if condition.has("unless_flag"):
+		var blocked := str(condition.get("unless_flag", "")).strip_edges()
+		if blocked != "" and _state_has_flag(state, blocked):
 			return false
 	if condition.has("rank_gte") and _resolve_rank(ctx) < int(condition.get("rank_gte", 0)):
 		return false

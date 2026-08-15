@@ -2,12 +2,144 @@
   "version": 1,
   "events": [
     {
+      "id": "ch1_after_wind",
+      "fire": {"month_offset": 2},
+      "condition": {"flag": "chapter1_complete"},
+      "action": {
+        "type": "effect",
+        "effects": {
+          "fame": 5,
+          "story_flag": "calendar_ch1_wind_noted",
+          "shell_log": "【月报】海风转向，泉州至澎湖一线航路渐稳。有人说，你在码头的名字开始被人记住。"
+        }
+      },
+      "priority": 2,
+      "once": true
+    },
+    {
+      "id": "ch2_gate_whisper",
+      "fire": {"month_offset": 3},
+      "condition": {"flag": "chapter1_complete", "unless_flag": "chapter2_complete"},
+      "action": {
+        "type": "effect",
+        "effects": {
+          "fame": 5,
+          "story_flag": "calendar_ch2_gate_whisper",
+          "shell_log": "【风声】临安城门盘问渐紧。无引凭的海商，多半被挡在瓮城之外。"
+        }
+      },
+      "priority": 3,
+      "once": true
+    },
+    {
+      "id": "ch3_street_rumor",
+      "fire": {"month_offset": 3},
+      "condition": {
+        "flag": "chapter2_complete",
+        "unless_flag": "chapter3_complete"
+      },
+      "action": {
+        "type": "effect",
+        "effects": {
+          "story_flag": "calendar_ch3_street_rumor",
+          "pu_attention": 1,
+          "shell_log": "【城中风声】蒲府偏厅夜灯不熄。茶楼里有人压低嗓子：府里在等一个泉州来的人，怀里还揣着书。"
+        }
+      },
+      "priority": 5,
+      "once": true
+    },
+    {
       "id": "ch3_pu_summon",
-      "fire": {"month_offset": 7},
-      "condition": {"flag": "chapter2_complete", "rank_gte": 4},
+      "fire": {"month_offset": 4},
+      "condition": {
+        "flag": "chapter2_complete",
+        "rank_gte": 1,
+        "unless_flag": "chapter3_complete"
+      },
       "action": {"type": "scene", "target": "chapter3_pu_summon"},
       "priority": 10,
       "once": true
+    },
+    {
+      "id": "ch3_mandate_pressure",
+      "fire": {"month_offset": 5},
+      "condition": {
+        "flag": "chapter2_complete",
+        "rank_gte": 1,
+        "unless_flag": "chapter3_complete"
+      },
+      "action": {
+        "type": "effect",
+        "effects": {
+          "fame": 5,
+          "pu_attention": 2,
+          "story_flag": "calendar_ch3_mandate_pressure",
+          "shell_log": "【时局】市舶司传言：蒲氏要在榜前清一批「泉州线」的人。你若还在城中徘徊，风声只会更紧。"
+        }
+      },
+      "priority": 6,
+      "once": true
+    },
+    {
+      "id": "ch3_pu_summon_late",
+      "fire": {"month_offset": 7},
+      "condition": {
+        "flag": "chapter2_complete",
+        "unless_flag": "chapter3_complete"
+      },
+      "action": {"type": "scene", "target": "chapter3_pu_summon"},
+      "priority": 9,
+      "once": true
+    },
+    {
+      "id": "ch3_branch_nudge",
+      "fire": {"month_offset": 6},
+      "condition": {
+        "flag": "chapter3_pu_deal_accepted",
+        "unless_flag": "chapter3_complete"
+      },
+      "action": {
+        "type": "effect",
+        "effects": {
+          "story_flag": "calendar_ch3_branch_nudge",
+          "shell_log": "【催促】名籍房的人放话：复试不等人。你若还耽在港市，蒲府的名帖也会作废。"
+        }
+      },
+      "priority": 7,
+      "once": true
+    },
+    {
+      "id": "post_ch3_rank_nudge",
+      "fire": {"month_offset": 9},
+      "condition": {
+        "flag": "chapter3_complete",
+        "unless_flag": "game_completed"
+      },
+      "action": {
+        "type": "effect",
+        "effects": {
+          "fame": 20,
+          "career_promote": true,
+          "story_flag": "calendar_post_ch3_nudge",
+          "shell_log": "【余波】章三尘埃未定，海路与官路却都记得你的名字。秩禄之阶，或许就差最后一脚。"
+        }
+      },
+      "priority": 6,
+      "once": true
+    },
+    {
+      "id": "econ_gossip_pulse",
+      "fire": {"month_offset": 1},
+      "condition": {"flag": "chapter1_complete"},
+      "action": {
+        "type": "effect",
+        "effects": {
+          "economy_pulse": true
+        }
+      },
+      "priority": 1,
+      "once": false
     }
   ]
 }

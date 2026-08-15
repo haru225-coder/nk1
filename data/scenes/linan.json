@@ -819,7 +819,9 @@
           "next": "port_linan",
           "effects": {
             "story_flag": "chapter2_complete",
-            "chapter_unlock": "chapter3_pu_counter"
+            "chapter_unlock": "chapter3_pu_counter",
+            "fame": 180,
+            "career_promote": true
           }
         }
       ],
@@ -842,7 +844,9 @@
               "chapter2_exile_route": true
             },
             "chapter_unlock": "chapter3_pu_counter",
-            "money": 30
+            "money": 30,
+            "fame": 180,
+            "career_promote": true
           },
           "narration": "城门在身后合上。你成了太学弃子，却未必是死棋。"
         }

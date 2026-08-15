@@ -182,9 +182,12 @@
           "effects": {
             "story_flag": "chapter1_complete",
             "story_flag2": {
-              "linboyuan_relationship": "neutral_positive"
+              "linboyuan_relationship_tone": "neutral_positive"
             },
-            "chapter_unlock": "chapter2_linan"
+            "chapter_unlock": "chapter2_linan",
+            "fame": 80,
+            "linboyuan_relationship": 10,
+            "career_promote": true
           }
         },
         {
@@ -193,11 +196,13 @@
           "effects": {
             "story_flag": "chapter1_complete",
             "story_flag2": {
-              "linboyuan_relationship": "neutral_positive"
+              "linboyuan_relationship_tone": "neutral_positive"
             },
             "chapter_unlock": "chapter2_linan",
             "pu_attention": -3,
-            "fame": 2
+            "fame": 82,
+            "linboyuan_relationship": 10,
+            "career_promote": true
           },
           "narration": "你在蕃坊的巷子里绕了三圈，借阿拉伯人的香料味掩盖了行踪，才回码头。"
         }
