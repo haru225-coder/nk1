@@ -1,6 +1,11 @@
 extends Node
 
 func _ready() -> void:
+	var ok := run()
+	print("[IntentResolverSelfTest] %s" % ("PASS" if ok else "FAIL"))
+	get_tree().quit(0 if ok else 1)
+
+func run() -> bool:
 	var ok := true
 	_reset_state()
 	IntentResolver.clear_handlers()
@@ -315,9 +320,7 @@ func _ready() -> void:
 	var unknown := IntentResolver.resolve(Intent.new("unknown_type", "a", "b"))
 	ok = ok and not unknown.success
 	ok = ok and unknown.error_code == IntentErrorCodes.NO_HANDLER
-
-	print("[IntentResolverSelfTest] %s" % ("PASS" if ok else "FAIL"))
-	get_tree().quit(0 if ok else 1)
+	return ok
 
 func _reset_state() -> void:
 	IdempotencyGuard.processed_intents.clear()

@@ -83,6 +83,10 @@ const SCRIPT_STORY_TABLE_REGISTRY := "res://scripts/systems/StoryTableRegistry.g
 const SCRIPT_STORY_UNLOCK_TOAST_CONTROLLER := "res://scripts/StoryUnlockToastController.gd"
 const SCRIPT_STORYBOOK_PRESENTER := "res://scripts/systems/StorybookPresenter.gd"
 const SCRIPT_STORYBOOK_VIEW_BUILDER := "res://scripts/systems/StorybookViewBuilder.gd"
+const SCRIPT_SELFTEST_INTENT := "res://tools/IntentResolverSelfTest.gd"
+const SCRIPT_SELFTEST_SAVE := "res://tools/SaveManagerSelfTest.gd"
+const SCRIPT_SELFTEST_STORY_CHAIN := "res://tools/StoryEventChainSelfTest.gd"
+const SCRIPT_SELFTEST_TAIKOU := "res://tools/TaikouSmokeSelfTest.gd"
 
 ## ── 资源目录 ────────────────────────────────────────────
 const DIR_ASSETS := "res://assets/"

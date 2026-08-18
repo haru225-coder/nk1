@@ -870,6 +870,9 @@ func begin_new_run() -> void:
 		career.load_defs()
 	navigation = NavigationState.new()
 	market = MarketState.new()
+	var gm = get_node_or_null("/root/GameManager")
+	if gm != null and market != null:
+		market.init_from_ports(gm.ports_data.get("ports", []), gm.goods_data.get("goods", []))
 	calendar = CalendarStateScript.new()
 	calendar_scheduler = CalendarEventSchedulerScript.new()
 	economy_log = EconomyLog.new()

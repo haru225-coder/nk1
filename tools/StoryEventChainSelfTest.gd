@@ -1,6 +1,11 @@
 extends Node
 
 func _ready() -> void:
+	var ok := run()
+	print("[StoryEventChainSelfTest] %s" % ("PASS" if ok else "FAIL"))
+	get_tree().quit(0 if ok else 1)
+
+func run() -> bool:
 	var ok := true
 	StoryEventChainEngine.reload()
 
@@ -33,6 +38,4 @@ func _ready() -> void:
 	ok = ok and day_again.is_empty()
 
 	GameState.story_flags = saved_flags
-
-	print("[StoryEventChainSelfTest] %s" % ("PASS" if ok else "FAIL"))
-	get_tree().quit(0 if ok else 1)
+	return ok

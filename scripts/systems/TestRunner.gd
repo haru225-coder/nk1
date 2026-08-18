@@ -80,6 +80,7 @@ func _run() -> void:
 	_run_world_test("run_ship_system")
 	_run_world_test("run_map_layout")
 	_run_ui_test("run_map_visual_style")
+	_run_ci_self_tests()
 	_print_summary()
 	quit(PASS if _failures.is_empty() else FAIL)
 
@@ -166,6 +167,40 @@ func _run_story_tests() -> void:
 
 func _run_controller_tests() -> void:
 	_run_suite("res://scripts/systems/TestRunnerController.gd", "TestRunnerController")
+
+func _run_ci_self_tests() -> void:
+	print("[CI SelfTests]")
+	var tests: Array = [
+		ResourcePaths.SCRIPT_SELFTEST_SAVE,
+		ResourcePaths.SCRIPT_SELFTEST_STORY_CHAIN,
+		ResourcePaths.SCRIPT_SELFTEST_INTENT,
+		ResourcePaths.SCRIPT_SELFTEST_TAIKOU,
+	]
+	var verify_src := FileAccess.get_file_as_string("res://tools/verify_release.ps1")
+	for path in tests:
+		_assert_true(verify_src.contains(String(path).get_file()), "verify_release.ps1 含 %s" % String(path).get_file())
+	for path in tests:
+		var label := String(path).get_file().get_basename()
+		var script = _load_script_or_fail(path, "%s 可加载" % label, false)
+		if script == null:
+			continue
+		var node = script.new()
+		if node == null or not node.has_method("run"):
+			_fail("%s: run() 可调用" % label)
+			continue
+		var gs = root.get_node_or_null("/root/GameState")
+		if gs != null and gs.has_method("begin_new_run"):
+			gs.begin_new_run()
+		IdempotencyGuard.clear_all()
+		var ok := bool(node.run())
+		_assert_true(ok, "%s run() PASS" % label)
+		if gs != null and gs.has_method("begin_new_run"):
+			gs.begin_new_run()
+		IdempotencyGuard.clear_all()
+		if node is Object and not node is RefCounted:
+			node.free()
+	print("")
+
 
 func _run_suite(path: String, label: String) -> void:
 	var suite_script = _load_script_or_fail(path, "%s 脚本可加载" % label, false)

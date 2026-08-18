@@ -6,6 +6,11 @@ const TradeRecoveryEvent = preload(ResourcePaths.SCRIPT_TRADE_RECOVERY)
 const BaseEconomicEvent = preload(ResourcePaths.SCRIPT_BASE_EVENT)
 
 func _ready() -> void:
+	var ok := run()
+	print("[SaveManagerSelfTest] %s" % ("PASS" if ok else "FAIL"))
+	get_tree().quit(0 if ok else 1)
+
+func run() -> bool:
 	var ok := true
 	SaveManager._set_test_path_stem('nk1_selftest_save')
 	GameState.fame = 42
@@ -236,8 +241,7 @@ func _ready() -> void:
 		print("  port_triggered=", WorldEventTracker.port_triggered)
 		print("  cooldowns=", WorldEventTracker.cooldowns)
 		print("  active count=", WorldEventTracker.get_active_events().size())
-	print("[SaveManagerSelfTest] %s" % ("PASS" if ok else "FAIL"))
-	get_tree().quit(0 if ok else 1)
+	return ok
 
 
 func _test_atomic_save_protocol() -> bool:

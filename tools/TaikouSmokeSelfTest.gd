@@ -2,13 +2,17 @@ extends Node
 ## 人工冒烟走查的自动化替身：泉州进港 → 投资 → 送礼/求教 → 事件链 → 决斗
 
 func _ready() -> void:
+	var ok := run()
+	print("[TaikouSmokeSelfTest] %s" % ("PASS" if ok else "FAIL"))
+	get_tree().quit(0 if ok else 1)
+
+func run() -> bool:
 	var ok := true
 	ok = ok and _smoke_invest_unlock()
 	ok = ok and _smoke_gift_and_study()
 	ok = ok and _smoke_story_chains()
 	ok = ok and _smoke_duel_flow()
-	print("[TaikouSmokeSelfTest] %s" % ("PASS" if ok else "FAIL"))
-	get_tree().quit(0 if ok else 1)
+	return ok
 
 func _smoke_invest_unlock() -> bool:
 	IdempotencyGuard.processed_intents.clear()
