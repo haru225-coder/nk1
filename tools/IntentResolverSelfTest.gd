@@ -182,13 +182,14 @@ func _ready() -> void:
 	ok = ok and not full_crew.success
 	ok = ok and full_crew.error_code == IntentErrorCodes.CREW_LIMIT_REACHED
 
-	# BuySupplies — 补满水粮
+	# BuySupplies — 补满水粮（按缺额计价，不信 intent 里的 total_cost）
 	IdempotencyGuard.processed_intents.clear()
 	LedgerSystem.from_save_dict({"balance": 200})
 	GameState.food = 10.0
 	GameState.water = 10.0
 	GameState.max_food = 100.0
 	GameState.max_water = 100.0
+	var fill_cost := BuySuppliesHandler.estimate_fill_cost()
 	var supply_result := IntentResolver.resolve(Intent.new(
 		"buy_supplies", "player", "shipyard",
 		{"supply_type": "food_water", "total_cost": 20, "fill_to_max": true},
@@ -197,7 +198,8 @@ func _ready() -> void:
 	ok = ok and supply_result.success
 	ok = ok and GameState.food == 100.0
 	ok = ok and GameState.water == 100.0
-	ok = ok and LedgerSystem.get_balance() == 180
+	ok = ok and fill_cost == 90
+	ok = ok and LedgerSystem.get_balance() == 200 - fill_cost
 
 	# BuySupplies 资金不足
 	IdempotencyGuard.processed_intents.clear()
