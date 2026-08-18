@@ -484,7 +484,7 @@ func _resolve_good_id(key: String) -> Dictionary:
 	return GameManager.get_good_by_name(key)
 
 func _calc_bulk_sell_price(port_id: String, g_data: Dictionary) -> int:
-	return EconomySystem.get_price(port_id, g_data.get("id", ""))
+	return EconomySystem.get_trade_price(port_id, g_data.get("id", ""), 1, false)
 
 ## ── Dispatchers ───────────────────────────────────────────
 
@@ -545,6 +545,28 @@ func _init_effect_handlers() -> void:
 	}
 
 const _SILENT_KEYS := ["sea_tendency", "scholar_tendency", "merchant_credit", "ledger_note"]
+
+## 选择/调查的 effects 是否已经结算过（靠其中的旗标或已获物品判断）
+func effects_already_consumed(effects: Dictionary) -> bool:
+	if effects.is_empty():
+		return false
+	if _effect_flags_already_set(effects.get("story_flag")):
+		return true
+	if _effect_flags_already_set(effects.get("story_flag2")):
+		return true
+	var item_id := str(effects.get("item_acquired", effects.get("acquire_item", "")))
+	if item_id != "" and has_item_flag(item_id):
+		return true
+	return false
+
+func _effect_flags_already_set(val) -> bool:
+	if val is String:
+		return str(val) != "" and has_story_flag(str(val))
+	if val is Dictionary:
+		for key in val.keys():
+			if has_story_flag(str(key)):
+				return true
+	return false
 
 func apply_effects(effects: Dictionary) -> void:
 	if _effect_handlers.is_empty():
@@ -647,9 +669,16 @@ func _apply_smuggled_out(_val) -> void:
 	set_flag("smuggled_out")
 
 func _apply_money(val) -> void:
-	if val != 0:
-		# INTENT_DEFERRED: 剧情 apply_effects 金钱变动 — 场景脚本副作用，保留直连 Ledger
-		LedgerSystem.apply({"amount": int(val), "source": "scene", "reason": "scene_effect", "actor": "GameState"})
+	var amount := int(val)
+	if amount == 0:
+		return
+	# INTENT_DEFERRED: 剧情 apply_effects 金钱变动 — 场景脚本副作用，保留直连 Ledger
+	LedgerSystem.apply({
+		"amount": amount,
+		"source": "scene",
+		"reason": "scene_effect",
+		"actor": "GameState",
+	}, "scene_money_%s" % Time.get_ticks_usec())
 
 func _apply_hull_hp(val) -> void:
 	modify_hp(float(val))
@@ -759,7 +788,7 @@ func _do_supply_ship() -> Dictionary:
 		IntentTypes.BUY_SUPPLIES, "player", "shipyard",
 		{"supply_type": "food_water", "total_cost": 20, "fill_to_max": true},
 		{"port_id": last_port}
-	)), "水粮已全部补满！", "【补充失败】金钱不足 20！")
+	)), "水粮已全部补满！", "【补充失败】金钱不足！")
 
 func _intent_action_to_dict(result: IntentResult, ok_msg: String, fail_msg: String) -> Dictionary:
 	if result.success:
@@ -783,6 +812,10 @@ func _do_sail_world_map() -> Dictionary:
 	var depart_result := navigation.depart_port(check)
 	if not depart_result.get("success", false):
 		return depart_result
+	var left_port := str(navigation.current_voyage_origin)
+	if left_port.is_empty():
+		left_port = str(last_port)
+	InvestPortHandler.clear_visit_cooldown(left_port)
 	StoryEventChainEngine.check_triggers("leave_port", {"port_id": navigation.current_voyage_origin})
 	if has_customs_permit:
 		has_customs_permit = false

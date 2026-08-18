@@ -70,7 +70,12 @@ func customs_inspection() -> Dictionary:
 			var fine = min(b, CUSTOMS_FINE_MAX)
 			if fine > 0:
 				# INTENT_DEFERRED: 严重走私海关罚款 — 非贿赂路径，暂不迁移至 Intent
-				LedgerSystem.apply({"amount": -fine, "source": "system", "reason": "customs_fine", "actor": "GameState"})
+				LedgerSystem.apply({
+					"amount": -fine,
+					"source": "system",
+					"reason": "customs_fine",
+					"actor": "GameState",
+				}, "customs_fine_%s" % Time.get_ticks_usec())
 			CargoSystem.clear_all()
 		else:
 			var bribe_intent := Intent.new(

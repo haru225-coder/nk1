@@ -37,9 +37,16 @@ const MAX_FLEETS_ON_MAP: int = 5
 const FLEET_SPAWN_RADIUS: float = 1200.0
 const FLEET_DESPAWN_RADIUS: float = 3000.0
 
+const CrateScript := preload("res://scripts/Crate.gd")
+const CRATE_SPAWN_INTERVAL_MIN := 45.0
+const CRATE_SPAWN_INTERVAL_MAX := 90.0
+const MAX_ALIVE_WORLD_CRATES := 3
+const DAILY_PICKUP_CAP := 8
+const WORLD_CRATE_GROUP := "world_crate"
+
 var _weather_time: WorldWeatherTime
 
-var crate_spawn_timer: float = 5.0
+var crate_spawn_timer: float = CRATE_SPAWN_INTERVAL_MIN
 var animal_spawn_timer: float = 15.0
 var navigation_locked: bool = false
 var _overlay_open: bool = false
@@ -364,15 +371,37 @@ func _on_fleet_encountered(encounter_data: Dictionary, fleet_node: Node2D) -> vo
 		_shell_log("【海遇】%s — 航线恢复。\n" % ev_title)
 	)
 
+func _count_alive_world_crates() -> int:
+	var n := 0
+	for child in get_children():
+		if not is_instance_valid(child) or child.is_queued_for_deletion():
+			continue
+		if child.is_in_group(WORLD_CRATE_GROUP):
+			n += 1
+			continue
+		var script = child.get_script()
+		if script != null and script == CrateScript:
+			n += 1
+	return n
+
+func _can_spawn_world_crate() -> bool:
+	if CrateScript.world_pickups_today() >= DAILY_PICKUP_CAP:
+		return false
+	return _count_alive_world_crates() < MAX_ALIVE_WORLD_CRATES
+
+func _spawn_world_crate() -> void:
+	var crate = crate_scene.instantiate()
+	var offset := Vector2(randf_range(-1500, 1500), randf_range(-1500, 1500))
+	var forward_dir := Vector2.UP.rotated(ship.rotation)
+	crate.global_position = ship.global_position + forward_dir * 500.0 + offset
+	add_child(crate)
+
 func _process_spawns(delta: float) -> void:
 	crate_spawn_timer -= delta
 	if crate_spawn_timer <= 0:
-		crate_spawn_timer = randf_range(10.0, 20.0)
-		var crate = crate_scene.instantiate()
-		var offset := Vector2(randf_range(-1500, 1500), randf_range(-1500, 1500))
-		var forward_dir := Vector2.UP.rotated(ship.rotation)
-		crate.global_position = ship.global_position + forward_dir * 500.0 + offset
-		add_child(crate)
+		crate_spawn_timer = randf_range(CRATE_SPAWN_INTERVAL_MIN, CRATE_SPAWN_INTERVAL_MAX)
+		if _can_spawn_world_crate():
+			_spawn_world_crate()
 
 	animal_spawn_timer -= delta
 	if animal_spawn_timer <= 0:

@@ -124,6 +124,7 @@ func _test_text_keys() -> void:
 	# Error 消息
 	_assert_eq(TextKeys.ERROR_INTENT_MISSING_TYPE, "error.intent.missing_type", "TextKeys.ERROR_INTENT_MISSING_TYPE")
 	_assert_eq(TextKeys.ERROR_MARKET_NO_PORT, "error.market.no_port", "TextKeys.ERROR_MARKET_NO_PORT")
+	_assert_eq(TextKeys.ERROR_MARKET_NO_STOCK, "error.market.no_stock", "TextKeys.ERROR_MARKET_NO_STOCK")
 	_assert_eq(TextKeys.ERROR_PAYMENT_INSUFFICIENT_FUNDS, "error.payment.insufficient_funds", "TextKeys.ERROR_PAYMENT_INSUFFICIENT_FUNDS")
 	_assert_eq(TextKeys.ERROR_BRIBE_CUSTOMS_BLOCKED, "error.bribe.customs_blocked", "TextKeys.ERROR_BRIBE_CUSTOMS_BLOCKED")
 	_assert_eq(TextKeys.ERROR_COMBAT_NO_FLEET, "error.combat.no_fleet", "TextKeys.ERROR_COMBAT_NO_FLEET")
@@ -137,6 +138,7 @@ func _test_text_keys() -> void:
 	# is_error 验证
 	_assert_true(TextKeys.is_error("error.intent.missing_type"), "is_error: missing_type")
 	_assert_true(TextKeys.is_error("error.combat.no_fleet"), "is_error: combat")
+	_assert_true(TextKeys.is_error("error.market.no_stock"), "is_error: market.no_stock")
 	_assert_true(not TextKeys.is_error("intent.payment.success"), "is_error: intent.* 不属于 error")
 
 	# all_intent_success_keys 返回 20 个

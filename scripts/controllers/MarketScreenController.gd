@@ -353,8 +353,8 @@ func _get_price_from_snapshot(good_id: String) -> int:
 			return g.price
 	return 0
 
-func _get_live_price(good_id: String) -> int:
-	var live := EconomySystem.get_price(port_id, good_id)
+func _get_live_price(good_id: String, amount: int = 1, is_buy: bool = true) -> int:
+	var live := EconomySystem.get_trade_price(port_id, good_id, maxi(amount, 1), is_buy)
 	if live > 0:
 		return live
 	return _get_price_from_snapshot(good_id)
@@ -364,7 +364,10 @@ func _on_item_selected(good_id: String, action: String) -> void:
 	_selected_action = action
 	_trade_amount = min(DEFAULT_TRADE_AMOUNT, _max_trade_amount())
 	if _trade_amount <= 0:
-		preview_label.text = "无法交易该商品（货舱已满或余额不足）。"
+		var no_stock := false
+		if _selected_action == "buy" and GameManager.state != null and GameManager.state.market != null:
+			no_stock = GameManager.state.market.get_stock(port_id, _selected_good_id) <= 0
+		preview_label.text = "无法交易该商品（市面已无存货）。" if no_stock else "无法交易该商品（货舱已满或余额不足）。"
 		pending_intent = null
 		confirm_button.disabled = true
 		amount_row.visible = false
@@ -377,12 +380,16 @@ func _max_trade_amount() -> int:
 		return DEFAULT_TRADE_AMOUNT
 	if _selected_action == "sell":
 		return CargoSystem.get_amount(_selected_good_id)
-	var price := _get_live_price(_selected_good_id)
+	var by_space := CargoSystem.get_available_space()
+	var by_stock := 0
+	if GameManager.state != null and GameManager.state.market != null:
+		by_stock = GameManager.state.market.get_stock(port_id, _selected_good_id)
+	var buy_qty := maxi(1, mini(by_space, by_stock))
+	var price := _get_live_price(_selected_good_id, buy_qty, true)
 	if price <= 0:
 		return 0
 	var by_balance := LedgerSystem.get_balance() / price
-	var by_space := CargoSystem.get_available_space()
-	return maxi(0, mini(by_balance, by_space))
+	return maxi(0, mini(by_balance, mini(by_space, by_stock)))
 
 func _adjust_trade_amount(delta: int) -> void:
 	if _selected_good_id.is_empty():
@@ -393,7 +400,8 @@ func _adjust_trade_amount(delta: int) -> void:
 
 func _update_trade_preview() -> void:
 	var g_data := GameManager.get_good_data(_selected_good_id)
-	var price := _get_live_price(_selected_good_id)
+	var is_buy := _selected_action == "buy"
+	var price := _get_live_price(_selected_good_id, _trade_amount, is_buy)
 	var total := price * _trade_amount
 	amount_value_label.text = str(_trade_amount)
 	if _selected_action == "buy":

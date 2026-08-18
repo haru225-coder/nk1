@@ -2,26 +2,21 @@ class_name BuySuppliesHandler extends RefCounted
 
 ## ── 补给默认值常量 ───────────────────────────────────────
 const SUPPLY_FILL_FLAT_COST := 20         ## 补满水粮的固定费用
+const SUPPLY_PARTIAL_AMOUNT := 20.0       ## 与 ShipyardController.SUPPLY_PARTIAL_AMOUNT 一致
+const SUPPLY_PARTIAL_COST := 10           ## 与 ShipyardController.SUPPLY_PARTIAL_COST 一致
+const MAX_AMMO_PER_BUY := 20
+const AMMO_UNIT_PRICE := 5
 
 func handle(intent: Intent) -> IntentResult:
 	var supply_type := str(intent.parameters.get("supply_type", "food_water"))
 	var fill_to_max := bool(intent.parameters.get("fill_to_max", false))
 	var amount := float(intent.parameters.get("amount", 0.0))
-	var unit_price := float(intent.parameters.get("unit_price", 0.0))
-	var total_cost := int(intent.parameters.get("total_cost", 0))
 	var applied := _preview_supply(supply_type, amount, fill_to_max)
 
 	if applied.is_empty():
 		return IntentResult.error(IntentErrorCodes.SUPPLY_LIMIT_REACHED, "", IntentTypes.BUY_SUPPLIES)
 
-	if total_cost <= 0:
-		if unit_price > 0.0:
-			var units := float(applied.get("food_added", applied.get("water_added", applied.get("ammo_added", 0))))
-			if supply_type == "food_water":
-				units = float(applied.get("food_added", 0.0)) + float(applied.get("water_added", 0.0))
-			total_cost = ceili(units * unit_price)
-		elif fill_to_max and supply_type == "food_water":
-			total_cost = SUPPLY_FILL_FLAT_COST
+	var total_cost := _compute_total_cost(supply_type, fill_to_max, applied)
 
 	if total_cost <= 0:
 		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "", IntentTypes.BUY_SUPPLIES)
@@ -33,7 +28,7 @@ func handle(intent: Intent) -> IntentResult:
 		"actor": "BuySuppliesHandler",
 	}
 	if not LedgerSystem.apply(tx, intent.id):
-		return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", IntentTypes.BUY_SUPPLIES)
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "", IntentTypes.BUY_SUPPLIES)
 
 	_commit_supply(supply_type, amount, fill_to_max, applied)
 
@@ -47,6 +42,38 @@ func handle(intent: Intent) -> IntentResult:
 	}, TextKeys.INTENT_BUY_SUPPLIES_SUCCESS)
 	r.type = IntentTypes.BUY_SUPPLIES
 	return r
+
+static func supply_unit_price() -> float:
+	return float(SUPPLY_PARTIAL_COST) / SUPPLY_PARTIAL_AMOUNT
+
+## 按实际缺额计价，至少收一口价，避免大舱位 20 钱补满。
+static func estimate_fill_cost() -> int:
+	var food_need := maxf(0.0, GameState.max_food - GameState.food)
+	var water_need := maxf(0.0, GameState.max_water - GameState.water)
+	return cost_for_units(food_need + water_need, true)
+
+static func cost_for_units(units: float, apply_fill_floor: bool = false) -> int:
+	if units <= 0.0:
+		return 0
+	var raw := ceili(units * supply_unit_price())
+	if apply_fill_floor:
+		return maxi(SUPPLY_FILL_FLAT_COST, raw)
+	return raw
+
+func _compute_total_cost(supply_type: String, fill_to_max: bool, applied: Dictionary) -> int:
+	if supply_type == "ammo":
+		return int(applied.get("ammo_added", 0)) * AMMO_UNIT_PRICE
+	var units := 0.0
+	match supply_type:
+		"food":
+			units = float(applied.get("food_added", 0.0))
+		"water":
+			units = float(applied.get("water_added", 0.0))
+		"food_water":
+			units = float(applied.get("food_added", 0.0)) + float(applied.get("water_added", 0.0))
+		_:
+			return 0
+	return cost_for_units(units, fill_to_max and supply_type == "food_water")
 
 func _preview_supply(supply_type: String, amount: float, fill_to_max: bool) -> Dictionary:
 	match supply_type:
@@ -66,7 +93,7 @@ func _preview_supply(supply_type: String, amount: float, fill_to_max: bool) -> D
 				"water_added": water_applied.get("water_added", 0.0),
 			}
 		"ammo":
-			var ammo_amount := int(amount)
+			var ammo_amount := clampi(int(amount), 0, MAX_AMMO_PER_BUY)
 			if ammo_amount <= 0:
 				return {}
 			return {"ammo_added": ammo_amount}

@@ -36,7 +36,6 @@ func _ready() -> void:
 
 func setup(scene_data: Dictionary, port_id: String) -> void:
 	_current_port_id = scene_data.get("location", port_id.replace("port_", ""))
-	_clear_port_invest_cooldown(_current_port_id)
 	port_title.text = scene_data.get("title", "未知港口")
 
 	var facilities: Array = scene_data.get("facilities", [])
@@ -202,7 +201,7 @@ func _show_quick_actions() -> void:
 	var needs_supply := GameState.food < GameState.max_food or GameState.water < GameState.max_water
 	var needs_repair := GameState.ship_hp < GameState.ship_max_hp
 	var has_actions := false
-	var supply_cost := 20  ## NK1-P6: 补满水粮固定费用
+	var supply_cost := BuySuppliesHandler.estimate_fill_cost()
 	var missing_hp: float = 0.0
 	var repair_cost: int = 0
 
@@ -368,11 +367,6 @@ func _find_dialogue_box() -> Control:
 
 func _find_cutscene_player() -> CutscenePlayer:
 	return get_tree().root.find_child("CutscenePlayer", true, false) as CutscenePlayer
-
-func _clear_port_invest_cooldown(port_id: String) -> void:
-	var cooldown_key := InvestPortHandler.INVEST_COOLDOWN_FLAG_PREFIX + port_id
-	if GameState.has_story_flag(cooldown_key):
-		GameState.set_story_flag(cooldown_key, false)
 
 ## 太阁式月历：在港休整至下月
 func _on_rest_to_next_month() -> void:

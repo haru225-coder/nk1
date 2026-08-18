@@ -45,6 +45,7 @@
   "error.market.invalid_amount": "【交易失败】无效数量。",
   "error.market.invalid_price": "【交易失败】无法定价。",
   "error.market.cargo_full": "【交易失败】货舱已满。",
+  "error.market.no_stock": "【交易失败】市面已无存货。",
 
   "intent.refit.success": "【造船厂】改装完成。",
   "error.refit.invalid_cost": "【改装失败】费用无效。",

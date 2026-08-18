@@ -22,6 +22,7 @@ var _title_label: Label
 var _status_label: RichTextLabel   ## 双方 HP/Crew 状态条
 var _body_label: RichTextLabel     ## 战斗播报区
 var _actions: VBoxContainer        ## 战术按钮区
+var _result_emitted := false       ## 防止确认按钮连点重复 emit
 
 ## ── 生命周期 ─────────────────────────────────────────────
 
@@ -295,6 +296,12 @@ func _on_combat_over(result: Dictionary) -> void:
 		button_text = "残局收束"
 
 	var btn := _make_button(button_text, func():
+		for child in _actions.get_children():
+			if child is Button:
+				child.disabled = true
+		if _result_emitted:
+			return
+		_result_emitted = true
 		combat_finished.emit(result, combat)
 		_close_modal()
 	, false)
@@ -315,7 +322,9 @@ func _clear_actions() -> void:
 
 func _close_modal() -> void:
 	if not is_instance_valid(_root):
-		combat_finished.emit({}, null)
+		if not _result_emitted:
+			_result_emitted = true
+			combat_finished.emit({}, null)
 		queue_free()
 		return
 	var tween := create_tween()

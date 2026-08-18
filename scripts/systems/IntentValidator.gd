@@ -86,7 +86,13 @@ static func _validate_market(intent: Intent) -> IntentResult:
 		return _validation_error(intent, TextKeys.ERROR_MARKET_NO_PORT)
 
 	if intent.type == IntentTypes.MARKET_BUY:
-		var price := EconomySystem.get_price(port_id, good_id)
+		var stock := 0
+		if GameState.market != null:
+			stock = GameState.market.get_stock(port_id, good_id)
+		if stock <= 0 or amount > stock:
+			return IntentResult.error(IntentErrorCodes.INSUFFICIENT_STOCK, TextKeys.ERROR_MARKET_NO_STOCK, intent.type)
+		amount = mini(amount, stock)
+		var price := EconomySystem.get_trade_price(port_id, good_id, amount, true)
 		if price <= 0:
 			return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_MARKET_INVALID_PRICE, intent.type)
 		if LedgerSystem.get_balance() < price * amount:
@@ -127,12 +133,7 @@ static func _validate_repair_ship(intent: Intent) -> IntentResult:
 	if repair_amount <= 0.0:
 		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_REPAIR_INVALID_AMOUNT, intent.type)
 
-	var cost: int
-	if intent.parameters.has("cost"):
-		cost = int(intent.parameters["cost"])
-	else:
-		var cost_per_hp: float = float(intent.parameters.get("cost_per_hp", 1.0))
-		cost = ceili(repair_amount * cost_per_hp)
+	var cost: int = ceili(repair_amount * RepairHandler.COST_PER_HP)
 	if cost <= 0:
 		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_REPAIR_INVALID_COST, intent.type)
 	if LedgerSystem.get_balance() < cost:
@@ -147,7 +148,7 @@ static func _validate_refit_ship(intent: Intent) -> IntentResult:
 
 
 static func _validate_sail_change(intent: Intent) -> IntentResult:
-	var cost := int(intent.parameters.get("cost", 500))
+	var cost := RefitHandler.SAIL_REFIT_COST
 	if cost <= 0:
 		return _validation_error(intent, TextKeys.ERROR_REFIT_INVALID_COST)
 	if LedgerSystem.get_balance() < cost:
@@ -179,7 +180,7 @@ static func _validate_hull_change(intent: Intent) -> IntentResult:
 	if flagship != null and hull_id == flagship.hull_id:
 		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_REFIT_SAME_HULL, intent.type)
 
-	var cost := int(intent.parameters.get("cost", ShipSystem.get_hull_change_cost(hull_id)))
+	var cost := ShipSystem.get_hull_change_cost(hull_id)
 	if cost <= 0:
 		return _validation_error(intent, TextKeys.ERROR_REFIT_INVALID_COST)
 	if LedgerSystem.get_balance() < cost:
@@ -191,7 +192,7 @@ static func _validate_hire_crew(intent: Intent) -> IntentResult:
 	if port_id.is_empty():
 		return IntentResult.error(IntentErrorCodes.PORT_RECRUIT_BLOCKED, TextKeys.ERROR_HIRE_CREW_NO_PORT, intent.type)
 
-	var cost_per_crew := int(intent.parameters.get("cost_per_crew", 10))
+	var cost_per_crew := HireCrewHandler.DEFAULT_COST_PER_CREW
 	if cost_per_crew <= 0:
 		return _validation_error(intent, TextKeys.ERROR_HIRE_CREW_INVALID_COST)
 
@@ -207,7 +208,7 @@ static func _validate_hire_crew(intent: Intent) -> IntentResult:
 		crew_count = mini(crew_count, space)
 		if crew_count <= 0:
 			return IntentResult.error(IntentErrorCodes.CREW_LIMIT_REACHED, TextKeys.ERROR_HIRE_CREW_FULL, intent.type)
-		var total_cost := int(intent.parameters.get("total_cost", crew_count * cost_per_crew))
+		var total_cost := crew_count * cost_per_crew
 		if LedgerSystem.get_balance() < total_cost:
 			return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, TextKeys.ERROR_HIRE_CREW_INSUFFICIENT_FUNDS, intent.type)
 
@@ -220,8 +221,6 @@ static func _validate_buy_supplies(intent: Intent) -> IntentResult:
 
 	var fill_to_max := bool(intent.parameters.get("fill_to_max", false))
 	var amount := float(intent.parameters.get("amount", 0.0))
-	var total_cost := int(intent.parameters.get("total_cost", 0))
-	var unit_price := float(intent.parameters.get("unit_price", 0.0))
 
 	match supply_type:
 		"food":
@@ -240,18 +239,16 @@ static func _validate_buy_supplies(intent: Intent) -> IntentResult:
 				if GameState.food >= GameState.max_food and GameState.water >= GameState.max_water:
 					return IntentResult.error(IntentErrorCodes.SUPPLY_LIMIT_REACHED, TextKeys.ERROR_BUY_SUPPLIES_FULL, intent.type)
 		"ammo":
-			if int(intent.parameters.get("amount", amount)) <= 0:
+			if clampi(int(intent.parameters.get("amount", amount)), 0, BuySuppliesHandler.MAX_AMMO_PER_BUY) <= 0:
 				return _validation_error(intent, TextKeys.ERROR_BUY_SUPPLIES_INVALID_AMOUNT)
 		_:
 			return _validation_error(intent, TextKeys.ERROR_BUY_SUPPLIES_INVALID_TYPE)
 
+	var previewer := BuySuppliesHandler.new()
+	var applied: Dictionary = previewer._preview_supply(supply_type, amount, fill_to_max)
+	var total_cost: int = previewer._compute_total_cost(supply_type, fill_to_max, applied)
 	if total_cost <= 0:
-		if unit_price > 0.0 and amount > 0.0:
-			total_cost = ceili(amount * unit_price)
-		elif fill_to_max and supply_type == "food_water":
-			total_cost = 20
-		else:
-			return _validation_error(intent, TextKeys.ERROR_BUY_SUPPLIES_INVALID_COST)
+		return _validation_error(intent, TextKeys.ERROR_BUY_SUPPLIES_INVALID_COST)
 
 	if LedgerSystem.get_balance() < total_cost:
 		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, TextKeys.ERROR_BUY_SUPPLIES_INSUFFICIENT_FUNDS, intent.type)

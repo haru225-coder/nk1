@@ -16,6 +16,15 @@ const SPECIALTY_UNLOCK_RULES := {
 	"xinghua": {"good_id": "aromatic_medicine", "affinity_min": 5.0, "prosperity_min": 1.0},
 }
 
+## 离港时清除本港「本访已投资」冷却，下次入港可再投
+static func clear_visit_cooldown(port_id: String) -> void:
+	if port_id.is_empty():
+		return
+	var cooldown_key := INVEST_COOLDOWN_FLAG_PREFIX + port_id
+	GameState.set_story_flag(cooldown_key, false)
+	if GameState.story_flags.has(cooldown_key):
+		GameState.story_flags.erase(cooldown_key)
+
 func handle(intent: Intent) -> IntentResult:
 	var port_id := str(intent.target)
 	if port_id.is_empty():

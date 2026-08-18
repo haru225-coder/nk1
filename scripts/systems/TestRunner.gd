@@ -58,6 +58,9 @@ func _run() -> void:
 	_test_p9a_first_hour_ux()
 	_test_p9c_architecture_boundaries()
 	_run_controller_tests()
+	_run_suite("res://scripts/systems/TestRunnerMarketIntegrity.gd", "TestRunnerMarketIntegrity")
+	_run_suite("res://scripts/systems/TestRunnerCrateLimits.gd", "TestRunnerCrateLimits")
+	_run_suite("res://scripts/systems/TestRunnerHandlerCosts.gd", "TestRunnerHandlerCosts")
 	_run_story_tests()
 	_test_event_economy_integration()
 	_test_polish_constants()
@@ -161,14 +164,17 @@ func _run_story_tests() -> void:
 	story_tests.run()
 
 func _run_controller_tests() -> void:
-	var controller_tests_script = _load_script_or_fail("res://scripts/systems/TestRunnerController.gd", "TestRunnerController script loads", false)
-	if controller_tests_script == null:
+	_run_suite("res://scripts/systems/TestRunnerController.gd", "TestRunnerController")
+
+func _run_suite(path: String, label: String) -> void:
+	var suite_script = _load_script_or_fail(path, "%s 脚本可加载" % label, false)
+	if suite_script == null:
 		return
-	var controller_tests = controller_tests_script.new(self)
-	if controller_tests == null or not controller_tests.has_method("run"):
-		_fail("TestRunnerController: run() callable")
+	var suite = suite_script.new(self)
+	if suite == null or not suite.has_method("run"):
+		_fail("%s: run() 可调用" % label)
 		return
-	controller_tests.run()
+	suite.run()
 
 func _run_ui_test(method_name: String) -> void:
 	var ui_tests_script = _load_script_or_fail("res://scripts/systems/TestRunnerUi.gd", "TestRunnerUi script loads", false)
@@ -550,6 +556,24 @@ func _test_market_state() -> void:
 	var ratio_low := market.get_stock_ratio("liuqiu", "fujian_porcelain")
 	_assert_true(ratio_low >= 0.2, "极度过剩: ratio clamp 下限 >= 0.2")
 	_assert_eq(ratio_low, 0.2, "极度过剩: ratio 精确 clamp 至 0.2")
+
+	# 每日库存向 base_stock 缓慢回归（短缺回补 / 过剩消化，不立刻重置）
+	var regen_good := "fujian_porcelain"
+	var q_base := market.get_base_stock("quanzhou", regen_good)
+	market.port_stocks["quanzhou"][regen_good]["stock"] = 0
+	var q_before := market.get_stock("quanzhou", regen_good)
+	market.process_daily_economy()
+	var q_after := market.get_stock("quanzhou", regen_good)
+	_assert_true(q_after > q_before, "短缺: process_daily_economy 库存向 base 回升")
+	_assert_true(q_after < q_base, "短缺: 不立刻回满 base_stock")
+
+	var l_base := market.get_base_stock("liuqiu", regen_good)
+	market.port_stocks["liuqiu"][regen_good]["stock"] = l_base * 2
+	var l_before := market.get_stock("liuqiu", regen_good)
+	market.process_daily_economy()
+	var l_after := market.get_stock("liuqiu", regen_good)
+	_assert_true(l_after < l_before, "过剩: process_daily_economy 库存向 base 回落")
+	_assert_true(l_after > l_base, "过剩: 不立刻重置到 base_stock")
 
 	print("")
 

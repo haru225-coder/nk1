@@ -197,6 +197,8 @@ func _drop_cargo_if_hit() -> void:
 		return
 	var side_dir := Vector2.RIGHT.rotated(rotation) if randf() > 0.5 else Vector2.LEFT.rotated(rotation)
 	var crate := crate_scene.instantiate()
+	crate.preset_good_id = dropped
+	crate.preset_amount = 1
 	crate.global_position = global_position + side_dir * 20.0
 	var parent := get_parent()
 	if is_instance_valid(parent):

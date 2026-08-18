@@ -304,6 +304,8 @@ func _investigation_available(inv: Dictionary) -> bool:
 	var once_flag: String = inv.get("once_flag", "")
 	if once_flag != "" and GameState.has_story_flag(once_flag):
 		return false
+	if GameState.effects_already_consumed(inv.get("effects", {})):
+		return false
 	var req: String = inv.get("requires_story_flag", "")
 	if req != "" and not GameState.has_story_flag(req):
 		return false

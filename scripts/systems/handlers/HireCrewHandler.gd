@@ -4,7 +4,7 @@ class_name HireCrewHandler extends RefCounted
 const DEFAULT_COST_PER_CREW := 10          ## 默认每名水手招募费用
 
 func handle(intent: Intent) -> IntentResult:
-	var cost_per_crew := int(intent.parameters.get("cost_per_crew", DEFAULT_COST_PER_CREW))
+	var cost_per_crew := DEFAULT_COST_PER_CREW
 	var crew_count := int(intent.parameters.get("crew_count", 0))
 	var space := GameState.max_crew - GameState.crew_count
 
@@ -20,9 +20,7 @@ func handle(intent: Intent) -> IntentResult:
 	if crew_count <= 0:
 		return IntentResult.error(IntentErrorCodes.CREW_LIMIT_REACHED, "", IntentTypes.HIRE_CREW)
 
-	var total_cost := int(intent.parameters.get("total_cost", 0))
-	if total_cost <= 0:
-		total_cost = crew_count * cost_per_crew
+	var total_cost := crew_count * cost_per_crew
 
 	var tx := {
 		"amount": -total_cost,
@@ -31,7 +29,7 @@ func handle(intent: Intent) -> IntentResult:
 		"actor": "HireCrewHandler",
 	}
 	if not LedgerSystem.apply(tx, intent.id):
-		return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", IntentTypes.HIRE_CREW)
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "", IntentTypes.HIRE_CREW)
 
 	GameState.modify_crew(crew_count)
 	var r := IntentResult.ok({

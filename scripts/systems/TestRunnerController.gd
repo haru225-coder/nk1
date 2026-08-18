@@ -10,6 +10,7 @@ func run() -> void:
 	_test_facility_resolver_rules()
 	_test_investigation_clear_containers_signal_safe()
 	_test_invest_port_handler()
+	_test_effects_already_consumed()
 	_test_npc_affinity_handlers()
 	_test_duel_action_matrix()
 
@@ -207,6 +208,30 @@ func _test_invest_port_handler() -> void:
 	_assert_eq(TextKeys.INTENT_INVEST_SUCCESS, "intent.invest_port.success", "TextKeys.INTENT_INVEST_SUCCESS")
 	_assert_eq(TextKeys.ERROR_INVEST_COOLDOWN, "error.invest.cooldown", "TextKeys.ERROR_INVEST_COOLDOWN")
 
+	var port_file := FileAccess.open("res://scripts/PortScreenController.gd", FileAccess.READ)
+	var port_src := port_file.get_as_text() if port_file != null else ""
+	_assert_true(not port_src.is_empty(), "PortScreenController.gd 可读")
+	var setup_src := _extract_func_source(port_src, "setup")
+	_assert_true(not setup_src.is_empty(), "PortScreenController.setup 可定位")
+	_assert_true(not setup_src.contains("_clear_port_invest_cooldown"), "setup 不再调用 _clear_port_invest_cooldown")
+	_assert_true(not setup_src.contains("port_invested_this_visit"), "setup 不触碰 port_invested_this_visit")
+
+	var gs_file := FileAccess.open("res://scripts/GameState.gd", FileAccess.READ)
+	var gs_src := gs_file.get_as_text() if gs_file != null else ""
+	_assert_true(not gs_src.is_empty(), "GameState.gd 可读")
+	var sail_src := _extract_func_source(gs_src, "_do_sail_world_map")
+	_assert_true(not sail_src.is_empty(), "GameState._do_sail_world_map 可定位")
+	_assert_true(
+		sail_src.contains("clear_visit_cooldown") or sail_src.contains("port_invested_this_visit"),
+		"出港路径清除港口投资冷却"
+	)
+
+	var handler_file := FileAccess.open(ResourcePaths.SCRIPT_HANDLER_INVEST_PORT, FileAccess.READ)
+	var handler_src := handler_file.get_as_text() if handler_file != null else ""
+	_assert_true(handler_src.contains("static func clear_visit_cooldown"), "InvestPortHandler.clear_visit_cooldown 已定义")
+
+	_test_invest_port_handler_live(invest_port_handler)
+
 	print("")
 
 # ── NK1-P6: NPC 好感 / 送礼 / 求教测试 ───────────────────
@@ -277,6 +302,83 @@ func _test_duel_action_matrix() -> void:
 	_assert_eq(int(special.get("clash_winner", 0)), 1, "必杀克制招架")
 	_assert_eq(combat.ki_points, 1, "必杀后剩余气力（获胜+1）")
 
+	print("")
+
+func _extract_func_source(src: String, func_name: String) -> String:
+	var marker := "func " + func_name
+	var start := src.find(marker)
+	if start < 0:
+		return ""
+	var search_from := start + marker.length()
+	var next_func := src.find("\nfunc ", search_from)
+	if next_func < 0:
+		return src.substr(start)
+	return src.substr(start, next_func - start)
+
+func _test_invest_port_handler_live(invest_port_handler) -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var ledger = tree.root.get_node_or_null("/root/LedgerSystem") if tree != null else null
+	var gs = tree.root.get_node_or_null("/root/GameState") if tree != null else null
+	if ledger == null or gs == null or invest_port_handler == null:
+		print("  SKIP: InvestPortHandler live cooldown (autoloads unavailable)")
+		return
+
+	var test_port := "test_invest_visit_cd"
+	var cd_key := str(invest_port_handler.INVEST_COOLDOWN_FLAG_PREFIX) + test_port
+	var had_flag := GameState.story_flags.has(cd_key)
+	var saved_flag = GameState.story_flags.get(cd_key, null)
+	var saved_market = GameState.market
+	var saved_balance := int(LedgerSystem.get_balance())
+
+	GameState.market = MarketState.new()
+	LedgerSystem.from_save_dict({"balance": 1000})
+	invest_port_handler.clear_visit_cooldown(test_port)
+
+	var handler = invest_port_handler.new()
+	var first = handler.handle(Intent.new(IntentTypes.INVEST_PORT, "player", test_port, {"tier": "small"}))
+	_assert_true(first.success, "同访: 首次投资成功")
+	var second = handler.handle(Intent.new(IntentTypes.INVEST_PORT, "player", test_port, {"tier": "small"}))
+	_assert_true(not second.success, "同访: 二次投资被冷却拒绝")
+	_assert_eq(second.message, TextKeys.ERROR_INVEST_COOLDOWN, "同访: 冷却错误文案")
+	invest_port_handler.clear_visit_cooldown(test_port)
+	_assert_true(not GameState.has_story_flag(cd_key), "clear_visit_cooldown 后冷却已清除")
+	var third = handler.handle(Intent.new(IntentTypes.INVEST_PORT, "player", test_port, {"tier": "small"}))
+	_assert_true(third.success, "离港清冷却后: 第三次投资成功")
+
+	GameState.market = saved_market
+	LedgerSystem.from_save_dict({"balance": saved_balance})
+	if had_flag:
+		GameState.set_story_flag(cd_key, saved_flag)
+	else:
+		GameState.story_flags.erase(cd_key)
+
+func _test_effects_already_consumed() -> void:
+	print("[GameState.effects_already_consumed]")
+	if GameState == null:
+		_assert_true(false, "GameState autoload 可取得")
+		return
+	_assert_true(GameState.has_method("effects_already_consumed"), "GameState 暴露 effects_already_consumed")
+	var flag := "test_effect_consumed_flag"
+	var item_id := "test_effect_consumed_item"
+	var had_flag := GameState.has_story_flag(flag)
+	var had_item := GameState.has_item_flag(item_id)
+	GameState.story_flags.erase(flag)
+	GameState.story.story_items.erase(item_id)
+	_assert_true(not GameState.effects_already_consumed({"money": 120, "story_flag": flag}), "旗标未立: 未消费")
+	GameState.set_story_flag(flag, true)
+	_assert_true(GameState.effects_already_consumed({"money": 120, "story_flag": flag}), "旗标已立: 视为已消费")
+	_assert_true(GameState.effects_already_consumed({"story_flag2": {flag: true}}), "story_flag2 字典旗标已立")
+	GameState.story_flags.erase(flag)
+	GameState.acquire_item(item_id)
+	_assert_true(GameState.effects_already_consumed({"money": 5, "item_acquired": item_id}), "已获物品: 视为已消费")
+	if had_flag:
+		GameState.set_story_flag(flag, true)
+	else:
+		GameState.story_flags.erase(flag)
+	if had_item:
+		GameState.acquire_item(item_id)
+	else:
+		GameState.story.story_items.erase(item_id)
 	print("")
 
 func _load_npc_fixture(npc_id: String) -> Dictionary:

@@ -1,5 +1,8 @@
 class_name RepairHandler extends RefCounted
 
+## ── 修理默认值常量 ───────────────────────────────────────
+const COST_PER_HP := 2.0  ## 与 ShipyardController.SHIPYARD_REPAIR_COST_PER_HP 一致
+
 func handle(intent: Intent) -> IntentResult:
 	var ship_index: int = int(intent.parameters.get("ship_index", 0))
 	var fleet := GameState.fleet
@@ -27,12 +30,7 @@ func handle(intent: Intent) -> IntentResult:
 	if repair_amount <= 0.0:
 		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "修理量为零", IntentTypes.REPAIR_SHIP)
 
-	var cost: int
-	if intent.parameters.has("cost"):
-		cost = int(intent.parameters["cost"])
-	else:
-		var cost_per_hp: float = float(intent.parameters.get("cost_per_hp", 1.0))
-		cost = ceili(repair_amount * cost_per_hp)
+	var cost: int = ceili(repair_amount * COST_PER_HP)
 	if cost <= 0:
 		return IntentResult.error(IntentErrorCodes.INVALID_STATE, "修理费用无效", IntentTypes.REPAIR_SHIP)
 

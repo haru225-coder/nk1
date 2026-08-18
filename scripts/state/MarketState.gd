@@ -42,6 +42,7 @@ const _AFFINITY_MAX := 20.0
 const _AFFINITY_TRADE_GAIN := 0.05   # 每笔交易好感度增益
 const _AFFINITY_DAILY_DECAY := 0.02  # 每日好感度自然回归
 const _AFFINITY_PRICE_IMPACT := 0.003 # 每点好感度对价格的影响系数
+const _STOCK_REGEN_RATE := 0.05       # 每日库存向 base_stock 回归的缺口比例
 
 func init_from_ports(ports: Array, goods: Array) -> void:
 	for port in ports:
@@ -74,12 +75,12 @@ func init_from_ports(ports: Array, goods: Array) -> void:
 
 func get_stock(port_id: String, good_id: String) -> int:
 	if not port_stocks.has(port_id) or not port_stocks[port_id].has(good_id):
-		return 999
+		return 0
 	return port_stocks[port_id][good_id]["stock"]
 
 func get_base_stock(port_id: String, good_id: String) -> int:
 	if not port_stocks.has(port_id) or not port_stocks[port_id].has(good_id):
-		return 999
+		return 0
 	return port_stocks[port_id][good_id]["base_stock"]
 
 func get_stock_ratio(port_id: String, good_id: String) -> float:
@@ -89,6 +90,24 @@ func get_stock_ratio(port_id: String, good_id: String) -> float:
 	var base_stock = float(get_base_stock(port_id, good_id))
 	var ratio = base_stock / stock
 	return clampf(ratio, 0.2, 5.0)
+
+## 临时按 delta 调整库存后询价，再还原。不写 trade_history，避免预览污染。
+## 运行时 load EconomySystem，避免 MarketState ↔ EconomySystem 编译期环依赖。
+func preview_price_stock(port_id: String, good_id: String, delta: int, for_buy: bool = true) -> int:
+	if not port_stocks.has(port_id) or not port_stocks[port_id].has(good_id):
+		return _query_live_price(port_id, good_id, for_buy)
+	var entry: Dictionary = port_stocks[port_id][good_id]
+	var original: int = int(entry.get("stock", 0))
+	entry["stock"] = maxi(0, original + delta)
+	var price := _query_live_price(port_id, good_id, for_buy)
+	entry["stock"] = original
+	return price
+
+func _query_live_price(port_id: String, good_id: String, for_buy: bool = true) -> int:
+	var es = load("res://scripts/systems/EconomySystem.gd")
+	if es != null and es.has_method("get_price"):
+		return int(es.get_price(port_id, good_id, for_buy))
+	return 0
 
 func adjust_stock(port_id: String, good_id: String, delta: int) -> void:
 	if not port_stocks.has(port_id) or not port_stocks[port_id].has(good_id):
@@ -176,9 +195,12 @@ func unlock_specialty(port_id: String, good_id: String) -> void:
 ## 好感度 > 0: 买入更便宜（mod < 1.0），卖出更划算（mod > 1.0）
 ## 好感度 < 0: 买入更贵（mod > 1.0），卖出更便宜（mod < 1.0）
 ## 返回 [0.88, 1.12] 范围的价格修正
-func get_affinity_price_mod(port_id: String) -> float:
+func get_affinity_price_mod(port_id: String, for_buy: bool = true) -> float:
 	var aff := get_affinity(port_id)
-	return clampf(1.0 - aff * _AFFINITY_PRICE_IMPACT, 0.88, 1.12)
+	var signed := aff * _AFFINITY_PRICE_IMPACT
+	if for_buy:
+		return clampf(1.0 - signed, 0.88, 1.12)
+	return clampf(1.0 + signed, 0.88, 1.12)
 
 ## 获取好感度等级描述（用于 UI 显示）
 func get_affinity_label(port_id: String) -> String:
@@ -220,6 +242,25 @@ func process_daily_economy() -> void:
 		if absf(current_aff) > 0.01:
 			var direction := 1.0 if current_aff < 0.0 else -1.0
 			port_affinity[port_id] = clampf(current_aff + direction * _AFFINITY_DAILY_DECAY, _AFFINITY_MIN, _AFFINITY_MAX)
+	# 库存向 base_stock 缓慢回归（短缺回补、过剩消化），不立刻重置
+	_regenerate_daily_stock()
+
+func _regenerate_daily_stock() -> void:
+	for port_id in port_stocks.keys():
+		var goods: Dictionary = port_stocks[port_id]
+		for good_id in goods.keys():
+			var entry: Dictionary = goods[good_id]
+			var stock: int = int(entry.get("stock", 0))
+			var base: int = int(entry.get("base_stock", stock))
+			var gap: int = base - stock
+			if gap == 0:
+				continue
+			var step: int = int(round(float(gap) * _STOCK_REGEN_RATE))
+			if step == 0:
+				step = 1 if gap > 0 else -1
+			if absi(step) > absi(gap):
+				step = gap
+			entry["stock"] = maxi(0, stock + step)
 
 ## 查询当前生效的世界事件对价格的影响（为 UI 反馈价格变化原因准备）
 ## active_events 由调用方注入（通常为 WorldEventTracker.get_active_events()），

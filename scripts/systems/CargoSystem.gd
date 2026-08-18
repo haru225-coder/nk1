@@ -116,8 +116,18 @@ static func to_save_dict() -> Dictionary:
 	return {"cargo": _cargo.duplicate(), "total": _total}
 
 static func from_save_dict(data: Dictionary) -> void:
-	_cargo = data.get("cargo", {}).duplicate()
-	_total = int(data.get("total", 0))
+	_cargo.clear()
+	_total = 0
+	var raw: Dictionary = data.get("cargo", {})
+	if not raw is Dictionary:
+		return
+	for key in raw.keys():
+		var good_id := str(key)
+		var amount := int(raw[key])
+		if good_id.is_empty() or amount <= 0:
+			continue
+		_cargo[good_id] = amount
+		_total += amount
 
 static func to_dict() -> Dictionary:
 	return to_save_dict()

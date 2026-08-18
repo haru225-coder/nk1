@@ -15,6 +15,8 @@ var _root: Control
 var _game_theme: Theme
 var _pending_enemy_data: Dictionary = {}  ## 战斗结束后用于结算
 var _pending_combat_state: CombatState = null  ## 战斗结束后用于结算
+var _loot_resolved := false  ## 防止 combat_finished 连发导致战利品结算两次
+var _choice_resolved := false  ## 防止连点两个选项或同一选项结算两次
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -127,10 +129,21 @@ func _make_choice_button(text: String, callback: Callable) -> Button:
 	btn.pressed.connect(callback)
 	return btn
 
+func _disable_action_buttons() -> void:
+	if _actions == null:
+		return
+	for child in _actions.get_children():
+		if child is Button:
+			child.disabled = true
+
 func _on_choice_made(choice: Dictionary) -> void:
+	if _choice_resolved:
+		return
 	if choice.has("req_flag") and not FleetArchetypes.check_req_flag(choice["req_flag"]):
 		_show_result(choice.get("msg_fail", "条件不足，无法执行此选项。"))
 		return
+	_choice_resolved = true
+	_disable_action_buttons()
 
 	# ── FleetArchetypes 战斗路由：通过 Intent 管道 ──
 	if choice.has("launch_combat") and choice["launch_combat"]:
@@ -248,6 +261,9 @@ func _launch_combat_from_result(result: IntentResult) -> void:
 	ctrl.combat_finished.connect(_on_combat_over)
 
 func _on_combat_over(result: Dictionary, combat_state: CombatState = null) -> void:
+	if _loot_resolved:
+		return
+	_loot_resolved = true
 	if result.is_empty():
 		# 战斗被取消（如 UI 关闭）
 		event_finished.emit()

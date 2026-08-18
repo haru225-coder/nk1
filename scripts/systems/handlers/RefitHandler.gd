@@ -1,5 +1,8 @@
 class_name RefitHandler extends RefCounted
 
+## ── 改装默认值常量 ───────────────────────────────────────
+const SAIL_REFIT_COST := 500
+
 func handle(intent: Intent) -> IntentResult:
 	var refit_mode := str(intent.parameters.get("refit_mode", "sail"))
 	if refit_mode == "hull":
@@ -8,7 +11,7 @@ func handle(intent: Intent) -> IntentResult:
 
 
 func _handle_sail_change(intent: Intent) -> IntentResult:
-	var cost := int(intent.parameters.get("cost", 500))
+	var cost := SAIL_REFIT_COST
 	var current_type := GameState.sail_type
 	var new_type := str(intent.parameters.get("sail_type", ""))
 	if new_type.is_empty():
@@ -21,7 +24,7 @@ func _handle_sail_change(intent: Intent) -> IntentResult:
 		"actor": "RefitHandler",
 	}
 	if not LedgerSystem.apply(tx, intent.id):
-		return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", IntentTypes.REFIT_SHIP)
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "", IntentTypes.REFIT_SHIP)
 
 	GameState.set_sail_type(new_type)
 	var r := IntentResult.ok({
@@ -37,9 +40,11 @@ func _handle_sail_change(intent: Intent) -> IntentResult:
 
 func _handle_hull_change(intent: Intent) -> IntentResult:
 	var hull_id := str(intent.parameters.get("hull_id", ""))
-	var cost := int(intent.parameters.get("cost", ShipSystem.get_hull_change_cost(hull_id)))
+	var cost := ShipSystem.get_hull_change_cost(hull_id)
 	var flagship := GameState.fleet.get_flagship()
 	var previous_hull_id := flagship.hull_id if flagship else ""
+	if cost <= 0:
+		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_REFIT_INVALID_HULL, IntentTypes.REFIT_SHIP)
 
 	var tx := {
 		"amount": -cost,
@@ -48,9 +53,15 @@ func _handle_hull_change(intent: Intent) -> IntentResult:
 		"actor": "RefitHandler",
 	}
 	if not LedgerSystem.apply(tx, intent.id):
-		return IntentResult.error(IntentErrorCodes.TRANSACTION_FAILED, "", IntentTypes.REFIT_SHIP)
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_FUNDS, "", IntentTypes.REFIT_SHIP)
 
 	if not ShipSystem.apply_hull_to_flagship(flagship, hull_id):
+		LedgerSystem.apply({
+			"amount": cost,
+			"source": "gameplay",
+			"reason": "refit_hull_rollback",
+			"actor": "RefitHandler",
+		}, intent.id + ":rollback")
 		return IntentResult.error(IntentErrorCodes.INVALID_STATE, TextKeys.ERROR_REFIT_INVALID_HULL, IntentTypes.REFIT_SHIP)
 
 	var r := IntentResult.ok({

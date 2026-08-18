@@ -32,6 +32,9 @@ func _choice_available(choice: Dictionary, ctx: Dictionary = {}) -> bool:
 	var req_item: String = choice.get("requires_item", "")
 	if req_item != "" and (game_state == null or not game_state.has_item_flag(req_item)):
 		return false
+	if game_state != null and game_state.has_method("effects_already_consumed"):
+		if game_state.effects_already_consumed(choice.get("effects", {})):
+			return false
 	if choice.has("conditions"):
 		var eval_ctx := ctx.duplicate()
 		if not eval_ctx.has("game_state"):
@@ -63,6 +66,10 @@ func _on_choice_pressed(choice_data: Dictionary) -> void:
 	if game_manager != null and game_manager.input_locked:
 		return
 	_lock_cb.call(true)
+	if _choices_container != null:
+		for child in _choices_container.get_children():
+			if child is Button:
+				child.disabled = true
 	if choice_data.has("random_roll"):
 		await _resolve_random_roll_choice(choice_data)
 		_lock_cb.call(false)
@@ -133,7 +140,7 @@ func _handle_special_action(action: String) -> void:
 			message_logged.emit("水粮已全部补满！\n\n")
 			status_updated.emit()
 		else:
-			message_logged.emit("【补充失败】金钱不足 20！\n\n")
+			message_logged.emit("【补充失败】金钱不足！\n\n")
 		return
 	var game_state = _game_state()
 	if game_state == null:

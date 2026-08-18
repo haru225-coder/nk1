@@ -25,7 +25,14 @@ func _handle_market_buy(intent: Intent, port_id: String, good_id: String, amount
 	if good_id.is_empty() or amount <= 0:
 		return IntentResult.error(TextKeys.ERROR_MARKET_INVALID_AMOUNT, "", type)
 
-	var price := EconomySystem.get_price(port_id, good_id)
+	var stock := 0
+	if GameState.market != null:
+		stock = GameState.market.get_stock(port_id, good_id)
+	if stock <= 0 or amount > stock:
+		return IntentResult.error(IntentErrorCodes.INSUFFICIENT_STOCK, TextKeys.ERROR_MARKET_NO_STOCK, type)
+	amount = mini(amount, stock)
+
+	var price := EconomySystem.get_trade_price(port_id, good_id, amount, true)
 	if price <= 0:
 		return IntentResult.error(TextKeys.ERROR_MARKET_INVALID_PRICE, "", type)
 	if not CargoSystem.has_space_for(amount):
@@ -59,7 +66,7 @@ func _handle_market_sell(intent: Intent, port_id: String, good_id: String, amoun
 	if good_id.is_empty() or amount <= 0:
 		return IntentResult.error(TextKeys.ERROR_MARKET_INVALID_AMOUNT, "", type)
 
-	var price := EconomySystem.get_price(port_id, good_id)
+	var price := EconomySystem.get_trade_price(port_id, good_id, amount, false)
 	if price <= 0:
 		return IntentResult.error(TextKeys.ERROR_MARKET_INVALID_PRICE, "", type)
 	if not CargoSystem.has_item(good_id, amount):
@@ -90,6 +97,12 @@ func _handle_sea_trade(intent: Intent) -> IntentResult:
 
 	if cost <= 0:
 		return IntentResult.error(TextKeys.ERROR_TRADE_INVALID_COST, "", IntentTypes.TRADE_REQUEST)
+
+	# 事件 JSON 的 cost 可信；粮水按剩余舱容截断，避免溢出
+	var food_headroom := maxi(0, int(floor(GameState.max_food - GameState.food)))
+	var water_headroom := maxi(0, int(floor(GameState.max_water - GameState.water)))
+	food_gain = clampi(food_gain, 0, food_headroom)
+	water_gain = clampi(water_gain, 0, water_headroom)
 
 	var tx := {
 		"amount": -cost,

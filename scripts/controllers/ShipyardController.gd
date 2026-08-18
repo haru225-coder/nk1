@@ -50,7 +50,7 @@ func _build_options() -> void:
 	if needs_prep:
 		var prep_cost := 0
 		if GameState.food < GameState.max_food or GameState.water < GameState.max_water:
-			prep_cost += SUPPLY_FULL_COST
+			prep_cost += BuySuppliesHandler.estimate_fill_cost()
 		if GameState.ship_hp < GameState.ship_max_hp:
 			prep_cost += ceili((GameState.ship_max_hp - GameState.ship_hp) * SHIPYARD_REPAIR_COST_PER_HP)
 		var prep_btn = UIBuilder.make_action_button("⚡ 一键整备 (补给+修理, 共 %d 钱)" % prep_cost)
@@ -106,8 +106,9 @@ func _setup_shipyard_crew_supply_options(choices_container: VBoxContainer) -> vo
 		choices_container.add_child(one_btn)
 
 	if GameState.food < GameState.max_food or GameState.water < GameState.max_water:
-		var supply_btn = UIBuilder.make_action_button("🍚 补满水粮 (%d 钱)" % SUPPLY_FULL_COST)
-		supply_btn.pressed.connect(_on_buy_supplies_pressed.bind("food_water", 0.0, SUPPLY_FULL_COST, true))
+		var fill_cost := BuySuppliesHandler.estimate_fill_cost()
+		var supply_btn = UIBuilder.make_action_button("🍚 补满水粮 (%d 钱)" % fill_cost)
+		supply_btn.pressed.connect(_on_buy_supplies_pressed.bind("food_water", 0.0, fill_cost, true))
 		choices_container.add_child(supply_btn)
 
 	if GameState.max_food - GameState.food >= SUPPLY_PARTIAL_AMOUNT:

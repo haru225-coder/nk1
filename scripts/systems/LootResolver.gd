@@ -168,9 +168,11 @@ static func _resolve_duel_victory(enemy_data: Dictionary, combat: CombatState = 
 ##
 ## 由调用方（SeaEventController 或 CombatSessionController）在播报后调用。
 
-static func apply_loot(loot: Dictionary) -> void:
+static func apply_loot(loot: Dictionary, intent_id: String = "") -> void:
 	if loot.is_empty():
 		return
+	if intent_id.is_empty():
+		intent_id = "loot_%s" % [Time.get_ticks_usec()]
 
 	# 资金
 	var money: int = loot.get("money", 0)
@@ -181,15 +183,19 @@ static func apply_loot(loot: Dictionary) -> void:
 			"source": "combat_loot",
 			"reason": "combat_victory",
 			"actor": "LootResolver",
-		}, "")
+		}, intent_id)
 
 	# 货物
 	var cargo_items: Array = loot.get("cargo", [])
 	for item in cargo_items:
 		var good_id: String = item.get("id", "")
 		var amount: int = item.get("amount", 0)
-		if good_id != "" and amount > 0:
-			CargoSystem.add_item(good_id, amount)
+		if good_id == "" or amount <= 0:
+			continue
+		var space := CargoSystem.get_available_space()
+		if space <= 0:
+			break
+		CargoSystem.add_item(good_id, mini(amount, space))
 
 	# 俘虏水手
 	var recruited: int = loot.get("crew_recruited", 0)
@@ -205,7 +211,7 @@ static func apply_loot(loot: Dictionary) -> void:
 			"source": "combat_defeat",
 			"reason": "combat_defeat",
 			"actor": "LootResolver",
-		}, "")
+		}, intent_id + ":defeat")
 
 ## ── 世界事件拾取（非战斗）──────────────────────────────────
 ##
@@ -213,8 +219,10 @@ static func apply_loot(loot: Dictionary) -> void:
 ## 与 apply_loot 共用 LedgerSystem/CargoSystem 底层，但 source 标记为 world_event，
 ## 便于审计区分战斗战利品与世界拾取。
 
-static func apply_world_pickup(money: int, cargo_good_id: String = "", cargo_amount: int = 0) -> Dictionary:
+static func apply_world_pickup(money: int, cargo_good_id: String = "", cargo_amount: int = 0, intent_id: String = "") -> Dictionary:
 	var result := {"money": 0, "cargo": ""}
+	if intent_id.is_empty():
+		intent_id = "pickup_%s" % [Time.get_ticks_usec()]
 	if money > 0:
 		# INTENT_DEFERRED: 世界事件拾取金钱 — 非战斗路径，暂不迁移至 Intent
 		LedgerSystem.apply({
@@ -222,7 +230,7 @@ static func apply_world_pickup(money: int, cargo_good_id: String = "", cargo_amo
 			"source": "world_event",
 			"reason": "world_pickup",
 			"actor": "LootResolver",
-		}, "")
+		}, intent_id)
 		result["money"] = money
 	if cargo_good_id != "" and cargo_amount > 0:
 		if CargoSystem.add_item(cargo_good_id, cargo_amount):

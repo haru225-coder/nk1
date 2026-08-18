@@ -3,6 +3,9 @@ class_name EconomySystem extends RefCounted
 ## 经济系统统一入口：所有价格计算走 PriceEngine（含跨港口联动）。
 ## 事件修正通过 active_events 注入，库存联动通过 neighbor_ratios 注入。
 
+## 卖出价相对成交参考价的买卖价差（先按成交后库存定价，再打 bid/ask）。
+const SELL_PRICE_RATIO := 0.85
+
 static func get_market_snapshot(port_id: String) -> Dictionary:
 	var port = GameManager.get_port_data(port_id)
 	if port.is_empty(): return {}
@@ -18,7 +21,7 @@ static func get_market_snapshot(port_id: String) -> Dictionary:
 		if g_id.is_empty(): continue
 		if g.get("category", "") != "货物": continue
 
-		var p_price = _get_price_with_port(port, g_id)
+		var p_price = get_trade_price(port_id, g_id, 1, true)
 
 		snapshot["goods"].append({
 			"id": g_id,
@@ -30,13 +33,27 @@ static func get_market_snapshot(port_id: String) -> Dictionary:
 
 	return snapshot
 
-static func get_price(port_id: String, good_id: String) -> int:
+static func get_price(port_id: String, good_id: String, for_buy: bool = true) -> int:
 	var port = GameManager.get_port_data(port_id)
-	return _get_price_with_port(port, good_id)
+	return _get_price_with_port(port, good_id, for_buy)
+
+## 成交价：按本笔交易完成后的库存询价。买入付稀缺价，卖出收过剩价。
+static func get_trade_price(port_id: String, good_id: String, amount: int, is_buy: bool) -> int:
+	var qty := maxi(amount, 0)
+	var market = GameManager.state.market if GameManager.state != null else null
+	var price: int
+	if market != null and qty > 0:
+		var delta := -qty if is_buy else qty
+		price = market.preview_price_stock(port_id, good_id, delta, is_buy)
+	else:
+		price = get_price(port_id, good_id, is_buy)
+	if not is_buy:
+		price = maxi(1, int(round(float(price) * SELL_PRICE_RATIO))) if price > 0 else 0
+	return price
 
 # 内部方法：统一走 PriceEngine 跨港口联动版本
 # NK1-P5-ECON-002: 升级为 calculate_price_deep，增加供应链+区域压力+饱和+繁荣度
-static func _get_price_with_port(port: Dictionary, good_id: String) -> int:
+static func _get_price_with_port(port: Dictionary, good_id: String, for_buy: bool = true) -> int:
 	var good = GameManager.get_good_data(good_id)
 
 	if good.is_empty() or port.is_empty(): return 0
@@ -79,7 +96,7 @@ static func _get_price_with_port(port: Dictionary, good_id: String) -> int:
 	var saturation_mod: float = market.get_saturation_mod(port_id, good_id)
 	var prosperity_mod: float = _compute_prosperity_price_mod(market.get_prosperity(port_id))
 	# NK1-P5-ECON-003: 港口好感度修正
-	var affinity_mod: float = market.get_affinity_price_mod(port_id)
+	var affinity_mod: float = market.get_affinity_price_mod(port_id, for_buy)
 
 	var active_events = WorldEventTracker.get_active_events()
 	var result = PriceEngine.calculate_price_deep(

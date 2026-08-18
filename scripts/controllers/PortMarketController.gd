@@ -130,7 +130,7 @@ func _build_market_ui() -> void:
 		var good_data = GameManager.get_good_data(g_id)
 		var i_name = good_data.get("name", g_id)
 		# 获取当地收购价
-		var sell_price = EconomySystem.get_price(_port_id, g_id)
+		var sell_price = EconomySystem.get_trade_price(_port_id, g_id, 1, false)
 
 		var item_hbox := HBoxContainer.new()
 		right_vbox.add_child(item_hbox)
@@ -181,7 +181,12 @@ func _on_buy_pressed(good_id: String, item_name: String, _price: int) -> void:
 		status_updated.emit()
 		_refresh_ui()
 	else:
-		var reason = GameManager.get_text(result.message_key, "【失败】金钱不足或货舱已满。")
+		var reason_key: String = str(result.message_key)
+		if result.error_code == IntentErrorCodes.INSUFFICIENT_STOCK or str(result.message) == TextKeys.ERROR_MARKET_NO_STOCK:
+			reason_key = TextKeys.ERROR_MARKET_NO_STOCK
+		var reason: String = str(GameManager.get_text(reason_key, "【失败】金钱不足或货舱已满。"))
+		if reason_key == TextKeys.ERROR_MARKET_NO_STOCK and reason == "【失败】金钱不足或货舱已满。":
+			reason = "【交易失败】市面已无存货。"
 		message_logged.emit("✗ " + reason + "\n")
 
 func _on_sell_pressed(good_id: String, item_name: String, _amount: int) -> void:
