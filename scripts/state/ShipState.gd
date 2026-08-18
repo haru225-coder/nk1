@@ -29,14 +29,27 @@ func to_dict() -> Dictionary:
 	}
 
 func from_dict(d: Dictionary) -> void:
-	hull_id = d.get("hull_id", "fujian_merchant")
-	name = d.get("name", "未命名船只")
-	hp = d.get("hp", 100.0); max_hp = d.get("max_hp", 100.0)
-	crew = int(d.get("crew", 30))
-	max_crew = int(d.get("max_crew", 50))
-	armor_level = int(d.get("armor_level", 1))
-	sail_level = int(d.get("sail_level", 1))
-	sail_type = d.get("sail_type", "square")
-	artillery = int(d.get("artillery", 3))
-	swordplay = int(d.get("swordplay", 2))
-	maneuverability = int(d.get("maneuverability", 5))
+	hull_id = str(d.get("hull_id", "fujian_merchant"))
+	if hull_id.is_empty():
+		hull_id = "fujian_merchant"
+	name = str(d.get("name", "未命名船只"))
+	if name.is_empty():
+		name = "未命名船只"
+	max_hp = maxf(1.0, _as_finite(d.get("max_hp", 100.0), 100.0))
+	hp = clampf(_as_finite(d.get("hp", max_hp), max_hp), 0.0, max_hp)
+	max_crew = maxi(1, int(d.get("max_crew", 50)))
+	crew = clampi(int(d.get("crew", 30)), 0, max_crew)
+	armor_level = maxi(0, int(d.get("armor_level", 1)))
+	sail_level = maxi(0, int(d.get("sail_level", 1)))
+	sail_type = str(d.get("sail_type", "square"))
+	if sail_type != "lateen":
+		sail_type = "square"
+	artillery = maxi(0, int(d.get("artillery", 3)))
+	swordplay = maxi(0, int(d.get("swordplay", 2)))
+	maneuverability = maxi(0, int(d.get("maneuverability", 5)))
+
+static func _as_finite(value, fallback: float) -> float:
+	var n := float(value)
+	if is_nan(n) or is_inf(n):
+		return fallback
+	return n

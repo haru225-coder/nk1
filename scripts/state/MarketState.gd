@@ -357,6 +357,7 @@ func from_dict(d: Dictionary) -> void:
 	var loaded_stocks = d.get("port_stocks", {})
 	if not loaded_stocks.is_empty():
 		port_stocks = loaded_stocks
+		_sanitize_port_stocks()
 	# else keep previously initialized stocks (for old saves without full market data)
 	
 	# NK1-P5-ECON-002: 恢复贸易历史与繁荣度（兼容旧存档无此字段）
@@ -366,10 +367,20 @@ func from_dict(d: Dictionary) -> void:
 	var loaded_prosperity = d.get("port_prosperity", {})
 	if not loaded_prosperity.is_empty():
 		port_prosperity = loaded_prosperity
+		for port_id in port_prosperity.keys():
+			var p := float(port_prosperity[port_id])
+			if is_nan(p) or is_inf(p):
+				p = 1.0
+			port_prosperity[port_id] = clampf(p, _PROSPERITY_MIN, _PROSPERITY_MAX)
 	# NK1-P5-ECON-003: 恢复港口好感度
 	var loaded_affinity = d.get("port_affinity", {})
 	if not loaded_affinity.is_empty():
 		port_affinity = loaded_affinity
+		for port_id in port_affinity.keys():
+			var a := float(port_affinity[port_id])
+			if is_nan(a) or is_inf(a):
+				a = 0.0
+			port_affinity[port_id] = clampf(a, _AFFINITY_MIN, _AFFINITY_MAX)
 	unlocked_specialties = d.get("unlocked_specialties", {})
 	
 	upcoming_events.clear()
@@ -392,3 +403,20 @@ func from_dict(d: Dictionary) -> void:
 	# else: old save without upcoming key -> no pending events (correct for compatibility)
 	# 注：port_stocks 的空数据兜底再初始化由 SaveManager.load_game 统一负责，
 	# MarketState 不在此直接依赖 GameManager autoload，保持可单元测试。
+
+func _sanitize_port_stocks() -> void:
+	var cleaned_ports: Dictionary = {}
+	for port_id in port_stocks.keys():
+		var goods = port_stocks[port_id]
+		if not (goods is Dictionary):
+			continue
+		var cleaned_goods: Dictionary = {}
+		for good_id in goods.keys():
+			var entry = goods[good_id]
+			if not (entry is Dictionary):
+				continue
+			var stock := maxi(0, int(entry.get("stock", 0)))
+			var base := maxi(0, int(entry.get("base_stock", stock)))
+			cleaned_goods[str(good_id)] = {"stock": stock, "base_stock": base}
+		cleaned_ports[str(port_id)] = cleaned_goods
+	port_stocks = cleaned_ports

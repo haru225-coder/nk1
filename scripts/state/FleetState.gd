@@ -47,6 +47,13 @@ func to_dict() -> Dictionary:
 func from_dict(d: Dictionary) -> void:
 	ships.clear()
 	for sd in d.get("ships", []):
+		if not (sd is Dictionary):
+			continue
 		var s = ShipState.new()
 		s.from_dict(sd)
 		ships.append(s)
+	if ships.is_empty():
+		var flagship := ShipState.new()
+		flagship.hull_id = "fujian_merchant"
+		flagship.name = "福船"
+		ships.append(flagship)

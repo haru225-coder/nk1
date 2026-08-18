@@ -21,9 +21,20 @@ func to_dict() -> Dictionary:
 	return {"food": food, "max_food": max_food, "water": water, "max_water": max_water, "max_cargo": max_cargo}
 
 func from_dict(d: Dictionary) -> void:
-	food = d.get("food", DEFAULT_FOOD); max_food = d.get("max_food", MAX_FOOD)
-	water = d.get("water", DEFAULT_WATER); max_water = d.get("max_water", MAX_WATER)
-	max_cargo = int(d.get("max_cargo", MAX_CARGO))
+	max_food = _clamp_max(_as_finite(d.get("max_food", MAX_FOOD), MAX_FOOD), 1.0, MAX_FOOD)
+	max_water = _clamp_max(_as_finite(d.get("max_water", MAX_WATER), MAX_WATER), 1.0, MAX_WATER)
+	food = clampf(_as_finite(d.get("food", DEFAULT_FOOD), DEFAULT_FOOD), 0.0, max_food)
+	water = clampf(_as_finite(d.get("water", DEFAULT_WATER), DEFAULT_WATER), 0.0, max_water)
+	max_cargo = clampi(int(d.get("max_cargo", MAX_CARGO)), 1, MAX_CARGO)
+
+static func _as_finite(value, fallback: float) -> float:
+	var n := float(value)
+	if is_nan(n) or is_inf(n):
+		return fallback
+	return n
+
+static func _clamp_max(value: float, lo: float, hi: float) -> float:
+	return clampf(value, lo, hi)
 
 signal crew_lost(amount: int)
 signal resource_depleted(resource: String)

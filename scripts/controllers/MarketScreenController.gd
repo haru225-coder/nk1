@@ -97,11 +97,11 @@ func _ready() -> void:
 	split.add_child(right_panel)
 
 	preview_label = Label.new()
-	preview_label.custom_minimum_size = Vector2(0, 56)
+	preview_label.custom_minimum_size = Vector2(0, 88)
 	preview_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	preview_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	preview_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	preview_label.max_lines_visible = 3
+	preview_label.max_lines_visible = 5
 	preview_label.theme_type_variation = UITheme.MARKET_PREVIEW
 	vbox.add_child(preview_label)
 
@@ -218,7 +218,7 @@ func refresh_ui() -> void:
 			continue
 		inv_empty = false
 		var g_data := GameManager.get_good_data(good_id)
-		var price := _get_live_price(good_id)
+		var price := _get_live_price(good_id, 1, false)
 		var base_val = g_data.get("base_value", 50)
 		var trend_info = _get_trend_info(price, base_val)
 		var btn := _make_item_button(
@@ -237,10 +237,17 @@ func refresh_ui() -> void:
 	var mkt_empty := true
 	for g in market_snapshot.get("goods", []):
 		mkt_empty = false
-		var live_price := _get_live_price(g.id)
+		var live_price := _get_live_price(g.id, 1, true)
+		var sell_here := int(g.get("sell_price", 0))
+		if sell_here <= 0:
+			sell_here = _get_live_price(g.id, 1, false)
+		var stock_left := int(g.get("available", 0))
 		var base_val = g.get("base_value", 50)
 		var trend_info = _get_trend_info(live_price, base_val)
-		var btn := _make_item_button("%s   买入 %d %s" % [g.name, live_price, trend_info.text], "buy")
+		var btn := _make_item_button(
+			"%s   买 %d / 收 %d  余%d %s" % [g.name, live_price, sell_here, stock_left, trend_info.text],
+			"buy"
+		)
 		if trend_info.color != Color.TRANSPARENT:
 			# [Code Audit Exemption] 颜色基于运行时价格走势动态计算，无法在 theme 中静态定义
 			btn.add_theme_color_override("font_color", trend_info.color)
@@ -404,9 +411,11 @@ func _update_trade_preview() -> void:
 	var price := _get_live_price(_selected_good_id, _trade_amount, is_buy)
 	var total := price * _trade_amount
 	amount_value_label.text = str(_trade_amount)
+	var ask := _get_live_price(_selected_good_id, _trade_amount, true)
+	var bid := _get_live_price(_selected_good_id, _trade_amount, false)
 	if _selected_action == "buy":
-		preview_label.text = "买入 %d 单位「%s」\n花费 %d 钱 · 余额 %d" % [
-			_trade_amount, g_data.get("name", _selected_good_id), total, LedgerSystem.get_balance() - total
+		preview_label.text = "买入 %d 单位「%s」\n花费 %d 钱（单价 %d · 本港收购 %d）· 余额 %d" % [
+			_trade_amount, g_data.get("name", _selected_good_id), total, ask, bid, LedgerSystem.get_balance() - total
 		]
 		pending_intent = Intent.new(
 			IntentTypes.MARKET_BUY, "player", "market",
@@ -414,8 +423,8 @@ func _update_trade_preview() -> void:
 			{"port_id": port_id}
 		)
 	else:
-		preview_label.text = "卖出 %d 单位「%s」\n收入 %d 钱 · 结余 %d" % [
-			_trade_amount, g_data.get("name", _selected_good_id), total, LedgerSystem.get_balance() + total
+		preview_label.text = "卖出 %d 单位「%s」\n收入 %d 钱（单价 %d · 本港挂牌 %d）· 结余 %d" % [
+			_trade_amount, g_data.get("name", _selected_good_id), total, bid, ask, LedgerSystem.get_balance() + total
 		]
 		pending_intent = Intent.new(
 			IntentTypes.MARKET_SELL, "player", "market",

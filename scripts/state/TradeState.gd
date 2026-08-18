@@ -16,8 +16,8 @@ func to_dict() -> Dictionary:
 	return {"pu_attention": pu_attention, "has_customs_permit": has_customs_permit}
 
 func from_dict(d: Dictionary) -> void:
-	pu_attention = int(d.get("pu_attention", 0))
-	has_customs_permit = d.get("has_customs_permit", false)
+	pu_attention = maxi(0, int(d.get("pu_attention", 0)))
+	has_customs_permit = bool(d.get("has_customs_permit", false))
 
 signal inspection_result(result: Dictionary)
 

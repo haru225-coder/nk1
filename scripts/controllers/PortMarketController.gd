@@ -85,6 +85,9 @@ func _build_market_ui() -> void:
 		var g_id = item.get("id", "")
 		var i_name = item.get("name", g_id)
 		var price = item.get("price", 0)
+		var sell_here = int(item.get("sell_price", 0))
+		if sell_here <= 0:
+			sell_here = EconomySystem.get_trade_price(_port_id, g_id, 1, false)
 		var avail = item.get("available", 0)
 
 		if avail <= 0: continue
@@ -101,8 +104,11 @@ func _build_market_ui() -> void:
 		stock_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6)) # [豁免] 纯代码生成的辅助灰字色
 		item_hbox.add_child(stock_lbl)
 
-		var price_lbl := UIBuilder.make_label("%d 钱" % price, UITheme.MARKET_PREVIEW)
-		price_lbl.custom_minimum_size = Vector2(80, 0)
+		var price_text := "%d 钱" % price
+		if sell_here > 0:
+			price_text = "买%d/收%d" % [price, sell_here]
+		var price_lbl := UIBuilder.make_label(price_text, UITheme.MARKET_PREVIEW)
+		price_lbl.custom_minimum_size = Vector2(110, 0)
 		price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		item_hbox.add_child(price_lbl)
 

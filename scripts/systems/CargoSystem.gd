@@ -129,6 +129,52 @@ static func from_save_dict(data: Dictionary) -> void:
 		_cargo[good_id] = amount
 		_total += amount
 
+## 读档后：丢掉未登记货，再把总量压回舱容。不信存档里的 total。
+static func sanitize_after_load() -> void:
+	drop_unknown_goods()
+	trim_to_capacity()
+
+static func drop_unknown_goods() -> void:
+	if GameManager == null or not GameManager.has_method("get_good_data"):
+		return
+	var goods_data = GameManager.get("goods_data")
+	if goods_data == null or not (goods_data is Dictionary):
+		return
+	if (goods_data as Dictionary).get("goods", []).is_empty():
+		return
+	for good_id in _cargo.keys().duplicate():
+		var data: Dictionary = GameManager.get_good_data(str(good_id))
+		if data.is_empty():
+			_cargo.erase(good_id)
+	_recount()
+
+static func trim_to_capacity() -> void:
+	var cap := 0
+	if GameState != null:
+		cap = int(GameState.max_cargo)
+	if cap <= 0 or _total <= cap:
+		return
+	var overflow := _total - cap
+	var keys: Array = _cargo.keys()
+	var i := keys.size() - 1
+	while overflow > 0 and i >= 0:
+		var gid := str(keys[i])
+		var amt := int(_cargo.get(gid, 0))
+		var cut := mini(amt, overflow)
+		var left := amt - cut
+		if left <= 0:
+			_cargo.erase(gid)
+		else:
+			_cargo[gid] = left
+		_total -= cut
+		overflow -= cut
+		i -= 1
+
+static func _recount() -> void:
+	_total = 0
+	for good_id in _cargo.keys():
+		_total += int(_cargo[good_id])
+
 static func to_dict() -> Dictionary:
 	return to_save_dict()
 

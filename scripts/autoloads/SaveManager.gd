@@ -180,6 +180,7 @@ func load_game(slot: int = 0) -> bool:
 	GameState.from_save_dict(data.get("game_state", {}))
 	LedgerSystem.from_save_dict(data.get("ledger", {}))
 	CargoSystem.from_save_dict(data.get("cargo", {}))
+	CargoSystem.sanitize_after_load()
 	WorldEventTracker.from_save_dict(data.get("world_events", {}))
 
 	# strengthen consistency after load (for old saves and state sync)

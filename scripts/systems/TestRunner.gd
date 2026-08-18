@@ -61,6 +61,7 @@ func _run() -> void:
 	_run_suite("res://scripts/systems/TestRunnerMarketIntegrity.gd", "TestRunnerMarketIntegrity")
 	_run_suite("res://scripts/systems/TestRunnerCrateLimits.gd", "TestRunnerCrateLimits")
 	_run_suite("res://scripts/systems/TestRunnerHandlerCosts.gd", "TestRunnerHandlerCosts")
+	_run_suite("res://scripts/systems/TestRunnerSaveSanitize.gd", "TestRunnerSaveSanitize")
 	_run_story_tests()
 	_test_event_economy_integration()
 	_test_polish_constants()
@@ -1959,6 +1960,7 @@ func _test_sea_feedback() -> void:
 func _test_economy_feel() -> void:
 	print("[Economy Feel]")
 	_assert_eq(ResourcePaths.SCRIPT_ECONOMY_FEEL, "res://scripts/EconomyFeel.gd", "EconFeel: ResourcePaths")
+	_assert_eq(ResourcePaths.SCRIPT_ECONOMY_SYSTEM, "res://scripts/systems/EconomySystem.gd", "EconFeel: EconomySystem 路径")
 	var EF = load(ResourcePaths.SCRIPT_ECONOMY_FEEL)
 	_assert_true(EF != null, "EconFeel: 脚本可加载")
 	if EF == null:
@@ -1969,19 +1971,37 @@ func _test_economy_feel() -> void:
 	_assert_true("稳" in str(triad[0]), "EconFeel: 第1条为稳策")
 	_assert_true("赌" in str(triad[1]), "EconFeel: 第2条为赌策")
 	_assert_true("搬" in str(triad[2]), "EconFeel: 第3条为搬策")
+	_assert_true(not ("即买即卖" in str(triad[0])), "EconFeel: 稳策不再教同港对倒")
+	_assert_true("亏" in str(triad[0]) or "价差" in str(triad[0]) or "收购" in str(triad[0]), "EconFeel: 稳策点明价差")
 	var block: String = EF.format_triad_block("quanzhou")
 	_assert_true(block.find("\n") >= 0, "EconFeel: format 多行")
-	# 交易提示非空
+	# 交易提示走成交价，并标出挂牌/收购
+	var q: Dictionary = EF.quote("quanzhou", "fujian_porcelain")
+	_assert_true(int(q.get("buy", 0)) > 0, "EconFeel: quote 挂牌 > 0")
+	_assert_true(int(q.get("sell", 0)) > 0, "EconFeel: quote 收购 > 0")
+	_assert_true(int(q.get("sell", 0)) < int(q.get("buy", 0)), "EconFeel: 收购低于挂牌")
+	_assert_eq(EF.SELL_PRICE_RATIO, EconomySystem.SELL_PRICE_RATIO, "EconFeel: 卖出价差与 EconomySystem 对齐")
+	var q5: Dictionary = EF.quote("quanzhou", "fujian_porcelain", 5)
 	var buy_h: String = EF.trade_decision_hint("quanzhou", "fujian_porcelain", "buy", 5)
 	_assert_true(buy_h != "" and "商策" in buy_h, "EconFeel: 买入商策")
+	_assert_true("挂牌" in buy_h and "收购" in buy_h, "EconFeel: 买入商策含买卖价")
+	_assert_true(str(int(q5.get("buy", 0)) * 5) in buy_h, "EconFeel: 买入此笔金额按成交挂牌")
 	var sell_h: String = EF.trade_decision_hint("quanzhou", "fujian_porcelain", "sell", 5)
 	_assert_true(sell_h != "" and "商策" in sell_h, "EconFeel: 卖出商策")
-	# arbitrage 结构（可能为空字典，但应可调用）
+	_assert_true(str(int(q5.get("sell", 0)) * 5) in sell_h, "EconFeel: 卖出此笔金额按成交收购")
+	# arbitrage 结构（可能为空字典，但应可调用）；有差价时必须是买挂牌/卖收购
 	var arb: Dictionary = EF.best_arbitrage("quanzhou")
 	_assert_true(arb is Dictionary, "EconFeel: best_arbitrage 返回字典")
 	if not arb.is_empty():
 		_assert_true(str(arb.get("good_id", "")) != "", "EconFeel: 差价含 good_id")
 		_assert_true(str(arb.get("direction", "")) != "", "EconFeel: 差价含方向")
+		var pay_p := int(arb.get("pay_price", 0))
+		var get_p := int(arb.get("get_price", 0))
+		_assert_true(pay_p > 0 and get_p > pay_p, "EconFeel: 可走航线到手价高于付出价")
+		_assert_true(float(get_p) / float(pay_p) + 0.0001 >= float(EF.MIN_ARBITRAGE_RATIO), "EconFeel: 差价达门槛")
+	var msc := FileAccess.get_file_as_string("res://scripts/controllers/MarketScreenController.gd")
+	_assert_true(" _get_live_price(good_id, 1, false)" in msc, "EconFeel: 市集货舱卖出价走收购")
+	_assert_true("买 %d / 收 %d" in msc, "EconFeel: 市集挂牌同时标收购")
 	# 空 port 不崩
 	var empty_triad: Array = EF.strategy_triad("")
 	_assert_eq(empty_triad.size(), 3, "EconFeel: 空 port 仍给三策")

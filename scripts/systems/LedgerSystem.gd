@@ -44,7 +44,8 @@ func to_save_dict() -> Dictionary:
 	return {"balance": _balance}
 
 func from_save_dict(data: Dictionary) -> void:
-	_balance = int(data.get("balance", STARTING_BALANCE))
+	# 负余额是坏数据，抬回 0。单机明文改高余额有意不拦。
+	_balance = maxi(0, int(data.get("balance", STARTING_BALANCE)))
 
 func to_dict() -> Dictionary:
 	return to_save_dict()
