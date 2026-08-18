@@ -316,7 +316,7 @@ func _on_quick_supply() -> void:
 		return
 	var result := IntentResolver.resolve(Intent.new(
 		IntentTypes.BUY_SUPPLIES, "player", "shipyard",
-		{"supply_type": "food_water", "total_cost": 20, "fill_to_max": true},
+		{"supply_type": "food_water", "fill_to_max": true},
 		{"port_id": _current_port_id}
 	))
 	if result.success:

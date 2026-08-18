@@ -786,7 +786,7 @@ func _do_recruit_crew() -> Dictionary:
 func _do_supply_ship() -> Dictionary:
 	return _intent_action_to_dict(IntentResolver.resolve(Intent.new(
 		IntentTypes.BUY_SUPPLIES, "player", "shipyard",
-		{"supply_type": "food_water", "total_cost": 20, "fill_to_max": true},
+		{"supply_type": "food_water", "fill_to_max": true},
 		{"port_id": last_port}
 	)), "水粮已全部补满！", "【补充失败】金钱不足！")
 

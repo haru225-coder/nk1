@@ -48,6 +48,15 @@ func _test_source_scans() -> void:
 	_assert_true(not supply_src.contains("parameters.get(\"total_cost\""), "BuySuppliesHandler 不读取 total_cost")
 	_assert_true(not supply_src.contains("parameters.get(\"unit_price\""), "BuySuppliesHandler 不读取 unit_price")
 	_assert_true(supply_src.contains("MAX_AMMO_PER_BUY"), "BuySuppliesHandler 有弹药上限")
+	for path in [
+		"res://scripts/PortScreenController.gd",
+		"res://scripts/GameState.gd",
+		"res://scripts/controllers/ChoiceHandler.gd",
+		"res://scripts/controllers/ShipyardController.gd",
+	]:
+		var src := FileAccess.get_file_as_string(path)
+		_assert_true(not src.contains("\"total_cost\": 20"), "%s 补给 intent 不塞一口价 20" % path.get_file())
+		_assert_true(not src.contains("\"total_cost\": SUPPLY_FULL_COST"), "%s 补给 intent 不塞 SUPPLY_FULL_COST" % path.get_file())
 
 	var combat_src := FileAccess.get_file_as_string("res://scripts/CombatSessionController.gd")
 	_assert_true(combat_src.contains("_result_emitted") or combat_src.contains(".disabled"), "CombatSessionController 防连点 emit")

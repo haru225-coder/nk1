@@ -10,7 +10,6 @@ signal scene_requested(scene_id: String)
 
 const SHIPYARD_REPAIR_COST_PER_HP := 2.0
 const HIRE_CREW_COST_PER := HireCrewHandler.DEFAULT_COST_PER_CREW
-const SUPPLY_FULL_COST := BuySuppliesHandler.SUPPLY_FILL_FLAT_COST
 const SUPPLY_PARTIAL_AMOUNT := 20.0
 const SUPPLY_PARTIAL_COST := 10
 
@@ -108,17 +107,17 @@ func _setup_shipyard_crew_supply_options(choices_container: VBoxContainer) -> vo
 	if GameState.food < GameState.max_food or GameState.water < GameState.max_water:
 		var fill_cost := BuySuppliesHandler.estimate_fill_cost()
 		var supply_btn = UIBuilder.make_action_button("🍚 补满水粮 (%d 钱)" % fill_cost)
-		supply_btn.pressed.connect(_on_buy_supplies_pressed.bind("food_water", 0.0, fill_cost, true))
+		supply_btn.pressed.connect(_on_buy_supplies_pressed.bind("food_water", 0.0, true))
 		choices_container.add_child(supply_btn)
 
 	if GameState.max_food - GameState.food >= SUPPLY_PARTIAL_AMOUNT:
 		var food_btn = UIBuilder.make_action_button("🌾 购买粮食 (+%.0f, %d 钱)" % [SUPPLY_PARTIAL_AMOUNT, SUPPLY_PARTIAL_COST])
-		food_btn.pressed.connect(_on_buy_supplies_pressed.bind("food", SUPPLY_PARTIAL_AMOUNT, SUPPLY_PARTIAL_COST, false))
+		food_btn.pressed.connect(_on_buy_supplies_pressed.bind("food", SUPPLY_PARTIAL_AMOUNT, false))
 		choices_container.add_child(food_btn)
 
 	if GameState.max_water - GameState.water >= SUPPLY_PARTIAL_AMOUNT:
 		var water_btn = UIBuilder.make_action_button("💧 购买淡水 (+%.0f, %d 钱)" % [SUPPLY_PARTIAL_AMOUNT, SUPPLY_PARTIAL_COST])
-		water_btn.pressed.connect(_on_buy_supplies_pressed.bind("water", SUPPLY_PARTIAL_AMOUNT, SUPPLY_PARTIAL_COST, false))
+		water_btn.pressed.connect(_on_buy_supplies_pressed.bind("water", SUPPLY_PARTIAL_AMOUNT, false))
 		choices_container.add_child(water_btn)
 
 func _setup_shipyard_hull_options(choices_container: VBoxContainer) -> void:
@@ -244,10 +243,9 @@ func _on_hire_crew_pressed(crew_count: int, recruit_max: bool) -> void:
 	else:
 		message_logged.emit(_format_intent_failure(result, "【船坞】招募失败。") + "\n\n")
 
-func _on_buy_supplies_pressed(supply_type: String, amount: float, total_cost: int, fill_to_max: bool) -> void:
+func _on_buy_supplies_pressed(supply_type: String, amount: float, fill_to_max: bool) -> void:
 	var params := {
 		"supply_type": supply_type,
-		"total_cost": total_cost,
 		"fill_to_max": fill_to_max,
 	}
 	if not fill_to_max and amount > 0.0:
@@ -324,7 +322,7 @@ func _on_one_click_prepare() -> void:
 	if GameState.food < GameState.max_food or GameState.water < GameState.max_water:
 		var supply_result := IntentResolver.resolve(Intent.new(
 			IntentTypes.BUY_SUPPLIES, "player", "shipyard",
-			{"supply_type": "food_water", "total_cost": SUPPLY_FULL_COST, "fill_to_max": true},
+			{"supply_type": "food_water", "fill_to_max": true},
 			{"port_id": GameState.last_port}
 		))
 		if supply_result.success:
