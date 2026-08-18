@@ -11,7 +11,7 @@ func _ready() -> void:
 	GameState.fame = 42
 	GameState.navigation.last_port = "quanzhou"
 	LedgerSystem.from_save_dict({"balance": 2500})
-	CargoSystem.from_save_dict({"cargo": {"silk": 5}, "total": 5})
+	CargoSystem.from_save_dict({"cargo": {"fujian_porcelain": 5}, "total": 5})
 	SaveManager.set_current_scene_id("port_quanzhou")
 
 	# === WorldEventTracker 序列化测试准备 ===
@@ -46,7 +46,7 @@ func _ready() -> void:
 	ok = ok and SaveManager.load_game(0)
 	ok = ok and GameState.fame == 42
 	ok = ok and LedgerSystem.get_balance() == 2500
-	ok = ok and CargoSystem.get_amount("silk") == 5
+	ok = ok and CargoSystem.get_amount("fujian_porcelain") == 5
 	ok = ok and SaveManager.has_save(0)
 
 	# WorldEventTracker 恢复验证
