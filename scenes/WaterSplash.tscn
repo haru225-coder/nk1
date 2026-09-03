@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://watersplash_node_123"]
+[gd_scene load_steps=2 format=3]
 
 [node name="WaterSplash" type="CPUParticles2D"]
 z_index = 5

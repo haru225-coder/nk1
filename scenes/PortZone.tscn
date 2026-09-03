@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://portzone_node_1234"]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/PortZone.gd" id="1_port"]
 
