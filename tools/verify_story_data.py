@@ -120,6 +120,22 @@ check(declared == routed, f"守城卡常量与 _on_siege_card 分支不一致：
 for _n, v in card_ids:
     check(v.startswith("siege_"), f"守城卡 id `{v}` 须以 siege_ 开头（_on_facility_pressed 按前缀路由）")
 
+# ── identity 三值都要可达且有归宿 ──────────────────────
+gs_src = open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read()
+assigned = set(re.findall(r'identity = "(\w+)"', gs_src))
+check(IDENTITIES <= assigned, f"GameState 未赋值的身份：{sorted(IDENTITIES - assigned)}（死分支）")
+# 每个身份在 Main 里都要有至少一处收束（结局卡 / 结局判定 / 等价旗标）
+# scholar 的收束走 renamed_wenlong 旗标（守城与「未归」），不走 identity 比较
+IDENT_MARKERS = {
+    "scholar":  ['identity == "scholar"', 'has_flag("renamed_wenlong")'],
+    "merchant": ['identity == "merchant"', 'identity != "scholar"'],
+    "hometown": ['identity == "hometown"', 'identity != "scholar"'],
+}
+for ident in sorted(IDENTITIES):
+    markers = IDENT_MARKERS.get(ident, [f'identity == "{ident}"'])
+    check(any(mk in main_src for mk in markers),
+          f"身份 {ident} 在 Main.gd 无任何收束分支（找过：{markers}）")
+
 # ── GameState 存档字段对称 ─────────────────────────────
 gs = open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read()
 to_d = re.search(r"func to_dict\(\).*?\n\treturn \{(.*?)\n\t\}", gs, re.S)

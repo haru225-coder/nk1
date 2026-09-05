@@ -308,5 +308,46 @@ func _initialize() -> void:
 	GS.siege_set("grain", GS.SIEGE_GRAIN_PER_ROUND * 3)
 	_check(GS.siege_get("grain") / GS.SIEGE_GRAIN_PER_ROUND == 3, "粮够三阵")
 
+	# ── 乡土身份可达（此前是死分支） ──
+	GS.from_dict({})
+	GS.hometown_tendency = 9
+	GS.scholar_tendency = 4
+	GS.sea_tendency = 3
+	var hr: Dictionary = GS.resolve_identity_1268()
+	_check(hr.get("resolved", false) and GS.identity == "hometown", "乡土压过两头 → identity=hometown（实际 %s）" % GS.identity)
+	_check(GS.player_name == "陈子龙" and GS.has_flag("name_unchanged"), "乡土线不改名")
+	# 乡土不足则仍按士人/海商二分
+	GS.from_dict({})
+	GS.hometown_tendency = 4
+	GS.scholar_tendency = 4
+	GS.sea_tendency = 6
+	GS.resolve_identity_1268()
+	_check(GS.identity == "merchant", "乡土未压过时不抢身份")
+	# 乡土线能收到自己的短札通道（only=hometown 合法）
+	GS.from_dict({})
+	GS.identity = "hometown"
+	_check(GS.news_variant() == "M", "乡土线取 M 版文案")
+
+	# ── 陈文龙不能从海上逃走（涵江卡身份门） ──
+	# 卡面条件在 Main._special_cards，此处校验旗标语义：renamed_wenlong 与 ending_root_sea 不可共存
+	GS.from_dict({})
+	GS.set_flag("renamed_wenlong")
+	_check(GS.has_flag("renamed_wenlong") and not GS.has_flag("ending_root_sea"), "改名后未持涵江结局旗标")
+
+	# ── 「未归」：士人线错过守城仍有结局 ──
+	GS.from_dict({})
+	GS.set_flag("renamed_wenlong")
+	GS.identity = "scholar"
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	_check(Eco.war_status("xinghua") == "fallen", "1276-12 兴化已陷")
+	_check(not GS.siege_open() and not GS.has_flag("siege_fought"), "未开城防、未打过囊山")
+	_check(GS.finish("未归", "正文"), "未归可落定")
+	_check(GS.ended == "未归", "未归结局名")
+	# 打过囊山的不算「未归」
+	GS.from_dict({})
+	GS.set_flag("renamed_wenlong")
+	GS.set_flag("siege_fought")
+	_check(GS.has_flag("siege_fought"), "打过囊山即留痕，未归判据可排除")
+
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	quit(1 if _fails > 0 else 0)

@@ -657,6 +657,7 @@ func _special_cards() -> Array:
 	if current_scene_id in ["xinghua", "xinghua_harbor"] \
 			and Calendar.year == 1277 and Calendar.month in [2, 3] \
 			and Economy.war_status("xinghua") == "loyal" \
+			and not GameState.has_flag("renamed_wenlong") \
 			and GameState.has_found("nameless_shelter_bay") \
 			and not GameState.has_flag("ending_root_sea"):
 		out.append({"id": CARD_HANJIANG, "title": "涵江海口", "subtitle": "带族人走旧避风澳"})
@@ -670,8 +671,8 @@ func _special_cards() -> Array:
 			and Calendar.year == 1279 and Calendar.month <= 3:
 		out.append({"id": CARD_YASHAN, "title": "崖山", "subtitle": "宋军的船连成一片"})
 
-	# 海商线收官：1285 年后，一局跑到底
-	if GameState.identity == "merchant" and Calendar.year >= 1285:
+	# 海商线收官：1285 年后，一局跑到底（乡土线同样收在这里）
+	if GameState.identity != "scholar" and Calendar.year >= 1285:
 		out.append({"id": CARD_GANGSHOU, "title": "市舶司・新册", "subtitle": "封面换了，名字还在"})
 
 	return out
@@ -1173,6 +1174,21 @@ func _setup_residence(port_id: String) -> void:
 	scene_title.text = "%s・玉湖陈宅" % GameManager.get_port_name(port_id)
 	var mother := "母亲黄氏在隔壁厢房摇着织机，一声声像是催你动笔。" if Calendar.year < 1270 else "母亲黄氏的织机停了，她的手已经摇不动。她坐在织机旁边看你。"
 	body_text.text = "祠堂的灯还是二十年前那盏。%s\n案上压着一叠策论草稿，纸边微硬。" % mother
+
+	# 1268 殿试前：替族里跑事。这是「乡土」这条身份唯一的早期写入点。
+	if GameState.identity == "undecided":
+		var errand := Button.new()
+		errand.text = "替族里跑一趟事（费 6 日・30 钱，乡土 +3）"
+		errand.disabled = GameState.money < 30
+		errand.pressed.connect(func():
+			if not GameState.spend_money(30):
+				return
+			GameState.hometown_tendency += 3
+			GameManager.advance_days(6)
+			log_msg("修祠堂的木料、外姓那桩田讼、三房的婚事——都不是你的事，可族里只找得到你。")
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(errand)
 
 	if GameState.has_flag("chen_zan_stake"):
 		var l := Label.new()
@@ -1822,6 +1838,7 @@ func _siege_nangshan() -> void:
 		return
 
 	GameState.siege_set("round", rd)
+	GameState.set_flag("siege_fought")
 	GameState.siege_add("grain", -GameState.SIEGE_GRAIN_PER_ROUND)
 
 	var power := GameState.siege_power()
@@ -1945,6 +1962,41 @@ func _siege_fall(reason: String) -> void:
 
 	GameState.siege = {}
 	_show_notice_dialog("忠肃", "兴化・景炎元年十二月", text, "忠肃")
+
+
+## 士人线错过守城：1276 年兴化陷落时你不在城里。
+## 这不是漏判，是这一局的答案——所以它必须有结局，而不是让陈文龙继续跑商到老。
+func _check_absent_from_xinghua() -> bool:
+	if GameState.is_ended() or not GameState.has_flag("renamed_wenlong"):
+		return false
+	if GameState.siege_open() or GameState.has_flag("siege_fought"):
+		return false
+	if Economy.war_status("xinghua") != "fallen":
+		return false
+	if not (Calendar.year > 1276 or (Calendar.year == 1276 and Calendar.month >= 12)):
+		return false
+
+	_show_notice_dialog(
+		"未归", "兴化・景炎元年十二月",
+		"消息是在别处听到的。
+
+兴化城破了。城中兵不满千，守了四十天。城头上挂过一幅白布，八个字，来往的人都说见过。
+部将林华出去侦敌，回来时后面跟着一万人。通判曹澄孙开的东门。
+
+母亲黄氏和幼子璥被扣在福州一座尼寺里。有人说，只要城里那个人肯出来，当天就放。
+城里那个人没有出来——因为城里没有那个人。
+
+你姓陈，名文龙，字君贲，咸淳四年殿试第一，御笔改的名。这些年你走的是另一条路。
+史书上后来写：是年，兴化陷，守臣不知所终。
+
+——
+一百多年后，福州台江，泗洲。江边没有庙。
+渔民出海前拜妈祖，只拜妈祖。官船出洋，二号封舟空着。
+
+这个世界少了一位海神。也没有多出几条回来的船。",
+		"未归"
+	)
+	return true
 
 
 ## 终局后的港口页：不出海、不交易、不推进时间，只回顾与读档。
@@ -2153,6 +2205,8 @@ func _show_save_dialog() -> void:
 ## 只有 ports.json 里登记的港口算数——剧情场景不是港口。
 func _on_enter_port(port_id: String) -> void:
 	if GameManager.get_port_by_id(port_id).is_empty():
+		return
+	if _check_absent_from_xinghua():
 		return
 	GameState.visit_port(port_id)
 	var res := GameState.try_advance_chapter()

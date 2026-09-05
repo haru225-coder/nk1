@@ -246,6 +246,16 @@ func news_variant() -> String:
 func resolve_identity_1268() -> Dictionary:
 	if identity != "undecided":
 		return {"resolved": false}
+	# 乡土压过两头：不赴太学补试，也不下海，人留在兴化。名不改，根在岸上。
+	if hometown_tendency > scholar_tendency and hometown_tendency > sea_tendency:
+		identity = "hometown"
+		set_flag("name_unchanged")
+		return {
+			"resolved": true,
+			"title": "咸淳四年 · 无人登第",
+			"text": "族里来信只有一行：今年殿试，兴化无人登第。\n你这些年跑的是族里的事，不是自己的前程。老夫人把策论草稿收进了箧底，没有说什么。",
+		}
+
 	var scholar_wins := scholar_tendency > sea_tendency
 	if scholar_tendency == sea_tendency:
 		scholar_wins = has_flag("chose_land_first")
