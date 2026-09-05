@@ -264,9 +264,13 @@ func _refresh_ports() -> void:
 		btn.custom_minimum_size = Vector2(0, 34)
 
 		var known := "" if Voyage.is_known_route(origin_port, pid) else "　[生路]"
-		btn.text = "%s　%d里　%s　约 %d 日%s" % [
-			p.get("name", pid), int(plan["distance"]), plan["wind_desc"], plan["days"], known,
+		var war_lbl := Economy.war_label(pid)
+		var war_str := "" if war_lbl == "" else "　[%s]" % war_lbl
+		btn.text = "%s　%d里　%s　约 %d 日%s%s" % [
+			p.get("name", pid), int(plan["distance"]), plan["wind_desc"], plan["days"], known, war_str,
 		]
+		if not Economy.is_port_reachable(pid):
+			btn.disabled = true
 		if not plan["supply_ok"]:
 			btn.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
 		elif plan["wind_desc"] == "顺风":
@@ -523,6 +527,19 @@ func _show_event(event: Dictionary) -> void:
 	elif kind == Voyage.EventKind.DISCOVERY:
 		_add_event_action("绕过去看看（费 1 日）", _on_investigate_discovery)
 		_add_event_action("不理会，继续航行", _on_event_continue)
+	elif kind == Voyage.EventKind.REQUISITION:
+		if Fleet.ships.size() > 1:
+			_add_event_action("交出一条船（名声 +）", _on_requisition_surrender)
+		_add_event_action("塞钱免征", _on_requisition_bribe)
+		_add_event_action("趁夜溜走", _on_requisition_flee)
+	elif kind == Voyage.EventKind.YUAN_PATROL:
+		_add_event_action("落帆受检", _on_patrol_submit)
+		_add_event_action("迎战", _on_fight_patrol)
+		_add_event_action("扬帆逃走", _on_flee_pirates)
+	elif kind == Voyage.EventKind.REFUGEE:
+		_add_event_action("载人同行（水粮 −2 成）", _on_refugee_take)
+		_add_event_action("分些水粮，不载人", _on_refugee_share)
+		_add_event_action("不停船", _on_refugee_pass)
 	else:
 		_add_event_action("继续航行", _on_event_continue)
 
@@ -654,6 +671,117 @@ func _after_combat() -> void:
 		_arrive()
 	else:
 		_sail_next_day()
+
+
+# ── 战时遭遇 ──────────────────────────────────────────
+
+## 征船：交出最小的一条船（连船上的货）。朝廷记你的名。
+func _on_requisition_surrender() -> void:
+	event_panel.visible = false
+	if Fleet.ships.size() <= 1:
+		_on_event_continue()
+		return
+	var idx := 0
+	for i in range(Fleet.ships.size()):
+		if Fleet.ship_capacity(i) < Fleet.ship_capacity(idx):
+			idx = i
+	var s: Dictionary = Fleet.ships[idx]
+	Fleet.ships.remove_at(idx)
+	GameState.fame += 6
+	Fleet.morale = maxi(0, Fleet.morale - 4)
+	_log("[color=yellow]「%s」连船带货编入官军。小官在册子上记了你的名字，写得很工整。名声 +6。[/color]" % s.get("name", "一船"))
+	_refresh_status()
+	_on_event_continue()
+
+
+func _on_requisition_bribe() -> void:
+	event_panel.visible = false
+	var cost: int = maxi(100, int(GameState.money * 0.15))
+	if GameState.spend_money(cost):
+		_log("[color=yellow]%d 钱换了册子上「已征」两个字。船一条没少。[/color]" % cost)
+	else:
+		# 拿不出钱，按逃走处理
+		_on_requisition_flee()
+		return
+	_refresh_status()
+	_on_event_continue()
+
+
+func _on_requisition_flee() -> void:
+	event_panel.visible = false
+	var chance := clampf(Fleet.fleet_speed() / 240.0, 0.2, 0.85)
+	if randf() < chance:
+		remaining_li += Fleet.fleet_speed() * 0.5
+		_log("[color=lime]熄灯落帆，借夜潮漂出哨船视线（绕了些路）。[/color]")
+	else:
+		var fine: int = maxi(80, int(GameState.money * 0.25))
+		GameState.add_money(-fine)
+		GameState.fame -= 4
+		Fleet.morale = maxi(0, Fleet.morale - 5)
+		_log("[color=red]被哨船追上。「抗征」二字记入册子，罚钱 %d，名声 −4。[/color]" % fine)
+	_refresh_status()
+	_on_event_continue()
+
+
+## 元军哨船受检：有违禁货则没收加罚；无则放行
+func _on_patrol_submit() -> void:
+	event_panel.visible = false
+	var contraband := GameState.contraband_units()
+	if contraband > 0:
+		var fine: int = mini(400, maxi(60, int(GameState.money * 0.2)))
+		GameState.confiscate_contraband()
+		GameState.add_money(-fine)
+		Fleet.morale = maxi(0, Fleet.morale - 6)
+		_log("[color=red]舱底被翻了个底朝天。%d 件违禁之物起获，罚钱 %d。那个泉州口音的人说：「往后规矩变了。」[/color]" % [contraband, fine])
+	else:
+		Fleet.morale = maxi(0, Fleet.morale - 2)
+		_log("[color=yellow]查了半日，没查出什么。对方在你的引目上盖了一个你不认得的印，放行。[/color]")
+	_refresh_status()
+	_on_event_continue()
+
+
+func _on_fight_patrol() -> void:
+	event_panel.visible = false
+	var power := _fleet_power()
+	var enemy := randf_range(320.0, 760.0)
+	GameManager.pending_battle = {
+		"battle": true,
+		"power": enemy,
+		"player_power": power,
+		"enemy": [{"type": "sea_falcon", "count": 3, "hull_hp": 120.0}],
+		"source": {"scene": "SeaChart", "event": "yuan_patrol"},
+	}
+	_enter_battle()
+
+
+## 难民：载人费水粮、长名声；不停船伤士气
+func _on_refugee_take() -> void:
+	event_panel.visible = false
+	Fleet.water = maxi(0, Fleet.water - int(ceil(Fleet.water * 0.2)))
+	Fleet.food = maxi(0, Fleet.food - int(ceil(Fleet.food * 0.2)))
+	GameState.fame += 4
+	Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 3)
+	_log("[color=lime]把人接上船。甲板挤了，水粮吃得快了。有个老人一直握着你的手不放。名声 +4。[/color]")
+	_refresh_status()
+	_on_event_continue()
+
+
+func _on_refugee_share() -> void:
+	event_panel.visible = false
+	Fleet.water = maxi(0, Fleet.water - int(ceil(Fleet.water * 0.1)))
+	Fleet.food = maxi(0, Fleet.food - int(ceil(Fleet.food * 0.1)))
+	GameState.fame += 1
+	_log("[color=yellow]递过去几桶水和一袋米。他们没有道谢的力气，船慢慢漂远了。[/color]")
+	_refresh_status()
+	_on_event_continue()
+
+
+func _on_refugee_pass() -> void:
+	event_panel.visible = false
+	Fleet.morale = maxi(0, Fleet.morale - 3)
+	_log("[color=red]没有停。水手们都没说话，只有舵工朝海里啐了一口。士气 −3。[/color]")
+	_refresh_status()
+	_on_event_continue()
 
 
 # ── 发现物 ──────────────────────────────────────────

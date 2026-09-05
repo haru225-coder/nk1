@@ -354,10 +354,13 @@ func customs_inspection() -> Dictionary:
 	var result := {"passed": true, "msg": "", "confiscated": false}
 	var contraband := contraband_units()
 
+	# 降元港口缉私加严（Economy.WAR_INSPECTION）
+	var war_mul: float = Economy.inspection_factor(last_port)
+
 	if has_customs_permit:
 		if contraband > 0:
 			# 有引也压不住违禁货，只是查出的概率低一些
-			var risk := 0.25 + float(pu_attention) / 400.0
+			var risk := (0.25 + float(pu_attention) / 400.0) * war_mul
 			if randf() < risk:
 				result["passed"] = false
 				result["confiscated"] = true
@@ -376,7 +379,7 @@ func customs_inspection() -> Dictionary:
 		return result
 
 	# 无引
-	if pu_attention > 50:
+	if float(pu_attention) * war_mul > 50.0:
 		var fine: int = mini(500, maxi(50, int(money * 0.4)))
 		result["passed"] = false
 		result["confiscated"] = true
@@ -395,6 +398,11 @@ func customs_inspection() -> Dictionary:
 		result["passed"] = false
 		result["msg"] = "【遣返】没有货引，连塞给小吏的 %d 钱都拿不出。小吏毫不客气地把你轰回港内。" % bribe
 	return result
+
+
+## 元军哨船等港外查验也要没收违禁货，公开给 SeaChart 用
+func confiscate_contraband() -> void:
+	_confiscate_contraband()
 
 
 func _confiscate_contraband() -> void:

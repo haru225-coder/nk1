@@ -102,7 +102,11 @@ func update_status_panel() -> void:
 	t += "金钱：%d\n" % GameState.money
 	if GameState.debt > 0:
 		t += "[color=orange]欠债：%d[/color]\n" % GameState.debt
-	t += "名声：%d\n\n" % GameState.fame
+	t += "名声：%d\n" % GameState.fame
+	var war_lbl := Economy.war_label(GameState.last_port)
+	if war_lbl != "":
+		t += "[color=orange]战况：%s %s[/color]\n" % [GameManager.get_port_name(GameState.last_port), war_lbl]
+	t += "\n"
 	t += "[u]舰队[/u]\n船数：%d　水手：%d\n舱位：%d / %d 料\n耐久：%d / %d\n士气：%d\n" % [
 		Fleet.ships.size(), Fleet.total_crew(),
 		int(cap_used), int(cap_total),
@@ -329,6 +333,11 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 func _setup_market(port_id: String) -> void:
 	scene_title.text = "%s・牙行" % GameManager.get_port_name(port_id)
 	body_text.text = "牙行里挤着各色商人，没有人说官话，只用手势、算筹和一把碎银落地就要捡的速度说话。"
+
+	if not Economy.is_market_open(port_id):
+		body_text.text += "\n\n牙行的门板上了闸。%s，城里只剩米价在动，没人敢开秤。" % Economy.war_label(port_id)
+		_add_leave_button(port_id)
+		return
 
 	var goods_ids: Array = Economy.goods_at(port_id)
 	if goods_ids.is_empty():
@@ -1442,6 +1451,9 @@ func apply_effects(effects: Dictionary) -> void:
 				GameState.sea_tendency += int(val)
 			"scholar_tendency":
 				GameState.scholar_tendency += int(val)
+			"hometown_tendency":
+				# 2026-09-04 解冻：键已接住，数据侧尚无写入点（兴化事件待做）
+				GameState.hometown_tendency += int(val)
 			"name":
 				GameState.player_name = str(val)
 			# ── 第一/二章（v0.3 时代）效果键，2026-09-04 起接入 ──

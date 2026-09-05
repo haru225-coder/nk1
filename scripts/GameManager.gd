@@ -71,6 +71,8 @@ func advance_days(n: int) -> void:
 			if notice != "":
 				monthly_notice.emit(notice)
 			_settle_history()
+			for w in Economy.on_month_changed():
+				monthly_notice.emit(w)
 		Economy.on_day_passed()
 		Fleet.on_day_passed()
 

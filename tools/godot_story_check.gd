@@ -100,5 +100,69 @@ func _initialize() -> void:
 	GS.identity = "merchant"
 	_check(GS.news_text(n).find("大食人") >= 0, "M 版文案取 text_M")
 
+	# ── 战况状态机（Calendar 纯函数） ──
+	var Eco: Node = root.get_node("Economy")
+	var Voy: Node = root.get_node("Voyage")
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_check(Eco.war_status("quanzhou") == "loyal", "1255 泉州 loyal")
+	_check(Eco.war_status("penghu") == "loyal", "无 war 表的港口恒 loyal")
+	Cal.from_dict({"year": 1274, "month": 10, "day": 1})
+	_check(Eco.war_status("hakata") == "closed" and not Eco.is_port_reachable("hakata"), "1274-10 博多封港不可达")
+	Cal.from_dict({"year": 1275, "month": 5, "day": 1})
+	_check(Eco.war_status("hakata") == "loyal", "1275-05 博多复通")
+	Cal.from_dict({"year": 1276, "month": 5, "day": 1})
+	_check(Eco.war_status("quanzhou") == "contested", "1276-05 泉州对峙")
+	_check(Eco.war_status("fuzhou") == "loyal", "1276-05 福州仍宋土")
+	Cal.from_dict({"year": 1276, "month": 11, "day": 1})
+	_check(Eco.war_status("fuzhou") == "fallen" and Eco.war_status("xinghua") == "besieged", "1276-11 福州降、兴化围")
+	_check(not Eco.is_market_open("xinghua"), "围城牙行闭门")
+	Cal.from_dict({"year": 1276, "month": 12, "day": 1})
+	_check(Eco.war_status("quanzhou") == "fallen", "1276-12 泉州降元")
+	var p_loyal: int = Eco.price_at_rate("quanzhou", "grain", 1.0, true)
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	var p_before: int = Eco.price_at_rate("quanzhou", "grain", 1.0, true)
+	_check(p_loyal > p_before, "降元后泉州买价含加倍抽解（%d > %d）" % [p_loyal, p_before])
+	_check(Eco.inspection_factor("quanzhou") == 1.0, "1255 缉私倍率 1.0")
+	Cal.from_dict({"year": 1277, "month": 2, "day": 1})
+	_check(Eco.war_status("xinghua") == "loyal", "1277-02 陈瓒复兴化")
+	Cal.from_dict({"year": 1277, "month": 4, "day": 1})
+	_check(Eco.war_status("xinghua") == "fallen", "1277-04 兴化再陷")
+
+	# 月初战况通告：推进跨过 1276-12 应有泉州降元通告，且 grain 行情被抬
+	Cal.from_dict({"year": 1276, "month": 11, "day": 28})
+	Eco.initialize()
+	var r0: float = Eco.get_rate("quanzhou", "grain")
+	_notices.clear()
+	GM.advance_days(3)
+	var got := false
+	for t in _notices:
+		if str(t).find("泉州已降元") >= 0:
+			got = true
+	_check(got, "跨入 1276-12 收到泉州降元通告")
+	_check(Eco.get_rate("quanzhou", "grain") > r0, "降元冲击抬高泉州米价")
+
+	# 战时遭遇：1255 年任何航段不出战时事件；1277 年降元港航段 200 次抽样应至少出现一次元哨/难民
+	Cal.from_dict({"year": 1255, "month": 6, "day": 1})
+	var bad := 0
+	for i in range(200):
+		var ev: Dictionary = Voy.roll_day_event(90.0, "quanzhou", "penghu")
+		if ev.get("kind", 0) in [Voy.EventKind.REQUISITION, Voy.EventKind.YUAN_PATROL, Voy.EventKind.REFUGEE]:
+			bad += 1
+	_check(bad == 0, "1255 年无战时遭遇")
+	Cal.from_dict({"year": 1277, "month": 1, "day": 1})
+	var hits := 0
+	for i in range(200):
+		var ev: Dictionary = Voy.roll_day_event(90.0, "quanzhou", "fuzhou")
+		if ev.get("kind", 0) in [Voy.EventKind.YUAN_PATROL, Voy.EventKind.REFUGEE]:
+			hits += 1
+	_check(hits > 0, "1277 年降元航段出现战时遭遇（200 次中 %d 次）" % hits)
+	var far := 0
+	for i in range(200):
+		var ev: Dictionary = Voy.roll_day_event(90.0, "penghu", "ryukyu")
+		if ev.get("kind", 0) in [Voy.EventKind.REQUISITION, Voy.EventKind.YUAN_PATROL, Voy.EventKind.REFUGEE]:
+			far += 1
+	_check(far == 0, "1277 年澎湖—流求外海无战时遭遇")
+
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	quit(1 if _fails > 0 else 0)

@@ -20,6 +20,18 @@ var broker_fee: float = 0.05
 ## {port_id: {good_id: rate}}
 var rates: Dictionary = {}
 
+## ── 战况 ──────────────────────────────────────────────
+## 港口战况是 Calendar 的纯函数：ports.json 每港 `war: {"YYYY-MM": status}`，取 ≤ 当月的最新一条。
+## 不入存档；读档后按日期自然复原。状态只改参数（抽解、缉私、开市、可达），不开场景。
+const WAR_STATUSES := ["loyal", "contested", "besieged", "fallen", "closed"]
+const WAR_LABEL := {
+	"loyal": "", "contested": "对峙", "besieged": "围城", "fallen": "已降元", "closed": "封港",
+}
+## 抽解倍率：降元港口抽解加倍；对峙期两边都要打点
+const WAR_TARIFF := {"loyal": 1.0, "contested": 1.2, "besieged": 1.0, "fallen": 2.0, "closed": 1.0}
+## 缉私倍率（GameState.customs_inspection 读）
+const WAR_INSPECTION := {"loyal": 1.0, "contested": 1.3, "besieged": 1.0, "fallen": 2.0, "closed": 1.0}
+
 var _initialized: bool = false
 
 
@@ -82,9 +94,10 @@ func get_rate(port_id: String, good_id: String) -> float:
 	return rates.get(port_id, {}).get(good_id, 1.0)
 
 
-## 杂事压低抽解与佣金；通事在异国港口另有议价之利
-func _effective_tariff() -> float:
-	return tariff_rate * Crew.trade_cost_factor()
+## 杂事压低抽解与佣金；通事在异国港口另有议价之利；降元港口抽解加倍
+func _effective_tariff(port_id: String = "") -> float:
+	var war_mul: float = WAR_TARIFF.get(war_status(port_id), 1.0) if port_id != "" else 1.0
+	return tariff_rate * Crew.trade_cost_factor() * war_mul
 
 
 func _effective_broker() -> float:
@@ -98,7 +111,7 @@ func price_at_rate(port_id: String, good_id: String, rate: float, is_buy: bool) 
 	var edge := Crew.interpreter_edge(port_id)
 	var v := base * mod * rate
 	if is_buy:
-		return int(round(v * (1.0 + _effective_tariff()) * (1.0 - edge)))
+		return int(round(v * (1.0 + _effective_tariff(port_id)) * (1.0 - edge)))
 	return int(round(v * (1.0 - _effective_broker()) * (1.0 + edge)))
 
 
@@ -136,6 +149,76 @@ func price_hint(port_id: String, good_id: String) -> String:
 	if base_hint != "" and rate_hint != "":
 		return base_hint + "・" + rate_hint
 	return base_hint + rate_hint
+
+
+# ── 战况 ──────────────────────────────────────────────
+
+func _ym_now() -> String:
+	return "%04d-%02d" % [Calendar.year, Calendar.month]
+
+
+## 当前战况。无 war 表或尚未到任何节点则 loyal。
+func war_status(port_id: String) -> String:
+	var war: Dictionary = _port_def(port_id).get("war", {})
+	if war.is_empty():
+		return "loyal"
+	var now := _ym_now()
+	var best_date := ""
+	var best := "loyal"
+	for ym in war.keys():
+		var k := str(ym)
+		if k <= now and k > best_date:
+			best_date = k
+			best = str(war[ym])
+	return best
+
+
+func war_label(port_id: String) -> String:
+	return WAR_LABEL.get(war_status(port_id), "")
+
+
+## 围城 / 封港时牙行闭门
+func is_market_open(port_id: String) -> bool:
+	return not (war_status(port_id) in ["besieged", "closed"])
+
+
+## 封港不可抵达（文永之役后的博多等）
+func is_port_reachable(port_id: String) -> bool:
+	return war_status(port_id) != "closed"
+
+
+func inspection_factor(port_id: String) -> float:
+	return WAR_INSPECTION.get(war_status(port_id), 1.0)
+
+
+## 月初由 GameManager 调用：本月进入新战况的港口，给一次行情冲击，并返回通告文本。
+## 冲击是一次性的，之后仍按 RECOVERY 回归——战争抬高的米价会慢慢落，但税不会。
+func on_month_changed() -> Array:
+	var notices := []
+	var now := _ym_now()
+	for p in GameManager.ports_data.get("ports", []):
+		var war: Dictionary = p.get("war", {})
+		if not war.has(now):
+			continue
+		var pid: String = p.get("id", "")
+		var status := str(war[now])
+		match status:
+			"besieged":
+				_shift_rate(pid, "grain", 0.8)
+				notices.append("【战况】%s被围。城中米价腾贵，牙行闭门。" % p.get("name", pid))
+			"fallen":
+				_shift_rate(pid, "grain", 0.5)
+				for gid in goods_at(pid):
+					if gid != "grain":
+						_shift_rate(pid, gid, -0.15)
+				notices.append("【战况】%s已降元。市舶司换了旗，抽解加倍，缉私加严。" % p.get("name", pid))
+			"contested":
+				notices.append("【战况】%s两军对峙，港内船只都在名册上。" % p.get("name", pid))
+			"closed":
+				notices.append("【战况】%s封港，海路不通。" % p.get("name", pid))
+			"loyal":
+				notices.append("【战况】%s复归宋土。" % p.get("name", pid))
+	return notices
 
 
 # ── 交易冲击 ──────────────────────────────────────────

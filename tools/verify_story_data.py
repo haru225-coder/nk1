@@ -71,6 +71,39 @@ check(len(pids) == len(set(pids)), "npcs.json id 重复")
 for p in npcs:
     check(p.get("name") and p.get("role") and p.get("function"), f"npcs {p.get('id')} 缺 name/role/function")
 
+# ── ports.json war 表 ─────────────────────────────────
+econ = open(os.path.join(ROOT, "scripts", "core", "Economy.gd"), encoding="utf-8").read()
+ws = re.search(r'const WAR_STATUSES := \[(.*?)\]', econ, re.S)
+statuses = set(re.findall(r'"([a-z]+)"', ws.group(1))) if ws else set()
+check(len(statuses) >= 4, "Economy.WAR_STATUSES 解析失败")
+for tbl in ("WAR_LABEL", "WAR_TARIFF", "WAR_INSPECTION"):
+    m2 = re.search(r'const %s := \{(.*?)\}' % tbl, econ, re.S)
+    keys = set(re.findall(r'"([a-z]+)":', m2.group(1))) if m2 else set()
+    check(keys == statuses, f"Economy.{tbl} 键 {sorted(keys)} 与 WAR_STATUSES {sorted(statuses)} 不一致")
+ports = load("ports.json")["ports"]
+war_ports = 0
+for p in ports:
+    war = p.get("war")
+    if war is None:
+        continue
+    war_ports += 1
+    pid = p["id"]
+    check(isinstance(war, dict) and war, f"ports {pid} war 须为非空对象")
+    prev = ""
+    for ym in war:
+        check(DATE.match(ym) is not None, f"ports {pid} war 日期 `{ym}` 须为 YYYY-MM")
+        check(war[ym] in statuses, f"ports {pid} war[{ym}]=`{war[ym]}` 不在 {sorted(statuses)}")
+        check(1273 <= int(ym[:4]) <= 1279, f"ports {pid} war[{ym}] 年份超出 1273–1279")
+    seq = list(war.items())
+    for a, b in zip(seq, seq[1:]):
+        check(a[0] < b[0], f"ports {pid} war 日期须升序：{a[0]} → {b[0]}")
+        check(a[1] != b[1], f"ports {pid} war 相邻状态重复：{a[0]}/{b[0]} 都是 {a[1]}")
+check(war_ports >= 8, f"ports.json 只有 {war_ports} 港有 war 表，1276 年闽粤沿海不应如此安静")
+# 兴化 / 兴化海口是同一座城的两个节点，战况必须同步
+xh = next((p for p in ports if p["id"] == "xinghua"), {}).get("war")
+xhh = next((p for p in ports if p["id"] == "xinghua_harbor"), {}).get("war")
+check(xh == xhh, "xinghua 与 xinghua_harbor 的 war 表须一致")
+
 # ── GameState 存档字段对称 ─────────────────────────────
 gs = open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read()
 to_d = re.search(r"func to_dict\(\).*?\n\treturn \{(.*?)\n\t\}", gs, re.S)
@@ -88,5 +121,5 @@ if FAIL:
         print("FAIL:", f)
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
-print(f"scenes {len(scenes)} · news {len(news)} · npcs {len(npcs)} · apply_effects 接住 {sorted(handled)}")
+print(f"scenes {len(scenes)} · news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
 print("结果：全部通过")

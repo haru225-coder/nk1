@@ -10,7 +10,11 @@ const EARTH_R_KM := 6371.0
 const WIND_MIN := 0.40
 const WIND_MAX := 1.60
 
-enum EventKind { NONE, CALM, CURRENT, STORM, PIRATE, MERCHANT, DISCOVERY }
+enum EventKind { NONE, CALM, CURRENT, STORM, PIRATE, MERCHANT, DISCOVERY, REQUISITION, YUAN_PATROL, REFUGEE }
+
+## 战时遭遇起始年月（德祐元年四月朝廷征调商船；次年元军入闽）
+const REQUISITION_FROM := "1275-04"
+const YUAN_FROM := "1276-01"
 
 
 func port_def(port_id: String) -> Dictionary:
@@ -121,6 +125,11 @@ func is_known_route(from_id: String, to_id: String) -> bool:
 ## 推演一日，返回事件字典 {kind, title, text, ...}
 ## from_id / to_id 用于把发现物限定在本航段沿途
 func roll_day_event(course_bearing: float, from_id: String = "", to_id: String = "") -> Dictionary:
+	# 战时遭遇先抽：历史压力压过海盗与顺流
+	var war_ev := _war_event(from_id, to_id)
+	if not war_ev.is_empty():
+		return war_ev
+
 	var r := randf()
 	var monsoon_strength := Calendar.get_monsoon_strength()
 
@@ -140,6 +149,64 @@ func roll_day_event(course_bearing: float, from_id: String = "", to_id: String =
 	elif r < storm_chance + 0.24:
 		return _discovery_event(from_id, to_id)
 	return {"kind": EventKind.NONE}
+
+
+# ── 战时遭遇 ──────────────────────────────────────────
+
+## 按航段两端战况抽一次。返回空字典表示无战时事件，继续常规抽取。
+func _war_event(from_id: String, to_id: String) -> Dictionary:
+	if from_id == "" and to_id == "":
+		return {}
+	var now := "%04d-%02d" % [Calendar.year, Calendar.month]
+	var sf := Economy.war_status(from_id)
+	var st := Economy.war_status(to_id)
+	# 征船只在战火波及的宋土港口附近：有 war 表、非异国、尚未降元。澎湖—流求这种外海航段不征。
+	var song_side := _is_song_war_port(from_id, sf) or _is_song_war_port(to_id, st)
+	var yuan_side := (sf == "fallen") or (st == "fallen")
+	var war_zone := (sf in ["besieged", "fallen"]) or (st in ["besieged", "fallen"])
+
+	var r := randf()
+	if now >= YUAN_FROM and yuan_side and r < 0.06:
+		return _yuan_patrol_event()
+	r = randf()
+	if now >= YUAN_FROM and war_zone and r < 0.05:
+		return _refugee_event()
+	r = randf()
+	if now >= REQUISITION_FROM and song_side and r < 0.05:
+		return _requisition_event()
+	return {}
+
+
+func _is_song_war_port(pid: String, status: String) -> bool:
+	if pid == "" or pid in Crew.FOREIGN_PORTS:
+		return false
+	if not (status in ["loyal", "contested", "besieged"]):
+		return false
+	return not port_def(pid).get("war", {}).is_empty()
+
+
+func _requisition_event() -> Dictionary:
+	return {
+		"kind": EventKind.REQUISITION,
+		"title": "征船",
+		"text": "一条挂着官旗的哨船横过来，船头站着个穿绿袍的小官，手里是市舶司的文书。\n「朝廷用船。按册征调，船主自行报数。」他没看你，看的是你舱里的东西。",
+	}
+
+
+func _yuan_patrol_event() -> Dictionary:
+	return {
+		"kind": EventKind.YUAN_PATROL,
+		"title": "元军哨船",
+		"text": "两条船从雾里出来，帆上是你没见过的旗。船头的人用福建话喊：「大元巡海，落帆受检。」\n口音是泉州的。",
+	}
+
+
+func _refugee_event() -> Dictionary:
+	return {
+		"kind": EventKind.REFUGEE,
+		"title": "难民船",
+		"text": "一条超载的渔船在浪里打横，甲板上挤着老人和孩子，有人举着一件湿透的儒衫朝你挥。\n他们没有水了。",
+	}
 
 
 func _storm_event() -> Dictionary:
