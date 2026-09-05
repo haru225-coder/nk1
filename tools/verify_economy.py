@@ -309,8 +309,75 @@ check(all(p > 0 for p, _, _, _ in inbound), "回程所有此类货物均为正�
 
 print()
 print("=" * 68)
-print("三、砸盘效应：一次性倾销是否真的压价")
+print("二之二、同港价差不变量：站着不动能不能印钱")
 print("=" * 68)
+print("  Economy.price_at_rate 的买卖两侧共有因子 v = base_value × ROLE_MOD × rate，")
+print("  故『同港卖价 > 买价』只由职事修正决定，与货物、行情、身份倍率无关。")
+print("  但价格取整（int(round)）会打破这个约分，所以必须逐（港, 货, 杂事, 通译）实扫。")
+
+MAX_Z = best_lv.get("zashi", 0)
+MAX_T = best_lv.get("tongshi", 0)
+
+def same_port_pair(pid, gid, zashi, tongshi, rate=1.0):
+    """复现 Economy.price_at_rate 的同港买卖两价。改公式时这里必须同步。"""
+    return (price_with_crew(pid, gid, True, zashi, tongshi),
+            price_with_crew(pid, gid, False, zashi, tongshi))
+
+inverted = []
+for pid in ports:
+    for gid in ports[pid].get("market", {}):
+        for z in range(MAX_Z + 1):
+            for t in range(MAX_T + 1):
+                b, s = same_port_pair(pid, gid, z, t)
+                if s > b:
+                    inverted.append((pid, gid, z, t, b, s, (s - b) / b if b else 0))
+
+if inverted:
+    inverted.sort(key=lambda r: -r[6])
+    worst = inverted[0]
+    print(f"  同港卖价高于买价的组合：{len(inverted)} 个（港, 货, 杂事, 通译）")
+    print(f"    最坏：{worst[0]} / {goods[worst[1]]['name']}"
+          f"　杂事{worst[2]} 通译{worst[3]}　买 {worst[4]} → 卖 {worst[5]}"
+          f"（每轮 +{worst[6]*100:.1f}%）")
+    zt = sorted({(r[2], r[3]) for r in inverted})
+    print(f"    最低触发职事组合：杂事{zt[0][0]} 通译{zt[0][1]}"
+          f"　（共 {len({(r[0], r[1]) for r in inverted})} 处 (港, 货) 对沦陷）")
+    print("    原地买入立刻卖出即净赚，不出港故 customs_inspection 永不触发——可无限重复。")
+check(not inverted,
+      f"任何（港, 货, 杂事, 通译）组合下同港卖价均不高于买价（越界 {len(inverted)} 个）")
+
+# 价差不写死具体倍率，只断言「买价至少比卖价高出一个可察觉的档」，
+# 免得日后调抽解/佣金时这条断言变成硬编码的绊脚石。
+SPREAD_MIN = 1.08
+thin = []
+for pid in ports:
+    for gid in ports[pid].get("market", {}):
+        for z in range(MAX_Z + 1):
+            for t in range(MAX_T + 1):
+                b, s = same_port_pair(pid, gid, z, t)
+                if s > 0 and b / s < SPREAD_MIN:
+                    thin.append((pid, gid, z, t, b / s))
+if thin:
+    thin.sort(key=lambda r: r[4])
+    w = thin[0]
+    print(f"  价差不足 {SPREAD_MIN:.2f} 倍的组合：{len(thin)} 个"
+          f"　最薄 {w[0]}/{goods[w[1]]['name']} 杂事{w[2]} 通译{w[3]} 买/卖 = {w[4]:.4f}")
+check(not thin,
+      f"同港买价 ≥ 卖价 × {SPREAD_MIN}（价差够厚，不留取整级别的套利余地；越界 {len(thin)} 个）")
+
+# 雇人不能反而更亏：核心商路的单件利润必须随职事等级单调不降。
+# 这条是为封洞方案设的护栏——只压卖价的 clamp 会让满编利润掉到光杆以下。
+_gid = "qingbai_porcelain"
+ladder = []
+for z, t in ((0, 0), (min(2, MAX_Z), min(2, MAX_T)), (MAX_Z, MAX_T)):
+    _b = price_with_crew("quanzhou", _gid, True, z, t)
+    _s = price_with_crew("hakata", _gid, False, z, t)
+    ladder.append((z, t, _s - _b))
+print("  泉州→博多 青白瓷单件利润随职事递进："
+      + " → ".join(f"杂{z}通{t} {p}" for z, t, p in ladder))
+check(all(ladder[i][2] <= ladder[i + 1][2] for i in range(len(ladder) - 1)),
+      "核心商路利润随职事等级单调不降（雇人不会反而更亏）")
+
 
 def sell_revenue(pid, gid, amount, rate=1.0):
     depth = ports[pid]["depth"]
