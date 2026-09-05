@@ -1971,8 +1971,8 @@ func _check_absent_from_xinghua() -> bool:
 		return false
 	if GameState.siege_open() or GameState.has_flag("siege_fought"):
 		return false
-	if Economy.war_status("xinghua") != "fallen":
-		return false
+	# 按日期判，不按当前战况：1277-02/03 陈瓒复城时兴化会回 loyal，
+	# 若看当前战况，士人线玩家在那两个月入港就躲过了这个结局。城破发生过就是发生过。
 	if not (Calendar.year > 1276 or (Calendar.year == 1276 and Calendar.month >= 12)):
 		return false
 

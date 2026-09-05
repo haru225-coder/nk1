@@ -349,5 +349,51 @@ func _initialize() -> void:
 	GS.set_flag("siege_fought")
 	_check(GS.has_flag("siege_fought"), "打过囊山即留痕，未归判据可排除")
 
+	# ── 「未归」不得被陈瓒复城的两个月钻空子 ──
+	# 兴化 war 表：1277-02 loyal / 1277-04 fallen。若判据只看当前 war_status，
+	# 士人线玩家在 1277-02、03 入港就躲过了结局。
+	Cal.from_dict({"year": 1277, "month": 2, "day": 10})
+	_check(Eco.war_status("xinghua") == "loyal", "1277-02 兴化确实回 loyal（复城）")
+	var past_fall: bool = (Cal.year > 1276) or (Cal.year == 1276 and Cal.month >= 12)
+	_check(past_fall, "1277-02 已过 1276-12 陷落点——判据须按日期而非当前战况")
+
+	# ── 存档 round-trip：整局状态（不只 GameState） ──
+	var SL: Node = root.get_node("SaveLoad")
+	var Flt: Node = root.get_node("Fleet")
+	GS.from_dict({})
+	Cal.from_dict({"year": 1276, "month": 11, "day": 3})
+	GS.set_flag("renamed_wenlong")
+	GS.identity = "scholar"
+	GS.player_name = "陈文龙"
+	GS.money = 4321
+	GS.siege_begin()
+	GS.siege_set("round", 1)
+	GS.siege_set("shishou", "kept")
+	GS.siege_add("troops", 150)
+	GS.ban_port("quanzhou", "1277-01")
+	GS.add_ledger_note("斩王刚中使")
+	var troops_before: int = GS.siege_get("troops")
+	_check(SL.save_game(9, "xinghua"), "守城中途可存档")
+	_check(SL.save_label(9).find("终") < 0, "未终局的档不带终局标记")
+	# 打乱现场
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_check(SL.load_game(9), "读回守城档")
+	_check(Cal.year == 1276 and Cal.month == 11, "读档复原历法")
+	_check(GS.player_name == "陈文龙" and GS.identity == "scholar", "读档复原身份与姓名")
+	_check(GS.siege_open() and GS.siege_get("round") == 1, "读档复原城防轮次")
+	_check(GS.siege_get("troops") == troops_before, "读档复原兵力")
+	_check(str(GS.siege.get("shishou", "")) == "kept", "读档复原石手军")
+	_check(GS.is_port_banned("quanzhou"), "读档复原个人封港")
+	_check("斩王刚中使" in GS.ledger_notes, "读档复原札记")
+	_check(GS.money == 4321, "读档复原钱")
+	# 战况是 Calendar 纯函数，读档后自然复原
+	_check(Eco.war_status("xinghua") == "besieged", "读档后战况随历法复原（不入存档）")
+	# 终局档带标记
+	GS.finish("忠肃", "正文")
+	_check(SL.save_game(9, "xinghua"), "终局可存档")
+	_check(SL.save_label(9).find("终：忠肃") >= 0, "终局档标签带结局名（%s）" % SL.save_label(9))
+	_check(SL.load_game(9) and GS.is_ended() and GS.ended == "忠肃", "读回终局档仍是终局态")
+
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	quit(1 if _fails > 0 else 0)

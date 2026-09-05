@@ -3,7 +3,8 @@ extends Node
 
 const SAVE_DIR := "user://saves/"
 const SLOTS := 3
-const VERSION := 2
+## 3：加入身份/新闻/战况/城防/终局等剧情字段。旧档仍可读——GameState.from_dict 全部走默认值。
+const VERSION := 3
 
 
 func _ready() -> void:
@@ -27,10 +28,11 @@ func save_game(slot: int, current_scene: String = "") -> bool:
 		"crew": Crew.to_dict(),
 		"state": GameState.to_dict(),
 		"scene": current_scene,
-		"label": "%s・%s・%d钱" % [
+		"label": "%s・%s・%d钱%s" % [
 			Calendar.get_date_string(),
 			GameManager.get_port_name(GameState.last_port),
 			GameState.money,
+			"" if GameState.ended == "" else "・终：" + GameState.ended,
 		],
 	}
 	var f := FileAccess.open(_path(slot), FileAccess.WRITE)
