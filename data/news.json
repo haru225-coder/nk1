@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "历史压力新闻",
-    "note": "按 Calendar 年月投放（date <= 当前 YYYY-MM 且未投放过）。走 GameManager.monthly_notice，酒馆墙上保留最近三条。text 为默认；text_S / text_M 按 GameState.news_variant() 覆盖（S 士人 / M 海商）。speaker 为空则显示【酒馆传闻】。市场副作用（禁运、恐慌）尚未接入 Economy，本文件不写未消费字段。史源：docs/陈文龙史料调研_2026-09-04.md"
+    "note": "按 Calendar 年月投放（date <= 当前 YYYY-MM 且未投放过）。走 GameManager.monthly_notice，酒馆墙上保留最近三条。text 为默认；text_S / text_M 按 GameState.news_variant() 覆盖（S 士人 / M 海商）。speaker 为空则显示【酒馆传闻】。市场副作用（禁运、恐慌）尚未接入 Economy，本文件不写未消费字段。史源：docs/陈文龙史料调研_2026-09-04.md 文案可用 {target_name}（有陈文龙则为其名，否则「兴化陈瓒」）与 {player_name} 两个占位符。"
   },
   "news": [
     {
@@ -110,10 +110,10 @@
       "text_M": "「福州立了新皇帝。张世杰的船队在泉州港外，要蒲家的船。蒲家不给。」"
     },
     {
-      "id": "n_1276_11_quanzhou_falls",
-      "date": "1276-11",
+      "id": "n_1276_12_quanzhou_falls",
+      "date": "1276-12",
       "speaker": "",
-      "text": "泉州开城了。福州也开了。蒲提举在清净寺前对满街人说了一句话，有人笑了一声。"
+      "text": "泉州开城了。开城前三天，城里的宋宗室和淮兵杀了三千人。蒲提举站在清净寺前的台阶上，对满街海商说：「{target_name}非不忠义——如民何？」有人笑了一声。"
     }
   ]
 }

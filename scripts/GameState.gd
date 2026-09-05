@@ -27,6 +27,8 @@ var merchant_credit: int = 0
 var network: int = 0
 ## 账目备注 / 货损记录（札记）。不可折算为钱的后果，只记不算。
 var ledger_notes: Array = []
+## 对玩家个人封闭的港口 {port_id: "YYYY-MM"}（到该月为止不可入）。泉州对峙期连夜出港即触发。
+var port_bans: Dictionary = {}
 
 var money: int = 1000
 var fame: int = 0
@@ -270,9 +272,10 @@ func pending_news() -> Array:
 ## 取一条新闻在当前身份下的文案
 func news_text(n: Dictionary) -> String:
 	var key := "text_" + news_variant()
-	if n.has(key):
-		return str(n[key])
-	return str(n.get("text", ""))
+	var t: String = str(n[key]) if n.has(key) else str(n.get("text", ""))
+	# {target_name}：蒲寿庚那句话点的名。世上有陈文龙就点他；没有就点陈瓒。
+	var target := player_name if has_flag("renamed_wenlong") else "兴化陈瓒"
+	return t.replace("{target_name}", target).replace("{player_name}", player_name)
 
 
 func mark_news_seen(nid: String) -> void:
@@ -290,6 +293,20 @@ func recent_news(k: int = 3) -> Array:
 		if out.size() >= k:
 			break
 	return out
+
+
+func ban_port(port_id: String, until_ym: String) -> void:
+	port_bans[port_id] = until_ym
+
+
+func is_port_banned(port_id: String) -> bool:
+	if not port_bans.has(port_id):
+		return false
+	var now := "%04d-%02d" % [Calendar.year, Calendar.month]
+	if now > str(port_bans[port_id]):
+		port_bans.erase(port_id)
+		return false
+	return true
 
 
 func add_ledger_note(note: String) -> void:
@@ -443,6 +460,7 @@ func to_dict() -> Dictionary:
 		"merchant_credit": merchant_credit,
 		"network": network,
 		"ledger_notes": ledger_notes,
+		"port_bans": port_bans,
 	}
 
 
@@ -470,3 +488,4 @@ func from_dict(d: Dictionary) -> void:
 	merchant_credit = int(d.get("merchant_credit", 0))
 	network = int(d.get("network", 0))
 	ledger_notes = d.get("ledger_notes", [])
+	port_bans = d.get("port_bans", {})

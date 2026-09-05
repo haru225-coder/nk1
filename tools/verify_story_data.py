@@ -57,6 +57,9 @@ for n in news:
     check(has_text, f"news {nid} 须有 text，或同时有 text_S 与 text_M")
     extra = set(n) - ALLOWED
     check(not extra, f"news {nid} 含未被消费的字段 {sorted(extra)}（反模式：数据写了代码不读）")
+    for f in ("text", "text_S", "text_M"):
+        for tok in re.findall(r"\{([a-z_]+)\}", str(n.get(f, ""))):
+            check(tok in ("target_name", "player_name"), f"news {nid}.{f} 未知占位符 {{{tok}}}（GameState.news_text 只替换 target_name/player_name）")
     y = int(str(n.get("date", "0000"))[:4] or 0)
     check(1255 <= y <= 1279, f"news {nid} 年份 {y} 超出 1255–1279")
 

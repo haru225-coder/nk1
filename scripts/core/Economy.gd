@@ -97,6 +97,9 @@ func get_rate(port_id: String, good_id: String) -> float:
 ## 杂事压低抽解与佣金；通事在异国港口另有议价之利；降元港口抽解加倍
 func _effective_tariff(port_id: String = "") -> float:
 	var war_mul: float = WAR_TARIFF.get(war_status(port_id), 1.0) if port_id != "" else 1.0
+	# 对峙期站了蒲家：泉州抽解永久八折——「都是一家人」
+	if port_id == "quanzhou" and GameState.has_flag("sided_pu"):
+		war_mul *= 0.8
 	return tariff_rate * Crew.trade_cost_factor() * war_mul
 
 
@@ -184,7 +187,7 @@ func is_market_open(port_id: String) -> bool:
 
 ## 封港不可抵达（文永之役后的博多等）
 func is_port_reachable(port_id: String) -> bool:
-	return war_status(port_id) != "closed"
+	return war_status(port_id) != "closed" and not GameState.is_port_banned(port_id)
 
 
 func inspection_factor(port_id: String) -> float:

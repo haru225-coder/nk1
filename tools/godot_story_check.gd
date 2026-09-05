@@ -164,5 +164,32 @@ func _initialize() -> void:
 			far += 1
 	_check(far == 0, "1277 年澎湖—流求外海无战时遭遇")
 
+	# ── 蒲寿庚那句话点谁的名 ──
+	GS.from_dict({})
+	var pu: Dictionary = GM.get_news_by_id("n_1276_12_quanzhou_falls")
+	_check(not pu.is_empty(), "泉州降元新闻存在")
+	_check(GS.news_text(pu).find("兴化陈瓒非不忠义") >= 0, "无陈文龙的世界：点名陈瓒")
+	GS.set_flag("renamed_wenlong")
+	GS.player_name = "陈文龙"
+	_check(GS.news_text(pu).find("陈文龙非不忠义") >= 0, "有陈文龙的世界：点名玩家")
+	_check(GS.news_text(pu).find("{") < 0, "占位符全部替换")
+
+	# ── 泉州对峙期个人封港与蒲家折扣 ──
+	GS.from_dict({})
+	Cal.from_dict({"year": 1276, "month": 6, "day": 1})
+	GS.ban_port("quanzhou", "1276-11")
+	_check(GS.is_port_banned("quanzhou") and not Eco.is_port_reachable("quanzhou"), "1276-06 连夜出港后泉州对己封港")
+	Cal.from_dict({"year": 1276, "month": 12, "day": 1})
+	_check(not GS.is_port_banned("quanzhou"), "1276-12 封港到期自动解除")
+	_check(GS.port_bans.is_empty(), "到期后 port_bans 清理")
+	Cal.from_dict({"year": 1277, "month": 1, "day": 1})
+	var p_plain: int = Eco.price_at_rate("quanzhou", "grain", 1.0, true)
+	GS.set_flag("sided_pu")
+	var p_pu: int = Eco.price_at_rate("quanzhou", "grain", 1.0, true)
+	_check(p_pu < p_plain, "站蒲家后泉州买价更低（%d < %d）" % [p_pu, p_plain])
+	var p_other: int = Eco.price_at_rate("fuzhou", "grain", 1.0, true)
+	GS.flags.erase("sided_pu")
+	_check(Eco.price_at_rate("fuzhou", "grain", 1.0, true) == p_other, "蒲家折扣不外溢到福州")
+
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	quit(1 if _fails > 0 else 0)

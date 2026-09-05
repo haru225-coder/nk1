@@ -34,7 +34,10 @@ var title_button_connected: bool = false
 ## 牙行当前选中的船 index（多船分装用），进牙行时重置为旗舰
 var _market_ship: int = 0
 
-const FACILITY_SUFFIXES := ["_market", "_yamen", "_shipyard", "_tavern", "_inn"]
+const FACILITY_SUFFIXES := ["_market", "_yamen", "_shipyard", "_tavern", "_inn", "_residence"]
+
+## 港口页上的特殊卡（非设施）：由 _on_facility_pressed 按 id 路由
+const CARD_HANJIANG := "special_hanjiang_escape"
 
 ## 无剧情场景的港口使用的通用设施
 const GENERIC_FACILITIES := [
@@ -326,6 +329,8 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 			_setup_shipyard(base_loc)
 		"_inn":
 			_setup_inn(base_loc)
+		"_residence":
+			_setup_residence(base_loc)
 
 
 # ── 牙行（市场）─────────────────────────────────────
@@ -552,6 +557,7 @@ func _setup_yamen(port_id: String) -> void:
 		choices_container.add_child(warn)
 
 	_setup_reporting()
+	_setup_quanzhou_standoff(port_id)
 
 	var att := Label.new()
 	att.text = "蒲氏关注度 %d　%s" % [GameState.pu_attention, _attention_desc()]
@@ -560,6 +566,145 @@ func _setup_yamen(port_id: String) -> void:
 
 	choices_label.visible = true
 	_add_leave_button(port_id)
+
+
+## 泉州对峙期（1276-05 至降元前）：张世杰索船，蒲家不给。市舶司钉出征船名册，你的船在上面。
+## 一张卡三选一，选过即止；拖到泉州降元则名册作废，什么也不发生——这本身也是一种选择。
+func _setup_quanzhou_standoff(port_id: String) -> void:
+	if port_id != "quanzhou" or Economy.war_status("quanzhou") != "contested":
+		return
+	if GameState.has_flag("sided_zhang") or GameState.has_flag("sided_pu") or GameState.has_flag("fled_quanzhou"):
+		return
+
+	var sep := Label.new()
+	sep.text = "── 征船名册 ──"
+	sep.add_theme_font_size_override("font_size", 13)
+	choices_container.add_child(sep)
+
+	var info := Label.new()
+	var who: String = GameState.player_name if GameState.has_flag("renamed_wenlong") else "陈纲首"
+	info.text = "牙行门口钉着一张纸，第四行是你的船。小吏低声说：「%s。张少保要船，蒲提举说泉州的船蒲家说了算。您站哪边？」" % who
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.add_theme_color_override("font_color", Color(1.0, 0.85, 0.6))
+	choices_container.add_child(info)
+
+	var zhang := Button.new()
+	if Fleet.ships.size() > 1:
+		zhang.text = "船借张世杰——编出最小一条船（名声 +8，海商信用 −15）"
+	else:
+		zhang.text = "船借张世杰——只此一条，出人出粮（名声 +8，海商信用 −15，水粮减半）"
+	zhang.pressed.connect(func():
+		if Fleet.ships.size() > 1:
+			var idx := 0
+			for i in range(Fleet.ships.size()):
+				if Fleet.ship_capacity(i) < Fleet.ship_capacity(idx):
+					idx = i
+			var sname: String = Fleet.ships[idx].get("name", "一船")
+			Fleet.ships.remove_at(idx)
+			log_msg("「%s」挂了宋旗，编进张少保的船队。蒲家的人在码头上看着，没说话。" % sname)
+		else:
+			Fleet.water = Fleet.water / 2
+			Fleet.food = Fleet.food / 2
+			log_msg("船没给，人和粮给了一半。蒲家的人在码头上看着，没说话。")
+		GameState.fame += 8
+		GameState.merchant_credit -= 15
+		GameState.pu_attention = 0
+		GameState.set_flag("sided_zhang")
+		GameState.add_ledger_note("借船张世杰")
+		load_scene(current_scene_id)
+	)
+	choices_container.add_child(zhang)
+
+	var pu := Button.new()
+	pu.text = "跟蒲家——泉州抽解永久八折（海商信用 +10，名声 −8）"
+	pu.pressed.connect(func():
+		GameState.merchant_credit += 10
+		GameState.fame -= 8
+		GameState.set_flag("sided_pu")
+		GameState.add_ledger_note("蒲家账房的茶")
+		log_msg("蒲家的账房请你喝了茶。茶很好。他说泉州不会有事，「提举心里有数」。你问有数是什么数。他笑，没答。")
+		load_scene(current_scene_id)
+	)
+	choices_container.add_child(pu)
+
+	var flee := Button.new()
+	flee.text = "今夜出港，谁也不给——泉州对你封港至降元"
+	flee.pressed.connect(func():
+		GameState.set_flag("fled_quanzhou")
+		GameState.ban_port("quanzhou", "1276-11")
+		GameState.add_ledger_note("澎湖避祸")
+		log_msg("夜潮。港外张世杰的船队像一座漂着的城。没有人拦你——他们不知道你是谁，这时候这是好事。泉州的门，年内不要再敲。")
+		load_scene(current_scene_id)
+	)
+	choices_container.add_child(flee)
+
+
+## 港口页特殊卡：只在特定年月与旗标下出现。
+func _special_cards() -> Array:
+	var out := []
+	# 涵江海口 → 旧避风澳：1277 年二三月陈瓒复兴化的那四十天，且第一章复核过旧泊地
+	if current_scene_id in ["xinghua", "xinghua_harbor"] \
+			and Calendar.year == 1277 and Calendar.month in [2, 3] \
+			and Economy.war_status("xinghua") == "loyal" \
+			and GameState.has_found("nameless_shelter_bay") \
+			and not GameState.has_flag("ending_root_sea"):
+		out.append({"id": CARD_HANJIANG, "title": "涵江海口", "subtitle": "带族人走旧避风澳"})
+	return out
+
+
+## 「岸上的根」：陈瓒守城，你带族人出海。第一章那次复核在二十二年后变现。
+func _on_hanjiang_escape() -> void:
+	if Fleet.supply_days() < 7:
+		log_msg("【水粮不足】四条船的人，至少要撑七日。先去船屋补齐。")
+		update_status_panel()
+		return
+	GameManager.advance_days(7)
+	GameState.set_flag("ending_root_sea")
+	GameState.fame += 10
+	GameState.hometown_tendency += 10
+	GameState.add_ledger_note("北礁可泊")
+	var stake_line := "陈瓒没有上船。他说他姓陈，在这里出生，就死在这里。" if GameState.has_flag("chen_zan_stake") else "陈瓒没有上船。"
+	_show_notice_dialog(
+		"岸上的根",
+		"旧避风澳・景炎三年三月",
+		"四条船。族里能走的都在船上，老夫人也在，她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经进城了。海上没有人追。你看水色。北礁可泊。二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
+			"子龙", stake_line, "子龙",
+		]
+	)
+
+
+## 通用结算对话框（章节晋升以外的历史节点与结局用）
+func _show_notice_dialog(title: String, head: String, text: String) -> void:
+	var dlg := AcceptDialog.new()
+	dlg.title = title
+	dlg.ok_button_text = "……"
+
+	var m := MarginContainer.new()
+	m.add_theme_constant_override("margin_left", 18)
+	m.add_theme_constant_override("margin_right", 18)
+	m.add_theme_constant_override("margin_top", 12)
+	m.add_theme_constant_override("margin_bottom", 12)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	m.add_child(v)
+
+	var h := Label.new()
+	h.text = head
+	h.add_theme_font_size_override("font_size", 24)
+	v.add_child(h)
+
+	var body := RichTextLabel.new()
+	body.bbcode_enabled = false
+	body.fit_content = true
+	body.custom_minimum_size = Vector2(560, 240)
+	body.text = text
+	v.add_child(body)
+
+	dlg.add_child(m)
+	add_child(dlg)
+	dlg.popup_centered()
+	dlg.confirmed.connect(func(): load_scene(current_scene_id))
+	update_status_panel()
 
 
 ## 上报发现：航中勘见的东西要回衙门报了才换得赏格与名声
@@ -824,6 +969,44 @@ func _on_buy_supplies(n: int, wp: int, gp: int) -> void:
 	Fleet.food += n
 	log_msg("补入水 %d 份、粮 %d 份，付 %d 钱。现可支撑 %d 日。" % [n, n, cost, Fleet.supply_days()])
 	load_scene(current_scene_id)
+
+
+# ── 玉湖陈宅（兴化住宅）────────────────────────────
+
+const CHEN_ZAN_STAKE := 3000
+const CHEN_ZAN_FROM_YEAR := 1270
+const CHEN_ZAN_MIN_FAME := 15
+
+func _setup_residence(port_id: String) -> void:
+	scene_title.text = "%s・玉湖陈宅" % GameManager.get_port_name(port_id)
+	var mother := "母亲黄氏在隔壁厢房摇着织机，一声声像是催你动笔。" if Calendar.year < 1270 else "母亲黄氏的织机停了，她的手已经摇不动。她坐在织机旁边看你。"
+	body_text.text = "祠堂的灯还是二十年前那盏。%s\n案上压着一叠策论草稿，纸边微硬。" % mother
+
+	if GameState.has_flag("chen_zan_stake"):
+		var l := Label.new()
+		l.text = "族叔陈瓒的船股一分，记在账上。他说过：「几时回，走哪条水，要先说。」"
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.add_theme_color_override("font_color", Color(0.65, 0.9, 0.7))
+		choices_container.add_child(l)
+	elif Calendar.year >= CHEN_ZAN_FROM_YEAR:
+		var b := Button.new()
+		if GameState.fame >= CHEN_ZAN_MIN_FAME:
+			b.text = "族叔陈瓒愿入船股一分（得 %d 钱，乡土 +5）" % CHEN_ZAN_STAKE
+			b.pressed.connect(func():
+				GameState.add_money(CHEN_ZAN_STAKE)
+				GameState.hometown_tendency += 5
+				GameState.set_flag("chen_zan_stake")
+				GameState.add_ledger_note("陈瓒船股一分")
+				log_msg("陈瓒把三千钱推过案来，没数。「要多少、走哪条水、几时回——这三句先说清，钱就是你的。」")
+				load_scene(current_scene_id)
+			)
+		else:
+			b.text = "族叔陈瓒——「名声不到 %d，钱不能给你」" % CHEN_ZAN_MIN_FAME
+			b.disabled = true
+		choices_container.add_child(b)
+
+	choices_label.visible = true
+	_add_leave_button(port_id)
 
 
 # ── 酒馆 ────────────────────────────────────────────
@@ -1132,7 +1315,8 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 	for child in right_facilities.get_children():
 		child.queue_free()
 
-	var facilities = scene_data.get("facilities", [])
+	var facilities: Array = scene_data.get("facilities", []).duplicate()
+	facilities.append_array(_special_cards())
 	for i in range(facilities.size()):
 		var card := _make_facility_card(facilities[i])
 		if i % 2 == 0:
@@ -1355,8 +1539,14 @@ func _cn_chapter(n: int) -> String:
 
 func _on_facility_pressed(fac: Dictionary) -> void:
 	var target_scene = fac.get("id", "")
+	if target_scene == CARD_HANJIANG:
+		_on_hanjiang_escape()
+		return
 	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern"]:
 		target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")
+	elif target_scene == "city_residence" and current_scene_id == "xinghua":
+		# 只有兴化的住宅是玉湖陈宅；别处仍是租来的下处（占位）
+		target_scene = "xinghua_residence"
 	if target_scene != "":
 		load_scene(target_scene)
 
