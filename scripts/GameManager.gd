@@ -82,6 +82,8 @@ func advance_days(n: int) -> void:
 ## 月初结算历史压力：到期新闻投放；1268 年四月殿试一次性锁定身份。
 ## 历史是天气不是过场——全部走 monthly_notice，不开新场景。
 func _settle_history() -> void:
+	if GameState.is_ended():
+		return
 	if Calendar.year > GameState.IDENTITY_YEAR or (Calendar.year == GameState.IDENTITY_YEAR and Calendar.month >= GameState.IDENTITY_MONTH):
 		var r := GameState.resolve_identity_1268()
 		if r.get("resolved", false):

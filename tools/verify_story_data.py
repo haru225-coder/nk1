@@ -107,6 +107,15 @@ xh = next((p for p in ports if p["id"] == "xinghua"), {}).get("war")
 xhh = next((p for p in ports if p["id"] == "xinghua_harbor"), {}).get("war")
 check(xh == xhh, "xinghua 与 xinghua_harbor 的 war 表须一致")
 
+# ── 守城卡路由完整 ─────────────────────────────────────
+card_ids = set(re.findall(r'const (CARD_SIEGE_\w+) := "(\w+)"', main_src))
+routed = set(re.findall(r'^\t\t(CARD_SIEGE_\w+):', main_src, re.M))
+declared = {c[0] for c in card_ids}
+check(declared, "Main.gd 未声明守城卡常量")
+check(declared == routed, f"守城卡常量与 _on_siege_card 分支不一致：仅声明 {sorted(declared-routed)} 仅路由 {sorted(routed-declared)}")
+for _n, v in card_ids:
+    check(v.startswith("siege_"), f"守城卡 id `{v}` 须以 siege_ 开头（_on_facility_pressed 按前缀路由）")
+
 # ── GameState 存档字段对称 ─────────────────────────────
 gs = open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read()
 to_d = re.search(r"func to_dict\(\).*?\n\treturn \{(.*?)\n\t\}", gs, re.S)

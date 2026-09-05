@@ -191,5 +191,62 @@ func _initialize() -> void:
 	GS.flags.erase("sided_pu")
 	_check(Eco.price_at_rate("fuzhou", "grain", 1.0, true) == p_other, "蒲家折扣不外溢到福州")
 
+	# ── 终局态 ──
+	GS.from_dict({})
+	Cal.from_dict({"year": 1277, "month": 3, "day": 1})
+	_check(not GS.is_ended(), "开局非终局态")
+	_check(GS.finish("岸上的根"), "finish() 首次落定")
+	_check(GS.is_ended() and GS.ended == "岸上的根", "终局名已记")
+	_check(GS.ended_at.find("兴化") >= 0 or GS.ended_at.find("泉州") >= 0, "终局记下日期与地点（%s）" % GS.ended_at)
+	_check(not GS.finish("忠肃"), "重复 finish() 被拒——历史只走一遍")
+	_check(GS.ended == "岸上的根", "重复 finish() 不覆盖")
+	_check(GS.epilogue_lines().size() >= 5, "札记至少五行")
+	# 终局后历史不再推进
+	var seen_before: int = GS.news_seen.size()
+	var id_before: String = GS.identity
+	GM.advance_days(400)
+	_check(GS.news_seen.size() == seen_before, "终局后不再投放新闻")
+	_check(GS.identity == id_before, "终局后不再结算身份")
+	# 存档 round-trip 带 ended
+	var ed: Dictionary = GS.to_dict()
+	GS.from_dict({})
+	_check(not GS.is_ended(), "from_dict({}) 清空终局")
+	GS.from_dict(ed)
+	_check(GS.is_ended() and GS.ended == "岸上的根", "存档 round-trip 保留终局")
+
+	# ── 守城 ──
+	GS.from_dict({})
+	_check(not GS.siege_open(), "开局无城防")
+	GS.siege_begin()
+	_check(GS.siege_open() and GS.siege_get("troops") == 300, "siege_begin 初始兵 300")
+	var t0: int = GS.siege_get("troops")
+	GS.siege_begin()
+	_check(GS.siege_get("troops") == t0, "重复 siege_begin 不重置")
+	GS.fame = 0
+	_check(GS.siege_troop_cap() == 300, "名声 0 时募兵上限 300")
+	GS.fame = 100
+	_check(GS.siege_troop_cap() == 1000, "名声足时上限封顶 1000（城中兵不满千）")
+	GS.fame = 20
+	_check(GS.siege_troop_cap() == 540, "上限随名声（20 → 540）")
+	# 石手军 ×1.5
+	GS.siege_set("shishou", "")
+	var sp_plain: float = GS.siege_power()
+	GS.siege_set("shishou", "kept")
+	var sp_keep: float = GS.siege_power()
+	_check(sp_keep > sp_plain, "石手军抬高战力（%.0f > %.0f）" % [sp_keep, sp_plain])
+	GS.siege_set("shishou", "disbanded")
+	_check(abs(GS.siege_power() - sp_plain) < 0.01, "遣散后战力回落")
+	# siege_add 不落负
+	GS.siege_set("grain", 10)
+	GS.siege_add("grain", -999)
+	_check(GS.siege_get("grain") == 0, "守城资源不落负数")
+	# 存档带 siege
+	GS.siege_set("round", 2)
+	var sd: Dictionary = GS.to_dict()
+	GS.from_dict({})
+	_check(not GS.siege_open(), "from_dict({}) 清空城防")
+	GS.from_dict(sd)
+	_check(GS.siege_get("round") == 2, "存档 round-trip 保留城防轮次")
+
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	quit(1 if _fails > 0 else 0)

@@ -30,6 +30,16 @@ var ledger_notes: Array = []
 ## 对玩家个人封闭的港口 {port_id: "YYYY-MM"}（到该月为止不可入）。泉州对峙期连夜出港即触发。
 var port_bans: Dictionary = {}
 
+## 守城（甲线・兴化 1276-11~12）。空字典 = 未开城防。
+## 兵/粮/城墙/士气/已打轮次；粮尽或三轮打完即城破。
+var siege: Dictionary = {}
+
+## 终局。空串 = 未结束；否则为结局名（忠肃 / 纲首 / 海上宋鬼 / 岸上的根 / 泉州蒲氏的船）。
+## 一旦落定，港口页只剩回顾札记：沙盒不再继续，但存档仍可读回结局前。
+var ended: String = ""
+## 结局达成时的日期与地点，供札记显示
+var ended_at: String = ""
+
 var money: int = 1000
 var fame: int = 0
 ## 主角武力（陈子龙）。白刃战判定输入之一；打赢海盗、夺船等会成长。
@@ -309,6 +319,84 @@ func is_port_banned(port_id: String) -> bool:
 	return true
 
 
+# ── 守城 ──────────────────────────────────────────────
+
+const SIEGE_ROUNDS_MAX := 3
+const SIEGE_TROOP_COST := 10
+const SIEGE_GRAIN_PER_ROUND := 40
+
+func siege_open() -> bool:
+	return not siege.is_empty()
+
+
+func siege_begin() -> void:
+	if not siege.is_empty():
+		return
+	siege = {
+		"troops": 300, "grain": 120, "wall": 60, "morale": 55,
+		"round": 0, "shishou": "", "envoy_wang": false, "envoy_kin": false,
+		"lin_hua_sent": false,
+	}
+
+
+func siege_get(key: String, dflt: int = 0) -> int:
+	return int(siege.get(key, dflt))
+
+
+func siege_set(key: String, val) -> void:
+	if siege.is_empty():
+		return
+	siege[key] = val
+
+
+func siege_add(key: String, delta: int) -> void:
+	if siege.is_empty():
+		return
+	siege[key] = maxi(0, int(siege.get(key, 0)) + delta)
+
+
+## 募兵上限随名声：城中兵不满千是史实，名声高才募得动人
+func siege_troop_cap() -> int:
+	return mini(1000, 300 + fame * 12)
+
+
+## 我方战力：兵 × 士气 × 石手军加成，城墙作底
+func siege_power() -> float:
+	var t := float(siege_get("troops"))
+	var m := float(siege_get("morale")) / 100.0
+	var shishou := 1.5 if str(siege.get("shishou", "")) == "kept" else 1.0
+	return (t * m * shishou) + float(siege_get("wall")) * 2.0
+
+
+func is_ended() -> bool:
+	return ended != ""
+
+
+## 落定终局。重复调用只认第一次——历史只走一遍。
+func finish(ending_name: String) -> bool:
+	if ended != "":
+		return false
+	ended = ending_name
+	ended_at = "%s・%s" % [Calendar.get_date_string(), GameManager.get_port_name(last_port)]
+	set_flag("game_ended")
+	return true
+
+
+## 终局札记：把这一局做过的事收成几行，给结局屏与港口页复用
+func epilogue_lines() -> Array:
+	var out := []
+	out.append("姓名：%s" % player_name)
+	out.append("身份：%s" % {
+		"scholar": "士人", "merchant": "海商", "hometown": "乡土",
+	}.get(identity, "未定"))
+	out.append("终局：%s（%s）" % [ended, ended_at])
+	out.append("本钱峰值 %d 钱・名声 %d・海商信用 %d" % [peak_money, fame, merchant_credit])
+	out.append("走通港口 %d 处・勘见 %d 处" % [visited_ports.size(), discoveries_found.size() + discoveries_reported.size()])
+	if not ledger_notes.is_empty():
+		out.append("札记：" + "、".join(ledger_notes))
+	return out
+
+
 func add_ledger_note(note: String) -> void:
 	if note != "" and not (note in ledger_notes):
 		ledger_notes.append(note)
@@ -461,6 +549,9 @@ func to_dict() -> Dictionary:
 		"network": network,
 		"ledger_notes": ledger_notes,
 		"port_bans": port_bans,
+		"siege": siege,
+		"ended": ended,
+		"ended_at": ended_at,
 	}
 
 
@@ -489,3 +580,6 @@ func from_dict(d: Dictionary) -> void:
 	network = int(d.get("network", 0))
 	ledger_notes = d.get("ledger_notes", [])
 	port_bans = d.get("port_bans", {})
+	siege = d.get("siege", {})
+	ended = str(d.get("ended", ""))
+	ended_at = str(d.get("ended_at", ""))
