@@ -48,7 +48,8 @@ nids = [n.get("id", "") for n in news]
 check(all(nids), "news.json 有条目缺 id")
 check(len(nids) == len(set(nids)), "news.json id 重复")
 DATE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
-ALLOWED = {"id", "date", "speaker", "text", "text_S", "text_M"}
+ALLOWED = {"id", "date", "speaker", "text", "text_S", "text_M", "only", "flag"}
+IDENTITIES = {"scholar", "merchant", "hometown"}
 for n in news:
     nid = n.get("id", "?")
     check(DATE.match(str(n.get("date", ""))) is not None, f"news {nid} date 须为 YYYY-MM")
@@ -60,6 +61,9 @@ for n in news:
     for f in ("text", "text_S", "text_M"):
         for tok in re.findall(r"\{([a-z_]+)\}", str(n.get(f, ""))):
             check(tok in ("target_name", "player_name"), f"news {nid}.{f} 未知占位符 {{{tok}}}（GameState.news_text 只替换 target_name/player_name）")
+    if "only" in n:
+        check(n["only"] in IDENTITIES, f"news {nid} only=`{n['only']}` 不是合法身份 {sorted(IDENTITIES)}")
+        check(str(n.get("date", "")) > "1268-04", f"news {nid} 带 only 但日期早于 1268-04 殿试结算，那时 identity 还是 undecided，永远发不出去")
     y = int(str(n.get("date", "0000"))[:4] or 0)
     check(1255 <= y <= 1279, f"news {nid} 年份 {y} 超出 1255–1279")
 

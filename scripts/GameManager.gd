@@ -90,6 +90,7 @@ func _settle_history() -> void:
 			monthly_notice.emit("【%s】%s" % [r["title"], r["text"]])
 	for n in GameState.pending_news():
 		GameState.mark_news_seen(n.get("id", ""))
+		GameState.apply_news_flag(n)
 		var speaker: String = str(n.get("speaker", ""))
 		var prefix := "【酒馆传闻】" if speaker == "" else "【%s】" % speaker
 		monthly_notice.emit(prefix + GameState.news_text(n))

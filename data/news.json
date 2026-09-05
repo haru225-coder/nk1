@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "历史压力新闻",
-    "note": "按 Calendar 年月投放（date <= 当前 YYYY-MM 且未投放过）。走 GameManager.monthly_notice，酒馆墙上保留最近三条。text 为默认；text_S / text_M 按 GameState.news_variant() 覆盖（S 士人 / M 海商）。speaker 为空则显示【酒馆传闻】。市场副作用（禁运、恐慌）尚未接入 Economy，本文件不写未消费字段。史源：docs/陈文龙史料调研_2026-09-04.md 文案可用 {target_name}（有陈文龙则为其名，否则「兴化陈瓒」）与 {player_name} 两个占位符。"
+    "note": "按 Calendar 年月投放（date <= 当前 YYYY-MM 且未投放过）。走 GameManager.monthly_notice，酒馆墙上保留最近三条。text 为默认；text_S / text_M 按 GameState.news_variant() 覆盖（S 士人 / M 海商）。speaker 为空则显示【酒馆传闻】。市场副作用（禁运、恐慌）尚未接入 Economy，本文件不写未消费字段。史源：docs/陈文龙史料调研_2026-09-04.md 文案可用 {target_name}（有陈文龙则为其名，否则「兴化陈瓒」）与 {player_name} 两个占位符。 可选 only（scholar/merchant，按 GameState.identity 过滤）与 flag（投放时写入旗标）。"
   },
   "news": [
     {
@@ -60,11 +60,27 @@
       "text": "「元。鞑子给自己起了国号，叫大元。」"
     },
     {
+      "id": "n_1272_03_no_draft",
+      "date": "1272-03",
+      "speaker": "",
+      "only": "scholar",
+      "flag": "jia_offended",
+      "text": "临安来的短札：台谏例呈稿于贾府，你独不呈。贾平章爱你的文章，却不爱这件事。"
+    },
+    {
       "id": "n_1273_02_xiangyang_falls",
       "date": "1273-02",
       "speaker": "小瘸子",
       "text_S": "「襄阳没了。吕文焕降了，守了六年。」",
       "text_M": "「襄阳没了。吕文焕降了。」他压低声音，「蕃坊里大食人在卖宅子，一处临街的院子只要三百贯。」"
+    },
+    {
+      "id": "n_1273_02_dismissed",
+      "date": "1273-02",
+      "speaker": "",
+      "only": "scholar",
+      "flag": "dismissed_1273",
+      "text": "短札：你弹劾范文虎、赵溍、黄万石，贾平章大怒，贬你知抚州；未几又使台臣李可以「催科峻急」劾罢。你收拾了书箧，回兴化。"
     },
     {
       "id": "n_1273_03_fanfang_panic",
@@ -91,10 +107,25 @@
       "text": "「贾似道在鲁港跑了。十三万人，他坐一条小船先走。朝廷把他贬去循州，路上给人杀了。」"
     },
     {
+      "id": "n_1275_03_recalled",
+      "date": "1275-03",
+      "speaker": "",
+      "only": "scholar",
+      "text": "短札：鲁港溃败，朝廷起你为左司谏，寻迁侍御史。这一次来的人骑马，走得很急。"
+    },
+    {
       "id": "n_1275_04_requisition",
       "date": "1275-04",
       "speaker": "",
       "text": "朝廷征调商船的文书到了市舶司。在港的船，谁家的都一样。"
+    },
+    {
+      "id": "n_1275_11_vice",
+      "date": "1275-11",
+      "speaker": "",
+      "only": "scholar",
+      "flag": "vice_councillor",
+      "text": "短札：累迁参知政事。同一封信的末尾另起一行——朝议降。"
     },
     {
       "id": "n_1276_01_linan_falls",

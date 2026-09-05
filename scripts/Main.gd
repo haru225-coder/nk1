@@ -45,6 +45,10 @@ const CARD_SIEGE_WALL := "siege_wall"          # 船厂・修城墙
 const CARD_SIEGE_ENVOY := "siege_envoy"        # 酒馆・使者
 const CARD_SIEGE_NANGSHAN := "siege_nangshan"  # 囊山设伏
 const CARD_SIEGE_NUNNERY := "siege_nunnery"    # 福州尼寺（不可操作）
+## 士人线 1275 年末「出国门而悔」；海商线 1279 崖山 / 1285 收官
+const CARD_RESIGN := "special_resign_1275"
+const CARD_YASHAN := "special_yashan"
+const CARD_GANGSHOU := "special_gangshou_end"
 
 ## 无剧情场景的港口使用的通用设施
 const GENERIC_FACILITIES := [
@@ -656,7 +660,171 @@ func _special_cards() -> Array:
 			and GameState.has_found("nameless_shelter_bay") \
 			and not GameState.has_flag("ending_root_sea"):
 		out.append({"id": CARD_HANJIANG, "title": "涵江海口", "subtitle": "带族人走旧避风澳"})
+
+	# 士人线：辞呈已批，出不出国门（1275-12 起，未决则一直挂着）
+	if GameState.has_flag("vice_councillor") and not _resign_decided():
+		out.append({"id": CARD_RESIGN, "title": "临安・辞呈批语", "subtitle": "依奏。车已备在门外"})
+
+	# 海商线：崖山（1279 正月至三月，须在广州）
+	if current_scene_id == "guangzhou" and GameState.identity == "merchant" \
+			and Calendar.year == 1279 and Calendar.month <= 3:
+		out.append({"id": CARD_YASHAN, "title": "崖山", "subtitle": "宋军的船连成一片"})
+
+	# 海商线收官：1285 年后，一局跑到底
+	if GameState.identity == "merchant" and Calendar.year >= 1285:
+		out.append({"id": CARD_GANGSHOU, "title": "市舶司・新册", "subtitle": "封面换了，名字还在"})
+
 	return out
+
+
+func _resign_decided() -> bool:
+	return GameState.has_flag("petitioned_return") \
+		or GameState.has_flag("quiet_return") \
+		or GameState.has_flag("late_defection")
+
+
+## 1275 年十二月：辞呈已批，出了嘉会门又后悔。三条路，用航向选，不用按钮选。
+func _on_resign_1275() -> void:
+	_enter_panel_mode()
+	scene_title.text = "临安・嘉会门"
+	body_text.text = "辞呈是三天前批的。批语只有两个字：「依奏。」
+车出嘉会门时是卯时，守门的兵在跺脚取暖。车里放着一只书箧，箧里是十三年前那本夹着货引的《论语》。
+
+车过江头。钱塘江的水是灰的，和兴化海口一个颜色。车夫问：过了江往南，走陆路还是走海路？"
+
+	var again := Button.new()
+	again.text = "回头。再上一疏求还。"
+	again.pressed.connect(func():
+		GameState.set_flag("petitioned_return")
+		GameState.scholar_tendency += 4
+		GameState.add_ledger_note("复上疏不报")
+		GameManager.advance_days(7)
+		_show_notice_dialog("出国门而悔", "钱塘江畔",
+			"你在江边客店里写了一夜。天亮时奏疏送进城去。
+等了六天。没有回音。第七天，客店掌柜小心地问你还住不住。
+你付了钱，上了去明州的船。奏疏后来有没有人拆过，你一辈子不知道。")
+	)
+	choices_container.add_child(again)
+
+	var quiet := Button.new()
+	quiet.text = "不回头。走海路回兴化。"
+	quiet.pressed.connect(func():
+		GameState.set_flag("quiet_return")
+		GameState.set_flag("no_official_title")
+		GameState.sea_tendency += 2
+		GameState.hometown_tendency += 4
+		GameManager.advance_days(11)
+		_show_notice_dialog("不回头", "海上十一日",
+			"船在明州换了一次，在温州又换了一次。海上十一天，你大部分时候在看水色。
+二十年前阿那教过你怎么看，你以为早忘了。
+没忘。")
+	)
+	choices_container.add_child(quiet)
+
+	var defect := Button.new()
+	defect.text = "车转向南，去泉州找林阿舶（清算士人三锚）"
+	defect.disabled = GameState.money < 500
+	defect.tooltip_text = "县学籍册、名流举荐信、宗祠联名担保——撕这三张纸要钱，也要名声。"
+	defect.pressed.connect(func():
+		if not GameState.spend_money(500):
+			return
+		GameState.set_flag("late_defection")
+		GameState.fame -= 10
+		GameState.sea_tendency += 6
+		GameState.identity = "merchant"
+		GameState.merchant_credit += 10
+		GameState.add_ledger_note("一铺之地")
+		GameManager.advance_days(9)
+		_show_notice_dialog("一铺之地", "泉州・城南账房",
+			"泉州。二十年。
+码头比你记得的大了一倍，桅杆密得像一片死掉的林子。你问林阿舶的账房在哪，被问的人看了看你的官袍，指了指城南。
+
+账房里坐着的不是林阿舶。是一个和你差不多年纪的人，算盘打得比林阿舶还快。他抬头：「陈大人？林老爹去年走了。他说过要是有个姓陈的读书人来，账上给留了一铺之地。」
+
+他推过来一张纸。上面是二十年前你叔父那笔债的余数——早清了，用红笔划掉的。红笔底下另起一行：「陈子龙，船股一分。」
+
+你还叫陈文龙。可这张纸上写的是另一个名字。")
+	)
+	choices_container.add_child(defect)
+
+	choices_label.visible = true
+	_add_leave_button(current_scene_id)
+
+
+## 崖山：把粮与硫黄交上去，然后砍断自己的缆。
+func _on_yashan() -> void:
+	_enter_panel_mode()
+	scene_title.text = "崖山外海"
+	body_text.text = "祥兴二年二月。张世杰的船连成一片，船和船之间用铁索。
+陈瓒的船不在——他回兴化了，听说起了兵，要把兴化夺回来。
+一个书吏在册子上记你的名字。他问：「哪个陈？」"
+
+	var join := Button.new()
+	join.text = "把粮与硫黄交上去，船留在外围"
+	join.pressed.connect(func():
+		GameState.fame += 12
+		GameState.merchant_credit -= 30
+		GameManager.advance_days(5)
+		var speed_ok := Fleet.fleet_speed() > 90.0
+		var tail := "你砍断了自己的缆。阿那要是还活着，会告诉你这时候该往哪边走。你自己看了水色。往南。" if speed_ok \
+			else "你砍缆砍晚了。火从上风头卷过来，烧了半条船。人捞上来一半。往南走的时候，船比来时轻得多。"
+		if not speed_ok:
+			Fleet.damage_fleet(60.0)
+			Fleet.lose_cargo_ratio(0.5)
+		_show_notice_dialog("海上宋鬼", "崖山・祥兴二年二月",
+			"战到午后，铁索连着的船开始烧。
+%s
+
+——
+一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。
+这个世界少了一位海神，多了几条回来的船。" % tail,
+			"海上宋鬼")
+	)
+	choices_container.add_child(join)
+
+	var pass_by := Button.new()
+	pass_by.text = "不上前。远远看着，掉头往南"
+	pass_by.pressed.connect(func():
+		GameState.fame -= 6
+		Fleet.morale = maxi(0, Fleet.morale - 10)
+		GameState.add_ledger_note("崖山外海掉头")
+		GameManager.advance_days(3)
+		log_msg("你在十里外看着那片火。水手们没有说话。掉头往南的时候，风是顺的。")
+		load_scene(current_scene_id)
+	)
+	choices_container.add_child(pass_by)
+
+	choices_label.visible = true
+	_add_leave_button(current_scene_id)
+
+
+## 海商线收官：至元年间，泉州更大了。
+func _on_gangshou_end() -> void:
+	var pu := GameState.has_flag("sided_pu")
+	var head := "泉州・至元二十二年"
+	var text := ""
+	if pu:
+		text = "市舶司的册子换了封面。你的名字还在，「纲首」两字旁边加了一个蒙古官名，你不认得。
+蒲家的账房说，明年起船去占城不用再走暗关了——「都是一家人」。
+
+"
+	else:
+		text = "市舶司的册子换了封面。你的名字还在，只是排在很后面。
+那些当年站错队的，名字已经不在册上了。你还在。
+
+"
+	text += "你活到了至元二十年代。泉州比从前更大，港里有波斯人、大食人、高丽人，还有从前不敢来的北方人。
+有一年你雇的一个兴化水手在船上说：他们村口有一座小祠，供一个叫陈瓒的。
+你问，有没有一个叫陈文龙的。
+他说没听过。
+
+——
+一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。
+这个世界少了一位海神，多了几条回来的船。"
+	_show_notice_dialog("纲首" if not pu else "泉州蒲氏的船", head, text, "泉州蒲氏的船" if pu else "纲首")
+
+
+
 
 
 ## 「岸上的根」：陈瓒守城，你带族人出海。第一章那次复核在二十二年后变现。
@@ -685,7 +853,7 @@ func _on_hanjiang_escape() -> void:
 ## ending 非空则落定终局：关掉对话框后港口页只剩回顾札记。
 func _show_notice_dialog(title: String, head: String, text: String, ending: String = "") -> void:
 	if ending != "":
-		GameState.finish(ending)
+		GameState.finish(ending, text)
 	var dlg := AcceptDialog.new()
 	dlg.title = title
 	dlg.ok_button_text = "……" if ending == "" else "此局终"
@@ -1776,6 +1944,16 @@ func _setup_ended_port() -> void:
 		v.add_child(l)
 
 	left_facilities.add_child(panel)
+
+	if GameState.ended_text != "":
+		var review := Button.new()
+		review.text = "重读结局"
+		review.custom_minimum_size = Vector2(250, 44)
+		review.pressed.connect(func():
+			_show_notice_dialog(GameState.ended, GameState.ended_at, GameState.ended_text)
+		)
+		right_facilities.add_child(review)
+
 	_add_save_button()
 
 
@@ -1997,6 +2175,15 @@ func _on_facility_pressed(fac: Dictionary) -> void:
 		return
 	if target_scene == CARD_HANJIANG:
 		_on_hanjiang_escape()
+		return
+	if target_scene == CARD_RESIGN:
+		_on_resign_1275()
+		return
+	if target_scene == CARD_YASHAN:
+		_on_yashan()
+		return
+	if target_scene == CARD_GANGSHOU:
+		_on_gangshou_end()
 		return
 	if target_scene.begins_with("siege_"):
 		_on_siege_card(target_scene)

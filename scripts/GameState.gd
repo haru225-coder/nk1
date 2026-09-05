@@ -39,6 +39,8 @@ var siege: Dictionary = {}
 var ended: String = ""
 ## 结局达成时的日期与地点，供札记显示
 var ended_at: String = ""
+## 结局正文，供札记页回看
+var ended_text: String = ""
 
 var money: int = 1000
 var fame: int = 0
@@ -273,8 +275,13 @@ func pending_news() -> Array:
 		var nid: String = n.get("id", "")
 		if nid == "" or nid in news_seen:
 			continue
-		if str(n.get("date", "9999-99")) <= today:
-			out.append(n)
+		if str(n.get("date", "9999-99")) > today:
+			continue
+		# only: 只发给特定身份的短札（士人线的朝廷文书，海商线永远收不到）
+		var only := str(n.get("only", ""))
+		if only != "" and only != identity:
+			continue
+		out.append(n)
 	out.sort_custom(func(a, b): return str(a.get("date", "")) < str(b.get("date", "")))
 	return out
 
@@ -286,6 +293,13 @@ func news_text(n: Dictionary) -> String:
 	# {target_name}：蒲寿庚那句话点的名。世上有陈文龙就点他；没有就点陈瓒。
 	var target := player_name if has_flag("renamed_wenlong") else "兴化陈瓒"
 	return t.replace("{target_name}", target).replace("{player_name}", player_name)
+
+
+## 投放时写入旗标（news.json 的可选 flag 字段）
+func apply_news_flag(n: Dictionary) -> void:
+	var f := str(n.get("flag", ""))
+	if f != "":
+		set_flag(f)
 
 
 func mark_news_seen(nid: String) -> void:
@@ -373,10 +387,11 @@ func is_ended() -> bool:
 
 
 ## 落定终局。重复调用只认第一次——历史只走一遍。
-func finish(ending_name: String) -> bool:
+func finish(ending_name: String, text: String = "") -> bool:
 	if ended != "":
 		return false
 	ended = ending_name
+	ended_text = text
 	ended_at = "%s・%s" % [Calendar.get_date_string(), GameManager.get_port_name(last_port)]
 	set_flag("game_ended")
 	return true
@@ -552,6 +567,7 @@ func to_dict() -> Dictionary:
 		"siege": siege,
 		"ended": ended,
 		"ended_at": ended_at,
+		"ended_text": ended_text,
 	}
 
 
@@ -583,3 +599,4 @@ func from_dict(d: Dictionary) -> void:
 	siege = d.get("siege", {})
 	ended = str(d.get("ended", ""))
 	ended_at = str(d.get("ended_at", ""))
+	ended_text = str(d.get("ended_text", ""))

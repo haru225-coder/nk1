@@ -58,8 +58,13 @@ func _run_case(scholar: int, sea: int, first_flag: String, expect_name: String, 
 	# 新闻不重复：统计所有通知中每条 news 文本出现次数
 	_advance_to(1277, 1)
 	var seen_all: int = GS.news_seen.size()
-	var total_news: int = GM.news_data.get("news", []).size()
-	_check(seen_all == total_news, "1277-01 全部 %d 条新闻已投放（实际 %d）" % [total_news, seen_all])
+	# 带 only 的短札只发给对应身份，故应投总数随身份而变
+	var total_news := 0
+	for item0 in GM.news_data.get("news", []):
+		var only0 := str(item0.get("only", ""))
+		if only0 == "" or only0 == GS.identity:
+			total_news += 1
+	_check(seen_all == total_news, "1277-01 本身份应投 %d 条新闻（实际 %d）" % [total_news, seen_all])
 	var uniq := {}
 	for nid in GS.news_seen:
 		uniq[nid] = true
@@ -247,6 +252,40 @@ func _initialize() -> void:
 	_check(not GS.siege_open(), "from_dict({}) 清空城防")
 	GS.from_dict(sd)
 	_check(GS.siege_get("round") == 2, "存档 round-trip 保留城防轮次")
+
+	# ── only 过滤：士人短札海商永远收不到 ──
+	GS.from_dict({})
+	GS.identity = "scholar"
+	Cal.from_dict({"year": 1273, "month": 6, "day": 1})
+	var s_ids := []
+	for item in GS.pending_news():
+		s_ids.append(item.get("id", ""))
+	_check(s_ids.has("n_1272_03_no_draft"), "士人线收到 1272 不呈稿短札")
+	_check(s_ids.has("n_1273_02_dismissed"), "士人线收到 1273 罢归短札")
+	GS.from_dict({})
+	GS.identity = "merchant"
+	Cal.from_dict({"year": 1273, "month": 6, "day": 1})
+	var m_ids := []
+	for item2 in GS.pending_news():
+		m_ids.append(item2.get("id", ""))
+	_check(not m_ids.has("n_1272_03_no_draft"), "海商线收不到士人短札")
+	_check(m_ids.has("n_1273_02_xiangyang_falls"), "海商线仍收公共新闻")
+	# flag 随投放写入
+	GS.from_dict({})
+	GS.identity = "scholar"
+	Cal.from_dict({"year": 1273, "month": 1, "day": 28})
+	GM.advance_days(40)
+	_check(GS.has_flag("dismissed_1273"), "投放 1273 短札写入 dismissed_1273 旗标")
+	_check(GS.has_flag("jia_offended"), "1272 短札旗标补投")
+
+	# ── 结局正文回看 ──
+	GS.from_dict({})
+	_check(GS.finish("纲首", "正文若干"), "finish 带正文")
+	_check(GS.ended_text == "正文若干", "ended_text 已存")
+	var fd: Dictionary = GS.to_dict()
+	GS.from_dict({})
+	GS.from_dict(fd)
+	_check(GS.ended_text == "正文若干", "存档 round-trip 保留结局正文")
 
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	quit(1 if _fails > 0 else 0)
