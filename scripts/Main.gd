@@ -755,9 +755,15 @@ func _on_resign_1275() -> void:
 func _on_yashan() -> void:
 	_enter_panel_mode()
 	scene_title.text = "崖山外海"
+	var known_here := GameState.has_flag("sided_zhang")
 	body_text.text = "祥兴二年二月。张世杰的船连成一片，船和船之间用铁索。
 陈瓒的船不在——他回兴化了，听说起了兵，要把兴化夺回来。
-一个书吏在册子上记你的名字。他问：「哪个陈？」"
+"
+	if known_here:
+		body_text.text += "书吏翻册子翻到一半停住了：「泉州借船的那位。少保记着。」
+他没有再问你叫什么。"
+	else:
+		body_text.text += "一个书吏在册子上记你的名字。他问：「哪个陈？」"
 
 	var join := Button.new()
 	join.text = "把粮与硫黄交上去，船留在外围"
@@ -765,9 +771,16 @@ func _on_yashan() -> void:
 		GameState.fame += 12
 		GameState.merchant_credit -= 30
 		GameManager.advance_days(5)
-		var speed_ok := Fleet.fleet_speed() > 90.0
-		var tail := "你砍断了自己的缆。阿那要是还活着，会告诉你这时候该往哪边走。你自己看了水色。往南。" if speed_ok \
-			else "你砍缆砍晚了。火从上风头卷过来，烧了半条船。人捞上来一半。往南走的时候，船比来时轻得多。"
+		# 泉州借过船的，崖山有人替你留了外围的位置——砍缆的门槛低一截
+		var speed_ok := Fleet.fleet_speed() > (70.0 if known_here else 90.0)
+		var tail := ""
+		if speed_ok and known_here:
+			tail = "有人在铁索那头替你留了一道口子。你砍断自己的缆，从那道口子出去。
+阿那要是还活着，会告诉你这时候该往哪边走。你自己看了水色。往南。"
+		elif speed_ok:
+			tail = "你砍断了自己的缆。阿那要是还活着，会告诉你这时候该往哪边走。你自己看了水色。往南。"
+		else:
+			tail = "你砍缆砍晚了。火从上风头卷过来，烧了半条船。人捞上来一半。往南走的时候，船比来时轻得多。"
 		if not speed_ok:
 			Fleet.damage_fleet(60.0)
 			Fleet.lose_cargo_ratio(0.5)
@@ -1549,14 +1562,30 @@ func _setup_siege_port() -> void:
 	head.add_theme_color_override("font_color", Color(0.95, 0.9, 0.75))
 	v.add_child(head)
 	var body := Label.new()
-	body.text = "兵 %d / 上限 %d　粮 %d　城墙 %d　士气 %d%s" % [
+	var grain: int = GameState.siege_get("grain")
+	var rounds_left: int = grain / GameState.SIEGE_GRAIN_PER_ROUND
+	body.text = "兵 %d / 上限 %d　粮 %d（够打 %d 阵）　城墙 %d　士气 %d%s" % [
 		GameState.siege_get("troops"), GameState.siege_troop_cap(),
-		GameState.siege_get("grain"), GameState.siege_get("wall"),
+		grain, rounds_left, GameState.siege_get("wall"),
 		GameState.siege_get("morale"),
 		"　石手军在城" if str(GameState.siege.get("shishou", "")) == "kept" else "",
 	]
 	body.add_theme_font_size_override("font_size", 14)
 	v.add_child(body)
+
+	if rounds_left < 1:
+		var warn := Label.new()
+		warn.text = "⚠ 粮已不够打下一阵。此时出战即城破。"
+		warn.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4))
+		warn.add_theme_font_size_override("font_size", 14)
+		v.add_child(warn)
+	elif rounds_left == 1 and GameState.siege_get("round") < GameState.SIEGE_ROUNDS_MAX - 1:
+		var warn2 := Label.new()
+		warn2.text = "⚠ 粮只够再打一阵。要守满三阵，还得屯粮。"
+		warn2.add_theme_color_override("font_color", Color(1.0, 0.8, 0.45))
+		warn2.add_theme_font_size_override("font_size", 14)
+		v.add_child(warn2)
+
 	left_facilities.add_child(stat)
 
 	for fac in _siege_cards():
@@ -1573,7 +1602,11 @@ func _siege_cards() -> Array:
 	out.append({"id": CARD_SIEGE_WALL, "title": "船屋", "subtitle": "把修船的料改修城墙"})
 	if not (GameState.siege.get("envoy_wang", false) and GameState.siege.get("envoy_kin", false)):
 		out.append({"id": CARD_SIEGE_ENVOY, "title": "酒馆", "subtitle": "城下有使者求见"})
-	out.append({"id": CARD_SIEGE_NANGSHAN, "title": "囊山", "subtitle": "设伏迎敌（第 %d 阵）" % (GameState.siege_get("round") + 1)})
+	var short_of_grain: bool = GameState.siege_get("grain") < GameState.SIEGE_GRAIN_PER_ROUND
+	out.append({
+		"id": CARD_SIEGE_NANGSHAN, "title": "囊山",
+		"subtitle": "粮尽・出战即城破" if short_of_grain else "设伏迎敌（第 %d 阵）" % (GameState.siege_get("round") + 1),
+	})
 	out.append({"id": CARD_SIEGE_NUNNERY, "title": "福州尼寺", "subtitle": "母亲与璥儿在那里"})
 	return out
 

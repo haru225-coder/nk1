@@ -62,6 +62,8 @@ func _run_case(scholar: int, sea: int, first_flag: String, expect_name: String, 
 	var total_news := 0
 	for item0 in GM.news_data.get("news", []):
 		var only0 := str(item0.get("only", ""))
+		if str(item0.get("date", "9999-99")) > "1277-01":
+			continue
 		if only0 == "" or only0 == GS.identity:
 			total_news += 1
 	_check(seen_all == total_news, "1277-01 本身份应投 %d 条新闻（实际 %d）" % [total_news, seen_all])
@@ -286,6 +288,25 @@ func _initialize() -> void:
 	GS.from_dict({})
 	GS.from_dict(fd)
 	_check(GS.ended_text == "正文若干", "存档 round-trip 保留结局正文")
+
+	# ── 结局可发现性：每条线在窗口前都有预告 ──
+	var hints := {"n_1276_10_xinghua_muster": "scholar", "n_1277_01_chenzan_raises": "merchant", "n_1278_12_yashan": "merchant"}
+	for hid in hints:
+		var hn: Dictionary = GM.get_news_by_id(hid)
+		_check(not hn.is_empty(), "预告新闻 %s 存在" % hid)
+		_check(str(hn.get("only", "")) == hints[hid], "预告 %s 发给 %s" % [hid, hints[hid]])
+	# 预告必须早于对应窗口
+	_check(str(GM.get_news_by_id("n_1276_10_xinghua_muster").get("date", "")) < "1276-11", "守城预告早于 1276-11 围城")
+	_check(str(GM.get_news_by_id("n_1277_01_chenzan_raises").get("date", "")) < "1277-02", "陈瓒预告早于 1277-02 复城")
+	_check(str(GM.get_news_by_id("n_1278_12_yashan").get("date", "")) < "1279-01", "崖山预告早于 1279 正月")
+
+	# ── 守城粮尽口径与卡面一致 ──
+	GS.from_dict({})
+	GS.siege_begin()
+	GS.siege_set("grain", GS.SIEGE_GRAIN_PER_ROUND - 1)
+	_check(GS.siege_get("grain") / GS.SIEGE_GRAIN_PER_ROUND == 0, "粮不足一阵时余阵数为 0")
+	GS.siege_set("grain", GS.SIEGE_GRAIN_PER_ROUND * 3)
+	_check(GS.siege_get("grain") / GS.SIEGE_GRAIN_PER_ROUND == 3, "粮够三阵")
 
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	quit(1 if _fails > 0 else 0)
