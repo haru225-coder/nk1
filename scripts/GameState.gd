@@ -2,6 +2,32 @@ extends Node
 ## 玩家身份状态：钱、名声、章节、旗标、市舶司关系。
 ## 船与货已迁往 Fleet，时间迁往 Calendar，行情迁往 Economy。
 
+## 主角姓名。开局「陈子龙」；1268 年殿试结算若走士人线则改「陈文龙」。UI 一律读此字段，不写死。
+var player_name: String = "陈子龙"
+
+## 身份倾向。序章与剧情 effects 写入（sea_tendency / scholar_tendency）。
+## hometown_tendency 字段预留，v0.5.1 禁区未解冻：目前无任何写入点。
+var sea_tendency: int = 0
+var scholar_tendency: int = 0
+var hometown_tendency: int = 0
+
+## 1268 殿试结算后锁定：undecided | scholar | merchant | hometown
+var identity: String = "undecided"
+const IDENTITY_YEAR := 1268
+const IDENTITY_MONTH := 4
+
+## 已投放过的酒馆新闻 id（news.json）
+var news_seen: Array = []
+
+## 曾雇用过的具名水手 id（含已辞退）。终局「林华」伏笔靠它。
+var crew_history: Array = []
+
+## 海商信用与人脉。第一/二章剧情 effects 写入；终局泉州站队（终局系统化 §六）读 merchant_credit。
+var merchant_credit: int = 0
+var network: int = 0
+## 账目备注 / 货损记录（札记）。不可折算为钱的后果，只记不算。
+var ledger_notes: Array = []
+
 var money: int = 1000
 var fame: int = 0
 ## 主角武力（陈子龙）。白刃战判定输入之一；打赢海盗、夺船等会成长。
@@ -189,6 +215,93 @@ func try_advance_chapter() -> Dictionary:
 	}
 
 
+# ── 身份 ──────────────────────────────────────────────
+
+## 新闻/短札取哪一版文案：S（士人）或 M（海商）。1268 前按倾向，之后按锁定身份。
+func news_variant() -> String:
+	match identity:
+		"scholar":
+			return "S"
+		"merchant", "hometown":
+			return "M"
+	return "S" if scholar_tendency >= sea_tendency else "M"
+
+
+## 1268 年四月殿试结算，只结一次。返回 {resolved, title, text}。
+## 打平按开局第一选择破平（chose_land_first → 士人），再平则海商。
+func resolve_identity_1268() -> Dictionary:
+	if identity != "undecided":
+		return {"resolved": false}
+	var scholar_wins := scholar_tendency > sea_tendency
+	if scholar_tendency == sea_tendency:
+		scholar_wins = has_flag("chose_land_first")
+	if scholar_wins:
+		identity = "scholar"
+		player_name = "陈文龙"
+		set_flag("renamed_wenlong")
+		return {
+			"resolved": true,
+			"title": "咸淳四年 · 唱第",
+			"text": "临安来信：唱第日，御笔易名。你叫陈文龙了，赐字君贲。",
+		}
+	identity = "merchant"
+	set_flag("name_unchanged")
+	return {
+		"resolved": true,
+		"title": "咸淳四年 · 无人登第",
+		"text": "族里来信只有一行：今年殿试，兴化无人登第。老夫人把策论草稿收进了箧底。",
+	}
+
+
+## 尚未投放、且日期已到的新闻，按日期升序。
+func pending_news() -> Array:
+	var today := "%04d-%02d" % [Calendar.year, Calendar.month]
+	var out := []
+	for n in GameManager.news_data.get("news", []):
+		var nid: String = n.get("id", "")
+		if nid == "" or nid in news_seen:
+			continue
+		if str(n.get("date", "9999-99")) <= today:
+			out.append(n)
+	out.sort_custom(func(a, b): return str(a.get("date", "")) < str(b.get("date", "")))
+	return out
+
+
+## 取一条新闻在当前身份下的文案
+func news_text(n: Dictionary) -> String:
+	var key := "text_" + news_variant()
+	if n.has(key):
+		return str(n[key])
+	return str(n.get("text", ""))
+
+
+func mark_news_seen(nid: String) -> void:
+	if nid != "" and not (nid in news_seen):
+		news_seen.append(nid)
+
+
+## 最近投放过的 k 条新闻（酒馆墙上贴的），新的在前
+func recent_news(k: int = 3) -> Array:
+	var out := []
+	for i in range(news_seen.size() - 1, -1, -1):
+		var n := GameManager.get_news_by_id(news_seen[i])
+		if not n.is_empty():
+			out.append(n)
+		if out.size() >= k:
+			break
+	return out
+
+
+func add_ledger_note(note: String) -> void:
+	if note != "" and not (note in ledger_notes):
+		ledger_notes.append(note)
+
+
+func record_crew(cand_id: String) -> void:
+	if cand_id != "" and not (cand_id in crew_history):
+		crew_history.append(cand_id)
+
+
 # ── 旗标 ──────────────────────────────────────────────
 
 func set_flag(flag_name: String) -> void:
@@ -312,6 +425,16 @@ func to_dict() -> Dictionary:
 		"discoveries_reported": discoveries_reported,
 		"visited_ports": visited_ports,
 		"peak_money": peak_money,
+		"player_name": player_name,
+		"sea_tendency": sea_tendency,
+		"scholar_tendency": scholar_tendency,
+		"hometown_tendency": hometown_tendency,
+		"identity": identity,
+		"news_seen": news_seen,
+		"crew_history": crew_history,
+		"merchant_credit": merchant_credit,
+		"network": network,
+		"ledger_notes": ledger_notes,
 	}
 
 
@@ -329,3 +452,13 @@ func from_dict(d: Dictionary) -> void:
 	discoveries_reported = d.get("discoveries_reported", [])
 	visited_ports = d.get("visited_ports", [])
 	peak_money = d.get("peak_money", money)
+	player_name = str(d.get("player_name", "陈子龙"))
+	sea_tendency = int(d.get("sea_tendency", 0))
+	scholar_tendency = int(d.get("scholar_tendency", 0))
+	hometown_tendency = int(d.get("hometown_tendency", 0))
+	identity = str(d.get("identity", "undecided"))
+	news_seen = d.get("news_seen", [])
+	crew_history = d.get("crew_history", [])
+	merchant_credit = int(d.get("merchant_credit", 0))
+	network = int(d.get("network", 0))
+	ledger_notes = d.get("ledger_notes", [])

@@ -67,6 +67,7 @@ func hire(cand_id: String) -> Dictionary:
 	if not GameState.spend_money(fee):
 		return {"ok": false, "msg": "入伙钱要 %d，你拿不出。" % fee}
 	hired[role_id] = c
+	GameState.record_crew(cand_id)
 	return {"ok": true, "msg": "%s 入伙，付入伙钱 %d，月俸 %d。" % [
 		c.get("name", "此人"), fee, c.get("wage", 0),
 	]}

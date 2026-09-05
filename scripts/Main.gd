@@ -98,7 +98,7 @@ func update_status_panel() -> void:
 	var permit_str := "【有】合法" if GameState.has_customs_permit else "【无】黑市"
 	var contraband := GameState.contraband_units()
 
-	var t := "[b]%s[/b]\n%s\n\n" % [Calendar.get_date_string(), Calendar.get_monsoon_desc()]
+	var t := "[b]%s[/b]　%s\n%s\n\n" % [GameState.player_name, Calendar.get_date_string(), Calendar.get_monsoon_desc()]
 	t += "金钱：%d\n" % GameState.money
 	if GameState.debt > 0:
 		t += "[color=orange]欠债：%d[/color]\n" % GameState.debt
@@ -822,6 +822,12 @@ func _on_buy_supplies(n: int, wp: int, gp: int) -> void:
 func _setup_tavern(port_id: String) -> void:
 	scene_title.text = "%s・酒馆" % GameManager.get_port_name(port_id)
 	body_text.text = "这里充斥着劣质酒水的味道和水手们的大声喧哗。"
+	var recent := GameState.recent_news(3)
+	if not recent.is_empty():
+		body_text.text += "\n\n── 近日传闻 ──"
+		for n in recent:
+			var who: String = str(n.get("speaker", ""))
+			body_text.text += "\n%s%s" % ["" if who == "" else who + "：", GameState.news_text(n)]
 
 	if port_id.begins_with("quanzhou"):
 		_add_npc_button("merchant_lin", "林阿舶")
@@ -1432,4 +1438,42 @@ func apply_effects(effects: Dictionary) -> void:
 				GameState.set_flag(str(val))
 			"chapter":
 				GameState.chapter = maxi(GameState.chapter, int(val))
+			"sea_tendency":
+				GameState.sea_tendency += int(val)
+			"scholar_tendency":
+				GameState.scholar_tendency += int(val)
+			"name":
+				GameState.player_name = str(val)
+			# ── 第一/二章（v0.3 时代）效果键，2026-09-04 起接入 ──
+			"merchant_credit":
+				GameState.merchant_credit += int(val)
+			"network":
+				GameState.network += int(val)
+			"ledger_note", "cargo_loss":
+				GameState.add_ledger_note(str(val))
+			"supplies":
+				Fleet.water = maxi(0, Fleet.water + int(val))
+				Fleet.food = maxi(0, Fleet.food + int(val))
+			"ship":
+				# 正值修船、负值受损，作用于旗舰
+				if int(val) < 0:
+					Fleet.damage_fleet(float(-int(val)))
+				elif not Fleet.ships.is_empty():
+					var fs: Dictionary = Fleet.ships[0]
+					fs["durability"] = minf(float(fs.get("max_durability", 100)), float(fs.get("durability", 0)) + float(val))
+			"discovery":
+				var did := GameManager.get_discovery_id_by_name(str(val))
+				if did == "":
+					push_warning("apply_effects: 未知发现物 %s" % str(val))
+				elif GameState.record_discovery(did):
+					log_msg("【勘见】%s 已记入发现录。" % GameManager.get_discovery_by_id(did).get("name", did))
+			"cargo":
+				# 剧情交付的货/文书（林阿舶押货、寺院经卷等），每种一件、无本钱；舱位不足则只记不装
+				for gid in val:
+					if GameManager.get_good_by_id(str(gid)).is_empty():
+						push_warning("apply_effects: 未知货物 %s" % str(gid))
+					elif not Fleet.add_cargo(str(gid), 1, 0.0):
+						log_msg("【舱满】%s 装不下，暂寄岸上。" % GameManager.get_good_name(str(gid)))
+			_:
+				push_warning("apply_effects: 未知效果键 %s" % key)
 	update_status_panel()

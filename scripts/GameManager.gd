@@ -16,6 +16,8 @@ var discoveries_data: Dictionary = {}
 var ships_data: Dictionary = {}
 var chapters_data: Dictionary = {}
 var crew_data: Dictionary = {}
+## 历史压力新闻（酒馆传闻），按 Calendar 年月投放
+var news_data: Dictionary = {}
 
 
 func _ready() -> void:
@@ -31,6 +33,7 @@ func load_data() -> void:
 	ships_data = _load_json("res://data/ships.json")
 	chapters_data = _load_json("res://data/chapters.json")
 	crew_data = _load_json("res://data/crew.json")
+	news_data = _load_json("res://data/news.json")
 
 	if scenes_data.has("scenes"):
 		print("Data loaded. Scenes:%d Goods:%d Ports:%d Ships:%d" % [
@@ -67,11 +70,26 @@ func advance_days(n: int) -> void:
 			var notice := Crew.pay_wages()
 			if notice != "":
 				monthly_notice.emit(notice)
+			_settle_history()
 		Economy.on_day_passed()
 		Fleet.on_day_passed()
 
 
 # ── 资源 ──────────────────────────────────────────────
+
+## 月初结算历史压力：到期新闻投放；1268 年四月殿试一次性锁定身份。
+## 历史是天气不是过场——全部走 monthly_notice，不开新场景。
+func _settle_history() -> void:
+	if Calendar.year > GameState.IDENTITY_YEAR or (Calendar.year == GameState.IDENTITY_YEAR and Calendar.month >= GameState.IDENTITY_MONTH):
+		var r := GameState.resolve_identity_1268()
+		if r.get("resolved", false):
+			monthly_notice.emit("【%s】%s" % [r["title"], r["text"]])
+	for n in GameState.pending_news():
+		GameState.mark_news_seen(n.get("id", ""))
+		var speaker: String = str(n.get("speaker", ""))
+		var prefix := "【酒馆传闻】" if speaker == "" else "【%s】" % speaker
+		monthly_notice.emit(prefix + GameState.news_text(n))
+
 
 ## 按文件头而非扩展名加载图片。
 ## assets 里有若干 .png 文件实际是 JPEG 内容（图片压缩后沿用了原文件名），
@@ -112,10 +130,25 @@ func get_scene_by_id(scene_id: String) -> Dictionary:
 
 
 # 按 id 查询发现物（航路复核、碑拓证据等）
+## 剧情 effects 里的 discovery 用中文名（"旧避风澳"），此处按 id 或 name 双向查
+func get_discovery_id_by_name(name_or_id: String) -> String:
+	for d in discoveries_data.get("discoveries", []):
+		if d.get("id") == name_or_id or d.get("name") == name_or_id:
+			return str(d.get("id", ""))
+	return ""
+
+
 func get_discovery_by_id(discovery_id: String) -> Dictionary:
 	for d in discoveries_data.get("discoveries", []):
 		if d.get("id") == discovery_id:
 			return d
+	return {}
+
+
+func get_news_by_id(news_id: String) -> Dictionary:
+	for n in news_data.get("news", []):
+		if n.get("id") == news_id:
+			return n
 	return {}
 
 

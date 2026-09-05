@@ -32,6 +32,7 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 python3 tools/check_symbols.py    # autoload 顺序与跨文件符号（GDScript 动态语言的必要保险）
 python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 / 死港 / 海战数值边界
 python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢出
+python3 tools/verify_story_data.py # 剧情数据：scenes effects 键必须被 Main.apply_effects 接住；news.json / npcs.json 结构；GameState 存档字段对称
 ```
 
 有 Godot 4.6.3 时再加第四道引擎内编译门禁（2026-09-03 起；建议先把项目 rsync 到临时目录再跑，编辑器扫描会生成 `.godot/` 与 `*.gd.uid`）：
@@ -39,11 +40,12 @@ python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢�
 ```bash
 godot --headless --editor --path . --quit                    # 编辑器扫描：期望 0 ERROR / 0 WARNING
 godot --headless --path . -s tools/godot_compile_check.gd    # 带 autoload 逐脚本编译：期望 18/18
+godot --headless --path . -s tools/godot_story_check.gd      # 剧情状态机：新闻按月投放、1268 殿试结算、存档 round-trip：期望 fails=0
 ```
 
 不要用 `--check-only` 当门禁：它不实例化 autoload，会把 `GameManager`/`Fleet` 等引用误报为 Identifier not found，且有 SCRIPT ERROR 时退出码仍为 0。
 
-四道全绿才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
+六道全绿才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
 
 ## 目录结构
 
