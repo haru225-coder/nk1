@@ -16,6 +16,12 @@ var identity: String = "undecided"
 const IDENTITY_YEAR := 1268
 const IDENTITY_MONTH := 4
 
+## 本章内的行为累计。章节晋升时结成「数年后」摘要，然后清零。
+## 记的是「这几年你在做什么」，不是分数。
+var era_trips: int = 0
+var era_routes: Dictionary = {}   # {"泉州→博多": 次数}
+var era_profit: int = 0
+
 ## 已投放过的酒馆新闻 id（news.json）
 var news_seen: Array = []
 
@@ -164,6 +170,32 @@ func report_discovery(did: String) -> Dictionary:
 	return {"gold": gold, "fame": fame_gain, "name": d.get("name", "所见")}
 
 
+## 记一趟航行（SeaChart 抵港时调用）。跳年摘要的原料。
+func record_trip(from_id: String, to_id: String) -> void:
+	era_trips += 1
+	if from_id == "" or to_id == "":
+		return
+	var key := "%s→%s" % [GameManager.get_port_name(from_id), GameManager.get_port_name(to_id)]
+	era_routes[key] = int(era_routes.get(key, 0)) + 1
+
+
+## 本段跑得最多的一条线
+func era_main_route() -> String:
+	var best := ""
+	var best_n := 0
+	for k in era_routes.keys():
+		if int(era_routes[k]) > best_n:
+			best_n = int(era_routes[k])
+			best = str(k)
+	return best
+
+
+func clear_era() -> void:
+	era_trips = 0
+	era_routes = {}
+	era_profit = 0
+
+
 func visit_port(port_id: String) -> void:
 	if port_id != "" and not (port_id in visited_ports):
 		visited_ports.append(port_id)
@@ -226,6 +258,7 @@ func try_advance_chapter() -> Dictionary:
 		"advanced": true,
 		"title": cur.get("advance_title", "新的一章"),
 		"text": cur.get("advance_text", ""),
+		"years": int(cur.get("advance_years", 0)),
 	}
 
 
@@ -578,6 +611,9 @@ func to_dict() -> Dictionary:
 		"hometown_tendency": hometown_tendency,
 		"identity": identity,
 		"news_seen": news_seen,
+		"era_trips": era_trips,
+		"era_routes": era_routes,
+		"era_profit": era_profit,
 		"crew_history": crew_history,
 		"merchant_credit": merchant_credit,
 		"network": network,
@@ -610,6 +646,9 @@ func from_dict(d: Dictionary) -> void:
 	hometown_tendency = int(d.get("hometown_tendency", 0))
 	identity = str(d.get("identity", "undecided"))
 	news_seen = d.get("news_seen", [])
+	era_trips = int(d.get("era_trips", 0))
+	era_routes = d.get("era_routes", {})
+	era_profit = int(d.get("era_profit", 0))
 	crew_history = d.get("crew_history", [])
 	merchant_credit = int(d.get("merchant_credit", 0))
 	network = int(d.get("network", 0))

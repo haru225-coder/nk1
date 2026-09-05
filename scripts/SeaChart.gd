@@ -805,6 +805,7 @@ func _on_investigate_discovery() -> void:
 func _arrive() -> void:
 	sailing = false
 	Fleet.at_sea = false
+	GameState.record_trip(origin_port, selected_port)
 	GameState.last_port = selected_port
 	_log("[color=aqua]历 %d 日，抵 %s。[/color]" % [days_elapsed, GameManager.get_port_name(selected_port)])
 

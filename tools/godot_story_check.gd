@@ -395,5 +395,47 @@ func _initialize() -> void:
 	_check(SL.save_label(9).find("终：忠肃") >= 0, "终局档标签带结局名（%s）" % SL.save_label(9))
 	_check(SL.load_game(9) and GS.is_ended() and GS.ended == "忠肃", "读回终局档仍是终局态")
 
+	# ── 跳年（P1 时间脊柱） ──
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	Flt.from_dict({})
+	Eco.initialize()
+	# 行为累计
+	GS.record_trip("quanzhou", "hakata")
+	GS.record_trip("quanzhou", "hakata")
+	GS.record_trip("quanzhou", "penghu")
+	_check(GS.era_trips == 3, "记满三趟")
+	_check(GS.era_main_route().find("博多") >= 0, "主航线取次数最多者（%s）" % GS.era_main_route())
+	# 跳年：历法真的走、行情重置、船况折旧
+	if not Flt.ships.is_empty():
+		Flt.ships[0]["durability"] = float(Flt.ships[0].get("max_durability", 120))
+	var hull0: float = float(Flt.ships[0].get("durability", 0)) if not Flt.ships.is_empty() else 0.0
+	Eco.rates["quanzhou"]["grain"] = 1.8
+	var lines: Array = GM.skip_years(3)
+	_check(Cal.year == 1258, "跳 3 年后历法到 1258（实际 %d）" % Cal.year)
+	_check(not lines.is_empty(), "跳年返回摘要行")
+	_check(abs(float(Eco.get_rate("quanzhou", "grain")) - 1.0) < 0.001, "跳年后行情重置为 1.0")
+	if not Flt.ships.is_empty():
+		var hull1: float = float(Flt.ships[0].get("durability", 0))
+		_check(hull1 < hull0, "跳年后船况折旧（%.0f → %.0f）" % [hull0, hull1])
+		_check(hull1 >= float(Flt.ships[0].get("max_durability", 120)) * GM.SKIP_HULL_FLOOR - 0.5, "折旧不低于下限")
+	_check(Flt.morale <= GM.SKIP_MORALE_AFTER, "跳年后士气不高于 %d" % GM.SKIP_MORALE_AFTER)
+	# 跳年期间新闻照常投放（1255→1258 应收到 1256 太学等）
+	# 1255-03 跳 3 年 → 1258-03，期间到期的只有 1256 的两条（1258-09 尚未到）
+	_check(GS.news_seen.size() == 2, "跳年期间新闻照常按月投放，且不越期（%d 条）" % GS.news_seen.size())
+	_check(GS.news_seen.has("n_1256_03_taixue"), "跳年不吞掉途中的新闻")
+	# 清段
+	GS.clear_era()
+	_check(GS.era_trips == 0 and GS.era_routes.is_empty(), "clear_era 清零")
+	# 跳 0 年不动
+	var y_before: int = Cal.year
+	_check(GM.skip_years(0).is_empty(), "跳 0 年返回空")
+	_check(Cal.year == y_before, "跳 0 年历法不动")
+	# 晋升带 years 字段
+	GS.from_dict({})
+	GS.chapter = 1
+	var cdef: Dictionary = GS.chapter_def()
+	_check(int(cdef.get("advance_years", 0)) > 0, "第一章带 advance_years")
+
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	quit(1 if _fails > 0 else 0)

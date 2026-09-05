@@ -2225,11 +2225,37 @@ func _on_enter_port(port_id: String) -> void:
 		_show_chapter_dialog(res)
 
 
+## 「数年后」：把这一段的行为结成几行，再加上跳年的代价。
+## 这是全作唯一一处让玩家看见「时间过去了」的地方——不能只写一句「三年后」。
+func _era_summary_lines(years: int) -> Array:
+	var lines := []
+	var trips: int = GameState.era_trips
+	var route: String = GameState.era_main_route()
+	if trips > 0:
+		if route != "":
+			lines.append("这%s，你的船跑了 %d 趟，走得最多的是%s。" % [
+				"几年" if years > 0 else "一段日子", trips, route,
+			])
+		else:
+			lines.append("这%s，你的船跑了 %d 趟。" % ["几年" if years > 0 else "一段日子", trips])
+	if GameState.merchant_credit >= 20:
+		lines.append("牙行里提起你的名字，不必再加「泉州那个姓陈的」。")
+	elif GameState.merchant_credit <= -10:
+		lines.append("有几家牙行不再接你的单子，理由都说得很客气。")
+	if not Crew.hired.is_empty():
+		var names := []
+		for c in Crew.roster():
+			names.append(str(c.get("name", "")))
+		lines.append("还在船上的：%s。" % "、".join(names))
+	return lines
+
+
 func _show_chapter_dialog(res: Dictionary) -> void:
 	var dlg := AcceptDialog.new()
 	dlg.title = "第 %s 章・%s" % [
 		_cn_chapter(GameState.chapter), GameState.chapter_def().get("name", ""),
 	]
+	dlg.exclusive = true
 	dlg.ok_button_text = "承此一路"
 
 	var m := MarginContainer.new()
@@ -2247,11 +2273,31 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	head.add_theme_font_size_override("font_size", 26)
 	v.add_child(head)
 
+	var years: int = int(res.get("years", 0))
+	var text: String = str(res.get("text", ""))
+	if years > 0:
+		var era := _era_summary_lines(years)
+		var costs: Array = GameManager.skip_years(years)
+		var block := "【%d 年后・%s】
+" % [years, Calendar.get_date_string()]
+		if not era.is_empty():
+			block += "
+".join(era) + "
+"
+		if not costs.is_empty():
+			block += "
+".join(costs) + "
+"
+		text = block + "
+" + text
+		GameState.clear_era()
+		update_status_panel()
+
 	var body := RichTextLabel.new()
 	body.bbcode_enabled = false
 	body.fit_content = true
-	body.custom_minimum_size = Vector2(520, 200)
-	body.text = res.get("text", "")
+	body.custom_minimum_size = Vector2(560, 300)
+	body.text = text
 	v.add_child(body)
 
 	dlg.add_child(m)

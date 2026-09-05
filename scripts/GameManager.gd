@@ -79,6 +79,61 @@ func advance_days(n: int) -> void:
 
 # ── 资源 ──────────────────────────────────────────────
 
+# ── 跳年 ──────────────────────────────────────────────
+
+## 章节晋升时跳过若干年。
+## 这些年不是「什么都没发生」，而是「你一直在跑船，只是不必一趟趟点」。
+## 代价必须真实：船会旧，人会走，行情会忘掉你，士气不会自己攒着。
+const SKIP_HULL_DECAY := 0.08      # 每年折旧
+const SKIP_HULL_FLOOR := 0.20      # 折到底也留两成，不至于一跳就沉
+const SKIP_CREW_LEAVE := 0.12      # 每年每人离船概率
+const SKIP_MORALE_AFTER := 65      # 久不出海，人心散了
+
+## 返回摘要行数组，供章节对话框显示
+func skip_years(n: int) -> Array:
+	if n <= 0:
+		return []
+	var lines := []
+	var y0 := Calendar.year
+
+	# 先把这几年的日子真的走完——新闻、月结、行情回归都照常发生
+	for i in range(n):
+		advance_days(Calendar.DAYS_PER_MONTH * Calendar.MONTHS_PER_YEAR)
+
+	# 船况折旧
+	var decayed := 0
+	for sh in Fleet.ships:
+		var maxd := float(sh.get("max_durability", 100))
+		var cur := float(sh.get("durability", maxd))
+		var after := maxf(maxd * SKIP_HULL_FLOOR, cur * pow(1.0 - SKIP_HULL_DECAY, float(n)))
+		if after < cur - 0.5:
+			decayed += 1
+		sh["durability"] = after
+	if decayed > 0:
+		lines.append("船板泡了%d年海水，%d 条船都该进坞了。" % [n, decayed])
+
+	# 水手流失
+	var left := []
+	for role_id in Crew.hired.keys().duplicate():
+		var leave_p := 1.0 - pow(1.0 - SKIP_CREW_LEAVE, float(n))
+		if randf() < leave_p:
+			left.append(str(Crew.hired[role_id].get("name", "一个人")))
+			Crew.hired.erase(role_id)
+	if not left.is_empty():
+		lines.append("%s没有再上船——有的回了乡，有的上了别家的船。" % "、".join(left))
+
+	# 士气与行情
+	Fleet.morale = mini(Fleet.morale, SKIP_MORALE_AFTER)
+	for pid in Economy.rates.keys():
+		var pr: Dictionary = Economy.rates[pid]
+		for gid in pr.keys():
+			pr[gid] = 1.0
+	lines.append("市价早不是当年的市价了。")
+
+	lines.append("——%d 年至 %d 年。" % [y0, Calendar.year])
+	return lines
+
+
 ## 月初结算历史压力：到期新闻投放；1268 年四月殿试一次性锁定身份。
 ## 历史是天气不是过场——全部走 monthly_notice，不开新场景。
 func _settle_history() -> void:

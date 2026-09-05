@@ -80,6 +80,40 @@ if m:
     print(f"    每次 +{gain} 乡土 / {days} 日；压过序章 4 点需 {need} 次（{need*days} 日）")
     check(need * days < 365 * 12, f"1255–1268 有 {365*12} 余日，{need*days} 日可达——乡土线非死分支")
 
+# ── 一之二、时间轴对齐 ─────────────────────────────────
+print("\n  ── 时间轴：进度系统必须撑得住 24 年故事 ──")
+chapters = {int(c["id"]): c for c in load("chapters.json")["chapters"]}
+skip_total = sum(int(c.get("advance_years", 0)) for c in chapters.values())
+print(f"    章节跳年合计 {skip_total} 年")
+check(skip_total >= 8, f"四章跳年合计 {skip_total} 年 ≥ 8——否则进度在故事第 2 年就跑完")
+
+# simulate_run 实测：约 10 个月打完前两章门槛；据此推 1268 时的历法
+# 保守假设玩家每章沙盒期只花 1 年（比实测还快），加上跳年
+sandbox_per_chapter = 1
+reach = 1255 + sandbox_per_chapter * 4 + skip_total
+print(f"    最快推演：每章沙盒 {sandbox_per_chapter} 年 + 跳年 {skip_total} 年 → 第四章达成时约 {reach} 年")
+check(reach >= 1264, f"最快也要到 {reach} 年才走完四章（≥1264，与 1268 殿试接得上）")
+check(reach <= 1275, f"最慢不至于错过 1275 历史压力段（{reach} ≤ 1275）")
+
+# 第四章必须有门槛，否则玩家做完就悬空
+ch4 = chapters.get(4, {})
+check(ch4.get("next_requires") is not None, "第四章有门槛（此前 next_requires: null，做完即悬空）")
+if ch4.get("next_requires"):
+    need = ch4["next_requires"].get("peak_money", 0)
+    check(need > 60000, f"第四章门槛 {need} 钱高于第三章 60000（经济仍有天花板）")
+
+# 跳年代价必须存在且不致命
+gm = src("scripts/GameManager.gd")
+for name, lo, hi in [("SKIP_HULL_DECAY", 0.03, 0.20), ("SKIP_CREW_LEAVE", 0.05, 0.25)]:
+    v = const(name, gm, float)
+    check(lo <= v <= hi, f"{name}={v} 落在 [{lo},{hi}]（有代价但不致命）")
+floor = const("SKIP_HULL_FLOOR", gm, float)
+worst = max(int(c.get("advance_years", 0)) for c in chapters.values())
+decay = const("SKIP_HULL_DECAY", gm, float)
+left = max(floor, (1 - decay) ** worst)
+print(f"    最长一跳 {worst} 年：船况余 {left:.0%}（下限 {floor:.0%}）")
+check(left >= floor and left > 0.15, f"最长跳年后船况余 {left:.0%}，不会一跳沉船")
+
 # ── 二、守城胜率 ───────────────────────────────────────
 print("\n  ── 守城：三阵胜率与「花钱买过关」风险 ──")
 
