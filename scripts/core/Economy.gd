@@ -17,6 +17,13 @@ var tariff_rate: float = 0.10
 ## 牙人佣金，卖出时扣
 var broker_fee: float = 0.05
 
+## 同港价差地板。通事的议价是双向的（压买价又抬卖价），杂事又同时缩小抽解与佣金，
+## 而抽解与佣金正是唯一阻止「原地买入立刻卖出」的价差——10%+5% 的毛价差撑不起满级
+## 通事 ±21% 的双向议价，满编时同港卖价会高过买价，站着不动就能无限印钱，且不出港
+## 故 customs_inspection 永不触发。与城墙无上限（GameState.SIEGE_WALL_MAX）是同一类错误。
+## 这条不靠调参维持、靠结构维持：任何修饰组合下同港买价恒 ≥ 卖价 × 此值。
+const PRICE_SPREAD_MIN := 1.08
+
 ## {port_id: {good_id: rate}}
 var rates: Dictionary = {}
 
@@ -94,13 +101,19 @@ func get_rate(port_id: String, good_id: String) -> float:
 	return rates.get(port_id, {}).get(good_id, 1.0)
 
 
-## 杂事压低抽解与佣金；通事在异国港口另有议价之利；降元港口抽解加倍
-func _effective_tariff(port_id: String = "") -> float:
+## 抽解的港口部分（战况倍率 + 世界线旗标），不含任何职事修正。
+## 同港价差地板拿它当「光杆基准」，好让地板只压职事加成、不与战况机制打架。
+func _base_tariff(port_id: String = "") -> float:
 	var war_mul: float = WAR_TARIFF.get(war_status(port_id), 1.0) if port_id != "" else 1.0
 	# 对峙期站了蒲家：泉州抽解永久八折——「都是一家人」
 	if port_id == "quanzhou" and GameState.has_flag("sided_pu"):
 		war_mul *= 0.8
-	return tariff_rate * Crew.trade_cost_factor() * war_mul
+	return tariff_rate * war_mul
+
+
+## 杂事压低抽解与佣金；通事在异国港口另有议价之利；降元港口抽解加倍
+func _effective_tariff(port_id: String = "") -> float:
+	return _base_tariff(port_id) * Crew.trade_cost_factor()
 
 
 func _effective_broker() -> float:
@@ -108,14 +121,24 @@ func _effective_broker() -> float:
 
 
 ## 定价的唯一出处。estimate_* 逐单位推演时也走这里，避免公式分叉。
+##
+## 价差地板的裁法（改公式时 tools/verify_economy.py 的 price_with_crew 必须同步）：
+## 卖价先封顶在「光杆买价 ÷ 地板」，超出的部分改从买价折扣里扣回来；且买、卖两侧
+## 都不得劣于光杆——只压卖价的话，雇齐 400 钱/月的杂事通事反而比光杆赚得少。
 func price_at_rate(port_id: String, good_id: String, rate: float, is_buy: bool) -> int:
 	var base: float = float(_good_def(good_id).get("base_value", 0))
 	var mod: float = ROLE_MOD.get(get_role(port_id, good_id), 1.0)
 	var edge := Crew.interpreter_edge(port_id)
 	var v := base * mod * rate
-	if is_buy:
-		return int(round(v * (1.0 + _effective_tariff(port_id)) * (1.0 - edge)))
-	return int(round(v * (1.0 - _effective_broker()) * (1.0 + edge)))
+	var bare_buy := v * (1.0 + _base_tariff(port_id))
+	var bare_sell := v * (1.0 - broker_fee)
+	var cap := bare_buy / PRICE_SPREAD_MIN
+	var sell_v: float = minf(v * (1.0 - _effective_broker()) * (1.0 + edge), cap)
+	sell_v = maxf(sell_v, minf(bare_sell, cap))
+	if not is_buy:
+		return int(round(sell_v))
+	var buy_v: float = maxf(v * (1.0 + _effective_tariff(port_id)) * (1.0 - edge), sell_v * PRICE_SPREAD_MIN)
+	return int(round(minf(buy_v, maxf(bare_buy, sell_v * PRICE_SPREAD_MIN))))
 
 
 ## 玩家买入单价（含抽解）
