@@ -346,6 +346,10 @@ func is_port_banned(port_id: String) -> bool:
 # ── 守城 ──────────────────────────────────────────────
 
 const SIEGE_ROUNDS_MAX := 3
+## 城墙上限。没有它，1276 年的富商可以直接用钱把守城买穿——
+## 名声、石手军、斩使焚书全部失效（tools/simulate_endgame.py 实测三阵全胜率 100%）。
+## 守城要由「有多少人肯跟你」决定，不由账上有多少钱决定。
+const SIEGE_WALL_MAX := 200
 const SIEGE_TROOP_COST := 10
 const SIEGE_GRAIN_PER_ROUND := 40
 
@@ -382,6 +386,11 @@ func siege_add(key: String, delta: int) -> void:
 ## 募兵上限随名声：城中兵不满千是史实，名声高才募得动人
 func siege_troop_cap() -> int:
 	return mini(1000, 300 + fame * 12)
+
+
+## 城墙尚可加固的余量
+func siege_wall_room() -> int:
+	return maxi(0, SIEGE_WALL_MAX - siege_get("wall"))
 
 
 ## 我方战力：兵 × 士气 × 石手军加成，城墙作底

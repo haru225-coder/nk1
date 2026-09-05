@@ -32,6 +32,7 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 python3 tools/check_symbols.py    # autoload 顺序与跨文件符号（GDScript 动态语言的必要保险）
 python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 / 死港 / 海战数值边界
 python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢出
+python3 tools/simulate_endgame.py # 终局数值：身份判定、守城胜率、崖山门槛、结局窗口与预告提前量
 python3 tools/verify_story_data.py # 剧情数据：scenes effects 键必须被 Main.apply_effects 接住；news.json / npcs.json 结构；GameState 存档字段对称
 ```
 
@@ -45,7 +46,7 @@ godot --headless --path . -s tools/godot_story_check.gd      # 剧情状态机�
 
 不要用 `--check-only` 当门禁：它不实例化 autoload，会把 `GameManager`/`Fleet` 等引用误报为 Identifier not found，且有 SCRIPT ERROR 时退出码仍为 0。
 
-六道全绿才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
+七道全绿才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
 
 ## 目录结构
 

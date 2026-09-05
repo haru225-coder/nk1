@@ -1580,9 +1580,9 @@ func _setup_siege_port() -> void:
 	var body := Label.new()
 	var grain: int = GameState.siege_get("grain")
 	var rounds_left: int = grain / GameState.SIEGE_GRAIN_PER_ROUND
-	body.text = "兵 %d / 上限 %d　粮 %d（够打 %d 阵）　城墙 %d　士气 %d%s" % [
+	body.text = "兵 %d / 上限 %d　粮 %d（够打 %d 阵）　城墙 %d/%d　士气 %d%s" % [
 		GameState.siege_get("troops"), GameState.siege_troop_cap(),
-		grain, rounds_left, GameState.siege_get("wall"),
+		grain, rounds_left, GameState.siege_get("wall"), GameState.SIEGE_WALL_MAX,
 		GameState.siege_get("morale"),
 		"　石手军在城" if str(GameState.siege.get("shishou", "")) == "kept" else "",
 	]
@@ -1745,18 +1745,29 @@ func _siege_repair_wall() -> void:
 	scene_title.text = "兴化・船屋"
 	body_text.text = "船料还剩一些。修船是为了走，修墙是为了不走。"
 
-	for n in [20, 60]:
-		var cost: int = n * 15
-		var b := Button.new()
-		b.text = "加固城墙 +%d（%d 钱）" % [n, cost]
-		b.disabled = GameState.money < cost
-		b.pressed.connect(func():
-			if GameState.spend_money(cost):
-				GameState.siege_add("wall", n)
-				log_msg("把修船的料改了修墙。木匠没问为什么。")
-			load_scene(current_scene_id)
-		)
-		choices_container.add_child(b)
+	var room: int = GameState.siege_wall_room()
+	if room <= 0:
+		var done := Label.new()
+		done.text = "城墙已加到 %d——再堆料也无非是墙。守城守的是人。" % GameState.SIEGE_WALL_MAX
+		done.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		done.add_theme_color_override("font_color", Color(0.7, 0.75, 0.7))
+		choices_container.add_child(done)
+	else:
+		for n in [20, 60]:
+			var add: int = mini(n, room)
+			if add <= 0:
+				continue
+			var cost: int = add * 15
+			var b := Button.new()
+			b.text = "加固城墙 +%d（%d 钱・上限 %d）" % [add, cost, GameState.SIEGE_WALL_MAX]
+			b.disabled = GameState.money < cost
+			b.pressed.connect(func():
+				if GameState.spend_money(cost):
+					GameState.siege_add("wall", add)
+					log_msg("把修船的料改了修墙。木匠没问为什么。")
+				load_scene(current_scene_id)
+			)
+			choices_container.add_child(b)
 
 	choices_label.visible = true
 	_add_leave_button("xinghua")
