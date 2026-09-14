@@ -515,9 +515,20 @@ func _route_check() -> void:
 	main.load_scene("quanzhou")
 	main._on_facility_pressed({"id": "city_inn"})
 	_check(main.current_scene_id == "quanzhou_inn", "旅店按钮落到 quanzhou_inn（实际 %s）" % main.current_scene_id)
-	# 背景回落：缺图不黑屏
-	main._set_background_file("bg_world_map.jpg")
+	# 背景回落：缺图不黑屏（拿一个肯定不存在的名字试）
+	main._set_background_file("bg_definitely_missing.jpg")
 	_check(main.background.texture != null, "缺失背景图回落到 FALLBACK_BG，texture 非 Nil")
+	# 标题屏 / 海图底图 bg_world_map.jpg 已落地
+	main._apply_background("title", "")
+	_check(str(main.background.texture.resource_path).ends_with("bg_world_map.jpg"), "标题屏用 bg_world_map.jpg（实际 %s）" % main.background.texture.resource_path)
+	# 终局：结算图压在结局对话框后，之后的港页也持续压着
+	GS.from_dict({})
+	GS.finish("忠肃", "正文")
+	GS.last_port = "xinghua"
+	main.load_scene("xinghua")
+	_check(str(main.background.texture.resource_path).ends_with("bg_end_temple.jpg"), "终局「忠肃」港页压 bg_end_temple.jpg（实际 %s）" % main.background.texture.resource_path)
+	GS.from_dict({})
+	_close_dialogs(main)
 	main.queue_free()
 
 

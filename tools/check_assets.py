@@ -47,15 +47,28 @@ for p, src in sources.items():
 
 # ── 2. Main.gd 背景表 ───────────────────────────────────
 main_src = (ROOT / "scripts" / "Main.gd").read_text(encoding="utf-8")
-for tbl in ("PORT_BG", "FACILITY_BG"):
+port_bg_keys = set()
+for tbl in ("PORT_BG", "FACILITY_BG", "ENDING_BG"):
     m = re.search(r'const %s := \{(.*?)\n\}' % tbl, main_src, re.S)
     check(m is not None, f"Main.gd 缺 {tbl}")
     if not m:
         continue
-    for key, name in re.findall(r'"([a-z_]+)":\s*"([^"]+)"', m.group(1)):
+    for key, name in re.findall(r'"([^"]+)":\s*"([^"]+\.(?:jpg|png|webp))"', m.group(1)):
         check(exists(name), f"Main.{tbl}[{key}] = {name}，文件不存在")
+        if tbl == "PORT_BG":
+            port_bg_keys.add(key)
 fb = re.search(r'const FALLBACK_BG := "([^"]+)"', main_src)
 check(fb is not None and exists(fb.group(1)), "Main.FALLBACK_BG 缺失或文件不存在——回落底图本身不能缺")
+# 每个港口都该有专属底图；漏了会静默回落通用航海图（2026-09-14 前漳州/温州/明州/济州就是这样）
+for p in load("ports.json")["ports"]:
+    check(p["id"] in port_bg_keys, f"ports.json 港口 {p['id']} 无 PORT_BG 映射，会回落通用图")
+# 每个结局名都该有结算图：结局名 = _show_notice_dialog 第四个实参（只认整个调用写在一行、第四参是字面量的写法；
+# 多行调用抓不到，靠 ENDING_BG 注释「键须与 finish() 收到的结局名一字不差」人工兜）
+ending_names = set(re.findall(r'^\s*_show_notice_dialog\("[^"\n]*",\s*[^\n]*?,\s*"([^"\n]+)"\)\s*$', main_src, re.M))
+em = re.search(r'const ENDING_BG := \{(.*?)\n\}', main_src, re.S)
+ending_keys = set(re.findall(r'"([^"]+)":', em.group(1))) if em else set()
+for nm in sorted(ending_names):
+    check(nm in ending_keys, f"结局「{nm}」无 ENDING_BG 结算图映射")
 
 # ── 3. 前缀拼接 ────────────────────────────────────────
 # sprite_<npc id>.png：Main._add_npc_button 之类按 NPC id 拼；只有实际被引用的 id 才要求

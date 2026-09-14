@@ -234,14 +234,17 @@ func load_scene(scene_id: String) -> void:
 		_setup_investigation_mode(scene_data)
 
 
-## 港口 → 背景图
-## hakata 无专属图：此前挂 bg_arab_mosque.jpg（日本港配伊斯兰圆顶）属误配，
-## 宁可回落通用航海图，等 docs/资产生成提示词_2026-09-14.md 的 bg_hakata.jpg 落地再补映射。
+## 港口 → 背景图（2026-09-14 起 ports.json 十四港全部有专属图；check_assets.py 会查漏）
 const PORT_BG := {
 	"quanzhou": "bg_quanzhou_harbor.jpg",
 	"xinghua": "bg_xinghua_study.jpg",
 	"xinghua_harbor": "bg_xinghua_harbor.jpg",
 	"fuzhou": "bg_fuzhou_yamen.jpg",
+	"zhangzhou": "bg_zhangzhou.jpg",
+	"wenzhou": "bg_wenzhou.jpg",
+	"mingzhou": "bg_mingzhou.jpg",
+	"jeju": "bg_jeju.jpg",
+	"hakata": "bg_hakata.jpg",
 	"ryukyu": "bg_reef_bay.jpg",
 	"penghu": "bg_reef_bay.jpg",
 	"kagoshima": "bg_beacon_tower.jpg",
@@ -261,10 +264,23 @@ const FACILITY_BG := {
 ## 兜底底图：任何背景文件缺失时都回落到它，不让画面黑屏
 const FALLBACK_BG := "bg_sea_route.jpg"
 
+## 结局名 → 结算底图。结局对话框弹出时换上，之后的终局港页也一直压着它——游戏已经结束了，
+## 港口不再是港口，是尾声。键必须与 GameState.finish() 收到的结局名一字不差。
+const ENDING_BG := {
+	"忠肃": "bg_end_temple.jpg",
+	"未归": "bg_end_siege.jpg",
+	"海上宋鬼": "bg_end_yashan.jpg",
+	"泉州蒲氏的船": "bg_end_pu.jpg",
+	"纲首": "bg_end_pu.jpg",
+	"岸上的根": "bg_end_root.jpg",
+}
+
 
 func _apply_background(type: String, loc: String) -> void:
 	var file := FALLBACK_BG
-	if type == "title":
+	if GameState.is_ended() and ENDING_BG.has(GameState.ended):
+		file = ENDING_BG[GameState.ended]
+	elif type == "title":
 		file = "bg_world_map.jpg"
 	elif PORT_BG.has(loc):
 		file = PORT_BG[loc]
@@ -696,6 +712,7 @@ func _resign_decided() -> bool:
 ## 1275 年十二月：辞呈已批，出了嘉会门又后悔。三条路，用航向选，不用按钮选。
 func _on_resign_1275() -> void:
 	_enter_panel_mode()
+	_set_background_file("bg_linan.jpg")  # 1275 冬临安：终局抉择节点专属底图
 	scene_title.text = "临安・嘉会门"
 	body_text.text = "辞呈是三天前批的。批语只有两个字：「依奏。」
 车出嘉会门时是卯时，守门的兵在跺脚取暖。车里放着一只书箧，箧里是十三年前那本夹着货引的《论语》。
@@ -877,6 +894,8 @@ func _on_hanjiang_escape() -> void:
 func _show_notice_dialog(title: String, head: String, text: String, ending: String = "") -> void:
 	if ending != "":
 		GameState.finish(ending, text)
+		if ENDING_BG.has(ending):
+			_set_background_file(ENDING_BG[ending])  # 结算画面：台词压在结局图上
 	var dlg := AcceptDialog.new()
 	dlg.title = title
 	dlg.ok_button_text = "……" if ending == "" else "此局终"
