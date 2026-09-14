@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://60h3acpf7ud1"
-valid=false
+uid="uid://dftm36bw21ntt"
+path="res://.godot/imported/sprite_ana.png-21dc8cea85fa6c68fff979890ab19f34.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/sprite_ana.png"
+dest_files=["res://.godot/imported/sprite_ana.png-21dc8cea85fa6c68fff979890ab19f34.ctex"]
 
 [params]
 

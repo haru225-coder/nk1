@@ -235,12 +235,13 @@ func load_scene(scene_id: String) -> void:
 
 
 ## 港口 → 背景图
+## hakata 无专属图：此前挂 bg_arab_mosque.jpg（日本港配伊斯兰圆顶）属误配，
+## 宁可回落通用航海图，等 docs/资产生成提示词_2026-09-14.md 的 bg_hakata.jpg 落地再补映射。
 const PORT_BG := {
 	"quanzhou": "bg_quanzhou_harbor.jpg",
 	"xinghua": "bg_xinghua_study.jpg",
 	"xinghua_harbor": "bg_xinghua_harbor.jpg",
 	"fuzhou": "bg_fuzhou_yamen.jpg",
-	"hakata": "bg_arab_mosque.jpg",
 	"ryukyu": "bg_reef_bay.jpg",
 	"penghu": "bg_reef_bay.jpg",
 	"kagoshima": "bg_beacon_tower.jpg",
@@ -257,8 +258,12 @@ const FACILITY_BG := {
 }
 
 
+## 兜底底图：任何背景文件缺失时都回落到它，不让画面黑屏
+const FALLBACK_BG := "bg_sea_route.jpg"
+
+
 func _apply_background(type: String, loc: String) -> void:
-	var file := "bg_sea_route.jpg"
+	var file := FALLBACK_BG
 	if type == "title":
 		file = "bg_world_map.jpg"
 	elif PORT_BG.has(loc):
@@ -268,6 +273,10 @@ func _apply_background(type: String, loc: String) -> void:
 
 func _set_background_file(file_name: String) -> void:
 	var tex := GameManager.load_texture("res://assets/" + file_name)
+	if tex == null and file_name != FALLBACK_BG:
+		# bg_world_map.jpg 等尚未落地的资产：宁可显示通用航海图，也不留上一屏或黑底
+		push_warning("背景图缺失：%s，回落 %s" % [file_name, FALLBACK_BG])
+		tex = GameManager.load_texture("res://assets/" + FALLBACK_BG)
 	if tex != null:
 		background.texture = tex
 
@@ -2332,7 +2341,7 @@ func _on_facility_pressed(fac: Dictionary) -> void:
 	if target_scene.begins_with("siege_"):
 		_on_siege_card(target_scene)
 		return
-	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern"]:
+	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern", "city_inn"]:
 		target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")
 	elif target_scene == "city_residence" and current_scene_id == "xinghua":
 		# 只有兴化的住宅是玉湖陈宅；别处仍是租来的下处（占位）

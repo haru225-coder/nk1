@@ -1,7 +1,8 @@
 ## 引擎内剧情状态机门禁（2026-09-04 引入，随 news.json / 1268 身份结算落地）
 ## 用法：<godot 4.6.3> --headless --path <项目根> -s tools/godot_story_check.gd
 ## 只推进 GM.advance_days()，断言：新闻按月到期投放且不重复；1268-04 结算恰一次；
-## 士人/海商两种倾向分别得到陈文龙/陈子龙；存档 round-trip 保留新字段。任一失败 quit(1)。
+## 士人/海商两种倾向分别得到陈文龙/陈子龙；存档 round-trip 保留新字段。
+## 首帧另实例化 Main 走真机抵港路由（2026-09-14）：与港口同名的 load_scene 必须记 visited_ports 并能晋升。任一失败 quit(1)。
 extends SceneTree
 
 var _fails := 0
@@ -436,6 +437,93 @@ func _initialize() -> void:
 	GS.chapter = 1
 	var cdef: Dictionary = GS.chapter_def()
 	_check(int(cdef.get("advance_years", 0)) > 0, "第一章带 advance_years")
+	# 抵港路由一节要实例化 Main，@onready 节点须等树 ready——留到首帧 _process 再跑，那里再收尾
 
+
+## 首帧：树与 autoload 都已 ready，才能实例化 Main 并让其 @onready 节点就位
+func _process(_delta: float) -> bool:
+	if not _route_pending:
+		return false
+	_route_pending = false
+	_route_check()
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	quit(1 if _fails > 0 else 0)
+	return true
+
+
+var _route_pending := true
+
+
+## ── 抵港路由（2026-09-14 审计 P0）──
+## 海图抵港走 SeaChart._arrive → last_port → Main.start_game → load_scene(last_port)。
+## 此前 scenes.json 有与港口同名的剧情幕（ryukyu / hakata）且无 type=port，load_scene 命中剧情表
+## 走调查页、不调 _on_enter_port，visited_ports 永不记录——章一 / 章二 must_visit 在真机上不可完成。
+## 这里真的实例化 Main，按真机路由逐港 load_scene，断言 visited_ports 与章节晋升。
+func _route_check() -> void:
+	var Eco: Node = root.get_node("Economy")
+	var Flt: Node = root.get_node("Fleet")
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 6, "day": 1})
+	Flt.from_dict({})
+	Eco.initialize()
+	var main_scene: PackedScene = load("res://scenes/Main.tscn")
+	_check(main_scene != null, "Main.tscn 可加载")
+	if main_scene == null:
+		return
+	var main: Node = main_scene.instantiate()
+	root.add_child(main)
+	_check(main.get("background") != null, "Main 实例 @onready 节点已就位（background 非 Nil）")
+	var route_ports := ["ryukyu", "hakata", "penghu", "quanzhou", "zhangzhou", "xinghua", "champa"]
+	for pid in route_ports:
+		GS.last_port = pid
+		main.load_scene(pid)
+		_check(pid in GS.visited_ports, "抵港 load_scene(%s) 记入 visited_ports" % pid)
+	_check(GS.visited_ports.size() == route_ports.size(), "七港各记一次（实际 %d）" % GS.visited_ports.size())
+	# 剧情幕不冒充港口
+	GS.visited_ports.clear()
+	main.load_scene("ryukyu_survey")
+	main.load_scene("hakata_ledger")
+	_check(GS.visited_ports.is_empty(), "剧情幕 ryukyu_survey / hakata_ledger 不记港")
+	# 章一 must_visit=ryukyu 在真机路由下可完成：够钱 + 五港含流求 → 晋升第二章
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 6, "day": 1})
+	GS.chapter = 1
+	GS.money = 6000
+	GS.peak_money = 6000
+	for pid in ["quanzhou", "xinghua", "penghu", "fuzhou"]:
+		GS.last_port = pid
+		main.load_scene(pid)
+	_check(GS.chapter == 1, "四港未含流求，章一不晋升")
+	GS.last_port = "ryukyu"
+	main.load_scene("ryukyu")
+	_check(GS.chapter == 2, "第五港抵流求 → 章一晋升第二章（实际第 %d 章）" % GS.chapter)
+	_check(Cal.year >= 1257, "晋升已跳年（实际 %d 年）" % Cal.year)
+	_close_dialogs(main)  # 真机上玩家会按「承此一路」；不关掉，下一个 exclusive 对话框会报错
+	# 章二 must_visit=hakata 同理可完成
+	GS.money = 25000
+	GS.peak_money = 25000
+	for pid in ["zhangzhou", "wenzhou", "mingzhou", "jeju"]:
+		GS.last_port = pid
+		main.load_scene(pid)
+	_check(GS.chapter == 2, "九港未含博多，章二不晋升")
+	GS.last_port = "hakata"
+	main.load_scene("hakata")
+	_check(GS.chapter == 3, "抵博多 → 章二晋升第三章（实际第 %d 章）" % GS.chapter)
+	_close_dialogs(main)
+	# 旅店路由：city_inn 必须落到 {港}_inn，不能是 city_inn
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou")
+	main._on_facility_pressed({"id": "city_inn"})
+	_check(main.current_scene_id == "quanzhou_inn", "旅店按钮落到 quanzhou_inn（实际 %s）" % main.current_scene_id)
+	# 背景回落：缺图不黑屏
+	main._set_background_file("bg_world_map.jpg")
+	_check(main.background.texture != null, "缺失背景图回落到 FALLBACK_BG，texture 非 Nil")
+	main.queue_free()
+
+
+## 关掉 Main 弹出的 AcceptDialog（章节晋升 / 通告），等价于玩家按下确认
+func _close_dialogs(main: Node) -> void:
+	for c in main.get_children():
+		if c is AcceptDialog:
+			c.hide()
+			c.free()

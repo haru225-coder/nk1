@@ -33,14 +33,58 @@ scenes = load("scenes.json")["scenes"]
 ids = [s["id"] for s in scenes]
 check(len(ids) == len(set(ids)), "scenes.json 场景 id 重复")
 idset = set(ids)
+ports_all = load("ports.json")["ports"]
+port_ids = {p["id"] for p in ports_all}
+port_unlock = {p["id"]: int(str(p.get("unlock", "ch1"))[2:] or 1) for p in ports_all}
+# Main.FACILITY_SUFFIXES 的镜像：xxx_market 等由 Main 动态生成
+fac_m = re.search(r'const FACILITY_SUFFIXES := \[(.*?)\]', main_src, re.S)
+FACILITY_SUFFIXES = tuple(re.findall(r'"(_[a-z]+)"', fac_m.group(1))) if fac_m else ()
+check(len(FACILITY_SUFFIXES) >= 4, "Main.FACILITY_SUFFIXES 解析失败")
+placeholder_m = re.search(r'const FACILITY_PLACEHOLDER := \{(.*?)\n\}', main_src, re.S)
+PLACEHOLDERS = set(re.findall(r'^\t"([a-z_]+)":', placeholder_m.group(1), re.M)) if placeholder_m else set()
+
+
+def next_resolves(nxt: str) -> bool:
+    """Main.load_scene 的解析顺序：设施后缀 → scenes.json → ports.json → 占位页。
+    起始场景以外，任何 next 都必须落到这四类之一，否则真机是「区域施工中」。"""
+    if nxt in idset or nxt in port_ids or nxt in PLACEHOLDERS:
+        return True
+    for suf in FACILITY_SUFFIXES:
+        if nxt.endswith(suf) and nxt[: -len(suf)] in port_ids | idset:
+            return True
+    return False
+
+
 for s in scenes:
     for c in s.get("choices", []):
         for k in c.get("effects", {}):
             check(k in handled, f"scenes.json {s['id']} 效果键 `{k}` 未被 Main.apply_effects 处理")
         nxt = c.get("next", "")
-        # 设施 id（xxx_market 等）与港口 id 由 Main 动态生成，这里只校验 cg_/chapter 类硬跳转
-        if nxt.startswith(("cg_", "chapter", "sea_path", "scholar_path", "letter_", "gate_")):
-            check(nxt in idset, f"scenes.json {s['id']} 跳转到不存在的 `{nxt}`")
+        if nxt:
+            check(next_resolves(nxt), f"scenes.json {s['id']} 跳转到无法解析的 `{nxt}`（不在 scenes/ports/设施/占位任何一类）")
+
+# 2026-09-14 审计 P0：剧情幕 id 与港口 id 同名却不是 type=port 时，海图抵港 load_scene 命中剧情表、
+# 走调查页而不调 _on_enter_port，visited_ports 永不记录——章节 must_visit 在真机上不可完成。
+# 七道门禁对此全盲（simulate_run 自管 visited）。此处把「同名必是港」做成静态门禁。
+for s in scenes:
+    if s["id"] in port_ids:
+        check(s.get("type") == "port",
+              f"scenes.json `{s['id']}` 与 ports.json 港口同名但 type={s.get('type')!r}——抵港会被调查页吞掉，"
+              f"visited_ports 不记录；剧情幕请改独立 id（如 {s['id']}_survey）")
+
+# ── chapters.json：must_visit 港必须存在且本章就能到 ──
+chapters = load("chapters.json")["chapters"]
+for ch in chapters:
+    cid = int(ch["id"])
+    req = ch.get("next_requires") or {}
+    for pid in req.get("must_visit", []):
+        check(pid in port_ids, f"chapters {cid} must_visit `{pid}` 不在 ports.json")
+        if pid in port_ids:
+            check(port_unlock[pid] <= cid,
+                  f"chapters {cid} must_visit `{pid}` 要到第 {port_unlock[pid]} 章才解锁，本章永远晋升不了")
+    need = int(req.get("visited_count", 0))
+    reachable = sum(1 for p in port_ids if port_unlock[p] <= cid)
+    check(need <= reachable, f"chapters {cid} visited_count={need} 超过本章可达港口数 {reachable}")
 
 # ── news.json ─────────────────────────────────────────
 news = load("news.json")["news"]

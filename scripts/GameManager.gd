@@ -155,8 +155,12 @@ func _settle_history() -> void:
 ## assets 里有若干 .png 文件实际是 JPEG 内容（图片压缩后沿用了原文件名），
 ## Godot 的导入器与 Image.load_from_file 都按扩展名选解码器，会直接失败。
 func load_texture(path: String) -> Texture2D:
-	# 有 .import 时资源系统最快，先走它
-	var tex := load(path) as Texture2D
+	# 有 .import 且导入成功时资源系统最快，先走它。
+	# 导入失败的（伪装成 .png 的 JPEG）ResourceLoader.exists 为 false，直接跳到按文件头解码，
+	# 免得 load() 每次都往控制台刷一串 "Failed loading resource"。
+	var tex: Texture2D = null
+	if ResourceLoader.exists(path, "Texture2D"):
+		tex = load(path) as Texture2D
 	if tex != null:
 		return tex
 	if not FileAccess.file_exists(path):

@@ -26,14 +26,15 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-代码改动后必须跑这三套静态校验（改数据尤其要重跑）：
+代码改动后必须跑这六套静态校验（改数据尤其要重跑）：
 
 ```bash
 python3 tools/check_symbols.py    # autoload 顺序与跨文件符号（GDScript 动态语言的必要保险）
 python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 / 死港 / 海战数值边界
-python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢出
+python3 tools/simulate_run.py     # 端到端跑一局（生产定价镜像 + 晋升跳年），找死锁与账目溢出
 python3 tools/simulate_endgame.py # 终局数值：身份判定、守城胜率、崖山门槛、结局窗口与预告提前量
-python3 tools/verify_story_data.py # 剧情数据：scenes effects 键必须被 Main.apply_effects 接住；news.json / npcs.json 结构；GameState 存档字段对称
+python3 tools/verify_story_data.py # 剧情数据：scenes effects 键必须被 Main.apply_effects 接住；next 全部可解析；与港口同名的幕必须 type=port；must_visit 港本章可达；news.json / npcs.json 结构；GameState 存档字段对称
+python3 tools/check_assets.py     # 资产存在性：res://assets/ 字面量、PORT_BG/FACILITY_BG 表、icon_/sprite_ 前缀拼接展开后文件必须存在
 ```
 
 有 Godot 4.6.3 时再加第四道引擎内编译门禁（2026-09-03 起；建议先把项目 rsync 到临时目录再跑，编辑器扫描会生成 `.godot/` 与 `*.gd.uid`）：
@@ -46,7 +47,9 @@ godot --headless --path . -s tools/godot_story_check.gd      # 剧情状态机�
 
 不要用 `--check-only` 当门禁：它不实例化 autoload，会把 `GameManager`/`Fleet` 等引用误报为 Identifier not found，且有 SCRIPT ERROR 时退出码仍为 0。
 
-七道全绿才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
+九道全绿才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
+
+门禁的已知盲区（2026-09-14 审计）：headless 不加载贴图、不走海图抵港的真实路由。凡改 `scenes.json` 场景 id、`PORT_BG`、章节 `must_visit`，除九道门禁外还要真机从海图抵港一次，看章节进度里「走通港口」是否 +1。
 
 ## 目录结构
 
@@ -54,7 +57,7 @@ godot --headless --path . -s tools/godot_story_check.gd      # 剧情状态机�
 data/       港口、货物、船种、章节、职事等 JSON 数据
 scripts/    游戏脚本（core/ 为 autoload 单例：Fleet/Economy/Voyage/…）
 scenes/     场景与 UI
-tools/      三套 Python 静态校验脚本 + Godot 引擎内编译门禁（godot_compile_check.gd）
+tools/      六套 Python 静态校验脚本 + Godot 引擎内编译门禁（godot_compile_check.gd / godot_story_check.gd）
 docs/       复刻设计文档
 assets/     美术资源
 ```

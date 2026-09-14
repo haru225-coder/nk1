@@ -48,7 +48,12 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	bg.texture = GameManager.load_texture("res://assets/bg_world_map.jpg")
+	var bg_tex := GameManager.load_texture("res://assets/bg_world_map.jpg")
+	if bg_tex == null:
+		# 海图底图尚未落地（见 docs/资产生成提示词_2026-09-14.md）：回落通用航海图，不留黑底
+		push_warning("bg_world_map.jpg 缺失，海图底图回落 bg_sea_route.jpg")
+		bg_tex = GameManager.load_texture("res://assets/bg_sea_route.jpg")
+	bg.texture = bg_tex
 	bg.modulate = Color(0.55, 0.6, 0.7, 1.0)
 	add_child(bg)
 

@@ -26,6 +26,18 @@ KM_PER_LI, EARTH_R = 0.576, 6371.0
 NE, SW = 225.0, 45.0
 INN_RATE = 15
 
+# ── 生产定价与跳年常量：从 .gd 源码读，改公式时这里自动跟上 ──
+import re as _re
+_eco_src = open(os.path.join(ROOT, "scripts", "core", "Economy.gd"), encoding="utf-8").read()
+_gm_src = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
+def _const(src, name, default):
+    m = _re.search(r'const %s := ([0-9.]+)' % name, src)
+    return float(m.group(1)) if m else default
+PRICE_SPREAD_MIN = _const(_eco_src, "PRICE_SPREAD_MIN", 1.08)
+SKIP_HULL_DECAY = _const(_gm_src, "SKIP_HULL_DECAY", 0.08)
+SKIP_HULL_FLOOR = _const(_gm_src, "SKIP_HULL_FLOOR", 0.20)
+SKIP_MORALE_AFTER = int(_const(_gm_src, "SKIP_MORALE_AFTER", 65))
+
 rates = {pid: {gid: 1.0 for gid in p.get("market", {})} for pid, p in ports.items()}
 
 # ── 多船舰队模型 ──────────────────────────────────────
@@ -175,21 +187,58 @@ def open_ports():
 def visit(pid):
     if pid not in G.visited: G.visited.append(pid)
 
+def skip_years(n):
+    """复刻 GameManager.skip_years：日子真走完（行情回归、月息照算）、船况年折、士气压顶、行情重置。
+    模型里没有雇员，水手流失一项略去。返回摘要行。"""
+    if n <= 0: return []
+    y0 = G.year
+    advance(30 * 12 * n)
+    decayed = 0
+    for s in G.ships:
+        maxd = float(ships[s["type"]]["durability"])
+        cur = float(s["durability"])
+        after = max(maxd * SKIP_HULL_FLOOR, cur * (1.0 - SKIP_HULL_DECAY) ** n)
+        if after < cur - 0.5: decayed += 1
+        s["durability"] = after
+    G.morale = min(G.morale, SKIP_MORALE_AFTER)
+    for pid in rates:
+        for gid in rates[pid]: rates[pid][gid] = 1.0
+    return [f"跳 {n} 年（{y0}→{G.year}），{decayed} 船折旧，士气≤{SKIP_MORALE_AFTER}，行情重置"]
+
 def try_advance():
+    """复刻 GameState.try_advance_chapter + Main._show_chapter_dialog：晋升即跳年。"""
     req = chapters.get(G.chapter, {}).get("next_requires")
     if not req: return None
     if G.peak_money < req.get("peak_money", 0): return None
     if len(G.visited) < req.get("visited_count", 0): return None
     for m in req.get("must_visit", []):
         if m not in G.visited: return None
-    title = chapters[G.chapter].get("advance_title","")
+    cur = chapters[G.chapter]
+    title = cur.get("advance_title","")
     G.chapter += 1
+    for line in skip_years(int(cur.get("advance_years", 0))):
+        print(f"    ★ {line}")
     return title
 
 def role(pid, gid): return ports[pid]["market"].get(gid)
-def uval(pid, gid): return goods[gid]["base_value"] * ROLE_MOD[role(pid,gid)] * rates[pid][gid]
-def buy_p(pid,gid):  return round(uval(pid,gid)*(1+TARIFF))
-def sell_p(pid,gid): return round(uval(pid,gid)*(1-BROKER))
+
+def price_at_rate(pid, gid, rate, is_buy, tariff_factor=1.0, broker_factor=1.0, edge=0.0):
+    """Economy.price_at_rate 的镜像（含 P2-0 同港价差地板）。
+    tariff_factor/broker_factor = Crew.trade_cost_factor()，edge = Crew.interpreter_edge()；
+    本模型不雇职事，三者取光杆值，但公式必须与生产一致，否则门禁测的是另一套经济。"""
+    v = goods[gid]["base_value"] * ROLE_MOD[role(pid, gid)] * rate
+    bare_buy = v * (1 + TARIFF)
+    bare_sell = v * (1 - BROKER)
+    cap = bare_buy / PRICE_SPREAD_MIN
+    sell_v = min(v * (1 - BROKER * broker_factor) * (1 + edge), cap)
+    sell_v = max(sell_v, min(bare_sell, cap))
+    if not is_buy:
+        return round(sell_v)
+    buy_v = max(v * (1 + TARIFF * tariff_factor) * (1 - edge), sell_v * PRICE_SPREAD_MIN)
+    return round(min(buy_v, max(bare_buy, sell_v * PRICE_SPREAD_MIN)))
+
+def buy_p(pid,gid):  return price_at_rate(pid, gid, rates[pid][gid], True)
+def sell_p(pid,gid): return price_at_rate(pid, gid, rates[pid][gid], False)
 
 def _best_free_ship():
     """空舱最大的船（模拟理性玩家选舱装货）"""
@@ -367,24 +416,39 @@ check(True, "行情随交易变动（低于 0.75 表示已被砸盘，需换港�
 print()
 check(G.chapter >= 2, f"24 趟内晋升至第 {G.chapter} 章（起始第 1 章）")
 check("hakata" in open_ports(), "晋升后博多唐房已可抵达——核心商路不再是死内容")
+if G.chapter >= 2:
+    check(G.year >= 1255 + chapters[1].get("advance_years", 0),
+          f"晋升已按 chapters.json 跳年（现为 {G.year} 年，进度不再两年跑完）")
+    check(G.morale <= SKIP_MORALE_AFTER, f"跳年后士气被压到 {G.morale} ≤ {SKIP_MORALE_AFTER}")
 print(f"    资金峰值 {G.peak_money}　走通港口 {len(G.visited)} 处：{'、'.join(ports[p]['name'] for p in G.visited)}")
+
+print()
+print("  ── 定价镜像自检：光杆下同港买价 ≥ 卖价 × 地板（与 Economy.price_at_rate 同式）──")
+viol = [(pid, gid) for pid in ports for gid in ports[pid]["market"]
+        if goods[gid]["base_value"] > 0 and buy_p(pid, gid) < sell_p(pid, gid) * PRICE_SPREAD_MIN - 1]
+check(not viol, f"同港价差地板 {PRICE_SPREAD_MIN} 在全部（港,货）成立（越界 {len(viol)}）")
 
 print()
 print("="*70)
 print("远洋检验：候西南季风北上博多（多船舰队）")
 print("="*70)
 G.port = "quanzhou"
-if G.money >= ships["fu_ship_medium"]["price"]:
-    G.money -= ships["fu_ship_medium"]["price"]
-    G.ships.append({"type": "fu_ship_medium", "name": "福船",
-                    "crew": ships["fu_ship_medium"]["crew_min"],
-                    "durability": 300.0, "sail_level": 1, "armor_level": 1, "cargo": {}})
-    print(f"  已购福船（中），余银 {G.money}，舰队 {len(G.ships)} 船，载重 {cap_total()} 料")
-    check(G.ships[-1]["crew"] == ships["fu_ship_medium"]["crew_min"],
-          f"新购福船水手 = crew_min（{G.ships[-1]['crew']} 人）")
-    check(verify_invariants(), "购船后分船账目不变量成立")
-else:
-    print(f"  资金 {G.money} 不足以购福船（{ships['fu_ship_medium']['price']}），以小艍船试航")
+fu_price = ships["fu_ship_medium"]["price"]
+FAR_SEA_CAPITAL = 20000  # 购船后余银：与跳年前基线一轮（约 2.2 万）同量级，够候风 + 26 人水粮 + 一舱货
+if G.money < fu_price + FAR_SEA_CAPITAL:
+    # 主循环的资金走势受走私查扣的随机序列左右（晋升跳年后序列整体偏移）。
+    # 远洋段只验航海补给 / 季风 / 分船装载，不验赚钱能力——资金不够就补成受控场景，并明说。
+    grant = fu_price + FAR_SEA_CAPITAL - G.money
+    print(f"  主循环结束时资金 {G.money}，受控场景补入 {grant} 钱至购船后余 {FAR_SEA_CAPITAL}——此段不验赚钱")
+    G.money += grant
+G.money -= fu_price
+G.ships.append({"type": "fu_ship_medium", "name": "福船",
+                "crew": ships["fu_ship_medium"]["crew_min"],
+                "durability": 300.0, "sail_level": 1, "armor_level": 1, "cargo": {}})
+print(f"  已购福船（中），余银 {G.money}，舰队 {len(G.ships)} 船，载重 {cap_total()} 料")
+check(G.ships[-1]["crew"] == ships["fu_ship_medium"]["crew_min"],
+      f"新购福船水手 = crew_min（{G.ships[-1]['crew']} 人）")
+check(verify_invariants(), "购船后分船账目不变量成立")
 
 crs = bearing("quanzhou","hakata")
 print(f"\n  现在是 {G.month} 月（{monsoon()}），泉州→博多 风向系数 {wind_factor(crs):.2f}")
@@ -402,7 +466,10 @@ check(waited*INN_RATE < 3000, f"候风成本 {waited*INN_RATE} 钱，未压垮�
 
 d = dist("quanzhou","hakata")
 est = math.ceil(d/speed(crs))
-print(f"\n  预计航程 {est} 日，需水粮 {est*total_crew()} 份")
+# 先在船屋补足各船最低水手，再按实际人头买水粮——顺序反了会按少算的人数备货，海上断粮
+top_up_crew()
+crew_before = total_crew()
+print(f"\n  预计航程 {est} 日，水手 {crew_before} 人，需水粮 {est*daily_use()} 份")
 bought = buy_supplies(est + 6)
 print(f"  补给后：水 {G.water} 粮 {G.food}（足 {supply_days()} 日），空舱 {free():.0f} 料")
 check(supply_days() >= est, f"补给足以支撑 {est} 日航程")
@@ -427,7 +494,7 @@ if bt:
     check(rev - spent > 0, f"远洋单程盈利 {rev-spent}")
     check(verify_invariants(), "远洋后分船账目不变量成立")
     crew_after = total_crew()
-    check(crew_after >= 20, f"航程后水手 {crew_after} 人，未因断粮损失殆尽")
+    check(crew_after >= crew_before, f"航程后水手 {crew_after} 人（出港 {crew_before}），未因断粮减员")
 
 print()
 print("="*70)

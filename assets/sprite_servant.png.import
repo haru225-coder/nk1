@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c7rcc2ao12l5m"
-valid=false
+uid="uid://bq5nyisyem6ye"
+path="res://.godot/imported/sprite_servant.png-45039034796959bd9b8ec9a78a2c909a.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/sprite_servant.png"
+dest_files=["res://.godot/imported/sprite_servant.png-45039034796959bd9b8ec9a78a2c909a.ctex"]
 
 [params]
 

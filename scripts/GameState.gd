@@ -6,7 +6,7 @@ extends Node
 var player_name: String = "陈子龙"
 
 ## 身份倾向。序章与剧情 effects 写入（sea_tendency / scholar_tendency）。
-## hometown_tendency 字段预留，v0.5.1 禁区未解冻：目前无任何写入点。
+## hometown_tendency 由 Main 直接累加：玉湖陈宅跑腿 +3、涵江/木兰陂等乡土场景 +4~10（见 Main.gd 各 `hometown_tendency +=`）。
 var sea_tendency: int = 0
 var scholar_tendency: int = 0
 var hometown_tendency: int = 0
