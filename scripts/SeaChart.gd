@@ -49,7 +49,8 @@ func _build_ui() -> void:
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	bg.texture = GameManager.load_texture("res://assets/bg_world_map.jpg")
-	bg.modulate = Color(0.55, 0.6, 0.7, 1.0)
+	# 古海图是氛围底衬：压暗留蓝让自绘航线/港点可读，但别压到看不见
+	bg.modulate = Color(0.72, 0.76, 0.82, 1.0)
 	add_child(bg)
 
 	var root := HBoxContainer.new()

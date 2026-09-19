@@ -844,6 +844,12 @@ for rel, min_kb in (("assets/ship_fu.png", 60), ("assets/ship_falcon.png", 60)):
         else:
             print(f"  ✗ {rel} 仅 {kb}KB（<{min_kb}KB），疑似平涂占位图")
             problems.append(f"{rel} 疑似占位图")
+_bg_map = os.path.join(ROOT, "assets", "bg_world_map.jpg")
+if os.path.exists(_bg_map) and open(_bg_map, "rb").read(2) == b"\xff\xd8":
+    print("  ✓ bg_world_map.jpg 在仓库里且是真 JPEG（海图/标题底图）")
+else:
+    print("  ✗ 缺 bg_world_map.jpg 或不是真 JPEG（海图背景留黑）")
+    problems.append("缺 bg_world_map.jpg")
 
 print()
 print("=" * 68)
