@@ -610,7 +610,12 @@ func _enter_battle() -> void:
 		_after_combat()
 		return
 	wm.battle_finished.connect(_on_battle_result)
+	# 海图三栏是全屏 Control，盖在 Node2D 海战上面会挡住船和 HUD。
+	for c in get_children():
+		if c is CanvasItem:
+			c.visible = false
 	add_child(wm)
+	wm.visible = true
 
 
 ## 战斗结果写回：对齐现有文本结算公式（逐字保留），再续航行
@@ -641,6 +646,9 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
 			_log("[color=red]没能甩脱，被追上跳帮，抢走了货。%s[/color]" % lost_str)
 	GameManager.pending_battle = {}
+	for c in get_children():
+		if c is CanvasItem:
+			c.visible = true
 	_refresh_status()
 	_after_combat()
 
