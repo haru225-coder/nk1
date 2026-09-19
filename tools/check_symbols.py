@@ -675,6 +675,34 @@ else:
 
 print()
 print("=" * 68)
+print("十、海图 / 海战点验入口")
+print("=" * 68)
+print("  HUD 写 WASD，工程默认 input map 只有方向键，操船必须另认字母键。")
+ship_src = open(os.path.join(SCRIPTS, "Ship.gd"), encoding="utf-8").read()
+chart_src = open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()
+if "KEY_W" in ship_src and "KEY_A" in ship_src and "KEY_D" in ship_src:
+    print("  ✓ Ship 认 WASD 升降帆 / 操舵")
+else:
+    print("  ✗ Ship 未认 WASD——HUD 与手感对不上")
+    problems.append("Ship 未认 WASD")
+if "pirate_sighting" in defined.get("Voyage", set()):
+    print("  ✓ Voyage.pirate_sighting 已定义")
+else:
+    print("  ✗ Voyage.pirate_sighting 未定义")
+    problems.append("Voyage.pirate_sighting 未定义")
+if "_debug_force_pirate" in chart_src and "KEY_F10" in chart_src:
+    print("  ✓ SeaChart F10 可强行遭遇海盗")
+else:
+    print("  ✗ SeaChart 无 F10 海盗点验入口")
+    problems.append("SeaChart 无 F10")
+if "_debug_jump_port" in main_src and "KEY_F11" in main_src:
+    print("  ✓ Main F11 可跳到泉州港")
+else:
+    print("  ✗ Main 无 F11 进港点验入口")
+    problems.append("Main 无 F11")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:

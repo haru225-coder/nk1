@@ -448,6 +448,35 @@ func _log(text: String) -> void:
 	log_label.text = text + "\n\n" + log_label.text
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not OS.is_debug_build():
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F10:
+		_debug_force_pirate()
+		get_viewport().set_input_as_handled()
+
+
+## 调试局直接刷出「不明船影」。逐日抽海盗大约 6%，云电脑点验用。
+func _debug_force_pirate() -> void:
+	if not sailing:
+		if selected_port == "":
+			selected_port = "penghu"
+		total_li = Voyage.distance_li(origin_port, selected_port)
+		if total_li <= 0.0:
+			total_li = 300.0
+		remaining_li = maxf(total_li, 80.0)
+		course_bearing = Voyage.bearing(origin_port, selected_port)
+		days_elapsed = maxi(days_elapsed, 1)
+		sailing = true
+		Fleet.at_sea = true
+		sail_button.disabled = true
+		for c in port_list.get_children():
+			c.disabled = true
+		_log("[color=yellow]（调试）中途遭遇。[/color]")
+		_refresh_status()
+	_show_event(Voyage.pirate_sighting())
+
+
 # ══════════════════════════════════════════════════════
 #  航行
 # ══════════════════════════════════════════════════════

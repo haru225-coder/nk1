@@ -36,9 +36,10 @@ func _ready() -> void:
 	base_turn_speed = 1.8 + (sail_lv - 1) * 0.2
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_up"):
+	# HUD 写 W/S 升降帆；工程默认 input map 只有方向键，两边都认。
+	if event.is_action_pressed("ui_up") or _key_pressed(event, KEY_W):
 		sail_gear = min(sail_gear + 1, max_gear)
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") or _key_pressed(event, KEY_S):
 		sail_gear = max(sail_gear - 1, 0)
 	
 	if fire_cooldown <= 0:
@@ -49,6 +50,10 @@ func _input(event: InputEvent) -> void:
 				_fire_broadside(-1) # Left
 			elif event.keycode == KEY_K:
 				_fire_broadside(1) # Right
+
+
+func _key_pressed(event: InputEvent, code: Key) -> bool:
+	return event is InputEventKey and event.pressed and not event.echo and event.keycode == code
 
 
 ## P4-2 接舷：白刃阶段禁炮击（敌船已钩住，甲板上是白刃不是炮战）
@@ -90,6 +95,11 @@ func _physics_process(delta: float) -> void:
 func _apply_sailing_physics(delta: float) -> void:
 	var ship_dir = Vector2.UP.rotated(rotation)
 	var turn_input = Input.get_axis("ui_left", "ui_right")
+	if Input.is_physical_key_pressed(KEY_A):
+		turn_input -= 1.0
+	if Input.is_physical_key_pressed(KEY_D):
+		turn_input += 1.0
+	turn_input = clampf(turn_input, -1.0, 1.0)
 	
 	var turn_efficiency = 1.0
 	if sail_gear == 2: turn_efficiency = 0.4
@@ -122,6 +132,11 @@ func _update_visuals(delta: float) -> void:
 	var roll_angle = cross_wind * wind_strength * 0.002 * sail_gear
 	
 	var turn_input = Input.get_axis("ui_left", "ui_right")
+	if Input.is_physical_key_pressed(KEY_A):
+		turn_input -= 1.0
+	if Input.is_physical_key_pressed(KEY_D):
+		turn_input += 1.0
+	turn_input = clampf(turn_input, -1.0, 1.0)
 	roll_angle -= turn_input * (current_speed / max_speed) * 0.3
 	
 	sprite.rotation = lerp_angle(sprite.rotation, roll_angle, 5.0 * delta)

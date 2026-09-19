@@ -194,6 +194,11 @@ func _current_event() -> Dictionary:
 
 
 func _pirate_event() -> Dictionary:
+	return pirate_sighting()
+
+
+## 逐日抽取与调试强行遭遇共用同一条文案。
+func pirate_sighting() -> Dictionary:
 	return {
 		"kind": EventKind.PIRATE,
 		"title": "不明船影",

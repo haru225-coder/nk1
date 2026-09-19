@@ -1540,9 +1540,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_accept"):
 		if _activate_first_choice():
 			get_viewport().set_input_as_handled()
-	elif OS.is_debug_build() and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F12:
-		_debug_preview_ending()
-		get_viewport().set_input_as_handled()
+	elif OS.is_debug_build() and event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F12:
+			_debug_preview_ending()
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_F11:
+			_debug_jump_port()
+			get_viewport().set_input_as_handled()
 
 
 func _activate_first_choice() -> bool:
@@ -1554,6 +1558,12 @@ func _activate_first_choice() -> bool:
 		start_button.pressed.emit()
 		return true
 	return false
+
+
+## 调试局跳到泉州港，方便点「升帆出海」看海图。
+func _debug_jump_port() -> void:
+	GameState.last_port = "quanzhou"
+	load_scene("quanzhou")
 
 
 ## 调试局预览了结弹窗。沙盒攒到八万+占城太慢，云电脑点验用。
