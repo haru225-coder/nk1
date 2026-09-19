@@ -166,12 +166,14 @@ bbcode_enabled = true
 text = "环境描述文本"
 
 [node name="InteractiveLabel" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 text = "--- 桌面可调查物 ---"
 
 [node name="InteractiveContainer" type="HFlowContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 100)
+visible = false
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 
 [node name="ChoicesLabel" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]

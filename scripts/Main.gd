@@ -13,6 +13,7 @@ extends Control
 @onready var investigation_mode: PanelContainer = $HBoxContainer/CenterArea/InvestigationMode
 @onready var scene_title: Label = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/SceneTitle
 @onready var body_text: RichTextLabel = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/BodyText
+@onready var interactive_label: Label = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/InteractiveLabel
 @onready var interactive_container: HFlowContainer = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/InteractiveContainer
 @onready var choices_container: VBoxContainer = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/ChoicesContainer
 @onready var choices_label: Label = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/ChoicesLabel
@@ -50,6 +51,7 @@ func _ready() -> void:
 	message_label.text = ""
 	status_label.bbcode_enabled = true
 	message_label.bbcode_enabled = true
+	scene_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# 防御：异常路径可能残留未清理的海战上下文，回港时清空
 	GameManager.pending_battle = {}
 	GameManager.monthly_notice.connect(_on_monthly_notice)
@@ -284,8 +286,15 @@ func _enter_panel_mode() -> void:
 		child.queue_free()
 	for child in choices_container.get_children():
 		child.queue_free()
+	_show_investigation_chrome(false)
 	choices_label.visible = false
 	choices_label.text = "请选择"  # 市场会改写它，此处复位避免上一屏文字残留
+
+
+func _show_investigation_chrome(show: bool) -> void:
+	interactive_label.visible = show
+	interactive_container.visible = show
+	interactive_container.custom_minimum_size = Vector2(0, 100) if show else Vector2.ZERO
 
 
 ## 剧情设施尚未实装时的占位文案，比「施工中」更不出戏
@@ -843,6 +852,9 @@ func _setup_tavern(port_id: String) -> void:
 	scene_title.text = "%s・酒馆" % GameManager.get_port_name(port_id)
 	body_text.text = "这里充斥着劣质酒水的味道和水手们的大声喧哗。"
 
+	# 旧事放最前：泉州候选五人时，钩子否则会被挤出 720p 窗口。
+	_setup_story_hooks(port_id)
+
 	if port_id.begins_with("quanzhou"):
 		_add_npc_button("merchant_lin", "林阿舶")
 	elif port_id.begins_with("ryukyu"):
@@ -859,7 +871,6 @@ func _setup_tavern(port_id: String) -> void:
 	choices_container.add_child(intel)
 
 	_setup_hiring(port_id)
-	_setup_story_hooks(port_id)
 
 	choices_label.visible = true
 	_add_leave_button(port_id)
@@ -1416,6 +1427,7 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 	body_text.text = shown_body
 
 	var investigations = scene_data.get("investigations", [])
+	_show_investigation_chrome(investigations.size() > 0)
 	for inv in investigations:
 		var btn = Button.new()
 		btn.text = "★ " + inv.get("label", "互动")
