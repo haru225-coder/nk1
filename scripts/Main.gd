@@ -48,6 +48,8 @@ const GENERIC_FACILITIES := [
 
 func _ready() -> void:
 	message_label.text = ""
+	status_label.bbcode_enabled = true
+	message_label.bbcode_enabled = true
 	# 防御：异常路径可能残留未清理的海战上下文，回港时清空
 	GameManager.pending_battle = {}
 	GameManager.monthly_notice.connect(_on_monthly_notice)
@@ -1404,8 +1406,14 @@ func _on_facility_pressed(fac: Dictionary) -> void:
 func _setup_investigation_mode(scene_data: Dictionary) -> void:
 	_enter_panel_mode()
 
-	scene_title.text = scene_data.get("title", "未命名地点")
-	body_text.text = scene_data.get("body", "")
+	var shown_title := str(scene_data.get("title", "")).strip_edges()
+	if shown_title == "":
+		shown_title = str(scene_data.get("cg_title", "未命名地点")).strip_edges()
+	scene_title.text = shown_title if shown_title != "" else "未命名地点"
+	var shown_body := str(scene_data.get("body", "")).strip_edges()
+	if shown_body == "":
+		shown_body = str(scene_data.get("cg_sub", "")).replace("\\A", "\n\n").strip_edges()
+	body_text.text = shown_body
 
 	var investigations = scene_data.get("investigations", [])
 	for inv in investigations:
@@ -1503,4 +1511,43 @@ func apply_effects(effects: Dictionary) -> void:
 				GameState.scholar_tendency += int(val)
 			"ledger_note":
 				GameState.add_ledger_note(str(val))
+	update_status_panel()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_accept"):
+		if _activate_first_choice():
+			get_viewport().set_input_as_handled()
+	elif OS.is_debug_build() and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F12:
+		_debug_preview_ending()
+		get_viewport().set_input_as_handled()
+
+
+func _activate_first_choice() -> bool:
+	for child in choices_container.get_children():
+		if child is Button and not (child as Button).disabled:
+			(child as Button).pressed.emit()
+			return true
+	if title_mode.visible and start_button.visible and not start_button.disabled:
+		start_button.pressed.emit()
+		return true
+	return false
+
+
+## 调试局预览了结弹窗。沙盒攒到八万+占城太慢，云电脑点验用。
+func _debug_preview_ending() -> void:
+	GameState.chapter = 4
+	if GameState.money < 80000:
+		GameState.add_money(80000 - GameState.money)
+	GameState.peak_money = maxi(GameState.peak_money, 80000)
+	for pid in ["quanzhou", "xinghua", "fuzhou", "wenzhou", "zhangzhou", "penghu", "ryukyu", "mingzhou", "hakata", "jeju", "kagoshima", "guangzhou", "champa"]:
+		GameState.visit_port(pid)
+	if not GameState.has_flag("chen_line_open") and not GameState.has_flag("merchant_distance") and not GameState.has_flag("history_pressure_seen"):
+		GameState.set_flag("chen_line_open")
+	GameState.last_port = "champa"
+	var res := GameState.try_resolve_ending()
+	if res.get("resolved", false):
+		_show_chapter_dialog(res)
+	else:
+		log_msg("预览了结未触发。")
 	update_status_panel()
