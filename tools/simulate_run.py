@@ -552,6 +552,61 @@ check(verify_invariants(), "海战结算后分船账目不变量仍成立")
 
 print()
 print("="*70)
+print("P6 结局分支（独立于晋升主循环）")
+print("="*70)
+
+def flag_ok(req, fl, chapter=4):
+    need = req.get("require_flag")
+    if need and need not in fl:
+        return False
+    anyf = req.get("require_any") or []
+    if anyf and not any(f in fl for f in anyf):
+        return False
+    hide = req.get("hide_if_flag")
+    if hide and hide in fl:
+        return False
+    need_ch = int(req.get("require_chapter", 0) or 0)
+    if need_ch and chapter < need_ch:
+        return False
+    return True
+
+def pick_ending(fl):
+    for e in chapters[4].get("endings", []):
+        if flag_ok(e, fl):
+            return e["id"]
+    return None
+
+def ending_ready(peak, visited):
+    req = chapters[4].get("ending_requires") or {}
+    if peak < req.get("peak_money", 0):
+        return False
+    if len(visited) < req.get("visited_count", 0):
+        return False
+    for m in req.get("must_visit", []):
+        if m not in visited:
+            return False
+    return True
+
+check(pick_ending(["chen_line_open"]) == "sea_letter", "海口信路：chen_line_open")
+check(pick_ending(["letter_to_xinghua"]) == "sea_letter", "海口信路：letter_to_xinghua")
+check(pick_ending(["merchant_distance"]) == "ledger_distance", "账上的距离：merchant_distance")
+check(pick_ending(["merchant_caution"]) == "ledger_distance", "账上的距离：merchant_caution")
+check(pick_ending(["history_pressure_seen"]) == "history_wind", "史册未落笔：history_pressure_seen")
+check(pick_ending([]) == "south_sea", "无剧情旗标走南海一纲兜底")
+check(pick_ending(["chen_line_open", "merchant_distance"]) == "sea_letter",
+      "同时有海口与账面旗标时海口优先")
+check(not chapters[2].get("ending_requires"), "第二章没有 ending_requires——主循环不会误了结")
+
+no_champa = [pid for pid in ports if pid != "champa"]
+check(len(no_champa) >= 13, f"去掉占城仍有 {len(no_champa)} 港")
+check(not ending_ready(80000, no_champa[:13]), "走通十三港但未至占城 → 不能了结")
+with_champa = no_champa[:12] + ["champa"]
+check(ending_ready(80000, with_champa), "八万 + 十三港含占城 → 可了结")
+check(not ending_ready(79999, with_champa), "本钱 79999 不能了结")
+check(G.chapter < 4, f"主循环停在第 {G.chapter} 章，未误触了结")
+
+print()
+print("="*70)
 if fails:
     print(f"结果：{len(fails)} 项未通过")
     for f in fails: print("   ✗", f)

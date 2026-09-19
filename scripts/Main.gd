@@ -102,7 +102,10 @@ func update_status_panel() -> void:
 	t += "金钱：%d\n" % GameState.money
 	if GameState.debt > 0:
 		t += "[color=orange]欠债：%d[/color]\n" % GameState.debt
-	t += "名声：%d\n\n" % GameState.fame
+	t += "名声：%d\n" % GameState.fame
+	if GameState.network != 0 or GameState.merchant_credit != 0:
+		t += "人脉：%d　海商信用：%d\n" % [GameState.network, GameState.merchant_credit]
+	t += "\n"
 	t += "[u]舰队[/u]\n船数：%d　水手：%d\n舱位：%d / %d 料\n耐久：%d / %d\n士气：%d\n" % [
 		Fleet.ships.size(), Fleet.total_crew(),
 		int(cap_used), int(cap_total),
@@ -158,8 +161,16 @@ func update_status_panel() -> void:
 	t += "\n[u]第%s章・%s[/u]\n" % [
 		_cn_chapter(GameState.chapter), GameState.chapter_def().get("name", ""),
 	]
-	if prog.get("final", false):
-		t += "[color=gray]已至最后一章[/color]\n"
+	if prog.get("ended", false):
+		t += "[color=gold]了结：%s[/color]\n" % prog.get("ending_title", GameState.ending_title())
+	elif prog.get("final", false):
+		t += "[color=gray]终章・可了结[/color]\n"
+		for it in prog.get("items", []):
+			var emark: String = "[color=lime]✓[/color]" if it["done"] else "・"
+			if int(it["need"]) > 1:
+				t += "%s %s %d/%d\n" % [emark, it["label"], it["current"], it["need"]]
+			else:
+				t += "%s %s\n" % [emark, it["label"]]
 	else:
 		for it in prog.get("items", []):
 			var mark: String = "[color=lime]✓[/color]" if it["done"] else "・"
@@ -187,6 +198,13 @@ func load_scene(scene_id: String) -> void:
 			return
 
 	var scene_data = GameManager.get_scene_by_id(scene_id)
+	if not scene_data.is_empty() and not GameState.scene_unlocked(scene_data):
+		log_msg("这条路还没到时候。")
+		var fallback := GameState.last_port
+		if fallback == "" or fallback == scene_id:
+			fallback = "quanzhou"
+		load_scene(fallback)
+		return
 	if scene_data.is_empty():
 		# scenes.json 只为少数港口写了剧情场景；其余按 ports.json 生成通用港口界面
 		var pdef := GameManager.get_port_by_id(scene_id)
@@ -839,9 +857,36 @@ func _setup_tavern(port_id: String) -> void:
 	choices_container.add_child(intel)
 
 	_setup_hiring(port_id)
+	_setup_story_hooks(port_id)
 
 	choices_label.visible = true
 	_add_leave_button(port_id)
+
+
+func _setup_story_hooks(port_id: String) -> void:
+	var hooks: Array = GameState.story_hooks_at(port_id)
+	if hooks.is_empty():
+		return
+	var sep := Label.new()
+	sep.text = "── 旧事 ──"
+	sep.add_theme_font_size_override("font_size", 13)
+	choices_container.add_child(sep)
+	for h in hooks:
+		var btn := Button.new()
+		btn.text = str(h.get("label", "追问"))
+		btn.pressed.connect(_on_story_hook.bind(h, port_id))
+		choices_container.add_child(btn)
+
+
+func _on_story_hook(hook: Dictionary, port_id: String) -> void:
+	var flag_name := str(hook.get("flag", ""))
+	if flag_name != "":
+		GameState.set_flag(flag_name)
+	var msg := str(hook.get("text", ""))
+	if msg != "":
+		log_msg(msg)
+	update_status_panel()
+	load_scene(current_scene_id if current_scene_id != "" else port_id + "_tavern")
 
 
 ## 酒馆募人。每种职事至多一人，故已雇之职不再列出候选。
@@ -1292,16 +1337,20 @@ func _on_enter_port(port_id: String) -> void:
 		return
 	GameState.visit_port(port_id)
 	var res := GameState.try_advance_chapter()
-	if res.get("advanced", false):
+	if res.get("advanced", false) or res.get("resolved", false):
 		_show_chapter_dialog(res)
 
 
 func _show_chapter_dialog(res: Dictionary) -> void:
 	var dlg := AcceptDialog.new()
-	dlg.title = "第 %s 章・%s" % [
-		_cn_chapter(GameState.chapter), GameState.chapter_def().get("name", ""),
-	]
-	dlg.ok_button_text = "承此一路"
+	if res.get("resolved", false):
+		dlg.title = "了结・%s" % res.get("title", GameState.ending_title())
+		dlg.ok_button_text = "记下这一纲"
+	else:
+		dlg.title = "第 %s 章・%s" % [
+			_cn_chapter(GameState.chapter), GameState.chapter_def().get("name", ""),
+		]
+		dlg.ok_button_text = "承此一路"
 
 	var m := MarginContainer.new()
 	m.add_theme_constant_override("margin_left", 18)
@@ -1328,7 +1377,13 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	dlg.add_child(m)
 	add_child(dlg)
 	dlg.popup_centered()
-	dlg.confirmed.connect(func(): load_scene(current_scene_id))
+	var next_scene := str(res.get("scene", ""))
+	dlg.confirmed.connect(func():
+		if next_scene != "" and not GameManager.get_scene_by_id(next_scene).is_empty():
+			load_scene(next_scene)
+		else:
+			load_scene(current_scene_id)
+	)
 
 	update_status_panel()
 
@@ -1404,11 +1459,17 @@ func show_choices(choices: Array) -> void:
 	if choices.is_empty():
 		return
 	choices_label.visible = true
+	var shown := 0
 	for choice in choices:
+		if not GameState.choice_visible(choice):
+			continue
 		var btn = Button.new()
 		btn.text = choice.get("label", "继续")
 		btn.pressed.connect(_on_choice_pressed.bind(choice))
 		choices_container.add_child(btn)
+		shown += 1
+	if shown == 0:
+		_add_fallback_return_button()
 
 
 func _on_choice_pressed(choice_data: Dictionary) -> void:
@@ -1432,4 +1493,14 @@ func apply_effects(effects: Dictionary) -> void:
 				GameState.set_flag(str(val))
 			"chapter":
 				GameState.chapter = maxi(GameState.chapter, int(val))
+			"network":
+				GameState.network += int(val)
+			"merchant_credit":
+				GameState.merchant_credit += int(val)
+			"sea_tendency":
+				GameState.sea_tendency += int(val)
+			"scholar_tendency":
+				GameState.scholar_tendency += int(val)
+			"ledger_note":
+				GameState.add_ledger_note(str(val))
 	update_status_panel()

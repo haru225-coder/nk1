@@ -624,6 +624,57 @@ else:
 
 print()
 print("=" * 68)
+print("九、P6 剧情旗标与结局契约")
+print("=" * 68)
+print("  旗标门槛、酒馆旧事、结局了结、剧情效果字段须有消费方。")
+
+gs_need = (
+    "flag_requirement_met", "choice_visible", "scene_unlocked",
+    "try_resolve_ending", "has_ended", "pick_ending", "story_hooks_at",
+    "ending_id", "network", "merchant_credit", "add_ledger_note",
+)
+for f in gs_need:
+    if f in defined.get("GameState", set()):
+        print(f"  ✓ GameState.{f} 已定义")
+    else:
+        print(f"  ✗ GameState.{f} 未定义")
+        problems.append(f"GameState.{f} 未定义")
+
+main_path = os.path.join(SCRIPTS, "Main.gd")
+with open(main_path, encoding="utf-8") as f:
+    main_src = f.read()
+for needle, label in (
+    ("choice_visible", "Main.show_choices 过滤不可见选项"),
+    ("scene_unlocked", "Main.load_scene 守剧情门槛"),
+    ("story_hooks_at", "Main 酒馆接旧事钩子"),
+    ('"network"', "Main.apply_effects 写入人脉"),
+    ('"merchant_credit"', "Main.apply_effects 写入海商信用"),
+    ('"ledger_note"', "Main.apply_effects 写入边记"),
+    ("try_advance_chapter", "Main 入港结算晋升/了结"),
+):
+    if needle in main_src:
+        print(f"  ✓ {label}")
+    else:
+        print(f"  ✗ {label}")
+        problems.append(label)
+
+crew_src = ""
+with open(os.path.join(SCRIPTS, "core", "Crew.gd"), encoding="utf-8") as f:
+    crew_src = f.read()
+if "flag_requirement_met" in crew_src and "candidates_at" in crew_src:
+    print("  ✓ Crew.candidates_at 守旗标门槛")
+else:
+    print("  ✗ Crew.candidates_at 未守旗标门槛")
+    problems.append("Crew.candidates_at 未守旗标")
+
+if '"ending_id"' in gs_src and '"network"' in gs_src and '"merchant_credit"' in gs_src:
+    print("  ✓ GameState 存档含 ending_id / network / merchant_credit")
+else:
+    print("  ✗ GameState 存档缺结局或账本字段")
+    problems.append("GameState 存档缺 P6 字段")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:

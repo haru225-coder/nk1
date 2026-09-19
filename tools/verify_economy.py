@@ -130,7 +130,18 @@ for c in chapters:
     n = int(c["id"])
     req = c.get("next_requires")
     if not req:
-        print(f"  · 第{n}章「{c['name']}」为最终章，无晋升条件")
+        end_req = c.get("ending_requires")
+        if end_req:
+            avail = [p for p in ports.values() if ch_num(p.get("unlock", "ch1")) <= n]
+            check(len(avail) >= end_req.get("visited_count", 0),
+                  f"第{n}章了结需走通 {end_req.get('visited_count',0)} 港，该章实际可达 {len(avail)} 港")
+            for pid in end_req.get("must_visit", []):
+                reachable = pid in ports and ch_num(ports[pid].get("unlock", "ch1")) <= n
+                check(reachable,
+                      f"第{n}章了结要求亲至「{ports.get(pid,{}).get('name',pid)}」，该港在本章"
+                      + ("可达" if reachable else "尚未解锁——死锁"))
+        else:
+            print(f"  · 第{n}章「{c['name']}」为最终章，无晋升条件")
         continue
     # 该章可抵达的港口
     avail = [p for p in ports.values() if ch_num(p.get("unlock", "ch1")) <= n]
@@ -732,6 +743,107 @@ check(0.8 * 100 <= low_scale <= high_scale <= 3.0 * 100,
 check(low_scale >= 150 and high_scale >= 250,
       f"开局小艍对敌倍率 1.5~3.0（{low_scale:.0f}~{high_scale:.0f} 血，必败向）")
 check(std_scale <= 100.5, f"标准舰队对上限敌倍率 ≤1.0（{std_scale:.0f} 血，可胜向）")
+
+print()
+print("=" * 68)
+print("九、P6 剧情旗标与结局（旗标有消费方、结局可到达）")
+print("=" * 68)
+
+scenes_doc = load("scenes.json")
+chapters_doc = load("chapters.json")
+crew_doc = load("crew.json")
+scenes = scenes_doc["scenes"]
+by_id = {s["id"]: s for s in scenes}
+
+def walk_effects(node, acc):
+    if isinstance(node, dict):
+        if "flag" in node.get("effects", {}):
+            acc.add(node["effects"]["flag"])
+        for k in ("choices", "investigations", "scenes"):
+            if k in node:
+                walk_effects(node[k], acc)
+        # 钩子自身也可写旗标
+        if "flag" in node and isinstance(node.get("flag"), str) and node.get("port"):
+            acc.add(node["flag"])
+    elif isinstance(node, list):
+        for x in node:
+            walk_effects(x, acc)
+
+settable = set()
+walk_effects(scenes, settable)
+walk_effects(chapters_doc.get("story_hooks", []), settable)
+
+def collect_required(node, acc):
+    if isinstance(node, dict):
+        if node.get("require_flag"):
+            acc.add(node["require_flag"])
+        for f in node.get("require_any", []) or []:
+            acc.add(f)
+        hide = node.get("hide_if_flag")
+        if hide:
+            acc.add(hide)
+        for v in node.values():
+            collect_required(v, acc)
+    elif isinstance(node, list):
+        for x in node:
+            collect_required(x, acc)
+
+required = set()
+collect_required(scenes, required)
+collect_required(chapters_doc, required)
+collect_required(crew_doc, required)
+# 结局/钩子自己写的 hide_if_flag 必须也能被写下
+hook_written = {h.get("flag") for h in chapters_doc.get("story_hooks", []) if h.get("flag")}
+ok_required = required <= (settable | hook_written)
+dangling = sorted(required - settable - hook_written)
+check(ok_required, f"所有 require/hide 旗标都能被写下（悬空 {dangling or '无'}）")
+check(len(settable) >= 30, f"剧情可写下旗标 {len(settable)} 个（应覆盖第一章主线选择）")
+
+# ending 继续按钮不得再盖掉第一章三选一
+ending_scene = by_id.get("ending", {})
+forced = [c.get("effects", {}).get("flag") for c in ending_scene.get("choices", [])]
+check("history_pressure_seen" not in forced,
+      "第一章 ending 继续按钮不再强行写入 history_pressure_seen")
+
+letter = by_id.get("chapter2_letter", {})
+need_any = set(letter.get("require_any", []))
+ch1_spine = {"chen_line_open", "merchant_distance", "history_pressure_seen"}
+check(need_any == ch1_spine, "chapter2_letter 须先走完回泉州三选一旗标")
+
+# 晋升过场与结局场景必须存在
+for c in chapters_doc["chapters"]:
+    sid = c.get("advance_scene")
+    if sid:
+        check(sid in by_id, f"第{c['id']}章 advance_scene「{sid}」存在于 scenes.json")
+    for e in c.get("endings", []):
+        es = e.get("scene")
+        if es:
+            check(es in by_id, f"结局 {e.get('id')} 的场景「{es}」存在")
+
+ch4 = next(c for c in chapters_doc["chapters"] if int(c["id"]) == 4)
+endings = ch4.get("endings", [])
+check(len(endings) >= 2, f"第四章至少两条结局（实际 {len(endings)}）")
+ids = [e.get("id") for e in endings]
+check(len(ids) == len(set(ids)), "结局 id 不重复")
+check(not endings[-1].get("require_any") and not endings[-1].get("require_flag"),
+      f"最后一条结局「{endings[-1].get('id')}」无旗标门槛（沙盒兜底）")
+
+ch3 = next(c for c in chapters_doc["chapters"] if int(c["id"]) == 3)
+ch3_peak = int(ch3["next_requires"]["peak_money"])
+end_peak = int(ch4["ending_requires"]["peak_money"])
+check(end_peak > ch3_peak, f"了结本钱 {end_peak} > 第三章晋升 {ch3_peak}")
+
+# 酒馆钩子港口必须存在
+for h in chapters_doc.get("story_hooks", []):
+    pid = h.get("port")
+    check(pid in ports, f"story_hook 港口「{pid}」存在")
+
+# 职事 require_flag 不得锁死第一章六职
+ch1_roles = set()
+for c in crew_doc["candidates"]:
+    if ch_num(c.get("unlock", "ch1")) <= 1 and not c.get("require_flag") and not c.get("require_any"):
+        ch1_roles.add(c["role"])
+check(len(ch1_roles) >= 6, f"第一章无旗标门槛的职事仍覆盖 {len(ch1_roles)}/6 种")
 
 print()
 print("=" * 68)

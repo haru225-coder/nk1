@@ -1004,9 +1004,7 @@
         {
           "label": "翻开杯底短信，进入第二章",
           "next": "chapter2_letter",
-          "effects": {
-            "flag": "history_pressure_seen"
-          }
+          "effects": {}
         }
       ]
     },
@@ -1052,6 +1050,11 @@
             "flag": "letter_delayed"
           }
         }
+      ],
+      "require_any": [
+        "chen_line_open",
+        "merchant_distance",
+        "history_pressure_seen"
       ]
     },
     {
@@ -1710,6 +1713,104 @@
           "next": "xinghua"
         }
       ]
+    },
+    {
+      "id": "chapter3_gangshou",
+      "chapter": "chapter_3",
+      "require_chapter": 3,
+      "title": "第三章：册上的纲首",
+      "location": "quanzhou",
+      "objective": "接受纲首之名，广州蕃坊的门路随之松动。",
+      "body": "市舶司的小吏把册子转过来给你看。名字后面多了「纲首」二字，墨还没干。\n林阿舶在廊下等你，没有道喜，只说广州那边有人问过你的船。净海遣来的小沙弥合掌退到一边。\n北路已经走通。再往南，香药与象牙不再只是转手价。",
+      "choices": [
+        {
+          "label": "收下这个称呼，先回港上打点南下的水粮与货引",
+          "next": "quanzhou",
+          "effects": {
+            "flag": "chapter3_seen",
+            "fame": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter4_nanhai",
+      "chapter": "chapter_4",
+      "require_chapter": 4,
+      "title": "第四章：酒案上的西南线",
+      "location": "guangzhou",
+      "objective": "听见占城与更远的南洋，决定是否把船再往南开。",
+      "body": "广州蕃坊的宴席散得很慢。占城的船主用酒在案上画线，画到一半停住，说再往下他也只是听人讲。\n北方的邸报近来少了。席上有人笑，有人不再问临安的事。你的船停在珠江口外，水手已经在问：还走不走。",
+      "choices": [
+        {
+          "label": "把这条没画完的线记进自己的海图，回港上准备南洋的水粮",
+          "next": "guangzhou",
+          "effects": {
+            "flag": "chapter4_seen",
+            "fame": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "ending_sea_letter",
+      "chapter": "chapter_4",
+      "title": "了结：海口信路",
+      "location": "champa",
+      "body": "占城的灯比泉州疏。有人在蕃坊问你：兴化那条不点灯的海口，是否还通。\n你没有把旧避风澳画进官图，可已经有人顺着你走过的水走。陈子龙三个字仍写在货引上，史册要等的那个名字还没落笔——海路却先替你记了一笔。",
+      "choices": [
+        {
+          "label": "卷起海图，船还要走。回占城港上",
+          "next": "champa",
+          "effects": {}
+        }
+      ],
+      "require_chapter": 4
+    },
+    {
+      "id": "ending_ledger",
+      "chapter": "chapter_4",
+      "title": "了结：账上的距离",
+      "location": "champa",
+      "body": "牙行把你的名字写在纲首一栏，旁边没有信，没有寺社短札，只有进出清楚的货与脚钱。兴化来人后来再没找上门。\n你的船还在南海走，账面比许多同年都干净；有些门从此只对货开，不对人开。",
+      "choices": [
+        {
+          "label": "账还要继续算。回占城港上",
+          "next": "champa",
+          "effects": {}
+        }
+      ],
+      "require_chapter": 4
+    },
+    {
+      "id": "ending_history",
+      "chapter": "chapter_4",
+      "title": "了结：史册未落笔",
+      "location": "champa",
+      "body": "占城夜里潮声很重。你想起酒肆里那个兴化口音，想起杯底未封口的短信，也想起北方那些还没写进邸报的事。\n陈文龙三个字仍在将来。你把海图卷好，没有把旧泊地标进官册，只在自己的边记里留了一处能避开闲眼的湾。",
+      "choices": [
+        {
+          "label": "把边记收进袖底，回占城港上",
+          "next": "champa",
+          "effects": {}
+        }
+      ],
+      "require_chapter": 4
+    },
+    {
+      "id": "ending_south_sea",
+      "chapter": "chapter_4",
+      "title": "了结：南海一纲",
+      "location": "champa",
+      "body": "没有信，没有寺社，也没有谁在酒肆里叫破你的族里称呼。你只是把船从泉州开到了占城，本钱还在，水手还在。\n市舶司的册子上多了一个纲首。南海很大，这一纲只是开头。",
+      "choices": [
+        {
+          "label": "这一纲还没走完。回占城港上",
+          "next": "champa",
+          "effects": {}
+        }
+      ],
+      "require_chapter": 4
     }
   ]
 }

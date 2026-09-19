@@ -24,6 +24,17 @@ var last_port: String = "quanzhou"
 ## 剧情旗标
 var flags: Dictionary = {}
 
+## 剧情 choice 早已写出、此前 apply_effects 丢掉的账本字段。
+## 不改买卖公式，只供酒馆追问、结局分支与存档对照。
+var network: int = 0
+var merchant_credit: int = 0
+var sea_tendency: int = 0
+var scholar_tendency: int = 0
+var ledger_notes: Array = []
+
+## 已了结的结局 id。空字符串表示尚未了结。
+var ending_id: String = ""
+
 ## 已勘见但未上报的发现物 id
 var discoveries_found: Array = []
 ## 已向市舶司上报、领过赏格的发现物 id
@@ -137,14 +148,8 @@ func chapter_def(n: int = -1) -> Dictionary:
 	return {}
 
 
-## 当前章节晋升进度。返回 {ready, items:[{label, done, current, need}], hint}
-func chapter_progress() -> Dictionary:
-	var req = chapter_def().get("next_requires", null)
-	if req == null or typeof(req) != TYPE_DICTIONARY:
-		return {"ready": false, "items": [], "hint": "", "final": true}
-
+func _requirement_items(req: Dictionary) -> Array:
 	var items := []
-
 	var need_money: int = int(req.get("peak_money", 0))
 	if need_money > 0:
 		items.append({
@@ -161,42 +166,181 @@ func chapter_progress() -> Dictionary:
 
 	for pid in req.get("must_visit", []):
 		items.append({
-			"label": "亲至 " + GameManager.get_port_name(pid),
+			"label": "亲至 " + GameManager.get_port_name(str(pid)),
 			"current": 1 if pid in visited_ports else 0, "need": 1,
 			"done": pid in visited_ports,
 		})
+	return items
 
-	var ready := true
-	for it in items:
+
+func _requirements_ready(req) -> bool:
+	if req == null or typeof(req) != TYPE_DICTIONARY:
+		return false
+	for it in _requirement_items(req):
 		if not it["done"]:
-			ready = false
-			break
-
-	return {"ready": ready, "items": items, "hint": req.get("hint", ""), "final": false}
+			return false
+	return true
 
 
-## 条件达成则进下一章。返回 {advanced, title, text}
+## 当前章节晋升或结局进度。
+## 返回 {ready, items, hint, final, ended}
+func chapter_progress() -> Dictionary:
+	if ending_id != "":
+		var ended := ending_def()
+		return {
+			"ready": false, "items": [], "hint": "", "final": true,
+			"ended": true, "ending_title": ended.get("title", ending_id),
+		}
+
+	var nxt = chapter_def().get("next_requires", null)
+	if nxt != null and typeof(nxt) == TYPE_DICTIONARY:
+		return {
+			"ready": _requirements_ready(nxt),
+			"items": _requirement_items(nxt),
+			"hint": nxt.get("hint", ""),
+			"final": false,
+			"ended": false,
+		}
+
+	var end_req = chapter_def().get("ending_requires", null)
+	if end_req != null and typeof(end_req) == TYPE_DICTIONARY:
+		return {
+			"ready": _requirements_ready(end_req),
+			"items": _requirement_items(end_req),
+			"hint": end_req.get("hint", ""),
+			"final": true,
+			"ended": false,
+		}
+
+	return {"ready": false, "items": [], "hint": "", "final": true, "ended": false}
+
+
+## 条件达成则进下一章或了结。返回 {advanced, resolved, title, text, scene}
 func try_advance_chapter() -> Dictionary:
+	if ending_id != "":
+		return {"advanced": false, "resolved": false}
 	var prog := chapter_progress()
-	if prog.get("final", false) or not prog.get("ready", false):
-		return {"advanced": false}
+	if not prog.get("ready", false):
+		return {"advanced": false, "resolved": false}
+	if prog.get("final", false):
+		return try_resolve_ending()
 	var cur := chapter_def()
 	chapter += 1
 	return {
 		"advanced": true,
+		"resolved": false,
 		"title": cur.get("advance_title", "新的一章"),
 		"text": cur.get("advance_text", ""),
+		"scene": str(cur.get("advance_scene", "")),
+	}
+
+
+func ending_list() -> Array:
+	return chapter_def().get("endings", [])
+
+
+func ending_def(eid: String = "") -> Dictionary:
+	var target: String = ending_id if eid == "" else eid
+	for e in ending_list():
+		if str(e.get("id", "")) == target:
+			return e
+	return {}
+
+
+func has_ended() -> bool:
+	return ending_id != ""
+
+
+func ending_title() -> String:
+	return str(ending_def().get("title", ending_id))
+
+
+## 按 endings 数组顺序取第一条旗标条件成立的结局；最后一条无旗标要求作沙盒兜底。
+func pick_ending() -> Dictionary:
+	for e in ending_list():
+		if typeof(e) != TYPE_DICTIONARY:
+			continue
+		if flag_requirement_met(e):
+			return e
+	return {}
+
+
+## 终章条件达成则按旗标了结。返回 {advanced, resolved, title, text, scene}
+func try_resolve_ending() -> Dictionary:
+	if ending_id != "" or not chapter_progress().get("ready", false):
+		return {"advanced": false, "resolved": false}
+	var picked := pick_ending()
+	if picked.is_empty():
+		return {"advanced": false, "resolved": false}
+	ending_id = str(picked.get("id", ""))
+	return {
+		"advanced": false,
+		"resolved": true,
+		"title": picked.get("title", "了结"),
+		"text": picked.get("text", ""),
+		"scene": str(picked.get("scene", "")),
 	}
 
 
 # ── 旗标 ──────────────────────────────────────────────
 
 func set_flag(flag_name: String) -> void:
-	flags[flag_name] = true
+	if flag_name != "":
+		flags[flag_name] = true
 
 
 func has_flag(flag_name: String) -> bool:
 	return flags.get(flag_name, false) == true
+
+
+## 场景 / 选项 / 结局 / 酒馆钩子共用的旗标门槛。
+## 认 require_flag、require_any、hide_if_flag、require_chapter。缺省为通过。
+func flag_requirement_met(req: Dictionary) -> bool:
+	var need := str(req.get("require_flag", ""))
+	if need != "" and not has_flag(need):
+		return false
+	var any_flags = req.get("require_any", [])
+	if typeof(any_flags) == TYPE_ARRAY and any_flags.size() > 0:
+		var ok := false
+		for f in any_flags:
+			if has_flag(str(f)):
+				ok = true
+				break
+		if not ok:
+			return false
+	var hide := str(req.get("hide_if_flag", ""))
+	if hide != "" and has_flag(hide):
+		return false
+	var need_ch: int = int(req.get("require_chapter", 0))
+	if need_ch > 0 and chapter < need_ch:
+		return false
+	return true
+
+
+func choice_visible(choice: Dictionary) -> bool:
+	return flag_requirement_met(choice)
+
+
+func scene_unlocked(scene_data: Dictionary) -> bool:
+	return flag_requirement_met(scene_data)
+
+
+func add_ledger_note(note: String) -> void:
+	if note != "" and not (note in ledger_notes):
+		ledger_notes.append(note)
+
+
+## 当前港口可出现的一次性剧情追问（data/chapters.json 的 story_hooks）
+func story_hooks_at(port_id: String) -> Array:
+	var out := []
+	for h in GameManager.chapters_data.get("story_hooks", []):
+		if typeof(h) != TYPE_DICTIONARY:
+			continue
+		if str(h.get("port", "")) != port_id:
+			continue
+		if flag_requirement_met(h):
+			out.append(h)
+	return out
 
 
 # ── 市舶司 ────────────────────────────────────────────
@@ -308,6 +452,12 @@ func to_dict() -> Dictionary:
 		"has_customs_permit": has_customs_permit,
 		"last_port": last_port,
 		"flags": flags,
+		"network": network,
+		"merchant_credit": merchant_credit,
+		"sea_tendency": sea_tendency,
+		"scholar_tendency": scholar_tendency,
+		"ledger_notes": ledger_notes,
+		"ending_id": ending_id,
 		"discoveries_found": discoveries_found,
 		"discoveries_reported": discoveries_reported,
 		"visited_ports": visited_ports,
@@ -325,6 +475,12 @@ func from_dict(d: Dictionary) -> void:
 	has_customs_permit = d.get("has_customs_permit", false)
 	last_port = d.get("last_port", "quanzhou")
 	flags = d.get("flags", {})
+	network = int(d.get("network", 0))
+	merchant_credit = int(d.get("merchant_credit", 0))
+	sea_tendency = int(d.get("sea_tendency", 0))
+	scholar_tendency = int(d.get("scholar_tendency", 0))
+	ledger_notes = d.get("ledger_notes", [])
+	ending_id = str(d.get("ending_id", ""))
 	discoveries_found = d.get("discoveries_found", [])
 	discoveries_reported = d.get("discoveries_reported", [])
 	visited_ports = d.get("visited_ports", [])

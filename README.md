@@ -30,11 +30,18 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ```bash
 python3 tools/check_symbols.py    # autoload 顺序与跨文件符号（GDScript 动态语言的必要保险）
-python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 / 死港 / 海战数值边界
+python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 / 死港 / 海战数值边界 / 结局旗标
 python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢出
 ```
 
-三套全绿才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
+有 Godot 4.6 时再加一套引擎冒烟（无显示器也能跑）：
+
+```bash
+godot --headless --path . --import
+godot --headless --path . -s res://tools/godot_smoke.gd
+```
+
+三套 Python 全绿才算一次改动闭环；引擎冒烟用来抓 GDScript 解析/autoload 运行时错误。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
 
 ## 目录结构
 
@@ -52,7 +59,8 @@ assets/     美术资源
 - ✅ P0 地基 / P1 经济内核 / P3 航海层 / P5 职事与发现录 / P6 章节推进
 - ✅ P2 舰队深化（海图、分船装载、分船船员、船体改装）
 - ✅ P4 海战（炮击接入、接舷白刃夺船、弹数挂炮位 + 伤害乘甲）
-- ⏳ 真机手感待点验：本机长期无 Godot，代码经静态校验但未在引擎内实机运行过
+- ✅ P6 其余：剧情旗标真正被场景/酒馆/职事消费；第四章四条结局（海口信路 / 账上的距离 / 史册未落笔 / 南海一纲兜底）
+- ⏳ 编辑器里的手感点验仍待真机：无头引擎可做 import + `godot_smoke.gd`，交互与海战手感仍要在窗口里点
 
 ## 许可
 

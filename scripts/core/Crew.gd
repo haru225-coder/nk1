@@ -45,6 +45,8 @@ func candidates_at(port_id: String) -> Array:
 			continue
 		if not GameState.is_chapter_reached(c.get("unlock", "ch1")):
 			continue
+		if not GameState.flag_requirement_met(c):
+			continue
 		if hired.has(c.get("role", "")):
 			continue
 		out.append(c)

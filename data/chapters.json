@@ -3,7 +3,7 @@
     "title": "东亚海域立志传章节",
     "era": "南宋末，约1255-1277",
     "prototype": "v1.0-uw",
-    "note": "章节推进采用「剧情为骨、沙盒为肉」：晋升条件是沙盒经营的成果（本钱、走通的港口、亲历的关键泊地），达成后以叙事方式开出下一片海域。peak_money 取历史峰值，避免玩家把钱花掉后倒退。"
+    "note": "章节推进采用「剧情为骨、沙盒为肉」：晋升条件是沙盒经营的成果（本钱、走通的港口、亲历的关键泊地），达成后以叙事方式开出下一片海域。peak_money 取历史峰值，避免玩家把钱花掉后倒退。终章不晋升，改为 ending_requires + endings 按旗标了结。"
   },
   "chapters": [
     {
@@ -30,7 +30,8 @@
         "hint": "本钱积至两万，走通九处港口，并亲赴博多唐房对清那笔旧账。"
       },
       "advance_title": "南海路",
-      "advance_text": "市舶司的册子上，你的名字后头添了「纲首」二字。写字的小吏没抬头，笔却比从前恭敬。\n\n广州蕃坊的门路随之松动。那边的香药、象牙与珊瑚，你从前只在泉州的转手价里见过——中间隔着的那几道手，如今可以自己去走。\n\n【广州、南九州 已可抵达】\n【福船（大）已可购置】"
+      "advance_text": "市舶司的册子上，你的名字后头添了「纲首」二字。写字的小吏没抬头，笔却比从前恭敬。\n\n广州蕃坊的门路随之松动。那边的香药、象牙与珊瑚，你从前只在泉州的转手价里见过——中间隔着的那几道手，如今可以自己去走。\n\n【广州、南九州 已可抵达】\n【福船（大）已可购置】",
+      "advance_scene": "chapter3_gangshou"
     },
     {
       "id": 3,
@@ -43,13 +44,75 @@
         "hint": "本钱积至六万，走通十二处港口，并在广州蕃坊立稳脚跟。"
       },
       "advance_title": "远洋",
-      "advance_text": "占城的船主在蕃坊设宴，席间反复提起真腊与三佛齐。有人用手指蘸了酒，在案上画出一条向西南去的线，画到一半停住，说再往下他也只是听人讲。\n\n南海的航路在酒气里铺开，远得让人心里发虚。\n\n【占城 已可抵达】\n【神舟 已可购置】"
+      "advance_text": "占城的船主在蕃坊设宴，席间反复提起真腊与三佛齐。有人用手指蘸了酒，在案上画出一条向西南去的线，画到一半停住，说再往下他也只是听人讲。\n\n南海的航路在酒气里铺开，远得让人心里不便。\n\n【占城 已可抵达】\n【神舟 已可购置】",
+      "advance_scene": "chapter4_nanhai"
     },
     {
       "id": 4,
       "name": "南海",
       "summary": "占城与更远的南洋。此时北方的消息已经不太进得来了。",
-      "next_requires": null
+      "next_requires": null,
+      "ending_requires": {
+        "peak_money": 80000,
+        "visited_count": 13,
+        "must_visit": ["champa"],
+        "hint": "本钱积至八万，走通十三处港口，并亲至占城。海路至此，可了结一纲。"
+      },
+      "endings": [
+        {
+          "id": "sea_letter",
+          "title": "海口信路",
+          "scene": "ending_sea_letter",
+          "require_any": ["chen_line_open", "letter_to_xinghua", "temple_route"],
+          "text": "占城的灯比泉州疏。有人在蕃坊问你：兴化那条不点灯的海口，是否还通。你没有把旧避风澳画进官图，可已经有人顺着你走过的水走。陈子龙三个字仍写在货引上，史册要等的那个名字还没落笔——海路却先替你记了一笔。"
+        },
+        {
+          "id": "ledger_distance",
+          "title": "账上的距离",
+          "scene": "ending_ledger",
+          "require_any": ["merchant_distance", "merchant_caution"],
+          "text": "牙行把你的名字写在纲首一栏，旁边没有信，没有寺社短札，只有进出清楚的货与脚钱。兴化来人后来再没找上门。你的船还在南海走，账面比许多同年都干净；有些门从此只对货开，不对人开。"
+        },
+        {
+          "id": "history_wind",
+          "title": "史册未落笔",
+          "scene": "ending_history",
+          "require_any": ["history_pressure_seen"],
+          "text": "占城夜里潮声很重。你想起酒肆里那个兴化口音，想起杯底未封口的短信，也想起北方那些还没写进邸报的事。陈文龙三个字仍在将来。你把海图卷好，没有把旧泊地标进官册，只在自己的边记里留了一处能避开闲眼的湾。"
+        },
+        {
+          "id": "south_sea",
+          "title": "南海一纲",
+          "scene": "ending_south_sea",
+          "text": "没有信，没有寺社，也没有谁在酒肆里叫破你的族里称呼。你只是把船从泉州开到了占城，本钱还在，水手还在。市舶司的册子上多了一个纲首。南海很大，这一纲只是开头。"
+        }
+      ]
+    }
+  ],
+  "story_hooks": [
+    {
+      "port": "quanzhou",
+      "require_any": ["chen_line_open", "letter_to_xinghua"],
+      "hide_if_flag": "hook_xinghua_asked",
+      "label": "追问兴化来人的下落",
+      "flag": "hook_xinghua_asked",
+      "text": "酒肆里的兴化口音已经散了。掌柜只说那人往海口去，再没回来。柜上还压着一只空杯，杯底的水渍早干了。"
+    },
+    {
+      "port": "hakata",
+      "require_flag": "japan_temple_network",
+      "hide_if_flag": "hook_temple_hakata",
+      "label": "寻寺社引荐的人",
+      "flag": "hook_temple_hakata",
+      "text": "博多的寺社小沙弥看见你袖底那张短札，合掌让出一条更安静的回廊。没有成交，只是有人记住了你。"
+    },
+    {
+      "port": "ryukyu",
+      "require_flag": "ana_hired",
+      "hide_if_flag": "hook_ana_recall",
+      "label": "向阿那复核旧避风澳",
+      "flag": "hook_ana_recall",
+      "text": "阿那用脚尖在沙上划了一道浅湾：「上次你看过的那处，潮退时才能进。别在涨潮硬闯。」"
     }
   ]
 }

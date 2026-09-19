@@ -181,6 +181,18 @@
       "bio": "博多唐房里长大的日本人，汉话说得比许多唐人还清楚。寺社与商家两头都认他。"
     },
     {
+      "id": "jinghai_shami",
+      "name": "净海记名沙弥",
+      "role": "tongshi",
+      "level": 2,
+      "wage": 140,
+      "port": "hakata",
+      "unlock": "ch2",
+      "unlock_flag": "japan_temple_network",
+      "require_flag": "japan_temple_network",
+      "bio": "博多寺社记着净海的短札。只有走过寺社引荐的人，才能在酒肆里遇见他。"
+    },
+    {
       "id": "jin_tanluo",
       "name": "金耽罗",
       "role": "tongshi",
