@@ -750,6 +750,12 @@ if "ship_colorkey.gdshader" in ship_tscn and "ship_colorkey.gdshader" in pirate_
 else:
     print("  ✗ 船精灵未挂 ship_colorkey.gdshader")
     problems.append("船精灵未去底板")
+cb_tscn = open(os.path.join(ROOT, "scenes", "Cannonball.tscn"), encoding="utf-8").read()
+if "ship_colorkey.gdshader" in cb_tscn and "0.1, 0.1" in cb_tscn:
+    print("  ✓ 炮弹已去底板并缩小，避免盖住半个海面")
+else:
+    print("  ✗ 炮弹仍是大号 RGB 底板")
+    problems.append("炮弹未去底板")
 
 print()
 print("=" * 68)
