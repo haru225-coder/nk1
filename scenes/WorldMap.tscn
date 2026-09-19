@@ -127,6 +127,7 @@ theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
 [node name="Label" type="RichTextLabel" parent="CanvasLayer/HUD/LeftPanel/Margin"]
+custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
 theme_override_font_sizes/normal_font_size = 18
 bbcode_enabled = true
@@ -134,6 +135,7 @@ text = "当前季风: 北风 (自北向南吹)
 风力强度: 80
 W/S: 升降帆 (当前档位: 0)
 A/D: 操舵
+J/K: 左/右舷齐射开炮
 船体耐久: [color=green]100/100[/color]
 B/Esc: 弃战逃走"
 fit_content = true
@@ -151,7 +153,11 @@ theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
-[node name="FleetStatus" type="Label" parent="CanvasLayer/HUD/RightPanel/Margin"]
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/HUD/RightPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="FleetStatus" type="Label" parent="CanvasLayer/HUD/RightPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
 theme_override_font_sizes/font_size = 18
@@ -159,9 +165,8 @@ text = "【舰队资产】
 金钱: 0
 货舱: 空"
 
-[node name="WeatherStatus" type="Label" parent="CanvasLayer/HUD/RightPanel/Margin"]
+[node name="WeatherStatus" type="Label" parent="CanvasLayer/HUD/RightPanel/Margin/VBox"]
 layout_mode = 2
-size_flags_vertical = 8
 theme_override_colors/font_color = Color(0.5, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 16
 text = "当前天气: 晴朗"

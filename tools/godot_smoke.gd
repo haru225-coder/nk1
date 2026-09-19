@@ -67,6 +67,18 @@ func _run() -> void:
 		var wm_inst = wm_packed.instantiate()
 		_check(wm_inst != null and wm_inst.has_signal("battle_finished"), "WorldMap 实例挂上海战脚本", fails)
 		if wm_inst != null:
+			# --script 没有 autoload 全局名，不能 add_child 走 _ready；只测格式串占位。
+			if wm_inst.has_method("_format_left_hud"):
+				var hud_txt: String = wm_inst._format_left_hud(
+					"敌船 2 艘　存活 2\n", "", "北风", 80, 1, "green", 100, 100, "B/Esc: 弃战逃走"
+				)
+				_check(
+					hud_txt.find("操舵") >= 0 and hud_txt.find("齐射") >= 0 and hud_txt.find("弃战逃走") >= 0,
+					"海战 HUD 格式串参数对齐",
+					fails,
+				)
+			else:
+				_check(false, "WorldMap._format_left_hud 已定义", fails)
 			wm_inst.free()
 
 	_finish(fails)

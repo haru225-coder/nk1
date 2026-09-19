@@ -711,6 +711,27 @@ if "class_name PirateShip" in open(os.path.join(SCRIPTS, "PirateShip.gd"), encod
 else:
     print("  ✗ PirateShip 无 class_name")
     problems.append("PirateShip 无 class_name")
+if "_format_left_hud" in wm_src:
+    print("  ✓ WorldMap._format_left_hud 已定义（左栏 HUD 单独拼）")
+else:
+    print("  ✗ WorldMap 无 _format_left_hud")
+    problems.append("WorldMap 无 _format_left_hud")
+spawn_max = re.search(r"COMBAT_SPAWN_DIST_MAX\s*:=\s*([0-9.]+)", wm_src)
+if spawn_max and float(spawn_max.group(1)) <= 500.0:
+    print("  ✓ 开战刷船距离在镜头内（≤500）")
+else:
+    print("  ✗ 开战刷船距离过远或未定义")
+    problems.append("开战刷船距离过远")
+if "c is CanvasItem" in chart_src and "_enter_battle" in chart_src:
+    print("  ✓ SeaChart 开战收起全屏栏")
+else:
+    print("  ✗ SeaChart 开战未收起全屏栏")
+    problems.append("SeaChart 开战未收起全屏栏")
+if "RightPanel/Margin/VBox/FleetStatus" in wm_src:
+    print("  ✓ 右栏舰队/天气走 VBox，不再叠字")
+else:
+    print("  ✗ 右栏 FleetStatus 未改到 VBox")
+    problems.append("右栏 FleetStatus 未改到 VBox")
 
 print()
 print("=" * 68)

@@ -5,8 +5,8 @@ signal battle_finished(outcome: String, data: Dictionary)
 
 @onready var ship: CharacterBody2D = $Ship
 @onready var label: RichTextLabel = $CanvasLayer/HUD/LeftPanel/Margin/Label
-@onready var fleet_status: Label = $CanvasLayer/HUD/RightPanel/Margin/FleetStatus
-@onready var weather_status: Label = $CanvasLayer/HUD/RightPanel/Margin/WeatherStatus
+@onready var fleet_status: Label = $CanvasLayer/HUD/RightPanel/Margin/VBox/FleetStatus
+@onready var weather_status: Label = $CanvasLayer/HUD/RightPanel/Margin/VBox/WeatherStatus
 @onready var canvas_modulate: CanvasModulate = $CanvasModulate
 @onready var rain_particles: CPUParticles2D = $RainParticles
 @onready var lightning_flash: ColorRect = $CanvasLayer/LightningFlash
@@ -40,6 +40,9 @@ const ENEMY_HULL_BASE := 100.0
 ## 敌船血量缩放 clamp 下限/上限
 const ENEMY_SCALE_MIN := 0.8
 const ENEMY_SCALE_MAX := 3.0
+## 开战刷船距离：镜头 zoom 1.5 时可见约 850×480，1200 外等于空镜
+const COMBAT_SPAWN_DIST_MIN := 300.0
+const COMBAT_SPAWN_DIST_MAX := 420.0
 
 ## P4-2 接舷距离：低于此距离可按 G 钩住敌船进入白刃
 const BOARD_DISTANCE := 140.0
@@ -218,7 +221,9 @@ func _update_hud() -> void:
 	if ship.hull_hp < 50: hp_color = "red"
 
 	var tail := "B/Esc: 弃战逃走"
-	var mission := "敌船 %d 艘　存活 %d\n" % [total_enemies, _enemies_alive()] if combat_mode else ""
+	var mission := ""
+	if combat_mode:
+		mission = "敌船 %d 艘　存活 %d\n" % [total_enemies, _enemies_alive()]
 	var boarding_hint := ""
 	if combat_mode and not resolved:
 		if boarding:
@@ -229,10 +234,10 @@ func _update_hud() -> void:
 			if ne.size() == 2 and ne[1] < BOARD_DISTANCE:
 				tail = "G: 接舷　B/Esc: 逃走"
 				boarding_hint = "[color=yellow]敌船就在舷边，按 G 钩住白刃！[/color]\n"
-	var text = "%s%s当前季风: %s\n风力强度: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nJ/K: 左/右舷齐射开炮\n船体耐久: [color=%s]%d/%d[/color]\n%s%s" % [
-		mission, boarding_hint, wind_desc, int(ship.wind_strength), ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), tail,
-	]
-	label.text = text
+	label.text = _format_left_hud(
+		mission, boarding_hint, wind_desc, int(ship.wind_strength),
+		ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), tail,
+	)
 
 	var cargo_str = ""
 	if Fleet.cargo.is_empty():
@@ -242,6 +247,16 @@ func _update_hud() -> void:
 			cargo_str += GameManager.get_good_name(k) + " x" + str(Fleet.cargo[k].get("qty", 0)) + " "
 
 	fleet_status.text = "【舰队资产】\n金钱: %d\n货舱: %s" % [GameState.money, cargo_str]
+
+
+## 左栏文案单独拼，避免一条长 % 串数错占位（Godot 4.6 少参数会整栏变空）
+func _format_left_hud(
+	mission: String, boarding_hint: String, wind_desc: String, wind_strength: int,
+	sail_gear: int, hp_color: String, hull_hp: int, max_hp: int, tail: String
+) -> String:
+	return "%s%s当前季风: %s\n风力强度: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nJ/K: 左/右舷齐射开炮\n船体耐久: [color=%s]%d/%d[/color]\n%s" % [
+		mission, boarding_hint, wind_desc, wind_strength, sail_gear, hp_color, hull_hp, max_hp, tail,
+	]
 
 func _process_weather_and_time(delta: float) -> void:
 	# 战斗模式固定晴朗：风暴伤会污染 player_damage 统计并破坏公平性
@@ -385,8 +400,8 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary) -> void:
 	var type_name: String = d.get("name", "敌船")
 	for i in range(count):
 		var p := pirate_scene.instantiate()
-		var angle := randf() * TAU
-		var dist := randf_range(1200.0, 2000.0)
+		var angle := TAU * float(i) / float(maxi(count, 1)) + randf_range(-0.25, 0.25)
+		var dist := randf_range(COMBAT_SPAWN_DIST_MIN, COMBAT_SPAWN_DIST_MAX)
 		p.position = ship.position + Vector2(cos(angle), sin(angle)) * dist
 		p.target = ship
 		p.hull_hp = hull
