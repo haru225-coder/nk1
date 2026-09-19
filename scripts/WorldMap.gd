@@ -85,10 +85,29 @@ func _process(delta: float) -> void:
 
 
 ## 战斗模式下存活敌船数（PirateShip 爆炸后 hull_hp 归零仍存活一帧，按血量判定）
+## Godot 4.6 的 Object.get 只收属性名。Node 上写 get(k, default) 会直接编不过。
+func _node_float(n: Object, prop: String, fallback: float = 0.0) -> float:
+	if n == null:
+		return fallback
+	var v = n.get(prop)
+	return fallback if v == null else float(v)
+
+
+func _node_str(n: Object, prop: String, fallback: String = "") -> String:
+	if n == null:
+		return fallback
+	var v = n.get(prop)
+	return fallback if v == null else str(v)
+
+
+func _is_live_pirate(n: Node) -> bool:
+	return n != null and n.name.begins_with("PirateShip") and _node_float(n, "hull_hp") > 0.0
+
+
 func _enemies_alive() -> int:
 	var n := 0
 	for child in get_children():
-		if child is PirateShip and child.hull_hp > 0.0:
+		if _is_live_pirate(child):
 			n += 1
 	return n
 
@@ -98,11 +117,13 @@ func _nearest_enemy() -> Array:
 	var best: Node2D = null
 	var best_d := 1e9
 	for child in get_children():
-		if child is PirateShip and child.hull_hp > 0.0:
-			var d := child.position.distance_to(ship.position)
-			if d < best_d:
-				best_d = d
-				best = child
+		var n2 := child as Node2D
+		if n2 == null or not _is_live_pirate(n2):
+			continue
+		var d: float = n2.position.distance_to(ship.position)
+		if d < best_d:
+			best_d = d
+			best = n2
 	if best == null:
 		return []
 	return [best, best_d]
@@ -115,7 +136,7 @@ func _boarding_target_valid() -> bool:
 	if not is_instance_valid(boarding_target):
 		boarding_target = null
 		return false
-	return boarding_target is PirateShip and boarding_target.hull_hp > 0.0
+	return _is_live_pirate(boarding_target)
 
 
 ## P4-2 白刃判定：按 水手数 × 士气 × 将领武力 对比双方，胜则夺船并入舰队。
@@ -141,12 +162,8 @@ func _board_enemy(enemy: Node2D) -> void:
 	# 白刃必死人：胜方损失 8%-15%，负方损失 20%-30%（下限 1，保火种）
 	var lose_n := maxi(1, int(Fleet.total_crew() * (0.08 + randf() * 0.07)))
 	if win:
-		var type_id := "sea_falcon"
-		var boarded_name := ""
-		if enemy is PirateShip:
-			type_id = enemy.ship_type
-			boarded_name = enemy.ship_name
-		var ship_name: String = boarded_name
+		var type_id := _node_str(enemy, "ship_type", "sea_falcon")
+		var ship_name := _node_str(enemy, "ship_name", "")
 		Fleet.lose_crew_random(lose_n)
 		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 4)
 		# 主角武力成长：白刃夺船历练（上限 100）

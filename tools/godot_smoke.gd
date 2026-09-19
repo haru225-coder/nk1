@@ -58,10 +58,16 @@ func _run() -> void:
 			cand_ok = true
 	_check(cand_ok, "crew.json 含 jinghai_shami", fails)
 
-	_check(load("res://scripts/WorldMap.gd") != null, "WorldMap.gd 能编译", fails)
 	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
 	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)
 	_check(load("res://scripts/PirateShip.gd") != null, "PirateShip.gd 能编译", fails)
+	var wm_packed = load("res://scenes/WorldMap.tscn")
+	_check(wm_packed != null, "WorldMap.tscn 能加载", fails)
+	if wm_packed != null:
+		var wm_inst = wm_packed.instantiate()
+		_check(wm_inst != null and wm_inst.has_signal("battle_finished"), "WorldMap 实例挂上海战脚本", fails)
+		if wm_inst != null:
+			wm_inst.free()
 
 	_finish(fails)
 
