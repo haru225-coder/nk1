@@ -109,6 +109,7 @@ func _build_ui() -> void:
 	port_list = VBoxContainer.new()
 	port_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(port_list)
+	UiTheme.hook_buttons(port_list)
 
 	detail_box = VBoxContainer.new()
 	detail_box.add_theme_constant_override("separation", 4)
@@ -121,6 +122,7 @@ func _build_ui() -> void:
 	sail_button.disabled = true
 	sail_button.pressed.connect(_on_sail_pressed)
 	center_v.add_child(sail_button)
+	UiTheme.style_button(sail_button, true)
 
 	var back := Button.new()
 	back.text = "回港（不出海）"
@@ -197,13 +199,7 @@ func _build_event_panel() -> void:
 
 
 func _panel_style() -> StyleBoxFlat:
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.07, 0.08, 0.11, 0.88)
-	st.corner_radius_top_left = 6
-	st.corner_radius_top_right = 6
-	st.corner_radius_bottom_left = 6
-	st.corner_radius_bottom_right = 6
-	return st
+	return UiTheme.panel()
 
 
 func _set_margins(m: MarginContainer, v: int) -> void:
@@ -566,6 +562,7 @@ func _add_event_action(text: String, cb: Callable) -> void:
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.pressed.connect(cb)
 	event_actions.add_child(b)
+	UiTheme.style_button(b, text == "迎战")
 
 
 func _on_event_continue() -> void:

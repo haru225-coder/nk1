@@ -55,6 +55,12 @@ func _ready() -> void:
 	# 防御：异常路径可能残留未清理的海战上下文，回港时清空
 	GameManager.pending_battle = {}
 	GameManager.monthly_notice.connect(_on_monthly_notice)
+	# 「绢本墨笔」主题：面板/按钮统一走 UiTheme，后加的按钮由 hook 自动带样式
+	left_panel.add_theme_stylebox_override("panel", UiTheme.panel())
+	investigation_mode.add_theme_stylebox_override("panel", UiTheme.panel())
+	UiTheme.style_button(start_button, true)
+	UiTheme.hook_buttons(choices_container)
+	UiTheme.hook_buttons(right_facilities)
 	update_status_panel()
 	call_deferred("start_game")
 
@@ -1195,19 +1201,7 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 func _make_facility_card(fac: Dictionary) -> Control:
 	var card = PanelContainer.new()
 	card.custom_minimum_size = Vector2(280, 90)
-
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.1, 0.6)
-	style.border_width_left = 1
-	style.border_width_top = 1
-	style.border_width_right = 1
-	style.border_width_bottom = 1
-	style.border_color = Color(0.3, 0.3, 0.3, 0.5)
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_right = 6
-	style.corner_radius_bottom_left = 6
-	card.add_theme_stylebox_override("panel", style)
+	card.add_theme_stylebox_override("panel", UiTheme.card())
 
 	var hbox = HBoxContainer.new()
 	card.add_child(hbox)
@@ -1250,8 +1244,8 @@ func _make_facility_card(fac: Dictionary) -> Control:
 	btn.set_anchors_preset(Control.PRESET_FULL_RECT)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	btn.pressed.connect(_on_facility_pressed.bind(fac))
-	btn.mouse_entered.connect(func(): style.bg_color = Color(0.25, 0.25, 0.3, 0.8))
-	btn.mouse_exited.connect(func(): style.bg_color = Color(0.1, 0.1, 0.1, 0.6))
+	btn.mouse_entered.connect(func(): card.add_theme_stylebox_override("panel", UiTheme.card_hover()))
+	btn.mouse_exited.connect(func(): card.add_theme_stylebox_override("panel", UiTheme.card()))
 	card.add_child(btn)
 
 	return card
@@ -1262,11 +1256,9 @@ func _add_sail_button() -> void:
 	btn.text = "🚢 升帆出海（海图）"
 	btn.custom_minimum_size = Vector2(250, 70)
 	btn.add_theme_font_size_override("font_size", 22)
-	var sb = StyleBoxFlat.new()
-	sb.bg_color = Color(0.75, 0.22, 0.2, 1.0)
-	btn.add_theme_stylebox_override("normal", sb)
 	btn.pressed.connect(_on_set_sail)
 	right_facilities.add_child(btn)
+	UiTheme.style_button(btn, true)
 
 
 func _on_set_sail() -> void:
