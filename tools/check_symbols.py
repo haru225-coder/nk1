@@ -737,6 +737,19 @@ if "RightPanel/Margin/VBox/FleetStatus" in wm_src:
 else:
     print("  ✗ 右栏 FleetStatus 未改到 VBox")
     problems.append("右栏 FleetStatus 未改到 VBox")
+cap = re.search(r"COMBAT_CANNON_CAP\s*:=\s*(\d+)", wm_src)
+if cap and int(cap.group(1)) <= 2:
+    print("  ✓ 开战敌船齐射封顶（≤2），开局小艍扛得住第一轮")
+else:
+    print("  ✗ 开战齐射未封顶，开局仍会被一波秒沉")
+    problems.append("开战齐射未封顶")
+ship_tscn = open(os.path.join(ROOT, "scenes", "Ship.tscn"), encoding="utf-8").read()
+pirate_tscn = open(os.path.join(ROOT, "scenes", "PirateShip.tscn"), encoding="utf-8").read()
+if "ship_colorkey.gdshader" in ship_tscn and "ship_colorkey.gdshader" in pirate_tscn:
+    print("  ✓ 玩家船/敌船已挂去底板着色器")
+else:
+    print("  ✗ 船精灵未挂 ship_colorkey.gdshader")
+    problems.append("船精灵未去底板")
 
 print()
 print("=" * 68)
