@@ -287,6 +287,7 @@ func _enter_panel_mode() -> void:
 	for child in choices_container.get_children():
 		child.queue_free()
 	_show_investigation_chrome(false)
+	scene_title.visible = true
 	choices_label.visible = false
 	choices_label.text = "请选择"  # 市场会改写它，此处复位避免上一屏文字残留
 
@@ -295,6 +296,10 @@ func _show_investigation_chrome(show: bool) -> void:
 	interactive_label.visible = show
 	interactive_container.visible = show
 	interactive_container.custom_minimum_size = Vector2(0, 100) if show else Vector2.ZERO
+
+
+func _unescape_scene_text(s: String) -> String:
+	return s.replace("\\A", "\n\n").replace("\\n", "\n")
 
 
 ## 剧情设施尚未实装时的占位文案，比「施工中」更不出戏
@@ -1142,7 +1147,7 @@ func _setup_title_mode(scene_data: Dictionary) -> void:
 	title_mode.visible = true
 
 	main_title.text = scene_data.get("cg_title", "东亚海域立志传")
-	sub_title.text = scene_data.get("cg_sub", "")
+	sub_title.text = _unescape_scene_text(str(scene_data.get("cg_sub", "")))
 
 	if title_button_connected:
 		for c in start_button.pressed.get_connections():
@@ -1419,12 +1424,17 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 
 	var shown_title := str(scene_data.get("title", "")).strip_edges()
 	if shown_title == "":
-		shown_title = str(scene_data.get("cg_title", "未命名地点")).strip_edges()
-	scene_title.text = shown_title if shown_title != "" else "未命名地点"
+		shown_title = str(scene_data.get("cg_title", "")).strip_edges()
+	if shown_title == "":
+		var speaker := str(scene_data.get("speaker", "")).strip_edges()
+		if speaker != "" and speaker != "——":
+			shown_title = speaker
+	scene_title.visible = shown_title != ""
+	scene_title.text = shown_title
 	var shown_body := str(scene_data.get("body", "")).strip_edges()
 	if shown_body == "":
-		shown_body = str(scene_data.get("cg_sub", "")).replace("\\A", "\n\n").strip_edges()
-	body_text.text = shown_body
+		shown_body = str(scene_data.get("cg_sub", "")).strip_edges()
+	body_text.text = _unescape_scene_text(shown_body)
 
 	var investigations = scene_data.get("investigations", [])
 	_show_investigation_chrome(investigations.size() > 0)
