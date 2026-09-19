@@ -700,6 +700,17 @@ if "_debug_jump_port" in main_src and "KEY_F11" in main_src:
 else:
     print("  ✗ Main 无 F11 进港点验入口")
     problems.append("Main 无 F11")
+wm_src = open(os.path.join(SCRIPTS, "WorldMap.gd"), encoding="utf-8").read()
+if 'child.get("hull_hp"' in wm_src or 'boarding_target.get("hull_hp"' in wm_src:
+    print("  ✗ WorldMap 对 Node 用了两参数 get()——Godot 4.6 编不过")
+    problems.append("WorldMap Node.get 两参数")
+else:
+    print("  ✓ WorldMap 不再对 Node 调用两参数 get()")
+if "class_name PirateShip" in open(os.path.join(SCRIPTS, "PirateShip.gd"), encoding="utf-8").read():
+    print("  ✓ PirateShip 有 class_name，is PirateShip 可解析")
+else:
+    print("  ✗ PirateShip 无 class_name")
+    problems.append("PirateShip 无 class_name")
 
 print()
 print("=" * 68)

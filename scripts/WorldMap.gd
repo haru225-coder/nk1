@@ -88,7 +88,7 @@ func _process(delta: float) -> void:
 func _enemies_alive() -> int:
 	var n := 0
 	for child in get_children():
-		if child.name.begins_with("PirateShip") and float(child.get("hull_hp", 0.0)) > 0.0:
+		if child is PirateShip and child.hull_hp > 0.0:
 			n += 1
 	return n
 
@@ -98,7 +98,7 @@ func _nearest_enemy() -> Array:
 	var best: Node2D = null
 	var best_d := 1e9
 	for child in get_children():
-		if child.name.begins_with("PirateShip") and float(child.get("hull_hp", 0.0)) > 0.0:
+		if child is PirateShip and child.hull_hp > 0.0:
 			var d := child.position.distance_to(ship.position)
 			if d < best_d:
 				best_d = d
@@ -115,7 +115,7 @@ func _boarding_target_valid() -> bool:
 	if not is_instance_valid(boarding_target):
 		boarding_target = null
 		return false
-	return float(boarding_target.get("hull_hp", 0.0)) > 0.0
+	return boarding_target is PirateShip and boarding_target.hull_hp > 0.0
 
 
 ## P4-2 白刃判定：按 水手数 × 士气 × 将领武力 对比双方，胜则夺船并入舰队。
@@ -141,8 +141,12 @@ func _board_enemy(enemy: Node2D) -> void:
 	# 白刃必死人：胜方损失 8%-15%，负方损失 20%-30%（下限 1，保火种）
 	var lose_n := maxi(1, int(Fleet.total_crew() * (0.08 + randf() * 0.07)))
 	if win:
-		var type_id: String = enemy.get("ship_type", "sea_falcon")
-		var ship_name: String = enemy.get("ship_name", "")
+		var type_id := "sea_falcon"
+		var boarded_name := ""
+		if enemy is PirateShip:
+			type_id = enemy.ship_type
+			boarded_name = enemy.ship_name
+		var ship_name: String = boarded_name
 		Fleet.lose_crew_random(lose_n)
 		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 4)
 		# 主角武力成长：白刃夺船历练（上限 100）

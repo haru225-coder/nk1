@@ -1,3 +1,4 @@
+class_name PirateShip
 extends CharacterBody2D
 
 @export var max_speed: float = 250.0

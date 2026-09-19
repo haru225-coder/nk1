@@ -59,7 +59,8 @@ func _key_pressed(event: InputEvent, code: Key) -> bool:
 ## P4-2 接舷：白刃阶段禁炮击（敌船已钩住，甲板上是白刃不是炮战）
 func _can_fire() -> bool:
 	var parent := get_parent()
-	if parent and parent.get("boarding", false):
+	# Object.get 在 4.6 只收属性名，不能带默认值。
+	if parent != null and parent.get("boarding") == true:
 		return false
 	return true
 

@@ -604,6 +604,11 @@ func _on_fight_pirates() -> void:
 ## 实例化 WorldMap 叠加到 SeaChart 上（add_child 保留航行状态，战斗结束 queue_free 即回）
 func _enter_battle() -> void:
 	var wm := preload("res://scenes/WorldMap.tscn").instantiate()
+	if not wm.has_signal("battle_finished"):
+		_log("[color=red]海战脚本没挂上，未能开打。[/color]")
+		wm.queue_free()
+		_after_combat()
+		return
 	wm.battle_finished.connect(_on_battle_result)
 	add_child(wm)
 

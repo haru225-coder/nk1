@@ -58,6 +58,11 @@ func _run() -> void:
 			cand_ok = true
 	_check(cand_ok, "crew.json 含 jinghai_shami", fails)
 
+	_check(load("res://scripts/WorldMap.gd") != null, "WorldMap.gd 能编译", fails)
+	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
+	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)
+	_check(load("res://scripts/PirateShip.gd") != null, "PirateShip.gd 能编译", fails)
+
 	_finish(fails)
 
 
