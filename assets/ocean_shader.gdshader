@@ -19,7 +19,10 @@ void fragment() {
     
     // Add specular highlights on peaks of waves
     float highlight = max(0.0, sin(uv.y * wave_freq * 2.0 + time * 1.5) * cos(uv.x * wave_freq * 2.0 + time * 1.5));
-    highlight = pow(highlight, 4.0) * 0.3;
-    
-    COLOR = mix(tex_color, water_color, 0.2) + vec4(highlight);
+    highlight = pow(highlight, 4.0) * 0.34;
+    // 细碎波光：高频交叠正弦，让白天海面不只是色块
+    float glint = max(0.0, sin(uv.y * wave_freq * 6.0 - time * 2.2) * sin(uv.x * wave_freq * 5.0 + time * 1.7));
+    glint = pow(glint, 8.0) * 0.22;
+
+    COLOR = mix(tex_color, water_color, 0.2) + vec4(highlight + glint);
 }

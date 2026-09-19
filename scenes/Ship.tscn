@@ -10,7 +10,7 @@ radius = 24.0
 script = ExtResource("1_ship")
 
 [node name="WakeParticles" type="CPUParticles2D" parent="."]
-position = Vector2(0, 48)
+position = Vector2(0, 128)
 amount = 100
 lifetime = 1.5
 emission_shape = 3
@@ -25,7 +25,7 @@ scale_amount_max = 6.0
 color = Color(0.9, 0.95, 1, 0.5)
 
 [node name="BowWaveLeft" type="CPUParticles2D" parent="."]
-position = Vector2(-12, -44)
+position = Vector2(-14, -118)
 emitting = false
 amount = 40
 lifetime = 0.8
@@ -39,7 +39,7 @@ scale_amount_max = 3.0
 color = Color(1, 1, 1, 0.6)
 
 [node name="BowWaveRight" type="CPUParticles2D" parent="."]
-position = Vector2(12, -44)
+position = Vector2(14, -118)
 emitting = false
 amount = 40
 lifetime = 0.8

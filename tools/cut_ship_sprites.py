@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 from scipy.ndimage import binary_dilation, binary_propagation, label
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -24,9 +24,10 @@ CANVAS = 512  # 输出正方形画布
 MARGIN = 6    # 抠底后包围盒外留边
 
 SHIPS = {
-    # 原稿 → (输出, 船体长轴像素)。艏必须朝上，引擎内绕中心旋转。
-    "ship_fu_raw.png": ("ship_fu.png", 460),
-    "ship_falcon_raw.png": ("ship_falcon.png", 440),
+    # 原稿 → (输出, 长轴像素, 艏尖位置, 压影中心/半径)。艏朝上，引擎内绕中心旋转。
+    # 艏尖/压影为占包围盒高度的比例，按 sprite 实测标线手调（帆伸出船体，剖面分不出）。
+    "ship_fu_raw.png": ("ship_fu.png", 460, 0.23, 0.58, 0.32),
+    "ship_falcon_raw.png": ("ship_falcon.png", 440, 0.29, 0.60, 0.30),
 }
 
 
@@ -82,7 +83,51 @@ def despill(rgb: np.ndarray) -> np.ndarray:
     return out
 
 
-def cut(raw_path: str, out_name: str, long_axis: int) -> tuple[Image.Image, tuple[int, int, int, int]]:
+def waterline(canvas: Image.Image, bbox: tuple[int, int, int, int], bow_f: float, sh_cy: float, sh_ry: float) -> None:
+    """在船体下方画水线：软椭圆压影 + 艏部白沫弧。船图艏朝上。
+
+    压影让船「坐」进海面而不是浮贴上去；随船图一起旋转，符合顶视逻辑。
+    艏尖与压影位置按包围盒比例给（见 SHIPS 注释）。
+    """
+    x0, y0, x1, y1 = bbox
+    w, h = x1 - x0, y1 - y0
+    cx = (x0 + x1) // 2
+    layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    rx, ry = int(w * 0.38), int(h * sh_ry)
+    cy = y0 + int(h * sh_cy)
+    d.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=(5, 16, 28, 130))
+    layer = layer.filter(ImageFilter.GaussianBlur(8))
+    foam = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    f = ImageDraw.Draw(foam)
+    bx, by = cx, y0 + int(h * bow_f)
+    f.arc((bx - int(w * 0.30), by - 24, bx + int(w * 0.30), by + 28), 195, 345, fill=(230, 243, 248, 150), width=6)
+    f.ellipse((bx - int(w * 0.34), by + 2, bx - int(w * 0.34) + 10, by + 14), fill=(230, 243, 248, 90))
+    f.ellipse((bx + int(w * 0.34) - 10, by + 2, bx + int(w * 0.34), by + 14), fill=(230, 243, 248, 90))
+    foam = foam.filter(ImageFilter.GaussianBlur(2.5))
+    canvas.alpha_composite(layer)
+    canvas.alpha_composite(foam)
+
+
+def make_shot() -> Image.Image:
+    """铁子 48²：铁球径向明暗 + 软水花晕（炮弹不随速度旋转，晕必须各向同性）。"""
+    S = 192
+    src = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(src)
+    c = S // 2
+    d.ellipse((c - 60, c - 60, c + 60, c + 60), fill=(214, 236, 244, 60))
+    src = src.filter(ImageFilter.GaussianBlur(10))
+    d = ImageDraw.Draw(src)
+    for r, col in ((34, (18, 16, 15, 255)), (28, (52, 48, 44, 255)), (20, (78, 70, 62, 255))):
+        d.ellipse((c - r, c - r, c + r, c + r), fill=col)
+    d.ellipse((c - 16, c - 20, c + 2, c - 2), fill=(208, 196, 172, 220))
+    out = src.resize((48, 48), Image.LANCZOS)
+    out.save(os.path.join(OUT, "shot_iron.png"))
+    print(f"  shot_iron.png: 48²  {os.path.getsize(os.path.join(OUT, 'shot_iron.png'))}B")
+    return out
+
+
+def cut(raw_path: str, out_name: str, long_axis: int, bow_f: float, sh_cy: float, sh_ry: float) -> Image.Image:
     rgb = np.array(Image.open(raw_path).convert("RGB"))
     bg = background_mask(magenta_mask(rgb))
 
@@ -120,11 +165,13 @@ def cut(raw_path: str, out_name: str, long_axis: int) -> tuple[Image.Image, tupl
     ship = ship.resize((max(1, round(ship.width * scale)), max(1, round(ship.height * scale))), Image.LANCZOS)
 
     canvas = Image.new("RGBA", (CANVAS, CANVAS), (0, 0, 0, 0))
-    canvas.paste(ship, ((CANVAS - ship.width) // 2, (CANVAS - ship.height) // 2), ship)
+    px, py = (CANVAS - ship.width) // 2, (CANVAS - ship.height) // 2
+    waterline(canvas, (px, py, px + ship.width, py + ship.height), bow_f, sh_cy, sh_ry)
+    canvas.paste(ship, (px, py), ship)
     out_path = os.path.join(OUT, out_name)
     canvas.save(out_path)
     print(f"  {out_name}: 包围盒 {x1 - x0}x{y1 - y0} → {ship.size} → {CANVAS}²  {os.path.getsize(out_path)}B")
-    return canvas, (x0, y0, x1, y1)
+    return canvas
 
 
 def preview(sprites: dict[str, Image.Image]) -> None:
@@ -145,9 +192,9 @@ def preview(sprites: dict[str, Image.Image]) -> None:
 
 def main() -> None:
     sprites = {}
-    for raw_name, (out_name, long_axis) in SHIPS.items():
-        spr, _ = cut(os.path.join(SRC, raw_name), out_name, long_axis)
-        sprites[out_name] = spr
+    for raw_name, (out_name, long_axis, bow_f, sh_cy, sh_ry) in SHIPS.items():
+        sprites[out_name] = cut(os.path.join(SRC, raw_name), out_name, long_axis, bow_f, sh_cy, sh_ry)
+    sprites["shot_iron.png"] = make_shot()
     preview(sprites)
 
 
