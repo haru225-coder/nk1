@@ -8,7 +8,7 @@
 
 核心循环是**套利贸易**：货物在产地与消费地之间有真实的异地差价，去程南下、回程北上各有不同的盈利路线；季风决定航期（去日本要等夏季西南风、回泉州要赶冬季东北风），补给和船员是远洋的硬约束，砸盘、查扣、风暴、海战都是真实的经营风险。
 
-**剧情为骨、沙盒为肉**：98 个历史考据扎实的剧情场景作章节闸门，解锁港口与船种；章节之间是完全自由的沙盒贸易。
+**剧情为骨、沙盒为肉**：104 个历史考据扎实的剧情场景作章节闸门，解锁港口与船种；章节之间是完全自由的沙盒贸易。
 
 ## 引擎
 
@@ -29,7 +29,7 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 本机无 Godot 时，代码改动后必须跑这三套静态校验（改数据尤其要重跑）：
 
 ```bash
-python3 tools/check_symbols.py    # autoload 顺序与跨文件符号（GDScript 动态语言的必要保险）
+python3 tools/check_symbols.py    # autoload 顺序与跨文件符号 + 海战精灵 PNG 取证（RGBA8/四角透明/体积下限）
 python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 / 死港 / 海战数值边界 / 结局旗标
 python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢出
 ```
@@ -43,13 +43,31 @@ godot --headless --path . -s res://tools/godot_smoke.gd
 
 三套 Python 全绿才算一次改动闭环；引擎冒烟用来抓 GDScript 解析/autoload 运行时错误。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
 
+> 注意：`.godot/` 导入缓存与生成它的 Godot 版本绑定。换二进制或从快照恢复后若场景渲染成黑屏，先 `rm -rf .godot && godot --headless --path . --import` 重建再排查。
+
+## 海战操作与调试键
+
+海战（战术层实时操船）：**W/S** 帆档、**A/D** 操舵、**J/K** 左右舷炮、**G** 接舷、**B/Esc** 弃战逃走。开局小艍对海盗停着打必沉（第二轮齐射），这是门禁锁死的数值设计（`verify_economy.py` 海战数值边界 + `check_symbols.py` 齐射封顶断言），不是 bug。
+
+debug 构建下：**F11** 跳泉州港、**F10** 海图强刷海盗遭遇、**F12** 预览第四章了结弹窗——云电脑/无头环境点验用，正式构建不响应。
+
+## 海战船图管线
+
+海战精灵（福船 / 海鹘 / 铁子）是真 RGBA 位图，不靠抠像着色器。福船、海鹘由生成原稿精修：
+
+```bash
+python3 tools/cut_ship_sprites.py   # 需 numpy / Pillow / scipy（仅美术管线用，游戏本身无第三方依赖）
+```
+
+原稿在 `tools/art_src/`（`.gdignore`，不进 Godot 导入与导出），管线负责抠品红底、去溢色、清孤岛、按长轴归一化到 512² 画布。改完必须重跑 `check_symbols.py`——PNG 取证会拦下平涂占位图和烤进底板的 RGB 图。
+
 ## 目录结构
 
 ```
 data/       港口、货物、船种、章节、职事等 JSON 数据
 scripts/    游戏脚本（core/ 为 autoload 单例：Fleet/Economy/Voyage/…）
 scenes/     场景与 UI
-tools/      三套 Python 静态校验脚本
+tools/      三套 Python 静态校验 + 引擎冒烟 + 船图精修管线（art_src/ 为生成原稿，gdignore）
 docs/       复刻设计文档
 assets/     美术资源
 ```
@@ -61,7 +79,14 @@ assets/     美术资源
 - ✅ P4 海战（炮击接入、接舷白刃夺船、弹数挂炮位 + 伤害乘甲）
 - ✅ P6 其余：剧情旗标真正被场景/酒馆/职事消费；第四章四条结局（海口信路 / 账上的距离 / 史册未落笔 / 南海一纲兜底）
 - ✅ Godot 4.6-stable 无头已跑通：import + `godot_smoke.gd` PASS，`Main.tscn` 启动无脚本错误
-- ⏳ 窗口里的手感点验仍待：海图点选、海战、章节弹窗要在编辑器里点一遍
+- ✅ 窗口点验已过（云电脑 XFCE + llvmpipe）：序章 → 海路 → 泉州三选一 → 酒馆旧事 → F12 了结预览；F11 进港 → 升帆 → F10 海盗 → 迎战 → J/K 舷炮 → B 逃走
+- ✅ 海战船图精绘化：福船（牙色硬帆三桅、高艉楼、龙目）/ 海鹘（炭黑壳、绛红破帆、长桨）/ 铁子，真 RGBA 抠底，管线见上节
+
+## 已知坑（点验/改图前必读）
+
+- `assets/icon_*.png` 有若干实为 JPEG（沿用旧文件名），import 时报 `Not a PNG` 无害——运行时 `GameManager.load_texture` 按文件头解码兜底；**不要重转它们**（会牵连 .import 与 uid）。港口设施图标因此在窗口里显示灰叉，属既有观感问题
+- `assets/bg_world_map.jpg` 缺失，WorldMap 背景留黑；crate / 海鸟 / 鲸影仍是 RGB 底板（海战不刷它们，未动）
+- 提交不要带 `.uid` 文件；`git commit` 用显式 pathspec（并行窗口共享工作区）
 
 ## 许可
 
