@@ -85,7 +85,7 @@ assets/     美术资源
 ## 已知坑（点验/改图前必读）
 
 - `assets/icon_*.png` 有若干实为 JPEG（沿用旧文件名），import 时报 `Not a PNG` 无害——运行时 `GameManager.load_texture` 按文件头解码兜底；**不要重转它们**（会牵连 .import 与 uid）。港口设施图标因此在窗口里显示灰叉，属既有观感问题
-- `assets/bg_world_map.jpg` 缺失，WorldMap 背景留黑；crate / 海鸟 / 鲸影仍是 RGB 底板（海战不刷它们，未动）
+- `assets/bg_world_map.jpg` 缺失，WorldMap 背景留黑；crate / 海鸟 / 鲸影仍是 RGB 底板——且 WorldMap 已纯战斗化（`_process_spawns` 只在非战斗跑），这三样当前实际不刷出，是死内容，要清先决定要不要恢复拾取/生态
 - 提交不要带 `.uid` 文件；`git commit` 用显式 pathspec（并行窗口共享工作区）
 
 ## 许可
