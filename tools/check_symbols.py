@@ -746,7 +746,7 @@ else:
 ship_tscn = open(os.path.join(ROOT, "scenes", "Ship.tscn"), encoding="utf-8").read()
 pirate_tscn = open(os.path.join(ROOT, "scenes", "PirateShip.tscn"), encoding="utf-8").read()
 if "ship_fu.png" in ship_tscn and "ship_falcon.png" in pirate_tscn and "ship_topdown.png" not in ship_tscn:
-    print("  ✓ 玩家福船 / 敌船海鹘用海图图式精灵，不再用照片底板")
+    print("  ✓ 玩家福船 / 敌船海鹘用精绘精灵，不再用照片底板")
 else:
     print("  ✗ 船精灵仍是照片底板或未换新图")
     problems.append("船精灵未换成福船/海鹘")
@@ -761,12 +761,89 @@ if "shot_iron.png" in cb_tscn and "cannonball.png" not in cb_tscn:
 else:
     print("  ✗ 炮弹仍是大号 RGB 底板")
     problems.append("炮弹未换成铁子")
+
+
+def png_probe(path):
+    """stdlib 解码 PNG（含 Paeth/Up/Sub/Average 反过滤）。
+    返回 (宽, 高, 是否 RGBA8, 四角 alpha 是否全 0)；无法解析返回 None。"""
+    import struct as _st, zlib as _zl
+    try:
+        data = open(path, "rb").read()
+        if data[:8] != b"\x89PNG\r\n\x1a\n":
+            return None
+        pos, idat, w, h, depth, ctype = 8, b"", 0, 0, 0, 0
+        while pos < len(data):
+            ln = _st.unpack(">I", data[pos:pos + 4])[0]
+            typ, body = data[pos + 4:pos + 8], data[pos + 8:pos + 8 + ln]
+            if typ == b"IHDR":
+                w, h, depth, ctype = _st.unpack(">IIBB", body[:10])
+            elif typ == b"IDAT":
+                idat += body
+            pos += 12 + ln
+        if ctype != 6 or depth != 8:
+            return (w, h, False, False)
+        raw = _zl.decompress(idat)
+        stride = w * 4
+        prev = bytearray(stride)
+        corners = []
+        p = 0
+        for y in range(h):
+            filt = raw[p]; p += 1
+            cur = bytearray(raw[p:p + stride]); p += stride
+            if filt == 1:
+                for i in range(4, stride):
+                    cur[i] = (cur[i] + cur[i - 4]) & 255
+            elif filt == 2:
+                for i in range(stride):
+                    cur[i] = (cur[i] + prev[i]) & 255
+            elif filt == 3:
+                for i in range(stride):
+                    cur[i] = (cur[i] + ((cur[i - 4] if i >= 4 else 0) + prev[i]) // 2) & 255
+            elif filt == 4:
+                for i in range(stride):
+                    a = cur[i - 4] if i >= 4 else 0
+                    b, c = prev[i], prev[i - 4] if i >= 4 else 0
+                    pp = a + b - c
+                    pa, pb, pc = abs(pp - a), abs(pp - b), abs(pp - c)
+                    cur[i] = (cur[i] + (a if pa <= pb and pa <= pc else (b if pb <= pc else c))) & 255
+            if y == 0 or y == h - 1:
+                corners += [cur[3], cur[stride - 1]]
+            prev = cur
+        return (w, h, True, all(a == 0 for a in corners))
+    except Exception:
+        return None
+
+
 for rel in ("assets/ship_fu.png", "assets/ship_falcon.png", "assets/shot_iron.png"):
-    if os.path.exists(os.path.join(ROOT, rel)):
-        print(f"  ✓ {rel} 在仓库里")
-    else:
+    full = os.path.join(ROOT, rel)
+    if not os.path.exists(full):
         print(f"  ✗ 缺 {rel}")
         problems.append(f"缺 {rel}")
+        continue
+    probe = png_probe(full)
+    if probe is None:
+        print(f"  ✗ {rel} 不是可解析的 PNG")
+        problems.append(f"{rel} 无法解析")
+        continue
+    w, h, is_rgba, clear_corners = probe
+    if not is_rgba:
+        print(f"  ✗ {rel} 不是 RGBA8（底板又会烤进图里）")
+        problems.append(f"{rel} 非 RGBA")
+    elif not clear_corners:
+        print(f"  ✗ {rel} 四角不透明（疑似带底板）")
+        problems.append(f"{rel} 带底板")
+    else:
+        print(f"  ✓ {rel} 真 RGBA 且四角透明（{w}x{h}）")
+for rel, min_kb in (("assets/ship_fu.png", 60), ("assets/ship_falcon.png", 60)):
+    full = os.path.join(ROOT, rel)
+    if os.path.exists(full):
+        kb = os.path.getsize(full) // 1024
+        # 精绘 512² 船图约 110~150KB；扫线平涂占位只有 5KB 量级。
+        if kb >= min_kb:
+            print(f"  ✓ {rel} {kb}KB，是精绘位图不是平涂占位")
+        else:
+            print(f"  ✗ {rel} 仅 {kb}KB（<{min_kb}KB），疑似平涂占位图")
+            problems.append(f"{rel} 疑似占位图")
 
 print()
 print("=" * 68)

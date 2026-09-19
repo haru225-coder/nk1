@@ -70,7 +70,6 @@ color = Color(0.6, 0.4, 0.2, 1)
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_ship_tex")
-offset = Vector2(10, 4)
 scale = Vector2(0.62, 0.62)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
