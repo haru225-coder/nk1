@@ -1,20 +1,16 @@
-[gd_scene load_steps=6 format=3 uid="uid://ship_node_1234"]
+[gd_scene load_steps=4 format=3 uid="uid://ship_node_1234"]
 
 [ext_resource type="Script" path="res://scripts/Ship.gd" id="1_ship"]
-[ext_resource type="Texture2D" uid="uid://ship_tex_1234" path="res://assets/ship_topdown.png" id="2_ship_tex"]
-[ext_resource type="Shader" path="res://assets/ship_colorkey.gdshader" id="3_key"]
+[ext_resource type="Texture2D" uid="uid://bs4vafdk65gsh" path="res://assets/ship_fu.png" id="2_ship_tex"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ship"]
 radius = 24.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_key"]
-shader = ExtResource("3_key")
 
 [node name="Ship" type="CharacterBody2D"]
 script = ExtResource("1_ship")
 
 [node name="WakeParticles" type="CPUParticles2D" parent="."]
-position = Vector2(0, 40)
+position = Vector2(0, 48)
 amount = 100
 lifetime = 1.5
 emission_shape = 3
@@ -29,7 +25,7 @@ scale_amount_max = 6.0
 color = Color(0.9, 0.95, 1, 0.5)
 
 [node name="BowWaveLeft" type="CPUParticles2D" parent="."]
-position = Vector2(-15, -35)
+position = Vector2(-12, -44)
 emitting = false
 amount = 40
 lifetime = 0.8
@@ -43,7 +39,7 @@ scale_amount_max = 3.0
 color = Color(1, 1, 1, 0.6)
 
 [node name="BowWaveRight" type="CPUParticles2D" parent="."]
-position = Vector2(15, -35)
+position = Vector2(12, -44)
 emitting = false
 amount = 40
 lifetime = 0.8
@@ -73,9 +69,9 @@ scale_amount_max = 5.0
 color = Color(0.6, 0.4, 0.2, 1)
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-material = SubResource("ShaderMaterial_key")
 texture = ExtResource("2_ship_tex")
-scale = Vector2(0.3, 0.3)
+offset = Vector2(10, 4)
+scale = Vector2(0.62, 0.62)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_ship")

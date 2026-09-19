@@ -745,17 +745,28 @@ else:
     problems.append("开战齐射未封顶")
 ship_tscn = open(os.path.join(ROOT, "scenes", "Ship.tscn"), encoding="utf-8").read()
 pirate_tscn = open(os.path.join(ROOT, "scenes", "PirateShip.tscn"), encoding="utf-8").read()
-if "ship_colorkey.gdshader" in ship_tscn and "ship_colorkey.gdshader" in pirate_tscn:
-    print("  ✓ 玩家船/敌船已挂去底板着色器")
+if "ship_fu.png" in ship_tscn and "ship_falcon.png" in pirate_tscn and "ship_topdown.png" not in ship_tscn:
+    print("  ✓ 玩家福船 / 敌船海鹘用海图图式精灵，不再用照片底板")
 else:
-    print("  ✗ 船精灵未挂 ship_colorkey.gdshader")
-    problems.append("船精灵未去底板")
+    print("  ✗ 船精灵仍是照片底板或未换新图")
+    problems.append("船精灵未换成福船/海鹘")
+if "Color(1, 0.5, 0.5)" in pirate_src:
+    print("  ✗ 海盗还在用红色 modulate 盖船图")
+    problems.append("海盗红色 modulate 会脏掉海鹘精灵")
+else:
+    print("  ✓ 海盗不再用红色 modulate 盖船图")
 cb_tscn = open(os.path.join(ROOT, "scenes", "Cannonball.tscn"), encoding="utf-8").read()
-if "ship_colorkey.gdshader" in cb_tscn and "0.1, 0.1" in cb_tscn:
-    print("  ✓ 炮弹已去底板并缩小，避免盖住半个海面")
+if "shot_iron.png" in cb_tscn and "cannonball.png" not in cb_tscn:
+    print("  ✓ 炮弹用铁子精灵")
 else:
     print("  ✗ 炮弹仍是大号 RGB 底板")
-    problems.append("炮弹未去底板")
+    problems.append("炮弹未换成铁子")
+for rel in ("assets/ship_fu.png", "assets/ship_falcon.png", "assets/shot_iron.png"):
+    if os.path.exists(os.path.join(ROOT, rel)):
+        print(f"  ✓ {rel} 在仓库里")
+    else:
+        print(f"  ✗ 缺 {rel}")
+        problems.append(f"缺 {rel}")
 
 print()
 print("=" * 68)

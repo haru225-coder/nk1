@@ -176,6 +176,10 @@ func take_damage(amount: float) -> void:
 	var tween = create_tween()
 	tween.tween_callback(func(): splinter_particles.emitting = false).set_delay(0.5)
 	
+	sprite.modulate = Color(1.25, 0.72, 0.55)
+	var flash = create_tween()
+	flash.tween_property(sprite, "modulate", Color.WHITE, 0.22)
+
 	hull_hp -= amount
 	Fleet.damage_fleet(amount)
 	# 中弹会颠掉舱面货

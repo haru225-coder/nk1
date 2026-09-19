@@ -35,7 +35,7 @@ var enemy_morale: int = 60
 var captain_force: float = 1.0
 
 func _ready() -> void:
-	sprite.modulate = Color(1, 0.5, 0.5) # Make it look reddish/evil
+	sprite.modulate = Color.WHITE
 
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(target): return
@@ -96,9 +96,9 @@ func _process_firing(delta: float, angle_diff: float, dist: float) -> void:
 
 func take_damage(amount: float) -> void:
 	hull_hp -= amount
-	sprite.modulate = Color(1, 0.2, 0.2)
+	sprite.modulate = Color(1.2, 0.5, 0.45)
 	var tween = create_tween()
-	tween.tween_property(sprite, "modulate", Color(1, 0.5, 0.5), 0.2)
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.2)
 	
 	if hull_hp <= 0:
 		_explode()
