@@ -722,6 +722,11 @@ if spawn_max and float(spawn_max.group(1)) <= 500.0:
 else:
     print("  ✗ 开战刷船距离过远或未定义")
     problems.append("开战刷船距离过远")
+if "COMBAT_FIRE_DELAY" in wm_src and "fire_timer" in wm_src:
+    print("  ✓ 开战给敌船接敌延迟，避免首帧齐射秒杀")
+else:
+    print("  ✗ 开战未给敌船接敌延迟")
+    problems.append("开战未给敌船接敌延迟")
 if "c is CanvasItem" in chart_src and "_enter_battle" in chart_src:
     print("  ✓ SeaChart 开战收起全屏栏")
 else:

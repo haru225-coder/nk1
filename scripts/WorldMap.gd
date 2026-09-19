@@ -43,6 +43,8 @@ const ENEMY_SCALE_MAX := 3.0
 ## 开战刷船距离：镜头 zoom 1.5 时可见约 850×480，1200 外等于空镜
 const COMBAT_SPAWN_DIST_MIN := 300.0
 const COMBAT_SPAWN_DIST_MAX := 420.0
+## 镜头内等于已进 800 射程；不延迟会被 9 门齐射秒掉开局小艍
+const COMBAT_FIRE_DELAY := 3.5
 
 ## P4-2 接舷距离：低于此距离可按 G 钩住敌船进入白刃
 const BOARD_DISTANCE := 140.0
@@ -414,6 +416,9 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary) -> void:
 		p.enemy_morale = randi_range(50, 75)
 		p.captain_force = 1.0 + 0.3 * float(scale - 1.0)  # 强敌水手多，头目更悍
 		p.cannon_count = maxi(1, int(round(3.0 * scale)))  # P4-3：敌船弹数随战力比温和缩放（0.8~3.0 → 2~9 发）
+		# 刷在镜头里等于已经进射程。fire_timer 默认 0 会首帧齐射，
+		# 开局小艍 120 耐久扛不住 2 艘 × 9 门，HUD 还没看清就沉。
+		p.fire_timer = COMBAT_FIRE_DELAY
 		add_child(p)
 		total_enemies += 1
 
