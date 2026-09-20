@@ -58,6 +58,16 @@ func _run() -> void:
 			cand_ok = true
 	_check(cand_ok, "crew.json 含 jinghai_shami", fails)
 
+	_check(not ResourceLoader.exists("res://scenes/Crate.tscn"), "Crate.tscn 已拆除", fails)
+	_check(not FileAccess.file_exists("res://scripts/Crate.gd"), "Crate.gd 已拆除", fails)
+	var wm_src := FileAccess.get_file_as_string("res://scripts/WorldMap.gd")
+	_check(wm_src.find("_process_spawns") < 0, "WorldMap 无自由航行刷怪", fails)
+	var theme_scr = load("res://scripts/core/UiTheme.gd")
+	_check(theme_scr != null, "UiTheme.gd 能编译", fails)
+	var dlg := AcceptDialog.new()
+	UiTheme.style_dialog(dlg, true)
+	_check(dlg.get_theme_stylebox("panel") != null, "UiTheme.style_dialog 给弹窗套绢本面板", fails)
+	dlg.free()
 	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
 	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)
 	_check(load("res://scripts/PirateShip.gd") != null, "PirateShip.gd 能编译", fails)

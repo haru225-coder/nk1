@@ -89,3 +89,12 @@ static func hook_buttons(container: Node) -> void:
 ## 分隔标题（「── 呈报所见 ──」这类）：金色小字
 static func style_section_label(lbl: Label) -> void:
 	lbl.add_theme_color_override("font_color", Color(GOLD, 0.85))
+
+
+## 给 AcceptDialog 套绢本面板。accent_ok=朱砂确定钮（了结 / 升章）。
+static func style_dialog(dlg: AcceptDialog, accent_ok := false) -> void:
+	dlg.add_theme_stylebox_override("panel", panel())
+	dlg.add_theme_color_override("title_color", GOLD)
+	var ok := dlg.get_ok_button()
+	if ok:
+		style_button(ok, accent_ok)

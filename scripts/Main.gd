@@ -61,6 +61,7 @@ func _ready() -> void:
 	UiTheme.style_button(start_button, true)
 	UiTheme.hook_buttons(choices_container)
 	UiTheme.hook_buttons(right_facilities)
+	UiTheme.hook_buttons(npc_actions)
 	update_status_panel()
 	call_deferred("start_game")
 
@@ -1085,9 +1086,6 @@ func _add_npc_button(npc_id: String, fallback_name: String) -> void:
 	var btn = Button.new()
 	btn.text = "【遇见人物】 " + fallback_name
 	btn.pressed.connect(func(): _show_npc_mode(npc_id, fallback_name))
-	var sb = StyleBoxFlat.new()
-	sb.bg_color = Color(0.2, 0.4, 0.6, 1.0)
-	btn.add_theme_stylebox_override("normal", sb)
 	choices_container.add_child(btn)
 	choices_label.visible = true
 
@@ -1299,14 +1297,18 @@ func _show_save_dialog() -> void:
 	var dlg := AcceptDialog.new()
 	dlg.title = "航海日志"
 	dlg.dialog_hide_on_ok = true
+	dlg.ok_button_text = "合上"
 	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 10)
 	dlg.add_child(vb)
 
 	for slot in range(1, SaveLoad.SLOTS + 1):
 		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
 		var lbl := Label.new()
 		lbl.text = "第 %d 卷：%s" % [slot, SaveLoad.save_label(slot)]
 		lbl.custom_minimum_size = Vector2(360, 0)
+		lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 		row.add_child(lbl)
 
 		var sb := Button.new()
@@ -1317,6 +1319,7 @@ func _show_save_dialog() -> void:
 			log_msg("已记入航海日志第 %d 卷。" % slot)
 		)
 		row.add_child(sb)
+		UiTheme.style_button(sb, true)
 
 		var lb := Button.new()
 		lb.text = "翻阅"
@@ -1330,9 +1333,11 @@ func _show_save_dialog() -> void:
 				log_msg("翻开日志第 %d 卷，回到 %s。" % [slot, Calendar.get_date_string()])
 		)
 		row.add_child(lb)
+		UiTheme.style_button(lb, false)
 		vb.add_child(row)
 
 	add_child(dlg)
+	UiTheme.style_dialog(dlg, false)
 	dlg.popup_centered()
 
 
@@ -1375,6 +1380,7 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	var head := Label.new()
 	head.text = res.get("title", "")
 	head.add_theme_font_size_override("font_size", 26)
+	head.add_theme_color_override("font_color", UiTheme.GOLD)
 	v.add_child(head)
 
 	var body := RichTextLabel.new()
@@ -1382,10 +1388,12 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	body.fit_content = true
 	body.custom_minimum_size = Vector2(520, 200)
 	body.text = res.get("text", "")
+	body.add_theme_color_override("default_color", UiTheme.TEXT)
 	v.add_child(body)
 
 	dlg.add_child(m)
 	add_child(dlg)
+	UiTheme.style_dialog(dlg, true)
 	dlg.popup_centered()
 	var next_scene := str(res.get("scene", ""))
 	dlg.confirmed.connect(func():

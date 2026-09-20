@@ -860,6 +860,39 @@ else:
 
 print()
 print("=" * 68)
+print("十一、绢本弹窗（存档 / 升章 / 了结）")
+print("=" * 68)
+theme_src = ""
+with open(os.path.join(ROOT, "scripts", "core", "UiTheme.gd"), encoding="utf-8") as f:
+    theme_src = f.read()
+if re.search(r"^static func style_dialog\b", theme_src, re.M):
+    print("  ✓ UiTheme.style_dialog 已定义")
+else:
+    print("  ✗ UiTheme.style_dialog 未定义")
+    problems.append("UiTheme.style_dialog 未定义")
+if "UiTheme.style_dialog" in main_src and "_show_save_dialog" in main_src:
+    print("  ✓ 存档弹窗走 UiTheme.style_dialog")
+else:
+    print("  ✗ 存档弹窗未套绢本主题")
+    problems.append("存档弹窗未套绢本主题")
+if "UiTheme.style_dialog" in main_src and "_show_chapter_dialog" in main_src:
+    print("  ✓ 升章/了结弹窗走 UiTheme.style_dialog")
+else:
+    print("  ✗ 升章/了结弹窗未套绢本主题")
+    problems.append("升章/了结弹窗未套绢本主题")
+if "Color(0.2, 0.4, 0.6" in main_src:
+    print("  ✗ NPC 按钮仍用蓝底硬编码")
+    problems.append("NPC 按钮蓝底硬编码")
+else:
+    print("  ✓ NPC 按钮不再用蓝底硬编码")
+if "hook_buttons(npc_actions)" in main_src:
+    print("  ✓ 人物对话按钮挂钩 UiTheme")
+else:
+    print("  ✗ npc_actions 未挂钩 UiTheme")
+    problems.append("npc_actions 未挂钩")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:
