@@ -347,6 +347,7 @@ func _setup_missing_scene(scene_id: String) -> void:
 	if base_loc == "" or base_loc == scene_id:
 		base_loc = "quanzhou" if scene_id.begins_with("quanzhou") else "xinghua"
 	_add_leave_button(base_loc)
+	update_status_panel()
 
 
 # ══════════════════════════════════════════════════════
@@ -370,6 +371,7 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 			_setup_shipyard(base_loc)
 		"_inn":
 			_setup_inn(base_loc)
+	update_status_panel()
 
 
 # ── 牙行（市场）─────────────────────────────────────

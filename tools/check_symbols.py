@@ -1029,6 +1029,12 @@ if "_setup_title_and_invest" in main_src and "向本港投钱修埠" in main_src
 else:
     print("  ✗ 市舶司未接职衔/修埠")
     problems.append("市舶司未接职衔修埠")
+dyn = re.search(r"func _setup_dynamic_scene.*?(?=\nfunc )", main_src, re.S)
+if dyn and "update_status_panel()" in dyn.group(0):
+    print("  ✓ 设施页重载刷新状态栏（修埠/买卖后金钱可见）")
+else:
+    print("  ✗ _setup_dynamic_scene 未刷新状态栏")
+    problems.append("_setup_dynamic_scene 未刷新状态栏")
 if "title_name()" in seachart_src:
     print("  ✓ 海图状态栏显示职衔")
 else:
