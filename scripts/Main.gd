@@ -120,7 +120,7 @@ func update_status_panel() -> void:
 	t += "金钱：%d\n" % GameState.money
 	if GameState.debt > 0:
 		t += "[color=orange]欠债：%d[/color]\n" % GameState.debt
-	t += "名声：%d\n" % GameState.fame
+	t += "名声：%d　%s\n" % [GameState.fame, GameState.title_name()]
 	if GameState.network != 0 or GameState.merchant_credit != 0:
 		t += "人脉：%d　海商信用：%d\n" % [GameState.network, GameState.merchant_credit]
 	t += "\n"
@@ -591,6 +591,7 @@ func _setup_yamen(port_id: String) -> void:
 		choices_container.add_child(warn)
 
 	_setup_reporting()
+	_setup_title_and_invest(port_id)
 
 	var att := Label.new()
 	att.text = "蒲氏关注度 %d　%s" % [GameState.pu_attention, _attention_desc()]
@@ -625,12 +626,70 @@ func _setup_reporting() -> void:
 		btn.pressed.connect(func():
 			var res: Dictionary = GameState.report_discovery(did)
 			if not res.is_empty():
-				log_msg("【呈报】%s 录入案册，赏钱 %d，名声 +%d。" % [
-					res["name"], res["gold"], res["fame"],
+				var extra := ""
+				if res.get("promoted", false):
+					extra = "市舶司案册改题「%s」。" % str(res.get("title", {}).get("name", ""))
+				log_msg("【呈报】%s 录入案册，赏钱 %d，名声 +%d。%s" % [
+					res["name"], res["gold"], res["fame"], extra,
 				])
 			load_scene(current_scene_id)
 		)
 		choices_container.add_child(btn)
+
+
+func _setup_title_and_invest(port_id: String) -> void:
+	var sep := Label.new()
+	sep.text = "── 市舶职衔 ──"
+	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	choices_container.add_child(sep)
+
+	var rank: Dictionary = GameState.title_rank()
+	var nxt: Dictionary = GameState.next_title()
+	var rank_lbl := Label.new()
+	if nxt.is_empty():
+		rank_lbl.text = "现为「%s」。抽解按职衔折至 %d%%，赊贷上限 %d。" % [
+			rank.get("name", ""),
+			int(round(float(rank.get("duty_factor", 1.0)) * 100.0)),
+			GameState.DEBT_CEILING + GameState.title_loan_bonus(),
+		]
+	else:
+		var need: int = maxi(0, int(nxt.get("min_fame", 0)) - GameState.fame)
+		rank_lbl.text = "现为「%s」。再记 %d 声名可题「%s」。抽解折至 %d%%，赊贷上限 %d。" % [
+			rank.get("name", ""), need, nxt.get("name", ""),
+			int(round(float(rank.get("duty_factor", 1.0)) * 100.0)),
+			GameState.DEBT_CEILING + GameState.title_loan_bonus(),
+		]
+	rank_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	rank_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	choices_container.add_child(rank_lbl)
+
+	var inv_sep := Label.new()
+	inv_sep.text = "── 修埠 ──"
+	inv_sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	choices_container.add_child(inv_sep)
+
+	var lv: int = Economy.investment_level(port_id)
+	var cost: int = Economy.invest_cost(port_id)
+	var inv_lbl := Label.new()
+	if cost <= 0:
+		inv_lbl.text = "本港埠头已修至 %d 等。产地更廉、紧缺更好卖，市场也更深。" % lv
+	elif lv <= 0:
+		inv_lbl.text = "本港尚未修埠。投钱可加深市场、让本地所产更廉、紧缺货更好卖。"
+	else:
+		inv_lbl.text = "本港埠头 %d 等。再投可升一等：产地买入更廉、紧缺货更好卖、市场更深。" % lv
+	inv_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	inv_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	choices_container.add_child(inv_lbl)
+
+	if cost > 0:
+		var ib := Button.new()
+		ib.text = "向本港投钱修埠（%d 钱）" % cost
+		ib.pressed.connect(func():
+			var res: Dictionary = Economy.invest(port_id)
+			log_msg(res.get("msg", ""))
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(ib)
 
 
 func _attention_desc() -> String:
@@ -715,7 +774,8 @@ func _setup_shipyard(port_id: String) -> void:
 	# 赊贷：本钱被查扣清空后仍有翻身的路
 	var loan_lbl := Label.new()
 	loan_lbl.text = "── 蕃商赊贷（月息 %d%%，上限 %d）──" % [
-		int(GameState.DEBT_MONTHLY_RATE * 100), GameState.DEBT_CEILING,
+		int(GameState.DEBT_MONTHLY_RATE * 100),
+		GameState.DEBT_CEILING + GameState.title_loan_bonus(),
 	]
 	loan_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(loan_lbl)
@@ -1528,7 +1588,9 @@ func apply_effects(effects: Dictionary) -> void:
 			"money":
 				GameState.add_money(val)
 			"fame":
-				GameState.fame += val
+				var fame_res: Dictionary = GameState.add_fame(int(val))
+				if fame_res.get("promoted", false):
+					log_msg("市舶司案册改题「%s」。" % str(fame_res.get("title", {}).get("name", "")))
 			"days":
 				GameManager.advance_days(val)
 			"flag":

@@ -19,6 +19,8 @@ var broker_fee: float = 0.05
 
 ## {port_id: {good_id: rate}}
 var rates: Dictionary = {}
+## {port_id: level} 市舶修埠等级，0 表示未投
+var investments: Dictionary = {}
 
 var _initialized: bool = false
 
@@ -82,21 +84,82 @@ func get_rate(port_id: String, good_id: String) -> float:
 	return rates.get(port_id, {}).get(good_id, 1.0)
 
 
-## 杂事压低抽解与佣金；通事在异国港口另有议价之利
+## 杂事压低抽解与佣金；通事在异国港口另有议价之利；职衔再折一层抽解
 func _effective_tariff() -> float:
-	return tariff_rate * Crew.trade_cost_factor()
+	return tariff_rate * Crew.trade_cost_factor() * GameState.title_duty_factor()
 
 
 func _effective_broker() -> float:
-	return broker_fee * Crew.trade_cost_factor()
+	return broker_fee * Crew.trade_cost_factor() * GameState.title_duty_factor()
+
+
+func _invest_cfg() -> Dictionary:
+	var cfg = GameManager.titles_data.get("invest", {})
+	return cfg if typeof(cfg) == TYPE_DICTIONARY else {}
+
+
+func investment_level(port_id: String) -> int:
+	return int(investments.get(port_id, 0))
+
+
+func invest_max_level() -> int:
+	return int(_invest_cfg().get("max_level", 5))
+
+
+func invest_cost(port_id: String) -> int:
+	var lv := investment_level(port_id)
+	var costs = _invest_cfg().get("costs", [])
+	if typeof(costs) != TYPE_ARRAY or lv >= costs.size() or lv >= invest_max_level():
+		return 0
+	return int(costs[lv])
+
+
+func invest_edge(port_id: String) -> float:
+	return float(_invest_cfg().get("edge_per_level", 0.025)) * float(investment_level(port_id))
+
+
+func invest_fame_gain(new_level: int) -> int:
+	return int(_invest_cfg().get("fame_base", 3)) + new_level
+
+
+## 向本港投钱修埠。返回 {ok, msg, level, cost, fame, promoted, title}
+func invest(port_id: String) -> Dictionary:
+	if port_id == "" or _port_def(port_id).is_empty():
+		return {"ok": false, "msg": "【修埠】查无此港。"}
+	var cost := invest_cost(port_id)
+	if cost <= 0:
+		return {"ok": false, "msg": "【修埠】本港埠头已修至最高等。"}
+	if not GameState.spend_money(cost):
+		return {"ok": false, "msg": "【修埠】再投 %d 钱才能动工，你囊中不足。" % cost}
+	var lv := investment_level(port_id) + 1
+	investments[port_id] = lv
+	var fame_res: Dictionary = GameState.add_fame(invest_fame_gain(lv))
+	var title_name := str(fame_res.get("title", {}).get("name", GameState.title_name()))
+	var msg := "【修埠】向%s投下 %d 钱，埠头升为 %d 等。名声 +%d。" % [
+		GameManager.get_port_name(port_id), cost, lv, fame_res.get("gained", 0),
+	]
+	if fame_res.get("promoted", false):
+		msg += "市舶司案册改题「%s」。" % title_name
+	return {
+		"ok": true, "msg": msg, "level": lv, "cost": cost,
+		"fame": fame_res.get("gained", 0),
+		"promoted": fame_res.get("promoted", false),
+		"title": fame_res.get("title", {}),
+	}
 
 
 ## 定价的唯一出处。estimate_* 逐单位推演时也走这里，避免公式分叉。
 func price_at_rate(port_id: String, good_id: String, rate: float, is_buy: bool) -> int:
 	var base: float = float(_good_def(good_id).get("base_value", 0))
-	var mod: float = ROLE_MOD.get(get_role(port_id, good_id), 1.0)
+	var role := get_role(port_id, good_id)
+	var mod: float = ROLE_MOD.get(role, 1.0)
 	var edge := Crew.interpreter_edge(port_id)
 	var v := base * mod * rate
+	var ie := invest_edge(port_id)
+	if role == "origin":
+		v *= (1.0 - ie)
+	elif role == "consumer":
+		v *= (1.0 + ie)
 	if is_buy:
 		return int(round(v * (1.0 + _effective_tariff()) * (1.0 - edge)))
 	return int(round(v * (1.0 - _effective_broker()) * (1.0 + edge)))
@@ -141,7 +204,8 @@ func price_hint(port_id: String, good_id: String) -> String:
 # ── 交易冲击 ──────────────────────────────────────────
 
 func _depth(port_id: String) -> float:
-	return float(_port_def(port_id).get("depth", 100))
+	var base := float(_port_def(port_id).get("depth", 100))
+	return base * (1.0 + float(_invest_cfg().get("depth_per_level", 0.12)) * float(investment_level(port_id)))
 
 
 func _shift_rate(port_id: String, good_id: String, delta: float) -> void:
@@ -196,11 +260,15 @@ func on_day_passed() -> void:
 # ── 存档 ──────────────────────────────────────────────
 
 func to_dict() -> Dictionary:
-	return {"rates": rates, "tariff": tariff_rate, "broker": broker_fee}
+	return {
+		"rates": rates, "tariff": tariff_rate, "broker": broker_fee,
+		"investments": investments,
+	}
 
 
 func from_dict(d: Dictionary) -> void:
 	rates = d.get("rates", {})
 	tariff_rate = d.get("tariff", 0.10)
 	broker_fee = d.get("broker", 0.05)
+	investments = d.get("investments", {})
 	_initialized = true

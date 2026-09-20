@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "title": "东亚海域立志传市舶职衔与修埠",
+    "note": "名声只换市舶职衔与优惠，不另开港口/船种闸门——那些仍由章节管。职衔不是朝廷实封，也不用「纲首」（章名已占用）。修埠按角色同向调单位价：产地买卖同降、紧缺买卖同升，避免同港套利。"
+  },
+  "ranks": [
+    {
+      "id": "san_shang",
+      "name": "籍外散商",
+      "min_fame": 0,
+      "duty_factor": 1.0,
+      "loan_bonus": 0
+    },
+    {
+      "id": "bo_ya",
+      "name": "在册舶牙",
+      "min_fame": 10,
+      "duty_factor": 0.94,
+      "loan_bonus": 500
+    },
+    {
+      "id": "hai_jia",
+      "name": "远洋海贾",
+      "min_fame": 24,
+      "duty_factor": 0.88,
+      "loan_bonus": 1000
+    },
+    {
+      "id": "bo_zhu",
+      "name": "舶主",
+      "min_fame": 48,
+      "duty_factor": 0.82,
+      "loan_bonus": 1800
+    },
+    {
+      "id": "du_bao",
+      "name": "市舶都保",
+      "min_fame": 80,
+      "duty_factor": 0.76,
+      "loan_bonus": 2500
+    }
+  ],
+  "invest": {
+    "max_level": 5,
+    "costs": [800, 2000, 4500, 9000, 18000],
+    "edge_per_level": 0.025,
+    "depth_per_level": 0.12,
+    "fame_base": 3
+  }
+}

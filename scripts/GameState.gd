@@ -57,7 +57,7 @@ func add_money(amount: int) -> void:
 # ── 赊贷 ──────────────────────────────────────────────
 
 func borrow_limit() -> int:
-	return maxi(0, DEBT_CEILING - debt)
+	return maxi(0, DEBT_CEILING + title_loan_bonus() - debt)
 
 
 func borrow(amount: int) -> bool:
@@ -131,8 +131,14 @@ func report_discovery(did: String) -> Dictionary:
 	var gold := value
 	var fame_gain: int = maxi(1, value / 10)
 	add_money(gold)
-	fame += fame_gain
-	return {"gold": gold, "fame": fame_gain, "name": d.get("name", "所见")}
+	var fame_res := add_fame(fame_gain)
+	return {
+		"gold": gold,
+		"fame": fame_gain,
+		"name": d.get("name", "所见"),
+		"promoted": fame_res.get("promoted", false),
+		"title": fame_res.get("title", {}),
+	}
 
 
 func visit_port(port_id: String) -> void:
@@ -343,6 +349,65 @@ func story_hooks_at(port_id: String) -> Array:
 	return out
 
 
+# ── 名声换爵 ──────────────────────────────────────────
+
+func title_ranks() -> Array:
+	var out := []
+	for r in GameManager.titles_data.get("ranks", []):
+		if typeof(r) == TYPE_DICTIONARY:
+			out.append(r)
+	out.sort_custom(func(a, b): return int(a.get("min_fame", 0)) < int(b.get("min_fame", 0)))
+	return out
+
+
+func title_rank() -> Dictionary:
+	var best := {
+		"id": "san_shang", "name": "籍外散商",
+		"min_fame": 0, "duty_factor": 1.0, "loan_bonus": 0,
+	}
+	for r in title_ranks():
+		if fame >= int(r.get("min_fame", 0)):
+			best = r
+	return best
+
+
+func next_title() -> Dictionary:
+	var cur_id := str(title_rank().get("id", ""))
+	var seen := false
+	for r in title_ranks():
+		if seen:
+			return r
+		if str(r.get("id", "")) == cur_id:
+			seen = true
+	return {}
+
+
+func title_duty_factor() -> float:
+	return float(title_rank().get("duty_factor", 1.0))
+
+
+func title_loan_bonus() -> int:
+	return int(title_rank().get("loan_bonus", 0))
+
+
+func title_name() -> String:
+	return str(title_rank().get("name", "籍外散商"))
+
+
+## 名声可负（剧情罚没）。返回 {gained, fame, promoted, title, prev}
+func add_fame(amount: int) -> Dictionary:
+	var prev := title_rank()
+	fame = maxi(0, fame + amount)
+	var now := title_rank()
+	return {
+		"gained": amount,
+		"fame": fame,
+		"promoted": str(prev.get("id", "")) != str(now.get("id", "")),
+		"title": now,
+		"prev": prev,
+	}
+
+
 # ── 市舶司 ────────────────────────────────────────────
 
 ## 舱内违禁货（宋钱、铁器等）总量
@@ -362,7 +427,7 @@ func customs_duty() -> int:
 		if g.get("contraband", false):
 			continue  # 违禁货无法报关，不计入
 		var qty: int = Fleet.cargo[gid].get("qty", 0)
-		total += float(g.get("base_value", 0)) * qty * Economy.tariff_rate
+		total += float(g.get("base_value", 0)) * qty * Economy.tariff_rate * title_duty_factor()
 	return maxi(20, int(round(total)))
 
 

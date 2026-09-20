@@ -955,6 +955,93 @@ else:
 
 print()
 print("=" * 68)
+print("十二、名声换爵与港口投资")
+print("=" * 68)
+print("  职衔派生自名声；修埠落 Economy；市舶司是唯一入口。")
+
+titles_path = os.path.join(ROOT, "data", "titles.json")
+if os.path.isfile(titles_path):
+    print("  ✓ data/titles.json 存在")
+else:
+    print("  ✗ data/titles.json 不存在")
+    problems.append("缺 titles.json")
+
+gm_src = open(os.path.join(SCRIPTS, "GameManager.gd"), encoding="utf-8").read()
+eco_src = open(os.path.join(SCRIPTS, "core", "Economy.gd"), encoding="utf-8").read()
+gs_src = open(os.path.join(SCRIPTS, "GameState.gd"), encoding="utf-8").read()
+if "titles_data" in defined.get("GameManager", set()) and "titles.json" in gm_src:
+    print("  ✓ GameManager 加载 titles.json")
+else:
+    print("  ✗ GameManager 未加载 titles.json")
+    problems.append("GameManager 未加载 titles")
+
+for f in ("add_fame", "title_rank", "next_title", "title_duty_factor",
+          "title_loan_bonus", "title_name", "title_ranks"):
+    if f in defined.get("GameState", set()):
+        print(f"  ✓ GameState.{f} 已定义")
+    else:
+        print(f"  ✗ GameState.{f} 未定义")
+        problems.append(f"GameState.{f} 未定义")
+
+for f in ("invest", "invest_cost", "investment_level", "invest_edge",
+          "investments", "invest_fame_gain"):
+    if f in defined.get("Economy", set()):
+        print(f"  ✓ Economy.{f} 已定义")
+    else:
+        print(f"  ✗ Economy.{f} 未定义")
+        problems.append(f"Economy.{f} 未定义")
+
+if "title_duty_factor" in eco_src:
+    print("  ✓ Economy 定价乘职衔抽解")
+else:
+    print("  ✗ Economy 定价未乘职衔")
+    problems.append("Economy 未乘职衔")
+if 'role == "origin"' in eco_src and 'role == "consumer"' in eco_src and "invest_edge" in eco_src:
+    print("  ✓ Economy 修埠按产地/消费地同向调单位价")
+else:
+    print("  ✗ Economy 修埠未按角色同向调价")
+    problems.append("Economy 修埠调价未接线")
+if '"investments"' in eco_src:
+    print("  ✓ Economy 存档含 investments")
+else:
+    print("  ✗ Economy 存档缺 investments")
+    problems.append("Economy 存档缺 investments")
+if "title_loan_bonus" in gs_src and "borrow_limit" in gs_src:
+    print("  ✓ 赊贷上限吃职衔加成")
+else:
+    print("  ✗ 赊贷上限未吃职衔加成")
+    problems.append("borrow_limit 未接职衔")
+if "title_duty_factor" in gs_src and "customs_duty" in gs_src:
+    print("  ✓ 货引抽解吃职衔折让")
+else:
+    print("  ✗ 货引抽解未吃职衔")
+    problems.append("customs_duty 未接职衔")
+if "add_fame(" in main_src and "fame +=" not in main_src.replace("add_fame", ""):
+    print("  ✓ Main 名声走 add_fame")
+else:
+    if "add_fame(" in main_src:
+        print("  ✓ Main 名声走 add_fame")
+    else:
+        print("  ✗ Main 未走 add_fame")
+        problems.append("Main 未走 add_fame")
+if "_setup_title_and_invest" in main_src and "向本港投钱修埠" in main_src:
+    print("  ✓ 市舶司有职衔说明与修埠钮")
+else:
+    print("  ✗ 市舶司未接职衔/修埠")
+    problems.append("市舶司未接职衔修埠")
+if "title_name()" in seachart_src:
+    print("  ✓ 海图状态栏显示职衔")
+else:
+    print("  ✗ 海图状态栏无职衔")
+    problems.append("海图无职衔")
+if "add_fame(3)" in seachart_src:
+    print("  ✓ 海战胜仗名声走 add_fame")
+else:
+    print("  ✗ 海战胜仗仍直接改 fame")
+    problems.append("海战名声未走 add_fame")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:

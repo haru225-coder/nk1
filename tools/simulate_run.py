@@ -730,6 +730,84 @@ check(playthrough["ending"] == "south_sea", "通关主循环已了结，旗标�
 
 print()
 print("="*70)
+print("名声换爵与港口投资（独立账本，不改写通关 ending）")
+print("="*70)
+
+titles = load("titles.json")
+ranks = titles["ranks"]
+inv_cfg = titles["invest"]
+inv_costs = inv_cfg["costs"]
+edge_per = inv_cfg["edge_per_level"]
+fame_base = inv_cfg["fame_base"]
+
+def title_of(fame):
+    best = ranks[0]
+    for r in ranks:
+        if fame >= r["min_fame"]:
+            best = r
+    return best
+
+def role_of(pid, gid):
+    return ports[pid].get("market", {}).get(gid)
+
+def price_inv(pid, gid, is_buy, inv=0, title_duty=1.0, rate=1.0):
+    r = role_of(pid, gid)
+    v = goods[gid]["base_value"] * ROLE_MOD[r] * rate
+    ie = inv * edge_per
+    if r == "origin":
+        v *= (1.0 - ie)
+    elif r == "consumer":
+        v *= (1.0 + ie)
+    if is_buy:
+        return round(v * (1 + TARIFF * title_duty))
+    return round(v * (1 - BROKER * title_duty))
+
+class InvBook:
+    money = 20000
+    fame = 0
+    investments = {}
+    ending_id = playthrough["ending"]
+
+def do_invest(book, pid):
+    lv = book.investments.get(pid, 0)
+    if lv >= inv_cfg["max_level"]:
+        return False
+    cost = inv_costs[lv]
+    if book.money < cost:
+        return False
+    book.money -= cost
+    book.investments[pid] = lv + 1
+    book.fame += fame_base + (lv + 1)
+    return True
+
+bare_buy = price_inv("quanzhou", "qingbai_porcelain", True)
+bare_sell = price_inv("hakata", "qingbai_porcelain", False)
+check(InvBook.fame == 0 and title_of(0)["id"] == "san_shang", "独立账本开局籍外散商")
+n_qz = n_hk = 0
+while n_qz < 3 and do_invest(InvBook, "quanzhou"):
+    n_qz += 1
+while n_hk < 2 and do_invest(InvBook, "hakata"):
+    n_hk += 1
+spent = 20000 - InvBook.money
+print(f"  泉州修 {n_qz} 等、博多修 {n_hk} 等，花 {spent} 钱，名声 {InvBook.fame}，职衔 {title_of(InvBook.fame)['name']}")
+check(n_qz == 3 and n_hk == 2, f"修埠次数 泉州{n_qz} 博多{n_hk}")
+check(InvBook.fame >= 10, f"修埠后名声 {InvBook.fame} ≥ 10，至少升舶牙")
+check(title_of(InvBook.fame)["id"] != "san_shang", "修埠后职衔已升")
+check(InvBook.ending_id == playthrough["ending"], "修埠账本不改写通关结局")
+
+qz_buy = price_inv("quanzhou", "qingbai_porcelain", True, InvBook.investments["quanzhou"])
+hk_sell = price_inv("hakata", "qingbai_porcelain", False, InvBook.investments["hakata"])
+qz_sell = price_inv("quanzhou", "qingbai_porcelain", False, InvBook.investments["quanzhou"])
+check(qz_buy < bare_buy, f"泉州修埠后青白瓷买入 {qz_buy} < {bare_buy}")
+check(hk_sell > bare_sell, f"博多修埠后青白瓷卖出 {hk_sell} > {bare_sell}")
+check(qz_sell <= qz_buy, f"泉州同港卖 {qz_sell} ≤ 买 {qz_buy}（无正套利）")
+
+InvBook.fame = 80
+check(title_of(InvBook.fame)["id"] == "du_bao", "名声 80 为市舶都保")
+check(title_of(InvBook.fame)["loan_bonus"] == 2500, "都保赊贷 +2500")
+
+print()
+print("="*70)
 if fails:
     print(f"结果：{len(fails)} 项未通过")
     for f in fails: print("   ✗", f)

@@ -90,6 +90,28 @@ func _run() -> void:
 	_check(UiTheme.SIZE_HEAD > UiTheme.SIZE_BODY and UiTheme.SIZE_BODY > UiTheme.SIZE_FOOT,
 		"字阶 HEAD > BODY > FOOT", fails)
 	choice.free()
+
+	_check(gm.titles_data.get("ranks", []).size() == 5, "titles 五档职衔", fails)
+	_check(gs.title_name() == "籍外散商", "开局籍外散商", fails)
+	var promo: Dictionary = gs.add_fame(10)
+	_check(promo.get("promoted", false) and str(gs.title_name()) == "在册舶牙",
+		"名声 10 升在册舶牙", fails)
+	_check(int(gs.title_loan_bonus()) == 500, "舶牙赊贷 +500", fails)
+	_check(int(gs.borrow_limit()) == int(gs.DEBT_CEILING) + 500, "赊贷上限含职衔", fails)
+	var eco: Node = root.get_node_or_null("Economy")
+	_check(eco != null, "autoload Economy 在 /root", fails)
+	if eco != null:
+		var invs = eco.get("investments")
+		_check(typeof(invs) == TYPE_DICTIONARY, "Economy.investments 是字典", fails)
+		if eco.has_method("invest") and eco.has_method("investment_level"):
+			var money0: int = int(gs.money)
+			var inv0: Dictionary = eco.invest("quanzhou")
+			_check(inv0.get("ok", false) and int(eco.investment_level("quanzhou")) == 1,
+				"泉州可修一等埠", fails)
+			_check(int(gs.money) == money0 - 800, "一等修埠扣 800 钱", fails)
+			var saved: Dictionary = eco.to_dict()
+			_check(saved.has("investments") and int(saved["investments"].get("quanzhou", 0)) == 1,
+				"Economy 存档含修埠", fails)
 	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
 	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)
 	_check(load("res://scripts/PirateShip.gd") != null, "PirateShip.gd 能编译", fails)

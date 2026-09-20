@@ -847,6 +847,90 @@ check(len(ch1_roles) >= 6, f"第一章无旗标门槛的职事仍覆盖 {len(ch1
 
 print()
 print("=" * 68)
+print("十、名声换爵与港口投资（职衔不另开章门，修埠不造同港套利）")
+print("=" * 68)
+
+titles_doc = load("titles.json")
+ranks = titles_doc["ranks"]
+invest = titles_doc["invest"]
+rank_ids = [r["id"] for r in ranks]
+check(len(ranks) == 5, f"职衔五档（实际 {len(ranks)}）")
+check(len(rank_ids) == len(set(rank_ids)), "职衔 id 不重复")
+check(ranks[0]["min_fame"] == 0, "最低档 min_fame=0，开局即有职衔")
+check(all(ranks[i]["min_fame"] < ranks[i+1]["min_fame"] for i in range(len(ranks)-1)),
+      "职衔门槛严格递增")
+check(all(ranks[i]["duty_factor"] >= ranks[i+1]["duty_factor"] for i in range(len(ranks)-1)),
+      "职衔抽解折让不递增")
+check(all(ranks[i]["loan_bonus"] <= ranks[i+1]["loan_bonus"] for i in range(len(ranks)-1)),
+      "职衔赊贷加成不递减")
+check(all(r["duty_factor"] > 0.70 for r in ranks),
+      f"最高档抽解仍余 {ranks[-1]['duty_factor']*100:.0f}%——职衔只折不免")
+check("纲首" not in "".join(r["name"] for r in ranks),
+      "职衔名不用「纲首」（章名已占用）")
+for c in load("chapters.json")["chapters"]:
+    req = c.get("next_requires") or c.get("ending_requires") or {}
+    check("fame" not in req and "title" not in req,
+          f"第{c.get('id')}章门槛不含名声/职衔——不另开章门")
+
+costs = invest["costs"]
+max_lv = invest["max_level"]
+edge_per = invest["edge_per_level"]
+depth_per = invest["depth_per_level"]
+check(max_lv == len(costs) == 5, f"修埠五等，成本表 {len(costs)} 档")
+check(all(costs[i] < costs[i+1] for i in range(len(costs)-1)), "修埠成本严格递增")
+check(costs[0] <= 1000, f"一等修埠 {costs[0]} ≤ 1000，第一章就能做选择")
+check(sum(costs) < 80000, f"单港修满 {sum(costs)} < 了结本钱 80000")
+check(edge_per * max_lv <= 0.15, f"满级修埠价沿 {edge_per*max_lv:.3f} ≤ 0.15")
+check(0 < depth_per * max_lv <= 0.80, f"满级深度 +{depth_per*max_lv*100:.0f}% 只加深不改角色")
+
+FOREIGN = {"hakata", "kagoshima", "jeju", "champa"}
+max_title = ranks[-1]["duty_factor"]
+max_zashi = best_lv.get("zashi", 0)
+max_tong = best_lv.get("tongshi", 0)
+
+def stacked_price(pid, gid, is_buy, zashi=0, tongshi=0, title_duty=1.0, inv=0, rate=1.0):
+    r = role(pid, gid)
+    if not r:
+        return None
+    v = goods[gid]["base_value"] * ROLE_MOD[r] * rate
+    ie = inv * edge_per
+    if r == "origin":
+        v *= (1.0 - ie)
+    elif r == "consumer":
+        v *= (1.0 + ie)
+    tc = trade_cost(zashi)
+    ie_t = interp_edge(tongshi) if pid in FOREIGN else 0.0
+    if is_buy:
+        return round(v * (1 + TARIFF * tc * title_duty) * (1 - ie_t))
+    return round(v * (1 - BROKER * tc * title_duty) * (1 + ie_t))
+
+local_arb = []
+for pid, p in ports.items():
+    for gid in p.get("market", {}):
+        b = stacked_price(pid, gid, True, max_zashi, 0, max_title, max_lv)
+        s = stacked_price(pid, gid, False, max_zashi, 0, max_title, max_lv)
+        if b is None or s is None:
+            continue
+        if s > b:
+            local_arb.append(f"{p.get('name', pid)}/{gid} 卖{s}>买{b}")
+check(not local_arb,
+      f"满修埠+满职衔+满杂事、不通事时同港无正套利（违例 {local_arb[:3] or '无'}）")
+
+gid = "qingbai_porcelain"
+bare = sell_price("hakata", gid) - buy_price("quanzhou", gid)
+full_crew_title_inv = (
+    stacked_price("hakata", gid, False, max_zashi, max_tong, max_title, max_lv)
+    - stacked_price("quanzhou", gid, True, max_zashi, 0, max_title, max_lv)
+)
+infl_all = (full_crew_title_inv / bare - 1) * 100 if bare else 0
+print(f"  泉州→博多 青白瓷：裸价差 {bare} → 满编+都保+满修埠 {full_crew_title_inv}（+{infl_all:.0f}%）")
+check(full_crew_title_inv > bare, "修埠+职衔仍拉大核心商路价差")
+check(infl_all < 100, f"满栈利润膨胀 {infl_all:.0f}% < 100%（未印钞）")
+check(trade_cost(MAXLV) * max_title > 0.40,
+      f"满杂事×都保后抽解份额仍余 {trade_cost(MAXLV)*max_title*100:.0f}%")
+
+print()
+print("=" * 68)
 if fails:
     print(f"结果：{len(fails)} 项未通过")
     for f in fails:

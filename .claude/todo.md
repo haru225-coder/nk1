@@ -22,6 +22,12 @@
 - [x] 海图收进绢本字阶；死生态位图拆除；海洋贴图 UID 对齐
 - [x] 海图遭遇弹层改 CenterContainer 居中（原 360,200 钉右下裁第三钮）
 
+## 后续（2026-09-20）
+- [x] 名声换爵：titles.json 五档职衔，折抽解、加赊贷，不另开章门
+- [x] 港口修埠：市舶司投钱，产地/消费地同向调价 + 加深市场
+- [x] add_fame 统一入口（呈报 / 海战 / 剧情 / 修埠）
+- [x] 三套 Python 校验 + Godot 冒烟接职衔/修埠
+
 ## 验证
 ```
 python3 tools/check_symbols.py && python3 tools/verify_economy.py && python3 tools/simulate_run.py
