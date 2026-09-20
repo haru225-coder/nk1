@@ -71,6 +71,8 @@ func _run() -> void:
 	var chart_src := FileAccess.get_file_as_string("res://scripts/SeaChart.gd")
 	_check(chart_src.find("style_heading(head)") >= 0 and chart_src.find("UiTheme.panel()") >= 0,
 		"海图标题与遭遇弹层走绢本", fails)
+	_check(chart_src.find("CenterContainer") >= 0 and chart_src.find("Vector2(360, 200)") < 0,
+		"海图遭遇弹层居中", fails)
 	var theme_scr = load("res://scripts/core/UiTheme.gd")
 	_check(theme_scr != null, "UiTheme.gd 能编译", fails)
 	var dlg := AcceptDialog.new()

@@ -942,6 +942,11 @@ if "event_panel.add_theme_stylebox_override(\"panel\", UiTheme.panel())" in seac
 else:
     print("  ✗ 海图遭遇弹层仍用硬编码 StyleBox")
     problems.append("海图遭遇弹层未套绢本")
+if "CenterContainer" in seachart_src and "Vector2(360, 200)" not in seachart_src:
+    print("  ✓ 海图遭遇弹层居中，不再钉右下")
+else:
+    print("  ✗ 海图遭遇弹层仍用 360,200 硬坐标")
+    problems.append("海图遭遇弹层未居中")
 if "StyleBoxFlat.new()" in seachart_src:
     print("  ✗ SeaChart 仍手写 StyleBoxFlat")
     problems.append("SeaChart 手写 StyleBoxFlat")

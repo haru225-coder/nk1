@@ -20,6 +20,7 @@
 - [x] Godot 4.6 无头冒烟重跑（Crate 拆除 + style_dialog；Main 20 帧无脚本错误）
 - [x] 剧情字阶 + 选项挑签 hover
 - [x] 海图收进绢本字阶；死生态位图拆除；海洋贴图 UID 对齐
+- [x] 海图遭遇弹层改 CenterContainer 居中（原 360,200 钉右下裁第三钮）
 
 ## 验证
 ```

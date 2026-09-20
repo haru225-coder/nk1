@@ -160,13 +160,16 @@ func _build_ui() -> void:
 
 
 func _build_event_panel() -> void:
+	var overlay := CenterContainer.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(overlay)
+
 	event_panel = PanelContainer.new()
-	event_panel.set_anchors_preset(Control.PRESET_CENTER)
 	event_panel.custom_minimum_size = Vector2(560, 0)
-	event_panel.position = Vector2(360, 200)
 	event_panel.add_theme_stylebox_override("panel", UiTheme.panel())
 	event_panel.visible = false
-	add_child(event_panel)
+	overlay.add_child(event_panel)
 
 	var m := MarginContainer.new()
 	_set_margins(m, 18)
