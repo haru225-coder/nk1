@@ -84,11 +84,12 @@ assets/     美术资源
 - ✅ 收官：拆除 crate / 海鸟 / 鲸影 / 野海盗刷怪（不恢复自由航行拾取）；`simulate_run` 从开局真跑到占城「南海一纲」，不垫 F12
 - ✅ 存档 / 升章 / 了结弹窗与人物对话钮收进「绢本墨笔」主题
 - ✅ 剧情字阶锁成标题 28 / 正文 18 / 脚注 13；选项 hover 挑签（左金杠滑出）
+- ✅ 海图标题 / 状态栏 / 遭遇弹层收进绢本字阶；死生态位图从 `assets/` 拆除；海洋贴图 UID 对齐导入缓存
 
 ## 已知坑（点验/改图前必读）
 
 - `assets/icon_*.png` 有若干实为 JPEG（沿用旧文件名），import 时报 `Not a PNG` 无害——运行时 `GameManager.load_texture` 按文件头解码兜底；**不要重转它们**（会牵连 .import 与 uid）。港口设施大图标本身是真 PNG；窗口里灰叉多半是 `.godot` 缓存与 4.6 二进制不匹配
-- `crate_barrel.png` / `seagull.png` / `whale_shadow.png` 仍留在 `assets/`，但已从 WorldMap / PirateShip 拆除，不再刷出
+- 死生态位图（crate / 海鸟 / 鲸影）已从 `assets/` 删除，不要再加回 WorldMap
 - 提交不要带 `.uid` 文件；`git commit` 用显式 pathspec（并行窗口共享工作区）
 
 ## 许可

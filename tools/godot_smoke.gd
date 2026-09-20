@@ -60,8 +60,17 @@ func _run() -> void:
 
 	_check(not ResourceLoader.exists("res://scenes/Crate.tscn"), "Crate.tscn 已拆除", fails)
 	_check(not FileAccess.file_exists("res://scripts/Crate.gd"), "Crate.gd 已拆除", fails)
+	_check(not FileAccess.file_exists("res://assets/crate_barrel.png"), "crate 位图已拆除", fails)
+	_check(not FileAccess.file_exists("res://assets/seagull.png"), "海鸟位图已拆除", fails)
+	_check(not FileAccess.file_exists("res://assets/whale_shadow.png"), "鲸影位图已拆除", fails)
 	var wm_src := FileAccess.get_file_as_string("res://scripts/WorldMap.gd")
 	_check(wm_src.find("_process_spawns") < 0, "WorldMap 无自由航行刷怪", fails)
+	var wm_tscn := FileAccess.get_file_as_string("res://scenes/WorldMap.tscn")
+	_check(wm_tscn.find("ocean_tex_1234") < 0 and wm_tscn.find("uid://xnp7vjyfjnp1") >= 0,
+		"WorldMap 海洋贴图用导入 UID", fails)
+	var chart_src := FileAccess.get_file_as_string("res://scripts/SeaChart.gd")
+	_check(chart_src.find("style_heading(head)") >= 0 and chart_src.find("UiTheme.panel()") >= 0,
+		"海图标题与遭遇弹层走绢本", fails)
 	var theme_scr = load("res://scripts/core/UiTheme.gd")
 	_check(theme_scr != null, "UiTheme.gd 能编译", fails)
 	var dlg := AcceptDialog.new()

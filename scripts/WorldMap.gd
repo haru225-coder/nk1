@@ -193,8 +193,8 @@ func _show_combat_notice(text: String) -> void:
 	if not is_instance_valid(_notice):
 		_notice = Label.new()
 		_notice.set_anchors_preset(Control.PRESET_CENTER)
-		_notice.add_theme_font_size_override("font_size", 28)
-		_notice.add_theme_color_override("font_color", Color(1, 0.95, 0.6))
+		_notice.add_theme_font_size_override("font_size", UiTheme.SIZE_HEAD)
+		_notice.add_theme_color_override("font_color", UiTheme.GOLD)
 		_notice.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
 		_notice.add_theme_constant_override("outline_size", 4)
 		$CanvasLayer.add_child(_notice)

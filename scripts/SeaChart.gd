@@ -69,6 +69,7 @@ func _build_ui() -> void:
 	status_label = RichTextLabel.new()
 	status_label.bbcode_enabled = true
 	status_label.fit_content = true
+	UiTheme.style_body(status_label)
 	left_m.add_child(status_label)
 
 	# ── 中：港口与航段 ──
@@ -85,13 +86,12 @@ func _build_ui() -> void:
 
 	var head := Label.new()
 	head.text = "海　图"
-	head.add_theme_font_size_override("font_size", 26)
+	UiTheme.style_heading(head)
 	center_v.add_child(head)
 
 	var hint := Label.new()
 	hint.text = "选定去处，量过风信与水粮，再决定发不发舶。"
-	hint.add_theme_font_size_override("font_size", 13)
-	hint.add_theme_color_override("font_color", Color(0.75, 0.78, 0.82))
+	UiTheme.style_footnote(hint)
 	center_v.add_child(hint)
 
 	# 真正的图。数据用 ports.json 的经纬度，CanvasItem.draw 信号接 lambda，
@@ -118,7 +118,7 @@ func _build_ui() -> void:
 	sail_button = Button.new()
 	sail_button.text = "发　舶"
 	sail_button.custom_minimum_size = Vector2(0, 48)
-	sail_button.add_theme_font_size_override("font_size", 20)
+	sail_button.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
 	sail_button.disabled = true
 	sail_button.pressed.connect(_on_sail_pressed)
 	center_v.add_child(sail_button)
@@ -128,6 +128,7 @@ func _build_ui() -> void:
 	back.text = "回港（不出海）"
 	back.pressed.connect(_return_to_port)
 	center_v.add_child(back)
+	UiTheme.style_button(back)
 
 	# ── 右：航海日志 ──
 	var right := PanelContainer.new()
@@ -141,7 +142,8 @@ func _build_ui() -> void:
 	right_m.add_child(right_v)
 	var log_head := Label.new()
 	log_head.text = "航海日志"
-	log_head.add_theme_font_size_override("font_size", 18)
+	log_head.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	log_head.add_theme_color_override("font_color", UiTheme.GOLD)
 	right_v.add_child(log_head)
 	var log_scroll := ScrollContainer.new()
 	log_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -150,6 +152,7 @@ func _build_ui() -> void:
 	log_label.bbcode_enabled = true
 	log_label.fit_content = true
 	log_label.custom_minimum_size = Vector2(272, 0)
+	UiTheme.style_body(log_label)
 	log_scroll.add_child(log_label)
 
 	# ── 事件浮层 ──
@@ -161,18 +164,7 @@ func _build_event_panel() -> void:
 	event_panel.set_anchors_preset(Control.PRESET_CENTER)
 	event_panel.custom_minimum_size = Vector2(560, 0)
 	event_panel.position = Vector2(360, 200)
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.06, 0.07, 0.10, 0.97)
-	st.border_width_left = 2
-	st.border_width_top = 2
-	st.border_width_right = 2
-	st.border_width_bottom = 2
-	st.border_color = Color(0.6, 0.5, 0.3)
-	st.corner_radius_top_left = 8
-	st.corner_radius_top_right = 8
-	st.corner_radius_bottom_left = 8
-	st.corner_radius_bottom_right = 8
-	event_panel.add_theme_stylebox_override("panel", st)
+	event_panel.add_theme_stylebox_override("panel", UiTheme.panel())
 	event_panel.visible = false
 	add_child(event_panel)
 
@@ -184,13 +176,14 @@ func _build_event_panel() -> void:
 	m.add_child(v)
 
 	event_title = Label.new()
-	event_title.add_theme_font_size_override("font_size", 24)
+	UiTheme.style_heading(event_title)
 	v.add_child(event_title)
 
 	event_text = RichTextLabel.new()
 	event_text.bbcode_enabled = true
 	event_text.fit_content = true
 	event_text.custom_minimum_size = Vector2(520, 60)
+	UiTheme.style_body(event_text)
 	v.add_child(event_text)
 
 	event_actions = HBoxContainer.new()
@@ -306,17 +299,21 @@ func _refresh_detail() -> void:
 	for l in lines:
 		var lbl := Label.new()
 		lbl.text = l
+		lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+		lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 		detail_box.add_child(lbl)
 
 	if not Voyage.is_known_route(origin_port, selected_port):
 		var w := Label.new()
 		w.text = "此非熟路，海图上只有传闻，途中易生变故。"
+		w.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 		w.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
 		detail_box.add_child(w)
 
 	if not plan["supply_ok"]:
 		var w := Label.new()
 		w.text = "水粮不足以支撑此程——半途必要死人。"
+		w.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 		w.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
 		detail_box.add_child(w)
 

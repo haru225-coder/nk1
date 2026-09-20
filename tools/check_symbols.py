@@ -518,6 +518,27 @@ if os.path.exists(os.path.join(ROOT, "scripts", "Crate.gd")) or os.path.exists(o
     problems.append("Crate 场景未拆除")
 else:
     print("  ✓ Crate.gd / Crate.tscn 已拆除")
+dead_bitmaps = [
+    os.path.join(ROOT, "assets", name)
+    for name in ("crate_barrel.png", "seagull.png", "whale_shadow.png")
+    if os.path.exists(os.path.join(ROOT, "assets", name))
+]
+if dead_bitmaps:
+    print("  ✗ 死生态位图仍在 assets/：%s" % ", ".join(os.path.basename(p) for p in dead_bitmaps))
+    problems.append("死生态位图未拆除")
+else:
+    print("  ✓ crate / 海鸟 / 鲸影位图已从 assets/ 拆除")
+wm_tscn = ""
+with open(os.path.join(ROOT, "scenes", "WorldMap.tscn"), encoding="utf-8") as f:
+    wm_tscn = f.read()
+if "ocean_tex_1234" in wm_tscn:
+    print("  ✗ WorldMap.tscn 仍用假 UID ocean_tex_1234")
+    problems.append("WorldMap.tscn 海洋假 UID")
+elif "uid://xnp7vjyfjnp1" in wm_tscn:
+    print("  ✓ WorldMap.tscn 海洋贴图用导入 UID")
+else:
+    print("  ✗ WorldMap.tscn 未引用 ocean_water 导入 UID")
+    problems.append("WorldMap.tscn 海洋 UID 未对齐")
 
 # 7. PirateShip 不再掉拾取箱（赏金只走 SeaChart 结算）
 if "drops_loot" in pirate_src or "Crate.tscn" in pirate_src:
@@ -911,6 +932,21 @@ if "style_heading(scene_title)" in main_src and "style_body(body_text)" in main_
 else:
     print("  ✗ 调查页未接线字阶")
     problems.append("调查页未接线字阶")
+if "style_heading(head)" in seachart_src and "style_body(status_label)" in seachart_src:
+    print("  ✓ 海图标题/状态栏走字阶")
+else:
+    print("  ✗ 海图未接线字阶")
+    problems.append("海图未接线字阶")
+if "event_panel.add_theme_stylebox_override(\"panel\", UiTheme.panel())" in seachart_src:
+    print("  ✓ 海图遭遇弹层走绢本面板")
+else:
+    print("  ✗ 海图遭遇弹层仍用硬编码 StyleBox")
+    problems.append("海图遭遇弹层未套绢本")
+if "StyleBoxFlat.new()" in seachart_src:
+    print("  ✗ SeaChart 仍手写 StyleBoxFlat")
+    problems.append("SeaChart 手写 StyleBoxFlat")
+else:
+    print("  ✓ SeaChart 不再手写 StyleBoxFlat")
 
 print()
 print("=" * 68)
