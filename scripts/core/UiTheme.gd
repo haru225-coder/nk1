@@ -12,6 +12,14 @@ const TEXT_DIM := Color(0.58, 0.61, 0.65)        # 弱提示
 const SEAL := Color(0.64, 0.22, 0.17)            # 朱砂主钮
 const SEAL_HI := Color(0.76, 0.29, 0.21)         # 朱砂 hover
 
+# 字阶从 Main.tscn 实测收口。标题页大题 64 仍走场景，不挤进正文栏。
+const SIZE_PORT := 36     # 港口名（原 36）
+const SIZE_HEAD := 28     # 调查页标题、人物名（原 32）
+const SIZE_CARD := 22     # 设施卡 / 升帆（原 22）
+const SIZE_BODY := 18     # 正文、选项（原正文 18、对话 20）
+const SIZE_FOOT := 13     # 说明、分隔、行情旁注（原硬编码 13）
+const LINE_BODY := 6      # 正文行距（原默认 0，挤）
+
 
 static func _flat(bg: Color, border: Color, radius: int, bw := 1) -> StyleBoxFlat:
 	var st := StyleBoxFlat.new()
@@ -77,6 +85,56 @@ static func style_button(btn: Button, accent := false) -> void:
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 
+## 剧情选项「挑签」：静息细金杠，hover 左杠加宽、正文右让一截，像从签筒抽出。
+static func _choice_box(hover: bool) -> StyleBoxFlat:
+	var st := _flat(
+		Color(0.23, 0.28, 0.38, 0.95) if hover else Color(0.16, 0.20, 0.28, 0.92),
+		Color(GOLD, 0.70) if hover else Color(GOLD, 0.28),
+		6
+	)
+	st.border_width_left = 6 if hover else 3
+	st.border_width_top = 1
+	st.border_width_right = 1
+	st.border_width_bottom = 1
+	st.content_margin_left = 20 if hover else 12
+	st.content_margin_right = 14
+	st.content_margin_top = 8
+	st.content_margin_bottom = 8
+	return st
+
+
+static func style_choice_button(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal", _choice_box(false))
+	btn.add_theme_stylebox_override("hover", _choice_box(true))
+	btn.add_theme_stylebox_override("pressed", _choice_box(true))
+	btn.add_theme_stylebox_override("disabled", _choice_box(false))
+	btn.add_theme_color_override("font_color", TEXT)
+	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.96, 0.85))
+	btn.add_theme_color_override("font_pressed_color", Color(1.0, 0.96, 0.85))
+	btn.add_theme_color_override("font_disabled_color", TEXT_DIM)
+	btn.add_theme_color_override("font_focus_color", TEXT)
+	btn.add_theme_font_size_override("font_size", SIZE_BODY)
+	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+
+
+static func style_heading(lbl: Label, port := false) -> void:
+	lbl.add_theme_font_size_override("font_size", SIZE_PORT if port else SIZE_HEAD)
+	lbl.add_theme_color_override("font_color", GOLD)
+
+
+static func style_body(rtl: RichTextLabel) -> void:
+	rtl.add_theme_font_size_override("normal_font_size", SIZE_BODY)
+	rtl.add_theme_color_override("default_color", TEXT)
+	rtl.add_theme_constant_override("line_separation", LINE_BODY)
+
+
+static func style_footnote(lbl: Label) -> void:
+	lbl.add_theme_font_size_override("font_size", SIZE_FOOT)
+	lbl.add_theme_color_override("font_color", TEXT_DIM)
+
+
 ## 递归给子树所有 Button 上默认样式（OptionButton 亦属 Button）。
 ## 在容器 child_entered_tree 上挂一次，之后任何代码 add 的按钮自动带样式。
 static func hook_buttons(container: Node) -> void:
@@ -88,6 +146,7 @@ static func hook_buttons(container: Node) -> void:
 
 ## 分隔标题（「── 呈报所见 ──」这类）：金色小字
 static func style_section_label(lbl: Label) -> void:
+	lbl.add_theme_font_size_override("font_size", SIZE_FOOT)
 	lbl.add_theme_color_override("font_color", Color(GOLD, 0.85))
 
 

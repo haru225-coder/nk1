@@ -62,6 +62,13 @@ func _ready() -> void:
 	UiTheme.hook_buttons(choices_container)
 	UiTheme.hook_buttons(right_facilities)
 	UiTheme.hook_buttons(npc_actions)
+	UiTheme.style_heading(scene_title)
+	UiTheme.style_body(body_text)
+	UiTheme.style_section_label(choices_label)
+	UiTheme.style_section_label(interactive_label)
+	UiTheme.style_heading(port_title, true)
+	UiTheme.style_heading(npc_name_lbl)
+	UiTheme.style_body(npc_dialog_lbl)
 	update_status_panel()
 	call_deferred("start_game")
 
@@ -442,7 +449,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	var hint_lbl := Label.new()
 	hint_lbl.text = Economy.price_hint(port_id, good_id)
 	hint_lbl.custom_minimum_size = Vector2(120, 0)
-	hint_lbl.add_theme_font_size_override("font_size", 13)
+	UiTheme.style_footnote(hint_lbl)
 	if role == "origin":
 		hint_lbl.add_theme_color_override("font_color", Color(0.5, 0.9, 0.6))
 	elif role == "consumer":
@@ -457,7 +464,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	var held_lbl := Label.new()
 	held_lbl.text = "舱%d" % held
 	held_lbl.custom_minimum_size = Vector2(52, 0)
-	held_lbl.add_theme_font_size_override("font_size", 13)
+	UiTheme.style_footnote(held_lbl)
 	row.add_child(held_lbl)
 
 	for n in [1, 10]:
@@ -587,7 +594,7 @@ func _setup_yamen(port_id: String) -> void:
 
 	var att := Label.new()
 	att.text = "蒲氏关注度 %d　%s" % [GameState.pu_attention, _attention_desc()]
-	att.add_theme_font_size_override("font_size", 13)
+	att.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(att)
 
 	choices_label.visible = true
@@ -602,7 +609,7 @@ func _setup_reporting() -> void:
 
 	var sep := Label.new()
 	sep.text = "── 呈报所见 ──"
-	sep.add_theme_font_size_override("font_size", 13)
+	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(sep)
 
 	for did in pending:
@@ -651,7 +658,7 @@ func _setup_shipyard(port_id: String) -> void:
 	supply_lbl.text = "── 补给（水 %d钱/份，粮 %d钱/份；一份供两人一日，现每日耗 %d 份）──" % [
 		water_price, grain_price, Fleet.daily_supply_use(),
 	]
-	supply_lbl.add_theme_font_size_override("font_size", 13)
+	supply_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(supply_lbl)
 
 	for n in [30, 100]:
@@ -710,7 +717,7 @@ func _setup_shipyard(port_id: String) -> void:
 	loan_lbl.text = "── 蕃商赊贷（月息 %d%%，上限 %d）──" % [
 		int(GameState.DEBT_MONTHLY_RATE * 100), GameState.DEBT_CEILING,
 	]
-	loan_lbl.add_theme_font_size_override("font_size", 13)
+	loan_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(loan_lbl)
 
 	if GameState.debt > 0:
@@ -750,7 +757,7 @@ func _setup_shipyard(port_id: String) -> void:
 	# 改装：帆 Lv 决定航速，甲 Lv 减免风暴/海盗船体伤。逐船两按钮（.bind 传 index 防闭包陷阱）
 	var up_lbl := Label.new()
 	up_lbl.text = "── 船体改装（帆 Lv 决定航速，甲 Lv 减免风暴/海盗船体伤）──"
-	up_lbl.add_theme_font_size_override("font_size", 13)
+	up_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(up_lbl)
 
 	for i in range(Fleet.ships.size()):
@@ -790,7 +797,7 @@ func _setup_shipyard(port_id: String) -> void:
 	# 买船
 	var ship_lbl := Label.new()
 	ship_lbl.text = "── 船行 ──"
-	ship_lbl.add_theme_font_size_override("font_size", 13)
+	ship_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(ship_lbl)
 
 	for s in GameManager.ships_data.get("ships", []):
@@ -894,13 +901,14 @@ func _setup_story_hooks(port_id: String) -> void:
 		return
 	var sep := Label.new()
 	sep.text = "── 旧事 ──"
-	sep.add_theme_font_size_override("font_size", 13)
+	UiTheme.style_section_label(sep)
 	choices_container.add_child(sep)
 	for h in hooks:
 		var btn := Button.new()
 		btn.text = str(h.get("label", "追问"))
 		btn.pressed.connect(_on_story_hook.bind(h, port_id))
 		choices_container.add_child(btn)
+		UiTheme.style_choice_button(btn)
 
 
 func _on_story_hook(hook: Dictionary, port_id: String) -> void:
@@ -918,7 +926,7 @@ func _on_story_hook(hook: Dictionary, port_id: String) -> void:
 func _setup_hiring(port_id: String) -> void:
 	var sep := Label.new()
 	sep.text = "── 募人（月俸按月支给，欠饷三月则去）──"
-	sep.add_theme_font_size_override("font_size", 13)
+	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(sep)
 
 	# 在船的人
@@ -950,7 +958,7 @@ func _setup_hiring(port_id: String) -> void:
 	if cands.is_empty():
 		var none := Label.new()
 		none.text = "此处无人可用。"
-		none.add_theme_font_size_override("font_size", 13)
+		none.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 		none.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 		choices_container.add_child(none)
 		return
@@ -990,7 +998,7 @@ func _setup_inn(port_id: String) -> void:
 	var forecast := Label.new()
 	forecast.text = _monsoon_forecast()
 	forecast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	forecast.add_theme_font_size_override("font_size", 13)
+	forecast.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	forecast.add_theme_color_override("font_color", Color(0.8, 0.85, 0.7))
 	choices_container.add_child(forecast)
 
@@ -1087,6 +1095,7 @@ func _add_npc_button(npc_id: String, fallback_name: String) -> void:
 	btn.text = "【遇见人物】 " + fallback_name
 	btn.pressed.connect(func(): _show_npc_mode(npc_id, fallback_name))
 	choices_container.add_child(btn)
+	UiTheme.style_choice_button(btn)
 	choices_label.visible = true
 
 
@@ -1228,13 +1237,13 @@ func _make_facility_card(fac: Dictionary) -> Control:
 
 	var title_lbl = Label.new()
 	title_lbl.text = fac.get("title", "未命名设施")
-	title_lbl.add_theme_font_size_override("font_size", 22)
+	title_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
+	title_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 	vbox.add_child(title_lbl)
 
 	var sub_lbl = Label.new()
 	sub_lbl.text = fac.get("subtitle", "")
-	sub_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
-	sub_lbl.add_theme_font_size_override("font_size", 14)
+	UiTheme.style_footnote(sub_lbl)
 	vbox.add_child(sub_lbl)
 
 	var btn = Button.new()
@@ -1253,7 +1262,7 @@ func _add_sail_button() -> void:
 	var btn = Button.new()
 	btn.text = "🚢 升帆出海（海图）"
 	btn.custom_minimum_size = Vector2(250, 70)
-	btn.add_theme_font_size_override("font_size", 22)
+	btn.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
 	btn.pressed.connect(_on_set_sail)
 	right_facilities.add_child(btn)
 	UiTheme.style_button(btn, true)
@@ -1379,8 +1388,7 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 
 	var head := Label.new()
 	head.text = res.get("title", "")
-	head.add_theme_font_size_override("font_size", 26)
-	head.add_theme_color_override("font_color", UiTheme.GOLD)
+	UiTheme.style_heading(head)
 	v.add_child(head)
 
 	var body := RichTextLabel.new()
@@ -1388,7 +1396,7 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	body.fit_content = true
 	body.custom_minimum_size = Vector2(520, 200)
 	body.text = res.get("text", "")
-	body.add_theme_color_override("default_color", UiTheme.TEXT)
+	UiTheme.style_body(body)
 	v.add_child(body)
 
 	dlg.add_child(m)
@@ -1443,6 +1451,7 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 		btn.text = "★ " + inv.get("label", "互动")
 		btn.pressed.connect(_on_investigate_pressed.bind(inv, btn))
 		interactive_container.add_child(btn)
+		UiTheme.style_choice_button(btn)
 
 	var choices = scene_data.get("choices", [])
 	show_choices(choices)
@@ -1461,6 +1470,7 @@ func _add_fallback_return_button() -> void:
 	btn.text = "返回上一处"
 	btn.pressed.connect(func(): load_scene(target))
 	choices_container.add_child(btn)
+	UiTheme.style_choice_button(btn)
 	choices_label.visible = true
 
 
@@ -1469,6 +1479,7 @@ func _add_leave_button(port_id: String) -> void:
 	btn.text = "离开"
 	btn.pressed.connect(func(): load_scene(port_id))
 	choices_container.add_child(btn)
+	UiTheme.style_choice_button(btn)
 	choices_label.visible = true
 
 
@@ -1497,6 +1508,7 @@ func show_choices(choices: Array) -> void:
 		btn.text = choice.get("label", "继续")
 		btn.pressed.connect(_on_choice_pressed.bind(choice))
 		choices_container.add_child(btn)
+		UiTheme.style_choice_button(btn)
 		shown += 1
 	if shown == 0:
 		_add_fallback_return_button()

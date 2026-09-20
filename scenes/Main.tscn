@@ -149,11 +149,12 @@ theme_override_constants/margin_bottom = 40
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 15
+theme_override_constants/separation = 18
 
 [node name="SceneTitle" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.79, 0.64, 0.15, 1)
 text = "地点标题"
 
 [node name="HSeparator" type="HSeparator" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
@@ -164,6 +165,8 @@ custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_font_sizes/normal_font_size = 18
+theme_override_colors/default_color = Color(0.90, 0.88, 0.82, 1)
+theme_override_constants/line_separation = 6
 bbcode_enabled = true
 text = "环境描述文本"
 
@@ -256,14 +259,16 @@ size_flags_horizontal = 3
 
 [node name="NPCName" type="Label" parent="HBoxContainer/CenterArea/NPCMode/HBox/DialogPanel"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
-theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.79, 0.64, 0.15, 1)
 text = "NPC Name"
 
 [node name="NPCDialog" type="RichTextLabel" parent="HBoxContainer/CenterArea/NPCMode/HBox/DialogPanel"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_font_sizes/normal_font_size = 20
+theme_override_font_sizes/normal_font_size = 18
+theme_override_colors/default_color = Color(0.90, 0.88, 0.82, 1)
+theme_override_constants/line_separation = 6
 text = "NPC Dialog text goes here..."
 
 [node name="NPCActions" type="VBoxContainer" parent="HBoxContainer/CenterArea/NPCMode/HBox/DialogPanel"]

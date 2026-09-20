@@ -68,6 +68,17 @@ func _run() -> void:
 	UiTheme.style_dialog(dlg, true)
 	_check(dlg.get_theme_stylebox("panel") != null, "UiTheme.style_dialog 给弹窗套绢本面板", fails)
 	dlg.free()
+	var choice := Button.new()
+	UiTheme.style_choice_button(choice)
+	var nor := choice.get_theme_stylebox("normal") as StyleBoxFlat
+	var hov := choice.get_theme_stylebox("hover") as StyleBoxFlat
+	_check(nor != null and hov != null, "挑签按钮有 normal/hover 样式", fails)
+	if nor != null and hov != null:
+		_check(hov.border_width_left > nor.border_width_left, "挑签 hover 左金杠加宽", fails)
+		_check(hov.content_margin_left > nor.content_margin_left, "挑签 hover 正文滑出", fails)
+	_check(UiTheme.SIZE_HEAD > UiTheme.SIZE_BODY and UiTheme.SIZE_BODY > UiTheme.SIZE_FOOT,
+		"字阶 HEAD > BODY > FOOT", fails)
+	choice.free()
 	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
 	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)
 	_check(load("res://scripts/PirateShip.gd") != null, "PirateShip.gd 能编译", fails)

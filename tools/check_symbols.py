@@ -860,7 +860,7 @@ else:
 
 print()
 print("=" * 68)
-print("十一、绢本弹窗（存档 / 升章 / 了结）")
+print("十一、绢本弹窗与字阶 / 挑签")
 print("=" * 68)
 theme_src = ""
 with open(os.path.join(ROOT, "scripts", "core", "UiTheme.gd"), encoding="utf-8") as f:
@@ -890,6 +890,27 @@ if "hook_buttons(npc_actions)" in main_src:
 else:
     print("  ✗ npc_actions 未挂钩 UiTheme")
     problems.append("npc_actions 未挂钩")
+for name in ("SIZE_HEAD", "SIZE_BODY", "SIZE_FOOT", "LINE_BODY"):
+    if "const %s" % name in theme_src:
+        print(f"  ✓ UiTheme.{name} 已锁定")
+    else:
+        print(f"  ✗ UiTheme.{name} 未定义")
+        problems.append(f"UiTheme.{name} 未定义")
+if re.search(r"^static func style_choice_button\b", theme_src, re.M):
+    print("  ✓ UiTheme.style_choice_button 已定义（挑签）")
+else:
+    print("  ✗ UiTheme.style_choice_button 未定义")
+    problems.append("UiTheme.style_choice_button 未定义")
+if "style_choice_button" in main_src and "func show_choices" in main_src:
+    print("  ✓ 剧情选项走挑签样式")
+else:
+    print("  ✗ 剧情选项未走挑签样式")
+    problems.append("剧情选项未走挑签")
+if "style_heading(scene_title)" in main_src and "style_body(body_text)" in main_src:
+    print("  ✓ 调查页标题/正文走字阶")
+else:
+    print("  ✗ 调查页未接线字阶")
+    problems.append("调查页未接线字阶")
 
 print()
 print("=" * 68)
