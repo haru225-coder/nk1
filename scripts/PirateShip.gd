@@ -10,15 +10,10 @@ extends CharacterBody2D
 
 var target: Node2D = null
 var cannonball_scene = preload("res://scenes/Cannonball.tscn")
-var crate_scene = preload("res://scenes/Crate.tscn")
-
-## 击沉后是否掉宝箱（战斗模式下由 WorldMap 置 false，赏金走 SeaChart 结算）
-@export var drops_loot: bool = true
 
 var fire_timer: float = 0.0
 
-## P4-3 齐射弹数：默认 3 覆盖自由航行刷出的海盗（_process_spawns 不设此字段）；
-## 海战由 _spawn_enemy 按 scale 写入 2~9。
+## P4-3 齐射弹数：海战由 _spawn_enemy 按 scale 写入，封顶 COMBAT_CANNON_CAP。
 var cannon_count: int = 3
 
 ## P4-2 接舷：被玩家钩住后停止航行/开炮，进入白刃判定
@@ -104,14 +99,7 @@ func take_damage(amount: float) -> void:
 		_explode()
 
 func _explode() -> void:
-	# Loot pinata（战斗模式下关闭：赏金由 SeaChart 结算）
-	if drops_loot:
-		for i in range(5):
-			var crate = crate_scene.instantiate()
-			crate.position = position + Vector2(randf_range(-50, 50), randf_range(-50, 50))
-			get_parent().call_deferred("add_child", crate)
-
-	# Could add explosion particles here
+	# 赏金走 SeaChart 结算，击沉不再掉拾取箱
 	queue_free()
 
 

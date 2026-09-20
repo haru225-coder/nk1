@@ -11,20 +11,13 @@ signal battle_finished(outcome: String, data: Dictionary)
 @onready var rain_particles: CPUParticles2D = $RainParticles
 @onready var lightning_flash: ColorRect = $CanvasLayer/LightningFlash
 
-var crate_scene = preload("res://scenes/Crate.tscn")
 var pirate_scene = preload("res://scenes/PirateShip.tscn")
-var seagull_tex = preload("res://assets/seagull.png")
-var whale_tex = preload("res://assets/whale_shadow.png")
 
 var time_of_day: float = 12.0
 var is_storm: bool = false
 var storm_timer: float = 0.0
 var lightning_timer: float = 0.0
 var base_wind_strength: float = 80.0
-
-var crate_spawn_timer: float = 5.0
-var animal_spawn_timer: float = 10.0
-var pirate_spawn_timer: float = 20.0
 
 # ── 战斗模式（P4-1 接入）──
 ## 由 SeaChart._on_fight_pirates 开启：遭遇海盗进入本场景即战斗专用
@@ -69,8 +62,7 @@ func _process(delta: float) -> void:
 	if not ship: return
 
 	_process_weather_and_time(delta)
-	if not combat_mode:
-		_process_spawns(delta)
+	if combat_mode:
 		rain_particles.global_position = ship.global_position
 
 	# 战损统计：以进入战斗时的舰队总耐久为基准（仅战斗期有意义）
@@ -320,60 +312,10 @@ func _strike_lightning() -> void:
 	tween.tween_property(lightning_flash, "color:a", 0.0, 0.3)
 	tween.tween_callback(func(): lightning_flash.visible = false)
 
-func _process_spawns(delta: float) -> void:
-	crate_spawn_timer -= delta
-	if crate_spawn_timer <= 0:
-		crate_spawn_timer = randf_range(10.0, 20.0)
-		var crate = crate_scene.instantiate()
-		var offset = Vector2(randf_range(-1500, 1500), randf_range(-1500, 1500))
-		crate.position = ship.position + ship.velocity.normalized() * 500.0 + offset
-		add_child(crate)
-		
-	animal_spawn_timer -= delta
-	if animal_spawn_timer <= 0:
-		animal_spawn_timer = randf_range(15.0, 30.0)
-		_spawn_animal()
-		
-	pirate_spawn_timer -= delta
-	if pirate_spawn_timer <= 0:
-		pirate_spawn_timer = randf_range(30.0, 60.0)
-		var pirate = pirate_scene.instantiate()
-		var angle = randf() * TAU
-		var dist = randf_range(1500, 2500)
-		pirate.position = ship.position + Vector2(cos(angle), sin(angle)) * dist
-		pirate.target = ship
-		add_child(pirate)
-
-func _spawn_animal() -> void:
-	var sprite = Sprite2D.new()
-	var is_whale = randf() > 0.5
-	if is_whale:
-		sprite.texture = whale_tex
-		sprite.scale = Vector2(0.5, 0.5)
-		sprite.modulate.a = 0.5
-		sprite.z_index = -1
-	else:
-		sprite.texture = seagull_tex
-		sprite.scale = Vector2(0.2, 0.2)
-		sprite.z_index = 10
-		
-	var offset = Vector2(randf_range(-1000, 1000), randf_range(-1000, 1000))
-	sprite.position = ship.position + offset
-	
-	var move_dir = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized()
-	sprite.rotation = move_dir.angle() + PI/2.0
-	
-	add_child(sprite)
-	
-	var tween = create_tween()
-	var target_pos = sprite.position + move_dir * 3000.0
-	tween.tween_property(sprite, "position", target_pos, 20.0)
-	tween.tween_callback(func(): sprite.queue_free())
-
-
 # ── 战斗模式（P4-1 接入）─────────────────────────────
 
-## 由 _ready 在 pending_battle.battle 时调用：禁用停靠、禁自动刷怪、生成敌舰队
+## 由 _ready 在 pending_battle.battle 时调用：禁用停靠、生成敌舰队
+## 自由航行刷怪（crate / 海鸟 / 鲸影 / 野海盗）已拆除：WorldMap 只作战术层。
 func _setup_combat(pb: Dictionary) -> void:
 	combat_mode = true
 	# 战斗专用：禁掉 PortZone 停靠出口（否则 Enter 会切回 Main 丢战斗）
@@ -410,7 +352,6 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary) -> void:
 		p.position = ship.position + Vector2(cos(angle), sin(angle)) * dist
 		p.target = ship
 		p.hull_hp = hull
-		p.drops_loot = false  # 战斗中不掉宝箱，赏金走 SeaChart 结算
 		# P4-2：白刃/夺船输入。节点名保持 "PirateShip" 前缀（_enemies_alive 依赖），
 		# 夺船后的船名另存 ship_name（沿用敌船名，如「海鹘」）。
 		p.ship_name = "%s" % type_name

@@ -44,6 +44,7 @@ class G:
     chapter = 1
     visited = ['quanzhou']
     peak_money = 1000
+    ending_id = ""
 
 def cap_total():  return sum(ships[s["type"]]["capacity"] for s in G.ships)
 def bulk(gid):    return goods[gid]["bulk"]
@@ -186,6 +187,177 @@ def try_advance():
     G.chapter += 1
     return title
 
+def flag_ok(req, fl, chapter=4):
+    need = req.get("require_flag")
+    if need and need not in fl:
+        return False
+    anyf = req.get("require_any") or []
+    if anyf and not any(f in fl for f in anyf):
+        return False
+    hide = req.get("hide_if_flag")
+    if hide and hide in fl:
+        return False
+    need_ch = int(req.get("require_chapter", 0) or 0)
+    if need_ch and chapter < need_ch:
+        return False
+    return True
+
+def pick_ending(fl):
+    for e in chapters[4].get("endings", []):
+        if flag_ok(e, fl):
+            return e["id"]
+    return None
+
+def ending_ready(peak, visited):
+    req = chapters[4].get("ending_requires") or {}
+    if peak < req.get("peak_money", 0):
+        return False
+    if len(visited) < req.get("visited_count", 0):
+        return False
+    for m in req.get("must_visit", []):
+        if m not in visited:
+            return False
+    return True
+
+def requirement():
+    """当前未完成的晋升或了结条件。"""
+    if G.ending_id:
+        return {}
+    if G.chapter < 4:
+        return chapters.get(G.chapter, {}).get("next_requires") or {}
+    return chapters[4].get("ending_requires") or {}
+
+def resolve_progress():
+    """对齐 GameState.try_advance_chapter：晋升或按旗标了结。模拟无剧情旗标，走南海一纲。"""
+    if G.ending_id:
+        return None
+    if G.chapter < 4:
+        return try_advance()
+    if ending_ready(G.peak_money, G.visited):
+        G.ending_id = pick_ending([])
+        for e in chapters[4].get("endings", []):
+            if e["id"] == G.ending_id:
+                return e.get("title", G.ending_id)
+        return G.ending_id
+    return None
+
+def trade_destinations(src):
+    """未亲至的必须港、未走通的港优先，避免一直在熟港套利而卡晋升。"""
+    req = requirement()
+    opened = [p for p in open_ports() if p != src]
+    must = [m for m in req.get("must_visit", []) if m not in G.visited and m in opened]
+    if must:
+        return must
+    need_n = int(req.get("visited_count", 0) or 0)
+    if len(G.visited) < need_n:
+        unvis = [p for p in opened if p not in G.visited]
+        if unvis:
+            return unvis
+    return opened
+
+def wait_wind(src, dst, max_wait=40):
+    crs = bearing(src, dst)
+    if wind_factor(crs) >= 0.70:
+        return 0
+    waited = 0
+    while wind_factor(crs) < 0.70 and waited < max_wait:
+        step = min(10, 30 - G.day + 1)
+        cost = step * INN_RATE
+        if G.money < cost:
+            break
+        G.money -= cost
+        advance(step)
+        waited += step
+        G.morale = min(100, G.morale + step * 2)
+    return waited
+
+def one_trip(trip):
+    """跑一趟商路（或空航亲至必须港）。成功返回 True。"""
+    qty, gid, dst, spent = 0, None, None, 0
+    dests = trade_destinations(G.port)
+    for _attempt in range(6):
+        bt = best_trade(G.port, dests)
+        if bt is None:
+            bt = best_trade(G.port, [p for p in open_ports() if p != G.port])
+        if bt is None:
+            gid = dst = None
+        else:
+            _, gid, dst, _margin = bt
+            d = dist(G.port, dst)
+            crs = bearing(G.port, dst)
+            if d > 800:
+                wait_wind(G.port, dst)
+                crs = bearing(G.port, dst)
+            est_days = math.ceil(d / max(1.0, speed(crs)))
+            buy_supplies(est_days + 4)
+            is_contra = goods[gid].get("contraband", False)
+            cap_budget = int(G.money * 0.6) if is_contra else G.money
+            qty, spent = do_buy(gid, 9999, floor_price=sell_p(dst, gid), budget=cap_budget)
+        if qty > 0:
+            break
+        if G.money < 300:
+            got_loan = borrow(500)
+            if got_loan:
+                print(f"    第{trip:>2}趟  本钱告罄，赊借 {got_loan} 钱（现欠 {G.debt}）")
+                continue
+        cost = 10 * INN_RATE
+        if G.money < cost:
+            break
+        G.money -= cost
+        advance(10)
+        G.morale = min(100, G.morale + 20)
+        print(f"    第{trip:>2}趟  行情不佳，在店中候市 10 日（房钱 {cost}）")
+    empty = False
+    if qty == 0:
+        must = [m for m in requirement().get("must_visit", [])
+                if m not in G.visited and m in open_ports() and m != G.port]
+        if not must:
+            print(f"    第{trip:>2}趟  确实无利可图（钱 {G.money}，空舱 {free():.0f}）")
+            return False
+        dst = must[0]
+        gid, spent = None, 0
+        empty = True
+        d = dist(G.port, dst)
+        crs = bearing(G.port, dst)
+        if d > 800:
+            wait_wind(G.port, dst)
+            crs = bearing(G.port, dst)
+        est_days = math.ceil(d / max(1.0, speed(crs)))
+        buy_supplies(est_days + 4)
+    src = G.port
+    smuggle = (not empty) and goods[gid].get("contraband", False)
+    seized = False
+    fine = 0
+    if smuggle:
+        if random.random() < 0.28:
+            seized = True
+            for s in G.ships:
+                if gid in s["cargo"]:
+                    del s["cargo"][gid]
+            fine = min(300, max(50, int(G.money * 0.4)))
+            G.money = max(0, G.money - fine)
+    days = sail(dst)
+    rev = 0 if (seized or empty) else do_sell(gid, qty)
+    profit = rev - spent - (fine if seized else 0)
+    history.append(profit)
+    promoted = resolve_progress()
+    tag = ""
+    if empty:
+        tag += f"　空航亲至{ports[dst]['name']}"
+    elif smuggle:
+        tag += "　[走私]" + ("　✗查扣" if seized else "")
+    if promoted:
+        if G.ending_id:
+            tag += f"　★了结「{promoted}」"
+        else:
+            tag += f"　★进第{G.chapter}章「{promoted}」"
+    good_name = "—" if empty else goods[gid]["name"]
+    qty_s = 0 if empty else qty
+    print(f"    第{trip:>2}趟 {ports[src]['name']:<5}→{ports[dst]['name']:<7} "
+          f"{good_name:<5}×{qty_s:<3} 本{spent:>5} 得{rev:>6} 净{profit:>+6}  "
+          f"{days:>2}日  {G.year}年{G.month:>2}月  存银 {G.money:>6}{tag}")
+    return True
+
 def role(pid, gid): return ports[pid]["market"].get(gid)
 def uval(pid, gid): return goods[gid]["base_value"] * ROLE_MOD[role(pid,gid)] * rates[pid][gid]
 def buy_p(pid,gid):  return round(uval(pid,gid)*(1+TARIFF))
@@ -290,65 +462,15 @@ print(f"  起始舱位占用 {used():.0f} / {cap_total()} 料，可装货 {free(
 check(free() > cap_total()*0.5, "开局补给未占满舱（仍有一半以上可装货）")
 check(verify_invariants(), "开局分船账目不变量成立")
 
-# 第一章全部已解锁港口——真实玩家会轮换航线，避免把某一条线跑疲
+# 已解锁港口轮换——优先未走通/必须亲至的港，避免熟港套利卡晋升
 history = []
 print()
 print(f"  ── 跑商 24 趟（起始第 {G.chapter} 章，可达 {len(open_ports())} 港）──")
-waits = 0
 for trip in range(1, 25):
-    # 商路被自己跑疲时，真人玩家会在店里等行情回升，而不是硬亏本买
-    qty = 0
-    for attempt in range(6):
-        bt = best_trade(G.port, [p for p in open_ports() if p != G.port])
-        if bt is None:
-            gid = dst = None
-        else:
-            _, gid, dst, margin = bt
-            d = dist(G.port, dst); crs = bearing(G.port, dst)
-            est_days = math.ceil(d / speed(crs))
-            buy_supplies(est_days + 4)
-            is_contra = goods[gid].get("contraband", False)
-            # 违禁货最多押六成身家；一次查扣不该让人再也翻不了身
-            cap_budget = int(G.money * 0.6) if is_contra else G.money
-            qty, spent = do_buy(gid, 9999, floor_price=sell_p(dst, gid), budget=cap_budget)
-        if qty > 0:
-            break
-        # 本钱见底时向蕃商赊贷
-        if G.money < 300:
-            got_loan = borrow(500)
-            if got_loan:
-                print(f"    第{trip:>2}趟  本钱告罄，赊借 {got_loan} 钱（现欠 {G.debt}）")
-                continue
-        # 候市：住店 10 日让行情回归
-        cost = 10 * INN_RATE
-        if G.money < cost:
-            break
-        G.money -= cost; advance(10); waits += 10
-        G.morale = min(100, G.morale + 20)
-        print(f"    第{trip:>2}趟  行情不佳，在店中候市 10 日（房钱 {cost}）")
-    if qty == 0:
-        print(f"    第{trip:>2}趟  确实无利可图（钱 {G.money}，空舱 {free():.0f}）"); break
-    src = G.port
-    smuggle = goods[gid].get("contraband", False)
-    seized = False
-    if smuggle:
-        # 违禁货出港查扣风险（游戏内由 GameState.customs_inspection 判定）
-        if random.random() < 0.28:
-            seized = True
-            for s in G.ships:
-                if gid in s["cargo"]: del s["cargo"][gid]
-            fine = min(300, max(50, int(G.money*0.4)))
-            G.money = max(0, G.money - fine)
-    days = sail(dst)
-    rev = 0 if seized else do_sell(gid, qty)
-    profit = rev - spent - (fine if seized else 0)
-    history.append(profit)
-    promoted = try_advance()
-    tag = "　[走私]" + ("　✗查扣" if seized else "") if smuggle else ""
-    if promoted: tag += f"　★进第{G.chapter}章「{promoted}」"
-    print(f"    第{trip:>2}趟 {ports[src]['name']:<5}→{ports[dst]['name']:<7} "
-          f"{goods[gid]['name']:<5}×{qty:<3} 本{spent:>5} 得{rev:>6} 净{profit:>+6}  "
-          f"{days:>2}日  {G.year}年{G.month:>2}月  存银 {G.money:>6}{tag}")
+    if G.ending_id:
+        break
+    if not one_trip(trip):
+        break
     if not verify_invariants():
         check(False, f"第{trip}趟后分船账目不变量被破坏")
 
@@ -477,6 +599,39 @@ if fu_i is not None:
 
 print()
 print("="*70)
+print("正式通关：继续跑商至第四章占城了结（不垫 F12）")
+print("="*70)
+trip = 25
+while not G.ending_id and trip <= 220:
+    if not one_trip(trip):
+        break
+    if not verify_invariants():
+        check(False, f"第{trip}趟后分船账目不变量被破坏")
+        break
+    trip += 1
+
+playthrough = {
+    "ending": G.ending_id,
+    "chapter": G.chapter,
+    "visited": list(G.visited),
+    "peak": G.peak_money,
+    "trips": trip - 1 if G.ending_id else trip,
+    "money": G.money,
+}
+print(f"  通关停在第 {playthrough['trips']} 趟　第 {playthrough['chapter']} 章　"
+      f"峰值 {playthrough['peak']}　存银 {playthrough['money']}　"
+      f"走通 {len(playthrough['visited'])} 港")
+print(f"    港口：{'、'.join(ports[p]['name'] for p in playthrough['visited'])}")
+check(playthrough["chapter"] == 4, f"主循环进至第 {playthrough['chapter']} 章")
+check("champa" in playthrough["visited"], "亲至占城（不靠 F12 垫条件）")
+check(playthrough["peak"] >= 80000, f"本钱峰值 {playthrough['peak']} ≥ 80000")
+check(len(playthrough["visited"]) >= 13, f"走通 {len(playthrough['visited'])} 港 ≥ 13")
+check(playthrough["ending"] == "south_sea",
+      f"无剧情旗标了结「{playthrough['ending'] or '未触发'}」（南海一纲兜底）")
+check(trip <= 220, f"在 {playthrough['trips']} 趟内闭合，未撞 220 趟上限")
+
+print()
+print("="*70)
 print("海战接入模拟（P4-1：WorldMap 炮击分胜负，结算复用现有文本公式）")
 print("="*70)
 print("  独立于晋升主循环：构造标准舰队 pending_battle，复刻三路结算账目增量。")
@@ -552,40 +707,8 @@ check(verify_invariants(), "海战结算后分船账目不变量仍成立")
 
 print()
 print("="*70)
-print("P6 结局分支（独立于晋升主循环）")
+print("P6 结局分支（旗标选择，独立于通关主循环的账本）")
 print("="*70)
-
-def flag_ok(req, fl, chapter=4):
-    need = req.get("require_flag")
-    if need and need not in fl:
-        return False
-    anyf = req.get("require_any") or []
-    if anyf and not any(f in fl for f in anyf):
-        return False
-    hide = req.get("hide_if_flag")
-    if hide and hide in fl:
-        return False
-    need_ch = int(req.get("require_chapter", 0) or 0)
-    if need_ch and chapter < need_ch:
-        return False
-    return True
-
-def pick_ending(fl):
-    for e in chapters[4].get("endings", []):
-        if flag_ok(e, fl):
-            return e["id"]
-    return None
-
-def ending_ready(peak, visited):
-    req = chapters[4].get("ending_requires") or {}
-    if peak < req.get("peak_money", 0):
-        return False
-    if len(visited) < req.get("visited_count", 0):
-        return False
-    for m in req.get("must_visit", []):
-        if m not in visited:
-            return False
-    return True
 
 check(pick_ending(["chen_line_open"]) == "sea_letter", "海口信路：chen_line_open")
 check(pick_ending(["letter_to_xinghua"]) == "sea_letter", "海口信路：letter_to_xinghua")
@@ -603,7 +726,7 @@ check(not ending_ready(80000, no_champa[:13]), "走通十三港但未至占城 �
 with_champa = no_champa[:12] + ["champa"]
 check(ending_ready(80000, with_champa), "八万 + 十三港含占城 → 可了结")
 check(not ending_ready(79999, with_champa), "本钱 79999 不能了结")
-check(G.chapter < 4, f"主循环停在第 {G.chapter} 章，未误触了结")
+check(playthrough["ending"] == "south_sea", "通关主循环已了结，旗标单测不改写 ending_id")
 
 print()
 print("="*70)

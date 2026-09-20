@@ -1,6 +1,6 @@
-# P6 旗标联动与结局 — 实施追踪
+# P6 收官 — 实施追踪
 
-## 步骤
+## 已完成（旗标与结局）
 - [x] 旗标门槛 API（require_flag / require_any / hide_if_flag / require_chapter）
 - [x] apply_effects 消费 network / merchant_credit / ledger_note 等
 - [x] 修 ending 继续按钮盖掉第一章三选一
@@ -10,6 +10,12 @@
 - [x] 章三 / 章四短过场
 - [x] 第四章四条结局
 - [x] 三套 Python 校验 + Godot 无头冒烟
+
+## 收官（2026-09-20）
+- [x] 拆除 crate / 海鸟 / 鲸影 / 野海盗刷怪，不恢复自由航行拾取
+- [x] simulate_run 从开局真跑到占城「南海一纲」，不垫 F12（28 趟 / 峰值 83090）
+- [x] 三套 Python 校验全绿
+- [ ] 合入候选 PR 标成可合并（不硬合 PR #1）
 
 ## 验证
 ```

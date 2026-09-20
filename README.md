@@ -81,11 +81,12 @@ assets/     美术资源
 - ✅ Godot 4.6-stable 无头已跑通：import + `godot_smoke.gd` PASS，`Main.tscn` 启动无脚本错误
 - ✅ 窗口点验已过（云电脑 XFCE + llvmpipe）：序章 → 海路 → 泉州三选一 → 酒馆旧事 → F12 了结预览；F11 进港 → 升帆 → F10 海盗 → 迎战 → J/K 舷炮 → B 逃走
 - ✅ 海战船图精绘化：福船（牙色硬帆三桅、高艉楼、龙目）/ 海鹘（炭黑壳、绛红破帆、长桨）/ 铁子，真 RGBA 抠底，管线见上节
+- ✅ 收官：拆除 crate / 海鸟 / 鲸影 / 野海盗刷怪（不恢复自由航行拾取）；`simulate_run` 从开局真跑到占城「南海一纲」，不垫 F12
 
 ## 已知坑（点验/改图前必读）
 
-- `assets/icon_*.png` 有若干实为 JPEG（沿用旧文件名），import 时报 `Not a PNG` 无害——运行时 `GameManager.load_texture` 按文件头解码兜底；**不要重转它们**（会牵连 .import 与 uid）。港口设施图标因此在窗口里显示灰叉，属既有观感问题
-- crate / 海鸟 / 鲸影仍是 RGB 底板——且 WorldMap 已纯战斗化（`_process_spawns` 只在非战斗跑），这三样当前实际不刷出，是死内容，要清先决定要不要恢复拾取/生态
+- `assets/icon_*.png` 有若干实为 JPEG（沿用旧文件名），import 时报 `Not a PNG` 无害——运行时 `GameManager.load_texture` 按文件头解码兜底；**不要重转它们**（会牵连 .import 与 uid）。港口设施大图标本身是真 PNG；窗口里灰叉多半是 `.godot` 缓存与 4.6 二进制不匹配
+- `crate_barrel.png` / `seagull.png` / `whale_shadow.png` 仍留在 `assets/`，但已从 WorldMap / PirateShip 拆除，不再刷出
 - 提交不要带 `.uid` 文件；`git commit` 用显式 pathspec（并行窗口共享工作区）
 
 ## 许可

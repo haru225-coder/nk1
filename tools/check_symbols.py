@@ -500,24 +500,31 @@ if "current_scene" in minimap_nc:
 else:
     print("  ✓ Minimap 已改用父链查找（add_child 兼容）")
 
-# 6. WorldMap 战斗模式：禁停靠 + 禁自动刷怪
+# 6. WorldMap 战斗模式：禁停靠 + 已拆除自由航行刷怪
 if "PROCESS_MODE_DISABLED" in wm_src:
     print("  ✓ WorldMap 战斗模式禁用 Ports（停靠出口关闭）")
 else:
     print("  ✗ WorldMap 未禁用 Ports（战斗可误停靠）")
     problems.append("WorldMap 未禁用 Ports")
-if "combat_mode" in wm_src and "_process_spawns" in wm_src:
-    print("  ✓ WorldMap 战斗模式短路自动刷怪")
+ecology_left = [name for name in ("_process_spawns", "seagull_tex", "whale_tex", "crate_scene")
+                if name in wm_src]
+if ecology_left:
+    print(f"  ✗ WorldMap 仍留自由航行刷怪：{', '.join(ecology_left)}")
+    problems.append("WorldMap 仍留自由航行刷怪")
 else:
-    print("  ✗ WorldMap 未短路自动刷怪")
-    problems.append("WorldMap 未短路自动刷怪")
+    print("  ✓ WorldMap 已拆除 crate / 海鸟 / 鲸影 / 野海盗刷怪")
+if os.path.exists(os.path.join(ROOT, "scripts", "Crate.gd")) or os.path.exists(os.path.join(ROOT, "scenes", "Crate.tscn")):
+    print("  ✗ Crate 场景仍在（拾取箱应为死内容，已裁定拆除）")
+    problems.append("Crate 场景未拆除")
+else:
+    print("  ✓ Crate.gd / Crate.tscn 已拆除")
 
-# 7. PirateShip.drops_loot 开关
-if "drops_loot" in pirate_src and "if drops_loot" in pirate_src:
-    print("  ✓ PirateShip.drops_loot 开关已定义（战斗不掉宝箱）")
+# 7. PirateShip 不再掉拾取箱（赏金只走 SeaChart 结算）
+if "drops_loot" in pirate_src or "Crate.tscn" in pirate_src:
+    print("  ✗ PirateShip 仍引用拾取箱 / drops_loot")
+    problems.append("PirateShip 仍掉拾取箱")
 else:
-    print("  ✗ PirateShip.drops_loot 开关缺失")
-    problems.append("PirateShip.drops_loot 缺失")
+    print("  ✓ PirateShip 击沉不再掉拾取箱")
 
 print()
 print("=" * 68)
