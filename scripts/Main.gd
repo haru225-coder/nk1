@@ -35,13 +35,18 @@ var title_button_connected: bool = false
 ## 牙行当前选中的船 index（多船分装用），进牙行时重置为旗舰
 var _market_ship: int = 0
 
-const FACILITY_SUFFIXES := ["_market", "_yamen", "_shipyard", "_tavern", "_inn"]
-## 港卡 id 是 city_*，动态设施页是 {港}_{后缀}。漏改写时 city_inn 也会
-## ends_with("_inn")，被收成 _setup_inn("city")。
+const FACILITY_SUFFIXES := [
+	"_market", "_yamen", "_shipyard", "_tavern", "_inn",
+	"_guild", "_exam", "_residence",
+]
+## 港卡 id 是 city_*，动态设施页是 {港}_{后缀}。city_inn / city_guild
+## 也会 ends_with 对应后缀，load_scene 必须跳过 city_ 前缀，否则收成
+## _setup_inn("city")、并盖掉兴化序章调查页。
 const REMAPPED_FACILITIES := [
 	"city_market", "city_yamen", "city_shipyard", "city_tavern", "city_inn",
+	"city_guild", "city_exam", "city_residence",
 ]
-## 序章兴化才进原调查页。游戏港点这些卡不再把人送回兴化内景。
+## 兴化序章仍进 scenes.json 调查页；游戏港改走动态设施。
 const PROLOGUE_ONLY_FACILITIES := ["city_guild", "city_exam", "city_residence"]
 
 ## 无剧情场景的港口使用的通用设施
@@ -216,11 +221,13 @@ func load_scene(scene_id: String) -> void:
 		previous_scene_id = current_scene_id
 	current_scene_id = scene_id
 
-	# 设施场景由代码动态生成，不走 scenes.json
-	for suffix in FACILITY_SUFFIXES:
-		if scene_id.ends_with(suffix):
-			_setup_dynamic_scene(scene_id, suffix)
-			return
+	# 设施场景由代码动态生成，不走 scenes.json。
+	# city_* 是序章共用 id，不能按后缀收成 _setup_*(「city」)。
+	if not scene_id.begins_with("city_"):
+		for suffix in FACILITY_SUFFIXES:
+			if scene_id.ends_with(suffix):
+				_setup_dynamic_scene(scene_id, suffix)
+				return
 
 	var scene_data = GameManager.get_scene_by_id(scene_id)
 	if not scene_data.is_empty() and not GameState.scene_unlocked(scene_data):
@@ -280,6 +287,9 @@ const FACILITY_BG := {
 	"_yamen": "bg_customs_room.jpg",
 	"_tavern": "bg_xinghua_wine_shed.jpg",
 	"_inn": "bg_relay_post.jpg",
+	"_guild": "bg_quanzhou_ledger.jpg",
+	"_exam": "bg_academy.jpg",
+	"_residence": "bg_xinghua_study.jpg",
 }
 
 
@@ -332,11 +342,11 @@ const FACILITY_PLACEHOLDER := {
 	},
 	"city_guild": {
 		"title": "行会",
-		"body": "行首正与几名蕃商核对舱位与脚钱。见你进来，只抬了抬眼皮。\n（行会事务尚未实装。）",
+		"body": "行首正与几名蕃商核对舱位与脚钱。墙上钉着一张抄来的远港价目。",
 	},
 	"city_residence": {
 		"title": "住处",
-		"body": "一间租来的下处，屋角堆着几卷未拆的旧账。\n（住处事务尚未实装。）",
+		"body": "一间租来的下处，屋角堆着几卷未拆的旧账。",
 	},
 }
 
@@ -359,7 +369,7 @@ func _setup_missing_scene(scene_id: String) -> void:
 
 
 # ══════════════════════════════════════════════════════
-#  设施：牙行 / 市舶司 / 船屋 / 酒馆
+#  设施：牙行 / 市舶司 / 船屋 / 酒馆 / 旅店 / 行会 / 贡院 / 住宅
 # ══════════════════════════════════════════════════════
 
 func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
@@ -379,6 +389,12 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 			_setup_shipyard(base_loc)
 		"_inn":
 			_setup_inn(base_loc)
+		"_guild":
+			_setup_guild(base_loc)
+		"_exam":
+			_setup_exam(base_loc)
+		"_residence":
+			_setup_residence(base_loc)
 	update_status_panel()
 
 
@@ -1090,6 +1106,123 @@ func _setup_inn(port_id: String) -> void:
 
 
 const INN_RATE := 15
+const HOME_RATE := 5
+const EXAM_COPY_DAYS := 3
+const EXAM_STIPEND := 30
+const GUILD_CREDIT_WIDE := 8
+
+
+## 行会：出港行情抄本。酒馆打听仍费一日只吐一条；这里钉在墙上，不耗日。
+func _setup_guild(port_id: String) -> void:
+	scene_title.text = "%s・行会" % GameManager.get_port_name(port_id)
+	body_text.text = "行首正与几名蕃商核对舱位与脚钱。墙上钉着一张抄来的远港价目，墨迹有的还潮着。"
+
+	var cred := Label.new()
+	cred.text = "海商信用 %d。信用足的人，会里肯多抄几条远路。" % GameState.merchant_credit
+	cred.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	cred.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	choices_container.add_child(cred)
+
+	var sep := Label.new()
+	sep.text = "── 出港行情 ──"
+	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	choices_container.add_child(sep)
+
+	var limit: int = 5 if GameState.merchant_credit >= GUILD_CREDIT_WIDE else 3
+	var rows: Array = _collect_spreads(port_id, limit)
+	if rows.is_empty():
+		var empty := Label.new()
+		empty.text = "眼下会里也抄不出能赚的路。过几日行情回一回再来。"
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+		choices_container.add_child(empty)
+	else:
+		for row in rows:
+			var line := Label.new()
+			line.text = "%s → %s　买%d 卖%d　+ %d" % [
+				GameManager.get_good_name(row["good"]),
+				GameManager.get_port_name(row["port"]),
+				int(row["buy"]), int(row["sell"]), int(row["profit"]),
+			]
+			line.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+			line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			choices_container.add_child(line)
+
+	choices_label.visible = true
+	_add_leave_button(port_id)
+
+
+## 贡院：今科未开，只能替人誊录。耗日换工钱与学者倾向，不给名声、不另开章门。
+func _setup_exam(port_id: String) -> void:
+	scene_title.text = "%s・贡院" % GameManager.get_port_name(port_id)
+	body_text.text = "贡院朱门紧闭。今科未开，阶下只有几个背着书箧的士子在张望。\n你想起叔父留下的那笔债——科举与海路，眼下还容不得你两头都要。誊录的笔墨钱倒是现结。"
+
+	var tend := Label.new()
+	tend.text = "学者倾向 %d　海路倾向 %d" % [GameState.scholar_tendency, GameState.sea_tendency]
+	tend.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	choices_container.add_child(tend)
+
+	var btn := Button.new()
+	btn.text = "替人誊录三日（工钱 %d，费 %d 日）" % [EXAM_STIPEND, EXAM_COPY_DAYS]
+	btn.pressed.connect(_on_exam_copy.bind(port_id))
+	choices_container.add_child(btn)
+
+	choices_label.visible = true
+	_add_leave_button(port_id)
+
+
+func _on_exam_copy(_port_id: String) -> void:
+	GameManager.advance_days(EXAM_COPY_DAYS)
+	GameState.add_money(EXAM_STIPEND)
+	GameState.scholar_tendency += 1
+	log_msg("【誊录】在贡院廊下抄了 %d 日试卷，得工钱 %d。学者倾向 %d。如今是 %s。" % [
+		EXAM_COPY_DAYS, EXAM_STIPEND, GameState.scholar_tendency, Calendar.get_date_string(),
+	])
+	load_scene(current_scene_id)
+
+
+## 住宅：看边记、便宜歇息。候风仍去旅店——下处等不到风向。
+func _setup_residence(port_id: String) -> void:
+	scene_title.text = "%s・住处" % GameManager.get_port_name(port_id)
+	body_text.text = "一间租来的下处，屋角堆着几卷未拆的旧账。比旅店便宜，只是听不见港上的风信。"
+
+	var tend := Label.new()
+	tend.text = "学者倾向 %d　海路倾向 %d" % [GameState.scholar_tendency, GameState.sea_tendency]
+	tend.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	choices_container.add_child(tend)
+
+	var sep := Label.new()
+	sep.text = "── 边记 ──"
+	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	choices_container.add_child(sep)
+
+	if GameState.ledger_notes.is_empty():
+		var empty := Label.new()
+		empty.text = "案上只有叔父那几卷未清的旧账。"
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+		choices_container.add_child(empty)
+	else:
+		for note in GameState.ledger_notes:
+			var n := Label.new()
+			n.text = str(note)
+			n.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			n.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+			choices_container.add_child(n)
+
+	var rest_sep := Label.new()
+	rest_sep.text = "── 歇息（候风仍去旅店）──"
+	rest_sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	choices_container.add_child(rest_sep)
+
+	for n in [1, 3]:
+		var b := Button.new()
+		b.text = "歇 %d 日（%d 钱）" % [n, n * HOME_RATE]
+		b.pressed.connect(_on_rest.bind(n, port_id, HOME_RATE, "下处"))
+		choices_container.add_child(b)
+
+	choices_label.visible = true
+	_add_leave_button(port_id)
 
 
 ## 提示下一次季风转向还有多久
@@ -1121,38 +1254,53 @@ func _monsoon_forecast() -> String:
 	return "掌柜掐指算了算：约 %d 日后风信要转。北上博多、高丽须候西南风（五至八月），南下流求、南洋须候东北风（十月至次年二月）。" % days
 
 
-func _on_rest(days: int, port_id: String) -> void:
-	var cost := days * INN_RATE
+func _on_rest(days: int, port_id: String, rate: int = INN_RATE, place: String = "店中") -> void:
+	var cost := days * rate
 	if not GameState.spend_money(cost):
 		log_msg("【钱不够】掌柜把算盘一推：「客官，先结了前帐罢。」")
 		return
 	GameManager.advance_days(days)
 	Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + days * 2)
-	log_msg("在店中歇了 %d 日，付房钱 %d。如今是 %s，%s。" % [
-		days, cost, Calendar.get_date_string(), Calendar.get_monsoon_desc(),
+	log_msg("在%s歇了 %d 日，付房钱 %d。如今是 %s，%s。" % [
+		place, days, cost, Calendar.get_date_string(), Calendar.get_monsoon_desc(),
 	])
 	load_scene(current_scene_id)
 
 
-## 在已解锁港口中找一条真实存在的价差，作为情报吐给玩家
-func _gather_price_intel(port_id: String) -> String:
-	var best := {"profit": 0}
+## 已解锁港口中、从此港买出能正赚的价差，按利润降序。
+func _collect_spreads(port_id: String, limit: int = 3) -> Array:
+	var rows: Array = []
 	for p in GameManager.unlocked_ports():
 		var pid: String = p.get("id", "")
-		if pid == port_id:
+		if pid == port_id or pid.ends_with("_harbor"):
 			continue
 		for gid in Economy.goods_at(port_id):
 			if not Economy.is_traded(pid, gid):
 				continue
-			var profit: int = Economy.sell_price(pid, gid) - Economy.buy_price(port_id, gid)
-			if profit > best.get("profit", 0):
-				best = {"profit": profit, "port": pid, "good": gid}
-	if best.get("profit", 0) <= 0:
+			var buy_p: int = Economy.buy_price(port_id, gid)
+			var sell_p: int = Economy.sell_price(pid, gid)
+			var profit: int = sell_p - buy_p
+			if profit > 0:
+				rows.append({
+					"profit": profit, "port": pid, "good": gid,
+					"buy": buy_p, "sell": sell_p,
+				})
+	rows.sort_custom(func(a, b): return int(a["profit"]) > int(b["profit"]))
+	if limit > 0 and rows.size() > limit:
+		return rows.slice(0, limit)
+	return rows
+
+
+## 在已解锁港口中找一条真实存在的价差，作为情报吐给玩家
+func _gather_price_intel(port_id: String) -> String:
+	var rows: Array = _collect_spreads(port_id, 1)
+	if rows.is_empty():
 		return "【闲谈】几个老水手翻来覆去只讲当年的风暴，没打听出什么有用的。"
+	var best: Dictionary = rows[0]
 	return "【行情】邻座的牙人压低声音：「%s 眼下缺%s，此地买了运过去，一件能多得 %d 钱。」" % [
 		GameManager.get_port_name(best["port"]),
 		GameManager.get_good_name(best["good"]),
-		best["profit"],
+		int(best["profit"]),
 	]
 
 
@@ -1491,15 +1639,13 @@ func _cn_chapter(n: int) -> String:
 
 func _on_facility_pressed(fac: Dictionary) -> void:
 	var target_scene = fac.get("id", "")
+	# 兴化序章三张卡仍进调查页；游戏港改走 {港}_guild 等动态页。
+	if current_scene_id == "xinghua" and target_scene in PROLOGUE_ONLY_FACILITIES:
+		load_scene(target_scene)
+		return
 	if target_scene in REMAPPED_FACILITIES:
 		target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")
 		load_scene(target_scene)
-		return
-	if target_scene in PROLOGUE_ONLY_FACILITIES and current_scene_id != "xinghua":
-		if current_scene_id != "" and current_scene_id != target_scene:
-			previous_scene_id = current_scene_id
-		current_scene_id = target_scene
-		_setup_missing_scene(target_scene)
 		return
 	if target_scene != "":
 		load_scene(target_scene)

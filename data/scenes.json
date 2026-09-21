@@ -1400,7 +1400,7 @@
         {
           "id": "city_guild",
           "title": "行会",
-          "subtitle": "商贾云集",
+          "subtitle": "行情・信用",
           "body": "泉州商人与各路掌柜的集会所。"
         },
         {
@@ -1424,13 +1424,13 @@
         {
           "id": "city_exam",
           "title": "贡院",
-          "subtitle": "科考之所",
+          "subtitle": "誊录・观礼",
           "body": "天下士人求取功名之地。"
         },
         {
           "id": "city_residence",
           "title": "住宅",
-          "subtitle": "简陋住处",
+          "subtitle": "账本・歇息",
           "body": "属于你的一方天地。"
         },
         {
@@ -1456,7 +1456,7 @@
         {
           "id": "city_guild",
           "title": "行会",
-          "subtitle": "商贾云集",
+          "subtitle": "行情・信用",
           "body": "泉州商人与各路掌柜的集会所。"
         },
         {
@@ -1480,13 +1480,13 @@
         {
           "id": "city_exam",
           "title": "贡院",
-          "subtitle": "科考之所",
+          "subtitle": "誊录・观礼",
           "body": "天下士人求取功名之地。"
         },
         {
           "id": "city_residence",
           "title": "住宅",
-          "subtitle": "简陋住处",
+          "subtitle": "账本・歇息",
           "body": "属于你的一方天地。"
         },
         {
@@ -1512,7 +1512,7 @@
         {
           "id": "city_guild",
           "title": "行会",
-          "subtitle": "商贾云集",
+          "subtitle": "行情・信用",
           "body": "泉州商人与各路掌柜的集会所。"
         },
         {
@@ -1536,13 +1536,13 @@
         {
           "id": "city_exam",
           "title": "贡院",
-          "subtitle": "科考之所",
+          "subtitle": "誊录・观礼",
           "body": "天下士人求取功名之地。"
         },
         {
           "id": "city_residence",
           "title": "住宅",
-          "subtitle": "简陋住处",
+          "subtitle": "账本・歇息",
           "body": "属于你的一方天地。"
         },
         {
@@ -1568,7 +1568,7 @@
         {
           "id": "city_guild",
           "title": "行会",
-          "subtitle": "商贾云集",
+          "subtitle": "行情・信用",
           "body": "泉州商人与各路掌柜的集会所。"
         },
         {
@@ -1592,13 +1592,13 @@
         {
           "id": "city_exam",
           "title": "贡院",
-          "subtitle": "科考之所",
+          "subtitle": "誊录・观礼",
           "body": "天下士人求取功名之地。"
         },
         {
           "id": "city_residence",
           "title": "住宅",
-          "subtitle": "简陋住处",
+          "subtitle": "账本・歇息",
           "body": "属于你的一方天地。"
         },
         {

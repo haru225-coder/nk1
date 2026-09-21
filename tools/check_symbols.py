@@ -1052,11 +1052,66 @@ if pressed and "REMAPPED_FACILITIES" in pressed.group(0) and "city_inn" in main_
 else:
     print("  ✗ 旅店未列入港卡改写")
     problems.append("city_inn 未改写")
-if "PROLOGUE_ONLY_FACILITIES" in main_src and "current_scene_id != \"xinghua\"" in main_src:
-    print("  ✓ 游戏港行会/贡院/住宅不再送回兴化序章")
+if "PROLOGUE_ONLY_FACILITIES" in main_src and 'current_scene_id == "xinghua"' in main_src:
+    print("  ✓ 兴化序章仍进调查页，游戏港行会/贡院/住宅走动态页")
 else:
     print("  ✗ 序章设施未与游戏港切开")
     problems.append("序章设施未切开")
+if "begins_with(\"city_\")" in main_src:
+    print("  ✓ load_scene 跳过 city_ 前缀，避免盖掉序章 id")
+else:
+    print("  ✗ load_scene 仍会把 city_guild 收成动态页")
+    problems.append("load_scene 未跳过 city_ 前缀")
+for fn in ("_setup_guild", "_setup_exam", "_setup_residence", "_collect_spreads", "_on_exam_copy"):
+    if re.search(r"func %s\b" % fn, main_src):
+        print("  ✓ Main.%s 已定义" % fn)
+    else:
+        print("  ✗ 缺 Main.%s" % fn)
+        problems.append("缺 %s" % fn)
+if "HOME_RATE" in main_src and "INN_RATE" in main_src:
+    home = re.search(r"const HOME_RATE\s*:=\s*(\d+)", main_src)
+    inn = re.search(r"const INN_RATE\s*:=\s*(\d+)", main_src)
+    if home and inn and int(home.group(1)) < int(inn.group(1)):
+        print("  ✓ 住处歇息 %s 钱/日 < 旅店 %s" % (home.group(1), inn.group(1)))
+    else:
+        print("  ✗ 住处房价未低于旅店")
+        problems.append("HOME_RATE 未低于 INN_RATE")
+else:
+    print("  ✗ 缺 HOME_RATE / INN_RATE")
+    problems.append("缺房价常量")
+exam_fn = re.search(r"func _on_exam_copy.*?(?=\nfunc |\Z)", main_src, re.S)
+if exam_fn and "add_fame" in exam_fn.group(0):
+    print("  ✗ 贡院誊录给了名声（会绕过修埠/呈报）")
+    problems.append("贡院不得给名声")
+elif exam_fn and "scholar_tendency" in exam_fn.group(0):
+    print("  ✓ 贡院誊录只加学者倾向，不给名声")
+else:
+    print("  ✗ 贡院誊录未接线")
+    problems.append("贡院誊录未接线")
+if all(s in main_src for s in (
+    '"_guild"', '"_exam"', '"_residence"',
+    "bg_quanzhou_ledger.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",
+)):
+    print("  ✓ 行会/贡院/住宅有设施背景")
+else:
+    print("  ✗ 三设施缺背景")
+    problems.append("三设施缺 FACILITY_BG")
+for rel in (
+    "assets/bg_quanzhou_ledger.jpg",
+    "assets/bg_academy.jpg",
+    "assets/bg_xinghua_study.jpg",
+):
+    if os.path.isfile(os.path.join(ROOT, rel)):
+        print("  ✓ %s 在仓库" % rel)
+    else:
+        print("  ✗ 缺 %s" % rel)
+        problems.append("缺 %s" % rel)
+sim_src = open(os.path.join(ROOT, "tools", "simulate_run.py"), encoding="utf-8").read()
+if any(tok in sim_src for tok in ("scholar_tendency", "誊录", "EXAM_STIPEND", "HOME_RATE")):
+    print("  ✗ simulate_run 自动走了贡院誊录或住处歇息")
+    problems.append("simulate_run 不得自动誊录/住家")
+else:
+    print("  ✓ simulate_run 不自动誊录、不改住家房价（贡院/住宅不进通关主循环）")
 if '"_inn"' in main_src and "bg_relay_post.jpg" in main_src:
     print("  ✓ 旅店有设施背景")
 else:
@@ -1082,14 +1137,24 @@ with open(scenes_path, encoding="utf-8") as f:
     scenes_doc = json.load(f)
 yamen_titles = set()
 market_titles = set()
+guild_subs = set()
+exam_subs = set()
+home_subs = set()
 for sc in scenes_doc.get("scenes", []):
     if sc.get("type") != "port":
         continue
     for fac in sc.get("facilities", []):
-        if fac.get("id") == "city_yamen":
+        fid = fac.get("id", "")
+        if fid == "city_yamen":
             yamen_titles.add(fac.get("title", ""))
-        if fac.get("id") == "city_market":
+        if fid == "city_market":
             market_titles.add(fac.get("title", ""))
+        if fid == "city_guild":
+            guild_subs.add(fac.get("subtitle", ""))
+        if fid == "city_exam":
+            exam_subs.add(fac.get("subtitle", ""))
+        if fid == "city_residence":
+            home_subs.add(fac.get("subtitle", ""))
 if yamen_titles == {"市舶司"}:
     print("  ✓ 港卡 city_yamen 标题是市舶司（不再写衙门）")
 else:
@@ -1100,6 +1165,21 @@ if market_titles == {"牙行"}:
 else:
     print("  ✗ 港卡牙行标题漂移：%s" % sorted(market_titles))
     problems.append("港卡 market 标题不是牙行")
+if guild_subs == {"行情・信用"}:
+    print("  ✓ 港卡行会副题是行情・信用")
+else:
+    print("  ✗ 行会副题漂移：%s" % sorted(guild_subs))
+    problems.append("行会副题未改")
+if exam_subs == {"誊录・观礼"}:
+    print("  ✓ 港卡贡院副题是誊录・观礼")
+else:
+    print("  ✗ 贡院副题漂移：%s" % sorted(exam_subs))
+    problems.append("贡院副题未改")
+if home_subs == {"账本・歇息"}:
+    print("  ✓ 港卡住宅副题是账本・歇息")
+else:
+    print("  ✗ 住宅副题漂移：%s" % sorted(home_subs))
+    problems.append("住宅副题未改")
 title_ui = re.search(r"func _setup_title_and_invest.*?(?=\nfunc |\Z)", main_src, re.S)
 if title_ui and "纲首" in title_ui.group(0):
     print("  ✗ 职衔说明文案写了纲首")
