@@ -1806,8 +1806,16 @@ func _activate_first_choice() -> bool:
 	return false
 
 
-## 调试局跳到泉州港，方便点「升帆出海」看海图。
+## 调试局跳港。第一次泉州（剧情八卡），再按福州（通用八卡），再按兴化回访。
 func _debug_jump_port() -> void:
+	if current_scene_id == "quanzhou":
+		GameState.last_port = "fuzhou"
+		load_scene("fuzhou")
+		return
+	if current_scene_id == "fuzhou":
+		GameState.last_port = "xinghua"
+		load_scene("xinghua")
+		return
 	GameState.last_port = "quanzhou"
 	load_scene("quanzhou")
 

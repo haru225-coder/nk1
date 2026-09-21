@@ -725,6 +725,12 @@ else:
     problems.append("SeaChart 无 F10")
 if "_debug_jump_port" in main_src and "KEY_F11" in main_src:
     print("  ✓ Main F11 可跳到泉州港")
+    dbg = re.search(r"func _debug_jump_port.*?(?=\nfunc |\Z)", main_src, re.S)
+    if dbg and "fuzhou" in dbg.group(0) and "xinghua" in dbg.group(0):
+        print("  ✓ F11 点验链含福州通用港与兴化回访")
+    else:
+        print("  ✗ F11 不能跳到福州/兴化")
+        problems.append("F11 点验链缺福州/兴化")
 else:
     print("  ✗ Main 无 F11 进港点验入口")
     problems.append("Main 无 F11")
