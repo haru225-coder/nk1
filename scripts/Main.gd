@@ -1807,12 +1807,19 @@ func _activate_first_choice() -> bool:
 
 
 ## 调试局跳港。第一次泉州（剧情八卡），再按福州（通用八卡），再按兴化回访。
+## 设施页 current_scene_id 是 {港}_guild，要剥后缀，否则会误跳回泉州。
 func _debug_jump_port() -> void:
-	if current_scene_id == "quanzhou":
+	var here := current_scene_id
+	if not here.begins_with("city_"):
+		for suffix in FACILITY_SUFFIXES:
+			if here.ends_with(suffix):
+				here = here.trim_suffix(suffix)
+				break
+	if here == "quanzhou":
 		GameState.last_port = "fuzhou"
 		load_scene("fuzhou")
 		return
-	if current_scene_id == "fuzhou":
+	if here == "fuzhou":
 		GameState.last_port = "xinghua"
 		load_scene("xinghua")
 		return
