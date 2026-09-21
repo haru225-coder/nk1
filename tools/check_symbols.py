@@ -1071,12 +1071,20 @@ else:
 gen = re.search(r"const GENERIC_FACILITIES\s*:=\s*\[(.*?)\]", main_src, re.S)
 if gen:
     gbody = gen.group(1)
-    missing = [fid for fid in ("city_guild", "city_exam", "city_residence") if fid not in gbody]
+    missing = [fid for fid in (
+        "city_guild", "city_exam", "city_residence", "city_temple", "city_yamen",
+    ) if fid not in gbody]
     if missing:
         print("  ✗ 通用港缺卡：%s" % ", ".join(missing))
         problems.append("GENERIC_FACILITIES 缺 %s" % ",".join(missing))
+    elif gbody.find("city_temple") > gbody.find("city_yamen"):
+        print("  ✗ 通用港寺观须排在市舶司之前（右列原市舶司位）")
+        problems.append("GENERIC 寺观卡序")
+    elif "勘见・拓碑" not in gbody:
+        print("  ✗ 通用港寺观副题不是勘见・拓碑")
+        problems.append("GENERIC 寺观副题")
     else:
-        print("  ✓ 通用港 GENERIC_FACILITIES 含行会/贡院/住宅")
+        print("  ✓ 通用港 GENERIC_FACILITIES 含行会/贡院/住宅/寺观")
 else:
     print("  ✗ 未找到 GENERIC_FACILITIES")
     problems.append("缺 GENERIC_FACILITIES")
@@ -1085,7 +1093,10 @@ if "begins_with(\"city_\")" in main_src:
 else:
     print("  ✗ load_scene 仍会把 city_guild 收成动态页")
     problems.append("load_scene 未跳过 city_ 前缀")
-for fn in ("_setup_guild", "_setup_exam", "_setup_residence", "_collect_spreads", "_on_exam_copy"):
+for fn in (
+    "_setup_guild", "_setup_exam", "_setup_residence", "_collect_spreads",
+    "_on_exam_copy", "_setup_temple", "_on_temple_look",
+):
     if re.search(r"func %s\b" % fn, main_src):
         print("  ✓ Main.%s 已定义" % fn)
     else:
@@ -1112,29 +1123,52 @@ else:
     print("  ✗ 贡院誊录未接线")
     problems.append("贡院誊录未接线")
 if all(s in main_src for s in (
-    '"_guild"', '"_exam"', '"_residence"',
+    '"_guild"', '"_exam"', '"_residence"', '"_temple"',
     "bg_quanzhou_ledger.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",
+    "bg_temple_library.jpg",
 )):
-    print("  ✓ 行会/贡院/住宅有设施背景")
+    print("  ✓ 行会/贡院/住宅/寺观有设施背景")
 else:
-    print("  ✗ 三设施缺背景")
-    problems.append("三设施缺 FACILITY_BG")
+    print("  ✗ 设施缺背景")
+    problems.append("设施缺 FACILITY_BG")
 for rel in (
     "assets/bg_quanzhou_ledger.jpg",
     "assets/bg_academy.jpg",
     "assets/bg_xinghua_study.jpg",
+    "assets/bg_temple_library.jpg",
+    "assets/icon_temple.png",
 ):
     if os.path.isfile(os.path.join(ROOT, rel)):
         print("  ✓ %s 在仓库" % rel)
     else:
         print("  ✗ 缺 %s" % rel)
         problems.append("缺 %s" % rel)
-sim_src = open(os.path.join(ROOT, "tools", "simulate_run.py"), encoding="utf-8").read()
-if any(tok in sim_src for tok in ("scholar_tendency", "誊录", "EXAM_STIPEND", "HOME_RATE")):
-    print("  ✗ simulate_run 自动走了贡院誊录或住处歇息")
-    problems.append("simulate_run 不得自动誊录/住家")
+if "discoveries_near" not in defined.get("GameManager", set()):
+    print("  ✗ GameManager.discoveries_near 未定义")
+    problems.append("缺 discoveries_near")
 else:
-    print("  ✓ simulate_run 不自动誊录、不改住家房价（贡院/住宅不进通关主循环）")
+    print("  ✓ GameManager.discoveries_near 已定义")
+temple_fn = re.search(r"func _on_temple_look.*?(?=\nfunc |\Z)", main_src, re.S)
+if not temple_fn:
+    print("  ✗ 寺观细看未接线")
+    problems.append("缺 _on_temple_look")
+elif any(tok in temple_fn.group(0) for tok in ("add_fame", "report_discovery")):
+    print("  ✗ 寺观勘见给了名声或当场呈报（赏格须回市舶司）")
+    problems.append("寺观不得给名声/呈报")
+elif "record_discovery" in temple_fn.group(0) and "TEMPLE_LOOK_DAYS" in temple_fn.group(0):
+    print("  ✓ 寺观细看只记入册、耗日，不给名声")
+else:
+    print("  ✗ 寺观细看未走 record_discovery")
+    problems.append("寺观未记入册")
+sim_src = open(os.path.join(ROOT, "tools", "simulate_run.py"), encoding="utf-8").read()
+if any(tok in sim_src for tok in (
+    "scholar_tendency", "誊录", "EXAM_STIPEND", "HOME_RATE",
+    "勘见", "TEMPLE_LOOK", "_on_temple_look", "record_discovery",
+)):
+    print("  ✗ simulate_run 自动走了贡院誊录、住处歇息或寺观勘见")
+    problems.append("simulate_run 不得自动誊录/住家/勘见")
+else:
+    print("  ✓ simulate_run 不自动誊录、歇住家、勘见（贡院/住宅/寺观不进通关主循环）")
 if '"_inn"' in main_src and "bg_relay_post.jpg" in main_src:
     print("  ✓ 旅店有设施背景")
 else:
@@ -1163,9 +1197,14 @@ market_titles = set()
 guild_subs = set()
 exam_subs = set()
 home_subs = set()
+temple_subs = set()
+port_ids_with_temple = set()
+port_scene_ids = []
 for sc in scenes_doc.get("scenes", []):
     if sc.get("type") != "port":
         continue
+    sid = sc.get("id", "")
+    port_scene_ids.append(sid)
     for fac in sc.get("facilities", []):
         fid = fac.get("id", "")
         if fid == "city_yamen":
@@ -1178,6 +1217,9 @@ for sc in scenes_doc.get("scenes", []):
             exam_subs.add(fac.get("subtitle", ""))
         if fid == "city_residence":
             home_subs.add(fac.get("subtitle", ""))
+        if fid == "city_temple":
+            temple_subs.add(fac.get("subtitle", ""))
+            port_ids_with_temple.add(sid)
 if yamen_titles == {"市舶司"}:
     print("  ✓ 港卡 city_yamen 标题是市舶司（不再写衙门）")
 else:
@@ -1203,6 +1245,44 @@ if home_subs == {"账本・歇息"}:
 else:
     print("  ✗ 住宅副题漂移：%s" % sorted(home_subs))
     problems.append("住宅副题未改")
+if temple_subs == {"勘见・拓碑"} and set(port_scene_ids) <= port_ids_with_temple:
+    print("  ✓ 港卡寺观副题是勘见・拓碑，剧情港均有此卡")
+else:
+    print("  ✗ 寺观卡漂移：副题 %s，缺卡港 %s" % (
+        sorted(temple_subs), sorted(set(port_scene_ids) - port_ids_with_temple),
+    ))
+    problems.append("寺观港卡未对齐")
+disc_path = os.path.join(ROOT, "data", "discoveries.json")
+with open(disc_path, encoding="utf-8") as f:
+    disc_doc = json.load(f)
+note = str(disc_doc.get("meta", {}).get("note", ""))
+if "寺观上报" in note or "寺观呈报" in note:
+    print("  ✗ discoveries.json 仍写寺观上报（呈报只在市舶司）")
+    problems.append("发现录 note 把呈报写到寺观")
+else:
+    print("  ✓ 发现录 note 不把呈报放到寺观")
+ports_path = os.path.join(ROOT, "data", "ports.json")
+with open(ports_path, encoding="utf-8") as f:
+    ports_doc = json.load(f)
+near_ports = set()
+for d in disc_doc.get("discoveries", []):
+    for pid in d.get("near_ports", []):
+        near_ports.add(pid)
+bare = [p.get("id") for p in ports_doc.get("ports", []) if p.get("id") not in near_ports]
+if bare:
+    print("  ✗ 无近侧发现的港口：%s" % ", ".join(bare))
+    problems.append("有港无 near_ports 发现")
+else:
+    print("  ✓ 各港至少一条近侧发现（寺观细看不空）")
+fuzhou_ids = [
+    d.get("id") for d in disc_doc.get("discoveries", [])
+    if "fuzhou" in d.get("near_ports", [])
+]
+if "beacon_ruin" in fuzhou_ids:
+    print("  ✓ 福州近侧含废烽堠")
+else:
+    print("  ✗ 福州近侧没有废烽堠")
+    problems.append("福州缺 beacon_ruin")
 title_ui = re.search(r"func _setup_title_and_invest.*?(?=\nfunc |\Z)", main_src, re.S)
 if title_ui and "纲首" in title_ui.group(0):
     print("  ✗ 职衔说明文案写了纲首")

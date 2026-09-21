@@ -120,6 +120,21 @@ func _run() -> void:
 		_check(gm.load_texture("res://assets/icon_guild.png") != null, "icon_guild 按文件头能加载", fails)
 		_check(gm.load_texture("res://assets/icon_exam.png") != null, "icon_exam 按文件头能加载", fails)
 		_check(gm.load_texture("res://assets/icon_residence.png") != null, "icon_residence 按文件头能加载", fails)
+		_check(gm.load_texture("res://assets/icon_temple.png") != null, "icon_temple 按文件头能加载", fails)
+	if gm.has_method("discoveries_near"):
+		var near: Array = gm.discoveries_near("fuzhou")
+		var near_ids: Array = []
+		for d in near:
+			near_ids.append(str(d.get("id", "")))
+		_check(near_ids.has("beacon_ruin"), "福州近侧含废烽堠", fails)
+	else:
+		_check(false, "GameManager.discoveries_near 已定义", fails)
+	var fame_before_look: int = int(gs.fame)
+	_check(gs.record_discovery("beacon_ruin"), "上陆勘见把废烽堠记入册", fails)
+	_check(int(gs.fame) == fame_before_look, "勘见不给名声", fails)
+	_check("beacon_ruin" in gs.discoveries_found, "废烽堠在 discoveries_found", fails)
+	var rpt: Dictionary = gs.report_discovery("beacon_ruin")
+	_check(not rpt.is_empty() and int(rpt.get("fame", 0)) > 0, "市舶司呈报才给名声", fails)
 	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
 	_check(main_src.find("city_inn") >= 0 and main_src.find("REMAPPED_FACILITIES") >= 0,
 		"旅店列入港卡改写", fails)
@@ -131,13 +146,13 @@ func _run() -> void:
 	var gen_j := main_src.find("]", gen_i) if gen_i >= 0 else -1
 	var gen_body := main_src.substr(gen_i, gen_j - gen_i) if gen_i >= 0 and gen_j > gen_i else ""
 	_check(gen_body.find("city_guild") >= 0 and gen_body.find("city_exam") >= 0
-		and gen_body.find("city_residence") >= 0,
-		"通用港含行会/贡院/住宅", fails)
+		and gen_body.find("city_residence") >= 0 and gen_body.find("city_temple") >= 0,
+		"通用港含行会/贡院/住宅/寺观", fails)
 	_check(main_src.find('begins_with("city_")') >= 0,
 		"load_scene 跳过 city_ 前缀", fails)
 	_check(main_src.find("func _setup_guild") >= 0 and main_src.find("func _setup_exam") >= 0
-		and main_src.find("func _setup_residence") >= 0,
-		"行会/贡院/住宅有动态页", fails)
+		and main_src.find("func _setup_residence") >= 0 and main_src.find("func _setup_temple") >= 0,
+		"行会/贡院/住宅/寺观有动态页", fails)
 	_check(main_src.find("HOME_RATE") >= 0 and main_src.find("INN_RATE") >= 0,
 		"住处与旅店房价分开", fails)
 	var exam_i := main_src.find("func _on_exam_copy")
@@ -145,6 +160,12 @@ func _run() -> void:
 	var exam_body := main_src.substr(exam_i, exam_j - exam_i) if exam_i >= 0 and exam_j > exam_i else ""
 	_check(exam_body.find("scholar_tendency") >= 0 and exam_body.find("add_fame") < 0,
 		"贡院誊录只加学者倾向、不给名声", fails)
+	var look_i := main_src.find("func _on_temple_look")
+	var look_j := main_src.find("\nfunc ", look_i + 1) if look_i >= 0 else -1
+	var look_body := main_src.substr(look_i, look_j - look_i) if look_i >= 0 and look_j > look_i else ""
+	_check(look_body.find("record_discovery") >= 0 and look_body.find("add_fame") < 0
+		and look_body.find("report_discovery") < 0,
+		"寺观细看只记入册、不给名声", fails)
 	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
 	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)
 	_check(load("res://scripts/PirateShip.gd") != null, "PirateShip.gd 能编译", fails)

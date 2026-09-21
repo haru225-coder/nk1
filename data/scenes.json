@@ -1434,6 +1434,12 @@
           "body": "属于你的一方天地。"
         },
         {
+          "id": "city_temple",
+          "title": "寺观",
+          "subtitle": "勘见・拓碑",
+          "body": "香火与旧碑。近侧未入官图的遗迹，可在此细看后记入册子。"
+        },
+        {
           "id": "city_yamen",
           "title": "市舶司",
           "subtitle": "验引・抽解",
@@ -1488,6 +1494,12 @@
           "title": "住宅",
           "subtitle": "账本・歇息",
           "body": "属于你的一方天地。"
+        },
+        {
+          "id": "city_temple",
+          "title": "寺观",
+          "subtitle": "勘见・拓碑",
+          "body": "香火与旧碑。近侧未入官图的遗迹，可在此细看后记入册子。"
         },
         {
           "id": "city_yamen",
@@ -1546,6 +1558,12 @@
           "body": "属于你的一方天地。"
         },
         {
+          "id": "city_temple",
+          "title": "寺观",
+          "subtitle": "勘见・拓碑",
+          "body": "香火与旧碑。近侧未入官图的遗迹，可在此细看后记入册子。"
+        },
+        {
           "id": "city_yamen",
           "title": "市舶司",
           "subtitle": "验引・抽解",
@@ -1600,6 +1618,12 @@
           "title": "住宅",
           "subtitle": "账本・歇息",
           "body": "属于你的一方天地。"
+        },
+        {
+          "id": "city_temple",
+          "title": "寺观",
+          "subtitle": "勘见・拓碑",
+          "body": "香火与旧碑。近侧未入官图的遗迹，可在此细看后记入册子。"
         },
         {
           "id": "city_yamen",

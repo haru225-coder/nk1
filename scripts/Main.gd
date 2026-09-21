@@ -37,20 +37,20 @@ var _market_ship: int = 0
 
 const FACILITY_SUFFIXES := [
 	"_market", "_yamen", "_shipyard", "_tavern", "_inn",
-	"_guild", "_exam", "_residence",
+	"_guild", "_exam", "_residence", "_temple",
 ]
 ## 港卡 id 是 city_*，动态设施页是 {港}_{后缀}。city_inn / city_guild
 ## 也会 ends_with 对应后缀，load_scene 必须跳过 city_ 前缀，否则收成
 ## _setup_inn("city")、并盖掉兴化序章调查页。
 const REMAPPED_FACILITIES := [
 	"city_market", "city_yamen", "city_shipyard", "city_tavern", "city_inn",
-	"city_guild", "city_exam", "city_residence",
+	"city_guild", "city_exam", "city_residence", "city_temple",
 ]
 ## 兴化序章仍进 scenes.json 调查页；游戏港改走动态设施。
 const PROLOGUE_ONLY_FACILITIES := ["city_guild", "city_exam", "city_residence"]
 
-## 无剧情场景的港口使用的通用设施。卡序与泉州/兴化港卡一致，
-## 避免博多只剩五卡、行会行情板变成死内容。
+## 无剧情场景的港口使用的通用设施。卡序与泉州/兴化港卡一致（九卡），
+## 避免博多缺行会行情或寺观勘见。
 const GENERIC_FACILITIES := [
 	{"id": "city_shipyard", "title": "船屋", "subtitle": "修船・补给・船行"},
 	{"id": "city_guild", "title": "行会", "subtitle": "行情・信用"},
@@ -59,6 +59,7 @@ const GENERIC_FACILITIES := [
 	{"id": "city_inn", "title": "旅店", "subtitle": "歇息・候风"},
 	{"id": "city_exam", "title": "贡院", "subtitle": "誊录・观礼"},
 	{"id": "city_residence", "title": "住宅", "subtitle": "账本・歇息"},
+	{"id": "city_temple", "title": "寺观", "subtitle": "勘见・拓碑"},
 	{"id": "city_yamen", "title": "市舶司", "subtitle": "验引・抽解"},
 ]
 
@@ -294,6 +295,7 @@ const FACILITY_BG := {
 	"_guild": "bg_quanzhou_ledger.jpg",
 	"_exam": "bg_academy.jpg",
 	"_residence": "bg_xinghua_study.jpg",
+	"_temple": "bg_temple_library.jpg",
 }
 
 
@@ -373,7 +375,7 @@ func _setup_missing_scene(scene_id: String) -> void:
 
 
 # ══════════════════════════════════════════════════════
-#  设施：牙行 / 市舶司 / 船屋 / 酒馆 / 旅店 / 行会 / 贡院 / 住宅
+#  设施：牙行 / 市舶司 / 船屋 / 酒馆 / 旅店 / 行会 / 贡院 / 住宅 / 寺观
 # ══════════════════════════════════════════════════════
 
 func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
@@ -399,6 +401,8 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 			_setup_exam(base_loc)
 		"_residence":
 			_setup_residence(base_loc)
+		"_temple":
+			_setup_temple(base_loc)
 	update_status_panel()
 
 
@@ -632,7 +636,7 @@ func _setup_yamen(port_id: String) -> void:
 	_add_leave_button(port_id)
 
 
-## 上报发现：航中勘见的东西要回衙门报了才换得赏格与名声
+## 上报发现：航中或寺观记下的东西要回市舶司呈报才换得赏格与名声
 func _setup_reporting() -> void:
 	var pending := GameState.unreported_discoveries()
 	if pending.is_empty():
@@ -1229,6 +1233,64 @@ func _setup_residence(port_id: String) -> void:
 	_add_leave_button(port_id)
 
 
+const TEMPLE_LOOK_DAYS := 1
+
+
+## 寺观：上陆勘见近侧旧迹。记入册子，赏格仍回市舶司呈报——不在这里发名声。
+func _setup_temple(port_id: String) -> void:
+	scene_title.text = "%s・寺观" % GameManager.get_port_name(port_id)
+	body_text.text = "廊下香灰积了一指厚。住持不谈功名，只说近侧还有几处未入官图的旧迹，海上人来了才有人去看。记进册子之后，赏格仍要回市舶司呈报。"
+	if GameState.has_flag("japan_temple_network"):
+		body_text.text += "\n袖底那张寺社短札，这里的沙弥看过一眼就不再多问。"
+
+	var near: Array = GameManager.discoveries_near(port_id)
+	var sep := Label.new()
+	sep.text = "── 近侧旧迹 ──"
+	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	choices_container.add_child(sep)
+
+	if near.is_empty():
+		var empty := Label.new()
+		empty.text = "这座香火地近侧没有可勘的旧迹。海上撞见的，回市舶司呈报即可。"
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+		choices_container.add_child(empty)
+	else:
+		for d in near:
+			var did := str(d.get("id", ""))
+			var name := str(d.get("name", did))
+			if GameState.has_found(did) and not (did in GameState.discoveries_found):
+				var done := Label.new()
+				done.text = "「%s」已呈报市舶。" % name
+				done.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+				choices_container.add_child(done)
+			elif did in GameState.discoveries_found:
+				var noted := Label.new()
+				noted.text = "「%s」已记入册。赏格回市舶司呈报。" % name
+				noted.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+				choices_container.add_child(noted)
+			else:
+				var btn := Button.new()
+				btn.text = "细看一日：「%s」" % name
+				btn.tooltip_text = "%s\n%s" % [d.get("location", ""), d.get("historical_hook", "")]
+				btn.pressed.connect(_on_temple_look.bind(did, name))
+				choices_container.add_child(btn)
+
+	choices_label.visible = true
+	_add_leave_button(port_id)
+
+
+func _on_temple_look(did: String, name: String) -> void:
+	GameManager.advance_days(TEMPLE_LOOK_DAYS)
+	if GameState.record_discovery(did):
+		log_msg("【勘见】在寺观廊下细看了 %d 日，把「%s」记入册子。赏格须回市舶司呈报。如今是 %s。" % [
+			TEMPLE_LOOK_DAYS, name, Calendar.get_date_string(),
+		])
+	else:
+		log_msg("沿廊走了一圈，「%s」与册上所记并无出入。" % name)
+	load_scene(current_scene_id)
+
+
 ## 提示下一次季风转向还有多久
 func _monsoon_forecast() -> String:
 	var cur := Calendar.get_monsoon()
@@ -1806,7 +1868,7 @@ func _activate_first_choice() -> bool:
 	return false
 
 
-## 调试局跳港。第一次泉州（剧情八卡），再按福州（通用八卡），再按兴化回访。
+## 调试局跳港。第一次泉州（剧情九卡），再按福州（通用九卡），再按兴化回访。
 ## 设施页 current_scene_id 是 {港}_guild，要剥后缀，否则会误跳回泉州。
 func _debug_jump_port() -> void:
 	var here := current_scene_id

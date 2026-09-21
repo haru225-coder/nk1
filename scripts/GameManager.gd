@@ -114,6 +114,17 @@ func get_discovery_by_id(discovery_id: String) -> Dictionary:
 	return {}
 
 
+## 与该港近侧相关的发现物（上陆勘见用）。航中遭遇仍走 Voyage。
+func discoveries_near(port_id: String) -> Array:
+	var out: Array = []
+	for d in discoveries_data.get("discoveries", []):
+		if typeof(d) != TYPE_DICTIONARY:
+			continue
+		if port_id in d.get("near_ports", []):
+			out.append(d)
+	return out
+
+
 func get_good_by_id(good_id: String) -> Dictionary:
 	for g in goods_data.get("goods", []):
 		if g.get("id") == good_id:
