@@ -28,6 +28,12 @@
 - [x] add_fame 统一入口（呈报 / 海战 / 剧情 / 修埠）
 - [x] 三套 Python 校验 + Godot 冒烟接职衔/修埠
 
+## 窗口点验回收（2026-09-21）
+- [x] load_texture 先按文件头解码，避开 icon_*.import valid=false 的 ERROR
+- [x] 旅店按港改写成 {港}_inn（原先 city_inn 被收成 _setup_inn("city")）
+- [x] 游戏港行会/贡院/住宅不再送回兴化序章
+- [x] 港卡「衙门/市场」改成「市舶司/牙行」，与内页一致
+
 ## 验证
 ```
 python3 tools/check_symbols.py && python3 tools/verify_economy.py && python3 tools/simulate_run.py

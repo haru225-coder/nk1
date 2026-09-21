@@ -78,31 +78,23 @@ func advance_days(n: int) -> void:
 
 ## 按文件头而非扩展名加载图片。
 ## assets 里有若干 .png 文件实际是 JPEG 内容（图片压缩后沿用了原文件名），
-## Godot 的导入器与 Image.load_from_file 都按扩展名选解码器，会直接失败。
+## 若干真 PNG 的 .import 被标成 valid=false。ResourceLoader.load() 这两种
+## 都会打 ERROR，即便字节本身能解开——所以先读文件头，load() 只作兜底。
 func load_texture(path: String) -> Texture2D:
-	# 有 .import 时资源系统最快，先走它
-	var tex := load(path) as Texture2D
-	if tex != null:
-		return tex
-	if not FileAccess.file_exists(path):
-		return null
-
-	var bytes := FileAccess.get_file_as_bytes(path)
-	if bytes.size() < 8:
-		return null
-
-	var img := Image.new()
-	var err := ERR_FILE_UNRECOGNIZED
-	if bytes[0] == 0xFF and bytes[1] == 0xD8:                       # JPEG: FF D8
-		err = img.load_jpg_from_buffer(bytes)
-	elif bytes[0] == 0x89 and bytes[1] == 0x50 and bytes[2] == 0x4E:  # PNG: 89 50 4E 47
-		err = img.load_png_from_buffer(bytes)
-	elif bytes[0] == 0x57 and bytes[1] == 0x45:                     # WEBP: WE(BP)
-		err = img.load_webp_from_buffer(bytes)
-
-	if err != OK:
-		return null
-	return ImageTexture.create_from_image(img)
+	if FileAccess.file_exists(path):
+		var bytes := FileAccess.get_file_as_bytes(path)
+		if bytes.size() >= 8:
+			var img := Image.new()
+			var err := ERR_FILE_UNRECOGNIZED
+			if bytes[0] == 0xFF and bytes[1] == 0xD8:                       # JPEG: FF D8
+				err = img.load_jpg_from_buffer(bytes)
+			elif bytes[0] == 0x89 and bytes[1] == 0x50 and bytes[2] == 0x4E:  # PNG: 89 50 4E 47
+				err = img.load_png_from_buffer(bytes)
+			elif bytes.size() >= 12 and bytes[8] == 0x57 and bytes[9] == 0x45:  # RIFF....WEBP
+				err = img.load_webp_from_buffer(bytes)
+			if err == OK:
+				return ImageTexture.create_from_image(img)
+	return load(path) as Texture2D
 
 
 # ── 查询 ──────────────────────────────────────────────

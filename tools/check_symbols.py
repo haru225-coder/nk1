@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """静态检查 GDScript：autoload 单例的跨文件引用是否都真实存在。
 GDScript 是动态语言，Autoload.missing_method() 只有跑到那一行才报错。"""
-import re, os, sys, collections
+import json, re, os, sys, collections
 
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -1045,6 +1045,70 @@ if "add_fame(3)" in seachart_src:
 else:
     print("  ✗ 海战胜仗仍直接改 fame")
     problems.append("海战名声未走 add_fame")
+
+pressed = re.search(r"func _on_facility_pressed.*?(?=\nfunc |\Z)", main_src, re.S)
+if pressed and "REMAPPED_FACILITIES" in pressed.group(0) and "city_inn" in main_src:
+    print("  ✓ 旅店按港改写成 {港}_inn（不再 _setup_inn(\"city\")）")
+else:
+    print("  ✗ 旅店未列入港卡改写")
+    problems.append("city_inn 未改写")
+if "PROLOGUE_ONLY_FACILITIES" in main_src and "current_scene_id != \"xinghua\"" in main_src:
+    print("  ✓ 游戏港行会/贡院/住宅不再送回兴化序章")
+else:
+    print("  ✗ 序章设施未与游戏港切开")
+    problems.append("序章设施未切开")
+if '"_inn"' in main_src and "bg_relay_post.jpg" in main_src:
+    print("  ✓ 旅店有设施背景")
+else:
+    print("  ✗ 旅店缺设施背景")
+    problems.append("旅店缺 FACILITY_BG")
+
+lt = re.search(r"func load_texture.*?(?=\nfunc |\Z)", gm_src, re.S)
+if lt:
+    body = lt.group(0)
+    fi = body.find("get_file_as_bytes")
+    li = body.find("load(path)")
+    if fi >= 0 and (li < 0 or fi < li):
+        print("  ✓ load_texture 先按文件头解码（避开 valid=false / 假 PNG 的 ERROR）")
+    else:
+        print("  ✗ load_texture 仍先走 ResourceLoader.load")
+        problems.append("load_texture 仍先 load()")
+else:
+    print("  ✗ 未找到 load_texture")
+    problems.append("缺 load_texture")
+
+scenes_path = os.path.join(ROOT, "data", "scenes.json")
+with open(scenes_path, encoding="utf-8") as f:
+    scenes_doc = json.load(f)
+yamen_titles = set()
+market_titles = set()
+for sc in scenes_doc.get("scenes", []):
+    if sc.get("type") != "port":
+        continue
+    for fac in sc.get("facilities", []):
+        if fac.get("id") == "city_yamen":
+            yamen_titles.add(fac.get("title", ""))
+        if fac.get("id") == "city_market":
+            market_titles.add(fac.get("title", ""))
+if yamen_titles == {"市舶司"}:
+    print("  ✓ 港卡 city_yamen 标题是市舶司（不再写衙门）")
+else:
+    print("  ✗ 港卡市舶司标题漂移：%s" % sorted(yamen_titles))
+    problems.append("港卡 yamen 标题不是市舶司")
+if market_titles == {"牙行"}:
+    print("  ✓ 港卡 city_market 标题是牙行（不再写市场）")
+else:
+    print("  ✗ 港卡牙行标题漂移：%s" % sorted(market_titles))
+    problems.append("港卡 market 标题不是牙行")
+title_ui = re.search(r"func _setup_title_and_invest.*?(?=\nfunc |\Z)", main_src, re.S)
+if title_ui and "纲首" in title_ui.group(0):
+    print("  ✗ 职衔说明文案写了纲首")
+    problems.append("职衔 UI 含纲首")
+elif title_ui:
+    print("  ✓ 职衔说明不写纲首（下一档走 titles.json 的 name）")
+else:
+    print("  ✗ 未找到 _setup_title_and_invest")
+    problems.append("缺 _setup_title_and_invest")
 
 print()
 print("=" * 68)

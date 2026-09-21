@@ -36,6 +36,13 @@ var title_button_connected: bool = false
 var _market_ship: int = 0
 
 const FACILITY_SUFFIXES := ["_market", "_yamen", "_shipyard", "_tavern", "_inn"]
+## 港卡 id 是 city_*，动态设施页是 {港}_{后缀}。漏改写时 city_inn 也会
+## ends_with("_inn")，被收成 _setup_inn("city")。
+const REMAPPED_FACILITIES := [
+	"city_market", "city_yamen", "city_shipyard", "city_tavern", "city_inn",
+]
+## 序章兴化才进原调查页。游戏港点这些卡不再把人送回兴化内景。
+const PROLOGUE_ONLY_FACILITIES := ["city_guild", "city_exam", "city_residence"]
 
 ## 无剧情场景的港口使用的通用设施
 const GENERIC_FACILITIES := [
@@ -272,6 +279,7 @@ const FACILITY_BG := {
 	"_shipyard": "bg_shipyard.jpg",
 	"_yamen": "bg_customs_room.jpg",
 	"_tavern": "bg_xinghua_wine_shed.jpg",
+	"_inn": "bg_relay_post.jpg",
 }
 
 
@@ -1483,8 +1491,16 @@ func _cn_chapter(n: int) -> String:
 
 func _on_facility_pressed(fac: Dictionary) -> void:
 	var target_scene = fac.get("id", "")
-	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern"]:
+	if target_scene in REMAPPED_FACILITIES:
 		target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")
+		load_scene(target_scene)
+		return
+	if target_scene in PROLOGUE_ONLY_FACILITIES and current_scene_id != "xinghua":
+		if current_scene_id != "" and current_scene_id != target_scene:
+			previous_scene_id = current_scene_id
+		current_scene_id = target_scene
+		_setup_missing_scene(target_scene)
+		return
 	if target_scene != "":
 		load_scene(target_scene)
 

@@ -87,10 +87,11 @@ assets/     美术资源
 - ✅ 海图标题 / 状态栏 / 遭遇弹层收进绢本字阶；遭遇弹层居中；死生态位图从 `assets/` 拆除；海洋贴图 UID 对齐导入缓存
 - ✅ 名声换爵：市舶职衔五档（籍外散商 → 市舶都保），折抽解、加赊贷；不另开港口/船种闸门
 - ✅ 港口修埠：市舶司投钱升等，产地更廉、紧缺更好卖、市场更深；同港不套利
+- ✅ 窗口点验回收：港卡改称市舶司/牙行；旅店按港进入候风页；设施图标按文件头加载
 
 ## 已知坑（点验/改图前必读）
 
-- `assets/icon_*.png` 有若干实为 JPEG（沿用旧文件名），import 时报 `Not a PNG` 无害——运行时 `GameManager.load_texture` 按文件头解码兜底；**不要重转它们**（会牵连 .import 与 uid）。港口设施大图标本身是真 PNG；窗口里灰叉多半是 `.godot` 缓存与 4.6 二进制不匹配
+- `assets/icon_*.png` 有若干实为 JPEG（沿用旧文件名），另有一批真 PNG 的 `.import` 被标成 `valid=false`。`GameManager.load_texture` **先按文件头解码**，不再先走 `ResourceLoader.load()`（那条路会打 `Failed loading resource`）。**不要重转假 PNG**（会牵连 .import 与 uid）。窗口里灰叉多半是 `.godot` 缓存与 4.6 二进制不匹配
 - 死生态位图（crate / 海鸟 / 鲸影）已从 `assets/` 删除，不要再加回 WorldMap
 - 提交不要带 `.uid` 文件；`git commit` 用显式 pathspec（并行窗口共享工作区）
 

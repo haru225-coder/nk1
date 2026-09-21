@@ -112,6 +112,16 @@ func _run() -> void:
 			var saved: Dictionary = eco.to_dict()
 			_check(saved.has("investments") and int(saved["investments"].get("quanzhou", 0)) == 1,
 				"Economy 存档含修埠", fails)
+	if gm.has_method("load_texture"):
+		var yamen_tex: Texture2D = gm.load_texture("res://assets/icon_yamen.png")
+		_check(yamen_tex != null, "icon_yamen 按文件头能加载（不依赖 valid=false 的 .import）", fails)
+		var academy_tex: Texture2D = gm.load_texture("res://assets/icon_academy.png")
+		_check(academy_tex != null, "icon_academy（JPEG 冒充 png）按文件头能加载", fails)
+	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
+	_check(main_src.find("city_inn") >= 0 and main_src.find("REMAPPED_FACILITIES") >= 0,
+		"旅店列入港卡改写", fails)
+	_check(main_src.find("PROLOGUE_ONLY_FACILITIES") >= 0,
+		"序章设施与游戏港切开", fails)
 	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
 	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)
 	_check(load("res://scripts/PirateShip.gd") != null, "PirateShip.gd 能编译", fails)

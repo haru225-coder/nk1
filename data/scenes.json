@@ -1411,15 +1411,15 @@
         },
         {
           "id": "city_market",
-          "title": "市场",
-          "subtitle": "奇货交易",
+          "title": "牙行",
+          "subtitle": "货殖交易",
           "body": "散发着香料与海货腥味的市集。"
         },
         {
           "id": "city_inn",
           "title": "旅店",
-          "subtitle": "休息住宿",
-          "body": "南来北往的客商落脚点。"
+          "subtitle": "歇息・候风",
+          "body": "南来北往的客商落脚点。风信不对时在此候风。"
         },
         {
           "id": "city_exam",
@@ -1435,9 +1435,9 @@
         },
         {
           "id": "city_yamen",
-          "title": "衙门",
-          "subtitle": "官府重地",
-          "body": "市舶司与地方官署。"
+          "title": "市舶司",
+          "subtitle": "验引・抽解",
+          "body": "验引、抽解、呈报与修埠。"
         }
       ]
     },
@@ -1467,15 +1467,15 @@
         },
         {
           "id": "city_market",
-          "title": "市场",
-          "subtitle": "奇货交易",
+          "title": "牙行",
+          "subtitle": "货殖交易",
           "body": "散发着香料与海货腥味的市集。"
         },
         {
           "id": "city_inn",
           "title": "旅店",
-          "subtitle": "休息住宿",
-          "body": "南来北往的客商落脚点。"
+          "subtitle": "歇息・候风",
+          "body": "南来北往的客商落脚点。风信不对时在此候风。"
         },
         {
           "id": "city_exam",
@@ -1491,9 +1491,9 @@
         },
         {
           "id": "city_yamen",
-          "title": "衙门",
-          "subtitle": "官府重地",
-          "body": "市舶司与地方官署。"
+          "title": "市舶司",
+          "subtitle": "验引・抽解",
+          "body": "验引、抽解、呈报与修埠。"
         }
       ]
     },
@@ -1523,15 +1523,15 @@
         },
         {
           "id": "city_market",
-          "title": "市场",
-          "subtitle": "奇货交易",
+          "title": "牙行",
+          "subtitle": "货殖交易",
           "body": "散发着香料与海货腥味的市集。"
         },
         {
           "id": "city_inn",
           "title": "旅店",
-          "subtitle": "休息住宿",
-          "body": "南来北往的客商落脚点。"
+          "subtitle": "歇息・候风",
+          "body": "南来北往的客商落脚点。风信不对时在此候风。"
         },
         {
           "id": "city_exam",
@@ -1547,9 +1547,9 @@
         },
         {
           "id": "city_yamen",
-          "title": "衙门",
-          "subtitle": "官府重地",
-          "body": "市舶司与地方官署。"
+          "title": "市舶司",
+          "subtitle": "验引・抽解",
+          "body": "验引、抽解、呈报与修埠。"
         }
       ]
     },
@@ -1579,15 +1579,15 @@
         },
         {
           "id": "city_market",
-          "title": "市场",
-          "subtitle": "奇货交易",
+          "title": "牙行",
+          "subtitle": "货殖交易",
           "body": "散发着香料与海货腥味的市集。"
         },
         {
           "id": "city_inn",
           "title": "旅店",
-          "subtitle": "休息住宿",
-          "body": "南来北往的客商落脚点。"
+          "subtitle": "歇息・候风",
+          "body": "南来北往的客商落脚点。风信不对时在此候风。"
         },
         {
           "id": "city_exam",
@@ -1603,9 +1603,9 @@
         },
         {
           "id": "city_yamen",
-          "title": "衙门",
-          "subtitle": "官府重地",
-          "body": "市舶司与地方官署。"
+          "title": "市舶司",
+          "subtitle": "验引・抽解",
+          "body": "验引、抽解、呈报与修埠。"
         }
       ]
     },
