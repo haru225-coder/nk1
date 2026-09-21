@@ -1053,10 +1053,27 @@ else:
     print("  ✗ 旅店未列入港卡改写")
     problems.append("city_inn 未改写")
 if "PROLOGUE_ONLY_FACILITIES" in main_src and 'current_scene_id == "xinghua"' in main_src:
-    print("  ✓ 兴化序章仍进调查页，游戏港行会/贡院/住宅走动态页")
+    pressed_body = pressed.group(0) if pressed else ""
+    if "visited_ports" in pressed_body and "quanzhou" in pressed_body:
+        print("  ✓ 兴化序章调查页仅在未到泉州前；回访走动态页")
+    else:
+        print("  ✗ 兴化回访仍一律进序章调查页")
+        problems.append("兴化回访未切开")
 else:
     print("  ✗ 序章设施未与游戏港切开")
     problems.append("序章设施未切开")
+gen = re.search(r"const GENERIC_FACILITIES\s*:=\s*\[(.*?)\]", main_src, re.S)
+if gen:
+    gbody = gen.group(1)
+    missing = [fid for fid in ("city_guild", "city_exam", "city_residence") if fid not in gbody]
+    if missing:
+        print("  ✗ 通用港缺卡：%s" % ", ".join(missing))
+        problems.append("GENERIC_FACILITIES 缺 %s" % ",".join(missing))
+    else:
+        print("  ✓ 通用港 GENERIC_FACILITIES 含行会/贡院/住宅")
+else:
+    print("  ✗ 未找到 GENERIC_FACILITIES")
+    problems.append("缺 GENERIC_FACILITIES")
 if "begins_with(\"city_\")" in main_src:
     print("  ✓ load_scene 跳过 city_ 前缀，避免盖掉序章 id")
 else:

@@ -125,6 +125,14 @@ func _run() -> void:
 		"旅店列入港卡改写", fails)
 	_check(main_src.find("PROLOGUE_ONLY_FACILITIES") >= 0,
 		"序章设施与游戏港切开", fails)
+	_check(main_src.find("visited_ports") >= 0 and main_src.find('current_scene_id == "xinghua"') >= 0,
+		"兴化回访看是否已到泉州", fails)
+	var gen_i := main_src.find("const GENERIC_FACILITIES")
+	var gen_j := main_src.find("]", gen_i) if gen_i >= 0 else -1
+	var gen_body := main_src.substr(gen_i, gen_j - gen_i) if gen_i >= 0 and gen_j > gen_i else ""
+	_check(gen_body.find("city_guild") >= 0 and gen_body.find("city_exam") >= 0
+		and gen_body.find("city_residence") >= 0,
+		"通用港含行会/贡院/住宅", fails)
 	_check(main_src.find('begins_with("city_")') >= 0,
 		"load_scene 跳过 city_ 前缀", fails)
 	_check(main_src.find("func _setup_guild") >= 0 and main_src.find("func _setup_exam") >= 0

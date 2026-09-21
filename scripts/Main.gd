@@ -49,13 +49,17 @@ const REMAPPED_FACILITIES := [
 ## 兴化序章仍进 scenes.json 调查页；游戏港改走动态设施。
 const PROLOGUE_ONLY_FACILITIES := ["city_guild", "city_exam", "city_residence"]
 
-## 无剧情场景的港口使用的通用设施
+## 无剧情场景的港口使用的通用设施。卡序与泉州/兴化港卡一致，
+## 避免博多只剩五卡、行会行情板变成死内容。
 const GENERIC_FACILITIES := [
-	{"id": "city_market", "title": "牙行", "subtitle": "货殖交易"},
 	{"id": "city_shipyard", "title": "船屋", "subtitle": "修船・补给・船行"},
-	{"id": "city_yamen", "title": "市舶司", "subtitle": "验引・抽解"},
+	{"id": "city_guild", "title": "行会", "subtitle": "行情・信用"},
 	{"id": "city_tavern", "title": "酒馆", "subtitle": "打听消息"},
+	{"id": "city_market", "title": "牙行", "subtitle": "货殖交易"},
 	{"id": "city_inn", "title": "旅店", "subtitle": "歇息・候风"},
+	{"id": "city_exam", "title": "贡院", "subtitle": "誊录・观礼"},
+	{"id": "city_residence", "title": "住宅", "subtitle": "账本・歇息"},
+	{"id": "city_yamen", "title": "市舶司", "subtitle": "验引・抽解"},
 ]
 
 
@@ -1639,8 +1643,12 @@ func _cn_chapter(n: int) -> String:
 
 func _on_facility_pressed(fac: Dictionary) -> void:
 	var target_scene = fac.get("id", "")
-	# 兴化序章三张卡仍进调查页；游戏港改走 {港}_guild 等动态页。
-	if current_scene_id == "xinghua" and target_scene in PROLOGUE_ONLY_FACILITIES:
+	# 兴化序章三张卡仍进调查页；已经踏足泉州之后再回兴化，改走动态页。
+	if (
+		current_scene_id == "xinghua"
+		and target_scene in PROLOGUE_ONLY_FACILITIES
+		and not ("quanzhou" in GameState.visited_ports)
+	):
 		load_scene(target_scene)
 		return
 	if target_scene in REMAPPED_FACILITIES:
