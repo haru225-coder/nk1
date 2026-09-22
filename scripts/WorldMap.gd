@@ -54,8 +54,11 @@ func _ready() -> void:
 	UiTheme.apply(hud)
 	UiTheme.style_body(label)
 	fleet_status.add_theme_font_override("font", UiTheme.font())
+	fleet_status.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	fleet_status.add_theme_color_override("font_color", UiTheme.GOLD)
 	weather_status.add_theme_font_override("font", UiTheme.font())
+	weather_status.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	weather_status.add_theme_color_override("font_color", UiTheme.TEXT)
 	for panel_name in ["LeftPanel", "RightPanel", "MinimapPanel"]:
 		var panel := hud.get_node_or_null(panel_name)
 		if panel is PanelContainer:
@@ -234,20 +237,20 @@ func _update_hud() -> void:
 	if ship.hull_hp < 50:
 		hp_color = "#" + UiTheme.hex(UiTheme.CINNABAR)
 
-	var tail := "B/Esc: 弃战逃走"
+	var tail := "B/Esc　弃战逃走"
 	var mission := ""
 	if combat_mode:
 		mission = "敌船 %d 艘　存活 %d\n" % [total_enemies, _enemies_alive()]
 	var boarding_hint := ""
 	if combat_mode and not resolved:
 		if boarding:
-			tail = "白刃判定中…"
-			boarding_hint = "[color=#%s]已钩住敌船，白刃战定生死！[/color]\n" % UiTheme.hex(UiTheme.HONEY)
+			tail = "白刃中"
+			boarding_hint = "[color=#%s]已钩住[/color]\n" % UiTheme.hex(UiTheme.HONEY)
 		else:
 			var ne := _nearest_enemy()
 			if ne.size() == 2 and ne[1] < BOARD_DISTANCE:
-				tail = "G: 接舷　B/Esc: 逃走"
-				boarding_hint = "[color=#%s]敌船就在舷边，按 G 钩住白刃！[/color]\n" % UiTheme.hex(UiTheme.HONEY)
+				tail = "G　接舷　B/Esc　逃走"
+				boarding_hint = "[color=#%s]舷边可接[/color]\n" % UiTheme.hex(UiTheme.HONEY)
 	label.text = _format_left_hud(
 		mission, boarding_hint, wind_desc, int(ship.wind_strength),
 		ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), tail,
@@ -299,7 +302,7 @@ func _process_weather_and_time(delta: float) -> void:
 		is_storm = not is_storm
 		if is_storm:
 			storm_timer = randf_range(20.0, 40.0)
-			weather_status.text = "当前天气: 狂风骤雨 (极其危险!)"
+			weather_status.text = "天气　骤雨"
 			weather_status.add_theme_color_override("font_color", UiTheme.CINNABAR)
 			rain_particles.emitting = true
 			ship.wind_strength = base_wind_strength * randf_range(2.0, 3.5)
@@ -307,7 +310,7 @@ func _process_weather_and_time(delta: float) -> void:
 			ship.wind_vector = Vector2(cos(angle), sin(angle))
 		else:
 			storm_timer = randf_range(40.0, 80.0)
-			weather_status.text = "当前天气: 晴朗"
+			weather_status.text = "天气　晴"
 			weather_status.add_theme_color_override("font_color", UiTheme.TEXT)
 			rain_particles.emitting = false
 			ship.wind_strength = base_wind_strength
@@ -345,7 +348,7 @@ func _setup_combat(pb: Dictionary) -> void:
 		var type_id: String = entry.get("type", "sea_falcon")
 		var count: int = entry.get("count", 1)
 		_spawn_enemy(type_id, count, pb)
-	weather_status.text = "海战！ 击沉敌船"
+	weather_status.text = "海战"
 	weather_status.add_theme_color_override("font_color", UiTheme.HONEY)
 
 

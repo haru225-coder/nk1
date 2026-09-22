@@ -134,13 +134,13 @@ custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
 theme_override_font_sizes/normal_font_size = 18
 bbcode_enabled = true
-text = "当前季风: 北风 (自北向南吹)
-风力强度: 80
-W/S: 升降帆 (当前档位: 0)
-A/D: 操舵
-J/K: 左/右舷齐射开炮
-船体耐久: [color=#9ebd7a]100/100[/color]
-B/Esc: 弃战逃走"
+text = "季风　北风
+风力　80
+帆　0 档
+操舵　A/D
+齐射　J/K
+船体　[color=#9ebd7a]100/100[/color]
+B/Esc　弃战逃走"
 fit_content = true
 
 [node name="RightPanel" type="PanelContainer" parent="CanvasLayer/HUD"]
@@ -164,15 +164,15 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_colors/font_color = Color(0.86, 0.7, 0.34, 1)
 theme_override_font_sizes/font_size = 18
-text = "【舰队资产】
-金钱: 0
-货舱: 空"
+text = "舰队
+金钱　0
+货舱　空"
 
 [node name="WeatherStatus" type="Label" parent="CanvasLayer/HUD/RightPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.91, 0.82, 1)
 theme_override_font_sizes/font_size = 16
-text = "当前天气: 晴朗"
+text = "天气　晴"
 
 [node name="MinimapPanel" type="PanelContainer" parent="CanvasLayer/HUD"]
 layout_mode = 2
