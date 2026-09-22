@@ -91,6 +91,7 @@ func _build_ui() -> void:
 	_set_margins(center_m, 12)
 	center.add_child(center_m)
 	var center_v := VBoxContainer.new()
+	center_v.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center_v.add_theme_constant_override("separation", 8)
 	center_m.add_child(center_v)
 
@@ -107,14 +108,14 @@ func _build_ui() -> void:
 	# 真正的图。数据用 ports.json 的经纬度，CanvasItem.draw 信号接 lambda，
 	# 不另建节点树——一张静态海图不需要缩放拖拽。
 	chart = Control.new()
-	chart.custom_minimum_size = Vector2(0, 250)
+	chart.custom_minimum_size = Vector2(0, 168)
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chart.draw.connect(func(): _draw_chart(chart))
 	center_v.add_child(chart)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 150)
+	scroll.custom_minimum_size = Vector2(0, 96)
 	center_v.add_child(scroll)
 	port_list = VBoxContainer.new()
 	port_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -274,17 +275,19 @@ func _refresh_ports() -> void:
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.custom_minimum_size = Vector2(0, 34)
 
-		var known := "" if Voyage.is_known_route(origin_port, pid) else "　[生路]"
-		btn.text = "%s　%d里　%s　约 %d 日%s" % [
+		var known := "" if Voyage.is_known_route(origin_port, pid) else "　生路"
+		btn.text = "%s　　%d 里　　%s　　约 %d 日%s" % [
 			p.get("name", pid), int(plan["distance"]), plan["wind_desc"], plan["days"], known,
 		]
-		if not plan["supply_ok"]:
-			btn.add_theme_color_override("font_color", UiTheme.CINNABAR)
-		elif plan["wind_desc"] == "顺风":
-			btn.add_theme_color_override("font_color", UiTheme.MOSS)
-
 		btn.pressed.connect(_on_port_selected.bind(pid))
 		port_list.add_child(btn)
+		UiTheme.style_choice_button(btn, pid == selected_port)
+		if not plan["supply_ok"]:
+			btn.add_theme_color_override("font_color", UiTheme.CINNABAR)
+			btn.add_theme_color_override("font_hover_color", UiTheme.CINNABAR)
+		elif plan["wind_desc"] == "顺风":
+			btn.add_theme_color_override("font_color", UiTheme.MOSS)
+			btn.add_theme_color_override("font_hover_color", UiTheme.MOSS)
 
 
 func _on_port_selected(pid: String) -> void:
@@ -320,8 +323,7 @@ func _refresh_detail() -> void:
 	for l in lines:
 		var lbl := Label.new()
 		lbl.text = l
-		lbl.add_theme_font_override("font", UiTheme.font())
-		lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+		UiTheme.style_footnote(lbl)
 		lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 		detail_box.add_child(lbl)
 
@@ -466,6 +468,10 @@ func _log(text: String) -> void:
 	log_label.text = text + "\n\n" + log_label.text
 
 
+func _ink(c: Color, text: String) -> String:
+	return "[color=#%s]%s[/color]" % [UiTheme.hex(c), text]
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not OS.is_debug_build():
 		return
@@ -490,7 +496,7 @@ func _debug_force_pirate() -> void:
 		sail_button.disabled = true
 		for c in port_list.get_children():
 			c.disabled = true
-		_log("[color=yellow]（调试）中途遭遇。[/color]")
+		_log(_ink(UiTheme.HONEY, "（调试）中途遭遇。"))
 		_refresh_status()
 	_show_event(Voyage.pirate_sighting())
 
@@ -513,7 +519,7 @@ func _on_sail_pressed() -> void:
 	for c in port_list.get_children():
 		c.disabled = true
 
-	_log("[color=aqua]启程往 %s，航程 %d 里。[/color]" % [GameManager.get_port_name(selected_port), int(total_li)])
+	_log(_ink(UiTheme.GOLD, "启程往 %s，航程 %d 里。" % [GameManager.get_port_name(selected_port), int(total_li)]))
 	_sail_next_day()
 
 
@@ -539,7 +545,7 @@ func _sail_next_day() -> void:
 
 	# 补给见底的警告
 	if Fleet.supply_days() <= 0 and Fleet.total_crew() > 0:
-		_log("[color=red]第 %d 日・水粮已尽，舱里开始有人病倒。[/color]" % days_elapsed)
+		_log(_ink(UiTheme.CINNABAR, "第 %d 日・水粮已尽，舱里开始有人病倒。" % days_elapsed))
 
 	if kind != Voyage.EventKind.NONE:
 		_show_event(event)
@@ -624,7 +630,7 @@ func _on_fight_pirates() -> void:
 func _enter_battle() -> void:
 	var wm := preload("res://scenes/WorldMap.tscn").instantiate()
 	if not wm.has_signal("battle_finished"):
-		_log("[color=red]海战脚本没挂上，未能开打。[/color]")
+		_log(_ink(UiTheme.CINNABAR, "海战脚本没挂上，未能开打。"))
 		wm.queue_free()
 		_after_combat()
 		return
@@ -648,25 +654,25 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 		var promo := ""
 		if fame_res.get("promoted", false):
 			promo = "案册改题「%s」。" % str(fame_res.get("title", {}).get("name", ""))
-		_log("[color=lime]击退海盗，夺得财货 %d 钱。战损 %d。%s[/color]" % [spoil, int(dmg), promo])
+		_log(_ink(UiTheme.MOSS, "击退海盗，夺得财货 %d 钱。战损 %d。%s" % [spoil, int(dmg), promo]))
 	elif outcome == "lose":
 		Fleet.morale = maxi(0, Fleet.morale - 12)
 		var lost := Fleet.lose_cargo_ratio(0.25)
 		var lost_str := ""
 		for gid in lost.keys():
 			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-		_log("[color=red]接舷失利，被夺去部分货物。%s船体受损 %d。[/color]" % [lost_str, int(dmg)])
+		_log(_ink(UiTheme.CINNABAR, "接舷失利，被夺去部分货物。%s船体受损 %d。" % [lost_str, int(dmg)]))
 	else:  # flee
 		if data.get("flee_ok", false):
 			remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
-			_log("[color=lime]转舵抢上风头，把那两条快船甩在了后面（绕了些路）。[/color]")
+			_log(_ink(UiTheme.MOSS, "转舵抢上风头，把那两条快船甩在了后面（绕了些路）。"))
 		else:
 			Fleet.damage_fleet(30.0 * Fleet.armor_damage_reduction())
 			var lost := Fleet.lose_cargo_ratio(0.18)
 			var lost_str := ""
 			for gid in lost.keys():
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-			_log("[color=red]没能甩脱，被追上跳帮，抢走了货。%s[/color]" % lost_str)
+			_log(_ink(UiTheme.CINNABAR, "没能甩脱，被追上跳帮，抢走了货。%s" % lost_str))
 	GameManager.pending_battle = {}
 	for c in get_children():
 		if c is CanvasItem:
@@ -681,14 +687,14 @@ func _on_flee_pirates() -> void:
 	var chance := clampf(Fleet.fleet_speed() / 220.0, 0.25, 0.9)
 	if randf() < chance:
 		remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
-		_log("[color=lime]转舵抢上风头，把那两条快船甩在了后面（绕了些路）。[/color]")
+		_log(_ink(UiTheme.MOSS, "转舵抢上风头，把那两条快船甩在了后面（绕了些路）。"))
 	else:
 		var lost := Fleet.lose_cargo_ratio(0.18)
 		var lost_str := ""
 		for gid in lost.keys():
 			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
 		Fleet.damage_fleet(30.0 * Fleet.armor_damage_reduction())
-		_log("[color=red]没能甩脱，被追上跳帮，抢走了货。%s[/color]" % lost_str)
+		_log(_ink(UiTheme.CINNABAR, "没能甩脱，被追上跳帮，抢走了货。%s" % lost_str))
 	_refresh_status()
 	_after_combat()
 
@@ -698,13 +704,13 @@ func _on_pay_pirates() -> void:
 	var toll: int = maxi(100, int(GameState.money * 0.15))
 	if GameState.spend_money(toll):
 		Fleet.morale = maxi(0, Fleet.morale - 4)
-		_log("[color=yellow]递过去 %d 钱买路。对方点了点数目，掉头走了。[/color]" % toll)
+		_log(_ink(UiTheme.HONEY, "递过去 %d 钱买路。对方点了点数目，掉头走了。" % toll))
 	else:
 		var lost := Fleet.lose_cargo_ratio(0.3)
 		var lost_str := ""
 		for gid in lost.keys():
 			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-		_log("[color=red]拿不出买路钱，他们自己动手搬空了半个货舱。%s[/color]" % lost_str)
+		_log(_ink(UiTheme.CINNABAR, "拿不出买路钱，他们自己动手搬空了半个货舱。%s" % lost_str))
 	_refresh_status()
 	_after_combat()
 
@@ -729,7 +735,7 @@ func _on_investigate_discovery() -> void:
 	var did: String = pending_event.get("discovery_id", "")
 	var d := GameManager.get_discovery_by_id(did)
 	if GameState.record_discovery(did):
-		_log("[color=lime]近岸细看，果然是%s。记入册子——回港上报市舶司，当有赏格。[/color]" % d.get("name", "旧泊地"))
+		_log(_ink(UiTheme.MOSS, "近岸细看，果然是%s。记入册子——回港上报市舶司，当有赏格。" % d.get("name", "旧泊地")))
 	else:
 		_log("绕过去看了一圈，与册上所记并无出入。")
 	_refresh_status()
@@ -742,7 +748,7 @@ func _arrive() -> void:
 	sailing = false
 	Fleet.at_sea = false
 	GameState.last_port = selected_port
-	_log("[color=aqua]历 %d 日，抵 %s。[/color]" % [days_elapsed, GameManager.get_port_name(selected_port)])
+	_log(_ink(UiTheme.GOLD, "历 %d 日，抵 %s。" % [days_elapsed, GameManager.get_port_name(selected_port)]))
 
 	event_title.text = "到　港"
 	event_text.text = "历 %d 日海路，%s 的岸线终于在雾里显出来。\n\n%s" % [

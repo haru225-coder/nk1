@@ -22,13 +22,12 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if not ship: return
 
-	# Draw background
-	draw_circle(Vector2(radar_radius, radar_radius), radar_radius, Color(0, 0.1, 0.2, 0.8))
-	draw_arc(Vector2(radar_radius, radar_radius), radar_radius, 0, TAU, 32, Color(0.2, 0.5, 0.8, 1.0), 2.0)
+	# 熟漆圆盘、泥金圈。本船朱砂，港口泥金，敌船更亮的朱砂。
+	draw_circle(Vector2(radar_radius, radar_radius), radar_radius, Color(0.10, 0.07, 0.04, 0.90))
+	draw_arc(Vector2(radar_radius, radar_radius), radar_radius - 1.0, 0, TAU, 48, UiTheme.GOLD, 1.5)
 
-	# Draw ship (center)
 	var center = Vector2(radar_radius, radar_radius)
-	draw_circle(center, 3.0, Color.WHITE)
+	draw_circle(center, 3.5, UiTheme.CINNABAR)
 
 	# Draw ports (Green) and pirates (Red)
 	if not root: return
@@ -37,12 +36,12 @@ func _draw() -> void:
 	if root.has_node("Ports"):
 		for port in root.get_node("Ports").get_children():
 			if not port.visible: continue  # 战斗模式隐藏港口，雷达不画
-			_draw_blip(port.global_position, Color.GREEN)
+			_draw_blip(port.global_position, UiTheme.GOLD)
 
 	# Draw Pirates
 	for child in root.get_children():
 		if child.name.begins_with("PirateShip"):
-			_draw_blip(child.global_position, Color.RED)
+			_draw_blip(child.global_position, UiTheme.SEAL_HI)
 
 func _draw_blip(world_pos: Vector2, color: Color) -> void:
 	var rel_pos = world_pos - ship.global_position

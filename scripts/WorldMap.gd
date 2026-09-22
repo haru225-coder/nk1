@@ -230,8 +230,9 @@ func _update_hud() -> void:
 	elif ship.wind_vector.x > 0: wind_desc = "西风 (自西向东吹)"
 	elif ship.wind_vector.x < 0: wind_desc = "东风 (自东向西吹)"
 
-	var hp_color = "green"
-	if ship.hull_hp < 50: hp_color = "red"
+	var hp_color := "#" + UiTheme.hex(UiTheme.MOSS)
+	if ship.hull_hp < 50:
+		hp_color = "#" + UiTheme.hex(UiTheme.CINNABAR)
 
 	var tail := "B/Esc: 弃战逃走"
 	var mission := ""
@@ -241,12 +242,12 @@ func _update_hud() -> void:
 	if combat_mode and not resolved:
 		if boarding:
 			tail = "白刃判定中…"
-			boarding_hint = "[color=yellow]已钩住敌船，白刃战定生死！[/color]\n"
+			boarding_hint = "[color=#%s]已钩住敌船，白刃战定生死！[/color]\n" % UiTheme.hex(UiTheme.HONEY)
 		else:
 			var ne := _nearest_enemy()
 			if ne.size() == 2 and ne[1] < BOARD_DISTANCE:
 				tail = "G: 接舷　B/Esc: 逃走"
-				boarding_hint = "[color=yellow]敌船就在舷边，按 G 钩住白刃！[/color]\n"
+				boarding_hint = "[color=#%s]敌船就在舷边，按 G 钩住白刃！[/color]\n" % UiTheme.hex(UiTheme.HONEY)
 	label.text = _format_left_hud(
 		mission, boarding_hint, wind_desc, int(ship.wind_strength),
 		ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), tail,
@@ -259,7 +260,7 @@ func _update_hud() -> void:
 		for k in Fleet.cargo.keys():
 			cargo_str += GameManager.get_good_name(k) + " x" + str(Fleet.cargo[k].get("qty", 0)) + " "
 
-	fleet_status.text = "【舰队资产】\n金钱: %d\n货舱: %s" % [GameState.money, cargo_str]
+	fleet_status.text = "舰队\n金钱　%d\n货舱　%s" % [GameState.money, cargo_str]
 
 
 ## 左栏文案单独拼，避免一条长 % 串数错占位（Godot 4.6 少参数会整栏变空）
@@ -299,7 +300,7 @@ func _process_weather_and_time(delta: float) -> void:
 		if is_storm:
 			storm_timer = randf_range(20.0, 40.0)
 			weather_status.text = "当前天气: 狂风骤雨 (极其危险!)"
-			weather_status.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+			weather_status.add_theme_color_override("font_color", UiTheme.CINNABAR)
 			rain_particles.emitting = true
 			ship.wind_strength = base_wind_strength * randf_range(2.0, 3.5)
 			var angle = randf() * TAU
@@ -307,7 +308,7 @@ func _process_weather_and_time(delta: float) -> void:
 		else:
 			storm_timer = randf_range(40.0, 80.0)
 			weather_status.text = "当前天气: 晴朗"
-			weather_status.add_theme_color_override("font_color", Color(0.5, 0.8, 1))
+			weather_status.add_theme_color_override("font_color", UiTheme.TEXT)
 			rain_particles.emitting = false
 			ship.wind_strength = base_wind_strength
 			ship.wind_vector = Vector2(0, 1)
@@ -345,7 +346,7 @@ func _setup_combat(pb: Dictionary) -> void:
 		var count: int = entry.get("count", 1)
 		_spawn_enemy(type_id, count, pb)
 	weather_status.text = "海战！ 击沉敌船"
-	weather_status.add_theme_color_override("font_color", Color(1, 0.6, 0.2))
+	weather_status.add_theme_color_override("font_color", UiTheme.HONEY)
 
 
 ## 生成一支敌舰队，绕玩家船散布；hull_hp 按战力比缩放

@@ -284,9 +284,9 @@ static func _choice_box(hover: bool) -> StyleBoxFlat:
 	return st
 
 
-static func style_choice_button(btn: Button) -> void:
+static func style_choice_button(btn: Button, selected := false) -> void:
 	_paint_font(btn)
-	btn.add_theme_stylebox_override("normal", _choice_box(false))
+	btn.add_theme_stylebox_override("normal", _choice_box(selected))
 	btn.add_theme_stylebox_override("hover", _choice_box(true))
 	btn.add_theme_stylebox_override("pressed", _choice_box(true))
 	btn.add_theme_stylebox_override("disabled", _choice_box(false))

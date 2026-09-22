@@ -605,6 +605,7 @@ func _setup_market(port_id: String) -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var rows := VBoxContainer.new()
 	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rows.add_theme_constant_override("separation", 6)
 	scroll.add_child(rows)
 	choices_container.add_child(scroll)
 
@@ -617,8 +618,12 @@ func _setup_market(port_id: String) -> void:
 
 
 func _make_market_row(port_id: String, good_id: String) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", UiTheme.card())
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 4)
+	card.add_child(body)
 
 	var g := GameManager.get_good_by_id(good_id)
 	var buy_p := Economy.buy_price(port_id, good_id)
@@ -626,50 +631,61 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	var held := Fleet.cargo_qty(good_id, _market_ship)
 	var role := Economy.get_role(port_id, good_id)
 
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	body.add_child(head)
+
 	var name_lbl := Label.new()
 	name_lbl.text = g.get("name", good_id)
-	name_lbl.custom_minimum_size = Vector2(88, 0)
+	name_lbl.custom_minimum_size = Vector2(96, 0)
 	name_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	name_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 	if g.get("contraband", false):
 		name_lbl.add_theme_color_override("font_color", UiTheme.CINNABAR)
 		name_lbl.tooltip_text = "违禁：宋法不许出海，验引护不住"
-	row.add_child(name_lbl)
+	head.add_child(name_lbl)
 
 	var hint_lbl := Label.new()
 	hint_lbl.text = Economy.price_hint(port_id, good_id)
-	hint_lbl.custom_minimum_size = Vector2(120, 0)
+	hint_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hint_lbl.clip_text = true
 	UiTheme.style_footnote(hint_lbl)
 	if role == "origin":
 		hint_lbl.add_theme_color_override("font_color", UiTheme.MOSS)
 	elif role == "consumer":
 		hint_lbl.add_theme_color_override("font_color", UiTheme.HONEY)
-	row.add_child(hint_lbl)
+	head.add_child(hint_lbl)
 
 	var price_lbl := Label.new()
-	price_lbl.text = "买%d 卖%d" % [buy_p, sell_p]
-	price_lbl.custom_minimum_size = Vector2(110, 0)
+	price_lbl.text = "买 %d　卖 %d" % [buy_p, sell_p]
+	price_lbl.custom_minimum_size = Vector2(120, 0)
+	price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	UiTheme.style_footnote(price_lbl)
 	price_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
-	row.add_child(price_lbl)
+	head.add_child(price_lbl)
 
 	var held_lbl := Label.new()
-	held_lbl.text = "舱%d" % held
-	held_lbl.custom_minimum_size = Vector2(52, 0)
+	held_lbl.text = "舱 %d" % held
+	held_lbl.custom_minimum_size = Vector2(56, 0)
+	held_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	UiTheme.style_footnote(held_lbl)
-	row.add_child(held_lbl)
+	head.add_child(held_lbl)
+
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 6)
+	body.add_child(actions)
 
 	for n in [1, 10]:
 		var b := Button.new()
 		b.text = "买%d" % n
 		b.pressed.connect(_on_buy.bind(port_id, good_id, n, _market_ship))
-		row.add_child(b)
+		actions.add_child(b)
 		UiTheme.style_chip(b)
 
 	var bmax := Button.new()
 	bmax.text = "买满"
 	bmax.pressed.connect(_on_buy_max.bind(port_id, good_id, _market_ship))
-	row.add_child(bmax)
+	actions.add_child(bmax)
 	UiTheme.style_chip(bmax, true)
 
 	for n in [1, 10]:
@@ -677,17 +693,17 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 		s.text = "卖%d" % n
 		s.disabled = held < n
 		s.pressed.connect(_on_sell.bind(port_id, good_id, n, _market_ship))
-		row.add_child(s)
+		actions.add_child(s)
 		UiTheme.style_chip(s)
 
 	var sall := Button.new()
 	sall.text = "全卖"
 	sall.disabled = held <= 0
 	sall.pressed.connect(_on_sell.bind(port_id, good_id, held, _market_ship))
-	row.add_child(sall)
+	actions.add_child(sall)
 	UiTheme.style_chip(sall)
 
-	return row
+	return card
 
 
 func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> void:
@@ -1198,7 +1214,7 @@ func _setup_hiring(port_id: String) -> void:
 				c.get("name", ""), rname, _stars(int(c.get("level", 1))), c.get("wage", 0),
 			]
 			lbl.custom_minimum_size = Vector2(400, 0)
-			lbl.add_theme_color_override("font_color", Color(0.65, 0.9, 0.7))
+			lbl.add_theme_color_override("font_color", UiTheme.MOSS)
 			row.add_child(lbl)
 
 			var d := Button.new()
@@ -1211,6 +1227,7 @@ func _setup_hiring(port_id: String) -> void:
 				load_scene(current_scene_id)
 			)
 			row.add_child(d)
+			UiTheme.style_chip(d)
 			choices_container.add_child(row)
 
 	var cands := Crew.candidates_at(port_id)
@@ -1218,7 +1235,7 @@ func _setup_hiring(port_id: String) -> void:
 		var none := Label.new()
 		none.text = "此处无人可用。"
 		none.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
-		none.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+		none.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
 		choices_container.add_child(none)
 		return
 
@@ -1258,7 +1275,7 @@ func _setup_inn(port_id: String) -> void:
 	forecast.text = _monsoon_forecast()
 	forecast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	forecast.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
-	forecast.add_theme_color_override("font_color", Color(0.8, 0.85, 0.7))
+	forecast.add_theme_color_override("font_color", UiTheme.HONEY)
 	choices_container.add_child(forecast)
 
 	for n in [1, 10]:
