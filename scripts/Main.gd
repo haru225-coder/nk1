@@ -65,6 +65,9 @@ const GENERIC_FACILITIES := [
 
 
 func _ready() -> void:
+	UiTheme.apply(self)
+	_mount_veil()
+	_inset_stage()
 	message_label.text = ""
 	status_label.bbcode_enabled = true
 	message_label.bbcode_enabled = true
@@ -72,26 +75,158 @@ func _ready() -> void:
 	body_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body_text.fit_content = true
 	body_text.scroll_active = false
+	body_text.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	# 防御：异常路径可能残留未清理的海战上下文，回港时清空
 	GameManager.pending_battle = {}
 	GameManager.monthly_notice.connect(_on_monthly_notice)
-	# 「绢本墨笔」主题：面板/按钮统一走 UiTheme，后加的按钮由 hook 自动带样式
+	# 「绢本墨笔」：面板不透底图，后加的按钮由 hook 自动带样式
 	left_panel.add_theme_stylebox_override("panel", UiTheme.panel())
 	investigation_mode.add_theme_stylebox_override("panel", UiTheme.panel())
 	UiTheme.style_button(start_button, true)
+	start_button.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
 	UiTheme.hook_buttons(choices_container, true)
 	choices_container.add_theme_constant_override("separation", 6)
 	UiTheme.hook_buttons(right_facilities)
 	UiTheme.hook_buttons(npc_actions)
 	UiTheme.style_heading(scene_title)
 	UiTheme.style_body(body_text)
+	UiTheme.style_body(status_label)
+	UiTheme.style_body(message_label)
+	message_label.add_theme_stylebox_override("normal", UiTheme.log_well())
 	UiTheme.style_section_label(choices_label)
 	UiTheme.style_section_label(interactive_label)
 	UiTheme.style_heading(port_title, true)
 	UiTheme.style_heading(npc_name_lbl)
 	UiTheme.style_body(npc_dialog_lbl)
+	_dress_ledger()
+	_dress_title()
+	_mount_port_plaque()
+	_frame_portrait()
 	update_status_panel()
 	call_deferred("start_game")
+
+
+func _mount_veil() -> void:
+	var veil := ColorRect.new()
+	veil.name = "Veil"
+	veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+	veil.color = UiTheme.VEIL
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(veil)
+	move_child(veil, background.get_index() + 1)
+	background.modulate = Color(0.92, 0.86, 0.76)
+
+
+func _inset_stage() -> void:
+	var box := $HBoxContainer
+	box.offset_left = 16
+	box.offset_top = 16
+	box.offset_right = -16
+	box.offset_bottom = -16
+	box.add_theme_constant_override("separation", 14)
+
+
+func _dress_ledger() -> void:
+	var title := $HBoxContainer/LeftPanel/MarginContainer/VBoxContainer/TitleLabel
+	title.text = "船籍簿"
+	UiTheme.style_heading(title)
+	title.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var rule := $HBoxContainer/LeftPanel/MarginContainer/VBoxContainer/HSeparator
+	if rule is Separator:
+		var line := StyleBoxLine.new()
+		line.color = Color(UiTheme.GOLD, 0.45)
+		line.thickness = 1
+		rule.add_theme_stylebox_override("separator", line)
+
+
+func _dress_title() -> void:
+	main_title.add_theme_font_override("font", UiTheme.font())
+	main_title.add_theme_font_size_override("font_size", 52)
+	main_title.add_theme_color_override("font_color", UiTheme.GOLD)
+	sub_title.add_theme_font_override("font", UiTheme.font())
+	sub_title.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	sub_title.add_theme_color_override("font_color", UiTheme.TEXT)
+	sub_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if title_mode.get_node_or_null("TitlePlaque") != null:
+		return
+	var plaque := Panel.new()
+	plaque.name = "TitlePlaque"
+	plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plaque.set_anchors_preset(Control.PRESET_CENTER)
+	plaque.offset_left = -360
+	plaque.offset_top = -210
+	plaque.offset_right = 360
+	plaque.offset_bottom = 190
+	plaque.add_theme_stylebox_override("panel", UiTheme.plaque())
+	title_mode.add_child(plaque)
+	title_mode.move_child(plaque, 0)
+
+
+func _mount_port_plaque() -> void:
+	var holder := CenterContainer.new()
+	holder.name = "PortPlaqueHolder"
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	holder.offset_left = -260
+	holder.offset_top = 18
+	holder.offset_right = 260
+	holder.offset_bottom = 78
+	port_mode.add_child(holder)
+	port_mode.move_child(holder, 0)
+	var plaque := PanelContainer.new()
+	plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plaque.add_theme_stylebox_override("panel", UiTheme.plaque())
+	holder.add_child(plaque)
+	port_title.get_parent().remove_child(port_title)
+	plaque.add_child(port_title)
+	port_title.layout_mode = 2
+	port_title.offset_left = 0
+	port_title.offset_top = 0
+	port_title.offset_right = 0
+	port_title.offset_bottom = 0
+	port_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	port_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+
+func _frame_portrait() -> void:
+	var parent := npc_portrait.get_parent()
+	var frame := PanelContainer.new()
+	frame.name = "PortraitFrame"
+	frame.custom_minimum_size = Vector2(280, 0)
+	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	frame.add_theme_stylebox_override("panel", UiTheme.icon_frame())
+	var idx := npc_portrait.get_index()
+	parent.remove_child(npc_portrait)
+	parent.add_child(frame)
+	parent.move_child(frame, idx)
+	frame.add_child(npc_portrait)
+	npc_portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	npc_portrait.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+
+## 调查页平时铺满中栏；卷首 cg_ 收成居中的册页，左边船籍簿让开。
+func _frame_sheet(floating: bool) -> void:
+	left_panel.visible = not floating
+	if floating:
+		investigation_mode.anchor_left = 0.5
+		investigation_mode.anchor_top = 0.5
+		investigation_mode.anchor_right = 0.5
+		investigation_mode.anchor_bottom = 0.5
+		investigation_mode.offset_left = -430
+		investigation_mode.offset_top = -268
+		investigation_mode.offset_right = 430
+		investigation_mode.offset_bottom = 268
+	else:
+		investigation_mode.anchor_left = 0.0
+		investigation_mode.anchor_top = 0.0
+		investigation_mode.anchor_right = 1.0
+		investigation_mode.anchor_bottom = 1.0
+		investigation_mode.offset_left = 0
+		investigation_mode.offset_top = 0
+		investigation_mode.offset_right = 0
+		investigation_mode.offset_bottom = 0
+	scene_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if floating else HORIZONTAL_ALIGNMENT_LEFT
 
 
 func _on_monthly_notice(text: String) -> void:
@@ -128,49 +263,56 @@ func update_status_panel() -> void:
 	var cap_used := Fleet.used_capacity()
 	var cap_total := Fleet.total_capacity()
 	var supply_d := Fleet.supply_days()
-	var supply_color := "white"
+	var supply_color := UiTheme.MOSS
 	if supply_d <= 3:
-		supply_color = "red"
+		supply_color = UiTheme.CINNABAR
 	elif supply_d <= 7:
-		supply_color = "yellow"
+		supply_color = UiTheme.HONEY
 
 	var permit_str := "【有】合法" if GameState.has_customs_permit else "【无】黑市"
 	var contraband := GameState.contraband_units()
+	var gold := UiTheme.hex(UiTheme.GOLD)
+	var dim := UiTheme.hex(UiTheme.TEXT_DIM)
 
-	var t := "[b]%s[/b]\n%s\n\n" % [Calendar.get_date_string(), Calendar.get_monsoon_desc()]
-	t += "金钱：%d\n" % GameState.money
+	var t := "[color=#%s][b]%s[/b][/color]\n[color=#%s]%s[/color]\n" % [
+		gold, Calendar.get_date_string(), dim, Calendar.get_monsoon_desc(),
+	]
+	t += "金钱　[b]%d[/b]\n" % GameState.money
 	if GameState.debt > 0:
-		t += "[color=orange]欠债：%d[/color]\n" % GameState.debt
-	t += "名声：%d　%s\n" % [GameState.fame, GameState.title_name()]
+		t += "[color=#%s]欠债　%d[/color]\n" % [UiTheme.hex(UiTheme.HONEY), GameState.debt]
+	t += "名声　%d　%s\n" % [GameState.fame, GameState.title_name()]
 	if GameState.network != 0 or GameState.merchant_credit != 0:
-		t += "人脉：%d　海商信用：%d\n" % [GameState.network, GameState.merchant_credit]
-	t += "\n"
-	t += "[u]舰队[/u]\n船数：%d　水手：%d\n舱位：%d / %d 料\n耐久：%d / %d\n士气：%d\n" % [
+		t += "人脉　%d　海商信用　%d\n" % [GameState.network, GameState.merchant_credit]
+	t += "[color=#%s][b]舰队[/b][/color]\n船数　%d　水手　%d\n舱位　%d / %d 料\n耐久　%d / %d\n士气　%d\n" % [
+		gold,
 		Fleet.ships.size(), Fleet.total_crew(),
 		int(cap_used), int(cap_total),
 		int(Fleet.total_durability()), int(Fleet.total_max_durability()),
 		Fleet.morale,
 	]
-	t += "水：%d　粮：%d　[color=%s]（足 %d 日）[/color]\n" % [Fleet.water, Fleet.food, supply_color, supply_d]
+	t += "水　%d　粮　%d　[color=#%s]足 %d 日[/color]\n" % [
+		Fleet.water, Fleet.food, UiTheme.hex(supply_color), supply_d,
+	]
 
 	if not Crew.hired.is_empty():
-		t += "\n[u]职事[/u]\n"
+		t += "[color=#%s][b]职事[/b][/color]\n" % gold
 		for c in Crew.roster():
 			t += "%s %s%s\n" % [
 				Crew.role_def(c.get("role", "")).get("name", ""),
 				c.get("name", ""), _stars(int(c.get("level", 1))),
 			]
 		var wage := Crew.monthly_wage()
-		var wage_color := "orange" if Crew.unpaid_months > 0 else "white"
-		t += "[color=%s]月俸共 %d" % [wage_color, wage]
+		var wage_color := UiTheme.HONEY if Crew.unpaid_months > 0 else UiTheme.TEXT
+		t += "[color=#%s]月俸共 %d" % [UiTheme.hex(wage_color), wage]
 		if Crew.unpaid_months > 0:
 			t += "　已欠 %d 月" % Crew.unpaid_months
 		t += "[/color]\n"
-	t += "\n"
-	t += "[u]市舶[/u]\n蒲氏关注：%d\n货引：%s\n" % [GameState.pu_attention, permit_str]
+	t += "[color=#%s][b]市舶[/b][/color]\n蒲氏关注　%d\n货引　%s\n" % [
+		gold, GameState.pu_attention, permit_str,
+	]
 	if contraband > 0:
-		t += "[color=orange]舱底违禁：%d 件[/color]\n" % contraband
-	t += "\n[u]船舱[/u]\n%s" % cargo_str
+		t += "[color=#%s]舱底违禁　%d 件[/color]\n" % [UiTheme.hex(UiTheme.CINNABAR), contraband]
+	t += "[color=#%s][b]船舱[/b][/color]\n%s" % [gold, cargo_str]
 
 	# 多船时追加每船明细
 	if Fleet.ships.size() > 1:
@@ -184,11 +326,11 @@ func update_status_panel() -> void:
 				for gid in sc.keys():
 					per_ship += "%s ×%d　" % [GameManager.get_good_name(gid), sc[gid].get("qty", 0)]
 			var crew_str := "水手 %d/%d" % [Fleet.ship_crew(i), Fleet.ship_crew_max(i)]
-			var crew_color := "white"
+			var crew_color := UiTheme.hex(UiTheme.TEXT)
 			if Fleet.ship_crew(i) < Fleet.ship_crew_min(i):
-				crew_color = "red"
+				crew_color = UiTheme.hex(UiTheme.CINNABAR)
 				crew_str += "（缺 %d 人）" % (Fleet.ship_crew_min(i) - Fleet.ship_crew(i))
-			t += "[i]└ %s（%s）%d/%d 料　帆Lv%d/甲Lv%d　[color=%s]%s[/color]　%s[/i]\n" % [
+			t += "[i]└ %s（%s）%d/%d 料　帆Lv%d/甲Lv%d　[color=#%s]%s[/color]　%s[/i]\n" % [
 				s.get("name", ""), Fleet.ship_def(s.get("type", "")).get("name", ""),
 				int(Fleet.ship_cargo_bulk(i)), int(Fleet.ship_capacity(i)),
 				Fleet.sail_level(i), Fleet.armor_level(i),
@@ -197,22 +339,25 @@ func update_status_panel() -> void:
 
 	# 章节目标：不写出来玩家不会知道怎样才能开出下一片海
 	var prog := GameState.chapter_progress()
-	t += "\n[u]第%s章・%s[/u]\n" % [
+	t += "[color=#%s][b]第%s章・%s[/b][/color]\n" % [
+		UiTheme.hex(UiTheme.GOLD),
 		_cn_chapter(GameState.chapter), GameState.chapter_def().get("name", ""),
 	]
 	if prog.get("ended", false):
-		t += "[color=gold]了结：%s[/color]\n" % prog.get("ending_title", GameState.ending_title())
+		t += "[color=#%s]了结　%s[/color]\n" % [
+			UiTheme.hex(UiTheme.GOLD), prog.get("ending_title", GameState.ending_title()),
+		]
 	elif prog.get("final", false):
-		t += "[color=gray]终章・可了结[/color]\n"
+		t += "[color=#%s]终章・可了结[/color]\n" % UiTheme.hex(UiTheme.TEXT_DIM)
 		for it in prog.get("items", []):
-			var emark: String = "[color=lime]✓[/color]" if it["done"] else "・"
+			var emark: String = "[color=#%s]✓[/color]" % UiTheme.hex(UiTheme.MOSS) if it["done"] else "・"
 			if int(it["need"]) > 1:
 				t += "%s %s %d/%d\n" % [emark, it["label"], it["current"], it["need"]]
 			else:
 				t += "%s %s\n" % [emark, it["label"]]
 	else:
 		for it in prog.get("items", []):
-			var mark: String = "[color=lime]✓[/color]" if it["done"] else "・"
+			var mark: String = "[color=#%s]✓[/color]" % UiTheme.hex(UiTheme.MOSS) if it["done"] else "・"
 			if int(it["need"]) > 1:
 				t += "%s %s %d/%d\n" % [mark, it["label"], it["current"], it["need"]]
 			else:
@@ -263,7 +408,10 @@ func load_scene(scene_id: String) -> void:
 
 	var type = scene_data.get("type", "scene")
 	var loc = scene_data.get("location", "")
-	_apply_background(type, loc)
+	if str(scene_id).begins_with("cg_"):
+		_set_background_file("bg_world_map.jpg")
+	else:
+		_apply_background(type, loc)
 
 	if type == "title":
 		_setup_title_mode(scene_data)
@@ -319,6 +467,7 @@ func _set_background_file(file_name: String) -> void:
 
 
 func _enter_panel_mode() -> void:
+	_frame_sheet(false)
 	left_panel.visible = true
 	title_mode.visible = false
 	port_mode.visible = false
@@ -443,6 +592,7 @@ func _setup_market(port_id: String) -> void:
 			])
 			opt.set_item_metadata(i, i)
 		opt.selected = _market_ship
+		UiTheme.style_button(opt)
 		opt.item_selected.connect(func(idx: int):
 			_market_ship = int(opt.get_item_metadata(idx))
 			load_scene(current_scene_id))
@@ -479,8 +629,10 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	var name_lbl := Label.new()
 	name_lbl.text = g.get("name", good_id)
 	name_lbl.custom_minimum_size = Vector2(88, 0)
+	name_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	name_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 	if g.get("contraband", false):
-		name_lbl.add_theme_color_override("font_color", Color(1.0, 0.55, 0.3))
+		name_lbl.add_theme_color_override("font_color", UiTheme.CINNABAR)
 		name_lbl.tooltip_text = "违禁：宋法不许出海，验引护不住"
 	row.add_child(name_lbl)
 
@@ -489,14 +641,16 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	hint_lbl.custom_minimum_size = Vector2(120, 0)
 	UiTheme.style_footnote(hint_lbl)
 	if role == "origin":
-		hint_lbl.add_theme_color_override("font_color", Color(0.5, 0.9, 0.6))
+		hint_lbl.add_theme_color_override("font_color", UiTheme.MOSS)
 	elif role == "consumer":
-		hint_lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
+		hint_lbl.add_theme_color_override("font_color", UiTheme.HONEY)
 	row.add_child(hint_lbl)
 
 	var price_lbl := Label.new()
 	price_lbl.text = "买%d 卖%d" % [buy_p, sell_p]
 	price_lbl.custom_minimum_size = Vector2(110, 0)
+	UiTheme.style_footnote(price_lbl)
+	price_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 	row.add_child(price_lbl)
 
 	var held_lbl := Label.new()
@@ -510,11 +664,13 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 		b.text = "买%d" % n
 		b.pressed.connect(_on_buy.bind(port_id, good_id, n, _market_ship))
 		row.add_child(b)
+		UiTheme.style_chip(b)
 
 	var bmax := Button.new()
 	bmax.text = "买满"
 	bmax.pressed.connect(_on_buy_max.bind(port_id, good_id, _market_ship))
 	row.add_child(bmax)
+	UiTheme.style_chip(bmax, true)
 
 	for n in [1, 10]:
 		var s := Button.new()
@@ -522,12 +678,14 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 		s.disabled = held < n
 		s.pressed.connect(_on_sell.bind(port_id, good_id, n, _market_ship))
 		row.add_child(s)
+		UiTheme.style_chip(s)
 
 	var sall := Button.new()
 	sall.text = "全卖"
 	sall.disabled = held <= 0
 	sall.pressed.connect(_on_sell.bind(port_id, good_id, held, _market_ship))
 	row.add_child(sall)
+	UiTheme.style_chip(sall)
 
 	return row
 
@@ -609,7 +767,7 @@ func _setup_yamen(port_id: String) -> void:
 	if GameState.has_customs_permit:
 		var info := Label.new()
 		info.text = "货引已在手，本次出港可合法验放。"
-		info.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
+		info.add_theme_color_override("font_color", UiTheme.MOSS)
 		choices_container.add_child(info)
 	else:
 		var btn := Button.new()
@@ -624,7 +782,7 @@ func _setup_yamen(port_id: String) -> void:
 	if contraband > 0:
 		var warn := Label.new()
 		warn.text = "舱底尚有违禁 %d 件——报不进明账，验引也遮不住。" % contraband
-		warn.add_theme_color_override("font_color", Color(1.0, 0.6, 0.3))
+		warn.add_theme_color_override("font_color", UiTheme.CINNABAR)
 		warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		choices_container.add_child(warn)
 
@@ -648,6 +806,7 @@ func _setup_reporting() -> void:
 
 	var sep := Label.new()
 	sep.text = "呈报所见"
+	UiTheme.style_section_label(sep)
 	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(sep)
 
@@ -678,6 +837,7 @@ func _setup_reporting() -> void:
 func _setup_title_and_invest(port_id: String) -> void:
 	var sep := Label.new()
 	sep.text = "市舶职衔"
+	UiTheme.style_section_label(sep)
 	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(sep)
 
@@ -703,6 +863,7 @@ func _setup_title_and_invest(port_id: String) -> void:
 
 	var inv_sep := Label.new()
 	inv_sep.text = "修埠"
+	UiTheme.style_section_label(inv_sep)
 	inv_sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(inv_sep)
 
@@ -755,7 +916,7 @@ func _setup_shipyard(port_id: String) -> void:
 	supply_lbl.text = "补给　水 %d　粮 %d　每日耗 %d" % [
 		water_price, grain_price, Fleet.daily_supply_use(),
 	]
-	supply_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	UiTheme.style_section_label(supply_lbl)
 	choices_container.add_child(supply_lbl)
 
 	for n in [30, 100]:
@@ -815,7 +976,7 @@ func _setup_shipyard(port_id: String) -> void:
 		int(GameState.DEBT_MONTHLY_RATE * 100),
 		GameState.DEBT_CEILING + GameState.title_loan_bonus(),
 	]
-	loan_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	UiTheme.style_section_label(loan_lbl)
 	choices_container.add_child(loan_lbl)
 
 	if GameState.debt > 0:
@@ -823,7 +984,7 @@ func _setup_shipyard(port_id: String) -> void:
 		debt_lbl.text = "现欠蕃商 %d 钱，每月生息 %d。" % [
 			GameState.debt, int(ceil(GameState.debt * GameState.DEBT_MONTHLY_RATE)),
 		]
-		debt_lbl.add_theme_color_override("font_color", Color(1.0, 0.7, 0.4))
+		debt_lbl.add_theme_color_override("font_color", UiTheme.HONEY)
 		choices_container.add_child(debt_lbl)
 
 	var limit := GameState.borrow_limit()
@@ -855,7 +1016,7 @@ func _setup_shipyard(port_id: String) -> void:
 	# 改装：帆 Lv 决定航速，甲 Lv 减免风暴/海盗船体伤。逐船两按钮（.bind 传 index 防闭包陷阱）
 	var up_lbl := Label.new()
 	up_lbl.text = "船体改装"
-	up_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	UiTheme.style_section_label(up_lbl)
 	choices_container.add_child(up_lbl)
 
 	for i in range(Fleet.ships.size()):
@@ -895,7 +1056,7 @@ func _setup_shipyard(port_id: String) -> void:
 	# 买船
 	var ship_lbl := Label.new()
 	ship_lbl.text = "船行"
-	ship_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	UiTheme.style_section_label(ship_lbl)
 	choices_container.add_child(ship_lbl)
 
 	for s in GameManager.ships_data.get("ships", []):
@@ -1024,7 +1185,7 @@ func _on_story_hook(hook: Dictionary, port_id: String) -> void:
 func _setup_hiring(port_id: String) -> void:
 	var sep := Label.new()
 	sep.text = "募人　月俸按月，欠饷三月则去"
-	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	UiTheme.style_section_label(sep)
 	choices_container.add_child(sep)
 
 	# 在船的人
@@ -1137,6 +1298,7 @@ func _setup_guild(port_id: String) -> void:
 
 	var sep := Label.new()
 	sep.text = "出港行情"
+	UiTheme.style_section_label(sep)
 	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(sep)
 
@@ -1205,7 +1367,7 @@ func _setup_residence(port_id: String) -> void:
 
 	var sep := Label.new()
 	sep.text = "边记"
-	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	UiTheme.style_section_label(sep)
 	choices_container.add_child(sep)
 
 	if GameState.ledger_notes.is_empty():
@@ -1224,7 +1386,7 @@ func _setup_residence(port_id: String) -> void:
 
 	var rest_sep := Label.new()
 	rest_sep.text = "歇息　候风仍去旅店"
-	rest_sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	UiTheme.style_section_label(rest_sep)
 	choices_container.add_child(rest_sep)
 
 	for n in [1, 3]:
@@ -1251,7 +1413,7 @@ func _setup_temple(port_id: String) -> void:
 	var near: Array = GameManager.discoveries_near(port_id)
 	var sep := Label.new()
 	sep.text = "近侧旧迹"
-	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+	UiTheme.style_section_label(sep)
 	choices_container.add_child(sep)
 
 	if near.is_empty():
@@ -1537,42 +1699,52 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 
 func _make_facility_card(fac: Dictionary) -> Control:
 	var card = PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, 58)
+	card.custom_minimum_size = Vector2(0, 64)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.add_theme_stylebox_override("panel", UiTheme.card())
 
 	var hbox = HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 8)
+	hbox.add_theme_constant_override("separation", 10)
 	card.add_child(hbox)
 
 	var icon_id = fac.get("id", "").replace("city_", "")
 	var icon_path = "res://assets/icon_" + icon_id + ".png"
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(46, 46)
+	frame.clip_contents = true
+	frame.add_theme_stylebox_override("panel", UiTheme.icon_frame())
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var tex_rect = TextureRect.new()
 	tex_rect.custom_minimum_size = Vector2(40, 40)
 	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	tex_rect.clip_contents = true
+	tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var icon_tex := GameManager.load_texture(icon_path)
 	if icon_tex != null:
 		tex_rect.texture = icon_tex
 
-	hbox.add_child(tex_rect)
+	frame.add_child(tex_rect)
+	hbox.add_child(frame)
 
 	var vbox = VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(vbox)
 
 	var title_lbl = Label.new()
 	title_lbl.text = fac.get("title", "未命名设施")
+	title_lbl.add_theme_font_override("font", UiTheme.font())
 	title_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	title_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
+	title_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(title_lbl)
 
 	var sub_lbl = Label.new()
 	sub_lbl.text = fac.get("subtitle", "")
 	UiTheme.style_footnote(sub_lbl)
+	sub_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(sub_lbl)
 
 	var btn = Button.new()
@@ -1770,6 +1942,15 @@ func _on_facility_pressed(fac: Dictionary) -> void:
 
 func _setup_investigation_mode(scene_data: Dictionary) -> void:
 	_enter_panel_mode()
+	var cinematic := str(scene_data.get("id", "")).begins_with("cg_")
+	if cinematic:
+		_frame_sheet(true)
+		if str(scene_data.get("id", "")) == "cg_title":
+			scene_title.add_theme_font_size_override("font_size", 46)
+		else:
+			scene_title.add_theme_font_size_override("font_size", 30)
+	else:
+		scene_title.add_theme_font_size_override("font_size", UiTheme.SIZE_HEAD)
 
 	var shown_title := str(scene_data.get("title", "")).strip_edges()
 	if shown_title == "":
@@ -1850,6 +2031,10 @@ func show_choices(choices: Array) -> void:
 		btn.pressed.connect(_on_choice_pressed.bind(choice))
 		choices_container.add_child(btn)
 		UiTheme.style_choice_button(btn)
+		if str(current_scene_id).begins_with("cg_"):
+			UiTheme.style_button(btn, true)
+			btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+			btn.custom_minimum_size = Vector2(220, 46)
 		shown += 1
 	if shown == 0:
 		_add_fallback_return_button()

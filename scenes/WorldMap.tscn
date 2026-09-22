@@ -15,12 +15,12 @@ shader_parameter/wave_amp = 0.02
 shader_parameter/water_color = Color(0.1, 0.4, 0.6, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glass"]
-bg_color = Color(0.08, 0.1, 0.15, 0.85)
+bg_color = Color(0.145, 0.098, 0.064, 0.94)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.79, 0.64, 0.15, 0.3)
+border_color = Color(0.86, 0.7, 0.34, 0.48)
 corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10

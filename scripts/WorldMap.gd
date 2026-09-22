@@ -50,6 +50,21 @@ var boarding: bool = false
 var boarding_target: Node2D = null
 
 func _ready() -> void:
+	var hud := $CanvasLayer/HUD
+	UiTheme.apply(hud)
+	UiTheme.style_body(label)
+	fleet_status.add_theme_font_override("font", UiTheme.font())
+	fleet_status.add_theme_color_override("font_color", UiTheme.GOLD)
+	weather_status.add_theme_font_override("font", UiTheme.font())
+	for panel_name in ["LeftPanel", "RightPanel", "MinimapPanel"]:
+		var panel := hud.get_node_or_null(panel_name)
+		if panel is PanelContainer:
+			panel.add_theme_stylebox_override("panel", UiTheme.panel())
+	for port in $Ports.get_children():
+		for child in port.get_children():
+			if child is Label:
+				child.add_theme_font_override("font", UiTheme.font())
+				child.add_theme_color_override("font_color", UiTheme.GOLD)
 	randomize()
 	var pb: Dictionary = GameManager.pending_battle
 	if pb.get("battle", false):
@@ -193,6 +208,7 @@ func _show_combat_notice(text: String) -> void:
 	if not is_instance_valid(_notice):
 		_notice = Label.new()
 		_notice.set_anchors_preset(Control.PRESET_CENTER)
+		_notice.add_theme_font_override("font", UiTheme.font())
 		_notice.add_theme_font_size_override("font_size", UiTheme.SIZE_HEAD)
 		_notice.add_theme_color_override("font_color", UiTheme.GOLD)
 		_notice.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))

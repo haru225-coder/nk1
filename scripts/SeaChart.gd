@@ -27,6 +27,7 @@ var event_actions: HBoxContainer
 
 
 func _ready() -> void:
+	UiTheme.apply(self)
 	origin_port = GameState.last_port
 	selected_port = ""
 	_build_ui()
@@ -49,13 +50,22 @@ func _build_ui() -> void:
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	bg.texture = GameManager.load_texture("res://assets/bg_world_map.jpg")
-	# 古海图是氛围底衬：压暗留蓝让自绘航线/港点可读，但别压到看不见
-	bg.modulate = Color(0.72, 0.76, 0.82, 1.0)
+	bg.modulate = Color(0.94, 0.88, 0.76, 1.0)
 	add_child(bg)
+
+	var veil := ColorRect.new()
+	veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+	veil.color = UiTheme.VEIL
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(veil)
 
 	var root := HBoxContainer.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 8)
+	root.offset_left = 16
+	root.offset_top = 16
+	root.offset_right = -16
+	root.offset_bottom = -16
+	root.add_theme_constant_override("separation", 12)
 	add_child(root)
 
 	# ── 左：状态 ──
@@ -85,7 +95,7 @@ func _build_ui() -> void:
 	center_m.add_child(center_v)
 
 	var head := Label.new()
-	head.text = "海　图"
+	head.text = "海图"
 	UiTheme.style_heading(head)
 	center_v.add_child(head)
 
@@ -211,26 +221,34 @@ func _set_margins(m: MarginContainer, v: int) -> void:
 
 func _refresh_status() -> void:
 	var supply_d := Fleet.supply_days()
-	var supply_color := "white"
+	var supply_color := UiTheme.MOSS
 	if supply_d <= 3:
-		supply_color = "red"
+		supply_color = UiTheme.CINNABAR
 	elif supply_d <= 7:
-		supply_color = "yellow"
+		supply_color = UiTheme.HONEY
 
-	var t := "[b]%s[/b]\n%s\n\n" % [Calendar.get_date_string(), Calendar.get_monsoon_desc()]
+	var gold := UiTheme.hex(UiTheme.GOLD)
+	var t := "[color=#%s][b]%s[/b][/color]\n[color=#%s]%s[/color]\n" % [
+		gold, Calendar.get_date_string(), UiTheme.hex(UiTheme.TEXT_DIM), Calendar.get_monsoon_desc(),
+	]
 	if sailing:
 		var pct := 0.0
 		if total_li > 0.0:
 			pct = clampf((total_li - remaining_li) / total_li, 0.0, 1.0)
-		t += "[color=aqua]航行中　第 %d 日[/color]\n已行 %d%%\n余程 %d 里\n\n" % [days_elapsed, int(pct * 100), int(remaining_li)]
-	t += "金钱：%d\n名声：%d　%s\n\n" % [GameState.money, GameState.fame, GameState.title_name()]
-	t += "[u]舰队[/u]\n船数：%d　水手：%d\n舱位：%d / %d 料\n耐久：%d / %d\n士气：%d\n" % [
+		t += "[color=#%s]航行中　第 %d 日[/color]\n已行 %d%%\n余程 %d 里\n" % [
+			UiTheme.hex(UiTheme.HONEY), days_elapsed, int(pct * 100), int(remaining_li),
+		]
+	t += "金钱　[b]%d[/b]\n名声　%d　%s\n" % [GameState.money, GameState.fame, GameState.title_name()]
+	t += "[color=#%s][b]舰队[/b][/color]\n船数　%d　水手　%d\n舱位　%d / %d 料\n耐久　%d / %d\n士气　%d\n" % [
+		gold,
 		Fleet.ships.size(), Fleet.total_crew(),
 		int(Fleet.used_capacity()), int(Fleet.total_capacity()),
 		int(Fleet.total_durability()), int(Fleet.total_max_durability()),
 		Fleet.morale,
 	]
-	t += "水：%d　粮：%d　[color=%s]（足 %d 日）[/color]\n" % [Fleet.water, Fleet.food, supply_color, supply_d]
+	t += "水　%d　粮　%d　[color=#%s]足 %d 日[/color]\n" % [
+		Fleet.water, Fleet.food, UiTheme.hex(supply_color), supply_d,
+	]
 	status_label.text = t
 	# 日期推进会改季风，图上的风向箭头与航段配色随之变
 	if chart:
@@ -261,9 +279,9 @@ func _refresh_ports() -> void:
 			p.get("name", pid), int(plan["distance"]), plan["wind_desc"], plan["days"], known,
 		]
 		if not plan["supply_ok"]:
-			btn.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
+			btn.add_theme_color_override("font_color", UiTheme.CINNABAR)
 		elif plan["wind_desc"] == "顺风":
-			btn.add_theme_color_override("font_color", Color(0.6, 0.95, 0.7))
+			btn.add_theme_color_override("font_color", UiTheme.MOSS)
 
 		btn.pressed.connect(_on_port_selected.bind(pid))
 		port_list.add_child(btn)
@@ -302,6 +320,7 @@ func _refresh_detail() -> void:
 	for l in lines:
 		var lbl := Label.new()
 		lbl.text = l
+		lbl.add_theme_font_override("font", UiTheme.font())
 		lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 		lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 		detail_box.add_child(lbl)
@@ -309,15 +328,17 @@ func _refresh_detail() -> void:
 	if not Voyage.is_known_route(origin_port, selected_port):
 		var w := Label.new()
 		w.text = "此非熟路，海图上只有传闻，途中易生变故。"
+		w.add_theme_font_override("font", UiTheme.font())
 		w.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
-		w.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
+		w.add_theme_color_override("font_color", UiTheme.HONEY)
 		detail_box.add_child(w)
 
 	if not plan["supply_ok"]:
 		var w := Label.new()
 		w.text = "水粮不足以支撑此程——半途必要死人。"
+		w.add_theme_font_override("font", UiTheme.font())
 		w.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
-		w.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
+		w.add_theme_color_override("font_color", UiTheme.CINNABAR)
 		detail_box.add_child(w)
 
 	sail_button.disabled = false
@@ -356,7 +377,7 @@ func _draw_chart(c: Control) -> void:
 	var proj := func(lat: float, lon: float) -> Vector2:
 		return mid + Vector2((lon - mean_lon) * kx * scale, -(lat - mean_lat) * scale)
 
-	c.draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.11, 0.17, 0.75))
+	c.draw_rect(Rect2(Vector2.ZERO, size), Color(0.11, 0.08, 0.05, 0.55))
 
 	_draw_monsoon(c, size)
 
@@ -368,7 +389,7 @@ func _draw_chart(c: Control) -> void:
 			if q.is_empty() or not GameState.is_chapter_reached(q.get("unlock", "ch1")):
 				continue
 			var b: Vector2 = proj.call(float(q.get("lat", 0.0)), float(q.get("lon", 0.0)))
-			c.draw_line(a, b, Color(1, 1, 1, 0.10), 1.0)
+			c.draw_line(a, b, Color(UiTheme.GOLD, 0.28), 1.0)
 
 	# 当前航段
 	if selected_port != "":
@@ -379,11 +400,11 @@ func _draw_chart(c: Control) -> void:
 			var b: Vector2 = proj.call(float(d.get("lat", 0.0)), float(d.get("lon", 0.0)))
 			var wf := Voyage.wind_factor(Voyage.bearing(origin_port, selected_port))
 			# 顺风泛绿、逆风泛红——季风是否有利，一眼能看出来
-			var col := Color(0.45, 0.95, 0.6) if wf >= 1.15 else (
-				Color(1.0, 0.5, 0.42) if wf <= 0.75 else Color(0.95, 0.85, 0.5))
+			var col := UiTheme.MOSS if wf >= 1.15 else (
+				UiTheme.CINNABAR if wf <= 0.75 else UiTheme.HONEY)
 			c.draw_line(a, b, col, 2.5)
 
-	var font := ThemeDB.fallback_font
+	var font := UiTheme.font()
 	for p in pts:
 		var pid: String = p.get("id", "")
 		var v: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
@@ -391,35 +412,35 @@ func _draw_chart(c: Control) -> void:
 		var is_here := pid == origin_port
 		var is_target := pid == selected_port
 
-		var col := Color(0.55, 0.6, 0.68)
+		var col := UiTheme.TEXT_DIM
 		if visited:
-			col = Color(0.85, 0.88, 0.92)
+			col = UiTheme.TEXT
 		if is_target:
-			col = Color(1.0, 0.85, 0.35)
+			col = UiTheme.GOLD
 		if is_here:
-			col = Color(0.5, 0.95, 1.0)
+			col = UiTheme.CINNABAR
 
 		c.draw_circle(v, 4.0 if (is_here or is_target) else 3.0, col)
 		if is_here:
 			c.draw_arc(v, 8.0, 0, TAU, 20, col, 1.5)
 
 		var label: String = p.get("name", pid)
-		c.draw_string(font, v + Vector2(7, 4), label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col)
+		c.draw_string(font, v + Vector2(8, 5), label,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 15, col)
 
 
 ## 季风方向：全图统一的斜箭头。风信是大尺度的，不必逐点画。
 func _draw_monsoon(c: Control, size: Vector2) -> void:
 	var wb := Calendar.get_wind_bearing()
 	if wb < 0.0:
-		c.draw_string(ThemeDB.fallback_font, Vector2(10, 18),
-			"季风转换期・风微而多变", HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
-			Color(0.7, 0.72, 0.75, 0.9))
+		c.draw_string(UiTheme.font(), Vector2(10, 22),
+			"季风转换期・风微而多变", HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
+			UiTheme.TEXT_DIM)
 		return
 
 	# 方位角 → 屏幕向量（y 轴向下，故取负 cos）
 	var dir := Vector2(sin(deg_to_rad(wb)), -cos(deg_to_rad(wb)))
-	var col := Color(0.45, 0.7, 0.95, 0.22)
+	var col := Color(UiTheme.GOLD, 0.28)
 	var step := 62.0
 	var arrow := 7.0
 	var y := step * 0.5
@@ -436,9 +457,9 @@ func _draw_monsoon(c: Control, size: Vector2) -> void:
 			x += step
 		y += step
 
-	c.draw_string(ThemeDB.fallback_font, Vector2(10, 18),
-		Calendar.get_monsoon_desc(), HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
-		Color(0.6, 0.8, 1.0, 0.9))
+	c.draw_string(UiTheme.font(), Vector2(10, 22),
+		Calendar.get_monsoon_desc(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
+		UiTheme.GOLD)
 
 
 func _log(text: String) -> void:
