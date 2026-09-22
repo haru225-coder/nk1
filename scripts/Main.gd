@@ -2043,22 +2043,43 @@ func show_choices(choices: Array) -> void:
 	if choices.is_empty():
 		return
 	choices_label.visible = true
+	var cinematic := str(current_scene_id).begins_with("cg_")
 	var shown := 0
+	var page_turns := 0
 	for choice in choices:
 		if not GameState.choice_visible(choice):
 			continue
+		var label := str(choice.get("label", "继续"))
 		var btn = Button.new()
-		btn.text = choice.get("label", "继续")
+		btn.text = label
 		btn.pressed.connect(_on_choice_pressed.bind(choice))
 		choices_container.add_child(btn)
 		UiTheme.style_choice_button(btn)
-		if str(current_scene_id).begins_with("cg_"):
+		# 卷首翻页只有一串省略号，收成居中朱印，不再铺成整条。
+		# 真正的岔路（货引 / 策问）留挑签。
+		if cinematic and _is_page_turn(label):
 			UiTheme.style_button(btn, true)
 			btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-			btn.custom_minimum_size = Vector2(220, 46)
+			btn.custom_minimum_size = Vector2(168, 40)
+			btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			page_turns += 1
 		shown += 1
+	if cinematic and shown > 0 and page_turns == shown:
+		choices_label.visible = false
 	if shown == 0:
 		_add_fallback_return_button()
+
+
+## 「…………」这类翻页，不是要玩家做决断。
+func _is_page_turn(label: String) -> bool:
+	var t := label.strip_edges()
+	if t == "":
+		return true
+	for i in t.length():
+		var ch := t.unicode_at(i)
+		if ch != 0x2026 and ch != 0x002E and ch != 0x3002 and ch != 0x00B7:
+			return false
+	return true
 
 
 func _on_choice_pressed(choice_data: Dictionary) -> void:
