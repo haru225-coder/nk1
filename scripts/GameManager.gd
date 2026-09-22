@@ -81,19 +81,20 @@ func advance_days(n: int) -> void:
 ## 若干真 PNG 的 .import 被标成 valid=false。ResourceLoader.load() 这两种
 ## 都会打 ERROR，即便字节本身能解开——所以先读文件头，load() 只作兜底。
 func load_texture(path: String) -> Texture2D:
-	if FileAccess.file_exists(path):
-		var bytes := FileAccess.get_file_as_bytes(path)
-		if bytes.size() >= 8:
-			var img := Image.new()
-			var err := ERR_FILE_UNRECOGNIZED
-			if bytes[0] == 0xFF and bytes[1] == 0xD8:                       # JPEG: FF D8
-				err = img.load_jpg_from_buffer(bytes)
-			elif bytes[0] == 0x89 and bytes[1] == 0x50 and bytes[2] == 0x4E:  # PNG: 89 50 4E 47
-				err = img.load_png_from_buffer(bytes)
-			elif bytes.size() >= 12 and bytes[8] == 0x57 and bytes[9] == 0x45:  # RIFF....WEBP
-				err = img.load_webp_from_buffer(bytes)
-			if err == OK:
-				return ImageTexture.create_from_image(img)
+	if not FileAccess.file_exists(path):
+		return null
+	var bytes := FileAccess.get_file_as_bytes(path)
+	if bytes.size() >= 8:
+		var img := Image.new()
+		var err := ERR_FILE_UNRECOGNIZED
+		if bytes[0] == 0xFF and bytes[1] == 0xD8:                       # JPEG: FF D8
+			err = img.load_jpg_from_buffer(bytes)
+		elif bytes[0] == 0x89 and bytes[1] == 0x50 and bytes[2] == 0x4E:  # PNG: 89 50 4E 47
+			err = img.load_png_from_buffer(bytes)
+		elif bytes.size() >= 12 and bytes[8] == 0x57 and bytes[9] == 0x45:  # RIFF....WEBP
+			err = img.load_webp_from_buffer(bytes)
+		if err == OK:
+			return ImageTexture.create_from_image(img)
 	return load(path) as Texture2D
 
 

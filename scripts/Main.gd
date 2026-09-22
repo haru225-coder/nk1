@@ -36,6 +36,8 @@ var title_button_connected: bool = false
 var _market_ship: int = 0
 ## 账条暂时写入的容器。船屋条数多，先收进内滚，离开钮留在外面。
 var _slip_host: Node = null
+## 见面册页上的话。原 RichTextLabel 在这栏里排不出行，改用能折行的 Label。
+var _npc_speech: Label
 
 const FACILITY_SUFFIXES := [
 	"_market", "_yamen", "_shipyard", "_tavern", "_inn",
@@ -104,6 +106,7 @@ func _ready() -> void:
 	_dress_title()
 	_mount_port_plaque()
 	_frame_portrait()
+	_dress_npc_sheet()
 	update_status_panel()
 	call_deferred("start_game")
 
@@ -205,6 +208,38 @@ func _frame_portrait() -> void:
 	frame.add_child(npc_portrait)
 	npc_portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	npc_portrait.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+
+## 见面是中栏里的一册：对话落在熟漆上，画像没有就不留空框。
+func _dress_npc_sheet() -> void:
+	var hbox: HBoxContainer = npc_mode.get_node("HBox")
+	hbox.offset_left = 16
+	hbox.offset_top = 16
+	hbox.offset_right = -16
+	hbox.offset_bottom = -16
+	var dialog := npc_name_lbl.get_parent()
+	var sheet := PanelContainer.new()
+	sheet.name = "DialogSheet"
+	sheet.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sheet.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sheet.add_theme_stylebox_override("panel", UiTheme.panel())
+	var idx := dialog.get_index()
+	var parent := dialog.get_parent()
+	parent.remove_child(dialog)
+	parent.add_child(sheet)
+	parent.move_child(sheet, idx)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 22)
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	sheet.add_child(margin)
+	dialog.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dialog.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	margin.add_child(dialog)
+	UiTheme.style_heading(npc_name_lbl)
+	npc_dialog_lbl.visible = false
+	npc_actions.add_theme_constant_override("separation", 6)
 
 
 ## 调查页平时铺满中栏；卷首 cg_ 收成居中的册页，左边船籍簿让开。
@@ -941,13 +976,14 @@ func _slip_title(body: VBoxContainer, title: String, aside := "") -> Label:
 	return hint
 
 
-func _slip_note(body: VBoxContainer, text: String, color: Color = UiTheme.TEXT_DIM) -> void:
+func _slip_note(body: VBoxContainer, text: String, color: Color = UiTheme.TEXT_DIM) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UiTheme.style_footnote(lbl)
 	lbl.add_theme_color_override("font_color", color)
 	body.add_child(lbl)
+	return lbl
 
 
 func _slip_row(body: VBoxContainer) -> HBoxContainer:
@@ -1563,43 +1599,66 @@ func _show_npc_mode(npc_id: String, fallback_name: String) -> void:
 			npc_data = n
 			break
 
-	var n_name = npc_data.get("name", fallback_name)
+	var n_name := str(npc_data.get("name", fallback_name))
 	npc_name_lbl.text = n_name
-	npc_dialog_lbl.text = npc_data.get("function", "（这人看起来有些眼熟，但什么也没说...）")
-
-	var tex_path = "res://assets/sprite_" + npc_id.replace("pilot_", "").replace("merchant_", "") + ".png"
+	var spoken := str(NPC_GREETING.get(npc_id, ""))
+	if spoken == "":
+		spoken = str(npc_data.get("function", "这人看了你一眼，没先开口。"))
+	var tex_path := "res://assets/sprite_" + npc_id.replace("pilot_", "").replace("merchant_", "") + ".png"
 	npc_portrait.texture = GameManager.load_texture(tex_path)
+	npc_portrait.get_parent().visible = npc_portrait.texture != null
 
 	for child in npc_actions.get_children():
 		child.queue_free()
 
-	var intel_btn = Button.new()
-	intel_btn.text = "打听情报"
-	intel_btn.pressed.connect(func():
-		npc_dialog_lbl.text = n_name + " 压低声音说：\n\n" + _gather_price_intel(GameState.last_port)
-	)
-	npc_actions.add_child(intel_btn)
-
+	_slip_host = npc_actions
+	var talk := _slip_body()
+	_npc_speech = _slip_note(talk, spoken, UiTheme.TEXT)
+	_npc_speech.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	var intel := _slip_body()
+	_slip_title(intel, "行情", "邻座牙人")
+	_slip_chip(_slip_row(intel), "打听", _on_npc_intel.bind(n_name))
 	if npc_id == "customs_official":
-		var bribe_btn = Button.new()
-		bribe_btn.text = "塞钱疏通（50 钱，降低关注度）"
-		bribe_btn.pressed.connect(func():
-			if GameState.spend_money(50):
-				GameState.pu_attention = maxi(0, GameState.pu_attention - 15)
-				update_status_panel()
-				npc_dialog_lbl.text = n_name + " 颠了颠手里的碎银：「算你懂事。近来风声紧，自己当心。」"
-			else:
-				npc_dialog_lbl.text = n_name + " 满脸鄙夷：「就这点钱也想打通关节？」"
-		)
-		npc_actions.add_child(bribe_btn)
+		var bribe := _slip_body()
+		_slip_title(bribe, "疏通", "关注减 15")
+		_slip_chip(_slip_row(bribe), "塞 50", _on_npc_bribe.bind(n_name), true)
+	_slip_host = null
 
-	var leave_btn = Button.new()
+	var leave_btn := Button.new()
 	leave_btn.text = "离开"
-	leave_btn.pressed.connect(func():
-		npc_mode.visible = false
-		investigation_mode.visible = true
-	)
+	leave_btn.pressed.connect(_on_npc_leave)
 	npc_actions.add_child(leave_btn)
+	UiTheme.style_choice_button(leave_btn)
+
+
+const NPC_GREETING := {
+	"customs_official": "小吏把册子掀开一条缝，眼皮都没抬。「验引、呈报、修埠，都在这案上。有话就说。」",
+	"merchant_lin": "林阿舶用指甲敲了敲账簿。「舱位、脚钱、货损，一样一样算。你叔父那笔，我还记着。」",
+	"pilot_ana": "阿那望了一眼外海的水色。「潮声不对就别嘴硬。要问航路，就问。」",
+}
+
+
+func _set_npc_speech(text: String) -> void:
+	if _npc_speech != null:
+		_npc_speech.text = text
+
+
+func _on_npc_intel(n_name: String) -> void:
+	_set_npc_speech(n_name + " 压低声音说：\n\n" + _gather_price_intel(GameState.last_port))
+
+
+func _on_npc_bribe(n_name: String) -> void:
+	if GameState.spend_money(50):
+		GameState.pu_attention = maxi(0, GameState.pu_attention - 15)
+		update_status_panel()
+		_set_npc_speech(n_name + " 颠了颠手里的碎银：「算你懂事。近来风声紧，自己当心。」")
+	else:
+		_set_npc_speech(n_name + " 满脸鄙夷：「就这点钱也想打通关节？」")
+
+
+func _on_npc_leave() -> void:
+	npc_mode.visible = false
+	investigation_mode.visible = true
 
 
 # ══════════════════════════════════════════════════════

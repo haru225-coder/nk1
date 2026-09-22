@@ -225,10 +225,10 @@ func _show_combat_notice(text: String) -> void:
 
 func _update_hud() -> void:
 	var wind_desc = "无风"
-	if ship.wind_vector.y > 0: wind_desc = "北风 (自北向南吹)"
-	elif ship.wind_vector.y < 0: wind_desc = "南风 (自南向北吹)"
-	elif ship.wind_vector.x > 0: wind_desc = "西风 (自西向东吹)"
-	elif ship.wind_vector.x < 0: wind_desc = "东风 (自东向西吹)"
+	if ship.wind_vector.y > 0: wind_desc = "北风"
+	elif ship.wind_vector.y < 0: wind_desc = "南风"
+	elif ship.wind_vector.x > 0: wind_desc = "西风"
+	elif ship.wind_vector.x < 0: wind_desc = "东风"
 
 	var hp_color := "#" + UiTheme.hex(UiTheme.MOSS)
 	if ship.hull_hp < 50:
@@ -268,7 +268,7 @@ func _format_left_hud(
 	mission: String, boarding_hint: String, wind_desc: String, wind_strength: int,
 	sail_gear: int, hp_color: String, hull_hp: int, max_hp: int, tail: String
 ) -> String:
-	return "%s%s当前季风: %s\n风力强度: %d\nW/S: 升降帆 (当前档位: %d)\nA/D: 操舵\nJ/K: 左/右舷齐射开炮\n船体耐久: [color=%s]%d/%d[/color]\n%s" % [
+	return "%s%s季风　%s\n风力　%d\n帆　%d 档\n操舵　A/D\n齐射　J/K\n船体　[color=%s]%d/%d[/color]\n%s" % [
 		mission, boarding_hint, wind_desc, wind_strength, sail_gear, hp_color, hull_hp, max_hp, tail,
 	]
 
