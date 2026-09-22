@@ -101,9 +101,15 @@ static func theme() -> Theme:
 	t.set_stylebox("separator", "HSeparator", rule)
 	t.set_stylebox("separator", "VSeparator", rule)
 
-	var track := _flat(Color(0.05, 0.03, 0.02, 0.35), Color(0, 0, 0, 0), 3, 0)
-	var grab := _flat(Color(GOLD, 0.55), Color(0, 0, 0, 0), 3, 0)
-	var grab_hi := _flat(Color(GOLD, 0.85), Color(0, 0, 0, 0), 3, 0)
+	var track := _flat(Color(0.05, 0.03, 0.02, 0.55), Color(0, 0, 0, 0), 3, 0)
+	var grab := _flat(Color(GOLD, 0.85), Color(0, 0, 0, 0), 3, 0)
+	var grab_hi := _flat(GOLD, Color(0, 0, 0, 0), 3, 0)
+	# 空边距的 StyleBox 会把滚动条压成 0 宽，滚轮能动、条却看不见。
+	for st in [track, grab, grab_hi]:
+		st.content_margin_left = 4
+		st.content_margin_right = 4
+		st.content_margin_top = 6
+		st.content_margin_bottom = 6
 	for kind in ["VScrollBar", "HScrollBar"]:
 		t.set_stylebox("scroll", kind, track)
 		t.set_stylebox("grabber", kind, grab)

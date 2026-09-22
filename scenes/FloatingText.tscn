@@ -6,7 +6,7 @@
 z_index = 100
 offset_right = 40.0
 offset_bottom = 23.0
-theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+theme_override_colors/font_color = Color(0.86, 0.46, 0.34, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
 theme_override_font_sizes/font_size = 20
