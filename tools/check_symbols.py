@@ -1096,6 +1096,7 @@ else:
 for fn in (
     "_setup_guild", "_setup_exam", "_setup_residence", "_collect_spreads",
     "_on_exam_copy", "_setup_temple", "_on_temple_look",
+    "_on_temple_rub", "_temple_rub_note",
 ):
     if re.search(r"func %s\b" % fn, main_src):
         print("  ✓ Main.%s 已定义" % fn)
@@ -1160,15 +1161,28 @@ elif "record_discovery" in temple_fn.group(0) and "TEMPLE_LOOK_DAYS" in temple_f
 else:
     print("  ✗ 寺观细看未走 record_discovery")
     problems.append("寺观未记入册")
+rub_fn = re.search(r"func _on_temple_rub.*?(?=\nfunc |\Z)", main_src, re.S)
+if not rub_fn:
+    print("  ✗ 寺观拓碑未接线")
+    problems.append("缺 _on_temple_rub")
+elif any(tok in rub_fn.group(0) for tok in ("add_fame", "report_discovery")):
+    print("  ✗ 寺观拓碑给了名声或当场呈报")
+    problems.append("寺观拓碑不得给名声/呈报")
+elif "add_ledger_note" in rub_fn.group(0) and "TEMPLE_RUB_DAYS" in rub_fn.group(0):
+    print("  ✓ 寺观拓碑只写入边记、耗日，不给名声")
+else:
+    print("  ✗ 寺观拓碑未走 add_ledger_note")
+    problems.append("寺观未写入边记")
 sim_src = open(os.path.join(ROOT, "tools", "simulate_run.py"), encoding="utf-8").read()
 if any(tok in sim_src for tok in (
     "scholar_tendency", "誊录", "EXAM_STIPEND", "HOME_RATE",
     "勘见", "TEMPLE_LOOK", "_on_temple_look", "record_discovery",
+    "拓碑", "TEMPLE_RUB", "_on_temple_rub",
 )):
-    print("  ✗ simulate_run 自动走了贡院誊录、住处歇息或寺观勘见")
-    problems.append("simulate_run 不得自动誊录/住家/勘见")
+    print("  ✗ simulate_run 自动走了贡院誊录、住处歇息或寺观勘见/拓碑")
+    problems.append("simulate_run 不得自动誊录/住家/勘见/拓碑")
 else:
-    print("  ✓ simulate_run 不自动誊录、歇住家、勘见（贡院/住宅/寺观不进通关主循环）")
+    print("  ✓ simulate_run 不自动誊录、歇住家、勘见、拓碑（贡院/住宅/寺观不进通关主循环）")
 if '"_inn"' in main_src and "bg_relay_post.jpg" in main_src:
     print("  ✓ 旅店有设施背景")
 else:

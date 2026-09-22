@@ -166,6 +166,17 @@ func _run() -> void:
 	_check(look_body.find("record_discovery") >= 0 and look_body.find("add_fame") < 0
 		and look_body.find("report_discovery") < 0,
 		"寺观细看只记入册、不给名声", fails)
+	var rub_i := main_src.find("func _on_temple_rub")
+	var rub_j := main_src.find("\nfunc ", rub_i + 1) if rub_i >= 0 else -1
+	var rub_body := main_src.substr(rub_i, rub_j - rub_i) if rub_i >= 0 and rub_j > rub_i else ""
+	_check(rub_body.find("add_ledger_note") >= 0 and rub_body.find("add_fame") < 0
+		and rub_body.find("report_discovery") < 0,
+		"寺观拓碑只写入边记、不给名声", fails)
+	var fame_before_rub: int = int(gs.fame)
+	var notes0: int = gs.ledger_notes.size()
+	gs.add_ledger_note("拓「废烽堠」：旧时守海的烽堠，如今无人执守，却仍是夜航辨岸的好记认。")
+	_check(gs.ledger_notes.size() == notes0 + 1, "拓碑边记可写入 ledger_notes", fails)
+	_check(int(gs.fame) == fame_before_rub, "写入边记不给名声", fails)
 	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
 	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)
 	_check(load("res://scripts/PirateShip.gd") != null, "PirateShip.gd 能编译", fails)

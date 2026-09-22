@@ -1234,12 +1234,13 @@ func _setup_residence(port_id: String) -> void:
 
 
 const TEMPLE_LOOK_DAYS := 1
+const TEMPLE_RUB_DAYS := 1
 
 
-## 寺观：上陆勘见近侧旧迹。记入册子，赏格仍回市舶司呈报——不在这里发名声。
+## 寺观：上陆勘见近侧旧迹。记入册子，拓纸入边记；赏格仍回市舶司呈报——不在这里发名声。
 func _setup_temple(port_id: String) -> void:
 	scene_title.text = "%s・寺观" % GameManager.get_port_name(port_id)
-	body_text.text = "廊下香灰积了一指厚。住持不谈功名，只说近侧还有几处未入官图的旧迹，海上人来了才有人去看。记进册子之后，赏格仍要回市舶司呈报。"
+	body_text.text = "廊下香灰积了一指厚。住持不谈功名，只说近侧还有几处未入官图的旧迹。细看记入册子，拓下的墨纸带回住处；赏格仍要回市舶司呈报。"
 	if GameState.has_flag("japan_temple_network"):
 		body_text.text += "\n袖底那张寺社短札，这里的沙弥看过一眼就不再多问。"
 
@@ -1259,25 +1260,50 @@ func _setup_temple(port_id: String) -> void:
 		for d in near:
 			var did := str(d.get("id", ""))
 			var name := str(d.get("name", did))
-			if GameState.has_found(did) and not (did in GameState.discoveries_found):
-				var done := Label.new()
-				done.text = "「%s」已呈报市舶。" % name
-				done.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
-				choices_container.add_child(done)
-			elif did in GameState.discoveries_found:
-				var noted := Label.new()
-				noted.text = "「%s」已记入册。赏格回市舶司呈报。" % name
-				noted.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
-				choices_container.add_child(noted)
-			else:
+			var hook := str(d.get("historical_hook", ""))
+			if not GameState.has_found(did):
 				var btn := Button.new()
 				btn.text = "细看一日：「%s」" % name
-				btn.tooltip_text = "%s\n%s" % [d.get("location", ""), d.get("historical_hook", "")]
+				btn.tooltip_text = "%s\n%s" % [d.get("location", ""), hook]
 				btn.pressed.connect(_on_temple_look.bind(did, name))
 				choices_container.add_child(btn)
+				continue
+			var status := Label.new()
+			if did in GameState.discoveries_found:
+				status.text = "「%s」已记入册。赏格回市舶司呈报。" % name
+			else:
+				status.text = "「%s」已呈报市舶。" % name
+			status.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+			choices_container.add_child(status)
+			if _has_temple_rub(name):
+				var rubbed := Label.new()
+				rubbed.text = "拓纸已入边记，回住处可翻。"
+				rubbed.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+				choices_container.add_child(rubbed)
+			else:
+				var rub := Button.new()
+				rub.text = "拓碑一日：「%s」" % name
+				rub.tooltip_text = hook
+				rub.pressed.connect(_on_temple_rub.bind(did, name, hook))
+				choices_container.add_child(rub)
 
 	choices_label.visible = true
 	_add_leave_button(port_id)
+
+
+func _temple_rub_note(name: String, hook: String) -> String:
+	var body := hook.strip_edges()
+	if body == "":
+		return "拓「%s」。" % name
+	return "拓「%s」：%s" % [name, body]
+
+
+func _has_temple_rub(name: String) -> bool:
+	var needle := "拓「%s」" % name
+	for note in GameState.ledger_notes:
+		if str(note).begins_with(needle):
+			return true
+	return false
 
 
 func _on_temple_look(did: String, name: String) -> void:
@@ -1288,6 +1314,22 @@ func _on_temple_look(did: String, name: String) -> void:
 		])
 	else:
 		log_msg("沿廊走了一圈，「%s」与册上所记并无出入。" % name)
+	load_scene(current_scene_id)
+
+
+func _on_temple_rub(did: String, name: String, hook: String) -> void:
+	if did == "" or not GameState.has_found(did):
+		log_msg("还没细看过，「%s」纸上拓不出字。" % name)
+		load_scene(current_scene_id)
+		return
+	GameManager.advance_days(TEMPLE_RUB_DAYS)
+	if _has_temple_rub(name):
+		log_msg("纸上墨迹未干，「%s」已经拓过了。" % name)
+	else:
+		GameState.add_ledger_note(_temple_rub_note(name, hook))
+		log_msg("【拓碑】在寺观廊下拓了 %d 日，把「%s」写入边记。回住处可翻。如今是 %s。" % [
+			TEMPLE_RUB_DAYS, name, Calendar.get_date_string(),
+		])
 	load_scene(current_scene_id)
 
 
