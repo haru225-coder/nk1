@@ -38,6 +38,8 @@ var _market_ship: int = 0
 var _slip_host: Node = null
 ## 见面册页上的话。原 RichTextLabel 在这栏里排不出行，改用能折行的 Label。
 var _npc_speech: Label
+## 航海日志册页。AcceptDialog 会把三卷撑出 1280 宽的窗口。
+var _save_host: Control
 
 const FACILITY_SUFFIXES := [
 	"_market", "_yamen", "_shipyard", "_tavern", "_inn",
@@ -1827,51 +1829,90 @@ func _add_save_button() -> void:
 
 
 func _show_save_dialog() -> void:
-	var dlg := AcceptDialog.new()
-	dlg.title = "航海日志"
-	dlg.dialog_hide_on_ok = true
-	dlg.ok_button_text = "合上"
-	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 10)
-	dlg.add_child(vb)
+	if is_instance_valid(_save_host):
+		_save_host.queue_free()
+	var host := Control.new()
+	host.name = "SaveSheet"
+	host.set_anchors_preset(Control.PRESET_FULL_RECT)
+	host.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(host)
+	_save_host = host
 
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.05, 0.03, 0.02, 0.55)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	host.add_child(dim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	host.add_child(center)
+
+	var sheet := PanelContainer.new()
+	sheet.custom_minimum_size = Vector2(520, 0)
+	sheet.add_theme_stylebox_override("panel", UiTheme.panel())
+	center.add_child(sheet)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 22)
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_bottom", 16)
+	sheet.add_child(margin)
+
+	var col := VBoxContainer.new()
+	col.custom_minimum_size = Vector2(476, 0)
+	col.add_theme_constant_override("separation", 8)
+	margin.add_child(col)
+
+	var head := Label.new()
+	head.text = "航海日志"
+	UiTheme.style_heading(head)
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(head)
+
+	_slip_host = col
 	for slot in range(1, SaveLoad.SLOTS + 1):
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		var lbl := Label.new()
-		lbl.text = "第 %d 卷：%s" % [slot, SaveLoad.save_label(slot)]
-		lbl.custom_minimum_size = Vector2(360, 0)
-		lbl.add_theme_color_override("font_color", UiTheme.TEXT)
-		row.add_child(lbl)
+		var n := int(slot)
+		var slip := _slip_body()
+		_slip_title(slip, "第 %d 卷" % n, SaveLoad.save_label(n))
+		var row := _slip_row(slip)
+		_slip_chip(row, "记录", _on_save_slot.bind(n), true)
+		var read := _slip_chip(row, "翻阅", _on_load_slot.bind(n))
+		read.disabled = not SaveLoad.has_save(n)
+	_slip_host = null
 
-		var sb := Button.new()
-		sb.text = "记录"
-		sb.pressed.connect(func():
-			SaveLoad.save_game(slot, current_scene_id)
-			dlg.queue_free()
-			log_msg("已记入航海日志第 %d 卷。" % slot)
-		)
-		row.add_child(sb)
-		UiTheme.style_button(sb, true)
+	var close := Button.new()
+	close.text = "合上"
+	close.pressed.connect(_close_save_sheet)
+	col.add_child(close)
+	UiTheme.style_choice_button(close)
 
-		var lb := Button.new()
-		lb.text = "翻阅"
-		lb.disabled = not SaveLoad.has_save(slot)
-		lb.pressed.connect(func():
-			var scene_id := SaveLoad.saved_scene(slot)
-			if SaveLoad.load_game(slot):
-				dlg.queue_free()
-				update_status_panel()
-				load_scene(scene_id if scene_id != "" else GameState.last_port)
-				log_msg("翻开日志第 %d 卷，回到 %s。" % [slot, Calendar.get_date_string()])
-		)
-		row.add_child(lb)
-		UiTheme.style_button(lb, false)
-		vb.add_child(row)
 
-	add_child(dlg)
-	UiTheme.style_dialog(dlg, false)
-	dlg.popup_centered()
+func _close_save_sheet() -> void:
+	if is_instance_valid(_save_host):
+		_save_host.queue_free()
+	_save_host = null
+
+
+func _on_save_slot(slot: int) -> void:
+	if not SaveLoad.save_game(slot, current_scene_id):
+		log_msg("第 %d 卷没能记下。" % slot)
+		return
+	_close_save_sheet()
+	log_msg("已记入航海日志第 %d 卷。" % slot)
+
+
+func _on_load_slot(slot: int) -> void:
+	var scene_id := SaveLoad.saved_scene(slot)
+	if not SaveLoad.load_game(slot):
+		log_msg("第 %d 卷翻不开。" % slot)
+		return
+	_close_save_sheet()
+	update_status_panel()
+	load_scene(scene_id if scene_id != "" else GameState.last_port)
+	log_msg("翻开日志第 %d 卷，回到 %s。" % [slot, Calendar.get_date_string()])
 
 
 # ══════════════════════════════════════════════════════
