@@ -71,10 +71,10 @@ text = "金钱：0
 士人倾向：0"
 
 [node name="MessageLabel" type="RichTextLabel" parent="HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 150)
+custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
-theme_override_colors/default_color = Color(0.9, 0.4, 0.4, 1)
-text = "系统提示将在这里显示..."
+theme_override_colors/default_color = Color(0.90, 0.88, 0.82, 1)
+text = ""
 
 [node name="CenterArea" type="Control" parent="HBoxContainer"]
 layout_mode = 2
@@ -142,51 +142,58 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_right")
 
 [node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/CenterArea/InvestigationMode"]
 layout_mode = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 40
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 40
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 18
 
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer"]
+[node name="Scroll" type="ScrollContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 18
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
-[node name="SceneTitle" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="SceneTitle" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 theme_override_colors/font_color = Color(0.79, 0.64, 0.15, 1)
 text = "地点标题"
 
-[node name="HSeparator" type="HSeparator" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer"]
 layout_mode = 2
 
-[node name="BodyText" type="RichTextLabel" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 200)
+[node name="BodyText" type="RichTextLabel" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer"]
 layout_mode = 2
-size_flags_vertical = 3
+fit_content = true
+scroll_active = false
 theme_override_font_sizes/normal_font_size = 18
 theme_override_colors/default_color = Color(0.90, 0.88, 0.82, 1)
 theme_override_constants/line_separation = 6
 bbcode_enabled = true
 text = "环境描述文本"
 
-[node name="InteractiveLabel" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+[node name="InteractiveLabel" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer"]
 visible = false
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-text = "--- 桌面可调查物 ---"
+text = "可调查"
 
-[node name="InteractiveContainer" type="HFlowContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+[node name="InteractiveContainer" type="HFlowContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer"]
 visible = false
 custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 
-[node name="ChoicesLabel" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+[node name="ChoicesLabel" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-text = "--- 决断 ---"
+text = "决断"
 
-[node name="ChoicesContainer" type="VBoxContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer"]
+[node name="ChoicesContainer" type="VBoxContainer" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer"]
 layout_mode = 2
 
 [node name="PortMode" type="Control" parent="HBoxContainer/CenterArea"]
@@ -202,11 +209,13 @@ grow_vertical = 2
 layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
-offset_left = 30.0
-offset_right = 130.0
+offset_left = 18.0
+offset_top = 8.0
+offset_right = 286.0
+offset_bottom = -8.0
 grow_vertical = 2
 alignment = 1
-theme_override_constants/separation = 20
+theme_override_constants/separation = 8
 
 [node name="RightFacilities" type="VBoxContainer" parent="HBoxContainer/CenterArea/PortMode"]
 layout_mode = 1
@@ -214,22 +223,24 @@ anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -130.0
-offset_right = -30.0
+offset_left = -286.0
+offset_top = 8.0
+offset_right = -18.0
+offset_bottom = -8.0
 grow_horizontal = 0
 grow_vertical = 2
 alignment = 1
-theme_override_constants/separation = 20
+theme_override_constants/separation = 8
 
 [node name="PortTitle" type="Label" parent="HBoxContainer/CenterArea/PortMode"]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -100.0
-offset_top = 20.0
-offset_right = 100.0
-offset_bottom = 60.0
+offset_left = -120.0
+offset_top = 16.0
+offset_right = 120.0
+offset_bottom = 56.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 36
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)

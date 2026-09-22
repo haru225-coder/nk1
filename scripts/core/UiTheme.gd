@@ -47,11 +47,21 @@ static func panel() -> StyleBoxFlat:
 
 ## 设施卡：比面板浅半档，hover 由调用方接 mouse_entered 换 card_hover()
 static func card() -> StyleBoxFlat:
-	return _flat(INK_SOFT, Color(GOLD, 0.22), 8)
+	var st := _flat(INK_SOFT, Color(GOLD, 0.22), 6)
+	st.content_margin_left = 6
+	st.content_margin_right = 8
+	st.content_margin_top = 4
+	st.content_margin_bottom = 4
+	return st
 
 
 static func card_hover() -> StyleBoxFlat:
-	return _flat(Color(0.17, 0.20, 0.28, 0.85), Color(GOLD, 0.55), 8)
+	var st := _flat(Color(0.17, 0.20, 0.28, 0.85), Color(GOLD, 0.55), 6)
+	st.content_margin_left = 6
+	st.content_margin_right = 8
+	st.content_margin_top = 4
+	st.content_margin_bottom = 4
+	return st
 
 
 static func _button_box(bg: Color, border: Color) -> StyleBoxFlat:
@@ -135,12 +145,15 @@ static func style_footnote(lbl: Label) -> void:
 	lbl.add_theme_color_override("font_color", TEXT_DIM)
 
 
-## 递归给子树所有 Button 上默认样式（OptionButton 亦属 Button）。
 ## 在容器 child_entered_tree 上挂一次，之后任何代码 add 的按钮自动带样式。
-static func hook_buttons(container: Node) -> void:
+## choice=true 走挑签，设施页选项与剧情选项同一套，不再混默认方钮。
+static func hook_buttons(container: Node, choice := false) -> void:
 	container.child_entered_tree.connect(func(n: Node):
 		if n is Button:
-			style_button(n)
+			if choice:
+				style_choice_button(n)
+			else:
+				style_button(n)
 	)
 
 

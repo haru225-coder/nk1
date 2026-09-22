@@ -11,12 +11,12 @@ extends Control
 @onready var start_button: Button = $HBoxContainer/CenterArea/TitleMode/VBoxContainer/StartButton
 
 @onready var investigation_mode: PanelContainer = $HBoxContainer/CenterArea/InvestigationMode
-@onready var scene_title: Label = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/SceneTitle
-@onready var body_text: RichTextLabel = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/BodyText
-@onready var interactive_label: Label = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/InteractiveLabel
-@onready var interactive_container: HFlowContainer = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/InteractiveContainer
-@onready var choices_container: VBoxContainer = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/ChoicesContainer
-@onready var choices_label: Label = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/VBoxContainer/ChoicesLabel
+@onready var scene_title: Label = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer/SceneTitle
+@onready var body_text: RichTextLabel = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer/BodyText
+@onready var interactive_label: Label = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer/InteractiveLabel
+@onready var interactive_container: HFlowContainer = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer/InteractiveContainer
+@onready var choices_container: VBoxContainer = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer/ChoicesContainer
+@onready var choices_label: Label = $HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer/ChoicesLabel
 
 @onready var port_mode: Control = $HBoxContainer/CenterArea/PortMode
 @onready var left_facilities: VBoxContainer = $HBoxContainer/CenterArea/PortMode/LeftFacilities
@@ -69,6 +69,9 @@ func _ready() -> void:
 	status_label.bbcode_enabled = true
 	message_label.bbcode_enabled = true
 	scene_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body_text.fit_content = true
+	body_text.scroll_active = false
 	# 防御：异常路径可能残留未清理的海战上下文，回港时清空
 	GameManager.pending_battle = {}
 	GameManager.monthly_notice.connect(_on_monthly_notice)
@@ -76,7 +79,8 @@ func _ready() -> void:
 	left_panel.add_theme_stylebox_override("panel", UiTheme.panel())
 	investigation_mode.add_theme_stylebox_override("panel", UiTheme.panel())
 	UiTheme.style_button(start_button, true)
-	UiTheme.hook_buttons(choices_container)
+	UiTheme.hook_buttons(choices_container, true)
+	choices_container.add_theme_constant_override("separation", 6)
 	UiTheme.hook_buttons(right_facilities)
 	UiTheme.hook_buttons(npc_actions)
 	UiTheme.style_heading(scene_title)
@@ -410,7 +414,7 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 
 func _setup_market(port_id: String) -> void:
 	scene_title.text = "%s・牙行" % GameManager.get_port_name(port_id)
-	body_text.text = "牙行里挤着各色商人，没有人说官话，只用手势、算筹和一把碎银落地就要捡的速度说话。"
+	body_text.text = "牙行里没人说官话，只用算筹和价目说话。"
 
 	var goods_ids: Array = Economy.goods_at(port_id)
 	if goods_ids.is_empty():
@@ -458,7 +462,7 @@ func _setup_market(port_id: String) -> void:
 		rows.add_child(_make_market_row(port_id, gid))
 
 	choices_label.visible = true
-	choices_label.text = "── 舱位 %d / %d 料 ──" % [int(Fleet.used_capacity()), int(Fleet.total_capacity())]
+	choices_label.text = "舱位 %d / %d 料" % [int(Fleet.used_capacity()), int(Fleet.total_capacity())]
 	_add_leave_button(port_id)
 
 
@@ -595,7 +599,7 @@ func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) ->
 
 func _setup_yamen(port_id: String) -> void:
 	scene_title.text = "%s・市舶司" % GameManager.get_port_name(port_id)
-	body_text.text = "官府重地。几名差役正在慵懒地打瞌睡，案上压着一摞未及批的货单。"
+	body_text.text = "案上压着未批的货单。验引、呈报、修埠都在这里。"
 
 	_add_npc_button("customs_official", "市舶司小吏")
 
@@ -643,7 +647,7 @@ func _setup_reporting() -> void:
 		return
 
 	var sep := Label.new()
-	sep.text = "── 呈报所见 ──"
+	sep.text = "呈报所见"
 	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(sep)
 
@@ -673,7 +677,7 @@ func _setup_reporting() -> void:
 
 func _setup_title_and_invest(port_id: String) -> void:
 	var sep := Label.new()
-	sep.text = "── 市舶职衔 ──"
+	sep.text = "市舶职衔"
 	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(sep)
 
@@ -698,7 +702,7 @@ func _setup_title_and_invest(port_id: String) -> void:
 	choices_container.add_child(rank_lbl)
 
 	var inv_sep := Label.new()
-	inv_sep.text = "── 修埠 ──"
+	inv_sep.text = "修埠"
 	inv_sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(inv_sep)
 
@@ -741,14 +745,14 @@ func _attention_desc() -> String:
 
 func _setup_shipyard(port_id: String) -> void:
 	scene_title.text = "%s・船屋" % GameManager.get_port_name(port_id)
-	body_text.text = "船坞里散发着桐油与海水的味道。这是修补海船、补充水手与水粮的地方。"
+	body_text.text = "桐油和潮气。修船、补员、装水粮。"
 
 	# 补给
 	var grain_price := Economy.buy_price(port_id, "grain") if Economy.is_traded(port_id, "grain") else 12
 	var water_price := 1
 
 	var supply_lbl := Label.new()
-	supply_lbl.text = "── 补给（水 %d钱/份，粮 %d钱/份；一份供两人一日，现每日耗 %d 份）──" % [
+	supply_lbl.text = "补给　水 %d　粮 %d　每日耗 %d" % [
 		water_price, grain_price, Fleet.daily_supply_use(),
 	]
 	supply_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
@@ -807,7 +811,7 @@ func _setup_shipyard(port_id: String) -> void:
 
 	# 赊贷：本钱被查扣清空后仍有翻身的路
 	var loan_lbl := Label.new()
-	loan_lbl.text = "── 蕃商赊贷（月息 %d%%，上限 %d）──" % [
+	loan_lbl.text = "蕃商赊贷　月息 %d%%　上限 %d" % [
 		int(GameState.DEBT_MONTHLY_RATE * 100),
 		GameState.DEBT_CEILING + GameState.title_loan_bonus(),
 	]
@@ -850,7 +854,7 @@ func _setup_shipyard(port_id: String) -> void:
 
 	# 改装：帆 Lv 决定航速，甲 Lv 减免风暴/海盗船体伤。逐船两按钮（.bind 传 index 防闭包陷阱）
 	var up_lbl := Label.new()
-	up_lbl.text = "── 船体改装（帆 Lv 决定航速，甲 Lv 减免风暴/海盗船体伤）──"
+	up_lbl.text = "船体改装"
 	up_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(up_lbl)
 
@@ -890,7 +894,7 @@ func _setup_shipyard(port_id: String) -> void:
 
 	# 买船
 	var ship_lbl := Label.new()
-	ship_lbl.text = "── 船行 ──"
+	ship_lbl.text = "船行"
 	ship_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(ship_lbl)
 
@@ -963,7 +967,7 @@ func _on_buy_supplies(n: int, wp: int, gp: int) -> void:
 
 func _setup_tavern(port_id: String) -> void:
 	scene_title.text = "%s・酒馆" % GameManager.get_port_name(port_id)
-	body_text.text = "这里充斥着劣质酒水的味道和水手们的大声喧哗。"
+	body_text.text = "劣酒和喧哗。消息与人手都从这儿来。"
 
 	# 旧事放最前：泉州候选五人时，钩子否则会被挤出 720p 窗口。
 	_setup_story_hooks(port_id)
@@ -994,7 +998,7 @@ func _setup_story_hooks(port_id: String) -> void:
 	if hooks.is_empty():
 		return
 	var sep := Label.new()
-	sep.text = "── 旧事 ──"
+	sep.text = "旧事"
 	UiTheme.style_section_label(sep)
 	choices_container.add_child(sep)
 	for h in hooks:
@@ -1019,7 +1023,7 @@ func _on_story_hook(hook: Dictionary, port_id: String) -> void:
 ## 酒馆募人。每种职事至多一人，故已雇之职不再列出候选。
 func _setup_hiring(port_id: String) -> void:
 	var sep := Label.new()
-	sep.text = "── 募人（月俸按月支给，欠饷三月则去）──"
+	sep.text = "募人　月俸按月，欠饷三月则去"
 	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(sep)
 
@@ -1083,7 +1087,7 @@ func _stars(n: int) -> String:
 ## 旅店：候风。季风按月转向，等到对的月份再发舶是这个游戏最要紧的判断之一。
 func _setup_inn(port_id: String) -> void:
 	scene_title.text = "%s・旅店" % GameManager.get_port_name(port_id)
-	body_text.text = "临街的通铺，草席上还留着上一个客人的潮气。掌柜说，风信不对的时候，港里泰半的海商都在这儿耗着。"
+	body_text.text = "通铺草席还潮着。风信不对时，海商在这儿候着。"
 
 	var info := Label.new()
 	info.text = "眼下：%s，%s" % [Calendar.get_date_string(), Calendar.get_monsoon_desc()]
@@ -1123,7 +1127,7 @@ const GUILD_CREDIT_WIDE := 8
 ## 行会：出港行情抄本。酒馆打听仍费一日只吐一条；这里钉在墙上，不耗日。
 func _setup_guild(port_id: String) -> void:
 	scene_title.text = "%s・行会" % GameManager.get_port_name(port_id)
-	body_text.text = "行首正与几名蕃商核对舱位与脚钱。墙上钉着一张抄来的远港价目，墨迹有的还潮着。"
+	body_text.text = "墙上钉着远港价目，墨迹有的还潮着。"
 
 	var cred := Label.new()
 	cred.text = "海商信用 %d。信用足的人，会里肯多抄几条远路。" % GameState.merchant_credit
@@ -1132,7 +1136,7 @@ func _setup_guild(port_id: String) -> void:
 	choices_container.add_child(cred)
 
 	var sep := Label.new()
-	sep.text = "── 出港行情 ──"
+	sep.text = "出港行情"
 	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(sep)
 
@@ -1163,7 +1167,7 @@ func _setup_guild(port_id: String) -> void:
 ## 贡院：今科未开，只能替人誊录。耗日换工钱与学者倾向，不给名声、不另开章门。
 func _setup_exam(port_id: String) -> void:
 	scene_title.text = "%s・贡院" % GameManager.get_port_name(port_id)
-	body_text.text = "贡院朱门紧闭。今科未开，阶下只有几个背着书箧的士子在张望。\n你想起叔父留下的那笔债——科举与海路，眼下还容不得你两头都要。誊录的笔墨钱倒是现结。"
+	body_text.text = "今科未开。只能替人誊录，笔墨钱现结。"
 
 	var tend := Label.new()
 	tend.text = "学者倾向 %d　海路倾向 %d" % [GameState.scholar_tendency, GameState.sea_tendency]
@@ -1192,7 +1196,7 @@ func _on_exam_copy(_port_id: String) -> void:
 ## 住宅：看边记、便宜歇息。候风仍去旅店——下处等不到风向。
 func _setup_residence(port_id: String) -> void:
 	scene_title.text = "%s・住处" % GameManager.get_port_name(port_id)
-	body_text.text = "一间租来的下处，屋角堆着几卷未拆的旧账。比旅店便宜，只是听不见港上的风信。"
+	body_text.text = "租来的下处。比旅店便宜，听不见风信。"
 
 	var tend := Label.new()
 	tend.text = "学者倾向 %d　海路倾向 %d" % [GameState.scholar_tendency, GameState.sea_tendency]
@@ -1200,7 +1204,7 @@ func _setup_residence(port_id: String) -> void:
 	choices_container.add_child(tend)
 
 	var sep := Label.new()
-	sep.text = "── 边记 ──"
+	sep.text = "边记"
 	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(sep)
 
@@ -1219,7 +1223,7 @@ func _setup_residence(port_id: String) -> void:
 			choices_container.add_child(n)
 
 	var rest_sep := Label.new()
-	rest_sep.text = "── 歇息（候风仍去旅店）──"
+	rest_sep.text = "歇息　候风仍去旅店"
 	rest_sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(rest_sep)
 
@@ -1240,13 +1244,13 @@ const TEMPLE_RUB_DAYS := 1
 ## 寺观：上陆勘见近侧旧迹。记入册子，拓纸入边记；赏格仍回市舶司呈报——不在这里发名声。
 func _setup_temple(port_id: String) -> void:
 	scene_title.text = "%s・寺观" % GameManager.get_port_name(port_id)
-	body_text.text = "廊下香灰积了一指厚。住持不谈功名，只说近侧还有几处未入官图的旧迹。细看记入册子，拓下的墨纸带回住处；赏格仍要回市舶司呈报。"
+	body_text.text = "住持不谈功名。细看记入册子，拓纸带回住处，赏格回市舶司。"
 	if GameState.has_flag("japan_temple_network"):
 		body_text.text += "\n袖底那张寺社短札，这里的沙弥看过一眼就不再多问。"
 
 	var near: Array = GameManager.discoveries_near(port_id)
 	var sep := Label.new()
-	sep.text = "── 近侧旧迹 ──"
+	sep.text = "近侧旧迹"
 	sep.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
 	choices_container.add_child(sep)
 
@@ -1533,28 +1537,27 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 
 func _make_facility_card(fac: Dictionary) -> Control:
 	var card = PanelContainer.new()
-	card.custom_minimum_size = Vector2(280, 90)
+	card.custom_minimum_size = Vector2(0, 58)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.add_theme_stylebox_override("panel", UiTheme.card())
 
 	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
 	card.add_child(hbox)
 
 	var icon_id = fac.get("id", "").replace("city_", "")
 	var icon_path = "res://assets/icon_" + icon_id + ".png"
 	var tex_rect = TextureRect.new()
-	tex_rect.custom_minimum_size = Vector2(80, 80)
+	tex_rect.custom_minimum_size = Vector2(40, 40)
 	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	tex_rect.clip_contents = true
 
 	var icon_tex := GameManager.load_texture(icon_path)
 	if icon_tex != null:
 		tex_rect.texture = icon_tex
 
-	var icon_margin = MarginContainer.new()
-	icon_margin.add_theme_constant_override("margin_left", 5)
-	icon_margin.add_theme_constant_override("margin_right", 5)
-	icon_margin.add_child(tex_rect)
-	hbox.add_child(icon_margin)
+	hbox.add_child(tex_rect)
 
 	var vbox = VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -1563,7 +1566,7 @@ func _make_facility_card(fac: Dictionary) -> Control:
 
 	var title_lbl = Label.new()
 	title_lbl.text = fac.get("title", "未命名设施")
-	title_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
+	title_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	title_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 	vbox.add_child(title_lbl)
 
@@ -1586,9 +1589,10 @@ func _make_facility_card(fac: Dictionary) -> Control:
 
 func _add_sail_button() -> void:
 	var btn = Button.new()
-	btn.text = "🚢 升帆出海（海图）"
-	btn.custom_minimum_size = Vector2(250, 70)
-	btn.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
+	btn.text = "升帆出海"
+	btn.custom_minimum_size = Vector2(0, 42)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	btn.pressed.connect(_on_set_sail)
 	right_facilities.add_child(btn)
 	UiTheme.style_button(btn, true)
@@ -1623,7 +1627,8 @@ func _on_set_sail() -> void:
 func _add_save_button() -> void:
 	var btn = Button.new()
 	btn.text = "存档 / 读档"
-	btn.custom_minimum_size = Vector2(250, 44)
+	btn.custom_minimum_size = Vector2(0, 34)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.pressed.connect(_show_save_dialog)
 	right_facilities.add_child(btn)
 
