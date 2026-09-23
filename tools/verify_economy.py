@@ -284,6 +284,60 @@ for name, bearing_deg, want in [("西南季风(吹向东北)", 45.0, "右上"), 
     got = ("右" if dx > 0 else "左") + ("上" if dy < 0 else "下")
     check(got == want, f"{name} 的箭头指向{got}")
 
+# 海岸是绢纸上的装饰，不能把港点埋进陆地。投影系数仍锁 0.78。
+coast = load("chart_coast.json")
+seachart_src = open(os.path.join(ROOT, "scripts", "SeaChart.gd"), encoding="utf-8").read()
+check("res://data/chart_coast.json" in seachart_src, "海图会读取 chart_coast.json")
+check("* 0.78" in seachart_src, "海图投影系数仍是 0.78")
+
+def _ring_has(lat, lon, ring):
+    inside = False
+    n = len(ring)
+    j = n - 1
+    for i in range(n):
+        yi, xi = float(ring[i][0]), float(ring[i][1])
+        yj, xj = float(ring[j][0]), float(ring[j][1])
+        denom = yj - yi
+        if abs(denom) < 1e-9:
+            j = i
+            continue
+        if ((yi > lat) != (yj > lat)) and (lon < (xj - xi) * (lat - yi) / denom + xi):
+            inside = not inside
+        j = i
+    return inside
+
+def _edge_gap(lat, lon, ring):
+    best = 1e9
+    for i in range(len(ring) - 1):
+        lat1, lon1 = float(ring[i][0]), float(ring[i][1])
+        lat2, lon2 = float(ring[i + 1][0]), float(ring[i + 1][1])
+        vx, vy = lon2 - lon1, lat2 - lat1
+        L2 = vx * vx + vy * vy
+        if L2 < 1e-12:
+            d = math.hypot(lon - lon1, lat - lat1)
+        else:
+            t = max(0.0, min(1.0, ((lon - lon1) * vx + (lat - lat1) * vy) / L2))
+            d = math.hypot(lon - (lon1 + t * vx), lat - (lat1 + t * vy))
+        best = min(best, d)
+    return best
+
+rings = coast.get("land", [])
+check(len(rings) >= 5, f"海岸至少有大陆和几座岛（现有 {len(rings)} 环）")
+buried = []
+close = []
+for p in allp:
+    lat, lon = float(p["lat"]), float(p["lon"])
+    if any(_ring_has(lat, lon, ring) for ring in rings):
+        buried.append(p["id"])
+    gap = min(_edge_gap(lat, lon, ring) for ring in rings)
+    if gap < 0.18:
+        close.append(f"{p['id']} {gap:.2f}°")
+check(not buried, f"港口都在海上（埋进陆地：{buried or '无'}）")
+check(not close, f"港口离岸至少 0.18 度（过近：{close or '无'}）")
+for sea in coast.get("seas", []):
+    on = any(_ring_has(float(sea["lat"]), float(sea["lon"]), ring) for ring in rings)
+    check(not on, f"海名「{sea['name']}」写在海上")
+
 print()
 print("=" * 68)
 print("二、核心贸易循环：泉州 ⇄ 博多 往返是否双向盈利")
