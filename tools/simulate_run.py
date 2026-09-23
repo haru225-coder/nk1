@@ -599,6 +599,34 @@ land_ids = eligible_ids({"chose_land_first"})
 check("exam_road" in land_ids and "south_sea" not in land_ids,
       f"只持 chose_land_first：{sorted(land_ids)}")
 
+def eligible_at(port_id, flags, network=0):
+    return {
+        e["id"] for e in ending_rows
+        if port_id in (e.get("where") or [])
+        and ending_matches(e, flags, 4, 1, network)
+    }
+
+quanzhou_sea = eligible_at("quanzhou", {"chose_sea_first"})
+check(quanzhou_sea == {"ledger_open"},
+      f"泉州 + chose_sea_first 只剩默认结局（{sorted(quanzhou_sea)}）")
+champa_sea = eligible_at("champa", {"chose_sea_first"})
+check(champa_sea == {"south_sea"},
+      f"占城 + chose_sea_first 只有南海不归（{sorted(champa_sea)}）")
+xinghua_land = eligible_at("xinghua", {"chose_land_first"})
+check(xinghua_land == {"exam_road"},
+      f"兴化 + chose_land_first 只有科举结局（{sorted(xinghua_land)}）")
+quanzhou_land = eligible_at("quanzhou", {"chose_land_first"})
+check(quanzhou_land == {"exam_road", "ledger_open"},
+      f"泉州 + chose_land_first：{sorted(quanzhou_land)}")
+quanzhou_temple = eligible_at("quanzhou", {"temple_route"}, network=10)
+check(quanzhou_temple == {"temple_post", "ledger_open"},
+      f"泉州 + temple_route + 人脉 10：{sorted(quanzhou_temple)}")
+quanzhou_letter = eligible_at("quanzhou", {"temple_letter"}, network=0)
+check(quanzhou_letter == {"ledger_open"},
+      f"泉州 + temple_letter + 人脉 0：{sorted(quanzhou_letter)}")
+penghu_sea = eligible_at("penghu", {"chose_sea_first"})
+check(penghu_sea == set(), f"澎湖住处不提供结局（{sorted(penghu_sea)}）")
+
 print()
 print("="*70)
 if fails:

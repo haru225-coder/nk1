@@ -187,11 +187,14 @@ func load_scene(scene_id: String) -> void:
 		previous_scene_id = current_scene_id
 	current_scene_id = scene_id
 
-	# 设施场景由代码动态生成，不走 scenes.json
+	# 设施场景由代码动态生成，不走 scenes.json。
+	# 前缀必须是港口 id。city_guild 也以 _guild 结尾，但 city 不是港口，那是序章里的孤儿场景。
 	for suffix in FACILITY_SUFFIXES:
 		if scene_id.ends_with(suffix):
-			_setup_dynamic_scene(scene_id, suffix)
-			return
+			var facility_port := scene_id.trim_suffix(suffix)
+			if not GameManager.get_port_by_id(facility_port).is_empty():
+				_setup_dynamic_scene(scene_id, suffix)
+				return
 
 	var scene_data = GameManager.get_scene_by_id(scene_id)
 	var pdef := GameManager.get_port_by_id(scene_id)

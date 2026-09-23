@@ -230,7 +230,15 @@ func _refresh_status() -> void:
 		if total_li > 0.0:
 			pct = clampf((total_li - remaining_li) / total_li, 0.0, 1.0)
 		t += "[color=aqua]航行中　第 %d 日[/color]\n已行 %d%%\n余程 %d 里\n\n" % [days_elapsed, int(pct * 100), int(remaining_li)]
-	t += "金钱：%d\n名声：%d（%s）\n\n" % [GameState.money, GameState.fame, GameState.fame_title()]
+	t += "金钱：%d\n名声：%d（%s）\n" % [GameState.money, GameState.fame, GameState.fame_title()]
+	var cn := ["", "一", "二", "三", "四", "五", "六"]
+	var ch_n := GameState.chapter
+	var ch_label := cn[ch_n] if ch_n < cn.size() else str(ch_n)
+	t += "\n[u]第%s章・%s[/u]\n" % [ch_label, GameState.chapter_def().get("name", "")]
+	var ending := GameState.ending_def()
+	if not ending.is_empty():
+		t += "[color=lime]%s[/color]\n" % ending.get("title", "")
+	t += "\n"
 	t += "[u]舰队[/u]\n船数：%d　水手：%d\n舱位：%d / %d 料\n耐久：%d / %d\n士气：%d\n" % [
 		Fleet.ships.size(), Fleet.total_crew(),
 		int(Fleet.used_capacity()), int(Fleet.total_capacity()),

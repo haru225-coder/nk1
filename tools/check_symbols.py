@@ -670,6 +670,28 @@ else:
     print("  ✗ _on_facility_pressed 未重写 city_inn")
     problems.append("_on_facility_pressed 未重写 city_inn")
 
+load_body = _func_body(main_src, "load_scene")
+if "get_port_by_id" in load_body and "trim_suffix" in load_body:
+    print("  ✓ 设施后缀先确认前缀是港口")
+else:
+    print("  ✗ load_scene 未用港口 id 拦住设施后缀")
+    problems.append("load_scene 未用港口 id 拦住设施后缀")
+
+residence_body = _func_body(main_src, "_setup_residence")
+if "endings_at" in residence_body:
+    print("  ✓ 住处结局走 endings_at")
+else:
+    print("  ✗ 住处未调用 endings_at")
+    problems.append("住处未调用 endings_at")
+
+sea_src = open(os.path.join(ROOT, "scripts", "SeaChart.gd"), encoding="utf-8").read()
+sea_status = _func_body(sea_src, "_refresh_status")
+if "ending_def" in sea_status and "chapter_def" in sea_status:
+    print("  ✓ 海图状态栏含章名与结局标题")
+else:
+    print("  ✗ 海图状态栏未写章名或结局标题")
+    problems.append("海图状态栏未写章名或结局标题")
+
 print()
 print("=" * 68)
 if problems:

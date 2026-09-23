@@ -807,6 +807,75 @@ price_body = price_m.group(1) if price_m else ""
 check(price_body != "" and "fame" not in price_body and "merchant_credit" not in price_body,
       "price_at_rate 不读名声与商誉")
 
+def func_body(src, name):
+    m = re.search(rf"func {name}\b.*?\n(.*?)(?=\nfunc |\Z)", src, re.S)
+    return m.group(1) if m else ""
+
+join_body = func_body(gs_src, "join_guild")
+fee_m = re.search(r"const GUILD_FEE := (\d+)", gs_src)
+need_m = re.search(r"const GUILD_CREDIT_NEED := (\d+)", gs_src)
+guild_fee = int(fee_m.group(1)) if fee_m else 0
+guild_need = int(need_m.group(1)) if need_m else 0
+check(guild_fee == 2000 and guild_need == 8, f"入行费 {guild_fee}、商誉门槛 {guild_need}")
+check(join_body != "" and "Economy" not in join_body and "price_at_rate" not in join_body
+      and "tariff" not in join_body,
+      "join_guild 不改行情、抽解、佣金")
+credit_at = join_body.find("merchant_credit < GUILD_CREDIT_NEED")
+spend_at = join_body.find("spend_money(GUILD_FEE)")
+add_credit_at = join_body.find("add_merchant_credit(4)")
+add_net_at = join_body.find("add_network(2)")
+check(0 <= credit_at < spend_at < add_credit_at and spend_at < add_net_at,
+      "入行先看商誉和现钱，通过后才加商誉与人脉")
+
+def try_join(port, credit, money, flags):
+    """与 join_guild 同一顺序。数值来自源码里的常量与调用。"""
+    guild_ports = re.search(r'const GUILD_PORTS := \[(.*?)\]', gs_src, re.S)
+    ports_ok = re.findall(r'"([a-z_]+)"', guild_ports.group(1) if guild_ports else "")
+    if port not in ports_ok:
+        return False, money, credit, flags
+    flag = "guild_" + port
+    if flag in flags:
+        return False, money, credit, flags
+    if credit < guild_need:
+        return False, money, credit, flags
+    if money < guild_fee:
+        return False, money, credit, flags
+    return True, money - guild_fee, credit + 4, flags | {flag}
+
+ok, money_left, credit_left, flags_left = try_join("quanzhou", 7, 5000, set())
+check(not ok and money_left == 5000 and credit_left == 7, "商誉 7 时入行不扣钱")
+ok, money_left, credit_left, flags_left = try_join("quanzhou", 8, 1999, set())
+check(not ok and money_left == 1999, "现钱不足 2000 时不扣、不加商誉")
+ok, money_left, credit_left, flags_left = try_join("hakata", 8, 2000, set())
+check(ok and money_left == 0 and credit_left == 12 and "guild_hakata" in flags_left,
+      f"博多入行后钱 {money_left} 商誉 {credit_left}")
+ok2, money2, credit2, flags2 = try_join("hakata", credit_left, money_left + 2000, flags_left)
+check(not ok2 and credit2 == 12, "同一港不能再交一次入行银")
+ok3, money3, credit3, flags3 = try_join("penghu", 20, 5000, set())
+check(not ok3 and money3 == 5000, "澎湖没有行会，不扣钱")
+
+where_body = func_body(gs_src, "endings_at")
+check("port_id in where" in where_body, "endings_at 按 where 过滤港口")
+
+suffix_m = re.search(r"const FACILITY_SUFFIXES := \[(.*?)\]", main_src, re.S)
+suffixes = re.findall(r'"(_[a-z]+)"', suffix_m.group(1) if suffix_m else "")
+port_ids = {p["id"] for p in load("ports.json")["ports"]}
+
+def routes_as_facility(scene_id):
+    for sx in suffixes:
+        if scene_id.endswith(sx) and scene_id[:-len(sx)] in port_ids:
+            return True
+    return False
+
+check(suffixes and not routes_as_facility("city_guild") and not routes_as_facility("city_residence"),
+      f"city_guild / city_residence 仍是场景（后缀 {suffixes}）")
+check(routes_as_facility("quanzhou_guild") and routes_as_facility("hakata_guild")
+      and routes_as_facility("champa_residence") and routes_as_facility("xinghua_exam"),
+      "港口前缀的行会、住处、贡院仍走设施")
+load_body = func_body(main_src, "load_scene")
+check("get_port_by_id" in load_body and "trim_suffix" in load_body,
+      "load_scene 用港口 id 确认设施后缀")
+
 disc_names = {d["name"] for d in load("discoveries.json")["discoveries"]}
 disc_effects = []
 for s in scenes_doc["scenes"]:
