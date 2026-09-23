@@ -762,7 +762,7 @@ func _draw_world(c: Control, frame: Dictionary, size: Vector2) -> void:
 		stroke.append(soft[0])
 		c.draw_polyline(stroke, shore, 4.2, true)
 		c.draw_polyline(stroke, ink, 1.55, true)
-		_draw_shoal(c, frame, ring, pts, i == 0, harbors)
+		_draw_shoal(c, frame, soft, i == 0, harbors)
 	_draw_land_grain(c, frame, size)
 	_draw_inland(c, frame, size)
 	_draw_ranges(c, frame, size)
@@ -901,22 +901,30 @@ func _draw_river(c: Control, frame: Dictionary, pts: PackedVector2Array, col: Co
 		curved.append(a)
 		var span := b - a
 		var length := span.length()
-		if length < 16.0:
+		if length < 28.0:
 			continue
 		var nrm := Vector2(-span.y, span.x).normalized()
-		var amp := minf(10.0, length * 0.09)
+		var amp := minf(7.5, length * 0.045)
 		if i % 2 == 1:
 			amp = -amp
-		var m1 := a.lerp(b, 0.33) + nrm * amp
-		var m2 := a.lerp(b, 0.68) - nrm * amp * 0.55
-		var g1 := _chart_unproject(frame, m1)
-		var g2 := _chart_unproject(frame, m2)
-		if _ashore(g1.y, g1.x) and _ashore(g2.y, g2.x):
-			curved.append(m1)
-			curved.append(m2)
+		var waves := 2 if length >= 90.0 else 1
+		var steps := 5 * waves
+		var extra := PackedVector2Array()
+		var ok := true
+		for s in steps:
+			var t := float(s + 1) / float(steps + 1)
+			var bend := a.lerp(b, t) + nrm * sin(t * TAU * float(waves)) * amp
+			var geo := _chart_unproject(frame, bend)
+			if not _ashore(geo.y, geo.x):
+				ok = false
+				break
+			extra.append(bend)
+		if ok:
+			for bend in extra:
+				curved.append(bend)
 	curved.append(pts[last])
-	c.draw_polyline(curved, Color(0.55, 0.68, 0.72, 0.40), 2.6, true)
-	c.draw_polyline(curved, col, 1.25, true)
+	c.draw_polyline(curved, Color(0.55, 0.68, 0.72, 0.42), 2.8, true)
+	c.draw_polyline(curved, col, 1.15, true)
 
 
 func _draw_graticule(c: Control, frame: Dictionary, size: Vector2) -> void:
@@ -967,36 +975,52 @@ func _draw_sea_depth(c: Control, size: Vector2) -> void:
 
 
 func _draw_waves(c: Control, frame: Dictionary, size: Vector2) -> void:
-	var col := Color(0.22, 0.40, 0.46, 0.34)
-	var step := 52.0
+	var col := Color(0.22, 0.40, 0.46, 0.32)
+	var step := 58.0
 	var row := 0
-	var y := 28.0
-	while y < size.y - 16.0:
-		var x := 22.0 + float(row % 3) * 14.0
-		while x < size.x - 16.0:
+	var y := 34.0
+	while y < size.y - 18.0:
+		var x := 26.0 + float(row % 3) * 18.0
+		while x < size.x - 18.0:
 			var salt := int(x) * 3 + row * 5
-			if salt % 4 == 0:
+			if salt % 5 == 0:
 				x += step
 				continue
-			var geo := _chart_unproject(frame, Vector2(x, y))
-			if _ashore(geo.y, geo.x):
+			var at := Vector2(
+				x + float((salt * 17) % 17) - 8.0,
+				y + float((salt * 13) % 13) - 6.0)
+			if not _open_water(frame, at, 22.0):
 				x += step
 				continue
-			var shoreward := _chart_unproject(frame, Vector2(x - 16.0, y))
-			if _ashore(shoreward.y, shoreward.x):
-				x += step
-				continue
-			var lift := 1.1 + float(salt % 4) * 0.45
-			var span := 6.0 + float((salt / 3) % 3) * 2.0
+			var lift := 1.0 + float(salt % 3) * 0.4
+			var span := 5.0 + float((salt / 3) % 3) * 1.6
+			var tilt := float((salt % 5) - 2) * 0.35
 			c.draw_polyline(PackedVector2Array([
-				Vector2(x - span, y),
-				Vector2(x - span * 0.35, y - lift),
-				Vector2(x + span * 0.25, y),
-				Vector2(x + span, y - lift * 0.55),
+				at + Vector2(-span, tilt),
+				at + Vector2(-span * 0.25, -lift),
+				at + Vector2(span * 0.35, tilt * 0.3),
+				at + Vector2(span, -lift * 0.45 + tilt),
 			]), col, 1.0, true)
 			x += step
-		y += 36.0
+		y += 40.0
 		row += 1
+
+
+func _open_water(frame: Dictionary, p: Vector2, pad: float) -> bool:
+	var here := _chart_unproject(frame, p)
+	if _ashore(here.y, here.x):
+		return false
+	var probes: Array[Vector2] = [
+		Vector2(pad, 0.0),
+		Vector2(-pad, 0.0),
+		Vector2(0.0, pad * 0.75),
+		Vector2(0.0, -pad * 0.75),
+	]
+	for dir in probes:
+		var geo := _chart_unproject(frame, p + dir)
+		if _ashore(geo.y, geo.x):
+			return false
+	return true
 
 
 func _harbor_marks(frame: Dictionary) -> PackedVector2Array:
@@ -1014,8 +1038,8 @@ func _near_harbor(harbors: PackedVector2Array, p: Vector2, radius: float) -> boo
 
 
 ## 岸线外侧两三道浅水，内侧一条沙岸。大陆西边的封口边不画。港点附近让开。
-func _draw_shoal(c: Control, frame: Dictionary, ring: Array, pts: PackedVector2Array, mainland: bool, harbors: PackedVector2Array) -> void:
-	var n := mini(ring.size(), pts.size())
+func _draw_shoal(c: Control, frame: Dictionary, pts: PackedVector2Array, mainland: bool, harbors: PackedVector2Array) -> void:
+	var n := pts.size()
 	if n < 2:
 		return
 	var bands: Array = [
@@ -1029,11 +1053,13 @@ func _draw_shoal(c: Control, frame: Dictionary, ring: Array, pts: PackedVector2A
 	var page := Rect2(Vector2(-40, -40), c.size + Vector2(80, 80))
 	for i in n:
 		var j := (i + 1) % n
-		if mainland:
-			if float(ring[i][1]) < 104.0 or float(ring[j][1]) < 104.0:
-				continue
 		var a: Vector2 = pts[i]
 		var b: Vector2 = pts[j]
+		if mainland:
+			var ga := _chart_unproject(frame, a)
+			var gb := _chart_unproject(frame, b)
+			if ga.x < 104.0 or gb.x < 104.0:
+				continue
 		if not page.has_point(a) and not page.has_point(b):
 			continue
 		var delta := b - a
@@ -1063,9 +1089,8 @@ func _draw_land_grain(c: Control, frame: Dictionary, size: Vector2) -> void:
 	while y < size.y - 8.0:
 		var x := 12.0 + float(row % 3) * 7.0
 		while x < size.x - 8.0:
-			var geo := _chart_unproject(frame, Vector2(x, y))
-			if _ashore(geo.y, geo.x):
-				c.draw_line(Vector2(x, y), Vector2(x + 4.5, y + 0.6), col, 1.0)
+			if _deep_inland(frame, Vector2(x, y), 14.0):
+				c.draw_line(Vector2(x, y), Vector2(x + 5.0, y + 1.4), col, 1.0)
 			x += 18.0
 		y += 13.0
 		row += 1
@@ -1086,11 +1111,11 @@ func _draw_inland(c: Control, frame: Dictionary, size: Vector2) -> void:
 		row += 1
 
 
-func _deep_inland(frame: Dictionary, p: Vector2) -> bool:
+func _deep_inland(frame: Dictionary, p: Vector2, pad: float = 30.0) -> bool:
 	var here := _chart_unproject(frame, p)
 	if not _ashore(here.y, here.x):
 		return false
-	var probes: Array[Vector2] = [Vector2(30, 0), Vector2(-30, 0), Vector2(0, 30), Vector2(0, -30)]
+	var probes: Array[Vector2] = [Vector2(pad, 0), Vector2(-pad, 0), Vector2(0, pad), Vector2(0, -pad)]
 	for dir in probes:
 		var geo := _chart_unproject(frame, p + dir)
 		if not _ashore(geo.y, geo.x):
@@ -1126,7 +1151,7 @@ func _draw_ranges(c: Control, frame: Dictionary, size: Vector2) -> void:
 				continue
 			_draw_peak(c, p, col, 1.0)
 			if has_prev:
-				c.draw_line(prev, p, Color(col, 0.35), 1.0)
+				c.draw_line(prev, p, Color(col, 0.20), 0.9)
 				if prev.distance_to(p) > 18.0:
 					_draw_peak(c, (prev + p) * 0.5, col, 0.72)
 			prev = p
@@ -1134,10 +1159,22 @@ func _draw_ranges(c: Control, frame: Dictionary, size: Vector2) -> void:
 
 
 func _draw_peak(c: Control, p: Vector2, col: Color, scale: float) -> void:
-	c.draw_line(p + Vector2(-6.5, 4.0) * scale, p + Vector2(0, -6.5) * scale, col, 1.2)
-	c.draw_line(p + Vector2(0, -6.5) * scale, p + Vector2(6.5, 4.0) * scale, col, 1.2)
-	c.draw_line(p + Vector2(-3.5, 4.0) * scale, p + Vector2(0, -2.2) * scale, col, 1.0)
-	c.draw_line(p + Vector2(0, -2.2) * scale, p + Vector2(3.5, 4.0) * scale, col, 1.0)
+	var s := scale
+	c.draw_polyline(PackedVector2Array([
+		p + Vector2(-7.2, 3.4) * s,
+		p + Vector2(-4.0, -0.6) * s,
+		p + Vector2(-1.6, 2.2) * s,
+	]), col, 1.15, true)
+	c.draw_polyline(PackedVector2Array([
+		p + Vector2(-2.4, 2.4) * s,
+		p + Vector2(0.0, -6.4) * s,
+		p + Vector2(2.4, 2.4) * s,
+	]), col, 1.25, true)
+	c.draw_polyline(PackedVector2Array([
+		p + Vector2(1.6, 2.2) * s,
+		p + Vector2(4.2, -1.0) * s,
+		p + Vector2(7.4, 3.4) * s,
+	]), col, 1.15, true)
 
 
 func _draw_reefs(c: Control, frame: Dictionary, size: Vector2) -> void:
