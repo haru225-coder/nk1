@@ -351,6 +351,13 @@ func _run() -> void:
 		"进港后船籍簿按已走通的港重写",
 		fails,
 	)
+	_check(
+		main_src.find("掐指算了算。") >= 0 and main_src.find("掐指算了算：") < 0
+			and main_src.find("压低声音说。") >= 0 and main_src.find("压低声音说：") < 0
+			and main_src.find("五至八月") >= 0 and main_src.find("十月至次年二月") >= 0,
+		"候风与打听去掉冒号，月份仍写在风名后面",
+		fails,
+	)
 	note_node.free()
 	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
 	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)

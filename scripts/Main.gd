@@ -1620,7 +1620,7 @@ func _monsoon_forecast() -> String:
 			break
 	if days == 0:
 		return ""
-	return "掌柜掐指算了算：约 %d 日后风信要转。北上博多、高丽须候西南风　五至八月。南下流求、南洋须候东北风　十月至次年二月。" % days
+	return "掌柜掐指算了算。约 %d 日后风信要转。北上博多、高丽须候西南风　五至八月。南下流求、南洋须候东北风　十月至次年二月。" % days
 
 
 func _on_rest(days: int, port_id: String, rate: int = INN_RATE, place: String = "店中") -> void:
@@ -1743,7 +1743,7 @@ func _set_npc_speech(text: String) -> void:
 
 func _on_npc_intel(n_name: String) -> void:
 	var heard := UiTheme.plain_log(_gather_price_intel(GameState.last_port))
-	_set_npc_speech("%s压低声音说：\n\n%s" % [n_name, heard])
+	_set_npc_speech("%s压低声音说。\n\n%s" % [n_name, heard])
 
 
 func _on_npc_bribe(n_name: String) -> void:

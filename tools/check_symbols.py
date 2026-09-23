@@ -1087,6 +1087,18 @@ if "visit_port" in enter_body and enter_body.find("update_status_panel") > enter
 else:
     print("  ✗ 进港后船籍簿未按已走通的港重写")
     problems.append("进港后船籍簿未重写")
+if (
+    "掐指算了算。" in main_src
+    and "掐指算了算：" not in main_src
+    and "压低声音说。" in main_src
+    and "压低声音说：" not in main_src
+    and "五至八月" in main_src
+    and "十月至次年二月" in main_src
+):
+    print("  ✓ 候风与打听去掉冒号")
+else:
+    print("  ✗ 候风或打听仍用冒号领起")
+    problems.append("候风或打听仍用冒号领起")
 if '" x"' not in wm_src:
     print("  ✓ 海战货舱用乘号")
 else:
