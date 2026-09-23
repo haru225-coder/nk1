@@ -107,6 +107,20 @@ func _run() -> void:
 	_check(UiTheme.SIZE_HEAD > UiTheme.SIZE_BODY and UiTheme.SIZE_BODY > UiTheme.SIZE_FOOT,
 		"字阶 HEAD > BODY > FOOT", fails)
 	choice.free()
+	var accent := Button.new()
+	UiTheme.style_button(accent, true)
+	var chip := Button.new()
+	UiTheme.style_chip(chip, true)
+	_check(accent.get_theme_color("font_color") == UiTheme.INK_SOLID
+		and accent.get_theme_color("font_focus_color") == UiTheme.INK_SOLID
+		and accent.get_theme_color("font_pressed_color") == UiTheme.INK_SOLID,
+		"珊瑚主钮聚焦和按下仍是深字", fails)
+	_check(chip.get_theme_color("font_color") == UiTheme.INK_SOLID
+		and chip.get_theme_color("font_focus_color") == UiTheme.INK_SOLID
+		and chip.get_theme_color("font_pressed_color") == UiTheme.INK_SOLID,
+		"珊瑚小钮聚焦和按下仍是深字", fails)
+	accent.free()
+	chip.free()
 
 	_check(gm.titles_data.get("ranks", []).size() == 5, "titles 五档职衔", fails)
 	_check(gs.title_name() == "籍外散商", "开局籍外散商", fails)

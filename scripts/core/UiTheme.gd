@@ -230,28 +230,28 @@ static func _paint_font(ctrl: Control) -> void:
 
 
 ## 四态按钮。accent=珊瑚主钮（升帆 / 开局），其余夜潮。
+## 珊瑚上必须是深字。主题默认 font_focus_color 是壳白，不覆盖的话
+## Tab 聚焦或按下时白字叠珊瑚，对比约 2.2:1。
 static func style_button(btn: Button, accent := false) -> void:
 	_paint_font(btn)
+	var ink := INK_SOLID if accent else TEXT
 	if accent:
 		btn.add_theme_stylebox_override("normal", _button_box(SEAL, Color(1, 0.78, 0.70, 0.45)))
 		btn.add_theme_stylebox_override("hover", _button_box(SEAL_HI, Color(1, 0.86, 0.80, 0.70)))
 		btn.add_theme_stylebox_override("pressed", _button_box(Color(1.0, 0.376, 0.251), Color(1, 0.70, 0.60, 0.40)))
 		btn.add_theme_stylebox_override("disabled", _button_box(Color(0.35, 0.18, 0.16, 0.55), Color(TIDE, 0.12)))
 		btn.add_theme_stylebox_override("focus", _button_box(SEAL_HI, Color(TIDE, 0.7)))
-		btn.add_theme_color_override("font_color", INK_SOLID)
-		btn.add_theme_color_override("font_hover_color", INK_SOLID)
-		btn.add_theme_color_override("font_pressed_color", INK_SOLID)
-		btn.add_theme_color_override("font_disabled_color", TEXT_DIM)
 	else:
 		btn.add_theme_stylebox_override("normal", _button_box(BTN, Color(TIDE, 0.35)))
 		btn.add_theme_stylebox_override("hover", _button_box(BTN_HI, Color(TIDE, 0.85)))
 		btn.add_theme_stylebox_override("pressed", _button_box(BTN_DOWN, Color(TIDE, 0.45)))
 		btn.add_theme_stylebox_override("disabled", _button_box(Color(BTN_DOWN, 0.55), Color(TIDE, 0.12)))
 		btn.add_theme_stylebox_override("focus", _button_box(BTN_HI, Color(TIDE, 0.85)))
-		btn.add_theme_color_override("font_color", TEXT)
-		btn.add_theme_color_override("font_hover_color", TEXT)
-		btn.add_theme_color_override("font_disabled_color", TEXT_DIM)
-	btn.add_theme_color_override("font_focus_color", TEXT)
+	btn.add_theme_color_override("font_color", ink)
+	btn.add_theme_color_override("font_hover_color", ink)
+	btn.add_theme_color_override("font_pressed_color", ink)
+	btn.add_theme_color_override("font_disabled_color", TEXT_DIM)
+	btn.add_theme_color_override("font_focus_color", ink)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 
@@ -274,8 +274,11 @@ static func style_chip(btn: Button, accent := false) -> void:
 	btn.add_theme_stylebox_override("disabled", mk.call(Color(BTN_DOWN, 0.45)))
 	btn.add_theme_stylebox_override("focus", mk.call(hi))
 	btn.add_theme_font_size_override("font_size", SIZE_FOOT)
-	btn.add_theme_color_override("font_color", INK_SOLID if accent else TEXT)
-	btn.add_theme_color_override("font_hover_color", INK_SOLID if accent else TEXT)
+	var ink := INK_SOLID if accent else TEXT
+	btn.add_theme_color_override("font_color", ink)
+	btn.add_theme_color_override("font_hover_color", ink)
+	btn.add_theme_color_override("font_pressed_color", ink)
+	btn.add_theme_color_override("font_focus_color", ink)
 	btn.add_theme_color_override("font_disabled_color", TEXT_DIM)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
