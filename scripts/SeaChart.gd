@@ -538,17 +538,26 @@ func _draw_chart(c: Control) -> void:
 	RenderingServer.canvas_item_set_clip(c.get_canvas_item(), true)
 	_draw_chart_leaf(c, size)
 	_draw_world(c, frame, size)
-	_draw_monsoon(c, size, frame)
 
 	# 已知航路：淡墨勾出港口间的连接关系。绢纸上不用泥金，否则线会发飘。
+	# 双向连接只画一次，虚线才留得住空隙。
+	var drawn_routes := {}
 	for p in pts:
+		var pid := str(p.get("id", ""))
 		var a: Vector2 = _chart_xy(frame, float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
 		for cid in p.get("connections", []):
-			var q := GameManager.get_port_by_id(cid)
+			var other := str(cid)
+			var lo := pid if pid < other else other
+			var hi := other if pid < other else pid
+			var key := lo + "|" + hi
+			if pid == other or drawn_routes.has(key):
+				continue
+			drawn_routes[key] = true
+			var q := GameManager.get_port_by_id(other)
 			if q.is_empty() or not GameState.is_chapter_reached(q.get("unlock", "ch1")):
 				continue
 			var b: Vector2 = _chart_xy(frame, float(q.get("lat", 0.0)), float(q.get("lon", 0.0)))
-			_draw_rhumb(c, a, b, Color(0.40, 0.26, 0.12, 0.62))
+			_draw_rhumb(c, frame, a, b, Color(0.40, 0.26, 0.12, 0.62))
 
 	# 当前航段
 	if selected_port != "":
@@ -568,8 +577,7 @@ func _draw_chart(c: Control) -> void:
 			# 绢纸上的顺风/横风/逆风要比面板上的亮色深一档，否则会糊进纸色。
 			var col := Color(0.30, 0.42, 0.22) if wf >= 1.15 else (
 				Color(0.62, 0.24, 0.16) if wf <= 0.75 else Color(0.55, 0.36, 0.10))
-			c.draw_line(a, b, Color(col, 0.35), 5.0)
-			c.draw_line(a, b, col, 2.5)
+			_draw_wet_line(c, frame, a, b, col, 2.5, true)
 
 	var font := UiTheme.font()
 	var marks: Array[Dictionary] = []
@@ -745,6 +753,7 @@ func _draw_world(c: Control, frame: Dictionary, size: Vector2) -> void:
 	_draw_sea_depth(c, size)
 	_draw_graticule(c, frame, size)
 	_draw_waves(c, frame, size)
+	_draw_monsoon(c, size, frame)
 	var harbors := _harbor_marks(frame)
 	var lands: Array = data.get("land", [])
 	var mainland := Color(0.776, 0.635, 0.408, 1.0)
@@ -1196,26 +1205,72 @@ func _draw_reefs(c: Control, frame: Dictionary, size: Vector2) -> void:
 		c.draw_line(p + Vector2(-3.5, 2.5), p + Vector2(3.5, -2.5), col, 1.0)
 
 
-## 已知航路用虚线，港点两边留出空，菱形才站得住。
-func _draw_rhumb(c: Control, a: Vector2, b: Vector2, col: Color) -> void:
+## 已知航路用虚线，港点两边留出空，菱形才站得住。压在陆上的那一段空过。
+func _draw_rhumb(c: Control, frame: Dictionary, a: Vector2, b: Vector2, col: Color) -> void:
 	var delta := b - a
 	var length := delta.length()
-	if length < 18.0:
-		c.draw_line(a, b, col, 1.15)
+	if length < 2.0:
 		return
 	var dir := delta / length
+	if length < 18.0:
+		var mid := (a + b) * 0.5
+		var geo := _chart_unproject(frame, mid)
+		if not _ashore(geo.y, geo.x):
+			c.draw_line(a, b, col, 1.15)
+		return
 	var start := a + dir * 8.0
 	var end := b - dir * 8.0
 	var span := end - start
 	var total := span.length()
+	if total < 2.0:
+		return
 	var step_dir := span / total
 	var t := 0.0
 	var dash := 6.0
 	var gap := 4.5
 	while t < total:
 		var t2 := minf(t + dash, total)
-		c.draw_line(start + step_dir * t, start + step_dir * t2, col, 1.15)
+		var p0 := start + step_dir * t
+		var p1 := start + step_dir * t2
+		var geo := _chart_unproject(frame, (p0 + p1) * 0.5)
+		if not _ashore(geo.y, geo.x):
+			c.draw_line(p0, p1, col, 1.15)
 		t += dash + gap
+
+
+func _draw_wet_line(c: Control, frame: Dictionary, a: Vector2, b: Vector2, col: Color, width: float, halo: bool) -> void:
+	var delta := b - a
+	var length := delta.length()
+	if length < 2.0:
+		return
+	var dir := delta / length
+	var step := 5.0
+	var run_from := -1.0
+	var t := 0.0
+	while true:
+		var at_end := t >= length
+		var here := minf(t, length)
+		var geo := _chart_unproject(frame, a + dir * here)
+		var wet := (not at_end) and not _ashore(geo.y, geo.x)
+		if wet:
+			if run_from < 0.0:
+				run_from = here
+		elif run_from >= 0.0:
+			_stroke_wet_run(c, a, dir, run_from, here, col, width, halo)
+			run_from = -1.0
+		if at_end:
+			break
+		t += step
+
+
+func _stroke_wet_run(c: Control, a: Vector2, dir: Vector2, from: float, to: float, col: Color, width: float, halo: bool) -> void:
+	if to - from < 4.0:
+		return
+	var p0 := a + dir * from
+	var p1 := a + dir * to
+	if halo:
+		c.draw_line(p0, p1, Color(col, 0.35), width + 2.5)
+	c.draw_line(p0, p1, col, width)
 
 
 func _draw_sea_names(c: Control, frame: Dictionary, size: Vector2, font: Font, occupied: Array[Rect2]) -> void:
@@ -1504,7 +1559,7 @@ func _draw_chart_frame(c: Control, size: Vector2) -> void:
 		c.draw_line(p, p + Vector2(0.0, s.y * arm), ink, 1.6)
 
 
-## 季风方向：全图统一的斜箭头。风信是大尺度的，不必逐点画。陆地上不画。
+## 季风方向：开阔海上疏疏几支。箭身要整段落在海里，岸边和浅滩留白。
 func _draw_monsoon(c: Control, size: Vector2, frame: Dictionary) -> void:
 	var wb := Calendar.get_wind_bearing()
 	if wb < 0.0:
@@ -1512,24 +1567,30 @@ func _draw_monsoon(c: Control, size: Vector2, frame: Dictionary) -> void:
 
 	# 方位角 → 屏幕向量（y 轴向下，故取负 cos）
 	var dir := Vector2(sin(deg_to_rad(wb)), -cos(deg_to_rad(wb)))
-	var col := Color(0.42, 0.28, 0.14, 0.38)
-	var step := 62.0
-	var arrow := 7.0
-	var y := step * 0.5
-	while y < size.y:
-		var x := step * 0.5
-		while x < size.x:
-			var mid := Vector2(x, y)
-			var geo := _chart_unproject(frame, mid)
-			if not _ashore(geo.y, geo.x):
-				var a := mid - dir * 13.0
-				var b := mid + dir * 13.0
-				c.draw_line(a, b, col, 1.0)
+	var col := Color(0.42, 0.28, 0.14, 0.34)
+	var step := 78.0
+	var row := 0
+	var y := 46.0
+	while y < size.y - 20.0:
+		var x := 40.0 + float(row % 2) * 34.0
+		while x < size.x - 24.0:
+			var salt := int(x) + row * 5
+			if salt % 4 == 0:
+				x += step
+				continue
+			var at := Vector2(x + float((salt * 7) % 13) - 6.0, y + float((salt * 3) % 11) - 5.0)
+			var reach := 10.0 + float(salt % 3) * 2.0
+			var tail := at - dir * reach
+			var head := at + dir * reach
+			if _open_water(frame, at, 28.0) and _open_water(frame, tail, 10.0) and _open_water(frame, head, 10.0):
+				c.draw_line(tail, head, col, 1.0)
 				var perp := Vector2(-dir.y, dir.x)
-				c.draw_line(b, b - dir * arrow + perp * arrow * 0.5, col, 1.0)
-				c.draw_line(b, b - dir * arrow - perp * arrow * 0.5, col, 1.0)
+				var arrow := 6.0
+				c.draw_line(head, head - dir * arrow + perp * arrow * 0.45, col, 1.0)
+				c.draw_line(head, head - dir * arrow - perp * arrow * 0.45, col, 1.0)
 			x += step
-		y += step
+		y += 72.0
+		row += 1
 
 
 ## 港名与风信短句垫一块熟漆。裸字会压在季风箭头和航线上。
