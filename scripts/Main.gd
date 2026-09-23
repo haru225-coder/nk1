@@ -48,6 +48,8 @@ var _chapter_next_scene: String = ""
 ## 今日岸上开着的去处。再候一日之前这一手不变。
 var shore_hand: PackedStringArray = PackedStringArray()
 var _shore_facilities: Array = []
+## 今日柜上的三样货。明日再看之前这一手不变。
+var broker_hand: PackedStringArray = PackedStringArray()
 
 const FACILITY_SUFFIXES := [
 	"_market", "_yamen", "_shipyard", "_tavern", "_inn",
@@ -599,6 +601,13 @@ func _set_background_file(file_name: String) -> void:
 		background.texture = tex
 
 
+func _drop_children(box: Node) -> void:
+	var stale: Array = box.get_children()
+	for child in stale:
+		box.remove_child(child)
+		child.queue_free()
+
+
 func _enter_panel_mode() -> void:
 	_frame_sheet(false)
 	left_panel.visible = true
@@ -606,10 +615,8 @@ func _enter_panel_mode() -> void:
 	port_mode.visible = false
 	npc_mode.visible = false
 	investigation_mode.visible = true
-	for child in interactive_container.get_children():
-		child.queue_free()
-	for child in choices_container.get_children():
-		child.queue_free()
+	_drop_children(interactive_container)
+	_drop_children(choices_container)
 	_slip_host = null
 	_show_investigation_chrome(false)
 	scene_title.visible = true
@@ -698,16 +705,12 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 
 func _setup_market(port_id: String) -> void:
 	scene_title.text = "%s・牙行" % GameManager.get_port_name(port_id)
-	body_text.text = "牙行里没人说官话，只用算筹和价目说话。"
-
+	body_text.text = "柜上只摆三样。要看别的，明日再来。"
 	var goods_ids: Array = Economy.goods_at(port_id)
 	if goods_ids.is_empty():
-		body_text.text += "\n\n此地并无正经牙行，只有几个渔妇在晒网。"
+		body_text.text = "此地并无正经牙行，只有几个渔妇在晒网。"
 		_add_leave_button(port_id)
 		return
-
-	# 按买价排序，便宜的在前
-	goods_ids.sort_custom(func(a, b): return Economy.buy_price(port_id, a) < Economy.buy_price(port_id, b))
 
 	# 多船时选船装货。从别的页进来回到旗舰；本页刷新则留下刚才那艘。
 	if not _market_hold or _market_ship < 0 or _market_ship >= Fleet.ships.size():
@@ -734,31 +737,117 @@ func _setup_market(port_id: String) -> void:
 			UiTheme.style_chip(chip, idx == _market_ship)
 		choices_container.add_child(sel)
 
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 300)
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var rows := VBoxContainer.new()
-	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	rows.add_theme_constant_override("separation", 6)
-	scroll.add_child(rows)
-	choices_container.add_child(scroll)
+	var catalog: Array = []
+	for raw_gid in goods_ids:
+		var gid := str(raw_gid)
+		catalog.append({
+			"id": gid,
+			"role": str(Economy.get_role(port_id, gid)),
+			"buy": Economy.buy_price(port_id, gid),
+		})
+	broker_hand = BrokerSlip.deal(catalog, GameState.broker_salt, _broker_held_id(port_id))
 
-	for gid in goods_ids:
-		rows.add_child(_make_market_row(port_id, gid))
+	var slips := HBoxContainer.new()
+	slips.name = "BrokerSlips"
+	slips.add_theme_constant_override("separation", 12)
+	slips.alignment = BoxContainer.ALIGNMENT_CENTER
+	slips.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	choices_container.add_child(slips)
+	for slip_id in broker_hand:
+		slips.add_child(_make_market_row(port_id, slip_id))
+
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 12)
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	var tomorrow := Button.new()
+	tomorrow.text = "明日再看"
+	tomorrow.custom_minimum_size = Vector2(160, 42)
+	tomorrow.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	tomorrow.pressed.connect(_on_broker_wait)
+	UiTheme.style_button(tomorrow, false)
+	actions.add_child(tomorrow)
+	var leave := Button.new()
+	leave.text = "离开"
+	leave.custom_minimum_size = Vector2(120, 42)
+	leave.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	leave.pressed.connect(func(): load_scene(port_id))
+	UiTheme.style_choice_button(leave)
+	leave.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	actions.add_child(leave)
+	choices_container.add_child(actions)
+
+	var shut := HFlowContainer.new()
+	shut.name = "BrokerShut"
+	shut.add_theme_constant_override("h_separation", 8)
+	shut.add_theme_constant_override("v_separation", 6)
+	shut.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	choices_container.add_child(shut)
+	for raw_shut in goods_ids:
+		var shut_id := str(raw_shut)
+		if shut_id in broker_hand:
+			continue
+		var shut_btn := Button.new()
+		shut_btn.text = GameManager.get_good_name(shut_id)
+		shut_btn.custom_minimum_size = Vector2(96, 34)
+		shut_btn.set_meta("broker_shut", true)
+		shut_btn.pressed.connect(_on_broker_shut)
+		UiTheme.style_button(shut_btn, false)
+		var shut_box := UiTheme.shore_shut()
+		shut_btn.add_theme_stylebox_override("normal", shut_box)
+		shut_btn.add_theme_stylebox_override("hover", shut_box)
+		shut_btn.add_theme_stylebox_override("pressed", shut_box)
+		shut_btn.add_theme_stylebox_override("focus", shut_box)
+		shut_btn.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
+		shut_btn.add_theme_color_override("font_hover_color", UiTheme.TEXT_DIM)
+		shut.add_child(shut_btn)
 
 	choices_label.visible = true
 	choices_label.text = "舱位 %d / %d 料" % [int(Fleet.used_capacity()), int(Fleet.total_capacity())]
-	_add_leave_button(port_id)
+
+
+func _broker_held_id(port_id: String) -> String:
+	var best_id := ""
+	var best_qty := 0
+	for raw_gid in Economy.goods_at(port_id):
+		var gid := str(raw_gid)
+		var qty := Fleet.cargo_qty(gid, _market_ship)
+		if qty > best_qty or (qty == best_qty and qty > 0 and (best_id == "" or gid < best_id)):
+			best_qty = qty
+			best_id = gid
+	if best_qty <= 0:
+		return ""
+	return best_id
+
+
+func _on_broker_wait() -> void:
+	GameState.broker_salt += 1
+	GameManager.advance_days(1)
+	log_msg("柜上换了一手，日子过了一天。")
+	_market_hold = true
+	load_scene(current_scene_id)
+
+
+func _on_broker_shut() -> void:
+	log_msg("这件今日不在柜上。")
+	update_status_panel()
 
 
 func _make_market_row(port_id: String, good_id: String) -> Control:
 	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(200, 188)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", UiTheme.card())
+	card.add_theme_stylebox_override("panel", UiTheme.shore_door())
+	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	card.add_child(margin)
 	var body := VBoxContainer.new()
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_theme_constant_override("separation", 4)
-	card.add_child(body)
+	margin.add_child(body)
 
 	var g := GameManager.get_good_by_id(good_id)
 	var buy_p := Economy.buy_price(port_id, good_id)
@@ -766,82 +855,91 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	var held := Fleet.cargo_qty(good_id, _market_ship)
 	var role := Economy.get_role(port_id, good_id)
 
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 10)
-	body.add_child(head)
-
 	var name_lbl := Label.new()
-	name_lbl.text = g.get("name", good_id)
-	name_lbl.custom_minimum_size = Vector2(96, 0)
-	name_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
-	name_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
+	name_lbl.text = str(g.get("name", good_id))
+	name_lbl.add_theme_font_override("font", UiTheme.font())
+	name_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
+	name_lbl.add_theme_color_override("font_color", UiTheme.TIDE)
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if g.get("contraband", false):
 		name_lbl.add_theme_color_override("font_color", UiTheme.CINNABAR)
 		name_lbl.tooltip_text = "违禁　宋法不许出海，验引护不住"
-	head.add_child(name_lbl)
+	body.add_child(name_lbl)
 
 	var hint_lbl := Label.new()
-	hint_lbl.text = Economy.price_hint(port_id, good_id)
-	hint_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hint_lbl.clip_text = true
+	var hint := Economy.price_hint(port_id, good_id)
+	hint_lbl.text = hint if hint != "" else "寻常"
 	UiTheme.style_footnote(hint_lbl)
+	hint_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if role == "origin":
 		hint_lbl.add_theme_color_override("font_color", UiTheme.MOSS)
 	elif role == "consumer":
 		hint_lbl.add_theme_color_override("font_color", UiTheme.HONEY)
-	head.add_child(hint_lbl)
+	body.add_child(hint_lbl)
 
 	var price_lbl := Label.new()
 	price_lbl.text = "买 %d　卖 %d" % [buy_p, sell_p]
-	price_lbl.custom_minimum_size = Vector2(120, 0)
-	price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	UiTheme.style_footnote(price_lbl)
+	price_lbl.add_theme_font_override("font", UiTheme.font())
+	price_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	price_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
-	head.add_child(price_lbl)
+	price_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_child(price_lbl)
 
 	var held_lbl := Label.new()
 	held_lbl.text = "舱 %d" % held
-	held_lbl.custom_minimum_size = Vector2(56, 0)
-	held_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	UiTheme.style_footnote(held_lbl)
-	head.add_child(held_lbl)
+	held_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_child(held_lbl)
 
-	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 6)
-	body.add_child(actions)
-
+	var buy_row := HBoxContainer.new()
+	buy_row.add_theme_constant_override("separation", 6)
+	buy_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_child(buy_row)
 	for n in [1, 10]:
 		var b := Button.new()
 		b.text = "买 %d" % n
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.custom_minimum_size = Vector2(0, 28)
 		b.pressed.connect(_on_buy.bind(port_id, good_id, n, _market_ship))
-		actions.add_child(b)
+		buy_row.add_child(b)
 		UiTheme.style_chip(b)
-
 	var bmax := Button.new()
 	bmax.text = "买满"
+	bmax.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bmax.custom_minimum_size = Vector2(0, 28)
 	bmax.pressed.connect(_on_buy_max.bind(port_id, good_id, _market_ship))
-	actions.add_child(bmax)
+	buy_row.add_child(bmax)
 	UiTheme.style_chip(bmax, true)
 
-	for n in [1, 10]:
+	var sell_row := HBoxContainer.new()
+	sell_row.add_theme_constant_override("separation", 6)
+	sell_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_child(sell_row)
+	for n2 in [1, 10]:
 		var s := Button.new()
-		s.text = "卖 %d" % n
-		s.disabled = held < n
-		s.pressed.connect(_on_sell.bind(port_id, good_id, n, _market_ship))
-		actions.add_child(s)
+		s.text = "卖 %d" % n2
+		s.disabled = held < n2
+		s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		s.custom_minimum_size = Vector2(0, 28)
+		s.pressed.connect(_on_sell.bind(port_id, good_id, n2, _market_ship))
+		sell_row.add_child(s)
 		UiTheme.style_chip(s)
-
 	var sall := Button.new()
 	sall.text = "全卖"
 	sall.disabled = held <= 0
+	sall.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sall.custom_minimum_size = Vector2(0, 28)
 	sall.pressed.connect(_on_sell.bind(port_id, good_id, held, _market_ship))
-	actions.add_child(sall)
+	sell_row.add_child(sall)
 	UiTheme.style_chip(sall)
 
 	return card
 
 
 func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> void:
+	if good_id not in broker_hand:
+		log_msg("这件今日不在柜上。")
+		return
 	if amount <= 0:
 		return
 	var loadable := Fleet.max_loadable(good_id, ship_index)
@@ -888,6 +986,9 @@ func _on_buy_max(port_id: String, good_id: String, ship_index: int) -> void:
 
 
 func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) -> void:
+	if good_id not in broker_hand:
+		log_msg("这件今日不在柜上。")
+		return
 	var held := Fleet.cargo_qty(good_id, ship_index)
 	var actual := mini(amount, held)
 	if actual <= 0:

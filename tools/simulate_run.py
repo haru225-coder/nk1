@@ -565,6 +565,54 @@ shore_seen = set()
 for salt in range(len(SHORE_IDS) - 1):
     shore_seen.update(shore_deal(SHORE_IDS, salt, False))
 check(set(SHORE_IDS) <= shore_seen, "盐位转一圈，九处都会开门")
+
+def broker_deal(goods, salt, held_id):
+    """与 BrokerSlip.deal 同一规则。跑商不调用它。"""
+    rows = []
+    seen = set()
+    for row in goods:
+        gid = row["id"]
+        if gid in seen:
+            continue
+        seen.add(gid)
+        rows.append(row)
+    seats = [held_id] if held_id and held_id in seen else []
+    origins = sorted((r for r in rows if r["role"] == "origin" and r["id"] not in seats),
+                     key=lambda r: (r["buy"], r["id"]))
+    rest = [r for r in rows if r["id"] not in seats and r["role"] != "origin"]
+    if origins:
+        seats.append(origins[0]["id"])
+        rest.extend(origins[1:])
+    rest.sort(key=lambda r: (r["buy"], r["id"]))
+    if not rest:
+        return seats
+    start = salt % len(rest)
+    i = 0
+    while len(seats) < 3 and i < len(rest):
+        gid = rest[(start + i) % len(rest)]["id"]
+        if gid not in seats:
+            seats.append(gid)
+        i += 1
+    return seats
+
+BROKER_GOODS = [
+    {"id": "a", "role": "origin", "buy": 10},
+    {"id": "b", "role": "origin", "buy": 30},
+    {"id": "c", "role": "normal", "buy": 5},
+    {"id": "d", "role": "consumer", "buy": 40},
+    {"id": "e", "role": "normal", "buy": 20},
+]
+slip0 = broker_deal(BROKER_GOODS, 0, "")
+slip1 = broker_deal(BROKER_GOODS, 1, "")
+slip_held = broker_deal(BROKER_GOODS, 0, "d")
+check(len(slip0) == 3 and slip0[0] == "a" and slip0[1] != slip1[1],
+      f"柜上这一手 {slip0} 以最便宜的土产起首，盐位一转第二席换货")
+check(slip_held[0] == "d" and slip_held[1] == "a",
+      f"舱里有货时 {slip_held} 先卖手里的，再摆土产")
+slip_seen = set()
+for salt in range(4):
+    slip_seen.update(broker_deal(BROKER_GOODS, salt, ""))
+check(slip_seen == {g["id"] for g in BROKER_GOODS}, "盐位转一圈，五样货都会上柜")
 print(f"  ── 跑商 24 趟（起始第 {G.chapter} 章，可达 {len(open_ports())} 港）──")
 for trip in range(1, 25):
     if G.ending_id:

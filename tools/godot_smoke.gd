@@ -142,6 +142,25 @@ func _run() -> void:
 	var door_box := UiTheme.shore_door()
 	_check(door_box.corner_radius_top_left == 16 and door_box.border_color.g > door_box.border_color.r,
 		"岸门是潮光边的潮玻璃", fails)
+	var broker_goods: Array = [
+		{"id": "a", "role": "origin", "buy": 10},
+		{"id": "b", "role": "origin", "buy": 30},
+		{"id": "c", "role": "normal", "buy": 5},
+		{"id": "d", "role": "consumer", "buy": 40},
+		{"id": "e", "role": "normal", "buy": 20},
+	]
+	var slip0: PackedStringArray = BrokerSlip.deal(broker_goods, 0, "")
+	var slip1: PackedStringArray = BrokerSlip.deal(broker_goods, 1, "")
+	var slip_held: PackedStringArray = BrokerSlip.deal(broker_goods, 0, "d")
+	_check(slip0.size() == 3 and slip0[0] == "a" and slip0[1] != slip1[1],
+		"柜上三样，最便宜的土产占第一席，盐位一转第二席换货", fails)
+	_check(slip_held.size() == 3 and slip_held[0] == "d" and slip_held[1] == "a",
+		"舱里有货占第一席，土产仍占下一席", fails)
+	var slip_seen := {}
+	for broker_salt_i in 4:
+		for slip_id in BrokerSlip.deal(broker_goods, broker_salt_i, ""):
+			slip_seen[slip_id] = true
+	_check(slip_seen.size() == 5, "盐位转一圈，五样货都会上柜", fails)
 	_check(UiTheme.plain_log("【钱不够】牙人摇头。") == "牙人摇头。", "日志去掉方括号标签", fails)
 	_check(UiTheme.plain_log("买入瓷器 ×1。") == "买入瓷器 ×1。", "普通日志原样保留", fails)
 	_check(UiTheme.plain_log("[color=#aabbcc]【欠饷】已拖欠。[/color]") == "[color=#aabbcc]已拖欠。[/color]",

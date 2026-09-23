@@ -1034,6 +1034,23 @@ if (
 else:
     print("  ✗ 岸上三处未接上")
     problems.append("岸上三处未接上")
+broker_src = open(os.path.join(SCRIPTS, "core", "BrokerSlip.gd"), encoding="utf-8").read()
+market_fn = _func_body(main_src, "_setup_market")
+if (
+    "class_name BrokerSlip" in broker_src
+    and "BrokerSlip.deal" in market_fn
+    and "明日再看" in market_fn
+    and "柜上只摆三样。要看别的，明日再来。" in main_src
+    and "这件今日不在柜上。" in main_src
+    and "柜上换了一手，日子过了一天。" in main_src
+    and '"broker_salt"' in gs_src_draft
+    and "OptionButton" not in market_fn
+    and "_select_market_ship" in market_fn
+):
+    print("  ✓ 牙行改成柜上三样")
+else:
+    print("  ✗ 柜上三样未接上")
+    problems.append("柜上三样未接上")
 if (
     "%s　%s%s" in cal_src
     and "%s %s%s" not in cal_src

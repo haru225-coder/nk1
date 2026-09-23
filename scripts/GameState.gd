@@ -48,6 +48,8 @@ var peak_money: int = 1000
 var draft_salt: int = 0
 ## 岸上门户的轮转。再候一日加一。旧档没有这个字段时当作 0。
 var shore_salt: int = 0
+## 牙行柜台的轮转。明日再看加一。旧档没有这个字段时当作 0。
+var broker_salt: int = 0
 
 
 # ── 钱 ────────────────────────────────────────────────
@@ -533,6 +535,7 @@ func to_dict() -> Dictionary:
 		"peak_money": peak_money,
 		"draft_salt": draft_salt,
 		"shore_salt": shore_salt,
+		"broker_salt": broker_salt,
 	}
 
 
@@ -558,3 +561,4 @@ func from_dict(d: Dictionary) -> void:
 	peak_money = d.get("peak_money", money)
 	draft_salt = int(d.get("draft_salt", 0))
 	shore_salt = int(d.get("shore_salt", 0))
+	broker_salt = int(d.get("broker_salt", 0))
