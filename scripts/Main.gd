@@ -773,7 +773,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 
 	for n in [1, 10]:
 		var b := Button.new()
-		b.text = "买%d" % n
+		b.text = "买 %d" % n
 		b.pressed.connect(_on_buy.bind(port_id, good_id, n, _market_ship))
 		actions.add_child(b)
 		UiTheme.style_chip(b)
@@ -786,7 +786,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 
 	for n in [1, 10]:
 		var s := Button.new()
-		s.text = "卖%d" % n
+		s.text = "卖 %d" % n
 		s.disabled = held < n
 		s.pressed.connect(_on_sell.bind(port_id, good_id, n, _market_ship))
 		actions.add_child(s)
@@ -828,7 +828,7 @@ func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> 
 
 	var note := ""
 	if actual < amount:
-		note = "（只购得 %d）" % actual
+		note = "只购得 %d。" % actual
 	log_msg("买入 %s ×%d，付 %d 钱。%s" % [GameManager.get_good_name(good_id), actual, cost, note])
 	_market_hold = true
 	load_scene(current_scene_id)
@@ -862,7 +862,7 @@ func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) ->
 
 	var profit := revenue - int(round(cost_basis))
 	var profit_str := "赚 %d" % profit if profit >= 0 else "亏 %d" % (-profit)
-	log_msg("卖出 %s ×%d，得 %d 钱（%s）。" % [GameManager.get_good_name(good_id), actual, revenue, profit_str])
+	log_msg("卖出 %s ×%d，得 %d 钱，%s。" % [GameManager.get_good_name(good_id), actual, revenue, profit_str])
 	_market_hold = true
 	load_scene(current_scene_id)
 

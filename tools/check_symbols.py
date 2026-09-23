@@ -920,6 +920,11 @@ if "OptionButton" not in market_body and "_select_market_ship" in market_body:
 else:
     print("  ✗ 牙行仍用系统下拉选船")
     problems.append("牙行仍用系统下拉选船")
+if '买%d' not in main_src and '卖%d' not in main_src and "只购得 %d。" in main_src and "钱（" not in main_src:
+    print("  ✓ 牙行小钮与买卖日志留出字距")
+else:
+    print("  ✗ 牙行小钮或买卖日志仍挤在一起")
+    problems.append("牙行小钮或买卖日志仍挤在一起")
 if "★" not in main_src and "func _skill_rank" in main_src and "Crew.rank_word" in main_src and "func rank_word" in crew_src:
     print("  ✓ 职事品级写成初习/谙熟/老练")
 else:

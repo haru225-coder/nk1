@@ -154,6 +154,9 @@ func _run() -> void:
 		"升章了结走居中册页，主场景不再弹系统对话框", fails)
 	_check(main_src.find("OptionButton.new()") < 0 and main_src.find("_select_market_ship") >= 0,
 		"牙行选船走账条小钮，不再用系统下拉", fails)
+	_check(main_src.find("买%d") < 0 and main_src.find("卖%d") < 0
+		and main_src.find("只购得 %d。") >= 0 and main_src.find("钱（") < 0,
+		"牙行小钮与买卖日志留出字距", fails)
 	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
 		"职事品级写成初习/谙熟/老练，不再用星号", fails)
 	_check(main_src.find("func _fit_rank") >= 0 and main_src.find("帆Lv") < 0
