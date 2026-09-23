@@ -158,7 +158,44 @@ def clip_segment(a, b, lon0, lat0, lon1, lat1):
     return None
 
 
+def _coast_runs(poly, proj, lon0, lat0, lon1, lat1):
+    ring = list(poly.exterior.coords)
+    runs = []
+    run = []
+    n = len(ring) - 1 if ring[0] == ring[-1] else len(ring)
+    for i in range(n):
+        clipped = clip_segment(ring[i], ring[(i + 1) % n], lon0, lat0, lon1, lat1)
+        if clipped is None:
+            if len(run) >= 2:
+                runs.append(run)
+            run = []
+            continue
+        p0 = proj(clipped[0][1], clipped[0][0])
+        p1 = proj(clipped[1][1], clipped[1][0])
+        if not run or math.hypot(run[-1][0] - p0[0], run[-1][1] - p0[1]) > 0.75:
+            if len(run) >= 2:
+                runs.append(run)
+            run = [p0]
+        run.append(p1)
+    if len(run) >= 2:
+        runs.append(run)
+    return runs
+
+
+def _dashed(draw, a, b, fill, width=1, dash=6, gap=4):
+    dist = math.hypot(b[0] - a[0], b[1] - a[1])
+    if dist < 1:
+        return
+    ux, uy = (b[0] - a[0]) / dist, (b[1] - a[1]) / dist
+    t = 0.0
+    while t < dist:
+        t2 = min(dist, t + dash)
+        draw.line([(a[0] + ux * t, a[1] + uy * t), (a[0] + ux * t2, a[1] + uy * t2)], fill=fill, width=width)
+        t = t2 + gap
+
+
 def render(path: Path, ports, polys, const, size):
+    """跟 SeaChart 的配色和层次对齐，用来肉眼看浅滩、墨线和港口标注。"""
     lat0, lat1, lon0, lon1 = frame_for(ports, const)
     w, h = size
     mean_lat = (lat0 + lat1) * 0.5
@@ -175,54 +212,110 @@ def render(path: Path, ports, polys, const, size):
             mid[1] - (lat - mean_lat) * scale,
         )
 
-    img = Image.new("RGB", (w, h), (11, 14, 19))
+    sea = (18, 45, 64)
+    shoal = (51, 115, 138)
+    land = (199, 181, 138)
+    coast = (74, 59, 41)
+    ink = (56, 43, 31)
+    grid = (90, 110, 120)
+    frame = (209, 189, 140)
+    img = Image.new("RGB", (w, h), (10, 14, 18))
     draw = ImageDraw.Draw(img)
     top_left = proj(lat1, lon0)
     bottom_right = proj(lat0, lon1)
     map_rect = [top_left[0], top_left[1], bottom_right[0], bottom_right[1]]
-    draw.rectangle(map_rect, fill=(15, 28, 41))
+    draw.rectangle(map_rect, fill=sea)
+
+    step = 5.0 if (lat1 - lat0) > 16.0 else 2.0
+    lat = math.ceil(lat0 / step) * step
+    while lat < lat1 - 0.05:
+        draw.line([proj(lat, lon0), proj(lat, lon1)], fill=grid, width=1)
+        lat += step
+    lon = math.ceil(lon0 / step) * step
+    while lon < lon1 - 0.05:
+        draw.line([proj(lat0, lon), proj(lat1, lon)], fill=grid, width=1)
+        lon += step
 
     view = box(lon0, lat0, lon1, lat1)
-    for poly in polys:
-        if not poly.intersects(view):
-            continue
+    visible = [poly for poly in polys if poly.intersects(view)]
+    for poly in visible:
+        for run in _coast_runs(poly, proj, lon0, lat0, lon1, lat1):
+            draw.line(run, fill=shoal, width=12)
+    for poly in visible:
         part = poly.intersection(view)
         for piece in explode(part):
             pts = [proj(y, x) for x, y in piece.exterior.coords]
             if len(pts) >= 3:
-                draw.polygon(pts, fill=(102, 94, 71))
-        ring = list(poly.exterior.coords)
-        run = []
-        n = len(ring) - 1 if ring[0] == ring[-1] else len(ring)
-        for i in range(n):
-            a = ring[i]
-            b = ring[(i + 1) % n]
-            clipped = clip_segment(a, b, lon0, lat0, lon1, lat1)
-            if clipped is None:
-                if len(run) >= 2:
-                    draw.line(run, fill=(184, 168, 133), width=2)
-                run = []
-                continue
-            p0 = proj(clipped[0][1], clipped[0][0])
-            p1 = proj(clipped[1][1], clipped[1][0])
-            if not run or math.hypot(run[-1][0] - p0[0], run[-1][1] - p0[1]) > 0.75:
-                if len(run) >= 2:
-                    draw.line(run, fill=(184, 168, 133), width=2)
-                run = [p0]
-            run.append(p1)
-        if len(run) >= 2:
-            draw.line(run, fill=(184, 168, 133), width=2)
+                draw.polygon(pts, fill=land)
+    for poly in visible:
+        for run in _coast_runs(poly, proj, lon0, lat0, lon1, lat1):
+            draw.line(run, fill=coast, width=2)
 
     try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/wqy/wqy-microhei.ttc", 14)
+        font = ImageFont.truetype("/usr/share/fonts/truetype/wqy/wqy-microhei.ttc", 13)
+        font_sea = ImageFont.truetype("/usr/share/fonts/truetype/wqy/wqy-microhei.ttc", 16)
     except OSError:
         font = ImageFont.load_default()
+        font_sea = font
+
+    by_id = {p["id"]: p for p in ports}
+    seen = set()
+    for p in ports:
+        a = proj(float(p["lat"]), float(p["lon"]))
+        for cid in p.get("connections", []):
+            q = by_id.get(cid)
+            if q is None or q not in ports and cid not in by_id:
+                continue
+            if cid not in by_id or by_id[cid] not in ports:
+                continue
+            key = tuple(sorted((p["id"], cid)))
+            if key in seen:
+                continue
+            seen.add(key)
+            b = proj(float(by_id[cid]["lat"]), float(by_id[cid]["lon"]))
+            _dashed(draw, a, b, (210, 190, 145))
+
+    land_all = unary_union(polys) if polys else None
+    port_xy = [proj(float(p["lat"]), float(p["lon"])) for p in ports]
+    for name, slat, slon in (("东海", 27.6, 123.5), ("南海", 15.4, 113.6)):
+        if not (lat0 <= slat <= lat1 and lon0 <= slon <= lon1):
+            continue
+        if land_all is not None and land_all.covers(Point(slon, slat)):
+            continue
+        v = proj(slat, slon)
+        if any(math.hypot(v[0] - x, v[1] - y) < 42 for x, y in port_xy):
+            continue
+        draw.text((v[0] - 16, v[1] - 10), name, fill=(176, 206, 214), font=font_sea)
+
+    # 罗盘放在离港口最远的一角
+    corners = [
+        (map_rect[2] - 48, map_rect[3] - 48),
+        (map_rect[0] + 48, map_rect[3] - 48),
+        (map_rect[0] + 48, map_rect[1] + 52),
+        (map_rect[2] - 48, map_rect[1] + 52),
+    ]
+    center = corners[0]
+    for s in corners:
+        if all(math.hypot(s[0] - x, s[1] - y) >= 58 for x, y in port_xy):
+            center = s
+            break
+    cx, cy = center
+    draw.ellipse((cx - 15, cy - 15, cx + 15, cy + 15), outline=frame)
+    draw.line((cx - 13, cy, cx + 13, cy), fill=frame, width=1)
+    draw.line((cx, cy + 11, cx, cy - 14), fill=frame, width=2)
+    draw.polygon([(cx, cy - 18), (cx - 4, cy - 10), (cx + 4, cy - 10)], fill=frame)
+    draw.text((cx - 7, cy - 34), "北", fill=frame, font=font)
+
     for p in ports:
         x, y = proj(float(p["lat"]), float(p["lon"]))
-        r = 3
-        draw.ellipse((x - r, y - r, x + r, y + r), fill=(214, 224, 234))
-        draw.text((x + 6, y - 8), p["name"], fill=(214, 224, 234), font=font)
-    draw.rectangle(map_rect, outline=(158, 143, 107))
+        r = 4
+        draw.ellipse((x - r - 2, y - r - 2, x + r + 2, y + r + 2), fill=(245, 237, 214))
+        draw.ellipse((x - r, y - r, x + r, y + r), outline=ink, width=2)
+        draw.ellipse((x - 1, y - 1, x + 1, y + 1), fill=ink)
+        draw.text((x + 8, y - 8), p["name"], fill=ink, font=font)
+    draw.rectangle(map_rect, outline=frame, width=2)
+    inner = [map_rect[0] + 4, map_rect[1] + 4, map_rect[2] - 4, map_rect[3] - 4]
+    draw.rectangle(inner, outline=frame)
     path.parent.mkdir(parents=True, exist_ok=True)
     img.save(path)
     print(f"  预览 {path}")

@@ -346,11 +346,17 @@ const CHART_MIN_SPAN := 8.0
 ## 已解锁港口的包围盒占取景框的比例，剩下的边留给海岸和港名字。
 const CHART_FRAME_FILL := 0.80
 
-const CHART_MARGIN := Color(0.045, 0.055, 0.075, 1.0)
-const CHART_SEA := Color(0.06, 0.11, 0.16, 1.0)
-const CHART_LAND := Color(0.40, 0.37, 0.28, 1.0)
-const CHART_COAST := Color(0.72, 0.66, 0.52, 0.95)
-const CHART_FRAME := Color(0.62, 0.56, 0.42, 0.75)
+const CHART_MARGIN := Color(0.04, 0.055, 0.07, 1.0)
+const CHART_SEA := Color(0.07, 0.175, 0.25, 1.0)
+const CHART_SHOAL := Color(0.20, 0.45, 0.54, 1.0)
+const CHART_LAND := Color(0.78, 0.71, 0.54, 1.0)
+const CHART_COAST := Color(0.29, 0.23, 0.16, 1.0)
+const CHART_INK := Color(0.22, 0.17, 0.12, 1.0)
+const CHART_HALO := Color(0.96, 0.93, 0.84, 0.92)
+const CHART_GRID := Color(0.82, 0.74, 0.55, 0.18)
+const CHART_FRAME := Color(0.82, 0.74, 0.55, 0.88)
+const CHART_VERMILION := Color(0.72, 0.24, 0.16, 1.0)
+const CHART_GOLD := Color(0.62, 0.44, 0.12, 1.0)
 
 
 ## 等比投影。经度按平均纬度收窄，否则高纬处会被拉宽。
@@ -386,20 +392,29 @@ func _draw_chart(c: Control) -> void:
 
 	c.draw_rect(Rect2(Vector2.ZERO, size), CHART_MARGIN)
 	c.draw_rect(map_rect, CHART_SEA)
+	_draw_graticule(c, proj, lat_min, lat_max, lon_min, lon_max)
 	_draw_monsoon(c, map_rect)
 	_draw_land(c, proj, lon_min, lat_min, lon_max, lat_max)
 
-	# 已知航路：淡线勾出港口间的连接关系
+	# 已知航路：虚线，压在陆地之上、港口之下。
+	var route_col := Color(0.90, 0.82, 0.62, 0.38)
+	var drawn_routes := {}
 	for p in pts:
+		var pid: String = p.get("id", "")
 		var a: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
 		for cid in p.get("connections", []):
 			var q := GameManager.get_port_by_id(cid)
 			if q.is_empty() or not GameState.is_chapter_reached(q.get("unlock", "ch1")):
 				continue
+			var other: String = str(cid)
+			var key := pid + "|" + other if pid < other else other + "|" + pid
+			if drawn_routes.has(key):
+				continue
+			drawn_routes[key] = true
 			var b: Vector2 = proj.call(float(q.get("lat", 0.0)), float(q.get("lon", 0.0)))
-			c.draw_line(a, b, Color(1, 1, 1, 0.10), 1.0)
+			c.draw_dashed_line(a, b, route_col, 1.0, 5.0, true, true)
 
-	# 当前航段
+	# 当前航段。顺风绿、逆风朱、侧风金，底下垫一条浅色让它在浅滩上也能看清。
 	if selected_port != "":
 		var o := GameManager.get_port_by_id(origin_port)
 		var d := GameManager.get_port_by_id(selected_port)
@@ -407,42 +422,40 @@ func _draw_chart(c: Control) -> void:
 			var a: Vector2 = proj.call(float(o.get("lat", 0.0)), float(o.get("lon", 0.0)))
 			var b: Vector2 = proj.call(float(d.get("lat", 0.0)), float(d.get("lon", 0.0)))
 			var wf := Voyage.wind_factor(Voyage.bearing(origin_port, selected_port))
-			# 顺风泛绿、逆风泛红——季风是否有利，一眼能看出来
-			var col := Color(0.45, 0.95, 0.6) if wf >= 1.15 else (
-				Color(1.0, 0.5, 0.42) if wf <= 0.75 else Color(0.95, 0.85, 0.5))
-			c.draw_line(a, b, col, 2.5)
+			var col := CHART_GOLD
+			if wf >= 1.15:
+				col = Color(0.18, 0.48, 0.32)
+			elif wf <= 0.75:
+				col = CHART_VERMILION
+			c.draw_line(a, b, Color(0.96, 0.93, 0.84, 0.85), 4.5)
+			c.draw_line(a, b, col, 2.2)
+
+	var port_pts: Array = []
+	for p in pts:
+		port_pts.append(proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0))))
+	_draw_sea_names(c, proj, lat_min, lat_max, lon_min, lon_max, port_pts)
+	_draw_compass(c, map_rect, port_pts)
 
 	var font := ThemeDB.fallback_font
 	var label_spots: Array = []
 	for p in pts:
 		var pid: String = p.get("id", "")
 		var v: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
-		var visited: bool = pid in GameState.visited_ports
 		var is_here := pid == origin_port
 		var is_target := pid == selected_port
+		var visited: bool = pid in GameState.visited_ports
 
-		var col := Color(0.55, 0.6, 0.68)
-		if visited:
-			col = Color(0.85, 0.88, 0.92)
+		var mark := CHART_INK
 		if is_target:
-			col = Color(1.0, 0.85, 0.35)
+			mark = CHART_GOLD
 		if is_here:
-			col = Color(0.5, 0.95, 1.0)
+			mark = CHART_VERMILION
+		_draw_port_mark(c, v, mark, is_here or is_target, visited or is_here or is_target)
 
-		c.draw_circle(v, 4.0 if (is_here or is_target) else 3.0, col)
-		if is_here:
-			c.draw_arc(v, 8.0, 0, TAU, 20, col, 1.5)
+		var label_pos := _place_label(font, p.get("name", pid), v, label_spots, map_rect)
+		_draw_ink(c, font, label_pos, p.get("name", pid), mark, 12)
 
-		var label_pos := v + Vector2(7, 4)
-		for prev in label_spots:
-			if label_pos.distance_to(prev) < 18.0:
-				label_pos.y += 13.0
-		label_spots.append(label_pos)
-		var label: String = p.get("name", pid)
-		c.draw_string(font, label_pos, label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col)
-
-	c.draw_rect(map_rect, CHART_FRAME, false, 1.0)
+	_draw_chart_frame(c, map_rect)
 	_draw_monsoon_caption(c, map_rect)
 
 
@@ -512,6 +525,8 @@ func _draw_land(c: Control, proj: Callable, lon0: float, lat0: float, lon1: floa
 	for ring in _land_rings:
 		if not _ring_hits(ring, lon0, lat0, lon1, lat1):
 			continue
+		# 宽笔先画，陆地盖住靠岸的一半，海里就剩一圈浅滩。
+		_stroke_coast(c, proj, ring, lon0, lat0, lon1, lat1, CHART_SHOAL, 12.0)
 		var pieces: Array = Geometry2D.intersect_polygons(ring, view)
 		for piece in pieces:
 			var outline := PackedVector2Array(piece)
@@ -525,7 +540,7 @@ func _draw_land(c: Control, proj: Callable, lon0: float, lat0: float, lon1: floa
 				var ll: Vector2 = outline[i]
 				screen[i] = proj.call(ll.y, ll.x)
 			_fill_polygon(c, screen)
-		_stroke_coast(c, proj, ring, lon0, lat0, lon1, lat1)
+		_stroke_coast(c, proj, ring, lon0, lat0, lon1, lat1, CHART_COAST, 1.4)
 
 
 func _fill_polygon(c: Control, screen: PackedVector2Array) -> void:
@@ -559,7 +574,7 @@ func _ring_hits(ring: PackedVector2Array, lon0: float, lat0: float, lon1: float,
 	return rlon1 >= lon0 and rlon0 <= lon1 and rlat1 >= lat0 and rlat0 <= lat1
 
 
-func _stroke_coast(c: Control, proj: Callable, ring: PackedVector2Array, lon0: float, lat0: float, lon1: float, lat1: float) -> void:
+func _stroke_coast(c: Control, proj: Callable, ring: PackedVector2Array, lon0: float, lat0: float, lon1: float, lat1: float, color: Color, width: float) -> void:
 	var run := PackedVector2Array()
 	var n := ring.size()
 	for i in n:
@@ -567,22 +582,175 @@ func _stroke_coast(c: Control, proj: Callable, ring: PackedVector2Array, lon0: f
 		var b: Vector2 = ring[(i + 1) % n]
 		var clipped: Array = _clip_segment(a, b, lon0, lat0, lon1, lat1)
 		if clipped.is_empty():
-			_flush_coast(c, run)
+			_flush_coast(c, run, color, width)
 			run = PackedVector2Array()
 			continue
 		var p0: Vector2 = proj.call(clipped[0].y, clipped[0].x)
 		var p1: Vector2 = proj.call(clipped[1].y, clipped[1].x)
 		if run.is_empty() or run[run.size() - 1].distance_to(p0) > 0.75:
-			_flush_coast(c, run)
+			_flush_coast(c, run, color, width)
 			run = PackedVector2Array()
 			run.append(p0)
 		run.append(p1)
-	_flush_coast(c, run)
+	_flush_coast(c, run, color, width)
 
 
-func _flush_coast(c: Control, run: PackedVector2Array) -> void:
+func _flush_coast(c: Control, run: PackedVector2Array, color: Color, width: float) -> void:
 	if run.size() >= 2:
-		c.draw_polyline(run, CHART_COAST, 1.25, true)
+		c.draw_polyline(run, color, width, true)
+
+
+func _draw_graticule(c: Control, proj: Callable, lat0: float, lat1: float, lon0: float, lon1: float) -> void:
+	var step := 5.0 if (lat1 - lat0) > 16.0 else 2.0
+	var lat: float = ceil(lat0 / step) * step
+	while lat < lat1 - 0.05:
+		c.draw_line(proj.call(lat, lon0), proj.call(lat, lon1), CHART_GRID, 1.0)
+		lat += step
+	var lon: float = ceil(lon0 / step) * step
+	while lon < lon1 - 0.05:
+		c.draw_line(proj.call(lat0, lon), proj.call(lat1, lon), CHART_GRID, 1.0)
+		lon += step
+
+
+func _draw_chart_frame(c: Control, map_rect: Rect2) -> void:
+	c.draw_rect(map_rect, CHART_FRAME, false, 1.25)
+	c.draw_rect(map_rect.grow(-4.0), Color(CHART_FRAME.r, CHART_FRAME.g, CHART_FRAME.b, 0.45), false, 1.0)
+	var tick := 5.0
+	var corners: Array[Vector2] = [
+		map_rect.position,
+		Vector2(map_rect.end.x, map_rect.position.y),
+		map_rect.end,
+		Vector2(map_rect.position.x, map_rect.end.y),
+	]
+	for corner in corners:
+		c.draw_rect(Rect2(corner - Vector2(tick, tick) * 0.5, Vector2(tick, tick)), CHART_FRAME)
+
+
+func _draw_port_mark(c: Control, v: Vector2, mark: Color, emphasized: bool, filled: bool) -> void:
+	var r := 5.2 if emphasized else 3.6
+	c.draw_circle(v, r + 1.6, CHART_HALO)
+	c.draw_arc(v, r, 0.0, TAU, 20, mark, 1.5)
+	if filled:
+		c.draw_circle(v, r - 2.0, mark)
+	else:
+		c.draw_circle(v, 1.3, mark)
+
+
+func _draw_ink(c: Control, font: Font, pos: Vector2, text: String, col: Color, font_size: int, halo: Color = CHART_HALO) -> void:
+	for off in [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1), Vector2(-1, -1), Vector2(1, 1)]:
+		c.draw_string(font, pos + off, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, halo)
+	c.draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, col)
+
+
+func _place_label(font: Font, text: String, anchor: Vector2, spots: Array, map_rect: Rect2) -> Vector2:
+	var font_size := 12
+	var sz := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	var ascent := font.get_ascent(font_size)
+	var candidates: Array[Vector2] = [
+		anchor + Vector2(8, 4),
+		anchor + Vector2(8, 16),
+		anchor + Vector2(-sz.x - 8, 4),
+		anchor + Vector2(8, -14),
+	]
+	var bounds := map_rect.grow(-6.0)
+	for baseline in candidates:
+		var rect := Rect2(baseline - Vector2(0, ascent), sz)
+		if not bounds.encloses(rect):
+			continue
+		var hit := false
+		for prev in spots:
+			if rect.grow(2.0).intersects(prev):
+				hit = true
+				break
+		if hit:
+			continue
+		spots.append(rect)
+		return baseline
+	var fallback := anchor + Vector2(8, 4)
+	spots.append(Rect2(fallback - Vector2(0, ascent), sz))
+	return fallback
+
+
+func _draw_sea_names(c: Control, proj: Callable, lat0: float, lat1: float, lon0: float, lon1: float, port_pts: Array) -> void:
+	# 只用宋时已有的海名，并且只写在开阔水面上。
+	var names := [
+		{"name": "东海", "lat": 27.6, "lon": 123.5},
+		{"name": "南海", "lat": 15.4, "lon": 113.6},
+	]
+	var font := ThemeDB.fallback_font
+	var col := Color(0.78, 0.88, 0.92, 0.72)
+	for item in names:
+		var lat := float(item["lat"])
+		var lon := float(item["lon"])
+		if lat < lat0 or lat > lat1 or lon < lon0 or lon > lon1:
+			continue
+		if _on_land(lon, lat):
+			continue
+		var v: Vector2 = proj.call(lat, lon)
+		var near_port := false
+		for p in port_pts:
+			if v.distance_to(p) < 42.0:
+				near_port = true
+				break
+		if near_port:
+			continue
+		var text: String = item["name"]
+		var sz := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15)
+		_draw_ink(c, font, v - Vector2(sz.x * 0.5, 0), text, col, 15, Color(0.04, 0.08, 0.12, 0.75))
+
+
+func _on_land(lon: float, lat: float) -> bool:
+	for ring in _land_rings:
+		if _point_in_ring(lon, lat, ring):
+			return true
+	return false
+
+
+func _point_in_ring(lon: float, lat: float, ring: PackedVector2Array) -> bool:
+	var inside := false
+	var n := ring.size()
+	var j := n - 1
+	for i in n:
+		var yi: float = ring[i].y
+		var yj: float = ring[j].y
+		if (yi > lat) != (yj > lat):
+			var xi: float = ring[i].x
+			var xj: float = ring[j].x
+			if lon < (xj - xi) * (lat - yi) / (yj - yi) + xi:
+				inside = not inside
+		j = i
+	return inside
+
+
+func _draw_compass(c: Control, map_rect: Rect2, port_pts: Array) -> void:
+	var spots: Array[Vector2] = [
+		map_rect.end + Vector2(-48, -48),
+		Vector2(map_rect.position.x + 48, map_rect.end.y - 48),
+		map_rect.position + Vector2(48, 52),
+		Vector2(map_rect.end.x - 48, map_rect.position.y + 52),
+	]
+	var center: Vector2 = spots[0]
+	for s in spots:
+		var clear := true
+		for p in port_pts:
+			if s.distance_to(p) < 58.0:
+				clear = false
+				break
+		if clear:
+			center = s
+			break
+	var gold := Color(0.90, 0.82, 0.60, 0.95)
+	var dim := Color(0.90, 0.82, 0.60, 0.45)
+	c.draw_circle(center, 18.0, Color(0.05, 0.10, 0.14, 0.55))
+	c.draw_arc(center, 15.0, 0.0, TAU, 28, dim, 1.0)
+	c.draw_line(center + Vector2(-13, 0), center + Vector2(13, 0), dim, 1.0)
+	c.draw_line(center + Vector2(0, 11), center + Vector2(0, -14), gold, 1.4)
+	var tip := center + Vector2(0, -16)
+	c.draw_colored_polygon(PackedVector2Array([
+		tip, tip + Vector2(-3.6, 7.5), tip + Vector2(3.6, 7.5)
+	]), gold)
+	var font := ThemeDB.fallback_font
+	_draw_ink(c, font, tip + Vector2(-6, -13), "北", gold, 12, Color(0.04, 0.08, 0.12, 0.8))
 
 
 func _out_code(lon: float, lat: float, lon0: float, lat0: float, lon1: float, lat1: float) -> int:
