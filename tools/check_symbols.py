@@ -1094,6 +1094,9 @@ if (
     and "压低声音说：" not in main_src
     and "五至八月" in main_src
     and "十月至次年二月" in main_src
+    and "%s　眼下缺%s" in main_src
+    and "%s 眼下缺" not in main_src
+    and "多得　%d" in main_src
 ):
     print("  ✓ 候风与打听去掉冒号")
 else:

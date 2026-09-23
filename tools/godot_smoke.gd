@@ -354,7 +354,9 @@ func _run() -> void:
 	_check(
 		main_src.find("掐指算了算。") >= 0 and main_src.find("掐指算了算：") < 0
 			and main_src.find("压低声音说。") >= 0 and main_src.find("压低声音说：") < 0
-			and main_src.find("五至八月") >= 0 and main_src.find("十月至次年二月") >= 0,
+			and main_src.find("五至八月") >= 0 and main_src.find("十月至次年二月") >= 0
+			and main_src.find("%s　眼下缺%s") >= 0 and main_src.find("%s 眼下缺") < 0
+			and main_src.find("多得　%d") >= 0,
 		"候风与打听去掉冒号，月份仍写在风名后面",
 		fails,
 	)

@@ -1666,7 +1666,7 @@ func _gather_price_intel(port_id: String) -> String:
 	if rows.is_empty():
 		return "【闲谈】几个老水手翻来覆去只讲当年的风暴，没打听出什么有用的。"
 	var best: Dictionary = rows[0]
-	return "【行情】邻座的牙人压低声音：「%s 眼下缺%s，此地买了运过去，一件能多得 %d 钱。」" % [
+	return "【行情】邻座的牙人压低声音：「%s　眼下缺%s，此地买了运过去，一件能多得　%d 钱。」" % [
 		GameManager.get_port_name(best["port"]),
 		GameManager.get_good_name(best["good"]),
 		int(best["profit"]),
