@@ -188,7 +188,9 @@ func load_scene(scene_id: String) -> void:
 
 	var scene_data = GameManager.get_scene_by_id(scene_id)
 	if scene_data.is_empty():
-		# scenes.json 只为少数港口写了剧情场景；其余按 ports.json 生成通用港口界面
+		# scenes.json 只为少数港口写了剧情场景；其余按 ports.json 生成通用港口界面。
+		# 流求、博多的正文不占用港口 id（ryukyu_story / hakata_story），
+		# 否则海图回港进剧情、不记 visited_ports，牙行也进不去。
 		var pdef := GameManager.get_port_by_id(scene_id)
 		if not pdef.is_empty():
 			GameState.last_port = scene_id
@@ -1084,7 +1086,17 @@ func _setup_title_mode(scene_data: Dictionary) -> void:
 	title_mode.visible = true
 
 	main_title.text = scene_data.get("cg_title", "东亚海域立志传")
-	sub_title.text = scene_data.get("cg_sub", "")
+	main_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	main_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if main_title.text.length() > 12:
+		main_title.add_theme_font_size_override("font_size", 36)
+	else:
+		main_title.add_theme_font_size_override("font_size", 64)
+	# 开场卡用 \A 断行。JSON 读出来是两个字符，不替换的话副标题是一整行。
+	var sub := str(scene_data.get("cg_sub", "")).replace("\\A", "\n")
+	sub_title.text = sub
+	sub_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sub_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	if title_button_connected:
 		for c in start_button.pressed.get_connections():
@@ -1340,7 +1352,8 @@ func _cn_chapter(n: int) -> String:
 
 func _on_facility_pressed(fac: Dictionary) -> void:
 	var target_scene = fac.get("id", "")
-	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern"]:
+	# 旅店和牙行一样，要改写成当前港口。漏掉 city_inn 时港口 id 会变成 "city"。
+	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern", "city_inn"]:
 		target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")
 	if target_scene != "":
 		load_scene(target_scene)

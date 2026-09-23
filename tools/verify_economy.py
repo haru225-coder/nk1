@@ -735,6 +735,38 @@ check(std_scale <= 100.5, f"标准舰队对上限敌倍率 ≤1.0（{std_scale:.
 
 print()
 print("=" * 68)
+print("九、进港命名空间（剧情 id 不得盖住港口）")
+print("=" * 68)
+scenes_doc = load("scenes.json")
+scene_by_id = {s["id"]: s for s in scenes_doc["scenes"]}
+# 海图回港 load_scene(port_id)。同名剧情若 type 不是 port，会先被当成正文，
+# visit_port 不调用，第一章 must_visit ryukyu 永远完不成。
+shadowed = []
+for pid in ports:
+    sc = scene_by_id.get(pid)
+    if sc is not None and sc.get("type", "scene") != "port":
+        shadowed.append(pid)
+check(not shadowed, "港口 id 不被非 port 剧情占用" + (f"（{shadowed}）" if shadowed else ""))
+for sid in ("ryukyu_story", "hakata_story"):
+    check(sid in scene_by_id, f"剧情正文改挂 {sid}，港口 id 留给牙行")
+# 选项 next 必须落到场景或港口，否则改名后剧情链断
+dangling = []
+for sc in scenes_doc["scenes"]:
+    for key in ("choices", "investigations"):
+        for ch in sc.get(key, []) or []:
+            nxt = ch.get("next", "")
+            if nxt and nxt not in scene_by_id and nxt not in ports:
+                dangling.append(f"{sc['id']}→{nxt}")
+check(not dangling, "场景 next 都指向场景或港口" + (f"（{dangling[:6]}）" if dangling else ""))
+opening = ["cg_title", "cg_world_north", "cg_world_east", "cg_world_south", "cg_world_west"]
+bad_open = [sid for sid in opening
+            if scene_by_id.get(sid, {}).get("type") != "title"
+            or not str(scene_by_id.get(sid, {}).get("cg_title", "")).strip()
+            or not str(scene_by_id.get(sid, {}).get("cg_sub", "")).strip()]
+check(not bad_open, "开场五屏 type=title 且标题正文都在" + (f"（{bad_open}）" if bad_open else ""))
+
+print()
+print("=" * 68)
 if fails:
     print(f"结果：{len(fails)} 项未通过")
     for f in fails:

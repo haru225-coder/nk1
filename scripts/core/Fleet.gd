@@ -296,6 +296,20 @@ func clear_cargo() -> void:
 		_ship_cargo(i).clear()
 
 
+## 只清空一艘船的货舱，返回 {gid: 件数}。旗舰沉没、护航还在时用。
+func clear_ship_cargo(ship_index: int) -> Dictionary:
+	var lost := {}
+	if ship_index < 0 or ship_index >= ships.size():
+		return lost
+	var sc: Dictionary = _ship_cargo(ship_index)
+	for gid in sc.keys().duplicate():
+		var q: int = int(sc[gid].get("qty", 0))
+		if q > 0:
+			lost[gid] = q
+	sc.clear()
+	return lost
+
+
 # ── 船员与补给 ────────────────────────────────────────
 
 func total_crew() -> int:

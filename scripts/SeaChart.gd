@@ -590,11 +590,23 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 		_log("[color=lime]击退海盗，夺得财货 %d 钱。战损 %d。[/color]" % [spoil, int(dmg)])
 	elif outcome == "lose":
 		Fleet.morale = maxi(0, Fleet.morale - 12)
-		var lost := Fleet.lose_cargo_ratio(0.25)
-		var lost_str := ""
-		for gid in lost.keys():
-			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-		_log("[color=red]接舷失利，被夺去部分货物。%s船体受损 %d。[/color]" % [lost_str, int(dmg)])
+		# WorldMap 只在旗舰沉没时发 lose。先按该船货舱全损记账，
+		# 不要写成「部分」——护航船还在则只清旗舰，全队耐久归零再由沉没结算收尾。
+		if bool(data.get("sunk", false)) or Fleet.total_durability() <= 0.0:
+			var lost := Fleet.clear_ship_cargo(0)
+			var lost_str := ""
+			for gid in lost.keys():
+				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
+			if Fleet.total_durability() <= 0.0:
+				_log("[color=red]旗舰沉没，货舱随船没了。%s船体受损 %d。[/color]" % [lost_str, int(dmg)])
+			else:
+				_log("[color=red]旗舰沉没，该船货物随船没了。%s其余船只还在。船体受损 %d。[/color]" % [lost_str, int(dmg)])
+		else:
+			var lost := Fleet.lose_cargo_ratio(0.25)
+			var lost_str := ""
+			for gid in lost.keys():
+				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
+			_log("[color=red]接舷失利，被夺去部分货物。%s船体受损 %d。[/color]" % [lost_str, int(dmg)])
 	else:  # flee
 		if data.get("flee_ok", false):
 			remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
@@ -659,17 +671,27 @@ func _after_combat() -> void:
 # ── 发现物 ──────────────────────────────────────────
 
 func _on_investigate_discovery() -> void:
-	event_panel.visible = false
+	# 按钮写「费 1 日」。这一日只扣水粮和历法，船不往前。
+	# 续航交给下一次点击，避免同一次点击里再进 _sail_next_day 叠成两日。
 	GameManager.advance_days(1)
 	days_elapsed += 1
 	var did: String = pending_event.get("discovery_id", "")
 	var d := GameManager.get_discovery_by_id(did)
+	var note := ""
 	if GameState.record_discovery(did):
-		_log("[color=lime]近岸细看，果然是%s。记入册子——回港上报市舶司，当有赏格。[/color]" % d.get("name", "旧泊地"))
+		note = "近岸细看，果然是%s。记入册子——回港上报市舶司，当有赏格。" % d.get("name", "旧泊地")
+		_log("[color=lime]%s[/color]" % note)
 	else:
-		_log("绕过去看了一圈，与册上所记并无出入。")
+		note = "绕过去看了一圈，与册上所记并无出入。"
+		_log(note)
 	_refresh_status()
-	_on_event_continue()
+	pending_event = {}
+	event_title.text = "第 %d 日・近岸" % days_elapsed
+	event_text.text = note + "\n\n这一日水粮照耗，船没有往前挪。"
+	for c in event_actions.get_children():
+		c.queue_free()
+	_add_event_action("继续航行", _on_event_continue)
+	event_panel.visible = true
 
 
 # ── 结束 ────────────────────────────────────────────

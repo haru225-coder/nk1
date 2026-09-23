@@ -522,19 +522,18 @@ check(G.money == win_money + 350, f"win 只加赏金 350（{win_money}→{G.mone
 check(G.morale == win_morale + 5, f"win 士气 +5（{win_morale}→{G.morale}）")
 check(dmg_win == 0.0, "win 结算不补扣耐久（战斗实时扣）")
 
-# lose：士气-12、货损 0.25，耐久不补扣
+# lose：WorldMap 只在旗舰沉没时发出。该船货舱清空，护航船不动。
+# 未沉的 25% 是 SeaChart 的 else，当前战斗不会走到。
+G.ships[0]["cargo"] = {"raw_silk": [10, 100]}
+G.ships[1]["cargo"] = {"raw_silk": [8, 90]}
 lose_morale0 = G.morale
 G.morale = max(0, G.morale - 12)
-# lose_cargo_ratio(0.25)：按比例从各船扣货（取整向上，货损不手软）
-for s in G.ships:
-    for gid, (q, p) in list(s["cargo"].items()):
-        l = int(math.ceil(q * 0.25))
-        if l > 0:
-            s["cargo"][gid][0] -= l
-            if s["cargo"][gid][0] <= 0: del s["cargo"][gid]
-cargo_after_lose = G.ships[0]["cargo"].get("raw_silk", [0])[0]
-check(cargo_after_lose == 7, f"lose 货损 25%（生丝 10→{cargo_after_lose}）")
+G.ships[0]["cargo"] = {}  # clear_ship_cargo(0)
+check(G.ships[0]["cargo"] == {}, "旗舰沉没清空该船货舱，不是留下 75%")
+check(G.ships[1]["cargo"]["raw_silk"][0] == 8, "护航船货物不随旗舰沉没清掉")
 check(G.morale == max(0, lose_morale0 - 12), "lose 士气 -12")
+unsunk_left = 10 - int(math.ceil(10 * 0.25))
+check(unsunk_left == 7, "未沉败局仍是货损 25%（10→7），与沉船全损分开")
 
 # flee 失败：货损 0.18 + 耐久 -30*armor_reduction（只打旗舰 ships[0]，同 damage_fleet）
 flee_durab = sum(s["durability"] for s in G.ships)
