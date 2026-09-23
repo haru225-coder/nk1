@@ -971,6 +971,11 @@ if "func _draw_ink_label" in seachart_src and "draw_string(font, v + Vector2(8, 
 else:
     print("  ✗ 海图港名仍是裸字")
     problems.append("海图港名未垫墨底")
+if "func _draw_chart_leaf" in seachart_src and "Color(0.11, 0.08, 0.05, 0.55)" not in seachart_src:
+    print("  ✓ 海图中栏是绢纸")
+else:
+    print("  ✗ 海图中栏仍铺熟漆")
+    problems.append("海图中栏未改绢纸")
 if "event_actions = VBoxContainer" in seachart_src and "style_choice_button(b)" in seachart_src:
     print("  ✓ 海图遭遇选项走竖排挑签")
 else:

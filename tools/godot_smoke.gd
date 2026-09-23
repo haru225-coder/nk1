@@ -76,6 +76,9 @@ func _run() -> void:
 	_check(chart_src.find("func _draw_ink_label") >= 0
 		and chart_src.find("draw_string(font, v + Vector2(8, 5)") < 0,
 		"海图港名走墨底签", fails)
+	_check(chart_src.find("func _draw_chart_leaf") >= 0
+		and chart_src.find("Color(0.11, 0.08, 0.05, 0.55)") < 0,
+		"海图中栏是绢纸", fails)
 	_check(chart_src.find("event_actions = VBoxContainer") >= 0
 		and chart_src.find("style_choice_button(b)") >= 0,
 		"海图遭遇选项走竖排挑签", fails)

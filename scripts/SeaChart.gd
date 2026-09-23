@@ -382,11 +382,11 @@ func _draw_chart(c: Control) -> void:
 	var proj := func(lat: float, lon: float) -> Vector2:
 		return mid + Vector2((lon - mean_lon) * kx * scale, -(lat - mean_lat) * scale)
 
-	c.draw_rect(Rect2(Vector2.ZERO, size), Color(0.11, 0.08, 0.05, 0.55))
+	_draw_chart_leaf(c, size)
 
 	_draw_monsoon(c, size)
 
-	# 已知航路：淡线勾出港口间的连接关系
+	# 已知航路：淡墨勾出港口间的连接关系。绢纸上不用泥金，否则线会发飘。
 	for p in pts:
 		var a: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
 		for cid in p.get("connections", []):
@@ -394,7 +394,7 @@ func _draw_chart(c: Control) -> void:
 			if q.is_empty() or not GameState.is_chapter_reached(q.get("unlock", "ch1")):
 				continue
 			var b: Vector2 = proj.call(float(q.get("lat", 0.0)), float(q.get("lon", 0.0)))
-			c.draw_line(a, b, Color(UiTheme.GOLD, 0.28), 1.0)
+			c.draw_line(a, b, Color(0.40, 0.26, 0.12, 0.45), 1.0)
 
 	# 当前航段
 	if selected_port != "":
@@ -405,8 +405,9 @@ func _draw_chart(c: Control) -> void:
 			var b: Vector2 = proj.call(float(d.get("lat", 0.0)), float(d.get("lon", 0.0)))
 			var wf := Voyage.wind_factor(Voyage.bearing(origin_port, selected_port))
 			# 顺风泛绿、逆风泛红——季风是否有利，一眼能看出来
-			var col := UiTheme.MOSS if wf >= 1.15 else (
-				UiTheme.CINNABAR if wf <= 0.75 else UiTheme.HONEY)
+			# 绢纸上的顺风/横风/逆风要比面板上的亮色深一档，否则会糊进纸色。
+			var col := Color(0.30, 0.42, 0.22) if wf >= 1.15 else (
+				Color(0.62, 0.24, 0.16) if wf <= 0.75 else Color(0.55, 0.36, 0.10))
 			c.draw_line(a, b, col, 2.5)
 
 	var font := UiTheme.font()
@@ -417,20 +418,25 @@ func _draw_chart(c: Control) -> void:
 		var visited: bool = pid in GameState.visited_ports
 		var is_here := pid == origin_port
 		var is_target := pid == selected_port
-		var col := UiTheme.TEXT_DIM
+		# 圆点落在绢纸上，要用深墨；签上的字仍是浅色，两套不能混。
+		var label_col := UiTheme.TEXT_DIM
+		var dot_col := Color(0.42, 0.32, 0.22)
 		if visited:
-			col = UiTheme.TEXT
+			label_col = UiTheme.TEXT
+			dot_col = Color(0.24, 0.16, 0.10)
 		if is_target:
-			col = UiTheme.GOLD
+			label_col = UiTheme.GOLD
+			dot_col = Color(0.55, 0.36, 0.10)
 		if is_here:
-			col = UiTheme.CINNABAR
-		c.draw_circle(v, 4.0 if (is_here or is_target) else 3.0, col)
+			label_col = UiTheme.CINNABAR
+			dot_col = Color(0.62, 0.22, 0.14)
+		c.draw_circle(v, 4.0 if (is_here or is_target) else 3.0, dot_col)
 		if is_here:
-			c.draw_arc(v, 8.0, 0, TAU, 20, col, 1.5)
+			c.draw_arc(v, 8.0, 0, TAU, 20, dot_col, 1.5)
 		marks.append({
 			"at": v,
 			"name": str(p.get("name", pid)),
-			"col": col,
+			"col": label_col,
 			"accent": is_here or is_target,
 		})
 
@@ -455,6 +461,18 @@ func _draw_chart(c: Control) -> void:
 			))
 
 
+## 海图中栏是一张绢纸，不再在熟漆面板上再铺一层熟漆。
+func _draw_chart_leaf(c: Control, size: Vector2) -> void:
+	c.draw_rect(Rect2(Vector2.ZERO, size), Color(0.91, 0.84, 0.70, 1.0), true)
+	var frame := Rect2(Vector2(3, 3), size - Vector2(6, 6))
+	if frame.size.x < 8.0 or frame.size.y < 8.0:
+		return
+	c.draw_rect(frame, Color(0.45, 0.32, 0.16, 0.55), false, 1.0)
+	var inner := frame.grow(-3.0)
+	if inner.size.x > 4.0 and inner.size.y > 4.0:
+		c.draw_rect(inner, Color(0.45, 0.32, 0.16, 0.28), false, 1.0)
+
+
 ## 季风方向：全图统一的斜箭头。风信是大尺度的，不必逐点画。
 func _draw_monsoon(c: Control, size: Vector2) -> void:
 	var wb := Calendar.get_wind_bearing()
@@ -463,7 +481,7 @@ func _draw_monsoon(c: Control, size: Vector2) -> void:
 
 	# 方位角 → 屏幕向量（y 轴向下，故取负 cos）
 	var dir := Vector2(sin(deg_to_rad(wb)), -cos(deg_to_rad(wb)))
-	var col := Color(UiTheme.GOLD, 0.28)
+	var col := Color(0.42, 0.28, 0.14, 0.38)
 	var step := 62.0
 	var arrow := 7.0
 	var y := step * 0.5
