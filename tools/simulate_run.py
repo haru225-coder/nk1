@@ -2,7 +2,7 @@
 """端到端模拟一局：从开局 1000 钱、一条小艍船出发，跑近海商路攒钱换船。
 完整复现 Fleet 的舱位/补给（多船分装）、Economy 的行情冲击与回归、Voyage 的季风与航速。
 目的是找出设计死锁（卡补给、卡舱位、卡钱），而不是验证单条公式。"""
-import json, math, os, sys, random
+import json, math, os, re, sys, random
 
 random.seed(20260727)
 import pathlib
@@ -549,6 +549,26 @@ check(0.25 <= 0.6 <= 0.9, "flee 概率公式 clampf(speed/220, 0.25, 0.9) 落区
 win_dmg_worst = 520 * 0.06 * armor_r
 check(win_dmg_worst < 120, f"最坏胜战伤 {win_dmg_worst:.1f} < 小艍耐久 120（单次胜仗不沉开局船）")
 check(verify_invariants(), "海战结算后分船账目不变量仍成立")
+
+print()
+print("="*70)
+print("风涛分摊：护航船自己吃一份，旗舰不替它挨")
+print("="*70)
+voyage_src = open(os.path.join(ROOT, "scripts", "core", "Voyage.gd"), encoding="utf-8").read()
+storm_body = voyage_src.split("func _storm_event", 1)[1].split("\nfunc ", 1)[0]
+hit_m = re.search(r"var each := ([0-9.]+) \* severity", storm_body)
+storm_base = float(hit_m.group(1)) if hit_m else 0.0
+flag_h = float(ships["fu_ship_medium"]["durability"])
+esc_h = float(ships["sampan"]["durability"])
+each = storm_base * 1.0
+flag_after = flag_h - each
+esc_after = esc_h - each
+piled = flag_h - each * 2
+print(f"  满风涛每艘 {each:.0f}：福船 {flag_h:.0f}→{flag_after:.0f}，小艍 {esc_h:.0f}→{esc_after:.0f}")
+check(flag_after == flag_h - each and esc_after == esc_h - each, "两艘各掉一份")
+check(flag_after > piled, f"旗舰剩 {flag_after:.0f}，没有吃掉护航的那份（堆旗舰会剩 {piled:.0f}）")
+check("damage_each_ship" in storm_body and "ships.size()" not in storm_body,
+      "风涛脚本按艘扣，不再乘船数")
 
 print()
 print("="*70)

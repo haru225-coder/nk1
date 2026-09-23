@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """复现 Economy.gd / Voyage.gd 的公式，验证核心贸易循环与航海数值是否成立。
 不依赖 Godot，纯数学校验。"""
-import json, math, sys, os
+import json, math, re, sys, os
 
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -732,6 +732,41 @@ check(0.8 * 100 <= low_scale <= high_scale <= 3.0 * 100,
 check(low_scale >= 150 and high_scale >= 250,
       f"开局小艍对敌倍率 1.5~3.0（{low_scale:.0f}~{high_scale:.0f} 血，必败向）")
 check(std_scale <= 100.5, f"标准舰队对上限敌倍率 ≤1.0（{std_scale:.0f} 血，可胜向）")
+
+print()
+print("=" * 68)
+print("九、风涛：每艘各吃一份，旗舰不替护航船挨打")
+print("=" * 68)
+
+voyage_src = open(os.path.join(ROOT, "scripts", "core", "Voyage.gd"), encoding="utf-8").read()
+storm_body = voyage_src.split("func _storm_event", 1)[1].split("\nfunc ", 1)[0]
+hit_m = re.search(r"var each := ([0-9.]+) \* severity", storm_body)
+storm_base = float(hit_m.group(1)) if hit_m else 0.0
+print(f"  满强度、无甲，每艘 {storm_base:.1f}")
+check(0 < storm_base <= ships["sampan"]["durability"] * 0.2,
+      f"一场满风涛每艘 {storm_base:.1f} ≤ 小艍耐久的两成（{ships['sampan']['durability'] * 0.2:.0f}）")
+
+def storm_left(hulls, each):
+    return [max(0.0, h - each) for h in hulls]
+
+one = storm_left([ships["sampan"]["durability"]], storm_base)
+check(one[0] == ships["sampan"]["durability"] - storm_base,
+      f"单船小艍满风涛后剩 {one[0]:.0f}（与旧的单船公式相同）")
+flag0 = ships["fu_ship_medium"]["durability"]
+esc0 = ships["sampan"]["durability"]
+two = storm_left([flag0, esc0], storm_base)
+piled = flag0 - storm_base * 2
+print(f"  福船+小艍：旗舰 {flag0:.0f}→{two[0]:.0f}，护航 {esc0:.0f}→{two[1]:.0f}；堆在旗舰上会是 {piled:.0f}")
+check(two[0] == flag0 - storm_base, f"旗舰只掉自己的 {storm_base:.0f}")
+check(two[1] == esc0 - storm_base, f"护航船也掉 {storm_base:.0f}")
+check(two[0] > piled, f"旗舰剩 {two[0]:.0f}，不是把两艘的份量堆成 {piled:.0f}")
+check((flag0 - two[0]) + (esc0 - two[1]) == storm_base * 2,
+      "健康舰队的总伤仍是每艘一份相加（日志上的总数不变）")
+armored = storm_left([flag0, esc0], storm_base * 0.8)
+check(abs(armored[0] - (flag0 - storm_base * 0.8)) < 1e-9,
+      f"满甲后旗舰掉 {storm_base * 0.8:.1f}，不是 {storm_base:.0f}")
+wreck = storm_left([4.0], storm_base)
+check(wreck[0] == 0.0, "残船扣到 0 为止，不出现负耐久")
 
 print()
 print("=" * 68)

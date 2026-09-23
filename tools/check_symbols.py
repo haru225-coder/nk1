@@ -624,6 +624,28 @@ else:
 
 print()
 print("=" * 68)
+print("九、风涛分摊（每艘各吃一份，不把船数乘进旗舰）")
+print("=" * 68)
+if "damage_each_ship" in defined.get("Fleet", set()):
+    print("  ✓ Fleet.damage_each_ship 已定义")
+else:
+    print("  ✗ Fleet.damage_each_ship 未定义")
+    problems.append("Fleet.damage_each_ship 未定义")
+storm_body = voyage_src.split("func _storm_event", 1)[-1].split("\nfunc ", 1)[0]
+if "damage_each_ship" in storm_body and "damage_fleet" not in storm_body and "ships.size()" not in storm_body:
+    print("  ✓ 风涛按艘分摊，不再乘船数打旗舰")
+else:
+    print("  ✗ 风涛仍把伤害堆进旗舰")
+    problems.append("风涛未分摊")
+flee_body = seachart_src.split("func _on_flee_pirates", 1)[-1].split("\nfunc ", 1)[0]
+if "damage_fleet" in flee_body and "damage_each_ship" not in flee_body:
+    print("  ✓ 逃走失败仍只打旗舰")
+else:
+    print("  ✗ 逃走失败不再打旗舰")
+    problems.append("逃走失败误改成分摊")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:
