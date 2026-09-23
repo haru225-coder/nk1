@@ -88,6 +88,9 @@ func _run() -> void:
 	var dlg := AcceptDialog.new()
 	UiTheme.style_dialog(dlg, true)
 	_check(dlg.get_theme_stylebox("panel") != null, "UiTheme.style_dialog 给弹窗套绢本面板", fails)
+	_check(UiTheme.INK.b > UiTheme.INK.r and UiTheme.INK.g > UiTheme.INK.r
+		and UiTheme.TIDE.g > UiTheme.TIDE.r and UiTheme.SEAL.r > UiTheme.SEAL.b,
+		"面板是夜潮青，潮光作线，主钮是珊瑚", fails)
 	_check(UiTheme.plain_log("【钱不够】牙人摇头。") == "牙人摇头。", "日志去掉方括号标签", fails)
 	_check(UiTheme.plain_log("买入瓷器 ×1。") == "买入瓷器 ×1。", "普通日志原样保留", fails)
 	_check(UiTheme.plain_log("[color=#aabbcc]【欠饷】已拖欠。[/color]") == "[color=#aabbcc]已拖欠。[/color]",

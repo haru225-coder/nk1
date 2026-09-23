@@ -993,6 +993,12 @@ if (
 else:
     print("  ✗ 风信仍套括号")
     problems.append("风信仍套括号")
+theme_src_tide = open(os.path.join(SCRIPTS, "core", "UiTheme.gd"), encoding="utf-8").read()
+if "夜潮" in theme_src_tide and "const TIDE" in theme_src_tide and "熟漆面板" not in theme_src_tide:
+    print("  ✓ 面板改成夜潮")
+else:
+    print("  ✗ 面板仍是熟漆描金")
+    problems.append("面板仍是熟漆描金")
 if (
     "%s　%s%s" in cal_src
     and "%s %s%s" not in cal_src
