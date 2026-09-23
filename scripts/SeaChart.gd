@@ -1,9 +1,11 @@
 extends Control
-## 海图。点选目的地 → 按日推进 → 逐日抽事件 → 到港。
+## 海图。风每一手发至多三向，选定后按日推进，逐日抽事件，到港。
 ## 实时操船（WorldMap.tscn）降级为海战/风涛时切入的战术场景。
 
 var origin_port: String = ""
 var selected_port: String = ""
+var _hand: PackedStringArray = PackedStringArray()
+var _marker_at: Dictionary = {}
 
 ## 航行状态
 var sailing: bool = false
@@ -16,10 +18,10 @@ var pending_event: Dictionary = {}
 # UI
 var status_label: RichTextLabel
 var chart: Control
-var port_list: VBoxContainer
-var detail_box: VBoxContainer
+var heading_row: HBoxContainer
 var log_label: RichTextLabel
 var sail_button: Button
+var redraw_button: Button
 var event_panel: PanelContainer
 var event_title: Label
 var event_text: RichTextLabel
@@ -30,10 +32,11 @@ func _ready() -> void:
 	UiTheme.apply(self)
 	origin_port = GameState.last_port
 	selected_port = ""
+	_hand = HeadingDraft.deal(origin_port, GameState.draft_salt)
 	_build_ui()
 	# 连接放在 _build_ui 之后：_log 依赖其中创建的 log_label
 	GameManager.monthly_notice.connect(_log)
-	_refresh_ports()
+	_refresh_hand()
 	_refresh_status()
 	_log("自 %s 起锚。%s。" % [GameManager.get_port_name(origin_port), Calendar.get_monsoon_desc()])
 
@@ -59,20 +62,25 @@ func _build_ui() -> void:
 	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(veil)
 
-	var root := HBoxContainer.new()
+	var root := VBoxContainer.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.offset_left = 16
 	root.offset_top = 16
 	root.offset_right = -16
 	root.offset_bottom = -16
-	root.add_theme_constant_override("separation", 12)
+	root.add_theme_constant_override("separation", 8)
 	add_child(root)
+
+	var columns := HBoxContainer.new()
+	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	columns.add_theme_constant_override("separation", 12)
+	root.add_child(columns)
 
 	# ── 左：状态 ──
 	var left := PanelContainer.new()
 	left.custom_minimum_size = Vector2(260, 0)
 	left.add_theme_stylebox_override("panel", _panel_style())
-	root.add_child(left)
+	columns.add_child(left)
 	var left_m := MarginContainer.new()
 	_set_margins(left_m, 10)
 	left.add_child(left_m)
@@ -82,11 +90,11 @@ func _build_ui() -> void:
 	UiTheme.style_body(status_label)
 	left_m.add_child(status_label)
 
-	# ── 中：港口与航段 ──
+	# ── 中：绢纸海图。航向牌不放这里，三张 372 宽的牌在底栏才排得下。 ──
 	var center := PanelContainer.new()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	center.add_theme_stylebox_override("panel", _panel_style())
-	root.add_child(center)
+	columns.add_child(center)
 	var center_m := MarginContainer.new()
 	_set_margins(center_m, 12)
 	center.add_child(center_m)
@@ -101,7 +109,7 @@ func _build_ui() -> void:
 	center_v.add_child(head)
 
 	var hint := Label.new()
-	hint.text = "选定去处，量过风信与水粮，再决定发不发舶。"
+	hint.text = "风这一手只发三向。看中一张，再决定发不发舶。"
 	UiTheme.style_footnote(hint)
 	center_v.add_child(hint)
 
@@ -111,44 +119,15 @@ func _build_ui() -> void:
 	chart.custom_minimum_size = Vector2(0, 160)
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chart.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	chart.size_flags_stretch_ratio = 1.35
 	chart.draw.connect(func(): _draw_chart(chart))
+	chart.gui_input.connect(_on_chart_input)
 	center_v.add_child(chart)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_stretch_ratio = 1.0
-	scroll.custom_minimum_size = Vector2(0, 96)
-	center_v.add_child(scroll)
-	port_list = VBoxContainer.new()
-	port_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(port_list)
-	UiTheme.hook_buttons(port_list)
-
-	detail_box = VBoxContainer.new()
-	detail_box.add_theme_constant_override("separation", 4)
-	center_v.add_child(detail_box)
-
-	sail_button = Button.new()
-	sail_button.text = "发　舶"
-	sail_button.custom_minimum_size = Vector2(0, 48)
-	sail_button.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
-	sail_button.disabled = true
-	sail_button.pressed.connect(_on_sail_pressed)
-	center_v.add_child(sail_button)
-	UiTheme.style_button(sail_button, true)
-
-	var back := Button.new()
-	back.text = "回　港"
-	back.pressed.connect(_return_to_port)
-	center_v.add_child(back)
-	UiTheme.style_button(back)
 
 	# ── 右：航海日志 ──
 	var right := PanelContainer.new()
 	right.custom_minimum_size = Vector2(300, 0)
 	right.add_theme_stylebox_override("panel", _panel_style())
-	root.add_child(right)
+	columns.add_child(right)
 	var right_m := MarginContainer.new()
 	_set_margins(right_m, 10)
 	right.add_child(right_m)
@@ -168,6 +147,40 @@ func _build_ui() -> void:
 	log_label.custom_minimum_size = Vector2(272, 0)
 	UiTheme.style_body(log_label)
 	log_scroll.add_child(log_label)
+
+	heading_row = HBoxContainer.new()
+	heading_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	heading_row.add_theme_constant_override("separation", 12)
+	heading_row.custom_minimum_size = Vector2(0, 148)
+	root.add_child(heading_row)
+
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	actions.add_theme_constant_override("separation", 12)
+	root.add_child(actions)
+
+	sail_button = Button.new()
+	sail_button.text = "就这一向"
+	sail_button.custom_minimum_size = Vector2(220, 48)
+	sail_button.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
+	sail_button.disabled = true
+	sail_button.pressed.connect(_on_sail_pressed)
+	actions.add_child(sail_button)
+	UiTheme.style_button(sail_button, true)
+
+	redraw_button = Button.new()
+	redraw_button.text = "候风再发"
+	redraw_button.custom_minimum_size = Vector2(160, 42)
+	redraw_button.pressed.connect(_on_redraw_hand)
+	actions.add_child(redraw_button)
+	UiTheme.style_button(redraw_button)
+
+	var back := Button.new()
+	back.text = "回港"
+	back.custom_minimum_size = Vector2(120, 42)
+	back.pressed.connect(_return_to_port)
+	actions.add_child(back)
+	UiTheme.style_button(back)
 
 	# ── 事件浮层 ──
 	_build_event_panel()
@@ -259,110 +272,133 @@ func _refresh_status() -> void:
 		chart.queue_redraw()
 
 
-func _refresh_ports() -> void:
-	for c in port_list.get_children():
+func _refresh_hand() -> void:
+	for c in heading_row.get_children():
 		c.queue_free()
-
-	for p in GameManager.unlocked_ports():
-		var pid: String = p.get("id", "")
-		if pid == origin_port:
-			continue
-		# 兴化与海口是陆路可达的剧情点，不列入海图
-		if p.get("depth", 0) <= 0:
-			continue
-
-		var plan := Voyage.plan(origin_port, pid)
-		var btn := Button.new()
-		btn.toggle_mode = true
-		btn.button_pressed = (pid == selected_port)
-		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		btn.custom_minimum_size = Vector2(0, 34)
-
-		var known := "" if Voyage.is_known_route(origin_port, pid) else "　生路"
-		btn.text = "%s　　%d 里　　%s　　约 %d 日%s" % [
-			p.get("name", pid), int(plan["distance"]), plan["wind_desc"], plan["days"], known,
-		]
-		btn.pressed.connect(_on_port_selected.bind(pid))
-		port_list.add_child(btn)
-		UiTheme.style_choice_button(btn, pid == selected_port)
-		if not plan["supply_ok"]:
-			btn.add_theme_color_override("font_color", UiTheme.CINNABAR)
-			btn.add_theme_color_override("font_hover_color", UiTheme.CINNABAR)
-		elif plan["wind_desc"] == "顺风":
-			btn.add_theme_color_override("font_color", UiTheme.MOSS)
-			btn.add_theme_color_override("font_hover_color", UiTheme.MOSS)
-
-
-func _on_port_selected(pid: String) -> void:
-	selected_port = pid
-	_refresh_ports()
-	_refresh_detail()
+	_hand = HeadingDraft.deal(origin_port, GameState.draft_salt)
+	if selected_port not in _hand:
+		selected_port = ""
+	for pid in _hand:
+		heading_row.add_child(_make_heading_card(str(pid)))
+	sail_button.disabled = selected_port == "" or sailing
+	redraw_button.disabled = sailing
 	if chart:
 		chart.queue_redraw()
 
 
-func _refresh_detail() -> void:
-	for c in detail_box.get_children():
-		c.queue_free()
-	if selected_port == "":
-		sail_button.disabled = true
-		detail_box.custom_minimum_size = Vector2.ZERO
-		return
+func _make_heading_card(pid: String) -> Control:
+	var plan := Voyage.plan(origin_port, pid)
+	var selected := pid == selected_port
+	var wrap := Control.new()
+	wrap.custom_minimum_size = Vector2(372, 148)
+	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var plan := Voyage.plan(origin_port, selected_port)
-	var card := PanelContainer.new()
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", UiTheme.card())
-	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 2)
-	card.add_child(body)
-	detail_box.add_child(card)
+	var panel := Panel.new()
+	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_theme_stylebox_override("panel", UiTheme.heading_card(selected))
+	wrap.add_child(panel)
+
+	var box := VBoxContainer.new()
+	box.set_anchors_preset(Control.PRESET_FULL_RECT)
+	box.offset_left = 16
+	box.offset_top = 12
+	box.offset_right = -14
+	box.offset_bottom = -12
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", 4)
+	wrap.add_child(box)
 
 	var name_lbl := Label.new()
-	name_lbl.text = str(GameManager.get_port_name(selected_port))
-	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UiTheme.style_footnote(name_lbl)
-	name_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
-	name_lbl.add_theme_color_override("font_color", UiTheme.GOLD)
-	body.add_child(name_lbl)
+	name_lbl.text = str(GameManager.get_port_name(pid))
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_lbl.add_theme_font_override("font", UiTheme.font())
+	name_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
+	name_lbl.add_theme_color_override("font_color", UiTheme.TIDE)
+	box.add_child(name_lbl)
 
-	_detail_line(body, "航程　%d 里　方位　%s" % [
-		int(plan["distance"]), _bearing_phrase(float(plan["bearing"])),
-	])
-	var wind := "风信　%s　日速 %d 里" % [str(plan["wind_desc"]), int(plan["speed"])]
+	var wind_lbl := _card_line("%s　约 %d 日" % [str(plan["wind_desc"]), int(plan["days"])], UiTheme.TEXT)
 	var hz := Crew.level_of("huozhang")
 	if hz > 0:
-		wind += "　火长　%s" % Crew.rank_word(hz)
+		wind_lbl.text += "　火长　%s" % Crew.rank_word(hz)
 	var dg := Crew.level_of("duogong")
 	if dg > 0 and str(plan["wind_desc"]) in ["斜逆风", "顶头逆风"]:
-		wind += "　舵工抢风"
-	_detail_line(body, wind)
-	_detail_line(body, "约 %d 日　水粮足 %d 日" % [int(plan["days"]), int(plan["supply_days"])])
+		wind_lbl.text += "　舵工抢风"
+	box.add_child(wind_lbl)
+	box.add_child(_card_line("%d 里　%s" % [int(plan["distance"]), _bearing_phrase(float(plan["bearing"]))], UiTheme.TEXT_DIM))
+	if not Voyage.is_known_route(origin_port, pid):
+		box.add_child(_card_line("生路", UiTheme.HONEY))
+	if not bool(plan["supply_ok"]):
+		box.add_child(_card_line("水粮不够", UiTheme.CINNABAR))
 
-	var extra := 0
-	if not Voyage.is_known_route(origin_port, selected_port):
-		_detail_line(body, "此非熟路，海图上只有传闻，途中易生变故。", UiTheme.HONEY)
-		extra += 1
-	if not plan["supply_ok"]:
-		_detail_line(body, "水粮不足以支撑此程——半途必要死人。", UiTheme.CINNABAR)
-		extra += 1
-	# 港名一行加航程、风信、日程。栏高不够时这张账条会被压进港口挑签里。
-	detail_box.custom_minimum_size = Vector2(0, 40 + (3 + extra) * 22)
+	var hit := Button.new()
+	hit.flat = true
+	hit.set_anchors_preset(Control.PRESET_FULL_RECT)
+	hit.disabled = sailing
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		hit.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	hit.pressed.connect(_select_heading.bind(pid))
+	wrap.add_child(hit)
+	if sailing:
+		wrap.modulate = Color(1, 1, 1, 0.45)
+	return wrap
 
-	sail_button.disabled = false
 
-
-func _detail_line(parent: VBoxContainer, text: String, color: Color = Color(0, 0, 0, 0)) -> void:
+func _card_line(text: String, color: Color) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UiTheme.style_footnote(lbl)
-	if color.a <= 0.0:
-		color = UiTheme.TEXT
 	lbl.add_theme_color_override("font_color", color)
-	parent.add_child(lbl)
+	return lbl
+
+
+func _select_heading(pid: String) -> void:
+	if sailing:
+		return
+	if pid not in _hand:
+		_log("今日风不放这一向。")
+		return
+	selected_port = pid
+	_refresh_hand()
+
+
+func _on_redraw_hand() -> void:
+	if sailing:
+		return
+	GameState.draft_salt += 1
+	GameManager.advance_days(3)
+	selected_port = ""
+	_log("在船上候了三日，风又换了一手。")
+	_refresh_hand()
+	_refresh_status()
+
+
+func _on_chart_input(event: InputEvent) -> void:
+	if sailing or not (event is InputEventMouseButton):
+		return
+	var mb := event as InputEventMouseButton
+	if not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var pid := _port_at(mb.position)
+	if pid == "" or pid == origin_port:
+		return
+	if pid in _hand:
+		_select_heading(pid)
+	else:
+		_log("今日风不放这一向。")
+
+
+func _port_at(at: Vector2) -> String:
+	var best := ""
+	var best_d := 16.0
+	for key in _marker_at.keys():
+		var pos: Vector2 = _marker_at[key]
+		var d := pos.distance_to(at)
+		if d < best_d:
+			best_d = d
+			best = str(key)
+	return best
 
 
 ## 八方加上度数。字跟最近的一方，数目仍是航向。
@@ -436,12 +472,15 @@ func _draw_chart(c: Control) -> void:
 
 	var font := UiTheme.font()
 	var marks: Array[Dictionary] = []
+	_marker_at = {}
 	for p in pts:
 		var pid: String = p.get("id", "")
 		var v: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
+		_marker_at[pid] = v
 		var visited: bool = pid in GameState.visited_ports
 		var is_here := pid == origin_port
 		var is_target := pid == selected_port
+		var offered := is_here or pid in _hand
 		# 圆点落在绢纸上，要用深墨；签上的字仍是浅色，两套不能混。
 		var label_col := UiTheme.TEXT_DIM
 		var dot_col := Color(0.42, 0.32, 0.22)
@@ -454,6 +493,9 @@ func _draw_chart(c: Control) -> void:
 		if is_here:
 			label_col = UiTheme.CINNABAR
 			dot_col = Color(0.62, 0.22, 0.14)
+		if not offered:
+			label_col.a = 0.35
+			dot_col.a = 0.35
 		c.draw_circle(v, 4.0 if (is_here or is_target) else 3.0, dot_col)
 		if is_here:
 			c.draw_arc(v, 8.0, 0, TAU, 20, dot_col, 1.5)
@@ -620,8 +662,7 @@ func _debug_force_pirate() -> void:
 		sailing = true
 		Fleet.at_sea = true
 		sail_button.disabled = true
-		for c in port_list.get_children():
-			c.disabled = true
+		_lock_hand()
 		_log(_ink(UiTheme.HONEY, "点验　中途遭遇。"))
 		_refresh_status()
 	_show_event(Voyage.pirate_sighting())
@@ -630,6 +671,16 @@ func _debug_force_pirate() -> void:
 # ══════════════════════════════════════════════════════
 #  航行
 # ══════════════════════════════════════════════════════
+
+func _lock_hand() -> void:
+	sailing = true
+	redraw_button.disabled = true
+	for wrap in heading_row.get_children():
+		wrap.modulate = Color(1, 1, 1, 0.45)
+		for ch in wrap.get_children():
+			if ch is Button:
+				ch.disabled = true
+
 
 func _on_sail_pressed() -> void:
 	if selected_port == "" or sailing:
@@ -642,8 +693,7 @@ func _on_sail_pressed() -> void:
 	Fleet.at_sea = true
 
 	sail_button.disabled = true
-	for c in port_list.get_children():
-		c.disabled = true
+	_lock_hand()
 
 	_log(_ink(UiTheme.GOLD, "启程往 %s，航程 %d 里。" % [GameManager.get_port_name(selected_port), int(total_li)]))
 	_sail_next_day()

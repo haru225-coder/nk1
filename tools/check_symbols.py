@@ -999,6 +999,25 @@ if "夜潮" in theme_src_tide and "const TIDE" in theme_src_tide and "熟漆面�
 else:
     print("  ✗ 面板仍是熟漆描金")
     problems.append("面板仍是熟漆描金")
+draft_src = open(os.path.join(SCRIPTS, "core", "HeadingDraft.gd"), encoding="utf-8").read()
+chart_src_draft = open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()
+gs_src_draft = open(os.path.join(SCRIPTS, "GameState.gd"), encoding="utf-8").read()
+if (
+    "class_name HeadingDraft" in draft_src
+    and "今日风不放这一向。" in chart_src_draft
+    and "在船上候了三日，风又换了一手。" in chart_src_draft
+    and "就这一向" in chart_src_draft
+    and "候风再发" in chart_src_draft
+    and "看风" in main_src
+    and "升帆出海" not in main_src
+    and '"draft_salt"' in gs_src_draft
+    and "heading_card" in theme_src_tide
+    and "port_list" not in chart_src_draft
+):
+    print("  ✓ 出海改成晨潮三向")
+else:
+    print("  ✗ 晨潮三向未接上")
+    problems.append("晨潮三向未接上")
 if (
     "%s　%s%s" in cal_src
     and "%s %s%s" not in cal_src
@@ -1044,7 +1063,7 @@ else:
     problems.append("海图日志仍写发舶标签")
 if (
     "func _bearing_phrase" in seachart_src
-    and "UiTheme.card()" in seachart_src
+    and "UiTheme.heading_card" in seachart_src
     and "回港（不出海）" not in seachart_src
     and "目的：" not in seachart_src
     and "绕过去看看（费 1 日）" not in seachart_src

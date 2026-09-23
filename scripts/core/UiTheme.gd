@@ -197,7 +197,7 @@ static func log_well() -> StyleBoxFlat:
 
 
 static func card() -> StyleBoxFlat:
-	var st := _flat(INK_SOFT, Color(TIDE, 0.90), 0, 0)
+	var st := _flat(INK_SOFT, Color(TIDE, 0.90), 16, 0)
 	st.border_width_left = 3
 	st.content_margin_left = 8
 	st.content_margin_right = 8
@@ -207,12 +207,23 @@ static func card() -> StyleBoxFlat:
 
 
 static func card_hover() -> StyleBoxFlat:
-	var st := _flat(BTN_HI, Color(TIDE, 1.0), 0, 0)
+	var st := _flat(BTN_HI, Color(TIDE, 1.0), 16, 0)
 	st.border_width_left = 4
 	st.content_margin_left = 8
 	st.content_margin_right = 8
 	st.content_margin_top = 5
 	st.content_margin_bottom = 5
+	return st
+
+
+## 航向牌。未选中暗边，选中潮光边。半径与港卡同为 16。
+static func heading_card(selected: bool) -> StyleBoxFlat:
+	var edge := TIDE if selected else BTN
+	var st := _flat(INK, edge, 16, 2 if selected else 1)
+	st.content_margin_left = 14
+	st.content_margin_right = 12
+	st.content_margin_top = 10
+	st.content_margin_bottom = 10
 	return st
 
 

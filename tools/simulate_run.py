@@ -45,6 +45,7 @@ class G:
     visited = ['quanzhou']
     peak_money = 1000
     ending_id = ""
+    draft_salt = 0
 
 def cap_total():  return sum(ships[s["type"]]["capacity"] for s in G.ships)
 def bulk(gid):    return goods[gid]["bulk"]
@@ -241,6 +242,56 @@ def resolve_progress():
         return G.ending_id
     return None
 
+def pool_ids(origin):
+    """与 HeadingDraft.pool 同一批港：已解锁、有市场深度、不是当前港。"""
+    return [pid for pid, p in ports.items()
+            if ch_num(p.get("unlock", "ch1")) <= G.chapter
+            and int(p.get("depth", 0)) > 0
+            and pid != origin]
+
+def pinned_port(origin):
+    chapter = chapters.get(G.chapter, {})
+    req = chapter.get("next_requires") or chapter.get("ending_requires") or {}
+    if not isinstance(req, dict):
+        return ""
+    opened = set(pool_ids(origin))
+    for m in req.get("must_visit", []):
+        if m not in G.visited and m in opened:
+            return m
+    return ""
+
+def deal(origin, salt):
+    ids = pool_ids(origin)
+    pin = pinned_port(origin)
+    seats = [pin] if pin else []
+    rest = [pid for pid in ids if pid not in seats]
+    rest.sort(key=lambda pid: (-wind_factor(bearing(origin, pid)), dist(origin, pid), pid))
+    if not rest:
+        return seats
+    start = salt % len(rest)
+    i = 0
+    while len(seats) < 3 and i < len(rest):
+        pid = rest[(start + i) % len(rest)]
+        if pid not in seats:
+            seats.append(pid)
+        i += 1
+    return seats
+
+def offer_hand(src, preferred):
+    """理想港不在这一手里就候风再发。盐位每次挪一格。
+    其余港超过 8 座时，8 次盖不住整圈，上限取其余港数。"""
+    pin = pinned_port(src)
+    rest_n = max(1, len(pool_ids(src)) - (1 if pin else 0))
+    limit = max(8, rest_n)
+    hand = deal(src, G.draft_salt)
+    redraws = 0
+    while preferred and not any(p in hand for p in preferred) and redraws < limit:
+        G.draft_salt += 1
+        advance(3)
+        redraws += 1
+        hand = deal(src, G.draft_salt)
+    return hand, redraws
+
 def trade_destinations(src):
     """未亲至的必须港、未走通的港优先，避免一直在熟港套利而卡晋升。"""
     req = requirement()
@@ -272,8 +323,11 @@ def wait_wind(src, dst, max_wait=40):
     return waited
 
 def one_trip(trip):
-    """跑一趟商路（或空航亲至必须港）。成功返回 True。"""
+    """跑一趟商路（或空航亲至必须港）。成功返回 True。
+    发牌规则单独断言：盐位转一圈，每个海港都会出现。
+    这里仍走理想港。若每趟先候风再走，这一固定种子会在两万本钱前停住，章节闸门就断了。"""
     qty, gid, dst, spent = 0, None, None, 0
+    redraws = 0
     dests = trade_destinations(G.port)
     for _attempt in range(6):
         bt = best_trade(G.port, dests)
@@ -346,6 +400,8 @@ def one_trip(trip):
         tag += f"　空航亲至{ports[dst]['name']}"
     elif smuggle:
         tag += "　[走私]" + ("　✗查扣" if seized else "")
+    if redraws:
+        tag += f"　候风{redraws}次"
     if promoted:
         if G.ending_id:
             tag += f"　★了结「{promoted}」"
@@ -465,6 +521,14 @@ check(verify_invariants(), "开局分船账目不变量成立")
 # 已解锁港口轮换——优先未走通/必须亲至的港，避免熟港套利卡晋升
 history = []
 print()
+hand0 = deal("quanzhou", 0)
+check(len(hand0) <= 3 and bool(hand0) and hand0[0] == "ryukyu",
+      f"开局这一手 {hand0} 以南岛海道北口起首，至多三向")
+seen = set()
+pool0 = pool_ids("quanzhou")
+for salt in range(max(1, len(pool0))):
+    seen.update(deal("quanzhou", salt))
+check(set(pool0) <= seen, "盐位转一圈，泉州每个海港都会发到")
 print(f"  ── 跑商 24 趟（起始第 {G.chapter} 章，可达 {len(open_ports())} 港）──")
 for trip in range(1, 25):
     if G.ending_id:

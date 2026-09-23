@@ -91,6 +91,31 @@ func _run() -> void:
 	_check(UiTheme.INK.b > UiTheme.INK.r and UiTheme.INK.g > UiTheme.INK.r
 		and UiTheme.TIDE.g > UiTheme.TIDE.r and UiTheme.SEAL.r > UiTheme.SEAL.b,
 		"面板是夜潮青，潮光作线，主钮是珊瑚", fails)
+	var facility := UiTheme.card()
+	var picked := UiTheme.heading_card(true)
+	var idle := UiTheme.heading_card(false)
+	_check(facility.corner_radius_top_left == 16 and picked.corner_radius_top_left == 16
+		and picked.border_color.g > picked.border_color.r
+		and idle.border_color.b > idle.border_color.r,
+		"港卡与航向牌是潮玻璃，选中边是潮光", fails)
+	var ch_keep: int = gs.chapter
+	var vis_keep: Array = gs.visited_ports.duplicate()
+	var end_keep: String = str(gs.ending_id)
+	var salt_keep: int = int(gs.draft_salt)
+	gs.chapter = 1
+	gs.visited_ports = ["quanzhou"]
+	gs.ending_id = ""
+	gs.draft_salt = 0
+	var hand: PackedStringArray = HeadingDraft.deal("quanzhou", 0)
+	var hand_next: PackedStringArray = HeadingDraft.deal("quanzhou", 1)
+	_check(hand.size() >= 1 and hand.size() <= 3 and hand[0] == "ryukyu",
+		"泉州开局这一手最多三向，南岛海道北口占第一席", fails)
+	_check(hand.size() >= 2 and hand_next.size() >= 2 and hand[1] != hand_next[1],
+		"盐位一转，非必须席换港", fails)
+	gs.chapter = ch_keep
+	gs.visited_ports = vis_keep
+	gs.ending_id = end_keep
+	gs.draft_salt = salt_keep
 	_check(UiTheme.plain_log("【钱不够】牙人摇头。") == "牙人摇头。", "日志去掉方括号标签", fails)
 	_check(UiTheme.plain_log("买入瓷器 ×1。") == "买入瓷器 ×1。", "普通日志原样保留", fails)
 	_check(UiTheme.plain_log("[color=#aabbcc]【欠饷】已拖欠。[/color]") == "[color=#aabbcc]已拖欠。[/color]",
@@ -221,7 +246,7 @@ func _run() -> void:
 		"序章内页进门有一句，日志走 plain_log", fails)
 	_check(chart_src.find("【发舶】") < 0 and chart_src.find("UiTheme.plain_log") >= 0,
 		"海图日志不再写发舶标签", fails)
-	_check(chart_src.find("func _bearing_phrase") >= 0 and chart_src.find("UiTheme.card()") >= 0
+	_check(chart_src.find("func _bearing_phrase") >= 0 and chart_src.find("UiTheme.heading_card") >= 0
 		and chart_src.find("回港（不出海）") < 0 and chart_src.find("目的：") < 0
 		and chart_src.find("绕过去看看（费 1 日）") < 0 and chart_src.find("%d%%") < 0
 		and chart_src.find("°") < 0,

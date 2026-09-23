@@ -1889,7 +1889,7 @@ func _make_facility_card(fac: Dictionary) -> Control:
 
 func _add_sail_button() -> void:
 	var btn = Button.new()
-	btn.text = "升帆出海"
+	btn.text = "看风"
 	btn.custom_minimum_size = Vector2(0, 42)
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)

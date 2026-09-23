@@ -44,6 +44,8 @@ var discoveries_reported: Array = []
 var visited_ports: Array = []
 ## 资金历史峰值。用峰值而非当前值判定晋升，否则买条船就把进度买没了。
 var peak_money: int = 1000
+## 晨潮三向的轮转。候风再发加一。旧档没有这个字段时当作 0。
+var draft_salt: int = 0
 
 
 # ── 钱 ────────────────────────────────────────────────
@@ -527,6 +529,7 @@ func to_dict() -> Dictionary:
 		"discoveries_reported": discoveries_reported,
 		"visited_ports": visited_ports,
 		"peak_money": peak_money,
+		"draft_salt": draft_salt,
 	}
 
 
@@ -550,3 +553,4 @@ func from_dict(d: Dictionary) -> void:
 	discoveries_reported = d.get("discoveries_reported", [])
 	visited_ports = d.get("visited_ports", [])
 	peak_money = d.get("peak_money", money)
+	draft_salt = int(d.get("draft_salt", 0))
