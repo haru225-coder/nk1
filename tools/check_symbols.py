@@ -1051,6 +1051,26 @@ if (
 else:
     print("  ✗ 柜上三样未接上")
     problems.append("柜上三样未接上")
+dry_src = open(os.path.join(SCRIPTS, "core", "DrydockBerth.gd"), encoding="utf-8").read()
+yard_fn = _func_body(main_src, "_setup_shipyard")
+switch_fn = _func_body(main_src, "_on_berth_switch")
+if (
+    "class_name DrydockBerth" in dry_src
+    and "DrydockBerth.berth_index" in yard_fn
+    and "DrydockBerth.sale_ids" in yard_fn
+    and "坞上只搁一艘。帆和甲对着这一艘。水粮和赊贷仍在码头上。" in yard_fn
+    and "换上　" in yard_fn
+    and "把「%s」拖上坞位。帆和甲对着这一艘。" in switch_fn
+    and "_begin_slip_scroll" not in yard_fn
+    and "advance_days" not in yard_fn
+    and "advance_days" not in switch_fn
+    and '"berth_index"' in gs_src_draft
+    and "func _on_upgrade" in main_src
+):
+    print("  ✓ 船屋改成坞位一艘")
+else:
+    print("  ✗ 坞位一艘未接上")
+    problems.append("坞位一艘未接上")
 if (
     "%s　%s%s" in cal_src
     and "%s %s%s" not in cal_src

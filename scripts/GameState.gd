@@ -50,6 +50,8 @@ var draft_salt: int = 0
 var shore_salt: int = 0
 ## 牙行柜台的轮转。明日再看加一。旧档没有这个字段时当作 0。
 var broker_salt: int = 0
+## 船坞上正在收拾的那一艘。换船不过日子。旧档没有这个字段时当作 0。
+var berth_index: int = 0
 
 
 # ── 钱 ────────────────────────────────────────────────
@@ -536,6 +538,7 @@ func to_dict() -> Dictionary:
 		"draft_salt": draft_salt,
 		"shore_salt": shore_salt,
 		"broker_salt": broker_salt,
+		"berth_index": berth_index,
 	}
 
 
@@ -562,3 +565,4 @@ func from_dict(d: Dictionary) -> void:
 	draft_salt = int(d.get("draft_salt", 0))
 	shore_salt = int(d.get("shore_salt", 0))
 	broker_salt = int(d.get("broker_salt", 0))
+	berth_index = int(d.get("berth_index", 0))
