@@ -21,6 +21,8 @@ var detail_box: VBoxContainer
 var log_label: RichTextLabel
 var sail_button: Button
 var event_panel: PanelContainer
+var _port_scroll: ScrollContainer
+var _port_fit_token := 0
 var event_title: Label
 var event_text: RichTextLabel
 var event_actions: VBoxContainer
@@ -120,6 +122,7 @@ func _build_ui() -> void:
 	scroll.size_flags_stretch_ratio = 1.0
 	scroll.custom_minimum_size = Vector2(0, 96)
 	center_v.add_child(scroll)
+	_port_scroll = scroll
 	port_list = VBoxContainer.new()
 	port_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(port_list)
@@ -143,6 +146,7 @@ func _build_ui() -> void:
 	back.pressed.connect(_return_to_port)
 	center_v.add_child(back)
 	UiTheme.style_button(back)
+	_schedule_port_fit()
 
 	# ── 右：航海日志 ──
 	var right := PanelContainer.new()
@@ -286,11 +290,10 @@ func _refresh_ports() -> void:
 		port_list.add_child(btn)
 		UiTheme.style_choice_button(btn, pid == selected_port)
 		if not plan["supply_ok"]:
-			btn.add_theme_color_override("font_color", UiTheme.CINNABAR)
-			btn.add_theme_color_override("font_hover_color", UiTheme.CINNABAR)
+			_tint_button(btn, UiTheme.CINNABAR)
 		elif plan["wind_desc"] == "顺风":
-			btn.add_theme_color_override("font_color", UiTheme.MOSS)
-			btn.add_theme_color_override("font_hover_color", UiTheme.MOSS)
+			_tint_button(btn, UiTheme.MOSS)
+	_schedule_port_fit()
 
 
 func _on_port_selected(pid: String) -> void:
@@ -351,6 +354,69 @@ func _refresh_detail() -> void:
 	detail_box.custom_minimum_size = Vector2(0, 40 + (3 + extra) * 22)
 
 	sail_button.disabled = false
+	_schedule_port_fit()
+
+
+## 挑签的聚焦色和按下色默认是壳白。只改常态的话，选中或 Tab 过去警告色就没了。
+func _tint_button(btn: Button, color: Color) -> void:
+	btn.add_theme_color_override("font_color", color)
+	btn.add_theme_color_override("font_hover_color", color)
+	btn.add_theme_color_override("font_pressed_color", color)
+	btn.add_theme_color_override("font_focus_color", color)
+
+
+## 中栏高度随账条变化。先按比例摊开，等布局完成再收到整行。
+## 同一帧里读高度会读到账条挤完、或上一次锁高还没放开的尺寸。
+func _schedule_port_fit() -> void:
+	if _port_scroll == null:
+		return
+	_port_fit_token += 1
+	var token := _port_fit_token
+	_port_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_port_scroll.custom_minimum_size = Vector2(0, 96)
+	_fit_port_scroll_later(token)
+
+
+func _fit_port_scroll_later(token: int) -> void:
+	await get_tree().process_frame
+	if token != _port_fit_token or _port_scroll == null or not is_instance_valid(_port_scroll):
+		return
+	await get_tree().process_frame
+	if token != _port_fit_token or _port_scroll == null or not is_instance_valid(_port_scroll):
+		return
+	_fit_port_scroll()
+
+
+func _port_row_pitch() -> float:
+	var sep := float(port_list.get_theme_constant("separation"))
+	for c in port_list.get_children():
+		if c is Control and not (c as Control).is_queued_for_deletion():
+			var ctrl := c as Control
+			var h := ctrl.size.y
+			if h < 20.0:
+				h = ctrl.get_combined_minimum_size().y
+			if h >= 20.0:
+				return h + sep
+	return 0.0
+
+
+func _fit_port_scroll() -> void:
+	if _port_scroll == null or not is_instance_valid(_port_scroll):
+		return
+	var row := _port_row_pitch()
+	var h := _port_scroll.size.y
+	if row < 20.0 or h < row:
+		return
+	var rows := maxi(1, int(round(h / row)))
+	var snapped := float(rows) * row
+	var spare := 0.0
+	if chart != null:
+		spare = chart.size.y - chart.custom_minimum_size.y
+	if snapped > h and snapped - h > spare + 1.0:
+		rows = maxi(1, int(floor(h / row)))
+		snapped = float(rows) * row
+	_port_scroll.size_flags_vertical = Control.SIZE_FILL
+	_port_scroll.custom_minimum_size.y = snapped
 
 
 func _detail_line(parent: VBoxContainer, text: String, color: Color = Color(0, 0, 0, 0)) -> void:
@@ -716,8 +782,7 @@ func _add_event_action(text: String, cb: Callable) -> void:
 	event_actions.add_child(b)
 	UiTheme.style_choice_button(b)
 	if text == "迎战":
-		b.add_theme_color_override("font_color", UiTheme.CINNABAR)
-		b.add_theme_color_override("font_hover_color", UiTheme.CINNABAR)
+		_tint_button(b, UiTheme.CINNABAR)
 
 
 func _on_event_continue() -> void:
