@@ -277,9 +277,24 @@ func _run() -> void:
 	var tavern_i := main_src.find("func _setup_tavern")
 	var tavern_j := main_src.find("\nfunc ", tavern_i + 1)
 	var tavern_body := main_src.substr(tavern_i, tavern_j - tavern_i) if tavern_i >= 0 and tavern_j > tavern_i else ""
-	_check(tavern_body.find("_begin_slip_scroll") >= 0
-		and tavern_body.find("_add_leave_button") > tavern_body.find("_end_slip_scroll"),
-		"酒馆募人在里面滚，离开留在下面", fails)
+	_check(tavern_body.find("_begin_benches") >= 0
+		and tavern_body.find("_add_leave_button") > tavern_body.find("_end_benches"),
+		"酒馆募人排成工席，离开留在下面", fails)
+	_check(main_src.find("func _mount_status_strip") >= 0
+		and main_src.find("func _lift_ledger") >= 0
+		and main_src.find("func _begin_benches") >= 0,
+		"船籍簿收成顶栏浮层，内页走工席", fails)
+	var port_i := main_src.find("func _setup_port_mode")
+	var port_j := main_src.find("\nfunc ", port_i + 1)
+	var port_body := main_src.substr(port_i, port_j - port_i) if port_i >= 0 and port_j > port_i else ""
+	_check(port_body.find("left_panel.visible = true") < 0 and port_body.find("_show_strip(true)") >= 0,
+		"进港不再把船籍簿铺回左栏", fails)
+	var accent := Button.new()
+	UiTheme.style_button(accent, true)
+	_check(accent.get_theme_color("font_focus_color") == UiTheme.INK_SOLID
+		and accent.get_theme_color("font_pressed_color") == UiTheme.INK_SOLID,
+		"珊瑚钮聚焦和按下仍是深字", fails)
+	accent.free()
 	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
 		"职事品级写成初习/谙熟/老练，不再用星号", fails)
 	_check(main_src.find("func _fit_rank") >= 0 and main_src.find("帆Lv") < 0

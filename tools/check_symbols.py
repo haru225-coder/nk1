@@ -1064,11 +1064,25 @@ else:
 tavern_i = main_src.find("func _setup_tavern")
 tavern_j = main_src.find("\nfunc ", tavern_i + 1)
 tavern_body = main_src[tavern_i:tavern_j] if tavern_i >= 0 and tavern_j > tavern_i else ""
-if "_begin_slip_scroll" in tavern_body and tavern_body.find("_add_leave_button") > tavern_body.find("_end_slip_scroll"):
-    print("  ✓ 酒馆募人在里面滚，离开留在下面")
+if "_begin_benches" in tavern_body and tavern_body.find("_add_leave_button") > tavern_body.find("_end_benches"):
+    print("  ✓ 酒馆募人排成工席，离开留在下面")
 else:
-    print("  ✗ 酒馆离开未钉在募人账条下面")
-    problems.append("酒馆离开未钉在募人账条下面")
+    print("  ✗ 酒馆离开未留在工席下面")
+    problems.append("酒馆离开未留在工席下面")
+port_i = main_src.find("func _setup_port_mode")
+port_j = main_src.find("\nfunc ", port_i + 1)
+port_body = main_src[port_i:port_j] if port_i >= 0 and port_j > port_i else ""
+if (
+    "func _mount_status_strip" in main_src
+    and "func _lift_ledger" in main_src
+    and "func _begin_benches" in main_src
+    and "left_panel.visible = true" not in port_body
+    and "_show_strip(true)" in port_body
+):
+    print("  ✓ 船籍簿收成顶栏，进港不再铺回左栏")
+else:
+    print("  ✗ 船籍簿仍占左栏，或内页没有工席")
+    problems.append("船籍簿仍占左栏，或内页没有工席")
 if "★" not in main_src and "func _skill_rank" in main_src and "Crew.rank_word" in main_src and "func rank_word" in crew_src:
     print("  ✓ 职事品级写成初习/谙熟/老练")
 else:

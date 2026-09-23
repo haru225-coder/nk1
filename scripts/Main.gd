@@ -38,6 +38,10 @@ var _market_ship: int = 0
 var _market_hold: bool = false
 ## 账条暂时写入的容器。船屋条数多，先收进内滚，离开钮留在外面。
 var _slip_host: Node = null
+var _ledger_layer: Control
+var _status_strip: PanelContainer
+var _status_line: RichTextLabel
+var _page_footer: HBoxContainer
 ## 见面册页上的话。原 RichTextLabel 在这栏里排不出行，改用能折行的 Label。
 var _npc_speech: Label
 ## 航海日志册页。系统对话框会把三卷撑出 1280 宽的窗口。
@@ -119,6 +123,9 @@ func _ready() -> void:
 	_mount_port_plaque()
 	_frame_portrait()
 	_dress_npc_sheet()
+	_mount_status_strip()
+	_lift_ledger()
+	_split_page_footer()
 	update_status_panel()
 	call_deferred("start_game")
 
@@ -155,6 +162,204 @@ func _dress_ledger() -> void:
 		line.color = Color(UiTheme.GOLD, 0.45)
 		line.thickness = 1
 		rule.add_theme_stylebox_override("separator", line)
+
+
+## 顶上一匾。左栏收起来之后，日期和钱留在这里。
+func _mount_status_strip() -> void:
+	var strip := PanelContainer.new()
+	strip.name = "StatusStrip"
+	strip.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	strip.offset_left = 16
+	strip.offset_top = 8
+	strip.offset_right = -16
+	strip.offset_bottom = 76
+	strip.mouse_filter = Control.MOUSE_FILTER_STOP
+	strip.add_theme_stylebox_override("panel", UiTheme.plaque())
+	strip.visible = false
+	add_child(strip)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	strip.add_child(row)
+	_status_line = RichTextLabel.new()
+	_status_line.bbcode_enabled = true
+	_status_line.fit_content = false
+	_status_line.scroll_active = false
+	_status_line.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_status_line.clip_contents = true
+	_status_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_status_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_status_line.custom_minimum_size = Vector2(0, 48)
+	UiTheme.style_body(_status_line)
+	row.add_child(_status_line)
+	var book := Button.new()
+	book.text = "船籍簿"
+	book.custom_minimum_size = Vector2(120, 40)
+	book.pressed.connect(_toggle_ledger)
+	UiTheme.style_button(book, false)
+	row.add_child(book)
+	_status_strip = strip
+
+
+## 船籍簿从横排里摘出来，点开才盖在画面上。
+func _lift_ledger() -> void:
+	var layer := Control.new()
+	layer.name = "LedgerLayer"
+	layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.visible = false
+	layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(layer)
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.02, 0.05, 0.08, 0.62)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	dim.gui_input.connect(_on_ledger_dim_input)
+	layer.add_child(dim)
+	var holder := CenterContainer.new()
+	holder.set_anchors_preset(Control.PRESET_FULL_RECT)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(holder)
+	left_panel.get_parent().remove_child(left_panel)
+	left_panel.custom_minimum_size = Vector2(480, 600)
+	left_panel.visible = true
+	holder.add_child(left_panel)
+	status_label.scroll_active = true
+	status_label.custom_minimum_size = Vector2(0, 360)
+	var close := Button.new()
+	close.text = "合上"
+	close.custom_minimum_size = Vector2(0, 40)
+	close.pressed.connect(_close_ledger)
+	UiTheme.style_button(close, true)
+	left_panel.get_node("MarginContainer/VBoxContainer").add_child(close)
+	_ledger_layer = layer
+
+
+## 内页滚动区下面留一条，离开钉在这里，不跟工席一起滚出画面。
+func _split_page_footer() -> void:
+	var margin: MarginContainer = investigation_mode.get_node("MarginContainer")
+	var scroll: ScrollContainer = margin.get_node("Scroll")
+	margin.remove_child(scroll)
+	var col := VBoxContainer.new()
+	col.name = "PageColumn"
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	margin.add_child(col)
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.clip_contents = true
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	var inner := scroll.get_node_or_null("VBoxContainer")
+	if inner is VBoxContainer:
+		inner.add_theme_constant_override("separation", 6)
+	col.add_theme_constant_override("separation", 8)
+	col.add_child(scroll)
+	var footer := HBoxContainer.new()
+	footer.name = "PageFooter"
+	footer.alignment = BoxContainer.ALIGNMENT_CENTER
+	footer.add_theme_constant_override("separation", 12)
+	col.add_child(footer)
+	_page_footer = footer
+
+
+func _clear_page_footer() -> void:
+	if _page_footer == null:
+		return
+	var stale: Array = _page_footer.get_children()
+	for child in stale:
+		_page_footer.remove_child(child)
+		child.queue_free()
+
+
+func _show_strip(show: bool) -> void:
+	if _status_strip == null:
+		return
+	_status_strip.visible = show
+	var box := $HBoxContainer
+	box.offset_top = 84 if show else 16
+
+
+func _toggle_ledger() -> void:
+	if _ledger_layer == null:
+		return
+	if _ledger_layer.visible:
+		_close_ledger()
+		return
+	_ledger_layer.visible = true
+	move_child(_ledger_layer, get_child_count() - 1)
+
+
+func _close_ledger() -> void:
+	if _ledger_layer != null:
+		_ledger_layer.visible = false
+
+
+func _on_ledger_dim_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var click := event as InputEventMouseButton
+		if click.pressed:
+			_close_ledger()
+
+
+func _monsoon_short() -> String:
+	var desc := Calendar.get_monsoon_desc()
+	if desc.begins_with("东北"):
+		return "东北风"
+	if desc.begins_with("西南"):
+		return "西南风"
+	return "转换期"
+
+
+func _latest_log() -> String:
+	var raw := message_label.text.strip_edges()
+	if raw == "":
+		return ""
+	return raw.get_slice("\n", 0).strip_edges()
+
+
+func _chapter_hint() -> String:
+	var prog := GameState.chapter_progress()
+	if prog.get("ended", false):
+		return "了结　%s" % str(prog.get("ending_title", ""))
+	if prog.get("final", false) and prog.get("items", []).is_empty():
+		return "终章・可了结"
+	for it in prog.get("items", []):
+		if it.get("done", false):
+			continue
+		if int(it.get("need", 1)) > 1:
+			return "%s　%d / %d" % [it.get("label", ""), it.get("current", 0), it.get("need", 1)]
+		return str(it.get("label", ""))
+	if prog.get("final", false):
+		return "终章・可了结"
+	return ""
+
+
+func _refresh_strip() -> void:
+	if _status_line == null:
+		return
+	var supply_d := Fleet.supply_days()
+	var supply_color := UiTheme.MOSS
+	if supply_d <= 3:
+		supply_color = UiTheme.CINNABAR
+	elif supply_d <= 7:
+		supply_color = UiTheme.HONEY
+	var debt := ""
+	if GameState.debt > 0:
+		debt = "　[color=#%s]欠 %d[/color]" % [UiTheme.hex(UiTheme.HONEY), GameState.debt]
+	var line1 := "%s　%s　钱 %d%s　[color=#%s]水粮 %d 日[/color]　第%s章・%s" % [
+		Calendar.get_date_string(),
+		_monsoon_short(),
+		GameState.money,
+		debt,
+		UiTheme.hex(supply_color),
+		supply_d,
+		_cn_chapter(GameState.chapter),
+		str(GameState.chapter_def().get("name", "")),
+	]
+	var note := _latest_log()
+	if note == "":
+		note = _chapter_hint()
+	var dim := UiTheme.hex(UiTheme.TEXT_DIM)
+	_status_line.text = line1 + "\n[color=#%s]%s[/color]" % [dim, note]
 
 
 func _dress_title() -> void:
@@ -254,10 +459,14 @@ func _dress_npc_sheet() -> void:
 	npc_actions.add_theme_constant_override("separation", 6)
 
 
-## 调查页平时铺满中栏；卷首 cg_ 收成居中的册页，左边船籍簿让开。
+## 调查页平时铺满中栏；卷首 cg_ 收成居中的册页，顶栏让开。
 func _frame_sheet(floating: bool) -> void:
-	left_panel.visible = not floating
+	_show_strip(not floating)
+	var sheet_margin: MarginContainer = investigation_mode.get_node("MarginContainer")
 	if floating:
+		_close_ledger()
+		sheet_margin.add_theme_constant_override("margin_top", 22)
+		sheet_margin.add_theme_constant_override("margin_bottom", 18)
 		investigation_mode.anchor_left = 0.5
 		investigation_mode.anchor_top = 0.5
 		investigation_mode.anchor_right = 0.5
@@ -267,6 +476,9 @@ func _frame_sheet(floating: bool) -> void:
 		investigation_mode.offset_right = 430
 		investigation_mode.offset_bottom = 268
 	else:
+		# 顶栏已经占了 68。内页上下再留 22 会把船屋第四排压进离开。
+		sheet_margin.add_theme_constant_override("margin_top", 8)
+		sheet_margin.add_theme_constant_override("margin_bottom", 8)
 		investigation_mode.anchor_left = 0.0
 		investigation_mode.anchor_top = 0.0
 		investigation_mode.anchor_right = 1.0
@@ -294,6 +506,7 @@ func start_game() -> void:
 
 func log_msg(text: String) -> void:
 	message_label.text = UiTheme.plain_log(text) + "\n\n" + message_label.text
+	_refresh_strip()
 
 
 # ══════════════════════════════════════════════════════
@@ -405,6 +618,7 @@ func update_status_panel() -> void:
 			t = _append_progress_line(t, it)
 
 	status_label.text = t
+	_refresh_strip()
 
 
 func _append_progress_line(text: String, it: Dictionary) -> String:
@@ -610,13 +824,13 @@ func _drop_children(box: Node) -> void:
 
 func _enter_panel_mode() -> void:
 	_frame_sheet(false)
-	left_panel.visible = true
 	title_mode.visible = false
 	port_mode.visible = false
 	npc_mode.visible = false
 	investigation_mode.visible = true
 	_drop_children(interactive_container)
 	_drop_children(choices_container)
+	_clear_page_footer()
 	_slip_host = null
 	_show_investigation_chrome(false)
 	scene_title.visible = true
@@ -1012,6 +1226,7 @@ func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) ->
 func _setup_yamen(port_id: String) -> void:
 	scene_title.text = "%s・市舶司" % GameManager.get_port_name(port_id)
 	body_text.text = "案上压着未批的货单。验引、呈报、修埠都在这里。"
+	_begin_benches()
 
 	_add_npc_button("customs_official", "市舶司小吏")
 
@@ -1031,6 +1246,7 @@ func _setup_yamen(port_id: String) -> void:
 	_setup_reporting()
 	_setup_title_and_invest(port_id)
 
+	_end_benches()
 	_add_leave_button(port_id)
 	choices_label.visible = false
 
@@ -1122,54 +1338,82 @@ func _attention_desc() -> String:
 	return "尚无人留意"
 
 
-# ── 账条 ────────────────────────────────────────────
-## 设施页里一桩事一张熟漆卡。标题在上，小钮在下，和牙行价目同一套。
+# ── 工席 ────────────────────────────────────────────
+## 设施页里一桩事一张潮玻璃。和岸门同一块材料，横排放，放不下就换行。
+
+func _begin_benches() -> void:
+	var flow := HFlowContainer.new()
+	flow.name = "Benches"
+	flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	flow.alignment = FlowContainer.ALIGNMENT_CENTER
+	flow.add_theme_constant_override("h_separation", 12)
+	flow.add_theme_constant_override("v_separation", 8)
+	choices_container.add_child(flow)
+	_slip_host = flow
+
+
+func _end_benches() -> void:
+	_slip_host = null
+
+
+## 工席宽 480，扣掉潮光边和内边距后字宽 448。
+## Label 打开 autowrap 后最小高度仍按一行算，长旁注会被裁成半句。
+func _lock_slip_wrap(lbl: Label) -> void:
+	if not (_slip_host is HFlowContainer):
+		return
+	var width := 448.0
+	var font := lbl.get_theme_font("font")
+	if font == null:
+		font = UiTheme.font()
+	var fsize := lbl.get_theme_font_size("font_size")
+	if fsize <= 0:
+		fsize = UiTheme.SIZE_FOOT
+	var measured := font.get_multiline_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, width, fsize)
+	var h := measured.y
+	if h < float(fsize):
+		h = float(fsize)
+	lbl.custom_minimum_size = Vector2(width, ceil(h))
+
 
 func _slip_body() -> VBoxContainer:
 	var card := PanelContainer.new()
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", UiTheme.card())
+	card.add_theme_stylebox_override("panel", UiTheme.shore_door())
+	var in_flow := _slip_host is HFlowContainer
+	if in_flow:
+		card.custom_minimum_size = Vector2(480, 0)
+		card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	else:
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	card.add_child(margin)
 	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 4)
-	card.add_child(body)
+	body.add_theme_constant_override("separation", 2)
+	margin.add_child(body)
 	var parent: Node = _slip_host if _slip_host != null else choices_container
 	parent.add_child(card)
 	return body
 
 
-## 条数放不下 720 高时，账条在里面滚，离开钮钉在下面。
-func _begin_slip_scroll(max_h: int) -> void:
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, max_h)
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var box := VBoxContainer.new()
-	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.add_theme_constant_override("separation", 6)
-	scroll.add_child(box)
-	choices_container.add_child(scroll)
-	_slip_host = box
-
-
-func _end_slip_scroll() -> void:
-	_slip_host = null
-
-
 func _slip_title(body: VBoxContainer, title: String, aside := "") -> Label:
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 10)
-	body.add_child(head)
 	var name_lbl := Label.new()
 	name_lbl.text = title
+	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_lbl.add_theme_font_override("font", UiTheme.font())
 	name_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
-	name_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
-	head.add_child(name_lbl)
+	name_lbl.add_theme_color_override("font_color", UiTheme.TIDE)
+	_lock_slip_wrap(name_lbl)
+	body.add_child(name_lbl)
 	var hint := Label.new()
 	hint.text = aside
-	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hint.clip_text = true
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UiTheme.style_footnote(hint)
-	head.add_child(hint)
+	if aside != "":
+		_lock_slip_wrap(hint)
+		body.add_child(hint)
 	return hint
 
 
@@ -1179,13 +1423,16 @@ func _slip_note(body: VBoxContainer, text: String, color: Color = UiTheme.TEXT_D
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UiTheme.style_footnote(lbl)
 	lbl.add_theme_color_override("font_color", color)
+	_lock_slip_wrap(lbl)
 	body.add_child(lbl)
 	return lbl
 
 
-func _slip_row(body: VBoxContainer) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+func _slip_row(body: VBoxContainer) -> HFlowContainer:
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 6)
+	row.add_theme_constant_override("v_separation", 6)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(row)
 	return row
 
@@ -1204,8 +1451,7 @@ func _slip_chip(row: Node, text: String, cb: Callable, accent := false) -> Butto
 func _setup_shipyard(port_id: String) -> void:
 	scene_title.text = "%s・船屋" % GameManager.get_port_name(port_id)
 	body_text.text = "桐油和潮气。修船、补员、装水粮。"
-	# 补给、改装、购船叠在一起会把离开裁出 720 高的画面。
-	_begin_slip_scroll(412)
+	_begin_benches()
 
 	var grain_price := Economy.buy_price(port_id, "grain") if Economy.is_traded(port_id, "grain") else 12
 	var water_price := 1
@@ -1311,7 +1557,7 @@ func _setup_shipyard(port_id: String) -> void:
 		var buy := _slip_chip(_slip_row(offer), "购入　%d" % price, _on_buy_ship.bind(tid, price), true)
 		buy.tooltip_text = str(s.get("historical_note", ""))
 
-	_end_slip_scroll()
+	_end_benches()
 	_add_leave_button(port_id)
 	choices_label.visible = false
 
@@ -1415,8 +1661,9 @@ func _setup_tavern(port_id: String) -> void:
 	scene_title.text = "%s・酒馆" % GameManager.get_port_name(port_id)
 	body_text.text = "劣酒和喧哗。消息与人手都从这儿来。月俸按月，欠饷三月则去。"
 
-	# 旧事放最前，仍走挑签：泉州候选五人时，钩子否则会被挤出 720p 窗口。
+	# 旧事放最前，仍走挑签。打听和募人进工席。
 	_setup_story_hooks(port_id)
+	_begin_benches()
 
 	if port_id.begins_with("quanzhou"):
 		_add_npc_button("merchant_lin", "林阿舶")
@@ -1427,14 +1674,8 @@ func _setup_tavern(port_id: String) -> void:
 	_slip_title(intel, "行情", "费一日")
 	_slip_chip(_slip_row(intel), "打听", _on_gather_intel.bind(port_id))
 
-	# 泉州一次可募五人，账条叠开会把离开裁出 720。
-	_begin_slip_scroll(248)
 	_setup_hiring(port_id)
-	var hire_box := _slip_host as VBoxContainer
-	var hire_scroll := hire_box.get_parent() as ScrollContainer
-	var cards := hire_box.get_child_count()
-	hire_scroll.custom_minimum_size.y = mini(248, maxi(72, cards * 86))
-	_end_slip_scroll()
+	_end_benches()
 
 	_add_leave_button(port_id)
 	choices_label.visible = false
@@ -1516,6 +1757,7 @@ func _skill_rank(n: int) -> String:
 func _setup_inn(port_id: String) -> void:
 	scene_title.text = "%s・旅店" % GameManager.get_port_name(port_id)
 	body_text.text = "通铺草席还潮着。风信不对时，海商在这儿候着。"
+	_begin_benches()
 
 	var rest := _slip_body()
 	_slip_title(rest, "歇息", "%s　%s" % [Calendar.get_date_string(), Calendar.get_monsoon_desc()])
@@ -1532,6 +1774,7 @@ func _setup_inn(port_id: String) -> void:
 		true
 	)
 
+	_end_benches()
 	_add_leave_button(port_id)
 	choices_label.visible = false
 
@@ -1547,6 +1790,7 @@ const GUILD_CREDIT_WIDE := 8
 func _setup_guild(port_id: String) -> void:
 	scene_title.text = "%s・行会" % GameManager.get_port_name(port_id)
 	body_text.text = "墙上钉着远港价目，墨迹有的还潮着。海商信用 %d，足的人会里肯多抄几条远路。" % GameState.merchant_credit
+	_begin_benches()
 
 	var limit: int = 5 if GameState.merchant_credit >= GUILD_CREDIT_WIDE else 3
 	var rows: Array = _collect_spreads(port_id, limit)
@@ -1565,6 +1809,7 @@ func _setup_guild(port_id: String) -> void:
 			hint.add_theme_color_override("font_color", UiTheme.MOSS)
 			_slip_note(slip, "买 %d　卖 %d" % [int(row["buy"]), int(row["sell"])])
 
+	_end_benches()
 	_add_leave_button(port_id)
 	choices_label.visible = false
 
@@ -1573,12 +1818,14 @@ func _setup_guild(port_id: String) -> void:
 func _setup_exam(port_id: String) -> void:
 	scene_title.text = "%s・贡院" % GameManager.get_port_name(port_id)
 	body_text.text = "今科未开。只能替人誊录，笔墨钱现结。"
+	_begin_benches()
 
 	var copy := _slip_body()
 	_slip_title(copy, "誊录", "学者 %d　海路 %d" % [GameState.scholar_tendency, GameState.sea_tendency])
 	_slip_note(copy, "工钱 %d　费 %d 日。不记名声。" % [EXAM_STIPEND, EXAM_COPY_DAYS])
 	_slip_chip(_slip_row(copy), "替人抄三日", _on_exam_copy.bind(port_id), true)
 
+	_end_benches()
 	_add_leave_button(port_id)
 	choices_label.visible = false
 
@@ -1597,6 +1844,7 @@ func _on_exam_copy(_port_id: String) -> void:
 func _setup_residence(port_id: String) -> void:
 	scene_title.text = "%s・住处" % GameManager.get_port_name(port_id)
 	body_text.text = "租来的下处。比旅店便宜，听不见风信。"
+	_begin_benches()
 
 	var book := _slip_body()
 	_slip_title(book, "边记", "学者 %d　海路 %d" % [GameState.scholar_tendency, GameState.sea_tendency])
@@ -1617,6 +1865,7 @@ func _setup_residence(port_id: String) -> void:
 			_on_rest.bind(nights, port_id, HOME_RATE, "下处")
 		)
 
+	_end_benches()
 	_add_leave_button(port_id)
 	choices_label.visible = false
 
@@ -1631,6 +1880,7 @@ func _setup_temple(port_id: String) -> void:
 	body_text.text = "住持不谈功名。细看记入册子，拓纸带回住处，赏格回市舶司。"
 	if GameState.has_flag("japan_temple_network"):
 		body_text.text += "\n袖底那张寺社短札，这里的沙弥看过一眼就不再多问。"
+	_begin_benches()
 
 	var near: Array = GameManager.discoveries_near(port_id)
 	if near.is_empty():
@@ -1659,6 +1909,7 @@ func _setup_temple(port_id: String) -> void:
 				var rub := _slip_chip(_slip_row(slip), "拓碑一日", _on_temple_rub.bind(did, name, hook))
 				rub.tooltip_text = hook
 
+	_end_benches()
 	_add_leave_button(port_id)
 	choices_label.visible = false
 
@@ -1876,7 +2127,8 @@ func _on_npc_leave() -> void:
 # ══════════════════════════════════════════════════════
 
 func _setup_title_mode(scene_data: Dictionary) -> void:
-	left_panel.visible = false
+	_show_strip(false)
+	_close_ledger()
 	investigation_mode.visible = false
 	port_mode.visible = false
 	npc_mode.visible = false
@@ -1904,7 +2156,8 @@ func _on_start_game_pressed(next_scene: String) -> void:
 
 
 func _setup_port_mode(scene_data: Dictionary) -> void:
-	left_panel.visible = true
+	_show_strip(true)
+	_close_ledger()
 	title_mode.visible = false
 	investigation_mode.visible = false
 	npc_mode.visible = false
@@ -2466,10 +2719,13 @@ func _add_fallback_return_button() -> void:
 func _add_leave_button(port_id: String) -> void:
 	var btn = Button.new()
 	btn.text = "离开"
+	btn.custom_minimum_size = Vector2(160, 42)
 	btn.pressed.connect(func(): load_scene(port_id))
-	choices_container.add_child(btn)
+	var host: Node = _page_footer if _page_footer != null else choices_container
+	host.add_child(btn)
 	UiTheme.style_choice_button(btn)
-	choices_label.visible = true
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	choices_label.visible = false
 
 
 func _on_investigate_pressed(inv_data: Dictionary, btn: Button) -> void:

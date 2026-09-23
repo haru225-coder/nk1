@@ -282,7 +282,9 @@ static func style_button(btn: Button, accent := false) -> void:
 		btn.add_theme_color_override("font_color", TEXT)
 		btn.add_theme_color_override("font_hover_color", TEXT)
 		btn.add_theme_color_override("font_disabled_color", TEXT_DIM)
-	btn.add_theme_color_override("font_focus_color", TEXT)
+	var ink := INK_SOLID if accent else TEXT
+	btn.add_theme_color_override("font_pressed_color", ink)
+	btn.add_theme_color_override("font_focus_color", ink)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 
@@ -305,8 +307,11 @@ static func style_chip(btn: Button, accent := false) -> void:
 	btn.add_theme_stylebox_override("disabled", mk.call(Color(BTN_DOWN, 0.45)))
 	btn.add_theme_stylebox_override("focus", mk.call(hi))
 	btn.add_theme_font_size_override("font_size", SIZE_FOOT)
-	btn.add_theme_color_override("font_color", INK_SOLID if accent else TEXT)
-	btn.add_theme_color_override("font_hover_color", INK_SOLID if accent else TEXT)
+	var chip_ink := INK_SOLID if accent else TEXT
+	btn.add_theme_color_override("font_color", chip_ink)
+	btn.add_theme_color_override("font_hover_color", chip_ink)
+	btn.add_theme_color_override("font_pressed_color", chip_ink)
+	btn.add_theme_color_override("font_focus_color", chip_ink)
 	btn.add_theme_color_override("font_disabled_color", TEXT_DIM)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
