@@ -1183,6 +1183,52 @@ hk_safe = walk_event_days("quanzhou", "hakata", 3, 1, "offshore", False, hk_mean
 check(hk_mean <= hk_deadline < hk_safe,
       f"三月泉州→博多外洋遇事 {hk_mean} 日卡进期限 {hk_deadline}，八成要 {hk_safe} 日")
 
+def flee_fail_chance(morale=70, ship_id="sampan"):
+    """复刻 1 - Voyage.flee_success_chance。小艍、士气 70、无火长时航速 105.6，失败率 0.52。"""
+    spd = ships[ship_id]["base_speed"] * (0.6 + 0.4 * morale / 100.0)
+    return 1.0 - min(0.9, max(0.25, spd / 220.0))
+
+def cargo_hold_chance(month, day, order, known, days, year=1255, morale=70):
+    """复刻 Voyage.cargo_hold_chance：从次日启航，按遇事日数连乘「当日没被抢走」。"""
+    fail = flee_fail_chance(morale)
+    y, m, d = shift_date(year, month, day, 1)
+    keep = 1.0
+    for _i in range(max(0, days)):
+        _wb, st = month_wind(m)
+        ww = event_weights(order, st, known, True)
+        keep *= 1.0 - ww["pirate"] * fail
+        y, m, d = shift_date(y, m, d, 1)
+    return keep
+
+def cargo_hold_tenths(p):
+    return max(0, min(10, math.floor(p * 10.0)))
+
+wz_deadline = march_walk + CONTRACT_SLACK
+wz_off_mean = walk_event_days("quanzhou", "wenzhou", 3, 1, "offshore", True)
+wz_off_safe = walk_event_days("quanzhou", "wenzhou", 3, 1, "offshore", True, wz_off_mean)
+wz_coast_mean = walk_event_days("quanzhou", "wenzhou", 3, 1, "coast", True)
+wz_coast_safe = walk_event_days("quanzhou", "wenzhou", 3, 1, "coast", True, wz_coast_mean)
+hold_r = cargo_hold_tenths(cargo_hold_chance(3, 1, "rumb", True, wz_mean))
+hold_o = cargo_hold_tenths(cargo_hold_chance(3, 1, "offshore", True, wz_off_mean))
+hold_c = cargo_hold_tenths(cargo_hold_chance(3, 1, "coast", True, wz_coast_mean))
+check(hold_o < hold_r < hold_c,
+      f"开局泉州→温州保货 外洋 {hold_o} < 针路 {hold_r} < 傍岸 {hold_c}")
+check(hold_r == 7 and hold_o == 6 and hold_c == 8,
+      f"保货十分位下整：针路 {hold_r} / 外洋 {hold_o} / 傍岸 {hold_c}")
+check(wz_safe <= wz_deadline and hold_r < 8,
+      f"针路八成 {wz_safe} 日赶得上期限 {wz_deadline}，保货只有 {hold_r}，不到八成")
+check(wz_off_safe <= wz_deadline and hold_o < 8,
+      f"外洋八成 {wz_off_safe} 日赶得上期限 {wz_deadline}，保货只有 {hold_o}")
+check(wz_coast_safe > wz_deadline and hold_c >= 8,
+      f"傍岸八成 {wz_coast_safe} 日超过期限 {wz_deadline}，保货 {hold_c} 不拿来冒充赶得上")
+p_by_mean = cargo_hold_chance(3, 1, "offshore", True, wz_off_mean)
+p_by_safe = cargo_hold_chance(3, 1, "offshore", True, wz_off_safe)
+check(p_by_mean > p_by_safe + 0.02,
+      f"外洋保货按遇事 {wz_off_mean} 日是 {p_by_mean:.3f}，长于按八成 {wz_off_safe} 日的 {p_by_safe:.3f}")
+hk_hold = cargo_hold_tenths(cargo_hold_chance(3, 1, "offshore", False, hk_mean))
+check(hk_hold <= 2 and hk_safe > hk_deadline,
+      f"三月泉州→博多外洋保货只有 {hk_hold}，八成 {hk_safe} 日已超过期限 {hk_deadline}")
+
 check(RUMOR_STALE >= 30, f"行情传闻保鲜 {RUMOR_STALE} 日，够跑一趟近海再回来对")
 gs_src = open(os.path.join(ROOT, S_GD), encoding="utf-8").read()
 deliver_body = gs_src.split("func deliver_contract", 1)[1].split("\nfunc ", 1)[0]
@@ -1230,6 +1276,27 @@ check("八成" in sea_src and "不算稳" in main_src and "不算稳" in sea_src
       "平均数卡进期限、八成超出时，界面写明不算稳")
 check("凑得出" in main_src and "拿不满酬" in main_src,
       "钱不够买满委办时，牙行把缺口写在单子上")
+check("hold_tenths" in plan_body and "cargo_hold_chance(order, known, open, expected)" in plan_body,
+      "保货按遇事日数写进航程，期限仍用静风")
+check("cargo_hold_chance(order, known, open, safe)" not in plan_body,
+      "保货不改用八成日数")
+hold_fn = voyage_src.split("func cargo_hold_chance", 1)[1].split("\nfunc ", 1)[0]
+tenths_fn = voyage_src.split("func cargo_hold_tenths", 1)[1].split("\nfunc ", 1)[0]
+flee_fn = voyage_src.split("func flee_success_chance", 1)[1].split("\nfunc ", 1)[0]
+check("flee_success_chance" in hold_fn and "event_weights" in hold_fn and "floor" in tenths_fn,
+      "保货是逃走失败率按逐日海盗权重连乘，十分位下整")
+check("220.0" in flee_fn and "0.25" in flee_fn and "0.9" in flee_fn,
+      "逃走成功率仍是航速 / 220，夹在 0.25 和 0.9")
+world_src = open(os.path.join(ROOT, "scripts/WorldMap.gd"), encoding="utf-8").read()
+check("Voyage.flee_success_chance" in sea_src and "Voyage.flee_success_chance" in world_src,
+      "海图逃走和海战弃战用同一条成功率")
+check("220.0" not in sea_src and "220.0" not in world_src,
+      "逃走的 220 只写在 Voyage，海图和海战不再各写一遍")
+check("保货" in sea_src and "保货" in main_src and "不到八成" in main_src and "不到八成" in sea_src,
+      "日子赶得上但保货不到八成时，牙行和海图都写出来")
+check('int(plan_r.get("safe_days", 0)) <= deadline and int(plan_r.get("hold_tenths", 0)) < 8' in main_src
+      and 'int(plan_c.get("safe_days", 0)) <= deadline and int(plan_c.get("hold_tenths", 0)) < 8' in main_src,
+      "保货警告按同一条航法看八成日数和保货")
 check("·换风" in sea_src and "逐日累加" in main_src, "途中换风写在海图和委办上")
 
 print()

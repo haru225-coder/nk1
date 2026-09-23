@@ -387,6 +387,9 @@ func _refresh_detail() -> void:
 		"八成：针路 %d / 外洋 %d / 傍岸 %d 日（十次约有八次不迟于这个数）" % [
 			plan_rumb["safe_days"], plan_off["safe_days"], plan_coast["safe_days"],
 		],
+		"保货：针路 %d / 外洋 %d / 傍岸 %d（十次里至少有这么多次，逃走没被抢走货）" % [
+			plan_rumb["hold_tenths"], plan_off["hold_tenths"], plan_coast["hold_tenths"],
+		],
 		Voyage.order_blurb(course_order),
 	]
 	if plan.get("departs_on_new_wind", false):
@@ -418,8 +421,13 @@ func _refresh_detail() -> void:
 			contract_lbl.text = "委办还剩 %d 日。遇事约 %d 日，八成要 %d 日，不算稳。" % [left, rough_days, safe_days]
 			contract_lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
 		else:
-			contract_lbl.text = "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。" % [left, rough_days, safe_days]
-			contract_lbl.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
+			var hold_shown := int(plan.get("hold_tenths", 0))
+			if hold_shown < 8:
+				contract_lbl.text = "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。保货只有 %d，不到八成。" % [left, rough_days, safe_days, hold_shown]
+				contract_lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
+			else:
+				contract_lbl.text = "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。" % [left, rough_days, safe_days]
+				contract_lbl.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
 		detail_box.add_child(contract_lbl)
 
 	if not cst.is_empty():
@@ -835,7 +843,7 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 func _on_flee_pirates() -> void:
 	event_panel.visible = false
 	# 逃跑成败取决于航速与士气
-	var chance := clampf(Fleet.fleet_speed() / 220.0, 0.25, 0.9)
+	var chance := Voyage.flee_success_chance()
 	if randf() < chance:
 		remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
 		_log("[color=lime]转舵抢上风头，把那两条快船甩在了后面（绕了些路）。[/color]")

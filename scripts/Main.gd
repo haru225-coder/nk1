@@ -489,6 +489,25 @@ func _add_contract_panel(port_id: String) -> void:
 			safe_note.add_theme_font_size_override("font_size", 13)
 			safe_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
 			box.add_child(safe_note)
+			var hold_note := Label.new()
+			hold_note.text = "保货：针路 %d / 外洋 %d / 傍岸 %d。十次里至少有这么多次，逃走没被抢走货。" % [
+				int(plan_r.get("hold_tenths", 0)), int(plan_o.get("hold_tenths", 0)), int(plan_c.get("hold_tenths", 0)),
+			]
+			var cargo_bits := ""
+			if int(plan_r.get("safe_days", 0)) <= deadline and int(plan_r.get("hold_tenths", 0)) < 8:
+				cargo_bits += "针路"
+			if int(plan_o.get("safe_days", 0)) <= deadline and int(plan_o.get("hold_tenths", 0)) < 8:
+				cargo_bits += ("、" if cargo_bits != "" else "") + "外洋"
+			if int(plan_c.get("safe_days", 0)) <= deadline and int(plan_c.get("hold_tenths", 0)) < 8:
+				cargo_bits += ("、" if cargo_bits != "" else "") + "傍岸"
+			if cargo_bits != "":
+				hold_note.text += " %s按八成日数赶得上，保货不到八成。小船打不赢，这数不含买路。" % cargo_bits
+				hold_note.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
+			else:
+				hold_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
+			hold_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			hold_note.add_theme_font_size_override("font_size", 13)
+			box.add_child(hold_note)
 			var need_qty := int(offer.get("qty", 0))
 			var unit_cost := Economy.buy_price(port_id, gid)
 			var held_qty := Fleet.cargo_qty(gid)

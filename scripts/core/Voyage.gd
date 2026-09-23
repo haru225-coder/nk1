@@ -234,8 +234,34 @@ func _walk_days(dist: float, course_bearing: float, order: int, known: bool, dis
 	return {"days": n, "changed": changed}
 
 
+## 扬帆逃走的成功率。与海图上的「扬帆逃走」、海战里弃战是同一条：
+## 航速除以 220，低于二成五按二成五，高于九成按九成。保货用的是它的反面。
+func flee_success_chance() -> float:
+	return clampf(Fleet.fleet_speed() / 220.0, 0.25, 0.9)
+
+
+## 一路逃走、海盗一次都没抢到货的概率。按遇事日数逐日连乘当日的海盗权重。
+## 绕路会把航程拉长，沉船和腐烂也不在这数里；界面取十分位下整，所以写「至少」。
+func cargo_hold_chance(order: int, known: bool, discoveries_open: bool, days: int) -> float:
+	if days <= 0 or days >= 900:
+		return 0.0
+	var fail := 1.0 - flee_success_chance()
+	var cursor := _shift_date(Calendar.year, Calendar.month, Calendar.day, 1)
+	var keep := 1.0
+	for _i in days:
+		var w := event_weights(order, Calendar.monsoon_strength_of(cursor.y), known, discoveries_open)
+		keep *= 1.0 - float(w.get("pirate", 0.0)) * fail
+		cursor = _shift_date(cursor.x, cursor.y, cursor.z, 1)
+	return keep
+
+
+func cargo_hold_tenths(chance: float) -> int:
+	return clampi(int(floor(chance * 10.0)), 0, 10)
+
+
 ## 返回航程。days 是逐日静风日数，委办期限仍用它。
 ## expected_days 是同一条日期上的平均遇事日数。safe_days 是八成能到的日数。
+## hold_tenths 是保货：十次里至少有几次整舱没被海盗抢走。日数赶得上，不代表货还在。
 ## 平均数卡进期限，不代表十次里有八次赶得上。月末换季时，不把今天的风套到全程。
 func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dictionary:
 	var dist := distance_li(from_id, to_id)
@@ -256,6 +282,7 @@ func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dict
 		safe_changed = bool(cautious.get("changed", false))
 		if safe < expected:
 			safe = expected
+	var hold := cargo_hold_chance(order, known, open, expected)
 	var start := _shift_date(Calendar.year, Calendar.month, Calendar.day, 1)
 	var wf := wind_factor(brg, start.y)
 	var spd := Fleet.fleet_speed() * wf * order_speed_mult(order)
@@ -272,6 +299,7 @@ func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dict
 		"days": days,
 		"expected_days": expected,
 		"safe_days": safe,
+		"hold_tenths": cargo_hold_tenths(hold),
 		"wind_changes": changed,
 		"departs_on_new_wind": absf(wind_factor(brg) - wf) > 0.001,
 		"supply_days": Fleet.supply_days(),
