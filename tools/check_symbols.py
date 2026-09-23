@@ -930,6 +930,49 @@ if 'text = "请选择"' not in main_src and "区域施工中" not in main_src:
 else:
     print("  ✗ 调查页仍写请选择或施工中")
     problems.append("调查页仍写请选择或施工中")
+main_tscn = ""
+with open(os.path.join(ROOT, "scenes", "Main.tscn"), encoding="utf-8") as f:
+    main_tscn = f.read()
+_placeholder_left = [
+    needle for needle in (
+        "副标题", "地点标题", "环境描述文本", "NPC Dialog", "NPC Name",
+        "情报与状态", "港口名称",
+    ) if needle in main_tscn
+]
+if _placeholder_left:
+    print("  ✗ 开场场景仍有原型占位：%s" % "、".join(_placeholder_left))
+    problems.append("开场场景仍有原型占位")
+else:
+    print("  ✓ 开场场景不再写原型占位")
+
+
+def _node_block(src: str, node_name: str) -> str:
+    token = '[node name="%s"' % node_name
+    at = src.find(token)
+    if at < 0:
+        return ""
+    nxt = src.find("\n[node ", at + len(token))
+    return src[at:] if nxt < 0 else src[at:nxt]
+
+
+if "visible = false" in _node_block(main_tscn, "InvestigationMode") and "visible = false" in _node_block(main_tscn, "LeftPanel"):
+    print("  ✓ 调查页和船籍簿默认收起")
+else:
+    print("  ✗ 调查页或船籍簿开场仍展开")
+    problems.append("开场占位层未收起")
+if "按 Enter 停靠" in wm_tscn:
+    print("  ✗ 海战港名仍写停靠教程")
+    problems.append("海战港名仍写停靠教程")
+else:
+    print("  ✓ 海战港名不再写停靠教程")
+portzone_src = ""
+with open(os.path.join(ROOT, "scripts", "PortZone.gd"), encoding="utf-8") as f:
+    portzone_src = f.read()
+if "name_lbl.text = port_name" in portzone_src:
+    print("  ✓ 港区名牌写港口名")
+else:
+    print("  ✗ 港区名牌未写港口名")
+    problems.append("港区名牌未写港口名")
 if "Color(0.2, 0.4, 0.6" in main_src:
     print("  ✗ NPC 按钮仍用蓝底硬编码")
     problems.append("NPC 按钮蓝底硬编码")

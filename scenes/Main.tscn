@@ -39,6 +39,7 @@ grow_vertical = 2
 theme_override_constants/separation = 0
 
 [node name="LeftPanel" type="PanelContainer" parent="HBoxContainer"]
+visible = false
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_left")
@@ -56,7 +57,7 @@ layout_mode = 2
 [node name="TitleLabel" type="Label" parent="HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "情报与状态"
+text = ""
 horizontal_alignment = 1
 
 [node name="HSeparator" type="HSeparator" parent="HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
@@ -66,9 +67,7 @@ theme_override_constants/separation = 20
 [node name="StatusLabel" type="RichTextLabel" parent="HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-text = "金钱：0
-海路倾向：0
-士人倾向：0"
+text = ""
 
 [node name="MessageLabel" type="RichTextLabel" parent="HBoxContainer/LeftPanel/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 88)
@@ -121,7 +120,7 @@ theme_override_font_sizes/font_size = 24
 theme_override_colors/font_color = Color(0.78, 0.76, 0.70, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_y = 2
-text = "副标题"
+text = ""
 horizontal_alignment = 1
 
 [node name="StartButton" type="Button" parent="HBoxContainer/CenterArea/TitleMode/VBoxContainer"]
@@ -132,6 +131,7 @@ theme_override_font_sizes/font_size = 24
 text = "开始游戏"
 
 [node name="InvestigationMode" type="PanelContainer" parent="HBoxContainer/CenterArea"]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -162,7 +162,7 @@ theme_override_constants/separation = 10
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 theme_override_colors/font_color = Color(0.79, 0.64, 0.15, 1)
-text = "地点标题"
+text = ""
 
 [node name="HSeparator" type="HSeparator" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer"]
 layout_mode = 2
@@ -175,7 +175,7 @@ theme_override_font_sizes/normal_font_size = 18
 theme_override_colors/default_color = Color(0.90, 0.88, 0.82, 1)
 theme_override_constants/line_separation = 6
 bbcode_enabled = true
-text = "环境描述文本"
+text = ""
 
 [node name="InteractiveLabel" type="Label" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer"]
 visible = false
@@ -245,7 +245,7 @@ grow_horizontal = 2
 theme_override_font_sizes/font_size = 36
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_y = 2
-text = "港口名称"
+text = ""
 horizontal_alignment = 1
 
 [node name="NPCMode" type="Control" parent="HBoxContainer/CenterArea"]
@@ -272,7 +272,7 @@ size_flags_horizontal = 3
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 theme_override_colors/font_color = Color(0.79, 0.64, 0.15, 1)
-text = "NPC Name"
+text = ""
 
 [node name="NPCDialog" type="RichTextLabel" parent="HBoxContainer/CenterArea/NPCMode/HBox/DialogPanel"]
 layout_mode = 2
@@ -280,7 +280,7 @@ size_flags_vertical = 3
 theme_override_font_sizes/normal_font_size = 18
 theme_override_colors/default_color = Color(0.90, 0.88, 0.82, 1)
 theme_override_constants/line_separation = 6
-text = "NPC Dialog text goes here..."
+text = ""
 
 [node name="NPCActions" type="VBoxContainer" parent="HBoxContainer/CenterArea/NPCMode/HBox/DialogPanel"]
 layout_mode = 2

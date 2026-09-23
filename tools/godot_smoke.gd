@@ -68,6 +68,7 @@ func _run() -> void:
 	var wm_tscn := FileAccess.get_file_as_string("res://scenes/WorldMap.tscn")
 	_check(wm_tscn.find("ocean_tex_1234") < 0 and wm_tscn.find("uid://xnp7vjyfjnp1") >= 0,
 		"WorldMap 海洋贴图用导入 UID", fails)
+	_check(wm_tscn.find("按 Enter 停靠") < 0, "海战港名不再写停靠教程", fails)
 	var chart_src := FileAccess.get_file_as_string("res://scripts/SeaChart.gd")
 	_check(chart_src.find("style_heading(head)") >= 0 and chart_src.find("UiTheme.panel()") >= 0,
 		"海图标题与遭遇弹层走绢本", fails)
@@ -153,6 +154,22 @@ func _run() -> void:
 		"职事品级写成初习/谙熟/老练，不再用星号", fails)
 	_check(main_src.find("请选择") < 0 and main_src.find("区域施工中") < 0,
 		"调查页用决断，缺页不再写施工中", fails)
+	var main_tscn := FileAccess.get_file_as_string("res://scenes/Main.tscn")
+	_check(main_tscn.find("副标题") < 0 and main_tscn.find("地点标题") < 0
+		and main_tscn.find("环境描述文本") < 0 and main_tscn.find("NPC Dialog") < 0
+		and main_tscn.find("NPC Name") < 0 and main_tscn.find("情报与状态") < 0
+		and main_tscn.find("港口名称") < 0,
+		"开场场景不再写原型占位", fails)
+	var inv_at := main_tscn.find("[node name=\"InvestigationMode\"")
+	var inv_end := main_tscn.find("\n[node ", inv_at + 10)
+	var inv_block := main_tscn.substr(inv_at, inv_end - inv_at) if inv_at >= 0 and inv_end > inv_at else ""
+	_check(inv_block.find("visible = false") >= 0, "调查页默认收起，开场不闪占位", fails)
+	var left_at := main_tscn.find("[node name=\"LeftPanel\"")
+	var left_end := main_tscn.find("\n[node ", left_at + 10)
+	var left_block := main_tscn.substr(left_at, left_end - left_at) if left_at >= 0 and left_end > left_at else ""
+	_check(left_block.find("visible = false") >= 0, "船籍簿默认收起，开场不闪旧栏", fails)
+	var port_src := FileAccess.get_file_as_string("res://scripts/PortZone.gd")
+	_check(port_src.find("name_lbl.text = port_name") >= 0, "港区名牌写港口名", fails)
 	_check(main_src.find("city_inn") >= 0 and main_src.find("REMAPPED_FACILITIES") >= 0,
 		"旅店列入港卡改写", fails)
 	_check(main_src.find("PROLOGUE_ONLY_FACILITIES") >= 0,
