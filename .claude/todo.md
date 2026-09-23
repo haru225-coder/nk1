@@ -1,15 +1,7 @@
-# 船体改装系统 - 实施追踪
+# 哗变 - 已落地
 
-## 步骤
-- [x] 探索完成（Fleet/Main/Voyage/SeaChart/Ship/校验全部读完）
-- [x] 计划批准
-- [ ] 1. Fleet.gd：常量 + 只读 API + upgrade_* + 成本 + armor 辅助
-- [ ] 2. Voyage.gd + SeaChart.gd：armor 消费点
-- [ ] 3. Main.gd：船屋 UI + _on_upgrade + 状态面板
-- [ ] 4. simulate_run.py：speed 加成 + 独立升级模拟段
-- [ ] 5. verify_economy.py：六之四
-- [ ] 6. check_symbols.py：五之三
-- [ ] 7. 三套校验收口
+船体改装早在 `fc818b3` 做完，这份清单原先没勾掉。
 
-## 验证方式
-cd ~/nk-1 && python3 tools/check_symbols.py && python3 tools/verify_economy.py && python3 tools/simulate_run.py
+- [x] Fleet：哗变线、冷却、散钱 / 放人 / 压住
+- [x] Voyage + SeaChart：低士气日换掉随机事件，三个按钮
+- [x] verify_economy / simulate_run / check_symbols

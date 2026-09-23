@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """复现 Economy.gd / Voyage.gd 的公式，验证核心贸易循环与航海数值是否成立。
 不依赖 Godot，纯数学校验。"""
-import json, math, sys, os
+import json, math, re, sys, os
 
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -732,6 +732,96 @@ check(0.8 * 100 <= low_scale <= high_scale <= 3.0 * 100,
 check(low_scale >= 150 and high_scale >= 250,
       f"开局小艍对敌倍率 1.5~3.0（{low_scale:.0f}~{high_scale:.0f} 血，必败向）")
 check(std_scale <= 100.5, f"标准舰队对上限敌倍率 ≤1.0（{std_scale:.0f} 血，可胜向）")
+
+print()
+print("=" * 68)
+print("九、哗变：断粮才闹舱，三种了结都留得下船")
+print("=" * 68)
+
+fleet_src = open(os.path.join(os.path.dirname(__file__), "..", "scripts", "core", "Fleet.gd"),
+                 encoding="utf-8").read()
+
+def fleet_const(name):
+    m = re.search(rf"const {name} := (-?\d+(?:\.\d+)?)", fleet_src)
+    if not m:
+        raise SystemExit(f"Fleet.gd 缺少 {name}")
+    raw = m.group(1)
+    return float(raw) if "." in raw else int(raw)
+
+M_LINE = fleet_const("MUTINY_LINE")
+M_COOL = fleet_const("MUTINY_COOLDOWN_DAYS")
+M_FLOOR = fleet_const("MUTINY_BRIBE_FLOOR")
+M_PER = fleet_const("MUTINY_BRIBE_PER_CREW")
+M_BRIBE = fleet_const("MUTINY_BRIBE_MORALE")
+M_DIS_PCT = fleet_const("MUTINY_DISMISS_PERCENT")
+M_DIS_CARGO = fleet_const("MUTINY_DISMISS_CARGO")
+M_DIS_MORALE = fleet_const("MUTINY_DISMISS_MORALE")
+M_NEED = fleet_const("MUTINY_SUPPRESS_NEED")
+M_SUP_MORALE = fleet_const("MUTINY_SUPPRESS_MORALE")
+M_SUP_PCT = fleet_const("MUTINY_SUPPRESS_PERCENT")
+M_SUP_CARGO = fleet_const("MUTINY_SUPPRESS_CARGO")
+
+def crew_percent(crew, percent):
+    return max(1, int((crew * percent) / 100.0))
+
+# 开局小艍：6 人，水粮各 60，每日 ceil(6/2)=3。扣到 0 的当天就算断粮，士气 -6。
+# 不计风涛和无风（那些会更早）。这是只靠水粮的钟。
+starter_crew = ships["sampan"]["crew_min"]
+daily = math.ceil(starter_crew / 2)
+water, morale, day, starve = 60, 70, 0, 0
+while day < 80 and morale > M_LINE:
+    day += 1
+    water = max(0, water - daily)
+    if water <= 0:
+        morale = max(0, morale - 6)
+        starve += 1
+trigger_morale = morale
+print(f"  不补水粮：第 {day} 日哗变（其中断粮 {starve} 日），士气 {trigger_morale}，线 {M_LINE}")
+check(24 <= day <= 36, f"只靠开局水粮，第 {day} 日才哗变（近海三五日出不了这事）")
+check(8 <= starve <= 12, f"断粮 {starve} 日才哗变（落在 8～12，不会一饿就炸，也不会拖过两旬）")
+check(trigger_morale <= M_LINE, f"触发日士气 {trigger_morale} ≤ {M_LINE}")
+check(70 - 12 > M_LINE, "单次战败 -12 从 70 掉不到哗变线")
+check(70 - 8 - 12 > M_LINE, "一场满风涛 -8 再加战败 -12，仍高于哗变线")
+
+bribe6 = max(M_FLOOR, starter_crew * M_PER)
+bribe50 = max(M_FLOOR, 50 * M_PER)
+print(f"  六人散钱 {bribe6}，五十人散钱 {bribe50}")
+check(60 <= bribe6 <= 120, f"开局散钱 {bribe6} 落在 60～120（付得起，也不是象征性的几文）")
+check(bribe6 < 1000, f"开局散钱 {bribe6} < 本金 1000")
+check(bribe50 > bribe6, f"五十人散钱 {bribe50} > 六人 {bribe6}（按人头涨）")
+after_bribe = min(100, trigger_morale + M_BRIBE)
+check(after_bribe >= M_LINE + 15, f"散钱后士气 {after_bribe} ≥ 线+15（一次散钱能离开哗变线一截）")
+
+leave = crew_percent(starter_crew, M_DIS_PCT)
+cargo_dis = math.ceil(10 * M_DIS_CARGO)
+print(f"  六人放走 {leave} 人；10 件货抬走 {cargo_dis}")
+check(1 <= leave < starter_crew, f"放人 {leave} 人，船还留得下人")
+check(starter_crew - leave < ships["sampan"]["crew_min"],
+      f"放人后剩 {starter_crew - leave} 人 < 小艍最低水手 {ships['sampan']['crew_min']}，下一趟要补人")
+main_src = open(os.path.join(os.path.dirname(__file__), "..", "scripts", "Main.gd"),
+                encoding="utf-8").read()
+hire_m = re.search(r"below_min \* (\d+)", main_src)
+hire_each = int(hire_m.group(1)) if hire_m else 0
+check(hire_each > 0 and bribe6 > hire_each * leave,
+      f"散钱 {bribe6} > 事后补 {leave} 人的 {hire_each * leave}（留人比雇人贵，贵在保住那份货）")
+check(1 <= cargo_dis <= 2, f"放人抬走的 10 件里是 {cargo_dis} 件（有代价，但不清舱）")
+after_dis = min(100, trigger_morale + M_DIS_MORALE)
+check(after_dis > M_LINE, f"放人后士气 {after_dis} > {M_LINE}")
+
+print(f"  开局武力 50 + 士气 {trigger_morale} = {50 + trigger_morale}，压住线 {M_NEED}")
+check(50 + trigger_morale >= M_NEED, "第一次哗变，开局武力压得住")
+after_sup = min(100, trigger_morale + M_SUP_MORALE)
+check(M_LINE < after_sup < after_bribe, f"压住后士气 {after_sup}，高于线、低于散钱（压是弱选项）")
+cooled = after_sup
+for _ in range(M_COOL):
+    cooled = max(0, cooled - 6)
+print(f"  压住后再断粮 {M_COOL} 日，士气 {cooled}")
+check(M_COOL >= 4, f"冷却 {M_COOL} 日 ≥ 4（不是天天拦船）")
+check(50 + cooled < M_NEED, f"冷却耗尽后再压：武力 50 + 士气 {cooled} < {M_NEED}")
+fail_leave = crew_percent(starter_crew, M_SUP_PCT)
+cargo_fail = math.ceil(10 * M_SUP_CARGO)
+check(fail_leave >= leave, f"压失败走 {fail_leave} 人 ≥ 主动放人 {leave}")
+check(cargo_fail > cargo_dis, f"压失败抬货 {cargo_fail} > 主动放人 {cargo_dis}")
 
 print()
 print("=" * 68)

@@ -34,6 +34,8 @@ var food: int = 0
 
 ## 士气 0-100
 var morale: int = 70
+## 哗变之后的静默日数。到 0 且士气仍低于线，海上会再闹一次。
+var mutiny_cooldown: int = 0
 
 ## 是否在海上。停泊港内时水手上岸就食，不吃船上存粮——否则在港候风会把全船饿死。
 var at_sea: bool = false
@@ -49,6 +51,23 @@ const SAIL_LEVEL_MAX := 3
 const ARMOR_LEVEL_MAX := 3
 ## 升级成本 = ceil(船价 × 本比例 × 级数递增系数 × (甲则 ×1.25))，与每级 10% 加成同量级
 const UPGRADE_BASE_RATIO := 0.10
+
+## 哗变。开局水粮各 60、6 人每日 3 份，不另补粮时第 28 日才第一次低于这条线
+## （其中断粮 9 日，士气 16）。单次战败 -12 或一场风涛都到不了。冷却 5 日，避免舱里天天拦船。
+const MUTINY_LINE := 18
+const MUTINY_COOLDOWN_DAYS := 5
+const MUTINY_BRIBE_FLOOR := 80
+const MUTINY_BRIBE_PER_CREW := 4
+const MUTINY_BRIBE_MORALE := 24
+## 放人：人数按百分比截断，至少 1；再抬走一小份货。
+const MUTINY_DISMISS_PERCENT := 10
+const MUTINY_DISMISS_CARGO := 0.08
+const MUTINY_DISMISS_MORALE := 20
+## 压住：武力 + 当前士气 ≥ 60 才压得住。开局武力 50，第一次（士气 16）压得住，再饿过冷却就压不住。
+const MUTINY_SUPPRESS_NEED := 60
+const MUTINY_SUPPRESS_MORALE := 10
+const MUTINY_SUPPRESS_PERCENT := 15
+const MUTINY_SUPPRESS_CARGO := 0.12
 
 
 ## 当前船员每日消耗的水（或粮）份数
@@ -428,6 +447,8 @@ func supply_days() -> int:
 
 ## 每日结算：消耗水粮、货物损耗、士气变动
 func on_day_passed() -> void:
+	if mutiny_cooldown > 0:
+		mutiny_cooldown -= 1
 	var crew := total_crew()
 	if crew <= 0:
 		return
@@ -500,6 +521,103 @@ func _apply_perishable() -> void:
 ## 士气系数，影响航速与白刃战
 func morale_factor() -> float:
 	return 0.6 + 0.4 * (float(morale) / float(MORALE_MAX))
+
+
+## 海上、士气已低于线、冷却已尽，且还有人走得掉。
+func mutiny_ready() -> bool:
+	return at_sea and morale <= MUTINY_LINE and mutiny_cooldown <= 0 and _crew_can_leave()
+
+
+func _crew_can_leave() -> bool:
+	for s in ships:
+		if int(s.get("crew", 0)) > 1:
+			return true
+	return false
+
+
+## 散钱。六人小艍是地板 80；人多了按人头涨。
+func mutiny_bribe_cost() -> int:
+	return maxi(MUTINY_BRIBE_FLOOR, total_crew() * MUTINY_BRIBE_PER_CREW)
+
+
+## 百分比截断，至少走 1 人。先乘后除，避免 0.1 的浮点尾巴。
+func _crew_percent(percent: int) -> int:
+	return maxi(1, int(float(total_crew() * percent) / 100.0))
+
+
+func mutiny_dismiss_count() -> int:
+	return _crew_percent(MUTINY_DISMISS_PERCENT)
+
+
+## 放人之后会不会落到各船最低水手以下，下一趟出不了港。
+func mutiny_dismiss_blocks_next_sail() -> bool:
+	var left := mutiny_dismiss_count()
+	for i in range(ships.size()):
+		var c := ship_crew(i)
+		var take := 0
+		if c > 1 and left > 0:
+			take = mini(left, c - 1)
+			left -= take
+		if c - take < ship_crew_min(i):
+			return true
+	return false
+
+
+## 开局武力下，第一次哗变压得住；士气被饿到个位数就压不住。
+func mutiny_suppress_succeeds() -> bool:
+	return GameState.martial + morale >= MUTINY_SUPPRESS_NEED
+
+
+## 结算一次哗变。冷却立刻开始，三种选择都走这里。
+## 返回 {outcome, paid, crew_lost, cargo_lost, morale}
+func resolve_mutiny(choice: String) -> Dictionary:
+	mutiny_cooldown = MUTINY_COOLDOWN_DAYS
+	var paid := 0
+	var crew_lost := 0
+	var cargo_lost := {}
+	var outcome := choice
+	if choice == "bribe":
+		var cost := mutiny_bribe_cost()
+		if GameState.spend_money(cost):
+			paid = cost
+			outcome = "bribe"
+			morale = mini(MORALE_MAX, morale + MUTINY_BRIBE_MORALE)
+		else:
+			outcome = "bribe_fail"
+			var gone := _mutiny_let_go(MUTINY_DISMISS_PERCENT, MUTINY_DISMISS_CARGO)
+			crew_lost = gone["crew"]
+			cargo_lost = gone["cargo"]
+			morale = mini(MORALE_MAX, morale + MUTINY_DISMISS_MORALE)
+	elif choice == "dismiss":
+		outcome = "dismiss"
+		var gone := _mutiny_let_go(MUTINY_DISMISS_PERCENT, MUTINY_DISMISS_CARGO)
+		crew_lost = gone["crew"]
+		cargo_lost = gone["cargo"]
+		morale = mini(MORALE_MAX, morale + MUTINY_DISMISS_MORALE)
+	elif mutiny_suppress_succeeds():
+		outcome = "suppress_ok"
+		morale = mini(MORALE_MAX, morale + MUTINY_SUPPRESS_MORALE)
+	else:
+		outcome = "suppress_fail"
+		var gone := _mutiny_let_go(MUTINY_SUPPRESS_PERCENT, MUTINY_SUPPRESS_CARGO)
+		crew_lost = gone["crew"]
+		cargo_lost = gone["cargo"]
+	return {
+		"outcome": outcome,
+		"paid": paid,
+		"crew_lost": crew_lost,
+		"cargo_lost": cargo_lost,
+		"morale": morale,
+	}
+
+
+func _mutiny_let_go(percent: int, cargo_ratio: float) -> Dictionary:
+	var before := total_crew()
+	_lose_crew(_crew_percent(percent))
+	return {
+		"crew": before - total_crew(),
+		"cargo": lose_cargo_ratio(cargo_ratio),
+	}
 
 
 ## 将领系数（主角武力）：白刃战判定输入之一。满值 100 → ×1.5，越高越强。
@@ -642,6 +760,7 @@ func to_dict() -> Dictionary:
 		"water": water,
 		"food": food,
 		"morale": morale,
+		"mutiny_cooldown": mutiny_cooldown,
 	}
 
 
@@ -661,4 +780,5 @@ func from_dict(d: Dictionary) -> void:
 	water = d.get("water", 0)
 	food = d.get("food", 0)
 	morale = d.get("morale", 70)
+	mutiny_cooldown = maxi(0, int(d.get("mutiny_cooldown", 0)))
 	at_sea = false  # 只在港内存档，读档必定停泊
