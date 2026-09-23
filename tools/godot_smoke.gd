@@ -136,6 +136,10 @@ func _run() -> void:
 	var rpt: Dictionary = gs.report_discovery("beacon_ruin")
 	_check(not rpt.is_empty() and int(rpt.get("fame", 0)) > 0, "市舶司呈报才给名声", fails)
 	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
+	_check(main_src.find("ChapterSheet") >= 0 and main_src.find("AcceptDialog.new()") < 0,
+		"升章了结走居中册页，主场景不再弹系统对话框", fails)
+	_check(main_src.find("OptionButton.new()") < 0 and main_src.find("_select_market_ship") >= 0,
+		"牙行选船走账条小钮，不再用系统下拉", fails)
 	_check(main_src.find("city_inn") >= 0 and main_src.find("REMAPPED_FACILITIES") >= 0,
 		"旅店列入港卡改写", fails)
 	_check(main_src.find("PROLOGUE_ONLY_FACILITIES") >= 0,

@@ -897,16 +897,29 @@ if re.search(r"^static func style_dialog\b", theme_src, re.M):
 else:
     print("  ✗ UiTheme.style_dialog 未定义")
     problems.append("UiTheme.style_dialog 未定义")
-if "UiTheme.style_dialog" in main_src and "_show_save_dialog" in main_src:
-    print("  ✓ 存档弹窗走 UiTheme.style_dialog")
+def _func_body(src: str, name: str) -> str:
+    m = re.search(rf"^func {name}\b.*?(?=^func |\Z)", src, re.M | re.S)
+    return m.group(0) if m else ""
+
+
+save_body = _func_body(main_src, "_show_save_dialog")
+if "SaveSheet" in save_body and "UiTheme.panel()" in save_body and "AcceptDialog" not in save_body:
+    print("  ✓ 航海日志是居中绢本册页")
 else:
     print("  ✗ 存档弹窗未套绢本主题")
     problems.append("存档弹窗未套绢本主题")
-if "UiTheme.style_dialog" in main_src and "_show_chapter_dialog" in main_src:
-    print("  ✓ 升章/了结弹窗走 UiTheme.style_dialog")
+chapter_body = _func_body(main_src, "_show_chapter_dialog")
+if "ChapterSheet" in chapter_body and "UiTheme.panel()" in chapter_body and "AcceptDialog" not in chapter_body:
+    print("  ✓ 升章/了结是居中绢本册页")
 else:
     print("  ✗ 升章/了结弹窗未套绢本主题")
     problems.append("升章/了结弹窗未套绢本主题")
+market_body = _func_body(main_src, "_setup_market")
+if "OptionButton" not in market_body and "_select_market_ship" in market_body:
+    print("  ✓ 牙行选船走账条小钮")
+else:
+    print("  ✗ 牙行仍用系统下拉选船")
+    problems.append("牙行仍用系统下拉选船")
 if "Color(0.2, 0.4, 0.6" in main_src:
     print("  ✗ NPC 按钮仍用蓝底硬编码")
     problems.append("NPC 按钮蓝底硬编码")

@@ -32,14 +32,19 @@ extends Control
 var current_scene_id: String = ""
 var previous_scene_id: String = ""  # 死胡同场景兜底用：只记一层，不做完整历史栈
 var title_button_connected: bool = false
-## 牙行当前选中的船 index（多船分装用），进牙行时重置为旗舰
+## 牙行当前选中的船 index（多船分装用）。进牙行时重置为旗舰；
+## 同页换船或买卖后刷新时保留，否则选中会被 load_scene 清掉。
 var _market_ship: int = 0
+var _market_hold: bool = false
 ## 账条暂时写入的容器。船屋条数多，先收进内滚，离开钮留在外面。
 var _slip_host: Node = null
 ## 见面册页上的话。原 RichTextLabel 在这栏里排不出行，改用能折行的 Label。
 var _npc_speech: Label
-## 航海日志册页。AcceptDialog 会把三卷撑出 1280 宽的窗口。
+## 航海日志册页。系统对话框会把三卷撑出 1280 宽的窗口。
 var _save_host: Control
+## 升章 / 了结册页。同一理由，不用系统对话框。
+var _chapter_host: Control
+var _chapter_next_scene: String = ""
 
 const FACILITY_SUFFIXES := [
 	"_market", "_yamen", "_shipyard", "_tavern", "_inn",
@@ -614,31 +619,29 @@ func _setup_market(port_id: String) -> void:
 	# 按买价排序，便宜的在前
 	goods_ids.sort_custom(func(a, b): return Economy.buy_price(port_id, a) < Economy.buy_price(port_id, b))
 
-	# 多船时选船装货；重置到旗舰
-	_market_ship = 0
+	# 多船时选船装货。从别的页进来回到旗舰；本页刷新则留下刚才那艘。
+	if not _market_hold or _market_ship < 0 or _market_ship >= Fleet.ships.size():
+		_market_ship = 0
+	_market_hold = false
 	if Fleet.ships.size() > 1:
-		var sel := HBoxContainer.new()
-		sel.add_theme_constant_override("separation", 6)
+		var sel := HFlowContainer.new()
+		sel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sel.add_theme_constant_override("h_separation", 6)
+		sel.add_theme_constant_override("v_separation", 6)
 		var lbl := Label.new()
 		lbl.text = "装至"
 		lbl.custom_minimum_size = Vector2(44, 0)
 		UiTheme.style_footnote(lbl)
 		lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 		sel.add_child(lbl)
-		var opt := OptionButton.new()
 		for i in range(Fleet.ships.size()):
-			var s: Dictionary = Fleet.ships[i]
-			opt.add_item("%s（%s）　空 %d 料" % [
-				s.get("name", ""), Fleet.ship_def(s.get("type", "")).get("name", ""),
-				int(Fleet.ship_free_capacity(i)),
-			])
-			opt.set_item_metadata(i, i)
-		opt.selected = _market_ship
-		UiTheme.style_button(opt)
-		opt.item_selected.connect(func(idx: int):
-			_market_ship = int(opt.get_item_metadata(idx))
-			load_scene(current_scene_id))
-		sel.add_child(opt)
+			var idx := int(i)
+			var s: Dictionary = Fleet.ships[idx]
+			var chip := Button.new()
+			chip.text = "%s　空 %d" % [s.get("name", "船"), int(Fleet.ship_free_capacity(idx))]
+			chip.pressed.connect(_select_market_ship.bind(idx))
+			sel.add_child(chip)
+			UiTheme.style_chip(chip, idx == _market_ship)
 		choices_container.add_child(sel)
 
 	var scroll := ScrollContainer.new()
@@ -776,6 +779,7 @@ func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> 
 	if actual < amount:
 		note = "（只购得 %d）" % actual
 	log_msg("买入 %s ×%d，付 %d 钱。%s" % [GameManager.get_good_name(good_id), actual, cost, note])
+	_market_hold = true
 	load_scene(current_scene_id)
 
 
@@ -808,6 +812,7 @@ func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) ->
 	var profit := revenue - int(round(cost_basis))
 	var profit_str := "赚 %d" % profit if profit >= 0 else "亏 %d" % (-profit)
 	log_msg("卖出 %s ×%d，得 %d 钱（%s）。" % [GameManager.get_good_name(good_id), actual, revenue, profit_str])
+	_market_hold = true
 	load_scene(current_scene_id)
 
 
@@ -1888,6 +1893,7 @@ func _show_save_dialog() -> void:
 	close.pressed.connect(_close_save_sheet)
 	col.add_child(close)
 	UiTheme.style_choice_button(close)
+	close.alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
 func _close_save_sheet() -> void:
@@ -1931,52 +1937,122 @@ func _on_enter_port(port_id: String) -> void:
 
 
 func _show_chapter_dialog(res: Dictionary) -> void:
-	var dlg := AcceptDialog.new()
+	if is_instance_valid(_chapter_host):
+		_chapter_host.queue_free()
+	_chapter_next_scene = str(res.get("scene", ""))
+
+	var host := Control.new()
+	host.name = "ChapterSheet"
+	host.set_anchors_preset(Control.PRESET_FULL_RECT)
+	host.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(host)
+	_chapter_host = host
+
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.05, 0.03, 0.02, 0.55)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	host.add_child(dim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	host.add_child(center)
+
+	var sheet := PanelContainer.new()
+	sheet.custom_minimum_size = Vector2(640, 0)
+	sheet.add_theme_stylebox_override("panel", UiTheme.panel())
+	center.add_child(sheet)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 22)
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_bottom", 16)
+	sheet.add_child(margin)
+
+	var col := VBoxContainer.new()
+	col.custom_minimum_size = Vector2(596, 0)
+	col.add_theme_constant_override("separation", 10)
+	margin.add_child(col)
+
+	var kicker := Label.new()
+	var ok_text := "承此一路"
 	if res.get("resolved", false):
-		dlg.title = "了结・%s" % res.get("title", GameState.ending_title())
-		dlg.ok_button_text = "记下这一纲"
+		kicker.text = "了结"
+		ok_text = "记下这一纲"
 	else:
-		dlg.title = "第 %s 章・%s" % [
+		kicker.text = "第 %s 章・%s" % [
 			_cn_chapter(GameState.chapter), GameState.chapter_def().get("name", ""),
 		]
-		dlg.ok_button_text = "承此一路"
-
-	var m := MarginContainer.new()
-	m.add_theme_constant_override("margin_left", 18)
-	m.add_theme_constant_override("margin_right", 18)
-	m.add_theme_constant_override("margin_top", 12)
-	m.add_theme_constant_override("margin_bottom", 12)
-
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
-	m.add_child(v)
+	UiTheme.style_section_label(kicker)
+	kicker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(kicker)
 
 	var head := Label.new()
-	head.text = res.get("title", "")
+	head.text = str(res.get("title", ""))
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UiTheme.style_heading(head)
-	v.add_child(head)
+	col.add_child(head)
 
-	var body := RichTextLabel.new()
-	body.bbcode_enabled = false
-	body.fit_content = true
-	body.custom_minimum_size = Vector2(520, 200)
-	body.text = res.get("text", "")
-	UiTheme.style_body(body)
-	v.add_child(body)
+	var raw := str(res.get("text", ""))
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(560, _chapter_body_height(raw))
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.add_child(scroll)
 
-	dlg.add_child(m)
-	add_child(dlg)
-	UiTheme.style_dialog(dlg, true)
-	dlg.popup_centered()
-	var next_scene := str(res.get("scene", ""))
-	dlg.confirmed.connect(func():
-		if next_scene != "" and not GameManager.get_scene_by_id(next_scene).is_empty():
-			load_scene(next_scene)
-		else:
-			load_scene(current_scene_id)
-	)
+	var body := Label.new()
+	body.text = raw
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.custom_minimum_size = Vector2(560, 0)
+	body.add_theme_font_override("font", UiTheme.font())
+	body.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	body.add_theme_color_override("font_color", UiTheme.TEXT)
+	body.add_theme_constant_override("line_spacing", UiTheme.LINE_BODY)
+	scroll.add_child(body)
+
+	var ok := Button.new()
+	ok.text = ok_text
+	ok.pressed.connect(_confirm_chapter_sheet)
+	col.add_child(ok)
+	UiTheme.style_button(ok, true)
+	ok.alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	update_status_panel()
+
+
+func _chapter_body_height(text: String) -> int:
+	var lines := 0
+	for raw_line in text.split("\n"):
+		var n := raw_line.length()
+		lines += 1 if n == 0 else maxi(1, int(ceil(float(n) / 28.0)))
+	return clampi(lines * 28 + 8, 88, 340)
+
+
+func _confirm_chapter_sheet() -> void:
+	if _chapter_host == null:
+		return
+	var next_scene := _chapter_next_scene
+	_chapter_next_scene = ""
+	var host := _chapter_host
+	_chapter_host = null
+	host.visible = false
+	host.queue_free()
+	if next_scene != "" and not GameManager.get_scene_by_id(next_scene).is_empty():
+		load_scene(next_scene)
+	else:
+		load_scene(current_scene_id)
+
+
+func _select_market_ship(idx: int) -> void:
+	if idx == _market_ship:
+		return
+	_market_ship = idx
+	_market_hold = true
+	load_scene(current_scene_id)
 
 
 func _cn_chapter(n: int) -> String:
@@ -2161,7 +2237,13 @@ func apply_effects(effects: Dictionary) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_accept"):
-		if _activate_first_choice():
+		if is_instance_valid(_chapter_host):
+			_confirm_chapter_sheet()
+			get_viewport().set_input_as_handled()
+		elif is_instance_valid(_save_host):
+			_close_save_sheet()
+			get_viewport().set_input_as_handled()
+		elif _activate_first_choice():
 			get_viewport().set_input_as_handled()
 	elif OS.is_debug_build() and event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_F12:
