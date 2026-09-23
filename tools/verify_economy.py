@@ -143,6 +143,54 @@ for c in chapters:
               f"第{n}章要求亲至「{ports.get(pid,{}).get('name',pid)}」，该港在本章"
               + ("可达" if reachable else "尚未解锁——死锁"))
 
+# 海图回港走 load_scene(port_id)。同名剧情若 type 不是 port，会盖住牙行，visited_ports 写不进。
+scenes_doc = load("scenes.json")
+scene_list = scenes_doc["scenes"]
+by_scene = {}
+dup_ids = []
+for sc in scene_list:
+    sid = sc["id"]
+    if sid in by_scene:
+        dup_ids.append(sid)
+    by_scene[sid] = sc
+check(not dup_ids, f"剧情场景 id 不重复（重复：{dup_ids or '无'}）")
+
+shadowed = []
+for pid, p in ports.items():
+    sc = by_scene.get(pid)
+    if sc is not None and sc.get("type") != "port":
+        shadowed.append(f"{pid}（{p.get('name', pid)}，场景 type={sc.get('type', 'scene')}）")
+check(not shadowed, "港口 id 不被非 port 剧情盖住（海图回港能进牙行并记到访）："
+      + ("无" if not shadowed else "；".join(shadowed)))
+
+for pid in ("ryukyu", "hakata"):
+    sc = by_scene.get(pid)
+    ok = sc is None or sc.get("type") == "port"
+    check(ok, f"亲至条件港口 {pid} 从海图回港走港口界面，不走进同名剧情")
+
+check("ryukyu_bay" in by_scene and by_scene["ryukyu_bay"].get("type") != "port",
+      "流求海面北缘仍是剧情场景 ryukyu_bay，不再占用港口 id")
+check("hakata_ledger" in by_scene and by_scene["hakata_ledger"].get("type") != "port",
+      "博多旧账仍是剧情场景 hakata_ledger，不再占用港口 id")
+
+dangling = []
+known = set(by_scene) | set(ports)
+for sc in scene_list:
+    for ch in sc.get("choices") or []:
+        nxt = ch.get("next")
+        if nxt and nxt not in known:
+            dangling.append(f"{sc['id']} → {nxt}")
+check(not dangling, f"场景 next 都能落到场景或港口（悬空 {len(dangling)}）")
+for d in dangling[:8]:
+    print("      悬空:", d)
+
+TITLE_IDS = ("cg_title", "cg_world_north", "cg_world_east", "cg_world_south", "cg_world_west")
+for tid in TITLE_IDS:
+    sc = by_scene.get(tid, {})
+    has_copy = bool(sc.get("cg_title") or sc.get("cg_sub"))
+    check(sc.get("type") == "title" and has_copy,
+          f"开场 {tid} 为 type=title，正文在 cg_title/cg_sub（现 type={sc.get('type', '无')}）")
+
 # 每一章都必须能通向下一章
 max_ch = max(int(c["id"]) for c in chapters)
 declared = {ch_num(p.get("unlock", "ch1")) for p in ports.values()}

@@ -1083,8 +1083,24 @@ func _setup_title_mode(scene_data: Dictionary) -> void:
 	npc_mode.visible = false
 	title_mode.visible = true
 
-	main_title.text = scene_data.get("cg_title", "东亚海域立志传")
-	sub_title.text = scene_data.get("cg_sub", "")
+	var headline := str(scene_data.get("cg_title", "东亚海域立志传"))
+	var blurb := str(scene_data.get("cg_sub", "")).replace("\\A", "\n").replace("\\n", "\n")
+	main_title.text = headline
+	sub_title.text = blurb
+	# 卷首五屏正文很长，标题盒原来只有 600×300，字会裁出画面。
+	main_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sub_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var wide := 760.0
+	main_title.custom_minimum_size = Vector2(wide, 0)
+	sub_title.custom_minimum_size = Vector2(wide, 0)
+	main_title.add_theme_font_size_override("font_size", 40 if headline.length() > 10 else 64)
+	sub_title.add_theme_font_size_override("font_size", 18)
+	var box := title_mode.get_node_or_null("VBoxContainer") as Control
+	if box != null:
+		box.offset_left = -wide * 0.5
+		box.offset_right = wide * 0.5
+		box.offset_top = -300.0
+		box.offset_bottom = 300.0
 
 	if title_button_connected:
 		for c in start_button.pressed.get_connections():
@@ -1340,7 +1356,9 @@ func _cn_chapter(n: int) -> String:
 
 func _on_facility_pressed(fac: Dictionary) -> void:
 	var target_scene = fac.get("id", "")
-	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern"]:
+	# 牙行/市舶司/船屋/酒馆/旅店都按当前港口改写。漏掉旅店时 id 停在 city_inn，
+	# 港口被切成不存在的 "city"，离开键掉进「区域施工中」。
+	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern", "city_inn"]:
 		target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")
 	if target_scene != "":
 		load_scene(target_scene)

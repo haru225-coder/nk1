@@ -185,10 +185,12 @@ func _process_storm_damage(delta: float) -> void:
 			pass
 
 func _sink_ship() -> void:
-	Fleet.clear_cargo()
-	GameState.set_flag("return_to_port")
-	# 海战（P4-1）：旗舰在 WorldMap 战斗中沉没 → 由 WorldMap 结算败局，不切场景
+	# 海战（P4-1）：旗舰在 WorldMap 战斗中沉没 → 由 WorldMap 结算败局，不切场景。
+	# 战斗里先清舱，会让 SeaChart 的 25% 货损落在空舱上，日志仍写「部分货物」。
+	# 全队沉没的清舱在 SeaChart._sink；姊妹船还在时只走败局的比例货损。
 	if GameManager.pending_battle.get("battle", false):
 		get_parent()._battle_player_sunk()
 		return
+	Fleet.clear_cargo()
+	GameState.set_flag("return_to_port")
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")

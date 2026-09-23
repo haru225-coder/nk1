@@ -590,11 +590,16 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 		_log("[color=lime]击退海盗，夺得财货 %d 钱。战损 %d。[/color]" % [spoil, int(dmg)])
 	elif outcome == "lose":
 		Fleet.morale = maxi(0, Fleet.morale - 12)
-		var lost := Fleet.lose_cargo_ratio(0.25)
-		var lost_str := ""
-		for gid in lost.keys():
-			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-		_log("[color=red]接舷失利，被夺去部分货物。%s船体受损 %d。[/color]" % [lost_str, int(dmg)])
+		# 全队耐久已归零时，货舱由 _sink 清空，文案不能再写「部分」。
+		# 旗舰沉了但姊妹船还在：不要在进这里之前清舱，只扣 25%。
+		if Fleet.total_durability() <= 0.0:
+			_log("[color=red]船队沉没。船体受损 %d。[/color]" % int(dmg))
+		else:
+			var lost := Fleet.lose_cargo_ratio(0.25)
+			var lost_str := ""
+			for gid in lost.keys():
+				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
+			_log("[color=red]接舷失利，被夺去部分货物。%s船体受损 %d。[/color]" % [lost_str, int(dmg)])
 	else:  # flee
 		if data.get("flee_ok", false):
 			remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
@@ -660,8 +665,8 @@ func _after_combat() -> void:
 
 func _on_investigate_discovery() -> void:
 	event_panel.visible = false
-	GameManager.advance_days(1)
-	days_elapsed += 1
+	# 按钮写「费 1 日」。这一日由随后的 _on_event_continue → _sail_next_day 推进。
+	# 这里再 advance_days 会让水粮、士气和历法走两日，里程却只减后面那一天。
 	var did: String = pending_event.get("discovery_id", "")
 	var d := GameManager.get_discovery_by_id(did)
 	if GameState.record_discovery(did):

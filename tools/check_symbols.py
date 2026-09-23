@@ -624,6 +624,67 @@ else:
 
 print()
 print("=" * 68)
+print("九、进港与结算回归（审计硬伤）")
+print("=" * 68)
+print("  海图回港、旅店、发现计日、沉船货损。改数据或结算顺序时这里会红。")
+
+def _code_only(src):
+    return "\n".join(re.sub(r'#.*$', '', ln) for ln in src.split("\n"))
+
+fac = _code_only(func_bodies(main_src).get("_on_facility_pressed", ""))
+if '"city_inn"' in fac and "trim_prefix(\"city_\")" in fac:
+    print("  ✓ 旅店 city_inn 随当前港口改写，离开键不会落到 id=city")
+else:
+    print("  ✗ 旅店未按当前港口改写")
+    problems.append("city_inn 未改写成当前港口")
+
+title_body = _code_only(func_bodies(main_src).get("_setup_title_mode", ""))
+if "cg_title" in title_body and "cg_sub" in title_body and "\\\\A" in title_body:
+    print("  ✓ 标题模式读 cg_title/cg_sub，并把 \\\\A 换成换行")
+else:
+    print("  ✗ 标题模式未读卷首正文或未把 \\\\A 换成换行")
+    problems.append("标题模式未展示 cg 正文")
+
+inv = _code_only(func_bodies(seachart_src).get("_on_investigate_discovery", ""))
+if "advance_days" in inv:
+    print("  ✗ 发现调查仍调用 advance_days，会与随后的航行日叠成两日")
+    problems.append("发现调查双计日")
+elif "_on_event_continue" not in inv:
+    print("  ✗ 发现调查没有回到航行循环")
+    problems.append("发现调查未续航")
+else:
+    print("  ✓ 发现调查只经航行循环推进一日")
+
+sink = func_bodies(ship_src).get("_sink_ship", "")
+sink_code = _code_only(sink)
+cut = sink_code.find("_battle_player_sunk")
+if cut < 0:
+    print("  ✗ Ship._sink_ship 未把战斗沉没交回 WorldMap")
+    problems.append("战斗沉没未交回结算")
+elif "clear_cargo" in sink_code[:cut]:
+    print("  ✗ 战斗沉没在通知败局前 clear_cargo，25% 货损会落在空舱")
+    problems.append("战斗沉没先清舱")
+else:
+    print("  ✓ 战斗沉没不先清舱，货损留给败局结算")
+
+battle = _code_only(func_bodies(seachart_src).get("_on_battle_result", ""))
+i_dur = battle.find("total_durability")
+i25 = battle.find("lose_cargo_ratio(0.25)")
+if i_dur < 0 or i25 < 0 or not (i_dur < i25):
+    print("  ✗ 败局未在 25% 货损之前判断全队是否已经沉没")
+    problems.append("败局货损未区分沉船")
+else:
+    print("  ✓ 全队沉没不走 25% 货损")
+
+sink_voyage = _code_only(func_bodies(seachart_src).get("_sink", ""))
+if "clear_cargo" in sink_voyage:
+    print("  ✓ 全队沉没仍清空货舱")
+else:
+    print("  ✗ 全队沉没未清空货舱")
+    problems.append("沉船未清舱")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:

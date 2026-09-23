@@ -536,6 +536,17 @@ cargo_after_lose = G.ships[0]["cargo"].get("raw_silk", [0])[0]
 check(cargo_after_lose == 7, f"lose 货损 25%（生丝 10→{cargo_after_lose}）")
 check(G.morale == max(0, lose_morale0 - 12), "lose 士气 -12")
 
+# 与 SeaChart._on_battle_result / Ship._sink_ship 同一条顺序：
+# 战斗中不先清舱。全队耐久归零走沉船清舱；姊妹船还在只扣 25%。
+def settle_lose_cargo(qty, fleet_durability):
+    if fleet_durability <= 0:
+        return 0
+    lost = int(math.ceil(qty * 0.25))
+    return qty - lost
+
+check(settle_lose_cargo(10, 0) == 0, "全队沉没货舱清空，不按 25% 留 7 件")
+check(settle_lose_cargo(10, 300) == 7, "旗舰沉没但姊妹船还在，只扣 25%（10→7），不清空")
+
 # flee 失败：货损 0.18 + 耐久 -30*armor_reduction（只打旗舰 ships[0]，同 damage_fleet）
 flee_durab = sum(s["durability"] for s in G.ships)
 armor_r = armor_reduction()
