@@ -935,6 +935,16 @@ if "func _interior_title" in main_src and "未命名设施" not in main_src:
 else:
     print("  ✗ 序章内页或港卡仍是占位名")
     problems.append("序章内页或港卡仍是占位名")
+if "func _interior_lead" in main_src and "static func plain_log" in theme_src and "UiTheme.plain_log" in main_src:
+    print("  ✓ 序章内页进门有一句，日志去掉方括号标签")
+else:
+    print("  ✗ 内页正文或日志标签未收")
+    problems.append("内页正文或日志标签未收")
+if "【发舶】" not in seachart_src and "UiTheme.plain_log" in seachart_src:
+    print("  ✓ 海图日志不再写发舶标签")
+else:
+    print("  ✗ 海图日志仍写发舶标签")
+    problems.append("海图日志仍写发舶标签")
 if '" x"' not in wm_src:
     print("  ✓ 海战货舱用乘号")
 else:

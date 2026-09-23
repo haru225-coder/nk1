@@ -88,6 +88,10 @@ func _run() -> void:
 	var dlg := AcceptDialog.new()
 	UiTheme.style_dialog(dlg, true)
 	_check(dlg.get_theme_stylebox("panel") != null, "UiTheme.style_dialog 给弹窗套绢本面板", fails)
+	_check(UiTheme.plain_log("【钱不够】牙人摇头。") == "牙人摇头。", "日志去掉方括号标签", fails)
+	_check(UiTheme.plain_log("买入瓷器 ×1。") == "买入瓷器 ×1。", "普通日志原样保留", fails)
+	_check(UiTheme.plain_log("[color=#aabbcc]【欠饷】已拖欠。[/color]") == "[color=#aabbcc]已拖欠。[/color]",
+		"色标里的方括号标签也去掉", fails)
 	dlg.free()
 	var choice := Button.new()
 	UiTheme.style_choice_button(choice)
@@ -157,6 +161,10 @@ func _run() -> void:
 		"船壳改装写成一等二等三等", fails)
 	_check(main_src.find("func _interior_title") >= 0 and main_src.find("未命名设施") < 0,
 		"序章内页改写成港名去处，港卡不写未命名设施", fails)
+	_check(main_src.find("func _interior_lead") >= 0 and main_src.find("UiTheme.plain_log") >= 0,
+		"序章内页进门有一句，日志走 plain_log", fails)
+	_check(chart_src.find("【发舶】") < 0 and chart_src.find("UiTheme.plain_log") >= 0,
+		"海图日志不再写发舶标签", fails)
 	_check(main_src.find("请选择") < 0 and main_src.find("区域施工中") < 0,
 		"调查页用决断，缺页不再写施工中", fails)
 	var main_tscn := FileAccess.get_file_as_string("res://scenes/Main.tscn")

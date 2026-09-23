@@ -288,7 +288,7 @@ func start_game() -> void:
 
 
 func log_msg(text: String) -> void:
-	message_label.text = text + "\n\n" + message_label.text
+	message_label.text = UiTheme.plain_log(text) + "\n\n" + message_label.text
 
 
 # ══════════════════════════════════════════════════════
@@ -441,6 +441,23 @@ func _interior_title(scene_id: String) -> String:
 	if port_name == "" or port_name == port_id:
 		port_name = "兴化"
 	return "%s・%s" % [port_name, place]
+
+
+## 内景页的 JSON 正文是空的。进门补一句屋子说明，点调查项才展开原文。
+func _interior_lead(scene_id: String) -> String:
+	match scene_id:
+		"city_guild":
+			return "行首正与几名蕃商核对舱位。墙上钉着一张抄来的远港价目。"
+		"city_residence":
+			return "一间租来的下处，屋角堆着几卷未拆的旧账。"
+		"city_exam":
+			return "贡院朱门紧闭。今科未开，阶下只有几个背着书箧的士子在张望。"
+		"city_tavern":
+			return "劣酒和喧哗。邻桌有人压低了声音。"
+		"city_shipyard":
+			return "桐油和潮气。坞里还停着没漆完的船板。"
+		_:
+			return ""
 
 
 # ══════════════════════════════════════════════════════
@@ -1126,13 +1143,13 @@ func _setup_shipyard(port_id: String) -> void:
 		_slip_title(fit, sname, "帆　%s　甲　%s" % [_fit_rank(slv), _fit_rank(alv)])
 		var fit_row := _slip_row(fit)
 		if Fleet.is_sail_max(i):
-			_slip_note(fit, "帆已满级。")
+			_slip_note(fit, "帆已是三等。")
 		else:
 			var scost: int = Fleet.upgrade_cost(i, "sail")
 			var sail_chip := _slip_chip(fit_row, "升帆　%d" % scost, _on_upgrade.bind(i, "sail", scost))
 			sail_chip.tooltip_text = "航速 ×%.2f" % (1.0 + 0.12 * slv)
 		if Fleet.is_armor_max(i):
-			_slip_note(fit, "甲已满级。")
+			_slip_note(fit, "甲已是三等。")
 		else:
 			var acost: int = Fleet.upgrade_cost(i, "armor")
 			var armor_chip := _slip_chip(fit_row, "升甲　%d" % acost, _on_upgrade.bind(i, "armor", acost))
@@ -2144,6 +2161,8 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 	var shown_body := str(scene_data.get("body", "")).strip_edges()
 	if shown_body == "":
 		shown_body = str(scene_data.get("cg_sub", "")).strip_edges()
+	if shown_body == "" and str(scene_data.get("title", "")).strip_edges() == "内景":
+		shown_body = _interior_lead(str(scene_data.get("id", "")))
 	body_text.text = _unescape_scene_text(shown_body)
 
 	var investigations = scene_data.get("investigations", [])

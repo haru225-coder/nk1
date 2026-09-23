@@ -35,7 +35,7 @@ func _ready() -> void:
 	GameManager.monthly_notice.connect(_log)
 	_refresh_ports()
 	_refresh_status()
-	_log("【发舶】自 %s 起锚。%s。" % [GameManager.get_port_name(origin_port), Calendar.get_monsoon_desc()])
+	_log("自 %s 起锚。%s。" % [GameManager.get_port_name(origin_port), Calendar.get_monsoon_desc()])
 
 
 # ══════════════════════════════════════════════════════
@@ -567,7 +567,7 @@ func _chart_label_hits(rect: Rect2, occupied: Array[Rect2]) -> bool:
 
 
 func _log(text: String) -> void:
-	log_label.text = text + "\n\n" + log_label.text
+	log_label.text = UiTheme.plain_log(text) + "\n\n" + log_label.text
 
 
 func _ink(c: Color, text: String) -> String:

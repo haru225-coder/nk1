@@ -350,6 +350,21 @@ static func style_section_label(lbl: Label) -> void:
 	lbl.add_theme_color_override("font_color", Color(GOLD, 0.92))
 
 
+## 日志开头的【舱满】【钱不够】一类标签是原型告警，句子留下。
+## 色标包在外面时也去掉标签，不拆 bbcode。
+static func plain_log(text: String) -> String:
+	var open := text.find("【")
+	if open < 0 or open > 24:
+		return text
+	var close := text.find("】", open + 1)
+	if close < 0 or close - open > 8:
+		return text
+	var head := text.substr(0, open).strip_edges()
+	if head != "" and not head.begins_with("[color="):
+		return text
+	return (text.substr(0, open) + text.substr(close + 1)).strip_edges()
+
+
 ## 给 AcceptDialog 套绢本面板。accent_ok=朱砂确定钮。
 static func style_dialog(dlg: AcceptDialog, accent_ok := false) -> void:
 	dlg.theme = theme()
