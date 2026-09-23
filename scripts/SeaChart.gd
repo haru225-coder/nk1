@@ -25,6 +25,10 @@ var event_title: Label
 var event_text: RichTextLabel
 var event_actions: HBoxContainer
 
+## 陆地环，x = 经度，y = 纬度。首尾不重复。
+var _land_rings: Array = []
+var _land_ready: bool = false
+
 
 func _ready() -> void:
 	origin_port = GameState.last_port
@@ -93,17 +97,20 @@ func _build_ui() -> void:
 	hint.add_theme_color_override("font_color", Color(0.75, 0.78, 0.82))
 	center_v.add_child(hint)
 
-	# 真正的图。数据用 ports.json 的经纬度，CanvasItem.draw 信号接 lambda，
-	# 不另建节点树——一张静态海图不需要缩放拖拽。
+	# 真正的图。港口与陆地共用同一套经纬度投影。不缩放拖拽。
 	chart = Control.new()
-	chart.custom_minimum_size = Vector2(0, 250)
+	chart.custom_minimum_size = Vector2(0, 280)
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chart.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	chart.size_flags_stretch_ratio = 3.0
+	chart.clip_contents = true
 	chart.draw.connect(func(): _draw_chart(chart))
 	center_v.add_child(chart)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 150)
+	scroll.size_flags_stretch_ratio = 1.0
+	scroll.custom_minimum_size = Vector2(0, 120)
 	center_v.add_child(scroll)
 	port_list = VBoxContainer.new()
 	port_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -330,21 +337,35 @@ func _refresh_detail() -> void:
 #  海图绘制
 # ══════════════════════════════════════════════════════
 
-## 等比投影已解锁港口的经纬度。经度按平均纬度收窄，否则高纬处会被拉宽。
+## 取景不会缩得比这一圈更小，也不会画出这一圈外的陆地。
+const CHART_LAT_MIN := 10.0
+const CHART_LAT_MAX := 37.0
+const CHART_LON_MIN := 105.0
+const CHART_LON_MAX := 134.0
+const CHART_MIN_SPAN := 8.0
+## 已解锁港口的包围盒占取景框的比例，剩下的边留给海岸和港名字。
+const CHART_FRAME_FILL := 0.80
+
+const CHART_MARGIN := Color(0.045, 0.055, 0.075, 1.0)
+const CHART_SEA := Color(0.06, 0.11, 0.16, 1.0)
+const CHART_LAND := Color(0.40, 0.37, 0.28, 1.0)
+const CHART_COAST := Color(0.72, 0.66, 0.52, 0.95)
+const CHART_FRAME := Color(0.62, 0.56, 0.42, 0.75)
+
+
+## 等比投影。经度按平均纬度收窄，否则高纬处会被拉宽。
+## 取景至少 8 个经纬度，并留出边，所以福建几个港也能看见海峡和台湾。
 func _draw_chart(c: Control) -> void:
 	var pts: Array = GameManager.unlocked_ports()
-	if pts.size() < 2:
+	if pts.is_empty() or c.size.x < 2.0 or c.size.y < 2.0:
 		return
 
-	var lat_min := 999.0
-	var lat_max := -999.0
-	var lon_min := 999.0
-	var lon_max := -999.0
-	for p in pts:
-		lat_min = minf(lat_min, float(p.get("lat", 0.0)))
-		lat_max = maxf(lat_max, float(p.get("lat", 0.0)))
-		lon_min = minf(lon_min, float(p.get("lon", 0.0)))
-		lon_max = maxf(lon_max, float(p.get("lon", 0.0)))
+	_ensure_land()
+	var frame := _chart_frame(pts)
+	var lat_min: float = frame["lat_min"]
+	var lat_max: float = frame["lat_max"]
+	var lon_min: float = frame["lon_min"]
+	var lon_max: float = frame["lon_max"]
 
 	var mean_lat := (lat_min + lat_max) * 0.5
 	var mean_lon := (lon_min + lon_max) * 0.5
@@ -353,15 +374,20 @@ func _draw_chart(c: Control) -> void:
 	var span_y := maxf(0.5, lat_max - lat_min)
 
 	var size := c.size
-	var scale := minf(size.x / span_x, size.y / span_y) * 0.78
+	var scale := minf(size.x / span_x, size.y / span_y)
 	var mid := size * 0.5
 
 	var proj := func(lat: float, lon: float) -> Vector2:
 		return mid + Vector2((lon - mean_lon) * kx * scale, -(lat - mean_lat) * scale)
 
-	c.draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.11, 0.17, 0.75))
+	var top_left: Vector2 = proj.call(lat_max, lon_min)
+	var bottom_right: Vector2 = proj.call(lat_min, lon_max)
+	var map_rect := Rect2(top_left, bottom_right - top_left).abs()
 
-	_draw_monsoon(c, size)
+	c.draw_rect(Rect2(Vector2.ZERO, size), CHART_MARGIN)
+	c.draw_rect(map_rect, CHART_SEA)
+	_draw_monsoon(c, map_rect)
+	_draw_land(c, proj, lon_min, lat_min, lon_max, lat_max)
 
 	# 已知航路：淡线勾出港口间的连接关系
 	for p in pts:
@@ -387,6 +413,7 @@ func _draw_chart(c: Control) -> void:
 			c.draw_line(a, b, col, 2.5)
 
 	var font := ThemeDB.fallback_font
+	var label_spots: Array = []
 	for p in pts:
 		var pid: String = p.get("id", "")
 		var v: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
@@ -406,18 +433,217 @@ func _draw_chart(c: Control) -> void:
 		if is_here:
 			c.draw_arc(v, 8.0, 0, TAU, 20, col, 1.5)
 
+		var label_pos := v + Vector2(7, 4)
+		for prev in label_spots:
+			if label_pos.distance_to(prev) < 18.0:
+				label_pos.y += 13.0
+		label_spots.append(label_pos)
 		var label: String = p.get("name", pid)
-		c.draw_string(font, v + Vector2(7, 4), label,
+		c.draw_string(font, label_pos, label,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col)
 
+	c.draw_rect(map_rect, CHART_FRAME, false, 1.0)
+	_draw_monsoon_caption(c, map_rect)
 
-## 季风方向：全图统一的斜箭头。风信是大尺度的，不必逐点画。
-func _draw_monsoon(c: Control, size: Vector2) -> void:
+
+func _chart_frame(pts: Array) -> Dictionary:
+	var lat_lo := 999.0
+	var lat_hi := -999.0
+	var lon_lo := 999.0
+	var lon_hi := -999.0
+	for p in pts:
+		var lat := float(p.get("lat", 0.0))
+		var lon := float(p.get("lon", 0.0))
+		lat_lo = minf(lat_lo, lat)
+		lat_hi = maxf(lat_hi, lat)
+		lon_lo = minf(lon_lo, lon)
+		lon_hi = maxf(lon_hi, lon)
+	var lat_pair: Array = _expand_axis(lat_lo, lat_hi, CHART_LAT_MIN, CHART_LAT_MAX)
+	var lon_pair: Array = _expand_axis(lon_lo, lon_hi, CHART_LON_MIN, CHART_LON_MAX)
+	return {
+		"lat_min": lat_pair[0],
+		"lat_max": lat_pair[1],
+		"lon_min": lon_pair[0],
+		"lon_max": lon_pair[1],
+	}
+
+
+func _expand_axis(lo: float, hi: float, bound_lo: float, bound_hi: float) -> Array:
+	var mid := (lo + hi) * 0.5
+	var half := maxf(CHART_MIN_SPAN, hi - lo) * 0.5 / CHART_FRAME_FILL
+	lo = mid - half
+	hi = mid + half
+	if hi - lo > bound_hi - bound_lo:
+		return [bound_lo, bound_hi]
+	if lo < bound_lo:
+		var shift: float = bound_lo - lo
+		lo += shift
+		hi += shift
+	if hi > bound_hi:
+		var shift_hi: float = hi - bound_hi
+		lo -= shift_hi
+		hi -= shift_hi
+	return [maxf(lo, bound_lo), minf(hi, bound_hi)]
+
+
+func _ensure_land() -> void:
+	if _land_ready:
+		return
+	_land_ready = true
+	for land in GameManager.coastline_data.get("lands", []):
+		var ring := PackedVector2Array()
+		for pt in land.get("ring", []):
+			if typeof(pt) != TYPE_ARRAY or pt.size() < 2:
+				continue
+			ring.append(Vector2(float(pt[0]), float(pt[1])))
+		if ring.size() >= 2 and ring[0].is_equal_approx(ring[ring.size() - 1]):
+			ring.resize(ring.size() - 1)
+		if ring.size() >= 3:
+			_land_rings.append(ring)
+
+
+func _draw_land(c: Control, proj: Callable, lon0: float, lat0: float, lon1: float, lat1: float) -> void:
+	var view := PackedVector2Array([
+		Vector2(lon0, lat0),
+		Vector2(lon1, lat0),
+		Vector2(lon1, lat1),
+		Vector2(lon0, lat1),
+	])
+	for ring in _land_rings:
+		if not _ring_hits(ring, lon0, lat0, lon1, lat1):
+			continue
+		var pieces: Array = Geometry2D.intersect_polygons(ring, view)
+		for piece in pieces:
+			var outline := PackedVector2Array(piece)
+			if outline.size() >= 2 and outline[0].is_equal_approx(outline[outline.size() - 1]):
+				outline.resize(outline.size() - 1)
+			if outline.size() < 3:
+				continue
+			var screen := PackedVector2Array()
+			screen.resize(outline.size())
+			for i in outline.size():
+				var ll: Vector2 = outline[i]
+				screen[i] = proj.call(ll.y, ll.x)
+			_fill_polygon(c, screen)
+		_stroke_coast(c, proj, ring, lon0, lat0, lon1, lat1)
+
+
+func _fill_polygon(c: Control, screen: PackedVector2Array) -> void:
+	var idx := Geometry2D.triangulate_polygon(screen)
+	if idx.is_empty():
+		screen.reverse()
+		idx = Geometry2D.triangulate_polygon(screen)
+	if idx.is_empty():
+		return
+	var tri := PackedVector2Array()
+	tri.resize(3)
+	var i := 0
+	while i + 2 < idx.size():
+		tri[0] = screen[idx[i]]
+		tri[1] = screen[idx[i + 1]]
+		tri[2] = screen[idx[i + 2]]
+		c.draw_colored_polygon(tri, CHART_LAND)
+		i += 3
+
+
+func _ring_hits(ring: PackedVector2Array, lon0: float, lat0: float, lon1: float, lat1: float) -> bool:
+	var rlon0 := ring[0].x
+	var rlon1 := ring[0].x
+	var rlat0 := ring[0].y
+	var rlat1 := ring[0].y
+	for p in ring:
+		rlon0 = minf(rlon0, p.x)
+		rlon1 = maxf(rlon1, p.x)
+		rlat0 = minf(rlat0, p.y)
+		rlat1 = maxf(rlat1, p.y)
+	return rlon1 >= lon0 and rlon0 <= lon1 and rlat1 >= lat0 and rlat0 <= lat1
+
+
+func _stroke_coast(c: Control, proj: Callable, ring: PackedVector2Array, lon0: float, lat0: float, lon1: float, lat1: float) -> void:
+	var run := PackedVector2Array()
+	var n := ring.size()
+	for i in n:
+		var a: Vector2 = ring[i]
+		var b: Vector2 = ring[(i + 1) % n]
+		var clipped: Array = _clip_segment(a, b, lon0, lat0, lon1, lat1)
+		if clipped.is_empty():
+			_flush_coast(c, run)
+			run = PackedVector2Array()
+			continue
+		var p0: Vector2 = proj.call(clipped[0].y, clipped[0].x)
+		var p1: Vector2 = proj.call(clipped[1].y, clipped[1].x)
+		if run.is_empty() or run[run.size() - 1].distance_to(p0) > 0.75:
+			_flush_coast(c, run)
+			run = PackedVector2Array()
+			run.append(p0)
+		run.append(p1)
+	_flush_coast(c, run)
+
+
+func _flush_coast(c: Control, run: PackedVector2Array) -> void:
+	if run.size() >= 2:
+		c.draw_polyline(run, CHART_COAST, 1.25, true)
+
+
+func _out_code(lon: float, lat: float, lon0: float, lat0: float, lon1: float, lat1: float) -> int:
+	var code := 0
+	if lon < lon0:
+		code |= 1
+	elif lon > lon1:
+		code |= 2
+	if lat < lat0:
+		code |= 4
+	elif lat > lat1:
+		code |= 8
+	return code
+
+
+func _clip_segment(a: Vector2, b: Vector2, lon0: float, lat0: float, lon1: float, lat1: float) -> Array:
+	var x0 := a.x
+	var y0 := a.y
+	var x1 := b.x
+	var y1 := b.y
+	var c0 := _out_code(x0, y0, lon0, lat0, lon1, lat1)
+	var c1 := _out_code(x1, y1, lon0, lat0, lon1, lat1)
+	for _i in 12:
+		if c0 == 0 and c1 == 0:
+			return [Vector2(x0, y0), Vector2(x1, y1)]
+		if (c0 & c1) != 0:
+			return []
+		var outside := c0 if c0 != 0 else c1
+		var x := x0
+		var y := y0
+		var dx := x1 - x0
+		var dy := y1 - y0
+		if (outside & 8) != 0 and dy != 0.0:
+			x = x0 + dx * (lat1 - y0) / dy
+			y = lat1
+		elif (outside & 4) != 0 and dy != 0.0:
+			x = x0 + dx * (lat0 - y0) / dy
+			y = lat0
+		elif (outside & 2) != 0 and dx != 0.0:
+			y = y0 + dy * (lon1 - x0) / dx
+			x = lon1
+		elif dx != 0.0:
+			y = y0 + dy * (lon0 - x0) / dx
+			x = lon0
+		else:
+			return []
+		if outside == c0:
+			x0 = x
+			y0 = y
+			c0 = _out_code(x0, y0, lon0, lat0, lon1, lat1)
+		else:
+			x1 = x
+			y1 = y
+			c1 = _out_code(x1, y1, lon0, lat0, lon1, lat1)
+	return []
+
+
+## 季风方向：只铺在海图框内。风信是大尺度的，不必逐点画。
+func _draw_monsoon(c: Control, map_rect: Rect2) -> void:
 	var wb := Calendar.get_wind_bearing()
 	if wb < 0.0:
-		c.draw_string(ThemeDB.fallback_font, Vector2(10, 18),
-			"季风转换期・风微而多变", HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
-			Color(0.7, 0.72, 0.75, 0.9))
 		return
 
 	# 方位角 → 屏幕向量（y 轴向下，故取负 cos）
@@ -425,10 +651,10 @@ func _draw_monsoon(c: Control, size: Vector2) -> void:
 	var col := Color(0.45, 0.7, 0.95, 0.22)
 	var step := 62.0
 	var arrow := 7.0
-	var y := step * 0.5
-	while y < size.y:
-		var x := step * 0.5
-		while x < size.x:
+	var y := map_rect.position.y + 20.0
+	while y < map_rect.end.y - 16.0:
+		var x := map_rect.position.x + 20.0
+		while x < map_rect.end.x - 16.0:
 			var mid := Vector2(x, y)
 			var a := mid - dir * 13.0
 			var b := mid + dir * 13.0
@@ -439,9 +665,13 @@ func _draw_monsoon(c: Control, size: Vector2) -> void:
 			x += step
 		y += step
 
-	c.draw_string(ThemeDB.fallback_font, Vector2(10, 18),
-		Calendar.get_monsoon_desc(), HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
-		Color(0.6, 0.8, 1.0, 0.9))
+
+func _draw_monsoon_caption(c: Control, map_rect: Rect2) -> void:
+	var wb := Calendar.get_wind_bearing()
+	var text := "季风转换期・风微而多变" if wb < 0.0 else Calendar.get_monsoon_desc()
+	var col := Color(0.7, 0.72, 0.75, 0.9) if wb < 0.0 else Color(0.6, 0.8, 1.0, 0.9)
+	c.draw_string(ThemeDB.fallback_font, map_rect.position + Vector2(10, 18),
+		text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col)
 
 
 func _log(text: String) -> void:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """复现 Economy.gd / Voyage.gd 的公式，验证核心贸易循环与航海数值是否成立。
 不依赖 Godot，纯数学校验。"""
-import json, math, sys, os
+import json, math, re, sys, os
 
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -220,16 +220,55 @@ print("一之四、海图投影（SeaChart._draw_chart 的等比投影）")
 print("=" * 68)
 
 W, H = 560.0, 250.0
+
+def chart_consts():
+    """与 SeaChart.gd 的取景常数保持同一份。"""
+    text = open(os.path.join(ROOT, "scripts/SeaChart.gd"), encoding="utf-8").read()
+    out = {}
+    for name in ("CHART_LAT_MIN", "CHART_LAT_MAX", "CHART_LON_MIN", "CHART_LON_MAX",
+                 "CHART_MIN_SPAN", "CHART_FRAME_FILL"):
+        m = re.search(rf"const {name} := ([0-9.]+)", text)
+        check(m is not None, f"SeaChart.gd 定义了 {name}")
+        out[name] = float(m.group(1)) if m else 0.0
+    return out
+
+def expand_axis(lo, hi, bound_lo, bound_hi, min_span, fill):
+    mid = (lo + hi) * 0.5
+    half = max(min_span, hi - lo) * 0.5 / fill
+    lo, hi = mid - half, mid + half
+    if hi - lo > bound_hi - bound_lo:
+        return bound_lo, bound_hi
+    if lo < bound_lo:
+        shift = bound_lo - lo
+        lo += shift
+        hi += shift
+    if hi > bound_hi:
+        shift = hi - bound_hi
+        lo -= shift
+        hi -= shift
+    return max(lo, bound_lo), min(hi, bound_hi)
+
+def chart_frame(subset, const):
+    lats = [p["lat"] for p in subset]
+    lons = [p["lon"] for p in subset]
+    lat0, lat1 = expand_axis(min(lats), max(lats), const["CHART_LAT_MIN"], const["CHART_LAT_MAX"],
+                             const["CHART_MIN_SPAN"], const["CHART_FRAME_FILL"])
+    lon0, lon1 = expand_axis(min(lons), max(lons), const["CHART_LON_MIN"], const["CHART_LON_MAX"],
+                             const["CHART_MIN_SPAN"], const["CHART_FRAME_FILL"])
+    return lat0, lat1, lon0, lon1
+
+CHART = chart_consts()
+
 def project(subset):
-    """复现 _draw_chart 的投影，返回 {pid: (x, y)}"""
-    lats = [p["lat"] for p in subset]; lons = [p["lon"] for p in subset]
-    mean_lat, mean_lon = (min(lats)+max(lats))/2, (min(lons)+max(lons))/2
+    """复现 _draw_chart：最小 8° 取景、留边、经度按平均纬度收窄。"""
+    lat0, lat1, lon0, lon1 = chart_frame(subset, CHART)
+    mean_lat, mean_lon = (lat0 + lat1) / 2, (lon0 + lon1) / 2
     kx = math.cos(math.radians(mean_lat))
-    span_x = max(0.5, (max(lons)-min(lons))*kx)
-    span_y = max(0.5, max(lats)-min(lats))
-    scale = min(W/span_x, H/span_y) * 0.78
-    return {p["id"]: (W/2 + (p["lon"]-mean_lon)*kx*scale,
-                      H/2 - (p["lat"]-mean_lat)*scale) for p in subset}, scale, kx
+    span_x = max(0.5, (lon1 - lon0) * kx)
+    span_y = max(0.5, lat1 - lat0)
+    scale = min(W / span_x, H / span_y)
+    return {p["id"]: (W / 2 + (p["lon"] - mean_lon) * kx * scale,
+                      H / 2 - (p["lat"] - mean_lat) * scale) for p in subset}, scale, kx
 
 allp = list(ports.values())
 pos, scale, kx = project(allp)
@@ -261,11 +300,14 @@ spread = max(ratios)/min(ratios)
 print(f"\n  屏幕距离/实际里程 之比：{min(ratios):.4f} ~ {max(ratios):.4f}（离散度 {spread:.3f}）")
 check(spread < 1.12, f"各航段的图上比例一致，离散度 {spread:.3f} < 1.12（地图未失真）")
 
-# 只解锁第一章时也要成图
+# 只解锁第一章时也要成图，并且取景不能缩成几个点——至少盖住海峡。
 ch1 = [p for p in allp if p.get("unlock","ch1") == "ch1"]
 pos1, _, _ = project(ch1)
 oob1 = [pid for pid,(x,y) in pos1.items() if not (0 <= x <= W and 0 <= y <= H)]
 check(not oob1, f"仅第一章 {len(ch1)} 港时同样全部在画布内")
+lat0, lat1, lon0, lon1 = chart_frame(ch1, CHART)
+check(lat1 - lat0 >= CHART["CHART_MIN_SPAN"] - 1e-6 and lon1 - lon0 >= CHART["CHART_MIN_SPAN"] - 1e-6,
+      f"第一章取景 {lat1-lat0:.1f}°×{lon1-lon0:.1f}°，不小于 {CHART['CHART_MIN_SPAN']:.0f}°")
 
 # 季风箭头方向：方位角 → 屏幕向量（y 向下取负 cos）
 for name, bearing_deg, want in [("西南季风(吹向东北)", 45.0, "右上"), ("东北季风(吹向西南)", 225.0, "左下")]:

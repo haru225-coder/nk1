@@ -16,6 +16,7 @@ var discoveries_data: Dictionary = {}
 var ships_data: Dictionary = {}
 var chapters_data: Dictionary = {}
 var crew_data: Dictionary = {}
+var coastline_data: Dictionary = {}
 
 
 func _ready() -> void:
@@ -31,13 +32,15 @@ func load_data() -> void:
 	ships_data = _load_json("res://data/ships.json")
 	chapters_data = _load_json("res://data/chapters.json")
 	crew_data = _load_json("res://data/crew.json")
+	coastline_data = _load_json("res://data/coastline.json")
 
 	if scenes_data.has("scenes"):
-		print("Data loaded. Scenes:%d Goods:%d Ports:%d Ships:%d" % [
+		print("Data loaded. Scenes:%d Goods:%d Ports:%d Ships:%d Lands:%d" % [
 			scenes_data.get("scenes", []).size(),
 			goods_data.get("goods", []).size(),
 			ports_data.get("ports", []).size(),
 			ships_data.get("ships", []).size(),
+			coastline_data.get("lands", []).size(),
 		])
 
 

@@ -1,0 +1,375 @@
+#!/usr/bin/env python3
+"""核对 data/coastline.json：环闭合、陆地还在该在的位置、港口贴着海岸。
+
+取景常数从 scripts/SeaChart.gd 读，避免和绘制各写一套。
+同时把第一章和全图取景画成 PNG，方便肉眼看海岸。
+"""
+import json
+import math
+import re
+import sys
+from pathlib import Path
+
+import mapbox_earcut
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+from shapely.geometry import Point, Polygon, box
+from shapely.ops import unary_union
+
+ROOT = Path(__file__).resolve().parent.parent
+GD = ROOT / "scripts" / "SeaChart.gd"
+COAST = ROOT / "data" / "coastline.json"
+PORTS = ROOT / "data" / "ports.json"
+OUT_DIR = Path("/tmp/coastline-preview")
+
+# 城可以在岸上，不能落到腹地；屿可以略偏外海，不能漂到大洋中间。
+MAX_INLAND_KM = 180.0
+MAX_OFFSHORE_KM = 45.0
+
+problems = []
+
+
+def fail(msg: str) -> None:
+    problems.append(msg)
+    print(f"  ✗ {msg}")
+
+
+def ok(msg: str) -> None:
+    print(f"  ✓ {msg}")
+
+
+def gdscript_numbers() -> dict:
+    text = GD.read_text(encoding="utf-8")
+    found = {}
+    for name in (
+        "CHART_LAT_MIN", "CHART_LAT_MAX", "CHART_LON_MIN", "CHART_LON_MAX",
+        "CHART_MIN_SPAN", "CHART_FRAME_FILL",
+    ):
+        m = re.search(rf"const {name} := ([0-9.]+)", text)
+        if not m:
+            fail(f"SeaChart.gd 缺少 const {name}")
+            continue
+        found[name] = float(m.group(1))
+    return found
+
+
+def expand_axis(lo, hi, bound_lo, bound_hi, min_span, fill):
+    mid = (lo + hi) * 0.5
+    half = max(min_span, hi - lo) * 0.5 / fill
+    lo, hi = mid - half, mid + half
+    if hi - lo > bound_hi - bound_lo:
+        return bound_lo, bound_hi
+    if lo < bound_lo:
+        shift = bound_lo - lo
+        lo += shift
+        hi += shift
+    if hi > bound_hi:
+        shift = hi - bound_hi
+        lo -= shift
+        hi -= shift
+    return max(lo, bound_lo), min(hi, bound_hi)
+
+
+def frame_for(ports, const):
+    lats = [float(p["lat"]) for p in ports]
+    lons = [float(p["lon"]) for p in ports]
+    lat0, lat1 = expand_axis(
+        min(lats), max(lats), const["CHART_LAT_MIN"], const["CHART_LAT_MAX"],
+        const["CHART_MIN_SPAN"], const["CHART_FRAME_FILL"])
+    lon0, lon1 = expand_axis(
+        min(lons), max(lons), const["CHART_LON_MIN"], const["CHART_LON_MAX"],
+        const["CHART_MIN_SPAN"], const["CHART_FRAME_FILL"])
+    return lat0, lat1, lon0, lon1
+
+
+def km(lon1, lat1, lon2, lat2) -> float:
+    x = math.radians(lon2 - lon1) * math.cos(math.radians((lat1 + lat2) * 0.5))
+    y = math.radians(lat2 - lat1)
+    return 6371.0 * math.hypot(x, y)
+
+
+def explode(geom):
+    if geom.is_empty:
+        return
+    if geom.geom_type == "Polygon":
+        yield geom
+    elif geom.geom_type in ("MultiPolygon", "GeometryCollection"):
+        for g in geom.geoms:
+            yield from explode(g)
+
+
+def earcut_ok(poly: Polygon) -> bool:
+    ring = list(poly.exterior.coords)
+    if len(ring) >= 2 and ring[0] == ring[-1]:
+        ring = ring[:-1]
+    if len(ring) < 3:
+        return poly.area < 1e-8
+    verts = np.asarray(ring, dtype=np.float64)
+    counts = np.asarray([len(ring)], dtype=np.uint32)
+    idx = mapbox_earcut.triangulate_float64(verts, counts)
+    return len(idx) >= 3 and len(idx) % 3 == 0
+
+
+def out_code(lon, lat, lon0, lat0, lon1, lat1) -> int:
+    code = 0
+    if lon < lon0:
+        code |= 1
+    elif lon > lon1:
+        code |= 2
+    if lat < lat0:
+        code |= 4
+    elif lat > lat1:
+        code |= 8
+    return code
+
+
+def clip_segment(a, b, lon0, lat0, lon1, lat1):
+    x0, y0 = a
+    x1, y1 = b
+    c0 = out_code(x0, y0, lon0, lat0, lon1, lat1)
+    c1 = out_code(x1, y1, lon0, lat0, lon1, lat1)
+    for _ in range(12):
+        if c0 == 0 and c1 == 0:
+            return (x0, y0), (x1, y1)
+        if c0 & c1:
+            return None
+        outside = c0 or c1
+        dx, dy = x1 - x0, y1 - y0
+        if outside & 8 and dy != 0.0:
+            x = x0 + dx * (lat1 - y0) / dy
+            y = lat1
+        elif outside & 4 and dy != 0.0:
+            x = x0 + dx * (lat0 - y0) / dy
+            y = lat0
+        elif outside & 2 and dx != 0.0:
+            y = y0 + dy * (lon1 - x0) / dx
+            x = lon1
+        elif dx != 0.0:
+            y = y0 + dy * (lon0 - x0) / dx
+            x = lon0
+        else:
+            return None
+        if outside == c0:
+            x0, y0 = x, y
+            c0 = out_code(x0, y0, lon0, lat0, lon1, lat1)
+        else:
+            x1, y1 = x, y
+            c1 = out_code(x1, y1, lon0, lat0, lon1, lat1)
+    return None
+
+
+def render(path: Path, ports, polys, const, size):
+    lat0, lat1, lon0, lon1 = frame_for(ports, const)
+    w, h = size
+    mean_lat = (lat0 + lat1) * 0.5
+    mean_lon = (lon0 + lon1) * 0.5
+    kx = math.cos(math.radians(mean_lat))
+    span_x = max(0.5, (lon1 - lon0) * kx)
+    span_y = max(0.5, lat1 - lat0)
+    scale = min(w / span_x, h / span_y)
+    mid = (w * 0.5, h * 0.5)
+
+    def proj(lat, lon):
+        return (
+            mid[0] + (lon - mean_lon) * kx * scale,
+            mid[1] - (lat - mean_lat) * scale,
+        )
+
+    img = Image.new("RGB", (w, h), (11, 14, 19))
+    draw = ImageDraw.Draw(img)
+    top_left = proj(lat1, lon0)
+    bottom_right = proj(lat0, lon1)
+    map_rect = [top_left[0], top_left[1], bottom_right[0], bottom_right[1]]
+    draw.rectangle(map_rect, fill=(15, 28, 41))
+
+    view = box(lon0, lat0, lon1, lat1)
+    for poly in polys:
+        if not poly.intersects(view):
+            continue
+        part = poly.intersection(view)
+        for piece in explode(part):
+            pts = [proj(y, x) for x, y in piece.exterior.coords]
+            if len(pts) >= 3:
+                draw.polygon(pts, fill=(102, 94, 71))
+        ring = list(poly.exterior.coords)
+        run = []
+        n = len(ring) - 1 if ring[0] == ring[-1] else len(ring)
+        for i in range(n):
+            a = ring[i]
+            b = ring[(i + 1) % n]
+            clipped = clip_segment(a, b, lon0, lat0, lon1, lat1)
+            if clipped is None:
+                if len(run) >= 2:
+                    draw.line(run, fill=(184, 168, 133), width=2)
+                run = []
+                continue
+            p0 = proj(clipped[0][1], clipped[0][0])
+            p1 = proj(clipped[1][1], clipped[1][0])
+            if not run or math.hypot(run[-1][0] - p0[0], run[-1][1] - p0[1]) > 0.75:
+                if len(run) >= 2:
+                    draw.line(run, fill=(184, 168, 133), width=2)
+                run = [p0]
+            run.append(p1)
+        if len(run) >= 2:
+            draw.line(run, fill=(184, 168, 133), width=2)
+
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/wqy/wqy-microhei.ttc", 14)
+    except OSError:
+        font = ImageFont.load_default()
+    for p in ports:
+        x, y = proj(float(p["lat"]), float(p["lon"]))
+        r = 3
+        draw.ellipse((x - r, y - r, x + r, y + r), fill=(214, 224, 234))
+        draw.text((x + 6, y - 8), p["name"], fill=(214, 224, 234), font=font)
+    draw.rectangle(map_rect, outline=(158, 143, 107))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(path)
+    print(f"  预览 {path}")
+
+
+def main() -> None:
+    print("=" * 68)
+    print("海图陆地")
+    print("=" * 68)
+    const = gdscript_numbers()
+    if len(const) < 6:
+        print(f"\n{len(problems)} 个问题")
+        sys.exit(1)
+
+    coast = json.loads(COAST.read_text(encoding="utf-8"))
+    ports = json.loads(PORTS.read_text(encoding="utf-8"))["ports"]
+    meta = coast.get("meta", {})
+    lands = coast.get("lands", [])
+    bbox = meta.get("bbox", [])
+    if len(bbox) != 4:
+        fail("meta.bbox 应为 [lon_min, lat_min, lon_max, lat_max]")
+        bbox = [0, 0, 0, 0]
+
+    polys = []
+    ids = []
+    for land in lands:
+        ident = land.get("id", "")
+        ids.append(ident)
+        ring = land.get("ring", [])
+        if len(ring) < 4:
+            fail(f"{ident} 顶点不足")
+            continue
+        if ring[0] != ring[-1]:
+            fail(f"{ident} 环未闭合")
+        for i in range(len(ring) - 1):
+            if ring[i] == ring[i + 1]:
+                fail(f"{ident} 有连续重复点")
+                break
+        for lon, lat in ring:
+            if not (bbox[0] - 0.02 <= lon <= bbox[2] + 0.02 and bbox[1] - 0.02 <= lat <= bbox[3] + 0.02):
+                fail(f"{ident} 有点落在数据框外: {lon}, {lat}")
+                break
+        poly = Polygon(ring)
+        if not poly.is_valid:
+            fail(f"{ident} 多边形自交或无效")
+        elif poly.exterior.is_ccw is False:
+            fail(f"{ident} 环不是逆时针")
+        polys.append(poly)
+
+    for need in ("mainland", "taiwan", "hainan", "kyushu", "jeju", "penghu"):
+        if need not in ids:
+            fail(f"缺少陆地 {need}")
+        else:
+            ok(f"有 {need}")
+
+    if polys:
+        land = unary_union(polys)
+        print()
+        print("港口到海岸的距离（负值表示在海上）")
+        for p in ports:
+            pt = Point(float(p["lon"]), float(p["lat"]))
+            near = land.boundary.interpolate(land.boundary.project(pt))
+            dist = km(pt.x, pt.y, near.x, near.y)
+            inside = land.covers(pt)
+            signed = dist if inside else -dist
+            flag = ""
+            if inside and dist > MAX_INLAND_KM:
+                flag = "  腹地过深"
+                fail(f"{p['name']} 在陆地内 {dist:.0f} km，超过 {MAX_INLAND_KM:.0f}")
+            elif not inside and dist > MAX_OFFSHORE_KM:
+                flag = "  离岸过远"
+                fail(f"{p['name']} 在海上 {dist:.0f} km，超过 {MAX_OFFSHORE_KM:.0f}")
+            print(f"  {p['name']:<8} {signed:7.1f} km{flag}")
+        if not any("腹地" in x or "离岸" in x for x in problems):
+            ok(f"港口都在岸边 {MAX_OFFSHORE_KM:.0f} km 内或陆地 {MAX_INLAND_KM:.0f} km 内")
+
+    ch1 = [p for p in ports if p.get("unlock") == "ch1"]
+    ch1_frame = frame_for(ch1, const)
+    full_frame = frame_for(ports, const)
+    print()
+    print(f"  第一章取景  lat {ch1_frame[0]:.2f}–{ch1_frame[1]:.2f}  lon {ch1_frame[2]:.2f}–{ch1_frame[3]:.2f}")
+    print(f"  全图取景    lat {full_frame[0]:.2f}–{full_frame[1]:.2f}  lon {full_frame[2]:.2f}–{full_frame[3]:.2f}")
+
+    def inside(frame, lon, lat, pad=0.0):
+        lat0, lat1, lon0, lon1 = frame
+        return lat0 - pad <= lat <= lat1 + pad and lon0 - pad <= lon <= lon1 + pad
+
+    for p in ch1:
+        if not inside(ch1_frame, float(p["lon"]), float(p["lat"])):
+            fail(f"第一章取景装不下 {p['name']}")
+    for p in ports:
+        if not inside(full_frame, float(p["lon"]), float(p["lat"])):
+            fail(f"全图取景装不下 {p['name']}")
+    if not any("装不下" in x for x in problems):
+        ok("取景框盖住对应港口")
+
+    by_id = {land["id"]: Polygon(land["ring"]).centroid for land in lands if land.get("ring")}
+    expect = (
+        ("taiwan", ch1_frame),
+        ("penghu", ch1_frame),
+        ("hainan", full_frame),
+        ("kyushu", full_frame),
+        ("jeju", full_frame),
+    )
+    for ident, frame in expect:
+        c = by_id.get(ident)
+        if c is None:
+            continue
+        if not inside(frame, c.x, c.y):
+            fail(f"{ident} 的中心不在对应取景里 ({c.x:.2f}, {c.y:.2f})")
+        else:
+            ok(f"{ident} 落在取景内")
+
+    # 数据框要比最大取景宽，裁切直边才不会出现在画面上。
+    for frame, label in ((ch1_frame, "第一章"), (full_frame, "全图")):
+        lat0, lat1, lon0, lon1 = frame
+        if not (bbox[0] < lon0 - 0.4 and bbox[2] > lon1 + 0.4 and bbox[1] < lat0 - 0.4 and bbox[3] > lat1 + 0.4):
+            fail(f"{label}取景贴到了陆地数据的裁切边")
+    if not any("裁切边" in x for x in problems):
+        ok("取景没有贴上数据裁切边")
+
+    bad_tri = 0
+    for frame in (ch1_frame, full_frame):
+        view = box(frame[2], frame[0], frame[3], frame[1])
+        for poly in polys:
+            if not poly.intersects(view):
+                continue
+            part = poly.intersection(view)
+            for piece in explode(part):
+                if piece.area < 1e-6:
+                    continue
+                if not earcut_ok(piece):
+                    bad_tri += 1
+    if bad_tri:
+        fail(f"{bad_tri} 块陆地三角化失败")
+    else:
+        ok("第一章和全图取景里的陆地都能三角化")
+
+    render(OUT_DIR / "chart_ch1.png", ch1, polys, const, (900, 520))
+    render(OUT_DIR / "chart_full.png", ports, polys, const, (900, 520))
+
+    print()
+    if problems:
+        print(f"{len(problems)} 个问题")
+        sys.exit(1)
+    print("海图陆地通过")
+
+
+if __name__ == "__main__":
+    main()
