@@ -155,7 +155,20 @@ func order_blurb(order: int) -> String:
 	return "针路：按熟路的针位走。速度、风涛、海盗都是寻常概率。"
 
 
-## 返回 {distance, bearing, wind_factor, wind_desc, speed, days, supply_ok, order}
+## 一日期望行程倍率。风暴、海盗、商船、岸影不改里数；无风归零，顺流加半，浅滩与迷航按进度系数。
+## 季风强度几乎不进这个数——那些权重不随风势变，除非事件总质量被压到上限。
+func progress_expectation(order: int, known: bool, discoveries_open: bool = true) -> float:
+	var w := event_weights(order, Calendar.get_monsoon_strength(), known, discoveries_open)
+	var e := 1.0
+	e += float(w["calm"]) * (0.0 - 1.0)
+	e += float(w["current"]) * (1.5 - 1.0)
+	e += float(w["shoal"]) * (SHOAL_PROGRESS - 1.0)
+	e += float(w["lost"]) * (LOST_PROGRESS - 1.0)
+	return e
+
+
+## 返回 {distance, bearing, wind_factor, wind_desc, speed, days, expected_days, supply_ok, order}
+## days 是静风日数，委办期限仍用它。expected_days 把无风、顺流、浅滩、迷航按概率算进。
 func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dictionary:
 	var dist := distance_li(from_id, to_id)
 	var brg := bearing(from_id, to_id)
@@ -164,6 +177,14 @@ func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dict
 	var days := 999
 	if spd > 1.0:
 		days = int(ceil(dist / spd))
+	var known := is_known_route(from_id, to_id)
+	var open := not _discovery_candidates(from_id, to_id).is_empty()
+	var ex := progress_expectation(order, known, open)
+	var expected := 999
+	if spd > 1.0 and ex > 0.05:
+		expected = int(ceil(dist / (spd * ex)))
+	if days < 900 and ex <= 1.0 and expected < days:
+		expected = days
 	return {
 		"from": from_id,
 		"to": to_id,
@@ -174,6 +195,7 @@ func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dict
 		"wind_desc": wind_desc(brg),
 		"speed": spd,
 		"days": days,
+		"expected_days": expected,
 		"supply_days": Fleet.supply_days(),
 		"supply_ok": Fleet.supply_days() >= days,
 	}

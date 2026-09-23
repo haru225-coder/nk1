@@ -451,12 +451,15 @@ func _add_contract_panel(port_id: String) -> void:
 		else:
 			var dest := str(offer.get("dest", ""))
 			var gid := str(offer.get("good_id", ""))
-			var rumb: int = int(offer.get("voyage_days", 0))
-			var off: int = int(Voyage.plan(port_id, dest, Voyage.CourseOrder.OFFSHORE).get("days", 0))
-			var coast: int = int(Voyage.plan(port_id, dest, Voyage.CourseOrder.COAST).get("days", 0))
+			var plan_r := Voyage.plan(port_id, dest, Voyage.CourseOrder.RUMB)
+			var plan_o := Voyage.plan(port_id, dest, Voyage.CourseOrder.OFFSHORE)
+			var plan_c := Voyage.plan(port_id, dest, Voyage.CourseOrder.COAST)
+			var rumb: int = int(plan_r.get("days", 0))
+			var off: int = int(plan_o.get("days", 0))
+			var coast: int = int(plan_c.get("days", 0))
 			var deadline: int = int(offer.get("deadline_days", 0))
 			var route := "熟路" if Voyage.is_known_route(port_id, dest) else "生路"
-			head.text = "委办：送 %s ×%d 到%s（%s）。酬 %d 钱，其中溢价 %d，交货不砸盘。针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日，期限 %d 日。" % [
+			head.text = "委办：送 %s ×%d 到%s（%s）。酬 %d 钱，其中溢价 %d，交货不砸盘。静风针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日，期限 %d 日。" % [
 				GameManager.get_good_name(gid), int(offer.get("qty", 0)),
 				GameManager.get_port_name(dest), route,
 				int(offer.get("purse", 0)), int(offer.get("premium", 0)),
@@ -464,16 +467,23 @@ func _add_contract_panel(port_id: String) -> void:
 			]
 			box.add_child(head)
 			var calm_note := Label.new()
-			calm_note.text = "日数为静风推算，风涛、无风、迷航都不计。"
+			calm_note.text = "遇事约：针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日。期限按静风针路加余量。" % [
+				int(plan_r.get("expected_days", 0)), int(plan_o.get("expected_days", 0)), int(plan_c.get("expected_days", 0)),
+			]
 			calm_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			calm_note.add_theme_font_size_override("font_size", 13)
 			calm_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
 			box.add_child(calm_note)
-			if coast > deadline:
+			if int(plan_c.get("expected_days", 0)) > deadline:
 				var warn := Label.new()
-				warn.text = "傍岸赶不上这一单。"
+				warn.text = "傍岸遇事约 %d 日，超过期限 %d 日。" % [int(plan_c.get("expected_days", 0)), deadline]
 				warn.add_theme_color_override("font_color", Color(1.0, 0.7, 0.4))
 				box.add_child(warn)
+			elif coast > deadline:
+				var warn_calm := Label.new()
+				warn_calm.text = "傍岸静风就要 %d 日，赶不上。" % coast
+				warn_calm.add_theme_color_override("font_color", Color(1.0, 0.7, 0.4))
+				box.add_child(warn_calm)
 			var take := Button.new()
 			take.text = "接下委办"
 			take.pressed.connect(_on_accept_contract.bind(offer.duplicate(true)))
@@ -1060,16 +1070,28 @@ func _setup_inn(port_id: String) -> void:
 	forecast.add_theme_color_override("font_color", Color(0.8, 0.85, 0.7))
 	choices_container.add_child(forecast)
 
+	var rest_cst := GameState.contract_status()
+	if not rest_cst.is_empty():
+		var rest_note := Label.new()
+		rest_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var rest_left := int(rest_cst.get("days_left", 0))
+		if rest_left < 0:
+			rest_note.text = "在身委办已经逾期，歇着也会被牙行扣钱。"
+		else:
+			rest_note.text = "在身委办还剩 %d 日。歇过这个数，牙行要扣钱、掉名声。" % rest_left
+		rest_note.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
+		choices_container.add_child(rest_note)
+
 	for n in [1, 10]:
 		var b := Button.new()
-		b.text = "歇 %d 日（%d 钱）" % [n, n * INN_RATE]
+		b.text = "歇 %d 日（%d 钱）%s" % [n, n * INN_RATE, _contract_rest_mark(n)]
 		b.pressed.connect(_on_rest.bind(n, port_id))
 		choices_container.add_child(b)
 
 	# 候风：睡到下月初一，季风可能已转向
 	var to_next: int = Calendar.DAYS_PER_MONTH - Calendar.day + 1
 	var nb := Button.new()
-	nb.text = "候至下月初一（%d 日，%d 钱）" % [to_next, to_next * INN_RATE]
+	nb.text = "候至下月初一（%d 日，%d 钱）%s" % [to_next, to_next * INN_RATE, _contract_rest_mark(to_next)]
 	nb.pressed.connect(_on_rest.bind(to_next, port_id))
 	choices_container.add_child(nb)
 
@@ -1107,6 +1129,15 @@ func _monsoon_forecast() -> String:
 	if days == 0:
 		return ""
 	return "掌柜掐指算了算：约 %d 日后风信要转。北上博多、高丽须候西南风（五至八月），南下流求、南洋须候东北风（十月至次年二月）。" % days
+
+
+func _contract_rest_mark(days: int) -> String:
+	var cst := GameState.contract_status()
+	if cst.is_empty():
+		return ""
+	if days > int(cst.get("days_left", 0)):
+		return "·误期"
+	return ""
 
 
 func _on_rest(days: int, port_id: String) -> void:

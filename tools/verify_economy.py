@@ -744,7 +744,7 @@ import re
 
 def gd_const(rel, name):
     src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
-    m = re.search(rf"const {name} := ([0-9.]+)", src)
+    m = re.search(rf"const {name} := (-?[0-9.]+)", src)
     if not m:
         raise SystemExit(f"找不到 {rel} 的 const {name}")
     return float(m.group(1))
@@ -851,6 +851,27 @@ check(abs(sum(coast_closed.values()) - sum(event_weights("coast", 1.0, False).va
       and coast_closed["discovery"] == 0
       and coast_closed["shoal"] > event_weights("coast", 1.0, False)["shoal"],
       "岸影抽空后傍岸总质量不变、浅滩概率上升，不会变成白走的无事日")
+SHOAL_P = gd_const(V_GD, "SHOAL_PROGRESS")
+LOST_P = gd_const(V_GD, "LOST_PROGRESS")
+
+def progress_expectation(order, known, discoveries_open=True, strength=1.0):
+    """复刻 Voyage.progress_expectation。风暴不拖日，无风、浅滩、迷航拖。"""
+    w = event_weights(order, strength, known, discoveries_open)
+    e = 1.0
+    e += w["calm"] * (0.0 - 1.0)
+    e += w["current"] * (1.5 - 1.0)
+    e += w["shoal"] * (SHOAL_P - 1.0)
+    e += w["lost"] * (LOST_P - 1.0)
+    return e
+
+er, eo, ec = (progress_expectation(o, True) for o in ("rumb", "offshore", "coast"))
+eru, eou, ecu = (progress_expectation(o, False) for o in ("rumb", "offshore", "coast"))
+check(OFF_SPD * eo > er > COAST_SPD * ec > 0.5,
+      f"熟路日速×遇事：外洋 {OFF_SPD * eo:.3f} > 针路 {er:.3f} > 傍岸 {COAST_SPD * ec:.3f}")
+check(OFF_SPD * eou > eru > COAST_SPD * ecu > 0.4,
+      f"生路日速×遇事：外洋 {OFF_SPD * eou:.3f} > 针路 {eru:.3f} > 傍岸 {COAST_SPD * ecu:.3f}")
+check(max(er, eo, ec, eru, eou, ecu) < 1.0, "无风使遇事行程慢于静风，遇事日数不会短于静风日数")
+check(progress_expectation("coast", False, False) < ecu, "岸影抽空后傍岸遇事更慢")
 
 def ch_of(unlock):
     if isinstance(unlock, str) and unlock.startswith("ch"):
@@ -1063,6 +1084,9 @@ check("_cheapest_port_buy" in buy_body, "海上买价会看已解锁港口里的
 weights_body = voyage_src.split("func event_weights", 1)[1].split("\nfunc ", 1)[0]
 check("discoveries_open" in weights_body and "_discovery_candidates" in roll_body,
       "岸影抽空时当日权重不再把这一档当成无事日")
+plan_body = voyage_src.split("func plan", 1)[1].split("\nfunc ", 1)[0]
+check("expected_days" in plan_body and "progress_expectation" in plan_body,
+      "航程同时给出静风日数和遇事日数，期限仍用静风")
 main_src = open(os.path.join(ROOT, "scripts/Main.gd"), encoding="utf-8").read()
 check("hint_lbl.text = rumor" in main_src, "牙行行上直接写出传闻卖价，不只藏在悬停里")
 offer_body = gs_src.split("func contract_offer", 1)[1].split("\nfunc ", 1)[0]
@@ -1075,6 +1099,9 @@ check("contract_offer" in accept_body and "offer_month" in accept_body,
 sea_src = open(os.path.join(ROOT, "scripts/SeaChart.gd"), encoding="utf-8").read()
 back_body = sea_src.split("func _on_back_to_port", 1)[1].split("\nfunc ", 1)[0]
 check("voyage_started" in back_body, "发舶之后不能点回港躲开海难")
+check("voyage_days" in offer_body and "expected_days" not in offer_body,
+      "委办期限不改用遇事日数")
+check("·误期" in main_src and "交不齐" in sea_src, "旅店歇过期限、舱里货不够，界面会写出来")
 
 print()
 print("=" * 68)
