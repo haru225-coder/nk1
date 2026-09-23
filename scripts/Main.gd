@@ -1359,11 +1359,7 @@ func _setup_hiring(port_id: String) -> void:
 
 ## 职事品级。数据里只有 1–3，不再用星号。
 func _skill_rank(n: int) -> String:
-	if n >= 3:
-		return "老练"
-	if n == 2:
-		return "谙熟"
-	return "初习"
+	return Crew.rank_word(n)
 
 
 ## 旅店：候风。季风按月转向，等到对的月份再发舶是这个游戏最要紧的判断之一。

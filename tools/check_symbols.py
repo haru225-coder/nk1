@@ -920,7 +920,7 @@ if "OptionButton" not in market_body and "_select_market_ship" in market_body:
 else:
     print("  ✗ 牙行仍用系统下拉选船")
     problems.append("牙行仍用系统下拉选船")
-if "★" not in main_src and "func _skill_rank" in main_src:
+if "★" not in main_src and "func _skill_rank" in main_src and "Crew.rank_word" in main_src and "func rank_word" in crew_src:
     print("  ✓ 职事品级写成初习/谙熟/老练")
 else:
     print("  ✗ 职事仍用星号")
@@ -945,6 +945,19 @@ if "【发舶】" not in seachart_src and "UiTheme.plain_log" in seachart_src:
 else:
     print("  ✗ 海图日志仍写发舶标签")
     problems.append("海图日志仍写发舶标签")
+if (
+    "func _bearing_phrase" in seachart_src
+    and "UiTheme.card()" in seachart_src
+    and "回港（不出海）" not in seachart_src
+    and "目的：" not in seachart_src
+    and "绕过去看看（费 1 日）" not in seachart_src
+    and "%d%%" not in seachart_src
+    and "°" not in seachart_src
+):
+    print("  ✓ 海图旁注收成账条，去掉冒号、度数符号和括号教程")
+else:
+    print("  ✗ 海图旁注仍是冒号或括号教程")
+    problems.append("海图旁注仍是冒号或括号教程")
 if '" x"' not in wm_src:
     print("  ✓ 海战货舱用乘号")
 else:

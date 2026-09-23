@@ -165,6 +165,21 @@ func _run() -> void:
 		"序章内页进门有一句，日志走 plain_log", fails)
 	_check(chart_src.find("【发舶】") < 0 and chart_src.find("UiTheme.plain_log") >= 0,
 		"海图日志不再写发舶标签", fails)
+	_check(chart_src.find("func _bearing_phrase") >= 0 and chart_src.find("UiTheme.card()") >= 0
+		and chart_src.find("回港（不出海）") < 0 and chart_src.find("目的：") < 0
+		and chart_src.find("绕过去看看（费 1 日）") < 0 and chart_src.find("%d%%") < 0
+		and chart_src.find("°") < 0,
+		"海图旁注收成账条，去掉冒号、度数符号和括号教程", fails)
+	var chart_script := load("res://scripts/SeaChart.gd") as GDScript
+	var chart_node := chart_script.new() as Node
+	_check(str(chart_node.call("_bearing_phrase", 90.0)) == "东　90 度", "正东写成东并附度数", fails)
+	_check(str(chart_node.call("_bearing_phrase", 47.0)) == "东北　47 度", "四十七度归东北", fails)
+	_check(str(chart_node.call("_bearing_phrase", 225.0)) == "西南　225 度", "二百二十五度归西南", fails)
+	chart_node.free()
+	var crew: Node = root.get_node("Crew")
+	_check(str(crew.call("rank_word", 1)) == "初习" and str(crew.call("rank_word", 3)) == "老练",
+		"职事品级首尾两字仍在", fails)
+	_check(str(crew.call("rank_word", 2)) == "谙熟", "职事品级第二档仍是原字", fails)
 	_check(main_src.find("请选择") < 0 and main_src.find("区域施工中") < 0,
 		"调查页用决断，缺页不再写施工中", fails)
 	var main_tscn := FileAccess.get_file_as_string("res://scenes/Main.tscn")

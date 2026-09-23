@@ -139,7 +139,7 @@ func _build_ui() -> void:
 	UiTheme.style_button(sail_button, true)
 
 	var back := Button.new()
-	back.text = "回港（不出海）"
+	back.text = "回　港"
 	back.pressed.connect(_return_to_port)
 	center_v.add_child(back)
 	UiTheme.style_button(back)
@@ -239,7 +239,7 @@ func _refresh_status() -> void:
 		var pct := 0.0
 		if total_li > 0.0:
 			pct = clampf((total_li - remaining_li) / total_li, 0.0, 1.0)
-		t += "[color=#%s]航行中　第 %d 日[/color]\n已行 %d%%\n余程 %d 里\n" % [
+		t += "[color=#%s]航行中　第 %d 日[/color]\n已行　%d / 100\n余程　%d 里\n" % [
 			UiTheme.hex(UiTheme.HONEY), days_elapsed, int(pct * 100), int(remaining_li),
 		]
 	t += "金钱　[b]%d[/b]\n名声　%d　%s\n" % [GameState.money, GameState.fame, GameState.title_name()]
@@ -309,44 +309,62 @@ func _refresh_detail() -> void:
 		return
 
 	var plan := Voyage.plan(origin_port, selected_port)
-	var crew_note := ""
-	var hz := Crew.level_of("huozhang")
-	var dg := Crew.level_of("duogong")
-	if hz > 0:
-		crew_note += "　火长 +%d%%" % int(round((Crew.speed_factor() - 1.0) * 100))
-	if dg > 0 and plan["wind_desc"] in ["斜逆风", "顶头逆风"]:
-		crew_note += "　舵工抢风"
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", UiTheme.card())
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 2)
+	card.add_child(body)
+	detail_box.add_child(card)
 
-	var lines := [
-		"目的：%s" % GameManager.get_port_name(selected_port),
-		"航程：%d 里　方位 %d°" % [int(plan["distance"]), int(plan["bearing"])],
-		"风信：%s（日速 %d 里）%s" % [plan["wind_desc"], int(plan["speed"]), crew_note],
-		"预计：%d 日　水粮足 %d 日" % [plan["days"], plan["supply_days"]],
-	]
-	for l in lines:
-		var lbl := Label.new()
-		lbl.text = l
-		UiTheme.style_footnote(lbl)
-		lbl.add_theme_color_override("font_color", UiTheme.TEXT)
-		detail_box.add_child(lbl)
+	var name_lbl := Label.new()
+	name_lbl.text = str(GameManager.get_port_name(selected_port))
+	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UiTheme.style_footnote(name_lbl)
+	name_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	name_lbl.add_theme_color_override("font_color", UiTheme.GOLD)
+	body.add_child(name_lbl)
+
+	_detail_line(body, "航程　%d 里　方位　%s" % [
+		int(plan["distance"]), _bearing_phrase(float(plan["bearing"])),
+	])
+	var wind := "风信　%s　日速 %d 里" % [str(plan["wind_desc"]), int(plan["speed"])]
+	var hz := Crew.level_of("huozhang")
+	if hz > 0:
+		wind += "　火长　%s" % Crew.rank_word(hz)
+	var dg := Crew.level_of("duogong")
+	if dg > 0 and str(plan["wind_desc"]) in ["斜逆风", "顶头逆风"]:
+		wind += "　舵工抢风"
+	_detail_line(body, wind)
+	_detail_line(body, "约 %d 日　水粮足 %d 日" % [int(plan["days"]), int(plan["supply_days"])])
 
 	if not Voyage.is_known_route(origin_port, selected_port):
-		var w := Label.new()
-		w.text = "此非熟路，海图上只有传闻，途中易生变故。"
-		w.add_theme_font_override("font", UiTheme.font())
-		w.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
-		w.add_theme_color_override("font_color", UiTheme.HONEY)
-		detail_box.add_child(w)
-
+		_detail_line(body, "此非熟路，海图上只有传闻，途中易生变故。", UiTheme.HONEY)
 	if not plan["supply_ok"]:
-		var w := Label.new()
-		w.text = "水粮不足以支撑此程——半途必要死人。"
-		w.add_theme_font_override("font", UiTheme.font())
-		w.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
-		w.add_theme_color_override("font_color", UiTheme.CINNABAR)
-		detail_box.add_child(w)
+		_detail_line(body, "水粮不足以支撑此程——半途必要死人。", UiTheme.CINNABAR)
 
 	sail_button.disabled = false
+
+
+func _detail_line(parent: VBoxContainer, text: String, color: Color = Color(0, 0, 0, 0)) -> void:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UiTheme.style_footnote(lbl)
+	if color.a <= 0.0:
+		color = UiTheme.TEXT
+	lbl.add_theme_color_override("font_color", color)
+	parent.add_child(lbl)
+
+
+## 八方加上度数。字跟最近的一方，数目仍是航向。
+func _bearing_phrase(deg: float) -> String:
+	var dirs := PackedStringArray(["北", "东北", "东", "东南", "南", "西南", "西", "西北"])
+	var wrapped := posmod(int(round(deg)), 360)
+	var idx := int(round(float(wrapped) / 45.0)) % 8
+	return "%s　%d 度" % [dirs[idx], wrapped]
 
 
 # ══════════════════════════════════════════════════════
@@ -676,8 +694,8 @@ func _show_event(event: Dictionary) -> void:
 		_add_event_action("扬帆逃走", _on_flee_pirates)
 		_add_event_action("献上买路财", _on_pay_pirates)
 	elif kind == Voyage.EventKind.DISCOVERY:
-		_add_event_action("绕过去看看（费 1 日）", _on_investigate_discovery)
-		_add_event_action("不理会，继续航行", _on_event_continue)
+		_add_event_action("绕去细看　费一日", _on_investigate_discovery)
+		_add_event_action("不理会　继续航行", _on_event_continue)
 	else:
 		_add_event_action("继续航行", _on_event_continue)
 
