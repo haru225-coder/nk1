@@ -149,6 +149,10 @@ func _run() -> void:
 		"升章了结走居中册页，主场景不再弹系统对话框", fails)
 	_check(main_src.find("OptionButton.new()") < 0 and main_src.find("_select_market_ship") >= 0,
 		"牙行选船走账条小钮，不再用系统下拉", fails)
+	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
+		"职事品级写成初习/谙熟/老练，不再用星号", fails)
+	_check(main_src.find("请选择") < 0 and main_src.find("区域施工中") < 0,
+		"调查页用决断，缺页不再写施工中", fails)
 	_check(main_src.find("city_inn") >= 0 and main_src.find("REMAPPED_FACILITIES") >= 0,
 		"旅店列入港卡改写", fails)
 	_check(main_src.find("PROLOGUE_ONLY_FACILITIES") >= 0,

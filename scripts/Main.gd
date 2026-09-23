@@ -341,9 +341,9 @@ func update_status_panel() -> void:
 	if not Crew.hired.is_empty():
 		t += "[color=#%s][b]职事[/b][/color]\n" % gold
 		for c in Crew.roster():
-			t += "%s %s%s\n" % [
+			t += "%s　%s　%s\n" % [
 				Crew.role_def(c.get("role", "")).get("name", ""),
-				c.get("name", ""), _stars(int(c.get("level", 1))),
+				c.get("name", ""), _skill_rank(int(c.get("level", 1))),
 			]
 		var wage := Crew.monthly_wage()
 		var wage_color := UiTheme.HONEY if Crew.unpaid_months > 0 else UiTheme.TEXT
@@ -525,7 +525,7 @@ func _enter_panel_mode() -> void:
 	_show_investigation_chrome(false)
 	scene_title.visible = true
 	choices_label.visible = false
-	choices_label.text = "请选择"  # 市场会改写它，此处复位避免上一屏文字残留
+	choices_label.text = "决断"  # 市场会改写它，此处复位避免上一屏文字残留
 
 
 func _show_investigation_chrome(show: bool) -> void:
@@ -562,8 +562,8 @@ func _setup_missing_scene(scene_id: String) -> void:
 		scene_title.text = ph.get("title", scene_id)
 		body_text.text = ph.get("body", "")
 	else:
-		scene_title.text = "区域施工中..."
-		body_text.text = "该区域（" + scene_id + "）尚未实装，请耐心等待后续版本更新。"
+		scene_title.text = "无人应门"
+		body_text.text = "这条路眼下还走不通。先回港口去。"
 
 	var base_loc = GameState.last_port
 	if base_loc == "" or base_loc == scene_id:
@@ -1279,8 +1279,8 @@ func _setup_hiring(port_id: String) -> void:
 		for c in Crew.roster():
 			var aboard := _slip_body()
 			var rname: String = Crew.role_def(c.get("role", "")).get("name", "")
-			var aboard_hint := _slip_title(aboard, str(c.get("name", "")), "%s %s　月俸 %d" % [
-				rname, _stars(int(c.get("level", 1))), int(c.get("wage", 0)),
+			var aboard_hint := _slip_title(aboard, str(c.get("name", "")), "%s　%s　月俸 %d" % [
+				rname, _skill_rank(int(c.get("level", 1))), int(c.get("wage", 0)),
 			])
 			aboard_hint.add_theme_color_override("font_color", UiTheme.MOSS)
 			var rid: String = str(c.get("role", ""))
@@ -1296,8 +1296,8 @@ func _setup_hiring(port_id: String) -> void:
 		var cid: String = str(c.get("id", ""))
 		var role: Dictionary = Crew.role_def(c.get("role", ""))
 		var card := _slip_body()
-		_slip_title(card, str(c.get("name", "")), "%s %s" % [
-			role.get("name", ""), _stars(int(c.get("level", 1))),
+		_slip_title(card, str(c.get("name", "")), "%s　%s" % [
+			role.get("name", ""), _skill_rank(int(c.get("level", 1))),
 		])
 		_slip_note(card, "入伙 %d　月俸 %d" % [Crew.signing_fee(cid), int(c.get("wage", 0))])
 		var hire := _slip_chip(_slip_row(card), "雇入", _on_hire_candidate.bind(cid), true)
@@ -1306,8 +1306,13 @@ func _setup_hiring(port_id: String) -> void:
 		]
 
 
-func _stars(n: int) -> String:
-	return "★".repeat(maxi(0, n))
+## 职事品级。数据里只有 1–3，不再用星号。
+func _skill_rank(n: int) -> String:
+	if n >= 3:
+		return "老练"
+	if n == 2:
+		return "谙熟"
+	return "初习"
 
 
 ## 旅店：候风。季风按月转向，等到对的月份再发舶是这个游戏最要紧的判断之一。
@@ -2108,7 +2113,7 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 	_show_investigation_chrome(investigations.size() > 0)
 	for inv in investigations:
 		var btn = Button.new()
-		btn.text = "★ " + inv.get("label", "互动")
+		btn.text = str(inv.get("label", "互动"))
 		btn.pressed.connect(_on_investigate_pressed.bind(inv, btn))
 		interactive_container.add_child(btn)
 		UiTheme.style_choice_button(btn)

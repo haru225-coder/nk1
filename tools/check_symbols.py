@@ -920,6 +920,16 @@ if "OptionButton" not in market_body and "_select_market_ship" in market_body:
 else:
     print("  ✗ 牙行仍用系统下拉选船")
     problems.append("牙行仍用系统下拉选船")
+if "★" not in main_src and "func _skill_rank" in main_src:
+    print("  ✓ 职事品级写成初习/谙熟/老练")
+else:
+    print("  ✗ 职事仍用星号")
+    problems.append("职事仍用星号")
+if 'text = "请选择"' not in main_src and "区域施工中" not in main_src:
+    print("  ✓ 调查页用决断，缺页不再写施工中")
+else:
+    print("  ✗ 调查页仍写请选择或施工中")
+    problems.append("调查页仍写请选择或施工中")
 if "Color(0.2, 0.4, 0.6" in main_src:
     print("  ✗ NPC 按钮仍用蓝底硬编码")
     problems.append("NPC 按钮蓝底硬编码")
