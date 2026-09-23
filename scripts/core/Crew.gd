@@ -87,6 +87,15 @@ func level_of(role_id: String) -> int:
 	return int(hired.get(role_id, {}).get("level", 0))
 
 
+## 职事品级。数据里只有 1、2、3。酒馆账条和海图旁注共用这三字。
+func rank_word(n: int) -> String:
+	if n >= 3:
+		return "老练"
+	if n == 2:
+		return "谙熟"
+	return "初习"
+
+
 func roster() -> Array:
 	var out := []
 	for r in hired.keys():

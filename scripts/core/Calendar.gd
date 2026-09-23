@@ -80,10 +80,10 @@ func get_wind_bearing() -> float:
 func get_monsoon_desc() -> String:
 	var m := get_monsoon()
 	if m == Monsoon.NORTHEAST:
-		return "东北季风（利南下）"
+		return "东北季风　利南下"
 	elif m == Monsoon.SOUTHWEST:
-		return "西南季风（利北上）"
-	return "季风转换期（风微而多变）"
+		return "西南季风　利北上"
+	return "季风转换期・风微而多变"
 
 
 # ── 显示 ──────────────────────────────────────────────
@@ -139,11 +139,11 @@ func get_day_name() -> String:
 	return "廿" + CN_NUM[day - 20]
 
 
-## 「宝祐三年 三月初一」
+## 「宝祐三年　三月初一」
 func get_date_string() -> String:
 	var ey := get_era_year()
 	var y_str := get_era() + ("元年" if ey == 1 else _cn_number(ey) + "年")
-	return "%s %s%s" % [y_str, get_month_name(), get_day_name()]
+	return "%s　%s%s" % [y_str, get_month_name(), get_day_name()]
 
 
 ## 存档用

@@ -68,16 +68,103 @@ func _run() -> void:
 	var wm_tscn := FileAccess.get_file_as_string("res://scenes/WorldMap.tscn")
 	_check(wm_tscn.find("ocean_tex_1234") < 0 and wm_tscn.find("uid://xnp7vjyfjnp1") >= 0,
 		"WorldMap 海洋贴图用导入 UID", fails)
+	_check(wm_tscn.find("按 Enter 停靠") < 0, "海战港名不再写停靠教程", fails)
 	var chart_src := FileAccess.get_file_as_string("res://scripts/SeaChart.gd")
 	_check(chart_src.find("style_heading(head)") >= 0 and chart_src.find("UiTheme.panel()") >= 0,
 		"海图标题与遭遇弹层走绢本", fails)
 	_check(chart_src.find("CenterContainer") >= 0 and chart_src.find("Vector2(360, 200)") < 0,
 		"海图遭遇弹层居中", fails)
+	_check(chart_src.find("func _draw_ink_label") >= 0
+		and chart_src.find("draw_string(font, v + Vector2(8, 5)") < 0,
+		"海图港名走墨底签", fails)
+	_check(chart_src.find("func _draw_chart_leaf") >= 0
+		and chart_src.find("Color(0.11, 0.08, 0.05, 0.55)") < 0,
+		"海图中栏是绢纸", fails)
+	_check(chart_src.find("event_actions = VBoxContainer") >= 0
+		and chart_src.find("style_choice_button(b)") >= 0,
+		"海图遭遇选项走竖排挑签", fails)
 	var theme_scr = load("res://scripts/core/UiTheme.gd")
 	_check(theme_scr != null, "UiTheme.gd 能编译", fails)
 	var dlg := AcceptDialog.new()
 	UiTheme.style_dialog(dlg, true)
 	_check(dlg.get_theme_stylebox("panel") != null, "UiTheme.style_dialog 给弹窗套绢本面板", fails)
+	_check(UiTheme.INK.b > UiTheme.INK.r and UiTheme.INK.g > UiTheme.INK.r
+		and UiTheme.TIDE.g > UiTheme.TIDE.r and UiTheme.SEAL.r > UiTheme.SEAL.b,
+		"面板是夜潮青，潮光作线，主钮是珊瑚", fails)
+	var facility := UiTheme.card()
+	var picked := UiTheme.heading_card(true)
+	var idle := UiTheme.heading_card(false)
+	_check(facility.corner_radius_top_left == 16 and picked.corner_radius_top_left == 16
+		and picked.border_color.g > picked.border_color.r
+		and idle.border_color.b > idle.border_color.r,
+		"港卡与航向牌是潮玻璃，选中边是潮光", fails)
+	var ch_keep: int = gs.chapter
+	var vis_keep: Array = gs.visited_ports.duplicate()
+	var end_keep: String = str(gs.ending_id)
+	var salt_keep: int = int(gs.draft_salt)
+	gs.chapter = 1
+	gs.visited_ports = ["quanzhou"]
+	gs.ending_id = ""
+	gs.draft_salt = 0
+	var hand: PackedStringArray = HeadingDraft.deal("quanzhou", 0)
+	var hand_next: PackedStringArray = HeadingDraft.deal("quanzhou", 1)
+	_check(hand.size() >= 1 and hand.size() <= 3 and hand[0] == "ryukyu",
+		"泉州开局这一手最多三向，南岛海道北口占第一席", fails)
+	_check(hand.size() >= 2 and hand_next.size() >= 2 and hand[1] != hand_next[1],
+		"盐位一转，非必须席换港", fails)
+	gs.chapter = ch_keep
+	gs.visited_ports = vis_keep
+	gs.ending_id = end_keep
+	gs.draft_salt = salt_keep
+	var shore_facs: Array = [
+		{"id": "city_shipyard"},
+		{"id": "city_guild"},
+		{"id": "city_tavern"},
+		{"id": "city_market"},
+		{"id": "city_inn"},
+		{"id": "city_exam"},
+		{"id": "city_residence"},
+		{"id": "city_temple"},
+		{"id": "city_yamen"},
+	]
+	var shore0: PackedStringArray = ShoreDraft.deal(shore_facs, 0, false)
+	var shore1: PackedStringArray = ShoreDraft.deal(shore_facs, 1, false)
+	var shore_pin: PackedStringArray = ShoreDraft.deal(shore_facs, 0, true)
+	_check(shore0.size() == 3 and shore0[0] == "city_market" and shore0[1] != shore1[1],
+		"泉州岸上最多三处，牙行占第一席，盐位一转第二席换门", fails)
+	_check(shore_pin.size() == 3 and shore_pin[1] == "city_shipyard",
+		"船开不出去时船屋占第二席", fails)
+	var shore_seen := {}
+	for salt_i in 8:
+		for door_id in ShoreDraft.deal(shore_facs, salt_i, false):
+			shore_seen[door_id] = true
+	_check(shore_seen.size() == 9, "盐位转一圈，九处都会开门", fails)
+	var door_box := UiTheme.shore_door()
+	_check(door_box.corner_radius_top_left == 16 and door_box.border_color.g > door_box.border_color.r,
+		"岸门是潮光边的潮玻璃", fails)
+	var broker_goods: Array = [
+		{"id": "a", "role": "origin", "buy": 10},
+		{"id": "b", "role": "origin", "buy": 30},
+		{"id": "c", "role": "normal", "buy": 5},
+		{"id": "d", "role": "consumer", "buy": 40},
+		{"id": "e", "role": "normal", "buy": 20},
+	]
+	var slip0: PackedStringArray = BrokerSlip.deal(broker_goods, 0, "")
+	var slip1: PackedStringArray = BrokerSlip.deal(broker_goods, 1, "")
+	var slip_held: PackedStringArray = BrokerSlip.deal(broker_goods, 0, "d")
+	_check(slip0.size() == 3 and slip0[0] == "a" and slip0[1] != slip1[1],
+		"柜上三样，最便宜的土产占第一席，盐位一转第二席换货", fails)
+	_check(slip_held.size() == 3 and slip_held[0] == "d" and slip_held[1] == "a",
+		"舱里有货占第一席，土产仍占下一席", fails)
+	var slip_seen := {}
+	for broker_salt_i in 4:
+		for slip_id in BrokerSlip.deal(broker_goods, broker_salt_i, ""):
+			slip_seen[slip_id] = true
+	_check(slip_seen.size() == 5, "盐位转一圈，五样货都会上柜", fails)
+	_check(UiTheme.plain_log("【钱不够】牙人摇头。") == "牙人摇头。", "日志去掉方括号标签", fails)
+	_check(UiTheme.plain_log("买入瓷器 ×1。") == "买入瓷器 ×1。", "普通日志原样保留", fails)
+	_check(UiTheme.plain_log("[color=#aabbcc]【欠饷】已拖欠。[/color]") == "[color=#aabbcc]已拖欠。[/color]",
+		"色标里的方括号标签也去掉", fails)
 	dlg.free()
 	var choice := Button.new()
 	UiTheme.style_choice_button(choice)
@@ -138,8 +225,128 @@ func _run() -> void:
 	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
 	_check(main_src.find("ChapterSheet") >= 0 and main_src.find("AcceptDialog.new()") < 0,
 		"升章了结走居中册页，主场景不再弹系统对话框", fails)
+	var saveload_src := FileAccess.get_file_as_string("res://scripts/core/SaveLoad.gd")
+	_check(saveload_src.find("未记") >= 0 and saveload_src.find("卷页损了") >= 0
+		and saveload_src.find("未题") >= 0
+		and saveload_src.find("（空）") < 0 and saveload_src.find("（损坏）") < 0
+		and saveload_src.find("（无标签）") < 0
+		and main_src.find("存档 / 读档") < 0 and saveload_src.find("%d 钱") >= 0,
+		"航海日志空卷写成未记", fails)
+	_check(str(root.get_node("SaveLoad").call("save_label", 9)) == "未记", "空卷读出来是未记", fails)
 	_check(main_src.find("OptionButton.new()") < 0 and main_src.find("_select_market_ship") >= 0,
 		"牙行选船走账条小钮，不再用系统下拉", fails)
+	_check(main_src.find("买%d") < 0 and main_src.find("卖%d") < 0
+		and main_src.find("只购得 %d。") >= 0 and main_src.find("钱（") < 0,
+		"牙行小钮与买卖日志留出字距", fails)
+	_check(main_src.find("塞　50") >= 0 and main_src.find("关注　减 15") >= 0
+		and main_src.find("塞 50") < 0 and main_src.find("关注减 15") < 0
+		and main_src.find("UiTheme.plain_log(_gather_price_intel") >= 0,
+		"见面册疏通留出字距，行情去掉方括号", fails)
+	_check(main_src.find("尚无人留意") >= 0 and main_src.find("偶有闲话传出") >= 0
+		and main_src.find("起了疑心") >= 0 and main_src.find("暗桩已盯死，出港必查") >= 0
+		and main_src.find("（尚无人留意）") < 0 and main_src.find("（偶有闲话传出）") < 0
+		and main_src.find("（蒲氏起了疑心）") < 0 and main_src.find("（暗桩已盯死，出港必查）") < 0,
+		"市舶司关注四档去掉括号", fails)
+	_check(main_src.find("（缺 %d 人）") < 0 and main_src.find("缺 %d 人") >= 0
+		and main_src.find("（%d/%d）") < 0 and main_src.find("水手 %d / %d") >= 0
+		and main_src.find("水手 %d/%d") < 0 and main_src.find("%d/%d 料") < 0
+		and main_src.find("水手不足　%s") >= 0 and main_src.find("水手不足：") < 0,
+		"缺员与分船账条写成已有 / 所需，出海拦阻去掉冒号", fails)
+	var cal_src := FileAccess.get_file_as_string("res://scripts/core/Calendar.gd")
+	_check(cal_src.find("东北季风　利南下") >= 0 and cal_src.find("西南季风　利北上") >= 0
+		and cal_src.find("季风转换期・风微而多变") >= 0
+		and cal_src.find("（利南下）") < 0 and cal_src.find("（利北上）") < 0
+		and cal_src.find("（风微而多变）") < 0
+		and main_src.find("（五至八月）") < 0 and main_src.find("（十月至次年二月）") < 0,
+		"风信写成短句", fails)
+	var cal: Node = root.get_node("Calendar")
+	var saved_month: int = int(cal.month)
+	var saved_day: int = int(cal.day)
+	cal.month = 3
+	cal.day = 1
+	_check(str(cal.call("get_date_string")) == "宝祐三年　三月初一", "开局日期留出字距", fails)
+	_check(str(cal.call("get_monsoon_desc")) == "季风转换期・风微而多变", "三月是转换期", fails)
+	cal.month = 6
+	_check(str(cal.call("get_monsoon_desc")) == "西南季风　利北上", "六月利北上", fails)
+	cal.month = 11
+	_check(str(cal.call("get_monsoon_desc")) == "东北季风　利南下", "十一月利南下", fails)
+	cal.month = saved_month
+	cal.day = saved_day
+	_check(main_src.find("费一日") >= 0 and main_src.find("费 1 日") < 0,
+		"酒馆行情写成费一日", fails)
+	var tavern_i := main_src.find("func _setup_tavern")
+	var tavern_j := main_src.find("\nfunc ", tavern_i + 1)
+	var tavern_body := main_src.substr(tavern_i, tavern_j - tavern_i) if tavern_i >= 0 and tavern_j > tavern_i else ""
+	_check(tavern_body.find("_begin_slip_scroll") >= 0
+		and tavern_body.find("_add_leave_button") > tavern_body.find("_end_slip_scroll"),
+		"酒馆募人在里面滚，离开留在下面", fails)
+	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
+		"职事品级写成初习/谙熟/老练，不再用星号", fails)
+	_check(main_src.find("func _fit_rank") >= 0 and main_src.find("帆Lv") < 0
+		and main_src.find("Lv%d") < 0,
+		"船壳改装写成一等二等三等", fails)
+	_check(main_src.find("func _interior_title") >= 0 and main_src.find("未命名设施") < 0,
+		"序章内页改写成港名去处，港卡不写未命名设施", fails)
+	_check(main_src.find("func _interior_lead") >= 0 and main_src.find("UiTheme.plain_log") >= 0,
+		"序章内页进门有一句，日志走 plain_log", fails)
+	_check(chart_src.find("【发舶】") < 0 and chart_src.find("UiTheme.plain_log") >= 0,
+		"海图日志不再写发舶标签", fails)
+	_check(chart_src.find("func _bearing_phrase") >= 0 and chart_src.find("UiTheme.heading_card") >= 0
+		and chart_src.find("回港（不出海）") < 0 and chart_src.find("目的：") < 0
+		and chart_src.find("绕过去看看（费 1 日）") < 0 and chart_src.find("%d%%") < 0
+		and chart_src.find("°") < 0,
+		"海图旁注收成账条，去掉冒号、度数符号和括号教程", fails)
+	var voyage_src := FileAccess.get_file_as_string("res://scripts/core/Voyage.gd")
+	_check(chart_src.find("绕了些路。") >= 0 and chart_src.find("（绕了些路）") < 0
+		and chart_src.find("（调试）") < 0 and chart_src.find("点验　中途遭遇。") >= 0
+		and voyage_src.find("损折：") < 0 and voyage_src.find("损折　") >= 0,
+		"海图遭遇日志去掉括号，风涛货损去掉冒号", fails)
+	var yard_node := (load("res://scripts/Main.gd") as GDScript).new() as Node
+	_check(str(yard_node.call("_sail_fit_phrase", 1)) == "此帆比光船快一成二"
+		and str(yard_node.call("_sail_fit_phrase", 2)) == "此帆比光船快二成四"
+		and str(yard_node.call("_armor_fit_phrase", 1)) == "船体伤剩九成"
+		and str(yard_node.call("_armor_fit_phrase", 2)) == "船体伤剩八成"
+		and main_src.find("月息每百 %d") >= 0 and main_src.find("月息 %d%%") < 0
+		and main_src.find("添 %d 人") >= 0 and main_src.find("+%d") < 0
+		and main_src.find("运往 %s　多 %d") >= 0 and main_src.find("→ %s") < 0
+		and main_src.find("航速 ×") < 0 and main_src.find("违禁：") < 0
+		and FileAccess.get_file_as_string("res://scripts/core/Economy.gd").find("名声加 %d") >= 0
+		and FileAccess.get_file_as_string("res://scripts/core/Economy.gd").find("名声 +%d") < 0
+		and int(yard_node.call("_duty_per_hundred", 1.0)) == 100
+		and int(yard_node.call("_duty_per_hundred", 0.94)) == 94
+		and int(yard_node.call("_duty_per_hundred", 0.76)) == 76
+		and main_src.find("抽解每百 %d") >= 0 and main_src.find("%d%%") < 0
+		and main_src.find("水手 %d 至 %d") >= 0 and main_src.find("水粮各 %d　付 %d") >= 0,
+		"船屋加成写成成数，抽解与购船去掉百分号和短横", fails)
+	yard_node.free()
+	var chart_script := load("res://scripts/SeaChart.gd") as GDScript
+	var chart_node := chart_script.new() as Node
+	_check(str(chart_node.call("_bearing_phrase", 90.0)) == "东　90 度", "正东写成东并附度数", fails)
+	_check(str(chart_node.call("_bearing_phrase", 47.0)) == "东北　47 度", "四十七度归东北", fails)
+	_check(str(chart_node.call("_bearing_phrase", 225.0)) == "西南　225 度", "二百二十五度归西南", fails)
+	chart_node.free()
+	var crew: Node = root.get_node("Crew")
+	_check(str(crew.call("rank_word", 1)) == "初习" and str(crew.call("rank_word", 3)) == "老练",
+		"职事品级首尾两字仍在", fails)
+	_check(str(crew.call("rank_word", 2)) == "谙熟", "职事品级第二档仍是原字", fails)
+	_check(main_src.find("请选择") < 0 and main_src.find("区域施工中") < 0,
+		"调查页用决断，缺页不再写施工中", fails)
+	var main_tscn := FileAccess.get_file_as_string("res://scenes/Main.tscn")
+	_check(main_tscn.find("副标题") < 0 and main_tscn.find("地点标题") < 0
+		and main_tscn.find("环境描述文本") < 0 and main_tscn.find("NPC Dialog") < 0
+		and main_tscn.find("NPC Name") < 0 and main_tscn.find("情报与状态") < 0
+		and main_tscn.find("港口名称") < 0,
+		"开场场景不再写原型占位", fails)
+	var inv_at := main_tscn.find("[node name=\"InvestigationMode\"")
+	var inv_end := main_tscn.find("\n[node ", inv_at + 10)
+	var inv_block := main_tscn.substr(inv_at, inv_end - inv_at) if inv_at >= 0 and inv_end > inv_at else ""
+	_check(inv_block.find("visible = false") >= 0, "调查页默认收起，开场不闪占位", fails)
+	var left_at := main_tscn.find("[node name=\"LeftPanel\"")
+	var left_end := main_tscn.find("\n[node ", left_at + 10)
+	var left_block := main_tscn.substr(left_at, left_end - left_at) if left_at >= 0 and left_end > left_at else ""
+	_check(left_block.find("visible = false") >= 0, "船籍簿默认收起，开场不闪旧栏", fails)
+	var port_src := FileAccess.get_file_as_string("res://scripts/PortZone.gd")
+	_check(port_src.find("name_lbl.text = port_name") >= 0, "港区名牌写港口名", fails)
 	_check(main_src.find("city_inn") >= 0 and main_src.find("REMAPPED_FACILITIES") >= 0,
 		"旅店列入港卡改写", fails)
 	_check(main_src.find("PROLOGUE_ONLY_FACILITIES") >= 0,
@@ -181,6 +388,64 @@ func _run() -> void:
 	gs.add_ledger_note("拓「废烽堠」：旧时守海的烽堠，如今无人执守，却仍是夜航辨岸的好记认。")
 	_check(gs.ledger_notes.size() == notes0 + 1, "拓碑边记可写入 ledger_notes", fails)
 	_check(int(gs.fame) == fame_before_rub, "写入边记不给名声", fails)
+	var note_node := (load("res://scripts/Main.gd") as GDScript).new() as Node
+	var rub_fresh := str(note_node.call(
+		"_temple_rub_note", "废烽堠", "旧时守海的烽堠，如今无人执守，却仍是夜航辨岸的好记认。"
+	))
+	_check(
+		rub_fresh == "拓「废烽堠」　旧时守海的烽堠，如今无人执守，却仍是夜航辨岸的好记认。"
+			and str(note_node.call("_temple_rub_note", "废烽堠", "  ")) == "拓「废烽堠」。"
+			and bool(note_node.call("_has_temple_rub", "废烽堠"))
+			and main_src.find("再升一等。") >= 0 and main_src.find("再升一等：") < 0,
+		"拓碑边记用空格隔开，旧冒号仍算拓过，修埠注用句号",
+		fails,
+	)
+	var money_line := str(note_node.call("_append_progress_line", "", {
+		"label": "本钱", "current": 0, "need": 5000, "done": false,
+	}))
+	var been_line := str(note_node.call("_append_progress_line", "", {
+		"label": "亲至　南岛海道北口", "current": 0, "need": 1, "done": false,
+	}))
+	var items: Array = gs.call("_requirement_items", {
+		"peak_money": 5000, "visited_count": 5, "must_visit": ["ryukyu"],
+	})
+	var money_ok := false
+	var ports_ok := false
+	var ryukyu_ok := false
+	for it_v in items:
+		var it: Dictionary = it_v
+		var lab := str(it.get("label", ""))
+		if lab == "本钱" and int(it.get("need", 0)) == 5000:
+			money_ok = true
+		if lab == "走通港口" and int(it.get("need", 0)) == 5:
+			ports_ok = true
+		if lab == "亲至　南岛海道北口":
+			ryukyu_ok = true
+	_check(
+		money_line == "・　本钱　0 / 5000\n" and been_line == "・　亲至　南岛海道北口\n"
+			and money_ok and ports_ok and ryukyu_ok,
+		"章目写成已行多少，亲至港名用空格隔开，门槛仍是五千与五港",
+		fails,
+	)
+	var enter_i2 := main_src.find("func _on_enter_port")
+	var enter_j2 := main_src.find("\nfunc ", enter_i2 + 1)
+	var enter_body2 := main_src.substr(enter_i2, enter_j2 - enter_i2) if enter_i2 >= 0 and enter_j2 > enter_i2 else ""
+	_check(
+		enter_body2.find("visit_port") >= 0
+			and enter_body2.find("update_status_panel") > enter_body2.find("visit_port"),
+		"进港后船籍簿按已走通的港重写",
+		fails,
+	)
+	_check(
+		main_src.find("掐指算了算。") >= 0 and main_src.find("掐指算了算：") < 0
+			and main_src.find("压低声音说。") >= 0 and main_src.find("压低声音说：") < 0
+			and main_src.find("五至八月") >= 0 and main_src.find("十月至次年二月") >= 0
+			and main_src.find("%s　眼下缺%s") >= 0 and main_src.find("%s 眼下缺") < 0
+			and main_src.find("多得　%d") >= 0,
+		"候风与打听去掉冒号，月份仍写在风名后面",
+		fails,
+	)
+	note_node.free()
 	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
 	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)
 	_check(load("res://scripts/PirateShip.gd") != null, "PirateShip.gd 能编译", fails)
@@ -192,12 +457,23 @@ func _run() -> void:
 		if wm_inst != null:
 			# --script 没有 autoload 全局名，不能 add_child 走 _ready；只测格式串占位。
 			if wm_inst.has_method("_format_left_hud"):
-				var hud_txt: String = wm_inst._format_left_hud(
-					"敌船 2 艘　存活 2\n", "", "北风", 80, 1, "green", 100, 100, "B/Esc: 弃战逃走"
+				var hud0: String = wm_inst._format_left_hud(
+					"敌船 2 艘　存活 2\n", "", "北风", 80, 0, "green", 100, 100, "弃战　B"
+				)
+				var hud1: String = wm_inst._format_left_hud(
+					"敌船 2 艘　存活 2\n", "", "北风", 80, 1, "green", 100, 100, "接舷　G　弃战　B"
+				)
+				var hud2: String = wm_inst._format_left_hud(
+					"敌船 2 艘　存活 2\n", "", "北风", 80, 2, "green", 100, 100, "弃战　B"
 				)
 				_check(
-					hud_txt.find("操舵") >= 0 and hud_txt.find("齐射") >= 0 and hud_txt.find("弃战逃走") >= 0,
-					"海战 HUD 格式串参数对齐",
+					hud0.find("收帆") >= 0 and hud1.find("半帆") >= 0 and hud2.find("满帆") >= 0
+						and hud0.find("升帆　W") >= 0 and hud0.find("落帆　S") >= 0
+						and hud0.find("操舵　A　D") >= 0 and hud0.find("齐射　J　K") >= 0
+						and hud0.find("100 / 100") >= 0 and hud0.find("A/D") < 0
+						and hud0.find("J/K") < 0 and hud0.find("档") < 0
+						and hud1.find("接舷　G") >= 0,
+					"海战栏写成升帆落帆与半帆，不再用斜杠档位",
 					fails,
 				)
 			else:

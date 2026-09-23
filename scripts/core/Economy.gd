@@ -135,7 +135,7 @@ func invest(port_id: String) -> Dictionary:
 	investments[port_id] = lv
 	var fame_res: Dictionary = GameState.add_fame(invest_fame_gain(lv))
 	var title_name := str(fame_res.get("title", {}).get("name", GameState.title_name()))
-	var msg := "【修埠】向%s投下 %d 钱，埠头升为 %d 等。名声 +%d。" % [
+	var msg := "【修埠】向%s投下 %d 钱，埠头升为 %d 等。名声加 %d。" % [
 		GameManager.get_port_name(port_id), cost, lv, fame_res.get("gained", 0),
 	]
 	if fame_res.get("promoted", false):

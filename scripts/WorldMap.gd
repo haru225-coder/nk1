@@ -237,7 +237,7 @@ func _update_hud() -> void:
 	if ship.hull_hp < 50:
 		hp_color = "#" + UiTheme.hex(UiTheme.CINNABAR)
 
-	var tail := "B/Esc　弃战逃走"
+	var tail := "弃战　B"
 	var mission := ""
 	if combat_mode:
 		mission = "敌船 %d 艘　存活 %d\n" % [total_enemies, _enemies_alive()]
@@ -249,19 +249,17 @@ func _update_hud() -> void:
 		else:
 			var ne := _nearest_enemy()
 			if ne.size() == 2 and ne[1] < BOARD_DISTANCE:
-				tail = "G　接舷　B/Esc　逃走"
+				tail = "接舷　G　弃战　B"
 				boarding_hint = "[color=#%s]舷边可接[/color]\n" % UiTheme.hex(UiTheme.HONEY)
 	label.text = _format_left_hud(
 		mission, boarding_hint, wind_desc, int(ship.wind_strength),
 		ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), tail,
 	)
 
-	var cargo_str = ""
-	if Fleet.cargo.is_empty():
-		cargo_str = "空"
-	else:
-		for k in Fleet.cargo.keys():
-			cargo_str += GameManager.get_good_name(k) + " x" + str(Fleet.cargo[k].get("qty", 0)) + " "
+	var cargo_bits := PackedStringArray()
+	for k in Fleet.cargo.keys():
+		cargo_bits.append("%s ×%d" % [GameManager.get_good_name(k), int(Fleet.cargo[k].get("qty", 0))])
+	var cargo_str := "空" if cargo_bits.is_empty() else "　".join(cargo_bits)
 
 	fleet_status.text = "舰队\n金钱　%d\n货舱　%s" % [GameState.money, cargo_str]
 
@@ -271,9 +269,17 @@ func _format_left_hud(
 	mission: String, boarding_hint: String, wind_desc: String, wind_strength: int,
 	sail_gear: int, hp_color: String, hull_hp: int, max_hp: int, tail: String
 ) -> String:
-	return "%s%s季风　%s\n风力　%d\n帆　%d 档\n操舵　A/D\n齐射　J/K\n船体　[color=%s]%d/%d[/color]\n%s" % [
-		mission, boarding_hint, wind_desc, wind_strength, sail_gear, hp_color, hull_hp, max_hp, tail,
+	return "%s%s季风　%s\n风力　%d\n升帆　W　落帆　S　%s\n操舵　A　D\n齐射　J　K\n船体　[color=%s]%d / %d[/color]\n%s" % [
+		mission, boarding_hint, wind_desc, wind_strength, _sail_word(sail_gear), hp_color, hull_hp, max_hp, tail,
 	]
+
+
+func _sail_word(gear: int) -> String:
+	if gear <= 0:
+		return "收帆"
+	if gear == 1:
+		return "半帆"
+	return "满帆"
 
 func _process_weather_and_time(delta: float) -> void:
 	# 战斗模式固定晴朗：风暴伤会污染 player_damage 统计并破坏公平性
@@ -388,7 +394,7 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary) -> void:
 		total_enemies += 1
 
 
-## B/Esc：弃战逃走。成败都退出战斗，写回由 SeaChart 结算
+## B 或 Esc：弃战逃走。成败都退出战斗，写回由 SeaChart 结算。栏上只写 B。
 ## G：接舷白刃（P4-2）。贴近敌船时按 G 钩住进入白刃判定
 func _unhandled_input(event: InputEvent) -> void:
 	if not combat_mode or resolved:

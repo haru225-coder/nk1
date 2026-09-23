@@ -908,6 +908,23 @@ if "SaveSheet" in save_body and "UiTheme.panel()" in save_body and "AcceptDialog
 else:
     print("  ✗ 存档弹窗未套绢本主题")
     problems.append("存档弹窗未套绢本主题")
+saveload_src = ""
+with open(os.path.join(SCRIPTS, "core", "SaveLoad.gd"), encoding="utf-8") as f:
+    saveload_src = f.read()
+if (
+    "未记" in saveload_src
+    and "卷页损了" in saveload_src
+    and "未题" in saveload_src
+    and "（空）" not in saveload_src
+    and "（损坏）" not in saveload_src
+    and "（无标签）" not in saveload_src
+    and "存档 / 读档" not in main_src
+    and "%d 钱" in saveload_src
+):
+    print("  ✓ 航海日志空卷写成未记")
+else:
+    print("  ✗ 航海日志仍写空卷括号")
+    problems.append("航海日志仍写空卷括号")
 chapter_body = _func_body(main_src, "_show_chapter_dialog")
 if "ChapterSheet" in chapter_body and "UiTheme.panel()" in chapter_body and "AcceptDialog" not in chapter_body:
     print("  ✓ 升章/了结是居中绢本册页")
@@ -920,6 +937,300 @@ if "OptionButton" not in market_body and "_select_market_ship" in market_body:
 else:
     print("  ✗ 牙行仍用系统下拉选船")
     problems.append("牙行仍用系统下拉选船")
+if '买%d' not in main_src and '卖%d' not in main_src and "只购得 %d。" in main_src and "钱（" not in main_src:
+    print("  ✓ 牙行小钮与买卖日志留出字距")
+else:
+    print("  ✗ 牙行小钮或买卖日志仍挤在一起")
+    problems.append("牙行小钮或买卖日志仍挤在一起")
+if "塞　50" in main_src and "关注　减 15" in main_src and "塞 50" not in main_src and "关注减 15" not in main_src and "UiTheme.plain_log(_gather_price_intel" in main_src:
+    print("  ✓ 见面册疏通留出字距，行情去掉方括号")
+else:
+    print("  ✗ 见面册疏通或行情仍是挤字")
+    problems.append("见面册疏通或行情仍是挤字")
+if (
+    "尚无人留意" in main_src
+    and "偶有闲话传出" in main_src
+    and "起了疑心" in main_src
+    and "暗桩已盯死，出港必查" in main_src
+    and "（尚无人留意）" not in main_src
+    and "（偶有闲话传出）" not in main_src
+    and "（蒲氏起了疑心）" not in main_src
+    and "（暗桩已盯死，出港必查）" not in main_src
+):
+    print("  ✓ 市舶司关注四档去掉括号")
+else:
+    print("  ✗ 市舶司关注仍套括号")
+    problems.append("市舶司关注仍套括号")
+if (
+    "（缺 %d 人）" not in main_src
+    and "缺 %d 人" in main_src
+    and "（%d/%d）" not in main_src
+    and "水手 %d / %d" in main_src
+    and "水手 %d/%d" not in main_src
+    and "%d / %d 料" in main_src
+    and "%d/%d 料" not in main_src
+    and "水手不足　%s" in main_src
+    and "水手不足：" not in main_src
+):
+    print("  ✓ 缺员与分船账条写成已有 / 所需，出海拦阻去掉冒号")
+else:
+    print("  ✗ 缺员或分船账条仍是紧挨斜杠或冒号")
+    problems.append("缺员或分船账条仍是紧挨斜杠或冒号")
+cal_src = ""
+with open(os.path.join(SCRIPTS, "core", "Calendar.gd"), encoding="utf-8") as f:
+    cal_src = f.read()
+if (
+    "东北季风　利南下" in cal_src
+    and "西南季风　利北上" in cal_src
+    and "季风转换期・风微而多变" in cal_src
+    and "（利南下）" not in cal_src
+    and "（利北上）" not in cal_src
+    and "（风微而多变）" not in cal_src
+    and "（五至八月）" not in main_src
+    and "（十月至次年二月）" not in main_src
+):
+    print("  ✓ 风信写成短句")
+else:
+    print("  ✗ 风信仍套括号")
+    problems.append("风信仍套括号")
+theme_src_tide = open(os.path.join(SCRIPTS, "core", "UiTheme.gd"), encoding="utf-8").read()
+if "夜潮" in theme_src_tide and "const TIDE" in theme_src_tide and "熟漆面板" not in theme_src_tide:
+    print("  ✓ 面板改成夜潮")
+else:
+    print("  ✗ 面板仍是熟漆描金")
+    problems.append("面板仍是熟漆描金")
+draft_src = open(os.path.join(SCRIPTS, "core", "HeadingDraft.gd"), encoding="utf-8").read()
+chart_src_draft = open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()
+gs_src_draft = open(os.path.join(SCRIPTS, "GameState.gd"), encoding="utf-8").read()
+if (
+    "class_name HeadingDraft" in draft_src
+    and "今日风不放这一向。" in chart_src_draft
+    and "在船上候了三日，风又换了一手。" in chart_src_draft
+    and "就这一向" in chart_src_draft
+    and "候风再发" in chart_src_draft
+    and "看风" in main_src
+    and "升帆出海" not in main_src
+    and '"draft_salt"' in gs_src_draft
+    and "heading_card" in theme_src_tide
+    and "port_list" not in chart_src_draft
+):
+    print("  ✓ 出海改成晨潮三向")
+else:
+    print("  ✗ 晨潮三向未接上")
+    problems.append("晨潮三向未接上")
+shore_src = open(os.path.join(SCRIPTS, "core", "ShoreDraft.gd"), encoding="utf-8").read()
+if (
+    "class_name ShoreDraft" in shore_src
+    and "今日这处没开门。" in main_src
+    and "在岸上又候了一日，门又换了几处。" in main_src
+    and "再候一日" in main_src
+    and "今日只开三处。" in main_src
+    and "ShoreDraft.deal" in main_src
+    and '"shore_salt"' in gs_src_draft
+    and "func shore_door" in theme_src_tide
+    and "func _add_sail_button" not in main_src
+):
+    print("  ✓ 进港改成今日只开三处")
+else:
+    print("  ✗ 岸上三处未接上")
+    problems.append("岸上三处未接上")
+broker_src = open(os.path.join(SCRIPTS, "core", "BrokerSlip.gd"), encoding="utf-8").read()
+market_fn = _func_body(main_src, "_setup_market")
+if (
+    "class_name BrokerSlip" in broker_src
+    and "BrokerSlip.deal" in market_fn
+    and "明日再看" in market_fn
+    and "柜上只摆三样。要看别的，明日再来。" in main_src
+    and "这件今日不在柜上。" in main_src
+    and "柜上换了一手，日子过了一天。" in main_src
+    and '"broker_salt"' in gs_src_draft
+    and "OptionButton" not in market_fn
+    and "_select_market_ship" in market_fn
+):
+    print("  ✓ 牙行改成柜上三样")
+else:
+    print("  ✗ 柜上三样未接上")
+    problems.append("柜上三样未接上")
+if (
+    "%s　%s%s" in cal_src
+    and "%s %s%s" not in cal_src
+    and "费一日" in main_src
+    and "费 1 日" not in main_src
+):
+    print("  ✓ 日期留出字距，酒馆行情写成费一日")
+else:
+    print("  ✗ 日期仍是半角空格，或酒馆行情仍写费 1 日")
+    problems.append("日期或酒馆行情仍是半角记法")
+tavern_i = main_src.find("func _setup_tavern")
+tavern_j = main_src.find("\nfunc ", tavern_i + 1)
+tavern_body = main_src[tavern_i:tavern_j] if tavern_i >= 0 and tavern_j > tavern_i else ""
+if "_begin_slip_scroll" in tavern_body and tavern_body.find("_add_leave_button") > tavern_body.find("_end_slip_scroll"):
+    print("  ✓ 酒馆募人在里面滚，离开留在下面")
+else:
+    print("  ✗ 酒馆离开未钉在募人账条下面")
+    problems.append("酒馆离开未钉在募人账条下面")
+if "★" not in main_src and "func _skill_rank" in main_src and "Crew.rank_word" in main_src and "func rank_word" in crew_src:
+    print("  ✓ 职事品级写成初习/谙熟/老练")
+else:
+    print("  ✗ 职事仍用星号")
+    problems.append("职事仍用星号")
+if "func _fit_rank" in main_src and "帆Lv" not in main_src and "Lv%d" not in main_src:
+    print("  ✓ 船壳改装写成一等/二等/三等")
+else:
+    print("  ✗ 船壳改装仍写 Lv")
+    problems.append("船壳改装仍写 Lv")
+if "func _interior_title" in main_src and "未命名设施" not in main_src:
+    print("  ✓ 序章内页改写成港名去处")
+else:
+    print("  ✗ 序章内页或港卡仍是占位名")
+    problems.append("序章内页或港卡仍是占位名")
+if "func _interior_lead" in main_src and "static func plain_log" in theme_src and "UiTheme.plain_log" in main_src:
+    print("  ✓ 序章内页进门有一句，日志去掉方括号标签")
+else:
+    print("  ✗ 内页正文或日志标签未收")
+    problems.append("内页正文或日志标签未收")
+if "【发舶】" not in seachart_src and "UiTheme.plain_log" in seachart_src:
+    print("  ✓ 海图日志不再写发舶标签")
+else:
+    print("  ✗ 海图日志仍写发舶标签")
+    problems.append("海图日志仍写发舶标签")
+if (
+    "func _bearing_phrase" in seachart_src
+    and "UiTheme.heading_card" in seachart_src
+    and "回港（不出海）" not in seachart_src
+    and "目的：" not in seachart_src
+    and "绕过去看看（费 1 日）" not in seachart_src
+    and "%d%%" not in seachart_src
+    and "°" not in seachart_src
+):
+    print("  ✓ 海图旁注收成账条，去掉冒号、度数符号和括号教程")
+else:
+    print("  ✗ 海图旁注仍是冒号或括号教程")
+    problems.append("海图旁注仍是冒号或括号教程")
+if (
+    seachart_src.count("绕了些路。") == 1
+    and seachart_src.count("_log_shook_pursuers()") == 3
+    and "（绕了些路）" not in seachart_src
+    and "（调试）" not in seachart_src
+    and "点验　中途遭遇。" in seachart_src
+    and "损折：" not in voyage_src
+    and "损折　" in voyage_src
+):
+    print("  ✓ 海图遭遇日志去掉括号，风涛货损去掉冒号")
+else:
+    print("  ✗ 海图遭遇日志仍有括号或风涛货损仍有冒号")
+    problems.append("海图遭遇日志仍有括号")
+if (
+    "收帆" in wm_src and "半帆" in wm_src and "满帆" in wm_src
+    and "操舵　A　D" in wm_src and "齐射　J　K" in wm_src
+    and "弃战　B" in wm_src and "接舷　G　弃战　B" in wm_src
+    and "A/D" not in wm_src and "J/K" not in wm_src and "B/Esc" not in wm_src
+    and "档" not in wm_src
+    and "月息每百 %d" in main_src and "月息 %d%%" not in main_src
+    and "添 %d 人" in main_src and "+%d" not in main_src
+    and "运往 %s　多 %d" in main_src and "→ %s" not in main_src
+    and "此帆比光船快" in main_src and "船体伤剩" in main_src
+    and "航速 ×" not in main_src and "违禁：" not in main_src
+    and "抽解每百 %d" in main_src and "%d%%" not in main_src
+    and "水手 %d 至 %d" in main_src and "水粮各 %d　付 %d" in main_src
+    and "水手 %d–%d" not in main_src and "各 %d　%d" not in main_src
+):
+    print("  ✓ 海战栏与船屋账条去掉斜杠、百分号和小数倍率")
+else:
+    print("  ✗ 海战栏或船屋账条仍有斜杠、百分号或小数倍率")
+    problems.append("海战栏或船屋仍是原型记法")
+gs_chapter_src = open(os.path.join(SCRIPTS, "GameState.gd"), encoding="utf-8").read()
+if (
+    "%s　%s　%d / %d" in main_src
+    and "%s %s %d/%d" not in main_src
+    and "再升一等。" in main_src
+    and "再升一等：" not in main_src
+    and "拓「%s」　%s" in main_src
+    and "拓「%s」：" not in main_src
+    and "亲至　" in gs_chapter_src
+    and "亲至 " not in gs_chapter_src
+    and "水手 %d / %d" in main_src
+):
+    print("  ✓ 章目写成已行多少，修埠与拓碑去掉冒号")
+else:
+    print("  ✗ 章目、修埠或拓碑仍是半角或冒号")
+    problems.append("章目、修埠或拓碑仍是半角或冒号")
+enter_i = main_src.find("func _on_enter_port")
+enter_j = main_src.find("\nfunc ", enter_i + 1)
+enter_body = main_src[enter_i:enter_j] if enter_i >= 0 and enter_j > enter_i else ""
+if "visit_port" in enter_body and enter_body.find("update_status_panel") > enter_body.find("visit_port"):
+    print("  ✓ 进港后船籍簿按已走通的港重写")
+else:
+    print("  ✗ 进港后船籍簿未按已走通的港重写")
+    problems.append("进港后船籍簿未重写")
+if (
+    "掐指算了算。" in main_src
+    and "掐指算了算：" not in main_src
+    and "压低声音说。" in main_src
+    and "压低声音说：" not in main_src
+    and "五至八月" in main_src
+    and "十月至次年二月" in main_src
+    and "%s　眼下缺%s" in main_src
+    and "%s 眼下缺" not in main_src
+    and "多得　%d" in main_src
+):
+    print("  ✓ 候风与打听去掉冒号")
+else:
+    print("  ✗ 候风或打听仍用冒号领起")
+    problems.append("候风或打听仍用冒号领起")
+if '" x"' not in wm_src:
+    print("  ✓ 海战货舱用乘号")
+else:
+    print("  ✗ 海战货舱仍用拉丁字母 x")
+    problems.append("海战货舱仍用拉丁字母 x")
+if 'text = "请选择"' not in main_src and "区域施工中" not in main_src:
+    print("  ✓ 调查页用决断，缺页不再写施工中")
+else:
+    print("  ✗ 调查页仍写请选择或施工中")
+    problems.append("调查页仍写请选择或施工中")
+main_tscn = ""
+with open(os.path.join(ROOT, "scenes", "Main.tscn"), encoding="utf-8") as f:
+    main_tscn = f.read()
+_placeholder_left = [
+    needle for needle in (
+        "副标题", "地点标题", "环境描述文本", "NPC Dialog", "NPC Name",
+        "情报与状态", "港口名称",
+    ) if needle in main_tscn
+]
+if _placeholder_left:
+    print("  ✗ 开场场景仍有原型占位：%s" % "、".join(_placeholder_left))
+    problems.append("开场场景仍有原型占位")
+else:
+    print("  ✓ 开场场景不再写原型占位")
+
+
+def _node_block(src: str, node_name: str) -> str:
+    token = '[node name="%s"' % node_name
+    at = src.find(token)
+    if at < 0:
+        return ""
+    nxt = src.find("\n[node ", at + len(token))
+    return src[at:] if nxt < 0 else src[at:nxt]
+
+
+if "visible = false" in _node_block(main_tscn, "InvestigationMode") and "visible = false" in _node_block(main_tscn, "LeftPanel"):
+    print("  ✓ 调查页和船籍簿默认收起")
+else:
+    print("  ✗ 调查页或船籍簿开场仍展开")
+    problems.append("开场占位层未收起")
+if "按 Enter 停靠" in wm_tscn:
+    print("  ✗ 海战港名仍写停靠教程")
+    problems.append("海战港名仍写停靠教程")
+else:
+    print("  ✓ 海战港名不再写停靠教程")
+portzone_src = ""
+with open(os.path.join(ROOT, "scripts", "PortZone.gd"), encoding="utf-8") as f:
+    portzone_src = f.read()
+if "name_lbl.text = port_name" in portzone_src:
+    print("  ✓ 港区名牌写港口名")
+else:
+    print("  ✗ 港区名牌未写港口名")
+    problems.append("港区名牌未写港口名")
 if "Color(0.2, 0.4, 0.6" in main_src:
     print("  ✗ NPC 按钮仍用蓝底硬编码")
     problems.append("NPC 按钮蓝底硬编码")
@@ -966,6 +1277,21 @@ if "CenterContainer" in seachart_src and "Vector2(360, 200)" not in seachart_src
 else:
     print("  ✗ 海图遭遇弹层仍用 360,200 硬坐标")
     problems.append("海图遭遇弹层未居中")
+if "func _draw_ink_label" in seachart_src and "draw_string(font, v + Vector2(8, 5)" not in seachart_src:
+    print("  ✓ 海图港名走墨底签")
+else:
+    print("  ✗ 海图港名仍是裸字")
+    problems.append("海图港名未垫墨底")
+if "func _draw_chart_leaf" in seachart_src and "Color(0.11, 0.08, 0.05, 0.55)" not in seachart_src:
+    print("  ✓ 海图中栏是绢纸")
+else:
+    print("  ✗ 海图中栏仍铺熟漆")
+    problems.append("海图中栏未改绢纸")
+if "event_actions = VBoxContainer" in seachart_src and "style_choice_button(b)" in seachart_src:
+    print("  ✓ 海图遭遇选项走竖排挑签")
+else:
+    print("  ✗ 海图遭遇选项未走挑签")
+    problems.append("海图遭遇未走挑签")
 if "StyleBoxFlat.new()" in seachart_src:
     print("  ✗ SeaChart 仍手写 StyleBoxFlat")
     problems.append("SeaChart 手写 StyleBoxFlat")

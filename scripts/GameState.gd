@@ -44,6 +44,12 @@ var discoveries_reported: Array = []
 var visited_ports: Array = []
 ## 资金历史峰值。用峰值而非当前值判定晋升，否则买条船就把进度买没了。
 var peak_money: int = 1000
+## 晨潮三向的轮转。候风再发加一。旧档没有这个字段时当作 0。
+var draft_salt: int = 0
+## 岸上门户的轮转。再候一日加一。旧档没有这个字段时当作 0。
+var shore_salt: int = 0
+## 牙行柜台的轮转。明日再看加一。旧档没有这个字段时当作 0。
+var broker_salt: int = 0
 
 
 # ── 钱 ────────────────────────────────────────────────
@@ -172,7 +178,7 @@ func _requirement_items(req: Dictionary) -> Array:
 
 	for pid in req.get("must_visit", []):
 		items.append({
-			"label": "亲至 " + GameManager.get_port_name(str(pid)),
+			"label": "亲至　" + GameManager.get_port_name(str(pid)),
 			"current": 1 if pid in visited_ports else 0, "need": 1,
 			"done": pid in visited_ports,
 		})
@@ -527,6 +533,9 @@ func to_dict() -> Dictionary:
 		"discoveries_reported": discoveries_reported,
 		"visited_ports": visited_ports,
 		"peak_money": peak_money,
+		"draft_salt": draft_salt,
+		"shore_salt": shore_salt,
+		"broker_salt": broker_salt,
 	}
 
 
@@ -550,3 +559,6 @@ func from_dict(d: Dictionary) -> void:
 	discoveries_reported = d.get("discoveries_reported", [])
 	visited_ports = d.get("visited_ports", [])
 	peak_money = d.get("peak_money", money)
+	draft_salt = int(d.get("draft_salt", 0))
+	shore_salt = int(d.get("shore_salt", 0))
+	broker_salt = int(d.get("broker_salt", 0))

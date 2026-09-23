@@ -8,6 +8,9 @@ var player_in_zone: bool = false
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+	var name_lbl := get_node_or_null("Label")
+	if name_lbl is Label:
+		name_lbl.text = port_name
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "Ship":

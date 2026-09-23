@@ -27,7 +27,7 @@ func save_game(slot: int, current_scene: String = "") -> bool:
 		"crew": Crew.to_dict(),
 		"state": GameState.to_dict(),
 		"scene": current_scene,
-		"label": "%s・%s・%d钱" % [
+		"label": "%s　%s　%d 钱" % [
 			Calendar.get_date_string(),
 			GameManager.get_port_name(GameState.last_port),
 			GameState.money,
@@ -74,10 +74,10 @@ func saved_scene(slot: int) -> String:
 
 func save_label(slot: int) -> String:
 	if not has_save(slot):
-		return "（空）"
+		return "未记"
 	var f := FileAccess.open(_path(slot), FileAccess.READ)
 	var json := JSON.new()
 	if json.parse(f.get_as_text()) != OK:
-		return "（损坏）"
-	return json.data.get("label", "（无标签）")
+		return "卷页损了"
+	return json.data.get("label", "未题")
 
