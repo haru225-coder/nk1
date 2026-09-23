@@ -794,7 +794,7 @@ check(0.70 <= COAST_SPD < 0.90, f"傍岸日速 ×{COAST_SPD} 落在 [0.70, 0.90)
 check(0.40 * OFF_SPD < 1.0, f"顶头逆风 × 外洋 = {0.40 * OFF_SPD:.3f} < 1，逆风不会被航法乘成顺风")
 check(1.60 * COAST_SPD < 1.60 * 1.0, "顺风傍岸仍慢于顺风针路")
 
-def event_weights(order, strength, known):
+def event_weights(order, strength, known, discoveries_open=True):
     """复刻 Voyage.event_weights。order: rumb / offshore / coast。"""
     storm = W_STORM_BASE + W_STORM_WIND * strength
     pirate, calm, current = W_PIRATE, W_CALM, W_CURRENT
@@ -816,6 +816,13 @@ def event_weights(order, strength, known):
     mass = sum(vals)
     if mass > MAX_EVENT_MASS:
         vals = [v * MAX_EVENT_MASS / mass for v in vals]
+        mass = MAX_EVENT_MASS
+    if not discoveries_open and vals[keys.index("discovery")] > 0:
+        disc = vals[keys.index("discovery")]
+        kept = mass - disc
+        if kept > 0:
+            scale = mass / kept
+            vals = [0.0 if i == keys.index("discovery") else v * scale for i, v in enumerate(vals)]
     return dict(zip(keys, vals))
 
 rumb = event_weights("rumb", 1.0, True)
@@ -839,16 +846,22 @@ check(lost_o["lost"] > lost_r["lost"] > lost_c["lost"] > 0,
       f"生路迷航 外洋 {lost_o['lost']:.3f} > 针路 {lost_r['lost']:.3f} > 傍岸 {lost_c['lost']:.3f}")
 for name, w in (("针路熟路", rumb), ("外洋生路", lost_o), ("傍岸生路", event_weights("coast", 1.0, False))):
     check(sum(w.values()) <= MAX_EVENT_MASS + 1e-9, f"{name} 事件总质量 {sum(w.values()):.3f} ≤ {MAX_EVENT_MASS}")
+coast_closed = event_weights("coast", 1.0, False, False)
+check(abs(sum(coast_closed.values()) - sum(event_weights("coast", 1.0, False).values())) < 1e-9
+      and coast_closed["discovery"] == 0
+      and coast_closed["shoal"] > event_weights("coast", 1.0, False)["shoal"],
+      "岸影抽空后傍岸总质量不变、浅滩概率上升，不会变成白走的无事日")
 
 def ch_of(unlock):
     if isinstance(unlock, str) and unlock.startswith("ch"):
         return int(unlock[2:])
     return 1
 
-def sea_buy_unit(gid):
-    """出发港不经营此货时的海上买价：普通口岸行情 1.0 再加价。"""
+def sea_buy_unit(gid, live_min=0):
+    """海上买价。live_min 是已解锁港口里的最低现买价；低于行情 1.0 的普通口岸时不采用。"""
     normal = round(goods[gid]["base_value"] * (1 + TARIFF))
-    return math.ceil(normal * SEA_BUY_MARKUP)
+    floor = max(normal, live_min)
+    return math.ceil(floor * SEA_BUY_MARKUP)
 
 def best_consumer_sell(gid, chapter=4):
     best = 0
@@ -895,6 +908,24 @@ for gid, g in goods.items():
             worst_gap = gap
 check(origin_beats, "海上买价严格高于任一产地或普通口岸的买价（产地低价买不到）")
 check(sell_capped, f"海上卖价严格低于最佳消费地卖价（最窄价差 {worst_gap}）")
+spiked_ok = True
+discount_ok = True
+for gid, g in goods.items():
+    if not g.get("tradable") or g.get("contraband") or g.get("base_value", 0) <= 0 or g.get("bulk", 0) <= 0:
+        continue
+    lives = [buy_price(pid, gid, 2.2) for pid, p in ports.items()
+             if p.get("depth", 0) > 0 and gid in p.get("market", {})]
+    lows = [buy_price(pid, gid, 0.4) for pid, p in ports.items()
+            if p.get("depth", 0) > 0 and gid in p.get("market", {})]
+    if not lives or not lows:
+        continue
+    if sea_buy_unit(gid, min(lives)) <= min(lives):
+        spiked_ok = False
+    plain = sea_buy_unit(gid)
+    if min(lows) < plain and sea_buy_unit(gid, min(lows)) != plain:
+        discount_ok = False
+check(spiked_ok, "港口被买到行情 2.2 后，海上买价仍高于最便宜的那个港口")
+check(discount_ok, "产地行情跌到 0.4 时，海上买价不跟着降到产地价")
 
 def stable_hash(s):
     h = 0
@@ -1026,6 +1057,14 @@ check(not known_route("quanzhou", "hakata"), "没有连线的泉州–博多仍�
 voyage_src = open(os.path.join(ROOT, V_GD), encoding="utf-8").read()
 known_body = voyage_src.split("func is_known_route", 1)[1].split("\nfunc ", 1)[0]
 check(known_body.count("port_def") >= 2, "熟路判定读了两端的连线，不是只看出发港")
+buy_body = voyage_src.split("func sea_buy_unit", 1)[1].split("\nfunc ", 1)[0]
+roll_body = voyage_src.split("func roll_day_event", 1)[1].split("\nfunc ", 1)[0]
+check("_cheapest_port_buy" in buy_body, "海上买价会看已解锁港口里的最低现价，不会低于它")
+weights_body = voyage_src.split("func event_weights", 1)[1].split("\nfunc ", 1)[0]
+check("discoveries_open" in weights_body and "_discovery_candidates" in roll_body,
+      "岸影抽空时当日权重不再把这一档当成无事日")
+main_src = open(os.path.join(ROOT, "scripts/Main.gd"), encoding="utf-8").read()
+check("hint_lbl.text = rumor" in main_src, "牙行行上直接写出传闻卖价，不只藏在悬停里")
 offer_body = gs_src.split("func contract_offer", 1)[1].split("\nfunc ", 1)[0]
 fail_body = gs_src.split("func _fail_contract", 1)[1].split("\nfunc ", 1)[0]
 accept_body = gs_src.split("func accept_contract", 1)[1].split("\nfunc ", 1)[0]

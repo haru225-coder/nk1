@@ -189,8 +189,9 @@ func is_known_route(from_id: String, to_id: String) -> bool:
 
 # ── 逐日事件 ──────────────────────────────────────────
 
-## 当日事件权重。针路且熟路时与旧表逐项相同；外洋/傍岸/生路只改权重，不改结算公式。
-func event_weights(order: int, monsoon_strength: float, known: bool) -> Dictionary:
+## 当日事件权重。针路且熟路、岸影还在时，与旧表逐项相同。
+## 岸影抽空后把这一档按比例摊回其余事件，总质量不变，傍岸不会因此变快。
+func event_weights(order: int, monsoon_strength: float, known: bool, discoveries_open: bool = true) -> Dictionary:
 	var storm := W_STORM_BASE + W_STORM_WIND * monsoon_strength
 	var pirate := W_PIRATE
 	var calm := W_CALM
@@ -232,6 +233,19 @@ func event_weights(order: int, monsoon_strength: float, known: bool) -> Dictiona
 		discovery *= k
 		shoal *= k
 		lost *= k
+		mass = MAX_EVENT_MASS
+	if not discoveries_open and discovery > 0.0:
+		var kept := mass - discovery
+		if kept > 0.0:
+			var scale := mass / kept
+			storm *= scale
+			pirate *= scale
+			calm *= scale
+			current *= scale
+			merchant *= scale
+			shoal *= scale
+			lost *= scale
+		discovery = 0.0
 	return {
 		"storm": storm,
 		"pirate": pirate,
@@ -250,7 +264,8 @@ func roll_day_event(_course_bearing: float, from_id: String = "", to_id: String 
 	var known := true
 	if from_id != "" and to_id != "":
 		known = is_known_route(from_id, to_id)
-	var w := event_weights(order, Calendar.get_monsoon_strength(), known)
+	var open := not _discovery_candidates(from_id, to_id).is_empty()
+	var w := event_weights(order, Calendar.get_monsoon_strength(), known, open)
 	var r := randf()
 	var t := 0.0
 	t += float(w["storm"])
@@ -350,8 +365,26 @@ func sea_sell_unit(good_id: String, avg_cost: float, jitter: float) -> int:
 	return maxi(1, raw)
 
 
+## 已解锁港口里，这货现在最便宜的买价。没有在卖的港口则返回 0。
+func _cheapest_port_buy(good_id: String) -> int:
+	var cheapest := 0
+	for p in GameManager.unlocked_ports():
+		if int(p.get("depth", 0)) <= 0:
+			continue
+		var pid: String = p.get("id", "")
+		if not Economy.is_traded(pid, good_id):
+			continue
+		var b := Economy.buy_price(pid, good_id)
+		if b <= 0:
+			continue
+		if cheapest == 0 or b < cheapest:
+			cheapest = b
+	return cheapest
+
+
 ## 海上买入价：至少是「普通口岸、行情 1.0、不含职事议价」再加一成二。
-## 出发港若更贵，取更贵的那个。产地的低价在海上买不到。
+## 出发港或任一已解锁港口的现价若更高，取更高的那个再加价。
+## 产地低价、被砸低的行情，都不会把海上买价拉下来。
 func sea_buy_unit(good_id: String, from_port: String) -> int:
 	var base := float(GameManager.get_good_by_id(good_id).get("base_value", 0))
 	if base <= 0.0:
@@ -360,6 +393,7 @@ func sea_buy_unit(good_id: String, from_port: String) -> int:
 	var floor_p := normal
 	if from_port != "" and Economy.is_traded(from_port, good_id):
 		floor_p = maxi(floor_p, Economy.buy_price(from_port, good_id))
+	floor_p = maxi(floor_p, _cheapest_port_buy(good_id))
 	return int(ceil(float(floor_p) * SEA_BUY_MARKUP))
 
 
@@ -494,17 +528,22 @@ func _lost_event() -> Dictionary:
 	}
 
 
-## 只抽当前航段沿途可能有的、且尚未勘见的发现物
-func _discovery_event(from_id: String = "", to_id: String = "") -> Dictionary:
+## 当前航段沿途可能有的、且尚未勘见的发现物。未标注海域的算通用。
+func _discovery_candidates(from_id: String, to_id: String) -> Array:
 	var pool := []
 	for d in GameManager.discoveries_data.get("discoveries", []):
 		var did: String = d.get("id", "")
 		if GameState.has_found(did):
 			continue
 		var near: Array = d.get("near_ports", [])
-		# 未标注海域的算通用；标注了则须与本航段两端有交集
 		if near.is_empty() or from_id in near or to_id in near:
 			pool.append(d)
+	return pool
+
+
+## 只抽当前航段沿途可能有的、且尚未勘见的发现物
+func _discovery_event(from_id: String = "", to_id: String = "") -> Dictionary:
+	var pool := _discovery_candidates(from_id, to_id)
 	if pool.is_empty():
 		return {"kind": EventKind.NONE}
 

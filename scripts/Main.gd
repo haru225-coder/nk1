@@ -463,6 +463,12 @@ func _add_contract_panel(port_id: String) -> void:
 				rumb, off, coast, deadline,
 			]
 			box.add_child(head)
+			var calm_note := Label.new()
+			calm_note.text = "日数为静风推算，风涛、无风、迷航都不计。"
+			calm_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			calm_note.add_theme_font_size_override("font_size", 13)
+			calm_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
+			box.add_child(calm_note)
 			if coast > deadline:
 				var warn := Label.new()
 				warn.text = "傍岸赶不上这一单。"
@@ -524,12 +530,13 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	row.add_child(name_lbl)
 
 	var hint_lbl := Label.new()
-	hint_lbl.text = Economy.price_hint(port_id, good_id)
+	var hint := Economy.price_hint(port_id, good_id)
 	var rumor := GameState.rumor_label(port_id, good_id)
+	hint_lbl.text = hint
 	if rumor != "":
-		hint_lbl.tooltip_text = rumor
-		hint_lbl.text = (hint_lbl.text + "·闻") if hint_lbl.text != "" else "闻"
-	hint_lbl.custom_minimum_size = Vector2(120, 0)
+		hint_lbl.text = rumor
+		hint_lbl.tooltip_text = (hint + "\n" + rumor) if hint != "" else rumor
+	hint_lbl.custom_minimum_size = Vector2(168, 0)
 	hint_lbl.add_theme_font_size_override("font_size", 13)
 	if role == "origin":
 		hint_lbl.add_theme_color_override("font_color", Color(0.5, 0.9, 0.6))

@@ -378,6 +378,7 @@ func _refresh_detail() -> void:
 			Voyage.plan(origin_port, selected_port, Voyage.CourseOrder.RUMB)["days"],
 			plan_off["days"], plan_coast["days"],
 		],
+		"日数为静风推算，风涛、无风、迷航都不计在内。",
 		Voyage.order_blurb(course_order),
 	]
 	for l in lines:
@@ -391,11 +392,12 @@ func _refresh_detail() -> void:
 	if not cst.is_empty() and str(cst.get("dest", "")) == selected_port:
 		var left: int = int(cst.get("days_left", 0))
 		var contract_lbl := Label.new()
+		contract_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		if int(plan["days"]) > left:
-			contract_lbl.text = "委办只剩 %d 日，此航法预计 %d 日，赶不上。" % [left, int(plan["days"])]
+			contract_lbl.text = "委办只剩 %d 日，静风预计就要 %d 日，赶不上。" % [left, int(plan["days"])]
 			contract_lbl.add_theme_color_override("font_color", Color(1.0, 0.55, 0.4))
 		else:
-			contract_lbl.text = "委办还剩 %d 日，此航法预计 %d 日。" % [left, int(plan["days"])]
+			contract_lbl.text = "委办还剩 %d 日，静风预计 %d 日。风涛、无风、迷航都会把这个数拖过。" % [left, int(plan["days"])]
 			contract_lbl.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
 		detail_box.add_child(contract_lbl)
 
