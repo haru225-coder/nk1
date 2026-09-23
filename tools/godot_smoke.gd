@@ -161,6 +161,11 @@ func _run() -> void:
 		and main_src.find("塞 50") < 0 and main_src.find("关注减 15") < 0
 		and main_src.find("UiTheme.plain_log(_gather_price_intel") >= 0,
 		"见面册疏通留出字距，行情去掉方括号", fails)
+	_check(main_src.find("尚无人留意") >= 0 and main_src.find("偶有闲话传出") >= 0
+		and main_src.find("起了疑心") >= 0 and main_src.find("暗桩已盯死，出港必查") >= 0
+		and main_src.find("（尚无人留意）") < 0 and main_src.find("（偶有闲话传出）") < 0
+		and main_src.find("（蒲氏起了疑心）") < 0 and main_src.find("（暗桩已盯死，出港必查）") < 0,
+		"市舶司关注四档去掉括号", fails)
 	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
 		"职事品级写成初习/谙熟/老练，不再用星号", fails)
 	_check(main_src.find("func _fit_rank") >= 0 and main_src.find("帆Lv") < 0

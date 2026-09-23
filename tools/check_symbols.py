@@ -930,6 +930,20 @@ if "塞　50" in main_src and "关注　减 15" in main_src and "塞 50" not in 
 else:
     print("  ✗ 见面册疏通或行情仍是挤字")
     problems.append("见面册疏通或行情仍是挤字")
+if (
+    "尚无人留意" in main_src
+    and "偶有闲话传出" in main_src
+    and "起了疑心" in main_src
+    and "暗桩已盯死，出港必查" in main_src
+    and "（尚无人留意）" not in main_src
+    and "（偶有闲话传出）" not in main_src
+    and "（蒲氏起了疑心）" not in main_src
+    and "（暗桩已盯死，出港必查）" not in main_src
+):
+    print("  ✓ 市舶司关注四档去掉括号")
+else:
+    print("  ✗ 市舶司关注仍套括号")
+    problems.append("市舶司关注仍套括号")
 if "★" not in main_src and "func _skill_rank" in main_src and "Crew.rank_word" in main_src and "func rank_word" in crew_src:
     print("  ✓ 职事品级写成初习/谙熟/老练")
 else:

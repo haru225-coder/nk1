@@ -975,12 +975,12 @@ func _on_invest_port(port_id: String) -> void:
 func _attention_desc() -> String:
 	var a := GameState.pu_attention
 	if a >= 70:
-		return "（暗桩已盯死，出港必查）"
+		return "暗桩已盯死，出港必查"
 	elif a >= 50:
-		return "（蒲氏起了疑心）"
+		return "起了疑心"
 	elif a >= 25:
-		return "（偶有闲话传出）"
-	return "（尚无人留意）"
+		return "偶有闲话传出"
+	return "尚无人留意"
 
 
 # ── 账条 ────────────────────────────────────────────
