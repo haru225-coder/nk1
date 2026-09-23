@@ -34,7 +34,7 @@ var title_button_connected: bool = false
 ## 牙行当前选中的船 index（多船分装用），进牙行时重置为旗舰
 var _market_ship: int = 0
 
-const FACILITY_SUFFIXES := ["_market", "_yamen", "_shipyard", "_tavern", "_inn"]
+const FACILITY_SUFFIXES := ["_market", "_yamen", "_shipyard", "_tavern", "_inn", "_guild", "_exam", "_residence"]
 
 ## 无剧情场景的港口使用的通用设施
 const GENERIC_FACILITIES := [
@@ -63,6 +63,7 @@ func _on_monthly_notice(text: String) -> void:
 func start_game() -> void:
 	if GameState.has_flag("return_to_port"):
 		GameState.flags.erase("return_to_port")
+		GameState.docked = true
 		load_scene(GameState.last_port)
 	else:
 		var start_id = GameManager.scenes_data.get("start_scene", "cg_title")
@@ -102,7 +103,10 @@ func update_status_panel() -> void:
 	t += "金钱：%d\n" % GameState.money
 	if GameState.debt > 0:
 		t += "[color=orange]欠债：%d[/color]\n" % GameState.debt
-	t += "名声：%d\n\n" % GameState.fame
+	t += "名声：%d（%s）\n" % [GameState.fame, GameState.fame_title()]
+	if GameState.merchant_credit != 0 or GameState.network != 0:
+		t += "商誉：%d　人脉：%d\n" % [GameState.merchant_credit, GameState.network]
+	t += "\n"
 	t += "[u]舰队[/u]\n船数：%d　水手：%d\n舱位：%d / %d 料\n耐久：%d / %d\n士气：%d\n" % [
 		Fleet.ships.size(), Fleet.total_crew(),
 		int(cap_used), int(cap_total),
@@ -158,6 +162,9 @@ func update_status_panel() -> void:
 	t += "\n[u]第%s章・%s[/u]\n" % [
 		_cn_chapter(GameState.chapter), GameState.chapter_def().get("name", ""),
 	]
+	var ending := GameState.ending_def()
+	if not ending.is_empty():
+		t += "[color=lime]%s[/color]\n" % ending.get("title", "")
 	if prog.get("final", false):
 		t += "[color=gray]已至最后一章[/color]\n"
 	else:
@@ -187,18 +194,17 @@ func load_scene(scene_id: String) -> void:
 			return
 
 	var scene_data = GameManager.get_scene_by_id(scene_id)
+	var pdef := GameManager.get_port_by_id(scene_id)
+	# 博多、流求的场景 id 与港口 id 相同。剧情选项仍播正文；靠岸之后打开港口。
+	if GameState.docked and not pdef.is_empty() and scene_data.get("type", "") != "port":
+		_open_generic_port(scene_id, pdef)
+		return
 	if scene_data.is_empty():
 		# scenes.json 只为少数港口写了剧情场景；其余按 ports.json 生成通用港口界面
-		var pdef := GameManager.get_port_by_id(scene_id)
 		if not pdef.is_empty():
-			GameState.last_port = scene_id
-			_apply_background("port", scene_id)
-			_setup_port_mode({
-				"title": pdef.get("name", scene_id),
-				"facilities": GENERIC_FACILITIES,
-			})
-			_on_enter_port(scene_id)
+			_open_generic_port(scene_id, pdef)
 			return
+		GameState.docked = false
 		_setup_missing_scene(scene_id)
 		return
 
@@ -207,13 +213,27 @@ func load_scene(scene_id: String) -> void:
 	_apply_background(type, loc)
 
 	if type == "title":
+		GameState.docked = false
 		_setup_title_mode(scene_data)
 	elif type == "port":
+		GameState.docked = true
 		GameState.last_port = scene_id
 		_setup_port_mode(scene_data)
 		_on_enter_port(scene_id)
 	else:
+		GameState.docked = false
 		_setup_investigation_mode(scene_data)
+
+
+func _open_generic_port(port_id: String, pdef: Dictionary) -> void:
+	GameState.docked = true
+	GameState.last_port = port_id
+	_apply_background("port", port_id)
+	_setup_port_mode({
+		"title": pdef.get("name", port_id),
+		"facilities": GENERIC_FACILITIES,
+	})
+	_on_enter_port(port_id)
 
 
 ## 港口 → 背景图
@@ -236,6 +256,9 @@ const FACILITY_BG := {
 	"_shipyard": "bg_shipyard.jpg",
 	"_yamen": "bg_customs_room.jpg",
 	"_tavern": "bg_xinghua_wine_shed.jpg",
+	"_guild": "bg_yahang.jpg",
+	"_exam": "bg_academy.jpg",
+	"_residence": "bg_quanzhou_ledger.jpg",
 }
 
 
@@ -322,6 +345,12 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 			_setup_shipyard(base_loc)
 		"_inn":
 			_setup_inn(base_loc)
+		"_guild":
+			_setup_guild(base_loc)
+		"_exam":
+			_setup_exam(base_loc)
+		"_residence":
+			_setup_residence(base_loc)
 
 
 # ── 牙行（市场）─────────────────────────────────────
@@ -666,8 +695,8 @@ func _setup_shipyard(port_id: String) -> void:
 
 	# 赊贷：本钱被查扣清空后仍有翻身的路
 	var loan_lbl := Label.new()
-	loan_lbl.text = "── 蕃商赊贷（月息 %d%%，上限 %d）──" % [
-		int(GameState.DEBT_MONTHLY_RATE * 100), GameState.DEBT_CEILING,
+	loan_lbl.text = "── 蕃商赊贷（月息 %d%%，上限 %d・%s）──" % [
+		int(GameState.DEBT_MONTHLY_RATE * 100), GameState.debt_ceiling(), GameState.fame_title(),
 	]
 	loan_lbl.add_theme_font_size_override("font_size", 13)
 	choices_container.add_child(loan_lbl)
@@ -986,6 +1015,117 @@ func _on_rest(days: int, port_id: String) -> void:
 	load_scene(current_scene_id)
 
 
+func _setup_guild(port_id: String) -> void:
+	scene_title.text = "%s・行会" % GameManager.get_port_name(port_id)
+	body_text.text = "称谓：%s\n名声 %d　商誉 %d　人脉 %d\n海路倾向 %d　士人倾向 %d\n\n近账：\n%s" % [
+		GameState.fame_title(), GameState.fame, GameState.merchant_credit, GameState.network,
+		GameState.sea_tendency, GameState.scholar_tendency,
+		GameState.ledger_recent_text(8),
+	]
+	if GameState.has_flag("guild_" + port_id):
+		body_text.text += "\n\n你已是此港行会中人。册子摊在案上，不必再交一次入行银。"
+	else:
+		var b := Button.new()
+		b.text = "入行（%d 钱）" % GameState.GUILD_FEE
+		b.pressed.connect(func():
+			var res := GameState.join_guild(port_id)
+			log_msg(str(res.get("msg", "")))
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(b)
+	choices_label.visible = true
+	_add_leave_button(port_id)
+
+
+func _setup_exam(port_id: String) -> void:
+	scene_title.text = "%s・贡院" % GameManager.get_port_name(port_id)
+	var once := "exam_sat_ch%d" % GameState.chapter
+	if GameState.has_flag(once):
+		body_text.text = "这一章的号房已经坐过。卷子还在，人不必再进。"
+	else:
+		body_text.text = "贡院朱门开着一条缝。坐这一科要十五日，风信和行情都不会等你。\n眼下海路倾向 %d，士人倾向 %d。" % [
+			GameState.sea_tendency, GameState.scholar_tendency,
+		]
+		var b := Button.new()
+		b.text = "坐这一科（%d 日）" % GameState.EXAM_DAYS
+		b.pressed.connect(func():
+			var res := GameState.sit_exam()
+			if res.get("scholar", false):
+				GameState.set_flag("exam_sat")
+			log_msg(str(res.get("msg", "")))
+			update_status_panel()
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(b)
+	choices_label.visible = true
+	_add_leave_button(port_id)
+
+
+func _setup_residence(port_id: String) -> void:
+	scene_title.text = "%s・住处" % GameManager.get_port_name(port_id)
+	var ending := GameState.ending_def()
+	var end_line := ""
+	if not ending.is_empty():
+		end_line = "结局：%s\n\n" % ending.get("title", "")
+	var ledger_text := GameState.ledger_recent_text(GameState.ledger.size())
+	if GameState.ledger.is_empty():
+		ledger_text = "（账册还是空白）"
+	body_text.text = "称谓：%s\n名声 %d　商誉 %d　人脉 %d\n海路倾向 %d　士人倾向 %d\n\n%s账册：\n%s" % [
+		GameState.fame_title(), GameState.fame, GameState.merchant_credit, GameState.network,
+		GameState.sea_tendency, GameState.scholar_tendency,
+		end_line, ledger_text,
+	]
+	if GameState.ending_id == "":
+		for e in GameState.endings_at(port_id):
+			var b := Button.new()
+			b.text = "合上账册・%s" % e.get("title", "")
+			var eid := str(e.get("id", ""))
+			b.pressed.connect(_on_choose_ending.bind(eid, port_id))
+			choices_container.add_child(b)
+	for slot in range(1, SaveLoad.SLOTS + 1):
+		var row := HBoxContainer.new()
+		var lbl := Label.new()
+		lbl.text = "第 %d 卷：%s" % [slot, SaveLoad.save_label(slot)]
+		lbl.custom_minimum_size = Vector2(280, 0)
+		row.add_child(lbl)
+		var sb := Button.new()
+		sb.text = "记录"
+		sb.pressed.connect(_on_residence_save.bind(slot))
+		row.add_child(sb)
+		var lb := Button.new()
+		lb.text = "翻阅"
+		lb.disabled = not SaveLoad.has_save(slot)
+		lb.pressed.connect(_on_residence_load.bind(slot))
+		row.add_child(lb)
+		choices_container.add_child(row)
+	choices_label.visible = true
+	_add_leave_button(port_id)
+
+
+func _on_choose_ending(ending_pick: String, port_id: String) -> void:
+	var res := GameState.choose_ending(ending_pick, port_id)
+	if res.get("ok", false):
+		log_msg(str(res.get("text", "")))
+	else:
+		log_msg(str(res.get("msg", "")))
+	update_status_panel()
+	load_scene(current_scene_id)
+
+
+func _on_residence_save(slot: int) -> void:
+	SaveLoad.save_game(slot, current_scene_id)
+	log_msg("已记入航海日志第 %d 卷。" % slot)
+	load_scene(current_scene_id)
+
+
+func _on_residence_load(slot: int) -> void:
+	var scene_id := SaveLoad.saved_scene(slot)
+	if SaveLoad.load_game(slot):
+		update_status_panel()
+		load_scene(scene_id if scene_id != "" else GameState.last_port)
+		log_msg("翻开日志第 %d 卷，回到 %s。" % [slot, Calendar.get_date_string()])
+
+
 ## 在已解锁港口中找一条真实存在的价差，作为情报吐给玩家
 func _gather_price_intel(port_id: String) -> String:
 	var best := {"profit": 0}
@@ -1117,7 +1257,7 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 	for child in right_facilities.get_children():
 		child.queue_free()
 
-	var facilities = scene_data.get("facilities", [])
+	var facilities = _visible_facilities(current_scene_id, scene_data.get("facilities", []))
 	for i in range(facilities.size()):
 		var card := _make_facility_card(facilities[i])
 		if i % 2 == 0:
@@ -1338,9 +1478,26 @@ func _cn_chapter(n: int) -> String:
 	return cn[n] if n < cn.size() else str(n)
 
 
+func _visible_facilities(port_id: String, facilities: Array) -> Array:
+	var out: Array = []
+	var has_guild := false
+	for fac in facilities:
+		var fid := str(fac.get("id", ""))
+		if fid == "city_guild":
+			if not (port_id in GameState.GUILD_PORTS):
+				continue
+			has_guild = true
+		if fid == "city_exam" and not (port_id in GameState.EXAM_PORTS):
+			continue
+		out.append(fac)
+	if port_id in GameState.GUILD_PORTS and not has_guild:
+		out.append({"id": "city_guild", "title": "行会", "subtitle": "入行・看账"})
+	return out
+
+
 func _on_facility_pressed(fac: Dictionary) -> void:
 	var target_scene = fac.get("id", "")
-	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern"]:
+	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern", "city_inn", "city_guild", "city_exam", "city_residence"]:
 		target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")
 	if target_scene != "":
 		load_scene(target_scene)
@@ -1425,11 +1582,29 @@ func apply_effects(effects: Dictionary) -> void:
 			"money":
 				GameState.add_money(val)
 			"fame":
-				GameState.fame += val
+				GameState.add_fame(int(val))
 			"days":
 				GameManager.advance_days(val)
 			"flag":
 				GameState.set_flag(str(val))
 			"chapter":
 				GameState.chapter = maxi(GameState.chapter, int(val))
+			"network":
+				GameState.add_network(int(val))
+			"merchant_credit":
+				GameState.add_merchant_credit(int(val))
+			"ledger_note":
+				GameState.append_ledger(str(val))
+			"sea_tendency":
+				GameState.add_sea_tendency(int(val))
+			"scholar_tendency":
+				GameState.add_scholar_tendency(int(val))
+			"discovery":
+				var did := GameState.discovery_id_by_name(str(val))
+				if did == "":
+					push_error("发现物名称对不上: " + str(val))
+				else:
+					GameState.record_discovery(did)
+			"supplies", "cargo", "ship", "cargo_loss":
+				GameState.append_ledger("ignored:" + str(key))
 	update_status_panel()

@@ -2,7 +2,7 @@
 """端到端模拟一局：从开局 1000 钱、一条小艍船出发，跑近海商路攒钱换船。
 完整复现 Fleet 的舱位/补给（多船分装）、Economy 的行情冲击与回归、Voyage 的季风与航速。
 目的是找出设计死锁（卡补给、卡舱位、卡钱），而不是验证单条公式。"""
-import json, math, os, sys, random
+import json, math, os, sys, random, re
 
 random.seed(20260727)
 import pathlib
@@ -549,6 +549,55 @@ check(0.25 <= 0.6 <= 0.9, "flee 概率公式 clampf(speed/220, 0.25, 0.9) 落区
 win_dmg_worst = 520 * 0.06 * armor_r
 check(win_dmg_worst < 120, f"最坏胜战伤 {win_dmg_worst:.1f} < 小艍耐久 120（单次胜仗不沉开局船）")
 check(verify_invariants(), "海战结算后分船账目不变量仍成立")
+
+print()
+print("="*70)
+print("纪事与终章（P7）：声望阶、入行不改行情、结局资格")
+print("="*70)
+gs_src = open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read()
+table_m = re.search(r"const FAME_RANK_TABLE := \[(.*?)\n\]", gs_src, re.S)
+rank_rows = [(int(a), int(b)) for a, b in re.findall(r"\[(\d+),\s*(\d+)\]", table_m.group(1))]
+
+def debt_ceiling_for(fame):
+    cap = rank_rows[0][1]
+    for thr, c in rank_rows:
+        if fame >= thr:
+            cap = c
+    return cap
+
+check(debt_ceiling_for(0) == 3000, f"名声 0 上限 {debt_ceiling_for(0)}")
+check(debt_ceiling_for(179) == 4600, f"名声 179 上限 {debt_ceiling_for(179)}（仍是记名）")
+check(debt_ceiling_for(180) == 5400, f"名声 180 上限 {debt_ceiling_for(180)}（簿有名）")
+check(G.money >= 2000, f"入行试验前现钱 {G.money} ≥ 2000")
+rates_before = {pid: dict(book) for pid, book in rates.items()}
+G.money -= 2000
+rates_after = {pid: dict(book) for pid, book in rates.items()}
+check(rates_before == rates_after, "入行扣款不改变任一港口的 rate")
+
+def ending_matches(entry, flags, chapter, reported, network):
+    req = entry.get("requires") or {}
+    if chapter < req.get("min_chapter", 1):
+        return False
+    if reported < req.get("min_reported", 0):
+        return False
+    if network < req.get("min_network", 0):
+        return False
+    any_flags = req.get("any_flags") or []
+    if not any_flags:
+        return True
+    return any(flag in flags for flag in any_flags)
+
+ending_rows = load("endings.json")["endings"]
+
+def eligible_ids(flags):
+    return {e["id"] for e in ending_rows if ending_matches(e, flags, 4, 1, 0)}
+
+sea_ids = eligible_ids({"chose_sea_first"})
+check("south_sea" in sea_ids and "ledger_open" in sea_ids and "exam_road" not in sea_ids,
+      f"只持 chose_sea_first：{sorted(sea_ids)}")
+land_ids = eligible_ids({"chose_land_first"})
+check("exam_road" in land_ids and "south_sea" not in land_ids,
+      f"只持 chose_land_first：{sorted(land_ids)}")
 
 print()
 print("="*70)

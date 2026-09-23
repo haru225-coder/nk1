@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "title": "东亚海域立志传终章",
+    "note": "四条都要先走到第四章。前三条另要至少上报一件发现。ledger_open 是唯一默认条，没有旗标要求。merchant_caution 与 chen_line_open 不参与判定。"
+  },
+  "endings": [
+    {
+      "id": "south_sea",
+      "title": "南海不归",
+      "where": ["champa"],
+      "requires": {
+        "min_chapter": 4,
+        "min_reported": 1,
+        "any_flags": [
+          "chose_sea_first",
+          "lin_sea_route_open",
+          "letter_to_xinghua",
+          "route_charted",
+          "bay_surveyed",
+          "hakata_first"
+        ]
+      },
+      "text": "你没有再问北方的船期。占城的船主把酒碗推过来，说再往西南他也只是听人讲。你把海图按在案上，那条向南的线这次没有停住。\n\n咸淳以后的唱名、兴化的城门，都留在已经走过的水路上。船还在，账还在你自己手里。"
+    },
+    {
+      "id": "exam_road",
+      "title": "榜上的名字还没写",
+      "where": ["quanzhou", "xinghua"],
+      "requires": {
+        "min_chapter": 4,
+        "min_reported": 1,
+        "any_flags": [
+          "chose_land_first",
+          "taixue_route_open",
+          "merchant_distance",
+          "exam_sat"
+        ]
+      },
+      "text": "贡院的朱门这回是开的。你把海图折进书箱底，跟族里的人说要北上。咸淳四年的唱第还没有发生，度宗的御笔也还没有把子龙改成文龙。你只是把策问题目重新拿了起来。\n\n港口的货单不因此作废。船仍泊在原处，等你或者别人去开。"
+    },
+    {
+      "id": "temple_post",
+      "title": "寺门后的短札",
+      "where": ["quanzhou"],
+      "requires": {
+        "min_chapter": 4,
+        "min_reported": 1,
+        "min_network": 10,
+        "any_flags": [
+          "temple_letter",
+          "temple_route",
+          "japan_temple_network",
+          "stele_quest",
+          "stele_found"
+        ]
+      },
+      "text": "净海没有再问信皮里是什么。短札压在经案边，沿海寺社的暗号你已经识得。这条路比货单更窄，也更安静。\n\n你合上账册的时候，寺门后有人记得你哪一次没有把泊澳的名字写进明账。"
+    },
+    {
+      "id": "ledger_open",
+      "title": "账还开着",
+      "default": true,
+      "where": ["quanzhou"],
+      "requires": {
+        "min_chapter": 4,
+        "min_reported": 0
+      },
+      "text": "你把账册合上，又没有真的合死。泉州的牙行照旧开着，博多的风也还在该来的月份来。没有人在这一页上给你写一个更大的名字。\n\n船在，货在，下一趟仍由你自己点。"
+    }
+  ]
+}

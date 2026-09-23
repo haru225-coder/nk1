@@ -3,7 +3,7 @@ extends Node
 
 const SAVE_DIR := "user://saves/"
 const SLOTS := 3
-const VERSION := 2
+const VERSION := 3
 
 
 func _ready() -> void:

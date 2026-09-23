@@ -34,6 +34,38 @@ var visited_ports: Array = []
 ## 资金历史峰值。用峰值而非当前值判定晋升，否则买条船就把进度买没了。
 var peak_money: int = 1000
 
+## 纪事。序章选项与沙盒事件写在这里。
+## 这些数不进 Economy.price_at_rate：物价已经由产地差和职事加成锁过。
+var network: int = 0
+var merchant_credit: int = 0
+var sea_tendency: int = 0
+var scholar_tendency: int = 0
+## 账册条目 id。重复的不二次追加。
+var ledger: Array = []
+## 选定的结局 id。空字符串表示账还开着。选定后不可改。
+var ending_id: String = ""
+## 海路入港后为真。与剧情场景同名的港口（博多、流求）靠这个区分「重播正文」和「港口界面」。
+var docked: bool = false
+
+const CHRONICLE_MIN := -100
+const CHRONICLE_MAX := 200
+const TENDENCY_MAX := 20
+
+## [名声门槛, 赊贷上限]。称谓与行对齐，见 FAME_RANK_TITLES。
+const FAME_RANK_TABLE := [
+	[0, 3000],
+	[40, 3800],
+	[100, 4600],
+	[180, 5400],
+]
+const FAME_RANK_TITLES := ["散商", "客纲", "记名", "簿有名"]
+
+const GUILD_PORTS := ["quanzhou", "hakata", "guangzhou"]
+const EXAM_PORTS := ["xinghua", "quanzhou"]
+const GUILD_FEE := 2000
+const GUILD_CREDIT_NEED := 8
+const EXAM_DAYS := 15
+
 
 # ── 钱 ────────────────────────────────────────────────
 
@@ -43,10 +75,66 @@ func add_money(amount: int) -> void:
 	peak_money = maxi(peak_money, money)
 
 
+## 名声不低于 0。剧情可以扣，扣完停在零。
+func add_fame(amount: int) -> void:
+	fame = maxi(0, fame + amount)
+
+
+func add_network(amount: int) -> void:
+	network = clampi(network + amount, CHRONICLE_MIN, CHRONICLE_MAX)
+
+
+func add_merchant_credit(amount: int) -> void:
+	merchant_credit = clampi(merchant_credit + amount, CHRONICLE_MIN, CHRONICLE_MAX)
+
+
+func add_sea_tendency(amount: int) -> void:
+	sea_tendency = clampi(sea_tendency + amount, 0, TENDENCY_MAX)
+
+
+func add_scholar_tendency(amount: int) -> void:
+	scholar_tendency = clampi(scholar_tendency + amount, 0, TENDENCY_MAX)
+
+
+func append_ledger(note: String) -> void:
+	if note == "" or note in ledger:
+		return
+	ledger.append(note)
+
+
+func ledger_recent_text(n: int) -> String:
+	if ledger.is_empty():
+		return "（尚无）"
+	var start := maxi(0, ledger.size() - n)
+	var lines: PackedStringArray = []
+	for i in range(start, ledger.size()):
+		lines.append(str(ledger[i]))
+	return "\n".join(lines)
+
+
+func fame_title() -> String:
+	var idx := 0
+	for i in range(FAME_RANK_TABLE.size()):
+		if fame >= int(FAME_RANK_TABLE[i][0]):
+			idx = i
+	if idx < FAME_RANK_TITLES.size():
+		return FAME_RANK_TITLES[idx]
+	return FAME_RANK_TITLES[0]
+
+
+## 声望阶只改这一处上限。月息与还款不变。
+func debt_ceiling() -> int:
+	var ceiling := DEBT_CEILING
+	for row in FAME_RANK_TABLE:
+		if fame >= int(row[0]):
+			ceiling = int(row[1])
+	return ceiling
+
+
 # ── 赊贷 ──────────────────────────────────────────────
 
 func borrow_limit() -> int:
-	return maxi(0, DEBT_CEILING - debt)
+	return maxi(0, debt_ceiling() - debt)
 
 
 func borrow(amount: int) -> bool:
@@ -120,7 +208,8 @@ func report_discovery(did: String) -> Dictionary:
 	var gold := value
 	var fame_gain: int = maxi(1, value / 10)
 	add_money(gold)
-	fame += fame_gain
+	add_fame(fame_gain)
+	add_merchant_credit(1)
 	return {"gold": gold, "fame": fame_gain, "name": d.get("name", "所见")}
 
 
@@ -182,6 +271,7 @@ func try_advance_chapter() -> Dictionary:
 		return {"advanced": false}
 	var cur := chapter_def()
 	chapter += 1
+	add_merchant_credit(3)
 	return {
 		"advanced": true,
 		"title": cur.get("advance_title", "新的一章"),
@@ -197,6 +287,109 @@ func set_flag(flag_name: String) -> void:
 
 func has_flag(flag_name: String) -> bool:
 	return flags.get(flag_name, false) == true
+
+
+func discovery_id_by_name(discovery_name: String) -> String:
+	for d in GameManager.discoveries_data.get("discoveries", []):
+		if str(d.get("name", "")) == discovery_name:
+			return str(d.get("id", ""))
+	return ""
+
+
+# ── 行会 / 贡院 / 终章 ────────────────────────────────
+
+func join_guild(port_id: String) -> Dictionary:
+	if not (port_id in GUILD_PORTS):
+		return {"ok": false, "msg": "此地没有行会。"}
+	var flag_name := "guild_" + port_id
+	if has_flag(flag_name):
+		return {"ok": false, "already": true, "msg": "你已是此港行会中人。"}
+	if merchant_credit < GUILD_CREDIT_NEED:
+		return {"ok": false, "msg": "行首看了看你的名帖，摇头。商誉还差一截，眼下不收。"}
+	if not spend_money(GUILD_FEE):
+		return {"ok": false, "msg": "入行要 %d 钱。你囊中不够。" % GUILD_FEE}
+	add_merchant_credit(4)
+	add_network(2)
+	set_flag(flag_name)
+	append_ledger(flag_name)
+	return {"ok": true, "msg": "行首收下 %d 钱，在册上添了你的名字。" % GUILD_FEE}
+
+
+## 每章一次。士人倾向不低于海路倾向时记 exam_sat。
+func sit_exam() -> Dictionary:
+	var once := "exam_sat_ch%d" % chapter
+	if has_flag(once):
+		return {"ok": false, "msg": "这一章的贡院你已经坐过。下一章再来。"}
+	set_flag(once)
+	GameManager.advance_days(EXAM_DAYS)
+	if scholar_tendency >= sea_tendency:
+		add_fame(4)
+		add_scholar_tendency(2)
+		set_flag("exam_sat")
+		return {"ok": true, "scholar": true, "msg": "你在号房里坐了十五日。策问写完的时候，海图还压在书箱底。"}
+	add_fame(1)
+	add_sea_tendency(1)
+	return {"ok": true, "scholar": false, "msg": "卷子铺开，字却往水路那边斜。十五日下来，你知道自己写的不是策论。"}
+
+
+func ending_matches(e: Dictionary) -> bool:
+	if ending_id != "":
+		return false
+	var req: Dictionary = e.get("requires", {})
+	if chapter < int(req.get("min_chapter", 1)):
+		return false
+	if discoveries_reported.size() < int(req.get("min_reported", 0)):
+		return false
+	if network < int(req.get("min_network", 0)):
+		return false
+	var any_flags: Array = req.get("any_flags", [])
+	if any_flags.is_empty():
+		return true
+	for f in any_flags:
+		if has_flag(str(f)):
+			return true
+	return false
+
+
+func endings_at(port_id: String) -> Array:
+	var out: Array = []
+	for e in GameManager.endings_data.get("endings", []):
+		var where: Array = e.get("where", [])
+		if not (port_id in where):
+			continue
+		if ending_matches(e):
+			out.append(e)
+	return out
+
+
+func ending_def() -> Dictionary:
+	if ending_id == "":
+		return {}
+	for e in GameManager.endings_data.get("endings", []):
+		if str(e.get("id", "")) == ending_id:
+			return e
+	return {}
+
+
+func choose_ending(ending_pick: String, port_id: String) -> Dictionary:
+	if ending_id != "":
+		return {"ok": false, "msg": "这本账已经合上了。"}
+	for e in endings_at(port_id):
+		if str(e.get("id", "")) == ending_pick:
+			ending_id = ending_pick
+			return {"ok": true, "title": str(e.get("title", "")), "text": str(e.get("text", ""))}
+	return {"ok": false, "msg": "这一页现在还合不上。"}
+
+
+## 年份进入 1268 或 1276 时各一句。不改钱、不改章、不改结局资格。
+func note_historical_year(year: int) -> String:
+	if year == 1268 and not has_flag("heard_1268"):
+		set_flag("heard_1268")
+		return "临安有船带来唱第的消息。埠头上有人说，殿试头名是兴化人，名字被御笔改过一笔。"
+	if year == 1276 and not has_flag("heard_1276"):
+		set_flag("heard_1276")
+		return "北方来的船稀了。有人在埠头压低声音说，临安已不在宋人手里，兴化的信断了几个月。"
+	return ""
 
 
 # ── 市舶司 ────────────────────────────────────────────
@@ -253,6 +446,7 @@ func customs_inspection() -> Dictionary:
 				result["msg"] = "【查扣】货引虽全，抽查却翻到了舱底。%d 件违禁之物当场起获，罚钱 %d，货引作废。" % [contraband, fine]
 				_confiscate_contraband()
 				add_money(-fine)
+				add_merchant_credit(-4)
 				pu_attention += 30
 				has_customs_permit = false
 				return result
@@ -270,6 +464,7 @@ func customs_inspection() -> Dictionary:
 		result["msg"] = "【严重警告】蒲氏暗桩早已盯上你。市舶司当场查扣所有无证货物，罚钱 %d。" % fine
 		Fleet.clear_cargo()
 		add_money(-fine)
+		add_merchant_credit(-4)
 		return result
 
 	var bribe := 50 + contraband * 10
@@ -312,13 +507,20 @@ func to_dict() -> Dictionary:
 		"discoveries_reported": discoveries_reported,
 		"visited_ports": visited_ports,
 		"peak_money": peak_money,
+		"network": network,
+		"merchant_credit": merchant_credit,
+		"sea_tendency": sea_tendency,
+		"scholar_tendency": scholar_tendency,
+		"ledger": ledger,
+		"ending_id": ending_id,
+		"docked": docked,
 	}
 
 
 func from_dict(d: Dictionary) -> void:
 	money = d.get("money", 1000)
 	debt = d.get("debt", 0)
-	fame = d.get("fame", 0)
+	fame = maxi(0, int(d.get("fame", 0)))
 	martial = int(d.get("martial", 50))
 	chapter = d.get("chapter", 1)
 	pu_attention = d.get("pu_attention", 0)
@@ -329,3 +531,11 @@ func from_dict(d: Dictionary) -> void:
 	discoveries_reported = d.get("discoveries_reported", [])
 	visited_ports = d.get("visited_ports", [])
 	peak_money = d.get("peak_money", money)
+	network = clampi(int(d.get("network", 0)), CHRONICLE_MIN, CHRONICLE_MAX)
+	merchant_credit = clampi(int(d.get("merchant_credit", 0)), CHRONICLE_MIN, CHRONICLE_MAX)
+	sea_tendency = clampi(int(d.get("sea_tendency", 0)), 0, TENDENCY_MAX)
+	scholar_tendency = clampi(int(d.get("scholar_tendency", 0)), 0, TENDENCY_MAX)
+	var led = d.get("ledger", [])
+	ledger = led if typeof(led) == TYPE_ARRAY else []
+	ending_id = str(d.get("ending_id", ""))
+	docked = bool(d.get("docked", false))

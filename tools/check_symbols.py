@@ -624,6 +624,54 @@ else:
 
 print()
 print("=" * 68)
+print("九、纪事契约（P7：账册、声望阶、终章）")
+print("=" * 68)
+
+for member in ("add_fame", "borrow_limit", "ending_id", "network", "merchant_credit"):
+    if member in defined.get("GameState", set()):
+        print(f"  ✓ GameState.{member} 已声明")
+    else:
+        print(f"  ✗ GameState.{member} 未声明")
+        problems.append(f"GameState.{member} 未声明")
+
+def _func_body(src, name):
+    m = re.search(rf"func {name}\b.*?\n(.*?)(?=\nfunc |\Z)", src, re.S)
+    return m.group(1) if m else ""
+
+to_body = _func_body(gs_src, "to_dict")
+from_body = _func_body(gs_src, "from_dict")
+for key in ("network", "merchant_credit", "ending_id", "ledger", "sea_tendency", "scholar_tendency"):
+    if f'"{key}"' in to_body and key in from_body:
+        print(f"  ✓ 存档含 {key}")
+    else:
+        print(f"  ✗ 存档缺 {key}")
+        problems.append(f"存档缺 {key}")
+
+gm_src = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
+if "endings.json" in gm_src:
+    print("  ✓ GameManager 读取 endings.json")
+else:
+    print("  ✗ GameManager 未读取 endings.json")
+    problems.append("GameManager 未读取 endings.json")
+
+main_src = open(os.path.join(ROOT, "scripts", "Main.gd"), encoding="utf-8").read()
+fx_body = _func_body(main_src, "apply_effects")
+for key in ("network", "merchant_credit", "ledger_note", "discovery", "sea_tendency", "scholar_tendency"):
+    if f'"{key}"' in fx_body:
+        print(f"  ✓ apply_effects 处理 {key}")
+    else:
+        print(f"  ✗ apply_effects 未处理 {key}")
+        problems.append(f"apply_effects 未处理 {key}")
+
+fac_body = _func_body(main_src, "_on_facility_pressed")
+if "city_inn" in fac_body:
+    print("  ✓ _on_facility_pressed 重写名单含 city_inn")
+else:
+    print("  ✗ _on_facility_pressed 未重写 city_inn")
+    problems.append("_on_facility_pressed 未重写 city_inn")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:

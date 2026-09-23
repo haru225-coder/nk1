@@ -230,7 +230,7 @@ func _refresh_status() -> void:
 		if total_li > 0.0:
 			pct = clampf((total_li - remaining_li) / total_li, 0.0, 1.0)
 		t += "[color=aqua]航行中　第 %d 日[/color]\n已行 %d%%\n余程 %d 里\n\n" % [days_elapsed, int(pct * 100), int(remaining_li)]
-	t += "金钱：%d\n名声：%d\n\n" % [GameState.money, GameState.fame]
+	t += "金钱：%d\n名声：%d（%s）\n\n" % [GameState.money, GameState.fame, GameState.fame_title()]
 	t += "[u]舰队[/u]\n船数：%d　水手：%d\n舱位：%d / %d 料\n耐久：%d / %d\n士气：%d\n" % [
 		Fleet.ships.size(), Fleet.total_crew(),
 		int(Fleet.used_capacity()), int(Fleet.total_capacity()),
@@ -585,7 +585,7 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	if outcome == "win":
 		var spoil := int(randf_range(150, 600))
 		GameState.add_money(spoil)
-		GameState.fame += 3
+		GameState.add_fame(3)
 		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 5)
 		_log("[color=lime]击退海盗，夺得财货 %d 钱。战损 %d。[/color]" % [spoil, int(dmg)])
 	elif outcome == "lose":

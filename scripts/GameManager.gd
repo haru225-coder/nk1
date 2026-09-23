@@ -16,6 +16,7 @@ var discoveries_data: Dictionary = {}
 var ships_data: Dictionary = {}
 var chapters_data: Dictionary = {}
 var crew_data: Dictionary = {}
+var endings_data: Dictionary = {}
 
 
 func _ready() -> void:
@@ -31,6 +32,7 @@ func load_data() -> void:
 	ships_data = _load_json("res://data/ships.json")
 	chapters_data = _load_json("res://data/chapters.json")
 	crew_data = _load_json("res://data/crew.json")
+	endings_data = _load_json("res://data/endings.json")
 
 	if scenes_data.has("scenes"):
 		print("Data loaded. Scenes:%d Goods:%d Ports:%d Ships:%d" % [
@@ -61,12 +63,20 @@ func _load_json(path: String) -> Dictionary:
 func advance_days(n: int) -> void:
 	for i in range(n):
 		var prev_month: int = Calendar.month
+		var prev_year: int = Calendar.year
 		Calendar.advance_days(1)
 		if Calendar.month != prev_month:
 			GameState.accrue_interest()
+			var parts: PackedStringArray = []
 			var notice := Crew.pay_wages()
 			if notice != "":
-				monthly_notice.emit(notice)
+				parts.append(notice)
+			if Calendar.year != prev_year:
+				var year_note := GameState.note_historical_year(Calendar.year)
+				if year_note != "":
+					parts.append(year_note)
+			if not parts.is_empty():
+				monthly_notice.emit("\n".join(parts))
 		Economy.on_day_passed()
 		Fleet.on_day_passed()
 

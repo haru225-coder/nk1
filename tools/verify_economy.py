@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """复现 Economy.gd / Voyage.gd 的公式，验证核心贸易循环与航海数值是否成立。
 不依赖 Godot，纯数学校验。"""
-import json, math, sys, os
+import json, math, sys, os, re, subprocess
 
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -732,6 +732,107 @@ check(0.8 * 100 <= low_scale <= high_scale <= 3.0 * 100,
 check(low_scale >= 150 and high_scale >= 250,
       f"开局小艍对敌倍率 1.5~3.0（{low_scale:.0f}~{high_scale:.0f} 血，必败向）")
 check(std_scale <= 100.5, f"标准舰队对上限敌倍率 ≤1.0（{std_scale:.0f} 血，可胜向）")
+
+print()
+print("=" * 68)
+print("九、纪事与终章（P7）")
+print("=" * 68)
+
+endings_doc = load("endings.json")
+endings = endings_doc["endings"]
+ending_ids = [e["id"] for e in endings]
+check(set(ending_ids) == {"south_sea", "exam_road", "temple_post", "ledger_open"},
+      f"终章四条 id 齐全（{ending_ids}）")
+defaults = [e["id"] for e in endings if e.get("default")]
+check(defaults == ["ledger_open"], f"ledger_open 是唯一默认结局（{defaults}）")
+
+req_blob = json.dumps([e.get("requires", {}) for e in endings], ensure_ascii=False)
+check("merchant_caution" not in req_blob, "merchant_caution 不出现在结局条件里")
+check("chen_line_open" not in req_blob, "chen_line_open 不出现在结局条件里")
+
+scenes_doc = load("scenes.json")
+by_id = {s["id"]: s for s in scenes_doc["scenes"]}
+seen = set()
+queue = [scenes_doc["start_scene"]]
+while queue:
+    cur = queue.pop()
+    if cur in seen:
+        continue
+    seen.add(cur)
+    node = by_id.get(cur)
+    if not node:
+        continue
+    for choice in node.get("choices", []):
+        nxt = choice.get("next", "")
+        if nxt:
+            queue.append(nxt)
+written_flags = set()
+for sid in seen:
+    for choice in by_id[sid].get("choices", []):
+        flag = choice.get("effects", {}).get("flag")
+        if flag:
+            written_flags.add(flag)
+for e in endings:
+    for flag in e.get("requires", {}).get("any_flags", []):
+        if flag == "exam_sat":
+            continue
+        check(flag in written_flags, f"结局旗标 {flag} 写在从开场可达的场景上")
+
+main_src = open(os.path.join(ROOT, "scripts", "Main.gd"), encoding="utf-8").read()
+check('set_flag("exam_sat")' in main_src, "贡院在 Main.gd 写入 exam_sat")
+
+gs_src = open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read()
+table_m = re.search(r"const FAME_RANK_TABLE := \[(.*?)\n\]", gs_src, re.S)
+pairs = [(int(a), int(b)) for a, b in re.findall(r"\[(\d+),\s*(\d+)\]", table_m.group(1) if table_m else "")]
+check(len(pairs) == 4, f"声望阶四档（{pairs}）")
+mono = all(pairs[i][0] < pairs[i + 1][0] and pairs[i][1] < pairs[i + 1][1] for i in range(len(pairs) - 1))
+check(mono, f"声望阶门槛与上限都单调上升（{pairs}）")
+
+def ceiling_for(fame, rows):
+    cap = rows[0][1]
+    for thr, c in rows:
+        if fame >= thr:
+            cap = c
+    return cap
+
+check(ceiling_for(0, pairs) == 3000, f"名声 0 的赊贷上限 {ceiling_for(0, pairs)} = 3000")
+check(ceiling_for(179, pairs) == 4600, f"名声 179 的赊贷上限 {ceiling_for(179, pairs)} = 4600")
+check(ceiling_for(180, pairs) == 5400, f"名声 180 的赊贷上限 {ceiling_for(180, pairs)} = 5400")
+check(pairs[-1][1] <= 6000, f"顶阶上限 {pairs[-1][1]} ≤ 6000")
+check(math.ceil(5400 * 0.03) == 162, "顶阶月息 ceil(5400×0.03) = 162")
+
+eco_src = open(os.path.join(ROOT, "scripts", "core", "Economy.gd"), encoding="utf-8").read()
+price_m = re.search(r"func price_at_rate\(.*?\n(.*?)(?=\nfunc )", eco_src, re.S)
+price_body = price_m.group(1) if price_m else ""
+check(price_body != "" and "fame" not in price_body and "merchant_credit" not in price_body,
+      "price_at_rate 不读名声与商誉")
+
+disc_names = {d["name"] for d in load("discoveries.json")["discoveries"]}
+disc_effects = []
+for s in scenes_doc["scenes"]:
+    for choice in s.get("choices", []):
+        if "discovery" in choice.get("effects", {}):
+            disc_effects.append(choice["effects"]["discovery"])
+    for inv in s.get("investigations", []):
+        if "discovery" in inv.get("effects", {}):
+            disc_effects.append(inv["effects"]["discovery"])
+missing_disc = [name for name in disc_effects if name not in disc_names]
+check(not missing_disc, f"场景里的发现物名称都能对上（对不上：{missing_disc or '无'}）")
+
+sim = subprocess.run(
+    [sys.executable, os.path.join(ROOT, "tools", "simulate_run.py")],
+    capture_output=True, text=True,
+)
+if sim.returncode != 0:
+    tail = "\n".join((sim.stdout + sim.stderr).strip().splitlines()[-12:])
+    print(tail)
+check(sim.returncode == 0, "simulate_run 通过，才能读取泉州→博多净赚")
+far_idx = sim.stdout.rfind("远洋检验")
+far_text = sim.stdout[far_idx:] if far_idx >= 0 else ""
+net_m = re.search(r"净赚 ([+-]?\d+)", far_text)
+hakata_net = int(net_m.group(1)) if net_m else 0
+check(hakata_net > pairs[-1][1],
+      f"顶阶赊贷上限 {pairs[-1][1]} < 泉州→博多单程净赚 {hakata_net}")
 
 print()
 print("=" * 68)
