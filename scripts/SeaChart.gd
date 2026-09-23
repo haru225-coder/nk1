@@ -23,7 +23,7 @@ var sail_button: Button
 var event_panel: PanelContainer
 var event_title: Label
 var event_text: RichTextLabel
-var event_actions: HBoxContainer
+var event_actions: VBoxContainer
 
 
 func _ready() -> void:
@@ -108,14 +108,17 @@ func _build_ui() -> void:
 	# 真正的图。数据用 ports.json 的经纬度，CanvasItem.draw 信号接 lambda，
 	# 不另建节点树——一张静态海图不需要缩放拖拽。
 	chart = Control.new()
-	chart.custom_minimum_size = Vector2(0, 168)
+	chart.custom_minimum_size = Vector2(0, 200)
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chart.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	chart.size_flags_stretch_ratio = 1.35
 	chart.draw.connect(func(): _draw_chart(chart))
 	center_v.add_child(chart)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 96)
+	scroll.size_flags_stretch_ratio = 1.0
+	scroll.custom_minimum_size = Vector2(0, 110)
 	center_v.add_child(scroll)
 	port_list = VBoxContainer.new()
 	port_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -200,8 +203,8 @@ func _build_event_panel() -> void:
 	UiTheme.style_body(event_text)
 	v.add_child(event_text)
 
-	event_actions = HBoxContainer.new()
-	event_actions.add_theme_constant_override("separation", 8)
+	event_actions = VBoxContainer.new()
+	event_actions.add_theme_constant_override("separation", 6)
 	v.add_child(event_actions)
 
 
@@ -407,13 +410,13 @@ func _draw_chart(c: Control) -> void:
 			c.draw_line(a, b, col, 2.5)
 
 	var font := UiTheme.font()
+	var marks: Array[Dictionary] = []
 	for p in pts:
 		var pid: String = p.get("id", "")
 		var v: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
 		var visited: bool = pid in GameState.visited_ports
 		var is_here := pid == origin_port
 		var is_target := pid == selected_port
-
 		var col := UiTheme.TEXT_DIM
 		if visited:
 			col = UiTheme.TEXT
@@ -421,23 +424,41 @@ func _draw_chart(c: Control) -> void:
 			col = UiTheme.GOLD
 		if is_here:
 			col = UiTheme.CINNABAR
-
 		c.draw_circle(v, 4.0 if (is_here or is_target) else 3.0, col)
 		if is_here:
 			c.draw_arc(v, 8.0, 0, TAU, 20, col, 1.5)
+		marks.append({
+			"at": v,
+			"name": str(p.get("name", pid)),
+			"col": col,
+			"accent": is_here or is_target,
+		})
 
-		var label: String = p.get("name", pid)
-		c.draw_string(font, v + Vector2(8, 5), label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 15, col)
+	var bounds := Rect2(Vector2(4, 4), size - Vector2(8, 8))
+	var occupied: Array[Rect2] = []
+	for mark in marks:
+		var at: Vector2 = mark["at"]
+		occupied.append(Rect2(at - Vector2(7, 7), Vector2(14, 14)))
+	var wind_bearing := Calendar.get_wind_bearing()
+	var monsoon_text := Calendar.get_monsoon_desc() if wind_bearing >= 0.0 else "季风转换期・风微而多变"
+	var monsoon_col := UiTheme.GOLD if wind_bearing >= 0.0 else UiTheme.TEXT_DIM
+	occupied.append(_draw_ink_label(c, font, Vector2(12, 18), monsoon_text, monsoon_col, false))
+	for mark in marks:
+		var label: String = str(mark["name"])
+		var text_w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT).x
+		var baseline := _place_chart_label(
+			font, mark["at"] as Vector2, label, text_w, bounds, occupied, bool(mark["accent"])
+		)
+		if baseline.x > -1000.0:
+			occupied.append(_draw_ink_label(
+				c, font, baseline, label, mark["col"] as Color, bool(mark["accent"])
+			))
 
 
 ## 季风方向：全图统一的斜箭头。风信是大尺度的，不必逐点画。
 func _draw_monsoon(c: Control, size: Vector2) -> void:
 	var wb := Calendar.get_wind_bearing()
 	if wb < 0.0:
-		c.draw_string(UiTheme.font(), Vector2(10, 22),
-			"季风转换期・风微而多变", HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
-			UiTheme.TEXT_DIM)
 		return
 
 	# 方位角 → 屏幕向量（y 轴向下，故取负 cos）
@@ -459,9 +480,72 @@ func _draw_monsoon(c: Control, size: Vector2) -> void:
 			x += step
 		y += step
 
-	c.draw_string(UiTheme.font(), Vector2(10, 22),
-		Calendar.get_monsoon_desc(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
-		UiTheme.GOLD)
+
+## 港名与风信短句垫一块熟漆。裸字会压在季风箭头和航线上。
+func _ink_metrics(font: Font) -> Vector2:
+	var size := UiTheme.SIZE_FOOT
+	var ascent := font.get_ascent(size)
+	var descent := font.get_descent(size)
+	if ascent < 1.0:
+		ascent = float(size) * 0.82
+		descent = float(size) * 0.18
+	return Vector2(ascent, descent)
+
+
+func _ink_label_rect(font: Font, baseline: Vector2, text: String) -> Rect2:
+	var metric := _ink_metrics(font)
+	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT).x
+	if width < 1.0:
+		width = float(text.length()) * float(UiTheme.SIZE_FOOT)
+	var pad_x := 4.0
+	var pad_y := 2.0
+	return Rect2(
+		baseline + Vector2(-pad_x, -metric.x - pad_y),
+		Vector2(width + pad_x * 2.0, metric.x + metric.y + pad_y * 2.0)
+	)
+
+
+func _draw_ink_label(c: Control, font: Font, baseline: Vector2, text: String, col: Color, accent: bool) -> Rect2:
+	var rect := _ink_label_rect(font, baseline, text)
+	var ink := Color(UiTheme.INK.r, UiTheme.INK.g, UiTheme.INK.b, 0.94)
+	var edge_a := 0.78 if accent else 0.34
+	c.draw_rect(rect, ink, true)
+	c.draw_rect(rect, Color(UiTheme.GOLD, edge_a), false, 1.0)
+	c.draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, col)
+	return rect
+
+
+func _place_chart_label(
+	font: Font, marker: Vector2, text: String, text_w: float,
+	bounds: Rect2, occupied: Array[Rect2], must: bool
+) -> Vector2:
+	for side in [0, 1]:
+		for row in [0, -1, 1, -2, 2]:
+			var baseline := _chart_label_baseline(marker, text_w, side, row)
+			var rect := _ink_label_rect(font, baseline, text)
+			if not bounds.encloses(rect):
+				continue
+			if _chart_label_hits(rect, occupied):
+				continue
+			return baseline
+	if must:
+		return _chart_label_baseline(marker, text_w, 0, 0)
+	return Vector2(-9999, 0)
+
+
+func _chart_label_baseline(marker: Vector2, text_w: float, side: int, row: int) -> Vector2:
+	var x := marker.x + 9.0
+	if side == 1:
+		x = marker.x - 9.0 - text_w - 8.0
+	return Vector2(x, marker.y + 4.0 + float(row) * 16.0)
+
+
+func _chart_label_hits(rect: Rect2, occupied: Array[Rect2]) -> bool:
+	var padded := rect.grow(1.0)
+	for prev in occupied:
+		if padded.intersects(prev):
+			return true
+	return false
 
 
 func _log(text: String) -> void:
@@ -585,11 +669,13 @@ func _show_event(event: Dictionary) -> void:
 func _add_event_action(text: String, cb: Callable) -> void:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(0, 38)
-	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.custom_minimum_size = Vector2(0, 40)
 	b.pressed.connect(cb)
 	event_actions.add_child(b)
-	UiTheme.style_button(b, text == "迎战")
+	UiTheme.style_choice_button(b)
+	if text == "迎战":
+		b.add_theme_color_override("font_color", UiTheme.CINNABAR)
+		b.add_theme_color_override("font_hover_color", UiTheme.CINNABAR)
 
 
 func _on_event_continue() -> void:

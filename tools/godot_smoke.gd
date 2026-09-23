@@ -73,6 +73,12 @@ func _run() -> void:
 		"海图标题与遭遇弹层走绢本", fails)
 	_check(chart_src.find("CenterContainer") >= 0 and chart_src.find("Vector2(360, 200)") < 0,
 		"海图遭遇弹层居中", fails)
+	_check(chart_src.find("func _draw_ink_label") >= 0
+		and chart_src.find("draw_string(font, v + Vector2(8, 5)") < 0,
+		"海图港名走墨底签", fails)
+	_check(chart_src.find("event_actions = VBoxContainer") >= 0
+		and chart_src.find("style_choice_button(b)") >= 0,
+		"海图遭遇选项走竖排挑签", fails)
 	var theme_scr = load("res://scripts/core/UiTheme.gd")
 	_check(theme_scr != null, "UiTheme.gd 能编译", fails)
 	var dlg := AcceptDialog.new()

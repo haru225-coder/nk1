@@ -966,6 +966,16 @@ if "CenterContainer" in seachart_src and "Vector2(360, 200)" not in seachart_src
 else:
     print("  ✗ 海图遭遇弹层仍用 360,200 硬坐标")
     problems.append("海图遭遇弹层未居中")
+if "func _draw_ink_label" in seachart_src and "draw_string(font, v + Vector2(8, 5)" not in seachart_src:
+    print("  ✓ 海图港名走墨底签")
+else:
+    print("  ✗ 海图港名仍是裸字")
+    problems.append("海图港名未垫墨底")
+if "event_actions = VBoxContainer" in seachart_src and "style_choice_button(b)" in seachart_src:
+    print("  ✓ 海图遭遇选项走竖排挑签")
+else:
+    print("  ✗ 海图遭遇选项未走挑签")
+    problems.append("海图遭遇未走挑签")
 if "StyleBoxFlat.new()" in seachart_src:
     print("  ✗ SeaChart 仍手写 StyleBoxFlat")
     problems.append("SeaChart 手写 StyleBoxFlat")
