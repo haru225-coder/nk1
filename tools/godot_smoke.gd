@@ -209,6 +209,11 @@ func _run() -> void:
 		and chart_src.find("绕过去看看（费 1 日）") < 0 and chart_src.find("%d%%") < 0
 		and chart_src.find("°") < 0,
 		"海图旁注收成账条，去掉冒号、度数符号和括号教程", fails)
+	var voyage_src := FileAccess.get_file_as_string("res://scripts/core/Voyage.gd")
+	_check(chart_src.find("绕了些路。") >= 0 and chart_src.find("（绕了些路）") < 0
+		and chart_src.find("（调试）") < 0 and chart_src.find("点验　中途遭遇。") >= 0
+		and voyage_src.find("损折：") < 0 and voyage_src.find("损折　") >= 0,
+		"海图遭遇日志去掉括号，风涛货损去掉冒号", fails)
 	var chart_script := load("res://scripts/SeaChart.gd") as GDScript
 	var chart_node := chart_script.new() as Node
 	_check(str(chart_node.call("_bearing_phrase", 90.0)) == "东　90 度", "正东写成东并附度数", fails)

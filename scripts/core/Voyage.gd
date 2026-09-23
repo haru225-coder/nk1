@@ -169,7 +169,7 @@ func _storm_event() -> Dictionary:
 		var parts := []
 		for gid in lost.keys():
 			parts.append("%s %d" % [_good_name(gid), lost[gid]])
-		txt += "\n舱内货物翻倒，损折：" + "、".join(parts) + "。"
+		txt += "\n舱内货物翻倒，损折　" + "、".join(parts) + "。"
 	txt += "\n船体受损 %d。" % int(hull_dmg)
 	return {"kind": EventKind.STORM, "title": "风涛", "text": txt, "severity": severity}
 

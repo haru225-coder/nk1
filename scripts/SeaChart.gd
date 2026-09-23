@@ -622,7 +622,7 @@ func _debug_force_pirate() -> void:
 		sail_button.disabled = true
 		for c in port_list.get_children():
 			c.disabled = true
-		_log(_ink(UiTheme.HONEY, "（调试）中途遭遇。"))
+		_log(_ink(UiTheme.HONEY, "点验　中途遭遇。"))
 		_refresh_status()
 	_show_event(Voyage.pirate_sighting())
 
@@ -793,7 +793,7 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	else:  # flee
 		if data.get("flee_ok", false):
 			remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
-			_log(_ink(UiTheme.MOSS, "转舵抢上风头，把那两条快船甩在了后面（绕了些路）。"))
+			_log_shook_pursuers()
 		else:
 			Fleet.damage_fleet(30.0 * Fleet.armor_damage_reduction())
 			var lost := Fleet.lose_cargo_ratio(0.18)
@@ -809,13 +809,17 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	_after_combat()
 
 
+func _log_shook_pursuers() -> void:
+	_log(_ink(UiTheme.MOSS, "转舵抢上风头，把那两条快船甩在了后面。绕了些路。"))
+
+
 func _on_flee_pirates() -> void:
 	event_panel.visible = false
 	# 逃跑成败取决于航速与士气
 	var chance := clampf(Fleet.fleet_speed() / 220.0, 0.25, 0.9)
 	if randf() < chance:
 		remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
-		_log(_ink(UiTheme.MOSS, "转舵抢上风头，把那两条快船甩在了后面（绕了些路）。"))
+		_log_shook_pursuers()
 	else:
 		var lost := Fleet.lose_cargo_ratio(0.18)
 		var lost_str := ""

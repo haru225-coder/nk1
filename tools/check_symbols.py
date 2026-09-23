@@ -1021,6 +1021,19 @@ if (
 else:
     print("  ✗ 海图旁注仍是冒号或括号教程")
     problems.append("海图旁注仍是冒号或括号教程")
+if (
+    seachart_src.count("绕了些路。") == 1
+    and seachart_src.count("_log_shook_pursuers()") == 3
+    and "（绕了些路）" not in seachart_src
+    and "（调试）" not in seachart_src
+    and "点验　中途遭遇。" in seachart_src
+    and "损折：" not in voyage_src
+    and "损折　" in voyage_src
+):
+    print("  ✓ 海图遭遇日志去掉括号，风涛货损去掉冒号")
+else:
+    print("  ✗ 海图遭遇日志仍有括号或风涛货损仍有冒号")
+    problems.append("海图遭遇日志仍有括号")
 if '" x"' not in wm_src:
     print("  ✓ 海战货舱用乘号")
 else:
