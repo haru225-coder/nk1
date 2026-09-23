@@ -330,13 +330,16 @@ func _refresh_ports() -> void:
 		btn.custom_minimum_size = Vector2(0, 34)
 
 		var known := "" if Voyage.is_known_route(origin_port, pid) else "　[生路]"
+		var wind_mark := str(plan["wind_desc"])
+		if plan.get("wind_changes", false):
+			wind_mark += "·换风"
 		btn.text = "%s　%d里　%s　%s遇事%d日%s" % [
-			p.get("name", pid), int(plan["distance"]), plan["wind_desc"],
+			p.get("name", pid), int(plan["distance"]), wind_mark,
 			Voyage.order_name(course_order), int(plan["expected_days"]), known,
 		]
 		if int(plan["supply_days"]) < int(plan["expected_days"]):
 			btn.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
-		elif plan["wind_desc"] == "顺风":
+		elif str(plan["wind_desc"]) == "顺风" and not plan.get("wind_changes", false):
 			btn.add_theme_color_override("font_color", Color(0.6, 0.95, 0.7))
 
 		btn.pressed.connect(_on_port_selected.bind(pid))
@@ -373,7 +376,7 @@ func _refresh_detail() -> void:
 	var lines := [
 		"目的：%s" % GameManager.get_port_name(selected_port),
 		"航程：%d 里　方位 %d°" % [int(plan["distance"]), int(plan["bearing"])],
-		"风信：%s（日速 %d 里）%s" % [plan["wind_desc"], int(plan["speed"]), crew_note],
+		"风信：%s（启航日速 %d 里）%s" % [plan["wind_desc"], int(plan["speed"]), crew_note],
 		"预计：%s 静风 %d 日，遇事约 %d 日。水粮足 %d 日" % [
 			Voyage.order_name(course_order), plan["days"], plan["expected_days"], plan["supply_days"],
 		],
@@ -383,6 +386,10 @@ func _refresh_detail() -> void:
 		],
 		Voyage.order_blurb(course_order),
 	]
+	if plan.get("departs_on_new_wind", false):
+		lines.append("明日才启航，日数不按今天的风。")
+	if plan.get("wind_changes", false):
+		lines.append("途中换风，静风和遇事都按逐日的风累加。")
 	for l in lines:
 		var lbl := Label.new()
 		lbl.text = l
@@ -492,13 +499,16 @@ func _draw_chart(c: Control) -> void:
 		var o := GameManager.get_port_by_id(origin_port)
 		var d := GameManager.get_port_by_id(selected_port)
 		if not o.is_empty() and not d.is_empty():
-			var a: Vector2 = proj.call(float(o.get("lat", 0.0)), float(o.get("lon", 0.0)))
-			var b: Vector2 = proj.call(float(d.get("lat", 0.0)), float(d.get("lon", 0.0)))
-			var wf := Voyage.wind_factor(Voyage.bearing(origin_port, selected_port))
-			# 顺风泛绿、逆风泛红——季风是否有利，一眼能看出来
-			var col := Color(0.45, 0.95, 0.6) if wf >= 1.15 else (
-				Color(1.0, 0.5, 0.42) if wf <= 0.75 else Color(0.95, 0.85, 0.5))
-			c.draw_line(a, b, col, 2.5)
+			var route_a: Vector2 = proj.call(float(o.get("lat", 0.0)), float(o.get("lon", 0.0)))
+			var route_b: Vector2 = proj.call(float(d.get("lat", 0.0)), float(d.get("lon", 0.0)))
+			var leg := Voyage.plan(origin_port, selected_port, course_order)
+			var route_wf := float(leg["wind_factor"])
+			# 顺风泛绿、逆风泛红。途中换风时不涂成一卦顺风。
+			var route_col := Color(0.95, 0.85, 0.5)
+			if not leg.get("wind_changes", false):
+				route_col = Color(0.45, 0.95, 0.6) if route_wf >= 1.15 else (
+					Color(1.0, 0.5, 0.42) if route_wf <= 0.75 else Color(0.95, 0.85, 0.5))
+			c.draw_line(route_a, route_b, route_col, 2.5)
 
 	var font := ThemeDB.fallback_font
 	for p in pts:

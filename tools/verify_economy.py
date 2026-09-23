@@ -964,6 +964,50 @@ def rumb_days(src, dst, wind_b=-1.0, strength=0.3, morale=70, ship_id="sampan"):
         return 999
     return math.ceil(d / spd)
 
+def shift_date(year, month, day, n=1):
+    """与 Voyage._shift_date 相同：每月 30 日，不改历法本体。"""
+    for _step in range(n):
+        day += 1
+        if day > 30:
+            day = 1
+            month += 1
+            if month > 12:
+                month = 1
+                year += 1
+    return year, month, day
+
+def month_wind(month):
+    if month >= 10 or month <= 2:
+        return 225.0, (1.0 if month in (11, 12, 1) else 0.8)
+    if 5 <= month <= 8:
+        return 45.0, (1.0 if month in (6, 7) else 0.8)
+    return -1.0, 0.3
+
+def walk_calm_days(src, dst, month, day, year=1255, morale=70, ship_id="sampan"):
+    """从次日启航，按每天的风扣里程。返回 (日数, 途中是否换风)。"""
+    dist = distance_li(src, dst)
+    y, m, d = shift_date(year, month, day, 1)
+    spd0 = ships[ship_id]["base_speed"] * (0.6 + 0.4 * morale / 100.0)
+    course = bearing(src, dst)
+    rem = dist
+    n = 0
+    first = None
+    changed = False
+    while rem > 0 and n < 900:
+        wb, st = month_wind(m)
+        wf = wind_factor(course, wb, st)
+        if first is None:
+            first = wf
+        elif abs(wf - first) > 0.001:
+            changed = True
+        gain = spd0 * wf
+        if gain <= 1:
+            return 999, changed
+        rem -= gain
+        n += 1
+        y, m, d = shift_date(y, m, d, 1)
+    return n, changed
+
 def known_route(a, b):
     """连线无向。与 Voyage.is_known_route 一致。"""
     if a not in ports or b not in ports:
@@ -1064,6 +1108,30 @@ for a, pa in ports.items():
 check(miss, "存在长航次：傍岸日数超过针路期限（赶委办不能无脑贴岸）")
 check(fit, "存在短航次：傍岸仍赶得上期限（贴岸不是死选项）")
 
+# 日数从次日启航起按逐日风信累加。三月初一的短航次整段仍在转换期，开局委办数字不变。
+march_walk, march_changed = walk_calm_days("quanzhou", "wenzhou", 3, 1)
+check(march_walk == rumb_days("quanzhou", "wenzhou") and not march_changed,
+      f"三月初一泉州→温州整段都在转换期，逐日静风仍是 {march_walk} 日")
+if offer:
+    check(march_walk == offer["voyage_days"],
+          "开局委办的针路日数等于逐日静风，不因换季算法改写")
+
+aug_snap = rumb_days("quanzhou", "hakata", 45.0, 0.8)
+aug_walk, _aug_changed = walk_calm_days("quanzhou", "hakata", 8, 30)
+aug_trans = rumb_days("quanzhou", "hakata", -1.0, 0.3)
+check(aug_walk == aug_trans and aug_walk > aug_snap + CONTRACT_SLACK,
+      f"八月三十泉州→博多：当天西南风 {aug_snap} 日，明日启航落入转换期 {aug_walk} 日，按旧风计价的期限赶不上")
+aug_cross = any(
+    ch and w > aug_snap
+    for day in range(1, 31)
+    for w, ch in [walk_calm_days("quanzhou", "hakata", 8, day)]
+)
+check(aug_cross, "八月里有出发日会在泉州→博多途中换风，逐日静风长于把西南风套全程")
+feb_snap = rumb_days("quanzhou", "guangzhou", 225.0, 0.8)
+feb_walk, _feb_changed = walk_calm_days("quanzhou", "guangzhou", 2, 30)
+check(feb_walk > feb_snap,
+      f"二月三十泉州→广州：当天东北顺风 {feb_snap} 日，次日转风后要 {feb_walk} 日")
+
 check(RUMOR_STALE >= 30, f"行情传闻保鲜 {RUMOR_STALE} 日，够跑一趟近海再回来对")
 gs_src = open(os.path.join(ROOT, S_GD), encoding="utf-8").read()
 deliver_body = gs_src.split("func deliver_contract", 1)[1].split("\nfunc ", 1)[0]
@@ -1085,8 +1153,13 @@ weights_body = voyage_src.split("func event_weights", 1)[1].split("\nfunc ", 1)[
 check("discoveries_open" in weights_body and "_discovery_candidates" in roll_body,
       "岸影抽空时当日权重不再把这一档当成无事日")
 plan_body = voyage_src.split("func plan", 1)[1].split("\nfunc ", 1)[0]
-check("expected_days" in plan_body and "progress_expectation" in plan_body,
+walk_body = voyage_src.split("func _walk_days", 1)[1].split("\nfunc ", 1)[0]
+check("expected_days" in plan_body and "_walk_days" in plan_body,
       "航程同时给出静风日数和遇事日数，期限仍用静风")
+check("progress_expectation" in walk_body and "_shift_date" in walk_body,
+      "静风和遇事都从次日启航起按逐日风信累加")
+check("wind_changes" in plan_body and "departs_on_new_wind" in plan_body,
+      "换季和途中换风会标出来")
 main_src = open(os.path.join(ROOT, "scripts/Main.gd"), encoding="utf-8").read()
 check("hint_lbl.text = rumor" in main_src, "牙行行上直接写出传闻卖价，不只藏在悬停里")
 offer_body = gs_src.split("func contract_offer", 1)[1].split("\nfunc ", 1)[0]
@@ -1102,6 +1175,7 @@ check("voyage_started" in back_body, "发舶之后不能点回港躲开海难")
 check("voyage_days" in offer_body and "expected_days" not in offer_body,
       "委办期限不改用遇事日数")
 check("·误期" in main_src and "交不齐" in sea_src, "旅店歇过期限、舱里货不够，界面会写出来")
+check("·换风" in sea_src and "逐日累加" in main_src, "途中换风写在海图和委办上")
 
 print()
 print("=" * 68)

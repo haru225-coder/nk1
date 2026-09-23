@@ -343,7 +343,7 @@ func rumor_label(port_id: String, good_id: String) -> String:
 
 ## 酬金 = 目的港逐件卖价（含砸盘推演）+ 基准价的一成二。交货本身不砸盘。
 const CONTRACT_PREMIUM := 0.12
-## 期限 = 针路预计日数 + 这几天余量。长航次傍岸会赶不上，短航次赶得上。
+## 期限 = 从明日启航起逐日累加的针路静风日数 + 这几天余量。不把今天的风套到全程。
 const CONTRACT_SLACK_DAYS := 3
 const CONTRACT_QTY_BUDGET := 36.0
 const CONTRACT_QTY_MIN := 4

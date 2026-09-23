@@ -98,9 +98,13 @@ func bearing(from_id: String, to_id: String) -> float:
 
 # ── 季风修正 ──────────────────────────────────────────
 
-## 当前季风对给定航向的日速乘数
-func wind_factor(course_bearing: float) -> float:
+## 季风对给定航向的日速乘数。at_month < 1 时用当前月，否则用那一个月的风。
+func wind_factor(course_bearing: float, at_month: int = -1) -> float:
 	var wind := Calendar.get_wind_bearing()
+	var strength := Calendar.get_monsoon_strength()
+	if at_month >= 1:
+		wind = Calendar.wind_bearing_of(at_month)
+		strength = Calendar.monsoon_strength_of(at_month)
 	if wind < 0.0:
 		# 转换期：无稳定季风，略微不利
 		return 0.85
@@ -109,14 +113,15 @@ func wind_factor(course_bearing: float) -> float:
 	var t := cos(diff)  # 1 → -1
 	var raw := 1.0 + t * 0.6
 	# 季风强度弱时向 1.0 收敛
-	var strength := Calendar.get_monsoon_strength()
 	raw = 1.0 + (raw - 1.0) * strength
 	# 舵工抢风，抬高逆风时的下限
 	return clampf(raw, Crew.wind_floor(), WIND_MAX)
 
 
-func wind_desc(course_bearing: float) -> String:
+func wind_desc(course_bearing: float, at_month: int = -1) -> String:
 	var wind := Calendar.get_wind_bearing()
+	if at_month >= 1:
+		wind = Calendar.wind_bearing_of(at_month)
 	if wind < 0.0:
 		return "无定向风"
 	var diff := absf(rad_to_deg(angle_difference(deg_to_rad(course_bearing), deg_to_rad(wind))))
@@ -157,8 +162,11 @@ func order_blurb(order: int) -> String:
 
 ## 一日期望行程倍率。风暴、海盗、商船、岸影不改里数；无风归零，顺流加半，浅滩与迷航按进度系数。
 ## 季风强度几乎不进这个数——那些权重不随风势变，除非事件总质量被压到上限。
-func progress_expectation(order: int, known: bool, discoveries_open: bool = true) -> float:
-	var w := event_weights(order, Calendar.get_monsoon_strength(), known, discoveries_open)
+func progress_expectation(order: int, known: bool, discoveries_open: bool = true, at_month: int = -1) -> float:
+	var strength := Calendar.get_monsoon_strength()
+	if at_month >= 1:
+		strength = Calendar.monsoon_strength_of(at_month)
+	var w := event_weights(order, strength, known, discoveries_open)
 	var e := 1.0
 	e += float(w["calm"]) * (0.0 - 1.0)
 	e += float(w["current"]) * (1.5 - 1.0)
@@ -167,24 +175,63 @@ func progress_expectation(order: int, known: bool, discoveries_open: bool = true
 	return e
 
 
-## 返回 {distance, bearing, wind_factor, wind_desc, speed, days, expected_days, supply_ok, order}
-## days 是静风日数，委办期限仍用它。expected_days 把无风、顺流、浅滩、迷航按概率算进。
+## 日期往前推 n 日，不改动历法本身。每月 30 日。
+func _shift_date(year: int, month: int, day: int, n: int) -> Vector3i:
+	for _step in n:
+		day += 1
+		if day > Calendar.DAYS_PER_MONTH:
+			day = 1
+			month += 1
+			if month > Calendar.MONTHS_PER_YEAR:
+				month = 1
+				year += 1
+	return Vector3i(year, month, day)
+
+
+## 从明日启航起逐日扣里程。航行当天先过一日，所以第一日的风不是看海图这一天的风。
+func _walk_days(dist: float, course_bearing: float, order: int, known: bool, discoveries_open: bool, use_expectation: bool) -> Dictionary:
+	var cursor := _shift_date(Calendar.year, Calendar.month, Calendar.day, 1)
+	var rem := dist
+	var n := 0
+	var first_wf := -1.0
+	var changed := false
+	while rem > 0.0 and n < 900:
+		var month_now := cursor.y
+		var wf := wind_factor(course_bearing, month_now)
+		if first_wf < 0.0:
+			first_wf = wf
+		elif absf(wf - first_wf) > 0.001:
+			changed = true
+		var gain := Fleet.fleet_speed() * wf * order_speed_mult(order)
+		if use_expectation:
+			gain *= progress_expectation(order, known, discoveries_open, month_now)
+		if gain <= 1.0:
+			n = 999
+			break
+		rem -= gain
+		n += 1
+		cursor = _shift_date(cursor.x, cursor.y, cursor.z, 1)
+	return {"days": n, "changed": changed}
+
+
+## 返回航程。days 是逐日静风日数，委办期限仍用它。
+## expected_days 在同一条日期上计入无风、顺流、浅滩、迷航。
+## 月末换季时，不把今天的风套到全程。
 func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dictionary:
 	var dist := distance_li(from_id, to_id)
 	var brg := bearing(from_id, to_id)
-	var wf := wind_factor(brg)
-	var spd := Fleet.fleet_speed() * wf * order_speed_mult(order)
-	var days := 999
-	if spd > 1.0:
-		days = int(ceil(dist / spd))
 	var known := is_known_route(from_id, to_id)
 	var open := not _discovery_candidates(from_id, to_id).is_empty()
-	var ex := progress_expectation(order, known, open)
-	var expected := 999
-	if spd > 1.0 and ex > 0.05:
-		expected = int(ceil(dist / (spd * ex)))
-	if days < 900 and ex <= 1.0 and expected < days:
+	var calm: Dictionary = _walk_days(dist, brg, order, known, open, false)
+	var rough: Dictionary = _walk_days(dist, brg, order, known, open, true)
+	var days := int(calm.get("days", 999))
+	var expected := int(rough.get("days", 999))
+	if days < 900 and expected < days:
 		expected = days
+	var start := _shift_date(Calendar.year, Calendar.month, Calendar.day, 1)
+	var wf := wind_factor(brg, start.y)
+	var spd := Fleet.fleet_speed() * wf * order_speed_mult(order)
+	var changed := bool(calm.get("changed", false)) or bool(rough.get("changed", false))
 	return {
 		"from": from_id,
 		"to": to_id,
@@ -192,12 +239,14 @@ func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dict
 		"distance": dist,
 		"bearing": brg,
 		"wind_factor": wf,
-		"wind_desc": wind_desc(brg),
+		"wind_desc": wind_desc(brg, start.y),
 		"speed": spd,
 		"days": days,
 		"expected_days": expected,
+		"wind_changes": changed,
+		"departs_on_new_wind": absf(wind_factor(brg) - wf) > 0.001,
 		"supply_days": Fleet.supply_days(),
-		"supply_ok": Fleet.supply_days() >= days,
+		"supply_ok": Fleet.supply_days() >= expected,
 	}
 
 

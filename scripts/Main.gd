@@ -470,6 +470,8 @@ func _add_contract_panel(port_id: String) -> void:
 			calm_note.text = "遇事约：针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日。期限按静风针路加余量。" % [
 				int(plan_r.get("expected_days", 0)), int(plan_o.get("expected_days", 0)), int(plan_c.get("expected_days", 0)),
 			]
+			if bool(plan_r.get("wind_changes", false)) or bool(plan_o.get("wind_changes", false)) or bool(plan_c.get("wind_changes", false)) or bool(plan_r.get("departs_on_new_wind", false)):
+				calm_note.text += " 启航后的风和今天不一定相同，日数已按逐日累加。"
 			calm_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			calm_note.add_theme_font_size_override("font_size", 13)
 			calm_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
