@@ -918,6 +918,16 @@ if "SaveSheet" in save_body and "UiTheme.panel()" in save_body and "AcceptDialog
 else:
     print("  ✗ 存档弹窗未套绢本主题")
     problems.append("存档弹窗未套绢本主题")
+if (
+    "_begin_benches(col)" in save_body
+    and "SIZE_SHRINK_CENTER" in save_body
+    and "Vector2(520, 0)" not in save_body
+    and "style_choice_button(close)" not in save_body
+):
+    print("  ✓ 航海日志三卷走工席，合上不再拉满宽")
+else:
+    print("  ✗ 航海日志仍是竖排细条")
+    problems.append("航海日志仍是竖排细条")
 saveload_src = ""
 with open(os.path.join(SCRIPTS, "core", "SaveLoad.gd"), encoding="utf-8") as f:
     saveload_src = f.read()

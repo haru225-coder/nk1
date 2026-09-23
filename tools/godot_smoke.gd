@@ -251,6 +251,14 @@ func _run() -> void:
 		and main_src.find("存档 / 读档") < 0 and saveload_src.find("%d 钱") >= 0,
 		"航海日志空卷写成未记", fails)
 	_check(str(root.get_node("SaveLoad").call("save_label", 9)) == "未记", "空卷读出来是未记", fails)
+	var save_at := main_src.find("func _show_save_dialog")
+	var save_end := main_src.find("\nfunc ", save_at + 1)
+	var save_body := main_src.substr(save_at, save_end - save_at) if save_at >= 0 and save_end > save_at else ""
+	_check(save_body.find("SaveSheet") >= 0 and save_body.find("_begin_benches(col)") >= 0
+		and save_body.find("SIZE_SHRINK_CENTER") >= 0
+		and save_body.find("Vector2(520, 0)") < 0
+		and save_body.find("style_choice_button(close)") < 0,
+		"航海日志三卷走工席，合上不再拉满宽", fails)
 	_check(main_src.find("OptionButton.new()") < 0 and main_src.find("_select_market_ship") >= 0,
 		"牙行选船走账条小钮，不再用系统下拉", fails)
 	_check(main_src.find("买%d") < 0 and main_src.find("卖%d") < 0
