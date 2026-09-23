@@ -746,7 +746,7 @@ else:
     print("  ✗ PirateShip 无 class_name")
     problems.append("PirateShip 无 class_name")
 if "_format_left_hud" in wm_src:
-    print("  ✓ WorldMap._format_left_hud 已定义（左栏 HUD 单独拼）")
+    print("  ✓ WorldMap._format_left_hud 已定义（顶匾文案单独拼）")
 else:
     print("  ✗ WorldMap 无 _format_left_hud")
     problems.append("WorldMap 无 _format_left_hud")
@@ -766,11 +766,21 @@ if "c is CanvasItem" in chart_src and "_enter_battle" in chart_src:
 else:
     print("  ✗ SeaChart 开战未收起全屏栏")
     problems.append("SeaChart 开战未收起全屏栏")
-if "RightPanel/Margin/VBox/FleetStatus" in wm_src:
-    print("  ✓ 右栏舰队/天气走 VBox，不再叠字")
+if "TideBar/Margin/Row/VBox/FleetStatus" in wm_src and "RightPanel/Margin/VBox/FleetStatus" not in wm_src:
+    print("  ✓ 舰队和天气写在顶匾右侧，仍走 VBox")
 else:
-    print("  ✗ 右栏 FleetStatus 未改到 VBox")
-    problems.append("右栏 FleetStatus 未改到 VBox")
+    print("  ✗ 海战舰队天气未收进顶匾")
+    problems.append("海战舰队天气未收进顶匾")
+wm_tscn_hud = open(os.path.join(ROOT, "scenes", "WorldMap.tscn"), encoding="utf-8").read()
+if (
+    '[node name="TideBar"' in wm_tscn_hud
+    and '[node name="LeftPanel"' not in wm_tscn_hud
+    and "Vector2(320, 0)" not in wm_tscn_hud
+):
+    print("  ✓ 海战左右栏收成顶匾")
+else:
+    print("  ✗ 海战仍铺左右栏")
+    problems.append("海战仍铺左右栏")
 cap = re.search(r"COMBAT_CANNON_CAP\s*:=\s*(\d+)", wm_src)
 if cap and int(cap.group(1)) <= 2:
     print("  ✓ 开战敌船齐射封顶（≤2），开局小艍扛得住第一轮")

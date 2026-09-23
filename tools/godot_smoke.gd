@@ -66,6 +66,12 @@ func _run() -> void:
 	var wm_src := FileAccess.get_file_as_string("res://scripts/WorldMap.gd")
 	_check(wm_src.find("_process_spawns") < 0, "WorldMap 无自由航行刷怪", fails)
 	var wm_tscn := FileAccess.get_file_as_string("res://scenes/WorldMap.tscn")
+	_check(wm_tscn.find("[node name=\"TideBar\"") >= 0
+		and wm_tscn.find("[node name=\"LeftPanel\"") < 0
+		and wm_tscn.find("Vector2(320, 0)") < 0
+		and wm_src.find("TideBar/Margin/Row/VBox/FleetStatus") >= 0
+		and wm_src.find("RightPanel/Margin/VBox/FleetStatus") < 0,
+		"海战左右栏收成顶匾，舰队天气仍在匾内竖排", fails)
 	_check(wm_tscn.find("ocean_tex_1234") < 0 and wm_tscn.find("uid://xnp7vjyfjnp1") >= 0,
 		"WorldMap 海洋贴图用导入 UID", fails)
 	_check(wm_tscn.find("按 Enter 停靠") < 0, "海战港名不再写停靠教程", fails)
@@ -499,8 +505,10 @@ func _run() -> void:
 						and hud0.find("操舵　A　D") >= 0 and hud0.find("齐射　J　K") >= 0
 						and hud0.find("100 / 100") >= 0 and hud0.find("A/D") < 0
 						and hud0.find("J/K") < 0 and hud0.find("档") < 0
+						and hud0.find("操舵　A　D\n") < 0 and hud0.find("齐射　J　K\n") < 0
+						and hud0.find("\n") >= 0
 						and hud1.find("接舷　G") >= 0,
-					"海战栏写成升帆落帆与半帆，不再用斜杠档位",
+					"海战栏写成升帆落帆与半帆，操纵横排成两行",
 					fails,
 				)
 			else:
