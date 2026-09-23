@@ -108,7 +108,7 @@ func _build_ui() -> void:
 	# 真正的图。数据用 ports.json 的经纬度，CanvasItem.draw 信号接 lambda，
 	# 不另建节点树——一张静态海图不需要缩放拖拽。
 	chart = Control.new()
-	chart.custom_minimum_size = Vector2(0, 200)
+	chart.custom_minimum_size = Vector2(0, 160)
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chart.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	chart.size_flags_stretch_ratio = 1.35
@@ -118,7 +118,7 @@ func _build_ui() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_stretch_ratio = 1.0
-	scroll.custom_minimum_size = Vector2(0, 110)
+	scroll.custom_minimum_size = Vector2(0, 96)
 	center_v.add_child(scroll)
 	port_list = VBoxContainer.new()
 	port_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -306,6 +306,7 @@ func _refresh_detail() -> void:
 		c.queue_free()
 	if selected_port == "":
 		sail_button.disabled = true
+		detail_box.custom_minimum_size = Vector2.ZERO
 		return
 
 	var plan := Voyage.plan(origin_port, selected_port)
@@ -339,10 +340,15 @@ func _refresh_detail() -> void:
 	_detail_line(body, wind)
 	_detail_line(body, "约 %d 日　水粮足 %d 日" % [int(plan["days"]), int(plan["supply_days"])])
 
+	var extra := 0
 	if not Voyage.is_known_route(origin_port, selected_port):
 		_detail_line(body, "此非熟路，海图上只有传闻，途中易生变故。", UiTheme.HONEY)
+		extra += 1
 	if not plan["supply_ok"]:
 		_detail_line(body, "水粮不足以支撑此程——半途必要死人。", UiTheme.CINNABAR)
+		extra += 1
+	# 港名一行加航程、风信、日程。栏高不够时这张账条会被压进港口挑签里。
+	detail_box.custom_minimum_size = Vector2(0, 40 + (3 + extra) * 22)
 
 	sail_button.disabled = false
 
