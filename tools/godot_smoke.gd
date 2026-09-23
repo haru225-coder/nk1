@@ -83,6 +83,18 @@ func _run() -> void:
 	_check(chart_src.find("event_actions = VBoxContainer") >= 0
 		and chart_src.find("style_choice_button(b)") >= 0,
 		"海图遭遇选项走竖排挑签", fails)
+	_check(chart_src.find("船况") >= 0
+		and chart_src.find("func _mount_condition") >= 0
+		and chart_src.find("Vector2(260, 0)") < 0
+		and chart_src.find("Vector2(300, 0)") < 0,
+		"海图左右栏收成顶匾，船况点开才占画面", fails)
+	var meet_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
+	var meet_at := meet_src.find("func _show_npc_mode")
+	var meet_end := meet_src.find("\nfunc ", meet_at + 1)
+	var meet_body := meet_src.substr(meet_at, meet_end - meet_at) if meet_at >= 0 and meet_end > meet_at else ""
+	_check(meet_body.find("_begin_benches(npc_actions)") >= 0
+		and meet_body.find("SIZE_SHRINK_CENTER") >= 0,
+		"见面行情走工席，离开不再拉满宽", fails)
 	var theme_scr = load("res://scripts/core/UiTheme.gd")
 	_check(theme_scr != null, "UiTheme.gd 能编译", fails)
 	var dlg := AcceptDialog.new()

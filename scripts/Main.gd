@@ -43,7 +43,7 @@ var _status_strip: PanelContainer
 var _status_line: RichTextLabel
 var _page_footer: HBoxContainer
 ## 见面册页上的话。原 RichTextLabel 在这栏里排不出行，改用能折行的 Label。
-var _npc_speech: Label
+var _npc_speech: RichTextLabel
 ## 航海日志册页。系统对话框会把三卷撑出 1280 宽的窗口。
 var _save_host: Control
 ## 升章 / 了结册页。同一理由，不用系统对话框。
@@ -455,8 +455,13 @@ func _dress_npc_sheet() -> void:
 	dialog.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	margin.add_child(dialog)
 	UiTheme.style_heading(npc_name_lbl)
-	npc_dialog_lbl.visible = false
-	npc_actions.add_theme_constant_override("separation", 6)
+	npc_dialog_lbl.fit_content = true
+	npc_dialog_lbl.scroll_active = false
+	npc_dialog_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	npc_dialog_lbl.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	UiTheme.style_body(npc_dialog_lbl)
+	npc_actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	npc_actions.add_theme_constant_override("separation", 8)
 
 
 ## 调查页平时铺满中栏；卷首 cg_ 收成居中的册页，顶栏让开。
@@ -1341,14 +1346,15 @@ func _attention_desc() -> String:
 # ── 工席 ────────────────────────────────────────────
 ## 设施页里一桩事一张潮玻璃。和岸门同一块材料，横排放，放不下就换行。
 
-func _begin_benches() -> void:
+func _begin_benches(host: Node = null) -> void:
 	var flow := HFlowContainer.new()
 	flow.name = "Benches"
 	flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	flow.alignment = FlowContainer.ALIGNMENT_CENTER
 	flow.add_theme_constant_override("h_separation", 12)
 	flow.add_theme_constant_override("v_separation", 8)
-	choices_container.add_child(flow)
+	var parent: Node = host if host != null else choices_container
+	parent.add_child(flow)
 	_slip_host = flow
 
 
@@ -2071,10 +2077,9 @@ func _show_npc_mode(npc_id: String, fallback_name: String) -> void:
 	for child in npc_actions.get_children():
 		child.queue_free()
 
-	_slip_host = npc_actions
-	var talk := _slip_body()
-	_npc_speech = _slip_note(talk, spoken, UiTheme.TEXT)
-	_npc_speech.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	npc_dialog_lbl.text = spoken
+	_npc_speech = npc_dialog_lbl
+	_begin_benches(npc_actions)
 	var intel := _slip_body()
 	_slip_title(intel, "行情", "邻座牙人")
 	_slip_chip(_slip_row(intel), "打听", _on_npc_intel.bind(n_name))
@@ -2082,13 +2087,19 @@ func _show_npc_mode(npc_id: String, fallback_name: String) -> void:
 		var bribe := _slip_body()
 		_slip_title(bribe, "疏通", "关注　减 15")
 		_slip_chip(_slip_row(bribe), "塞　50", _on_npc_bribe.bind(n_name), true)
-	_slip_host = null
+	_end_benches()
 
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	npc_actions.add_child(spacer)
 	var leave_btn := Button.new()
 	leave_btn.text = "离开"
+	leave_btn.custom_minimum_size = Vector2(160, 42)
 	leave_btn.pressed.connect(_on_npc_leave)
 	npc_actions.add_child(leave_btn)
 	UiTheme.style_choice_button(leave_btn)
+	leave_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 
 const NPC_GREETING := {

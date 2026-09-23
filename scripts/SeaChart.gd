@@ -26,6 +26,9 @@ var event_panel: PanelContainer
 var event_title: Label
 var event_text: RichTextLabel
 var event_actions: VBoxContainer
+var _strip_line: RichTextLabel
+var _condition_layer: Control
+var _latest_note := ""
 
 
 func _ready() -> void:
@@ -71,82 +74,49 @@ func _build_ui() -> void:
 	root.add_theme_constant_override("separation", 8)
 	add_child(root)
 
-	var columns := HBoxContainer.new()
-	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override("separation", 12)
-	root.add_child(columns)
+	# 顶匾。左栏船况和右栏日志收起来之后，日期和刚写下的一句留在这里。
+	var strip := PanelContainer.new()
+	strip.custom_minimum_size = Vector2(0, 80)
+	strip.add_theme_stylebox_override("panel", UiTheme.plaque())
+	root.add_child(strip)
+	var strip_row := HBoxContainer.new()
+	strip_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	strip_row.add_theme_constant_override("separation", 12)
+	strip.add_child(strip_row)
+	_strip_line = RichTextLabel.new()
+	_strip_line.bbcode_enabled = true
+	_strip_line.fit_content = false
+	_strip_line.scroll_active = false
+	_strip_line.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_strip_line.clip_contents = true
+	_strip_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_strip_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_strip_line.custom_minimum_size = Vector2(0, 56)
+	UiTheme.style_body(_strip_line)
+	strip_row.add_child(_strip_line)
+	var cond_btn := Button.new()
+	cond_btn.text = "船况"
+	cond_btn.custom_minimum_size = Vector2(120, 40)
+	cond_btn.pressed.connect(_toggle_condition)
+	UiTheme.style_button(cond_btn, false)
+	strip_row.add_child(cond_btn)
 
-	# ── 左：状态 ──
-	var left := PanelContainer.new()
-	left.custom_minimum_size = Vector2(260, 0)
-	left.add_theme_stylebox_override("panel", _panel_style())
-	columns.add_child(left)
-	var left_m := MarginContainer.new()
-	_set_margins(left_m, 10)
-	left.add_child(left_m)
-	status_label = RichTextLabel.new()
-	status_label.bbcode_enabled = true
-	status_label.fit_content = true
-	UiTheme.style_body(status_label)
-	left_m.add_child(status_label)
-
-	# ── 中：绢纸海图。航向牌不放这里，三张 372 宽的牌在底栏才排得下。 ──
+	# 图铺满匾和航向牌之间。三张 372 宽的牌仍在底栏。
 	var center := PanelContainer.new()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.add_theme_stylebox_override("panel", _panel_style())
-	columns.add_child(center)
+	root.add_child(center)
 	var center_m := MarginContainer.new()
-	_set_margins(center_m, 12)
+	_set_margins(center_m, 8)
 	center.add_child(center_m)
-	var center_v := VBoxContainer.new()
-	center_v.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	center_v.add_theme_constant_override("separation", 8)
-	center_m.add_child(center_v)
-
-	var head := Label.new()
-	head.text = "海图"
-	UiTheme.style_heading(head)
-	center_v.add_child(head)
-
-	var hint := Label.new()
-	hint.text = "风这一手只发三向。看中一张，再决定发不发舶。"
-	UiTheme.style_footnote(hint)
-	center_v.add_child(hint)
-
-	# 真正的图。数据用 ports.json 的经纬度，CanvasItem.draw 信号接 lambda，
-	# 不另建节点树——一张静态海图不需要缩放拖拽。
 	chart = Control.new()
 	chart.custom_minimum_size = Vector2(0, 160)
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chart.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	chart.draw.connect(func(): _draw_chart(chart))
 	chart.gui_input.connect(_on_chart_input)
-	center_v.add_child(chart)
-
-	# ── 右：航海日志 ──
-	var right := PanelContainer.new()
-	right.custom_minimum_size = Vector2(300, 0)
-	right.add_theme_stylebox_override("panel", _panel_style())
-	columns.add_child(right)
-	var right_m := MarginContainer.new()
-	_set_margins(right_m, 10)
-	right.add_child(right_m)
-	var right_v := VBoxContainer.new()
-	right_m.add_child(right_v)
-	var log_head := Label.new()
-	log_head.text = "航海日志"
-	log_head.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
-	log_head.add_theme_color_override("font_color", UiTheme.GOLD)
-	right_v.add_child(log_head)
-	var log_scroll := ScrollContainer.new()
-	log_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_v.add_child(log_scroll)
-	log_label = RichTextLabel.new()
-	log_label.bbcode_enabled = true
-	log_label.fit_content = true
-	log_label.custom_minimum_size = Vector2(272, 0)
-	UiTheme.style_body(log_label)
-	log_scroll.add_child(log_label)
+	center_m.add_child(chart)
 
 	heading_row = HBoxContainer.new()
 	heading_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -184,6 +154,7 @@ func _build_ui() -> void:
 
 	# ── 事件浮层 ──
 	_build_event_panel()
+	_mount_condition()
 
 
 func _build_event_panel() -> void:
@@ -219,6 +190,139 @@ func _build_event_panel() -> void:
 	event_actions = VBoxContainer.new()
 	event_actions.add_theme_constant_override("separation", 6)
 	v.add_child(event_actions)
+
+
+## 船况和这趟日志。点开才盖在图上，不占海图的宽。
+func _mount_condition() -> void:
+	var layer := Control.new()
+	layer.name = "ConditionLayer"
+	layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.visible = false
+	layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(layer)
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.02, 0.05, 0.08, 0.62)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	dim.gui_input.connect(_on_condition_dim)
+	layer.add_child(dim)
+	var holder := CenterContainer.new()
+	holder.set_anchors_preset(Control.PRESET_FULL_RECT)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(holder)
+	var sheet := PanelContainer.new()
+	sheet.custom_minimum_size = Vector2(520, 0)
+	sheet.add_theme_stylebox_override("panel", UiTheme.panel())
+	holder.add_child(sheet)
+	var margin := MarginContainer.new()
+	_set_margins(margin, 18)
+	sheet.add_child(margin)
+	var col := VBoxContainer.new()
+	col.custom_minimum_size = Vector2(480, 0)
+	col.add_theme_constant_override("separation", 8)
+	margin.add_child(col)
+	var head := Label.new()
+	head.text = "船况"
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UiTheme.style_heading(head)
+	col.add_child(head)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 360)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	col.add_child(scroll)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 10)
+	scroll.add_child(body)
+	status_label = RichTextLabel.new()
+	status_label.bbcode_enabled = true
+	status_label.fit_content = true
+	status_label.scroll_active = false
+	status_label.custom_minimum_size = Vector2(460, 0)
+	UiTheme.style_body(status_label)
+	body.add_child(status_label)
+	log_label = RichTextLabel.new()
+	log_label.bbcode_enabled = true
+	log_label.fit_content = true
+	log_label.scroll_active = false
+	log_label.custom_minimum_size = Vector2(460, 0)
+	UiTheme.style_body(log_label)
+	body.add_child(log_label)
+	var close := Button.new()
+	close.text = "合上"
+	close.custom_minimum_size = Vector2(0, 40)
+	close.pressed.connect(_close_condition)
+	UiTheme.style_button(close, true)
+	col.add_child(close)
+	_condition_layer = layer
+
+
+func _toggle_condition() -> void:
+	if _condition_layer == null:
+		return
+	if _condition_layer.visible:
+		_close_condition()
+		return
+	_condition_layer.visible = true
+	move_child(_condition_layer, get_child_count() - 1)
+
+
+func _close_condition() -> void:
+	if _condition_layer != null:
+		_condition_layer.visible = false
+
+
+func _on_condition_dim(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var click := event as InputEventMouseButton
+		if click.pressed:
+			_close_condition()
+
+
+func _open_event_panel() -> void:
+	_close_condition()
+	event_panel.visible = true
+
+
+func _monsoon_short() -> String:
+	var desc := Calendar.get_monsoon_desc()
+	if desc.begins_with("东北"):
+		return "东北风"
+	if desc.begins_with("西南"):
+		return "西南风"
+	return "转换期"
+
+
+func _plain_note(text: String) -> String:
+	var rx := RegEx.new()
+	rx.compile("\\[[^\\]]*\\]")
+	var plain := rx.sub(text, "", true)
+	return plain.get_slice("\n", 0).strip_edges()
+
+
+func _refresh_strip() -> void:
+	if _strip_line == null:
+		return
+	var supply_d := Fleet.supply_days()
+	var supply_color := UiTheme.MOSS
+	if supply_d <= 3:
+		supply_color = UiTheme.CINNABAR
+	elif supply_d <= 7:
+		supply_color = UiTheme.HONEY
+	var line1 := "%s　%s　钱 %d　[color=#%s]水粮 %d 日[/color]" % [
+		Calendar.get_date_string(),
+		_monsoon_short(),
+		GameState.money,
+		UiTheme.hex(supply_color),
+		supply_d,
+	]
+	var note := _latest_note
+	if sailing:
+		var pct := 0
+		if total_li > 0.0:
+			pct = int(clampf((total_li - remaining_li) / total_li, 0.0, 1.0) * 100.0)
+		note = "航行中　第 %d 日　已行 %d / 100　余程 %d 里" % [days_elapsed, pct, int(remaining_li)]
+	var dim := UiTheme.hex(UiTheme.TEXT_DIM)
+	_strip_line.text = line1 + "\n[color=#%s]%s[/color]" % [dim, note]
 
 
 func _panel_style() -> StyleBoxFlat:
@@ -267,6 +371,7 @@ func _refresh_status() -> void:
 		Fleet.water, Fleet.food, UiTheme.hex(supply_color), supply_d,
 	]
 	status_label.text = t
+	_refresh_strip()
 	# 日期推进会改季风，图上的风向箭头与航段配色随之变
 	if chart:
 		chart.queue_redraw()
@@ -634,6 +739,8 @@ func _chart_label_hits(rect: Rect2, occupied: Array[Rect2]) -> bool:
 
 func _log(text: String) -> void:
 	log_label.text = UiTheme.plain_log(text) + "\n\n" + log_label.text
+	_latest_note = _plain_note(text)
+	_refresh_strip()
 
 
 func _ink(c: Color, text: String) -> String:
@@ -755,7 +862,7 @@ func _show_event(event: Dictionary) -> void:
 	else:
 		_add_event_action("继续航行", _on_event_continue)
 
-	event_panel.visible = true
+	_open_event_panel()
 
 
 func _add_event_action(text: String, cb: Callable) -> void:
@@ -855,6 +962,7 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	for c in get_children():
 		if c is CanvasItem:
 			c.visible = true
+	_close_condition()
 	_refresh_status()
 	_after_combat()
 
@@ -941,7 +1049,7 @@ func _arrive() -> void:
 	for c in event_actions.get_children():
 		c.queue_free()
 	_add_event_action("下船入港", _return_to_port)
-	event_panel.visible = true
+	_open_event_panel()
 
 
 func _sink() -> void:
@@ -962,7 +1070,7 @@ func _sink() -> void:
 		GameState.last_port = origin_port
 		_return_to_port()
 	)
-	event_panel.visible = true
+	_open_event_panel()
 
 
 func _return_to_port() -> void:

@@ -1281,6 +1281,22 @@ if "style_heading(head)" in seachart_src and "style_body(status_label)" in seach
 else:
     print("  ✗ 海图未接线字阶")
     problems.append("海图未接线字阶")
+if (
+    "船况" in seachart_src
+    and "func _mount_condition" in seachart_src
+    and "Vector2(260, 0)" not in seachart_src
+    and "Vector2(300, 0)" not in seachart_src
+):
+    print("  ✓ 海图左右栏收成顶匾，船况点开才占画面")
+else:
+    print("  ✗ 海图仍铺左右栏")
+    problems.append("海图仍铺左右栏")
+meet_body = _func_body(main_src, "_show_npc_mode")
+if "_begin_benches(npc_actions)" in meet_body and "SIZE_SHRINK_CENTER" in meet_body:
+    print("  ✓ 见面行情走工席，离开不再拉满宽")
+else:
+    print("  ✗ 见面仍是满宽细条")
+    problems.append("见面仍是满宽细条")
 if "event_panel.add_theme_stylebox_override(\"panel\", UiTheme.panel())" in seachart_src:
     print("  ✓ 海图遭遇弹层走绢本面板")
 else:
