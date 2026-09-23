@@ -261,7 +261,7 @@ func _update_hud() -> void:
 		cargo_str = "空"
 	else:
 		for k in Fleet.cargo.keys():
-			cargo_str += GameManager.get_good_name(k) + " x" + str(Fleet.cargo[k].get("qty", 0)) + " "
+			cargo_str += "%s ×%d " % [GameManager.get_good_name(k), int(Fleet.cargo[k].get("qty", 0))]
 
 	fleet_status.text = "舰队\n金钱　%d\n货舱　%s" % [GameState.money, cargo_str]
 

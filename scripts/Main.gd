@@ -313,7 +313,7 @@ func update_status_panel() -> void:
 	elif supply_d <= 7:
 		supply_color = UiTheme.HONEY
 
-	var permit_str := "【有】合法" if GameState.has_customs_permit else "【无】黑市"
+	var permit_str := "在手" if GameState.has_customs_permit else "未领"
 	var contraband := GameState.contraband_units()
 	var gold := UiTheme.hex(UiTheme.GOLD)
 	var dim := UiTheme.hex(UiTheme.TEXT_DIM)
@@ -374,10 +374,10 @@ func update_status_panel() -> void:
 			if Fleet.ship_crew(i) < Fleet.ship_crew_min(i):
 				crew_color = UiTheme.hex(UiTheme.CINNABAR)
 				crew_str += "（缺 %d 人）" % (Fleet.ship_crew_min(i) - Fleet.ship_crew(i))
-			t += "[i]└ %s（%s）%d/%d 料　帆Lv%d/甲Lv%d　[color=#%s]%s[/color]　%s[/i]\n" % [
+			t += "　%s　%s　%d/%d 料　帆%s　甲%s　[color=#%s]%s[/color]　%s\n" % [
 				s.get("name", ""), Fleet.ship_def(s.get("type", "")).get("name", ""),
 				int(Fleet.ship_cargo_bulk(i)), int(Fleet.ship_capacity(i)),
-				Fleet.sail_level(i), Fleet.armor_level(i),
+				_fit_rank(Fleet.sail_level(i)), _fit_rank(Fleet.armor_level(i)),
 				crew_color, crew_str, per_ship,
 			]
 
@@ -394,20 +394,53 @@ func update_status_panel() -> void:
 	elif prog.get("final", false):
 		t += "[color=#%s]终章・可了结[/color]\n" % UiTheme.hex(UiTheme.TEXT_DIM)
 		for it in prog.get("items", []):
-			var emark: String = "[color=#%s]✓[/color]" % UiTheme.hex(UiTheme.MOSS) if it["done"] else "・"
-			if int(it["need"]) > 1:
-				t += "%s %s %d/%d\n" % [emark, it["label"], it["current"], it["need"]]
-			else:
-				t += "%s %s\n" % [emark, it["label"]]
+			t = _append_progress_line(t, it)
 	else:
 		for it in prog.get("items", []):
-			var mark: String = "[color=#%s]✓[/color]" % UiTheme.hex(UiTheme.MOSS) if it["done"] else "・"
-			if int(it["need"]) > 1:
-				t += "%s %s %d/%d\n" % [mark, it["label"], it["current"], it["need"]]
-			else:
-				t += "%s %s\n" % [mark, it["label"]]
+			t = _append_progress_line(t, it)
 
 	status_label.text = t
+
+
+func _append_progress_line(text: String, it: Dictionary) -> String:
+	var mark := "・"
+	if it.get("done", false):
+		mark = "[color=#%s]已[/color]" % UiTheme.hex(UiTheme.MOSS)
+	if int(it.get("need", 1)) > 1:
+		return text + "%s %s %d/%d\n" % [mark, it.get("label", ""), it.get("current", 0), it.get("need", 1)]
+	return text + "%s %s\n" % [mark, it.get("label", "")]
+
+
+## 船体改装是一等、二等、三等。职事品级另用初习 / 谙熟 / 老练，两套词不混。
+func _fit_rank(n: int) -> String:
+	if n >= 3:
+		return "三等"
+	if n == 2:
+		return "二等"
+	if n <= 0:
+		return "未装"
+	return "一等"
+
+
+## scenes.json 里四张兴化序章内页标题写成「内景」。画面上改成港名・去处，正文不动。
+func _interior_title(scene_id: String) -> String:
+	var names := {
+		"city_guild": "行会",
+		"city_residence": "住处",
+		"city_exam": "贡院",
+		"city_tavern": "酒馆",
+		"city_shipyard": "船屋",
+	}
+	var place := str(names.get(scene_id, ""))
+	if place == "":
+		return "内室"
+	var port_id := str(GameState.last_port)
+	var port_name := ""
+	if port_id != "":
+		port_name = GameManager.get_port_name(port_id)
+	if port_name == "" or port_name == port_id:
+		port_name = "兴化"
+	return "%s・%s" % [port_name, place]
 
 
 # ══════════════════════════════════════════════════════
@@ -526,6 +559,7 @@ func _enter_panel_mode() -> void:
 	scene_title.visible = true
 	choices_label.visible = false
 	choices_label.text = "决断"  # 市场会改写它，此处复位避免上一屏文字残留
+	update_status_panel()
 
 
 func _show_investigation_chrome(show: bool) -> void:
@@ -1089,7 +1123,7 @@ func _setup_shipyard(port_id: String) -> void:
 		var slv: int = Fleet.sail_level(i)
 		var alv: int = Fleet.armor_level(i)
 		var fit := _slip_body()
-		_slip_title(fit, sname, "帆 Lv%d　甲 Lv%d" % [slv, alv])
+		_slip_title(fit, sname, "帆　%s　甲　%s" % [_fit_rank(slv), _fit_rank(alv)])
 		var fit_row := _slip_row(fit)
 		if Fleet.is_sail_max(i):
 			_slip_note(fit, "帆已满级。")
@@ -1192,11 +1226,11 @@ func _on_upgrade(ship_index: int, kind: String, cost: int) -> void:
 	elif kind == "armor":
 		Fleet.upgrade_armor(ship_index)
 		var s: Dictionary = Fleet.ships[ship_index]
-		log_msg("「%s」加厚了船壳，甲升至 Lv%d。" % [s.get("name", "船"), Fleet.armor_level(ship_index)])
+		log_msg("「%s」加厚了船壳，甲升至%s。" % [s.get("name", "船"), _fit_rank(Fleet.armor_level(ship_index))])
 	else:
 		Fleet.upgrade_sail(ship_index)
 		var s2: Dictionary = Fleet.ships[ship_index]
-		log_msg("「%s」换了新帆，帆升至 Lv%d。" % [s2.get("name", "船"), Fleet.sail_level(ship_index)])
+		log_msg("「%s」换了新帆，帆升至%s。" % [s2.get("name", "船"), _fit_rank(Fleet.sail_level(ship_index))])
 	load_scene(current_scene_id)
 
 
@@ -1728,6 +1762,7 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 
 	_add_sail_button()
 	_add_save_button()
+	update_status_panel()
 
 
 func _make_facility_card(fac: Dictionary) -> Control:
@@ -1767,7 +1802,7 @@ func _make_facility_card(fac: Dictionary) -> Control:
 	hbox.add_child(vbox)
 
 	var title_lbl = Label.new()
-	title_lbl.text = fac.get("title", "未命名设施")
+	title_lbl.text = fac.get("title", "去处")
 	title_lbl.add_theme_font_override("font", UiTheme.font())
 	title_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	title_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
@@ -2102,6 +2137,8 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 		var speaker := str(scene_data.get("speaker", "")).strip_edges()
 		if speaker != "" and speaker != "——":
 			shown_title = speaker
+	if shown_title == "内景":
+		shown_title = _interior_title(str(scene_data.get("id", "")))
 	scene_title.visible = shown_title != ""
 	scene_title.text = shown_title
 	var shown_body := str(scene_data.get("body", "")).strip_edges()

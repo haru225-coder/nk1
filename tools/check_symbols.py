@@ -925,6 +925,21 @@ if "★" not in main_src and "func _skill_rank" in main_src:
 else:
     print("  ✗ 职事仍用星号")
     problems.append("职事仍用星号")
+if "func _fit_rank" in main_src and "帆Lv" not in main_src and "Lv%d" not in main_src:
+    print("  ✓ 船壳改装写成一等/二等/三等")
+else:
+    print("  ✗ 船壳改装仍写 Lv")
+    problems.append("船壳改装仍写 Lv")
+if "func _interior_title" in main_src and "未命名设施" not in main_src:
+    print("  ✓ 序章内页改写成港名去处")
+else:
+    print("  ✗ 序章内页或港卡仍是占位名")
+    problems.append("序章内页或港卡仍是占位名")
+if '" x"' not in wm_src:
+    print("  ✓ 海战货舱用乘号")
+else:
+    print("  ✗ 海战货舱仍用拉丁字母 x")
+    problems.append("海战货舱仍用拉丁字母 x")
 if 'text = "请选择"' not in main_src and "区域施工中" not in main_src:
     print("  ✓ 调查页用决断，缺页不再写施工中")
 else:

@@ -152,6 +152,11 @@ func _run() -> void:
 		"牙行选船走账条小钮，不再用系统下拉", fails)
 	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
 		"职事品级写成初习/谙熟/老练，不再用星号", fails)
+	_check(main_src.find("func _fit_rank") >= 0 and main_src.find("帆Lv") < 0
+		and main_src.find("Lv%d") < 0,
+		"船壳改装写成一等二等三等", fails)
+	_check(main_src.find("func _interior_title") >= 0 and main_src.find("未命名设施") < 0,
+		"序章内页改写成港名去处，港卡不写未命名设施", fails)
 	_check(main_src.find("请选择") < 0 and main_src.find("区域施工中") < 0,
 		"调查页用决断，缺页不再写施工中", fails)
 	var main_tscn := FileAccess.get_file_as_string("res://scenes/Main.tscn")
