@@ -76,20 +76,46 @@ func advance_days(n: int) -> void:
 # ── 资源 ──────────────────────────────────────────────
 
 ## 按文件头而非扩展名加载图片。
-## assets 里有若干 .png 文件实际是 JPEG 内容（图片压缩后沿用了原文件名），
-## Godot 的导入器与 Image.load_from_file 都按扩展名选解码器，会直接失败。
+## assets 里有四张 .png 实际是 JPEG（icon_academy / icon_guild / icon_residence / icon_temple），
+## 导入器按扩展名解码会失败，并把 .import 写成 valid=false。
+## 对这种文件直接 load() 会在回退成功之前先刷一条 ERROR，港口界面每张图标都打一次。
 func load_texture(path: String) -> Texture2D:
-	# 有 .import 时资源系统最快，先走它
-	var tex := load(path) as Texture2D
-	if tex != null:
-		return tex
-	if not FileAccess.file_exists(path):
-		return null
+	if FileAccess.file_exists(path):
+		var bytes := FileAccess.get_file_as_bytes(path)
+		var decoded := _texture_from_bytes(bytes)
+		if decoded != null and (_header_mismatches_extension(path, bytes) or _import_marked_invalid(path)):
+			return decoded
+		var tex := load(path) as Texture2D
+		if tex != null:
+			return tex
+		return decoded
+	return load(path) as Texture2D
 
-	var bytes := FileAccess.get_file_as_bytes(path)
+
+func _import_marked_invalid(path: String) -> bool:
+	var sidecar := path + ".import"
+	if not FileAccess.file_exists(sidecar):
+		return false
+	var text := FileAccess.get_file_as_string(sidecar)
+	return text.begins_with("valid=false") or text.contains("\nvalid=false")
+
+
+func _header_mismatches_extension(path: String, bytes: PackedByteArray) -> bool:
+	if bytes.size() < 3:
+		return false
+	var ext := path.get_extension().to_lower()
+	if bytes[0] == 0xFF and bytes[1] == 0xD8:
+		return ext != "jpg" and ext != "jpeg"
+	if bytes[0] == 0x89 and bytes[1] == 0x50:
+		return ext != "png"
+	if bytes[0] == 0x57 and bytes[1] == 0x45:
+		return ext != "webp"
+	return false
+
+
+func _texture_from_bytes(bytes: PackedByteArray) -> Texture2D:
 	if bytes.size() < 8:
 		return null
-
 	var img := Image.new()
 	var err := ERR_FILE_UNRECOGNIZED
 	if bytes[0] == 0xFF and bytes[1] == 0xD8:                       # JPEG: FF D8
@@ -98,7 +124,6 @@ func load_texture(path: String) -> Texture2D:
 		err = img.load_png_from_buffer(bytes)
 	elif bytes[0] == 0x57 and bytes[1] == 0x45:                     # WEBP: WE(BP)
 		err = img.load_webp_from_buffer(bytes)
-
 	if err != OK:
 		return null
 	return ImageTexture.create_from_image(img)

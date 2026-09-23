@@ -26,7 +26,7 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-本机无 Godot 时，代码改动后必须跑这三套静态校验（改数据尤其要重跑）：
+代码改动后必须跑这四条静态校验（改数据尤其要重跑）。没有 Godot 也能跑：
 
 ```bash
 python3 tools/check_symbols.py    # autoload 顺序与跨文件符号（GDScript 动态语言的必要保险）
@@ -35,7 +35,13 @@ python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢�
 python3 tools/verify_narrative.py # 剧情效果白名单、开局截断、港口节拍、终局文案
 ```
 
-三套全绿才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
+四条全绿才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
+
+有 Godot 4.6 时可以再跑无界面冒烟。它不进上面的门禁：
+
+```bash
+godot --headless --path . -s res://tools/p7_smoke.gd
+```
 
 ## 目录结构
 
@@ -43,7 +49,7 @@ python3 tools/verify_narrative.py # 剧情效果白名单、开局截断、港�
 data/       港口、货物、船种、章节、职事等 JSON 数据
 scripts/    游戏脚本（core/ 为 autoload 单例：Fleet/Economy/Voyage/…）
 scenes/     场景与 UI
-tools/      三套 Python 静态校验脚本
+tools/      四条 Python 静态校验，另有 Godot 无界面冒烟 p7_smoke.gd
 docs/       复刻设计文档
 assets/     美术资源
 ```
@@ -54,7 +60,7 @@ assets/     美术资源
 - ✅ P2 舰队深化（海图、分船装载、分船船员、船体改装）
 - ✅ P4 海战（炮击接入、接舷白刃夺船、弹数挂炮位 + 伤害乘甲）
 - ✅ P7 剧情闭环：开局截断、效果白名单、九条港口节拍、第四章终局（`docs/P7-剧情闭环-任务书.md`）
-- ⏳ 真机手感待点验：本机长期无 Godot，代码经静态校验但未在引擎内实机运行过
+- ⏳ 窗口里亲手跑一局仍未做。Godot 4.6 无界面已编译通过，P7 点击路径见 `tools/p7_smoke.gd`
 
 ## 许可
 
