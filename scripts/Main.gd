@@ -45,6 +45,9 @@ var _save_host: Control
 ## 升章 / 了结册页。同一理由，不用系统对话框。
 var _chapter_host: Control
 var _chapter_next_scene: String = ""
+## 今日岸上开着的去处。再候一日之前这一手不变。
+var shore_hand: PackedStringArray = PackedStringArray()
+var _shore_facilities: Array = []
 
 const FACILITY_SUFFIXES := [
 	"_market", "_yamen", "_shipyard", "_tavern", "_inn",
@@ -1805,97 +1808,220 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 	investigation_mode.visible = false
 	npc_mode.visible = false
 	port_mode.visible = true
-	port_title.text = scene_data.get("title", "未知港口")
+	port_title.text = str(scene_data.get("title", "未知港口"))
+	_shore_facilities = scene_data.get("facilities", [])
+	_refresh_shore()
+	update_status_panel()
 
+
+func _shore_pin_shipyard() -> bool:
+	return (not Fleet.can_sail()) or Fleet.supply_days() < 2
+
+
+func _refresh_shore() -> void:
 	for child in left_facilities.get_children():
 		child.queue_free()
 	for child in right_facilities.get_children():
 		child.queue_free()
+	left_facilities.visible = false
+	right_facilities.visible = false
+	shore_hand = ShoreDraft.deal(_shore_facilities, GameState.shore_salt, _shore_pin_shipyard())
+	var band := _shore_band()
+	# 发信号的钮还在这排里。先摘下来再排新门，否则新节点会被改名。
+	var stale: Array = band.get_children()
+	for child in stale:
+		band.remove_child(child)
+		child.queue_free()
 
-	var facilities = scene_data.get("facilities", [])
-	for i in range(facilities.size()):
-		var card := _make_facility_card(facilities[i])
-		if i % 2 == 0:
-			left_facilities.add_child(card)
-		else:
-			right_facilities.add_child(card)
+	var hint := Label.new()
+	hint.text = "今日只开三处。"
+	UiTheme.style_footnote(hint)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	band.add_child(hint)
 
-	_add_sail_button()
-	_add_save_button()
-	update_status_panel()
+	var doors := HBoxContainer.new()
+	doors.name = "ShoreDoors"
+	doors.add_theme_constant_override("separation", 12)
+	doors.alignment = BoxContainer.ALIGNMENT_CENTER
+	doors.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	band.add_child(doors)
+	var by_id := {}
+	for raw in _shore_facilities:
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var fac: Dictionary = raw
+		by_id[str(fac.get("id", ""))] = fac
+	var pin_yard := _shore_pin_shipyard()
+	for fid in shore_hand:
+		if not by_id.has(fid):
+			continue
+		var open_fac: Dictionary = by_id[fid]
+		doors.add_child(_make_shore_door(open_fac, fid == "city_shipyard" and pin_yard))
+
+	var shut := HBoxContainer.new()
+	shut.name = "ShoreShut"
+	shut.add_theme_constant_override("separation", 8)
+	shut.alignment = BoxContainer.ALIGNMENT_CENTER
+	shut.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	band.add_child(shut)
+	for raw_shut in _shore_facilities:
+		if typeof(raw_shut) != TYPE_DICTIONARY:
+			continue
+		var shut_fac: Dictionary = raw_shut
+		var shut_id := str(shut_fac.get("id", ""))
+		if shut_id != "" and shut_id not in shore_hand:
+			shut.add_child(_make_shore_shut(shut_fac))
+
+	var actions := HBoxContainer.new()
+	actions.name = "ShoreActions"
+	actions.add_theme_constant_override("separation", 12)
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	actions.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	band.add_child(actions)
+	actions.add_child(_shore_action("看风", Vector2(220, 48), true, _on_set_sail))
+	actions.add_child(_shore_action("再候一日", Vector2(160, 42), false, _on_shore_wait))
+	actions.add_child(_shore_action("航海日志", Vector2(140, 42), false, _show_save_dialog))
 
 
-func _make_facility_card(fac: Dictionary) -> Control:
-	var card = PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, 64)
+func _shore_band() -> VBoxContainer:
+	var existing := port_mode.get_node_or_null("ShoreBand")
+	if existing is VBoxContainer:
+		return existing
+	var band := VBoxContainer.new()
+	band.name = "ShoreBand"
+	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	band.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	band.offset_left = 16
+	band.offset_top = -372
+	band.offset_right = -16
+	band.offset_bottom = -12
+	band.add_theme_constant_override("separation", 8)
+	band.alignment = BoxContainer.ALIGNMENT_END
+	port_mode.add_child(band)
+	return band
+
+
+func _shore_action(label: String, size: Vector2, accent: bool, callback: Callable) -> Button:
+	var btn := Button.new()
+	btn.text = label
+	btn.custom_minimum_size = size
+	btn.pressed.connect(callback)
+	UiTheme.style_button(btn, accent)
+	return btn
+
+
+func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(220, 128)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", UiTheme.card())
+	card.add_theme_stylebox_override("panel", UiTheme.shore_door())
 
-	var hbox = HBoxContainer.new()
+	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	card.add_child(margin)
+
+	var hbox := HBoxContainer.new()
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_theme_constant_override("separation", 10)
-	card.add_child(hbox)
+	margin.add_child(hbox)
 
-	var icon_id = fac.get("id", "").replace("city_", "")
-	var icon_path = "res://assets/icon_" + icon_id + ".png"
+	var icon_id := str(fac.get("id", "")).replace("city_", "")
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = Vector2(46, 46)
 	frame.clip_contents = true
 	frame.add_theme_stylebox_override("panel", UiTheme.icon_frame())
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var tex_rect = TextureRect.new()
+	var tex_rect := TextureRect.new()
 	tex_rect.custom_minimum_size = Vector2(40, 40)
 	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var icon_tex := GameManager.load_texture(icon_path)
+	var icon_tex := GameManager.load_texture("res://assets/icon_%s.png" % icon_id)
 	if icon_tex != null:
 		tex_rect.texture = icon_tex
-
 	frame.add_child(tex_rect)
 	hbox.add_child(frame)
 
-	var vbox = VBoxContainer.new()
+	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(vbox)
 
-	var title_lbl = Label.new()
-	title_lbl.text = fac.get("title", "去处")
+	var title_lbl := Label.new()
+	title_lbl.text = str(fac.get("title", "去处"))
 	title_lbl.add_theme_font_override("font", UiTheme.font())
-	title_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
-	title_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
+	title_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
+	title_lbl.add_theme_color_override("font_color", UiTheme.TIDE)
 	title_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(title_lbl)
 
-	var sub_lbl = Label.new()
-	sub_lbl.text = fac.get("subtitle", "")
+	var sub_lbl := Label.new()
+	sub_lbl.text = str(fac.get("subtitle", ""))
 	UiTheme.style_footnote(sub_lbl)
 	sub_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(sub_lbl)
 
-	var btn = Button.new()
+	if pinned_yard:
+		var why := Label.new()
+		why.text = "船还开不出去"
+		why.add_theme_font_override("font", UiTheme.font())
+		why.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT)
+		why.add_theme_color_override("font_color", UiTheme.CINNABAR)
+		why.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(why)
+
+	var btn := Button.new()
 	btn.flat = true
 	btn.set_anchors_preset(Control.PRESET_FULL_RECT)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var empty := StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", empty)
+	btn.add_theme_stylebox_override("hover", empty)
+	btn.add_theme_stylebox_override("pressed", empty)
+	btn.add_theme_stylebox_override("focus", empty)
 	btn.pressed.connect(_on_facility_pressed.bind(fac))
-	btn.mouse_entered.connect(func(): card.add_theme_stylebox_override("panel", UiTheme.card_hover()))
-	btn.mouse_exited.connect(func(): card.add_theme_stylebox_override("panel", UiTheme.card()))
+	btn.mouse_entered.connect(func(): card.add_theme_stylebox_override("panel", UiTheme.shore_door_hover()))
+	btn.mouse_exited.connect(func(): card.add_theme_stylebox_override("panel", UiTheme.shore_door()))
 	card.add_child(btn)
-
 	return card
 
 
-func _add_sail_button() -> void:
-	var btn = Button.new()
-	btn.text = "看风"
-	btn.custom_minimum_size = Vector2(0, 42)
-	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
-	btn.pressed.connect(_on_set_sail)
-	right_facilities.add_child(btn)
-	UiTheme.style_button(btn, true)
+func _make_shore_shut(fac: Dictionary) -> Button:
+	var btn := Button.new()
+	btn.text = str(fac.get("title", "去处"))
+	btn.custom_minimum_size = Vector2(108, 36)
+	btn.set_meta("shore_shut", true)
+	btn.pressed.connect(_on_shore_shut)
+	UiTheme.style_button(btn, false)
+	var shut_box := UiTheme.shore_shut()
+	btn.add_theme_stylebox_override("normal", shut_box)
+	btn.add_theme_stylebox_override("hover", shut_box)
+	btn.add_theme_stylebox_override("pressed", shut_box)
+	btn.add_theme_stylebox_override("focus", shut_box)
+	btn.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
+	btn.add_theme_color_override("font_hover_color", UiTheme.TEXT_DIM)
+	btn.add_theme_color_override("font_pressed_color", UiTheme.TEXT_DIM)
+	return btn
+
+
+func _on_shore_shut() -> void:
+	log_msg("今日这处没开门。")
+	update_status_panel()
+
+
+func _on_shore_wait() -> void:
+	GameState.shore_salt += 1
+	GameManager.advance_days(1)
+	log_msg("在岸上又候了一日，门又换了几处。")
+	_refresh_shore()
+	update_status_panel()
+
 
 
 func _on_set_sail() -> void:
@@ -1923,14 +2049,6 @@ func _on_set_sail() -> void:
 		GameState.consume_permit()
 		get_tree().change_scene_to_file("res://scenes/SeaChart.tscn")
 
-
-func _add_save_button() -> void:
-	var btn = Button.new()
-	btn.text = "航海日志"
-	btn.custom_minimum_size = Vector2(0, 34)
-	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.pressed.connect(_show_save_dialog)
-	right_facilities.add_child(btn)
 
 
 func _show_save_dialog() -> void:
@@ -2162,7 +2280,12 @@ func _cn_chapter(n: int) -> String:
 
 
 func _on_facility_pressed(fac: Dictionary) -> void:
-	var target_scene = fac.get("id", "")
+	var raw_id := str(fac.get("id", ""))
+	if raw_id.begins_with("city_") and raw_id not in shore_hand:
+		log_msg("今日这处没开门。")
+		update_status_panel()
+		return
+	var target_scene = raw_id
 	# 兴化序章三张卡仍进调查页；已经踏足泉州之后再回兴化，改走动态页。
 	if (
 		current_scene_id == "xinghua"

@@ -1018,6 +1018,22 @@ if (
 else:
     print("  ✗ 晨潮三向未接上")
     problems.append("晨潮三向未接上")
+shore_src = open(os.path.join(SCRIPTS, "core", "ShoreDraft.gd"), encoding="utf-8").read()
+if (
+    "class_name ShoreDraft" in shore_src
+    and "今日这处没开门。" in main_src
+    and "在岸上又候了一日，门又换了几处。" in main_src
+    and "再候一日" in main_src
+    and "今日只开三处。" in main_src
+    and "ShoreDraft.deal" in main_src
+    and '"shore_salt"' in gs_src_draft
+    and "func shore_door" in theme_src_tide
+    and "func _add_sail_button" not in main_src
+):
+    print("  ✓ 进港改成今日只开三处")
+else:
+    print("  ✗ 岸上三处未接上")
+    problems.append("岸上三处未接上")
 if (
     "%s　%s%s" in cal_src
     and "%s %s%s" not in cal_src

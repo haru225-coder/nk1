@@ -116,6 +116,32 @@ func _run() -> void:
 	gs.visited_ports = vis_keep
 	gs.ending_id = end_keep
 	gs.draft_salt = salt_keep
+	var shore_facs: Array = [
+		{"id": "city_shipyard"},
+		{"id": "city_guild"},
+		{"id": "city_tavern"},
+		{"id": "city_market"},
+		{"id": "city_inn"},
+		{"id": "city_exam"},
+		{"id": "city_residence"},
+		{"id": "city_temple"},
+		{"id": "city_yamen"},
+	]
+	var shore0: PackedStringArray = ShoreDraft.deal(shore_facs, 0, false)
+	var shore1: PackedStringArray = ShoreDraft.deal(shore_facs, 1, false)
+	var shore_pin: PackedStringArray = ShoreDraft.deal(shore_facs, 0, true)
+	_check(shore0.size() == 3 and shore0[0] == "city_market" and shore0[1] != shore1[1],
+		"泉州岸上最多三处，牙行占第一席，盐位一转第二席换门", fails)
+	_check(shore_pin.size() == 3 and shore_pin[1] == "city_shipyard",
+		"船开不出去时船屋占第二席", fails)
+	var shore_seen := {}
+	for salt_i in 8:
+		for door_id in ShoreDraft.deal(shore_facs, salt_i, false):
+			shore_seen[door_id] = true
+	_check(shore_seen.size() == 9, "盐位转一圈，九处都会开门", fails)
+	var door_box := UiTheme.shore_door()
+	_check(door_box.corner_radius_top_left == 16 and door_box.border_color.g > door_box.border_color.r,
+		"岸门是潮光边的潮玻璃", fails)
 	_check(UiTheme.plain_log("【钱不够】牙人摇头。") == "牙人摇头。", "日志去掉方括号标签", fails)
 	_check(UiTheme.plain_log("买入瓷器 ×1。") == "买入瓷器 ×1。", "普通日志原样保留", fails)
 	_check(UiTheme.plain_log("[color=#aabbcc]【欠饷】已拖欠。[/color]") == "[color=#aabbcc]已拖欠。[/color]",

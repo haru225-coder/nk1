@@ -529,6 +529,42 @@ pool0 = pool_ids("quanzhou")
 for salt in range(max(1, len(pool0))):
     seen.update(deal("quanzhou", salt))
 check(set(pool0) <= seen, "盐位转一圈，泉州每个海港都会发到")
+
+SHORE_IDS = [
+    "city_shipyard", "city_guild", "city_tavern", "city_market", "city_inn",
+    "city_exam", "city_residence", "city_temple", "city_yamen",
+]
+
+def shore_deal(ids, salt, pin_shipyard):
+    """与 ShoreDraft.deal 同一规则。跑商不调用它。"""
+    seats = []
+    if "city_market" in ids:
+        seats.append("city_market")
+    if pin_shipyard and "city_shipyard" in ids and "city_shipyard" not in seats:
+        seats.append("city_shipyard")
+    rest = sorted(fid for fid in ids if fid not in seats)
+    if not rest:
+        return seats
+    start = salt % len(rest)
+    i = 0
+    while len(seats) < 3 and i < len(rest):
+        fid = rest[(start + i) % len(rest)]
+        if fid not in seats:
+            seats.append(fid)
+        i += 1
+    return seats
+
+shore0 = shore_deal(SHORE_IDS, 0, False)
+shore1 = shore_deal(SHORE_IDS, 1, False)
+shore_pin = shore_deal(SHORE_IDS, 0, True)
+check(len(shore0) == 3 and shore0[0] == "city_market" and shore0[1] != shore1[1],
+      f"岸上这一手 {shore0} 以牙行起首，盐位一转第二席换门")
+check(shore_pin[0] == "city_market" and shore_pin[1] == "city_shipyard",
+      f"船开不出去时 {shore_pin} 第二席是船屋")
+shore_seen = set()
+for salt in range(len(SHORE_IDS) - 1):
+    shore_seen.update(shore_deal(SHORE_IDS, salt, False))
+check(set(SHORE_IDS) <= shore_seen, "盐位转一圈，九处都会开门")
 print(f"  ── 跑商 24 趟（起始第 {G.chapter} 章，可达 {len(open_ports())} 港）──")
 for trip in range(1, 25):
     if G.ending_id:

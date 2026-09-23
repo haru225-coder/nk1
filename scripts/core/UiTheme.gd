@@ -216,6 +216,26 @@ static func card_hover() -> StyleBoxFlat:
 	return st
 
 
+## 岸上开着的门。潮光边，深青底，半径 16。
+static func shore_door() -> StyleBoxFlat:
+	return _flat(INK, TIDE, 16, 2)
+
+
+## 岸门悬停。底抬一档，边仍是潮光。
+static func shore_door_hover() -> StyleBoxFlat:
+	return _flat(BTN_HI, TIDE, 16, 2)
+
+
+## 今日没开的门。暗边，字另用旁注色。
+static func shore_shut() -> StyleBoxFlat:
+	var st := _flat(INK, BTN, 16, 1)
+	st.content_margin_left = 10
+	st.content_margin_right = 10
+	st.content_margin_top = 4
+	st.content_margin_bottom = 4
+	return st
+
+
 ## 航向牌。未选中暗边，选中潮光边。半径与港卡同为 16。
 static func heading_card(selected: bool) -> StyleBoxFlat:
 	var edge := TIDE if selected else BTN
