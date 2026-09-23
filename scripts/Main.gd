@@ -422,6 +422,37 @@ func _fit_rank(n: int) -> String:
 	return "一等"
 
 
+## 船屋悬停用的成数。12 是一成二，90 是九成。只换说法，不改加成。
+func _cheng_phrase(percent: int) -> String:
+	if percent <= 0:
+		return ""
+	var digits := PackedStringArray(["", "一", "二", "三", "四", "五", "六", "七", "八", "九"])
+	var cheng := int(percent / 10)
+	var rest := int(percent % 10)
+	var s := ""
+	if cheng >= 10:
+		s = "十成"
+	elif cheng > 0:
+		s = digits[cheng] + "成"
+	if rest > 0:
+		s += digits[rest]
+	return s
+
+
+func _sail_fit_phrase(level: int) -> String:
+	var extra := int(round(12.0 * float(level)))
+	if extra <= 0:
+		return "此帆比光船并不更快"
+	return "此帆比光船快%s" % _cheng_phrase(extra)
+
+
+func _armor_fit_phrase(level: int) -> String:
+	var left := int(round((1.0 - 0.10 * float(level)) * 100.0))
+	if left >= 100:
+		return "船体伤并不减轻"
+	return "船体伤剩%s" % _cheng_phrase(left)
+
+
 ## scenes.json 里四张兴化序章内页标题写成「内景」。画面上改成港名・去处，正文不动。
 func _interior_title(scene_id: String) -> String:
 	var names := {
@@ -738,7 +769,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	name_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 	if g.get("contraband", false):
 		name_lbl.add_theme_color_override("font_color", UiTheme.CINNABAR)
-		name_lbl.tooltip_text = "违禁：宋法不许出海，验引护不住"
+		name_lbl.tooltip_text = "违禁　宋法不许出海，验引护不住"
 	head.add_child(name_lbl)
 
 	var hint_lbl := Label.new()
@@ -913,7 +944,7 @@ func _setup_reporting() -> void:
 			continue
 		var value: int = int(d.get("value", 50))
 		var slip := _slip_body()
-		_slip_title(slip, str(d.get("name", did)), "赏格 %d　名声 +%d" % [value, maxi(1, value / 10)])
+		_slip_title(slip, str(d.get("name", did)), "赏格 %d　名声加 %d" % [value, maxi(1, value / 10)])
 		var chip := _slip_chip(_slip_row(slip), "呈报", _on_report_discovery.bind(str(did)), true)
 		chip.tooltip_text = "%s\n%s" % [d.get("location", ""), d.get("historical_hook", "")]
 
@@ -924,7 +955,7 @@ func _on_report_discovery(did: String) -> void:
 		var extra := ""
 		if res.get("promoted", false):
 			extra = "市舶司案册改题「%s」。" % str(res.get("title", {}).get("name", ""))
-		log_msg("【呈报】%s 录入案册，赏钱 %d，名声 +%d。%s" % [
+		log_msg("【呈报】%s 录入案册，赏钱 %d，名声加 %d。%s" % [
 			res["name"], res["gold"], res["fame"], extra,
 		])
 	load_scene(current_scene_id)
@@ -1108,15 +1139,15 @@ func _setup_shipyard(port_id: String) -> void:
 		var hire_cost := hire_n * 20
 		var chip := _slip_chip(
 			hand_row,
-			"%s　+%d　%d" % [s.get("name", "船"), hire_n, hire_cost],
+			"%s　添 %d 人　%d" % [s.get("name", "船"), hire_n, hire_cost],
 			_on_hire_crew.bind(i, hire_n, hire_cost)
 		)
-		chip.tooltip_text = "该船可容 %d，现有 %d" % [room, Fleet.ship_crew(i)]
+		chip.tooltip_text = "尚可添 %d　现有 %d" % [room, Fleet.ship_crew(i)]
 	if below_min <= 0 and not any_room:
 		_slip_note(hands, "各船人手已满。")
 
 	var loan := _slip_body()
-	_slip_title(loan, "蕃商赊贷", "月息 %d%%　上限 %d" % [
+	_slip_title(loan, "蕃商赊贷", "月息每百 %d　上限 %d" % [
 		int(GameState.DEBT_MONTHLY_RATE * 100),
 		GameState.DEBT_CEILING + GameState.title_loan_bonus(),
 	])
@@ -1147,13 +1178,17 @@ func _setup_shipyard(port_id: String) -> void:
 		else:
 			var scost: int = Fleet.upgrade_cost(i, "sail")
 			var sail_chip := _slip_chip(fit_row, "升帆　%d" % scost, _on_upgrade.bind(i, "sail", scost))
-			sail_chip.tooltip_text = "航速 ×%.2f" % (1.0 + 0.12 * slv)
+			var sail_phrase := _sail_fit_phrase(slv)
+			sail_chip.tooltip_text = sail_phrase
+			_slip_note(fit, sail_phrase)
 		if Fleet.is_armor_max(i):
 			_slip_note(fit, "甲已是三等。")
 		else:
 			var acost: int = Fleet.upgrade_cost(i, "armor")
 			var armor_chip := _slip_chip(fit_row, "升甲　%d" % acost, _on_upgrade.bind(i, "armor", acost))
-			armor_chip.tooltip_text = "船体伤 ×%.2f" % (1.0 - 0.10 * alv)
+			var armor_phrase := _armor_fit_phrase(alv)
+			armor_chip.tooltip_text = armor_phrase
+			_slip_note(fit, armor_phrase)
 
 	for s in GameManager.ships_data.get("ships", []):
 		if not GameState.is_chapter_reached(s.get("unlock", "ch1")):
@@ -1193,7 +1228,7 @@ func _on_hire_to_min(cost: int) -> void:
 
 func _on_borrow(amt: int) -> void:
 	if GameState.borrow(amt):
-		log_msg("蕃商掂了掂你的船和名声，点了头。赊得 %d 钱，月息 %d%%。" % [
+		log_msg("蕃商掂了掂你的船和名声，点了头。赊得 %d 钱，月息每百 %d。" % [
 			amt, int(GameState.DEBT_MONTHLY_RATE * 100),
 		])
 	load_scene(current_scene_id)
@@ -1410,7 +1445,7 @@ func _setup_guild(port_id: String) -> void:
 			var hint := _slip_title(
 				slip,
 				GameManager.get_good_name(row["good"]),
-				"→ %s　+%d" % [GameManager.get_port_name(row["port"]), int(row["profit"])]
+				"运往 %s　多 %d" % [GameManager.get_port_name(row["port"]), int(row["profit"])]
 			)
 			hint.add_theme_color_override("font_color", UiTheme.MOSS)
 			_slip_note(slip, "买 %d　卖 %d" % [int(row["buy"]), int(row["sell"])])

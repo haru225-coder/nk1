@@ -112,11 +112,11 @@ theme_override_font_sizes/normal_font_size = 18
 bbcode_enabled = true
 text = "季风　北风
 风力　80
-帆　0 档
-操舵　A/D
-齐射　J/K
-船体　[color=#9ebd7a]100/100[/color]
-B/Esc　弃战逃走"
+升帆　W　落帆　S　收帆
+操舵　A　D
+齐射　J　K
+船体　[color=#9ebd7a]100 / 100[/color]
+弃战　B"
 fit_content = true
 
 [node name="RightPanel" type="PanelContainer" parent="CanvasLayer/HUD"]

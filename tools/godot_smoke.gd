@@ -214,6 +214,19 @@ func _run() -> void:
 		and chart_src.find("（调试）") < 0 and chart_src.find("点验　中途遭遇。") >= 0
 		and voyage_src.find("损折：") < 0 and voyage_src.find("损折　") >= 0,
 		"海图遭遇日志去掉括号，风涛货损去掉冒号", fails)
+	var yard_node := (load("res://scripts/Main.gd") as GDScript).new() as Node
+	_check(str(yard_node.call("_sail_fit_phrase", 1)) == "此帆比光船快一成二"
+		and str(yard_node.call("_sail_fit_phrase", 2)) == "此帆比光船快二成四"
+		and str(yard_node.call("_armor_fit_phrase", 1)) == "船体伤剩九成"
+		and str(yard_node.call("_armor_fit_phrase", 2)) == "船体伤剩八成"
+		and main_src.find("月息每百 %d") >= 0 and main_src.find("月息 %d%%") < 0
+		and main_src.find("添 %d 人") >= 0 and main_src.find("+%d") < 0
+		and main_src.find("运往 %s　多 %d") >= 0 and main_src.find("→ %s") < 0
+		and main_src.find("航速 ×") < 0 and main_src.find("违禁：") < 0
+		and FileAccess.get_file_as_string("res://scripts/core/Economy.gd").find("名声加 %d") >= 0
+		and FileAccess.get_file_as_string("res://scripts/core/Economy.gd").find("名声 +%d") < 0,
+		"船屋加成写成成数，月息去掉百分号", fails)
+	yard_node.free()
 	var chart_script := load("res://scripts/SeaChart.gd") as GDScript
 	var chart_node := chart_script.new() as Node
 	_check(str(chart_node.call("_bearing_phrase", 90.0)) == "东　90 度", "正东写成东并附度数", fails)
@@ -294,12 +307,23 @@ func _run() -> void:
 		if wm_inst != null:
 			# --script 没有 autoload 全局名，不能 add_child 走 _ready；只测格式串占位。
 			if wm_inst.has_method("_format_left_hud"):
-				var hud_txt: String = wm_inst._format_left_hud(
-					"敌船 2 艘　存活 2\n", "", "北风", 80, 1, "green", 100, 100, "B/Esc: 弃战逃走"
+				var hud0: String = wm_inst._format_left_hud(
+					"敌船 2 艘　存活 2\n", "", "北风", 80, 0, "green", 100, 100, "弃战　B"
+				)
+				var hud1: String = wm_inst._format_left_hud(
+					"敌船 2 艘　存活 2\n", "", "北风", 80, 1, "green", 100, 100, "接舷　G　弃战　B"
+				)
+				var hud2: String = wm_inst._format_left_hud(
+					"敌船 2 艘　存活 2\n", "", "北风", 80, 2, "green", 100, 100, "弃战　B"
 				)
 				_check(
-					hud_txt.find("操舵") >= 0 and hud_txt.find("齐射") >= 0 and hud_txt.find("弃战逃走") >= 0,
-					"海战 HUD 格式串参数对齐",
+					hud0.find("收帆") >= 0 and hud1.find("半帆") >= 0 and hud2.find("满帆") >= 0
+						and hud0.find("升帆　W") >= 0 and hud0.find("落帆　S") >= 0
+						and hud0.find("操舵　A　D") >= 0 and hud0.find("齐射　J　K") >= 0
+						and hud0.find("100 / 100") >= 0 and hud0.find("A/D") < 0
+						and hud0.find("J/K") < 0 and hud0.find("档") < 0
+						and hud1.find("接舷　G") >= 0,
+					"海战栏写成升帆落帆与半帆，不再用斜杠档位",
 					fails,
 				)
 			else:

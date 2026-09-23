@@ -1034,6 +1034,22 @@ if (
 else:
     print("  ✗ 海图遭遇日志仍有括号或风涛货损仍有冒号")
     problems.append("海图遭遇日志仍有括号")
+if (
+    "收帆" in wm_src and "半帆" in wm_src and "满帆" in wm_src
+    and "操舵　A　D" in wm_src and "齐射　J　K" in wm_src
+    and "弃战　B" in wm_src and "接舷　G　弃战　B" in wm_src
+    and "A/D" not in wm_src and "J/K" not in wm_src and "B/Esc" not in wm_src
+    and "档" not in wm_src
+    and "月息每百 %d" in main_src and "月息 %d%%" not in main_src
+    and "添 %d 人" in main_src and "+%d" not in main_src
+    and "运往 %s　多 %d" in main_src and "→ %s" not in main_src
+    and "此帆比光船快" in main_src and "船体伤剩" in main_src
+    and "航速 ×" not in main_src and "违禁：" not in main_src
+):
+    print("  ✓ 海战栏与船屋账条去掉斜杠、百分号和小数倍率")
+else:
+    print("  ✗ 海战栏或船屋账条仍有斜杠、百分号或小数倍率")
+    problems.append("海战栏或船屋仍是原型记法")
 if '" x"' not in wm_src:
     print("  ✓ 海战货舱用乘号")
 else:
