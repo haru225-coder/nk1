@@ -26,7 +26,13 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-本机无 Godot 时，代码改动后必须跑这三套静态校验（改数据尤其要重跑）：
+一次巡检走 `tools/patrol.py`。它先跑下面三套静态校验；`PATH` 里有 Godot 4.6 时，再跑无头冒烟，并在有显示器或 `xvfb-run` 时把主场景挂上，走泉州 / 福州 / 兴化九个设施页。
+
+```bash
+python3 tools/patrol.py
+```
+
+本机没有 Godot 时，三套静态校验本身仍是闭环（改数据尤其要重跑）：
 
 ```bash
 python3 tools/check_symbols.py    # autoload 顺序与跨文件符号 + 海战精灵 PNG 取证（RGBA8/四角透明/体积下限）
@@ -34,14 +40,15 @@ python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 /
 python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢出
 ```
 
-有 Godot 4.6 时再加一套引擎冒烟（无显示器也能跑）：
+有 Godot 4.6 时，引擎两层也可以单独跑：
 
 ```bash
 godot --headless --path . --import
 godot --headless --path . -s res://tools/godot_smoke.gd
+godot --path . -s res://tools/patrol_shell.gd
 ```
 
-三套 Python 全绿才算一次改动闭环；引擎冒烟用来抓 GDScript 解析/autoload 运行时错误。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
+静态三套全绿，且引擎两层在有 Godot 时也全绿，才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
 
 > 注意：`.godot/` 导入缓存与生成它的 Godot 版本绑定。换二进制或从快照恢复后若场景渲染成黑屏，先 `rm -rf .godot && godot --headless --path . --import` 重建再排查。
 
