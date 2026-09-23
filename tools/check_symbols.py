@@ -993,6 +993,16 @@ if (
 else:
     print("  ✗ 风信仍套括号")
     problems.append("风信仍套括号")
+if (
+    "%s　%s%s" in cal_src
+    and "%s %s%s" not in cal_src
+    and "费一日" in main_src
+    and "费 1 日" not in main_src
+):
+    print("  ✓ 日期留出字距，酒馆行情写成费一日")
+else:
+    print("  ✗ 日期仍是半角空格，或酒馆行情仍写费 1 日")
+    problems.append("日期或酒馆行情仍是半角记法")
 if "★" not in main_src and "func _skill_rank" in main_src and "Crew.rank_word" in main_src and "func rank_word" in crew_src:
     print("  ✓ 职事品级写成初习/谙熟/老练")
 else:

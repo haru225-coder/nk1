@@ -188,13 +188,19 @@ func _run() -> void:
 		"风信写成短句", fails)
 	var cal: Node = root.get_node("Calendar")
 	var saved_month: int = int(cal.month)
+	var saved_day: int = int(cal.day)
 	cal.month = 3
+	cal.day = 1
+	_check(str(cal.call("get_date_string")) == "宝祐三年　三月初一", "开局日期留出字距", fails)
 	_check(str(cal.call("get_monsoon_desc")) == "季风转换期・风微而多变", "三月是转换期", fails)
 	cal.month = 6
 	_check(str(cal.call("get_monsoon_desc")) == "西南季风　利北上", "六月利北上", fails)
 	cal.month = 11
 	_check(str(cal.call("get_monsoon_desc")) == "东北季风　利南下", "十一月利南下", fails)
 	cal.month = saved_month
+	cal.day = saved_day
+	_check(main_src.find("费一日") >= 0 and main_src.find("费 1 日") < 0,
+		"酒馆行情写成费一日", fails)
 	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
 		"职事品级写成初习/谙熟/老练，不再用星号", fails)
 	_check(main_src.find("func _fit_rank") >= 0 and main_src.find("帆Lv") < 0

@@ -1320,7 +1320,7 @@ func _setup_tavern(port_id: String) -> void:
 		_add_npc_button("pilot_ana", "阿那")
 
 	var intel := _slip_body()
-	_slip_title(intel, "行情", "费 1 日")
+	_slip_title(intel, "行情", "费一日")
 	_slip_chip(_slip_row(intel), "打听", _on_gather_intel.bind(port_id))
 
 	_setup_hiring(port_id)
