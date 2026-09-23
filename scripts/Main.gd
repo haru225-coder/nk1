@@ -1340,7 +1340,7 @@ func _cn_chapter(n: int) -> String:
 
 func _on_facility_pressed(fac: Dictionary) -> void:
 	var target_scene = fac.get("id", "")
-	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern"]:
+	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern", "city_inn"]:
 		target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")
 	if target_scene != "":
 		load_scene(target_scene)
@@ -1349,8 +1349,16 @@ func _on_facility_pressed(fac: Dictionary) -> void:
 func _setup_investigation_mode(scene_data: Dictionary) -> void:
 	_enter_panel_mode()
 
-	scene_title.text = scene_data.get("title", "未命名地点")
-	body_text.text = scene_data.get("body", "")
+	# 开场五屏把正文写在 cg_title / cg_sub，title 与 body 为空。
+	# cg_sub 用字面量 \A 分段。调查模式读这两处，否则卷首是空白的「未命名地点」。
+	var title := str(scene_data.get("title", ""))
+	var body := str(scene_data.get("body", ""))
+	if title == "":
+		title = str(scene_data.get("cg_title", ""))
+	if body == "":
+		body = str(scene_data.get("cg_sub", "")).replace("\\A", "\n")
+	scene_title.text = title if title != "" else "未命名地点"
+	body_text.text = body
 
 	var investigations = scene_data.get("investigations", [])
 	for inv in investigations:

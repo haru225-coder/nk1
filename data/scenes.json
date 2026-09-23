@@ -805,7 +805,7 @@
       "choices": [
         {
           "label": "保船，弃一部分湿货和压舱杂物，回泉州照实入账",
-          "next": "ryukyu",
+          "next": "ryukyu_story",
           "effects": {
             "ship": 5,
             "money": -30,
@@ -818,7 +818,7 @@
         },
         {
           "label": "保货，硬顶风浪护住瓷箱、寄物和账册",
-          "next": "ryukyu",
+          "next": "ryukyu_story",
           "effects": {
             "ship": -25,
             "money": 80,
@@ -829,7 +829,7 @@
         },
         {
           "label": "保人，减帆漂航，先把水手拉回舱内，货损另记",
-          "next": "ryukyu",
+          "next": "ryukyu_story",
           "effects": {
             "supplies": -20,
             "network": 10,
@@ -843,7 +843,7 @@
       ]
     },
     {
-      "id": "ryukyu",
+      "id": "ryukyu_story",
       "chapter": "chapter_1",
       "title": "流求海面北缘",
       "location": "ryukyu",
@@ -869,7 +869,7 @@
         },
         {
           "label": "不久留，把旧泊地写成博多旧账的远景中继提示",
-          "next": "hakata",
+          "next": "hakata_story",
           "effects": {
             "money": 120,
             "fame": 5,
@@ -919,7 +919,7 @@
       ]
     },
     {
-      "id": "hakata",
+      "id": "hakata_story",
       "chapter": "chapter_1",
       "title": "博多旧账",
       "location": "hakata",

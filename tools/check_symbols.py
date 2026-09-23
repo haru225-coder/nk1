@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """静态检查 GDScript：autoload 单例的跨文件引用是否都真实存在。
 GDScript 是动态语言，Autoload.missing_method() 只有跑到那一行才报错。"""
-import re, os, sys, collections
+import json, re, os, sys, collections
 
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -621,6 +621,60 @@ if "armor_damage_reduction" in cannonball_src:
 else:
     print("  ✗ Cannonball 未引用 armor_damage_reduction——甲等级无实时消费点")
     problems.append("Cannonball 未乘 armor")
+
+print()
+print("=" * 68)
+print("九、剧情场景不得遮蔽港口 id")
+print("=" * 68)
+print("  load_scene 先查 scenes.json。非 port 场景若与港口同 id，入港不记 visited_ports，牙行也进不去。")
+
+with open(os.path.join(ROOT, "data", "ports.json"), encoding="utf-8") as f:
+    port_ids = {p.get("id") for p in json.load(f).get("ports", [])}
+with open(os.path.join(ROOT, "data", "scenes.json"), encoding="utf-8") as f:
+    scene_list = json.load(f).get("scenes", [])
+shadowed = [s.get("id") for s in scene_list
+            if s.get("id") in port_ids and s.get("type") != "port"]
+if shadowed:
+    print(f"  ✗ 非 port 剧情场景与港口同 id：{shadowed}")
+    problems.append(f"剧情场景遮蔽港口 {shadowed}")
+else:
+    print("  ✓ 与港口同 id 的场景都是 type=port")
+
+rewrite = re.search(r'target_scene in \[([^\]]+)\]', main_src)
+inn_ok = rewrite is not None and "city_inn" in rewrite.group(1)
+if inn_ok:
+    print("  ✓ 旅店 city_inn 会改写成「当前港口_inn」")
+else:
+    print("  ✗ 旅店 city_inn 未进入设施改写——会把港口切成 city")
+    problems.append("city_inn 未改写")
+
+invest = func_bodies(seachart_src).get("_on_investigate_discovery", "")
+# 按钮回调可以指向 _on_event_continue，但不能在同一次点击里直接调用它或 _sail_next_day
+if ("advance_days(1)" in invest
+        and "_sail_next_day(" not in invest
+        and "_on_event_continue()" not in invest):
+    print("  ✓ 发现调查只 advance_days(1)，同一次点击不再推进下一日")
+else:
+    print("  ✗ 发现调查的「费 1 日」仍会再进下一日")
+    problems.append("发现调查双日")
+
+if "cg_title" in main_src and 'replace("\\\\A"' in main_src:
+    print("  ✓ 调查模式在 title/body 为空时回读 cg_title / cg_sub")
+else:
+    print("  ✗ 调查模式未回读 cg_title，开场五屏正文仍是空的")
+    problems.append("开场 cg 未回读")
+
+sink_body = func_bodies(ship_src).get("_sink_ship", "")
+battle_at = sink_body.find("pending_battle")
+clear_at = sink_body.find("clear_cargo")
+# set_flag("return_to_port") 里也有 return 这四个字母，只认独立的 return 语句
+ret_stmt = re.search(r'^\t+return\s*$', sink_body, re.M)
+ret_at = ret_stmt.start() if ret_stmt else -1
+if battle_at >= 0 and ret_at > battle_at and (clear_at < 0 or clear_at > ret_at):
+    print("  ✓ 战斗沉没在 return 之后才 clear_cargo，败局可以按比例扣货")
+else:
+    print("  ✗ 战斗沉没仍先清空货舱")
+    problems.append("战斗沉没先清空货舱")
 
 print()
 print("=" * 68)
