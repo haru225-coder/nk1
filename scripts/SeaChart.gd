@@ -22,8 +22,8 @@ var log_label: RichTextLabel
 var sail_button: Button
 var event_panel: PanelContainer
 var event_title: Label
-var event_text: RichTextLabel
-var event_actions: HBoxContainer
+var event_text: Label
+var event_actions: VBoxContainer
 
 
 func _ready() -> void:
@@ -108,8 +108,9 @@ func _build_ui() -> void:
 	# 真正的图。数据用 ports.json 的经纬度，CanvasItem.draw 信号接 lambda，
 	# 不另建节点树——一张静态海图不需要缩放拖拽。
 	chart = Control.new()
-	chart.custom_minimum_size = Vector2(0, 168)
+	chart.custom_minimum_size = Vector2(0, 248)
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chart.clip_contents = true
 	chart.draw.connect(func(): _draw_chart(chart))
 	center_v.add_child(chart)
 
@@ -193,15 +194,18 @@ func _build_event_panel() -> void:
 	UiTheme.style_heading(event_title)
 	v.add_child(event_title)
 
-	event_text = RichTextLabel.new()
-	event_text.bbcode_enabled = true
-	event_text.fit_content = true
-	event_text.custom_minimum_size = Vector2(520, 60)
-	UiTheme.style_body(event_text)
+	event_text = Label.new()
+	event_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	event_text.custom_minimum_size = Vector2(520, 0)
+	event_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	event_text.add_theme_font_override("font", UiTheme.font())
+	event_text.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	event_text.add_theme_color_override("font_color", UiTheme.TEXT)
+	event_text.add_theme_constant_override("line_spacing", UiTheme.LINE_BODY)
 	v.add_child(event_text)
 
-	event_actions = HBoxContainer.new()
-	event_actions.add_theme_constant_override("separation", 8)
+	event_actions = VBoxContainer.new()
+	event_actions.add_theme_constant_override("separation", 6)
 	v.add_child(event_actions)
 
 
@@ -407,6 +411,7 @@ func _draw_chart(c: Control) -> void:
 			c.draw_line(a, b, col, 2.5)
 
 	var font := UiTheme.font()
+	var occupied: Array[Rect2] = []
 	for p in pts:
 		var pid: String = p.get("id", "")
 		var v: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
@@ -425,19 +430,65 @@ func _draw_chart(c: Control) -> void:
 		c.draw_circle(v, 4.0 if (is_here or is_target) else 3.0, col)
 		if is_here:
 			c.draw_arc(v, 8.0, 0, TAU, 20, col, 1.5)
+		occupied.append(Rect2(v - Vector2(7, 7), Vector2(14, 14)))
+		_place_port_label(c, font, v, str(p.get("name", pid)), col, occupied)
 
-		var label: String = p.get("name", pid)
-		c.draw_string(font, v + Vector2(8, 5), label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 15, col)
+
+## 港名小匾。兴化与兴化海口几乎叠在同一点，匾按右、上、左错开。
+func _place_port_label(c: Control, font: Font, anchor: Vector2, text: String, col: Color, occupied: Array[Rect2]) -> void:
+	var font_size := UiTheme.SIZE_FOOT
+	var ts := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	var offsets: Array[Vector2] = [
+		Vector2(10, 4),
+		Vector2(10, -ts.y - 8),
+		Vector2(-ts.x - 16, 4),
+		Vector2(-ts.x - 16, -ts.y - 8),
+		Vector2(10, ts.y + 8),
+	]
+	var bounds := Rect2(Vector2(2, 2), c.size - Vector2(4, 4))
+	var chosen_base := anchor + offsets[0]
+	var chosen := _ink_string_rect(chosen_base, ts)
+	for off in offsets:
+		var base: Vector2 = anchor + off
+		var rect := _ink_string_rect(base, ts)
+		if c.size.x > 8.0 and c.size.y > 8.0 and not bounds.encloses(rect):
+			continue
+		var blocked := false
+		for prev in occupied:
+			if rect.intersects(prev, true):
+				blocked = true
+				break
+		if not blocked:
+			chosen = rect
+			chosen_base = base
+			break
+	occupied.append(chosen)
+	_paint_ink_plaque(c, chosen)
+	c.draw_string(font, chosen_base, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, col)
+
+
+func _ink_string_rect(baseline: Vector2, text_size: Vector2) -> Rect2:
+	return Rect2(baseline.x - 4.0, baseline.y - text_size.y - 1.0, text_size.x + 8.0, text_size.y + 6.0)
+
+
+func _paint_ink_plaque(c: Control, rect: Rect2) -> void:
+	c.draw_rect(rect, Color(0.09, 0.055, 0.03, 0.92))
+	c.draw_rect(rect, Color(UiTheme.GOLD, 0.50), false, 1.0)
+
+
+func _draw_ink_string(c: Control, baseline: Vector2, text: String, font_size: int, col: Color) -> void:
+	var font := UiTheme.font()
+	var ts := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	var rect := _ink_string_rect(baseline, ts)
+	_paint_ink_plaque(c, rect)
+	c.draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, col)
 
 
 ## 季风方向：全图统一的斜箭头。风信是大尺度的，不必逐点画。
 func _draw_monsoon(c: Control, size: Vector2) -> void:
 	var wb := Calendar.get_wind_bearing()
 	if wb < 0.0:
-		c.draw_string(UiTheme.font(), Vector2(10, 22),
-			"季风转换期・风微而多变", HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
-			UiTheme.TEXT_DIM)
+		_draw_ink_string(c, Vector2(8, 20), "季风转换期・风微而多变", UiTheme.SIZE_FOOT, UiTheme.TEXT_DIM)
 		return
 
 	# 方位角 → 屏幕向量（y 轴向下，故取负 cos）
@@ -585,11 +636,15 @@ func _show_event(event: Dictionary) -> void:
 func _add_event_action(text: String, cb: Callable) -> void:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(0, 38)
+	b.custom_minimum_size = Vector2(0, 36)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.pressed.connect(cb)
 	event_actions.add_child(b)
-	UiTheme.style_button(b, text == "迎战")
+	if text == "迎战":
+		UiTheme.style_button(b, true)
+		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	else:
+		UiTheme.style_choice_button(b)
 
 
 func _on_event_continue() -> void:
