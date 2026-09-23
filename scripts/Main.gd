@@ -489,6 +489,21 @@ func _add_contract_panel(port_id: String) -> void:
 			safe_note.add_theme_font_size_override("font_size", 13)
 			safe_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
 			box.add_child(safe_note)
+			var need_qty := int(offer.get("qty", 0))
+			var unit_cost := Economy.buy_price(port_id, gid)
+			var held_qty := Fleet.cargo_qty(gid)
+			var can_buy := 0
+			if unit_cost > 0:
+				can_buy = int(float(GameState.money) / float(unit_cost))
+			var can_carry := held_qty + mini(can_buy, Fleet.max_loadable(gid))
+			if can_carry < need_qty:
+				var purse_lbl := Label.new()
+				purse_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				purse_lbl.text = "这里一件 %d 钱。钱和舱里现有的，凑得出 %d 件，单子要 %d 件。不够也能接，交不齐就拿不满酬，也没有名声。" % [
+					unit_cost, can_carry, need_qty,
+				]
+				purse_lbl.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
+				box.add_child(purse_lbl)
 			if int(plan_c.get("expected_days", 0)) > deadline:
 				var warn := Label.new()
 				warn.text = "傍岸遇事约 %d 日，超过期限 %d 日。" % [int(plan_c.get("expected_days", 0)), deadline]
