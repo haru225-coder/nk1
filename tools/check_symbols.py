@@ -949,6 +949,23 @@ if "（缺 %d 人）" not in main_src and "缺 %d 人" in main_src and "（%d/%d
 else:
     print("  ✗ 缺员仍用括号")
     problems.append("缺员仍用括号")
+cal_src = ""
+with open(os.path.join(SCRIPTS, "core", "Calendar.gd"), encoding="utf-8") as f:
+    cal_src = f.read()
+if (
+    "东北季风　利南下" in cal_src
+    and "西南季风　利北上" in cal_src
+    and "季风转换期・风微而多变" in cal_src
+    and "（利南下）" not in cal_src
+    and "（利北上）" not in cal_src
+    and "（风微而多变）" not in cal_src
+    and "（五至八月）" not in main_src
+    and "（十月至次年二月）" not in main_src
+):
+    print("  ✓ 风信写成短句")
+else:
+    print("  ✗ 风信仍套括号")
+    problems.append("风信仍套括号")
 if "★" not in main_src and "func _skill_rank" in main_src and "Crew.rank_word" in main_src and "func rank_word" in crew_src:
     print("  ✓ 职事品级写成初习/谙熟/老练")
 else:

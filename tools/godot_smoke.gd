@@ -169,6 +169,22 @@ func _run() -> void:
 	_check(main_src.find("（缺 %d 人）") < 0 and main_src.find("缺 %d 人") >= 0
 		and main_src.find("（%d/%d）") < 0 and main_src.find("水手 %d/%d") >= 0,
 		"缺员写成水手现有与所缺", fails)
+	var cal_src := FileAccess.get_file_as_string("res://scripts/core/Calendar.gd")
+	_check(cal_src.find("东北季风　利南下") >= 0 and cal_src.find("西南季风　利北上") >= 0
+		and cal_src.find("季风转换期・风微而多变") >= 0
+		and cal_src.find("（利南下）") < 0 and cal_src.find("（利北上）") < 0
+		and cal_src.find("（风微而多变）") < 0
+		and main_src.find("（五至八月）") < 0 and main_src.find("（十月至次年二月）") < 0,
+		"风信写成短句", fails)
+	var cal: Node = root.get_node("Calendar")
+	var saved_month: int = int(cal.month)
+	cal.month = 3
+	_check(str(cal.call("get_monsoon_desc")) == "季风转换期・风微而多变", "三月是转换期", fails)
+	cal.month = 6
+	_check(str(cal.call("get_monsoon_desc")) == "西南季风　利北上", "六月利北上", fails)
+	cal.month = 11
+	_check(str(cal.call("get_monsoon_desc")) == "东北季风　利南下", "十一月利南下", fails)
+	cal.month = saved_month
 	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
 		"职事品级写成初习/谙熟/老练，不再用星号", fails)
 	_check(main_src.find("func _fit_rank") >= 0 and main_src.find("帆Lv") < 0

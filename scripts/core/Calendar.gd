@@ -80,10 +80,10 @@ func get_wind_bearing() -> float:
 func get_monsoon_desc() -> String:
 	var m := get_monsoon()
 	if m == Monsoon.NORTHEAST:
-		return "东北季风（利南下）"
+		return "东北季风　利南下"
 	elif m == Monsoon.SOUTHWEST:
-		return "西南季风（利北上）"
-	return "季风转换期（风微而多变）"
+		return "西南季风　利北上"
+	return "季风转换期・风微而多变"
 
 
 # ── 显示 ──────────────────────────────────────────────

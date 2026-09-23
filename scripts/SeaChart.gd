@@ -470,7 +470,7 @@ func _draw_chart(c: Control) -> void:
 		var at: Vector2 = mark["at"]
 		occupied.append(Rect2(at - Vector2(7, 7), Vector2(14, 14)))
 	var wind_bearing := Calendar.get_wind_bearing()
-	var monsoon_text := Calendar.get_monsoon_desc() if wind_bearing >= 0.0 else "季风转换期・风微而多变"
+	var monsoon_text := Calendar.get_monsoon_desc()
 	var monsoon_col := UiTheme.GOLD if wind_bearing >= 0.0 else UiTheme.TEXT_DIM
 	occupied.append(_draw_ink_label(c, font, Vector2(12, 18), monsoon_text, monsoon_col, false))
 	for mark in marks:
