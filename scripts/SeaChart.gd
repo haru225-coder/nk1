@@ -604,6 +604,7 @@ func _draw_chart(c: Control) -> void:
 			v + Vector2(0, radius),
 			v + Vector2(-radius, 0),
 		]), dot_col)
+		c.draw_circle(v, 1.35, Color(0.96, 0.90, 0.78, dot_col.a))
 		if is_here or is_target:
 			c.draw_arc(v, radius + 3.4, 0, TAU, 24, dot_col, 1.3)
 		marks.append({
@@ -624,6 +625,7 @@ func _draw_chart(c: Control) -> void:
 	occupied.append(_draw_ink_label(c, font, Vector2(12, 18), monsoon_text, monsoon_col, false))
 	_draw_sea_names(c, frame, size, font, occupied)
 	_draw_chart_title(c, frame, size, font, occupied)
+	_draw_margin_degrees(c, frame, size, font, occupied)
 	for mark in marks:
 		var label: String = str(mark["name"])
 		var text_w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT).x
@@ -743,6 +745,7 @@ func _draw_world(c: Control, frame: Dictionary, size: Vector2) -> void:
 	_draw_sea_depth(c, size)
 	_draw_graticule(c, frame, size)
 	_draw_waves(c, frame, size)
+	var harbors := _harbor_marks(frame)
 	var lands: Array = data.get("land", [])
 	var mainland := Color(0.776, 0.635, 0.408, 1.0)
 	var island := Color(0.690, 0.604, 0.392, 1.0)
@@ -756,7 +759,7 @@ func _draw_world(c: Control, frame: Dictionary, size: Vector2) -> void:
 		c.draw_colored_polygon(pts, mainland if i == 0 else island)
 		c.draw_polyline(pts, shore, 4.5, true)
 		c.draw_polyline(pts, ink, 1.45, true)
-		_draw_shoal(c, frame, ring, pts, i == 0)
+		_draw_shoal(c, frame, ring, pts, i == 0, harbors)
 	_draw_land_grain(c, frame, size)
 	_draw_ranges(c, frame, size)
 	var river_col := Color(0.32, 0.48, 0.55, 0.80)
@@ -769,7 +772,7 @@ func _draw_world(c: Control, frame: Dictionary, size: Vector2) -> void:
 	_draw_reefs(c, frame, size)
 
 
-func _draw_graticule(c: Control, frame: Dictionary, size: Vector2) -> void:
+func _geo_bounds(frame: Dictionary, size: Vector2) -> Dictionary:
 	var corners: Array[Vector2] = [
 		_chart_unproject(frame, Vector2.ZERO),
 		_chart_unproject(frame, Vector2(size.x, 0)),
@@ -785,21 +788,46 @@ func _draw_graticule(c: Control, frame: Dictionary, size: Vector2) -> void:
 		lon_max = maxf(lon_max, corner.x)
 		lat_min = minf(lat_min, corner.y)
 		lat_max = maxf(lat_max, corner.y)
-	var col := Color(0.45, 0.32, 0.16, 0.20)
-	var lat := floorf(lat_min / 5.0) * 5.0
-	while lat <= lat_max:
-		c.draw_line(
-			_chart_xy(frame, lat, lon_min),
-			_chart_xy(frame, lat, lon_max),
-			col, 1.0)
+	return {
+		"lon_min": lon_min,
+		"lon_max": lon_max,
+		"lat_min": lat_min,
+		"lat_max": lat_max,
+	}
+
+
+func _draw_graticule(c: Control, frame: Dictionary, size: Vector2) -> void:
+	var bounds := _geo_bounds(frame, size)
+	var col := Color(0.45, 0.32, 0.16, 0.16)
+	var lat := floorf(float(bounds["lat_min"]) / 5.0) * 5.0
+	while lat <= float(bounds["lat_max"]):
+		_draw_dashed_line(
+			c,
+			_chart_xy(frame, lat, float(bounds["lon_min"])),
+			_chart_xy(frame, lat, float(bounds["lon_max"])),
+			col, 1.0, 9.0, 7.0)
 		lat += 5.0
-	var lon := floorf(lon_min / 5.0) * 5.0
-	while lon <= lon_max:
-		c.draw_line(
-			_chart_xy(frame, lat_min, lon),
-			_chart_xy(frame, lat_max, lon),
-			col, 1.0)
+	var lon := floorf(float(bounds["lon_min"]) / 5.0) * 5.0
+	while lon <= float(bounds["lon_max"]):
+		_draw_dashed_line(
+			c,
+			_chart_xy(frame, float(bounds["lat_min"]), lon),
+			_chart_xy(frame, float(bounds["lat_max"]), lon),
+			col, 1.0, 9.0, 7.0)
 		lon += 5.0
+
+
+func _draw_dashed_line(c: Control, a: Vector2, b: Vector2, col: Color, width: float, dash: float, gap: float) -> void:
+	var delta := b - a
+	var total := delta.length()
+	if total < 1.0:
+		return
+	var dir := delta / total
+	var t := 0.0
+	while t < total:
+		var t2 := minf(t + dash, total)
+		c.draw_line(a + dir * t, a + dir * t2, col, width)
+		t += dash + gap
 
 
 ## 东边外海略深。叠色仍是浅青，绢底要透出来，不能画成夜航图。
@@ -809,38 +837,67 @@ func _draw_sea_depth(c: Control, size: Vector2) -> void:
 		var t := float(i) / float(strips - 1)
 		var x0 := size.x * float(i) / float(strips)
 		var w := size.x / float(strips) + 1.0
-		var alpha := 0.05 + t * t * 0.48
+		var alpha := 0.04 + t * t * 0.34
 		c.draw_rect(Rect2(x0, 0, w, size.y), Color(0.50, 0.78, 0.84, alpha), true)
 
 
 func _draw_waves(c: Control, frame: Dictionary, size: Vector2) -> void:
-	var col := Color(0.22, 0.40, 0.46, 0.40)
-	var step := 48.0
+	var col := Color(0.22, 0.40, 0.46, 0.34)
+	var step := 52.0
 	var row := 0
 	var y := 28.0
 	while y < size.y - 16.0:
-		var x := 24.0 + float(row % 2) * 16.0
+		var x := 22.0 + float(row % 3) * 14.0
 		while x < size.x - 16.0:
+			var salt := int(x) * 3 + row * 5
+			if salt % 4 == 0:
+				x += step
+				continue
 			var geo := _chart_unproject(frame, Vector2(x, y))
-			if not _ashore(geo.y, geo.x):
-				var lift := 2.2 if row % 3 == 0 else 1.4
-				c.draw_polyline(PackedVector2Array([
-					Vector2(x - 8, y),
-					Vector2(x - 3, y - lift),
-					Vector2(x + 3, y),
-					Vector2(x + 8, y - lift * 0.6),
-				]), col, 1.05, true)
+			if _ashore(geo.y, geo.x):
+				x += step
+				continue
+			var shoreward := _chart_unproject(frame, Vector2(x - 16.0, y))
+			if _ashore(shoreward.y, shoreward.x):
+				x += step
+				continue
+			var lift := 1.1 + float(salt % 4) * 0.45
+			var span := 6.0 + float((salt / 3) % 3) * 2.0
+			c.draw_polyline(PackedVector2Array([
+				Vector2(x - span, y),
+				Vector2(x - span * 0.35, y - lift),
+				Vector2(x + span * 0.25, y),
+				Vector2(x + span, y - lift * 0.55),
+			]), col, 1.0, true)
 			x += step
-		y += 34.0
+		y += 36.0
 		row += 1
 
 
-## 岸线外侧一笔浅水。大陆西边的封口边不画，免得假海岸横过内陆。
-func _draw_shoal(c: Control, frame: Dictionary, ring: Array, pts: PackedVector2Array, mainland: bool) -> void:
+func _harbor_marks(frame: Dictionary) -> PackedVector2Array:
+	var marks := PackedVector2Array()
+	for p in GameManager.unlocked_ports():
+		marks.append(_chart_xy(frame, float(p.get("lat", 0.0)), float(p.get("lon", 0.0))))
+	return marks
+
+
+func _near_harbor(harbors: PackedVector2Array, p: Vector2, radius: float) -> bool:
+	for mark in harbors:
+		if mark.distance_to(p) < radius:
+			return true
+	return false
+
+
+## 岸线外侧两三道浅水，内侧一条沙岸。大陆西边的封口边不画。港点附近让开。
+func _draw_shoal(c: Control, frame: Dictionary, ring: Array, pts: PackedVector2Array, mainland: bool, harbors: PackedVector2Array) -> void:
 	var n := mini(ring.size(), pts.size())
 	if n < 2:
 		return
-	var col := Color(0.38, 0.55, 0.58, 0.55)
+	var bands: Array = [
+		{"off": 5.0, "width": 5.0, "col": Color(0.78, 0.74, 0.56, 0.55), "clear": 11.0},
+		{"off": 11.0, "width": 2.4, "col": Color(0.32, 0.52, 0.56, 0.38), "clear": 16.0},
+	]
+	var beach := Color(0.88, 0.76, 0.54, 0.78)
 	var page := Rect2(Vector2(-40, -40), c.size + Vector2(80, 80))
 	for i in n:
 		var j := (i + 1) % n
@@ -859,7 +916,16 @@ func _draw_shoal(c: Control, frame: Dictionary, ring: Array, pts: PackedVector2A
 		var geo := _chart_unproject(frame, (a + b) * 0.5 + nrm * 7.0)
 		if _ashore(geo.y, geo.x):
 			nrm = -nrm
-		c.draw_line(a + nrm * 3.2, b + nrm * 3.2, col, 1.0)
+		var mid_beach := (a + b) * 0.5 - nrm * 6.0
+		if not _near_harbor(harbors, mid_beach, 10.0):
+			c.draw_line(a - nrm * 6.0, b - nrm * 6.0, beach, 7.0)
+		for band in bands:
+			var spec: Dictionary = band
+			var off := float(spec["off"])
+			var mid := (a + b) * 0.5 + nrm * off
+			if _near_harbor(harbors, mid, float(spec["clear"])):
+				continue
+			c.draw_line(a + nrm * off, b + nrm * off, spec["col"], float(spec["width"]))
 
 
 func _draw_land_grain(c: Control, frame: Dictionary, size: Vector2) -> void:
@@ -911,10 +977,10 @@ func _draw_ranges(c: Control, frame: Dictionary, size: Vector2) -> void:
 
 
 func _draw_peak(c: Control, p: Vector2, col: Color) -> void:
-	c.draw_line(p + Vector2(-5, 3), p + Vector2(0, -5), col, 1.1)
-	c.draw_line(p + Vector2(0, -5), p + Vector2(5, 3), col, 1.1)
-	c.draw_line(p + Vector2(-3, 3), p + Vector2(0, -2), col, 1.0)
-	c.draw_line(p + Vector2(0, -2), p + Vector2(3, 3), col, 1.0)
+	c.draw_line(p + Vector2(-6.5, 4.0), p + Vector2(0, -6.5), col, 1.2)
+	c.draw_line(p + Vector2(0, -6.5), p + Vector2(6.5, 4.0), col, 1.2)
+	c.draw_line(p + Vector2(-3.5, 4.0), p + Vector2(0, -2.2), col, 1.0)
+	c.draw_line(p + Vector2(0, -2.2), p + Vector2(3.5, 4.0), col, 1.0)
 
 
 func _draw_reefs(c: Control, frame: Dictionary, size: Vector2) -> void:
@@ -980,6 +1046,11 @@ func _draw_sea_names(c: Control, frame: Dictionary, size: Vector2, font: Font, o
 		if not bounds.encloses(rect) or _chart_label_hits(rect, occupied):
 			continue
 		_draw_spaced_text(c, font, baseline, text, UiTheme.SIZE_FOOT, col, gap)
+		c.draw_line(
+			Vector2(baseline.x, baseline.y + 3.0),
+			Vector2(baseline.x + width, baseline.y + 3.0),
+			Color(col.r, col.g, col.b, 0.45),
+			0.8)
 		occupied.append(rect)
 
 
@@ -1033,6 +1104,44 @@ func _draw_chart_title(c: Control, frame: Dictionary, size: Vector2, font: Font,
 		c.draw_string(font, rect.position + Vector2(11.0, 38.0), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, Color(ink, 0.62))
 		occupied.append(rect)
 		return
+
+
+## 图廓上的经纬度。近图 5 度一格，远图放宽，碰到港签或图题就空过。
+func _draw_margin_degrees(c: Control, frame: Dictionary, size: Vector2, font: Font, occupied: Array[Rect2]) -> void:
+	var bounds := _geo_bounds(frame, size)
+	var ink := Color(0.32, 0.18, 0.08, 0.92)
+	var chip := Color(0.95, 0.89, 0.76, 0.90)
+	var page := Rect2(Vector2(6, 8), size - Vector2(12, 16))
+	var lon_span := float(bounds["lon_max"]) - float(bounds["lon_min"])
+	var lat_span := float(bounds["lat_max"]) - float(bounds["lat_min"])
+	var lat_step := 10.0 if lat_span > 40.0 else 5.0
+	var lon_step := 20.0 if lon_span > 70.0 else (10.0 if lon_span > 36.0 else 5.0)
+	var lat := ceilf(float(bounds["lat_min"]) / lat_step) * lat_step
+	while lat < float(bounds["lat_max"]):
+		var y := _chart_xy(frame, lat, float(frame["mean_lon"])).y
+		var text := "%d度" % roundi(lat)
+		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT).x
+		var baseline := Vector2(12.0, y + 4.0)
+		var rect := Rect2(baseline + Vector2(-2.0, -14.0), Vector2(width + 6.0, 18.0))
+		if page.encloses(rect) and not _chart_label_hits(rect, occupied):
+			c.draw_rect(rect, chip, true)
+			c.draw_line(Vector2(6.0, y), Vector2(11.0, y), ink, 1.0)
+			c.draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, ink)
+			occupied.append(rect)
+		lat += lat_step
+	var lon := ceilf(float(bounds["lon_min"]) / lon_step) * lon_step
+	while lon < float(bounds["lon_max"]):
+		var x := _chart_xy(frame, float(frame["mean_lat"]), lon).x
+		var text := "%d度" % roundi(lon)
+		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT).x
+		var baseline := Vector2(x - width * 0.5, 26.0)
+		var rect := Rect2(baseline + Vector2(-2.0, -14.0), Vector2(width + 6.0, 18.0))
+		if page.encloses(rect) and not _chart_label_hits(rect, occupied):
+			c.draw_rect(rect, chip, true)
+			c.draw_line(Vector2(x, 6.0), Vector2(x, 12.0), ink, 1.0)
+			c.draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, ink)
+			occupied.append(rect)
+		lon += lon_step
 
 
 ## 纬度上一里约 193 宋里。条长跟着当前图尺走，太长就改二百里、一百里。
