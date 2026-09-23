@@ -1323,7 +1323,14 @@ func _setup_tavern(port_id: String) -> void:
 	_slip_title(intel, "行情", "费一日")
 	_slip_chip(_slip_row(intel), "打听", _on_gather_intel.bind(port_id))
 
+	# 泉州一次可募五人，账条叠开会把离开裁出 720。
+	_begin_slip_scroll(248)
 	_setup_hiring(port_id)
+	var hire_box := _slip_host as VBoxContainer
+	var hire_scroll := hire_box.get_parent() as ScrollContainer
+	var cards := hire_box.get_child_count()
+	hire_scroll.custom_minimum_size.y = mini(248, maxi(72, cards * 86))
+	_end_slip_scroll()
 
 	_add_leave_button(port_id)
 	choices_label.visible = false

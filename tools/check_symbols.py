@@ -1003,6 +1003,14 @@ if (
 else:
     print("  ✗ 日期仍是半角空格，或酒馆行情仍写费 1 日")
     problems.append("日期或酒馆行情仍是半角记法")
+tavern_i = main_src.find("func _setup_tavern")
+tavern_j = main_src.find("\nfunc ", tavern_i + 1)
+tavern_body = main_src[tavern_i:tavern_j] if tavern_i >= 0 and tavern_j > tavern_i else ""
+if "_begin_slip_scroll" in tavern_body and tavern_body.find("_add_leave_button") > tavern_body.find("_end_slip_scroll"):
+    print("  ✓ 酒馆募人在里面滚，离开留在下面")
+else:
+    print("  ✗ 酒馆离开未钉在募人账条下面")
+    problems.append("酒馆离开未钉在募人账条下面")
 if "★" not in main_src and "func _skill_rank" in main_src and "Crew.rank_word" in main_src and "func rank_word" in crew_src:
     print("  ✓ 职事品级写成初习/谙熟/老练")
 else:

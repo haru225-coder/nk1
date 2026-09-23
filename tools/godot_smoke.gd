@@ -201,6 +201,12 @@ func _run() -> void:
 	cal.day = saved_day
 	_check(main_src.find("费一日") >= 0 and main_src.find("费 1 日") < 0,
 		"酒馆行情写成费一日", fails)
+	var tavern_i := main_src.find("func _setup_tavern")
+	var tavern_j := main_src.find("\nfunc ", tavern_i + 1)
+	var tavern_body := main_src.substr(tavern_i, tavern_j - tavern_i) if tavern_i >= 0 and tavern_j > tavern_i else ""
+	_check(tavern_body.find("_begin_slip_scroll") >= 0
+		and tavern_body.find("_add_leave_button") > tavern_body.find("_end_slip_scroll"),
+		"酒馆募人在里面滚，离开留在下面", fails)
 	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
 		"职事品级写成初习/谙熟/老练，不再用星号", fails)
 	_check(main_src.find("func _fit_rank") >= 0 and main_src.find("帆Lv") < 0
