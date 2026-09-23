@@ -139,6 +139,11 @@ func get_day_name() -> String:
 	return "廿" + CN_NUM[day - 20]
 
 
+## 自 1255 正月初一算起的绝对日，用于委办期限与行情传闻的保鲜。
+func absolute_day() -> int:
+	return ((year - 1255) * MONTHS_PER_YEAR + (month - 1)) * DAYS_PER_MONTH + (day - 1)
+
+
 ## 「宝祐三年 三月初一」
 func get_date_string() -> String:
 	var ey := get_era_year()

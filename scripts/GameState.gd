@@ -295,6 +295,263 @@ func consume_permit() -> void:
 	has_customs_permit = false
 
 
+# ── 行情传闻 ──────────────────────────────────────────
+
+## 传闻超过这么多日就作废。一趟近海来回大约这个量级。
+const RUMOR_STALE_DAYS := 45
+
+## {port_id: {good_id: {rate, day}}}
+var rumors: Dictionary = {}
+
+
+func note_rumor(port_id: String, good_id: String, rate: float) -> void:
+	if port_id == "" or good_id == "":
+		return
+	if not rumors.has(port_id) or typeof(rumors[port_id]) != TYPE_DICTIONARY:
+		rumors[port_id] = {}
+	rumors[port_id][good_id] = {
+		"rate": clampf(rate, Economy.RATE_MIN, Economy.RATE_MAX),
+		"day": Calendar.absolute_day(),
+	}
+
+
+func rumor_of(port_id: String, good_id: String) -> Dictionary:
+	var book = rumors.get(port_id, {})
+	if typeof(book) != TYPE_DICTIONARY:
+		return {}
+	var rec = book.get(good_id, {})
+	if typeof(rec) != TYPE_DICTIONARY or rec.is_empty():
+		return {}
+	var age := Calendar.absolute_day() - int(rec.get("day", 0))
+	if age > RUMOR_STALE_DAYS:
+		return {}
+	return rec
+
+
+func rumor_label(port_id: String, good_id: String) -> String:
+	var rec := rumor_of(port_id, good_id)
+	if rec.is_empty():
+		return ""
+	var sell := Economy.price_at_rate(port_id, good_id, float(rec.get("rate", 1.0)), false)
+	var age := Calendar.absolute_day() - int(rec.get("day", 0))
+	if age <= 0:
+		return "传闻卖%d" % sell
+	return "传闻卖%d·%d日前" % [sell, age]
+
+
+# ── 牙行委办 ──────────────────────────────────────────
+
+## 酬金 = 目的港逐件卖价（含砸盘推演）+ 基准价的一成二。交货本身不砸盘。
+const CONTRACT_PREMIUM := 0.12
+## 期限 = 针路预计日数 + 这几天余量。长航次傍岸会赶不上，短航次赶得上。
+const CONTRACT_SLACK_DAYS := 3
+const CONTRACT_QTY_BUDGET := 36.0
+const CONTRACT_QTY_MIN := 4
+const CONTRACT_QTY_MAX := 16
+const CONTRACT_FINE_RATE := 0.15
+const CONTRACT_FINE_MIN := 40
+const CONTRACT_BASE_MIN := 15
+
+## 空，或 {good_id, qty, remaining, dest, from, purse, unit_purse, due_day, deadline_days, voyage_days}
+var contract: Dictionary = {}
+
+
+func _stable_hash(s: String) -> int:
+	var h := 0
+	for i in s.length():
+		h = int((h * 33 + s.unicode_at(i)) % 1000003)
+	return h
+
+
+func _contract_seed(port_id: String) -> int:
+	return _stable_hash(port_id) + Calendar.year * 12 + Calendar.month
+
+
+## 当前章节能靠岸、且把这货当紧缺货收的港口。按 id 排序，月份种子才稳定。
+func _contract_destinations(port_id: String, good_id: String) -> Array:
+	var dests: Array = []
+	for p in GameManager.unlocked_ports():
+		var pid: String = p.get("id", "")
+		if pid == port_id or int(p.get("depth", 0)) <= 0:
+			continue
+		if Economy.get_role(pid, good_id) != "consumer":
+			continue
+		if not Economy.is_traded(pid, good_id):
+			continue
+		dests.append(pid)
+	dests.sort()
+	return dests
+
+
+## 本月此港的委办。同一月内货物与目的地不变；酬金按当下行情现算，接下才冻结。
+func contract_offer(port_id: String) -> Dictionary:
+	if not contract.is_empty():
+		return {}
+	var goods_ids: Array = []
+	for gid in Economy.goods_at(port_id):
+		var g := GameManager.get_good_by_id(str(gid))
+		if g.is_empty() or not g.get("tradable", false) or g.get("contraband", false):
+			continue
+		if float(g.get("base_value", 0)) < CONTRACT_BASE_MIN or float(g.get("bulk", 0)) <= 0.0:
+			continue
+		if Economy.get_role(port_id, str(gid)) == "consumer":
+			continue
+		if _contract_destinations(port_id, str(gid)).is_empty():
+			continue
+		goods_ids.append(str(gid))
+	goods_ids.sort()
+	if goods_ids.is_empty():
+		return {}
+
+	var seed := _contract_seed(port_id)
+	var gid: String = goods_ids[seed % goods_ids.size()]
+	var dests: Array = _contract_destinations(port_id, gid)
+	if dests.is_empty():
+		return {}
+	var known: Array = []
+	for pid in dests:
+		if Voyage.is_known_route(port_id, pid):
+			known.append(pid)
+	var pool: Array = known if not known.is_empty() else dests
+	var dest: String = pool[int(seed / 7.0) % pool.size()]
+
+	var g := GameManager.get_good_by_id(gid)
+	var bulk := float(g.get("bulk", 1.0))
+	var qty := clampi(int(CONTRACT_QTY_BUDGET / bulk), CONTRACT_QTY_MIN, CONTRACT_QTY_MAX)
+	var trip: Dictionary = Voyage.plan(port_id, dest, Voyage.CourseOrder.RUMB)
+	var days: int = int(trip.get("days", 999))
+	if days >= 900 or days <= 0:
+		return {}
+	var sale := Economy.estimate_sell_revenue(dest, gid, qty)
+	var premium := int(round(float(qty) * float(g.get("base_value", 0)) * CONTRACT_PREMIUM))
+	var purse := sale + premium
+	if purse <= 0:
+		return {}
+	var deadline := days + CONTRACT_SLACK_DAYS
+	return {
+		"good_id": gid,
+		"qty": qty,
+		"dest": dest,
+		"from": port_id,
+		"purse": purse,
+		"premium": premium,
+		"voyage_days": days,
+		"deadline_days": deadline,
+		"due_day": Calendar.absolute_day() + deadline,
+	}
+
+
+func accept_contract(offer: Dictionary) -> bool:
+	if offer.is_empty() or not contract.is_empty():
+		return false
+	var qty := int(offer.get("qty", 0))
+	var purse := int(offer.get("purse", 0))
+	var dest := str(offer.get("dest", ""))
+	var gid := str(offer.get("good_id", ""))
+	if qty <= 0 or purse <= 0 or dest == "" or gid == "":
+		return false
+	contract = {
+		"good_id": gid,
+		"qty": qty,
+		"remaining": qty,
+		"dest": dest,
+		"from": str(offer.get("from", "")),
+		"purse": purse,
+		"unit_purse": float(purse) / float(qty),
+		"paid": 0,
+		"due_day": int(offer.get("due_day", 0)),
+		"deadline_days": int(offer.get("deadline_days", 0)),
+		"voyage_days": int(offer.get("voyage_days", 0)),
+	}
+	return true
+
+
+func contract_status() -> Dictionary:
+	if contract.is_empty():
+		return {}
+	var rem := int(contract.get("remaining", 0))
+	return {
+		"good_id": str(contract.get("good_id", "")),
+		"remaining": rem,
+		"qty": int(contract.get("qty", rem)),
+		"dest": str(contract.get("dest", "")),
+		"from": str(contract.get("from", "")),
+		"days_left": int(contract.get("due_day", 0)) - Calendar.absolute_day(),
+		"pay_left": maxi(0, int(contract.get("purse", 0)) - int(contract.get("paid", 0))),
+	}
+
+
+## 在目的港交货。不走牙行砸盘——这是委办相对直接卖掉的好处。允许分批。
+func deliver_contract(port_id: String) -> Dictionary:
+	if contract.is_empty():
+		return {"ok": false, "msg": "没有在身的委办。"}
+	if str(contract.get("dest", "")) != port_id:
+		return {"ok": false, "msg": "交货地不是这里。"}
+	if Calendar.absolute_day() > int(contract.get("due_day", 0)):
+		return {"ok": false, "msg": _fail_contract("逾期")}
+	if int(contract.get("remaining", 0)) <= 0:
+		contract = {}
+		return {"ok": false, "msg": "这笔委办已经结了。"}
+	var gid := str(contract.get("good_id", ""))
+	var have := Fleet.cargo_qty(gid)
+	if have <= 0:
+		return {"ok": false, "msg": "舱里没有%s。" % GameManager.get_good_name(gid)}
+	var n := mini(have, int(contract.get("remaining", 0)))
+	var already := int(contract.get("paid", 0))
+	var pay := int(round(float(contract.get("unit_purse", 0.0)) * float(n)))
+	if int(contract.get("remaining", 0)) - n <= 0:
+		pay = maxi(0, int(contract.get("purse", 0)) - already)
+	if not Fleet.remove_cargo(gid, n):
+		return {"ok": false, "msg": "货卸不下来。"}
+	add_money(pay)
+	contract["paid"] = already + pay
+	contract["remaining"] = int(contract["remaining"]) - n
+	if int(contract["remaining"]) <= 0:
+		fame += 1
+		contract = {}
+		return {
+			"ok": true, "done": true, "pay": pay, "qty": n,
+			"msg": "委办交清，牙行付了 %d 钱。名声 +1。" % pay,
+		}
+	return {
+		"ok": true, "done": false, "pay": pay, "qty": n,
+		"remaining": int(contract["remaining"]),
+		"msg": "先交了 %d 件，得 %d 钱。还欠 %d 件。" % [n, pay, int(contract["remaining"])],
+	}
+
+
+func abandon_contract() -> String:
+	if contract.is_empty():
+		return ""
+	return _fail_contract("毁约")
+
+
+## 日期越过 due_day 的那个早晨作废。due_day 当天仍可交货。
+func tick_contract() -> String:
+	if contract.is_empty():
+		return ""
+	if Calendar.absolute_day() <= int(contract.get("due_day", 0)):
+		return ""
+	return _fail_contract("逾期")
+
+
+func _fail_contract(reason: String) -> String:
+	if contract.is_empty():
+		return ""
+	var purse := int(contract.get("purse", 0))
+	var fine := maxi(CONTRACT_FINE_MIN, int(round(float(purse) * CONTRACT_FINE_RATE)))
+	fine = mini(fine, money)
+	if fine > 0:
+		spend_money(fine)
+	fame = maxi(0, fame - 1)
+	var good_name := GameManager.get_good_name(str(contract.get("good_id", "")))
+	var dest_name := GameManager.get_port_name(str(contract.get("dest", "")))
+	contract = {}
+	if reason == "毁约":
+		return "【毁约】%s的委办作废。牙行扣 %d 钱，名声 -1。" % [good_name, fine]
+	return "【逾期】%s没能送到%s。牙行扣 %d 钱，名声 -1。" % [good_name, dest_name, fine]
+
+
 # ── 存档 ──────────────────────────────────────────────
 
 func to_dict() -> Dictionary:
@@ -312,6 +569,8 @@ func to_dict() -> Dictionary:
 		"discoveries_reported": discoveries_reported,
 		"visited_ports": visited_ports,
 		"peak_money": peak_money,
+		"contract": contract,
+		"rumors": rumors,
 	}
 
 
@@ -329,3 +588,13 @@ func from_dict(d: Dictionary) -> void:
 	discoveries_reported = d.get("discoveries_reported", [])
 	visited_ports = d.get("visited_ports", [])
 	peak_money = d.get("peak_money", money)
+	rumors = d.get("rumors", {})
+	if typeof(rumors) != TYPE_DICTIONARY:
+		rumors = {}
+	var saved = d.get("contract", {})
+	if typeof(saved) == TYPE_DICTIONARY and str(saved.get("good_id", "")) != "" and int(saved.get("remaining", 0)) > 0:
+		contract = saved
+		if float(contract.get("unit_purse", 0.0)) <= 0.0 and int(contract.get("qty", 0)) > 0:
+			contract["unit_purse"] = float(contract.get("purse", 0)) / float(contract["qty"])
+	else:
+		contract = {}

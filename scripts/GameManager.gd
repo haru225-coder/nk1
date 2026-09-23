@@ -69,6 +69,9 @@ func advance_days(n: int) -> void:
 				monthly_notice.emit(notice)
 		Economy.on_day_passed()
 		Fleet.on_day_passed()
+		var broke := GameState.tick_contract()
+		if broke != "":
+			monthly_notice.emit(broke)
 
 
 # ── 资源 ──────────────────────────────────────────────

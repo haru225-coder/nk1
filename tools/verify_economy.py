@@ -735,6 +735,287 @@ check(std_scale <= 100.5, f"标准舰队对上限敌倍率 ≤1.0（{std_scale:.
 
 print()
 print("=" * 68)
+print("九、航法、海上交市、牙行委办")
+print("=" * 68)
+print("  针路保持旧的日速与事件表。外洋赶期限，傍岸换岸影，生路才会迷航。")
+print("  海上买卖不得压过港口；委办是小批量、有期限、交货不砸盘。")
+
+import re
+
+def gd_const(rel, name):
+    src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+    m = re.search(rf"const {name} := ([0-9.]+)", src)
+    if not m:
+        raise SystemExit(f"找不到 {rel} 的 const {name}")
+    return float(m.group(1))
+
+V_GD = "scripts/core/Voyage.gd"
+S_GD = "scripts/GameState.gd"
+OFF_SPD = gd_const(V_GD, "ORDER_SPEED_OFFSHORE")
+COAST_SPD = gd_const(V_GD, "ORDER_SPEED_COAST")
+SEA_BUY_MARKUP = gd_const(V_GD, "SEA_BUY_MARKUP")
+SEA_SELL_CAP = gd_const(V_GD, "SEA_SELL_CAP")
+W_STORM_BASE = gd_const(V_GD, "W_STORM_BASE")
+W_STORM_WIND = gd_const(V_GD, "W_STORM_WIND")
+W_PIRATE = gd_const(V_GD, "W_PIRATE")
+W_CALM = gd_const(V_GD, "W_CALM")
+W_CURRENT = gd_const(V_GD, "W_CURRENT")
+W_MERCHANT = gd_const(V_GD, "W_MERCHANT")
+W_DISCOVERY = gd_const(V_GD, "W_DISCOVERY")
+OFFSHORE_STORM_MUL = gd_const(V_GD, "OFFSHORE_STORM_MUL")
+OFFSHORE_PIRATE_MUL = gd_const(V_GD, "OFFSHORE_PIRATE_MUL")
+OFFSHORE_CALM = gd_const(V_GD, "OFFSHORE_CALM")
+OFFSHORE_CURRENT = gd_const(V_GD, "OFFSHORE_CURRENT")
+OFFSHORE_MERCHANT = gd_const(V_GD, "OFFSHORE_MERCHANT")
+OFFSHORE_DISCOVERY = gd_const(V_GD, "OFFSHORE_DISCOVERY")
+COAST_STORM_MUL = gd_const(V_GD, "COAST_STORM_MUL")
+COAST_PIRATE_MUL = gd_const(V_GD, "COAST_PIRATE_MUL")
+COAST_CALM = gd_const(V_GD, "COAST_CALM")
+COAST_CURRENT = gd_const(V_GD, "COAST_CURRENT")
+COAST_MERCHANT = gd_const(V_GD, "COAST_MERCHANT")
+COAST_DISCOVERY = gd_const(V_GD, "COAST_DISCOVERY")
+COAST_SHOAL = gd_const(V_GD, "COAST_SHOAL")
+LOST_RUMB = gd_const(V_GD, "LOST_RUMB")
+LOST_OFFSHORE = gd_const(V_GD, "LOST_OFFSHORE")
+LOST_COAST = gd_const(V_GD, "LOST_COAST")
+MAX_EVENT_MASS = gd_const(V_GD, "MAX_EVENT_MASS")
+CONTRACT_PREMIUM = gd_const(S_GD, "CONTRACT_PREMIUM")
+CONTRACT_SLACK = int(gd_const(S_GD, "CONTRACT_SLACK_DAYS"))
+CONTRACT_QTY_BUDGET = gd_const(S_GD, "CONTRACT_QTY_BUDGET")
+CONTRACT_QTY_MIN = int(gd_const(S_GD, "CONTRACT_QTY_MIN"))
+CONTRACT_QTY_MAX = int(gd_const(S_GD, "CONTRACT_QTY_MAX"))
+CONTRACT_FINE_RATE = gd_const(S_GD, "CONTRACT_FINE_RATE")
+CONTRACT_FINE_MIN = int(gd_const(S_GD, "CONTRACT_FINE_MIN"))
+CONTRACT_BASE_MIN = gd_const(S_GD, "CONTRACT_BASE_MIN")
+RUMOR_STALE = int(gd_const(S_GD, "RUMOR_STALE_DAYS"))
+
+check(1.05 < OFF_SPD <= 1.20, f"外洋日速 ×{OFF_SPD} 落在 (1.05, 1.20]，赶路但不架空候风")
+check(0.70 <= COAST_SPD < 0.90, f"傍岸日速 ×{COAST_SPD} 落在 [0.70, 0.90)，慢，但远洋仍走得完")
+check(0.40 * OFF_SPD < 1.0, f"顶头逆风 × 外洋 = {0.40 * OFF_SPD:.3f} < 1，逆风不会被航法乘成顺风")
+check(1.60 * COAST_SPD < 1.60 * 1.0, "顺风傍岸仍慢于顺风针路")
+
+def event_weights(order, strength, known):
+    """复刻 Voyage.event_weights。order: rumb / offshore / coast。"""
+    storm = W_STORM_BASE + W_STORM_WIND * strength
+    pirate, calm, current = W_PIRATE, W_CALM, W_CURRENT
+    merchant, discovery, shoal, lost = W_MERCHANT, W_DISCOVERY, 0.0, 0.0
+    if order == "offshore":
+        storm *= OFFSHORE_STORM_MUL
+        pirate *= OFFSHORE_PIRATE_MUL
+        calm, current = OFFSHORE_CALM, OFFSHORE_CURRENT
+        merchant, discovery = OFFSHORE_MERCHANT, OFFSHORE_DISCOVERY
+    elif order == "coast":
+        storm *= COAST_STORM_MUL
+        pirate *= COAST_PIRATE_MUL
+        calm, current = COAST_CALM, COAST_CURRENT
+        merchant, discovery, shoal = COAST_MERCHANT, COAST_DISCOVERY, COAST_SHOAL
+    if not known:
+        lost = {"offshore": LOST_OFFSHORE, "coast": LOST_COAST}.get(order, LOST_RUMB)
+    keys = ["storm", "pirate", "calm", "current", "merchant", "discovery", "shoal", "lost"]
+    vals = [storm, pirate, calm, current, merchant, discovery, shoal, lost]
+    mass = sum(vals)
+    if mass > MAX_EVENT_MASS:
+        vals = [v * MAX_EVENT_MASS / mass for v in vals]
+    return dict(zip(keys, vals))
+
+rumb = event_weights("rumb", 1.0, True)
+check(abs(rumb["storm"] - 0.12) < 1e-9 and abs(rumb["pirate"] - 0.06) < 1e-9
+      and abs(rumb["calm"] - 0.06) < 1e-9 and abs(rumb["current"] - 0.05) < 1e-9
+      and abs(rumb["merchant"] - 0.04) < 1e-9 and abs(rumb["discovery"] - 0.03) < 1e-9
+      and rumb["shoal"] == 0 and rumb["lost"] == 0,
+      "针路 + 熟路的事件表与改航法前逐项相同（暴风 0.12 / 海盗 0.06 / …）")
+off = event_weights("offshore", 1.0, True)
+coast = event_weights("coast", 1.0, True)
+check(off["pirate"] > rumb["pirate"] > coast["pirate"],
+      f"海盗概率 外洋 {off['pirate']:.3f} > 针路 {rumb['pirate']:.3f} > 傍岸 {coast['pirate']:.3f}")
+check(coast["discovery"] > rumb["discovery"] > off["discovery"],
+      f"岸影概率 傍岸 {coast['discovery']:.3f} > 针路 {rumb['discovery']:.3f} > 外洋 {off['discovery']:.3f}")
+check(coast["shoal"] > 0 and rumb["shoal"] == 0 and off["shoal"] == 0, "只有傍岸会擦浅滩")
+lost_r = event_weights("rumb", 1.0, False)
+lost_o = event_weights("offshore", 1.0, False)
+lost_c = event_weights("coast", 1.0, False)
+check(event_weights("rumb", 1.0, True)["lost"] == 0, "熟路不迷航")
+check(lost_o["lost"] > lost_r["lost"] > lost_c["lost"] > 0,
+      f"生路迷航 外洋 {lost_o['lost']:.3f} > 针路 {lost_r['lost']:.3f} > 傍岸 {lost_c['lost']:.3f}")
+for name, w in (("针路熟路", rumb), ("外洋生路", lost_o), ("傍岸生路", event_weights("coast", 1.0, False))):
+    check(sum(w.values()) <= MAX_EVENT_MASS + 1e-9, f"{name} 事件总质量 {sum(w.values()):.3f} ≤ {MAX_EVENT_MASS}")
+
+def ch_of(unlock):
+    if isinstance(unlock, str) and unlock.startswith("ch"):
+        return int(unlock[2:])
+    return 1
+
+def sea_buy_unit(gid):
+    """出发港不经营此货时的海上买价：普通口岸行情 1.0 再加价。"""
+    normal = round(goods[gid]["base_value"] * (1 + TARIFF))
+    return math.ceil(normal * SEA_BUY_MARKUP)
+
+def best_consumer_sell(gid, chapter=4):
+    best = 0
+    any_sell = 0
+    for pid, p in ports.items():
+        if p.get("depth", 0) <= 0 or ch_of(p.get("unlock", "ch1")) > chapter:
+            continue
+        if gid not in p.get("market", {}):
+            continue
+        s = sell_price(pid, gid)
+        any_sell = max(any_sell, s)
+        if role(pid, gid) == "consumer":
+            best = max(best, s)
+    return best or any_sell
+
+def sea_sell_unit(avg_cost, jitter, best):
+    raw = round(max(avg_cost, 1) * jitter)
+    if best > 0:
+        cap = int(best * SEA_SELL_CAP)
+        raw = min(raw, max(1, cap))
+    return max(1, raw)
+
+origin_beats = True
+sell_capped = True
+worst_gap = None
+for gid, g in goods.items():
+    if not g.get("tradable") or g.get("contraband") or g.get("base_value", 0) <= 0 or g.get("bulk", 0) <= 0:
+        continue
+    unit = sea_buy_unit(gid)
+    for pid, p in ports.items():
+        if p.get("market", {}).get(gid) in ("origin", "normal"):
+            if unit <= buy_price(pid, gid):
+                origin_beats = False
+    best = best_consumer_sell(gid)
+    if best < 2:
+        continue
+    for jitter in (gd_const(V_GD, "SEA_SELL_JITTER_MIN"), gd_const(V_GD, "SEA_SELL_JITTER_MAX")):
+        # 成本就算已经是消费地卖价，海上也卖不过那个港口
+        sold = sea_sell_unit(best, jitter, best)
+        if sold >= best:
+            sell_capped = False
+        gap = best - sold
+        if worst_gap is None or gap < worst_gap:
+            worst_gap = gap
+check(origin_beats, "海上买价严格高于任一产地或普通口岸的买价（产地低价买不到）")
+check(sell_capped, f"海上卖价严格低于最佳消费地卖价（最窄价差 {worst_gap}）")
+
+def stable_hash(s):
+    h = 0
+    for ch in s:
+        h = (h * 33 + ord(ch)) % 1000003
+    return h
+
+def contract_qty(gid):
+    return max(CONTRACT_QTY_MIN, min(CONTRACT_QTY_MAX, int(CONTRACT_QTY_BUDGET / goods[gid]["bulk"])))
+
+def rumb_days(src, dst, wind_b=-1.0, strength=0.3, morale=70, ship_id="sampan"):
+    d = distance_li(src, dst)
+    spd = ships[ship_id]["base_speed"] * (0.6 + 0.4 * morale / 100.0) * wind_factor(bearing(src, dst), wind_b, strength)
+    if spd <= 1:
+        return 999
+    return math.ceil(d / spd)
+
+def contract_offer(port_id, year=1255, month=3, chapter=1):
+    """开局三月、转换期、小艍、士气 70、行情 1.0。复刻 GameState.contract_offer 的选型。"""
+    def destinations(gid):
+        out = []
+        for pid, p in ports.items():
+            if pid == port_id or p.get("depth", 0) <= 0:
+                continue
+            if ch_of(p.get("unlock", "ch1")) > chapter:
+                continue
+            if p.get("market", {}).get(gid) != "consumer":
+                continue
+            out.append(pid)
+        out.sort()
+        return out
+    goods_ids = []
+    for gid, rel in ports[port_id].get("market", {}).items():
+        g = goods[gid]
+        if not g.get("tradable") or g.get("contraband"):
+            continue
+        if g.get("base_value", 0) < CONTRACT_BASE_MIN or g.get("bulk", 0) <= 0:
+            continue
+        if rel == "consumer":
+            continue
+        if not destinations(gid):
+            continue
+        goods_ids.append(gid)
+    goods_ids.sort()
+    if not goods_ids:
+        return {}
+    seed = stable_hash(port_id) + year * 12 + month
+    gid = goods_ids[seed % len(goods_ids)]
+    dests = destinations(gid)
+    if not dests:
+        return {}
+    known = [pid for pid in dests if pid in ports[port_id].get("connections", [])]
+    pool = known or dests
+    dest = pool[(seed // 7) % len(pool)]
+    qty = contract_qty(gid)
+    days = rumb_days(port_id, dest)
+    if days >= 900 or days <= 0:
+        return {}
+    sale = sell_revenue(dest, gid, qty)
+    premium = round(qty * goods[gid]["base_value"] * CONTRACT_PREMIUM)
+    return {
+        "good_id": gid, "qty": qty, "dest": dest, "from": port_id,
+        "purse": sale + premium, "premium": premium,
+        "voyage_days": days, "deadline_days": days + CONTRACT_SLACK,
+    }
+
+offer = contract_offer("quanzhou")
+check(bool(offer), "开局泉州牙行能开出一笔委办")
+if offer:
+    gid, dest, qty = offer["good_id"], offer["dest"], offer["qty"]
+    print(f"  泉州三月委办：{goods[gid]['name']} ×{qty} → {ports[dest]['name']}　"
+          f"针路 {offer['voyage_days']} 日，期限 {offer['deadline_days']} 日，酬 {offer['purse']}")
+    check(goods[gid].get("contraband") is not True, "委办货不是违禁品")
+    check(role("quanzhou", gid) != "consumer", "委办不把本地紧缺货往外送")
+    check(role(dest, gid) == "consumer" and ports[dest]["depth"] > 0, "交货地是已解锁的消费港")
+    check(ch_of(ports[dest].get("unlock", "ch1")) <= 1, "开局委办的交货地第一章就到得了")
+    known_dests = [pid for pid, p in ports.items()
+                   if p.get("market", {}).get(gid) == "consumer" and p.get("depth", 0) > 0
+                   and ch_of(p.get("unlock", "ch1")) <= 1 and pid in ports["quanzhou"].get("connections", [])]
+    if known_dests:
+        check(dest in known_dests, "有熟路消费地时，委办不把货派去生路")
+    check(CONTRACT_QTY_MIN <= qty <= CONTRACT_QTY_MAX, f"委办件数 {qty} 在 {CONTRACT_QTY_MIN}–{CONTRACT_QTY_MAX}")
+    sale = offer["purse"] - offer["premium"]
+    check(offer["purse"] > sale and offer["premium"] > 0, "酬金高于直接卖掉的实得，溢价为正")
+    check(offer["purse"] <= sale * 1.25, f"溢价未超过实得的 25%（酬 {offer['purse']} / 卖 {sale}）")
+    fine = max(CONTRACT_FINE_MIN, round(offer["purse"] * CONTRACT_FINE_RATE))
+    check(fine < offer["purse"], f"误期罚款 {fine} < 酬金 {offer['purse']}（货还在，不会罚穿）")
+    coast_days = math.ceil(distance_li("quanzhou", dest) / (
+        ships["sampan"]["base_speed"] * (0.6 + 0.4 * 0.7) * 0.85 * COAST_SPD))
+    off_days = math.ceil(distance_li("quanzhou", dest) / (
+        ships["sampan"]["base_speed"] * (0.6 + 0.4 * 0.7) * 0.85 * OFF_SPD))
+    check(off_days <= offer["voyage_days"], f"外洋 {off_days} 日 ≤ 针路 {offer['voyage_days']} 日")
+    print(f"  同一单：外洋 {off_days} 日 / 针路 {offer['voyage_days']} 日 / 傍岸 {coast_days} 日 / 期限 {offer['deadline_days']} 日")
+
+# 傍岸不是永远安全，也不是永远赶不上
+miss = fit = False
+spd0 = ships["sampan"]["base_speed"] * (0.6 + 0.4 * 0.7)
+for a, pa in ports.items():
+    for b, pb in ports.items():
+        if a == b or pa.get("depth", 0) <= 0 or pb.get("depth", 0) <= 0:
+            continue
+        d = distance_li(a, b)
+        r_days = math.ceil(d / spd0)
+        c_days = math.ceil(d / (spd0 * COAST_SPD))
+        if c_days > r_days + CONTRACT_SLACK:
+            miss = True
+        if r_days <= 4 and c_days <= r_days + CONTRACT_SLACK:
+            fit = True
+check(miss, "存在长航次：傍岸日数超过针路期限（赶委办不能无脑贴岸）")
+check(fit, "存在短航次：傍岸仍赶得上期限（贴岸不是死选项）")
+
+check(RUMOR_STALE >= 30, f"行情传闻保鲜 {RUMOR_STALE} 日，够跑一趟近海再回来对")
+gs_src = open(os.path.join(ROOT, S_GD), encoding="utf-8").read()
+deliver_body = gs_src.split("func deliver_contract", 1)[1].split("\nfunc ", 1)[0]
+check("apply_sell_impact" not in deliver_body and "remove_cargo" in deliver_body and "add_money" in deliver_body,
+      "交货卸货给钱，不调用砸盘")
+check("func tick_contract" in gs_src and "advance_days" in open(os.path.join(ROOT, "scripts/GameManager.gd"), encoding="utf-8").read(),
+      "逾期在日推进里结算")
+
+print()
+print("=" * 68)
 if fails:
     print(f"结果：{len(fails)} 项未通过")
     for f in fails:

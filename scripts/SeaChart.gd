@@ -1,9 +1,11 @@
 extends Control
-## 海图。点选目的地 → 按日推进 → 逐日抽事件 → 到港。
-## 实时操船（WorldMap.tscn）降级为海战/风涛时切入的战术场景。
+## 海图。选定航法与目的地 → 按日推进 → 逐日抽事件 → 到港。
+## 实时操船（WorldMap.tscn）降级为海战切入的战术场景。
 
 var origin_port: String = ""
 var selected_port: String = ""
+## 默认针路，与改航法之前的日速、事件表一致。
+var course_order: int = 0
 
 ## 航行状态
 var sailing: bool = false
@@ -20,16 +22,19 @@ var port_list: VBoxContainer
 var detail_box: VBoxContainer
 var log_label: RichTextLabel
 var sail_button: Button
+var order_row: HBoxContainer
 var event_panel: PanelContainer
 var event_title: Label
 var event_text: RichTextLabel
-var event_actions: HBoxContainer
+var event_actions: VBoxContainer
 
 
 func _ready() -> void:
 	origin_port = GameState.last_port
 	selected_port = ""
+	course_order = Voyage.CourseOrder.RUMB
 	_build_ui()
+	_sync_order_buttons()
 	# 连接放在 _build_ui 之后：_log 依赖其中创建的 log_label
 	GameManager.monthly_notice.connect(_log)
 	_refresh_ports()
@@ -88,9 +93,10 @@ func _build_ui() -> void:
 	center_v.add_child(head)
 
 	var hint := Label.new()
-	hint.text = "选定去处，量过风信与水粮，再决定发不发舶。"
+	hint.text = "先定航法，再定去处。外洋赶期限，傍岸找岸影，生路会迷航。"
 	hint.add_theme_font_size_override("font_size", 13)
 	hint.add_theme_color_override("font_color", Color(0.75, 0.78, 0.82))
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	center_v.add_child(hint)
 
 	# 真正的图。数据用 ports.json 的经纬度，CanvasItem.draw 信号接 lambda，
@@ -100,6 +106,9 @@ func _build_ui() -> void:
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chart.draw.connect(func(): _draw_chart(chart))
 	center_v.add_child(chart)
+
+	order_row = _build_order_row()
+	center_v.add_child(order_row)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -171,6 +180,8 @@ func _build_event_panel() -> void:
 	st.corner_radius_bottom_right = 8
 	event_panel.add_theme_stylebox_override("panel", st)
 	event_panel.visible = false
+	event_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	event_panel.z_index = 10
 	add_child(event_panel)
 
 	var m := MarginContainer.new()
@@ -190,7 +201,7 @@ func _build_event_panel() -> void:
 	event_text.custom_minimum_size = Vector2(520, 60)
 	v.add_child(event_text)
 
-	event_actions = HBoxContainer.new()
+	event_actions = VBoxContainer.new()
 	event_actions.add_theme_constant_override("separation", 8)
 	v.add_child(event_actions)
 
@@ -212,6 +223,46 @@ func _set_margins(m: MarginContainer, v: int) -> void:
 	m.add_theme_constant_override("margin_bottom", v)
 
 
+func _build_order_row() -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var specs: Array = [
+		[Voyage.CourseOrder.RUMB, "针路"],
+		[Voyage.CourseOrder.OFFSHORE, "外洋"],
+		[Voyage.CourseOrder.COAST, "傍岸"],
+	]
+	for spec in specs:
+		var b := Button.new()
+		b.toggle_mode = true
+		b.text = str(spec[1])
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(_on_order_pressed.bind(int(spec[0])))
+		row.add_child(b)
+	return row
+
+
+func _on_order_pressed(order: int) -> void:
+	if sailing:
+		_sync_order_buttons()
+		return
+	course_order = order
+	_sync_order_buttons()
+	_refresh_ports()
+	_refresh_detail()
+
+
+func _sync_order_buttons() -> void:
+	if order_row == null:
+		return
+	var orders: Array = [Voyage.CourseOrder.RUMB, Voyage.CourseOrder.OFFSHORE, Voyage.CourseOrder.COAST]
+	var i := 0
+	for c in order_row.get_children():
+		if c is Button and i < orders.size():
+			c.button_pressed = course_order == int(orders[i])
+			c.disabled = sailing
+			i += 1
+
+
 # ══════════════════════════════════════════════════════
 #  刷新
 # ══════════════════════════════════════════════════════
@@ -229,7 +280,19 @@ func _refresh_status() -> void:
 		var pct := 0.0
 		if total_li > 0.0:
 			pct = clampf((total_li - remaining_li) / total_li, 0.0, 1.0)
-		t += "[color=aqua]航行中　第 %d 日[/color]\n已行 %d%%\n余程 %d 里\n\n" % [days_elapsed, int(pct * 100), int(remaining_li)]
+		t += "[color=aqua]航行中　第 %d 日・%s[/color]\n已行 %d%%\n余程 %d 里\n\n" % [
+			days_elapsed, Voyage.order_name(course_order), int(pct * 100), int(remaining_li),
+		]
+	var cst := GameState.contract_status()
+	if not cst.is_empty():
+		var left: int = int(cst.get("days_left", 0))
+		var left_s := "今日截止" if left == 0 else ("%d 日后截止" % left if left > 0 else "已逾期")
+		t += "[u]委办[/u] %s ×%d → %s（%s）\n\n" % [
+			GameManager.get_good_name(str(cst.get("good_id", ""))),
+			int(cst.get("remaining", 0)),
+			GameManager.get_port_name(str(cst.get("dest", ""))),
+			left_s,
+		]
 	t += "金钱：%d\n名声：%d\n\n" % [GameState.money, GameState.fame]
 	t += "[u]舰队[/u]\n船数：%d　水手：%d\n舱位：%d / %d 料\n耐久：%d / %d\n士气：%d\n" % [
 		Fleet.ships.size(), Fleet.total_crew(),
@@ -256,7 +319,7 @@ func _refresh_ports() -> void:
 		if p.get("depth", 0) <= 0:
 			continue
 
-		var plan := Voyage.plan(origin_port, pid)
+		var plan := Voyage.plan(origin_port, pid, course_order)
 		var btn := Button.new()
 		btn.toggle_mode = true
 		btn.button_pressed = (pid == selected_port)
@@ -264,8 +327,9 @@ func _refresh_ports() -> void:
 		btn.custom_minimum_size = Vector2(0, 34)
 
 		var known := "" if Voyage.is_known_route(origin_port, pid) else "　[生路]"
-		btn.text = "%s　%d里　%s　约 %d 日%s" % [
-			p.get("name", pid), int(plan["distance"]), plan["wind_desc"], plan["days"], known,
+		btn.text = "%s　%d里　%s　%s约 %d 日%s" % [
+			p.get("name", pid), int(plan["distance"]), plan["wind_desc"],
+			Voyage.order_name(course_order), plan["days"], known,
 		]
 		if not plan["supply_ok"]:
 			btn.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
@@ -291,7 +355,9 @@ func _refresh_detail() -> void:
 		sail_button.disabled = true
 		return
 
-	var plan := Voyage.plan(origin_port, selected_port)
+	var plan := Voyage.plan(origin_port, selected_port, course_order)
+	var plan_off := Voyage.plan(origin_port, selected_port, Voyage.CourseOrder.OFFSHORE)
+	var plan_coast := Voyage.plan(origin_port, selected_port, Voyage.CourseOrder.COAST)
 	var crew_note := ""
 	var hz := Crew.level_of("huozhang")
 	var dg := Crew.level_of("duogong")
@@ -304,25 +370,46 @@ func _refresh_detail() -> void:
 		"目的：%s" % GameManager.get_port_name(selected_port),
 		"航程：%d 里　方位 %d°" % [int(plan["distance"]), int(plan["bearing"])],
 		"风信：%s（日速 %d 里）%s" % [plan["wind_desc"], int(plan["speed"]), crew_note],
-		"预计：%d 日　水粮足 %d 日" % [plan["days"], plan["supply_days"]],
+		"预计：%s %d 日　水粮足 %d 日" % [Voyage.order_name(course_order), plan["days"], plan["supply_days"]],
+		"对照：针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日" % [
+			Voyage.plan(origin_port, selected_port, Voyage.CourseOrder.RUMB)["days"],
+			plan_off["days"], plan_coast["days"],
+		],
+		Voyage.order_blurb(course_order),
 	]
 	for l in lines:
 		var lbl := Label.new()
 		lbl.text = l
+		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		detail_box.add_child(lbl)
 
+	var cst := GameState.contract_status()
+	if not cst.is_empty() and str(cst.get("dest", "")) == selected_port:
+		var left: int = int(cst.get("days_left", 0))
+		var contract_lbl := Label.new()
+		if int(plan["days"]) > left:
+			contract_lbl.text = "委办只剩 %d 日，此航法预计 %d 日，赶不上。" % [left, int(plan["days"])]
+			contract_lbl.add_theme_color_override("font_color", Color(1.0, 0.55, 0.4))
+		else:
+			contract_lbl.text = "委办还剩 %d 日，此航法预计 %d 日。" % [left, int(plan["days"])]
+			contract_lbl.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
+		detail_box.add_child(contract_lbl)
+
 	if not Voyage.is_known_route(origin_port, selected_port):
-		var w := Label.new()
-		w.text = "此非熟路，海图上只有传闻，途中易生变故。"
-		w.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
-		detail_box.add_child(w)
+		var unknown_lbl := Label.new()
+		unknown_lbl.text = "此非熟路。针路与外洋都可能迷航，傍岸靠岸影，迷航少一些。"
+		unknown_lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
+		unknown_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		detail_box.add_child(unknown_lbl)
 
 	if not plan["supply_ok"]:
-		var w := Label.new()
-		w.text = "水粮不足以支撑此程——半途必要死人。"
-		w.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
-		detail_box.add_child(w)
+		var supply_lbl := Label.new()
+		supply_lbl.text = "水粮不足以支撑此程——半途必要死人。"
+		supply_lbl.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
+		detail_box.add_child(supply_lbl)
 
+	sail_button.text = "发舶・" + Voyage.order_name(course_order)
 	sail_button.disabled = false
 
 
@@ -463,11 +550,27 @@ func _on_sail_pressed() -> void:
 	Fleet.at_sea = true
 
 	sail_button.disabled = true
+	_sync_order_buttons()
 	for c in port_list.get_children():
 		c.disabled = true
 
-	_log("[color=aqua]启程往 %s，航程 %d 里。[/color]" % [GameManager.get_port_name(selected_port), int(total_li)])
+	_log("[color=aqua]启程往 %s，航程 %d 里，走%s。[/color]" % [
+		GameManager.get_port_name(selected_port), int(total_li), Voyage.order_name(course_order),
+	])
 	_sail_next_day()
+
+
+func _day_progress(event: Dictionary) -> float:
+	var wf := Voyage.wind_factor(course_bearing)
+	var progress := Fleet.fleet_speed() * wf * Voyage.order_speed_mult(course_order)
+	var kind: int = int(event.get("kind", Voyage.EventKind.NONE))
+	if kind == Voyage.EventKind.CALM:
+		return 0.0
+	if kind == Voyage.EventKind.CURRENT:
+		return progress * 1.5
+	if event.has("progress_mult"):
+		return progress * float(event["progress_mult"])
+	return progress
 
 
 func _sail_next_day() -> void:
@@ -477,17 +580,9 @@ func _sail_next_day() -> void:
 	GameManager.advance_days(1)
 	days_elapsed += 1
 
-	var event := Voyage.roll_day_event(course_bearing, origin_port, selected_port)
+	var event := Voyage.roll_day_event(course_bearing, origin_port, selected_port, course_order)
 	var kind: int = event.get("kind", Voyage.EventKind.NONE)
-	var wf := Voyage.wind_factor(course_bearing)
-	var progress := Fleet.fleet_speed() * wf
-
-	if kind == Voyage.EventKind.CALM:
-		progress = 0.0
-	elif kind == Voyage.EventKind.CURRENT:
-		progress *= 1.5
-
-	remaining_li -= progress
+	remaining_li -= _day_progress(event)
 	_refresh_status()
 
 	# 补给见底的警告
@@ -495,6 +590,10 @@ func _sail_next_day() -> void:
 		_log("[color=red]第 %d 日・水粮已尽，舱里开始有人病倒。[/color]" % days_elapsed)
 
 	if kind != Voyage.EventKind.NONE:
+		_log("第 %d 日・%s" % [days_elapsed, event.get("title", "")])
+		if Fleet.total_durability() <= 0.0:
+			_sink(str(event.get("text", "")))
+			return
 		_show_event(event)
 		return
 
@@ -510,13 +609,26 @@ func _show_event(event: Dictionary) -> void:
 	pending_event = event
 	event_title.text = "第 %d 日・%s" % [days_elapsed, event.get("title", "事")]
 	event_text.text = event.get("text", "")
-	_log("第 %d 日・%s" % [days_elapsed, event.get("title", "")])
-
 	for c in event_actions.get_children():
 		c.queue_free()
 
 	var kind: int = event.get("kind", Voyage.EventKind.NONE)
-	if kind == Voyage.EventKind.PIRATE:
+	if kind == Voyage.EventKind.MERCHANT:
+		var offer := str(event.get("offer", "rumor"))
+		if offer == "sell":
+			_add_event_action("卖出 %s ×%d（%d 钱）" % [
+				GameManager.get_good_name(str(event.get("good_id", ""))),
+				int(event.get("qty", 0)), int(event.get("unit", 0)) * int(event.get("qty", 0)),
+			], _on_sea_sell)
+		elif offer == "buy":
+			_add_event_action("买下 %s ×%d（%d 钱）" % [
+				GameManager.get_good_name(str(event.get("good_id", ""))),
+				int(event.get("qty", 0)), int(event.get("unit", 0)) * int(event.get("qty", 0)),
+			], _on_sea_buy)
+		if str(event.get("rumor_port", "")) != "":
+			_add_event_action("记下这条行情", _on_note_rumor)
+		_add_event_action("继续航行", _on_event_continue)
+	elif kind == Voyage.EventKind.PIRATE:
 		_add_event_action("迎战", _on_fight_pirates)
 		_add_event_action("扬帆逃走", _on_flee_pirates)
 		_add_event_action("献上买路财", _on_pay_pirates)
@@ -536,6 +648,63 @@ func _add_event_action(text: String, cb: Callable) -> void:
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.pressed.connect(cb)
 	event_actions.add_child(b)
+
+
+func _note_rumor_from_event(event: Dictionary) -> void:
+	var pid := str(event.get("rumor_port", ""))
+	var gid := str(event.get("rumor_good", ""))
+	if pid == "" or gid == "":
+		return
+	GameState.note_rumor(pid, gid, float(event.get("rumor_rate", 1.0)))
+	_log("记下行情：%s 的 %s。" % [GameManager.get_port_name(pid), GameManager.get_good_name(gid)])
+
+
+func _on_note_rumor() -> void:
+	event_panel.visible = false
+	_note_rumor_from_event(pending_event)
+	_on_event_continue()
+
+
+func _on_sea_sell() -> void:
+	event_panel.visible = false
+	var ev := pending_event
+	var gid := str(ev.get("good_id", ""))
+	var qty := mini(int(ev.get("qty", 0)), Fleet.cargo_qty(gid))
+	var unit := int(ev.get("unit", 0))
+	if qty <= 0 or unit <= 0:
+		_log("这批货已经不在舱里了。")
+	else:
+		Fleet.remove_cargo(gid, qty)
+		GameState.add_money(unit * qty)
+		_log("海上卖掉 %s ×%d，得 %d 钱。" % [GameManager.get_good_name(gid), qty, unit * qty])
+		_note_rumor_from_event(ev)
+	_on_event_continue()
+
+
+func _on_sea_buy() -> void:
+	event_panel.visible = false
+	var ev := pending_event
+	var gid := str(ev.get("good_id", ""))
+	var unit := int(ev.get("unit", 0))
+	var want := int(ev.get("qty", 0))
+	var loaded := 0
+	var spent := 0
+	while loaded < want and unit > 0:
+		if Fleet.max_loadable(gid) <= 0 or GameState.money < unit:
+			break
+		if not GameState.spend_money(unit):
+			break
+		if not Fleet.add_cargo(gid, 1, float(unit)):
+			GameState.add_money(unit)
+			break
+		loaded += 1
+		spent += unit
+	if loaded <= 0:
+		_log("没有买成。要么钱不够，要么舱位不够。")
+	else:
+		_log("海上买下 %s ×%d，付 %d 钱。" % [GameManager.get_good_name(gid), loaded, spent])
+		_note_rumor_from_event(ev)
+	_on_event_continue()
 
 
 func _on_event_continue() -> void:
@@ -692,12 +861,15 @@ func _arrive() -> void:
 	event_panel.visible = true
 
 
-func _sink() -> void:
+func _sink(preface: String = "") -> void:
 	sailing = false
 	Fleet.at_sea = false
 	Fleet.clear_cargo()
 	event_title.text = "沉　没"
-	event_text.text = "船身裂开，海水灌进货舱。等你再睁眼时，已被人捞上一条渔船，货与船都没了。"
+	var lead := ""
+	if preface != "":
+		lead = preface + "\n\n"
+	event_text.text = lead + "船身裂开，海水灌进货舱。等你再睁眼时，已被人捞上一条渔船，货与船都没了。"
 	for c in event_actions.get_children():
 		c.queue_free()
 	_add_event_action("……", func():

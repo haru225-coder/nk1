@@ -153,6 +153,22 @@ func update_status_panel() -> void:
 				crew_color, crew_str, per_ship,
 			]
 
+	var cst := GameState.contract_status()
+	if not cst.is_empty():
+		var left: int = int(cst.get("days_left", 0))
+		var left_s := "今日截止" if left == 0 else ("%d 日后截止" % left if left > 0 else "已逾期")
+		var col := "yellow" if left <= 2 else "white"
+		if left < 0:
+			col = "red"
+		t += "\n[u]委办[/u]\n[color=%s]%s ×%d → %s（%s）酬 %d[/color]\n" % [
+			col,
+			GameManager.get_good_name(str(cst.get("good_id", ""))),
+			int(cst.get("remaining", 0)),
+			GameManager.get_port_name(str(cst.get("dest", ""))),
+			left_s,
+			int(cst.get("pay_left", 0)),
+		]
+
 	# 章节目标：不写出来玩家不会知道怎样才能开出下一片海
 	var prog := GameState.chapter_progress()
 	t += "\n[u]第%s章・%s[/u]\n" % [
@@ -176,6 +192,14 @@ func update_status_panel() -> void:
 # ══════════════════════════════════════════════════════
 
 func load_scene(scene_id: String) -> void:
+	var overdue := GameState.tick_contract()
+	_load_scene_inner(scene_id)
+	if overdue != "":
+		log_msg(overdue)
+	update_status_panel()
+
+
+func _load_scene_inner(scene_id: String) -> void:
 	if current_scene_id != "" and current_scene_id != scene_id:
 		previous_scene_id = current_scene_id
 	current_scene_id = scene_id
@@ -330,6 +354,8 @@ func _setup_market(port_id: String) -> void:
 	scene_title.text = "%s・牙行" % GameManager.get_port_name(port_id)
 	body_text.text = "牙行里挤着各色商人，没有人说官话，只用手势、算筹和一把碎银落地就要捡的速度说话。"
 
+	_add_contract_panel(port_id)
+
 	var goods_ids: Array = Economy.goods_at(port_id)
 	if goods_ids.is_empty():
 		body_text.text += "\n\n此地并无正经牙行，只有几个渔妇在晒网。"
@@ -380,6 +406,99 @@ func _setup_market(port_id: String) -> void:
 	_add_leave_button(port_id)
 
 
+func _add_contract_panel(port_id: String) -> void:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	var cst := GameState.contract_status()
+	if not cst.is_empty():
+		var left: int = int(cst.get("days_left", 0))
+		var left_s := "今日截止" if left == 0 else ("%d 日后截止" % left if left > 0 else "已逾期")
+		var head := Label.new()
+		head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		head.text = "在身委办：%s ×%d（共 %d）送往 %s，%s。交清尚可得 %d 钱。舱里现有 %d。" % [
+			GameManager.get_good_name(str(cst.get("good_id", ""))),
+			int(cst.get("remaining", 0)),
+			int(cst.get("qty", 0)),
+			GameManager.get_port_name(str(cst.get("dest", ""))),
+			left_s,
+			int(cst.get("pay_left", 0)),
+			Fleet.cargo_qty(str(cst.get("good_id", ""))),
+		]
+		box.add_child(head)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		if str(cst.get("dest", "")) == port_id:
+			var deliver := Button.new()
+			deliver.text = "交货"
+			deliver.disabled = Fleet.cargo_qty(str(cst.get("good_id", ""))) <= 0 or left < 0
+			deliver.pressed.connect(_on_deliver_contract.bind(port_id))
+			row.add_child(deliver)
+		var drop := Button.new()
+		drop.text = "毁约"
+		drop.pressed.connect(_on_abandon_contract)
+		row.add_child(drop)
+		box.add_child(row)
+	else:
+		var offer := GameState.contract_offer(port_id)
+		var head := Label.new()
+		head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if offer.is_empty():
+			head.text = "本月牙行没有外埠委办。"
+			box.add_child(head)
+		else:
+			var dest := str(offer.get("dest", ""))
+			var gid := str(offer.get("good_id", ""))
+			var rumb: int = int(offer.get("voyage_days", 0))
+			var off: int = int(Voyage.plan(port_id, dest, Voyage.CourseOrder.OFFSHORE).get("days", 0))
+			var coast: int = int(Voyage.plan(port_id, dest, Voyage.CourseOrder.COAST).get("days", 0))
+			var deadline: int = int(offer.get("deadline_days", 0))
+			var route := "熟路" if Voyage.is_known_route(port_id, dest) else "生路"
+			head.text = "委办：送 %s ×%d 到%s（%s）。酬 %d 钱，其中溢价 %d，交货不砸盘。针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日，期限 %d 日。" % [
+				GameManager.get_good_name(gid), int(offer.get("qty", 0)),
+				GameManager.get_port_name(dest), route,
+				int(offer.get("purse", 0)), int(offer.get("premium", 0)),
+				rumb, off, coast, deadline,
+			]
+			box.add_child(head)
+			if coast > deadline:
+				var warn := Label.new()
+				warn.text = "傍岸赶不上这一单。"
+				warn.add_theme_color_override("font_color", Color(1.0, 0.7, 0.4))
+				box.add_child(warn)
+			var take := Button.new()
+			take.text = "接下委办"
+			take.pressed.connect(_on_accept_contract.bind(offer.duplicate(true)))
+			box.add_child(take)
+	choices_container.add_child(box)
+
+
+func _on_accept_contract(offer: Dictionary) -> void:
+	if GameState.accept_contract(offer):
+		log_msg("接下委办：%s ×%d，%d 日内送到%s。酬 %d 钱，误期要赔。" % [
+			GameManager.get_good_name(str(offer.get("good_id", ""))),
+			int(offer.get("qty", 0)),
+			int(offer.get("deadline_days", 0)),
+			GameManager.get_port_name(str(offer.get("dest", ""))),
+			int(offer.get("purse", 0)),
+		])
+	else:
+		log_msg("牙行摇头：你身上已经有一笔没了结的。")
+	load_scene(current_scene_id)
+
+
+func _on_deliver_contract(port_id: String) -> void:
+	var res := GameState.deliver_contract(port_id)
+	log_msg(str(res.get("msg", "")))
+	load_scene(current_scene_id)
+
+
+func _on_abandon_contract() -> void:
+	var msg := GameState.abandon_contract()
+	if msg != "":
+		log_msg(msg)
+	load_scene(current_scene_id)
+
+
 func _make_market_row(port_id: String, good_id: String) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
@@ -400,6 +519,10 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 
 	var hint_lbl := Label.new()
 	hint_lbl.text = Economy.price_hint(port_id, good_id)
+	var rumor := GameState.rumor_label(port_id, good_id)
+	if rumor != "":
+		hint_lbl.tooltip_text = rumor
+		hint_lbl.text = (hint_lbl.text + "·闻") if hint_lbl.text != "" else "闻"
 	hint_lbl.custom_minimum_size = Vector2(120, 0)
 	hint_lbl.add_theme_font_size_override("font_size", 13)
 	if role == "origin":
@@ -1001,6 +1124,7 @@ func _gather_price_intel(port_id: String) -> String:
 				best = {"profit": profit, "port": pid, "good": gid}
 	if best.get("profit", 0) <= 0:
 		return "【闲谈】几个老水手翻来覆去只讲当年的风暴，没打听出什么有用的。"
+	GameState.note_rumor(str(best["port"]), str(best["good"]), Economy.get_rate(str(best["port"]), str(best["good"])))
 	return "【行情】邻座的牙人压低声音：「%s 眼下缺%s，此地买了运过去，一件能多得 %d 钱。」" % [
 		GameManager.get_port_name(best["port"]),
 		GameManager.get_good_name(best["good"]),
