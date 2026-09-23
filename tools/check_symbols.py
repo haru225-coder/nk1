@@ -1045,6 +1045,9 @@ if (
     and "运往 %s　多 %d" in main_src and "→ %s" not in main_src
     and "此帆比光船快" in main_src and "船体伤剩" in main_src
     and "航速 ×" not in main_src and "违禁：" not in main_src
+    and "抽解每百 %d" in main_src and "%d%%" not in main_src
+    and "水手 %d 至 %d" in main_src and "水粮各 %d　付 %d" in main_src
+    and "水手 %d–%d" not in main_src and "各 %d　%d" not in main_src
 ):
     print("  ✓ 海战栏与船屋账条去掉斜杠、百分号和小数倍率")
 else:

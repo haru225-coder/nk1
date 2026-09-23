@@ -453,6 +453,11 @@ func _armor_fit_phrase(level: int) -> String:
 	return "船体伤剩%s" % _cheng_phrase(left)
 
 
+## 职衔抽解写成每百剩多少。1 是 100，0.94 是 94。只换说法。
+func _duty_per_hundred(factor: float) -> int:
+	return int(round(factor * 100.0))
+
+
 ## scenes.json 里四张兴化序章内页标题写成「内景」。画面上改成港名・去处，正文不动。
 func _interior_title(scene_id: String) -> String:
 	var names := {
@@ -966,17 +971,16 @@ func _setup_title_and_invest(port_id: String) -> void:
 	var nxt: Dictionary = GameState.next_title()
 	var rank_slip := _slip_body()
 	_slip_title(rank_slip, "职衔", str(rank.get("name", "")))
+	var duty_line := "抽解每百 %d　赊贷上限 %d" % [
+		_duty_per_hundred(float(rank.get("duty_factor", 1.0))),
+		GameState.DEBT_CEILING + GameState.title_loan_bonus(),
+	]
 	if nxt.is_empty():
-		_slip_note(rank_slip, "抽解按职衔折至 %d%%，赊贷上限 %d。" % [
-			int(round(float(rank.get("duty_factor", 1.0)) * 100.0)),
-			GameState.DEBT_CEILING + GameState.title_loan_bonus(),
-		])
+		_slip_note(rank_slip, duty_line + "。")
 	else:
 		var need: int = maxi(0, int(nxt.get("min_fame", 0)) - GameState.fame)
-		_slip_note(rank_slip, "再记 %d 声名可题「%s」。抽解折至 %d%%，赊贷上限 %d。" % [
-			need, nxt.get("name", ""),
-			int(round(float(rank.get("duty_factor", 1.0)) * 100.0)),
-			GameState.DEBT_CEILING + GameState.title_loan_bonus(),
+		_slip_note(rank_slip, "再记 %d 声名可题「%s」。%s。" % [
+			need, str(nxt.get("name", "")), duty_line,
 		])
 
 	var lv: int = Economy.investment_level(port_id)
@@ -1110,7 +1114,7 @@ func _setup_shipyard(port_id: String) -> void:
 		var packs := int(n)
 		_slip_chip(
 			supply_row,
-			"各 %d　%d" % [packs, packs * (water_price + grain_price)],
+			"水粮各 %d　付 %d" % [packs, packs * (water_price + grain_price)],
 			_on_buy_supplies.bind(packs, water_price, grain_price)
 		)
 	var rc := Fleet.repair_cost()
@@ -1196,7 +1200,7 @@ func _setup_shipyard(port_id: String) -> void:
 		var price: int = int(s.get("price", 0))
 		var tid: String = str(s.get("id", ""))
 		var offer := _slip_body()
-		_slip_title(offer, str(s.get("name", "?")), "载 %d 料　水手 %d–%d　耐久 %d" % [
+		_slip_title(offer, str(s.get("name", "?")), "载 %d 料　水手 %d 至 %d　耐久 %d" % [
 			int(s.get("capacity", 0)), int(s.get("crew_min", 0)),
 			int(s.get("crew_max", 0)), int(s.get("durability", 0)),
 		])

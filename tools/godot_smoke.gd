@@ -224,8 +224,13 @@ func _run() -> void:
 		and main_src.find("运往 %s　多 %d") >= 0 and main_src.find("→ %s") < 0
 		and main_src.find("航速 ×") < 0 and main_src.find("违禁：") < 0
 		and FileAccess.get_file_as_string("res://scripts/core/Economy.gd").find("名声加 %d") >= 0
-		and FileAccess.get_file_as_string("res://scripts/core/Economy.gd").find("名声 +%d") < 0,
-		"船屋加成写成成数，月息去掉百分号", fails)
+		and FileAccess.get_file_as_string("res://scripts/core/Economy.gd").find("名声 +%d") < 0
+		and int(yard_node.call("_duty_per_hundred", 1.0)) == 100
+		and int(yard_node.call("_duty_per_hundred", 0.94)) == 94
+		and int(yard_node.call("_duty_per_hundred", 0.76)) == 76
+		and main_src.find("抽解每百 %d") >= 0 and main_src.find("%d%%") < 0
+		and main_src.find("水手 %d 至 %d") >= 0 and main_src.find("水粮各 %d　付 %d") >= 0,
+		"船屋加成写成成数，抽解与购船去掉百分号和短横", fails)
 	yard_node.free()
 	var chart_script := load("res://scripts/SeaChart.gd") as GDScript
 	var chart_node := chart_script.new() as Node
