@@ -1679,8 +1679,8 @@ func _show_npc_mode(npc_id: String, fallback_name: String) -> void:
 	_slip_chip(_slip_row(intel), "打听", _on_npc_intel.bind(n_name))
 	if npc_id == "customs_official":
 		var bribe := _slip_body()
-		_slip_title(bribe, "疏通", "关注减 15")
-		_slip_chip(_slip_row(bribe), "塞 50", _on_npc_bribe.bind(n_name), true)
+		_slip_title(bribe, "疏通", "关注　减 15")
+		_slip_chip(_slip_row(bribe), "塞　50", _on_npc_bribe.bind(n_name), true)
 	_slip_host = null
 
 	var leave_btn := Button.new()
@@ -1703,16 +1703,17 @@ func _set_npc_speech(text: String) -> void:
 
 
 func _on_npc_intel(n_name: String) -> void:
-	_set_npc_speech(n_name + " 压低声音说：\n\n" + _gather_price_intel(GameState.last_port))
+	var heard := UiTheme.plain_log(_gather_price_intel(GameState.last_port))
+	_set_npc_speech("%s压低声音说：\n\n%s" % [n_name, heard])
 
 
 func _on_npc_bribe(n_name: String) -> void:
 	if GameState.spend_money(50):
 		GameState.pu_attention = maxi(0, GameState.pu_attention - 15)
 		update_status_panel()
-		_set_npc_speech(n_name + " 颠了颠手里的碎银：「算你懂事。近来风声紧，自己当心。」")
+		_set_npc_speech("%s颠了颠手里的碎银：「算你懂事。近来风声紧，自己当心。」" % n_name)
 	else:
-		_set_npc_speech(n_name + " 满脸鄙夷：「就这点钱也想打通关节？」")
+		_set_npc_speech("%s满脸鄙夷：「就这点钱也想打通关节？」" % n_name)
 
 
 func _on_npc_leave() -> void:

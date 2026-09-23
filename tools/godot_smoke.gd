@@ -157,6 +157,10 @@ func _run() -> void:
 	_check(main_src.find("买%d") < 0 and main_src.find("卖%d") < 0
 		and main_src.find("只购得 %d。") >= 0 and main_src.find("钱（") < 0,
 		"牙行小钮与买卖日志留出字距", fails)
+	_check(main_src.find("塞　50") >= 0 and main_src.find("关注　减 15") >= 0
+		and main_src.find("塞 50") < 0 and main_src.find("关注减 15") < 0
+		and main_src.find("UiTheme.plain_log(_gather_price_intel") >= 0,
+		"见面册疏通留出字距，行情去掉方括号", fails)
 	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
 		"职事品级写成初习/谙熟/老练，不再用星号", fails)
 	_check(main_src.find("func _fit_rank") >= 0 and main_src.find("帆Lv") < 0
