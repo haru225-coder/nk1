@@ -33,6 +33,14 @@ var previous_scene_id: String = ""  # 死胡同场景兜底用：只记一层，
 var title_button_connected: bool = false
 ## 牙行当前选中的船 index（多船分装用），进牙行时重置为旗舰
 var _market_ship: int = 0
+## 港口节拍播放中。谈话沿 next 走，碰到港口或 stop_before 就回港。
+var _beat_active: bool = false
+var _beat_port: String = ""
+var _beat_stop: Array = []
+## 节拍结束回到港口的那一次入港不再接上下一条，避免同一次入港连播。
+var _suppress_beat_once: bool = false
+## 流求、博多的场景 id 与港口 id 相同。只有节拍播放时才进正文，入港仍是港口界面。
+var _force_story: bool = false
 
 const FACILITY_SUFFIXES := ["_market", "_yamen", "_shipyard", "_tavern", "_inn"]
 
@@ -102,7 +110,11 @@ func update_status_panel() -> void:
 	t += "金钱：%d\n" % GameState.money
 	if GameState.debt > 0:
 		t += "[color=orange]欠债：%d[/color]\n" % GameState.debt
-	t += "名声：%d\n\n" % GameState.fame
+	t += "名声：%d\n" % GameState.fame
+	t += "海路 %d　举业 %d\n" % [GameState.sea_tendency, GameState.scholar_tendency]
+	if GameState.merchant_credit != 0:
+		t += "海商信用 %d\n" % GameState.merchant_credit
+	t += "\n"
 	t += "[u]舰队[/u]\n船数：%d　水手：%d\n舱位：%d / %d 料\n耐久：%d / %d\n士气：%d\n" % [
 		Fleet.ships.size(), Fleet.total_crew(),
 		int(cap_used), int(cap_total),
@@ -159,7 +171,10 @@ func update_status_panel() -> void:
 		_cn_chapter(GameState.chapter), GameState.chapter_def().get("name", ""),
 	]
 	if prog.get("final", false):
-		t += "[color=gray]已至最后一章[/color]\n"
+		if GameState.has_flag("chronicle_closed"):
+			t += "[color=gray]%s[/color]\n" % GameState.chronicle_branch_title()
+		else:
+			t += "[color=gray]已至最后一章[/color]\n"
 	else:
 		for it in prog.get("items", []):
 			var mark: String = "[color=lime]✓[/color]" if it["done"] else "・"
@@ -179,6 +194,8 @@ func load_scene(scene_id: String) -> void:
 	if current_scene_id != "" and current_scene_id != scene_id:
 		previous_scene_id = current_scene_id
 	current_scene_id = scene_id
+	var force_story := _force_story
+	_force_story = false
 
 	# 设施场景由代码动态生成，不走 scenes.json
 	for suffix in FACILITY_SUFFIXES:
@@ -187,22 +204,21 @@ func load_scene(scene_id: String) -> void:
 			return
 
 	var scene_data = GameManager.get_scene_by_id(scene_id)
+	var pdef := GameManager.get_port_by_id(scene_id)
 	if scene_data.is_empty():
 		# scenes.json 只为少数港口写了剧情场景；其余按 ports.json 生成通用港口界面
-		var pdef := GameManager.get_port_by_id(scene_id)
 		if not pdef.is_empty():
-			GameState.last_port = scene_id
-			_apply_background("port", scene_id)
-			_setup_port_mode({
-				"title": pdef.get("name", scene_id),
-				"facilities": GENERIC_FACILITIES,
-			})
-			_on_enter_port(scene_id)
+			_enter_port_ui(scene_id, pdef.get("name", scene_id), GENERIC_FACILITIES)
 			return
 		_setup_missing_scene(scene_id)
 		return
 
 	var type = scene_data.get("type", "scene")
+	# 场景 id 与港口 id 撞车时，入港走港口界面；节拍把 _force_story 打开才演正文。
+	if not force_story and type != "port" and not pdef.is_empty():
+		_enter_port_ui(scene_id, pdef.get("name", scene_id), GENERIC_FACILITIES)
+		return
+
 	var loc = scene_data.get("location", "")
 	_apply_background(type, loc)
 
@@ -214,6 +230,16 @@ func load_scene(scene_id: String) -> void:
 		_on_enter_port(scene_id)
 	else:
 		_setup_investigation_mode(scene_data)
+
+
+func _enter_port_ui(port_id: String, title: String, facilities: Array) -> void:
+	GameState.last_port = port_id
+	_apply_background("port", port_id)
+	_setup_port_mode({
+		"title": title,
+		"facilities": facilities,
+	})
+	_on_enter_port(port_id)
 
 
 ## 港口 → 背景图
@@ -667,7 +693,7 @@ func _setup_shipyard(port_id: String) -> void:
 	# 赊贷：本钱被查扣清空后仍有翻身的路
 	var loan_lbl := Label.new()
 	loan_lbl.text = "── 蕃商赊贷（月息 %d%%，上限 %d）──" % [
-		int(GameState.DEBT_MONTHLY_RATE * 100), GameState.DEBT_CEILING,
+		int(GameState.DEBT_MONTHLY_RATE * 100), GameState.borrow_ceiling(),
 	]
 	loan_lbl.add_theme_font_size_override("font_size", 13)
 	choices_container.add_child(loan_lbl)
@@ -1294,6 +1320,11 @@ func _on_enter_port(port_id: String) -> void:
 	var res := GameState.try_advance_chapter()
 	if res.get("advanced", false):
 		_show_chapter_dialog(res)
+	_maybe_close_chronicle()
+	var skip_beat := _suppress_beat_once
+	_suppress_beat_once = false
+	if not skip_beat:
+		_offer_port_beat(port_id)
 
 
 func _show_chapter_dialog(res: Dictionary) -> void:
@@ -1340,7 +1371,7 @@ func _cn_chapter(n: int) -> String:
 
 func _on_facility_pressed(fac: Dictionary) -> void:
 	var target_scene = fac.get("id", "")
-	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern"]:
+	if target_scene in ["city_market", "city_yamen", "city_shipyard", "city_tavern", "city_inn"]:
 		target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")
 	if target_scene != "":
 		load_scene(target_scene)
@@ -1395,7 +1426,7 @@ func _on_investigate_pressed(inv_data: Dictionary, btn: Button) -> void:
 
 	var next_sc = inv_data.get("next", "")
 	if next_sc != "":
-		load_scene(next_sc)
+		_follow_story_next(next_sc)
 	else:
 		btn.disabled = true
 
@@ -1415,21 +1446,211 @@ func _on_choice_pressed(choice_data: Dictionary) -> void:
 	apply_effects(choice_data.get("effects", {}))
 	var next_scene = choice_data.get("next", "")
 	if next_scene != "":
-		load_scene(next_scene)
+		_follow_story_next(next_scene)
 
 
-func apply_effects(effects: Dictionary) -> void:
+## 节拍播放时，next 落到港口或 stop_before 就结束这次谈话并回港。
+func _follow_story_next(next_scene: String) -> void:
+	if _beat_should_stop(next_scene):
+		_finish_beat()
+		return
+	load_scene(next_scene)
+
+
+func _beat_should_stop(next_id: String) -> bool:
+	if not _beat_active:
+		return false
+	if next_id == "" or next_id == _beat_port or next_id in _beat_stop:
+		return true
+	if not GameManager.get_port_by_id(next_id).is_empty():
+		return true
+	return false
+
+
+func _finish_beat() -> void:
+	var port := _beat_port
+	_beat_active = false
+	_beat_port = ""
+	_beat_stop = []
+	_suppress_beat_once = true
+	if port == "":
+		port = GameState.last_port
+	load_scene(port)
+
+
+func _pick_port_beat(port_id: String) -> Dictionary:
+	var best: Dictionary = {}
+	var best_order := 999999
+	for b in GameManager.port_beats:
+		if typeof(b) != TYPE_DICTIONARY:
+			continue
+		if str(b.get("port", "")) != port_id:
+			continue
+		var entry := str(b.get("entry", ""))
+		if entry == "" or entry in GameState.seen_scenes:
+			continue
+		var req: Dictionary = b.get("requires", {})
+		if not GameState.beat_requirements_met(req):
+			continue
+		var order := int(b.get("order", 0))
+		if order < best_order:
+			best_order = order
+			best = b
+	return best
+
+
+func _offer_port_beat(port_id: String) -> void:
+	if GameState.has_flag("chronicle_closed"):
+		return
+	var beat := _pick_port_beat(port_id)
+	if beat.is_empty():
+		return
+	var btn := Button.new()
+	btn.text = "有人找你"
+	btn.custom_minimum_size = Vector2(250, 56)
+	btn.pressed.connect(_on_beat_pressed.bind(beat))
+	left_facilities.add_child(btn)
+
+
+func _on_beat_pressed(beat: Dictionary) -> void:
+	_beat_active = true
+	_beat_port = str(beat.get("port", ""))
+	_beat_stop = []
+	for s in beat.get("stop_before", []):
+		_beat_stop.append(str(s))
+	var entry := str(beat.get("entry", ""))
+	GameState.mark_scene_seen(entry)
+	_force_story = true
+	load_scene(entry)
+
+
+func _maybe_close_chronicle() -> void:
+	if GameState.has_flag("chronicle_closed"):
+		return
+	if GameState.chapter != 4:
+		return
+	if not ("champa" in GameState.visited_ports):
+		return
+	if GameState.discoveries_reported.size() < 3:
+		return
+	var ending: Dictionary = GameState.chapter_def(4).get("ending", {})
+	if ending.is_empty():
+		return
+	GameState.set_flag("chronicle_closed")
+	var branch: Dictionary = ending.get(GameState.chronicle_branch(), {})
+	_show_ending_dialog(
+		str(ending.get("title", "占城以后")),
+		str(branch.get("title", "")),
+		str(branch.get("text", "")),
+	)
+
+
+func _show_ending_dialog(title: String, head_text: String, body_text_str: String) -> void:
+	var dlg := AcceptDialog.new()
+	dlg.title = title
+	dlg.ok_button_text = "继续走"
+
+	var m := MarginContainer.new()
+	m.add_theme_constant_override("margin_left", 18)
+	m.add_theme_constant_override("margin_right", 18)
+	m.add_theme_constant_override("margin_top", 12)
+	m.add_theme_constant_override("margin_bottom", 12)
+
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	m.add_child(v)
+
+	var head := Label.new()
+	head.text = head_text
+	head.add_theme_font_size_override("font_size", 26)
+	v.add_child(head)
+
+	var body := RichTextLabel.new()
+	body.bbcode_enabled = false
+	body.fit_content = true
+	body.custom_minimum_size = Vector2(520, 220)
+	body.text = body_text_str
+	v.add_child(body)
+
+	dlg.add_child(m)
+	add_child(dlg)
+	dlg.popup_centered()
+	dlg.confirmed.connect(func(): load_scene(current_scene_id))
+	update_status_panel()
+
+
+func _discovery_id_for(token: String) -> String:
+	var want := token.strip_edges()
+	for d in GameManager.discoveries_data.get("discoveries", []):
+		if str(d.get("name", "")) == want or str(d.get("id", "")) == want:
+			return str(d.get("id", ""))
+	return ""
+
+
+## 白名单见 docs/P7-剧情闭环-任务书.md 第 4 节。未知键返回并 push_warning，不再静默丢弃。
+func apply_effects(effects: Dictionary) -> Array:
+	var unknown: Array = []
 	for key in effects.keys():
 		var val = effects[key]
 		match key:
 			"money":
-				GameState.add_money(val)
+				GameState.add_money(int(val))
 			"fame":
-				GameState.fame += val
+				GameState.fame = maxi(0, GameState.fame + int(val))
 			"days":
-				GameManager.advance_days(val)
+				GameManager.advance_days(int(val))
 			"flag":
 				GameState.set_flag(str(val))
-			"chapter":
-				GameState.chapter = maxi(GameState.chapter, int(val))
+			"sea_tendency":
+				GameState.sea_tendency += int(val)
+			"scholar_tendency":
+				GameState.scholar_tendency += int(val)
+			"merchant_credit":
+				GameState.merchant_credit += int(val)
+			"network":
+				GameState.network += int(val)
+			"ledger_note":
+				GameState.add_ledger_note(str(val))
+			"supplies":
+				var want := int(val)
+				var got := Fleet.add_supply_pair(want)
+				if want > 0 and got < want:
+					push_warning("补给装不下 %d 份，实装 %d @ %s" % [want, got, current_scene_id])
+			"cargo":
+				var ids: Array = val if val is Array else [val]
+				for gid in ids:
+					var good := GameManager.get_good_by_id(str(gid))
+					if good.is_empty():
+						push_warning("未知货物 %s @ %s" % [gid, current_scene_id])
+						continue
+					if not Fleet.add_cargo(str(gid), 1, 0.0):
+						push_warning("舱位不足，未装入 %s @ %s" % [gid, current_scene_id])
+			"ship":
+				Fleet.adjust_flagship_durability(int(val))
+			"cargo_loss":
+				_apply_cargo_loss(str(val))
+			"discovery":
+				var did := _discovery_id_for(str(val))
+				if did == "":
+					push_warning("未知发现 %s @ %s" % [val, current_scene_id])
+				else:
+					GameState.record_discovery(did)
+			_:
+				unknown.append(str(key))
+				push_warning("未识别的剧情效果 %s @ %s" % [key, current_scene_id])
 	update_status_panel()
+	return unknown
+
+
+func _apply_cargo_loss(token: String) -> void:
+	if token == "qingbai_porcelain_partial_loss":
+		var q := Fleet.cargo_qty("qingbai_porcelain")
+		if q > 0:
+			var loss := mini(q, maxi(1, int(round(float(q) * 0.3))))
+			Fleet.remove_cargo("qingbai_porcelain", loss)
+	elif token == "tangfang_parcel_water_stain":
+		if Fleet.cargo_qty("tangfang_parcel") > 0:
+			Fleet.remove_cargo("tangfang_parcel", 1)
+			GameState.add_ledger_note("parcel_stained")
+	else:
+		GameState.add_ledger_note(token)

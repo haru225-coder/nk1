@@ -34,6 +34,15 @@ var visited_ports: Array = []
 ## 资金历史峰值。用峰值而非当前值判定晋升，否则买条船就把进度买没了。
 var peak_money: int = 1000
 
+## 剧情账。倾向只进状态栏和终局，不锁港口。信用为 0 时赊贷与旧档相同。
+var sea_tendency: int = 0
+var scholar_tendency: int = 0
+var merchant_credit: int = 0
+var network: int = 0
+var ledger_notes: Array = []
+## 港口节拍入口场。进入 entry 时写入，看过不再出现。
+var seen_scenes: Array = []
+
 
 # ── 钱 ────────────────────────────────────────────────
 
@@ -45,8 +54,13 @@ func add_money(amount: int) -> void:
 
 # ── 赊贷 ──────────────────────────────────────────────
 
+## 信用只在消费处钳制。存储的 merchant_credit 可以超出 ±20/40。
+func borrow_ceiling() -> int:
+	return DEBT_CEILING + clampi(merchant_credit, -20, 40) * 50
+
+
 func borrow_limit() -> int:
-	return maxi(0, DEBT_CEILING - debt)
+	return maxi(0, borrow_ceiling() - debt)
 
 
 func borrow(amount: int) -> bool:
@@ -199,6 +213,51 @@ func has_flag(flag_name: String) -> bool:
 	return flags.get(flag_name, false) == true
 
 
+func mark_scene_seen(scene_id: String) -> void:
+	if scene_id != "" and not (scene_id in seen_scenes):
+		seen_scenes.append(scene_id)
+
+
+func add_ledger_note(note: String) -> void:
+	if note != "" and not (note in ledger_notes):
+		ledger_notes.append(note)
+
+
+## 终局分流。两侧都不够 +4，或都是 0，走 both。
+func chronicle_branch() -> String:
+	if sea_tendency >= scholar_tendency + 4:
+		return "sea"
+	if scholar_tendency >= sea_tendency + 4:
+		return "scholar"
+	return "both"
+
+
+func chronicle_branch_title() -> String:
+	var ending: Dictionary = chapter_def(4).get("ending", {})
+	var block: Dictionary = ending.get(chronicle_branch(), {})
+	var title := str(block.get("title", ""))
+	return title if title != "" else "已至最后一章"
+
+
+## port_beats.json 的 requires。只认任务书列出的键。
+func beat_requirements_met(req: Dictionary) -> bool:
+	if req.has("chapter_at_least") and chapter < int(req["chapter_at_least"]):
+		return false
+	for pid in req.get("visited", []):
+		if not (str(pid) in visited_ports):
+			return false
+	for fl in req.get("has_flag", []):
+		if not has_flag(str(fl)):
+			return false
+	for fl in req.get("missing_flag", []):
+		if has_flag(str(fl)):
+			return false
+	for sid in req.get("seen", []):
+		if not (str(sid) in seen_scenes):
+			return false
+	return true
+
+
 # ── 市舶司 ────────────────────────────────────────────
 
 ## 舱内违禁货（宋钱、铁器等）总量
@@ -312,6 +371,12 @@ func to_dict() -> Dictionary:
 		"discoveries_reported": discoveries_reported,
 		"visited_ports": visited_ports,
 		"peak_money": peak_money,
+		"sea_tendency": sea_tendency,
+		"scholar_tendency": scholar_tendency,
+		"merchant_credit": merchant_credit,
+		"network": network,
+		"ledger_notes": ledger_notes,
+		"seen_scenes": seen_scenes,
 	}
 
 
@@ -329,3 +394,9 @@ func from_dict(d: Dictionary) -> void:
 	discoveries_reported = d.get("discoveries_reported", [])
 	visited_ports = d.get("visited_ports", [])
 	peak_money = d.get("peak_money", money)
+	sea_tendency = int(d.get("sea_tendency", 0))
+	scholar_tendency = int(d.get("scholar_tendency", 0))
+	merchant_credit = int(d.get("merchant_credit", 0))
+	network = int(d.get("network", 0))
+	ledger_notes = d.get("ledger_notes", [])
+	seen_scenes = d.get("seen_scenes", [])

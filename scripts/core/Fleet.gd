@@ -97,6 +97,33 @@ func flagship() -> Dictionary:
 	return ships[0] if not ships.is_empty() else {}
 
 
+## 剧情效果 ship：加减旗舰耐久，钳在 0..max。无船则忽略。
+func adjust_flagship_durability(delta: int) -> void:
+	var fs := flagship()
+	if fs.is_empty():
+		return
+	var mx := float(fs.get("max_durability", 0.0))
+	var cur := float(fs.get("durability", 0.0)) + float(delta)
+	fs["durability"] = clampf(cur, 0.0, mx)
+
+
+## 剧情效果 supplies：水与粮各加 delta。正增量受剩余舱位限制，装不下的部分丢弃。
+## 返回实际加上的份数（负 delta 时返回请求值，两侧已与 0 取大）。
+func add_supply_pair(delta: int) -> int:
+	if delta == 0:
+		return 0
+	if delta < 0:
+		water = maxi(0, water + delta)
+		food = maxi(0, food + delta)
+		return delta
+	var pair_bulk := SUPPLY_BULK * 2.0
+	var fit := int(floor(free_capacity() / pair_bulk))
+	var actual := mini(delta, maxi(0, fit))
+	water += actual
+	food += actual
+	return actual
+
+
 # ── 载重 ──────────────────────────────────────────────
 
 func total_capacity() -> float:

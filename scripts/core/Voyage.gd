@@ -124,8 +124,9 @@ func roll_day_event(course_bearing: float, from_id: String = "", to_id: String =
 	var r := randf()
 	var monsoon_strength := Calendar.get_monsoon_strength()
 
-	# 季风盛期暴风概率更高
+	# 季风盛期暴风概率更高。人脉不加这一段。
 	var storm_chance := 0.06 + 0.06 * monsoon_strength
+	var discovery_extra := _discovery_extra()
 
 	if r < storm_chance:
 		return _storm_event()
@@ -137,9 +138,14 @@ func roll_day_event(course_bearing: float, from_id: String = "", to_id: String =
 		return _current_event()
 	elif r < storm_chance + 0.21:
 		return _merchant_event()
-	elif r < storm_chance + 0.24:
+	elif r < storm_chance + 0.24 + discovery_extra:
 		return _discovery_event(from_id, to_id)
 	return {"kind": EventKind.NONE}
+
+
+## 人脉只加宽岸影，从「无事」的尾巴里扣。负人脉不削减基础 0.03。
+func _discovery_extra() -> float:
+	return clampf(float(GameState.network), 0.0, 30.0) / 30.0 * 0.03
 
 
 func _storm_event() -> Dictionary:

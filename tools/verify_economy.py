@@ -152,6 +152,19 @@ ship_ch = {ch_num(s.get("unlock", "ch1")) for s in ships.values()}
 check(ship_ch <= set(range(1, max_ch + 1)),
       f"ships.json 引用的章节号 {sorted(ship_ch)} 均在定义范围内")
 
+finals = [c for c in chapters if not c.get("next_requires")]
+check(len(finals) == 1, "恰好有一个最终章（next_requires 为空）")
+if len(finals) == 1:
+    ending = finals[0].get("ending") or {}
+    for key in ("sea", "scholar", "both"):
+        block = ending.get(key) if isinstance(ending, dict) else None
+        text = block.get("text", "") if isinstance(block, dict) else ""
+        check(isinstance(text, str) and text.strip() != "",
+              f"最终章 ending.{key}.text 非空")
+    champa_ch = ch_num(ports.get("champa", {}).get("unlock", "ch1"))
+    check(champa_ch <= int(finals[0]["id"]),
+          f"占城解锁于第 {champa_ch} 章，不高于最终章 {finals[0]['id']}")
+
 print()
 print("=" * 68)
 print("一之三、船上职事的加成边界（防数值失控）")

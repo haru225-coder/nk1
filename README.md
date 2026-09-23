@@ -32,6 +32,7 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 python3 tools/check_symbols.py    # autoload 顺序与跨文件符号（GDScript 动态语言的必要保险）
 python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 / 死港 / 海战数值边界
 python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢出
+python3 tools/verify_narrative.py # 剧情效果白名单、开局截断、港口节拍、终局文案
 ```
 
 三套全绿才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
@@ -52,7 +53,7 @@ assets/     美术资源
 - ✅ P0 地基 / P1 经济内核 / P3 航海层 / P5 职事与发现录 / P6 章节推进
 - ✅ P2 舰队深化（海图、分船装载、分船船员、船体改装）
 - ✅ P4 海战（炮击接入、接舷白刃夺船、弹数挂炮位 + 伤害乘甲）
-- ⏳ P7 剧情闭环：任务书已颁布、未开工（`docs/P7-剧情闭环-任务书.md`）。剧情旗标只写不读，第四章尚无终局
+- ✅ P7 剧情闭环：开局截断、效果白名单、九条港口节拍、第四章终局（`docs/P7-剧情闭环-任务书.md`）
 - ⏳ 真机手感待点验：本机长期无 Godot，代码经静态校验但未在引擎内实机运行过
 
 ## 许可
