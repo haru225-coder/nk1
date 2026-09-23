@@ -912,6 +912,12 @@ def rumb_days(src, dst, wind_b=-1.0, strength=0.3, morale=70, ship_id="sampan"):
         return 999
     return math.ceil(d / spd)
 
+def known_route(a, b):
+    """连线无向。与 Voyage.is_known_route 一致。"""
+    if a not in ports or b not in ports:
+        return False
+    return b in ports[a].get("connections", []) or a in ports[b].get("connections", [])
+
 def contract_offer(port_id, year=1255, month=3, chapter=1):
     """开局三月、转换期、小艍、士气 70、行情 1.0。复刻 GameState.contract_offer 的选型。"""
     def destinations(gid):
@@ -946,7 +952,7 @@ def contract_offer(port_id, year=1255, month=3, chapter=1):
     dests = destinations(gid)
     if not dests:
         return {}
-    known = [pid for pid in dests if pid in ports[port_id].get("connections", [])]
+    known = [pid for pid in dests if known_route(port_id, pid)]
     pool = known or dests
     dest = pool[(seed // 7) % len(pool)]
     qty = contract_qty(gid)
@@ -973,7 +979,7 @@ if offer:
     check(ch_of(ports[dest].get("unlock", "ch1")) <= 1, "开局委办的交货地第一章就到得了")
     known_dests = [pid for pid, p in ports.items()
                    if p.get("market", {}).get(gid) == "consumer" and p.get("depth", 0) > 0
-                   and ch_of(p.get("unlock", "ch1")) <= 1 and pid in ports["quanzhou"].get("connections", [])]
+                   and ch_of(p.get("unlock", "ch1")) <= 1 and known_route("quanzhou", pid)]
     if known_dests:
         check(dest in known_dests, "有熟路消费地时，委办不把货派去生路")
     check(CONTRACT_QTY_MIN <= qty <= CONTRACT_QTY_MAX, f"委办件数 {qty} 在 {CONTRACT_QTY_MIN}–{CONTRACT_QTY_MAX}")
@@ -1013,6 +1019,23 @@ check("apply_sell_impact" not in deliver_body and "remove_cargo" in deliver_body
       "交货卸货给钱，不调用砸盘")
 check("func tick_contract" in gs_src and "advance_days" in open(os.path.join(ROOT, "scripts/GameManager.gd"), encoding="utf-8").read(),
       "逾期在日推进里结算")
+check(known_route("zhangzhou", "guangzhou") and known_route("quanzhou", "guangzhou")
+      and known_route("ryukyu", "kagoshima"),
+      "图上只有去程的三条航路，返程也算熟路")
+check(not known_route("quanzhou", "hakata"), "没有连线的泉州–博多仍是生路")
+voyage_src = open(os.path.join(ROOT, V_GD), encoding="utf-8").read()
+known_body = voyage_src.split("func is_known_route", 1)[1].split("\nfunc ", 1)[0]
+check(known_body.count("port_def") >= 2, "熟路判定读了两端的连线，不是只看出发港")
+offer_body = gs_src.split("func contract_offer", 1)[1].split("\nfunc ", 1)[0]
+fail_body = gs_src.split("func _fail_contract", 1)[1].split("\nfunc ", 1)[0]
+accept_body = gs_src.split("func accept_contract", 1)[1].split("\nfunc ", 1)[0]
+check("contract_port_closed" in offer_body, "毁约当月，签发港不再开出同一笔委办")
+check("contract_ban" in fail_body and "offer_month" in fail_body, "逾期和毁约都会记下签发年月")
+check("contract_offer" in accept_body and "offer_month" in accept_body,
+      "接下时按现单重算酬金和期限，不吃按钮上的旧数字")
+sea_src = open(os.path.join(ROOT, "scripts/SeaChart.gd"), encoding="utf-8").read()
+back_body = sea_src.split("func _on_back_to_port", 1)[1].split("\nfunc ", 1)[0]
+check("voyage_started" in back_body, "发舶之后不能点回港躲开海难")
 
 print()
 print("=" * 68)

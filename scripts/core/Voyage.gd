@@ -179,10 +179,12 @@ func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dict
 	}
 
 
-## 两港是否有已知航路（不相连也可直航，但有迷航风险）
+## 两港是否有已知航路。连线是无向的：图上只要有一条线，往返都是熟路。
+## 不相连也可直航，但算生路，会迷航。
 func is_known_route(from_id: String, to_id: String) -> bool:
-	var conns: Array = port_def(from_id).get("connections", [])
-	return to_id in conns
+	if to_id in port_def(from_id).get("connections", []):
+		return true
+	return from_id in port_def(to_id).get("connections", [])
 
 
 # ── 逐日事件 ──────────────────────────────────────────

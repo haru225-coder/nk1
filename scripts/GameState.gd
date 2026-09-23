@@ -352,8 +352,10 @@ const CONTRACT_FINE_RATE := 0.15
 const CONTRACT_FINE_MIN := 40
 const CONTRACT_BASE_MIN := 15
 
-## 空，或 {good_id, qty, remaining, dest, from, purse, unit_purse, due_day, deadline_days, voyage_days}
+## 空，或 {good_id, qty, remaining, dest, from, purse, unit_purse, due_day, deadline_days, voyage_days, offer_month}
 var contract: Dictionary = {}
+## 签发港 -> 被拒的年月序号（year * 12 + month）。只挡住签发当月再接，下个月的新单照开。
+var contract_ban: Dictionary = {}
 
 
 func _stable_hash(s: String) -> int:
@@ -383,9 +385,16 @@ func _contract_destinations(port_id: String, good_id: String) -> Array:
 	return dests
 
 
+## 签发当月已毁约或逾期，则本月此港不再开单。
+func contract_port_closed(port_id: String) -> bool:
+	return int(contract_ban.get(port_id, -1)) == Calendar.year * 12 + Calendar.month
+
+
 ## 本月此港的委办。同一月内货物与目的地不变；酬金按当下行情现算，接下才冻结。
 func contract_offer(port_id: String) -> Dictionary:
 	if not contract.is_empty():
+		return {}
+	if contract_port_closed(port_id):
 		return {}
 	var goods_ids: Array = []
 	for gid in Economy.goods_at(port_id):
@@ -444,24 +453,35 @@ func contract_offer(port_id: String) -> Dictionary:
 func accept_contract(offer: Dictionary) -> bool:
 	if offer.is_empty() or not contract.is_empty():
 		return false
-	var qty := int(offer.get("qty", 0))
-	var purse := int(offer.get("purse", 0))
-	var dest := str(offer.get("dest", ""))
-	var gid := str(offer.get("good_id", ""))
+	# 以按下时的现单为准。按钮上的旧酬金、旧期限不能买到一笔新的延期。
+	var port := str(offer.get("from", ""))
+	var live := contract_offer(port)
+	if live.is_empty():
+		return false
+	if str(live.get("good_id", "")) != str(offer.get("good_id", "")):
+		return false
+	if str(live.get("dest", "")) != str(offer.get("dest", "")):
+		return false
+	var qty := int(live.get("qty", 0))
+	var purse := int(live.get("purse", 0))
+	var dest := str(live.get("dest", ""))
+	var gid := str(live.get("good_id", ""))
 	if qty <= 0 or purse <= 0 or dest == "" or gid == "":
 		return false
+	var deadline := int(live.get("deadline_days", 0))
 	contract = {
 		"good_id": gid,
 		"qty": qty,
 		"remaining": qty,
 		"dest": dest,
-		"from": str(offer.get("from", "")),
+		"from": port,
 		"purse": purse,
 		"unit_purse": float(purse) / float(qty),
 		"paid": 0,
-		"due_day": int(offer.get("due_day", 0)),
-		"deadline_days": int(offer.get("deadline_days", 0)),
-		"voyage_days": int(offer.get("voyage_days", 0)),
+		"due_day": Calendar.absolute_day() + deadline,
+		"deadline_days": deadline,
+		"voyage_days": int(live.get("voyage_days", 0)),
+		"offer_month": Calendar.year * 12 + Calendar.month,
 	}
 	return true
 
@@ -546,7 +566,11 @@ func _fail_contract(reason: String) -> String:
 	fame = maxi(0, fame - 1)
 	var good_name := GameManager.get_good_name(str(contract.get("good_id", "")))
 	var dest_name := GameManager.get_port_name(str(contract.get("dest", "")))
+	var issued := str(contract.get("from", ""))
+	var offer_month := int(contract.get("offer_month", Calendar.year * 12 + Calendar.month))
 	contract = {}
+	if issued != "":
+		contract_ban[issued] = offer_month
 	if reason == "毁约":
 		return "【毁约】%s的委办作废。牙行扣 %d 钱，名声 -1。" % [good_name, fine]
 	return "【逾期】%s没能送到%s。牙行扣 %d 钱，名声 -1。" % [good_name, dest_name, fine]
@@ -570,6 +594,7 @@ func to_dict() -> Dictionary:
 		"visited_ports": visited_ports,
 		"peak_money": peak_money,
 		"contract": contract,
+		"contract_ban": contract_ban,
 		"rumors": rumors,
 	}
 
@@ -591,6 +616,9 @@ func from_dict(d: Dictionary) -> void:
 	rumors = d.get("rumors", {})
 	if typeof(rumors) != TYPE_DICTIONARY:
 		rumors = {}
+	contract_ban = d.get("contract_ban", {})
+	if typeof(contract_ban) != TYPE_DICTIONARY:
+		contract_ban = {}
 	var saved = d.get("contract", {})
 	if typeof(saved) == TYPE_DICTIONARY and str(saved.get("good_id", "")) != "" and int(saved.get("remaining", 0)) > 0:
 		contract = saved

@@ -22,7 +22,10 @@ var port_list: VBoxContainer
 var detail_box: VBoxContainer
 var log_label: RichTextLabel
 var sail_button: Button
+var back_button: Button
 var order_row: HBoxContainer
+## 一旦发舶，回港按钮就关掉。事件浮层盖不住整屏，否则可以点回港躲开海盗。
+var voyage_started: bool = false
 var event_panel: PanelContainer
 var event_title: Label
 var event_text: RichTextLabel
@@ -130,10 +133,10 @@ func _build_ui() -> void:
 	sail_button.pressed.connect(_on_sail_pressed)
 	center_v.add_child(sail_button)
 
-	var back := Button.new()
-	back.text = "回港（不出海）"
-	back.pressed.connect(_return_to_port)
-	center_v.add_child(back)
+	back_button = Button.new()
+	back_button.text = "回港（不出海）"
+	back_button.pressed.connect(_on_back_to_port)
+	center_v.add_child(back_button)
 
 	# ── 右：航海日志 ──
 	var right := PanelContainer.new()
@@ -315,7 +318,7 @@ func _refresh_ports() -> void:
 		var pid: String = p.get("id", "")
 		if pid == origin_port:
 			continue
-		# 兴化与海口是陆路可达的剧情点，不列入海图
+		# 没有泊位的地点不进海图。兴化、海口的 depth 大于 0，仍是可以靠的港。
 		if p.get("depth", 0) <= 0:
 			continue
 
@@ -550,6 +553,9 @@ func _on_sail_pressed() -> void:
 	Fleet.at_sea = true
 
 	sail_button.disabled = true
+	voyage_started = true
+	if back_button:
+		back_button.disabled = true
 	_sync_order_buttons()
 	for c in port_list.get_children():
 		c.disabled = true
@@ -883,6 +889,12 @@ func _sink(preface: String = "") -> void:
 		_return_to_port()
 	)
 	event_panel.visible = true
+
+
+func _on_back_to_port() -> void:
+	if voyage_started:
+		return
+	_return_to_port()
 
 
 func _return_to_port() -> void:

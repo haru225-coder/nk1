@@ -442,7 +442,10 @@ func _add_contract_panel(port_id: String) -> void:
 		var offer := GameState.contract_offer(port_id)
 		var head := Label.new()
 		head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		if offer.is_empty():
+		if GameState.contract_port_closed(port_id):
+			head.text = "这个月已经毁约或误期，牙行不再委办。下个月再来。"
+			box.add_child(head)
+		elif offer.is_empty():
 			head.text = "本月牙行没有外埠委办。"
 			box.add_child(head)
 		else:
@@ -474,15 +477,18 @@ func _add_contract_panel(port_id: String) -> void:
 
 func _on_accept_contract(offer: Dictionary) -> void:
 	if GameState.accept_contract(offer):
+		var cst := GameState.contract_status()
 		log_msg("接下委办：%s ×%d，%d 日内送到%s。酬 %d 钱，误期要赔。" % [
-			GameManager.get_good_name(str(offer.get("good_id", ""))),
-			int(offer.get("qty", 0)),
-			int(offer.get("deadline_days", 0)),
-			GameManager.get_port_name(str(offer.get("dest", ""))),
-			int(offer.get("purse", 0)),
+			GameManager.get_good_name(str(cst.get("good_id", ""))),
+			int(cst.get("qty", 0)),
+			int(GameState.contract.get("deadline_days", 0)),
+			GameManager.get_port_name(str(cst.get("dest", ""))),
+			int(GameState.contract.get("purse", 0)),
 		])
-	else:
+	elif not GameState.contract_status().is_empty():
 		log_msg("牙行摇头：你身上已经有一笔没了结的。")
+	else:
+		log_msg("牙行把单子收了回去。这月的委办对不上。")
 	load_scene(current_scene_id)
 
 
