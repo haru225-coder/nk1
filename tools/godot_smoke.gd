@@ -152,6 +152,14 @@ func _run() -> void:
 	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
 	_check(main_src.find("ChapterSheet") >= 0 and main_src.find("AcceptDialog.new()") < 0,
 		"升章了结走居中册页，主场景不再弹系统对话框", fails)
+	var saveload_src := FileAccess.get_file_as_string("res://scripts/core/SaveLoad.gd")
+	_check(saveload_src.find("未记") >= 0 and saveload_src.find("卷页损了") >= 0
+		and saveload_src.find("未题") >= 0
+		and saveload_src.find("（空）") < 0 and saveload_src.find("（损坏）") < 0
+		and saveload_src.find("（无标签）") < 0
+		and main_src.find("存档 / 读档") < 0 and saveload_src.find("%d 钱") >= 0,
+		"航海日志空卷写成未记", fails)
+	_check(str(root.get_node("SaveLoad").call("save_label", 9)) == "未记", "空卷读出来是未记", fails)
 	_check(main_src.find("OptionButton.new()") < 0 and main_src.find("_select_market_ship") >= 0,
 		"牙行选船走账条小钮，不再用系统下拉", fails)
 	_check(main_src.find("买%d") < 0 and main_src.find("卖%d") < 0

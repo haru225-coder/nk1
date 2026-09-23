@@ -908,6 +908,23 @@ if "SaveSheet" in save_body and "UiTheme.panel()" in save_body and "AcceptDialog
 else:
     print("  ✗ 存档弹窗未套绢本主题")
     problems.append("存档弹窗未套绢本主题")
+saveload_src = ""
+with open(os.path.join(SCRIPTS, "core", "SaveLoad.gd"), encoding="utf-8") as f:
+    saveload_src = f.read()
+if (
+    "未记" in saveload_src
+    and "卷页损了" in saveload_src
+    and "未题" in saveload_src
+    and "（空）" not in saveload_src
+    and "（损坏）" not in saveload_src
+    and "（无标签）" not in saveload_src
+    and "存档 / 读档" not in main_src
+    and "%d 钱" in saveload_src
+):
+    print("  ✓ 航海日志空卷写成未记")
+else:
+    print("  ✗ 航海日志仍写空卷括号")
+    problems.append("航海日志仍写空卷括号")
 chapter_body = _func_body(main_src, "_show_chapter_dialog")
 if "ChapterSheet" in chapter_body and "UiTheme.panel()" in chapter_body and "AcceptDialog" not in chapter_body:
     print("  ✓ 升章/了结是居中绢本册页")

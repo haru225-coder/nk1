@@ -1880,7 +1880,7 @@ func _on_set_sail() -> void:
 
 func _add_save_button() -> void:
 	var btn = Button.new()
-	btn.text = "存档 / 读档"
+	btn.text = "航海日志"
 	btn.custom_minimum_size = Vector2(0, 34)
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.pressed.connect(_show_save_dialog)
