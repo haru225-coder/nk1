@@ -944,6 +944,11 @@ if (
 else:
     print("  ✗ 市舶司关注仍套括号")
     problems.append("市舶司关注仍套括号")
+if "（缺 %d 人）" not in main_src and "缺 %d 人" in main_src and "（%d/%d）" not in main_src and "水手 %d/%d" in main_src:
+    print("  ✓ 缺员写成水手现有与所缺")
+else:
+    print("  ✗ 缺员仍用括号")
+    problems.append("缺员仍用括号")
 if "★" not in main_src and "func _skill_rank" in main_src and "Crew.rank_word" in main_src and "func rank_word" in crew_src:
     print("  ✓ 职事品级写成初习/谙熟/老练")
 else:

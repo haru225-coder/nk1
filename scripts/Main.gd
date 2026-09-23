@@ -373,7 +373,7 @@ func update_status_panel() -> void:
 			var crew_color := UiTheme.hex(UiTheme.TEXT)
 			if Fleet.ship_crew(i) < Fleet.ship_crew_min(i):
 				crew_color = UiTheme.hex(UiTheme.CINNABAR)
-				crew_str += "（缺 %d 人）" % (Fleet.ship_crew_min(i) - Fleet.ship_crew(i))
+				crew_str += "　缺 %d 人" % (Fleet.ship_crew_min(i) - Fleet.ship_crew(i))
 			t += "　%s　%s　%d/%d 料　帆%s　甲%s　[color=#%s]%s[/color]　%s\n" % [
 				s.get("name", ""), Fleet.ship_def(s.get("type", "")).get("name", ""),
 				int(Fleet.ship_cargo_bulk(i)), int(Fleet.ship_capacity(i)),
@@ -1860,8 +1860,8 @@ func _on_set_sail() -> void:
 		else:
 			var parts := PackedStringArray()
 			for b in bad:
-				parts.append("%s（%d/%d）" % [b["name"], b["crew"], b["crew_min"]])
-			log_msg("【无法出海】下列船水手不足：%s。先去船屋雇人。" % "、".join(parts))
+				parts.append("%s　水手 %d/%d" % [b["name"], b["crew"], b["crew_min"]])
+			log_msg("【无法出海】水手不足：%s。先去船屋雇人。" % "、".join(parts))
 		update_status_panel()
 		return
 	if Fleet.supply_days() < 2:
