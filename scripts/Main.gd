@@ -2027,6 +2027,7 @@ func _on_enter_port(port_id: String) -> void:
 	var res := GameState.try_advance_chapter()
 	if res.get("advanced", false) or res.get("resolved", false):
 		_show_chapter_dialog(res)
+	update_status_panel()
 
 
 func _show_chapter_dialog(res: Dictionary) -> void:

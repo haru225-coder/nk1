@@ -340,6 +340,15 @@ func _run() -> void:
 		"章目写成已行多少，亲至港名用空格隔开，门槛仍是五千与五港",
 		fails,
 	)
+	var enter_i2 := main_src.find("func _on_enter_port")
+	var enter_j2 := main_src.find("\nfunc ", enter_i2 + 1)
+	var enter_body2 := main_src.substr(enter_i2, enter_j2 - enter_i2) if enter_i2 >= 0 and enter_j2 > enter_i2 else ""
+	_check(
+		enter_body2.find("visit_port") >= 0
+			and enter_body2.find("update_status_panel") > enter_body2.find("visit_port"),
+		"进港后船籍簿按已走通的港重写",
+		fails,
+	)
 	note_node.free()
 	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
 	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)

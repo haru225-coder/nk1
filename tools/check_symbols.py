@@ -1069,6 +1069,14 @@ if (
 else:
     print("  ✗ 章目、修埠或拓碑仍是半角或冒号")
     problems.append("章目、修埠或拓碑仍是半角或冒号")
+enter_i = main_src.find("func _on_enter_port")
+enter_j = main_src.find("\nfunc ", enter_i + 1)
+enter_body = main_src[enter_i:enter_j] if enter_i >= 0 and enter_j > enter_i else ""
+if "visit_port" in enter_body and enter_body.find("update_status_panel") > enter_body.find("visit_port"):
+    print("  ✓ 进港后船籍簿按已走通的港重写")
+else:
+    print("  ✗ 进港后船籍簿未按已走通的港重写")
+    problems.append("进港后船籍簿未重写")
 if '" x"' not in wm_src:
     print("  ✓ 海战货舱用乘号")
 else:
