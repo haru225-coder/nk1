@@ -369,12 +369,12 @@ func update_status_panel() -> void:
 			else:
 				for gid in sc.keys():
 					per_ship += "%s ×%d　" % [GameManager.get_good_name(gid), sc[gid].get("qty", 0)]
-			var crew_str := "水手 %d/%d" % [Fleet.ship_crew(i), Fleet.ship_crew_max(i)]
+			var crew_str := "水手 %d / %d" % [Fleet.ship_crew(i), Fleet.ship_crew_max(i)]
 			var crew_color := UiTheme.hex(UiTheme.TEXT)
 			if Fleet.ship_crew(i) < Fleet.ship_crew_min(i):
 				crew_color = UiTheme.hex(UiTheme.CINNABAR)
 				crew_str += "　缺 %d 人" % (Fleet.ship_crew_min(i) - Fleet.ship_crew(i))
-			t += "　%s　%s　%d/%d 料　帆%s　甲%s　[color=#%s]%s[/color]　%s\n" % [
+			t += "　%s　%s　%d / %d 料　帆%s　甲%s　[color=#%s]%s[/color]　%s\n" % [
 				s.get("name", ""), Fleet.ship_def(s.get("type", "")).get("name", ""),
 				int(Fleet.ship_cargo_bulk(i)), int(Fleet.ship_capacity(i)),
 				_fit_rank(Fleet.sail_level(i)), _fit_rank(Fleet.armor_level(i)),
@@ -1899,8 +1899,8 @@ func _on_set_sail() -> void:
 		else:
 			var parts := PackedStringArray()
 			for b in bad:
-				parts.append("%s　水手 %d/%d" % [b["name"], b["crew"], b["crew_min"]])
-			log_msg("【无法出海】水手不足：%s。先去船屋雇人。" % "、".join(parts))
+				parts.append("%s　水手 %d / %d" % [b["name"], b["crew"], b["crew_min"]])
+			log_msg("【无法出海】水手不足　%s。先去船屋雇人。" % "、".join(parts))
 		update_status_panel()
 		return
 	if Fleet.supply_days() < 2:

@@ -961,11 +961,21 @@ if (
 else:
     print("  ✗ 市舶司关注仍套括号")
     problems.append("市舶司关注仍套括号")
-if "（缺 %d 人）" not in main_src and "缺 %d 人" in main_src and "（%d/%d）" not in main_src and "水手 %d/%d" in main_src:
-    print("  ✓ 缺员写成水手现有与所缺")
+if (
+    "（缺 %d 人）" not in main_src
+    and "缺 %d 人" in main_src
+    and "（%d/%d）" not in main_src
+    and "水手 %d / %d" in main_src
+    and "水手 %d/%d" not in main_src
+    and "%d / %d 料" in main_src
+    and "%d/%d 料" not in main_src
+    and "水手不足　%s" in main_src
+    and "水手不足：" not in main_src
+):
+    print("  ✓ 缺员与分船账条写成已有 / 所需，出海拦阻去掉冒号")
 else:
-    print("  ✗ 缺员仍用括号")
-    problems.append("缺员仍用括号")
+    print("  ✗ 缺员或分船账条仍是紧挨斜杠或冒号")
+    problems.append("缺员或分船账条仍是紧挨斜杠或冒号")
 cal_src = ""
 with open(os.path.join(SCRIPTS, "core", "Calendar.gd"), encoding="utf-8") as f:
     cal_src = f.read()
@@ -1063,7 +1073,7 @@ if (
     and "拓「%s」：" not in main_src
     and "亲至　" in gs_chapter_src
     and "亲至 " not in gs_chapter_src
-    and "水手 %d/%d" in main_src
+    and "水手 %d / %d" in main_src
 ):
     print("  ✓ 章目写成已行多少，修埠与拓碑去掉冒号")
 else:

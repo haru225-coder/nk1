@@ -175,8 +175,10 @@ func _run() -> void:
 		and main_src.find("（蒲氏起了疑心）") < 0 and main_src.find("（暗桩已盯死，出港必查）") < 0,
 		"市舶司关注四档去掉括号", fails)
 	_check(main_src.find("（缺 %d 人）") < 0 and main_src.find("缺 %d 人") >= 0
-		and main_src.find("（%d/%d）") < 0 and main_src.find("水手 %d/%d") >= 0,
-		"缺员写成水手现有与所缺", fails)
+		and main_src.find("（%d/%d）") < 0 and main_src.find("水手 %d / %d") >= 0
+		and main_src.find("水手 %d/%d") < 0 and main_src.find("%d/%d 料") < 0
+		and main_src.find("水手不足　%s") >= 0 and main_src.find("水手不足：") < 0,
+		"缺员与分船账条写成已有 / 所需，出海拦阻去掉冒号", fails)
 	var cal_src := FileAccess.get_file_as_string("res://scripts/core/Calendar.gd")
 	_check(cal_src.find("东北季风　利南下") >= 0 and cal_src.find("西南季风　利北上") >= 0
 		and cal_src.find("季风转换期・风微而多变") >= 0
