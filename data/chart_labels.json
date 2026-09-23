@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "note": "海图上的海名与岛名。min_span/max_span 是视窗纬差（度）：放得太近不标大海，放得太远不标小岛，免得和港口名叠在一起。"
+  },
+  "labels": [
+    {"text": "东海", "lon": 125.8, "lat": 27.6, "min_span": 5, "max_span": 40},
+    {"text": "南海", "lon": 113.8, "lat": 16.4, "min_span": 12, "max_span": 40},
+    {"text": "黄海", "lon": 123.2, "lat": 34.6, "min_span": 14, "max_span": 40},
+    {"text": "海南", "lon": 109.55, "lat": 19.15, "min_span": 12, "max_span": 32},
+    {"text": "琉球", "lon": 128.6, "lat": 26.7, "min_span": 12, "max_span": 32},
+    {"text": "流求", "lon": 120.95, "lat": 23.5, "min_span": 4, "max_span": 14}
+  ]
+}

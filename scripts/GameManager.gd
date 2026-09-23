@@ -16,6 +16,10 @@ var discoveries_data: Dictionary = {}
 var ships_data: Dictionary = {}
 var chapters_data: Dictionary = {}
 var crew_data: Dictionary = {}
+## 真实岸线（Natural Earth）与绕陆航线，只供海图绘制
+var coastline_data: Dictionary = {}
+var sealanes_data: Dictionary = {}
+var chart_labels_data: Dictionary = {}
 
 
 func _ready() -> void:
@@ -31,6 +35,9 @@ func load_data() -> void:
 	ships_data = _load_json("res://data/ships.json")
 	chapters_data = _load_json("res://data/chapters.json")
 	crew_data = _load_json("res://data/crew.json")
+	coastline_data = _load_json("res://data/coastline.json")
+	sealanes_data = _load_json("res://data/sealanes.json")
+	chart_labels_data = _load_json("res://data/chart_labels.json")
 
 	if scenes_data.has("scenes"):
 		print("Data loaded. Scenes:%d Goods:%d Ports:%d Ships:%d" % [

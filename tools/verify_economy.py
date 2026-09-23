@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """复现 Economy.gd / Voyage.gd 的公式，验证核心贸易循环与航海数值是否成立。
 不依赖 Godot，纯数学校验。"""
-import json, math, sys, os
+import json, math, sys, os, re
 
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -216,23 +216,51 @@ check(not missing, f"每种职事都有候选人（缺：{[roles[m]['name'] for 
 
 print()
 print("=" * 68)
-print("一之四、海图投影（SeaChart._draw_chart 的等比投影）")
+print("一之四、海图投影（SeaChart 墨卡托，常数从脚本读出）")
 print("=" * 68)
+
+# 投影常数以 SeaChart.gd 为准，避免校验脚本和画面各写一套。
+_seachart_src = open(os.path.join(os.path.dirname(__file__), "..", "scripts", "SeaChart.gd"),
+                     encoding="utf-8").read()
+def _gd_const(name):
+    m = re.search(rf"const {name} := ([0-9.]+)", _seachart_src)
+    if not m:
+        raise SystemExit(f"SeaChart.gd 缺少 const {name}")
+    return float(m.group(1))
+PAD_MIN = _gd_const("CHART_PAD_MIN_DEG")
+PAD_FRAC = _gd_const("CHART_PAD_FRAC")
+FIT_MARGIN = _gd_const("CHART_FIT_MARGIN")
+check("func _mercator_y" in _seachart_src and "tan(PI * 0.25" in _seachart_src,
+      "海图使用墨卡托（y = ln tan(π/4+φ/2)），不是等比纬度")
+
+def merc_y(lat):
+    lat = max(-80.0, min(80.0, lat))
+    r = math.radians(lat)
+    return math.log(math.tan(math.pi / 4 + r / 2))
 
 W, H = 560.0, 250.0
 def project(subset):
-    """复现 _draw_chart 的投影，返回 {pid: (x, y)}"""
-    lats = [p["lat"] for p in subset]; lons = [p["lon"] for p in subset]
-    mean_lat, mean_lon = (min(lats)+max(lats))/2, (min(lons)+max(lons))/2
-    kx = math.cos(math.radians(mean_lat))
-    span_x = max(0.5, (max(lons)-min(lons))*kx)
-    span_y = max(0.5, max(lats)-min(lats))
-    scale = min(W/span_x, H/span_y) * 0.78
-    return {p["id"]: (W/2 + (p["lon"]-mean_lon)*kx*scale,
-                      H/2 - (p["lat"]-mean_lat)*scale) for p in subset}, scale, kx
+    """复现 _fit_projection / _project。返回 {pid: (x, y)}"""
+    lats = [p["lat"] for p in subset]
+    lons = [p["lon"] for p in subset]
+    lat_min, lat_max = min(lats), max(lats)
+    lon_min, lon_max = min(lons), max(lons)
+    pad_lat = max(PAD_MIN, (lat_max - lat_min) * PAD_FRAC)
+    pad_lon = max(PAD_MIN, (lon_max - lon_min) * PAD_FRAC)
+    south, north = lat_min - pad_lat, lat_max + pad_lat
+    west, east = lon_min - pad_lon, lon_max + pad_lon
+    x0, x1 = math.radians(west), math.radians(east)
+    y0, y1 = merc_y(south), merc_y(north)
+    span_x, span_y = max(0.01, x1 - x0), max(0.01, y1 - y0)
+    scale = min(W / span_x, H / span_y) * FIT_MARGIN
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    def pos(p):
+        return (W / 2 + (math.radians(p["lon"]) - cx) * scale,
+                H / 2 - (merc_y(p["lat"]) - cy) * scale)
+    return {p["id"]: pos(p) for p in subset}, scale
 
 allp = list(ports.values())
-pos, scale, kx = project(allp)
+pos, scale = project(allp)
 
 oob = [pid for pid,(x,y) in pos.items() if not (0 <= x <= W and 0 <= y <= H)]
 check(not oob, f"全部 {len(pos)} 个港口都落在画布内（越界：{oob or '无'}）")
@@ -263,7 +291,7 @@ check(spread < 1.12, f"各航段的图上比例一致，离散度 {spread:.3f} <
 
 # 只解锁第一章时也要成图
 ch1 = [p for p in allp if p.get("unlock","ch1") == "ch1"]
-pos1, _, _ = project(ch1)
+pos1, _ = project(ch1)
 oob1 = [pid for pid,(x,y) in pos1.items() if not (0 <= x <= W and 0 <= y <= H)]
 check(not oob1, f"仅第一章 {len(ch1)} 港时同样全部在画布内")
 
@@ -272,6 +300,78 @@ for name, bearing_deg, want in [("西南季风(吹向东北)", 45.0, "右上"), 
     dx, dy = math.sin(math.radians(bearing_deg)), -math.cos(math.radians(bearing_deg))
     got = ("右" if dx > 0 else "左") + ("上" if dy < 0 else "下")
     check(got == want, f"{name} 的箭头指向{got}")
+
+# ── 真实岸线 ──
+coast = load("coastline.json")
+rings = coast.get("land", [])
+check(len(rings) >= 100, f"岸线环 {len(rings)} 个（Natural Earth 裁切后应有上百个岛礁）")
+npts = sum(len(r) for r in rings)
+check(npts >= 5000, f"岸线顶点 {npts}，福建沿海的海湾还在")
+bbox = coast.get("meta", {}).get("bbox", [0, 0, 0, 0])
+for pid, p in ports.items():
+    check(bbox[0] < p["lon"] < bbox[2] and bbox[1] < p["lat"] < bbox[3],
+          f"{p['name']} 落在岸线数据框内")
+
+def _bbox(ring):
+    xs = [pt[0] for pt in ring]
+    ys = [pt[1] for pt in ring]
+    return min(xs), min(ys), max(xs), max(ys)
+
+def _pip(lon, lat, ring):
+    inside = False
+    j = len(ring) - 1
+    for i in range(len(ring)):
+        xi, yi = ring[i]
+        xj, yj = ring[j]
+        if (yi > lat) != (yj > lat) and lon < (xj - xi) * (lat - yi) / (yj - yi) + xi:
+            inside = not inside
+        j = i
+    return inside
+
+_boxes = [_bbox(r) for r in rings]
+def on_land(lon, lat):
+    for ring, b in zip(rings, _boxes):
+        if lon < b[0] or lon > b[2] or lat < b[1] or lat > b[3]:
+            continue
+        if _pip(lon, lat, ring):
+            return True
+    return False
+
+def nearest_vertex_km(lon, lat):
+    best = 1e9
+    for ring, b in zip(rings, _boxes):
+        if lon < b[0] - 1.5 or lon > b[2] + 1.5 or lat < b[1] - 1.5 or lat > b[3] + 1.5:
+            continue
+        for vx, vy in ring:
+            # 局部平面足够比较远近
+            dx = (vx - lon) * math.cos(math.radians(lat)) * 111.32
+            dy = (vy - lat) * 110.57
+            d = math.hypot(dx, dy)
+            if d < best:
+                best = d
+    return best
+
+shore = {pid: nearest_vertex_km(p["lon"], p["lat"]) for pid, p in ports.items()}
+worst = max(shore, key=shore.get)
+check(shore[worst] < 40.0, f"最远离岸的港口 {ports[worst]['name']} {shore[worst]:.1f} km < 40（坐标贴着真海岸）")
+land_sea = [
+    ("流求岛心", 121.0, 23.7, True),
+    ("海南岛心", 109.7, 19.2, True),
+    ("九州", 131.0, 32.5, True),
+    ("济州岛", 126.5, 33.4, True),
+    ("澎湖本岛", 119.58, 23.57, True),
+    ("台湾以东大洋", 123.2, 25.0, False),
+    ("东海", 125.0, 30.0, False),
+    ("南海", 114.0, 18.0, False),
+]
+for name, lon, lat, want in land_sea:
+    got = on_land(lon, lat)
+    check(got == want, f"{name}（{lat}N {lon}E）{'是陆地' if got else '是海'}，应{'是陆地' if want else '是海'}")
+
+lanes = load("sealanes.json").get("lanes", {})
+check("hakata|kagoshima" in lanes, "博多—鹿儿岛的直线穿过九州，海图改走绕岛航线")
+check("guangzhou|quanzhou" in lanes, "泉州—广州沿岸直连会切入陆地，海图改走海上折线")
+check(10 <= len(lanes) <= 80, f"绕陆航线 {len(lanes)} 条，只覆盖会穿陆的港对")
 
 print()
 print("=" * 68)
