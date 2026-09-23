@@ -377,12 +377,15 @@ func _refresh_detail() -> void:
 		"目的：%s" % GameManager.get_port_name(selected_port),
 		"航程：%d 里　方位 %d°" % [int(plan["distance"]), int(plan["bearing"])],
 		"风信：%s（启航日速 %d 里）%s" % [plan["wind_desc"], int(plan["speed"]), crew_note],
-		"预计：%s 静风 %d 日，遇事约 %d 日。水粮足 %d 日" % [
-			Voyage.order_name(course_order), plan["days"], plan["expected_days"], plan["supply_days"],
+		"预计：%s 静风 %d 日，遇事约 %d 日，八成 %d 日。水粮足 %d 日" % [
+			Voyage.order_name(course_order), plan["days"], plan["expected_days"], plan["safe_days"], plan["supply_days"],
 		],
 		"静风：针路 %d / 外洋 %d / 傍岸 %d 日" % [plan_rumb["days"], plan_off["days"], plan_coast["days"]],
 		"遇事：针路 %d / 外洋 %d / 傍岸 %d 日" % [
 			plan_rumb["expected_days"], plan_off["expected_days"], plan_coast["expected_days"],
+		],
+		"八成：针路 %d / 外洋 %d / 傍岸 %d 日（十次约有八次不迟于这个数）" % [
+			plan_rumb["safe_days"], plan_off["safe_days"], plan_coast["safe_days"],
 		],
 		Voyage.order_blurb(course_order),
 	]
@@ -404,14 +407,18 @@ func _refresh_detail() -> void:
 		contract_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var calm_days := int(plan["days"])
 		var rough_days := int(plan["expected_days"])
+		var safe_days := int(plan["safe_days"])
 		if calm_days > left:
 			contract_lbl.text = "委办只剩 %d 日，静风预计就要 %d 日，赶不上。" % [left, calm_days]
 			contract_lbl.add_theme_color_override("font_color", Color(1.0, 0.55, 0.4))
 		elif rough_days > left:
 			contract_lbl.text = "委办还剩 %d 日。静风 %d 日赶得上，遇事约 %d 日，可能误期。" % [left, calm_days, rough_days]
 			contract_lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
+		elif safe_days > left:
+			contract_lbl.text = "委办还剩 %d 日。遇事约 %d 日，八成要 %d 日，不算稳。" % [left, rough_days, safe_days]
+			contract_lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
 		else:
-			contract_lbl.text = "委办还剩 %d 日。静风 %d 日，遇事约 %d 日。" % [left, calm_days, rough_days]
+			contract_lbl.text = "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。" % [left, rough_days, safe_days]
 			contract_lbl.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
 		detail_box.add_child(contract_lbl)
 
@@ -434,13 +441,18 @@ func _refresh_detail() -> void:
 		unknown_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		detail_box.add_child(unknown_lbl)
 
-	if int(plan["supply_days"]) < int(plan["expected_days"]):
+	var supply_have := int(plan["supply_days"])
+	var supply_mean := int(plan["expected_days"])
+	var supply_safe := int(plan["safe_days"])
+	if supply_have < supply_safe:
 		var supply_lbl := Label.new()
 		supply_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		supply_lbl.text = "水粮只够 %d 日，遇事大约要 %d 日——半途必要死人。" % [
-			int(plan["supply_days"]), int(plan["expected_days"]),
-		]
-		supply_lbl.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
+		if supply_have < supply_mean:
+			supply_lbl.text = "水粮只够 %d 日，遇事大约要 %d 日——半途必要死人。" % [supply_have, supply_mean]
+			supply_lbl.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
+		else:
+			supply_lbl.text = "水粮够遇事约 %d 日，八成要 %d 日，可能中途断粮。" % [supply_mean, supply_safe]
+			supply_lbl.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
 		detail_box.add_child(supply_lbl)
 
 	sail_button.text = "发舶・" + Voyage.order_name(course_order)

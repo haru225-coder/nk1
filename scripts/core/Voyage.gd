@@ -46,6 +46,8 @@ const MAX_EVENT_MASS := 0.90
 const SHOAL_HULL := 5.0
 const SHOAL_PROGRESS := 0.35
 const LOST_PROGRESS := -0.55
+## 标准正态 80% 分位。八成日数≈十次航行有八次不迟于它。
+const SAFE_Z := 0.8416
 
 ## 海上买货不得便宜过「普通口岸、行情 1.0」的买价。卖货不得高于最佳消费地卖价的九二折。
 const SEA_BUY_MARKUP := 1.12
@@ -160,19 +162,29 @@ func order_blurb(order: int) -> String:
 	return "针路：按熟路的针位走。速度、风涛、海盗都是寻常概率。"
 
 
-## 一日期望行程倍率。风暴、海盗、商船、岸影不改里数；无风归零，顺流加半，浅滩与迷航按进度系数。
-## 季风强度几乎不进这个数——那些权重不随风势变，除非事件总质量被压到上限。
-func progress_expectation(order: int, known: bool, discoveries_open: bool = true, at_month: int = -1) -> float:
+## 当日行程倍率的均值和方差。风暴、海盗、商船、岸影进度都是 1；无风归零，顺流 1.5，浅滩与迷航按系数。
+## 季风强度几乎不进均值——那些权重不随风势变，除非事件总质量被压到上限。
+func progress_moments(order: int, known: bool, discoveries_open: bool = true, at_month: int = -1) -> Dictionary:
 	var strength := Calendar.get_monsoon_strength()
 	if at_month >= 1:
 		strength = Calendar.monsoon_strength_of(at_month)
 	var w := event_weights(order, strength, known, discoveries_open)
-	var e := 1.0
-	e += float(w["calm"]) * (0.0 - 1.0)
-	e += float(w["current"]) * (1.5 - 1.0)
-	e += float(w["shoal"]) * (SHOAL_PROGRESS - 1.0)
-	e += float(w["lost"]) * (LOST_PROGRESS - 1.0)
-	return e
+	var calm := float(w["calm"])
+	var current := float(w["current"])
+	var shoal := float(w["shoal"])
+	var lost := float(w["lost"])
+	var mean := 1.0
+	mean += calm * (0.0 - 1.0)
+	mean += current * (1.5 - 1.0)
+	mean += shoal * (SHOAL_PROGRESS - 1.0)
+	mean += lost * (LOST_PROGRESS - 1.0)
+	var rest := 1.0 - calm - current - shoal - lost
+	var second := rest * 1.0 + current * 2.25 + shoal * SHOAL_PROGRESS * SHOAL_PROGRESS + lost * LOST_PROGRESS * LOST_PROGRESS
+	return {"mean": mean, "variance": maxf(0.0, second - mean * mean)}
+
+
+func progress_expectation(order: int, known: bool, discoveries_open: bool = true, at_month: int = -1) -> float:
+	return float(progress_moments(order, known, discoveries_open, at_month).get("mean", 1.0))
 
 
 ## 日期往前推 n 日，不改动历法本身。每月 30 日。
@@ -189,12 +201,16 @@ func _shift_date(year: int, month: int, day: int, n: int) -> Vector3i:
 
 
 ## 从明日启航起逐日扣里程。航行当天先过一日，所以第一日的风不是看海图这一天的风。
-func _walk_days(dist: float, course_bearing: float, order: int, known: bool, discoveries_open: bool, use_expectation: bool) -> Dictionary:
+## drag_days > 0 时，把每日期望进度再减去 SAFE_Z 倍标准差 / sqrt(平均日数)，用来走「八成能到」的那条偏慢路径。
+func _walk_days(dist: float, course_bearing: float, order: int, known: bool, discoveries_open: bool, use_expectation: bool, drag_days: int = 0) -> Dictionary:
 	var cursor := _shift_date(Calendar.year, Calendar.month, Calendar.day, 1)
 	var rem := dist
 	var n := 0
 	var first_wf := -1.0
 	var changed := false
+	var drag_scale := 0.0
+	if drag_days > 0:
+		drag_scale = SAFE_Z / sqrt(float(drag_days))
 	while rem > 0.0 and n < 900:
 		var month_now := cursor.y
 		var wf := wind_factor(course_bearing, month_now)
@@ -204,7 +220,11 @@ func _walk_days(dist: float, course_bearing: float, order: int, known: bool, dis
 			changed = true
 		var gain := Fleet.fleet_speed() * wf * order_speed_mult(order)
 		if use_expectation:
-			gain *= progress_expectation(order, known, discoveries_open, month_now)
+			var mom := progress_moments(order, known, discoveries_open, month_now)
+			var ex := float(mom.get("mean", 1.0))
+			if drag_scale > 0.0:
+				ex = maxf(0.05, ex - drag_scale * sqrt(float(mom.get("variance", 0.0))))
+			gain *= ex
 		if gain <= 1.0:
 			n = 999
 			break
@@ -215,8 +235,8 @@ func _walk_days(dist: float, course_bearing: float, order: int, known: bool, dis
 
 
 ## 返回航程。days 是逐日静风日数，委办期限仍用它。
-## expected_days 在同一条日期上计入无风、顺流、浅滩、迷航。
-## 月末换季时，不把今天的风套到全程。
+## expected_days 是同一条日期上的平均遇事日数。safe_days 是八成能到的日数。
+## 平均数卡进期限，不代表十次里有八次赶得上。月末换季时，不把今天的风套到全程。
 func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dictionary:
 	var dist := distance_li(from_id, to_id)
 	var brg := bearing(from_id, to_id)
@@ -228,10 +248,18 @@ func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dict
 	var expected := int(rough.get("days", 999))
 	if days < 900 and expected < days:
 		expected = days
+	var safe := expected
+	var safe_changed := false
+	if expected > 0 and expected < 900:
+		var cautious: Dictionary = _walk_days(dist, brg, order, known, open, true, expected)
+		safe = int(cautious.get("days", expected))
+		safe_changed = bool(cautious.get("changed", false))
+		if safe < expected:
+			safe = expected
 	var start := _shift_date(Calendar.year, Calendar.month, Calendar.day, 1)
 	var wf := wind_factor(brg, start.y)
 	var spd := Fleet.fleet_speed() * wf * order_speed_mult(order)
-	var changed := bool(calm.get("changed", false)) or bool(rough.get("changed", false))
+	var changed := bool(calm.get("changed", false)) or bool(rough.get("changed", false)) or safe_changed
 	return {
 		"from": from_id,
 		"to": to_id,
@@ -243,10 +271,11 @@ func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dict
 		"speed": spd,
 		"days": days,
 		"expected_days": expected,
+		"safe_days": safe,
 		"wind_changes": changed,
 		"departs_on_new_wind": absf(wind_factor(brg) - wf) > 0.001,
 		"supply_days": Fleet.supply_days(),
-		"supply_ok": Fleet.supply_days() >= expected,
+		"supply_ok": Fleet.supply_days() >= safe,
 	}
 
 

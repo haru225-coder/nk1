@@ -476,6 +476,19 @@ func _add_contract_panel(port_id: String) -> void:
 			calm_note.add_theme_font_size_override("font_size", 13)
 			calm_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
 			box.add_child(calm_note)
+			var safe_note := Label.new()
+			safe_note.text = "八成：针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日。十次里大约八次不迟于这个数。" % [
+				int(plan_r.get("safe_days", 0)), int(plan_o.get("safe_days", 0)), int(plan_c.get("safe_days", 0)),
+			]
+			var rumb_thin := int(plan_r.get("expected_days", 0)) <= deadline and int(plan_r.get("safe_days", 0)) > deadline
+			var off_thin := int(plan_o.get("expected_days", 0)) <= deadline and int(plan_o.get("safe_days", 0)) > deadline
+			var coast_thin := int(plan_c.get("expected_days", 0)) <= deadline and int(plan_c.get("safe_days", 0)) > deadline
+			if rumb_thin or off_thin or coast_thin:
+				safe_note.text += " 有航法平均数赶得上，八成日数超过期限，不算稳。"
+			safe_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			safe_note.add_theme_font_size_override("font_size", 13)
+			safe_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
+			box.add_child(safe_note)
 			if int(plan_c.get("expected_days", 0)) > deadline:
 				var warn := Label.new()
 				warn.text = "傍岸遇事约 %d 日，超过期限 %d 日。" % [int(plan_c.get("expected_days", 0)), deadline]

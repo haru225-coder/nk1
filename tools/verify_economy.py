@@ -1008,6 +1008,41 @@ def walk_calm_days(src, dst, month, day, year=1255, morale=70, ship_id="sampan")
         y, m, d = shift_date(y, m, d, 1)
     return n, changed
 
+def progress_spread(order, known, strength):
+    """复刻 Voyage.progress_moments。返回 (均值, 方差)。"""
+    w = event_weights(order, strength, known, True)
+    pc, pu, ps, pl = w["calm"], w["current"], w["shoal"], w["lost"]
+    mean = progress_expectation(order, known, True, strength)
+    rest = 1.0 - pc - pu - ps - pl
+    second = rest + pu * 2.25 + ps * (SHOAL_P ** 2) + pl * (LOST_P ** 2)
+    return mean, max(0.0, second - mean * mean)
+
+def walk_event_days(src, dst, month, day, order="rumb", known=True, drag_days=0,
+                    year=1255, morale=70, ship_id="sampan"):
+    """从次日启航按遇事均值扣里程。drag_days>0 时走八成偏慢路径。"""
+    dist = distance_li(src, dst)
+    course = bearing(src, dst)
+    y, m, d = shift_date(year, month, day, 1)
+    spd_base = ships[ship_id]["base_speed"] * (0.6 + 0.4 * morale / 100.0)
+    mult = {"offshore": OFF_SPD, "coast": COAST_SPD}.get(order, 1.0)
+    rem = dist
+    n = 0
+    drag_scale = (gd_const(V_GD, "SAFE_Z") / math.sqrt(drag_days)) if drag_days > 0 else 0.0
+    while rem > 0 and n < 900:
+        _wb, st = month_wind(m)
+        wf = wind_factor(course, _wb, st)
+        mean, var = progress_spread(order, known, st)
+        ex = mean
+        if drag_scale > 0.0:
+            ex = max(0.05, ex - drag_scale * math.sqrt(var))
+        gain = spd_base * wf * mult * ex
+        if gain <= 1:
+            return 999
+        rem -= gain
+        n += 1
+        y, m, d = shift_date(y, m, d, 1)
+    return n
+
 def known_route(a, b):
     """连线无向。与 Voyage.is_known_route 一致。"""
     if a not in ports or b not in ports:
@@ -1132,6 +1167,17 @@ feb_walk, _feb_changed = walk_calm_days("quanzhou", "guangzhou", 2, 30)
 check(feb_walk > feb_snap,
       f"二月三十泉州→广州：当天东北顺风 {feb_snap} 日，次日转风后要 {feb_walk} 日")
 
+wz_mean = walk_event_days("quanzhou", "wenzhou", 3, 1, "rumb", True)
+wz_safe = walk_event_days("quanzhou", "wenzhou", 3, 1, "rumb", True, wz_mean)
+check(wz_safe >= wz_mean and wz_safe <= march_walk + CONTRACT_SLACK,
+      f"开局泉州→温州针路八成 {wz_safe} 日，仍落在期限 {march_walk + CONTRACT_SLACK} 内")
+hk_calm, _hk_changed = walk_calm_days("quanzhou", "hakata", 3, 1)
+hk_deadline = hk_calm + CONTRACT_SLACK
+hk_mean = walk_event_days("quanzhou", "hakata", 3, 1, "offshore", False)
+hk_safe = walk_event_days("quanzhou", "hakata", 3, 1, "offshore", False, hk_mean)
+check(hk_mean <= hk_deadline < hk_safe,
+      f"三月泉州→博多外洋遇事 {hk_mean} 日卡进期限 {hk_deadline}，八成要 {hk_safe} 日")
+
 check(RUMOR_STALE >= 30, f"行情传闻保鲜 {RUMOR_STALE} 日，够跑一趟近海再回来对")
 gs_src = open(os.path.join(ROOT, S_GD), encoding="utf-8").read()
 deliver_body = gs_src.split("func deliver_contract", 1)[1].split("\nfunc ", 1)[0]
@@ -1154,10 +1200,10 @@ check("discoveries_open" in weights_body and "_discovery_candidates" in roll_bod
       "岸影抽空时当日权重不再把这一档当成无事日")
 plan_body = voyage_src.split("func plan", 1)[1].split("\nfunc ", 1)[0]
 walk_body = voyage_src.split("func _walk_days", 1)[1].split("\nfunc ", 1)[0]
-check("expected_days" in plan_body and "_walk_days" in plan_body,
-      "航程同时给出静风日数和遇事日数，期限仍用静风")
-check("progress_expectation" in walk_body and "_shift_date" in walk_body,
-      "静风和遇事都从次日启航起按逐日风信累加")
+check("expected_days" in plan_body and "safe_days" in plan_body and "_walk_days" in plan_body,
+      "航程给出静风、遇事和八成日数，期限仍用静风")
+check("progress_moments" in walk_body and "_shift_date" in walk_body and "SAFE_Z" in walk_body,
+      "遇事与八成从次日启航起按逐日风信累加")
 check("wind_changes" in plan_body and "departs_on_new_wind" in plan_body,
       "换季和途中换风会标出来")
 main_src = open(os.path.join(ROOT, "scripts/Main.gd"), encoding="utf-8").read()
@@ -1172,9 +1218,11 @@ check("contract_offer" in accept_body and "offer_month" in accept_body,
 sea_src = open(os.path.join(ROOT, "scripts/SeaChart.gd"), encoding="utf-8").read()
 back_body = sea_src.split("func _on_back_to_port", 1)[1].split("\nfunc ", 1)[0]
 check("voyage_started" in back_body, "发舶之后不能点回港躲开海难")
-check("voyage_days" in offer_body and "expected_days" not in offer_body,
-      "委办期限不改用遇事日数")
+check("voyage_days" in offer_body and "expected_days" not in offer_body and "safe_days" not in offer_body,
+      "委办期限不改用遇事日数或八成日数")
 check("·误期" in main_src and "交不齐" in sea_src, "旅店歇过期限、舱里货不够，界面会写出来")
+check("八成" in sea_src and "不算稳" in main_src and "不算稳" in sea_src,
+      "平均数卡进期限、八成超出时，界面写明不算稳")
 check("·换风" in sea_src and "逐日累加" in main_src, "途中换风写在海图和委办上")
 
 print()
