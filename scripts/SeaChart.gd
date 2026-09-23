@@ -439,11 +439,11 @@ func _place_port_label(c: Control, font: Font, anchor: Vector2, text: String, co
 	var font_size := UiTheme.SIZE_FOOT
 	var ts := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 	var offsets: Array[Vector2] = [
-		Vector2(10, 4),
-		Vector2(10, -ts.y - 8),
+		Vector2(12, 4),
+		Vector2(12, -ts.y - 8),
 		Vector2(-ts.x - 16, 4),
 		Vector2(-ts.x - 16, -ts.y - 8),
-		Vector2(10, ts.y + 8),
+		Vector2(12, ts.y + 8),
 	]
 	var bounds := Rect2(Vector2(2, 2), c.size - Vector2(4, 4))
 	var chosen_base := anchor + offsets[0]
