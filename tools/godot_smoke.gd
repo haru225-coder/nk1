@@ -301,6 +301,46 @@ func _run() -> void:
 	gs.add_ledger_note("拓「废烽堠」：旧时守海的烽堠，如今无人执守，却仍是夜航辨岸的好记认。")
 	_check(gs.ledger_notes.size() == notes0 + 1, "拓碑边记可写入 ledger_notes", fails)
 	_check(int(gs.fame) == fame_before_rub, "写入边记不给名声", fails)
+	var note_node := (load("res://scripts/Main.gd") as GDScript).new() as Node
+	var rub_fresh := str(note_node.call(
+		"_temple_rub_note", "废烽堠", "旧时守海的烽堠，如今无人执守，却仍是夜航辨岸的好记认。"
+	))
+	_check(
+		rub_fresh == "拓「废烽堠」　旧时守海的烽堠，如今无人执守，却仍是夜航辨岸的好记认。"
+			and str(note_node.call("_temple_rub_note", "废烽堠", "  ")) == "拓「废烽堠」。"
+			and bool(note_node.call("_has_temple_rub", "废烽堠"))
+			and main_src.find("再升一等。") >= 0 and main_src.find("再升一等：") < 0,
+		"拓碑边记用空格隔开，旧冒号仍算拓过，修埠注用句号",
+		fails,
+	)
+	var money_line := str(note_node.call("_append_progress_line", "", {
+		"label": "本钱", "current": 0, "need": 5000, "done": false,
+	}))
+	var been_line := str(note_node.call("_append_progress_line", "", {
+		"label": "亲至　南岛海道北口", "current": 0, "need": 1, "done": false,
+	}))
+	var items: Array = gs.call("_requirement_items", {
+		"peak_money": 5000, "visited_count": 5, "must_visit": ["ryukyu"],
+	})
+	var money_ok := false
+	var ports_ok := false
+	var ryukyu_ok := false
+	for it_v in items:
+		var it: Dictionary = it_v
+		var lab := str(it.get("label", ""))
+		if lab == "本钱" and int(it.get("need", 0)) == 5000:
+			money_ok = true
+		if lab == "走通港口" and int(it.get("need", 0)) == 5:
+			ports_ok = true
+		if lab == "亲至　南岛海道北口":
+			ryukyu_ok = true
+	_check(
+		money_line == "・　本钱　0 / 5000\n" and been_line == "・　亲至　南岛海道北口\n"
+			and money_ok and ports_ok and ryukyu_ok,
+		"章目写成已行多少，亲至港名用空格隔开，门槛仍是五千与五港",
+		fails,
+	)
+	note_node.free()
 	_check(load("res://scripts/Ship.gd") != null, "Ship.gd 能编译", fails)
 	_check(load("res://scripts/Cannonball.gd") != null, "Cannonball.gd 能编译", fails)
 	_check(load("res://scripts/PirateShip.gd") != null, "PirateShip.gd 能编译", fails)

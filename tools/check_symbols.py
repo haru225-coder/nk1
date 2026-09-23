@@ -1053,6 +1053,22 @@ if (
 else:
     print("  ✗ 海战栏或船屋账条仍有斜杠、百分号或小数倍率")
     problems.append("海战栏或船屋仍是原型记法")
+gs_chapter_src = open(os.path.join(SCRIPTS, "GameState.gd"), encoding="utf-8").read()
+if (
+    "%s　%s　%d / %d" in main_src
+    and "%s %s %d/%d" not in main_src
+    and "再升一等。" in main_src
+    and "再升一等：" not in main_src
+    and "拓「%s」　%s" in main_src
+    and "拓「%s」：" not in main_src
+    and "亲至　" in gs_chapter_src
+    and "亲至 " not in gs_chapter_src
+    and "水手 %d/%d" in main_src
+):
+    print("  ✓ 章目写成已行多少，修埠与拓碑去掉冒号")
+else:
+    print("  ✗ 章目、修埠或拓碑仍是半角或冒号")
+    problems.append("章目、修埠或拓碑仍是半角或冒号")
 if '" x"' not in wm_src:
     print("  ✓ 海战货舱用乘号")
 else:

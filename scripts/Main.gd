@@ -407,8 +407,8 @@ func _append_progress_line(text: String, it: Dictionary) -> String:
 	if it.get("done", false):
 		mark = "[color=#%s]已[/color]" % UiTheme.hex(UiTheme.MOSS)
 	if int(it.get("need", 1)) > 1:
-		return text + "%s %s %d/%d\n" % [mark, it.get("label", ""), it.get("current", 0), it.get("need", 1)]
-	return text + "%s %s\n" % [mark, it.get("label", "")]
+		return text + "%s　%s　%d / %d\n" % [mark, it.get("label", ""), it.get("current", 0), it.get("need", 1)]
+	return text + "%s　%s\n" % [mark, it.get("label", "")]
 
 
 ## 船体改装是一等、二等、三等。职事品级另用初习 / 谙熟 / 老练，两套词不混。
@@ -995,7 +995,7 @@ func _setup_title_and_invest(port_id: String) -> void:
 	elif lv <= 0:
 		_slip_note(inv, "向本港投钱修埠，可加深市场、让本地所产更廉、紧缺货更好卖。")
 	else:
-		_slip_note(inv, "向本港投钱修埠，再升一等：产地买入更廉、紧缺货更好卖、市场更深。")
+		_slip_note(inv, "向本港投钱修埠，再升一等。产地买入更廉、紧缺货更好卖、市场更深。")
 	if cost > 0:
 		var chip := _slip_chip(_slip_row(inv), "投钱　%d" % cost, _on_invest_port.bind(port_id), true)
 		chip.tooltip_text = "向本港投钱修埠"
@@ -1556,7 +1556,7 @@ func _temple_rub_note(name: String, hook: String) -> String:
 	var body := hook.strip_edges()
 	if body == "":
 		return "拓「%s」。" % name
-	return "拓「%s」：%s" % [name, body]
+	return "拓「%s」　%s" % [name, body]
 
 
 func _has_temple_rub(name: String) -> bool:

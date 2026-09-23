@@ -172,7 +172,7 @@ func _requirement_items(req: Dictionary) -> Array:
 
 	for pid in req.get("must_visit", []):
 		items.append({
-			"label": "亲至 " + GameManager.get_port_name(str(pid)),
+			"label": "亲至　" + GameManager.get_port_name(str(pid)),
 			"current": 1 if pid in visited_ports else 0, "need": 1,
 			"done": pid in visited_ports,
 		})
