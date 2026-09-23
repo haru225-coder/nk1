@@ -1229,6 +1229,37 @@ hk_hold = cargo_hold_tenths(cargo_hold_chance(3, 1, "offshore", False, hk_mean))
 check(hk_hold <= 2 and hk_safe > hk_deadline,
       f"三月泉州→博多外洋保货只有 {hk_hold}，八成 {hk_safe} 日已超过期限 {hk_deadline}")
 
+def spoil_hold_chance(rate, qty, days, factor=1.0):
+    """复刻 Voyage.spoil_hold_chance。不会潮或没有货，概率是 1。"""
+    if rate <= 0 or qty <= 0:
+        return 1.0
+    if days <= 0 or days >= 900:
+        return 0.0
+    p = min(1.0, rate * qty * factor)
+    return (1.0 - p) ** days
+
+if offer:
+    spoil_rate = goods[offer["good_id"]]["perishable"]
+    have_qty = 1000 // buy_price("quanzhou", offer["good_id"])
+    st_r = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_safe))
+    st_o = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_off_safe))
+    st_c = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_coast_safe))
+    check(spoil_rate > 0 and have_qty == 12,
+          f"开局这单会潮，1000 钱凑得出 {have_qty} 件")
+    check(st_r == 6 and st_o == 6 and st_c == 5,
+          f"凑得出 {have_qty} 件，按八成日数受潮：针路 {st_r} / 外洋 {st_o} / 傍岸 {st_c}")
+    check(wz_safe <= wz_deadline and st_r < 8 and wz_off_safe <= wz_deadline and st_o < 8,
+          f"针路、外洋八成赶得上，受潮只有 {st_r} 和 {st_o}，不到八成")
+    check(wz_coast_safe > wz_deadline,
+          f"傍岸八成 {wz_coast_safe} 日超过期限 {wz_deadline}，不拿受潮来说成日子赶得上")
+    st_full = cargo_hold_tenths(spoil_hold_chance(spoil_rate, offer["qty"], wz_safe))
+    check(st_full < st_r,
+          f"单上 {offer['qty']} 件受潮 {st_full}，比凑得出的 {have_qty} 件更潮")
+    st_optimistic = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_off_mean))
+    check(st_optimistic > st_o,
+          f"外洋按遇事 {wz_off_mean} 日下整是 {st_optimistic}，按八成 {wz_off_safe} 日是 {st_o}")
+check(spoil_hold_chance(0.0, 16, 9) == 1.0, "不会潮的货，受潮概率是 1")
+
 check(RUMOR_STALE >= 30, f"行情传闻保鲜 {RUMOR_STALE} 日，够跑一趟近海再回来对")
 gs_src = open(os.path.join(ROOT, S_GD), encoding="utf-8").read()
 deliver_body = gs_src.split("func deliver_contract", 1)[1].split("\nfunc ", 1)[0]
@@ -1297,6 +1328,19 @@ check("保货" in sea_src and "保货" in main_src and "不到八成" in main_sr
 check('int(plan_r.get("safe_days", 0)) <= deadline and int(plan_r.get("hold_tenths", 0)) < 8' in main_src
       and 'int(plan_c.get("safe_days", 0)) <= deadline and int(plan_c.get("hold_tenths", 0)) < 8' in main_src,
       "保货警告按同一条航法看八成日数和保货")
+spoil_fn = voyage_src.split("func spoil_hold_chance", 1)[1].split("\nfunc ", 1)[0]
+check("cargo_loss_factor" in spoil_fn and "pow" in spoil_fn,
+      "受潮按每日概率连乘，总管减损算进去")
+spoil_ui = main_src.split("受潮：", 1)[1].split('if int(plan_c.get("expected_days"', 1)[0]
+check("safe_days" in spoil_ui and "expected_days" not in spoil_ui and "can_carry" in spoil_ui,
+      "牙行受潮按八成日数和凑得出的件数，不用遇事日数")
+check('int(plan_r.get("safe_days", 0)) <= deadline and sr < 8' in spoil_ui
+      and 'int(plan_c.get("safe_days", 0)) <= deadline and sc < 8' in spoil_ui,
+      "受潮警告按同一条航法看八成日数")
+check("一件没潮" in main_src and "一件没潮" in sea_src and "受潮不到八成" in main_src and "受潮只有" in sea_src,
+      "会潮的货，牙行和海图都写出一件没潮的成数")
+check("dampest_aboard" in sea_src and "good_perish_rate" in sea_src,
+      "海图按舱里会潮的货来写，委办货优先")
 check("·换风" in sea_src and "逐日累加" in main_src, "途中换风写在海图和委办上")
 
 print()

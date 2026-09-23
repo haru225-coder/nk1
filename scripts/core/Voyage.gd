@@ -259,6 +259,46 @@ func cargo_hold_tenths(chance: float) -> int:
 	return clampi(int(floor(chance * 10.0)), 0, 10)
 
 
+func good_perish_rate(good_id: String) -> float:
+	for g in GameManager.goods_data.get("goods", []):
+		if str(g.get("id", "")) == good_id:
+			return float(g.get("perishable", 0.0))
+	return 0.0
+
+
+## 一件都没潮的概率。日数用八成那条，不用遇事平均数。
+## 外洋去温州，遇事只有 7 日，下整会写成七成；船实际平均要七个半日，抽样不到七成。
+## 海盗抢货另算在保货里。
+func spoil_hold_chance(perish_rate: float, qty: int, days: int) -> float:
+	if perish_rate <= 0.0 or qty <= 0:
+		return 1.0
+	if days <= 0 or days >= 900:
+		return 0.0
+	var p := clampf(perish_rate * float(qty) * Crew.cargo_loss_factor(), 0.0, 1.0)
+	return pow(1.0 - p, float(days))
+
+
+## 舱里每天最容易少一件的那票货。没有会潮的货则返回空。
+func dampest_aboard() -> Dictionary:
+	var best_id := ""
+	var best_qty := 0
+	var best_rate := 0.0
+	var best_risk := 0.0
+	for raw_id in Fleet.cargo.keys():
+		var gid := str(raw_id)
+		var q := Fleet.cargo_qty(gid)
+		var rate := good_perish_rate(gid)
+		var risk := rate * float(q)
+		if q > 0 and risk > best_risk:
+			best_risk = risk
+			best_id = gid
+			best_qty = q
+			best_rate = rate
+	if best_id == "":
+		return {}
+	return {"good_id": best_id, "qty": best_qty, "rate": best_rate}
+
+
 ## 返回航程。days 是逐日静风日数，委办期限仍用它。
 ## expected_days 是同一条日期上的平均遇事日数。safe_days 是八成能到的日数。
 ## hold_tenths 是保货：十次里至少有几次整舱没被海盗抢走。日数赶得上，不代表货还在。

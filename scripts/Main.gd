@@ -523,6 +523,30 @@ func _add_contract_panel(port_id: String) -> void:
 				]
 				purse_lbl.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
 				box.add_child(purse_lbl)
+			var spoil_rate := Voyage.good_perish_rate(gid)
+			if spoil_rate > 0.0 and can_carry > 0:
+				var spoil_note := Label.new()
+				var sr := Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(spoil_rate, can_carry, int(plan_r.get("safe_days", 0))))
+				var so := Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(spoil_rate, can_carry, int(plan_o.get("safe_days", 0))))
+				var sc := Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(spoil_rate, can_carry, int(plan_c.get("safe_days", 0))))
+				spoil_note.text = "受潮：针路 %d / 外洋 %d / 傍岸 %d。按八成日数，十次里至少有这么多次一件没潮。这数不含海盗。" % [sr, so, sc]
+				if can_carry < need_qty:
+					spoil_note.text += " 按眼下凑得出的 %d 件算。" % can_carry
+				var spoil_bits := ""
+				if int(plan_r.get("safe_days", 0)) <= deadline and sr < 8:
+					spoil_bits += "针路"
+				if int(plan_o.get("safe_days", 0)) <= deadline and so < 8:
+					spoil_bits += ("、" if spoil_bits != "" else "") + "外洋"
+				if int(plan_c.get("safe_days", 0)) <= deadline and sc < 8:
+					spoil_bits += ("、" if spoil_bits != "" else "") + "傍岸"
+				if spoil_bits != "":
+					spoil_note.text += " %s按八成日数赶得上，受潮不到八成。" % spoil_bits
+					spoil_note.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
+				else:
+					spoil_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
+				spoil_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				spoil_note.add_theme_font_size_override("font_size", 13)
+				box.add_child(spoil_note)
 			if int(plan_c.get("expected_days", 0)) > deadline:
 				var warn := Label.new()
 				warn.text = "傍岸遇事约 %d 日，超过期限 %d 日。" % [int(plan_c.get("expected_days", 0)), deadline]

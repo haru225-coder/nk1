@@ -404,6 +404,23 @@ func _refresh_detail() -> void:
 		detail_box.add_child(lbl)
 
 	var cst := GameState.contract_status()
+	var damp := Voyage.dampest_aboard()
+	if not cst.is_empty():
+		var maybe_id := str(cst.get("good_id", ""))
+		var maybe_qty := Fleet.cargo_qty(maybe_id)
+		var maybe_rate := Voyage.good_perish_rate(maybe_id)
+		if maybe_qty > 0 and maybe_rate > 0.0:
+			damp = {"good_id": maybe_id, "qty": maybe_qty, "rate": maybe_rate}
+	if not damp.is_empty():
+		var spoil_lbl := Label.new()
+		spoil_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		spoil_lbl.text = "受潮：%s 针路 %d / 外洋 %d / 傍岸 %d（按八成日数，十次里至少有这么多次一件没潮）" % [
+			GameManager.get_good_name(str(damp["good_id"])),
+			Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(float(damp["rate"]), int(damp["qty"]), int(plan_rumb["safe_days"]))),
+			Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(float(damp["rate"]), int(damp["qty"]), int(plan_off["safe_days"]))),
+			Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(float(damp["rate"]), int(damp["qty"]), int(plan_coast["safe_days"]))),
+		]
+		detail_box.add_child(spoil_lbl)
 	if not cst.is_empty() and str(cst.get("dest", "")) == selected_port:
 		var left: int = int(cst.get("days_left", 0))
 		var contract_lbl := Label.new()
@@ -422,8 +439,14 @@ func _refresh_detail() -> void:
 			contract_lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
 		else:
 			var hold_shown := int(plan.get("hold_tenths", 0))
+			var spoil_shown := 10
+			if not damp.is_empty() and str(damp.get("good_id", "")) == str(cst.get("good_id", "")):
+				spoil_shown = Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(float(damp["rate"]), int(damp["qty"]), safe_days))
 			if hold_shown < 8:
 				contract_lbl.text = "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。保货只有 %d，不到八成。" % [left, rough_days, safe_days, hold_shown]
+				contract_lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
+			elif spoil_shown < 8:
+				contract_lbl.text = "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。受潮只有 %d，不到八成。" % [left, rough_days, safe_days, spoil_shown]
 				contract_lbl.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
 			else:
 				contract_lbl.text = "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。" % [left, rough_days, safe_days]
