@@ -756,9 +756,12 @@ func _draw_world(c: Control, frame: Dictionary, size: Vector2) -> void:
 		var pts := _project_ring(frame, ring)
 		if pts.size() < 3:
 			continue
-		c.draw_colored_polygon(pts, mainland if i == 0 else island)
-		c.draw_polyline(pts, shore, 4.5, true)
-		c.draw_polyline(pts, ink, 1.45, true)
+		var soft := _soft_coast(frame, ring, pts, i == 0)
+		c.draw_colored_polygon(soft, mainland if i == 0 else island)
+		var stroke := soft.duplicate()
+		stroke.append(soft[0])
+		c.draw_polyline(stroke, shore, 4.2, true)
+		c.draw_polyline(stroke, ink, 1.55, true)
 		_draw_shoal(c, frame, ring, pts, i == 0, harbors)
 	_draw_land_grain(c, frame, size)
 	_draw_inland(c, frame, size)
@@ -766,10 +769,9 @@ func _draw_world(c: Control, frame: Dictionary, size: Vector2) -> void:
 	var river_col := Color(0.32, 0.48, 0.55, 0.80)
 	for river in data.get("rivers", []):
 		if river is Array:
-			var pts := _project_ring(frame, river)
-			if pts.size() >= 2:
-				c.draw_polyline(pts, Color(0.55, 0.68, 0.72, 0.35), 2.4, true)
-				c.draw_polyline(pts, river_col, 1.15, true)
+			var river_pts := _project_ring(frame, river)
+			if river_pts.size() >= 2:
+				_draw_river(c, frame, river_pts, river_col)
 	_draw_reefs(c, frame, size)
 
 
@@ -804,6 +806,117 @@ func _grid_step(span: float) -> float:
 	if span > 36.0:
 		return 10.0
 	return 5.0
+
+
+## 海角收圆、长边略向陆弯。凹进去的海湾保持原样，免得把湾口封死。
+func _soft_coast(frame: Dictionary, ring: Array, pts: PackedVector2Array, mainland: bool) -> PackedVector2Array:
+	var n := mini(ring.size(), pts.size())
+	var count := n
+	if n >= 2 and pts[0].distance_to(pts[n - 1]) < 0.8:
+		count = n - 1
+	if count < 3:
+		return pts
+	var out := PackedVector2Array()
+	for i in count:
+		var i0 := (i + count - 1) % count
+		var i1 := (i + 1) % count
+		var prev: Vector2 = pts[i0]
+		var cur: Vector2 = pts[i]
+		var nxt: Vector2 = pts[i1]
+		var hard := mainland and (
+			float(ring[i][1]) < 104.0
+			or float(ring[i0][1]) < 104.0
+			or float(ring[i1][1]) < 104.0
+		)
+		var back := cur - prev
+		var fore := nxt - cur
+		var back_len := back.length()
+		var fore_len := fore.length()
+		if hard or back_len < 8.0 or fore_len < 8.0:
+			out.append(cur)
+			continue
+		var cut := minf(8.0, minf(back_len, fore_len) * 0.28)
+		var a := cur - back / back_len * cut
+		var b := cur + fore / fore_len * cut
+		var chord_mid := (a + b) * 0.5
+		var geo := _chart_unproject(frame, chord_mid)
+		if not _ashore(geo.y, geo.x):
+			out.append(cur)
+			continue
+		var dir := b - a
+		if dir.length() < 0.5:
+			out.append(cur)
+			continue
+		var nrm := Vector2(-dir.y, dir.x).normalized()
+		var sea_probe := _chart_unproject(frame, chord_mid + nrm * 4.0)
+		if _ashore(sea_probe.y, sea_probe.x):
+			nrm = -nrm
+		out.append(a)
+		# 窄岬只削角，不再往里拱，免得两侧对穿。
+		var bow_amp := 2.8
+		var deep := _chart_unproject(frame, chord_mid - nrm * bow_amp * 2.4)
+		if _ashore(deep.y, deep.x):
+			out.append(chord_mid - nrm * bow_amp)
+		out.append(b)
+	if out.size() < 3:
+		return pts
+	return _bow_long_edges(frame, out)
+
+
+func _bow_long_edges(frame: Dictionary, poly: PackedVector2Array) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var n := poly.size()
+	for i in n:
+		var a: Vector2 = poly[i]
+		var b: Vector2 = poly[(i + 1) % n]
+		out.append(a)
+		var span := b - a
+		var length := span.length()
+		if length < 22.0:
+			continue
+		var nrm := Vector2(-span.y, span.x).normalized()
+		var sea_probe := _chart_unproject(frame, (a + b) * 0.5 + nrm * 4.0)
+		if _ashore(sea_probe.y, sea_probe.x):
+			nrm = -nrm
+		var amp := minf(5.5, length * 0.055)
+		var stations := [0.5]
+		if length >= 78.0:
+			stations = [0.34, 0.67]
+		for t in stations:
+			var at := a.lerp(b, t)
+			var bow := at - nrm * amp
+			var geo := _chart_unproject(frame, bow)
+			var deep := _chart_unproject(frame, at - nrm * amp * 2.3)
+			if _ashore(geo.y, geo.x) and _ashore(deep.y, deep.x):
+				out.append(bow)
+	return out
+
+
+func _draw_river(c: Control, frame: Dictionary, pts: PackedVector2Array, col: Color) -> void:
+	var curved := PackedVector2Array()
+	var last := pts.size() - 1
+	for i in last:
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[i + 1]
+		curved.append(a)
+		var span := b - a
+		var length := span.length()
+		if length < 16.0:
+			continue
+		var nrm := Vector2(-span.y, span.x).normalized()
+		var amp := minf(10.0, length * 0.09)
+		if i % 2 == 1:
+			amp = -amp
+		var m1 := a.lerp(b, 0.33) + nrm * amp
+		var m2 := a.lerp(b, 0.68) - nrm * amp * 0.55
+		var g1 := _chart_unproject(frame, m1)
+		var g2 := _chart_unproject(frame, m2)
+		if _ashore(g1.y, g1.x) and _ashore(g2.y, g2.x):
+			curved.append(m1)
+			curved.append(m2)
+	curved.append(pts[last])
+	c.draw_polyline(curved, Color(0.55, 0.68, 0.72, 0.40), 2.6, true)
+	c.draw_polyline(curved, col, 1.25, true)
 
 
 func _draw_graticule(c: Control, frame: Dictionary, size: Vector2) -> void:
@@ -1011,18 +1124,20 @@ func _draw_ranges(c: Control, frame: Dictionary, size: Vector2) -> void:
 			if not page.has_point(p):
 				has_prev = false
 				continue
-			_draw_peak(c, p, col)
+			_draw_peak(c, p, col, 1.0)
 			if has_prev:
 				c.draw_line(prev, p, Color(col, 0.35), 1.0)
+				if prev.distance_to(p) > 18.0:
+					_draw_peak(c, (prev + p) * 0.5, col, 0.72)
 			prev = p
 			has_prev = true
 
 
-func _draw_peak(c: Control, p: Vector2, col: Color) -> void:
-	c.draw_line(p + Vector2(-6.5, 4.0), p + Vector2(0, -6.5), col, 1.2)
-	c.draw_line(p + Vector2(0, -6.5), p + Vector2(6.5, 4.0), col, 1.2)
-	c.draw_line(p + Vector2(-3.5, 4.0), p + Vector2(0, -2.2), col, 1.0)
-	c.draw_line(p + Vector2(0, -2.2), p + Vector2(3.5, 4.0), col, 1.0)
+func _draw_peak(c: Control, p: Vector2, col: Color, scale: float) -> void:
+	c.draw_line(p + Vector2(-6.5, 4.0) * scale, p + Vector2(0, -6.5) * scale, col, 1.2)
+	c.draw_line(p + Vector2(0, -6.5) * scale, p + Vector2(6.5, 4.0) * scale, col, 1.2)
+	c.draw_line(p + Vector2(-3.5, 4.0) * scale, p + Vector2(0, -2.2) * scale, col, 1.0)
+	c.draw_line(p + Vector2(0, -2.2) * scale, p + Vector2(3.5, 4.0) * scale, col, 1.0)
 
 
 func _draw_reefs(c: Control, frame: Dictionary, size: Vector2) -> void:
