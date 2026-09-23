@@ -761,6 +761,7 @@ func _draw_world(c: Control, frame: Dictionary, size: Vector2) -> void:
 		c.draw_polyline(pts, ink, 1.45, true)
 		_draw_shoal(c, frame, ring, pts, i == 0, harbors)
 	_draw_land_grain(c, frame, size)
+	_draw_inland(c, frame, size)
 	_draw_ranges(c, frame, size)
 	var river_col := Color(0.32, 0.48, 0.55, 0.80)
 	for river in data.get("rivers", []):
@@ -796,25 +797,36 @@ func _geo_bounds(frame: Dictionary, size: Vector2) -> Dictionary:
 	}
 
 
+## 近图 5 度，中图 10 度，远图 20 度。线和边上的数字用同一档。
+func _grid_step(span: float) -> float:
+	if span > 70.0:
+		return 20.0
+	if span > 36.0:
+		return 10.0
+	return 5.0
+
+
 func _draw_graticule(c: Control, frame: Dictionary, size: Vector2) -> void:
 	var bounds := _geo_bounds(frame, size)
-	var col := Color(0.45, 0.32, 0.16, 0.16)
-	var lat := floorf(float(bounds["lat_min"]) / 5.0) * 5.0
+	var col := Color(0.45, 0.32, 0.16, 0.18)
+	var lat_step := _grid_step(float(bounds["lat_max"]) - float(bounds["lat_min"]))
+	var lon_step := _grid_step(float(bounds["lon_max"]) - float(bounds["lon_min"]))
+	var lat := floorf(float(bounds["lat_min"]) / lat_step) * lat_step
 	while lat <= float(bounds["lat_max"]):
 		_draw_dashed_line(
 			c,
 			_chart_xy(frame, lat, float(bounds["lon_min"])),
 			_chart_xy(frame, lat, float(bounds["lon_max"])),
 			col, 1.0, 9.0, 7.0)
-		lat += 5.0
-	var lon := floorf(float(bounds["lon_min"]) / 5.0) * 5.0
+		lat += lat_step
+	var lon := floorf(float(bounds["lon_min"]) / lon_step) * lon_step
 	while lon <= float(bounds["lon_max"]):
 		_draw_dashed_line(
 			c,
 			_chart_xy(frame, float(bounds["lat_min"]), lon),
 			_chart_xy(frame, float(bounds["lat_max"]), lon),
 			col, 1.0, 9.0, 7.0)
-		lon += 5.0
+		lon += lon_step
 
 
 func _draw_dashed_line(c: Control, a: Vector2, b: Vector2, col: Color, width: float, dash: float, gap: float) -> void:
@@ -837,7 +849,7 @@ func _draw_sea_depth(c: Control, size: Vector2) -> void:
 		var t := float(i) / float(strips - 1)
 		var x0 := size.x * float(i) / float(strips)
 		var w := size.x / float(strips) + 1.0
-		var alpha := 0.04 + t * t * 0.34
+		var alpha := 0.04 + t * t * 0.28
 		c.draw_rect(Rect2(x0, 0, w, size.y), Color(0.50, 0.78, 0.84, alpha), true)
 
 
@@ -896,6 +908,9 @@ func _draw_shoal(c: Control, frame: Dictionary, ring: Array, pts: PackedVector2A
 	var bands: Array = [
 		{"off": 5.0, "width": 5.0, "col": Color(0.78, 0.74, 0.56, 0.55), "clear": 11.0},
 		{"off": 11.0, "width": 2.4, "col": Color(0.32, 0.52, 0.56, 0.38), "clear": 16.0},
+		{"off": 18.0, "width": 8.0, "col": Color(0.40, 0.64, 0.72, 0.14), "clear": 26.0},
+		{"off": 30.0, "width": 10.0, "col": Color(0.34, 0.58, 0.68, 0.16), "clear": 38.0},
+		{"off": 44.0, "width": 12.0, "col": Color(0.28, 0.52, 0.64, 0.14), "clear": 52.0},
 	]
 	var beach := Color(0.88, 0.76, 0.54, 0.78)
 	var page := Rect2(Vector2(-40, -40), c.size + Vector2(80, 80))
@@ -941,6 +956,33 @@ func _draw_land_grain(c: Control, frame: Dictionary, size: Vector2) -> void:
 			x += 18.0
 		y += 13.0
 		row += 1
+
+
+## 离岸远一点的内陆铺一层暖赭，沿海那条沙岸留亮。
+func _draw_inland(c: Control, frame: Dictionary, size: Vector2) -> void:
+	var col := Color(0.52, 0.36, 0.16, 0.18)
+	var y := 20.0
+	var row := 0
+	while y < size.y - 12.0:
+		var x := 16.0 + float(row % 2) * 10.0
+		while x < size.x - 12.0:
+			if _deep_inland(frame, Vector2(x, y)):
+				c.draw_circle(Vector2(x, y), 12.0, col)
+			x += 18.0
+		y += 16.0
+		row += 1
+
+
+func _deep_inland(frame: Dictionary, p: Vector2) -> bool:
+	var here := _chart_unproject(frame, p)
+	if not _ashore(here.y, here.x):
+		return false
+	var probes: Array[Vector2] = [Vector2(30, 0), Vector2(-30, 0), Vector2(0, 30), Vector2(0, -30)]
+	for dir in probes:
+		var geo := _chart_unproject(frame, p + dir)
+		if not _ashore(geo.y, geo.x):
+			return false
+	return true
 
 
 func _draw_ranges(c: Control, frame: Dictionary, size: Vector2) -> void:
@@ -1112,10 +1154,8 @@ func _draw_margin_degrees(c: Control, frame: Dictionary, size: Vector2, font: Fo
 	var ink := Color(0.32, 0.18, 0.08, 0.92)
 	var chip := Color(0.95, 0.89, 0.76, 0.90)
 	var page := Rect2(Vector2(6, 8), size - Vector2(12, 16))
-	var lon_span := float(bounds["lon_max"]) - float(bounds["lon_min"])
-	var lat_span := float(bounds["lat_max"]) - float(bounds["lat_min"])
-	var lat_step := 10.0 if lat_span > 40.0 else 5.0
-	var lon_step := 20.0 if lon_span > 70.0 else (10.0 if lon_span > 36.0 else 5.0)
+	var lat_step := _grid_step(float(bounds["lat_max"]) - float(bounds["lat_min"]))
+	var lon_step := _grid_step(float(bounds["lon_max"]) - float(bounds["lon_min"]))
 	var lat := ceilf(float(bounds["lat_min"]) / lat_step) * lat_step
 	while lat < float(bounds["lat_max"]):
 		var y := _chart_xy(frame, lat, float(frame["mean_lon"])).y
