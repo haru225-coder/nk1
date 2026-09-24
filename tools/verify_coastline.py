@@ -4,6 +4,7 @@
 取景常数从 scripts/SeaChart.gd 读，避免和绘制各写一套。
 同时把第一章和全图取景画成 PNG，方便肉眼看海岸。
 """
+import heapq
 import json
 import math
 import re
@@ -182,6 +183,473 @@ def _coast_runs(poly, proj, lon0, lat0, lon1, lat1):
     return runs
 
 
+# 航线与港名的数字从 SeaChart.gd 读，避免和游戏各写一套。
+_RINGS = []
+_BOXES = []
+_BINS = []
+
+
+def lane_numbers() -> dict:
+    text = GD.read_text(encoding="utf-8")
+    found = {}
+    for name in (
+        "LANE_CELL", "LANE_INSET", "LANE_HARBOR", "LANE_SAMPLE", "LANE_DEDUP",
+        "LANE_SHORE_PENALTY", "LABEL_CLUSTER_PX",
+    ):
+        m = re.search(rf"const {name} := ([0-9.]+)", text)
+        if not m:
+            fail(f"SeaChart.gd 缺少 const {name}")
+            continue
+        found[name] = float(m.group(1))
+    return found
+
+
+def load_land_index(lands) -> None:
+    global _RINGS, _BOXES, _BINS
+    _RINGS, _BOXES, _BINS = [], [], []
+    for land in lands:
+        ring = land.get("ring", [])
+        if len(ring) >= 2 and ring[0] == ring[-1]:
+            ring = ring[:-1]
+        if len(ring) < 3:
+            continue
+        _RINGS.append(ring)
+        xs = [p[0] for p in ring]
+        ys = [p[1] for p in ring]
+        _BOXES.append((min(xs), min(ys), max(xs), max(ys)))
+        edge_bins = {}
+        n = len(ring)
+        for i in range(n):
+            y0 = ring[i][1]
+            y1 = ring[(i + 1) % n][1]
+            lo = int(math.floor(min(y0, y1))) - 6
+            hi = int(math.floor(max(y0, y1))) - 6
+            for b in range(lo, hi + 1):
+                edge_bins.setdefault(b, []).append(i)
+        _BINS.append(edge_bins)
+
+
+def on_land(lon, lat) -> bool:
+    for ring, (x0, y0, x1, y1), edge_bins in zip(_RINGS, _BOXES, _BINS):
+        if lon < x0 or lon > x1 or lat < y0 or lat > y1:
+            continue
+        edges = edge_bins.get(int(math.floor(lat)) - 6)
+        if not edges:
+            continue
+        inside = False
+        n = len(ring)
+        for i in edges:
+            j = (i + 1) % n
+            yi = ring[i][1]
+            yj = ring[j][1]
+            if (yi > lat) != (yj > lat):
+                xi = ring[i][0]
+                xj = ring[j][0]
+                if lon < (xj - xi) * (lat - yi) / (yj - yi) + xi:
+                    inside = not inside
+        if inside:
+            return True
+    return False
+
+
+class LaneGrid:
+    def __init__(self, frame, numbers):
+        self.frame = frame
+        self.n = numbers
+        self.cache = {}
+
+    def inside(self, lon, lat) -> bool:
+        lat0, lat1, lon0, lon1 = self.frame
+        pad = self.n["LANE_INSET"]
+        return lon0 + pad <= lon <= lon1 - pad and lat0 + pad <= lat <= lat1 - pad
+
+    def blocked(self, ix, iy) -> bool:
+        key = (ix, iy)
+        hit = self.cache.get(key)
+        if hit is not None:
+            return hit
+        cell = self.n["LANE_CELL"]
+        lon = (ix + 0.5) * cell
+        lat = (iy + 0.5) * cell
+        bad = (not self.inside(lon, lat)) or on_land(lon, lat)
+        self.cache[key] = bad
+        return bad
+
+
+def _nearest_water(grid, lon, lat, toward):
+    cell = grid.n["LANE_CELL"]
+    ix = int(math.floor(lon / cell))
+    iy = int(math.floor(lat / cell))
+    if not grid.blocked(ix, iy):
+        return ix, iy
+    best = None
+    best_score = 1e9
+    vx = toward[0] - lon
+    vy = toward[1] - lat
+    vl = math.hypot(vx, vy) or 1.0
+    for rad in range(1, 14):
+        found = False
+        for dy in range(-rad, rad + 1):
+            for dx in range(-rad, rad + 1):
+                if max(abs(dx), abs(dy)) != rad:
+                    continue
+                cx, cy = ix + dx, iy + dy
+                if grid.blocked(cx, cy):
+                    continue
+                found = True
+                clon = (cx + 0.5) * cell
+                clat = (cy + 0.5) * cell
+                align = ((clon - lon) * vx + (clat - lat) * vy) / vl
+                score = math.hypot(clon - lon, clat - lat) - align * 0.35
+                if score < best_score:
+                    best_score = score
+                    best = (cx, cy)
+        if found and best is not None and rad >= 2:
+            break
+    return best
+
+
+def _astar(grid, start, goal):
+    if start is None or goal is None:
+        return None
+    if start == goal:
+        return [start]
+    sx, sy = start
+    gx, gy = goal
+
+    def heuristic(ix, iy):
+        return math.hypot(ix - gx, iy - gy)
+
+    openq = [(heuristic(sx, sy), 0.0, sx, sy)]
+    came = {}
+    cost = {start: 0.0}
+    seen = 0
+    penalty = grid.n["LANE_SHORE_PENALTY"]
+    while openq:
+        _, g, x, y = heapq.heappop(openq)
+        if (x, y) == goal:
+            path = [(x, y)]
+            while (x, y) in came:
+                x, y = came[(x, y)]
+                path.append((x, y))
+            path.reverse()
+            return path
+        if g > cost.get((x, y), 1e18) + 1e-9:
+            continue
+        seen += 1
+        if seen > 20000:
+            return None
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                if dx == 0 and dy == 0:
+                    continue
+                nx, ny = x + dx, y + dy
+                if grid.blocked(nx, ny):
+                    continue
+                if dx != 0 and dy != 0 and (grid.blocked(x + dx, y) or grid.blocked(x, y + dy)):
+                    continue
+                step = math.hypot(dx, dy)
+                for ox, oy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    if grid.blocked(nx + ox, ny + oy):
+                        step += penalty
+                        break
+                ng = g + step
+                if ng < cost.get((nx, ny), 1e18):
+                    cost[(nx, ny)] = ng
+                    came[(nx, ny)] = (x, y)
+                    heapq.heappush(openq, (ng + heuristic(nx, ny), ng, nx, ny))
+    return None
+
+
+def _line_clear(a, b, ends, harbor, sample) -> bool:
+    dist = math.hypot(b[0] - a[0], b[1] - a[1])
+    steps = max(1, int(math.ceil(dist / sample)))
+    for i in range(steps + 1):
+        t = i / steps
+        lon = a[0] + (b[0] - a[0]) * t
+        lat = a[1] + (b[1] - a[1]) * t
+        if any(math.hypot(lon - e[0], lat - e[1]) < harbor for e in ends):
+            continue
+        if on_land(lon, lat):
+            return False
+    return True
+
+
+def _shortcut(pts, ends, harbor, sample):
+    if len(pts) <= 2:
+        return pts
+    out = [pts[0]]
+    i = 0
+    while i < len(pts) - 1:
+        j = len(pts) - 1
+        while j > i + 1 and not _line_clear(pts[i], pts[j], ends, harbor, sample):
+            j -= 1
+        out.append(pts[j])
+        i = j
+    return out
+
+
+def sea_lane(grid, a, b):
+    """(lon, lat) 到 (lon, lat)。航程仍按直线，这里只给海图一条不穿陆地的画法。"""
+    harbor = grid.n["LANE_HARBOR"]
+    cell = grid.n["LANE_CELL"]
+    dedup = grid.n["LANE_DEDUP"]
+    sample = grid.n["LANE_SAMPLE"]
+    straight = [a, b]
+    if _line_clear(a, b, [a, b], harbor, sample):
+        return straight
+    start = _nearest_water(grid, a[0], a[1], b)
+    goal = _nearest_water(grid, b[0], b[1], a)
+    path = _astar(grid, start, goal)
+    if not path:
+        return straight
+    pts = [((ix + 0.5) * cell, (iy + 0.5) * cell) for ix, iy in path]
+    pts = _shortcut(pts, [a, b], harbor, sample)
+    full = [a]
+    for p in pts:
+        if math.hypot(p[0] - full[-1][0], p[1] - full[-1][1]) > dedup:
+            full.append(p)
+    if math.hypot(full[-1][0] - b[0], full[-1][1] - b[1]) > dedup:
+        full.append(b)
+    else:
+        full[-1] = b
+    return _shortcut(full, [a, b], harbor, sample)
+
+
+def land_hits(pts, harbor, sample) -> int:
+    n = 0
+    for p, q in zip(pts, pts[1:]):
+        dist = math.hypot(q[0] - p[0], q[1] - p[1])
+        steps = max(1, int(math.ceil(dist / sample)))
+        for i in range(steps + 1):
+            t = i / steps
+            lon = p[0] + (q[0] - p[0]) * t
+            lat = p[1] + (q[1] - p[1]) * t
+            if math.hypot(lon - pts[0][0], lat - pts[0][1]) < harbor:
+                continue
+            if math.hypot(lon - pts[-1][0], lat - pts[-1][1]) < harbor:
+                continue
+            if on_land(lon, lat):
+                n += 1
+    return n
+
+
+def route_pairs(ports):
+    by_id = {p["id"]: p for p in ports}
+    seen = set()
+    pairs = []
+    for p in ports:
+        for cid in p.get("connections", []):
+            if cid not in by_id:
+                continue
+            key = tuple(sorted((p["id"], cid)))
+            if key in seen:
+                continue
+            seen.add(key)
+            pairs.append(key)
+    return pairs
+
+
+def check_lanes(ports, frame, numbers, label) -> None:
+    grid = LaneGrid(frame, numbers)
+    by_id = {p["id"]: p for p in ports}
+    harbor = numbers["LANE_HARBOR"]
+    worse = []
+    focus = {
+        "第一章": (("quanzhou", "fuzhou"),),
+        "全图": (("guangzhou", "quanzhou"), ("quanzhou", "fuzhou")),
+    }
+    report = {}
+    for a_id, b_id in route_pairs(ports):
+        a = (float(by_id[a_id]["lon"]), float(by_id[a_id]["lat"]))
+        b = (float(by_id[b_id]["lon"]), float(by_id[b_id]["lat"]))
+        sample = numbers["LANE_SAMPLE"]
+        straight = land_hits([a, b], harbor, sample)
+        bent = land_hits(sea_lane(grid, a, b), harbor, sample)
+        report[(a_id, b_id)] = (straight, bent)
+        if bent > straight:
+            worse.append(f"{by_id[a_id]['name']}-{by_id[b_id]['name']} {straight}->{bent}")
+    if worse:
+        fail(f"{label}有航线比直线更穿陆地: " + ", ".join(worse))
+    else:
+        ok(f"{label}航线没有比直线更穿陆地")
+    for a_id, b_id in focus.get(label, ()):
+        straight, bent = report.get((a_id, b_id), report.get((b_id, a_id), None))
+        names = f"{by_id[a_id]['name']}-{by_id[b_id]['name']}"
+        if straight is None:
+            fail(f"{label}缺少 {names}")
+        elif straight == 0 or bent * 2 > straight:
+            fail(f"{label}{names} 穿陆 {straight} -> {bent}，没有明显躲开陆地")
+        else:
+            ok(f"{label}{names} 穿陆 {straight} -> {bent}")
+
+
+def _seaward(lon, lat) -> int:
+    east = west = 0
+    for dist in (0.4, 0.85, 1.3):
+        east += not on_land(lon + dist, lat)
+        west += not on_land(lon - dist, lat)
+    if east > west:
+        return 1
+    if west > east:
+        return -1
+    return 1
+
+
+def place_labels(ports, proj, map_rect, measure, cluster_px):
+    """近港排成一列。靠海的一侧会盖住别的港时，改放到另一侧。"""
+    xy = [proj(float(p["lat"]), float(p["lon"])) for p in ports]
+    n = len(ports)
+    parent = list(range(n))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            if math.hypot(xy[i][0] - xy[j][0], xy[i][1] - xy[j][1]) < cluster_px:
+                parent[find(j)] = find(i)
+    groups = {}
+    for i in range(n):
+        groups.setdefault(find(i), []).append(i)
+
+    spots = []
+    placed = []
+
+    def overlaps(rect, pad):
+        grow = (rect[0] - pad, rect[1] - pad, rect[2] + pad, rect[3] + pad)
+        for prev in spots:
+            if grow[0] < prev[2] and grow[2] > prev[0] and grow[1] < prev[3] and grow[3] > prev[1]:
+                return True
+        return False
+
+    def covers_port(rect, members, pad=5):
+        grow = (rect[0] - pad, rect[1] - pad, rect[2] + pad, rect[3] + pad)
+        for i, (x, y) in enumerate(xy):
+            if i in members:
+                continue
+            if grow[0] <= x <= grow[2] and grow[1] <= y <= grow[3]:
+                return True
+        return False
+
+    clusters = []
+    singles = []
+    for members in groups.values():
+        if len(members) >= 2:
+            clusters.append(members)
+        else:
+            singles.append(members[0])
+    clusters.sort(key=len, reverse=True)
+    bounds = (map_rect[0] + 4, map_rect[1] + 4, map_rect[2] - 4, map_rect[3] - 4)
+
+    for members in clusters:
+        members = sorted(members, key=lambda i: -float(ports[i]["lat"]))
+        member_set = set(members)
+        sizes = [measure(ports[i]["name"]) for i in members]
+        max_w = max(w for w, _h in sizes)
+        gap = 2
+        total_h = sum(h for _w, h in sizes) + gap * (len(members) - 1)
+        lon = sum(float(ports[i]["lon"]) for i in members) / len(members)
+        lat = sum(float(ports[i]["lat"]) for i in members) / len(members)
+        sea = _seaward(lon, lat)
+        max_x = max(xy[i][0] for i in members)
+        min_x = min(xy[i][0] for i in members)
+        mean_y = sum(xy[i][1] for i in members) / len(members)
+
+        def column_at(side, shift, max_w=max_w, total_h=total_h, sizes=sizes):
+            left = max_x + 12 if side > 0 else min_x - 12 - max_w
+            top = mean_y - total_h * 0.5 + shift
+            left = min(max(left, bounds[0]), max(bounds[0], bounds[2] - max_w))
+            top = min(max(top, bounds[1]), max(bounds[1], bounds[3] - total_h))
+            rects = []
+            xs = []
+            y = top
+            for w, h in sizes:
+                x = left if side > 0 else left + max_w - w
+                rects.append((x, y, x + w, y + h))
+                xs.append(x)
+                y += h + gap
+            return xs, rects
+
+        chosen = None
+        for side in (sea, -sea):
+            for shift in (0, -16, 16, -32, 32, -48, 48, -64, 64):
+                xs, rects = column_at(side, shift)
+                if any(overlaps(r, 1) or covers_port(r, member_set) for r in rects):
+                    continue
+                cost = abs(shift) + (0 if side == sea else 6)
+                if chosen is None or cost < chosen[0]:
+                    chosen = (cost, side, xs, rects)
+            if chosen is not None and chosen[0] < 6:
+                break
+        if chosen is None:
+            xs, rects = column_at(sea, 0)
+            chosen = (99, sea, xs, rects)
+        _cost, side, xs, rects = chosen
+        for i, x, rect in zip(members, xs, rects):
+            w = rect[2] - rect[0]
+            h = rect[3] - rect[1]
+            spots.append(rect)
+            attach_x = x if side > 0 else x + w
+            anchor = xy[i]
+            leader = None
+            attach = (attach_x, rect[1] + h * 0.5)
+            if math.hypot(attach[0] - anchor[0], attach[1] - anchor[1]) > 8:
+                leader = (anchor, attach)
+            placed.append((ports[i]["name"], (x, rect[1]), rect, leader))
+
+    for i in singles:
+        name = ports[i]["name"]
+        w, h = measure(name)
+        ax, ay = xy[i]
+        sea = _seaward(float(ports[i]["lon"]), float(ports[i]["lat"]))
+        cands = []
+        for dist in (8, 22, 36):
+            cands.append((ax + sea * dist - (0 if sea > 0 else w), ay - h * 0.5))
+            cands.append((ax + sea * dist - (0 if sea > 0 else w), ay + 4))
+            cands.append((ax + sea * dist - (0 if sea > 0 else w), ay - h - 2))
+            cands.append((ax - sea * dist - (w if sea > 0 else 0), ay - h * 0.5))
+            cands.append((ax - w * 0.5, ay - h - dist))
+            cands.append((ax - w * 0.5, ay + dist))
+        best = None
+        best_cost = 1e9
+        for x, y in cands:
+            rect = (x, y, x + w, y + h)
+            if rect[0] < bounds[0] or rect[1] < bounds[1] or rect[2] > bounds[2] or rect[3] > bounds[3]:
+                continue
+            cost = 0
+            if overlaps(rect, 2):
+                cost += 50
+            if covers_port(rect, {i}):
+                cost += 80
+            if sea > 0 and x < ax:
+                cost += 3
+            if sea < 0 and x + w > ax:
+                cost += 3
+            if cost < best_cost:
+                best_cost = cost
+                best = (x, y, rect)
+                if cost == 0:
+                    break
+        if best is None:
+            best = (ax + 8, ay - h * 0.5, (ax + 8, ay - h * 0.5, ax + 8 + w, ay - h * 0.5 + h))
+        x, y, rect = best
+        spots.append(rect)
+        placed.append((name, (x, y), rect, None))
+
+    overlaps_at = []
+    for i in range(len(spots)):
+        a = spots[i]
+        for j in range(i + 1, len(spots)):
+            b = spots[j]
+            if a[0] < b[2] and a[2] > b[0] and a[1] < b[3] and a[3] > b[1]:
+                overlaps_at.append(f"{placed[i][0]}/{placed[j][0]}")
+    return placed, overlaps_at
+
+
 def _dashed(draw, a, b, fill, width=1, dash=6, gap=4):
     dist = math.hypot(b[0] - a[0], b[1] - a[1])
     if dist < 1:
@@ -236,11 +704,12 @@ def render(path: Path, ports, polys, const, size):
         draw.line([proj(lat0, lon), proj(lat1, lon)], fill=grid, width=1)
         lon += step
 
+    shoal_w = int(round(min(7.5, max(3.0, scale * 0.11))))
     view = box(lon0, lat0, lon1, lat1)
     visible = [poly for poly in polys if poly.intersects(view)]
     for poly in visible:
         for run in _coast_runs(poly, proj, lon0, lat0, lon1, lat1):
-            draw.line(run, fill=shoal, width=12)
+            draw.line(run, fill=shoal, width=shoal_w)
     for poly in visible:
         part = poly.intersection(view)
         for piece in explode(part):
@@ -258,22 +727,24 @@ def render(path: Path, ports, polys, const, size):
         font = ImageFont.load_default()
         font_sea = font
 
+    numbers = lane_numbers()
+    lane_grid = LaneGrid((lat0, lat1, lon0, lon1), numbers) if len(numbers) == 7 else None
     by_id = {p["id"]: p for p in ports}
     seen = set()
     for p in ports:
-        a = proj(float(p["lat"]), float(p["lon"]))
         for cid in p.get("connections", []):
-            q = by_id.get(cid)
-            if q is None or q not in ports and cid not in by_id:
-                continue
             if cid not in by_id or by_id[cid] not in ports:
                 continue
             key = tuple(sorted((p["id"], cid)))
             if key in seen:
                 continue
             seen.add(key)
-            b = proj(float(by_id[cid]["lat"]), float(by_id[cid]["lon"]))
-            _dashed(draw, a, b, (210, 190, 145))
+            a = (float(p["lon"]), float(p["lat"]))
+            b = (float(by_id[cid]["lon"]), float(by_id[cid]["lat"]))
+            pts = sea_lane(lane_grid, a, b) if lane_grid is not None else [a, b]
+            screen = [proj(lat, lon) for lon, lat in pts]
+            for u, v in zip(screen, screen[1:]):
+                _dashed(draw, u, v, (210, 190, 145), width=2)
 
     land_all = unary_union(polys) if polys else None
     port_xy = [proj(float(p["lat"]), float(p["lon"])) for p in ports]
@@ -306,13 +777,25 @@ def render(path: Path, ports, polys, const, size):
     draw.polygon([(cx, cy - 18), (cx - 4, cy - 10), (cx + 4, cy - 10)], fill=frame)
     draw.text((cx - 7, cy - 34), "北", fill=frame, font=font)
 
+    def measure(text):
+        box = font.getbbox(text)
+        return box[2] - box[0], box[3] - box[1]
+
+    placed = []
+    if len(numbers) == 7:
+        placed, _overlaps = place_labels(
+            ports, proj, tuple(map_rect), measure, numbers["LABEL_CLUSTER_PX"])
+    for _text, _xy, _rect, leader in placed:
+        if leader:
+            draw.line(leader, fill=ink, width=1)
     for p in ports:
         x, y = proj(float(p["lat"]), float(p["lon"]))
         r = 4
         draw.ellipse((x - r - 2, y - r - 2, x + r + 2, y + r + 2), fill=(245, 237, 214))
         draw.ellipse((x - r, y - r, x + r, y + r), outline=ink, width=2)
         draw.ellipse((x - 1, y - 1, x + 1, y + 1), fill=ink)
-        draw.text((x + 8, y - 8), p["name"], fill=ink, font=font)
+    for text, (x, y), _rect, _leader in placed:
+        draw.text((x, y), text, fill=ink, font=font)
     draw.rectangle(map_rect, outline=frame, width=2)
     inner = [map_rect[0] + 4, map_rect[1] + 4, map_rect[2] - 4, map_rect[3] - 4]
     draw.rectangle(inner, outline=frame)
@@ -453,6 +936,50 @@ def main() -> None:
         fail(f"{bad_tri} 块陆地三角化失败")
     else:
         ok("第一章和全图取景里的陆地都能三角化")
+
+    load_land_index(lands)
+    numbers = lane_numbers()
+    if len(numbers) == 7 and _RINGS:
+        check_lanes(ch1, ch1_frame, numbers, "第一章")
+        check_lanes(ports, full_frame, numbers, "全图")
+        try:
+            label_font = ImageFont.truetype("/usr/share/fonts/truetype/wqy/wqy-microhei.ttc", 13)
+        except OSError:
+            label_font = None
+            fail("缺少中文字体，无法核对港名是否重叠")
+        if label_font is not None:
+            def measure(text, font=label_font):
+                box = font.getbbox(text)
+                return box[2] - box[0], box[3] - box[1]
+
+            def layout_of(subset, const, size):
+                lat0, lat1, lon0, lon1 = frame_for(subset, const)
+                w, h = size
+                mean_lat = (lat0 + lat1) * 0.5
+                mean_lon = (lon0 + lon1) * 0.5
+                kx = math.cos(math.radians(mean_lat))
+                scale = min(w / max(0.5, (lon1 - lon0) * kx), h / max(0.5, lat1 - lat0))
+                mid = (w * 0.5, h * 0.5)
+
+                def proj(lat, lon):
+                    return (
+                        mid[0] + (lon - mean_lon) * kx * scale,
+                        mid[1] - (lat - mean_lat) * scale,
+                    )
+
+                top = proj(lat1, lon0)
+                bot = proj(lat0, lon1)
+                return proj, (top[0], top[1], bot[0], bot[1])
+
+            for size in ((900, 520), (680, 380)):
+                for label, subset in (("第一章", ch1), ("全图", ports)):
+                    proj, map_rect = layout_of(subset, const, size)
+                    _placed, overlaps = place_labels(
+                        subset, proj, map_rect, measure, numbers["LABEL_CLUSTER_PX"])
+                    if overlaps:
+                        fail(f"{label} {size[0]}×{size[1]} 港名重叠: {', '.join(overlaps)}")
+            if not any("港名重叠" in item for item in problems):
+                ok("两种图幅下港名都不重叠")
 
     render(OUT_DIR / "chart_ch1.png", ch1, polys, const, (900, 520))
     render(OUT_DIR / "chart_full.png", ports, polys, const, (900, 520))
