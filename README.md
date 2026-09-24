@@ -38,6 +38,7 @@ python3 tools/patrol.py
 python3 tools/check_symbols.py    # autoload 顺序与跨文件符号 + 海战精灵 PNG 取证（RGBA8/四角透明/体积下限）
 python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 / 死港 / 海战数值边界 / 结局旗标
 python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢出
+python3 tools/verify_narrative.py # （云端 21ce 自带，绑定其 P7 平行实现；本分支按主干 p6 结局线，此脚本仅留档不入门禁）
 ```
 
 有 Godot 4.6 时，引擎两层也可以单独跑：

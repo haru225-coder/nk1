@@ -3141,7 +3141,56 @@ func apply_effects(effects: Dictionary) -> void:
 				GameState.scholar_tendency += int(val)
 			"ledger_note":
 				GameState.add_ledger_note(str(val))
+			# 以下五键取自云端 21ce（此前写入即丢弃）：补给、货物、船体、货损、发现
+			"supplies":
+				var want := int(val)
+				var got := Fleet.add_supply_pair(want)
+				if want > 0 and got < want:
+					push_warning("补给装不下 %d 份，实装 %d @ %s" % [want, got, current_scene_id])
+			"cargo":
+				var ids: Array = val if val is Array else [val]
+				for gid in ids:
+					var good := GameManager.get_good_by_id(str(gid))
+					if good.is_empty():
+						push_warning("未知货物 %s @ %s" % [gid, current_scene_id])
+						continue
+					if not Fleet.add_cargo(str(gid), 1, 0.0):
+						push_warning("舱位不足，未装入 %s @ %s" % [gid, current_scene_id])
+			"ship":
+				Fleet.adjust_flagship_durability(int(val))
+			"cargo_loss":
+				_apply_cargo_loss(str(val))
+			"discovery":
+				var did := _discovery_id_for(str(val))
+				if did == "":
+					push_warning("未知发现 %s @ %s" % [val, current_scene_id])
+				else:
+					GameState.record_discovery(did)
 	update_status_panel()
+
+
+## 序章货损令牌（云端 21ce）：青白瓷三成、唐坊寄物水渍一件；其余令牌只记入账册。
+func _apply_cargo_loss(token: String) -> void:
+	if token == "qingbai_porcelain_partial_loss":
+		var q := Fleet.cargo_qty("qingbai_porcelain")
+		if q > 0:
+			var loss := mini(q, maxi(1, int(round(float(q) * 0.3))))
+			Fleet.remove_cargo("qingbai_porcelain", loss)
+	elif token == "tangfang_parcel_water_stain":
+		if Fleet.cargo_qty("tangfang_parcel") > 0:
+			Fleet.remove_cargo("tangfang_parcel", 1)
+			GameState.add_ledger_note("parcel_stained")
+	else:
+		GameState.add_ledger_note(token)
+
+
+## 剧情效果里的发现可以写中文名或 id（云端 21ce）。
+func _discovery_id_for(token: String) -> String:
+	var want := token.strip_edges()
+	for d in GameManager.discoveries_data.get("discoveries", []):
+		if str(d.get("name", "")) == want or str(d.get("id", "")) == want:
+			return str(d.get("id", ""))
+	return ""
 
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -211,6 +211,19 @@ ship_ch = {ch_num(s.get("unlock", "ch1")) for s in ships.values()}
 check(ship_ch <= set(range(1, max_ch + 1)),
       f"ships.json 引用的章节号 {sorted(ship_ch)} 均在定义范围内")
 
+finals = [c for c in chapters if not c.get("next_requires")]
+check(len(finals) == 1, "恰好有一个最终章（next_requires 为空）")
+if len(finals) == 1:
+    # 云端 21ce 原按自家 ending.{sea,scholar,both} 结构检查；本分支按主干 p6 结构：终章 endings 列表非空、每条带 id 与 scene
+    endings = finals[0].get("endings") or []
+    check(isinstance(endings, list) and len(endings) >= 1, f"最终章 endings 列表非空（现 {len(endings)} 条）")
+    for e in endings:
+        check(isinstance(e, dict) and str(e.get("id", "")).strip() != "" and str(e.get("scene", "")).strip() != "",
+              f"最终章结局 {e.get('id', '?') if isinstance(e, dict) else e} 带 id 与 scene")
+    champa_ch = ch_num(ports.get("champa", {}).get("unlock", "ch1"))
+    check(champa_ch <= int(finals[0]["id"]),
+          f"占城解锁于第 {champa_ch} 章，不高于最终章 {finals[0]['id']}")
+
 print()
 print("=" * 68)
 print("一之三、船上职事的加成边界（防数值失控）")
