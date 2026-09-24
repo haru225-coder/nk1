@@ -358,6 +358,9 @@ const LANE_HARBOR := 0.22
 const LANE_SAMPLE := 0.10
 const LANE_DEDUP := 0.08
 const LANE_SHORE_PENALTY := 0.15
+## 折角尽量圆成这个半径；靠岸的一段停在海岸，不再画进城。里程仍按直线。
+const LANE_FILLET := 0.50
+const LANE_STUB := 0.55
 ## 屏幕上近过这个距离的港名合成一列，避免叠字。
 const LABEL_CLUSTER_PX := 18.0
 
@@ -420,16 +423,17 @@ func _draw_chart(c: Control) -> void:
 			var lane := _sea_lane(
 				float(o.get("lon", 0.0)), float(o.get("lat", 0.0)),
 				float(d.get("lon", 0.0)), float(d.get("lat", 0.0)), frame)
-			var screen := _project_lane(proj, lane)
 			var wf := Voyage.wind_factor(Voyage.bearing(origin_port, selected_port))
 			var col := CHART_GOLD
 			if wf >= 1.15:
 				col = Color(0.18, 0.48, 0.32)
 			elif wf <= 0.75:
 				col = CHART_VERMILION
-			# 顺风绿、逆风朱、侧风金。浅色垫底，浅滩上也看得见。
-			_draw_lane_solid(c, screen, Color(0.96, 0.93, 0.84, 0.85), 4.5)
-			_draw_lane_solid(c, screen, col, 2.2)
+			# 顺风绿、逆风朱、侧风金。浅色垫底，浅滩上也看得见。线停在海岸，不画进城。
+			for run in _lane_water_runs(lane):
+				var screen := _project_lane(proj, run)
+				_draw_lane_solid(c, screen, Color(0.96, 0.93, 0.84, 0.85), 4.5)
+				_draw_lane_solid(c, screen, col, 2.2)
 
 	var port_pts: Array = []
 	for p in pts:
@@ -673,7 +677,8 @@ func _draw_known_routes(c: Control, proj: Callable, pts: Array, frame: Dictionar
 			var lane := _sea_lane(
 				float(p.get("lon", 0.0)), float(p.get("lat", 0.0)),
 				float(q.get("lon", 0.0)), float(q.get("lat", 0.0)), frame)
-			_draw_dashed_poly(c, _project_lane(proj, lane), route_col, 1.0, 5.0, 4.0)
+			for run in _lane_water_runs(lane):
+				_draw_dashed_poly(c, _project_lane(proj, run), route_col, 1.0, 5.0, 4.0)
 
 
 func _draw_ports(c: Control, proj: Callable, pts: Array, screen: Array, map_rect: Rect2) -> void:
@@ -974,18 +979,19 @@ func _prepare_lane_frame(frame: Dictionary) -> void:
 
 
 func _sea_lane_build(a: Vector2, b: Vector2) -> PackedVector2Array:
-	if _line_clear(a, b, [a, b]):
-		return PackedVector2Array([a, b])
+	var ends: Array = [a, b]
+	if _line_clear(a, b, ends):
+		return _pack_lane(_polish_lane(ends, ends))
 	var start = _nearest_water(a.x, a.y, b)
 	var goal = _nearest_water(b.x, b.y, a)
 	var path: Array = _astar(start, goal)
 	if path.is_empty():
-		return PackedVector2Array([a, b])
+		return _pack_lane(_polish_lane(ends, ends))
 	var pts: Array = []
 	for cell in path:
 		var iv: Vector2i = cell
 		pts.append(Vector2((float(iv.x) + 0.5) * LANE_CELL, (float(iv.y) + 0.5) * LANE_CELL))
-	pts = _shortcut(pts, [a, b])
+	pts = _shortcut(pts, ends)
 	var full: Array = [a]
 	for p in pts:
 		var pv: Vector2 = p
@@ -997,10 +1003,15 @@ func _sea_lane_build(a: Vector2, b: Vector2) -> PackedVector2Array:
 		full.append(b)
 	else:
 		full[full.size() - 1] = b
-	full = _shortcut(full, [a, b])
+	full = _shortcut(full, ends)
+	return _pack_lane(_polish_lane(full, ends))
+
+
+func _pack_lane(pts: Array) -> PackedVector2Array:
 	var packed := PackedVector2Array()
-	for p in full:
-		packed.append(p)
+	packed.resize(pts.size())
+	for i in pts.size():
+		packed[i] = pts[i]
 	return packed
 
 
@@ -1186,6 +1197,376 @@ func _shortcut(pts: Array, ends: Array) -> Array:
 		out.append(pts[j])
 		i = j
 	return out
+
+
+func _turn_of(a: Vector2, b: Vector2, c: Vector2) -> Array:
+	var v1 := a - b
+	var v2 := c - b
+	var l1 := v1.length()
+	var l2 := v2.length()
+	if l1 < 0.000000001:
+		l1 = 0.000000001
+	if l2 < 0.000000001:
+		l2 = 0.000000001
+	var dot := clampf((v1.x * v2.x + v1.y * v2.y) / (l1 * l2), -1.0, 1.0)
+	var turn := 180.0 - rad_to_deg(acos(dot))
+	return [turn, v1 / l1, v2 / l2, l1, l2]
+
+
+func _max_turn(pts: Array) -> float:
+	var best := 0.0
+	for i in range(1, pts.size() - 1):
+		var info: Array = _turn_of(pts[i - 1], pts[i], pts[i + 1])
+		best = maxf(best, float(info[0]))
+	return best
+
+
+func _clear_seq(seq: Array, ends: Array) -> bool:
+	for i in seq.size() - 1:
+		var u: Vector2 = seq[i]
+		var w: Vector2 = seq[i + 1]
+		if u.distance_to(w) < 0.000001:
+			continue
+		if not _line_clear(u, w, ends):
+			return false
+	return true
+
+
+func _bisector(u1: Vector2, u2: Vector2) -> Vector2:
+	var bis := u1 + u2
+	var length := bis.length()
+	if length < 0.000000001:
+		length = 0.000000001
+	return bis / length
+
+
+func _inward_arc(a: Vector2, b: Vector2, c: Vector2, ends: Array):
+	var info: Array = _turn_of(a, b, c)
+	var turn: float = info[0]
+	var u1: Vector2 = info[1]
+	var u2: Vector2 = info[2]
+	var l1: float = info[3]
+	var l2: float = info[4]
+	if turn < 18.0 or l1 < 0.05 or l2 < 0.05:
+		return null
+	var bis := _bisector(u1, u2)
+	var vertices: Array = [b]
+	for nudge_v in [0.08, 0.14]:
+		var nudge := float(nudge_v)
+		var nb := Vector2(b.x - bis.x * nudge, b.y - bis.y * nudge)
+		if _on_land(nb.x, nb.y):
+			continue
+		if _clear_seq([a, nb, c], ends):
+			vertices.append(nb)
+	for vertex in vertices:
+		var vv: Vector2 = vertex
+		info = _turn_of(a, vv, c)
+		turn = float(info[0])
+		u1 = info[1]
+		u2 = info[2]
+		l1 = float(info[3])
+		l2 = float(info[4])
+		var interior := 180.0 - turn
+		bis = _bisector(u1, u2)
+		var half := deg_to_rad(maxf(interior, 1.0) * 0.5)
+		var tang := tan(half)
+		if tang < 0.12:
+			continue
+		for radius_v in [LANE_FILLET, LANE_FILLET * 0.64, LANE_FILLET * 0.36, LANE_FILLET * 0.22]:
+			var radius := float(radius_v)
+			var tdist := minf(radius / tang, minf(l1 * 0.45, l2 * 0.45))
+			if tdist < 0.05:
+				continue
+			var p1 := Vector2(vv.x + u1.x * tdist, vv.y + u1.y * tdist)
+			var p2 := Vector2(vv.x + u2.x * tdist, vv.y + u2.y * tdist)
+			var rad := tdist * tang
+			var dist_c := rad / sin(half)
+			var center := Vector2(vv.x + bis.x * dist_c, vv.y + bis.y * dist_c)
+			var a1 := atan2(p1.y - center.y, p1.x - center.x)
+			var a2 := atan2(p2.y - center.y, p2.x - center.x)
+			var sweep := a2 - a1
+			while sweep <= 0.0:
+				sweep += TAU
+			if sweep > PI:
+				sweep -= TAU
+			if absf(sweep) > deg_to_rad(175.0):
+				continue
+			var steps := maxi(3, int(ceil(absf(rad_to_deg(sweep)) / 14.0)))
+			var arc: Array = []
+			for s in steps + 1:
+				var theta := a1 + sweep * (float(s) / float(steps))
+				arc.append(Vector2(center.x + cos(theta) * rad, center.y + sin(theta) * rad))
+			var seq: Array = [a]
+			seq.append_array(arc)
+			seq.append(c)
+			if _clear_seq(seq, ends):
+				return arc
+	return null
+
+
+func _outward_curve(a: Vector2, b: Vector2, c: Vector2, ends: Array):
+	var info: Array = _turn_of(a, b, c)
+	var turn: float = info[0]
+	var u1: Vector2 = info[1]
+	var u2: Vector2 = info[2]
+	var l1: float = info[3]
+	var l2: float = info[4]
+	if turn < 36.0 or l1 < 0.08 or l2 < 0.08:
+		return null
+	var bis := _bisector(u1, u2)
+	var best = null
+	var best_turn := turn
+	for shoulder_v in [0.28, 0.18, 0.12]:
+		var shoulder := float(shoulder_v)
+		var td := minf(shoulder, minf(l1 * 0.42, l2 * 0.42))
+		if td < 0.08:
+			continue
+		var p1 := Vector2(b.x + u1.x * td, b.y + u1.y * td)
+		var p2 := Vector2(b.x + u2.x * td, b.y + u2.y * td)
+		for bulge_v in [0.16, 0.10, 0.06]:
+			var bulge := float(bulge_v)
+			var ctrl := Vector2(b.x - bis.x * bulge, b.y - bis.y * bulge)
+			if _on_land(ctrl.x, ctrl.y):
+				continue
+			var curve: Array = []
+			var steps := 8
+			for s in steps + 1:
+				var t := float(s) / float(steps)
+				var u := 1.0 - t
+				curve.append(Vector2(
+					u * u * p1.x + 2.0 * u * t * ctrl.x + t * t * p2.x,
+					u * u * p1.y + 2.0 * u * t * ctrl.y + t * t * p2.y))
+			var seq: Array = [a]
+			seq.append_array(curve)
+			seq.append(c)
+			if not _clear_seq(seq, ends):
+				continue
+			var local := _max_turn(seq)
+			if local < best_turn - 8.0 and local <= 34.0:
+				best = curve
+				best_turn = local
+	return best
+
+
+func _dedup_lane(pts: Array, gap: float) -> Array:
+	if pts.is_empty():
+		return []
+	var out: Array = [pts[0]]
+	for i in range(1, pts.size()):
+		var pv: Vector2 = pts[i]
+		var last: Vector2 = out[out.size() - 1]
+		if last.distance_to(pv) > gap:
+			out.append(pv)
+	return out
+
+
+func _lane_hits(pts: Array) -> int:
+	var count := 0
+	if pts.size() < 2:
+		return 0
+	var origin: Vector2 = pts[0]
+	var dest: Vector2 = pts[pts.size() - 1]
+	for i in pts.size() - 1:
+		var p: Vector2 = pts[i]
+		var q: Vector2 = pts[i + 1]
+		var dist := p.distance_to(q)
+		var steps := maxi(1, int(ceil(dist / LANE_SAMPLE)))
+		for k in steps + 1:
+			var t := float(k) / float(steps)
+			var point := Vector2(p.x + (q.x - p.x) * t, p.y + (q.y - p.y) * t)
+			if point.distance_to(origin) < LANE_HARBOR:
+				continue
+			if point.distance_to(dest) < LANE_HARBOR:
+				continue
+			if _on_land(point.x, point.y):
+				count += 1
+	return count
+
+
+func _round_once(pts: Array, ends: Array) -> Array:
+	if pts.size() < 3:
+		return pts.duplicate()
+	var cur: Array = pts.duplicate()
+	var i := 1
+	var guard := 0
+	while i < cur.size() - 1 and guard < 40:
+		guard += 1
+		var a: Vector2 = cur[i - 1]
+		var b: Vector2 = cur[i]
+		var c: Vector2 = cur[i + 1]
+		var info: Array = _turn_of(a, b, c)
+		var turn: float = info[0]
+		var arc = null
+		if turn >= 18.0:
+			arc = _inward_arc(a, b, c, ends)
+			if arc == null and turn >= 36.0:
+				arc = _outward_curve(a, b, c, ends)
+		if arc == null:
+			i += 1
+			continue
+		var nxt: Array = cur.slice(0, i)
+		nxt.append_array(arc)
+		nxt.append_array(cur.slice(i + 1, cur.size()))
+		nxt = _dedup_lane(nxt, 0.025)
+		if _lane_hits(nxt) > _lane_hits(cur):
+			i += 1
+			continue
+		if _max_turn(nxt) > _max_turn(cur) + 0.5:
+			i += 1
+			continue
+		var old_len := cur.size()
+		cur = nxt
+		i += maxi(1, cur.size() - old_len + 1)
+	return cur
+
+
+func _trim_stub(pts: Array, ends: Array) -> Array:
+	var trimmed: Array = _trim_one_end(pts, ends[1], false)
+	return _trim_one_end(trimmed, ends[0], true)
+
+
+func _trim_one_end(pts: Array, origin: Vector2, at_start: bool) -> Array:
+	if pts.size() < 2:
+		return pts
+	var seq: Array = pts.duplicate()
+	if not at_start:
+		seq.reverse()
+	var exit_lon := 0.0
+	var exit_lat := 0.0
+	var exit_seg := -1
+	var exit_t := 0.0
+	var seen_land := false
+	var stop := false
+	for seg in seq.size() - 1:
+		if stop:
+			break
+		var p: Vector2 = seq[seg]
+		var q: Vector2 = seq[seg + 1]
+		var dist := p.distance_to(q)
+		var steps := maxi(1, int(ceil(dist / 0.02)))
+		for k in steps + 1:
+			var t := float(k) / float(steps)
+			var lon := p.x + (q.x - p.x) * t
+			var lat := p.y + (q.y - p.y) * t
+			if Vector2(lon, lat).distance_to(origin) > LANE_STUB:
+				stop = true
+				break
+			if _on_land(lon, lat):
+				seen_land = true
+				exit_seg = -1
+			elif seen_land and exit_seg < 0:
+				exit_lon = lon
+				exit_lat = lat
+				exit_seg = seg
+				exit_t = t
+	if exit_seg < 0:
+		return pts
+	var rest: Array = [Vector2(exit_lon, exit_lat)]
+	if exit_t < 0.999:
+		rest.append(seq[exit_seg + 1])
+	for j in range(exit_seg + 2, seq.size()):
+		rest.append(seq[j])
+	var cleaned := _dedup_lane(rest, 0.02)
+	if cleaned.size() < 2:
+		return pts
+	if not at_start:
+		cleaned.reverse()
+	return cleaned
+
+
+func _polish_lane(pts: Array, ends: Array) -> Array:
+	var curved := _round_once(pts, ends)
+	curved = _trim_stub(curved, ends)
+	curved = _round_once(curved, ends)
+	return _trim_stub(curved, ends)
+
+
+func _coast_between(water: Vector2, land: Vector2) -> Vector2:
+	var lo := 0.0
+	var hi := 1.0
+	for _step in 8:
+		var mid := (lo + hi) * 0.5
+		var lon := water.x + (land.x - water.x) * mid
+		var lat := water.y + (land.y - water.y) * mid
+		if _on_land(lon, lat):
+			hi = mid
+		else:
+			lo = mid
+	return Vector2(water.x + (land.x - water.x) * lo, water.y + (land.y - water.y) * lo)
+
+
+func _append_far(cur: Array, pt: Vector2) -> void:
+	if cur.is_empty():
+		cur.append(pt)
+		return
+	var last: Vector2 = cur[cur.size() - 1]
+	if last.distance_to(pt) > 0.0001:
+		cur.append(pt)
+
+
+func _emit_run(runs: Array, cur: Array) -> Array:
+	if cur.size() >= 2:
+		var packed := PackedVector2Array()
+		packed.resize(cur.size())
+		for i in cur.size():
+			packed[i] = cur[i]
+		runs.append(packed)
+	return []
+
+
+func _lane_water_runs(lane: PackedVector2Array) -> Array:
+	var runs: Array = []
+	if lane.size() < 2:
+		return runs
+	var cur: Array = []
+	var step := 0.04
+	for seg in lane.size() - 1:
+		var p: Vector2 = lane[seg]
+		var q: Vector2 = lane[seg + 1]
+		var dist := p.distance_to(q)
+		var n := maxi(1, int(ceil(dist / step)))
+		var flags: Array = []
+		flags.resize(n + 1)
+		for sample_i in n + 1:
+			var sample_t := float(sample_i) / float(n)
+			flags[sample_i] = _on_land(p.x + (q.x - p.x) * sample_t, p.y + (q.y - p.y) * sample_t)
+		var cursor := 0
+		while cursor <= n:
+			if flags[cursor]:
+				if not cur.is_empty() and cursor > 0 and not flags[cursor - 1]:
+					var tw := float(cursor - 1) / float(n)
+					var tl := float(cursor) / float(n)
+					_append_far(cur, _coast_between(
+						Vector2(p.x + (q.x - p.x) * tw, p.y + (q.y - p.y) * tw),
+						Vector2(p.x + (q.x - p.x) * tl, p.y + (q.y - p.y) * tl)))
+					cur = _emit_run(runs, cur)
+				cursor += 1
+				continue
+			if cur.is_empty():
+				if cursor == 0:
+					_append_far(cur, p)
+				else:
+					var tw2 := float(cursor) / float(n)
+					var tl2 := float(cursor - 1) / float(n)
+					_append_far(cur, _coast_between(
+						Vector2(p.x + (q.x - p.x) * tw2, p.y + (q.y - p.y) * tw2),
+						Vector2(p.x + (q.x - p.x) * tl2, p.y + (q.y - p.y) * tl2)))
+			var k1 := cursor
+			while k1 + 1 <= n and not flags[k1 + 1]:
+				k1 += 1
+			if k1 == n:
+				_append_far(cur, q)
+			else:
+				var tw3 := float(k1) / float(n)
+				var tl3 := float(k1 + 1) / float(n)
+				_append_far(cur, _coast_between(
+					Vector2(p.x + (q.x - p.x) * tw3, p.y + (q.y - p.y) * tw3),
+					Vector2(p.x + (q.x - p.x) * tl3, p.y + (q.y - p.y) * tl3)))
+				cur = _emit_run(runs, cur)
+			cursor = k1 + 1
+	if cur.size() >= 2:
+		_emit_run(runs, cur)
+	return runs
 
 
 func _draw_sea_names(c: Control, proj: Callable, lat0: float, lat1: float, lon0: float, lon1: float, port_pts: Array) -> void:

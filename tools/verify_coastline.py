@@ -194,7 +194,7 @@ def lane_numbers() -> dict:
     found = {}
     for name in (
         "LANE_CELL", "LANE_INSET", "LANE_HARBOR", "LANE_SAMPLE", "LANE_DEDUP",
-        "LANE_SHORE_PENALTY", "LABEL_CLUSTER_PX",
+        "LANE_SHORE_PENALTY", "LANE_FILLET", "LANE_STUB", "LABEL_CLUSTER_PX",
     ):
         m = re.search(rf"const {name} := ([0-9.]+)", text)
         if not m:
@@ -389,22 +389,302 @@ def _shortcut(pts, ends, harbor, sample):
     return out
 
 
+def _turn_of(a, b, c):
+    v1 = (a[0] - b[0], a[1] - b[1])
+    v2 = (c[0] - b[0], c[1] - b[1])
+    l1 = math.hypot(*v1) or 1e-9
+    l2 = math.hypot(*v2) or 1e-9
+    dot = max(-1.0, min(1.0, (v1[0] * v2[0] + v1[1] * v2[1]) / (l1 * l2)))
+    turn = 180.0 - math.degrees(math.acos(dot))
+    return turn, (v1[0] / l1, v1[1] / l1), (v2[0] / l2, v2[1] / l2), l1, l2
+
+
+def _max_turn(pts) -> float:
+    best = 0.0
+    for i in range(1, len(pts) - 1):
+        turn, *_rest = _turn_of(pts[i - 1], pts[i], pts[i + 1])
+        if turn > best:
+            best = turn
+    return best
+
+
+def _clear_seq(seq, ends, harbor, sample) -> bool:
+    for u, w in zip(seq, seq[1:]):
+        if math.hypot(w[0] - u[0], w[1] - u[1]) < 1e-6:
+            continue
+        if not _line_clear(u, w, ends, harbor, sample):
+            return False
+    return True
+
+
+def _bisector(u1, u2):
+    bis = (u1[0] + u2[0], u1[1] + u2[1])
+    length = math.hypot(*bis) or 1.0
+    return (bis[0] / length, bis[1] / length)
+
+
+def _inward_arc(a, b, c, ends, harbor, sample, fillet):
+    turn, u1, u2, l1, l2 = _turn_of(a, b, c)
+    if turn < 18.0 or l1 < 0.05 or l2 < 0.05:
+        return None
+    bis = _bisector(u1, u2)
+    vertices = [b]
+    for nudge in (0.08, 0.14):
+        nb = (b[0] - bis[0] * nudge, b[1] - bis[1] * nudge)
+        if on_land(nb[0], nb[1]):
+            continue
+        if _clear_seq((a, nb, c), ends, harbor, sample):
+            vertices.append(nb)
+    for vertex in vertices:
+        turn, u1, u2, l1, l2 = _turn_of(a, vertex, c)
+        interior = 180.0 - turn
+        bis = _bisector(u1, u2)
+        half = math.radians(max(interior, 1.0) * 0.5)
+        tang = math.tan(half)
+        if tang < 0.12:
+            continue
+        for radius in (fillet, fillet * 0.64, fillet * 0.36, fillet * 0.22):
+            tdist = min(radius / tang, l1 * 0.45, l2 * 0.45)
+            if tdist < 0.05:
+                continue
+            p1 = (vertex[0] + u1[0] * tdist, vertex[1] + u1[1] * tdist)
+            p2 = (vertex[0] + u2[0] * tdist, vertex[1] + u2[1] * tdist)
+            rad = tdist * tang
+            dist_c = rad / math.sin(half)
+            center = (vertex[0] + bis[0] * dist_c, vertex[1] + bis[1] * dist_c)
+            a1 = math.atan2(p1[1] - center[1], p1[0] - center[0])
+            a2 = math.atan2(p2[1] - center[1], p2[0] - center[0])
+            sweep = a2 - a1
+            while sweep <= 0.0:
+                sweep += math.tau
+            if sweep > math.pi:
+                sweep -= math.tau
+            if abs(sweep) > math.radians(175.0):
+                continue
+            steps = max(3, int(math.ceil(abs(math.degrees(sweep)) / 14.0)))
+            arc = []
+            for s in range(steps + 1):
+                theta = a1 + sweep * (s / steps)
+                arc.append((center[0] + math.cos(theta) * rad, center[1] + math.sin(theta) * rad))
+            if _clear_seq([a] + arc + [c], ends, harbor, sample):
+                return arc
+    return None
+
+
+def _outward_curve(a, b, c, ends, harbor, sample):
+    turn, u1, u2, l1, l2 = _turn_of(a, b, c)
+    if turn < 36.0 or l1 < 0.08 or l2 < 0.08:
+        return None
+    bis = _bisector(u1, u2)
+    best = None
+    best_turn = turn
+    for shoulder in (0.28, 0.18, 0.12):
+        td = min(shoulder, l1 * 0.42, l2 * 0.42)
+        if td < 0.08:
+            continue
+        p1 = (b[0] + u1[0] * td, b[1] + u1[1] * td)
+        p2 = (b[0] + u2[0] * td, b[1] + u2[1] * td)
+        for bulge in (0.16, 0.10, 0.06):
+            ctrl = (b[0] - bis[0] * bulge, b[1] - bis[1] * bulge)
+            if on_land(ctrl[0], ctrl[1]):
+                continue
+            curve = []
+            steps = 8
+            for s in range(steps + 1):
+                t = s / steps
+                u = 1.0 - t
+                curve.append((
+                    u * u * p1[0] + 2.0 * u * t * ctrl[0] + t * t * p2[0],
+                    u * u * p1[1] + 2.0 * u * t * ctrl[1] + t * t * p2[1],
+                ))
+            seq = [a] + curve + [c]
+            if not _clear_seq(seq, ends, harbor, sample):
+                continue
+            local = _max_turn(seq)
+            if local < best_turn - 8.0 and local <= 34.0:
+                best = curve
+                best_turn = local
+    return best
+
+
+def _dedup_lane(pts, gap):
+    if not pts:
+        return []
+    out = [pts[0]]
+    for p in pts[1:]:
+        if math.hypot(p[0] - out[-1][0], p[1] - out[-1][1]) > gap:
+            out.append(p)
+    return out
+
+
+def _round_once(pts, ends, harbor, sample, fillet):
+    if len(pts) < 3:
+        return list(pts)
+    cur = list(pts)
+    i = 1
+    guard = 0
+    while i < len(cur) - 1 and guard < 40:
+        guard += 1
+        a, b, c = cur[i - 1], cur[i], cur[i + 1]
+        turn, *_rest = _turn_of(a, b, c)
+        arc = None
+        if turn >= 18.0:
+            arc = _inward_arc(a, b, c, ends, harbor, sample, fillet)
+            if arc is None and turn >= 36.0:
+                arc = _outward_curve(a, b, c, ends, harbor, sample)
+        if not arc:
+            i += 1
+            continue
+        nxt = _dedup_lane(cur[:i] + list(arc) + cur[i + 1:], 0.025)
+        if land_hits(nxt, harbor, sample) > land_hits(cur, harbor, sample):
+            i += 1
+            continue
+        if _max_turn(nxt) > _max_turn(cur) + 0.5:
+            i += 1
+            continue
+        old_len = len(cur)
+        cur = nxt
+        i += max(1, len(cur) - old_len + 1)
+    return cur
+
+
+def _trim_stub(pts, ends, stub):
+    def one(pts, origin, at_start):
+        if len(pts) < 2:
+            return pts
+        seq = list(pts) if at_start else list(reversed(pts))
+        exitp = None
+        seen_land = False
+        stop = False
+        for seg in range(len(seq) - 1):
+            if stop:
+                break
+            p, q = seq[seg], seq[seg + 1]
+            dist = math.hypot(q[0] - p[0], q[1] - p[1])
+            n = max(1, int(math.ceil(dist / 0.02)))
+            for k in range(n + 1):
+                t = k / n
+                lon = p[0] + (q[0] - p[0]) * t
+                lat = p[1] + (q[1] - p[1]) * t
+                if math.hypot(lon - origin[0], lat - origin[1]) > stub:
+                    stop = True
+                    break
+                if on_land(lon, lat):
+                    seen_land = True
+                    exitp = None
+                elif seen_land and exitp is None:
+                    exitp = (lon, lat, seg, t)
+        if exitp is None:
+            return pts
+        lon, lat, seg, t = exitp
+        rest = [(lon, lat)]
+        if t < 0.999:
+            rest.append(seq[seg + 1])
+        rest.extend(seq[seg + 2:])
+        cleaned = _dedup_lane(rest, 0.02)
+        if len(cleaned) < 2:
+            return pts
+        if not at_start:
+            cleaned.reverse()
+        return cleaned
+
+    return one(one(list(pts), ends[1], False), ends[0], True)
+
+
+def _polish_lane(pts, ends, numbers):
+    harbor = numbers["LANE_HARBOR"]
+    sample = numbers["LANE_SAMPLE"]
+    fillet = numbers["LANE_FILLET"]
+    stub = numbers["LANE_STUB"]
+    curved = _round_once(pts, ends, harbor, sample, fillet)
+    curved = _trim_stub(curved, ends, stub)
+    curved = _round_once(curved, ends, harbor, sample, fillet)
+    return _trim_stub(curved, ends, stub)
+
+
+def _coast_between(water, land):
+    lo = 0.0
+    hi = 1.0
+    for _ in range(8):
+        mid = (lo + hi) * 0.5
+        lon = water[0] + (land[0] - water[0]) * mid
+        lat = water[1] + (land[1] - water[1]) * mid
+        if on_land(lon, lat):
+            hi = mid
+        else:
+            lo = mid
+    return (
+        water[0] + (land[0] - water[0]) * lo,
+        water[1] + (land[1] - water[1]) * lo,
+    )
+
+
+def water_runs(pts, step=0.04):
+    """航线切成不穿陆地的几段。城在岸上时，线停在海岸。"""
+    runs = []
+    cur = []
+
+    def add(pt):
+        if not cur or math.hypot(pt[0] - cur[-1][0], pt[1] - cur[-1][1]) > 1e-4:
+            cur.append(pt)
+
+    def emit():
+        nonlocal cur
+        if len(cur) >= 2:
+            runs.append(cur)
+        cur = []
+
+    for p, q in zip(pts, pts[1:]):
+        dist = math.hypot(q[0] - p[0], q[1] - p[1])
+        n = max(1, int(math.ceil(dist / step)))
+
+        def at(k, p=p, q=q, n=n):
+            t = k / n
+            return (p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t)
+
+        flags = [on_land(*at(k)) for k in range(n + 1)]
+        k = 0
+        while k <= n:
+            if flags[k]:
+                if cur and k > 0 and not flags[k - 1]:
+                    add(_coast_between(at(k - 1), at(k)))
+                    emit()
+                k += 1
+                continue
+            if not cur:
+                if k == 0:
+                    add(at(0))
+                else:
+                    add(_coast_between(at(k), at(k - 1)))
+            k1 = k
+            while k1 + 1 <= n and not flags[k1 + 1]:
+                k1 += 1
+            if k1 == n:
+                add(at(n))
+            else:
+                add(_coast_between(at(k1), at(k1 + 1)))
+                emit()
+            k = k1 + 1
+    emit()
+    return runs
+
+
 def sea_lane(grid, a, b):
     """(lon, lat) 到 (lon, lat)。航程仍按直线，这里只给海图一条不穿陆地的画法。"""
     harbor = grid.n["LANE_HARBOR"]
     cell = grid.n["LANE_CELL"]
     dedup = grid.n["LANE_DEDUP"]
     sample = grid.n["LANE_SAMPLE"]
-    straight = [a, b]
-    if _line_clear(a, b, [a, b], harbor, sample):
-        return straight
+    ends = [a, b]
+    if _line_clear(a, b, ends, harbor, sample):
+        return _polish_lane(ends, ends, grid.n)
     start = _nearest_water(grid, a[0], a[1], b)
     goal = _nearest_water(grid, b[0], b[1], a)
     path = _astar(grid, start, goal)
     if not path:
-        return straight
+        return _polish_lane(ends, ends, grid.n)
     pts = [((ix + 0.5) * cell, (iy + 0.5) * cell) for ix, iy in path]
-    pts = _shortcut(pts, [a, b], harbor, sample)
+    pts = _shortcut(pts, ends, harbor, sample)
     full = [a]
     for p in pts:
         if math.hypot(p[0] - full[-1][0], p[1] - full[-1][1]) > dedup:
@@ -413,7 +693,8 @@ def sea_lane(grid, a, b):
         full.append(b)
     else:
         full[-1] = b
-    return _shortcut(full, [a, b], harbor, sample)
+    full = _shortcut(full, ends, harbor, sample)
+    return _polish_lane(full, ends, grid.n)
 
 
 def land_hits(pts, harbor, sample) -> int:
@@ -455,6 +736,8 @@ def check_lanes(ports, frame, numbers, label) -> None:
     by_id = {p["id"]: p for p in ports}
     harbor = numbers["LANE_HARBOR"]
     worse = []
+    sharp = []
+    painted = []
     focus = {
         "第一章": (("quanzhou", "fuzhou"),),
         "全图": (("guangzhou", "quanzhou"), ("quanzhou", "fuzhou")),
@@ -464,15 +747,34 @@ def check_lanes(ports, frame, numbers, label) -> None:
         a = (float(by_id[a_id]["lon"]), float(by_id[a_id]["lat"]))
         b = (float(by_id[b_id]["lon"]), float(by_id[b_id]["lat"]))
         sample = numbers["LANE_SAMPLE"]
+        bent_pts = sea_lane(grid, a, b)
         straight = land_hits([a, b], harbor, sample)
-        bent = land_hits(sea_lane(grid, a, b), harbor, sample)
+        bent = land_hits(bent_pts, harbor, sample)
         report[(a_id, b_id)] = (straight, bent)
+        names = f"{by_id[a_id]['name']}-{by_id[b_id]['name']}"
         if bent > straight:
-            worse.append(f"{by_id[a_id]['name']}-{by_id[b_id]['name']} {straight}->{bent}")
+            worse.append(f"{names} {straight}->{bent}")
+        turn = _max_turn(bent_pts)
+        if turn > 50.0:
+            sharp.append(f"{names} {turn:.0f}°")
+        for run in water_runs(bent_pts):
+            for u, w in zip(run, run[1:]):
+                mid = ((u[0] + w[0]) * 0.5, (u[1] + w[1]) * 0.5)
+                if on_land(mid[0], mid[1]):
+                    painted.append(names)
+                    break
     if worse:
         fail(f"{label}有航线比直线更穿陆地: " + ", ".join(worse))
     else:
         ok(f"{label}航线没有比直线更穿陆地")
+    if sharp:
+        fail(f"{label}航线折角还太硬: " + ", ".join(sharp))
+    else:
+        ok(f"{label}航线折角都收到 50° 以内")
+    if painted:
+        fail(f"{label}画出的航线还压在陆地上: " + ", ".join(painted))
+    else:
+        ok(f"{label}画出的航线不压陆地")
     for a_id, b_id in focus.get(label, ()):
         straight, bent = report.get((a_id, b_id), report.get((b_id, a_id), None))
         names = f"{by_id[a_id]['name']}-{by_id[b_id]['name']}"
@@ -728,7 +1030,7 @@ def render(path: Path, ports, polys, const, size):
         font_sea = font
 
     numbers = lane_numbers()
-    lane_grid = LaneGrid((lat0, lat1, lon0, lon1), numbers) if len(numbers) == 7 else None
+    lane_grid = LaneGrid((lat0, lat1, lon0, lon1), numbers) if "LANE_FILLET" in numbers else None
     by_id = {p["id"]: p for p in ports}
     seen = set()
     for p in ports:
@@ -742,9 +1044,11 @@ def render(path: Path, ports, polys, const, size):
             a = (float(p["lon"]), float(p["lat"]))
             b = (float(by_id[cid]["lon"]), float(by_id[cid]["lat"]))
             pts = sea_lane(lane_grid, a, b) if lane_grid is not None else [a, b]
-            screen = [proj(lat, lon) for lon, lat in pts]
-            for u, v in zip(screen, screen[1:]):
-                _dashed(draw, u, v, (210, 190, 145), width=2)
+            runs = water_runs(pts) if lane_grid is not None else [pts]
+            for run in runs:
+                screen = [proj(lat, lon) for lon, lat in run]
+                for u, v in zip(screen, screen[1:]):
+                    _dashed(draw, u, v, (210, 190, 145), width=2)
 
     land_all = unary_union(polys) if polys else None
     port_xy = [proj(float(p["lat"]), float(p["lon"])) for p in ports]
@@ -782,7 +1086,7 @@ def render(path: Path, ports, polys, const, size):
         return box[2] - box[0], box[3] - box[1]
 
     placed = []
-    if len(numbers) == 7:
+    if "LABEL_CLUSTER_PX" in numbers:
         placed, _overlaps = place_labels(
             ports, proj, tuple(map_rect), measure, numbers["LABEL_CLUSTER_PX"])
     for _text, _xy, _rect, leader in placed:
@@ -939,7 +1243,7 @@ def main() -> None:
 
     load_land_index(lands)
     numbers = lane_numbers()
-    if len(numbers) == 7 and _RINGS:
+    if "LANE_FILLET" in numbers and _RINGS:
         check_lanes(ch1, ch1_frame, numbers, "第一章")
         check_lanes(ports, full_frame, numbers, "全图")
         try:
