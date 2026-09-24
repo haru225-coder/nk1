@@ -1302,6 +1302,11 @@ if "event_panel.add_theme_stylebox_override(\"panel\", UiTheme.panel())" in seac
 else:
     print("  ✗ 海图遭遇弹层仍用硬编码 StyleBox")
     problems.append("海图遭遇弹层未套绢本")
+if "event_actions = VBoxContainer" in seachart_src and "event_actions = HBoxContainer" not in seachart_src:
+    print("  ✓ 海图遭遇选项竖排挑签")
+else:
+    print("  ✗ 海图遭遇选项仍横排挤在一行")
+    problems.append("海图遭遇选项未竖排")
 if "CenterContainer" in seachart_src and "Vector2(360, 200)" not in seachart_src:
     print("  ✓ 海图遭遇弹层居中，不再钉右下")
 else:
