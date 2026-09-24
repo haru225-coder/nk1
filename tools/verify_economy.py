@@ -1178,6 +1178,613 @@ check(abs(armored[0] - (flag0 - storm_base * 0.8)) < 1e-9,
       f"满甲后旗舰掉 {storm_base * 0.8:.1f}，不是 {storm_base:.0f}")
 wreck = storm_left([4.0], storm_base)
 check(wreck[0] == 0.0, "残船扣到 0 为止，不出现负耐久")
+print("九之五、航法、海上交市、牙行委办（云端 bed9）")
+print("=" * 68)
+print("  针路保持旧的日速与事件表。外洋赶期限，傍岸换岸影，生路才会迷航。")
+print("  海上买卖不得压过港口；委办是小批量、有期限、交货不砸盘。")
+
+import re
+
+def gd_const(rel, name):
+    src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+    m = re.search(rf"const {name} := (-?[0-9.]+)", src)
+    if not m:
+        raise SystemExit(f"找不到 {rel} 的 const {name}")
+    return float(m.group(1))
+
+V_GD = "scripts/core/Voyage.gd"
+S_GD = "scripts/GameState.gd"
+OFF_SPD = gd_const(V_GD, "ORDER_SPEED_OFFSHORE")
+COAST_SPD = gd_const(V_GD, "ORDER_SPEED_COAST")
+SEA_BUY_MARKUP = gd_const(V_GD, "SEA_BUY_MARKUP")
+SEA_SELL_CAP = gd_const(V_GD, "SEA_SELL_CAP")
+W_STORM_BASE = gd_const(V_GD, "W_STORM_BASE")
+W_STORM_WIND = gd_const(V_GD, "W_STORM_WIND")
+W_PIRATE = gd_const(V_GD, "W_PIRATE")
+W_CALM = gd_const(V_GD, "W_CALM")
+W_CURRENT = gd_const(V_GD, "W_CURRENT")
+W_MERCHANT = gd_const(V_GD, "W_MERCHANT")
+W_DISCOVERY = gd_const(V_GD, "W_DISCOVERY")
+OFFSHORE_STORM_MUL = gd_const(V_GD, "OFFSHORE_STORM_MUL")
+OFFSHORE_PIRATE_MUL = gd_const(V_GD, "OFFSHORE_PIRATE_MUL")
+OFFSHORE_CALM = gd_const(V_GD, "OFFSHORE_CALM")
+OFFSHORE_CURRENT = gd_const(V_GD, "OFFSHORE_CURRENT")
+OFFSHORE_MERCHANT = gd_const(V_GD, "OFFSHORE_MERCHANT")
+OFFSHORE_DISCOVERY = gd_const(V_GD, "OFFSHORE_DISCOVERY")
+COAST_STORM_MUL = gd_const(V_GD, "COAST_STORM_MUL")
+COAST_PIRATE_MUL = gd_const(V_GD, "COAST_PIRATE_MUL")
+COAST_CALM = gd_const(V_GD, "COAST_CALM")
+COAST_CURRENT = gd_const(V_GD, "COAST_CURRENT")
+COAST_MERCHANT = gd_const(V_GD, "COAST_MERCHANT")
+COAST_DISCOVERY = gd_const(V_GD, "COAST_DISCOVERY")
+COAST_SHOAL = gd_const(V_GD, "COAST_SHOAL")
+LOST_RUMB = gd_const(V_GD, "LOST_RUMB")
+LOST_OFFSHORE = gd_const(V_GD, "LOST_OFFSHORE")
+LOST_COAST = gd_const(V_GD, "LOST_COAST")
+MAX_EVENT_MASS = gd_const(V_GD, "MAX_EVENT_MASS")
+CONTRACT_PREMIUM = gd_const(S_GD, "CONTRACT_PREMIUM")
+CONTRACT_SLACK = int(gd_const(S_GD, "CONTRACT_SLACK_DAYS"))
+CONTRACT_QTY_BUDGET = gd_const(S_GD, "CONTRACT_QTY_BUDGET")
+CONTRACT_QTY_MIN = int(gd_const(S_GD, "CONTRACT_QTY_MIN"))
+CONTRACT_QTY_MAX = int(gd_const(S_GD, "CONTRACT_QTY_MAX"))
+CONTRACT_FINE_RATE = gd_const(S_GD, "CONTRACT_FINE_RATE")
+CONTRACT_FINE_MIN = int(gd_const(S_GD, "CONTRACT_FINE_MIN"))
+CONTRACT_BASE_MIN = gd_const(S_GD, "CONTRACT_BASE_MIN")
+RUMOR_STALE = int(gd_const(S_GD, "RUMOR_STALE_DAYS"))
+
+check(1.05 < OFF_SPD <= 1.20, f"外洋日速 ×{OFF_SPD} 落在 (1.05, 1.20]，赶路但不架空候风")
+check(0.70 <= COAST_SPD < 0.90, f"傍岸日速 ×{COAST_SPD} 落在 [0.70, 0.90)，慢，但远洋仍走得完")
+check(0.40 * OFF_SPD < 1.0, f"顶头逆风 × 外洋 = {0.40 * OFF_SPD:.3f} < 1，逆风不会被航法乘成顺风")
+check(1.60 * COAST_SPD < 1.60 * 1.0, "顺风傍岸仍慢于顺风针路")
+
+def event_weights(order, strength, known, discoveries_open=True):
+    """复刻 Voyage.event_weights。order: rumb / offshore / coast。"""
+    storm = W_STORM_BASE + W_STORM_WIND * strength
+    pirate, calm, current = W_PIRATE, W_CALM, W_CURRENT
+    merchant, discovery, shoal, lost = W_MERCHANT, W_DISCOVERY, 0.0, 0.0
+    if order == "offshore":
+        storm *= OFFSHORE_STORM_MUL
+        pirate *= OFFSHORE_PIRATE_MUL
+        calm, current = OFFSHORE_CALM, OFFSHORE_CURRENT
+        merchant, discovery = OFFSHORE_MERCHANT, OFFSHORE_DISCOVERY
+    elif order == "coast":
+        storm *= COAST_STORM_MUL
+        pirate *= COAST_PIRATE_MUL
+        calm, current = COAST_CALM, COAST_CURRENT
+        merchant, discovery, shoal = COAST_MERCHANT, COAST_DISCOVERY, COAST_SHOAL
+    if not known:
+        lost = {"offshore": LOST_OFFSHORE, "coast": LOST_COAST}.get(order, LOST_RUMB)
+    keys = ["storm", "pirate", "calm", "current", "merchant", "discovery", "shoal", "lost"]
+    vals = [storm, pirate, calm, current, merchant, discovery, shoal, lost]
+    mass = sum(vals)
+    if mass > MAX_EVENT_MASS:
+        vals = [v * MAX_EVENT_MASS / mass for v in vals]
+        mass = MAX_EVENT_MASS
+    if not discoveries_open and vals[keys.index("discovery")] > 0:
+        disc = vals[keys.index("discovery")]
+        kept = mass - disc
+        if kept > 0:
+            scale = mass / kept
+            vals = [0.0 if i == keys.index("discovery") else v * scale for i, v in enumerate(vals)]
+    return dict(zip(keys, vals))
+
+rumb = event_weights("rumb", 1.0, True)
+check(abs(rumb["storm"] - 0.12) < 1e-9 and abs(rumb["pirate"] - 0.06) < 1e-9
+      and abs(rumb["calm"] - 0.06) < 1e-9 and abs(rumb["current"] - 0.05) < 1e-9
+      and abs(rumb["merchant"] - 0.04) < 1e-9 and abs(rumb["discovery"] - 0.03) < 1e-9
+      and rumb["shoal"] == 0 and rumb["lost"] == 0,
+      "针路 + 熟路的事件表与改航法前逐项相同（暴风 0.12 / 海盗 0.06 / …）")
+off = event_weights("offshore", 1.0, True)
+coast = event_weights("coast", 1.0, True)
+check(off["pirate"] > rumb["pirate"] > coast["pirate"],
+      f"海盗概率 外洋 {off['pirate']:.3f} > 针路 {rumb['pirate']:.3f} > 傍岸 {coast['pirate']:.3f}")
+check(coast["discovery"] > rumb["discovery"] > off["discovery"],
+      f"岸影概率 傍岸 {coast['discovery']:.3f} > 针路 {rumb['discovery']:.3f} > 外洋 {off['discovery']:.3f}")
+check(coast["shoal"] > 0 and rumb["shoal"] == 0 and off["shoal"] == 0, "只有傍岸会擦浅滩")
+lost_r = event_weights("rumb", 1.0, False)
+lost_o = event_weights("offshore", 1.0, False)
+lost_c = event_weights("coast", 1.0, False)
+check(event_weights("rumb", 1.0, True)["lost"] == 0, "熟路不迷航")
+check(lost_o["lost"] > lost_r["lost"] > lost_c["lost"] > 0,
+      f"生路迷航 外洋 {lost_o['lost']:.3f} > 针路 {lost_r['lost']:.3f} > 傍岸 {lost_c['lost']:.3f}")
+for name, w in (("针路熟路", rumb), ("外洋生路", lost_o), ("傍岸生路", event_weights("coast", 1.0, False))):
+    check(sum(w.values()) <= MAX_EVENT_MASS + 1e-9, f"{name} 事件总质量 {sum(w.values()):.3f} ≤ {MAX_EVENT_MASS}")
+coast_closed = event_weights("coast", 1.0, False, False)
+check(abs(sum(coast_closed.values()) - sum(event_weights("coast", 1.0, False).values())) < 1e-9
+      and coast_closed["discovery"] == 0
+      and coast_closed["shoal"] > event_weights("coast", 1.0, False)["shoal"],
+      "岸影抽空后傍岸总质量不变、浅滩概率上升，不会变成白走的无事日")
+SHOAL_P = gd_const(V_GD, "SHOAL_PROGRESS")
+LOST_P = gd_const(V_GD, "LOST_PROGRESS")
+
+def progress_expectation(order, known, discoveries_open=True, strength=1.0):
+    """复刻 Voyage.progress_expectation。风暴不拖日，无风、浅滩、迷航拖。"""
+    w = event_weights(order, strength, known, discoveries_open)
+    e = 1.0
+    e += w["calm"] * (0.0 - 1.0)
+    e += w["current"] * (1.5 - 1.0)
+    e += w["shoal"] * (SHOAL_P - 1.0)
+    e += w["lost"] * (LOST_P - 1.0)
+    return e
+
+er, eo, ec = (progress_expectation(o, True) for o in ("rumb", "offshore", "coast"))
+eru, eou, ecu = (progress_expectation(o, False) for o in ("rumb", "offshore", "coast"))
+check(OFF_SPD * eo > er > COAST_SPD * ec > 0.5,
+      f"熟路日速×遇事：外洋 {OFF_SPD * eo:.3f} > 针路 {er:.3f} > 傍岸 {COAST_SPD * ec:.3f}")
+check(OFF_SPD * eou > eru > COAST_SPD * ecu > 0.4,
+      f"生路日速×遇事：外洋 {OFF_SPD * eou:.3f} > 针路 {eru:.3f} > 傍岸 {COAST_SPD * ecu:.3f}")
+check(max(er, eo, ec, eru, eou, ecu) < 1.0, "无风使遇事行程慢于静风，遇事日数不会短于静风日数")
+check(progress_expectation("coast", False, False) < ecu, "岸影抽空后傍岸遇事更慢")
+
+def ch_of(unlock):
+    if isinstance(unlock, str) and unlock.startswith("ch"):
+        return int(unlock[2:])
+    return 1
+
+def sea_buy_unit(gid, live_min=0):
+    """海上买价。live_min 是已解锁港口里的最低现买价；低于行情 1.0 的普通口岸时不采用。"""
+    normal = round(goods[gid]["base_value"] * (1 + TARIFF))
+    floor = max(normal, live_min)
+    return math.ceil(floor * SEA_BUY_MARKUP)
+
+def best_consumer_sell(gid, chapter=4):
+    best = 0
+    any_sell = 0
+    for pid, p in ports.items():
+        if p.get("depth", 0) <= 0 or ch_of(p.get("unlock", "ch1")) > chapter:
+            continue
+        if gid not in p.get("market", {}):
+            continue
+        s = sell_price(pid, gid)
+        any_sell = max(any_sell, s)
+        if role(pid, gid) == "consumer":
+            best = max(best, s)
+    return best or any_sell
+
+def sea_sell_unit(avg_cost, jitter, best):
+    raw = round(max(avg_cost, 1) * jitter)
+    if best > 0:
+        cap = int(best * SEA_SELL_CAP)
+        raw = min(raw, max(1, cap))
+    return max(1, raw)
+
+origin_beats = True
+sell_capped = True
+worst_gap = None
+for gid, g in goods.items():
+    if not g.get("tradable") or g.get("contraband") or g.get("base_value", 0) <= 0 or g.get("bulk", 0) <= 0:
+        continue
+    unit = sea_buy_unit(gid)
+    for pid, p in ports.items():
+        if p.get("market", {}).get(gid) in ("origin", "normal"):
+            if unit <= buy_price(pid, gid):
+                origin_beats = False
+    best = best_consumer_sell(gid)
+    if best < 2:
+        continue
+    for jitter in (gd_const(V_GD, "SEA_SELL_JITTER_MIN"), gd_const(V_GD, "SEA_SELL_JITTER_MAX")):
+        # 成本就算已经是消费地卖价，海上也卖不过那个港口
+        sold = sea_sell_unit(best, jitter, best)
+        if sold >= best:
+            sell_capped = False
+        gap = best - sold
+        if worst_gap is None or gap < worst_gap:
+            worst_gap = gap
+check(origin_beats, "海上买价严格高于任一产地或普通口岸的买价（产地低价买不到）")
+check(sell_capped, f"海上卖价严格低于最佳消费地卖价（最窄价差 {worst_gap}）")
+spiked_ok = True
+discount_ok = True
+for gid, g in goods.items():
+    if not g.get("tradable") or g.get("contraband") or g.get("base_value", 0) <= 0 or g.get("bulk", 0) <= 0:
+        continue
+    lives = [buy_price(pid, gid, 2.2) for pid, p in ports.items()
+             if p.get("depth", 0) > 0 and gid in p.get("market", {})]
+    lows = [buy_price(pid, gid, 0.4) for pid, p in ports.items()
+            if p.get("depth", 0) > 0 and gid in p.get("market", {})]
+    if not lives or not lows:
+        continue
+    if sea_buy_unit(gid, min(lives)) <= min(lives):
+        spiked_ok = False
+    plain = sea_buy_unit(gid)
+    if min(lows) < plain and sea_buy_unit(gid, min(lows)) != plain:
+        discount_ok = False
+check(spiked_ok, "港口被买到行情 2.2 后，海上买价仍高于最便宜的那个港口")
+check(discount_ok, "产地行情跌到 0.4 时，海上买价不跟着降到产地价")
+
+def stable_hash(s):
+    h = 0
+    for ch in s:
+        h = (h * 33 + ord(ch)) % 1000003
+    return h
+
+def contract_qty(gid):
+    return max(CONTRACT_QTY_MIN, min(CONTRACT_QTY_MAX, int(CONTRACT_QTY_BUDGET / goods[gid]["bulk"])))
+
+def rumb_days(src, dst, wind_b=-1.0, strength=0.3, morale=70, ship_id="sampan"):
+    d = distance_li(src, dst)
+    spd = ships[ship_id]["base_speed"] * (0.6 + 0.4 * morale / 100.0) * wind_factor(bearing(src, dst), wind_b, strength)
+    if spd <= 1:
+        return 999
+    return math.ceil(d / spd)
+
+def shift_date(year, month, day, n=1):
+    """与 Voyage._shift_date 相同：每月 30 日，不改历法本体。"""
+    for _step in range(n):
+        day += 1
+        if day > 30:
+            day = 1
+            month += 1
+            if month > 12:
+                month = 1
+                year += 1
+    return year, month, day
+
+def month_wind(month):
+    if month >= 10 or month <= 2:
+        return 225.0, (1.0 if month in (11, 12, 1) else 0.8)
+    if 5 <= month <= 8:
+        return 45.0, (1.0 if month in (6, 7) else 0.8)
+    return -1.0, 0.3
+
+def walk_calm_days(src, dst, month, day, year=1255, morale=70, ship_id="sampan"):
+    """从次日启航，按每天的风扣里程。返回 (日数, 途中是否换风)。"""
+    dist = distance_li(src, dst)
+    y, m, d = shift_date(year, month, day, 1)
+    spd0 = ships[ship_id]["base_speed"] * (0.6 + 0.4 * morale / 100.0)
+    course = bearing(src, dst)
+    rem = dist
+    n = 0
+    first = None
+    changed = False
+    while rem > 0 and n < 900:
+        wb, st = month_wind(m)
+        wf = wind_factor(course, wb, st)
+        if first is None:
+            first = wf
+        elif abs(wf - first) > 0.001:
+            changed = True
+        gain = spd0 * wf
+        if gain <= 1:
+            return 999, changed
+        rem -= gain
+        n += 1
+        y, m, d = shift_date(y, m, d, 1)
+    return n, changed
+
+def progress_spread(order, known, strength):
+    """复刻 Voyage.progress_moments。返回 (均值, 方差)。"""
+    w = event_weights(order, strength, known, True)
+    pc, pu, ps, pl = w["calm"], w["current"], w["shoal"], w["lost"]
+    mean = progress_expectation(order, known, True, strength)
+    rest = 1.0 - pc - pu - ps - pl
+    second = rest + pu * 2.25 + ps * (SHOAL_P ** 2) + pl * (LOST_P ** 2)
+    return mean, max(0.0, second - mean * mean)
+
+def walk_event_days(src, dst, month, day, order="rumb", known=True, drag_days=0,
+                    year=1255, morale=70, ship_id="sampan"):
+    """从次日启航按遇事均值扣里程。drag_days>0 时走八成偏慢路径。"""
+    dist = distance_li(src, dst)
+    course = bearing(src, dst)
+    y, m, d = shift_date(year, month, day, 1)
+    spd_base = ships[ship_id]["base_speed"] * (0.6 + 0.4 * morale / 100.0)
+    mult = {"offshore": OFF_SPD, "coast": COAST_SPD}.get(order, 1.0)
+    rem = dist
+    n = 0
+    drag_scale = (gd_const(V_GD, "SAFE_Z") / math.sqrt(drag_days)) if drag_days > 0 else 0.0
+    while rem > 0 and n < 900:
+        _wb, st = month_wind(m)
+        wf = wind_factor(course, _wb, st)
+        mean, var = progress_spread(order, known, st)
+        ex = mean
+        if drag_scale > 0.0:
+            ex = max(0.05, ex - drag_scale * math.sqrt(var))
+        gain = spd_base * wf * mult * ex
+        if gain <= 1:
+            return 999
+        rem -= gain
+        n += 1
+        y, m, d = shift_date(y, m, d, 1)
+    return n
+
+def known_route(a, b):
+    """连线无向。与 Voyage.is_known_route 一致。"""
+    if a not in ports or b not in ports:
+        return False
+    return b in ports[a].get("connections", []) or a in ports[b].get("connections", [])
+
+def contract_offer(port_id, year=1255, month=3, chapter=1):
+    """开局三月、转换期、小艍、士气 70、行情 1.0。复刻 GameState.contract_offer 的选型。"""
+    def destinations(gid):
+        out = []
+        for pid, p in ports.items():
+            if pid == port_id or p.get("depth", 0) <= 0:
+                continue
+            if ch_of(p.get("unlock", "ch1")) > chapter:
+                continue
+            if p.get("market", {}).get(gid) != "consumer":
+                continue
+            out.append(pid)
+        out.sort()
+        return out
+    goods_ids = []
+    for gid, rel in ports[port_id].get("market", {}).items():
+        g = goods[gid]
+        if not g.get("tradable") or g.get("contraband"):
+            continue
+        if g.get("base_value", 0) < CONTRACT_BASE_MIN or g.get("bulk", 0) <= 0:
+            continue
+        if rel == "consumer":
+            continue
+        if not destinations(gid):
+            continue
+        goods_ids.append(gid)
+    goods_ids.sort()
+    if not goods_ids:
+        return {}
+    seed = stable_hash(port_id) + year * 12 + month
+    gid = goods_ids[seed % len(goods_ids)]
+    dests = destinations(gid)
+    if not dests:
+        return {}
+    known = [pid for pid in dests if known_route(port_id, pid)]
+    pool = known or dests
+    dest = pool[(seed // 7) % len(pool)]
+    qty = contract_qty(gid)
+    days = rumb_days(port_id, dest)
+    if days >= 900 or days <= 0:
+        return {}
+    sale = sell_revenue(dest, gid, qty)
+    premium = round(qty * goods[gid]["base_value"] * CONTRACT_PREMIUM)
+    return {
+        "good_id": gid, "qty": qty, "dest": dest, "from": port_id,
+        "purse": sale + premium, "premium": premium,
+        "voyage_days": days, "deadline_days": days + CONTRACT_SLACK,
+    }
+
+offer = contract_offer("quanzhou")
+check(bool(offer), "开局泉州牙行能开出一笔委办")
+if offer:
+    gid, dest, qty = offer["good_id"], offer["dest"], offer["qty"]
+    print(f"  泉州三月委办：{goods[gid]['name']} ×{qty} → {ports[dest]['name']}　"
+          f"针路 {offer['voyage_days']} 日，期限 {offer['deadline_days']} 日，酬 {offer['purse']}")
+    check(goods[gid].get("contraband") is not True, "委办货不是违禁品")
+    check(role("quanzhou", gid) != "consumer", "委办不把本地紧缺货往外送")
+    check(role(dest, gid) == "consumer" and ports[dest]["depth"] > 0, "交货地是已解锁的消费港")
+    check(ch_of(ports[dest].get("unlock", "ch1")) <= 1, "开局委办的交货地第一章就到得了")
+    known_dests = [pid for pid, p in ports.items()
+                   if p.get("market", {}).get(gid) == "consumer" and p.get("depth", 0) > 0
+                   and ch_of(p.get("unlock", "ch1")) <= 1 and known_route("quanzhou", pid)]
+    if known_dests:
+        check(dest in known_dests, "有熟路消费地时，委办不把货派去生路")
+    check(CONTRACT_QTY_MIN <= qty <= CONTRACT_QTY_MAX, f"委办件数 {qty} 在 {CONTRACT_QTY_MIN}–{CONTRACT_QTY_MAX}")
+    sale = offer["purse"] - offer["premium"]
+    check(offer["purse"] > sale and offer["premium"] > 0, "酬金高于直接卖掉的实得，溢价为正")
+    check(offer["purse"] <= sale * 1.25, f"溢价未超过实得的 25%（酬 {offer['purse']} / 卖 {sale}）")
+    fine = max(CONTRACT_FINE_MIN, round(offer["purse"] * CONTRACT_FINE_RATE))
+    check(fine < offer["purse"], f"误期罚款 {fine} < 酬金 {offer['purse']}（货还在，不会罚穿）")
+    coast_days = math.ceil(distance_li("quanzhou", dest) / (
+        ships["sampan"]["base_speed"] * (0.6 + 0.4 * 0.7) * 0.85 * COAST_SPD))
+    off_days = math.ceil(distance_li("quanzhou", dest) / (
+        ships["sampan"]["base_speed"] * (0.6 + 0.4 * 0.7) * 0.85 * OFF_SPD))
+    check(off_days <= offer["voyage_days"], f"外洋 {off_days} 日 ≤ 针路 {offer['voyage_days']} 日")
+    print(f"  同一单：外洋 {off_days} 日 / 针路 {offer['voyage_days']} 日 / 傍岸 {coast_days} 日 / 期限 {offer['deadline_days']} 日")
+
+# 傍岸不是永远安全，也不是永远赶不上
+miss = fit = False
+spd0 = ships["sampan"]["base_speed"] * (0.6 + 0.4 * 0.7)
+for a, pa in ports.items():
+    for b, pb in ports.items():
+        if a == b or pa.get("depth", 0) <= 0 or pb.get("depth", 0) <= 0:
+            continue
+        d = distance_li(a, b)
+        r_days = math.ceil(d / spd0)
+        c_days = math.ceil(d / (spd0 * COAST_SPD))
+        if c_days > r_days + CONTRACT_SLACK:
+            miss = True
+        if r_days <= 4 and c_days <= r_days + CONTRACT_SLACK:
+            fit = True
+check(miss, "存在长航次：傍岸日数超过针路期限（赶委办不能无脑贴岸）")
+check(fit, "存在短航次：傍岸仍赶得上期限（贴岸不是死选项）")
+
+# 日数从次日启航起按逐日风信累加。三月初一的短航次整段仍在转换期，开局委办数字不变。
+march_walk, march_changed = walk_calm_days("quanzhou", "wenzhou", 3, 1)
+check(march_walk == rumb_days("quanzhou", "wenzhou") and not march_changed,
+      f"三月初一泉州→温州整段都在转换期，逐日静风仍是 {march_walk} 日")
+if offer:
+    check(march_walk == offer["voyage_days"],
+          "开局委办的针路日数等于逐日静风，不因换季算法改写")
+
+aug_snap = rumb_days("quanzhou", "hakata", 45.0, 0.8)
+aug_walk, _aug_changed = walk_calm_days("quanzhou", "hakata", 8, 30)
+aug_trans = rumb_days("quanzhou", "hakata", -1.0, 0.3)
+check(aug_walk == aug_trans and aug_walk > aug_snap + CONTRACT_SLACK,
+      f"八月三十泉州→博多：当天西南风 {aug_snap} 日，明日启航落入转换期 {aug_walk} 日，按旧风计价的期限赶不上")
+aug_cross = any(
+    ch and w > aug_snap
+    for day in range(1, 31)
+    for w, ch in [walk_calm_days("quanzhou", "hakata", 8, day)]
+)
+check(aug_cross, "八月里有出发日会在泉州→博多途中换风，逐日静风长于把西南风套全程")
+feb_snap = rumb_days("quanzhou", "guangzhou", 225.0, 0.8)
+feb_walk, _feb_changed = walk_calm_days("quanzhou", "guangzhou", 2, 30)
+check(feb_walk > feb_snap,
+      f"二月三十泉州→广州：当天东北顺风 {feb_snap} 日，次日转风后要 {feb_walk} 日")
+
+wz_mean = walk_event_days("quanzhou", "wenzhou", 3, 1, "rumb", True)
+wz_safe = walk_event_days("quanzhou", "wenzhou", 3, 1, "rumb", True, wz_mean)
+check(wz_safe >= wz_mean and wz_safe <= march_walk + CONTRACT_SLACK,
+      f"开局泉州→温州针路八成 {wz_safe} 日，仍落在期限 {march_walk + CONTRACT_SLACK} 内")
+if offer:
+    unit = buy_price("quanzhou", offer["good_id"])
+    afford = (1000 // unit) if unit else 0
+    check(unit > 0 and unit * offer["qty"] > 1000 and afford < offer["qty"],
+          f"开局本金 1000 买不满这单：一件 {unit} 钱，凑得出 {afford} 件，单子要 {offer['qty']} 件")
+hk_calm, _hk_changed = walk_calm_days("quanzhou", "hakata", 3, 1)
+hk_deadline = hk_calm + CONTRACT_SLACK
+hk_mean = walk_event_days("quanzhou", "hakata", 3, 1, "offshore", False)
+hk_safe = walk_event_days("quanzhou", "hakata", 3, 1, "offshore", False, hk_mean)
+check(hk_mean <= hk_deadline < hk_safe,
+      f"三月泉州→博多外洋遇事 {hk_mean} 日卡进期限 {hk_deadline}，八成要 {hk_safe} 日")
+
+def flee_fail_chance(morale=70, ship_id="sampan"):
+    """复刻 1 - Voyage.flee_success_chance。小艍、士气 70、无火长时航速 105.6，失败率 0.52。"""
+    spd = ships[ship_id]["base_speed"] * (0.6 + 0.4 * morale / 100.0)
+    return 1.0 - min(0.9, max(0.25, spd / 220.0))
+
+def cargo_hold_chance(month, day, order, known, days, year=1255, morale=70):
+    """复刻 Voyage.cargo_hold_chance：从次日启航，按遇事日数连乘「当日没被抢走」。"""
+    fail = flee_fail_chance(morale)
+    y, m, d = shift_date(year, month, day, 1)
+    keep = 1.0
+    for _i in range(max(0, days)):
+        _wb, st = month_wind(m)
+        ww = event_weights(order, st, known, True)
+        keep *= 1.0 - ww["pirate"] * fail
+        y, m, d = shift_date(y, m, d, 1)
+    return keep
+
+def cargo_hold_tenths(p):
+    return max(0, min(10, math.floor(p * 10.0)))
+
+wz_deadline = march_walk + CONTRACT_SLACK
+wz_off_mean = walk_event_days("quanzhou", "wenzhou", 3, 1, "offshore", True)
+wz_off_safe = walk_event_days("quanzhou", "wenzhou", 3, 1, "offshore", True, wz_off_mean)
+wz_coast_mean = walk_event_days("quanzhou", "wenzhou", 3, 1, "coast", True)
+wz_coast_safe = walk_event_days("quanzhou", "wenzhou", 3, 1, "coast", True, wz_coast_mean)
+hold_r = cargo_hold_tenths(cargo_hold_chance(3, 1, "rumb", True, wz_mean))
+hold_o = cargo_hold_tenths(cargo_hold_chance(3, 1, "offshore", True, wz_off_mean))
+hold_c = cargo_hold_tenths(cargo_hold_chance(3, 1, "coast", True, wz_coast_mean))
+check(hold_o < hold_r < hold_c,
+      f"开局泉州→温州保货 外洋 {hold_o} < 针路 {hold_r} < 傍岸 {hold_c}")
+check(hold_r == 7 and hold_o == 6 and hold_c == 8,
+      f"保货十分位下整：针路 {hold_r} / 外洋 {hold_o} / 傍岸 {hold_c}")
+check(wz_safe <= wz_deadline and hold_r < 8,
+      f"针路八成 {wz_safe} 日赶得上期限 {wz_deadline}，保货只有 {hold_r}，不到八成")
+check(wz_off_safe <= wz_deadline and hold_o < 8,
+      f"外洋八成 {wz_off_safe} 日赶得上期限 {wz_deadline}，保货只有 {hold_o}")
+check(wz_coast_safe > wz_deadline and hold_c >= 8,
+      f"傍岸八成 {wz_coast_safe} 日超过期限 {wz_deadline}，保货 {hold_c} 不拿来冒充赶得上")
+p_by_mean = cargo_hold_chance(3, 1, "offshore", True, wz_off_mean)
+p_by_safe = cargo_hold_chance(3, 1, "offshore", True, wz_off_safe)
+check(p_by_mean > p_by_safe + 0.02,
+      f"外洋保货按遇事 {wz_off_mean} 日是 {p_by_mean:.3f}，长于按八成 {wz_off_safe} 日的 {p_by_safe:.3f}")
+hk_hold = cargo_hold_tenths(cargo_hold_chance(3, 1, "offshore", False, hk_mean))
+check(hk_hold <= 2 and hk_safe > hk_deadline,
+      f"三月泉州→博多外洋保货只有 {hk_hold}，八成 {hk_safe} 日已超过期限 {hk_deadline}")
+
+def spoil_hold_chance(rate, qty, days, factor=1.0):
+    """复刻 Voyage.spoil_hold_chance。不会潮或没有货，概率是 1。"""
+    if rate <= 0 or qty <= 0:
+        return 1.0
+    if days <= 0 or days >= 900:
+        return 0.0
+    p = min(1.0, rate * qty * factor)
+    return (1.0 - p) ** days
+
+if offer:
+    spoil_rate = goods[offer["good_id"]]["perishable"]
+    have_qty = 1000 // buy_price("quanzhou", offer["good_id"])
+    st_r = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_safe))
+    st_o = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_off_safe))
+    st_c = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_coast_safe))
+    check(spoil_rate > 0 and have_qty == 12,
+          f"开局这单会潮，1000 钱凑得出 {have_qty} 件")
+    check(st_r == 6 and st_o == 6 and st_c == 5,
+          f"凑得出 {have_qty} 件，按八成日数受潮：针路 {st_r} / 外洋 {st_o} / 傍岸 {st_c}")
+    check(wz_safe <= wz_deadline and st_r < 8 and wz_off_safe <= wz_deadline and st_o < 8,
+          f"针路、外洋八成赶得上，受潮只有 {st_r} 和 {st_o}，不到八成")
+    check(wz_coast_safe > wz_deadline,
+          f"傍岸八成 {wz_coast_safe} 日超过期限 {wz_deadline}，不拿受潮来说成日子赶得上")
+    st_full = cargo_hold_tenths(spoil_hold_chance(spoil_rate, offer["qty"], wz_safe))
+    check(st_full < st_r,
+          f"单上 {offer['qty']} 件受潮 {st_full}，比凑得出的 {have_qty} 件更潮")
+    st_optimistic = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_off_mean))
+    check(st_optimistic > st_o,
+          f"外洋按遇事 {wz_off_mean} 日下整是 {st_optimistic}，按八成 {wz_off_safe} 日是 {st_o}")
+check(spoil_hold_chance(0.0, 16, 9) == 1.0, "不会潮的货，受潮概率是 1")
+
+check(RUMOR_STALE >= 30, f"行情传闻保鲜 {RUMOR_STALE} 日，够跑一趟近海再回来对")
+gs_src = open(os.path.join(ROOT, S_GD), encoding="utf-8").read()
+deliver_body = gs_src.split("func deliver_contract", 1)[1].split("\nfunc ", 1)[0]
+check("apply_sell_impact" not in deliver_body and "remove_cargo" in deliver_body and "add_money" in deliver_body,
+      "交货卸货给钱，不调用砸盘")
+check("func tick_contract" in gs_src and "advance_days" in open(os.path.join(ROOT, "scripts/GameManager.gd"), encoding="utf-8").read(),
+      "逾期在日推进里结算")
+check(known_route("zhangzhou", "guangzhou") and known_route("quanzhou", "guangzhou")
+      and known_route("ryukyu", "kagoshima"),
+      "图上只有去程的三条航路，返程也算熟路")
+check(not known_route("quanzhou", "hakata"), "没有连线的泉州–博多仍是生路")
+voyage_src = open(os.path.join(ROOT, V_GD), encoding="utf-8").read()
+known_body = voyage_src.split("func is_known_route", 1)[1].split("\nfunc ", 1)[0]
+check(known_body.count("port_def") >= 2, "熟路判定读了两端的连线，不是只看出发港")
+buy_body = voyage_src.split("func sea_buy_unit", 1)[1].split("\nfunc ", 1)[0]
+roll_body = voyage_src.split("func roll_day_event", 1)[1].split("\nfunc ", 1)[0]
+check("_cheapest_port_buy" in buy_body, "海上买价会看已解锁港口里的最低现价，不会低于它")
+weights_body = voyage_src.split("func event_weights", 1)[1].split("\nfunc ", 1)[0]
+check("discoveries_open" in weights_body and "_discovery_candidates" in roll_body,
+      "岸影抽空时当日权重不再把这一档当成无事日")
+plan_body = voyage_src.split("func plan", 1)[1].split("\nfunc ", 1)[0]
+walk_body = voyage_src.split("func _walk_days", 1)[1].split("\nfunc ", 1)[0]
+check("expected_days" in plan_body and "safe_days" in plan_body and "_walk_days" in plan_body,
+      "航程给出静风、遇事和八成日数，期限仍用静风")
+check("progress_moments" in walk_body and "_shift_date" in walk_body and "SAFE_Z" in walk_body,
+      "遇事与八成从次日启航起按逐日风信累加")
+check("wind_changes" in plan_body and "departs_on_new_wind" in plan_body,
+      "换季和途中换风会标出来")
+main_src = open(os.path.join(ROOT, "scripts/Main.gd"), encoding="utf-8").read()
+check("hint_lbl.text = rumor" in main_src, "牙行行上直接写出传闻卖价，不只藏在悬停里")
+offer_body = gs_src.split("func contract_offer", 1)[1].split("\nfunc ", 1)[0]
+fail_body = gs_src.split("func _fail_contract", 1)[1].split("\nfunc ", 1)[0]
+accept_body = gs_src.split("func accept_contract", 1)[1].split("\nfunc ", 1)[0]
+check("contract_port_closed" in offer_body, "毁约当月，签发港不再开出同一笔委办")
+check("contract_ban" in fail_body and "offer_month" in fail_body, "逾期和毁约都会记下签发年月")
+check("contract_offer" in accept_body and "offer_month" in accept_body,
+      "接下时按现单重算酬金和期限，不吃按钮上的旧数字")
+sea_src = open(os.path.join(ROOT, "scripts/SeaChart.gd"), encoding="utf-8").read()
+back_body = sea_src.split("func _on_back_to_port", 1)[1].split("\nfunc ", 1)[0]
+check("voyage_started" in back_body, "发舶之后不能点回港躲开海难")
+check("voyage_days" in offer_body and "expected_days" not in offer_body and "safe_days" not in offer_body,
+      "委办期限不改用遇事日数或八成日数")
+check("·误期" in main_src and "交不齐" in sea_src, "旅店歇过期限、舱里货不够，界面会写出来")
+check("八成" in sea_src and "不算稳" in main_src and "不算稳" in sea_src,
+      "平均数卡进期限、八成超出时，界面写明不算稳")
+check("凑得出" in main_src and "拿不满酬" in main_src,
+      "钱不够买满委办时，牙行把缺口写在单子上")
+check("hold_tenths" in plan_body and "cargo_hold_chance(order, known, open, expected)" in plan_body,
+      "保货按遇事日数写进航程，期限仍用静风")
+check("cargo_hold_chance(order, known, open, safe)" not in plan_body,
+      "保货不改用八成日数")
+hold_fn = voyage_src.split("func cargo_hold_chance", 1)[1].split("\nfunc ", 1)[0]
+tenths_fn = voyage_src.split("func cargo_hold_tenths", 1)[1].split("\nfunc ", 1)[0]
+flee_fn = voyage_src.split("func flee_success_chance", 1)[1].split("\nfunc ", 1)[0]
+check("flee_success_chance" in hold_fn and "event_weights" in hold_fn and "floor" in tenths_fn,
+      "保货是逃走失败率按逐日海盗权重连乘，十分位下整")
+check("220.0" in flee_fn and "0.25" in flee_fn and "0.9" in flee_fn,
+      "逃走成功率仍是航速 / 220，夹在 0.25 和 0.9")
+world_src = open(os.path.join(ROOT, "scripts/WorldMap.gd"), encoding="utf-8").read()
+check("Voyage.flee_success_chance" in sea_src and "Voyage.flee_success_chance" in world_src,
+      "海图逃走和海战弃战用同一条成功率")
+check("220.0" not in sea_src and "220.0" not in world_src,
+      "逃走的 220 只写在 Voyage，海图和海战不再各写一遍")
+check("保货" in sea_src and "保货" in main_src and "不到八成" in main_src and "不到八成" in sea_src,
+      "日子赶得上但保货不到八成时，牙行和海图都写出来")
+check('int(plan_r.get("safe_days", 0)) <= deadline and int(plan_r.get("hold_tenths", 0)) < 8' in main_src
+      and 'int(plan_c.get("safe_days", 0)) <= deadline and int(plan_c.get("hold_tenths", 0)) < 8' in main_src,
+      "保货警告按同一条航法看八成日数和保货")
+spoil_fn = voyage_src.split("func spoil_hold_chance", 1)[1].split("\nfunc ", 1)[0]
+check("cargo_loss_factor" in spoil_fn and "pow" in spoil_fn,
+      "受潮按每日概率连乘，总管减损算进去")
+spoil_ui = main_src.split("受潮：", 1)[1].split('if int(plan_c.get("expected_days"', 1)[0]
+check("safe_days" in spoil_ui and "expected_days" not in spoil_ui and "can_carry" in spoil_ui,
+      "牙行受潮按八成日数和凑得出的件数，不用遇事日数")
+check('int(plan_r.get("safe_days", 0)) <= deadline and sr < 8' in spoil_ui
+      and 'int(plan_c.get("safe_days", 0)) <= deadline and sc < 8' in spoil_ui,
+      "受潮警告按同一条航法看八成日数")
+check("一件没潮" in main_src and "一件没潮" in sea_src and "受潮不到八成" in main_src and "受潮只有" in sea_src,
+      "会潮的货，牙行和海图都写出一件没潮的成数")
+check("dampest_aboard" in sea_src and "good_perish_rate" in sea_src,
+      "海图按舱里会潮的货来写，委办货优先")
+check("·换风" in sea_src and "逐日累加" in main_src, "途中换风写在海图和委办上")
 
 print()
 print("=" * 68)

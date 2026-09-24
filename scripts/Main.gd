@@ -604,6 +604,22 @@ func update_status_panel() -> void:
 				crew_color, crew_str, per_ship,
 			]
 
+	var cst := GameState.contract_status()
+	if not cst.is_empty():
+		var left: int = int(cst.get("days_left", 0))
+		var left_s := "今日截止" if left == 0 else ("%d 日后截止" % left if left > 0 else "已逾期")
+		var col := "yellow" if left <= 2 else "white"
+		if left < 0:
+			col = "red"
+		t += "\n[u]委办[/u]\n[color=%s]%s ×%d 运往 %s（%s）酬 %d[/color]\n" % [
+			col,
+			GameManager.get_good_name(str(cst.get("good_id", ""))),
+			int(cst.get("remaining", 0)),
+			GameManager.get_port_name(str(cst.get("dest", ""))),
+			left_s,
+			int(cst.get("pay_left", 0)),
+		]
+
 	# 章节目标：不写出来玩家不会知道怎样才能开出下一片海
 	var prog := GameState.chapter_progress()
 	t += "[color=#%s][b]第%s章・%s[/b][/color]\n" % [
@@ -725,6 +741,14 @@ func _interior_lead(scene_id: String) -> String:
 # ══════════════════════════════════════════════════════
 
 func load_scene(scene_id: String) -> void:
+	var overdue := GameState.tick_contract()
+	_load_scene_inner(scene_id)
+	if overdue != "":
+		log_msg(overdue)
+	update_status_panel()
+
+
+func _load_scene_inner(scene_id: String) -> void:
 	if current_scene_id != "" and current_scene_id != scene_id:
 		previous_scene_id = current_scene_id
 	current_scene_id = scene_id
@@ -927,6 +951,9 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 func _setup_market(port_id: String) -> void:
 	scene_title.text = "%s・牙行" % GameManager.get_port_name(port_id)
 	body_text.text = "柜上只摆三样。要看别的，明日再来。"
+
+	_add_contract_panel(port_id)
+
 	var goods_ids: Array = Economy.goods_at(port_id)
 	if goods_ids.is_empty():
 		body_text.text = "此地并无正经牙行，只有几个渔妇在晒网。"
@@ -1053,6 +1080,194 @@ func _on_broker_shut() -> void:
 	update_status_panel()
 
 
+func _add_contract_panel(port_id: String) -> void:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	var cst := GameState.contract_status()
+	if not cst.is_empty():
+		var left: int = int(cst.get("days_left", 0))
+		var left_s := "今日截止" if left == 0 else ("%d 日后截止" % left if left > 0 else "已逾期")
+		var head := Label.new()
+		head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		head.text = "在身委办：%s ×%d（共 %d）送往 %s，%s。交清尚可得 %d 钱。舱里现有 %d。" % [
+			GameManager.get_good_name(str(cst.get("good_id", ""))),
+			int(cst.get("remaining", 0)),
+			int(cst.get("qty", 0)),
+			GameManager.get_port_name(str(cst.get("dest", ""))),
+			left_s,
+			int(cst.get("pay_left", 0)),
+			Fleet.cargo_qty(str(cst.get("good_id", ""))),
+		]
+		box.add_child(head)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		if str(cst.get("dest", "")) == port_id:
+			var deliver := Button.new()
+			deliver.text = "交货"
+			deliver.disabled = Fleet.cargo_qty(str(cst.get("good_id", ""))) <= 0 or left < 0
+			deliver.pressed.connect(_on_deliver_contract.bind(port_id))
+			row.add_child(deliver)
+		var drop := Button.new()
+		drop.text = "毁约"
+		drop.pressed.connect(_on_abandon_contract)
+		row.add_child(drop)
+		box.add_child(row)
+	else:
+		var offer := GameState.contract_offer(port_id)
+		var head := Label.new()
+		head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if GameState.contract_port_closed(port_id):
+			head.text = "这个月已经毁约或误期，牙行不再委办。下个月再来。"
+			box.add_child(head)
+		elif offer.is_empty():
+			head.text = "本月牙行没有外埠委办。"
+			box.add_child(head)
+		else:
+			var dest := str(offer.get("dest", ""))
+			var gid := str(offer.get("good_id", ""))
+			var plan_r := Voyage.plan(port_id, dest, Voyage.CourseOrder.RUMB)
+			var plan_o := Voyage.plan(port_id, dest, Voyage.CourseOrder.OFFSHORE)
+			var plan_c := Voyage.plan(port_id, dest, Voyage.CourseOrder.COAST)
+			var rumb: int = int(plan_r.get("days", 0))
+			var off: int = int(plan_o.get("days", 0))
+			var coast: int = int(plan_c.get("days", 0))
+			var deadline: int = int(offer.get("deadline_days", 0))
+			var route := "熟路" if Voyage.is_known_route(port_id, dest) else "生路"
+			head.text = "委办：送 %s ×%d 到%s（%s）。酬 %d 钱，其中溢价 %d，交货不砸盘。静风针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日，期限 %d 日。" % [
+				GameManager.get_good_name(gid), int(offer.get("qty", 0)),
+				GameManager.get_port_name(dest), route,
+				int(offer.get("purse", 0)), int(offer.get("premium", 0)),
+				rumb, off, coast, deadline,
+			]
+			box.add_child(head)
+			var calm_note := Label.new()
+			calm_note.text = "遇事约：针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日。期限按静风针路加余量。" % [
+				int(plan_r.get("expected_days", 0)), int(plan_o.get("expected_days", 0)), int(plan_c.get("expected_days", 0)),
+			]
+			if bool(plan_r.get("wind_changes", false)) or bool(plan_o.get("wind_changes", false)) or bool(plan_c.get("wind_changes", false)) or bool(plan_r.get("departs_on_new_wind", false)):
+				calm_note.text += " 启航后的风和今天不一定相同，日数已按逐日累加。"
+			calm_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			calm_note.add_theme_font_size_override("font_size", 13)
+			calm_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
+			box.add_child(calm_note)
+			var safe_note := Label.new()
+			safe_note.text = "八成：针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日。十次里大约八次不迟于这个数。" % [
+				int(plan_r.get("safe_days", 0)), int(plan_o.get("safe_days", 0)), int(plan_c.get("safe_days", 0)),
+			]
+			var rumb_thin := int(plan_r.get("expected_days", 0)) <= deadline and int(plan_r.get("safe_days", 0)) > deadline
+			var off_thin := int(plan_o.get("expected_days", 0)) <= deadline and int(plan_o.get("safe_days", 0)) > deadline
+			var coast_thin := int(plan_c.get("expected_days", 0)) <= deadline and int(plan_c.get("safe_days", 0)) > deadline
+			if rumb_thin or off_thin or coast_thin:
+				safe_note.text += " 有航法平均数赶得上，八成日数超过期限，不算稳。"
+			safe_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			safe_note.add_theme_font_size_override("font_size", 13)
+			safe_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
+			box.add_child(safe_note)
+			var hold_note := Label.new()
+			hold_note.text = "保货：针路 %d / 外洋 %d / 傍岸 %d。十次里至少有这么多次，逃走没被抢走货。" % [
+				int(plan_r.get("hold_tenths", 0)), int(plan_o.get("hold_tenths", 0)), int(plan_c.get("hold_tenths", 0)),
+			]
+			var cargo_bits := ""
+			if int(plan_r.get("safe_days", 0)) <= deadline and int(plan_r.get("hold_tenths", 0)) < 8:
+				cargo_bits += "针路"
+			if int(plan_o.get("safe_days", 0)) <= deadline and int(plan_o.get("hold_tenths", 0)) < 8:
+				cargo_bits += ("、" if cargo_bits != "" else "") + "外洋"
+			if int(plan_c.get("safe_days", 0)) <= deadline and int(plan_c.get("hold_tenths", 0)) < 8:
+				cargo_bits += ("、" if cargo_bits != "" else "") + "傍岸"
+			if cargo_bits != "":
+				hold_note.text += " %s按八成日数赶得上，保货不到八成。小船打不赢，这数不含买路。" % cargo_bits
+				hold_note.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
+			else:
+				hold_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
+			hold_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			hold_note.add_theme_font_size_override("font_size", 13)
+			box.add_child(hold_note)
+			var need_qty := int(offer.get("qty", 0))
+			var unit_cost := Economy.buy_price(port_id, gid)
+			var held_qty := Fleet.cargo_qty(gid)
+			var can_buy := 0
+			if unit_cost > 0:
+				can_buy = int(float(GameState.money) / float(unit_cost))
+			var can_carry := held_qty + mini(can_buy, Fleet.max_loadable(gid))
+			if can_carry < need_qty:
+				var purse_lbl := Label.new()
+				purse_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				purse_lbl.text = "这里一件 %d 钱。钱和舱里现有的，凑得出 %d 件，单子要 %d 件。不够也能接，交不齐就拿不满酬，也没有名声。" % [
+					unit_cost, can_carry, need_qty,
+				]
+				purse_lbl.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
+				box.add_child(purse_lbl)
+			var spoil_rate := Voyage.good_perish_rate(gid)
+			if spoil_rate > 0.0 and can_carry > 0:
+				var spoil_note := Label.new()
+				var sr := Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(spoil_rate, can_carry, int(plan_r.get("safe_days", 0))))
+				var so := Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(spoil_rate, can_carry, int(plan_o.get("safe_days", 0))))
+				var sc := Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(spoil_rate, can_carry, int(plan_c.get("safe_days", 0))))
+				spoil_note.text = "受潮：针路 %d / 外洋 %d / 傍岸 %d。按八成日数，十次里至少有这么多次一件没潮。这数不含海盗。" % [sr, so, sc]
+				if can_carry < need_qty:
+					spoil_note.text += " 按眼下凑得出的 %d 件算。" % can_carry
+				var spoil_bits := ""
+				if int(plan_r.get("safe_days", 0)) <= deadline and sr < 8:
+					spoil_bits += "针路"
+				if int(plan_o.get("safe_days", 0)) <= deadline and so < 8:
+					spoil_bits += ("、" if spoil_bits != "" else "") + "外洋"
+				if int(plan_c.get("safe_days", 0)) <= deadline and sc < 8:
+					spoil_bits += ("、" if spoil_bits != "" else "") + "傍岸"
+				if spoil_bits != "":
+					spoil_note.text += " %s按八成日数赶得上，受潮不到八成。" % spoil_bits
+					spoil_note.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
+				else:
+					spoil_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
+				spoil_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				spoil_note.add_theme_font_size_override("font_size", 13)
+				box.add_child(spoil_note)
+			if int(plan_c.get("expected_days", 0)) > deadline:
+				var warn := Label.new()
+				warn.text = "傍岸遇事约 %d 日，超过期限 %d 日。" % [int(plan_c.get("expected_days", 0)), deadline]
+				warn.add_theme_color_override("font_color", Color(1.0, 0.7, 0.4))
+				box.add_child(warn)
+			elif coast > deadline:
+				var warn_calm := Label.new()
+				warn_calm.text = "傍岸静风就要 %d 日，赶不上。" % coast
+				warn_calm.add_theme_color_override("font_color", Color(1.0, 0.7, 0.4))
+				box.add_child(warn_calm)
+			var take := Button.new()
+			take.text = "接下委办"
+			take.pressed.connect(_on_accept_contract.bind(offer.duplicate(true)))
+			box.add_child(take)
+	choices_container.add_child(box)
+
+
+func _on_accept_contract(offer: Dictionary) -> void:
+	if GameState.accept_contract(offer):
+		var cst := GameState.contract_status()
+		log_msg("接下委办：%s ×%d，%d 日内送到%s。酬 %d 钱，误期要赔。" % [
+			GameManager.get_good_name(str(cst.get("good_id", ""))),
+			int(cst.get("qty", 0)),
+			int(GameState.contract.get("deadline_days", 0)),
+			GameManager.get_port_name(str(cst.get("dest", ""))),
+			int(GameState.contract.get("purse", 0)),
+		])
+	elif not GameState.contract_status().is_empty():
+		log_msg("牙行摇头：你身上已经有一笔没了结的。")
+	else:
+		log_msg("牙行把单子收了回去。这月的委办对不上。")
+	load_scene(current_scene_id)
+
+
+func _on_deliver_contract(port_id: String) -> void:
+	var res := GameState.deliver_contract(port_id)
+	log_msg(str(res.get("msg", "")))
+	load_scene(current_scene_id)
+
+
+func _on_abandon_contract() -> void:
+	var msg := GameState.abandon_contract()
+	if msg != "":
+		log_msg(msg)
+	load_scene(current_scene_id)
+
+
 func _make_market_row(port_id: String, good_id: String) -> Control:
 	var card := PanelContainer.new()
 	card.custom_minimum_size = Vector2(200, 188)
@@ -1089,7 +1304,12 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 
 	var hint_lbl := Label.new()
 	var hint := Economy.price_hint(port_id, good_id)
+	# 行情传闻（云端 bed9）：有传闻时行上写传闻，原提示进 tooltip
+	var rumor := GameState.rumor_label(port_id, good_id)
 	hint_lbl.text = hint if hint != "" else "寻常"
+	if rumor != "":
+		hint_lbl.text = rumor
+		hint_lbl.tooltip_text = (hint + "\n" + rumor) if hint != "" else rumor
 	UiTheme.style_footnote(hint_lbl)
 	hint_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if role == "origin":
@@ -1820,14 +2040,22 @@ func _setup_inn(port_id: String) -> void:
 	var rest := _slip_body()
 	_slip_title(rest, "歇息", "%s　%s" % [Calendar.get_date_string(), Calendar.get_monsoon_desc()])
 	_slip_note(rest, _monsoon_forecast(), UiTheme.HONEY)
+	# 在身委办的期限提醒（云端 bed9），嵌进主干的歇息工席
+	var rest_cst := GameState.contract_status()
+	if not rest_cst.is_empty():
+		var rest_left := int(rest_cst.get("days_left", 0))
+		if rest_left < 0:
+			_slip_note(rest, "在身委办已经逾期，歇着也会被牙行扣钱。", UiTheme.CINNABAR)
+		else:
+			_slip_note(rest, "在身委办还剩 %d 日。歇过这个数，牙行要扣钱、掉名声。" % rest_left, UiTheme.CINNABAR)
 	var rest_row := _slip_row(rest)
 	for n in [1, 10]:
 		var nights := int(n)
-		_slip_chip(rest_row, "歇 %d 日　%d" % [nights, nights * INN_RATE], _on_rest.bind(nights, port_id))
+		_slip_chip(rest_row, "歇 %d 日　%d%s" % [nights, nights * INN_RATE, _contract_rest_mark(nights)], _on_rest.bind(nights, port_id))
 	var to_next: int = Calendar.DAYS_PER_MONTH - Calendar.day + 1
 	_slip_chip(
 		rest_row,
-		"候 %d 日　%d" % [to_next, to_next * INN_RATE],
+		"候 %d 日　%d%s" % [to_next, to_next * INN_RATE, _contract_rest_mark(to_next)],
 		_on_rest.bind(to_next, port_id),
 		true
 	)
@@ -2043,6 +2271,15 @@ func _monsoon_forecast() -> String:
 	return "掌柜掐指算了算。约 %d 日后风信要转。北上博多、高丽须候西南风　五至八月。南下流求、南洋须候东北风　十月至次年二月。" % days
 
 
+func _contract_rest_mark(days: int) -> String:
+	var cst := GameState.contract_status()
+	if cst.is_empty():
+		return ""
+	if days > int(cst.get("days_left", 0)):
+		return "·误期"
+	return ""
+
+
 func _on_rest(days: int, port_id: String, rate: int = INN_RATE, place: String = "店中") -> void:
 	var cost := days * rate
 	if not GameState.spend_money(cost):
@@ -2086,6 +2323,7 @@ func _gather_price_intel(port_id: String) -> String:
 	if rows.is_empty():
 		return "【闲谈】几个老水手翻来覆去只讲当年的风暴，没打听出什么有用的。"
 	var best: Dictionary = rows[0]
+	GameState.note_rumor(str(best["port"]), str(best["good"]), Economy.get_rate(str(best["port"]), str(best["good"])))
 	return "【行情】邻座的牙人压低声音：「%s　眼下缺%s，此地买了运过去，一件能多得　%d 钱。」" % [
 		GameManager.get_port_name(best["port"]),
 		GameManager.get_good_name(best["good"]),

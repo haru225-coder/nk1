@@ -47,34 +47,46 @@ func _advance_one_day() -> void:
 
 # ── 季风 ──────────────────────────────────────────────
 
-## 当前季风类型。史实：「北风下南洋，南风回唐山」。
-func get_monsoon() -> Monsoon:
-	if month >= 10 or month <= 2:
+## 指定月份的季风。史实：「北风下南洋，南风回唐山」。
+func monsoon_of(month_num: int) -> Monsoon:
+	if month_num >= 10 or month_num <= 2:
 		return Monsoon.NORTHEAST
-	elif month >= 5 and month <= 8:
+	elif month_num >= 5 and month_num <= 8:
 		return Monsoon.SOUTHWEST
 	return Monsoon.TRANSITION
 
 
-## 季风强度系数，转换期风弱且多变。
-func get_monsoon_strength() -> float:
-	var m := get_monsoon()
+func get_monsoon() -> Monsoon:
+	return monsoon_of(month)
+
+
+## 指定月份的季风强度。转换期风弱且多变。
+func monsoon_strength_of(month_num: int) -> float:
+	var m := monsoon_of(month_num)
 	if m == Monsoon.NORTHEAST:
 		# 冬月最盛
-		return 1.0 if month in [11, 12, 1] else 0.8
+		return 1.0 if month_num in [11, 12, 1] else 0.8
 	elif m == Monsoon.SOUTHWEST:
-		return 1.0 if month in [6, 7] else 0.8
+		return 1.0 if month_num in [6, 7] else 0.8
 	return 0.3
 
 
-## 当前季风吹向的方位角。转换期返回 -1 表示无稳定风向。
-func get_wind_bearing() -> float:
-	var m := get_monsoon()
+func get_monsoon_strength() -> float:
+	return monsoon_strength_of(month)
+
+
+## 指定月份的风向方位角。转换期返回 -1，表示无稳定风向。
+func wind_bearing_of(month_num: int) -> float:
+	var m := monsoon_of(month_num)
 	if m == Monsoon.NORTHEAST:
 		return NE_MONSOON_BEARING
 	elif m == Monsoon.SOUTHWEST:
 		return SW_MONSOON_BEARING
 	return -1.0
+
+
+func get_wind_bearing() -> float:
+	return wind_bearing_of(month)
 
 
 func get_monsoon_desc() -> String:
@@ -137,6 +149,11 @@ func get_day_name() -> String:
 	elif day < 20:
 		return "十" + CN_NUM[day - 10]
 	return "廿" + CN_NUM[day - 20]
+
+
+## 自 1255 正月初一算起的绝对日，用于委办期限与行情传闻的保鲜。（云端 bed9）
+func absolute_day() -> int:
+	return ((year - 1255) * MONTHS_PER_YEAR + (month - 1)) * DAYS_PER_MONTH + (day - 1)
 
 
 ## 「宝祐三年　三月初一」

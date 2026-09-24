@@ -1064,6 +1064,99 @@ check(flag_after == flag_h - each and esc_after == esc_h - each, "两艘各掉�
 check(flag_after > piled, f"旗舰剩 {flag_after:.0f}，没有吃掉护航的那份（堆旗舰会剩 {piled:.0f}）")
 check("damage_each_ship" in storm_body and "ships.size()" not in storm_body,
       "风涛脚本按艘扣，不再乘船数")
+print("航法与委办：接一单、针路送到、交货不砸盘")
+print("="*70)
+# 独立于上面的晋升账本。开局三月转换期、行情归 1，验证新循环自己能走完。
+G.money = 8000
+G.port = "quanzhou"
+G.chapter = 1
+G.month = 3
+G.day = 1
+G.year = 1255
+G.morale = 70
+G.debt = 0
+G.water, G.food = 80, 80
+G.ships = [{"type": "sampan", "name": "无名小艍", "crew": 6,
+            "durability": 120.0, "sail_level": 1, "armor_level": 1, "cargo": {}}]
+for pid in rates:
+    for gid in rates[pid]:
+        rates[pid][gid] = 1.0
+
+import re as _re
+def _gd_const(rel, name):
+    src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+    m = _re.search(rf"const {name} := ([0-9.]+)", src)
+    return float(m.group(1))
+SLACK = int(_gd_const("scripts/GameState.gd", "CONTRACT_SLACK_DAYS"))
+PREMIUM = _gd_const("scripts/GameState.gd", "CONTRACT_PREMIUM")
+QBUDGET = _gd_const("scripts/GameState.gd", "CONTRACT_QTY_BUDGET")
+QMIN = int(_gd_const("scripts/GameState.gd", "CONTRACT_QTY_MIN"))
+QMAX = int(_gd_const("scripts/GameState.gd", "CONTRACT_QTY_MAX"))
+BMIN = _gd_const("scripts/GameState.gd", "CONTRACT_BASE_MIN")
+FINE_RATE = _gd_const("scripts/GameState.gd", "CONTRACT_FINE_RATE")
+FINE_MIN = int(_gd_const("scripts/GameState.gd", "CONTRACT_FINE_MIN"))
+OFF_M = _gd_const("scripts/core/Voyage.gd", "ORDER_SPEED_OFFSHORE")
+COAST_M = _gd_const("scripts/core/Voyage.gd", "ORDER_SPEED_COAST")
+
+def _pair():
+    for gid, rel in ports["quanzhou"]["market"].items():
+        if rel == "consumer" or goods[gid].get("contraband"):
+            continue
+        if goods[gid]["base_value"] < BMIN or goods[gid]["bulk"] <= 0:
+            continue
+        for pid in ports["quanzhou"].get("connections", []):
+            p = ports.get(pid)
+            if not p or p.get("depth", 0) <= 0:
+                continue
+            if ch_num(p.get("unlock", "ch1")) > 1:
+                continue
+            if p.get("market", {}).get(gid) == "consumer":
+                return gid, pid
+    return None, None
+
+cgid, cdst = _pair()
+check(cgid is not None, "泉州有一笔第一章熟路就能交的委办货")
+if cgid:
+    cqty = max(QMIN, min(QMAX, int(QBUDGET / goods[cgid]["bulk"])))
+    got, spent = do_buy(cgid, cqty)
+    check(got == cqty, f"舱位与本钱装得下委办的 {goods[cgid]['name']} ×{cqty}（实装 {got}）")
+    dest_rate = rates[cdst][cgid]
+    est = math.ceil(dist(G.port, cdst) / speed(bearing(G.port, cdst)))
+    days = sail(cdst)
+    check(days <= est + SLACK, f"针路 {days} 日送到，未超过期限 {est + SLACK} 日")
+    check(abs(rates[cdst][cgid] - dest_rate) < 1e-9, "航行本身不改目的港行情")
+    sale = 0
+    r = dest_rate
+    depth = ports[cdst]["depth"]
+    for _ in range(got):
+        sale += round(goods[cgid]["base_value"] * ROLE_MOD["consumer"] * r * (1 - BROKER))
+        r = max(0.4, min(2.2, r - 1.0 / depth))
+    premium = round(got * goods[cgid]["base_value"] * PREMIUM)
+    purse = sale + premium
+    # 交货：卸货、给酬，行情不动
+    for s in G.ships:
+        if cgid in s["cargo"]:
+            del s["cargo"][cgid]
+    before = G.money
+    G.money += purse
+    G.peak_money = max(G.peak_money, G.money)
+    check(abs(rates[cdst][cgid] - dest_rate) < 1e-9, "交货不砸盘")
+    check(r < dest_rate, "若改走牙行卖掉，同样件数会把行情压低")
+    check(G.money == before + purse and purse > sale, f"交清实得酬金 {purse}（高于直接卖的 {sale}）")
+    check(verify_invariants(), "交货后分船账目不变量成立")
+    fine = min(G.money, max(FINE_MIN, round(purse * FINE_RATE)))
+    check(fine < purse, f"就算毁约，罚款 {fine} 也小于酬金 {purse}")
+    print(f"  {goods[cgid]['name']} ×{got} → {ports[cdst]['name']}　{days} 日　酬 {purse}（溢价 {premium}）")
+
+d_far = dist("quanzhou", "hakata")
+crs_far = bearing("quanzhou", "hakata")
+base_spd = ships["sampan"]["base_speed"] * morale_f() * wind_factor(crs_far)
+days_r = math.ceil(d_far / base_spd)
+days_o = math.ceil(d_far / (base_spd * OFF_M))
+days_c = math.ceil(d_far / (base_spd * COAST_M))
+print(f"  泉州→博多（当下风）：外洋 {days_o} 日 / 针路 {days_r} 日 / 傍岸 {days_c} 日，针路期限 {days_r + SLACK} 日")
+check(days_o <= days_r < days_c, "外洋不慢于针路，傍岸严格更慢")
+check(days_c > days_r + SLACK, "泉州→博多傍岸赶不上针路期限")
 
 print()
 print("="*70)

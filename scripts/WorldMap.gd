@@ -423,7 +423,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if boarding:
 				return # 白刃已钩住，不能逃
 			get_viewport().set_input_as_handled()
-			var chance := clampf(Fleet.fleet_speed() / 220.0, 0.25, 0.9)
+			var chance := Voyage.flee_success_chance()
 			var ok := randf() < chance
 			_battle_exit("flee", {"flee_ok": ok, "player_damage": player_damage})
 
