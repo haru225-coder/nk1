@@ -4,9 +4,9 @@ extends Node2D
 signal battle_finished(outcome: String, data: Dictionary)
 
 @onready var ship: CharacterBody2D = $Ship
-@onready var label: RichTextLabel = $CanvasLayer/HUD/LeftPanel/Margin/Label
-@onready var fleet_status: Label = $CanvasLayer/HUD/RightPanel/Margin/VBox/FleetStatus
-@onready var weather_status: Label = $CanvasLayer/HUD/RightPanel/Margin/VBox/WeatherStatus
+@onready var label: RichTextLabel = $CanvasLayer/HUD/TideBar/Margin/Row/Label
+@onready var fleet_status: Label = $CanvasLayer/HUD/TideBar/Margin/Row/VBox/FleetStatus
+@onready var weather_status: Label = $CanvasLayer/HUD/TideBar/Margin/Row/VBox/WeatherStatus
 @onready var canvas_modulate: CanvasModulate = $CanvasModulate
 @onready var rain_particles: CPUParticles2D = $RainParticles
 @onready var lightning_flash: ColorRect = $CanvasLayer/LightningFlash
@@ -59,10 +59,12 @@ func _ready() -> void:
 	weather_status.add_theme_font_override("font", UiTheme.font())
 	weather_status.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	weather_status.add_theme_color_override("font_color", UiTheme.TEXT)
-	for panel_name in ["LeftPanel", "RightPanel", "MinimapPanel"]:
-		var panel := hud.get_node_or_null(panel_name)
-		if panel is PanelContainer:
-			panel.add_theme_stylebox_override("panel", UiTheme.panel())
+	var tide := hud.get_node_or_null("TideBar")
+	if tide is PanelContainer:
+		tide.add_theme_stylebox_override("panel", UiTheme.plaque())
+	var mini := hud.get_node_or_null("MinimapPanel")
+	if mini is PanelContainer:
+		mini.add_theme_stylebox_override("panel", UiTheme.panel())
 	for port in $Ports.get_children():
 		for child in port.get_children():
 			if child is Label:
@@ -240,17 +242,17 @@ func _update_hud() -> void:
 	var tail := "弃战　B"
 	var mission := ""
 	if combat_mode:
-		mission = "敌船 %d 艘　存活 %d\n" % [total_enemies, _enemies_alive()]
+		mission = "敌船 %d 艘　存活 %d" % [total_enemies, _enemies_alive()]
 	var boarding_hint := ""
 	if combat_mode and not resolved:
 		if boarding:
 			tail = "白刃中"
-			boarding_hint = "[color=#%s]已钩住[/color]\n" % UiTheme.hex(UiTheme.HONEY)
+			boarding_hint = "[color=#%s]已钩住[/color]" % UiTheme.hex(UiTheme.HONEY)
 		else:
 			var ne := _nearest_enemy()
 			if ne.size() == 2 and ne[1] < BOARD_DISTANCE:
 				tail = "接舷　G　弃战　B"
-				boarding_hint = "[color=#%s]舷边可接[/color]\n" % UiTheme.hex(UiTheme.HONEY)
+				boarding_hint = "[color=#%s]舷边可接[/color]" % UiTheme.hex(UiTheme.HONEY)
 	label.text = _format_left_hud(
 		mission, boarding_hint, wind_desc, int(ship.wind_strength),
 		ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), tail,
@@ -261,16 +263,26 @@ func _update_hud() -> void:
 		cargo_bits.append("%s ×%d" % [GameManager.get_good_name(k), int(Fleet.cargo[k].get("qty", 0))])
 	var cargo_str := "空" if cargo_bits.is_empty() else "　".join(cargo_bits)
 
-	fleet_status.text = "舰队\n金钱　%d\n货舱　%s" % [GameState.money, cargo_str]
+	fleet_status.text = "金钱　%d　　货舱　%s" % [GameState.money, cargo_str]
 
 
-## 左栏文案单独拼，避免一条长 % 串数错占位（Godot 4.6 少参数会整栏变空）
+## 顶匾文案单独拼，避免一条长 % 串数错占位（Godot 4.6 少参数会整栏变空）。
+## 两行横排：操纵在上，敌船风船体在下。实时操船，不收进浮层。
 func _format_left_hud(
 	mission: String, boarding_hint: String, wind_desc: String, wind_strength: int,
 	sail_gear: int, hp_color: String, hull_hp: int, max_hp: int, tail: String
 ) -> String:
-	return "%s%s季风　%s\n风力　%d\n升帆　W　落帆　S　%s\n操舵　A　D\n齐射　J　K\n船体　[color=%s]%d / %d[/color]\n%s" % [
-		mission, boarding_hint, wind_desc, wind_strength, _sail_word(sail_gear), hp_color, hull_hp, max_hp, tail,
+	var bits := PackedStringArray()
+	var mission_line := mission.replace("\n", "")
+	var hint_line := boarding_hint.replace("\n", "")
+	if mission_line != "":
+		bits.append(mission_line)
+	if hint_line != "":
+		bits.append(hint_line)
+	bits.append("季风　%s　风力　%d" % [wind_desc, wind_strength])
+	bits.append("船体　[color=%s]%d / %d[/color]" % [hp_color, hull_hp, max_hp])
+	return "升帆　W　落帆　S　%s　　操舵　A　D　　齐射　J　K　　%s\n%s" % [
+		_sail_word(sail_gear), tail, "　　".join(bits),
 	]
 
 

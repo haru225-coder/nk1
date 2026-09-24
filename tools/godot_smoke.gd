@@ -66,6 +66,12 @@ func _run() -> void:
 	var wm_src := FileAccess.get_file_as_string("res://scripts/WorldMap.gd")
 	_check(wm_src.find("_process_spawns") < 0, "WorldMap 无自由航行刷怪", fails)
 	var wm_tscn := FileAccess.get_file_as_string("res://scenes/WorldMap.tscn")
+	_check(wm_tscn.find("[node name=\"TideBar\"") >= 0
+		and wm_tscn.find("[node name=\"LeftPanel\"") < 0
+		and wm_tscn.find("Vector2(320, 0)") < 0
+		and wm_src.find("TideBar/Margin/Row/VBox/FleetStatus") >= 0
+		and wm_src.find("RightPanel/Margin/VBox/FleetStatus") < 0,
+		"海战左右栏收成顶匾，舰队天气仍在匾内竖排", fails)
 	_check(wm_tscn.find("ocean_tex_1234") < 0 and wm_tscn.find("uid://xnp7vjyfjnp1") >= 0,
 		"WorldMap 海洋贴图用导入 UID", fails)
 	_check(wm_tscn.find("按 Enter 停靠") < 0, "海战港名不再写停靠教程", fails)
@@ -278,6 +284,14 @@ func _run() -> void:
 		and main_src.find("存档 / 读档") < 0 and saveload_src.find("%d 钱") >= 0,
 		"航海日志空卷写成未记", fails)
 	_check(str(root.get_node("SaveLoad").call("save_label", 9)) == "未记", "空卷读出来是未记", fails)
+	var save_at := main_src.find("func _show_save_dialog")
+	var save_end := main_src.find("\nfunc ", save_at + 1)
+	var save_body := main_src.substr(save_at, save_end - save_at) if save_at >= 0 and save_end > save_at else ""
+	_check(save_body.find("SaveSheet") >= 0 and save_body.find("_begin_benches(col)") >= 0
+		and save_body.find("SIZE_SHRINK_CENTER") >= 0
+		and save_body.find("Vector2(520, 0)") < 0
+		and save_body.find("style_choice_button(close)") < 0,
+		"航海日志三卷走工席，合上不再拉满宽", fails)
 	_check(main_src.find("OptionButton.new()") < 0 and main_src.find("_select_market_ship") >= 0,
 		"牙行选船走账条小钮，不再用系统下拉", fails)
 	_check(main_src.find("买%d") < 0 and main_src.find("卖%d") < 0
@@ -532,8 +546,10 @@ func _run() -> void:
 						and hud0.find("操舵　A　D") >= 0 and hud0.find("齐射　J　K") >= 0
 						and hud0.find("100 / 100") >= 0 and hud0.find("A/D") < 0
 						and hud0.find("J/K") < 0 and hud0.find("档") < 0
+						and hud0.find("操舵　A　D\n") < 0 and hud0.find("齐射　J　K\n") < 0
+						and hud0.find("\n") >= 0
 						and hud1.find("接舷　G") >= 0,
-					"海战栏写成升帆落帆与半帆，不再用斜杠档位",
+					"海战栏写成升帆落帆与半帆，操纵横排成两行",
 					fails,
 				)
 			else:

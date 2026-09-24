@@ -2478,8 +2478,9 @@ func _show_save_dialog() -> void:
 
 	var dim := ColorRect.new()
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0.05, 0.03, 0.02, 0.55)
+	dim.color = Color(0.02, 0.05, 0.08, 0.62)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	dim.gui_input.connect(_on_save_dim_input)
 	host.add_child(dim)
 
 	var center := CenterContainer.new()
@@ -2488,7 +2489,8 @@ func _show_save_dialog() -> void:
 	host.add_child(center)
 
 	var sheet := PanelContainer.new()
-	sheet.custom_minimum_size = Vector2(520, 0)
+	# 两张 480 工席并排，间距 12，左右边距各 22。
+	sheet.custom_minimum_size = Vector2(1016, 0)
 	sheet.add_theme_stylebox_override("panel", UiTheme.panel())
 	center.add_child(sheet)
 
@@ -2500,7 +2502,7 @@ func _show_save_dialog() -> void:
 	sheet.add_child(margin)
 
 	var col := VBoxContainer.new()
-	col.custom_minimum_size = Vector2(476, 0)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.add_theme_constant_override("separation", 8)
 	margin.add_child(col)
 
@@ -2510,7 +2512,7 @@ func _show_save_dialog() -> void:
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(head)
 
-	_slip_host = col
+	_begin_benches(col)
 	for slot in range(1, SaveLoad.SLOTS + 1):
 		var n := int(slot)
 		var slip := _slip_body()
@@ -2519,14 +2521,29 @@ func _show_save_dialog() -> void:
 		_slip_chip(row, "记录", _on_save_slot.bind(n), true)
 		var read := _slip_chip(row, "翻阅", _on_load_slot.bind(n))
 		read.disabled = not SaveLoad.has_save(n)
-	_slip_host = null
+	var benches := col.get_node("Benches") as HFlowContainer
+	var row_h := 0.0
+	for child in benches.get_children():
+		if child is Control:
+			row_h = maxf(row_h, (child as Control).get_combined_minimum_size().y)
+	benches.custom_minimum_size = Vector2(972, row_h * 2.0 + 8.0)
+	_end_benches()
 
 	var close := Button.new()
 	close.text = "合上"
+	close.custom_minimum_size = Vector2(160, 42)
 	close.pressed.connect(_close_save_sheet)
 	col.add_child(close)
-	UiTheme.style_choice_button(close)
+	UiTheme.style_button(close, true)
 	close.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+
+
+func _on_save_dim_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var click := event as InputEventMouseButton
+		if click.pressed:
+			_close_save_sheet()
 
 
 func _close_save_sheet() -> void:

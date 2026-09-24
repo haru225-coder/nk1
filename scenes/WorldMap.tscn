@@ -87,67 +87,61 @@ color = Color(1, 1, 1, 0.8)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
 
-[node name="LeftPanel" type="PanelContainer" parent="CanvasLayer/HUD"]
+[node name="TideBar" type="PanelContainer" parent="CanvasLayer/HUD"]
 layout_mode = 2
-size_flags_horizontal = 0
+size_flags_horizontal = 3
 size_flags_vertical = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_glass")
 
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/HUD/LeftPanel"]
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/HUD/TideBar"]
 layout_mode = 2
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_top = 15
-theme_override_constants/margin_right = 15
-theme_override_constants/margin_bottom = 15
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 2
 
-[node name="Label" type="RichTextLabel" parent="CanvasLayer/HUD/LeftPanel/Margin"]
-custom_minimum_size = Vector2(320, 0)
+[node name="Row" type="HBoxContainer" parent="CanvasLayer/HUD/TideBar/Margin"]
 layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="Label" type="RichTextLabel" parent="CanvasLayer/HUD/TideBar/Margin/Row"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
 theme_override_font_sizes/normal_font_size = 18
 bbcode_enabled = true
-text = "季风　北风
-风力　80
-升帆　W　落帆　S　收帆
-操舵　A　D
-齐射　J　K
-船体　[color=#9ebd7a]100 / 100[/color]
-弃战　B"
-fit_content = true
+text = "升帆　W　落帆　S　收帆　　操舵　A　D　　齐射　J　K　　弃战　B
+季风　北风　风力　80　　船体　[color=#9ebd7a]100 / 100[/color]"
+fit_content = false
+scroll_active = false
+autowrap_mode = 0
+clip_contents = true
 
-[node name="RightPanel" type="PanelContainer" parent="CanvasLayer/HUD"]
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/HUD/TideBar/Margin/Row"]
 layout_mode = 2
-size_flags_horizontal = 8
-size_flags_vertical = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_glass")
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme_override_constants/separation = 2
 
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/HUD/RightPanel"]
+[node name="FleetStatus" type="Label" parent="CanvasLayer/HUD/TideBar/Margin/Row/VBox"]
+custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_top = 15
-theme_override_constants/margin_right = 15
-theme_override_constants/margin_bottom = 15
-
-[node name="VBox" type="VBoxContainer" parent="CanvasLayer/HUD/RightPanel/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="FleetStatus" type="Label" parent="CanvasLayer/HUD/RightPanel/Margin/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.86, 0.7, 0.34, 1)
+theme_override_colors/font_color = Color(0.243, 0.878, 0.773, 1)
 theme_override_font_sizes/font_size = 18
-text = "舰队
-金钱　0
-货舱　空"
+text = "金钱　0　　货舱　空"
+autowrap_mode = 3
 
-[node name="WeatherStatus" type="Label" parent="CanvasLayer/HUD/RightPanel/Margin/VBox"]
+[node name="WeatherStatus" type="Label" parent="CanvasLayer/HUD/TideBar/Margin/Row/VBox"]
+custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.95, 0.91, 0.82, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.949, 0.984, 0.988, 1)
+theme_override_font_sizes/font_size = 18
 text = "天气　晴"
 
 [node name="MinimapPanel" type="PanelContainer" parent="CanvasLayer/HUD"]
