@@ -633,15 +633,15 @@ func _draw_ports(c: Control, pts: Array) -> void:
 func _draw_ship(c: Control) -> void:
 	if not sailing or selected_port == "" or total_li <= 0.0:
 		return
-	var frac := clampf((total_li - remaining_li) / total_li, 0.0, 1.0)
-	var line := _route_points(origin_port, selected_port)
-	if line.size() < 2:
-		return
-	var pos := _point_along(line, frac)
-	var ahead := _point_along(line, minf(1.0, frac + 0.02))
+	var traveled := clampf(total_li - remaining_li, 0.0, total_li)
+	var here: Dictionary = Voyage.point_along_track(origin_port, selected_port, traveled)
+	var ahead_ll: Dictionary = Voyage.point_along_track(
+		origin_port, selected_port, minf(total_li, traveled + maxf(8.0, total_li * 0.015)))
+	var pos := _project(float(here.get("lat", 0.0)), float(here.get("lon", 0.0)))
+	var ahead := _project(float(ahead_ll.get("lat", 0.0)), float(ahead_ll.get("lon", 0.0)))
 	var dir := ahead - pos
 	if dir.length() < 0.5:
-		var brg := Voyage.bearing(origin_port, selected_port)
+		var brg := Voyage.bearing_at(origin_port, selected_port, traveled)
 		dir = Vector2(sin(deg_to_rad(brg)), -cos(deg_to_rad(brg)))
 	else:
 		dir = dir.normalized()
@@ -778,6 +778,9 @@ func _sail_next_day() -> void:
 
 	GameManager.advance_days(1)
 	days_elapsed += 1
+	# 航向跟着当前这一段走。绕岛时风向会变，不能整段用出港时的一个方位。
+	var traveled := clampf(total_li - remaining_li, 0.0, total_li)
+	course_bearing = Voyage.bearing_at(origin_port, selected_port, traveled)
 
 	var event := Voyage.roll_day_event(course_bearing, origin_port, selected_port)
 	var kind: int = event.get("kind", Voyage.EventKind.NONE)
