@@ -2588,7 +2588,22 @@ func _refresh_shore() -> void:
 		child.queue_free()
 	left_facilities.visible = false
 	right_facilities.visible = false
-	shore_hand = ShoreDraft.deal(_shore_facilities, GameState.shore_salt, _shore_pin_shipyard())
+	# 「今日只开三处」只在寻常设施里发牌；本地 main 的终局特殊卡（special_* / siege_*）是历史节点，来了就一定在岸上
+	var regular: Array = []
+	var specials: PackedStringArray = PackedStringArray()
+	for raw_fac in _shore_facilities:
+		if typeof(raw_fac) != TYPE_DICTIONARY:
+			continue
+		var fid_raw := str(raw_fac.get("id", ""))
+		if fid_raw.begins_with("special_") or fid_raw.begins_with("siege_"):
+			if fid_raw not in specials:
+				specials.append(fid_raw)
+		else:
+			regular.append(raw_fac)
+	shore_hand = ShoreDraft.deal(regular, GameState.shore_salt, _shore_pin_shipyard())
+	for fid_sp in specials:
+		if fid_sp not in shore_hand:
+			shore_hand.append(fid_sp)
 	var band := _shore_band()
 	# 发信号的钮还在这排里。先摘下来再排新门，否则新节点会被改名。
 	var stale: Array = band.get_children()

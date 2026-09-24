@@ -514,6 +514,24 @@ func _route_check() -> void:
 	main.load_scene("hakata")
 	_check(GS.chapter == 3, "抵博多 → 章二晋升第三章（实际第 %d 章）" % GS.chapter)
 	_close_dialogs(main)
+	# ── 终局特殊卡必须进岸开名单：云端「今日只开三处」只在寻常设施里发牌，special_* 一律追加 ──
+	GS.from_dict({})
+	GS.identity = "merchant"
+	Cal.from_dict({"year": 1279, "month": 2, "day": 1})
+	GS.last_port = "guangzhou"
+	main.load_scene("guangzhou")
+	_check("special_yashan" in main.shore_hand, "1279-02 广州岸上有崖山卡（不受今日只开三处限制；名单 %s）" % [main.shore_hand])
+	_check(main.shore_hand.size() >= 4, "崖山卡是第四扇门，不挤掉三处寻常门（现 %d 扇）" % main.shore_hand.size())
+	GS.from_dict({})
+	GS.record_discovery("nameless_shelter_bay")
+	Cal.from_dict({"year": 1277, "month": 2, "day": 10})
+	GS.last_port = "xinghua"
+	main.load_scene("xinghua")
+	_check(Eco.war_status("xinghua") == "loyal", "1277-02 兴化复城（涵江卡前提）")
+	_check("special_hanjiang_escape" in main.shore_hand, "1277-02 兴化岸上有涵江海口卡（名单 %s）" % [main.shore_hand])
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_close_dialogs(main)
 	# 旅店路由：city_inn 必须落到 {港}_inn，不能是 city_inn
 	GS.last_port = "quanzhou"
 	main.load_scene("quanzhou")
