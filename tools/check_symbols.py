@@ -82,6 +82,35 @@ print("一之二、_ready 期间的 autoload 依赖顺序")
 print("=" * 68)
 print("  autoload 按注册顺序逐个 _ready；在 _ready 里碰排在自己后面的 autoload 会拿到 null。")
 
+def code_only(src):
+    """去掉字符串和注释后再数括号。字符串里的 [color= 不算语法括号。"""
+    out = []
+    i = 0
+    n = len(src)
+    while i < n:
+        c = src[i]
+        if c in ('"', "'"):
+            q = c * 3 if src.startswith(c * 3, i) else c
+            i += len(q)
+            while i < n:
+                if len(q) == 1 and src[i] == "\\":
+                    i += 2
+                    continue
+                if src.startswith(q, i):
+                    i += len(q)
+                    break
+                i += 1
+            out.append(" ")
+            continue
+        if c == "#":
+            while i < n and src[i] != "\n":
+                i += 1
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
 def func_bodies(src):
     """粗略切分出每个 func 的函数体（按缩进）"""
     out, cur, body = {}, None, []
@@ -222,15 +251,17 @@ for dirpath, _, files in os.walk(SCRIPTS):
         if bad_indent:
             print(f"  ✗ {rel}: 第 {bad_indent[:5]} 行用空格缩进（GDScript 需 Tab）")
             problems.append(f"{rel} 空格缩进")
-        src = "".join(lines)
+        src = code_only("".join(lines))
         for op, cl, label in [("(", ")", "圆括号"), ("[", "]", "方括号"), ("{", "}", "花括号")]:
-            # 粗略计数，字符串内的括号会有误差，仅作提示
             n_op = src.count(op)
             n_cl = src.count(cl)
             if n_op != n_cl:
-                print(f"  ! {rel}: {label} 数量不等（{n_op} vs {n_cl}），请人工确认")
+                print(f"  ✗ {rel}: {label} 数量不等（{n_op} vs {n_cl}）")
+                problems.append(f"{rel} {label}不成对")
 if not any("空格缩进" in p for p in problems):
     print("  ✓ 所有脚本使用 Tab 缩进")
+if not any("不成对" in p for p in problems):
+    print("  ✓ 去掉字符串和注释后，括号成对")
 
 print()
 print("=" * 68)
@@ -1071,6 +1102,32 @@ if (
 else:
     print("  ✗ 坞位一艘未接上")
     problems.append("坞位一艘未接上")
+
+
+def _static_body(src, name):
+    key = f"static func {name}"
+    i = src.find(key)
+    if i < 0:
+        return ""
+    j = src.find("\nstatic func ", i + len(key))
+    return src[i:] if j < 0 else src[i:j]
+
+
+_ink_line = 'var ink := INK_SOLID if accent else TEXT'
+_focus_ok = True
+for _fn in ("style_button", "style_chip"):
+    _body = _static_body(theme_src_tide, _fn)
+    if (
+        _ink_line not in _body
+        or 'font_focus_color", ink)' not in _body
+        or 'font_pressed_color", ink)' not in _body
+        or 'font_focus_color", TEXT)' in _body
+    ):
+        _focus_ok = False
+        print(f"  ✗ {_fn} 聚焦或按下仍可能是壳白字")
+        problems.append(f"{_fn} 珊瑚聚焦字色")
+if _focus_ok:
+    print("  ✓ 珊瑚主钮和小钮聚焦、按下都用深字")
 if (
     "%s　%s%s" in cal_src
     and "%s %s%s" not in cal_src
