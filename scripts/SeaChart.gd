@@ -721,25 +721,37 @@ func _draw_chart(c: Control) -> void:
 			var b: Vector2 = _chart_xy(frame, float(q.get("lat", 0.0)), float(q.get("lon", 0.0)))
 			_draw_rhumb(c, frame, a, b, Color(0.40, 0.26, 0.12, 0.62))
 
-	# 当前航段
+	# 当前航段：沿 sealanes 折线（云端 2d51，绕岛计里程），无折线时退回两点直连
 	if selected_port != "":
 		var o := GameManager.get_port_by_id(origin_port)
 		var d := GameManager.get_port_by_id(selected_port)
 		if not o.is_empty() and not d.is_empty():
-			var a: Vector2 = _chart_xy(frame, float(o.get("lat", 0.0)), float(o.get("lon", 0.0)))
-			var b: Vector2 = _chart_xy(frame, float(d.get("lat", 0.0)), float(d.get("lon", 0.0)))
-			var along := b - a
-			var span := along.length()
-			if span > 22.0:
-				var step := along / span
-				a += step * 9.0
-				b -= step * 9.0
 			var wf := Voyage.wind_factor(Voyage.bearing(origin_port, selected_port))
 			# 顺风泛绿、逆风泛红——季风是否有利，一眼能看出来
 			# 绢纸上的顺风/横风/逆风要比面板上的亮色深一档，否则会糊进纸色。
 			var col := Color(0.30, 0.42, 0.22) if wf >= 1.15 else (
 				Color(0.62, 0.24, 0.16) if wf <= 0.75 else Color(0.55, 0.36, 0.10))
-			_draw_wet_line(c, frame, a, b, col, 2.5, true)
+			var track: Array = Voyage.track_lonlat(origin_port, selected_port)
+			var nodes: Array[Vector2] = []
+			for pt in track:
+				nodes.append(_chart_xy(frame, float(pt[1]), float(pt[0])))
+			if nodes.size() < 2:
+				nodes = [
+					_chart_xy(frame, float(o.get("lat", 0.0)), float(o.get("lon", 0.0))),
+					_chart_xy(frame, float(d.get("lat", 0.0)), float(d.get("lon", 0.0))),
+				]
+			for i in range(nodes.size() - 1):
+				var a: Vector2 = nodes[i]
+				var b: Vector2 = nodes[i + 1]
+				var along := b - a
+				var span := along.length()
+				if span > 22.0:
+					var step := along / span
+					if i == 0:
+						a += step * 9.0
+					if i == nodes.size() - 2:
+						b -= step * 9.0
+				_draw_wet_line(c, frame, a, b, col, 2.5, true)
 
 	var font := UiTheme.font()
 	var marks: Array[Dictionary] = []
@@ -863,6 +875,21 @@ func _coast_data() -> Dictionary:
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(CHART_COAST))
 	if parsed is Dictionary:
 		_coast = parsed
+	# 云端 2d51：真实岸线（Natural Earth，data/coastline.json，坐标 [经, 纬]）替换手绘 15 环；
+	# 河流 / 山峦 / 海名仍取 chart_coast.json。环按顶点数降序，首环即大陆（_draw_world 以 i == 0 当大陆）。
+	var real: Dictionary = GameManager.coastline_data if GameManager.get("coastline_data") != null else {}
+	var rings: Array = real.get("land", []) if real is Dictionary else []
+	if rings.size() >= 3:
+		var converted: Array = []
+		for ring in rings:
+			if not (ring is Array) or ring.size() < 3:
+				continue
+			var latlon: Array = []
+			for pt in ring:
+				latlon.append([float(pt[1]), float(pt[0])])
+			converted.append(latlon)
+		converted.sort_custom(func(a, b): return a.size() > b.size())
+		_coast["land"] = converted
 	return _coast
 
 
@@ -1916,6 +1943,9 @@ func _sail_next_day() -> void:
 
 	GameManager.advance_days(1)
 	days_elapsed += 1
+
+	# 风向按段变（云端 2d51）：当日罗经取折线上已行里程所在那一段
+	course_bearing = Voyage.bearing_at(origin_port, selected_port, maxf(0.0, total_li - remaining_li))
 
 	# 士气已经在本日结算里掉过。低于线就闹舱，不再另抽风涛或海盗。
 	var event: Dictionary = Voyage.mutiny_event() if Fleet.mutiny_ready() else Voyage.roll_day_event(course_bearing, origin_port, selected_port, course_order)

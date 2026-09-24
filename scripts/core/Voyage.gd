@@ -68,35 +68,116 @@ func port_def(port_id: String) -> Dictionary:
 
 
 # ── 几何 ──────────────────────────────────────────────
+## 有绕岸折线时，船沿折线走，里程是各段大圆之和。
+## 没有折线（开阔洋面、兴化陆路）时仍是两港大圆。
+## 每一段的风向用恒向线方位：海图是墨卡托，船在一段上保持罗经航向。
 
-func distance_li(from_id: String, to_id: String) -> float:
-	var a := port_def(from_id)
-	var b := port_def(to_id)
-	if a.is_empty() or b.is_empty():
-		return 0.0
-	var lat1 := deg_to_rad(float(a.get("lat", 0.0)))
-	var lon1 := deg_to_rad(float(a.get("lon", 0.0)))
-	var lat2 := deg_to_rad(float(b.get("lat", 0.0)))
-	var lon2 := deg_to_rad(float(b.get("lon", 0.0)))
-	var dlat := lat2 - lat1
-	var dlon := lon2 - lon1
-	var h := sin(dlat / 2.0) * sin(dlat / 2.0) + cos(lat1) * cos(lat2) * sin(dlon / 2.0) * sin(dlon / 2.0)
-	var c := 2.0 * atan2(sqrt(h), sqrt(1.0 - h))
+func _haversine_li(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
+	var rlat1 := deg_to_rad(lat1)
+	var rlat2 := deg_to_rad(lat2)
+	var dlat := rlat2 - rlat1
+	var dlon := deg_to_rad(lon2 - lon1)
+	var h := sin(dlat / 2.0) * sin(dlat / 2.0) + cos(rlat1) * cos(rlat2) * sin(dlon / 2.0) * sin(dlon / 2.0)
+	var c := 2.0 * atan2(sqrt(h), sqrt(maxf(0.0, 1.0 - h)))
 	return (EARTH_R_KM * c) / KM_PER_LI
 
 
-## 航向方位角（度，0=正北 顺时针）
-func bearing(from_id: String, to_id: String) -> float:
+## 恒向线方位（度，0=正北 顺时针）
+func _rhumb_bearing(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
+	var phi1 := deg_to_rad(lat1)
+	var phi2 := deg_to_rad(lat2)
+	var dlon := deg_to_rad(lon2 - lon1)
+	dlon = fposmod(dlon + PI, TAU) - PI
+	var dpsi := log(tan(PI * 0.25 + phi2 * 0.5)) - log(tan(PI * 0.25 + phi1 * 0.5))
+	if absf(dpsi) < 0.0000001 and absf(dlon) < 0.0000001:
+		return 0.0
+	return fposmod(rad_to_deg(atan2(dlon, dpsi)), 360.0)
+
+
+## [[lon, lat], ...] 含两端港口。折线 key 按港口 id 字母序，方向从 from 到 to。
+func track_lonlat(from_id: String, to_id: String) -> Array:
 	var a := port_def(from_id)
 	var b := port_def(to_id)
+	var pts: Array = []
 	if a.is_empty() or b.is_empty():
+		return pts
+	pts.append([float(a.get("lon", 0.0)), float(a.get("lat", 0.0))])
+	var lo := from_id
+	var hi := to_id
+	var reverse := false
+	if hi < lo:
+		lo = to_id
+		hi = from_id
+		reverse = true
+	var lanes: Dictionary = GameManager.sealanes_data.get("lanes", {})
+	var lane: Array = lanes.get("%s|%s" % [lo, hi], [])
+	if reverse:
+		lane = lane.duplicate()
+		lane.reverse()
+	for w in lane:
+		pts.append([float(w[0]), float(w[1])])
+	pts.append([float(b.get("lon", 0.0)), float(b.get("lat", 0.0))])
+	return pts
+
+
+func distance_li(from_id: String, to_id: String) -> float:
+	var pts := track_lonlat(from_id, to_id)
+	if pts.size() < 2:
 		return 0.0
-	var lat1 := deg_to_rad(float(a.get("lat", 0.0)))
-	var lat2 := deg_to_rad(float(b.get("lat", 0.0)))
-	var dlon := deg_to_rad(float(b.get("lon", 0.0)) - float(a.get("lon", 0.0)))
-	var y := sin(dlon) * cos(lat2)
-	var x := cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dlon)
-	return fposmod(rad_to_deg(atan2(y, x)), 360.0)
+	var total := 0.0
+	for i in range(pts.size() - 1):
+		total += _haversine_li(float(pts[i][0]), float(pts[i][1]), float(pts[i + 1][0]), float(pts[i + 1][1]))
+	return total
+
+
+## 出发时的方位：第一段恒向线。开阔洋面只有一段，就是整段航向。
+func bearing(from_id: String, to_id: String) -> float:
+	return bearing_at(from_id, to_id, 0.0)
+
+
+## 已航行 traveled_li 里时所在那一段的恒向线方位
+func bearing_at(from_id: String, to_id: String, traveled_li: float) -> float:
+	var pts := track_lonlat(from_id, to_id)
+	if pts.size() < 2:
+		return 0.0
+	var walked := 0.0
+	var last := 0.0
+	for i in range(pts.size() - 1):
+		var lon1 := float(pts[i][0])
+		var lat1 := float(pts[i][1])
+		var lon2 := float(pts[i + 1][0])
+		var lat2 := float(pts[i + 1][1])
+		var seg := _haversine_li(lon1, lat1, lon2, lat2)
+		if seg < 0.05:
+			continue
+		last = _rhumb_bearing(lon1, lat1, lon2, lat2)
+		if traveled_li <= walked + seg:
+			return last
+		walked += seg
+	return last
+
+
+## 沿航迹走到 traveled_li 里的经纬度（段内按恒向线线性内插）
+func point_along_track(from_id: String, to_id: String, traveled_li: float) -> Dictionary:
+	var pts := track_lonlat(from_id, to_id)
+	if pts.is_empty():
+		return {"lon": 0.0, "lat": 0.0}
+	if traveled_li <= 0.0 or pts.size() == 1:
+		return {"lon": float(pts[0][0]), "lat": float(pts[0][1])}
+	var walked := 0.0
+	for i in range(pts.size() - 1):
+		var lon1 := float(pts[i][0])
+		var lat1 := float(pts[i][1])
+		var lon2 := float(pts[i + 1][0])
+		var lat2 := float(pts[i + 1][1])
+		var seg := _haversine_li(lon1, lat1, lon2, lat2)
+		if seg < 0.001:
+			continue
+		if traveled_li <= walked + seg or i == pts.size() - 2:
+			var t := clampf((traveled_li - walked) / seg, 0.0, 1.0)
+			return {"lon": lon1 + (lon2 - lon1) * t, "lat": lat1 + (lat2 - lat1) * t}
+		walked += seg
+	return {"lon": float(pts[pts.size() - 1][0]), "lat": float(pts[pts.size() - 1][1])}
 
 
 # ── 季风修正 ──────────────────────────────────────────

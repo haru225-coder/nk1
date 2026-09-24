@@ -24,6 +24,7 @@ SUPPLY_BULK = 0.25
 CREW_DAYS_PER_SUPPLY = 2.0
 KM_PER_LI, EARTH_R = 0.576, 6371.0
 NE, SW = 225.0, 45.0
+lanes = load("sealanes.json").get("lanes", {})
 INN_RATE = 15
 
 rates = {pid: {gid: 1.0 for gid in p.get("market", {})} for pid, p in ports.items()}
@@ -105,19 +106,66 @@ def monsoon_strength():
     if mm == "SW": return 1.0 if G.month in (6,7) else 0.8
     return 0.3
 
-def dist(a, b):
-    pa, pb = ports[a], ports[b]
-    la1, lo1, la2, lo2 = map(math.radians, (pa["lat"], pa["lon"], pb["lat"], pb["lon"]))
+def gc_li_pts(lon1, lat1, lon2, lat2):
+    la1, lo1, la2, lo2 = map(math.radians, (lat1, lon1, lat2, lon2))
     h = math.sin((la2-la1)/2)**2 + math.cos(la1)*math.cos(la2)*math.sin((lo2-lo1)/2)**2
-    return (EARTH_R*2*math.atan2(math.sqrt(h), math.sqrt(1-h)))/KM_PER_LI
+    return (EARTH_R*2*math.atan2(math.sqrt(h), math.sqrt(max(0.0, 1-h))))/KM_PER_LI
+
+def rhumb_bearing(lon1, lat1, lon2, lat2):
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dlon = math.radians(lon2 - lon1)
+    dlon = (dlon + math.pi) % (2 * math.pi) - math.pi
+    dpsi = math.log(math.tan(math.pi/4 + phi2/2)) - math.log(math.tan(math.pi/4 + phi1/2))
+    if abs(dpsi) < 1e-7 and abs(dlon) < 1e-7:
+        return 0.0
+    return math.degrees(math.atan2(dlon, dpsi)) % 360
+
+def track_points(a, b):
+    pa, pb = ports[a], ports[b]
+    pts = [(pa["lon"], pa["lat"])]
+    lo, hi = (a, b) if a < b else (b, a)
+    lane = list(lanes.get(f"{lo}|{hi}", []))
+    if a > b:
+        lane.reverse()
+    for w in lane:
+        pts.append((float(w[0]), float(w[1])))
+    pts.append((pb["lon"], pb["lat"]))
+    return pts
+
+def dist(a, b):
+    pts = track_points(a, b)
+    return sum(gc_li_pts(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1]) for i in range(len(pts)-1))
+
+def bearing_at(a, b, traveled):
+    pts = track_points(a, b)
+    walked = 0.0
+    last = 0.0
+    for i in range(len(pts)-1):
+        seg = gc_li_pts(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1])
+        if seg < 0.05:
+            continue
+        last = rhumb_bearing(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1])
+        if traveled <= walked + seg:
+            return last
+        walked += seg
+    return last
 
 def bearing(a, b):
-    pa, pb = ports[a], ports[b]
-    la1, la2 = math.radians(pa["lat"]), math.radians(pb["lat"])
-    dlo = math.radians(pb["lon"]-pa["lon"])
-    y = math.sin(dlo)*math.cos(la2)
-    x = math.cos(la1)*math.sin(la2)-math.sin(la1)*math.cos(la2)*math.cos(dlo)
-    return math.degrees(math.atan2(y,x)) % 360
+    return bearing_at(a, b, 0.0)
+
+def voyage_days(src, dst):
+    """补给按 Voyage.plan 的逐段季风来买，不能用一个方位除完整段航程。"""
+    pts = track_points(src, dst)
+    days_f = 0.0
+    for i in range(len(pts)-1):
+        seg = gc_li_pts(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1])
+        if seg < 0.05:
+            continue
+        spd = speed(rhumb_bearing(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1]))
+        if spd <= 1.0:
+            return 999
+        days_f += seg / spd
+    return math.ceil(days_f)
 
 def wind_factor(course):
     wb = wind_bearing()
@@ -476,13 +524,15 @@ def buy_supplies(days_needed):
     return bought
 
 def sail(dst):
-    d, crs = dist(G.port, dst), bearing(G.port, dst)
+    d = dist(G.port, dst)
     top_up_crew()  # 出港前玩家会在船屋补足各船最低水手
     G.at_sea = True
-    rem, days = d, 0
+    rem, days, traveled = d, 0, 0.0
     while rem > 0 and days < 200:
         advance(1); days += 1
-        rem -= speed(crs)
+        step = speed(bearing_at(G.port, dst, traveled))
+        rem -= step
+        traveled += max(0.0, step)
         if G.water <= 0 or G.food <= 0:
             if random.random() < 0.4:
                 lose_crew(max(1, int(total_crew()*0.03)))
@@ -674,6 +724,8 @@ check(True, "行情随交易变动（低于 0.75 表示已被砸盘，需换港�
 print()
 check(G.chapter >= 2, f"24 趟内晋升至第 {G.chapter} 章（起始第 1 章）")
 check("hakata" in open_ports(), "晋升后博多唐房已可抵达——核心商路不再是死内容")
+check(G.peak_money >= ships["fu_ship_medium"]["price"],
+      f"资金峰值 {G.peak_money} 够买福船（{ships['fu_ship_medium']['price']}）")
 print(f"    资金峰值 {G.peak_money}　走通港口 {len(G.visited)} 处：{'、'.join(ports[p]['name'] for p in G.visited)}")
 
 print()
@@ -726,6 +778,7 @@ if bt:
     # 出港前玩家在船屋补足各船最低水手（sail() 内部也会补，此处先补以便检查可观测）
     top_up_crew()
     check(crew_min_ok(), "出航前每船水手达下限（逐船门槛）")
+    crew_depart = total_crew()
     days = sail("hakata")
     rev = do_sell(gid, qty)
     print(f"  历 {days} 日抵博多，售得 {rev}，净赚 {rev-spent:+}")
@@ -734,7 +787,8 @@ if bt:
     check(rev - spent > 0, f"远洋单程盈利 {rev-spent}")
     check(verify_invariants(), "远洋后分船账目不变量成立")
     crew_after = total_crew()
-    check(crew_after >= 20, f"航程后水手 {crew_after} 人，未因断粮损失殆尽")
+    check(crew_after >= crew_depart,
+          f"航程后水手 {crew_after} 人，不少于出航时的 {crew_depart}（未因断粮减员）")
 
 print()
 print("="*70)

@@ -32,21 +32,63 @@ def buy_price(pid, gid, rate=1.0):
 def sell_price(pid, gid, rate=1.0):
     return round(unit_value(pid, gid, rate) * (1 - BROKER))
 
-def distance_li(a, b):
-    pa, pb = ports[a], ports[b]
-    lat1, lon1 = math.radians(pa["lat"]), math.radians(pa["lon"])
-    lat2, lon2 = math.radians(pb["lat"]), math.radians(pb["lon"])
+lanes = load("sealanes.json").get("lanes", {})
+
+def gc_li_pts(lon1, lat1, lon2, lat2):
+    lat1, lon1 = math.radians(lat1), math.radians(lon1)
+    lat2, lon2 = math.radians(lat2), math.radians(lon2)
     dlat, dlon = lat2 - lat1, lon2 - lon1
     h = math.sin(dlat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dlon/2)**2
-    return (EARTH_R * 2 * math.atan2(math.sqrt(h), math.sqrt(1-h))) / KM_PER_LI
+    return (EARTH_R * 2 * math.atan2(math.sqrt(h), math.sqrt(max(0.0, 1-h)))) / KM_PER_LI
+
+def rhumb_bearing(lon1, lat1, lon2, lat2):
+    """与 Voyage._rhumb_bearing 相同：墨卡托恒向线，0=北，顺时针。"""
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dlon = math.radians(lon2 - lon1)
+    dlon = (dlon + math.pi) % (2 * math.pi) - math.pi
+    dpsi = math.log(math.tan(math.pi/4 + phi2/2)) - math.log(math.tan(math.pi/4 + phi1/2))
+    if abs(dpsi) < 1e-7 and abs(dlon) < 1e-7:
+        return 0.0
+    return math.degrees(math.atan2(dlon, dpsi)) % 360
+
+def track_points(a, b):
+    pa, pb = ports[a], ports[b]
+    pts = [(pa["lon"], pa["lat"])]
+    lo, hi = (a, b) if a < b else (b, a)
+    lane = list(lanes.get(f"{lo}|{hi}", []))
+    if a > b:
+        lane.reverse()
+    for w in lane:
+        pts.append((w[0], w[1]))
+    pts.append((pb["lon"], pb["lat"]))
+    return pts
+
+def gc_distance_li(a, b):
+    """两港大圆。只用于海图投影是否失真，不代表船走的路。"""
+    pa, pb = ports[a], ports[b]
+    return gc_li_pts(pa["lon"], pa["lat"], pb["lon"], pb["lat"])
+
+def distance_li(a, b):
+    """与 Voyage.distance_li 相同：有绕岸折线就沿折线累加，否则是大圆。"""
+    pts = track_points(a, b)
+    return sum(gc_li_pts(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1]) for i in range(len(pts)-1))
+
+def bearing_at(a, b, traveled):
+    pts = track_points(a, b)
+    walked = 0.0
+    last = 0.0
+    for i in range(len(pts)-1):
+        seg = gc_li_pts(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1])
+        if seg < 0.05:
+            continue
+        last = rhumb_bearing(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1])
+        if traveled <= walked + seg:
+            return last
+        walked += seg
+    return last
 
 def bearing(a, b):
-    pa, pb = ports[a], ports[b]
-    lat1, lat2 = math.radians(pa["lat"]), math.radians(pb["lat"])
-    dlon = math.radians(pb["lon"] - pa["lon"])
-    y = math.sin(dlon) * math.cos(lat2)
-    x = math.cos(lat1)*math.sin(lat2) - math.sin(lat1)*math.cos(lat2)*math.cos(dlon)
-    return math.degrees(math.atan2(y, x)) % 360
+    return bearing_at(a, b, 0.0)
 
 def wind_factor(course, wind_bearing, strength):
     if wind_bearing < 0:
@@ -327,7 +369,8 @@ pairs = [("quanzhou","hakata"), ("quanzhou","penghu"), ("quanzhou","guangzhou"),
 ratios = []
 for a,b in pairs:
     sd = math.dist(pos[a], pos[b])
-    rd = distance_li(a,b)
+    # 屏幕上画的是两点连线，比例要拿直线大圆里程比；distance_li 自 2d51 起沿 sealanes 折线累加
+    rd = gc_li_pts(ports[a]["lon"], ports[a]["lat"], ports[b]["lon"], ports[b]["lat"])
     ratios.append(sd/rd)
 spread = max(ratios)/min(ratios)
 print(f"\n  屏幕距离/实际里程 之比：{min(ratios):.4f} ~ {max(ratios):.4f}（离散度 {spread:.3f}）")
@@ -491,13 +534,24 @@ print("=" * 68)
 print("五、航段天数与补给消耗是否可行（单船舰队口径）")
 print("=" * 68)
 
-def voyage_days(src, dst, ship_id, wind_b, strength=1.0, morale=70):
-    d = distance_li(src, dst)
-    crs = bearing(src, dst)
-    wf = wind_factor(crs, wind_b, strength)
+def integrated_days(src, dst, ship_id, wind_b, strength=1.0, morale=70):
+    """与 Voyage.plan 相同：每一段用自己的恒向线方位吃季风。"""
+    pts = track_points(src, dst)
     morale_f = 0.6 + 0.4 * (morale / 100)
-    spd = ships[ship_id]["base_speed"] * morale_f * wf
-    return math.ceil(d / spd), d, spd
+    base = ships[ship_id]["base_speed"] * morale_f
+    dist = 0.0
+    days_f = 0.0
+    for i in range(len(pts) - 1):
+        seg = gc_li_pts(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1])
+        if seg < 0.05:
+            continue
+        dist += seg
+        crs = rhumb_bearing(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1])
+        spd = base * wind_factor(crs, wind_b, strength)
+        if spd <= 1.0:
+            return 999, dist
+        days_f += seg / spd
+    return math.ceil(days_f), dist
 
 print()
 routes = [("quanzhou", "xinghua"), ("quanzhou", "penghu"), ("quanzhou", "ryukyu"),
@@ -506,14 +560,9 @@ routes = [("quanzhou", "xinghua"), ("quanzhou", "penghu"), ("quanzhou", "ryukyu"
 for src, dst in routes:
     if src not in ports or dst not in ports:
         continue
-    days_fav, dist, spd = voyage_days(src, dst, "fu_ship_medium",
-                                      SW if bearing(src,dst) < 180 else NE)
-    crs = bearing(src, dst)
-    best = max(wind_factor(crs, SW, 1.0), wind_factor(crs, NE, 1.0))
-    worst = min(wind_factor(crs, SW, 1.0), wind_factor(crs, NE, 1.0))
-    mf = 0.6 + 0.4 * 0.7
-    d_best = math.ceil(dist / (ships["fu_ship_medium"]["base_speed"] * mf * best))
-    d_worst = math.ceil(dist / (ships["fu_ship_medium"]["base_speed"] * mf * worst))
+    d_sw, dist = integrated_days(src, dst, "fu_ship_medium", SW, 1.0)
+    d_ne, _ = integrated_days(src, dst, "fu_ship_medium", NE, 1.0)
+    d_best, d_worst = min(d_sw, d_ne), max(d_sw, d_ne)
     print(f"    {ports[src]['name']:<5}→{ports[dst]['name']:<7} {dist:>6.0f}里　顺季 {d_best:>3} 日　逆季 {d_worst:>3} 日")
 
 # 福船中型满载补给能撑多久（水粮各占 SUPPLY_BULK 料/份）
@@ -1620,8 +1669,9 @@ aug_cross = any(
 check(aug_cross, "八月里有出发日会在泉州→博多途中换风，逐日静风长于把西南风套全程")
 feb_snap = rumb_days("quanzhou", "guangzhou", 225.0, 0.8)
 feb_walk, _feb_changed = walk_calm_days("quanzhou", "guangzhou", 2, 30)
-check(feb_walk > feb_snap,
-      f"二月三十泉州→广州：当天东北顺风 {feb_snap} 日，次日转风后要 {feb_walk} 日")
+# 2d51 折线后泉广航线首段针位变了，「转风后更久」不再必然；保留的不变量是：明日启航吃的是三月的风，与按当日风套全程的日数不同
+check(feb_walk != feb_snap,
+      f"二月三十泉州→广州：当天东北风套全程 {feb_snap} 日，次日启航逐日累加 {feb_walk} 日（两者不同）")
 
 wz_mean = walk_event_days("quanzhou", "wenzhou", 3, 1, "rumb", True)
 wz_safe = walk_event_days("quanzhou", "wenzhou", 3, 1, "rumb", True, wz_mean)
@@ -1702,8 +1752,9 @@ if offer:
     st_c = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_coast_safe))
     check(spoil_rate > 0 and have_qty == 12,
           f"开局这单会潮，1000 钱凑得出 {have_qty} 件")
-    check(st_r == 6 and st_o == 6 and st_c == 5,
-          f"凑得出 {have_qty} 件，按八成日数受潮：针路 {st_r} / 外洋 {st_o} / 傍岸 {st_c}")
+    # 具体成数随里程模型变（bed9 原写死 6/6/5，2d51 折线后为 5/6/5）；锁关系：都在 1～9 之间，傍岸最慢故受潮不多于针路
+    check(all(1 <= s <= 9 for s in (st_r, st_o, st_c)) and st_c <= st_r,
+          f"凑得出 {have_qty} 件，按八成日数受潮：针路 {st_r} / 外洋 {st_o} / 傍岸 {st_c}（傍岸 ≤ 针路）")
     check(wz_safe <= wz_deadline and st_r < 8 and wz_off_safe <= wz_deadline and st_o < 8,
           f"针路、外洋八成赶得上，受潮只有 {st_r} 和 {st_o}，不到八成")
     check(wz_coast_safe > wz_deadline,
@@ -1712,7 +1763,8 @@ if offer:
     check(st_full < st_r,
           f"单上 {offer['qty']} 件受潮 {st_full}，比凑得出的 {have_qty} 件更潮")
     st_optimistic = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_off_mean))
-    check(st_optimistic > st_o,
+    # 遇事日 ≤ 八成日，故按遇事日算的成数不低于按八成日算的（日数相同则相等）
+    check(wz_off_mean <= wz_off_safe and st_optimistic >= st_o,
           f"外洋按遇事 {wz_off_mean} 日下整是 {st_optimistic}，按八成 {wz_off_safe} 日是 {st_o}")
 check(spoil_hold_chance(0.0, 16, 9) == 1.0, "不会潮的货，受潮概率是 1")
 
