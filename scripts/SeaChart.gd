@@ -24,6 +24,7 @@ var heading_row: HBoxContainer
 var log_label: RichTextLabel
 var sail_button: Button
 var redraw_button: Button
+var back_button: Button
 var event_panel: PanelContainer
 var event_title: Label
 var event_text: RichTextLabel
@@ -148,12 +149,12 @@ func _build_ui() -> void:
 	actions.add_child(redraw_button)
 	UiTheme.style_button(redraw_button)
 
-	var back := Button.new()
-	back.text = "回港"
-	back.custom_minimum_size = Vector2(120, 42)
-	back.pressed.connect(_return_to_port)
-	actions.add_child(back)
-	UiTheme.style_button(back)
+	back_button = Button.new()
+	back_button.text = "回港"
+	back_button.custom_minimum_size = Vector2(120, 42)
+	back_button.pressed.connect(_return_to_port)
+	actions.add_child(back_button)
+	UiTheme.style_button(back_button)
 
 	# ── 事件浮层 ──
 	_build_event_panel()
@@ -1836,6 +1837,7 @@ func _on_fight_pirates() -> void:
 
 ## 实例化 WorldMap 叠加到 SeaChart 上（add_child 保留航行状态，战斗结束 queue_free 即回）
 func _enter_battle() -> void:
+	back_button.disabled = true
 	var wm := preload("res://scenes/WorldMap.tscn").instantiate()
 	if not wm.has_signal("battle_finished"):
 		_log(_ink(UiTheme.CINNABAR, "海战脚本没挂上，未能开打。"))
@@ -1865,11 +1867,15 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 		_log(_ink(UiTheme.MOSS, "击退海盗，夺得财货 %d 钱。战损 %d。%s" % [spoil, int(dmg), promo]))
 	elif outcome == "lose":
 		Fleet.morale = maxi(0, Fleet.morale - 12)
-		var lost := Fleet.lose_cargo_ratio(0.25)
-		var lost_str := ""
-		for gid in lost.keys():
-			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-		_log(_ink(UiTheme.CINNABAR, "接舷失利，被夺去部分货物。%s船体受损 %d。" % [lost_str, int(dmg)]))
+		# 全队耐久归零时随后走 _sink()：货与船一起没，不再套 25% 文案。（云端 be04）
+		if Fleet.total_durability() <= 0.0:
+			_log(_ink(UiTheme.CINNABAR, "旗舰沉没。船体受损 %d。" % int(dmg)))
+		else:
+			var lost := Fleet.lose_cargo_ratio(0.25)
+			var lost_str := ""
+			for gid in lost.keys():
+				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
+			_log(_ink(UiTheme.CINNABAR, "接舷失利，被夺去部分货物。%s船体受损 %d。" % [lost_str, int(dmg)]))
 	else:  # flee
 		if data.get("flee_ok", false):
 			remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
@@ -1882,6 +1888,7 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
 			_log(_ink(UiTheme.CINNABAR, "没能甩脱，被追上跳帮，抢走了货。%s" % lost_str))
 	GameManager.pending_battle = {}
+	back_button.disabled = false
 	for c in get_children():
 		if c is CanvasItem:
 			c.visible = true
@@ -1942,17 +1949,26 @@ func _after_combat() -> void:
 # ── 发现物 ──────────────────────────────────────────
 
 func _on_investigate_discovery() -> void:
-	event_panel.visible = false
+	# 「费 1 日」只推进这一日，里程不减。下一日由玩家再点「继续航行」，
+	# 避免同一次点击里再进 _sail_next_day，水粮和日历被扣两天。（云端 be04）
 	GameManager.advance_days(1)
 	days_elapsed += 1
 	var did: String = pending_event.get("discovery_id", "")
 	var d := GameManager.get_discovery_by_id(did)
+	var msg := "绕过去看了一圈，与册上所记并无出入。"
 	if GameState.record_discovery(did):
-		_log(_ink(UiTheme.MOSS, "近岸细看，果然是%s。记入册子——回港上报市舶司，当有赏格。" % d.get("name", "旧泊地")))
+		msg = "近岸细看，果然是%s。记入册子——回港上报市舶司，当有赏格。" % d.get("name", "旧泊地")
+		_log(_ink(UiTheme.MOSS, msg))
 	else:
-		_log("绕过去看了一圈，与册上所记并无出入。")
+		_log(msg)
+	pending_event = {}
 	_refresh_status()
-	_on_event_continue()
+	event_title.text = "第 %d 日・近岸" % days_elapsed
+	event_text.text = msg
+	for c in event_actions.get_children():
+		c.queue_free()
+	_add_event_action("继续航行", _on_event_continue)
+	event_panel.visible = true
 
 
 # ── 结束 ────────────────────────────────────────────
@@ -1997,6 +2013,9 @@ func _sink() -> void:
 
 
 func _return_to_port() -> void:
+	# 海战进行中回港会丢掉 battle_finished，战中已扣的耐久和舱货留在舰队上，赏罚不结算。（云端 be04）
+	if GameManager.pending_battle.get("battle", false):
+		return
 	Fleet.at_sea = false
 	GameState.set_flag("return_to_port")
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")
