@@ -25,6 +25,16 @@ var event_title: Label
 var event_text: RichTextLabel
 var event_actions: HBoxContainer
 
+## 陆地环，x = 经度，y = 纬度。首尾不重复。
+var _land_rings: Array = []
+var _land_boxes: Array = []
+var _land_bins: Array = []
+var _land_ready: bool = false
+var _lane_frame: Dictionary = {}
+var _block_key: String = ""
+var _block_cache: Dictionary = {}
+var _lane_cache: Dictionary = {}
+
 
 func _ready() -> void:
 	origin_port = GameState.last_port
@@ -93,17 +103,20 @@ func _build_ui() -> void:
 	hint.add_theme_color_override("font_color", Color(0.75, 0.78, 0.82))
 	center_v.add_child(hint)
 
-	# 真正的图。数据用 ports.json 的经纬度，CanvasItem.draw 信号接 lambda，
-	# 不另建节点树——一张静态海图不需要缩放拖拽。
+	# 真正的图。港口与陆地共用同一套经纬度投影。不缩放拖拽。
 	chart = Control.new()
-	chart.custom_minimum_size = Vector2(0, 250)
+	chart.custom_minimum_size = Vector2(0, 280)
 	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chart.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	chart.size_flags_stretch_ratio = 3.0
+	chart.clip_contents = true
 	chart.draw.connect(func(): _draw_chart(chart))
 	center_v.add_child(chart)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 150)
+	scroll.size_flags_stretch_ratio = 1.0
+	scroll.custom_minimum_size = Vector2(0, 120)
 	center_v.add_child(scroll)
 	port_list = VBoxContainer.new()
 	port_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -330,21 +343,53 @@ func _refresh_detail() -> void:
 #  海图绘制
 # ══════════════════════════════════════════════════════
 
-## 等比投影已解锁港口的经纬度。经度按平均纬度收窄，否则高纬处会被拉宽。
+## 取景不会缩得比这一圈更小，也不会画出这一圈外的陆地。
+const CHART_LAT_MIN := 10.0
+const CHART_LAT_MAX := 37.0
+const CHART_LON_MIN := 105.0
+const CHART_LON_MAX := 134.0
+const CHART_MIN_SPAN := 8.0
+## 已解锁港口的包围盒占取景框的比例，剩下的边留给海岸和港名字。
+const CHART_FRAME_FILL := 0.80
+## 航线绕陆用的格子。只影响画法，里程仍按港口间的直线。
+const LANE_CELL := 0.24
+const LANE_INSET := 0.15
+const LANE_HARBOR := 0.22
+const LANE_SAMPLE := 0.10
+const LANE_DEDUP := 0.08
+const LANE_SHORE_PENALTY := 0.15
+## 折角尽量圆成这个半径；靠岸的一段停在海岸，不再画进城。里程仍按直线。
+const LANE_FILLET := 0.50
+const LANE_STUB := 0.55
+## 屏幕上近过这个距离的港名合成一列，避免叠字。
+const LABEL_CLUSTER_PX := 18.0
+
+const CHART_MARGIN := Color(0.04, 0.055, 0.07, 1.0)
+const CHART_SEA := Color(0.07, 0.175, 0.25, 1.0)
+const CHART_SHOAL := Color(0.20, 0.45, 0.54, 1.0)
+const CHART_LAND := Color(0.78, 0.71, 0.54, 1.0)
+const CHART_COAST := Color(0.29, 0.23, 0.16, 1.0)
+const CHART_INK := Color(0.22, 0.17, 0.12, 1.0)
+const CHART_HALO := Color(0.96, 0.93, 0.84, 0.92)
+const CHART_GRID := Color(0.82, 0.74, 0.55, 0.18)
+const CHART_FRAME := Color(0.82, 0.74, 0.55, 0.88)
+const CHART_VERMILION := Color(0.72, 0.24, 0.16, 1.0)
+const CHART_GOLD := Color(0.62, 0.44, 0.12, 1.0)
+
+
+## 等比投影。经度按平均纬度收窄，否则高纬处会被拉宽。
+## 取景至少 8 个经纬度，并留出边，所以福建几个港也能看见海峡和台湾。
 func _draw_chart(c: Control) -> void:
 	var pts: Array = GameManager.unlocked_ports()
-	if pts.size() < 2:
+	if pts.is_empty() or c.size.x < 2.0 or c.size.y < 2.0:
 		return
 
-	var lat_min := 999.0
-	var lat_max := -999.0
-	var lon_min := 999.0
-	var lon_max := -999.0
-	for p in pts:
-		lat_min = minf(lat_min, float(p.get("lat", 0.0)))
-		lat_max = maxf(lat_max, float(p.get("lat", 0.0)))
-		lon_min = minf(lon_min, float(p.get("lon", 0.0)))
-		lon_max = maxf(lon_max, float(p.get("lon", 0.0)))
+	_ensure_land()
+	var frame := _chart_frame(pts)
+	var lat_min: float = frame["lat_min"]
+	var lat_max: float = frame["lat_max"]
+	var lon_min: float = frame["lon_min"]
+	var lon_max: float = frame["lon_max"]
 
 	var mean_lat := (lat_min + lat_max) * 0.5
 	var mean_lon := (lon_min + lon_max) * 0.5
@@ -353,71 +398,1324 @@ func _draw_chart(c: Control) -> void:
 	var span_y := maxf(0.5, lat_max - lat_min)
 
 	var size := c.size
-	var scale := minf(size.x / span_x, size.y / span_y) * 0.78
+	var scale := minf(size.x / span_x, size.y / span_y)
 	var mid := size * 0.5
 
 	var proj := func(lat: float, lon: float) -> Vector2:
 		return mid + Vector2((lon - mean_lon) * kx * scale, -(lat - mean_lat) * scale)
 
-	c.draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.11, 0.17, 0.75))
+	var top_left: Vector2 = proj.call(lat_max, lon_min)
+	var bottom_right: Vector2 = proj.call(lat_min, lon_max)
+	var map_rect := Rect2(top_left, bottom_right - top_left).abs()
 
-	_draw_monsoon(c, size)
+	c.draw_rect(Rect2(Vector2.ZERO, size), CHART_MARGIN)
+	c.draw_rect(map_rect, CHART_SEA)
+	_draw_graticule(c, proj, lat_min, lat_max, lon_min, lon_max)
+	_draw_monsoon(c, map_rect)
+	_draw_land(c, proj, lon_min, lat_min, lon_max, lat_max, scale)
+	# 航程仍按直线里程。弯线只是躲开陆地的画法。
+	_draw_known_routes(c, proj, pts, frame)
 
-	# 已知航路：淡线勾出港口间的连接关系
-	for p in pts:
-		var a: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
-		for cid in p.get("connections", []):
-			var q := GameManager.get_port_by_id(cid)
-			if q.is_empty() or not GameState.is_chapter_reached(q.get("unlock", "ch1")):
-				continue
-			var b: Vector2 = proj.call(float(q.get("lat", 0.0)), float(q.get("lon", 0.0)))
-			c.draw_line(a, b, Color(1, 1, 1, 0.10), 1.0)
-
-	# 当前航段
 	if selected_port != "":
 		var o := GameManager.get_port_by_id(origin_port)
 		var d := GameManager.get_port_by_id(selected_port)
 		if not o.is_empty() and not d.is_empty():
-			var a: Vector2 = proj.call(float(o.get("lat", 0.0)), float(o.get("lon", 0.0)))
-			var b: Vector2 = proj.call(float(d.get("lat", 0.0)), float(d.get("lon", 0.0)))
+			var lane := _sea_lane(
+				float(o.get("lon", 0.0)), float(o.get("lat", 0.0)),
+				float(d.get("lon", 0.0)), float(d.get("lat", 0.0)), frame)
 			var wf := Voyage.wind_factor(Voyage.bearing(origin_port, selected_port))
-			# 顺风泛绿、逆风泛红——季风是否有利，一眼能看出来
-			var col := Color(0.45, 0.95, 0.6) if wf >= 1.15 else (
-				Color(1.0, 0.5, 0.42) if wf <= 0.75 else Color(0.95, 0.85, 0.5))
-			c.draw_line(a, b, col, 2.5)
+			var col := CHART_GOLD
+			if wf >= 1.15:
+				col = Color(0.18, 0.48, 0.32)
+			elif wf <= 0.75:
+				col = CHART_VERMILION
+			# 顺风绿、逆风朱、侧风金。浅色垫底，浅滩上也看得见。线停在海岸，不画进城。
+			for run in _lane_water_runs(lane):
+				var screen := _project_lane(proj, run)
+				_draw_lane_solid(c, screen, Color(0.96, 0.93, 0.84, 0.85), 4.5)
+				_draw_lane_solid(c, screen, col, 2.2)
 
-	var font := ThemeDB.fallback_font
+	var port_pts: Array = []
+	for p in pts:
+		port_pts.append(proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0))))
+	_draw_sea_names(c, proj, lat_min, lat_max, lon_min, lon_max, port_pts)
+	_draw_compass(c, map_rect, port_pts)
+	_draw_ports(c, proj, pts, port_pts, map_rect)
+
+	_draw_chart_frame(c, map_rect)
+	_draw_monsoon_caption(c, map_rect)
+
+
+func _chart_frame(pts: Array) -> Dictionary:
+	var lat_lo := 999.0
+	var lat_hi := -999.0
+	var lon_lo := 999.0
+	var lon_hi := -999.0
+	for p in pts:
+		var lat := float(p.get("lat", 0.0))
+		var lon := float(p.get("lon", 0.0))
+		lat_lo = minf(lat_lo, lat)
+		lat_hi = maxf(lat_hi, lat)
+		lon_lo = minf(lon_lo, lon)
+		lon_hi = maxf(lon_hi, lon)
+	var lat_pair: Array = _expand_axis(lat_lo, lat_hi, CHART_LAT_MIN, CHART_LAT_MAX)
+	var lon_pair: Array = _expand_axis(lon_lo, lon_hi, CHART_LON_MIN, CHART_LON_MAX)
+	return {
+		"lat_min": lat_pair[0],
+		"lat_max": lat_pair[1],
+		"lon_min": lon_pair[0],
+		"lon_max": lon_pair[1],
+	}
+
+
+func _expand_axis(lo: float, hi: float, bound_lo: float, bound_hi: float) -> Array:
+	var mid := (lo + hi) * 0.5
+	var half := maxf(CHART_MIN_SPAN, hi - lo) * 0.5 / CHART_FRAME_FILL
+	lo = mid - half
+	hi = mid + half
+	if hi - lo > bound_hi - bound_lo:
+		return [bound_lo, bound_hi]
+	if lo < bound_lo:
+		var shift: float = bound_lo - lo
+		lo += shift
+		hi += shift
+	if hi > bound_hi:
+		var shift_hi: float = hi - bound_hi
+		lo -= shift_hi
+		hi -= shift_hi
+	return [maxf(lo, bound_lo), minf(hi, bound_hi)]
+
+
+func _ensure_land() -> void:
+	if _land_ready:
+		return
+	_land_ready = true
+	for land in GameManager.coastline_data.get("lands", []):
+		var ring := PackedVector2Array()
+		for pt in land.get("ring", []):
+			if typeof(pt) != TYPE_ARRAY or pt.size() < 2:
+				continue
+			ring.append(Vector2(float(pt[0]), float(pt[1])))
+		if ring.size() >= 2 and ring[0].is_equal_approx(ring[ring.size() - 1]):
+			ring.resize(ring.size() - 1)
+		if ring.size() >= 3:
+			_land_rings.append(ring)
+			_land_boxes.append(_ring_box(ring))
+			_land_bins.append(_ring_bins(ring))
+
+
+func _ring_box(ring: PackedVector2Array) -> Rect2:
+	var x0 := ring[0].x
+	var x1 := ring[0].x
+	var y0 := ring[0].y
+	var y1 := ring[0].y
+	for p in ring:
+		x0 = minf(x0, p.x)
+		x1 = maxf(x1, p.x)
+		y0 = minf(y0, p.y)
+		y1 = maxf(y1, p.y)
+	return Rect2(x0, y0, x1 - x0, y1 - y0)
+
+
+func _ring_bins(ring: PackedVector2Array) -> Dictionary:
+	var edge_bins := {}
+	var n := ring.size()
+	for i in n:
+		var ya: float = ring[i].y
+		var yb: float = ring[(i + 1) % n].y
+		var lo := int(floor(minf(ya, yb))) - 6
+		var hi := int(floor(maxf(ya, yb))) - 6
+		for b in range(lo, hi + 1):
+			var edges: PackedInt32Array = edge_bins.get(b, PackedInt32Array())
+			edges.append(i)
+			edge_bins[b] = edges
+	return edge_bins
+
+
+func _draw_land(c: Control, proj: Callable, lon0: float, lat0: float, lon1: float, lat1: float, scale: float) -> void:
+	var view := PackedVector2Array([
+		Vector2(lon0, lat0),
+		Vector2(lon1, lat0),
+		Vector2(lon1, lat1),
+		Vector2(lon0, lat1),
+	])
+	for ring in _land_rings:
+		if not _ring_hits(ring, lon0, lat0, lon1, lat1):
+			continue
+		# 浅滩跟着比例尺走，小岛才不会被一圈固定的宽笔涂成饼。
+		var shoal_w := clampf(scale * 0.11, 3.0, 7.5)
+		_stroke_coast(c, proj, ring, lon0, lat0, lon1, lat1, CHART_SHOAL, shoal_w)
+		var pieces: Array = Geometry2D.intersect_polygons(ring, view)
+		for piece in pieces:
+			var outline := PackedVector2Array(piece)
+			if outline.size() >= 2 and outline[0].is_equal_approx(outline[outline.size() - 1]):
+				outline.resize(outline.size() - 1)
+			if outline.size() < 3:
+				continue
+			var screen := PackedVector2Array()
+			screen.resize(outline.size())
+			for i in outline.size():
+				var ll: Vector2 = outline[i]
+				screen[i] = proj.call(ll.y, ll.x)
+			_fill_polygon(c, screen)
+		_stroke_coast(c, proj, ring, lon0, lat0, lon1, lat1, CHART_COAST, 1.4)
+
+
+func _fill_polygon(c: Control, screen: PackedVector2Array) -> void:
+	var idx := Geometry2D.triangulate_polygon(screen)
+	if idx.is_empty():
+		screen.reverse()
+		idx = Geometry2D.triangulate_polygon(screen)
+	if idx.is_empty():
+		return
+	var tri := PackedVector2Array()
+	tri.resize(3)
+	var i := 0
+	while i + 2 < idx.size():
+		tri[0] = screen[idx[i]]
+		tri[1] = screen[idx[i + 1]]
+		tri[2] = screen[idx[i + 2]]
+		c.draw_colored_polygon(tri, CHART_LAND)
+		i += 3
+
+
+func _ring_hits(ring: PackedVector2Array, lon0: float, lat0: float, lon1: float, lat1: float) -> bool:
+	var rlon0 := ring[0].x
+	var rlon1 := ring[0].x
+	var rlat0 := ring[0].y
+	var rlat1 := ring[0].y
+	for p in ring:
+		rlon0 = minf(rlon0, p.x)
+		rlon1 = maxf(rlon1, p.x)
+		rlat0 = minf(rlat0, p.y)
+		rlat1 = maxf(rlat1, p.y)
+	return rlon1 >= lon0 and rlon0 <= lon1 and rlat1 >= lat0 and rlat0 <= lat1
+
+
+func _stroke_coast(c: Control, proj: Callable, ring: PackedVector2Array, lon0: float, lat0: float, lon1: float, lat1: float, color: Color, width: float) -> void:
+	var run := PackedVector2Array()
+	var n := ring.size()
+	for i in n:
+		var a: Vector2 = ring[i]
+		var b: Vector2 = ring[(i + 1) % n]
+		var clipped: Array = _clip_segment(a, b, lon0, lat0, lon1, lat1)
+		if clipped.is_empty():
+			_flush_coast(c, run, color, width)
+			run = PackedVector2Array()
+			continue
+		var p0: Vector2 = proj.call(clipped[0].y, clipped[0].x)
+		var p1: Vector2 = proj.call(clipped[1].y, clipped[1].x)
+		if run.is_empty() or run[run.size() - 1].distance_to(p0) > 0.75:
+			_flush_coast(c, run, color, width)
+			run = PackedVector2Array()
+			run.append(p0)
+		run.append(p1)
+	_flush_coast(c, run, color, width)
+
+
+func _flush_coast(c: Control, run: PackedVector2Array, color: Color, width: float) -> void:
+	if run.size() >= 2:
+		c.draw_polyline(run, color, width, true)
+
+
+func _draw_graticule(c: Control, proj: Callable, lat0: float, lat1: float, lon0: float, lon1: float) -> void:
+	var step := 5.0 if (lat1 - lat0) > 16.0 else 2.0
+	var lat: float = ceil(lat0 / step) * step
+	while lat < lat1 - 0.05:
+		c.draw_line(proj.call(lat, lon0), proj.call(lat, lon1), CHART_GRID, 1.0)
+		lat += step
+	var lon: float = ceil(lon0 / step) * step
+	while lon < lon1 - 0.05:
+		c.draw_line(proj.call(lat0, lon), proj.call(lat1, lon), CHART_GRID, 1.0)
+		lon += step
+
+
+func _draw_chart_frame(c: Control, map_rect: Rect2) -> void:
+	c.draw_rect(map_rect, CHART_FRAME, false, 1.25)
+	c.draw_rect(map_rect.grow(-4.0), Color(CHART_FRAME.r, CHART_FRAME.g, CHART_FRAME.b, 0.45), false, 1.0)
+	var tick := 5.0
+	var corners: Array[Vector2] = [
+		map_rect.position,
+		Vector2(map_rect.end.x, map_rect.position.y),
+		map_rect.end,
+		Vector2(map_rect.position.x, map_rect.end.y),
+	]
+	for corner in corners:
+		c.draw_rect(Rect2(corner - Vector2(tick, tick) * 0.5, Vector2(tick, tick)), CHART_FRAME)
+
+
+func _draw_port_mark(c: Control, v: Vector2, mark: Color, emphasized: bool, filled: bool) -> void:
+	var r := 5.2 if emphasized else 3.6
+	c.draw_circle(v, r + 1.6, CHART_HALO)
+	c.draw_arc(v, r, 0.0, TAU, 20, mark, 1.5)
+	if filled:
+		c.draw_circle(v, r - 2.0, mark)
+	else:
+		c.draw_circle(v, 1.3, mark)
+
+
+func _draw_ink(c: Control, font: Font, pos: Vector2, text: String, col: Color, font_size: int, halo: Color = CHART_HALO) -> void:
+	for off in [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1), Vector2(-1, -1), Vector2(1, 1)]:
+		c.draw_string(font, pos + off, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, halo)
+	c.draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, col)
+
+
+func _draw_known_routes(c: Control, proj: Callable, pts: Array, frame: Dictionary) -> void:
+	var route_col := Color(0.90, 0.82, 0.62, 0.38)
+	var drawn := {}
 	for p in pts:
 		var pid: String = p.get("id", "")
-		var v: Vector2 = proj.call(float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
+		for cid in p.get("connections", []):
+			var q := GameManager.get_port_by_id(cid)
+			if q.is_empty() or not GameState.is_chapter_reached(q.get("unlock", "ch1")):
+				continue
+			var other: String = str(cid)
+			var key := pid + "|" + other if pid < other else other + "|" + pid
+			if drawn.has(key):
+				continue
+			drawn[key] = true
+			var lane := _sea_lane(
+				float(p.get("lon", 0.0)), float(p.get("lat", 0.0)),
+				float(q.get("lon", 0.0)), float(q.get("lat", 0.0)), frame)
+			for run in _lane_water_runs(lane):
+				_draw_dashed_poly(c, _project_lane(proj, run), route_col, 1.0, 5.0, 4.0)
+
+
+func _draw_ports(c: Control, proj: Callable, pts: Array, screen: Array, map_rect: Rect2) -> void:
+	var font := ThemeDB.fallback_font
+	var font_size := 12
+	var ascent := font.get_ascent(font_size)
+	var n := pts.size()
+	var parent: Array = []
+	parent.resize(n)
+	for i in n:
+		parent[i] = i
+		var pid: String = pts[i].get("id", "")
+		var here := pid == origin_port
+		var target := pid == selected_port
 		var visited: bool = pid in GameState.visited_ports
-		var is_here := pid == origin_port
-		var is_target := pid == selected_port
+		var mark := CHART_INK
+		if target:
+			mark = CHART_GOLD
+		if here:
+			mark = CHART_VERMILION
+		_draw_port_mark(c, screen[i], mark, here or target, visited or here or target)
+	for i in n:
+		for j in range(i + 1, n):
+			if screen[i].distance_to(screen[j]) < LABEL_CLUSTER_PX:
+				_uf_union(parent, i, j)
+	var groups := {}
+	for i in n:
+		var root := _uf_find(parent, i)
+		if not groups.has(root):
+			groups[root] = []
+		groups[root].append(i)
+	var clusters: Array = []
+	var singles: Array = []
+	for key in groups:
+		var members: Array = groups[key]
+		if members.size() >= 2:
+			clusters.append(members)
+		else:
+			singles.append(members[0])
+	clusters.sort_custom(func(a, b): return a.size() > b.size())
+	var spots: Array = []
+	var bounds := map_rect.grow(-4.0)
+	var ink_line := Color(CHART_INK.r, CHART_INK.g, CHART_INK.b, 0.55)
+	for members in clusters:
+		members.sort_custom(func(a, b):
+			return float(pts[a].get("lat", 0.0)) > float(pts[b].get("lat", 0.0))
+		)
+		var member_set := {}
+		var sizes: Array = []
+		var max_w := 0.0
+		var total_h := 0.0
+		var lon := 0.0
+		var lat := 0.0
+		var max_x := -1e9
+		var min_x := 1e9
+		var mean_y := 0.0
+		for i in members:
+			member_set[i] = true
+			var text: String = pts[i].get("name", "")
+			var sz := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+			sizes.append(sz)
+			max_w = maxf(max_w, sz.x)
+			total_h += sz.y
+			lon += float(pts[i].get("lon", 0.0))
+			lat += float(pts[i].get("lat", 0.0))
+			max_x = maxf(max_x, screen[i].x)
+			min_x = minf(min_x, screen[i].x)
+			mean_y += screen[i].y
+		var count := float(members.size())
+		lon /= count
+		lat /= count
+		mean_y /= count
+		total_h += 2.0 * float(members.size() - 1)
+		var sea := _seaward_sign(lon, lat)
+		var best_cost := 1.0e9
+		var best_side := sea
+		var best_xs: Array = []
+		var best_rects: Array = []
+		var found := false
+		for side in [sea, -sea]:
+			for shift in [0.0, -16.0, 16.0, -32.0, 32.0, -48.0, 48.0, -64.0, 64.0]:
+				var laid: Dictionary = _column_layout(side, shift, max_x, min_x, mean_y, max_w, total_h, sizes, bounds)
+				var rects: Array = laid["rects"]
+				var blocked := false
+				for rect in rects:
+					if _rect_hits(rect, spots, 1.0) or _covers_port(rect, screen, member_set, 5.0):
+						blocked = true
+						break
+				if blocked:
+					continue
+				var cost := absf(shift) + (0.0 if is_equal_approx(side, sea) else 6.0)
+				if not found or cost < best_cost:
+					found = true
+					best_cost = cost
+					best_side = side
+					best_xs = laid["xs"]
+					best_rects = rects
+			if found and best_cost < 6.0:
+				break
+		if not found:
+			var laid_fallback: Dictionary = _column_layout(sea, 0.0, max_x, min_x, mean_y, max_w, total_h, sizes, bounds)
+			best_side = sea
+			best_xs = laid_fallback["xs"]
+			best_rects = laid_fallback["rects"]
+		for k in members.size():
+			var i: int = members[k]
+			var rect: Rect2 = best_rects[k]
+			spots.append(rect)
+			var text: String = pts[i].get("name", "")
+			var attach := Vector2(rect.position.x if best_side > 0.0 else rect.end.x, rect.position.y + rect.size.y * 0.5)
+			_draw_leader(c, screen[i], attach, ink_line)
+			var col := _port_ink(pts[i].get("id", ""))
+			_draw_ink(c, font, Vector2(best_xs[k], rect.position.y + ascent), text, col, font_size)
+	for i in singles:
+		var text: String = pts[i].get("name", "")
+		var sz := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+		var anchor: Vector2 = screen[i]
+		var sea := _seaward_sign(float(pts[i].get("lon", 0.0)), float(pts[i].get("lat", 0.0)))
+		var cands: Array[Vector2] = []
+		for dist in [8.0, 22.0, 36.0]:
+			var sea_x: float = anchor.x + sea * float(dist) - (0.0 if sea > 0.0 else sz.x)
+			var back_x: float = anchor.x - sea * float(dist) - (sz.x if sea > 0.0 else 0.0)
+			cands.append(Vector2(sea_x, anchor.y - sz.y * 0.5))
+			cands.append(Vector2(sea_x, anchor.y + 4.0))
+			cands.append(Vector2(sea_x, anchor.y - sz.y - 2.0))
+			cands.append(Vector2(back_x, anchor.y - sz.y * 0.5))
+			cands.append(Vector2(anchor.x - sz.x * 0.5, anchor.y - sz.y - dist))
+			cands.append(Vector2(anchor.x - sz.x * 0.5, anchor.y + dist))
+		var best := Vector2(anchor.x + 8.0, anchor.y - sz.y * 0.5)
+		var best_cost := 1.0e9
+		var own := {i: true}
+		for cand in cands:
+			var rect := Rect2(cand, sz)
+			if not bounds.encloses(rect):
+				continue
+			var cost := 0.0
+			if _rect_hits(rect, spots, 2.0):
+				cost += 50.0
+			if _covers_port(rect, screen, own, 5.0):
+				cost += 80.0
+			if sea > 0.0 and cand.x < anchor.x:
+				cost += 3.0
+			if sea < 0.0 and cand.x + sz.x > anchor.x:
+				cost += 3.0
+			if cost < best_cost:
+				best_cost = cost
+				best = cand
+				if cost == 0.0:
+					break
+		var placed := Rect2(best, sz)
+		spots.append(placed)
+		_draw_ink(c, font, Vector2(best.x, best.y + ascent), text, _port_ink(pts[i].get("id", "")), font_size)
 
-		var col := Color(0.55, 0.6, 0.68)
-		if visited:
-			col = Color(0.85, 0.88, 0.92)
-		if is_target:
-			col = Color(1.0, 0.85, 0.35)
-		if is_here:
-			col = Color(0.5, 0.95, 1.0)
 
-		c.draw_circle(v, 4.0 if (is_here or is_target) else 3.0, col)
-		if is_here:
-			c.draw_arc(v, 8.0, 0, TAU, 20, col, 1.5)
-
-		var label: String = p.get("name", pid)
-		c.draw_string(font, v + Vector2(7, 4), label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col)
+func _port_ink(pid: String) -> Color:
+	if pid == origin_port:
+		return CHART_VERMILION
+	if pid == selected_port:
+		return CHART_GOLD
+	return CHART_INK
 
 
-## 季风方向：全图统一的斜箭头。风信是大尺度的，不必逐点画。
-func _draw_monsoon(c: Control, size: Vector2) -> void:
+func _draw_leader(c: Control, anchor: Vector2, attach: Vector2, color: Color) -> void:
+	var delta := attach - anchor
+	if delta.length() <= 8.0:
+		return
+	c.draw_line(anchor + delta.normalized() * 6.0, attach, color, 1.0, true)
+
+
+func _column_layout(side: float, shift: float, max_x: float, min_x: float, mean_y: float, max_w: float, total_h: float, sizes: Array, bounds: Rect2) -> Dictionary:
+	var left := max_x + 12.0 if side > 0.0 else min_x - 12.0 - max_w
+	var top := mean_y - total_h * 0.5 + shift
+	left = clampf(left, bounds.position.x, maxf(bounds.position.x, bounds.end.x - max_w))
+	top = clampf(top, bounds.position.y, maxf(bounds.position.y, bounds.end.y - total_h))
+	var xs: Array = []
+	var rects: Array = []
+	var y := top
+	for sz in sizes:
+		var x: float = left if side > 0.0 else left + max_w - sz.x
+		xs.append(x)
+		rects.append(Rect2(Vector2(x, y), sz))
+		y += sz.y + 2.0
+	return {"xs": xs, "rects": rects}
+
+
+func _rect_hits(rect: Rect2, spots: Array, pad: float) -> bool:
+	var grow := rect.grow(pad)
+	for prev in spots:
+		if grow.intersects(prev):
+			return true
+	return false
+
+
+func _covers_port(rect: Rect2, screen: Array, members: Dictionary, pad: float) -> bool:
+	var grow := rect.grow(pad)
+	for i in screen.size():
+		if members.has(i):
+			continue
+		var p: Vector2 = screen[i]
+		if p.x >= grow.position.x and p.x <= grow.end.x and p.y >= grow.position.y and p.y <= grow.end.y:
+			return true
+	return false
+
+
+func _seaward_sign(lon: float, lat: float) -> float:
+	var east := 0
+	var west := 0
+	for dist in [0.4, 0.85, 1.3]:
+		var d := float(dist)
+		if not _on_land(lon + d, lat):
+			east += 1
+		if not _on_land(lon - d, lat):
+			west += 1
+	if east > west:
+		return 1.0
+	if west > east:
+		return -1.0
+	return 1.0
+
+
+func _uf_find(parent: Array, i: int) -> int:
+	var root := i
+	while int(parent[root]) != root:
+		root = int(parent[root])
+	var cursor := i
+	while cursor != root:
+		var nxt := int(parent[cursor])
+		parent[cursor] = root
+		cursor = nxt
+	return root
+
+
+func _uf_union(parent: Array, a: int, b: int) -> void:
+	var ra := _uf_find(parent, a)
+	var rb := _uf_find(parent, b)
+	if ra != rb:
+		parent[rb] = ra
+
+
+func _project_lane(proj: Callable, lane: PackedVector2Array) -> PackedVector2Array:
+	var screen := PackedVector2Array()
+	screen.resize(lane.size())
+	for i in lane.size():
+		var ll: Vector2 = lane[i]
+		screen[i] = proj.call(ll.y, ll.x)
+	return screen
+
+
+func _draw_dashed_poly(c: Control, pts: PackedVector2Array, color: Color, width: float, dash: float, gap: float) -> void:
+	var draw_on := true
+	var remain := dash
+	for i in pts.size() - 1:
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[i + 1]
+		var dist := a.distance_to(b)
+		if dist < 0.5:
+			continue
+		var dir := (b - a) / dist
+		var t := 0.0
+		while t < dist:
+			var step := minf(remain, dist - t)
+			if draw_on and step > 0.15:
+				c.draw_line(a + dir * t, a + dir * (t + step), color, width, true)
+			t += step
+			remain -= step
+			if remain <= 0.01:
+				draw_on = not draw_on
+				remain = dash if draw_on else gap
+
+
+func _draw_lane_solid(c: Control, pts: PackedVector2Array, color: Color, width: float) -> void:
+	for i in range(1, pts.size() - 1):
+		c.draw_circle(pts[i], width * 0.45, color)
+	for i in pts.size() - 1:
+		c.draw_line(pts[i], pts[i + 1], color, width, true)
+
+
+func _sea_lane(alon: float, alat: float, blon: float, blat: float, frame: Dictionary) -> PackedVector2Array:
+	_prepare_lane_frame(frame)
+	var cache_key := "%s|%.4f|%.4f|%.4f|%.4f" % [_block_key, alon, alat, blon, blat]
+	if _lane_cache.has(cache_key):
+		return _lane_cache[cache_key]
+	var built := _sea_lane_build(Vector2(alon, alat), Vector2(blon, blat))
+	_lane_cache[cache_key] = built
+	return built
+
+
+func _prepare_lane_frame(frame: Dictionary) -> void:
+	var key := "%.3f|%.3f|%.3f|%.3f" % [
+		float(frame["lat_min"]), float(frame["lat_max"]),
+		float(frame["lon_min"]), float(frame["lon_max"])]
+	if key == _block_key:
+		return
+	_block_key = key
+	_lane_frame = frame
+	_block_cache = {}
+	_lane_cache = {}
+
+
+func _sea_lane_build(a: Vector2, b: Vector2) -> PackedVector2Array:
+	var ends: Array = [a, b]
+	if _line_clear(a, b, ends):
+		return _pack_lane(_polish_lane(ends, ends))
+	var start = _nearest_water(a.x, a.y, b)
+	var goal = _nearest_water(b.x, b.y, a)
+	var path: Array = _astar(start, goal)
+	if path.is_empty():
+		return _pack_lane(_polish_lane(ends, ends))
+	var pts: Array = []
+	for cell in path:
+		var iv: Vector2i = cell
+		pts.append(Vector2((float(iv.x) + 0.5) * LANE_CELL, (float(iv.y) + 0.5) * LANE_CELL))
+	pts = _shortcut(pts, ends)
+	var full: Array = [a]
+	for p in pts:
+		var pv: Vector2 = p
+		var last: Vector2 = full[full.size() - 1]
+		if last.distance_to(pv) > LANE_DEDUP:
+			full.append(pv)
+	var tail: Vector2 = full[full.size() - 1]
+	if tail.distance_to(b) > LANE_DEDUP:
+		full.append(b)
+	else:
+		full[full.size() - 1] = b
+	full = _shortcut(full, ends)
+	return _pack_lane(_polish_lane(full, ends))
+
+
+func _pack_lane(pts: Array) -> PackedVector2Array:
+	var packed := PackedVector2Array()
+	packed.resize(pts.size())
+	for i in pts.size():
+		packed[i] = pts[i]
+	return packed
+
+
+func _cell_inside(lon: float, lat: float) -> bool:
+	return (
+		lon >= float(_lane_frame["lon_min"]) + LANE_INSET
+		and lon <= float(_lane_frame["lon_max"]) - LANE_INSET
+		and lat >= float(_lane_frame["lat_min"]) + LANE_INSET
+		and lat <= float(_lane_frame["lat_max"]) - LANE_INSET
+	)
+
+
+func _cell_blocked(ix: int, iy: int) -> bool:
+	var key := Vector2i(ix, iy)
+	if _block_cache.has(key):
+		return _block_cache[key]
+	var lon := (float(ix) + 0.5) * LANE_CELL
+	var lat := (float(iy) + 0.5) * LANE_CELL
+	var bad := (not _cell_inside(lon, lat)) or _on_land(lon, lat)
+	_block_cache[key] = bad
+	return bad
+
+
+func _nearest_water(lon: float, lat: float, toward: Vector2):
+	var ix := int(floor(lon / LANE_CELL))
+	var iy := int(floor(lat / LANE_CELL))
+	if not _cell_blocked(ix, iy):
+		return Vector2i(ix, iy)
+	var best = null
+	var best_score := 1.0e9
+	var vx := toward.x - lon
+	var vy := toward.y - lat
+	var vl := sqrt(vx * vx + vy * vy)
+	if vl < 0.0001:
+		vl = 1.0
+	for rad in range(1, 14):
+		var found := false
+		for dy in range(-rad, rad + 1):
+			for dx in range(-rad, rad + 1):
+				if maxi(absi(dx), absi(dy)) != rad:
+					continue
+				var cx := ix + dx
+				var cy := iy + dy
+				if _cell_blocked(cx, cy):
+					continue
+				found = true
+				var clon := (float(cx) + 0.5) * LANE_CELL
+				var clat := (float(cy) + 0.5) * LANE_CELL
+				var align := ((clon - lon) * vx + (clat - lat) * vy) / vl
+				var score := sqrt((clon - lon) * (clon - lon) + (clat - lat) * (clat - lat)) - align * 0.35
+				if score < best_score:
+					best_score = score
+					best = Vector2i(cx, cy)
+		if found and best != null and rad >= 2:
+			break
+	return best
+
+
+func _astar(start, goal) -> Array:
+	if start == null or goal == null:
+		return []
+	var s: Vector2i = start
+	var gcell: Vector2i = goal
+	if s == gcell:
+		return [s]
+	var heap: Array = []
+	_heap_push(heap, [_cell_h(s, gcell), 0.0, s.x, s.y])
+	var came := {}
+	var cost := {s: 0.0}
+	var seen := 0
+	while not heap.is_empty():
+		var item: Array = _heap_pop(heap)
+		var g: float = item[1]
+		var x := int(item[2])
+		var y := int(item[3])
+		var here := Vector2i(x, y)
+		if here == gcell:
+			var path: Array = [here]
+			while came.has(here):
+				here = came[here]
+				path.append(here)
+			path.reverse()
+			return path
+		var known: float = cost.get(Vector2i(x, y), 1.0e18)
+		if g > known + 0.000001:
+			continue
+		seen += 1
+		if seen > 20000:
+			return []
+		for dx in [-1, 0, 1]:
+			for dy in [-1, 0, 1]:
+				if dx == 0 and dy == 0:
+					continue
+				var nx: int = x + int(dx)
+				var ny: int = y + int(dy)
+				if _cell_blocked(nx, ny):
+					continue
+				if dx != 0 and dy != 0 and (_cell_blocked(x + dx, y) or _cell_blocked(x, y + dy)):
+					continue
+				var step := sqrt(float(dx * dx + dy * dy))
+				for off in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					if _cell_blocked(nx + off.x, ny + off.y):
+						step += LANE_SHORE_PENALTY
+						break
+				var ng := g + step
+				var nxt := Vector2i(nx, ny)
+				if ng < float(cost.get(nxt, 1.0e18)):
+					cost[nxt] = ng
+					came[nxt] = Vector2i(x, y)
+					_heap_push(heap, [ng + _cell_h(nxt, gcell), ng, nx, ny])
+	return []
+
+
+func _cell_h(a: Vector2i, b: Vector2i) -> float:
+	return sqrt(float((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)))
+
+
+func _heap_push(heap: Array, item: Array) -> void:
+	heap.append(item)
+	var i := heap.size() - 1
+	while i > 0:
+		var parent := (i - 1) >> 1
+		if float(heap[parent][0]) <= float(heap[i][0]):
+			break
+		var tmp = heap[parent]
+		heap[parent] = heap[i]
+		heap[i] = tmp
+		i = parent
+
+
+func _heap_pop(heap: Array) -> Array:
+	var top: Array = heap[0]
+	var last: Array = heap[heap.size() - 1]
+	heap.resize(heap.size() - 1)
+	if heap.is_empty():
+		return top
+	heap[0] = last
+	var i := 0
+	while true:
+		var left := i * 2 + 1
+		if left >= heap.size():
+			break
+		var right := left + 1
+		var smaller := left
+		if right < heap.size() and float(heap[right][0]) < float(heap[left][0]):
+			smaller = right
+		if float(heap[i][0]) <= float(heap[smaller][0]):
+			break
+		var tmp = heap[i]
+		heap[i] = heap[smaller]
+		heap[smaller] = tmp
+		i = smaller
+	return top
+
+
+func _line_clear(a: Vector2, b: Vector2, ends: Array) -> bool:
+	var dist := a.distance_to(b)
+	var steps := maxi(1, int(ceil(dist / LANE_SAMPLE)))
+	for i in steps + 1:
+		var t := float(i) / float(steps)
+		var p := a.lerp(b, t)
+		var near := false
+		for e in ends:
+			if p.distance_to(e) < LANE_HARBOR:
+				near = true
+				break
+		if near:
+			continue
+		if _on_land(p.x, p.y):
+			return false
+	return true
+
+
+func _shortcut(pts: Array, ends: Array) -> Array:
+	if pts.size() <= 2:
+		return pts
+	var out: Array = [pts[0]]
+	var i := 0
+	while i < pts.size() - 1:
+		var j := pts.size() - 1
+		while j > i + 1 and not _line_clear(pts[i], pts[j], ends):
+			j -= 1
+		out.append(pts[j])
+		i = j
+	return out
+
+
+func _turn_of(a: Vector2, b: Vector2, c: Vector2) -> Array:
+	var v1 := a - b
+	var v2 := c - b
+	var l1 := v1.length()
+	var l2 := v2.length()
+	if l1 < 0.000000001:
+		l1 = 0.000000001
+	if l2 < 0.000000001:
+		l2 = 0.000000001
+	var dot := clampf((v1.x * v2.x + v1.y * v2.y) / (l1 * l2), -1.0, 1.0)
+	var turn := 180.0 - rad_to_deg(acos(dot))
+	return [turn, v1 / l1, v2 / l2, l1, l2]
+
+
+func _max_turn(pts: Array) -> float:
+	var best := 0.0
+	for i in range(1, pts.size() - 1):
+		var info: Array = _turn_of(pts[i - 1], pts[i], pts[i + 1])
+		best = maxf(best, float(info[0]))
+	return best
+
+
+func _clear_seq(seq: Array, ends: Array) -> bool:
+	for i in seq.size() - 1:
+		var u: Vector2 = seq[i]
+		var w: Vector2 = seq[i + 1]
+		if u.distance_to(w) < 0.000001:
+			continue
+		if not _line_clear(u, w, ends):
+			return false
+	return true
+
+
+func _bisector(u1: Vector2, u2: Vector2) -> Vector2:
+	var bis := u1 + u2
+	var length := bis.length()
+	if length < 0.000000001:
+		length = 0.000000001
+	return bis / length
+
+
+func _inward_arc(a: Vector2, b: Vector2, c: Vector2, ends: Array):
+	var info: Array = _turn_of(a, b, c)
+	var turn: float = info[0]
+	var u1: Vector2 = info[1]
+	var u2: Vector2 = info[2]
+	var l1: float = info[3]
+	var l2: float = info[4]
+	if turn < 18.0 or l1 < 0.05 or l2 < 0.05:
+		return null
+	var bis := _bisector(u1, u2)
+	var vertices: Array = [b]
+	for nudge_v in [0.08, 0.14]:
+		var nudge := float(nudge_v)
+		var nb := Vector2(b.x - bis.x * nudge, b.y - bis.y * nudge)
+		if _on_land(nb.x, nb.y):
+			continue
+		if _clear_seq([a, nb, c], ends):
+			vertices.append(nb)
+	for vertex in vertices:
+		var vv: Vector2 = vertex
+		info = _turn_of(a, vv, c)
+		turn = float(info[0])
+		u1 = info[1]
+		u2 = info[2]
+		l1 = float(info[3])
+		l2 = float(info[4])
+		var interior := 180.0 - turn
+		bis = _bisector(u1, u2)
+		var half := deg_to_rad(maxf(interior, 1.0) * 0.5)
+		var tang := tan(half)
+		if tang < 0.12:
+			continue
+		for radius_v in [LANE_FILLET, LANE_FILLET * 0.64, LANE_FILLET * 0.36, LANE_FILLET * 0.22]:
+			var radius := float(radius_v)
+			var tdist := minf(radius / tang, minf(l1 * 0.45, l2 * 0.45))
+			if tdist < 0.05:
+				continue
+			var p1 := Vector2(vv.x + u1.x * tdist, vv.y + u1.y * tdist)
+			var p2 := Vector2(vv.x + u2.x * tdist, vv.y + u2.y * tdist)
+			var rad := tdist * tang
+			var dist_c := rad / sin(half)
+			var center := Vector2(vv.x + bis.x * dist_c, vv.y + bis.y * dist_c)
+			var a1 := atan2(p1.y - center.y, p1.x - center.x)
+			var a2 := atan2(p2.y - center.y, p2.x - center.x)
+			var sweep := a2 - a1
+			while sweep <= 0.0:
+				sweep += TAU
+			if sweep > PI:
+				sweep -= TAU
+			if absf(sweep) > deg_to_rad(175.0):
+				continue
+			var steps := maxi(3, int(ceil(absf(rad_to_deg(sweep)) / 14.0)))
+			var arc: Array = []
+			for s in steps + 1:
+				var theta := a1 + sweep * (float(s) / float(steps))
+				arc.append(Vector2(center.x + cos(theta) * rad, center.y + sin(theta) * rad))
+			var seq: Array = [a]
+			seq.append_array(arc)
+			seq.append(c)
+			if _clear_seq(seq, ends):
+				return arc
+	return null
+
+
+func _outward_curve(a: Vector2, b: Vector2, c: Vector2, ends: Array):
+	var info: Array = _turn_of(a, b, c)
+	var turn: float = info[0]
+	var u1: Vector2 = info[1]
+	var u2: Vector2 = info[2]
+	var l1: float = info[3]
+	var l2: float = info[4]
+	if turn < 36.0 or l1 < 0.08 or l2 < 0.08:
+		return null
+	var bis := _bisector(u1, u2)
+	var best = null
+	var best_turn := turn
+	for shoulder_v in [0.28, 0.18, 0.12]:
+		var shoulder := float(shoulder_v)
+		var td := minf(shoulder, minf(l1 * 0.42, l2 * 0.42))
+		if td < 0.08:
+			continue
+		var p1 := Vector2(b.x + u1.x * td, b.y + u1.y * td)
+		var p2 := Vector2(b.x + u2.x * td, b.y + u2.y * td)
+		for bulge_v in [0.16, 0.10, 0.06]:
+			var bulge := float(bulge_v)
+			var ctrl := Vector2(b.x - bis.x * bulge, b.y - bis.y * bulge)
+			if _on_land(ctrl.x, ctrl.y):
+				continue
+			var curve: Array = []
+			var steps := 8
+			for s in steps + 1:
+				var t := float(s) / float(steps)
+				var u := 1.0 - t
+				curve.append(Vector2(
+					u * u * p1.x + 2.0 * u * t * ctrl.x + t * t * p2.x,
+					u * u * p1.y + 2.0 * u * t * ctrl.y + t * t * p2.y))
+			var seq: Array = [a]
+			seq.append_array(curve)
+			seq.append(c)
+			if not _clear_seq(seq, ends):
+				continue
+			var local := _max_turn(seq)
+			if local < best_turn - 8.0 and local <= 34.0:
+				best = curve
+				best_turn = local
+	return best
+
+
+func _dedup_lane(pts: Array, gap: float) -> Array:
+	if pts.is_empty():
+		return []
+	var out: Array = [pts[0]]
+	for i in range(1, pts.size()):
+		var pv: Vector2 = pts[i]
+		var last: Vector2 = out[out.size() - 1]
+		if last.distance_to(pv) > gap:
+			out.append(pv)
+	return out
+
+
+func _lane_hits(pts: Array) -> int:
+	var count := 0
+	if pts.size() < 2:
+		return 0
+	var origin: Vector2 = pts[0]
+	var dest: Vector2 = pts[pts.size() - 1]
+	for i in pts.size() - 1:
+		var p: Vector2 = pts[i]
+		var q: Vector2 = pts[i + 1]
+		var dist := p.distance_to(q)
+		var steps := maxi(1, int(ceil(dist / LANE_SAMPLE)))
+		for k in steps + 1:
+			var t := float(k) / float(steps)
+			var point := Vector2(p.x + (q.x - p.x) * t, p.y + (q.y - p.y) * t)
+			if point.distance_to(origin) < LANE_HARBOR:
+				continue
+			if point.distance_to(dest) < LANE_HARBOR:
+				continue
+			if _on_land(point.x, point.y):
+				count += 1
+	return count
+
+
+func _round_once(pts: Array, ends: Array) -> Array:
+	if pts.size() < 3:
+		return pts.duplicate()
+	var cur: Array = pts.duplicate()
+	var i := 1
+	var guard := 0
+	while i < cur.size() - 1 and guard < 40:
+		guard += 1
+		var a: Vector2 = cur[i - 1]
+		var b: Vector2 = cur[i]
+		var c: Vector2 = cur[i + 1]
+		var info: Array = _turn_of(a, b, c)
+		var turn: float = info[0]
+		var arc = null
+		if turn >= 18.0:
+			arc = _inward_arc(a, b, c, ends)
+			if arc == null and turn >= 36.0:
+				arc = _outward_curve(a, b, c, ends)
+		if arc == null:
+			i += 1
+			continue
+		var nxt: Array = cur.slice(0, i)
+		nxt.append_array(arc)
+		nxt.append_array(cur.slice(i + 1, cur.size()))
+		nxt = _dedup_lane(nxt, 0.025)
+		if _lane_hits(nxt) > _lane_hits(cur):
+			i += 1
+			continue
+		if _max_turn(nxt) > _max_turn(cur) + 0.5:
+			i += 1
+			continue
+		var old_len := cur.size()
+		cur = nxt
+		i += maxi(1, cur.size() - old_len + 1)
+	return cur
+
+
+func _trim_stub(pts: Array, ends: Array) -> Array:
+	var trimmed: Array = _trim_one_end(pts, ends[1], false)
+	return _trim_one_end(trimmed, ends[0], true)
+
+
+func _trim_one_end(pts: Array, origin: Vector2, at_start: bool) -> Array:
+	if pts.size() < 2:
+		return pts
+	var seq: Array = pts.duplicate()
+	if not at_start:
+		seq.reverse()
+	var exit_lon := 0.0
+	var exit_lat := 0.0
+	var exit_seg := -1
+	var exit_t := 0.0
+	var seen_land := false
+	var stop := false
+	for seg in seq.size() - 1:
+		if stop:
+			break
+		var p: Vector2 = seq[seg]
+		var q: Vector2 = seq[seg + 1]
+		var dist := p.distance_to(q)
+		var steps := maxi(1, int(ceil(dist / 0.02)))
+		for k in steps + 1:
+			var t := float(k) / float(steps)
+			var lon := p.x + (q.x - p.x) * t
+			var lat := p.y + (q.y - p.y) * t
+			if Vector2(lon, lat).distance_to(origin) > LANE_STUB:
+				stop = true
+				break
+			if _on_land(lon, lat):
+				seen_land = true
+				exit_seg = -1
+			elif seen_land and exit_seg < 0:
+				exit_lon = lon
+				exit_lat = lat
+				exit_seg = seg
+				exit_t = t
+	if exit_seg < 0:
+		return pts
+	var rest: Array = [Vector2(exit_lon, exit_lat)]
+	if exit_t < 0.999:
+		rest.append(seq[exit_seg + 1])
+	for j in range(exit_seg + 2, seq.size()):
+		rest.append(seq[j])
+	var cleaned := _dedup_lane(rest, 0.02)
+	if cleaned.size() < 2:
+		return pts
+	if not at_start:
+		cleaned.reverse()
+	return cleaned
+
+
+func _polish_lane(pts: Array, ends: Array) -> Array:
+	var curved := _round_once(pts, ends)
+	curved = _trim_stub(curved, ends)
+	curved = _round_once(curved, ends)
+	return _trim_stub(curved, ends)
+
+
+func _coast_between(water: Vector2, land: Vector2) -> Vector2:
+	var lo := 0.0
+	var hi := 1.0
+	for _step in 8:
+		var mid := (lo + hi) * 0.5
+		var lon := water.x + (land.x - water.x) * mid
+		var lat := water.y + (land.y - water.y) * mid
+		if _on_land(lon, lat):
+			hi = mid
+		else:
+			lo = mid
+	return Vector2(water.x + (land.x - water.x) * lo, water.y + (land.y - water.y) * lo)
+
+
+func _append_far(cur: Array, pt: Vector2) -> void:
+	if cur.is_empty():
+		cur.append(pt)
+		return
+	var last: Vector2 = cur[cur.size() - 1]
+	if last.distance_to(pt) > 0.0001:
+		cur.append(pt)
+
+
+func _emit_run(runs: Array, cur: Array) -> Array:
+	if cur.size() >= 2:
+		var packed := PackedVector2Array()
+		packed.resize(cur.size())
+		for i in cur.size():
+			packed[i] = cur[i]
+		runs.append(packed)
+	return []
+
+
+func _lane_water_runs(lane: PackedVector2Array) -> Array:
+	var runs: Array = []
+	if lane.size() < 2:
+		return runs
+	var cur: Array = []
+	var step := 0.04
+	for seg in lane.size() - 1:
+		var p: Vector2 = lane[seg]
+		var q: Vector2 = lane[seg + 1]
+		var dist := p.distance_to(q)
+		var n := maxi(1, int(ceil(dist / step)))
+		var flags: Array = []
+		flags.resize(n + 1)
+		for sample_i in n + 1:
+			var sample_t := float(sample_i) / float(n)
+			flags[sample_i] = _on_land(p.x + (q.x - p.x) * sample_t, p.y + (q.y - p.y) * sample_t)
+		var cursor := 0
+		while cursor <= n:
+			if flags[cursor]:
+				if not cur.is_empty() and cursor > 0 and not flags[cursor - 1]:
+					var tw := float(cursor - 1) / float(n)
+					var tl := float(cursor) / float(n)
+					_append_far(cur, _coast_between(
+						Vector2(p.x + (q.x - p.x) * tw, p.y + (q.y - p.y) * tw),
+						Vector2(p.x + (q.x - p.x) * tl, p.y + (q.y - p.y) * tl)))
+					cur = _emit_run(runs, cur)
+				cursor += 1
+				continue
+			if cur.is_empty():
+				if cursor == 0:
+					_append_far(cur, p)
+				else:
+					var tw2 := float(cursor) / float(n)
+					var tl2 := float(cursor - 1) / float(n)
+					_append_far(cur, _coast_between(
+						Vector2(p.x + (q.x - p.x) * tw2, p.y + (q.y - p.y) * tw2),
+						Vector2(p.x + (q.x - p.x) * tl2, p.y + (q.y - p.y) * tl2)))
+			var k1 := cursor
+			while k1 + 1 <= n and not flags[k1 + 1]:
+				k1 += 1
+			if k1 == n:
+				_append_far(cur, q)
+			else:
+				var tw3 := float(k1) / float(n)
+				var tl3 := float(k1 + 1) / float(n)
+				_append_far(cur, _coast_between(
+					Vector2(p.x + (q.x - p.x) * tw3, p.y + (q.y - p.y) * tw3),
+					Vector2(p.x + (q.x - p.x) * tl3, p.y + (q.y - p.y) * tl3)))
+				cur = _emit_run(runs, cur)
+			cursor = k1 + 1
+	if cur.size() >= 2:
+		_emit_run(runs, cur)
+	return runs
+
+
+func _draw_sea_names(c: Control, proj: Callable, lat0: float, lat1: float, lon0: float, lon1: float, port_pts: Array) -> void:
+	# 只用宋时已有的海名，并且只写在开阔水面上。
+	var names := [
+		{"name": "东海", "lat": 27.6, "lon": 123.5},
+		{"name": "南海", "lat": 15.4, "lon": 113.6},
+	]
+	var font := ThemeDB.fallback_font
+	var col := Color(0.78, 0.88, 0.92, 0.72)
+	for item in names:
+		var lat := float(item["lat"])
+		var lon := float(item["lon"])
+		if lat < lat0 or lat > lat1 or lon < lon0 or lon > lon1:
+			continue
+		if _on_land(lon, lat):
+			continue
+		var v: Vector2 = proj.call(lat, lon)
+		var near_port := false
+		for p in port_pts:
+			if v.distance_to(p) < 42.0:
+				near_port = true
+				break
+		if near_port:
+			continue
+		var text: String = item["name"]
+		var sz := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15)
+		_draw_ink(c, font, v - Vector2(sz.x * 0.5, 0), text, col, 15, Color(0.04, 0.08, 0.12, 0.75))
+
+
+func _on_land(lon: float, lat: float) -> bool:
+	var bi := int(floor(lat)) - 6
+	for r in _land_rings.size():
+		var box: Rect2 = _land_boxes[r]
+		if lon < box.position.x or lon > box.end.x or lat < box.position.y or lat > box.end.y:
+			continue
+		var edge_bins: Dictionary = _land_bins[r]
+		if not edge_bins.has(bi):
+			continue
+		var edges: PackedInt32Array = edge_bins[bi]
+		if edges.is_empty():
+			continue
+		var ring: PackedVector2Array = _land_rings[r]
+		var n := ring.size()
+		var inside := false
+		for i in edges:
+			var j := (int(i) + 1) % n
+			var yi: float = ring[i].y
+			var yj: float = ring[j].y
+			if (yi > lat) != (yj > lat):
+				var xi: float = ring[i].x
+				var xj: float = ring[j].x
+				if lon < (xj - xi) * (lat - yi) / (yj - yi) + xi:
+					inside = not inside
+		if inside:
+			return true
+	return false
+
+
+func _draw_compass(c: Control, map_rect: Rect2, port_pts: Array) -> void:
+	var spots: Array[Vector2] = [
+		map_rect.end + Vector2(-48, -48),
+		Vector2(map_rect.position.x + 48, map_rect.end.y - 48),
+		map_rect.position + Vector2(48, 52),
+		Vector2(map_rect.end.x - 48, map_rect.position.y + 52),
+	]
+	var center: Vector2 = spots[0]
+	for s in spots:
+		var clear := true
+		for p in port_pts:
+			if s.distance_to(p) < 58.0:
+				clear = false
+				break
+		if clear:
+			center = s
+			break
+	var gold := Color(0.90, 0.82, 0.60, 0.95)
+	var dim := Color(0.90, 0.82, 0.60, 0.45)
+	c.draw_circle(center, 18.0, Color(0.05, 0.10, 0.14, 0.55))
+	c.draw_arc(center, 15.0, 0.0, TAU, 28, dim, 1.0)
+	c.draw_line(center + Vector2(-13, 0), center + Vector2(13, 0), dim, 1.0)
+	c.draw_line(center + Vector2(0, 11), center + Vector2(0, -14), gold, 1.4)
+	var tip := center + Vector2(0, -16)
+	c.draw_colored_polygon(PackedVector2Array([
+		tip, tip + Vector2(-3.6, 7.5), tip + Vector2(3.6, 7.5)
+	]), gold)
+	var font := ThemeDB.fallback_font
+	_draw_ink(c, font, tip + Vector2(-6, -13), "北", gold, 12, Color(0.04, 0.08, 0.12, 0.8))
+
+
+func _out_code(lon: float, lat: float, lon0: float, lat0: float, lon1: float, lat1: float) -> int:
+	var code := 0
+	if lon < lon0:
+		code |= 1
+	elif lon > lon1:
+		code |= 2
+	if lat < lat0:
+		code |= 4
+	elif lat > lat1:
+		code |= 8
+	return code
+
+
+func _clip_segment(a: Vector2, b: Vector2, lon0: float, lat0: float, lon1: float, lat1: float) -> Array:
+	var x0 := a.x
+	var y0 := a.y
+	var x1 := b.x
+	var y1 := b.y
+	var c0 := _out_code(x0, y0, lon0, lat0, lon1, lat1)
+	var c1 := _out_code(x1, y1, lon0, lat0, lon1, lat1)
+	for _i in 12:
+		if c0 == 0 and c1 == 0:
+			return [Vector2(x0, y0), Vector2(x1, y1)]
+		if (c0 & c1) != 0:
+			return []
+		var outside := c0 if c0 != 0 else c1
+		var x := x0
+		var y := y0
+		var dx := x1 - x0
+		var dy := y1 - y0
+		if (outside & 8) != 0 and dy != 0.0:
+			x = x0 + dx * (lat1 - y0) / dy
+			y = lat1
+		elif (outside & 4) != 0 and dy != 0.0:
+			x = x0 + dx * (lat0 - y0) / dy
+			y = lat0
+		elif (outside & 2) != 0 and dx != 0.0:
+			y = y0 + dy * (lon1 - x0) / dx
+			x = lon1
+		elif dx != 0.0:
+			y = y0 + dy * (lon0 - x0) / dx
+			x = lon0
+		else:
+			return []
+		if outside == c0:
+			x0 = x
+			y0 = y
+			c0 = _out_code(x0, y0, lon0, lat0, lon1, lat1)
+		else:
+			x1 = x
+			y1 = y
+			c1 = _out_code(x1, y1, lon0, lat0, lon1, lat1)
+	return []
+
+
+## 季风方向：只铺在海图框内。风信是大尺度的，不必逐点画。
+func _draw_monsoon(c: Control, map_rect: Rect2) -> void:
 	var wb := Calendar.get_wind_bearing()
 	if wb < 0.0:
-		c.draw_string(ThemeDB.fallback_font, Vector2(10, 18),
-			"季风转换期・风微而多变", HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
-			Color(0.7, 0.72, 0.75, 0.9))
 		return
 
 	# 方位角 → 屏幕向量（y 轴向下，故取负 cos）
@@ -425,10 +1723,10 @@ func _draw_monsoon(c: Control, size: Vector2) -> void:
 	var col := Color(0.45, 0.7, 0.95, 0.22)
 	var step := 62.0
 	var arrow := 7.0
-	var y := step * 0.5
-	while y < size.y:
-		var x := step * 0.5
-		while x < size.x:
+	var y := map_rect.position.y + 20.0
+	while y < map_rect.end.y - 16.0:
+		var x := map_rect.position.x + 20.0
+		while x < map_rect.end.x - 16.0:
 			var mid := Vector2(x, y)
 			var a := mid - dir * 13.0
 			var b := mid + dir * 13.0
@@ -439,9 +1737,13 @@ func _draw_monsoon(c: Control, size: Vector2) -> void:
 			x += step
 		y += step
 
-	c.draw_string(ThemeDB.fallback_font, Vector2(10, 18),
-		Calendar.get_monsoon_desc(), HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
-		Color(0.6, 0.8, 1.0, 0.9))
+
+func _draw_monsoon_caption(c: Control, map_rect: Rect2) -> void:
+	var wb := Calendar.get_wind_bearing()
+	var text := "季风转换期・风微而多变" if wb < 0.0 else Calendar.get_monsoon_desc()
+	var col := Color(0.7, 0.72, 0.75, 0.9) if wb < 0.0 else Color(0.6, 0.8, 1.0, 0.9)
+	c.draw_string(ThemeDB.fallback_font, map_rect.position + Vector2(10, 18),
+		text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col)
 
 
 func _log(text: String) -> void:
