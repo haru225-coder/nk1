@@ -16,7 +16,10 @@
       "chart": {
         "label": "興化",
         "sub": "興化軍·莆田",
-        "shibo": false
+        "shibo": false,
+        "sub_by_year": [
+          {"from": 1277, "sub": "興化路（元）"}
+        ]
       },
       "depth": 120,
       "unlock": "ch1",
@@ -99,7 +102,11 @@
       "chart": {
         "label": "泉州",
         "sub": "刺桐·後渚",
-        "shibo": true
+        "shibo": true,
+        "sub_by_year": [
+          {"from": 1277, "sub": "刺桐·行宣慰司（元）"},
+          {"from": 1278, "sub": "刺桐·泉州路（元）"}
+        ]
       },
       "depth": 400,
       "unlock": "ch1",
@@ -168,7 +175,8 @@
           {
             "from": 1276,
             "sub": "福安府"
-          }
+          },
+          {"from": 1278, "sub": "福州路（元）"}
         ]
       },
       "depth": 250,
@@ -213,7 +221,10 @@
       "chart": {
         "label": "漳州",
         "sub": "龍溪",
-        "shibo": false
+        "shibo": false,
+        "sub_by_year": [
+          {"from": 1279, "sub": "漳州路（元）"}
+        ]
       },
       "depth": 150,
       "unlock": "ch1",
@@ -255,7 +266,8 @@
           {
             "from": 1265,
             "sub": "瑞安府"
-          }
+          },
+          {"from": 1276, "sub": "溫州路（元）"}
         ]
       },
       "depth": 200,
@@ -289,7 +301,7 @@
     {
       "id": "penghu",
       "name": "澎湖",
-      "region": "澎湖巡检 / 外海屿",
+      "region": "晋江县外屿 / 外海屿",
       "status": "main",
       "lat": 23.57,
       "lon": 119.59,
@@ -366,9 +378,12 @@
       "lat": 29.87,
       "lon": 121.55,
       "chart": {
-        "label": "明州",
-        "sub": "慶元府",
-        "shibo": true
+        "label": "慶元",
+        "sub": "明州·四明",
+        "shibo": true,
+        "sub_by_year": [
+          {"from": 1277, "sub": "慶元路（元）"}
+        ]
       },
       "depth": 350,
       "unlock": "ch2",
@@ -418,7 +433,7 @@
         "sub_by_year": [
           {
             "from": 1273,
-            "sub": "濟州（元）"
+            "sub": "耽羅國招討司（元）"
           }
         ]
       },
