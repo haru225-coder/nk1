@@ -890,6 +890,16 @@ func _coast_data() -> Dictionary:
 			converted.append(latlon)
 		converted.sort_custom(func(a, b): return a.size() > b.size())
 		_coast["land"] = converted
+	# 云端 2d51 的海名 / 岛名标注（data/chart_labels.json）替换 chart_coast.json 的三处海名
+	var labels: Dictionary = GameManager.chart_labels_data if GameManager.get("chart_labels_data") != null else {}
+	var label_rows: Array = labels.get("labels", []) if labels is Dictionary else []
+	if label_rows.size() > 0:
+		var seas: Array = []
+		for row in label_rows:
+			if row is Dictionary and str(row.get("text", "")) != "":
+				seas.append({"name": str(row["text"]), "lat": float(row.get("lat", 0.0)), "lon": float(row.get("lon", 0.0)),
+					"min_span": float(row.get("min_span", 0.0)), "max_span": float(row.get("max_span", 999.0))})
+		_coast["seas"] = seas
 	return _coast
 
 
