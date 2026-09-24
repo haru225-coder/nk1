@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cphk4is6wh26n"
-valid=false
+uid="uid://cr87jrcur22ga"
+path="res://.godot/imported/icon_yamen.png-5320f7d18a0687c3753f31bd9c39d7e8.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/icon_yamen.png"
+dest_files=["res://.godot/imported/icon_yamen.png-5320f7d18a0687c3753f31bd9c39d7e8.ctex"]
 
 [params]
 

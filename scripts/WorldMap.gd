@@ -441,3 +441,20 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 	data["player_damage"] = player_damage
 	battle_finished.emit(outcome, data)
 	queue_free()
+
+
+## Godot 4 的 Object.get() 只收 1 个参数（带默认值的是 Dictionary.get），缺属性时返回 null；
+## 且 float(null) 在运行期报错中止，所以对 Node 取属性统一走这两个判空封装。
+static func _prop_f(o: Object, prop: String, default_v: float) -> float:
+	var v = o.get(prop)
+	return default_v if v == null else float(v)
+
+
+static func _prop_s(o: Object, prop: String, default_v: String) -> String:
+	var v = o.get(prop)
+	return default_v if v == null else str(v)
+
+
+# ══ 以下为本地 main 的新增函数，合并时因所在区块让位云端而被丢，按「本地纯新增保留」原样补回（2026-09-25） ══
+
+

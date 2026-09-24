@@ -17,6 +17,8 @@ var ships_data: Dictionary = {}
 var chapters_data: Dictionary = {}
 var crew_data: Dictionary = {}
 var titles_data: Dictionary = {}
+## 本地 main：按月投放的历史新闻（data/news.json）
+var news_data: Dictionary = {}
 ## 真实岸线（Natural Earth）与绕陆航线，只供海图绘制
 var coastline_data: Dictionary = {}
 var sealanes_data: Dictionary = {}
@@ -37,6 +39,7 @@ func load_data() -> void:
 	chapters_data = _load_json("res://data/chapters.json")
 	crew_data = _load_json("res://data/crew.json")
 	titles_data = _load_json("res://data/titles.json")
+	news_data = _load_json("res://data/news.json")
 	coastline_data = _load_json("res://data/coastline.json")
 	sealanes_data = _load_json("res://data/sealanes.json")
 	chart_labels_data = _load_json("res://data/chart_labels.json")
@@ -77,6 +80,9 @@ func advance_days(n: int) -> void:
 			var notice := Crew.pay_wages()
 			if notice != "":
 				monthly_notice.emit(notice)
+			_settle_history()
+			for w in Economy.on_month_changed():
+				monthly_notice.emit(w)
 		Economy.on_day_passed()
 		Fleet.on_day_passed()
 		var broke := GameState.tick_contract()
@@ -85,6 +91,78 @@ func advance_days(n: int) -> void:
 
 
 # ── 资源 ──────────────────────────────────────────────
+
+# ── 跳年 ──────────────────────────────────────────────
+
+## 章节晋升时跳过若干年。
+## 这些年不是「什么都没发生」，而是「你一直在跑船，只是不必一趟趟点」。
+## 代价必须真实：船会旧，人会走，行情会忘掉你，士气不会自己攒着。
+const SKIP_HULL_DECAY := 0.08      # 每年折旧
+const SKIP_HULL_FLOOR := 0.20      # 折到底也留两成，不至于一跳就沉
+const SKIP_CREW_LEAVE := 0.12      # 每年每人离船概率
+const SKIP_MORALE_AFTER := 65      # 久不出海，人心散了
+
+## 返回摘要行数组，供章节对话框显示
+func skip_years(n: int) -> Array:
+	if n <= 0:
+		return []
+	var lines := []
+	var y0 := Calendar.year
+
+	# 先把这几年的日子真的走完——新闻、月结、行情回归都照常发生
+	for i in range(n):
+		advance_days(Calendar.DAYS_PER_MONTH * Calendar.MONTHS_PER_YEAR)
+
+	# 船况折旧
+	var decayed := 0
+	for sh in Fleet.ships:
+		var maxd := float(sh.get("max_durability", 100))
+		var cur := float(sh.get("durability", maxd))
+		var after := maxf(maxd * SKIP_HULL_FLOOR, cur * pow(1.0 - SKIP_HULL_DECAY, float(n)))
+		if after < cur - 0.5:
+			decayed += 1
+		sh["durability"] = after
+	if decayed > 0:
+		lines.append("船板泡了%d年海水，%d 条船都该进坞了。" % [n, decayed])
+
+	# 水手流失
+	var left := []
+	for role_id in Crew.hired.keys().duplicate():
+		var leave_p := 1.0 - pow(1.0 - SKIP_CREW_LEAVE, float(n))
+		if randf() < leave_p:
+			left.append(str(Crew.hired[role_id].get("name", "一个人")))
+			Crew.hired.erase(role_id)
+	if not left.is_empty():
+		lines.append("%s没有再上船——有的回了乡，有的上了别家的船。" % "、".join(left))
+
+	# 士气与行情
+	Fleet.morale = mini(Fleet.morale, SKIP_MORALE_AFTER)
+	for pid in Economy.rates.keys():
+		var pr: Dictionary = Economy.rates[pid]
+		for gid in pr.keys():
+			pr[gid] = 1.0
+	lines.append("市价早不是当年的市价了。")
+
+	lines.append("——%d 年至 %d 年。" % [y0, Calendar.year])
+	return lines
+
+
+## 月初结算历史压力：到期新闻投放；1268 年四月殿试一次性锁定身份。
+## 历史是天气不是过场——全部走 monthly_notice，不开新场景。
+func _settle_history() -> void:
+	if GameState.is_ended():
+		return
+	if Calendar.year > GameState.IDENTITY_YEAR or (Calendar.year == GameState.IDENTITY_YEAR and Calendar.month >= GameState.IDENTITY_MONTH):
+		var r := GameState.resolve_identity_1268()
+		if r.get("resolved", false):
+			monthly_notice.emit("【%s】%s" % [r["title"], r["text"]])
+	for n in GameState.pending_news():
+		GameState.mark_news_seen(n.get("id", ""))
+		GameState.apply_news_flag(n)
+		var speaker: String = str(n.get("speaker", ""))
+		var prefix := "【酒馆传闻】" if speaker == "" else "【%s】" % speaker
+		monthly_notice.emit(prefix + GameState.news_text(n))
+
 
 ## 按文件头而非扩展名加载图片。
 ## assets 里有若干 .png 文件实际是 JPEG 内容（图片压缩后沿用了原文件名），
@@ -118,6 +196,14 @@ func get_scene_by_id(scene_id: String) -> Dictionary:
 
 
 # 按 id 查询发现物（航路复核、碑拓证据等）
+## 剧情 effects 里的 discovery 用中文名（"旧避风澳"），此处按 id 或 name 双向查
+func get_discovery_id_by_name(name_or_id: String) -> String:
+	for d in discoveries_data.get("discoveries", []):
+		if d.get("id") == name_or_id or d.get("name") == name_or_id:
+			return str(d.get("id", ""))
+	return ""
+
+
 func get_discovery_by_id(discovery_id: String) -> Dictionary:
 	for d in discoveries_data.get("discoveries", []):
 		if d.get("id") == discovery_id:
@@ -165,3 +251,14 @@ func unlocked_ports() -> Array:
 		if GameState.is_chapter_reached(p.get("unlock", "ch1")):
 			out.append(p)
 	return out
+
+
+# ══ 以下为本地 main 的新增函数，合并时因所在区块让位云端而被丢，按「本地纯新增保留」原样补回（2026-09-25） ══
+
+func get_news_by_id(news_id: String) -> Dictionary:
+	for n in news_data.get("news", []):
+		if n.get("id") == news_id:
+			return n
+	return {}
+
+

@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cwru3t1f12j50"
-valid=false
+uid="uid://b015ehmhqqo1l"
+path="res://.godot/imported/icon_guild.png-aa9b7948c570ffd1e1aee764f3458d48.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/icon_guild.png"
+dest_files=["res://.godot/imported/icon_guild.png-aa9b7948c570ffd1e1aee764f3458d48.ctex"]
 
 [params]
 

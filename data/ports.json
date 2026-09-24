@@ -38,6 +38,12 @@
         "japanese_sword": "consumer",
         "sable_fur": "consumer",
         "lacquerware": "consumer"
+      },
+      "war": {
+        "1276-11": "besieged",
+        "1276-12": "fallen",
+        "1277-02": "loyal",
+        "1277-04": "fallen"
       }
     },
     {
@@ -65,6 +71,12 @@
         "deer_hide": "normal",
         "fujian_porcelain": "normal",
         "aromatic_medicine": "consumer"
+      },
+      "war": {
+        "1276-11": "besieged",
+        "1276-12": "fallen",
+        "1277-02": "loyal",
+        "1277-04": "fallen"
       }
     },
     {
@@ -120,6 +132,10 @@
         "mother_of_pearl": "consumer",
         "japanese_fan": "consumer",
         "deer_hide": "consumer"
+      },
+      "war": {
+        "1276-05": "contested",
+        "1276-12": "fallen"
       }
     },
     {
@@ -155,6 +171,10 @@
         "aromatic_medicine": "consumer",
         "korean_paper": "consumer",
         "japanese_fan": "consumer"
+      },
+      "war": {
+        "1276-10": "besieged",
+        "1276-11": "fallen"
       }
     },
     {
@@ -184,6 +204,9 @@
         "ironware": "normal",
         "aromatic_medicine": "consumer",
         "japanese_copper": "consumer"
+      },
+      "war": {
+        "1277-01": "fallen"
       }
     },
     {
@@ -216,6 +239,9 @@
         "aromatic_medicine": "consumer",
         "pepper": "consumer",
         "deer_hide": "consumer"
+      },
+      "war": {
+        "1276-05": "fallen"
       }
     },
     {
@@ -316,6 +342,9 @@
         "korean_ginseng": "consumer",
         "sable_fur": "consumer",
         "mother_of_pearl": "consumer"
+      },
+      "war": {
+        "1276-01": "fallen"
       }
     },
     {
@@ -351,6 +380,9 @@
         "aromatic_medicine": "consumer",
         "song_coin": "consumer",
         "sappanwood": "consumer"
+      },
+      "war": {
+        "1273-05": "fallen"
       }
     },
     {
@@ -394,6 +426,10 @@
         "pepper": "consumer",
         "sappanwood": "consumer",
         "ivory": "consumer"
+      },
+      "war": {
+        "1274-10": "closed",
+        "1275-05": "loyal"
       }
     },
     {
@@ -432,6 +468,12 @@
         "ironware": "normal",
         "japanese_copper": "consumer",
         "placer_gold": "consumer"
+      },
+      "war": {
+        "1276-11": "besieged",
+        "1276-12": "fallen",
+        "1277-04": "loyal",
+        "1278-03": "fallen"
       }
     },
     {
@@ -463,6 +505,10 @@
         "tea": "consumer",
         "song_coin": "consumer",
         "grain": "consumer"
+      },
+      "war": {
+        "1274-10": "closed",
+        "1275-05": "loyal"
       }
     },
     {

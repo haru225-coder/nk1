@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://impactexplosion_node_123"]
+[gd_scene load_steps=2 format=3]
 
 [node name="ImpactExplosion" type="CPUParticles2D"]
 z_index = 20

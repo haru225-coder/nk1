@@ -56,8 +56,9 @@ const SEA_SELL_JITTER_MIN := 0.82
 const SEA_SELL_JITTER_MAX := 1.02
 
 enum CourseOrder { RUMB, OFFSHORE, COAST }
-## MUTINY 来自云端 7d9f（不进随机表）；SHOAL / LOST 来自云端 bed9 航法线。
-enum EventKind { NONE, CALM, CURRENT, STORM, PIRATE, MERCHANT, DISCOVERY, MUTINY, SHOAL, LOST }
+## MUTINY 来自云端 7d9f（不进随机表）；SHOAL / LOST 来自云端 bed9 航法线；
+## REQUISITION / YUAN_PATROL / REFUGEE 是本地 main 的战时三遭遇（Voyage._war_event）。
+enum EventKind { NONE, CALM, CURRENT, STORM, PIRATE, MERCHANT, DISCOVERY, MUTINY, SHOAL, LOST, REQUISITION, YUAN_PATROL, REFUGEE }
 
 
 func port_def(port_id: String) -> Dictionary:
@@ -545,6 +546,64 @@ func roll_day_event(_course_bearing: float, from_id: String = "", to_id: String 
 	return {"kind": EventKind.NONE}
 
 
+# ── 战时遭遇 ──────────────────────────────────────────
+
+## 按航段两端战况抽一次。返回空字典表示无战时事件，继续常规抽取。
+func _war_event(from_id: String, to_id: String) -> Dictionary:
+	if from_id == "" and to_id == "":
+		return {}
+	var now := "%04d-%02d" % [Calendar.year, Calendar.month]
+	var sf := Economy.war_status(from_id)
+	var st := Economy.war_status(to_id)
+	# 征船只在战火波及的宋土港口附近：有 war 表、非异国、尚未降元。澎湖—流求这种外海航段不征。
+	var song_side := _is_song_war_port(from_id, sf) or _is_song_war_port(to_id, st)
+	var yuan_side := (sf == "fallen") or (st == "fallen")
+	var war_zone := (sf in ["besieged", "fallen"]) or (st in ["besieged", "fallen"])
+
+	var r := randf()
+	if now >= YUAN_FROM and yuan_side and r < 0.06:
+		return _yuan_patrol_event()
+	r = randf()
+	if now >= YUAN_FROM and war_zone and r < 0.05:
+		return _refugee_event()
+	r = randf()
+	if now >= REQUISITION_FROM and song_side and r < 0.05:
+		return _requisition_event()
+	return {}
+
+
+func _is_song_war_port(pid: String, status: String) -> bool:
+	if pid == "" or pid in Crew.FOREIGN_PORTS:
+		return false
+	if not (status in ["loyal", "contested", "besieged"]):
+		return false
+	return not port_def(pid).get("war", {}).is_empty()
+
+
+func _requisition_event() -> Dictionary:
+	return {
+		"kind": EventKind.REQUISITION,
+		"title": "征船",
+		"text": "一条挂着官旗的哨船横过来，船头站着个穿绿袍的小官，手里是市舶司的文书。\n「朝廷用船。按册征调，船主自行报数。」他没看你，看的是你舱里的东西。",
+	}
+
+
+func _yuan_patrol_event() -> Dictionary:
+	return {
+		"kind": EventKind.YUAN_PATROL,
+		"title": "元军哨船",
+		"text": "两条船从雾里出来，帆上是你没见过的旗。船头的人用福建话喊：「大元巡海，落帆受检。」\n口音是泉州的。",
+	}
+
+
+func _refugee_event() -> Dictionary:
+	return {
+		"kind": EventKind.REFUGEE,
+		"title": "难民船",
+		"text": "一条超载的渔船在浪里打横，甲板上挤着老人和孩子，有人举着一件湿透的儒衫朝你挥。\n他们没有水了。",
+	}
+
+
 func _storm_event() -> Dictionary:
 	var severity := randf_range(0.3, 1.0)
 	# 每艘各吃这一份，再乘船数会把整场都堆到旗舰上。
@@ -829,3 +888,8 @@ func _good_name(good_id: String) -> String:
 		if g.get("id") == good_id:
 			return g.get("name", good_id)
 	return good_id
+
+
+# ══ 以下为本地 main 的新增函数，合并时因所在区块让位云端而被丢，按「本地纯新增保留」原样补回（2026-09-25） ══
+const REQUISITION_FROM := "1275-04"
+const YUAN_FROM := "1276-01"

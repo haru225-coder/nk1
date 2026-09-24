@@ -803,13 +803,17 @@ func _load_scene_inner(scene_id: String) -> void:
 		_setup_investigation_mode(scene_data)
 
 
-## 港口 → 背景图
+## 港口 → 背景图（2026-09-14 起 ports.json 十四港全部有专属图；check_assets.py 会查漏）
 const PORT_BG := {
 	"quanzhou": "bg_quanzhou_harbor.jpg",
 	"xinghua": "bg_xinghua_study.jpg",
 	"xinghua_harbor": "bg_xinghua_harbor.jpg",
 	"fuzhou": "bg_fuzhou_yamen.jpg",
-	"hakata": "bg_arab_mosque.jpg",
+	"zhangzhou": "bg_zhangzhou.jpg",
+	"wenzhou": "bg_wenzhou.jpg",
+	"mingzhou": "bg_mingzhou.jpg",
+	"jeju": "bg_jeju.jpg",
+	"hakata": "bg_hakata.jpg",
 	"ryukyu": "bg_reef_bay.jpg",
 	"penghu": "bg_reef_bay.jpg",
 	"kagoshima": "bg_beacon_tower.jpg",
@@ -831,9 +835,26 @@ const FACILITY_BG := {
 }
 
 
+## 兜底底图：任何背景文件缺失时都回落到它，不让画面黑屏
+const FALLBACK_BG := "bg_sea_route.jpg"
+
+## 结局名 → 结算底图。结局对话框弹出时换上，之后的终局港页也一直压着它——游戏已经结束了，
+## 港口不再是港口，是尾声。键必须与 GameState.finish() 收到的结局名一字不差。
+const ENDING_BG := {
+	"忠肃": "bg_end_temple.jpg",
+	"未归": "bg_end_siege.jpg",
+	"海上宋鬼": "bg_end_yashan.jpg",
+	"泉州蒲氏的船": "bg_end_pu.jpg",
+	"纲首": "bg_end_pu.jpg",
+	"岸上的根": "bg_end_root.jpg",
+}
+
+
 func _apply_background(type: String, loc: String) -> void:
-	var file := "bg_sea_route.jpg"
-	if type == "title":
+	var file := FALLBACK_BG
+	if GameState.is_ended() and ENDING_BG.has(GameState.ended):
+		file = ENDING_BG[GameState.ended]
+	elif type == "title":
 		file = "bg_world_map.jpg"
 	elif PORT_BG.has(loc):
 		file = PORT_BG[loc]
@@ -842,6 +863,10 @@ func _apply_background(type: String, loc: String) -> void:
 
 func _set_background_file(file_name: String) -> void:
 	var tex := GameManager.load_texture("res://assets/" + file_name)
+	if tex == null and file_name != FALLBACK_BG:
+		# bg_world_map.jpg 等尚未落地的资产：宁可显示通用航海图，也不留上一屏或黑底
+		push_warning("背景图缺失：%s，回落 %s" % [file_name, FALLBACK_BG])
+		tex = GameManager.load_texture("res://assets/" + FALLBACK_BG)
 	if tex != null:
 		background.texture = tex
 
@@ -953,6 +978,11 @@ func _setup_market(port_id: String) -> void:
 	body_text.text = "柜上只摆三样。要看别的，明日再来。"
 
 	_add_contract_panel(port_id)
+
+	if not Economy.is_market_open(port_id):
+		body_text.text += "\n\n牙行的门板上了闸。%s，城里只剩米价在动，没人敢开秤。" % Economy.war_label(port_id)
+		_add_leave_button(port_id)
+		return
 
 	var goods_ids: Array = Economy.goods_at(port_id)
 	if goods_ids.is_empty():
@@ -1471,6 +1501,8 @@ func _setup_yamen(port_id: String) -> void:
 	_slip_note(permit, "蒲氏关注度 %d　%s" % [GameState.pu_attention, _attention_desc()])
 
 	_setup_reporting()
+	# 本地 main：泉州对峙期（1276-77）征船名册三选一，非对峙期内部自行返回
+	_setup_quanzhou_standoff(port_id)
 	_setup_title_and_invest(port_id)
 
 	_end_benches()
@@ -1933,6 +1965,61 @@ func _on_buy_supplies(n: int, wp: int, gp: int) -> void:
 	load_scene(current_scene_id)
 
 
+# ── 玉湖陈宅（兴化住宅）────────────────────────────
+
+const CHEN_ZAN_STAKE := 3000
+const CHEN_ZAN_FROM_YEAR := 1270
+const CHEN_ZAN_MIN_FAME := 15
+
+## 本地 main 的兴化玉湖陈宅（1268 殿试前的乡土写入点、陈瓒船股）；云端 7f92 的通用「住处」在下面。
+## 合并时按云端为准保留通用住处，兴化一港改走陈宅（陈文龙的家在兴化玉湖）。
+func _setup_residence_chen(port_id: String) -> void:
+	scene_title.text = "%s・玉湖陈宅" % GameManager.get_port_name(port_id)
+	var mother := "母亲黄氏在隔壁厢房摇着织机，一声声像是催你动笔。" if Calendar.year < 1270 else "母亲黄氏的织机停了，她的手已经摇不动。她坐在织机旁边看你。"
+	body_text.text = "祠堂的灯还是二十年前那盏。%s\n案上压着一叠策论草稿，纸边微硬。" % mother
+
+	# 1268 殿试前：替族里跑事。这是「乡土」这条身份唯一的早期写入点。
+	if GameState.identity == "undecided":
+		var errand := Button.new()
+		errand.text = "替族里跑一趟事（费 6 日・30 钱，乡土 +3）"
+		errand.disabled = GameState.money < 30
+		errand.pressed.connect(func():
+			if not GameState.spend_money(30):
+				return
+			GameState.hometown_tendency += 3
+			GameManager.advance_days(6)
+			log_msg("修祠堂的木料、外姓那桩田讼、三房的婚事——都不是你的事，可族里只找得到你。")
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(errand)
+
+	if GameState.has_flag("chen_zan_stake"):
+		var l := Label.new()
+		l.text = "族叔陈瓒的船股一分，记在账上。他说过：「几时回，走哪条水，要先说。」"
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.add_theme_color_override("font_color", Color(0.65, 0.9, 0.7))
+		choices_container.add_child(l)
+	elif Calendar.year >= CHEN_ZAN_FROM_YEAR:
+		var b := Button.new()
+		if GameState.fame >= CHEN_ZAN_MIN_FAME:
+			b.text = "族叔陈瓒愿入船股一分（得 %d 钱，乡土 +5）" % CHEN_ZAN_STAKE
+			b.pressed.connect(func():
+				GameState.add_money(CHEN_ZAN_STAKE)
+				GameState.hometown_tendency += 5
+				GameState.set_flag("chen_zan_stake")
+				GameState.add_ledger_note("陈瓒船股一分")
+				log_msg("陈瓒把三千钱推过案来，没数。「要多少、走哪条水、几时回——这三句先说清，钱就是你的。」")
+				load_scene(current_scene_id)
+			)
+		else:
+			b.text = "族叔陈瓒——「名声不到 %d，钱不能给你」" % CHEN_ZAN_MIN_FAME
+			b.disabled = true
+		choices_container.add_child(b)
+
+	choices_label.visible = true
+	_add_leave_button(port_id)
+
+
 # ── 酒馆 ────────────────────────────────────────────
 
 func _setup_tavern(port_id: String) -> void:
@@ -2128,6 +2215,9 @@ func _on_exam_copy(_port_id: String) -> void:
 
 ## 住宅：看边记、便宜歇息。候风仍去旅店——下处等不到风向。
 func _setup_residence(port_id: String) -> void:
+	if port_id == "xinghua":
+		_setup_residence_chen(port_id)
+		return
 	scene_title.text = "%s・住处" % GameManager.get_port_name(port_id)
 	body_text.text = "租来的下处。比旅店便宜，听不见风信。"
 	_begin_benches()
@@ -2468,8 +2558,17 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 	investigation_mode.visible = false
 	npc_mode.visible = false
 	port_mode.visible = true
+	# 本地 main 的终局线入口：终局后港口页 / 兴化守城页（函数在文件末尾补回段）
+	if GameState.is_ended():
+		_setup_ended_port()
+		return
+	if _siege_active():
+		_setup_siege_port()
+		return
 	port_title.text = str(scene_data.get("title", "未知港口"))
-	_shore_facilities = scene_data.get("facilities", [])
+	var shore_list: Array = scene_data.get("facilities", []).duplicate()
+	shore_list.append_array(_special_cards())
+	_shore_facilities = shore_list
 	_refresh_shore()
 	update_status_panel()
 
@@ -2685,6 +2784,9 @@ func _on_shore_wait() -> void:
 
 
 func _on_set_sail() -> void:
+	if GameState.is_ended():
+		log_msg("【此局已终】%s。船不再出港了。" % GameState.ended)
+		return
 	if not Fleet.can_sail():
 		var bad := Fleet.crew_shortfall()
 		if bad.is_empty():
@@ -2825,11 +2927,38 @@ func _on_load_slot(slot: int) -> void:
 func _on_enter_port(port_id: String) -> void:
 	if GameManager.get_port_by_id(port_id).is_empty():
 		return
+	if _check_absent_from_xinghua():
+		return
 	GameState.visit_port(port_id)
 	var res := GameState.try_advance_chapter()
 	if res.get("advanced", false) or res.get("resolved", false):
 		_show_chapter_dialog(res)
 	update_status_panel()
+
+
+## 「数年后」：把这一段的行为结成几行，再加上跳年的代价。
+## 这是全作唯一一处让玩家看见「时间过去了」的地方——不能只写一句「三年后」。
+func _era_summary_lines(years: int) -> Array:
+	var lines := []
+	var trips: int = GameState.era_trips
+	var route: String = GameState.era_main_route()
+	if trips > 0:
+		if route != "":
+			lines.append("这%s，你的船跑了 %d 趟，走得最多的是%s。" % [
+				"几年" if years > 0 else "一段日子", trips, route,
+			])
+		else:
+			lines.append("这%s，你的船跑了 %d 趟。" % ["几年" if years > 0 else "一段日子", trips])
+	if GameState.merchant_credit >= 20:
+		lines.append("牙行里提起你的名字，不必再加「泉州那个姓陈的」。")
+	elif GameState.merchant_credit <= -10:
+		lines.append("有几家牙行不再接你的单子，理由都说得很客气。")
+	if not Crew.hired.is_empty():
+		var names := []
+		for c in Crew.roster():
+			names.append(str(c.get("name", "")))
+		lines.append("还在船上的：%s。" % "、".join(names))
+	return lines
 
 
 func _show_chapter_dialog(res: Dictionary) -> void:
@@ -2958,6 +3087,24 @@ func _cn_chapter(n: int) -> String:
 
 func _on_facility_pressed(fac: Dictionary) -> void:
 	var raw_id := str(fac.get("id", ""))
+	# 本地 main 的终局特殊卡（涵江 / 辞呈 / 崖山 / 纲首 / 守城 siege_*）不走「今日只开三处」，先分发
+	if GameState.is_ended():
+		return
+	if raw_id == CARD_HANJIANG:
+		_on_hanjiang_escape()
+		return
+	if raw_id == CARD_RESIGN:
+		_on_resign_1275()
+		return
+	if raw_id == CARD_YASHAN:
+		_on_yashan()
+		return
+	if raw_id == CARD_GANGSHOU:
+		_on_gangshou_end()
+		return
+	if raw_id.begins_with("siege_"):
+		_on_siege_card(raw_id)
+		return
 	if raw_id.begins_with("city_") and raw_id not in shore_hand:
 		log_msg("今日这处没开门。")
 		update_status_panel()
@@ -3261,3 +3408,917 @@ func _debug_preview_ending() -> void:
 	else:
 		log_msg("预览了结未触发。")
 	update_status_panel()
+
+
+# ══ 以下为本地 main 的新增函数，合并时因所在区块让位云端而被丢，按「本地纯新增保留」原样补回（2026-09-25） ══
+const CARD_HANJIANG := "special_hanjiang_escape"
+const CARD_SIEGE_MUSTER := "siege_muster"      # 衙门・募兵 / 石手军
+const CARD_SIEGE_GRAIN := "siege_grain"        # 市场・屯粮
+const CARD_SIEGE_WALL := "siege_wall"          # 船厂・修城墙
+const CARD_SIEGE_ENVOY := "siege_envoy"        # 酒馆・使者
+const CARD_SIEGE_NANGSHAN := "siege_nangshan"  # 囊山设伏
+const CARD_SIEGE_NUNNERY := "siege_nunnery"    # 福州尼寺（不可操作）
+const CARD_RESIGN := "special_resign_1275"
+const CARD_YASHAN := "special_yashan"
+const CARD_GANGSHOU := "special_gangshou_end"
+
+
+func _add_save_button() -> void:
+	var btn = Button.new()
+	btn.text = "航海日志"
+	btn.custom_minimum_size = Vector2(250, 44)
+	btn.pressed.connect(_show_save_dialog)
+	right_facilities.add_child(btn)
+
+
+
+func _check_absent_from_xinghua() -> bool:
+	if GameState.is_ended() or not GameState.has_flag("renamed_wenlong"):
+		return false
+	if GameState.siege_open() or GameState.has_flag("siege_fought"):
+		return false
+	# 按日期判，不按当前战况：1277-02/03 陈瓒复城时兴化会回 loyal，
+	# 若看当前战况，士人线玩家在那两个月入港就躲过了这个结局。城破发生过就是发生过。
+	if not (Calendar.year > 1276 or (Calendar.year == 1276 and Calendar.month >= 12)):
+		return false
+
+	_show_notice_dialog(
+		"未归", "兴化・景炎元年十二月",
+		"消息是在别处听到的。
+
+兴化城破了。城中兵不满千，守了四十天。城头上挂过一幅白布，八个字，来往的人都说见过。
+部将林华出去侦敌，回来时后面跟着一万人。通判曹澄孙开的东门。
+
+母亲黄氏和幼子璥被扣在福州一座尼寺里。有人说，只要城里那个人肯出来，当天就放。
+城里那个人没有出来——因为城里没有那个人。
+
+你姓陈，名文龙，字君贲，咸淳四年殿试第一，御笔改的名。这些年你走的是另一条路。
+史书上后来写：是年，兴化陷，守臣不知所终。
+
+——
+一百多年后，福州台江，泗洲。江边没有庙。
+渔民出海前拜妈祖，只拜妈祖。官船出洋，二号封舟空着。
+
+这个世界少了一位海神。也没有多出几条回来的船。",
+		"未归"
+	)
+	return true
+
+
+## 终局后的港口页：不出海、不交易、不推进时间，只回顾与读档。
+
+func _make_facility_card(fac: Dictionary) -> Control:
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(280, 90)
+
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.1, 0.1, 0.6)
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = Color(0.3, 0.3, 0.3, 0.5)
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_right = 6
+	style.corner_radius_bottom_left = 6
+	card.add_theme_stylebox_override("panel", style)
+
+	var hbox = HBoxContainer.new()
+	card.add_child(hbox)
+
+	var icon_id = fac.get("id", "").replace("city_", "")
+	var icon_path = "res://assets/icon_" + icon_id + ".png"
+	var tex_rect = TextureRect.new()
+	tex_rect.custom_minimum_size = Vector2(80, 80)
+	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+
+	var icon_tex := GameManager.load_texture(icon_path)
+	if icon_tex != null:
+		tex_rect.texture = icon_tex
+
+	var icon_margin = MarginContainer.new()
+	icon_margin.add_theme_constant_override("margin_left", 5)
+	icon_margin.add_theme_constant_override("margin_right", 5)
+	icon_margin.add_child(tex_rect)
+	hbox.add_child(icon_margin)
+
+	var vbox = VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(vbox)
+
+	var title_lbl = Label.new()
+	title_lbl.text = fac.get("title", "无名之处")
+	title_lbl.add_theme_font_size_override("font_size", 22)
+	vbox.add_child(title_lbl)
+
+	var sub_lbl = Label.new()
+	sub_lbl.text = fac.get("subtitle", "")
+	sub_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	sub_lbl.add_theme_font_size_override("font_size", 14)
+	vbox.add_child(sub_lbl)
+
+	var btn = Button.new()
+	btn.flat = true
+	btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	btn.pressed.connect(_on_facility_pressed.bind(fac))
+	btn.mouse_entered.connect(func(): style.bg_color = Color(0.25, 0.25, 0.3, 0.8))
+	btn.mouse_exited.connect(func(): style.bg_color = Color(0.1, 0.1, 0.1, 0.6))
+	card.add_child(btn)
+
+	return card
+
+
+
+func _on_gangshou_end() -> void:
+	var pu := GameState.has_flag("sided_pu")
+	var head := "泉州・至元二十二年"
+	var text := ""
+	if pu:
+		text = "市舶司的册子换了封面。你的名字还在，「纲首」两字旁边加了一个蒙古官名，你不认得。
+蒲家的账房说，明年起船去占城不用再走暗关了——「都是一家人」。
+
+"
+	else:
+		text = "市舶司的册子换了封面。你的名字还在，只是排在很后面。
+那些当年站错队的，名字已经不在册上了。你还在。
+
+"
+	text += "你活到了至元二十年代。泉州比从前更大，港里有波斯人、大食人、高丽人，还有从前不敢来的北方人。
+有一年你雇的一个兴化水手在船上说：他们村口有一座小祠，供一个叫陈瓒的。
+你问，有没有一个叫陈文龙的。
+他说没听过。
+
+——
+一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。
+这个世界少了一位海神，多了几条回来的船。"
+	_show_notice_dialog("纲首" if not pu else "泉州蒲氏的船", head, text, "泉州蒲氏的船" if pu else "纲首")
+
+
+
+
+
+## 「岸上的根」：陈瓒守城，你带族人出海。第一章那次复核在二十二年后变现。
+
+func _on_hanjiang_escape() -> void:
+	if Fleet.supply_days() < 7:
+		log_msg("【水粮不足】四条船的人，至少要撑七日。先去船屋补齐。")
+		update_status_panel()
+		return
+	GameManager.advance_days(7)
+	GameState.set_flag("ending_root_sea")
+	GameState.fame += 10
+	GameState.hometown_tendency += 10
+	GameState.add_ledger_note("北礁可泊")
+	var stake_line := "陈瓒没有上船。他说他姓陈，在这里出生，就死在这里。" if GameState.has_flag("chen_zan_stake") else "陈瓒没有上船。"
+	_show_notice_dialog(
+		"岸上的根",
+		"旧避风澳・景炎三年三月",
+		"四条船。族里能走的都在船上，老夫人也在，她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经进城了。海上没有人追。你看水色。北礁可泊。二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
+			"子龙", stake_line, "子龙",
+		],
+		"岸上的根"
+	)
+
+
+## 通用结算对话框（章节晋升以外的历史节点与结局用）。
+## ending 非空则落定终局：关掉对话框后港口页只剩回顾札记。
+
+func _on_resign_1275() -> void:
+	_enter_panel_mode()
+	_set_background_file("bg_linan.jpg")  # 1275 冬临安：终局抉择节点专属底图
+	scene_title.text = "临安・嘉会门"
+	body_text.text = "辞呈是三天前批的。批语只有两个字：「依奏。」
+车出嘉会门时是卯时，守门的兵在跺脚取暖。车里放着一只书箧，箧里是十三年前那本夹着货引的《论语》。
+
+车过江头。钱塘江的水是灰的，和兴化海口一个颜色。车夫问：过了江往南，走陆路还是走海路？"
+
+	var again := Button.new()
+	again.text = "回头。再上一疏求还。"
+	again.pressed.connect(func():
+		GameState.set_flag("petitioned_return")
+		GameState.scholar_tendency += 4
+		GameState.add_ledger_note("复上疏不报")
+		GameManager.advance_days(7)
+		_show_notice_dialog("出国门而悔", "钱塘江畔",
+			"你在江边客店里写了一夜。天亮时奏疏送进城去。
+等了六天。没有回音。第七天，客店掌柜小心地问你还住不住。
+你付了钱，上了去明州的船。奏疏后来有没有人拆过，你一辈子不知道。")
+	)
+	choices_container.add_child(again)
+
+	var quiet := Button.new()
+	quiet.text = "不回头。走海路回兴化。"
+	quiet.pressed.connect(func():
+		GameState.set_flag("quiet_return")
+		GameState.set_flag("no_official_title")
+		GameState.sea_tendency += 2
+		GameState.hometown_tendency += 4
+		GameManager.advance_days(11)
+		_show_notice_dialog("不回头", "海上十一日",
+			"船在明州换了一次，在温州又换了一次。海上十一天，你大部分时候在看水色。
+二十年前阿那教过你怎么看，你以为早忘了。
+没忘。")
+	)
+	choices_container.add_child(quiet)
+
+	var defect := Button.new()
+	defect.text = "车转向南，去泉州找林阿舶（清算士人三锚）"
+	defect.disabled = GameState.money < 500
+	defect.tooltip_text = "县学籍册、名流举荐信、宗祠联名担保——撕这三张纸要钱，也要名声。"
+	defect.pressed.connect(func():
+		if not GameState.spend_money(500):
+			return
+		GameState.set_flag("late_defection")
+		GameState.fame -= 10
+		GameState.sea_tendency += 6
+		GameState.identity = "merchant"
+		GameState.merchant_credit += 10
+		GameState.add_ledger_note("一铺之地")
+		GameManager.advance_days(9)
+		_show_notice_dialog("一铺之地", "泉州・城南账房",
+			"泉州。二十年。
+码头比你记得的大了一倍，桅杆密得像一片死掉的林子。你问林阿舶的账房在哪，被问的人看了看你的官袍，指了指城南。
+
+账房里坐着的不是林阿舶。是一个和你差不多年纪的人，算盘打得比林阿舶还快。他抬头：「陈大人？林老爹去年走了。他说过要是有个姓陈的读书人来，账上给留了一铺之地。」
+
+他推过来一张纸。上面是二十年前你叔父那笔债的余数——早清了，用红笔划掉的。红笔底下另起一行：「陈子龙，船股一分。」
+
+你还叫陈文龙。可这张纸上写的是另一个名字。")
+	)
+	choices_container.add_child(defect)
+
+	choices_label.visible = true
+	_add_leave_button(current_scene_id)
+
+
+## 崖山：把粮与硫黄交上去，然后砍断自己的缆。
+
+func _on_siege_card(card_id: String) -> void:
+	match card_id:
+		CARD_SIEGE_MUSTER:
+			_siege_muster()
+		CARD_SIEGE_GRAIN:
+			_siege_buy_grain()
+		CARD_SIEGE_WALL:
+			_siege_repair_wall()
+		CARD_SIEGE_ENVOY:
+			_siege_envoy()
+		CARD_SIEGE_NANGSHAN:
+			_siege_nangshan()
+		CARD_SIEGE_NUNNERY:
+			_show_notice_dialog(
+				"福州尼寺", "你什么也做不了",
+				"母亲黄氏和幼子璥被扣在福州一座尼寺里。
+城里有人说，只要开门，当天就放回来。
+
+你在城头上站了很久。这件事没有选项。"
+			)
+
+
+
+func _on_yashan() -> void:
+	_enter_panel_mode()
+	scene_title.text = "崖山外海"
+	var known_here := GameState.has_flag("sided_zhang")
+	body_text.text = "祥兴二年二月。张世杰的船连成一片，船和船之间用铁索。
+陈瓒的船不在——他回兴化了，听说起了兵，要把兴化夺回来。
+"
+	if known_here:
+		body_text.text += "书吏翻册子翻到一半停住了：「泉州借船的那位。少保记着。」
+他没有再问你叫什么。"
+	else:
+		body_text.text += "一个书吏在册子上记你的名字。他问：「哪个陈？」"
+
+	var join := Button.new()
+	join.text = "把粮与硫黄交上去，船留在外围"
+	join.pressed.connect(func():
+		GameState.fame += 12
+		GameState.merchant_credit -= 30
+		GameManager.advance_days(5)
+		# 泉州借过船的，崖山有人替你留了外围的位置——砍缆的门槛低一截
+		var speed_ok := Fleet.fleet_speed() > (70.0 if known_here else 90.0)
+		var tail := ""
+		if speed_ok and known_here:
+			tail = "有人在铁索那头替你留了一道口子。你砍断自己的缆，从那道口子出去。
+阿那要是还活着，会告诉你这时候该往哪边走。你自己看了水色。往南。"
+		elif speed_ok:
+			tail = "你砍断了自己的缆。阿那要是还活着，会告诉你这时候该往哪边走。你自己看了水色。往南。"
+		else:
+			tail = "你砍缆砍晚了。火从上风头卷过来，烧了半条船。人捞上来一半。往南走的时候，船比来时轻得多。"
+		if not speed_ok:
+			Fleet.damage_fleet(60.0)
+			Fleet.lose_cargo_ratio(0.5)
+		_show_notice_dialog("海上宋鬼", "崖山・祥兴二年二月",
+			"战到午后，铁索连着的船开始烧。
+%s
+
+——
+一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。
+这个世界少了一位海神，多了几条回来的船。" % tail,
+			"海上宋鬼")
+	)
+	choices_container.add_child(join)
+
+	var pass_by := Button.new()
+	pass_by.text = "不上前。远远看着，掉头往南"
+	pass_by.pressed.connect(func():
+		GameState.fame -= 6
+		Fleet.morale = maxi(0, Fleet.morale - 10)
+		GameState.add_ledger_note("崖山外海掉头")
+		GameManager.advance_days(3)
+		log_msg("你在十里外看着那片火。水手们没有说话。掉头往南的时候，风是顺的。")
+		load_scene(current_scene_id)
+	)
+	choices_container.add_child(pass_by)
+
+	choices_label.visible = true
+	_add_leave_button(current_scene_id)
+
+
+## 海商线收官：至元年间，泉州更大了。
+
+func _resign_decided() -> bool:
+	return GameState.has_flag("petitioned_return") \
+		or GameState.has_flag("quiet_return") \
+		or GameState.has_flag("late_defection")
+
+
+## 1275 年十二月：辞呈已批，出了嘉会门又后悔。三条路，用航向选，不用按钮选。
+
+func _setup_ended_port() -> void:
+	port_title.text = "%s・%s" % [port_title.text, GameState.ended]
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(560, 260)
+	var m := MarginContainer.new()
+	m.add_theme_constant_override("margin_left", 16)
+	m.add_theme_constant_override("margin_right", 16)
+	m.add_theme_constant_override("margin_top", 12)
+	m.add_theme_constant_override("margin_bottom", 12)
+	panel.add_child(m)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 6)
+	m.add_child(v)
+
+	var head := Label.new()
+	head.text = "航海札记"
+	head.add_theme_font_size_override("font_size", 22)
+	v.add_child(head)
+
+	for line in GameState.epilogue_lines():
+		var l := Label.new()
+		l.text = line
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size = Vector2(520, 0)
+		l.add_theme_font_size_override("font_size", 14)
+		v.add_child(l)
+
+	left_facilities.add_child(panel)
+
+	if GameState.ended_text != "":
+		var review := Button.new()
+		review.text = "重读结局"
+		review.custom_minimum_size = Vector2(250, 44)
+		review.pressed.connect(func():
+			_show_notice_dialog(GameState.ended, GameState.ended_at, GameState.ended_text)
+		)
+		right_facilities.add_child(review)
+
+	_add_save_button()
+
+
+
+func _setup_quanzhou_standoff(port_id: String) -> void:
+	if port_id != "quanzhou" or Economy.war_status("quanzhou") != "contested":
+		return
+	if GameState.has_flag("sided_zhang") or GameState.has_flag("sided_pu") or GameState.has_flag("fled_quanzhou"):
+		return
+
+	var sep := Label.new()
+	sep.text = "── 征船名册 ──"
+	sep.add_theme_font_size_override("font_size", 13)
+	choices_container.add_child(sep)
+
+	var info := Label.new()
+	var who: String = GameState.player_name if GameState.has_flag("renamed_wenlong") else "陈纲首"
+	info.text = "牙行门口钉着一张纸，第四行是你的船。小吏低声说：「%s。张少保要船，蒲提举说泉州的船蒲家说了算。您站哪边？」" % who
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.add_theme_color_override("font_color", Color(1.0, 0.85, 0.6))
+	choices_container.add_child(info)
+
+	var zhang := Button.new()
+	if Fleet.ships.size() > 1:
+		zhang.text = "船借张世杰——编出最小一条船（名声 +8，海商信用 −15）"
+	else:
+		zhang.text = "船借张世杰——只此一条，出人出粮（名声 +8，海商信用 −15，水粮减半）"
+	zhang.pressed.connect(func():
+		if Fleet.ships.size() > 1:
+			var idx := 0
+			for i in range(Fleet.ships.size()):
+				if Fleet.ship_capacity(i) < Fleet.ship_capacity(idx):
+					idx = i
+			var sname: String = Fleet.ships[idx].get("name", "一船")
+			Fleet.ships.remove_at(idx)
+			log_msg("「%s」挂了宋旗，编进张少保的船队。蒲家的人在码头上看着，没说话。" % sname)
+		else:
+			Fleet.water = Fleet.water / 2
+			Fleet.food = Fleet.food / 2
+			log_msg("船没给，人和粮给了一半。蒲家的人在码头上看着，没说话。")
+		GameState.fame += 8
+		GameState.merchant_credit -= 15
+		GameState.pu_attention = 0
+		GameState.set_flag("sided_zhang")
+		GameState.add_ledger_note("借船张世杰")
+		load_scene(current_scene_id)
+	)
+	choices_container.add_child(zhang)
+
+	var pu := Button.new()
+	pu.text = "跟蒲家——泉州抽解永久八折（海商信用 +10，名声 −8）"
+	pu.pressed.connect(func():
+		GameState.merchant_credit += 10
+		GameState.fame -= 8
+		GameState.set_flag("sided_pu")
+		GameState.add_ledger_note("蒲家账房的茶")
+		log_msg("蒲家的账房请你喝了茶。茶很好。他说泉州不会有事，「提举心里有数」。你问有数是什么数。他笑，没答。")
+		load_scene(current_scene_id)
+	)
+	choices_container.add_child(pu)
+
+	var flee := Button.new()
+	flee.text = "今夜出港，谁也不给——泉州对你封港至降元"
+	flee.pressed.connect(func():
+		GameState.set_flag("fled_quanzhou")
+		GameState.ban_port("quanzhou", "1276-11")
+		GameState.add_ledger_note("澎湖避祸")
+		log_msg("夜潮。港外张世杰的船队像一座漂着的城。没有人拦你——他们不知道你是谁，这时候这是好事。泉州的门，年内不要再敲。")
+		load_scene(current_scene_id)
+	)
+	choices_container.add_child(flee)
+
+
+## 港口页特殊卡：只在特定年月与旗标下出现。
+
+func _setup_siege_port() -> void:
+	port_title.text = "兴化军・围城　第 %d/%d 阵" % [
+		GameState.siege_get("round"), GameState.SIEGE_ROUNDS_MAX,
+	]
+
+	var stat := PanelContainer.new()
+	var m := MarginContainer.new()
+	m.add_theme_constant_override("margin_left", 14)
+	m.add_theme_constant_override("margin_right", 14)
+	m.add_theme_constant_override("margin_top", 10)
+	m.add_theme_constant_override("margin_bottom", 10)
+	stat.add_child(m)
+	var v := VBoxContainer.new()
+	m.add_child(v)
+	var head := Label.new()
+	head.text = "城头白布八字：生为宋臣，死为宋鬼"
+	head.add_theme_font_size_override("font_size", 18)
+	head.add_theme_color_override("font_color", Color(0.95, 0.9, 0.75))
+	v.add_child(head)
+	var body := Label.new()
+	var grain: int = GameState.siege_get("grain")
+	var rounds_left: int = grain / GameState.SIEGE_GRAIN_PER_ROUND
+	body.text = "兵 %d / 上限 %d　粮 %d（够打 %d 阵）　城墙 %d/%d　士气 %d%s" % [
+		GameState.siege_get("troops"), GameState.siege_troop_cap(),
+		grain, rounds_left, GameState.siege_get("wall"), GameState.SIEGE_WALL_MAX,
+		GameState.siege_get("morale"),
+		"　石手军在城" if str(GameState.siege.get("shishou", "")) == "kept" else "",
+	]
+	body.add_theme_font_size_override("font_size", 14)
+	v.add_child(body)
+
+	if rounds_left < 1:
+		var warn := Label.new()
+		warn.text = "⚠ 粮已不够打下一阵。此时出战即城破。"
+		warn.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4))
+		warn.add_theme_font_size_override("font_size", 14)
+		v.add_child(warn)
+	elif rounds_left == 1 and GameState.siege_get("round") < GameState.SIEGE_ROUNDS_MAX - 1:
+		var warn2 := Label.new()
+		warn2.text = "⚠ 粮只够再打一阵。要守满三阵，还得屯粮。"
+		warn2.add_theme_color_override("font_color", Color(1.0, 0.8, 0.45))
+		warn2.add_theme_font_size_override("font_size", 14)
+		v.add_child(warn2)
+
+	left_facilities.add_child(stat)
+
+	for fac in _siege_cards():
+		var card := _make_facility_card(fac)
+		right_facilities.add_child(card)
+
+	_add_save_button()
+
+
+
+func _show_notice_dialog(title: String, head: String, text: String, ending: String = "") -> void:
+	if ending != "":
+		GameState.finish(ending, text)
+		if ENDING_BG.has(ending):
+			_set_background_file(ENDING_BG[ending])  # 结算画面：台词压在结局图上
+	# 云端 7f92 起主场景不再弹系统对话框；本地 main 的终局通知改走同一张居中册页（ChapterSheet），
+	# 「记下这一纲」后回到当前场景（终局后港口页由 _setup_ended_port 接管）。
+	var shown_head := head if title == "" else "%s　%s" % [title, head]
+	_show_chapter_dialog({"title": shown_head, "text": text, "resolved": true, "scene": ""})
+
+
+## 上报发现：航中勘见的东西要回衙门报了才换得赏格与名声
+
+func _siege_active() -> bool:
+	if not (current_scene_id in ["xinghua", "xinghua_harbor"]):
+		return false
+	if not GameState.has_flag("renamed_wenlong"):
+		return false
+	if Economy.war_status("xinghua") != "besieged":
+		return false
+	GameState.siege_begin()
+	return true
+
+
+
+func _siege_buy_grain() -> void:
+	_enter_panel_mode()
+	scene_title.text = "兴化・市场"
+	body_text.text = "牙行闭着，只有米在动。价一天一个样。
+粮就是守城的日子：每打一阵，耗粮 %d。" % GameState.SIEGE_GRAIN_PER_ROUND
+
+	# 围城米价：随已打轮次上涨
+	var unit: int = 12 + GameState.siege_get("round") * 8
+	for n in [40, 120]:
+		var cost: int = n * unit
+		var b := Button.new()
+		b.text = "屯粮 %d（%d 钱・每石 %d）" % [n, cost, unit]
+		b.disabled = GameState.money < cost
+		b.pressed.connect(func():
+			if GameState.spend_money(cost):
+				GameState.siege_add("grain", n)
+				log_msg("买进粮 %d。米价一天一个样，明日只会更贵。" % n)
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(b)
+
+	choices_label.visible = true
+	_add_leave_button("xinghua")
+
+
+
+func _siege_cards() -> Array:
+	var out := []
+	out.append({"id": CARD_SIEGE_MUSTER, "title": "衙门", "subtitle": "募兵・石手军"})
+	out.append({"id": CARD_SIEGE_GRAIN, "title": "市场", "subtitle": "屯粮（粮即守城日）"})
+	out.append({"id": CARD_SIEGE_WALL, "title": "船屋", "subtitle": "把修船的料改修城墙"})
+	if not (GameState.siege.get("envoy_wang", false) and GameState.siege.get("envoy_kin", false)):
+		out.append({"id": CARD_SIEGE_ENVOY, "title": "酒馆", "subtitle": "城下有使者求见"})
+	var short_of_grain: bool = GameState.siege_get("grain") < GameState.SIEGE_GRAIN_PER_ROUND
+	out.append({
+		"id": CARD_SIEGE_NANGSHAN, "title": "囊山",
+		"subtitle": "粮尽・出战即城破" if short_of_grain else "设伏迎敌（第 %d 阵）" % (GameState.siege_get("round") + 1),
+	})
+	out.append({"id": CARD_SIEGE_NUNNERY, "title": "福州尼寺", "subtitle": "母亲与璥儿在那里"})
+	return out
+
+
+
+func _siege_envoy() -> void:
+	_enter_panel_mode()
+	scene_title.text = "兴化・城下使者"
+
+	if not GameState.siege.get("envoy_wang", false):
+		body_text.text = "福州知军王刚中派了两个使者来，带着一封劝降书。正使在城下念。念到第三句时，你让人开了城门。"
+		var kill := Button.new()
+		kill.text = "斩正使，放副使回去，带一封信给王刚中"
+		kill.pressed.connect(func():
+			GameState.siege_set("envoy_wang", true)
+			GameState.siege_add("morale", 10)
+			GameState.fame += 5
+			GameState.add_ledger_note("斩王刚中使")
+			log_msg("信只有一句：「世强、刚中负国，文龙不负。」副使走的时候没敢回头。")
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(kill)
+		var keep := Button.new()
+		keep.text = "收下书信，不回话"
+		keep.pressed.connect(func():
+			GameState.siege_set("envoy_wang", true)
+			GameState.siege_add("morale", -8)
+			GameState.scholar_tendency -= 3
+			GameState.set_flag("hesitated_once")
+			log_msg("书信放在案上三天。第三天你把它烧了。城里有人看见你收信，也有人看见你烧信。两种人都在。")
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(keep)
+	elif not GameState.siege.get("envoy_kin", false):
+		body_text.text = "第二封劝降书是你的姻家送来的。他跪在城下，说福州那边答应了：只要你出城，老夫人和璥儿当天放回。
+城头上有人在看你。"
+		var burn := Button.new()
+		burn.text = "焚书，斩使"
+		burn.pressed.connect(func():
+			GameState.siege_set("envoy_kin", true)
+			GameState.siege_add("morale", 12)
+			GameState.fame += 8
+			GameState.hometown_tendency -= 5
+			GameState.add_ledger_note("焚姻家书")
+			log_msg("火盆里那封信烧得很快。城头上没有人说话。")
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(burn)
+		var spare := Button.new()
+		spare.text = "焚书，放他走"
+		spare.pressed.connect(func():
+			GameState.siege_set("envoy_kin", true)
+			GameState.siege_add("morale", 6)
+			GameState.fame += 4
+			GameState.add_ledger_note("焚姻家书")
+			log_msg("信烧了，人放了。他走出三十步又回头看了一眼，你没有再看他。")
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(spare)
+	else:
+		body_text.text = "城下没有人了。"
+
+	choices_label.visible = true
+	_add_leave_button("xinghua")
+
+
+## 囊山设伏：数值判定，最多三阵。粮尽或三阵毕即城破。
+
+func _siege_fall(reason: String) -> void:
+	var betrayal := ""
+	if GameState.has_flag("cao_opened"):
+		betrayal = "通判曹澄孙开了东门。"
+	elif GameState.has_flag("lin_hua_reminded"):
+		betrayal = "林华出去两天。第三天早上他回来了，后面跟着一万人。他在城下抬头看了你一眼，很快低下去。那个结松了。"
+	else:
+		betrayal = "林华出去两天。第三天早上他回来了，后面跟着一万人。"
+
+	var text := "%s（%s）
+城破的时候你在城楼上。白布还挂着。
+
+他们没有动手，把你和家人押去了福州。董文炳的军帐里点着很多灯。他们让你跪，你不跪。有人来扯你的胳膊，有人骂，有人试着往你脸上打。
+
+你用手指着自己的肚子：「此皆节义文章也。可相逼邪？」
+
+从兴化出来那天起，你就没有吃东西。合沙渡口，你要了纸笔——
+
+斗垒孤危势不支，书生守志定难移。
+自经沟渎非吾事，臣死封疆是此时。
+须信累囚堪衅鼓，未闻烈士竖降旗。
+一门百指沦胥尽，唯有丹衷天地知。
+
+杭州是正月到的。你说想去一个地方，他们允了。西湖边，岳飞的庙，庙门前的石阶有二十几级。你走到第十几级的时候，腿停了。
+不是跌倒。是坐下来，然后靠着石阶。
+
+福州的尼寺里，老夫人听完杭州的消息，很久没有说话。然后说：「吾与吾儿同死，又何恨哉。」
+寺里的人后来说：有斯母，宜有是儿。
+
+——
+一百多年后，福州台江，泗洲。江边起了一座庙，匾上四个字：水部尚书。
+渔民不知道尚书是什么官。他们只知道出海前拜一拜，海上会平安。
+官船出洋，头号船请妈祖，二号船请尚书公。
+
+供在里面的那个人，一辈子没出过海。" % [betrayal, reason]
+
+	GameState.siege = {}
+	_show_notice_dialog("忠肃", "兴化・景炎元年十二月", text, "忠肃")
+
+
+## 士人线错过守城：1276 年兴化陷落时你不在城里。
+## 这不是漏判，是这一局的答案——所以它必须有结局，而不是让陈文龙继续跑商到老。
+
+func _siege_lin_hua() -> void:
+	_enter_panel_mode()
+	scene_title.text = "兴化・城头"
+	var known := "lin_hua" in GameState.crew_history
+	body_text.text = "部将林华上来请命：「大人，元兵在江口。我带五十人出去看看虚实。」"
+	if known:
+		body_text.text += "
+
+你认得这张脸。二十年前他在林阿舶的船上系过缆，缆绳系得很好。"
+
+	if known:
+		var remind := Button.new()
+		remind.text = "「你的缆绳系得好。你系的结，从来不松。」让他去"
+		remind.pressed.connect(func():
+			GameState.siege_set("lin_hua_sent", true)
+			GameState.siege_add("morale", 5)
+			GameState.set_flag("lin_hua_reminded")
+			log_msg("他愣了一下，说大人还记得。城里人看见你认得出一个水手的名字，士气 +5。")
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(remind)
+
+	var go := Button.new()
+	go.text = "让他去"
+	go.pressed.connect(func():
+		GameState.siege_set("lin_hua_sent", true)
+		log_msg("林华带着五十人出了北门。")
+		load_scene(current_scene_id)
+	)
+	choices_container.add_child(go)
+
+	var stay := Button.new()
+	stay.text = "不去。关城门，谁也不出"
+	stay.pressed.connect(func():
+		GameState.siege_set("lin_hua_sent", true)
+		GameState.siege_add("grain", -30)
+		GameState.set_flag("cao_opened")
+		log_msg("城门关了七天。第八天夜里，通判曹澄孙开了东门。他后来说，是城里的人求他开的。这话可能是真的。")
+		load_scene(current_scene_id)
+	)
+	choices_container.add_child(stay)
+
+	choices_label.visible = true
+	_add_leave_button("xinghua")
+
+
+## 城破 → 甲线结局「忠肃」
+
+func _siege_muster() -> void:
+	_enter_panel_mode()
+	scene_title.text = "兴化・衙门"
+	body_text.text = "案上摊着户籍。能拿动东西的都登了记，登完还是不满千。"
+
+	var cap := GameState.siege_troop_cap()
+	var room := cap - GameState.siege_get("troops")
+	if room > 0:
+		for n in [50, 200]:
+			var take: int = mini(n, room)
+			if take <= 0:
+				continue
+			var cost: int = take * GameState.SIEGE_TROOP_COST
+			var b := Button.new()
+			b.text = "募兵 %d 人（%d 钱）" % [take, cost]
+			b.disabled = GameState.money < cost
+			b.pressed.connect(func():
+				if GameState.spend_money(cost):
+					GameState.siege_add("troops", take)
+					log_msg("募得 %d 人。倾家所有，招的是义兵，不是官军。" % take)
+				load_scene(current_scene_id)
+			)
+			choices_container.add_child(b)
+	else:
+		var l := Label.new()
+		l.text = "名声所及，能招的都招了。城中兵不满千。"
+		choices_container.add_child(l)
+
+	# 石手军一次性抉择
+	if str(GameState.siege.get("shishou", "")) == "":
+		var sep := Label.new()
+		sep.text = "── 石手军 ──"
+		sep.add_theme_font_size_override("font_size", 13)
+		choices_container.add_child(sep)
+		var info := Label.new()
+		info.text = "两百个能把石头掷中人头的乡兵站在木兰陂上。朝廷议者说「不足用」，把他们裁了。他们说：不是反朝廷，是朝廷不要我们。"
+		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		info.add_theme_color_override("font_color", Color(1.0, 0.85, 0.6))
+		choices_container.add_child(info)
+
+		var keep := Button.new()
+		keep.text = "重编石手军，归你麾下（兵 +200，囊山战力 ×1.5）"
+		keep.pressed.connect(func():
+			GameState.siege_set("shishou", "kept")
+			GameState.siege_add("troops", 200)
+			GameState.siege_add("morale", 8)
+			GameState.hometown_tendency += 5
+			log_msg("他们把石头放下了，没有走。以后五个月，城头上多了两百个不领饷的人。")
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(keep)
+
+		var disband := Button.new()
+		disband.text = "按律解散，不追究"
+		disband.pressed.connect(func():
+			GameState.siege_set("shishou", "disbanded")
+			GameState.scholar_tendency += 2
+			log_msg("他们把石头放下了，走了。有些人后来在囊山又出现过一次，不是站在你这边。")
+			load_scene(current_scene_id)
+		)
+		choices_container.add_child(disband)
+
+	choices_label.visible = true
+	_add_leave_button("xinghua")
+
+
+
+func _siege_nangshan() -> void:
+	if GameState.siege_get("grain") < GameState.SIEGE_GRAIN_PER_ROUND:
+		_siege_fall("粮尽")
+		return
+
+	var rd := GameState.siege_get("round") + 1
+
+	# 第三阵前的林华事件
+	if rd == GameState.SIEGE_ROUNDS_MAX and not GameState.siege.get("lin_hua_sent", false):
+		_siege_lin_hua()
+		return
+
+	GameState.siege_set("round", rd)
+	GameState.set_flag("siege_fought")
+	GameState.siege_add("grain", -GameState.SIEGE_GRAIN_PER_ROUND)
+
+	var power := GameState.siege_power()
+	var enemy := randf_range(600.0, 1400.0) * (1.0 + 0.25 * (rd - 1))
+	var won := power >= enemy
+
+	var txt := ""
+	if won:
+		GameState.siege_add("morale", 8)
+		GameState.fame += 4
+		var killed: int = int(GameState.siege_get("troops") * 0.08)
+		GameState.siege_add("troops", -killed)
+		txt = "山道两边全是石头。%s元兵退了。
+城里有人开始说：也许能守。
+
+折损 %d 人。" % [
+			"石手军在山上，石头落下去的时候不用弓。" if str(GameState.siege.get("shishou", "")) == "kept" else "",
+			killed,
+		]
+	else:
+		GameState.siege_add("morale", -12)
+		var killed2: int = int(GameState.siege_get("troops") * 0.22)
+		GameState.siege_add("troops", -killed2)
+		GameState.siege_add("wall", -20)
+		txt = "伏没设成。元兵从背面上了山脊，石头砸下去砸的是自己人。
+退回城里的时候少了 %d 人。" % killed2
+
+	if GameState.siege_get("round") >= GameState.SIEGE_ROUNDS_MAX:
+		_show_notice_dialog("囊山・第 %d 阵" % rd, "囊山" if won else "囊山失利", txt + "
+
+粮快尽了。这是最后一阵。")
+		_siege_fall("三阵毕")
+		return
+
+	_show_notice_dialog("囊山・第 %d 阵" % rd, "囊山" if won else "囊山失利", txt)
+
+
+## 部将林华请出侦。史实不变——他仍然降。
+
+func _siege_repair_wall() -> void:
+	_enter_panel_mode()
+	scene_title.text = "兴化・船屋"
+	body_text.text = "船料还剩一些。修船是为了走，修墙是为了不走。"
+
+	var room: int = GameState.siege_wall_room()
+	if room <= 0:
+		var done := Label.new()
+		done.text = "城墙已加到 %d——再堆料也无非是墙。守城守的是人。" % GameState.SIEGE_WALL_MAX
+		done.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		done.add_theme_color_override("font_color", Color(0.7, 0.75, 0.7))
+		choices_container.add_child(done)
+	else:
+		for n in [20, 60]:
+			var add: int = mini(n, room)
+			if add <= 0:
+				continue
+			var cost: int = add * 15
+			var b := Button.new()
+			b.text = "加固城墙　加 %d（%d 钱・上限 %d）" % [add, cost, GameState.SIEGE_WALL_MAX]
+			b.disabled = GameState.money < cost
+			b.pressed.connect(func():
+				if GameState.spend_money(cost):
+					GameState.siege_add("wall", add)
+					log_msg("把修船的料改了修墙。木匠没问为什么。")
+				load_scene(current_scene_id)
+			)
+			choices_container.add_child(b)
+
+	choices_label.visible = true
+	_add_leave_button("xinghua")
+
+
+## 两封劝降书，各一次
+
+func _special_cards() -> Array:
+	var out := []
+	# 涵江海口 → 旧避风澳：1277 年二三月陈瓒复兴化的那四十天，且第一章复核过旧泊地
+	if current_scene_id in ["xinghua", "xinghua_harbor"] \
+			and Calendar.year == 1277 and Calendar.month in [2, 3] \
+			and Economy.war_status("xinghua") == "loyal" \
+			and not GameState.has_flag("renamed_wenlong") \
+			and GameState.has_found("nameless_shelter_bay") \
+			and not GameState.has_flag("ending_root_sea"):
+		out.append({"id": CARD_HANJIANG, "title": "涵江海口", "subtitle": "带族人走旧避风澳"})
+
+	# 士人线：辞呈已批，出不出国门（1275-12 起，未决则一直挂着）
+	if GameState.has_flag("vice_councillor") and not _resign_decided():
+		out.append({"id": CARD_RESIGN, "title": "临安・辞呈批语", "subtitle": "依奏。车已备在门外"})
+
+	# 海商线：崖山（1279 正月至三月，须在广州）
+	if current_scene_id == "guangzhou" and GameState.identity == "merchant" \
+			and Calendar.year == 1279 and Calendar.month <= 3:
+		out.append({"id": CARD_YASHAN, "title": "崖山", "subtitle": "宋军的船连成一片"})
+
+	# 海商线收官：1285 年后，一局跑到底（乡土线同样收在这里）
+	if GameState.identity != "scholar" and Calendar.year >= 1285:
+		out.append({"id": CARD_GANGSHOU, "title": "市舶司・新册", "subtitle": "封面换了，名字还在"})
+
+	return out
+
+
+

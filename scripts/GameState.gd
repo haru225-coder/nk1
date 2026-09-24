@@ -2,6 +2,48 @@ extends Node
 ## 玩家身份状态：钱、名声、章节、旗标、市舶司关系。
 ## 船与货已迁往 Fleet，时间迁往 Calendar，行情迁往 Economy。
 
+## 主角姓名。开局「陈子龙」；1268 年殿试结算若走士人线则改「陈文龙」。UI 一律读此字段，不写死。
+var player_name: String = "陈子龙"
+
+## 身份倾向。序章与剧情 effects 写入（sea_tendency / scholar_tendency）。
+## hometown_tendency 由 Main 直接累加：玉湖陈宅跑腿 +3、涵江/木兰陂等乡土场景 +4~10（见 Main.gd 各 `hometown_tendency +=`）。
+## sea_tendency / scholar_tendency 声明在下方云端账本字段块。
+var hometown_tendency: int = 0
+
+## 1268 殿试结算后锁定：undecided | scholar | merchant | hometown
+var identity: String = "undecided"
+const IDENTITY_YEAR := 1268
+const IDENTITY_MONTH := 4
+
+## 本章内的行为累计。章节晋升时结成「数年后」摘要，然后清零。
+## 记的是「这几年你在做什么」，不是分数。
+var era_trips: int = 0
+var era_routes: Dictionary = {}   # {"泉州→博多": 次数}
+var era_profit: int = 0
+
+## 已投放过的酒馆新闻 id（news.json）
+var news_seen: Array = []
+
+## 曾雇用过的具名水手 id（含已辞退）。终局「林华」伏笔靠它。
+var crew_history: Array = []
+
+## 海商信用与人脉（merchant_credit / network）声明在下方云端账本字段块；终局泉州站队（终局系统化 §六）读 merchant_credit。
+## 账目备注 / 货损记录（札记）ledger_notes 声明在下方云端账本字段块。不可折算为钱的后果，只记不算。
+## 对玩家个人封闭的港口 {port_id: "YYYY-MM"}（到该月为止不可入）。泉州对峙期连夜出港即触发。
+var port_bans: Dictionary = {}
+
+## 守城（甲线・兴化 1276-11~12）。空字典 = 未开城防。
+## 兵/粮/城墙/士气/已打轮次；粮尽或三轮打完即城破。
+var siege: Dictionary = {}
+
+## 终局。空串 = 未结束；否则为结局名（忠肃 / 纲首 / 海上宋鬼 / 岸上的根 / 泉州蒲氏的船）。
+## 一旦落定，港口页只剩回顾札记：沙盒不再继续，但存档仍可读回结局前。
+var ended: String = ""
+## 结局达成时的日期与地点，供札记显示
+var ended_at: String = ""
+## 结局正文，供札记页回看
+var ended_text: String = ""
+
 var money: int = 1000
 var fame: int = 0
 ## 主角武力（陈子龙）。白刃战判定输入之一；打赢海盗、夺船等会成长。
@@ -147,6 +189,32 @@ func report_discovery(did: String) -> Dictionary:
 		"promoted": fame_res.get("promoted", false),
 		"title": fame_res.get("title", {}),
 	}
+
+
+## 记一趟航行（SeaChart 抵港时调用）。跳年摘要的原料。
+func record_trip(from_id: String, to_id: String) -> void:
+	era_trips += 1
+	if from_id == "" or to_id == "":
+		return
+	var key := "%s→%s" % [GameManager.get_port_name(from_id), GameManager.get_port_name(to_id)]
+	era_routes[key] = int(era_routes.get(key, 0)) + 1
+
+
+## 本段跑得最多的一条线
+func era_main_route() -> String:
+	var best := ""
+	var best_n := 0
+	for k in era_routes.keys():
+		if int(era_routes[k]) > best_n:
+			best_n = int(era_routes[k])
+			best = str(k)
+	return best
+
+
+func clear_era() -> void:
+	era_trips = 0
+	era_routes = {}
+	era_profit = 0
 
 
 func visit_port(port_id: String) -> void:
@@ -296,6 +364,218 @@ func try_resolve_ending() -> Dictionary:
 	}
 
 
+# ── 身份 ──────────────────────────────────────────────
+
+## 新闻/短札取哪一版文案：S（士人）或 M（海商）。1268 前按倾向，之后按锁定身份。
+func news_variant() -> String:
+	match identity:
+		"scholar":
+			return "S"
+		"merchant", "hometown":
+			return "M"
+	return "S" if scholar_tendency >= sea_tendency else "M"
+
+
+## 1268 年四月殿试结算，只结一次。返回 {resolved, title, text}。
+## 打平按开局第一选择破平（chose_land_first → 士人），再平则海商。
+func resolve_identity_1268() -> Dictionary:
+	if identity != "undecided":
+		return {"resolved": false}
+	# 乡土压过两头：不赴太学补试，也不下海，人留在兴化。名不改，根在岸上。
+	if hometown_tendency > scholar_tendency and hometown_tendency > sea_tendency:
+		identity = "hometown"
+		set_flag("name_unchanged")
+		return {
+			"resolved": true,
+			"title": "咸淳四年 · 无人登第",
+			"text": "族里来信只有一行：今年殿试，兴化无人登第。\n你这些年跑的是族里的事，不是自己的前程。老夫人把策论草稿收进了箧底，没有说什么。",
+		}
+
+	var scholar_wins := scholar_tendency > sea_tendency
+	if scholar_tendency == sea_tendency:
+		scholar_wins = has_flag("chose_land_first")
+	if scholar_wins:
+		identity = "scholar"
+		player_name = "陈文龙"
+		set_flag("renamed_wenlong")
+		return {
+			"resolved": true,
+			"title": "咸淳四年 · 唱第",
+			"text": "临安来信：唱第日，御笔易名。你叫陈文龙了，赐字君贲。",
+		}
+	identity = "merchant"
+	set_flag("name_unchanged")
+	return {
+		"resolved": true,
+		"title": "咸淳四年 · 无人登第",
+		"text": "族里来信只有一行：今年殿试，兴化无人登第。老夫人把策论草稿收进了箧底。",
+	}
+
+
+## 尚未投放、且日期已到的新闻，按日期升序。
+func pending_news() -> Array:
+	var today := "%04d-%02d" % [Calendar.year, Calendar.month]
+	var out := []
+	for n in GameManager.news_data.get("news", []):
+		var nid: String = n.get("id", "")
+		if nid == "" or nid in news_seen:
+			continue
+		if str(n.get("date", "9999-99")) > today:
+			continue
+		# only: 只发给特定身份的短札（士人线的朝廷文书，海商线永远收不到）
+		var only := str(n.get("only", ""))
+		if only != "" and only != identity:
+			continue
+		out.append(n)
+	out.sort_custom(func(a, b): return str(a.get("date", "")) < str(b.get("date", "")))
+	return out
+
+
+## 取一条新闻在当前身份下的文案
+func news_text(n: Dictionary) -> String:
+	var key := "text_" + news_variant()
+	var t: String = str(n[key]) if n.has(key) else str(n.get("text", ""))
+	# {target_name}：蒲寿庚那句话点的名。世上有陈文龙就点他；没有就点陈瓒。
+	var target := player_name if has_flag("renamed_wenlong") else "兴化陈瓒"
+	return t.replace("{target_name}", target).replace("{player_name}", player_name)
+
+
+## 投放时写入旗标（news.json 的可选 flag 字段）
+func apply_news_flag(n: Dictionary) -> void:
+	var f := str(n.get("flag", ""))
+	if f != "":
+		set_flag(f)
+
+
+func mark_news_seen(nid: String) -> void:
+	if nid != "" and not (nid in news_seen):
+		news_seen.append(nid)
+
+
+## 最近投放过的 k 条新闻（酒馆墙上贴的），新的在前
+func recent_news(k: int = 3) -> Array:
+	var out := []
+	for i in range(news_seen.size() - 1, -1, -1):
+		var n := GameManager.get_news_by_id(news_seen[i])
+		if not n.is_empty():
+			out.append(n)
+		if out.size() >= k:
+			break
+	return out
+
+
+func ban_port(port_id: String, until_ym: String) -> void:
+	port_bans[port_id] = until_ym
+
+
+func is_port_banned(port_id: String) -> bool:
+	if not port_bans.has(port_id):
+		return false
+	var now := "%04d-%02d" % [Calendar.year, Calendar.month]
+	if now > str(port_bans[port_id]):
+		port_bans.erase(port_id)
+		return false
+	return true
+
+
+# ── 守城 ──────────────────────────────────────────────
+
+const SIEGE_ROUNDS_MAX := 3
+## 城墙上限。没有它，1276 年的富商可以直接用钱把守城买穿——
+## 名声、石手军、斩使焚书全部失效（tools/simulate_endgame.py 实测三阵全胜率 100%）。
+## 守城要由「有多少人肯跟你」决定，不由账上有多少钱决定。
+const SIEGE_WALL_MAX := 200
+const SIEGE_TROOP_COST := 10
+const SIEGE_GRAIN_PER_ROUND := 40
+
+func siege_open() -> bool:
+	return not siege.is_empty()
+
+
+func siege_begin() -> void:
+	if not siege.is_empty():
+		return
+	siege = {
+		"troops": 300, "grain": 120, "wall": 60, "morale": 55,
+		"round": 0, "shishou": "", "envoy_wang": false, "envoy_kin": false,
+		"lin_hua_sent": false,
+	}
+
+
+func siege_get(key: String, dflt: int = 0) -> int:
+	return int(siege.get(key, dflt))
+
+
+func siege_set(key: String, val) -> void:
+	if siege.is_empty():
+		return
+	siege[key] = val
+
+
+func siege_add(key: String, delta: int) -> void:
+	if siege.is_empty():
+		return
+	siege[key] = maxi(0, int(siege.get(key, 0)) + delta)
+
+
+## 募兵上限随名声：城中兵不满千是史实，名声高才募得动人
+func siege_troop_cap() -> int:
+	return mini(1000, 300 + fame * 12)
+
+
+## 城墙尚可加固的余量
+func siege_wall_room() -> int:
+	return maxi(0, SIEGE_WALL_MAX - siege_get("wall"))
+
+
+## 我方战力：兵 × 士气 × 石手军加成，城墙作底
+func siege_power() -> float:
+	var t := float(siege_get("troops"))
+	var m := float(siege_get("morale")) / 100.0
+	var shishou := 1.5 if str(siege.get("shishou", "")) == "kept" else 1.0
+	return (t * m * shishou) + float(siege_get("wall")) * 2.0
+
+
+func is_ended() -> bool:
+	return ended != ""
+
+
+## 落定终局。重复调用只认第一次——历史只走一遍。
+func finish(ending_name: String, text: String = "") -> bool:
+	if ended != "":
+		return false
+	ended = ending_name
+	ended_text = text
+	ended_at = "%s・%s" % [Calendar.get_date_string(), GameManager.get_port_name(last_port)]
+	set_flag("game_ended")
+	return true
+
+
+## 终局札记：把这一局做过的事收成几行，给结局屏与港口页复用
+func epilogue_lines() -> Array:
+	var out := []
+	out.append("姓名：%s" % player_name)
+	out.append("身份：%s" % {
+		"scholar": "士人", "merchant": "海商", "hometown": "乡土",
+	}.get(identity, "未定"))
+	out.append("终局：%s（%s）" % [ended, ended_at])
+	out.append("本钱峰值 %d 钱・名声 %d・海商信用 %d" % [peak_money, fame, merchant_credit])
+	out.append("走通港口 %d 处・勘见 %d 处" % [visited_ports.size(), discoveries_found.size() + discoveries_reported.size()])
+	if not ledger_notes.is_empty():
+		out.append("札记：" + "、".join(ledger_notes))
+	return out
+
+
+func add_ledger_note(note: String) -> void:
+	if note != "" and not (note in ledger_notes):
+		ledger_notes.append(note)
+
+
+func record_crew(cand_id: String) -> void:
+	if cand_id != "" and not (cand_id in crew_history):
+		crew_history.append(cand_id)
+
+
 # ── 旗标 ──────────────────────────────────────────────
 
 func set_flag(flag_name: String) -> void:
@@ -338,10 +618,6 @@ func choice_visible(choice: Dictionary) -> bool:
 func scene_unlocked(scene_data: Dictionary) -> bool:
 	return flag_requirement_met(scene_data)
 
-
-func add_ledger_note(note: String) -> void:
-	if note != "" and not (note in ledger_notes):
-		ledger_notes.append(note)
 
 
 ## 当前港口可出现的一次性剧情追问（data/chapters.json 的 story_hooks）
@@ -458,10 +734,13 @@ func customs_inspection() -> Dictionary:
 	var result := {"passed": true, "msg": "", "confiscated": false}
 	var contraband := contraband_units()
 
+	# 降元港口缉私加严（Economy.WAR_INSPECTION）
+	var war_mul: float = Economy.inspection_factor(last_port)
+
 	if has_customs_permit:
 		if contraband > 0:
 			# 有引也压不住违禁货，只是查出的概率低一些
-			var risk := 0.25 + float(pu_attention) / 400.0
+			var risk := (0.25 + float(pu_attention) / 400.0) * war_mul
 			if randf() < risk:
 				result["passed"] = false
 				result["confiscated"] = true
@@ -480,7 +759,7 @@ func customs_inspection() -> Dictionary:
 		return result
 
 	# 无引
-	if pu_attention > 50:
+	if float(pu_attention) * war_mul > 50.0:
 		var fine: int = mini(500, maxi(50, int(money * 0.4)))
 		result["passed"] = false
 		result["confiscated"] = true
@@ -499,6 +778,11 @@ func customs_inspection() -> Dictionary:
 		result["passed"] = false
 		result["msg"] = "【遣返】没有货引，连塞给小吏的 %d 钱都拿不出。小吏毫不客气地把你轰回港内。" % bribe
 	return result
+
+
+## 元军哨船等港外查验也要没收违禁货，公开给 SeaChart 用
+func confiscate_contraband() -> void:
+	_confiscate_contraband()
 
 
 func _confiscate_contraband() -> void:

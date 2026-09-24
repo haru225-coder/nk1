@@ -13,11 +13,14 @@
       "next_requires": {
         "peak_money": 5000,
         "visited_count": 5,
-        "must_visit": ["ryukyu"],
+        "must_visit": [
+          "ryukyu"
+        ],
         "hint": "攒下五千钱本，走通近海五处港口，并亲自到南岛海道北口复核那处旧避风澳。"
       },
       "advance_title": "北路开",
-      "advance_text": "林阿舶把一只油布包推过案来，没有解绳。\n「唐房那边的旧账，总要有人去对。」他说这句时看的是窗外的桅林，不是你。\n\n阿那在海图上添了一道线，自南岛海道北口向东北，穿过一片什么也没标的海面。他用指节敲了敲纸面：「五月起西南风。那时候走，十来日能到。别的月份，别去试。」\n\n【明州、耽罗、博多唐房 已可抵达】\n【广船、海鹘 已可购置】"
+      "advance_text": "林阿舶把一只油布包推过案来，没有解绳。\n「唐房那边的旧账，总要有人去对。」他说这句时看的是窗外的桅林，不是你。\n\n阿那在海图上添了一道线，自南岛海道北口向东北，穿过一片什么也没标的海面。他用指节敲了敲纸面：「五月起西南风。那时候走，十来日能到。别的月份，别去试。」\n\n【明州、耽罗、博多唐房 已可抵达】\n【广船、海鹘 已可购置】",
+      "advance_years": 2
     },
     {
       "id": 2,
@@ -26,7 +29,9 @@
       "next_requires": {
         "peak_money": 20000,
         "visited_count": 9,
-        "must_visit": ["hakata"],
+        "must_visit": [
+          "hakata"
+        ],
         "hint": "本钱积至两万，走通九处港口，并亲赴博多唐房对清那笔旧账。"
       },
       "advance_title": "南海路",
@@ -40,7 +45,9 @@
       "next_requires": {
         "peak_money": 60000,
         "visited_count": 12,
-        "must_visit": ["guangzhou"],
+        "must_visit": [
+          "guangzhou"
+        ],
         "hint": "本钱积至六万，走通十二处港口，并在广州蕃坊立稳脚跟。"
       },
       "advance_title": "远洋",
