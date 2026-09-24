@@ -3,6 +3,7 @@
   "scenes": [
     {
       "id": "cg_title",
+      "type": "title",
       "chapter": "prologue",
       "title": "",
       "location": "xinghua_harbor",
@@ -20,6 +21,7 @@
     },
     {
       "id": "cg_world_north",
+      "type": "title",
       "chapter": "prologue",
       "title": "",
       "location": "xinghua_harbor",
@@ -37,6 +39,7 @@
     },
     {
       "id": "cg_world_east",
+      "type": "title",
       "chapter": "prologue",
       "title": "",
       "location": "xinghua_harbor",
@@ -54,6 +57,7 @@
     },
     {
       "id": "cg_world_south",
+      "type": "title",
       "chapter": "prologue",
       "title": "",
       "location": "xinghua_harbor",
@@ -71,6 +75,7 @@
     },
     {
       "id": "cg_world_west",
+      "type": "title",
       "chapter": "prologue",
       "title": "",
       "location": "xinghua_harbor",

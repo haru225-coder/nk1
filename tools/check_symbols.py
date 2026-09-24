@@ -1832,6 +1832,49 @@ if battle_at >= 0 and ret_at > battle_at and (clear_at < 0 or clear_at > ret_at)
 else:
     print("  ✗ 战斗沉没仍先清空货舱")
     problems.append("战斗沉没先清空货舱")
+print("九之三、审计硬伤回归（进港 / 旅店 / 发现一日 / 沉船货舱）（云端 c148）")
+print("=" * 68)
+
+main_src = open(os.path.join(ROOT, "scripts/Main.gd"), encoding="utf-8").read()
+fac_m = re.search(r'^func _on_facility_pressed\(.*?(?=^func )', main_src, re.M | re.S)
+fac_body = fac_m.group(0) if fac_m else ""
+# 主干把改写名单收成常量 REMAPPED_FACILITIES；函数体引用常量、常量里含 city_inn 即算改写
+_remap_m = re.search(r'REMAPPED_FACILITIES\s*:?=\s*\[([^\]]+)\]', main_src, re.S)
+_remap_has_inn = _remap_m is not None and '"city_inn"' in _remap_m.group(1) and "REMAPPED_FACILITIES" in fac_body
+if ('"city_inn"' in fac_body or _remap_has_inn) and "trim_prefix(\"city_\")" in fac_body:
+    print("  ✓ 旅店 city_inn 随当前港口改写")
+else:
+    print("  ✗ 旅店 city_inn 未进设施改写，离开会落到港口 id「city」")
+    problems.append("city_inn 未改写")
+
+seachart_src_full = open(os.path.join(ROOT, "scripts/SeaChart.gd"), encoding="utf-8").read()
+inv_m = re.search(r'^func _on_investigate_discovery\(\) -> void:.*?(?=^func )',
+                  seachart_src_full, re.M | re.S)
+inv_body = inv_m.group(0) if inv_m else ""
+inv_code = "\n".join(re.sub(r'#.*$', '', ln) for ln in inv_body.split("\n"))
+if inv_code.count("advance_days") == 1 and "_sail_next_day" not in inv_code and "_on_event_continue()" not in inv_code:
+    print("  ✓ 发现调查只 advance_days 一次，不在同一次点击里续航")
+else:
+    print("  ✗ 发现调查仍会叠日（advance_days 与 _sail_next_day 同一次点击）")
+    problems.append("发现调查叠日")
+
+ship_src_full = open(os.path.join(ROOT, "scripts/Ship.gd"), encoding="utf-8").read()
+sink_m = re.search(r'^func _sink_ship\(\) -> void:.*?(?=^func |\Z)', ship_src_full, re.M | re.S)
+sink_body = sink_m.group(0) if sink_m else ""
+battle_ret = sink_body.find("_battle_player_sunk")
+clear_at = sink_body.find("Fleet.clear_cargo()")
+if battle_ret != -1 and (clear_at == -1 or clear_at > battle_ret):
+    print("  ✓ 战斗沉船先交给败局结算，不先清空全队货舱")
+else:
+    print("  ✗ Ship._sink_ship 仍在战斗结算前 clear_cargo")
+    problems.append("战斗沉船先清货舱")
+
+fleet_src = open(os.path.join(ROOT, "scripts/core/Fleet.gd"), encoding="utf-8").read()
+if re.search(r'^func clear_ship_cargo\b', fleet_src, re.M) and "clear_ship_cargo" in seachart_src_full:
+    print("  ✓ 旗舰沉没只清该船货舱（clear_ship_cargo）")
+else:
+    print("  ✗ 败局未走 clear_ship_cargo")
+    problems.append("败局未走 clear_ship_cargo")
 
 print()
 print("=" * 68)

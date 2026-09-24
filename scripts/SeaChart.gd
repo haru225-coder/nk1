@@ -1867,9 +1867,17 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 		_log(_ink(UiTheme.MOSS, "击退海盗，夺得财货 %d 钱。战损 %d。%s" % [spoil, int(dmg), promo]))
 	elif outcome == "lose":
 		Fleet.morale = maxi(0, Fleet.morale - 12)
-		# 全队耐久归零时随后走 _sink()：货与船一起没，不再套 25% 文案。（云端 be04）
-		if Fleet.total_durability() <= 0.0:
-			_log(_ink(UiTheme.CINNABAR, "旗舰沉没。船体受损 %d。" % int(dmg)))
+		# WorldMap 只在旗舰沉没时发 lose。先按该船货舱全损记账，
+		# 不要写成「部分」——护航船还在则只清旗舰，全队耐久归零再由沉没结算收尾。（云端 c148）
+		if bool(data.get("sunk", false)) or Fleet.total_durability() <= 0.0:
+			var lost := Fleet.clear_ship_cargo(0)
+			var lost_str := ""
+			for gid in lost.keys():
+				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
+			if Fleet.total_durability() <= 0.0:
+				_log(_ink(UiTheme.CINNABAR, "旗舰沉没，货舱随船没了。%s船体受损 %d。" % [lost_str, int(dmg)]))
+			else:
+				_log(_ink(UiTheme.CINNABAR, "旗舰沉没，该船货物随船没了。%s其余船只还在。船体受损 %d。" % [lost_str, int(dmg)]))
 		else:
 			var lost := Fleet.lose_cargo_ratio(0.25)
 			var lost_str := ""
@@ -1949,22 +1957,23 @@ func _after_combat() -> void:
 # ── 发现物 ──────────────────────────────────────────
 
 func _on_investigate_discovery() -> void:
-	# 「费 1 日」只推进这一日，里程不减。下一日由玩家再点「继续航行」，
-	# 避免同一次点击里再进 _sail_next_day，水粮和日历被扣两天。（云端 be04）
+	# 按钮写「费 1 日」。这一日只扣水粮和历法，船不往前。
+	# 续航交给下一次点击，避免同一次点击里再进 _sail_next_day 叠成两日。（云端 be04/c148）
 	GameManager.advance_days(1)
 	days_elapsed += 1
 	var did: String = pending_event.get("discovery_id", "")
 	var d := GameManager.get_discovery_by_id(did)
-	var msg := "绕过去看了一圈，与册上所记并无出入。"
+	var note := ""
 	if GameState.record_discovery(did):
-		msg = "近岸细看，果然是%s。记入册子——回港上报市舶司，当有赏格。" % d.get("name", "旧泊地")
-		_log(_ink(UiTheme.MOSS, msg))
+		note = "近岸细看，果然是%s。记入册子——回港上报市舶司，当有赏格。" % d.get("name", "旧泊地")
+		_log(_ink(UiTheme.MOSS, note))
 	else:
-		_log(msg)
-	pending_event = {}
+		note = "绕过去看了一圈，与册上所记并无出入。"
+		_log(note)
 	_refresh_status()
+	pending_event = {}
 	event_title.text = "第 %d 日・近岸" % days_elapsed
-	event_text.text = msg
+	event_text.text = note + "\n\n这一日水粮照耗，船没有往前挪。"
 	for c in event_actions.get_children():
 		c.queue_free()
 	_add_event_action("继续航行", _on_event_continue)

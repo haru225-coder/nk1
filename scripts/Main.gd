@@ -746,7 +746,9 @@ func load_scene(scene_id: String) -> void:
 		load_scene(fallback)
 		return
 	if scene_data.is_empty():
-		# scenes.json 只为少数港口写了剧情场景；其余按 ports.json 生成通用港口界面
+		# scenes.json 只为少数港口写了剧情场景；其余按 ports.json 生成通用港口界面。
+		# 流求、博多的正文不占用港口 id（ryukyu_story / hakata_story），
+		# 否则海图回港进剧情、不记 visited_ports，牙行也进不去。
 		var pdef := GameManager.get_port_by_id(scene_id)
 		if not pdef.is_empty():
 			GameState.last_port = scene_id
@@ -2196,7 +2198,12 @@ func _setup_title_mode(scene_data: Dictionary) -> void:
 	title_mode.visible = true
 
 	main_title.text = scene_data.get("cg_title", "东亚海域立志传")
+	# 长标题与分段副标题按宽换行居中（云端 c148）；字号仍由 Main.tscn / 绢本主题定，不在此覆盖。
+	main_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	main_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub_title.text = _unescape_scene_text(str(scene_data.get("cg_sub", "")))
+	sub_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sub_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	if title_button_connected:
 		for c in start_button.pressed.get_connections():
@@ -2726,6 +2733,7 @@ func _on_facility_pressed(fac: Dictionary) -> void:
 	):
 		load_scene(target_scene)
 		return
+	# 旅店 city_inn 与牙行一样在 REMAPPED_FACILITIES 里，随当前港口改写（云端 be04/c148）。
 	if target_scene in REMAPPED_FACILITIES:
 		target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")
 		load_scene(target_scene)
