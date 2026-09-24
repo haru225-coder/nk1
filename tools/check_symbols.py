@@ -1875,6 +1875,70 @@ if re.search(r'^func clear_ship_cargo\b', fleet_src, re.M) and "clear_ship_cargo
 else:
     print("  ✗ 败局未走 clear_ship_cargo")
     problems.append("败局未走 clear_ship_cargo")
+print("九之四、进港与结算回归（审计硬伤）（云端 00b4）")
+print("=" * 68)
+print("  海图回港、旅店、发现计日、沉船货损。改数据或结算顺序时这里会红。")
+
+def _code_only(src):
+    return "\n".join(re.sub(r'#.*$', '', ln) for ln in src.split("\n"))
+
+fac = _code_only(func_bodies(main_src).get("_on_facility_pressed", ""))
+# 主干把改写名单收成常量 REMAPPED_FACILITIES（含 city_inn）
+if ('"city_inn"' in fac or ("REMAPPED_FACILITIES" in fac and _remap_has_inn)) and "trim_prefix(\"city_\")" in fac:
+    print("  ✓ 旅店 city_inn 随当前港口改写，离开键不会落到 id=city")
+else:
+    print("  ✗ 旅店未按当前港口改写")
+    problems.append("city_inn 未改写成当前港口")
+
+title_body = _code_only(func_bodies(main_src).get("_setup_title_mode", ""))
+# 主干把 \A 解码收进 _unescape_scene_text
+if "cg_title" in title_body and "cg_sub" in title_body and ("\\\\A" in title_body or "_unescape_scene_text(" in title_body):
+    print("  ✓ 标题模式读 cg_title/cg_sub，并把 \\\\A 换成换行")
+else:
+    print("  ✗ 标题模式未读卷首正文或未把 \\\\A 换成换行")
+    problems.append("标题模式未展示 cg 正文")
+
+inv = _code_only(func_bodies(seachart_src).get("_on_investigate_discovery", ""))
+# 取 be04/c148 语义：调查日只 advance_days 一次、不在同一次点击里直接续航（00b4 原版要求不调 advance_days）
+if inv.count("advance_days") != 1:
+    print("  ✗ 发现调查应恰好 advance_days 一次（现 %d 次）" % inv.count("advance_days"))
+    problems.append("发现调查计日次数不对")
+elif "_sail_next_day(" in inv or "_on_event_continue()" in inv:
+    print("  ✗ 发现调查在同一次点击里直接续航，会与调查日叠成两日")
+    problems.append("发现调查双计日")
+elif "_on_event_continue" not in inv:
+    print("  ✗ 发现调查没有回到航行循环（缺「继续航行」回调）")
+    problems.append("发现调查未续航")
+else:
+    print("  ✓ 发现调查只计一日，续航交给下一次点击")
+
+sink = func_bodies(ship_src).get("_sink_ship", "")
+sink_code = _code_only(sink)
+cut = sink_code.find("_battle_player_sunk")
+if cut < 0:
+    print("  ✗ Ship._sink_ship 未把战斗沉没交回 WorldMap")
+    problems.append("战斗沉没未交回结算")
+elif "clear_cargo" in sink_code[:cut]:
+    print("  ✗ 战斗沉没在通知败局前 clear_cargo，25% 货损会落在空舱")
+    problems.append("战斗沉没先清舱")
+else:
+    print("  ✓ 战斗沉没不先清舱，货损留给败局结算")
+
+battle = _code_only(func_bodies(seachart_src).get("_on_battle_result", ""))
+i_dur = battle.find("total_durability")
+i25 = battle.find("lose_cargo_ratio(0.25)")
+if i_dur < 0 or i25 < 0 or not (i_dur < i25):
+    print("  ✗ 败局未在 25% 货损之前判断全队是否已经沉没")
+    problems.append("败局货损未区分沉船")
+else:
+    print("  ✓ 全队沉没不走 25% 货损")
+
+sink_voyage = _code_only(func_bodies(seachart_src).get("_sink", ""))
+if "clear_cargo" in sink_voyage:
+    print("  ✓ 全队沉没仍清空货舱")
+else:
+    print("  ✗ 全队沉没未清空货舱")
+    problems.append("沉船未清舱")
 
 print()
 print("=" * 68)
