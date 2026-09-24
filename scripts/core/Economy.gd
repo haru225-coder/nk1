@@ -103,9 +103,10 @@ func get_rate(port_id: String, good_id: String) -> float:
 	return rates.get(port_id, {}).get(good_id, 1.0)
 
 
-## 杂事压低抽解与佣金；通事在异国港口另有议价之利；职衔再折一层抽解
-func _effective_tariff() -> float:
-	return tariff_rate * Crew.trade_cost_factor() * GameState.title_duty_factor()
+## 杂事压低抽解与佣金；通事在异国港口另有议价之利；职衔再折一层抽解；
+## 战况（本地 main）：降元港抽解加倍、站蒲家后泉州八折——走 _base_tariff(port_id)
+func _effective_tariff(port_id: String = "") -> float:
+	return _base_tariff(port_id) * Crew.trade_cost_factor() * GameState.title_duty_factor()
 
 
 func _effective_broker() -> float:
@@ -184,7 +185,7 @@ func price_at_rate(port_id: String, good_id: String, rate: float, is_buy: bool) 
 	elif role == "consumer":
 		v *= (1.0 + ie)
 	if is_buy:
-		return int(round(v * (1.0 + _effective_tariff()) * (1.0 - edge)))
+		return int(round(v * (1.0 + _effective_tariff(port_id)) * (1.0 - edge)))
 	return int(round(v * (1.0 - _effective_broker()) * (1.0 + edge)))
 
 

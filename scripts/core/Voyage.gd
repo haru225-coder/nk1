@@ -512,6 +512,11 @@ func event_weights(order: int, monsoon_strength: float, known: bool, discoveries
 ## 推演一日，返回事件字典 {kind, title, text, ...}
 ## from_id / to_id 用于发现物与生路判定；order 为当日航法。
 func roll_day_event(_course_bearing: float, from_id: String = "", to_id: String = "", order: int = CourseOrder.RUMB) -> Dictionary:
+	# 本地 main 战况机：战时航段先抽征船 / 元军哨船 / 难民船，抽不到再走航法权重表
+	if from_id != "" and to_id != "":
+		var war_ev := _war_event(from_id, to_id)
+		if not war_ev.is_empty():
+			return war_ev
 	var known := true
 	if from_id != "" and to_id != "":
 		known = is_known_route(from_id, to_id)

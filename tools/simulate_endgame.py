@@ -95,11 +95,12 @@ print(f"    最快推演：每章沙盒 {sandbox_per_chapter} 年 + 跳年 {skip
 check(reach >= 1264, f"最快也要到 {reach} 年才走完四章（≥1264，与 1268 殿试接得上）")
 check(reach <= 1275, f"最慢不至于错过 1275 历史压力段（{reach} ≤ 1275）")
 
-# 第四章必须有门槛，否则玩家做完就悬空
+# 第四章必须有门槛，否则玩家做完就悬空。云端 p6 把终章门槛写成 ending_requires（了结一纲），与 next_requires 同构
 ch4 = chapters.get(4, {})
-check(ch4.get("next_requires") is not None, "第四章有门槛（此前 next_requires: null，做完即悬空）")
-if ch4.get("next_requires"):
-    need = ch4["next_requires"].get("peak_money", 0)
+ch4_gate = ch4.get("next_requires") or ch4.get("ending_requires")
+check(ch4_gate is not None, "第四章有门槛（next_requires 或 ending_requires；此前 null，做完即悬空）")
+if ch4_gate:
+    need = ch4_gate.get("peak_money", 0)
     check(need > 60000, f"第四章门槛 {need} 钱高于第三章 60000（经济仍有天花板）")
 
 # 跳年代价必须存在且不致命

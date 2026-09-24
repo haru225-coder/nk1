@@ -39,7 +39,7 @@ func save_game(slot: int, current_scene: String = "") -> bool:
 		"crew": Crew.to_dict(),
 		"state": GameState.to_dict(),
 		"scene": current_scene,
-		"label": "%s　%s　%d 钱" % [
+		"label": "%s　%s　%d 钱%s" % [
 			Calendar.get_date_string(),
 			GameManager.get_port_name(GameState.last_port),
 			GameState.money,

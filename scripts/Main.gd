@@ -1,6 +1,8 @@
 extends Control
 
 @onready var background: TextureRect = $Background
+## 当前底图文件名（_set_background_file 写入），供门禁核对
+var _bg_file := ""
 @onready var left_panel: PanelContainer = $HBoxContainer/LeftPanel
 @onready var status_label: RichTextLabel = $HBoxContainer/LeftPanel/MarginContainer/VBoxContainer/StatusLabel
 @onready var message_label: RichTextLabel = $HBoxContainer/LeftPanel/MarginContainer/VBoxContainer/MessageLabel
@@ -867,8 +869,10 @@ func _set_background_file(file_name: String) -> void:
 		# bg_world_map.jpg 等尚未落地的资产：宁可显示通用航海图，也不留上一屏或黑底
 		push_warning("背景图缺失：%s，回落 %s" % [file_name, FALLBACK_BG])
 		tex = GameManager.load_texture("res://assets/" + FALLBACK_BG)
+		file_name = FALLBACK_BG
 	if tex != null:
 		background.texture = tex
+		_bg_file = file_name  # 云端 load_texture 按字节解码，纹理没有 resource_path，门禁靠这个名字核对
 
 
 func _drop_children(box: Node) -> void:
@@ -3022,6 +3026,19 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	col.add_child(head)
 
 	var raw := str(res.get("text", ""))
+	# 本地 main P1 时间脊柱：晋升跳年。这些年不是空白，摘要（跑了几趟 / 主航线 / 信用）与代价（船旧人走）写在正文前。
+	var years: int = int(res.get("years", 0))
+	if years > 0:
+		var era := _era_summary_lines(years)
+		var costs: Array = GameManager.skip_years(years)
+		var block := "【%d 年后・%s】\n" % [years, Calendar.get_date_string()]
+		if not era.is_empty():
+			block += "\n".join(era) + "\n"
+		if not costs.is_empty():
+			block += "\n".join(costs) + "\n"
+		raw = block + "\n" + raw
+		GameState.clear_era()
+		update_status_panel()
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(560, _chapter_body_height(raw))
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

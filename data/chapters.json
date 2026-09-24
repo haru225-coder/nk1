@@ -25,6 +25,7 @@
     {
       "id": 2,
       "name": "旧账",
+      "advance_years": 3,
       "summary": "博多唐房的旧账、耽罗的北线，与随之而来的信用与嫌疑。",
       "next_requires": {
         "peak_money": 20000,
@@ -41,6 +42,7 @@
     {
       "id": 3,
       "name": "纲首",
+      "advance_years": 4,
       "summary": "广州蕃坊与南九州的边缘航路，海商的名字开始出现在别人的账上。",
       "next_requires": {
         "peak_money": 60000,

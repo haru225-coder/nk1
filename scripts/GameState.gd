@@ -314,6 +314,8 @@ func try_advance_chapter() -> Dictionary:
 		"title": cur.get("advance_title", "新的一章"),
 		"text": cur.get("advance_text", ""),
 		"scene": str(cur.get("advance_scene", "")),
+		# 本地 main P1 时间脊柱：晋升跳年（chapters.json advance_years），Main._show_chapter_dialog 据此 skip_years
+		"years": int(cur.get("advance_years", 0)),
 	}
 
 
@@ -1107,6 +1109,20 @@ func to_dict() -> Dictionary:
 		"contract": contract,
 		"contract_ban": contract_ban,
 		"rumors": rumors,
+		# 本地 main 的终局线字段（合并时 to_dict 冲突让位云端，此处补回）
+		"player_name": player_name,
+		"hometown_tendency": hometown_tendency,
+		"identity": identity,
+		"news_seen": news_seen,
+		"era_trips": era_trips,
+		"era_routes": era_routes,
+		"era_profit": era_profit,
+		"crew_history": crew_history,
+		"port_bans": port_bans,
+		"siege": siege,
+		"ended": ended,
+		"ended_at": ended_at,
+		"ended_text": ended_text,
 	}
 
 
@@ -1147,3 +1163,17 @@ func from_dict(d: Dictionary) -> void:
 			contract["unit_purse"] = float(contract.get("purse", 0)) / float(contract["qty"])
 	else:
 		contract = {}
+	# 本地 main 的终局线字段（合并时 from_dict 冲突让位云端，此处补回）
+	player_name = str(d.get("player_name", "陈子龙"))
+	hometown_tendency = int(d.get("hometown_tendency", 0))
+	identity = str(d.get("identity", "undecided"))
+	news_seen = d.get("news_seen", [])
+	era_trips = int(d.get("era_trips", 0))
+	era_routes = d.get("era_routes", {})
+	era_profit = int(d.get("era_profit", 0))
+	crew_history = d.get("crew_history", [])
+	port_bans = d.get("port_bans", {})
+	siege = d.get("siege", {})
+	ended = str(d.get("ended", ""))
+	ended_at = str(d.get("ended_at", ""))
+	ended_text = str(d.get("ended_text", ""))
