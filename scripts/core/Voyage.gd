@@ -10,7 +10,7 @@ const EARTH_R_KM := 6371.0
 const WIND_MIN := 0.40
 const WIND_MAX := 1.60
 
-enum EventKind { NONE, CALM, CURRENT, STORM, PIRATE, MERCHANT, DISCOVERY }
+enum EventKind { NONE, CALM, CURRENT, STORM, PIRATE, MERCHANT, DISCOVERY, MUTINY }
 
 
 func port_def(port_id: String) -> Dictionary:
@@ -241,6 +241,18 @@ func _discovery_event(from_id: String = "", to_id: String = "") -> Dictionary:
 		"text": "左舷远处露出一线陆影，海图上此处应是空白。舵手眯眼看了半晌，说那多半就是老辈人讲的%s。" % d.get("name", "旧泊地"),
 		"discovery_id": d.get("id", ""),
 	}
+
+
+## 哗变不进随机表。SeaChart 在士气低于线时用它换掉当日的随机事件。
+## 后果由 Fleet.resolve_mutiny 在玩家点选后结算，这里只写场面。
+func mutiny_event() -> Dictionary:
+	var cost := Fleet.mutiny_bribe_cost()
+	var leave := Fleet.mutiny_dismiss_count()
+	var txt := "舱里的人围在桅下，桨横在舷边。有人说：再这样走，船是你的，命是他们的。"
+	txt += "\n士气 %d。散钱要 %d。放走 %d 人，他们会抬走一小份货。" % [Fleet.morale, cost, leave]
+	if Fleet.mutiny_dismiss_blocks_next_sail():
+		txt += "\n人一少，到港后补不满最低水手，下一趟出不了海。"
+	return {"kind": EventKind.MUTINY, "title": "哗变", "text": txt}
 
 
 func _good_name(good_id: String) -> String:

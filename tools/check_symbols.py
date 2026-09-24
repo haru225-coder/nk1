@@ -1939,6 +1939,57 @@ if "clear_cargo" in sink_voyage:
 else:
     print("  ✗ 全队沉没未清空货舱")
     problems.append("沉船未清舱")
+print("九之五、哗变契约（士气低于线时换掉当日随机事件）（云端 7d9f）")
+print("=" * 68)
+print("  断粮把士气压过线才闹舱。散钱、放人、压住都进 Fleet.resolve_mutiny。")
+
+fleet_src = ""
+with open(os.path.join(ROOT, "scripts", "core", "Fleet.gd"), encoding="utf-8") as f:
+    fleet_src = f.read()
+for f in ("mutiny_ready", "resolve_mutiny", "mutiny_bribe_cost",
+          "mutiny_dismiss_count", "mutiny_suppress_succeeds",
+          "mutiny_dismiss_blocks_next_sail"):
+    if f in defined.get("Fleet", set()):
+        print(f"  ✓ Fleet.{f} 已定义")
+    else:
+        print(f"  ✗ Fleet.{f} 未定义")
+        problems.append(f"Fleet.{f} 未定义")
+if "MUTINY" in enum_map.get("Voyage", {}).get("EventKind", set()):
+    print("  ✓ Voyage.EventKind.MUTINY 已声明（不进随机表）")
+else:
+    print("  ✗ Voyage.EventKind 缺少 MUTINY")
+    problems.append("Voyage.EventKind 缺少 MUTINY")
+if "func mutiny_event" in voyage_src and "roll_day_event" in voyage_src:
+    roll_body = voyage_src.split("func roll_day_event", 1)[-1].split("\nfunc ", 1)[0]
+    if "MUTINY" in roll_body:
+        print("  ✗ roll_day_event 把哗变放进了随机表")
+        problems.append("哗变进入随机表")
+    else:
+        print("  ✓ 哗变不在 roll_day_event 的随机表里")
+else:
+    print("  ✗ Voyage.mutiny_event 未定义")
+    problems.append("Voyage.mutiny_event 未定义")
+if "Fleet.mutiny_ready()" in seachart_src and "Voyage.EventKind.MUTINY" in seachart_src:
+    print("  ✓ SeaChart 在 mutiny_ready 时改走哗变")
+else:
+    print("  ✗ SeaChart 未把低士气日改成哗变")
+    problems.append("SeaChart 未接哗变")
+for handler in ("_on_mutiny_bribe", "_on_mutiny_dismiss", "_on_mutiny_suppress"):
+    if re.search(rf'^func\s+{handler}\b', seachart_src, re.M):
+        print(f"  ✓ SeaChart.{handler} 已定义")
+    else:
+        print(f"  ✗ SeaChart.{handler} 未定义")
+        problems.append(f"SeaChart.{handler} 未定义")
+if 'resolve_mutiny("bribe")' in seachart_src and 'resolve_mutiny("dismiss")' in seachart_src and 'resolve_mutiny("suppress")' in seachart_src:
+    print("  ✓ 三个选项都进 resolve_mutiny")
+else:
+    print("  ✗ 哗变选项没有全部进 resolve_mutiny")
+    problems.append("哗变选项未进 resolve_mutiny")
+if '"mutiny_cooldown"' in fleet_src:
+    print("  ✓ 哗变冷却写入舰队存档")
+else:
+    print("  ✗ mutiny_cooldown 未进 to_dict")
+    problems.append("mutiny_cooldown 未存档")
 
 print()
 print("=" * 68)

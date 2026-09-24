@@ -1737,7 +1737,8 @@ func _sail_next_day() -> void:
 	GameManager.advance_days(1)
 	days_elapsed += 1
 
-	var event := Voyage.roll_day_event(course_bearing, origin_port, selected_port)
+	# 士气已经在本日结算里掉过。低于线就闹舱，不再另抽风涛或海盗。
+	var event: Dictionary = Voyage.mutiny_event() if Fleet.mutiny_ready() else Voyage.roll_day_event(course_bearing, origin_port, selected_port)
 	var kind: int = event.get("kind", Voyage.EventKind.NONE)
 	var wf := Voyage.wind_factor(course_bearing)
 	var progress := Fleet.fleet_speed() * wf
@@ -1783,6 +1784,10 @@ func _show_event(event: Dictionary) -> void:
 	elif kind == Voyage.EventKind.DISCOVERY:
 		_add_event_action("绕去细看　费一日", _on_investigate_discovery)
 		_add_event_action("不理会　继续航行", _on_event_continue)
+	elif kind == Voyage.EventKind.MUTINY:
+		_add_event_action("散钱 %d" % Fleet.mutiny_bribe_cost(), _on_mutiny_bribe)
+		_add_event_action("放走 %d 人" % Fleet.mutiny_dismiss_count(), _on_mutiny_dismiss)
+		_add_event_action("压住", _on_mutiny_suppress)
 	else:
 		_add_event_action("继续航行", _on_event_continue)
 
@@ -1799,6 +1804,46 @@ func _add_event_action(text: String, cb: Callable) -> void:
 	if text == "迎战":
 		b.add_theme_color_override("font_color", UiTheme.CINNABAR)
 		b.add_theme_color_override("font_hover_color", UiTheme.CINNABAR)
+
+
+func _on_mutiny_bribe() -> void:
+	_finish_mutiny(Fleet.resolve_mutiny("bribe"))
+
+
+func _on_mutiny_dismiss() -> void:
+	_finish_mutiny(Fleet.resolve_mutiny("dismiss"))
+
+
+func _on_mutiny_suppress() -> void:
+	_finish_mutiny(Fleet.resolve_mutiny("suppress"))
+
+
+func _finish_mutiny(result: Dictionary) -> void:
+	var outcome := str(result.get("outcome", ""))
+	var line := ""
+	match outcome:
+		"bribe":
+			line = "[color=yellow]你把 %d 钱散到各舱。桨收回去了，人还在。[/color]" % int(result.get("paid", 0))
+		"bribe_fail":
+			line = "[color=red]钱匣是空的。有人自己下了舢板，走了 %d 人。[/color]" % int(result.get("crew_lost", 0))
+		"dismiss":
+			line = "[color=yellow]你点了 %d 个人下舢板。剩下的人重新升帆。[/color]" % int(result.get("crew_lost", 0))
+		"suppress_ok":
+			line = "[color=yellow]你站在桅下把话说明白。人散开了，眼神还硬。[/color]"
+		"suppress_fail":
+			line = "[color=red]压不住。走了 %d 人。[/color]" % int(result.get("crew_lost", 0))
+		_:
+			line = "舱里安静下来。"
+	var cargo: Dictionary = result.get("cargo_lost", {})
+	if not cargo.is_empty():
+		var parts := []
+		for gid in cargo.keys():
+			parts.append("%s %d" % [GameManager.get_good_name(str(gid)), int(cargo[gid])])
+		line += "抬走了" + "、".join(parts) + "。"
+	line += "士气 %d。" % int(result.get("morale", Fleet.morale))
+	_log(line)
+	_refresh_status()
+	_on_event_continue()
 
 
 func _on_event_continue() -> void:

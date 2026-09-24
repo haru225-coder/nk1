@@ -105,6 +105,8 @@ assets/     美术资源
 - `assets/icon_*.png` 有若干实为 JPEG（沿用旧文件名），另有一批真 PNG 的 `.import` 被标成 `valid=false`。`GameManager.load_texture` **先按文件头解码**，不再先走 `ResourceLoader.load()`（那条路会打 `Failed loading resource`）。**不要重转假 PNG**（会牵连 .import 与 uid）。窗口里灰叉多半是 `.godot` 缓存与 4.6 二进制不匹配
 - 死生态位图（crate / 海鸟 / 鲸影）已从 `assets/` 删除，不要再加回 WorldMap
 - 提交不要带 `.uid` 文件；`git commit` 用显式 pathspec（并行窗口共享工作区）
+- ✅ 哗变：不补水粮走到第 28 日，海上要在散钱、放人、压住里选
+- ⏳ 真机手感待点验：本机长期无 Godot，代码经静态校验但未在引擎内实机运行过
 
 ## 许可
 

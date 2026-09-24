@@ -2,7 +2,7 @@
 """端到端模拟一局：从开局 1000 钱、一条小艍船出发，跑近海商路攒钱换船。
 完整复现 Fleet 的舱位/补给（多船分装）、Economy 的行情冲击与回归、Voyage 的季风与航速。
 目的是找出设计死锁（卡补给、卡舱位、卡钱），而不是验证单条公式。"""
-import json, math, os, sys, random
+import json, math, os, re, sys, random
 
 random.seed(20260727)
 import pathlib
@@ -1000,6 +1000,52 @@ check(qz_sell <= qz_buy, f"泉州同港卖 {qz_sell} ≤ 买 {qz_buy}（无正�
 InvBook.fame = 80
 check(title_of(InvBook.fame)["id"] == "du_bao", "名声 80 为市舶都保")
 check(title_of(InvBook.fame)["loan_bonus"] == 2500, "都保赊贷 +2500")
+print()
+print("哗变：开局不补水粮才会闹舱；跑商补足的航次碰不到（云端 7d9f）")
+print("="*70)
+fleet_src = open(os.path.join(ROOT, "scripts", "core", "Fleet.gd"), encoding="utf-8").read()
+
+def fleet_const(name):
+    m = re.search(rf"const {name} := (-?\d+(?:\.\d+)?)", fleet_src)
+    if not m:
+        raise SystemExit(f"Fleet.gd 缺少 {name}")
+    raw = m.group(1)
+    return float(raw) if "." in raw else int(raw)
+
+m_line = fleet_const("MUTINY_LINE")
+m_floor = fleet_const("MUTINY_BRIBE_FLOOR")
+m_per = fleet_const("MUTINY_BRIBE_PER_CREW")
+m_bribe = fleet_const("MUTINY_BRIBE_MORALE")
+m_dis_pct = fleet_const("MUTINY_DISMISS_PERCENT")
+m_dis_cargo = fleet_const("MUTINY_DISMISS_CARGO")
+m_dis_morale = fleet_const("MUTINY_DISMISS_MORALE")
+crew0 = ships["sampan"]["crew_min"]
+use0 = math.ceil(crew0 / 2.0)
+# 补足 8 日口粮的近海航次：水粮从 60 起，扣不完
+water_left = 60 - 8 * use0
+check(water_left > 0 and 70 > m_line, f"近海 8 日还剩水 {water_left}，士气 70 不哗变")
+water, morale, day = 60, 70, 0
+while morale > m_line and day < 80:
+    day += 1
+    water = max(0, water - use0)
+    if water <= 0:
+        morale = max(0, morale - 6)
+print(f"  不补水粮走到第 {day} 日，士气 {morale}，水手 {crew0}")
+check(morale <= m_line, f"第 {day} 日士气 {morale} 跌破 {m_line}")
+cost = max(m_floor, crew0 * m_per)
+money = 1000 - cost
+morale_bribe = min(100, morale + m_bribe)
+check(money == 1000 - cost and crew0 == ships["sampan"]["crew_min"],
+      f"散钱 {cost} 后余 {money}，人还是 {crew0}，下一趟不用补水手")
+check(morale_bribe > m_line, f"散钱后士气 {morale_bribe} 高于线")
+leave = max(1, int((crew0 * m_dis_pct) / 100.0))
+cargo = 10 - math.ceil(10 * m_dis_cargo)
+crew_left = crew0 - leave
+print(f"  改放人：走 {leave}，剩 {crew_left}，10 件货剩 {cargo}，士气 {min(100, morale + m_dis_morale)}")
+check(crew_left < ships["sampan"]["crew_min"],
+      f"放人后 {crew_left} < 最低水手 {ships['sampan']['crew_min']}，到港得先补人才能再出海")
+check(cargo == 9, f"放人抬走 1 件（10→{cargo}）")
+check(min(100, morale + m_dis_morale) > m_line, "放人后士气回到线以上")
 
 print()
 print("="*70)
