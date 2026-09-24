@@ -26,30 +26,29 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-一次巡检走 `tools/patrol.py`。它先跑下面三套静态校验；`PATH` 里有 Godot 4.6 时，再跑无头冒烟，并在有显示器或 `xvfb-run` 时把主场景挂上，走泉州 / 福州 / 兴化九个设施页。
+一次改动闭环 = 下面十二道门禁全绿。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
 
 ```bash
-python3 tools/patrol.py
+# 七道 Python（无 Godot 也能跑）
+python3 tools/check_symbols.py      # autoload 顺序与跨文件符号、海战精灵 PNG 取证、绢本文案规范、各功能契约
+python3 tools/verify_economy.py     # 数据完整性 / 套利 / 砸盘 / 季风 / 航法与委办 / 哗变 / 风涛分摊 / 结局旗标
+python3 tools/simulate_run.py       # 端到端跑一局，找死锁与账目溢出
+python3 tools/verify_coastline.py   # 真实岸线 / 绕岸航线 / 海名标注数据与代码接线
+python3 tools/check_assets.py       # 代码引用的 res://assets 都在
+python3 tools/verify_story_data.py  # 剧情效果键白名单、存档字段对称
+python3 tools/simulate_endgame.py   # 跳年 / 终局窗口 / 守城数值
+
+# 五道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
+godot --headless --editor --path . --quit
+godot --headless --path . -s res://tools/godot_smoke.gd          # 云端冒烟 139 项
+godot --headless --path . -s res://tools/godot_compile_check.gd  # 全部脚本可编译
+godot --headless --path . -s res://tools/godot_story_check.gd    # 剧情脊柱与存档 round-trip（用完会清第 9 槽）
+godot --path . -s res://tools/patrol_shell.gd                    # 有窗口：三港九页 + 海图三向牌都在 1280×720 内
 ```
 
-本机没有 Godot 时，三套静态校验本身仍是闭环（改数据尤其要重跑）：
+`tools/patrol.py` 是云端留下的一键巡检（静态三套 + 冒烟 + 巡检）；`tools/verify_narrative.py` 与 `tools/p7_smoke.gd` 绑定云端 21ce 的 P7 平行实现，本分支未收该实现，两个脚本仅留档。
 
-```bash
-python3 tools/check_symbols.py    # autoload 顺序与跨文件符号 + 海战精灵 PNG 取证（RGBA8/四角透明/体积下限）
-python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 / 死港 / 海战数值边界 / 结局旗标
-python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢出
-python3 tools/verify_narrative.py # （云端 21ce 自带，绑定其 P7 平行实现；本分支按主干 p6 结局线，此脚本仅留档不入门禁）
-```
-
-有 Godot 4.6 时，引擎两层也可以单独跑：
-
-```bash
-godot --headless --path . --import
-godot --headless --path . -s res://tools/godot_smoke.gd
-godot --path . -s res://tools/patrol_shell.gd
-```
-
-静态三套全绿，且引擎两层在有 Godot 时也全绿，才算一次改动闭环。数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
+数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
 
 > 注意：`.godot/` 导入缓存与生成它的 Godot 版本绑定。换二进制或从快照恢复后若场景渲染成黑屏，先 `rm -rf .godot && godot --headless --path . --import` 重建再排查。
 
@@ -100,16 +99,21 @@ assets/     美术资源
 - ✅ 寺观上陆勘见：近侧未入官图的旧迹耗日记入册子，赏格仍回市舶司呈报（寺观不转呈、不给名声）
 - ✅ 寺观拓碑：已勘见的近侧旧迹再耗一日写入住处边记，不给名声
 - ✅ 绢本界面做实：熟漆面板不透底图，港名泥金匾，设施图标金框，卷首收成册页；字体优先宋体（Noto Serif CJK SC / Songti SC）
+- ✅ 晨潮三向 / 今日岸开三处 / 柜上三样 / 坞位一艘 / 顶栏与工席 / 海战顶匾 / 日志三卷（云端 UI 线，`docs/复刻设计_大航海时代标准.md` §十～十七）
+- ✅ 哗变：不补水粮走到第 28 日，海上要在散钱、放人、压住里选；风涛按艘分摊
+- ✅ 航法三策（针路 / 外洋 / 傍岸）、海上交市、牙行委办、行情传闻、八成日数与保货成数（嵌进三向牌与船况面板）
+- ✅ 真实岸线（Natural Earth 386 环）+ 沿 sealanes 折线计里程、逐段罗经；海名岛名标注
+- ✅ 本地剧情脊柱：跳年（2+3+4 年）、按月新闻、1268 殿试身份、战况机与战时三遭遇、守城 / 泉州对峙 / 涵江 / 崖山 / 辞呈 / 纲首收官、终局态与结局图；终局特殊卡不受「今日只开三处」限制
+- 📎 云端两套 P7（b05c 纪事与终章、21ce 剧情闭环）：与主干 p6 结局系统同名平行实现，未收；设计稿、`data/endings.json`、`data/port_beats.json` 留档待挑
+- ⏳ 真机手感待 Snow 点验：headless 十二道门禁与有窗口巡检全过，未在有人操作的窗口里看过
 
 ## 已知坑（点验/改图前必读）
 
-- `assets/icon_*.png` 有若干实为 JPEG（沿用旧文件名），另有一批真 PNG 的 `.import` 被标成 `valid=false`。`GameManager.load_texture` **先按文件头解码**，不再先走 `ResourceLoader.load()`（那条路会打 `Failed loading resource`）。**不要重转假 PNG**（会牵连 .import 与 uid）。窗口里灰叉多半是 `.godot` 缓存与 4.6 二进制不匹配
-- 死生态位图（crate / 海鸟 / 鲸影）已从 `assets/` 删除，不要再加回 WorldMap
+- `assets/icon_*.png` 现已全是真 PNG（2026-09-25 随本地 main 进入）；`GameManager.load_texture` 仍**先按文件头解码**，纹理没有 `resource_path`，门禁核对底图用 `Main._bg_file`。窗口里灰叉多半是 `.godot` 缓存与 4.6 二进制不匹配
+- 死生态位图（crate / 海鸟 / 鲸影）已从 `assets/` 与 WorldMap 删除，`godot_smoke.gd` 故意引用它们断言不存在，`check_assets.py` 对该文件放行
+- `godot_story_check.gd` 与 `godot_smoke.gd` 共用 `user://saves/` 第 9 槽：前者用完即删，后者断言空卷；别手工往第 9 槽存档
+- 海图 386 环岸线按视窗缓存（`SeaChart._land_polygons`）；平滑后自交的环三角化失败只描线不填色
 - 提交不要带 `.uid` 文件；`git commit` 用显式 pathspec（并行窗口共享工作区）
-- ✅ 哗变：不补水粮走到第 28 日，海上要在散钱、放人、压住里选
-- ✅ 航法（针路 / 外洋 / 傍岸）、海上交市、牙行委办
-- 📎 P7 纪事与终章（云端 b05c）：设计稿与 `data/endings.json` 留档（`docs/P7-纪事与终章.md`）；效果进账、声望阶、第四章结局按主干 p6 链的实现，b05c 的平行实现未另收
-- ⏳ 真机手感待点验：本机长期无 Godot，代码经静态校验但未在引擎内实机运行过
 
 ## 许可
 
