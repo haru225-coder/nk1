@@ -173,6 +173,25 @@ func _run() -> void:
 		for slip_id in BrokerSlip.deal(broker_goods, broker_salt_i, ""):
 			slip_seen[slip_id] = true
 	_check(slip_seen.size() == 5, "盐位转一圈，五样货都会上柜", fails)
+	var yard_offers: Array = [
+		{"id": "sampan", "unlock": "ch1"},
+		{"id": "keel_boat", "unlock": "ch1"},
+		{"id": "fu_ship_medium", "unlock": "ch1"},
+		{"id": "canton_ship", "unlock": "ch2"},
+	]
+	var yard_ch1 := PackedStringArray(["ch1"])
+	var yard_sale: PackedStringArray = DrydockBerth.sale_ids(yard_offers, yard_ch1)
+	_check(yard_sale.size() == 3 and yard_sale[0] == "sampan" and yard_sale[2] == "fu_ship_medium",
+		"第一章坞外待售三艘，广船不在", fails)
+	var yard_ch2 := PackedStringArray(["ch1", "ch2"])
+	var yard_sale2: PackedStringArray = DrydockBerth.sale_ids(yard_offers, yard_ch2)
+	_check(yard_sale2.size() == 4 and yard_sale2[3] == "canton_ship",
+		"第二章广船也在坞外", fails)
+	_check(DrydockBerth.berth_index(1, 5) == 0 and DrydockBerth.berth_index(3, 5) == 2,
+		"坞位夹回船队里", fails)
+	var yard_others := DrydockBerth.other_hulls(3, 0)
+	_check(yard_others.size() == 2 and yard_others[0] == 1 and yard_others[1] == 2,
+		"坞上这一艘不进换船", fails)
 	_check(UiTheme.plain_log("【钱不够】牙人摇头。") == "牙人摇头。", "日志去掉方括号标签", fails)
 	_check(UiTheme.plain_log("买入瓷器 ×1。") == "买入瓷器 ×1。", "普通日志原样保留", fails)
 	_check(UiTheme.plain_log("[color=#aabbcc]【欠饷】已拖欠。[/color]") == "[color=#aabbcc]已拖欠。[/color]",

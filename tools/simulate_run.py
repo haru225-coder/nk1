@@ -613,6 +613,43 @@ slip_seen = set()
 for salt in range(4):
     slip_seen.update(broker_deal(BROKER_GOODS, salt, ""))
 check(slip_seen == {g["id"] for g in BROKER_GOODS}, "盐位转一圈，五样货都会上柜")
+
+def berth_index(count, index):
+    """与 DrydockBerth.berth_index 同一规则。跑商不调用它。"""
+    if count <= 0 or index < 0:
+        return 0
+    if index >= count:
+        return count - 1
+    return index
+
+def other_hulls(count, index):
+    on = berth_index(count, index)
+    return [i for i in range(count) if i != on]
+
+def sale_ids(offers, reached):
+    out = []
+    seen = set()
+    for row in offers:
+        sid = row["id"]
+        unlock = row.get("unlock", "ch1")
+        if not sid or sid in seen or unlock not in reached:
+            continue
+        seen.add(sid)
+        out.append(sid)
+    return out
+
+YARD_OFFERS = [
+    {"id": "sampan", "unlock": "ch1"},
+    {"id": "keel_boat", "unlock": "ch1"},
+    {"id": "fu_ship_medium", "unlock": "ch1"},
+    {"id": "canton_ship", "unlock": "ch2"},
+]
+sale_ch1 = sale_ids(YARD_OFFERS, ["ch1"])
+sale_ch2 = sale_ids(YARD_OFFERS, ["ch1", "ch2"])
+check(sale_ch1 == ["sampan", "keel_boat", "fu_ship_medium"], f"第一章坞外待售 {sale_ch1}")
+check(len(sale_ch2) == 4 and sale_ch2[-1] == "canton_ship", f"第二章坞外待售 {sale_ch2}")
+check(berth_index(1, 5) == 0 and berth_index(3, 5) == 2 and other_hulls(3, 0) == [1, 2],
+      "坞位夹在船队里，坞上这一艘不进换船")
 print(f"  ── 跑商 24 趟（起始第 {G.chapter} 章，可达 {len(open_ports())} 港）──")
 for trip in range(1, 25):
     if G.ending_id:

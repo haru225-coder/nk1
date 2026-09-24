@@ -36,7 +36,7 @@ var title_button_connected: bool = false
 ## 同页换船或买卖后刷新时保留，否则选中会被 load_scene 清掉。
 var _market_ship: int = 0
 var _market_hold: bool = false
-## 账条暂时写入的容器。船屋条数多，先收进内滚，离开钮留在外面。
+## 账条暂时写入的容器。酒馆募人收进内滚，离开钮留在外面。
 var _slip_host: Node = null
 var _ledger_layer: Control
 var _status_strip: PanelContainer
@@ -1456,8 +1456,71 @@ func _slip_chip(row: Node, text: String, cb: Callable, accent := false) -> Butto
 
 func _setup_shipyard(port_id: String) -> void:
 	scene_title.text = "%s・船屋" % GameManager.get_port_name(port_id)
-	body_text.text = "桐油和潮气。修船、补员、装水粮。"
+	body_text.text = "坞上只搁一艘。帆和甲对着这一艘。水粮和赊贷仍在码头上。"
+	var on := DrydockBerth.berth_index(Fleet.ships.size(), GameState.berth_index)
+	if GameState.berth_index != on:
+		GameState.berth_index = on
 	_begin_benches()
+
+	# 坞位：一张工席，帆、甲、添人只对着坞上这一艘（云端 5588 坞位一艘，嵌进 c8fb/7f92 的工席壳）
+	if Fleet.ships.is_empty():
+		var empty := _slip_body()
+		_slip_title(empty, "坞位", "眼下没有船")
+	else:
+		var hull: Dictionary = Fleet.ships[on]
+		var sname := str(hull.get("name", "船"))
+		var slv := Fleet.sail_level(on)
+		var alv := Fleet.armor_level(on)
+		var berth := _slip_body()
+		_slip_title(berth, "坞位　%s" % sname, "帆　%s　甲　%s" % [_fit_rank(slv), _fit_rank(alv)])
+		_slip_note(berth, "水手 %d / %d　耐久 %d / %d　载 %d 料" % [
+			Fleet.ship_crew(on),
+			Fleet.ship_crew_max(on),
+			int(hull.get("durability", 0)),
+			int(hull.get("max_durability", 0)),
+			int(Fleet.ship_capacity(on)),
+		], UiTheme.TEXT)
+		var fit_row := _slip_row(berth)
+		if Fleet.is_sail_max(on):
+			_slip_note(berth, "帆已是三等。")
+		else:
+			var scost: int = Fleet.upgrade_cost(on, "sail")
+			var sail_chip := _slip_chip(fit_row, "升帆　%d" % scost, _on_upgrade.bind(on, "sail", scost))
+			var sail_phrase := _sail_fit_phrase(slv)
+			sail_chip.tooltip_text = sail_phrase
+			_slip_note(berth, sail_phrase)
+		if Fleet.is_armor_max(on):
+			_slip_note(berth, "甲已是三等。")
+		else:
+			var acost: int = Fleet.upgrade_cost(on, "armor")
+			var armor_chip := _slip_chip(fit_row, "升甲　%d" % acost, _on_upgrade.bind(on, "armor", acost))
+			var armor_phrase := _armor_fit_phrase(alv)
+			armor_chip.tooltip_text = armor_phrase
+			_slip_note(berth, armor_phrase)
+		var room: int = Fleet.ship_crew_room(on)
+		if room > 0:
+			var hire_n: int = mini(10, room)
+			var hire_cost := hire_n * 20
+			var hire_chip := _slip_chip(
+				fit_row,
+				"%s　添 %d 人　%d" % [sname, hire_n, hire_cost],
+				_on_hire_crew.bind(on, hire_n, hire_cost)
+			)
+			hire_chip.tooltip_text = "尚可添 %d　现有 %d" % [room, Fleet.ship_crew(on)]
+		var fleet_full := true
+		for j in Fleet.ships.size():
+			if Fleet.ship_crew_room(j) > 0:
+				fleet_full = false
+				break
+		if fleet_full:
+			_slip_note(berth, "各船人手已满。")
+
+		var others := DrydockBerth.other_hulls(Fleet.ships.size(), on)
+		if others.size() > 0:
+			var swap_row := _slip_row(berth)
+			for idx in others:
+				var other: Dictionary = Fleet.ships[idx]
+				_slip_chip(swap_row, "换上　%s" % str(other.get("name", "船")), _on_berth_switch.bind(int(idx)))
 
 	var grain_price := Economy.buy_price(port_id, "grain") if Economy.is_traded(port_id, "grain") else 12
 	var water_price := 1
@@ -1476,35 +1539,14 @@ func _setup_shipyard(port_id: String) -> void:
 	var rc := Fleet.repair_cost()
 	if rc > 0:
 		_slip_chip(supply_row, "修船　%d" % rc, _on_repair_hull.bind(rc))
-
-	var hands := _slip_body()
-	_slip_title(hands, "人手", "码头上按船招")
-	var hand_row := _slip_row(hands)
 	var below_min: int = Fleet.crew_to_min_needed()
 	if below_min > 0:
 		var top_cost := below_min * 20
 		_slip_chip(
-			hand_row,
+			supply_row,
 			"补齐 %d 人　%d" % [below_min, top_cost],
 			_on_hire_to_min.bind(top_cost)
 		)
-	var any_room := false
-	for i in range(Fleet.ships.size()):
-		var room: int = Fleet.ship_crew_room(i)
-		if room <= 0:
-			continue
-		any_room = true
-		var s: Dictionary = Fleet.ships[i]
-		var hire_n: int = mini(10, room)
-		var hire_cost := hire_n * 20
-		var chip := _slip_chip(
-			hand_row,
-			"%s　添 %d 人　%d" % [s.get("name", "船"), hire_n, hire_cost],
-			_on_hire_crew.bind(i, hire_n, hire_cost)
-		)
-		chip.tooltip_text = "尚可添 %d　现有 %d" % [room, Fleet.ship_crew(i)]
-	if below_min <= 0 and not any_room:
-		_slip_note(hands, "各船人手已满。")
 
 	var loan := _slip_body()
 	_slip_title(loan, "蕃商赊贷", "月息每百 %d　上限 %d" % [
@@ -1525,47 +1567,55 @@ func _setup_shipyard(port_id: String) -> void:
 	if GameState.debt > 0 and GameState.money > 0:
 		var pay: int = mini(GameState.debt, GameState.money)
 		_slip_chip(loan_row, "还 %d" % pay, _on_repay.bind(pay), true)
-
-	for i in range(Fleet.ships.size()):
-		var sname: String = Fleet.ships[i].get("name", "船")
-		var slv: int = Fleet.sail_level(i)
-		var alv: int = Fleet.armor_level(i)
-		var fit := _slip_body()
-		_slip_title(fit, sname, "帆　%s　甲　%s" % [_fit_rank(slv), _fit_rank(alv)])
-		var fit_row := _slip_row(fit)
-		if Fleet.is_sail_max(i):
-			_slip_note(fit, "帆已是三等。")
-		else:
-			var scost: int = Fleet.upgrade_cost(i, "sail")
-			var sail_chip := _slip_chip(fit_row, "升帆　%d" % scost, _on_upgrade.bind(i, "sail", scost))
-			var sail_phrase := _sail_fit_phrase(slv)
-			sail_chip.tooltip_text = sail_phrase
-			_slip_note(fit, sail_phrase)
-		if Fleet.is_armor_max(i):
-			_slip_note(fit, "甲已是三等。")
-		else:
-			var acost: int = Fleet.upgrade_cost(i, "armor")
-			var armor_chip := _slip_chip(fit_row, "升甲　%d" % acost, _on_upgrade.bind(i, "armor", acost))
-			var armor_phrase := _armor_fit_phrase(alv)
-			armor_chip.tooltip_text = armor_phrase
-			_slip_note(fit, armor_phrase)
-
-	for s in GameManager.ships_data.get("ships", []):
-		if not GameState.is_chapter_reached(s.get("unlock", "ch1")):
-			continue
-		var price: int = int(s.get("price", 0))
-		var tid: String = str(s.get("id", ""))
-		var offer := _slip_body()
-		_slip_title(offer, str(s.get("name", "?")), "载 %d 料　水手 %d 至 %d　耐久 %d" % [
-			int(s.get("capacity", 0)), int(s.get("crew_min", 0)),
-			int(s.get("crew_max", 0)), int(s.get("durability", 0)),
-		])
-		var buy := _slip_chip(_slip_row(offer), "购入　%d" % price, _on_buy_ship.bind(tid, price), true)
-		buy.tooltip_text = str(s.get("historical_note", ""))
+	# 坞外待售：本章够到的船全部排在坞外，一艘一个购入小钮
+	var reached := PackedStringArray()
+	for mark in ["ch1", "ch2", "ch3", "ch4"]:
+		if GameState.is_chapter_reached(mark):
+			reached.append(mark)
+	var catalog: Array = GameManager.ships_data.get("ships", [])
+	var for_sale := DrydockBerth.sale_ids(catalog, reached)
+	if for_sale.size() > 0:
+		var sale := _slip_body()
+		_slip_title(sale, "坞外待售", "新买的船泊在外侧，不自动占坞位")
+		var sale_row := _slip_row(sale)
+		for sid in for_sale:
+			var offer := _yard_offer(catalog, sid)
+			if offer.is_empty():
+				continue
+			var price: int = int(offer.get("price", 0))
+			var tid := str(offer.get("id", ""))
+			var buy := _slip_chip(sale_row, "%s　购入　%d" % [str(offer.get("name", "船")), price], _on_buy_ship.bind(tid, price), true)
+			buy.tooltip_text = "载 %d 料　水手 %d 至 %d　耐久 %d" % [
+				int(offer.get("capacity", 0)), int(offer.get("crew_min", 0)),
+				int(offer.get("crew_max", 0)), int(offer.get("durability", 0)),
+			]
+			var hist := str(offer.get("historical_note", ""))
+			if hist != "":
+				buy.tooltip_text += "\n" + hist
 
 	_end_benches()
 	_add_leave_button(port_id)
 	choices_label.visible = false
+
+
+func _yard_offer(catalog: Array, sid: String) -> Dictionary:
+	for raw_ship in catalog:
+		if typeof(raw_ship) != TYPE_DICTIONARY:
+			continue
+		var ship_row: Dictionary = raw_ship
+		if str(ship_row.get("id", "")) == sid:
+			return ship_row
+	return {}
+
+
+func _on_berth_switch(ship_index: int) -> void:
+	var on := DrydockBerth.berth_index(Fleet.ships.size(), ship_index)
+	if on == GameState.berth_index:
+		return
+	GameState.berth_index = on
+	var hull: Dictionary = Fleet.ships[on]
+	log_msg("把「%s」拖上坞位。帆和甲对着这一艘。" % str(hull.get("name", "船")))
+	load_scene(current_scene_id)
 
 
 func _on_repair_hull(cost: int) -> void:
