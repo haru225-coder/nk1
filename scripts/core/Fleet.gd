@@ -658,9 +658,22 @@ func total_max_durability() -> float:
 func damage_fleet(amount: float) -> void:
 	if ships.is_empty():
 		return
-	# 优先打旗舰
+	# 海盗和炮击打旗舰。风涛打整队，走 damage_each_ship。
 	var s: Dictionary = ships[0]
 	s["durability"] = maxf(0.0, float(s.get("durability", 0)) - amount)
+
+
+## 每艘各扣 amount。返回实际扣掉的耐久；已经是 0 的船不再重复记账。
+func damage_each_ship(amount: float) -> float:
+	var applied := 0.0
+	if amount <= 0.0:
+		return 0.0
+	for s in ships:
+		var before := float(s.get("durability", 0.0))
+		var after := maxf(0.0, before - amount)
+		s["durability"] = after
+		applied += before - after
+	return applied
 
 
 func repair_cost() -> int:
