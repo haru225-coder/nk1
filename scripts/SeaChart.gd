@@ -8,6 +8,10 @@ var _hand: PackedStringArray = PackedStringArray()
 var _marker_at: Dictionary = {}
 var _coast: Dictionary = {}
 var _coast_ready := false
+## 投影 + 平滑后的陆地多边形缓存。Natural Earth 386 环每帧重算会把海图拖到肉眼可见的卡；
+## 视窗（尺寸 / 投影参数）不变就复用，变了才重算。
+var _land_cache_key := ""
+var _land_cache: Array = []
 
 ## 航行状态
 var sailing: bool = false
@@ -945,6 +949,38 @@ func _project_ring(frame: Dictionary, ring: Array) -> PackedVector2Array:
 
 
 ## 绢纸上的东亚海岸。陆地盖住西边的空白，外海往东略深，海名和罗盘留在海上。
+## 视窗内陆地环的投影多边形：[{soft, fill, main}]。按 size + 投影参数缓存（云端 2d51 数据、8b32 剔除与只描线做法）。
+func _land_polygons(frame: Dictionary, size: Vector2) -> Array:
+	var key := "%s|%.4f|%.4f|%.5f|%.5f|%s" % [
+		size, float(frame.get("mean_lat", 0.0)), float(frame.get("mean_lon", 0.0)),
+		float(frame.get("scale", 0.0)), float(frame.get("kx", 1.0)), frame.get("mid", Vector2.ZERO),
+	]
+	if key == _land_cache_key:
+		return _land_cache
+	var out: Array = []
+	var lands: Array = _coast_data().get("land", [])
+	var view_rect := Rect2(Vector2.ZERO, size).grow(24.0)
+	for i in lands.size():
+		var ring: Array = lands[i]
+		var pts := _project_ring(frame, ring)
+		if pts.size() < 3:
+			continue
+		# 包围盒不碰视窗的环直接跳过
+		var bb := Rect2(pts[0], Vector2.ZERO)
+		for p in pts:
+			bb = bb.expand(p)
+		if not bb.intersects(view_rect):
+			continue
+		var soft := _soft_coast(frame, ring, pts, i == 0)
+		if soft.size() < 3:
+			continue
+		# 平滑后自交或退化的环三角化会失败并刷错误日志：这类环只描线不填色
+		out.append({"soft": soft, "fill": Geometry2D.triangulate_polygon(soft).size() > 0, "main": i == 0})
+	_land_cache_key = key
+	_land_cache = out
+	return out
+
+
 func _draw_world(c: Control, frame: Dictionary, size: Vector2) -> void:
 	var data := _coast_data()
 	if data.is_empty():
@@ -954,34 +990,20 @@ func _draw_world(c: Control, frame: Dictionary, size: Vector2) -> void:
 	_draw_waves(c, frame, size)
 	_draw_monsoon(c, size, frame)
 	var harbors := _harbor_marks(frame)
-	var lands: Array = data.get("land", [])
 	var mainland := Color(0.776, 0.635, 0.408, 1.0)
 	var island := Color(0.690, 0.604, 0.392, 1.0)
 	var shore := Color(0.42, 0.26, 0.12, 0.55)
 	var ink := Color(0.24, 0.13, 0.06, 1.0)
-	var view_rect := Rect2(Vector2.ZERO, size).grow(24.0)
-	for i in lands.size():
-		var ring: Array = lands[i]
-		var pts := _project_ring(frame, ring)
-		if pts.size() < 3:
-			continue
-		# Natural Earth 386 环逐帧全画会拖慢：包围盒不碰视窗的环直接跳过（云端 2d51 数据、8b32 做法）
-		var bb := Rect2(pts[0], Vector2.ZERO)
-		for p in pts:
-			bb = bb.expand(p)
-		if not bb.intersects(view_rect):
-			continue
-		var soft := _soft_coast(frame, ring, pts, i == 0)
-		if soft.size() < 3:
-			continue
-		# 平滑后自交或退化的环三角化会失败并刷错误日志：这类环只描线不填色（云端 8b32 做法）
-		if Geometry2D.triangulate_polygon(soft).size() > 0:
-			c.draw_colored_polygon(soft, mainland if i == 0 else island)
+	for entry in _land_polygons(frame, size):
+		var soft: PackedVector2Array = entry["soft"]
+		var is_main: bool = entry["main"]
+		if entry["fill"]:
+			c.draw_colored_polygon(soft, mainland if is_main else island)
 		var stroke := soft.duplicate()
 		stroke.append(soft[0])
 		c.draw_polyline(stroke, shore, 4.2, true)
 		c.draw_polyline(stroke, ink, 1.55, true)
-		_draw_shoal(c, frame, soft, i == 0, harbors)
+		_draw_shoal(c, frame, soft, is_main, harbors)
 	_draw_land_grain(c, frame, size)
 	_draw_inland(c, frame, size)
 	_draw_ranges(c, frame, size)
