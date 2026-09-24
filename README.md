@@ -36,10 +36,13 @@ python3 tools/patrol.py
 
 ```bash
 python3 tools/check_symbols.py    # autoload 顺序与跨文件符号 + 海战精灵 PNG 取证（RGBA8/四角透明/体积下限）
-python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 / 死港 / 海战数值边界 / 结局旗标
+python3 tools/verify_economy.py   # 数据完整性 / 套利 / 砸盘 / 季风 / 死港 / 海战数值边界 / 结局旗标 / 海图投影落点
 python3 tools/simulate_run.py     # 端到端跑一局，找死锁与账目溢出
+python3 tools/verify_coastline.py # 海图数据：岸线环、港口贴岸、史载航点在海上、标注/险地/洋流格式、投影常量三处一致、底图尺寸
 python3 tools/verify_narrative.py # （云端 21ce 自带，绑定其 P7 平行实现；本分支按主干 p6 结局线，此脚本仅留档不入门禁）
 ```
+
+海图（2026-09-25 重制，见 `docs/海图重制设计_2026-09-25.md`）：图面在 `scripts/chart/MapView.gd`，投影 `scripts/chart/ChartProjection.gd`（等距圆锥，参数 `data/chart_projection.json`），底图 `assets/map/terrain_4096.png` + `mapdata_2048.png` 由 `tools/build_terrain.py` 离线生成（ETOPO 2022 高程 + Natural Earth 1:10m 岸线；需 numpy / scipy / shapely / pyshp / tifffile / pillow）。改投影参数必须同时改 json 并重出底图。
 
 有 Godot 4.6 时，引擎两层也可以单独跑：
 

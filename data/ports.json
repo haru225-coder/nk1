@@ -13,6 +13,11 @@
       "status": "main",
       "lat": 25.43,
       "lon": 119.01,
+      "chart": {
+        "label": "興化",
+        "sub": "興化軍·莆田",
+        "shibo": false
+      },
       "depth": 120,
       "unlock": "ch1",
       "tags": [
@@ -51,8 +56,13 @@
       "name": "兴化海口",
       "region": "兴化军 / 海口酒棚",
       "status": "main",
-      "lat": 25.35,
-      "lon": 119.2,
+      "lat": 25.44,
+      "lon": 119.12,
+      "chart": {
+        "label": "興化海口",
+        "sub": "寧海·涵頭",
+        "shibo": false
+      },
       "depth": 100,
       "unlock": "ch1",
       "tags": [
@@ -86,6 +96,11 @@
       "status": "main",
       "lat": 24.87,
       "lon": 118.68,
+      "chart": {
+        "label": "泉州",
+        "sub": "刺桐·後渚",
+        "shibo": true
+      },
       "depth": 400,
       "unlock": "ch1",
       "tags": [
@@ -145,6 +160,17 @@
       "status": "main",
       "lat": 26.08,
       "lon": 119.3,
+      "chart": {
+        "label": "福州",
+        "sub": "閩安",
+        "shibo": false,
+        "sub_by_year": [
+          {
+            "from": 1276,
+            "sub": "福安府"
+          }
+        ]
+      },
       "depth": 250,
       "unlock": "ch1",
       "tags": [
@@ -184,6 +210,11 @@
       "status": "main",
       "lat": 24.51,
       "lon": 117.65,
+      "chart": {
+        "label": "漳州",
+        "sub": "龍溪",
+        "shibo": false
+      },
       "depth": 150,
       "unlock": "ch1",
       "tags": [
@@ -214,8 +245,19 @@
       "name": "温州",
       "region": "两浙路",
       "status": "main",
-      "lat": 28.0,
-      "lon": 120.7,
+      "lat": 28.03,
+      "lon": 120.65,
+      "chart": {
+        "label": "溫州",
+        "sub": "永嘉",
+        "shibo": false,
+        "sub_by_year": [
+          {
+            "from": 1265,
+            "sub": "瑞安府"
+          }
+        ]
+      },
       "depth": 200,
       "unlock": "ch1",
       "tags": [
@@ -251,6 +293,11 @@
       "status": "main",
       "lat": 23.57,
       "lon": 119.59,
+      "chart": {
+        "label": "彭湖",
+        "sub": "隸晉江縣",
+        "shibo": false
+      },
       "depth": 110,
       "unlock": "ch1",
       "tags": [
@@ -281,6 +328,11 @@
       "status": "main",
       "lat": 25.13,
       "lon": 121.74,
+      "chart": {
+        "label": "南島海道北口",
+        "sub": "流求北境（虛構泊地）",
+        "shibo": false
+      },
       "depth": 110,
       "unlock": "ch1",
       "tags": [
@@ -313,6 +365,11 @@
       "status": "main",
       "lat": 29.87,
       "lon": 121.55,
+      "chart": {
+        "label": "明州",
+        "sub": "慶元府",
+        "shibo": true
+      },
       "depth": 350,
       "unlock": "ch2",
       "tags": [
@@ -354,6 +411,17 @@
       "status": "main",
       "lat": 33.5,
       "lon": 126.53,
+      "chart": {
+        "label": "耽羅",
+        "sub": "濟州",
+        "shibo": false,
+        "sub_by_year": [
+          {
+            "from": 1273,
+            "sub": "濟州（元）"
+          }
+        ]
+      },
       "depth": 180,
       "unlock": "ch2",
       "tags": [
@@ -392,6 +460,11 @@
       "status": "main",
       "lat": 33.59,
       "lon": 130.4,
+      "chart": {
+        "label": "博多",
+        "sub": "唐房",
+        "shibo": false
+      },
       "depth": 300,
       "unlock": "ch2",
       "tags": [
@@ -439,6 +512,11 @@
       "status": "main",
       "lat": 23.13,
       "lon": 113.26,
+      "chart": {
+        "label": "廣州",
+        "sub": "扶胥",
+        "shibo": true
+      },
       "depth": 400,
       "unlock": "ch3",
       "tags": [
@@ -478,11 +556,16 @@
     },
     {
       "id": "kagoshima",
-      "name": "南九州",
-      "region": "萨摩外海",
+      "name": "萨摩",
+      "region": "萨摩 / 万之濑川口",
       "status": "main",
-      "lat": 31.6,
-      "lon": 130.55,
+      "lat": 31.42,
+      "lon": 130.31,
+      "chart": {
+        "label": "薩摩",
+        "sub": "萬之瀨",
+        "shibo": false
+      },
       "depth": 130,
       "unlock": "ch3",
       "tags": [
@@ -518,6 +601,11 @@
       "status": "main",
       "lat": 13.77,
       "lon": 109.22,
+      "chart": {
+        "label": "占城",
+        "sub": "新州",
+        "shibo": false
+      },
       "depth": 200,
       "unlock": "ch4",
       "tags": [

@@ -345,117 +345,78 @@ check(not missing, f"每种职事都有候选人（缺：{[roles[m]['name'] for 
 
 print()
 print("=" * 68)
-print("一之四、海图投影（SeaChart._draw_chart 的等比投影）")
+print("一之四、海图投影（scripts/chart/ChartProjection.gd 的等距圆锥投影，参数取 data/chart_projection.json）")
 print("=" * 68)
 
-W, H = 560.0, 250.0
+# 2026-09-25 海图重制：投影不再随解锁港口自动取景，而是固定画布上的等距圆锥（标准纬线 15°N / 35°N，中央经线 120°E）。
+# 这里按 json 里的常量重算（与 GDScript、tools/build_terrain.py 同一公式），检查港口落点与相对方位。
+_pj = load("chart_projection.json")
+W, H = (float(v) for v in _pj["canvas_px"])
+_b = _pj["bounds"]
+_phi1, _phi2 = math.radians(float(_pj["phi1"])), math.radians(float(_pj["phi2"]))
+_lon0 = math.radians(float(_pj["lon0"]))
+_n = (math.cos(_phi1) - math.cos(_phi2)) / (_phi2 - _phi1)
+_G = math.cos(_phi1) / _n + _phi1
+_rho0 = _G - (_phi1 + _phi2) * 0.5
+def _conic_px(lon, lat):
+    rho = _G - math.radians(lat)
+    theta = _n * (math.radians(lon) - _lon0)
+    x, y = rho * math.sin(theta), _rho0 - rho * math.cos(theta)
+    return ((x - _b["x0"]) / (_b["x1"] - _b["x0"]) * W, (_b["y1"] - y) / (_b["y1"] - _b["y0"]) * H)
 def project(subset):
-    """复现 _draw_chart 的投影，返回 {pid: (x, y)}"""
-    lats = [p["lat"] for p in subset]; lons = [p["lon"] for p in subset]
-    mean_lat, mean_lon = (min(lats)+max(lats))/2, (min(lons)+max(lons))/2
-    kx = math.cos(math.radians(mean_lat))
-    span_x = max(0.5, (max(lons)-min(lons))*kx)
-    span_y = max(0.5, max(lats)-min(lats))
-    scale = min(W/span_x, H/span_y) * 0.78
-    return {p["id"]: (W/2 + (p["lon"]-mean_lon)*kx*scale,
-                      H/2 - (p["lat"]-mean_lat)*scale) for p in subset}, scale, kx
+    """按海图投影把港口落到底图像素，返回 {pid: (x, y)}"""
+    return {p["id"]: _conic_px(p["lon"], p["lat"]) for p in subset}
 
 allp = list(ports.values())
-pos, scale, kx = project(allp)
+pos = project(allp)
 
 oob = [pid for pid,(x,y) in pos.items() if not (0 <= x <= W and 0 <= y <= H)]
-check(not oob, f"全部 {len(pos)} 个港口都落在画布内（越界：{oob or '无'}）")
+check(not oob, f"全部 {len(pos)} 个港口都落在底图内（越界：{oob or '无'}）")
 
 # 相对方位必须与真实地理一致（屏幕 y 轴向下，故北 = y 更小）
 def rel(a, b):
     return ("东" if pos[b][0] > pos[a][0] else "西") + ("北" if pos[b][1] < pos[a][1] else "南")
 cases = [("quanzhou","hakata","东北"), ("quanzhou","guangzhou","西南"),
          ("quanzhou","jeju","东北"), ("quanzhou","champa","西南"),
-         ("mingzhou","hakata","东北"), ("wenzhou","zhangzhou","西南"),
-         # 鹿儿岛 130.55°E 略东于福冈 130.40°E，故为东南而非想当然的西南
-         ("hakata","kagoshima","东南")]
+         ("mingzhou","hakata","东北"), ("wenzhou","zhangzhou","西南")]
 for a,b,want in cases:
     got = rel(a,b)
     check(got == want, f"{ports[a]['name']} → {ports[b]['name']} 在图上位于{got}（实际{want}）")
+# 萨摩（万之瀨川口 130.31°E，ports.md §2）在博多正南偏西约 2°：象限判法对近正南的两点没有意义，
+# 圆锥投影下 130°E 的经线已右倾 4°，只断言「近乎正南」——横向偏差不到纵向的 15%。
+_dx = pos["kagoshima"][0] - pos["hakata"][0]
+_dy = pos["kagoshima"][1] - pos["hakata"][1]
+check(_dy > 0 and abs(_dx) < 0.15 * _dy,
+      f"{ports['hakata']['name']} → {ports['kagoshima']['name']} 在图上近乎正南（横 {_dx:.0f} px / 纵 {_dy:.0f} px）")
 
-# 等比：屏幕距离之比应贴合真实里程之比，地图不能被拉伸变形
+# 等比：屏幕距离之比应贴合真实里程之比，地图不能被拉伸变形（等距圆锥在 15°–35° 之间形变很小）
 pairs = [("quanzhou","hakata"), ("quanzhou","penghu"), ("quanzhou","guangzhou"),
          ("mingzhou","hakata"), ("guangzhou","champa")]
 ratios = []
 for a,b in pairs:
     sd = math.dist(pos[a], pos[b])
-    # 屏幕上画的是两点连线，比例要拿直线大圆里程比；distance_li 自 2d51 起沿 sealanes 折线累加
+    # 屏幕上量的是两点直线，比例要拿直线大圆里程比；distance_li 自 2d51 起沿 sealanes 折线累加
     rd = gc_li_pts(ports[a]["lon"], ports[a]["lat"], ports[b]["lon"], ports[b]["lat"])
     ratios.append(sd/rd)
 spread = max(ratios)/min(ratios)
 print(f"\n  屏幕距离/实际里程 之比：{min(ratios):.4f} ~ {max(ratios):.4f}（离散度 {spread:.3f}）")
 check(spread < 1.12, f"各航段的图上比例一致，离散度 {spread:.3f} < 1.12（地图未失真）")
 
-# 只解锁第一章时也要成图
+# 只解锁第一章时港口同样在底图内（投影固定，不随章节变）
 ch1 = [p for p in allp if p.get("unlock","ch1") == "ch1"]
-pos1, _, _ = project(ch1)
+pos1 = project(ch1)
 oob1 = [pid for pid,(x,y) in pos1.items() if not (0 <= x <= W and 0 <= y <= H)]
-check(not oob1, f"仅第一章 {len(ch1)} 港时同样全部在画布内")
+check(not oob1, f"仅第一章 {len(ch1)} 港时同样全部在底图内")
 
-# 季风箭头方向：方位角 → 屏幕向量（y 向下取负 cos）
+# 季风流线方向：方位角 → 屏幕向量（y 向下取负 cos）
 for name, bearing_deg, want in [("西南季风(吹向东北)", 45.0, "右上"), ("东北季风(吹向西南)", 225.0, "左下")]:
     dx, dy = math.sin(math.radians(bearing_deg)), -math.cos(math.radians(bearing_deg))
     got = ("右" if dx > 0 else "左") + ("上" if dy < 0 else "下")
-    check(got == want, f"{name} 的箭头指向{got}")
+    check(got == want, f"{name} 的流线指向{got}")
 
-# 海岸是绢纸上的装饰，不能把港点埋进陆地。投影系数仍锁 0.78。
-coast = load("chart_coast.json")
-seachart_src = open(os.path.join(ROOT, "scripts", "SeaChart.gd"), encoding="utf-8").read()
-check("res://data/chart_coast.json" in seachart_src, "海图会读取 chart_coast.json")
-check("* 0.78" in seachart_src, "海图投影系数仍是 0.78")
-
-def _ring_has(lat, lon, ring):
-    inside = False
-    n = len(ring)
-    j = n - 1
-    for i in range(n):
-        yi, xi = float(ring[i][0]), float(ring[i][1])
-        yj, xj = float(ring[j][0]), float(ring[j][1])
-        denom = yj - yi
-        if abs(denom) < 1e-9:
-            j = i
-            continue
-        if ((yi > lat) != (yj > lat)) and (lon < (xj - xi) * (lat - yi) / denom + xi):
-            inside = not inside
-        j = i
-    return inside
-
-def _edge_gap(lat, lon, ring):
-    best = 1e9
-    for i in range(len(ring) - 1):
-        lat1, lon1 = float(ring[i][0]), float(ring[i][1])
-        lat2, lon2 = float(ring[i + 1][0]), float(ring[i + 1][1])
-        vx, vy = lon2 - lon1, lat2 - lat1
-        L2 = vx * vx + vy * vy
-        if L2 < 1e-12:
-            d = math.hypot(lon - lon1, lat - lat1)
-        else:
-            t = max(0.0, min(1.0, ((lon - lon1) * vx + (lat - lat1) * vy) / L2))
-            d = math.hypot(lon - (lon1 + t * vx), lat - (lat1 + t * vy))
-        best = min(best, d)
-    return best
-
-rings = coast.get("land", [])
-check(len(rings) >= 5, f"海岸至少有大陆和几座岛（现有 {len(rings)} 环）")
-buried = []
-close = []
-for p in allp:
-    lat, lon = float(p["lat"]), float(p["lon"])
-    if any(_ring_has(lat, lon, ring) for ring in rings):
-        buried.append(p["id"])
-    gap = min(_edge_gap(lat, lon, ring) for ring in rings)
-    if gap < 0.18:
-        close.append(f"{p['id']} {gap:.2f}°")
-check(not buried, f"港口都在海上（埋进陆地：{buried or '无'}）")
-check(not close, f"港口离岸至少 0.18 度（过近：{close or '无'}）")
-for sea in coast.get("seas", []):
-    on = any(_ring_has(float(sea["lat"]), float(sea["lon"]), ring) for ring in rings)
-    check(not on, f"海名「{sea['name']}」写在海上")
+# 港口贴岸、航点在海上、标注合法：见 tools/verify_coastline.py（真实岸线）。旧手绘 chart_coast.json 不再是海图数据。
+mapview_src = open(os.path.join(ROOT, "scripts", "chart", "MapView.gd"), encoding="utf-8").read()
+check("ChartProjection.from_json(" in mapview_src, "海图经 ChartProjection 读 chart_projection.json 投影")
 
 print()
 print("=" * 68)
@@ -1810,8 +1771,13 @@ check(wz_coast_safe > wz_deadline and hold_c >= 8,
       f"傍岸八成 {wz_coast_safe} 日超过期限 {wz_deadline}，保货 {hold_c} 不拿来冒充赶得上")
 p_by_mean = cargo_hold_chance(3, 1, "offshore", True, wz_off_mean)
 p_by_safe = cargo_hold_chance(3, 1, "offshore", True, wz_off_safe)
-check(p_by_mean > p_by_safe + 0.02,
-      f"外洋保货按遇事 {wz_off_mean} 日是 {p_by_mean:.3f}，长于按八成 {wz_off_safe} 日的 {p_by_safe:.3f}")
+# 八成日数比遇事日数长时，按八成算的保货必须更低；两者恰好同日（泉州→温州改走史载航点后 877 里，外洋均为 9 日）则应相等
+if wz_off_safe > wz_off_mean:
+    check(p_by_mean > p_by_safe + 0.02,
+          f"外洋保货按遇事 {wz_off_mean} 日是 {p_by_mean:.3f}，长于按八成 {wz_off_safe} 日的 {p_by_safe:.3f}")
+else:
+    check(abs(p_by_mean - p_by_safe) < 1e-9,
+          f"外洋遇事与八成同为 {wz_off_mean} 日，保货 {p_by_mean:.3f} 与 {p_by_safe:.3f} 相等")
 hk_hold = cargo_hold_tenths(cargo_hold_chance(3, 1, "offshore", False, hk_mean))
 check(hk_hold <= 2 and hk_safe > hk_deadline,
       f"三月泉州→博多外洋保货只有 {hk_hold}，八成 {hk_safe} 日已超过期限 {hk_deadline}")
