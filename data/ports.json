@@ -530,7 +530,8 @@
       "chart": {
         "label": "廣州",
         "sub": "扶胥",
-        "shibo": true
+        "shibo": true,
+        "sub_by_year": [{"from": 1278, "sub": "廣州路（元）"}]
       },
       "depth": 400,
       "unlock": "ch3",

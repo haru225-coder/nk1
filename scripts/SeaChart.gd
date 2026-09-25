@@ -21,6 +21,10 @@ var map_container: SubViewportContainer
 var compass: Control
 var scale_bar: Control
 var mode_button: Button
+## 中间露出图的那段占位（顶匾之下、牌区之上）；取景只用这段，见 _push_view_inset
+var _map_clear: Control
+var _actions_wrap: Control
+var _deck_hint: Label
 var terrain_mode: bool = false
 var heading_row: HBoxContainer
 var log_label: RichTextLabel
@@ -88,11 +92,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 var _deck_hidden: bool = false
 func _toggle_deck() -> void:
 	_deck_hidden = not _deck_hidden
-	for c in [order_row, heading_row]:
+	for c in [order_row, heading_row, _actions_wrap]:
 		if c:
 			c.visible = not _deck_hidden
-	if sail_button and sail_button.get_parent():
-		sail_button.get_parent().visible = not _deck_hidden
+	if _deck_hint:
+		_deck_hint.visible = _deck_hidden
 
 
 # ══════════════════════════════════════════════════════
@@ -104,8 +108,9 @@ func _build_ui() -> void:
 
 	# ── 海图：SubViewport 里的 MapView 铺满全屏，摄像机只影响它；容器挂后期纸纹 ──
 	map_container = SubViewportContainer.new()
-	map_container.set_anchors_preset(Control.PRESET_FULL_RECT)
-	map_container.stretch = true
+	# 验收 code:CR-3：原为 FULL_RECT + stretch=true，子视口恒按逻辑 1280x720 渲染再被根视口放大，Retina / 全屏发糊。
+	# 改为不拉伸，容器尺寸、缩放与子视口分辨率由 _fit_map_viewport 按物理像素设（默认锚点即左上）
+	map_container.stretch = false
 	var post := ShaderMaterial.new()
 	post.shader = load("res://assets/map/ChartPost.gdshader")
 	map_container.material = post
@@ -118,6 +123,10 @@ func _build_ui() -> void:
 	map = MapView.new()
 	vp.add_child(map)
 	map.port_clicked.connect(_on_map_port_clicked)
+	# CR-3：逻辑尺寸变（resized）或窗口像素变而逻辑尺寸不变（canvas_items 下只有 size_changed）都重配子视口
+	resized.connect(_fit_map_viewport)
+	get_viewport().size_changed.connect(_fit_map_viewport)
+	_fit_map_viewport()
 
 	var root := VBoxContainer.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -153,6 +162,8 @@ func _build_ui() -> void:
 	mode_button.text = "舆图"
 	mode_button.tooltip_text = "海图 / 舆图（地形）切换　T"
 	mode_button.custom_minimum_size = Vector2(96, 40)
+	# 验收 code:CR-5：HUD 按钮不拿焦点，航行中按空格加速不会误触（下同）
+	mode_button.focus_mode = Control.FOCUS_NONE
 	mode_button.pressed.connect(_toggle_mode)
 	UiTheme.style_button(mode_button, false)
 	strip_row.add_child(mode_button)
@@ -160,12 +171,14 @@ func _build_ui() -> void:
 	home_btn.text = "全图"
 	home_btn.tooltip_text = "取景到已知海域　F"
 	home_btn.custom_minimum_size = Vector2(96, 40)
+	home_btn.focus_mode = Control.FOCUS_NONE  # CR-5
 	home_btn.pressed.connect(func(): _frame_home(0.8))
 	UiTheme.style_button(home_btn, false)
 	strip_row.add_child(home_btn)
 	var cond_btn := Button.new()
 	cond_btn.text = "船况"
 	cond_btn.custom_minimum_size = Vector2(120, 40)
+	cond_btn.focus_mode = Control.FOCUS_NONE  # CR-5
 	cond_btn.pressed.connect(_toggle_condition)
 	UiTheme.style_button(cond_btn, false)
 	strip_row.add_child(cond_btn)
@@ -176,6 +189,9 @@ func _build_ui() -> void:
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(center)
+	_map_clear = center
+	# 占位一变（首帧布局、H 收牌、拉窗口）就把露出的图带高度告诉图
+	center.resized.connect(_push_view_inset)
 	compass = Control.new()
 	compass.custom_minimum_size = Vector2(150, 172)
 	compass.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -195,6 +211,8 @@ func _build_ui() -> void:
 	cartouche.offset_bottom = 8 + 190
 	cartouche.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cartouche.draw.connect(func(): _draw_cartouche(cartouche))
+	# 验收 code:CR-8：缩放换方格时题记旁注跟着重写
+	map.camera_changed.connect(cartouche.queue_redraw)
 	center.add_child(cartouche)
 	scale_bar = Control.new()
 	scale_bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
@@ -206,39 +224,66 @@ func _build_ui() -> void:
 	scale_bar.draw.connect(_draw_scale)
 	center.add_child(scale_bar)
 	map.camera_changed.connect(scale_bar.queue_redraw)
-	var speed_hint := Label.new()
-	speed_hint.text = "拖拽平移　滚轮缩放　T 舆图　F 全图　H 收牌　航行中按住空格加速"
-	speed_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	speed_hint.offset_left = -520
-	speed_hint.offset_right = -6
-	speed_hint.offset_top = -26
-	speed_hint.offset_bottom = -4
-	speed_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	speed_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UiTheme.style_footnote(speed_hint)
-	speed_hint.add_theme_color_override("font_color", Color(MAP_INK, 0.7))
-	center.add_child(speed_hint)
+	# 收牌后牌区不在了，图带右下角留一句怎么展开；平时藏着，不压图
+	_deck_hint = Label.new()
+	_deck_hint.text = "H 展开牌区"
+	_deck_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	_deck_hint.offset_left = -160
+	_deck_hint.offset_right = -6
+	_deck_hint.offset_top = -26
+	_deck_hint.offset_bottom = -4
+	_deck_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_deck_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiTheme.style_footnote(_deck_hint)
+	_deck_hint.add_theme_color_override("font_color", Color(MAP_INK, 0.7))
+	_deck_hint.visible = false
+	center.add_child(_deck_hint)
 
 	# 航法三策一栏（云端 bed9），放在航向牌上方
 	order_row = _build_order_row()
+	# 验收 interact:F4：横贯全宽的空白处不吃鼠标，牌区两侧露出的图也能拖、能滚轮缩放（按钮自己仍是 STOP，照样可点）
+	order_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(order_row)
 
 	heading_row = HBoxContainer.new()
 	heading_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	heading_row.add_theme_constant_override("separation", 12)
+	# 验收 visual:V1：148 只是下限（没牌时也留这么高）；牌高随行数长时 HBox 按最高那张撑开，center 随之 resized → _push_view_inset
 	heading_row.custom_minimum_size = Vector2(0, 148)
+	# 验收 interact:F4：同上，牌与牌之间、两侧空白让给图；牌上的覆盖 Button 仍接点击
+	heading_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(heading_row)
 
+	# 底行：按钮居中；操作提示两行小字靠右，不再浮在图上压港名（snowchan27-02 走查）
+	_actions_wrap = Control.new()
+	_actions_wrap.custom_minimum_size = Vector2(0, 48)
+	_actions_wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_actions_wrap)
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 12)
-	root.add_child(actions)
+	actions.set_anchors_preset(Control.PRESET_FULL_RECT)
+	actions.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_actions_wrap.add_child(actions)
+	var speed_hint := Label.new()
+	speed_hint.text = "拖拽平移　滚轮缩放　航行中按住空格加速\nT 舆图　F 全图　H 收牌"
+	speed_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
+	speed_hint.offset_left = -300
+	speed_hint.offset_right = 0
+	speed_hint.offset_top = -24
+	speed_hint.offset_bottom = 24
+	speed_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	speed_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	speed_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiTheme.style_footnote(speed_hint)
+	_actions_wrap.add_child(speed_hint)
 
 	sail_button = Button.new()
 	sail_button.text = "就这一向"
 	sail_button.custom_minimum_size = Vector2(220, 48)
 	sail_button.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
 	sail_button.disabled = true
+	sail_button.focus_mode = Control.FOCUS_NONE  # CR-5
 	sail_button.pressed.connect(_on_sail_pressed)
 	actions.add_child(sail_button)
 	UiTheme.style_button(sail_button, true)
@@ -246,6 +291,7 @@ func _build_ui() -> void:
 	redraw_button = Button.new()
 	redraw_button.text = "候风再发"
 	redraw_button.custom_minimum_size = Vector2(160, 42)
+	redraw_button.focus_mode = Control.FOCUS_NONE  # CR-5
 	redraw_button.pressed.connect(_on_redraw_hand)
 	actions.add_child(redraw_button)
 	UiTheme.style_button(redraw_button)
@@ -253,6 +299,7 @@ func _build_ui() -> void:
 	back_button = Button.new()
 	back_button.text = "回港"
 	back_button.custom_minimum_size = Vector2(120, 42)
+	back_button.focus_mode = Control.FOCUS_NONE  # CR-5
 	back_button.pressed.connect(_on_back_to_port)
 	actions.add_child(back_button)
 	UiTheme.style_button(back_button)
@@ -270,10 +317,41 @@ func _toggle_mode() -> void:
 
 ## 取景到全部已解锁港口
 func _frame_home(dur: float) -> void:
+	_push_view_inset()
 	var ids := []
 	for p in GameManager.unlocked_ports():
 		ids.append(str(p.get("id", "")))
-	map.frame_ports(ids, 0.20, dur)
+	map.frame_ports(ids, 0.16, dur, origin_port)
+
+
+## 把顶匾与底部牌区盖住的屏幕高度告诉图：取景只用中间露出的图带，起讫港不再躲在航向牌底下
+func _push_view_inset() -> void:
+	if map == null or _map_clear == null or not _map_clear.is_inside_tree():
+		return
+	var top := _map_clear.global_position.y - global_position.y
+	var bottom := size.y - (top + _map_clear.size.y)
+	map.set_view_inset(top, bottom)
+
+
+## 验收 code:CR-3：海图子视口按物理像素渲染。容器铺成物理像素大小再缩回 logical/phys，
+## 贴图经根视口放大后正好 1:1；size_2d_override 让 MapView 的 get_viewport_rect、镜头、输入仍是逻辑坐标（取景 inset 数学不变）。
+## 不能只关 stretch 不缩容器：stretch=false 时容器按子视口原尺寸画、最小尺寸也跟子视口，会画大一倍并自激放大（实测）。
+func _fit_map_viewport() -> void:
+	if map == null or map_container == null:
+		return
+	var logical := size
+	if logical.x < 1.0 or logical.y < 1.0:
+		return
+	var vp := map.get_viewport() as SubViewport
+	var phys := (logical * get_viewport().get_final_transform().get_scale()).round()
+	if phys.x < 1.0 or phys.y < 1.0:  # 窗口最小化时缩放可能为 0
+		return
+	vp.size = Vector2i(phys)
+	vp.size_2d_override = Vector2i(logical.round())
+	vp.size_2d_override_stretch = true
+	map_container.position = Vector2.ZERO
+	map_container.size = phys
+	map_container.scale = logical / phys
 
 
 ## 把当前选择同步到图上：风向、手牌、当前航段（顺风绿 / 逆风朱 / 换风金）
@@ -310,7 +388,7 @@ func _on_map_port_clicked(pid: String) -> void:
 
 
 ## 二十四向罗盘（宋元针盘）：内环四维（朱砂）、中环十二支（墨）、外环八干（淡墨），最外 48 刻度（每 7.5 度，缝针短刻）。
-## 朱针指当前航向并写「单某针」或「某某针」（缝针 = 两向之间），青箭示季风。中心一圈淡青取「指南浮针」之意。
+## 朱针指当前航向并写「某针」或「某某针」（缝针 = 两向之间），青箭示季风。中心一圈淡青取「指南浮针」之意。
 func _draw_compass() -> void:
 	var c := compass
 	var font := UiTheme.font()
@@ -372,11 +450,12 @@ func _draw_compass() -> void:
 	c.draw_circle(center, 2.5, MAP_INK)
 
 
-## 针位读法：正对一向为「单X针」，落在两向之间为「XY针」（分辨率 7.5 度，《真腊风土记》「行丁未针」）
+## 针位读法：正对一向为「X针」，落在两向之间为「XY针」（分辨率 7.5 度，《真腊风土记》「行丁未针」）
+## 验收 history:F6：「单X针」是《顺风相送》等明代针路簿写法，宋末只写「X针」（如「乙针」），缝针仍「乙辰针」
 static func needle_name(bearing: float) -> String:
 	var k := int(round(fposmod(bearing, 360.0) / 7.5)) % 48
 	if k % 2 == 0:
-		return "单%s针" % str(COMPASS_24[k / 2])
+		return "%s针" % str(COMPASS_24[k / 2])
 	var a := str(COMPASS_24[(k - 1) / 2])
 	var b := str(COMPASS_24[((k + 1) / 2) % 24])
 	return "%s%s针" % [a, b]
@@ -397,6 +476,9 @@ func _draw_cartouche(c: Control) -> void:
 		c.draw_string(font, Vector2(x_main + 12.0 - w * 0.5, y + 12.0), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, MAP_INK)
 		y += 21.0
 	var note := "每方折地百里"
+	# 验收 code:CR-8：旁注跟计里画方的实际方格走（MapView.grid_step_li 返回 100 / 500 / 1000）；图还没有该方法时仍写百里
+	if map != null and map.has_method("grid_step_li"):
+		note = "每方折地%s" % str({500: "五百里", 1000: "千里"}.get(int(map.call("grid_step_li")), "百里"))
 	var y2 := 26.0
 	var x_note := rect.end.x - 18.0
 	for ch in note:
@@ -592,7 +674,8 @@ func _refresh_strip() -> void:
 		var pct := 0
 		if total_li > 0.0:
 			pct = int(clampf((total_li - remaining_li) / total_li, 0.0, 1.0) * 100.0)
-		note = "航行中　第 %d 日　已行 %d / 100　余程 %d 里" % [days_elapsed, pct, int(remaining_li)]
+		# 验收 sail:SAIL-3：末日进度会冲过头，余程钳到 0，不显示负数
+		note = "航行中　第 %d 日　已行 %d / 100　余程 %d 里" % [days_elapsed, pct, maxi(0, int(remaining_li))]
 	var dim := UiTheme.hex(UiTheme.TEXT_DIM)
 	_strip_line.text = line1 + "\n[color=#%s]%s[/color]" % [dim, note]
 
@@ -622,6 +705,7 @@ func _build_order_row() -> HBoxContainer:
 		b.toggle_mode = true
 		b.text = str(spec[1])
 		b.custom_minimum_size = Vector2(120, 36)
+		b.focus_mode = Control.FOCUS_NONE  # 验收 code:CR-5：航法按钮不拿焦点
 		b.tooltip_text = Voyage.order_blurb(int(spec[0]))
 		b.pressed.connect(_on_order_pressed.bind(int(spec[0])))
 		row.add_child(b)
@@ -670,8 +754,9 @@ func _refresh_status() -> void:
 		var pct := 0.0
 		if total_li > 0.0:
 			pct = clampf((total_li - remaining_li) / total_li, 0.0, 1.0)
+		# 余程钳 0（验收 sail:SAIL-3）
 		t += "[color=#%s]航行中　第 %d 日・%s[/color]\n已行　%d / 100\n余程　%d 里\n" % [
-			UiTheme.hex(UiTheme.HONEY), days_elapsed, Voyage.order_name(course_order), int(pct * 100), int(remaining_li),
+			UiTheme.hex(UiTheme.HONEY), days_elapsed, Voyage.order_name(course_order), int(pct * 100), maxi(0, int(remaining_li)),
 		]
 	# 在身委办（云端 bed9）
 	var cst := GameState.contract_status()
@@ -858,11 +943,18 @@ func _make_heading_card(pid: String) -> Control:
 		box.add_child(_card_line("生路", UiTheme.HONEY))
 	if not bool(plan["supply_ok"]):
 		box.add_child(_card_line("水粮不够", UiTheme.CINNABAR))
+	# 验收 visual:V1 / interact:F7：牌高随行数长。「生路」+「水粮不够」同现时六行最小高 147，超出 148-24 的内高；
+	# 普通 Control 不按子节点撑高，这里跟着 box 的最小高重算（字体进树后才有尺寸，故挂 minimum_size_changed），至少仍 148
+	var fit_card := func() -> void:
+		wrap.custom_minimum_size.y = maxf(148.0, box.get_combined_minimum_size().y + 24.0)
+	box.minimum_size_changed.connect(fit_card)
+	fit_card.call()
 
 	var hit := Button.new()
 	hit.flat = true
 	hit.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hit.disabled = sailing
+	hit.focus_mode = Control.FOCUS_NONE  # 验收 code:CR-5：牌不拿焦点
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 		hit.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	hit.pressed.connect(_select_heading.bind(pid))

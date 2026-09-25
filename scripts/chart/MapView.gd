@@ -7,8 +7,8 @@ extends Node2D
 signal port_clicked(port_id: String)
 signal camera_changed
 
-const ZOOM_MIN := 0.32
-const ZOOM_MAX := 4.2
+const ZOOM_MIN := 0.28   # 4096 画布在 1280 宽下 0.32 才盖满屏；画布外已铺绢底，放宽到 0.28 让远程两港（广州—占城）装进图带
+const ZOOM_MAX := 3.2    # 岸线数据 0.008 度、底图 0.9 km/px，再放大只剩折线与糊纹理（近景实测 3.7 倍已显）
 const DRAG_FRICTION := 6.5
 const KM_PER_LI := 0.576
 
@@ -31,10 +31,12 @@ const COL_ROUTE_MIXED := COL_OCHRE
 
 var proj: ChartProjection
 var font: Font
+var font_title: Font   # 海名 / 地区名用的仿宋；缺则同 font
 var terrain: Sprite2D
 var camera: Camera2D
 var ship: ShipMarker
 
+var layer_paper: Node2D
 var layer_coast: Node2D
 var layer_flow: Node2D
 var layer_lanes: Node2D
@@ -81,6 +83,13 @@ var _cam_tween: Tween
 var _ship_tween: Tween
 var _mode_tween: Tween
 var _hover_port: String = ""
+var _drag_moved := 0.0                  # 本次按下以来累计位移（屏幕 px），判点击用
+var _drag_last_move_ms := 0             # 最后一次拖动的时刻，松手时判要不要甩出去
+var layer_mat: Node2D                   # 画布外的纸边盖层：盖住画到画布外的岸线与网格
+var _layout_key := ""                   # 上次算港口布局时的状态键（缩放、镜头、起讫、手牌、船位、年份）
+var _port_layout: Dictionary = {}       # 本帧要画的港：id -> {v, r, box, text, sub, pos …}
+var _port_label_texts: Dictionary = {}  # 本帧画出的港名 -> true，同名岛名 / 地区名不再标
+var _port_obstacles: Array[Rect2] = []  # 港框、船标、已放的港名，地名层避让用
 var map_size: Vector2 = Vector2(4096, 4318)
 
 
@@ -88,16 +97,27 @@ func _ready() -> void:
 	proj = ChartProjection.from_json()
 	map_size = Vector2(proj.canvas_w, proj.canvas_h)
 	# 字体：文楷子集（美术线的 Medium 落地后改指同名路径，见 docs/海图重制设计）；缺了就用 UiTheme 的系统字
-	var fp := "res://assets/fonts/LXGWWenKai-Regular-nk1.ttf"
+	var fp := "res://assets/fonts/LXGWWenKai-Medium.ttf"   # 与美术线统一用 Medium 全字（子集缺「討」等字）
 	if ResourceLoader.exists(fp):
 		font = load(fp) as Font
 	if font == null:
 		font = UiTheme.font()
+	# 图名字：朱雀仿宋（OFL，TrionesType/zhuque v0.212 子集）——海名、国名 / 地区名用仿宋，取宋刻本气；
+	# 港名与小字仍用文楷（仿宋细笔画在 15 px 以下不够清楚）。子集缺的字（阯 等）回退到文楷。
+	var tp := "res://assets/fonts/ZhuqueFangsong-nk1.ttf"
+	if ResourceLoader.exists(tp):
+		font_title = load(tp) as Font
+		if font_title is FontFile:
+			(font_title as FontFile).fallbacks = [font]
+	if font_title == null:
+		font_title = font
 	_build_nodes()
 	set_process(true)
 
 
 func _build_nodes() -> void:
+	# 画布之外铺绢底并描一圈墨线图框：拖到边上或最小缩放时露出的是纸，不是视口底色
+	layer_paper = _make_layer("Paper", _draw_paper)
 	terrain = Sprite2D.new()
 	terrain.centered = false
 	var tex := GameManager.load_texture("res://assets/map/terrain_4096.png")
@@ -119,6 +139,7 @@ func _build_nodes() -> void:
 	layer_flow = _make_layer("Flow", _draw_flow)
 	layer_lanes = _make_layer("Lanes", _draw_lanes)
 	layer_route = _make_layer("Route", _draw_route)
+	layer_mat = _make_layer("Mat", _draw_mat)
 	layer_labels = _make_layer("Labels", _draw_labels)
 	layer_ports = _make_layer("Ports", _draw_ports)
 
@@ -163,22 +184,106 @@ func setup(port_defs: Array, coast: Dictionary, lane_data: Dictionary, label_dat
 		tiers = t
 	coast_rings.clear()
 	coast_boxes.clear()
+	# 数据是按包围盒裁过的：环上两端都贴在同一条包围盒边上的段是裁边不是岸（103E 西缘在圆锥投影里是一条斜线，
+	# 会斜穿云南、老挝汇到画布角上），在那儿把环断成开放折线；没裁边的环才闭合
+	var bbox: Array = coast.get("meta", {}).get("bbox", [])
 	for ring in coast.get("land", []):
-		var poly := PackedVector2Array()
-		var r := Rect2()
-		var first := true
-		for pt in ring:
-			var v: Vector2 = proj.to_px(float(pt[0]), float(pt[1]))
-			poly.append(v)
-			if first:
-				r = Rect2(v, Vector2.ZERO)
-				first = false
-			else:
-				r = r.expand(v)
-		if poly.size() >= 3:
-			coast_rings.append(poly)
-			coast_boxes.append(r)
+		var n: int = ring.size()
+		if n < 3:
+			continue
+		var cut := PackedByteArray()
+		cut.resize(n)
+		var start := -1
+		for i in n:
+			cut[i] = 1 if _on_same_bbox_edge(ring[i], ring[(i + 1) % n], bbox) else 0
+			if cut[i] == 1 and start < 0:
+				start = (i + 1) % n
+		if start < 0:
+			var poly := PackedVector2Array()
+			for pt in ring:
+				poly.append(proj.to_px(float(pt[0]), float(pt[1])))
+			_add_coast_piece(poly, true)
+			continue
+		var piece := PackedVector2Array()
+		for k in n:
+			var i := (start + k) % n
+			var pt = ring[i]
+			piece.append(proj.to_px(float(pt[0]), float(pt[1])))
+			if cut[i] == 1:
+				_add_coast_piece(piece, false)
+				piece = PackedVector2Array()
+		_add_coast_piece(piece, false)
 	_redraw_all()
+
+
+## 岸线片段入缓存：先把长段加密到 5 世界像素（约 4.5 km）以内，再做一次 Chaikin 切角——数据是 0.008 度简化过的折线，
+## 近景折线感重；直接切角会把长段的拐点削掉最多四分之一段长（实测偏离底图岸缘 24 屏幕像素），先加密再切只圆角不走样。
+## 闭合环按环平滑并补首点，开放折线保留两端
+func _add_coast_piece(src: PackedVector2Array, closed: bool) -> void:
+	if src.size() < 2:
+		return
+	var poly := _chaikin(_densify(src, closed, 5.0), closed)
+	if closed:
+		poly.append(poly[0])
+	var r := Rect2(poly[0], Vector2.ZERO)
+	for v in poly:
+		r = r.expand(v)
+	coast_rings.append(poly)
+	coast_boxes.append(r)
+
+
+static func _densify(src: PackedVector2Array, closed: bool, max_len: float) -> PackedVector2Array:
+	var n := src.size()
+	var out := PackedVector2Array()
+	if n < 2:
+		return PackedVector2Array(src)
+	var segs := n if closed else n - 1
+	for i in segs:
+		var a := src[i]
+		var b := src[(i + 1) % n]
+		out.append(a)
+		var k := int(ceilf(a.distance_to(b) / max_len))
+		for j in range(1, k):
+			out.append(a.lerp(b, float(j) / float(k)))
+	if not closed:
+		out.append(src[n - 1])
+	return out
+
+
+static func _chaikin(src: PackedVector2Array, closed: bool) -> PackedVector2Array:
+	var n := src.size()
+	var out := PackedVector2Array()
+	if n < 3:
+		return PackedVector2Array(src)
+	var segs := n if closed else n - 1
+	if not closed:
+		out.append(src[0])
+	for i in segs:
+		var a := src[i]
+		var b := src[(i + 1) % n]
+		out.append(a.lerp(b, 0.25))
+		out.append(a.lerp(b, 0.75))
+	if not closed:
+		out.append(src[n - 1])
+	return out
+
+
+## 两点是否都贴在数据包围盒的同一条边上（bbox = [西, 南, 东, 北]，经纬度）
+static func _on_same_bbox_edge(a: Array, b: Array, bbox: Array) -> bool:
+	if bbox.size() != 4:
+		return false
+	var eps := 1e-4
+	var ax := float(a[0])
+	var ay := float(a[1])
+	var bx := float(b[0])
+	var by := float(b[1])
+	for x_edge in [float(bbox[0]), float(bbox[2])]:
+		if absf(ax - x_edge) < eps and absf(bx - x_edge) < eps:
+			return true
+	for y_edge in [float(bbox[1]), float(bbox[3])]:
+		if absf(ay - y_edge) < eps and absf(by - y_edge) < eps:
+			return true
+	return false
 
 
 func set_mode(terrain_mode: bool) -> void:
@@ -294,7 +399,9 @@ func move_ship_to(t: float, dur: float) -> Tween:
 	return _ship_tween
 
 
-## 船标直接放到经纬度处（云端 Voyage.point_along_track 按折线里程给点），frac 是已行比例，用来描深走过的线
+## 船标推到经纬度处（云端 Voyage.point_along_track 按折线里程给点），frac 是已行比例，用来描深走过的线。
+## 沿画出的航线折线按弧长走，不在像素空间对两点抄直线（一日跨过拐点时船会压到岸上）；
+## 朝向取所在线段方向，顺带扣掉了圆锥投影的经线收敛角。没有航线（不该发生）才退回直线。
 func move_ship_lonlat(lon: float, lat: float, heading_deg: float, frac: float, dur: float) -> Tween:
 	var target := proj.to_px(lon, lat)
 	var rot := deg_to_rad(heading_deg)
@@ -306,14 +413,52 @@ func move_ship_lonlat(lon: float, lat: float, heading_deg: float, frac: float, d
 	var from_rot := ship.rotation
 	var from_frac := ship_progress
 	_ship_tween = create_tween()
-	_ship_tween.tween_method(func(t: float):
-		ship.position = from_pos.lerp(target, t)
-		ship.rotation = lerp_angle(from_rot, rot, t)
-		ship_progress = lerpf(from_frac, frac, t)
-		_update_ship_scale()
-		layer_route.queue_redraw()
-	, 0.0, 1.0, maxf(0.01, dur)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	if route_points.size() >= 2 and route_total > 0.0:
+		var s0 := _arc_of_point(from_pos)
+		var s1 := _arc_of_point(target)
+		_ship_tween.tween_method(func(t: float):
+			var pose := _pose_at_arc(lerpf(s0, s1, t))
+			ship.position = pose[0]
+			ship.rotation = lerp_angle(ship.rotation, pose[1], 0.35)
+			ship_progress = lerpf(from_frac, frac, t)
+			_update_ship_scale()
+			layer_route.queue_redraw()
+		, 0.0, 1.0, maxf(0.01, dur)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	else:
+		_ship_tween.tween_method(func(t: float):
+			ship.position = from_pos.lerp(target, t)
+			ship.rotation = lerp_angle(from_rot, rot, t)
+			ship_progress = lerpf(from_frac, frac, t)
+			_update_ship_scale()
+			layer_route.queue_redraw()
+		, 0.0, 1.0, maxf(0.01, dur)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	return _ship_tween
+
+
+## 点到航线折线的最近投影处的弧长
+func _arc_of_point(p: Vector2) -> float:
+	var best_d := INF
+	var best_s := 0.0
+	var acc := 0.0
+	for i in range(route_lengths.size()):
+		var a := route_points[i]
+		var b := route_points[i + 1]
+		var seg := route_lengths[i]
+		var f := 0.0
+		if seg > 0.0:
+			f = clampf((p - a).dot(b - a) / (seg * seg), 0.0, 1.0)
+		var q := a.lerp(b, f)
+		var d := q.distance_squared_to(p)
+		if d < best_d:
+			best_d = d
+			best_s = acc + f * seg
+		acc += seg
+	return best_s
+
+
+## 弧长 s 处的位置与朝向（弧度，图上正北为 0）
+func _pose_at_arc(s: float) -> Array:
+	return route_pose(0.0 if route_total <= 0.0 else clampf(s / route_total, 0.0, 1.0))
 
 
 ## 这一手风放出的向（云端「风发三向」）：不在其中的港标画淡
@@ -387,18 +532,27 @@ func _unhandled_input(event: InputEvent) -> void:
 			if mb.pressed:
 				_dragging = true
 				_drag_last = mb.position
+				_drag_moved = 0.0
+				_drag_last_move_ms = Time.get_ticks_msec()
 				_velocity = Vector2.ZERO
 				_kill_cam_tween()
 			else:
 				_dragging = false
+				# 拖住停一会再松手不该再甩出去：最后一次移动距今超过 80 ms 就把速度清零
+				if Time.get_ticks_msec() - _drag_last_move_ms > 80:
+					_velocity = Vector2.ZERO
+				# 点击判定看按下到松手的累计位移，不看瞬时速度（手抖 1 px 也算点）
 				var pid := _port_at(get_global_mouse_position())
-				if pid != "" and _velocity.length() < 40.0:
+				if pid != "" and _drag_moved < 6.0:
+					_velocity = Vector2.ZERO
 					port_clicked.emit(pid)
 	elif event is InputEventMouseMotion:
 		var mm := event as InputEventMouseMotion
 		if _dragging:
 			var d: Vector2 = mm.position - _drag_last
 			_drag_last = mm.position
+			_drag_moved += d.length()
+			_drag_last_move_ms = Time.get_ticks_msec()
 			camera.position -= d / camera.zoom.x
 			_velocity = -d * 60.0
 			_velocity = _velocity.limit_length(2400.0)
@@ -410,8 +564,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				_hover_port = pid
 				layer_ports.queue_redraw()
 	elif event is InputEventMagnifyGesture:
+		_kill_cam_tween()
+		_velocity = Vector2.ZERO
 		zoom_at(get_global_mouse_position(), (event as InputEventMagnifyGesture).factor)
 	elif event is InputEventPanGesture:
+		# 取景过渡中双指平移也要立刻接管，否则被 tween 盖掉等于无效
+		_kill_cam_tween()
+		_velocity = Vector2.ZERO
 		camera.position += (event as InputEventPanGesture).delta * 3.0 / camera.zoom.x
 		_clamp_camera()
 		_on_camera_moved()
@@ -430,12 +589,24 @@ func zoom_at(world_anchor: Vector2, factor: float) -> void:
 
 
 func _clamp_camera() -> void:
-	var half := get_viewport_rect().size * 0.5 / camera.zoom.x
+	camera.position = _clamped_position(camera.position, camera.zoom.x)
+
+
+## 镜头中心在给定缩放下的钳位（允许越出画布 4%）
+func _clamped_position(pos: Vector2, z: float) -> Vector2:
+	var half := get_viewport_rect().size * 0.5 / z
 	var margin := map_size * 0.04
 	var lo := half - margin
 	var hi := map_size - half + margin
-	camera.position.x = clampf(camera.position.x, minf(lo.x, hi.x), maxf(lo.x, hi.x))
-	camera.position.y = clampf(camera.position.y, minf(lo.y, hi.y), maxf(lo.y, hi.y))
+	return Vector2(clampf(pos.x, minf(lo.x, hi.x), maxf(lo.x, hi.x)), clampf(pos.y, minf(lo.y, hi.y), maxf(lo.y, hi.y)))
+
+
+## 露出的图带在世界坐标里的矩形（去掉顶匾与牌区）
+func _band_world_rect() -> Rect2:
+	var vp := get_viewport_rect().size
+	var z := camera.zoom.x
+	var top_left := camera.position + Vector2(-vp.x * 0.5, -vp.y * 0.5 + inset_top) / z
+	return Rect2(top_left, Vector2(vp.x, maxf(vp.y - inset_top - inset_bottom, 1.0)) / z)
 
 
 func _on_camera_moved() -> void:
@@ -449,47 +620,127 @@ func _kill_cam_tween() -> void:
 		_cam_tween.kill()
 
 
-## 取景到一组港口（世界矩形外扩 pad 比例），平滑过去
-func frame_ports(ids: Array, pad: float = 0.28, dur: float = 0.8) -> void:
-	var r := Rect2()
-	var first := true
-	for id in ids:
-		if not port_px.has(id):
-			continue
-		if first:
-			r = Rect2(port_px[id], Vector2.ZERO)
-			first = false
-		else:
-			r = r.expand(port_px[id])
-	if first:
+## HUD 压住的屏幕高度（顶匾 / 底部牌区，屏幕像素）。取景只用中间露出来的那一段，
+## 免得起讫港被航向牌盖住。由 SeaChart 在布局后写入。
+var inset_top := 0.0
+var inset_bottom := 0.0
+
+
+func set_view_inset(top: float, bottom: float) -> void:
+	var changed := absf(top - inset_top) > 0.5 or absf(bottom - inset_bottom) > 0.5
+	inset_top = maxf(top, 0.0)
+	inset_bottom = maxf(bottom, 0.0)
+	if not changed or not is_inside_tree() or camera == null:
 		return
-	frame_rect(r, pad, dur)
+	# 图带变了（收牌 / 展牌 / 拉窗口）：起点港或目的港若被挤出图带，平移镜头把它拉回来，不改缩放
+	if _cam_tween and _cam_tween.is_valid() and _cam_tween.is_running():
+		return
+	var band := _band_world_rect().grow(-56.0 / camera.zoom.x)
+	if band.size.x <= 0.0 or band.size.y <= 0.0:
+		return
+	for pid in [origin_id, dest_id]:
+		if pid == "" or not port_px.has(pid):
+			continue
+		var p: Vector2 = port_px[pid]
+		if band.has_point(p):
+			continue
+		var shift := Vector2.ZERO
+		if p.x < band.position.x:
+			shift.x = p.x - band.position.x
+		elif p.x > band.end.x:
+			shift.x = p.x - band.end.x
+		if p.y < band.position.y:
+			shift.y = p.y - band.position.y
+		elif p.y > band.end.y:
+			shift.y = p.y - band.end.y
+		var target := _clamped_position(camera.position + shift, camera.zoom.x)
+		_velocity = Vector2.ZERO
+		_cam_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		_cam_tween.tween_property(camera, "position", target, 0.35)
+		_cam_tween.tween_method(func(_v: float): _on_camera_moved(), 0.0, 1.0, 0.35)
+		return
 
 
-func frame_rect(r: Rect2, pad: float = 0.28, dur: float = 0.8) -> void:
+## 取景到一组港口（世界矩形外扩 pad 比例），平滑过去。
+## anchor_id：装不下全部港口时（如第四章占城到高丽 2700 公里），至少保证这一港露在图带里；
+## 没传就默认起点港（选向 / 发舶取景也一样保起点，目的地出带时港标层会在图带边上画箭头指向它）。
+func frame_ports(ids: Array, pad: float = 0.28, dur: float = 0.8, anchor_id: String = "") -> void:
+	var use := []
+	for id in ids:
+		if port_px.has(id):
+			use.append(id)
+	if use.is_empty():
+		return
+	if anchor_id == "" and origin_id in use:
+		anchor_id = origin_id
+	var r := _rect_of(use)
+	# 全部港装不下时退而框「起点 + 本手可选港」，其余港让位（全图默认取景把手牌港压在牌下的问题）
+	if use.size() > 2 and not offered.is_empty() and _fit_zoom(r, pad) < ZOOM_MIN:
+		var sub := []
+		for id in use:
+			if id == origin_id or id in offered:
+				sub.append(id)
+		if not sub.is_empty():
+			r = _rect_of(sub)
+	var anchor: Vector2 = port_px[anchor_id] if port_px.has(anchor_id) else Vector2(INF, INF)
+	frame_rect(r, pad, dur, anchor)
+
+
+func _rect_of(ids: Array) -> Rect2:
+	var r := Rect2(port_px[ids[0]], Vector2.ZERO)
+	for id in ids:
+		r = r.expand(port_px[id])
+	return r
+
+
+## 把矩形装进露出的图带需要的缩放（未钳位）
+func _fit_zoom(r: Rect2, pad: float) -> float:
 	var vp := get_viewport_rect().size
+	var clear_h := maxf(vp.y - inset_top - inset_bottom, vp.y * 0.25)
 	var w := maxf(r.size.x, 120.0) * (1.0 + pad * 2.0)
 	var h := maxf(r.size.y, 120.0) * (1.0 + pad * 2.0)
-	var z := clampf(minf(vp.x / w, vp.y / h), ZOOM_MIN, ZOOM_MAX)
-	var target := r.get_center()
+	return minf(vp.x / w, clear_h / h)
+
+
+func frame_rect(r: Rect2, pad: float = 0.28, dur: float = 0.8, anchor: Vector2 = Vector2(INF, INF)) -> void:
+	var vp := get_viewport_rect().size
+	# 露出来的图带：整个视口去掉顶匾与底部牌区；缩放按这段算，目标点落在这段的中央
+	var z := clampf(_fit_zoom(r, pad), ZOOM_MIN, ZOOM_MAX)
+	# 图带中心比屏幕中心低 (top - bottom)/2 像素；镜头中心要反向偏这么多世界单位
+	var target := r.get_center() + Vector2(0.0, (inset_bottom - inset_top) * 0.5 / z)
+	# 最小缩放仍装不下时，把镜头挪到锚点港落进图带内（留 56 px 边，名字与船标都露出来）
+	if is_finite(anchor.x) and is_finite(anchor.y):
+		var m := 56.0 / z
+		var half_w := vp.x * 0.5 / z
+		var band_top := target.y - (vp.y * 0.5 - inset_top) / z
+		var band_bottom := target.y + (vp.y * 0.5 - inset_bottom) / z
+		if anchor.y < band_top + m:
+			target.y += anchor.y - (band_top + m)
+		elif anchor.y > band_bottom - m:
+			target.y += anchor.y - (band_bottom - m)
+		if anchor.x < target.x - half_w + m:
+			target.x += anchor.x - (target.x - half_w + m)
+		elif anchor.x > target.x + half_w - m:
+			target.x += anchor.x - (target.x + half_w - m)
+	# 先按目标缩放钳位，tween 走完就不会再跳一下
+	target = _clamped_position(target, z)
 	_kill_cam_tween()
 	_velocity = Vector2.ZERO
 	if dur <= 0.0:
 		camera.zoom = Vector2(z, z)
 		camera.position = target
-		_clamp_camera()
 		_on_camera_moved()
 		return
 	_cam_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	_cam_tween.tween_property(camera, "zoom", Vector2(z, z), dur)
 	_cam_tween.tween_property(camera, "position", target, dur)
+	# 过程中同步重绘：线宽、字号、比例尺跟着缩放走（与 zoom / position 在同一并行组里，不是走完再空转）
+	_cam_tween.tween_method(func(_v: float): _on_camera_moved(), 0.0, 1.0, dur)
 	_cam_tween.set_parallel(false)
 	_cam_tween.tween_callback(func():
 		_clamp_camera()
 		_on_camera_moved()
 	)
-	# 过程中也要重绘，线宽与字号跟着缩放走
-	_cam_tween.parallel().tween_method(func(_v: float): _on_camera_moved(), 0.0, 1.0, dur)
 
 
 func world_visible_rect() -> Rect2:
@@ -516,7 +767,7 @@ func _near_port(world: Vector2, radius: float) -> bool:
 
 
 func _redraw_all() -> void:
-	for l in [layer_coast, layer_flow, layer_lanes, layer_route, layer_labels, layer_ports]:
+	for l in [layer_paper, layer_coast, layer_flow, layer_lanes, layer_route, layer_mat, layer_labels, layer_ports]:
 		if l:
 			l.queue_redraw()
 
@@ -529,31 +780,33 @@ func _px(screen_px: float) -> float:
 	return screen_px / camera.zoom.x
 
 
-## 屏幕像素字号画字：局部变换按 1/zoom 缩放，字在任何缩放下都是 size_px 大
-func _text(ci: CanvasItem, world_pos: Vector2, text: String, size_px: int, col: Color, align: int = HORIZONTAL_ALIGNMENT_LEFT, outline: bool = true) -> void:
+## 屏幕像素字号画字：局部变换按 1/zoom 缩放，字在任何缩放下都是 size_px 大；f 不传就用 font（文楷）
+func _text(ci: CanvasItem, world_pos: Vector2, text: String, size_px: int, col: Color, align: int = HORIZONTAL_ALIGNMENT_LEFT, outline: bool = true, f: Font = null) -> void:
+	var fnt: Font = f if f != null else font
 	var z := camera.zoom.x
 	ci.draw_set_transform(world_pos, 0.0, Vector2(1.0 / z, 1.0 / z))
-	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x
+	var w := fnt.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x
 	var ox := 0.0
 	if align == HORIZONTAL_ALIGNMENT_CENTER:
 		ox = -w * 0.5
 	elif align == HORIZONTAL_ALIGNMENT_RIGHT:
 		ox = -w
 	if outline:
-		ci.draw_string_outline(font, Vector2(ox, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, 3, Color(COL_SHELL, 0.78))
-	ci.draw_string(font, Vector2(ox, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, col)
+		ci.draw_string_outline(fnt, Vector2(ox, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, 3, Color(COL_SHELL, 0.78))
+	ci.draw_string(fnt, Vector2(ox, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, col)
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 ## 竖排（海名用）：一字一行
-func _text_vertical(ci: CanvasItem, world_pos: Vector2, text: String, size_px: int, col: Color, spacing: float = 1.15) -> void:
+func _text_vertical(ci: CanvasItem, world_pos: Vector2, text: String, size_px: int, col: Color, spacing: float = 1.15, f: Font = null) -> void:
+	var fnt: Font = f if f != null else font
 	var z := camera.zoom.x
 	ci.draw_set_transform(world_pos, 0.0, Vector2(1.0 / z, 1.0 / z))
 	var y := 0.0
 	for ch in text:
-		var w := font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x
-		ci.draw_string_outline(font, Vector2(-w * 0.5, y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, 3, Color(COL_SHELL, 0.72))
-		ci.draw_string(font, Vector2(-w * 0.5, y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, col)
+		var w := fnt.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x
+		ci.draw_string_outline(fnt, Vector2(-w * 0.5, y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, 3, Color(COL_SHELL, 0.72))
+		ci.draw_string(fnt, Vector2(-w * 0.5, y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, col)
 		y += size_px * spacing
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
@@ -567,32 +820,37 @@ func _text_width_world(text: String, size_px: int) -> float:
 # ══════════════════════════════════════════════════════
 
 ## 岸线墨线 + 计里画方
+## 计里画方当前一方折多少里（题记框按它写「每方折地百里 / 五百里 / 千里」）
+func grid_step_li() -> float:
+	var z := camera.zoom.x
+	return 1000.0 if z < 1.1 else (500.0 if z < 2.2 else 100.0)
+
+
 func _draw_coast(ci: CanvasItem) -> void:
 	var view := world_visible_rect().grow(40.0)
-	# 计里画方：宋《禹迹图》每方折地百里。缩得远时改千里方，免得糊成一片。
-	var z := camera.zoom.x
+	# 计里画方：宋《禹迹图》每方折地百里。缩得远时改千里方，免得糊成一片。只画在画布内。
 	var li_per_px := proj.km_per_px_at(120.0, 25.0) / KM_PER_LI
-	var step_li := 1000.0 if z < 1.1 else (500.0 if z < 2.2 else 100.0)
-	var step := step_li / li_per_px
+	var step := grid_step_li() / li_per_px
 	var grid_col := Color(COL_INK, 0.10 + 0.05 * mode)
-	var x := floorf(view.position.x / step) * step
-	while x < view.end.x:
-		ci.draw_line(Vector2(x, view.position.y), Vector2(x, view.end.y), grid_col, _px(1.0))
-		x += step
-	var y := floorf(view.position.y / step) * step
-	while y < view.end.y:
-		ci.draw_line(Vector2(view.position.x, y), Vector2(view.end.x, y), grid_col, _px(1.0))
-		y += step
-	# 岸线：只画视窗相交的环；线宽 1.2 屏幕像素
+	var gv := view.intersection(Rect2(Vector2.ZERO, map_size))
+	if gv.size.x > 0.0 and gv.size.y > 0.0:
+		var x := floorf(gv.position.x / step) * step
+		while x < gv.end.x:
+			if x >= gv.position.x:
+				ci.draw_line(Vector2(x, gv.position.y), Vector2(x, gv.end.y), grid_col, _px(1.0))
+			x += step
+		var y := floorf(gv.position.y / step) * step
+		while y < gv.end.y:
+			if y >= gv.position.y:
+				ci.draw_line(Vector2(gv.position.x, y), Vector2(gv.end.x, y), grid_col, _px(1.0))
+			y += step
+	# 岸线：只画视窗相交的片段（闭合环在缓存里已补首点；裁边处断开的是开放折线）；线宽 1.25 屏幕像素
 	var w := _px(1.25)
 	var col := Color(COL_INK, 0.78)
 	for i in coast_rings.size():
 		if not (coast_boxes[i] as Rect2).intersects(view):
 			continue
-		var poly: PackedVector2Array = coast_rings[i]
-		var closed := PackedVector2Array(poly)
-		closed.append(poly[0])
-		ci.draw_polyline(closed, col, w, true)
+		ci.draw_polyline(coast_rings[i], col, w, true)
 
 
 ## 季风流线：全图匀布的短划，沿风向缓缓流动；洋流（flows）按折线画流动虚线
@@ -605,11 +863,22 @@ func _draw_flow(ci: CanvasItem) -> void:
 		var spacing := _px(72.0)
 		var len := _px(18.0)
 		var col := Color(COL_AZURITE, 0.30)
-		# 以风向为轴建网格，划线沿轴滑动
-		var u0 := floorf((view.position.dot(dir) - spacing * 2.0) / spacing)
-		var u1 := ceilf((view.end.dot(dir) + spacing * 2.0) / spacing)
-		var v0 := floorf((view.position.dot(perp) - spacing * 2.0) / spacing)
-		var v1 := ceilf((view.end.dot(perp) + spacing * 2.0) / spacing)
+		# 以风向为轴建网格，划线沿轴滑动。上下界要看视窗四个角在轴上的投影（只看两个角，东北风时 u 区间是空的，一根都不画）
+		var corners := [view.position, Vector2(view.end.x, view.position.y), view.end, Vector2(view.position.x, view.end.y)]
+		var umin := INF
+		var umax := -INF
+		var vmin := INF
+		var vmax := -INF
+		for c in corners:
+			var cv: Vector2 = c
+			umin = minf(umin, cv.dot(dir))
+			umax = maxf(umax, cv.dot(dir))
+			vmin = minf(vmin, cv.dot(perp))
+			vmax = maxf(vmax, cv.dot(perp))
+		var u0 := floorf((umin - spacing * 2.0) / spacing)
+		var u1 := ceilf((umax + spacing * 2.0) / spacing)
+		var v0 := floorf((vmin - spacing * 2.0) / spacing)
+		var v1 := ceilf((vmax + spacing * 2.0) / spacing)
 		var shift := fmod(flow_phase * spacing * 0.35, spacing)
 		var vi := v0
 		while vi <= v1:
@@ -669,6 +938,23 @@ func _draw_flow_dashes(ci: CanvasItem, poly: PackedVector2Array, col: Color, w: 
 		acc += seg
 
 
+## 画布外的绢底：底图只覆盖投影画布，镜头钳位允许越界 4%，最小缩放时四周也会露边
+func _draw_paper(ci: CanvasItem) -> void:
+	ci.draw_rect(Rect2(-map_size, map_size * 3.0), COL_PAPER, true)
+
+
+## 纸边盖层（画在岸线 / 网格 / 航线之上、地名之下）：岸线数据是 103–143E / 1–49N 裁的，比画布宽一圈，
+## 网格也按视窗画，这里用四条纸边把画布外的一切盖掉，再描图框——宋石刻图边栏外粗内细双线
+func _draw_mat(ci: CanvasItem) -> void:
+	var big := map_size * 3.0
+	ci.draw_rect(Rect2(Vector2(-big.x, -big.y), Vector2(big.x * 2.0 + map_size.x, big.y)), COL_PAPER, true)
+	ci.draw_rect(Rect2(Vector2(-big.x, map_size.y), Vector2(big.x * 2.0 + map_size.x, big.y)), COL_PAPER, true)
+	ci.draw_rect(Rect2(Vector2(-big.x, 0.0), Vector2(big.x, map_size.y)), COL_PAPER, true)
+	ci.draw_rect(Rect2(Vector2(map_size.x, 0.0), Vector2(big.x, map_size.y)), COL_PAPER, true)
+	ci.draw_rect(Rect2(Vector2.ZERO, map_size).grow(_px(10.0)), Color(COL_INK, 0.55), false, _px(3.0))
+	ci.draw_rect(Rect2(Vector2.ZERO, map_size).grow(_px(4.0)), Color(COL_INK, 0.45), false, _px(1.0))
+
+
 ## 熟路淡线 / 传闻海道虚线：已解锁港口之间的 connections
 func _draw_lanes(ci: CanvasItem) -> void:
 	var drawn := {}
@@ -695,8 +981,9 @@ func _draw_lanes(ci: CanvasItem) -> void:
 func _draw_route(ci: CanvasItem) -> void:
 	if route_points.size() < 2:
 		return
-	# 底衬：宽而淡
-	ci.draw_polyline(route_points, Color(route_color, 0.22), _px(6.0), true)
+	# 底衬：蛤粉宽线。沿岸航段的赭石 / 淡墨线压在赭石岸上会消失（第三章明州→广州实测），衬一层纸色才读得出
+	ci.draw_polyline(route_points, Color(COL_SHELL, 0.62), _px(6.5), true)
+	ci.draw_polyline(route_points, Color(route_color, 0.18), _px(4.0), true)
 	if known_route and route_color != COL_ROUTE_FOUL:
 		ci.draw_polyline(route_points, route_color, _px(2.2), true)
 	else:
@@ -724,40 +1011,24 @@ func _draw_route(ci: CanvasItem) -> void:
 
 ## 港口标：宋《地理图》式「州府加方框」——朱砂方框、蛤粉内填；市舶司港双框；当前所在加墨圈，目的地加金圈。
 ## 名字用 chart.label（繁体），小字 chart.sub（按年切换）；远景只留市舶港与本手可选的港，免得叠字。
+## 先由 _ensure_layout 算好这一帧画哪些港、名字放哪（避开别的港框、船标、已放的名字），地名层也用同一份布局避让。
 func _draw_ports(ci: CanvasItem) -> void:
-	var z := camera.zoom.x
-	var placed: Array[Rect2] = []
-	var order := ports.duplicate()
-	# 重要的先摆（当前/目的地优先，其次市舶港，然后按纬度自北向南），避让时它们不让位
-	order.sort_custom(func(a, b):
-		var ia := str(a.get("id", ""))
-		var ib := str(b.get("id", ""))
-		var pa := _port_rank(ia, a)
-		var pb := _port_rank(ib, b)
-		if pa != pb:
-			return pa > pb
-		return float(a.get("lat", 0.0)) > float(b.get("lat", 0.0))
-	)
-	var size_px := 13 if z < 0.7 else (14 if z < 1.6 else 16)
-	var show_sub := z >= 0.9
-	for p in order:
-		var pid := str(p.get("id", ""))
-		var rank := _port_rank(pid, p)
-		# 远景裁标：缩得很远只留市舶港、当前与本手可选的港
-		if z < 0.45 and rank < 2:
-			continue
-		var v: Vector2 = port_px[pid]
+	_ensure_layout()
+	for pid: String in _port_layout.keys():
+		var L: Dictionary = _port_layout[pid]
+		var p: Dictionary = L["p"]
 		var chart: Dictionary = p.get("chart", {})
+		var v: Vector2 = L["v"]
+		var r: float = L["r"]
+		var box: Rect2 = L["box"]
 		var is_here := pid == origin_id
 		var is_dest := pid == dest_id
 		var seen: bool = pid in visited
 		var hov := pid == _hover_port
 		var offered_now: bool = offered.is_empty() or (pid in offered)
 		var shibo: bool = bool(chart.get("shibo", false))
-		var r := _px(4.6 if (is_here or is_dest) else 3.8)
 		var alpha := 1.0 if offered_now else 0.45
 		# 方框：蛤粉内填 + 朱砂框；市舶司港外加一圈
-		var box := Rect2(v - Vector2(r, r), Vector2(r * 2.0, r * 2.0))
 		ci.draw_rect(box, Color(COL_SHELL, 0.95 * alpha), true)
 		ci.draw_rect(box, Color(COL_CINNABAR, alpha), false, _px(1.5))
 		if shibo:
@@ -771,41 +1042,156 @@ func _draw_ports(ci: CanvasItem) -> void:
 			ci.draw_arc(v, r + _px(6.0), 0.0, TAU, 40, COL_GOLD, _px(2.0), true)
 		elif hov:
 			ci.draw_arc(v, r + _px(5.5), 0.0, TAU, 40, Color(COL_INK, 0.6), _px(1.0), true)
-		# 名字：右侧优先，撞了就换位
+		var tcol := COL_INK if (seen or is_here) else Color(COL_INK, 0.75)
+		if is_dest:
+			tcol = COL_OCHRE
+		tcol.a *= alpha
+		var size_px: int = L["size_px"]
+		var pos: Vector2 = L["pos"]
+		_text(ci, pos, str(L["text"]), size_px, tcol)
+		if float(L["sub_w"]) > 0.0:
+			var sub_px: int = L["sub_px"]
+			_text(ci, pos + Vector2(0, _px(sub_px * 1.2)), str(L["sub"]), sub_px, Color(COL_INK_SOFT, 0.9 * alpha))
+	_draw_dest_edge_hint(ci)
+
+
+## 这一帧的港口布局：哪些港要画、方框在哪、名字放哪。港标层与地名层各自 _draw 时都先调它；
+## 按状态键判重（帧号不可靠：首帧取景前后会各画一次，帧号相同就会沿用 0.5 缩放时的旧布局）
+func _ensure_layout() -> void:
+	var key := "%s|%s|%s|%s|%s|%s|%s|%d|%s" % [camera.zoom.x, camera.position, origin_id, dest_id, offered, visited.size(), ship.position if ship else Vector2.ZERO, cal_year, ship_visible]
+	if _layout_key == key:
+		return
+	_layout_key = key
+	_port_layout.clear()
+	_port_label_texts.clear()
+	_port_obstacles.clear()
+	var z := camera.zoom.x
+	var order := ports.duplicate()
+	# 重要的先摆（当前/目的地优先，其次市舶港，然后按纬度自北向南），避让时它们不让位
+	order.sort_custom(func(a, b):
+		var ia := str(a.get("id", ""))
+		var ib := str(b.get("id", ""))
+		var pa := _port_rank(ia, a)
+		var pb := _port_rank(ib, b)
+		if pa != pb:
+			return pa > pb
+		return float(a.get("lat", 0.0)) > float(b.get("lat", 0.0))
+	)
+	# 字号：默认取景（z 约 0.6–0.9）下 13 px 只剩 11 px 高，读不清（snowchan27-02 走查），提到 15 起
+	var size_px := 15 if z < 0.7 else (16 if z < 1.6 else 18)
+	var show_sub := z >= 0.9
+	var view := world_visible_rect().grow(300.0)
+	# 障碍：船标 + 每个要画的港的框（名字要避开别的港框，兴化 / 兴化海口那种挨着的港才不会读反）
+	if ship_visible and ship.visible:
+		var sr := _px(18.0)
+		_port_obstacles.append(Rect2(ship.position - Vector2(sr, sr), Vector2(sr * 2.0, sr * 2.0)))
+	var drawn := []
+	for p in order:
+		var pid := str(p.get("id", ""))
+		if not port_px.has(pid):
+			continue
+		var rank := _port_rank(pid, p)
+		# 远景裁标：缩得很远只留市舶港、当前与本手可选的港
+		if z < 0.45 and rank < 2:
+			continue
+		var v: Vector2 = port_px[pid]
+		if not view.has_point(v):
+			continue
+		var r := _px(4.6 if (pid == origin_id or pid == dest_id) else 3.8)
+		var box := Rect2(v - Vector2(r, r), Vector2(r * 2.0, r * 2.0))
+		_port_obstacles.append(box.grow(_px(3.0)))
+		drawn.append({"id": pid, "p": p, "v": v, "r": r, "box": box})
+	for d in drawn:
+		var p: Dictionary = d["p"]
+		var pid: String = d["id"]
+		var v: Vector2 = d["v"]
+		var r: float = d["r"]
+		var chart: Dictionary = p.get("chart", {})
 		var text := str(chart.get("label", p.get("name", pid)))
 		var sub := _port_sub(chart)
 		var tw := _text_width_world(text, size_px)
 		var th := _px(size_px * 1.15)
-		var sub_px := 10
+		var sub_px := 11
 		var sub_w := _text_width_world(sub, sub_px) if (show_sub and sub != "") else 0.0
 		var block_w := maxf(tw, sub_w)
 		var block_h := th + (_px(sub_px * 1.2) if sub_w > 0.0 else 0.0)
 		var pad := r + _px(7.0)
+		# 右、左、上、下、右上、右下；全撞时取重叠面积最小的那个，不再一律放右边
 		var candidates := [
 			Vector2(pad, _px(size_px * 0.4)),
 			Vector2(-pad - block_w, _px(size_px * 0.4)),
 			Vector2(-block_w * 0.5, -pad - block_h + th),
 			Vector2(-block_w * 0.5, pad + th),
+			Vector2(pad, -pad - block_h + th),
+			Vector2(pad, pad + th),
 		]
-		var chosen: Vector2 = candidates[0]
+		var best: Vector2 = candidates[0]
+		var best_rect := Rect2(v + best - Vector2(0, th * 0.8), Vector2(block_w, block_h))
+		var best_cost := INF
 		for c in candidates:
-			var rect := Rect2(v + c - Vector2(0, th * 0.8), Vector2(block_w, block_h))
-			var hit := false
-			for pr in placed:
-				if pr.intersects(rect):
-					hit = true
-					break
-			if not hit:
-				chosen = c
-				placed.append(rect)
+			var cv: Vector2 = c
+			var rect := Rect2(v + cv - Vector2(0, th * 0.8), Vector2(block_w, block_h))
+			var cost := 0.0
+			for o in _port_obstacles:
+				if o.intersects(rect):
+					cost += o.intersection(rect).get_area()
+			if cost < best_cost:
+				best_cost = cost
+				best = cv
+				best_rect = rect
+			if cost <= 0.0:
 				break
-		var tcol := COL_INK if (seen or is_here) else Color(COL_INK, 0.75)
-		if is_dest:
-			tcol = COL_OCHRE
-		tcol.a *= alpha
-		_text(ci, v + chosen, text, size_px, tcol)
-		if sub_w > 0.0:
-			_text(ci, v + chosen + Vector2(0, _px(sub_px * 1.2)), sub, sub_px, Color(COL_INK_SOFT, 0.9 * alpha))
+		_port_obstacles.append(best_rect)
+		_port_label_texts[text] = true
+		_port_layout[pid] = {"p": p, "v": v, "r": r, "box": d["box"], "text": text, "sub": sub, "sub_w": sub_w,
+			"size_px": size_px, "sub_px": sub_px, "pos": v + best, "rect": best_rect}
+
+
+## 目的地被顶匾 / 牌区挤到图带外时，在图带边上画朱砂箭头指向它并写名字（远程港对装不下时的指引）
+func _draw_dest_edge_hint(ci: CanvasItem) -> void:
+	if dest_id == "" or not port_px.has(dest_id):
+		return
+	var band := _band_world_rect().grow(-_px(20.0))
+	if band.size.x <= 0.0 or band.size.y <= 0.0:
+		return
+	var d: Vector2 = port_px[dest_id]
+	# 图带下沿之下还有一条航法钮的缝（约 50 px）能露出港标，落在缝里的不算出带
+	if band.grow_individual(0.0, 0.0, 0.0, _px(52.0)).has_point(d):
+		return
+	var c := band.get_center()
+	var dir := (d - c).normalized()
+	if dir.length() < 0.5:
+		return
+	var half := band.size * 0.5
+	var tx := INF if absf(dir.x) < 1e-6 else half.x / absf(dir.x)
+	var ty := INF if absf(dir.y) < 1e-6 else half.y / absf(dir.y)
+	var e := c + dir * minf(tx, ty)
+	var s := _px(9.0)
+	var perp := Vector2(-dir.y, dir.x)
+	var tri := PackedVector2Array([e, e - dir * s * 1.7 + perp * s * 0.8, e - dir * s * 1.7 - perp * s * 0.8])
+	ci.draw_colored_polygon(tri, COL_CINNABAR)
+	ci.draw_polyline(PackedVector2Array([tri[0], tri[1], tri[2], tri[0]]), Color(COL_SHELL, 0.9), _px(1.0), true)
+	var chart: Dictionary = _port_def(dest_id).get("chart", {})
+	var text := str(chart.get("label", dest_id))
+	var tp := e - dir * s * 3.2
+	# 名字往带内侧偏，别贴着箭头
+	tp += Vector2(0, _px(5.0)) if dir.y < 0.0 else Vector2(0, -_px(4.0))
+	_text(ci, tp, text, 14, COL_CINNABAR, HORIZONTAL_ALIGNMENT_CENTER)
+
+
+func _port_def(pid: String) -> Dictionary:
+	for p in ports:
+		if str(p.get("id", "")) == pid:
+			return p
+	return {}
+
+
+## 是否离这一帧画出来的某个港标很近（地名层用：同地的岛名 / 地区名不重复标；没画出来的港不算，免得两者都不显示）
+func _near_drawn_port(world: Vector2, radius: float) -> bool:
+	for pid in _port_layout:
+		if (_port_layout[pid]["v"] as Vector2).distance_to(world) < radius:
+			return true
+	return false
 
 
 func _port_rank(pid: String, p: Dictionary) -> int:
@@ -828,10 +1214,13 @@ func _port_sub(chart: Dictionary) -> String:
 	return sub
 
 
-## 海名 / 国名 / 岛名 / 山川 / 险地：按 kind 与层级（tier）显隐
+## 海名 / 国名 / 岛名 / 山川 / 险地：按 kind 与层级（tier）显隐。
+## 小地名（岛、岬、河、山、族群）与险地名要避开港框、港名、船标（同一帧的港口布局），撞了就不画。
 func _draw_labels(ci: CanvasItem) -> void:
+	_ensure_layout()
 	var z := camera.zoom.x
 	var view := world_visible_rect().grow(200.0)
+	var placed_small: Array[Rect2] = []
 	for lb in labels:
 		var tier := str(lb.get("tier", "mid"))
 		if lb.has("zoom_min") or lb.has("zoom_max"):
@@ -844,40 +1233,67 @@ func _draw_labels(ci: CanvasItem) -> void:
 			continue
 		var kind := str(lb.get("kind", "sea"))
 		var text := str(lb.get("text", ""))
-		# 与已解锁港口同地的岛名 / 地区名 / 山名不重复标（彭湖之于澎湖港、薩摩之于萨摩港），免得叠字
-		if kind in ["island", "region", "cape", "mountain", "note"] and _near_port(v, _px(30.0 if kind != "mountain" else 20.0)):
-			continue
+		# 与画出来的港同名（耽羅之于耽罗港、彭湖之于澎湖港）或同地的岛名 / 地区名 / 山名不重复标，免得叠字
+		if kind in ["island", "region", "cape", "mountain", "note"]:
+			if _port_label_texts.has(text):
+				continue
+			if _near_drawn_port(v, _px(30.0 if kind != "mountain" else 20.0)):
+				continue
+		var small := kind in ["island", "cape", "strait", "mountain", "river", "note"] or not (kind in ["sea", "region"])
+		if small:
+			var sz_s := int(lb.get("size", 12))
+			var w_s := _text_width_world(text, sz_s)
+			var th_s := _px(sz_s * 1.15)
+			var off_y := _px(sz_s + 4) if kind == "mountain" else 0.0
+			var rect := Rect2(v + Vector2(-w_s * 0.5, off_y - th_s * 0.8), Vector2(w_s, th_s))
+			if _rect_hits(rect, _port_obstacles) or _rect_hits(rect, placed_small):
+				continue
+			placed_small.append(rect)
 		match kind:
 			"sea":
-				var sz := int(lb.get("size", 22))
-				_text_vertical(ci, v, text, sz, Color(COL_AZURITE_DEEP, 0.58), 1.30)
+				# 仿宋笔画细，比文楷多给 2 px、多给一点墨
+				var sz := int(lb.get("size", 22)) + 2
+				_text_vertical(ci, v, text, sz, Color(COL_AZURITE_DEEP, 0.64), 1.30, font_title)
 			"region":
-				_text(ci, v, text, int(lb.get("size", 16)), Color(COL_OCHRE, 0.70), HORIZONTAL_ALIGNMENT_CENTER)
+				# 赭石压在赭石陆上对比只有 1.5:1（走查实测），加深
+				_text(ci, v, text, int(lb.get("size", 16)) + 1, Color(COL_OCHRE.darkened(0.32), 0.88), HORIZONTAL_ALIGNMENT_CENTER, true, font_title)
 			"island", "cape", "strait":
-				_text(ci, v, text, int(lb.get("size", 12)), Color(COL_INK, 0.78), HORIZONTAL_ALIGNMENT_CENTER)
+				_text(ci, v, text, int(lb.get("size", 12)), Color(COL_INK, 0.82), HORIZONTAL_ALIGNMENT_CENTER)
 			"mountain":
 				if mode < 0.35 and bool(lb.get("chart_hide", false)):
 					continue
 				var sz2 := int(lb.get("size", 11))
 				# 山形符号：《地理图》写景法三峰
 				var s := _px(5.0)
-				var mc := Color(COL_OCHRE, 0.55 + 0.35 * mode)
+				var mc := Color(COL_OCHRE.darkened(0.2), 0.6 + 0.3 * mode)
 				ci.draw_polyline(PackedVector2Array([v + Vector2(-s * 2.0, 0), v + Vector2(-s, -s * 1.3), v + Vector2(0, 0), v + Vector2(s, -s * 1.9), v + Vector2(s * 2.0, 0)]), mc, _px(1.2), true)
-				_text(ci, v + Vector2(0, _px(sz2 + 4)), text, sz2, Color(COL_OCHRE, 0.65 + 0.35 * mode), HORIZONTAL_ALIGNMENT_CENTER)
+				_text(ci, v + Vector2(0, _px(sz2 + 4)), text, sz2, Color(COL_OCHRE.darkened(0.3), 0.8 + 0.2 * mode), HORIZONTAL_ALIGNMENT_CENTER)
 			"river":
-				_text(ci, v, text, int(lb.get("size", 11)), Color(COL_AZURITE, 0.60 + 0.30 * mode), HORIZONTAL_ALIGNMENT_CENTER)
+				_text(ci, v, text, int(lb.get("size", 11)), Color(COL_AZURITE_DEEP, 0.74 + 0.2 * mode), HORIZONTAL_ALIGNMENT_CENTER)
 			_:
-				_text(ci, v, text, int(lb.get("size", 12)), Color(COL_INK, 0.7), HORIZONTAL_ALIGNMENT_CENTER)
-	# 险地：朱砂三叠浪 + 名
+				_text(ci, v, text, int(lb.get("size", 12)), Color(COL_INK, 0.75), HORIZONTAL_ALIGNMENT_CENTER)
+	# 险地：朱砂三叠浪 + 名（13 px，11 px 在纹理上读不清）
 	for hz in hazards:
 		if not _tier_visible(str(hz.get("tier", "mid")), z):
 			continue
 		var v: Vector2 = proj.to_px(float(hz.get("lon", 0.0)), float(hz.get("lat", 0.0)))
 		if not view.has_point(v):
 			continue
+		var htext := str(hz.get("text", ""))
+		var hw := _text_width_world(htext, 13)
+		var hrect := Rect2(v + Vector2(-hw * 0.5, _px(16.0) - _px(13.0 * 0.8)), Vector2(hw, _px(13.0 * 1.15)))
+		if _rect_hits(hrect, _port_obstacles):
+			continue
 		var s := _px(4.0)
-		var hc := Color(COL_CINNABAR, 0.85)
+		var hc := Color(COL_CINNABAR, 0.9)
 		for k in range(3):
 			var o := v + Vector2((k - 1) * s * 2.2, 0)
 			ci.draw_polyline(PackedVector2Array([o + Vector2(-s, s * 0.5), o + Vector2(0, -s * 0.6), o + Vector2(s, s * 0.5)]), hc, _px(1.3), true)
-		_text(ci, v + Vector2(0, _px(16)), str(hz.get("text", "")), 11, hc, HORIZONTAL_ALIGNMENT_CENTER)
+		_text(ci, v + Vector2(0, _px(16)), htext, 13, hc, HORIZONTAL_ALIGNMENT_CENTER)
+
+
+static func _rect_hits(r: Rect2, rects: Array) -> bool:
+	for o in rects:
+		if (o as Rect2).intersects(r):
+			return true
+	return false

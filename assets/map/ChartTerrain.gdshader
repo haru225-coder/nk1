@@ -16,9 +16,10 @@ uniform float zoom = 1.0;           // 摄像机缩放，控制波纹密度
 uniform vec2 canvas_px = vec2(4096.0, 4318.0);
 
 float hash21(vec2 p) {
-	p = fract(p * vec2(123.34, 456.21));
-	p += dot(p, p + 45.32);
-	return fract(p.x * p.y);
+	// 先取小数再散列：画布坐标到 4000 多时 float 掉精度，纸纹会结成条纹
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
 }
 
 float vnoise(vec2 p) {

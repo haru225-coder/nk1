@@ -10,15 +10,26 @@ var year: int = 1255
 var month: int = 3
 var day: int = 1
 
-## 南宋末年号表：[起始公元年, 结束公元年, 年号]
+## 南宋末年号表：[元年公元年, 末年公元年, 年号]，按起用先后排列；年号年数 = 公元年 − 元年 + 1。
+## 改元当年两个年号各占一段：起用年月见 ERA_START，未列出的自元年正月起用。
+## tools/art/import_cutscene_bgs.py 用正则读这里的三元组，行格式别改。
 const ERAS := [
 	[1253, 1258, "宝祐"],
 	[1259, 1259, "开庆"],
 	[1260, 1264, "景定"],
 	[1265, 1274, "咸淳"],
-	[1275, 1275, "德祐"],
-	[1276, 1278, "景炎"],
+	[1275, 1276, "德祐"],   # 至德祐二年四月
+	[1276, 1278, "景炎"],   # 1276 年五月端宗福州即位改元，至景炎三年四月
+	[1278, 1279, "祥兴"],   # 1278 年五月改元；崖山（1279 年二月）后本年仍记祥兴二年
+	[1264, 1294, "至元"],   # 元世祖年号，1280 年起改用（至元十七年）
 ]
+
+## 不在元年正月起用的年号：年号 → [起用公元年, 起用月]
+const ERA_START := {
+	"景炎": [1276, 5],
+	"祥兴": [1278, 5],
+	"至元": [1280, 1],
+}
 
 const CN_NUM := ["", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
 
@@ -100,18 +111,29 @@ func get_monsoon_desc() -> String:
 
 # ── 显示 ──────────────────────────────────────────────
 
-func get_era() -> String:
+## 当前年月所用的年号行：已起用且未过末年的行里取最后一行（ERAS 按起用先后排）。表外返回空数组。
+func _era_row() -> Array:
+	var found: Array = []
 	for e in ERAS:
-		if year >= e[0] and year <= e[1]:
-			return e[2]
-	return "未纪"
+		var start: Array = ERA_START.get(e[2], [e[0], 1])
+		var started: bool = year > start[0] or (year == start[0] and month >= start[1])
+		if started and year <= e[1]:
+			found = e
+	return found
+
+
+func get_era() -> String:
+	var e := _era_row()
+	if e.is_empty():
+		return "未纪"
+	return e[2]
 
 
 func get_era_year() -> int:
-	for e in ERAS:
-		if year >= e[0] and year <= e[1]:
-			return year - e[0] + 1
-	return 0
+	var e := _era_row()
+	if e.is_empty():
+		return 0
+	return year - e[0] + 1
 
 
 func _cn_number(n: int) -> String:
