@@ -251,6 +251,8 @@ func _check_sea_chart() -> void:
 	_shot_chart(chart, "seachart-quanzhou")
 
 	var fleet: Node = root.get_node("Fleet")
+	var water0 = fleet.water
+	var food0 = fleet.food
 	fleet.water = 0
 	fleet.food = 0
 	chart._refresh_hand()
@@ -260,6 +262,14 @@ func _check_sea_chart() -> void:
 	_check_chart_floor(chart, "海图水粮告警")
 	_check_warn_lines(chart, "海图水粮告警")
 	_shot_chart(chart, "seachart-warning")
+	# 海图挂在 root 上、压在主场景之上；量完不拆，后面守城页 / 终局港口页的截图就全是海图（09-26 截图点验发现）。
+	# 水粮也要归位，免得后面几页的账条写着「水粮 0 日」。
+	fleet.water = water0
+	fleet.food = food0
+	root.remove_child(chart)
+	chart.free()
+	for _i in 2:
+		await process_frame
 
 
 func _check_heading_cards(chart: Node, tag: String) -> void:
