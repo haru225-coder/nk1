@@ -8,7 +8,7 @@ signal port_clicked(port_id: String)
 signal camera_changed
 
 const ZOOM_MIN := 0.28   # 4096 画布在 1280 宽下 0.32 才盖满屏；画布外已铺绢底，放宽到 0.28 让远程两港（广州—占城）装进图带
-const ZOOM_MAX := 4.2
+const ZOOM_MAX := 3.2    # 岸线数据 0.008 度、底图 0.9 km/px，再放大只剩折线与糊纹理（近景实测 3.7 倍已显）
 const DRAG_FRICTION := 6.5
 const KM_PER_LI := 0.576
 
@@ -194,8 +194,7 @@ func setup(port_defs: Array, coast: Dictionary, lane_data: Dictionary, label_dat
 			var poly := PackedVector2Array()
 			for pt in ring:
 				poly.append(proj.to_px(float(pt[0]), float(pt[1])))
-			poly.append(poly[0])
-			_add_coast_piece(poly)
+			_add_coast_piece(poly, true)
 			continue
 		var piece := PackedVector2Array()
 		for k in n:
@@ -203,20 +202,43 @@ func setup(port_defs: Array, coast: Dictionary, lane_data: Dictionary, label_dat
 			var pt = ring[i]
 			piece.append(proj.to_px(float(pt[0]), float(pt[1])))
 			if cut[i] == 1:
-				_add_coast_piece(piece)
+				_add_coast_piece(piece, false)
 				piece = PackedVector2Array()
-		_add_coast_piece(piece)
+		_add_coast_piece(piece, false)
 	_redraw_all()
 
 
-func _add_coast_piece(poly: PackedVector2Array) -> void:
-	if poly.size() < 2:
+## 岸线片段入缓存：先做一次 Chaikin 切角（数据是 0.008 度简化过的折线，近景折线感重；宋图岸线本是圆润的手绘线），
+## 闭合环按环平滑并补首点，开放折线保留两端
+func _add_coast_piece(src: PackedVector2Array, closed: bool) -> void:
+	if src.size() < 2:
 		return
+	var poly := _chaikin(src, closed)
+	if closed:
+		poly.append(poly[0])
 	var r := Rect2(poly[0], Vector2.ZERO)
 	for v in poly:
 		r = r.expand(v)
 	coast_rings.append(poly)
 	coast_boxes.append(r)
+
+
+static func _chaikin(src: PackedVector2Array, closed: bool) -> PackedVector2Array:
+	var n := src.size()
+	var out := PackedVector2Array()
+	if n < 3:
+		return PackedVector2Array(src)
+	var segs := n if closed else n - 1
+	if not closed:
+		out.append(src[0])
+	for i in segs:
+		var a := src[i]
+		var b := src[(i + 1) % n]
+		out.append(a.lerp(b, 0.25))
+		out.append(a.lerp(b, 0.75))
+	if not closed:
+		out.append(src[n - 1])
+	return out
 
 
 ## 两点是否都贴在数据包围盒的同一条边上（bbox = [西, 南, 东, 北]，经纬度）
