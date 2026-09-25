@@ -1,0 +1,226 @@
+{
+ "cs_north_mongol.jpg": {
+  "digest": "8435f25a4d9703d9",
+  "source": "codex:bg_mongol_camp.png",
+  "crop": null,
+  "size": [
+   1920,
+   1080
+  ],
+  "note": "开场·北：漠北营帐与骑兵，远处河谷",
+  "out_sha1": "2995f85c1d9c2794458d0d5315e1150a730f65c2"
+ },
+ "cs_west_caravan.jpg": {
+  "digest": "966247c92a0c2209",
+  "source": "codex:port_pools/quanzhou/021.jpg",
+  "crop": null,
+  "size": [
+   1920,
+   1080
+  ],
+  "note": "开场·西：驼队西行、圆顶城郭",
+  "out_sha1": "a68b7b50bdccc05d930860970969e7fe88493262"
+ },
+ "cs_south_champa.jpg": {
+  "digest": "0b28485a595f87f9",
+  "source": "codex:port_pools/champa/001.png",
+  "crop": null,
+  "size": [
+   1672,
+   941
+  ],
+  "note": "开场·南：占城港，塔寺与稻米装船",
+  "out_sha1": "aad301eb955b59e3022780d9fadcfce72922650e"
+ },
+ "cs_ziling_portrait.jpg": {
+  "digest": "8166c688acae5975",
+  "source": "codex:_ingested/grok-8f0dce14-91c1-4f22-8f70-427122af5600.jpg",
+  "crop": null,
+  "size": [
+   1152,
+   1728
+  ],
+  "note": "开场末镜/忠肃帐中：陈子龙半身像（与 Codex 线 portrait_chen_wenlong 同源）。整幅竖图保留，过场里靠 cam 的 cy 在脸（0.30）与《春秋左传》（0.72）之间竖摇",
+  "out_sha1": "0a80ca06bf8e62ba5db427618ea5abe89904ebe0"
+ },
+ "cs_jeju_north.jpg": {
+  "digest": "c81df35d3aa240ba",
+  "source": "codex:port_pools/jeju/004.jpg",
+  "crop": null,
+  "size": [
+   1792,
+   1008
+  ],
+  "note": "第二章：耽罗雪山、石墙、海女，北线寒色",
+  "out_sha1": "86320a8104ba3e6cd49d279b113d5f2bd43721a0"
+ },
+ "cs_guangzhou_guangta.jpg": {
+  "digest": "261b76a66c591403",
+  "source": "codex:port_pools/guangzhou/001.jpg",
+  "crop": [
+   600,
+   0,
+   1792,
+   670
+  ],
+  "size": [
+   1192,
+   670
+  ],
+  "out_sha1": "4017f22fc68303d99550a460aaa80adda9e5a032",
+  "note": "第三章卡专用：章节卡墨晕窗只露 cover 取景的中间一竖条（约 49% 宽），整幅导入时光塔落在窗边；改裁右上 16:9 块，让光塔落在窗中偏左、蕃坊拱廊在右；同时切掉右下角画家签名"
+ },
+ "cs_nanhai_dusk.jpg": {
+  "digest": "f3fdb0baca7c4f71",
+  "source": "codex:port_pools/keelung/004.png",
+  "crop": null,
+  "size": [
+   1672,
+   941
+  ],
+  "note": "第四章：南海岸夕照，独木舟与远帆",
+  "out_sha1": "54ffac18824f2e64d8b5e06aee4318525884757b"
+ },
+ "cs_xinghua_seawall.jpg": {
+  "digest": "c261cc45cc399670",
+  "source": "codex:port_pools/xinghua/004.jpg",
+  "crop": [
+   0,
+   0,
+   1792,
+   940
+  ],
+  "size": [
+   1792,
+   940
+  ],
+  "note": "忠肃·城楼：风暴下的临海城墙；切掉右下角签名",
+  "out_sha1": "d785e69666bd6d68347a30d8d9465ad7a76f860d"
+ },
+ "cs_fleet_armored.jpg": {
+  "digest": "bfadf47bb20b6005",
+  "source": "codex:port_pools/zhangzhou/041.jpg",
+  "crop": null,
+  "size": [
+   1792,
+   1008
+  ],
+  "note": "海上宋鬼·崖山：甲士立船，舰队连樯",
+  "out_sha1": "2267eeb1f2c829c0c76badfd062dfbe9bd2054e1"
+ },
+ "cs_quanzhou_fanfang.jpg": {
+  "digest": "59df95574f1e4a2d",
+  "source": "codex:port_pools/quanzhou/005.jpg",
+  "crop": null,
+  "size": [
+   1792,
+   1008
+  ],
+  "note": "泉州蒲氏的船：蕃坊、礼拜塔与番商",
+  "out_sha1": "d74563de7475827ba3ac73c8880149bc9a0eb5be"
+ },
+ "cs_citywall_sunset.jpg": {
+  "digest": "3a73ef0ec0925b0a",
+  "source": "codex:_ingested/grok-e163fc64-44b1-4cd3-86ad-08510ca7a612.jpg",
+  "crop": [
+   52,
+   44,
+   1740,
+   964
+  ],
+  "size": [
+   1688,
+   920
+  ],
+  "note": "未归/蒲氏：夕照城楼与码头人影；切掉做旧黑边",
+  "out_sha1": "5d3e59643c3aa4a791f7151d33f6551ea7e5b229"
+ },
+ "cs_fleet_sunset.jpg": {
+  "digest": "fab4071003cb6881",
+  "source": "codex:port_pools/quanzhou/009.jpg",
+  "crop": null,
+  "size": [
+   1792,
+   1008
+  ],
+  "note": "纲首：夕照里的船队",
+  "out_sha1": "9d2c0736a76255fdfed375b29b136f126d289fb3"
+ },
+ "cs_hanjiang_night.jpg": {
+  "digest": "83e05c2c22cd7e82",
+  "source": "codex:port_pools/zhangzhou/031.jpg",
+  "crop": null,
+  "size": [
+   1792,
+   1008
+  ],
+  "note": "岸上的根·涵江海口：月夜搬箱上船，远处城灯",
+  "out_sha1": "3dcd3fdd86dd60528e49a9d5959887fda7aa7202"
+ },
+ "cs_shore_soldiers.jpg": {
+  "digest": "74269d0ce9653764",
+  "source": "codex:port_pools/wenzhou/021.jpg",
+  "crop": null,
+  "size": [
+   1920,
+   1080
+  ],
+  "note": "岸上的根·出海口：岸上兵影，小船出港，云破日出",
+  "out_sha1": "a7aeead37e8608519d36ffc8cc755d9e3da63f72"
+ },
+ "cs_taijiang_dawn.jpg": {
+  "digest": "dcf13ea3c0c138ad",
+  "source": "codex:port_pools/mingzhou/027.jpg",
+  "crop": null,
+  "size": [
+   1792,
+   1008
+  ],
+  "out_sha1": "ac16fe75a15a2799ddd82484be5019d4c32b38f2",
+  "note": "五段结局后记「一百多年后・福州台江」：晨雾江岸、石桥、远帆与渔船（原先借用兴化海口，地理不对）"
+ },
+ "cs_world_map_gold.jpg": {
+  "digest": "d59e26118a739dcd",
+  "source": "legacy:bg_world_map.jpg",
+  "crop": null,
+  "size": [
+   1792,
+   1008
+  ],
+  "out_sha1": "71c1add1d6eaa9960c14e6e5790b48b171c6d542",
+  "note": "开场首镜「舆图总纲」：旧底 main 9233852 的泥金靛海舆图（华南海岸、台湾、琉球弧、日本）。云端 da29e49 把 assets/bg_world_map.jpg 换成了带西式罗盘玫瑰与海怪、海岸不对应真实地理的另一张（标题页仍用它），开场镜头是按旧图取景的，改指这张"
+ },
+ "cs_quanzhou_bay_gold.jpg": {
+  "digest": "358c0c64df430c53",
+  "source": "codex:port_pools/quanzhou/003.jpg",
+  "crop": null,
+  "size": [
+   1792,
+   1008
+  ],
+  "out_sha1": "6a7c0baec160f7d738b6c02e2d3c0871d8dffe78",
+  "note": "章末了结·南海一纲首镜：泉州湾金色天光，连樯出港，湾里有蕃舶三角帆（泉州蕃舶本色）"
+ },
+ "cs_night_surf.jpg": {
+  "digest": "cc5714a45f9532b5",
+  "source": "codex:port_pools/keelung/002.png",
+  "crop": null,
+  "size": [
+   1672,
+   941
+  ],
+  "out_sha1": "d3281718f398a693a7c65baacf4495c7e85917d0",
+  "note": "章末了结·史册未落笔首镜「占城夜里潮声很重」：黑礁白浪、泊船硬帆；镜头只取右半（左侧岸上人物不入画），调夜色"
+ },
+ "cs_counting_house.jpg": {
+  "digest": "5db07382aacfd22e",
+  "source": "repo:bg_gpt_1.png",
+  "crop": null,
+  "size": [
+   1672,
+   941
+  ],
+  "out_sha1": "3d29d8603eb3b2de486440ffa57f417b73e7e876",
+  "note": "章末了结·账上的距离第 2 镜「只有进出清楚的货，和脚钱」：货栈账房，麻包、算盘、摊开的账册（仓库内 bg_gpt_1.png，游戏未引用；镜头压在案面与货堆，避开左侧青花罐与上方匾额字）"
+ }
+}

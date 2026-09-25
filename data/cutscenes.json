@@ -1,0 +1,878 @@
+{
+ "version": 1,
+ "cutscenes": {
+  "opening": {
+   "title": "开场：宝祐三年",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/cutscene/cs_world_map_gold.jpg",
+     "duration": 9.0,
+     "cam_from": [0.5, 0.5, 1.0],
+     "cam_to": [0.39, 0.56, 1.3],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 1.0, "text": "宋理宗宝祐三年", "style": "era", "pos": "right_vertical"},
+      {"t": 2.4, "text": "是岁乙卯。北方之兵未息，东南之海方盛。", "style": "narration", "pos": "lower_left"},
+      {"t": 5.6, "text": "天下之势，试言其略。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_north_mongol.jpg",
+     "duration": 9.0,
+     "cam_from": [0.53, 0.46, 1.08],
+     "cam_to": [0.33, 0.56, 1.55],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.4, "text": "北", "style": "seal", "pos": "right_vertical"},
+      {"t": 0.9, "text": "漠北", "style": "era", "pos": "right_vertical"},
+      {"t": 1.8, "text": "蒙古大汗蒙哥在位，控弦之士，遍于漠北。", "style": "narration", "pos": "lower_left"},
+      {"t": 5.0, "text": "忽必烈既下大理，兵锋已在宋之西南。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_linan.jpg",
+     "duration": 9.0,
+     "cam_from": [0.46, 0.54, 1.1],
+     "cam_to": [0.6, 0.42, 1.35],
+     "grade": "cold",
+     "fx": ["rain", "mist"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "临安・行在", "style": "era", "pos": "right_vertical"},
+      {"t": 1.6, "text": "湖上歌吹，终夜未歇。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.8, "text": "北来的流民，一船一船渡江。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_hakata.jpg",
+     "duration": 8.0,
+     "cam_from": [0.5, 0.5, 1.0],
+     "cam_to": [0.61, 0.56, 1.3],
+     "grade": "dusk",
+     "fx": ["lantern_glow"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.4, "text": "东", "style": "seal", "pos": "right_vertical"},
+      {"t": 0.9, "text": "日本・博多津", "style": "era", "pos": "right_vertical"},
+      {"t": 1.8, "text": "宋商聚居于此，号为唐房。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.6, "text": "宋钱、瓷、绢东去，硫黄、宝刀西来。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_south_champa.jpg",
+     "duration": 8.0,
+     "cam_from": [0.5, 0.52, 1.05],
+     "cam_to": [0.42, 0.4, 1.35],
+     "grade": "dusk",
+     "fx": ["sea_spray"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.4, "text": "南", "style": "seal", "pos": "right_vertical"},
+      {"t": 0.9, "text": "占城・三佛齐", "style": "era", "pos": "right_vertical"},
+      {"t": 1.8, "text": "占城稻熟，三佛齐扼海峡之口。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.6, "text": "蕃舶乘风而至，岁无虚日。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_west_caravan.jpg",
+     "duration": 8.0,
+     "cam_from": [0.37, 0.62, 1.35],
+     "cam_to": [0.63, 0.4, 1.35],
+     "grade": "sepia",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.4, "text": "西", "style": "seal", "pos": "right_vertical"},
+      {"t": 0.9, "text": "白达", "style": "era", "pos": "right_vertical"},
+      {"t": 1.8, "text": "旭烈兀大军西行，驼道上尘起如雾。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.6, "text": "三年之后，白达城破，黑衣大食亡。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_quanzhou_harbor.jpg",
+     "duration": 9.0,
+     "cam_from": [0.39, 0.39, 1.3],
+     "cam_to": [0.43, 0.43, 1.18],
+     "grade": "dawn",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "泉州・刺桐港", "style": "era", "pos": "right_vertical"},
+      {"t": 1.8, "text": "四方消息，终归一港。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.8, "text": "蕃舶如林，一潮一汐。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_ziling_portrait.jpg",
+     "duration": 11.0,
+     "cam_from": [0.5, 0.74, 1.02],
+     "cam_to": [0.52, 0.3, 1.1],
+     "grade": "dusk",
+     "fx": ["lantern_glow"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "兴化军・玉湖", "style": "era", "pos": "right_vertical"},
+      {"t": 5.4, "text": "兴化玉湖陈氏子，名子龙。", "style": "narration", "pos": "lower_left"},
+      {"t": 6.9, "text": "族中催他赴试，箧底却压着一纸泉州货引。", "style": "narration", "pos": "lower_left"},
+      {"t": 9.0, "text": "债是真的。", "style": "line", "pos": "bottom"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_xinghua_harbor.jpg",
+     "duration": 13.0,
+     "cam_from": [0.5, 0.5, 1.0],
+     "cam_to": [0.36, 0.62, 1.45],
+     "grade": "dusk",
+     "fx": ["mist"],
+     "transition_in": "flash",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "兴化海口・三月", "style": "era", "pos": "right_vertical", "hold": 6.0},
+      {"t": 1.4, "text": "春雷。潮退，船搁在泥上。", "style": "narration", "pos": "lower_left", "hold": 5.0},
+      {"t": 4.0, "text": "北去是福州、临安的官道；南下，是海。", "style": "narration", "pos": "lower_left", "hold": 2.8},
+      {"t": 7.4, "text": "东亚海域立志传", "style": "title", "pos": "center"},
+      {"t": 8.6, "text": "乙卯", "style": "seal", "pos": "center"}
+     ]
+    }
+   ]
+  },
+  "ending_zhongsu": {
+   "title": "结局：忠肃",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/cutscene/cs_xinghua_seawall.jpg",
+     "duration": 8.0,
+     "cam_from": [0.5, 0.5, 1.0],
+     "cam_to": [0.36, 0.42, 1.3],
+     "grade": "cold",
+     "fx": ["rain", "sea_spray"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "兴化・景炎元年冬", "style": "era", "pos": "right_vertical"},
+      {"t": 1.2, "text": "福州降了，泉州降了。城中兵不满千。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.4, "text": "城楼上挂起一匹白布，写了八个字。", "style": "narration", "pos": "lower_left"},
+      {"t": 5.0, "text": "生为宋臣\n死为宋鬼", "style": "title", "pos": "right_vertical"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_end_siege.jpg",
+     "duration": 6.0,
+     "cam_from": [0.665, 0.44, 1.55],
+     "cam_to": [0.63, 0.3, 1.75],
+     "grade": "dusk",
+     "fx": ["embers", "dust"],
+     "transition_in": "cut",
+     "shake": 0.25,
+     "captions": [
+      {"t": 0.6, "text": "部将林华出城侦敌，回来时，身后是元兵。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.2, "text": "通判曹澄孙开了城门。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_ziling_portrait.jpg",
+     "duration": 8.0,
+     "cam_from": [0.47, 0.72, 1.12],
+     "cam_to": [0.5, 0.78, 1.0],
+     "grade": "night",
+     "fx": ["lantern_glow"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "董文炳军中", "style": "era", "pos": "right_vertical"},
+      {"t": 1.2, "text": "他们让你跪。你不跪。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.0, "text": "你用手指着自己的肚子——", "style": "narration", "pos": "lower_left"},
+      {"t": 4.8, "text": "「此皆节义文章也，可相逼邪？」", "style": "line", "pos": "bottom"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_end_temple.jpg",
+     "duration": 9.0,
+     "cam_from": [0.5, 0.5, 1.05],
+     "cam_to": [0.45, 0.56, 1.3],
+     "grade": "cold",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.5, "text": "杭州・岳王庙", "style": "era", "pos": "right_vertical"},
+      {"t": 1.1, "text": "从兴化出来那天起，你就没有吃东西。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.3, "text": "石阶二十几级。走到第十几级，你坐下了。", "style": "narration", "pos": "lower_left"},
+      {"t": 5.4, "text": "一门百指沦胥尽，\n唯有丹衷天地知。", "style": "line", "pos": "left_vertical"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_temple_gate.jpg",
+     "duration": 9.0,
+     "cam_from": [0.5, 0.55, 1.25],
+     "cam_to": [0.5, 0.5, 1.0],
+     "grade": "dawn",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.5, "text": "一百多年后・福州台江", "style": "era", "pos": "right_vertical"},
+      {"t": 1.1, "text": "江边起了一座庙，匾上四个字：水部尚书。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.6, "text": "官船拜尚书，民船拜妈祖。", "style": "line", "pos": "bottom"},
+      {"t": 5.8, "text": "供在里面的那个人，一辈子没出过海。", "style": "narration", "pos": "lower_left"}
+     ]
+    }
+   ]
+  },
+  "ending_weigui": {
+   "title": "结局：未归",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/bg_sea_route.jpg",
+     "duration": 7.0,
+     "cam_from": [0.655, 0.47, 1.45],
+     "cam_to": [0.66, 0.43, 1.55],
+     "grade": "cold",
+     "fx": ["sea_spray"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "景炎元年十二月", "style": "era", "pos": "right_vertical"},
+      {"t": 1.3, "text": "消息是在别处听到的。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.6, "text": "兴化城破了。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_end_siege.jpg",
+     "duration": 8.0,
+     "cam_from": [0.685, 0.4, 1.6],
+     "cam_to": [0.65, 0.34, 1.7],
+     "grade": "dusk",
+     "fx": ["embers"],
+     "transition_in": "ink",
+     "shake": 0.1,
+     "captions": [
+      {"t": 0.8, "text": "城头挂过一幅白布，八个字，来往的人都说见过。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.2, "text": "部将出侦，引兵而还；通判开了东门。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_citywall_sunset.jpg",
+     "duration": 9.5,
+     "cam_from": [0.5, 0.5, 1.0],
+     "cam_to": [0.4, 0.61, 1.3],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "母亲与幼子扣在福州，说城里的人出来就放。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.4, "text": "史书上后来写：是年，兴化陷，守臣不知所终。", "style": "narration", "pos": "lower_left"},
+      {"t": 6.0, "text": "城里那个人没有出来——因为城里没有那个人。", "style": "line", "pos": "bottom"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_taijiang_dawn.jpg",
+     "duration": 9.0,
+     "cam_from": [0.4, 0.62, 1.38],
+     "cam_to": [0.36, 0.61, 1.45],
+     "grade": "cold",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "一百多年后・福州台江", "style": "era", "pos": "right_vertical"},
+      {"t": 1.2, "text": "江边没有庙。渔民出海前拜妈祖，只拜妈祖。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.8, "text": "二号封舟，空着。", "style": "narration", "pos": "lower_left"},
+      {"t": 5.6, "text": "这个世界少了一位海神。也没有多出几条回来的船。", "style": "line", "pos": "bottom"}
+     ]
+    }
+   ]
+  },
+  "ending_sea_ghost": {
+   "title": "结局：海上宋鬼",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/cutscene/cs_fleet_armored.jpg",
+     "duration": 8.0,
+     "cam_from": [0.6, 0.5, 1.25],
+     "cam_to": [0.4, 0.42, 1.3],
+     "grade": "dusk",
+     "fx": ["sea_spray"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "崖山・祥兴二年二月", "style": "era", "pos": "right_vertical"},
+      {"t": 1.3, "text": "张世杰的船连成一片，船与船之间，是铁索。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.2, "text": "你把粮与硫黄交上去，船留在外围。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_end_yashan.jpg",
+     "duration": 8.0,
+     "cam_from": [0.42, 0.42, 1.2],
+     "cam_to": [0.62, 0.55, 1.35],
+     "grade": "fire",
+     "fx": ["embers", "mist"],
+     "transition_in": "flash",
+     "shake": 0.2,
+     "captions": [
+      {"t": 0.8, "text": "战到午后，铁索连着的船开始烧。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.8, "text": "你砍断了自己的缆。", "style": "line", "pos": "bottom"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_sea_route.jpg",
+     "duration": 8.0,
+     "cam_from": [0.655, 0.5, 1.45],
+     "cam_to": [0.62, 0.57, 1.65],
+     "grade": "dawn",
+     "fx": ["sea_spray"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "阿那要是还活着，会告诉你这时候该往哪边走。", "style": "narration", "pos": "lower_left", "hold": 4.4},
+      {"t": 3.4, "text": "你自己看了水色。", "style": "narration", "pos": "lower_left", "hold": 2.4},
+      {"t": 5.4, "text": "往南", "style": "title", "pos": "center"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_taijiang_dawn.jpg",
+     "duration": 10.0,
+     "cam_from": [0.5, 0.57, 1.52],
+     "cam_to": [0.52, 0.56, 1.44],
+     "grade": "dawn",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "一百多年后・福州台江", "style": "era", "pos": "right_vertical"},
+      {"t": 1.2, "text": "江边没有庙。渔船只拜妈祖。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.6, "text": "二号封舟，空着。", "style": "narration", "pos": "lower_left"},
+      {"t": 5.8, "text": "这个世界少了一位海神，多了几条回来的船。", "style": "line", "pos": "bottom"}
+     ]
+    }
+   ]
+  },
+  "ending_pu_ship": {
+   "title": "结局：泉州蒲氏的船",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/cutscene/cs_quanzhou_fanfang.jpg",
+     "duration": 9.0,
+     "cam_from": [0.45, 0.5, 1.1],
+     "cam_to": [0.63, 0.6, 1.35],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "泉州・景炎元年冬", "style": "era", "pos": "right_vertical"},
+      {"t": 1.3, "text": "蒲寿庚杀城中宋宗室、淮兵，开城降元。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.4, "text": "他在清净寺前对海商说：港保住了，船保住了。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_citywall_sunset.jpg",
+     "duration": 8.0,
+     "cam_from": [0.6, 0.4, 1.3],
+     "cam_to": [0.5, 0.5, 1.05],
+     "grade": "dusk",
+     "fx": ["lantern_glow"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "市舶司的册子换了封面。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.2, "text": "「纲首」旁边添了一个你不认得的蒙古官名。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_end_pu.jpg",
+     "duration": 8.0,
+     "cam_from": [0.4, 0.39, 1.3],
+     "cam_to": [0.58, 0.58, 1.2],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.5, "text": "泉州・至元年间", "style": "era", "pos": "right_vertical"},
+      {"t": 1.2, "text": "你活到了至元二十年代。泉州比从前更大。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.0, "text": "波斯人、大食人都在，还有从前不敢来的北方人。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_taijiang_dawn.jpg",
+     "duration": 9.0,
+     "cam_from": [0.5, 0.57, 1.52],
+     "cam_to": [0.52, 0.56, 1.44],
+     "grade": "dawn",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "一百多年后・福州台江", "style": "era", "pos": "right_vertical"},
+      {"t": 1.2, "text": "江边没有庙。渔船只拜妈祖。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.4, "text": "二号封舟，空着。", "style": "narration", "pos": "lower_left"},
+      {"t": 5.2, "text": "这个世界少了一位海神，多了几条回来的船。", "style": "line", "pos": "bottom"}
+     ]
+    }
+   ]
+  },
+  "ending_gangshou": {
+   "title": "结局：纲首",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/cutscene/cs_fleet_sunset.jpg",
+     "duration": 8.0,
+     "cam_from": [0.5, 0.5, 1.05],
+     "cam_to": [0.38, 0.5, 1.3],
+     "grade": "dusk",
+     "fx": ["sea_spray"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "泉州・至元二十二年", "style": "era", "pos": "right_vertical"},
+      {"t": 1.3, "text": "泉州的城门换过旗，你的船还在海上。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.2, "text": "账一年比一年厚，船一年比一年旧。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_customs_room.jpg",
+     "duration": 9.0,
+     "cam_from": [0.36, 0.64, 1.4],
+     "cam_to": [0.4, 0.675, 1.55],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "市舶司的册子换了封面。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.0, "text": "你的名字还在，只是排在很后面。", "style": "narration", "pos": "lower_left"},
+      {"t": 5.4, "text": "当年站错队的，名字已经不在册上了。你还在。", "style": "line", "pos": "bottom"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_end_pu.jpg",
+     "duration": 9.0,
+     "cam_from": [0.6, 0.62, 1.35],
+     "cam_to": [0.42, 0.4, 1.25],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "兴化来的水手说，他们村口有座小祠，供着陈瓒。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.0, "text": "你问，有没有一个叫陈文龙的。", "style": "narration", "pos": "lower_left"},
+      {"t": 6.4, "text": "他说没听过。", "style": "line", "pos": "bottom"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_taijiang_dawn.jpg",
+     "duration": 8.0,
+     "cam_from": [0.5, 0.57, 1.52],
+     "cam_to": [0.52, 0.56, 1.44],
+     "grade": "dawn",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "一百多年后・福州台江", "style": "era", "pos": "right_vertical"},
+      {"t": 1.2, "text": "江边没有庙。渔船只拜妈祖。", "style": "narration", "pos": "lower_left"},
+      {"t": 2.8, "text": "二号封舟，空着。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.4, "text": "这个世界少了一位海神，多了几条回来的船。", "style": "line", "pos": "bottom"}
+     ]
+    }
+   ]
+  },
+  "ending_root": {
+   "title": "结局：岸上的根",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/cutscene/cs_hanjiang_night.jpg",
+     "duration": 8.5,
+     "cam_from": [0.5, 0.5, 1.05],
+     "cam_to": [0.42, 0.61, 1.3],
+     "grade": "night",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "涵江海口・景炎二年", "style": "era", "pos": "right_vertical"},
+      {"t": 1.3, "text": "四条船。族里能走的，都在船上。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.2, "text": "老夫人也在。她把箧底那叠策论草稿带上了船。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_shore_soldiers.jpg",
+     "duration": 6.5,
+     "cam_from": [0.6, 0.45, 1.25],
+     "cam_to": [0.44, 0.52, 1.15],
+     "grade": "dawn",
+     "fx": ["sea_spray"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.7, "text": "出海口的时候，元兵已经进城了。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.4, "text": "海上没有人追。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_reef_bay.jpg",
+     "duration": 8.0,
+     "cam_from": [0.55, 0.6, 1.3],
+     "cam_to": [0.45, 0.64, 1.4],
+     "grade": "dawn",
+     "fx": ["mist"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.7, "text": "你看水色。北礁可泊。", "style": "narration", "pos": "lower_left"},
+      {"t": 2.8, "text": "二十二年前，一个舵手教过你。", "style": "narration", "pos": "lower_left"},
+      {"t": 5.4, "text": "船在旧避风澳泊了六天，避了一场风。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_end_root.jpg",
+     "duration": 9.5,
+     "cam_from": [0.48, 0.5, 1.05],
+     "cam_to": [0.61, 0.6, 1.3],
+     "grade": "dawn",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.7, "text": "第七天早晨，老夫人把草稿拿出来晒。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.2, "text": "纸都黄了，字还在。她一张一张看，看完放回去。", "style": "narration", "pos": "lower_left"},
+      {"t": 6.2, "text": "「子龙，往南走吧。」", "style": "line", "pos": "bottom"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_taijiang_dawn.jpg",
+     "duration": 7.5,
+     "cam_from": [0.5, 0.57, 1.52],
+     "cam_to": [0.52, 0.56, 1.44],
+     "grade": "dawn",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "一百多年后・福州台江", "style": "era", "pos": "right_vertical"},
+      {"t": 1.2, "text": "江边没有庙。渔船只拜妈祖。", "style": "narration", "pos": "lower_left"},
+      {"t": 2.6, "text": "二号封舟，空着。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.0, "text": "这个世界少了一位海神，多了几条回来的船。", "style": "line", "pos": "bottom"}
+     ]
+    }
+   ]
+  },
+  "ending_sea_letter": {
+   "title": "了结：海口信路",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/cutscene/cs_hanjiang_night.jpg",
+     "duration": 8.0,
+     "cam_from": [0.6, 0.42, 1.35],
+     "cam_to": [0.66, 0.4, 1.55],
+     "grade": "night",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "占城・蕃坊夜", "style": "era", "pos": "right_vertical"},
+      {"t": 1.3, "text": "占城的灯，比泉州疏。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.8, "text": "有人问你：兴化那条不点灯的海口，还通不通。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_reef_bay.jpg",
+     "duration": 7.5,
+     "cam_from": [0.42, 0.6, 1.3],
+     "cam_to": [0.48, 0.6, 1.25],
+     "grade": "dawn",
+     "fx": ["mist"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "旧避风澳，你没有画进官图。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.4, "text": "可已经有人，顺着你走过的水在走。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_xinghua_study.jpg",
+     "duration": 8.5,
+     "cam_from": [0.36, 0.62, 1.45],
+     "cam_to": [0.32, 0.68, 1.6],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "货引上写的，仍是陈子龙三个字。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.4, "text": "史册要等的那个名字，还没有落笔。", "style": "narration", "pos": "lower_left"},
+      {"t": 5.8, "text": "——海路却先替你记了一笔。", "style": "line", "pos": "bottom"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_nanhai_dusk.jpg",
+     "duration": 7.0,
+     "cam_from": [0.64, 0.5, 1.45],
+     "cam_to": [0.55, 0.5, 1.15],
+     "grade": "dusk",
+     "fx": ["sea_spray"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 1.0, "text": "卷起海图。船还要走。", "style": "narration", "pos": "lower_left"}
+     ]
+    }
+   ]
+  },
+  "ending_ledger": {
+   "title": "了结：账上的距离",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/bg_yahang.jpg",
+     "duration": 8.0,
+     "cam_from": [0.42, 0.5, 1.25],
+     "cam_to": [0.36, 0.44, 1.42],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "占城・牙行", "style": "era", "pos": "right_vertical"},
+      {"t": 1.3, "text": "牙行把你的名字，写在纲首一栏。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.9, "text": "旁边没有信，也没有寺社的短札。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_counting_house.jpg",
+     "duration": 7.5,
+     "cam_from": [0.52, 0.64, 1.5],
+     "cam_to": [0.51, 0.67, 1.55],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "只有进出清楚的货，和脚钱。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.2, "text": "兴化来人，后来再没找上门。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_sea_route.jpg",
+     "duration": 7.0,
+     "cam_from": [0.65, 0.56, 1.5],
+     "cam_to": [0.64, 0.6, 1.6],
+     "grade": "dusk",
+     "fx": ["sea_spray"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "你的船还在南海走。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.0, "text": "账面比许多同年都干净。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_temple_gate.jpg",
+     "duration": 8.0,
+     "cam_from": [0.58, 0.5, 1.3],
+     "cam_to": [0.64, 0.52, 1.6],
+     "grade": "cold",
+     "fx": ["mist"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "门还开着。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.2, "text": "有些门从此只对货开，不对人开。", "style": "line", "pos": "bottom"}
+     ]
+    }
+   ]
+  },
+  "ending_history": {
+   "title": "了结：史册未落笔",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/cutscene/cs_night_surf.jpg",
+     "duration": 6.5,
+     "cam_from": [0.655, 0.44, 1.5],
+     "cam_to": [0.665, 0.48, 1.55],
+     "grade": "night",
+     "fx": ["sea_spray"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "占城・夜潮", "style": "era", "pos": "right_vertical"},
+      {"t": 1.3, "text": "占城夜里，潮声很重。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_xinghua_wine_shed.jpg",
+     "duration": 6.5,
+     "cam_from": [0.36, 0.46, 1.45],
+     "cam_to": [0.34, 0.5, 1.5],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "你想起酒肆里那个兴化口音，", "style": "narration", "pos": "lower_left"},
+      {"t": 3.0, "text": "想起杯底那封未封口的短信。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_north_mongol.jpg",
+     "duration": 6.5,
+     "cam_from": [0.42, 0.55, 1.3],
+     "cam_to": [0.36, 0.6, 1.45],
+     "grade": "cold",
+     "fx": ["dust"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "也想起北方，那些还没写进邸报的事。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_xinghua_study.jpg",
+     "duration": 7.0,
+     "cam_from": [0.4, 0.66, 1.5],
+     "cam_to": [0.34, 0.68, 1.6],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "陈文龙三个字，仍在将来。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.0, "text": "你把海图卷好，旧泊地没有标进官册。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_reef_bay.jpg",
+     "duration": 7.0,
+     "cam_from": [0.5, 0.5, 1.2],
+     "cam_to": [0.58, 0.46, 1.35],
+     "grade": "dawn",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 1.0, "text": "只在自己的边记里，留了一处能避开闲眼的湾。", "style": "line", "pos": "bottom"}
+     ]
+    }
+   ]
+  },
+  "ending_south_sea": {
+   "title": "了结：南海一纲",
+   "letterbox": true,
+   "shots": [
+    {
+     "bg": "res://assets/cutscene/cs_quanzhou_bay_gold.jpg",
+     "duration": 8.0,
+     "cam_from": [0.5, 0.45, 1.15],
+     "cam_to": [0.42, 0.5, 1.35],
+     "grade": "dawn",
+     "fx": ["mist"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.6, "text": "泉州・刺桐港", "style": "era", "pos": "right_vertical"},
+      {"t": 1.3, "text": "没有信，没有寺社。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.4, "text": "也没有谁在酒肆里，叫破你的族里称呼。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_south_champa.jpg",
+     "duration": 7.5,
+     "cam_from": [0.55, 0.42, 1.3],
+     "cam_to": [0.48, 0.45, 1.2],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "ink",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "你只是把船从泉州，开到了占城。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.2, "text": "本钱还在，水手还在。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/bg_paper_shop.jpg",
+     "duration": 7.0,
+     "cam_from": [0.66, 0.5, 1.5],
+     "cam_to": [0.68, 0.47, 1.65],
+     "grade": "dusk",
+     "fx": ["dust"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 0.8, "text": "市舶司的册子上，多了一个纲首。", "style": "narration", "pos": "lower_left"}
+     ]
+    },
+    {
+     "bg": "res://assets/cutscene/cs_nanhai_dusk.jpg",
+     "duration": 7.5,
+     "cam_from": [0.64, 0.5, 1.45],
+     "cam_to": [0.5, 0.5, 1.0],
+     "grade": "dusk",
+     "fx": ["sea_spray"],
+     "transition_in": "fade",
+     "shake": 0.0,
+     "captions": [
+      {"t": 1.2, "text": "南海很大，这一纲只是开头。", "style": "line", "pos": "bottom"}
+     ]
+    }
+   ]
+  }
+ },
+ "chapters": {
+  "1": {"bg": "res://assets/bg_reef_bay.jpg", "epigraph": "道不行，乘桴浮于海。", "epigraph_src": "《论语·公冶长》", "year_text": "宝祐三年・一二五五"},
+  "2": {"bg": "res://assets/cutscene/cs_jeju_north.jpg", "epigraph": "云散月明谁点缀？天容海色本澄清。", "epigraph_src": "苏轼《六月二十日夜渡海》", "year_text": "宝祐五年・一二五七"},
+  "3": {"bg": "res://assets/cutscene/cs_guangzhou_guangta.jpg", "epigraph": "天接云涛连晓雾，星河欲转千帆舞。", "epigraph_src": "李清照《渔家傲》", "year_text": "景定元年・一二六〇"},
+  "4": {"bg": "res://assets/cutscene/cs_nanhai_dusk.jpg", "epigraph": "乡书何处达？归雁洛阳边。", "epigraph_src": "王湾《次北固山下》", "year_text": "景定五年・一二六四"}
+ },
+ "endings": {
+  "忠肃": "ending_zhongsu",
+  "未归": "ending_weigui",
+  "海上宋鬼": "ending_sea_ghost",
+  "泉州蒲氏的船": "ending_pu_ship",
+  "纲首": "ending_gangshou",
+  "岸上的根": "ending_root",
+  "sea_letter": "ending_sea_letter",
+  "ledger_distance": "ending_ledger",
+  "history_wind": "ending_history",
+  "south_sea": "ending_south_sea"
+ },
+ "port_banners": {
+  "xinghua": {"name": "兴化", "sub": "兴化军・治莆田"},
+  "xinghua_harbor": {"name": "兴化海口", "sub": "兴化湾畔・渡口酒棚"},
+  "quanzhou": {"name": "泉州", "sub": "刺桐港・市舶司所在"},
+  "fuzhou": {"name": "福州", "sub": "福建路治所・号三山"},
+  "zhangzhou": {"name": "漳州", "sub": "福建路南境・治龙溪"},
+  "wenzhou": {"name": "温州", "sub": "两浙东路・古称永嘉"},
+  "penghu": {"name": "澎湖", "sub": "隶泉州晋江县・外海诸屿"},
+  "ryukyu": {"name": "南岛海道北口", "sub": "流求海面・未入官图"},
+  "mingzhou": {"name": "明州", "sub": "庆元府・市舶司所在"},
+  "jeju": {"name": "耽罗", "sub": "高丽海中大岛・旧自为国"},
+  "hakata": {"name": "博多唐房", "sub": "筑前博多津・宋商聚居"},
+  "guangzhou": {"name": "广州", "sub": "古番禺・广南东路市舶司"},
+  "kagoshima": {"name": "南九州", "sub": "萨摩外海・硫黄所出"},
+  "champa": {"name": "占城", "sub": "古林邑之地・南海蕃国"}
+ }
+}
