@@ -7,7 +7,7 @@ extends Node2D
 signal port_clicked(port_id: String)
 signal camera_changed
 
-const ZOOM_MIN := 0.32
+const ZOOM_MIN := 0.28   # 4096 画布在 1280 宽下 0.32 才盖满屏；画布外已铺绢底，放宽到 0.28 让远程两港（广州—占城）装进图带
 const ZOOM_MAX := 4.2
 const DRAG_FRICTION := 6.5
 const KM_PER_LI := 0.576
@@ -35,6 +35,7 @@ var terrain: Sprite2D
 var camera: Camera2D
 var ship: ShipMarker
 
+var layer_paper: Node2D
 var layer_coast: Node2D
 var layer_flow: Node2D
 var layer_lanes: Node2D
@@ -98,6 +99,8 @@ func _ready() -> void:
 
 
 func _build_nodes() -> void:
+	# 画布之外铺绢底并描一圈墨线图框：拖到边上或最小缩放时露出的是纸，不是视口底色
+	layer_paper = _make_layer("Paper", _draw_paper)
 	terrain = Sprite2D.new()
 	terrain.centered = false
 	var tex := GameManager.load_texture("res://assets/map/terrain_4096.png")
@@ -163,22 +166,65 @@ func setup(port_defs: Array, coast: Dictionary, lane_data: Dictionary, label_dat
 		tiers = t
 	coast_rings.clear()
 	coast_boxes.clear()
+	# 数据是按包围盒裁过的：环上两端都贴在同一条包围盒边上的段是裁边不是岸（103E 西缘在圆锥投影里是一条斜线，
+	# 会斜穿云南、老挝汇到画布角上），在那儿把环断成开放折线；没裁边的环才闭合
+	var bbox: Array = coast.get("meta", {}).get("bbox", [])
 	for ring in coast.get("land", []):
-		var poly := PackedVector2Array()
-		var r := Rect2()
-		var first := true
-		for pt in ring:
-			var v: Vector2 = proj.to_px(float(pt[0]), float(pt[1]))
-			poly.append(v)
-			if first:
-				r = Rect2(v, Vector2.ZERO)
-				first = false
-			else:
-				r = r.expand(v)
-		if poly.size() >= 3:
-			coast_rings.append(poly)
-			coast_boxes.append(r)
+		var n: int = ring.size()
+		if n < 3:
+			continue
+		var cut := PackedByteArray()
+		cut.resize(n)
+		var start := -1
+		for i in n:
+			cut[i] = 1 if _on_same_bbox_edge(ring[i], ring[(i + 1) % n], bbox) else 0
+			if cut[i] == 1 and start < 0:
+				start = (i + 1) % n
+		if start < 0:
+			var poly := PackedVector2Array()
+			for pt in ring:
+				poly.append(proj.to_px(float(pt[0]), float(pt[1])))
+			poly.append(poly[0])
+			_add_coast_piece(poly)
+			continue
+		var piece := PackedVector2Array()
+		for k in n:
+			var i := (start + k) % n
+			var pt = ring[i]
+			piece.append(proj.to_px(float(pt[0]), float(pt[1])))
+			if cut[i] == 1:
+				_add_coast_piece(piece)
+				piece = PackedVector2Array()
+		_add_coast_piece(piece)
 	_redraw_all()
+
+
+func _add_coast_piece(poly: PackedVector2Array) -> void:
+	if poly.size() < 2:
+		return
+	var r := Rect2(poly[0], Vector2.ZERO)
+	for v in poly:
+		r = r.expand(v)
+	coast_rings.append(poly)
+	coast_boxes.append(r)
+
+
+## 两点是否都贴在数据包围盒的同一条边上（bbox = [西, 南, 东, 北]，经纬度）
+static func _on_same_bbox_edge(a: Array, b: Array, bbox: Array) -> bool:
+	if bbox.size() != 4:
+		return false
+	var eps := 1e-4
+	var ax := float(a[0])
+	var ay := float(a[1])
+	var bx := float(b[0])
+	var by := float(b[1])
+	for x_edge in [float(bbox[0]), float(bbox[2])]:
+		if absf(ax - x_edge) < eps and absf(bx - x_edge) < eps:
+			return true
+	for y_edge in [float(bbox[1]), float(bbox[3])]:
+		if absf(ay - y_edge) < eps and absf(by - y_edge) < eps:
+			return true
+	return false
 
 
 func set_mode(terrain_mode: bool) -> void:
@@ -546,7 +592,7 @@ func _near_port(world: Vector2, radius: float) -> bool:
 
 
 func _redraw_all() -> void:
-	for l in [layer_coast, layer_flow, layer_lanes, layer_route, layer_labels, layer_ports]:
+	for l in [layer_paper, layer_coast, layer_flow, layer_lanes, layer_route, layer_labels, layer_ports]:
 		if l:
 			l.queue_redraw()
 
@@ -613,16 +659,13 @@ func _draw_coast(ci: CanvasItem) -> void:
 	while y < view.end.y:
 		ci.draw_line(Vector2(view.position.x, y), Vector2(view.end.x, y), grid_col, _px(1.0))
 		y += step
-	# 岸线：只画视窗相交的环；线宽 1.2 屏幕像素
+	# 岸线：只画视窗相交的片段（闭合环在缓存里已补首点；裁边处断开的是开放折线）；线宽 1.25 屏幕像素
 	var w := _px(1.25)
 	var col := Color(COL_INK, 0.78)
 	for i in coast_rings.size():
 		if not (coast_boxes[i] as Rect2).intersects(view):
 			continue
-		var poly: PackedVector2Array = coast_rings[i]
-		var closed := PackedVector2Array(poly)
-		closed.append(poly[0])
-		ci.draw_polyline(closed, col, w, true)
+		ci.draw_polyline(coast_rings[i], col, w, true)
 
 
 ## 季风流线：全图匀布的短划，沿风向缓缓流动；洋流（flows）按折线画流动虚线
@@ -699,6 +742,15 @@ func _draw_flow_dashes(ci: CanvasItem, poly: PackedVector2Array, col: Color, w: 
 		acc += seg
 
 
+## 画布外的绢底与图框：底图只覆盖投影画布，镜头钳位允许越界 4%，最小缩放时四周也会露边
+func _draw_paper(ci: CanvasItem) -> void:
+	ci.draw_rect(Rect2(-map_size, map_size * 3.0), COL_PAPER, true)
+	# 图框：宋图惯例外粗内细双线（《禹迹图》《地理图》石刻边栏），粗线在外
+	var w := _px(3.0)
+	ci.draw_rect(Rect2(Vector2.ZERO, map_size).grow(_px(10.0)), Color(COL_INK, 0.55), false, w)
+	ci.draw_rect(Rect2(Vector2.ZERO, map_size).grow(_px(4.0)), Color(COL_INK, 0.45), false, _px(1.0))
+
+
 ## 熟路淡线 / 传闻海道虚线：已解锁港口之间的 connections
 func _draw_lanes(ci: CanvasItem) -> void:
 	var drawn := {}
@@ -725,8 +777,9 @@ func _draw_lanes(ci: CanvasItem) -> void:
 func _draw_route(ci: CanvasItem) -> void:
 	if route_points.size() < 2:
 		return
-	# 底衬：宽而淡
-	ci.draw_polyline(route_points, Color(route_color, 0.22), _px(6.0), true)
+	# 底衬：蛤粉宽线。沿岸航段的赭石 / 淡墨线压在赭石岸上会消失（第三章明州→广州实测），衬一层纸色才读得出
+	ci.draw_polyline(route_points, Color(COL_SHELL, 0.62), _px(6.5), true)
+	ci.draw_polyline(route_points, Color(route_color, 0.18), _px(4.0), true)
 	if known_route and route_color != COL_ROUTE_FOUL:
 		ci.draw_polyline(route_points, route_color, _px(2.2), true)
 	else:
