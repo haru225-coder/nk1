@@ -809,9 +809,11 @@ func _course_detail_text(gold: String) -> String:
 	var plan_off := Voyage.plan(origin_port, selected_port, Voyage.CourseOrder.OFFSHORE)
 	var plan_coast := Voyage.plan(origin_port, selected_port, Voyage.CourseOrder.COAST)
 	var t := "[color=#%s][b]航段　%s[/b][/color]\n" % [gold, GameManager.get_port_name(selected_port)]
-	t += "%s　静风 %d 日　遇事约 %d 日　八成 %d 日　水粮足 %d 日\n" % [
-		Voyage.order_name(course_order), int(plan["days"]), int(plan["expected_days"]), int(plan["safe_days"]), int(plan["supply_days"]),
+	# 1280 宽下这行连「水粮足」一起会折行、「日」字孤悬（-02 巡检），水粮拆到下一行
+	t += "%s　静风 %d 日　遇事约 %d 日　八成 %d 日\n" % [
+		Voyage.order_name(course_order), int(plan["days"]), int(plan["expected_days"]), int(plan["safe_days"]),
 	]
+	t += "水粮足 %d 日\n" % int(plan["supply_days"])
 	t += "静风　针路 %d　外洋 %d　傍岸 %d 日\n" % [int(plan_rumb["days"]), int(plan_off["days"]), int(plan_coast["days"])]
 	t += "遇事　针路 %d　外洋 %d　傍岸 %d 日\n" % [
 		int(plan_rumb["expected_days"]), int(plan_off["expected_days"]), int(plan_coast["expected_days"]),
