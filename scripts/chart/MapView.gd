@@ -1155,7 +1155,8 @@ func _draw_dest_edge_hint(ci: CanvasItem) -> void:
 	if band.size.x <= 0.0 or band.size.y <= 0.0:
 		return
 	var d: Vector2 = port_px[dest_id]
-	if band.has_point(d):
+	# 图带下沿之下还有一条航法钮的缝（约 50 px）能露出港标，落在缝里的不算出带
+	if band.grow_individual(0.0, 0.0, 0.0, _px(52.0)).has_point(d):
 		return
 	var c := band.get_center()
 	var dir := (d - c).normalized()
