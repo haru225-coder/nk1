@@ -449,8 +449,20 @@ func _kill_cam_tween() -> void:
 		_cam_tween.kill()
 
 
-## 取景到一组港口（世界矩形外扩 pad 比例），平滑过去
-func frame_ports(ids: Array, pad: float = 0.28, dur: float = 0.8) -> void:
+## HUD 压住的屏幕高度（顶匾 / 底部牌区，屏幕像素）。取景只用中间露出来的那一段，
+## 免得起讫港被航向牌盖住。由 SeaChart 在布局后写入。
+var inset_top := 0.0
+var inset_bottom := 0.0
+
+
+func set_view_inset(top: float, bottom: float) -> void:
+	inset_top = maxf(top, 0.0)
+	inset_bottom = maxf(bottom, 0.0)
+
+
+## 取景到一组港口（世界矩形外扩 pad 比例），平滑过去。
+## anchor_id：装不下全部港口时（如第四章占城到高丽 2700 公里），至少保证这一港露在图带里（一般传起点港）。
+func frame_ports(ids: Array, pad: float = 0.28, dur: float = 0.8, anchor_id: String = "") -> void:
 	var r := Rect2()
 	var first := true
 	for id in ids:
@@ -463,15 +475,33 @@ func frame_ports(ids: Array, pad: float = 0.28, dur: float = 0.8) -> void:
 			r = r.expand(port_px[id])
 	if first:
 		return
-	frame_rect(r, pad, dur)
+	var anchor: Vector2 = port_px[anchor_id] if port_px.has(anchor_id) else Vector2(INF, INF)
+	frame_rect(r, pad, dur, anchor)
 
 
-func frame_rect(r: Rect2, pad: float = 0.28, dur: float = 0.8) -> void:
+func frame_rect(r: Rect2, pad: float = 0.28, dur: float = 0.8, anchor: Vector2 = Vector2(INF, INF)) -> void:
 	var vp := get_viewport_rect().size
+	# 露出来的图带：整个视口去掉顶匾与底部牌区；缩放按这段算，目标点落在这段的中央
+	var clear_h := maxf(vp.y - inset_top - inset_bottom, vp.y * 0.25)
 	var w := maxf(r.size.x, 120.0) * (1.0 + pad * 2.0)
 	var h := maxf(r.size.y, 120.0) * (1.0 + pad * 2.0)
-	var z := clampf(minf(vp.x / w, vp.y / h), ZOOM_MIN, ZOOM_MAX)
-	var target := r.get_center()
+	var z := clampf(minf(vp.x / w, clear_h / h), ZOOM_MIN, ZOOM_MAX)
+	# 图带中心比屏幕中心低 (top - bottom)/2 像素；镜头中心要反向偏这么多世界单位
+	var target := r.get_center() + Vector2(0.0, (inset_bottom - inset_top) * 0.5 / z)
+	# 最小缩放仍装不下时，把镜头挪到锚点港落进图带内（留 56 px 边，名字与船标都露出来）
+	if is_finite(anchor.x) and is_finite(anchor.y):
+		var m := 56.0 / z
+		var half_w := vp.x * 0.5 / z
+		var band_top := target.y - (vp.y * 0.5 - inset_top) / z
+		var band_bottom := target.y + (vp.y * 0.5 - inset_bottom) / z
+		if anchor.y < band_top + m:
+			target.y += anchor.y - (band_top + m)
+		elif anchor.y > band_bottom - m:
+			target.y += anchor.y - (band_bottom - m)
+		if anchor.x < target.x - half_w + m:
+			target.x += anchor.x - (target.x - half_w + m)
+		elif anchor.x > target.x + half_w - m:
+			target.x += anchor.x - (target.x + half_w - m)
 	_kill_cam_tween()
 	_velocity = Vector2.ZERO
 	if dur <= 0.0:
@@ -738,7 +768,8 @@ func _draw_ports(ci: CanvasItem) -> void:
 			return pa > pb
 		return float(a.get("lat", 0.0)) > float(b.get("lat", 0.0))
 	)
-	var size_px := 13 if z < 0.7 else (14 if z < 1.6 else 16)
+	# 字号：默认取景（z 约 0.6–0.9）下 13 px 只剩 11 px 高，读不清（snowchan27-02 走查），提到 15 起
+	var size_px := 15 if z < 0.7 else (16 if z < 1.6 else 18)
 	var show_sub := z >= 0.9
 	for p in order:
 		var pid := str(p.get("id", ""))
@@ -776,7 +807,7 @@ func _draw_ports(ci: CanvasItem) -> void:
 		var sub := _port_sub(chart)
 		var tw := _text_width_world(text, size_px)
 		var th := _px(size_px * 1.15)
-		var sub_px := 10
+		var sub_px := 11
 		var sub_w := _text_width_world(sub, sub_px) if (show_sub and sub != "") else 0.0
 		var block_w := maxf(tw, sub_w)
 		var block_h := th + (_px(sub_px * 1.2) if sub_w > 0.0 else 0.0)

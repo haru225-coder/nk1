@@ -21,6 +21,10 @@ var map_container: SubViewportContainer
 var compass: Control
 var scale_bar: Control
 var mode_button: Button
+## 中间露出图的那段占位（顶匾之下、牌区之上）；取景只用这段，见 _push_view_inset
+var _map_clear: Control
+var _actions_wrap: Control
+var _deck_hint: Label
 var terrain_mode: bool = false
 var heading_row: HBoxContainer
 var log_label: RichTextLabel
@@ -88,11 +92,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 var _deck_hidden: bool = false
 func _toggle_deck() -> void:
 	_deck_hidden = not _deck_hidden
-	for c in [order_row, heading_row]:
+	for c in [order_row, heading_row, _actions_wrap]:
 		if c:
 			c.visible = not _deck_hidden
-	if sail_button and sail_button.get_parent():
-		sail_button.get_parent().visible = not _deck_hidden
+	if _deck_hint:
+		_deck_hint.visible = _deck_hidden
 
 
 # ══════════════════════════════════════════════════════
@@ -176,6 +180,9 @@ func _build_ui() -> void:
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(center)
+	_map_clear = center
+	# 占位一变（首帧布局、H 收牌、拉窗口）就把露出的图带高度告诉图
+	center.resized.connect(_push_view_inset)
 	compass = Control.new()
 	compass.custom_minimum_size = Vector2(150, 172)
 	compass.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -206,18 +213,20 @@ func _build_ui() -> void:
 	scale_bar.draw.connect(_draw_scale)
 	center.add_child(scale_bar)
 	map.camera_changed.connect(scale_bar.queue_redraw)
-	var speed_hint := Label.new()
-	speed_hint.text = "拖拽平移　滚轮缩放　T 舆图　F 全图　H 收牌　航行中按住空格加速"
-	speed_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	speed_hint.offset_left = -520
-	speed_hint.offset_right = -6
-	speed_hint.offset_top = -26
-	speed_hint.offset_bottom = -4
-	speed_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	speed_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UiTheme.style_footnote(speed_hint)
-	speed_hint.add_theme_color_override("font_color", Color(MAP_INK, 0.7))
-	center.add_child(speed_hint)
+	# 收牌后牌区不在了，图带右下角留一句怎么展开；平时藏着，不压图
+	_deck_hint = Label.new()
+	_deck_hint.text = "H 展开牌区"
+	_deck_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	_deck_hint.offset_left = -160
+	_deck_hint.offset_right = -6
+	_deck_hint.offset_top = -26
+	_deck_hint.offset_bottom = -4
+	_deck_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_deck_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiTheme.style_footnote(_deck_hint)
+	_deck_hint.add_theme_color_override("font_color", Color(MAP_INK, 0.7))
+	_deck_hint.visible = false
+	center.add_child(_deck_hint)
 
 	# 航法三策一栏（云端 bed9），放在航向牌上方
 	order_row = _build_order_row()
@@ -229,10 +238,29 @@ func _build_ui() -> void:
 	heading_row.custom_minimum_size = Vector2(0, 148)
 	root.add_child(heading_row)
 
+	# 底行：按钮居中；操作提示两行小字靠右，不再浮在图上压港名（snowchan27-02 走查）
+	_actions_wrap = Control.new()
+	_actions_wrap.custom_minimum_size = Vector2(0, 48)
+	_actions_wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_actions_wrap)
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 12)
-	root.add_child(actions)
+	actions.set_anchors_preset(Control.PRESET_FULL_RECT)
+	actions.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_actions_wrap.add_child(actions)
+	var speed_hint := Label.new()
+	speed_hint.text = "拖拽平移　滚轮缩放　航行中按住空格加速\nT 舆图　F 全图　H 收牌"
+	speed_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
+	speed_hint.offset_left = -300
+	speed_hint.offset_right = 0
+	speed_hint.offset_top = -24
+	speed_hint.offset_bottom = 24
+	speed_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	speed_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	speed_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiTheme.style_footnote(speed_hint)
+	_actions_wrap.add_child(speed_hint)
 
 	sail_button = Button.new()
 	sail_button.text = "就这一向"
@@ -270,10 +298,20 @@ func _toggle_mode() -> void:
 
 ## 取景到全部已解锁港口
 func _frame_home(dur: float) -> void:
+	_push_view_inset()
 	var ids := []
 	for p in GameManager.unlocked_ports():
 		ids.append(str(p.get("id", "")))
-	map.frame_ports(ids, 0.20, dur)
+	map.frame_ports(ids, 0.16, dur, origin_port)
+
+
+## 把顶匾与底部牌区盖住的屏幕高度告诉图：取景只用中间露出的图带，起讫港不再躲在航向牌底下
+func _push_view_inset() -> void:
+	if map == null or _map_clear == null or not _map_clear.is_inside_tree():
+		return
+	var top := _map_clear.global_position.y - global_position.y
+	var bottom := size.y - (top + _map_clear.size.y)
+	map.set_view_inset(top, bottom)
 
 
 ## 把当前选择同步到图上：风向、手牌、当前航段（顺风绿 / 逆风朱 / 换风金）
