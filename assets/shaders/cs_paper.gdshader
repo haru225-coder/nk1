@@ -14,6 +14,12 @@ uniform float fiber = 0.22;
 uniform float alpha = 1.0;
 uniform float reveal = 1.0;
 uniform vec2 reveal_origin = vec2(0.55, 0.48);
+// true：阈值场反过来（离 origin 越近越先退）——章节卡退场时纸从墨晕窗口往外退
+uniform bool reveal_outward = false;
+// 阈值扫过的区间：对准 field 在画面上的实际分布（5%–95% 分位约 0.03–0.56，外退场约 0.37–0.90；第 2 轮返工实测），
+// 原先 −0.22…1.08 里只有三成真在动，纸两三帧就铺满，读作闪屏
+uniform float thr_lo = -0.12;
+uniform float thr_hi = 0.80;
 uniform float seed = 0.0;
 
 // 片元里重写 COLOR 会丢掉节点 modulate（含父节点链），先在顶点阶段存下
@@ -46,13 +52,17 @@ void fragment() {
 		float n2 = texture(noise_tex, p * 1.9 + vec2(0.31, seed)).r;
 		float n3 = texture(noise_tex, p * 4.5 + vec2(0.11, 0.57 + seed)).r;
 		float d = length((UV - reveal_origin) * vec2(asp, 1.0)) / length(vec2(asp, 1.0));
-		float field = d * 1.1 + (n1 - 0.5) * 0.6 + (n2 - 0.5) * 0.2 + (n3 - 0.5) * 0.07;
-		// 阈值区间对齐 field 的实际取值（约 −0.2…1.0），整段时长都在动，不空转
-		float thr = mix(-0.22, 1.08, reveal);
-		a = 1.0 - smoothstep(thr - 0.025, thr, field);
-		// 前沿一线湿痕：纸边吃了水，略深略暖
-		float rim = smoothstep(thr - 0.075, thr - 0.006, field) * a;
-		c = mix(c, c * vec3(0.8, 0.74, 0.64), rim * 0.85);
+		if (reveal_outward) {
+			d = 0.85 - d;
+		}
+		// 低频噪声权重 0.6 → 0.35、中频 0.2 → 0.14：原先大块噪声在前沿外成一座座孤岛、边缘是分形棉絮，读作「棉絮块」（第 2 轮美术 M1）
+		float field = d * 1.1 + (n1 - 0.5) * 0.35 + (n2 - 0.5) * 0.14 + (n3 - 0.5) * 0.05;
+		float thr = mix(thr_lo, thr_hi, reveal);
+		// 过渡带 0.025 → 0.10：硬边读作白色剪纸，放宽后是纸吃水洇开
+		a = 1.0 - smoothstep(thr - 0.10, thr, field);
+		// 前沿一道湿痕：纸边吃了水，略深略暖，带宽 0.18，读作洇湿的纸边而不是亮边
+		float rim = smoothstep(thr - 0.18, thr - 0.01, field) * a;
+		c = mix(c, c * vec3(0.72, 0.64, 0.52), rim * 0.85);
 	}
 	COLOR = vec4(c, a * alpha * v_mod.a);
 }

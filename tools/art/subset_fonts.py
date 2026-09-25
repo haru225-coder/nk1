@@ -125,6 +125,7 @@ def base_chars() -> set:
     s |= range_chars(0x2600, 0x2610)    # ★☆
     s |= range_chars(0x3000, 0x303F)    # CJK 标点（、。〈〉《》「」『』【】〔〕）
     s |= range_chars(0x3040, 0x30FF)    # 假名（博多、日本人名；・U+30FB）
+    s |= range_chars(0xFE10, 0xFE19)    # 竖排句读（︐︑︒︓︔︕︖︙：章节卡题记竖排时换成竖排字形）
     s |= range_chars(0xFE30, 0xFE4F)    # 竖排标点兼容形
     s |= range_chars(0xFF01, 0xFF5E)    # 全角 ASCII
     s |= range_chars(0xFF5F, 0xFF65)    # 全角括号、半角句读

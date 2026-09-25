@@ -597,7 +597,7 @@ func _refresh_strip() -> void:
 	_strip_line.text = line1 + "\n[color=#%s]%s[/color]" % [dim, note]
 
 
-func _panel_style() -> StyleBoxFlat:
+func _panel_style() -> StyleBox:
 	return UiTheme.panel()
 
 
@@ -835,7 +835,7 @@ func _make_heading_card(pid: String) -> Control:
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_lbl.add_theme_font_override("font", UiTheme.font())
 	name_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
-	name_lbl.add_theme_color_override("font_color", UiTheme.TIDE)
+	name_lbl.add_theme_color_override("font_color", UiTheme.GOLD_HI if UiTheme.IS_JUANBEN else UiTheme.TIDE)
 	box.add_child(name_lbl)
 
 	var wind_mark := str(plan["wind_desc"])

@@ -61,7 +61,7 @@
      "transition_in": "fade",
      "shake": 0.0,
      "captions": [
-      {"t": 0.4, "text": "东", "style": "seal", "pos": "right_vertical"},
+      {"t": 0.4, "text": "扶桑", "style": "seal", "pos": "right_vertical"},
       {"t": 0.9, "text": "日本・博多津", "style": "era", "pos": "right_vertical"},
       {"t": 1.8, "text": "宋商聚居于此，号为唐房。", "style": "narration", "pos": "lower_left"},
       {"t": 4.6, "text": "宋钱、瓷、绢东去，硫黄、宝刀西来。", "style": "narration", "pos": "lower_left"}
@@ -843,7 +843,7 @@
  },
  "chapters": {
   "1": {"bg": "res://assets/bg_reef_bay.jpg", "epigraph": "道不行，乘桴浮于海。", "epigraph_src": "《论语·公冶长》", "year_text": "宝祐三年・一二五五"},
-  "2": {"bg": "res://assets/cutscene/cs_jeju_north.jpg", "epigraph": "云散月明谁点缀？天容海色本澄清。", "epigraph_src": "苏轼《六月二十日夜渡海》", "year_text": "宝祐五年・一二五七"},
+  "2": {"bg": "res://assets/cutscene/cs_jeju_north.jpg", "focus": [0.63, 0.37], "zoom": 1.32, "epigraph": "云散月明谁点缀？天容海色本澄清。", "epigraph_src": "苏轼《六月二十日夜渡海》", "year_text": "宝祐五年・一二五七"},
   "3": {"bg": "res://assets/cutscene/cs_guangzhou_guangta.jpg", "epigraph": "天接云涛连晓雾，星河欲转千帆舞。", "epigraph_src": "李清照《渔家傲》", "year_text": "景定元年・一二六〇"},
   "4": {"bg": "res://assets/cutscene/cs_nanhai_dusk.jpg", "epigraph": "乡书何处达？归雁洛阳边。", "epigraph_src": "王湾《次北固山下》", "year_text": "景定五年・一二六四"}
  },
@@ -872,7 +872,7 @@
   "jeju": {"name": "耽罗", "sub": "高丽海中大岛・旧自为国"},
   "hakata": {"name": "博多唐房", "sub": "筑前博多津・宋商聚居"},
   "guangzhou": {"name": "广州", "sub": "古番禺・广南东路市舶司"},
-  "kagoshima": {"name": "南九州", "sub": "萨摩外海・硫黄所出"},
+  "kagoshima": {"name": "萨摩", "sub": "南九州外海・硫黄所出"},
   "champa": {"name": "占城", "sub": "古林邑之地・南海蕃国"}
  }
 }

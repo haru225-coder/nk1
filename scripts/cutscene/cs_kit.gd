@@ -43,7 +43,8 @@ static var _warmed := false
 
 ## 管线预热用到的全部 shader（首次绘制时编译，Metal/Vulkan 下单个 30–100 ms）
 const WARM_SHADERS := ["cs_shot.gdshader", "cs_seal.gdshader", "cs_paper.gdshader", "cs_ink_bloom.gdshader",
-	"cs_silk_band.gdshader", "cs_overlay.gdshader", "cs_wipe.gdshader", "cs_living_backdrop.gdshader"]
+	"cs_silk_band.gdshader", "cs_overlay.gdshader", "cs_wipe.gdshader", "cs_living_backdrop.gdshader",
+	"cs_line_reveal.gdshader"]
 
 
 ## 管线预热：把过场 / 章节卡 / 横幅用到的全部 shader、加色混合、粒子（multimesh）各画一帧——

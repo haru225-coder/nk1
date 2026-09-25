@@ -191,6 +191,148 @@ if to_d and from_d:
 else:
     check(False, "GameState.gd 未找到 to_dict/from_dict")
 
+# ── 人物志 / 见面页上屏文本（第 1 轮评审 UX B1 / M1）──────────────
+# characters.json 的 bio / bio_short 是设定集原稿，不上屏；上屏的字一律走 data/characters_codex.json。
+# 凡会上屏的字段不许出现策划腔；每段按可见条件分级，段里写到的最晚年份不得晚于该段的可见年
+# （0 段 = 开局即可见，只许写 1255 年及以前的事）。
+CODEX_META = re.compile(r"本作|玩家|士人线|海商线|乡土线|暗线|性格锚|全作|选项|设定|第.章|月俸|可雇|雇到|结局|序章|终局|"
+                        r"开局|一屏|结算|码头卡|三选一|这就是设计")
+_ERA0 = {"宝庆": 1225, "绍定": 1228, "端平": 1234, "嘉熙": 1237, "淳祐": 1241, "宝祐": 1253, "开庆": 1259,
+         "景定": 1260, "咸淳": 1265, "德祐": 1275, "景炎": 1276, "祥兴": 1278, "至元": 1264, "文永": 1264,
+         "绍兴": 1131, "乾道": 1165, "淳熙": 1174, "隆兴": 1163, "宣和": 1119, "至治": 1321}
+_CNN = {"元": 1, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
+START_YEAR = 1255
+# 进度段（c1…c5）最早落在哪一年：序章走完仍在 1255，第二章起按云端 advance_years 2 / 3 / 4 累加，终局 1275 年十二月起
+PHASE_YEAR = {1: 1255, 2: 1257, 3: 1260, 4: 1264, 5: 1275}
+
+
+def _cn_n(s):
+    if s in _CNN:
+        return _CNN[s]
+    if "十" in s:
+        a, _, b = s.partition("十")
+        return (_CNN.get(a, 1) if a else 1) * 10 + (_CNN.get(b, 0) if b else 0)
+    return 1
+
+
+def latest_year(text):
+    ys = [int(y) for y in re.findall(r"(?<!\d)(1[1-3]\d\d)(?!\d)", text)]
+    for era, n in re.findall(r"(" + "|".join(_ERA0) + r")([元一二三四五六七八九十]{1,3})年", text):
+        ys.append(_ERA0[era] + _cn_n(n) - 1)
+    for era in re.findall(r"(德祐|景炎|祥兴|咸淳|景定|开庆)(?![元一二三四五六七八九十])", text):
+        ys.append(_ERA0[era])
+    return max(ys) if ys else 0
+
+
+def cond_year(cond):
+    if cond == "end":
+        return 99999
+    if isinstance(cond, str) and cond.startswith("c") and cond[1:].isdigit():
+        return PHASE_YEAR.get(int(cond[1:]), 99999)
+    if isinstance(cond, (int, float)):
+        return max(int(cond), START_YEAR)
+    return None
+
+
+chars_all = load("characters.json").get("characters", [])
+codex_path = os.path.join(ROOT, "data", "characters_codex.json")
+check(os.path.isfile(codex_path), "缺 data/characters_codex.json（人物志上屏文本层）")
+codex = {}
+if os.path.isfile(codex_path):
+    try:
+        codex = load("characters_codex.json").get("characters", {})
+    except (ValueError, OSError) as e:
+        check(False, f"characters_codex.json 解析失败：{e}")
+codex_segs = 0
+for c in chars_all:
+    cid = c.get("id", "")
+    e = codex.get(cid)
+    check(isinstance(e, dict) and e.get("bio") and e.get("short"), f"人物志文本层缺 {cid} 的 bio / short")
+    if not isinstance(e, dict):
+        continue
+    fields = {}
+    for k in ("bio", "short", "lines", "title", "courtesy", "alt"):
+        if k in e:
+            fields[k] = e[k]
+    if "alt" not in e:
+        fields["alt"] = [[0, str(x)] for x in c.get("alt_names", [])]
+    # 文本层没覆写的上屏字段：用设定集原稿，但同样查策划腔（原稿当作一直可见）
+    for k in ("title", "courtesy"):
+        if k not in e and c.get(k):
+            fields[k] = [[0, str(c.get(k))]]
+    if "lines" not in e:
+        fields["lines"] = [[0, str(x)] for x in c.get("lines", [])]
+    for k in ("look", "personality"):
+        v = e.get(k, c.get(k, ""))
+        if v:
+            fields[k] = [[0, str(v)]]
+    for k, segs in fields.items():
+        check(isinstance(segs, list), f"{cid}.{k} 应为 [[可见条件, 文字], …]")
+        if not isinstance(segs, list):
+            continue
+        for s in segs:
+            ok = isinstance(s, list) and len(s) == 2 and isinstance(s[1], str)
+            check(ok, f"{cid}.{k} 有一段不是 [可见条件, 文字]：{s!r}"[:120])
+            if not ok:
+                continue
+            cy = cond_year(s[0])
+            check(cy is not None, f"{cid}.{k} 可见条件无法识别：{s[0]!r}")
+            txt = s[1]
+            hit = CODEX_META.search(txt)
+            check(hit is None, f"{cid}.{k} 上屏文字含策划腔「{hit.group(0) if hit else ''}」：{txt[:40]}")
+            # 称谓（未识格也露）不许带「后为……」透底；原稿 title 里的由运行时截掉，文本层覆写的一律不许有
+            check(not (k == "title" and k in e and "后为" in txt), f"{cid}.title 含「后为」透底：{txt[:40]}")
+            ly = latest_year(txt)
+            if cy is not None and cy < 99999 and ly > 0 and k != "look":
+                check(ly <= cy, f"{cid}.{k} 一段写到 {ly} 年，却在 {cy} 年就可见：{txt[:40]}")
+            codex_segs += 1
+check(codex_segs >= 300, f"人物志文本层只有 {codex_segs} 段，疑似载入不全")
+# 关系签的可见条件：键必须是设定集里真有的签，条件可识别
+all_rels = {r.get("rel", "") for c in chars_all for r in c.get("relations", [])}
+rel_from = load("characters_codex.json").get("rel_from", {}) if os.path.isfile(codex_path) else {}
+for rk, rv in rel_from.items():
+    check(rk in all_rels, f"characters_codex.rel_from 的「{rk}」不是设定集里的关系签")
+    check(cond_year(rv) is not None, f"characters_codex.rel_from「{rk}」可见条件无法识别：{rv!r}")
+# 上屏出口必须读文本层：人物志小传不再读 bio 原稿，见面页简介不再读 bio_short 原稿
+codex_src = open(os.path.join(ROOT, "scripts", "ui", "CharacterCodex.gd"), encoding="utf-8").read()
+art_src = open(os.path.join(ROOT, "scripts", "ui", "CharacterArt.gd"), encoding="utf-8").read()
+check('get("bio"' not in codex_src and "codex_bio(" in codex_src, "人物志小传仍读 characters.json 的 bio 原稿")
+check('"bio_short"' not in main_src and "codex_short(" in main_src, "见面页简介仍读 characters.json 的 bio_short 原稿")
+check("characters_codex.json" in art_src, "CharacterArt 未接人物志上屏文本层")
+
+# 上屏的场景文字（标题、正文、选项、调查项、speaker）引号一律用「」『』，不用 “” ‘’（第 2 轮 UX M7：
+# 人物志、册页、见面页、过场全用「」，只有 scenes.json 混着西式引号）。deprecated 场景不上屏，不查。
+# 序章正文不得点破主角结局（岳王庙、孤城、改名陈文龙）与现代腔（世界地图的迷雾、命运的指针、宏大沙盘）。
+PROLOGUE_SPOIL = re.compile(r"岳王庙|兵不满千|孤城|改名为陈文龙|世界地图的迷雾|命运的指针|宏大沙盘")
+def _scene_texts(s):
+    for k in ("title", "cg_title", "cg_sub", "body", "speaker"):
+        v = s.get(k)
+        if isinstance(v, str):
+            yield k, v
+    for c in s.get("choices", []) or []:
+        if isinstance(c, dict) and isinstance(c.get("label"), str):
+            yield "choice", c["label"]
+    for inv in s.get("investigations", []) or []:
+        if isinstance(inv, dict):
+            for k in ("label", "text"):
+                if isinstance(inv.get(k), str):
+                    yield "inv." + k, inv[k]
+    for k in ("lines",):
+        for v in s.get(k, []) or []:
+            if isinstance(v, str):
+                yield k, v
+bad_quotes = 0
+for s in scenes:
+    if s.get("deprecated"):
+        continue
+    for k, v in _scene_texts(s):
+        if any(q in v for q in "“”‘’"):
+            bad_quotes += 1
+            check(False, f"scenes.json {s.get('id')}.{k} 用了西式引号：{v[:40]}")
+        if s.get("chapter") == "prologue" or str(s.get("id", "")).startswith("cg_") or s.get("id") == "start":
+            hit = PROLOGUE_SPOIL.search(v)
+            check(hit is None, f"scenes.json {s.get('id')}.{k} 序章文字剧透 / 现代腔「{hit.group(0) if hit else ''}」")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:

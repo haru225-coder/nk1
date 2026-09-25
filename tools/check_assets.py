@@ -104,11 +104,35 @@ for imp in sorted(ASSETS.glob("*.import")):
     txt = imp.read_text(encoding="utf-8", errors="replace")
     check("valid=false" not in txt, f"{imp.name} 记录 valid=false（上次导入失败且不会自动重试）——删掉它，rsync 到临时目录跑一次编辑器扫描再拷回")
 
+# ── 5. 人物立绘（characters 线）──────────────────────────
+# Main 见面页、酒馆人物卡、船籍簿小头像、人物志都按 data/characters.json 的 portrait 取图（GameManager 读表）。
+# 逐人遍历：路径须在 res://assets/ 下、文件在、且有 .import（没导入的 PNG load() 取不到，只剩回落图）。人数不写死。
+portrait_checked = 0
+chars_file = ROOT / "data" / "characters.json"
+check(chars_file.is_file(), "data/characters.json 不存在（人物志与立绘的数据源）")
+if chars_file.is_file():
+    try:
+        chars = json.loads(chars_file.read_text(encoding="utf-8")).get("characters", [])
+    except (ValueError, AttributeError) as e:
+        chars = []
+        check(False, f"data/characters.json 解析失败：{e}")
+    check(isinstance(chars, list) and len(chars) > 0, "data/characters.json 没有 characters 表或为空")
+    for c in chars if isinstance(chars, list) else []:
+        cid = c.get("id", "?") if isinstance(c, dict) else "?"
+        pth = str(c.get("portrait", "")) if isinstance(c, dict) else ""
+        if not pth.startswith("res://assets/"):
+            check(False, f"人物 {cid} 的 portrait 不在 res://assets/ 下：{pth!r}")
+            continue
+        rel = pth[len("res://assets/"):]
+        check(exists(rel), f"人物 {cid} 的立绘 {pth} 文件不存在")
+        check((ASSETS / (rel + ".import")).is_file(), f"人物 {cid} 的立绘 {pth} 缺 .import（编辑器未导入，load() 取不到）")
+        portrait_checked += 1
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:
         print("FAIL:", f)
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
-print(f"资产引用 {len(seen)} 个完整路径 + PORT_BG/FACILITY_BG 表 + 前缀拼接展开，全部存在")
+print(f"资产引用 {len(seen)} 个完整路径 + PORT_BG/FACILITY_BG 表 + 前缀拼接展开 + 人物立绘 {portrait_checked} 张，全部存在")
 print("结果：全部通过")

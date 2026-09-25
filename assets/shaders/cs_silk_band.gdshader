@@ -10,6 +10,8 @@ uniform vec3 silk_dark : source_color = vec3(0.64, 0.54, 0.38);
 uniform vec3 gold : source_color = vec3(0.788, 0.631, 0.29);
 uniform vec3 indigo : source_color = vec3(0.122, 0.227, 0.302);
 uniform float fray_start = 0.72;
+// 左端毛边（挂签式两端都毛；0 = 左端直接出画，不做毛边）
+uniform float fray_left = 0.0;
 uniform float alpha = 1.0;
 uniform float seed = 0.0;
 
@@ -32,12 +34,21 @@ void fragment() {
 	float line_y = min(abs(UV.y - 0.1), abs(UV.y - 0.9)) * band_size.y;
 	float gl = (1.0 - smoothstep(0.55, 1.45, line_y)) * smoothstep(0.25, 0.5, nf + 0.2);
 	c = mix(c, gold, gl * 0.85);
-	// 上下边沿的靛青压边
-	float edge = 1.0 - smoothstep(0.0, 3.0, min(UV.y, 1.0 - UV.y) * band_size.y);
+	// 上下缘是撕开的绢边，不是尺子裁的直边：沿边走向的两层噪声把边缘咬进 0–5px（先算，压边随咬口走）
+	float ey = min(UV.y, 1.0 - UV.y) * band_size.y;
+	float bite = texture(noise_tex, vec2(px.x / 70.0, seed + (UV.y < 0.5 ? 0.11 : 0.63))).r * 3.6
+		+ texture(noise_tex, vec2(px.x / 13.0, seed + (UV.y < 0.5 ? 0.37 : 0.81))).r * 1.6;
+	// 上下边沿的焦墨压边（原为靛青），随咬口起伏
+	float edge = 1.0 - smoothstep(0.0, 3.0, ey - bite);
 	c = mix(c, indigo, edge * 0.8);
 	// 右端毛边：噪声扰动的渐隐阈值
 	float fray = fray_start + (texture(noise_tex, vec2(UV.y * 1.7, seed)).r - 0.5) * 0.12
 		+ (texture(noise_tex, vec2(UV.y * 11.0, seed + 0.5)).r - 0.5) * 0.05;
 	float a = 1.0 - smoothstep(fray, fray + 0.16, UV.x);
+	if (fray_left > 0.0) {
+		float fl = fray_left + (texture(noise_tex, vec2(UV.y * 1.9, seed + 0.27)).r - 0.5) * 0.10;
+		a *= smoothstep(fl - 0.12, fl, UV.x);
+	}
+	a *= smoothstep(bite - 0.6, bite + 1.1, ey);
 	COLOR = vec4(c, a * alpha * v_mod.a);
 }

@@ -1,770 +1,526 @@
 # -*- coding: utf-8 -*-
-"""「绢本墨影」兜底卡的人物部件库：按冠服拼装正面半身剪影，输出 SVG 文本。
+"""墨影（减笔泼墨）人物骨架：把 cast.json 一条选角拼成一串墨法部件（parts），交给 inkbrush.render 合成。
 
-build_portraits.py 调用 figure_svg(spec) / backdrop_svg(spec)，用 rsvg-convert 渲染后再做纸纹墨韵。
-颜色是「通道编码」，不是最终颜色：
-  人物层  R = 墨浓度（255 焦墨 / 150 中墨：白须素服 / 100 淡墨），
-          G > 0 = 留白描线（渲染成绢色），B > 0 = 粉彩（面、手、象笏、纸张：浅暖粉，白描勾边），A = 覆盖。
-  背景层  R = 淡墨意象（远山、海浪、屏风……），G = 圆光（宣纸色提亮）。
-坐标：人物以面部中心为原点、面宽 96 为单位写，Fig 负责平移缩放到 512×640 画布（人物居左，右侧留题签）。
+画法取南宋梁楷一路的减笔泼墨：
+  · 身形不是整块填色，而是几笔侧锋大笔横扫叠出（肩背一笔、前襟一笔、两袖各一笔，大袖另垂一笔袖袋），
+    每笔一侧浓一侧淡，笔程越往下越枯、自然断成飞白；衣纹、领缘是焦墨钉头鼠尾；
+  · 面是淡墨一染，眉眼鼻口只落几笔焦墨（heads.py），发冠焦墨与面在发际处相接；
+  · 头与身各按一个转角投影（头转得比身多），侧身、歪头、前倾、驼背都在三维里做，不再是同一张正面模板。
 
-cast.json 每人一条：body 身形、head 冠帽、beard 须、pose 手势、prop 持物、scene 背景，
-另有 collar（round 圆领 / cross 交领）、tone（ink / grey 素服）、hat_tone、hair_tone、extra 附件。
+坐标：头部局部单位（面宽约 94），身坐标与头同原点（颈根约 y=86，肩约 y=110）；x 为人物左侧，z 朝观者。
+Rig 以 |turn| 投影后按朝向翻转，所以「近侧」（离观者近、画面上靠后的一侧）恒为局部 -x。
+
+cast.json 字段（缺省即默认）：
+  comp   {"s": 比例, "hx": 头心 x, "hy": 头心 y}——构图（景别由比例决定，头心须落在小头像取景框内）
+  body   robe 大袖袍 / narrow 窄袖 / short 短褐 / bare 赤膊 / armor 甲 / mongol 质孙 / mongol_armor /
+         kasaya 袈裟 / woman 褙子 / onearm 独臂
+  pose   "近侧手+远侧手"：fold 拱手 / fold_low 袖手 / hu 执笏 / hold 捧物 / present 奉书 / raise 高擎 / hang 垂手 /
+         back 负手 / one 当胸持物 / hilt 按剑 / lantern 提灯 / staff 拄杖 / oar 持橹 / up 举物
+  turn -1..1（正值面朝画面右）；body_k 身随头转的比例；tilt 歪头（度）；lean 前倾；stoop 驼背；wide 胖瘦
+  tone 身上主墨；age 年纪（皱纹）；brow 眉势；eye 眼长；mouth 口角；wind 衣袂须髯被风吹向朝向一侧
+  head / beard 见 heads.py；prop / behind 见 props.py；scene 见 scenes.py
 """
+import math
+import random
 
-INK = "rgb(255,0,0)"
-GREY = "rgb(150,0,0)"
-WASH = "rgb(100,0,0)"
-SKIN = "rgb(0,0,255)"
-TAN = "rgb(0,0,110)"      # 日晒古铜：粉彩通道取低值 → 合成时偏赭
-PALE = "rgb(0,0,255)"
-WHITE = "rgb(255,255,0)"
-
-TONE = {"ink": INK, "grey": GREY, "wash": WASH, "pale": PALE}
+import heads
+import props
 
 
-def _fmt(p):
-    return "%.1f,%.1f" % p
+# 公服浅绛（紫、绯、青、绿、赭黄……）：色相要落在该色的区间里，所以色度给足
+ROBE_TINTS = {"zi": (0.52, 0.24, 0.52), "fei": (0.82, 0.25, 0.19), "qing": (0.20, 0.44, 0.50),
+              "lv": (0.28, 0.54, 0.30), "zhe": (0.84, 0.58, 0.20), "lan": (0.22, 0.33, 0.58),
+              "gold": (0.80, 0.63, 0.28), "hui": (0.5, 0.5, 0.5)}
 
 
-def smooth(pts, closed=True, k=1.0):
-    """Catmull-Rom → 三次贝塞尔。相邻重复点即成尖角。"""
-    n = len(pts)
-    if n < 3:
-        return "M" + " L".join(_fmt(p) for p in pts)
-    d = ["M" + _fmt(pts[0])]
-    last = n if closed else n - 1
-    for i in range(last):
-        p0 = pts[(i - 1) % n] if (closed or i > 0) else pts[i]
-        p1 = pts[i]
-        p2 = pts[(i + 1) % n]
-        p3 = pts[(i + 2) % n] if (closed or i + 2 < n) else p2
-        c1 = (p1[0] + (p2[0] - p0[0]) * k / 6.0, p1[1] + (p2[1] - p0[1]) * k / 6.0)
-        c2 = (p2[0] - (p3[0] - p1[0]) * k / 6.0, p2[1] - (p3[1] - p1[1]) * k / 6.0)
-        d.append("C%s %s %s" % (_fmt(c1), _fmt(c2), _fmt(p2)))
-    if closed:
-        d.append("Z")
-    return " ".join(d)
+def _lerp(a, b, t):
+    return tuple(a[i] + (b[i] - a[i]) * t for i in range(len(a)))
 
 
-def poly(pts):
-    return "M" + " L".join(_fmt(p) for p in pts) + " Z"
+class Rig:
+    def __init__(self, spec, seed):
+        self.spec = spec
+        self.seed = seed
+        self.rng = random.Random(seed)
+        self._n = seed * 7919
+        turn = spec.get("turn", 0.5)
+        self.sg = 1 if turn >= 0 else -1
+        self.th = math.radians(abs(turn) * 74)
+        self.tb = math.radians(abs(turn) * 74 * spec.get("body_k", 0.88))
+        self.tilt = math.radians(spec.get("tilt", 0.0))
+        self.lean = spec.get("lean", 0.0)
+        self.stoop = spec.get("stoop", 0.0)
+        self.wide = spec.get("wide", 1.0)
+        comp = spec.get("comp", {})
+        self.s = comp.get("s", 0.9)
+        self.bs = spec.get("bs", 0.68 if spec.get("child") else (0.92 if spec.get("youth") else 1.0))
+        self.hx = comp.get("hx", 240.0)
+        self.hy = comp.get("hy", 190.0)
+        self.elev = 0.12
+        self.hoff = (self.sg * (self.stoop * 28 + self.lean * 18), self.stoop * 20 + self.lean * 10)
+        self.parts = []
+        self.hands = {}
+        self.sil_polys = []
+        self.skin_polys = []
+        self.late = []
+        self.face_front = self.face_back = None
 
+    def n(self):
+        self._n += 1
+        return self._n
 
-def mir(pts):
-    """左半边点列 → 右半边（x 取反、逆序）。"""
-    return [(-x, y) for x, y in reversed(pts)]
+    def part(self, p):
+        self.parts.append(p)
 
+    # ── 投影 ──
+    def _p3(self, x, y, z, th):
+        c, s = math.cos(th), math.sin(th)
+        x1 = x * c + z * s
+        z1 = -x * s + z * c
+        return x1, y + z1 * self.elev
 
-def sym(half):
-    """half：从顶中线沿左侧到底中线；返回左右对称的闭合点列。"""
-    return list(half) + [(-x, y) for x, y in reversed(half[1:-1])]
+    def Hp(self, pts):
+        """头部投影坐标（未翻转）→ 画布：翻转、绕颈歪头、缩放平移。"""
+        ct, st = math.cos(self.tilt * self.sg), math.sin(self.tilt * self.sg)
+        out = []
+        for x, y in pts:
+            X = self.sg * x
+            dx, dy = X, y - 72
+            rx = dx * ct - dy * st
+            ry = dx * st + dy * ct + 72
+            out.append((self.hx + self.s * rx, self.hy + self.s * ry))
+        return out
 
+    def H3(self, pts):
+        return self.Hp([self._p3(x, y, z, self.th) for x, y, z in pts])
 
-class Fig:
-    ORDER = ["back", "body", "bodyd", "arms", "neck", "face", "feat", "beard", "hat", "hatd", "prop", "propd"]
+    def Hs(self, pts, zc=-6, ratio=1.15):
+        """回转体（冠帽）正视轮廓 → 画布：侧身时轮廓宽度按椭圆截面变化、随轴心平移。"""
+        c, s = math.cos(self.th), math.sin(self.th)
+        k = math.sqrt(c * c + (ratio * s) ** 2)
+        return self.Hp([(x * k + zc * s, y) for x, y in pts])
 
-    def __init__(self, cx=205.0, fy=250.0, s=1.0):
-        self.cx, self.fy, self.s = cx, fy, s
-        self.L = {k: [] for k in self.ORDER}
+    def B3(self, pts):
+        bs = self.bs
+        out = []
+        for x, y, z in pts:
+            x, y, z = x * bs, 80 + (y - 80) * bs, z * bs
+            x1, y1 = self._p3(x * self.wide, y, z, self.tb)
+            X = self.sg * x1
+            if self.stoop:
+                k = max(0.0, min(1.0, (230 - y) / 170.0))
+                X += self.sg * self.stoop * 30 * k
+                y1 += self.stoop * 18 * k
+            out.append((self.hx + self.s * (X - self.hoff[0]), self.hy + self.s * (y1 - self.hoff[1])))
+        return out
 
-    def T(self, pts):
-        return [(self.cx + x * self.s, self.fy + y * self.s) for x, y in pts]
+    # ── 部件 ──
+    def stroke3(self, pts, w, ink=0.9, dry=0.35, profile="nail", **kw):
+        self.part(dict(kind="stroke", pts=self.H3(pts), width=w * self.s, ink=ink, dry=dry, profile=profile,
+                       seed=self.n(), **kw))
 
-    def fill(self, layer, pts, color=INK, curve=True, k=1.0, op=1.0):
-        d = smooth(self.T(pts), True, k) if curve else poly(self.T(pts))
-        o = "" if op >= 1 else ' fill-opacity="%.2f"' % op
-        self.L[layer].append('<path d="%s" fill="%s"%s/>' % (d, color, o))
+    def dot3(self, p, r, ink=0.9, reserve=False):
+        (cx, cy), = self.H3([p])
+        rr = r * self.s * 0.5
+        pts = [(cx + rr * math.cos(2 * math.pi * i / 10), cy + rr * math.sin(2 * math.pi * i / 10) * 0.9)
+               for i in range(10)]
+        if reserve:
+            self.part(dict(kind="reserve", pts=pts, amount=0.7, rough=0.3))
+        else:
+            self.part(dict(kind="wash", pts=pts, tone=ink, edge=0.1, var=0.1, bloom=0.0, soft=0.5))
 
-    def ell(self, layer, c, rx, ry, color=INK, stroke=None, sw=0.0):
-        (x, y), = self.T([c])
-        f = color if stroke is None else "none"
-        st = "" if stroke is None else ' stroke="%s" stroke-width="%.1f"' % (stroke, sw * self.s)
-        self.L[layer].append('<ellipse cx="%.1f" cy="%.1f" rx="%.1f" ry="%.1f" fill="%s"%s/>'
-                             % (x, y, rx * self.s, ry * self.s, f, st))
+    def stroke_h(self, pts, w, ink=0.8, dry=0.35, profile="nail", sil=False, rstroke=False, zc=-6, ratio=1.15):
+        P = self.Hs(pts, zc, ratio) if sil else self.Hp(pts)
+        if rstroke:
+            self.part(dict(kind="rstroke", pts=P, width=w * self.s, amount=ink, dry=dry, profile=profile,
+                           seed=self.n()))
+        else:
+            self.part(dict(kind="stroke", pts=P, width=w * self.s, ink=ink, dry=dry, profile=profile, seed=self.n()))
 
-    def line(self, layer, pts, w=3.2, color=WHITE, curve=True, op=1.0, cap="round"):
-        d = smooth(self.T(pts), False) if curve and len(pts) > 2 else "M" + " L".join(_fmt(p) for p in self.T(pts))
-        o = "" if op >= 1 else ' stroke-opacity="%.2f"' % op
-        self.L[layer].append('<path d="%s" fill="none" stroke="%s" stroke-width="%.1f" stroke-linecap="%s" '
-                             'stroke-linejoin="round"%s/>' % (d, color, w * self.s, cap, o))
+    def sweep_b(self, pts3, width, ink=0.8, side=0.6, pale=0.3, dry=0.35, wet=0.4, profile="sweep", layer="robe",
+                **kw):
+        self.part(dict(kind="sweep", pts=self.B3(pts3), width=width * self.s, ink=ink, side=side * self.sg, pale=pale,
+                       dry=dry, wet=wet, seed=self.n(), profile=profile, layer=layer, **kw))
 
-    def cap(self, layer, a, b, wa, wb, color=INK):
-        """两端粗细不同的圆头棒（手臂、飘带、杖），参数用人物单位坐标。"""
-        import math
-        (ax, ay), (bx, by) = a, b
-        dx, dy = bx - ax, by - ay
-        ln = math.hypot(dx, dy) or 1.0
-        nx, ny = -dy / ln, dx / ln
-        pts = [(ax + nx * wa / 2, ay + ny * wa / 2), (bx + nx * wb / 2, by + ny * wb / 2),
-               (bx - nx * wb / 2, by - ny * wb / 2), (ax - nx * wa / 2, ay - ny * wa / 2)]
-        self.fill(layer, pts, color, curve=False)
-        self.ell(layer, a, wa / 2, wa / 2, color)
-        self.ell(layer, b, wb / 2, wb / 2, color)
+    def line_b(self, pts3, w, ink=0.9, dry=0.4, profile="nail", **kw):
+        self.part(dict(kind="stroke", pts=self.B3(pts3), width=w * self.s, ink=ink, dry=dry, profile=profile,
+                       seed=self.n(), **kw))
 
-    def svg(self, w, h):
-        body = "\n".join(e for k in self.ORDER for e in self.L[k])
-        return ('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">\n%s\n</svg>'
-                % (w, h, w, h, body))
+    def white_b(self, pts3, w, amount=0.6, dry=0.4, profile="nail"):
+        self.part(dict(kind="rstroke", pts=self.B3(pts3), width=w * self.s, amount=amount, dry=dry, profile=profile,
+                       seed=self.n()))
 
-
-# ───────────────────────── 头面 ─────────────────────────
-FACE = sym([(0, -62), (-30, -56), (-47, -32), (-49, -2), (-45, 24), (-34, 46), (-17, 60), (0, 64)])
-
-
-def head(f, spec):
-    hair_tone = TONE[spec.get("hair_tone", "ink")]
-    skin = TAN if spec.get("skin") == "tan" else SKIN
-    f.fill("neck", [(-21, 30), (21, 30), (24, 104), (-24, 104)], skin, curve=False)
-    for sgn in (-1, 1):
-        f.ell("face", (sgn * 50, 4), 8, 15, skin)
-        f.ell("face", (sgn * 50, 4), 8, 15, None, stroke=INK, sw=1.8)
-    hg = spec.get("head", "topknot")
-    if hg == "bald":
-        shape = sym([(0, -80), (-36, -72), (-52, -44), (-50, -2), (-45, 24), (-34, 46), (-17, 60), (0, 64)])
-    else:
-        shape = FACE
-    f.fill("face", shape, skin)
-    f.line("face", shape + shape[:2], 2.2, INK, op=0.7)
-    if spec.get("features", True):
-        feat(f, spec)
-    if hg in ("topknot", "topknot_band", "lowbun", "gaoji", "zongjiao", "messy"):
-        f.fill("hat", [(-50, -2), (-53, -40), (-40, -68), (0, -78), (40, -68), (53, -40), (50, -2),
-                       (44, -24), (24, -38), (0, -41), (-24, -38), (-44, -24)], hair_tone)
-
-
-def feat(f, spec):
-    """白描五官：柳叶眉、杏仁眼（实墨）、鼻线、平口，笔意克制。"""
-    k = spec.get("face", "man")
-    bw = 3.2 if k == "man" else 2.4
-    for sgn in (-1, 1):
-        f.line("feat", [(sgn * 36, -13), (sgn * 25, -19), (sgn * 10, -16)], bw, INK, op=0.9)
-        f.fill("feat", [(sgn * 30, -3), (sgn * 22, -7), (sgn * 13, -5), (sgn * 11, -3), (sgn * 21, -1)], INK, op=0.9)
-    f.line("feat", [(3, -2), (6, 15), (0, 20)], 1.8, INK, op=0.6)
-    if spec.get("beard", "none") in ("none", "goatee", "long3", "short", "moustache"):
-        f.line("feat", [(-9, 37), (0, 36.5), (9, 37.5)], 2.0, INK, op=0.75)
-
-
-def beard(f, spec):
-    b = spec.get("beard", "none")
-    c = TONE[spec.get("beard_tone", "ink")]
-    if b == "none":
-        return
-    must = [(-24, 31), (-10, 26), (0, 28), (10, 26), (24, 31), (14, 35), (0, 33), (-14, 35)]
-    if b == "short":
-        f.fill("beard", must, c)
-        f.fill("beard", [(-15, 46), (0, 44), (15, 46), (11, 70), (0, 78), (-11, 70)], c)
-    elif b == "goatee":
-        f.fill("beard", [(-28, 40), (-16, 28), (0, 30), (16, 28), (28, 40), (22, 41), (12, 34), (0, 35),
-                         (-12, 34), (-22, 41)], c)
-        f.fill("beard", [(-7, 52), (0, 50), (7, 52), (4, 76), (0, 88), (-4, 76)], c)
-    elif b == "long3":
-        f.fill("beard", must, c)
-        f.fill("beard", [(-15, 46), (0, 44), (15, 46), (18, 96), (8, 146), (0, 164), (-8, 146), (-18, 96)], c)
-        f.fill("beard", [(-26, 32), (-20, 34), (-26, 80), (-30, 118), (-34, 112), (-32, 72)], c)
-        f.fill("beard", [(26, 32), (20, 34), (26, 80), (30, 118), (34, 112), (32, 72)], c)
-    elif b == "full":
-        f.fill("beard", [(-49, -2), (-52, 30), (-46, 66), (-26, 94), (0, 104), (26, 94), (46, 66), (52, 30),
-                         (49, -2), (42, 22), (28, 38), (12, 40), (0, 38), (-12, 40), (-28, 38), (-42, 22)], c)
-        f.fill("beard", must, c)
-        f.line("beard", [(-9, 37), (0, 39), (9, 37)], 2.4, WHITE, op=0.5)
-    elif b == "moustache":
-        f.fill("beard", [(-36, 46), (-26, 29), (0, 31), (26, 29), (36, 46), (31, 54), (20, 39), (0, 38),
-                         (-20, 39), (-31, 54)], c)
-
-
-# ───────────────────────── 冠帽 ─────────────────────────
-def hat(f, spec):
-    hg = spec.get("head", "topknot")
-    t = TONE[spec.get("hat_tone", "ink")]
-    light = t in (WASH, PALE, GREY)
-    dl = INK if light else WHITE      # 冠上描线：深冠留白，浅冠墨线
-    if hg == "zhanjiao":             # 展脚幞头
-        for sgn in (-1, 1):
-            f.fill("hat", [(sgn * 40, -70), (sgn * 172, -70), (sgn * 180, -73), (sgn * 184, -56),
-                           (sgn * 172, -58), (sgn * 40, -58)], t, curve=False)
-        f.fill("hat", [(-51, -24), (-53, -58), (-44, -72), (-34, -74), (-33, -100), (-20, -113), (20, -113),
-                       (33, -100), (34, -74), (44, -72), (53, -58), (51, -24), (26, -32), (0, -34), (-26, -32)], t)
-        f.line("hatd", [(-44, -72), (0, -76), (44, -72)], 2.8, dl, op=0.8)
-    elif hg == "ruanjiao":           # 软脚幞头：两根软脚垂在脑后两侧
-        for sgn in (-1, 1):
-            f.fill("back", [(sgn * 30, -84), (sgn * 56, -70), (sgn * 72, -34), (sgn * 78, 16), (sgn * 72, 56),
-                            (sgn * 64, 54), (sgn * 66, 14), (sgn * 58, -30), (sgn * 38, -64)], t)
-        f.fill("hat", [(-51, -22), (-53, -56), (-44, -70), (-30, -72), (-28, -94), (-14, -104), (14, -104),
-                       (28, -94), (30, -72), (44, -70), (53, -56), (51, -22), (26, -30), (0, -32), (-26, -30)], t)
-        f.line("hatd", [(-44, -70), (0, -74), (44, -70)], 2.8, dl, op=0.8)
-    elif hg == "xiaofutou":          # 小幞头（内侍）
-        f.fill("hat", [(-49, -24), (-50, -54), (-34, -78), (0, -84), (34, -78), (50, -54), (49, -24), (24, -32),
-                       (0, -34), (-24, -32)], t)
-        for sgn in (-1, 1):
-            f.fill("back", [(sgn * 34, -60), (sgn * 56, -52), (sgn * 64, -22), (sgn * 56, -20), (sgn * 48, -46)], t)
-    elif hg == "fujin":              # 幅巾：软巾裹头，巾尾垂一侧
-        f.fill("back", [(34, -76), (62, -52), (76, -8), (80, 44), (70, 70), (62, 60), (64, 18), (56, -30),
-                        (40, -58)], t)
-        f.fill("hat", [(-52, -18), (-57, -58), (-42, -90), (0, -104), (42, -90), (57, -58), (52, -18), (28, -30),
-                       (0, -33), (-28, -30)], t)
-        f.line("hatd", [(-48, -44), (-10, -62), (46, -50)], 2.8, dl, op=0.75)
-        f.line("hatd", [(-30, -84), (4, -92), (36, -80)], 2.4, dl, op=0.55)
-        if spec.get("askew"):
-            f.line("hatd", [(20, -100), (44, -110), (64, -100)], 5, INK)
-    elif hg == "gaojin":             # 高装巾子（东坡巾式：内高外低、前有开衩）
-        f.fill("hat", [(-38, -40), (-37, -148), (-28, -156), (28, -156), (37, -148), (38, -40)], t, curve=False)
-        f.fill("hat", [(-52, -18), (-54, -102), (-46, -110), (-10, -110), (0, -94), (10, -110), (46, -110),
-                       (54, -102), (52, -18), (26, -28), (0, -31), (-26, -28)], t, k=0.6)
-        f.line("hatd", [(-48, -104), (-8, -104)], 2.6, dl, op=0.8)
-        f.line("hatd", [(8, -104), (48, -104)], 2.6, dl, op=0.8)
-        f.line("hatd", [(-30, -110), (-30, -150)], 2.2, dl, op=0.5)
-        f.line("hatd", [(30, -110), (30, -150)], 2.2, dl, op=0.5)
-    elif hg == "chantou":            # 缠头
-        f.fill("hat", [(-58, -18), (-67, -58), (-58, -98), (-32, -121), (0, -128), (32, -121), (58, -98),
-                       (67, -58), (58, -18), (30, -30), (0, -34), (-30, -30)], t)
-        f.line("hatd", [(-62, -40), (-12, -76), (58, -94)], 3.0, dl, op=0.8)
-        f.line("hatd", [(-62, -70), (-4, -104), (44, -116)], 3.0, dl, op=0.7)
-        f.line("hatd", [(-46, -28), (8, -56), (64, -60)], 3.0, dl, op=0.7)
-    elif hg == "bandana":            # 布缠头（海上人），结在右侧、两尾飘出
-        f.fill("hat", [(-51, -10), (-55, -48), (-40, -76), (0, -85), (40, -76), (55, -48), (51, -10),
-                       (30, -30), (0, -36), (-30, -30)], t)
-        f.fill("hat", [(48, -52), (80, -66), (108, -62), (100, -50), (78, -46), (54, -36)], t)
-        f.fill("hat", [(50, -42), (78, -30), (100, -12), (90, -6), (70, -20), (50, -30)], t)
-        f.line("hatd", [(-50, -30), (0, -52), (50, -44)], 2.6, dl, op=0.6)
-    elif hg == "douli":              # 竹笠
-        f.fill("hat", [(0, -152), (0, -152), (-34, -118), (-74, -80), (-112, -56), (-136, -44), (-130, -34),
-                       (-84, -38), (-40, -42), (0, -44), (40, -42), (84, -38), (130, -34), (136, -44),
-                       (112, -56), (74, -80), (34, -118)], t, k=0.8)
-        for x in (-90, -54, -20, 16, 52, 88):
-            f.line("hatd", [(0, -146), (x, -44 - abs(x) * 0.06)], 1.8, dl, op=0.55, curve=False)
-    elif hg == "zhanli":             # 破毡笠
-        f.fill("hat", [(-46, -34), (-45, -96), (-24, -116), (0, -120), (24, -116), (45, -96), (46, -34)], t)
-        f.fill("hat", [(-96, -30), (-88, -48), (-50, -56), (0, -58), (50, -56), (88, -48), (96, -30), (80, -26),
-                       (74, -34), (60, -30), (40, -40), (0, -42), (-40, -40), (-62, -30), (-78, -32), (-86, -24)], t)
-        f.line("hatd", [(-44, -60), (0, -64), (44, -60)], 2.6, dl, op=0.7)
-    elif hg == "helmet" or hg == "fengchi":   # 兜鍪（带顿项、顶缨）
-        f.fill("back", [(-52, -40), (-66, 10), (-88, 72), (-110, 104), (110, 104), (88, 72), (66, 10), (52, -40)], t)
-        f.fill("hat", [(-56, -22), (-59, -68), (-42, -104), (0, -118), (42, -104), (59, -68), (56, -22), (24, -30),
-                       (0, -26), (-24, -30)], t)
-        f.fill("hat", [(-4, -116), (4, -116), (4, -140), (-4, -140)], t, curve=False)
-        f.ell("hat", (0, -146), 8, 8, t)
-        f.fill("hat", [(0, -150), (-14, -164), (-6, -190), (1, -204), (8, -186), (15, -166)], t)
-        f.line("hatd", [(-54, -42), (0, -48), (54, -42)], 3.0, dl, op=0.8)
-        f.line("hatd", [(0, -48), (0, -112)], 2.4, dl, op=0.6)
-        f.line("hatd", [(-30, -46), (-24, -104)], 2.2, dl, op=0.5)
-        f.line("hatd", [(30, -46), (24, -104)], 2.2, dl, op=0.5)
-        for y in (20, 50, 80):
-            f.line("hatd", [(-60 - y * 0.35, y), (-100 - y * 0.1, y + 18)], 2.2, dl, op=0.45)
-            f.line("hatd", [(60 + y * 0.35, y), (100 + y * 0.1, y + 18)], 2.2, dl, op=0.45)
-        if hg == "fengchi":
-            for sgn in (-1, 1):
-                f.fill("hat", [(sgn * 54, -44), (sgn * 92, -52), (sgn * 124, -70), (sgn * 146, -96),
-                               (sgn * 136, -96), (sgn * 132, -86), (sgn * 122, -92), (sgn * 116, -80),
-                               (sgn * 104, -84), (sgn * 96, -72), (sgn * 82, -74), (sgn * 58, -64)], t, k=0.5)
-                f.line("hatd", [(sgn * 62, -54), (sgn * 100, -64), (sgn * 132, -88)], 2.2, dl, op=0.6)
-    elif hg == "boli":               # 钹笠帽 + 辫环
-        for sgn in (-1, 1):
-            f.ell("back", (sgn * 54, 30), 8, 15, None, stroke=INK, sw=6)
-        f.fill("hat", [(-47, -50), (-44, -88), (-22, -102), (0, -106), (22, -102), (44, -88), (47, -50)], t)
-        f.fill("hat", [(-114, -52), (-100, -62), (-50, -68), (0, -70), (50, -68), (100, -62), (114, -52),
-                       (100, -42), (50, -38), (0, -37), (-50, -38), (-100, -42)], t)
-        f.ell("hat", (0, -112), 6, 6, t)
-        f.line("hatd", [(-100, -50), (0, -54), (100, -50)], 2.2, dl, op=0.6)
-    elif hg == "nuanmao":            # 暖帽：翻沿皮檐 + 顶珠
-        ft = TONE[spec.get("fur_tone", "grey")]
-        f.fill("hat", [(-44, -54), (-42, -100), (-22, -114), (0, -118), (22, -114), (42, -100), (44, -54)], t)
-        zz = []
-        for i in range(13):
-            x = -62 + i * (124 / 12.0)
-            zz.append((x, -72 - (6 if i % 2 else 0) - 4 * (1 - abs(x) / 62.0)))
-        f.fill("hat", [(-60, -22)] + zz + [(60, -22), (30, -30), (0, -32), (-30, -30)], ft, curve=False)
-        f.ell("hat", (0, -124), 7, 7, INK)
-        if spec.get("jewel"):
-            f.ell("hatd", (0, -86), 8, 10, None, stroke=WHITE, sw=2.6)
-    elif hg == "gaoji":              # 高髻（妇人）
-        ht = TONE[spec.get("hair_tone", "ink")]
-        f.fill("hat", [(-54, -4), (-62, -40), (-52, -72), (-22, -86), (22, -86), (52, -72), (62, -40), (54, -4),
-                       (42, -28), (0, -42), (-42, -28)], ht)
-        f.fill("hat", [(-26, -80), (-32, -110), (-16, -130), (0, -134), (16, -130), (32, -110), (26, -80)], ht)
-        f.line("hatd", [(-46, -104), (0, -110), (48, -116)], 3.0, dl if ht == INK else INK, op=0.8)
-    elif hg == "lowbun":             # 低髻素簪
-        ht = TONE[spec.get("hair_tone", "ink")]
-        f.fill("hat", [(-54, -4), (-60, -40), (-50, -70), (-20, -84), (20, -84), (50, -70), (60, -40), (54, -4),
-                       (42, -28), (0, -42), (-42, -28)], ht)
-        f.ell("hat", (0, -84), 30, 18, ht)
-        f.line("hatd", [(-40, -88), (42, -80)], 3.2, INK if ht != INK else WHITE, op=0.85)
-    elif hg == "huachai":            # 花钗冠 + 博鬓（后妃像）
-        for sgn in (-1, 1):
-            for dy, ln in ((0, 1.0), (26, 0.8)):
-                x0, y0 = sgn * 50, -70 + dy
-                tip = (sgn * (50 + 92 * ln), 40 + dy)
-                f.fill("back", [(x0, y0), (sgn * (50 + 40 * ln), -58 + dy), (sgn * (50 + 80 * ln), -14 + dy),
-                                (tip[0], tip[1]), (sgn * (50 + 78 * ln), 36 + dy), (sgn * (50 + 50 * ln), -8 + dy),
-                                (sgn * (50 + 16 * ln), -46 + dy)], t, k=0.7)
-                f.line("hatd", [(sgn * 58, -60 + dy), (sgn * (50 + 60 * ln), -20 + dy), (sgn * (50 + 86 * ln), 30 + dy)],
-                       2.0, dl, op=0.6)
-        f.fill("hat", [(-54, -4), (-62, -40), (-52, -70), (0, -80), (52, -70), (62, -40), (54, -4), (42, -28),
-                       (0, -42), (-42, -28)], t)
-        f.fill("hat", [(-60, -50), (-68, -86), (-56, -120), (-28, -140), (0, -146), (28, -140), (56, -120),
-                       (68, -86), (60, -50), (0, -58)], t)
-        for x, y in ((-40, -92), (-18, -114), (0, -128), (18, -114), (40, -92), (-28, -70), (28, -70), (0, -96)):
-            f.ell("hatd", (x, y), 6, 6, None, stroke=dl, sw=2.2)
-        for sgn in (-1, 1):               # 冠顶两侧花钗（贴冠，短）
-            f.fill("hat", [(sgn * 40, -128), (sgn * 58, -142), (sgn * 70, -140), (sgn * 64, -128), (sgn * 50, -122)], t)
-        f.line("hatd", [(-66, -60), (0, -70), (66, -60)], 2.6, dl, op=0.8)
-    elif hg == "zongjiao":           # 总角
-        ht = TONE[spec.get("hair_tone", "ink")]
-        f.ell("hat", (-38, -66), 17, 17, ht)
-        f.ell("hat", (38, -66), 17, 17, ht)
-    elif hg == "tongguan":           # 童冠（幼帝）
-        f.fill("hat", [(-46, -26), (-47, -60), (-34, -80), (0, -86), (34, -80), (47, -60), (46, -26), (24, -32),
-                       (0, -34), (-24, -32)], t)
-        f.fill("hat", [(-16, -80), (-14, -108), (0, -116), (14, -108), (16, -80)], t)
-        f.line("hatd", [(-44, -46), (0, -52), (44, -46)], 2.4, dl, op=0.7)
-        f.ell("hatd", (0, -98), 5, 5, None, stroke=dl, sw=2.0)
-    elif hg == "eboshi":             # 立乌帽（镰仓）
-        f.fill("hat", [(-46, -24), (-48, -76), (-42, -138), (-22, -176), (8, -188), (34, -172), (46, -124),
-                       (48, -72), (46, -24), (0, -34)], t)
-        f.line("hatd", [(-44, -96), (0, -104), (44, -98)], 2.4, dl, op=0.6)
-        f.line("hatd", [(-40, -130), (-4, -142), (40, -134)], 2.2, dl, op=0.5)
-    elif hg == "gat":                # 高丽黑笠（马尾笠，半透）
-        f.fill("hat", [(-34, -58), (-32, -150), (32, -150), (34, -58)], t, curve=False, op=0.85)
-        f.fill("hat", [(-118, -54), (-100, -64), (0, -68), (100, -64), (118, -54), (100, -44), (0, -41),
-                       (-100, -44)], t, op=0.85)
-        f.line("hatd", [(-110, -54), (0, -58), (110, -54)], 1.8, dl, op=0.5)
-        f.line("hat", [(-46, -46), (-40, 20), (-20, 62), (0, 70)], 1.8, INK, op=0.6)
-        f.line("hat", [(46, -46), (40, 20), (20, 62), (0, 70)], 1.8, INK, op=0.6)
-    if hg == "topknot_band":
-        f.ell("hat", (0, -86), 18, 15, TONE[spec.get("hair_tone", "ink")])
-        f.line("hatd", [(-50, -34), (0, -46), (50, -34)], 4.0, WHITE, op=0.55)
-    elif hg == "topknot":
-        f.ell("hat", (0, -86), 18, 15, TONE[spec.get("hair_tone", "ink")])
-        f.line("hatd", [(-12, -80), (12, -80)], 3.0, WHITE, op=0.6)
-    elif hg == "messy":              # 草挽乱髻
-        ht = TONE[spec.get("hair_tone", "ink")]
-        f.fill("hat", [(-22, -76), (-28, -96), (-10, -112), (12, -108), (26, -94), (20, -76)], ht)
-        f.line("hat", [(-50, -10), (-58, 30), (-54, 70)], 3.0, ht)
-        f.line("hat", [(50, -10), (58, 28), (62, 60)], 3.0, ht)
-        f.line("hat", [(10, -110), (24, -126)], 2.6, ht)
+    def wash_b(self, pts3, tone, **kw):
+        self.part(dict(kind="wash", pts=self.B3(pts3), tone=tone, **kw))
 
 
 # ───────────────────────── 身形 ─────────────────────────
-ROBE = sym([(0, 72), (-24, 78), (-40, 88), (-78, 100), (-118, 118), (-146, 144), (-162, 182), (-172, 232),
-            (-182, 296), (-194, 360), (-204, 420), (-204, 420), (0, 420)])
-NARROW = sym([(0, 72), (-24, 78), (-42, 90), (-80, 100), (-120, 112), (-146, 132), (-158, 166), (-164, 214),
-              (-166, 262), (-170, 322), (-176, 382), (-180, 420), (-180, 420), (0, 420)])
-SHORT = sym([(0, 72), (-26, 76), (-46, 88), (-92, 98), (-134, 110), (-160, 128), (-172, 160), (-176, 200),
-             (-174, 246), (-146, 256), (-138, 300), (-140, 360), (-144, 420), (-144, 420), (0, 420)])
-ARMOR = sym([(0, 70), (-28, 74), (-56, 84), (-104, 90), (-150, 104), (-182, 128), (-192, 162), (-188, 214),
-             (-182, 262), (-178, 322), (-180, 382), (-184, 420), (-184, 420), (0, 420)])
-WOMAN = sym([(0, 70), (-20, 74), (-40, 88), (-78, 102), (-112, 122), (-128, 152), (-136, 204), (-144, 262),
-             (-154, 322), (-164, 382), (-170, 420), (-170, 420), (0, 420)])
-
-BODY_OUT = {"robe": ROBE, "narrow": NARROW, "short": SHORT, "bare": SHORT, "armor": ARMOR, "mongol": NARROW,
-            "mongol_armor": ARMOR, "kasaya": ROBE, "woman": WOMAN, "onearm": None}
-
-
-def collar(f, kind, dl=WHITE):
-    if kind == "round":
-        f.line("bodyd", [(-44, 88), (0, 116), (44, 88)], 3.4, dl)
-        f.line("bodyd", [(44, 88), (70, 112)], 2.6, dl, op=0.7)
-    elif kind == "cross":
-        f.line("bodyd", [(26, 80), (-8, 140), (-58, 214)], 3.4, dl)
-        f.line("bodyd", [(40, 86), (4, 150), (-44, 222)], 3.0, dl, op=0.8)
-        f.line("bodyd", [(-26, 80), (-8, 110), (2, 124)], 3.0, dl, op=0.8)
-    elif kind == "beizi":             # 褙子对襟：两道直领缘
-        for sgn in (-1, 1):
-            f.line("bodyd", [(sgn * 18, 80), (sgn * 22, 200), (sgn * 26, 420)], 3.2, dl)
-            f.line("bodyd", [(sgn * 30, 84), (sgn * 34, 200), (sgn * 38, 420)], 2.6, dl, op=0.7)
-        f.line("bodyd", [(-18, 82), (0, 112), (18, 82)], 2.4, dl, op=0.7)
-    elif kind == "mongol":            # 质孙服：右衽弧领
-        f.line("bodyd", [(-24, 80), (10, 118), (60, 146), (104, 156)], 3.4, dl)
-        f.line("bodyd", [(-36, 88), (0, 130), (56, 160), (102, 170)], 2.6, dl, op=0.7)
-
-
-def body(f, spec):
-    b = spec.get("body", "robe")
-    tone = TONE[spec.get("tone", "ink")]
-    dl = WHITE
-    if b == "onearm":
-        # 独臂：左肩塌、空袖掖进腰带
-        out = [(0, 72), (-26, 76), (-46, 88), (-88, 100), (-124, 116), (-140, 142), (-142, 190), (-138, 250),
-               (-138, 300), (-140, 360), (-144, 420), (-144, 420), (0, 420)] + mir(
-            [(0, 72), (-26, 76), (-46, 88), (-92, 98), (-134, 110), (-160, 128), (-172, 160), (-176, 200),
-             (-174, 246), (-146, 256), (-138, 300), (-140, 360), (-144, 420), (-144, 420), (0, 420)])[1:-1]
-        f.fill("body", out, tone)
-        f.line("bodyd", [(-126, 128), (-132, 180), (-124, 230), (-108, 272)], 3.0, dl)
-        f.line("bodyd", [(-108, 272), (-96, 286), (-84, 282)], 2.6, dl, op=0.8)
-        f.line("bodyd", [(-138, 276), (0, 290), (138, 276)], 5.0, dl, op=0.75)
-        collar(f, "cross", dl)
-        return
-    f.fill("body", BODY_OUT[b], tone)
-    if b in ("robe", "kasaya", "narrow", "woman", "mongol"):
-        # 衣纹：肩臂几道顺势的折线
-        for sgn in (-1, 1):
-            f.line("bodyd", [(sgn * 96, 108), (sgn * 124, 150), (sgn * 132, 200)], 2.2, dl, op=0.45)
-            f.line("bodyd", [(sgn * 150, 170), (sgn * 156, 230), (sgn * 150, 280)], 2.0, dl, op=0.35)
-    if b in ("robe", "kasaya"):
-        collar(f, spec.get("collar", "round"), dl)
-    elif b in ("narrow",):
-        collar(f, spec.get("collar", "round"), dl)
-        f.line("bodyd", [(-150, 268), (0, 286), (150, 268)], 4.0, dl, op=0.65)
-    elif b in ("short", "bare"):
-        if b == "short":
-            collar(f, "cross", dl)
-        f.line("bodyd", [(-138, 272), (0, 288), (138, 272)], 5.0, dl, op=0.75)
-        f.line("bodyd", [(30, 288), (40, 330), (34, 372)], 3.0, dl, op=0.6)
-    elif b == "woman":
-        collar(f, "beizi", dl)
-    elif b in ("armor", "mongol_armor"):
-        for sgn in (-1, 1):
-            for i, y in enumerate((96, 118, 140)):
-                f.line("bodyd", [(sgn * 70, y), (sgn * 140, y + 10 + i * 6), (sgn * 188, y + 44 + i * 10)], 2.6, dl,
-                       op=0.7)
-        for r, y in enumerate(range(160, 262, 15)):
-            off = 9 if r % 2 else 0
-            for x in range(-96 + off, 100, 19):
-                f.line("bodyd", [(x - 6, y), (x + 6, y)], 2.2, dl, op=0.5, curve=False)
-        if b == "armor":
-            f.ell("bodyd", (-46, 176), 17, 17, None, stroke=dl, sw=3.0)
-            f.ell("bodyd", (46, 176), 17, 17, None, stroke=dl, sw=3.0)
-        else:
-            collar(f, "mongol", dl)
-        f.line("bodyd", [(-150, 274), (0, 290), (150, 274)], 5.0, dl, op=0.8)
-        f.line("bodyd", [(-40, 292), (-70, 360), (-96, 420)], 2.6, dl, op=0.5)
-        f.line("bodyd", [(40, 292), (70, 360), (96, 420)], 2.6, dl, op=0.5)
-    if b == "mongol":
-        collar(f, "mongol", dl)
-        f.line("bodyd", [(-150, 270), (0, 286), (150, 270)], 5.0, dl, op=0.75)
-    if b == "kasaya":
-        f.line("bodyd", [(58, 92), (-20, 220), (-120, 330)], 3.4, dl)
-        f.line("bodyd", [(100, 100), (20, 236), (-70, 352)], 3.4, dl)
-        f.ell("bodyd", (70, 150), 10, 10, None, stroke=dl, sw=3.0)
-        if spec.get("futian"):
-            for x in (-120, -60, 60, 120):
-                f.line("bodyd", [(x, 160 if abs(x) > 90 else 130), (x * 1.04, 420)], 2.0, dl, op=0.4, curve=False)
-            for y in (230, 330):
-                f.line("bodyd", [(-170, y), (170, y)], 2.0, dl, op=0.4, curve=False)
-    if spec.get("fur"):             # 貂领 / 羊皮坎肩：毛边浅墨
-        ft = TONE[spec.get("fur_tone", "grey")]
-        zz = []
-        for i in range(19):
-            x = -150 + i * (300 / 18.0)
-            zz.append((x, 150 + (10 if i % 2 else 0) - 30 * (1 - (x / 150.0) ** 2)))
-        f.fill("bodyd", [(-40, 82), (-100, 98), (-146, 118)] + zz + [(146, 118), (100, 98), (40, 82), (0, 110)],
-               ft, curve=False)
-    if spec.get("cape"):            # 蓑衣
-        zz = []
-        for i in range(21):
-            x = -178 + i * (356 / 20.0)
-            zz.append((x, 232 + (16 if i % 2 else 0) - 26 * (1 - (x / 178.0) ** 2)))
-        f.fill("bodyd", [(-30, 76), (-90, 92), (-150, 116), (-178, 160)] + zz + [(178, 160), (150, 116), (90, 92),
-                                                                                  (30, 76)], INK, curve=False)
-        for x in range(-150, 160, 22):
-            f.line("bodyd", [(x * 0.5, 100), (x, 226 - abs(x) * 0.1)], 1.8, dl, op=0.5, curve=False)
-    if spec.get("apron"):
-        f.fill("bodyd", [(-96, 280), (96, 280), (104, 420), (-104, 420)], GREY, curve=False)
-    if spec.get("vest"):            # 赤膊外罩短褂：前胸敞开露肤
-        f.fill("bodyd", [(-44, 84), (44, 84), (52, 160), (40, 272), (-40, 272), (-52, 160)],
-               TAN if spec.get("skin") == "tan" else SKIN)
-        f.line("bodyd", [(-44, 86), (-52, 160), (-40, 272)], 3.0, dl, op=0.7)
-        f.line("bodyd", [(44, 86), (52, 160), (40, 272)], 3.0, dl, op=0.7)
-    if spec.get("barechest"):       # 赤膊（只穿短裤，腰缠布）
-        f.fill("bodyd", [(-26, 76), (-46, 88), (-92, 98), (-134, 110), (-160, 128), (-172, 160), (-176, 200),
-                         (-172, 246), (-146, 256), (-138, 272), (138, 272), (146, 256), (172, 246), (176, 200),
-                         (172, 160), (160, 128), (134, 110), (92, 98), (46, 88), (26, 76)],
-               TAN if spec.get("skin") == "tan" else SKIN)
-        f.line("bodyd", [(-60, 150), (0, 164), (60, 150)], 2.2, INK, op=0.35)
-        f.line("bodyd", [(-138, 276), (0, 292), (138, 276)], 12.0, INK)
-
-
-# ───────────────────────── 手势 ─────────────────────────
-POSE = {
-    #          肘            手           袖宽(肘,腕)
-    "fold": None,
-    "hang": ((166, 250), (158, 380), (46, 36)),
-    "chest": ((156, 250), (34, 206), (48, 38)),
-    "hilt": ((160, 256), (70, 226), (46, 36)),
-    "present": ((150, 232), (36, 176), (48, 38)),
+BODY = {
+    #              肩半宽 肩落 下摆  主墨  袖型     (上臂, 肘, 袖口)
+    "robe":         (112, 22, 128, 0.74, "wide", (46, 58, 86)),
+    "kasaya":       (110, 22, 124, 0.70, "wide", (44, 56, 80)),
+    "woman":        (92, 26, 106, 0.66, "wide", (36, 44, 58)),
+    "narrow":       (104, 18, 112, 0.72, "narrow", (40, 38, 32)),
+    "short":        (108, 14, 110, 0.72, "narrow", (42, 38, 32)),
+    "bare":         (116, 10, 104, 0.34, "bare", (40, 34, 28)),
+    "onearm":       (104, 20, 110, 0.72, "narrow", (40, 38, 32)),
+    "armor":        (126, 8, 126, 0.80, "narrow", (52, 44, 36)),
+    "mongol":       (112, 14, 120, 0.72, "narrow", (44, 40, 34)),
+    "mongol_armor": (124, 10, 124, 0.80, "narrow", (50, 44, 36)),
 }
 
+# 近侧手（局部 -x）的 (肘, 腕)；远侧手取 x 镜像。z 为向前。
+POSES = {
+    "fold":     ((-1.06, 222, 12), (-12, 214, 70)),
+    "fold_low": ((-1.04, 246, 6), (-12, 272, 62)),
+    "hu":       ((-1.04, 228, 14), (-8, 206, 74)),
+    "hold":     ((-1.02, 232, 10), (-36, 222, 66)),
+    "present":  ((-1.04, 206, 22), (-28, 168, 74)),
+    "raise":    ((-1.30, 70, 26), (-42, -108, 34)),
+    "hang":     ((-1.10, 250, -2), (-1.12, 390, 6)),
+    "back":     ((-1.06, 248, -22), (-40, 330, -46)),
+    "one":      ((-1.08, 236, 14), (-44, 194, 70)),
+    "up":       ((-1.14, 200, 22), (-70, 120, 66)),
+    "hilt":     ((-1.18, 238, 2), (-0.86, 292, 34)),
+    "lantern":  ((-1.12, 232, 22), (-1.02, 206, 92)),
+    "staff":    ((-1.22, 244, 16), (-1.20, 200, 62)),
+    "oar":      ((-1.0, 252, 34), (-40, 262, 70)),
+}
+HANDS_OUT = ("hu", "hold", "present", "raise", "one", "up", "hilt", "lantern", "staff", "oar")
 
-def arms(f, spec):
-    """pose：fold 拱手笼袖 / hang 垂手 / chest 双手当胸持物 / hilt 按剑 / present 双手奉书。
-    sides=right 时只有右手（画面右侧）摆 pose，左手垂下。"""
-    b = spec.get("body", "robe")
-    pose = spec.get("pose", "fold")
-    tone = TONE[spec.get("tone", "ink")]
-    skin = TAN if spec.get("skin") == "tan" else SKIN
-    if pose == "fold":
-        wide = b in ("robe", "kasaya", "woman", "armor")
-        y0 = 262 if b == "woman" else 205
-        k = 1.0 if wide else 0.82
-        for sgn in (-1, 1):
-            f.line("bodyd", [(sgn * 140 * k, 150), (sgn * 120 * k, y0 - 10), (sgn * 70 * k, y0 + 12),
-                             (sgn * 16, y0 + 2)], 3.2, WHITE)
-            if wide:
-                f.line("bodyd", [(sgn * 178, y0 + 92), (sgn * 130, y0 + 138), (sgn * 60, y0 + 140),
-                                 (sgn * 8, y0 + 124)], 3.2, WHITE)
-            else:
-                f.line("bodyd", [(sgn * 120, y0 + 60), (sgn * 80, y0 + 84), (sgn * 30, y0 + 84),
-                                 (sgn * 6, y0 + 70)], 3.0, WHITE)
-        f.line("bodyd", [(0, y0 + 8), (0, y0 + (122 if wide else 70))], 2.6, WHITE, op=0.7)
-        if spec.get("prop") == "hu":      # 执笏：双手露出握住笏下端；否则笼手于袖
-            hand = [(-20, y0 - 8), (0, y0 - 16), (20, y0 - 8), (18, y0 + 12), (0, y0 + 16), (-18, y0 + 12)]
-            f.fill("arms", hand, skin)
-            f.line("arms", hand + hand[:2], 1.8, INK, op=0.6)
-        else:                             # 两袖口相合处一道弧
-            f.line("bodyd", [(-40, y0 - 4), (0, y0 + 8), (40, y0 - 4)], 3.0, WHITE, op=0.8)
-        return
-    sides = spec.get("sides", "both")
-    skin_arm = b in ("short", "bare", "onearm")
-    for sgn in (-1, 1):
-        if b == "onearm" and sgn < 0:
-            continue
-        p = POSE[pose] if (sides == "both" or sgn > 0) else POSE["hang"]
-        (ex, ey), (hx, hy), (we, ww) = p
-        e = (sgn * ex, ey)
-        h = (sgn * hx, hy)
-        this_pose = pose if (sides == "both" or sgn > 0) else "hang"
-        if this_pose == "hang":
-            # 垂手：手落在下半身淡出区，只画袖筒，不画手
-            f.cap("arms", e, h, we, ww, tone if not skin_arm or b != "bare" else skin)
-            f.line("arms", [(e[0] - sgn * 12, e[1] - 10), (h[0] - sgn * 10, h[1] - 30)], 2.2, WHITE, op=0.4,
-                   curve=False)
-            continue
-        if skin_arm:
-            f.cap("arms", e, h, we + 4, ww, INK)
-            f.cap("arms", e, h, we, ww - 4, skin)
+
+def _joint(v, sw):
+    x, y, z = v
+    return (x * sw if abs(x) < 2 else x, y, z)
+
+
+def chain2d(P, W):
+    """画布折线 + 每点宽（px）→ 闭合轮廓。"""
+    A, Bs = [], []
+    n = len(P)
+    for i in range(n):
+        if i == 0:
+            dx, dy = P[1][0] - P[0][0], P[1][1] - P[0][1]
+        elif i == n - 1:
+            dx, dy = P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]
         else:
-            f.cap("arms", e, h, we, ww, tone)
-            f.line("arms", [(e[0] - sgn * 10, e[1] - 12), (h[0] + sgn * 4, h[1] - 12)], 2.4, WHITE, op=0.45,
-                   curve=False)
-        f.ell("arms", (h[0] - sgn * 2, h[1] + 6), 15, 17, skin)
-        f.ell("arms", (h[0] - sgn * 2, h[1] + 6), 15, 17, None, stroke=INK, sw=1.8)
+            dx, dy = P[i + 1][0] - P[i - 1][0], P[i + 1][1] - P[i - 1][1]
+        ln = math.hypot(dx, dy) or 1
+        nx, ny = -dy / ln, dx / ln
+        w = W[i] / 2
+        A.append((P[i][0] + nx * w, P[i][1] + ny * w))
+        Bs.append((P[i][0] - nx * w, P[i][1] - ny * w))
+    return A + list(reversed(Bs))
 
 
-# ───────────────────────── 持物 ─────────────────────────
-def prop(f, spec):
-    p = spec.get("prop", "none")
-    if p == "none":
-        return
-    if p == "hu":                    # 象笏
-        hu = [(-13, 122), (-6, 114), (6, 114), (13, 122), (15, 202), (-15, 202)]
-        f.fill("prop", hu, PALE, curve=False)
-        f.line("propd", hu + hu[:1], 1.6, INK, op=0.55, curve=False)
-    elif p == "book":
-        f.fill("prop", [(-48, 186), (46, 178), (50, 226), (-44, 234)], PALE, curve=False)
-        f.line("propd", [(0, 182), (3, 230)], 2.0, INK, op=0.7, curve=False)
-        f.line("propd", [(-40, 196), (-8, 192)], 1.6, INK, op=0.4, curve=False)
-    elif p == "letter":
-        f.fill("prop", [(-18, 142), (20, 138), (24, 214), (-14, 218)], PALE, curve=False)
-        for y in (156, 172, 188):
-            f.line("propd", [(-8, y), (-6, y + 20)], 1.4, INK, op=0.45, curve=False)
-            f.line("propd", [(6, y - 2), (8, y + 18)], 1.4, INK, op=0.45, curve=False)
-    elif p == "memorial":            # 弹章：展开的奏纸
-        f.fill("prop", [(-54, 170), (54, 164), (56, 206), (-52, 212)], PALE, curve=False)
-        for x in range(-40, 50, 12):
-            f.line("propd", [(x, 176), (x + 1, 202)], 1.3, INK, op=0.45, curve=False)
-    elif p == "abacus":
-        f.fill("prop", [(-62, 184), (62, 178), (64, 232), (-60, 238)], INK, curve=False)
-        for x in range(-50, 58, 12):
-            f.line("propd", [(x, 186), (x + 1, 232)], 1.4, WHITE, op=0.55, curve=False)
-            f.ell("propd", (x + 0.5, 200 + (x % 3) * 3), 3.2, 2.6, WHITE)
-            f.ell("propd", (x + 0.5, 222 - (x % 2) * 3), 3.2, 2.6, WHITE)
-        f.line("propd", [(-60, 208), (62, 204)], 1.8, WHITE, op=0.7, curve=False)
-    elif p == "beads":
-        import math
-        for i in range(15):
-            a = math.pi * (0.1 + 0.8 * i / 14.0)
-            f.ell("prop", (26 + 34 * math.cos(a) - 34 * 0.0, 212 + 60 * math.sin(a)), 5, 5, INK)
-            f.ell("propd", (26 + 34 * math.cos(a), 212 + 60 * math.sin(a)), 5, 5, None, stroke=WHITE, sw=1.2)
-    elif p == "bowl":
-        f.fill("prop", [(-42, 190), (42, 190), (36, 208), (20, 222), (-20, 222), (-36, 208)], GREY, k=0.7)
-        f.line("propd", [(-42, 190), (42, 190)], 2.4, WHITE, op=0.8, curve=False)
-    elif p == "jianzhan":            # 黑釉建盏
-        f.fill("prop", [(-32, 188), (32, 188), (26, 206), (10, 218), (-10, 218), (-26, 206)], GREY, k=0.7)
-        f.line("propd", [(-32, 188), (32, 188)], 2.4, WHITE, op=0.9, curve=False)
-        f.line("propd", [(-26, 206), (0, 212), (26, 206)], 1.6, WHITE, op=0.5)
-    elif p == "stone":
-        f.fill("prop", [(128, 212), (150, 200), (170, 212), (172, 236), (152, 248), (130, 240)], GREY)
-    elif p == "compass":
-        f.line("prop", [(-26, 86), (0, 126), (26, 86)], 1.8, INK, op=0.8)
-        f.ell("prop", (0, 138), 16, 16, PALE)
-        f.line("propd", [(0, 126), (0, 150)], 1.6, INK, curve=False)
-        f.line("propd", [(-12, 138), (12, 138)], 1.6, INK, curve=False)
-    elif p == "whip":
-        f.line("prop", [(158, 386), (190, 300)], 5.0, INK, curve=False)
-        f.line("prop", [(190, 300), (214, 250), (200, 200), (216, 150)], 2.2, INK)
-    elif p == "lantern":
-        f.line("prop", [(158, 392), (162, 408)], 2.0, INK, curve=False)
-        f.fill("prop", [(162, 408), (190, 420), (196, 456), (184, 488), (162, 496), (140, 488), (128, 456),
-                        (134, 420)], PALE)
-        f.fill("prop", [(146, 404), (178, 404), (178, 412), (146, 412)], INK, curve=False)
-        f.fill("prop", [(148, 490), (176, 490), (176, 498), (148, 498)], INK, curve=False)
-        for x in (146, 162, 178):
-            f.line("propd", [(x, 414), (x + (x - 162) * 0.15, 488)], 1.2, INK, op=0.35)
-    elif p == "whisk":
-        f.line("prop", [(22, 206), (-34, 118)], 5.0, INK, curve=False)
-        f.fill("prop", [(20, 212), (36, 238), (58, 300), (66, 360), (48, 350), (32, 290), (14, 232)], GREY)
-    elif p == "seal_box":
-        f.fill("prop", [(-50, 176), (50, 176), (50, 236), (-50, 236)], INK, curve=False)
-        f.line("propd", [(-50, 190), (50, 190)], 2.4, WHITE, op=0.8, curve=False)
-        f.line("propd", [(0, 176), (0, 236)], 2.0, WHITE, op=0.5, curve=False)
-        f.ell("propd", (0, 206), 7, 7, None, stroke=WHITE, sw=2.0)
-    elif p == "cricket_jar":
-        f.ell("prop", (0, 206), 32, 24, GREY)
-        f.fill("prop", [(-26, 186), (26, 186), (22, 176), (-22, 176)], INK, curve=False)
-    elif p == "brush":
-        f.line("prop", [(34, 212), (74, 128)], 4.0, INK, curve=False)
-        f.fill("prop", [(30, 212), (40, 214), (34, 234), (28, 226)], INK, curve=False)
-    elif p == "staff":
-        f.line("prop", [(-160, 60), (-156, 420)], 6.0, INK, curve=False)
-        for y in (120, 200, 290, 370):
-            f.line("propd", [(-165, y), (-151, y)], 2.0, WHITE, op=0.7, curve=False)
-    elif p == "keys":
-        for i, (x, y) in enumerate(((-86, 296), (-76, 310), (-94, 312), (-84, 324))):
-            f.ell("prop", (x, y), 6, 8, None, stroke=GREY, sw=3.0)
-    elif p == "bell":
-        f.ell("prop", (150, 196), 22, 22, None, stroke=INK, sw=6)
-        for a in (0, 1, 2):
-            f.ell("prop", (134 + a * 16, 222), 6, 6, INK)
-    elif p == "orange":
-        f.ell("prop", (158, 390), 13, 12, PALE)
-    elif p == "sword":                # 佩剑在画面右侧腰间，剑柄斜出，右手按柄
-        f.line("back", [(60, 240), (10, 420)], 12.0, INK, curve=False)
-        f.line("prop", [(60, 238), (86, 188)], 7.0, INK, curve=False)
-        f.line("prop", [(44, 232), (76, 248)], 6.0, INK, curve=False)
-        f.ell("prop", (88, 184), 6, 6, INK)
-        f.line("propd", [(40, 244), (76, 250)], 1.6, WHITE, op=0.6, curve=False)
-    elif p == "bow":
-        f.line("back", [(110, -40), (170, 60), (176, 180), (140, 300)], 7.0, INK)
-        f.line("back", [(110, -40), (140, 300)], 1.4, INK, curve=False)
-    if spec.get("medbox"):
-        f.fill("back", [(92, 36), (146, 48), (146, 140), (92, 128)], INK, curve=False)
-        for y in (54, 76):
-            f.line("back", [(96, y), (142, y + 12)], 1.8, WHITE, op=0.5, curve=False)
-    if spec.get("necklace"):
-        import math
-        for i in range(11):
-            a = math.pi * (0.12 + 0.76 * i / 10.0)
-            f.ell("propd", (60 * math.cos(a), 82 + 44 * math.sin(a)), 5, 5, PALE)
+def torso_poly(r, sw, slope, hem, bt):
+    """躯干轮廓：按椭圆柱截面投影（侧身时轮廓宽度按截面变化，不再左右对称压缩）。"""
+    c_, s_ = math.cos(r.tb), math.sin(r.tb)
+    sq = bt in ("armor", "mongol_armor")
+    rows = [(92 + slope * 0.2, sw * 0.42), (100 + slope * 0.5, sw * (0.8 if not sq else 0.9)),
+            (114 + slope, sw * (0.97 if not sq else 1.04)), (160 + slope, sw * 1.02), (240, sw * 0.97),
+            (330, hem * 0.96), (430, hem), (560, hem * 1.03)]
+    L, R = [], []
+    for y, a in rows:
+        c = a * 0.46
+        phi = math.atan2(c * s_, a * c_)
+        R.append((a * math.cos(phi), y, c * math.sin(phi)))
+        L.append((-a * math.cos(phi), y, -c * math.sin(phi)))
+    return r.B3([(0, 86, 0)] + L + list(reversed(R)))
 
 
-def figure_svg(spec, w=512, h=640):
-    child = spec.get("child", False)
-    youth = spec.get("youth", False)
-    if child:
-        f = Fig(205, 336, 0.8)
-    elif youth:
-        f = Fig(205, 262, 0.94)
+def arm(r, sd, pose, bt, sw, slope, widths, tone, sleeve):
+    """一只手臂一笔（侧锋，外浓内淡）；大袖在前臂下再垂一笔袖袋。sd=-1 近侧，+1 远侧。"""
+    E, Wr = POSES[pose]
+    E, Wr = _joint(E, sw), _joint(Wr, sw)
+    if sd > 0:
+        E, Wr = (-E[0], E[1], E[2]), (-Wr[0], Wr[1], Wr[2])
+    Sh = (sd * sw * 0.9, 112 + slope, -6)
+    wu, we, ww = widths
+    far = sd > 0
+    ink = min(0.96, tone * 1.12) if not far else tone * 0.8
+    path = [Sh, _lerp(Sh, E, 0.55), E, _lerp(E, Wr, 0.5), Wr]
+    prof = [wu / ww * 0.95, (wu + we) / 2 / ww, we / ww, (we + ww) / 2 / ww, 1.0]
+    Pc = r.B3(path)
+    Wd = [p * ww * r.s for p in prof]
+    ch = chain2d(Pc, Wd)
+    r.sil_polys.append(ch)
+    # 臂与身的交界：一道有起收的留白（钉头鼠尾），把袖从身形里分出来
+    nP = len(Pc)
+    A_, B_ = ch[:nP], list(reversed(ch[nP:]))
+    if pose not in ("hang", "back") and sleeve != "bare":
+        sa, sb = A_[2:5], B_[2:5]
+        up = sa if sum(p[1] for p in sa) < sum(p[1] for p in sb) else sb
+        r.late.append(dict(kind="rstroke", pts=up, width=3.0 * r.s, amount=0.5, dry=0.5, profile="nail", seed=r.n()))
+    elif sleeve != "bare":
+        cx = r.hx
+        inner = A_ if abs(A_[2][0] - cx) < abs(B_[2][0] - cx) else B_
+        r.late.append(dict(kind="rstroke", pts=inner[1:5], width=2.6 * r.s, amount=0.45, dry=0.55, profile="nail",
+                           seed=r.n()))
+    if sleeve == "bare":                  # 赤膊：臂是淡墨皮肉，外缘一线
+        r.skin_polys.append(r.sil_polys.pop())
+        r.sweep_b(path, ww * 1.2, ink=0.2, side=0.8 * -sd, pale=0.4, dry=0.3, wet=0.2, profile=prof, layer="skin")
+        r.line_b(path, 2.6, ink=0.7, dry=0.4)
     else:
-        f = Fig(205, 250, 1.0)
-    body(f, spec)
-    arms(f, spec)
-    head(f, spec)
-    beard(f, spec)
-    hat(f, spec)
-    prop(f, spec)
-    return f.svg(w, h)
+        r.sweep_b(path, ww * 0.9, ink=ink, side=0.75 * -sd, pale=0.35, dry=0.45, wet=0.5, profile=prof)
+    hang = pose in ("hang", "back")
+    if sleeve == "wide" and not hang and pose != "raise":
+        # 袖袋：自肘下垂、至腕下收
+        bag = [_lerp(E, Wr, 0.1), (E[0] * 0.8 + Wr[0] * 0.2, E[1] + 70, E[2] + 10),
+               (Wr[0] * 0.8 + E[0] * 0.2, Wr[1] + 88, Wr[2]), (Wr[0], Wr[1] + 36, Wr[2])]
+        r.sil_polys.append(chain2d(r.B3(bag), [w * ww * r.s for w in (0.55, 0.95, 0.95, 0.6)]))
+        r.sweep_b(bag, ww * 0.85, ink=ink * 0.85, side=0.6, pale=0.3, dry=0.55, wet=0.4, profile="press")
+        r.line_b(bag[1:], 3.4, ink=0.92, dry=0.5)
+    elif sleeve == "wide" and hang:
+        r.line_b([E, (E[0] * 1.04, E[1] + 80, E[2]), (E[0] * 0.98, E[1] + 150, E[2])], 3.0, ink=0.9, dry=0.5)
+    # 外缘焦墨一笔（肩→肘→袖底），侧锋，定住身形的毛涩硬边
+    if not far and sleeve != "bare":
+        r.sweep_b([(Sh[0] * 1.04, Sh[1] - 8, Sh[2]), _lerp(Sh, E, 0.5), (E[0] * 1.05, E[1] + 12, E[2]),
+                   (E[0] * 1.0 + Wr[0] * 0.0, E[1] + (60 if sleeve == "wide" and not hang else 30), E[2])], 11,
+                  ink=0.95, side=0.8, pale=0.5, dry=0.5, wet=0.4, profile="press")
+    # 袖口：一笔有粗细的焦墨（不是胶囊）
+    if pose in HANDS_OUT or pose in ("fold", "fold_low"):
+        d = (Wr[0] - E[0], Wr[1] - E[1])
+        ln = math.hypot(*d) or 1
+        nx, ny = -d[1] / ln, d[0] / ln
+        half = ww * 0.5
+        a = (Wr[0] + nx * half, Wr[1] + ny * half, Wr[2])
+        b = (Wr[0] - nx * half, Wr[1] - ny * half, Wr[2])
+        r.line_b([a, (Wr[0] + d[0] / ln * 4, Wr[1] + d[1] / ln * 4, Wr[2]), b], 3.4, ink=0.9, dry=0.3,
+                 profile="swell")
+    # 衣纹两道
+    if sleeve != "bare":
+        for k in (0.35, 0.7):
+            p0 = _lerp(Sh, E, k)
+            p1 = _lerp(E, Wr, k * 0.6)
+            r.line_b([p0, _lerp(p0, p1, 0.5), p1], 2.0, ink=0.85, dry=0.6)
+    wr_c = r.B3([Wr])[0]
+    el_c = r.B3([E])[0]
+    r.hands["far" if far else "near"] = (wr_c, pose, el_c)
 
 
-# ───────────────────────── 背景意象 ─────────────────────────
-def backdrop_svg(spec, w=512, h=640):
-    sc = spec.get("scene", "none")
-    child = spec.get("child", False)
-    gy = 250 if not child else 330
-    E = []
-    E.append('<defs><radialGradient id="g" cx="0.5" cy="0.5" r="0.5">'
-             '<stop offset="0" stop-color="rgb(0,255,0)" stop-opacity="1"/>'
-             '<stop offset="0.62" stop-color="rgb(0,255,0)" stop-opacity="0.75"/>'
-             '<stop offset="1" stop-color="rgb(0,255,0)" stop-opacity="0"/></radialGradient>'
-             '<linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">'
-             '<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="0"/>'
-             '<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0.9"/></linearGradient></defs>')
-    E.append('<circle cx="205" cy="%d" r="170" fill="url(#g)"/>' % (gy - 30))
+def torso(r, bt, sw, slope, hem, tone):
+    """躯干：近侧半身一笔、远侧半身一笔（侧锋、上浓下枯），中间留一线淡处。"""
+    sg = 1
+    pale = 0.25
+    if bt == "bare":
+        # 赤膊：淡墨皮肉 + 胸腹几道轮廓
+        r.skin_polys.append(torso_poly(r, sw, slope, hem, bt))
+        r.sweep_b([(-sw * 0.5, 104, 20), (-sw * 0.52, 220, 34), (-sw * 0.5, 330, 30)], sw * 1.05, ink=0.24,
+                  side=0.7, pale=0.4, dry=0.4, wet=0.2, layer="skin")
+        r.sweep_b([(sw * 0.45, 108, 26), (sw * 0.48, 220, 36), (sw * 0.45, 330, 30)], sw * 0.95, ink=0.18,
+                  side=-0.6, pale=0.4, dry=0.45, wet=0.2, layer="skin")
+        r.line_b([(-sw, 118, -4), (-sw * 0.96, 190, 10), (-sw * 0.8, 290, 20)], 3.0, ink=0.8, dry=0.45)
+        r.line_b([(-sw * 0.62, 150, 34), (-sw * 0.25, 176, 42), (0, 168, 44)], 2.2, ink=0.6, dry=0.5)
+        r.line_b([(sw * 0.62, 150, 34), (sw * 0.25, 176, 42), (0, 168, 44)], 2.0, ink=0.5, dry=0.5)
+        r.line_b([(-10, 200, 44), (-8, 250, 44), (-12, 300, 40)], 1.6, ink=0.45, dry=0.6)
+        # 腰间缠布
+        r.sweep_b([(-sw * 1.02, 296, -4), (-sw * 0.3, 312, 40), (sw * 0.4, 312, 40), (sw * 1.0, 296, -4)], 34,
+                  ink=0.7, side=0.6, pale=0.3, dry=0.5, wet=0.3, profile="flat")
+        return
+    t_n = tone
+    t_f = tone * 0.74
+    r.sil_polys.append(torso_poly(r, sw, slope, hem, bt))
+    # 近侧半身、远侧半身各一笔（外浓内淡），中间前襟淡——笔与笔之间透出底墨
+    r.sweep_b([(-sw * 0.66, 100 + slope * 0.5, -10), (-sw * 0.72, 230, 24), (-hem * 0.7, 470, 24)],
+              sw * 0.8, ink=t_n, side=0.85, pale=0.3, dry=0.5, wet=0.5)
+    r.sweep_b([(sw * 0.6, 104 + slope * 0.5, -6), (sw * 0.64, 232, 30), (hem * 0.66, 470, 26)],
+              sw * 0.66, ink=t_f, side=-0.75, pale=0.3, dry=0.55, wet=0.45)
+    # 衣褶：两三道焦墨钉头鼠尾，自胸前顺身势垂下（近侧长、远侧短）
+    rng = r.rng
+    for k, (xf, y0, ln) in enumerate(((-0.42, 150, 230), (0.18, 170, 170), (-0.12, 210, 150))[:int(rng.uniform(2, 3.99))]):
+        x0 = (xf + rng.uniform(-0.08, 0.08)) * sw
+        z = 34 * math.sqrt(max(0.0, 1 - (x0 / (sw * 1.05)) ** 2))
+        bend = rng.uniform(-18, 18)
+        r.line_b([(x0, y0, z), (x0 + bend * 0.5, y0 + ln * 0.45, z), (x0 + bend, y0 + ln, z)], rng.uniform(2.4, 3.4),
+                 ink=0.92, dry=0.55)
+    # 肩背一笔：自颈后压过近侧肩头，定住轮廓
+    r.sweep_b([(-12, 82, -30), (-sw * 0.62, 94 + slope * 0.6, -24), (-sw * 1.0, 124 + slope, -10),
+               (-sw * 1.06, 190, 0)], 30, ink=min(0.95, tone + 0.15), side=0.9, pale=0.3, dry=0.45, wet=0.5,
+              profile="press")
+    r.sweep_b([(12, 84, -26), (sw * 0.6, 96 + slope * 0.6, -20), (sw * 0.96, 124 + slope, -8)], 20,
+              ink=tone * 0.9, side=-0.8, pale=0.35, dry=0.5, wet=0.4, profile="press")
 
-    def wash(d, op):
-        E.append('<path d="%s" fill="rgb(255,0,0)" fill-opacity="%.2f"/>' % (d, op))
 
-    def stroke(d, op, sw):
-        E.append('<path d="%s" fill="none" stroke="rgb(255,0,0)" stroke-opacity="%.2f" stroke-width="%.1f" '
-                 'stroke-linecap="round"/>' % (d, op, sw))
+def collar(r, bt, kind):
+    if bt == "bare":
+        return
+    if kind == "round":         # 圆领：绕颈一圈，内露中单白领（一线）
+        ring = [(34 * math.cos(a), 86 + 10 * math.sin(a) * 0.3, 30 * math.sin(a))
+                for a in [math.pi * (1.08 - 1.16 * i / 14) for i in range(15)]]
+        ring = [(x, y + (8 if z > 20 else 0), z) for x, y, z in ring]
+        r.sweep_b(ring, 11, ink=0.9, side=0.3, pale=0.5, dry=0.3, wet=0.3, profile="press")
+        inner = [(x * 0.82, y - 7, z * 0.9) for x, y, z in ring[2:-2]]
+        r.white_b(inner, 3.0, amount=0.55, dry=0.35, profile="even")
+        # 圆领右开的一道衣缘（近侧腋下）
+        r.line_b([(-30, 100, 22), (-60, 150, 30), (-76, 210, 28)], 2.4, ink=0.8, dry=0.5)
+    elif kind == "cross":       # 交领右衽：领缘一笔有粗细的焦墨，旁留一线白色中单领
+        a = [(28, 82, -4), (14, 104, 28), (-12, 152, 38), (-40, 222, 34)]
+        r.sweep_b(a, 12, ink=0.92, side=0.4, pale=0.5, dry=0.35, wet=0.35, profile="press")
+        r.white_b([(p[0] + 7, p[1] - 3, p[2]) for p in a[:3]], 3.0, amount=0.55, dry=0.4)
+        r.line_b([(-26, 84, -4), (-12, 106, 26), (-2, 128, 36)], 5.0, ink=0.85, dry=0.4, profile="swell")
+    elif kind == "beizi":       # 褙子对襟：两道直领缘
+        for s_ in (-1, 1):
+            r.sweep_b([(s_ * 18, 86, 22), (s_ * 22, 200, 36), (s_ * 26, 420, 34)], 10, ink=0.85, side=0.3, pale=0.5,
+                      dry=0.45, wet=0.3, profile="flat")
+        r.white_b([(-14, 90, 26), (0, 100, 30), (14, 90, 26)], 2.6, amount=0.5, profile="even")
+    elif kind == "mongol":      # 质孙右衽弧领
+        a = [(-26, 84, 10), (4, 116, 34), (50, 150, 34), (92, 168, 10)]
+        r.sweep_b(a, 12, ink=0.9, side=0.4, pale=0.5, dry=0.35, wet=0.35, profile="press")
+        r.white_b([(p[0], p[1] - 7, p[2]) for p in a[:3]], 2.6, amount=0.5)
+    elif kind == "kasaya":      # 袈裟：远侧肩斜搭过胸到近侧腰，环扣一枚
+        a = [(80, 104, 0), (30, 160, 34), (-30, 236, 38), (-90, 320, 20)]
+        r.sweep_b(a, 44, ink=0.9, side=0.5, pale=0.35, dry=0.4, wet=0.4, profile="flat")
+        r.white_b([(p[0] + 20, p[1] - 12, p[2]) for p in a], 2.8, amount=0.5, dry=0.4)
+        r.line_b([(26, 82, -4), (10, 104, 28), (-6, 132, 36)], 5.0, ink=0.85, dry=0.4, profile="swell")
+        cx, cy = r.B3([(56, 132, 30)])[0]
+        rr = 7 * r.s
+        ring = [(cx + rr * math.cos(i * 0.52), cy + rr * math.sin(i * 0.52)) for i in range(13)]
+        r.part(dict(kind="stroke", pts=ring, width=2.4 * r.s, ink=0.9, dry=0.2, profile="even", seed=r.n()))
+        if r.spec.get("futian"):
+            for u in (0.3, 0.62):
+                p = _lerp(a[1], a[2], u)
+                r.white_b([(p[0] - 30, p[1] - 20, p[2]), (p[0] + 30, p[1] + 20, p[2])], 2.0, amount=0.4)
 
-    if sc in ("mountain", "steppe", "temple", "city", "tent", "domes", "arch"):
-        far = smooth([(0, 470), (60, 430), (110, 452), (170, 400), (240, 446), (300, 418), (370, 440), (430, 396),
-                      (512, 430), (512, 640), (0, 640)], True, 0.8) if sc != "steppe" else \
-            smooth([(0, 500), (120, 478), (260, 492), (400, 470), (512, 484), (512, 640), (0, 640)], True)
-        wash(far, 0.30)
-    if sc == "mountain":
-        wash(smooth([(0, 530), (80, 496), (150, 520), (230, 480), (330, 526), (420, 500), (512, 520), (512, 640),
-                     (0, 640)], True, 0.8), 0.42)
-    if sc == "sea":
-        wash("M0,470 L512,470 L512,640 L0,640 Z", 0.18)
-        for i, y in enumerate((492, 520, 552, 588, 626)):
-            for x0 in range(-40 + (i % 2) * 50, 520, 100):
-                stroke("M%d,%d q18,-14 36,0 q18,14 36,0" % (x0, y), 0.55 - i * 0.05, 2.6 + i * 0.4)
-        stroke("M0,470 L512,470", 0.5, 1.6)
-    if sc == "harbor":
-        wash("M0,500 L512,500 L512,640 L0,640 Z", 0.2)
-        for x, hh in ((40, 250), (88, 200), (360, 230), (420, 270), (470, 210)):
-            stroke("M%d,500 L%d,%d" % (x, x, 500 - hh), 0.55, 3.0)
-            wash(poly([(x - 30, 520 - hh), (x + 26, 510 - hh), (x + 22, 590 - hh), (x - 26, 596 - hh)]), 0.26)
-        for x0 in range(0, 512, 90):
-            stroke("M%d,560 q20,-10 40,0 q20,10 40,0" % x0, 0.4, 2.2)
-    if sc == "court" or sc == "throne":
-        E.append('<rect x="24" y="92" width="360" height="440" fill="none" stroke="rgb(255,0,0)" '
-                 'stroke-opacity="0.30" stroke-width="5"/>')
-        for x in (144, 264):
-            stroke("M%d,96 L%d,528" % (x, x), 0.22, 3)
-        for y0 in (140, 220):
-            stroke("M40,%d q30,-24 60,0 q20,16 40,0" % y0, 0.28, 3)
-            stroke("M300,%d q30,-24 60,0 q20,16 40,0" % (y0 + 30), 0.28, 3)
-    if sc == "throne":                # 障扇
-        for cxs in (42, 368):
-            E.append('<ellipse cx="%d" cy="150" rx="46" ry="54" fill="rgb(255,0,0)" fill-opacity="0.32"/>' % cxs)
-            stroke("M%d,204 L%d,560" % (cxs, cxs), 0.4, 5)
-    if sc == "temple":
-        x = 356
-        for i, (ww, y) in enumerate(((70, 300), (60, 340), (52, 376), (44, 408), (38, 436))):
-            wash(poly([(x - ww, y + 12), (x + ww, y + 12), (x + ww - 14, y), (x - ww + 14, y)]), 0.34)
-            wash(poly([(x - ww * 0.55, y + 12), (x + ww * 0.55, y + 12), (x + ww * 0.55, y + 30),
-                       (x - ww * 0.55, y + 30)]), 0.22)
-        stroke("M356,300 L356,262", 0.4, 4)
-        E.append('<circle cx="205" cy="%d" r="150" fill="none" stroke="rgb(255,0,0)" stroke-opacity="0.16" '
-                 'stroke-width="10"/>' % (gy - 30))
-    if sc == "shrine":                # 祠堂遗像：挂轴
-        E.append('<rect x="36" y="58" width="340" height="560" fill="rgb(255,0,0)" fill-opacity="0.16"/>')
-        E.append('<rect x="36" y="58" width="340" height="560" fill="none" stroke="rgb(255,0,0)" '
-                 'stroke-opacity="0.45" stroke-width="4"/>')
-        stroke("M24,52 L388,52", 0.7, 9)
-    if sc == "city":
-        top = 430
-        pts = [(0, top)]
-        x = 0
-        while x < 512:
-            pts += [(x, top), (x + 22, top), (x + 22, top + 16), (x + 40, top + 16), (x + 40, top)]
-            x += 40
-        pts += [(512, top), (512, 640), (0, 640)]
-        wash(poly(pts), 0.36)
-        wash(poly([(330, 430), (330, 360), (318, 360), (360, 326), (402, 360), (390, 360), (390, 430)]), 0.34)
-    if sc == "steppe":
-        stroke("M400,480 L400,300", 0.45, 4)
-        wash(poly([(400, 300), (440, 312), (404, 330)]), 0.4)
-    if sc == "tent":
-        for x0, ww in ((40, 90), (360, 110)):
-            wash(smooth([(x0, 520), (x0 + ww * 0.1, 470), (x0 + ww / 2, 440), (x0 + ww * 0.9, 470),
-                         (x0 + ww, 520)], True), 0.32)
-    if sc == "domes":
-        for x0, r in ((60, 40), (380, 54), (450, 34)):
-            E.append('<circle cx="%d" cy="470" r="%d" fill="rgb(255,0,0)" fill-opacity="0.30"/>' % (x0, r))
-            stroke("M%d,%d L%d,%d" % (x0, 470 - r, x0, 470 - r - 30), 0.4, 3)
-        wash(smooth([(300, 380), (340, 330), (320, 280), (360, 240), (340, 200)], True), 0.12)
-    if sc == "arch":                  # 清净寺式尖拱门
-        E.append('<path d="M60,600 L60,300 Q60,150 205,110 Q350,150 350,300 L350,600" fill="none" '
-                 'stroke="rgb(255,0,0)" stroke-opacity="0.30" stroke-width="14"/>')
-        E.append('<path d="M92,600 L92,310 Q92,186 205,150 Q318,186 318,310 L318,600" fill="none" '
-                 'stroke="rgb(255,0,0)" stroke-opacity="0.18" stroke-width="5"/>')
-    if sc == "parasol":               # 伞盖
-        wash(smooth([(60, 150), (205, 70), (350, 150), (330, 160), (205, 150), (80, 160)], True, 0.8), 0.34)
-        for x in range(80, 340, 18):
-            stroke("M%d,158 L%d,186" % (x, x), 0.3, 2.4)
-        stroke("M205,150 L205,40", 0.4, 5)
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">\n%s\n</svg>' % (
-        w, h, w, h, "\n".join(E))
+
+def belt(r, bt, sw):
+    if bt in ("narrow", "short", "mongol", "onearm") and not r.spec.get("cape"):
+        pts = [(-sw * 1.02, 290, -4), (-sw * 0.4, 304, 38), (sw * 0.3, 306, 40), (sw * 0.98, 292, -4)]
+        r.sweep_b(pts, 14, ink=0.9, side=0.5, pale=0.4, dry=0.45, wet=0.3, profile="flat")
+    if bt == "robe" and r.spec.get("belt_band", False):
+        pts = [(-sw * 1.06, 300, -4), (-sw * 0.4, 314, 38), (sw * 0.3, 316, 40), (sw * 1.02, 302, -4)]
+        r.sweep_b(pts, 12, ink=0.9, side=0.5, pale=0.4, dry=0.45, wet=0.3, profile="flat")
+
+
+def armor(r, bt, sw):
+    """甲：披膊两笔、甲片改点厾（随机抖动的干笔点，留大块空白），腰带一笔。"""
+    rng = r.rng
+    for sd in (-1, 1):
+        for k, y in enumerate((116, 146)):
+            r.sweep_b([(sd * 64, y - 6, 10), (sd * 112, y + 8, 0), (sd * (sw + 14), y + 40, -8)], 22 - k * 4,
+                      ink=0.9, side=0.6 * sd, pale=0.3, dry=0.5, wet=0.3, profile="press")
+            r.white_b([(sd * 70, y - 12, 12), (sd * 118, y + 1, 2), (sd * (sw + 8), y + 30, -6)], 2.2, amount=0.45)
+    lam = bt == "mongol_armor"
+    n = 70 if not lam else 60
+    for _ in range(n):
+        x = rng.uniform(-sw * 0.85, sw * 0.85)
+        y = rng.uniform(162, 290)
+        if rng.random() < 0.35:            # 留空白
+            continue
+        z = 36 * math.sqrt(max(0.0, 1 - (x / (sw * 1.05)) ** 2))
+        if lam:
+            a, b = (x, y - 7, z), (x + rng.uniform(-1, 1), y + 7, z)
+        else:
+            a, b = (x - 6, y, z), (x + 4, y + 3 + rng.uniform(-2, 2), z)
+        if rng.random() < 0.5:
+            r.white_b([a, b], rng.uniform(2.2, 3.4), amount=rng.uniform(0.35, 0.55), dry=0.6)
+        else:
+            r.line_b([a, b], rng.uniform(2.6, 4.0), ink=0.95, dry=0.6, profile="nail")
+    r.sweep_b([(-sw * 1.06, 292, -4), (-sw * 0.4, 308, 38), (sw * 0.3, 310, 40), (sw * 1.04, 294, -4)], 16, ink=0.92,
+              side=0.5, pale=0.4, dry=0.45, wet=0.3, profile="flat")
+    if r.spec.get("armor_light"):          # 亮银甲：甲面提亮
+        r.wash_b([(-sw * 0.8, 160, 30), (sw * 0.8, 160, 30), (sw * 0.8, 280, 30), (-sw * 0.8, 280, 30)], 0.0)
+        r.part(dict(kind="reserve", pts=r.B3([(-sw * 0.7, 164, 30), (sw * 0.6, 164, 30), (sw * 0.64, 276, 30),
+                                             (-sw * 0.7, 276, 30)]), amount=0.35, soft=6.0, rough=1.0))
+    if r.spec.get("mirror"):               # 护心镜
+        cx, cy = r.B3([(-10, 200, 42)])[0]
+        rr = 20 * r.s
+        ring = [(cx + rr * math.cos(i * 0.4), cy + rr * math.sin(i * 0.4) * 1.05) for i in range(17)]
+        r.part(dict(kind="stroke", pts=ring, width=3.0 * r.s, ink=0.9, dry=0.3, profile="even", seed=r.n()))
+
+
+def extras(r, bt, sw):
+    sp = r.spec
+    rng = r.rng
+    if sp.get("vest"):                     # 赤膊外罩短褂：两片深色褂身
+        for sd in (-1, 1):
+            r.sweep_b([(sd * sw * 0.72, 104, -4), (sd * sw * 0.8, 200, 20), (sd * sw * 0.74, 300, 22)], 44, ink=0.72,
+                      side=0.6 * sd, pale=0.3, dry=0.5, wet=0.3)
+    if sp.get("apron"):                    # 油布围裙
+        r.sweep_b([(-4, 280, 44), (-6, 360, 44), (-8, 440, 40)], sw * 1.4, ink=0.4, side=0.4, pale=0.4, dry=0.35,
+                  wet=0.5, profile="flat")
+        r.line_b([(-sw * 0.7, 282, 30), (0, 290, 44), (sw * 0.7, 282, 30)], 3.0, ink=0.85, dry=0.4)
+    if sp.get("fur"):                      # 貂领 / 羊皮坎肩：一团破墨软块，不画刺
+        a = [(-sw * 1.0, 124, -10), (-sw * 0.6, 102, 20), (0, 100, 38), (sw * 0.6, 104, 20), (sw * 1.0, 128, -10)]
+        r.sweep_b(a, 44, ink=0.72, side=0.2, pale=0.5, dry=0.25, wet=1.0, profile="press", rough=2.6, layer="fur")
+        r.sweep_b(a[1:4], 22, ink=0.9, side=0.6, pale=0.4, dry=0.35, wet=0.6, profile="press", rough=2.0, layer="fur")
+    if sp.get("cape"):                     # 蓑衣：肩上一大团干笔，草茎顺势下垂
+        r.sweep_b([(-sw * 1.2, 150, -6), (-sw * 0.5, 110, 30), (sw * 0.5, 112, 30), (sw * 1.2, 150, -6)], 90,
+                  ink=0.75, side=0.3, pale=0.4, dry=0.7, wet=0.2, profile="press", streak=0.4)
+        for i in range(26):
+            x = -sw * 1.2 + sw * 2.4 * i / 25.0 + rng.uniform(-6, 6)
+            y0 = 140 - 36 * (1 - (x / (sw * 1.2)) ** 2)
+            z = 30 * math.sqrt(max(0.0, 1 - (x / (sw * 1.25)) ** 2))
+            r.line_b([(x, y0, z), (x * 1.04 + rng.uniform(-4, 4), y0 + rng.uniform(70, 120), z)], 2.4, ink=0.85,
+                     dry=0.65, profile="taper")
+    if sp.get("necklace"):                 # 贝珠串：一圈留白小点
+        for i in range(11):
+            a = math.pi * (0.15 + 0.7 * i / 10.0)
+            x, y = 50 * math.cos(a), 104 + 40 * math.sin(a)
+            z = 34 + 8 * math.sin(a)
+            (cx, cy), = r.B3([(x, y, z)])
+            rr = 4.6 * r.s
+            r.part(dict(kind="cover", pts=[(cx - rr, cy - rr), (cx + rr, cy - rr), (cx + rr, cy + rr),
+                                           (cx - rr, cy + rr)], tone=0.12, rough=0.3))
+    if sp.get("belt_gold"):                # 金带
+        pts = [(-sw * 1.04, 298, -4), (-sw * 0.4, 312, 38), (sw * 0.3, 314, 40), (sw * 1.0, 300, -4)]
+        r.sweep_b(pts, 14, ink=0.6, side=0.5, pale=0.4, dry=0.3, wet=0.3, profile="flat", layer="gold")
+
+
+def empty_sleeve(r, sw, slope):
+    """独臂：近侧空袖塌下，掖进腰带。"""
+    x0 = -sw * 0.92
+    path = [(x0, 116 + slope, -6), (x0 - 10, 190, 4), (x0 + 26, 290, 24)]
+    r.sil_polys.append(chain2d(r.B3(path), [30 * r.s, 34 * r.s, 22 * r.s]))
+    r.sweep_b(path, 26, ink=0.62, side=0.6, pale=0.3, dry=0.5, wet=0.4, profile="press")
+    r.line_b([(x0 - 6, 150, 0), (x0 - 12, 210, 6), (x0 + 22, 288, 24)], 2.4, ink=0.85, dry=0.5)
+    r.hands["near"] = (r.B3([(x0 + 26, 290, 24)])[0], "empty", r.B3([(x0 - 10, 190, 4)])[0])
+
+
+def build(spec, seed):
+    """一位人物 → Rig（parts 已按合成顺序排好）。"""
+    r = Rig(spec, seed)
+    bt = spec.get("body", "robe")
+    sw, slope, hem, base_tone, sleeve, widths = BODY[bt]
+    tone = spec.get("tone", base_tone)
+    props.behind(r)
+    heads.back(r)                          # 发团（面随后在上面留白）
+    start = len(r.parts)
+    torso(r, bt, sw, slope, hem, tone)
+    pose = spec.get("pose", "fold")
+    near, far = (pose.split("+") + [None])[:2]
+    far = far or near
+    if bt == "onearm":
+        empty_sleeve(r, sw, slope)
+    else:
+        arm(r, -1, near, bt, sw, slope, widths, tone, sleeve)
+    arm(r, 1, far, bt, sw, slope, widths, tone, sleeve)
+    # 身形底墨：躯干与两臂并成一片，湿墨一泼（上浓下淡、水渍花、边缘洇开、下缘枯），笔都叠在它上面
+    (_, y_top), = r.B3([(0, 100, 0)])
+    (_, y_bot), = r.B3([(0, 470, 0)])
+    base = spec.get("under", 0.6)
+    if r.sil_polys:
+        r.parts.insert(start, dict(kind="sil", polys=list(r.sil_polys), tone=((0, y_top), (0, y_bot), tone * base,
+                                                                                tone * base * 0.62),
+                                   angle=4, edge=0.4, var=0.6, bleed=1.0, bloom=0.3, streak=0.05, dry_edge=0.6,
+                                   dry_side=(0, 1), dry_depth=40, soft=1.6, layer="robe"))
+    if r.skin_polys:
+        r.parts.insert(start, dict(kind="sil", polys=list(r.skin_polys), tone=0.14, edge=0.3, var=0.5, bleed=0.6,
+                                   bloom=0.2, streak=0.03, dry_edge=0.4, dry_side=(0, 1), dry_depth=30, soft=1.4,
+                                   layer="skin"))
+    if bt in ("armor", "mongol_armor"):
+        armor(r, bt, sw)
+    belt(r, bt, sw)
+    extras(r, bt, sw)
+    r.parts.extend(r.late)                 # 臂身交界的留白线：压在所有身形笔之上
+    heads.face(r)                          # 面颈留白 + 淡墨成面（压在身形墨上）
+    collar(r, bt, spec.get("collar", {"robe": "round", "woman": "beizi", "mongol": "mongol",
+                                      "mongol_armor": "mongol", "kasaya": "kasaya"}.get(bt, "cross")))
+    heads.hat(r)                           # 发与冠
+    heads.features(r)                      # 减笔五官
+    heads.beard(r)
+    props.front(r)                         # 手中持物 + 手
+    # 人物轮廓（避让用，不上墨）：面 + 颈
+    r.part(dict(kind="mask", pts=r.Hp(r.face_poly), layer="face", soft=2.0))
+    r.part(dict(kind="mask", pts=r.Hp(r.neck_poly), layer="face", soft=2.0))
+    return r

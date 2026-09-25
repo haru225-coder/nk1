@@ -1045,11 +1045,30 @@ else:
     print("  ✗ 风信仍套括号")
     problems.append("风信仍套括号")
 theme_src_tide = open(os.path.join(SCRIPTS, "core", "UiTheme.gd"), encoding="utf-8").read()
-if "夜潮" in theme_src_tide and "const TIDE" in theme_src_tide and "熟漆面板" not in theme_src_tide:
-    print("  ✓ 面板改成夜潮")
+# 皮肤断言按当前皮肤判（第 2 轮工程 m1：绢本下原句只因注释里还有「夜潮」二字才过，是假 ✓）
+_skin_m = re.search(r'const SKIN := "(\w+)"', theme_src_tide)
+_skin = _skin_m.group(1) if _skin_m else ""
+if _skin == "yechao":
+    if "夜潮" in theme_src_tide and "const TIDE" in theme_src_tide and "熟漆面板" not in theme_src_tide:
+        print("  ✓ 面板改成夜潮")
+    else:
+        print("  ✗ 面板仍是熟漆描金")
+        problems.append("面板仍是熟漆描金")
 else:
-    print("  ✗ 面板仍是熟漆描金")
-    problems.append("面板仍是熟漆描金")
+    _panel_body = theme_src_tide[theme_src_tide.find("static func panel()"):]
+    _panel_body = _panel_body[:_panel_body.find("\nstatic func ", 10)]
+    if (
+        _skin == "juanben"
+        and "const JUANBEN := {" in theme_src_tide
+        and "const YECHAO := {" in theme_src_tide
+        and "if IS_JUANBEN" in _panel_body
+        and "_ink_panel(" in _panel_body
+        and "熟漆面板" not in theme_src_tide
+    ):
+        print("  ✓ 面板是绢本暖墨（夜潮原值留在 YECHAO 表里可一键切回）")
+    else:
+        print("  ✗ 绢本面板没接上，或夜潮原值表丢了")
+        problems.append("绢本面板没接上，或夜潮原值表丢了")
 draft_src = open(os.path.join(SCRIPTS, "core", "HeadingDraft.gd"), encoding="utf-8").read()
 chart_src_draft = open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()
 gs_src_draft = open(os.path.join(SCRIPTS, "GameState.gd"), encoding="utf-8").read()
@@ -1148,6 +1167,21 @@ for _fn in ("style_button", "style_chip"):
         problems.append(f"{_fn} 珊瑚聚焦字色")
 if _focus_ok:
     print("  ✓ 珊瑚主钮和小钮聚焦、按下都用深字")
+# 绢本分支另查（第 2 轮工程 m1）：朱砂印钮 / 朱砂小钮聚焦、按下都是印面浅字 SEAL_TEXT
+if _skin == "juanben":
+    _bj = _static_body(theme_src_tide, "_style_button_juanben")
+    _cj = _static_body(theme_src_tide, "_style_chip_juanben")
+    if (
+        'font_focus_color", SEAL_TEXT)' in _bj
+        and 'font_pressed_color", SEAL_TEXT)' in _bj
+        and "var ink := SEAL_TEXT if accent else TEXT" in _cj
+        and 'font_focus_color", ink)' in _cj
+        and 'font_pressed_color", ink)' in _cj
+    ):
+        print("  ✓ 绢本朱砂印钮和小钮聚焦、按下都用印面浅字")
+    else:
+        print("  ✗ 绢本朱砂钮聚焦或按下字色没锁成 SEAL_TEXT")
+        problems.append("绢本朱砂钮聚焦字色")
 if (
     "%s　%s%s" in cal_src
     and "%s %s%s" not in cal_src

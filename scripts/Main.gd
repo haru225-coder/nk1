@@ -38,12 +38,22 @@ var title_button_connected: bool = false
 ## 同页换船或买卖后刷新时保留，否则选中会被 load_scene 清掉。
 var _market_ship: int = 0
 var _market_hold: bool = false
+## 牙行委办「细则」展开与否（会话内 UI 状态，不入存档；买卖刷新页面时保留）
+var _contract_detail_open := false
 ## 账条暂时写入的容器。酒馆募人收进内滚，离开钮留在外面。
 var _slip_host: Node = null
 var _ledger_layer: Control
 var _status_strip: PanelContainer
 var _status_line: RichTextLabel
+var _status_note: Label
+## 船籍簿记事：最近 LOG_KEEP 条（会话内，不入存档）。原先整串无限拼接，空时是一块空墨框
+var _log_lines: PackedStringArray = PackedStringArray()
+const LOG_KEEP := 8
 var _page_footer: HBoxContainer
+## 内页滚动区（_split_page_footer 摘出来的 Scroll）
+var _page_scroll: ScrollContainer
+## 当前是序章对白条（cg_ 酒棚各页）：点画面任意处续读
+var _cg_dialogue := false
 ## 见面册页上的话。原 RichTextLabel 在这栏里排不出行，改用能折行的 Label。
 var _npc_speech: RichTextLabel
 ## 航海日志册页。系统对话框会把三卷撑出 1280 宽的窗口。
@@ -54,8 +64,44 @@ var _chapter_next_scene: String = ""
 ## 今日岸上开着的去处。再候一日之前这一手不变。
 var shore_hand: PackedStringArray = PackedStringArray()
 var _shore_facilities: Array = []
+## 本港的设施表（进港时从场景数据记下；守城 / 终局页不用它，「再候一日」回寻常岸带时要用）
+var _port_scene_facilities: Array = []
+## 岸带页型：port 寻常 / siege 兴化守城 / ended 终局后港口。UI 状态，不入存档。
+var _shore_mode := "port"
 ## 今日柜上的三样货。明日再看之前这一手不变。
 var broker_hand: PackedStringArray = PackedStringArray()
+
+## 过场接线（cinematics 线）：开场 / 章节卡 / 结局过场 / 抵港横幅 / 活背景 / 标题演出。
+## headless（门禁）下全部旁路：Cinematics.live() 为假，当帧照原逻辑走，不延迟。会话状态在 Cinematics 静态变量里，不进存档。
+const _CINE := preload("res://scripts/cutscene/Cinematics.gd")
+const _CS_PLAYER := preload("res://scripts/cutscene/CutscenePlayer.gd")
+const _CS_CARD := preload("res://scripts/cutscene/ChapterCard.gd")
+const _CS_BANNER := preload("res://scripts/cutscene/PortBanner.gd")
+const _CS_BACKDROP := preload("res://scripts/cutscene/LivingBackdrop.gd")
+const _TITLE_STAGE := preload("res://scripts/cutscene/TitleStage.gd")
+## 活背景幅度：比引擎默认再收一档（正文底下的画不能晃得人头晕）
+const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
+## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
+var _arrival_banner := false
+## 起始标题页的「重看开场」
+var _rewatch_button: Button
+## 起始标题页的「续卷」（有存档才显示）
+var _resume_button: Button
+
+## 人物系统（characters 线）：立绘 / 五维 / 特技 / 人物志。只作展示，不入存档
+const _CHAR_ART := preload("res://scripts/ui/CharacterArt.gd")
+const _CODEX := preload("res://scripts/ui/CharacterCodex.gd")
+## 酒馆人物卡上的小立绘（逻辑像素，4:5）
+const HIRE_PIC := Vector2i(84, 105)
+## 船籍簿职事列表的小头像
+const ROSTER_HEAD := 24
+var _codex: Control
+var _codex_title_button: Button
+var _npc_courtesy: Label
+var _npc_faction: HBoxContainer
+var _npc_profile: VBoxContainer
+var _npc_codex_btn: Button
+var _npc_codex_id := ""
 
 const FACILITY_SUFFIXES := [
 	"_market", "_yamen", "_shipyard", "_tavern", "_inn",
@@ -89,6 +135,8 @@ const GENERIC_FACILITIES := [
 func _ready() -> void:
 	UiTheme.apply(self)
 	_mount_veil()
+	# 活背景：呼吸推拉 + 暗角 + 细颗粒；顺带把过场 / 章节卡 / 横幅的 shader 管线预热掉。headless 下不做事
+	_CS_BACKDROP.attach(background, BACKDROP_OPTS)
 	_inset_stage()
 	message_label.text = ""
 	status_label.bbcode_enabled = true
@@ -106,6 +154,10 @@ func _ready() -> void:
 	investigation_mode.add_theme_stylebox_override("panel", UiTheme.panel())
 	UiTheme.style_button(start_button, true)
 	start_button.add_theme_font_size_override("font_size", UiTheme.SIZE_CARD)
+	if UiTheme.IS_JUANBEN:
+		# 大主钮：马善政 28、字间加宽，196×52 的印面不再显空（第 1 轮评审 minor 4）
+		start_button.add_theme_font_size_override("font_size", 28)
+		start_button.add_theme_font_override("font", UiTheme.seal_font(8))
 	UiTheme.hook_buttons(choices_container, true)
 	choices_container.add_theme_constant_override("separation", 6)
 	UiTheme.hook_buttons(right_facilities)
@@ -115,6 +167,7 @@ func _ready() -> void:
 	UiTheme.style_body(status_label)
 	UiTheme.style_body(message_label)
 	message_label.add_theme_stylebox_override("normal", UiTheme.log_well())
+	_render_log()
 	UiTheme.style_section_label(choices_label)
 	UiTheme.style_section_label(interactive_label)
 	UiTheme.style_heading(port_title, true)
@@ -128,6 +181,8 @@ func _ready() -> void:
 	_mount_status_strip()
 	_lift_ledger()
 	_split_page_footer()
+	($HBoxContainer/CenterArea as Control).gui_input.connect(_on_stage_click)
+	investigation_mode.gui_input.connect(_on_stage_click)
 	update_status_panel()
 	call_deferred("start_game")
 
@@ -156,8 +211,15 @@ func _dress_ledger() -> void:
 	var title := $HBoxContainer/LeftPanel/MarginContainer/VBoxContainer/TitleLabel
 	title.text = "船籍簿"
 	UiTheme.style_heading(title)
-	title.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	# 绢本：抬头与「航海日志」同一字阶（SIZE_HEAD）；正文左右留 18，不贴金线（第 1 轮评审 minor 3）
+	title.add_theme_font_size_override("font_size", UiTheme.SIZE_HEAD if UiTheme.IS_JUANBEN else UiTheme.SIZE_BODY)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if UiTheme.IS_JUANBEN:
+		var lm := $HBoxContainer/LeftPanel/MarginContainer as MarginContainer
+		lm.add_theme_constant_override("margin_left", 28)
+		lm.add_theme_constant_override("margin_right", 28)
+		lm.add_theme_constant_override("margin_top", 18)
+		lm.add_theme_constant_override("margin_bottom", 20)
 	var rule := $HBoxContainer/LeftPanel/MarginContainer/VBoxContainer/HSeparator
 	if rule is Separator:
 		var line := StyleBoxLine.new()
@@ -183,17 +245,37 @@ func _mount_status_strip() -> void:
 	row.add_theme_constant_override("separation", 12)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	strip.add_child(row)
+	# 两行：上行日期、钱、水粮、章（富文本上色）；下行最新一条记事（Label，超长以「…」收尾、全文挂 tooltip）。
+	# 原先下行也是不折行的富文本，超长直接截断，旧闻点睛那半句看不到（第 2 轮 UX M3）
+	var lines := VBoxContainer.new()
+	lines.name = "StatusText"
+	lines.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lines.alignment = BoxContainer.ALIGNMENT_CENTER
+	lines.add_theme_constant_override("separation", 0)
+	lines.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(lines)
 	_status_line = RichTextLabel.new()
 	_status_line.bbcode_enabled = true
-	_status_line.fit_content = false
+	_status_line.fit_content = true
 	_status_line.scroll_active = false
 	_status_line.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_status_line.clip_contents = true
 	_status_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_status_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_status_line.custom_minimum_size = Vector2(0, 48)
 	UiTheme.style_body(_status_line)
-	row.add_child(_status_line)
+	lines.add_child(_status_line)
+	_status_note = Label.new()
+	_status_note.name = "StatusNote"
+	_status_note.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_status_note.clip_text = true
+	_status_note.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_status_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_status_note.custom_minimum_size = Vector2(80, 0)
+	_status_note.mouse_filter = Control.MOUSE_FILTER_PASS
+	_status_note.add_theme_font_override("font", UiTheme.font())
+	_status_note.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	_status_note.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
+	lines.add_child(_status_note)
 	var book := Button.new()
 	book.text = "船籍簿"
 	book.custom_minimum_size = Vector2(120, 40)
@@ -213,7 +295,7 @@ func _lift_ledger() -> void:
 	add_child(layer)
 	var dim := ColorRect.new()
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0.02, 0.05, 0.08, 0.62)
+	dim.color = UiTheme.DIM
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	dim.gui_input.connect(_on_ledger_dim_input)
 	layer.add_child(dim)
@@ -230,6 +312,10 @@ func _lift_ledger() -> void:
 	var close := Button.new()
 	close.text = "合上"
 	close.custom_minimum_size = Vector2(0, 40)
+	if UiTheme.IS_JUANBEN:
+		# 绢本：印钮居中定宽，不拉成通栏红条
+		close.custom_minimum_size = Vector2(160, 40)
+		close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	close.pressed.connect(_close_ledger)
 	UiTheme.style_button(close, true)
 	left_panel.get_node("MarginContainer/VBoxContainer").add_child(close)
@@ -240,6 +326,7 @@ func _lift_ledger() -> void:
 func _split_page_footer() -> void:
 	var margin: MarginContainer = investigation_mode.get_node("MarginContainer")
 	var scroll: ScrollContainer = margin.get_node("Scroll")
+	_page_scroll = scroll
 	margin.remove_child(scroll)
 	var col := VBoxContainer.new()
 	col.name = "PageColumn"
@@ -254,7 +341,10 @@ func _split_page_footer() -> void:
 	if inner is VBoxContainer:
 		inner.add_theme_constant_override("separation", 6)
 	col.add_theme_constant_override("separation", 8)
-	col.add_child(scroll)
+	# 滚动区底边 24px 渐隐：牙行货卡、酒馆第三排原先被视口底边一刀切断（第 2 轮美术 M3）
+	var faded := UiTheme.fade_scroll(scroll, 24)
+	faded.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(faded)
 	var footer := HBoxContainer.new()
 	footer.name = "PageFooter"
 	footer.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -286,8 +376,39 @@ func _toggle_ledger() -> void:
 	if _ledger_layer.visible:
 		_close_ledger()
 		return
+	_dismiss_banner()
 	_ledger_layer.visible = true
 	move_child(_ledger_layer, get_child_count() - 1)
+	UiTheme.pop_in(left_panel)
+
+
+## 离开港页（进设施、开船籍簿 / 人物志 / 航海日志）时抵港横幅快速淡去，不压在内页上（第 2 轮 UX M1）
+func _dismiss_banner() -> void:
+	if is_inside_tree():
+		_CS_BANNER.dismiss_all(get_tree(), 0.15)
+
+
+## 港页工作层（岸带：工席、小笺、门排、动作行；顶上港名匾）淡去 / 回来。
+## 结局册页压在港页上时工作层先退，结局最后一眼只留结局图与册页（第 2 轮美术 M2）；航海日志浮层只让开港名匾。
+## 只动 modulate，不改 visible（门禁量的是排版与可见性），不入存档；headless 下直接设值。
+func _show_port_layer(show: bool, dur := 0.2, plate_only := false) -> void:
+	var nodes: Array = [port_mode.get_node_or_null("PortPlaqueHolder")]
+	if not plate_only:
+		nodes.append(port_mode.get_node_or_null("ShoreBand"))
+	for n in nodes:
+		if not (n is CanvasItem):
+			continue
+		var ci := n as CanvasItem
+		var old: Variant = ci.get_meta(&"nk1_fade_tw") if ci.has_meta(&"nk1_fade_tw") else null
+		if old is Tween and (old as Tween).is_valid():
+			(old as Tween).kill()
+		var target := 1.0 if show else 0.0
+		if dur <= 0.0 or not ci.is_inside_tree() or not _CINE.live():
+			ci.modulate.a = target
+			continue
+		var tw := ci.create_tween()
+		tw.tween_property(ci, "modulate:a", target, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		ci.set_meta(&"nk1_fade_tw", tw)
 
 
 func _close_ledger() -> void:
@@ -312,10 +433,9 @@ func _monsoon_short() -> String:
 
 
 func _latest_log() -> String:
-	var raw := message_label.text.strip_edges()
-	if raw == "":
+	if _log_lines.is_empty():
 		return ""
-	return raw.get_slice("\n", 0).strip_edges()
+	return _log_lines[0].strip_edges()
 
 
 func _chapter_hint() -> String:
@@ -360,18 +480,67 @@ func _refresh_strip() -> void:
 	var note := _latest_log()
 	if note == "":
 		note = _chapter_hint()
-	var dim := UiTheme.hex(UiTheme.TEXT_DIM)
-	_status_line.text = line1 + "\n[color=#%s]%s[/color]" % [dim, note]
+	_status_line.text = line1
+	if _status_note != null:
+		var plain := note.replace("\n", "　")
+		_status_note.text = plain
+		_status_note.tooltip_text = note if note.length() > 30 else ""
 
 
 func _dress_title() -> void:
-	main_title.add_theme_font_override("font", UiTheme.font())
+	main_title.add_theme_font_override("font", UiTheme.title_font())
 	main_title.add_theme_font_size_override("font_size", 52)
 	main_title.add_theme_color_override("font_color", UiTheme.GOLD)
+	UiTheme.style_overlay(main_title)
 	sub_title.add_theme_font_override("font", UiTheme.font())
 	sub_title.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	sub_title.add_theme_color_override("font_color", UiTheme.TEXT)
 	sub_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UiTheme.style_overlay(sub_title)
+	# 绢本：题名是「东亚海域立志传」时换成书法（_setup_title_mode 里 sync_title_logo 切换；夜潮 title_logo() 为 null）
+	var logo := UiTheme.title_logo()
+	if logo != null and main_title.get_parent().get_node_or_null("TitleLogo") == null:
+		main_title.get_parent().add_child(logo)
+		main_title.get_parent().move_child(logo, main_title.get_index())
+		logo.visible = false
+	# 起始标题页的「重看开场」：墨钮，排在开卷钮下面；只在起始标题页显示（_setup_title_mode 切换）
+	if _rewatch_button == null:
+		_rewatch_button = Button.new()
+		_rewatch_button.name = "RewatchButton"
+		_rewatch_button.text = "重看开场"
+		_rewatch_button.custom_minimum_size = Vector2(150, 38)
+		_rewatch_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		_rewatch_button.visible = false
+		UiTheme.style_button(_rewatch_button)
+		_rewatch_button.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+		_rewatch_button.pressed.connect(_on_rewatch_opening)
+		# 「重看开场」与「人物志」并排一行，排在开卷钮下面（characters 线加人物志）
+		var aux := HBoxContainer.new()
+		aux.name = "TitleAux"
+		aux.alignment = BoxContainer.ALIGNMENT_CENTER
+		aux.add_theme_constant_override("separation", 16)
+		aux.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		start_button.get_parent().add_child(aux)
+		# 「续卷」：本机航海日志里记过卷才出，点开航海日志（只能翻阅，不能记录）——回头玩家不必再走一遍序章
+		_resume_button = Button.new()
+		_resume_button.name = "ResumeButton"
+		_resume_button.text = "续卷"
+		_resume_button.custom_minimum_size = Vector2(150, 38)
+		_resume_button.visible = false
+		UiTheme.style_button(_resume_button)
+		_resume_button.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+		_resume_button.pressed.connect(_show_save_dialog.bind(true))
+		aux.add_child(_resume_button)
+		aux.add_child(_rewatch_button)
+		_codex_title_button = Button.new()
+		_codex_title_button.name = "CodexTitleButton"
+		_codex_title_button.text = "人物志"
+		_codex_title_button.custom_minimum_size = Vector2(150, 38)
+		_codex_title_button.visible = false
+		UiTheme.style_button(_codex_title_button)
+		_codex_title_button.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+		_codex_title_button.pressed.connect(_open_codex.bind(""))
+		aux.add_child(_codex_title_button)
 	if title_mode.get_node_or_null("TitlePlaque") != null:
 		return
 	var plaque := Panel.new()
@@ -382,7 +551,7 @@ func _dress_title() -> void:
 	plaque.offset_top = -210
 	plaque.offset_right = 360
 	plaque.offset_bottom = 190
-	plaque.add_theme_stylebox_override("panel", UiTheme.plaque())
+	plaque.add_theme_stylebox_override("panel", UiTheme.title_plaque())
 	title_mode.add_child(plaque)
 	title_mode.move_child(plaque, 0)
 
@@ -400,7 +569,7 @@ func _mount_port_plaque() -> void:
 	port_mode.move_child(holder, 0)
 	var plaque := PanelContainer.new()
 	plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plaque.add_theme_stylebox_override("panel", UiTheme.plaque())
+	plaque.add_theme_stylebox_override("panel", UiTheme.port_plaque())
 	holder.add_child(plaque)
 	port_title.get_parent().remove_child(port_title)
 	plaque.add_child(port_title)
@@ -427,6 +596,8 @@ func _frame_portrait() -> void:
 	frame.add_child(npc_portrait)
 	npc_portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	npc_portrait.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# 绢本：换成旧绢裱框 + 名牌（夜潮返回 false，上面的画框照旧）
+	UiTheme.frame_portrait(frame, npc_portrait)
 
 
 ## 见面是中栏里的一册：对话落在熟漆上，画像没有就不留空框。
@@ -451,7 +622,8 @@ func _dress_npc_sheet() -> void:
 	margin.add_theme_constant_override("margin_left", 22)
 	margin.add_theme_constant_override("margin_right", 22)
 	margin.add_theme_constant_override("margin_top", 16)
-	margin.add_theme_constant_override("margin_bottom", 14)
+	# 底边距 24：「离开」钮离开面板底线与泥金框饰（原 14 时钮的下沿压在框线上）
+	margin.add_theme_constant_override("margin_bottom", 24)
 	sheet.add_child(margin)
 	dialog.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	dialog.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -464,12 +636,123 @@ func _dress_npc_sheet() -> void:
 	UiTheme.style_body(npc_dialog_lbl)
 	npc_actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	npc_actions.add_theme_constant_override("separation", 8)
+	_mount_npc_profile(dialog)
+
+
+## 见面页的人物栏（characters 线）：名字一行并上字号与阵营签，下面身份、五维、特技、小传。
+## 内容由 _show_npc_mode 按 characters.json 填；查无此人时整栏藏起，见面页照旧。
+func _mount_npc_profile(dialog: Node) -> void:
+	var head := HBoxContainer.new()
+	head.name = "NPCHead"
+	head.add_theme_constant_override("separation", 14)
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var at := npc_name_lbl.get_index()
+	dialog.remove_child(npc_name_lbl)
+	head.add_child(npc_name_lbl)
+	npc_name_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_npc_courtesy = _CHAR_ART.label("", UiTheme.SIZE_FOOT + 2, UiTheme.TEXT_DIM)
+	_npc_courtesy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(_npc_courtesy)
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(gap)
+	_npc_faction = HBoxContainer.new()
+	_npc_faction.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_npc_faction.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(_npc_faction)
+	# 翻到人物志里此人那一页
+	_npc_codex_btn = Button.new()
+	_npc_codex_btn.name = "NPCCodexButton"
+	_npc_codex_btn.text = "人物志"
+	_npc_codex_btn.custom_minimum_size = Vector2(88, 32)
+	_npc_codex_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_npc_codex_btn.visible = false
+	UiTheme.style_button(_npc_codex_btn)
+	_npc_codex_btn.add_theme_font_size_override("font_size", UiTheme.SIZE_FOOT + 1)
+	_npc_codex_btn.pressed.connect(func() -> void: _open_codex(_npc_codex_id))
+	head.add_child(_npc_codex_btn)
+	dialog.add_child(head)
+	dialog.move_child(head, at)
+	_npc_profile = VBoxContainer.new()
+	_npc_profile.name = "NPCProfile"
+	_npc_profile.add_theme_constant_override("separation", 8)
+	_npc_profile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_npc_profile.visible = false
+	dialog.add_child(_npc_profile)
+	dialog.move_child(_npc_profile, at + 1)
+
+
+func _fill_npc_profile(ch: Dictionary) -> void:
+	if _npc_profile == null:
+		return
+	for box in [_npc_profile, _npc_faction]:
+		var stale: Array = (box as Node).get_children()
+		for c in stale:
+			(box as Node).remove_child(c)
+			c.queue_free()
+	_npc_courtesy.text = _CHAR_ART.courtesy_of(ch)
+	_npc_profile.visible = not ch.is_empty()
+	_npc_codex_id = str(ch.get("id", ""))
+	_npc_codex_btn.visible = _npc_codex_id != ""
+	if ch.is_empty():
+		return
+	_npc_faction.add_child(_CHAR_ART.faction_chip(ch))
+	var ident := _CHAR_ART.identity_line(ch)
+	var life := _CHAR_ART.life_line(ch)
+	if life != "":
+		ident = "%s　%s" % [ident, life]
+	var ident_lbl := _CHAR_ART.label(ident, UiTheme.SIZE_BODY - 1, UiTheme.TEXT_DIM)
+	_npc_profile.add_child(ident_lbl)
+	_npc_profile.add_child(_CHAR_ART.rule(0.40))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 28)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_npc_profile.add_child(row)
+	row.add_child(_CHAR_ART.attr_block(ch, 150.0, 16))
+	var side := VBoxContainer.new()
+	side.add_theme_constant_override("separation", 10)
+	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	side.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(side)
+	if not _CHAR_ART.traits_of(ch).is_empty():
+		side.add_child(_CHAR_ART.trait_row(ch, 17))
+	# 简介走人物志上屏文本层（按年份取可见段）；设定集原稿 bio_short 带着未来年号与结局，不上屏
+	var bio := _CHAR_ART.label(_CHAR_ART.codex_short(ch), UiTheme.SIZE_BODY - 1, UiTheme.TEXT)
+	bio.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bio.add_theme_constant_override("line_spacing", 6)
+	bio.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	side.add_child(bio)
+	_npc_profile.add_child(_CHAR_ART.rule(0.40))
 
 
 ## 调查页平时铺满中栏；卷首 cg_ 收成居中的册页，顶栏让开。
-func _frame_sheet(floating: bool) -> void:
+## dialogue=true（序章酒棚各页）：收成画面下三分之一的对白条，高度随内容往上长，正文 20px，名牌写说话人。
+func _frame_sheet(floating: bool, dialogue := false) -> void:
 	_show_strip(not floating)
 	var sheet_margin: MarginContainer = investigation_mode.get_node("MarginContainer")
+	_cg_dialogue = floating and dialogue
+	if _page_scroll != null:
+		# 对白条不滚动：滚动区关掉竖向滚动后按内容给最小高，面板随之长高
+		_page_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if _cg_dialogue else ScrollContainer.SCROLL_MODE_AUTO
+	body_text.add_theme_font_size_override("normal_font_size", 20 if _cg_dialogue else UiTheme.SIZE_BODY)
+	if _cg_dialogue:
+		_close_ledger()
+		sheet_margin.add_theme_constant_override("margin_top", 20)
+		sheet_margin.add_theme_constant_override("margin_bottom", 16)
+		investigation_mode.anchor_left = 0.0
+		investigation_mode.anchor_top = 1.0
+		investigation_mode.anchor_right = 1.0
+		investigation_mode.anchor_bottom = 1.0
+		investigation_mode.offset_left = 72
+		investigation_mode.offset_top = -196
+		investigation_mode.offset_right = -72
+		investigation_mode.offset_bottom = -12
+		investigation_mode.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		scene_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		_fit_dialogue.call_deferred()
+		return
+	investigation_mode.grow_vertical = Control.GROW_DIRECTION_BOTH
 	if floating:
 		_close_ledger()
 		sheet_margin.add_theme_constant_override("margin_top", 22)
@@ -484,8 +767,9 @@ func _frame_sheet(floating: bool) -> void:
 		investigation_mode.offset_bottom = 268
 	else:
 		# 顶栏已经占了 68。内页上下再留 22 会把船屋第四排压进离开。
+		# 底边留 22：面板泥金内线在内容区里约 10px 处，页脚的离开 / 明日再看要离开它与框饰 ≥12（第 1 轮评审 M3），滚动区少 14px。
 		sheet_margin.add_theme_constant_override("margin_top", 8)
-		sheet_margin.add_theme_constant_override("margin_bottom", 8)
+		sheet_margin.add_theme_constant_override("margin_bottom", 22)
 		investigation_mode.anchor_left = 0.0
 		investigation_mode.anchor_top = 0.0
 		investigation_mode.anchor_right = 1.0
@@ -497,6 +781,20 @@ func _frame_sheet(floating: bool) -> void:
 	scene_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if floating else HORIZONTAL_ALIGNMENT_LEFT
 
 
+## 对白条的高度随内容：滚动区外包的渐隐层是普通 Control，不往上报最小高，这里按内页 VBox 的最小高直接定面板上沿。
+func _fit_dialogue() -> void:
+	if not _cg_dialogue or _page_scroll == null:
+		return
+	var inner := _page_scroll.get_node_or_null("VBoxContainer") as Control
+	if inner == null:
+		return
+	if not inner.minimum_size_changed.is_connected(_fit_dialogue):
+		inner.minimum_size_changed.connect(_fit_dialogue)
+	var h := inner.get_combined_minimum_size().y + 20.0 + 16.0 + 8.0 + 6.0
+	h = clampf(h, 150.0, get_viewport_rect().size.y - 80.0 if is_inside_tree() else 560.0)
+	investigation_mode.offset_top = -12.0 - h
+
+
 func _on_monthly_notice(text: String) -> void:
 	log_msg(text)
 	update_status_panel()
@@ -505,15 +803,71 @@ func _on_monthly_notice(text: String) -> void:
 func start_game() -> void:
 	if GameState.has_flag("return_to_port"):
 		GameState.flags.erase("return_to_port")
+		# 海图回港：出过港且走了日子 / 换了港才算真正抵港，入港时出抵港横幅（原路折回、读档、设施间来回都不出）
+		_arrival_banner = _CINE.take_arrival(GameState.last_port, Calendar.absolute_day())
 		load_scene(GameState.last_port)
+		_arrival_banner = false
 	else:
 		var start_id = GameManager.scenes_data.get("start_scene", "cg_title")
+		# 新开一局：先演开场（从全黑起播，起始场景在黑幕底下就位，演完揭开）。本会话只自动演一次；headless 不演
+		if _CINE.want_opening():
+			_CINE.opening_seen = true
+			_play_opening(true)
 		load_scene(start_id)
 
 
+func _play_opening(from_black := false) -> void:
+	var p: Node = _CS_PLAYER.play(self, _CINE.OPENING, _CINE.DATA, from_black)
+	if p != null:
+		p.connect("finished", _on_opening_finished, CONNECT_ONE_SHOT)
+
+
+## 开场演完（此刻全黑）：还停在标题页就把标题演出从头再来，黑幕退去时正好看见题名写出、印落下
+func _on_opening_finished() -> void:
+	if not title_mode.visible:
+		return
+	var stage := title_mode.get_node_or_null("TitleStage")
+	if stage != null:
+		stage.call("replay")
+
+
+func _on_rewatch_opening() -> void:
+	_play_opening(false)
+
+
+## 人物志：一层浮页盖在当前画面上（港口页底、标题页进）。focus_id 非空直接开此人详页。不入存档。
+func _open_codex(focus_id := "") -> void:
+	_close_ledger()
+	_dismiss_banner()
+	if is_instance_valid(_codex) and not bool(_codex.get("_closing")):
+		if focus_id != "":
+			_codex.call("show_detail", focus_id, false)
+		return
+	var cx: Control = _CODEX.new()
+	add_child(cx)
+	cx.call("begin", focus_id)
+	_codex = cx
+
+
 func log_msg(text: String) -> void:
-	message_label.text = UiTheme.plain_log(text) + "\n\n" + message_label.text
+	_log_lines.insert(0, UiTheme.plain_log(text))
+	if _log_lines.size() > LOG_KEEP:
+		_log_lines.resize(LOG_KEEP)
+	_render_log()
 	_refresh_strip()
+
+
+## 船籍簿记事栏：最近 8 条，新的在上（宣纸色），旧的淡一档；一条没有时写一行淡字，不留空墨框
+func _render_log() -> void:
+	if _log_lines.is_empty():
+		message_label.text = "[color=#%s]（尚无记事）[/color]" % UiTheme.hex(UiTheme.TEXT_DIM)
+		return
+	var dim := UiTheme.hex(UiTheme.TEXT_DIM)
+	var parts := PackedStringArray()
+	for i in _log_lines.size():
+		var line := _log_lines[i]
+		parts.append(line if i == 0 else "[color=#%s]%s[/color]" % [dim, line])
+	message_label.text = "\n".join(parts)
 
 
 # ══════════════════════════════════════════════════════
@@ -552,7 +906,7 @@ func update_status_panel() -> void:
 	t += "名声　%d　%s\n" % [GameState.fame, GameState.title_name()]
 	if GameState.network != 0 or GameState.merchant_credit != 0:
 		t += "人脉　%d　海商信用　%d\n" % [GameState.network, GameState.merchant_credit]
-	t += "[color=#%s][b]舰队[/b][/color]\n船数　%d　水手　%d\n舱位　%d / %d 料\n耐久　%d / %d\n士气　%d\n" % [
+	t += "[color=#%s][b]船队[/b][/color]\n船数　%d　水手　%d\n舱位　%d / %d 料\n耐久　%d / %d\n士气　%d\n" % [
 		gold,
 		Fleet.ships.size(), Fleet.total_crew(),
 		int(cap_used), int(cap_total),
@@ -563,9 +917,15 @@ func update_status_panel() -> void:
 		Fleet.water, Fleet.food, UiTheme.hex(supply_color), supply_d,
 	]
 
+	# 职事行前的小头像（characters 线）：富文本里只能 add_image，先在串里留记号，末尾 _set_status_text 换图
+	var heads: Array = []
 	if not Crew.hired.is_empty():
 		t += "[color=#%s][b]职事[/b][/color]\n" % gold
 		for c in Crew.roster():
+			var head_tex := _roster_head(str(c.get("id", "")))
+			if head_tex != null:
+				t += "%s%d%s" % [HEAD_MARK, heads.size(), HEAD_MARK]
+				heads.append(head_tex)
 			t += "%s　%s　%s\n" % [
 				Crew.role_def(c.get("role", "")).get("name", ""),
 				c.get("name", ""), _skill_rank(int(c.get("level", 1))),
@@ -576,7 +936,7 @@ func update_status_panel() -> void:
 		if Crew.unpaid_months > 0:
 			t += "　已欠 %d 月" % Crew.unpaid_months
 		t += "[/color]\n"
-	t += "[color=#%s][b]市舶[/b][/color]\n蒲氏关注　%d\n货引　%s\n" % [
+	t += "[color=#%s][b]市舶[/b][/color]\n蒲家留意　%d\n货引　%s\n" % [
 		gold, GameState.pu_attention, permit_str,
 	]
 	if contraband > 0:
@@ -640,8 +1000,40 @@ func update_status_panel() -> void:
 		for it in prog.get("items", []):
 			t = _append_progress_line(t, it)
 
-	status_label.text = t
+	if heads.is_empty():
+		status_label.text = t
+	else:
+		_set_status_text(t, heads)
 	_refresh_strip()
+
+
+## 富文本里的小头像记号（控制符，正文里不会出现）
+const HEAD_MARK := "\u0001"
+
+
+## 职事的小头像：头面方块、烤一道泥金边。headless 或查无立绘时返回 null，这一行照旧只有字。
+func _roster_head(crew_id: String) -> Texture2D:
+	if DisplayServer.get_name() == "headless":
+		return null
+	var ch: Dictionary = GameManager.character_for_crew(crew_id)
+	if ch.is_empty():
+		return null
+	return _CHAR_ART.thumb(ch, Vector2i(ROSTER_HEAD, ROSTER_HEAD), true, Color(UiTheme.GOLD, 0.9))
+
+
+## 船籍簿正文：按记号切开，字段照 bbcode 追加，记号处插小头像（与文字行垂直居中）。
+func _set_status_text(t: String, heads: Array) -> void:
+	# 先置空（text 属性归零，下回整串赋值一定重排），再逐段追加
+	status_label.text = ""
+	var parts := t.split(HEAD_MARK)
+	for i in parts.size():
+		if i % 2 == 1:
+			var k := int(parts[i])
+			if k >= 0 and k < heads.size():
+				status_label.add_image(heads[k], ROSTER_HEAD, ROSTER_HEAD, Color.WHITE, INLINE_ALIGNMENT_CENTER)
+				status_label.append_text(" ")
+		elif parts[i] != "":
+			status_label.append_text(parts[i])
 
 
 func _append_progress_line(text: String, it: Dictionary) -> String:
@@ -791,7 +1183,13 @@ func _load_scene_inner(scene_id: String) -> void:
 	var type = scene_data.get("type", "scene")
 	var loc = scene_data.get("location", "")
 	if str(scene_id).begins_with("cg_"):
-		_set_background_file("bg_world_map.jpg")
+		# 卷首题名与四方沙盘（title 型）压在世界图上；其余 cg_ 序章页的戏都在兴化海口那间漏风的酒棚里（雨夜、惊雷），
+		# 换成酒棚油画并压成夜色——原先一律世界地图，酒棚、老兵的戏也压在标题同款地图上（第 2 轮 UX M6）
+		if type == "title":
+			_set_background_file("bg_world_map.jpg")
+		else:
+			_set_background_file(PROLOGUE_BG)
+			_CS_BACKDROP.set_grade(background, "night")
 	else:
 		_apply_background(type, loc)
 
@@ -839,6 +1237,8 @@ const FACILITY_BG := {
 
 ## 兜底底图：任何背景文件缺失时都回落到它，不让画面黑屏
 const FALLBACK_BG := "bg_sea_route.jpg"
+## 序章酒棚（cg_narrate / veteran / wine_shed / ana / servant / decision / choice 各页）
+const PROLOGUE_BG := "bg_xinghua_wine_shed.jpg"
 
 ## 结局名 → 结算底图。结局对话框弹出时换上，之后的终局港页也一直压着它——游戏已经结束了，
 ## 港口不再是港口，是尾声。键必须与 GameState.finish() 收到的结局名一字不差。
@@ -873,6 +1273,13 @@ func _set_background_file(file_name: String) -> void:
 	if tex != null:
 		background.texture = tex
 		_bg_file = file_name  # 云端 load_texture 按字节解码，纹理没有 resource_path，门禁靠这个名字核对
+		_grade_backdrop(file_name)
+
+
+## 活背景随底图换调（未挂活背景时是空操作）：结局图压暮色，港页转成尾声；其余中性。
+## 标题海图不开 shimmer：这张水墨海图的海面偏灰褐，过 shader 海面蒙版的像素只有约 4%，开了只会零星闪，只用呼吸推拉 + 暗角。
+func _grade_backdrop(file_name: String) -> void:
+	_CS_BACKDROP.set_grade(background, "dusk" if ENDING_BG.values().has(file_name) else "neutral")
 
 
 func _drop_children(box: Node) -> void:
@@ -883,6 +1290,7 @@ func _drop_children(box: Node) -> void:
 
 
 func _enter_panel_mode() -> void:
+	_dismiss_banner()
 	_frame_sheet(false)
 	title_mode.visible = false
 	port_mode.visible = false
@@ -894,6 +1302,9 @@ func _enter_panel_mode() -> void:
 	_slip_host = null
 	_show_investigation_chrome(false)
 	scene_title.visible = true
+	var title_rule := scene_title.get_parent().get_node_or_null("HSeparator") as Control
+	if title_rule != null:
+		title_rule.visible = true
 	choices_label.visible = false
 	choices_label.text = "决断"  # 市场会改写它，此处复位避免上一屏文字残留
 	update_status_panel()
@@ -1038,9 +1449,9 @@ func _setup_market(port_id: String) -> void:
 	for slip_id in broker_hand:
 		slips.add_child(_make_market_row(port_id, slip_id))
 
-	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 12)
-	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	# 「明日再看 / 离开」钉在页脚（与 _add_leave_button 同一处），不跟柜上三样一起滚出画面：
+	# 1280×720 下这一行原先挂在滚动区里，静止时只露出上半截（第 1 轮评审 M2 / M8）
+	var actions: HBoxContainer = _page_footer if _page_footer != null else HBoxContainer.new()
 	var tomorrow := Button.new()
 	tomorrow.text = "明日再看"
 	tomorrow.custom_minimum_size = Vector2(160, 42)
@@ -1053,10 +1464,13 @@ func _setup_market(port_id: String) -> void:
 	leave.custom_minimum_size = Vector2(120, 42)
 	leave.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	leave.pressed.connect(func(): load_scene(port_id))
-	UiTheme.style_choice_button(leave)
+	UiTheme.style_leave_button(leave)
 	leave.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	actions.add_child(leave)
-	choices_container.add_child(actions)
+	if actions != _page_footer:
+		actions.add_theme_constant_override("separation", 12)
+		actions.alignment = BoxContainer.ALIGNMENT_CENTER
+		choices_container.add_child(actions)
 
 	var shut := HFlowContainer.new()
 	shut.name = "BrokerShut"
@@ -1116,13 +1530,18 @@ func _on_broker_shut() -> void:
 
 func _add_contract_panel(port_id: String) -> void:
 	var box := VBoxContainer.new()
+	box.name = "ContractPanel"
 	box.add_theme_constant_override("separation", 4)
 	var cst := GameState.contract_status()
 	if not cst.is_empty():
 		var left: int = int(cst.get("days_left", 0))
 		var left_s := "今日截止" if left == 0 else ("%d 日后截止" % left if left > 0 else "已逾期")
+		# 一行：在身委办 + 交货 / 毁约（原先文字一行、钮另起一行）
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
 		var head := Label.new()
 		head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		head.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		head.text = "在身委办：%s ×%d（共 %d）送往 %s，%s。交清尚可得 %d 钱。舱里现有 %d。" % [
 			GameManager.get_good_name(str(cst.get("good_id", ""))),
 			int(cst.get("remaining", 0)),
@@ -1132,9 +1551,7 @@ func _add_contract_panel(port_id: String) -> void:
 			int(cst.get("pay_left", 0)),
 			Fleet.cargo_qty(str(cst.get("good_id", ""))),
 		]
-		box.add_child(head)
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
+		row.add_child(head)
 		if str(cst.get("dest", "")) == port_id:
 			var deliver := Button.new()
 			deliver.text = "交货"
@@ -1148,13 +1565,11 @@ func _add_contract_panel(port_id: String) -> void:
 		box.add_child(row)
 	else:
 		var offer := GameState.contract_offer(port_id)
-		var head := Label.new()
-		head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		if GameState.contract_port_closed(port_id):
-			head.text = "这个月已经毁约或误期，牙行不再委办。下个月再来。"
-			box.add_child(head)
-		elif offer.is_empty():
-			head.text = "本月牙行没有外埠委办。"
+		# 只在要写一句话时才建这枚 Label：委办摘要走自己的一行，旧的 head 不进树就成了孤儿节点，退出时报字体 RID 泄漏
+		if GameState.contract_port_closed(port_id) or offer.is_empty():
+			var head := Label.new()
+			head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			head.text = "这个月已经毁约或误期，牙行不再委办。下个月再来。" if GameState.contract_port_closed(port_id) else "本月牙行没有外埠委办。"
 			box.add_child(head)
 		else:
 			var dest := str(offer.get("dest", ""))
@@ -1167,13 +1582,61 @@ func _add_contract_panel(port_id: String) -> void:
 			var coast: int = int(plan_c.get("days", 0))
 			var deadline: int = int(offer.get("deadline_days", 0))
 			var route := "熟路" if Voyage.is_known_route(port_id, dest) else "生路"
-			head.text = "委办：送 %s ×%d 到%s（%s）。酬 %d 钱，其中溢价 %d，交货不砸盘。静风针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日，期限 %d 日。" % [
+			# 720p 下委办细则原先占去半页，把货卡的买卖钮挤出折线（第 2 轮美术 M3 / UX M2）：
+			# 收成一行摘要 +「细则」钮；细则（航期、八成、保货、受潮、告警）展开才见，同文也挂在摘要的 tooltip 上。数值与回调不动。
+			var summary_row := HBoxContainer.new()
+			summary_row.name = "ContractSummary"
+			summary_row.add_theme_constant_override("separation", 8)
+			box.add_child(summary_row)
+			var summary := Label.new()
+			summary.name = "ContractLine"
+			summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			summary.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			summary.text = "委办　送 %s×%d 到%s（%s）・酬 %d・限 %d 日" % [
 				GameManager.get_good_name(gid), int(offer.get("qty", 0)),
-				GameManager.get_port_name(dest), route,
+				GameManager.get_port_name(dest), route, int(offer.get("purse", 0)), deadline,
+			]
+			summary.mouse_filter = Control.MOUSE_FILTER_PASS
+			summary_row.add_child(summary)
+			var detail := VBoxContainer.new()
+			detail.name = "ContractDetail"
+			detail.add_theme_constant_override("separation", 2)
+			detail.visible = _contract_detail_open
+			var flag := Label.new()
+			flag.name = "ContractFlag"
+			flag.visible = false
+			flag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			flag.add_theme_font_size_override("font_size", 16)
+			flag.add_theme_color_override("font_color", UiTheme.HONEY)
+			summary_row.add_child(flag)
+			var more := Button.new()
+			more.name = "ContractMore"
+			more.text = "收起" if _contract_detail_open else "细则"
+			more.custom_minimum_size = Vector2(76, 32)
+			more.pressed.connect(func() -> void:
+				_contract_detail_open = not detail.visible
+				detail.visible = _contract_detail_open
+				more.text = "收起" if _contract_detail_open else "细则")
+			summary_row.add_child(more)
+			UiTheme.style_chip(more)
+			var take_btn := Button.new()
+			take_btn.text = "接下委办"
+			take_btn.custom_minimum_size = Vector2(120, 32)
+			take_btn.pressed.connect(_on_accept_contract.bind(offer.duplicate(true)))
+			summary_row.add_child(take_btn)
+			UiTheme.style_chip(take_btn, true)
+			box.add_child(detail)
+			var note_col := UiTheme.TEXT_DIM
+			var warn_col := UiTheme.HONEY
+			var lead := Label.new()
+			lead.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			lead.text = "酬 %d 钱，其中溢价 %d，交货不砸盘。静风针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日，期限 %d 日。" % [
 				int(offer.get("purse", 0)), int(offer.get("premium", 0)),
 				rumb, off, coast, deadline,
 			]
-			box.add_child(head)
+			lead.add_theme_font_size_override("font_size", 16)
+			lead.add_theme_color_override("font_color", UiTheme.TEXT)
+			detail.add_child(lead)
 			var calm_note := Label.new()
 			calm_note.text = "遇事约：针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日。期限按静风针路加余量。" % [
 				int(plan_r.get("expected_days", 0)), int(plan_o.get("expected_days", 0)), int(plan_c.get("expected_days", 0)),
@@ -1181,9 +1644,9 @@ func _add_contract_panel(port_id: String) -> void:
 			if bool(plan_r.get("wind_changes", false)) or bool(plan_o.get("wind_changes", false)) or bool(plan_c.get("wind_changes", false)) or bool(plan_r.get("departs_on_new_wind", false)):
 				calm_note.text += " 启航后的风和今天不一定相同，日数已按逐日累加。"
 			calm_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			calm_note.add_theme_font_size_override("font_size", 13)
-			calm_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
-			box.add_child(calm_note)
+			calm_note.add_theme_font_size_override("font_size", 16)
+			calm_note.add_theme_color_override("font_color", note_col)
+			detail.add_child(calm_note)
 			var safe_note := Label.new()
 			safe_note.text = "八成：针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日。十次里大约八次不迟于这个数。" % [
 				int(plan_r.get("safe_days", 0)), int(plan_o.get("safe_days", 0)), int(plan_c.get("safe_days", 0)),
@@ -1194,9 +1657,9 @@ func _add_contract_panel(port_id: String) -> void:
 			if rumb_thin or off_thin or coast_thin:
 				safe_note.text += " 有航法平均数赶得上，八成日数超过期限，不算稳。"
 			safe_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			safe_note.add_theme_font_size_override("font_size", 13)
-			safe_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
-			box.add_child(safe_note)
+			safe_note.add_theme_font_size_override("font_size", 16)
+			safe_note.add_theme_color_override("font_color", note_col)
+			detail.add_child(safe_note)
 			var hold_note := Label.new()
 			hold_note.text = "保货：针路 %d / 外洋 %d / 傍岸 %d。十次里至少有这么多次，逃走没被抢走货。" % [
 				int(plan_r.get("hold_tenths", 0)), int(plan_o.get("hold_tenths", 0)), int(plan_c.get("hold_tenths", 0)),
@@ -1208,14 +1671,16 @@ func _add_contract_panel(port_id: String) -> void:
 				cargo_bits += ("、" if cargo_bits != "" else "") + "外洋"
 			if int(plan_c.get("safe_days", 0)) <= deadline and int(plan_c.get("hold_tenths", 0)) < 8:
 				cargo_bits += ("、" if cargo_bits != "" else "") + "傍岸"
+			var risks := PackedStringArray()
 			if cargo_bits != "":
 				hold_note.text += " %s按八成日数赶得上，保货不到八成。小船打不赢，这数不含买路。" % cargo_bits
-				hold_note.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
+				hold_note.add_theme_color_override("font_color", warn_col)
+				risks.append("保货")
 			else:
-				hold_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
+				hold_note.add_theme_color_override("font_color", note_col)
 			hold_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			hold_note.add_theme_font_size_override("font_size", 13)
-			box.add_child(hold_note)
+			hold_note.add_theme_font_size_override("font_size", 16)
+			detail.add_child(hold_note)
 			var need_qty := int(offer.get("qty", 0))
 			var unit_cost := Economy.buy_price(port_id, gid)
 			var held_qty := Fleet.cargo_qty(gid)
@@ -1229,8 +1694,10 @@ func _add_contract_panel(port_id: String) -> void:
 				purse_lbl.text = "这里一件 %d 钱。钱和舱里现有的，凑得出 %d 件，单子要 %d 件。不够也能接，交不齐就拿不满酬，也没有名声。" % [
 					unit_cost, can_carry, need_qty,
 				]
-				purse_lbl.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
-				box.add_child(purse_lbl)
+				purse_lbl.add_theme_font_size_override("font_size", 16)
+				purse_lbl.add_theme_color_override("font_color", warn_col)
+				detail.add_child(purse_lbl)
+				risks.append("凑不齐")
 			var spoil_rate := Voyage.good_perish_rate(gid)
 			if spoil_rate > 0.0 and can_carry > 0:
 				var spoil_note := Label.new()
@@ -1249,26 +1716,36 @@ func _add_contract_panel(port_id: String) -> void:
 					spoil_bits += ("、" if spoil_bits != "" else "") + "傍岸"
 				if spoil_bits != "":
 					spoil_note.text += " %s按八成日数赶得上，受潮不到八成。" % spoil_bits
-					spoil_note.add_theme_color_override("font_color", Color(1.0, 0.75, 0.45))
+					spoil_note.add_theme_color_override("font_color", warn_col)
+					risks.append("受潮")
 				else:
-					spoil_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.7))
+					spoil_note.add_theme_color_override("font_color", note_col)
 				spoil_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				spoil_note.add_theme_font_size_override("font_size", 13)
-				box.add_child(spoil_note)
+				spoil_note.add_theme_font_size_override("font_size", 16)
+				detail.add_child(spoil_note)
 			if int(plan_c.get("expected_days", 0)) > deadline:
 				var warn := Label.new()
 				warn.text = "傍岸遇事约 %d 日，超过期限 %d 日。" % [int(plan_c.get("expected_days", 0)), deadline]
-				warn.add_theme_color_override("font_color", Color(1.0, 0.7, 0.4))
-				box.add_child(warn)
+				warn.add_theme_font_size_override("font_size", 16)
+				warn.add_theme_color_override("font_color", warn_col)
+				detail.add_child(warn)
+				risks.append("傍岸误期")
 			elif coast > deadline:
 				var warn_calm := Label.new()
 				warn_calm.text = "傍岸静风就要 %d 日，赶不上。" % coast
-				warn_calm.add_theme_color_override("font_color", Color(1.0, 0.7, 0.4))
-				box.add_child(warn_calm)
-			var take := Button.new()
-			take.text = "接下委办"
-			take.pressed.connect(_on_accept_contract.bind(offer.duplicate(true)))
-			box.add_child(take)
+				warn_calm.add_theme_font_size_override("font_size", 16)
+				warn_calm.add_theme_color_override("font_color", warn_col)
+				detail.add_child(warn_calm)
+				risks.append("傍岸赶不上")
+			# 细则收起时摘要行尾挂一句风险提要（藤黄），整段细则也挂在摘要 tooltip 上
+			if not risks.is_empty():
+				flag.text = "・".join(risks)
+				flag.visible = true
+			var tip := PackedStringArray()
+			for c in detail.get_children():
+				if c is Label:
+					tip.append((c as Label).text)
+			summary.tooltip_text = "\n".join(tip)
 	choices_container.add_child(box)
 
 
@@ -1306,7 +1783,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	var card := PanelContainer.new()
 	card.custom_minimum_size = Vector2(200, 188)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", UiTheme.shore_door())
+	UiTheme.paper_card(card)
 	var margin := MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_theme_constant_override("margin_left", 12)
@@ -1502,7 +1979,7 @@ func _setup_yamen(port_id: String) -> void:
 		_slip_chip(_slip_row(permit), "请领　%d" % duty, _on_apply_permit, true)
 	if contraband > 0:
 		_slip_note(permit, "舱底尚有违禁 %d 件。报不进明账，验引也遮不住。" % contraband, UiTheme.CINNABAR)
-	_slip_note(permit, "蒲氏关注度 %d　%s" % [GameState.pu_attention, _attention_desc()])
+	_slip_note(permit, "蒲家留意 %d　%s" % [GameState.pu_attention, _attention_desc()])
 
 	_setup_reporting()
 	# 本地 main：泉州对峙期（1276-77）征船名册三选一，非对峙期内部自行返回
@@ -1641,7 +2118,7 @@ func _lock_slip_wrap(lbl: Label) -> void:
 
 func _slip_body() -> VBoxContainer:
 	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel", UiTheme.shore_door())
+	UiTheme.paper_card(card)
 	var in_flow := _slip_host is HFlowContainer
 	if in_flow:
 		card.custom_minimum_size = Vector2(480, 0)
@@ -1708,6 +2185,38 @@ func _slip_chip(row: Node, text: String, cb: Callable, accent := false) -> Butto
 	row.add_child(b)
 	UiTheme.style_chip(b, accent)
 	return b
+
+
+## 工席上只有这一个动作时，整张卡都可点（照 _make_shore_door：卡底下铺一层扁平钮，悬停时纸被照亮）。
+## 卡里的容器让开鼠标；小钮本身仍在最上面，点它照旧。第 1 轮评审 UX M6：玩家会去点卡，卡原先没有反应。
+func _slip_whole(btn: Button) -> void:
+	var card: Node = btn.get_parent()
+	while card != null and not (card is PanelContainer):
+		card = card.get_parent()
+	if card == null or card.get_node_or_null("WholeHit") != null:
+		return
+	var panel := card as PanelContainer
+	for c in panel.find_children("*", "Container", true, false):
+		if (c as Control).tooltip_text == "":
+			(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hit := Button.new()
+	hit.name = "WholeHit"
+	hit.flat = true
+	hit.focus_mode = Control.FOCUS_NONE
+	hit.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var empty := StyleBoxEmpty.new()
+	for s in ["normal", "hover", "pressed", "focus", "disabled"]:
+		hit.add_theme_stylebox_override(s, empty)
+	hit.tooltip_text = btn.tooltip_text
+	hit.pressed.connect(func() -> void:
+		if is_instance_valid(btn) and not btn.disabled:
+			btn.pressed.emit())
+	hit.mouse_entered.connect(func() -> void:
+		if not btn.disabled:
+			panel.add_theme_stylebox_override("panel", UiTheme.shore_door_hover()))
+	hit.mouse_exited.connect(func() -> void: panel.add_theme_stylebox_override("panel", UiTheme.shore_door()))
+	panel.add_child(hit)
+	panel.move_child(hit, 0)
 
 
 # ── 船屋 ────────────────────────────────────────────
@@ -2041,6 +2550,7 @@ func _setup_tavern(port_id: String) -> void:
 
 	var intel := _slip_body()
 	_slip_title(intel, "行情", "费一日")
+	# 「打听」费一日（advance_days：耗水粮、推逐日结算）：花时间的动作和花钱的一样不做整卡可点，免得点卡误过一天（第 2 轮工程 m5）
 	_slip_chip(_slip_row(intel), "打听", _on_gather_intel.bind(port_id))
 
 	_setup_hiring(port_id)
@@ -2084,18 +2594,21 @@ func _on_gather_intel(port_id: String) -> void:
 
 
 ## 酒馆募人。每种职事至多一人，故已雇之职不再列出候选。
+## characters 线：候选人与在船人员都排成横向人物卡（小立绘 + 名 + 职事品级 + 五维迷你条 + 钱数 + 钮）；
+## 卡上文案与数值照旧（「火长　初习」「入伙 120　月俸 60」「雇入」「辞退」），钮的回调不变。
 func _setup_hiring(port_id: String) -> void:
 	# 在船的人
 	if not Crew.hired.is_empty():
 		for c in Crew.roster():
-			var aboard := _slip_body()
 			var rname: String = Crew.role_def(c.get("role", "")).get("name", "")
-			var aboard_hint := _slip_title(aboard, str(c.get("name", "")), "%s　%s　月俸 %d" % [
-				rname, _skill_rank(int(c.get("level", 1))), int(c.get("wage", 0)),
-			])
-			aboard_hint.add_theme_color_override("font_color", UiTheme.MOSS)
+			var aboard := _person_slip(GameManager.character_for_crew(str(c.get("id", ""))), str(c.get("name", "")),
+				"%s　%s　月俸 %d" % [rname, _skill_rank(int(c.get("level", 1))), int(c.get("wage", 0))],
+				int(c.get("level", 1)))
+			var aboard_hint := aboard.get_node("Head/Aside") as Label
+			aboard_hint.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.MOSS))
 			var rid: String = str(c.get("role", ""))
-			_slip_chip(_slip_row(aboard), "辞退", _on_dismiss_crew.bind(rid))
+			var foot := _person_foot(aboard, "在船")
+			_slip_chip(foot, "辞退", _on_dismiss_crew.bind(rid))
 
 	var cands := Crew.candidates_at(port_id)
 	if cands.is_empty():
@@ -2106,15 +2619,112 @@ func _setup_hiring(port_id: String) -> void:
 	for c in cands:
 		var cid: String = str(c.get("id", ""))
 		var role: Dictionary = Crew.role_def(c.get("role", ""))
-		var card := _slip_body()
-		_slip_title(card, str(c.get("name", "")), "%s　%s" % [
+		var cch: Dictionary = GameManager.character_for_crew(cid)
+		var card := _person_slip(cch, str(c.get("name", "")), "%s　%s" % [
 			role.get("name", ""), _skill_rank(int(c.get("level", 1))),
-		])
-		_slip_note(card, "入伙 %d　月俸 %d" % [Crew.signing_fee(cid), int(c.get("wage", 0))])
-		var hire := _slip_chip(_slip_row(card), "雇入", _on_hire_candidate.bind(cid), true)
+		], int(c.get("level", 1)))
+		# 职事真正管用的是这一句（航程、价差、减员……），写在品级下面；五维只作展示，压淡（第 1 轮评审 UX M5）
+		var eff := str(role.get("effect_hint", ""))
+		if eff != "":
+			var eff_lbl := Label.new()
+			eff_lbl.name = "EffectHint"
+			eff_lbl.text = eff
+			eff_lbl.add_theme_font_override("font", UiTheme.font())
+			eff_lbl.add_theme_font_size_override("font_size", 16)
+			eff_lbl.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.TEXT))
+			eff_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			card.add_child(eff_lbl)
+			card.move_child(eff_lbl, 1)
+		# 只压淡细条，字不压：整条 modulate 0.55 时纸上 16px 字实渲染只剩 2.2–3.2:1（返工自查，cap3 rend 实测）
+		var strip := card.get_node_or_null("AttrStrip") as Control
+		if strip != null:
+			for col in strip.get_children():
+				for part in col.get_children():
+					if not (part is HBoxContainer):
+						(part as CanvasItem).modulate = Color(1, 1, 1, 0.55)
+		# 在酒馆里见过画像与五维的候选，人物志里记作已识（本会话，不入存档）
+		_CHAR_ART.note_met(str(cch.get("id", "")))
+		var foot := _person_foot(card, "入伙 %d　月俸 %d" % [Crew.signing_fee(cid), int(c.get("wage", 0))])
+		var hire := _slip_chip(foot, "雇入", _on_hire_candidate.bind(cid), true)
+		_seal_chip(hire)
 		hire.tooltip_text = "%s\n\n%s\n%s" % [
 			c.get("bio", ""), role.get("desc", ""), role.get("effect_hint", ""),
 		]
+
+
+## 人物卡的右栏：名（绢本马善政）+ 品级点 / 旁注 / 五维迷你条。返回右栏，调用方再往下接 _person_foot。
+## ch 为空（设定集里查无此人）时画框里是一方墨，五维条不出，文案照旧。
+func _person_slip(ch: Dictionary, title: String, aside: String, level := 0) -> VBoxContainer:
+	var body := _slip_body()
+	var row := HBoxContainer.new()
+	row.name = "PersonRow"
+	row.add_theme_constant_override("separation", 14)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_child(row)
+	var tex: Texture2D = _CHAR_ART.thumb(ch, HIRE_PIC) if not ch.is_empty() else null
+	row.add_child(_CHAR_ART.framed(tex, Vector2(HIRE_PIC), true))
+	var info := VBoxContainer.new()
+	info.name = "Info"
+	info.add_theme_constant_override("separation", 2)
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(info)
+	var head := VBoxContainer.new()
+	head.name = "Head"
+	head.add_theme_constant_override("separation", 0)
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info.add_child(head)
+	var name_row := HBoxContainer.new()
+	name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(name_row)
+	var name_lbl := Label.new()
+	name_lbl.name = "Name"
+	name_lbl.text = title
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# 与其它工席抬头同一写法：绢本宣纸上是马善政靛青（大四号），夜潮是石青正文字。这里直接写定，不等卡片换色
+	name_lbl.add_theme_font_override("font", UiTheme.title_font() if UiTheme.IS_JUANBEN else UiTheme.font())
+	name_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY + (4 if UiTheme.IS_JUANBEN else 0))
+	name_lbl.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.TIDE))
+	name_lbl.set_meta(&"nk1_title", true)
+	name_row.add_child(name_lbl)
+	if level > 0:
+		name_row.add_child(_CHAR_ART.pips(level, true))
+	var hint := Label.new()
+	hint.name = "Aside"
+	hint.text = aside
+	UiTheme.style_footnote(hint)
+	hint.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.TEXT_DIM))
+	head.add_child(hint)
+	if not ch.is_empty():
+		var strip := _CHAR_ART.attr_strip(ch, 56.0, true)
+		info.add_child(strip)
+	return info
+
+
+## 人物卡底行：左边一句钱数 / 在船，右边钮。返回放钮的那一格。
+func _person_foot(info: VBoxContainer, note: String) -> HBoxContainer:
+	var foot := HBoxContainer.new()
+	foot.name = "Foot"
+	foot.add_theme_constant_override("separation", 8)
+	foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info.add_child(foot)
+	var lbl := Label.new()
+	lbl.text = note
+	UiTheme.style_footnote(lbl)
+	lbl.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.TEXT_DIM))
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	foot.add_child(lbl)
+	return foot
+
+
+## 募人钮放大成一方朱印：马善政、四周留足，一眼看得见（仍是 style_chip 的朱砂四态与印面字）。
+func _seal_chip(btn: Button) -> void:
+	if not UiTheme.IS_JUANBEN:
+		return
+	btn.add_theme_font_override("font", UiTheme.title_font())
+	btn.add_theme_font_size_override("font_size", 18)
+	btn.custom_minimum_size = Vector2(78, 34)
 
 
 ## 职事品级。数据里只有 1–3，不再用星号。
@@ -2430,9 +3040,16 @@ func _gather_price_intel(port_id: String) -> String:
 # ══════════════════════════════════════════════════════
 
 func _add_npc_button(npc_id: String, fallback_name: String) -> void:
+	# characters 线：设定集里有此人就排成人物卡（小立绘 + 五维迷你条，底行写身份），文案「在侧」「见」照旧
+	var ch: Dictionary = GameManager.character_for_npc(npc_id)
+	if not ch.is_empty():
+		var info := _person_slip(ch, fallback_name, "在侧")
+		var foot := _person_foot(info, _CHAR_ART.codex_title(ch))
+		_slip_whole(_slip_chip(foot, "见", _on_meet_npc.bind(npc_id, fallback_name)))
+		return
 	var slip := _slip_body()
 	_slip_title(slip, fallback_name, "在侧")
-	_slip_chip(_slip_row(slip), "见", _on_meet_npc.bind(npc_id, fallback_name))
+	_slip_whole(_slip_chip(_slip_row(slip), "见", _on_meet_npc.bind(npc_id, fallback_name)))
 
 
 func _on_meet_npc(npc_id: String, fallback_name: String) -> void:
@@ -2454,22 +3071,37 @@ func _show_npc_mode(npc_id: String, fallback_name: String) -> void:
 	var spoken := str(NPC_GREETING.get(npc_id, ""))
 	if spoken == "":
 		spoken = str(npc_data.get("function", "这人看了你一眼，没先开口。"))
-	var tex_path := "res://assets/sprite_" + npc_id.replace("pilot_", "").replace("merchant_", "") + ".png"
-	npc_portrait.texture = GameManager.load_texture(tex_path)
+	# 立绘以 characters.json 的 portrait 为准（缩到框里的尺寸、带 mipmap）；查无此人或缺图时回落旧的 sprite_ 图
+	var ch: Dictionary = GameManager.character_for_npc(npc_id)
+	var tex: Texture2D = _CHAR_ART.thumb(ch, Vector2i(256, 320)) if not ch.is_empty() else null
+	if tex == null:
+		var tex_path := "res://assets/sprite_" + npc_id.replace("pilot_", "").replace("merchant_", "") + ".png"
+		tex = GameManager.load_texture(tex_path)
+	npc_portrait.texture = tex
 	npc_portrait.get_parent().visible = npc_portrait.texture != null
+	var plate_name := npc_portrait.get_parent().get_node_or_null("NamePlate/Name") as Label
+	if plate_name != null:
+		plate_name.text = n_name
+		plate_name.add_theme_font_override("font", _CHAR_ART.title_font_for(n_name))
+	_fill_npc_profile(ch)
+	_CHAR_ART.note_met(str(ch.get("id", "")))
 
 	for child in npc_actions.get_children():
 		child.queue_free()
 
 	npc_dialog_lbl.text = spoken
 	_npc_speech = npc_dialog_lbl
+	# 纸笺左齐，与正文、五维栏同一条左轴（原先居中，见面页两套对齐轴；第 2 轮美术 minor 11）
 	_begin_benches(npc_actions)
+	if _slip_host is HFlowContainer:
+		(_slip_host as HFlowContainer).alignment = FlowContainer.ALIGNMENT_BEGIN
 	var intel := _slip_body()
 	_slip_title(intel, "行情", "邻座牙人")
-	_slip_chip(_slip_row(intel), "打听", _on_npc_intel.bind(n_name))
+	_slip_whole(_slip_chip(_slip_row(intel), "打听", _on_npc_intel.bind(n_name)))
 	if npc_id == "customs_official":
 		var bribe := _slip_body()
 		_slip_title(bribe, "疏通", "关注　减 15")
+		# 花钱的动作不做整卡可点，免得点卡误塞了钱
 		_slip_chip(_slip_row(bribe), "塞　50", _on_npc_bribe.bind(n_name), true)
 	_end_benches()
 
@@ -2482,7 +3114,7 @@ func _show_npc_mode(npc_id: String, fallback_name: String) -> void:
 	leave_btn.custom_minimum_size = Vector2(160, 42)
 	leave_btn.pressed.connect(_on_npc_leave)
 	npc_actions.add_child(leave_btn)
-	UiTheme.style_choice_button(leave_btn)
+	UiTheme.style_leave_button(leave_btn)
 	leave_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 
@@ -2533,6 +3165,7 @@ func _setup_title_mode(scene_data: Dictionary) -> void:
 	# 长标题与分段副标题按宽换行居中（云端 c148/00b4）；盒宽与字号由 Main.tscn / 绢本主题定，不在此覆盖。
 	main_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	main_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UiTheme.sync_title_logo(main_title)
 	sub_title.text = _unescape_scene_text(str(scene_data.get("cg_sub", "")))
 	sub_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sub_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2550,6 +3183,20 @@ func _setup_title_mode(scene_data: Dictionary) -> void:
 	start_button.pressed.connect(_on_start_game_pressed.bind(next_scene))
 	title_button_connected = true
 
+	# 起始标题页：占位的「…………」换成「开卷」（路由照旧取 choices[0].next），另给「重看开场」；
+	# 卷首四方沙盘的「…………」只改显示为「翻页」（数据与路由不动）。标题演出（书法写出、引首章、分段逐行洇出）见 TitleStage。
+	var is_start := current_scene_id == str(GameManager.scenes_data.get("start_scene", "cg_title"))
+	if start_button.text.replace("…", "").strip_edges() == "":
+		start_button.text = "开卷" if is_start else "翻页"
+	_rewatch_button.visible = is_start and _CS_PLAYER.has_cutscene(_CINE.OPENING, _CINE.DATA)
+	_codex_title_button.visible = is_start and not GameManager.all_characters().is_empty()
+	var has_save := false
+	for slot in range(1, SaveLoad.SLOTS + 1):
+		has_save = has_save or SaveLoad.has_save(slot)
+	_resume_button.visible = is_start and has_save
+	_rewatch_button.get_parent().visible = _rewatch_button.visible or _codex_title_button.visible or _resume_button.visible
+	_TITLE_STAGE.present(title_mode, main_title, sub_title, [start_button, _resume_button, _rewatch_button, _codex_title_button], is_start)
+
 
 func _on_start_game_pressed(next_scene: String) -> void:
 	load_scene(next_scene)
@@ -2562,6 +3209,19 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 	investigation_mode.visible = false
 	npc_mode.visible = false
 	port_mode.visible = true
+	_show_port_layer(true, 0.0)
+	# 港名先写上，再分终局 / 守城：原先两条分支在赋值前就 return，匾上留着上一港的名字，
+	# 终局匾再拿旧字拼「・结局名」，进出一次设施就累加一截（第 2 轮 UX B1）
+	port_title.text = str(scene_data.get("title", "未知港口"))
+	_port_scene_facilities = scene_data.get("facilities", []).duplicate()
+	_build_shore()
+	update_status_panel()
+
+
+## 按页型重排岸带：终局后港口页 / 兴化守城页 / 寻常港页三选一。进港与「再候一日」都走这里，
+## 每次先 _clear_shore() 把岸带与旧左右栏清空，旧节点不会残留，也不会翻倍。只是 UI 状态，不入存档。
+func _build_shore() -> void:
+	_clear_shore()
 	# 本地 main 的终局线入口：终局后港口页 / 兴化守城页（函数在文件末尾补回段）
 	if GameState.is_ended():
 		_setup_ended_port()
@@ -2569,12 +3229,38 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 	if _siege_active():
 		_setup_siege_port()
 		return
-	port_title.text = str(scene_data.get("title", "未知港口"))
-	var shore_list: Array = scene_data.get("facilities", []).duplicate()
+	_shore_mode = "port"
+	_fit_port_title()
+	var shore_list: Array = _port_scene_facilities.duplicate()
 	shore_list.append_array(_special_cards())
 	_shore_facilities = shore_list
 	_refresh_shore()
-	update_status_panel()
+
+
+## 清岸带：岸门带、旧左右栏（云端港页已不用，守城 / 终局旧代码往里塞过卡）一律清空并按页型设可见。
+func _clear_shore() -> void:
+	for col in [left_facilities, right_facilities]:
+		var stale_col: Array = (col as Node).get_children()
+		for child in stale_col:
+			(col as Node).remove_child(child)
+			child.queue_free()
+		(col as Control).visible = false
+	var band := port_mode.get_node_or_null("ShoreBand")
+	if band != null:
+		var stale: Array = band.get_children()
+		for child in stale:
+			band.remove_child(child)
+			child.queue_free()
+	shore_hand = PackedStringArray()
+
+
+## 港名匾字号：长题（终局「泉州・泉州蒲氏的船」、守城「兴化军・围城」）按字数收小，不冲出墨刷
+func _fit_port_title() -> void:
+	var n := port_title.text.length()
+	var px := UiTheme.SIZE_PORT
+	if UiTheme.IS_JUANBEN and n > 5:
+		px = clampi(int(round(float(UiTheme.SIZE_PORT) * 5.0 / float(n))), 34, UiTheme.SIZE_PORT)
+	port_title.add_theme_font_size_override("font_size", px)
 
 
 func _shore_pin_shipyard() -> bool:
@@ -2582,12 +3268,12 @@ func _shore_pin_shipyard() -> bool:
 
 
 func _refresh_shore() -> void:
-	for child in left_facilities.get_children():
-		child.queue_free()
-	for child in right_facilities.get_children():
-		child.queue_free()
-	left_facilities.visible = false
-	right_facilities.visible = false
+	for col in [left_facilities, right_facilities]:
+		var stale_col: Array = (col as Node).get_children()
+		for child in stale_col:
+			(col as Node).remove_child(child)
+			child.queue_free()
+		(col as Control).visible = false
 	# 「今日只开三处」只在寻常设施里发牌；本地 main 的终局特殊卡（special_* / siege_*）是历史节点，来了就一定在岸上
 	var regular: Array = []
 	var specials: PackedStringArray = PackedStringArray()
@@ -2611,12 +3297,30 @@ func _refresh_shore() -> void:
 		band.remove_child(child)
 		child.queue_free()
 
-	var hint := Label.new()
-	hint.text = "今日只开三处。"
-	UiTheme.style_footnote(hint)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	band.add_child(hint)
+	if _shore_mode == "siege":
+		band.add_child(_siege_stat_slip())
+	elif _shore_mode == "ended":
+		band.add_child(_epilogue_slip())
+	else:
+		var hint := Label.new()
+		hint.text = "今日只开三处。"
+		UiTheme.style_footnote(hint)
+		hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# 行首注：左齐第一扇岸门（门排铺满整行，第一扇门就从行首起）。原先是 14px 悬在画面正中的一行，
+		# 像漏掉的调试字（第 1 轮评审 minor 7）。绢本下注文落在一方墨底小笺上，16px。
+		if UiTheme.IS_JUANBEN:
+			hint.add_theme_font_size_override("font_size", 16)
+			var note := PanelContainer.new()
+			note.name = "ShoreNote"
+			note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			note.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			note.add_theme_stylebox_override("panel", UiTheme.log_well())
+			note.add_child(hint)
+			band.add_child(note)
+		else:
+			UiTheme.style_overlay(hint)
+			hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			band.add_child(hint)
 
 	var doors := HBoxContainer.new()
 	doors.name = "ShoreDoors"
@@ -2657,9 +3361,58 @@ func _refresh_shore() -> void:
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	band.add_child(actions)
-	actions.add_child(_shore_action("看风", Vector2(220, 48), true, _on_set_sail))
-	actions.add_child(_shore_action("再候一日", Vector2(160, 42), false, _on_shore_wait))
+	if _shore_mode == "ended":
+		# 终局：不出海、不候日，只留重读与读档
+		if GameState.ended_text != "":
+			actions.add_child(_shore_action("重读结局", Vector2(220, 48), true, _on_reread_ending))
+	elif _shore_mode == "siege":
+		# 围城中不出海：动作行去掉「看风」
+		actions.add_child(_shore_action("再候一日", Vector2(160, 42), false, _on_shore_wait))
+	else:
+		actions.add_child(_shore_action("看风", Vector2(220, 48), true, _on_set_sail))
+		actions.add_child(_shore_action("再候一日", Vector2(160, 42), false, _on_shore_wait))
 	actions.add_child(_shore_action("航海日志", Vector2(140, 42), false, _show_save_dialog))
+	# characters 线：人物志（浮页，不过日子、不入存档）
+	if not GameManager.all_characters().is_empty():
+		actions.add_child(_shore_action("人物志", Vector2(120, 42), false, _open_codex.bind("")))
+
+
+func _on_reread_ending() -> void:
+	_show_notice_dialog(GameState.ended, GameState.ended_at, GameState.ended_text)
+
+
+## 岸带上方的墨底小笺（守城城防账、终局航海札记共用）：log_well 暗墨底、泥金淡边，16px 起。
+func _band_slip(slip_name: String) -> Array:
+	var slip := PanelContainer.new()
+	slip.name = slip_name
+	slip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var box := UiTheme.log_well()
+	if box is StyleBoxFlat:
+		var well := (box as StyleBoxFlat).duplicate() as StyleBoxFlat
+		well.bg_color = Color(UiTheme.INK_SOLID, 0.86) if UiTheme.IS_JUANBEN else well.bg_color
+		well.content_margin_left = 18
+		well.content_margin_right = 18
+		well.content_margin_top = 10
+		well.content_margin_bottom = 12
+		box = well
+	slip.add_theme_stylebox_override("panel", box)
+	var col := VBoxContainer.new()
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_theme_constant_override("separation", 4)
+	slip.add_child(col)
+	return [slip, col]
+
+
+func _band_line(col: Node, text: String, color: Color, px := 16, title := false) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.add_theme_font_override("font", UiTheme.title_font() if title else UiTheme.font())
+	l.add_theme_font_size_override("font_size", px)
+	l.add_theme_color_override("font_color", color)
+	col.add_child(l)
+	return l
 
 
 func _shore_band() -> VBoxContainer:
@@ -2691,16 +3444,20 @@ func _shore_action(label: String, size: Vector2, accent: bool, callback: Callabl
 
 func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(220, 128)
+	card.custom_minimum_size = Vector2(220, 104 if UiTheme.IS_JUANBEN else 128)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", UiTheme.shore_door())
+	UiTheme.paper_card(card)
+	if UiTheme.IS_JUANBEN:
+		# 工席是港画上最亮的一块（宣纸 v≈0.85，港画均值 0.21–0.29）：纸面压到旧绢调，字不压（self_modulate 只染面板自身）
+		card.self_modulate = UiTheme.DOOR_PAPER_TINT
+		card.add_child(_door_watermark(fac))
 
 	var margin := MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_theme_constant_override("margin_left", 14)
 	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_bottom", 10)
+	margin.add_theme_constant_override("margin_top", 12 if not UiTheme.IS_JUANBEN else 8)
+	margin.add_theme_constant_override("margin_bottom", 10 if not UiTheme.IS_JUANBEN else 8)
 	card.add_child(margin)
 
 	var hbox := HBoxContainer.new()
@@ -2709,6 +3466,15 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	margin.add_child(hbox)
 
 	var icon_id := str(fac.get("id", "")).replace("city_", "")
+	# 本地终局线的守城卡 / 特殊卡没有自己的图标文件，借同性质设施的图标，别留空框
+	const SPECIAL_ICON := {
+		"siege_muster": "yamen", "siege_grain": "market", "siege_wall": "shipyard",
+		"siege_envoy": "tavern", "siege_nangshan": "yamen", "siege_nunnery": "temple",
+		"special_hanjiang_escape": "shipyard", "special_resign_1275": "exam",
+		"special_yashan": "shipyard", "special_gangshou_end": "yamen",
+	}
+	if SPECIAL_ICON.has(icon_id):
+		icon_id = SPECIAL_ICON[icon_id]
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = Vector2(46, 46)
 	frame.clip_contents = true
@@ -2770,6 +3536,40 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	return card
 
 
+## 工席右半的淡墨大字水印（牙 / 贡 / 会…，马善政 90px，α0.07）：卡右半原先空着，14 港同一构图（第 2 轮美术 minor 1）
+const DOOR_MARK := {
+	"market": "牙", "exam": "贡", "guild": "会", "shipyard": "船", "tavern": "酒", "inn": "店",
+	"residence": "宅", "temple": "寺", "yamen": "舶",
+	"siege_muster": "兵", "siege_grain": "粮", "siege_wall": "城", "siege_envoy": "使", "siege_nangshan": "伏",
+	"special_hanjiang_escape": "帆", "special_resign_1275": "辞", "special_yashan": "崖", "special_gangshou_end": "纲",
+}
+
+
+func _door_watermark(fac: Dictionary) -> Control:
+	var holder := Control.new()
+	holder.name = "DoorMark"
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.clip_contents = true
+	var key := str(fac.get("id", "")).replace("city_", "")
+	var ch := str(DOOR_MARK.get(key, str(fac.get("title", "")).left(1)))
+	var mark := Label.new()
+	mark.text = ch
+	mark.set_meta(&"nk1_title", true)  # 纸上换色 / 换字体只做一次的记号：水印自带字体与色，不再改
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mark.add_theme_font_override("font", UiTheme.title_font())
+	mark.add_theme_font_size_override("font_size", 90)
+	mark.add_theme_color_override("font_color", Color(UiTheme.PAPER_TEXT, 0.08))
+	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	mark.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
+	mark.offset_left = -130
+	mark.offset_right = -14
+	mark.offset_top = -10
+	mark.offset_bottom = 14
+	holder.add_child(mark)
+	return holder
+
+
 func _make_shore_shut(fac: Dictionary) -> Button:
 	var btn := Button.new()
 	btn.text = str(fac.get("title", "去处"))
@@ -2797,7 +3597,8 @@ func _on_shore_wait() -> void:
 	GameState.shore_salt += 1
 	GameManager.advance_days(1)
 	log_msg("在岸上又候了一日，门又换了几处。")
-	_refresh_shore()
+	# 按页型重排（守城页候一日仍是守城页，不会退回寻常岸带多出「看风」）
+	_build_shore()
 	update_status_panel()
 
 
@@ -2828,13 +3629,20 @@ func _on_set_sail() -> void:
 
 	if res["passed"]:
 		GameState.consume_permit()
+		# 记下出港（港、日）：回港时据此判断是不是真正抵港，决定出不出抵港横幅（会话内，不进存档）
+		_CINE.note_departure(GameState.last_port, Calendar.absolute_day())
 		get_tree().change_scene_to_file("res://scenes/SeaChart.tscn")
 
 
 
-func _show_save_dialog() -> void:
+## read_only：从标题页「续卷」进来——还没开局，「记录」不可用，只留「翻阅」。
+func _show_save_dialog(read_only := false) -> void:
 	if is_instance_valid(_save_host):
 		_save_host.queue_free()
+	_dismiss_banner()
+	# 日志册页上沿正落在港名匾字脚上：匾先淡去，合上时回来（第 2 轮美术 minor 2）
+	if port_mode.visible:
+		_show_port_layer(false, 0.15, true)
 	var host := Control.new()
 	host.name = "SaveSheet"
 	host.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -2844,7 +3652,7 @@ func _show_save_dialog() -> void:
 
 	var dim := ColorRect.new()
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0.02, 0.05, 0.08, 0.62)
+	dim.color = UiTheme.DIM
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	dim.gui_input.connect(_on_save_dim_input)
 	host.add_child(dim)
@@ -2882,9 +3690,11 @@ func _show_save_dialog() -> void:
 	for slot in range(1, SaveLoad.SLOTS + 1):
 		var n := int(slot)
 		var slip := _slip_body()
-		_slip_title(slip, "第 %d 卷" % n, SaveLoad.save_label(n))
+		# 卷号写中文数字：马善政的「1」像小写 l（第 1 轮评审 minor 12）
+		_slip_title(slip, "第%s卷" % _cn_chapter(n), SaveLoad.save_label(n))
 		var row := _slip_row(slip)
-		_slip_chip(row, "记录", _on_save_slot.bind(n), true)
+		var write := _slip_chip(row, "记录", _on_save_slot.bind(n), true)
+		write.disabled = read_only
 		var read := _slip_chip(row, "翻阅", _on_load_slot.bind(n))
 		read.disabled = not SaveLoad.has_save(n)
 	var benches := col.get_node("Benches") as HFlowContainer
@@ -2903,6 +3713,7 @@ func _show_save_dialog() -> void:
 	UiTheme.style_button(close, true)
 	close.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	UiTheme.pop_in(sheet)
 
 
 func _on_save_dim_input(event: InputEvent) -> void:
@@ -2916,6 +3727,8 @@ func _close_save_sheet() -> void:
 	if is_instance_valid(_save_host):
 		_save_host.queue_free()
 	_save_host = null
+	if port_mode.visible and not is_instance_valid(_chapter_host):
+		_show_port_layer(true, 0.15, true)
 
 
 func _on_save_slot(slot: int) -> void:
@@ -2948,10 +3761,19 @@ func _on_enter_port(port_id: String) -> void:
 		return
 	if _check_absent_from_xinghua():
 		return
+	var first_port := GameState.visited_ports.is_empty()
 	GameState.visit_port(port_id)
 	var res := GameState.try_advance_chapter()
 	if res.get("advanced", false) or res.get("resolved", false):
 		_show_chapter_dialog(res)
+	elif first_port and GameState.chapter == 1 and _CINE.live():
+		# 序章走完、第一次踏上港口（岸页开张）：第一章开卷。只演卡，不弹册页。
+		# 卡紧跟在港页 load_scene 之后：黑场第 0 帧就压满，不先露出港页再压黑（第 2 轮美术 M1）
+		_CS_CARD.play(self, 1, _CINE.DATA, _CINE.year_text(Calendar.year, Calendar.ERAS), true)
+	elif _arrival_banner and _CINE.live():
+		# 海图回港的真正抵港：旧绢挂签报副题（港名已在顶上的墨刷匾里，同屏不写第二遍），居中挂在匾下；
+		# 不拦输入、2.65 秒自退；开章 / 了结时让位给章节卡与结局过场。
+		_CS_BANNER.show_banner(self, port_id, _CINE.DATA, 0.285, false)
 	update_status_panel()
 
 
@@ -2963,11 +3785,11 @@ func _era_summary_lines(years: int) -> Array:
 	var route: String = GameState.era_main_route()
 	if trips > 0:
 		if route != "":
-			lines.append("这%s，你的船跑了 %d 趟，走得最多的是%s。" % [
-				"几年" if years > 0 else "一段日子", trips, route,
+			lines.append("这%s，你的船跑了%s趟，走得最多的是%s。" % [
+				"几年" if years > 0 else "一段日子", _cn_num(trips, true), route,
 			])
 		else:
-			lines.append("这%s，你的船跑了 %d 趟。" % ["几年" if years > 0 else "一段日子", trips])
+			lines.append("这%s，你的船跑了%s趟。" % ["几年" if years > 0 else "一段日子", _cn_num(trips, true)])
 	if GameState.merchant_credit >= 20:
 		lines.append("牙行里提起你的名字，不必再加「泉州那个姓陈的」。")
 	elif GameState.merchant_credit <= -10:
@@ -2981,6 +3803,21 @@ func _era_summary_lines(years: int) -> Array:
 
 
 func _show_chapter_dialog(res: Dictionary) -> void:
+	# 过场先演（晋升 → 章节卡，了结 / 结局 → 结局过场），演完带标记回到这里；headless 下当帧直接往下走
+	if _cinema_before_sheet(res):
+		return
+	# 结算底图随册页一起换（有结局过场时正是过场全黑的那一刻，画面上看不见切换）
+	var ending := str(res.get("ending", ""))
+	if ending != "" and ENDING_BG.has(ending):
+		_set_background_file(ENDING_BG[ending])  # 结算画面：台词压在结局图上
+	var resolved_sheet: bool = bool(res.get("resolved", false))
+	if resolved_sheet:
+		# 结局 / 了结册页：港页工作层（工席、小笺、门排、动作行、港名匾）0.2 秒退去；崖山外海这类调查页的正文与选项整页隐去，
+		# 结局最后一眼只留结局图与册页（第 2 轮美术 M2）。关册页走 load_scene，版面整页重建，自然回来。不入存档。
+		_dismiss_banner()
+		_show_port_layer(false, 0.2)
+		investigation_mode.visible = false
+		npc_mode.visible = false
 	if is_instance_valid(_chapter_host):
 		_chapter_host.queue_free()
 	_chapter_next_scene = str(res.get("scene", ""))
@@ -2994,7 +3831,8 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 
 	var dim := ColorRect.new()
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0.05, 0.03, 0.02, 0.55)
+	# 结局册页压得更深（宣纸工席退了之后仍有港画高光）；升章册页照旧 0.55
+	dim.color = Color(0.05, 0.03, 0.02, 0.72 if resolved_sheet and UiTheme.IS_JUANBEN else 0.55)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	host.add_child(dim)
 
@@ -3004,7 +3842,10 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	host.add_child(center)
 
 	var sheet := PanelContainer.new()
-	sheet.custom_minimum_size = Vector2(640, 0)
+	# 结局册页的长文加宽到 820；升章册页 640（第 1 轮评审 UX M8）
+	var wide: bool = bool(res.get("resolved", false)) or str(res.get("ending", "")) != ""
+	var sheet_w := 820 if wide and UiTheme.IS_JUANBEN else 640
+	sheet.custom_minimum_size = Vector2(sheet_w, 0)
 	sheet.add_theme_stylebox_override("panel", UiTheme.panel())
 	center.add_child(sheet)
 
@@ -3016,7 +3857,7 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	sheet.add_child(margin)
 
 	var col := VBoxContainer.new()
-	col.custom_minimum_size = Vector2(596, 0)
+	col.custom_minimum_size = Vector2(sheet_w - 44, 0)
 	col.add_theme_constant_override("separation", 10)
 	margin.add_child(col)
 
@@ -3026,10 +3867,14 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 		kicker.text = "了结"
 		ok_text = "记下这一纲"
 	else:
-		kicker.text = "第 %s 章・%s" % [
+		# 中文数字不留空格（「第 二 章」是给阿拉伯数字留的格式，第 2 轮美术 minor 3）
+		kicker.text = "第%s章・%s" % [
 			_cn_chapter(GameState.chapter), GameState.chapter_def().get("name", ""),
 		]
 	UiTheme.style_section_label(kicker)
+	if UiTheme.IS_JUANBEN:
+		kicker.add_theme_font_size_override("font_size", 16)
+		kicker.add_theme_font_override("font", UiTheme.body_spaced(2))
 	kicker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(kicker)
 
@@ -3046,7 +3891,7 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	if years > 0:
 		var era := _era_summary_lines(years)
 		var costs: Array = GameManager.skip_years(years)
-		var block := "【%d 年后・%s】\n" % [years, Calendar.get_date_string()]
+		var block := "【%s年后・%s】\n" % [_cn_num(years, true), Calendar.get_date_string()]
 		if not era.is_empty():
 			block += "\n".join(era) + "\n"
 		if not costs.is_empty():
@@ -3054,22 +3899,31 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 		raw = block + "\n" + raw
 		GameState.clear_era()
 		update_status_panel()
+	var body_w := sheet_w - 80
+	# 正文区高：按画布高度放（720 下约 420，16:10 下多出来的高度也用上），按行高取整，底行不再裁半行
+	var body_h := _chapter_body_height(raw, body_w)
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(560, _chapter_body_height(raw))
+	scroll.name = "SheetScroll"
+	scroll.custom_minimum_size = Vector2(body_w, body_h)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	col.add_child(scroll)
 
 	var body := Label.new()
 	body.text = raw
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.custom_minimum_size = Vector2(560, 0)
+	body.custom_minimum_size = Vector2(body_w, 0)
 	body.add_theme_font_override("font", UiTheme.font())
 	body.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	body.add_theme_color_override("font_color", UiTheme.TEXT)
 	body.add_theme_constant_override("line_spacing", UiTheme.LINE_BODY)
 	scroll.add_child(body)
+	# 滚动区底边 24px 渐隐：还有下文时底行淡进墨里，而不是被一刀裁掉半行（第 1 轮评审 minor 2）
+	col.add_child(UiTheme.fade_scroll(scroll, 24))
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 2)
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(gap)
 
 	var ok := Button.new()
 	ok.text = ok_text
@@ -3077,16 +3931,64 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	col.add_child(ok)
 	UiTheme.style_button(ok, true)
 	ok.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# 绢本：印钮居中、定宽，不拉成一条通栏红条（夜潮照旧通栏）
+	if UiTheme.IS_JUANBEN:
+		ok.custom_minimum_size = Vector2(240, 44)
+		ok.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 	update_status_panel()
+	# 不是由章节卡揭开的（没有过场、或结局过场全黑之后）：册页淡入 + 微缩放，不再一帧弹出
+	if not res.get("_cinema", false) or not res.get("advanced", false):
+		UiTheme.pop_in(sheet)
 
 
-func _chapter_body_height(text: String) -> int:
+## 正文区高：按行估高（每行 body_w / 字号 个字），上限按画布高度（画布高 − 300，720 下 420），
+## 并取整到整行高，免得底行裁出半行。
+func _chapter_body_height(text: String, body_w := 560) -> int:
+	var per_line := maxi(12, int(floor(float(body_w) / float(UiTheme.SIZE_BODY + 1))))
+	var line_h := int(ceil(UiTheme.font().get_height(UiTheme.SIZE_BODY))) + UiTheme.LINE_BODY
 	var lines := 0
 	for raw_line in text.split("\n"):
 		var n := raw_line.length()
-		lines += 1 if n == 0 else maxi(1, int(ceil(float(n) / 28.0)))
-	return clampi(lines * 28 + 8, 88, 340)
+		lines += 1 if n == 0 else maxi(1, int(ceil(float(n) / float(per_line))))
+	var cap_h := 340
+	if is_inside_tree():
+		cap_h = clampi(int(get_viewport_rect().size.y) - 300, 300, 560)
+	var want := clampi(lines * line_h + 8, 88, cap_h)
+	return int(floor(float(want - 8) / float(line_h))) * line_h + 8
+
+
+## 过场先于册页（cinematics 线）：晋升先演章节卡（年号按当前历法 + 跳年现算），了结 / 结局先演 data/cutscenes.json
+## endings 映射里的结局过场；演完带 _cinema 标记回到 _show_chapter_dialog 弹原册页。
+## headless / 巡检关闭 / 映射缺失时返回 false，调用方当帧照原逻辑走。
+func _cinema_before_sheet(res: Dictionary) -> bool:
+	if res.get("_cinema", false) or not _CINE.live():
+		return false
+	var node: Node = null
+	if res.get("advanced", false):
+		var year: int = Calendar.year + int(res.get("years", 0))
+		node = _CS_CARD.play(self, GameState.chapter, _CINE.DATA, _CINE.year_text(year, Calendar.ERAS))
+	elif res.get("resolved", false):
+		var key := _ending_cinema_key(res)
+		if key != "":
+			node = _CS_PLAYER.play_ending(self, key, _CINE.DATA)
+	if node == null:
+		return false
+	var after := res.duplicate()
+	after["_cinema"] = true
+	# 章节卡：纸面开始退去时就在卡底下建好压暗层与册页（连同跳年后的状态匾），纸退去揭开的就是最终画面；
+	# 结局过场在全黑时发 finished，照旧接 finished
+	var sig := "exiting" if node.has_signal("exiting") else "finished"
+	node.connect(sig, _show_chapter_dialog.bind(after), CONNECT_ONE_SHOT)
+	return true
+
+
+## 结局过场的键：_show_notice_dialog 带来的结局名（忠肃…）；章末了结（res.scene 是 ending_* 场景）取 GameState.ending_id
+func _ending_cinema_key(res: Dictionary) -> String:
+	var key := str(res.get("ending", ""))
+	if key == "" and str(res.get("scene", "")) != "" and GameState.ending_id != "":
+		key = GameState.ending_id
+	return key
 
 
 func _confirm_chapter_sheet() -> void:
@@ -3163,11 +4065,9 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 	_enter_panel_mode()
 	var cinematic := str(scene_data.get("id", "")).begins_with("cg_")
 	if cinematic:
-		_frame_sheet(true)
-		if str(scene_data.get("id", "")) == "cg_title":
-			scene_title.add_theme_font_size_override("font_size", 46)
-		else:
-			scene_title.add_theme_font_size_override("font_size", 30)
+		# 序章酒棚各页：下三分之一对白条（type=title 的卷首四页走 _setup_title_mode，不到这里）
+		_frame_sheet(true, true)
+		scene_title.add_theme_font_size_override("font_size", 24)
 	else:
 		scene_title.add_theme_font_size_override("font_size", UiTheme.SIZE_HEAD)
 
@@ -3182,6 +4082,10 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 		shown_title = _interior_title(str(scene_data.get("id", "")))
 	scene_title.visible = shown_title != ""
 	scene_title.text = shown_title
+	var title_rule := scene_title.get_parent().get_node_or_null("HSeparator") as Control
+	if title_rule != null:
+		# 对白条的旁白页（说话人「——」）没有名牌，名牌下那道金线也收起
+		title_rule.visible = scene_title.visible or not cinematic
 	var shown_body := str(scene_data.get("body", "")).strip_edges()
 	if shown_body == "":
 		shown_body = str(scene_data.get("cg_sub", "")).strip_edges()
@@ -3215,7 +4119,7 @@ func _add_fallback_return_button() -> void:
 	btn.text = "返回上一处"
 	btn.pressed.connect(func(): load_scene(target))
 	choices_container.add_child(btn)
-	UiTheme.style_choice_button(btn)
+	UiTheme.style_leave_button(btn)
 	choices_label.visible = true
 
 
@@ -3226,7 +4130,7 @@ func _add_leave_button(port_id: String) -> void:
 	btn.pressed.connect(func(): load_scene(port_id))
 	var host: Node = _page_footer if _page_footer != null else choices_container
 	host.add_child(btn)
-	UiTheme.style_choice_button(btn)
+	UiTheme.style_leave_button(btn)
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	choices_label.visible = false
 
@@ -3263,10 +4167,21 @@ func show_choices(choices: Array) -> void:
 		# 卷首翻页只有一串省略号，收成居中朱印，不再铺成整条。
 		# 真正的岔路（货引 / 策问）留挑签。
 		if cinematic and _is_page_turn(label):
-			UiTheme.style_button(btn, true)
-			btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-			btn.custom_minimum_size = Vector2(168, 40)
-			btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			if _cg_dialogue:
+				# 对白条：翻页只是一枚靠右的小「续 ▼」墨钮（点画面任意处也续读）；路由照旧取这条 choice。
+				# ▾（U+25BE）文楷子集里没有，用 ▼
+				btn.text = "续 ▼"
+				btn.set_meta(&"page_turn", true)
+				UiTheme.style_button(btn, false)
+				btn.add_theme_font_size_override("font_size", 16)
+				btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+				btn.custom_minimum_size = Vector2(88, 34)
+				btn.size_flags_horizontal = Control.SIZE_SHRINK_END
+			else:
+				UiTheme.style_button(btn, true)
+				btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+				btn.custom_minimum_size = Vector2(168, 40)
+				btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			page_turns += 1
 		shown += 1
 	if cinematic and shown > 0 and page_turns == shown:
@@ -3370,6 +4285,32 @@ func _discovery_id_for(token: String) -> String:
 		if str(d.get("name", "")) == want or str(d.get("id", "")) == want:
 			return str(d.get("id", ""))
 	return ""
+
+
+## 序章对白条：点画面任意处续读（只在这一页全是翻页、没有真岔路时；浮层开着时点不到这里）
+func _on_stage_click(event: InputEvent) -> void:
+	if not _cg_dialogue or not investigation_mode.visible:
+		return
+	if not (event is InputEventMouseButton):
+		return
+	var mb := event as InputEventMouseButton
+	if not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var first: Button = null
+	for c in choices_container.get_children():
+		if not (c is Button):
+			continue
+		if not (c as Button).has_meta(&"page_turn"):
+			return
+		if first == null and not (c as Button).disabled:
+			first = c
+	if first != null:
+		accept_event()
+		first.pressed.emit()
+
+
+func _gui_input(event: InputEvent) -> void:
+	_on_stage_click(event)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -3782,45 +4723,49 @@ func _resign_decided() -> bool:
 ## 1275 年十二月：辞呈已批，出了嘉会门又后悔。三条路，用航向选，不用按钮选。
 
 func _setup_ended_port() -> void:
-	port_title.text = "%s・%s" % [port_title.text, GameState.ended]
+	# 港名已由 _setup_port_mode 写好；这里只拼一次结局名（不再拿旧匾文字累加）
+	var base := port_title.text
+	if base.find("・") >= 0 and base.ends_with(GameState.ended):
+		base = base.trim_suffix("・" + GameState.ended)
+	port_title.text = "%s・%s" % [base, GameState.ended]
+	_fit_port_title()
+	# 云端港口页没有左右栏：札记是岸带上方一方墨笺，动作行只留「重读结局」「航海日志」「人物志」
+	_shore_mode = "ended"
+	_shore_facilities = []
+	_refresh_shore()
+	update_status_panel()
 
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(560, 260)
-	var m := MarginContainer.new()
-	m.add_theme_constant_override("margin_left", 16)
-	m.add_theme_constant_override("margin_right", 16)
-	m.add_theme_constant_override("margin_top", 12)
-	m.add_theme_constant_override("margin_bottom", 12)
-	panel.add_child(m)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 6)
-	m.add_child(v)
 
-	var head := Label.new()
-	head.text = "航海札记"
-	head.add_theme_font_size_override("font_size", 22)
-	v.add_child(head)
-
+## 终局后港口页的航海札记：墨底小笺，标题马善政泥金，逐行 16px；行多时在 220 高里滚动、底边渐隐
+func _epilogue_slip() -> Control:
+	var parts := _band_slip("EpilogueSlip")
+	var slip: PanelContainer = parts[0]
+	var col: VBoxContainer = parts[1]
+	slip.custom_minimum_size = Vector2(760, 0)
+	_band_line(col, "航海札记", UiTheme.GOLD_HI, 24, true)
+	var rule := HSeparator.new()
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(rule)
+	var lines_box := VBoxContainer.new()
+	lines_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lines_box.add_theme_constant_override("separation", 4)
+	lines_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var n := 0
 	for line in GameState.epilogue_lines():
-		var l := Label.new()
-		l.text = line
+		var l := _band_line(lines_box, str(line), UiTheme.TEXT, 16)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size = Vector2(520, 0)
-		l.add_theme_font_size_override("font_size", 14)
-		v.add_child(l)
-
-	left_facilities.add_child(panel)
-
-	if GameState.ended_text != "":
-		var review := Button.new()
-		review.text = "重读结局"
-		review.custom_minimum_size = Vector2(250, 44)
-		review.pressed.connect(func():
-			_show_notice_dialog(GameState.ended, GameState.ended_at, GameState.ended_text)
-		)
-		right_facilities.add_child(review)
-
-	_add_save_button()
+		l.custom_minimum_size = Vector2(724, 0)
+		n += 1
+	if n <= 6:
+		col.add_child(lines_box)
+	else:
+		var scroll := ScrollContainer.new()
+		scroll.name = "EpilogueScroll"
+		scroll.custom_minimum_size = Vector2(724, 170)
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroll.add_child(lines_box)
+		col.add_child(UiTheme.fade_scroll(scroll, 24))
+	return slip
 
 
 
@@ -3896,68 +4841,99 @@ func _setup_quanzhou_standoff(port_id: String) -> void:
 ## 港口页特殊卡：只在特定年月与旗标下出现。
 
 func _setup_siege_port() -> void:
-	port_title.text = "兴化军・围城　第 %d/%d 阵" % [
-		GameState.siege_get("round"), GameState.SIEGE_ROUNDS_MAX,
-	]
+	port_title.text = "兴化军・围城"
+	_fit_port_title()
+	# 云端港口页没有左右栏，守城的账与五张卡都走岸带：卡以 siege_* 身份全部上岸（不受「今日只开三处」），
+	# 城防账是岸带上方一方墨笺；福州尼寺本就不可操作，岸带一行也放不下六扇门，写成账里一行
+	var cards: Array = []
+	for fac in _siege_cards():
+		if str(fac.get("id", "")) != CARD_SIEGE_NUNNERY:
+			cards.append(fac)
+	_shore_mode = "siege"
+	_shore_facilities = cards
+	_refresh_shore()
+	update_status_panel()
 
-	var stat := PanelContainer.new()
-	var m := MarginContainer.new()
-	m.add_theme_constant_override("margin_left", 14)
-	m.add_theme_constant_override("margin_right", 14)
-	m.add_theme_constant_override("margin_top", 10)
-	m.add_theme_constant_override("margin_bottom", 10)
-	stat.add_child(m)
-	var v := VBoxContainer.new()
-	m.add_child(v)
-	var head := Label.new()
-	head.text = "城头白布八字：生为宋臣，死为宋鬼"
-	head.add_theme_font_size_override("font_size", 18)
-	head.add_theme_color_override("font_color", Color(0.95, 0.9, 0.75))
-	v.add_child(head)
-	var body := Label.new()
+
+## 守城城防账：马善政泥金题「城头白布八字」，一行 16px 兵粮城墙士气，缺粮时一枚朱砂「急」字小印领朱字告警
+func _siege_stat_slip() -> Control:
+	var parts := _band_slip("SiegeStat")
+	var slip: PanelContainer = parts[0]
+	var col: VBoxContainer = parts[1]
 	var grain: int = GameState.siege_get("grain")
 	var rounds_left: int = grain / GameState.SIEGE_GRAIN_PER_ROUND
-	body.text = "兵 %d / 上限 %d　粮 %d（够打 %d 阵）　城墙 %d/%d　士气 %d%s" % [
+	var fought: int = GameState.siege_get("round")
+	var head := HBoxContainer.new()
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_theme_constant_override("separation", 18)
+	col.add_child(head)
+	_band_line(head, "城头白布八字　生为宋臣　死为宋鬼", UiTheme.GOLD_HI, 22, true)
+	var rounds := _band_line(head, "三阵・尚未接战" if fought <= 0 else "三阵・已守%s阵" % _cn_num(fought), UiTheme.TEXT, 18, true)
+	rounds.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_band_line(col, "兵 %d（上限 %d）　粮 %d・够打%s阵　城墙 %d / %d　士气 %d%s" % [
 		GameState.siege_get("troops"), GameState.siege_troop_cap(),
-		grain, rounds_left, GameState.siege_get("wall"), GameState.SIEGE_WALL_MAX,
+		grain, _cn_num(rounds_left), GameState.siege_get("wall"), GameState.SIEGE_WALL_MAX,
 		GameState.siege_get("morale"),
 		"　石手军在城" if str(GameState.siege.get("shishou", "")) == "kept" else "",
-	]
-	body.add_theme_font_size_override("font_size", 14)
-	v.add_child(body)
-
+	], UiTheme.TEXT, 16)
+	var warn := ""
 	if rounds_left < 1:
-		var warn := Label.new()
-		warn.text = "⚠ 粮已不够打下一阵。此时出战即城破。"
-		warn.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4))
-		warn.add_theme_font_size_override("font_size", 14)
-		v.add_child(warn)
-	elif rounds_left == 1 and GameState.siege_get("round") < GameState.SIEGE_ROUNDS_MAX - 1:
-		var warn2 := Label.new()
-		warn2.text = "⚠ 粮只够再打一阵。要守满三阵，还得屯粮。"
-		warn2.add_theme_color_override("font_color", Color(1.0, 0.8, 0.45))
-		warn2.add_theme_font_size_override("font_size", 14)
-		v.add_child(warn2)
-
-	left_facilities.add_child(stat)
-
+		warn = "粮已不够打下一阵。此时出战即城破。"
+	elif rounds_left == 1 and fought < GameState.SIEGE_ROUNDS_MAX - 1:
+		warn = "粮只够再打一阵。要守满三阵，还得屯粮。"
+	if warn != "":
+		var row := HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_theme_constant_override("separation", 8)
+		col.add_child(row)
+		row.add_child(_seal_mark("急"))
+		var wl := _band_line(row, warn, UiTheme.CINNABAR if rounds_left < 1 else UiTheme.HONEY, 16)
+		wl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	for fac in _siege_cards():
-		var card := _make_facility_card(fac)
-		right_facilities.add_child(card)
+		if str(fac.get("id", "")) == CARD_SIEGE_NUNNERY:
+			_band_line(col, "%s：%s。这件事没有选项。" % [str(fac.get("title", "福州尼寺")), str(fac.get("subtitle", ""))], UiTheme.TEXT_DIM, 16)
+	return slip
 
-	_add_save_button()
+
+## 一枚朱砂小印（方 26，马善政印面字）：代替告警前的「⚠」
+func _seal_mark(ch: String) -> Control:
+	var seal := PanelContainer.new()
+	seal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	seal.custom_minimum_size = Vector2(26, 26)
+	seal.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var box := StyleBoxFlat.new()
+	box.bg_color = UiTheme.SEAL if UiTheme.IS_JUANBEN else UiTheme.CINNABAR
+	box.corner_radius_top_left = 2
+	box.corner_radius_top_right = 3
+	box.corner_radius_bottom_left = 3
+	box.corner_radius_bottom_right = 2
+	seal.add_theme_stylebox_override("panel", box)
+	var l := Label.new()
+	l.text = ch
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.add_theme_font_override("font", UiTheme.title_font())
+	l.add_theme_font_size_override("font_size", 18)
+	l.add_theme_color_override("font_color", UiTheme.SEAL_TEXT)
+	seal.add_child(l)
+	return seal
+
+
+## 小数目写中文（零 至 九十九）：册页、城防账等上屏文字用，钱数这类账目仍写阿拉伯数字
+func _cn_num(n: int, liang := false) -> String:
+	return GameManager.cn_num(n, liang)
 
 
 
 func _show_notice_dialog(title: String, head: String, text: String, ending: String = "") -> void:
 	if ending != "":
 		GameState.finish(ending, text)
-		if ENDING_BG.has(ending):
-			_set_background_file(ENDING_BG[ending])  # 结算画面：台词压在结局图上
 	# 云端 7f92 起主场景不再弹系统对话框；本地 main 的终局通知改走同一张居中册页（ChapterSheet），
 	# 「记下这一纲」后回到当前场景（终局后港口页由 _setup_ended_port 接管）。
+	# ending 随 res 交给册页：有结局过场先演过场，册页弹出时再换结算底图（ENDING_BG）。
 	var shown_head := head if title == "" else "%s　%s" % [title, head]
-	_show_chapter_dialog({"title": shown_head, "text": text, "resolved": true, "scene": ""})
+	_show_chapter_dialog({"title": shown_head, "text": text, "resolved": true, "scene": "", "ending": ending})
 
 
 ## 上报发现：航中勘见的东西要回衙门报了才换得赏格与名声
@@ -4010,7 +4986,7 @@ func _siege_cards() -> Array:
 	var short_of_grain: bool = GameState.siege_get("grain") < GameState.SIEGE_GRAIN_PER_ROUND
 	out.append({
 		"id": CARD_SIEGE_NANGSHAN, "title": "囊山",
-		"subtitle": "粮尽・出战即城破" if short_of_grain else "设伏迎敌（第 %d 阵）" % (GameState.siege_get("round") + 1),
+		"subtitle": "粮尽・出战即城破" if short_of_grain else "设伏迎敌・第%s阵" % _cn_num(GameState.siege_get("round") + 1),
 	})
 	out.append({"id": CARD_SIEGE_NUNNERY, "title": "福州尼寺", "subtitle": "母亲与璥儿在那里"})
 	return out

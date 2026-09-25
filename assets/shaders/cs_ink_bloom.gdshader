@@ -29,21 +29,27 @@ void fragment() {
 	float n1 = texture(noise_tex, np * 0.62 + vec2(seed, 0.17)).r;
 	float n2 = texture(noise_tex, np * 2.3 + vec2(0.41, seed)).r;
 	float n3 = texture(noise_tex, np * 7.7 + vec2(seed * 0.5, 0.83)).r;
-	float field = d + (n1 - 0.5) * 0.62 + (n2 - 0.5) * 0.22 + (n3 - 0.5) * 0.07;
+	// 噪声只在外圈起作用：核心区衰减到三成，免得窗里冒出一块块纸色孤岛（第 1 轮评审 M7）
+	float nk = mix(0.3, 1.0, smoothstep(0.55, 0.95, d));
+	float field = d + ((n1 - 0.5) * 0.62 + (n2 - 0.5) * 0.22 + (n3 - 0.5) * 0.07) * nk;
 	float thr = progress;
 	float paint = 1.0 - smoothstep(thr - 0.04, thr + 0.008, field);
-	// 积墨：边缘一圈，浓淡随细噪声起伏（不是一道均匀的焦边）
-	float rim = smoothstep(thr - 0.12, thr - 0.01, field) * paint * mix(0.45, 1.0, smoothstep(0.3, 0.7, n3));
+	// 积墨：边缘一圈放宽到 thr-0.18，浓淡随细噪声起伏（不是一道均匀的焦边）；越靠边越浓，往深墨过渡
+	float rim = smoothstep(thr - 0.18, thr - 0.005, field) * paint * mix(0.55, 1.0, smoothstep(0.3, 0.7, n3));
+	// 画与纸之间紧贴一道深墨（画缘外 0.035 以内）。不乘 (1-paint)：画淡出的那一段 alpha 由这道墨托住，
+	// 否则画缘 paint≈0.5 处整体只剩半透明，纸色从底下透上来，成一圈发白的剪纸亮边（第 1 轮评审 M7）
+	float seam = 1.0 - smoothstep(thr - 0.005, thr + 0.035, field);
 	float wash = (1.0 - smoothstep(thr, thr + 0.06 + 0.22 * progress, field)) * (1.0 - paint);
 
 	vec3 c = texture(tex, view.xy + UV * view.zw).rgb;
 	float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
 	c = mix(c, vec3(l) * vec3(1.06, 0.95, 0.78), 0.28);      // 略做旧
 	c = mix(c, c * paper * 1.12, 0.4);                         // 贴着纸面
-	c = mix(c, ink, rim * 0.62);                               // 边缘积墨
+	c = mix(c, ink, rim * 0.7);                                // 边缘积墨
 	float gran = smoothstep(0.35, 0.75, n3);
 	float wash_a = wash * (0.18 + 0.22 * gran);
-	float a = max(paint, wash_a);
+	float seam_a = seam * mix(0.72, 0.9, gran);
+	float a = max(paint, max(wash_a, seam_a));
 	vec3 outc = mix(ink, c, paint / max(a, 0.0001));
 	COLOR = vec4(outc, a * alpha * v_mod.a);
 }

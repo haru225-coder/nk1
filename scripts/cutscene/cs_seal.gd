@@ -65,6 +65,8 @@ var style := Style.BAIWEN
 var hollow_alpha := 0.0
 var ink := Color(0.69, 0.188, 0.165)
 var tilt := -0.045
+## 程序印面蒙版的超采样倍数（SubViewport 尺寸 = 印面 × FACE_SS）
+const FACE_SS := 3.0
 
 var _vp: SubViewport
 var _rect: TextureRect
@@ -214,7 +216,8 @@ func _build_textured(tex: Texture2D) -> void:
 
 
 func _build(grid: Vector2i, pad: float, seed_v: float) -> void:
-	var k := 2.0
+	# 印面蒙版按 3 倍分辨率画（原 2 倍：两字印每字约 14px，缩下来字口发糊；第 2 轮美术 minor 6）
+	var k := FACE_SS
 	_vp = SubViewport.new()
 	_vp.disable_3d = true
 	_vp.transparent_bg = true
@@ -272,7 +275,7 @@ func _set_blank(seed_v: float) -> void:
 		return
 	_mat.set_shader_parameter("blank_tex", blank)
 	var bs := blank.get_size()
-	var face := _seal_size * 2.0
+	var face := _seal_size * FACE_SS
 	var sc := minf(1.0, 0.9 * minf(bs.x, bs.y) / maxf(face.x, face.y))
 	var win := face * sc / bs
 	var room := Vector2(0.9, 0.9) - win

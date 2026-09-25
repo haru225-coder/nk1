@@ -84,7 +84,10 @@ void fragment() {
 	m += texture(TEXTURE, UV - vec2(tp.x, 0.0)).r * 0.15;
 	m += texture(TEXTURE, UV + vec2(0.0, tp.y)).r * 0.15;
 	m += texture(TEXTURE, UV - vec2(0.0, tp.y)).r * 0.15;
-	float g = smoothstep(fill - 0.08, fill + 0.08, m + nz(p, 170.0, vec2(0.37, seed)) * 0.3 + nz(p, 480.0, vec2(seed, 0.61)) * 0.18);
+	// 过渡宽度跟屏幕像素走（fwidth）：原先固定 ±0.08 叠上噪声几乎是二值，1:1 看得到阶梯（第 2 轮美术 minor 6）
+	float v = m + nz(p, 170.0, vec2(0.37, seed)) * 0.3 + nz(p, 480.0, vec2(seed, 0.61)) * 0.18;
+	float aa = max(fwidth(v) * 1.2, 0.04);
+	float g = smoothstep(fill - aa, fill + aa, v);
 	float ink_a = body * g * pa * density;
 	float hol = body * (1.0 - g) * hollow_alpha;
 	float oa = max(ink_a, hol);

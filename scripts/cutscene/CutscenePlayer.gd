@@ -146,6 +146,7 @@ static var debug_start_shot := 0
 
 var cutscene_id := ""
 var _data_path := "res://data/cutscenes.json"
+var _from_black := false
 var _shots: Array = []
 var _letterbox := true
 var _phase := Phase.PRE
@@ -183,13 +184,15 @@ var _warmed := false
 var _seal_pool: Dictionary = {}
 
 
-static func play(parent: Node, id: String, data_path := "res://data/cutscenes.json") -> CutscenePlayer:
+## from_black：从全黑起播（开机即演开场时用：第一帧就是黑的，底下场景在黑幕后就位，不会先闪一下再压黑）
+static func play(parent: Node, id: String, data_path := "res://data/cutscenes.json", from_black := false) -> CutscenePlayer:
 	if parent == null:
 		push_warning("CutscenePlayer.play：parent 为空，过场 %s 未播放" % id)
 		return null
 	var p := CutscenePlayer.new()
 	p.cutscene_id = id
 	p._data_path = data_path
+	p._from_black = from_black
 	parent.add_child(p)
 	return p
 
@@ -295,6 +298,10 @@ func _build() -> void:
 
 	_base = _full_rect(Kit.C_JIAOMO)
 	_base.modulate.a = 0.0
+	if _from_black:
+		# 跳过压黑段：本帧起就是全黑，下一帧预热、再停 PRE_HOLD 进第一镜
+		_base.modulate.a = 1.0
+		_phase_t = PRE_ROLL
 	for i in range(2):
 		var r := _full_rect(Color.BLACK)
 		r.name = "Shot%d" % i
@@ -342,7 +349,7 @@ func _build() -> void:
 	_root.add_child(_captions)
 
 	_hint = Label.new()
-	_hint.text = "Esc 跳过"
+	_hint.text = "跳过 ›　Esc ／ 右键"
 	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hint.add_theme_font_override("font", Kit.body_font())
 	_hint.add_theme_font_size_override("font_size", 16)
@@ -443,8 +450,15 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
-		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
-			_advance_input()
+		if mb.pressed and mb.button_index == MOUSE_BUTTON_RIGHT:
+			# 右键即跳过：只用鼠标的玩家不必逐镜点 20 下（第 1 轮评审 minor）
+			skip()
+		elif mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			# 点角上的「跳过」提示 = 跳过；点别处照旧「补全 → 下一句 → 下一镜」
+			if _hint != null and _hint.modulate.a > 0.05 and _hint.get_global_rect().grow(10.0).has_point(mb.position):
+				skip()
+			else:
+				_advance_input()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventScreenTouch:
 		if (event as InputEventScreenTouch).pressed:
@@ -756,13 +770,31 @@ func _make_caption(txt: String, style: String, pos: String, n: int) -> Control:
 	return t
 
 
-## 字幕印章（白文、字口填宣纸色，压在暗画上也读得清）
+## 字幕印章（白文、字口填宣纸色，压在暗画上也读得清）。
+## 与书法题名同镜的年号印（开场末镜「乙卯」）缩成与题名末「立志」名章相当的一方，挂在名章下面（见 _place_captions）
 func _new_seal(txt: String, n: int, i: int) -> Control:
 	var s := Seal.new()
-	s.configure(txt, {"cell": 58.0 if txt.length() == 1 else 44.0, "style": "baiwen", "hollow_alpha": 0.9,
+	var cell := 58.0 if txt.length() == 1 else 44.0
+	if _shot_has_logo(i):
+		cell = 26.0 if txt.length() > 1 else 34.0
+	s.configure(txt, {"cell": cell, "style": "baiwen", "hollow_alpha": 0.9,
 		"seed": fmod(float(n) * 0.37 + float(i) * 0.11, 1.0), "tilt": -0.05 + 0.03 * sin(float(n + i))})
 	s.impacted.connect(_on_seal_impact)
 	return s
+
+
+## 第 i 镜有没有书法题名（LOGO_TEX 那一幅）
+func _shot_has_logo(i: int) -> bool:
+	if i < 0 or i >= _shots.size() or typeof(_shots[i]) != TYPE_DICTIONARY:
+		return false
+	var caps: Variant = (_shots[i] as Dictionary).get("captions", [])
+	if typeof(caps) != TYPE_ARRAY:
+		return false
+	for c in caps:
+		if typeof(c) == TYPE_DICTIONARY and str((c as Dictionary).get("style", "")) == "title" \
+				and str((c as Dictionary).get("text", "")).strip_edges() == GAME_TITLE:
+			return ResourceLoader.exists(LOGO_TEX)
+	return false
 
 
 ## 全黑时调用一次：管线预热 + 预建全片所有印章（SubViewport 下一帧渲染一次、字形光栅化），各镜到时直接取用。
@@ -908,6 +940,31 @@ func _place_captions() -> void:
 			if vert:
 				y = r.position.y
 			node.position = Vector2(roundf(x), roundf(y))
+		if pos == "center":
+			_hang_seal_under_logo()
+
+
+## 开场末镜：书法题名居中，年号印不再和题名上下堆叠（原先悬在船头下方约 60px，和题名没有对位；第 2 轮美术 minor 12），
+## 而是挂在题名末「立志」名章正下方 12px——两方印上下钤，书画落款的常见位置。logo 图里名章在宽 0.896–0.950、高到 0.80 处（PIL 实测）。
+func _hang_seal_under_logo() -> void:
+	var logo: Control = null
+	var seals: Array = []
+	for e in _cap_live:
+		if e["pos"] != "center":
+			continue
+		var node: Control = e["node"]
+		if node is LogoCaption:
+			logo = node
+		elif node is Seal:
+			seals.append(node)
+	if logo == null or seals.is_empty():
+		return
+	logo.position = Vector2(roundf((_canvas.x - logo.size.x) * 0.5), roundf(_canvas.y * 0.5 - logo.size.y * 0.5 - 6.0))
+	var y := logo.position.y + logo.size.y * 0.80 + 12.0
+	for s in seals:
+		var sc := s as Control
+		sc.position = Vector2(roundf(logo.position.x + logo.size.x * 0.923 - sc.size.x * 0.5), roundf(y))
+		y += sc.size.y + 8.0
 
 
 func _update_captions(dt: float) -> void:

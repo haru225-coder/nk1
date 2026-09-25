@@ -23,6 +23,14 @@ var news_data: Dictionary = {}
 var coastline_data: Dictionary = {}
 var sealanes_data: Dictionary = {}
 var chart_labels_data: Dictionary = {}
+## 人物设定集（data/characters.json）：立绘、五维、特技、小传、关系。只作展示，不接任何玩法数值，不入存档。
+## 文件缺失或解析失败时回落空表（只打 WARNING），游戏照常。
+const CHARACTERS_PATH := "res://data/characters.json"
+var characters_data: Dictionary = {}
+var _char_list: Array = []
+var _char_by_id: Dictionary = {}
+var _char_by_npc: Dictionary = {}
+var _char_by_crew: Dictionary = {}
 
 
 func _ready() -> void:
@@ -43,6 +51,7 @@ func load_data() -> void:
 	coastline_data = _load_json("res://data/coastline.json")
 	sealanes_data = _load_json("res://data/sealanes.json")
 	chart_labels_data = _load_json("res://data/chart_labels.json")
+	_load_characters()
 
 	if scenes_data.has("scenes"):
 		print("Data loaded. Scenes:%d Goods:%d Ports:%d Ships:%d Titles:%d" % [
@@ -66,6 +75,76 @@ func _load_json(path: String) -> Dictionary:
 	else:
 		push_error("Could not find " + path)
 	return {}
+
+
+# ── 人物设定集 ────────────────────────────────────────
+
+func _load_characters() -> void:
+	characters_data = {}
+	_char_list = []
+	_char_by_id = {}
+	_char_by_npc = {}
+	_char_by_crew = {}
+	if not FileAccess.file_exists(CHARACTERS_PATH):
+		push_warning("人物设定集缺失：%s（人物志与立绘回落旧图）" % CHARACTERS_PATH)
+		return
+	var json := JSON.new()
+	if json.parse(FileAccess.get_file_as_string(CHARACTERS_PATH)) != OK or typeof(json.data) != TYPE_DICTIONARY:
+		push_warning("人物设定集解析失败：%s（第 %d 行 %s）" % [CHARACTERS_PATH, json.get_error_line(), json.get_error_message()])
+		return
+	var raw: Dictionary = json.data
+	var list = raw.get("characters", [])
+	if typeof(list) != TYPE_ARRAY:
+		push_warning("人物设定集没有 characters 表：%s" % CHARACTERS_PATH)
+		return
+	characters_data = raw
+	for c in list:
+		if typeof(c) != TYPE_DICTIONARY:
+			continue
+		var cid := str(c.get("id", ""))
+		if cid == "" or _char_by_id.has(cid):
+			continue
+		_char_list.append(c)
+		_char_by_id[cid] = c
+		var src = c.get("sources", {})
+		if typeof(src) != TYPE_DICTIONARY:
+			continue
+		var npc_id = src.get("npc_id")
+		if npc_id != null and str(npc_id) != "" and not _char_by_npc.has(str(npc_id)):
+			_char_by_npc[str(npc_id)] = c
+		var crew_id = src.get("crew_id")
+		if crew_id != null and str(crew_id) != "" and not _char_by_crew.has(str(crew_id)):
+			_char_by_crew[str(crew_id)] = c
+
+
+## 按人物 id 取一条设定（查无返回空字典）。
+func get_character(id: String) -> Dictionary:
+	return _char_by_id.get(id, {})
+
+
+## NPC id → 人物。先认 sources.npc_id，再认同名人物 id（市舶司小吏等不在 npcs.json 的见面人）。
+func character_for_npc(npc_id: String) -> Dictionary:
+	if _char_by_npc.has(npc_id):
+		return _char_by_npc[npc_id]
+	return get_character(npc_id)
+
+
+## 职事候选 id（crew.json candidates）→ 人物。先认 sources.crew_id，再认同名人物 id。
+func character_for_crew(crew_id: String) -> Dictionary:
+	if _char_by_crew.has(crew_id):
+		return _char_by_crew[crew_id]
+	return get_character(crew_id)
+
+
+## 全部人物，按设定集原顺序（主角、主要、次要、职事、史实）。
+func all_characters() -> Array:
+	return _char_list
+
+
+## 设定集 meta：attr_def（五维名）、trait_def（特技）、faction_def（阵营色与字色）。
+func character_meta() -> Dictionary:
+	var m = characters_data.get("meta", {})
+	return m if typeof(m) == TYPE_DICTIONARY else {}
 
 
 # ── 时间推进 ──────────────────────────────────────────
@@ -102,6 +181,20 @@ const SKIP_HULL_FLOOR := 0.20      # 折到底也留两成，不至于一跳就�
 const SKIP_CREW_LEAVE := 0.12      # 每年每人离船概率
 const SKIP_MORALE_AFTER := 65      # 久不出海，人心散了
 
+## 小数目写中文（零 至 九十九；liang=true 时单独的二写「两」：两年、两条船）。上屏的册页、城防账用，账目钱数仍写阿拉伯数字。
+func cn_num(n: int, liang := false) -> String:
+	var d := ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
+	if n < 0 or n >= 100:
+		return str(n)
+	if n == 2 and liang:
+		return "两"
+	if n < 10:
+		return d[n]
+	var tens := int(n / 10)
+	var ones := n % 10
+	return ("" if tens == 1 else d[tens]) + "十" + ("" if ones == 0 else d[ones])
+
+
 ## 返回摘要行数组，供章节对话框显示
 func skip_years(n: int) -> Array:
 	if n <= 0:
@@ -123,7 +216,11 @@ func skip_years(n: int) -> Array:
 			decayed += 1
 		sh["durability"] = after
 	if decayed > 0:
-		lines.append("船板泡了%d年海水，%d 条船都该进坞了。" % [n, decayed])
+		# 册页是每章必看的一页：小数目写中文、不留空格（第 2 轮美术 minor 8）
+		if decayed == 1:
+			lines.append("船板泡了%s年海水，船该进坞了。" % cn_num(n, true))
+		else:
+			lines.append("船板泡了%s年海水，%s条船都该进坞了。" % [cn_num(n, true), cn_num(decayed, true)])
 
 	# 水手流失
 	var left := []
@@ -133,7 +230,7 @@ func skip_years(n: int) -> Array:
 			left.append(str(Crew.hired[role_id].get("name", "一个人")))
 			Crew.hired.erase(role_id)
 	if not left.is_empty():
-		lines.append("%s没有再上船——有的回了乡，有的上了别家的船。" % "、".join(left))
+		lines.append("%s没有再上船。有的回了乡，有的上了别家的船。" % "、".join(left))
 
 	# 士气与行情
 	Fleet.morale = mini(Fleet.morale, SKIP_MORALE_AFTER)

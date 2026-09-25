@@ -14,6 +14,13 @@ const NO_LINE_END := "「『（《〈【〔"
 const PHRASE_END := "，。；！？、："
 const V_ROTATE := "「」『』（）《》〈〉【】〔〕—…～：；-–()[]<>"
 const V_CORNER := "，。、．"
+## 竖排时换成 Unicode 竖排字形（字体里有才换，否则退回上面的旋转 / 挪角）：书名号、引号、括号成竖排形，
+## 句读落在右上（第 1 轮评审 minor 1：章节卡题记里《》是横排形、「，。」居中）。？！在竖排里本就居中，也换成竖排形。
+const V_FORMS := {
+	"《": "︽", "》": "︾", "〈": "︿", "〉": "﹀", "「": "﹁", "」": "﹂", "『": "﹃", "』": "﹄",
+	"（": "︵", "）": "︶", "【": "︻", "】": "︼", "〔": "︹", "〕": "︺",
+	"，": "︐", "。": "︒", "、": "︑", "：": "︓", "；": "︔", "！": "︕", "？": "︖", "—": "︱", "…": "︙",
+}
 ## 竖排句读挪到右上所需的字形包围盒中心（em/1000，y 向上，基线为 0）。用 fontTools 实测。
 const CORNER_BOX := {
 	"body": {"，": Vector2(166, -1), "。": Vector2(214, 50), "、": Vector2(180, 40), "．": Vector2(214, 50)},
@@ -249,12 +256,24 @@ func _layout() -> void:
 				y0 = (bh - (float(col.size()) * cell - fs * spacing)) * 0.5
 			for ri in range(col.size()):
 				var ch := str(col[ri])
+				# 竖排破折号：连续的「—」画成一条贯通的竖线（逐字画 ︱ 会断成两截、中间夹着字距；第 2 轮美术 minor 5）
+				var is_dash := ch == "—"
+				var dash_prev := is_dash and ri > 0 and str(col[ri - 1]) == "—"
+				var dash_next := is_dash and ri + 1 < col.size() and str(col[ri + 1]) == "—"
+				var vf := str(V_FORMS.get(ch, ""))
+				if vf != "" and font != null and font.has_char(vf.unicode_at(0)):
+					ch = vf
 				var cp := ch.unicode_at(0)
 				var adv := _advance_of(cp)
 				var rot := V_ROTATE.contains(ch)
 				var corner := V_CORNER.contains(ch)
 				var w := fs if (rot or corner) else adv
-				_glyphs.append({"cp": cp, "ch": ch, "x": xc - w * 0.5, "y": y0 + float(ri) * cell, "w": w, "adv": adv, "rot": rot, "corner": corner, "i": idx})
+				var gd := {"cp": cp, "ch": ch, "x": xc - w * 0.5, "y": y0 + float(ri) * cell, "w": w, "adv": adv, "rot": rot, "corner": corner, "i": idx}
+				if is_dash:
+					gd["dash"] = true
+					gd["dash_top"] = 0.0 if dash_prev else fs * 0.08
+					gd["dash_bot"] = cell if dash_next else fs * 0.92
+				_glyphs.append(gd)
 				idx += 1
 		_block = Vector2(bw, bh)
 	custom_minimum_size = _block
@@ -311,6 +330,18 @@ func _draw() -> void:
 			var bb: Vector2 = corner_tbl.get(str(g["ch"]), Vector2(200, 50))
 			base = Vector2(fs * 0.22 - bb.x * fs / 1000.0, -fs * 0.22 + bb.y * fs / 1000.0)
 		draw_set_transform(center + off, ang, Vector2(sc, sc))
+		if g.has("dash"):
+			# 竖排破折号：一条竖线，连着的两格之间不断（线宽约笔画粗细）
+			var ang0 := 0.0
+			draw_set_transform(center + off, ang0, Vector2(sc, sc))
+			var y_top := float(g["dash_top"]) - fs * 0.5
+			var y_bot := float(g["dash_bot"]) - fs * 0.5
+			var lw := maxf(fs * 0.07, 1.5)
+			if halo > 0.0:
+				draw_line(Vector2(0, y_top), Vector2(0, y_bot), Color(halo_color, 0.2 * halo * a), lw + float(halo_mid) * 2.0)
+				draw_line(Vector2(0, y_top), Vector2(0, y_bot), Color(halo_color, 0.42 * halo * a), lw + float(halo_tight) * 2.0)
+			draw_line(Vector2(0, y_top), Vector2(0, y_bot), Color(color, a), lw, true)
+			continue
 		if halo > 0.0:
 			# 三层由宽到窄、由淡到浓的外晕：柔和的墨晕，而不是一道硬描边
 			font.draw_char_outline(ci, base, cp, font_size, halo_wide, Color(halo_color, 0.1 * halo * a))

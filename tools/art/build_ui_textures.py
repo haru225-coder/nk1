@@ -305,15 +305,34 @@ def silk_tile(S, seed=200, base=JIUJUAN, age=1.0, lowfreq=1.0):
     return np.clip(col, 0, 1).astype(np.float32)
 
 
-def ink_tile(S, seed=300, alpha=0.86):
-    """深墨（靛墨）：焦墨底 + 靛青晕 + 横向刷痕 + 极淡绢纹；返回 (rgb, a)。"""
-    c = noise(S, S, 1.9, seed)                      # 大片、缓的靛晕（不要迷彩斑）
+def ink_tile(S, seed=300, alpha=0.86, rich=False):
+    """深墨（暖墨）：焦墨底 + 暖墨晕 + 横向刷痕 + 极淡绢纹；返回 (rgb, a)。
+    第 1 轮返工：原先晕的是靛青（面板中段 #12171a，色相约 203°），满屏藏青与暖油画对冲，是夜潮的余味；
+    改成暖墨（中段约 #17130f–#1a1612，色相约 30°，明度基本不变），靛青只在晕里留极淡一丝。
+    rich=True（大面板 panel_ink / 墨底 tex_ink_wash / tex_ink_solid，第 2 轮美术 M4）：屏上实测 σ≈1.8/255，读作平涂暗褐，
+    再叠两层零均值的质感——低频墨晕 ±5 级、2 逻辑像素（4 纹素）周期的绢纹 ±2 级；均值不变，字色对比度基本不动。"""
+    c = noise(S, S, 1.9, seed)                      # 大片、缓的墨晕（不要迷彩斑）
     streak = noise(S, S, 1.0, seed + 2, stretch=(9, 1))
     t = sstep(-2.0, 2.0, c)[..., None]
-    col = lerp(JIAOMO * 1.05, DIANQING * 0.72 + JIAOMO * 0.28, 0.20 + 0.36 * t)
+    warm = MO * 1.30 + DIANQING * 0.04
+    col = lerp(JIAOMO * 1.05, warm, 0.20 + 0.36 * t)
     col = col * (1 + 0.045 * streak[..., None] + 0.02 * noise(S, S, 0.6, seed + 4)[..., None])
     weave = silk_tile(S, seed + 3, base=np.array([1, 1, 1], np.float32), age=0.0)[..., 0]
     col = col * (0.9 + 0.1 * weave[..., None] / weave.mean())
+    if rich:
+        mean_v = float(col.mean())
+        # 低频墨晕：一格（512 纹素 = 256 逻辑像素）里两三团，约 ±5/255（按亮度成比例加，色相不变）。
+        # 首版 σ 只到 ±3 级，屏上实测 σ 1.2 仍读作平涂，放到 7/255 ÷1.3（σ≈5 级）
+        lf = noise(S, S, 2.6, seed + 7, hi=0.008)
+        lf = np.clip(lf / 1.3, -1.0, 1.0)
+        col = col * (1 + (7.0 / 255.0) * lf[..., None] / mean_v)
+        # 绢纹：经纬各 4 纹素一周期（2× 贴图 → 屏上 2 逻辑像素），经线略弱，按低频噪声起伏，±2/255
+        x, y = grid(S, S)
+        wx = np.cos(2 * math.pi * x / 4.0)
+        wy = np.cos(2 * math.pi * y / 4.0)
+        wv = (0.55 * wx + 0.45 * wy) * (0.7 + 0.3 * np.clip(noise(S, S, 1.2, seed + 8), -1, 1))
+        col = col + ((2.0 / 255.0) * wv)[..., None] * (col / mean_v)
+        col = col * (mean_v / float(col.mean()))
     a = np.clip(alpha + 0.035 * c, alpha - 0.07, min(0.97, alpha + 0.07))
     return np.clip(col, 0, 1).astype(np.float32), a.astype(np.float32)
 
@@ -322,10 +341,10 @@ def ink_tile(S, seed=300, alpha=0.86):
 def gen_tiles():
     save("tex_paper_xuan.png", paper_tile(512, 101, lowfreq=0.5))
     save("tex_silk_old.png", silk_tile(512, 201, lowfreq=0.5))
-    rgb, a = ink_tile(512, 301)
+    rgb, a = ink_tile(512, 301, rich=True)
     save("tex_ink_wash.png", rgb, a)
     # 不透明版：AcceptDialog 正文底（嵌入式窗口本身会清成灰底，半透明墨会透灰）
-    rgb, _ = ink_tile(256, 302, 1.0)
+    rgb, _ = ink_tile(256, 302, 1.0, rich=True)
     save("tex_ink_solid.png", rgb)
 
 
@@ -450,9 +469,12 @@ def gen_panel_ink():
     W = H = 2 * TM + P
     d = rect_dist(W, H, SH)
     body = np.clip(d + 0.5, 0, 1)
-    irgb, ia = ink_tile(P, 311, 0.89)
+    irgb, ia = ink_tile(P, 311, 0.89, rich=True)
     irgb = tile_sample(irgb, W, H, TM, TM)
     ia = tile_sample(ia[..., None], W, H, TM, TM)[..., 0]
+    # 内缘暗角：九宫边条里（墨面 d 0–32 纹素）从边上 −12% 渐到中段 0，接缝处恰为 0，边段平铺不出接痕（第 2 轮美术 M4）
+    vig = 0.12 * (1.0 - sstep(2.0, 32.0, np.maximum(d, 0)))
+    irgb = irgb * (1.0 - vig[..., None])
     # 边缘略加深，面板边界在亮背景上也立得住
     ia = np.clip(ia + 0.08 * np.exp(-np.maximum(d, 0) / 14.0), 0, 0.97)
     rgb, a = canvas(W, H, JIAOMO)
@@ -540,7 +562,8 @@ def button_tex(kind, state, seed):
             "normal": ((0.690, 0.195, 0.160), (0.560, 0.145, 0.125), 0.55, 1.0, 0.97),
             "hover": ((0.770, 0.245, 0.190), (0.635, 0.180, 0.150), 0.95, 1.1, 0.98),
             "pressed": ((0.540, 0.140, 0.120), (0.470, 0.115, 0.100), 0.40, 0.9, 0.98),
-            "disabled": ((0.420, 0.320, 0.300), (0.350, 0.270, 0.255), 0.30, 0.8, 0.72),
+            # 不可用：朱砂去饱和约 35% 再压暗一档（原先灰紫 #6f645e 像塑料块，第 1 轮评审 minor 9）
+            "disabled": ((0.480, 0.210, 0.180), (0.345, 0.155, 0.135), 0.30, 0.8, 0.82),
         }[state]
         col = lerp(np.array(top_c, np.float32), np.array(bot_c, np.float32), t)
         mott = tile_sample(noise(H, P, 1.4, seed + 3)[..., None], W, H, ML, 0)[..., 0]

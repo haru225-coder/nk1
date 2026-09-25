@@ -7,6 +7,8 @@
 #   -r  运行副本目录，默认 ~/tmp/nk1-art-cloud-run-port（须先 rsync 并 --headless --editor --quit 导入过一次）
 #   -o  输出根，默认 ~/tmp/nk1-art-work/tour
 #   站点缺省 = 下面 ALL（基础站点全集）；另可给 cutscene_<id> / chapter_card_<n> / banner_<port> 等，见 ShotTour.gd 的 SITES。
+#   过场接线站点（cinematics 线，走 Main 真实流程，时长长，按需给 -n）：cutscene_opening（开机开场）、chapter_card_<n>、
+#   banner_<港>（海图回港横幅）、ending_cs_<结局>（结局过场 + 结算册页）、title_anim（标题演出；TOUR_ARGS="--rewatch" 看重看开场）。
 #   额外参数：环境变量 TOUR_ARGS 原样追加在 -- 之后（如 TOUR_ARGS="--shot=3"）。
 # 一次只开一个 Godot 进程（逐站串行）。本脚本只读运行副本，不改仓库。
 set -u

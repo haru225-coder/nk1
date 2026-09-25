@@ -19,6 +19,10 @@ const SCRIPTS := [
 	"res://scripts/cutscene/CutscenePreview.gd", "res://scripts/cutscene/cs_kit.gd",
 	"res://scripts/cutscene/cs_ink_text.gd", "res://scripts/cutscene/cs_seal.gd",
 	"res://scripts/cutscene/cs_fx.gd",
+	# cinematics 线：过场接线的会话开关与标题演出
+	"res://scripts/cutscene/Cinematics.gd", "res://scripts/cutscene/TitleStage.gd",
+	# characters 线：人物系统的画与小件、人物志浮页
+	"res://scripts/ui/CharacterArt.gd", "res://scripts/ui/CharacterCodex.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
 	"res://tools/art/portrait_svg/PortraitWall.gd", "res://tools/art/ShotTour.gd",
 ]

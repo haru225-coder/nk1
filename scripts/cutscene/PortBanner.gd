@@ -26,6 +26,7 @@ const SEAL_TEXT := "泊"
 
 var port_id := ""
 var _data_path := "res://data/cutscenes.json"
+var _y_frac := 0.17
 var _t := 0.0
 var _done := false
 var _canvas := Vector2(1280, 720)
@@ -37,9 +38,16 @@ var _shadow: TextureRect
 var _items: Array = []
 var _band_w := 600.0
 var _band_h := 100.0
+var _with_name := true
+## 只写副题的挂签式绢带（居中、下坠淡入）
+var _hang := false
 
 
-static func show_banner(parent: Node, port: String, data_path := "res://data/cutscenes.json") -> PortBanner:
+## y_frac：绢带上缘在画布高度的比例（默认 0.17）。游戏港页顶上有港名墨刷匾，Main 传更低的值让开它。
+## with_name=false：画面上已有港名（港页顶上的墨刷匾）时，绢带只写副题 +「泊」印，居中挂在匾下，
+## 同屏不再出现两个港名（第 1 轮评审 M6）；副题缺了才退回写港名。
+static func show_banner(parent: Node, port: String, data_path := "res://data/cutscenes.json", y_frac := 0.17,
+		with_name := true) -> PortBanner:
 	if parent == null or Kit.is_headless():
 		return null
 	if parent.is_inside_tree():
@@ -48,6 +56,8 @@ static func show_banner(parent: Node, port: String, data_path := "res://data/cut
 	var b := PortBanner.new()
 	b.port_id = port
 	b._data_path = data_path
+	b._y_frac = clampf(y_frac, 0.0, 0.85)
+	b._with_name = with_name
 	b.add_to_group(GROUP)
 	parent.add_child(b)
 	return b
@@ -87,6 +97,10 @@ func _build(nm: String, sub: String) -> void:
 	_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_band)
 
+	_hang = not _with_name and sub != ""
+	if _hang:
+		_build_hang(sub)
+		return
 	var fs := 56 if nm.length() <= 3 else (48 if nm.length() <= 4 else 40)
 	var name_t := InkText.new()
 	name_t.configure(nm, {"font_kind": "title", "size": fs, "spacing": 0.1, "color": Kit.C_JIAOMO,
@@ -147,6 +161,83 @@ func _build(nm: String, sub: String) -> void:
 	_apply()
 
 
+## 挂签式：副题（文楷 22）+「泊」印，两端都是绢的毛边，居中挂在港名匾下面。
+func _build_hang(sub: String) -> void:
+	var st := InkText.new()
+	st.configure(sub, {"font_kind": "body", "size": 22, "spacing": 0.18, "color": Kit.C_MO,
+		"effect": 0, "interval": 0.035, "fade": 0.35})
+	var seal := Seal.new()
+	seal.configure(SEAL_TEXT, {"cell": 30.0, "style": "baiwen", "hollow_alpha": 0.0, "seed": fmod(float(port_id.hash() & 1023) / 1023.0, 1.0), "tilt": -0.06})
+	_band_h = maxf(62.0, st.size.y + 26.0)
+	var pad := 64.0
+	var x := pad
+	var cy := _band_h * 0.5
+	st.position = Vector2(roundf(x), roundf(cy - st.size.y * 0.5))
+	x += st.size.x + 18.0
+	seal.position = Vector2(roundf(x), roundf(cy - seal.size.y * 0.5))
+	x += seal.size.x
+	_band_w = x + pad
+
+	_shadow = TextureRect.new()
+	_shadow.texture = Kit.fx_texture("soft_dot.png")
+	_shadow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_shadow.stretch_mode = TextureRect.STRETCH_SCALE
+	_shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_shadow.position = Vector2(-_band_w * 0.15, -_band_h * 0.4)
+	_shadow.size = Vector2(_band_w * 1.3, _band_h * 2.0)
+	_shadow.modulate = Color(Kit.C_JIAOMO, 0.5)
+	_band.add_child(_shadow)
+
+	_silk = ColorRect.new()
+	_silk.color = Kit.C_JUAN
+	_silk.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_silk.size = Vector2(_band_w, _band_h)
+	_silk_mat = Kit.material("cs_silk_band.gdshader")
+	if _silk_mat != null:
+		_silk_mat.set_shader_parameter("weave_tex", Kit.fx_texture("silk_weave.png"))
+		_silk_mat.set_shader_parameter("noise_tex", Kit.fx_texture("noise_ink.png"))
+		_silk_mat.set_shader_parameter("band_size", Vector2(_band_w, _band_h))
+		_silk_mat.set_shader_parameter("fray_start", 1.0 - 46.0 / _band_w)
+		_silk_mat.set_shader_parameter("fray_left", 46.0 / _band_w)
+		_silk_mat.set_shader_parameter("seed", fmod(float(port_id.length()) * 0.173, 1.0))
+		_silk.material = _silk_mat
+	_band.add_child(_silk)
+	for pair in [[st, T_NAME], [seal, T_SUB + 0.2]]:
+		var node: Control = pair[0]
+		node.visible = false
+		_band.add_child(node)
+		_items.append({"node": node, "start": float(pair[1]), "started": false})
+	_band.size = Vector2(_band_w, _band_h)
+	_apply()
+
+
+## 让场上的横幅快速淡去（离开港页：进设施、开船籍簿 / 人物志 / 航海日志时调；第 2 轮 UX M1——
+## 横幅挂在 Main 顶层，原先进了牙行还浮在内页上 1.7 秒压住委办正文）。没有横幅时什么都不做。
+static func dismiss_all(tree: SceneTree, dur := 0.15) -> void:
+	if tree == null:
+		return
+	for n in tree.get_nodes_in_group(GROUP):
+		if n is PortBanner:
+			(n as PortBanner).dismiss(dur)
+
+
+## 从当前时刻起 dur 秒淡到 0 并释放（不再走完剩下的 2.65 秒）；finished 照发。
+func dismiss(dur := 0.15) -> void:
+	if _done:
+		return
+	_done = true
+	remove_from_group(GROUP)
+	if _band == null or not is_inside_tree():
+		finished.emit()
+		queue_free()
+		return
+	var tw := create_tween()
+	tw.tween_property(_band, "modulate:a", 0.0, maxf(dur, 0.01))
+	tw.tween_callback(func() -> void:
+		finished.emit()
+		queue_free())
+
+
 func _process(delta: float) -> void:
 	if _done or _root == null:
 		return
@@ -175,6 +266,11 @@ func _process(delta: float) -> void:
 func _apply() -> void:
 	var slide := Kit.ease_out_cubic(_t / SLIDE)
 	var out := Kit.ease_in_out((_t - T_OUT) / (T_END - T_OUT))
-	var y := roundf(_canvas.y * 0.17)
+	var y := roundf(_canvas.y * _y_frac)
+	if _hang:
+		# 挂签：居中，从上方 14px 轻轻坠下来，退场原地淡去
+		_band.position = Vector2(roundf((_canvas.x - _band_w) * 0.5), roundf(y - 14.0 * (1.0 - slide)))
+		_band.modulate.a = clampf(slide * 1.4, 0.0, 1.0) * (1.0 - out)
+		return
 	_band.position = Vector2(roundf(-_band_w * (1.0 - slide) - 36.0 * out), y)
 	_band.modulate.a = clampf(slide * 1.6, 0.0, 1.0) * (1.0 - out)

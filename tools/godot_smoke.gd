@@ -108,16 +108,72 @@ func _run() -> void:
 	var dlg := AcceptDialog.new()
 	UiTheme.style_dialog(dlg, true)
 	_check(dlg.get_theme_stylebox("panel") != null, "UiTheme.style_dialog 给弹窗套绢本面板", fails)
-	_check(UiTheme.INK.b > UiTheme.INK.r and UiTheme.INK.g > UiTheme.INK.r
-		and UiTheme.TIDE.g > UiTheme.TIDE.r and UiTheme.SEAL.r > UiTheme.SEAL.b,
-		"面板是夜潮青，潮光作线，主钮是珊瑚", fails)
+	# 皮肤断言按 UiTheme.SKIN 分支：夜潮原断言逐字保留；绢本断言靛墨 / 泥金 / 朱砂 / 石青的色相关系与实测对比度。
+	var yechao := UiTheme.SKIN == "yechao"
+	if yechao:
+		_check(UiTheme.INK.b > UiTheme.INK.r and UiTheme.INK.g > UiTheme.INK.r
+			and UiTheme.TIDE.g > UiTheme.TIDE.r and UiTheme.SEAL.r > UiTheme.SEAL.b,
+			"面板是夜潮青，潮光作线，主钮是珊瑚", fails)
+	else:
+		_check(UiTheme.INK.get_luminance() < 0.12 and UiTheme.INK.a >= 0.9
+			and UiTheme.GOLD.r > UiTheme.GOLD.g and UiTheme.GOLD.g > UiTheme.GOLD.b
+			and UiTheme.GOLD.h > 0.08 and UiTheme.GOLD.h < 0.14
+			and (UiTheme.SEAL.h < 0.03 or UiTheme.SEAL.h > 0.97) and UiTheme.SEAL.s > 0.6 and UiTheme.SEAL.r > 0.6
+			and UiTheme.TIDE.b > UiTheme.TIDE.r and UiTheme.TIDE.g > UiTheme.TIDE.r,
+			"面板是暖墨，泥金作线，主钮是朱砂，航向是石青", fails)
+		var weak := []
+		for pair in [["TEXT", UiTheme.TEXT], ["TEXT_DIM", UiTheme.TEXT_DIM], ["GOLD", UiTheme.GOLD],
+				["GOLD_HI", UiTheme.GOLD_HI], ["TIDE", UiTheme.TIDE], ["MOSS", UiTheme.MOSS],
+				["HONEY", UiTheme.HONEY], ["CINNABAR", UiTheme.CINNABAR]]:
+			if _contrast(pair[1], UiTheme.INK) < 4.5:
+				weak.append(pair[0])
+		var paper: Color = UiTheme.PAPER_CARD  # 未点亮的宣纸卡（比点亮时暗一成），取暗的一侧量
+		for pair in [["PAPER_TEXT", UiTheme.PAPER_TEXT], ["PAPER_DIM", UiTheme.PAPER_DIM], ["PAPER_TIDE", UiTheme.PAPER_TIDE],
+				["PAPER_GOLD", UiTheme.PAPER_GOLD], ["PAPER_MOSS", UiTheme.PAPER_MOSS], ["PAPER_HONEY", UiTheme.PAPER_HONEY],
+				["PAPER_CINNABAR", UiTheme.PAPER_CINNABAR]]:
+			if _contrast(pair[1], paper) < 4.5:
+				weak.append(pair[0])
+		if _contrast(UiTheme.SEAL_TEXT, UiTheme.SEAL) < 4.5:
+			weak.append("SEAL_TEXT")
+		# 港页岸门的纸面另压到旧绢调（Main._make_shore_door 的 self_modulate = UiTheme.DOOR_PAPER_TINT），纸上字色按压暗后的纸再量一遍
+		var door_paper := paper * UiTheme.DOOR_PAPER_TINT
+		for pair in [["DOOR_TEXT", UiTheme.PAPER_TEXT], ["DOOR_DIM", UiTheme.PAPER_DIM], ["DOOR_TIDE", UiTheme.PAPER_TIDE],
+				["DOOR_CINNABAR", UiTheme.PAPER_CINNABAR]]:
+			if _contrast(pair[1], door_paper) < 4.5:
+				weak.append(pair[0])
+		_check(weak.is_empty(), "绢本字色对底色实测 ≥4.5:1（不达标 %s）" % [weak], fails)
+		var smudged := []
+		for dark_c in [UiTheme.TEXT, UiTheme.TEXT_DIM, UiTheme.TIDE, UiTheme.MOSS, UiTheme.HONEY, UiTheme.CINNABAR,
+				Color(0.75, 0.75, 0.7), Color(1.0, 0.75, 0.45), Color(0.65, 0.9, 0.7)]:
+			var inked: Color = UiTheme.on_paper(dark_c)
+			if _contrast(inked, paper) < 4.5 or UiTheme.on_paper(inked) != inked:
+				smudged.append(dark_c)
+		_check(smudged.is_empty() and UiTheme.on_paper(UiTheme.PAPER_TEXT) == UiTheme.PAPER_TEXT,
+			"深底字色落到宣纸上一律换成纸上墨色（≥4.5:1），已换过的不再动（不达标 %s）" % [smudged], fails)
 	var facility := UiTheme.card()
 	var picked := UiTheme.heading_card(true)
 	var idle := UiTheme.heading_card(false)
-	_check(facility.corner_radius_top_left == 16 and picked.corner_radius_top_left == 16
-		and picked.border_color.g > picked.border_color.r
-		and idle.border_color.b > idle.border_color.r,
-		"港卡与航向牌是潮玻璃，选中边是潮光", fails)
+	if yechao:
+		var facility_f := facility as StyleBoxFlat
+		var picked_f := picked as StyleBoxFlat
+		var idle_f := idle as StyleBoxFlat
+		_check(facility_f != null and picked_f != null and idle_f != null
+			and facility_f.corner_radius_top_left == 16 and picked_f.corner_radius_top_left == 16
+			and picked_f.border_color.g > picked_f.border_color.r
+			and idle_f.border_color.b > idle_f.border_color.r,
+			"港卡与航向牌是潮玻璃，选中边是潮光", fails)
+	else:
+		var facility_t := facility as StyleBoxTexture
+		var picked_f := picked as StyleBoxFlat
+		var idle_f := idle as StyleBoxFlat
+		_check(facility_t != null and facility_t.texture != null
+			and facility_t.texture.resource_path.ends_with("panel_paper.res")
+			and picked_f != null and idle_f != null
+			and picked_f.corner_detail == 1 and picked_f.corner_radius_top_left > 0
+			and picked_f.border_color.r > picked_f.border_color.b
+			and picked_f.border_width_left > idle_f.border_width_left
+			and picked_f.border_color.a > idle_f.border_color.a,
+			"港卡是宣纸，航向牌是委角墨牌，选中边是泥金实线", fails)
 	var ch_keep: int = gs.chapter
 	var vis_keep: Array = gs.visited_ports.duplicate()
 	var end_keep: String = str(gs.ending_id)
@@ -160,8 +216,17 @@ func _run() -> void:
 			shore_seen[door_id] = true
 	_check(shore_seen.size() == 9, "盐位转一圈，九处都会开门", fails)
 	var door_box := UiTheme.shore_door()
-	_check(door_box.corner_radius_top_left == 16 and door_box.border_color.g > door_box.border_color.r,
-		"岸门是潮光边的潮玻璃", fails)
+	if yechao:
+		var door_f := door_box as StyleBoxFlat
+		_check(door_f != null and door_f.corner_radius_top_left == 16 and door_f.border_color.g > door_f.border_color.r,
+			"岸门是潮光边的潮玻璃", fails)
+	else:
+		var door_t := door_box as StyleBoxTexture
+		var door_hi := UiTheme.shore_door_hover() as StyleBoxTexture
+		_check(door_t != null and door_hi != null and door_t.texture != null
+			and door_t.texture.resource_path.ends_with("panel_paper.res")
+			and door_hi.modulate_color.v > door_t.modulate_color.v,
+			"岸门是宣纸卡，悬停纸面点亮", fails)
 	var broker_goods: Array = [
 		{"id": "a", "role": "origin", "buy": 10},
 		{"id": "b", "role": "origin", "buy": 30},
@@ -220,14 +285,24 @@ func _run() -> void:
 	UiTheme.style_button(accent_btn, true)
 	var chip := Button.new()
 	UiTheme.style_chip(chip, true)
-	_check(accent_btn.get_theme_color("font_color") == UiTheme.INK_SOLID
-		and accent_btn.get_theme_color("font_focus_color") == UiTheme.INK_SOLID
-		and accent_btn.get_theme_color("font_pressed_color") == UiTheme.INK_SOLID,
-		"珊瑚主钮聚焦和按下仍是深字", fails)
-	_check(chip.get_theme_color("font_color") == UiTheme.INK_SOLID
-		and chip.get_theme_color("font_focus_color") == UiTheme.INK_SOLID
-		and chip.get_theme_color("font_pressed_color") == UiTheme.INK_SOLID,
-		"珊瑚小钮聚焦和按下仍是深字", fails)
+	if yechao:
+		_check(accent_btn.get_theme_color("font_color") == UiTheme.INK_SOLID
+			and accent_btn.get_theme_color("font_focus_color") == UiTheme.INK_SOLID
+			and accent_btn.get_theme_color("font_pressed_color") == UiTheme.INK_SOLID,
+			"珊瑚主钮聚焦和按下仍是深字", fails)
+		_check(chip.get_theme_color("font_color") == UiTheme.INK_SOLID
+			and chip.get_theme_color("font_focus_color") == UiTheme.INK_SOLID
+			and chip.get_theme_color("font_pressed_color") == UiTheme.INK_SOLID,
+			"珊瑚小钮聚焦和按下仍是深字", fails)
+	else:
+		_check(_is_seal_text(accent_btn.get_theme_color("font_color"))
+			and _is_seal_text(accent_btn.get_theme_color("font_focus_color"))
+			and _is_seal_text(accent_btn.get_theme_color("font_pressed_color")),
+			"朱砂主钮常态、聚焦和按下都是印面浅字（朱砂上 ≥4.5:1）", fails)
+		_check(_is_seal_text(chip.get_theme_color("font_color"))
+			and _is_seal_text(chip.get_theme_color("font_focus_color"))
+			and _is_seal_text(chip.get_theme_color("font_pressed_color")),
+			"朱砂小钮常态、聚焦和按下都是印面浅字（朱砂上 ≥4.5:1）", fails)
 	accent_btn.free()
 	chip.free()
 
@@ -352,9 +427,14 @@ func _run() -> void:
 		"进港不再把船籍簿铺回左栏", fails)
 	var accent := Button.new()
 	UiTheme.style_button(accent, true)
-	_check(accent.get_theme_color("font_focus_color") == UiTheme.INK_SOLID
-		and accent.get_theme_color("font_pressed_color") == UiTheme.INK_SOLID,
-		"珊瑚钮聚焦和按下仍是深字", fails)
+	if UiTheme.SKIN == "yechao":
+		_check(accent.get_theme_color("font_focus_color") == UiTheme.INK_SOLID
+			and accent.get_theme_color("font_pressed_color") == UiTheme.INK_SOLID,
+			"珊瑚钮聚焦和按下仍是深字", fails)
+	else:
+		_check(_is_seal_text(accent.get_theme_color("font_focus_color"))
+			and _is_seal_text(accent.get_theme_color("font_pressed_color")),
+			"朱砂钮聚焦和按下仍是印面浅字", fails)
 	accent.free()
 	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
 		"职事品级写成初习/谙熟/老练，不再用星号", fails)
@@ -558,13 +638,121 @@ func _run() -> void:
 				_check(false, "WorldMap._format_left_hud 已定义", fails)
 			wm_inst.free()
 
+	_check_characters(gm, main_src, fails)
+	await _check_headless_bypass(fails)
 	_finish(fails)
+
+
+## headless 零延迟旁路（第 2 轮工程 m4：原先只查源码里有没有 ChapterSheet 字样；live() 在 headless 下误判为真时，
+## 章节卡会晚一帧才出册页，门禁照样全绿）。照评审探针 probe_headless：过场层关闭；升章册页与结局册页都在调用的同一帧建好，
+## 跳年当帧结算；Main 底下没有章节卡 / 过场 / 横幅层。放在最后跑：会真的落定一个结局。
+func _check_headless_bypass(fails: Array) -> void:
+	var cine = load("res://scripts/cutscene/Cinematics.gd")
+	_check(not bool(cine.call("live")) and not bool(cine.call("want_opening")),
+		"headless 下过场层关闭（live / want_opening 皆假）", fails)
+	var main: Node = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
+	root.add_child(main)
+	for _i in 3:
+		await process_frame
+	var cal: Node = root.get_node("Calendar")
+	var gs: Node = root.get_node("GameState")
+	gs.last_port = "quanzhou"
+	main.load_scene("quanzhou")
+	var y0: int = cal.year
+	var f0 := Engine.get_process_frames()
+	main._show_chapter_dialog({"advanced": true, "resolved": false, "title": "t", "text": "x", "scene": "", "years": 2})
+	var host = main.get("_chapter_host")
+	_check(host != null and is_instance_valid(host) and cal.year == y0 + 2 and Engine.get_process_frames() == f0,
+		"headless 升章册页当帧出、跳年当帧结算（%d → %d）" % [y0, cal.year], fails)
+	var layers := 0
+	for c in main.get_children():
+		if c is ChapterCard or c is CutscenePlayer or c is PortBanner:
+			layers += 1
+	_check(layers == 0, "headless 下 Main 底下没有章节卡 / 过场 / 横幅层（%d）" % layers, fails)
+	main._confirm_chapter_sheet()
+	main._show_notice_dialog("", "忠肃", "正文", "忠肃")
+	host = main.get("_chapter_host")
+	_check(host != null and is_instance_valid(host) and str(main.get("_bg_file")) == "bg_end_temple.jpg" and gs.is_ended(),
+		"headless 结局册页当帧出、底图换成结局图（%s）" % str(main.get("_bg_file")), fails)
+	main.queue_free()
+
+
+## characters 线：人物设定集接进 GameManager，见面页 / 酒馆人物卡 / 人物志都从它取人取图。
+func _check_characters(gm: Node, main_src: String, fails: Array) -> void:
+	var all: Array = gm.call("all_characters")
+	_check(all.size() > 0 and str(gm.call("get_character", "chen_wenlong").get("tier", "")) == "protagonist",
+		"人物设定集载入，get_character 取得到主角", fails)
+	var npc_miss: Array = []
+	for nid in ["merchant_lin", "pilot_ana", "customs_official"]:
+		var c: Dictionary = gm.call("character_for_npc", nid)
+		if c.is_empty() or not ResourceLoader.exists(str(c.get("portrait", ""))):
+			npc_miss.append(nid)
+	_check(npc_miss.is_empty(), "见面三人都认得出人、取得到立绘（缺 %s）" % [npc_miss], fails)
+	var crew_miss: Array = []
+	for cand in gm.crew_data.get("candidates", []):
+		var cid := str(cand.get("id", ""))
+		var got: Dictionary = gm.call("character_for_crew", cid)
+		if got.is_empty():
+			crew_miss.append(cid)
+	_check(crew_miss.is_empty(), "酒馆每个候选人都在设定集里（缺 %s）" % [crew_miss], fails)
+	# 阵营签：16px 小字压在阵营色上，声明对比度要留出抗锯齿的余量（第 2 轮 UX M5：声明 5.0 的实渲染只剩 3.84）
+	var fdefs: Dictionary = gm.characters_data.get("meta", {}).get("faction_def", {})
+	var weak_f: Array = []
+	for fk in fdefs.keys():
+		var fe: Dictionary = fdefs[fk]
+		var fc := Color.from_string(str(fe.get("color", "")), Color.BLACK)
+		var ft := Color.from_string(str(fe.get("text", "")), Color.BLACK)
+		var cr := _contrast(fc, ft)
+		if cr < 6.0:
+			weak_f.append("%s %.2f" % [fk, cr])
+	_check(fdefs.size() >= 8 and weak_f.is_empty(), "阵营签每对字色 / 底色声明对比度 ≥6.0（%d 家，不达标 %s）" % [fdefs.size(), weak_f], fails)
+	var meet_i := main_src.find("func _show_npc_mode")
+	var meet_j := main_src.find("\nfunc ", meet_i + 1)
+	var meet := main_src.substr(meet_i, meet_j - meet_i) if meet_i >= 0 and meet_j > meet_i else ""
+	_check(meet.find("character_for_npc") >= 0 and meet.find("res://assets/sprite_") > meet.find("character_for_npc"),
+		"见面页立绘先认 characters.json，缺了才回落 sprite_ 旧图", fails)
+	var codex_scr = load("res://scripts/ui/CharacterCodex.gd")
+	_check(codex_scr != null, "人物志脚本能编译", fails)
+	if codex_scr == null or all.is_empty():
+		return
+	var cx: Control = codex_scr.new()
+	root.add_child(cx)
+	cx.call("begin", "")
+	var cells := cx.find_children("Cell_*", "Button", true, false)
+	_check(cells.size() == all.size(), "人物志名册铺满设定集全部人物（%d / %d 格）" % [cells.size(), all.size()], fails)
+	cx.call("show_detail", "merchant_lin", false)
+	var detail := cx.find_child("Detail", true, false)
+	var rel_n := cx.find_children("Rel_*", "", true, false).size()
+	_check(detail != null and str(cx.call("current_id")) == "merchant_lin" and rel_n > 0,
+		"人物志点开详页，关系一一成签（%d 条）" % rel_n, fails)
+	cx.call("go_back")
+	_check(str(cx.call("current_id")) == "" and cx.find_child("GridScroll", true, false) != null,
+		"人物志详页退回名册", fails)
+	cx.call("close_codex")
+	_check(cx.is_queued_for_deletion(), "人物志名册页再退就合上", fails)
 
 
 func _check(cond: bool, msg: String, fails: Array) -> void:
 	print(("  ✓ " if cond else "  ✗ ") + msg)
 	if not cond:
 		fails.append(msg)
+
+
+## WCAG 相对亮度对比度（sRGB 线性化，不计 alpha）。
+func _contrast(a: Color, b: Color) -> float:
+	var la := _rel_lum(a)
+	var lb := _rel_lum(b)
+	return (maxf(la, lb) + 0.05) / (minf(la, lb) + 0.05)
+
+
+func _rel_lum(c: Color) -> float:
+	var l := c.srgb_to_linear()
+	return 0.2126 * l.r + 0.7152 * l.g + 0.0722 * l.b
+
+
+## 绢本朱砂钮上的字：必须是 UiTheme.SEAL_TEXT 印面浅字，且对朱砂实测 ≥4.5:1。
+func _is_seal_text(c: Color) -> bool:
+	return c.is_equal_approx(UiTheme.SEAL_TEXT) and c.get_luminance() > 0.7 and _contrast(c, UiTheme.SEAL) >= 4.5
 
 
 func _finish(fails: Array) -> void:

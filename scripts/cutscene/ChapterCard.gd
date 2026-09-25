@@ -1,6 +1,6 @@
 ## 章节卡（cutscene_engine 线）：黑场 → 宣纸按噪声阈值洇进来 → 墨晕铺开露出章节油画 → 「第X章」逐字 → 章名 → 年号 → 题记竖排带出处
 ## → 朱印盖下（回弹 + 印泥洇开；UI 线的「立志」成品印在就用它）→ 停留 → 字印淡去、墨晕回缩、纸面按同一阈值退去露出游戏。
-## 总长约 7.4 秒；点击 / 空格 / 回车先补全、再跳到退场；Esc 直接退场。
+## 总长约 7.7 秒；点击 / 空格 / 回车先补全、再跳到退场；Esc 直接退场。
 ##
 ##   var card := ChapterCard.play(self, GameState.chapter)
 ##   await card.finished            # 退场淡完、底下游戏画面已完全露出时发出，随后自 queue_free
@@ -11,6 +11,9 @@ class_name ChapterCard
 extends CanvasLayer
 
 signal finished
+## 纸面开始退去（T_WIPE）的那一刻发出：调用方趁卡还盖在上面，把卡后要出的画面（压暗层 + 册页）先在底下建好，
+## 纸退去时揭开的就是最终画面，不再先露出没压暗的港页、再硬切出册页。headless 下与 finished 同帧发出。
+signal exiting
 
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const InkText := preload("res://scripts/cutscene/cs_ink_text.gd")
@@ -19,7 +22,8 @@ const Seal := preload("res://scripts/cutscene/cs_seal.gd")
 const LAYER_INDEX := 55
 const T_BLACK := 0.3
 const T_PAPER_IN := 0.5
-const T_PAPER_DUR := 0.6
+## 纸洇进来 1.0 秒、ease_in_out（原 0.6 秒 ease_out_cubic：前 0.2 秒走完大半，亮度两帧打满，像闪屏；第 2 轮美术 M1）
+const T_PAPER_DUR := 1.0
 const T_BLOOM := 0.8
 const T_BLOOM_DUR := 2.0
 const T_HEAD := 1.25
@@ -28,9 +32,9 @@ const T_YEAR := 2.85
 const T_EPI := 3.25
 const T_SEAL := 4.6
 const T_OUT := 6.3
-## 退场：字与印 0.5 秒淡去、墨晕 0.6 秒回缩，纸面从 T_WIPE 起按噪声阈值退去（露出底下的游戏，不是整层交叉淡化）
+## 退场：字与印 0.5 秒淡去、墨晕 0.6 秒回缩，纸面从 T_WIPE 起按噪声阈值从墨晕窗口往外退去 1.0 秒（露出底下的游戏，不是整层交叉淡化）
 const T_WIPE := 6.7
-const T_END := 7.4
+const T_END := 7.7
 const TEXT_OUT := 0.5
 const BLOOM_OUT := 0.6
 const PAPER_TEX := "res://assets/ui/nk1/tex_paper_xuan.png"
@@ -40,6 +44,7 @@ const OCHRE_TEXT := Color(0.36, 0.205, 0.08)
 
 var chapter := 1
 var _data_path := "res://data/cutscenes.json"
+var _year_override := ""
 var _t := 0.0
 var _done := false
 var _warmed := false
@@ -56,21 +61,32 @@ var _bloom_region := Rect2()
 var _items: Array = []
 var _seal: Control
 var _overlay: ColorRect
+var _hint: Label
 var _name := ""
 var _head := ""
 var _year := ""
 var _epi := ""
 var _src := ""
 var _bg_path := ""
+var _focus := Vector2(0.5, 0.5)
+var _zoom := 1.0
+## 从全黑起（首次进港：卡跟在港页 load_scene 之后，原先先露出 0.1–0.2 秒港页再压黑起卡）
+var _from_black := false
 
 
-static func play(parent: Node, chapter_no: int, data_path := "res://data/cutscenes.json") -> ChapterCard:
+## year_override：非空时替换数据里的 year_text。数据里写的是「最早可能开场年」，玩家晚晋升时由调用方
+## 按当前历法现算传入（Main 用 Cinematics.year_text(Calendar.year + 跳年, Calendar.ERAS)）。
+## from_black：黑场在第 0 帧就压满（跳过 T_BLACK 的淡入），用在卡紧跟一次换页之后。
+static func play(parent: Node, chapter_no: int, data_path := "res://data/cutscenes.json", year_override := "",
+		from_black := false) -> ChapterCard:
 	if parent == null:
 		push_warning("ChapterCard.play：parent 为空")
 		return null
 	var c := ChapterCard.new()
 	c.chapter = chapter_no
 	c._data_path = data_path
+	c._year_override = year_override.strip_edges()
+	c._from_black = from_black
 	parent.add_child(c)
 	return c
 
@@ -95,8 +111,19 @@ func _finish() -> void:
 	if _done:
 		return
 	_done = true
+	_emit_exiting()
 	finished.emit()
 	queue_free()
+
+
+var _exited := false
+
+
+func _emit_exiting() -> void:
+	if _exited:
+		return
+	_exited = true
+	exiting.emit()
 
 
 func _read_data() -> void:
@@ -108,10 +135,16 @@ func _read_data() -> void:
 	elif not d.is_empty():
 		push_warning("ChapterCard：%s 没有 chapters[\"%d\"]，只演章名" % [_data_path, chapter])
 	_bg_path = str(entry.get("bg", ""))
+	# 可选取景：focus（画内中心 0–1）、zoom（在 cover 之上再推近）。墨晕窗是圆的，画里要紧的东西（人）
+	# 不该被窗边截一半——要么整个收进窗，要么整个让出去（第 1 轮评审 minor 13，卡 2）
+	var fv: Variant = entry.get("focus", [])
+	if typeof(fv) == TYPE_ARRAY and (fv as Array).size() == 2:
+		_focus = Vector2(float(fv[0]), float(fv[1]))
+	_zoom = maxf(1.0, float(entry.get("zoom", 1.0)))
 	_epi = str(entry.get("epigraph", ""))
 	_src = str(entry.get("epigraph_src", ""))
-	_year = str(entry.get("year_text", ""))
-	_head = "第%s章" % Kit.cn_number(chapter)
+	_year = _year_override if _year_override != "" else str(entry.get("year_text", ""))
+	_head ="第%s章" % Kit.cn_number(chapter)
 	var cd := Kit.load_json(Kit.CHAPTERS_DATA)
 	var list: Variant = cd.get("chapters", [])
 	if typeof(list) == TYPE_ARRAY:
@@ -146,7 +179,7 @@ func _build() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_root)
 	_black = _full(Kit.C_JIAOMO)
-	_black.modulate.a = 0.0
+	_black.modulate.a = 1.0 if _from_black else 0.0
 
 	_paper = _full(Kit.C_XUAN)
 	_paper_mat = Kit.material("cs_paper.gdshader")
@@ -219,6 +252,15 @@ func _build() -> void:
 		_overlay.material = om
 		_overlay.color = Color.WHITE
 	_overlay.modulate.a = 0.0
+	# 章名写出之后，纸脚淡淡出一行「点击继续」（7.4 秒的卡全程没有提示，第 1 轮评审 minor）
+	_hint = Label.new()
+	_hint.text = "点击继续"
+	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint.add_theme_font_override("font", Kit.body_font())
+	_hint.add_theme_font_size_override("font_size", 16)
+	_hint.add_theme_color_override("font_color", OCHRE_TEXT)
+	_hint.modulate.a = 0.0
+	_root.add_child(_hint)
 	_layout(head, nm, yr, ep, sr)
 
 
@@ -267,8 +309,8 @@ func _update_bloom_view() -> void:
 	if _bloom_mat == null or _bloom_tex_size == Vector2.ZERO:
 		return
 	# 墨晕区内按 cover 取景，并随整张卡极慢推近
-	var z := 1.02 + 0.06 * Kit.ease_in_out_sine(_t / T_END)
-	var crop := Kit.cover_view(_bloom_tex_size, _bloom_region.size, Vector2(0.5, 0.5), z)
+	var z := _zoom * (1.02 + 0.06 * Kit.ease_in_out_sine(_t / T_END))
+	var crop := Kit.cover_view(_bloom_tex_size, _bloom_region.size, _focus, z)
 	var rs := _bloom_region.size
 	var vx := crop.position.x - _bloom_region.position.x / rs.x * crop.size.x
 	var vy := crop.position.y - _bloom_region.position.y / rs.y * crop.size.y
@@ -288,12 +330,24 @@ func _step(dt: float) -> void:
 	var cv := Kit.canvas_size(self)
 	if cv != _canvas:
 		_canvas = cv
-	# 黑场 → 宣纸按噪声阈值洇进来（先快后慢，没有「半透明纸压黑底」的灰褐过渡）；退场同一阈值退去
-	_black.modulate.a = Kit.ease_in_out(_t / T_BLACK)
-	var paper_r := minf(Kit.ease_out_cubic((_t - T_PAPER_IN) / T_PAPER_DUR),
-		1.0 - Kit.ease_in_out((_t - T_WIPE) / (T_END - T_WIPE)))
+	# 黑场 → 宣纸按噪声阈值洇进来（ease_in_out 1.0 秒，没有「半透明纸压黑底」的灰褐过渡）；退场同一阈值从墨晕窗口往外退
+	_black.modulate.a = 1.0 if _from_black else Kit.ease_in_out(_t / T_BLACK)
+	var wipe_q := (_t - T_WIPE) / (T_END - T_WIPE)
+	# 进场：线性与 ease_in_out 各半——纯 ease_in_out 时覆盖率仍有四成挤在中段 0.2 秒里（实测逐帧均亮度 35→101→153）
+	var in_q := clampf((_t - T_PAPER_IN) / T_PAPER_DUR, 0.0, 1.0)
+	var paper_r := minf(in_q * 0.5 + Kit.ease_in_out(in_q) * 0.5,
+		1.0 - Kit.ease_in_out(wipe_q))
 	if _paper_mat != null:
 		_paper_mat.set_shader_parameter("reveal", paper_r)
+		# 退场时阈值场以墨晕窗中心为原点反过来：纸从窗口往外退（进场仍从画面中偏右处洇开）
+		var leaving := _t >= T_WIPE
+		_paper_mat.set_shader_parameter("reveal_outward", leaving)
+		# 外退场的阈值场分布（约 0.37–0.90）比进场（约 0.03–0.56）整体偏高，扫描区间跟着换
+		_paper_mat.set_shader_parameter("thr_lo", 0.15 if leaving else -0.12)
+		_paper_mat.set_shader_parameter("thr_hi", 0.98 if leaving else 0.80)
+		if leaving and _bloom_region.size.x > 0.0:
+			var ctr := _bloom_region.position + _bloom_region.size * 0.5
+			_paper_mat.set_shader_parameter("reveal_origin", Vector2(ctr.x / maxf(_canvas.x, 1.0), ctr.y / maxf(_canvas.y, 1.0)))
 	else:
 		_paper.modulate.a = paper_r
 	# 纸铺满后黑底就没用了；退场时纸退去的地方要直接露出游戏
@@ -334,6 +388,13 @@ func _step(dt: float) -> void:
 	# 盖印那一下，整张纸轻轻一震
 	_jolt = maxf(0.0, _jolt - dt * 6.0)
 	_root.position = Vector2(0.0, 2.5 * _jolt * sin(_t * 90.0))
+	if _hint != null:
+		var hs := _hint.get_minimum_size()
+		_hint.position = Vector2(roundf(_canvas.x - hs.x - maxf(_canvas.x * 0.07, 64.0)), roundf(_canvas.y * 0.9 - hs.y))
+		# α0.62 时 16px 赭石字实测只有 2.3:1（第 2 轮 UX minor 5），提到 0.92
+		_hint.modulate.a = 0.92 * Kit.ease_in_out((_t - T_NAME) / 0.6) * (1.0 - Kit.ease_in_out((_t - T_OUT) / 0.4))
+	if _t >= T_WIPE - 0.05:
+		_emit_exiting()
 	if _t >= T_END:
 		_finish()
 
@@ -363,6 +424,7 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		go = mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT
+		esc = mb.pressed and mb.button_index == MOUSE_BUTTON_RIGHT
 		get_viewport().set_input_as_handled()
 	if esc:
 		skip()
