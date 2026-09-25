@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "_note": "cutscene_engine 线自测数据（不是正式内容；正式内容见 data/cutscenes.json，由 cutscene_content 线维护）。覆盖全部 style / pos / grade / fx / transition、hold 槽位复用、shake、letterbox 开关。",
+  "cutscenes": {
+    "fixture_prologue": {
+      "title": "自测・序幕（四镜，全部转场）",
+      "letterbox": true,
+      "shots": [
+        {
+          "bg": "res://assets/bg_quanzhou_harbor.jpg",
+          "duration": 7.0,
+          "cam_from": [0.42, 0.56, 1.2],
+          "cam_to": [0.55, 0.5, 1.04],
+          "grade": "dawn",
+          "fx": ["mist"],
+          "transition_in": "fade",
+          "shake": 0.0,
+          "captions": [
+            {"t": 0.9, "text": "东亚海域立志传", "style": "title", "pos": "center"},
+            {"t": 3.1, "text": "宝祐三年・一二五五", "style": "era", "pos": "center"}
+          ]
+        },
+        {
+          "bg": "res://assets/bg_xinghua_study.jpg",
+          "duration": 7.0,
+          "cam_from": [0.36, 0.52, 1.1],
+          "cam_to": [0.44, 0.48, 1.24],
+          "grade": "dusk",
+          "fx": ["dust", "lantern_glow"],
+          "transition_in": "ink",
+          "shake": 0.0,
+          "captions": [
+            {"t": 1.2, "text": "兴化军莆田县，玉湖陈氏。\n祖上出过宰相，到这一代，只剩一屋子书，和一本对不上的旧账。", "style": "narration", "pos": "lower_left"},
+            {"t": 4.6, "text": "「海上的事，书里是写不全的。」", "style": "line", "pos": "bottom"}
+          ]
+        },
+        {
+          "bg": "res://assets/bg_sea_route.jpg",
+          "duration": 6.5,
+          "cam_from": [0.5, 0.56, 1.0],
+          "cam_to": [0.6, 0.5, 1.16],
+          "grade": "neutral",
+          "fx": ["sea_spray"],
+          "transition_in": "ink",
+          "shake": 0.12,
+          "captions": [
+            {"t": 1.0, "text": "潮平两岸阔，", "style": "line", "pos": "right_vertical"},
+            {"t": 2.4, "text": "风正一帆悬。", "style": "line", "pos": "right_vertical"}
+          ]
+        },
+        {
+          "bg": "res://assets/bg_end_siege.jpg",
+          "duration": 6.0,
+          "cam_from": [0.5, 0.45, 1.12],
+          "cam_to": [0.46, 0.5, 1.02],
+          "grade": "fire",
+          "fx": ["embers", "mist"],
+          "transition_in": "flash",
+          "shake": 0.55,
+          "captions": [
+            {"t": 0.7, "text": "德祐二年正月，元军入临安。", "style": "line", "pos": "bottom"},
+            {"t": 3.3, "text": "未归", "style": "seal", "pos": "right_vertical"}
+          ]
+        }
+      ]
+    },
+    "fixture_weather": {
+      "title": "自测・雨雪（cut 转场、hold 槽位复用、左竖排、sepia/cold/night）",
+      "letterbox": true,
+      "shots": [
+        {
+          "bg": "res://assets/bg_temple_gate.jpg",
+          "duration": 6.0,
+          "cam_from": [0.5, 0.5, 1.06],
+          "cam_to": [0.5, 0.44, 1.18],
+          "grade": "cold",
+          "fx": ["snow"],
+          "transition_in": "fade",
+          "shake": 0.0,
+          "captions": [
+            {"t": 0.8, "text": "咸淳九年冬，", "style": "narration", "pos": "left_vertical", "hold": 2.0},
+            {"t": 3.4, "text": "襄阳城破的消息，过了四十日才到泉州。", "style": "narration", "pos": "left_vertical"}
+          ]
+        },
+        {
+          "bg": "res://assets/bg_academy.jpg",
+          "duration": 5.0,
+          "cam_from": [0.55, 0.55, 1.15],
+          "cam_to": [0.5, 0.5, 1.0],
+          "grade": "night",
+          "fx": ["rain"],
+          "transition_in": "cut",
+          "shake": 0.0,
+          "captions": [
+            {"t": 0.5, "text": "「这雨，下到明日也不会停。」", "style": "line", "pos": "bottom", "hold": 2.0},
+            {"t": 2.9, "text": "「那就明日再走。」", "style": "line", "pos": "bottom"}
+          ]
+        },
+        {
+          "bg": "res://assets/bg_quanzhou_ledger.jpg",
+          "duration": 5.0,
+          "cam_from": [0.4, 0.55, 1.2],
+          "cam_to": [0.46, 0.55, 1.28],
+          "grade": "sepia",
+          "fx": [],
+          "transition_in": "ink",
+          "shake": 0.0,
+          "captions": [
+            {"t": 0.6, "text": "旧账", "style": "title", "pos": "right_vertical"},
+            {"t": 1.9, "text": "三十七笔，笔笔对得上，偏偏总数对不上。", "style": "narration", "pos": "center"}
+          ]
+        }
+      ]
+    },
+    "fixture_ending": {
+      "title": "自测・结局（无 letterbox）",
+      "letterbox": false,
+      "shots": [
+        {
+          "bg": "res://assets/bg_end_yashan.jpg",
+          "duration": 7.5,
+          "cam_from": [0.5, 0.52, 1.14],
+          "cam_to": [0.5, 0.58, 1.0],
+          "grade": "night",
+          "fx": ["mist", "embers"],
+          "transition_in": "ink",
+          "shake": 0.0,
+          "captions": [
+            {"t": 1.0, "text": "海上宋鬼", "style": "title", "pos": "center"},
+            {"t": 2.9, "text": "祥兴二年二月・崖山", "style": "era", "pos": "center"},
+            {"t": 4.6, "text": "宋鬼", "style": "seal", "pos": "center"}
+          ]
+        }
+      ]
+    }
+  },
+  "chapters": {
+    "1": {"bg": "res://assets/bg_quanzhou_harbor.jpg", "epigraph": "苍官影里三洲路，涨海声中万国商。", "epigraph_src": "宋・李邴《咏泉州》", "year_text": "宝祐三年・一二五五"},
+    "2": {"bg": "res://assets/bg_hakata.jpg", "epigraph": "市舶之利最厚，若措置合宜，所得动以百万计。", "epigraph_src": "《宋会要辑稿・职官》", "year_text": "宝祐五年・一二五七"},
+    "3": {"bg": "res://assets/bg_arab_mosque.jpg", "epigraph": "舶商云集，蕃汉杂处。", "epigraph_src": "", "year_text": "景定元年・一二六〇"},
+    "4": {"bg": "res://assets/bg_temple_gate.jpg", "epigraph": "人生自古谁无死，留取丹心照汗青。", "epigraph_src": "文天祥《过零丁洋》", "year_text": "景定五年・一二六四"}
+  },
+  "endings": {
+    "忠肃": "fixture_ending",
+    "未归": "fixture_prologue",
+    "海上宋鬼": "fixture_ending",
+    "泉州蒲氏的船": "fixture_weather",
+    "纲首": "fixture_weather",
+    "岸上的根": "fixture_weather"
+  },
+  "port_banners": {
+    "xinghua": {"name": "兴化", "sub": "莆田・玉湖陈氏故里"},
+    "xinghua_harbor": {"name": "兴化海口", "sub": "木兰溪入海处"},
+    "quanzhou": {"name": "泉州", "sub": "刺桐港・市舶司所在"},
+    "fuzhou": {"name": "福州", "sub": "闽都・安抚司治所"},
+    "zhangzhou": {"name": "漳州", "sub": "九龙江口"},
+    "wenzhou": {"name": "温州", "sub": "瓯江・市舶务"},
+    "penghu": {"name": "澎湖", "sub": "泉州东海中・平湖"},
+    "ryukyu": {"name": "南岛海道北口", "sub": "未入官图的旧避风澳"},
+    "mingzhou": {"name": "明州", "sub": "庆元府・高丽日本船所泊"},
+    "jeju": {"name": "耽罗", "sub": "高丽南海中岛"},
+    "hakata": {"name": "博多唐房", "sub": "筑前・宋商聚居之所"},
+    "guangzhou": {"name": "广州", "sub": "番禺・蕃坊"},
+    "kagoshima": {"name": "南九州", "sub": "萨摩・坊津"},
+    "champa": {"name": "占城", "sub": "南海・宾童龙"}
+  }
+}
