@@ -2562,6 +2562,7 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 	investigation_mode.visible = false
 	npc_mode.visible = false
 	port_mode.visible = true
+	port_title.text = str(scene_data.get("title", "未知港口"))
 	# 本地 main 的终局线入口：终局后港口页 / 兴化守城页（函数在文件末尾补回段）
 	if GameState.is_ended():
 		_setup_ended_port()
@@ -2569,7 +2570,6 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 	if _siege_active():
 		_setup_siege_port()
 		return
-	port_title.text = str(scene_data.get("title", "未知港口"))
 	var shore_list: Array = scene_data.get("facilities", []).duplicate()
 	shore_list.append_array(_special_cards())
 	_shore_facilities = shore_list
@@ -2709,6 +2709,15 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	margin.add_child(hbox)
 
 	var icon_id := str(fac.get("id", "")).replace("city_", "")
+	# 本地终局线的守城卡 / 特殊卡没有自己的图标文件，借同性质设施的图标，别留空框
+	const SPECIAL_ICON := {
+		"siege_muster": "yamen", "siege_grain": "market", "siege_wall": "shipyard",
+		"siege_envoy": "tavern", "siege_nangshan": "yamen", "siege_nunnery": "temple",
+		"special_hanjiang_escape": "shipyard", "special_resign_1275": "exam",
+		"special_yashan": "shipyard", "special_gangshou_end": "yamen",
+	}
+	if SPECIAL_ICON.has(icon_id):
+		icon_id = SPECIAL_ICON[icon_id]
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = Vector2(46, 46)
 	frame.clip_contents = true
@@ -3783,44 +3792,25 @@ func _resign_decided() -> bool:
 
 func _setup_ended_port() -> void:
 	port_title.text = "%s・%s" % [port_title.text, GameState.ended]
-
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(560, 260)
-	var m := MarginContainer.new()
-	m.add_theme_constant_override("margin_left", 16)
-	m.add_theme_constant_override("margin_right", 16)
-	m.add_theme_constant_override("margin_top", 12)
-	m.add_theme_constant_override("margin_bottom", 12)
-	panel.add_child(m)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 6)
-	m.add_child(v)
-
-	var head := Label.new()
-	head.text = "航海札记"
-	head.add_theme_font_size_override("font_size", 22)
-	v.add_child(head)
-
-	for line in GameState.epilogue_lines():
-		var l := Label.new()
-		l.text = line
-		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size = Vector2(520, 0)
-		l.add_theme_font_size_override("font_size", 14)
-		v.add_child(l)
-
-	left_facilities.add_child(panel)
-
-	if GameState.ended_text != "":
-		var review := Button.new()
-		review.text = "重读结局"
-		review.custom_minimum_size = Vector2(250, 44)
-		review.pressed.connect(func():
-			_show_notice_dialog(GameState.ended, GameState.ended_at, GameState.ended_text)
-		)
-		right_facilities.add_child(review)
-
-	_add_save_button()
+	# 云端港口页没有左右栏：札记写进岸带那行提示，动作行只留「重读结局」与「航海日志」
+	_shore_facilities = []
+	_refresh_shore()
+	var band := _shore_band()
+	if band.get_child_count() > 0 and band.get_child(0) is Label:
+		var hint: Label = band.get_child(0)
+		hint.text = "航海札记\n" + "\n".join(GameState.epilogue_lines())
+		hint.add_theme_color_override("font_color", UiTheme.TEXT)
+	var actions: Node = band.get_node_or_null("ShoreActions")
+	if actions != null:
+		for c in actions.get_children():
+			actions.remove_child(c)
+			c.queue_free()
+		if GameState.ended_text != "":
+			actions.add_child(_shore_action("重读结局", Vector2(220, 48), true, func():
+				_show_notice_dialog(GameState.ended, GameState.ended_at, GameState.ended_text)
+			))
+		actions.add_child(_shore_action("航海日志", Vector2(140, 42), false, _show_save_dialog))
+	update_status_panel()
 
 
 
@@ -3899,53 +3889,45 @@ func _setup_siege_port() -> void:
 	port_title.text = "兴化军・围城　第 %d/%d 阵" % [
 		GameState.siege_get("round"), GameState.SIEGE_ROUNDS_MAX,
 	]
-
-	var stat := PanelContainer.new()
-	var m := MarginContainer.new()
-	m.add_theme_constant_override("margin_left", 14)
-	m.add_theme_constant_override("margin_right", 14)
-	m.add_theme_constant_override("margin_top", 10)
-	m.add_theme_constant_override("margin_bottom", 10)
-	stat.add_child(m)
-	var v := VBoxContainer.new()
-	m.add_child(v)
-	var head := Label.new()
-	head.text = "城头白布八字：生为宋臣，死为宋鬼"
-	head.add_theme_font_size_override("font_size", 18)
-	head.add_theme_color_override("font_color", Color(0.95, 0.9, 0.75))
-	v.add_child(head)
-	var body := Label.new()
+	# 云端港口页没有左右栏，守城的账与五张卡都走岸带：卡以 siege_* 身份全部上岸（不受「今日只开三处」），
+	# 岸带那行「今日只开三处。」改写成城防账。
 	var grain: int = GameState.siege_get("grain")
 	var rounds_left: int = grain / GameState.SIEGE_GRAIN_PER_ROUND
-	body.text = "兵 %d / 上限 %d　粮 %d（够打 %d 阵）　城墙 %d/%d　士气 %d%s" % [
+	var lines := "城头白布八字：生为宋臣，死为宋鬼\n"
+	lines += "兵 %d　上限 %d　粮 %d（够打 %d 阵）　城墙 %d 至多 %d　士气 %d%s" % [
 		GameState.siege_get("troops"), GameState.siege_troop_cap(),
 		grain, rounds_left, GameState.siege_get("wall"), GameState.SIEGE_WALL_MAX,
 		GameState.siege_get("morale"),
 		"　石手军在城" if str(GameState.siege.get("shishou", "")) == "kept" else "",
 	]
-	body.add_theme_font_size_override("font_size", 14)
-	v.add_child(body)
-
 	if rounds_left < 1:
-		var warn := Label.new()
-		warn.text = "⚠ 粮已不够打下一阵。此时出战即城破。"
-		warn.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4))
-		warn.add_theme_font_size_override("font_size", 14)
-		v.add_child(warn)
+		lines += "\n粮已不够打下一阵。此时出战即城破。"
 	elif rounds_left == 1 and GameState.siege_get("round") < GameState.SIEGE_ROUNDS_MAX - 1:
-		var warn2 := Label.new()
-		warn2.text = "⚠ 粮只够再打一阵。要守满三阵，还得屯粮。"
-		warn2.add_theme_color_override("font_color", Color(1.0, 0.8, 0.45))
-		warn2.add_theme_font_size_override("font_size", 14)
-		v.add_child(warn2)
+		lines += "\n粮只够再打一阵。要守满三阵，还得屯粮。"
 
-	left_facilities.add_child(stat)
-
+	# 岸带一行放不下六扇门（220 宽 × 6 > 1280）：福州尼寺本就不可操作，改成一句话写进账里
+	var cards: Array = []
 	for fac in _siege_cards():
-		var card := _make_facility_card(fac)
-		right_facilities.add_child(card)
-
-	_add_save_button()
+		if str(fac.get("id", "")) == CARD_SIEGE_NUNNERY:
+			lines += "\n%s：%s" % [str(fac.get("title", "")), str(fac.get("subtitle", ""))]
+		else:
+			cards.append(fac)
+	_shore_facilities = cards
+	_refresh_shore()
+	var band := _shore_band()
+	if band.get_child_count() > 0 and band.get_child(0) is Label:
+		var hint: Label = band.get_child(0)
+		hint.text = lines
+		hint.add_theme_color_override("font_color", UiTheme.HONEY if rounds_left <= 1 else UiTheme.TEXT)
+	# 围城中不出海：动作行去掉「看风」，留「再候一日」与「航海日志」
+	var actions: Node = band.get_node_or_null("ShoreActions")
+	if actions != null:
+		for c in actions.get_children():
+			actions.remove_child(c)
+			c.queue_free()
+		actions.add_child(_shore_action("再候一日", Vector2(160, 42), false, _on_shore_wait))
+		actions.add_child(_shore_action("航海日志", Vector2(140, 42), false, _show_save_dialog))
+	update_status_panel()
 
 
 

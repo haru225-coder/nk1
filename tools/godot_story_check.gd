@@ -529,6 +529,24 @@ func _route_check() -> void:
 	main.load_scene("xinghua")
 	_check(Eco.war_status("xinghua") == "loyal", "1277-02 兴化复城（涵江卡前提）")
 	_check("special_hanjiang_escape" in main.shore_hand, "1277-02 兴化岸上有涵江海口卡（名单 %s）" % [main.shore_hand])
+	# 守城页走岸带：五张 siege_* 卡全上岸，尼寺不占门，动作行无「看风」
+	GS.from_dict({})
+	GS.set_flag("renamed_wenlong")
+	GS.identity = "scholar"
+	Cal.from_dict({"year": 1276, "month": 11, "day": 3})
+	GS.siege_begin()
+	GS.last_port = "xinghua"
+	main.load_scene("xinghua")
+	_check("siege_muster" in main.shore_hand and "siege_nangshan" in main.shore_hand and "siege_nunnery" not in main.shore_hand,
+		"守城页五张卡在岸带、尼寺只作一行字（名单 %s）" % [main.shore_hand])
+	_check(main.shore_hand.size() == 5, "守城岸带恰五扇门（现 %d）" % main.shore_hand.size())
+	var siege_sail := false
+	var sa: Node = main._shore_band().get_node_or_null("ShoreActions")
+	if sa != null:
+		for b in sa.get_children():
+			if b is Button and (b as Button).text == "看风":
+				siege_sail = true
+	_check(not siege_sail, "围城中动作行没有「看风」")
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
