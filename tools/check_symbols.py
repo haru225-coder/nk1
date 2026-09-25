@@ -1409,13 +1409,15 @@ if "CenterContainer" in seachart_src and "Vector2(360, 200)" not in seachart_src
 else:
     print("  ✗ 海图遭遇弹层仍用 360,200 硬坐标")
     problems.append("海图遭遇弹层未居中")
-if "func _draw_ink_label" in seachart_src and "draw_string(font, v + Vector2(8, 5)" not in seachart_src:
-    print("  ✓ 海图港名走墨底签")
+mapview_src_cs = open(os.path.join(ROOT, "scripts", "chart", "MapView.gd"), encoding="utf-8").read() if os.path.exists(os.path.join(ROOT, "scripts", "chart", "MapView.gd")) else ""
+# 2026-09-25 海图重制：港名与底图都移到 scripts/chart/MapView.gd——港名走《地理图》式朱砂方框加蛤粉内填，底图是舆图纹理经绢本着色器
+if "COL_SHELL" in mapview_src_cs and "draw_rect(box" in mapview_src_cs and "draw_string(font, v + Vector2(8, 5)" not in seachart_src:
+    print("  ✓ 海图港名走方框蛤粉签（MapView._draw_ports）")
 else:
     print("  ✗ 海图港名仍是裸字")
     problems.append("海图港名未垫墨底")
-if "func _draw_chart_leaf" in seachart_src and "Color(0.11, 0.08, 0.05, 0.55)" not in seachart_src:
-    print("  ✓ 海图中栏是绢纸")
+if "ChartTerrain.gdshader" in mapview_src_cs and "terrain_4096.png" in mapview_src_cs and "Color(0.11, 0.08, 0.05, 0.55)" not in seachart_src:
+    print("  ✓ 海图底图是绢本着色的舆图纹理（MapView）")
 else:
     print("  ✗ 海图中栏仍铺熟漆")
     problems.append("海图中栏未改绢纸")

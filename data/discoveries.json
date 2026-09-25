@@ -26,12 +26,12 @@
     },
     {
       "id": "heishui_gou",
-      "name": "黑水沟",
+      "name": "落漈",
       "type": "水文",
-      "location": "泉州外海东行水道",
+      "location": "彭湖与流求之间的水道",
       "value": 150,
       "near_ports": ["penghu", "ryukyu", "quanzhou"],
-      "historical_hook": "海面色深如墨，流急而不测。舟人相戒，谓过此沟者十去六还。摸清其流向与宽窄，往流求的航期可缩短数日。"
+      "historical_hook": "彭湖以东水势渐低，近流求则水趋下而不回，舟人谓之落漈。遇飓风漂流落漈者，回者百一。摸清其流向与宽窄，往流求的航期可缩短数日。"
     },
     {
       "id": "penghu_stone_wall",

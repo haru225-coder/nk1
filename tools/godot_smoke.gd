@@ -80,12 +80,14 @@ func _run() -> void:
 		"海图标题与遭遇弹层走绢本", fails)
 	_check(chart_src.find("CenterContainer") >= 0 and chart_src.find("Vector2(360, 200)") < 0,
 		"海图遭遇弹层居中", fails)
-	_check(chart_src.find("func _draw_ink_label") >= 0
+	# 2026-09-25 海图重制：港名与底图移到 scripts/chart/MapView.gd（朱砂方框蛤粉签 / 舆图纹理经绢本着色器）
+	var mapview_src := FileAccess.get_file_as_string("res://scripts/chart/MapView.gd")
+	_check(mapview_src.find("COL_SHELL") >= 0 and mapview_src.find("draw_rect(box") >= 0
 		and chart_src.find("draw_string(font, v + Vector2(8, 5)") < 0,
-		"海图港名走墨底签", fails)
-	_check(chart_src.find("func _draw_chart_leaf") >= 0
+		"海图港名走方框蛤粉签", fails)
+	_check(mapview_src.find("ChartTerrain.gdshader") >= 0 and mapview_src.find("terrain_4096.png") >= 0
 		and chart_src.find("Color(0.11, 0.08, 0.05, 0.55)") < 0,
-		"海图中栏是绢纸", fails)
+		"海图底图是绢本着色的舆图纹理", fails)
 	_check(chart_src.find("event_actions = VBoxContainer") >= 0
 		and chart_src.find("style_choice_button(b)") >= 0,
 		"海图遭遇选项走竖排挑签", fails)

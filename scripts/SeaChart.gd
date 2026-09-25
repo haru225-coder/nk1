@@ -5,13 +5,6 @@ extends Control
 var origin_port: String = ""
 var selected_port: String = ""
 var _hand: PackedStringArray = PackedStringArray()
-var _marker_at: Dictionary = {}
-var _coast: Dictionary = {}
-var _coast_ready := false
-## 投影 + 平滑后的陆地多边形缓存。Natural Earth 386 环每帧重算会把海图拖到肉眼可见的卡；
-## 视窗（尺寸 / 投影参数）不变就复用，变了才重算。
-var _land_cache_key := ""
-var _land_cache: Array = []
 
 ## 航行状态
 var sailing: bool = false
@@ -21,9 +14,14 @@ var course_bearing: float = 0.0
 var days_elapsed: int = 0
 var pending_event: Dictionary = {}
 
-# UI
+# UI（2026-09-25 海图重制：全屏 MapView，夜潮面板压在图上；见 docs/海图重制设计_2026-09-25.md）
 var status_label: RichTextLabel
-var chart: Control
+var map: MapView
+var map_container: SubViewportContainer
+var compass: Control
+var scale_bar: Control
+var mode_button: Button
+var terrain_mode: bool = false
 var heading_row: HBoxContainer
 var log_label: RichTextLabel
 var sail_button: Button
@@ -41,6 +39,16 @@ var event_actions: VBoxContainer
 var _strip_line: RichTextLabel
 var _condition_layer: Control
 var _latest_note := ""
+## 逐日推进时船标在图上走的秒数；按住空格加速。serial 用来作废回港后仍在等的协程。
+const DAY_SECONDS := 0.42
+const DAY_SECONDS_FAST := 0.05
+var _sail_serial: int = 0
+## 二十四向（自正北顺时针，每向 15 度）：宋元罗盘的方位字，海图罗盘与「某针」文案用它
+const COMPASS_24 := ["子", "癸", "丑", "艮", "寅", "甲", "卯", "乙", "辰", "巽", "巳", "丙", "午", "丁", "未", "坤", "申", "庚", "酉", "辛", "戌", "乾", "亥", "壬"]
+const MAP_INK := Color(0.165, 0.141, 0.114)
+const MAP_PAPER := Color(0.894, 0.827, 0.682)
+const MAP_CINNABAR := Color(0.659, 0.196, 0.165)
+const MAP_AZURITE := Color(0.208, 0.376, 0.498)
 
 
 func _ready() -> void:
@@ -53,9 +61,38 @@ func _ready() -> void:
 	_sync_order_buttons()
 	# 连接放在 _build_ui 之后：_log 依赖其中创建的 log_label
 	GameManager.monthly_notice.connect(_log)
+	# 海图数据接入：岸线、绕岸折线、标注、已至港。船标先停在起点港。
+	map.setup(GameManager.unlocked_ports(), GameManager.coastline_data, GameManager.sealanes_data, GameManager.chart_labels_data, GameState.visited_ports)
+	map.show_ship_at_port(origin_port)
 	_refresh_hand()
 	_refresh_status()
 	_log("自 %s 起锚。%s。" % [GameManager.get_port_name(origin_port), Calendar.get_monsoon_desc()])
+	# 首帧取景要等视口有尺寸
+	await get_tree().process_frame
+	_frame_home(0.0)
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	match (event as InputEventKey).keycode:
+		KEY_T:
+			_toggle_mode()
+		KEY_F:
+			_frame_home(0.8)
+		KEY_H:
+			_toggle_deck()
+
+
+## 收起 / 展开底部的航法栏、航向牌与按钮，只看图（H）
+var _deck_hidden: bool = false
+func _toggle_deck() -> void:
+	_deck_hidden = not _deck_hidden
+	for c in [order_row, heading_row]:
+		if c:
+			c.visible = not _deck_hidden
+	if sail_button and sail_button.get_parent():
+		sail_button.get_parent().visible = not _deck_hidden
 
 
 # ══════════════════════════════════════════════════════
@@ -65,19 +102,22 @@ func _ready() -> void:
 func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 
-	var bg := TextureRect.new()
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	bg.texture = GameManager.load_texture("res://assets/bg_world_map.jpg")
-	bg.modulate = Color(0.94, 0.88, 0.76, 1.0)
-	add_child(bg)
-
-	var veil := ColorRect.new()
-	veil.set_anchors_preset(Control.PRESET_FULL_RECT)
-	veil.color = UiTheme.VEIL
-	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(veil)
+	# ── 海图：SubViewport 里的 MapView 铺满全屏，摄像机只影响它；容器挂后期纸纹 ──
+	map_container = SubViewportContainer.new()
+	map_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	map_container.stretch = true
+	var post := ShaderMaterial.new()
+	post.shader = load("res://assets/map/ChartPost.gdshader")
+	map_container.material = post
+	add_child(map_container)
+	var vp := SubViewport.new()
+	vp.disable_3d = true
+	vp.transparent_bg = false
+	vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	map_container.add_child(vp)
+	map = MapView.new()
+	vp.add_child(map)
+	map.port_clicked.connect(_on_map_port_clicked)
 
 	var root := VBoxContainer.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -86,6 +126,7 @@ func _build_ui() -> void:
 	root.offset_right = -16
 	root.offset_bottom = -16
 	root.add_theme_constant_override("separation", 8)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 
 	# 顶匾。左栏船况和右栏日志收起来之后，日期和刚写下的一句留在这里。
@@ -108,6 +149,20 @@ func _build_ui() -> void:
 	_strip_line.custom_minimum_size = Vector2(0, 56)
 	UiTheme.style_body(_strip_line)
 	strip_row.add_child(_strip_line)
+	mode_button = Button.new()
+	mode_button.text = "舆图"
+	mode_button.tooltip_text = "海图 / 舆图（地形）切换　T"
+	mode_button.custom_minimum_size = Vector2(96, 40)
+	mode_button.pressed.connect(_toggle_mode)
+	UiTheme.style_button(mode_button, false)
+	strip_row.add_child(mode_button)
+	var home_btn := Button.new()
+	home_btn.text = "全图"
+	home_btn.tooltip_text = "取景到已知海域　F"
+	home_btn.custom_minimum_size = Vector2(96, 40)
+	home_btn.pressed.connect(func(): _frame_home(0.8))
+	UiTheme.style_button(home_btn, false)
+	strip_row.add_child(home_btn)
 	var cond_btn := Button.new()
 	cond_btn.text = "船况"
 	cond_btn.custom_minimum_size = Vector2(120, 40)
@@ -115,23 +170,54 @@ func _build_ui() -> void:
 	UiTheme.style_button(cond_btn, false)
 	strip_row.add_child(cond_btn)
 
-	# 图铺满匾和航向牌之间。三张 372 宽的牌仍在底栏。
-	var center := PanelContainer.new()
+	# 中间留给图：透明占位，鼠标穿到 MapView。罗盘与比例尺挂在占位的角上。
+	var center := Control.new()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	center.add_theme_stylebox_override("panel", _panel_style())
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(center)
-	var center_m := MarginContainer.new()
-	_set_margins(center_m, 8)
-	center.add_child(center_m)
-	chart = Control.new()
-	chart.custom_minimum_size = Vector2(0, 160)
-	chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	chart.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	chart.clip_contents = true
-	chart.draw.connect(func(): _draw_chart(chart))
-	chart.gui_input.connect(_on_chart_input)
-	center_m.add_child(chart)
+	compass = Control.new()
+	compass.custom_minimum_size = Vector2(150, 172)
+	compass.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	compass.offset_left = -150 - 6
+	compass.offset_right = -6
+	compass.offset_top = 8
+	compass.offset_bottom = 8 + 172
+	compass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	compass.draw.connect(_draw_compass)
+	center.add_child(compass)
+	# 题记框：仿《禹迹图》图首方框，竖写图名与「每方折地百里」
+	var cartouche := Control.new()
+	cartouche.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	cartouche.offset_left = 8
+	cartouche.offset_right = 8 + 62
+	cartouche.offset_top = 8
+	cartouche.offset_bottom = 8 + 190
+	cartouche.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cartouche.draw.connect(func(): _draw_cartouche(cartouche))
+	center.add_child(cartouche)
+	scale_bar = Control.new()
+	scale_bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	scale_bar.offset_left = 6
+	scale_bar.offset_right = 6 + 240
+	scale_bar.offset_top = -40
+	scale_bar.offset_bottom = -4
+	scale_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	scale_bar.draw.connect(_draw_scale)
+	center.add_child(scale_bar)
+	map.camera_changed.connect(scale_bar.queue_redraw)
+	var speed_hint := Label.new()
+	speed_hint.text = "拖拽平移　滚轮缩放　T 舆图　F 全图　H 收牌　航行中按住空格加速"
+	speed_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	speed_hint.offset_left = -520
+	speed_hint.offset_right = -6
+	speed_hint.offset_top = -26
+	speed_hint.offset_bottom = -4
+	speed_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	speed_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiTheme.style_footnote(speed_hint)
+	speed_hint.add_theme_color_override("font_color", Color(MAP_INK, 0.7))
+	center.add_child(speed_hint)
 
 	# 航法三策一栏（云端 bed9），放在航向牌上方
 	order_row = _build_order_row()
@@ -174,6 +260,173 @@ func _build_ui() -> void:
 	# ── 事件浮层 ──
 	_build_event_panel()
 	_mount_condition()
+
+
+func _toggle_mode() -> void:
+	terrain_mode = not terrain_mode
+	map.set_mode(terrain_mode)
+	mode_button.text = "海图" if terrain_mode else "舆图"
+
+
+## 取景到全部已解锁港口
+func _frame_home(dur: float) -> void:
+	var ids := []
+	for p in GameManager.unlocked_ports():
+		ids.append(str(p.get("id", "")))
+	map.frame_ports(ids, 0.20, dur)
+
+
+## 把当前选择同步到图上：风向、手牌、当前航段（顺风绿 / 逆风朱 / 换风金）
+func _sync_map() -> void:
+	if map == null:
+		return
+	map.set_wind(Calendar.get_wind_bearing())
+	map.set_calendar(Calendar.month, Calendar.year)
+	var offered: Array = [origin_port]
+	for pid in _hand:
+		offered.append(str(pid))
+	map.set_offered(offered)
+	if selected_port == "":
+		map.clear_route()
+	else:
+		var plan := Voyage.plan(origin_port, selected_port, course_order)
+		var wf := float(plan.get("wind_factor", 1.0))
+		var col := MapView.COL_ROUTE_MIXED
+		if not plan.get("wind_changes", false):
+			col = MapView.COL_ROUTE_FAIR if wf >= 1.15 else (MapView.COL_ROUTE_FOUL if wf <= 0.75 else MapView.COL_ROUTE_MIXED)
+		map.set_route(origin_port, selected_port, col, Voyage.is_known_route(origin_port, selected_port))
+	if compass:
+		compass.queue_redraw()
+
+
+## 图上点港：与航向牌同一套规则——只有这一手风放出的向才能选
+func _on_map_port_clicked(pid: String) -> void:
+	if sailing or pid == "" or pid == origin_port:
+		return
+	if pid in _hand:
+		_select_heading(pid)
+	else:
+		_log("今日风不放这一向。")
+
+
+## 二十四向罗盘（宋元针盘）：内环四维（朱砂）、中环十二支（墨）、外环八干（淡墨），最外 48 刻度（每 7.5 度，缝针短刻）。
+## 朱针指当前航向并写「单某针」或「某某针」（缝针 = 两向之间），青箭示季风。中心一圈淡青取「指南浮针」之意。
+func _draw_compass() -> void:
+	var c := compass
+	var font := UiTheme.font()
+	var center := c.size * 0.5
+	var r := minf(c.size.x, c.size.y) * 0.5 - 3.0
+	c.draw_circle(center, r + 2.0, Color(MAP_INK, 0.35))
+	c.draw_circle(center, r, Color(MAP_PAPER, 0.93))
+	c.draw_arc(center, r, 0, TAU, 96, Color(MAP_INK, 0.85), 1.6, true)
+	c.draw_arc(center, r * 0.74, 0, TAU, 96, Color(MAP_INK, 0.35), 1.0, true)
+	c.draw_arc(center, r * 0.55, 0, TAU, 96, Color(MAP_INK, 0.30), 1.0, true)
+	# 浮针水面
+	c.draw_circle(center, r * 0.36, Color(MAP_AZURITE, 0.16))
+	c.draw_arc(center, r * 0.36, 0, TAU, 64, Color(MAP_AZURITE, 0.45), 1.0, true)
+	# 48 刻度
+	for i in range(48):
+		var ang := deg_to_rad(i * 7.5) - PI * 0.5
+		var dir := Vector2(cos(ang), sin(ang))
+		var single := i % 2 == 0
+		var major := i % 12 == 0
+		var len := 7.0 if major else (5.0 if single else 2.5)
+		c.draw_line(center + dir * r, center + dir * (r - len), Color(MAP_INK, 0.85 if single else 0.45), 1.0, true)
+	# 三环文字：干（外）、支（中）、维（内）
+	for i in range(24):
+		var ang := deg_to_rad(i * 15.0) - PI * 0.5
+		var dir := Vector2(cos(ang), sin(ang))
+		var ch: String = str(COMPASS_24[i])
+		var is_branch := i % 2 == 0          # 子丑寅卯…（偶数位）
+		var is_corner := ch in ["乾", "坤", "艮", "巽"]
+		var ring := 0.645 if is_branch else 0.85
+		var col := MAP_INK if is_branch else Color(MAP_INK, 0.62)
+		var fs := 11 if is_branch else 10
+		if is_corner:
+			ring = 0.46
+			col = MAP_CINNABAR
+			fs = 11
+		var w := font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var tp := center + dir * (r * ring)
+		c.draw_string(font, tp + Vector2(-w * 0.5, fs * 0.36), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+	var wb := Calendar.get_wind_bearing()
+	if wb >= 0.0:
+		var d := Vector2(sin(deg_to_rad(wb)), -cos(deg_to_rad(wb)))
+		var a := center - d * r * 0.30
+		var b := center + d * r * 0.30
+		var perp := Vector2(-d.y, d.x)
+		c.draw_line(a, b, Color(MAP_AZURITE, 0.8), 2.0, true)
+		c.draw_line(b, b - d * 6.0 + perp * 3.5, Color(MAP_AZURITE, 0.8), 2.0, true)
+		c.draw_line(b, b - d * 6.0 - perp * 3.5, Color(MAP_AZURITE, 0.8), 2.0, true)
+	if selected_port != "":
+		var bearing := course_bearing if sailing else Voyage.bearing(origin_port, selected_port)
+		var d2 := Vector2(sin(deg_to_rad(bearing)), -cos(deg_to_rad(bearing)))
+		var perp2 := Vector2(-d2.y, d2.x)
+		var tip := center + d2 * r * 0.70
+		var tail := center - d2 * r * 0.18
+		c.draw_colored_polygon(PackedVector2Array([tip, center + perp2 * 3.0, tail, center - perp2 * 3.0]), MAP_CINNABAR)
+		var needle := needle_name(bearing)
+		var w2 := font.get_string_size(needle, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+		c.draw_string_outline(font, center + Vector2(-w2 * 0.5, r + 16), needle, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 3, Color(MAP_PAPER, 0.9))
+		c.draw_string(font, center + Vector2(-w2 * 0.5, r + 16), needle, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, MAP_CINNABAR)
+	c.draw_circle(center, 2.5, MAP_INK)
+
+
+## 针位读法：正对一向为「单X针」，落在两向之间为「XY针」（分辨率 7.5 度，《真腊风土记》「行丁未针」）
+static func needle_name(bearing: float) -> String:
+	var k := int(round(fposmod(bearing, 360.0) / 7.5)) % 48
+	if k % 2 == 0:
+		return "单%s针" % str(COMPASS_24[k / 2])
+	var a := str(COMPASS_24[(k - 1) / 2])
+	var b := str(COMPASS_24[((k + 1) / 2) % 24])
+	return "%s%s针" % [a, b]
+
+
+## 题记框：墨线双框，竖写「東南海道圖」，旁注「每方折地百里」（《禹迹图》图首方框之制）
+func _draw_cartouche(c: Control) -> void:
+	var font: Font = map.font if (map != null and map.font != null) else UiTheme.font()
+	var rect := Rect2(Vector2(2, 2), c.size - Vector2(4, 4))
+	c.draw_rect(rect, Color(MAP_PAPER, 0.92), true)
+	c.draw_rect(rect, Color(MAP_INK, 0.85), false, 1.5)
+	c.draw_rect(rect.grow(-4.0), Color(MAP_INK, 0.45), false, 1.0)
+	var title := "東南海道圖"
+	var y := 22.0
+	var x_main := rect.position.x + 14.0
+	for ch in title:
+		var w := font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
+		c.draw_string(font, Vector2(x_main + 12.0 - w * 0.5, y + 12.0), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, MAP_INK)
+		y += 21.0
+	var note := "每方折地百里"
+	var y2 := 26.0
+	var x_note := rect.end.x - 18.0
+	for ch in note:
+		var w2 := font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+		c.draw_string(font, Vector2(x_note - w2 * 0.5, y2 + 6.0), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(MAP_INK, 0.7))
+		y2 += 13.0
+
+
+## 比例尺：按当前缩放画一段整数里程（百里 / 二百里 / 五百里 / 千里）
+func _draw_scale() -> void:
+	var c := scale_bar
+	if map == null or map.camera == null or not map.proj.loaded:
+		return
+	var font := UiTheme.font()
+	var li_per_px := map.proj.km_per_px_at(120.0, 25.0) / map.camera.zoom.x / Voyage.KM_PER_LI
+	var step_li := 100.0
+	for cand: float in [100.0, 200.0, 500.0, 1000.0, 2000.0]:
+		if cand / li_per_px <= 190.0:
+			step_li = cand
+	var w := step_li / li_per_px
+	var y := c.size.y - 8.0
+	var x0 := 6.0
+	c.draw_line(Vector2(x0, y), Vector2(x0 + w, y), MAP_INK, 1.6, true)
+	c.draw_line(Vector2(x0, y - 5), Vector2(x0, y + 1), MAP_INK, 1.6, true)
+	c.draw_line(Vector2(x0 + w, y - 5), Vector2(x0 + w, y + 1), MAP_INK, 1.6, true)
+	c.draw_line(Vector2(x0 + w * 0.5, y - 3), Vector2(x0 + w * 0.5, y + 1), MAP_INK, 1.0, true)
+	var names := {100.0: "一百里", 200.0: "二百里", 500.0: "五百里", 1000.0: "千里", 2000.0: "二千里"}
+	var label: String = names.get(step_li, "%d 里" % int(step_li))
+	c.draw_string_outline(font, Vector2(x0, y - 9), label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, 3, Color(MAP_PAPER, 0.9))
+	c.draw_string(font, Vector2(x0, y - 9), label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, MAP_INK)
 
 
 func _build_event_panel() -> void:
@@ -446,9 +699,8 @@ func _refresh_status() -> void:
 	t += _course_detail_text(gold)
 	status_label.text = t
 	_refresh_strip()
-	# 日期推进会改季风，图上的风向箭头与航段配色随之变
-	if chart:
-		chart.queue_redraw()
+	# 日期推进会改季风，图上的风向流线与航段配色随之变
+	_sync_map()
 
 
 ## 选定航向后的航段细节（云端 bed9 `_refresh_detail` 改写成船况面板的文字段）：
@@ -549,8 +801,10 @@ func _refresh_hand() -> void:
 	redraw_button.disabled = sailing
 	if status_label:
 		_refresh_status()
-	if chart:
-		chart.queue_redraw()
+	_sync_map()
+	# 选了去处就把起点与去处一起框进镜头
+	if selected_port != "" and map:
+		map.frame_ports([origin_port, selected_port], 0.30, 0.7)
 
 
 func _make_heading_card(pid: String) -> Control:
@@ -648,33 +902,6 @@ func _on_redraw_hand() -> void:
 	_refresh_status()
 
 
-func _on_chart_input(event: InputEvent) -> void:
-	if sailing or not (event is InputEventMouseButton):
-		return
-	var mb := event as InputEventMouseButton
-	if not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
-		return
-	var pid := _port_at(mb.position)
-	if pid == "" or pid == origin_port:
-		return
-	if pid in _hand:
-		_select_heading(pid)
-	else:
-		_log("今日风不放这一向。")
-
-
-func _port_at(at: Vector2) -> String:
-	var best := ""
-	var best_d := 16.0
-	for key in _marker_at.keys():
-		var pos: Vector2 = _marker_at[key]
-		var d := pos.distance_to(at)
-		if d < best_d:
-			best_d = d
-			best = str(key)
-	return best
-
-
 ## 八方加上度数。字跟最近的一方，数目仍是航向。
 func _bearing_phrase(deg: float) -> String:
 	var dirs := PackedStringArray(["北", "东北", "东", "东南", "南", "西南", "西", "西北"])
@@ -684,1213 +911,8 @@ func _bearing_phrase(deg: float) -> String:
 
 
 # ══════════════════════════════════════════════════════
-#  海图绘制
+#  海图绘制已移到 scripts/chart/MapView.gd（2026-09-25 海图重制）
 # ══════════════════════════════════════════════════════
-
-const CHART_COAST := "res://data/chart_coast.json"
-
-## 等比投影已解锁港口的经纬度。经度按平均纬度收窄，否则高纬处会被拉宽。
-## 系数 0.78 与 tools/verify_economy.py 的海图投影校验锁在一起，不要单独改。
-func _draw_chart(c: Control) -> void:
-	var pts: Array = GameManager.unlocked_ports()
-	if pts.size() < 2:
-		return
-
-	var size := c.size
-	if size.x < 8.0 or size.y < 8.0:
-		return
-	var frame := _chart_frame(pts, size)
-
-	RenderingServer.canvas_item_set_clip(c.get_canvas_item(), true)
-	_draw_chart_leaf(c, size)
-	_draw_world(c, frame, size)
-
-	# 已知航路：淡墨勾出港口间的连接关系。绢纸上不用泥金，否则线会发飘。
-	# 双向连接只画一次，虚线才留得住空隙。
-	var drawn_routes := {}
-	for p in pts:
-		var pid := str(p.get("id", ""))
-		var a: Vector2 = _chart_xy(frame, float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
-		for cid in p.get("connections", []):
-			var other := str(cid)
-			var lo := pid if pid < other else other
-			var hi := other if pid < other else pid
-			var key := lo + "|" + hi
-			if pid == other or drawn_routes.has(key):
-				continue
-			drawn_routes[key] = true
-			var q := GameManager.get_port_by_id(other)
-			if q.is_empty() or not GameState.is_chapter_reached(q.get("unlock", "ch1")):
-				continue
-			var b: Vector2 = _chart_xy(frame, float(q.get("lat", 0.0)), float(q.get("lon", 0.0)))
-			_draw_rhumb(c, frame, a, b, Color(0.40, 0.26, 0.12, 0.62))
-
-	# 当前航段：沿 sealanes 折线（云端 2d51，绕岛计里程），无折线时退回两点直连
-	if selected_port != "":
-		var o := GameManager.get_port_by_id(origin_port)
-		var d := GameManager.get_port_by_id(selected_port)
-		if not o.is_empty() and not d.is_empty():
-			var wf := Voyage.wind_factor(Voyage.bearing(origin_port, selected_port))
-			# 顺风泛绿、逆风泛红——季风是否有利，一眼能看出来
-			# 绢纸上的顺风/横风/逆风要比面板上的亮色深一档，否则会糊进纸色。
-			var col := Color(0.30, 0.42, 0.22) if wf >= 1.15 else (
-				Color(0.62, 0.24, 0.16) if wf <= 0.75 else Color(0.55, 0.36, 0.10))
-			var track: Array = Voyage.track_lonlat(origin_port, selected_port)
-			var nodes: Array[Vector2] = []
-			for pt in track:
-				nodes.append(_chart_xy(frame, float(pt[1]), float(pt[0])))
-			if nodes.size() < 2:
-				nodes = [
-					_chart_xy(frame, float(o.get("lat", 0.0)), float(o.get("lon", 0.0))),
-					_chart_xy(frame, float(d.get("lat", 0.0)), float(d.get("lon", 0.0))),
-				]
-			for i in range(nodes.size() - 1):
-				var a: Vector2 = nodes[i]
-				var b: Vector2 = nodes[i + 1]
-				var along := b - a
-				var span := along.length()
-				if span > 22.0:
-					var step := along / span
-					if i == 0:
-						a += step * 9.0
-					if i == nodes.size() - 2:
-						b -= step * 9.0
-				_draw_wet_line(c, frame, a, b, col, 2.5, true)
-
-	var font := UiTheme.font()
-	var marks: Array[Dictionary] = []
-	_marker_at = {}
-	for p in pts:
-		var pid: String = p.get("id", "")
-		var v: Vector2 = _chart_xy(frame, float(p.get("lat", 0.0)), float(p.get("lon", 0.0)))
-		_marker_at[pid] = v
-		var visited: bool = pid in GameState.visited_ports
-		var is_here := pid == origin_port
-		var is_target := pid == selected_port
-		var offered := is_here or pid in _hand
-		# 圆点落在绢纸上，要用深墨；签上的字仍是浅色，两套不能混。
-		var label_col := UiTheme.TEXT_DIM
-		var dot_col := Color(0.42, 0.32, 0.22)
-		if visited:
-			label_col = UiTheme.TEXT
-			dot_col = Color(0.24, 0.16, 0.10)
-		if is_target:
-			label_col = UiTheme.GOLD
-			dot_col = Color(0.55, 0.36, 0.10)
-		if is_here:
-			label_col = UiTheme.CINNABAR
-			dot_col = Color(0.62, 0.22, 0.14)
-		if not offered:
-			label_col.a = 0.35
-			dot_col.a = 0.35
-		var radius := 5.2 if (is_here or is_target) else 4.0
-		c.draw_colored_polygon(PackedVector2Array([
-			v + Vector2(0, -radius),
-			v + Vector2(radius, 0),
-			v + Vector2(0, radius),
-			v + Vector2(-radius, 0),
-		]), dot_col)
-		c.draw_circle(v, 1.35, Color(0.96, 0.90, 0.78, dot_col.a))
-		if is_here or is_target:
-			c.draw_arc(v, radius + 3.4, 0, TAU, 24, dot_col, 1.3)
-		marks.append({
-			"at": v,
-			"name": str(p.get("name", pid)),
-			"col": label_col,
-			"accent": is_here or is_target,
-		})
-
-	var bounds := Rect2(Vector2(4, 4), size - Vector2(8, 8))
-	var occupied: Array[Rect2] = []
-	for mark in marks:
-		var at: Vector2 = mark["at"]
-		occupied.append(Rect2(at - Vector2(7, 7), Vector2(14, 14)))
-	var wind_bearing := Calendar.get_wind_bearing()
-	var monsoon_text := Calendar.get_monsoon_desc()
-	var monsoon_col := UiTheme.GOLD if wind_bearing >= 0.0 else UiTheme.TEXT_DIM
-	occupied.append(_draw_ink_label(c, font, Vector2(12, 18), monsoon_text, monsoon_col, false))
-	_draw_sea_names(c, frame, size, font, occupied)
-	_draw_chart_title(c, frame, size, font, occupied)
-	_draw_margin_degrees(c, frame, size, font, occupied)
-	for mark in marks:
-		var label: String = str(mark["name"])
-		var text_w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT).x
-		var baseline := _place_chart_label(
-			font, mark["at"] as Vector2, label, text_w, bounds, occupied, bool(mark["accent"])
-		)
-		if baseline.x > -1000.0:
-			occupied.append(_draw_ink_label(
-				c, font, baseline, label, mark["col"] as Color, bool(mark["accent"])
-			))
-	_draw_scale(c, frame, size, font, occupied)
-	_draw_compass(c, size, occupied)
-	_draw_chart_frame(c, size)
-
-
-func _chart_frame(pts: Array, size: Vector2) -> Dictionary:
-	var lat_min := 999.0
-	var lat_max := -999.0
-	var lon_min := 999.0
-	var lon_max := -999.0
-	for p in pts:
-		lat_min = minf(lat_min, float(p.get("lat", 0.0)))
-		lat_max = maxf(lat_max, float(p.get("lat", 0.0)))
-		lon_min = minf(lon_min, float(p.get("lon", 0.0)))
-		lon_max = maxf(lon_max, float(p.get("lon", 0.0)))
-	var mean_lat := (lat_min + lat_max) * 0.5
-	var mean_lon := (lon_min + lon_max) * 0.5
-	var kx := cos(deg_to_rad(mean_lat))
-	var span_x := maxf(0.5, (lon_max - lon_min) * kx)
-	var span_y := maxf(0.5, lat_max - lat_min)
-	var scale := minf(size.x / span_x, size.y / span_y) * 0.78
-	return {
-		"mean_lat": mean_lat,
-		"mean_lon": mean_lon,
-		"kx": kx,
-		"scale": scale,
-		"mid": size * 0.5,
-	}
-
-
-func _chart_xy(frame: Dictionary, lat: float, lon: float) -> Vector2:
-	var mid: Vector2 = frame["mid"]
-	var kx := float(frame["kx"])
-	var scale := float(frame["scale"])
-	return mid + Vector2((lon - float(frame["mean_lon"])) * kx * scale, -(lat - float(frame["mean_lat"])) * scale)
-
-
-func _chart_unproject(frame: Dictionary, p: Vector2) -> Vector2:
-	var scale := float(frame["scale"])
-	var kx := float(frame["kx"])
-	if scale < 0.001 or kx < 0.001:
-		return Vector2.ZERO
-	var mid: Vector2 = frame["mid"]
-	var lon := (p.x - mid.x) / (kx * scale) + float(frame["mean_lon"])
-	var lat := -(p.y - mid.y) / scale + float(frame["mean_lat"])
-	return Vector2(lon, lat)
-
-
-func _coast_data() -> Dictionary:
-	if _coast_ready:
-		return _coast
-	_coast_ready = true
-	if not FileAccess.file_exists(CHART_COAST):
-		return _coast
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(CHART_COAST))
-	if parsed is Dictionary:
-		_coast = parsed
-	# 云端 2d51：真实岸线（Natural Earth，data/coastline.json，坐标 [经, 纬]）替换手绘 15 环；
-	# 河流 / 山峦 / 海名仍取 chart_coast.json。环按顶点数降序，首环即大陆（_draw_world 以 i == 0 当大陆）。
-	var real: Dictionary = GameManager.coastline_data if GameManager.get("coastline_data") != null else {}
-	var rings: Array = real.get("land", []) if real is Dictionary else []
-	if rings.size() >= 3:
-		var converted: Array = []
-		for ring in rings:
-			if not (ring is Array) or ring.size() < 3:
-				continue
-			var latlon: Array = []
-			for pt in ring:
-				latlon.append([float(pt[1]), float(pt[0])])
-			converted.append(latlon)
-		converted.sort_custom(func(a, b): return a.size() > b.size())
-		_coast["land"] = converted
-	# 云端 2d51 的海名 / 岛名标注（data/chart_labels.json）替换 chart_coast.json 的三处海名
-	var labels: Dictionary = GameManager.chart_labels_data if GameManager.get("chart_labels_data") != null else {}
-	var label_rows: Array = labels.get("labels", []) if labels is Dictionary else []
-	if label_rows.size() > 0:
-		var seas: Array = []
-		for row in label_rows:
-			if row is Dictionary and str(row.get("text", "")) != "":
-				seas.append({"name": str(row["text"]), "lat": float(row.get("lat", 0.0)), "lon": float(row.get("lon", 0.0)),
-					"min_span": float(row.get("min_span", 0.0)), "max_span": float(row.get("max_span", 999.0))})
-		_coast["seas"] = seas
-	return _coast
-
-
-func _ring_has(lat: float, lon: float, ring: Array) -> bool:
-	var inside := false
-	var n := ring.size()
-	if n < 3:
-		return false
-	var j := n - 1
-	for i in n:
-		var a: Array = ring[i]
-		var b: Array = ring[j]
-		if a.size() < 2 or b.size() < 2:
-			j = i
-			continue
-		var yi := float(a[0])
-		var xi := float(a[1])
-		var yj := float(b[0])
-		var xj := float(b[1])
-		var denom := yj - yi
-		if is_zero_approx(denom):
-			j = i
-			continue
-		if ((yi > lat) != (yj > lat)) and (lon < (xj - xi) * (lat - yi) / denom + xi):
-			inside = not inside
-		j = i
-	return inside
-
-
-func _ashore(lat: float, lon: float) -> bool:
-	for ring in _coast_data().get("land", []):
-		if ring is Array and _ring_has(lat, lon, ring):
-			return true
-	return false
-
-
-func _project_ring(frame: Dictionary, ring: Array) -> PackedVector2Array:
-	var pts := PackedVector2Array()
-	for pair in ring:
-		if pair is Array and pair.size() >= 2:
-			pts.append(_chart_xy(frame, float(pair[0]), float(pair[1])))
-	return pts
-
-
-## 绢纸上的东亚海岸。陆地盖住西边的空白，外海往东略深，海名和罗盘留在海上。
-## 视窗内陆地环的投影多边形：[{soft, fill, main}]。按 size + 投影参数缓存（云端 2d51 数据、8b32 剔除与只描线做法）。
-func _land_polygons(frame: Dictionary, size: Vector2) -> Array:
-	var key := "%s|%.4f|%.4f|%.5f|%.5f|%s" % [
-		size, float(frame.get("mean_lat", 0.0)), float(frame.get("mean_lon", 0.0)),
-		float(frame.get("scale", 0.0)), float(frame.get("kx", 1.0)), frame.get("mid", Vector2.ZERO),
-	]
-	if key == _land_cache_key:
-		return _land_cache
-	var out: Array = []
-	var lands: Array = _coast_data().get("land", [])
-	var view_rect := Rect2(Vector2.ZERO, size).grow(24.0)
-	for i in lands.size():
-		var ring: Array = lands[i]
-		var pts := _project_ring(frame, ring)
-		if pts.size() < 3:
-			continue
-		# 包围盒不碰视窗的环直接跳过
-		var bb := Rect2(pts[0], Vector2.ZERO)
-		for p in pts:
-			bb = bb.expand(p)
-		if not bb.intersects(view_rect):
-			continue
-		var soft := _soft_coast(frame, ring, pts, i == 0)
-		if soft.size() < 3:
-			continue
-		# 平滑后自交或退化的环三角化会失败并刷错误日志：这类环只描线不填色
-		out.append({"soft": soft, "fill": Geometry2D.triangulate_polygon(soft).size() > 0, "main": i == 0})
-	_land_cache_key = key
-	_land_cache = out
-	return out
-
-
-func _draw_world(c: Control, frame: Dictionary, size: Vector2) -> void:
-	var data := _coast_data()
-	if data.is_empty():
-		return
-	_draw_sea_depth(c, size)
-	_draw_graticule(c, frame, size)
-	_draw_waves(c, frame, size)
-	_draw_monsoon(c, size, frame)
-	var harbors := _harbor_marks(frame)
-	var mainland := Color(0.776, 0.635, 0.408, 1.0)
-	var island := Color(0.690, 0.604, 0.392, 1.0)
-	var shore := Color(0.42, 0.26, 0.12, 0.55)
-	var ink := Color(0.24, 0.13, 0.06, 1.0)
-	for entry in _land_polygons(frame, size):
-		var soft: PackedVector2Array = entry["soft"]
-		var is_main: bool = entry["main"]
-		if entry["fill"]:
-			c.draw_colored_polygon(soft, mainland if is_main else island)
-		var stroke := soft.duplicate()
-		stroke.append(soft[0])
-		c.draw_polyline(stroke, shore, 4.2, true)
-		c.draw_polyline(stroke, ink, 1.55, true)
-		_draw_shoal(c, frame, soft, is_main, harbors)
-	_draw_land_grain(c, frame, size)
-	_draw_inland(c, frame, size)
-	_draw_ranges(c, frame, size)
-	var river_col := Color(0.32, 0.48, 0.55, 0.80)
-	for river in data.get("rivers", []):
-		if river is Array:
-			var river_pts := _project_ring(frame, river)
-			if river_pts.size() >= 2:
-				_draw_river(c, frame, river_pts, river_col)
-	_draw_reefs(c, frame, size)
-
-
-func _geo_bounds(frame: Dictionary, size: Vector2) -> Dictionary:
-	var corners: Array[Vector2] = [
-		_chart_unproject(frame, Vector2.ZERO),
-		_chart_unproject(frame, Vector2(size.x, 0)),
-		_chart_unproject(frame, size),
-		_chart_unproject(frame, Vector2(0, size.y)),
-	]
-	var lon_min := corners[0].x
-	var lon_max := corners[0].x
-	var lat_min := corners[0].y
-	var lat_max := corners[0].y
-	for corner in corners:
-		lon_min = minf(lon_min, corner.x)
-		lon_max = maxf(lon_max, corner.x)
-		lat_min = minf(lat_min, corner.y)
-		lat_max = maxf(lat_max, corner.y)
-	return {
-		"lon_min": lon_min,
-		"lon_max": lon_max,
-		"lat_min": lat_min,
-		"lat_max": lat_max,
-	}
-
-
-## 近图 5 度，中图 10 度，远图 20 度。线和边上的数字用同一档。
-func _grid_step(span: float) -> float:
-	if span > 70.0:
-		return 20.0
-	if span > 36.0:
-		return 10.0
-	return 5.0
-
-
-## 海角收圆、长边略向陆弯。凹进去的海湾保持原样，免得把湾口封死。
-func _soft_coast(frame: Dictionary, ring: Array, pts: PackedVector2Array, mainland: bool) -> PackedVector2Array:
-	var n := mini(ring.size(), pts.size())
-	var count := n
-	if n >= 2 and pts[0].distance_to(pts[n - 1]) < 0.8:
-		count = n - 1
-	if count < 3:
-		return pts
-	var out := PackedVector2Array()
-	for i in count:
-		var i0 := (i + count - 1) % count
-		var i1 := (i + 1) % count
-		var prev: Vector2 = pts[i0]
-		var cur: Vector2 = pts[i]
-		var nxt: Vector2 = pts[i1]
-		var hard := mainland and (
-			float(ring[i][1]) < 104.0
-			or float(ring[i0][1]) < 104.0
-			or float(ring[i1][1]) < 104.0
-		)
-		var back := cur - prev
-		var fore := nxt - cur
-		var back_len := back.length()
-		var fore_len := fore.length()
-		if hard or back_len < 8.0 or fore_len < 8.0:
-			out.append(cur)
-			continue
-		var cut := minf(8.0, minf(back_len, fore_len) * 0.28)
-		var a := cur - back / back_len * cut
-		var b := cur + fore / fore_len * cut
-		var chord_mid := (a + b) * 0.5
-		var geo := _chart_unproject(frame, chord_mid)
-		if not _ashore(geo.y, geo.x):
-			out.append(cur)
-			continue
-		var dir := b - a
-		if dir.length() < 0.5:
-			out.append(cur)
-			continue
-		var nrm := Vector2(-dir.y, dir.x).normalized()
-		var sea_probe := _chart_unproject(frame, chord_mid + nrm * 4.0)
-		if _ashore(sea_probe.y, sea_probe.x):
-			nrm = -nrm
-		out.append(a)
-		# 窄岬只削角，不再往里拱，免得两侧对穿。
-		var bow_amp := 2.8
-		var deep := _chart_unproject(frame, chord_mid - nrm * bow_amp * 2.4)
-		if _ashore(deep.y, deep.x):
-			out.append(chord_mid - nrm * bow_amp)
-		out.append(b)
-	if out.size() < 3:
-		return pts
-	return _bow_long_edges(frame, out)
-
-
-func _bow_long_edges(frame: Dictionary, poly: PackedVector2Array) -> PackedVector2Array:
-	var out := PackedVector2Array()
-	var n := poly.size()
-	for i in n:
-		var a: Vector2 = poly[i]
-		var b: Vector2 = poly[(i + 1) % n]
-		out.append(a)
-		var span := b - a
-		var length := span.length()
-		if length < 22.0:
-			continue
-		var nrm := Vector2(-span.y, span.x).normalized()
-		var sea_probe := _chart_unproject(frame, (a + b) * 0.5 + nrm * 4.0)
-		if _ashore(sea_probe.y, sea_probe.x):
-			nrm = -nrm
-		var amp := minf(5.5, length * 0.055)
-		var stations := [0.5]
-		if length >= 78.0:
-			stations = [0.34, 0.67]
-		for t in stations:
-			var at := a.lerp(b, t)
-			var bow := at - nrm * amp
-			var geo := _chart_unproject(frame, bow)
-			var deep := _chart_unproject(frame, at - nrm * amp * 2.3)
-			if _ashore(geo.y, geo.x) and _ashore(deep.y, deep.x):
-				out.append(bow)
-	return out
-
-
-func _draw_river(c: Control, frame: Dictionary, pts: PackedVector2Array, col: Color) -> void:
-	var curved := PackedVector2Array()
-	var last := pts.size() - 1
-	for i in last:
-		var a: Vector2 = pts[i]
-		var b: Vector2 = pts[i + 1]
-		curved.append(a)
-		var span := b - a
-		var length := span.length()
-		if length < 28.0:
-			continue
-		var nrm := Vector2(-span.y, span.x).normalized()
-		var amp := minf(7.5, length * 0.045)
-		if i % 2 == 1:
-			amp = -amp
-		var waves := 2 if length >= 90.0 else 1
-		var steps := 5 * waves
-		var extra := PackedVector2Array()
-		var ok := true
-		for s in steps:
-			var t := float(s + 1) / float(steps + 1)
-			var bend := a.lerp(b, t) + nrm * sin(t * TAU * float(waves)) * amp
-			var geo := _chart_unproject(frame, bend)
-			if not _ashore(geo.y, geo.x):
-				ok = false
-				break
-			extra.append(bend)
-		if ok:
-			for bend in extra:
-				curved.append(bend)
-	curved.append(pts[last])
-	c.draw_polyline(curved, Color(0.55, 0.68, 0.72, 0.42), 2.8, true)
-	c.draw_polyline(curved, col, 1.15, true)
-
-
-func _draw_graticule(c: Control, frame: Dictionary, size: Vector2) -> void:
-	var bounds := _geo_bounds(frame, size)
-	var col := Color(0.45, 0.32, 0.16, 0.18)
-	var lat_step := _grid_step(float(bounds["lat_max"]) - float(bounds["lat_min"]))
-	var lon_step := _grid_step(float(bounds["lon_max"]) - float(bounds["lon_min"]))
-	var lat := floorf(float(bounds["lat_min"]) / lat_step) * lat_step
-	while lat <= float(bounds["lat_max"]):
-		_draw_dashed_line(
-			c,
-			_chart_xy(frame, lat, float(bounds["lon_min"])),
-			_chart_xy(frame, lat, float(bounds["lon_max"])),
-			col, 1.0, 9.0, 7.0)
-		lat += lat_step
-	var lon := floorf(float(bounds["lon_min"]) / lon_step) * lon_step
-	while lon <= float(bounds["lon_max"]):
-		_draw_dashed_line(
-			c,
-			_chart_xy(frame, float(bounds["lat_min"]), lon),
-			_chart_xy(frame, float(bounds["lat_max"]), lon),
-			col, 1.0, 9.0, 7.0)
-		lon += lon_step
-
-
-func _draw_dashed_line(c: Control, a: Vector2, b: Vector2, col: Color, width: float, dash: float, gap: float) -> void:
-	var delta := b - a
-	var total := delta.length()
-	if total < 1.0:
-		return
-	var dir := delta / total
-	var t := 0.0
-	while t < total:
-		var t2 := minf(t + dash, total)
-		c.draw_line(a + dir * t, a + dir * t2, col, width)
-		t += dash + gap
-
-
-## 东边外海略深。叠色仍是浅青，绢底要透出来，不能画成夜航图。
-func _draw_sea_depth(c: Control, size: Vector2) -> void:
-	var strips := 16
-	for i in strips:
-		var t := float(i) / float(strips - 1)
-		var x0 := size.x * float(i) / float(strips)
-		var w := size.x / float(strips) + 1.0
-		var alpha := 0.04 + t * t * 0.28
-		c.draw_rect(Rect2(x0, 0, w, size.y), Color(0.50, 0.78, 0.84, alpha), true)
-
-
-func _draw_waves(c: Control, frame: Dictionary, size: Vector2) -> void:
-	var col := Color(0.22, 0.40, 0.46, 0.32)
-	var step := 58.0
-	var row := 0
-	var y := 34.0
-	while y < size.y - 18.0:
-		var x := 26.0 + float(row % 3) * 18.0
-		while x < size.x - 18.0:
-			var salt := int(x) * 3 + row * 5
-			if salt % 5 == 0:
-				x += step
-				continue
-			var at := Vector2(
-				x + float((salt * 17) % 17) - 8.0,
-				y + float((salt * 13) % 13) - 6.0)
-			if not _open_water(frame, at, 22.0):
-				x += step
-				continue
-			var lift := 1.0 + float(salt % 3) * 0.4
-			var span := 5.0 + float((salt / 3) % 3) * 1.6
-			var tilt := float((salt % 5) - 2) * 0.35
-			c.draw_polyline(PackedVector2Array([
-				at + Vector2(-span, tilt),
-				at + Vector2(-span * 0.25, -lift),
-				at + Vector2(span * 0.35, tilt * 0.3),
-				at + Vector2(span, -lift * 0.45 + tilt),
-			]), col, 1.0, true)
-			x += step
-		y += 40.0
-		row += 1
-
-
-func _open_water(frame: Dictionary, p: Vector2, pad: float) -> bool:
-	var here := _chart_unproject(frame, p)
-	if _ashore(here.y, here.x):
-		return false
-	var probes: Array[Vector2] = [
-		Vector2(pad, 0.0),
-		Vector2(-pad, 0.0),
-		Vector2(0.0, pad * 0.75),
-		Vector2(0.0, -pad * 0.75),
-	]
-	for dir in probes:
-		var geo := _chart_unproject(frame, p + dir)
-		if _ashore(geo.y, geo.x):
-			return false
-	return true
-
-
-func _harbor_marks(frame: Dictionary) -> PackedVector2Array:
-	var marks := PackedVector2Array()
-	for p in GameManager.unlocked_ports():
-		marks.append(_chart_xy(frame, float(p.get("lat", 0.0)), float(p.get("lon", 0.0))))
-	return marks
-
-
-func _near_harbor(harbors: PackedVector2Array, p: Vector2, radius: float) -> bool:
-	for mark in harbors:
-		if mark.distance_to(p) < radius:
-			return true
-	return false
-
-
-## 岸线外侧两三道浅水，内侧一条沙岸。大陆西边的封口边不画。港点附近让开。
-func _draw_shoal(c: Control, frame: Dictionary, pts: PackedVector2Array, mainland: bool, harbors: PackedVector2Array) -> void:
-	var n := pts.size()
-	if n < 2:
-		return
-	var bands: Array = [
-		{"off": 5.0, "width": 5.0, "col": Color(0.78, 0.74, 0.56, 0.55), "clear": 11.0},
-		{"off": 11.0, "width": 2.4, "col": Color(0.32, 0.52, 0.56, 0.38), "clear": 16.0},
-		{"off": 18.0, "width": 8.0, "col": Color(0.40, 0.64, 0.72, 0.14), "clear": 26.0},
-		{"off": 30.0, "width": 10.0, "col": Color(0.34, 0.58, 0.68, 0.16), "clear": 38.0},
-		{"off": 44.0, "width": 12.0, "col": Color(0.28, 0.52, 0.64, 0.14), "clear": 52.0},
-	]
-	var beach := Color(0.88, 0.76, 0.54, 0.78)
-	var page := Rect2(Vector2(-40, -40), c.size + Vector2(80, 80))
-	for i in n:
-		var j := (i + 1) % n
-		var a: Vector2 = pts[i]
-		var b: Vector2 = pts[j]
-		if mainland:
-			var ga := _chart_unproject(frame, a)
-			var gb := _chart_unproject(frame, b)
-			if ga.x < 104.0 or gb.x < 104.0:
-				continue
-		if not page.has_point(a) and not page.has_point(b):
-			continue
-		var delta := b - a
-		if delta.length() < 3.0:
-			continue
-		var dir := delta.normalized()
-		var nrm := Vector2(-dir.y, dir.x)
-		var geo := _chart_unproject(frame, (a + b) * 0.5 + nrm * 7.0)
-		if _ashore(geo.y, geo.x):
-			nrm = -nrm
-		var mid_beach := (a + b) * 0.5 - nrm * 6.0
-		if not _near_harbor(harbors, mid_beach, 10.0):
-			c.draw_line(a - nrm * 6.0, b - nrm * 6.0, beach, 7.0)
-		for band in bands:
-			var spec: Dictionary = band
-			var off := float(spec["off"])
-			var mid := (a + b) * 0.5 + nrm * off
-			if _near_harbor(harbors, mid, float(spec["clear"])):
-				continue
-			c.draw_line(a + nrm * off, b + nrm * off, spec["col"], float(spec["width"]))
-
-
-func _draw_land_grain(c: Control, frame: Dictionary, size: Vector2) -> void:
-	var col := Color(0.48, 0.32, 0.14, 0.28)
-	var y := 16.0
-	var row := 0
-	while y < size.y - 8.0:
-		var x := 12.0 + float(row % 3) * 7.0
-		while x < size.x - 8.0:
-			if _deep_inland(frame, Vector2(x, y), 14.0):
-				c.draw_line(Vector2(x, y), Vector2(x + 5.0, y + 1.4), col, 1.0)
-			x += 18.0
-		y += 13.0
-		row += 1
-
-
-## 离岸远一点的内陆铺一层暖赭，沿海那条沙岸留亮。
-func _draw_inland(c: Control, frame: Dictionary, size: Vector2) -> void:
-	var col := Color(0.52, 0.36, 0.16, 0.18)
-	var y := 20.0
-	var row := 0
-	while y < size.y - 12.0:
-		var x := 16.0 + float(row % 2) * 10.0
-		while x < size.x - 12.0:
-			if _deep_inland(frame, Vector2(x, y)):
-				c.draw_circle(Vector2(x, y), 12.0, col)
-			x += 18.0
-		y += 16.0
-		row += 1
-
-
-func _deep_inland(frame: Dictionary, p: Vector2, pad: float = 30.0) -> bool:
-	var here := _chart_unproject(frame, p)
-	if not _ashore(here.y, here.x):
-		return false
-	var probes: Array[Vector2] = [Vector2(pad, 0), Vector2(-pad, 0), Vector2(0, pad), Vector2(0, -pad)]
-	for dir in probes:
-		var geo := _chart_unproject(frame, p + dir)
-		if not _ashore(geo.y, geo.x):
-			return false
-	return true
-
-
-func _draw_ranges(c: Control, frame: Dictionary, size: Vector2) -> void:
-	var chains: Array = [
-		[[27.2, 117.8], [26.4, 117.0], [25.6, 116.4]],
-		[[28.8, 118.4], [28.0, 117.6], [27.2, 116.8]],
-		[[32.4, 116.0], [31.6, 114.4], [30.6, 112.6]],
-		[[24.2, 112.4], [23.6, 110.8], [23.2, 109.2]],
-		[[35.2, 118.2], [34.4, 116.6], [33.4, 114.8]],
-		[[24.5, 121.15], [23.7, 120.85], [22.7, 120.55]],
-		[[19.7, 109.5], [19.2, 109.9]],
-		[[38.2, 128.0], [36.8, 128.3], [35.4, 127.6]],
-	]
-	var col := Color(0.36, 0.22, 0.10, 0.78)
-	var page := Rect2(Vector2.ZERO, size)
-	for chain in chains:
-		var prev := Vector2.ZERO
-		var has_prev := false
-		for pair in chain:
-			var lat := float(pair[0])
-			var lon := float(pair[1])
-			if not _ashore(lat, lon):
-				has_prev = false
-				continue
-			var p := _chart_xy(frame, lat, lon)
-			if not page.has_point(p):
-				has_prev = false
-				continue
-			_draw_peak(c, p, col, 1.0)
-			if has_prev:
-				c.draw_line(prev, p, Color(col, 0.20), 0.9)
-				if prev.distance_to(p) > 18.0:
-					_draw_peak(c, (prev + p) * 0.5, col, 0.72)
-			prev = p
-			has_prev = true
-
-
-func _draw_peak(c: Control, p: Vector2, col: Color, scale: float) -> void:
-	var s := scale
-	c.draw_polyline(PackedVector2Array([
-		p + Vector2(-7.2, 3.4) * s,
-		p + Vector2(-4.0, -0.6) * s,
-		p + Vector2(-1.6, 2.2) * s,
-	]), col, 1.15, true)
-	c.draw_polyline(PackedVector2Array([
-		p + Vector2(-2.4, 2.4) * s,
-		p + Vector2(0.0, -6.4) * s,
-		p + Vector2(2.4, 2.4) * s,
-	]), col, 1.25, true)
-	c.draw_polyline(PackedVector2Array([
-		p + Vector2(1.6, 2.2) * s,
-		p + Vector2(4.2, -1.0) * s,
-		p + Vector2(7.4, 3.4) * s,
-	]), col, 1.15, true)
-
-
-func _draw_reefs(c: Control, frame: Dictionary, size: Vector2) -> void:
-	var spots: Array[Vector2] = [
-		Vector2(119.9, 24.2),
-		Vector2(122.4, 26.6),
-		Vector2(114.8, 21.6),
-		Vector2(125.2, 29.4),
-	]
-	var col := Color(0.30, 0.40, 0.42, 0.55)
-	var page := Rect2(Vector2(8, 8), size - Vector2(16, 16))
-	for spot in spots:
-		if _ashore(spot.y, spot.x):
-			continue
-		var p := _chart_xy(frame, spot.y, spot.x)
-		if not page.has_point(p):
-			continue
-		c.draw_line(p + Vector2(-3.5, -2.5), p + Vector2(3.5, 2.5), col, 1.0)
-		c.draw_line(p + Vector2(-3.5, 2.5), p + Vector2(3.5, -2.5), col, 1.0)
-
-
-## 已知航路用虚线，港点两边留出空，菱形才站得住。压在陆上的那一段空过。
-func _draw_rhumb(c: Control, frame: Dictionary, a: Vector2, b: Vector2, col: Color) -> void:
-	var delta := b - a
-	var length := delta.length()
-	if length < 2.0:
-		return
-	var dir := delta / length
-	if length < 18.0:
-		var mid := (a + b) * 0.5
-		var geo := _chart_unproject(frame, mid)
-		if not _ashore(geo.y, geo.x):
-			c.draw_line(a, b, col, 1.15)
-		return
-	var start := a + dir * 8.0
-	var end := b - dir * 8.0
-	var span := end - start
-	var total := span.length()
-	if total < 2.0:
-		return
-	var step_dir := span / total
-	var t := 0.0
-	var dash := 6.0
-	var gap := 4.5
-	while t < total:
-		var t2 := minf(t + dash, total)
-		var p0 := start + step_dir * t
-		var p1 := start + step_dir * t2
-		var geo := _chart_unproject(frame, (p0 + p1) * 0.5)
-		if not _ashore(geo.y, geo.x):
-			c.draw_line(p0, p1, col, 1.15)
-		t += dash + gap
-
-
-func _draw_wet_line(c: Control, frame: Dictionary, a: Vector2, b: Vector2, col: Color, width: float, halo: bool) -> void:
-	var delta := b - a
-	var length := delta.length()
-	if length < 2.0:
-		return
-	var dir := delta / length
-	var step := 5.0
-	var run_from := -1.0
-	var t := 0.0
-	while true:
-		var at_end := t >= length
-		var here := minf(t, length)
-		var geo := _chart_unproject(frame, a + dir * here)
-		var wet := (not at_end) and not _ashore(geo.y, geo.x)
-		if wet:
-			if run_from < 0.0:
-				run_from = here
-		elif run_from >= 0.0:
-			_stroke_wet_run(c, a, dir, run_from, here, col, width, halo)
-			run_from = -1.0
-		if at_end:
-			break
-		t += step
-
-
-func _stroke_wet_run(c: Control, a: Vector2, dir: Vector2, from: float, to: float, col: Color, width: float, halo: bool) -> void:
-	if to - from < 4.0:
-		return
-	var p0 := a + dir * from
-	var p1 := a + dir * to
-	if halo:
-		c.draw_line(p0, p1, Color(col, 0.35), width + 2.5)
-	c.draw_line(p0, p1, col, width)
-
-
-func _draw_sea_names(c: Control, frame: Dictionary, size: Vector2, font: Font, occupied: Array[Rect2]) -> void:
-	var bounds := Rect2(Vector2(12, 30), size - Vector2(24, 44))
-	var col := Color(0.30, 0.20, 0.10, 0.78)
-	var gap := 5.0
-	for entry in _coast_data().get("seas", []):
-		if not (entry is Dictionary):
-			continue
-		var text := str(entry.get("name", ""))
-		var lat := float(entry.get("lat", 0.0))
-		var lon := float(entry.get("lon", 0.0))
-		if text == "" or _ashore(lat, lon):
-			continue
-		var baseline := _chart_xy(frame, lat, lon) + Vector2(0, 4)
-		var width := _spaced_text_width(font, text, UiTheme.SIZE_FOOT, gap)
-		var metric := _ink_metrics(font)
-		var rect := Rect2(
-			baseline + Vector2(-3.0, -metric.x - 3.0),
-			Vector2(width + 6.0, metric.x + metric.y + 6.0)
-		)
-		if not bounds.encloses(rect) or _chart_label_hits(rect, occupied):
-			continue
-		_draw_spaced_text(c, font, baseline, text, UiTheme.SIZE_FOOT, col, gap)
-		c.draw_line(
-			Vector2(baseline.x, baseline.y + 3.0),
-			Vector2(baseline.x + width, baseline.y + 3.0),
-			Color(col.r, col.g, col.b, 0.45),
-			0.8)
-		occupied.append(rect)
-
-
-func _spaced_text_width(font: Font, text: String, size: int, gap: float) -> float:
-	var width := 0.0
-	for i in text.length():
-		width += font.get_string_size(text.substr(i, 1), HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-		if i < text.length() - 1:
-			width += gap
-	return width
-
-
-func _draw_spaced_text(c: Control, font: Font, baseline: Vector2, text: String, size: int, col: Color, gap: float) -> void:
-	var x := baseline.x
-	for i in text.length():
-		var ch := text.substr(i, 1)
-		c.draw_string(font, Vector2(x, baseline.y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
-		x += font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x + gap
-
-
-func _draw_chart_title(c: Control, frame: Dictionary, size: Vector2, font: Font, occupied: Array[Rect2]) -> void:
-	var text := "东南海图"
-	var sub := "针路"
-	var title_w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_BODY).x
-	var sub_w := font.get_string_size(sub, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT).x
-	var box := Vector2(maxf(title_w, sub_w) + 22.0, 48.0)
-	# 经度, 纬度。都在陆上，图放大到福建时也能落在画面左侧。
-	var spots: Array[Vector2] = [
-		Vector2(113.8, 27.4),
-		Vector2(108.5, 30.2),
-		Vector2(112.0, 26.0),
-		Vector2(106.5, 22.5),
-	]
-	var page := Rect2(Vector2(16, 16), size - Vector2(32, 32))
-	for spot in spots:
-		if not _ashore(spot.y, spot.x):
-			continue
-		var anchor := _chart_xy(frame, spot.y, spot.x)
-		if anchor.x > size.x * 0.62:
-			continue
-		var rect := Rect2(anchor + Vector2(-10.0, -20.0), box)
-		if not page.encloses(rect) or _chart_label_hits(rect.grow(6.0), occupied):
-			continue
-		var ink := Color(0.32, 0.18, 0.08, 0.88)
-		var edge := Color(0.42, 0.26, 0.12, 0.72)
-		c.draw_rect(rect, Color(0.95, 0.89, 0.76, 0.94), true)
-		c.draw_rect(rect, edge, false, 1.3)
-		var inner := rect.grow(-3.0)
-		c.draw_rect(inner, Color(edge, 0.40), false, 1.0)
-		c.draw_string(font, rect.position + Vector2(11.0, 20.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_BODY, ink)
-		c.draw_string(font, rect.position + Vector2(11.0, 38.0), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, Color(ink, 0.62))
-		occupied.append(rect)
-		return
-
-
-## 图廓上的经纬度。近图 5 度一格，远图放宽，碰到港签或图题就空过。
-func _draw_margin_degrees(c: Control, frame: Dictionary, size: Vector2, font: Font, occupied: Array[Rect2]) -> void:
-	var bounds := _geo_bounds(frame, size)
-	var ink := Color(0.32, 0.18, 0.08, 0.92)
-	var chip := Color(0.95, 0.89, 0.76, 0.90)
-	var page := Rect2(Vector2(6, 8), size - Vector2(12, 16))
-	var lat_step := _grid_step(float(bounds["lat_max"]) - float(bounds["lat_min"]))
-	var lon_step := _grid_step(float(bounds["lon_max"]) - float(bounds["lon_min"]))
-	var lat := ceilf(float(bounds["lat_min"]) / lat_step) * lat_step
-	while lat < float(bounds["lat_max"]):
-		var y := _chart_xy(frame, lat, float(frame["mean_lon"])).y
-		var text := "%d度" % roundi(lat)
-		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT).x
-		var baseline := Vector2(12.0, y + 4.0)
-		var rect := Rect2(baseline + Vector2(-2.0, -14.0), Vector2(width + 6.0, 18.0))
-		if page.encloses(rect) and not _chart_label_hits(rect, occupied):
-			c.draw_rect(rect, chip, true)
-			c.draw_line(Vector2(6.0, y), Vector2(11.0, y), ink, 1.0)
-			c.draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, ink)
-			occupied.append(rect)
-		lat += lat_step
-	var lon := ceilf(float(bounds["lon_min"]) / lon_step) * lon_step
-	while lon < float(bounds["lon_max"]):
-		var x := _chart_xy(frame, float(frame["mean_lat"]), lon).x
-		var text := "%d度" % roundi(lon)
-		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT).x
-		var baseline := Vector2(x - width * 0.5, 26.0)
-		var rect := Rect2(baseline + Vector2(-2.0, -14.0), Vector2(width + 6.0, 18.0))
-		if page.encloses(rect) and not _chart_label_hits(rect, occupied):
-			c.draw_rect(rect, chip, true)
-			c.draw_line(Vector2(x, 6.0), Vector2(x, 12.0), ink, 1.0)
-			c.draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, ink)
-			occupied.append(rect)
-		lon += lon_step
-
-
-## 纬度上一里约 193 宋里。条长跟着当前图尺走，太长就改二百里、一百里。
-func _draw_scale(c: Control, frame: Dictionary, size: Vector2, font: Font, occupied: Array[Rect2]) -> void:
-	var li_per_deg := (Voyage.EARTH_R_KM * PI / 180.0) / Voyage.KM_PER_LI
-	var scale := float(frame["scale"])
-	if li_per_deg < 1.0 or scale < 0.001:
-		return
-	var choices: Array[Dictionary] = [
-		{"li": 200.0, "label": "二百里"},
-		{"li": 500.0, "label": "五百里"},
-		{"li": 1000.0, "label": "千里"},
-	]
-	var pick: Dictionary = choices[0]
-	var pick_px := 200.0 / li_per_deg * scale
-	for choice in choices:
-		var trial := float(choice["li"]) / li_per_deg * scale
-		if trial <= 156.0 and trial >= pick_px:
-			pick = choice
-			pick_px = trial
-	if pick_px > 156.0:
-		pick = {"li": 100.0, "label": "一百里"}
-		pick_px = 100.0 / li_per_deg * scale
-	var label := str(pick["label"])
-	var text_w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT).x
-	var bar := maxf(pick_px, 28.0)
-	var box := Vector2(maxf(bar, text_w) + 18.0, 40.0)
-	var candidates: Array[Vector2] = [
-		Vector2(16.0, size.y - box.y - 12.0),
-		Vector2(size.x * 0.5 - box.x * 0.5, size.y - box.y - 12.0),
-		Vector2(16.0, 40.0),
-	]
-	var origin := Vector2.ZERO
-	var found := false
-	for cand in candidates:
-		var rect := Rect2(cand, box)
-		if cand.x < 8.0 or cand.y < 8.0:
-			continue
-		if cand.x + box.x > size.x - 8.0 or cand.y + box.y > size.y - 8.0:
-			continue
-		if _chart_label_hits(rect, occupied):
-			continue
-		origin = cand
-		found = true
-		break
-	if not found:
-		return
-	var rect := Rect2(origin, box)
-	var ink := Color(0.32, 0.18, 0.08, 0.88)
-	var edge := Color(0.45, 0.32, 0.16, 0.62)
-	c.draw_rect(rect, Color(0.95, 0.89, 0.76, 0.94), true)
-	c.draw_rect(rect, edge, false, 1.0)
-	c.draw_string(font, origin + Vector2(9.0, 15.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, ink)
-	var x0 := origin.x + 9.0
-	var y := origin.y + 27.0
-	var half := bar * 0.5
-	c.draw_rect(Rect2(x0, y - 3.5, half, 7.0), ink, true)
-	c.draw_rect(Rect2(x0, y - 3.5, bar, 7.0), ink, false, 1.1)
-	c.draw_line(Vector2(x0 + half, y - 3.5), Vector2(x0 + half, y + 3.5), ink, 1.0)
-	occupied.append(rect)
-
-
-func _draw_compass(c: Control, size: Vector2, occupied: Array[Rect2]) -> void:
-	var radius := clampf(minf(size.x, size.y) * 0.085, 22.0, 34.0)
-	var extent := radius + 16.0
-	var candidates: Array[Vector2] = [
-		Vector2(size.x - extent - 14.0, size.y - extent - 12.0),
-		Vector2(extent + 16.0, size.y - extent - 12.0),
-		Vector2(size.x - extent - 14.0, extent + 22.0),
-	]
-	var center := Vector2.ZERO
-	var found := false
-	for cand in candidates:
-		var box := Rect2(cand - Vector2(extent, extent), Vector2(extent * 2.0, extent * 2.0))
-		if _chart_label_hits(box, occupied):
-			continue
-		center = cand
-		found = true
-		break
-	if not found:
-		return
-	var ink := Color(0.32, 0.18, 0.08, 0.88)
-	var pale := Color(0.45, 0.32, 0.16, 0.55)
-	c.draw_circle(center, radius + 8.0, Color(0.95, 0.89, 0.76, 0.92))
-	c.draw_arc(center, radius, 0.0, TAU, 48, ink, 1.25)
-	c.draw_arc(center, radius - 5.0, 0.0, TAU, 40, pale, 1.0)
-	var dirs: Array[Vector2] = [
-		Vector2(0, -1),
-		Vector2(0.7071, -0.7071),
-		Vector2(1, 0),
-		Vector2(0.7071, 0.7071),
-		Vector2(0, 1),
-		Vector2(-0.7071, 0.7071),
-		Vector2(-1, 0),
-		Vector2(-0.7071, -0.7071),
-	]
-	for i in dirs.size():
-		var dir: Vector2 = dirs[i]
-		var inner := radius - (8.0 if i % 2 == 0 else 4.5)
-		c.draw_line(center + dir * inner, center + dir * (radius - 1.2), ink, 1.15 if i % 2 == 0 else 0.9)
-	c.draw_colored_polygon(PackedVector2Array([
-		center + Vector2(0, -radius + 3.0),
-		center + Vector2(-4.6, 1.5),
-		center,
-		center + Vector2(4.6, 1.5),
-	]), Color(0.62, 0.22, 0.14, 0.92))
-	c.draw_colored_polygon(PackedVector2Array([
-		center + Vector2(0, radius - 3.0),
-		center + Vector2(4.2, -1.5),
-		center,
-		center + Vector2(-4.2, -1.5),
-	]), Color(0.32, 0.18, 0.08, 0.55))
-	var font := UiTheme.font()
-	var names: PackedStringArray = ["北", "东", "南", "西"]
-	var place: Array[Vector2] = [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]
-	for i in names.size():
-		var ch := names[i]
-		var glyph := font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT)
-		var at := center + place[i] * (radius + 11.0)
-		var baseline := Vector2(at.x - glyph.x * 0.5, at.y + glyph.y * 0.32)
-		c.draw_string(font, baseline, ch, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, ink)
-
-
-## 海图中栏是一张绢纸，不再在熟漆面板上再铺一层熟漆。
-func _draw_chart_leaf(c: Control, size: Vector2) -> void:
-	c.draw_rect(Rect2(Vector2.ZERO, size), Color(0.91, 0.84, 0.70, 1.0), true)
-	_draw_paper(c, size)
-
-
-## 纸纹很淡，海色盖上去之后西边浅水还能看见丝缕。
-func _draw_paper(c: Control, size: Vector2) -> void:
-	var col := Color(0.55, 0.40, 0.22, 0.08)
-	var y := 4.0
-	var row := 0
-	while y < size.y:
-		var x := fmod(float(row * 13), 17.0)
-		while x < size.x:
-			var span := 7.0 + fmod(float(row * 5) + x, 11.0)
-			var x1 := minf(x + span, size.x)
-			c.draw_line(Vector2(x, y), Vector2(x1, y + 0.3), col, 1.0)
-			x += span + 18.0
-		y += 6.0
-		row += 1
-
-
-func _draw_chart_frame(c: Control, size: Vector2) -> void:
-	var frame := Rect2(Vector2(3, 3), size - Vector2(6, 6))
-	if frame.size.x < 8.0 or frame.size.y < 8.0:
-		return
-	var edge := Color(0.45, 0.32, 0.16, 0.55)
-	c.draw_rect(frame, edge, false, 1.0)
-	var inner := frame.grow(-3.0)
-	if inner.size.x > 4.0 and inner.size.y > 4.0:
-		c.draw_rect(inner, Color(0.45, 0.32, 0.16, 0.28), false, 1.0)
-	var ink := Color(0.42, 0.26, 0.12, 0.78)
-	var arm := 12.0
-	var corners: Array[Vector2] = [
-		frame.position,
-		Vector2(frame.end.x, frame.position.y),
-		Vector2(frame.position.x, frame.end.y),
-		frame.end,
-	]
-	var signs: Array[Vector2] = [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]
-	for i in corners.size():
-		var p: Vector2 = corners[i]
-		var s: Vector2 = signs[i]
-		c.draw_line(p, p + Vector2(s.x * arm, 0.0), ink, 1.6)
-		c.draw_line(p, p + Vector2(0.0, s.y * arm), ink, 1.6)
-
-
-## 季风方向：开阔海上疏疏几支。箭身要整段落在海里，岸边和浅滩留白。
-func _draw_monsoon(c: Control, size: Vector2, frame: Dictionary) -> void:
-	var wb := Calendar.get_wind_bearing()
-	if wb < 0.0:
-		return
-
-	# 方位角 → 屏幕向量（y 轴向下，故取负 cos）
-	var dir := Vector2(sin(deg_to_rad(wb)), -cos(deg_to_rad(wb)))
-	var col := Color(0.42, 0.28, 0.14, 0.34)
-	var step := 78.0
-	var row := 0
-	var y := 46.0
-	while y < size.y - 20.0:
-		var x := 40.0 + float(row % 2) * 34.0
-		while x < size.x - 24.0:
-			var salt := int(x) + row * 5
-			if salt % 4 == 0:
-				x += step
-				continue
-			var at := Vector2(x + float((salt * 7) % 13) - 6.0, y + float((salt * 3) % 11) - 5.0)
-			var reach := 10.0 + float(salt % 3) * 2.0
-			var tail := at - dir * reach
-			var head := at + dir * reach
-			if _open_water(frame, at, 28.0) and _open_water(frame, tail, 10.0) and _open_water(frame, head, 10.0):
-				c.draw_line(tail, head, col, 1.0)
-				var perp := Vector2(-dir.y, dir.x)
-				var arrow := 6.0
-				c.draw_line(head, head - dir * arrow + perp * arrow * 0.45, col, 1.0)
-				c.draw_line(head, head - dir * arrow - perp * arrow * 0.45, col, 1.0)
-			x += step
-		y += 72.0
-		row += 1
-
-
-## 港名与风信短句垫一块熟漆。裸字会压在季风箭头和航线上。
-func _ink_metrics(font: Font) -> Vector2:
-	var size := UiTheme.SIZE_FOOT
-	var ascent := font.get_ascent(size)
-	var descent := font.get_descent(size)
-	if ascent < 1.0:
-		ascent = float(size) * 0.82
-		descent = float(size) * 0.18
-	return Vector2(ascent, descent)
-
-
-func _ink_label_rect(font: Font, baseline: Vector2, text: String) -> Rect2:
-	var metric := _ink_metrics(font)
-	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT).x
-	if width < 1.0:
-		width = float(text.length()) * float(UiTheme.SIZE_FOOT)
-	var pad_x := 4.0
-	var pad_y := 2.0
-	return Rect2(
-		baseline + Vector2(-pad_x, -metric.x - pad_y),
-		Vector2(width + pad_x * 2.0, metric.x + metric.y + pad_y * 2.0)
-	)
-
-
-func _draw_ink_label(c: Control, font: Font, baseline: Vector2, text: String, col: Color, accent: bool) -> Rect2:
-	var rect := _ink_label_rect(font, baseline, text)
-	var ink := Color(UiTheme.INK.r, UiTheme.INK.g, UiTheme.INK.b, 0.94)
-	var edge_a := 0.78 if accent else 0.34
-	c.draw_rect(rect, ink, true)
-	c.draw_rect(rect, Color(UiTheme.GOLD, edge_a), false, 1.0)
-	c.draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT, col)
-	return rect
-
-
-func _place_chart_label(
-	font: Font, marker: Vector2, text: String, text_w: float,
-	bounds: Rect2, occupied: Array[Rect2], must: bool
-) -> Vector2:
-	for side in [0, 1]:
-		for row in [0, -1, 1, -2, 2]:
-			var baseline := _chart_label_baseline(marker, text_w, side, row)
-			var rect := _ink_label_rect(font, baseline, text)
-			if not bounds.encloses(rect):
-				continue
-			if _chart_label_hits(rect, occupied):
-				continue
-			return baseline
-	if must:
-		return _chart_label_baseline(marker, text_w, 0, 0)
-	return Vector2(-9999, 0)
-
-
-func _chart_label_baseline(marker: Vector2, text_w: float, side: int, row: int) -> Vector2:
-	var x := marker.x + 9.0
-	if side == 1:
-		x = marker.x - 9.0 - text_w - 8.0
-	return Vector2(x, marker.y + 4.0 + float(row) * 16.0)
-
-
-func _chart_label_hits(rect: Rect2, occupied: Array[Rect2]) -> bool:
-	var padded := rect.grow(1.0)
-	for prev in occupied:
-		if padded.intersects(prev):
-			return true
-	return false
-
 
 func _log(text: String) -> void:
 	log_label.text = UiTheme.plain_log(text) + "\n\n" + log_label.text
@@ -1962,6 +984,10 @@ func _on_sail_pressed() -> void:
 
 	sail_button.disabled = true
 	_lock_hand()
+	# 图：船标启程，镜头框住起讫两港
+	_sync_map()
+	if map:
+		map.frame_ports([origin_port, selected_port], 0.30, 0.9)
 
 	_log(_ink(UiTheme.GOLD, "启程往 %s，航程 %d 里。" % [GameManager.get_port_name(selected_port), int(total_li)]))
 	_sail_next_day()
@@ -1996,6 +1022,12 @@ func _sail_next_day() -> void:
 	remaining_li -= _day_progress(event)
 	_refresh_status()
 
+	# 船标沿折线走完这一日（按住空格加速）。回港或换场景后协程作废。
+	var serial := _sail_serial
+	await _advance_ship_marker()
+	if serial != _sail_serial or not sailing or not is_inside_tree():
+		return
+
 	# 补给见底的警告
 	if Fleet.supply_days() <= 0 and Fleet.total_crew() > 0:
 		_log(_ink(UiTheme.CINNABAR, "第 %d 日・水粮已尽，舱里开始有人病倒。" % days_elapsed))
@@ -2014,6 +1046,20 @@ func _sail_next_day() -> void:
 
 	# 无事之日直接推进下一天
 	_sail_next_day()
+
+
+## 把船标推到当前已行里程处；返回后这一日的动画已走完
+func _advance_ship_marker() -> void:
+	if map == null:
+		return
+	var traveled := clampf(total_li - remaining_li, 0.0, total_li)
+	var at: Dictionary = Voyage.point_along_track(origin_port, selected_port, traveled)
+	var heading := Voyage.bearing_at(origin_port, selected_port, traveled)
+	var dur := DAY_SECONDS_FAST if Input.is_key_pressed(KEY_SPACE) else DAY_SECONDS
+	var frac := 0.0 if total_li <= 0.0 else traveled / total_li
+	var tw := map.move_ship_lonlat(float(at["lon"]), float(at["lat"]), heading, frac, dur)
+	if tw:
+		await tw.finished
 
 
 func _show_event(event: Dictionary) -> void:
@@ -2050,6 +1096,20 @@ func _show_event(event: Dictionary) -> void:
 		_add_event_action("散钱 %d" % Fleet.mutiny_bribe_cost(), _on_mutiny_bribe)
 		_add_event_action("放走 %d 人" % Fleet.mutiny_dismiss_count(), _on_mutiny_dismiss)
 		_add_event_action("压住", _on_mutiny_suppress)
+	# 战时遭遇三类：处理函数一直在，云端合并时这里的路由丢了，2026-09-25 海图重制顺手接回
+	elif kind == Voyage.EventKind.REQUISITION:
+		if Fleet.ships.size() > 1:
+			_add_event_action("交出一条船（名声 +）", _on_requisition_surrender)
+		_add_event_action("塞钱免征", _on_requisition_bribe)
+		_add_event_action("趁夜溜走", _on_requisition_flee)
+	elif kind == Voyage.EventKind.YUAN_PATROL:
+		_add_event_action("落帆受检", _on_patrol_submit)
+		_add_event_action("迎战", _on_fight_patrol)
+		_add_event_action("扬帆逃走", _on_flee_pirates)
+	elif kind == Voyage.EventKind.REFUGEE:
+		_add_event_action("载人同行（水粮 −2 成）", _on_refugee_take)
+		_add_event_action("分些水粮，不载人", _on_refugee_share)
+		_add_event_action("不停船", _on_refugee_pass)
 	else:
 		_add_event_action("继续航行", _on_event_continue)
 
@@ -2480,6 +1540,8 @@ func _sink(preface: String = "") -> void:
 	sailing = false
 	Fleet.at_sea = false
 	Fleet.clear_cargo()
+	if map:
+		map.hide_ship()
 	event_title.text = "沉　没"
 	var lead := ""
 	if preface != "":
@@ -2510,6 +1572,7 @@ func _return_to_port() -> void:
 	# 海战进行中回港会丢掉 battle_finished，战中已扣的耐久和舱货留在舰队上，赏罚不结算。（云端 be04）
 	if GameManager.pending_battle.get("battle", false):
 		return
+	_sail_serial += 1
 	Fleet.at_sea = false
 	GameState.set_flag("return_to_port")
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")

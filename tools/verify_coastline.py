@@ -7,7 +7,8 @@
   二、港口贴岸：在陆上的港离海岸 ≤ MAX_INLAND_KM（城可在岸上，不能落到腹地）；
         在海上的港离海岸 ≤ MAX_OFFSHORE_KM（屿可略偏外海，不能漂到大洋中间）
   三、绕岸航线：key 按字母序 "a|b"、两港存在且不同、航点在 bbox 内且都在海上
-  四、海名标注：文字非空、坐标在 bbox 内、min_span < max_span
+  四、海名标注：labels 有 text/kind/lon/lat/tier，kind 在枚举内、tier 在 meta.tiers 内、坐标在画布范围内；
+        hazards 查 text/lon/lat/tier；flows points ≥ 2 且在范围内、months 为 1..12 整数数组；打印三类条数
   五、接线：GameManager 加载三份数据；SeaChart 读 coastline_data / sealanes_data / chart_labels_data 并开 clip_contents
 """
 import json
@@ -179,13 +180,80 @@ print()
 print("=" * 68)
 print("四、海名标注")
 print("=" * 68)
-labels = load("data/chart_labels.json").get("labels", [])
-check(len(labels) >= 1, f"标注 {len(labels)} 条")
+LABEL_KINDS = ("sea", "region", "island", "cape", "strait", "mountain", "river", "note")
+chart_labels = load("data/chart_labels.json")
+labels = chart_labels.get("labels", [])
+hazards = chart_labels.get("hazards", [])
+flows = chart_labels.get("flows", [])
+tiers = chart_labels.get("meta", {}).get("tiers", {})
+# 标注落点按海图画布的经纬范围查（chart_projection.json；比岸线 bbox 更窄）；读不到就退回岸线 bbox
+try:
+    _proj = load("data/chart_projection.json")
+    LW, LE = (float(v) for v in _proj["lon_range"])
+    LS, LN = (float(v) for v in _proj["lat_range"])
+except (OSError, KeyError, ValueError):
+    LW, LS, LE, LN = W, S, E, N
+print(f"  标注范围 lon {LW}–{LE} / lat {LS}–{LN}")
+
+
+def in_label_box(lon, lat):
+    return LW <= lon <= LE and LS <= lat <= LN
+
+
+def num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+ok_tiers = isinstance(tiers, dict) and len(tiers) >= 1 and all(
+    isinstance(r, list) and len(r) == 2 and num(r[0]) and num(r[1]) and r[0] < r[1] for r in tiers.values())
+check(ok_tiers, f"meta.tiers 为 {{名: [zoom_min, zoom_max]}} 且 min < max（{sorted(tiers) if isinstance(tiers, dict) else tiers}）")
+check(len(labels) >= 1, f"labels {len(labels)} 条")
+bad = []
 for lb in labels:
     t = str(lb.get("text", ""))
-    lon, lat = float(lb.get("lon", 0)), float(lb.get("lat", 0))
-    check(t != "" and W <= lon <= E and S <= lat <= N, f"「{t}」文字非空且在 bbox 内")
-    check(float(lb.get("min_span", 0)) < float(lb.get("max_span", 0)), f"「{t}」min_span < max_span")
+    miss = [k for k in ("text", "kind", "lon", "lat", "tier") if lb.get(k) in (None, "")]
+    if miss:
+        bad.append(f"「{t}」缺 {'/'.join(miss)}")
+        continue
+    if lb["kind"] not in LABEL_KINDS:
+        bad.append(f"「{t}」kind={lb['kind']} 不在枚举内")
+    if lb["tier"] not in tiers:
+        bad.append(f"「{t}」tier={lb['tier']} 不在 meta.tiers 内")
+    if not (num(lb["lon"]) and num(lb["lat"]) and in_label_box(lb["lon"], lb["lat"])):
+        bad.append(f"「{t}」坐标 ({lb['lon']}, {lb['lat']}) 越出范围")
+check(not bad, "labels 字段齐全、kind/tier 合法、坐标在范围内" + ("：" + "；".join(bad) if bad else ""))
+
+bad = []
+for hz in hazards:
+    t = str(hz.get("text", ""))
+    miss = [k for k in ("text", "lon", "lat", "tier") if hz.get(k) in (None, "")]
+    if miss:
+        bad.append(f"「{t}」缺 {'/'.join(miss)}")
+        continue
+    if hz["tier"] not in tiers:
+        bad.append(f"「{t}」tier={hz['tier']} 不在 meta.tiers 内")
+    if not (num(hz["lon"]) and num(hz["lat"]) and in_label_box(hz["lon"], hz["lat"])):
+        bad.append(f"「{t}」坐标 ({hz['lon']}, {hz['lat']}) 越出范围")
+check(not bad, f"hazards {len(hazards)} 条：字段齐全、tier 合法、坐标在范围内" + ("：" + "；".join(bad) if bad else ""))
+# 同一处不既做 label 又做 hazard
+dup = sorted({str(lb.get("text")) for lb in labels} & {str(hz.get("text")) for hz in hazards})
+check(not dup, "labels 与 hazards 无同名重复" + (f"：{dup}" if dup else ""))
+
+bad = []
+for fl in flows:
+    fid = str(fl.get("id", "?"))
+    pts = fl.get("points")
+    if not isinstance(pts, list) or len(pts) < 2:
+        bad.append(f"{fid} points 少于 2 个")
+    else:
+        out = [p for p in pts if not (isinstance(p, list) and len(p) == 2 and num(p[0]) and num(p[1]) and in_label_box(p[0], p[1]))]
+        if out:
+            bad.append(f"{fid} 有 {len(out)} 点越出范围或格式不对（如 {out[0]}）")
+    mo = fl.get("months")
+    if not (isinstance(mo, list) and all(isinstance(m, int) and not isinstance(m, bool) and 1 <= m <= 12 for m in mo)):
+        bad.append(f"{fid} months={mo} 不是 1..12 的整数数组")
+check(not bad, f"flows {len(flows)} 条：points ≥ 2 且在范围内、months 为 1..12 整数数组" + ("：" + "；".join(bad) if bad else ""))
+print(f"  labels {len(labels)} · hazards {len(hazards)} · flows {len(flows)}")
 
 print()
 print("=" * 68)
@@ -200,13 +268,35 @@ for name in ("coastline", "sealanes", "chart_labels"):
 check("GameManager.coastline_data" in sc, "SeaChart 读 GameManager.coastline_data")
 check("GameManager.chart_labels_data" in sc, "SeaChart 读 GameManager.chart_labels_data")
 check("GameManager.sealanes_data" in vo and "func track_lonlat(" in vo, "Voyage.track_lonlat 读 GameManager.sealanes_data")
-check("chart.clip_contents = true" in sc, "SeaChart 的 chart 开了 clip_contents（陆地多边形不画出面板）")
-check("draw_colored_polygon" in sc and "_soft_coast(" in sc,
-      "陆地环经 _soft_coast 后 draw_colored_polygon 填色（主干 7f92 画法；8b32 原为先三角化）")
-check("Voyage.track_lonlat(origin_port, selected_port)" in sc,
-      "当前航段按 sealanes 绕岸折线画")
+# 2026-09-25 海图重制：绘制移到 scripts/chart/MapView.gd，SeaChart 只负责把三份数据交给它；投影按 data/chart_projection.json
+mv = open(os.path.join(ROOT, "scripts", "chart", "MapView.gd"), encoding="utf-8").read()
+cp = open(os.path.join(ROOT, "scripts", "chart", "ChartProjection.gd"), encoding="utf-8").read()
+check("MapView.new()" in sc and "map.setup(GameManager.unlocked_ports(), GameManager.coastline_data, GameManager.sealanes_data, GameManager.chart_labels_data" in sc,
+      "SeaChart 挂 MapView 并把岸线 / 航线 / 标注三份数据交给它")
+check("ChartProjection.from_json(" in mv and 'res://data/chart_projection.json' in cp,
+      "MapView 经 ChartProjection 读 data/chart_projection.json 投影")
+check("coast_rings" in mv and "draw_polyline(" in mv, "MapView 把岸线环投影后按视窗描墨线")
+check("Voyage.point_along_track(origin_port, selected_port" in sc and "move_ship_lonlat(" in mv,
+      "航行中船标沿 sealanes 折线按已行里程走（Voyage.point_along_track）")
 check("Voyage.bearing_at(origin_port, selected_port" in sc,
       "航行中每日罗经按折线所在段取（2d51 风向按段变）")
+proj_path = os.path.join(ROOT, "data", "chart_projection.json")
+check(os.path.exists(proj_path), "data/chart_projection.json 存在")
+if os.path.exists(proj_path):
+    pj = json.load(open(proj_path, encoding="utf-8"))
+    cw, ch = (int(v) for v in pj.get("canvas_px", [0, 0]))
+    tex = os.path.join(ROOT, "assets", "map", "terrain_4096.png")
+    check(os.path.exists(tex), "assets/map/terrain_4096.png 存在")
+    if os.path.exists(tex):
+        with open(tex, "rb") as f:
+            head = f.read(24)
+        import struct
+        tw, th = struct.unpack(">II", head[16:24])
+        check((tw, th) == (cw, ch), f"底图尺寸 {tw}×{th} 与 chart_projection.canvas_px {cw}×{ch} 一致")
+    bt = open(os.path.join(ROOT, "tools", "build_terrain.py"), encoding="utf-8").read()
+    m_ = re.search(r"PHI1, PHI2, LON0 = ([\d.]+), ([\d.]+), ([\d.]+)", bt)
+    check(m_ is not None and [float(m_.group(1)), float(m_.group(2)), float(m_.group(3))] == [float(pj.get("phi1")), float(pj.get("phi2")), float(pj.get("lon0"))],
+          "build_terrain.py 的投影常量与 chart_projection.json 一致（GDScript 按 json 重算，三处同一公式）")
 
 print()
 print("=" * 68)
