@@ -48,7 +48,7 @@
     {"text": "日本", "kind": "region", "lon": 131.5, "lat": 33.3, "tier": "far", "size": 16, "today": "日本（宋称倭國）", "source": "seas.md §7；《諸蕃志》倭國「今號日本國」", "confidence": "高"},
     {"text": "瓊州", "kind": "region", "lon": 110.35, "lat": 20.0, "tier": "mid", "size": 16, "today": "海口府城", "source": "seas.md §7；《諸蕃志》卷下海南", "confidence": "高"},
     {"text": "雷州", "kind": "region", "lon": 110.08, "lat": 20.91, "tier": "mid", "size": 16, "today": "雷州", "source": "seas.md §7；《嶺外代答》卷一", "confidence": "高"},
-    {"text": "吉陽軍", "kind": "region", "lon": 109.5, "lat": 18.3, "tier": "near", "size": 16, "today": "三亚崖州", "source": "seas.md §7；《諸蕃志》「至吉陽，迺海之極」", "confidence": "高"},
+    {"text": "吉陽軍", "kind": "region", "lon": 109.17, "lat": 18.36, "tier": "near", "size": 16, "today": "三亚崖州区崖城（宋吉阳军治）", "source": "seas.md §7；《諸蕃志》「至吉陽，迺海之極」；军治在崖城，非今三亚市区（验收 F11）", "confidence": "高"},
     {"text": "欽州", "kind": "region", "lon": 108.62, "lat": 21.95, "tier": "near", "size": 16, "today": "钦州", "source": "seas.md §7；《嶺外代答》卷一", "confidence": "高"},
     {"text": "廉州", "kind": "region", "lon": 109.19, "lat": 21.66, "tier": "near", "size": 16, "today": "合浦", "source": "seas.md §7；《嶺外代答》卷一「廉之海，直通交阯」", "confidence": "高"},
     {"text": "薩摩", "kind": "region", "lon": 130.4, "lat": 31.7, "tier": "mid", "size": 16, "today": "鹿儿岛西部", "source": "seas.md §7；《宋史·日本國傳》西海道九州", "confidence": "高"},
@@ -90,8 +90,8 @@
     {"text": "落漈", "lon": 119.9, "lat": 23.35, "tier": "mid", "quote": "近瑠求則謂之落漈，漈者水趨下而不回也。凡西岸漁舟到彭湖已下，遇颶風發作，漂流落漈，回者百一", "source": "monsoon.md §4 H6；《元史·瑠求傳》（元人语，替代清代「黑水溝」）；critic §4.1 实测：报告坐标 120.2,23.2 在陆上 11.5 km，改用澎湖水道东侧海面（离岸 14 km，水深约 123 m）", "confidence": "中"},
     {"text": "半洋焦", "lon": 122.9, "lat": 30.3, "tier": "near", "quote": "洋中有石，曰半洋焦", "source": "monsoon.md §4 H11；《宣和奉使高麗圖經》（今地不明）", "confidence": "低"},
     {"text": "沙尾", "lon": 122.8, "lat": 31.9, "tier": "mid", "quote": "黃水洋，卽沙尾也。其水渾濁且淺", "source": "monsoon.md §4 H9；《圖經》卷三四「第二舟，至黃水洋中，三柁倂折」", "confidence": "中"},
-    {"text": "急水門", "lon": 126.4, "lat": 37.6, "tier": "near", "quote": "水埶爲山峽所束，驚濤拍岸，轉石穿崖，喧豗如雷", "source": "monsoon.md §4 H14；《圖經》卷三九", "confidence": "中"},
-    {"text": "黑山", "lon": 125.43, "lat": 34.68, "tier": "mid", "quote": "辰巳望見黑山，忽東南風暴，復遇海動，舟側欲傾", "source": "monsoon.md §4 H13；《圖經》卷三五、三九（兼岛名，今大黑山岛）", "confidence": "高"},
+    {"text": "急水門", "lon": 126.53, "lat": 37.68, "tier": "near", "quote": "水埶爲山峽所束，驚濤拍岸，轉石穿崖，喧豗如雷", "source": "monsoon.md §4 H14；《圖經》卷三九；比定江华海峡孙乭项（routes.md §1.2 #29；「宛如巫峽江路，山圍屈曲」与海峡相符，验收 F9）", "confidence": "中"},
+    {"text": "黑山", "lon": 125.52, "lat": 34.62, "tier": "mid", "quote": "辰巳望見黑山，忽東南風暴，復遇海動，舟側欲傾", "source": "monsoon.md §4 H13；《圖經》卷三五、三九（兼岛名，今大黑山岛；险地标在岛东南海面，验收 PD-6）", "confidence": "高"},
     {"text": "夾界山", "lon": 125.2, "lat": 34.2, "tier": "near", "quote": "正東望一山如屛，卽夾界山也。華夷，以此爲界限", "source": "monsoon.md §4 H12；《圖經》卷三五（兼岛名，今地存疑，候选可居岛）", "confidence": "低"}
   ],
   "flows": [
