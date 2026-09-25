@@ -123,7 +123,7 @@ func skip_years(n: int) -> Array:
 			decayed += 1
 		sh["durability"] = after
 	if decayed > 0:
-		lines.append("船板泡了%d年海水，%d 条船都该进坞了。" % [n, decayed])
+		lines.append("船板泡了 %d 年海水，%d 条船都该进坞了。" % [n, decayed])
 
 	# 水手流失
 	var left := []
@@ -133,7 +133,7 @@ func skip_years(n: int) -> Array:
 			left.append(str(Crew.hired[role_id].get("name", "一个人")))
 			Crew.hired.erase(role_id)
 	if not left.is_empty():
-		lines.append("%s没有再上船——有的回了乡，有的上了别家的船。" % "、".join(left))
+		lines.append("%s没有再上船。有的回了乡，有的上了别家的船。" % "、".join(left))
 
 	# 士气与行情
 	Fleet.morale = mini(Fleet.morale, SKIP_MORALE_AFTER)
