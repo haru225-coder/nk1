@@ -161,7 +161,7 @@
     "jeju": {"name": "耽罗", "sub": "高丽南海中岛"},
     "hakata": {"name": "博多唐房", "sub": "筑前・宋商聚居之所"},
     "guangzhou": {"name": "广州", "sub": "番禺・蕃坊"},
-    "kagoshima": {"name": "南九州", "sub": "萨摩・坊津"},
+    "kagoshima": {"name": "萨摩", "sub": "萨摩・坊津"},
     "champa": {"name": "占城", "sub": "南海・宾童龙"}
   }
 }

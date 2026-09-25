@@ -115,7 +115,8 @@ assets/     美术资源
 - 死生态位图（crate / 海鸟 / 鲸影）已从 `assets/` 与 WorldMap 删除，`godot_smoke.gd` 故意引用它们断言不存在，`check_assets.py` 对该文件放行
 - `godot_story_check.gd` 与 `godot_smoke.gd` 共用 `user://saves/` 第 9 槽：前者用完即删，后者断言空卷；别手工往第 9 槽存档
 - 海图 386 环岸线按视窗缓存（`SeaChart._land_polygons`）；平滑后自交的环三角化失败只描线不填色
-- 提交不要带 `.uid` 文件；`git commit` 用显式 pathspec（并行窗口共享工作区）
+- 新素材的 `.import` 与脚本的 `.uid` 侧车随文件一起提交（仓库现行做法，2026-09-26 起统一）：不带的话别处 `git clean` 后重导，uid 会全变、场景引用断开；`git commit` 用显式 pathspec（并行窗口共享工作区）
+- 视觉资产：皮肤在 `scripts/core/UiTheme.gd` 的 `const SKIN`（`juanben` 绢本 / `yechao` 夜潮）；立绘由 `tools/art/build_portraits.py` 生成，出了新油画直接覆盖 `assets/portraits/<id>.png` 并把 `data/characters.json` 该人 `portrait_status` 改 `painted`；新剧情文字落地后重跑 `python3 tools/art/subset_fonts.py` 补字
 
 ## 许可
 
