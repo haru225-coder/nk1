@@ -31,6 +31,7 @@ const COL_ROUTE_MIXED := COL_OCHRE
 
 var proj: ChartProjection
 var font: Font
+var font_title: Font   # 海名 / 地区名用的仿宋；缺则同 font
 var terrain: Sprite2D
 var camera: Camera2D
 var ship: ShipMarker
@@ -94,6 +95,15 @@ func _ready() -> void:
 		font = load(fp) as Font
 	if font == null:
 		font = UiTheme.font()
+	# 图名字：朱雀仿宋（OFL，TrionesType/zhuque v0.212 子集）——海名、国名 / 地区名用仿宋，取宋刻本气；
+	# 港名与小字仍用文楷（仿宋细笔画在 15 px 以下不够清楚）。子集缺的字（阯 等）回退到文楷。
+	var tp := "res://assets/fonts/ZhuqueFangsong-nk1.ttf"
+	if ResourceLoader.exists(tp):
+		font_title = load(tp) as Font
+		if font_title is FontFile:
+			(font_title as FontFile).fallbacks = [font]
+	if font_title == null:
+		font_title = font
 	_build_nodes()
 	set_process(true)
 
@@ -605,31 +615,33 @@ func _px(screen_px: float) -> float:
 	return screen_px / camera.zoom.x
 
 
-## 屏幕像素字号画字：局部变换按 1/zoom 缩放，字在任何缩放下都是 size_px 大
-func _text(ci: CanvasItem, world_pos: Vector2, text: String, size_px: int, col: Color, align: int = HORIZONTAL_ALIGNMENT_LEFT, outline: bool = true) -> void:
+## 屏幕像素字号画字：局部变换按 1/zoom 缩放，字在任何缩放下都是 size_px 大；f 不传就用 font（文楷）
+func _text(ci: CanvasItem, world_pos: Vector2, text: String, size_px: int, col: Color, align: int = HORIZONTAL_ALIGNMENT_LEFT, outline: bool = true, f: Font = null) -> void:
+	var fnt: Font = f if f != null else font
 	var z := camera.zoom.x
 	ci.draw_set_transform(world_pos, 0.0, Vector2(1.0 / z, 1.0 / z))
-	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x
+	var w := fnt.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x
 	var ox := 0.0
 	if align == HORIZONTAL_ALIGNMENT_CENTER:
 		ox = -w * 0.5
 	elif align == HORIZONTAL_ALIGNMENT_RIGHT:
 		ox = -w
 	if outline:
-		ci.draw_string_outline(font, Vector2(ox, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, 3, Color(COL_SHELL, 0.78))
-	ci.draw_string(font, Vector2(ox, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, col)
+		ci.draw_string_outline(fnt, Vector2(ox, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, 3, Color(COL_SHELL, 0.78))
+	ci.draw_string(fnt, Vector2(ox, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, col)
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 ## 竖排（海名用）：一字一行
-func _text_vertical(ci: CanvasItem, world_pos: Vector2, text: String, size_px: int, col: Color, spacing: float = 1.15) -> void:
+func _text_vertical(ci: CanvasItem, world_pos: Vector2, text: String, size_px: int, col: Color, spacing: float = 1.15, f: Font = null) -> void:
+	var fnt: Font = f if f != null else font
 	var z := camera.zoom.x
 	ci.draw_set_transform(world_pos, 0.0, Vector2(1.0 / z, 1.0 / z))
 	var y := 0.0
 	for ch in text:
-		var w := font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x
-		ci.draw_string_outline(font, Vector2(-w * 0.5, y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, 3, Color(COL_SHELL, 0.72))
-		ci.draw_string(font, Vector2(-w * 0.5, y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, col)
+		var w := fnt.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x
+		ci.draw_string_outline(fnt, Vector2(-w * 0.5, y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, 3, Color(COL_SHELL, 0.72))
+		ci.draw_string(fnt, Vector2(-w * 0.5, y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, col)
 		y += size_px * spacing
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
@@ -933,10 +945,11 @@ func _draw_labels(ci: CanvasItem) -> void:
 			continue
 		match kind:
 			"sea":
-				var sz := int(lb.get("size", 22))
-				_text_vertical(ci, v, text, sz, Color(COL_AZURITE_DEEP, 0.58), 1.30)
+				# 仿宋笔画细，比文楷多给 2 px、多给一点墨
+				var sz := int(lb.get("size", 22)) + 2
+				_text_vertical(ci, v, text, sz, Color(COL_AZURITE_DEEP, 0.64), 1.30, font_title)
 			"region":
-				_text(ci, v, text, int(lb.get("size", 16)), Color(COL_OCHRE, 0.70), HORIZONTAL_ALIGNMENT_CENTER)
+				_text(ci, v, text, int(lb.get("size", 16)) + 1, Color(COL_OCHRE, 0.74), HORIZONTAL_ALIGNMENT_CENTER, true, font_title)
 			"island", "cape", "strait":
 				_text(ci, v, text, int(lb.get("size", 12)), Color(COL_INK, 0.78), HORIZONTAL_ALIGNMENT_CENTER)
 			"mountain":

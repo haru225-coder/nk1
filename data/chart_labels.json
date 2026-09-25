@@ -12,7 +12,7 @@
     {"text": "黃水洋", "kind": "sea", "lon": 122.6, "lat": 32.3, "tier": "mid", "size": 20, "today": "苏北外海浅滩", "source": "seas.md §7；《圖經》卷三四「黃水洋，卽沙尾也」（险地层另标「沙尾」）", "confidence": "中"},
     {"text": "白水洋", "kind": "sea", "lon": 122.9, "lat": 30.8, "tier": "mid", "size": 20, "today": "长江口至洋山外海", "source": "seas.md §7；《圖經》卷三四「入白水洋」；刘迎胜比定", "confidence": "中"},
     {"text": "蘇州洋", "kind": "sea", "lon": 122.2, "lat": 31.1, "tier": "near", "size": 16, "today": "长江口外", "source": "seas.md §7；《圖經》卷三九「早過蘇州洋」", "confidence": "中"},
-    {"text": "交阯洋", "kind": "sea", "lon": 107.6, "lat": 18.3, "tier": "mid", "size": 20, "today": "北部湾南口、越南中北部近海", "source": "seas.md §7；《嶺外代答》卷一「其大海曰交阯洋」、卷三", "confidence": "高"},
+    {"text": "交趾洋", "kind": "sea", "lon": 107.6, "lat": 18.3, "tier": "mid", "size": 20, "today": "北部湾南口、越南中北部近海", "source": "seas.md §7；《嶺外代答》卷一「其大海曰交阯洋」、卷三；阯 / 趾 宋人互用，圖上從《諸蕃志》作「交趾」", "confidence": "高"},
     {"text": "烏豬洋", "kind": "sea", "lon": 112.9, "lat": 21.5, "tier": "near", "size": 16, "today": "广东上川岛东南", "source": "seas.md §7；《夢粱錄》卷十二「昆侖、沙漠、蛇龍、烏豬等洋」", "confidence": "中"},
 
     {"text": "流求", "kind": "island", "lon": 120.95, "lat": 23.5, "tier": "far", "size": 12, "today": "台湾岛", "source": "seas.md §7；《諸蕃志》流求國「當泉州之東」、《宋史·流求國傳》", "confidence": "中高"},
@@ -41,7 +41,7 @@
     {"text": "成山", "kind": "cape", "lon": 122.7, "lat": 37.4, "tier": "mid", "size": 12, "today": "成山角", "source": "seas.md §7；秦汉以来古名，宋代原句未取得", "confidence": "中"},
     {"text": "禮成港", "kind": "cape", "lon": 126.55, "lat": 37.85, "tier": "mid", "size": 12, "today": "礼成江口（开京外港）", "source": "seas.md §7；《圖經》卷三九", "confidence": "高"},
 
-    {"text": "交阯", "kind": "region", "lon": 105.85, "lat": 21.03, "tier": "far", "size": 16, "today": "越南北部（升龙）", "source": "seas.md §7；《嶺外代答》卷二、《諸蕃志》", "confidence": "高"},
+    {"text": "交趾", "kind": "region", "lon": 105.85, "lat": 21.03, "tier": "far", "size": 16, "today": "越南北部（升龙）", "source": "seas.md §7；《嶺外代答》卷二、《諸蕃志》「交趾國」；阯 / 趾 宋人互用，圖上從《諸蕃志》", "confidence": "高"},
     {"text": "占城", "kind": "region", "lon": 108.9, "lat": 14.2, "tier": "far", "size": 16, "today": "越南中部", "source": "seas.md §7；《諸蕃志》占城", "confidence": "高"},
     {"text": "真臘", "kind": "region", "lon": 104.5, "lat": 13.3, "tier": "far", "size": 16, "today": "柬埔寨（字心在图西南缘）", "source": "seas.md §7；《諸蕃志》真臘", "confidence": "高"},
     {"text": "高麗", "kind": "region", "lon": 127.2, "lat": 36.5, "tier": "far", "size": 16, "today": "朝鲜半岛", "source": "seas.md §7；诸史", "confidence": "高"},
