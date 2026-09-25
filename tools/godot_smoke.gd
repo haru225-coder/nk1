@@ -477,9 +477,9 @@ func _run() -> void:
 	yard_node.free()
 	var chart_script := load("res://scripts/SeaChart.gd") as GDScript
 	var chart_node := chart_script.new() as Node
-	_check(str(chart_node.call("_bearing_phrase", 90.0)) == "东　90 度", "正东写成东并附度数", fails)
-	_check(str(chart_node.call("_bearing_phrase", 47.0)) == "东北　47 度", "四十七度归东北", fails)
-	_check(str(chart_node.call("_bearing_phrase", 225.0)) == "西南　225 度", "二百二十五度归西南", fails)
+	_check(str(chart_node.call("_bearing_phrase", 90.0)) == "东　卯针", "正东写成东并附卯针", fails)
+	_check(str(chart_node.call("_bearing_phrase", 47.0)) == "东北　艮针", "四十七度归东北、艮针", fails)
+	_check(str(chart_node.call("_bearing_phrase", 225.0)) == "西南　坤针", "二百二十五度归西南、坤针", fails)
 	chart_node.free()
 	var crew: Node = root.get_node("Crew")
 	_check(str(crew.call("rank_word", 1)) == "初习" and str(crew.call("rank_word", 3)) == "老练",

@@ -74,6 +74,16 @@ func _ready() -> void:
 	# 首帧取景要等视口有尺寸
 	await get_tree().process_frame
 	_frame_home(0.0)
+	# 进海图首帧淡入（美术线评审 M5 ③）：一层绢色盖住整屏，半秒褪去，不挡鼠标
+	var veil := ColorRect.new()
+	veil.color = MAP_PAPER
+	veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	veil.z_index = 100
+	add_child(veil)
+	var vt := create_tween()
+	vt.tween_property(veil, "modulate:a", 0.0, 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	vt.tween_callback(veil.queue_free)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -461,9 +471,10 @@ static func needle_name(bearing: float) -> String:
 	return "%s%s针" % [a, b]
 
 
-## 题记框：墨线双框，竖写「東南海道圖」，旁注「每方折地百里」（《禹迹图》图首方框之制）
+## 题记框：墨线双框，竖写「東南海道圖」，旁注「每方折地百里」（《禹迹图》图首方框之制）。图名用朱雀仿宋（宋刻本气），旁注小字仍文楷
 func _draw_cartouche(c: Control) -> void:
 	var font: Font = map.font if (map != null and map.font != null) else UiTheme.font()
+	var title_font: Font = map.font_title if (map != null and map.font_title != null) else font
 	var rect := Rect2(Vector2(2, 2), c.size - Vector2(4, 4))
 	c.draw_rect(rect, Color(MAP_PAPER, 0.92), true)
 	c.draw_rect(rect, Color(MAP_INK, 0.85), false, 1.5)
@@ -472,8 +483,8 @@ func _draw_cartouche(c: Control) -> void:
 	var y := 22.0
 	var x_main := rect.position.x + 14.0
 	for ch in title:
-		var w := font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
-		c.draw_string(font, Vector2(x_main + 12.0 - w * 0.5, y + 12.0), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, MAP_INK)
+		var w := title_font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
+		c.draw_string(title_font, Vector2(x_main + 12.0 - w * 0.5, y + 12.0), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, MAP_INK)
 		y += 21.0
 	var note := "每方折地百里"
 	# 验收 code:CR-8：旁注跟计里画方的实际方格走（MapView.grid_step_li 返回 100 / 500 / 1000）；图还没有该方法时仍写百里
@@ -934,7 +945,8 @@ func _make_heading_card(pid: String) -> Control:
 	if dg > 0 and str(plan["wind_desc"]) in ["斜逆风", "顶头逆风"]:
 		wind_lbl.text += "　舵工抢风"
 	box.add_child(wind_lbl)
-	box.add_child(_card_line("%d 里　%s" % [int(plan["distance"]), _bearing_phrase(float(plan["bearing"]))], UiTheme.TEXT_DIM))
+	# 方位按起讫两港直连算（Voyage.overall_bearing），不用 plan 里出港第一段的方位——泉州三条线出湾都是 102 度，三张牌会全写「东」
+	box.add_child(_card_line("%d 里　%s" % [int(plan["distance"]), _bearing_phrase(Voyage.overall_bearing(origin_port, pid))], UiTheme.TEXT_DIM))
 	# 航法下的遇事日数与八成日数（云端 bed9）
 	box.add_child(_card_line("%s　遇事约 %d 日　八成 %d 日" % [
 		Voyage.order_name(course_order), int(plan.get("expected_days", plan["days"])), int(plan.get("safe_days", plan["days"])),
@@ -995,11 +1007,12 @@ func _on_redraw_hand() -> void:
 
 
 ## 八方加上度数。字跟最近的一方，数目仍是航向。
+## 去向牌上的方位：八方 + 针位（宋元舟师说「行乙针」「行丁未针」，不说度数；美术线评审 UX M4）
 func _bearing_phrase(deg: float) -> String:
 	var dirs := PackedStringArray(["北", "东北", "东", "东南", "南", "西南", "西", "西北"])
 	var wrapped := posmod(int(round(deg)), 360)
 	var idx := int(round(float(wrapped) / 45.0)) % 8
-	return "%s　%d 度" % [dirs[idx], wrapped]
+	return "%s　%s" % [dirs[idx], needle_name(deg)]
 
 
 # ══════════════════════════════════════════════════════

@@ -136,6 +136,16 @@ func bearing(from_id: String, to_id: String) -> float:
 	return bearing_at(from_id, to_id, 0.0)
 
 
+## 起讫两港之间的整段恒向线方位（去向牌显示用）。bearing() 给的是出港第一段，泉州三条航线出湾都是 102 度，
+## 牌上会三张全写「东」；这里按两港直连算，才是「往哪个方向去」
+func overall_bearing(from_id: String, to_id: String) -> float:
+	var a := port_def(from_id)
+	var b := port_def(to_id)
+	if a.is_empty() or b.is_empty():
+		return bearing(from_id, to_id)
+	return _rhumb_bearing(float(a.get("lon", 0.0)), float(a.get("lat", 0.0)), float(b.get("lon", 0.0)), float(b.get("lat", 0.0)))
+
+
 ## 已航行 traveled_li 里时所在那一段的恒向线方位
 func bearing_at(from_id: String, to_id: String, traveled_li: float) -> float:
 	var pts := track_lonlat(from_id, to_id)
