@@ -2287,6 +2287,118 @@ else:
 
 print()
 print("=" * 68)
+print("九之七、发现录呈报路径与存档键")
+print("=" * 68)
+print("  勘见只入 discoveries_found；呈报只在市舶司，挪进 discoveries_reported 才给赏格名声。两键都进存档。")
+
+_disc_gs = open(os.path.join(SCRIPTS, "GameState.gd"), encoding="utf-8").read()
+_disc_main = open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read()
+_disc_gs_fn = func_bodies(_disc_gs)
+_disc_main_fn = func_bodies(_disc_main)
+for sym in ("discoveries_found", "discoveries_reported", "has_found",
+            "record_discovery", "unreported_discoveries", "report_discovery"):
+    if sym in defined.get("GameState", set()):
+        print(f"  ✓ GameState.{sym} 已定义")
+    else:
+        print(f"  ✗ GameState.{sym} 未定义")
+        problems.append(f"GameState.{sym} 未定义")
+
+_to_d = _code_only(_disc_gs_fn.get("to_dict", ""))
+_from_d = _code_only(_disc_gs_fn.get("from_dict", ""))
+for key in ("discoveries_found", "discoveries_reported"):
+    if re.search(rf'"{key}"\s*:\s*{key}\b', _to_d) and re.search(rf'\b{key}\s*=\s*d\.get\("{key}"', _from_d):
+        print(f"  ✓ 存档键 {key} 在 to_dict / from_dict 成对")
+    else:
+        print(f"  ✗ 存档键 {key} 未在 to_dict / from_dict 成对读写")
+        problems.append(f"存档键 {key} 不对称")
+
+_has = _code_only(_disc_gs_fn.get("has_found", ""))
+if "discoveries_found" in _has and "discoveries_reported" in _has:
+    print("  ✓ has_found 同时认已勘见与已呈报（呈报过的不再入册）")
+else:
+    print("  ✗ has_found 未同时查两册，呈报后可重复勘见")
+    problems.append("has_found 未查两册")
+
+_rec = _code_only(_disc_gs_fn.get("record_discovery", ""))
+if ("has_found(" in _rec and "discoveries_found.append" in _rec
+        and not any(t in _rec for t in ("discoveries_reported", "add_fame", "add_money"))):
+    print("  ✓ record_discovery 去重后只入 discoveries_found，不给钱名")
+else:
+    print("  ✗ record_discovery 越过勘见册（直入已呈报或当场给钱名）")
+    problems.append("record_discovery 越权")
+
+_unrep = _code_only(_disc_gs_fn.get("unreported_discoveries", ""))
+if "discoveries_found" in _unrep and "duplicate(" in _unrep:
+    print("  ✓ unreported_discoveries 返回 discoveries_found 副本（遍历中呈报不改迭代源）")
+else:
+    print("  ✗ unreported_discoveries 未返回 discoveries_found 副本")
+    problems.append("unreported_discoveries 非副本")
+
+_rep = _code_only(_disc_gs_fn.get("report_discovery", ""))
+_i_guard = _rep.find("in discoveries_found")
+_i_erase = _rep.find("discoveries_found.erase(")
+_i_push = _rep.find("discoveries_reported.append(")
+_i_pay = min([i for i in (_rep.find("add_money("), _rep.find("add_fame(")) if i >= 0] or [-1])
+if (0 <= _i_guard < _i_erase and 0 <= _i_erase and 0 <= _i_push and _i_pay >= 0
+        and max(_i_erase, _i_push) < _i_pay and "add_money(" in _rep and "add_fame(" in _rep):
+    print("  ✓ report_discovery 先验在册，挪入 discoveries_reported 后才给赏格与名声")
+else:
+    print("  ✗ report_discovery 顺序不对（须先验在册、erase + append，再 add_money / add_fame）")
+    problems.append("report_discovery 呈报顺序")
+for rk in ('"gold"', '"fame"', '"name"', '"promoted"', '"title"'):
+    if rk not in _rep:
+        print(f"  ✗ report_discovery 回执缺 {rk}（_on_report_discovery 要读）")
+        problems.append(f"report_discovery 回执缺 {rk}")
+if all(rk in _rep for rk in ('"gold"', '"fame"', '"name"', '"promoted"', '"title"')):
+    print("  ✓ report_discovery 回执含 gold / fame / name / promoted / title")
+
+_yamen = _code_only(_disc_main_fn.get("_setup_yamen", ""))
+if "_setup_reporting()" in _yamen:
+    print("  ✓ 市舶司页 _setup_yamen 挂呈报签")
+else:
+    print("  ✗ _setup_yamen 未调 _setup_reporting，呈报入口丢失")
+    problems.append("市舶司未挂呈报")
+_callers = sorted(fn for fn, b in _disc_main_fn.items()
+                  if fn != "_setup_reporting" and "_setup_reporting()" in _code_only(b))
+if _callers == ["_setup_yamen"]:
+    print("  ✓ 呈报签只在市舶司页（别处不挂）")
+else:
+    print("  ✗ _setup_reporting 调用方漂移：%s" % _callers)
+    problems.append("呈报签不止市舶司")
+
+_slips = _code_only(_disc_main_fn.get("_setup_reporting", ""))
+if ("GameState.unreported_discoveries()" in _slips
+        and re.search(r'_slip_chip\(\s*_slip_row\([^)]*\)\s*,\s*"呈报"\s*,\s*_on_report_discovery\.bind\(', _slips)
+        and "report_discovery(" not in _slips.replace("_on_report_discovery", "")):
+    print("  ✓ _setup_reporting 按 unreported_discoveries 逐件出「呈报」chip，绑 _on_report_discovery")
+else:
+    print("  ✗ _setup_reporting 未按未呈报册出「呈报」chip 或当场呈报")
+    problems.append("呈报 chip 接线")
+
+_onrep = _code_only(_disc_main_fn.get("_on_report_discovery", ""))
+if "GameState.report_discovery(" in _onrep and "load_scene(current_scene_id)" in _onrep:
+    print("  ✓ _on_report_discovery 走 GameState.report_discovery 并重载本页")
+else:
+    print("  ✗ _on_report_discovery 未走 report_discovery 或未重载页面")
+    problems.append("_on_report_discovery 接线")
+
+_rep_callers = []
+for _dp, _dn, _fs in os.walk(SCRIPTS):
+    for _fn in _fs:
+        if not _fn.endswith(".gd"):
+            continue
+        _src = open(os.path.join(_dp, _fn), encoding="utf-8").read()
+        for _name, _body in func_bodies(_src).items():
+            if re.search(r'(?<![\w_])(?:GameState\.)?report_discovery\(', _code_only(_body)):
+                _rep_callers.append(f"{_fn}:{_name}")
+if _rep_callers == ["Main.gd:_on_report_discovery"]:
+    print("  ✓ report_discovery 只由 Main._on_report_discovery 调（航中/寺观不当场呈报）")
+else:
+    print("  ✗ report_discovery 调用方漂移：%s" % _rep_callers)
+    problems.append("report_discovery 调用方漂移")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:

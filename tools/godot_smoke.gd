@@ -350,6 +350,14 @@ func _run() -> void:
 	_check("beacon_ruin" in gs.discoveries_found, "废烽堠在 discoveries_found", fails)
 	var rpt: Dictionary = gs.report_discovery("beacon_ruin")
 	_check(not rpt.is_empty() and int(rpt.get("fame", 0)) > 0, "市舶司呈报才给名声", fails)
+	_check(not ("beacon_ruin" in gs.discoveries_found) and "beacon_ruin" in gs.discoveries_reported
+		and not ("beacon_ruin" in gs.unreported_discoveries()),
+		"呈报后废烽堠挪入 discoveries_reported、不再挂呈报签", fails)
+	_check(gs.report_discovery("beacon_ruin").is_empty() and not gs.record_discovery("beacon_ruin"),
+		"已呈报的发现不能二次领赏、也不再入册", fails)
+	var disc_save: Dictionary = gs.to_dict()
+	_check(disc_save.has("discoveries_found") and "beacon_ruin" in disc_save.get("discoveries_reported", []),
+		"存档含 discoveries_found / discoveries_reported", fails)
 	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
 	_check(main_src.find("ChapterSheet") >= 0 and main_src.find("AcceptDialog.new()") < 0,
 		"升章了结走居中册页，主场景不再弹系统对话框", fails)
