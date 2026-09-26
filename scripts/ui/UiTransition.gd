@@ -139,6 +139,27 @@ static func drydock_open(parent: Node, port_name: String, act: String, subtitle 
 	return play(parent, drydock_title(port_name, act), subtitle, on_black, drydock_seal(act))
 
 
+## 章晋升翻页题签：有跳年写「%s年后」或「%s年后・章名」；无跳年只写章名。朱印「晋」。
+## 年数用「两/三/四」；不编剧情评语。副题（日期）由调用方从 Calendar 传入。
+static func _cn_years(n: int) -> String:
+	if n == 2:
+		return "两"
+	return _cn_small(n)
+
+
+static func promote_title(years: int, chapter_name: String) -> String:
+	var name := chapter_name.strip_edges()
+	if years > 0:
+		var head := "%s年后" % _cn_years(years)
+		return head if name == "" else "%s・%s" % [head, name]
+	return name if name != "" else "晋升"
+
+
+static func promote_open(parent: Node, years: int, chapter_name: String, subtitle := "",
+		on_black := Callable()) -> CanvasLayer:
+	return play(parent, promote_title(years, chapter_name), subtitle, on_black, "晋")
+
+
 static func _cn_small(n: int) -> String:
 	var digits := ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
 	if n < 10:

@@ -200,7 +200,8 @@ func skip_years(n: int) -> Array:
 	if n <= 0:
 		return []
 	var lines := []
-	var y0 := Calendar.year
+	# 跳年前记下历法纪实串；末行「自…至于…」用两端日期，不写阿拉伯公元年。
+	var from_date := Calendar.get_date_string()
 
 	# 先把这几年的日子真的走完——新闻、月结、行情回归都照常发生
 	for i in range(n):
@@ -240,7 +241,7 @@ func skip_years(n: int) -> Array:
 			pr[gid] = 1.0
 	lines.append("市价早不是当年的市价了。")
 
-	lines.append("——%d 年至 %d 年。" % [y0, Calendar.year])
+	lines.append("——自%s至于%s。" % [from_date, Calendar.get_date_string()])
 	return lines
 
 
