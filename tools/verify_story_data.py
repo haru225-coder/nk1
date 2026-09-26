@@ -333,6 +333,29 @@ for s in scenes:
             hit = PROLOGUE_SPOIL.search(v)
             check(hit is None, f"scenes.json {s.get('id')}.{k} 序章文字剧透 / 现代腔「{hit.group(0) if hit else ''}」")
 
+# 序章史实校勘必修 5 处（docs/剧情打磨_序章与终局_2026-09-04.md §一）：小暑与三月开局矛盾、1255 年襄阳未战、
+# 丁大全 1258 才拜相、蒙哥南征非「大捷」、青瓷当私盐抄不通、陈文龙非绞刑、「新大陆」现代词——锁住不回退。
+# cg_world_north / cg_decision 已按后续稿重写（改后原句含「孤城 / 岳王庙」，与上面的剧透禁词冲突），只查不回退旧写法。
+PROLOGUE_HISTORY_OLD = re.compile(r"小暑|襄阳|汉水|排斥异己|大捷|当私盐抄|绞索|新大陆")
+PROLOGUE_HISTORY_KEEP = {
+    "cg_narrate_table": "三月，春雷，暴雨将至",
+    "cg_veteran_3": "大理去岁也叫鞑子拿了，下一步就是绕到咱们背后来",
+    "cg_world_north": "宦官董宋臣",
+    "cg_ana_speak_3": "箱底垫的是什么，市舶司不问也知道",
+    "cg_decision": "没有官图的海",
+}
+_scene_by_id = {s.get("id"): s for s in scenes}
+for sid, keep in PROLOGUE_HISTORY_KEEP.items():
+    s = _scene_by_id.get(sid)
+    check(s is not None, f"scenes.json 缺序章场景 {sid}")
+    if s is None:
+        continue
+    texts = [v for _, v in _scene_texts(s)] + [s.get("objective") or ""]
+    check(any(keep in v for v in texts), f"scenes.json {sid} 史实校勘改后文字丢失：{keep}")
+    for v in texts:
+        hit = PROLOGUE_HISTORY_OLD.search(v)
+        check(hit is None, f"scenes.json {sid} 回退到史实校勘前写法「{hit.group(0) if hit else ''}」")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:
