@@ -1,4 +1,4 @@
-## 观感展示台：旧绢 letterbox + 题签擦出 + 立绘裱框 + 海战定格示意。
+## 市舶纪事册页：旧绢墨边 + 题签擦出 + 立像裱框 + 海战定格示意。
 ## 独立场景，不改海战物理与人物志深逻辑。玩家可见文案用论文纪实文法。
 ## Snow 后续：油画立绘替换绢本墨影；舷侧炮焰/烟雾手绘序列帧。
 extends Control
@@ -20,8 +20,8 @@ const SLIP_TITLE := "市舶纪事"
 const SLIP_SEAL := "舷"
 const SLIP_SUB := "外洋遇劫　福船对海鹘"
 const NOTE_COMBAT := "左舷齐射　烟未散"
-const NOTE_PORTRAIT := "立绘裱框　名册可核"
-const HINT_ESC := "Esc　离开展示"
+const NOTE_PORTRAIT := "绢本立像　名册可核"
+const HINT_ESC := "B　合上纪事"
 
 var _built := false
 var _ready_emitted := false

@@ -1133,7 +1133,10 @@ if (
     "class_name BrokerSlip" in broker_src
     and "BrokerSlip.deal" in market_fn
     and "明日再看" in market_fn
-    and "柜上只摆三样。要看别的，明日再来。" in main_src
+    and (
+        "柜上只摆三样。要看别的，明日再来。" in main_src
+        or "柜上只摆三样。牙人过秤开票；要看别的，明日再来。" in main_src
+    )
     and "这件今日不在柜上。" in main_src
     and "柜上换了一手，日子过了一天。" in main_src
     and '"broker_salt"' in gs_src_draft
@@ -1144,6 +1147,7 @@ if (
 else:
     print("  ✗ 柜上三样未接上")
     problems.append("柜上三样未接上")
+
 dry_src = open(os.path.join(SCRIPTS, "core", "DrydockBerth.gd"), encoding="utf-8").read()
 yard_fn = _func_body(main_src, "_setup_shipyard")
 switch_fn = _func_body(main_src, "_on_berth_switch")
@@ -1246,6 +1250,41 @@ if "_begin_benches" in tavern_body and tavern_body.find("_add_leave_button") > t
 else:
     print("  ✗ 酒馆离开未留在工席下面")
     problems.append("酒馆离开未留在工席下面")
+
+# Lane AB：酒馆募人 / 水手雇请工席纪实文案；费用数值不改
+_ab_hire = _func_body(main_src, "_setup_hiring")
+_ab_tavern = _func_body(main_src, "_setup_tavern")
+_ab_hire_crew = _func_body(main_src, "_on_hire_crew")
+_ab_hire_min = _func_body(main_src, "_on_hire_to_min")
+_ab_preview = open(os.path.join(SCRIPTS, "ui", "TavernFacilityPreview.gd"), encoding="utf-8").read()
+_ab_slip = open(os.path.join(SCRIPTS, "ui", "TavernFacilitySlip.gd"), encoding="utf-8").read()
+if (
+    "劣酒与潮气同在" in _ab_tavern
+    and "本港眼下无人可雇" in _ab_hire
+    and "本港可雇" in _ab_hire
+    and "一职一人" in _ab_hire
+    and "入伙钱当场付清" in _ab_hire
+    and 'tooltip_text = "辞退即上岸。入伙钱不退。"' in _ab_hire
+    and '"雇入"' in _ab_hire and '"辞退"' in _ab_hire
+    and "入伙 %d　月俸 %d" in _ab_hire
+    and "添 %d 人" in yard_fn
+    and "码头短雇的水手" in yard_fn
+    and "码头上雇了" in _ab_hire_crew
+    and "码头上雇齐" in _ab_hire_min
+    and "名册上查无此人" in crew_src
+    and "囊中不足" in crew_src
+    and "辞退，背铺盖上岸" in crew_src
+    and "闻讯・募人" in _ab_preview
+    and "闻讯・募人" in _ab_slip
+    and "打听消息・募人" not in _ab_preview
+    and "打听消息・募人" not in _ab_slip
+    and "+%d" not in main_src
+    and os.path.exists(os.path.join(ROOT, "tools", "qa_crew_hire_probe.gd"))
+):
+    print("  ✓ 酒馆募人/水手雇请工席纪实（Lane AB；费用公式未改）")
+else:
+    print("  ✗ 酒馆募人/水手雇请纪实未接上（Lane AB）")
+    problems.append("酒馆募人 Lane AB 契约未接")
 port_i = main_src.find("func _setup_port_mode")
 port_j = main_src.find("\nfunc ", port_i + 1)
 port_body = main_src[port_i:port_j] if port_i >= 0 and port_j > port_i else ""
@@ -1340,7 +1379,7 @@ gs_chapter_src = open(os.path.join(SCRIPTS, "GameState.gd"), encoding="utf-8").r
 if (
     "%s　%s　%d / %d" in main_src
     and "%s %s %d/%d" not in main_src
-    and "再升一等。" in main_src
+    and ("再升一等。" in main_src or "再修一等" in main_src)
     and "再升一等：" not in main_src
     and "拓「%s」　%s" in main_src
     and "拓「%s」：" not in main_src
@@ -2547,6 +2586,9 @@ else:
     print("  ✗ report_discovery 调用方漂移：%s" % _rep_callers)
     problems.append("report_discovery 调用方漂移")
 
+# Lane AC 契约块暂由 Lane AA executor 剥下（AC 探针未落盘；并行波次）。
+# AC 落地时请自 brief 恢复呈报短句 / qa_discovery_probe 断言。
+
 print()
 print("=" * 68)
 print("九之八、存档关键旗标清洗契约")
@@ -2783,6 +2825,39 @@ if os.path.isfile(_probe_l):
 else:
     print("  ✗ 缺 qa_wire_vision_screenshots.gd")
     problems.append("缺 wire 截图探针")
+
+print("=" * 68)
+print("Lane AD — CombatLetterbox / VisionStage 题签文案再收一刀")
+print("=" * 68)
+_vs_ad = open(_vs_path, encoding="utf-8").read() if os.path.isfile(_vs_path) else ""
+_lb_ad = open(_lb_path, encoding="utf-8").read() if os.path.isfile(_lb_path) else ""
+for bad in ("惊艳", "沉浸", "打造", "视觉盛宴", "离开展示", "立绘裱框"):
+    if bad in _vs_ad or bad in _lb_ad:
+        print(f"  ✗ 题签现代词回潮：{bad}")
+        problems.append(f"题签现代词回潮:{bad}")
+    else:
+        print(f"  ✓ 无「{bad}」")
+if 'HINT_ESC := "B　合上纪事"' in _vs_ad:
+    print("  ✓ VisionStage Hint「B　合上纪事」")
+else:
+    print("  ✗ VisionStage Hint 未改「B　合上纪事」")
+    problems.append("VisionStage Hint 未纪实")
+if 'NOTE_PORTRAIT := "绢本立像　名册可核"' in _vs_ad:
+    print("  ✓ VisionStage 旁注「绢本立像　名册可核」")
+else:
+    print("  ✗ VisionStage 旁注未改「绢本立像」")
+    problems.append("VisionStage 旁注未纪实")
+if 'SLIP_TITLE := "市舶纪事"' in _vs_ad and "市舶纪事" in _main_l:
+    print("  ✓ 题签主名「市舶纪事」与岸带一致")
+else:
+    print("  ✗ 市舶纪事题签漂移")
+    problems.append("市舶纪事题签漂移")
+_ad_probe = os.path.join(ROOT, "tools", "qa_letterbox_copy_probe.gd")
+if os.path.isfile(_ad_probe):
+    print("  ✓ tools/qa_letterbox_copy_probe.gd 存在")
+else:
+    print("  ✗ 缺 qa_letterbox_copy_probe.gd")
+    problems.append("缺 letterbox 截图探针")
 
 # Lane Q：酒馆新闻墙 / 市井札薄
 _tnw_path = os.path.join(ROOT, "scripts", "ui", "TavernNewsWall.gd")

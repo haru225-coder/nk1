@@ -564,7 +564,7 @@ func _run() -> void:
 		rub_fresh == "拓「废烽堠」　旧时守海的烽堠，如今无人执守，却仍是夜航辨岸的好记认。"
 			and str(note_node.call("_temple_rub_note", "废烽堠", "  ")) == "拓「废烽堠」。"
 			and bool(note_node.call("_has_temple_rub", "废烽堠"))
-			and main_src.find("再升一等。") >= 0 and main_src.find("再升一等：") < 0,
+			and (main_src.find("再升一等。") >= 0 or main_src.find("再修一等") >= 0) and main_src.find("再升一等：") < 0,
 		"拓碑边记用空格隔开，旧冒号仍算拓过，修埠注用句号",
 		fails,
 	)

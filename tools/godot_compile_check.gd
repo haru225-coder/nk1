@@ -32,12 +32,14 @@ const SCRIPTS := [
 	"res://scripts/ui/UiTransition.gd", "res://tools/qa_title_probe.gd", "res://tools/qa_siege_endgame_probe.gd", "res://tools/qa_ending_reread_probe.gd",
 	"res://tools/qa_drydock_probe.gd",
 	"res://tools/qa_voyage_status_probe.gd",
+	"res://tools/qa_market_panel_probe.gd",
 	"res://tools/qa_port_doors_probe.gd",
+	"res://tools/qa_crew_hire_probe.gd",
 	# Lane Z3 伙伴草案预览浮页
 	"res://scripts/companions/CompanionPreview.gd", "res://tools/qa_companion_preview_screenshots.gd",
 	# Lane A 观感展示台（独立场景）
 	"res://scripts/ui/VisionStage.gd", "res://tools/qa_wire_vision_screenshots.gd",
-	"res://scripts/ui/CombatLetterbox.gd",
+	"res://scripts/ui/CombatLetterbox.gd", "res://tools/qa_letterbox_copy_probe.gd",
 	# Lane G/Q 酒馆设施纸笺与新闻墙
 	"res://scripts/ui/TavernFacilitySlip.gd", "res://scripts/ui/TavernFacilityPreview.gd",
 	"res://scripts/ui/TavernNewsWall.gd", "res://tools/qa_tavern_news_wall_screenshots.gd",
