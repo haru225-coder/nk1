@@ -2561,6 +2561,54 @@ for bad in ("惊艳", "沉浸", "视觉盛宴", "夺下敌船"):
     else:
         print(f"  ✓ 无「{bad}」")
 
+print("=" * 68)
+print("Lane L — VisionStage / CombatLetterbox 主流程薄接入")
+print("=" * 68)
+_main_l = open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read()
+_sc_l = open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()
+_wm_l = open(os.path.join(SCRIPTS, "WorldMap.gd"), encoding="utf-8").read()
+_vs_path = os.path.join(SCRIPTS, "ui", "VisionStage.gd")
+_lb_path = os.path.join(SCRIPTS, "ui", "CombatLetterbox.gd")
+if os.path.isfile(_vs_path):
+    print("  ✓ scripts/ui/VisionStage.gd 存在")
+else:
+    print("  ✗ 缺 VisionStage.gd")
+    problems.append("缺 VisionStage.gd")
+if os.path.isfile(_lb_path):
+    print("  ✓ scripts/ui/CombatLetterbox.gd 存在")
+else:
+    print("  ✗ 缺 CombatLetterbox.gd")
+    problems.append("缺 CombatLetterbox.gd")
+if "KEY_F8" in _main_l and "_open_vision_stage" in _main_l and "市舶纪事" in _main_l:
+    print("  ✓ Main F8 / 市舶纪事 → VisionStage")
+else:
+    print("  ✗ Main 未薄接入 VisionStage（F8 / 市舶纪事）")
+    problems.append("Main 未接 VisionStage")
+if "_battle_sea_name" in _sc_l and '"sea_name"' in _sc_l:
+    print("  ✓ SeaChart pending_battle 写 sea_name")
+else:
+    print("  ✗ SeaChart 未写 sea_name")
+    problems.append("SeaChart 缺 sea_name")
+if 'pb.get("sea_name"' in _wm_l or "sea_x" in _wm_l:
+    print("  ✓ WorldMap letterbox 读 sea_name")
+else:
+    print("  ✗ WorldMap letterbox 未读 sea_name")
+    problems.append("WorldMap 未读 sea_name")
+_vs_l = open(_vs_path, encoding="utf-8").read() if os.path.isfile(_vs_path) else ""
+for bad in ("惊艳", "沉浸", "打造", "视觉盛宴"):
+    if bad in _vs_l or bad in _main_l:
+        print(f"  ✗ 观感文案回潮：{bad}")
+        problems.append(f"观感文案回潮:{bad}")
+    else:
+        print(f"  ✓ 无「{bad}」")
+_probe_l = os.path.join(ROOT, "tools", "qa_wire_vision_screenshots.gd")
+if os.path.isfile(_probe_l):
+    print("  ✓ tools/qa_wire_vision_screenshots.gd 存在")
+else:
+    print("  ✗ 缺 qa_wire_vision_screenshots.gd")
+    problems.append("缺 wire 截图探针")
+
+print()
 print()
 print("=" * 68)
 if problems:

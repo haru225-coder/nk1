@@ -31,7 +31,7 @@ const SCRIPTS := [
 	# 工席成功态过渡（淡入墨幕 + 题签）
 	"res://scripts/ui/UiTransition.gd",
 	# Lane A 观感展示台（独立场景）
-	"res://scripts/ui/VisionStage.gd",
+	"res://scripts/ui/VisionStage.gd", "res://tools/qa_wire_vision_screenshots.gd",
 	"res://scripts/ui/CombatLetterbox.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",

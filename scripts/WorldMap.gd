@@ -519,7 +519,10 @@ func _try_letterbox_enter(pb: Dictionary) -> void:
 	if note.strip_edges() == "":
 		note = _CombatFx.battle_enter_subtitle(enemy_n)
 	var sub := "%s　%s" % [Calendar.get_date_string(), note]
-	LB.enter(self, LB.sea_title("外海", "遇敌"), sub)
+	var sea := str(pb.get("sea_name", "外海")).strip_edges()
+	if sea == "":
+		sea = "外海"
+	LB.enter(self, LB.sea_title(sea, "遇敌"), sub)
 	_CombatFx.hitstop(self, 0.045, 0.32)
 
 
@@ -535,5 +538,11 @@ func _try_letterbox_exit(outcome: String) -> void:
 	var act_outcome := outcome
 	if _last_boarded and outcome == "win":
 		act_outcome = "board"
-	LB.exit(parent, LB.outcome_title(act_outcome, "外海"), Calendar.get_date_string())
+	var sea_x := "外海"
+	var pb_x: Dictionary = GameManager.pending_battle
+	if pb_x is Dictionary:
+		var sn := str(pb_x.get("sea_name", "")).strip_edges()
+		if sn != "":
+			sea_x = sn
+	LB.exit(parent, LB.outcome_title(act_outcome, sea_x), Calendar.get_date_string())
 

@@ -1380,6 +1380,17 @@ func _fleet_power() -> float:
 	return (Fleet.total_durability() * 0.5 + Fleet.total_crew() * 4.0 + cannons * 25.0 + Fleet.fleet_armor_level() * 30.0) * Fleet.morale_factor()
 
 
+## Lane L：海战题签用港外海域名（「泉州外海」）；无起运港则退回「外海」。
+func _battle_sea_name() -> String:
+	var pid := str(origin_port)
+	if pid == "":
+		pid = str(GameState.last_port)
+	var pname := str(GameManager.get_port_name(pid))
+	if pname.strip_edges() == "" or pname == pid:
+		return "外海"
+	return "%s外海" % pname
+
+
 func _on_fight_pirates() -> void:
 	event_panel.visible = false
 	var power := _fleet_power()
@@ -1390,6 +1401,7 @@ func _on_fight_pirates() -> void:
 		"power": enemy,
 		"player_power": power,
 		"enemy": [{"type": "sea_falcon", "count": 2, "hull_hp": 100.0}],
+		"sea_name": _battle_sea_name(),
 		"source": {"scene": "SeaChart", "event": "pirate"},
 	}
 	_enter_battle()
@@ -1591,6 +1603,7 @@ func _on_fight_patrol() -> void:
 		"power": enemy,
 		"player_power": power,
 		"enemy": [{"type": "sea_falcon", "count": 3, "hull_hp": 120.0}],
+		"sea_name": _battle_sea_name(),
 		"source": {"scene": "SeaChart", "event": "yuan_patrol"},
 	}
 	_enter_battle()

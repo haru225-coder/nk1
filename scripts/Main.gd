@@ -98,12 +98,15 @@ const _CODEX := preload("res://scripts/ui/CharacterCodex.gd")
 const _CHARS_WIRE := preload("res://scripts/chars/CharsShoreOverlay.gd")
 ## Lane N：接舷题签岸上预览（调试 F9；真实路径仍是海图遇盗→WorldMap 按 G）
 const _COMBAT_SHORE := preload("res://scripts/combat/CombatShoreHook.gd")
+## Lane L：观感展示台薄接入（岸带「市舶纪事」/ 调试 F8；叠层，不入存档）
+const _VISION_STAGE := preload("res://scenes/vision/VisionStage.tscn")
 ## 酒馆人物卡上的小立绘（逻辑像素，4:5）
 const HIRE_PIC := Vector2i(84, 105)
 ## 船籍簿职事列表的小头像
 const ROSTER_HEAD := 24
 var _codex: Control
 var _chars_wire: Control
+var _vision_stage: Control
 var _codex_title_button: Button
 var _npc_courtesy: Label
 var _npc_faction: HBoxContainer
@@ -848,6 +851,7 @@ func _open_codex(focus_id := "") -> void:
 	_close_ledger()
 	_dismiss_banner()
 	_close_chars_wire()
+	_close_vision_stage()
 	if is_instance_valid(_codex) and not bool(_codex.get("_closing")):
 		if focus_id != "":
 			_codex.call("show_detail", focus_id, false)
@@ -862,6 +866,7 @@ func _open_codex(focus_id := "") -> void:
 func _open_chars_wire(focus_id := "") -> void:
 	_close_ledger()
 	_dismiss_banner()
+	_close_vision_stage()
 	if is_instance_valid(_codex) and not bool(_codex.get("_closing")):
 		_codex.call("close_codex")
 	if is_instance_valid(_chars_wire) and not bool(_chars_wire.get("_closing")):
@@ -877,6 +882,31 @@ func _open_chars_wire(focus_id := "") -> void:
 func _close_chars_wire() -> void:
 	if is_instance_valid(_chars_wire) and not bool(_chars_wire.get("_closing")):
 		_chars_wire.call("close_overlay")
+
+
+## Lane L：叠一层 VisionStage（立绘裱框 + 海战定格）。Esc/B 离开；不入存档、不过日子。
+func _open_vision_stage() -> void:
+	_close_ledger()
+	_dismiss_banner()
+	_close_chars_wire()
+	if is_instance_valid(_codex) and not bool(_codex.get("_closing")):
+		_codex.call("close_codex")
+	if is_instance_valid(_vision_stage):
+		return
+	var vs: Control = _VISION_STAGE.instantiate()
+	add_child(vs)
+	_vision_stage = vs
+	# 子节点离开时清引用（VisionStage._leave → queue_free）
+	vs.tree_exited.connect(func() -> void:
+		if _vision_stage == vs:
+			_vision_stage = null
+	)
+
+
+func _close_vision_stage() -> void:
+	if is_instance_valid(_vision_stage):
+		_vision_stage.queue_free()
+		_vision_stage = null
 
 
 func log_msg(text: String) -> void:
@@ -3622,6 +3652,8 @@ func _refresh_shore() -> void:
 		actions.add_child(_shore_action("人物志", Vector2(120, 42), false, _open_codex.bind("")))
 		# chars 线薄接入：名册 / 立绘面板（CharRoster + CharPortraitPanel）
 		actions.add_child(_shore_action("名册", Vector2(100, 42), false, _open_chars_wire.bind("")))
+	# Lane L：观感展示台（立绘裱框 + 海战定格示意）；论文纪实题签，不入存档
+	actions.add_child(_shore_action("市舶纪事", Vector2(140, 42), false, _open_vision_stage))
 
 
 func _on_reread_ending() -> void:
@@ -4580,6 +4612,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_F9:
 			# Lane N：岸上预览接舷题签（不入存档、不改舰队）
 			_COMBAT_SHORE.preview_boarding(self, true)
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_F8:
+			# Lane L：岸上叠 VisionStage（立绘裱框）；Esc/B 离开
+			_open_vision_stage()
 			get_viewport().set_input_as_handled()
 
 
