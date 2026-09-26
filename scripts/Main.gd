@@ -3991,6 +3991,10 @@ func _show_save_dialog(read_only := false) -> void:
 		var slip := _slip_body()
 		# 卷号写中文数字：马善政的「1」像小写 l（第 1 轮评审 minor 12）
 		_slip_title(slip, "第%s卷" % _cn_chapter(n), SaveLoad.save_label(n))
+		var tip := SaveLoad.save_tip(n)
+		if tip != "":
+			var tip_color := UiTheme.CINNABAR if SaveLoad.slot_source(n) == "corrupt" else UiTheme.TEXT_DIM
+			_slip_note(slip, tip, tip_color)
 		var row := _slip_row(slip)
 		var write := _slip_chip(row, "记录", _on_save_slot.bind(n), true)
 		write.disabled = read_only
@@ -4032,7 +4036,7 @@ func _close_save_sheet() -> void:
 
 func _on_save_slot(slot: int) -> void:
 	if not SaveLoad.save_game(slot, current_scene_id):
-		log_msg("第 %d 卷没能记下。" % slot)
+		log_msg("第 %d 卷誊写未成，笔墨未落定。" % slot)
 		return
 	_close_save_sheet()
 	log_msg("已记入航海日志第 %d 卷。" % slot)
@@ -4040,13 +4044,16 @@ func _on_save_slot(slot: int) -> void:
 
 func _on_load_slot(slot: int) -> void:
 	var scene_id := SaveLoad.saved_scene(slot)
+	var from_bak := SaveLoad.slot_source(slot) == "bak"
 	if not SaveLoad.load_game(slot):
-		log_msg("第 %d 卷翻不开。" % slot)
+		log_msg("第 %d 卷正本与副抄皆不可读。" % slot)
 		return
 	_close_save_sheet()
 	update_status_panel()
 	load_scene(scene_id if scene_id != "" else GameState.last_port)
 	log_msg("翻开日志第 %d 卷，回到 %s。" % [slot, Calendar.get_date_string()])
+	if from_bak:
+		log_msg("第 %d 卷正本卷页损了，已从副抄翻出。" % slot)
 
 
 # ══════════════════════════════════════════════════════

@@ -2474,6 +2474,36 @@ if "_read_slot(slot)" in _label_body:
 else:
     print("  ✗ save_label 未走 _read_slot")
     problems.append("save_label 未走 _read_slot")
+# Lane T：正本坏、副抄可读时册页须有脚注；提示另走 save_tip，不塞进 save_label。
+_source_body = _code_only(_saveload_fn.get("slot_source", ""))
+_tip_body = _code_only(_saveload_fn.get("save_tip", ""))
+if (
+    all(tok in _source_body for tok in ('"none"', '"primary"', '"bak"', '"corrupt"', "has_save(slot)", "_bak_path(slot)"))
+    and "slot_source(slot)" in _tip_body
+    and "副抄" in _tip_body and "正本" in _tip_body
+    and not re.search(r"（[^）]*）", _tip_body + _source_body + _label_body)
+    and "副抄" not in _label_body
+):
+    print("  ✓ slot_source 分四态，save_tip 以正本/副抄纪实短句作脚注")
+else:
+    print("  ✗ slot_source/save_tip 缺失、四态不全或提示混入括号词/label")
+    problems.append("存档槽坏档提示契约不全")
+_save_dialog_code = _code_only(func_bodies(main_src).get("_show_save_dialog", ""))
+_load_slot_code = _code_only(func_bodies(main_src).get("_on_load_slot", ""))
+_save_slot_code = _code_only(func_bodies(main_src).get("_on_save_slot", ""))
+if (
+    "SaveLoad.save_label(n)" in _save_dialog_code
+    and "SaveLoad.save_tip(n)" in _save_dialog_code
+    and "_slip_note(slip, tip" in _save_dialog_code
+    and "SaveLoad.slot_source(slot)" in _load_slot_code
+    and "副抄" in _load_slot_code
+    and "翻不开" not in _load_slot_code
+    and "没能记下" not in _save_slot_code
+):
+    print("  ✓ 航海日志册页挂坏档脚注，翻阅/记录失败写纪实短句")
+else:
+    print("  ✗ 航海日志册页未挂坏档脚注，或翻阅/记录失败仍是旧句")
+    problems.append("航海日志坏档脚注未接入")
 if (
     all(token in _flags_body for token in ("TYPE_DICTIONARY", "TYPE_BOOL", "not raw.get(key)"))
     and all(token in _saveload_src for token in (

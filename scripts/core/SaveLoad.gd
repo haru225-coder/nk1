@@ -185,6 +185,28 @@ func saved_scene(slot: int) -> String:
 	return str(_read_slot(slot).get("scene", ""))
 
 
+## 卷页从哪一份翻出：none 无档 / primary 正本可读 / bak 正本不可用、副抄可读 / corrupt 两份皆读不出。
+## 只读查询，不改文件；给航海日志册页挂脚注用。
+func slot_source(slot: int) -> String:
+	if not has_save(slot):
+		return "none"
+	if not _read(_path(slot)).is_empty():
+		return "primary"
+	if not _read(_bak_path(slot)).is_empty():
+		return "bak"
+	return "corrupt"
+
+
+## 册页脚注：正本无恙时为空串；长提示不塞进 save_label。
+func save_tip(slot: int) -> String:
+	match slot_source(slot):
+		"bak":
+			return "正本卷页损了，已从副抄翻出。"
+		"corrupt":
+			return "正本与副抄皆不可读。"
+	return ""
+
+
 func save_label(slot: int) -> String:
 	if not has_save(slot):
 		return "未记"
