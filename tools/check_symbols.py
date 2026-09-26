@@ -1709,6 +1709,25 @@ elif sit_body.find('set_flag("exam_sat")') > sit_body.find("else:"):
     problems.append("exam_sat 分支错")
 else:
     print("  ✓ 赴试每章一次、费 15 日；学者不输海路记 exam_sat")
+# 赴试只兴化、泉州（P7 §贡院）。city_exam 在通用九卡里，每港都进得了 {港}_exam，须在工席与处理函数两头拦。
+sit_ports = re.search(r"const EXAM_SIT_PORTS\s*:=\s*\[(.*?)\]", main_src, re.S)
+exam_setup = _p7_code(p7_bodies.get("_setup_exam", ""))
+sit_guard = sit_body.find("EXAM_SIT_PORTS.has(port_id)")
+if not sit_ports or set(re.findall(r'"(\w+)"', sit_ports.group(1))) != {"xinghua", "quanzhou"}:
+    print("  ✗ EXAM_SIT_PORTS 不是兴化 / 泉州二港")
+    problems.append("赴试港口漂移")
+elif not (0 <= exam_setup.find("EXAM_SIT_PORTS.has(port_id)") < exam_setup.find("本港无贡院科场")
+          < exam_setup.find("_on_exam_sit")):
+    print("  ✗ 别港贡院仍出赴试钮（_setup_exam 须先按 EXAM_SIT_PORTS 改只读）")
+    problems.append("赴试工席未限港")
+elif not (0 <= sit_guard < sit_body.find("set_flag(chapter_flag)") and "return" in sit_body[sit_guard:sit_body.find("set_flag(chapter_flag)")]):
+    print("  ✗ _on_exam_sit 未先按 EXAM_SIT_PORTS 拦别港")
+    problems.append("赴试处理未限港")
+elif "_on_exam_copy.bind(port_id)" not in exam_setup or "EXAM_SIT_PORTS" in _p7_code(p7_bodies.get("_on_exam_copy", "")):
+    print("  ✗ 誊录工席被限港牵连")
+    problems.append("誊录不应限港")
+else:
+    print("  ✓ 赴试只在兴化 / 泉州；别港贡院只读「本港无贡院科场」，誊录照旧")
 ident = _p7_code(func_bodies(gs_src).get("resolve_identity_1268", ""))
 tie = re.search(r"if scholar_tendency == sea_tendency:\s*\n\s*scholar_wins = (.*)", ident)
 if tie and 0 <= tie.group(1).find('has_flag("exam_sat")') < tie.group(1).find('has_flag("chose_land_first")'):

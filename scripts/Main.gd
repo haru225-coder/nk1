@@ -2777,6 +2777,8 @@ const GUILD_JOIN_CREDIT := 8
 const GUILD_JOIN_CREDIT_GAIN := 4
 const GUILD_JOIN_NETWORK_GAIN := 2
 const EXAM_SIT_DAYS := 15
+## 赴试只兴化、泉州（P7 §贡院）；别港贡院只剩誊录。port_id 是 {港}_exam 去后缀后的基港 id。
+const EXAM_SIT_PORTS := ["xinghua", "quanzhou"]
 
 
 ## 行会：出港行情抄本。酒馆打听仍费一日只吐一条；这里钉在墙上，不耗日。
@@ -2871,7 +2873,10 @@ func _setup_exam(port_id: String) -> void:
 	_slip_chip(_slip_row(copy), "替人抄三日", _on_exam_copy.bind(port_id), true)
 
 	var sit := _slip_body()
-	if GameState.has_flag(_exam_sat_flag()):
+	if not EXAM_SIT_PORTS.has(port_id):
+		_slip_title(sit, "赴试", "本港无贡院科场")
+		_slip_note(sit, "赴试只在兴化、泉州两处贡院。")
+	elif GameState.has_flag(_exam_sat_flag()):
 		_slip_title(sit, "赴试", "本章已赴过")
 		_slip_note(sit, "下一章再来。名声 %d。" % GameState.fame)
 	else:
@@ -2898,8 +2903,11 @@ func _exam_sat_flag() -> String:
 	return "exam_sat_ch%d" % GameState.chapter
 
 
-## 赴试：每章一次，费 15 日。不发钱、不跳章、不改船。
-func _on_exam_sit(_port_id: String) -> void:
+## 赴试：只兴化、泉州，每章一次，费 15 日。不发钱、不跳章、不改船。
+func _on_exam_sit(port_id: String) -> void:
+	if not EXAM_SIT_PORTS.has(port_id):
+		log_msg("【贡院】本港无贡院科场，赴试只在兴化、泉州。")
+		return
 	var chapter_flag := _exam_sat_flag()
 	if GameState.has_flag(chapter_flag):
 		log_msg("【贡院】本章已赴过试，下一章再来。")
