@@ -1742,6 +1742,25 @@ if all(tok in ge_src for tok in ("P7_GUILD_EXAM_SMOKE_OK", "交会费入行", "�
 else:
     print("  ✗ 缺 tools/p7_guild_exam_smoke.gd 或其断言被删")
     problems.append("入行赴试 smoke 缺失")
+# 工席成功态过渡（淡入墨幕 + 题签 + 淡出）：入行 / 赴试成功后经 play_transition 在全黑时 load_scene；
+# 过场层不上场（headless / -s 工具脚本）时须当帧调 at_black、不 await，否则 smoke 与巡检量到的是旧页。
+ut_path = os.path.join(ROOT, "scripts", "ui", "UiTransition.gd")
+ut_src = open(ut_path, encoding="utf-8").read() if os.path.exists(ut_path) else ""
+pt_body = _p7_code(p7_bodies.get("play_transition", ""))
+_pt_live = pt_body.find("_CINE.live()")
+_pt_null = pt_body.find("if node == null:")
+if not ut_src or "is_headless()" not in ut_src or "UiTheme." not in ut_src:
+    print("  ✗ 缺 scripts/ui/UiTransition.gd，或它没在 headless 下旁路 / 没取 UiTheme 色字")
+    problems.append("工席过渡脚本缺失")
+elif not (0 <= _pt_live < _pt_null < pt_body.find("at_black.call()") < pt_body.find("return") < pt_body.find("await node.finished")):
+    print("  ✗ play_transition 未按 Cinematics.live() 旁路（不上场时须当帧调 at_black 再 return）")
+    problems.append("工席过渡未旁路")
+elif not all("play_transition(" in b and "load_scene.bind(current_scene_id)" in b and "load_scene(current_scene_id)" not in b
+             for b in (join_body, sit_body)):
+    print("  ✗ 入行 / 赴试成功未接 play_transition（或仍另调一次 load_scene）")
+    problems.append("工席过渡未接钩子")
+else:
+    print("  ✓ 入行 / 赴试成功走 play_transition（全黑时 load_scene；headless 当帧直通）")
 if all(s in main_src for s in (
     '"_guild"', '"_exam"', '"_residence"', '"_temple"',
     "bg_quanzhou_ledger.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",

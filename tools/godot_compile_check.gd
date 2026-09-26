@@ -23,6 +23,8 @@ const SCRIPTS := [
 	"res://scripts/cutscene/Cinematics.gd", "res://scripts/cutscene/TitleStage.gd",
 	# characters 线：人物系统的画与小件、人物志浮页
 	"res://scripts/ui/CharacterArt.gd", "res://scripts/ui/CharacterCodex.gd",
+	# 工席成功态过渡（淡入墨幕 + 题签）
+	"res://scripts/ui/UiTransition.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
 	"res://tools/art/portrait_svg/PortraitWall.gd", "res://tools/art/ShotTour.gd",
 ]

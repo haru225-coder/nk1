@@ -79,6 +79,8 @@ const _CS_CARD := preload("res://scripts/cutscene/ChapterCard.gd")
 const _CS_BANNER := preload("res://scripts/cutscene/PortBanner.gd")
 const _CS_BACKDROP := preload("res://scripts/cutscene/LivingBackdrop.gd")
 const _TITLE_STAGE := preload("res://scripts/cutscene/TitleStage.gd")
+## 工席成功态的短过渡（淡入墨幕 + 题签 + 淡出），见 play_transition
+const _UI_TRANSITION := preload("res://scripts/ui/UiTransition.gd")
 ## 活背景幅度：比引擎默认再收一档（正文底下的画不能晃得人头晕）
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
@@ -2884,7 +2886,23 @@ func _on_guild_join(port_id: String) -> void:
 	log_msg("【入行】在%s行会交了会费 %d，簿上添了名字。商誉 %d，人脉 %d。" % [
 		port_name, GUILD_JOIN_FEE, GameState.merchant_credit, GameState.network,
 	])
-	load_scene(current_scene_id)
+	await play_transition("行会・入行", "%s行会　%s" % [port_name, Calendar.get_date_string()],
+		load_scene.bind(current_scene_id), "行")
+
+
+## 可复用的短过渡：淡入墨幕 → 题签擦出（title + 小朱印 seal）、副题浮起 → 停一拍 → 淡出，约 2.4 秒。
+## at_black 在全黑时调（通常是 load_scene，页面在黑幕底下换好）；await 到过渡结束才返回。
+## headless / -s 工具脚本 / 巡检关闭（Cinematics.live() 为假）时不演：当帧调 at_black 就返回，不 await、不延迟。
+func play_transition(title: String, subtitle := "", at_black := Callable(), seal := "") -> void:
+	var node: CanvasLayer = null
+	if _CINE.live():
+		_dismiss_banner()
+		node = _UI_TRANSITION.play(self, title, subtitle, at_black, seal)
+	if node == null:
+		if at_black.is_valid():
+			at_black.call()
+		return
+	await node.finished
 
 
 ## 贡院：誊录耗日换工钱与学者倾向，不给名声；赴试每章一次，费 15 日，按倾向记名声。
@@ -2967,7 +2985,8 @@ func _on_exam_sit(port_id: String) -> void:
 	log_msg("【赴试】在贡院坐了 %d 日。%s如今是 %s。" % [
 		EXAM_SIT_DAYS, line, Calendar.get_date_string(),
 	])
-	load_scene(current_scene_id)
+	await play_transition("贡院・赴试", "%s贡院　%s" % [GameManager.get_port_name(port_id), Calendar.get_date_string()],
+		load_scene.bind(current_scene_id), "试")
 
 
 ## 住宅：看边记、便宜歇息。候风仍去旅店——下处等不到风向。
