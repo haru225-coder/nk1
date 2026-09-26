@@ -1681,6 +1681,114 @@ if "has_flag" in slip_body and "本港已入行" in slip_body and slip_body.find
 else:
     print("  ✗ 已入行仍出交费钮")
     problems.append("已入行未改只读")
+# 行会入行港 id remap 契约：港卡 city_guild 改写成 current_scene_id + "_guild"，入行判定与 guild_<港> 旗标须落在基港 id。
+# 按实际页 id（港页 id 取自 scenes.json port 场景或 ports.json 通用港）推一遍路由，泉州 / 博多 / 广州三港都要认得出、只扣一次；
+# 再拿几份变异源码喂同一契约，须个个报错，免得契约本身写成空转。
+with open(os.path.join(ROOT, "data", "scenes.json"), encoding="utf-8") as f:
+    _gr_scenes = {s.get("id"): s for s in json.load(f).get("scenes", [])}
+with open(os.path.join(ROOT, "data", "ports.json"), encoding="utf-8") as f:
+    _gr_ports = {p.get("id") for p in json.load(f).get("ports", [])}
+GUILD_DESIGN_PORTS = ("quanzhou", "hakata", "guangzhou")
+def _gr_strip(helper_body, page_id):
+    """按 _guild_port_id 的写法模拟剥后缀：while 剥尽、if/裸 trim_suffix 只剥一次、都没有就原样。"""
+    code = _p7_code(helper_body)
+    if re.search(r'while\s+\w+\.ends_with\("_guild"\)', code) and 'trim_suffix("_guild")' in code:
+        while page_id.endswith("_guild"):
+            page_id = page_id[:-len("_guild")]
+    elif 'trim_suffix("_guild")' in code and page_id.endswith("_guild"):
+        page_id = page_id[:-len("_guild")]
+    return page_id
+def _gr_first_stmt(body):
+    for ln in _p7_code(body).split("\n"):
+        if ln.strip():
+            return ln.strip()
+    return ""
+def _guild_remap_contract(src):
+    errs = []
+    bodies = func_bodies(src)
+    jp = re.search(r"const GUILD_JOIN_PORTS\s*:=\s*\[(.*?)\]", src, re.S)
+    join_ports = set(re.findall(r'"(\w+)"', jp.group(1))) if jp else set()
+    remapped = re.search(r"const REMAPPED_FACILITIES\s*:=\s*\[(.*?)\]", src, re.S)
+    suffixes = re.search(r"const FACILITY_SUFFIXES\s*:=\s*\[(.*?)\]", src, re.S)
+    generic = re.search(r"const GENERIC_FACILITIES\s*:=\s*\[(.*?)\]", src, re.S)
+    if not remapped or '"city_guild"' not in remapped.group(1):
+        errs.append("city_guild 不在 REMAPPED_FACILITIES")
+    if 'target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")' not in src:
+        errs.append("港卡改写不再是 current_scene_id + _ + 后缀")
+    if not suffixes or '"_guild"' not in suffixes.group(1):
+        errs.append("FACILITY_SUFFIXES 缺 _guild")
+    dyn = _p7_code(bodies.get("_setup_dynamic_scene", ""))
+    if "scene_id.trim_suffix(suffix)" not in dyn or "_setup_guild(base_loc)" not in dyn:
+        errs.append("_guild 页未剥后缀进 _setup_guild")
+    helper = bodies.get("_guild_port_id", "")
+    if not helper:
+        errs.append("缺 _guild_port_id")
+    # 四个入口第一句就归一，port_id 在此之前不许被用
+    for fn in ("_setup_guild", "_add_guild_join_slip", "_guild_join_block", "_on_guild_join"):
+        if _gr_first_stmt(bodies.get(fn, "")) != "port_id = _guild_port_id(port_id)":
+            errs.append("%s 未先按 _guild_port_id 归一" % fn)
+    join = _p7_code(bodies.get("_on_guild_join", ""))
+    block = _p7_code(bodies.get("_guild_join_block", ""))
+    slip = _p7_code(bodies.get("_add_guild_join_slip", ""))
+    if join.count("spend_money(") != 1 or "add_money(" in join or "money -=" in join:
+        errs.append("_on_guild_join 扣费不止一处")
+    flag_set = join.find('set_flag("guild_%s" % port_id)')
+    first_await = join.find("await ")
+    if flag_set < 0 or (first_await >= 0 and first_await < flag_set):
+        errs.append("guild_<港> 旗标须在 await 过渡前写上（过渡中再按会二次扣费）")
+    if 'has_flag("guild_%s" % port_id)' not in block:
+        errs.append("_guild_join_block 已入行判定与 set_flag 键不同")
+    if "_on_guild_join.bind(port_id)" not in slip:
+        errs.append("入行钮未绑归一后的 port_id")
+    for port in GUILD_DESIGN_PORTS:
+        # 港页实际 id：剧情港取 scenes.json 的 port 场景，其余港走 ports.json + GENERIC_FACILITIES
+        sc = _gr_scenes.get(port)
+        if sc is not None and sc.get("type") == "port":
+            has_card = any(f.get("id") == "city_guild" for f in sc.get("facilities", []))
+        elif sc is None and port in _gr_ports:
+            has_card = bool(generic) and '"city_guild"' in generic.group(1)
+        else:
+            errs.append("%s 港页 id 不是基港 id（scenes.json 同 id 非 port 场景或 ports.json 缺港）" % port)
+            continue
+        if not has_card:
+            errs.append("%s 港页没有 city_guild 卡" % port)
+        page = port + "_guild"
+        routed = page[:-len("_guild")]  # _setup_dynamic_scene 的 trim_suffix(suffix)
+        keys = set()
+        for pid in (routed, page, page + "_guild"):
+            base = _gr_strip(helper, pid)
+            if base not in join_ports:
+                errs.append("%s 行会页经 %s 认不出入行港（得 %s）" % (port, pid, base))
+            keys.add("guild_%s" % base)
+        if len(keys) != 1:
+            errs.append("%s 同港旗标分成 %s，会重复扣会费" % (port, sorted(keys)))
+    return errs
+_gr_errs = _guild_remap_contract(main_src)
+if _gr_errs:
+    for e in _gr_errs:
+        print("  ✗ 行会 remap：%s" % e)
+    problems.append("行会入行港 id remap 契约")
+else:
+    print("  ✓ 泉州 / 博多 / 广州在实际页 id {港}_guild（含多重 _guild）下归一认港，旗标同键、会费只扣一次")
+_gr_helper = func_bodies(main_src).get("_guild_port_id", "")
+_gr_mutants = {
+    "剥后缀只剥一次": main_src.replace('while base.ends_with("_guild"):', 'if base.ends_with("_guild"):', 1),
+    "helper 不剥": main_src.replace(_gr_helper, "\n\treturn page_id\n", 1) if _gr_helper else "",
+    "入行处理不归一": main_src.replace("func _on_guild_join(port_id: String) -> void:\n\tport_id = _guild_port_id(port_id)\n",
+                                   "func _on_guild_join(port_id: String) -> void:\n", 1),
+    "门槛不归一": main_src.replace("func _guild_join_block(port_id: String) -> String:\n\tport_id = _guild_port_id(port_id)\n",
+                              "func _guild_join_block(port_id: String) -> String:\n", 1),
+    "二次扣费": main_src.replace("\tif not GameState.spend_money(GUILD_JOIN_FEE):\n\t\treturn\n",
+                             "\tif not GameState.spend_money(GUILD_JOIN_FEE):\n\t\treturn\n\tGameState.spend_money(GUILD_JOIN_FEE)\n", 1),
+    "港卡改写漂移": main_src.replace('target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")',
+                                 'target_scene = target_scene.trim_prefix("city_")', 1),
+}
+_gr_dead = [name for name, m in _gr_mutants.items() if m == main_src or not m or not _guild_remap_contract(m)]
+if _gr_dead:
+    print("  ✗ 行会 remap 契约变异自检失灵（变异未被抓）：%s" % "、".join(_gr_dead))
+    problems.append("行会 remap 变异自检")
+else:
+    print("  ✓ 行会 remap 变异自检：%d 份变异源码均被契约拦下" % len(_gr_mutants))
 if _const_int("EXAM_SIT_DAYS") == 15:
     print("  ✓ 赴试费 15 日")
 else:

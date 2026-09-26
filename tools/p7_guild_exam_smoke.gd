@@ -165,6 +165,39 @@ func _run(main) -> void:
 	else:
 		_ok("明州行会：本港无会籍，无入行按钮")
 
+	# ── 2b. 港卡 remap：从港页按 city_guild 进实际页 {港}_guild；带后缀直调也认港、只扣一次 ──
+	for port in ["hakata", "guangzhou"]:
+		_clear_flag("guild_%s" % port)
+		_gs.money = 5000
+		_gs.merchant_credit = 8
+		_gs.last_port = port
+		main.load_scene(port)
+		if not ("city_guild" in main.shore_hand):
+			main.shore_hand.append("city_guild")
+		main._on_facility_pressed({"id": "city_guild"})
+		var page := "%s_guild" % port
+		if str(main.current_scene_id) != page:
+			_fail("%s 港卡 city_guild 没进 %s，而是 %s" % [port, page, str(main.current_scene_id)])
+			continue
+		var chip := _button_with_text(main, JOIN_TEXT)
+		if chip == null:
+			_fail("%s 实际页 %s 认不出入行港（无「%s」）" % [port, page, JOIN_TEXT])
+			continue
+		var b := _snap()
+		chip.pressed.emit()
+		main._on_guild_join(page)
+		main._on_guild_join("%s_guild" % page)
+		main._on_guild_join(port)
+		var a := _snap()
+		if a["money"] != b["money"] - 2000 or a["credit"] != b["credit"] + 4 or a["network"] != b["network"] + 2:
+			_fail("%s 经 %s 入行后再按带后缀 / 基港 id 直调，账 %s→%s（应只扣一次）" % [port, page, b, a])
+		elif not _gs.has_flag("guild_%s" % port) or _gs.has_flag("guild_%s" % page):
+			_fail("%s 入行旗标没记在基港 guild_%s 上" % [port, port])
+		elif not _has_stamp(main, "本港已入行"):
+			_fail("%s 入行后 %s 卡底没有 disabled「本港已入行」" % [port, page])
+		else:
+			_ok("%s：港卡进 %s 入行，带后缀 / 基港直调都不再扣，旗标 guild_%s" % [port, page, port])
+
 	# ── 3. 赴试士人支（第一章） ──
 	_gs.chapter = 1
 	_clear_flag("exam_sat_ch1")

@@ -2805,8 +2805,18 @@ const EXAM_SIT_PORTS := ["xinghua", "quanzhou"]
 const EXAM_SLIP_MIN_H := 220
 
 
+## 行会页 id 是港卡 city_guild 按 current_scene_id 改写的 {港}_guild；入行港判定与 guild_<港> 旗标一律记在基港 id 上。
+## 尾部 _guild 剥尽（{港}_guild_guild 也收回基港），否则三港在实际页 id 下认不出，或同港旗标记成两份、会费扣两次。
+func _guild_port_id(page_id: String) -> String:
+	var base := page_id
+	while base.ends_with("_guild"):
+		base = base.trim_suffix("_guild")
+	return base
+
+
 ## 行会：出港行情抄本。酒馆打听仍费一日只吐一条；这里钉在墙上，不耗日。
 func _setup_guild(port_id: String) -> void:
+	port_id = _guild_port_id(port_id)
 	scene_title.text = "%s・行会" % GameManager.get_port_name(port_id)
 	body_text.text = "墙上钉着远港价目，墨迹有的还潮着。海商信用 %d，足的人会里肯多抄几条远路。" % GameState.merchant_credit
 	_begin_benches()
@@ -2837,6 +2847,7 @@ func _setup_guild(port_id: String) -> void:
 
 ## 入行：只泉州 / 博多 / 广州。已入行只看账；条件不足按钮仍在，按下只说缘由。
 func _add_guild_join_slip(port_id: String) -> void:
+	port_id = _guild_port_id(port_id)
 	var join := _slip_body()
 	var standing := "商誉 %d　人脉 %d" % [GameState.merchant_credit, GameState.network]
 	if not GUILD_JOIN_PORTS.has(port_id):
@@ -2861,6 +2872,7 @@ func _add_guild_join_slip(port_id: String) -> void:
 
 ## 返回不收的缘由；空串即可入行。
 func _guild_join_block(port_id: String) -> String:
+	port_id = _guild_port_id(port_id)
 	if not GUILD_JOIN_PORTS.has(port_id):
 		return "本港不设入行"
 	if GameState.has_flag("guild_%s" % port_id):
@@ -2873,6 +2885,7 @@ func _guild_join_block(port_id: String) -> String:
 
 
 func _on_guild_join(port_id: String) -> void:
+	port_id = _guild_port_id(port_id)
 	var port_name := GameManager.get_port_name(port_id)
 	var why := _guild_join_block(port_id)
 	if why != "":
