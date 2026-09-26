@@ -1946,10 +1946,11 @@ elif not os.path.exists(os.path.join(ROOT, "tools", "qa_siege_endgame_probe.gd")
 else:
     print("  ✓ 守城 / 终局岸带首进走纪实题签（城 / 终；UI 态防重播；headless 直通），小笺抬头同序章文法")
 # 终局「重读结局」入口（Lane X）：札记抬头旁注终局时地、笺脚注文；重读钮仍是动作行主钮（带 tooltip）；
-# _on_reread_ending 只翻开既有册页——不传 ending（不再 finish / 不演结局过场）、不经 _shore_title_once、册页已开不叠。
+# _on_reread_ending 只翻开既有册页——不传 ending（不再 finish / 不演结局过场）、眉题「重读・时地」钮「合上册页」、不经 _shore_title_once、册页已开不叠。
 _epi_body = _p7_code(p7_bodies.get("_epilogue_slip", ""))
 _reread_body = _p7_code(p7_bodies.get("_on_reread_ending", ""))
 _refresh_body = _p7_code(p7_bodies.get("_refresh_shore", ""))
+_show_ch_x = _p7_code(p7_bodies.get("_show_chapter_dialog", ""))
 if not ('_band_head(col, "航海札记", "终", GameState.ended_at)' in _epi_body
         and "EpilogueFoot" in _epi_body and "重读结局" in _epi_body and "TEXT_DIM, 16" in _epi_body):
     print("  ✗ 航海札记缺终局时地旁注或笺脚「重读结局」注文")
@@ -1958,7 +1959,10 @@ elif not ('_shore_action("重读结局"' in _refresh_body and "RereadEnding" in 
           and "tooltip_text" in _refresh_body and "_on_reread_ending" in _refresh_body):
     print("  ✗ 终局动作行「重读结局」主钮缺名或 tooltip")
     problems.append("重读结局钮漂移")
-elif not ("_show_notice_dialog(GameState.ended, GameState.ended_at, GameState.ended_text)" in _reread_body
+elif not ("_show_chapter_dialog(" in _reread_body and '"ending": ""' in _reread_body
+          and '"ok_text": "合上册页"' in _reread_body and '"重读' in _reread_body
+          and 'res.get("ok_text", "记下这一纲")' in _show_ch_x
+          and 'res.get("kicker", "了结")' in _show_ch_x
           and "is_instance_valid(_chapter_host)" in _reread_body
           and "play_transition(" not in _reread_body and "_shore_title" not in _reread_body
           and "finish(" not in _reread_body):
@@ -1968,7 +1972,36 @@ elif not os.path.exists(os.path.join(ROOT, "tools", "qa_ending_reread_probe.gd")
     print("  ✗ 缺 tools/qa_ending_reread_probe.gd")
     problems.append("终局重读探针缺失")
 else:
-    print("  ✓ 终局重读结局：札记旁注时地 + 笺脚注文；重读只翻既有册页，不重播题签、不叠册页、不再 finish")
+    print("  ✓ 终局重读结局：札记旁注时地 + 笺脚注文；重读只翻既有册页（眉题重读・合上册页），不重播题签、不叠册页、不再 finish")
+# 章晋升册页 / 翻页题签（Lane W）：摘要「这一路」+ 代价分区；skip_years 末行「自…至于…」；
+# 确认「承此一路」走 promote_title 印「晋」；不改 SKIP_* / advance_years 数值。
+_confirm_ch = _p7_code(p7_bodies.get("_confirm_chapter_sheet", ""))
+_era_body = _p7_code(p7_bodies.get("_era_summary_lines", ""))
+_show_ch = _p7_code(p7_bodies.get("_show_chapter_dialog", ""))
+_gm_skip = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
+if ("func promote_title" not in ut_src or "func promote_open" not in ut_src
+        or "年后" not in ut_src or '"晋")' not in ut_src):
+    print("  ✗ UiTransition 缺晋升翻页题签助手（promote_title / 印「晋」）")
+    problems.append("晋升题签助手缺失")
+elif not ("promote_title(" in _confirm_ch and "play_transition(" in _confirm_ch
+          and '"晋"' in _confirm_ch and "_chapter_advanced" in _confirm_ch):
+    print("  ✗ 晋升册页确认未接 promote_title / play_transition（印「晋」）")
+    problems.append("晋升翻页题签未接钩子")
+elif not ("这一路" in _show_ch and "代价" in _show_ch
+          and "_chapter_advanced" in _show_ch and "_chapter_years" in _show_ch):
+    print("  ✗ 晋升册页缺「这一路」/「代价」分区或未记住 advanced/years")
+    problems.append("晋升册页摘要代价分区漂移")
+elif "span :=" not in _era_body:
+    print("  ✗ _era_summary_lines 未按跳年数写「这两年/这三年」")
+    problems.append("跳年摘要年数笼统")
+elif "自%s至于%s" not in _gm_skip or "SKIP_HULL_DECAY" not in _gm_skip:
+    print("  ✗ skip_years 末行未改「自…至于…」或 SKIP_* 常量丢失")
+    problems.append("跳年代价末行漂移")
+elif not os.path.exists(os.path.join(ROOT, "tools", "qa_chapter_promote_probe.gd")):
+    print("  ✗ 缺 tools/qa_chapter_promote_probe.gd")
+    problems.append("晋升册页探针缺失")
+else:
+    print("  ✓ 章晋升册页：摘要/代价分区 + 翻页题签印「晋」；skip_years 末行历法纪实；数值未改")
 if all(s in main_src for s in (
     '"_guild"', '"_exam"', '"_residence"', '"_temple"',
     "bg_quanzhou_ledger.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",

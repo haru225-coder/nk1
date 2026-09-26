@@ -70,6 +70,8 @@ func _run() -> void:
 	_main.call("_on_reread_ending")
 	await _settle(6)
 	_expect(_sheet_count() == 1, "点重读后册页一张（%d）" % _sheet_count())
+	_expect(_sheet_has_text("重读"), "册页眉题含「重读」")
+	_expect(_sheet_has_text("合上册页"), "册页钮为「合上册页」")
 	_expect(_seen().size() == 1, "重读不重播岸带题签")
 	_expect(_transition_count() == 0, "重读不起墨幕题签（%d）" % _transition_count())
 	_main.call("_on_reread_ending")
@@ -118,6 +120,19 @@ func _check_back(want: String, acts0: int, tag: String) -> void:
 	_expect(_band_count("EpilogueSlip") == 1, "%s后札记仍一方（%d）" % [tag, _band_count("EpilogueSlip")])
 	_expect(_action_count() == acts0, "%s后动作行钮数不变（%d → %d）" % [tag, acts0, _action_count()])
 	_expect(_seen().size() == 1, "%s后题签记录仍一条" % tag)
+
+
+
+func _sheet_has_text(frag: String) -> bool:
+	var host = _main.get("_chapter_host")
+	if host == null or not is_instance_valid(host):
+		return false
+	for n in host.find_children("*", "", true, false):
+		if n is Label and frag in str(n.text):
+			return true
+		if n is Button and frag in str(n.text):
+			return true
+	return false
 
 
 func _expect(ok: bool, what: String) -> void:
@@ -212,7 +227,7 @@ func _hold_shot(node: CanvasLayer, stem: String) -> void:
 	if node == null:
 		print("QA_ENDING_SKIP_TRANSITION %s (headless)" % stem)
 		return
-	await _settle(36)
+	await _settle(72)
 	await _shot(stem)
 	if is_instance_valid(node):
 		node.call("_abort")

@@ -61,6 +61,10 @@ var _save_host: Control
 ## 升章 / 了结册页。同一理由，不用系统对话框。
 var _chapter_host: Control
 var _chapter_next_scene: String = ""
+## 本次册页是否晋升（非了结/结局）。UI 态，不入存档；确认「承此一路」时走翻页题签。
+var _chapter_advanced := false
+## 本次晋升跳年数（展示题签用）；确认后清零。不改 skip_years 数值。
+var _chapter_years := 0
 ## 今日岸上开着的去处。再候一日之前这一手不变。
 var shore_hand: PackedStringArray = PackedStringArray()
 var _shore_facilities: Array = []
@@ -3731,12 +3735,15 @@ func _refresh_shore() -> void:
 	actions.add_child(_shore_action("市舶纪事", Vector2(140, 42), false, _open_vision_stage))
 
 
-## 重读结局：只翻开既有 ChapterSheet（结局名 + 终局时地 + 结局正文），不传 ending，不再 finish、不演过场；
+## 重读结局：只翻开既有 ChapterSheet，不传 ending（不再 finish、不演过场、不换结算底图）；
+## 眉题「重读・终局时地」、大题只写结局名，钮写「合上册页」（初读「了结 / 记下这一纲」是落定那一刻的话）。
 ## 岸带题签已由 _shore_title_seen 记过，合上册页走 load_scene 重排岸带也不重播。册页已开时不叠第二张。
 func _on_reread_ending() -> void:
 	if is_instance_valid(_chapter_host) or GameState.ended_text == "":
 		return
-	_show_notice_dialog(GameState.ended, GameState.ended_at, GameState.ended_text)
+	var kicker := "重读" if GameState.ended_at == "" else "重读・%s" % GameState.ended_at
+	_show_chapter_dialog({"title": GameState.ended, "text": GameState.ended_text, "resolved": true,
+		"scene": "", "ending": "", "kicker": kicker, "ok_text": "合上册页"})
 
 
 ## 岸带上方的墨底小笺（守城城防账、终局航海札记共用）：log_well 暗墨底、泥金淡边，16px 起。
@@ -4173,13 +4180,14 @@ func _era_summary_lines(years: int) -> Array:
 	var lines := []
 	var trips: int = GameState.era_trips
 	var route: String = GameState.era_main_route()
+	var span := ("%s年" % _cn_num(years, true)) if years > 0 else "一段日子"
 	if trips > 0:
 		if route != "":
 			lines.append("这%s，你的船跑了%s趟，走得最多的是%s。" % [
-				"几年" if years > 0 else "一段日子", _cn_num(trips, true), route,
+				span, _cn_num(trips, true), route,
 			])
 		else:
-			lines.append("这%s，你的船跑了%s趟。" % ["几年" if years > 0 else "一段日子", _cn_num(trips, true)])
+			lines.append("这%s，你的船跑了%s趟。" % [span, _cn_num(trips, true)])
 	if GameState.merchant_credit >= 20:
 		lines.append("牙行里提起你的名字，不必再加「泉州那个姓陈的」。")
 	elif GameState.merchant_credit <= -10:
@@ -4211,6 +4219,9 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	if is_instance_valid(_chapter_host):
 		_chapter_host.queue_free()
 	_chapter_next_scene = str(res.get("scene", ""))
+	# 晋升册页记住 advanced / years，供「承此一路」翻页题签；了结/结局不走晋印。
+	_chapter_advanced = bool(res.get("advanced", false)) and not resolved_sheet
+	_chapter_years = int(res.get("years", 0)) if _chapter_advanced else 0
 
 	var host := Control.new()
 	host.name = "ChapterSheet"
@@ -4254,8 +4265,9 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 	var kicker := Label.new()
 	var ok_text := "承此一路"
 	if res.get("resolved", false):
-		kicker.text = "了结"
-		ok_text = "记下这一纲"
+		# 重读结局传自己的眉题与钮字（见 _on_reread_ending）；初读仍是「了结 / 记下这一纲」
+		kicker.text = str(res.get("kicker", "了结"))
+		ok_text = str(res.get("ok_text", "记下这一纲"))
 	else:
 		# 中文数字不留空格（「第 二 章」是给阿拉伯数字留的格式，第 2 轮美术 minor 3）
 		kicker.text = "第%s章・%s" % [
@@ -4282,10 +4294,11 @@ func _show_chapter_dialog(res: Dictionary) -> void:
 		var era := _era_summary_lines(years)
 		var costs: Array = GameManager.skip_years(years)
 		var block := "【%s年后・%s】\n" % [_cn_num(years, true), Calendar.get_date_string()]
+		# 摘要与代价分两截：纪实短标，不混成一段现代 UI 状态词。
 		if not era.is_empty():
-			block += "\n".join(era) + "\n"
+			block += "这一路\n" + "\n".join(era) + "\n"
 		if not costs.is_empty():
-			block += "\n".join(costs) + "\n"
+			block += "代价\n" + "\n".join(costs) + "\n"
 		raw = block + "\n" + raw
 		GameState.clear_era()
 		update_status_panel()
@@ -4385,15 +4398,31 @@ func _confirm_chapter_sheet() -> void:
 	if _chapter_host == null:
 		return
 	var next_scene := _chapter_next_scene
+	var was_advanced := _chapter_advanced
+	var years := _chapter_years
 	_chapter_next_scene = ""
+	_chapter_advanced = false
+	_chapter_years = 0
 	var host := _chapter_host
 	_chapter_host = null
 	host.visible = false
 	host.queue_free()
-	if next_scene != "" and not GameManager.get_scene_by_id(next_scene).is_empty():
-		load_scene(next_scene)
+	var go := func() -> void:
+		if next_scene != "" and not GameManager.get_scene_by_id(next_scene).is_empty():
+			load_scene(next_scene)
+		else:
+			load_scene(current_scene_id)
+	# 晋升翻页：墨幕题签「两年后・章名」印「晋」，全黑时换页；了结/结局直通。
+	if was_advanced:
+		var ch_name := str(GameState.chapter_def().get("name", ""))
+		await play_transition(
+			_UI_TRANSITION.promote_title(years, ch_name),
+			Calendar.get_date_string(),
+			go,
+			"晋"
+		)
 	else:
-		load_scene(current_scene_id)
+		go.call()
 
 
 func _select_market_ship(idx: int) -> void:
