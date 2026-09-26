@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "历史压力新闻",
-    "note": "按 Calendar 年月投放（date <= 当前 YYYY-MM 且未投放过）。走 GameManager.monthly_notice，酒馆墙上保留最近三条。text 为默认；text_S / text_M 按 GameState.news_variant() 覆盖（S 士人 / M 海商）。speaker 为空则显示【酒馆传闻】。市场副作用（禁运、恐慌）尚未接入 Economy，本文件不写未消费字段。史源：docs/陈文龙史料调研_2026-09-04.md 文案可用 {target_name}（有陈文龙则为其名，否则「兴化陈瓒」）与 {player_name} 两个占位符。 可选 only（scholar/merchant，按 GameState.identity 过滤）与 flag（投放时写入旗标）。"
+    "note": "按 Calendar 年月投放（date <= 当前 YYYY-MM 且未投放过）。走 GameManager.monthly_notice，酒馆墙上保留最近三条。text 为默认；text_S / text_M 按 GameState.news_variant() 覆盖（S 士人 / M 海商）。speaker 为空则显示【酒馆传闻】。可选 market：{good_id, mul, ports?}，投放当月经 Economy.apply_news_market 把该货行情乘 mul 一次（钳在 RATE_MIN–RATE_MAX），之后按 RECOVERY 回归 1.0；ports 省略则凡交易此货之港皆受波及。禁运尚未接入 Economy，本文件不写未消费字段。史源：docs/陈文龙史料调研_2026-09-04.md 文案可用 {target_name}（有陈文龙则为其名，否则「兴化陈瓒」）与 {player_name} 两个占位符。 可选 only（scholar/merchant，按 GameState.identity 过滤）与 flag（投放时写入旗标）。"
   },
   "news": [
     {
@@ -86,7 +86,8 @@
       "id": "n_1273_03_fanfang_panic",
       "date": "1273-03",
       "speaker": "",
-      "text": "蕃坊人心浮动。香药、乳香在码头上贱卖，铜钱出海的查禁比往年严得多。"
+      "text": "蕃坊人心浮动。香药、乳香在码头上贱卖，铜钱出海的查禁比往年严得多。",
+      "market": {"good_id": "aromatic_medicine", "mul": 0.6, "ports": ["quanzhou"]}
     },
     {
       "id": "n_1274_10_bunei",

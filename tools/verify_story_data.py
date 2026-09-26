@@ -92,8 +92,10 @@ nids = [n.get("id", "") for n in news]
 check(all(nids), "news.json 有条目缺 id")
 check(len(nids) == len(set(nids)), "news.json id 重复")
 DATE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
-ALLOWED = {"id", "date", "speaker", "text", "text_S", "text_M", "only", "flag"}
+ALLOWED = {"id", "date", "speaker", "text", "text_S", "text_M", "only", "flag", "market"}
 IDENTITIES = {"scholar", "merchant", "hometown"}
+NEWS_GOODS = {g["id"] for g in load("goods.json")["goods"]}
+NEWS_PORTS = {p["id"]: p for p in load("ports.json")["ports"]}
 for n in news:
     nid = n.get("id", "?")
     check(DATE.match(str(n.get("date", ""))) is not None, f"news {nid} date 须为 YYYY-MM")
@@ -108,12 +110,31 @@ for n in news:
     if "only" in n:
         check(n["only"] in IDENTITIES, f"news {nid} only=`{n['only']}` 不是合法身份 {sorted(IDENTITIES)}")
         check(str(n.get("date", "")) > "1268-04", f"news {nid} 带 only 但日期早于 1268-04 殿试结算，那时 identity 还是 undecided，永远发不出去")
+    if "market" in n:
+        mk = n["market"]
+        check(isinstance(mk, dict) and set(mk) <= {"good_id", "mul", "ports"},
+              f"news {nid}.market 只认 good_id/mul/ports（Economy.apply_news_market 不读别的键）")
+        gid = mk.get("good_id", "") if isinstance(mk, dict) else ""
+        check(gid in NEWS_GOODS, f"news {nid}.market good_id=`{gid}` 不在 goods.json")
+        mul = mk.get("mul") if isinstance(mk, dict) else None
+        check(isinstance(mul, (int, float)) and 0.4 <= mul <= 1.6 and mul != 1.0,
+              f"news {nid}.market mul={mul} 须在 0.4–1.6 且 ≠1（冲击在 RATE_MIN–RATE_MAX 内才有意义）")
+        mports = mk.get("ports", None) if isinstance(mk, dict) else None
+        traders = [pid for pid, p in NEWS_PORTS.items() if gid in p.get("market", {})]
+        if mports is None:
+            check(bool(traders), f"news {nid}.market 省略 ports 但无港交易 {gid}")
+        else:
+            check(isinstance(mports, list) and mports and all(pid in traders for pid in mports),
+                  f"news {nid}.market ports={mports} 须全部是交易 {gid} 的港口（否则冲击落空）")
     y = int(str(n.get("date", "0000"))[:4] or 0)
     check(1255 <= y <= 1279, f"news {nid} 年份 {y} 超出 1255–1279")
 
 # 1268 结算月之前不得出现任何依赖 identity 锁定的措辞（S/M 双版允许，按倾向选）
 # 这里只保证 1268-04 那个月本身没有新闻抢在结算前投放
 check(not any(n.get("date") == "1268-04" for n in news), "news.json 不得在 1268-04 投放（与殿试结算同月）")
+panic = next((n for n in news if n.get("id") == "n_1273_03_fanfang_panic"), {})
+check(panic.get("market", {}).get("good_id") == "aromatic_medicine" and panic.get("market", {}).get("mul", 1) < 1,
+      "1273-03 蕃坊恐慌挂香药抛售 market（剧情打磨 §二：香药 −40%）")
 
 # ── npcs.json ─────────────────────────────────────────
 npcs = load("npcs.json")["npcs"]

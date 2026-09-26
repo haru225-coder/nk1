@@ -256,6 +256,10 @@ func _settle_history() -> void:
 	for n in GameState.pending_news():
 		GameState.mark_news_seen(n.get("id", ""))
 		GameState.apply_news_flag(n)
+		# 市场副作用只在本月投放时生效；补发的旧闻不追溯砸盘
+		var mk = n.get("market", {})
+		if typeof(mk) == TYPE_DICTIONARY and not mk.is_empty() and str(n.get("date", "")) == "%04d-%02d" % [Calendar.year, Calendar.month]:
+			Economy.apply_news_market(mk)
 		var speaker: String = str(n.get("speaker", ""))
 		var prefix := "【酒馆传闻】" if speaker == "" else "【%s】" % speaker
 		monthly_notice.emit(prefix + GameState.news_text(n))

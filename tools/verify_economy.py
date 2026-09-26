@@ -1900,6 +1900,53 @@ check("·换风" in sea_src and "逐日累加" in main_src, "途中换风写在�
 
 print()
 print("=" * 68)
+print("九之六、新闻市场副作用（news.json market → Economy.apply_news_market，一次性冲击后按 RECOVERY 回归）")
+print("=" * 68)
+
+E_GD = "scripts/core/Economy.gd"
+RATE_MIN_E = gd_const(E_GD, "RATE_MIN")
+RATE_MAX_E = gd_const(E_GD, "RATE_MAX")
+RECOVERY_E = gd_const(E_GD, "RECOVERY")
+eco_src = open(os.path.join(ROOT, E_GD), encoding="utf-8").read()
+gm_src = open(os.path.join(ROOT, "scripts/GameManager.gd"), encoding="utf-8").read()
+nm_fn = eco_src.split("func apply_news_market", 1)[1].split("\nfunc ", 1)[0] if "func apply_news_market" in eco_src else ""
+check("clampf(" in nm_fn and "RATE_MIN" in nm_fn and "RATE_MAX" in nm_fn and "* mul" in nm_fn,
+      "apply_news_market 按 mul 乘行情并钳在 RATE_MIN–RATE_MAX（不另开常驻倍率层）")
+settle_fn = gm_src.split("func _settle_history", 1)[1].split("\nfunc ", 1)[0]
+check('n.get("market"' in settle_fn and "Economy.apply_news_market(" in settle_fn,
+      "GameManager._settle_history 投放新闻时消费 market 字段")
+check('str(n.get("date", "")) == "%04d-%02d" % [Calendar.year, Calendar.month]' in settle_fn,
+      "market 只在新闻本月投放时生效，补发旧闻不追溯砸盘")
+day_fn = eco_src.split("func on_day_passed", 1)[1].split("\nfunc ", 1)[0]
+check("(1.0 - r) * RECOVERY" in day_fn, "冲击后的行情仍走 on_day_passed 的 RECOVERY 回归，无永久层")
+
+news_all = load("news.json")["news"]
+mk_news = [n for n in news_all if "market" in n]
+check(bool(mk_news), f"至少一条新闻挂 market 副作用（{[n['id'] for n in mk_news]}）")
+for n in mk_news:
+    mk = n["market"]
+    gid, mul = mk["good_id"], float(mk["mul"])
+    tgt = mk.get("ports") or [pid for pid in ports if gid in ports[pid].get("market", {})]
+    for pid in tgt:
+        check(gid in ports[pid].get("market", {}), f"{n['id']}：{pid} 交易 {goods[gid]['name']}")
+        worst = []
+        for r0 in (0.85, 1.0, 1.15, RATE_MIN_E, RATE_MAX_E):
+            r1 = min(RATE_MAX_E, max(RATE_MIN_E, r0 * mul))
+            worst.append(r1)
+            b, sl = price_with_crew(pid, gid, True, 0, 0, r1), price_with_crew(pid, gid, False, 0, 0, r1)
+            check(RATE_MIN_E <= r1 <= RATE_MAX_E and 0 < sl <= b,
+                  f"{n['id']}@{pid} 起价率 {r0:.2f} → {r1:.3f}：在带内，买 {b} ≥ 卖 {sl} > 0")
+        # 最坏：从开局扰动下沿砸下去，60 日后须回到 1.0 的 5% 以内
+        r = min(worst[:3]) if mul < 1 else max(worst[:3])
+        r_start = r
+        for _ in range(60):
+            r = r + (1.0 - r) * RECOVERY_E
+        print(f"  {n['id']} @ {ports[pid]['name']} {goods[gid]['name']}×{mul}："
+              f"买价 {price_with_crew(pid, gid, True, 0, 0, 1.0)} → {price_with_crew(pid, gid, True, 0, 0, r_start)}，60 日后率 {r:.3f}")
+        check(abs(1.0 - r) < 0.05, f"{n['id']}@{pid} 冲击 60 日后回到 1.0±5%（{r:.3f}）——可逆，不打坏价带")
+
+print()
+print("=" * 68)
 if fails:
     print(f"结果：{len(fails)} 项未通过")
     for f in fails:
