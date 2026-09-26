@@ -1630,6 +1630,86 @@ elif exam_fn and "scholar_tendency" in exam_fn.group(0):
 else:
     print("  ✗ 贡院誊录未接线")
     problems.append("贡院誊录未接线")
+# P7 留档：行会入行（泉州 / 博多 / 广州）与贡院赴试（每章一次）
+def _p7_code(src):
+    return "\n".join(re.sub(r'#.*$', '', ln) for ln in src.split("\n"))
+def _const_int(name):
+    m = re.search(r"const %s\s*:=\s*(\d+)" % name, main_src)
+    return int(m.group(1)) if m else None
+join_ports = re.search(r"const GUILD_JOIN_PORTS\s*:=\s*\[(.*?)\]", main_src, re.S)
+if join_ports and set(re.findall(r'"(\w+)"', join_ports.group(1))) == {"quanzhou", "hakata", "guangzhou"}:
+    print("  ✓ 入行只在泉州 / 博多 / 广州")
+else:
+    print("  ✗ GUILD_JOIN_PORTS 不是泉州 / 博多 / 广州三港")
+    problems.append("入行港口漂移")
+if (_const_int("GUILD_JOIN_FEE"), _const_int("GUILD_JOIN_CREDIT"),
+        _const_int("GUILD_JOIN_CREDIT_GAIN"), _const_int("GUILD_JOIN_NETWORK_GAIN")) == (2000, 8, 4, 2):
+    print("  ✓ 入行会费 2000、商誉门槛 8、商誉 +4、人脉 +2")
+else:
+    print("  ✗ 入行数值漂移（须 2000 / 8 / +4 / +2）")
+    problems.append("入行数值漂移")
+p7_bodies = func_bodies(main_src)
+join_body = _p7_code(p7_bodies.get("_on_guild_join", ""))
+block_body = _p7_code(p7_bodies.get("_guild_join_block", ""))
+if not join_body or not block_body or "_add_guild_join_slip" not in p7_bodies.get("_setup_guild", ""):
+    print("  ✗ 行会入行未接线（_setup_guild → _add_guild_join_slip / _on_guild_join / _guild_join_block）")
+    problems.append("行会入行未接线")
+elif any(tok in join_body + block_body for tok in ("Economy", "price_at_rate", "tariff", "commission")):
+    print("  ✗ 入行动了行情 / 抽解 / 佣金")
+    problems.append("入行不得改行情抽解佣金")
+elif not all(tok in block_body for tok in ("GUILD_JOIN_PORTS", "has_flag", "merchant_credit < GUILD_JOIN_CREDIT", "money < GUILD_JOIN_FEE")):
+    print("  ✗ 入行缘由未查齐（港口 / 已入行 / 商誉 / 现钱）")
+    problems.append("入行门槛不全")
+elif not (0 <= join_body.find("_guild_join_block") < join_body.find("spend_money(GUILD_JOIN_FEE)")
+          < join_body.find('set_flag("guild_%s" % port_id)')):
+    print("  ✗ 入行须先查门槛、再扣会费、后记 guild_<港> 旗标")
+    problems.append("入行顺序不对")
+elif not ("merchant_credit += GUILD_JOIN_CREDIT_GAIN" in join_body and "network += GUILD_JOIN_NETWORK_GAIN" in join_body):
+    print("  ✗ 入行未加商誉 / 人脉")
+    problems.append("入行未加商誉人脉")
+else:
+    print("  ✓ 入行先查门槛再扣 2000，记 guild_<港>，不碰行情抽解佣金")
+slip_body = _p7_code(p7_bodies.get("_add_guild_join_slip", ""))
+if "has_flag" in slip_body and "本港已入行" in slip_body and slip_body.find("本港已入行") < slip_body.find("_on_guild_join"):
+    print("  ✓ 已入行只看账，不再出交费钮")
+else:
+    print("  ✗ 已入行仍出交费钮")
+    problems.append("已入行未改只读")
+if _const_int("EXAM_SIT_DAYS") == 15:
+    print("  ✓ 赴试费 15 日")
+else:
+    print("  ✗ EXAM_SIT_DAYS 不是 15")
+    problems.append("赴试天数漂移")
+sit_body = _p7_code(p7_bodies.get("_on_exam_sit", ""))
+if not sit_body or "_on_exam_sit" not in p7_bodies.get("_setup_exam", ""):
+    print("  ✗ 贡院赴试未接线")
+    problems.append("贡院赴试未接线")
+elif any(tok in sit_body for tok in ("add_money", "spend_money", "chapter =", "chapter +=", "Fleet.")):
+    print("  ✗ 赴试发了钱、跳了章或动了船")
+    problems.append("赴试不得发钱跳章改船")
+elif not ('"exam_sat_ch%d" % GameState.chapter' in _p7_code(p7_bodies.get("_exam_sat_flag", ""))
+          and "_exam_sat_flag()" in sit_body and "has_flag(chapter_flag)" in sit_body
+          and "advance_days(EXAM_SIT_DAYS)" in sit_body):
+    print("  ✗ 赴试未按 exam_sat_ch<章> 每章一次、费 EXAM_SIT_DAYS")
+    problems.append("赴试每章一次未接")
+elif not all(tok in sit_body for tok in (
+    "scholar_tendency >= GameState.sea_tendency", "add_fame(4)", "scholar_tendency += 2",
+    'set_flag("exam_sat")', "add_fame(1)", "sea_tendency += 1",
+)):
+    print("  ✗ 赴试结算漂移（学者不输海路 +4/+2/exam_sat，否则 +1/海路 +1）")
+    problems.append("赴试结算漂移")
+elif sit_body.find('set_flag("exam_sat")') > sit_body.find("else:"):
+    print("  ✗ exam_sat 记在了海路一支")
+    problems.append("exam_sat 分支错")
+else:
+    print("  ✓ 赴试每章一次、费 15 日；学者不输海路记 exam_sat")
+ident = _p7_code(func_bodies(gs_src).get("resolve_identity_1268", ""))
+tie = re.search(r"if scholar_tendency == sea_tendency:\s*\n\s*scholar_wins = (.*)", ident)
+if tie and 0 <= tie.group(1).find('has_flag("exam_sat")') < tie.group(1).find('has_flag("chose_land_first")'):
+    print("  ✓ 1268 殿试打平先读 exam_sat，再看 chose_land_first")
+else:
+    print("  ✗ 1268 殿试打平未优先读 exam_sat")
+    problems.append("1268 破平未读 exam_sat")
 if all(s in main_src for s in (
     '"_guild"', '"_exam"', '"_residence"', '"_temple"',
     "bg_quanzhou_ledger.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",

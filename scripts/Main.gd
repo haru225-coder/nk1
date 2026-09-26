@@ -2771,6 +2771,12 @@ const HOME_RATE := 5
 const EXAM_COPY_DAYS := 3
 const EXAM_STIPEND := 30
 const GUILD_CREDIT_WIDE := 8
+const GUILD_JOIN_PORTS := ["quanzhou", "hakata", "guangzhou"]
+const GUILD_JOIN_FEE := 2000
+const GUILD_JOIN_CREDIT := 8
+const GUILD_JOIN_CREDIT_GAIN := 4
+const GUILD_JOIN_NETWORK_GAIN := 2
+const EXAM_SIT_DAYS := 15
 
 
 ## 行会：出港行情抄本。酒馆打听仍费一日只吐一条；这里钉在墙上，不耗日。
@@ -2796,12 +2802,64 @@ func _setup_guild(port_id: String) -> void:
 			hint.add_theme_color_override("font_color", UiTheme.MOSS)
 			_slip_note(slip, "买 %d　卖 %d" % [int(row["buy"]), int(row["sell"])])
 
+	_add_guild_join_slip(port_id)
+
 	_end_benches()
 	_add_leave_button(port_id)
 	choices_label.visible = false
 
 
-## 贡院：今科未开，只能替人誊录。耗日换工钱与学者倾向，不给名声、不另开章门。
+## 入行：只泉州 / 博多 / 广州。已入行只看账；条件不足按钮仍在，按下只说缘由。
+func _add_guild_join_slip(port_id: String) -> void:
+	var join := _slip_body()
+	if not GUILD_JOIN_PORTS.has(port_id):
+		_slip_title(join, "会籍", "本港无会籍")
+		_slip_note(join, "入行只在泉州、博多、广州三座行会。")
+		return
+	var standing := "商誉 %d　人脉 %d" % [GameState.merchant_credit, GameState.network]
+	if GameState.has_flag("guild_%s" % port_id):
+		_slip_title(join, "会籍", "看账：本港已入行")
+		_slip_note(join, "%s　名声 %d。会费已交，不再收。" % [standing, GameState.fame])
+		return
+	_slip_title(join, "入行", standing)
+	_slip_note(join, "会费 %d　商誉须 %d。入行商誉加 %d，人脉加 %d；行情、抽解、佣金照旧。" % [
+		GUILD_JOIN_FEE, GUILD_JOIN_CREDIT, GUILD_JOIN_CREDIT_GAIN, GUILD_JOIN_NETWORK_GAIN,
+	])
+	var chip := _slip_chip(_slip_row(join), "交会费入行", _on_guild_join.bind(port_id), true)
+	_slip_whole(chip)
+
+
+## 返回不收的缘由；空串即可入行。
+func _guild_join_block(port_id: String) -> String:
+	if not GUILD_JOIN_PORTS.has(port_id):
+		return "本港不设入行"
+	if GameState.has_flag("guild_%s" % port_id):
+		return "本港已入行"
+	if GameState.merchant_credit < GUILD_JOIN_CREDIT:
+		return "信用不足（商誉 %d，须 %d）" % [GameState.merchant_credit, GUILD_JOIN_CREDIT]
+	if GameState.money < GUILD_JOIN_FEE:
+		return "现钱不足（%d，会费 %d）" % [GameState.money, GUILD_JOIN_FEE]
+	return ""
+
+
+func _on_guild_join(port_id: String) -> void:
+	var port_name := GameManager.get_port_name(port_id)
+	var why := _guild_join_block(port_id)
+	if why != "":
+		log_msg("【行会】%s行会还不收：%s。" % [port_name, why])
+		return
+	if not GameState.spend_money(GUILD_JOIN_FEE):
+		return
+	GameState.merchant_credit += GUILD_JOIN_CREDIT_GAIN
+	GameState.network += GUILD_JOIN_NETWORK_GAIN
+	GameState.set_flag("guild_%s" % port_id)
+	log_msg("【入行】在%s行会交了会费 %d，簿上添了名字。商誉 %d，人脉 %d。" % [
+		port_name, GUILD_JOIN_FEE, GameState.merchant_credit, GameState.network,
+	])
+	load_scene(current_scene_id)
+
+
+## 贡院：誊录耗日换工钱与学者倾向，不给名声；赴试每章一次，费 15 日，按倾向记名声。
 func _setup_exam(port_id: String) -> void:
 	scene_title.text = "%s・贡院" % GameManager.get_port_name(port_id)
 	body_text.text = "今科未开。只能替人誊录，笔墨钱现结。"
@@ -2811,6 +2869,15 @@ func _setup_exam(port_id: String) -> void:
 	_slip_title(copy, "誊录", "学者 %d　海路 %d" % [GameState.scholar_tendency, GameState.sea_tendency])
 	_slip_note(copy, "工钱 %d　费 %d 日。不记名声。" % [EXAM_STIPEND, EXAM_COPY_DAYS])
 	_slip_chip(_slip_row(copy), "替人抄三日", _on_exam_copy.bind(port_id), true)
+
+	var sit := _slip_body()
+	if GameState.has_flag(_exam_sat_flag()):
+		_slip_title(sit, "赴试", "本章已赴过")
+		_slip_note(sit, "下一章再来。名声 %d。" % GameState.fame)
+	else:
+		_slip_title(sit, "赴试", "每章一次　费 %d 日" % EXAM_SIT_DAYS)
+		_slip_note(sit, "学者不输海路则名声加 4、学者加 2；否则名声加 1、海路加 1。不发钱。")
+		_slip_chip(_slip_row(sit), "入场赴试", _on_exam_sit.bind(port_id), true)
 
 	_end_benches()
 	_add_leave_button(port_id)
@@ -2823,6 +2890,37 @@ func _on_exam_copy(_port_id: String) -> void:
 	GameState.scholar_tendency += 1
 	log_msg("【誊录】在贡院廊下抄了 %d 日试卷，得工钱 %d。学者倾向 %d。如今是 %s。" % [
 		EXAM_COPY_DAYS, EXAM_STIPEND, GameState.scholar_tendency, Calendar.get_date_string(),
+	])
+	load_scene(current_scene_id)
+
+
+func _exam_sat_flag() -> String:
+	return "exam_sat_ch%d" % GameState.chapter
+
+
+## 赴试：每章一次，费 15 日。不发钱、不跳章、不改船。
+func _on_exam_sit(_port_id: String) -> void:
+	var chapter_flag := _exam_sat_flag()
+	if GameState.has_flag(chapter_flag):
+		log_msg("【贡院】本章已赴过试，下一章再来。")
+		return
+	GameState.set_flag(chapter_flag)
+	GameManager.advance_days(EXAM_SIT_DAYS)
+	var res: Dictionary
+	var line := ""
+	if GameState.scholar_tendency >= GameState.sea_tendency:
+		res = GameState.add_fame(4)
+		GameState.scholar_tendency += 2
+		GameState.set_flag("exam_sat")
+		line = "卷子誊上了榜前的簿子。名声加 4，学者倾向 %d。" % GameState.scholar_tendency
+	else:
+		res = GameState.add_fame(1)
+		GameState.sea_tendency += 1
+		line = "策论写着写着成了海路账。名声加 1，海路倾向 %d。" % GameState.sea_tendency
+	if res.get("promoted", false):
+		line += "市舶司案册改题「%s」。" % str(res.get("title", {}).get("name", ""))
+	log_msg("【赴试】在贡院坐了 %d 日。%s如今是 %s。" % [
+		EXAM_SIT_DAYS, line, Calendar.get_date_string(),
 	])
 	load_scene(current_scene_id)
 

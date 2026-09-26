@@ -379,7 +379,7 @@ func news_variant() -> String:
 
 
 ## 1268 年四月殿试结算，只结一次。返回 {resolved, title, text}。
-## 打平按开局第一选择破平（chose_land_first → 士人），再平则海商。
+## 打平先看贡院赴试（exam_sat → 士人），再按开局第一选择（chose_land_first → 士人），再平则海商。
 func resolve_identity_1268() -> Dictionary:
 	if identity != "undecided":
 		return {"resolved": false}
@@ -395,7 +395,7 @@ func resolve_identity_1268() -> Dictionary:
 
 	var scholar_wins := scholar_tendency > sea_tendency
 	if scholar_tendency == sea_tendency:
-		scholar_wins = has_flag("chose_land_first")
+		scholar_wins = has_flag("exam_sat") or has_flag("chose_land_first")
 	if scholar_wins:
 		identity = "scholar"
 		player_name = "陈文龙"
