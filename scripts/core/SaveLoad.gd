@@ -8,6 +8,11 @@ extends Node
 const SAVE_DIR := "user://saves/"
 const SLOTS := 3
 const VERSION := 3
+## Save-critical progression flags. Keep these names stable across UI/page remaps.
+const EXAM_FLAG := "exam_sat"
+const EXAM_FLAG_PREFIX := "exam_sat_ch"
+const GUILD_FLAG_PREFIX := "guild_"
+const DISCOVERY_LIST_KEYS := ["discoveries_found", "discoveries_reported"]
 
 
 func _ready() -> void:
@@ -37,7 +42,7 @@ func save_game(slot: int, current_scene: String = "") -> bool:
 		"economy": Economy.to_dict(),
 		"fleet": Fleet.to_dict(),
 		"crew": Crew.to_dict(),
-		"state": GameState.to_dict(),
+		"state": _harden_state(GameState.to_dict()),
 		"scene": current_scene,
 		"label": "%s　%s　%d 钱%s" % [
 			Calendar.get_date_string(),
@@ -63,6 +68,65 @@ func save_game(slot: int, current_scene: String = "") -> bool:
 		push_error("存档 slot %d 无法从 .tmp 落位" % slot)
 		return false
 	return true
+
+
+## 保存/读档的剧情关键字段要经过同一层清洗。
+## 旧档可能来自早期原型或手改 JSON：旗标必须是 true，发现录必须是去重字符串。
+## discoveries_reported 胜过 discoveries_found，避免坏档重复领赏。
+func _harden_state(raw: Dictionary) -> Dictionary:
+	var state: Dictionary = raw.duplicate(true)
+	state["flags"] = _normalise_flags(state.get("flags", {}))
+	var reported := _normalise_ids(state.get("discoveries_reported", []))
+	var reported_set := {}
+	for did in reported:
+		reported_set[did] = true
+	var found := []
+	for did in _normalise_ids(state.get("discoveries_found", [])):
+		if not reported_set.has(did):
+			found.append(did)
+	state["discoveries_found"] = found
+	state["discoveries_reported"] = reported
+	return state
+
+
+func _normalise_flags(raw) -> Dictionary:
+	var clean := {}
+	if typeof(raw) != TYPE_DICTIONARY:
+		return clean
+	for key in raw.keys():
+		var flag := str(key).strip_edges()
+		if not _valid_flag_name(flag) or typeof(raw.get(key)) != TYPE_BOOL:
+			continue
+		if not raw.get(key):
+			continue
+		clean[flag] = true
+	return clean
+
+
+func _valid_flag_name(flag: String) -> bool:
+	if flag == "":
+		return false
+	if flag == EXAM_FLAG:
+		return true
+	if flag.begins_with(EXAM_FLAG_PREFIX):
+		var chapter_text: String = flag.substr(EXAM_FLAG_PREFIX.length())
+		return chapter_text.is_valid_int() and int(chapter_text) > 0
+	if flag.begins_with(GUILD_FLAG_PREFIX):
+		return flag.length() > GUILD_FLAG_PREFIX.length()
+	return true
+
+
+func _normalise_ids(raw) -> Array:
+	var clean: Array = []
+	if typeof(raw) != TYPE_ARRAY:
+		return clean
+	for value in raw:
+		if typeof(value) != TYPE_STRING:
+			continue
+		var did: String = value.strip_edges()
+		if did != "" and not (did in clean):
+			clean.append(did)
+	return clean
 
 
 ## 读一份 JSON 存档；文件不存在 / 解析失败 / 版本过新都返回空字典
@@ -107,7 +171,9 @@ func load_game(slot: int) -> bool:
 	Economy.from_dict(data.get("economy", {}))
 	Fleet.from_dict(data.get("fleet", {}))
 	Crew.from_dict(data.get("crew", {}))
-	GameState.from_dict(data.get("state", {}))
+	var raw_state = data.get("state", {})
+	var state: Dictionary = raw_state if typeof(raw_state) == TYPE_DICTIONARY else {}
+	GameState.from_dict(_harden_state(state))
 	return true
 
 

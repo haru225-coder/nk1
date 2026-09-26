@@ -2399,6 +2399,62 @@ else:
 
 print()
 print("=" * 68)
+print("九之八、存档关键旗标清洗契约")
+print("=" * 68)
+print("  SaveLoad 在写入与读回两端清洗 exam_sat / exam_sat_ch<章> / guild_*，并去重发现录。")
+
+_saveload_path = os.path.join(ROOT, "scripts", "core", "SaveLoad.gd")
+_saveload_src = open(_saveload_path, encoding="utf-8").read()
+_saveload_fn = func_bodies(_saveload_src)
+for _sym in ("_harden_state", "_normalise_flags", "_valid_flag_name", "_normalise_ids"):
+    if _sym in _saveload_fn:
+        print(f"  ✓ SaveLoad.{_sym} 已定义")
+    else:
+        print(f"  ✗ SaveLoad.{_sym} 未定义")
+        problems.append(f"SaveLoad.{_sym} 未定义")
+
+_save_body = _code_only(_saveload_fn.get("save_game", ""))
+_load_body = _code_only(_saveload_fn.get("load_game", ""))
+_harden_body = _code_only(_saveload_fn.get("_harden_state", ""))
+_flags_body = _code_only(_saveload_fn.get("_normalise_flags", ""))
+_flag_name_body = _code_only(_saveload_fn.get("_valid_flag_name", ""))
+_ids_body = _code_only(_saveload_fn.get("_normalise_ids", ""))
+if "_harden_state(GameState.to_dict())" in _save_body:
+    print("  ✓ save_game 写入前清洗 GameState 状态")
+else:
+    print("  ✗ save_game 未在写入前清洗 GameState 状态")
+    problems.append("save_game 未清洗状态")
+if "_harden_state(state)" in _load_body and "GameState.from_dict" in _load_body:
+    print("  ✓ load_game 读回前清洗状态（坏 state 类型回到空字典）")
+else:
+    print("  ✗ load_game 未在读回前清洗状态")
+    problems.append("load_game 未清洗状态")
+if (
+    all(token in _flags_body for token in ("TYPE_DICTIONARY", "TYPE_BOOL", "not raw.get(key)"))
+    and all(token in _saveload_src for token in (
+        'const EXAM_FLAG := "exam_sat"',
+        'const EXAM_FLAG_PREFIX := "exam_sat_ch"',
+        'const GUILD_FLAG_PREFIX := "guild_"',
+    ))
+    and all(token in _flag_name_body for token in ("EXAM_FLAG", "EXAM_FLAG_PREFIX", "GUILD_FLAG_PREFIX"))
+):
+    print("  ✓ 关键旗标只接受非空名称与 true（exam_sat / guild_*）")
+else:
+    print("  ✗ 关键旗标缺少字典、true 值或 exam_sat/guild_* 守卫")
+    problems.append("关键旗标清洗不完整")
+if all(token in _harden_body for token in ("discoveries_found", "discoveries_reported", "reported_set", "_normalise_ids")):
+    print("  ✓ 发现录两册均清洗去重，已呈报优先于待呈报")
+else:
+    print("  ✗ 发现录未成对清洗或未让已呈报优先")
+    problems.append("发现录清洗不完整")
+if all(token in _ids_body for token in ("TYPE_ARRAY", "TYPE_STRING", "not (did in clean)")):
+    print("  ✓ 发现录只保留非空字符串并去重")
+else:
+    print("  ✗ 发现录未限制字符串或去重")
+    problems.append("发现录 id 清洗不完整")
+
+print()
+print("=" * 68)
 if problems:
     print(f"结果：{len(problems)} 项问题")
     for p in problems:
