@@ -38,6 +38,12 @@ func _button_with_text(root_node: Node, text: String) -> Button:
 	return hits[0]
 
 
+## 只读态卡底那枚 disabled 钮（本港已入行 / 本港无会籍 / 本章已赴 / 本港无贡院科场）。
+func _has_stamp(root_node: Node, text: String) -> bool:
+	var b := _button_with_text(root_node, text)
+	return b != null and b.disabled
+
+
 func _has_label(root_node: Node, text: String) -> bool:
 	var hits: Array = []
 	_collect(root_node, text, hits, false)
@@ -110,8 +116,8 @@ func _run(main) -> void:
 			_fail("入行后没停在泉州行会，而是 %s" % str(main.current_scene_id))
 		elif _button_with_text(main, JOIN_TEXT) != null:
 			_fail("入行后刷新仍有「%s」" % JOIN_TEXT)
-		elif not _has_label(main, "看账：本港已入行"):
-			_fail("入行后没有「看账：本港已入行」")
+		elif not _has_stamp(main, "本港已入行"):
+			_fail("入行后卡底没有 disabled「本港已入行」")
 		else:
 			_ok("刷新后为已入行态，无再次扣费按钮")
 		var again := _snap()
@@ -154,8 +160,8 @@ func _run(main) -> void:
 		_fail("没能打开明州行会，现为 %s" % str(main.current_scene_id))
 	elif _button_with_text(main, JOIN_TEXT) != null:
 		_fail("明州行会出现了「%s」" % JOIN_TEXT)
-	elif not _has_label(main, "本港无会籍"):
-		_fail("明州行会没有「本港无会籍」")
+	elif not _has_stamp(main, "本港无会籍"):
+		_fail("明州行会卡底没有 disabled「本港无会籍」")
 	else:
 		_ok("明州行会：本港无会籍，无入行按钮")
 
@@ -190,8 +196,8 @@ func _run(main) -> void:
 	main.load_scene("quanzhou_exam")
 	if _button_with_text(main, SIT_TEXT) != null:
 		_fail("第一章已赴过仍有「%s」" % SIT_TEXT)
-	elif not _has_label(main, "本章已赴过"):
-		_fail("第一章已赴过没有「本章已赴过」")
+	elif not _has_stamp(main, "本章已赴"):
+		_fail("第一章已赴过卡底没有 disabled「本章已赴」")
 	else:
 		_ok("第一章已赴：贡院只显示本章已赴过")
 
@@ -226,6 +232,8 @@ func _run(main) -> void:
 	main.load_scene("quanzhou_exam")
 	if _button_with_text(main, SIT_TEXT) != null:
 		_fail("第二章已赴过仍有「%s」" % SIT_TEXT)
+	elif not _has_stamp(main, "本章已赴"):
+		_fail("第二章已赴过卡底没有 disabled「本章已赴」")
 	else:
 		var b5 := _snap()
 		main._on_exam_sit("quanzhou")
@@ -236,6 +244,17 @@ func _run(main) -> void:
 			_fail("本章已赴再调赴试写了 exam_sat")
 		else:
 			_ok("每章一次：本章已赴无按钮，直调不动日数/名声/倾向")
+
+	# ── 5c. 非科场港：明州贡院只誊录，赴试卡给 disabled「本港无贡院科场」 ──
+	main.load_scene("mingzhou_exam")
+	if str(main.current_scene_id) != "mingzhou_exam":
+		_fail("没能打开明州贡院，现为 %s" % str(main.current_scene_id))
+	elif _button_with_text(main, SIT_TEXT) != null:
+		_fail("明州贡院出现了「%s」" % SIT_TEXT)
+	elif not _has_stamp(main, "本港无贡院科场"):
+		_fail("明州贡院卡底没有 disabled「本港无贡院科场」")
+	else:
+		_ok("明州贡院：本港无贡院科场，无赴试按钮")
 
 	# ── 6. 1268 打平：exam_sat 定士人；无旗标则海商 ──
 	_gs.chapter = 1

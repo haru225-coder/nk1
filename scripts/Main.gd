@@ -2128,11 +2128,11 @@ func _slip_body() -> VBoxContainer:
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 14)
 	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
 	card.add_child(margin)
 	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", 2)
+	body.add_theme_constant_override("separation", 3)
 	margin.add_child(body)
 	var parent: Node = _slip_host if _slip_host != null else choices_container
 	parent.add_child(card)
@@ -2169,7 +2169,15 @@ func _slip_note(body: VBoxContainer, text: String, color: Color = UiTheme.TEXT_D
 	return lbl
 
 
-func _slip_row(body: VBoxContainer) -> HFlowContainer:
+## 钮行上方留一道空，旁注不贴钮。pin：空档可伸，钮行压到卡底——同排卡被拉高时两枚钮齐平。
+func _slip_row(body: VBoxContainer, pin := false) -> HFlowContainer:
+	if body.get_child_count() > 0:
+		var gap := Control.new()
+		gap.custom_minimum_size = Vector2(0, 6)
+		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if pin:
+			gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		body.add_child(gap)
 	var row := HFlowContainer.new()
 	row.add_theme_constant_override("h_separation", 6)
 	row.add_theme_constant_override("v_separation", 6)
@@ -2184,6 +2192,18 @@ func _slip_chip(row: Node, text: String, cb: Callable, accent := false) -> Butto
 	b.pressed.connect(cb)
 	row.add_child(b)
 	UiTheme.style_chip(b, accent)
+	return b
+
+
+## 只读态的钮：同一块 chip 皮，disabled、不聚焦、箭头光标。卡底仍有一行，不像坏掉的空卡。
+func _slip_stamp(row: Node, text: String) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.disabled = true
+	b.focus_mode = Control.FOCUS_NONE
+	row.add_child(b)
+	UiTheme.style_chip(b, false)
+	b.mouse_default_cursor_shape = Control.CURSOR_ARROW
 	return b
 
 
@@ -2779,6 +2799,8 @@ const GUILD_JOIN_NETWORK_GAIN := 2
 const EXAM_SIT_DAYS := 15
 ## 赴试只兴化、泉州（P7 §贡院）；别港贡院只剩誊录。port_id 是 {港}_exam 去后缀后的基港 id。
 const EXAM_SIT_PORTS := ["xinghua", "quanzhou"]
+## 贡院只两张卡，按内容高只占上半页、离开钮下一大片空；卡压到这个高，钮行压卡底。
+const EXAM_SLIP_MIN_H := 220
 
 
 ## 行会：出港行情抄本。酒馆打听仍费一日只吐一条；这里钉在墙上，不耗日。
@@ -2814,20 +2836,24 @@ func _setup_guild(port_id: String) -> void:
 ## 入行：只泉州 / 博多 / 广州。已入行只看账；条件不足按钮仍在，按下只说缘由。
 func _add_guild_join_slip(port_id: String) -> void:
 	var join := _slip_body()
-	if not GUILD_JOIN_PORTS.has(port_id):
-		_slip_title(join, "会籍", "本港无会籍")
-		_slip_note(join, "入行只在泉州、博多、广州三座行会。")
-		return
 	var standing := "商誉 %d　人脉 %d" % [GameState.merchant_credit, GameState.network]
+	if not GUILD_JOIN_PORTS.has(port_id):
+		_slip_title(join, "会籍", standing)
+		_slip_note(join, "入行只在泉州、博多、广州三座行会。")
+		_slip_stamp(_slip_row(join, true), "本港无会籍")
+		return
 	if GameState.has_flag("guild_%s" % port_id):
-		_slip_title(join, "会籍", "看账：本港已入行")
-		_slip_note(join, "%s　名声 %d。会费已交，不再收。" % [standing, GameState.fame])
+		_slip_title(join, "会籍", "%s　名声 %d" % [standing, GameState.fame])
+		_slip_note(join, "会费已交，不再收。")
+		_slip_stamp(_slip_row(join, true), "本港已入行")
 		return
 	_slip_title(join, "入行", standing)
-	_slip_note(join, "会费 %d　商誉须 %d。入行商誉加 %d，人脉加 %d；行情、抽解、佣金照旧。" % [
-		GUILD_JOIN_FEE, GUILD_JOIN_CREDIT, GUILD_JOIN_CREDIT_GAIN, GUILD_JOIN_NETWORK_GAIN,
+	# 门槛一行、收益一行：原先并成一句，折行后贴着朱钮
+	_slip_note(join, "会费 %d　商誉须 %d。" % [GUILD_JOIN_FEE, GUILD_JOIN_CREDIT])
+	_slip_note(join, "入行商誉加 %d，人脉加 %d；行情、抽解、佣金照旧。" % [
+		GUILD_JOIN_CREDIT_GAIN, GUILD_JOIN_NETWORK_GAIN,
 	])
-	var chip := _slip_chip(_slip_row(join), "交会费入行", _on_guild_join.bind(port_id), true)
+	var chip := _slip_chip(_slip_row(join, true), "交会费入行", _on_guild_join.bind(port_id), true)
 	_slip_whole(chip)
 
 
@@ -2867,26 +2893,37 @@ func _setup_exam(port_id: String) -> void:
 	body_text.text = "今科未开。只能替人誊录，笔墨钱现结。"
 	_begin_benches()
 
-	var copy := _slip_body()
+	var copy := _exam_slip()
 	_slip_title(copy, "誊录", "学者 %d　海路 %d" % [GameState.scholar_tendency, GameState.sea_tendency])
-	_slip_note(copy, "工钱 %d　费 %d 日。不记名声。" % [EXAM_STIPEND, EXAM_COPY_DAYS])
-	_slip_chip(_slip_row(copy), "替人抄三日", _on_exam_copy.bind(port_id), true)
+	_slip_note(copy, "工钱 %d　费 %d 日。" % [EXAM_STIPEND, EXAM_COPY_DAYS])
+	_slip_note(copy, "学者倾向加 1；不记名声。")
+	_slip_whole(_slip_chip(_slip_row(copy, true), "替人抄三日", _on_exam_copy.bind(port_id), true))
 
-	var sit := _slip_body()
+	var sit := _exam_slip()
+	_slip_title(sit, "赴试", "每章一次　费 %d 日" % EXAM_SIT_DAYS)
 	if not EXAM_SIT_PORTS.has(port_id):
-		_slip_title(sit, "赴试", "本港无贡院科场")
 		_slip_note(sit, "赴试只在兴化、泉州两处贡院。")
+		_slip_stamp(_slip_row(sit, true), "本港无贡院科场")
 	elif GameState.has_flag(_exam_sat_flag()):
-		_slip_title(sit, "赴试", "本章已赴过")
-		_slip_note(sit, "下一章再来。名声 %d。" % GameState.fame)
+		_slip_note(sit, "本章已赴过，下一章再来。")
+		_slip_note(sit, "名声 %d。" % GameState.fame)
+		_slip_stamp(_slip_row(sit, true), "本章已赴")
 	else:
-		_slip_title(sit, "赴试", "每章一次　费 %d 日" % EXAM_SIT_DAYS)
-		_slip_note(sit, "学者不输海路则名声加 4、学者加 2；否则名声加 1、海路加 1。不发钱。")
-		_slip_chip(_slip_row(sit), "入场赴试", _on_exam_sit.bind(port_id), true)
+		_slip_note(sit, "学者不输海路：名声加 4，学者加 2。")
+		_slip_note(sit, "否则名声加 1，海路加 1。不发钱。")
+		_slip_whole(_slip_chip(_slip_row(sit, true), "入场赴试", _on_exam_sit.bind(port_id), true))
 
 	_end_benches()
 	_add_leave_button(port_id)
 	choices_label.visible = false
+
+
+func _exam_slip() -> VBoxContainer:
+	var body := _slip_body()
+	body.add_theme_constant_override("separation", 6)
+	var card := body.get_parent().get_parent() as Control
+	card.custom_minimum_size.y = EXAM_SLIP_MIN_H
+	return body
 
 
 func _on_exam_copy(_port_id: String) -> void:
