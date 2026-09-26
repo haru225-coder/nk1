@@ -105,7 +105,7 @@ const _CODEX := preload("res://scripts/ui/CharacterCodex.gd")
 const _CHARS_WIRE := preload("res://scripts/chars/CharsShoreOverlay.gd")
 ## Lane N：接舷题签岸上预览（调试 F9；真实路径仍是海图遇盗→WorldMap 按 G）
 const _COMBAT_SHORE := preload("res://scripts/combat/CombatShoreHook.gd")
-## Lane L：观感展示台薄接入（岸带「市舶纪事」/ 调试 F8；叠层，不入存档）
+## Lane L：市舶纪事册页薄接入（岸带「市舶纪事」/ 调试 F8；叠层，不入存档）
 const _VISION_STAGE := preload("res://scenes/vision/VisionStage.tscn")
 ## Lane Q：酒馆墙上市井札薄（宣纸条；无新闻不上墙）
 const _TAVERN_NEWS_WALL := preload("res://scripts/ui/TavernNewsWall.gd")
@@ -959,7 +959,7 @@ func _close_companion_preview() -> void:
 		_companion_preview.call("close_overlay")
 
 
-## Lane L：叠一层 VisionStage（立绘裱框 + 海战定格）。Esc/B 离开；不入存档、不过日子。
+## Lane L：叠一层 VisionStage（立像裱框 + 海战定格）。B/Esc 合上；不入存档、不过日子。
 func _open_vision_stage() -> void:
 	_close_companion_preview()
 	_close_ledger()
@@ -2146,9 +2146,13 @@ func _setup_reporting() -> void:
 			continue
 		var value: int = int(d.get("value", 50))
 		var slip := _slip_body()
-		_slip_title(slip, str(d.get("name", did)), "赏格 %d　名声加 %d" % [value, maxi(1, value / 10)])
+		_slip_title(slip, str(d.get("name", did)), "赏钱 %d　声名 %d" % [value, maxi(1, value / 10)])
 		var chip := _slip_chip(_slip_row(slip), "呈报", _on_report_discovery.bind(str(did)), true)
-		chip.tooltip_text = "%s\n%s" % [d.get("location", ""), d.get("historical_hook", "")]
+		var tip := str(d.get("location", ""))
+		var hook := str(d.get("historical_hook", "")).strip_edges()
+		if hook != "":
+			tip += "\n" + hook
+		chip.tooltip_text = tip + "\n呈报入案，赏钱声名同领。"
 
 
 func _on_report_discovery(did: String) -> void:
@@ -2156,8 +2160,8 @@ func _on_report_discovery(did: String) -> void:
 	if not res.is_empty():
 		var extra := ""
 		if res.get("promoted", false):
-			extra = "市舶司案册改题「%s」。" % str(res.get("title", {}).get("name", ""))
-		log_msg("【呈报】%s 录入案册，赏钱 %d，名声加 %d。%s" % [
+			extra = "案册改题「%s」。" % str(res.get("title", {}).get("name", ""))
+		log_msg("【呈报】「%s」入案。赏钱 %d，声名添 %d。%s" % [
 			res["name"], res["gold"], res["fame"], extra,
 		])
 	load_scene(current_scene_id)
@@ -2469,7 +2473,7 @@ func _setup_shipyard(port_id: String) -> void:
 				"%s　添 %d 人　%d" % [sname, hire_n, hire_cost],
 				_on_hire_crew.bind(on, hire_n, hire_cost)
 			)
-			hire_chip.tooltip_text = "尚可添 %d　现有 %d" % [room, Fleet.ship_crew(on)]
+			hire_chip.tooltip_text = "码头短雇的水手，只上坞上这一艘。现有 %d，尚可添 %d。" % [Fleet.ship_crew(on), room]
 		var fleet_full := true
 		for j in Fleet.ships.size():
 			if Fleet.ship_crew_room(j) > 0:
@@ -2505,11 +2509,12 @@ func _setup_shipyard(port_id: String) -> void:
 	var below_min: int = Fleet.crew_to_min_needed()
 	if below_min > 0:
 		var top_cost := below_min * 20
-		_slip_chip(
+		var top_chip := _slip_chip(
 			supply_row,
 			"补齐 %d 人　%d" % [below_min, top_cost],
 			_on_hire_to_min.bind(top_cost)
 		)
+		top_chip.tooltip_text = "各船缺到最低人手的，码头一并雇齐。"
 
 	var loan := _slip_body()
 	_slip_title(loan, "蕃商赊贷", "月息每百 %d　上限 %d" % [
@@ -2594,9 +2599,9 @@ func _on_repair_hull(cost: int) -> void:
 func _on_hire_to_min(cost: int) -> void:
 	if GameState.spend_money(cost):
 		var got: int = Fleet.hire_to_min()
-		log_msg("码头上凑齐了 %d 个水手，各船补至最低人手。" % got)
+		log_msg("码头上雇齐 %d 人，各船补到最低人手。" % got)
 	else:
-		log_msg("【钱不够】没人肯赊帐上船。")
+		log_msg("【钱不够】码头上没人肯赊着上船。")
 	load_scene(current_scene_id)
 
 
@@ -2641,9 +2646,9 @@ func _on_hire_crew(ship_index: int, hire_n: int, hire_cost: int) -> void:
 	if GameState.spend_money(hire_cost):
 		var got: int = Fleet.hire_crew(hire_n, ship_index)
 		var s: Dictionary = Fleet.ships[ship_index]
-		log_msg("码头上招了 %d 个水手，上了「%s」。" % [got, s.get("name", "")])
+		log_msg("码头上雇了 %d 人，上了「%s」。" % [got, s.get("name", "")])
 	else:
-		log_msg("【钱不够】没人肯赊帐上船。")
+		log_msg("【钱不够】码头上没人肯赊着上船。")
 	load_scene(current_scene_id)
 
 
@@ -2757,7 +2762,7 @@ func _setup_residence_chen(port_id: String) -> void:
 
 func _setup_tavern(port_id: String) -> void:
 	scene_title.text = "%s・酒馆" % GameManager.get_port_name(port_id)
-	body_text.text = "劣酒与喧哗。消息与人手都从这儿来。月俸按月；欠饷三月，则人去。"
+	body_text.text = "劣酒与潮气同在，邻桌谈远港价目。闻讯、募人都在这几张桌边。月俸按月；欠饷三月，则人去。"
 
 	# 墙上贴最近三条已投放新闻；旧事仍走挑签。打听和募人进工席。
 	_setup_news_wall()
@@ -2834,13 +2839,19 @@ func _setup_hiring(port_id: String) -> void:
 			aboard_hint.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.MOSS))
 			var rid: String = str(c.get("role", ""))
 			var foot := _person_foot(aboard, "在船")
-			_slip_chip(foot, "辞退", _on_dismiss_crew.bind(rid))
+			var off := _slip_chip(foot, "辞退", _on_dismiss_crew.bind(rid))
+			off.tooltip_text = "辞退即上岸。入伙钱不退。"
 
+	# 募人题签：有候选、无候选都先出这一张，旁注只记事实（Lane AB）
 	var cands := Crew.candidates_at(port_id)
+	var head := _slip_body()
 	if cands.is_empty():
-		var none := _slip_body()
-		_slip_title(none, "募人", "此处无人可用")
+		_slip_title(head, "募人", "本港眼下无人可雇")
+		if not Crew.hired.is_empty():
+			_slip_note(head, "已雇之职不再列名。")
 		return
+	_slip_title(head, "募人", "本港可雇 %d 人　一职一人" % cands.size())
+	_slip_note(head, "入伙钱当场付清，月俸按月扣。")
 
 	for c in cands:
 		var cid: String = str(c.get("id", ""))
@@ -3273,10 +3284,10 @@ func _setup_temple(port_id: String) -> void:
 				look.tooltip_text = "%s\n%s" % [d.get("location", ""), hook]
 				continue
 			if did in GameState.discoveries_found:
-				_slip_title(slip, name, "已记入册")
-				_slip_note(slip, "赏格回市舶司呈报。")
+				_slip_title(slip, name, "已入册")
+				_slip_note(slip, "赏格回市舶司。")
 			else:
-				_slip_title(slip, name, "已呈报")
+				_slip_title(slip, name, "已呈案")
 			if _has_temple_rub(name):
 				_slip_note(slip, "拓纸已入边记，回住处可翻。", UiTheme.MOSS)
 			else:
@@ -3306,7 +3317,7 @@ func _has_temple_rub(name: String) -> bool:
 func _on_temple_look(did: String, name: String) -> void:
 	GameManager.advance_days(TEMPLE_LOOK_DAYS)
 	if GameState.record_discovery(did):
-		log_msg("【勘见】在寺观廊下细看了 %d 日，把「%s」记入册子。赏格须回市舶司呈报。如今是 %s。" % [
+		log_msg("【勘见】廊下细看 %d 日，「%s」记入册子。赏格回市舶司呈报。如今是 %s。" % [
 			TEMPLE_LOOK_DAYS, name, Calendar.get_date_string(),
 		])
 	else:
@@ -3798,7 +3809,7 @@ func _refresh_shore() -> void:
 		actions.add_child(_shore_action("人物志", Vector2(120, 42), false, _open_codex.bind("")))
 		# chars 线薄接入：名册 / 立绘面板（CharRoster + CharPortraitPanel）
 		actions.add_child(_shore_action("名册", Vector2(100, 42), false, _open_chars_wire.bind("")))
-	# Lane L：观感展示台（立绘裱框 + 海战定格示意）；论文纪实题签，不入存档
+	# Lane L：市舶纪事册页（立像裱框 + 海战定格示意）；论文纪实题签，不入存档
 	actions.add_child(_shore_action("市舶纪事", Vector2(140, 42), false, _open_vision_stage))
 
 
@@ -4840,7 +4851,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_toggle_companion_preview()
 			get_viewport().set_input_as_handled()
 		elif event.keycode == KEY_F8:
-			# Lane L：岸上叠 VisionStage（立绘裱框）；Esc/B 离开
+			# Lane L：岸上叠 VisionStage（立像裱框）；B/Esc 合上
 			_open_vision_stage()
 			get_viewport().set_input_as_handled()
 

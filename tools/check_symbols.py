@@ -1148,6 +1148,8 @@ else:
     print("  ✗ 柜上三样未接上")
     problems.append("柜上三样未接上")
 
+
+
 dry_src = open(os.path.join(SCRIPTS, "core", "DrydockBerth.gd"), encoding="utf-8").read()
 yard_fn = _func_body(main_src, "_setup_shipyard")
 switch_fn = _func_body(main_src, "_on_berth_switch")
@@ -1379,7 +1381,7 @@ gs_chapter_src = open(os.path.join(SCRIPTS, "GameState.gd"), encoding="utf-8").r
 if (
     "%s　%s　%d / %d" in main_src
     and "%s %s %d/%d" not in main_src
-    and ("再升一等。" in main_src or "再修一等" in main_src)
+    and "再升一等。" in main_src
     and "再升一等：" not in main_src
     and "拓「%s」　%s" in main_src
     and "拓「%s」：" not in main_src

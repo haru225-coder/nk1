@@ -56,7 +56,7 @@ func _ready() -> void:
 	cards.alignment = BoxContainer.ALIGNMENT_CENTER
 	page.add_child(cards)
 
-	_add_card(cards, "tavern", "兴化", "酒馆", "打听消息・募人", "本日开放", "劣酒与潮气同在。邻桌有人谈远港价目。", "进入酒馆", "tavern")
+	_add_card(cards, "tavern", "兴化", "酒馆", "闻讯・募人", "本日开放", "劣酒与潮气同在。邻桌有人谈远港价目。", "进入酒馆", "tavern")
 	_add_card(cards, "inn", "兴化", "旅店", "歇息・候风", "本日开放", "通铺草席未干。风信不合时，海商在此候着。", "进入旅店", "inn")
 	_add_card(cards, "guild", "泉州", "行会", "行情・信用", "本日开放", "行首核对舱位与脚钱。墙上钉着一张远港价目。", "查看行会", "guild")
 

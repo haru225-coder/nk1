@@ -7,7 +7,7 @@ signal selected(facility_id: String)
 @export var facility_id := "tavern"
 @export var port_name := "泉州"
 @export var facility_name := "酒馆"
-@export var facility_subtitle := "打听消息・募人"
+@export var facility_subtitle := "闻讯・募人"
 @export var status_text := "本日开放"
 @export var record_text := "酒气与潮气同在。邻桌谈及远港价目。"
 @export var action_text := "进入酒馆"

@@ -61,16 +61,16 @@ func signing_fee(cand_id: String) -> int:
 func hire(cand_id: String) -> Dictionary:
 	var c := candidate_def(cand_id)
 	if c.is_empty():
-		return {"ok": false, "msg": "查无此人。"}
+		return {"ok": false, "msg": "名册上查无此人。"}
 	var role_id: String = c.get("role", "")
 	if hired.has(role_id):
-		return {"ok": false, "msg": "船上已有%s，一职不容二人。" % role_def(role_id).get("name", "此职")}
+		return {"ok": false, "msg": "船上已有%s。一职只容一人。" % role_def(role_id).get("name", "此职")}
 	var fee := signing_fee(cand_id)
 	if not GameState.spend_money(fee):
-		return {"ok": false, "msg": "入伙钱要 %d，你拿不出。" % fee}
+		return {"ok": false, "msg": "入伙钱 %d，囊中不足。" % fee}
 	hired[role_id] = c
 	GameState.record_crew(cand_id)
-	return {"ok": true, "msg": "%s 入伙，付入伙钱 %d，月俸 %d。" % [
+	return {"ok": true, "msg": "%s 入伙。付入伙钱 %d，月俸 %d。" % [
 		c.get("name", "此人"), fee, c.get("wage", 0),
 	]}
 
@@ -80,7 +80,7 @@ func dismiss(role_id: String) -> Dictionary:
 		return {"ok": false, "msg": ""}
 	var name: String = hired[role_id].get("name", "此人")
 	hired.erase(role_id)
-	return {"ok": true, "msg": "%s 卷了铺盖上岸。" % name}
+	return {"ok": true, "msg": "%s 辞退，背铺盖上岸。" % name}
 
 
 ## 未雇为 0
@@ -176,9 +176,9 @@ func pay_wages() -> String:
 		var who: String = hired[quitter].get("name", "有人")
 		hired.erase(quitter)
 		unpaid_months = 0
-		return "【欠饷】已拖欠三月工食，%s 不告而别。" % who
+		return "【欠饷】工食欠满三月，%s 不告而去。" % who
 
-	return "【欠饷】这月的工食 %d 钱发不出，船上人心浮动。" % due
+	return "【欠饷】本月工食 %d 未发。船上人心浮动。" % due
 
 
 # ── 存档 ──────────────────────────────────────────────
