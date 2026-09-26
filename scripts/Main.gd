@@ -94,6 +94,8 @@ var _resume_button: Button
 ## 人物系统（characters 线）：立绘 / 五维 / 特技 / 人物志。只作展示，不入存档
 const _CHAR_ART := preload("res://scripts/ui/CharacterArt.gd")
 const _CODEX := preload("res://scripts/ui/CharacterCodex.gd")
+## chars 线薄接入：岸上「名册」浮页（CharRoster + CharPortraitPanel）
+const _CHARS_WIRE := preload("res://scripts/chars/CharsShoreOverlay.gd")
 ## Lane N：接舷题签岸上预览（调试 F9；真实路径仍是海图遇盗→WorldMap 按 G）
 const _COMBAT_SHORE := preload("res://scripts/combat/CombatShoreHook.gd")
 ## 酒馆人物卡上的小立绘（逻辑像素，4:5）
@@ -101,6 +103,7 @@ const HIRE_PIC := Vector2i(84, 105)
 ## 船籍簿职事列表的小头像
 const ROSTER_HEAD := 24
 var _codex: Control
+var _chars_wire: Control
 var _codex_title_button: Button
 var _npc_courtesy: Label
 var _npc_faction: HBoxContainer
@@ -844,6 +847,7 @@ func _on_rewatch_opening() -> void:
 func _open_codex(focus_id := "") -> void:
 	_close_ledger()
 	_dismiss_banner()
+	_close_chars_wire()
 	if is_instance_valid(_codex) and not bool(_codex.get("_closing")):
 		if focus_id != "":
 			_codex.call("show_detail", focus_id, false)
@@ -852,6 +856,27 @@ func _open_codex(focus_id := "") -> void:
 	add_child(cx)
 	cx.call("begin", focus_id)
 	_codex = cx
+
+
+## chars 线：岸上名册浮页（CharRoster + CharPortraitPanel）。与人物志互斥；不入存档。
+func _open_chars_wire(focus_id := "") -> void:
+	_close_ledger()
+	_dismiss_banner()
+	if is_instance_valid(_codex) and not bool(_codex.get("_closing")):
+		_codex.call("close_codex")
+	if is_instance_valid(_chars_wire) and not bool(_chars_wire.get("_closing")):
+		if focus_id != "":
+			_chars_wire.call("focus_id", focus_id)
+		return
+	var ov: Control = _CHARS_WIRE.new()
+	add_child(ov)
+	ov.call("begin", focus_id)
+	_chars_wire = ov
+
+
+func _close_chars_wire() -> void:
+	if is_instance_valid(_chars_wire) and not bool(_chars_wire.get("_closing")):
+		_chars_wire.call("close_overlay")
 
 
 func log_msg(text: String) -> void:
@@ -3595,6 +3620,8 @@ func _refresh_shore() -> void:
 	# characters 线：人物志（浮页，不过日子、不入存档）
 	if not GameManager.all_characters().is_empty():
 		actions.add_child(_shore_action("人物志", Vector2(120, 42), false, _open_codex.bind("")))
+		# chars 线薄接入：名册 / 立绘面板（CharRoster + CharPortraitPanel）
+		actions.add_child(_shore_action("名册", Vector2(100, 42), false, _open_chars_wire.bind("")))
 
 
 func _on_reread_ending() -> void:
