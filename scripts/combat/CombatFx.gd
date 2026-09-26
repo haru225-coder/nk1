@@ -1,5 +1,5 @@
 ## 海战观感薄层：命中顿帧、镜头轻震、炮弹命中加一缕焦烟。不改伤害/齐射/刷船数值。
-## 调用方：WorldMap（开战/结算题签旁路）、Cannonball（命中）、BoardingStage。
+## 调用方：WorldMap（开战/接舷/结算）、Cannonball（命中）、BoardingStage、SeaChart（战果飘字）。
 ## headless / -s 工具脚本下顿帧与震屏跳过（Engine.time_scale 仍复位），粒子照常可实例化。
 extends RefCounted
 
@@ -101,3 +101,34 @@ static func battle_enter_subtitle(enemy_count: int, date_str := "") -> String:
 	if date_str.strip_edges() == "":
 		return "敌船 %d 艘" % enemy_count
 	return "%s　敌船 %d 艘" % [date_str.strip_edges(), enemy_count]
+
+
+## 接舷开场副题（题签下沿）。
+static func board_begin_subtitle() -> String:
+	return "钩索已抛"
+
+
+## 海图战果注记（SeaChart._on_battle_result 用）：克制纪实，无叹号。
+static func sea_win_note(spoil: int, damage: int, promo := "") -> String:
+	var base := "海盗已退。获财货 %d 钱。船体受损 %d。" % [maxi(0, spoil), maxi(0, damage)]
+	var p := promo.strip_edges()
+	return base if p == "" else base + p
+
+
+static func sea_sunk_note(cargo_str: String, damage: int, fleet_gone: bool) -> String:
+	var cargo := cargo_str.strip_edges()
+	if fleet_gone:
+		return "旗舰沉没，货舱随船。%s船体受损 %d。" % [cargo, maxi(0, damage)]
+	return "旗舰沉没，该船货物随船。%s余船尚在。船体受损 %d。" % [cargo, maxi(0, damage)]
+
+
+static func sea_board_lose_note(cargo_str: String, damage: int) -> String:
+	return "白刃不利，货舱被夺。%s船体受损 %d。" % [cargo_str.strip_edges(), maxi(0, damage)]
+
+
+static func sea_flee_ok_note() -> String:
+	return "转舵抢上风头，把追船甩在后面。绕了些路。"
+
+
+static func sea_flee_fail_note(cargo_str: String) -> String:
+	return "未能甩脱。被追上跳帮，货舱被夺。%s" % cargo_str.strip_edges()

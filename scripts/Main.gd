@@ -94,6 +94,8 @@ var _resume_button: Button
 ## 人物系统（characters 线）：立绘 / 五维 / 特技 / 人物志。只作展示，不入存档
 const _CHAR_ART := preload("res://scripts/ui/CharacterArt.gd")
 const _CODEX := preload("res://scripts/ui/CharacterCodex.gd")
+## Lane N：接舷题签岸上预览（调试 F9；真实路径仍是海图遇盗→WorldMap 按 G）
+const _COMBAT_SHORE := preload("res://scripts/combat/CombatShoreHook.gd")
 ## 酒馆人物卡上的小立绘（逻辑像素，4:5）
 const HIRE_PIC := Vector2i(84, 105)
 ## 船籍簿职事列表的小头像
@@ -4547,6 +4549,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		elif event.keycode == KEY_F11:
 			_debug_jump_port()
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_F9:
+			# Lane N：岸上预览接舷题签（不入存档、不改舰队）
+			_COMBAT_SHORE.preview_boarding(self, true)
 			get_viewport().set_input_as_handled()
 
 

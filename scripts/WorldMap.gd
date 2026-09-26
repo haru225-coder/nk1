@@ -32,6 +32,8 @@ var combat_start_durability: float = 0.0
 var player_damage: float = 0.0
 ## 防 _battle_exit 重入（信号同步触发期间 WorldMap 仍存活一帧）
 var resolved: bool = false
+## 最近一次终结是否经接舷夺船（出战题签用「夺船」）
+var _last_boarded: bool = false
 ## 本次战斗敌船总数（HUD 显示）
 var total_enemies: int = 0
 ## 敌单船战斗血量基数（PirateShip.hull_hp），按战力比缩放
@@ -177,8 +179,8 @@ func _board_enemy(enemy: Node2D) -> void:
 	_AUDIO.combat_board(self)
 	enemy.set("grappled", true)  # 敌船停航停炮
 
-	# Lane C 观感节拍：钩索题签 + 轻震（不改白刃数值）
-	_BoardingStage.begin(self, ship, enemy, "钩索已抛")
+	# Lane N：真实接舷钩子 — 钩索题签 + 轻震（不改白刃数值）
+	var stage: CanvasLayer = _BoardingStage.begin(self, ship, enemy, _CombatFx.board_begin_subtitle())
 	_CombatFx.punch_camera(ship, 5.0)
 	if not _Kit.is_headless():
 		await get_tree().create_timer(0.42).timeout
@@ -207,14 +209,18 @@ func _board_enemy(enemy: Node2D) -> void:
 		var ok := Fleet.add_ship(type_id, ship_name)
 		var taken: String = str(Fleet.ships[Fleet.ships.size() - 1].get("name", "敌船")) if ok else "敌船"
 		var msg := _CombatFx.board_win_note(taken)
-		_BoardingStage.resolve(self, "win", msg)
+		var resolved_stage: CanvasLayer = _BoardingStage.resolve(self, "win", msg)
+		if resolved_stage != null:
+			stage = resolved_stage
 		_show_combat_notice(msg)
 		_CombatFx.hitstop(self, 0.09, 0.16)
 		enemy.queue_free()
 		boarding = false
 		boarding_target = null
 		if _enemies_alive() == 0:
-			_battle_exit("win", {})
+			# 等接舷题签播完再出战，避免 WorldMap.queue_free 切断演出
+			await _await_boarding_fx(stage)
+			_battle_exit("win", {"boarded": true})
 	else:
 		var lose_n2 := maxi(1, int(Fleet.total_crew() * (0.20 + randf() * 0.10)))
 		Fleet.lose_crew_random(lose_n2)
@@ -223,8 +229,11 @@ func _board_enemy(enemy: Node2D) -> void:
 		boarding = false
 		boarding_target = null
 		var msg2 := _CombatFx.board_lose_note(lose_n2)
-		_BoardingStage.resolve(self, "lose", msg2)
+		var lose_stage: CanvasLayer = _BoardingStage.resolve(self, "lose", msg2)
+		if lose_stage != null:
+			stage = lose_stage
 		_show_combat_notice(msg2)
+		await _await_boarding_fx(stage)
 
 
 ## 战斗通知浮字：在屏幕中央短暂显示（复用 FloatingText 场景），3 秒后淡出
@@ -461,6 +470,9 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 		return
 	resolved = true
 	data["player_damage"] = player_damage
+	_last_boarded = bool(data.get("boarded", false))
+	if _last_boarded:
+		data["boarded"] = true
 	_AUDIO.combat_result(self, outcome)
 	_try_letterbox_exit(outcome)
 	battle_finished.emit(outcome, data)
@@ -481,6 +493,16 @@ static func _prop_s(o: Object, prop: String, default_v: String) -> String:
 
 # ══ 以下为本地 main 的新增函数，合并时因所在区块让位云端而被丢，按「本地纯新增保留」原样补回（2026-09-25） ══
 
+## Lane N：等待接舷题签播完（headless / 无舞台则立刻返回）。
+func _await_boarding_fx(stage: CanvasLayer) -> void:
+	if stage == null or not is_instance_valid(stage):
+		return
+	if _Kit.is_headless():
+		return
+	if stage.has_signal("finished"):
+		await stage.finished
+
+
 ## Lane C：进出战墨边（若 CombatLetterbox 已入库则调用；否则静默跳过）。
 func _try_letterbox_enter(pb: Dictionary) -> void:
 	if not ResourceLoader.exists(_LETTERBOX_PATH):
@@ -489,8 +511,16 @@ func _try_letterbox_enter(pb: Dictionary) -> void:
 	if LB == null:
 		return
 	var enemy_list: Array = pb.get("enemy", [])
-	var sub := "%s　%s" % [Calendar.get_date_string(), LB.enemy_note(enemy_list)]
+	var enemy_n := 0
+	for e in enemy_list:
+		if e is Dictionary:
+			enemy_n += int(e.get("count", 1))
+	var note: String = str(LB.enemy_note(enemy_list))
+	if note.strip_edges() == "":
+		note = _CombatFx.battle_enter_subtitle(enemy_n)
+	var sub := "%s　%s" % [Calendar.get_date_string(), note]
 	LB.enter(self, LB.sea_title("外海", "遇敌"), sub)
+	_CombatFx.hitstop(self, 0.045, 0.32)
 
 
 func _try_letterbox_exit(outcome: String) -> void:
@@ -502,5 +532,8 @@ func _try_letterbox_exit(outcome: String) -> void:
 	var LB = load(_LETTERBOX_PATH)
 	if LB == null:
 		return
-	LB.exit(parent, LB.outcome_title(outcome, "外海"), Calendar.get_date_string())
+	var act_outcome := outcome
+	if _last_boarded and outcome == "win":
+		act_outcome = "board"
+	LB.exit(parent, LB.outcome_title(act_outcome, "外海"), Calendar.get_date_string())
 

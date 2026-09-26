@@ -2510,6 +2510,57 @@ if 'get("bio"' in _l1_codex or '"bio_short"' in _l1_main:
 else:
     print("  ✓ 人物志/见面页不直读 bio/bio_short 原稿")
 
+print("=" * 68)
+print("Lane N — BoardingStage/CombatFx 真实接舷/海战钩子")
+print("=" * 68)
+_wm_n = open(os.path.join(SCRIPTS, "WorldMap.gd"), encoding="utf-8").read()
+_sc_n = open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()
+_fx_n = open(os.path.join(SCRIPTS, "combat", "CombatFx.gd"), encoding="utf-8").read()
+_main_n = open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read()
+_hook_path = os.path.join(SCRIPTS, "combat", "CombatShoreHook.gd")
+if os.path.isfile(_hook_path):
+    print("  ✓ scripts/combat/CombatShoreHook.gd 存在")
+else:
+    print("  ✗ 缺 CombatShoreHook.gd")
+    problems.append("缺 CombatShoreHook.gd")
+for tok, label in (
+    ("_await_boarding_fx", "WorldMap 等待接舷题签"),
+    ("board_begin_subtitle", "WorldMap 开场副题走 CombatFx"),
+    ('"boarded"', "WorldMap 传 boarded 标记"),
+):
+    if tok in _wm_n:
+        print(f"  ✓ {label}")
+    else:
+        print(f"  ✗ {label}")
+        problems.append(label)
+for tok, label in (
+    ("sea_win_note", "SeaChart 用 CombatFx.sea_win_note"),
+    ("_CombatFx", "SeaChart 预载 CombatFx"),
+):
+    if tok in _sc_n:
+        print(f"  ✓ {label}")
+    else:
+        print(f"  ✗ {label}")
+        problems.append(label)
+for tok in ("sea_win_note", "sea_flee_ok_note", "board_begin_subtitle"):
+    if f"func {tok}" in _fx_n or f"static func {tok}" in _fx_n:
+        print(f"  ✓ CombatFx.{tok}")
+    else:
+        print(f"  ✗ CombatFx.{tok} 缺失")
+        problems.append(f"CombatFx.{tok}")
+if "CombatShoreHook" in _main_n and "KEY_F9" in _main_n:
+    print("  ✓ Main F9 薄接入 CombatShoreHook")
+else:
+    print("  ✗ Main 未薄接入 CombatShoreHook/F9")
+    problems.append("Main 未接 CombatShoreHook")
+# 营销词不得回潮
+for bad in ("惊艳", "沉浸", "视觉盛宴", "夺下敌船"):
+    if bad in _fx_n or bad in _wm_n:
+        print(f"  ✗ 战斗文案回潮：{bad}")
+        problems.append(f"战斗文案回潮:{bad}")
+    else:
+        print(f"  ✓ 无「{bad}」")
+
 print()
 print("=" * 68)
 if problems:

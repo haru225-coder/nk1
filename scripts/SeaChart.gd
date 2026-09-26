@@ -2,6 +2,8 @@ extends Control
 ## 海图。风每一手发至多三向，选定后按日推进，逐日抽事件，到港。
 ## 实时操船（WorldMap.tscn）降级为海战/风涛时切入的战术场景。
 
+const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
+
 var origin_port: String = ""
 var selected_port: String = ""
 var _hand: PackedStringArray = PackedStringArray()
@@ -1422,7 +1424,11 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 		var promo := ""
 		if fame_res.get("promoted", false):
 			promo = "案册改题「%s」。" % str(fame_res.get("title", {}).get("name", ""))
-		_log(_ink(UiTheme.MOSS, "击退海盗，夺得财货 %d 钱。战损 %d。%s" % [spoil, int(dmg), promo]))
+		# Lane N：战果注记走 CombatFx 论文纪实句；接舷夺船时附一句并入注记
+		var win_msg := _CombatFx.sea_win_note(spoil, int(dmg), promo)
+		if bool(data.get("boarded", false)):
+			win_msg = "接舷既定。" + win_msg
+		_log(_ink(UiTheme.MOSS, win_msg))
 	elif outcome == "lose":
 		Fleet.morale = maxi(0, Fleet.morale - 12)
 		# WorldMap 只在旗舰沉没时发 lose。先按该船货舱全损记账，
@@ -1432,16 +1438,13 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			var lost_str := ""
 			for gid in lost.keys():
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-			if Fleet.total_durability() <= 0.0:
-				_log(_ink(UiTheme.CINNABAR, "旗舰沉没，货舱随船没了。%s船体受损 %d。" % [lost_str, int(dmg)]))
-			else:
-				_log(_ink(UiTheme.CINNABAR, "旗舰沉没，该船货物随船没了。%s其余船只还在。船体受损 %d。" % [lost_str, int(dmg)]))
+			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_sunk_note(lost_str, int(dmg), Fleet.total_durability() <= 0.0)))
 		else:
 			var lost := Fleet.lose_cargo_ratio(0.25)
 			var lost_str := ""
 			for gid in lost.keys():
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-			_log(_ink(UiTheme.CINNABAR, "接舷失利，被夺去部分货物。%s船体受损 %d。" % [lost_str, int(dmg)]))
+			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_board_lose_note(lost_str, int(dmg))))
 	else:  # flee
 		if data.get("flee_ok", false):
 			remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
@@ -1452,7 +1455,7 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			var lost_str := ""
 			for gid in lost.keys():
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-			_log(_ink(UiTheme.CINNABAR, "没能甩脱，被追上跳帮，抢走了货。%s" % lost_str))
+			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_flee_fail_note(lost_str)))
 	GameManager.pending_battle = {}
 	back_button.disabled = voyage_started
 	for c in get_children():
@@ -1464,7 +1467,7 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 
 
 func _log_shook_pursuers() -> void:
-	_log(_ink(UiTheme.MOSS, "转舵抢上风头，把那两条快船甩在了后面。绕了些路。"))
+	_log(_ink(UiTheme.MOSS, _CombatFx.sea_flee_ok_note()))
 
 
 func _on_flee_pirates() -> void:
@@ -1480,7 +1483,7 @@ func _on_flee_pirates() -> void:
 		for gid in lost.keys():
 			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
 		Fleet.damage_fleet(30.0 * Fleet.armor_damage_reduction())
-		_log(_ink(UiTheme.CINNABAR, "没能甩脱，被追上跳帮，抢走了货。%s" % lost_str))
+		_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_flee_fail_note(lost_str)))
 	_refresh_status()
 	_after_combat()
 
