@@ -23,7 +23,8 @@ var max_hp: float = 100.0
 @onready var camera: Camera2D = $Camera2D
 
 var target_zoom = Vector2(1.5, 1.5)
-var cannonball_scene = preload("res://scenes/Cannonball.tscn")
+# lazy load：避免 compile 时 Cannonball.gd → class Ship → preload 场景 → 再要 Cannonball.gd 的环
+var cannonball_scene: PackedScene = null
 const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
 var fire_cooldown: float = 0.0
 
@@ -74,6 +75,8 @@ func _fire_broadside(side: int) -> void:
 	var flagship := Fleet.flagship()
 	var slots := int(Fleet.ship_def(flagship.get("type", "")).get("cannon_slots", 0))
 	var shots := maxi(1, slots)
+	if cannonball_scene == null:
+		cannonball_scene = load("res://scenes/Cannonball.tscn") as PackedScene
 	for i in range(shots):
 		var cb = cannonball_scene.instantiate()
 		cb.position = position + ship_dir * (i - (shots - 1) * 0.5) * 20 + side_dir * 30

@@ -14,3 +14,10 @@ __pycache__/
 
 # OS-specific ignores
 .DS_Store
+
+# --- *.uid / *.import 策略（Lane Z4，勿改成通配 ignore）---
+# Godot 4 侧车：脚本 .uid、素材 .import 跟随其源文件一并提交，保证 git clean
+# 后重导不会换 uid、场景 ExtResource 不断链（见 README「已知坑」）。
+# 并行 lane 禁止 `git add .` / 禁止盲加别人工作树里未跟踪的侧车噪声；
+# 只把「本 lane 新加的源文件」对应的那一份侧车放进同一次 commit。
+# 因此这里故意不 ignore *.uid / *.import。
