@@ -79,8 +79,15 @@ static func outcome_title(outcome: String, sea_name := "") -> String:
 	return sea_title(sea_name, OUTCOME_ACT.get(outcome, "战罢"))
 
 
-## 敌船数副题：「海鹘二艘・铁子一艘」。entry 形同 pending_battle.enemy（type / count），船名取 Fleet 船种表。
+## 敌船数副题：「海鹘二艘」。entry 形同 pending_battle.enemy（type / count）。
+## 船名用本地短表，避免 -s 探针编译期依赖 Fleet/GameManager。
 static func enemy_note(enemy_list: Array) -> String:
+	var type_names := {
+		"sea_falcon": "海鹘",
+		"fu_ship": "福船",
+		"iron_child": "铁子",
+		"tetsu": "铁子",
+	}
 	var parts: PackedStringArray = []
 	for entry in enemy_list:
 		if not entry is Dictionary:
@@ -89,7 +96,7 @@ static func enemy_note(enemy_list: Array) -> String:
 		if count <= 0:
 			continue
 		var type_id := String(entry.get("type", ""))
-		var ship_name := String(Fleet.ship_def(type_id).get("name", "敌船"))
+		var ship_name := String(type_names.get(type_id, "敌船"))
 		parts.append("%s%s艘" % [ship_name, _cn_count(count)])
 	return "・".join(parts)
 
