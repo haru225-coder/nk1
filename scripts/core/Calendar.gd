@@ -178,11 +178,15 @@ func absolute_day() -> int:
 	return ((year - 1255) * MONTHS_PER_YEAR + (month - 1)) * DAYS_PER_MONTH + (day - 1)
 
 
+## 「宝祐三年」
+func get_era_year_string() -> String:
+	var ey := get_era_year()
+	return get_era() + ("元年" if ey == 1 else _cn_number(ey) + "年")
+
+
 ## 「宝祐三年　三月初一」
 func get_date_string() -> String:
-	var ey := get_era_year()
-	var y_str := get_era() + ("元年" if ey == 1 else _cn_number(ey) + "年")
-	return "%s　%s%s" % [y_str, get_month_name(), get_day_name()]
+	return "%s　%s%s" % [get_era_year_string(), get_month_name(), get_day_name()]
 
 
 ## 存档用
