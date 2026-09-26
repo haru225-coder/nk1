@@ -356,6 +356,18 @@ for sid, keep in PROLOGUE_HISTORY_KEEP.items():
         hit = PROLOGUE_HISTORY_OLD.search(v)
         check(hit is None, f"scenes.json {sid} 回退到史实校勘前写法「{hit.group(0) if hit else ''}」")
 
+# 序章史实校勘建议 6–7（Q11）：阿那进场是赤脚踩水不是木屐（读者第一反应是日本）；南宋无「路试」，
+# 士人线入口是 1256 临安太学补试。只锁这两处正文；#8 家丁「明年丙辰大考」口吻允许不准确，不查。
+PROLOGUE_SUGGEST = {
+    "cg_ana_enter": ("赤脚踩水的啪啪声", re.compile(r"木屐")),
+    "scholar_path_start": ("临安太学补试是第一步", re.compile(r"福州路试")),
+}
+for sid, (keep, old) in PROLOGUE_SUGGEST.items():
+    body = (_scene_by_id.get(sid) or {}).get("body") or ""
+    check(keep in body, f"scenes.json {sid}.body 史实校勘建议改后文字丢失：{keep}")
+    hit = old.search(body)
+    check(hit is None, f"scenes.json {sid}.body 回退到史实校勘建议前写法「{hit.group(0) if hit else ''}」")
+
 # 序章长文去现代腔（Q5）：开卷、四方沙盘、酒棚各幕与旧 prologue_* 长文（含 deprecated，防复活时带回）
 # 不得再写「新大陆 / 崭新大陆 / 历史车轮 / 绞索 / 注定要砸下来的孤城」，开局是三月春雷，不得出现小暑。
 PROLOGUE_MODERN = re.compile(r"新大陆|历史车轮|绞索|注定要砸|小暑")
