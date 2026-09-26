@@ -1302,6 +1302,7 @@ func _enter_panel_mode() -> void:
 	_drop_children(choices_container)
 	_clear_page_footer()
 	_slip_host = null
+	_uncenter_benches()
 	_show_investigation_chrome(false)
 	scene_title.visible = true
 	var title_rule := scene_title.get_parent().get_node_or_null("HSeparator") as Control
@@ -2099,6 +2100,26 @@ func _end_benches() -> void:
 	_slip_host = null
 
 
+## 工席少的设施页（贡院两卡、行会几张），卡组在正文下、离开钮上那段竖直居中，不悬上半页留一片黑空。
+## 内页列与 choices_container 撑满滚动视口，Benches 吃掉余高再收回自身高度居中；卡多到溢出时余高为零，照旧从上排、可滚。
+## 换页时 _uncenter_benches 复位，别的页仍从上排。
+func _center_benches() -> void:
+	if not (_slip_host is HFlowContainer):
+		return
+	var inner := choices_container.get_parent() as Control
+	if inner != null:
+		inner.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	choices_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	(_slip_host as Control).size_flags_vertical = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
+
+
+func _uncenter_benches() -> void:
+	var inner := choices_container.get_parent() as Control
+	if inner != null:
+		inner.size_flags_vertical = Control.SIZE_FILL
+	choices_container.size_flags_vertical = Control.SIZE_FILL
+
+
 ## 工席宽 480，扣掉潮光边和内边距后字宽 448。
 ## Label 打开 autowrap 后最小高度仍按一行算，长旁注会被裁成半句。
 func _lock_slip_wrap(lbl: Label) -> void:
@@ -2820,6 +2841,7 @@ func _setup_guild(port_id: String) -> void:
 	scene_title.text = "%s・行会" % GameManager.get_port_name(port_id)
 	body_text.text = "墙上钉着远港价目，墨迹有的还潮着。海商信用 %d，足的人会里肯多抄几条远路。" % GameState.merchant_credit
 	_begin_benches()
+	_center_benches()
 
 	var limit: int = 5 if GameState.merchant_credit >= GUILD_CREDIT_WIDE else 3
 	var rows: Array = _collect_spreads(port_id, limit)
@@ -2923,6 +2945,7 @@ func _setup_exam(port_id: String) -> void:
 	scene_title.text = "%s・贡院" % GameManager.get_port_name(port_id)
 	body_text.text = "今科未开。只能替人誊录，笔墨钱现结。"
 	_begin_benches()
+	_center_benches()
 
 	var copy := _exam_slip()
 	_slip_title(copy, "誊录", "学者 %d　海路 %d" % [GameState.scholar_tendency, GameState.sea_tendency])
