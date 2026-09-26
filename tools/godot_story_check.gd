@@ -529,6 +529,16 @@ func _route_check() -> void:
 	main.load_scene("xinghua")
 	_check(Eco.war_status("xinghua") == "loyal", "1277-02 兴化复城（涵江卡前提）")
 	_check("special_hanjiang_escape" in main.shore_hand, "1277-02 兴化岸上有涵江海口卡（名单 %s）" % [main.shore_hand])
+	# 涵江出海：结算标题的年号跟出海后的日历走、与终局落款同年（原先硬写「景炎三年三月」，卡却只在景炎二年出现，门禁一直绿）
+	var fleet: Node = root.get_node("Fleet")
+	fleet.water = maxi(fleet.water, 999)
+	fleet.food = maxi(fleet.food, 999)
+	main._on_hanjiang_escape()
+	var era_year: String = Cal.get_era_year_string()
+	var sheet_head := _find_label_text(main.get("_chapter_host"), "旧避风澳・")
+	_check(era_year == "景炎二年" and sheet_head.find("旧避风澳・" + era_year) >= 0 and GS.ended_at.begins_with(era_year),
+		"涵江出海结算标题与终局落款同为景炎二年（标题「%s」／落款「%s」）" % [sheet_head, GS.ended_at])
+	main._confirm_chapter_sheet()
 	# 守城页走岸带：五张 siege_* 卡全上岸，尼寺不占门，动作行无「看风」
 	GS.from_dict({})
 	GS.set_flag("renamed_wenlong")
@@ -581,3 +591,16 @@ func _close_dialogs(main: Node) -> void:
 		if c is AcceptDialog:
 			c.hide()
 			c.free()
+
+
+## 在节点树里找第一个含 needle 的 Label 文本（册页标题等）；找不到返回空串
+func _find_label_text(node: Node, needle: String) -> String:
+	if node == null or not is_instance_valid(node):
+		return ""
+	if node is Label and (node as Label).text.find(needle) >= 0:
+		return (node as Label).text
+	for c in node.get_children():
+		var t := _find_label_text(c, needle)
+		if t != "":
+			return t
+	return ""

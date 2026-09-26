@@ -458,6 +458,8 @@ func _finale(ending_name: String) -> void:
 		"纲首":
 			_main.call("_on_gangshou_end")
 		"岸上的根":
+			Calendar.year = 1277
+			Calendar.month = 3
 			Fleet.water = maxi(Fleet.water, 999)
 			Fleet.food = maxi(Fleet.food, 999)
 			_main.call("_on_hanjiang_escape")
