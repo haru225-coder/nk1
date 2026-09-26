@@ -136,6 +136,26 @@ panic = next((n for n in news if n.get("id") == "n_1273_03_fanfang_panic"), {})
 check(panic.get("market", {}).get("good_id") == "aromatic_medicine" and panic.get("market", {}).get("mul", 1) < 1,
       "1273-03 蕃坊恐慌挂香药抛售 market（剧情打磨 §二：香药 −40%）")
 
+# Lane P：新闻上屏字段禁工程/现代/AI 腔；酒馆墙与传闻标签仍被消费
+_NEWS_ENG = re.compile(
+    r"placeholder|本作|玩家|士人线|海商线|乡土线|TODO|WIP|pipeline|LLM|ChatGPT|大模型|"
+    r"玩法循环|核心循环|用户体验|垂直切片|沉浸式|赋能|视觉盛宴"
+)
+for n in news:
+    nid = n.get("id", "?")
+    for f in ("text", "text_S", "text_M", "speaker"):
+        raw = str(n.get(f, ""))
+        if not raw:
+            continue
+        hit = _NEWS_ENG.search(raw)
+        check(hit is None, f"news {nid}.{f} 含工程/现代腔「{hit.group(0) if hit else ''}」")
+_gm = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
+_gs = open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read()
+check("【酒馆传闻】" in _gm, "GameManager 投放新闻须用【酒馆传闻】前缀（空 speaker）")
+check("传闻约卖" in _gs and "func rumor_label" in _gs, "GameState.rumor_label 须保留「传闻约卖」上屏标签")
+check("recent_news" in main_src and "_setup_news_wall" in main_src,
+      "酒馆须接 recent_news 上墙（Main._setup_news_wall）")
+
 # ── npcs.json ─────────────────────────────────────────
 npcs = load("npcs.json")["npcs"]
 pids = [p["id"] for p in npcs]

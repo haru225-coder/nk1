@@ -838,8 +838,8 @@ func rumor_label(port_id: String, good_id: String) -> String:
 	var sell := Economy.price_at_rate(port_id, good_id, float(rec.get("rate", 1.0)), false)
 	var age := Calendar.absolute_day() - int(rec.get("day", 0))
 	if age <= 0:
-		return "传闻卖%d" % sell
-	return "传闻卖%d·%d日前" % [sell, age]
+		return "传闻约卖 %d" % sell
+	return "传闻约卖 %d · %d 日前" % [sell, age]
 
 
 # ── 牙行委办 ──────────────────────────────────────────

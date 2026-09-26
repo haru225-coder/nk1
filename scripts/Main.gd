@@ -1183,7 +1183,7 @@ func _interior_lead(scene_id: String) -> String:
 		"city_exam":
 			return "贡院朱门紧闭。今科未开，阶下只有几个背着书箧的士子在张望。"
 		"city_tavern":
-			return "劣酒和喧哗。邻桌有人压低了声音。"
+			return "劣酒与喧哗。邻桌有人压低了声音。"
 		"city_shipyard":
 			return "桐油和潮气。坞里还停着没漆完的船板。"
 		_:
@@ -2654,9 +2654,10 @@ func _setup_residence_chen(port_id: String) -> void:
 
 func _setup_tavern(port_id: String) -> void:
 	scene_title.text = "%s・酒馆" % GameManager.get_port_name(port_id)
-	body_text.text = "劣酒和喧哗。消息与人手都从这儿来。月俸按月，欠饷三月则去。"
+	body_text.text = "劣酒与喧哗。消息与人手都从这儿来。月俸按月；欠饷三月，则人去。"
 
-	# 旧事放最前，仍走挑签。打听和募人进工席。
+	# 墙上贴最近三条已投放新闻；旧事仍走挑签。打听和募人进工席。
+	_setup_news_wall()
 	_setup_story_hooks(port_id)
 	_begin_benches()
 
@@ -2675,6 +2676,25 @@ func _setup_tavern(port_id: String) -> void:
 
 	_add_leave_button(port_id)
 	choices_label.visible = false
+
+
+## 酒馆墙上：最近投放的新闻（GameState.recent_news），新的在前。无则不上墙。
+func _setup_news_wall() -> void:
+	var wall: Array = GameState.recent_news(3)
+	if wall.is_empty():
+		return
+	var sep := Label.new()
+	sep.text = "墙上"
+	UiTheme.style_section_label(sep)
+	choices_container.add_child(sep)
+	for n in wall:
+		var speaker := str(n.get("speaker", ""))
+		var prefix := "酒馆传闻" if speaker == "" else speaker
+		var line := Label.new()
+		line.text = "【%s】%s" % [prefix, GameState.news_text(n)]
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UiTheme.style_footnote(line)
+		choices_container.add_child(line)
 
 
 func _setup_story_hooks(port_id: String) -> void:
@@ -3300,7 +3320,7 @@ func _collect_spreads(port_id: String, limit: int = 3) -> Array:
 func _gather_price_intel(port_id: String) -> String:
 	var rows: Array = _collect_spreads(port_id, 1)
 	if rows.is_empty():
-		return "【闲谈】几个老水手翻来覆去只讲当年的风暴，没打听出什么有用的。"
+		return "【闲谈】几个老水手翻来覆去只讲当年的风暴，没打听出新行情。"
 	var best: Dictionary = rows[0]
 	GameState.note_rumor(str(best["port"]), str(best["good"]), Economy.get_rate(str(best["port"]), str(best["good"])))
 	return "【行情】邻座的牙人压低声音：「%s　眼下缺%s，此地买了运过去，一件能多得　%d 钱。」" % [
@@ -3474,7 +3494,19 @@ func _setup_title_mode(scene_data: Dictionary) -> void:
 
 
 func _on_start_game_pressed(next_scene: String) -> void:
-	load_scene(next_scene)
+	# 卷首「开卷」与沙盘末翻入酒棚：走论文纪实题签（UiTransition）；四方沙盘中间翻页仍靠 TitleStage 节奏，不加墨幕。
+	# headless / 巡检下 play_transition 当帧直通，不拖门禁。
+	var start_id := str(GameManager.scenes_data.get("start_scene", "cg_title"))
+	var from_start := current_scene_id == start_id
+	var into_shed := str(next_scene).begins_with("cg_narrate")
+	if from_start:
+		await play_transition(_UI_TRANSITION.prologue_open_title(), Calendar.get_date_string(),
+			load_scene.bind(next_scene), "序")
+	elif into_shed:
+		await play_transition(_UI_TRANSITION.prologue_shore_title(), Calendar.get_date_string(),
+			load_scene.bind(next_scene), "序")
+	else:
+		load_scene(next_scene)
 
 
 func _setup_port_mode(scene_data: Dictionary) -> void:
