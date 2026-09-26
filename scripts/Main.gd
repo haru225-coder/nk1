@@ -140,39 +140,16 @@ const PROLOGUE_ONLY_FACILITIES := ["city_guild", "city_exam", "city_residence"]
 ## 无剧情场景的港口使用的通用设施。卡序与泉州/兴化港卡一致（九卡），
 ## 避免博多缺行会行情或寺观勘见。
 const GENERIC_FACILITIES := [
-	{"id": "city_shipyard", "title": "船屋", "subtitle": "修舱・上水・雇手"},
-	{"id": "city_guild", "title": "行会", "subtitle": "议价・立籍"},
-	{"id": "city_tavern", "title": "酒馆", "subtitle": "闻讯・募人"},
-	{"id": "city_market", "title": "牙行", "subtitle": "过秤・买卖"},
+	{"id": "city_shipyard", "title": "船屋", "subtitle": "修船・补给・船行"},
+	{"id": "city_guild", "title": "行会", "subtitle": "行情・信用"},
+	{"id": "city_tavern", "title": "酒馆", "subtitle": "打听消息"},
+	{"id": "city_market", "title": "牙行", "subtitle": "货殖交易"},
 	{"id": "city_inn", "title": "旅店", "subtitle": "歇息・候风"},
 	{"id": "city_exam", "title": "贡院", "subtitle": "誊录・观礼"},
 	{"id": "city_residence", "title": "住宅", "subtitle": "账本・歇息"},
 	{"id": "city_temple", "title": "寺观", "subtitle": "勘见・拓碑"},
 	{"id": "city_yamen", "title": "市舶司", "subtitle": "验引・抽解"},
 ]
-
-## 岸门悬停提示：论文纪实短注，不写「点击进入」类 UI 腔。key 去 city_ 前缀。
-const DOOR_TIP := {
-	"market": "牙人过秤开票。市舶抽解另计。",
-	"guild": "会馆议价、立会籍。入行另有会费。",
-	"tavern": "酒桌边听市井动静，也可雇水手。",
-	"shipyard": "坞上修舱、上水、雇手。船开不出去时必开此门。",
-	"inn": "借宿候风。日数照过。",
-	"exam": "贡院誊录与观礼。兴化、泉州可赴试。",
-	"residence": "下处歇息，翻看账册。",
-	"temple": "寺观细看遗迹，可拓碑。",
-	"yamen": "市舶司验引、抽解。违禁货过不了关。",
-	"siege_muster": "衙门募兵。石手军听调。",
-	"siege_grain": "市集屯粮。粮即守城日。",
-	"siege_wall": "船屋料改修城墙。",
-	"siege_envoy": "城下使者求见。",
-	"siege_nangshan": "南山下设伏。",
-	"siege_nunnery": "福州尼寺。母亲与璥儿在那里。",
-	"special_hanjiang_escape": "涵江海口旧避风澳。",
-	"special_resign_1275": "临安辞呈批语。",
-	"special_yashan": "崖山。宋军船阵相连。",
-	"special_gangshou_end": "市舶司新册。封面换了，名字还在。",
-}
 
 
 func _ready() -> void:
@@ -3943,15 +3920,6 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	btn.flat = true
 	btn.set_anchors_preset(Control.PRESET_FULL_RECT)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	var tip_key := str(fac.get("id", "")).replace("city_", "")
-	var tip := str(DOOR_TIP.get(tip_key, ""))
-	if tip == "":
-		var sub := str(fac.get("subtitle", "")).strip_edges()
-		tip = ("%s　%s" % [str(fac.get("title", "去处")), sub]).strip_edges() if sub != "" else str(fac.get("title", "去处"))
-	if pinned_yard:
-		tip = "船还开不出去。
-" + tip
-	btn.tooltip_text = tip
 	var empty := StyleBoxEmpty.new()
 	btn.add_theme_stylebox_override("normal", empty)
 	btn.add_theme_stylebox_override("hover", empty)
@@ -4001,14 +3969,9 @@ func _door_watermark(fac: Dictionary) -> Control:
 func _make_shore_shut(fac: Dictionary) -> Button:
 	var btn := Button.new()
 	btn.text = str(fac.get("title", "去处"))
-	# 热区 ≥64×32（美术规范小钮）；关着的门略宽一点，字不挤
-	btn.custom_minimum_size = Vector2(120, 36)
+	btn.custom_minimum_size = Vector2(108, 36)
 	btn.set_meta("shore_shut", true)
 	btn.pressed.connect(_on_shore_shut)
-	var tip_key := str(fac.get("id", "")).replace("city_", "")
-	var open_tip := str(DOOR_TIP.get(tip_key, str(fac.get("subtitle", ""))))
-	btn.tooltip_text = "今日未开。再候一日，门或另换。
-%s" % open_tip if open_tip != "" else "今日未开。再候一日，门或另换。"
 	UiTheme.style_button(btn, false)
 	var shut_box := UiTheme.shore_shut()
 	btn.add_theme_stylebox_override("normal", shut_box)
@@ -4022,7 +3985,7 @@ func _make_shore_shut(fac: Dictionary) -> Button:
 
 
 func _on_shore_shut() -> void:
-	log_msg("今日此门未开。")
+	log_msg("今日这处没开门。")
 	update_status_panel()
 
 
