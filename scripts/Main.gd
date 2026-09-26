@@ -109,6 +109,8 @@ const _COMBAT_SHORE := preload("res://scripts/combat/CombatShoreHook.gd")
 const _VISION_STAGE := preload("res://scenes/vision/VisionStage.tscn")
 ## Lane Q：酒馆墙上市井札薄（宣纸条；无新闻不上墙）
 const _TAVERN_NEWS_WALL := preload("res://scripts/ui/TavernNewsWall.gd")
+## Lane Z3：伙伴草案预览浮页（调试 F7；只读剪影卡，不接招募）
+const _COMPANION_PREVIEW := preload("res://scripts/companions/CompanionPreview.gd")
 ## 酒馆人物卡上的小立绘（逻辑像素，4:5）
 const HIRE_PIC := Vector2i(84, 105)
 ## 船籍簿职事列表的小头像
@@ -116,6 +118,7 @@ const ROSTER_HEAD := 24
 var _codex: Control
 var _chars_wire: Control
 var _vision_stage: Control
+var _companion_preview: Control
 var _codex_title_button: Button
 var _npc_courtesy: Label
 var _npc_faction: HBoxContainer
@@ -140,16 +143,39 @@ const PROLOGUE_ONLY_FACILITIES := ["city_guild", "city_exam", "city_residence"]
 ## 无剧情场景的港口使用的通用设施。卡序与泉州/兴化港卡一致（九卡），
 ## 避免博多缺行会行情或寺观勘见。
 const GENERIC_FACILITIES := [
-	{"id": "city_shipyard", "title": "船屋", "subtitle": "修船・补给・船行"},
-	{"id": "city_guild", "title": "行会", "subtitle": "行情・信用"},
-	{"id": "city_tavern", "title": "酒馆", "subtitle": "打听消息"},
-	{"id": "city_market", "title": "牙行", "subtitle": "货殖交易"},
+	{"id": "city_shipyard", "title": "船屋", "subtitle": "修舱・上水・雇手"},
+	{"id": "city_guild", "title": "行会", "subtitle": "议价・立籍"},
+	{"id": "city_tavern", "title": "酒馆", "subtitle": "闻讯・募人"},
+	{"id": "city_market", "title": "牙行", "subtitle": "过秤・买卖"},
 	{"id": "city_inn", "title": "旅店", "subtitle": "歇息・候风"},
 	{"id": "city_exam", "title": "贡院", "subtitle": "誊录・观礼"},
 	{"id": "city_residence", "title": "住宅", "subtitle": "账本・歇息"},
 	{"id": "city_temple", "title": "寺观", "subtitle": "勘见・拓碑"},
 	{"id": "city_yamen", "title": "市舶司", "subtitle": "验引・抽解"},
 ]
+
+## 岸门悬停提示：论文纪实短注，不写「点击进入」类 UI 腔。key 去 city_ 前缀。
+const DOOR_TIP := {
+	"market": "牙人过秤开票。市舶抽解另计。",
+	"guild": "会馆议价、立会籍。入行另有会费。",
+	"tavern": "酒桌边听市井动静，也可雇水手。",
+	"shipyard": "坞上修舱、上水、雇手。船开不出去时必开此门。",
+	"inn": "借宿候风。日数照过。",
+	"exam": "贡院誊录与观礼。兴化、泉州可赴试。",
+	"residence": "下处歇息，翻看账册。",
+	"temple": "寺观细看遗迹，可拓碑。",
+	"yamen": "市舶司验引、抽解。违禁货过不了关。",
+	"siege_muster": "衙门募兵。石手军听调。",
+	"siege_grain": "市集屯粮。粮即守城日。",
+	"siege_wall": "船屋料改修城墙。",
+	"siege_envoy": "城下使者求见。",
+	"siege_nangshan": "南山下设伏。",
+	"siege_nunnery": "福州尼寺。母亲与璥儿在那里。",
+	"special_hanjiang_escape": "涵江海口旧避风澳。",
+	"special_resign_1275": "临安辞呈批语。",
+	"special_yashan": "崖山。宋军船阵相连。",
+	"special_gangshou_end": "市舶司新册。封面换了，名字还在。",
+}
 
 
 func _ready() -> void:
@@ -863,6 +889,7 @@ func _on_rewatch_opening() -> void:
 
 ## 人物志：一层浮页盖在当前画面上（港口页底、标题页进）。focus_id 非空直接开此人详页。不入存档。
 func _open_codex(focus_id := "") -> void:
+	_close_companion_preview()
 	_close_ledger()
 	_dismiss_banner()
 	_close_chars_wire()
@@ -879,6 +906,7 @@ func _open_codex(focus_id := "") -> void:
 
 ## chars 线：岸上名册浮页（CharRoster + CharPortraitPanel）。与人物志互斥；不入存档。
 func _open_chars_wire(focus_id := "") -> void:
+	_close_companion_preview()
 	_close_ledger()
 	_dismiss_banner()
 	_close_vision_stage()
@@ -899,8 +927,41 @@ func _close_chars_wire() -> void:
 		_chars_wire.call("close_overlay")
 
 
+## Lane Z3：伙伴草案预览浮页（只读剪影六卡）。F7 开关；不入存档、不接招募。
+func _toggle_companion_preview() -> void:
+	if is_instance_valid(_companion_preview) and not bool(_companion_preview.get("_closing")):
+		_close_companion_preview()
+		return
+	_open_companion_preview()
+
+
+func _open_companion_preview() -> void:
+	_close_ledger()
+	_dismiss_banner()
+	_close_chars_wire()
+	_close_vision_stage()
+	if is_instance_valid(_codex) and not bool(_codex.get("_closing")):
+		_codex.call("close_codex")
+	if is_instance_valid(_companion_preview) and not bool(_companion_preview.get("_closing")):
+		return
+	var ov: Control = _COMPANION_PREVIEW.new()
+	add_child(ov)
+	ov.call("begin")
+	_companion_preview = ov
+	ov.tree_exited.connect(func() -> void:
+		if _companion_preview == ov:
+			_companion_preview = null
+	)
+
+
+func _close_companion_preview() -> void:
+	if is_instance_valid(_companion_preview) and not bool(_companion_preview.get("_closing")):
+		_companion_preview.call("close_overlay")
+
+
 ## Lane L：叠一层 VisionStage（立绘裱框 + 海战定格）。Esc/B 离开；不入存档、不过日子。
 func _open_vision_stage() -> void:
+	_close_companion_preview()
 	_close_ledger()
 	_dismiss_banner()
 	_close_chars_wire()
@@ -3920,6 +3981,14 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	btn.flat = true
 	btn.set_anchors_preset(Control.PRESET_FULL_RECT)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var tip_key := str(fac.get("id", "")).replace("city_", "")
+	var tip := str(DOOR_TIP.get(tip_key, ""))
+	if tip == "":
+		var sub := str(fac.get("subtitle", "")).strip_edges()
+		tip = ("%s　%s" % [str(fac.get("title", "去处")), sub]).strip_edges() if sub != "" else str(fac.get("title", "去处"))
+	if pinned_yard:
+		tip = "船还开不出去。\n" + tip
+	btn.tooltip_text = tip
 	var empty := StyleBoxEmpty.new()
 	btn.add_theme_stylebox_override("normal", empty)
 	btn.add_theme_stylebox_override("hover", empty)
@@ -3969,9 +4038,16 @@ func _door_watermark(fac: Dictionary) -> Control:
 func _make_shore_shut(fac: Dictionary) -> Button:
 	var btn := Button.new()
 	btn.text = str(fac.get("title", "去处"))
-	btn.custom_minimum_size = Vector2(108, 36)
+	# 热区 ≥64×32（美术规范小钮）；关着的门略宽一点，字不挤
+	btn.custom_minimum_size = Vector2(120, 36)
 	btn.set_meta("shore_shut", true)
 	btn.pressed.connect(_on_shore_shut)
+	var tip_key := str(fac.get("id", "")).replace("city_", "")
+	var open_tip := str(DOOR_TIP.get(tip_key, str(fac.get("subtitle", ""))))
+	if open_tip != "":
+		btn.tooltip_text = "今日未开。再候一日，门或另换。\n%s" % open_tip
+	else:
+		btn.tooltip_text = "今日未开。再候一日，门或另换。"
 	UiTheme.style_button(btn, false)
 	var shut_box := UiTheme.shore_shut()
 	btn.add_theme_stylebox_override("normal", shut_box)
@@ -3985,7 +4061,7 @@ func _make_shore_shut(fac: Dictionary) -> Button:
 
 
 func _on_shore_shut() -> void:
-	log_msg("今日这处没开门。")
+	log_msg("今日此门未开。")
 	update_status_panel()
 
 
@@ -4465,7 +4541,7 @@ func _on_facility_pressed(fac: Dictionary) -> void:
 		_on_siege_card(raw_id)
 		return
 	if raw_id.begins_with("city_") and raw_id not in shore_hand:
-		log_msg("今日这处没开门。")
+		log_msg("今日此门未开。")
 		update_status_panel()
 		return
 	var target_scene = raw_id
@@ -4758,6 +4834,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_F9:
 			# Lane N：岸上预览接舷题签（不入存档、不改舰队）
 			_COMBAT_SHORE.preview_boarding(self, true)
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_F7:
+			# Lane Z3：伙伴草案预览浮页（只读剪影卡；再按关闭）
+			_toggle_companion_preview()
 			get_viewport().set_input_as_handled()
 		elif event.keycode == KEY_F8:
 			# Lane L：岸上叠 VisionStage（立绘裱框）；Esc/B 离开

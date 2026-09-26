@@ -33,6 +33,8 @@ const SCRIPTS := [
 	"res://tools/qa_drydock_probe.gd",
 	"res://tools/qa_voyage_status_probe.gd",
 	"res://tools/qa_port_doors_probe.gd",
+	# Lane Z3 伙伴草案预览浮页
+	"res://scripts/companions/CompanionPreview.gd", "res://tools/qa_companion_preview_screenshots.gd",
 	# Lane A 观感展示台（独立场景）
 	"res://scripts/ui/VisionStage.gd", "res://tools/qa_wire_vision_screenshots.gd",
 	"res://scripts/ui/CombatLetterbox.gd",
