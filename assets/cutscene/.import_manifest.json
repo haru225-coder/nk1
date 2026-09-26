@@ -117,7 +117,8 @@
    1008
   ],
   "note": "泉州蒲氏的船：蕃坊、礼拜塔与番商",
-  "out_sha1": "d74563de7475827ba3ac73c8880149bc9a0eb5be"
+  "out_sha1": "d9e80fc60924361be95cb171661190e9ab4cdbe7",
+  "post": "fix_cs_qinghua.py --only quanzhou_fanfang --in-place"
  },
  "cs_citywall_sunset.jpg": {
   "digest": "3a73ef0ec0925b0a",
@@ -220,7 +221,8 @@
    1672,
    941
   ],
-  "out_sha1": "3d29d8603eb3b2de486440ffa57f417b73e7e876",
-  "note": "章末了结·账上的距离第 2 镜「只有进出清楚的货，和脚钱」：货栈账房，麻包、算盘、摊开的账册（仓库内 bg_gpt_1.png，游戏未引用；镜头压在案面与货堆，避开左侧青花罐与上方匾额字）"
+  "out_sha1": "7e89f825725deed385ab94d390083d75110f60e2",
+  "note": "章末了结·账上的距离第 2 镜「只有进出清楚的货，和脚钱」：货栈账房，麻包、算盘、摊开的账册（仓库内 bg_gpt_1.png，游戏未引用；镜头压在案面与货堆，避开左侧青花罐与上方匾额字）",
+  "post": "fix_cs_qinghua.py --only counting_house --in-place"
  }
 }
