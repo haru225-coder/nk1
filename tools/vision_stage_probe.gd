@@ -11,6 +11,10 @@ func _init() -> void:
 	call_deferred("_run")
 
 
+var _saved: Array = []
+var _fails: Array = []
+
+
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
@@ -35,15 +39,34 @@ func _run() -> void:
 	for _i in 30:
 		await process_frame
 	_shot("02_vision_stage_hold.png")
-	print("vision_stage_probe OK frames=%d ready=%s -> %s" % [frames, flag[0], OUT_DIR])
-	quit(0)
+	# 截图探针：空视口/零截图必须失败（与 headless 契约探针区分）。
+	if _saved.size() < 2:
+		_fails.append("期望 2 张截图，实得 %d（headless 空视口？请用 DISPLAY 跑）" % _saved.size())
+	if _fails.is_empty():
+		print("vision_stage_probe OK frames=%d ready=%s shots=%d -> %s" % [frames, flag[0], _saved.size(), OUT_DIR])
+		quit(0)
+	else:
+		for f in _fails:
+			print("  ✗ ", f)
+		print("vision_stage_probe FAIL %d" % _fails.size())
+		quit(1)
 
 
 func _shot(name: String) -> void:
-	var img: Image = root.get_texture().get_image()
+	var tex = root.get_texture()
+	if tex == null:
+		_fails.append("no viewport texture for %s" % name)
+		push_error("no viewport texture for %s" % name)
+		return
+	var img: Image = tex.get_image()
 	if img == null:
+		_fails.append("no viewport image for %s" % name)
 		push_error("no viewport image for %s" % name)
 		return
 	var path := "%s/%s" % [OUT_DIR, name]
 	var err := img.save_png(path)
 	print("shot %s err=%d" % [path, err])
+	if err != OK:
+		_fails.append("save failed %s (%d)" % [path, err])
+	else:
+		_saved.append(path)

@@ -2494,16 +2494,32 @@ func _on_hire_crew(ship_index: int, hire_n: int, hire_cost: int) -> void:
 
 
 func _on_upgrade(ship_index: int, kind: String, cost: int) -> void:
-	if not GameState.spend_money(cost):
+	if GameState.money < cost:
 		log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
-	elif kind == "armor":
-		Fleet.upgrade_armor(ship_index)
-		var s: Dictionary = Fleet.ships[ship_index]
-		log_msg("「%s」加厚了船壳，甲升至%s。" % [s.get("name", "船"), _fit_rank(Fleet.armor_level(ship_index))])
+		load_scene(current_scene_id)
+		return
+	var ok := false
+	if kind == "armor":
+		ok = Fleet.upgrade_armor(ship_index)
+		if ok and GameState.spend_money(cost):
+			var s: Dictionary = Fleet.ships[ship_index]
+			log_msg("「%s」加厚了船壳，甲升至%s。" % [s.get("name", "船"), _fit_rank(Fleet.armor_level(ship_index))])
+		elif ok:
+			# 钱在回调前被别处花掉：回滚等级，避免白升
+			Fleet.ships[ship_index]["armor_level"] = Fleet.armor_level(ship_index) - 1
+			log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
+		else:
+			log_msg("【满级】甲已无可再加。")
 	else:
-		Fleet.upgrade_sail(ship_index)
-		var s2: Dictionary = Fleet.ships[ship_index]
-		log_msg("「%s」换了新帆，帆升至%s。" % [s2.get("name", "船"), _fit_rank(Fleet.sail_level(ship_index))])
+		ok = Fleet.upgrade_sail(ship_index)
+		if ok and GameState.spend_money(cost):
+			var s2: Dictionary = Fleet.ships[ship_index]
+			log_msg("「%s」换了新帆，帆升至%s。" % [s2.get("name", "船"), _fit_rank(Fleet.sail_level(ship_index))])
+		elif ok:
+			Fleet.ships[ship_index]["sail_level"] = Fleet.sail_level(ship_index) - 1
+			log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
+		else:
+			log_msg("【满级】帆已无可再换。")
 	load_scene(current_scene_id)
 
 
@@ -2997,6 +3013,8 @@ func _exam_sat_flag() -> String:
 
 
 ## 赴试：只兴化、泉州，每章一次，费 15 日。不发钱、不跳章、不改船。
+## 身份相关旗标/倾向必须写在 advance_days 之前：三月下旬赴试会跨入四月，
+## 月初 _settle_history 会按 exam_sat 与倾向锁 1268 身份。
 func _on_exam_sit(port_id: String) -> void:
 	if not EXAM_SIT_PORTS.has(port_id):
 		log_msg("【贡院】本港无贡院科场，赴试只在兴化、泉州。")
@@ -3006,7 +3024,6 @@ func _on_exam_sit(port_id: String) -> void:
 		log_msg("【贡院】本章已赴过试，下一章再来。")
 		return
 	GameState.set_flag(chapter_flag)
-	GameManager.advance_days(EXAM_SIT_DAYS)
 	var res: Dictionary
 	var line := ""
 	if GameState.scholar_tendency >= GameState.sea_tendency:
@@ -3020,6 +3037,7 @@ func _on_exam_sit(port_id: String) -> void:
 		line = "策论写着写着成了海路账。名声加 1，海路倾向 %d。" % GameState.sea_tendency
 	if res.get("promoted", false):
 		line += "市舶司案册改题「%s」。" % str(res.get("title", {}).get("name", ""))
+	GameManager.advance_days(EXAM_SIT_DAYS)
 	log_msg("【赴试】在贡院坐了 %d 日。%s如今是 %s。" % [
 		EXAM_SIT_DAYS, line, Calendar.get_date_string(),
 	])

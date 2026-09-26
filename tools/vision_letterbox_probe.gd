@@ -141,6 +141,9 @@ func _expect(ok: bool, msg: String) -> void:
 func _report() -> void:
 	for p in _saved:
 		print("  shot ", p)
+	# headless 契约探针允许 shots=0；有窗口路径若零截图则失败。
+	if not Kit.is_headless() and _saved.is_empty() and _fails.is_empty():
+		_fails.append("有窗口路径未产出截图")
 	if _fails.is_empty():
 		print("VISION_LETTERBOX_PROBE_OK shots=%d" % _saved.size())
 		quit(0)

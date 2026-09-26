@@ -1817,6 +1817,12 @@ elif sit_body.find('set_flag("exam_sat")') > sit_body.find("else:"):
     problems.append("exam_sat 分支错")
 else:
     print("  ✓ 赴试每章一次、费 15 日；学者不输海路记 exam_sat")
+# 身份相关写入必须早于 advance_days：三月下旬赴试会跨入四月触发 _settle_history。
+if 0 <= sit_body.find('set_flag("exam_sat")') < sit_body.find("advance_days(EXAM_SIT_DAYS)"):
+    print("  ✓ 赴试先写 exam_sat 再 advance_days（跨月身份结算）")
+else:
+    print("  ✗ 赴试 exam_sat 写在 advance_days 之后（跨月会先锁身份）")
+    problems.append("赴试跨月身份时序")
 # 赴试只兴化、泉州（P7 §贡院）。city_exam 在通用九卡里，每港都进得了 {港}_exam，须在工席与处理函数两头拦。
 sit_ports = re.search(r"const EXAM_SIT_PORTS\s*:=\s*\[(.*?)\]", main_src, re.S)
 exam_setup = _p7_code(p7_bodies.get("_setup_exam", ""))
@@ -2429,6 +2435,27 @@ if "_harden_state(state)" in _load_body and "GameState.from_dict" in _load_body:
 else:
     print("  ✗ load_game 未在读回前清洗状态")
     problems.append("load_game 未清洗状态")
+# 顶层分区须 Dictionary 兜底，避免坏档 String 传入 from_dict 触发类型错误。
+if (
+    "_as_dict" in _saveload_src
+    and all(tok in _load_body for tok in (
+        'Calendar.from_dict(_as_dict(',
+        'Economy.from_dict(_as_dict(',
+        'Fleet.from_dict(_as_dict(',
+        'Crew.from_dict(_as_dict(',
+    ))
+):
+    print("  ✓ load_game 对 calendar/economy/fleet/crew 做 Dictionary 兜底")
+else:
+    print("  ✗ load_game 分区未做 Dictionary 兜底")
+    problems.append("load_game 分区未类型兜底")
+# save_label 须走 _read_slot（正式档坏了读 .bak），不得只开正式档。
+_label_body = _code_only(_saveload_fn.get("save_label", ""))
+if "_read_slot(slot)" in _label_body:
+    print("  ✓ save_label 经 _read_slot（含 .bak 回退）")
+else:
+    print("  ✗ save_label 未走 _read_slot")
+    problems.append("save_label 未走 _read_slot")
 if (
     all(token in _flags_body for token in ("TYPE_DICTIONARY", "TYPE_BOOL", "not raw.get(key)"))
     and all(token in _saveload_src for token in (

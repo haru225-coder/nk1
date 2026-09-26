@@ -162,17 +162,21 @@ func _read_slot(slot: int) -> Dictionary:
 	return data
 
 
+func _as_dict(raw) -> Dictionary:
+	return raw if typeof(raw) == TYPE_DICTIONARY else {}
+
+
 func load_game(slot: int) -> bool:
 	var data := _read_slot(slot)
 	if data.is_empty():
 		return false
 
-	Calendar.from_dict(data.get("calendar", {}))
-	Economy.from_dict(data.get("economy", {}))
-	Fleet.from_dict(data.get("fleet", {}))
-	Crew.from_dict(data.get("crew", {}))
-	var raw_state = data.get("state", {})
-	var state: Dictionary = raw_state if typeof(raw_state) == TYPE_DICTIONARY else {}
+	# 坏档分区可能是字符串/数组；from_dict 要 Dictionary，缺省用空表兜底。
+	Calendar.from_dict(_as_dict(data.get("calendar", {})))
+	Economy.from_dict(_as_dict(data.get("economy", {})))
+	Fleet.from_dict(_as_dict(data.get("fleet", {})))
+	Crew.from_dict(_as_dict(data.get("crew", {})))
+	var state: Dictionary = _as_dict(data.get("state", {}))
 	GameState.from_dict(_harden_state(state))
 	return true
 
@@ -184,9 +188,9 @@ func saved_scene(slot: int) -> String:
 func save_label(slot: int) -> String:
 	if not has_save(slot):
 		return "未记"
-	var f := FileAccess.open(_path(slot), FileAccess.READ)
-	var json := JSON.new()
-	if json.parse(f.get_as_text()) != OK:
+	# 与 has_save / load_game 一致：正式档坏了读 .bak，避免空 FileAccess 崩日志页。
+	var data := _read_slot(slot)
+	if data.is_empty():
 		return "卷页损了"
-	return json.data.get("label", "未题")
+	return str(data.get("label", "未题"))
 

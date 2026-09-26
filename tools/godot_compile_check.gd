@@ -38,9 +38,18 @@ const SCRIPTS := [
 	"res://tools/art/portrait_svg/PortraitWall.gd", "res://tools/art/ShotTour.gd",
 ]
 
+## 关键场景：脚本门禁通过后仍可能因 ext_resource 解析失败而坏档。
+const SCENES := [
+	"res://scenes/Main.tscn",
+	"res://scenes/WorldMap.tscn",
+	"res://scenes/Cannonball.tscn",
+]
+
+
 func _initialize() -> void:
 	print("COMPILE_CHECK autoload GameManager present: ", root.get_node_or_null("GameManager") != null)
 	var bad := 0
+	var total := SCRIPTS.size() + SCENES.size()
 	for p in SCRIPTS:
 		var s = load(p)
 		if s == null:
@@ -51,5 +60,23 @@ func _initialize() -> void:
 		print("COMPILE_CHECK ", "OK   " if ok else "FAIL ", p)
 		if not ok:
 			bad += 1
-	print("COMPILE_CHECK SUMMARY bad=", bad, "/", SCRIPTS.size())
+	for sp in SCENES:
+		# 场景解析错误时 load 可能仍返回 PackedScene；再 instantiate 抓坏挂接。
+		var packed = load(sp)
+		if packed == null or not (packed is PackedScene):
+			print("COMPILE_CHECK FAIL scene-load ", sp)
+			bad += 1
+			continue
+		if not packed.can_instantiate():
+			print("COMPILE_CHECK FAIL scene-cant ", sp)
+			bad += 1
+			continue
+		var node = packed.instantiate()
+		if node == null:
+			print("COMPILE_CHECK FAIL scene-inst ", sp)
+			bad += 1
+			continue
+		print("COMPILE_CHECK OK   ", sp)
+		node.free()
+	print("COMPILE_CHECK SUMMARY bad=", bad, "/", total)
 	quit(1 if bad > 0 else 0)
