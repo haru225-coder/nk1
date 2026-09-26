@@ -356,6 +356,17 @@ for sid, keep in PROLOGUE_HISTORY_KEEP.items():
         hit = PROLOGUE_HISTORY_OLD.search(v)
         check(hit is None, f"scenes.json {sid} 回退到史实校勘前写法「{hit.group(0) if hit else ''}」")
 
+# 序章长文去现代腔（Q5）：开卷、四方沙盘、酒棚各幕与旧 prologue_* 长文（含 deprecated，防复活时带回）
+# 不得再写「新大陆 / 崭新大陆 / 历史车轮 / 绞索 / 注定要砸下来的孤城」，开局是三月春雷，不得出现小暑。
+PROLOGUE_MODERN = re.compile(r"新大陆|历史车轮|绞索|注定要砸|小暑")
+for s in scenes:
+    sid = str(s.get("id", ""))
+    if not (s.get("chapter") == "prologue" or sid.startswith(("cg_", "prologue_")) or sid == "start"):
+        continue
+    for k, v in list(_scene_texts(s)) + [("objective", s.get("objective") or "")]:
+        hit = PROLOGUE_MODERN.search(v)
+        check(hit is None, f"scenes.json {sid}.{k} 序章现代腔 / 开局季节矛盾「{hit.group(0) if hit else ''}」")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:
