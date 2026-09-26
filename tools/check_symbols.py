@@ -1881,6 +1881,18 @@ elif not all("play_transition(" in b and "load_scene.bind(current_scene_id)" in 
     problems.append("工席过渡未接钩子")
 else:
     print("  ✓ 入行 / 赴试成功走 play_transition（全黑时 load_scene；headless 当帧直通）")
+# 序章开卷 / 入酒棚纪实题签（Lane O）：题名与朱印「序」锁在 UiTransition；Main 钩子走 play_transition。
+_start_body = _p7_code(p7_bodies.get("_on_start_game_pressed", ""))
+if ("prologue_open_title" not in ut_src or "序章・卷首" not in ut_src
+        or "prologue_shore_title" not in ut_src or "序章・兴化海口" not in ut_src):
+    print("  ✗ UiTransition 缺序章・卷首 / 序章・兴化海口题签助手")
+    problems.append("序章题签助手缺失")
+elif ("prologue_open_title()" not in _start_body or "prologue_shore_title()" not in _start_body
+        or "play_transition(" not in _start_body or 'begins_with("cg_narrate")' not in _start_body):
+    print("  ✗ 开卷 / 入酒棚未接序章题签 play_transition")
+    problems.append("序章题签未接钩子")
+else:
+    print("  ✓ 开卷 / 入酒棚走序章纪实题签（play_transition；headless 直通）")
 if all(s in main_src for s in (
     '"_guild"', '"_exam"', '"_residence"', '"_temple"',
     "bg_quanzhou_ledger.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",

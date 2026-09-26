@@ -67,6 +67,24 @@ static func port_arrive(parent: Node, port_name: String, subtitle := "",
 	return play(parent, port_title(port_name), subtitle, on_black, "泊")
 
 
+## 序章题签：只写可核对的位置——卷首（标题→四方沙盘）与兴化海口（沙盘末→酒棚）。
+## 年号/日期由调用方从 Calendar 传入；朱印用「序」。不动分支图。
+static func prologue_open_title() -> String:
+	return "序章・卷首"
+
+
+static func prologue_shore_title() -> String:
+	return "序章・兴化海口"
+
+
+static func prologue_open(parent: Node, subtitle := "", on_black := Callable()) -> CanvasLayer:
+	return play(parent, prologue_open_title(), subtitle, on_black, "序")
+
+
+static func prologue_shore(parent: Node, subtitle := "", on_black := Callable()) -> CanvasLayer:
+	return play(parent, prologue_shore_title(), subtitle, on_black, "序")
+
+
 static func _cn_small(n: int) -> String:
 	var digits := ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
 	if n < 10:
