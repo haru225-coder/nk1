@@ -42,6 +42,8 @@ var event_text: RichTextLabel
 var event_actions: VBoxContainer
 var _strip_line: RichTextLabel
 var _condition_layer: Control
+var _event_tween: Tween
+var _condition_tween: Tween
 var _latest_note := ""
 ## 逐日推进时船标在图上走的秒数；按住空格加速。serial 用来作废回港后仍在等的协程。
 const DAY_SECONDS := 0.42
@@ -107,6 +109,9 @@ func _toggle_deck() -> void:
 			c.visible = not _deck_hidden
 	if _deck_hint:
 		_deck_hint.visible = _deck_hidden
+	# Visibility changes resize the exposed map band on the next layout pass.
+	# Re-push after that pass so the camera never leaves the ship under the deck.
+	call_deferred("_push_view_inset")
 
 
 # ══════════════════════════════════════════════════════
@@ -628,11 +633,19 @@ func _toggle_condition() -> void:
 		_close_condition()
 		return
 	_condition_layer.visible = true
+	_condition_layer.modulate.a = 0.0
 	move_child(_condition_layer, get_child_count() - 1)
+	if _condition_tween and _condition_tween.is_valid():
+		_condition_tween.kill()
+	_condition_tween = create_tween()
+	_condition_tween.tween_property(_condition_layer, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 func _close_condition() -> void:
 	if _condition_layer != null:
+		if _condition_tween and _condition_tween.is_valid():
+			_condition_tween.kill()
+		_condition_layer.modulate.a = 1.0
 		_condition_layer.visible = false
 
 
@@ -646,6 +659,11 @@ func _on_condition_dim(event: InputEvent) -> void:
 func _open_event_panel() -> void:
 	_close_condition()
 	event_panel.visible = true
+	event_panel.modulate.a = 0.0
+	if _event_tween and _event_tween.is_valid():
+		_event_tween.kill()
+	_event_tween = create_tween()
+	_event_tween.tween_property(event_panel, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 func _monsoon_short() -> String:
@@ -972,6 +990,15 @@ func _make_heading_card(pid: String) -> Control:
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 		hit.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	hit.pressed.connect(_select_heading.bind(pid))
+	# A quiet lift on hover makes the three route slips feel tactile without
+	# changing their layout or adding a modern glow to the paper palette.
+	hit.mouse_entered.connect(func():
+		if not sailing:
+			panel.modulate = Color(1.08, 1.08, 1.08, 1.0)
+	)
+	hit.mouse_exited.connect(func():
+		panel.modulate = Color.WHITE
+	)
 	wrap.add_child(hit)
 	if sailing:
 		wrap.modulate = Color(1, 1, 1, 0.45)
