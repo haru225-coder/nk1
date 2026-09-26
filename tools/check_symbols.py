@@ -2620,6 +2620,33 @@ else:
     print("  ✗ 缺 qa_wire_vision_screenshots.gd")
     problems.append("缺 wire 截图探针")
 
+# Lane Q：酒馆新闻墙 / 市井札薄
+_tnw_path = os.path.join(ROOT, "scripts", "ui", "TavernNewsWall.gd")
+_tnw = open(_tnw_path, encoding="utf-8").read() if os.path.isfile(_tnw_path) else ""
+if not _tnw:
+    print("  ✗ 缺 TavernNewsWall.gd")
+    problems.append("缺 TavernNewsWall.gd")
+elif "func mount" not in _tnw or "recent_news" not in _tnw or "paper_card" not in _tnw:
+    print("  ✗ TavernNewsWall 未暴露 mount / recent_news / paper_card")
+    problems.append("TavernNewsWall 契约不全")
+else:
+    print("  ✓ _TAVERN_NEWS_WALL.mount + recent_news + paper_card")
+if "_TAVERN_NEWS_WALL.mount" not in main_src or "_setup_news_wall" not in main_src:
+    print("  ✗ Main 未薄调 _TAVERN_NEWS_WALL.mount（_setup_news_wall）")
+    problems.append("Main 未接 TavernNewsWall")
+else:
+    print("  ✓ Main._setup_news_wall → _TAVERN_NEWS_WALL.mount")
+_tnw_probe = os.path.join(ROOT, "tools", "qa_tavern_news_wall_screenshots.gd")
+if os.path.isfile(_tnw_probe):
+    print("  ✓ tools/qa_tavern_news_wall_screenshots.gd 存在")
+else:
+    print("  ✗ 缺 qa_tavern_news_wall_screenshots.gd")
+    problems.append("缺 tavern 截图探针")
+for bad in ("惊艳", "沉浸", "打造", "视觉盛宴"):
+    if bad in _tnw:
+        print(f"  ✗ 酒馆墙文案回潮：{bad}")
+        problems.append(f"酒馆墙文案回潮:{bad}")
+
 print()
 print()
 print("=" * 68)

@@ -153,8 +153,15 @@ _gm = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").re
 _gs = open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read()
 check("【酒馆传闻】" in _gm, "GameManager 投放新闻须用【酒馆传闻】前缀（空 speaker）")
 check("传闻约卖" in _gs and "func rumor_label" in _gs, "GameState.rumor_label 须保留「传闻约卖」上屏标签")
-check("recent_news" in main_src and "_setup_news_wall" in main_src,
-      "酒馆须接 recent_news 上墙（Main._setup_news_wall）")
+check("_setup_news_wall" in main_src and "_TAVERN_NEWS_WALL" in main_src,
+      "酒馆须接新闻墙上墙（Main._setup_news_wall → _TAVERN_NEWS_WALL）")
+_tnw_path = os.path.join(ROOT, "scripts", "ui", "TavernNewsWall.gd")
+check(os.path.isfile(_tnw_path), "缺 scripts/ui/TavernNewsWall.gd（市井札薄）")
+if os.path.isfile(_tnw_path):
+    _tnw = open(_tnw_path, encoding="utf-8").read()
+    check("paper_card" in _tnw and "recent_news" in _tnw and "news_text" in _tnw,
+          "TavernNewsWall 须用 paper_card 渲 recent_news/news_text")
+    check("_TAVERN_NEWS_WALL.mount" in main_src, "Main._setup_news_wall 须调 _TAVERN_NEWS_WALL.mount")
 
 # ── npcs.json ─────────────────────────────────────────
 npcs = load("npcs.json")["npcs"]

@@ -33,6 +33,9 @@ const SCRIPTS := [
 	# Lane A 观感展示台（独立场景）
 	"res://scripts/ui/VisionStage.gd", "res://tools/qa_wire_vision_screenshots.gd",
 	"res://scripts/ui/CombatLetterbox.gd",
+	# Lane G/Q 酒馆设施纸笺与新闻墙
+	"res://scripts/ui/TavernFacilitySlip.gd", "res://scripts/ui/TavernFacilityPreview.gd",
+	"res://scripts/ui/TavernNewsWall.gd", "res://tools/qa_tavern_news_wall_screenshots.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",

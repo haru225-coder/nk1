@@ -100,6 +100,8 @@ const _CHARS_WIRE := preload("res://scripts/chars/CharsShoreOverlay.gd")
 const _COMBAT_SHORE := preload("res://scripts/combat/CombatShoreHook.gd")
 ## Lane L：观感展示台薄接入（岸带「市舶纪事」/ 调试 F8；叠层，不入存档）
 const _VISION_STAGE := preload("res://scenes/vision/VisionStage.tscn")
+## Lane Q：酒馆墙上市井札薄（宣纸条；无新闻不上墙）
+const _TAVERN_NEWS_WALL := preload("res://scripts/ui/TavernNewsWall.gd")
 ## 酒馆人物卡上的小立绘（逻辑像素，4:5）
 const HIRE_PIC := Vector2i(84, 105)
 ## 船籍簿职事列表的小头像
@@ -2678,23 +2680,9 @@ func _setup_tavern(port_id: String) -> void:
 	choices_label.visible = false
 
 
-## 酒馆墙上：最近投放的新闻（GameState.recent_news），新的在前。无则不上墙。
+## 酒馆墙上：市井札薄（_TAVERN_NEWS_WALL）。最近投放新闻，新的在前；无则不上墙。
 func _setup_news_wall() -> void:
-	var wall: Array = GameState.recent_news(3)
-	if wall.is_empty():
-		return
-	var sep := Label.new()
-	sep.text = "墙上"
-	UiTheme.style_section_label(sep)
-	choices_container.add_child(sep)
-	for n in wall:
-		var speaker := str(n.get("speaker", ""))
-		var prefix := "酒馆传闻" if speaker == "" else speaker
-		var line := Label.new()
-		line.text = "【%s】%s" % [prefix, GameState.news_text(n)]
-		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		UiTheme.style_footnote(line)
-		choices_container.add_child(line)
+	_TAVERN_NEWS_WALL.mount(choices_container, 3)
 
 
 func _setup_story_hooks(port_id: String) -> void:
