@@ -10,6 +10,7 @@ extends CharacterBody2D
 
 var target: Node2D = null
 var cannonball_scene = preload("res://scenes/Cannonball.tscn")
+const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
 
 var fire_timer: float = 0.0
 
@@ -81,6 +82,7 @@ func _process_firing(delta: float, angle_diff: float, dist: float) -> void:
 		var side_dir = Vector2.RIGHT.rotated(rotation)
 		if angle_diff < 0: side_dir = Vector2.LEFT.rotated(rotation)
 		
+		_AUDIO.combat_fire(get_parent())
 		for i in range(cannon_count):
 			var cb = cannonball_scene.instantiate()
 			cb.position = position + ship_dir * (i - (cannon_count - 1) * 0.5) * 20 + side_dir * 30

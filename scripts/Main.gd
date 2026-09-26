@@ -81,6 +81,7 @@ const _CS_BACKDROP := preload("res://scripts/cutscene/LivingBackdrop.gd")
 const _TITLE_STAGE := preload("res://scripts/cutscene/TitleStage.gd")
 ## 工席成功态的短过渡（淡入墨幕 + 题签 + 淡出），见 play_transition
 const _UI_TRANSITION := preload("res://scripts/ui/UiTransition.gd")
+const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
 ## 活背景幅度：比引擎默认再收一档（正文底下的画不能晃得人头晕）
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
@@ -2929,6 +2930,7 @@ func _on_guild_join(port_id: String) -> void:
 ## at_black 在全黑时调（通常是 load_scene，页面在黑幕底下换好）；await 到过渡结束才返回。
 ## headless / -s 工具脚本 / 巡检关闭（Cinematics.live() 为假）时不演：当帧调 at_black 就返回，不 await、不延迟。
 func play_transition(title: String, subtitle := "", at_black := Callable(), seal := "") -> void:
+	_AUDIO.transition(self)
 	var node: CanvasLayer = null
 	if _CINE.live():
 		_dismiss_banner()

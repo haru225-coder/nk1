@@ -1,5 +1,7 @@
 extends Node2D
 
+const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
+
 ## 战斗结束信号：outcome 为 "win"/"lose"/"flee"，data 携带战损等结算信息
 signal battle_finished(outcome: String, data: Dictionary)
 
@@ -168,6 +170,7 @@ func _board_enemy(enemy: Node2D) -> void:
 		return
 	boarding = true
 	boarding_target = enemy
+	_AUDIO.combat_board(self)
 	enemy.set("grappled", true)  # 敌船停航停炮
 
 	var player_board := Fleet.total_crew() * Fleet.morale_factor() * Fleet.captain_power()
@@ -356,6 +359,7 @@ func _strike_lightning() -> void:
 ## 自由航行刷怪（crate / 海鸟 / 鲸影 / 野海盗）已拆除：WorldMap 只作战术层。
 func _setup_combat(pb: Dictionary) -> void:
 	combat_mode = true
+	_AUDIO.combat_start(self)
 	# 战斗专用：禁掉 PortZone 停靠出口（否则 Enter 会切回 Main 丢战斗）
 	$Ports.process_mode = Node.PROCESS_MODE_DISABLED
 	$Ports.visible = false
@@ -439,6 +443,7 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 		return
 	resolved = true
 	data["player_damage"] = player_damage
+	_AUDIO.combat_result(self, outcome)
 	battle_finished.emit(outcome, data)
 	queue_free()
 

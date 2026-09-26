@@ -24,6 +24,7 @@ var max_hp: float = 100.0
 
 var target_zoom = Vector2(1.5, 1.5)
 var cannonball_scene = preload("res://scenes/Cannonball.tscn")
+const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
 var fire_cooldown: float = 0.0
 
 func _ready() -> void:
@@ -81,6 +82,8 @@ func _fire_broadside(side: int) -> void:
 		cb.shooter = self
 		get_parent().add_child(cb)
 		
+	_AUDIO.combat_fire(get_parent())
+
 	# Recoil shake
 	camera.offset = -side_dir * 30.0
 
