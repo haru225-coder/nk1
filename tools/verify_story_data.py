@@ -367,11 +367,189 @@ for s in scenes:
         hit = PROLOGUE_MODERN.search(v)
         check(hit is None, f"scenes.json {sid}.{k} 序章现代腔 / 开局季节矛盾「{hit.group(0) if hit else ''}」")
 
+# ── 结局年号：过场 ↔ 结算册页 ↔ Calendar（Q8）───────────────
+# 「岸上的根」曾写景炎三年三月，而该卡只在 1277（景炎二年）出现。结局年号有三处镜像：cutscenes.json 过场的
+# era 字幕、Main._show_notice_dialog 的册页题头、触发该结局的 Calendar 日期闸；年号推算以 Calendar.ERAS /
+# ERA_START 为准（照 Calendar._era_row 抄）。三处任一漂移即红。忠肃 / 岸上的根 / 纲首必须在对照之列。
+cal_src = open(os.path.join(ROOT, "scripts", "core", "Calendar.gd"), encoding="utf-8").read()
+_eras_m = re.search(r"const ERAS := \[(.*?)\n\]", cal_src, re.S)
+CAL_ERAS = [(int(a), int(b), n) for a, b, n in re.findall(r'\[(\d{4}), (\d{4}), "(.+?)"\]', _eras_m.group(1))] if _eras_m else []
+_start_m = re.search(r"const ERA_START := \{(.*?)\n\}", cal_src, re.S)
+CAL_ERA_START = {n: (int(y), int(m)) for n, y, m in re.findall(r'"(.+?)": \[(\d{4}), (\d+)\]', _start_m.group(1))} if _start_m else {}
+check(len(CAL_ERAS) >= 6 and {"景炎", "祥兴", "至元"} <= set(CAL_ERA_START), "Calendar.ERAS / ERA_START 解析失败")
+_cal_y = re.search(r"var year: int = (\d{4})", cal_src)
+_cal_mo = re.search(r"var month: int = (\d+)", cal_src)
+
+
+def cal_era(year, month):
+    """Calendar._era_row + get_era_year 的镜像：→ (年号, 年号年数)，表外 None。"""
+    found = None
+    for e0, e1, name in CAL_ERAS:
+        sy, sm = CAL_ERA_START.get(name, (e0, 1))
+        if (year > sy or (year == sy and month >= sm)) and year <= e1:
+            found = (name, year - e0 + 1)
+    return found
+
+
+_SEASON = {"春": {1, 2, 3}, "夏": {4, 5, 6}, "秋": {7, 8, 9}, "冬": {10, 11, 12}}
+_ERA_NAMES = "|".join(sorted({e[2] for e in CAL_ERAS}, key=len, reverse=True)) or "宝祐"
+_DATE_RE = re.compile(r"(" + _ERA_NAMES + r")(?:([元一二三四五六七八九十]{1,3})年(?:(正|冬|腊|[一二三四五六七八九十]{1,2})月|([春夏秋冬]))?|年间)")
+
+
+def parse_era_date(s):
+    """「兴化・景炎元年十二月」→ {era, n, ce, months}；「至元年间」n/ce 为 None。无年号 → None。"""
+    m = _DATE_RE.search(s or "")
+    if not m:
+        return None
+    era, n, mo, season = m.groups()
+    d = {"era": era, "n": None, "ce": None, "months": set(range(1, 13)), "text": m.group(0)}
+    if n:
+        d["n"] = _cn_n(n)
+        e0 = next((e[0] for e in CAL_ERAS if e[2] == era), None)
+        d["ce"] = e0 + d["n"] - 1 if e0 is not None else None
+    if mo:
+        d["months"] = {{"正": 1, "冬": 11, "腊": 12}.get(mo) or _cn_n(mo)}
+    elif season:
+        d["months"] = set(_SEASON[season])
+    return d
+
+
+def cal_ok(d):
+    """年号年数落在 Calendar 会显示该年号的某个月里（如景炎元年须五月后、祥兴二年不得到至元）。"""
+    if d["ce"] is None:
+        return any(e[2] == d["era"] for e in CAL_ERAS)
+    return any(cal_era(d["ce"], mo) == (d["era"], d["n"]) for mo in d["months"])
+
+
+# 全部过场的 era 字幕都要是 Calendar 推得出的年号年
+cutscenes_all = load("cutscenes.json")
+era_caps = 0
+for cid, cs in cutscenes_all.get("cutscenes", {}).items():
+    for shot in cs.get("shots", []) or []:
+        for cap in shot.get("captions", []) or []:
+            if cap.get("style") != "era":
+                continue
+            d = parse_era_date(cap.get("text", ""))
+            if d:
+                era_caps += 1
+                check(cal_ok(d), f"cutscenes.{cid} 年号字幕「{cap.get('text')}」与 Calendar.ERAS 推算不符")
+check(era_caps >= 8, f"cutscenes.json 只认出 {era_caps} 条年号字幕，疑似解析失败")
+# 开场字幕 = Calendar 开局年月
+_open = next((parse_era_date(c.get("text", "")) for sh in cutscenes_all["cutscenes"].get("opening", {}).get("shots", [])
+              for c in sh.get("captions", []) if c.get("style") == "era" and parse_era_date(c.get("text", ""))), None)
+if _cal_y and _cal_mo and _open:
+    check(_open["ce"] == int(_cal_y.group(1)) and cal_era(int(_cal_y.group(1)), int(_cal_mo.group(1))) == (_open["era"], _open["n"]),
+          f"开场字幕「{_open['text']}」≠ Calendar 开局 {_cal_y.group(1)}-{_cal_mo.group(1)}")
+else:
+    check(False, "开场过场年号字幕或 Calendar 开局年月解析失败")
+
+
+def _enclosing_func(src, pos):
+    a = src.rfind("\nfunc ", 0, pos)
+    b = src.find("\nfunc ", pos)
+    return src[a:b if b >= 0 else len(src)]
+
+
+# 册页题头：_show_notice_dialog(标题, 题头, …)；标题可是 "甲" if … else "乙"，题头可是本函数里的 var head := "…"
+notice_head = {}
+for m in re.finditer(r'_show_notice_dialog\(\s*([^,\n]*?),\s*("[^"\n]*"|[A-Za-z_]\w*)\s*,', main_src):
+    titles = re.findall(r'"([^"\n]*)"', m.group(1))
+    head = m.group(2)
+    if not head.startswith('"'):
+        hv = re.search(r"var " + head + r' := "([^"\n]*)"', _enclosing_func(main_src, m.start()))
+        head = hv.group(1) if hv else ""
+    else:
+        head = head.strip('"')
+    for t in titles:
+        notice_head.setdefault(t, head)
+
+
+def _cs_eras(cid):
+    return [d for sh in cutscenes_all["cutscenes"].get(cid, {}).get("shots", []) or []
+            for c in sh.get("captions", []) or [] if c.get("style") == "era" and (d := parse_era_date(c.get("text", "")))]
+
+
+# 触发日期闸：_special_cards 各卡的 Calendar 条件；忠肃 / 未归共用兴化城破日（_check_absent_from_xinghua）
+_special = re.search(r"func _special_cards\(.*?\n(?=\nfunc |\Z)", main_src, re.S)
+_special_src = _special.group(0) if _special else ""
+
+
+def _card_gate(card):
+    chunks = _special_src.split("out.append(")
+    for i, ch in enumerate(chunks[1:], 1):
+        if ch.lstrip().startswith('{"id": ' + card):
+            return chunks[i - 1].rsplit("\n\n", 1)[-1]
+    return ""
+
+
+def _gate_from(src):
+    """→ (年下限, 年上限, 允许月份)；认 Calendar.year ==/>= N 与 Calendar.month in [...] / <= / >= N。"""
+    y = re.search(r"Calendar\.year (==|>=) (\d{4})", src)
+    if not y:
+        return None
+    lo = int(y.group(2))
+    hi = lo if y.group(1) == "==" else 99999
+    months = set(range(1, 13))
+    if (mi := re.search(r"Calendar\.month in \[([\d, ]+)\]", src)):
+        months = {int(x) for x in re.findall(r"\d+", mi.group(1))}
+    elif (ml := re.search(r"Calendar\.month (<=|>=) (\d+)", src)):
+        k = int(ml.group(2))
+        months = set(range(1, k + 1)) if ml.group(1) == "<=" else set(range(k, 13))
+    return lo, hi, months
+
+
+_absent = re.search(r"func _check_absent_from_xinghua\(.*?\n(?=\nfunc |\Z)", main_src, re.S)
+_fall_m = re.search(r"Calendar\.year == (\d{4}) and Calendar\.month >= (\d+)", _absent.group(0) if _absent else "")
+_fall_gate = (int(_fall_m.group(1)), int(_fall_m.group(1)), set(range(int(_fall_m.group(2)), 13))) if _fall_m else None
+ENDING_GATE = {
+    "忠肃": _fall_gate, "未归": _fall_gate,
+    "岸上的根": _gate_from(_card_gate("CARD_HANJIANG")),
+    "海上宋鬼": _gate_from(_card_gate("CARD_YASHAN")),
+    "纲首": _gate_from(_card_gate("CARD_GANGSHOU")),
+    "泉州蒲氏的船": _gate_from(_card_gate("CARD_GANGSHOU")),
+}
+for must in ("忠肃", "岸上的根", "纲首"):
+    check(ENDING_GATE.get(must) is not None, f"结局「{must}」的 Calendar 触发闸解析失败")
+    check(must in notice_head and must in cutscenes_all.get("endings", {}), f"结局「{must}」缺册页题头或过场，年号无从对照")
+
+def _mo(ms):
+    return "全年" if len(ms) == 12 else f"{sorted(ms)} 月"
+
+
+mirrored = 0
+for title, cid in cutscenes_all.get("endings", {}).items():
+    head = notice_head.get(title)
+    if head is None:
+        continue
+    # 过场可跨年（蒲氏的船：景炎元年冬 → 至元年间），字幕须按时序；册页题头对的是最后落定的那一年
+    cds = _cs_eras(cid)
+    ces = [d["ce"] for d in cds if d["ce"] is not None]
+    check(ces == sorted(ces), f"结局「{title}」过场 {cid} 年号字幕不按时序：{[d['text'] for d in cds]}")
+    hd, cd = parse_era_date(head), (cds[-1] if cds else None)
+    if title in ENDING_GATE:
+        check(hd is not None and hd["ce"] is not None, f"结局「{title}」册页题头「{head}」没有年号年")
+        check(cd is not None, f"结局「{title}」过场 {cid} 没有年号字幕")
+    if hd is None or cd is None:
+        continue
+    mirrored += 1
+    check(cal_ok(hd), f"结局「{title}」册页题头「{head}」与 Calendar.ERAS 推算不符")
+    # 过场 ↔ 册页：同一年号；两边都写到年数时年数相同；两边都写到月 / 季时须有交集（「冬」含十二月）
+    same = hd["era"] == cd["era"] and (hd["n"] is None or cd["n"] is None or hd["n"] == cd["n"]) \
+        and bool(hd["months"] & cd["months"])
+    check(same, f"结局「{title}」过场 {cid}「{cd['text']}」与册页题头「{hd['text']}」年号不一致")
+    gate = ENDING_GATE.get(title)
+    if gate and hd["ce"] is not None:
+        lo, hi, months = gate
+        check(lo <= hd["ce"] <= hi and bool(hd["months"] & months),
+              f"结局「{title}」题头「{hd['text']}」（{hd['ce']} 年 {_mo(hd['months'])}）落在触发闸 "
+              f"{lo}{'' if hi == lo else '+'} 年 {_mo(months)}之外")
+check(mirrored >= 5, f"结局年号只对照到 {mirrored} 个，疑似解析失败")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:
         print("FAIL:", f)
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
-print(f"scenes {len(scenes)} · news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
+print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · scenes {len(scenes)} · news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
 print("结果：全部通过")
