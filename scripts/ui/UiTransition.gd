@@ -108,6 +108,37 @@ static func endgame_open(parent: Node, port_name: String, ending_name: String, s
 	return play(parent, endgame_title(port_name, ending_name), subtitle, on_black, "终")
 
 
+## 船屋成功题签：港名・事由（修船／购入／升帆／升甲／换坞）。只写可核对事实；朱印一字。
+## 副题（日期）由调用方从 Calendar 传入。费用与门槛不经此处。
+static func drydock_title(port_name: String, act: String) -> String:
+	var port := port_name.strip_edges()
+	var action := act.strip_edges()
+	if action == "":
+		return "船屋" if port == "" else "%s・船屋" % port
+	return action if port == "" else "%s・%s" % [port, action]
+
+
+static func drydock_seal(act: String) -> String:
+	match act.strip_edges():
+		"修船":
+			return "修"
+		"购入":
+			return "购"
+		"升帆":
+			return "帆"
+		"升甲":
+			return "甲"
+		"换坞":
+			return "坞"
+		_:
+			return "船"
+
+
+static func drydock_open(parent: Node, port_name: String, act: String, subtitle := "",
+		on_black := Callable()) -> CanvasLayer:
+	return play(parent, drydock_title(port_name, act), subtitle, on_black, drydock_seal(act))
+
+
 static func _cn_small(n: int) -> String:
 	var digits := ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
 	if n < 10:

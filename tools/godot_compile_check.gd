@@ -29,7 +29,8 @@ const SCRIPTS := [
 	"res://scripts/chars/CharsShoreOverlay.gd", "res://tools/qa_chars_wire_screenshots.gd",
 	"res://tools/qa_chars_screenshots.gd",
 	# 工席成功态过渡（淡入墨幕 + 题签）
-	"res://scripts/ui/UiTransition.gd", "res://tools/qa_title_probe.gd", "res://tools/qa_siege_endgame_probe.gd",
+	"res://scripts/ui/UiTransition.gd", "res://tools/qa_title_probe.gd", "res://tools/qa_siege_endgame_probe.gd", "res://tools/qa_ending_reread_probe.gd",
+	"res://tools/qa_drydock_probe.gd",
 	# Lane A 观感展示台（独立场景）
 	"res://scripts/ui/VisionStage.gd", "res://tools/qa_wire_vision_screenshots.gd",
 	"res://scripts/ui/CombatLetterbox.gd",

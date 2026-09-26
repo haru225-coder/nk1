@@ -2327,9 +2327,28 @@ func _slip_whole(btn: Button) -> void:
 
 # ── 船屋 ────────────────────────────────────────────
 
+
+## 船屋页港名（题签用）。scene_id 形如 quanzhou_shipyard。
+func _yard_port_name() -> String:
+	var pid := current_scene_id.trim_suffix("_shipyard")
+	if pid == "" or pid == current_scene_id:
+		pid = str(GameState.last_port)
+	return GameManager.get_port_name(pid)
+
+
+## 船屋成功题签：港名・事由 + 历法日期；朱印见 UiTransition.drydock_seal。失败路径不走这里。
+func _yard_success_transition(act: String) -> void:
+	await play_transition(
+		_UI_TRANSITION.drydock_title(_yard_port_name(), act),
+		Calendar.get_date_string(),
+		load_scene.bind(current_scene_id),
+		_UI_TRANSITION.drydock_seal(act)
+	)
+
+
 func _setup_shipyard(port_id: String) -> void:
 	scene_title.text = "%s・船屋" % GameManager.get_port_name(port_id)
-	body_text.text = "坞上只搁一艘。帆和甲对着这一艘。水粮和赊贷仍在码头上。"
+	body_text.text = "坞上只搁一艘。帆和甲对着这一艘。水粮与赊贷仍在码头。"
 	var on := DrydockBerth.berth_index(Fleet.ships.size(), GameState.berth_index)
 	if GameState.berth_index != on:
 		GameState.berth_index = on
@@ -2449,7 +2468,7 @@ func _setup_shipyard(port_id: String) -> void:
 	var for_sale := DrydockBerth.sale_ids(catalog, reached)
 	if for_sale.size() > 0:
 		var sale := _slip_body()
-		_slip_title(sale, "坞外待售", "新买的船泊在外侧，不自动占坞位")
+		_slip_title(sale, "坞外待售", "新买的船泊在坞外，不自动占坞")
 		var sale_row := _slip_row(sale)
 		for sid in for_sale:
 			var offer := _yard_offer(catalog, sid)
@@ -2488,16 +2507,17 @@ func _on_berth_switch(ship_index: int) -> void:
 	GameState.berth_index = on
 	var hull: Dictionary = Fleet.ships[on]
 	log_msg("把「%s」拖上坞位。帆和甲对着这一艘。" % str(hull.get("name", "船")))
-	load_scene(current_scene_id)
+	await _yard_success_transition("换坞")
 
 
 func _on_repair_hull(cost: int) -> void:
 	if GameState.spend_money(cost):
 		Fleet.repair_all()
-		log_msg("船匠敲打了整整一日，船体修复如初。")
+		log_msg("船匠敲了一日。船体按簿修好。")
+		await _yard_success_transition("修船")
 	else:
 		log_msg("【钱不够】船匠摇摇头，把凿子收了。")
-	load_scene(current_scene_id)
+		load_scene(current_scene_id)
 
 
 func _on_hire_to_min(cost: int) -> void:
@@ -2526,10 +2546,11 @@ func _on_repay(pay: int) -> void:
 func _on_buy_ship(type_id: String, price: int) -> void:
 	if GameState.spend_money(price):
 		Fleet.add_ship(type_id)
-		log_msg("买下一条%s，泊在船坞外侧。记得雇足水手才好出海。" % Fleet.ship_def(type_id).get("name", "船"))
+		log_msg("买下一条%s，泊在坞外。水手未齐。" % Fleet.ship_def(type_id).get("name", "船"))
+		await _yard_success_transition("购入")
 	else:
-		log_msg("【钱不够】船行掌柜笑而不语。")
-	load_scene(current_scene_id)
+		log_msg("【钱不够】船行掌柜未点头。")
+		load_scene(current_scene_id)
 
 
 func _on_dismiss_crew(role_id: String) -> void:
@@ -2561,11 +2582,13 @@ func _on_upgrade(ship_index: int, kind: String, cost: int) -> void:
 		load_scene(current_scene_id)
 		return
 	var ok := false
+	var act := ""
 	if kind == "armor":
 		ok = Fleet.upgrade_armor(ship_index)
 		if ok and GameState.spend_money(cost):
 			var s: Dictionary = Fleet.ships[ship_index]
 			log_msg("「%s」加厚了船壳，甲升至%s。" % [s.get("name", "船"), _fit_rank(Fleet.armor_level(ship_index))])
+			act = "升甲"
 		elif ok:
 			# 钱在回调前被别处花掉：回滚等级，避免白升
 			Fleet.ships[ship_index]["armor_level"] = Fleet.armor_level(ship_index) - 1
@@ -2577,12 +2600,16 @@ func _on_upgrade(ship_index: int, kind: String, cost: int) -> void:
 		if ok and GameState.spend_money(cost):
 			var s2: Dictionary = Fleet.ships[ship_index]
 			log_msg("「%s」换了新帆，帆升至%s。" % [s2.get("name", "船"), _fit_rank(Fleet.sail_level(ship_index))])
+			act = "升帆"
 		elif ok:
 			Fleet.ships[ship_index]["sail_level"] = Fleet.sail_level(ship_index) - 1
 			log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
 		else:
 			log_msg("【满级】帆已无可再换。")
-	load_scene(current_scene_id)
+	if act != "":
+		await _yard_success_transition(act)
+	else:
+		load_scene(current_scene_id)
 
 
 func _on_buy_supplies(n: int, wp: int, gp: int) -> void:
@@ -3683,7 +3710,11 @@ func _refresh_shore() -> void:
 	if _shore_mode == "ended":
 		# 终局：不出海、不候日，只留重读与读档
 		if GameState.ended_text != "":
-			actions.add_child(_shore_action("重读结局", Vector2(220, 48), true, _on_reread_ending))
+			# 仍是动作行主钮，热区略大；点按只翻开既有结局册页，不重播岸带题签、不过日子、不入存档
+			var reread := _shore_action("重读结局", Vector2(240, 52), true, _on_reread_ending)
+			reread.name = "RereadEnding"
+			reread.tooltip_text = "再翻开结局册页。不过日子，不改存档。"
+			actions.add_child(reread)
 	elif _shore_mode == "siege":
 		# 围城中不出海：动作行去掉「看风」
 		actions.add_child(_shore_action("再候一日", Vector2(160, 42), false, _on_shore_wait))
@@ -3700,7 +3731,11 @@ func _refresh_shore() -> void:
 	actions.add_child(_shore_action("市舶纪事", Vector2(140, 42), false, _open_vision_stage))
 
 
+## 重读结局：只翻开既有 ChapterSheet（结局名 + 终局时地 + 结局正文），不传 ending，不再 finish、不演过场；
+## 岸带题签已由 _shore_title_seen 记过，合上册页走 load_scene 重排岸带也不重播。册页已开时不叠第二张。
 func _on_reread_ending() -> void:
+	if is_instance_valid(_chapter_host) or GameState.ended_text == "":
+		return
 	_show_notice_dialog(GameState.ended, GameState.ended_at, GameState.ended_text)
 
 
@@ -5104,16 +5139,17 @@ func _ended_port_base() -> String:
 	return base
 
 
-## 终局后港口页的航海札记：墨底小笺，标题马善政泥金，逐行 16px；行多时在 220 高里滚动、底边渐隐
+## 终局后港口页的航海札记：墨底小笺，标题马善政泥金印「终」、旁注终局时地（淡字 16px），逐行 16px；
+## 行多时在 170 高里滚动、底边渐隐；笺脚一行淡字注文指向动作行「重读结局」。
 func _epilogue_slip() -> Control:
 	var parts := _band_slip("EpilogueSlip")
 	var slip: PanelContainer = parts[0]
 	var col: VBoxContainer = parts[1]
 	slip.custom_minimum_size = Vector2(760, 0)
-	_band_head(col, "航海札记", "终")
+	_band_head(col, "航海札记", "终", GameState.ended_at)
 	var lines_box := VBoxContainer.new()
 	lines_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lines_box.add_theme_constant_override("separation", 4)
+	lines_box.add_theme_constant_override("separation", 6)
 	lines_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var n := 0
 	for line in GameState.epilogue_lines():
@@ -5130,6 +5166,10 @@ func _epilogue_slip() -> Control:
 		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 		scroll.add_child(lines_box)
 		col.add_child(UiTheme.fade_scroll(scroll, 24))
+	if GameState.ended_text != "":
+		var foot := _band_line(col, "结局册页在岸下，「重读结局」可再翻开。", UiTheme.TEXT_DIM, 16)
+		foot.name = "EpilogueFoot"
+		foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	return slip
 
 

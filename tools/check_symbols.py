@@ -1134,7 +1134,7 @@ if (
     "class_name DrydockBerth" in dry_src
     and "DrydockBerth.berth_index" in yard_fn
     and "DrydockBerth.sale_ids" in yard_fn
-    and "坞上只搁一艘。帆和甲对着这一艘。水粮和赊贷仍在码头上。" in yard_fn
+    and "坞上只搁一艘。帆和甲对着这一艘。水粮与赊贷仍在码头。" in yard_fn
     and "换上　" in yard_fn
     and "把「%s」拖上坞位。帆和甲对着这一艘。" in switch_fn
     and "_begin_slip_scroll" not in yard_fn
@@ -1147,6 +1147,29 @@ if (
 else:
     print("  ✗ 坞位一艘未接上")
     problems.append("坞位一艘未接上")
+
+# Lane V：船屋成功题签（修船／购入／升帆／升甲／换坞）走 UiTransition.drydock_*；失败不演
+ut_src_yard = open(os.path.join(SCRIPTS, "ui", "UiTransition.gd"), encoding="utf-8").read()
+repair_fn = _func_body(main_src, "_on_repair_hull")
+buy_fn = _func_body(main_src, "_on_buy_ship")
+upgrade_fn = _func_body(main_src, "_on_upgrade")
+yard_ok_fn = _func_body(main_src, "_yard_success_transition")
+if (
+    "func drydock_title" in ut_src_yard
+    and "func drydock_seal" in ut_src_yard
+    and "func drydock_open" in ut_src_yard
+    and '"修"' in ut_src_yard and '"购"' in ut_src_yard and '"坞"' in ut_src_yard
+    and "drydock_title(" in yard_ok_fn and "drydock_seal(" in yard_ok_fn
+    and "_yard_success_transition" in repair_fn and "船匠敲了一日" in repair_fn
+    and "_yard_success_transition" in buy_fn and "泊在坞外。水手未齐。" in buy_fn
+    and "_yard_success_transition" in switch_fn
+    and 'act = "升帆"' in upgrade_fn and 'act = "升甲"' in upgrade_fn
+    and os.path.exists(os.path.join(ROOT, "tools", "qa_drydock_probe.gd"))
+):
+    print("  ✓ 船屋成功题签走 UiTransition.drydock_*（修/购/帆/甲/坞；失败不演）")
+else:
+    print("  ✗ 船屋成功题签未接上")
+    problems.append("船屋成功题签未接上")
 
 
 def _static_body(src, name):
@@ -1913,7 +1936,7 @@ elif not ('_shore_title_once("ended", _setup_ended_port)' in _build_shore_body
     print("  ✗ 守城 / 终局岸带未经 _shore_title_once 接题签（或未防重播）")
     problems.append("守城终局题签未接钩子")
 elif not ("HSeparator.new()" in _band_head_body and "_seal_mark(seal)" in _band_head_body
-          and '_band_head(col, "航海札记", "终")' in _p7_code(p7_bodies.get("_epilogue_slip", ""))
+          and '_band_head(col, "航海札记", "终"' in _p7_code(p7_bodies.get("_epilogue_slip", ""))
           and '"城"' in _p7_code(p7_bodies.get("_siege_stat_slip", "")) and "_band_head(col," in _p7_code(p7_bodies.get("_siege_stat_slip", ""))):
     print("  ✗ 城防账 / 航海札记抬头未走 _band_head（泥金题 + 印 + 分隔线）")
     problems.append("守城终局小笺抬头漂移")
@@ -1922,6 +1945,30 @@ elif not os.path.exists(os.path.join(ROOT, "tools", "qa_siege_endgame_probe.gd")
     problems.append("守城终局探针缺失")
 else:
     print("  ✓ 守城 / 终局岸带首进走纪实题签（城 / 终；UI 态防重播；headless 直通），小笺抬头同序章文法")
+# 终局「重读结局」入口（Lane X）：札记抬头旁注终局时地、笺脚注文；重读钮仍是动作行主钮（带 tooltip）；
+# _on_reread_ending 只翻开既有册页——不传 ending（不再 finish / 不演结局过场）、不经 _shore_title_once、册页已开不叠。
+_epi_body = _p7_code(p7_bodies.get("_epilogue_slip", ""))
+_reread_body = _p7_code(p7_bodies.get("_on_reread_ending", ""))
+_refresh_body = _p7_code(p7_bodies.get("_refresh_shore", ""))
+if not ('_band_head(col, "航海札记", "终", GameState.ended_at)' in _epi_body
+        and "EpilogueFoot" in _epi_body and "重读结局" in _epi_body and "TEXT_DIM, 16" in _epi_body):
+    print("  ✗ 航海札记缺终局时地旁注或笺脚「重读结局」注文")
+    problems.append("终局札记抬头/笺脚漂移")
+elif not ('_shore_action("重读结局"' in _refresh_body and "RereadEnding" in _refresh_body
+          and "tooltip_text" in _refresh_body and "_on_reread_ending" in _refresh_body):
+    print("  ✗ 终局动作行「重读结局」主钮缺名或 tooltip")
+    problems.append("重读结局钮漂移")
+elif not ("_show_notice_dialog(GameState.ended, GameState.ended_at, GameState.ended_text)" in _reread_body
+          and "is_instance_valid(_chapter_host)" in _reread_body
+          and "play_transition(" not in _reread_body and "_shore_title" not in _reread_body
+          and "finish(" not in _reread_body):
+    print("  ✗ _on_reread_ending 不再只翻开既有册页（或会重播题签 / 叠册页 / 再 finish）")
+    problems.append("重读结局入口漂移")
+elif not os.path.exists(os.path.join(ROOT, "tools", "qa_ending_reread_probe.gd")):
+    print("  ✗ 缺 tools/qa_ending_reread_probe.gd")
+    problems.append("终局重读探针缺失")
+else:
+    print("  ✓ 终局重读结局：札记旁注时地 + 笺脚注文；重读只翻既有册页，不重播题签、不叠册页、不再 finish")
 if all(s in main_src for s in (
     '"_guild"', '"_exam"', '"_residence"', '"_temple"',
     "bg_quanzhou_ledger.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",
