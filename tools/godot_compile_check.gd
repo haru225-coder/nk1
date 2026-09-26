@@ -31,6 +31,7 @@ const SCRIPTS := [
 	"res://scripts/ui/UiTransition.gd",
 	# Lane A 观感展示台（独立场景）
 	"res://scripts/ui/VisionStage.gd",
+	"res://scripts/ui/CombatLetterbox.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
