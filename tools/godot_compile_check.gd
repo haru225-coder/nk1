@@ -25,6 +25,8 @@ const SCRIPTS := [
 	"res://scripts/ui/CharacterArt.gd", "res://scripts/ui/CharacterCodex.gd",
 	# 工席成功态过渡（淡入墨幕 + 题签）
 	"res://scripts/ui/UiTransition.gd",
+	# Lane A 观感展示台（独立场景）
+	"res://scripts/ui/VisionStage.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
 	"res://tools/art/portrait_svg/PortraitWall.gd", "res://tools/art/ShotTour.gd",
 ]
