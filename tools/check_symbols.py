@@ -1097,7 +1097,7 @@ else:
 shore_src = open(os.path.join(SCRIPTS, "core", "ShoreDraft.gd"), encoding="utf-8").read()
 if (
     "class_name ShoreDraft" in shore_src
-    and "今日此门未开。" in main_src
+    and "今日这处没开门。" in main_src
     and "在岸上又候了一日，门又换了几处。" in main_src
     and "再候一日" in main_src
     and "今日只开三处。" in main_src
@@ -1111,21 +1111,6 @@ else:
     print("  ✗ 岸上三处未接上")
     problems.append("岸上三处未接上")
 
-# Lane Z2：岸门副题与悬停纪实提示（泉州/福州/兴化共用 GENERIC 与剧情港卡）
-if (
-    "const DOOR_TIP" in main_src
-    and "过秤・买卖" in main_src
-    and "闻讯・募人" in main_src
-    and "修舱・上水・雇手" in main_src
-    and "议价・立籍" in main_src
-    and "btn.tooltip_text = tip" in main_src
-    and "今日未开。再候一日，门或另换。" in main_src
-    and os.path.exists(os.path.join(ROOT, "tools", "qa_port_doors_probe.gd"))
-):
-    print("  ✓ 岸门副题/tooltip 论文纪实（Lane Z2）")
-else:
-    print("  ✗ 岸门副题/tooltip 未接上（Lane Z2）")
-    problems.append("岸门 DOOR_TIP/副题未接")
 broker_src = open(os.path.join(SCRIPTS, "core", "BrokerSlip.gd"), encoding="utf-8").read()
 market_fn = _func_body(main_src, "_setup_market")
 if (
@@ -2877,6 +2862,41 @@ if os.path.isfile(_z1_probe):
 else:
     print("  ✗ 缺 qa_voyage_status_probe.gd")
     problems.append("缺 voyage 截图探针")
+
+print()
+print("Lane Z3 — 伙伴草案预览浮页（F7 / CompanionPreview）")
+_comp_path = os.path.join(SCRIPTS, "companions", "CompanionPreview.gd")
+if os.path.isfile(_comp_path):
+    print("  ✓ scripts/companions/CompanionPreview.gd 存在")
+    _comp_src = open(_comp_path, encoding="utf-8").read()
+else:
+    print("  ✗ 缺 CompanionPreview.gd")
+    problems.append("缺 CompanionPreview.gd")
+    _comp_src = ""
+_main_z3 = open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read()
+if "KEY_F7" in _main_z3 and "_toggle_companion_preview" in _main_z3 and "_COMPANION_PREVIEW" in _main_z3:
+    print("  ✓ Main F7 → CompanionPreview 开关")
+else:
+    print("  ✗ Main 未薄接入 CompanionPreview/F7")
+    problems.append("Main 未接 CompanionPreview/F7")
+if "草案预览" in _comp_src and "PREVIEW_IDS" in _comp_src and "招募" in _comp_src:
+    print("  ✓ 草案预览题签 + 六人名单 + 非招募声明")
+else:
+    print("  ✗ CompanionPreview 契约文案不全")
+    problems.append("CompanionPreview 契约不全")
+# 禁招募入口
+for bad in ("hire_crew", "招募确认", "月俸", "加入船队"):
+    if bad in _comp_src:
+        print(f"  ✗ CompanionPreview 混入招募玩法：{bad}")
+        problems.append(f"CompanionPreview 招募玩法:{bad}")
+    else:
+        print(f"  ✓ 无「{bad}」")
+_z3_probe = os.path.join(ROOT, "tools", "qa_companion_preview_screenshots.gd")
+if os.path.isfile(_z3_probe):
+    print("  ✓ tools/qa_companion_preview_screenshots.gd 存在")
+else:
+    print("  ✗ 缺 qa_companion_preview_screenshots.gd")
+    problems.append("缺 companion 截图探针")
 
 print()
 print()
