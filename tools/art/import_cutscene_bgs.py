@@ -18,11 +18,14 @@
 旧底来源（第一轮 worktree 的 assets/，即 main 9233852 落地、云端 da29e49 又换掉的旧图）默认
 /Users/snowchan27/tmp/nk1-art/assets，可用 NK1_LEGACY_ASSETS 覆盖。
 来源目录不在时（新克隆、别的机器、合回 main 后），--check 自动退化为 --data-only：只核对产物与清单一致，不报「来源缺失」。
+导出后要修瑕的图登记在 POSTFIX：写出后立即就地跑对应脚本（素材池原图带晚于宋元的器物，如青花），清单 out_sha1 记修后的图，
+所以 --force 重导也不会把修过的地方冲回去。
 """
 import hashlib
 import json
 import os
 import pathlib
+import subprocess
 import sys
 
 from PIL import Image
@@ -89,6 +92,12 @@ MANIFEST = [
      "章末了结·账上的距离第 2 镜「只有进出清楚的货，和脚钱」：货栈账房，麻包、算盘、摊开的账册"
      "（仓库内 bg_gpt_1.png，游戏未引用；镜头压在案面与货堆，避开左侧青花罐与上方匾额字）"),
 ]
+
+# 导出后就地修瑕（2026-09-26）：产物名 → tools/art/ 下的脚本与参数。青花是元至正以后的器物，改成宋元单色釉
+POSTFIX = {
+    "cs_counting_house.jpg": ["fix_cs_qinghua.py", "--only", "counting_house", "--in-place"],
+    "cs_quanzhou_fanfang.jpg": ["fix_cs_qinghua.py", "--only", "quanzhou_fanfang", "--in-place"],
+}
 
 
 def _digest(path: pathlib.Path, crop) -> str:
@@ -164,11 +173,21 @@ def run(force: bool) -> int:
         if not force and dst.is_file() and old.get("digest") == dg:
             # 旧清单没有产物 sha1 / 相对来源的，就地补上（不重编码图）
             old.update({"source": _src_label(src), "out_sha1": _file_sha1(dst), "note": note})
+            if name in POSTFIX:
+                old["post"] = " ".join(POSTFIX[name])
             print(f"skip {name}")
             continue
         size = convert(src, dst, crop)
+        post = POSTFIX.get(name)
+        if post:
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "art" / post[0]), *post[1:]])
+            if r.returncode != 0:
+                print(f"FAIL {name} 导出后修瑕失败：{' '.join(post)}（rc={r.returncode}）")
+                return 1
         stamp[name] = {"digest": dg, "source": _src_label(src), "crop": list(crop) if crop else None,
                        "size": list(size), "out_sha1": _file_sha1(dst), "note": note}
+        if post:
+            stamp[name]["post"] = " ".join(post)
         changed += 1
         print(f"write {name} {size[0]}x{size[1]} ← {_src_label(src)}")
     # 清理清单里已不存在的旧条目（只动 stamp，不删图）
