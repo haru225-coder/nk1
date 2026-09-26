@@ -2588,8 +2588,40 @@ else:
     print("  ✗ report_discovery 调用方漂移：%s" % _rep_callers)
     problems.append("report_discovery 调用方漂移")
 
-# Lane AC 契约块暂由 Lane AA executor 剥下（AC 探针未落盘；并行波次）。
-# AC 落地时请自 brief 恢复呈报短句 / qa_discovery_probe 断言。
+# Lane AC：发现录列表与呈报确认改纪实短句；存档键、呈报顺序与赏格公式不动
+_ac_slips = _disc_main_fn.get("_setup_reporting", "")
+_ac_onrep = _disc_main_fn.get("_on_report_discovery", "")
+_ac_temple = _disc_main_fn.get("_setup_temple", "")
+_ac_look = _disc_main_fn.get("_on_temple_look", "")
+_ac_invest = func_bodies(open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()).get("_on_investigate_discovery", "")
+_ac_ok = (
+    '"赏钱 %d　声名 %d" % [value, maxi(1, value / 10)]' in _ac_slips
+    and 'd.get("historical_hook", "")' in _ac_slips
+    and "呈报入案，赏钱声名同领。" in _ac_slips
+    and "【呈报】「%s」入案。赏钱 %d，声名添 %d。%s" in _ac_onrep
+    and '"案册改题「%s」。"' in _ac_onrep
+    and '_slip_title(slip, name, "未勘")' in _ac_temple
+    and '_slip_title(slip, name, "已入册")' in _ac_temple
+    and '_slip_title(slip, name, "已呈案")' in _ac_temple
+    and '_slip_note(slip, "赏格回市舶司。")' in _ac_temple
+    and "【勘见】廊下细看 %d 日，「%s」记入册子。赏格回市舶司呈报。" in _ac_look
+    and "记入册子，赏格回市舶司呈报。" in _ac_invest
+    and "GameState.record_discovery(did)" in _ac_look and "TEMPLE_LOOK_DAYS" in _ac_look
+)
+# 只查代码行：SeaChart 注释里「下一次点击」是开发说明，不算玩家可见文案
+_ac_bad = [b for b in ("名声加", "录入案册", "已记入册", '"已呈报"', "点击", "提交", "上报市舶司", "当有赏格")
+           if b in _code_only(_ac_slips + _ac_onrep + _ac_temple + _ac_look + _ac_invest)]
+if _ac_ok and not _ac_bad:
+    print("  ✓ 发现录呈报签 / 确认日志 / 寺观旧迹题签纪实短句（Lane AC）")
+else:
+    print("  ✗ 发现录文案漂移（Lane AC）%s" % (("：回退 " + "、".join(_ac_bad)) if _ac_bad else ""))
+    problems.append("发现录文案 Lane AC")
+if os.path.exists(os.path.join(ROOT, "tools", "qa_discovery_probe.gd")):
+    print("  ✓ 发现录截图探针 qa_discovery_probe.gd 在册（Lane AC）")
+else:
+    print("  ✗ 缺 tools/qa_discovery_probe.gd")
+    problems.append("缺发现录截图探针")
+
 
 print()
 print("=" * 68)

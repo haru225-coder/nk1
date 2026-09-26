@@ -1662,7 +1662,7 @@ func _on_investigate_discovery() -> void:
 	var d := GameManager.get_discovery_by_id(did)
 	var note := ""
 	if GameState.record_discovery(did):
-		note = "近岸细看，果然是%s。记入册子——回港上报市舶司，当有赏格。" % d.get("name", "旧泊地")
+		note = "近岸细看，果然是%s。记入册子，赏格回市舶司呈报。" % d.get("name", "旧泊地")
 		_log(_ink(UiTheme.MOSS, note))
 	else:
 		note = "绕过去看了一圈，与册上所记并无出入。"
