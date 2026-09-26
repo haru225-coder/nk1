@@ -39,5 +39,6 @@ godot --headless --editor --path . --quit
 godot --headless --path . -s res://tools/godot_smoke.gd
 godot --headless --path . -s res://tools/godot_compile_check.gd
 godot --headless --path . -s res://tools/godot_story_check.gd
+godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 godot --path . -s res://tools/patrol_shell.gd
 ```

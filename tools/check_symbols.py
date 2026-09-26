@@ -1716,6 +1716,13 @@ if tie and 0 <= tie.group(1).find('has_flag("exam_sat")') < tie.group(1).find('h
 else:
     print("  ✗ 1268 殿试打平未优先读 exam_sat")
     problems.append("1268 破平未读 exam_sat")
+ge_smoke = os.path.join(ROOT, "tools", "p7_guild_exam_smoke.gd")
+ge_src = open(ge_smoke, encoding="utf-8").read() if os.path.exists(ge_smoke) else ""
+if all(tok in ge_src for tok in ("P7_GUILD_EXAM_SMOKE_OK", "交会费入行", "入场赴试", "resolve_identity_1268")):
+    print("  ✓ 入行 / 赴试行为 smoke 在（tools/p7_guild_exam_smoke.gd）")
+else:
+    print("  ✗ 缺 tools/p7_guild_exam_smoke.gd 或其断言被删")
+    problems.append("入行赴试 smoke 缺失")
 if all(s in main_src for s in (
     '"_guild"', '"_exam"', '"_residence"', '"_temple"',
     "bg_quanzhou_ledger.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",
