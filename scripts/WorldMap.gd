@@ -1,6 +1,10 @@
 extends Node2D
 
 const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
+const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
+const _BoardingStage := preload("res://scripts/combat/BoardingStage.gd")
+const _LETTERBOX_PATH := "res://scripts/ui/CombatLetterbox.gd"
+const _Kit := preload("res://scripts/cutscene/cs_kit.gd")
 
 ## 战斗结束信号：outcome 为 "win"/"lose"/"flee"，data 携带战损等结算信息
 signal battle_finished(outcome: String, data: Dictionary)
@@ -173,6 +177,16 @@ func _board_enemy(enemy: Node2D) -> void:
 	_AUDIO.combat_board(self)
 	enemy.set("grappled", true)  # 敌船停航停炮
 
+	# Lane C 观感节拍：钩索题签 + 轻震（不改白刃数值）
+	_BoardingStage.begin(self, ship, enemy, "钩索已抛")
+	_CombatFx.punch_camera(ship, 5.0)
+	if not _Kit.is_headless():
+		await get_tree().create_timer(0.42).timeout
+	if not is_instance_valid(enemy) or not _boarding_target_valid():
+		boarding = false
+		boarding_target = null
+		return
+
 	var player_board := Fleet.total_crew() * Fleet.morale_factor() * Fleet.captain_power()
 	var enemy_board: float = enemy.combat_strength()
 	if player_board + enemy_board <= 0.0:
@@ -189,12 +203,13 @@ func _board_enemy(enemy: Node2D) -> void:
 		var ship_name := _node_str(enemy, "ship_name", "")
 		Fleet.lose_crew_random(lose_n)
 		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 4)
-		# 主角武力成长：白刃夺船历练（上限 100）
 		GameState.martial = mini(100, GameState.martial + 1)
-		# 夺船并入舰队：add_ship 自动初始化 sail_level/armor_level/cargo
 		var ok := Fleet.add_ship(type_id, ship_name)
-		var msg := "接舷白刃，夺下敌船「%s」！" % (Fleet.ships[Fleet.ships.size() - 1].get("name", "敌船") if ok else "敌船")
+		var taken: String = str(Fleet.ships[Fleet.ships.size() - 1].get("name", "敌船")) if ok else "敌船"
+		var msg := _CombatFx.board_win_note(taken)
+		_BoardingStage.resolve(self, "win", msg)
 		_show_combat_notice(msg)
+		_CombatFx.hitstop(self, 0.09, 0.16)
 		enemy.queue_free()
 		boarding = false
 		boarding_target = null
@@ -204,10 +219,12 @@ func _board_enemy(enemy: Node2D) -> void:
 		var lose_n2 := maxi(1, int(Fleet.total_crew() * (0.20 + randf() * 0.10)))
 		Fleet.lose_crew_random(lose_n2)
 		Fleet.morale = maxi(0, Fleet.morale - 10)
-		enemy.set("grappled", false)  # 敌船脱钩，继续炮击/逃逸
+		enemy.set("grappled", false)
 		boarding = false
 		boarding_target = null
-		_show_combat_notice("白刃失利，死了 %d 名水手，敌船脱钩。" % lose_n2)
+		var msg2 := _CombatFx.board_lose_note(lose_n2)
+		_BoardingStage.resolve(self, "lose", msg2)
+		_show_combat_notice(msg2)
 
 
 ## 战斗通知浮字：在屏幕中央短暂显示（复用 FloatingText 场景），3 秒后淡出
@@ -372,6 +389,7 @@ func _setup_combat(pb: Dictionary) -> void:
 		_spawn_enemy(type_id, count, pb)
 	weather_status.text = "海战"
 	weather_status.add_theme_color_override("font_color", UiTheme.HONEY)
+	_try_letterbox_enter(pb)
 
 
 ## 生成一支敌舰队，绕玩家船散布；hull_hp 按战力比缩放
@@ -444,6 +462,7 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 	resolved = true
 	data["player_damage"] = player_damage
 	_AUDIO.combat_result(self, outcome)
+	_try_letterbox_exit(outcome)
 	battle_finished.emit(outcome, data)
 	queue_free()
 
@@ -462,4 +481,26 @@ static func _prop_s(o: Object, prop: String, default_v: String) -> String:
 
 # ══ 以下为本地 main 的新增函数，合并时因所在区块让位云端而被丢，按「本地纯新增保留」原样补回（2026-09-25） ══
 
+## Lane C：进出战墨边（若 CombatLetterbox 已入库则调用；否则静默跳过）。
+func _try_letterbox_enter(pb: Dictionary) -> void:
+	if not ResourceLoader.exists(_LETTERBOX_PATH):
+		return
+	var LB = load(_LETTERBOX_PATH)
+	if LB == null:
+		return
+	var enemy_list: Array = pb.get("enemy", [])
+	var sub := "%s　%s" % [Calendar.get_date_string(), LB.enemy_note(enemy_list)]
+	LB.enter(self, LB.sea_title("外海", "遇敌"), sub)
+
+
+func _try_letterbox_exit(outcome: String) -> void:
+	if not ResourceLoader.exists(_LETTERBOX_PATH):
+		return
+	var parent := get_parent()
+	if parent == null:
+		return
+	var LB = load(_LETTERBOX_PATH)
+	if LB == null:
+		return
+	LB.exit(parent, LB.outcome_title(outcome, "外海"), Calendar.get_date_string())
 

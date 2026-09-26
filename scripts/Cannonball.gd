@@ -9,6 +9,7 @@ var shooter: Node2D = null
 var water_splash = preload("res://scenes/WaterSplash.tscn")
 var impact_explosion = preload("res://scenes/ImpactExplosion.tscn")
 const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
+const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 var floating_text = preload("res://scenes/FloatingText.tscn")
 
 func _ready() -> void:
@@ -29,6 +30,7 @@ func _on_body_entered(body: Node2D) -> void:
 			dmg = damage * Fleet.armor_damage_reduction()
 		body.take_damage(dmg)
 		_AUDIO.combat_hit(get_parent())
+		_CombatFx.on_cannon_hit(get_parent(), position, shooter)
 		_explode_and_die()
 		_spawn_floating_text("-" + str(int(dmg)), Color.RED)
 	else:

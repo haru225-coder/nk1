@@ -23,10 +23,16 @@ const SCRIPTS := [
 	"res://scripts/cutscene/Cinematics.gd", "res://scripts/cutscene/TitleStage.gd",
 	# characters 线：人物系统的画与小件、人物志浮页
 	"res://scripts/ui/CharacterArt.gd", "res://scripts/ui/CharacterCodex.gd",
+	# chars 线（人物呈现竖切）：场景 scripts/chars/ + 巡检工具
+	"res://scripts/chars/CharStage3D.gd", "res://scripts/chars/CharPortraitPanel.gd",
+	"res://scripts/chars/CharRoster.gd", "res://scripts/chars/CharsDemo.gd",
+	"res://tools/qa_chars_screenshots.gd",
 	# 工席成功态过渡（淡入墨幕 + 题签）
 	"res://scripts/ui/UiTransition.gd",
 	# Lane A 观感展示台（独立场景）
 	"res://scripts/ui/VisionStage.gd",
+	# lane-c 接舷/海战 VFX
+	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
 	"res://tools/art/portrait_svg/PortraitWall.gd", "res://tools/art/ShotTour.gd",
 ]
