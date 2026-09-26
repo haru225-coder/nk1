@@ -2533,6 +2533,14 @@ if (
 else:
     print("  ✗ 航海日志册页未挂坏档脚注，或翻阅/记录失败仍是旧句")
     problems.append("航海日志坏档脚注未接入")
+# Lane T：四种槽态运行时探针须在库内，供回归复跑。
+_tip_probe = os.path.join(ROOT, "tools", "qa_save_slot_tip_probe.gd")
+if os.path.isfile(_tip_probe) and "slot_source" in open(_tip_probe, encoding="utf-8").read() and "SAVE_SLOT_TIP_PROBE" in open(_tip_probe, encoding="utf-8").read():
+    print("  ✓ tools/qa_save_slot_tip_probe.gd 锁四态 tip")
+else:
+    print("  ✗ tools/qa_save_slot_tip_probe.gd 缺失或未覆盖 slot_source")
+    problems.append("存档槽 tip 探针缺失")
+
 if (
     all(token in _flags_body for token in ("TYPE_DICTIONARY", "TYPE_BOOL", "not raw.get(key)"))
     and all(token in _saveload_src for token in (
