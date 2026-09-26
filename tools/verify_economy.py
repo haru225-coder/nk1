@@ -1858,8 +1858,8 @@ check("voyage_started" in back_body, "发舶之后不能点回港躲开海难")
 check("voyage_days" in offer_body and "expected_days" not in offer_body and "safe_days" not in offer_body,
       "委办期限不改用遇事日数或八成日数")
 check("·误期" in main_src and "交不齐" in sea_src, "旅店歇过期限、舱里货不够，界面会写出来")
-check("八成" in sea_src and "不算稳" in main_src and "不算稳" in sea_src,
-      "平均数卡进期限、八成超出时，界面写明不算稳")
+check("八成" in sea_src and "未稳" in main_src and "未稳" in sea_src,
+      "平均数卡进期限、八成超出时，界面写明未稳")
 check("凑得出" in main_src and "拿不满酬" in main_src,
       "钱不够买满委办时，牙行把缺口写在单子上")
 check("hold_tenths" in plan_body and "cargo_hold_chance(order, known, open, expected)" in plan_body,
@@ -1892,8 +1892,8 @@ check("safe_days" in spoil_ui and "expected_days" not in spoil_ui and "can_carry
 check('int(plan_r.get("safe_days", 0)) <= deadline and sr < 8' in spoil_ui
       and 'int(plan_c.get("safe_days", 0)) <= deadline and sc < 8' in spoil_ui,
       "受潮警告按同一条航法看八成日数")
-check("一件没潮" in main_src and "一件没潮" in sea_src and "受潮不到八成" in main_src and "受潮只有" in sea_src,
-      "会潮的货，牙行和海图都写出一件没潮的成数")
+check("受潮" in main_src and "受潮" in sea_src and "受潮不到八成" in main_src and "受潮只有" in sea_src,
+      "会潮的货，牙行和海图都写出受潮成数")
 check("dampest_aboard" in sea_src and "good_perish_rate" in sea_src,
       "海图按舱里会潮的货来写，委办货优先")
 check("·换风" in sea_src and "逐日累加" in main_src, "途中换风写在海图和委办上")

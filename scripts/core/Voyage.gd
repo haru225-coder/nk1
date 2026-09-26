@@ -249,9 +249,9 @@ func order_name(order: int) -> String:
 
 func order_blurb(order: int) -> String:
 	if order == CourseOrder.OFFSHORE:
-		return "外洋：日速 ×%.2f。风暴与海盗更密，几乎碰不到岸影。逆风也不会因此变成顺风。" % ORDER_SPEED_OFFSHORE
+		return "外洋：日行较快。风暴与海盗更密，几乎碰不到岸影。逆风也不会因此变成顺风。"
 	if order == CourseOrder.COAST:
-		return "傍岸：日速 ×%.2f。海盗少、岸影多，但会擦到浅滩。生路上靠岸影，反而不容易迷航。" % ORDER_SPEED_COAST
+		return "傍岸：日行较缓。海盗少、岸影多，但会擦到浅滩。生路上靠岸影，反而不容易迷航。"
 	return "针路：按熟路的针位走。速度、风涛、海盗都是寻常概率。"
 
 

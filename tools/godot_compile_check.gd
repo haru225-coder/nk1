@@ -31,6 +31,8 @@ const SCRIPTS := [
 	# 工席成功态过渡（淡入墨幕 + 题签）
 	"res://scripts/ui/UiTransition.gd", "res://tools/qa_title_probe.gd", "res://tools/qa_siege_endgame_probe.gd", "res://tools/qa_ending_reread_probe.gd",
 	"res://tools/qa_drydock_probe.gd",
+	"res://tools/qa_voyage_status_probe.gd",
+	"res://tools/qa_port_doors_probe.gd",
 	# Lane A 观感展示台（独立场景）
 	"res://scripts/ui/VisionStage.gd", "res://tools/qa_wire_vision_screenshots.gd",
 	"res://scripts/ui/CombatLetterbox.gd",

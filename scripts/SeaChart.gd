@@ -700,13 +700,20 @@ func _refresh_strip() -> void:
 		UiTheme.hex(supply_color),
 		supply_d,
 	]
+	# 委办在身：顶匾第一行短标（≤3 日或逾期朱砂），不折行
+	var cst_strip := GameState.contract_status()
+	if not cst_strip.is_empty():
+		var left_st: int = int(cst_strip.get("days_left", 0))
+		var tag := "委办已逾" if left_st < 0 else ("委办 %d 日" % left_st)
+		var tag_col := UiTheme.CINNABAR if left_st <= 3 else UiTheme.HONEY
+		line1 += "　[color=#%s]%s[/color]" % [UiTheme.hex(tag_col), tag]
 	var note := _latest_note
 	if sailing:
 		var pct := 0
 		if total_li > 0.0:
 			pct = int(clampf((total_li - remaining_li) / total_li, 0.0, 1.0) * 100.0)
 		# 验收 sail:SAIL-3：末日进度会冲过头，余程钳到 0，不显示负数
-		note = "航行中　第 %d 日　已行 %d / 100　余程 %d 里" % [days_elapsed, pct, maxi(0, int(remaining_li))]
+		note = "航行　第 %d 日　行成 %d　余 %d 里" % [days_elapsed, pct, maxi(0, int(remaining_li))]
 	# Lane U：顶匾第二行截短，告警朱字与航讯不折行（strip 已 AUTOWRAP_OFF）
 	if note.length() > 28:
 		note = note.substr(0, 27) + "…"
@@ -789,14 +796,14 @@ func _refresh_status() -> void:
 		if total_li > 0.0:
 			pct = clampf((total_li - remaining_li) / total_li, 0.0, 1.0)
 		# 余程钳 0（验收 sail:SAIL-3）
-		t += "[color=#%s]航行中　第 %d 日・%s[/color]\n已行　%d / 100\n余程　%d 里\n" % [
+		t += "[color=#%s]航行　第 %d 日・%s[/color]\n行成　%d\n余程　%d 里\n" % [
 			UiTheme.hex(UiTheme.HONEY), days_elapsed, Voyage.order_name(course_order), int(pct * 100), maxi(0, int(remaining_li)),
 		]
 	# 在身委办（云端 bed9）
 	var cst := GameState.contract_status()
 	if not cst.is_empty():
 		var left: int = int(cst.get("days_left", 0))
-		var left_s := "今日截止" if left == 0 else ("%d 日后截止" % left if left > 0 else "已逾期")
+		var left_s := "限今日" if left == 0 else ("剩 %d 日" % left if left > 0 else "已逾")
 		t += "[color=#%s][b]委办[/b][/color]\n%s ×%d 运往 %s　%s\n" % [
 			gold,
 			GameManager.get_good_name(str(cst.get("good_id", ""))),
@@ -805,7 +812,7 @@ func _refresh_status() -> void:
 			left_s,
 		]
 	t += "金钱　[b]%d[/b]\n名声　%d　%s\n" % [GameState.money, GameState.fame, GameState.title_name()]
-	t += "[color=#%s][b]舰队[/b][/color]\n船数　%d　水手　%d\n舱位　%d / %d 料\n耐久　%d / %d\n士气　%d\n" % [
+	t += "[color=#%s][b]船队[/b][/color]\n船数　%d　水手　%d\n舱位　%d / %d 料\n耐久　%d / %d\n士气　%d\n" % [
 		gold,
 		Fleet.ships.size(), Fleet.total_crew(),
 		int(Fleet.used_capacity()), int(Fleet.total_capacity()),
@@ -841,10 +848,10 @@ func _course_detail_text(gold: String) -> String:
 	t += "遇事　针路 %d　外洋 %d　傍岸 %d 日\n" % [
 		int(plan_rumb["expected_days"]), int(plan_off["expected_days"]), int(plan_coast["expected_days"]),
 	]
-	t += "八成　针路 %d　外洋 %d　傍岸 %d 日（十次约有八次不迟于这个数）\n" % [
+	t += "八成　针路 %d　外洋 %d　傍岸 %d 日\n" % [
 		int(plan_rumb["safe_days"]), int(plan_off["safe_days"]), int(plan_coast["safe_days"]),
 	]
-	t += "保货　针路 %d　外洋 %d　傍岸 %d（十次里至少有这么多次，逃走没被抢走货）\n" % [
+	t += "保货　针路 %d　外洋 %d　傍岸 %d\n" % [
 		int(plan_rumb["hold_tenths"]), int(plan_off["hold_tenths"]), int(plan_coast["hold_tenths"]),
 	]
 	t += _ink(UiTheme.TEXT_DIM, Voyage.order_blurb(course_order)) + "\n"
@@ -862,7 +869,7 @@ func _course_detail_text(gold: String) -> String:
 		if maybe_qty > 0 and maybe_rate > 0.0:
 			damp = {"good_id": maybe_id, "qty": maybe_qty, "rate": maybe_rate}
 	if not damp.is_empty():
-		t += "受潮　%s　针路 %d　外洋 %d　傍岸 %d（按八成日数，十次里至少有这么多次一件没潮）\n" % [
+		t += "受潮　%s　针路 %d　外洋 %d　傍岸 %d\n" % [
 			GameManager.get_good_name(str(damp["good_id"])),
 			Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(float(damp["rate"]), int(damp["qty"]), int(plan_rumb["safe_days"]))),
 			Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(float(damp["rate"]), int(damp["qty"]), int(plan_off["safe_days"]))),
@@ -878,7 +885,7 @@ func _course_detail_text(gold: String) -> String:
 		elif rough_days > left:
 			t += _ink(UiTheme.HONEY, "委办剩 %d 日　静风 %d　遇事约 %d　或误期" % [left, calm_days, rough_days]) + "\n"
 		elif safe_days > left:
-			t += _ink(UiTheme.HONEY, "委办剩 %d 日　遇事约 %d　八成 %d　不算稳" % [left, rough_days, safe_days]) + "\n"
+			t += _ink(UiTheme.HONEY, "委办剩 %d 日　遇事约 %d　八成 %d　未稳" % [left, rough_days, safe_days]) + "\n"
 		else:
 			var hold_shown := int(plan.get("hold_tenths", 0))
 			var spoil_shown := 10

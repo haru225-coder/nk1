@@ -140,16 +140,39 @@ const PROLOGUE_ONLY_FACILITIES := ["city_guild", "city_exam", "city_residence"]
 ## 无剧情场景的港口使用的通用设施。卡序与泉州/兴化港卡一致（九卡），
 ## 避免博多缺行会行情或寺观勘见。
 const GENERIC_FACILITIES := [
-	{"id": "city_shipyard", "title": "船屋", "subtitle": "修船・补给・船行"},
-	{"id": "city_guild", "title": "行会", "subtitle": "行情・信用"},
-	{"id": "city_tavern", "title": "酒馆", "subtitle": "打听消息"},
-	{"id": "city_market", "title": "牙行", "subtitle": "货殖交易"},
+	{"id": "city_shipyard", "title": "船屋", "subtitle": "修舱・上水・雇手"},
+	{"id": "city_guild", "title": "行会", "subtitle": "议价・立籍"},
+	{"id": "city_tavern", "title": "酒馆", "subtitle": "闻讯・募人"},
+	{"id": "city_market", "title": "牙行", "subtitle": "过秤・买卖"},
 	{"id": "city_inn", "title": "旅店", "subtitle": "歇息・候风"},
 	{"id": "city_exam", "title": "贡院", "subtitle": "誊录・观礼"},
 	{"id": "city_residence", "title": "住宅", "subtitle": "账本・歇息"},
 	{"id": "city_temple", "title": "寺观", "subtitle": "勘见・拓碑"},
 	{"id": "city_yamen", "title": "市舶司", "subtitle": "验引・抽解"},
 ]
+
+## 岸门悬停提示：论文纪实短注，不写「点击进入」类 UI 腔。key 去 city_ 前缀。
+const DOOR_TIP := {
+	"market": "牙人过秤开票。市舶抽解另计。",
+	"guild": "会馆议价、立会籍。入行另有会费。",
+	"tavern": "酒桌边听市井动静，也可雇水手。",
+	"shipyard": "坞上修舱、上水、雇手。船开不出去时必开此门。",
+	"inn": "借宿候风。日数照过。",
+	"exam": "贡院誊录与观礼。兴化、泉州可赴试。",
+	"residence": "下处歇息，翻看账册。",
+	"temple": "寺观细看遗迹，可拓碑。",
+	"yamen": "市舶司验引、抽解。违禁货过不了关。",
+	"siege_muster": "衙门募兵。石手军听调。",
+	"siege_grain": "市集屯粮。粮即守城日。",
+	"siege_wall": "船屋料改修城墙。",
+	"siege_envoy": "城下使者求见。",
+	"siege_nangshan": "南山下设伏。",
+	"siege_nunnery": "福州尼寺。母亲与璥儿在那里。",
+	"special_hanjiang_escape": "涵江海口旧避风澳。",
+	"special_resign_1275": "临安辞呈批语。",
+	"special_yashan": "崖山。宋军船阵相连。",
+	"special_gangshou_end": "市舶司新册。封面换了，名字还在。",
+}
 
 
 func _ready() -> void:
@@ -500,6 +523,12 @@ func _refresh_strip() -> void:
 	var note := _latest_log()
 	if note == "":
 		note = _chapter_hint()
+	# 委办在身：札记旁注前缀短标（与海图顶匾口径一致）
+	var cst_note := GameState.contract_status()
+	if not cst_note.is_empty():
+		var left_n: int = int(cst_note.get("days_left", 0))
+		var tag_n := "委办已逾" if left_n < 0 else ("委办 %d 日" % left_n)
+		note = tag_n if note == "" else ("%s　%s" % [tag_n, note])
 	_status_line.text = line1
 	if _status_note != null:
 		var plain := note.replace("\n", "　")
@@ -1038,11 +1067,11 @@ func update_status_panel() -> void:
 	var cst := GameState.contract_status()
 	if not cst.is_empty():
 		var left: int = int(cst.get("days_left", 0))
-		var left_s := "今日截止" if left == 0 else ("%d 日后截止" % left if left > 0 else "已逾期")
-		var col := "yellow" if left <= 2 else "white"
+		var left_s := "限今日" if left == 0 else ("剩 %d 日" % left if left > 0 else "已逾")
+		var col := UiTheme.hex(UiTheme.HONEY) if left <= 2 else UiTheme.hex(UiTheme.TEXT)
 		if left < 0:
-			col = "red"
-		t += "\n[u]委办[/u]\n[color=%s]%s ×%d 运往 %s（%s）酬 %d[/color]\n" % [
+			col = UiTheme.hex(UiTheme.CINNABAR)
+		t += "\n[u]委办[/u]\n[color=#%s]%s ×%d 运往 %s（%s）酬 %d[/color]\n" % [
 			col,
 			GameManager.get_good_name(str(cst.get("good_id", ""))),
 			int(cst.get("remaining", 0)),
@@ -1605,7 +1634,7 @@ func _add_contract_panel(port_id: String) -> void:
 	var cst := GameState.contract_status()
 	if not cst.is_empty():
 		var left: int = int(cst.get("days_left", 0))
-		var left_s := "今日截止" if left == 0 else ("%d 日后截止" % left if left > 0 else "已逾期")
+		var left_s := "限今日" if left == 0 else ("剩 %d 日" % left if left > 0 else "已逾")
 		# 一行：在身委办 + 交货 / 毁约（原先文字一行、钮另起一行）
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
@@ -1718,20 +1747,20 @@ func _add_contract_panel(port_id: String) -> void:
 			calm_note.add_theme_color_override("font_color", note_col)
 			detail.add_child(calm_note)
 			var safe_note := Label.new()
-			safe_note.text = "八成：针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日。十次里大约八次不迟于这个数。" % [
+			safe_note.text = "八成：针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日。" % [
 				int(plan_r.get("safe_days", 0)), int(plan_o.get("safe_days", 0)), int(plan_c.get("safe_days", 0)),
 			]
 			var rumb_thin := int(plan_r.get("expected_days", 0)) <= deadline and int(plan_r.get("safe_days", 0)) > deadline
 			var off_thin := int(plan_o.get("expected_days", 0)) <= deadline and int(plan_o.get("safe_days", 0)) > deadline
 			var coast_thin := int(plan_c.get("expected_days", 0)) <= deadline and int(plan_c.get("safe_days", 0)) > deadline
 			if rumb_thin or off_thin or coast_thin:
-				safe_note.text += " 有航法平均数赶得上，八成日数超过期限，不算稳。"
+				safe_note.text += " 有航法平均数赶得上，八成日数超过期限，未稳。"
 			safe_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			safe_note.add_theme_font_size_override("font_size", 16)
 			safe_note.add_theme_color_override("font_color", note_col)
 			detail.add_child(safe_note)
 			var hold_note := Label.new()
-			hold_note.text = "保货：针路 %d / 外洋 %d / 傍岸 %d。十次里至少有这么多次，逃走没被抢走货。" % [
+			hold_note.text = "保货：针路 %d / 外洋 %d / 傍岸 %d。" % [
 				int(plan_r.get("hold_tenths", 0)), int(plan_o.get("hold_tenths", 0)), int(plan_c.get("hold_tenths", 0)),
 			]
 			var cargo_bits := ""
@@ -1774,7 +1803,7 @@ func _add_contract_panel(port_id: String) -> void:
 				var sr := Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(spoil_rate, can_carry, int(plan_r.get("safe_days", 0))))
 				var so := Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(spoil_rate, can_carry, int(plan_o.get("safe_days", 0))))
 				var sc := Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(spoil_rate, can_carry, int(plan_c.get("safe_days", 0))))
-				spoil_note.text = "受潮：针路 %d / 外洋 %d / 傍岸 %d。按八成日数，十次里至少有这么多次一件没潮。这数不含海盗。" % [sr, so, sc]
+				spoil_note.text = "受潮：针路 %d / 外洋 %d / 傍岸 %d。按八成日数计，不含海盗。" % [sr, so, sc]
 				if can_carry < need_qty:
 					spoil_note.text += " 按眼下凑得出的 %d 件算。" % can_carry
 				var spoil_bits := ""
@@ -3914,6 +3943,15 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	btn.flat = true
 	btn.set_anchors_preset(Control.PRESET_FULL_RECT)
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var tip_key := str(fac.get("id", "")).replace("city_", "")
+	var tip := str(DOOR_TIP.get(tip_key, ""))
+	if tip == "":
+		var sub := str(fac.get("subtitle", "")).strip_edges()
+		tip = ("%s　%s" % [str(fac.get("title", "去处")), sub]).strip_edges() if sub != "" else str(fac.get("title", "去处"))
+	if pinned_yard:
+		tip = "船还开不出去。
+" + tip
+	btn.tooltip_text = tip
 	var empty := StyleBoxEmpty.new()
 	btn.add_theme_stylebox_override("normal", empty)
 	btn.add_theme_stylebox_override("hover", empty)
@@ -3963,9 +4001,14 @@ func _door_watermark(fac: Dictionary) -> Control:
 func _make_shore_shut(fac: Dictionary) -> Button:
 	var btn := Button.new()
 	btn.text = str(fac.get("title", "去处"))
-	btn.custom_minimum_size = Vector2(108, 36)
+	# 热区 ≥64×32（美术规范小钮）；关着的门略宽一点，字不挤
+	btn.custom_minimum_size = Vector2(120, 36)
 	btn.set_meta("shore_shut", true)
 	btn.pressed.connect(_on_shore_shut)
+	var tip_key := str(fac.get("id", "")).replace("city_", "")
+	var open_tip := str(DOOR_TIP.get(tip_key, str(fac.get("subtitle", ""))))
+	btn.tooltip_text = "今日未开。再候一日，门或另换。
+%s" % open_tip if open_tip != "" else "今日未开。再候一日，门或另换。"
 	UiTheme.style_button(btn, false)
 	var shut_box := UiTheme.shore_shut()
 	btn.add_theme_stylebox_override("normal", shut_box)
@@ -3979,7 +4022,7 @@ func _make_shore_shut(fac: Dictionary) -> Button:
 
 
 func _on_shore_shut() -> void:
-	log_msg("今日这处没开门。")
+	log_msg("今日此门未开。")
 	update_status_panel()
 
 

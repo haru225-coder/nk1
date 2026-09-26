@@ -1097,7 +1097,7 @@ else:
 shore_src = open(os.path.join(SCRIPTS, "core", "ShoreDraft.gd"), encoding="utf-8").read()
 if (
     "class_name ShoreDraft" in shore_src
-    and "今日这处没开门。" in main_src
+    and "今日此门未开。" in main_src
     and "在岸上又候了一日，门又换了几处。" in main_src
     and "再候一日" in main_src
     and "今日只开三处。" in main_src
@@ -1110,6 +1110,22 @@ if (
 else:
     print("  ✗ 岸上三处未接上")
     problems.append("岸上三处未接上")
+
+# Lane Z2：岸门副题与悬停纪实提示（泉州/福州/兴化共用 GENERIC 与剧情港卡）
+if (
+    "const DOOR_TIP" in main_src
+    and "过秤・买卖" in main_src
+    and "闻讯・募人" in main_src
+    and "修舱・上水・雇手" in main_src
+    and "议价・立籍" in main_src
+    and "btn.tooltip_text = tip" in main_src
+    and "今日未开。再候一日，门或另换。" in main_src
+    and os.path.exists(os.path.join(ROOT, "tools", "qa_port_doors_probe.gd"))
+):
+    print("  ✓ 岸门副题/tooltip 论文纪实（Lane Z2）")
+else:
+    print("  ✗ 岸门副题/tooltip 未接上（Lane Z2）")
+    problems.append("岸门 DOOR_TIP/副题未接")
 broker_src = open(os.path.join(SCRIPTS, "core", "BrokerSlip.gd"), encoding="utf-8").read()
 market_fn = _func_body(main_src, "_setup_market")
 if (
@@ -2123,8 +2139,8 @@ if market_titles == {"牙行"}:
 else:
     print("  ✗ 港卡牙行标题漂移：%s" % sorted(market_titles))
     problems.append("港卡 market 标题不是牙行")
-if guild_subs == {"行情・信用"}:
-    print("  ✓ 港卡行会副题是行情・信用")
+if guild_subs == {"议价・立籍"}:
+    print("  ✓ 港卡行会副题是议价・立籍")
 else:
     print("  ✗ 行会副题漂移：%s" % sorted(guild_subs))
     problems.append("行会副题未改")
@@ -2793,6 +2809,74 @@ for bad in ("惊艳", "沉浸", "打造", "视觉盛宴"):
     if bad in _tnw:
         print(f"  ✗ 酒馆墙文案回潮：{bad}")
         problems.append(f"酒馆墙文案回潮:{bad}")
+
+
+print("=" * 68)
+print("Lane Z1 — 船况面板 / 航海札记旁注纪实短标签")
+print("=" * 68)
+_sc_z1 = open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()
+_voy_z1 = open(os.path.join(SCRIPTS, "core", "Voyage.gd"), encoding="utf-8").read()
+_main_z1 = open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read()
+
+def _z1_visible(src: str) -> str:
+    out = []
+    for line in src.splitlines():
+        code = line.split("#", 1)[0]
+        i = 0
+        while True:
+            a = code.find('"', i)
+            if a < 0:
+                break
+            b = a + 1
+            while b < len(code):
+                if code[b] == "\\":
+                    b += 2
+                    continue
+                if code[b] == '"':
+                    break
+                b += 1
+            else:
+                break
+            out.append(code[a:b + 1])
+            i = b + 1
+    return "\n".join(out)
+
+_sc_vis = _z1_visible(_sc_z1)
+_voy_vis = _z1_visible(_voy_z1)
+_main_vis = _z1_visible(_main_z1)
+if "[b]船队[/b]" in _sc_z1 and "行成" in _sc_z1 and ("委办已逾" in _sc_z1 or "委办 %d 日" in _sc_z1):
+    print("  ✓ 船况段头「船队」+ 航行「行成」+ 顶匾委办短标")
+else:
+    print("  ✗ 船况短标契约不全（船队/行成/委办）")
+    problems.append("船况短标契约不全")
+for bad in ("十次约有八次", "逃走没被抢走货", "日速 ×", "今日截止", "已逾期", "[b]舰队[/b]"):
+    if bad in _sc_vis:
+        print(f"  ✗ SeaChart 可见文案回潮：{bad}")
+        problems.append(f"SeaChart 回潮:{bad}")
+    else:
+        print(f"  ✓ SeaChart 无「{bad}」")
+if "日速 ×" in _voy_vis:
+    print("  ✗ Voyage.order_blurb 仍写日速公式")
+    problems.append("order_blurb 日速公式")
+else:
+    print("  ✓ Voyage.order_blurb 无日速公式")
+if "限今日" in _main_z1 and "UiTheme.hex(UiTheme.CINNABAR)" in _main_z1 and 'color=#%s' in _main_z1:
+    print("  ✓ Main 船籍簿委办短限日 + hex 色")
+else:
+    print("  ✗ Main 船籍簿委办短限日/色标未对齐")
+    problems.append("Main 委办短标未对齐")
+for bad in ("十次里大约八次", "逃走没被抢走货", "今日截止", "已逾期"):
+    if bad in _main_vis:
+        print(f"  ✗ Main 可见文案回潮：{bad}")
+        problems.append(f"Main 回潮:{bad}")
+    else:
+        print(f"  ✓ Main 无「{bad}」")
+_z1_probe = os.path.join(ROOT, "tools", "qa_voyage_status_probe.gd")
+if os.path.isfile(_z1_probe):
+    print("  ✓ tools/qa_voyage_status_probe.gd 存在")
+else:
+    print("  ✗ 缺 qa_voyage_status_probe.gd")
+    problems.append("缺 voyage 截图探针")
 
 print()
 print()
