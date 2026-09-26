@@ -461,7 +461,11 @@ func _run() -> void:
 		and chart_src.find("°") < 0,
 		"海图旁注收成账条，去掉冒号、度数符号和括号教程", fails)
 	var voyage_src := FileAccess.get_file_as_string("res://scripts/core/Voyage.gd")
-	_check(chart_src.find("绕了些路。") >= 0 and chart_src.find("（绕了些路）") < 0
+	var fx_src := FileAccess.get_file_as_string("res://scripts/combat/CombatFx.gd")
+	var flee_ok := chart_src.find("绕了些路。") >= 0 or (
+		(fx_src.find("绕了些路。") >= 0 or fx_src.find("绕路若干") >= 0)
+		and chart_src.find("sea_flee_ok_note") >= 0)
+	_check(flee_ok and chart_src.find("（绕了些路）") < 0
 		and chart_src.find("（调试）") < 0 and chart_src.find("点验　中途遭遇。") >= 0
 		and voyage_src.find("损折：") < 0 and voyage_src.find("损折　") >= 0,
 		"海图遭遇日志去掉括号，风涛货损去掉冒号", fails)

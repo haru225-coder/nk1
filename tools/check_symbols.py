@@ -1258,8 +1258,14 @@ if (
 else:
     print("  ✗ 海图旁注仍是冒号或括号教程")
     problems.append("海图旁注仍是冒号或括号教程")
-if (
+_fx_src_k = open(os.path.join(SCRIPTS, "combat", "CombatFx.gd"), encoding="utf-8").read() if os.path.isfile(os.path.join(SCRIPTS, "combat", "CombatFx.gd")) else ""
+_flee_ok_literal = (
     seachart_src.count("绕了些路。") == 1
+    or (("绕了些路。" in _fx_src_k or "绕路若干" in _fx_src_k)
+        and "sea_flee_ok_note" in seachart_src)
+)
+if (
+    _flee_ok_literal
     and seachart_src.count("_log_shook_pursuers()") == 3
     and "（绕了些路）" not in seachart_src
     and "（调试）" not in seachart_src
@@ -2479,6 +2485,30 @@ if all(token in _ids_body for token in ("TYPE_ARRAY", "TYPE_STRING", "not (did i
 else:
     print("  ✗ 发现录未限制字符串或去重")
     problems.append("发现录 id 清洗不完整")
+
+# ── Astra L1：characters.json 工程词 + 展示入口锁 ──────────────
+import re as _re_l1
+_l1_pat = _re_l1.compile(r"placeholder|本作|玩家|士人线|海商线|乡土线")
+_l1_chars = open(os.path.join(ROOT, "data", "characters.json"), encoding="utf-8").read()
+_l1_hit = _l1_pat.search(_l1_chars)
+if _l1_hit:
+    print(f"  ✗ characters.json 仍含工程词「{_l1_hit.group(0)}」")
+    problems.append(f"characters.json 工程词 {_l1_hit.group(0)}")
+else:
+    print("  ✓ characters.json 原稿无工程词（placeholder/本作/玩家/士人线/海商线/乡土线）")
+_l1_art = open(os.path.join(ROOT, "scripts", "ui", "CharacterArt.gd"), encoding="utf-8").read()
+_l1_codex = open(os.path.join(ROOT, "scripts", "ui", "CharacterCodex.gd"), encoding="utf-8").read()
+_l1_main = open(os.path.join(ROOT, "scripts", "Main.gd"), encoding="utf-8").read()
+if "characters_codex.json" in _l1_art and "codex_bio(" in _l1_codex and "codex_short(" in _l1_main:
+    print("  ✓ 展示入口走 characters_codex（CharacterArt/Codex/Main）")
+else:
+    print("  ✗ 展示入口未锁定 characters_codex")
+    problems.append("展示入口未锁 characters_codex")
+if 'get("bio"' in _l1_codex or '"bio_short"' in _l1_main:
+    print("  ✗ 人物志/见面页仍直读 characters.json bio 原稿")
+    problems.append("UI 直读 bio 原稿")
+else:
+    print("  ✓ 人物志/见面页不直读 bio/bio_short 原稿")
 
 print()
 print("=" * 68)

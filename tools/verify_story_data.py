@@ -321,6 +321,25 @@ check('get("bio"' not in codex_src and "codex_bio(" in codex_src, "人物志小�
 check('"bio_short"' not in main_src and "codex_short(" in main_src, "见面页简介仍读 characters.json 的 bio_short 原稿")
 check("characters_codex.json" in art_src, "CharacterArt 未接人物志上屏文本层")
 
+# Astra L1：设定集原稿不得含工程词；展示层入口不得直接把 bio / bio_short 送到玩家可见控件
+_CHARS_ENG = re.compile(r"placeholder|本作|玩家|士人线|海商线|乡土线")
+_chars_raw = open(os.path.join(ROOT, "data", "characters.json"), encoding="utf-8").read()
+_eng_hit = _CHARS_ENG.search(_chars_raw)
+check(_eng_hit is None, f"characters.json 原稿仍含工程词「{_eng_hit.group(0) if _eng_hit else ''}」")
+# CharacterArt / CharacterCodex / Main 上屏路径：bio 原稿不得经 get("bio") / bio_short 直出
+check("codex_bio(" in art_src or "codex_bio(" in codex_src, "上屏层未走 CharacterArt.codex_bio")
+check("codex_short(" in art_src or "codex_short(" in main_src, "上屏层未走 CharacterArt.codex_short")
+# 禁止 UI 脚本直接 FileAccess 打开 characters.json 的 bio 字段上屏（VisionStage 只取立绘允许）
+_vs_path = os.path.join(ROOT, "scripts", "ui", "VisionStage.gd")
+if os.path.isfile(_vs_path):
+    _vs = open(_vs_path, encoding="utf-8").read()
+    # VisionStage 可读 characters.json 取 portrait，但不得把 bio 填进 Label
+    check(".bio" not in _vs.replace("biography", "") or 'get("bio"' not in _vs,
+          "VisionStage 疑似把 characters.json bio 送到控件")
+# 人物志与见面页不得出现「直接读 GameManager.characters[*].bio」类路径
+check('["bio"]' not in codex_src and ".bio_short" not in codex_src,
+      "CharacterCodex 仍直接读 bio/bio_short 原稿字段")
+
 # 上屏的场景文字（标题、正文、选项、调查项、speaker）引号一律用「」『』，不用 “” ‘’（第 2 轮 UX M7：
 # 人物志、册页、见面页、过场全用「」，只有 scenes.json 混着西式引号）。deprecated 场景不上屏，不查。
 # 序章正文不得点破主角结局（岳王庙、孤城、改名陈文龙）与现代腔（世界地图的迷雾、命运的指针、宏大沙盘）。
