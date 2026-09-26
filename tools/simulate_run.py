@@ -1117,6 +1117,92 @@ check(qz_sell <= qz_buy, f"泉州同港卖 {qz_sell} ≤ 买 {qz_buy}（无正�
 InvBook.fame = 80
 check(title_of(InvBook.fame)["id"] == "du_bao", "名声 80 为市舶都保")
 check(title_of(InvBook.fame)["loan_bonus"] == 2500, "都保赊贷 +2500")
+
+print()
+print("行会 / 贡院账目与新闻倍率隔离（一次性账本、一次性 market mul）")
+print("="*70)
+main_src = open(os.path.join(ROOT, "scripts", "Main.gd"), encoding="utf-8").read()
+def main_const(name):
+    m = re.search(rf"const {name} := ([0-9]+)", main_src)
+    if not m:
+        raise SystemExit(f"Main.gd 缺少 {name}")
+    return int(m.group(1))
+
+guild_fee = main_const("GUILD_JOIN_FEE")
+guild_credit_req = main_const("GUILD_JOIN_CREDIT")
+guild_credit_gain = main_const("GUILD_JOIN_CREDIT_GAIN")
+guild_network_gain = main_const("GUILD_JOIN_NETWORK_GAIN")
+exam_days = main_const("EXAM_SIT_DAYS")
+check(guild_fee == 2000 and guild_credit_req == 8 and guild_credit_gain == 4 and
+      guild_network_gain == 2,
+      f"行会常量仍为会费 {guild_fee} / 信用 {guild_credit_req} / 商誉 +{guild_credit_gain} / 人脉 +{guild_network_gain}")
+check(exam_days == 15, f"赴试只耗 {exam_days} 日")
+
+# 复刻成功一次与重复点击：guild 只动账本，不动行情率。
+guild_money, guild_credit, guild_network = guild_fee + 500, guild_credit_req, 0
+guild_rate_snapshot = {pid: dict(r) for pid, r in rates.items()}
+guild_money -= guild_fee
+guild_credit += guild_credit_gain
+guild_network += guild_network_gain
+guild_joined = True
+check((guild_money, guild_credit, guild_network, guild_joined) ==
+      (500, guild_credit_req + guild_credit_gain, guild_network_gain, True),
+      "行会成功：一次扣会费、加商誉/人脉，余钱 500")
+# 已入行再点时 handler 应在扣费前拦住；把状态保持原样作为第二次点击的结果。
+repeat_ledger = (guild_money, guild_credit, guild_network, guild_joined)
+check(repeat_ledger == (500, guild_credit_req + guild_credit_gain, guild_network_gain, True),
+      "行会重复点击不再叠加会费或账本增量")
+check(guild_rate_snapshot == {pid: dict(r) for pid, r in rates.items()},
+      "行会入行不改变任何港口行情倍率")
+
+# 复刻赴试两支：只推进日期和身份账本，钱、船与行情保持不动。
+exam_money, exam_elapsed, exam_fame = 500, 0, 0
+exam_scholar, exam_sea = 1, 0
+exam_rate_snapshot = {pid: dict(r) for pid, r in rates.items()}
+exam_elapsed += exam_days
+if exam_scholar >= exam_sea:
+    exam_fame += 4; exam_scholar += 2; exam_sat = True
+else:
+    exam_fame += 1; exam_sea += 1; exam_sat = False
+check((exam_money, exam_elapsed, exam_fame, exam_scholar, exam_sea, exam_sat) ==
+      (500, exam_days, 4, 3, 0, True),
+      "赴试士人支：15 日、名声 +4、学者 +2、写 exam_sat，钱不变")
+exam_scholar, exam_sea, exam_fame, exam_elapsed = 0, 1, 0, 0
+exam_elapsed += exam_days
+if exam_scholar >= exam_sea:
+    exam_fame += 4; exam_scholar += 2; exam_sat = True
+else:
+    exam_fame += 1; exam_sea += 1; exam_sat = False
+check((exam_money, exam_elapsed, exam_fame, exam_scholar, exam_sea, exam_sat) ==
+      (500, exam_days, 1, 0, 2, False),
+      "赴试海路支：15 日、名声 +1、海路 +1、不写 exam_sat，钱不变")
+check(exam_rate_snapshot == {pid: dict(r) for pid, r in rates.items()},
+      "赴试不改变任何港口行情倍率")
+
+# 复刻 news market：显式港口才受一次 mul，其他港口不动，60 日后回归。
+news_data = load("news.json")["news"]
+market_news = [n for n in news_data if "market" in n]
+check(bool(market_news), f"模拟发现 {len(market_news)} 条 market 新闻")
+for n in market_news:
+    mk = n["market"]
+    gid, mul = mk["good_id"], float(mk["mul"])
+    targets = list(mk.get("ports") or [pid for pid in ports if gid in ports[pid].get("market", {})])
+    probe = {pid: 1.0 for pid in ports if gid in ports[pid].get("market", {})}
+    before = dict(probe)
+    for pid in targets:
+        if pid in probe:
+            probe[pid] = max(0.40, min(2.20, probe[pid] * mul))
+    expected = max(0.40, min(2.20, mul))
+    check(all(abs(probe[pid] - expected) < 1e-9 for pid in targets if pid in probe),
+          f"{n['id']} 一次 market mul {mul:g}：目标港率 → {expected:.3f}")
+    check(all(probe[pid] == before[pid] for pid in probe if pid not in targets),
+          f"{n['id']} 未列目标港率保持不变")
+    recovered = expected
+    for _ in range(60):
+        recovered += (1.0 - recovered) * RECOVERY
+    check(abs(recovered - 1.0) < 0.05,
+          f"{n['id']} 60 日回归率 {recovered:.3f}（不留下常驻倍率）")
+
 print()
 print("哗变：开局不补水粮才会闹舱；跑商补足的航次碰不到（云端 7d9f）")
 print("="*70)

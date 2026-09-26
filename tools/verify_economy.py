@@ -1947,6 +1947,86 @@ for n in mk_news:
 
 print()
 print("=" * 68)
+print("九之七、行会 / 贡院账目隔离与新闻倍率边界")
+print("=" * 68)
+
+def main_body(name):
+    marker = "func " + name
+    if marker not in main_src:
+        return ""
+    return main_src.split(marker, 1)[1].split("\nfunc ", 1)[0]
+
+# 行会入行是一次性会费与账本增量，不应悄悄叠到行情、抽解或佣金倍率。
+guild_join = main_body("_on_guild_join")
+guild_fee = int(gd_const("scripts/Main.gd", "GUILD_JOIN_FEE"))
+guild_credit_req = int(gd_const("scripts/Main.gd", "GUILD_JOIN_CREDIT"))
+guild_credit_gain = int(gd_const("scripts/Main.gd", "GUILD_JOIN_CREDIT_GAIN"))
+guild_network_gain = int(gd_const("scripts/Main.gd", "GUILD_JOIN_NETWORK_GAIN"))
+check(guild_fee > 0 and guild_credit_req > 0 and guild_credit_gain > 0 and guild_network_gain > 0,
+      f"行会常量为正：会费 {guild_fee}、信用门槛 {guild_credit_req}、商誉 +{guild_credit_gain}、人脉 +{guild_network_gain}")
+check(guild_join.count("spend_money(GUILD_JOIN_FEE)") == 1 and
+      "merchant_credit += GUILD_JOIN_CREDIT_GAIN" in guild_join and
+      "network += GUILD_JOIN_NETWORK_GAIN" in guild_join and
+      'set_flag("guild_%s" % port_id)' in guild_join,
+      "入行一次扣会费、加商誉/人脉并写 guild_<港> 旗标")
+check("Economy." not in guild_join and "apply_buy_impact" not in guild_join and
+      "apply_sell_impact" not in guild_join,
+      "入行不改行情、抽解、佣金（不偷偷开常驻倍率）")
+# 小账本复刻成功与重复点击：会费只出一次，收益只记一次。
+g_cash, g_credit, g_network, g_flag = guild_fee + 1, guild_credit_req, 0, False
+g_cash -= guild_fee; g_credit += guild_credit_gain; g_network += guild_network_gain; g_flag = True
+g_after_repeat = (g_cash, g_credit, g_network, g_flag)
+check(g_after_repeat == (1, guild_credit_req + guild_credit_gain, guild_network_gain, True),
+      "行会成功账本：钱 -会费、商誉/人脉一次性增加，重复点击不再产生第二笔倍率")
+
+# 赴试只推进日期并改变身份倾向/名声；明确不发钱、不改行情。
+exam_sit = main_body("_on_exam_sit")
+exam_days = int(gd_const("scripts/Main.gd", "EXAM_SIT_DAYS"))
+exam_ports_src = main_body("_setup_exam")
+check(exam_days > 0 and exam_days == 15, f"赴试耗时 {exam_days} 日（固定为 15 日，不以经济倍率折算）")
+check("advance_days(EXAM_SIT_DAYS)" in exam_sit and "add_money" not in exam_sit and
+      "spend_money" not in exam_sit and "apply_buy_impact" not in exam_sit and
+      "apply_sell_impact" not in exam_sit,
+      "赴试只耗日并结算身份倾向/名声，不发钱、不砸盘")
+check('"exam_sat"' in exam_sit and "add_fame(4)" in exam_sit and
+      "add_fame(1)" in exam_sit and "scholar_tendency += 2" in exam_sit and
+      "sea_tendency += 1" in exam_sit,
+      "赴试士人/海路两支的名声与倾向增量完整")
+check('const EXAM_SIT_PORTS := ["xinghua", "quanzhou"]' in main_src and
+      "EXAM_SIT_PORTS.has(port_id)" in exam_ports_src,
+      "赴试港限制仍为兴化、泉州，不把其误当成全港经济倍率")
+
+# 新闻倍率是单次 market mul：验证原始倍率、显式港口范围、只调用一次和回归。
+news_calls = settle_fn.count("Economy.apply_news_market(")
+check(news_calls == 1, f"新闻 market 每次投放只消费一次（接线调用 {news_calls} 处）")
+for n in mk_news:
+    mk = n["market"]
+    gid, mul = mk["good_id"], float(mk["mul"])
+    explicit = mk.get("ports")
+    targets = list(explicit) if explicit else [pid for pid in ports if gid in ports[pid].get("market", {})]
+    check(0.4 <= mul <= 1.6 and not math.isclose(mul, 1.0),
+          f"{n['id']}：market mul={mul:g} 在 0.4–1.6 且确有冲击")
+    check(bool(targets) and all(gid in ports[pid].get("market", {}) for pid in targets),
+          f"{n['id']}：market 只落在交易 {goods[gid]['name']} 的声明港口")
+    # 以 1.0 为基线，显式港口以外必须保持原率；倍率不可因补发或重复消费再乘一次。
+    probe = {pid: 1.0 for pid in ports if gid in ports[pid].get("market", {})}
+    before_probe = dict(probe)
+    for pid in targets:
+        if pid in probe:
+            probe[pid] = min(RATE_MAX_E, max(RATE_MIN_E, probe[pid] * mul))
+    check(all(probe[pid] == before_probe[pid] for pid in probe if pid not in targets),
+          f"{n['id']}：未列港行情不变（无越界倍率）")
+    expected = min(RATE_MAX_E, max(RATE_MIN_E, mul))
+    for pid in targets:
+        if pid in probe:
+            check(abs(probe[pid] - expected) < 1e-9,
+                  f"{n['id']}@{pid}：一次性行情率 1.0×{mul:g} → {probe[pid]:.3f}")
+    twice = min(RATE_MAX_E, max(RATE_MIN_E, expected * mul)) if targets else expected
+    check(not math.isclose(twice, expected),
+          f"{n['id']}：重复乘法会产生不同结果，故接线必须保持单次消费")
+
+print()
+print("=" * 68)
 if fails:
     print(f"结果：{len(fails)} 项未通过")
     for f in fails:
