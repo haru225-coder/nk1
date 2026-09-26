@@ -41,6 +41,44 @@ var _black_done := false
 var _done := false
 
 
+## 题签标题只写可核对的事实：章次 / 章节名 / 抵达港名；日期、年号由调用方从历法传入。
+## 不在这里编剧情，也不把「到港」写成教程式提示。这样章节卡、抵港横幅和工席
+## 成功态能共享同一套题签，而不会各自长出一套现代 UI 文案。
+static func chapter_title(chapter_no: int, chapter_name: String) -> String:
+	var name := chapter_name.strip_edges()
+	var head := "第%s章" % _cn_small(maxi(chapter_no, 1))
+	return head if name == "" else "%s・%s" % [head, name]
+
+
+static func port_title(port_name: String) -> String:
+	var name := port_name.strip_edges()
+	return "抵港" if name == "" else "抵港・%s" % name
+
+
+## 章节 / 抵港的可复用入口。subtitle 应是调用方拿到的真实年号或日期（例如
+## 「景定五年・一二六四」），不在过渡层猜时间，避免纪实标题与存档历法漂移。
+static func chapter_arrive(parent: Node, chapter_no: int, chapter_name: String,
+		subtitle := "", on_black := Callable()) -> CanvasLayer:
+	return play(parent, chapter_title(chapter_no, chapter_name), subtitle, on_black, "章")
+
+
+static func port_arrive(parent: Node, port_name: String, subtitle := "",
+		on_black := Callable()) -> CanvasLayer:
+	return play(parent, port_title(port_name), subtitle, on_black, "泊")
+
+
+static func _cn_small(n: int) -> String:
+	var digits := ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
+	if n < 10:
+		return digits[n]
+	if n == 10:
+		return "十"
+	if n < 20:
+		return "十" + digits[n - 10]
+	var tens := int(n / 10)
+	return digits[tens] + "十" + (digits[n % 10] if n % 10 > 0 else "")
+
+
 ## seal_text：题签末尾的小朱印（一个字，如「试」「行」）；空串不盖。
 static func play(parent: Node, p_title: String, p_subtitle := "", on_black := Callable(), p_seal := "") -> CanvasLayer:
 	if parent == null or not parent.is_inside_tree() or Kit.is_headless():
