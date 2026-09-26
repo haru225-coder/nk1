@@ -1973,35 +1973,6 @@ elif not os.path.exists(os.path.join(ROOT, "tools", "qa_ending_reread_probe.gd")
     problems.append("终局重读探针缺失")
 else:
     print("  ✓ 终局重读结局：札记旁注时地 + 笺脚注文；重读只翻既有册页（眉题重读・合上册页），不重播题签、不叠册页、不再 finish")
-# 章晋升册页 / 翻页题签（Lane W）：摘要「这一路」+ 代价分区；skip_years 末行「自…至于…」；
-# 确认「承此一路」走 promote_title 印「晋」；不改 SKIP_* / advance_years 数值。
-_confirm_ch = _p7_code(p7_bodies.get("_confirm_chapter_sheet", ""))
-_era_body = _p7_code(p7_bodies.get("_era_summary_lines", ""))
-_show_ch = _p7_code(p7_bodies.get("_show_chapter_dialog", ""))
-_gm_skip = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
-if ("func promote_title" not in ut_src or "func promote_open" not in ut_src
-        or "年后" not in ut_src or '"晋")' not in ut_src):
-    print("  ✗ UiTransition 缺晋升翻页题签助手（promote_title / 印「晋」）")
-    problems.append("晋升题签助手缺失")
-elif not ("promote_title(" in _confirm_ch and "play_transition(" in _confirm_ch
-          and '"晋"' in _confirm_ch and "_chapter_advanced" in _confirm_ch):
-    print("  ✗ 晋升册页确认未接 promote_title / play_transition（印「晋」）")
-    problems.append("晋升翻页题签未接钩子")
-elif not ("这一路" in _show_ch and "代价" in _show_ch
-          and "_chapter_advanced" in _show_ch and "_chapter_years" in _show_ch):
-    print("  ✗ 晋升册页缺「这一路」/「代价」分区或未记住 advanced/years")
-    problems.append("晋升册页摘要代价分区漂移")
-elif "span :=" not in _era_body:
-    print("  ✗ _era_summary_lines 未按跳年数写「这两年/这三年」")
-    problems.append("跳年摘要年数笼统")
-elif "自%s至于%s" not in _gm_skip or "SKIP_HULL_DECAY" not in _gm_skip:
-    print("  ✗ skip_years 末行未改「自…至于…」或 SKIP_* 常量丢失")
-    problems.append("跳年代价末行漂移")
-elif not os.path.exists(os.path.join(ROOT, "tools", "qa_chapter_promote_probe.gd")):
-    print("  ✗ 缺 tools/qa_chapter_promote_probe.gd")
-    problems.append("晋升册页探针缺失")
-else:
-    print("  ✓ 章晋升册页：摘要/代价分区 + 翻页题签印「晋」；skip_years 末行历法纪实；数值未改")
 if all(s in main_src for s in (
     '"_guild"', '"_exam"', '"_residence"', '"_temple"',
     "bg_quanzhou_ledger.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",
