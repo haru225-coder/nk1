@@ -85,6 +85,29 @@ static func prologue_shore(parent: Node, subtitle := "", on_black := Callable())
 	return play(parent, prologue_shore_title(), subtitle, on_black, "序")
 
 
+## 守城 / 终局题签：同序章文法，只写可核对的地名与结局名。守城印「城」，终局印「终」。
+## 副题（日期、终局时地）由调用方从 Calendar / GameState.ended_at 传入。只在首次进岸带时演，分支与数值不经此处。
+static func siege_title() -> String:
+	return "兴化军・围城"
+
+
+static func endgame_title(port_name: String, ending_name: String) -> String:
+	var port := port_name.strip_edges()
+	var ending := ending_name.strip_edges()
+	if ending == "":
+		return "终局" if port == "" else "%s・终局" % port
+	return ending if port == "" else "%s・%s" % [port, ending]
+
+
+static func siege_open(parent: Node, subtitle := "", on_black := Callable()) -> CanvasLayer:
+	return play(parent, siege_title(), subtitle, on_black, "城")
+
+
+static func endgame_open(parent: Node, port_name: String, ending_name: String, subtitle := "",
+		on_black := Callable()) -> CanvasLayer:
+	return play(parent, endgame_title(port_name, ending_name), subtitle, on_black, "终")
+
+
 static func _cn_small(n: int) -> String:
 	var digits := ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
 	if n < 10:

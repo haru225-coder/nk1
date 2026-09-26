@@ -68,6 +68,9 @@ var _shore_facilities: Array = []
 var _port_scene_facilities: Array = []
 ## 岸带页型：port 寻常 / siege 兴化守城 / ended 终局后港口。UI 状态，不入存档。
 var _shore_mode := "port"
+## 守城 / 终局岸带的纪实题签本会话已演过哪几种（siege / ended）：只首次进岸带时演一次，「再候一日」、
+## 进出设施、重读结局都不重播。UI 状态，不入存档；headless 下 play_transition 当帧直通。
+var _shore_title_seen := {}
 ## 今日柜上的三样货。明日再看之前这一手不变。
 var broker_hand: PackedStringArray = PackedStringArray()
 
@@ -3519,10 +3522,10 @@ func _build_shore() -> void:
 	_clear_shore()
 	# 本地 main 的终局线入口：终局后港口页 / 兴化守城页（函数在文件末尾补回段）
 	if GameState.is_ended():
-		_setup_ended_port()
+		_shore_title_once("ended", _setup_ended_port)
 		return
 	if _siege_active():
-		_setup_siege_port()
+		_shore_title_once("siege", _setup_siege_port)
 		return
 	_shore_mode = "port"
 	_fit_port_title()
@@ -3547,6 +3550,27 @@ func _clear_shore() -> void:
 			band.remove_child(child)
 			child.queue_free()
 	shore_hand = PackedStringArray()
+
+
+## 首次进守城 / 终局岸带：墨幕全黑时再排岸带（揭开就是新页），题签同序章文法——「兴化军・围城」印「城」，
+## 「港名・结局名」印「终」；副题是日期或终局时地。已演过就当帧直排。全黑前若已换页，不再补排旧页。
+func _shore_title_once(kind: String, build: Callable) -> void:
+	if _shore_title_seen.has(kind):
+		build.call()
+		return
+	_shore_title_seen[kind] = true
+	var sid := current_scene_id
+	var title := _UI_TRANSITION.siege_title()
+	var sub := Calendar.get_date_string()
+	var seal := "城"
+	if kind == "ended":
+		title = _UI_TRANSITION.endgame_title(_ended_port_base(), GameState.ended)
+		sub = GameState.ended_at if GameState.ended_at != "" else sub
+		seal = "终"
+	play_transition(title, sub, func() -> void:
+		if current_scene_id == sid and port_mode.visible:
+			build.call()
+	, seal)
 
 
 ## 港名匾字号：长题（终局「泉州・泉州蒲氏的船」、守城「兴化军・围城」）按字数收小，不冲出墨刷
@@ -3701,6 +3725,31 @@ func _band_slip(slip_name: String) -> Array:
 	col.add_theme_constant_override("separation", 4)
 	slip.add_child(col)
 	return [slip, col]
+
+
+## 小笺抬头，同序章题签文法：马善政泥金题 24 + 一枚小朱印（守城「城」、终局「终」）+ 可选 16px 淡字旁注，
+## 下接一道泥金细线（主题 HSeparator），正文由调用方逐行 16px 接在线下。
+func _band_head(col: Node, title: String, seal := "", aside := "") -> HBoxContainer:
+	var head := HBoxContainer.new()
+	head.name = "BandHead"
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_theme_constant_override("separation", 12)
+	col.add_child(head)
+	var head_l := _band_line(head, title, UiTheme.GOLD_HI, 24, true)
+	head_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if seal != "":
+		head.add_child(_seal_mark(seal))
+	if aside != "":
+		var gap := Control.new()
+		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		gap.custom_minimum_size = Vector2(6, 0)
+		head.add_child(gap)
+		var aside_l := _band_line(head, aside, UiTheme.TEXT_DIM, 16, true)
+		aside_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var rule := HSeparator.new()
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(rule)
+	return head
 
 
 func _band_line(col: Node, text: String, color: Color, px := 16, title := false) -> Label:
@@ -5038,10 +5087,7 @@ func _resign_decided() -> bool:
 
 func _setup_ended_port() -> void:
 	# 港名已由 _setup_port_mode 写好；这里只拼一次结局名（不再拿旧匾文字累加）
-	var base := port_title.text
-	if base.find("・") >= 0 and base.ends_with(GameState.ended):
-		base = base.trim_suffix("・" + GameState.ended)
-	port_title.text = "%s・%s" % [base, GameState.ended]
+	port_title.text = _UI_TRANSITION.endgame_title(_ended_port_base(), GameState.ended)
 	_fit_port_title()
 	# 云端港口页没有左右栏：札记是岸带上方一方墨笺，动作行只留「重读结局」「航海日志」「人物志」
 	_shore_mode = "ended"
@@ -5050,16 +5096,21 @@ func _setup_ended_port() -> void:
 	update_status_panel()
 
 
+## 匾上的港名（去掉已拼上的「・结局名」）：终局匾与终局题签共用
+func _ended_port_base() -> String:
+	var base := port_title.text
+	if base.find("・") >= 0 and base.ends_with(GameState.ended):
+		base = base.trim_suffix("・" + GameState.ended)
+	return base
+
+
 ## 终局后港口页的航海札记：墨底小笺，标题马善政泥金，逐行 16px；行多时在 220 高里滚动、底边渐隐
 func _epilogue_slip() -> Control:
 	var parts := _band_slip("EpilogueSlip")
 	var slip: PanelContainer = parts[0]
 	var col: VBoxContainer = parts[1]
 	slip.custom_minimum_size = Vector2(760, 0)
-	_band_line(col, "航海札记", UiTheme.GOLD_HI, 24, true)
-	var rule := HSeparator.new()
-	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_child(rule)
+	_band_head(col, "航海札记", "终")
 	var lines_box := VBoxContainer.new()
 	lines_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	lines_box.add_theme_constant_override("separation", 4)
@@ -5155,7 +5206,7 @@ func _setup_quanzhou_standoff(port_id: String) -> void:
 ## 港口页特殊卡：只在特定年月与旗标下出现。
 
 func _setup_siege_port() -> void:
-	port_title.text = "兴化军・围城"
+	port_title.text = _UI_TRANSITION.siege_title()
 	_fit_port_title()
 	# 云端港口页没有左右栏，守城的账与五张卡都走岸带：卡以 siege_* 身份全部上岸（不受「今日只开三处」），
 	# 城防账是岸带上方一方墨笺；福州尼寺本就不可操作，岸带一行也放不下六扇门，写成账里一行
@@ -5177,13 +5228,8 @@ func _siege_stat_slip() -> Control:
 	var grain: int = GameState.siege_get("grain")
 	var rounds_left: int = grain / GameState.SIEGE_GRAIN_PER_ROUND
 	var fought: int = GameState.siege_get("round")
-	var head := HBoxContainer.new()
-	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	head.add_theme_constant_override("separation", 18)
-	col.add_child(head)
-	_band_line(head, "城头白布八字　生为宋臣　死为宋鬼", UiTheme.GOLD_HI, 22, true)
-	var rounds := _band_line(head, "三阵・尚未接战" if fought <= 0 else "三阵・已守%s阵" % _cn_num(fought), UiTheme.TEXT, 18, true)
-	rounds.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_band_head(col, "城头白布八字　生为宋臣　死为宋鬼", "城",
+		"三阵・尚未接战" if fought <= 0 else "三阵・已守%s阵" % _cn_num(fought))
 	_band_line(col, "兵 %d（上限 %d）　粮 %d・够打%s阵　城墙 %d / %d　士气 %d%s" % [
 		GameState.siege_get("troops"), GameState.siege_troop_cap(),
 		grain, _cn_num(rounds_left), GameState.siege_get("wall"), GameState.SIEGE_WALL_MAX,

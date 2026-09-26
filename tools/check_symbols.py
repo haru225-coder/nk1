@@ -1893,6 +1893,35 @@ elif ("prologue_open_title()" not in _start_body or "prologue_shore_title()" not
     problems.append("序章题签未接钩子")
 else:
     print("  ✓ 开卷 / 入酒棚走序章纪实题签（play_transition；headless 直通）")
+# 守城 / 终局岸带纪实题签（Lane R）：题名与朱印「城」「终」锁在 UiTransition；首次进岸带经 _shore_title_once 演一次
+# （UI 态 _shore_title_seen 防重播），墨幕全黑时再排岸带；城防账 / 航海札记共用 _band_head（泥金题 + 印 + 分隔线）。
+_build_shore_body = _p7_code(p7_bodies.get("_build_shore", ""))
+_once_body = _p7_code(p7_bodies.get("_shore_title_once", ""))
+_band_head_body = _p7_code(p7_bodies.get("_band_head", ""))
+_siege_port_body = _p7_code(p7_bodies.get("_setup_siege_port", ""))
+_ended_port_body = _p7_code(p7_bodies.get("_setup_ended_port", ""))
+if ("func siege_title" not in ut_src or "兴化军・围城" not in ut_src
+        or "func endgame_title" not in ut_src or '"城")' not in ut_src or '"终")' not in ut_src):
+    print("  ✗ UiTransition 缺兴化军・围城 / 港名・结局题签助手（印「城」「终」）")
+    problems.append("守城终局题签助手缺失")
+elif not ('_shore_title_once("ended", _setup_ended_port)' in _build_shore_body
+          and '_shore_title_once("siege", _setup_siege_port)' in _build_shore_body
+          and "_shore_title_seen.has(kind)" in _once_body and "play_transition(" in _once_body
+          and _once_body.find("_shore_title_seen.has(kind)") < _once_body.find("_shore_title_seen[kind] = true") < _once_body.find("play_transition(")
+          and "siege_title()" in _once_body and "endgame_title(" in _once_body
+          and "siege_title()" in _siege_port_body and "endgame_title(" in _ended_port_body):
+    print("  ✗ 守城 / 终局岸带未经 _shore_title_once 接题签（或未防重播）")
+    problems.append("守城终局题签未接钩子")
+elif not ("HSeparator.new()" in _band_head_body and "_seal_mark(seal)" in _band_head_body
+          and '_band_head(col, "航海札记", "终")' in _p7_code(p7_bodies.get("_epilogue_slip", ""))
+          and '"城"' in _p7_code(p7_bodies.get("_siege_stat_slip", "")) and "_band_head(col," in _p7_code(p7_bodies.get("_siege_stat_slip", ""))):
+    print("  ✗ 城防账 / 航海札记抬头未走 _band_head（泥金题 + 印 + 分隔线）")
+    problems.append("守城终局小笺抬头漂移")
+elif not os.path.exists(os.path.join(ROOT, "tools", "qa_siege_endgame_probe.gd")):
+    print("  ✗ 缺 tools/qa_siege_endgame_probe.gd")
+    problems.append("守城终局探针缺失")
+else:
+    print("  ✓ 守城 / 终局岸带首进走纪实题签（城 / 终；UI 态防重播；headless 直通），小笺抬头同序章文法")
 if all(s in main_src for s in (
     '"_guild"', '"_exam"', '"_residence"', '"_temple"',
     "bg_quanzhou_ledger.jpg", "bg_academy.jpg", "bg_xinghua_study.jpg",
