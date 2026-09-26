@@ -792,7 +792,7 @@ func _text(ci: CanvasItem, world_pos: Vector2, text: String, size_px: int, col: 
 	elif align == HORIZONTAL_ALIGNMENT_RIGHT:
 		ox = -w
 	if outline:
-		ci.draw_string_outline(fnt, Vector2(ox, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, 3, Color(COL_SHELL, 0.78))
+		ci.draw_string_outline(fnt, Vector2(ox, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, 4, Color(COL_SHELL, 0.90))
 	ci.draw_string(fnt, Vector2(ox, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, col)
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
@@ -1078,12 +1078,13 @@ func _ensure_layout() -> void:
 		return float(a.get("lat", 0.0)) > float(b.get("lat", 0.0))
 	)
 	# 字号：默认取景（z 约 0.6–0.9）下 13 px 只剩 11 px 高，读不清（snowchan27-02 走查），提到 15 起
-	var size_px := 15 if z < 0.7 else (16 if z < 1.6 else 18)
+	var size_px := 16 if z < 0.7 else (17 if z < 1.6 else 19)
 	var show_sub := z >= 0.9
 	var view := world_visible_rect().grow(300.0)
 	# 障碍：船标 + 每个要画的港的框（名字要避开别的港框，兴化 / 兴化海口那种挨着的港才不会读反）
 	if ship_visible and ship.visible:
-		var sr := _px(18.0)
+		# Lane U：船标避让放大，港名/航段边标不压船
+		var sr := _px(26.0)
 		_port_obstacles.append(Rect2(ship.position - Vector2(sr, sr), Vector2(sr * 2.0, sr * 2.0)))
 	var drawn := []
 	for p in order:
@@ -1176,6 +1177,12 @@ func _draw_dest_edge_hint(ci: CanvasItem) -> void:
 	var tp := e - dir * s * 3.2
 	# 名字往带内侧偏，别贴着箭头
 	tp += Vector2(0, _px(5.0)) if dir.y < 0.0 else Vector2(0, -_px(4.0))
+	# Lane U：边沿航段提示再让开船标，避免朱箭/港名压船
+	if ship_visible and ship.visible:
+		var clear := _px(28.0)
+		var delta := tp - ship.position
+		if delta.length() < clear and delta.length() > 0.01:
+			tp = ship.position + delta.normalized() * clear
 	_text(ci, tp, text, 14, COL_CINNABAR, HORIZONTAL_ALIGNMENT_CENTER)
 
 

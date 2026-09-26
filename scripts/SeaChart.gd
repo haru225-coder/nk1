@@ -707,6 +707,9 @@ func _refresh_strip() -> void:
 			pct = int(clampf((total_li - remaining_li) / total_li, 0.0, 1.0) * 100.0)
 		# 验收 sail:SAIL-3：末日进度会冲过头，余程钳到 0，不显示负数
 		note = "航行中　第 %d 日　已行 %d / 100　余程 %d 里" % [days_elapsed, pct, maxi(0, int(remaining_li))]
+	# Lane U：顶匾第二行截短，告警朱字与航讯不折行（strip 已 AUTOWRAP_OFF）
+	if note.length() > 28:
+		note = note.substr(0, 27) + "…"
 	var dim := UiTheme.hex(UiTheme.TEXT_DIM)
 	_strip_line.text = line1 + "\n[color=#%s]%s[/color]" % [dim, note]
 
@@ -871,27 +874,27 @@ func _course_detail_text(gold: String) -> String:
 		var rough_days := int(plan["expected_days"])
 		var safe_days := int(plan["safe_days"])
 		if calm_days > left:
-			t += _ink(UiTheme.CINNABAR, "委办只剩 %d 日，静风预计就要 %d 日，赶不上。" % [left, calm_days]) + "\n"
+			t += _ink(UiTheme.CINNABAR, "委办剩 %d 日　静风 %d 日　赶不上" % [left, calm_days]) + "\n"
 		elif rough_days > left:
-			t += _ink(UiTheme.HONEY, "委办还剩 %d 日。静风 %d 日赶得上，遇事约 %d 日，可能误期。" % [left, calm_days, rough_days]) + "\n"
+			t += _ink(UiTheme.HONEY, "委办剩 %d 日　静风 %d　遇事约 %d　或误期" % [left, calm_days, rough_days]) + "\n"
 		elif safe_days > left:
-			t += _ink(UiTheme.HONEY, "委办还剩 %d 日。遇事约 %d 日，八成要 %d 日，不算稳。" % [left, rough_days, safe_days]) + "\n"
+			t += _ink(UiTheme.HONEY, "委办剩 %d 日　遇事约 %d　八成 %d　不算稳" % [left, rough_days, safe_days]) + "\n"
 		else:
 			var hold_shown := int(plan.get("hold_tenths", 0))
 			var spoil_shown := 10
 			if not damp.is_empty() and str(damp.get("good_id", "")) == str(cst.get("good_id", "")):
 				spoil_shown = Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(float(damp["rate"]), int(damp["qty"]), safe_days))
 			if hold_shown < 8:
-				t += _ink(UiTheme.HONEY, "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。保货只有 %d，不到八成。" % [left, rough_days, safe_days, hold_shown]) + "\n"
+				t += _ink(UiTheme.HONEY, "委办剩 %d 日　遇事约 %d　八成 %d　保货 %d，不到八成" % [left, rough_days, safe_days, hold_shown]) + "\n"
 			elif spoil_shown < 8:
-				t += _ink(UiTheme.HONEY, "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。受潮只有 %d，不到八成。" % [left, rough_days, safe_days, spoil_shown]) + "\n"
+				t += _ink(UiTheme.HONEY, "委办剩 %d 日　遇事约 %d　八成 %d　受潮只有 %d" % [left, rough_days, safe_days, spoil_shown]) + "\n"
 			else:
-				t += _ink(UiTheme.MOSS, "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。" % [left, rough_days, safe_days]) + "\n"
+				t += _ink(UiTheme.MOSS, "委办剩 %d 日　遇事约 %d　八成 %d" % [left, rough_days, safe_days]) + "\n"
 	if not cst.is_empty():
 		var need := int(cst.get("remaining", 0))
 		var have := Fleet.cargo_qty(str(cst.get("good_id", "")))
 		if have < need:
-			t += _ink(UiTheme.HONEY, "舱里的%s只有 %d，委办还要 %d。不够也能开船，到港交不齐。" % [
+			t += _ink(UiTheme.HONEY, "舱中%s　%d／委办 %d　到港或交不齐" % [
 				GameManager.get_good_name(str(cst.get("good_id", ""))), have, need,
 			]) + "\n"
 	if not Voyage.is_known_route(origin_port, selected_port):
@@ -901,9 +904,9 @@ func _course_detail_text(gold: String) -> String:
 	var supply_safe := int(plan["safe_days"])
 	if supply_have < supply_safe:
 		if supply_have < supply_mean:
-			t += _ink(UiTheme.CINNABAR, "水粮只够 %d 日，遇事大约要 %d 日，半途必要死人。" % [supply_have, supply_mean]) + "\n"
+			t += _ink(UiTheme.CINNABAR, "水粮 %d 日　遇事约 %d 日　半途必尽" % [supply_have, supply_mean]) + "\n"
 		else:
-			t += _ink(UiTheme.HONEY, "水粮够遇事约 %d 日，八成要 %d 日，可能中途断粮。" % [supply_mean, supply_safe]) + "\n"
+			t += _ink(UiTheme.HONEY, "水粮够遇事约 %d　八成 %d　或断粮" % [supply_mean, supply_safe]) + "\n"
 	return t
 
 
@@ -1011,6 +1014,8 @@ func _card_line(text: String, color: Color) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+	lbl.clip_text = true
 	UiTheme.style_footnote(lbl)
 	lbl.add_theme_color_override("font_color", color)
 	return lbl
@@ -1166,7 +1171,7 @@ func _sail_next_day() -> void:
 
 	# 补给见底的警告
 	if Fleet.supply_days() <= 0 and Fleet.total_crew() > 0:
-		_log(_ink(UiTheme.CINNABAR, "第 %d 日・水粮已尽，舱里开始有人病倒。" % days_elapsed))
+		_log(_ink(UiTheme.CINNABAR, "第 %d 日・水粮已尽　舱中有人病倒" % days_elapsed))
 
 	if kind != Voyage.EventKind.NONE:
 		_log("第 %d 日・%s" % [days_elapsed, event.get("title", "")])

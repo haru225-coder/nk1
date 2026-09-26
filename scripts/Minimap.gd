@@ -5,6 +5,13 @@ var root: Node
 var map_scale: float = 0.02
 var radar_radius: float = 75.0
 var _pulse_phase: float = 0.0
+## 子正午北、午正南、卯正东、酉正西——雷达十字旁的纪实短标，不写 NESW。
+const CARDINAL := [
+	[Vector2(0, -1), "子"],
+	[Vector2(1, 0), "卯"],
+	[Vector2(0, 1), "午"],
+	[Vector2(-1, 0), "酉"],
+]
 
 func _ready() -> void:
 	# WorldMap 可能是 add_child 到 SeaChart 上的子场景（P4 海战），
@@ -34,6 +41,7 @@ func _draw() -> void:
 	draw_arc(center, radar_radius * 0.78, 0, TAU, 40, Color(UiTheme.GOLD, 0.18), 1.0)
 	draw_line(center + Vector2(-radar_radius + 8.0, 0), center + Vector2(radar_radius - 8.0, 0), Color(UiTheme.GOLD, 0.14), 1.0)
 	draw_line(center + Vector2(0, -radar_radius + 8.0), center + Vector2(0, radar_radius - 8.0), Color(UiTheme.GOLD, 0.14), 1.0)
+	_draw_cardinals(center)
 
 	# 本船脉动一圈，保留朱砂实心点作为视觉锚点。
 	var pulse := 0.5 + 0.5 * sin(_pulse_phase * 2.0)
@@ -48,14 +56,38 @@ func _draw() -> void:
 	if root.has_node("Ports"):
 		for port in root.get_node("Ports").get_children():
 			if not port.visible: continue  # 战斗模式隐藏港口，雷达不画
-			_draw_blip(port.global_position, UiTheme.GOLD)
+			var pname := ""
+			if port.has_meta("port_name"):
+				pname = str(port.get_meta("port_name"))
+			elif "port_name" in port:
+				pname = str(port.get("port_name"))
+			_draw_blip(port.global_position, UiTheme.GOLD, pname)
 
 	# Draw Pirates
 	for child in root.get_children():
 		if child.name.begins_with("PirateShip"):
-			_draw_blip(child.global_position, UiTheme.SEAL_HI)
+			_draw_blip(child.global_position, UiTheme.SEAL_HI, "")
 
-func _draw_blip(world_pos: Vector2, color: Color) -> void:
+func _draw_cardinals(center: Vector2) -> void:
+	var fnt: Font = UiTheme.font()
+	var r := radar_radius - 14.0
+	for entry in CARDINAL:
+		var dir: Vector2 = entry[0]
+		var ch: String = entry[1]
+		var pos := center + dir * r
+		var sz := fnt.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 11)
+		draw_string(fnt, pos - Vector2(sz.x * 0.5, -3.0), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(UiTheme.GOLD, 0.55))
+
+func _short_port_label(name: String) -> String:
+	var t := name.strip_edges()
+	if t.ends_with("港"):
+		t = t.substr(0, t.length() - 1)
+	# 密区只留两字，免得压船标（兴化海口 → 兴化）
+	if t.length() > 2:
+		t = t.substr(0, 2)
+	return t
+
+func _draw_blip(world_pos: Vector2, color: Color, port_name: String = "") -> void:
 	var rel_pos := world_pos - ship.global_position
 	var map_pos := rel_pos * map_scale
 	var center := Vector2(radar_radius, radar_radius)
@@ -68,6 +100,17 @@ func _draw_blip(world_pos: Vector2, color: Color) -> void:
 		var blip_color := color
 		blip_color.a = alpha
 		draw_circle(center + map_pos, 2.5, blip_color)
+		# 近距港名短标；太贴本船（<18）不写，免得挡朱点
+		if port_name != "" and dist >= 18.0 and dist <= edge_radius * 0.92:
+			var label := _short_port_label(port_name)
+			if label != "":
+				var fnt: Font = UiTheme.font()
+				var sz := fnt.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10)
+				var lp := center + map_pos + Vector2(4.0, -3.0)
+				# 靠右缘时改到左侧，避免出盘
+				if lp.x + sz.x > center.x + edge_radius - 2.0:
+					lp.x = center.x + map_pos.x - sz.x - 4.0
+				draw_string(fnt, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(UiTheme.GOLD, 0.72 * alpha))
 		return
 
 	# Off-screen contacts stay legible as small edge chevrons instead of
