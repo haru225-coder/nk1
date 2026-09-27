@@ -428,6 +428,7 @@ print("  autoload 按注册顺序逐个 _ready；在 _ready 里碰排在自己�
 # 反向断言（"X" not in body / not any(…)）却照样绿——函数改了名 / 被删 / 搬走没拼回，断言就空转。
 # 所以 `_func_body(src, name)` 与 `func_bodies(src).get(name, …)` 一律记账：取不到记下「本脚本行号 + 函数名」，
 # 「十三、按函数名取函数体」逐条判红。只想探有没有这支函数、不想判红的，用 `name in func_bodies(src)`（不记账）。
+# 场景节点按名取块的 _node_block 同记这本账（键 `[node name="X"]`，lane cs12）。
 _body_asks = {}  # (本脚本行号, 函数名) -> 取到没有；同一行多次取（循环 / 变异自检）按一处计，有一次取不到就算取不到
 
 
@@ -2645,9 +2646,12 @@ else:
     print("  ✓ 开场场景不再写原型占位")
 
 
+# 按节点名取场景节点块（lane cs12）：与按名取函数体同一本账——节点改名 / 删了 / 挪进子场景时原先静默给 ""，
+# 正向断言（"visible = false" in 块）跟着红，红因却写成「仍展开」；反向断言就照样绿。取不到记账，十三节判红。
 def _node_block(src: str, node_name: str) -> str:
     token = '[node name="%s"' % node_name
     at = src.find(token)
+    _body_ask(token + "]", at >= 0)
     if at < 0:
         return ""
     nxt = src.find("\n[node ", at + len(token))
@@ -2993,8 +2997,16 @@ def _gr_first_stmt(body):
             return ln.strip()
     return ""
 def _guild_remap_contract(src):
+    # 本契约也跑在下面的变异源码上：取体一律 `in` 探、缺了记成契约错误，不走 .get 记账——
+    # 否则「删掉某函数」的变异会被十三节当成本脚本取不到函数体判红（lane cs12；真源码缺函数照样经「缺 X」判红）
     errs = []
     bodies = func_bodies(src)
+    def body(name):
+        if name in bodies:
+            return bodies[name]
+        if "缺 %s" % name not in errs:
+            errs.append("缺 %s" % name)
+        return ""
     jp = re.search(r"const GUILD_JOIN_PORTS\s*:=\s*\[(.*?)\]", src, re.S)
     join_ports = set(re.findall(r'"(\w+)"', jp.group(1))) if jp else set()
     remapped = re.search(r"const REMAPPED_FACILITIES\s*:=\s*\[(.*?)\]", src, re.S)
@@ -3006,19 +3018,17 @@ def _guild_remap_contract(src):
         errs.append("港卡改写不再是 current_scene_id + _ + 后缀")
     if not suffixes or '"_guild"' not in suffixes.group(1):
         errs.append("FACILITY_SUFFIXES 缺 _guild")
-    dyn = _p7_code(bodies.get("_setup_dynamic_scene", ""))
+    dyn = _p7_code(body("_setup_dynamic_scene"))
     if "scene_id.trim_suffix(suffix)" not in dyn or "_setup_guild(base_loc)" not in dyn:
         errs.append("_guild 页未剥后缀进 _setup_guild")
-    helper = bodies.get("_guild_port_id", "")
-    if not helper:
-        errs.append("缺 _guild_port_id")
+    helper = body("_guild_port_id")
     # 四个入口第一句就归一，port_id 在此之前不许被用
     for fn in ("_setup_guild", "_add_guild_join_slip", "_guild_join_block", "_on_guild_join"):
-        if _gr_first_stmt(bodies.get(fn, "")) != "port_id = _guild_port_id(port_id)":
+        if _gr_first_stmt(body(fn)) != "port_id = _guild_port_id(port_id)":
             errs.append("%s 未先按 _guild_port_id 归一" % fn)
-    join = _p7_code(bodies.get("_on_guild_join", ""))
-    block = _p7_code(bodies.get("_guild_join_block", ""))
-    slip = _p7_code(bodies.get("_add_guild_join_slip", ""))
+    join = _p7_code(body("_on_guild_join"))
+    block = _p7_code(body("_guild_join_block"))
+    slip = _p7_code(body("_add_guild_join_slip"))
     if join.count("spend_money(") != 1 or "add_money(" in join or "money -=" in join:
         errs.append("_on_guild_join 扣费不止一处")
     flag_set = join.find('set_flag("guild_%s" % port_id)')
@@ -3071,6 +3081,8 @@ _gr_mutants = {
                              "\tif not GameState.spend_money(GUILD_JOIN_FEE):\n\t\treturn\n\tGameState.spend_money(GUILD_JOIN_FEE)\n", 1),
     "港卡改写漂移": main_src.replace('target_scene = current_scene_id + "_" + target_scene.trim_prefix("city_")',
                                  'target_scene = target_scene.trim_prefix("city_")', 1),
+    # 删函数：契约须以「缺 X」拦下，且不进十三节的账（lane cs12）
+    "删入行门槛函数": main_src.replace(_locate_func(main_src, "_guild_join_block"), "", 1),
 }
 _gr_dead = [name for name, m in _gr_mutants.items() if m == main_src or not m or not _guild_remap_contract(m)]
 if _gr_dead:
@@ -4266,14 +4278,20 @@ else:
 
 print()
 print("=" * 68)
-print("十三、按函数名取函数体（lane gd16 / cs9：取不到判红）")
+print("十三、按函数名取函数体（lane gd16 / cs9 / cs12：取不到判红）")
 print("=" * 68)
 _body_missed = sorted(k for k, found in _body_asks.items() if not found)
 for _ln, _name in _body_missed:
+    if _name.startswith("[node "):  # _node_block（lane cs12）
+        print(f"  ✗ check_symbols.py:{_ln} 取场景节点块 {_name} 取不到（节点改名 / 删了 / 挪进子场景），这处断言在空转")
+        problems.append(f"取不到场景节点块：{_name}（check_symbols.py:{_ln}）")
+        continue
     print(f"  ✗ check_symbols.py:{_ln} 取函数体 {_name} 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转")
     problems.append(f"取不到函数体：{_name}（check_symbols.py:{_ln}）")
 if not _body_missed:
-    print(f"  ✓ _func_body / func_bodies().get / _locate_func 的 {len(_body_asks)} 处按名取用都取到函数体")
+    _n_node = sum(1 for _ln, _name in _body_asks if _name.startswith("[node "))
+    print(f"  ✓ _func_body / func_bodies().get / _locate_func 的 {len(_body_asks) - _n_node} 处按名取用都取到函数体"
+          f"，_node_block 的 {_n_node} 处按名取用都取到场景节点块")
 
 # 断言点名的函数须仍在（lane cs9：函数改名误绿）。按名取体之外，断言还会在字面量里点函数名：
 # 反向断言（`"_sail_next_day(" not in body`、`any(tok in body for tok in ("add_fame", …))`）、find 定位锚

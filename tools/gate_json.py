@@ -206,16 +206,18 @@ SUBCHECKS = [
              "`godot_smoke.gd 的 MAIN_SPLITS … 不一致` = 两份清单只改了一份；`MAIN_NOT_SPLITS 条目 <件> 文件不存在` / `Main 没 preload 它或没有一行转发到它` / "
              "`转发到 <件> 的 fn，那边没有这支 func（…指向不存在的目标）` / `注明「A → B」，Main 里实际一行转发是 …` / `同时登记在 MAIN_SPLITS 与 MAIN_NOT_SPLITS` "
              "= 放行清单过时（lane gd16），删条目或改注。都计入 check_symbols 问题、退 1"},
-    {"id": "按函数名取函数体（十三）", "parent": "check_symbols", "lane": "gd16 / cs9", "oneclick": True,
+    {"id": "按函数名取函数体（十三）", "parent": "check_symbols", "lane": "gd16 / cs9 / cs12", "oneclick": True,
      "cmd": "python3 tools/check_symbols.py",
      "marks": ["十三、按函数名取函数体", "class _Bodies(dict)", "_body_ask(name, m is not None)", "处按名取用都取到函数体",
-               "def _locate_func(src, name)", "NAMED_FUNCS = (", "支函数都还在"],
-     "expect": "「十三、按函数名取函数体」`✓ _func_body / func_bodies().get / _locate_func 的 N 处按名取用都取到函数体`（N = 本脚本「行号 + 函数名」去重后的取用处）。"
+               "def _locate_func(src, name)", "NAMED_FUNCS = (", "支函数都还在",
+               '_body_ask(token + "]", at >= 0)', "处按名取用都取到场景节点块", "def body(name):"],
+     "expect": "「十三、按函数名取函数体」`✓ _func_body / func_bodies().get / _locate_func 的 N 处按名取用都取到函数体，_node_block 的 M 处按名取用都取到场景节点块`"
+               "（N / M = 本脚本「行号 + 名字」去重后的取用处；_node_block 按 `[node name=\"X\"` 取场景节点块，lane cs12 纳入同一本账）。"
                "各节按名取体一律先定位再取体（lane cs9：原先手切的 find / split / 无锚正则 / _static_body 都收进 `_locate_func`，只认行首 `[static ]func 名字(`）；"
-               "只探有没有这支函数、不想判红的写 `name in func_bodies(src)`（不记账）。"
+               "只探有没有这支函数、不想判红的写 `name in func_bodies(src)`（不记账）；本身要跑在变异源码上的契约（`_guild_remap_contract`）一律 `in` 探、缺了记成契约错误「缺 X」，不走 .get 记账（lane cs12）。"
                "+ `✓ 断言点名的 N 支函数都还在（反向断言 / find 锚 / 存在性探查；NAMED_FUNCS 与本脚本自扫一致）`（lane cs9）",
      "fail": "`✗ check_symbols.py:<行> 取函数体 <fn> 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转` = 被读的函数改了名 / 删了 / "
-             "搬走没拼回，或断言里函数名写错；改前这里给 `\"\"`（手切的还会落到整份文件 / 最后一个字 / 前缀同名的别的函数），"
+             "搬走没拼回，或断言里函数名写错；`✗ check_symbols.py:<行> 取场景节点块 [node name=\"X\"] 取不到（节点改名 / 删了 / 挪进子场景）` = 同上、对象是 .tscn 节点（lane cs12）；改前这里给 `\"\"`（手切的还会落到整份文件 / 最后一个字 / 前缀同名的别的函数），"
              "反向断言（`\"X\" not in body`）照样绿；`✗ 断言点名的函数 X 在 scripts/ 下已无定义` = 反向断言 / find 锚 / 存在性探查点到的函数改了名或删了，"
              "断言与 NAMED_FUNCS 跟着改；`✗ check_symbols.py:<行> 的断言点到函数 X，没登记进 NAMED_FUNCS` = 新写这类断言没登记。计入 check_symbols 问题、退 1"},
     {"id": "compile 清单自检（inventory）", "parent": "compile", "lane": "ea4", "oneclick": True,
