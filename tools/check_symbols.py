@@ -3947,6 +3947,30 @@ else:
         print(f"  ✗ {_m}")
     problems.append("市舶司页没钉在 MaritimeOfficePage")
 
+# 船屋页 15 支真身钉在 ShipyardPage（lane main10，口径同上面市舶司页的钉子）：Main 里每支只许是一行转发到 _YARD 的同名 static func，
+# 拆出件里须真有那支。挪回 Main 在「一之零」里不红（件里还有别的转发），船屋的源码断言经 read_main_src 也照样绿，这里红。
+_yd_src = open(os.path.join(SCRIPTS, "ui", "ShipyardPage.gd"), encoding="utf-8").read()
+_yd_static = set(re.findall(r'^static\s+func\s+([A-Za-z_]\w*)\s*\(', _yd_src, re.M))
+_yd_raw_fn = func_bodies(open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read())
+_yd_bad = []
+for _yd_name in ("_yard_port_name", "_yard_success_transition", "_setup_shipyard", "_yard_offer", "_on_berth_switch",
+                 "_on_repair_hull", "_on_hire_to_min", "_on_borrow", "_on_repay", "_on_buy_ship", "_on_dismiss_crew",
+                 "_on_hire_candidate", "_on_hire_crew", "_on_upgrade", "_on_buy_supplies"):
+    _yd_code = [ln for ln in _yd_raw_fn.get(_yd_name, "", forward_ok=True).split("\n") if ln.strip() and not ln.strip().startswith("#")]
+    _yd_fwd = _SPLIT_FWD.match(_yd_code[0]) if len(_yd_code) == 1 else None
+    if not (_yd_fwd and _yd_fwd.group(1) == "_YARD" and _yd_fwd.group(2) == _yd_name[1:]):
+        _yd_bad.append(f"Main.{_yd_name} 不是一行转发到 _YARD.{_yd_name[1:]}")
+    elif _yd_name[1:] not in _yd_static:
+        _yd_bad.append(f"ShipyardPage.gd 缺 static func {_yd_name[1:]}")
+if re.search(r'^const _YARD := preload\("res://scripts/ui/ShipyardPage\.gd"\)', open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read(), re.M) is None:
+    _yd_bad.append("Main 没有 const _YARD := preload(ShipyardPage.gd)")
+if not _yd_bad:
+    print("  ✓ 船屋页 15 支真身在 ShipyardPage，Main 只留一行转发（lane main10）")
+else:
+    for _m in _yd_bad:
+        print(f"  ✗ {_m}")
+    problems.append("船屋页没钉在 ShipyardPage")
+
 # Lane AC：发现录列表与呈报确认改纪实短句；存档键、呈报顺序与赏格公式不动
 _ac_slips = _disc_main_fn.get("_setup_reporting", "")
 _ac_onrep = _disc_main_fn.get("_on_report_discovery", "")
@@ -4427,9 +4451,12 @@ NAMED_FUNCS = {
     "scripts/Main.gd": (
         "_add_guild_join_slip", "_add_leave_button", "_attention_desc", "_begin_benches", "_end_benches", "_fit_rank",
         "_guild_join_block", "_interior_lead", "_interior_title", "_lift_ledger", "_mount_status_strip",
-        "_on_apply_permit", "_on_exam_sit", "_on_guild_join", "_on_invest_port", "_on_report_discovery", "_on_upgrade",
-        "_setup_guild", "_setup_news_wall", "_setup_reporting", "_setup_title_and_invest", "_setup_yamen", "_skill_rank",
-        "load_scene", "play_transition", "show_choices", "update_status_panel",
+        "_on_apply_permit", "_on_berth_switch", "_on_borrow", "_on_buy_ship", "_on_buy_supplies", "_on_dismiss_crew",
+        "_on_exam_sit", "_on_guild_join", "_on_hire_candidate", "_on_hire_crew", "_on_hire_to_min", "_on_invest_port",
+        "_on_repair_hull", "_on_repay", "_on_report_discovery", "_on_upgrade", "_setup_guild", "_setup_news_wall",
+        "_setup_reporting", "_setup_shipyard", "_setup_title_and_invest", "_setup_yamen", "_skill_rank", "_yard_offer",
+        "_yard_port_name", "_yard_success_transition", "load_scene", "play_transition", "show_choices",
+        "update_status_panel",
     ),
     "scripts/GameManager.gd": (
         "advance_days", "discoveries_near",

@@ -363,3 +363,67 @@ Y 是第七刀台账列的下一刀首选，连续一段：**1766–1886，121 �
 ### 下一刀候选
 
 1. **A / C / E / H / I / K** 风险高（理由见第五 / 七刀）。先做「Main 家族源码」共用 helper 的门禁 lane：verify_economy 直读拆出件的写法已有旅店（TavernPage）、行会 / 贡院（GuildExamPage）、住处（ResidencePage）三处，smoke 也有贡院、寺观三处，应一起收进 helper。
+
+---
+
+## 第十刀（lane main10，2026-09-28）：船屋 → `scripts/ui/ShipyardPage.gd`
+
+### 切面（基 `abb3f05`：Main.gd 4527 行，第九刀之后；开工时基 `26bca91`、4612 行，main9 落地后 rebase，C 簇整体 +4 行、内容逐字节同）
+
+第七 / 八刀台账的下一刀候选里，Y、T 之后只剩 A / C / E / H / I / K。C 是其中唯一的「中高」（其余都是高：核心流程、互调或被多道门禁直读），
+lane main10 的 brief 也点了「把 verify_economy / smoke 的直读改到拆出件」，C 被 verify_economy 直读 6 条，又是剩下几簇里风险最低的，所以本刀拆 C。
+连续一段：**1883–2203，321 行 / 15 支**（簇首 `# ── 船屋 ──` 起，到 `_on_buy_supplies` 末行；第七刀按基 59254f5 记 1964–2281、318 行；按开工基 26bca91 是 1879–2199）。
+
+| 支 | 行段（含 `##`） | 做什么 | 被谁调（Main 内 / 他处） |
+|---|---|---|---|
+| `_yard_port_name()` | 1886–1891 | `{港}_shipyard` 剥尾取港名，取不到回 `last_port` | 簇内 1 处（题签） |
+| `_yard_success_transition(act)` | 1894–1901 | `await play_transition(drydock_title, 历法日期, load_scene 本页, drydock_seal)` | 簇内 4 处（换坞 / 修船 / 购入 / 升级） |
+| `_setup_shipyard(port_id)` | 1904–2046 | 坞位一艘（升帆 / 升甲 / 添人 / 换上）→ 补给（水粮 30 / 100、修船、补齐人手）→ 蕃商赊贷（赊 500 / 2000、还）→ 坞外待售 → 离开钮 | `_setup_dynamic_scene`（1111） |
+| `_yard_offer(catalog, sid)` | 2049–2056 | 按 id 在船表里找一行，非字典跳过 | 簇内 1 处 |
+| `_on_berth_switch(ship_index)` | 2059–2066 | 夹回船队 → 同一艘不理 → 写 `berth_index` → 记事 → 换坞题签 | 「换上」钮 |
+| `_on_repair_hull(cost)` | 2069–2081 | 连点闸 → 扣钱 → 上闸 → 修 → 题签 → 放闸；钱不够重载 | 「修船」钮 |
+| `_on_hire_to_min(cost)` | 2084–2090 | 付钱雇齐各船最低人手 | 「补齐 N 人」钮 |
+| `_on_borrow(amt)` | 2093–2098 | `GameState.borrow` → 记事 → 重载 | 「赊 N」钮 |
+| `_on_repay(pay)` | 2101–2104 | `GameState.repay` → 记事 → 重载 | 「还 N」钮 |
+| `_on_buy_ship(type_id, price)` | 2107–2119 | 连点闸 → 扣钱 → 上闸 → 添船 → 题签 → 放闸 | 「购入」钮 |
+| `_on_dismiss_crew(role_id)` | 2122–2126 | `Crew.dismiss` → 记事 → 重载 | TavernPage「辞退」钮经 `main.` 接 |
+| `_on_hire_candidate(crew_id)` | 2129–2132 | `Crew.hire` → 记事 → 重载 | TavernPage「雇入」钮经 `main.` 接 |
+| `_on_hire_crew(ship_index, hire_n, hire_cost)` | 2135–2142 | 付钱给坞上这一艘添人 | 「添 N 人」钮 |
+| `_on_upgrade(ship_index, kind, shown_cost)` | 2145–2188 | 连点闸 → 坏下标 / 满级拦 → 按当前等级重算价 → 升级 → 扣钱（扣不成回滚）→ 上闸 → 记事 → 题签 → 放闸 | 「升帆」「升甲」钮 |
+| `_on_buy_supplies(n, wp, gp)` | 2191–2203 | 舱位够、钱够才补水粮各 n 份 | 「水粮各 N」钮 |
+
+`_on_dismiss_crew` / `_on_hire_candidate` 是酒馆页的钮目标，函数一直写在船屋簇里（第四刀起的调查都把它们算进 C），本刀照原位一起搬，TavernPage 仍经 `main.` 调 Main 的同名转发。
+
+**跨切依赖**（全部经 `main.` 取，搬出件不存状态）：
+- Main 成员：`current_scene_id` 17、`_upgrade_busy` 9（读写，连点闸，唯一的簇状态；qa_yard_transition_probe 直读 Main 的它，留 Main）、`scene_title` / `body_text` / `choices_label` 各 1。
+- Main 方法：`log_msg` 23、`load_scene` 15、`_slip_chip` 10、`_slip_note` 7、`_slip_body` / `_slip_row` / `_slip_title` 各 5、`_fit_rank` 4、`_begin_benches` / `_end_benches` / `_add_leave_button` / `_sail_fit_phrase` / `_armor_fit_phrase` / `play_transition` 各 1、常量 `_UI_TRANSITION` 2；
+  簇内互调（`_yard_port_name` / `_yard_offer` / `_yard_success_transition` ×4）与 10 个信号目标（`_on_upgrade.bind` ×2、`_on_hire_crew` / `_on_berth_switch` / `_on_buy_supplies` / `_on_repair_hull` / `_on_hire_to_min` / `_on_borrow` / `_on_repay` / `_on_buy_ship` 的 `.bind`）也经 `main.` 走 Main 的转发。
+- autoload：`Fleet` 47、`GameState` 30、`DrydockBerth` 4（class_name）、`GameManager` 3、`Economy` / `Crew` / `UiTheme` 各 2、`Calendar` 1。
+
+**断言 / 探针引用点**（拆前逐个核过）：
+
+| 引用点 | 怎么读 | 拆后 |
+|---|---|---|
+| verify_economy 二之 2b / 2c（升级回调 4 条、修船 / 购船同闸 2 条） | **直读 Main.gd**（`_main_up`），`_locate_func` 切 `_on_upgrade` / `_on_repair_hull` / `_on_buy_ship` | 会切到一行转发，6 条里 5 条假红（实测）→ **改去 ShipyardPage.gd 里切** `on_upgrade` / `on_repair_hull` / `on_buy_ship`，切前去 `main.` 前缀；条件原样 |
+| verify_economy 哗变「散钱 > 事后补 N 人」 | **直读 Main.gd** 全文正则 `below_min \* (\d+)` | 字样随 `_setup_shipyard` 搬走，补人单价取成 0、假红（实测）→ **改去 ShipyardPage 里按名取 `setup_shipyard` 的函数体再找**（原先在整份 Main 泛搜，现在只认这一支，只收紧；取不到进「十一、按函数名取函数体」判红） |
+| verify_economy 其余直读 Main.gd 的（牙行 `_affordable_qty` / `_setup_market` …、委办字样、`INN_RATE` / `GUILD_*` / `EXAM_*` 常量、住处 `_setup_residence` / `_on_rest`） | 直读 Main.gd | 都不在 C 簇里（逐条核过），不用改 |
+| check_symbols「船屋改成坞位一艘」「船屋成功题签」、Lane AB 雇请文案（`_on_hire_crew` / `_on_hire_to_min`）、「Main._on_upgrade 已定义」 | `_func_body` / 正则读 `read_main_src()` | 转发就地换回拆出件函数体、去 `main.` 前缀 → **不用改**（拆出件进 `main_splits.txt` 即可） |
+| smoke「船屋加成写成成数…」（`月息每百 %d`、`添 %d 人`、`水手 %d 至 %d`、`水粮各 %d　付 %d` 正向；`月息 %d%%`、`+%d` 反向） | `_main_family_src()` 全文 `find` | 拆出件进 `main_splits.txt` 后字样仍在扫描范围内 → 不用改（漏登记则正向红） |
+| smoke `yard_node.call("_sail_fit_phrase" / "_armor_fit_phrase" / "_duty_per_hundred", …)`、`func _fit_rank` | 直调 / family src | 这几支不属本簇、留 Main → 不用改 |
+| qa_drydock_probe / qa_yard_transition_probe / qa_money_notices_probe | `load_scene("quanzhou_shipyard")`、按钮文找钮、`_main.get("_upgrade_busy")` | 页面、钮文不变，闸留 Main → 不用改 |
+| simulate_run / verify_story_data / check_assets / simulate_endgame | 不读这 15 支 | 无关 |
+
+### 落地
+
+- `scripts/ui/ShipyardPage.gd`（新增，332 行，`.uid` 同 commit）：15 支原样搬成 `static func`（yard_port_name / yard_success_transition / setup_shipyard / yard_offer / on_berth_switch / on_repair_hull / on_hire_to_min / on_borrow / on_repay / on_buy_ship / on_dismiss_crew / on_hire_candidate / on_hire_crew / on_upgrade / on_buy_supplies）。
+  `yard_offer` 不碰 Main，不带 `main` 形参；其余 Main 成员一律加 `main.` 前缀。经 `main.` 取值推断不出类型，19 处 `:=` 改为与原推断相同的显式类型（VBoxContainer ×5、HFlowContainer ×5、Button ×5、String ×3、Dictionary）。
+- Main.gd **4527 → 4275（−252）**（开工基 26bca91 上是 4612 → 4360），func 数不变：15 支都留同名同签名一行转发（`const _YARD := preload(...)`），五支协程（`_yard_success_transition` / `_on_berth_switch` / `_on_repair_hull` / `_on_buy_ship` / `_on_upgrade`）转发写 `await`，协程语义不变。
+  留在 Main 的：`_upgrade_busy`、`_fit_rank` / `_sail_fit_phrase` / `_armor_fit_phrase`（smoke 直调、LedgerPage 也用）、`play_transition`、`_UI_TRANSITION`、工席小件、`_add_leave_button`。
+- 门禁同步：本节标题登记后跑 `gen_main_splits.py --write`（`tools/main_splits.txt` 多一行）；`godot_compile_check` 的 SCRIPTS 加 1 行；verify_economy 两处直读改切拆出件（上表）。**断言条件一条没改、没放宽。**
+- 新加一条钉子（check_symbols 九之七，只收紧，口径照第八刀那条）：15 支在 Main 里须是一行转发到 `_YARD` 的同名 static func、拆出件里真有那支、Main 真 preload 了它。
+- 拼回原文：`read_main_src()` 拼回的 15 支和基线逐行比，只差上面 19 行 `:=`。
+
+### 下一刀候选（行数按基 abb3f05）
+
+1. 剩下的 **A 牙行 / E 岸带 / H 守城·终局 / I 调查页 / K 场景分发** 全是高风险。A 被 verify_economy 直读最多（`_affordable_qty` / `_setup_market` / `_add_contract_panel` / `_make_market_row` / 两支 tip，另有 `_purse_ui` 这类按锚文切片段），拆它之前先把 verify_economy 的「直读 Main」统一接到 check_symbols 的 `read_main_src()` 拼回（cs14 待议 2），不然每拆一簇都要手改一批切片。
+2. 第八刀和本刀各手写了一条「真身钉在拆出件」的钉子（main8 待议 3）。两条同形，可以改由 `main_splits.txt` 的「拆出函数」列反查、对全部拆出件生效，但要先定口径（不能靠 `--write` 自愈）。

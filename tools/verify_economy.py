@@ -840,9 +840,10 @@ all_full_cost0 = all(upgrade_cost(sid, "sail", 3) == 0 and upgrade_cost(sid, "ar
 check(all_full_cost0, "满级（Lv3）后升级成本为 0——上限 3 级生效")
 
 # 2b) 船屋升级回调：按当前等级重算、升级 true 才扣钱、扣不成回滚、连点不二次扣（ASTRA M1）
-_main_up = open(os.path.join(os.path.dirname(__file__), "..", "scripts", "Main.gd"),
-                encoding="utf-8").read()
-_up_body = _locate_func(_main_up, "_on_upgrade")
+# 船屋页在 ShipyardPage（lane main10 拆出），Main 里只剩一行转发：函数体去拆出件里切，去掉 main. 前缀即搬走前的原文。
+_yard_src = open(os.path.join(os.path.dirname(__file__), "..", "scripts", "ui", "ShipyardPage.gd"),
+                 encoding="utf-8").read().replace("main.", "")
+_up_body = _locate_func(_yard_src, "on_upgrade")
 _i_busy = _up_body.find("if _upgrade_busy:")
 _i_cost = _up_body.find("Fleet.upgrade_cost(ship_index, kind)")
 _i_up = _up_body.find("Fleet.upgrade_armor(ship_index) if is_armor else Fleet.upgrade_sail(ship_index)")
@@ -857,8 +858,8 @@ check("spend_money(shown_cost)" not in _up_body, "升级扣费不用按钮 bind 
 check(_up_body.rstrip().endswith("_upgrade_busy = false"), "升级过场落定后才放开连点闸")
 
 # 2c) 修船 / 购船同闸（lane fo）：墨幕不吞 ui_accept 动作，过场未落前旧页钮还能按到 → 先看闸、扣成才上闸、过场落定再放
-for _fn, _what in (("_on_repair_hull", "修船"), ("_on_buy_ship", "购船")):
-    _yb = _locate_func(_main_up, _fn)
+for _fn, _what in (("on_repair_hull", "修船"), ("on_buy_ship", "购船")):
+    _yb = _locate_func(_yard_src, _fn)
     _j_busy = _yb.find("if _upgrade_busy:")
     _j_spend = _yb.find("if GameState.spend_money(")
     _j_set = _yb.find("_upgrade_busy = true")
@@ -1372,9 +1373,10 @@ print(f"  六人放走 {leave} 人；10 件货抬走 {cargo_dis}")
 check(1 <= leave < starter_crew, f"放人 {leave} 人，船还留得下人")
 check(starter_crew - leave < ships["sampan"]["crew_min"],
       f"放人后剩 {starter_crew - leave} 人 < 小艍最低水手 {ships['sampan']['crew_min']}，下一趟要补人")
-main_src = open(os.path.join(os.path.dirname(__file__), "..", "scripts", "Main.gd"),
-                encoding="utf-8").read()
-hire_m = re.search(r"below_min \* (\d+)", main_src)
+# 补齐人手的单价在船屋页 ShipyardPage.setup_shipyard（lane main10 拆出）：按名取体再找，不在整份文件里泛搜
+_yard_fn = _locate_func(open(os.path.join(os.path.dirname(__file__), "..", "scripts", "ui", "ShipyardPage.gd"),
+                             encoding="utf-8").read().replace("main.", ""), "setup_shipyard")
+hire_m = re.search(r"below_min \* (\d+)", _yard_fn)
 hire_each = int(hire_m.group(1)) if hire_m else 0
 check(hire_each > 0 and bribe6 > hire_each * leave,
       f"散钱 {bribe6} > 事后补 {leave} 人的 {hire_each * leave}（留人比雇人贵，贵在保住那份货）")
