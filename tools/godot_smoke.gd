@@ -13,7 +13,7 @@ func _init() -> void:
 ## Main.gd 拆出去的件（与 tools/check_symbols.py 的 MAIN_SPLITS 同步，check_symbols 会对账）。
 ## 源码断言读 Main.gd + 这些件接在一起的全文：函数搬走后「某字样须在 / 不得在」不因 Main 里只剩一行转发而误判。
 ## （按 func 切函数体的断言仍切 Main 里的 func；要断言搬走的函数体，去拆出件里切。）
-const MAIN_SPLITS := ["res://scripts/ui/SlipKit.gd", "res://scripts/ui/LedgerPage.gd", "res://scripts/ui/ChapterSheet.gd"]
+const MAIN_SPLITS := ["res://scripts/ui/SlipKit.gd", "res://scripts/ui/LedgerPage.gd", "res://scripts/ui/ChapterSheet.gd", "res://scripts/ui/TavernPage.gd"]
 
 
 func _main_family_src() -> String:
@@ -433,9 +433,11 @@ func _run() -> void:
 	cal.day = saved_day
 	_check(main_src.find("费一日") >= 0 and main_src.find("费 1 日") < 0,
 		"酒馆行情写成费一日", fails)
-	var tavern_i := main_src.find("func _setup_tavern")
-	var tavern_j := main_src.find("\nfunc ", tavern_i + 1)
-	var tavern_body := main_src.substr(tavern_i, tavern_j - tavern_i) if tavern_i >= 0 and tavern_j > tavern_i else ""
+	# 酒馆整页在 TavernPage（Lane main4 拆出），Main 里只剩一行转发：函数体去拆出件里切
+	var tavern_src := FileAccess.get_file_as_string("res://scripts/ui/TavernPage.gd")
+	var tavern_i := tavern_src.find("static func setup_tavern(")
+	var tavern_j := tavern_src.find("\nstatic func ", tavern_i + 1)
+	var tavern_body := tavern_src.substr(tavern_i, tavern_j - tavern_i) if tavern_i >= 0 and tavern_j > tavern_i else ""
 	_check(tavern_body.find("_begin_benches") >= 0
 		and tavern_body.find("_add_leave_button") > tavern_body.find("_end_benches"),
 		"酒馆募人排成工席，离开留在下面", fails)

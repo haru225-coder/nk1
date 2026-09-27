@@ -6,6 +6,7 @@
 - [GATES.md](GATES.md)：门禁总表，写每道判什么、红了什么样、`--json` 怎么机读（§一由 `tools/gates_md.py --write` 生成）
 - [侧车口径.md](侧车口径.md)：哪些 `.uid` / `.import` 必须入库、哪些不许带（`check_sidecars`）
 - [人物原稿与上屏契约.md](人物原稿与上屏契约.md)：人物原稿与上屏字段的契约（`verify_story_data` Astra L1 段）
+- [Main拆解台账.md](Main拆解台账.md)：`scripts/Main.gd` 往 `scripts/ui/` 拆的逐刀台账，含各簇行数、调用面、直读 Main.gd 的门禁、风险，以及下一刀候选
 
 ## 玩法与系统设计
 - [复刻设计_大航海时代标准.md](复刻设计_大航海时代标准.md)：总设计，经济、航海、舰队、剧情结构，数值依据

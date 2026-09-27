@@ -488,6 +488,7 @@ L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
     "scripts/ui/CharacterCodex.gd": ({"api"}, "runtime", "人物志：列表、关系、小传（小传走 codex_bio）"),
     "scripts/Main.gd": ({"api"}, "runtime", "见面页、酒馆募人卡、人物志钮"),
     "scripts/ui/LedgerPage.gd": ({"api"}, "runtime", "船籍簿职事小头像（character_for_crew；Lane mz 自 Main 拆出）"),
+    "scripts/ui/TavernPage.gd": ({"api"}, "runtime", "酒馆募人卡：在船 / 候选人物卡（character_for_crew；Lane main4 自 Main 拆出）"),
     "scripts/ui/VisionStage.gd": ({"raw", "api"}, "runtime", "异象幕：先走取数口，GameManager 缺席（单跑场景）才兜底直读；只取 id"),
     "scripts/companions/CompanionPreview.gd": ({"api"}, "runtime", "同伴预览立绘"),
     "scripts/chars/CharRoster.gd": ({"api"}, "runtime", "人物名册"),

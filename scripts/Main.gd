@@ -102,6 +102,10 @@ const _LEDGER := preload("res://scripts/ui/LedgerPage.gd")
 ## （Lane ms2 第三刀拆出）；这里的 _era_summary_lines / _show_chapter_dialog / _chapter_body_height / _cinema_before_sheet /
 ## _ending_cinema_key / _confirm_chapter_sheet 都是同名同签名一行转发，调用点与信号目标不变。
 const _CHAPTER := preload("res://scripts/ui/ChapterSheet.gd")
+## 酒馆 / 旅店页（酒馆工席、旧事挑签、募人人物卡、人物卡小件、旅店歇息）的实现在 scripts/ui/TavernPage.gd
+## （Lane main4 第四刀拆出）；这里的 _setup_tavern / _setup_story_hooks / _on_story_hook / _on_gather_intel / _setup_hiring /
+## _person_slip / _person_foot / _seal_chip / _setup_inn 都是同名同签名一行转发，调用点与信号目标不变。
+const _TAVERN := preload("res://scripts/ui/TavernPage.gd")
 ## 活背景幅度：比引擎默认再收一档（正文底下的画不能晃得人头晕）
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
@@ -2455,29 +2459,7 @@ func _setup_residence_chen(port_id: String) -> void:
 # ── 酒馆 ────────────────────────────────────────────
 
 func _setup_tavern(port_id: String) -> void:
-	scene_title.text = "%s・酒馆" % GameManager.get_port_name(port_id)
-	body_text.text = "劣酒与潮气同在，邻桌谈远港价目。闻讯、募人都在这几张桌边。月俸按月；欠饷三月，则人去。"
-
-	# 墙上贴最近三条已投放新闻；旧事仍走挑签。打听和募人进工席。
-	_setup_news_wall()
-	_setup_story_hooks(port_id)
-	_begin_benches()
-
-	if port_id.begins_with("quanzhou"):
-		_add_npc_button("merchant_lin", "林阿舶")
-	elif port_id.begins_with("ryukyu"):
-		_add_npc_button("pilot_ana", "阿那")
-
-	var intel := _slip_body()
-	_slip_title(intel, "行情", "费一日")
-	# 「打听」费一日（advance_days：耗水粮、推逐日结算）：花时间的动作和花钱的一样不做整卡可点，免得点卡误过一天（第 2 轮工程 m5）
-	_slip_chip(_slip_row(intel), "打听", _on_gather_intel.bind(port_id))
-
-	_setup_hiring(port_id)
-	_end_benches()
-
-	_add_leave_button(port_id)
-	choices_label.visible = false
+	_TAVERN.setup_tavern(self, port_id)
 
 
 ## 酒馆墙上：市井札薄（_TAVERN_NEWS_WALL）。最近投放新闻，新的在前；无则不上墙。
@@ -2486,176 +2468,31 @@ func _setup_news_wall() -> void:
 
 
 func _setup_story_hooks(port_id: String) -> void:
-	var hooks: Array = GameState.story_hooks_at(port_id)
-	if hooks.is_empty():
-		return
-	var sep := Label.new()
-	sep.text = "旧事"
-	UiTheme.style_section_label(sep)
-	choices_container.add_child(sep)
-	for h in hooks:
-		var btn := Button.new()
-		btn.text = str(h.get("label", "追问"))
-		btn.pressed.connect(_on_story_hook.bind(h, port_id))
-		choices_container.add_child(btn)
-		UiTheme.style_choice_button(btn)
+	_TAVERN.setup_story_hooks(self, port_id)
 
 
 func _on_story_hook(hook: Dictionary, port_id: String) -> void:
-	var flag_name := str(hook.get("flag", ""))
-	if flag_name != "":
-		GameState.set_flag(flag_name)
-	var msg := str(hook.get("text", ""))
-	if msg != "":
-		log_msg(msg)
-	update_status_panel()
-	load_scene(current_scene_id if current_scene_id != "" else port_id + "_tavern")
+	_TAVERN.on_story_hook(self, hook, port_id)
 
 
 func _on_gather_intel(port_id: String) -> void:
-	GameManager.advance_days(1)
-	log_msg(_gather_price_intel(port_id))
-	load_scene(current_scene_id)
+	_TAVERN.on_gather_intel(self, port_id)
 
 
-## 酒馆募人。每种职事至多一人，故已雇之职不再列出候选。
-## characters 线：候选人与在船人员都排成横向人物卡（小立绘 + 名 + 职事品级 + 五维迷你条 + 钱数 + 钮）；
-## 卡上文案与数值照旧（「火长　初习」「入伙 120　月俸 60」「雇入」「辞退」），钮的回调不变。
 func _setup_hiring(port_id: String) -> void:
-	# 在船的人
-	if not Crew.hired.is_empty():
-		for c in Crew.roster():
-			var rname: String = Crew.role_def(c.get("role", "")).get("name", "")
-			var aboard := _person_slip(GameManager.character_for_crew(str(c.get("id", ""))), str(c.get("name", "")),
-				"%s　%s　月俸 %d" % [rname, _skill_rank(int(c.get("level", 1))), int(c.get("wage", 0))],
-				int(c.get("level", 1)))
-			var aboard_hint := aboard.get_node("Head/Aside") as Label
-			aboard_hint.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.MOSS))
-			var rid: String = str(c.get("role", ""))
-			var foot := _person_foot(aboard, "在船")
-			var off := _slip_chip(foot, "辞退", _on_dismiss_crew.bind(rid))
-			off.tooltip_text = "辞退即上岸。入伙钱不退。"
-
-	# 募人题签：有候选、无候选都先出这一张，旁注只记事实（Lane AB）
-	var cands := Crew.candidates_at(port_id)
-	var head := _slip_body()
-	if cands.is_empty():
-		_slip_title(head, "募人", "本港眼下无人可雇")
-		if not Crew.hired.is_empty():
-			_slip_note(head, "已雇之职不再列名。")
-		return
-	_slip_title(head, "募人", "本港可雇 %d 人　一职一人" % cands.size())
-	_slip_note(head, "入伙钱当场付清，月俸按月扣。")
-
-	for c in cands:
-		var cid: String = str(c.get("id", ""))
-		var role: Dictionary = Crew.role_def(c.get("role", ""))
-		var cch: Dictionary = GameManager.character_for_crew(cid)
-		var card := _person_slip(cch, str(c.get("name", "")), "%s　%s" % [
-			role.get("name", ""), _skill_rank(int(c.get("level", 1))),
-		], int(c.get("level", 1)))
-		# 职事真正管用的是这一句（航程、价差、减员……），写在品级下面；五维只作展示，压淡（第 1 轮评审 UX M5）
-		var eff := str(role.get("effect_hint", ""))
-		if eff != "":
-			var eff_lbl := Label.new()
-			eff_lbl.name = "EffectHint"
-			eff_lbl.text = eff
-			eff_lbl.add_theme_font_override("font", UiTheme.font())
-			eff_lbl.add_theme_font_size_override("font_size", 16)
-			eff_lbl.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.TEXT))
-			eff_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			card.add_child(eff_lbl)
-			card.move_child(eff_lbl, 1)
-		# 只压淡细条，字不压：整条 modulate 0.55 时纸上 16px 字实渲染只剩 2.2–3.2:1（返工自查，cap3 rend 实测）
-		var strip := card.get_node_or_null("AttrStrip") as Control
-		if strip != null:
-			for col in strip.get_children():
-				for part in col.get_children():
-					if not (part is HBoxContainer):
-						(part as CanvasItem).modulate = Color(1, 1, 1, 0.55)
-		# 在酒馆里见过画像与五维的候选，人物志里记作已识（本会话，不入存档）
-		_CHAR_ART.note_met(str(cch.get("id", "")))
-		var foot := _person_foot(card, "入伙 %d　月俸 %d" % [Crew.signing_fee(cid), int(c.get("wage", 0))])
-		var hire := _slip_chip(foot, "雇入", _on_hire_candidate.bind(cid), true)
-		_seal_chip(hire)
-		hire.tooltip_text = "%s\n\n%s\n%s" % [
-			c.get("bio", ""), role.get("desc", ""), role.get("effect_hint", ""),
-		]
+	_TAVERN.setup_hiring(self, port_id)
 
 
-## 人物卡的右栏：名（绢本马善政）+ 品级点 / 旁注 / 五维迷你条。返回右栏，调用方再往下接 _person_foot。
-## ch 为空（设定集里查无此人）时画框里是一方墨，五维条不出，文案照旧。
 func _person_slip(ch: Dictionary, title: String, aside: String, level := 0) -> VBoxContainer:
-	var body := _slip_body()
-	var row := HBoxContainer.new()
-	row.name = "PersonRow"
-	row.add_theme_constant_override("separation", 14)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.add_child(row)
-	var tex: Texture2D = _CHAR_ART.thumb(ch, HIRE_PIC) if not ch.is_empty() else null
-	row.add_child(_CHAR_ART.framed(tex, Vector2(HIRE_PIC), true))
-	var info := VBoxContainer.new()
-	info.name = "Info"
-	info.add_theme_constant_override("separation", 2)
-	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(info)
-	var head := VBoxContainer.new()
-	head.name = "Head"
-	head.add_theme_constant_override("separation", 0)
-	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info.add_child(head)
-	var name_row := HBoxContainer.new()
-	name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	head.add_child(name_row)
-	var name_lbl := Label.new()
-	name_lbl.name = "Name"
-	name_lbl.text = title
-	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	# 与其它工席抬头同一写法：绢本宣纸上是马善政靛青（大四号），夜潮是石青正文字。这里直接写定，不等卡片换色
-	name_lbl.add_theme_font_override("font", UiTheme.title_font() if UiTheme.IS_JUANBEN else UiTheme.font())
-	name_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY + (4 if UiTheme.IS_JUANBEN else 0))
-	name_lbl.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.TIDE))
-	name_lbl.set_meta(&"nk1_title", true)
-	name_row.add_child(name_lbl)
-	if level > 0:
-		name_row.add_child(_CHAR_ART.pips(level, true))
-	var hint := Label.new()
-	hint.name = "Aside"
-	hint.text = aside
-	UiTheme.style_footnote(hint)
-	hint.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.TEXT_DIM))
-	head.add_child(hint)
-	if not ch.is_empty():
-		var strip := _CHAR_ART.attr_strip(ch, 56.0, true)
-		info.add_child(strip)
-	return info
+	return _TAVERN.person_slip(self, ch, title, aside, level)
 
 
-## 人物卡底行：左边一句钱数 / 在船，右边钮。返回放钮的那一格。
 func _person_foot(info: VBoxContainer, note: String) -> HBoxContainer:
-	var foot := HBoxContainer.new()
-	foot.name = "Foot"
-	foot.add_theme_constant_override("separation", 8)
-	foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info.add_child(foot)
-	var lbl := Label.new()
-	lbl.text = note
-	UiTheme.style_footnote(lbl)
-	lbl.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.TEXT_DIM))
-	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	foot.add_child(lbl)
-	return foot
+	return _TAVERN.person_foot(info, note)
 
 
-## 募人钮放大成一方朱印：马善政、四周留足，一眼看得见（仍是 style_chip 的朱砂四态与印面字）。
 func _seal_chip(btn: Button) -> void:
-	if not UiTheme.IS_JUANBEN:
-		return
-	btn.add_theme_font_override("font", UiTheme.title_font())
-	btn.add_theme_font_size_override("font_size", 18)
-	btn.custom_minimum_size = Vector2(78, 34)
+	_TAVERN.seal_chip(btn)
 
 
 ## 职事品级。数据里只有 1–3，不再用星号。
@@ -2663,38 +2500,8 @@ func _skill_rank(n: int) -> String:
 	return Crew.rank_word(n)
 
 
-## 旅店：候风。季风按月转向，等到对的月份再发舶是这个游戏最要紧的判断之一。
 func _setup_inn(port_id: String) -> void:
-	scene_title.text = "%s・旅店" % GameManager.get_port_name(port_id)
-	body_text.text = "通铺草席还潮着。风信不对时，海商在这儿候着。"
-	_begin_benches()
-
-	var rest := _slip_body()
-	_slip_title(rest, "歇息", "%s　%s" % [Calendar.get_date_string(), Calendar.get_monsoon_desc()])
-	_slip_note(rest, _monsoon_forecast(), UiTheme.HONEY)
-	# 在身委办的期限提醒（云端 bed9），嵌进主干的歇息工席
-	var rest_cst := GameState.contract_status()
-	if not rest_cst.is_empty():
-		var rest_left := int(rest_cst.get("days_left", 0))
-		if rest_left < 0:
-			_slip_note(rest, "在身委办已经逾期，歇着也会被牙行扣钱。", UiTheme.CINNABAR)
-		else:
-			_slip_note(rest, "在身委办还剩 %d 日。歇过这个数，牙行要扣钱、掉名声。" % rest_left, UiTheme.CINNABAR)
-	var rest_row := _slip_row(rest)
-	for n in [1, 10]:
-		var nights := int(n)
-		_slip_chip(rest_row, "歇 %d 日　%d%s" % [nights, nights * INN_RATE, _contract_rest_mark(nights)], _on_rest.bind(nights, port_id))
-	var to_next: int = Calendar.DAYS_PER_MONTH - Calendar.day + 1
-	_slip_chip(
-		rest_row,
-		"候 %d 日　%d%s" % [to_next, to_next * INN_RATE, _contract_rest_mark(to_next)],
-		_on_rest.bind(to_next, port_id),
-		true
-	)
-
-	_end_benches()
-	_add_leave_button(port_id)
-	choices_label.visible = false
+	_TAVERN.setup_inn(self, port_id)
 
 
 const INN_RATE := 15
