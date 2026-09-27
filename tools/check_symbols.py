@@ -122,6 +122,18 @@ def parse_members(path):
             members |= vals  # 匿名 enum 的值直接挂在脚本上
     return members, enums, src
 
+# 检查面（lane cv）：scripts/ 与 tools/ 下全部 .gd（含 tools/art/ 等子目录）。路径里带 legacy 段的目录整棵不查
+# （与 check_assets、compile 门禁 inventory 同一排除法）：tools/legacy/ 是已退役的一次性 Python 补丁、现无 .gd、没有门禁会跑。
+def gd_scope():
+    out = []
+    for base in (SCRIPTS, os.path.join(ROOT, "tools")):
+        for dirpath, dirnames, files in os.walk(base):
+            dirnames[:] = sorted(d for d in dirnames if d != "legacy")
+            out += [os.path.join(dirpath, fn) for fn in sorted(files) if fn.endswith(".gd")]
+    return out
+
+GD_FILES = gd_scope()
+
 # project.godot 里注册了、上表却漏写的 autoload：照样纳入检查，免得它的引用整片不受检
 with open(os.path.join(ROOT, "project.godot"), encoding="utf-8") as f:
     _pg_autoloads = re.findall(r'^(\w+)="\*res://([^"]+\.gd)"', f.read(), re.M)
@@ -345,11 +357,9 @@ else:
           f"{len(BUILTIN_CLASSES)} 类，Object→Node 链 {_node_n} 名 + 手写补充 {len(BUILTIN_EXTRA)} 名")
 
 miss_count = 0
-for dirpath, _, files in os.walk(SCRIPTS):
-    for fn in sorted(files):
-        if not fn.endswith(".gd"):
-            continue
-        path = os.path.join(dirpath, fn)
+_n_tools = sum(1 for p in GD_FILES if not p.startswith(SCRIPTS + os.sep))
+print(f"  检查面：scripts/ {len(GD_FILES) - _n_tools} 个 + tools/ {_n_tools} 个 .gd（带 legacy 段的目录不查）")
+for path in GD_FILES:
         rel = os.path.relpath(path, ROOT)
         with open(path, encoding="utf-8") as f:
             src = f.read()
@@ -579,11 +589,7 @@ _SIGNAL_VAR_RE = re.compile(
     r'|[(,]\s*([A-Za-z_]\w*)\s*:\s*Signal\b')
 
 orphan_total = 0
-for dirpath, _, files in os.walk(SCRIPTS):
-    for fn in sorted(files):
-        if not fn.endswith(".gd"):
-            continue
-        path = os.path.join(dirpath, fn)
+for path in GD_FILES:
         with open(path, encoding="utf-8") as f:
             src = code_only(f.read())  # 注释、字符串里的 xx.emit() 不算
         declared, chain_note = _chain_signals(path)
@@ -748,11 +754,7 @@ print()
 print("=" * 68)
 print("三、缩进与括号一致性")
 print("=" * 68)
-for dirpath, _, files in os.walk(SCRIPTS):
-    for fn in sorted(files):
-        if not fn.endswith(".gd"):
-            continue
-        path = os.path.join(dirpath, fn)
+for path in GD_FILES:
         rel = os.path.relpath(path, ROOT)
         with open(path, encoding="utf-8") as f:
             lines = f.readlines()
