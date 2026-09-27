@@ -13,6 +13,7 @@ const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const TAG := "QA_LETTERBOX_COPY"
 const EXPECTED_SHOTS := 4
 const ShotGate := preload("res://tools/shot_gate.gd")
+const CombatStage := preload("res://tools/combat_probe_stage.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 
 ## 玩家可见禁词（营销腔 + 残留现代 UI）
@@ -81,25 +82,30 @@ func _run() -> void:
 	}
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
-	for _i in 30:
-		await process_frame
-	# 布景冻住（lane gd6，同 pg 对 vision_letterbox_probe 的修法）：WorldMap 是真海战，照常开炮结算。
+	# 布景不自己结算（lane gd6 立、gd10 改冻开炮）：WorldMap 是真海战，照常开炮结算。
 	# 探针不开船，约 3.5 s 首轮齐射、8–10 s 旗舰被击沉 → Ship._sink_ship → WorldMap._battle_exit("lose")
 	# → queue_free()；下面再调 wm.queue_free() 就报「previously freed instance」，_run 协程中断、
-	# quit() 没人调，DISPLAY 下挂到 timeout。冻住后仍出图，只是不再推进战斗。
-	wm.process_mode = Node.PROCESS_MODE_DISABLED
+	# quit() 没人调，DISPLAY 下挂到 timeout。add_child 当帧只冻敌炮，理由见 combat_probe_stage.gd。
+	_expect(CombatStage.freeze_enemy_fire(wm) == 2, "布景敌船开炮已冻住（2 艘）")
+	for _i in 30:
+		await process_frame
 	var sub := "咸淳三年六月十二　%s" % Letterbox.enemy_note(enemy)
 	var lb := Letterbox.enter(root, Letterbox.sea_title("刺桐外海", "遇敌"), sub)
 	_expect(lb != null, "有窗口时入战墨边未上场")
+	# 裸 await caption_shown 在墨边被顶掉 / 随布景释放时永不返回（lane gd10）：一律带帧数上界，没等到就判红收尾
+	if lb != null and not await CombatStage.wait_signal(self, lb, &"caption_shown"):
+		_bail("入战题签没擦出（caption_shown 未发：墨边被顶掉或随布景释放）", wm, gm)
+		return
 	if lb != null:
-		await lb.caption_shown
 		await _shot("02_enter_caption")
 		_expect(str(lb.get("title")) == "刺桐外海・遇敌", "入战题名「%s」" % lb.get("title"))
 		_expect("海鹘二艘" in str(lb.get("subtitle")), "入战副题含中文船数")
 		var enter_done := [false]
 		lb.finished.connect(func() -> void: enter_done[0] = true)
-		while not enter_done[0]:
-			await process_frame
+		if not await CombatStage.wait_until(self, func() -> bool: return enter_done[0] or not is_instance_valid(lb)) \
+				or not enter_done[0]:
+			_bail("入战墨边没演完（finished 未发）", wm, gm)
+			return
 	for _i in 4:
 		await process_frame
 
@@ -107,22 +113,25 @@ func _run() -> void:
 	var ex := Letterbox.exit(root, Letterbox.outcome_title("board", "刺桐外海"),
 		"咸淳三年六月十二　夺得海鹘一艘")
 	_expect(ex != null, "出战墨边未上场")
+	if ex != null and not await CombatStage.wait_signal(self, ex, &"caption_shown"):
+		_bail("出战题签没擦出（caption_shown 未发：墨边被顶掉或随布景释放）", wm, gm)
+		return
 	if ex != null:
-		await ex.caption_shown
 		await _shot("03_exit_caption")
 		_expect(str(ex.get("title")) == "刺桐外海・夺船", "出战题名「%s」" % ex.get("title"))
 		var exit_done := [false]
 		ex.finished.connect(func() -> void: exit_done[0] = true)
-		while not exit_done[0]:
-			await process_frame
+		if not await CombatStage.wait_until(self, func() -> bool: return exit_done[0] or not is_instance_valid(ex)) \
+				or not exit_done[0]:
+			_bail("出战墨边没演完（finished 未发）", wm, gm)
+			return
 	# 墨边退场后、海战场面拆掉前截：旧写法先 queue_free 再截，得的是一色空视口（lane sg2）
 	await _shot("04_after_exit")
 	# 冻住后布景不该自己结算；万一又被释放（去掉冻结 / WorldMap 改了结算时序），报红收尾，不挂死
+	var why := CombatStage.standing_fail(wm)
+	_expect(why == "", why if why != "" else "布景海战在探针演示中未自行结算")
 	if is_instance_valid(wm):
-		_expect(not bool(wm.get("resolved")), "布景海战在探针演示中未自行结算")
 		wm.queue_free()
-	else:
-		_fails.append("布景 WorldMap 在探针拆场前已自行结算释放（冻结失效，不是墨边回归）")
 	gm.pending_battle = {}
 	_report()
 
@@ -180,6 +189,17 @@ func _shot(stem: String) -> void:
 		return
 	await RenderingServer.frame_post_draw
 	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)
+
+
+## 等不到信号时判红收尾：拆掉还在的布景与墨边，照常出报告（不挂死）
+func _bail(msg: String, wm: Node, gm: Node) -> void:
+	_expect(false, msg)
+	for n in root.get_tree().get_nodes_in_group(Letterbox.GROUP):
+		n.call("_abort")
+	if is_instance_valid(wm):
+		wm.queue_free()
+	gm.pending_battle = {}
+	_report()
 
 
 func _report() -> void:

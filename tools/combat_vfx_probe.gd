@@ -10,6 +10,7 @@ const CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const BoardingStage := preload("res://scripts/combat/BoardingStage.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const ShotGate := preload("res://tools/shot_gate.gd")
+const CombatStage := preload("res://tools/combat_probe_stage.gd")
 const TAG := "COMBAT_VFX_PROBE"
 const EXPECTED_SHOTS := 4
 
@@ -56,12 +57,14 @@ func _run() -> void:
 
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
+	# 布景不自己结算（lane gd10）：只冻敌船开炮，接舷演出照常跑；理由见 combat_probe_stage.gd 头注释
+	_expect(CombatStage.freeze_enemy_fire(wm) == 2, "布景敌船开炮已冻住（2 艘）")
 	for _i in 40:
 		await process_frame
 	await _shot("01_naval_hud")
 
 	# 强制接舷最近敌船
-	if wm.has_method("_nearest_enemy") and wm.has_method("_board_enemy"):
+	if is_instance_valid(wm) and wm.has_method("_nearest_enemy") and wm.has_method("_board_enemy"):
 		var ne: Array = wm._nearest_enemy()
 		_expect(ne.size() == 2, "应有存活敌船可接舷")
 		if ne.size() == 2:
@@ -80,6 +83,8 @@ func _run() -> void:
 			await _shot("03_boarding_resolve")
 
 	await _shot("04_post_board")
+	var why := CombatStage.standing_fail(wm)
+	_expect(why == "", why if why != "" else "布景海战在探针演示中未自行结算")
 	_report()
 
 

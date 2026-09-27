@@ -11,6 +11,7 @@ var OUT_DIR := ShotGate.out_dir("vision")
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const ShotGate := preload("res://tools/shot_gate.gd")
+const CombatStage := preload("res://tools/combat_probe_stage.gd")
 const TAG := "VISION_LETTERBOX_PROBE"
 const EXPECTED_SHOTS := 7
 
@@ -52,12 +53,13 @@ func _run() -> void:
 		"enemy": enemy, "source": {"scene": "probe"}}
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
+	# 布景不自己结算（lane pg 立、gd10 改冻开炮）：WorldMap 是真海战，照常开炮结算。约 8–10 s 旗舰被击沉 →
+	# _battle_exit("lose") 自己起一副出战墨边，把探针这副在停拍时顶掉（_abort 提前补调 on_black，揭开是拆了场的灰底）
+	# → 05 中线 v=0.302 偶发红，10 次红 5。不是渲染时序，不能靠重试/多等帧遮掉。add_child 当帧就冻（原先等 30 帧再
+	# 整棵 DISABLED，慢帧下 30 帧可能已过 3.5 s 首轮齐射）；只冻敌炮、布景照常动，理由见 combat_probe_stage.gd。
+	_expect(CombatStage.freeze_enemy_fire(wm) == 2, "布景敌船开炮没冻住（应 2 艘）")
 	for _i in 30:
 		await process_frame
-	# 布景冻住（lane pg）：WorldMap 是真海战，照常开炮结算。约 8–10 s 旗舰被击沉 → _battle_exit("lose")
-	# 自己起一副出战墨边，把探针这副在停拍时顶掉（_abort 提前补调 on_black，揭开是拆了场的灰底）→ 05 中线
-	# v=0.302 偶发红，10 次红 5。不是渲染时序，不能靠重试/多等帧遮掉；冻住后仍出图，只是不再推进战斗。
-	wm.process_mode = Node.PROCESS_MODE_DISABLED
 	await _shot("00_combat_plain")
 
 	# 入战
@@ -73,11 +75,16 @@ func _run() -> void:
 	for _i in 6:
 		await process_frame
 	await _shot("01_enter_closing")
-	await lb.caption_shown
+	# 裸 await caption_shown 在墨边被顶掉 / 随布景释放时永不返回（lane gd10）：一律带帧数上界，没等到就判红收尾
+	if not await CombatStage.wait_signal(self, lb, &"caption_shown"):
+		_bail("入战题签没擦出（caption_shown 未发：墨边被顶掉或随布景释放）", wm)
+		return
 	await _shot("02_enter_caption")
 	_check_layout(lb, "入战")
-	while not enter_done[0]:
-		await process_frame
+	if not await CombatStage.wait_until(self, func() -> bool: return enter_done[0] or not is_instance_valid(lb)) \
+			or not enter_done[0]:
+		_bail("入战墨边没演完（finished 未发）", wm)
+		return
 	for _i in 3:
 		await process_frame
 	_expect(not is_instance_valid(lb) or lb.is_queued_for_deletion(), "入战演完节点未自删")
@@ -98,12 +105,16 @@ func _run() -> void:
 		_resolved_at_cover = is_instance_valid(wm) and bool(wm.get("resolved")))
 	var exit_done := [false]
 	ex.finished.connect(func() -> void: exit_done[0] = true)
-	await ex.caption_shown
+	if not await CombatStage.wait_signal(self, ex, &"caption_shown"):
+		_bail("出战题签没擦出（caption_shown 未发：墨边被顶掉或随布景释放）", wm)
+		return
 	await _shot("04_exit_caption")
 	_check_layout(ex, "出战")
-	# 已被顶掉时 covered 早发过了，再 await 会挂死
-	if _covered_hits == 0:
-		await ex.covered
+	# 已被顶掉时 covered 早发过了，裸 await 会挂死；按计数等、带上界
+	if not await CombatStage.wait_until(self, func() -> bool: return _covered_hits > 0 or not is_instance_valid(ex)) \
+			or _covered_hits == 0:
+		_bail("出战墨边没合到全黑（covered 未发）", wm)
+		return
 	_expect(not _resolved_at_cover,
 		"布景海战在墨边演示中自行结算，WorldMap 自己的出战墨边顶掉了探针这副（探针布景没冻住，不是墨边回归）")
 	_expect(_shut_at_cover >= VIEW.y * 0.5,
@@ -112,8 +123,10 @@ func _run() -> void:
 	if img != null:
 		var mid := img.get_pixel(VIEW.x / 2, VIEW.y / 2)
 		_expect(mid.v < 0.08, "出战合拢时画面中线未全黑（v=%.3f）" % mid.v)
-	while not exit_done[0]:
-		await process_frame
+	if not await CombatStage.wait_until(self, func() -> bool: return exit_done[0] or not is_instance_valid(ex)) \
+			or not exit_done[0]:
+		_bail("出战墨边没演完（finished 未发）", wm)
+		return
 	await _shot("06_exit_done", true)  # on_black 已换成空场，本就一色
 	_expect(_on_black_hits == 1 and _covered_hits == 1,
 		"出战 on_black / covered 应各调一次（%d / %d）" % [_on_black_hits, _covered_hits])
@@ -164,6 +177,16 @@ func _shot(name: String, allow_blank := false) -> Image:
 func _expect(ok: bool, msg: String) -> void:
 	if not ok:
 		_fails.append(msg)
+
+
+## 等不到信号时判红收尾：拆掉还在的布景与墨边，照常出报告（不挂死）
+func _bail(msg: String, wm: Node) -> void:
+	_fails.append(msg)
+	for n in root.get_tree().get_nodes_in_group(Letterbox.GROUP):
+		n.call("_abort")
+	if is_instance_valid(wm):
+		wm.queue_free()
+	_report()
 
 
 func _report() -> void:
