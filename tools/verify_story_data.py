@@ -740,6 +740,55 @@ for s in scenes:
         hit = PROLOGUE_MODERN.search(v)
         check(hit is None, f"scenes.json {sid}.{k} 序章现代腔 / 开局季节矛盾「{hit.group(0) if hit else ''}」")
 
+# 场景文案二轮去现代腔（lane seq1 / seq2）：全文件非 deprecated 场景的全部上屏字段（_scene_texts 之外还有
+# objective、result、设施 title / subtitle / body、调查项）不得回退到已改掉的现代 / 工程 / 外来词与存疑判改项
+# （大马士革 1255 非大食都城、拔锚→解缆、罗盘→针盘、船厂→船场、福州的贡院、南宋无路试），不得有西式引号，
+# 标题分隔号只用「・」。镜像到 characters.json lines 的原句（林阿舶「这趟先验中继路」、商长「按照大宋律例」）不在禁列。
+SCENE_MODERN = re.compile(
+    r"期票|单方面|违约|路径入口|海商路径|网络|远景中继|中继段|证据|样本|交付成果|风险|防波堤|羊皮纸|催款单|通行证|"
+    r"接头人|瞬间凝固|战局|科考|税率表|文书训练|沉默本身|对你而言|这个时代|人生|点触|点击|"
+    r"大马士革|拔锚|罗盘|船厂|福州的贡院|路试|番商|番文|蝉声"
+)
+def _scene_onscreen(s):
+    yield from _scene_texts(s)
+    for k in ("objective",):
+        if isinstance(s.get(k), str):
+            yield k, s[k]
+    res = s.get("result")
+    for i, v in enumerate(res if isinstance(res, list) else [res]):
+        if isinstance(v, str):
+            yield f"result[{i}]", v
+    for i, fac in enumerate(s.get("facilities", []) or []):
+        for k in ("title", "subtitle", "body"):
+            if isinstance(fac, dict) and isinstance(fac.get(k), str):
+                yield f"facilities[{i}].{k}", fac[k]
+    for o in s.get("options", []) or []:
+        if isinstance(o, dict) and isinstance(o.get("label"), str):
+            yield "option", o["label"]
+def _scene_modern_hits(s):
+    out = []
+    for k, v in _scene_onscreen(s):
+        hit = SCENE_MODERN.search(v)
+        if hit:
+            out.append(f"scenes.json {s.get('id')}.{k} 回退到现代腔 / 已判改写法「{hit.group(0)}」")
+        if any(q in v for q in "\"“”‘’"):
+            out.append(f"scenes.json {s.get('id')}.{k} 用了西式引号：{v[:40]}")
+    t = s.get("title")
+    if isinstance(t, str) and ("·" in t or " " in t):
+        out.append(f"scenes.json {s.get('id')}.title 分隔号须用「・」，不用「·」或半角空格：{t}")
+    return out
+for s in scenes:
+    if not s.get("deprecated"):
+        for msg in _scene_modern_hits(s):
+            check(False, msg)
+# 自证：每条上屏来路各塞一个禁词，扫描须逐条抓到（防日后改 _scene_onscreen 时某条来路静默失明）
+for tag, probe in (("body", {"body": "寺社网络"}), ("objective", {"objective": "科举路径入口"}),
+                   ("result[]", {"result": ["", "羊皮纸"]}), ("result", {"result": "税率表"}),
+                   ("facility", {"facilities": [{"body": "船厂"}]}), ("inv", {"investigations": [{"text": "瞬间凝固"}]}),
+                   ("choice", {"choices": [{"label": "拔锚"}]}), ("option", {"options": [{"label": "点击"}]}),
+                   ("quote", {"result": ["“陈公子”"]}), ("title", {"title": "兴化海口 · 酒棚"})):
+    check(bool(_scene_modern_hits(dict(probe, id="_probe"))), f"SCENE_MODERN 自证：往 {tag} 塞禁词后门禁没抓到，该上屏来路失明")
+
 # ── 结局年号：过场 ↔ 结算册页 ↔ Calendar（Q8）───────────────
 # 「岸上的根」曾写景炎三年三月，而该卡只在 1277（景炎二年）出现。结局年号有三处镜像：cutscenes.json 过场的
 # era 字幕、Main._show_notice_dialog 的册页题头、触发该结局的 Calendar 日期闸；年号推算以 Calendar.ERAS /
