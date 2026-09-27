@@ -3,6 +3,7 @@ extends SceneTree
 ## 演一次入战、一次带 on_black 的出战，按节拍截屏，并量排版与信号。
 ## Run: DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/vision_letterbox_probe.gd
 ## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/vision/（绝对路径，不进仓库）。默认严格：须出 7 张，headless / 空视口 / 张数不足必红。
+## 压帧自检（lane gd11）：NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/vision_letterbox_probe.gd
 ## 契约模式（显式）：godot --headless --path . -s res://tools/vision_letterbox_probe.gd -- --contract
 ##   只验静态题签与 headless 下入口返回 null，收尾打 VISION_LETTERBOX_PROBE_CONTRACT_OK，不报张数。
 
@@ -48,6 +49,7 @@ func _run() -> void:
 		return
 
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	CombatStage.frame_pressure(self)  # NK1_PROBE_SLOW_MS 压帧自检（lane gd11）；未设不挂
 	var gm := root.get_node("GameManager")
 	var enemy := [{"type": "sea_falcon", "count": 2}]
 	gm.pending_battle = {"battle": true, "power": 300.0, "player_power": 300.0,
@@ -59,9 +61,13 @@ func _run() -> void:
 	# → 05 中线 v=0.302 偶发红，10 次红 5。不是渲染时序，不能靠重试/多等帧遮掉。add_child 当帧就冻（原先等 30 帧再
 	# 整棵 DISABLED，慢帧下 30 帧可能已过 3.5 s 首轮齐射）；只冻敌炮、布景照常动，理由见 combat_probe_stage.gd。
 	_expect(CombatStage.freeze_enemy_fire(wm) == 2, "布景敌船开炮没冻住（应 2 艘）")
-	for _i in 30:
-		await process_frame
-	await _shot("00_combat_plain")
+	# 00 / 01 按演出相位截，不数帧（lane gd11）：原 30 帧在快机上 WorldMap 自己那副入战墨边（挂在 wm 下，约 3.2 s）
+	# 还没收，「combat_plain」截的是「外海・遇敌」墨边；原 6 帧在慢帧（每帧 160 ms）下墨边早合满、题签已在擦出，不是「合拢中」
+	if not await _shot_when("00_combat_plain",
+			func() -> bool: return CombatStage.letterbox_under(self, wm) == null,
+			func() -> bool: return CombatStage.standing_fail(wm) != ""):
+		_bail("布景入战墨边没收场，截不到海战素面", wm)
+		return
 
 	# 入战
 	var sub := "咸淳三年六月十二　%s" % Letterbox.enemy_note(enemy)
@@ -73,10 +79,13 @@ func _run() -> void:
 		return
 	var enter_done := [false]
 	lb.finished.connect(func() -> void: enter_done[0] = true)
-	for _i in 6:
-		await process_frame
-	await _shot("01_enter_closing")
-	# 裸 await caption_shown 在墨边被顶掉 / 随布景释放时永不返回（lane gd10）：一律带帧数上界，没等到就判红收尾
+	# 01：墨边合到三成以上、还没合满（合拢 0.46 s）
+	if not await _shot_when("01_enter_closing",
+			func() -> bool: return _bar_frac(lb) >= 0.3 and _bar_frac(lb) < 1.0,
+			func() -> bool: return _bar_frac(lb) >= 1.0):
+		_bail("入战墨边合拢中一帧也没画到", wm)
+		return
+	# 裸 await caption_shown 在墨边被顶掉 / 随布景释放时永不返回（lane gd10）：一律带上界（gd11 起按墙钟），没等到就判红收尾
 	if not await CombatStage.wait_signal(self, lb, &"caption_shown"):
 		_bail("入战题签没擦出（caption_shown 未发：墨边被顶掉或随布景释放）", wm)
 		return
@@ -186,6 +195,20 @@ func _check_layout(lb: CanvasLayer, tag: String) -> void:
 		"%s题签没落在下墨边里：%s" % [tag, r])
 	_expect(r.position.x >= 0.0 and r.end.x <= VIEW.x, "%s题签冲出画布：%s" % [tag, r])
 	print("  %s 墨边 %.0f  题签 %s" % [tag, h, r])
+
+
+## 截满足 want 的那一帧（combat_probe_stage.shot_when）；等不到红因已记进 _fails
+func _shot_when(name: String, want: Callable, gone: Callable) -> bool:
+	var path := "%s/letterbox_%s.png" % [OUT_DIR, name]
+	return await CombatStage.shot_when(self, path.get_file(), _fails,
+			func() -> void: ShotGate.shot(root, path, _saved, _fails), want, gone)
+
+
+## 墨边上边此刻合到几成（0 = 未合、1 = 合满）；墨边已释放按合满算
+func _bar_frac(lb) -> float:
+	if lb == null or not is_instance_valid(lb):
+		return 1.0
+	return (lb.get("_top") as Control).size.y / maxf(1.0, float(lb.call("bar_height")))
 
 
 ## allow_blank：05_exit_black 本该全黑、06_exit_done 是 on_black 换上的空场，都不按「一色空图」判红；

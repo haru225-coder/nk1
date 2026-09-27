@@ -121,11 +121,15 @@ func _dump(tag: String, btn: Variant) -> String:
 	]
 
 
+## 过场约 2.4 s（UiTransition 0.32 + 0.42 + 0.28 + 1.0 + 0.42）。上界按墙钟（lane gd11）：原 600 帧在 vsync 关
+## 约 235 fps 下只合 2.55 s，比过场长不到一成，帧率再高就没等完便数钱；墙钟上界与帧率无关，留约 6 倍余量。
+const SETTLE_MS := 15000
+
+
 func _settle() -> void:
-	var guard := 0
-	while _transition() != null and guard < 600:
+	var deadline := Time.get_ticks_msec() + SETTLE_MS
+	while _transition() != null and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
-		guard += 1
 	for _i in 4:
 		await get_tree().process_frame
 

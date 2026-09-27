@@ -3,6 +3,7 @@ extends SceneTree
 ## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/wire/（至少 2 张：裱框、入战墨边）。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_wire_vision_screenshots.gd
 ## 默认严格：须出 2 张；headless / 空视口 / 一色空图 / 张数不足一律非零退出（shot_gate.gd）。
+## 压帧自检（lane gd11）：NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_wire_vision_screenshots.gd
 ## 契约模式（显式）：godot --headless --path /workspace/nk1 -s res://tools/qa_wire_vision_screenshots.gd -- --contract
 ##   只验接线符号与题签静态契约，不截图。
 
@@ -14,6 +15,7 @@ const TAG := "QA_WIRE_VISION"
 const EXPECTED_SHOTS := 2
 const ShotGate := preload("res://tools/shot_gate.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
+const CombatStage := preload("res://tools/combat_probe_stage.gd")
 
 var _saved: Array = []
 var _fails: Array = []
@@ -43,6 +45,7 @@ func _run() -> void:
 		_report()
 		return
 
+	CombatStage.frame_pressure(self)  # NK1_PROBE_SLOW_MS 压帧自检（lane gd11）；未设不挂
 	# 1) VisionStage 裱框（与岸上「市舶纪事」/ F8 叠层同场景）
 	if not ResourceLoader.exists(STAGE):
 		_fails.append("缺 VisionStage 场景")
@@ -58,6 +61,7 @@ func _run() -> void:
 	while frames < 90 and not ready_flag[0]:
 		await process_frame
 		frames += 1
+	# 按帧不改（lane gd11）：VisionStage._run_intro 本身逐帧推进（题签擦出 20 帧），帧数就是它的时钟
 	for _i in 40:
 		await process_frame
 	await _shot("wire_01_vision_frame")
@@ -84,13 +88,27 @@ func _run() -> void:
 		}])
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
-	for _i in 36:
-		await process_frame
-	# 入战题签合拢期再截一帧
-	for _i in 24:
-		await process_frame
-	await _shot("wire_02_letterbox_enter")
-	wm.queue_free()
+	# 布景不自己结算（lane gd10 helper）：只冻敌炮，理由见 combat_probe_stage.gd
+	_expect(CombatStage.freeze_enemy_fire(wm) == 2, "布景敌船开炮已冻住（2 艘）")
+	# 入战题签合拢期再截一帧：按演出信号截（lane gd11），不数帧。原 36+24 帧快机截在墨边合拢前、
+	# 慢帧（每帧 160 ms）下 60 帧 ≈ 9.6 s，墨边（约 3.2 s）早收了，截的是空海面、照样 OK。
+	# WorldMap._try_letterbox_enter 那副挂在 wm 下：题签擦出（caption_shown）后停拍 1.3 s 内截
+	var lb := CombatStage.letterbox_under(self, wm)
+	_expect(lb != null, "WorldMap 入战墨边应上场（挂在 wm 下）")
+	if lb != null:
+		var shown := [false]
+		lb.caption_shown.connect(func() -> void: shown[0] = true, CONNECT_ONE_SHOT)
+		var path := "%s/wire_02_letterbox_enter.png" % OUT_DIR
+		await CombatStage.shot_when(self, path.get_file(), _fails,
+				func() -> void: ShotGate.shot(root, path, _saved, _fails),
+				func() -> bool: return shown[0] and is_instance_valid(lb) and not lb.is_queued_for_deletion(),
+				func() -> bool: return not is_instance_valid(lb) or lb.is_queued_for_deletion())
+		if is_instance_valid(lb) and shown[0]:
+			_expect(str(lb.get("title")) == "泉州外海・遇敌", "入战题名「%s」" % lb.get("title"))
+	var why := CombatStage.standing_fail(wm)
+	_expect(why == "", why if why != "" else "布景海战在探针演示中未自行结算")
+	if is_instance_valid(wm):
+		wm.queue_free()
 	gm.pending_battle = {}
 
 	_report()
