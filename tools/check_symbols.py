@@ -40,6 +40,8 @@ MAIN_SPLITS = (
     "scripts/ui/SaveSheet.gd",
 )
 # Main 里一行转发形状、但目标不是拆出件的委托（本来就是别的模块的 API，不拼回）。新增一条须注明为什么不是拆出件。
+# 条目失效判红（lane gd16，见「一之零」）：文件在、Main preload 了它、Main 里真有一行转发到它、转发的目标函数它真有、
+# 注明里的「（Main 函数 → 目标函数）」对得上实际转发——任一条不成立就是过时条目（该删 / 该改注），不能留着白放行。
 MAIN_NOT_SPLITS = {
     "scripts/cutscene/LivingBackdrop.gd": "过场背景调色（_grade_backdrop → set_grade），公共件，不是从 Main 搬出",
     "scripts/ui/TavernNewsWall.gd": "酒馆市井札薄（_setup_news_wall → mount），自成一件，不是从 Main 搬出",
@@ -48,6 +50,7 @@ SPLIT_MARK = "从 Main.gd 原样搬出"  # 拆出件头注（前 10 行）的约
 _SPLIT_FWD = re.compile(r'^\t(?:return |await )?(_[A-Z][A-Z0-9_]*)\.([A-Za-z_]\w*)\((.*)\)\s*$')
 _split_report = []
 _split_fwd_count = {}
+_nonsplit_fwd = {}  # 非拆出件路径 -> [(Main 函数名, 目标函数名)]：Main 里一行转发到它的各支（MAIN_NOT_SPLITS 失效判据用）
 
 
 def _top_level_chunks(src):
@@ -86,6 +89,7 @@ def read_main_src():
     拆走函数后，断言不会因为只看见一行转发而假绿（尤其是「某字样不得出现」一类的反向断言）。"""
     _split_report.clear()
     _split_fwd_count.clear()
+    _nonsplit_fwd.clear()
     with open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8") as f:
         main_text = f.read()
     const_of, other_of = {}, {}
@@ -115,6 +119,8 @@ def read_main_src():
             _split_report.append(f"{fname} 调了拆出件 {const_of[_k]}（{_k}.…）却不是一行转发，拼回不认、"
                                  f"函数体断言只看得到 Main 这几行（转发须独占函数体：`\\t[return |await ]{_k}.fn(…)`，"
                                  f"行尾不带注释、签名不折行）")
+        if fwd and fwd.group(1) in other_of:
+            _nonsplit_fwd.setdefault(other_of[fwd.group(1)], []).append((fname[len("func "):].strip(), fwd.group(2)))
         if fwd and fwd.group(1) in other_of and other_of[fwd.group(1)] not in MAIN_NOT_SPLITS:
             _split_report.append(f"{fname} 一行转发到 {other_of[fwd.group(1)]}，它没登记进 MAIN_SPLITS，函数体不拼回"
                                  f"（是拆出件就两处 MAIN_SPLITS 都登记；不是就加进 check_symbols 的 MAIN_NOT_SPLITS 并注明）")
@@ -318,6 +324,30 @@ for _rel in MAIN_SPLITS:
 if not _split_report:
     print(f"  ✓ 头注写「{SPLIT_MARK}」的 {len(_marked)} 件与 MAIN_SPLITS 一一对上；"
           f"Main 调拆出件处都是一行转发；非拆出件的一行委托 {len(MAIN_NOT_SPLITS)} 处都在 MAIN_NOT_SPLITS")
+# MAIN_NOT_SPLITS 条目失效判红（lane gd16）：过时条目不放行任何转发，却让人以为那处委托有人看着
+_ns_report = []
+for _rel, _why in MAIN_NOT_SPLITS.items():
+    _fwds = _nonsplit_fwd.get(_rel, [])
+    if _rel in MAIN_SPLITS:
+        _ns_report.append(f"{_rel} 同时登记在 MAIN_SPLITS 与 MAIN_NOT_SPLITS（二选一）")
+    if not os.path.isfile(os.path.join(ROOT, _rel)):
+        _ns_report.append(f"MAIN_NOT_SPLITS 条目 {_rel} 文件不存在（条目过时，删掉或改路径）")
+        continue
+    if not _fwds:
+        _ns_report.append(f"MAIN_NOT_SPLITS 条目 {_rel}：Main 没 preload 它或没有一行转发到它（条目过时，删掉）")
+        continue
+    with open(os.path.join(ROOT, _rel), encoding="utf-8") as f:
+        _ns_funcs = set(re.findall(r'^(?:static\s+)?func\s+([A-Za-z_]\w*)', f.read(), re.M))
+    for _caller, _callee in _fwds:
+        if _callee not in _ns_funcs:
+            _ns_report.append(f"func {_caller} 转发到 {_rel} 的 {_callee}，那边没有这支 func（MAIN_NOT_SPLITS 条目指向不存在的目标）")
+    for _caller, _callee in re.findall(r'([A-Za-z_]\w*)\s*→\s*([A-Za-z_]\w*)', _why):
+        if (_caller, _callee) not in _fwds:
+            _ns_report.append(f"MAIN_NOT_SPLITS 条目 {_rel} 注明「{_caller} → {_callee}」，Main 里实际一行转发是 "
+                              f"{'、'.join(f'{a} → {b}' for a, b in _fwds)}（注明过时，改注）")
+if not _ns_report:
+    print(f"  ✓ MAIN_NOT_SPLITS {len(MAIN_NOT_SPLITS)} 条都有效：文件在、Main 一行转发到它、目标函数在、注明与实际转发一致")
+_split_report.extend(_ns_report)
 for _msg in _split_report:
     print(f"  ✗ {_msg}")
     problems.append(f"Main 拆出件：{_msg}")
@@ -393,8 +423,27 @@ print("一之二、_ready 期间的 autoload 依赖顺序")
 print("=" * 68)
 print("  autoload 按注册顺序逐个 _ready；在 _ready 里碰排在自己后面的 autoload 会拿到 null。")
 
+# 按函数名取函数体取不到时判红（lane gd16）。取不到原先静默给 ""：正向断言（"X" in body）跟着红还算露馅，
+# 反向断言（"X" not in body / not any(…)）却照样绿——函数改了名 / 被删 / 搬走没拼回，断言就空转。
+# 所以 `_func_body(src, name)` 与 `func_bodies(src).get(name, …)` 一律记账：取不到记下「本脚本行号 + 函数名」，
+# 「十三、按函数名取函数体」逐条判红。只想探有没有这支函数、不想判红的，用 `name in func_bodies(src)`（不记账）。
+_body_asks = {}  # (本脚本行号, 函数名) -> 取到没有；同一行多次取（循环 / 变异自检）按一处计，有一次取不到就算取不到
+
+
+def _body_ask(name, found, depth=2):
+    key = (sys._getframe(depth).f_lineno, name)
+    _body_asks[key] = _body_asks.get(key, True) and found
+
+
+class _Bodies(dict):
+    """func_bodies 的结果：.get(name, …) 取不到时记账（见 _body_asks），其余同 dict。"""
+    def get(self, name, default=None):
+        _body_ask(name, name in self)
+        return super().get(name, default)
+
+
 def func_bodies(src):
-    """粗略切分出每个 func 的函数体（按缩进）"""
+    """粗略切分出每个 func 的函数体（按缩进）；返回 _Bodies，.get 取不到判红"""
     out, cur, body = {}, None, []
     for ln in src.split("\n"):
         m = re.match(r'^func\s+([A-Za-z_]\w*)', ln)
@@ -407,7 +456,7 @@ def func_bodies(src):
             else:
                 body.append(ln)
     if cur: out[cur] = "\n".join(body)
-    return out
+    return _Bodies(out)
 
 order_idx = {name: i for i, name in enumerate(order)}
 ready_problems = []
@@ -2065,7 +2114,9 @@ else:
     print("  ✗ UiTheme.style_dialog 未定义")
     problems.append("UiTheme.style_dialog 未定义")
 def _func_body(src: str, name: str) -> str:
+    """取 src 里 `func name` 连签名的函数体；取不到给 "" 并记账判红（见 _body_asks）。"""
     m = re.search(rf"^func {name}\b.*?(?=^func |\Z)", src, re.M | re.S)
+    _body_ask(name, m is not None)
     return m.group(0) if m else ""
 
 
@@ -4221,6 +4272,17 @@ if os.path.isfile(_z3_probe):
 else:
     print("  ✗ 缺 qa_companion_preview_screenshots.gd")
     problems.append("缺 companion 截图探针")
+
+print()
+print("=" * 68)
+print("十三、按函数名取函数体（lane gd16：取不到判红）")
+print("=" * 68)
+_body_missed = sorted(k for k, found in _body_asks.items() if not found)
+for _ln, _name in _body_missed:
+    print(f"  ✗ check_symbols.py:{_ln} 取函数体 {_name} 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转")
+    problems.append(f"取不到函数体：{_name}（check_symbols.py:{_ln}）")
+if not _body_missed:
+    print(f"  ✓ _func_body / func_bodies().get 的 {len(_body_asks)} 处按名取用都取到函数体")
 
 print()
 print()

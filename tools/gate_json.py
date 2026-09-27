@@ -192,16 +192,27 @@ SUBCHECKS = [
                "没疑点时没有 `⚠ WARN` 行；不开时输出逐字节不变，开了退出码也不变",
      "fail": "**不判红**：`⚠ WARN <文件>:L<行> <调用>  ← <作用域>：无此 func` / `…：无此 signal` = 字面量名在对应作用域里找不到，"
              "人工判真死引用 / 误报；`--json --suggest` 里记 `level: warn`（ok=true，不计 pass/fail）"},
-    {"id": "Main 拆出件拼回（一之零）", "parent": "check_symbols", "lane": "ms / cs8", "oneclick": True,
+    {"id": "Main 拆出件拼回（一之零）", "parent": "check_symbols", "lane": "ms / cs8 / gd16", "oneclick": True,
      "cmd": "python3 tools/check_symbols.py",
-     "marks": ["一之零、Main.gd 拆出件", "MAIN_NOT_SPLITS", "SPLIT_MARK", "却不是一行转发", "拼回只对源码字符串断言有效"],
+     "marks": ["一之零、Main.gd 拆出件", "MAIN_NOT_SPLITS", "SPLIT_MARK", "却不是一行转发", "拼回只对源码字符串断言有效",
+               "条都有效：文件在、Main 一行转发到它"],
      "expect": "「一之零」每件 `✓ scripts/ui/<件>.gd：N 支转发拼回函数体` + `✓ 头注写「从 Main.gd 原样搬出」的 N 件与 MAIN_SPLITS 一一对上；"
-               "Main 调拆出件处都是一行转发；非拆出件的一行委托 N 处都在 MAIN_NOT_SPLITS` + `✓ godot_smoke.gd 的 MAIN_SPLITS 与此一致`。"
+               "Main 调拆出件处都是一行转发；非拆出件的一行委托 N 处都在 MAIN_NOT_SPLITS` + `✓ MAIN_NOT_SPLITS N 条都有效：文件在、Main 一行转发到它、"
+               "目标函数在、注明与实际转发一致` + `✓ godot_smoke.gd 的 MAIN_SPLITS 与此一致`。"
                "**拼回只对源码字符串断言有效**：行号、`main.` 前缀、static / 实例语义不在此列（口径见 §三.1）",
      "fail": "`✗ … 转发到 <件> 的 fn，那边没有这支 static func` = 拆出件改名 / 删了没跟转发；`登记为 Main 拆出件，但 Main 里没有一行转发` = 登记了没接；"
              "`调了拆出件 … 却不是一行转发` = 转发带行尾注释 / 两行 / 折行签名，拼回不认；`一行转发到 <件>，它没登记进 MAIN_SPLITS` / "
              "`头注写「从 Main.gd 原样搬出」，却没登记` = 新拆一刀忘登记；`登记为拆出件，头注…没写` = 约定字样丢了；"
-             "`godot_smoke.gd 的 MAIN_SPLITS … 不一致` = 两份清单只改了一份。都计入 check_symbols 问题、退 1"},
+             "`godot_smoke.gd 的 MAIN_SPLITS … 不一致` = 两份清单只改了一份；`MAIN_NOT_SPLITS 条目 <件> 文件不存在` / `Main 没 preload 它或没有一行转发到它` / "
+             "`转发到 <件> 的 fn，那边没有这支 func（…指向不存在的目标）` / `注明「A → B」，Main 里实际一行转发是 …` / `同时登记在 MAIN_SPLITS 与 MAIN_NOT_SPLITS` "
+             "= 放行清单过时（lane gd16），删条目或改注。都计入 check_symbols 问题、退 1"},
+    {"id": "按函数名取函数体（十三）", "parent": "check_symbols", "lane": "gd16", "oneclick": True,
+     "cmd": "python3 tools/check_symbols.py",
+     "marks": ["十三、按函数名取函数体", "class _Bodies(dict)", "_body_ask(name, m is not None)", "处按名取用都取到函数体"],
+     "expect": "「十三、按函数名取函数体」`✓ _func_body / func_bodies().get 的 N 处按名取用都取到函数体`（N = 本脚本「行号 + 函数名」去重后的取用处）。"
+               "只探有没有这支函数、不想判红的写 `name in func_bodies(src)`（不记账）",
+     "fail": "`✗ check_symbols.py:<行> 取函数体 <fn> 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转` = 被读的函数改了名 / 删了 / "
+             "搬走没拼回，或断言里函数名写错；改前这里给 `\"\"`，反向断言（`\"X\" not in body`）照样绿。计入 check_symbols 问题、退 1"},
     {"id": "compile 清单自检（inventory）", "parent": "compile", "lane": "ea4", "oneclick": True,
      "cmd": "godot --headless --path . -s res://tools/godot_compile_check.gd",
      "marks": ["inventory SCRIPTS == tracked *.gd", "ls-files", "INVENTORY_EXEMPT", "unlisted", "exempt-stale"],
