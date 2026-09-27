@@ -114,6 +114,11 @@ const _NPC := preload("res://scripts/ui/NpcPage.gd")
 ## 航海日志册页（三卷工席 + 合上、暗幕点下即合、港名匾让开、记录 / 翻阅两个回调）的实现在 scripts/ui/SaveSheet.gd
 ## （Lane main6 第六刀拆出）；Main 保留同名一行转发，调用点与信号目标不变，状态 _save_host 仍在这里。
 const _SAVE := preload("res://scripts/ui/SaveSheet.gd")
+## 行会 / 贡院页（行会行情抄本 + 会籍 / 入行工席与入行回调、贡院誊录 / 赴试工席与两个回调）的实现在 scripts/ui/GuildExamPage.gd
+## （Lane main7 第七刀拆出）；这里的 _guild_port_id / _setup_guild / _add_guild_join_slip / _guild_join_block / _on_guild_join / _setup_exam /
+## _exam_slip / _on_exam_copy / _exam_sat_flag / _on_exam_sit 都是同名同签名一行转发，调用点与信号目标不变；GUILD_* / EXAM_* 常量与
+## play_transition 仍在这里。
+const _GUILD := preload("res://scripts/ui/GuildExamPage.gd")
 ## 活背景幅度：比引擎默认再收一档（正文底下的画不能晃得人头晕）
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
@@ -2404,100 +2409,26 @@ const EXAM_SLIP_MIN_H := 220
 ## 行会页 id 是港卡 city_guild 按 current_scene_id 改写的 {港}_guild；入行港判定与 guild_<港> 旗标一律记在基港 id 上。
 ## 尾部 _guild 剥尽（{港}_guild_guild 也收回基港），否则三港在实际页 id 下认不出，或同港旗标记成两份、会费扣两次。
 func _guild_port_id(page_id: String) -> String:
-	var base := page_id
-	while base.ends_with("_guild"):
-		base = base.trim_suffix("_guild")
-	return base
+	return _GUILD.guild_port_id(page_id)
 
 
 ## 行会：出港行情抄本。酒馆打听仍费一日只吐一条；这里钉在墙上，不耗日。
 func _setup_guild(port_id: String) -> void:
-	port_id = _guild_port_id(port_id)
-	scene_title.text = "%s・行会" % GameManager.get_port_name(port_id)
-	body_text.text = "墙上钉着远港价目，墨迹有的还潮着。海商信用 %d，足的人会里肯多抄几条远路。" % GameState.merchant_credit
-	_begin_benches()
-	_center_benches()
-
-	var limit: int = 5 if GameState.merchant_credit >= GUILD_CREDIT_WIDE else 3
-	var rows: Array = _collect_spreads(port_id, limit)
-	if rows.is_empty():
-		var empty := _slip_body()
-		_slip_title(empty, "出港行情", "眼下抄不出能赚的路")
-		_slip_note(empty, "过几日行情回一回再来。")
-	else:
-		for row in rows:
-			var slip := _slip_body()
-			var hint := _slip_title(
-				slip,
-				GameManager.get_good_name(row["good"]),
-				"运往 %s　多 %d" % [GameManager.get_port_name(row["port"]), int(row["profit"])]
-			)
-			hint.add_theme_color_override("font_color", UiTheme.MOSS)
-			_slip_note(slip, "买 %d　卖 %d" % [int(row["buy"]), int(row["sell"])])
-
-	_add_guild_join_slip(port_id)
-
-	_end_benches()
-	_add_leave_button(port_id)
-	choices_label.visible = false
+	_GUILD.setup_guild(self, port_id)
 
 
 ## 入行：只泉州 / 博多 / 广州。已入行只看账；条件不足按钮仍在，按下只说缘由。
 func _add_guild_join_slip(port_id: String) -> void:
-	port_id = _guild_port_id(port_id)
-	var join := _slip_body()
-	var standing := "商誉 %d　人脉 %d" % [GameState.merchant_credit, GameState.network]
-	if not GUILD_JOIN_PORTS.has(port_id):
-		_slip_title(join, "会籍", standing)
-		_slip_note(join, "入行只在泉州、博多、广州三座行会。")
-		_slip_stamp(_slip_row(join, true), "本港无会籍")
-		return
-	if GameState.has_flag("guild_%s" % port_id):
-		_slip_title(join, "会籍", "%s　名声 %d" % [standing, GameState.fame])
-		_slip_note(join, "会费已交，不再收。")
-		_slip_stamp(_slip_row(join, true), "本港已入行")
-		return
-	_slip_title(join, "入行", standing)
-	# 门槛一行、收益一行：原先并成一句，折行后贴着朱钮
-	_slip_note(join, "会费 %d　商誉须 %d。" % [GUILD_JOIN_FEE, GUILD_JOIN_CREDIT])
-	_slip_note(join, "入行商誉加 %d，人脉加 %d；行情、抽解、佣金照旧。" % [
-		GUILD_JOIN_CREDIT_GAIN, GUILD_JOIN_NETWORK_GAIN,
-	])
-	var chip := _slip_chip(_slip_row(join, true), "交会费入行", _on_guild_join.bind(port_id), true)
-	_slip_whole(chip)
+	_GUILD.add_guild_join_slip(self, port_id)
 
 
 ## 返回不收的缘由；空串即可入行。
 func _guild_join_block(port_id: String) -> String:
-	port_id = _guild_port_id(port_id)
-	if not GUILD_JOIN_PORTS.has(port_id):
-		return "本港不设入行"
-	if GameState.has_flag("guild_%s" % port_id):
-		return "本港已入行"
-	if GameState.merchant_credit < GUILD_JOIN_CREDIT:
-		return "信用不足（商誉 %d，须 %d）" % [GameState.merchant_credit, GUILD_JOIN_CREDIT]
-	if GameState.money < GUILD_JOIN_FEE:
-		return "现钱不足（%d，会费 %d）" % [GameState.money, GUILD_JOIN_FEE]
-	return ""
+	return _GUILD.guild_join_block(self, port_id)
 
 
 func _on_guild_join(port_id: String) -> void:
-	port_id = _guild_port_id(port_id)
-	var port_name := GameManager.get_port_name(port_id)
-	var why := _guild_join_block(port_id)
-	if why != "":
-		log_msg("【行会】%s行会还不收：%s。" % [port_name, why])
-		return
-	if not GameState.spend_money(GUILD_JOIN_FEE):
-		return
-	GameState.merchant_credit += GUILD_JOIN_CREDIT_GAIN
-	GameState.network += GUILD_JOIN_NETWORK_GAIN
-	GameState.set_flag("guild_%s" % port_id)
-	log_msg("【入行】在%s行会交了会费 %d，簿上添了名字。商誉 %d，人脉 %d。" % [
-		port_name, GUILD_JOIN_FEE, GameState.merchant_credit, GameState.network,
-	])
-	await play_transition("行会・入行", "%s行会　%s" % [port_name, Calendar.get_date_string()],
-		load_scene.bind(current_scene_id), "行")
+	await _GUILD.on_guild_join(self, port_id)
 
 
 ## 可复用的短过渡：淡入墨幕 → 题签擦出（title + 小朱印 seal）、副题浮起 → 停一拍 → 淡出，约 2.4 秒。
@@ -2518,91 +2449,28 @@ func play_transition(title: String, subtitle := "", at_black := Callable(), seal
 
 ## 贡院：誊录耗日换工钱与学者倾向，不给名声；赴试每章一次，费 15 日，按倾向记名声。
 func _setup_exam(port_id: String) -> void:
-	scene_title.text = "%s・贡院" % GameManager.get_port_name(port_id)
-	body_text.text = "今科未开。只能替人誊录，笔墨钱现结。"
-	_begin_benches()
-	_center_benches()
-
-	var copy := _exam_slip()
-	_slip_title(copy, "誊录", "学者 %d　海路 %d" % [GameState.scholar_tendency, GameState.sea_tendency])
-	_slip_note(copy, "工钱 %d　费 %d 日。" % [EXAM_STIPEND, EXAM_COPY_DAYS])
-	_slip_note(copy, "学者倾向加 1；不记名声。")
-	_slip_whole(_slip_chip(_slip_row(copy, true), "替人抄三日", _on_exam_copy.bind(port_id), true))
-
-	var sit := _exam_slip()
-	_slip_title(sit, "赴试", "每章一次　费 %d 日" % EXAM_SIT_DAYS)
-	if not EXAM_SIT_PORTS.has(port_id):
-		_slip_note(sit, "赴试只在兴化、泉州两处贡院。")
-		_slip_stamp(_slip_row(sit, true), "本港无贡院科场")
-	elif GameState.has_flag(_exam_sat_flag()):
-		_slip_note(sit, "本章已赴过，下一章再来。")
-		_slip_note(sit, "名声 %d。" % GameState.fame)
-		_slip_stamp(_slip_row(sit, true), "本章已赴")
-	else:
-		_slip_note(sit, "学者不输海路：名声加 4，学者加 2。")
-		_slip_note(sit, "否则名声加 1，海路加 1。不发钱。")
-		_slip_whole(_slip_chip(_slip_row(sit, true), "入场赴试", _on_exam_sit.bind(port_id), true))
-
-	_end_benches()
-	_add_leave_button(port_id)
-	choices_label.visible = false
+	_GUILD.setup_exam(self, port_id)
 
 
 func _exam_slip() -> VBoxContainer:
-	var body := _slip_body()
-	body.add_theme_constant_override("separation", 6)
-	var card := body.get_parent().get_parent() as Control
-	card.custom_minimum_size.y = EXAM_SLIP_MIN_H
-	return body
+	return _GUILD.exam_slip(self)
 
 
 ## 誊录：与赴试同一时序——工钱与学者倾向先落袋，再 advance_days。
 ## 三月末誊录会跨入四月，月初 _settle_history 按倾向锁 1268 身份、pay_wages 按现银发饷。
 func _on_exam_copy(_port_id: String) -> void:
-	GameState.add_money(EXAM_STIPEND)
-	GameState.scholar_tendency += 1
-	GameManager.advance_days(EXAM_COPY_DAYS)
-	log_msg("【誊录】在贡院廊下抄了 %d 日试卷，得工钱 %d。学者倾向 %d。如今是 %s。" % [
-		EXAM_COPY_DAYS, EXAM_STIPEND, GameState.scholar_tendency, Calendar.get_date_string(),
-	])
-	load_scene(current_scene_id)
+	_GUILD.on_exam_copy(self, _port_id)
 
 
 func _exam_sat_flag() -> String:
-	return "exam_sat_ch%d" % GameState.chapter
+	return _GUILD.exam_sat_flag()
 
 
 ## 赴试：只兴化、泉州，每章一次，费 15 日。不发钱、不跳章、不改船。
 ## 身份相关旗标/倾向必须写在 advance_days 之前：三月下旬赴试会跨入四月，
 ## 月初 _settle_history 会按 exam_sat 与倾向锁 1268 身份。
 func _on_exam_sit(port_id: String) -> void:
-	if not EXAM_SIT_PORTS.has(port_id):
-		log_msg("【贡院】本港无贡院科场，赴试只在兴化、泉州。")
-		return
-	var chapter_flag := _exam_sat_flag()
-	if GameState.has_flag(chapter_flag):
-		log_msg("【贡院】本章已赴过试，下一章再来。")
-		return
-	GameState.set_flag(chapter_flag)
-	var res: Dictionary
-	var line := ""
-	if GameState.scholar_tendency >= GameState.sea_tendency:
-		res = GameState.add_fame(4)
-		GameState.scholar_tendency += 2
-		GameState.set_flag("exam_sat")
-		line = "卷子誊上了榜前的簿子。名声加 4，学者倾向 %d。" % GameState.scholar_tendency
-	else:
-		res = GameState.add_fame(1)
-		GameState.sea_tendency += 1
-		line = "策论写着写着成了海路账。名声加 1，海路倾向 %d。" % GameState.sea_tendency
-	if res.get("promoted", false):
-		line += "市舶司案册改题「%s」。" % str(res.get("title", {}).get("name", ""))
-	GameManager.advance_days(EXAM_SIT_DAYS)
-	log_msg("【赴试】在贡院坐了 %d 日。%s如今是 %s。" % [
-		EXAM_SIT_DAYS, line, Calendar.get_date_string(),
-	])
-	await play_transition("贡院・赴试", "%s贡院　%s" % [GameManager.get_port_name(port_id), Calendar.get_date_string()],
-		load_scene.bind(current_scene_id), "试")
+	await _GUILD.on_exam_sit(self, port_id)
 
 
 ## 住宅：看边记、便宜歇息。候风仍去旅店——下处等不到风向。

@@ -38,6 +38,7 @@ MAIN_SPLITS = (
     "scripts/ui/TavernPage.gd",
     "scripts/ui/NpcPage.gd",
     "scripts/ui/SaveSheet.gd",
+    "scripts/ui/GuildExamPage.gd",
 )
 # Main 里一行转发形状、但目标不是拆出件的委托（本来就是别的模块的 API，不拼回）。新增一条须注明为什么不是拆出件。
 # 条目失效判红（lane gd16，见「一之零」）：文件在、Main preload 了它、Main 里真有一行转发到它、转发的目标函数它真有、

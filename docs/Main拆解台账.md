@@ -169,3 +169,87 @@ Python 门禁里没有直读 Main.gd 的（全经 `read_main_src()`），只有 
 1. **G2 行会 / 贡院**（200 / 11）是剩下唯一风险「中」的页面簇：check_symbols 的 66 处引用都经 read_main_src；verify_economy / simulate_run 用 `gd_const("scripts/Main.gd", "GUILD_*")` 直读常量（常量留 Main 即可）；p7 只经方法名调用；`play_transition` 是公共件，不要一起搬。
 2. **A / C / E / H / I / K** 风险高，先做「Main 家族源码」共用 helper 的门禁 lane（第五刀候选 3）。
 3. `MAIN_SPLITS` 已到第 6 件，两份清单靠对账同步，建议抽 `tools/main_splits.txt` 共读（ms2 待议 6 起一直挂着）。
+
+---
+
+## 第七刀（lane main7，2026-09-28）：调查 + 行会 / 贡院 → `scripts/ui/GuildExamPage.gd`
+
+### 调查（基 `59254f5`：Main.gd 4831 行，233 支 func，第六刀之后）
+
+口径同前三刀：簇跨度从簇首 `##` 注释算到末支 func 的最后一行，不含簇间常量块和分节横线。
+「被簇外调」「他处引用」「直读 Main.gd 的门禁」的含义也同上（他处引用按函数名统计，不含 Main.gd，也不含本刀新增的 GuildExamPage.gd）。
+直读门禁的行号都是基 `59254f5` 的行号。
+
+剩余最大 6 簇都是高或中高风险。按纯行数，G2 排第 7；按 ms2 的「页面簇」口径（I、K 两段核心流程不算），前 6 是 H / A / E / C / **G2** / Y。
+所以表里列 7 簇。
+
+| # | 簇（行段） | 行 / 支 | 被簇外调 | 他处引用 | 跨切依赖：Main 成员（state / ui）/ autoload / log_msg·load_scene（msg） | 直读 Main.gd 的门禁 | 风险 |
+|---|---|---|---|---|---|---|---|
+| 1 | H 守城 / 终局（`_check_absent_from_xinghua` … `_special_cards`，3905–4828） | 924 / 27 | 15 | check_symbols 10、verify_story_data 8、ShotTour 7、ChapterSheet 5、check_assets 2、story 1、smoke 1 | 8 个：choices_container 26、current_scene_id 21、body_text 12、scene_title / choices_label 各 7；GameState 155、Fleet 17、UiTheme 12；log_msg 18、load_scene 16 | verify_story_data 正则扫 `CARD_SIEGE_*`（:210）、切 `_special_cards`（:846）；check_assets 读 `ENDING_BG`（:54）；simulate_endgame 读崖山门槛（:195） | 高 |
+| 2 | A 牙行（`_setup_market` … `_on_sell`，1113–1758） | 646 / 15 | 1 | verify_economy 16、qa_contract_stock 4、check_symbols 4、qa_economy_spread 2、qa_money_notices 1 | 10 个：_market_ship 12、broker_hand 8、_market_hold 5、_contract_detail_open 5；UiTheme 32、Economy 24、Fleet 21、GameState 20、Voyage 14；log_msg 15、load_scene 7 | verify_economy 直读 Main.gd 切 `_affordable_qty` / `_setup_market` / `_add_contract_panel` / `_make_market_row`（:1940–1951） | 高 |
+| 3 | E 岸带（`_setup_port_mode` … `_on_set_sail`，2913–3418） | 506 / 19 | 7（`_band_*` 被守城 / 终局复用） | check_symbols 20、smoke 2、port_doors / siege / ending_reread 探针各 2、patrol 1、SlipKit 1、ChapterSheet 1、story 1 | 14 个：shore_hand 6、port_mode 5、_shore_mode 5、_shore_facilities 4…；UiTheme 39、GameState 17；log_msg 7、update_status_panel 6 | smoke 在 family src 里切 `func _setup_port_mode`（:451） | 高：状态最散，和 H 互调 |
+| 4 | C 船屋（`_yard_port_name` … `_on_buy_supplies`，1964–2281） | 318 / 15 | 1（`_on_dismiss_crew` / `_on_hire_candidate` 另由 TavernPage 经 main. 接钮） | check_symbols 16、verify_economy 5、TavernPage 2 | 5 个：current_scene_id 17、_upgrade_busy 9；Fleet 47、GameState 30；log_msg 23、load_scene 14 | verify_economy 直读 Main.gd 切 `_on_upgrade` / `_on_repair_hull` / `_on_buy_ship`（:838–855）、`below_min * N`（:1304） | 中高 |
+| 5 | I 调查页 / 选项 / 效果（`_setup_investigation_mode` … `_activate_first_choice`，3549–3840） | 292 / 14 | 3（`_add_leave_button` 全部设施页都用，本刀的 G2 也用） | check_symbols 9、verify_story_data 7、CharacterCodex / TavernPage 各 2，WorldMap / SeaChart / MapView / GameState / TavernFacilitySlip 各 1 | 14 个；GameState 15、Fleet 7；含 `_gui_input` / `_unhandled_input` 两个引擎虚函数 | verify_story_data 直切 `func apply_effects`（:26） | 高：核心流程，虚函数不宜转发 |
+| 6 | K 场景加载 / 分发（`load_scene` … `_setup_dynamic_scene`，858–1108） | 251 / 11 | 5 | check_symbols 20、story 19、p7 11、ShotTour 11、qa_money_notices / patrol 各 8、qa_crew_hire 7、qa_contract_stock 6 | 15 个；GameState 10 | `PORT_BG` / `FACILITY_BG` 被 check_assets 直读（:54，常量可留 Main）；check_symbols 查 `_setup_dynamic_scene` 里的 `_setup_guild(base_loc)` | 高：所有页面都经过这里 |
+| 7 | **G2 行会 / 贡院（`_guild_port_id` … `_on_guild_join` 2404–2500，`_setup_exam` … `_on_exam_sit` 2519–2605）** | **184 / 10** | 2（`_setup_guild` / `_setup_exam`，都由 `_setup_dynamic_scene` 调） | check_symbols 51、p7 5、verify_economy 3、smoke 3 | **4 个**：current_scene_id 3、scene_title / body_text / choices_label 各 2；GameState 36、GameManager 8、Calendar 4、UiTheme 1；log_msg 6、load_scene 3（1 直调 + 2 个 bind）、play_transition 2 | verify_economy 直读 Main.gd 切 `_on_guild_join` / `_on_exam_sit` / `_setup_exam`（:2099 / 2122 / 2124）；verify_economy / simulate_run 直读 `GUILD_*` / `EXAM_*` 常量（常量留 Main）；smoke 在 family src 里切 `func _on_exam_copy`（:557） | **中 → 本刀** |
+
+表外还有两簇，都比 G2 小：Y 市舶司 / 呈报 / 职衔 119 / 7（`_setup_yamen` … `_attention_desc` 1763–1881，只有 check_symbols 29 处引用、全经 read_main_src，qa_discovery_probe 经 Main 调 `_on_report_discovery`）；T 住处 / 寺观 117 / 6（`_setup_residence` … `_on_temple_rub` 2608–2724，smoke 两处在 family src 里切 `_on_temple_look` / `_on_temple_rub`，verify_economy 直读 `_setup_residence`）。
+
+**G2 的切面**（中间夹着的 `play_transition` 2503–2516 是公共件：入行 / 赴试 / 章节卡 / 船屋都用，不搬）：
+
+| 支 | 行段（含 `##`） | 行 | 做什么 | 被谁调（Main 内 / 他处） |
+|---|---|---|---|---|
+| `_guild_port_id(page_id)` | 2404–2410 | 7 | 尾部 `_guild` 剥尽回基港 id | 簇内 4 处；check_symbols remap 契约 |
+| `_setup_guild(port_id)` | 2413–2442 | 30 | 行会页：正文、按商誉抄 3 / 5 条出港行情（`_collect_spreads`）、会籍工席、离开钮 | `_setup_dynamic_scene`（1101）；smoke / check_symbols 查定义 |
+| `_add_guild_join_slip(port_id)` | 2445–2467 | 23 | 会籍 / 入行工席：非三港「本港无会籍」、已入行「本港已入行」、否则「交会费入行」朱钮 | 簇内 1 处 |
+| `_guild_join_block(port_id)` | 2470–2481 | 12 | 返回不收的缘由（港 / 已入行 / 商誉 / 现钱），空串即可入行 | 簇内 1 处 |
+| `_on_guild_join(port_id)` | 2484–2500 | 17 | 查门槛 → 扣会费 → 商誉 / 人脉 → 写 `guild_<港>` → 记事 → `await play_transition` 全黑时重载本页 | 「交会费入行」钮；p7 直调 4 处 |
+| `_setup_exam(port_id)` | 2519–2548 | 30 | 贡院页：誊录工席 + 赴试工席（别港「本港无贡院科场」、本章已赴只读） | `_setup_dynamic_scene`（1103） |
+| `_exam_slip()` | 2551–2556 | 6 | 卡压到 `EXAM_SLIP_MIN_H`、行距 6 | 簇内 2 处 |
+| `_on_exam_copy(_port_id)` | 2559–2568 | 10 | 工钱 + 学者倾向先落袋，再 advance_days，重载本页 | 「替人抄三日」钮 |
+| `_exam_sat_flag()` | 2571–2572 | 2 | `exam_sat_ch<章>` | 簇内 2 处 |
+| `_on_exam_sit(port_id)` | 2575–2605 | 31 | 拦别港 / 本章已赴 → 写章旗标 → 学者 / 海路两支 → 晋升改题 → advance_days → 记事 → `await play_transition` | 「入场赴试」钮；p7 直调 1 处 |
+
+**跨切依赖**（全部经 `main.` 取，搬出件不存状态）：
+- state：簇内**没有**状态成员；读 Main 的 `current_scene_id` 3 次（重载本页）。
+- ui：`scene_title` / `body_text` / `choices_label` 各 2；工席小件 `_slip_note` 13、`_slip_title` 7、`_slip_row` 7、`_slip_body` 4、`_slip_stamp` 4、`_slip_chip` 3、`_slip_whole` 3、`_begin_benches` / `_center_benches` / `_end_benches` / `_add_leave_button` 各 2、`_collect_spreads` 1。
+- msg：`log_msg` 6、`play_transition` 2、`load_scene` 3。
+- 常量：`GUILD_JOIN_FEE` 5、`GUILD_JOIN_CREDIT` 3、`EXAM_STIPEND` / `EXAM_SIT_DAYS` / `EXAM_COPY_DAYS` 各 3、`GUILD_JOIN_PORTS` / `GUILD_JOIN_CREDIT_GAIN` / `GUILD_JOIN_NETWORK_GAIN` / `EXAM_SIT_PORTS` 各 2、`GUILD_CREDIT_WIDE` / `EXAM_SLIP_MIN_H` 各 1，全都留在 Main。
+- autoload：GameState 36、GameManager 8、Calendar 4、UiTheme 1。
+- 回连的信号目标 3 个：`_on_guild_join.bind(port_id)` / `_on_exam_copy.bind(port_id)` / `_on_exam_sit.bind(port_id)`。
+
+**断言 / 探针引用点**（拆前逐个核过，行号按基 `59254f5`）：
+
+| 引用点 | 怎么读 | 拆后 |
+|---|---|---|
+| `verify_economy.py:2099 / 2122 / 2124`（九之七：入行一次扣费、赴试不发钱、两支增量、赴试港限制，共 4 条） | `main_body()` **直读 Main.gd**，切 `func _on_guild_join` / `_on_exam_sit` / `_setup_exam` | 会切到一行转发，4 条假红（实测）→ **改去 GuildExamPage.gd 里切** `static func on_guild_join(` / `on_exam_sit(` / `setup_exam(`，切前去 `main.` 前缀；条件原样。`main_body()` 再没有别的调用方，一起删掉 |
+| `verify_economy.py:2100–2103 / 2123 / 2134`、`simulate_run.py:1147–1151` | `gd_const` / `main_const` 直读 Main.gd 的 `GUILD_*` / `EXAM_*` 常量、`const EXAM_SIT_PORTS` 字面 | 常量留在 Main，不用改 |
+| `godot_smoke.gd:557`「贡院誊录只加学者倾向、不给名声」 | 在 `_main_family_src()` 里切 `func _on_exam_copy` | 会切到转发，假红（实测）→ **改去 GuildExamPage.gd 里切** `static func on_exam_copy(`，去 `main.` 前缀再比；条件原样 |
+| `godot_smoke.gd:499`、`check_symbols.py:2487`（账条字样：`"运往 %s　多 %d"` 须在） | family src / `read_main_src()` 全文查 | 这句随 `_setup_guild` 搬走；MAIN_SPLITS 登记上就还在扫描范围内。**漏登记就判红**（实测两道都红） |
+| `godot_smoke.gd:552`（四个动态页有定义） | family src 查 `func _setup_guild` / `func _setup_exam` | Main 留着同名转发，不用改 |
+| `check_symbols.py:2819 / 2835 / 2862–3060`（函数定义、誊录不给名声、入行接线 / 门槛 / 已入行、remap 契约 `_guild_remap_contract`、赴试每章一次 / 时序 / 港限制、誊录时序） | 都经 `read_main_src()`（:1793），`func_bodies` / 正则切 | `read_main_src()` 把转发就地换回拆出件的函数体、去 `main.` 前缀 → **不用改**（登记 MAIN_SPLITS 即可） |
+| `check_symbols.py:2979` remap 变异自检（6 份变异源码） | 在 `read_main_src()` 结果上做**逐字字符串替换**（如 `"func _on_guild_join(port_id: String) -> void:\n\tport_id = _guild_port_id(port_id)\n"`） | 拼回文本和原文逐字相同，替换仍然命中；拆后「6 份变异均被拦下」照旧 |
+| `check_symbols.py:2926`（`_setup_dynamic_scene` 里有 `_setup_guild(base_loc)`） | `read_main_src()` | `_setup_dynamic_scene` 留在 Main，不用改 |
+| `tools/p7_guild_exam_smoke.gd:101–276` | `load_scene("*_guild" / "*_exam")` 走真页面；直调 `main._on_guild_join(...)` ×4、`main._on_exam_sit(...)` ×1 | Main 保留同名转发（带 `await`），不用改 |
+| `tools/qa_p7_screenshots.gd` / `qa_patrol_pack_screenshots.gd` | 按场景 id 开页、按钮文找「交会费入行」 | 页面、钮文不变，不用改 |
+
+**为什么选 G2**：排在它前面的 6 簇都是高或中高风险（理由见上表和第五刀）。G2 簇内不存状态，只读 4 个 Main 的 UI 成员；3 个回调都 bind 到 Main 的同名方法，页面入口只有 `_setup_dynamic_scene` 一处。
+check_symbols 的 51 处引用都经 read_main_src。要改的门禁有 2 道：verify_economy 的 3 处直读切片和 smoke 的 1 处切片，另外两份 MAIN_SPLITS 和 compile 清单要登记。
+
+### 落地
+
+- `scripts/ui/GuildExamPage.gd`（新增，197 行，`.uid` `uid://dohf12o33y82h` 同 commit）：10 支原样搬成 `static func`（guild_port_id / setup_guild / add_guild_join_slip / guild_join_block / on_guild_join / setup_exam / exam_slip / on_exam_copy / exam_sat_flag / on_exam_sit）。
+  `guild_port_id` / `exam_sat_flag` 不碰 Main，不带 `main` 形参；其余的 Main 成员一律加 `main.` 前缀，簇内互调也经 `main.` 走转发（这样拼回后才是原文）。
+  经 `main.` 取值推断不出类型，10 处 `:=` 改为与原推断相同的显式类型（VBoxContainer ×6、Label、Button、String ×2）。
+- Main.gd **4831 → 4699（−132）**，func 数不变（233）：10 支都留同名同签名一行转发（`const _GUILD := preload(...)`）。`_on_guild_join` / `_on_exam_sit` 转发写 `await`，协程语义不变。
+  留在 Main 的：`GUILD_*` / `EXAM_*` 常量、`play_transition`、`_collect_spreads`、工席小件。
+- 门禁同步：两处 `MAIN_SPLITS`（check_symbols / smoke）都加 GuildExamPage.gd；`godot_compile_check` 的 SCRIPTS 加 1 行（126 → 127）；
+  smoke 的誊录切片、verify_economy 的 3 处切片改去 GuildExamPage 里切（见上表）。**断言条件一条没改、没放宽。**
+- 拼回原文：`read_main_src()` 拼回的 10 支和基线逐行比，只差上面 10 行 `:=`（末支后少一个空行，原因同第六刀：拆出件文件尾只有一个换行）。
+
+### 下一刀候选（行数按基 59254f5）
+
+1. **Y 市舶司 / 呈报 / 职衔**（119 / 7）风险低：Python 门禁只有 check_symbols 引用它，全经 read_main_src；探针只有 qa_discovery_probe 经 Main 调 `_on_report_discovery`。
+2. **T 住处 / 寺观**（117 / 6）风险中低：smoke 有两处在 family src 里切 `_on_temple_look` / `_on_temple_rub`，verify_economy 的旅店门禁直读 Main 的 `_setup_residence`（第五刀加的），都要改切片位置。
+3. **A / C / E / H / I / K** 风险高。先做「Main 家族源码」共用 helper 的门禁 lane（第五刀候选 3）。本刀又给 verify_economy 加了一处「直接读拆出件」的切片，和旅店那处（TavernPage）是同一种写法，应该一起收进这个 helper。
+4. `MAIN_SPLITS` 已到第 7 件，两份清单靠对账同步，建议抽 `tools/main_splits.txt` 共读（ms2 待议 6 起一直挂着）。

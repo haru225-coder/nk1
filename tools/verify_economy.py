@@ -2156,14 +2156,18 @@ print("=" * 68)
 print("九之七、行会 / 贡院账目隔离与新闻倍率边界")
 print("=" * 68)
 
-def main_body(name):
-    marker = "func " + name
-    if marker not in main_src:
+# 行会 / 贡院页在 GuildExamPage（lane main7 拆出），Main 里只剩一行转发：函数体去拆出件里切，
+# 去掉 main. 前缀即搬走前的原文（常量 GUILD_* / EXAM_* 仍在 Main，下面照旧直读 Main.gd）。
+_guild_src = open(os.path.join(ROOT, "scripts/ui/GuildExamPage.gd"), encoding="utf-8").read().replace("main.", "")
+
+def guild_body(name):
+    marker = "static func " + name + "("
+    if marker not in _guild_src:
         return ""
-    return main_src.split(marker, 1)[1].split("\nfunc ", 1)[0]
+    return _guild_src.split(marker, 1)[1].split("\nstatic func ", 1)[0]
 
 # 行会入行是一次性会费与账本增量，不应悄悄叠到行情、抽解或佣金倍率。
-guild_join = main_body("_on_guild_join")
+guild_join = guild_body("on_guild_join")
 guild_fee = int(gd_const("scripts/Main.gd", "GUILD_JOIN_FEE"))
 guild_credit_req = int(gd_const("scripts/Main.gd", "GUILD_JOIN_CREDIT"))
 guild_credit_gain = int(gd_const("scripts/Main.gd", "GUILD_JOIN_CREDIT_GAIN"))
@@ -2186,9 +2190,9 @@ check(g_after_repeat == (1, guild_credit_req + guild_credit_gain, guild_network_
       "行会成功账本：钱 -会费、商誉/人脉一次性增加，重复点击不再产生第二笔倍率")
 
 # 赴试只推进日期并改变身份倾向/名声；明确不发钱、不改行情。
-exam_sit = main_body("_on_exam_sit")
+exam_sit = guild_body("on_exam_sit")
 exam_days = int(gd_const("scripts/Main.gd", "EXAM_SIT_DAYS"))
-exam_ports_src = main_body("_setup_exam")
+exam_ports_src = guild_body("setup_exam")
 check(exam_days > 0 and exam_days == 15, f"赴试耗时 {exam_days} 日（固定为 15 日，不以经济倍率折算）")
 check("advance_days(EXAM_SIT_DAYS)" in exam_sit and "add_money" not in exam_sit and
       "spend_money" not in exam_sit and "apply_buy_impact" not in exam_sit and
