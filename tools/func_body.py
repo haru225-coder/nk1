@@ -14,6 +14,12 @@
   (b) callee 是点号名（`fn` / `obj.fn`），实参至少一个、个个都是本函数的形参或 self——原样传参给别的函数
       （`func get_monsoon(month): return monsoon_of(month)`、NpcPage 转回 Main 的 `main._show_npc_mode(npc_id, …)`）。
       (b) 要看形参，body 须带签名；不带签名的只按 (a) 认。
+  (c) callee 是同一份源码里的另一支 func（不带点号），零实参——同文件改名后留的别名（`func _x():\n\t_x_real()`，lane gd23）。
+  给了 src（取体那份源码）再按它收口（lane gd23，与 cs8 拼回口径对齐，见 docs/GATES.md §三「转发判据三片对账」）：
+    (a) 的 `_K` 须是 preload 常量——src 里 `const _K := {…}` / `Color(…)` 一类的是容器 / 值，`_K.get(k)` 是真实现；
+    (b) / (c) 不带点号的 callee 须是 src 里的 func——`str(x)` / `abs(x)` 一类内建不算；
+        (b) 带点号的，接收者须是形参 / self、大写开头的名字（autoload / class_name）或 preload 常量——
+        小写成员变量（`_cache.has(key)`、`_json_cache.erase(path)`）是内建容器方法，没有可取的真身。
   一行 `return <expr>` 不一概算：实参里有运算 / 嵌套调用 / 常量 / 零实参的是真实现（`return clampf(Fleet.fleet_speed() / 220.0, 0.25, 0.9)`、
   `DirAccess.make_dir_recursive_absolute(SAVE_DIR)`、`return discoveries_found.duplicate()`），不算转发；
   两行以上的不认（「体只有一行」才判）。
@@ -27,7 +33,7 @@ import re
 import sys
 
 body_asks = {}  # (本脚本行号, 函数名) -> 取到没有；同一行多次取（循环 / 变异自检）按一处计，有一次取不到就算取不到
-forwards = {}   # (本脚本行号, 函数名) -> 转发目标（`_K.fn`）：这处取到的只是一行转发，已记成取不到
+forwards = {}   # (本脚本行号, 函数名) -> 转发目标（`_K.fn` / 同文件的 `fn`）：这处取到的只是一行转发，已记成取不到
 
 _FWD_CALL = re.compile(r"(?:return\s+)?(?:await\s+)?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\((.*)\)")
 
@@ -55,8 +61,19 @@ def _split_top(s):
     return out + [cur.strip()] if cur.strip() else out
 
 
-def forward_of(body):
-    """body 是一行转发就给转发目标（callee 字样），否则 None。body 带不带 `func X(…):` 签名都行。"""
+def _const_kind(src, k):
+    """src 里 `const k` 的右值：preload 给 "preload"，别的给 "value"，没有这个常量给 None。"""
+    m = re.search(rf"^const\s+{re.escape(k)}\b[^=\n]*=\s*(\S)", src, re.M)
+    return None if not m else ("preload" if src.startswith("preload(", m.start(1)) else "value")
+
+
+def _has_func(src, name):
+    return re.search(rf"^(?:static\s+)?func\s+{re.escape(name)}\s*\(", src, re.M) is not None
+
+
+def forward_of(body, src=None):
+    """body 是一行转发就给转发目标（callee 字样），否则 None。body 带不带 `func X(…):` 签名都行；
+    src = 取体的那份源码（给了才按它收口 (a) / (b)、才认 (c)，见模块头注）。"""
     code, params = body, None
     head = re.match(r"\s*(?:static\s+)?func\s+[A-Za-z_]\w*\s*\(", code)
     if head:  # 去签名：括号配平后第一个冒号之后才是函数体（签名可折行、可带 -> 返回类型）
@@ -82,16 +99,27 @@ def forward_of(body):
     if args is None:
         return None
     callee = m.group(1)
-    if re.match(r"_[A-Z][A-Z0-9_]*\.", callee) or (params and args and all(a in params for a in args)):
+    recv = callee.split(".")[0] if "." in callee else None
+    if re.match(r"_[A-Z][A-Z0-9_]*\.", callee):  # (a)
+        return callee if src is None or _const_kind(src, recv) != "value" else None
+    if src is not None:
+        if recv is None and not _has_func(src, callee):
+            return None  # 内建 / 全局函数，没有可取的真身
+        if recv is not None and not (recv in (params or ()) or recv == "self" or recv[0].isupper()
+                                     or (recv[0] == "_" and recv[1:2].isupper() and _const_kind(src, recv) != "value")):
+            return None  # 接收者是成员变量：内建容器方法
+        if recv is None and not args:  # (c)
+            return callee
+    if params and args and all(a in params for a in args):  # (b)
         return callee
     return None
 
 
-def body_ask(name, found, depth=2, body=None, forward_ok=False):
+def body_ask(name, found, depth=2, body=None, forward_ok=False, src=None):
     """记一笔：depth 数到「写断言那一行」的栈帧（缺省 2 = 调本函数的 helper 的调用方）。
-    给了 body 且它只是一行转发（forward_of），不传 forward_ok 就记成取不到。"""
+    给了 body 且它只是一行转发（forward_of；src = 取体的那份源码），不传 forward_ok 就记成取不到。"""
     key = (sys._getframe(depth).f_lineno, name)
-    fwd = forward_of(body) if found and body and not forward_ok else None
+    fwd = forward_of(body, src) if found and body and not forward_ok else None
     if fwd:
         forwards[key] = fwd
     body_asks[key] = body_asks.get(key, True) and found and not fwd
@@ -99,7 +127,7 @@ def body_ask(name, found, depth=2, body=None, forward_ok=False):
 
 def locate_func(src, name, forward_ok=False):
     m = re.search(rf"^(?:static\s+)?func\s+{re.escape(name)}\s*\(.*?(?=\n(?:static\s+)?func\s|\Z)", src, re.M | re.S)
-    body_ask(name, m is not None, body=m and m.group(0), forward_ok=forward_ok)
+    body_ask(name, m is not None, body=m and m.group(0), forward_ok=forward_ok, src=src)
     return m.group(0) if m else ""
 
 
@@ -108,10 +136,16 @@ def missed():
     return sorted(k for k, found in body_asks.items() if not found)
 
 
+def forward_note(target):
+    """「只取到一行转发」后半句：转发目标不带点号 = 同文件别名（lane gd23），带点号 = 真身在别的文件 / 对象上。"""
+    if "." not in target:
+        return f"只取到一行转发（→ {target}），真身是同一份源码里的 {target}（改名后留了别名 / 该改取 {target}）"
+    return f"只取到一行转发（→ {target}），真身不在这份源码里（拆走没拼回 / 该改读拆出件）"
+
+
 def miss_why(key, file):
     """十三 / 十一节判红的那句话：取不到 / 只取到一行转发分开说。"""
     ln, name = key
     if key in forwards:
-        return (f"{file}:{ln} 取函数体 {name} 只取到一行转发（→ {forwards[key]}），真身不在这份源码里"
-                f"（拆走没拼回 / 该改读拆出件），这处断言在空转")
+        return f"{file}:{ln} 取函数体 {name} {forward_note(forwards[key])}，这处断言在空转"
     return f"{file}:{ln} 取函数体 {name} 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转"

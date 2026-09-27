@@ -465,18 +465,25 @@ print("  autoload 按注册顺序逐个 _ready；在 _ready 里碰排在自己�
 # 账本与 _locate_func 在 tools/func_body.py（lane cs14 抽出，verify_economy 共用同一份，别另起一套）：
 # _body_asks = (本脚本行号, 函数名) -> 取到没有；同一行多次取（循环 / 变异自检）按一处计，有一次取不到就算取不到。
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from func_body import body_asks as _body_asks, body_ask as _body_ask, locate_func as _locate_func, miss_why as _miss_why
+from func_body import body_asks as _body_asks, body_ask as _body_ask, locate_func as _locate_func, miss_why as _miss_why, \
+    forward_of as _forward_of, forward_note as _forward_note
 
 
 class _Bodies(dict):
     """func_bodies 的结果：.get(name, …) 取不到 / 只取到一行转发时记账（见 _body_asks），其余同 dict。
     本来就要读转发那一行的（顺调用链展开、钉「Main 只许一行转发」），.get(name, …, forward_ok=True)。"""
-    def __init__(self, bodies, heads):
+    def __init__(self, bodies, heads, src):
         super().__init__(bodies)
         self.heads = heads  # 函数名 -> 签名首行（func_bodies 切出的体不带签名，判转发要看形参）
+        self.src = src      # 切体的那份源码（forward_of 按它认同文件别名、preload 常量，lane gd23）
+
+    def forward(self, name):
+        """name 这支是一行转发就给转发目标（不记账；给自带「缺 X」的契约用）。"""
+        return name in self and _forward_of(self.heads[name] + "\n" + self[name], self.src)
 
     def get(self, name, default=None, forward_ok=False):
-        _body_ask(name, name in self, body=name in self and self.heads[name] + "\n" + self[name], forward_ok=forward_ok)
+        _body_ask(name, name in self, body=name in self and self.heads[name] + "\n" + self[name], forward_ok=forward_ok,
+                  src=self.src)
         return super().get(name, default)
 
 
@@ -498,7 +505,7 @@ def func_bodies(src):
             else:
                 body.append(ln)
     if cur: out[cur] = "\n".join(body)
-    return _Bodies(out, heads)
+    return _Bodies(out, heads, src)
 
 
 # 按名先定位、再取体（lane cs9：函数改名误绿收口）。原先各节手写的切法——`src.find("func X")` 切片、
@@ -2185,7 +2192,7 @@ else:
 def _func_body(src: str, name: str) -> str:
     """取 src 里 `[static ]func name` 连签名的函数体，到下一个顶格 [static ]func 为止；取不到给 "" 并记账判红（见 _body_asks）。"""
     m = re.search(rf"^(?:static\s+)?func {name}\b.*?(?=^(?:static\s+)?func |\Z)", src, re.M | re.S)
-    _body_ask(name, m is not None, body=m and m.group(0))
+    _body_ask(name, m is not None, body=m and m.group(0), src=src)
     return m.group(0) if m else ""
 
 
@@ -3057,10 +3064,15 @@ def _gr_first_stmt(body):
     return ""
 def _guild_remap_contract(src):
     # 本契约也跑在下面的变异源码上：取体一律 `in` 探、缺了记成契约错误，不走 .get 记账——
-    # 否则「删掉某函数」的变异会被十三节当成本脚本取不到函数体判红（lane cs12；真源码缺函数照样经「缺 X」判红）
+    # 否则「删掉某函数」的变异会被十三节当成本脚本取不到函数体判红（lane cs12；真源码缺函数照样经「缺 X」判红）。
+    # 只取到一行转发同记契约错误（lane gd23，判据同十三节 func_body.forward_of）：真身不在这一支里，下面的反向断言在空转。
     errs = []
     bodies = func_bodies(src)
     def body(name):
+        if bodies.forward(name):
+            if not any(e.startswith("%s 只剩一行转发" % name) for e in errs):
+                errs.append("%s %s" % (name, _forward_note(bodies.forward(name)).replace("只取到", "只剩", 1)))
+            return ""
         if name in bodies:
             return bodies[name]
         if "缺 %s" % name not in errs:

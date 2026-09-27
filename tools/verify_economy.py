@@ -994,7 +994,7 @@ def _src(rel):
     return open(os.path.join(ROOT, rel), encoding="utf-8").read()
 def _gd_body(src, name, forward_ok=False):  # 体到下一个 func / const / ## 为止；取不到、只取到一行转发记账（func_body.body_ask）
     m = re.search(rf"^(?:static )?func {name}\(.*?(?=^(?:static )?func |^const |^## |\Z)", src, re.S | re.M)
-    _body_ask(name, m is not None, body=m and m.group(0), forward_ok=forward_ok)
+    _body_ask(name, m is not None, body=m and m.group(0), forward_ok=forward_ok, src=src)
     return m.group(0) if m else ""
 _npc_src = _src("scripts/ui/NpcPage.gd").replace("main.", "")
 _main_ea9 = _src("scripts/Main.gd")
@@ -2038,7 +2038,7 @@ check("interest := GameState.accrue_interest()" in _adv_fn and "【月息】" in
 # Main 的 INN_RATE 与 simulate_run 算候风成本的 INN_RATE 须是同一个数。
 def _gd_fn(src, name):  # 体到下一个 func / const 为止；取不到、只取到一行转发记账（func_body.body_ask）
     m = re.search(rf"^(?:static )?func {name}\(.*?(?=^(?:static )?func |^const |\Z)", src, re.S | re.M)
-    _body_ask(name, m is not None, body=m and m.group(0))
+    _body_ask(name, m is not None, body=m and m.group(0), src=src)
     return m.group(0) if m else ""
 def _rest_chips(body):
     """body 里接 _on_rest.bind(...) 的每个 _slip_chip(...) → (钮文日数, 价的日数, 价的费率, bind 实参)；钮文拆不出算式记 None。"""
