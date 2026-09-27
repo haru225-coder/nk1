@@ -200,6 +200,17 @@ def code_only(src):
     return "".join(out)
 
 
+def inst_func_missing(src, name):
+    """实例方法存在性探查（lane cs19）：只认顶格非 static 的 `func name`，在返回 None，不在返回红词。
+    探的都是信号 / connect 目标、引擎回调、读写实例状态的方法，改成 static func 编不过（cs19 逐支实证），
+    所以 static 照旧判红；红词写明「成了 static func」而不是「未定义」，接手的人不必对着一支明明在的函数找原因。"""
+    if re.search(rf'^func\s+{name}\b', src, re.M):
+        return None
+    if re.search(rf'^static\s+func\s+{name}\b', src, re.M):
+        return "成了 static func（实例方法，static 化编不过）"
+    return "未定义"
+
+
 def line_starts_code(src):
     """逐行返回 (行号, 该行是否为「逻辑行」的开头)。
     在括号里续写、在 \\ 之后续写、落在多行字符串里的行，缩进不归 GDScript 管，返回 False。"""
@@ -370,9 +381,10 @@ with open(os.path.join(ROOT, "tools", "godot_smoke.gd"), encoding="utf-8") as f:
 _smoke_bad = []
 if not re.search(r'^const MAIN_SPLITS_TXT\s*:?=\s*"res://tools/main_splits\.txt"', _smoke_code, re.M):
     _smoke_bad.append("没有 `const MAIN_SPLITS_TXT := \"res://tools/main_splits.txt\"`")
-if not re.search(r'^func _main_family_src\(\)[^\n]*\n(?:\t[^\n]*\n)*?\tfor p in _main_splits\(\):', _smoke_code, re.M):
+# 两支认 static（lane cs19）：只认 func 时 _main_splits 改成 static func，下面「不许写死路径」就一个字都扫不到
+if not re.search(r'^(?:static\s+)?func _main_family_src\(\)[^\n]*\n(?:\t[^\n]*\n)*?\tfor p in _main_splits\(\):', _smoke_code, re.M):
     _smoke_bad.append("_main_family_src() 不是 `for p in _main_splits():` 读清单")
-_smoke_readers = "".join(m.group(0) for m in re.finditer(r'^func _main_(?:splits|family_src)\(\)[^\n]*\n(?:[\t ][^\n]*\n|\n)*', _smoke_code, re.M))
+_smoke_readers = "".join(m.group(0) for m in re.finditer(r'^(?:static\s+)?func _main_(?:splits|family_src)\(\)[^\n]*\n(?:[\t ][^\n]*\n|\n)*', _smoke_code, re.M))
 if re.search(r'"res://scripts/ui/\w+\.gd"', _smoke_readers):
     _smoke_bad.append("_main_splits / _main_family_src 里写死了拆出件路径")
 if re.search(r'^const MAIN_SPLITS\s*:?=', _smoke_code, re.M):
@@ -1589,11 +1601,14 @@ for c in ("SAIL_LEVEL_MAX", "ARMOR_LEVEL_MAX", "UPGRADE_BASE_RATIO"):
         problems.append(f"Fleet.{c} 未定义")
 
 main_src = read_main_src()
-if re.search(r'^func\s+_on_upgrade\b', main_src, re.M):
+# connect 目标得是 Main 自己的成员：查 Main.gd 原文，不查拼回的 main_src（lane cs19）——拼回会把拆出件里
+# 没被转发的函数追加在尾，函数搬进拆出件、Main 不留转发，在 main_src 里照样搜得到
+_upg_why = inst_func_missing(open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read(), "_on_upgrade")
+if not _upg_why:
     print("  ✓ Main._on_upgrade 已定义（船屋升级按钮 connect 目标）")
 else:
-    print("  ✗ Main._on_upgrade 未定义")
-    problems.append("Main._on_upgrade 未定义")
+    print(f"  ✗ Main._on_upgrade {_upg_why}")
+    problems.append(f"Main._on_upgrade {_upg_why}")
 
 # armor 消费方：风暴与海盗船体伤都须经 armor_damage_reduction
 voyage_src = ""
@@ -1683,11 +1698,12 @@ else:
 
 # 2. SeaChart 接入点 + WorldMap preload
 for f in ("_enter_battle", "_on_battle_result"):
-    if re.search(rf'^func\s+{f}\b', seachart_src, re.M):
+    _why = inst_func_missing(seachart_src, f)
+    if not _why:
         print(f"  ✓ SeaChart.{f} 已定义")
     else:
-        print(f"  ✗ SeaChart.{f} 未定义")
-        problems.append(f"SeaChart.{f} 未定义")
+        print(f"  ✗ SeaChart.{f} {_why}")
+        problems.append(f"SeaChart.{f} {_why}")
 if "WorldMap.tscn" in seachart_src:
     print("  ✓ SeaChart preload WorldMap.tscn（叠加进入战斗）")
 else:
@@ -1697,14 +1713,15 @@ else:
 # 3. WorldMap 战斗核心
 wm_need = ("combat_mode", "_setup_combat", "_spawn_enemy", "_battle_exit",
            "_battle_player_sunk", "_unhandled_input", "_enemies_alive")
-wm_members = set(re.findall(r'^func\s+([A-Za-z_]\w*)', wm_src, re.M))
-wm_vars = set(re.findall(r'^\s*var\s+([A-Za-z_]\w*)', wm_src, re.M))
+# 成员变量只认顶格（可带 @onready 等注解）：函数里同名的局部 var 不算（lane cs19）
+wm_vars = set(re.findall(r'^(?:@\w+(?:\([^)\n]*\))?\s+)*var\s+([A-Za-z_]\w*)', wm_src, re.M))
 for f in wm_need:
-    if f in wm_members or f in wm_vars:
+    _why = None if f in wm_vars else inst_func_missing(wm_src, f)
+    if not _why:
         print(f"  ✓ WorldMap.{f} 已定义")
     else:
-        print(f"  ✗ WorldMap.{f} 未定义")
-        problems.append(f"WorldMap.{f} 未定义")
+        print(f"  ✗ WorldMap.{f} {_why}")
+        problems.append(f"WorldMap.{f} {_why}")
 if "signal battle_finished" in wm_src:
     print("  ✓ WorldMap.battle_finished 信号已声明")
 else:
@@ -1836,13 +1853,14 @@ for f in ("grappled", "ship_type", "ship_name", "crew", "enemy_morale", "captain
 # 4. WorldMap 接舷/白刃
 wm_need4 = ("BOARD_DISTANCE", "boarding", "boarding_target", "_board_enemy",
             "_nearest_enemy", "_boarding_target_valid", "_show_combat_notice")
-wm_all = wm_vars | wm_members | set(re.findall(r'^const\s+([A-Za-z_]\w*)', wm_src, re.M))
+wm_all = wm_vars | set(re.findall(r'^const\s+([A-Za-z_]\w*)', wm_src, re.M))
 for f in wm_need4:
-    if f in wm_all:
+    _why = None if f in wm_all else inst_func_missing(wm_src, f)
+    if not _why:
         print(f"  ✓ WorldMap.{f} 已定义")
     else:
-        print(f"  ✗ WorldMap.{f} 未定义")
-        problems.append(f"WorldMap.{f} 未定义")
+        print(f"  ✗ WorldMap.{f} {_why}")
+        problems.append(f"WorldMap.{f} {_why}")
 
 # 5. Ship 白刃禁炮击
 if _has_func(ship_src, "_can_fire") and "boarding" in ship_src:
@@ -2938,12 +2956,14 @@ if "begins_with(\"city_\")" in main_src:
 else:
     print("  ✗ load_scene 仍会把 city_guild 收成动态页")
     problems.append("load_scene 未跳过 city_ 前缀")
+_main_gd_raw = open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read()
 for fn in (
     "_setup_guild", "_setup_exam", "_setup_residence", "_collect_spreads",
     "_on_exam_copy", "_setup_temple", "_on_temple_look",
     "_on_temple_rub", "_temple_rub_note",
 ):
-    if re.search(r"func %s\b" % fn, main_src):
+    # 顶格定义、查 Main.gd 原文（lane cs19）：不锚行首时注释里一句「func _x」就算有；拼回的 main_src 还带拆出件没被转发的函数
+    if re.search(r"^(?:static\s+)?func %s\b" % fn, _main_gd_raw, re.M):
         print("  ✓ Main.%s 已定义" % fn)
     else:
         print("  ✗ 缺 Main.%s" % fn)
@@ -3596,10 +3616,13 @@ else:
     problems.append("战斗沉船先清货舱")
 
 fleet_src = open(os.path.join(ROOT, "scripts/core/Fleet.gd"), encoding="utf-8").read()
-if re.search(r'^func clear_ship_cargo\b', fleet_src, re.M) and _has_tok(seachart_src_full, "clear_ship_cargo", call=True):
+# 调用点只认代码：SeaChart 里只剩注释 / 字符串提到它不算（lane cs19；按名认调用沿用 cs15 的 _has_tok call=True）
+_csc_why = inst_func_missing(fleet_src, "clear_ship_cargo")
+_csc_call = _has_tok(code_only(seachart_src_full), "clear_ship_cargo", call=True)
+if not _csc_why and _csc_call:
     print("  ✓ 旗舰沉没只清该船货舱（clear_ship_cargo）")
 else:
-    print("  ✗ 败局未走 clear_ship_cargo")
+    print(f"  ✗ 败局未走 clear_ship_cargo（{'SeaChart 代码里没调 clear_ship_cargo(' if not _csc_call else 'Fleet.clear_ship_cargo ' + _csc_why}）")
     problems.append("败局未走 clear_ship_cargo")
 print("九之四、进港与结算回归（审计硬伤）（云端 00b4）")
 print("=" * 68)
@@ -3730,11 +3753,12 @@ else:
     print("  ✗ SeaChart 未把低士气日改成哗变")
     problems.append("SeaChart 未接哗变")
 for handler in ("_on_mutiny_bribe", "_on_mutiny_dismiss", "_on_mutiny_suppress"):
-    if re.search(rf'^func\s+{handler}\b', seachart_src, re.M):
+    _why = inst_func_missing(seachart_src, handler)
+    if not _why:
         print(f"  ✓ SeaChart.{handler} 已定义")
     else:
-        print(f"  ✗ SeaChart.{handler} 未定义")
-        problems.append(f"SeaChart.{handler} 未定义")
+        print(f"  ✗ SeaChart.{handler} {_why}")
+        problems.append(f"SeaChart.{handler} {_why}")
 if _has_tok(seachart_src, 'resolve_mutiny("bribe")') and _has_tok(seachart_src, 'resolve_mutiny("dismiss")') and _has_tok(seachart_src, 'resolve_mutiny("suppress")'):
     print("  ✓ 三个选项都进 resolve_mutiny")
 else:
