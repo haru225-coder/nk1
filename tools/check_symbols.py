@@ -5,6 +5,8 @@ import json, re, os, sys, collections
 if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gate_json; gate_json.maybe_json(__file__)
+# 字符串派发候选提示：`--suggest` 或 CHECK_SYMBOLS_SUGGEST=1 才开（见「二之三」）；不开时输出与退出码一字不变
+SUGGEST = "--suggest" in sys.argv[1:] or os.environ.get("CHECK_SYMBOLS_SUGGEST", "") not in ("", "0")
 
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -499,6 +501,152 @@ for dirpath, _, files in os.walk(SCRIPTS):
             orphan_total += 1
 if orphan_total == 0:
     print("  ✓ 所有 emit 都有对应的 signal 声明")
+
+if SUGGEST:
+    print()
+    print("=" * 68)
+    print("二之三、字符串派发候选提示（--suggest：只提示，不判红，退出码不变）")
+    print("=" * 68)
+    print("  emit_signal(\"…\") / X.call|call_deferred|callv(\"…\") / Callable(obj, \"…\") 的字面量当候选名；")
+    print("  接收者是本文件（裸写 / self）→ 查本文件及 extends 链，是 autoload → 查该 autoload，")
+    print("  其余类型未知 → 只查全仓 func / signal 并集。名字压根不存在才打 ⚠ WARN，需人工判。")
+
+    def _code_mask(src):
+        """逐字符标出「代码」位置（非字符串、非注释），与 code_only 同一扫法。"""
+        mask = bytearray(len(src))
+        i, n = 0, len(src)
+        while i < n:
+            c = src[i]
+            if c in ('"', "'"):
+                q = c * 3 if src.startswith(c * 3, i) else c
+                i += len(q)
+                while i < n:
+                    if src[i] == "\\":
+                        i += 2
+                        continue
+                    if src.startswith(q, i):
+                        i += len(q)
+                        break
+                    i += 1
+                continue
+            if c == "#":
+                while i < n and src[i] != "\n":
+                    i += 1
+                continue
+            mask[i] = 1
+            i += 1
+        return mask
+
+    # Object / Node / CanvasItem / Control 常见方法与信号——扫描字面量时视为引擎内置，不提示
+    ENGINE_METHODS = BUILTIN | {
+        "add_sibling", "queue_redraw", "show", "hide", "grab_focus", "release_focus",
+        "set_position", "set_size", "set_visible", "set_modulate", "set_text", "set_process_input",
+        "set_anchors_preset", "set_anchors_and_offsets_preset", "play", "stop", "start",
+        "_ready", "_process", "_physics_process", "_input", "_unhandled_input", "_draw",
+        "_notification", "_enter_tree", "_exit_tree", "_init", "_gui_input",
+        # SceneTree（tools/ 探针多 extends SceneTree）
+        "quit", "create_timer", "change_scene_to_file", "change_scene_to_packed",
+        "reload_current_scene", "call_group", "set_pause",
+    }
+    ENGINE_SIGNALS = {
+        "ready", "tree_entered", "tree_exiting", "tree_exited", "renamed",
+        "child_entered_tree", "child_exiting_tree", "child_order_changed", "script_changed",
+        "property_list_changed", "visibility_changed", "draw", "item_rect_changed", "hidden",
+        "resized", "gui_input", "mouse_entered", "mouse_exited", "focus_entered", "focus_exited",
+        "size_flags_changed", "minimum_size_changed", "theme_changed",
+        "pressed", "toggled", "button_down", "button_up", "timeout", "finished",
+        "animation_finished", "text_changed", "text_submitted", "item_selected", "value_changed",
+        "body_entered", "body_exited", "area_entered", "area_exited", "input_event",
+        "process_frame", "physics_frame", "node_added", "node_removed",
+    }
+
+    _sg_files = []
+    for _sg_dir in (SCRIPTS, os.path.join(ROOT, "tools")):
+        for dirpath, _, files in os.walk(_sg_dir):
+            for fn in sorted(files):
+                if fn.endswith(".gd"):
+                    _sg_files.append(os.path.join(dirpath, fn))
+    _sg_info, _sg_class = {}, {}
+    for path in _sg_files:
+        rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+        with open(path, encoding="utf-8") as f:
+            src = f.read()
+        code = code_only(src)
+        pre = r'^\s*(?:@\w+(?:\([^)\n]*\))?\s+)*(?:static\s+)?'
+        funcs = set(re.findall(pre + r'func\s+([A-Za-z_]\w*)', code, re.M))
+        sigs = set(re.findall(pre + r'signal\s+([A-Za-z_]\w*)', code, re.M))
+        ext = re.search(r'^extends\s+(?:"res://([^"]+)"|([A-Za-z_]\w*))', src, re.M)
+        cls = re.search(r'^class_name\s+([A-Za-z_]\w*)', src, re.M)
+        if cls:
+            _sg_class[cls.group(1)] = rel
+        _sg_info[rel] = {"src": src, "funcs": funcs, "sigs": sigs,
+                         "ext": (ext.group(1) or ext.group(2)) if ext else None}
+
+    def _sg_scope(rel, seen=None):
+        """本脚本 + extends 链上各脚本的 (func, signal)；链尾落到引擎类时补引擎内置。"""
+        seen = seen or set()
+        info = _sg_info.get(rel)
+        if info is None or rel in seen:
+            return set(ENGINE_METHODS), set(ENGINE_SIGNALS)
+        seen.add(rel)
+        funcs, sigs = set(info["funcs"]), set(info["sigs"])
+        parent = info["ext"]
+        parent_rel = parent if parent and parent.endswith(".gd") else _sg_class.get(parent)
+        pf, ps = _sg_scope(parent_rel, seen) if parent_rel else (set(ENGINE_METHODS), set(ENGINE_SIGNALS))
+        return funcs | pf, sigs | ps
+
+    _sg_all_funcs = set(ENGINE_METHODS).union(*(i["funcs"] for i in _sg_info.values()))
+    _sg_all_sigs = set(ENGINE_SIGNALS).union(*(i["sigs"] for i in _sg_info.values()))
+    _sg_auto = {a: _sg_scope(r) for a, r in AUTOLOADS.items() if r in _sg_info}
+
+    _SG_DISPATCH = re.compile(r'\b(emit_signal|call_deferred|callv|call)\s*\(\s*&?"([^"\\\n]*)"')
+    _SG_CALLABLE = re.compile(r'\bCallable\s*\(\s*((?:[^,()\n]|\(\))+?)\s*,\s*&?"([^"\\\n]*)"')
+    _sg_tally = collections.Counter()
+    _sg_warns = []
+    for rel in sorted(_sg_info):
+        src = _sg_info[rel]["src"]
+        mask = _code_mask(src)
+        own = _sg_scope(rel)
+        hits = []
+        for m in _SG_DISPATCH.finditer(src):
+            if not mask[m.start()]:
+                continue
+            before = src[:m.start()].rstrip()
+            if before.endswith("."):
+                rm = re.search(r'([A-Za-z_]\w*)\s*$', before[:-1])
+                recv = rm.group(1) if rm and not before[:-1].rstrip()[:rm.start()].rstrip().endswith(".") else None
+                recv = recv if recv else "（表达式）"
+            else:
+                recv = "self"
+            hits.append((m.start(), m.group(1), recv, m.group(2), f'{m.group(1)}("{m.group(2)}")'))
+        for m in _SG_CALLABLE.finditer(src):
+            if mask[m.start()]:
+                hits.append((m.start(), "Callable", m.group(1).strip(), m.group(2),
+                             f'Callable({m.group(1).strip()}, "{m.group(2)}")'))
+        for pos, kind, recv, name, shown in sorted(hits):
+            want_sig = kind == "emit_signal"
+            if recv == "self":
+                scope, where = own[1 if want_sig else 0], "本文件及 extends 链"
+                _sg_tally["本文件"] += 1
+            elif recv in _sg_auto:
+                scope, where = _sg_auto[recv][1 if want_sig else 0], f"autoload {recv}"
+                _sg_tally["autoload"] += 1
+            else:
+                scope = _sg_all_sigs if want_sig else _sg_all_funcs
+                where = f"全仓（接收者 {recv} 类型未知）"
+                _sg_tally["未知接收者"] += 1
+            if name in scope:
+                continue
+            line = src[:pos].count("\n") + 1
+            if recv not in ("self", "（表达式）") and kind != "Callable":
+                shown = f"{recv}.{shown}"
+            _sg_warns.append(f"{rel}:L{line} {shown}  ← {where}：无此 {'signal' if want_sig else 'func'}")
+    print(f"  字面量 {sum(_sg_tally.values())} 处：本文件 {_sg_tally['本文件']} · autoload {_sg_tally['autoload']}"
+          f" · 未知接收者 {_sg_tally['未知接收者']}（扫 scripts/ + tools/ 共 {len(_sg_info)} 个 .gd）")
+    for w in _sg_warns:
+        print(f"  ⚠ WARN {w}")
+    if not _sg_warns:
+        print("  （无候选死引用）")
 
 print()
 print("=" * 68)
