@@ -1,5 +1,6 @@
 extends SceneTree
 ## Lane h1h2：headless 探针——坏分区判坏档退 .bak、仅剩 .bak 取标签、两份皆坏不抛错。
+## Lane rt：并入 state.rumors / contract_ban 强类型字典的坏值与好值用例。
 ## 用法：godot --headless --path . -s res://tools/save_robust_probe.gd
 ## 只动存档位 96，不碰正式位 1..SLOTS；输出含 SCRIPT ERROR 即视为失败。
 
@@ -52,6 +53,11 @@ func _run() -> void:
 		"state.money 字符串": ["state", {"money": "千贯"}],
 		"state.last_port 数字": ["state", {"last_port": 3}],
 		"state.visited_ports 对象": ["state", {"visited_ports": {}}],
+		# lane rt：GameState 强类型字典，from_dict 先赋值后判型，坏值会直接抛 SCRIPT ERROR
+		"state.rumors 数组": ["state", {"money": 500, "rumors": [1, 2]}],
+		"state.rumors 字符串": ["state", {"money": 500, "rumors": "泉州胡椒贵"}],
+		"state.contract_ban 数组": ["state", {"money": 500, "contract_ban": ["quanzhou"]}],
+		"state.contract_ban 数字": ["state", {"money": 500, "contract_ban": 7}],
 	}
 	for name in structural:
 		var d := _good(GOOD_LABEL, 1256, 4)
@@ -65,6 +71,23 @@ func _run() -> void:
 	_cleanup()
 	_write(_primary(), sparse)
 	_check("economy/crew 缺省", true, "primary", GOOD_LABEL, 1256)
+
+	# 4b 强类型字典给对了：照常读入 GameState
+	var typed := _good(GOOD_LABEL, 1256, 4)
+	typed["state"]["rumors"] = {"quanzhou": {"pepper": {"rate": 1.2, "day": 30}}}
+	typed["state"]["contract_ban"] = {"quanzhou": 15075}
+	_cleanup()
+	_write(_primary(), typed)
+	_check("rumors/contract_ban 好值", true, "primary", GOOD_LABEL, 1256)
+	var gs: Node = root.get_node("GameState")
+	var rumors = gs.get("rumors")
+	var ban = gs.get("contract_ban")
+	var typed_ok: bool = typeof(rumors) == TYPE_DICTIONARY and rumors.has("quanzhou") \
+			and typeof(ban) == TYPE_DICTIONARY and int(ban.get("quanzhou", -1)) == 15075
+	print("  %s  rumors/contract_ban 读回  rumors=%s contract_ban=%s" % [
+		"✓" if typed_ok else "✗", JSON.stringify(rumors), JSON.stringify(ban)])
+	if not typed_ok:
+		fails += 1
 
 	# 5 正式档不存在、只剩 .bak：标签取 .bak
 	_cleanup()

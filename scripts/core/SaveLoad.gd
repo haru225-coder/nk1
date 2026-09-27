@@ -225,9 +225,10 @@ func _check_partitions(data: Dictionary) -> String:
 		if typeof(r) != TYPE_DICTIONARY:
 			return "crew.hired 含非对象条目"
 
-	# GameState.from_dict 直赋强类型字段；flags / 发现录另由 _harden_state 清洗，rumors 等自带兜底。
+	# GameState.from_dict 直赋强类型字段；flags / 发现录另由 _harden_state 清洗，contract 经无类型局部量判型。
+	# rumors / contract_ban 虽在赋值后判型，但强类型变量赋错型当场抛 SCRIPT ERROR，兜底来不及，须在此拦。
 	var state: Dictionary = _as_dict(data.get("state", {}))
-	why = _bad_fields(state, STATE_NUM_KEYS, ["era_routes", "port_bans", "siege"],
+	why = _bad_fields(state, STATE_NUM_KEYS, ["era_routes", "port_bans", "siege", "rumors", "contract_ban"],
 			["ledger_notes", "visited_ports", "news_seen", "crew_history"])
 	if why != "":
 		return "state." + why
