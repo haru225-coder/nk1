@@ -294,6 +294,192 @@ print("=" * 68)
 print("二之二、emit 的信号是否都还存在")
 print("=" * 68)
 print("  删掉 signal 却漏了某处 emit，只有跑到那一行才炸。")
+print("  本文件 / extends 链上的父脚本 / 引擎基类内置信号 / 声明为 Signal 的变量与形参 都算有来处。")
+# 引擎基类的自有信号：{类: (父类, "信号 …")}。Godot 4.6.3 ClassDB.class_get_signal_list(类, true) 导出
+# （lane cs2）；只收本仓与常见节点，链走到表外的引擎类就不再放宽——照旧只认脚本里的声明
+NATIVE_SIGNALS = {
+    "Object": ("", "property_list_changed script_changed"),
+    "RefCounted": ("Object", ""),
+    "Resource": ("RefCounted", "changed setup_local_to_scene_requested"),
+    "Node": ("Object", "child_entered_tree child_exiting_tree child_order_changed editor_description_changed editor_state_changed ready renamed replacing_by tree_entered tree_exited tree_exiting"),
+    "CanvasItem": ("Node", "draw hidden item_rect_changed visibility_changed"),
+    "Node2D": ("CanvasItem", ""),
+    "Node3D": ("Node", "visibility_changed"),
+    "Control": ("CanvasItem", "focus_entered focus_exited gui_input minimum_size_changed mouse_entered mouse_exited resized size_flags_changed theme_changed"),
+    "Container": ("Control", "pre_sort_children sort_children"),
+    "BoxContainer": ("Container", ""),
+    "VBoxContainer": ("BoxContainer", ""),
+    "HBoxContainer": ("BoxContainer", ""),
+    "FlowContainer": ("Container", ""),
+    "HFlowContainer": ("FlowContainer", ""),
+    "VFlowContainer": ("FlowContainer", ""),
+    "PanelContainer": ("Container", ""),
+    "MarginContainer": ("Container", ""),
+    "CenterContainer": ("Container", ""),
+    "GridContainer": ("Container", ""),
+    "ScrollContainer": ("Container", "scroll_ended scroll_started"),
+    "SubViewportContainer": ("Container", ""),
+    "AspectRatioContainer": ("Container", ""),
+    "SplitContainer": ("Container", "drag_ended drag_started dragged"),
+    "HSplitContainer": ("SplitContainer", ""),
+    "VSplitContainer": ("SplitContainer", ""),
+    "TabContainer": ("Container", "active_tab_rearranged pre_popup_pressed tab_button_pressed tab_changed tab_clicked tab_hovered tab_selected"),
+    "TabBar": ("Control", "active_tab_rearranged tab_button_pressed tab_changed tab_clicked tab_close_pressed tab_hovered tab_rmb_clicked tab_selected"),
+    "Panel": ("Control", ""),
+    "Label": ("Control", ""),
+    "RichTextLabel": ("Control", "finished meta_clicked meta_hover_ended meta_hover_started"),
+    "BaseButton": ("Control", "button_down button_up pressed toggled"),
+    "Button": ("BaseButton", ""),
+    "TextureButton": ("BaseButton", ""),
+    "CheckBox": ("Button", ""),
+    "CheckButton": ("Button", ""),
+    "LinkButton": ("BaseButton", ""),
+    "OptionButton": ("Button", "item_focused item_selected"),
+    "MenuButton": ("Button", "about_to_popup"),
+    "TextureRect": ("Control", ""),
+    "NinePatchRect": ("Control", "texture_changed"),
+    "ColorRect": ("Control", ""),
+    "ReferenceRect": ("Control", ""),
+    "LineEdit": ("Control", "editing_toggled text_change_rejected text_changed text_submitted"),
+    "TextEdit": ("Control", "caret_changed gutter_added gutter_clicked gutter_removed lines_edited_from text_changed text_set"),
+    "CodeEdit": ("TextEdit", "breakpoint_toggled code_completion_requested symbol_hovered symbol_lookup symbol_validate"),
+    "ItemList": ("Control", "empty_clicked item_activated item_clicked item_selected multi_selected"),
+    "Tree": ("Control", "button_clicked cell_selected check_propagated_to_item column_title_clicked custom_item_clicked custom_popup_edited empty_clicked item_activated item_collapsed item_edited item_icon_double_clicked item_mouse_selected item_selected multi_selected nothing_selected"),
+    "Range": ("Control", "changed value_changed"),
+    "Slider": ("Range", "drag_ended drag_started"),
+    "HSlider": ("Slider", ""),
+    "VSlider": ("Slider", ""),
+    "ProgressBar": ("Range", ""),
+    "TextureProgressBar": ("Range", ""),
+    "ScrollBar": ("Range", "scrolling"),
+    "HScrollBar": ("ScrollBar", ""),
+    "VScrollBar": ("ScrollBar", ""),
+    "SpinBox": ("Range", ""),
+    "Separator": ("Control", ""),
+    "HSeparator": ("Separator", ""),
+    "VSeparator": ("Separator", ""),
+    "CanvasLayer": ("Node", "visibility_changed"),
+    "ParallaxBackground": ("CanvasLayer", ""),
+    "CollisionObject2D": ("Node2D", "input_event mouse_entered mouse_exited mouse_shape_entered mouse_shape_exited"),
+    "PhysicsBody2D": ("CollisionObject2D", ""),
+    "CharacterBody2D": ("PhysicsBody2D", ""),
+    "RigidBody2D": ("PhysicsBody2D", "body_entered body_exited body_shape_entered body_shape_exited sleeping_state_changed"),
+    "StaticBody2D": ("PhysicsBody2D", ""),
+    "AnimatableBody2D": ("StaticBody2D", ""),
+    "Area2D": ("CollisionObject2D", "area_entered area_exited area_shape_entered area_shape_exited body_entered body_exited body_shape_entered body_shape_exited"),
+    "Sprite2D": ("Node2D", "frame_changed texture_changed"),
+    "AnimatedSprite2D": ("Node2D", "animation_changed animation_finished animation_looped frame_changed sprite_frames_changed"),
+    "Camera2D": ("Node2D", ""),
+    "Line2D": ("Node2D", ""),
+    "Polygon2D": ("Node2D", ""),
+    "Path2D": ("Node2D", ""),
+    "PathFollow2D": ("Node2D", ""),
+    "Marker2D": ("Node2D", ""),
+    "GPUParticles2D": ("Node2D", "finished"),
+    "CPUParticles2D": ("Node2D", "finished"),
+    "VisibleOnScreenNotifier2D": ("Node2D", "screen_entered screen_exited"),
+    "TileMapLayer": ("Node2D", "changed"),
+    "Timer": ("Node", "timeout"),
+    "AnimationMixer": ("Node", "animation_finished animation_libraries_updated animation_list_changed animation_started caches_cleared mixer_applied mixer_updated"),
+    "AnimationPlayer": ("AnimationMixer", "animation_changed current_animation_changed"),
+    "AnimationTree": ("AnimationMixer", "animation_player_changed"),
+    "Viewport": ("Node", "gui_focus_changed size_changed"),
+    "SubViewport": ("Viewport", ""),
+    "Window": ("Viewport", "about_to_popup close_requested dpi_changed files_dropped focus_entered focus_exited go_back_requested mouse_entered mouse_exited nonclient_window_input theme_changed title_changed titlebar_changed visibility_changed window_input"),
+    "Popup": ("Window", "popup_hide"),
+    "PopupPanel": ("Popup", ""),
+    "PopupMenu": ("Popup", "id_focused id_pressed index_pressed menu_changed"),
+    "AcceptDialog": ("Window", "canceled confirmed custom_action"),
+    "ConfirmationDialog": ("AcceptDialog", ""),
+    "AudioStreamPlayer": ("Node", "finished"),
+    "AudioStreamPlayer2D": ("Node2D", "finished"),
+    "HTTPRequest": ("Node", "request_completed"),
+    "CollisionObject3D": ("Node3D", "input_event mouse_entered mouse_exited"),
+    "PhysicsBody3D": ("CollisionObject3D", ""),
+    "CharacterBody3D": ("PhysicsBody3D", ""),
+    "Area3D": ("CollisionObject3D", "area_entered area_exited area_shape_entered area_shape_exited body_entered body_exited body_shape_entered body_shape_exited"),
+    "VisualInstance3D": ("Node3D", ""),
+    "GeometryInstance3D": ("VisualInstance3D", ""),
+    "MeshInstance3D": ("GeometryInstance3D", ""),
+    "Camera3D": ("Node3D", ""),
+    "Light3D": ("VisualInstance3D", ""),
+    "DirectionalLight3D": ("Light3D", ""),
+    "OmniLight3D": ("Light3D", ""),
+    "Marker3D": ("Node3D", ""),
+    "WorldEnvironment": ("Node", ""),
+    "Tween": ("RefCounted", "finished loop_finished step_finished"),
+    "MainLoop": ("Object", "on_request_permissions_result"),
+    "SceneTree": ("MainLoop", "node_added node_configuration_warning_changed node_removed node_renamed physics_frame process_frame scene_changed tree_changed tree_process_mode_changed"),
+}
+
+
+def _native_signals(cls):
+    """引擎类 cls 连同祖先的内置信号；表外的类返回 None"""
+    if cls not in NATIVE_SIGNALS:
+        return None
+    out = set()
+    while cls:
+        parent, sigs = NATIVE_SIGNALS[cls]
+        out.update(sigs.split())
+        cls = parent
+    return out
+
+
+_EXTENDS_RE = re.compile(r'^(?:class_name\s+\w+\s+)?extends\s+("[^"\n]+"|\'[^\'\n]+\'|[A-Za-z_][\w.]*)', re.M)
+_CLASS_NAME_RE = re.compile(r'^class_name\s+([A-Za-z_]\w*)', re.M)
+_script_meta = {}  # 绝对路径 -> (本文件 signal 集合, 原始 extends 目标 或 None)
+_class_paths = {}  # class_name -> 绝对路径
+for dirpath, dirnames, files in os.walk(ROOT):
+    dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+    for fn in files:
+        if not fn.endswith(".gd"):
+            continue
+        path = os.path.join(dirpath, fn)
+        with open(path, encoding="utf-8") as f:
+            raw = f.read()
+        # extends 目标可以是字符串路径，得在 code_only 抹掉字符串之前取；只认顶格（内部 class 缩进在里面）
+        top = "\n".join(ln for ln in raw.split("\n") if not ln.lstrip().startswith("#"))
+        ext = _EXTENDS_RE.search(top)
+        cn = _CLASS_NAME_RE.search(top)
+        if cn:
+            _class_paths.setdefault(cn.group(1), path)
+        sigs = set(re.findall(r'^\s*signal\s+([A-Za-z_]\w*)', code_only(raw), re.M))
+        _script_meta[path] = (sigs, ext.group(1) if ext else None)
+
+
+def _chain_signals(path):
+    """返回 (extends 链上所有可 emit 的信号, 链尾说明)。链尾是表外引擎类 / 找不到的父脚本时不放宽，只带已走到的脚本声明"""
+    out, seen, cur = set(), set(), path
+    while cur and cur not in seen:
+        seen.add(cur)
+        sigs, ext = _script_meta.get(cur, (set(), None))
+        out |= sigs
+        if ext is None:
+            ext = "RefCounted"  # Godot 4：不写 extends 即 RefCounted
+        if ext[0] in "\"'":
+            target = ext[1:-1]
+            if target.startswith("res://"):
+                cur = os.path.join(ROOT, target[len("res://"):])
+            else:
+                cur = os.path.normpath(os.path.join(os.path.dirname(cur), target))
+            if cur not in _script_meta:
+                return out, f"父脚本 {target} 不存在"
+            continue
+        if ext in _class_paths:
+            cur = _class_paths[ext]
+            continue
+        native = _native_signals(ext)
+        if native is None:
+            return out, f"基类 {ext} 不在内置信号表"
+        return out | native, None
+    return out, None
+
+
+# var s: Signal / var s := Signal(…) / 形参 s: Signal——这些名字 .emit() 是在发一个 Signal 值，不对声明
+_SIGNAL_VAR_RE = re.compile(
+    r'\bvar\s+([A-Za-z_]\w*)\s*(?::\s*Signal\b|:?=\s*Signal\s*\()'
+    r'|[(,]\s*([A-Za-z_]\w*)\s*:\s*Signal\b')
+
 orphan_total = 0
 for dirpath, _, files in os.walk(SCRIPTS):
     for fn in sorted(files):
@@ -302,11 +488,13 @@ for dirpath, _, files in os.walk(SCRIPTS):
         path = os.path.join(dirpath, fn)
         with open(path, encoding="utf-8") as f:
             src = code_only(f.read())  # 注释、字符串里的 xx.emit() 不算
-        declared = set(re.findall(r'^\s*signal\s+([A-Za-z_]\w*)', src, re.M))
-        # 前面带点的是跨对象 emit（Autoload.sig.emit），不归本文件管；self.sig.emit 仍算本文件
+        declared, chain_note = _chain_signals(path)
+        signal_vars = {a or b for a, b in _SIGNAL_VAR_RE.findall(src)}
+        # 前面带点的是跨对象 emit（Autoload.sig.emit 归第二节、btn.pressed.emit 不核），不归本文件管；self.sig.emit 仍算本文件
         emitted = set(re.findall(r'(?:(?<![.\w])self\.|(?<![.\w]))([A-Za-z_]\w*)\.emit\s*\(', src))
-        for o in sorted(emitted - declared):
-            print(f"  ✗ {os.path.relpath(path, ROOT)}: {o}.emit() 但本文件无此 signal")
+        for o in sorted(emitted - declared - signal_vars):
+            where = "本文件与 extends 链上均无此 signal" + (f"（{chain_note}）" if chain_note else "")
+            print(f"  ✗ {os.path.relpath(path, ROOT)}: {o}.emit() 但{where}")
             problems.append(f"{os.path.relpath(path, ROOT)} emit 已删除的 {o}")
             orphan_total += 1
 if orphan_total == 0:
