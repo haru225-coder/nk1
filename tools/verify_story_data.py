@@ -2,7 +2,7 @@
 """剧情数据静态校验：news.json / scenes.json effects / npcs.json。
 起因：序章 effects 里的 sea_tendency / scholar_tendency 曾在 Main.apply_effects 里无分支，
 静默丢弃了两年。此脚本把「数据里写了的效果键，代码必须接住」做成门禁。"""
-import json, os, re, sys, pathlib
+import copy, json, os, re, sys, pathlib
 
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 FAIL = []
@@ -348,11 +348,113 @@ check('get("bio"' not in codex_src and "codex_bio(" in codex_src, "人物志小�
 check('"bio_short"' not in main_src and "codex_short(" in main_src, "见面页简介仍读 characters.json 的 bio_short 原稿")
 check("characters_codex.json" in art_src, "CharacterArt 未接人物志上屏文本层")
 
-# Astra L1：设定集原稿不得含工程词；展示层入口不得直接把 bio / bio_short 送到玩家可见控件
+# ── Astra L1：人物「原稿 vs 上屏」契约（docs/人物原稿与上屏契约.md）────────────
+# characters.json 是设定集原稿，characters_codex.json 是上屏文本层。上屏的字只有三条来路：
+#   ① 文本层 CODEX_ONSCREEN 各段；② 原稿里 UI 直读或文本层缺省时回落的 CHAR_ONSCREEN 字段、relations[].rel；
+#   ③ 原稿 meta 的 attr_def / trait_def 的 name·desc 与 faction_def 的 name。
+# 三条来路上出现 ONSCREEN_BAN 即失败；原稿 CHAR_DRAFT（bio / bio_short / 画像备注）与两份 meta.note 只供策划，不上屏。
+# 新增字段必须先在这里归类，UI 直读的原稿键必须落在「上屏 / 结构」两类里，否则门禁失败。
+ONSCREEN_BAN = re.compile(CODEX_META.pattern + r"|placeholder|TODO|WIP|FIXME|pipeline|LLM|ChatGPT|大模型")
+CHAR_ONSCREEN = {"name", "alt_names", "courtesy", "title", "origin", "personality", "look", "lines"}
+CHAR_STRUCT = {"id", "faction", "traits", "relations", "born", "died", "tier", "chapters", "attrs",
+               "portrait", "portrait_status", "sources", "historical"}  # 键、数值、枚举，不作正文上屏
+CHAR_DRAFT = {"bio", "bio_short", "portrait_src", "portrait_note"}
+CODEX_ONSCREEN = {"bio", "short", "lines", "title", "courtesy", "alt", "look", "personality"}
+check(not (CHAR_ONSCREEN & CHAR_STRUCT or CHAR_ONSCREEN & CHAR_DRAFT or CHAR_STRUCT & CHAR_DRAFT), "L1 字段分类有交叠")
+
+
+def onscreen_texts(chars_doc, codex_doc):
+    """列出人物线全部上屏文字 (出处, 文字)。门禁与自证共用同一份清单。"""
+    out = []
+    meta = chars_doc.get("meta", {})
+    for a in meta.get("attr_def", []):
+        for k in ("name", "desc"):
+            out.append((f"meta.attr_def.{a.get('key', '?')}.{k}", str(a.get(k, ""))))
+    for tk, t in meta.get("trait_def", {}).items():
+        for k in ("name", "desc"):
+            out.append((f"meta.trait_def.{tk}.{k}", str(t.get(k, ""))))
+    for fk, fd in meta.get("faction_def", {}).items():
+        out.append((f"meta.faction_def.{fk}.name", str(fd.get("name", ""))))
+    for c in chars_doc.get("characters", []):
+        cid = c.get("id", "?")
+        for k in sorted(CHAR_ONSCREEN):
+            v = c.get(k)
+            for i, s in enumerate(v if isinstance(v, list) else [v]):
+                if s is not None:
+                    out.append((f"characters.json {cid}.{k}[{i}]", str(s)))
+        for r in c.get("relations", []):
+            out.append((f"characters.json {cid}.relations→{r.get('id', '?')}", str(r.get("rel", ""))))
+    for cid, e in codex_doc.get("characters", {}).items():
+        for k in CODEX_ONSCREEN & set(e):
+            segs = e[k]
+            for i, s in enumerate(segs if isinstance(segs, list) else [segs]):
+                txt = s[1] if isinstance(s, list) and len(s) == 2 else s
+                out.append((f"characters_codex.json {cid}.{k}[{i}]", str(txt)))
+    return out
+
+
+def onscreen_hits(chars_doc, codex_doc):
+    return [(w, m.group(0), t) for w, t in onscreen_texts(chars_doc, codex_doc) for m in [ONSCREEN_BAN.search(t)] if m]
+
+
+_chars_doc = load("characters.json")
+_codex_doc = load("characters_codex.json") if os.path.isfile(codex_path) else {"characters": {}}
+for c in _chars_doc.get("characters", []):
+    unk = set(c) - CHAR_ONSCREEN - CHAR_STRUCT - CHAR_DRAFT
+    check(not unk, f"characters.json {c.get('id', '?')} 有未归类字段 {sorted(unk)}：先在 L1 契约里定上屏 / 结构 / 原稿")
+for cid, e in _codex_doc.get("characters", {}).items():
+    unk = set(e) - CODEX_ONSCREEN
+    check(not unk, f"characters_codex.json {cid} 有未登记字段 {sorted(unk)}：上屏文本层字段须进 CODEX_ONSCREEN 受查")
+_onscreen = onscreen_texts(_chars_doc, _codex_doc)
+check(len(_onscreen) >= 1200, f"人物上屏文字只收到 {len(_onscreen)} 条，疑似清单漏载")
+for where, word, txt in onscreen_hits(_chars_doc, _codex_doc):
+    check(False, f"{where} 上屏字段含禁词「{word}」：{txt[:40]}")
+
+# 自证：往每条来路各塞一个带记号的禁词，扫描必须逐条抓到那个记号（防止日后改清单时某条来路静默失明）
+_PROBE = "placeholder·L1自证"
+_probe_paths = []
+if _chars_doc.get("characters") and _codex_doc.get("characters"):
+    _x0 = next(iter(_codex_doc["characters"]))
+    _probe_paths = [("attr", lambda cd, xd: cd["meta"]["attr_def"][0].__setitem__("desc", _PROBE)),
+                    ("trait", lambda cd, xd: next(iter(cd["meta"]["trait_def"].values())).__setitem__("name", _PROBE)),
+                    ("faction", lambda cd, xd: next(iter(cd["meta"]["faction_def"].values())).__setitem__("name", _PROBE)),
+                    ("rel", lambda cd, xd: cd["characters"][0]["relations"].append({"id": "x", "rel": _PROBE}))]
+    for k in sorted(CHAR_ONSCREEN):
+        _probe_paths.append((f"raw.{k}", lambda cd, xd, k=k: cd["characters"][0].__setitem__(k, [_PROBE])))
+    for k in sorted(CODEX_ONSCREEN):
+        _probe_paths.append((f"codex.{k}", lambda cd, xd, k=k: xd["characters"][_x0].__setitem__(k, [[0, _PROBE]])))
+for tag, poke in _probe_paths:
+    cd, xd = copy.deepcopy(_chars_doc), copy.deepcopy(_codex_doc)
+    poke(cd, xd)
+    check(any(_PROBE in t for _, _, t in onscreen_hits(cd, xd)), f"L1 自证：往 {tag} 塞禁词后门禁没抓到，该上屏来路失明")
+check(len(_probe_paths) >= 20, f"L1 自证只探了 {len(_probe_paths)} 条来路")
+# 原稿兜底：设定集整份仍不许出现最硬的六个工程词（bio / bio_short 原稿亦然，防止回落时带出）
 _CHARS_ENG = re.compile(r"placeholder|本作|玩家|士人线|海商线|乡土线")
 _chars_raw = open(os.path.join(ROOT, "data", "characters.json"), encoding="utf-8").read()
 _eng_hit = _CHARS_ENG.search(_chars_raw)
 check(_eng_hit is None, f"characters.json 原稿仍含工程词「{_eng_hit.group(0) if _eng_hit else ''}」")
+
+# UI 读取入口锁：凡拿人物字典直读的 .get("键")，键只许是「上屏 / 结构」两类；文本层 layer(ch).get 只许 CODEX_ONSCREEN
+L1_UI_FILES = ["scripts/ui/CharacterArt.gd", "scripts/ui/CharacterCodex.gd", "scripts/ui/VisionStage.gd", "scripts/Main.gd",
+               "scripts/companions/CompanionPreview.gd"] + sorted(
+    os.path.relpath(str(p), ROOT) for p in pathlib.Path(ROOT, "scripts", "chars").glob("*.gd"))
+_ui_raw_keys = 0
+for rel in L1_UI_FILES:
+    p = os.path.join(ROOT, rel)
+    check(os.path.isfile(p), f"L1 上屏入口 {rel} 不见了：改了路径须同步契约")
+    if not os.path.isfile(p):
+        continue
+    src = open(p, encoding="utf-8").read()
+    for k in re.findall(r'(?<![A-Za-z_])(?:ch|cch|other|character)\.get\("([a-z_]+)"', src):
+        _ui_raw_keys += 1
+        check(k in CHAR_ONSCREEN | CHAR_STRUCT, f"{rel} 直读人物原稿字段「{k}」：不在 L1 上屏 / 结构白名单")
+    for k in re.findall(r'layer\([^)]*\)\.get\("([a-z_]+)"', src):
+        check(k in CODEX_ONSCREEN, f"{rel} 读文本层未登记字段「{k}」：须进 CODEX_ONSCREEN 受查")
+    for k in re.findall(r'character_meta\(\)\.get\("([a-z_]+)"', src):
+        check(k in {"attr_def", "trait_def", "faction_def"}, f"{rel} 读设定集 meta.{k}：meta 只许三张定义表上屏")
+    check(re.search(r'"bio_short"|"portrait_note"|"portrait_src"', src) is None,
+          f"{rel} 出现原稿专用键（bio_short / portrait_note / portrait_src）")
+check(_ui_raw_keys >= 40, f"L1 只扫到 {_ui_raw_keys} 处人物字典直读，疑似正则失效")
 # CharacterArt / CharacterCodex / Main 上屏路径：bio 原稿不得经 get("bio") / bio_short 直出
 check("codex_bio(" in art_src or "codex_bio(" in codex_src, "上屏层未走 CharacterArt.codex_bio")
 check("codex_short(" in art_src or "codex_short(" in main_src, "上屏层未走 CharacterArt.codex_short")
@@ -360,9 +462,7 @@ check("codex_short(" in art_src or "codex_short(" in main_src, "上屏层未走 
 _vs_path = os.path.join(ROOT, "scripts", "ui", "VisionStage.gd")
 if os.path.isfile(_vs_path):
     _vs = open(_vs_path, encoding="utf-8").read()
-    # VisionStage 可读 characters.json 取 portrait，但不得把 bio 填进 Label
-    check(".bio" not in _vs.replace("biography", "") or 'get("bio"' not in _vs,
-          "VisionStage 疑似把 characters.json bio 送到控件")
+    check('get("bio"' not in _vs, "VisionStage 疑似把 characters.json bio 送到控件")
 # 人物志与见面页不得出现「直接读 GameManager.characters[*].bio」类路径
 check('["bio"]' not in codex_src and ".bio_short" not in codex_src,
       "CharacterCodex 仍直接读 bio/bio_short 原稿字段")
