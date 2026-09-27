@@ -83,6 +83,11 @@ func _run() -> void:
 	root.add_child(wm)
 	for _i in 30:
 		await process_frame
+	# 布景冻住（lane gd6，同 pg 对 vision_letterbox_probe 的修法）：WorldMap 是真海战，照常开炮结算。
+	# 探针不开船，约 3.5 s 首轮齐射、8–10 s 旗舰被击沉 → Ship._sink_ship → WorldMap._battle_exit("lose")
+	# → queue_free()；下面再调 wm.queue_free() 就报「previously freed instance」，_run 协程中断、
+	# quit() 没人调，DISPLAY 下挂到 timeout。冻住后仍出图，只是不再推进战斗。
+	wm.process_mode = Node.PROCESS_MODE_DISABLED
 	var sub := "咸淳三年六月十二　%s" % Letterbox.enemy_note(enemy)
 	var lb := Letterbox.enter(root, Letterbox.sea_title("刺桐外海", "遇敌"), sub)
 	_expect(lb != null, "有窗口时入战墨边未上场")
@@ -112,7 +117,12 @@ func _run() -> void:
 			await process_frame
 	# 墨边退场后、海战场面拆掉前截：旧写法先 queue_free 再截，得的是一色空视口（lane sg2）
 	await _shot("04_after_exit")
-	wm.queue_free()
+	# 冻住后布景不该自己结算；万一又被释放（去掉冻结 / WorldMap 改了结算时序），报红收尾，不挂死
+	if is_instance_valid(wm):
+		_expect(not bool(wm.get("resolved")), "布景海战在探针演示中未自行结算")
+		wm.queue_free()
+	else:
+		_fails.append("布景 WorldMap 在探针拆场前已自行结算释放（冻结失效，不是墨边回归）")
 	gm.pending_battle = {}
 	_report()
 
