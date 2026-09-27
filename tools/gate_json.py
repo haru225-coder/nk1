@@ -12,7 +12,7 @@
      python3 tools/gate_json.py tools/verify_economy.py  # 等同 verify_economy.py --json
      python3 tools/gate_json.py -- <任意命令 ...>
   3. 门禁清单：`python3 tools/gate_json.py --list` 输出注册表 JSON（REGISTRY + SHOT_PROBES + SUBCHECKS + CI_STEPS）；
-     docs/GATES.md §一、§四由它生成，`python3 tools/gates_md.py` 校验、`--write` 重生成。
+     docs/GATES.md §一、§二批量巡检块、§四由它生成，`python3 tools/gates_md.py` 校验、`--write` 重生成。
 
 输出（stdout 只有这一段 JSON）：
   {"gate", "ok", "exit_code", "summary", "checks": [{"name", "ok", "detail"}...],
@@ -105,7 +105,7 @@ REGISTRY = [
      "judge": "（lane sv）v1 老档读入补字段、回写 v2、原件留 .v1；未来档明确拒读、不退副抄、文件不动",
      "green": "`SAVE_MIGRATE_PROBE PASS`", "red": "`✗` 行；`SAVE_MIGRATE_PROBE FAIL fails=k`；输出含 `SCRIPT ERROR` 即算失败"},
     {"id": "gates_md", "tier": "lane", "when": "动门禁清单 / docs/GATES.md", "kind": "py", "file": "tools/gates_md.py",
-     "judge": "（lane gd3 / gd4）本注册表 vs docs/GATES.md §一、§四逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；附属自检的开关还在源码里；§三 小节编号与一键跑命令对得上",
+     "judge": "（lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序",
      "green": "`结果：全部通过`", "red": "`✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write`"},
     {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/legacy/verify_narrative.py",
      "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
@@ -191,7 +191,7 @@ CI_STEPS = [
     {"id": "GATES.md 与注册表一致", "lane": "gd3", "needs": "python3 + git",
      "cmd": "python3 tools/gates_md.py",
      "expect": "`结果：全部通过`",
-     "fail": "有人手改了 §一 / §四 生成块、改了注册表没 `--write`、§三 一键跑命令与必跑清单不符，或注册的脚本挪走了"},
+     "fail": "有人手改了 §一 / §二批量巡检 / §四 生成块、改了注册表没 `--write`、§三 或 `.claude/todo.md` 验证段的一键跑命令与必跑清单不符，或注册的脚本挪走了"},
 ]
 
 
@@ -285,9 +285,13 @@ def registry():
         c["file"] = parent.get("file") if parent else None
         subs.append(c)
     # 一键跑顺序：导入步骤（step）先跑，再按注册表顺序跑必跑门禁
-    must = [g["cmd"] for g in gates if g["tier"] == "step"] + [g["cmd"] for g in gates if g["tier"] == "must"]
+    order = [g for g in gates if g["tier"] == "step"] + [g for g in gates if g["tier"] == "must"]
+    must = [g["cmd"] for g in order]
+    # 同序的机读版（docs/GATES.md §二「批量巡检」块由它生成）；step 不判红绿，消费方另放
+    must_json = [{"id": g["id"], "tier": g["tier"], "json": g["json"]} for g in order]
     ci = [dict(c) for c in CI_STEPS]
-    return {"gates": gates, "shot_probes": shots, "subchecks": subs, "oneclick": must, "ci_steps": ci}
+    return {"gates": gates, "shot_probes": shots, "subchecks": subs, "oneclick": must, "oneclick_json": must_json,
+            "ci_steps": ci}
 
 
 # `--godot <预设>`：注册表里的 Godot 门禁 + 截图脚本（带窗口的不加 --headless）

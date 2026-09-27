@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""docs/GATES.md §一（门禁总表 / 门禁开关与附属自检 / 截图门禁明细 / 不算门禁）与 §四（CI 建议步骤）
-按 tools/gate_json.py 的注册表生成，本脚本校验二者一致。
+"""docs/GATES.md §一（门禁总表 / 门禁开关与附属自检 / 截图门禁明细 / 不算门禁）、§二（批量巡检）与 §四（CI 建议步骤）
+按 tools/gate_json.py 的注册表生成，本脚本校验二者一致；§三「一键人读全跑」与 .claude/todo.md 验证段是手写，只比对。
 
   python3 tools/gates_md.py            # 自检：文档与注册表不一致、注册的脚本缺失、接 shot_gate 的截图脚本没入册、
-                                       #       附属自检的开关在源码里找不到、§三 一键跑命令与必跑清单不符 → 退 1
-  python3 tools/gates_md.py --write    # 按注册表重写 GATES.md 两个标记块（块外手写部分不动），写完再自检
+                                       #       附属自检的开关在源码里找不到、§三 一键跑命令 / .claude/todo.md 验证段与必跑清单不符 → 退 1
+  python3 tools/gates_md.py --write    # 按注册表重写 GATES.md 三个标记块（块外手写部分、todo.md 不动），写完再自检
   python3 tools/gates_md.py --json     # 机读（同 docs/GATES.md §二）
 
 改门禁清单只改 tools/gate_json.py 的 REGISTRY / SHOT_PROBES / SUBCHECKS / CI_STEPS，再 --write；别手改标记块。
@@ -18,11 +18,34 @@ if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关�
     import gate_json; gate_json.maybe_json(__file__)
 
 DOC = os.path.join(ROOT, "docs", "GATES.md")
+TODO = os.path.join(ROOT, ".claude", "todo.md")
 BEGIN = "<!-- GATES:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 注册表生成，勿手改 -->"
 END = "<!-- GATES:END -->"
 CI_BEGIN = "<!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->"
 CI_END = "<!-- GATES-CI:END -->"
 CI_HEAD = "## 四、CI 建议步骤"
+BATCH_BEGIN = "<!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->"
+BATCH_END = "<!-- GATES-BATCH:END -->"
+BATCH_HEAD = "## 二、`--json` 机读输出"
+BATCH_DIR = "/tmp/gates"
+# 批量巡检收尾汇总：Python / 外包是整段多行 JSON，原生是末行一行 JSON（不加 --quiet 时前面有引擎横幅）；
+# 原生 --json 的门禁中途崩 / 卡死不出 JSON 行（docs/GATES.md §二末），按红计
+BATCH_SUM = """python3 - <<'EOF'   # 汇总：逐道 ok / counts；任一道红或没有 JSON → 退 1
+import glob, json, os, sys
+red = 0
+for p in sorted(glob.glob("%s/*.json")):
+    s = open(p, encoding="utf-8").read()
+    try:
+        d = json.loads(s)
+    except ValueError:
+        try:
+            d = json.loads(s.strip().splitlines()[-1])
+        except (IndexError, ValueError):
+            d = {"gate": os.path.basename(p)[:-5], "ok": False, "counts": "没有 JSON"}
+    red += not d["ok"]
+    print(f"{d['gate']:24}", d["ok"], d["counts"])
+sys.exit(1 if red else 0)
+EOF""" % BATCH_DIR
 CN = "零一二三四五六七八九十"
 
 fails = []
@@ -110,13 +133,42 @@ def render_ci(reg):
     return "\n".join(out)
 
 
-def oneclick_block(text):
-    """§三「一键人读全跑」下第一段 ```sh 的命令（续行拼回、按 && 与换行切）；找不到返回 None。"""
-    m = re.search(r"^一键人读全跑[^\n]*\n+```sh\n(.*?)^```", text, re.M | re.S)
+def render_batch(reg):
+    """§二 批量巡检：一键跑各条换 §一 `--json` 列，stdout 落 /tmp/gates/<id>.json；导入步骤另放 steps/、不进汇总。"""
+    rows = reg["oneclick_json"]
+    out = ["```sh", f"# 必跑{cn(len(rows))}条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；"
+                    f"导入步骤不判红绿，落 {BATCH_DIR}/steps/、不进汇总",
+           f"rm -rf {BATCH_DIR} && mkdir -p {BATCH_DIR}/steps"]
+    for r in rows:
+        dst = f"{BATCH_DIR}/steps/{r['id']}.json" if r["tier"] == "step" else f"{BATCH_DIR}/{r['id']}.json"
+        out.append(f"{r['json']} > {dst}")
+    out += [BATCH_SUM, "```"]
+    return "\n".join(out)
+
+
+def split_batch(text):
+    """§二 批量巡检块：(块前, 块内, 块后)；标记不是恰好一对返回 None。"""
+    if text.count(BATCH_BEGIN) == 1 and text.count(BATCH_END) == 1 and text.index(BATCH_BEGIN) < text.index(BATCH_END):
+        a, b = text.index(BATCH_BEGIN) + len(BATCH_BEGIN), text.index(BATCH_END)
+        return text[:a], text[a:b], text[b:]
+    return None
+
+
+def oneclick_block(text, head=r"^一键人读全跑[^\n]*\n+```sh\n"):
+    """§三「一键人读全跑」下第一段 ```sh 的命令（续行拼回、按 && 与换行切、去行尾 `# 注释`）；找不到返回 None。
+    head 换成 `## 验证` 即读 .claude/todo.md 验证段（那里的代码块不写 sh）。"""
+    m = re.search(head + r"(.*?)^```", text, re.M | re.S)
     if not m:
         return None
     body = re.sub(r"\\\n\s*", " ", m.group(1))
-    return [c.strip() for ln in body.splitlines() for c in ln.split("&&") if c.strip() and not c.strip().startswith("#")]
+    body = re.sub(r"(^|\s)#.*$", "", body, flags=re.M)
+    return [c.strip() for ln in body.splitlines() for c in ln.split("&&") if c.strip()]
+
+
+def check_oneclick(cmds, must, where, fix):
+    diff = [c for c in cmds if c not in must] + [c for c in must if c not in cmds]
+    return check(cmds == must, f"{where}命令与必跑档逐条一致（{len(must)} 条）"
+                 + ("" if cmds == must else f"；不符：{diff or '顺序不同'}（{fix}）"))
 
 
 def tools_gd():
@@ -233,6 +285,16 @@ def main(argv):
         print(f"  已重写 {os.path.relpath(DOC, ROOT)} §四 CI 标记块（{len(ci_gen.splitlines())} 行）")
         head, body, tail = split_doc(text)
         ci_parts = split_ci(text)
+    batch_want = "\n" + render_batch(reg) + "\n"
+    batch_parts = split_batch(text)
+    if write and batch_parts is not None and batch_parts[1] != batch_want:
+        text = batch_parts[0] + batch_want + batch_parts[2]
+        with open(DOC, "w", encoding="utf-8") as f:
+            f.write(text)
+        print(f"  已重写 {os.path.relpath(DOC, ROOT)} §二 批量巡检标记块（{len(batch_want.splitlines()) - 1} 行）")
+        head, body, tail = split_doc(text)
+        ci_parts = split_ci(text)
+        batch_parts = split_batch(text)
     if body is None:
         check(False, "GATES.md 还没有生成标记块；跑 `python3 tools/gates_md.py --write`")
     else:
@@ -252,12 +314,23 @@ def main(argv):
     else:
         check(ci_body == ci_want, "§四 CI 标记块与 CI_STEPS 逐字一致" + ("" if ci_body == ci_want else "；修法：python3 tools/gates_md.py --write"))
         check(re.search(r"^" + re.escape(CI_HEAD) + r"\n", ci_parts[0], re.M) is not None, f"§四 CI 块在「{CI_HEAD}」小节里")
+    if check(batch_parts is not None, "GATES.md 的 §二 批量巡检生成标记有且只有一对（缺了就在 §二 手补一对空标记再 --write）"):
+        check(batch_parts[1] == batch_want, "§二 批量巡检标记块与 oneclick_json 逐字一致"
+              + ("" if batch_parts[1] == batch_want else "；修法：python3 tools/gates_md.py --write"))
+        check(re.search(r"^" + re.escape(BATCH_HEAD) + r"\n", batch_parts[0], re.M) is not None
+              and CI_HEAD not in batch_parts[0] and re.search(r"^## 三、", batch_parts[0], re.M) is None,
+              f"§二 批量巡检块在「{BATCH_HEAD}」小节里")
     ocb = oneclick_block(tail)
     must = reg["oneclick"]
     if check(ocb is not None, "§三 有「一键人读全跑」命令段"):
-        diff = [c for c in ocb if c not in must] + [c for c in must if c not in ocb]
-        check(ocb == must, f"§三 一键跑命令与必跑档逐条一致（{len(must)} 条）"
-              + ("" if ocb == must else f"；不符：{diff or '顺序不同'}（改 §三 手写段或注册表 tier）"))
+        check_oneclick(ocb, must, "§三 一键跑", "改 §三 手写段或注册表 tier")
+    try:
+        with open(TODO, encoding="utf-8") as f:
+            tcb = oneclick_block(f.read(), r"^## 验证[ \t]*\n+```[^\n]*\n")
+    except OSError:
+        tcb = None
+    if check(tcb is not None, "`.claude/todo.md` 有「## 验证」命令段"):
+        check_oneclick(tcb, must, "`.claude/todo.md` 验证段", "改 todo.md 验证段或注册表 tier")
     live = [g["id"] for g in gates if g["tier"] != "no"]
     heads = {int(m.group(1)): m.group(2) for m in re.finditer(r"^### (\d+)\. (.+)$", tail, re.M)}
     for i, gid in enumerate(live, 1):

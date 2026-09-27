@@ -30,7 +30,7 @@
 | 16 | save_robust_probe | Godot | 加跑：动 SaveLoad / 存档 | — | `godot --headless --path . -s res://tools/save_robust_probe.gd` | `python3 tools/gate_json.py --godot save_robust_probe` | （lane h1h2 / rt）坏分区退 .bak、只剩 .bak 取标签、两份皆坏不抛错 | `SAVE_ROBUST_PROBE PASS`（大量 `ERROR: 存档结构异常…` 是故意喂坏档，属预期） | `✗` 行 / 非零退出；输出含 `SCRIPT ERROR` 即算失败 |
 | 17 | check_sidecars | Python | 加跑：提交新 .gd / .gdshader / 素材，或挪删它们 | — | `python3 tools/check_sidecars.py` | `python3 tools/check_sidecars.py --json` | （lane ag / ag2）按 git 索引：已跟踪 .gd/.gdshader 须有已跟踪 `.uid`，可导入素材须有 `.import`；反向不许只提侧车 / 多余侧车；侧车内容与源文件、场景引用、VRAM 基线一致，uid 唯一；工作树里已跟踪侧车不许漂移。口径表见 docs/侧车口径.md | `结果：全部通过` | `FAIL: …` 行（缺侧车 / 孤儿·多余侧车 / 内容漂移 / 非基线形态 / 工作树漂移）；`结果：N 项失败` |
 | 18 | save_migrate_probe | Godot | 加跑：动存档结构 / save_schema | — | `godot --headless --path . -s res://tools/save_migrate_probe.gd` | `python3 tools/gate_json.py --godot save_migrate_probe` | （lane sv）v1 老档读入补字段、回写 v2、原件留 .v1；未来档明确拒读、不退副抄、文件不动 | `SAVE_MIGRATE_PROBE PASS` | `✗` 行；`SAVE_MIGRATE_PROBE FAIL fails=k`；输出含 `SCRIPT ERROR` 即算失败 |
-| 19 | gates_md | Python | 加跑：动门禁清单 / docs/GATES.md | — | `python3 tools/gates_md.py` | `python3 tools/gates_md.py --json` | （lane gd3 / gd4）本注册表 vs docs/GATES.md §一、§四逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；附属自检的开关还在源码里；§三 小节编号与一键跑命令对得上 | `结果：全部通过` | `✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write` |
+| 19 | gates_md | Python | 加跑：动门禁清单 / docs/GATES.md | — | `python3 tools/gates_md.py` | `python3 tools/gates_md.py --json` | （lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序 | `结果：全部通过` | `✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write` |
 
 每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「七道 Python + smoke/compile/story/p7/patrol」十二道门禁；8、15、16、17、18、19 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
@@ -102,7 +102,7 @@ python3 tools/gate_json.py tools/verify_economy.py      # = verify_economy.py --
 python3 tools/gate_json.py -- <任意命令 …>               # 通用解析
 ```
 
-门禁清单本身也能机读：`python3 tools/gate_json.py --list` 输出注册表（`gates[]` 带 `tier` / `family` / `oneclick` / `cmd` / `json` / `why`，`shot_probes[]` 带 `tag` / `shots` / `out_dir`，`subchecks[]` 带 `parent` / `oneclick` / `expect` / `fail`，`oneclick[]` 是一键跑命令，`ci_steps[]` 是 §四），§一、§四就是它生成的。
+门禁清单本身也能机读：`python3 tools/gate_json.py --list` 输出注册表（`gates[]` 带 `tier` / `family` / `oneclick` / `cmd` / `json` / `why`，`shot_probes[]` 带 `tag` / `shots` / `out_dir`，`subchecks[]` 带 `parent` / `oneclick` / `expect` / `fail`，`oneclick[]` 是一键跑命令，`oneclick_json[]` 是同序的 `{id, tier, json}`，`ci_steps[]` 是 §四），§一、§二「批量巡检」块、§四就是它生成的。
 
 Godot 路径取 `$GODOT`，其次 `PATH` 里的 `godot`，最后 `~/.local/bin/godot`。
 
@@ -139,20 +139,43 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 - 其余（check_symbols、verify_save_robustness、Godot 门禁）：解析 `✓ / ✗ / ⚠ / FAIL: / COMPILE_CHECK / STORY_CHECK / OK   / FAIL ` 行；收尾判词之后的 `✗` 视为复述，不重复计数。
 - 红了却一条失败都没解析到（脚本崩溃、提前 `exit`）：补一条 `{"name": "exit_code", "ok": false}`，看 `tail`。
 
-批量巡检示例（CI / 夜巡）：
+批量巡检（CI / 夜巡；下块由注册表生成——增删必跑门禁、改 `--json` 写法后 `python3 tools/gates_md.py --write` 随之更新，勿手改）：
 
+<!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-mkdir -p /tmp/gates
-for g in check_symbols verify_economy simulate_run verify_coastline check_assets verify_story_data simulate_endgame; do
-  python3 tools/$g.py --json > /tmp/gates/$g.json
-done
-python3 tools/gate_json.py --godot import > /tmp/gates/import.json   # 导入步骤，先跑、不判红绿
-for g in godot_smoke godot_compile_check godot_story_check p7_guild_exam_smoke; do   # 原生 --json（lane g2）
-  godot --headless --quiet --path . -s res://tools/$g.gd -- --json > /tmp/gates/$g.json
-done
-DISPLAY=:2 godot --quiet --path . -s res://tools/patrol_shell.gd -- --json > /tmp/gates/patrol_shell.json
-python3 -c "import json,glob;[print(f'{d[\"gate\"]:24}',d['ok'],d['counts']) for d in map(lambda p: json.load(open(p)), sorted(glob.glob('/tmp/gates/*.json')))]"
+# 必跑十三条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
+python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
+python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
+python3 tools/verify_economy.py --json > /tmp/gates/verify_economy.json
+python3 tools/simulate_run.py --json > /tmp/gates/simulate_run.json
+python3 tools/verify_coastline.py --json > /tmp/gates/verify_coastline.json
+python3 tools/check_assets.py --json > /tmp/gates/check_assets.json
+python3 tools/verify_story_data.py --json > /tmp/gates/verify_story_data.json
+python3 tools/simulate_endgame.py --json > /tmp/gates/simulate_endgame.json
+godot --quiet --headless --path . -s res://tools/godot_smoke.gd -- --json > /tmp/gates/smoke.json
+godot --quiet --headless --path . -s res://tools/godot_compile_check.gd -- --json > /tmp/gates/compile.json
+godot --quiet --headless --path . -s res://tools/godot_story_check.gd -- --json > /tmp/gates/story.json
+godot --quiet --headless --path . -s res://tools/p7_guild_exam_smoke.gd -- --json > /tmp/gates/p7.json
+DISPLAY=:2 godot --quiet --path . -s res://tools/patrol_shell.gd -- --json > /tmp/gates/patrol.json
+python3 - <<'EOF'   # 汇总：逐道 ok / counts；任一道红或没有 JSON → 退 1
+import glob, json, os, sys
+red = 0
+for p in sorted(glob.glob("/tmp/gates/*.json")):
+    s = open(p, encoding="utf-8").read()
+    try:
+        d = json.loads(s)
+    except ValueError:
+        try:
+            d = json.loads(s.strip().splitlines()[-1])
+        except (IndexError, ValueError):
+            d = {"gate": os.path.basename(p)[:-5], "ok": False, "counts": "没有 JSON"}
+    red += not d["ok"]
+    print(f"{d['gate']:24}", d["ok"], d["counts"])
+sys.exit(1 if red else 0)
+EOF
 ```
+<!-- GATES-BATCH:END -->
 
 ### GDScript 门禁原生 `--json`（lane g2，`tools/gate_report.gd`）
 
@@ -285,9 +308,9 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 - 常见红因：`SaveLoad.gd` 的 `_inspect` / `_resolve` / `_migrate_v1_to_v2` 链改动；新加 state 字段没进迁移补齐；未来档改成了退 `.bak`。
 
 ### 19. gates_md（本文件 §一 的自检）
-- 读：`一、注册表`（`tools/gate_json.py --list` 能出、注册的脚本都在、接 `shot_gate` 的截图脚本全入册且 TAG / 张数 / 目录读得到；附属自检的所属门禁在册、开关 / 判词字样还在其源码里；CI 步骤引用的 `tools/…` 都在）→ `二、docs/GATES.md`（生成表格列数整齐；§一、§四 两个标记块逐字一致，红时打首处差异的「文档 / 注册表」两行；§三 `### N.` 编号对得上；§三「一键人读全跑」拆出的命令与必跑档 `cmd` 逐条同序）。
-- 改法：**只改 `tools/gate_json.py` 的 `REGISTRY` / `SHOT_PROBES` / `SUBCHECKS` / `CI_STEPS`**，再 `python3 tools/gates_md.py --write`；块外（§二、§三、§四的标题）是手写，编号小节随注册表增删要补，一键跑命令段随必跑档改。
-- 常见红因：手改了标记块；新截图脚本接了 `shot_gate` 却没进 `SHOT_PROBES`；某道门禁挪走 / 改名（如 `verify_narrative` 挪 `tools/legacy/`）没改注册表；加了门禁没补 §三 小节；改了 `--suggest` / `--regen` 等开关名或判词没改 `SUBCHECKS[].marks`；升降必跑档没同步 §三 一键跑命令段。
+- 读：`一、注册表`（`tools/gate_json.py --list` 能出、注册的脚本都在、接 `shot_gate` 的截图脚本全入册且 TAG / 张数 / 目录读得到；附属自检的所属门禁在册、开关 / 判词字样还在其源码里；CI 步骤引用的 `tools/…` 都在）→ `二、docs/GATES.md`（生成表格列数整齐；§一、§四 两个标记块逐字一致，红时打首处差异的「文档 / 注册表」两行；§二「批量巡检」标记块逐字一致且在 §二 里；§三 `### N.` 编号对得上；§三「一键人读全跑」与 `.claude/todo.md`「## 验证」代码块拆出的命令（续行拼回、按 `&&` 切、去行尾 `# 注释`）都与必跑档 `cmd` 逐条同序）。
+- 改法：**只改 `tools/gate_json.py` 的 `REGISTRY` / `SHOT_PROBES` / `SUBCHECKS` / `CI_STEPS`**，再 `python3 tools/gates_md.py --write`；块外（§二、§三、§四的标题）是手写，编号小节随注册表增删要补，一键跑命令段与 `.claude/todo.md` 验证段随必跑档改（这两处 `--write` 不代写）。
+- 常见红因：手改了标记块；改了必跑档只改 §三 没改 `.claude/todo.md` 验证段（gd4 查出的 patrol 缺 `DISPLAY=:2` 即此类）；新截图脚本接了 `shot_gate` 却没进 `SHOT_PROBES`；某道门禁挪走 / 改名（如 `verify_narrative` 挪 `tools/legacy/`）没改注册表；加了门禁没补 §三 小节；改了 `--suggest` / `--regen` 等开关名或判词没改 `SUBCHECKS[].marks`；升降必跑档没同步 §三 一键跑命令段。
 
 ## 四、CI 建议步骤
 
@@ -318,5 +341,5 @@ python3 tools/gates_md.py
 | # | 步骤 | 接入 | 需要 | 命令 | 期望输出 | 失败含义 |
 |---|---|---|---|---|---|---|
 | 1 | builtin_api 漂移 | cs3 / gd4 | godot（与清单头部同版本） | `python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt` | `✓ --regen：…逐字节一致，未改动` + check_symbols `结果：全部通过`，`git diff` 无输出、退 0 | `git diff` 打出 `tools/builtin_api.txt` 的差异、退 1 = 提交的清单与本机 Godot 的 ClassDB 导出不一致（升级了 Godot / 改了 `gen_builtin_list.gd` 的 CLASSES 却没连同提交重导结果）；`--regen` 本身失败则 check_symbols 先退 1 |
-| 2 | GATES.md 与注册表一致 | gd3 | python3 + git | `python3 tools/gates_md.py` | `结果：全部通过` | 有人手改了 §一 / §四 生成块、改了注册表没 `--write`、§三 一键跑命令与必跑清单不符，或注册的脚本挪走了 |
+| 2 | GATES.md 与注册表一致 | gd3 | python3 + git | `python3 tools/gates_md.py` | `结果：全部通过` | 有人手改了 §一 / §二批量巡检 / §四 生成块、改了注册表没 `--write`、§三 或 `.claude/todo.md` 验证段的一键跑命令与必跑清单不符，或注册的脚本挪走了 |
 <!-- GATES-CI:END -->
