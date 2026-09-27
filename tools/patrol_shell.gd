@@ -18,6 +18,9 @@ var _fails: Array = []
 
 
 func _init() -> void:
+	# 巡检只看界面，不听声音：关掉程序音。本机跑巡检时音频服务器不混音，停下的播放对象收不回，
+	# 收尾恰好有声在响就会在退出时报 AudioStreamWAV / AudioStreamPlaybackWAV 泄漏
+	_AUDIO.enabled = false
 	call_deferred("_run")
 
 
@@ -454,8 +457,6 @@ func _check(cond: bool, msg: String) -> void:
 
 
 func _finish() -> void:
-	# 过渡音可能还在响：退出前释放播放器与合成缓存，免得退出时报 AudioStreamWAV 泄漏
-	_AUDIO.shutdown(self)
 	if _fails.is_empty():
 		print("PATROL SHELL PASS")
 		quit(0)
