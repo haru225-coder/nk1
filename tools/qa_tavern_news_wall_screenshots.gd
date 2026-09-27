@@ -10,6 +10,7 @@ extends SceneTree
 const VIEW := Vector2i(1280, 720)
 var OUT_DIR := ShotGate.out_dir("tavern")
 const TAG := "QA_TAVERN_NEWS_WALL"
+const SP := preload("res://tools/src_probe.gd")  # 按名认函数的源码探查（lane cs15：不按前缀认名）
 const EXPECTED_SHOTS := 2
 const ShotGate := preload("res://tools/shot_gate.gd")
 const Clock := preload("res://tools/probe_clock.gd")
@@ -71,11 +72,11 @@ func _run() -> void:
 
 func _check_wiring() -> void:
 	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
-	_expect("_setup_news_wall" in main_src and "_TAVERN_NEWS_WALL.mount" in main_src, "Main 薄调 _TAVERN_NEWS_WALL.mount")
-	_expect("_setup_news_wall()" in main_src, "_setup_tavern 调用 _setup_news_wall")
+	_expect(SP.has_func(main_src, "_setup_news_wall") and SP.calls(main_src, "_TAVERN_NEWS_WALL.mount"), "Main 薄调 _TAVERN_NEWS_WALL.mount")
+	_expect(SP.has_tok(main_src, "_setup_news_wall()"), "_setup_tavern 调用 _setup_news_wall")
 	var wall_src := FileAccess.get_file_as_string("res://scripts/ui/TavernNewsWall.gd")
-	_expect("recent_news" in wall_src and "news_text" in wall_src, "TavernNewsWall 消费 recent_news/news_text")
-	_expect("paper_card" in wall_src, "札记用 UiTheme.paper_card")
+	_expect(SP.has_tok(wall_src, "recent_news", true) and SP.has_tok(wall_src, "news_text", true), "TavernNewsWall 消费 recent_news/news_text")
+	_expect(SP.has_tok(wall_src, "paper_card", true), "札记用 UiTheme.paper_card")
 	_expect("墙上" in wall_src, "分区题「墙上」")
 	for bad in ["惊艳", "沉浸", "打造", "视觉盛宴", "placeholder", "玩家"]:
 		_expect(bad not in wall_src, "TavernNewsWall 无「%s」" % bad)

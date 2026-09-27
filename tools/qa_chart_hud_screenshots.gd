@@ -11,6 +11,7 @@ extends SceneTree
 const VIEW := Vector2i(1280, 720)
 const CHART_SCENE := "res://scenes/SeaChart.tscn"
 const WM_SCENE := "res://scenes/WorldMap.tscn"
+const SP := preload("res://tools/src_probe.gd")  # 按名认函数的源码探查（lane cs15：不按前缀认名）
 const TAG := "QA_CHART_HUD"
 const EXPECTED_SHOTS := 5
 const ShotGate := preload("res://tools/shot_gate.gd")
@@ -158,7 +159,7 @@ func _check_wiring() -> void:
 	_expect("子" in mini and "卯" in mini, "小地图子午卯酉短标")
 	var mv := FileAccess.get_file_as_string("res://scripts/chart/MapView.gd")
 	_expect("size_px := 16" in mv or "size_px := 16 if" in mv, "港名字号抬升")
-	_expect("_px(26.0)" in mv, "船标避让放大")
+	_expect(SP.has_tok(mv, "_px(26.0)"), "船标避让放大")
 	for bad in ["惊艳", "沉浸", "打造", "视觉盛宴", "placeholder", "玩家", "点击"]:
 		_expect(bad not in _visible_strings(src), "SeaChart 可见文案无「%s」" % bad)
 

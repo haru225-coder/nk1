@@ -8,6 +8,7 @@ if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关�
     import gate_json; gate_json.maybe_json(__file__)
 
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
+from src_probe import has_func, calls, has_tok  # 按名认函数的探查一律经 tools/src_probe.py（lane cs15：不按前缀认名）
 FAIL = []
 
 
@@ -155,16 +156,16 @@ for n in news:
 _gm = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
 _gs = open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read()
 check("【酒馆传闻】" in _gm, "GameManager 投放新闻须用【酒馆传闻】前缀（空 speaker）")
-check("传闻约卖" in _gs and "func rumor_label" in _gs, "GameState.rumor_label 须保留「传闻约卖」上屏标签")
-check("_setup_news_wall" in main_src and "_TAVERN_NEWS_WALL" in main_src,
+check("传闻约卖" in _gs and has_func(_gs, "rumor_label"), "GameState.rumor_label 须保留「传闻约卖」上屏标签")
+check(has_func(main_src, "_setup_news_wall") and "_TAVERN_NEWS_WALL" in main_src,
       "酒馆须接新闻墙上墙（Main._setup_news_wall → _TAVERN_NEWS_WALL）")
 _tnw_path = os.path.join(ROOT, "scripts", "ui", "TavernNewsWall.gd")
 check(os.path.isfile(_tnw_path), "缺 scripts/ui/TavernNewsWall.gd（市井札薄）")
 if os.path.isfile(_tnw_path):
     _tnw = open(_tnw_path, encoding="utf-8").read()
-    check("paper_card" in _tnw and "recent_news" in _tnw and "news_text" in _tnw,
+    check(has_tok(_tnw, "paper_card", call=True) and has_tok(_tnw, "recent_news", call=True) and has_tok(_tnw, "news_text", call=True),
           "TavernNewsWall 须用 paper_card 渲 recent_news/news_text")
-    check("_TAVERN_NEWS_WALL.mount" in main_src, "Main._setup_news_wall 须调 _TAVERN_NEWS_WALL.mount")
+    check(calls(main_src, "_TAVERN_NEWS_WALL.mount"), "Main._setup_news_wall 须调 _TAVERN_NEWS_WALL.mount")
 
 # ── npcs.json ─────────────────────────────────────────
 npcs = load("npcs.json")["npcs"]
@@ -228,7 +229,7 @@ IDENT_MARKERS = {
 }
 for ident in sorted(IDENTITIES):
     markers = IDENT_MARKERS.get(ident, [f'identity == "{ident}"'])
-    check(any(mk in main_src for mk in markers),
+    check(any(has_tok(main_src, mk) for mk in markers),
           f"身份 {ident} 在 Main.gd 无任何收束分支（找过：{markers}）")
 
 # ── GameState 存档字段对称 ─────────────────────────────
@@ -347,10 +348,10 @@ for rk, rv in rel_from.items():
 # 上屏出口必须读文本层：人物志小传不再读 bio 原稿，见面页简介不再读 bio_short 原稿
 codex_src = open(os.path.join(ROOT, "scripts", "ui", "CharacterCodex.gd"), encoding="utf-8").read()
 art_src = open(os.path.join(ROOT, "scripts", "ui", "CharacterArt.gd"), encoding="utf-8").read()
-check('get("bio"' not in codex_src and "codex_bio(" in codex_src, "人物志小传仍读 characters.json 的 bio 原稿")
+check('get("bio"' not in codex_src and has_tok(codex_src, "codex_bio("), "人物志小传仍读 characters.json 的 bio 原稿")
 # 见面页在 NpcPage（Lane main5 自 Main 拆出）：简介在那边读，Main 里也不许回头读原稿
 npc_src = open(os.path.join(ROOT, "scripts", "ui", "NpcPage.gd"), encoding="utf-8").read()
-check('"bio_short"' not in main_src and '"bio_short"' not in npc_src and "codex_short(" in npc_src,
+check('"bio_short"' not in main_src and '"bio_short"' not in npc_src and has_tok(npc_src, "codex_short("),
       "见面页简介仍读 characters.json 的 bio_short 原稿")
 check("characters_codex.json" in art_src, "CharacterArt 未接人物志上屏文本层")
 
@@ -462,8 +463,8 @@ for rel in L1_UI_FILES:
           f"{rel} 出现原稿专用键（bio_short / portrait_note / portrait_src）")
 check(_ui_raw_keys >= 40, f"L1 只扫到 {_ui_raw_keys} 处人物字典直读，疑似正则失效")
 # CharacterArt / CharacterCodex / Main 上屏路径：bio 原稿不得经 get("bio") / bio_short 直出
-check("codex_bio(" in art_src or "codex_bio(" in codex_src, "上屏层未走 CharacterArt.codex_bio")
-check("codex_short(" in art_src or "codex_short(" in main_src, "上屏层未走 CharacterArt.codex_short")
+check(has_tok(art_src, "codex_bio(") or has_tok(codex_src, "codex_bio("), "上屏层未走 CharacterArt.codex_bio")
+check(has_tok(art_src, "codex_short(") or has_tok(main_src, "codex_short("), "上屏层未走 CharacterArt.codex_short")
 # 禁止 UI 脚本直接 FileAccess 打开 characters.json 的 bio 字段上屏（VisionStage 只取立绘允许）
 _vs_path = os.path.join(ROOT, "scripts", "ui", "VisionStage.gd")
 if os.path.isfile(_vs_path):

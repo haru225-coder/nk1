@@ -4,6 +4,7 @@ extends SceneTree
 ## godot --headless --path . -s res://tools/godot_smoke.gd
 
 const GateReport := preload("res://tools/gate_report.gd")  # -- --json 时只打一行 JSON（lane g2）
+const SP := preload("res://tools/src_probe.gd")  # 按名认函数的源码探查（lane cs15：不按前缀认名）
 
 
 func _init() -> void:
@@ -101,7 +102,7 @@ func _run() -> void:
 		"WorldMap 海洋贴图用导入 UID", fails)
 	_check(wm_tscn.find("按 Enter 停靠") < 0, "海战港名不再写停靠教程", fails)
 	var chart_src := FileAccess.get_file_as_string("res://scripts/SeaChart.gd")
-	_check(chart_src.find("style_heading(head)") >= 0 and chart_src.find("UiTheme.panel()") >= 0,
+	_check(SP.has_tok(chart_src, "style_heading(head)") and chart_src.find("UiTheme.panel()") >= 0,
 		"海图标题与遭遇弹层走绢本", fails)
 	_check(chart_src.find("CenterContainer") >= 0 and chart_src.find("Vector2(360, 200)") < 0,
 		"海图遭遇弹层居中", fails)
@@ -114,10 +115,10 @@ func _run() -> void:
 		and chart_src.find("Color(0.11, 0.08, 0.05, 0.55)") < 0,
 		"海图底图是绢本着色的舆图纹理", fails)
 	_check(chart_src.find("event_actions = VBoxContainer") >= 0
-		and chart_src.find("style_choice_button(b)") >= 0,
+		and SP.has_tok(chart_src, "style_choice_button(b)"),
 		"海图遭遇选项走竖排挑签", fails)
 	_check(chart_src.find("船况") >= 0
-		and chart_src.find("func _mount_condition") >= 0
+		and SP.has_func(chart_src, "_mount_condition")
 		and chart_src.find("Vector2(260, 0)") < 0
 		and chart_src.find("Vector2(300, 0)") < 0,
 		"海图左右栏收成顶匾，船况点开才占画面", fails)
@@ -126,7 +127,7 @@ func _run() -> void:
 	var meet_at := meet_src.find("static func show_npc_mode(")
 	var meet_end := meet_src.find("\nstatic func ", meet_at + 1)
 	var meet_body := meet_src.substr(meet_at, meet_end - meet_at).replace("main.", "") if meet_at >= 0 and meet_end > meet_at else ""
-	_check(meet_body.find("_begin_benches(npc_actions)") >= 0
+	_check(SP.has_tok(meet_body, "_begin_benches(npc_actions)")
 		and meet_body.find("SIZE_SHRINK_CENTER") >= 0,
 		"见面行情走工席，离开不再拉满宽", fails)
 	var theme_scr = load("res://scripts/core/UiTheme.gd")
@@ -405,19 +406,19 @@ func _run() -> void:
 	var save_at := save_src.find("static func show_save_dialog(")
 	var save_end := save_src.find("\nstatic func ", save_at + 1)
 	var save_body := save_src.substr(save_at, save_end - save_at).replace("main.", "") if save_at >= 0 and save_end > save_at else ""
-	_check(save_body.find("SaveSheet") >= 0 and save_body.find("_begin_benches(col)") >= 0
+	_check(save_body.find("SaveSheet") >= 0 and SP.has_tok(save_body, "_begin_benches(col)")
 		and save_body.find("SIZE_SHRINK_CENTER") >= 0
 		and save_body.find("Vector2(520, 0)") < 0
 		and save_body.find("style_choice_button(close)") < 0,
 		"航海日志三卷走工席，合上不再拉满宽", fails)
-	_check(main_src.find("OptionButton.new()") < 0 and main_src.find("_select_market_ship") >= 0,
+	_check(main_src.find("OptionButton.new()") < 0 and SP.has_tok(main_src, "_select_market_ship", true),
 		"牙行选船走账条小钮，不再用系统下拉", fails)
 	_check(main_src.find("买%d") < 0 and main_src.find("卖%d") < 0
 		and main_src.find("只购得 %d。") >= 0 and main_src.find("钱（") < 0,
 		"牙行小钮与买卖日志留出字距", fails)
 	_check(main_src.find("塞　50") >= 0 and main_src.find("关注　减 15") >= 0
 		and main_src.find("塞 50") < 0 and main_src.find("关注减 15") < 0
-		and main_src.replace("main.", "").find("UiTheme.plain_log(_gather_price_intel") >= 0,
+		and SP.has_tok(main_src.replace("main.", ""), "UiTheme.plain_log(_gather_price_intel"),
 		"见面册疏通留出字距，行情去掉方括号", fails)
 	_check(main_src.find("尚无人留意") >= 0 and main_src.find("偶有闲话传出") >= 0
 		and main_src.find("起了疑心") >= 0 and main_src.find("暗桩已盯死，出港必查") >= 0
@@ -456,17 +457,17 @@ func _run() -> void:
 	var tavern_i := tavern_src.find("static func setup_tavern(")
 	var tavern_j := tavern_src.find("\nstatic func ", tavern_i + 1)
 	var tavern_body := tavern_src.substr(tavern_i, tavern_j - tavern_i) if tavern_i >= 0 and tavern_j > tavern_i else ""
-	_check(tavern_body.find("_begin_benches") >= 0
-		and tavern_body.find("_add_leave_button") > tavern_body.find("_end_benches"),
+	_check(SP.has_tok(tavern_body, "_begin_benches", true)
+		and SP.tok_find(tavern_body, "_add_leave_button", 0, true) > SP.tok_find(tavern_body, "_end_benches", 0, true),
 		"酒馆募人排成工席，离开留在下面", fails)
-	_check(main_src.find("func _mount_status_strip") >= 0
-		and main_src.find("func _lift_ledger") >= 0
-		and main_src.find("func _begin_benches") >= 0,
+	_check(SP.has_func(main_src, "_mount_status_strip")
+		and SP.has_func(main_src, "_lift_ledger")
+		and SP.has_func(main_src, "_begin_benches"),
 		"船籍簿收成顶栏浮层，内页走工席", fails)
-	var port_i := main_src.find("func _setup_port_mode")
+	var port_i := SP.func_at(main_src, "_setup_port_mode")
 	var port_j := main_src.find("\nfunc ", port_i + 1)
 	var port_body := main_src.substr(port_i, port_j - port_i) if port_i >= 0 and port_j > port_i else ""
-	_check(port_body.find("left_panel.visible = true") < 0 and port_body.find("_show_strip(true)") >= 0,
+	_check(port_body.find("left_panel.visible = true") < 0 and SP.has_tok(port_body, "_show_strip(true)"),
 		"进港不再把船籍簿铺回左栏", fails)
 	var accent := Button.new()
 	UiTheme.style_button(accent, true)
@@ -479,18 +480,18 @@ func _run() -> void:
 			and _is_seal_text(accent.get_theme_color("font_pressed_color")),
 			"朱砂钮聚焦和按下仍是印面浅字", fails)
 	accent.free()
-	_check(main_src.find("func _skill_rank") >= 0 and main_src.find("★") < 0,
+	_check(SP.has_func(main_src, "_skill_rank") and main_src.find("★") < 0,
 		"职事品级写成初习/谙熟/老练，不再用星号", fails)
-	_check(main_src.find("func _fit_rank") >= 0 and main_src.find("帆Lv") < 0
+	_check(SP.has_func(main_src, "_fit_rank") and main_src.find("帆Lv") < 0
 		and main_src.find("Lv%d") < 0,
 		"船壳改装写成一等二等三等", fails)
-	_check(main_src.find("func _interior_title") >= 0 and main_src.find("未命名设施") < 0,
+	_check(SP.has_func(main_src, "_interior_title") and main_src.find("未命名设施") < 0,
 		"序章内页改写成港名去处，港卡不写未命名设施", fails)
-	_check(main_src.find("func _interior_lead") >= 0 and main_src.find("UiTheme.plain_log") >= 0,
+	_check(SP.has_func(main_src, "_interior_lead") and SP.calls(main_src, "UiTheme.plain_log"),
 		"序章内页进门有一句，日志走 plain_log", fails)
-	_check(chart_src.find("【发舶】") < 0 and chart_src.find("UiTheme.plain_log") >= 0,
+	_check(chart_src.find("【发舶】") < 0 and SP.calls(chart_src, "UiTheme.plain_log"),
 		"海图日志不再写发舶标签", fails)
-	_check(chart_src.find("func _bearing_phrase") >= 0 and chart_src.find("UiTheme.heading_card") >= 0
+	_check(SP.has_func(chart_src, "_bearing_phrase") and SP.calls(chart_src, "UiTheme.heading_card")
 		and chart_src.find("回港（不出海）") < 0 and chart_src.find("目的：") < 0
 		and chart_src.find("绕过去看看（费 1 日）") < 0 and chart_src.find("%d%%") < 0
 		and chart_src.find("°") < 0,
@@ -499,7 +500,7 @@ func _run() -> void:
 	var fx_src := FileAccess.get_file_as_string("res://scripts/combat/CombatFx.gd")
 	var flee_ok := chart_src.find("绕了些路。") >= 0 or (
 		(fx_src.find("绕了些路。") >= 0 or fx_src.find("绕路若干") >= 0)
-		and chart_src.find("sea_flee_ok_note") >= 0)
+		and SP.has_tok(chart_src, "sea_flee_ok_note", true))
 	_check(flee_ok and chart_src.find("（绕了些路）") < 0
 		and chart_src.find("（调试）") < 0 and chart_src.find("点验　中途遭遇。") >= 0
 		and voyage_src.find("损折：") < 0 and voyage_src.find("损折　") >= 0,
@@ -564,8 +565,8 @@ func _run() -> void:
 		"通用港含行会/贡院/住宅/寺观", fails)
 	_check(main_src.find('begins_with("city_")') >= 0,
 		"load_scene 跳过 city_ 前缀", fails)
-	_check(main_src.find("func _setup_guild") >= 0 and main_src.find("func _setup_exam") >= 0
-		and main_src.find("func _setup_residence") >= 0 and main_src.find("func _setup_temple") >= 0,
+	_check(SP.has_func(main_src, "_setup_guild") and SP.has_func(main_src, "_setup_exam")
+		and SP.has_func(main_src, "_setup_residence") and SP.has_func(main_src, "_setup_temple"),
 		"行会/贡院/住宅/寺观有动态页", fails)
 	_check(main_src.find("HOME_RATE") >= 0 and main_src.find("INN_RATE") >= 0,
 		"住处与旅店房价分开", fails)
@@ -581,7 +582,7 @@ func _run() -> void:
 	var look_i := res_src.find("static func on_temple_look(")
 	var look_j := res_src.find("\nstatic func ", look_i + 1) if look_i >= 0 else -1
 	var look_body := res_src.substr(look_i, look_j - look_i).replace("main.", "") if look_i >= 0 and look_j > look_i else ""
-	_check(look_body.find("record_discovery") >= 0 and look_body.find("add_fame") < 0
+	_check(SP.has_tok(look_body, "record_discovery", true) and look_body.find("add_fame") < 0
 		and look_body.find("report_discovery") < 0,
 		"寺观细看只记入册、不给名声", fails)
 	var rub_i := res_src.find("static func on_temple_rub(")
@@ -589,7 +590,7 @@ func _run() -> void:
 	if rub_i >= 0 and rub_j < 0:
 		rub_j = res_src.length()  # on_temple_rub 是拆出件末支，切到文件尾
 	var rub_body := res_src.substr(rub_i, rub_j - rub_i).replace("main.", "") if rub_i >= 0 and rub_j > rub_i else ""
-	_check(rub_body.find("add_ledger_note") >= 0 and rub_body.find("add_fame") < 0
+	_check(SP.has_tok(rub_body, "add_ledger_note", true) and rub_body.find("add_fame") < 0
 		and rub_body.find("report_discovery") < 0,
 		"寺观拓碑只写入边记、不给名声", fails)
 	var fame_before_rub: int = int(gs.fame)
@@ -636,12 +637,12 @@ func _run() -> void:
 		"章目写成已行多少，亲至港名用空格隔开，门槛仍是五千与五港",
 		fails,
 	)
-	var enter_i2 := main_src.find("func _on_enter_port")
+	var enter_i2 := SP.func_at(main_src, "_on_enter_port")
 	var enter_j2 := main_src.find("\nfunc ", enter_i2 + 1)
 	var enter_body2 := main_src.substr(enter_i2, enter_j2 - enter_i2) if enter_i2 >= 0 and enter_j2 > enter_i2 else ""
 	_check(
-		enter_body2.find("visit_port") >= 0
-			and enter_body2.find("update_status_panel") > enter_body2.find("visit_port"),
+		SP.has_tok(enter_body2, "visit_port", true)
+			and SP.tok_find(enter_body2, "update_status_panel", 0, true) > SP.tok_find(enter_body2, "visit_port", 0, true),
 		"进港后船籍簿按已走通的港重写",
 		fails,
 	)
@@ -763,7 +764,7 @@ func _check_characters(gm: Node, main_src: String, fails: Array) -> void:
 	var meet_i := npc_src.find("static func show_npc_mode(")
 	var meet_j := npc_src.find("\nstatic func ", meet_i + 1)
 	var meet := npc_src.substr(meet_i, meet_j - meet_i) if meet_i >= 0 and meet_j > meet_i else ""
-	_check(meet.find("character_for_npc") >= 0 and meet.find("res://assets/sprite_") > meet.find("character_for_npc"),
+	_check(SP.has_tok(meet, "character_for_npc", true) and meet.find("res://assets/sprite_") > SP.tok_find(meet, "character_for_npc", 0, true),
 		"见面页立绘先认 characters.json，缺了才回落 sprite_ 旧图", fails)
 	var codex_scr = load("res://scripts/ui/CharacterCodex.gd")
 	_check(codex_scr != null, "人物志脚本能编译", fails)

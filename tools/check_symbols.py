@@ -503,12 +503,9 @@ def func_bodies(src):
 #   _has_func：行首 `[static ]func 名字(`（名尾须紧跟括号，不认 X_v2 / 注释 / 文案里的字样）；
 #   _calls：按名调用 `名字(` 或取 Callable `名字.bind(` / `.call(`（名前不接标识符或点、名尾不吃后缀）；
 #           名字可带宿主（`ShoreDraft.deal`），宿主前同样不接标识符或点。新写「有没有这支函数 / 调没调」的断言用它们。
-def _has_func(src, name):
-    return re.search(rf"^[ \t]*(?:static\s+)?func\s+{re.escape(name)}\s*\(", src, re.M) is not None
-
-
-def _calls(src, name):
-    return re.search(rf"(?<![\w.]){re.escape(name)}\s*(?:\(|\.(?:bind|call|callv)\s*\()", src) is not None
+#   lane cs15：两支搬进 tools/src_probe.py（与 verify_economy 等共用），另加 _has_tok / _tok_find / _tok_count——
+#   带参调用 `X(args)`、定位锚 find、计数 count 同样按标识符边界认（`add_fame(3)` 不认 `_add_fame(3)`）。
+from src_probe import has_func as _has_func, calls as _calls, has_tok as _has_tok, tok_find as _tok_find, tok_count as _tok_count
 
 order_idx = {name: i for i, name in enumerate(order)}
 ready_problems = []
@@ -1605,7 +1602,7 @@ for dirpath, _, files in os.walk(SCRIPTS):
         if fn == "Voyage.gd":
             with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
                 voyage_src = f.read()
-if "armor_damage_reduction" in voyage_src:
+if _has_tok(voyage_src, "armor_damage_reduction", call=True):
     print("  ✓ Voyage 风暴伤害已乘 armor_damage_reduction")
 else:
     print("  ✗ Voyage 风暴伤害未乘 armor_damage_reduction——甲等级无消费点")
@@ -1617,8 +1614,8 @@ for dirpath, _, files in os.walk(SCRIPTS):
         if fn == "SeaChart.gd":
             with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
                 seachart_src = f.read()
-uses_in_power = "fleet_armor_level" in seachart_src
-uses_in_dmg = seachart_src.count("armor_damage_reduction") >= 1
+uses_in_power = _has_tok(seachart_src, "fleet_armor_level", call=True)
+uses_in_dmg = _tok_count(seachart_src, "armor_damage_reduction", call=True) >= 1
 if uses_in_power:
     print("  ✓ SeaChart 战力已计入 fleet_armor_level")
 else:
@@ -1627,7 +1624,7 @@ else:
 if uses_in_dmg:
     print("  ✓ SeaChart 海盗船体伤已乘 armor_damage_reduction（P4-1 起结算不补扣耐久，保底 flee 仍乘）")
 else:
-    print(f"  ✗ SeaChart armor_damage_reduction 使用次数不足（期望 ≥1，实际 {seachart_src.count('armor_damage_reduction')}）")
+    print(f"  ✗ SeaChart armor_damage_reduction 使用次数不足（期望 ≥1，实际 {_tok_count(seachart_src, 'armor_damage_reduction', call=True)}）")
     problems.append("SeaChart 海盗伤害未消费 armor")
 
 # 升级 API 满级防御：upgrade_* 应返回 bool 且只在非满级时改写等级
@@ -1715,7 +1712,7 @@ else:
     problems.append("WorldMap.battle_finished 信号未声明")
 
 # 4. Ship._sink_ship 战斗守卫
-if "pending_battle" in ship_src and "_battle_player_sunk" in ship_src:
+if "pending_battle" in ship_src and _has_tok(ship_src, "_battle_player_sunk", call=True):
     print("  ✓ Ship._sink_ship 含战斗守卫（战斗期不切场景）")
 else:
     print("  ✗ Ship._sink_ship 缺少战斗守卫")
@@ -1904,7 +1901,7 @@ else:
     problems.append("WorldMap 未写 cannon_count")
 
 # 4. Cannonball：引用 armor_damage_reduction（玩家船受击乘甲）
-if "armor_damage_reduction" in cannonball_src:
+if _has_tok(cannonball_src, "armor_damage_reduction", call=True):
     print("  ✓ Cannonball 伤害已乘 armor_damage_reduction")
 else:
     print("  ✗ Cannonball 未引用 armor_damage_reduction——甲等级无实时消费点")
@@ -1929,13 +1926,15 @@ for f in gs_need:
         problems.append(f"GameState.{f} 未定义")
 
 main_src = read_main_src()
+# 文案点名 Main.apply_effects「写入」——三键按 apply_effects 函数体认（lane cs15：原先查整份 Main，别处出现同名键字面量也算写入）
+_ae_body = _locate_func(main_src, "apply_effects")
 for ok, label in (
     (_calls(main_src, "GameState.choice_visible"), "Main.show_choices 过滤不可见选项"),
     (_calls(main_src, "GameState.scene_unlocked"), "Main.load_scene 守剧情门槛"),
     (_calls(main_src, "GameState.story_hooks_at"), "Main 酒馆接旧事钩子"),
-    ('"network"' in main_src, "Main.apply_effects 写入人脉"),
-    ('"merchant_credit"' in main_src, "Main.apply_effects 写入海商信用"),
-    ('"ledger_note"' in main_src, "Main.apply_effects 写入边记"),
+    ('"network"' in _ae_body, "Main.apply_effects 写入人脉"),
+    ('"merchant_credit"' in _ae_body, "Main.apply_effects 写入海商信用"),
+    ('"ledger_note"' in _ae_body, "Main.apply_effects 写入边记"),
     (_calls(main_src, "GameState.try_advance_chapter"), "Main 入港结算晋升/了结"),
 ):
     if ok:
@@ -1947,7 +1946,7 @@ for ok, label in (
 crew_src = ""
 with open(os.path.join(SCRIPTS, "core", "Crew.gd"), encoding="utf-8") as f:
     crew_src = f.read()
-if "flag_requirement_met" in crew_src and _has_func(crew_src, "candidates_at"):
+if _has_tok(crew_src, "flag_requirement_met", call=True) and _has_func(crew_src, "candidates_at"):
     print("  ✓ Crew.candidates_at 守旗标门槛")
 else:
     print("  ✗ Crew.candidates_at 未守旗标门槛")
@@ -1981,7 +1980,7 @@ if _has_func(chart_src, "_debug_force_pirate") and "KEY_F10" in chart_src:
 else:
     print("  ✗ SeaChart 无 F10 海盗点验入口")
     problems.append("SeaChart 无 F10")
-if "_debug_jump_port" in main_src and "KEY_F11" in main_src:
+if _has_func(main_src, "_debug_jump_port") and "KEY_F11" in main_src:
     print("  ✓ Main F11 可跳到泉州港")
     dbg = _locate_func(main_src, "_debug_jump_port")
     if "fuzhou" in dbg and "xinghua" in dbg:
@@ -2019,7 +2018,7 @@ if "COMBAT_FIRE_DELAY" in wm_src and "fire_timer" in wm_src:
 else:
     print("  ✗ 开战未给敌船接敌延迟")
     problems.append("开战未给敌船接敌延迟")
-if "c is CanvasItem" in chart_src and "_enter_battle" in chart_src:
+if "c is CanvasItem" in chart_src and _has_func(chart_src, "_enter_battle"):
     print("  ✓ SeaChart 开战收起全屏栏")
 else:
     print("  ✗ SeaChart 开战未收起全屏栏")
@@ -2179,7 +2178,7 @@ else:
     print("  ✗ 存档弹窗未套绢本主题")
     problems.append("存档弹窗未套绢本主题")
 if (
-    "_begin_benches(col)" in save_body
+    _has_tok(save_body, "_begin_benches(col)")
     and "SIZE_SHRINK_CENTER" in save_body
     and "Vector2(520, 0)" not in save_body
     and "style_choice_button(close)" not in save_body
@@ -2296,7 +2295,7 @@ else:
         and "const JUANBEN := {" in theme_src_tide
         and "const YECHAO := {" in theme_src_tide
         and "if IS_JUANBEN" in _panel_body
-        and "_ink_panel(" in _panel_body
+        and _has_tok(_panel_body, "_ink_panel(")
         and "熟漆面板" not in theme_src_tide
     ):
         print("  ✓ 面板是绢本暖墨（夜潮原值留在 YECHAO 表里可一键切回）")
@@ -2331,7 +2330,7 @@ if (
     and "今日只开三处。" in main_src
     and _calls(main_src, "ShoreDraft.deal")
     and '"shore_salt"' in gs_src_draft
-    and "func shore_door" in theme_src_tide
+    and _has_func(theme_src_tide, "shore_door")
     and "func _add_sail_button" not in main_src
 ):
     print("  ✓ 进港改成今日只开三处")
@@ -2412,7 +2411,7 @@ yard_fn = _func_body(main_src, "_setup_shipyard")
 switch_fn = _func_body(main_src, "_on_berth_switch")
 if (
     "class_name DrydockBerth" in dry_src
-    and "DrydockBerth.berth_index" in yard_fn
+    and _calls(yard_fn, "DrydockBerth.berth_index")
     and _calls(yard_fn, "DrydockBerth.sale_ids")
     and "坞上只搁一艘。帆和甲对着这一艘。水粮与赊贷仍在码头。" in yard_fn
     and "换上　" in yard_fn
@@ -2421,7 +2420,7 @@ if (
     and "advance_days" not in yard_fn
     and "advance_days" not in switch_fn
     and '"berth_index"' in gs_src_draft
-    and "func _on_upgrade" in main_src
+    and _has_func(main_src, "_on_upgrade")
 ):
     print("  ✓ 船屋改成坞位一艘")
 else:
@@ -2435,14 +2434,14 @@ buy_fn = _func_body(main_src, "_on_buy_ship")
 upgrade_fn = _func_body(main_src, "_on_upgrade")
 yard_ok_fn = _func_body(main_src, "_yard_success_transition")
 if (
-    "func drydock_title" in ut_src_yard
-    and "func drydock_seal" in ut_src_yard
-    and "func drydock_open" in ut_src_yard
+    _has_func(ut_src_yard, "drydock_title")
+    and _has_func(ut_src_yard, "drydock_seal")
+    and _has_func(ut_src_yard, "drydock_open")
     and '"修"' in ut_src_yard and '"购"' in ut_src_yard and '"坞"' in ut_src_yard
-    and "drydock_title(" in yard_ok_fn and "drydock_seal(" in yard_ok_fn
-    and "_yard_success_transition" in repair_fn and "船匠敲了一日" in repair_fn
-    and "_yard_success_transition" in buy_fn and "泊在坞外。水手未齐。" in buy_fn
-    and "_yard_success_transition" in switch_fn
+    and _has_tok(yard_ok_fn, "drydock_title(") and _has_tok(yard_ok_fn, "drydock_seal(")
+    and _calls(repair_fn, "_yard_success_transition") and "船匠敲了一日" in repair_fn
+    and _calls(buy_fn, "_yard_success_transition") and "泊在坞外。水手未齐。" in buy_fn
+    and _calls(switch_fn, "_yard_success_transition")
     and 'act = "升帆"' in upgrade_fn and 'act = "升甲"' in upgrade_fn
     and os.path.exists(os.path.join(ROOT, "tools", "qa_drydock_probe.gd"))
 ):
@@ -2493,7 +2492,7 @@ else:
     print("  ✗ 日期仍是半角空格，或酒馆行情仍写费 1 日")
     problems.append("日期或酒馆行情仍是半角记法")
 tavern_body = _locate_func(main_src, "_setup_tavern")
-if "_begin_benches" in tavern_body and tavern_body.find("_add_leave_button") > tavern_body.find("_end_benches"):
+if _calls(tavern_body, "_begin_benches") and _tok_find(tavern_body, "_add_leave_button", call=True) > _tok_find(tavern_body, "_end_benches", call=True):
     print("  ✓ 酒馆募人排成工席，离开留在下面")
 else:
     print("  ✗ 酒馆离开未留在工席下面")
@@ -2535,43 +2534,43 @@ else:
     problems.append("酒馆募人 Lane AB 契约未接")
 port_body = _locate_func(main_src, "_setup_port_mode")
 if (
-    "func _mount_status_strip" in main_src
-    and "func _lift_ledger" in main_src
-    and "func _begin_benches" in main_src
+    _has_func(main_src, "_mount_status_strip")
+    and _has_func(main_src, "_lift_ledger")
+    and _has_func(main_src, "_begin_benches")
     and "left_panel.visible = true" not in port_body
-    and "_show_strip(true)" in port_body
+    and _has_tok(port_body, "_show_strip(true)")
 ):
     print("  ✓ 船籍簿收成顶栏，进港不再铺回左栏")
 else:
     print("  ✗ 船籍簿仍占左栏，或内页没有工席")
     problems.append("船籍簿仍占左栏，或内页没有工席")
-if "★" not in main_src and "func _skill_rank" in main_src and "Crew.rank_word" in main_src and "func rank_word" in crew_src:
+if "★" not in main_src and _has_func(main_src, "_skill_rank") and _calls(main_src, "Crew.rank_word") and _has_func(crew_src, "rank_word"):
     print("  ✓ 职事品级写成初习/谙熟/老练")
 else:
     print("  ✗ 职事仍用星号")
     problems.append("职事仍用星号")
-if "func _fit_rank" in main_src and "帆Lv" not in main_src and "Lv%d" not in main_src:
+if _has_func(main_src, "_fit_rank") and "帆Lv" not in main_src and "Lv%d" not in main_src:
     print("  ✓ 船壳改装写成一等/二等/三等")
 else:
     print("  ✗ 船壳改装仍写 Lv")
     problems.append("船壳改装仍写 Lv")
-if "func _interior_title" in main_src and "未命名设施" not in main_src:
+if _has_func(main_src, "_interior_title") and "未命名设施" not in main_src:
     print("  ✓ 序章内页改写成港名去处")
 else:
     print("  ✗ 序章内页或港卡仍是占位名")
     problems.append("序章内页或港卡仍是占位名")
-if "func _interior_lead" in main_src and "static func plain_log" in theme_src and "UiTheme.plain_log" in main_src:
+if _has_func(main_src, "_interior_lead") and _has_func(theme_src, "plain_log", static=True) and _calls(main_src, "UiTheme.plain_log"):
     print("  ✓ 序章内页进门有一句，日志去掉方括号标签")
 else:
     print("  ✗ 内页正文或日志标签未收")
     problems.append("内页正文或日志标签未收")
-if "【发舶】" not in seachart_src and "UiTheme.plain_log" in seachart_src:
+if "【发舶】" not in seachart_src and _calls(seachart_src, "UiTheme.plain_log"):
     print("  ✓ 海图日志不再写发舶标签")
 else:
     print("  ✗ 海图日志仍写发舶标签")
     problems.append("海图日志仍写发舶标签")
 if (
-    "func _bearing_phrase" in seachart_src
+    _has_func(seachart_src, "_bearing_phrase")
     and _calls(seachart_src, "UiTheme.heading_card")
     and "回港（不出海）" not in seachart_src
     and "目的：" not in seachart_src
@@ -2587,11 +2586,11 @@ _fx_src_k = open(os.path.join(SCRIPTS, "combat", "CombatFx.gd"), encoding="utf-8
 _flee_ok_literal = (
     seachart_src.count("绕了些路。") == 1
     or (("绕了些路。" in _fx_src_k or "绕路若干" in _fx_src_k)
-        and "sea_flee_ok_note" in seachart_src)
+        and _has_tok(seachart_src, "sea_flee_ok_note", call=True))
 )
 if (
     _flee_ok_literal
-    and seachart_src.count("_log_shook_pursuers()") == 3
+    and _tok_count(seachart_src, "_log_shook_pursuers()") == 3
     and "（绕了些路）" not in seachart_src
     and "（调试）" not in seachart_src
     and "点验　中途遭遇。" in seachart_src
@@ -2638,7 +2637,7 @@ else:
     print("  ✗ 章目、修埠或拓碑仍是半角或冒号")
     problems.append("章目、修埠或拓碑仍是半角或冒号")
 enter_body = _locate_func(main_src, "_on_enter_port")
-if "visit_port" in enter_body and enter_body.find("update_status_panel") > enter_body.find("visit_port"):
+if _has_tok(enter_body, "visit_port", call=True) and _tok_find(enter_body, "update_status_panel", call=True) > _tok_find(enter_body, "visit_port", call=True):
     print("  ✓ 进港后船籍簿按已走通的港重写")
 else:
     print("  ✗ 进港后船籍簿未按已走通的港重写")
@@ -2719,7 +2718,7 @@ if "Color(0.2, 0.4, 0.6" in main_src:
     problems.append("NPC 按钮蓝底硬编码")
 else:
     print("  ✓ NPC 按钮不再用蓝底硬编码")
-if "hook_buttons(npc_actions)" in main_src:
+if _has_tok(main_src, "hook_buttons(npc_actions)"):
     print("  ✓ 人物对话按钮挂钩 UiTheme")
 else:
     print("  ✗ npc_actions 未挂钩 UiTheme")
@@ -2735,24 +2734,24 @@ if re.search(r"^static func style_choice_button\b", theme_src, re.M):
 else:
     print("  ✗ UiTheme.style_choice_button 未定义")
     problems.append("UiTheme.style_choice_button 未定义")
-if "style_choice_button" in main_src and "func show_choices" in main_src:
+if _has_tok(main_src, "style_choice_button", call=True) and _has_func(main_src, "show_choices"):
     print("  ✓ 剧情选项走挑签样式")
 else:
     print("  ✗ 剧情选项未走挑签样式")
     problems.append("剧情选项未走挑签")
-if "style_heading(scene_title)" in main_src and "style_body(body_text)" in main_src:
+if _has_tok(main_src, "style_heading(scene_title)") and _has_tok(main_src, "style_body(body_text)"):
     print("  ✓ 调查页标题/正文走字阶")
 else:
     print("  ✗ 调查页未接线字阶")
     problems.append("调查页未接线字阶")
-if "style_heading(head)" in seachart_src and "style_body(status_label)" in seachart_src:
+if _has_tok(seachart_src, "style_heading(head)") and _has_tok(seachart_src, "style_body(status_label)"):
     print("  ✓ 海图标题/状态栏走字阶")
 else:
     print("  ✗ 海图未接线字阶")
     problems.append("海图未接线字阶")
 if (
     "船况" in seachart_src
-    and "func _mount_condition" in seachart_src
+    and _has_func(seachart_src, "_mount_condition")
     and "Vector2(260, 0)" not in seachart_src
     and "Vector2(300, 0)" not in seachart_src
 ):
@@ -2761,7 +2760,7 @@ else:
     print("  ✗ 海图仍铺左右栏")
     problems.append("海图仍铺左右栏")
 meet_body = _func_body(main_src, "_show_npc_mode")
-if "_begin_benches(npc_actions)" in meet_body and "SIZE_SHRINK_CENTER" in meet_body:
+if _has_tok(meet_body, "_begin_benches(npc_actions)") and "SIZE_SHRINK_CENTER" in meet_body:
     print("  ✓ 见面行情走工席，离开不再拉满宽")
 else:
     print("  ✗ 见面仍是满宽细条")
@@ -2783,7 +2782,9 @@ else:
     problems.append("海图遭遇弹层未居中")
 mapview_src_cs = open(os.path.join(ROOT, "scripts", "chart", "MapView.gd"), encoding="utf-8").read() if os.path.exists(os.path.join(ROOT, "scripts", "chart", "MapView.gd")) else ""
 # 2026-09-25 海图重制：港名与底图都移到 scripts/chart/MapView.gd——港名走《地理图》式朱砂方框加蛤粉内填，底图是舆图纹理经绢本着色器
-if "COL_SHELL" in mapview_src_cs and "draw_rect(box" in mapview_src_cs and "draw_string(font, v + Vector2(8, 5)" not in seachart_src:
+# 文案点名 MapView._draw_ports——蛤粉底与方框按 _draw_ports 函数体认（lane cs15：原先查整份 MapView，别的画法用了 COL_SHELL 也算）
+_draw_ports_body = _locate_func(mapview_src_cs, "_draw_ports")
+if "COL_SHELL" in _draw_ports_body and "draw_rect(box" in _draw_ports_body and "draw_string(font, v + Vector2(8, 5)" not in seachart_src:
     print("  ✓ 海图港名走方框蛤粉签（MapView._draw_ports）")
 else:
     print("  ✗ 海图港名仍是裸字")
@@ -2793,7 +2794,7 @@ if "ChartTerrain.gdshader" in mapview_src_cs and "terrain_4096.png" in mapview_s
 else:
     print("  ✗ 海图中栏仍铺熟漆")
     problems.append("海图中栏未改绢纸")
-if "event_actions = VBoxContainer" in seachart_src and "style_choice_button(b)" in seachart_src:
+if "event_actions = VBoxContainer" in seachart_src and _has_tok(seachart_src, "style_choice_button(b)"):
     print("  ✓ 海图遭遇选项走竖排挑签")
 else:
     print("  ✗ 海图遭遇选项未走挑签")
@@ -2842,12 +2843,12 @@ for f in ("invest", "invest_cost", "investment_level", "invest_edge",
         print(f"  ✗ Economy.{f} 未定义")
         problems.append(f"Economy.{f} 未定义")
 
-if "title_duty_factor" in eco_src:
+if _has_tok(eco_src, "title_duty_factor", call=True):
     print("  ✓ Economy 定价乘职衔抽解")
 else:
     print("  ✗ Economy 定价未乘职衔")
     problems.append("Economy 未乘职衔")
-if 'role == "origin"' in eco_src and 'role == "consumer"' in eco_src and "invest_edge" in eco_src:
+if 'role == "origin"' in eco_src and 'role == "consumer"' in eco_src and _has_tok(eco_src, "invest_edge", call=True):
     print("  ✓ Economy 修埠按产地/消费地同向调单位价")
 else:
     print("  ✗ Economy 修埠未按角色同向调价")
@@ -2857,41 +2858,41 @@ if '"investments"' in eco_src:
 else:
     print("  ✗ Economy 存档缺 investments")
     problems.append("Economy 存档缺 investments")
-if "title_loan_bonus" in gs_src and _has_func(gs_src, "borrow_limit"):
+if _has_tok(gs_src, "title_loan_bonus", call=True) and _has_func(gs_src, "borrow_limit"):
     print("  ✓ 赊贷上限吃职衔加成")
 else:
     print("  ✗ 赊贷上限未吃职衔加成")
     problems.append("borrow_limit 未接职衔")
-if "title_duty_factor" in gs_src and _has_func(gs_src, "customs_duty"):
+if _has_tok(gs_src, "title_duty_factor", call=True) and _has_func(gs_src, "customs_duty"):
     print("  ✓ 货引抽解吃职衔折让")
 else:
     print("  ✗ 货引抽解未吃职衔")
     problems.append("customs_duty 未接职衔")
-if "add_fame(" in main_src and "fame +=" not in main_src.replace("add_fame", ""):
+if _has_tok(main_src, "add_fame(") and "fame +=" not in main_src.replace("add_fame", ""):
     print("  ✓ Main 名声走 add_fame")
 else:
-    if "add_fame(" in main_src:
+    if _has_tok(main_src, "add_fame("):
         print("  ✓ Main 名声走 add_fame")
     else:
         print("  ✗ Main 未走 add_fame")
         problems.append("Main 未走 add_fame")
-if "_setup_title_and_invest" in main_src and "向本港投钱修埠" in main_src:
+if _has_func(main_src, "_setup_title_and_invest") and "向本港投钱修埠" in main_src:
     print("  ✓ 市舶司有职衔说明与修埠钮")
 else:
     print("  ✗ 市舶司未接职衔/修埠")
     problems.append("市舶司未接职衔修埠")
 dyn = _locate_func(main_src, "_setup_dynamic_scene")
-if "update_status_panel()" in dyn:
+if _has_tok(dyn, "update_status_panel()"):
     print("  ✓ 设施页重载刷新状态栏（修埠/买卖后金钱可见）")
 else:
     print("  ✗ _setup_dynamic_scene 未刷新状态栏")
     problems.append("_setup_dynamic_scene 未刷新状态栏")
-if "title_name()" in seachart_src:
+if _has_tok(seachart_src, "title_name()"):
     print("  ✓ 海图状态栏显示职衔")
 else:
     print("  ✗ 海图状态栏无职衔")
     problems.append("海图无职衔")
-if "add_fame(3)" in seachart_src:
+if _has_tok(seachart_src, "add_fame(3)"):
     print("  ✓ 海战胜仗名声走 add_fame")
 else:
     print("  ✗ 海战胜仗仍直接改 fame")
@@ -2988,17 +2989,17 @@ else:
 p7_bodies = func_bodies(main_src)
 join_body = _p7_code(p7_bodies.get("_on_guild_join", ""))
 block_body = _p7_code(p7_bodies.get("_guild_join_block", ""))
-if not join_body or not block_body or "_add_guild_join_slip" not in p7_bodies.get("_setup_guild", ""):
+if not join_body or not block_body or not _calls(p7_bodies.get("_setup_guild", ""), "_add_guild_join_slip"):
     print("  ✗ 行会入行未接线（_setup_guild → _add_guild_join_slip / _on_guild_join / _guild_join_block）")
     problems.append("行会入行未接线")
 elif any(tok in join_body + block_body for tok in ("Economy", "price_at_rate", "tariff", "commission")):
     print("  ✗ 入行动了行情 / 抽解 / 佣金")
     problems.append("入行不得改行情抽解佣金")
-elif not all(tok in block_body for tok in ("GUILD_JOIN_PORTS", "has_flag", "merchant_credit < GUILD_JOIN_CREDIT", "money < GUILD_JOIN_FEE")):
+elif not all(_has_tok(block_body, tok) for tok in ("GUILD_JOIN_PORTS", "has_flag", "merchant_credit < GUILD_JOIN_CREDIT", "money < GUILD_JOIN_FEE")):
     print("  ✗ 入行缘由未查齐（港口 / 已入行 / 商誉 / 现钱）")
     problems.append("入行门槛不全")
-elif not (0 <= join_body.find("_guild_join_block") < join_body.find("spend_money(GUILD_JOIN_FEE)")
-          < join_body.find('set_flag("guild_%s" % port_id)')):
+elif not (0 <= _tok_find(join_body, "_guild_join_block", call=True) < _tok_find(join_body, "spend_money(GUILD_JOIN_FEE)")
+          < _tok_find(join_body, 'set_flag("guild_%s" % port_id)')):
     print("  ✗ 入行须先查门槛、再扣会费、后记 guild_<港> 旗标")
     problems.append("入行顺序不对")
 elif not ("merchant_credit += GUILD_JOIN_CREDIT_GAIN" in join_body and "network += GUILD_JOIN_NETWORK_GAIN" in join_body):
@@ -3007,7 +3008,7 @@ elif not ("merchant_credit += GUILD_JOIN_CREDIT_GAIN" in join_body and "network 
 else:
     print("  ✓ 入行先查门槛再扣 2000，记 guild_<港>，不碰行情抽解佣金")
 slip_body = _p7_code(p7_bodies.get("_add_guild_join_slip", ""))
-if "has_flag" in slip_body and "本港已入行" in slip_body and slip_body.find("本港已入行") < slip_body.find("_on_guild_join"):
+if _has_tok(slip_body, "has_flag", call=True) and "本港已入行" in slip_body and slip_body.find("本港已入行") < _tok_find(slip_body, "_on_guild_join", call=True):
     print("  ✓ 已入行只看账，不再出交费钮")
 else:
     print("  ✗ 已入行仍出交费钮")
@@ -3057,7 +3058,7 @@ def _guild_remap_contract(src):
     if not suffixes or '"_guild"' not in suffixes.group(1):
         errs.append("FACILITY_SUFFIXES 缺 _guild")
     dyn = _p7_code(body("_setup_dynamic_scene"))
-    if "scene_id.trim_suffix(suffix)" not in dyn or "_setup_guild(base_loc)" not in dyn:
+    if "scene_id.trim_suffix(suffix)" not in dyn or not _has_tok(dyn, "_setup_guild(base_loc)"):
         errs.append("_guild 页未剥后缀进 _setup_guild")
     helper = body("_guild_port_id")
     # 四个入口第一句就归一，port_id 在此之前不许被用
@@ -3067,15 +3068,15 @@ def _guild_remap_contract(src):
     join = _p7_code(body("_on_guild_join"))
     block = _p7_code(body("_guild_join_block"))
     slip = _p7_code(body("_add_guild_join_slip"))
-    if join.count("spend_money(") != 1 or "add_money(" in join or "money -=" in join:
+    if _tok_count(join, "spend_money(") != 1 or "add_money(" in join or "money -=" in join:
         errs.append("_on_guild_join 扣费不止一处")
-    flag_set = join.find('set_flag("guild_%s" % port_id)')
+    flag_set = _tok_find(join, 'set_flag("guild_%s" % port_id)')
     first_await = join.find("await ")
     if flag_set < 0 or (first_await >= 0 and first_await < flag_set):
         errs.append("guild_<港> 旗标须在 await 过渡前写上（过渡中再按会二次扣费）")
-    if 'has_flag("guild_%s" % port_id)' not in block:
+    if not _has_tok(block, 'has_flag("guild_%s" % port_id)'):
         errs.append("_guild_join_block 已入行判定与 set_flag 键不同")
-    if "_on_guild_join.bind(port_id)" not in slip:
+    if not _has_tok(slip, "_on_guild_join.bind(port_id)"):
         errs.append("入行钮未绑归一后的 port_id")
     for port in GUILD_DESIGN_PORTS:
         # 港页实际 id：剧情港取 scenes.json 的 port 场景，其余港走 ports.json + GENERIC_FACILITIES
@@ -3134,38 +3135,38 @@ else:
     print("  ✗ EXAM_SIT_DAYS 不是 15")
     problems.append("赴试天数漂移")
 sit_body = _p7_code(p7_bodies.get("_on_exam_sit", ""))
-if not sit_body or "_on_exam_sit" not in p7_bodies.get("_setup_exam", ""):
+if not sit_body or not _calls(p7_bodies.get("_setup_exam", ""), "_on_exam_sit"):
     print("  ✗ 贡院赴试未接线")
     problems.append("贡院赴试未接线")
 elif any(tok in sit_body for tok in ("add_money", "spend_money", "chapter =", "chapter +=", "Fleet.")):
     print("  ✗ 赴试发了钱、跳了章或动了船")
     problems.append("赴试不得发钱跳章改船")
 elif not ('"exam_sat_ch%d" % GameState.chapter' in _p7_code(p7_bodies.get("_exam_sat_flag", ""))
-          and "_exam_sat_flag()" in sit_body and "has_flag(chapter_flag)" in sit_body
-          and "advance_days(EXAM_SIT_DAYS)" in sit_body):
+          and _has_tok(sit_body, "_exam_sat_flag()") and _has_tok(sit_body, "has_flag(chapter_flag)")
+          and _has_tok(sit_body, "advance_days(EXAM_SIT_DAYS)")):
     print("  ✗ 赴试未按 exam_sat_ch<章> 每章一次、费 EXAM_SIT_DAYS")
     problems.append("赴试每章一次未接")
-elif not all(tok in sit_body for tok in (
+elif not all(_has_tok(sit_body, tok) for tok in (
     "scholar_tendency >= GameState.sea_tendency", "add_fame(4)", "scholar_tendency += 2",
     'set_flag("exam_sat")', "add_fame(1)", "sea_tendency += 1",
 )):
     print("  ✗ 赴试结算漂移（学者不输海路 +4/+2/exam_sat，否则 +1/海路 +1）")
     problems.append("赴试结算漂移")
-elif sit_body.find('set_flag("exam_sat")') > sit_body.find("else:"):
+elif _tok_find(sit_body, 'set_flag("exam_sat")') > sit_body.find("else:"):
     print("  ✗ exam_sat 记在了海路一支")
     problems.append("exam_sat 分支错")
 else:
     print("  ✓ 赴试每章一次、费 15 日；学者不输海路记 exam_sat")
 # 身份相关写入必须早于 advance_days：三月下旬赴试会跨入四月触发 _settle_history。
-if 0 <= sit_body.find('set_flag("exam_sat")') < sit_body.find("advance_days(EXAM_SIT_DAYS)"):
+if 0 <= _tok_find(sit_body, 'set_flag("exam_sat")') < _tok_find(sit_body, "advance_days(EXAM_SIT_DAYS)"):
     print("  ✓ 赴试先写 exam_sat 再 advance_days（跨月身份结算）")
 else:
     print("  ✗ 赴试 exam_sat 写在 advance_days 之后（跨月会先锁身份）")
     problems.append("赴试跨月身份时序")
 # 誊录同理：工钱与学者倾向须先于 advance_days(EXAM_COPY_DAYS)，三月末誊录跨四月同样触发身份结算。
 copy_body = _p7_code(p7_bodies.get("_on_exam_copy", ""))
-copy_adv = copy_body.find("advance_days(EXAM_COPY_DAYS)")
-if 0 <= copy_body.find("scholar_tendency += 1") < copy_adv and 0 <= copy_body.find("add_money(EXAM_STIPEND)") < copy_adv:
+copy_adv = _tok_find(copy_body, "advance_days(EXAM_COPY_DAYS)")
+if 0 <= copy_body.find("scholar_tendency += 1") < copy_adv and 0 <= _tok_find(copy_body, "add_money(EXAM_STIPEND)") < copy_adv:
     print("  ✓ 誊录先记工钱与学者倾向再 advance_days（跨月身份结算）")
 else:
     print("  ✗ 誊录工钱/学者倾向写在 advance_days 之后（跨月会先锁身份）")
@@ -3178,20 +3179,20 @@ if not sit_ports or set(re.findall(r'"(\w+)"', sit_ports.group(1))) != {"xinghua
     print("  ✗ EXAM_SIT_PORTS 不是兴化 / 泉州二港")
     problems.append("赴试港口漂移")
 elif not (0 <= exam_setup.find("EXAM_SIT_PORTS.has(port_id)") < exam_setup.find("本港无贡院科场")
-          < exam_setup.find("_on_exam_sit")):
+          < _tok_find(exam_setup, "_on_exam_sit", call=True)):
     print("  ✗ 别港贡院仍出赴试钮（_setup_exam 须先按 EXAM_SIT_PORTS 改只读）")
     problems.append("赴试工席未限港")
-elif not (0 <= sit_guard < sit_body.find("set_flag(chapter_flag)") and "return" in sit_body[sit_guard:sit_body.find("set_flag(chapter_flag)")]):
+elif not (0 <= sit_guard < _tok_find(sit_body, "set_flag(chapter_flag)") and "return" in sit_body[sit_guard:_tok_find(sit_body, "set_flag(chapter_flag)")]):
     print("  ✗ _on_exam_sit 未先按 EXAM_SIT_PORTS 拦别港")
     problems.append("赴试处理未限港")
-elif "_on_exam_copy.bind(port_id)" not in exam_setup or "EXAM_SIT_PORTS" in _p7_code(p7_bodies.get("_on_exam_copy", "")):
+elif not _has_tok(exam_setup, "_on_exam_copy.bind(port_id)") or "EXAM_SIT_PORTS" in _p7_code(p7_bodies.get("_on_exam_copy", "")):
     print("  ✗ 誊录工席被限港牵连")
     problems.append("誊录不应限港")
 else:
     print("  ✓ 赴试只在兴化 / 泉州；别港贡院只读「本港无贡院科场」，誊录照旧")
 ident = _p7_code(func_bodies(gs_src).get("resolve_identity_1268", ""))
 tie = re.search(r"if scholar_tendency == sea_tendency:\s*\n\s*scholar_wins = (.*)", ident)
-if tie and 0 <= tie.group(1).find('has_flag("exam_sat")') < tie.group(1).find('has_flag("chose_land_first")'):
+if tie and 0 <= _tok_find(tie.group(1), 'has_flag("exam_sat")') < _tok_find(tie.group(1), 'has_flag("chose_land_first")'):
     print("  ✓ 1268 殿试打平先读 exam_sat，再看 chose_land_first")
 else:
     print("  ✗ 1268 殿试打平未优先读 exam_sat")
@@ -3199,7 +3200,7 @@ else:
 ge_smoke = os.path.join(ROOT, "tools", "p7_guild_exam_smoke.gd")
 ge_src = open(ge_smoke, encoding="utf-8").read() if os.path.exists(ge_smoke) else ""
 # lane gd19：行会抄行情条数（商誉 < 8 抄 3 / ≥ 8 抄 5）由 p7 的 _check_spread_rows 判，调用行也须在
-if all(tok in ge_src for tok in ("P7_GUILD_EXAM_SMOKE_OK", "交会费入行", "入场赴试", "resolve_identity_1268",
+if all(_has_tok(ge_src, tok) for tok in ("P7_GUILD_EXAM_SMOKE_OK", "交会费入行", "入场赴试", "resolve_identity_1268",
                                  "func _check_spread_rows(", "\t_check_spread_rows(main)")):
     print("  ✓ 入行 / 行情条数 / 赴试行为 smoke 在（tools/p7_guild_exam_smoke.gd）")
 else:
@@ -3212,13 +3213,13 @@ ut_src = open(ut_path, encoding="utf-8").read() if os.path.exists(ut_path) else 
 pt_body = _p7_code(p7_bodies.get("play_transition", ""))
 _pt_live = pt_body.find("_CINE.live()")
 _pt_null = pt_body.find("if node == null:")
-if not ut_src or "is_headless()" not in ut_src or "UiTheme." not in ut_src:
+if not ut_src or not _has_tok(ut_src, "is_headless()") or "UiTheme." not in ut_src:
     print("  ✗ 缺 scripts/ui/UiTransition.gd，或它没在 headless 下旁路 / 没取 UiTheme 色字")
     problems.append("工席过渡脚本缺失")
 elif not (0 <= _pt_live < _pt_null < pt_body.find("at_black.call()") < pt_body.find("return") < pt_body.find("await node.finished")):
     print("  ✗ play_transition 未按 Cinematics.live() 旁路（不上场时须当帧调 at_black 再 return）")
     problems.append("工席过渡未旁路")
-elif not all("play_transition(" in b and "load_scene.bind(current_scene_id)" in b and "load_scene(current_scene_id)" not in b
+elif not all(_has_tok(b, "play_transition(") and _has_tok(b, "load_scene.bind(current_scene_id)") and "load_scene(current_scene_id)" not in b
              for b in (join_body, sit_body)):
     print("  ✗ 入行 / 赴试成功未接 play_transition（或仍另调一次 load_scene）")
     problems.append("工席过渡未接钩子")
@@ -3226,12 +3227,12 @@ else:
     print("  ✓ 入行 / 赴试成功走 play_transition（全黑时 load_scene；headless 当帧直通）")
 # 序章开卷 / 入酒棚纪实题签（Lane O）：题名与朱印「序」锁在 UiTransition；Main 钩子走 play_transition。
 _start_body = _p7_code(p7_bodies.get("_on_start_game_pressed", ""))
-if ("prologue_open_title" not in ut_src or "序章・卷首" not in ut_src
-        or "prologue_shore_title" not in ut_src or "序章・兴化海口" not in ut_src):
+if (not _has_func(ut_src, "prologue_open_title") or "序章・卷首" not in ut_src
+        or not _has_func(ut_src, "prologue_shore_title") or "序章・兴化海口" not in ut_src):
     print("  ✗ UiTransition 缺序章・卷首 / 序章・兴化海口题签助手")
     problems.append("序章题签助手缺失")
-elif ("prologue_open_title()" not in _start_body or "prologue_shore_title()" not in _start_body
-        or "play_transition(" not in _start_body or 'begins_with("cg_narrate")' not in _start_body):
+elif (not _has_tok(_start_body, "prologue_open_title()") or not _has_tok(_start_body, "prologue_shore_title()")
+        or not _has_tok(_start_body, "play_transition(") or 'begins_with("cg_narrate")' not in _start_body):
     print("  ✗ 开卷 / 入酒棚未接序章题签 play_transition")
     problems.append("序章题签未接钩子")
 else:
@@ -3243,21 +3244,21 @@ _once_body = _p7_code(p7_bodies.get("_shore_title_once", ""))
 _band_head_body = _p7_code(p7_bodies.get("_band_head", ""))
 _siege_port_body = _p7_code(p7_bodies.get("_setup_siege_port", ""))
 _ended_port_body = _p7_code(p7_bodies.get("_setup_ended_port", ""))
-if ("func siege_title" not in ut_src or "兴化军・围城" not in ut_src
-        or "func endgame_title" not in ut_src or '"城")' not in ut_src or '"终")' not in ut_src):
+if (not _has_func(ut_src, "siege_title") or "兴化军・围城" not in ut_src
+        or not _has_func(ut_src, "endgame_title") or '"城")' not in ut_src or '"终")' not in ut_src):
     print("  ✗ UiTransition 缺兴化军・围城 / 港名・结局题签助手（印「城」「终」）")
     problems.append("守城终局题签助手缺失")
-elif not ('_shore_title_once("ended", _setup_ended_port)' in _build_shore_body
-          and '_shore_title_once("siege", _setup_siege_port)' in _build_shore_body
-          and "_shore_title_seen.has(kind)" in _once_body and "play_transition(" in _once_body
-          and _once_body.find("_shore_title_seen.has(kind)") < _once_body.find("_shore_title_seen[kind] = true") < _once_body.find("play_transition(")
-          and "siege_title()" in _once_body and "endgame_title(" in _once_body
-          and "siege_title()" in _siege_port_body and "endgame_title(" in _ended_port_body):
+elif not (_has_tok(_build_shore_body, '_shore_title_once("ended", _setup_ended_port)')
+          and _has_tok(_build_shore_body, '_shore_title_once("siege", _setup_siege_port)')
+          and "_shore_title_seen.has(kind)" in _once_body and _has_tok(_once_body, "play_transition(")
+          and _once_body.find("_shore_title_seen.has(kind)") < _once_body.find("_shore_title_seen[kind] = true") < _tok_find(_once_body, "play_transition(")
+          and _has_tok(_once_body, "siege_title()") and _has_tok(_once_body, "endgame_title(")
+          and _has_tok(_siege_port_body, "siege_title()") and _has_tok(_ended_port_body, "endgame_title(")):
     print("  ✗ 守城 / 终局岸带未经 _shore_title_once 接题签（或未防重播）")
     problems.append("守城终局题签未接钩子")
-elif not ("HSeparator.new()" in _band_head_body and "_seal_mark(seal)" in _band_head_body
-          and '_band_head(col, "航海札记", "终"' in _p7_code(p7_bodies.get("_epilogue_slip", ""))
-          and '"城"' in _p7_code(p7_bodies.get("_siege_stat_slip", "")) and "_band_head(col," in _p7_code(p7_bodies.get("_siege_stat_slip", ""))):
+elif not ("HSeparator.new()" in _band_head_body and _has_tok(_band_head_body, "_seal_mark(seal)")
+          and _has_tok(_p7_code(p7_bodies.get("_epilogue_slip", "")), '_band_head(col, "航海札记", "终"')
+          and '"城"' in _p7_code(p7_bodies.get("_siege_stat_slip", "")) and _has_tok(_p7_code(p7_bodies.get("_siege_stat_slip", "")), "_band_head(col,")):
     print("  ✗ 城防账 / 航海札记抬头未走 _band_head（泥金题 + 印 + 分隔线）")
     problems.append("守城终局小笺抬头漂移")
 elif not os.path.exists(os.path.join(ROOT, "tools", "qa_siege_endgame_probe.gd")):
@@ -3271,15 +3272,15 @@ _epi_body = _p7_code(p7_bodies.get("_epilogue_slip", ""))
 _reread_body = _p7_code(p7_bodies.get("_on_reread_ending", ""))
 _refresh_body = _p7_code(p7_bodies.get("_refresh_shore", ""))
 _show_ch_x = _p7_code(p7_bodies.get("_show_chapter_dialog", ""))
-if not ('_band_head(col, "航海札记", "终", GameState.ended_at)' in _epi_body
+if not (_has_tok(_epi_body, '_band_head(col, "航海札记", "终", GameState.ended_at)')
         and "EpilogueFoot" in _epi_body and "重读结局" in _epi_body and "TEXT_DIM, 16" in _epi_body):
     print("  ✗ 航海札记缺终局时地旁注或笺脚「重读结局」注文")
     problems.append("终局札记抬头/笺脚漂移")
-elif not ('_shore_action("重读结局"' in _refresh_body and "RereadEnding" in _refresh_body
-          and "tooltip_text" in _refresh_body and "_on_reread_ending" in _refresh_body):
+elif not (_has_tok(_refresh_body, '_shore_action("重读结局"') and "RereadEnding" in _refresh_body
+          and "tooltip_text" in _refresh_body and _has_tok(_refresh_body, "_on_reread_ending")):  # 当 Callable 传给 _shore_action，不带括号：按标识符边界认
     print("  ✗ 终局动作行「重读结局」主钮缺名或 tooltip")
     problems.append("重读结局钮漂移")
-elif not ("_show_chapter_dialog(" in _reread_body and '"ending": ""' in _reread_body
+elif not (_has_tok(_reread_body, "_show_chapter_dialog(") and '"ending": ""' in _reread_body
           and '"ok_text": "合上册页"' in _reread_body and '"重读' in _reread_body
           and 'res.get("ok_text", "记下这一纲")' in _show_ch_x
           and 'res.get("kicker", "了结")' in _show_ch_x
@@ -3301,11 +3302,11 @@ _show_ch = _p7_code(p7_bodies.get("_show_chapter_dialog", ""))
 _gm_skip = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
 # skip_years 末行（lane cs11：原先「自%s至于%s」查的是整份 GameManager，文案却点名 skip_years 末行；改成取体、看最后一条 lines.append）
 _skip_apps = re.findall(r'\blines\.append\((.*)', _locate_func(_gm_skip, "skip_years"))
-if ("func promote_title" not in ut_src or "func promote_open" not in ut_src
+if (not _has_func(ut_src, "promote_title") or not _has_func(ut_src, "promote_open")
         or "年后" not in ut_src or '"晋")' not in ut_src):
     print("  ✗ UiTransition 缺晋升翻页题签助手（promote_title / 印「晋」）")
     problems.append("晋升题签助手缺失")
-elif not ("promote_title(" in _confirm_ch and "play_transition(" in _confirm_ch
+elif not (_has_tok(_confirm_ch, "promote_title(") and _has_tok(_confirm_ch, "play_transition(")
           and '"晋"' in _confirm_ch and "_chapter_advanced" in _confirm_ch):
     print("  ✗ 晋升册页确认未接 promote_title / play_transition（印「晋」）")
     problems.append("晋升翻页题签未接钩子")
@@ -3357,7 +3358,7 @@ if not temple_fn:
 elif any(tok in temple_fn for tok in ("add_fame", "report_discovery")):
     print("  ✗ 寺观勘见给了名声或当场呈报（赏格须回市舶司）")
     problems.append("寺观不得给名声/呈报")
-elif "record_discovery" in temple_fn and "TEMPLE_LOOK_DAYS" in temple_fn:
+elif _has_tok(temple_fn, "record_discovery", call=True) and "TEMPLE_LOOK_DAYS" in temple_fn:
     print("  ✓ 寺观细看只记入册、耗日，不给名声")
 else:
     print("  ✗ 寺观细看未走 record_discovery")
@@ -3369,7 +3370,7 @@ if not rub_fn:
 elif any(tok in rub_fn for tok in ("add_fame", "report_discovery")):
     print("  ✗ 寺观拓碑给了名声或当场呈报")
     problems.append("寺观拓碑不得给名声/呈报")
-elif "add_ledger_note" in rub_fn and "TEMPLE_RUB_DAYS" in rub_fn:
+elif _has_tok(rub_fn, "add_ledger_note", call=True) and "TEMPLE_RUB_DAYS" in rub_fn:
     print("  ✓ 寺观拓碑只写入边记、耗日，不给名声")
 else:
     print("  ✗ 寺观拓碑未走 add_ledger_note")
@@ -3535,7 +3536,7 @@ else:
 
 invest = func_bodies(seachart_src).get("_on_investigate_discovery", "")
 # 按钮回调可以指向 _on_event_continue，但不能在同一次点击里直接调用它或 _sail_next_day
-if ("advance_days(1)" in invest
+if (_has_tok(invest, "advance_days(1)")
         and "_sail_next_day(" not in invest
         and "_on_event_continue()" not in invest):
     print("  ✓ 发现调查只 advance_days(1)，同一次点击不再推进下一日")
@@ -3544,7 +3545,7 @@ else:
     problems.append("发现调查双日")
 
 # 主干把 \A 解码收进 _unescape_scene_text（be04 原版查的是行内 replace）
-if "cg_title" in main_src and ('replace("\\\\A"' in main_src or "_unescape_scene_text(" in main_src):
+if "cg_title" in main_src and ('replace("\\\\A"' in main_src or _has_tok(main_src, "_unescape_scene_text(")):
     print("  ✓ 调查模式在 title/body 为空时回读 cg_title / cg_sub")
 else:
     print("  ✗ 调查模式未回读 cg_title，开场五屏正文仍是空的")
@@ -3578,7 +3579,7 @@ else:
 seachart_src_full = open(os.path.join(ROOT, "scripts/SeaChart.gd"), encoding="utf-8").read()
 inv_body = _locate_func(seachart_src_full, "_on_investigate_discovery")
 inv_code = "\n".join(re.sub(r'#.*$', '', ln) for ln in inv_body.split("\n"))
-if inv_code.count("advance_days") == 1 and "_sail_next_day" not in inv_code and "_on_event_continue()" not in inv_code:
+if _tok_count(inv_code, "advance_days", call=True) == 1 and "_sail_next_day" not in inv_code and "_on_event_continue()" not in inv_code:
     print("  ✓ 发现调查只 advance_days 一次，不在同一次点击里续航")
 else:
     print("  ✗ 发现调查仍会叠日（advance_days 与 _sail_next_day 同一次点击）")
@@ -3586,7 +3587,7 @@ else:
 
 ship_src_full = open(os.path.join(ROOT, "scripts/Ship.gd"), encoding="utf-8").read()
 sink_body = _locate_func(ship_src_full, "_sink_ship")
-battle_ret = sink_body.find("_battle_player_sunk")
+battle_ret = _tok_find(sink_body, "_battle_player_sunk", call=True)
 clear_at = sink_body.find("Fleet.clear_cargo()")
 if battle_ret != -1 and (clear_at == -1 or clear_at > battle_ret):
     print("  ✓ 战斗沉船先交给败局结算，不先清空全队货舱")
@@ -3595,7 +3596,7 @@ else:
     problems.append("战斗沉船先清货舱")
 
 fleet_src = open(os.path.join(ROOT, "scripts/core/Fleet.gd"), encoding="utf-8").read()
-if re.search(r'^func clear_ship_cargo\b', fleet_src, re.M) and "clear_ship_cargo" in seachart_src_full:
+if re.search(r'^func clear_ship_cargo\b', fleet_src, re.M) and _has_tok(seachart_src_full, "clear_ship_cargo", call=True):
     print("  ✓ 旗舰沉没只清该船货舱（clear_ship_cargo）")
 else:
     print("  ✗ 败局未走 clear_ship_cargo")
@@ -3646,7 +3647,7 @@ else:
 
 title_body = _code_only(func_bodies(main_src).get("_setup_title_mode", ""))
 # 主干把 \A 解码收进 _unescape_scene_text
-if "cg_title" in title_body and "cg_sub" in title_body and ("\\\\A" in title_body or "_unescape_scene_text(" in title_body):
+if "cg_title" in title_body and "cg_sub" in title_body and ("\\\\A" in title_body or _has_tok(title_body, "_unescape_scene_text(")):
     print("  ✓ 标题模式读 cg_title/cg_sub，并把 \\\\A 换成换行")
 else:
     print("  ✗ 标题模式未读卷首正文或未把 \\\\A 换成换行")
@@ -3654,13 +3655,13 @@ else:
 
 inv = _code_only(func_bodies(seachart_src).get("_on_investigate_discovery", ""))
 # 取 be04/c148 语义：调查日只 advance_days 一次、不在同一次点击里直接续航（00b4 原版要求不调 advance_days）
-if inv.count("advance_days") != 1:
-    print("  ✗ 发现调查应恰好 advance_days 一次（现 %d 次）" % inv.count("advance_days"))
+if _tok_count(inv, "advance_days", call=True) != 1:
+    print("  ✗ 发现调查应恰好 advance_days 一次（现 %d 次）" % _tok_count(inv, "advance_days", call=True))
     problems.append("发现调查计日次数不对")
 elif "_sail_next_day(" in inv or "_on_event_continue()" in inv:
     print("  ✗ 发现调查在同一次点击里直接续航，会与调查日叠成两日")
     problems.append("发现调查双计日")
-elif "_on_event_continue" not in inv:
+elif not _has_tok(inv, "_on_event_continue"):
     print("  ✗ 发现调查没有回到航行循环（缺「继续航行」回调）")
     problems.append("发现调查未续航")
 else:
@@ -3668,7 +3669,7 @@ else:
 
 sink = func_bodies(ship_src).get("_sink_ship", "")
 sink_code = _code_only(sink)
-cut = sink_code.find("_battle_player_sunk")
+cut = _tok_find(sink_code, "_battle_player_sunk", call=True)
 if cut < 0:
     print("  ✗ Ship._sink_ship 未把战斗沉没交回 WorldMap")
     problems.append("战斗沉没未交回结算")
@@ -3679,8 +3680,8 @@ else:
     print("  ✓ 战斗沉没不先清舱，货损留给败局结算")
 
 battle = _code_only(func_bodies(seachart_src).get("_on_battle_result", ""))
-i_dur = battle.find("total_durability")
-i25 = battle.find("lose_cargo_ratio(0.25)")
+i_dur = _tok_find(battle, "total_durability", call=True)
+i25 = _tok_find(battle, "lose_cargo_ratio(0.25)")
 if i_dur < 0 or i25 < 0 or not (i_dur < i25):
     print("  ✗ 败局未在 25% 货损之前判断全队是否已经沉没")
     problems.append("败局货损未区分沉船")
@@ -3688,7 +3689,7 @@ else:
     print("  ✓ 全队沉没不走 25% 货损")
 
 sink_voyage = _code_only(func_bodies(seachart_src).get("_sink", ""))
-if "clear_cargo" in sink_voyage:
+if _has_tok(sink_voyage, "clear_cargo", call=True):
     print("  ✓ 全队沉没仍清空货舱")
 else:
     print("  ✗ 全队沉没未清空货舱")
@@ -3713,7 +3714,7 @@ if "MUTINY" in enum_map.get("Voyage", {}).get("EventKind", set()):
 else:
     print("  ✗ Voyage.EventKind 缺少 MUTINY")
     problems.append("Voyage.EventKind 缺少 MUTINY")
-if "func mutiny_event" in voyage_src and "roll_day_event" in voyage_src:
+if _has_func(voyage_src, "mutiny_event") and _has_func(voyage_src, "roll_day_event"):
     roll_body = _locate_func(voyage_src, "roll_day_event")
     if "MUTINY" in roll_body:
         print("  ✗ roll_day_event 把哗变放进了随机表")
@@ -3734,7 +3735,7 @@ for handler in ("_on_mutiny_bribe", "_on_mutiny_dismiss", "_on_mutiny_suppress")
     else:
         print(f"  ✗ SeaChart.{handler} 未定义")
         problems.append(f"SeaChart.{handler} 未定义")
-if 'resolve_mutiny("bribe")' in seachart_src and 'resolve_mutiny("dismiss")' in seachart_src and 'resolve_mutiny("suppress")' in seachart_src:
+if _has_tok(seachart_src, 'resolve_mutiny("bribe")') and _has_tok(seachart_src, 'resolve_mutiny("dismiss")') and _has_tok(seachart_src, 'resolve_mutiny("suppress")'):
     print("  ✓ 三个选项都进 resolve_mutiny")
 else:
     print("  ✗ 哗变选项没有全部进 resolve_mutiny")
@@ -3752,13 +3753,13 @@ else:
     print("  ✗ Fleet.damage_each_ship 未定义")
     problems.append("Fleet.damage_each_ship 未定义")
 storm_body = _locate_func(voyage_src, "_storm_event")
-if "damage_each_ship" in storm_body and "damage_fleet" not in storm_body and "ships.size()" not in storm_body:
+if _has_tok(storm_body, "damage_each_ship", call=True) and "damage_fleet" not in storm_body and "ships.size()" not in storm_body:
     print("  ✓ 风涛按艘分摊，不再乘船数打旗舰")
 else:
     print("  ✗ 风涛仍把伤害堆进旗舰")
     problems.append("风涛未分摊")
 flee_body = _locate_func(seachart_src, "_on_flee_pirates")
-if "damage_fleet" in flee_body and "damage_each_ship" not in flee_body:
+if _has_tok(flee_body, "damage_fleet", call=True) and "damage_each_ship" not in flee_body:
     print("  ✓ 逃走失败仍只打旗舰")
 else:
     print("  ✗ 逃走失败不再打旗舰")
@@ -3799,7 +3800,7 @@ else:
     problems.append("has_found 未查两册")
 
 _rec = _code_only(_disc_gs_fn.get("record_discovery", ""))
-if ("has_found(" in _rec and "discoveries_found.append" in _rec
+if (_has_tok(_rec, "has_found(") and "discoveries_found.append" in _rec
         and not any(t in _rec for t in ("discoveries_reported", "add_fame", "add_money"))):
     print("  ✓ record_discovery 去重后只入 discoveries_found，不给钱名")
 else:
@@ -3817,9 +3818,9 @@ _rep = _code_only(_disc_gs_fn.get("report_discovery", ""))
 _i_guard = _rep.find("in discoveries_found")
 _i_erase = _rep.find("discoveries_found.erase(")
 _i_push = _rep.find("discoveries_reported.append(")
-_i_pay = min([i for i in (_rep.find("add_money("), _rep.find("add_fame(")) if i >= 0] or [-1])
+_i_pay = min([i for i in (_tok_find(_rep, "add_money("), _tok_find(_rep, "add_fame(")) if i >= 0] or [-1])
 if (0 <= _i_guard < _i_erase and 0 <= _i_erase and 0 <= _i_push and _i_pay >= 0
-        and max(_i_erase, _i_push) < _i_pay and "add_money(" in _rep and "add_fame(" in _rep):
+        and max(_i_erase, _i_push) < _i_pay and _has_tok(_rep, "add_money(") and _has_tok(_rep, "add_fame(")):
     print("  ✓ report_discovery 先验在册，挪入 discoveries_reported 后才给赏格与名声")
 else:
     print("  ✗ report_discovery 顺序不对（须先验在册、erase + append，再 add_money / add_fame）")
@@ -3832,13 +3833,13 @@ if all(rk in _rep for rk in ('"gold"', '"fame"', '"name"', '"promoted"', '"title
     print("  ✓ report_discovery 回执含 gold / fame / name / promoted / title")
 
 _yamen = _code_only(_disc_main_fn.get("_setup_yamen", ""))
-if "_setup_reporting()" in _yamen:
+if _has_tok(_yamen, "_setup_reporting()"):
     print("  ✓ 市舶司页 _setup_yamen 挂呈报签")
 else:
     print("  ✗ _setup_yamen 未调 _setup_reporting，呈报入口丢失")
     problems.append("市舶司未挂呈报")
 _callers = sorted(fn for fn, b in _disc_main_fn.items()
-                  if fn != "_setup_reporting" and "_setup_reporting()" in _code_only(b))
+                  if fn != "_setup_reporting" and _has_tok(_code_only(b), "_setup_reporting()"))
 if _callers == ["_setup_yamen"]:
     print("  ✓ 呈报签只在市舶司页（别处不挂）")
 else:
@@ -3855,7 +3856,7 @@ else:
     problems.append("呈报 chip 接线")
 
 _onrep = _code_only(_disc_main_fn.get("_on_report_discovery", ""))
-if "GameState.report_discovery(" in _onrep and "load_scene(current_scene_id)" in _onrep:
+if "GameState.report_discovery(" in _onrep and _has_tok(_onrep, "load_scene(current_scene_id)"):
     print("  ✓ _on_report_discovery 走 GameState.report_discovery 并重载本页")
 else:
     print("  ✗ _on_report_discovery 未走 report_discovery 或未重载页面")
@@ -3913,10 +3914,10 @@ _ac_ok = (
     and "呈报入案，赏钱声名同领。" in _ac_slips
     and "【呈报】「%s」入案。赏钱 %d，声名添 %d。%s" in _ac_onrep
     and '"案册改题「%s」。"' in _ac_onrep
-    and '_slip_title(slip, name, "未勘")' in _ac_temple
-    and '_slip_title(slip, name, "已入册")' in _ac_temple
-    and '_slip_title(slip, name, "已呈案")' in _ac_temple
-    and '_slip_note(slip, "赏格回市舶司。")' in _ac_temple
+    and _has_tok(_ac_temple, '_slip_title(slip, name, "未勘")')
+    and _has_tok(_ac_temple, '_slip_title(slip, name, "已入册")')
+    and _has_tok(_ac_temple, '_slip_title(slip, name, "已呈案")')
+    and _has_tok(_ac_temple, '_slip_note(slip, "赏格回市舶司。")')
     and "【勘见】廊下细看 %d 日，「%s」记入册子。赏格回市舶司呈报。" in _ac_look
     and "记入册子，赏格回市舶司呈报。" in _ac_invest
     and "GameState.record_discovery(did)" in _ac_look and "TEMPLE_LOOK_DAYS" in _ac_look
@@ -3958,19 +3959,19 @@ _harden_body = _code_only(_saveload_fn.get("_harden_state", ""))
 _flags_body = _code_only(_saveload_fn.get("_normalise_flags", ""))
 _flag_name_body = _code_only(_saveload_fn.get("_valid_flag_name", ""))
 _ids_body = _code_only(_saveload_fn.get("_normalise_ids", ""))
-if "_harden_state(GameState.to_dict())" in _save_body:
+if _has_tok(_save_body, "_harden_state(GameState.to_dict())"):
     print("  ✓ save_game 写入前清洗 GameState 状态")
 else:
     print("  ✗ save_game 未在写入前清洗 GameState 状态")
     problems.append("save_game 未清洗状态")
-if "_harden_state(state)" in _load_body and "GameState.from_dict" in _load_body:
+if _has_tok(_load_body, "_harden_state(state)") and _calls(_load_body, "GameState.from_dict"):
     print("  ✓ load_game 读回前清洗状态（坏 state 类型回到空字典）")
 else:
     print("  ✗ load_game 未在读回前清洗状态")
     problems.append("load_game 未清洗状态")
 # 顶层分区须 Dictionary 兜底，避免坏档 String 传入 from_dict 触发类型错误。
 if (
-    "_as_dict" in _saveload_src
+    _has_func(_saveload_src, "_as_dict")
     and all(tok in _load_body for tok in (
         'Calendar.from_dict(_as_dict(',
         'Economy.from_dict(_as_dict(',
@@ -3986,8 +3987,8 @@ else:
 # lane sv：_read_slot / save_label / slot_source 同经 _resolve 定槽态，经 _resolve 也算。
 _label_body = _code_only(_saveload_fn.get("save_label", ""))
 _resolve_body = _code_only(_saveload_fn.get("_resolve", ""))
-_via_resolve = "_resolve(slot)" in _code_only(_saveload_fn.get("_read_slot", "")) and "_bak_path(slot)" in _resolve_body
-if "_read_slot(slot)" in _label_body or (_via_resolve and "_resolve(slot)" in _label_body):
+_via_resolve = _has_tok(_code_only(_saveload_fn.get("_read_slot", "")), "_resolve(slot)") and _has_tok(_resolve_body, "_bak_path(slot)")
+if _has_tok(_label_body, "_read_slot(slot)") or (_via_resolve and _has_tok(_label_body, "_resolve(slot)")):
     print("  ✓ save_label 经 _read_slot（含 .bak 回退）")
 else:
     print("  ✗ save_label 未走 _read_slot")
@@ -3995,11 +3996,11 @@ else:
 # Lane T：正本坏、副抄可读时册页须有脚注；提示另走 save_tip，不塞进 save_label。
 _source_body = _code_only(_saveload_fn.get("slot_source", ""))
 _tip_body = _code_only(_saveload_fn.get("save_tip", ""))
-if _via_resolve and "_resolve(slot)" in _source_body:
+if _via_resolve and _has_tok(_source_body, "_resolve(slot)"):
     _source_body += "\n" + _resolve_body
 if (
-    all(tok in _source_body for tok in ('"none"', '"primary"', '"bak"', '"corrupt"', "has_save(slot)", "_bak_path(slot)"))
-    and ("slot_source(slot)" in _tip_body or (_via_resolve and "_resolve(slot)" in _tip_body))
+    all(_has_tok(_source_body, tok) for tok in ('"none"', '"primary"', '"bak"', '"corrupt"', "has_save(slot)", "_bak_path(slot)"))
+    and (_has_tok(_tip_body, "slot_source(slot)") or (_via_resolve and _has_tok(_tip_body, "_resolve(slot)")))
     # lane sv：新版档第五态 future 须有脚注，且题签不说成「卷页损了」
     and ('"future"' not in _source_body or ("新版所记" in _tip_body and "新版所记" in _label_body))
     and "副抄" in _tip_body and "正本" in _tip_body
@@ -4016,7 +4017,7 @@ _save_slot_code = _code_only(func_bodies(main_src).get("_on_save_slot", ""))
 if (
     "SaveLoad.save_label(n)" in _save_dialog_code
     and "SaveLoad.save_tip(n)" in _save_dialog_code
-    and "_slip_note(slip, tip" in _save_dialog_code
+    and _has_tok(_save_dialog_code, "_slip_note(slip, tip")
     and "SaveLoad.slot_source(slot)" in _load_slot_code
     and "副抄" in _load_slot_code
     and "翻不开" not in _load_slot_code
@@ -4028,7 +4029,8 @@ else:
     problems.append("航海日志坏档脚注未接入")
 # Lane T：四种槽态运行时探针须在库内，供回归复跑。
 _tip_probe = os.path.join(ROOT, "tools", "qa_save_slot_tip_probe.gd")
-if os.path.isfile(_tip_probe) and "slot_source" in open(_tip_probe, encoding="utf-8").read() and "SAVE_SLOT_TIP_PROBE" in open(_tip_probe, encoding="utf-8").read():
+# 探针经 sl.call("slot_source", …) 调，名字在字符串里：按标识符边界认，不套调用正则
+if os.path.isfile(_tip_probe) and _has_tok(open(_tip_probe, encoding="utf-8").read(), "slot_source") and "SAVE_SLOT_TIP_PROBE" in open(_tip_probe, encoding="utf-8").read():
     print("  ✓ tools/qa_save_slot_tip_probe.gd 锁四态 tip")
 else:
     print("  ✗ tools/qa_save_slot_tip_probe.gd 缺失或未覆盖 slot_source")
@@ -4047,7 +4049,7 @@ if (
 else:
     print("  ✗ 关键旗标缺少字典、true 值或 exam_sat/guild_* 守卫")
     problems.append("关键旗标清洗不完整")
-if all(token in _harden_body for token in ("discoveries_found", "discoveries_reported", "reported_set", "_normalise_ids")):
+if all(_has_tok(_harden_body, token) for token in ("discoveries_found", "discoveries_reported", "reported_set", "_normalise_ids")):
     print("  ✓ 发现录两册均清洗去重，已呈报优先于待呈报")
 else:
     print("  ✗ 发现录未成对清洗或未让已呈报优先")
@@ -4071,7 +4073,7 @@ else:
 _l1_art = open(os.path.join(ROOT, "scripts", "ui", "CharacterArt.gd"), encoding="utf-8").read()
 _l1_codex = open(os.path.join(ROOT, "scripts", "ui", "CharacterCodex.gd"), encoding="utf-8").read()
 _l1_main = read_main_src()
-if "characters_codex.json" in _l1_art and "codex_bio(" in _l1_codex and "codex_short(" in _l1_main:
+if "characters_codex.json" in _l1_art and _has_tok(_l1_codex, "codex_bio(") and _has_tok(_l1_main, "codex_short("):
     print("  ✓ 展示入口走 characters_codex（CharacterArt/Codex/Main）")
 else:
     print("  ✗ 展示入口未锁定 characters_codex")
@@ -4097,7 +4099,7 @@ else:
     problems.append("缺 CombatShoreHook.gd")
 for ok, label in (
     (_has_func(_wm_n, "_await_boarding_fx"), "WorldMap 等待接舷题签"),
-    ("board_begin_subtitle" in _wm_n, "WorldMap 开场副题走 CombatFx"),
+    (_has_tok(_wm_n, "board_begin_subtitle", call=True), "WorldMap 开场副题走 CombatFx"),
     ('"boarded"' in _wm_n, "WorldMap 传 boarded 标记"),
 ):
     if ok:
@@ -4105,17 +4107,17 @@ for ok, label in (
     else:
         print(f"  ✗ {label}")
         problems.append(label)
-for tok, label in (
-    ("sea_win_note", "SeaChart 用 CombatFx.sea_win_note"),
-    ("_CombatFx", "SeaChart 预载 CombatFx"),
+for tok, call, label in (
+    ("sea_win_note", True, "SeaChart 用 CombatFx.sea_win_note"),
+    ("_CombatFx", False, "SeaChart 预载 CombatFx"),
 ):
-    if tok in _sc_n:
+    if _has_tok(_sc_n, tok, call=call):
         print(f"  ✓ {label}")
     else:
         print(f"  ✗ {label}")
         problems.append(label)
 for tok in ("sea_win_note", "sea_flee_ok_note", "board_begin_subtitle"):
-    if f"func {tok}" in _fx_n or f"static func {tok}" in _fx_n:
+    if _has_func(_fx_n, tok):
         print(f"  ✓ CombatFx.{tok}")
     else:
         print(f"  ✗ CombatFx.{tok} 缺失")
@@ -4219,12 +4221,12 @@ _tnw = open(_tnw_path, encoding="utf-8").read() if os.path.isfile(_tnw_path) els
 if not _tnw:
     print("  ✗ 缺 TavernNewsWall.gd")
     problems.append("缺 TavernNewsWall.gd")
-elif "func mount" not in _tnw or "recent_news" not in _tnw or "paper_card" not in _tnw:
+elif not _has_func(_tnw, "mount") or not _has_tok(_tnw, "recent_news", call=True) or not _has_tok(_tnw, "paper_card", call=True):
     print("  ✗ TavernNewsWall 未暴露 mount / recent_news / paper_card")
     problems.append("TavernNewsWall 契约不全")
 else:
     print("  ✓ _TAVERN_NEWS_WALL.mount + recent_news + paper_card")
-if "_TAVERN_NEWS_WALL.mount" not in main_src or "_setup_news_wall" not in main_src:
+if not _calls(main_src, "_TAVERN_NEWS_WALL.mount") or not _has_func(main_src, "_setup_news_wall"):
     print("  ✗ Main 未薄调 _TAVERN_NEWS_WALL.mount（_setup_news_wall）")
     problems.append("Main 未接 TavernNewsWall")
 else:
@@ -4285,12 +4287,13 @@ for bad in ("十次约有八次", "逃走没被抢走货", "日速 ×", "今日�
         problems.append(f"SeaChart 回潮:{bad}")
     else:
         print(f"  ✓ SeaChart 无「{bad}」")
-# 查的是 Voyage 全文件可见文案（lane cs11：原文案点名 order_blurb，口径其实是整份文件；不收窄——别的函数写出日速公式同样该红）
+# 查的是 Voyage 全文件可见文案（lane cs11：原文案点名 order_blurb，口径其实是整份文件；不收窄——别的函数写出日速公式同样该红）。
+# lane cs15：文案不再点 order_blurb（点了名读的人会当成只查那一支），只说全文件。
 if "日速 ×" in _voy_vis:
-    print("  ✗ Voyage 可见文案仍写日速公式（「日速 ×」，原在 order_blurb）")
+    print("  ✗ Voyage 全文件可见文案仍写日速公式（「日速 ×」）")
     problems.append("Voyage 可见文案日速公式")
 else:
-    print("  ✓ Voyage 可见文案无日速公式（order_blurb 等全文件）")
+    print("  ✓ Voyage 全文件可见文案无日速公式")
 if "限今日" in _main_z1 and "UiTheme.hex(UiTheme.CINNABAR)" in _main_z1 and 'color=#%s' in _main_z1:
     print("  ✓ Main 船籍簿委办短限日 + hex 色")
 else:
@@ -4471,6 +4474,7 @@ for _ln_no, _ln in enumerate(_nf_self, 1):
         continue
     _ms = list(re.finditer(_NF_LIT + r'\s+not\s+in\b', _ln))
     _ms += list(re.finditer(r'\.(?:find|rfind|count)\(\s*' + _NF_LIT, _ln))
+    _ms += list(re.finditer(r'\b_tok_(?:find|count)\(\s*[\w.()\[\]]+\s*,\s*' + _NF_LIT, _ln))  # lane cs15 的有界 find / count
     _ms += list(re.finditer(r'"((?:static )?func [A-Za-z_]\w*)"\s+(?:not\s+)?in\b', _ln))
     if re.search(r'\bany\(', _ln) or re.search(r'\bfor\s+\w+\s+in\s+\(', _ln):
         _ms += list(re.finditer(_NF_LIT, _ln))

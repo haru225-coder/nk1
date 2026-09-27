@@ -16,6 +16,7 @@ ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 # 末节「十一、按函数名取函数体」逐条判红——原先取不到静默给 ""，反向断言（"X" not in body）在函数改名 / 搬走时空转变绿。
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from func_body import body_asks as _body_asks, body_ask as _body_ask, locate_func as _locate_func, missed as _body_missed, miss_why as _miss_why
+from src_probe import has_func, calls, has_tok, tok_find, tok_count, tok_rx  # 按名认函数的探查一律经 tools/src_probe.py（lane cs15：不按前缀认名）
 
 def load(name):
     with open(os.path.join(ROOT, "data", name), encoding="utf-8") as f:
@@ -849,7 +850,7 @@ _i_notok = _up_body.find("if not ok:")
 _i_spend = _up_body.find("GameState.spend_money(cost)")
 _i_roll = _up_body.find("Fleet.ships[ship_index][level_key] = prev_lv")
 _i_set = _up_body.find("_upgrade_busy = true")
-check(_up_body.count("spend_money(") == 1, "升级回调只一处扣钱")
+check(tok_count(_up_body, "spend_money(") == 1, "升级回调只一处扣钱")
 check(0 <= _i_busy < _i_cost < _i_up < _i_notok < _i_spend < _i_roll < _i_set,
       "升级回调：连点闸 → 按当前等级重算费用 → 升级 → 失败不扣 → 扣钱 → 扣不成回滚 → 上闸过场")
 check("spend_money(shown_cost)" not in _up_body, "升级扣费不用按钮 bind 的旧价")
@@ -863,7 +864,7 @@ for _fn, _what in (("_on_repair_hull", "修船"), ("_on_buy_ship", "购船")):
     _j_set = _yb.find("_upgrade_busy = true")
     _j_await = _yb.find("await _yard_success_transition(")
     _j_free = _yb.find("_upgrade_busy = false")
-    check(_yb.count("spend_money(") == 1 and 0 <= _j_busy < _j_spend < _j_set < _j_await < _j_free,
+    check(tok_count(_yb, "spend_money(") == 1 and 0 <= _j_busy < _j_spend < _j_set < _j_await < _j_free,
           "%s回调：连点闸 → 扣钱 → 上闸 → 过场 → 放闸（过场期间旧页钮不二次扣费）" % _what)
 
 # 3) armor 满级船体伤系数 = 0.80 > 0——风暴依旧要命，不能归零
@@ -1004,7 +1005,7 @@ _cut = re.findall(r"GameState\.pu_attention = maxi\(0, GameState\.pu_attention -
 _else_at = _bribe_fn.find("\telse:")
 _writes = len(re.findall(r"pu_attention\s*(?:[-+*/]?=)(?!=)", _bribe_fn))
 check(len(_pay) == 1 and len(_cut) == 1 and _writes == 1
-      and _bribe_fn.find("spend_money(") < _bribe_fn.find("pu_attention =") < _else_at,
+      and tok_find(_bribe_fn, "spend_money(") < _bribe_fn.find("pu_attention =") < _else_at,
       f"疏通只在付得起时扣一次关注（{'Main._on_npc_bribe' if _bribe_fn == _fwd else 'NpcPage.on_npc_bribe'}：付 {'/'.join(_pay) or '缺'}、减 {'/'.join(_cut) or '缺'}、写关注 {_writes} 处）")
 _meet_fn = _gd_body(_npc_src, "show_npc_mode")
 _title = re.search(r'_slip_title\((\w+), "疏通", "关注　减 (\d+)"\)', _meet_fn)
@@ -1963,9 +1964,9 @@ check(spoil_hold_chance(0.0, 16, 9) == 1.0, "不会潮的货，受潮概率是 1
 check(RUMOR_STALE >= 30, f"行情传闻保鲜 {RUMOR_STALE} 日，够跑一趟近海再回来对")
 gs_src = open(os.path.join(ROOT, S_GD), encoding="utf-8").read()
 deliver_body = _locate_func(gs_src, "deliver_contract")
-check("apply_sell_impact" not in deliver_body and "remove_cargo" in deliver_body and "add_money" in deliver_body,
+check("apply_sell_impact" not in deliver_body and has_tok(deliver_body, "remove_cargo", call=True) and has_tok(deliver_body, "add_money", call=True),
       "交货卸货给钱，不调用砸盘")
-check("func tick_contract" in gs_src and "advance_days" in open(os.path.join(ROOT, "scripts/GameManager.gd"), encoding="utf-8").read(),
+check(has_func(gs_src, "tick_contract") and has_func(open(os.path.join(ROOT, "scripts/GameManager.gd"), encoding="utf-8").read(), "advance_days"),
       "逾期在日推进里结算")
 check(known_route("zhangzhou", "guangzhou") and known_route("quanzhou", "guangzhou")
       and known_route("ryukyu", "kagoshima"),
@@ -1973,18 +1974,18 @@ check(known_route("zhangzhou", "guangzhou") and known_route("quanzhou", "guangzh
 check(not known_route("quanzhou", "hakata"), "没有连线的泉州–博多仍是生路")
 voyage_src = open(os.path.join(ROOT, V_GD), encoding="utf-8").read()
 known_body = _locate_func(voyage_src, "is_known_route")
-check(known_body.count("port_def") >= 2, "熟路判定读了两端的连线，不是只看出发港")
+check(tok_count(known_body, "port_def", call=True) >= 2, "熟路判定读了两端的连线，不是只看出发港")
 buy_body = _locate_func(voyage_src, "sea_buy_unit")
 roll_body = _locate_func(voyage_src, "roll_day_event")
-check("_cheapest_port_buy" in buy_body, "海上买价会看已解锁港口里的最低现价，不会低于它")
+check(has_tok(buy_body, "_cheapest_port_buy", call=True), "海上买价会看已解锁港口里的最低现价，不会低于它")
 weights_body = _locate_func(voyage_src, "event_weights")
-check("discoveries_open" in weights_body and "_discovery_candidates" in roll_body,
+check("discoveries_open" in weights_body and has_tok(roll_body, "_discovery_candidates", call=True),
       "岸影抽空时当日权重不再把这一档当成无事日")
 plan_body = _locate_func(voyage_src, "plan")
 walk_body = _locate_func(voyage_src, "_walk_days")
-check("expected_days" in plan_body and "safe_days" in plan_body and "_walk_days" in plan_body,
+check("expected_days" in plan_body and "safe_days" in plan_body and has_tok(plan_body, "_walk_days", call=True),
       "航程给出静风、遇事和八成日数，期限仍用静风")
-check("progress_moments" in walk_body and "_shift_date" in walk_body and "SAFE_Z" in walk_body,
+check(has_tok(walk_body, "progress_moments", call=True) and has_tok(walk_body, "_shift_date", call=True) and "SAFE_Z" in walk_body,
       "遇事与八成从次日启航起按逐日风信累加")
 check("wind_changes" in plan_body and "departs_on_new_wind" in plan_body,
       "换季和途中换风会标出来")
@@ -1993,9 +1994,9 @@ check("hint_lbl.text = rumor" in main_src, "牙行行上直接写出传闻卖价
 offer_body = _locate_func(gs_src, "contract_offer")
 fail_body = _locate_func(gs_src, "_fail_contract")
 accept_body = _locate_func(gs_src, "accept_contract")
-check("contract_port_closed" in offer_body, "毁约当月，签发港不再开出同一笔委办")
+check(has_tok(offer_body, "contract_port_closed", call=True), "毁约当月，签发港不再开出同一笔委办")
 check("contract_ban" in fail_body and "offer_month" in fail_body, "逾期和毁约都会记下签发年月")
-check("contract_offer" in accept_body and "offer_month" in accept_body,
+check(has_tok(accept_body, "contract_offer", call=True) and "offer_month" in accept_body,
       "接下时按现单重算酬金和期限，不吃按钮上的旧数字")
 sea_src = open(os.path.join(ROOT, "scripts/SeaChart.gd"), encoding="utf-8").read()
 back_body = _locate_func(sea_src, "_on_back_to_port")
@@ -2010,25 +2011,26 @@ check("凑得出" in main_src and "拿不满酬" in main_src,
 # lane iz：凑得出 N 件按逐件加价总价与逐船舱位算，不再是 现银÷首件价 × 全队空舱
 _purse_ui = main_src.split("var need_qty := int(offer.get(\"qty\", 0))", 1)[1].split("var purse_lbl", 1)[0]
 _afford_fn = _locate_func(main_src, "_affordable_qty")
-check("_affordable_qty(port_id, gid" in _purse_ui and "max_loadable(gid, si)" in _purse_ui
-      and "GameState.money) / float(unit_cost)" not in _purse_ui and "estimate_buy_cost" in _afford_fn,
+check(has_tok(_purse_ui, "_affordable_qty(port_id, gid") and has_tok(_purse_ui, "max_loadable(gid, si)")
+      and "GameState.money) / float(unit_cost)" not in _purse_ui and has_tok(_afford_fn, "estimate_buy_cost", call=True),
       "委办凑得出件数按逐件加价总价、逐船舱位算，与牙行结算同口径")
 # lane iz2：只有今日柜上的货买得到（_on_buy 查 broker_hand），凑得出按柜上现货算；柜要先发，单子才读得到今日的柜
 _market_fn = _locate_func(main_src, "_setup_market")
 _contract_fn = _locate_func(main_src, "_add_contract_panel")
 check("gid in broker_hand" in _purse_ui and "if on_counter else 0" in _purse_ui and "此货今日不在柜上" in _contract_fn
-      and "BrokerSlip.deal" in _market_fn and "_add_contract_panel(port_id)" in _market_fn
-      and _market_fn.index("BrokerSlip.deal") < _market_fn.index("_add_contract_panel(port_id)"),
+      and calls(_market_fn, "BrokerSlip.deal") and has_tok(_market_fn, "_add_contract_panel(port_id)")
+      and tok_find(_market_fn, "BrokerSlip.deal", call=True) < tok_find(_market_fn, "_add_contract_panel(port_id)"),
       "委办货不在今日柜上时凑得出只算舱货、单上写明不在柜上；柜上三样先于委办单发出")
 _row_fn = _locate_func(main_src, "_make_market_row")
 _btip_fn = _locate_func(main_src, "_market_buy_tip")
 _stip_fn = _locate_func(main_src, "_market_sell_tip")
-check(_row_fn.count("_market_buy_tip(") == 2 and _row_fn.count("_market_sell_tip(") == 2
-      and "estimate_buy_cost" in _btip_fn and "max_loadable(good_id, ship_index)" in _btip_fn
-      and "estimate_sell_revenue" in _stip_fn,
+check(tok_count(_row_fn, "_market_buy_tip(") == 2 and tok_count(_row_fn, "_market_sell_tip(") == 2
+      and has_tok(_btip_fn, "estimate_buy_cost", call=True) and has_tok(_btip_fn, "max_loadable(good_id, ship_index)")
+      and has_tok(_stip_fn, "estimate_sell_revenue", call=True),
       "牙行买十/买满/卖十/全卖的悬停印逐件累计的实价，与结算同一函数")
 _adv_fn = _locate_func(open(os.path.join(ROOT, "scripts/GameManager.gd"), encoding="utf-8").read(), "advance_days")
-check("interest := GameState.accrue_interest()" in _adv_fn and "【月息】" in _adv_fn and "monthly_notice.emit" in _adv_fn.split("accrue_interest", 1)[1].split("pay_wages", 1)[0],
+# 月息通知须夹在 accrue_interest 与 pay_wages 之间；pay_wages 取不到时切片会一直延到函数尾，所以两头的锚都得先在（lane cs15）
+check("interest := GameState.accrue_interest()" in _adv_fn and "【月息】" in _adv_fn and has_tok(_adv_fn, "pay_wages", call=True) and "monthly_notice.emit" in tok_rx("pay_wages", call=True).split(tok_rx("accrue_interest", call=True).split(_adv_fn, 1)[1], 1)[0],
       "月初结息有通告：欠债时写出本月息钱与现欠")
 # lane main5：歇息钮上写的房钱 = 钮上日数 × 费率，按下去 _on_rest 照同一日数、同一费率扣（lane main4 M11：钮文改成 nights * 16 全门禁照绿）。
 # 旅店页在 TavernPage（lane main4 拆出，经 main. 取 Main 的常量与方法，去掉前缀即原文）；住处「下处」歇息在 ResidencePage
@@ -2041,7 +2043,7 @@ def _gd_fn(src, name):  # 体到下一个 func / const 为止；取不到、只�
 def _rest_chips(body):
     """body 里接 _on_rest.bind(...) 的每个 _slip_chip(...) → (钮文日数, 价的日数, 价的费率, bind 实参)；钮文拆不出算式记 None。"""
     out, at = [], 0
-    while (i := body.find("_slip_chip(", at)) >= 0:
+    while (i := tok_find(body, "_slip_chip(", at)) >= 0:
         j, depth = i + len("_slip_chip("), 1
         while j < len(body) and depth:
             depth += {"(": 1, ")": -1}.get(body[j], 0)
@@ -2067,7 +2069,7 @@ def _rest_ok(chips, rate, bind_rate):
                and (a[2] if len(a) > 2 else "INN_RATE") == bind_rate for d, n, r, a in chips)
 _inn_chips, _home_chips = _rest_chips(_inn_fn), _rest_chips(_home_fn)
 check(_rest_sig is not None and _rest_sig.group(3) == "INN_RATE" and _rest_cost is not None
-      and _rest_cost.groups() == (_rest_sig.group(1), _rest_sig.group(2)) and "spend_money(cost)" in _rest_fn
+      and _rest_cost.groups() == (_rest_sig.group(1), _rest_sig.group(2)) and has_tok(_rest_fn, "spend_money(cost)")
       and "付房钱 %d" in _rest_fn,
       "歇息扣钱 = 日数 × 费率（_on_rest 默认旅店 INN_RATE），扣的与记事写的是同一笔")
 check(len(_inn_chips) >= 2 and _rest_ok(_inn_chips, "INN_RATE", "INN_RATE"),
@@ -2076,19 +2078,19 @@ check(len(_home_chips) >= 1 and _rest_ok(_home_chips, "HOME_RATE", "HOME_RATE"),
       f"住处歇 N 日钮上房钱 = 日数 × HOME_RATE，按下照 HOME_RATE 扣（源码 {len(_home_chips)} 处钮）")
 check(_sim_inn is not None and int(_sim_inn.group(1)) == _inn_const,
       f"Main.INN_RATE {_inn_const} 与 simulate_run 候风成本用的 INN_RATE {_sim_inn.group(1) if _sim_inn else '缺'} 一致")
-check("hold_tenths" in plan_body and "cargo_hold_chance(order, known, open, expected)" in plan_body,
+check("hold_tenths" in plan_body and has_tok(plan_body, "cargo_hold_chance(order, known, open, expected)"),
       "保货按遇事日数写进航程，期限仍用静风")
 check("cargo_hold_chance(order, known, open, safe)" not in plan_body,
       "保货不改用八成日数")
 hold_fn = _locate_func(voyage_src, "cargo_hold_chance")
 tenths_fn = _locate_func(voyage_src, "cargo_hold_tenths")
 flee_fn = _locate_func(voyage_src, "flee_success_chance")
-check("flee_success_chance" in hold_fn and "event_weights" in hold_fn and "floor" in tenths_fn,
+check(has_tok(hold_fn, "flee_success_chance", call=True) and has_tok(hold_fn, "event_weights", call=True) and "floor" in tenths_fn,
       "保货是逃走失败率按逐日海盗权重连乘，十分位下整")
 check("220.0" in flee_fn and "0.25" in flee_fn and "0.9" in flee_fn,
       "逃走成功率仍是航速 / 220，夹在 0.25 和 0.9")
 world_src = open(os.path.join(ROOT, "scripts/WorldMap.gd"), encoding="utf-8").read()
-check("Voyage.flee_success_chance" in sea_src and "Voyage.flee_success_chance" in world_src,
+check(calls(sea_src, "Voyage.flee_success_chance") and calls(world_src, "Voyage.flee_success_chance"),
       "海图逃走和海战弃战用同一条成功率")
 check("220.0" not in sea_src and "220.0" not in world_src,
       "逃走的 220 只写在 Voyage，海图和海战不再各写一遍")
@@ -2098,7 +2100,7 @@ check('int(plan_r.get("safe_days", 0)) <= deadline and int(plan_r.get("hold_tent
       and 'int(plan_c.get("safe_days", 0)) <= deadline and int(plan_c.get("hold_tenths", 0)) < 8' in main_src,
       "保货警告按同一条航法看八成日数和保货")
 spoil_fn = _locate_func(voyage_src, "spoil_hold_chance")
-check("cargo_loss_factor" in spoil_fn and "pow" in spoil_fn,
+check(has_tok(spoil_fn, "cargo_loss_factor", call=True) and "pow" in spoil_fn,
       "受潮按每日概率连乘，总管减损算进去")
 spoil_ui = main_src.split("受潮：", 1)[1].split('if int(plan_c.get("expected_days"', 1)[0]
 check("safe_days" in spoil_ui and "expected_days" not in spoil_ui and "can_carry" in spoil_ui,
@@ -2108,7 +2110,7 @@ check('int(plan_r.get("safe_days", 0)) <= deadline and sr < 8' in spoil_ui
       "受潮警告按同一条航法看八成日数")
 check("受潮" in main_src and "受潮" in sea_src and "受潮不到八成" in main_src and "受潮只有" in sea_src,
       "会潮的货，牙行和海图都写出受潮成数")
-check("dampest_aboard" in sea_src and "good_perish_rate" in sea_src,
+check(has_tok(sea_src, "dampest_aboard", call=True) and has_tok(sea_src, "good_perish_rate", call=True),
       "海图按舱里会潮的货来写，委办货优先")
 check("·换风" in sea_src and "逐日累加" in main_src, "途中换风写在海图和委办上")
 
@@ -2176,10 +2178,10 @@ guild_credit_gain = int(gd_const("scripts/Main.gd", "GUILD_JOIN_CREDIT_GAIN"))
 guild_network_gain = int(gd_const("scripts/Main.gd", "GUILD_JOIN_NETWORK_GAIN"))
 check(guild_fee > 0 and guild_credit_req > 0 and guild_credit_gain > 0 and guild_network_gain > 0,
       f"行会常量为正：会费 {guild_fee}、信用门槛 {guild_credit_req}、商誉 +{guild_credit_gain}、人脉 +{guild_network_gain}")
-check(guild_join.count("spend_money(GUILD_JOIN_FEE)") == 1 and
+check(tok_count(guild_join, "spend_money(GUILD_JOIN_FEE)") == 1 and
       "merchant_credit += GUILD_JOIN_CREDIT_GAIN" in guild_join and
       "network += GUILD_JOIN_NETWORK_GAIN" in guild_join and
-      'set_flag("guild_%s" % port_id)' in guild_join,
+      has_tok(guild_join, 'set_flag("guild_%s" % port_id)'),
       "入行一次扣会费、加商誉/人脉并写 guild_<港> 旗标")
 check("Economy." not in guild_join and "apply_buy_impact" not in guild_join and
       "apply_sell_impact" not in guild_join,
@@ -2196,12 +2198,12 @@ exam_sit = _locate_func(_guild_src, "on_exam_sit")
 exam_days = int(gd_const("scripts/Main.gd", "EXAM_SIT_DAYS"))
 exam_ports_src = _locate_func(_guild_src, "setup_exam")
 check(exam_days > 0 and exam_days == 15, f"赴试耗时 {exam_days} 日（固定为 15 日，不以经济倍率折算）")
-check("advance_days(EXAM_SIT_DAYS)" in exam_sit and "add_money" not in exam_sit and
+check(has_tok(exam_sit, "advance_days(EXAM_SIT_DAYS)") and "add_money" not in exam_sit and
       "spend_money" not in exam_sit and "apply_buy_impact" not in exam_sit and
       "apply_sell_impact" not in exam_sit,
       "赴试只耗日并结算身份倾向/名声，不发钱、不砸盘")
-check('"exam_sat"' in exam_sit and "add_fame(4)" in exam_sit and
-      "add_fame(1)" in exam_sit and "scholar_tendency += 2" in exam_sit and
+check('"exam_sat"' in exam_sit and has_tok(exam_sit, "add_fame(4)") and
+      has_tok(exam_sit, "add_fame(1)") and "scholar_tendency += 2" in exam_sit and
       "sea_tendency += 1" in exam_sit,
       "赴试士人/海路两支的名声与倾向增量完整")
 check('const EXAM_SIT_PORTS := ["xinghua", "quanzhou"]' in main_src and

@@ -11,6 +11,7 @@ const VIEW := Vector2i(1280, 720)
 var OUT_DIR := ShotGate.out_dir("wire")
 const STAGE := "res://scenes/vision/VisionStage.tscn"
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
+const SP := preload("res://tools/src_probe.gd")  # 按名认函数的源码探查（lane cs15：不按前缀认名）
 const TAG := "QA_WIRE_VISION"
 const EXPECTED_SHOTS := 2
 const ShotGate := preload("res://tools/shot_gate.gd")
@@ -119,10 +120,10 @@ func _run() -> void:
 
 func _check_wiring() -> void:
 	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
-	_expect("KEY_F8" in main_src and "_open_vision_stage" in main_src, "Main F8 / _open_vision_stage")
+	_expect("KEY_F8" in main_src and SP.has_tok(main_src, "_open_vision_stage", true), "Main F8 / _open_vision_stage")
 	_expect("市舶纪事" in main_src and "_VISION_STAGE" in main_src, "Main 岸带「市舶纪事」")
 	var sc := FileAccess.get_file_as_string("res://scripts/SeaChart.gd")
-	_expect("_battle_sea_name" in sc and "sea_name" in sc, "SeaChart sea_name 写入 pending_battle")
+	_expect(SP.has_func(sc, "_battle_sea_name") and "sea_name" in sc, "SeaChart sea_name 写入 pending_battle")
 	var wm := FileAccess.get_file_as_string("res://scripts/WorldMap.gd")
 	_expect('pb.get("sea_name"' in wm or "sea_name" in wm, "WorldMap letterbox 读 sea_name")
 	_expect("CombatLetterbox" in wm or "_LETTERBOX_PATH" in wm, "WorldMap 已接 CombatLetterbox")

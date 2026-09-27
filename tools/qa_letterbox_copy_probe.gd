@@ -14,6 +14,7 @@ const VIEW := Vector2i(1280, 720)
 var OUT_DIR := ShotGate.out_dir("letterbox")
 const STAGE := "res://scenes/vision/VisionStage.tscn"
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
+const SP := preload("res://tools/src_probe.gd")  # 按名认函数的源码探查（lane cs15：不按前缀认名）
 const TAG := "QA_LETTERBOX_COPY"
 const EXPECTED_SHOTS := 4
 const ShotGate := preload("res://tools/shot_gate.gd")
@@ -168,7 +169,7 @@ func _check_copy_contracts() -> void:
 	_expect('HINT_ESC := "B　合上纪事"' in vs, "Hint 为「B　合上纪事」")
 	_expect('NOTE_PORTRAIT := "绢本立像　名册可核"' in vs, "旁注为「绢本立像　名册可核」")
 	_expect('SLIP_TITLE := "市舶纪事"' in vs, "题签主名「市舶纪事」")
-	_expect("市舶纪事" in main_src and "_open_vision_stage" in main_src, "Main 岸带「市舶纪事」")
+	_expect("市舶纪事" in main_src and SP.has_tok(main_src, "_open_vision_stage", true), "Main 岸带「市舶纪事」")
 	_expect(Letterbox.sea_title("刺桐外海", "遇敌") == "刺桐外海・遇敌", "sea_title 纪实格式")
 	_expect(Letterbox.outcome_title("win", "刺桐外海") == "刺桐外海・战罢", "outcome win")
 	_expect(Letterbox.outcome_title("board", "刺桐外海") == "刺桐外海・夺船", "outcome board")

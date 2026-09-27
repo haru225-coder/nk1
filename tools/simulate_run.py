@@ -1269,7 +1269,9 @@ print()
 print("风涛分摊：护航船自己吃一份，旗舰不替它挨（云端 storm-7d9f）")
 print("="*70)
 voyage_src = open(os.path.join(ROOT, "scripts", "core", "Voyage.gd"), encoding="utf-8").read()
-storm_body = voyage_src.split("func _storm_event", 1)[1].split("\nfunc ", 1)[0]
+from func_body import locate_func  # lane cs15：原先 split("func _storm_event") 按前缀切，认得到 _storm_event_v2
+from src_probe import has_tok
+storm_body = locate_func(voyage_src, "_storm_event")
 hit_m = re.search(r"var each := ([0-9.]+) \* severity", storm_body)
 storm_base = float(hit_m.group(1)) if hit_m else 0.0
 flag_h = float(ships["fu_ship_medium"]["durability"])
@@ -1281,7 +1283,7 @@ piled = flag_h - each * 2
 print(f"  满风涛每艘 {each:.0f}：福船 {flag_h:.0f}→{flag_after:.0f}，小艍 {esc_h:.0f}→{esc_after:.0f}")
 check(flag_after == flag_h - each and esc_after == esc_h - each, "两艘各掉一份")
 check(flag_after > piled, f"旗舰剩 {flag_after:.0f}，没有吃掉护航的那份（堆旗舰会剩 {piled:.0f}）")
-check("damage_each_ship" in storm_body and "ships.size()" not in storm_body,
+check(has_tok(storm_body, "damage_each_ship", call=True) and "ships.size()" not in storm_body,
       "风涛脚本按艘扣，不再乘船数")
 print("航法与委办：接一单、针路送到、交货不砸盘")
 print("="*70)

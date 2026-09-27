@@ -10,6 +10,7 @@ extends SceneTree
 
 const VIEW := Vector2i(1280, 720)
 const CHART_SCENE := "res://scenes/SeaChart.tscn"
+const SP := preload("res://tools/src_probe.gd")  # 按名认函数的源码探查（lane cs15：不按前缀认名）
 var OUT_DIR := ShotGate.out_dir("voyage")
 const TAG := "QA_VOYAGE"
 const EXPECTED_SHOTS := 6
@@ -164,8 +165,10 @@ func _check_wiring() -> void:
 	for bad in ["十次约有八次", "逃走没被抢走货", "日速 ×", "今日截止", "已逾期", "[b]舰队[/b]"]:
 		_expect(bad not in vis, "可见文案无「%s」" % bad)
 	var voy := FileAccess.get_file_as_string("res://scripts/core/Voyage.gd")
-	_expect("日行较快" in voy or "日行较缓" in voy, "order_blurb 纪实短注")
-	_expect("日速 ×" not in _visible_strings(voy), "order_blurb 无日速公式")
+	# 文案点名 order_blurb 的，按 order_blurb 函数体认；日速公式查的是整份 Voyage 可见文案，文案就说全文件（lane cs15）
+	var blurb := SP.func_body(voy, "order_blurb")
+	_expect("日行较快" in blurb or "日行较缓" in blurb, "order_blurb 纪实短注")
+	_expect("日速 ×" not in _visible_strings(voy), "Voyage 全文件可见文案无日速公式")
 
 
 func _visible_strings(src: String) -> String:

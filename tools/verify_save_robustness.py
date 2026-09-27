@@ -28,6 +28,7 @@ if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关�
     import gate_json; gate_json.maybe_json(__file__)
 
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
+from src_probe import has_tok  # 按名认函数的探查一律经 tools/src_probe.py（lane cs15：不按前缀认名）
 SAVELOAD = os.path.join(ROOT, "scripts", "core", "SaveLoad.gd")
 PARTS = (("calendar", "Calendar"), ("economy", "Economy"), ("fleet", "Fleet"), ("crew", "Crew"))
 FROM_DICT_SRC = {
@@ -137,8 +138,8 @@ def build_model(src):
          "schema": _const_int(src, "SAVE_SCHEMA"), "schema_key": _const_str(src, "SCHEMA_KEY", SCHEMA_KEY)}
 
     hs = fn.get("has_save", "")
-    m["has_primary"] = "_path(slot)" in hs and "file_exists" in hs
-    m["has_bak"] = "_bak_path(slot)" in hs and "file_exists" in hs
+    m["has_primary"] = has_tok(hs, "_path(slot)") and "file_exists" in hs
+    m["has_bak"] = has_tok(hs, "_bak_path(slot)") and "file_exists" in hs
 
     # lane sv 起守卫都在 _inspect（_read 只是取 data 的薄壳）；旧形仍在 _read
     rd = fn.get("_inspect") or fn.get("_read", "")
@@ -217,7 +218,7 @@ def build_model(src):
         for tm in re.finditer(rf'if\s+{v}\.has\("(\w+)"\)\s+and\s+typeof\({v}\["\1"\]\)\s*!=\s*TYPE_(\w+)\s*:\s*\n\s*return\s+"', cp):
             rules["typed"].setdefault(part, {})[tm.group(1)] = tm.group(2)
     bfb = _live(fn.get("_bad_fields", ""))
-    if not ("_is_num(part[k])" in bfb and "TYPE_DICTIONARY" in bfb and "TYPE_ARRAY" in bfb and m["is_num_ok"]):
+    if not (has_tok(bfb, "_is_num(part[k])") and "TYPE_DICTIONARY" in bfb and "TYPE_ARRAY" in bfb and m["is_num_ok"]):
         rules["nums"], rules["dicts"], rules["arrays"] = {}, {}, {k: [] for k in rules["arrays"]}
         # ships 等单独写的 TYPE_ARRAY 判断不依赖 _bad_fields，保留
         for tm in re.finditer(r'if\s+(\w+)\.has\("(\w+)"\)\s*:\s*\n\s*if\s+typeof\(\1\["\2"\]\)\s*!=\s*TYPE_ARRAY', cp):
@@ -227,7 +228,7 @@ def build_model(src):
 
     rs = fn.get("_read_slot", "")
     rv = fn.get("_resolve", "")
-    m["resolve"] = bool(rv) and "_resolve(slot)" in rs
+    m["resolve"] = bool(rv) and has_tok(rs, "_resolve(slot)")
     if m["resolve"]:
         # lane sv：_resolve 统一定出 none / primary / bak / future / corrupt
         cut = _pos(rv, r'_inspect\(_bak_path\(slot\)\)')
@@ -241,7 +242,7 @@ def build_model(src):
     else:
         m["resolve_none"] = False
         m["slot_primary_first"] = _before(rs, r'_read\(_path\(slot\)\)', r'_read\(_bak_path\(slot\)\)') \
-            or ("_read(_path(slot))" in rs and "_bak_path" not in rs)
+            or (has_tok(rs, "_read(_path(slot))") and "_bak_path" not in rs)
         m["slot_bak_fallback"] = bool(re.search(r'if\s+data\.is_empty\(\)\s*:[\s\S]*_read\(_bak_path\(slot\)\)', rs))
         m["primary_future_stops"] = m["bak_future_reported"] = False
 
@@ -251,10 +252,10 @@ def build_model(src):
         or bool(re.search(r'if\s+typeof\(raw\)\s*!=\s*TYPE_DICTIONARY\s*:\s*\n\s*return\s*\{\}', ad))
 
     lg = fn.get("load_game", "")
-    if "_read_slot(slot)" in lg or (m["resolve"] and "_resolve(slot)" in lg):
+    if has_tok(lg, "_read_slot(slot)") or (m["resolve"] and has_tok(lg, "_resolve(slot)")):
         m["load_reader"] = "_read_slot"
     else:
-        m["load_reader"] = "_read" if "_read(_path(slot))" in lg else None
+        m["load_reader"] = "_read" if has_tok(lg, "_read(_path(slot))") else None
     m["load_writes_back"] = bool(re.search(
         r'if\s+int\(\w+\["schema"\]\)\s*<\s*SAVE_SCHEMA\s*:\s*\n\s*_write_back_migrated\(', lg)) \
         and _before(lg, r'_write_back_migrated\(', r'\w+\.from_dict\(')
@@ -284,9 +285,9 @@ def build_model(src):
 
     sl = fn.get("save_label", "")
     m["label_none_guard"] = bool(re.search(r'if\s+not\s+has_save\(slot\)\s*:\s*\n\s*return\s+"未记"', sl))
-    if "_read_slot(slot)" in sl or (m["resolve"] and "_resolve(slot)" in sl):
+    if has_tok(sl, "_read_slot(slot)") or (m["resolve"] and has_tok(sl, "_resolve(slot)")):
         m["label_reader"] = "_read_slot"
-    elif "_read(_path(slot))" in sl:
+    elif has_tok(sl, "_read(_path(slot))"):
         m["label_reader"] = "_read_primary"
     elif re.search(r'FileAccess\.open\(_path\(slot\)', sl):
         m["label_reader"] = "raw_primary"
@@ -306,7 +307,7 @@ def build_model(src):
         m["source_ok"] = m["resolve_none"] and m["slot_primary_first"] \
             and all(t in rv for t in ('"primary"', '"bak"', '"corrupt"', '"future"'))
 
-    m["scene_via_slot"] = "_read_slot(slot)" in fn.get("saved_scene", "")
+    m["scene_via_slot"] = has_tok(fn.get("saved_scene", ""), "_read_slot(slot)")
     m["chained_open"] = bool(re.search(r'FileAccess\.open\([^)]*\)\s*\.\s*get_as_text', code))
     m["from_dict"] = {part: parse_from_dict(rel) for part, rel in FROM_DICT_SRC.items()}
     return m
