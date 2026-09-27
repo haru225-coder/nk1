@@ -121,6 +121,13 @@ REGISTRY = [
     {"id": "gates_md", "tier": "lane", "when": "动门禁清单 / docs/GATES.md", "kind": "py", "file": "tools/gates_md.py",
      "judge": "（lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序",
      "green": "`结果：全部通过`", "red": "`✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write`"},
+    {"id": "RefsMacPath", "tier": "lane", "when": "新增 / 改动脚本或文档里写外部路径的地方（引擎 / 工具路径、素材与截图默认根、安装与照抄命令）", "kind": "py",
+     "file": "tools/check_mac_paths.py",
+     "judge": "（lane doc9）git 已跟踪的文本文件里不许写 Mac / Homebrew 专属绝对路径（Mac 家目录、Homebrew 前缀、Godot 应用包、用户资料库目录等 10 条，"
+              "模式与理由见脚本 `PATTERNS`，脚本自身不扫）；已定级的留档进白名单 `ALLOW`：按文件登记命中行数、头部横幅 / 回指注字样与理由，"
+              "行数不符、字样丢了、条目失效都判红；未跟踪文件只记 `⚠`",
+     "green": "`白名单外 0 处命中（扫 N 个已跟踪文本文件，本脚本自身除外）` + `结果：全部通过`",
+     "red": "`✗` 行（白名单外命中逐行列 `文件:行 … ← 命中串`；白名单文件行数不符；横幅 / 回指注丢了；失效条目）；`结果：N 项问题`"},
     {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/legacy/verify_narrative.py",
      "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
     {"id": "p7_smoke", "tier": "no", "kind": "godot", "file": "tools/legacy/p7_smoke.gd",
@@ -251,6 +258,11 @@ CI_STEPS = [
      "expect": "`结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`）",
      "fail": "`✗` 行、退 1：`MISSING` = 提交了 docs 下的 .md 没在 docs/README.md 补一行；`DEAD` = 索引链的文件挪走 / 改名 / 删了；"
              "`DUP` = 同一份文档链了两次。修法：改 docs/README.md"},
+    {"id": "Mac 专属绝对路径（RefsMacPath）", "lane": "doc9", "needs": "python3 + git",
+     "cmd": "python3 tools/check_mac_paths.py",
+     "expect": "`结果：全部通过`（前面每条白名单 `✓ 命中 N 行，登记 N 行（理由）`、`白名单外 0 处命中（扫 N 个已跟踪文本文件…）`）",
+     "fail": "`✗` 行、退 1：白名单外的已跟踪文件写了 Mac / Homebrew 专属路径（逐行列出命中串；改成 env / PATH / 仓库相对路径）；"
+             "白名单文件命中行数与登记不符、头部「勿运行」横幅 / 历史回指注被删、条目文件已不在。修法：改文件，或改 `tools/check_mac_paths.py` 的 `ALLOW`（写明理由）"},
 ]
 
 
