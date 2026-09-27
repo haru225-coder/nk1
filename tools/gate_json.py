@@ -95,7 +95,7 @@ REGISTRY = [
      "green": "`STORY_CHECK SUMMARY fails=0`", "red": "`STORY_CHECK FAIL …`；`fails=k`"},
     {"id": "p7", "gate": "p7_guild_exam_smoke", "tier": "must", "kind": "godot", "file": "tools/p7_guild_exam_smoke.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/p7_guild_exam_smoke.gd"],
-     "judge": "行会入行 / 贡院赴试 / 誊录：扣费门槛、每章一次、跨月结算时序",
+     "judge": "行会入行 / 行情抄本条数 / 贡院赴试 / 誊录：扣费门槛、商誉 3 / 5 条、每章一次、跨月结算时序",
      "green": "`P7_GUILD_EXAM_SMOKE_OK`", "red": "`FAIL …` 行；`P7_GUILD_EXAM_SMOKE_FAIL k`"},
     {"id": "patrol", "gate": "patrol_shell", "tier": "must", "kind": "godot", "file": "tools/patrol_shell.gd",
      "args": ["--path", ".", "-s", "res://tools/patrol_shell.gd"], "display": True,

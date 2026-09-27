@@ -82,6 +82,59 @@ func _snap() -> Dictionary:
 	}
 
 
+## 行会页上「运往 X　多 N」的行情抄本（树序），跳过同帧待删的旧条子。
+func _spread_hints(root_node: Node) -> Array:
+	var out: Array = []
+	if root_node.is_queued_for_deletion():
+		return out
+	if root_node is Label:
+		var t: String = (root_node as Label).text
+		if t.begins_with("运往 ") and t.contains("　多 "):
+			out.append(t)
+	for c in root_node.get_children():
+		out.append_array(_spread_hints(c))
+	return out
+
+
+## ── 0. 行情抄本条数（lane gd19）：商誉 < 8 抄 3 条、≥ 8 抄 5 条，再高也不多抄 ──
+## 条数、门槛用字面量（不读 main.GUILD_CREDIT_WIDE），改常量也判红。行情钉平（rate 1.0），
+## 可抄总数须 ≥ 6，否则两档上限压不住、5→4 这类改动测不出，直接判红而不是空转。
+func _check_spread_rows(main) -> void:
+	var eco = root.get_node("Economy")
+	var saved: Dictionary = eco.rates.duplicate(true)
+	for pid in eco.rates.keys():
+		for gid in eco.rates[pid].keys():
+			eco.rates[pid][gid] = 1.0
+	var all_rows: Array = main._collect_spreads("quanzhou", 0)
+	# 期望条目取自同一 _collect_spreads，排序另由这里独立核：利润须不增，否则「前 N 条」就不是最赚的 N 条
+	var sorted_ok := true
+	for i in range(1, all_rows.size()):
+		if int(all_rows[i]["profit"]) > int(all_rows[i - 1]["profit"]):
+			sorted_ok = false
+	if all_rows.size() < 6:
+		_fail("行情钉平后泉州只有 %d 条可抄价差（须 ≥ 6 才测得出上限）" % all_rows.size())
+	elif not sorted_ok:
+		_fail("_collect_spreads 没按利润降序：%s" % str(all_rows.map(func(r): return int(r["profit"]))))
+	else:
+		for case in [{"credit": 7, "rows": 3}, {"credit": 8, "rows": 5}, {"credit": 30, "rows": 5}]:
+			_gs.merchant_credit = int(case["credit"])
+			main.load_scene("quanzhou_guild")
+			if str(main.current_scene_id) != "quanzhou_guild":
+				_fail("没能打开泉州行会，现为 %s" % str(main.current_scene_id))
+				continue
+			var want: Array = []
+			for row in all_rows.slice(0, int(case["rows"])):
+				want.append("运往 %s　多 %d" % [_gm.get_port_name(row["port"]), int(row["profit"])])
+			var got: Array = _spread_hints(main)
+			if got.size() != want.size():
+				_fail("泉州行会商誉 %d 抄了 %d 条行情，应 %d 条" % [case["credit"], got.size(), want.size()])
+			elif got != want:
+				_fail("泉州行会商誉 %d 的行情不是利润前 %d 条：%s ≠ %s" % [case["credit"], want.size(), got, want])
+			else:
+				_ok("泉州行会商誉 %d：抄利润前 %d 条行情（可抄 %d 条）" % [case["credit"], want.size(), all_rows.size()])
+	eco.rates = saved
+
+
 func _run(main) -> void:
 	# Main._ready 里 call_deferred(start_game)，空等几帧直到开场场景写上。
 	for _i in 8:
@@ -93,6 +146,8 @@ func _run(main) -> void:
 	_gs.last_port = "quanzhou"
 	for port in ["quanzhou", "hakata", "guangzhou"]:
 		_clear_flag("guild_%s" % port)
+
+	_check_spread_rows(main)
 
 	# ── 1. 泉州入行成功 ──
 	_gs.money = 5000
