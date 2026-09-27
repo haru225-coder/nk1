@@ -28,6 +28,12 @@ const STATE_NUM_KEYS := [
 	"network", "merchant_credit", "sea_tendency", "scholar_tendency", "hometown_tendency",
 	"draft_salt", "shore_salt", "broker_salt", "berth_index", "era_trips", "era_profit",
 ]
+## state 容器内条目的数字位：GameState 读档与运行时直接 int()/float()，给成数组/对象/null 当场 SCRIPT ERROR；
+## contract 的还在 from_dict 半途抛，其后 player_name/identity/ended 等全留缺省却照报读档成功。
+const CONTRACT_NUM_KEYS := [
+	"qty", "remaining", "purse", "unit_purse", "paid", "due_day", "deadline_days", "voyage_days", "offer_month",
+]
+const RUMOR_NUM_KEYS := ["rate", "day"]
 
 
 func _ready() -> void:
@@ -313,17 +319,41 @@ func _check_partitions(data: Dictionary) -> String:
 		if typeof(r) != TYPE_DICTIONARY:
 			return "crew.hired 含非对象条目"
 
-	# GameState.from_dict 直赋强类型字段；flags / 发现录另由 _harden_state 清洗，contract 经无类型局部量判型。
+	# GameState.from_dict 直赋强类型字段；flags / 发现录另由 _harden_state 清洗，contract 经无类型局部量判型（条目见 _bad_entries）。
 	# rumors / contract_ban 虽在赋值后判型，但强类型变量赋错型当场抛 SCRIPT ERROR，兜底来不及，须在此拦。
 	var state: Dictionary = _as_dict(data.get("state", {}))
 	why = _bad_fields(state, STATE_NUM_KEYS, ["era_routes", "port_bans", "siege", "rumors", "contract_ban"],
 			["ledger_notes", "visited_ports", "news_seen", "crew_history"])
 	if why != "":
 		return "state." + why
+	why = _bad_entries(state)
+	if why != "":
+		return "state." + why
 	if state.has("has_customs_permit") and typeof(state["has_customs_permit"]) != TYPE_BOOL:
 		return "state.has_customs_permit 不是布尔"
 	if state.has("last_port") and typeof(state["last_port"]) != TYPE_STRING:
 		return "state.last_port 不是字符串"
+	return ""
+
+
+## state 容器内条目体检，与 _bad_fields 同口径：数字位给了却不是数字即坏。
+## contract_ban {港: 年月序号}、rumors {港: {货: {rate, day}}}、contract 的数字字段。
+## 传闻簿 / 传闻条目本身非对象时 rumor_of 已按型跳过，contract 非对象 from_dict 已判型置空，都不算坏。
+func _bad_entries(state: Dictionary) -> String:
+	var ban: Dictionary = _as_dict(state.get("contract_ban", {}))
+	for port in ban:
+		if not _is_num(ban[port]):
+			return "contract_ban.%s 不是数字" % port
+	var rumors: Dictionary = _as_dict(state.get("rumors", {}))
+	for port in rumors:
+		var book: Dictionary = _as_dict(rumors[port])
+		for good in book:
+			var why := _bad_fields(_as_dict(book[good]), RUMOR_NUM_KEYS, [])
+			if why != "":
+				return "rumors.%s.%s.%s" % [port, good, why]
+	var why := _bad_fields(_as_dict(state.get("contract", {})), CONTRACT_NUM_KEYS, [])
+	if why != "":
+		return "contract." + why
 	return ""
 
 
