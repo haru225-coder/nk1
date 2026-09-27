@@ -57,3 +57,62 @@ J 与它大小相当，但要改 4 处门禁，还牵涉 Main 在 L1B 的登记�
 3. **G2 行会 / 贡院**（203 / 11）风险中。check_symbols 有 66 处断言，都经 read_main_src 读；p7 只经方法名调用。`play_transition` 是公共件，不要一起搬。
 4. **A / C / H / I / K** 风险高。先单开一个门禁 lane，给 verify_economy / verify_story_data / check_assets / simulate_endgame / simulate_run 共用一个「读 Main 家族源码」的 helper。
 5. 门禁小事：`MAIN_SPLITS` 已经登记到第 4 件，建议抽成 `tools/main_splits.txt`，check_symbols 和 smoke 共读（ms2 待议 6）。
+
+---
+
+## 第五刀（lane main5，2026-09-28）：调查 + 见面页 → `scripts/ui/NpcPage.gd`
+
+### 调查（基 `6ff3d01`：Main.gd 5134 行，第四刀之后）
+
+口径同第四刀：簇跨度从首支 func 行算到末支 func 的最后一行，含簇内 `##` 注释，不含簇间常量块和分节横线。
+「被簇外调」「他处引用」「直读 Main.gd 的门禁」的含义也同上（他处引用不含 Main.gd，也不含本刀新增的 NpcPage.gd）。
+按纯行数，第 6 名 K（251）和第 7 名 J（250）只差 1 行，算并列，所以表里列 7 簇。
+按 ms2 的「页面簇」口径，I、K 两段核心流程不算，前 6 是 H / A / E / C / J / G2。两种口径 J 都在前 6。
+
+| # | 簇（行段） | 行 / 支 | 被簇外调 | 他处引用 | 跨切依赖：Main 成员 / autoload / log_msg·load_scene | 直读 Main.gd 的门禁 | 风险 |
+|---|---|---|---|---|---|---|---|
+| 1 | H 守城 / 终局（`_check_absent_from_xinghua` … `_special_cards`，4208–5131） | 924 / 27 | 15 | check_symbols 10、verify_story_data 8、ShotTour 7、ChapterSheet 5、check_assets 2、story 1、smoke 1 | 8 个：choices_container 26、current_scene_id 21、body_text 12；GameState 155、Fleet 17；log_msg 18、load_scene 16 | verify_story_data 切 `_special_cards` / `_check_absent_from_xinghua`；check_assets 读 `ENDING_BG` 和结局名；simulate_endgame 读崖山门槛 | 高 |
+| 2 | A 牙行（`_setup_market` … `_on_sell`，1233–1878） | 646 / 15 | 1 | verify_economy 16、qa_contract_stock 4、check_symbols 4、qa_economy_spread 2、qa_money_notices 1 | 10 个：_market_ship 12、broker_hand 8、_market_hold 5、_contract_detail_open 5；Economy 24、Fleet 21、GameState 20、Voyage 14；log_msg 15 | verify_economy 直读（切 `_setup_market` / `_add_contract_panel` / `_make_market_row` / `_affordable_qty` / 各 tip） | 高 |
+| 3 | E 岸带（`_setup_port_mode` … `_on_set_sail`，3115–3620） | 506 / 19 | 7（`_band_*` 被守城 / 终局复用） | check_symbols 20、smoke 2、port_doors / siege / ending_reread 探针各 2、patrol 1、SlipKit 1、ChapterSheet 1 | 14 个：shore_hand、_shore_mode、_shore_facilities、_shore_title_seen、port_mode…；GameState 17；update_status_panel 6 | smoke 按 family src 切 `_setup_port_mode` | 高：状态最散，和 H 互调 |
+| 4 | C 船屋（`_yard_port_name` … `_on_buy_supplies`，2083–2401） | 319 / 15 | 1（`_on_dismiss_crew` / `_on_hire_candidate` 由 TavernPage 经 main. 接钮） | check_symbols 16、verify_economy 5、TavernPage 2 | 5 个：current_scene_id 17、_upgrade_busy 9；Fleet 47、GameState 30；log_msg 23、load_scene 14 | verify_economy 直读 5 处 | 中高 |
+| 5 | I 调查页 / 选项 / 效果（`_setup_investigation_mode` … `_activate_first_choice`，3852–4143） | 292 / 14 | 3（`_add_leave_button` 全部设施页都用） | check_symbols 9、verify_story_data 7、CharacterCodex / TavernPage 各 2，WorldMap / SeaChart / MapView / GameState 各 1 | 14 个；GameState 15、Fleet 7；含 `_gui_input` / `_unhandled_input` 两个引擎虚函数 | verify_story_data 直接切 `func apply_effects` | 高：核心流程，虚函数不宜转发 |
+| 6 | K 场景加载 / 分发（`load_scene` … `_setup_dynamic_scene`，978–1228） | 251 / 11 | 5 | check_symbols 20、story 19、p7 11、ShotTour 11、patrol 8、各 qa 探针 6–8 | 15 个；GameState 10 | `PORT_BG` / `FACILITY_BG` / `FACILITY_SUFFIXES` 被 check_assets、verify_story_data 直读（常量可留在 Main） | 高：所有页面都经过这里 |
+| 7 | **J 见面页（`_frame_portrait` … `_fill_npc_profile` 502–643，`_add_npc_button` … `_on_npc_leave` 2940–3047）** | **250 / 11** | 3（`_frame_portrait` / `_dress_npc_sheet` 在 `_ready`；`_add_npc_button` 被市舶司页与 TavernPage 调） | TavernPage 2、smoke 2、ShotTour 2、check_assets 1（注释）、check_symbols 1 | 13 个：_npc_profile 14、npc_portrait 11、_npc_codex_btn 11、npc_name_lbl / npc_dialog_lbl 各 7、npc_actions 6；GameState 4、GameManager 4；log_msg 0、load_scene 0 | smoke 两处切 `_show_npc_mode`（一处直读 Main.gd、一处读 family src，都会切到转发）；verify_story_data 直读 Main.gd 查 `codex_short(`；L1B / L1 上屏入口要登记新文件 | **中 → 本刀** |
+
+另外两簇更小：G2 行会 / 贡院 200 / 11（check_symbols 有 66 处引用，都经 read_main_src；p7 专门盯它；`play_transition` 是公共件）；F 航海日志 120 / 5（`_show_save_dialog` … `_on_load_slot`，只用 `_save_host`，Python 门禁里没有直读它的）。
+
+**为什么选 J**：前 6 名（两种口径都算）里只有 J 不是高或中高。簇内不存状态，11 个状态成员都留在 Main、经 `main.` 取；回调都 bind 到 Main 的同名方法。
+J 只调 GameState / GameManager 各 4 处，不碰 log_msg / load_scene。要改的门禁有 4 处：smoke 两处切片、verify_story_data 的 `codex_short(`，以及 L1B / L1 登记。
+第四刀台账预计「两段都拆走后 Main 就不再读人物 API」，实测不对：Main 的人物志钮还调 `all_characters()`，所以 Main 仍留在 L1B，只改了说明文字。
+H / A / E / I / K 在核心流程上或被 Python 门禁多处直读；C 被 verify_economy 直读 5 处，本刀新加的旅店门禁（见下）也直读 Main 的 `_on_rest` / `_setup_residence`。
+
+### 落地
+
+- `scripts/ui/NpcPage.gd`（新增，264 行，`.uid` 同 commit）：11 支原样搬成 `static func`（frame_portrait / dress_npc_sheet / mount_npc_profile / fill_npc_profile / add_npc_button / on_meet_npc / show_npc_mode / set_npc_speech / on_npc_intel / on_npc_bribe / on_npc_leave），招呼常量 `NPC_GREETING` 随簇搬走。
+  Main 成员一律加 `main.` 前缀。经 `main.` 取值推断不出类型，13 处 `:=` 改成与原推断相同的显式类型（Node / int / String / Label / VBoxContainer / HBoxContainer）。
+  人物志钮仍是一个 lambda（`main._open_codex(main._npc_codex_id)`），按下时才读 id，行为不变。
+- Main.gd **5134 → 4929（−205）**。Main 保留同名同签名的一行转发（`const _NPC := preload(...)`）。
+  11 个状态成员（npc_mode / npc_portrait / npc_name_lbl / npc_dialog_lbl / npc_actions / _npc_speech / _npc_courtesy / _npc_faction / _npc_profile / _npc_codex_btn / _npc_codex_id）和 `_CHAR_ART` 留在 Main。
+- 门禁同步：
+  - 两处 `MAIN_SPLITS` 都加 NpcPage.gd；`godot_compile_check` 的 SCRIPTS 加 1 行。
+  - `godot_smoke` 的「见面行情走工席」「见面页立绘先认 characters.json」两处改去 NpcPage 里切 `static func show_npc_mode(`（前一处切完去掉 `main.` 前缀再比）。
+    「见面册疏通留出字距」查 `UiTheme.plain_log(_gather_price_intel` 的那半句，改成在去掉 `main.` 前缀的 family src 里查：smoke 的 family src 只把文件拼在一起，不像 check_symbols 的 read_main_src 会去前缀。
+  - `verify_story_data`：见面页简介改查 NpcPage（Main 里仍不许出现 `"bio_short"`）；`L1B_READERS` 加 NpcPage（`{"api"}`，读 character_for_npc），Main 那条的说明文字改掉；`L1_UI_FILES` 加 NpcPage，让搬走的 `ch.get(...)` 仍在上屏字段白名单的扫描范围内。
+- 拼回原文：`read_main_src()` 拼回的 11 支和基线 Main 逐行比，除上面 13 行 `:=` 外完全一致。
+
+### 同刀门禁：旅店房钱算式（第四刀待议 2）
+
+`verify_economy.py` 加 4 条源码断言：
+1. `_on_rest` 默认费率 INN_RATE，扣钱 = 日数 × 费率，扣的和记事写的是同一笔；
+2. 旅店（`TavernPage.setup_inn`）每个接 `_on_rest` 的钮：钮文里的日数、价的日数、bind 的日数是同一个变量，价的费率是 INN_RATE，bind 不另塞费率；
+3. 住处（`Main._setup_residence`）同理，走 HOME_RATE；
+4. Main 的 INN_RATE 等于 simulate_run 算候风成本用的 INN_RATE。
+
+第四刀的 M11（`nights * 16`）原样改回去，现在判红。
+
+### 下一刀候选（行数按基 6ff3d01）
+
+1. **F 航海日志**（120 / 5）风险低，和 ChapterSheet 同属浮层册页。check_symbols 的 `_show_save_dialog` / `_on_save_slot` / `_on_load_slot` 断言都经 read_main_src，不用改；smoke 有一处在 family src 里切 `func _show_save_dialog`（会切到转发），要改去拆出件里切。
+2. **G2 行会 / 贡院**（200 / 11）风险中。check_symbols 的 66 处引用都经 read_main_src；verify_economy / simulate_run 用 `gd_const("scripts/Main.gd", "GUILD_*")` 直读常量，常量留在 Main 就不受影响。`play_transition` 不要一起搬。
+3. **A / C / H / I / K / E** 风险高。先单开一个门禁 lane，给 verify_economy / verify_story_data / check_assets / simulate_endgame / simulate_run 共用一个「读 Main 家族源码」的 helper。本刀的旅店断言直接读 TavernPage.gd，也应该改走这个 helper。
+4. 门禁小事：`MAIN_SPLITS` 已经登记到第 5 件，两份清单（check_symbols / smoke）靠对账同步，建议抽成 `tools/main_splits.txt` 共读（ms2 待议 6、第四刀候选 5）。

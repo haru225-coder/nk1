@@ -13,7 +13,7 @@ func _init() -> void:
 ## Main.gd 拆出去的件（与 tools/check_symbols.py 的 MAIN_SPLITS 同步，check_symbols 会对账）。
 ## 源码断言读 Main.gd + 这些件接在一起的全文：函数搬走后「某字样须在 / 不得在」不因 Main 里只剩一行转发而误判。
 ## （按 func 切函数体的断言仍切 Main 里的 func；要断言搬走的函数体，去拆出件里切。）
-const MAIN_SPLITS := ["res://scripts/ui/SlipKit.gd", "res://scripts/ui/LedgerPage.gd", "res://scripts/ui/ChapterSheet.gd", "res://scripts/ui/TavernPage.gd"]
+const MAIN_SPLITS := ["res://scripts/ui/SlipKit.gd", "res://scripts/ui/LedgerPage.gd", "res://scripts/ui/ChapterSheet.gd", "res://scripts/ui/TavernPage.gd", "res://scripts/ui/NpcPage.gd"]
 
 
 func _main_family_src() -> String:
@@ -111,10 +111,11 @@ func _run() -> void:
 		and chart_src.find("Vector2(260, 0)") < 0
 		and chart_src.find("Vector2(300, 0)") < 0,
 		"海图左右栏收成顶匾，船况点开才占画面", fails)
-	var meet_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
-	var meet_at := meet_src.find("func _show_npc_mode")
-	var meet_end := meet_src.find("\nfunc ", meet_at + 1)
-	var meet_body := meet_src.substr(meet_at, meet_end - meet_at) if meet_at >= 0 and meet_end > meet_at else ""
+	# 见面页在 NpcPage（Lane main5 拆出），Main 里只剩一行转发：函数体去拆出件里切，去掉 main. 前缀即搬走前的原文
+	var meet_src := FileAccess.get_file_as_string("res://scripts/ui/NpcPage.gd")
+	var meet_at := meet_src.find("static func show_npc_mode(")
+	var meet_end := meet_src.find("\nstatic func ", meet_at + 1)
+	var meet_body := meet_src.substr(meet_at, meet_end - meet_at).replace("main.", "") if meet_at >= 0 and meet_end > meet_at else ""
 	_check(meet_body.find("_begin_benches(npc_actions)") >= 0
 		and meet_body.find("SIZE_SHRINK_CENTER") >= 0,
 		"见面行情走工席，离开不再拉满宽", fails)
@@ -399,7 +400,7 @@ func _run() -> void:
 		"牙行小钮与买卖日志留出字距", fails)
 	_check(main_src.find("塞　50") >= 0 and main_src.find("关注　减 15") >= 0
 		and main_src.find("塞 50") < 0 and main_src.find("关注减 15") < 0
-		and main_src.find("UiTheme.plain_log(_gather_price_intel") >= 0,
+		and main_src.replace("main.", "").find("UiTheme.plain_log(_gather_price_intel") >= 0,
 		"见面册疏通留出字距，行情去掉方括号", fails)
 	_check(main_src.find("尚无人留意") >= 0 and main_src.find("偶有闲话传出") >= 0
 		and main_src.find("起了疑心") >= 0 and main_src.find("暗桩已盯死，出港必查") >= 0
@@ -735,9 +736,10 @@ func _check_characters(gm: Node, main_src: String, fails: Array) -> void:
 		if cr < 6.0:
 			weak_f.append("%s %.2f" % [fk, cr])
 	_check(fdefs.size() >= 8 and weak_f.is_empty(), "阵营签每对字色 / 底色声明对比度 ≥6.0（%d 家，不达标 %s）" % [fdefs.size(), weak_f], fails)
-	var meet_i := main_src.find("func _show_npc_mode")
-	var meet_j := main_src.find("\nfunc ", meet_i + 1)
-	var meet := main_src.substr(meet_i, meet_j - meet_i) if meet_i >= 0 and meet_j > meet_i else ""
+	var npc_src := FileAccess.get_file_as_string("res://scripts/ui/NpcPage.gd")
+	var meet_i := npc_src.find("static func show_npc_mode(")
+	var meet_j := npc_src.find("\nstatic func ", meet_i + 1)
+	var meet := npc_src.substr(meet_i, meet_j - meet_i) if meet_i >= 0 and meet_j > meet_i else ""
 	_check(meet.find("character_for_npc") >= 0 and meet.find("res://assets/sprite_") > meet.find("character_for_npc"),
 		"见面页立绘先认 characters.json，缺了才回落 sprite_ 旧图", fails)
 	var codex_scr = load("res://scripts/ui/CharacterCodex.gd")

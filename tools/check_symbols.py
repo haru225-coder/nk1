@@ -32,6 +32,7 @@ MAIN_SPLITS = (
     "scripts/ui/LedgerPage.gd",
     "scripts/ui/ChapterSheet.gd",
     "scripts/ui/TavernPage.gd",
+    "scripts/ui/NpcPage.gd",
 )
 _SPLIT_FWD = re.compile(r'^\t(?:return |await )?(_[A-Z][A-Z0-9_]*)\.([A-Za-z_]\w*)\((.*)\)\s*$')
 _split_report = []

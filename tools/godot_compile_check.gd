@@ -51,6 +51,8 @@ const SCRIPTS := [
 	"res://scripts/ui/ChapterSheet.gd",
 	# Lane main4 Main.gd 第四刀拆出的酒馆 / 旅店页
 	"res://scripts/ui/TavernPage.gd",
+	# Lane main5 Main.gd 第五刀拆出的见面页
+	"res://scripts/ui/NpcPage.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",

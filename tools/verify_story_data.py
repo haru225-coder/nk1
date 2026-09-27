@@ -348,7 +348,10 @@ for rk, rv in rel_from.items():
 codex_src = open(os.path.join(ROOT, "scripts", "ui", "CharacterCodex.gd"), encoding="utf-8").read()
 art_src = open(os.path.join(ROOT, "scripts", "ui", "CharacterArt.gd"), encoding="utf-8").read()
 check('get("bio"' not in codex_src and "codex_bio(" in codex_src, "人物志小传仍读 characters.json 的 bio 原稿")
-check('"bio_short"' not in main_src and "codex_short(" in main_src, "见面页简介仍读 characters.json 的 bio_short 原稿")
+# 见面页在 NpcPage（Lane main5 自 Main 拆出）：简介在那边读，Main 里也不许回头读原稿
+npc_src = open(os.path.join(ROOT, "scripts", "ui", "NpcPage.gd"), encoding="utf-8").read()
+check('"bio_short"' not in main_src and '"bio_short"' not in npc_src and "codex_short(" in npc_src,
+      "见面页简介仍读 characters.json 的 bio_short 原稿")
 check("characters_codex.json" in art_src, "CharacterArt 未接人物志上屏文本层")
 
 # ── Astra L1：人物「原稿 vs 上屏」契约（docs/人物原稿与上屏契约.md）────────────
@@ -439,7 +442,7 @@ check(_eng_hit is None, f"characters.json 原稿仍含工程词「{_eng_hit.grou
 
 # UI 读取入口锁：凡拿人物字典直读的 .get("键")，键只许是「上屏 / 结构」两类；文本层 layer(ch).get 只许 CODEX_ONSCREEN
 L1_UI_FILES = ["scripts/ui/CharacterArt.gd", "scripts/ui/CharacterCodex.gd", "scripts/ui/VisionStage.gd", "scripts/Main.gd",
-               "scripts/companions/CompanionPreview.gd"] + sorted(
+               "scripts/ui/NpcPage.gd", "scripts/companions/CompanionPreview.gd"] + sorted(
     os.path.relpath(str(p), ROOT) for p in pathlib.Path(ROOT, "scripts", "chars").glob("*.gd"))
 _ui_raw_keys = 0
 for rel in L1_UI_FILES:
@@ -486,9 +489,10 @@ L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
     "scripts/GameManager.gd": ({"raw", "api"}, "runtime", "原稿唯一运行时加载器：建索引，对外只给取数口"),
     "scripts/ui/CharacterArt.gd": ({"codex", "api"}, "runtime", "文本层唯一加载器；立绘 / 五维 / 特技 / 称谓取数"),
     "scripts/ui/CharacterCodex.gd": ({"api"}, "runtime", "人物志：列表、关系、小传（小传走 codex_bio）"),
-    "scripts/Main.gd": ({"api"}, "runtime", "见面页、酒馆募人卡、人物志钮"),
+    "scripts/Main.gd": ({"api"}, "runtime", "人物志钮（all_characters；见面页 / 酒馆募人卡已拆去 NpcPage / TavernPage）"),
     "scripts/ui/LedgerPage.gd": ({"api"}, "runtime", "船籍簿职事小头像（character_for_crew；Lane mz 自 Main 拆出）"),
     "scripts/ui/TavernPage.gd": ({"api"}, "runtime", "酒馆募人卡：在船 / 候选人物卡（character_for_crew；Lane main4 自 Main 拆出）"),
+    "scripts/ui/NpcPage.gd": ({"api"}, "runtime", "见面页立绘 / 人物栏、设施页在侧人物卡（character_for_npc；Lane main5 自 Main 拆出）"),
     "scripts/ui/VisionStage.gd": ({"raw", "api"}, "runtime", "异象幕：先走取数口，GameManager 缺席（单跑场景）才兜底直读；只取 id"),
     "scripts/companions/CompanionPreview.gd": ({"api"}, "runtime", "同伴预览立绘"),
     "scripts/chars/CharRoster.gd": ({"api"}, "runtime", "人物名册"),
