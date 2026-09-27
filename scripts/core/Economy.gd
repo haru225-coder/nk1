@@ -184,9 +184,15 @@ func price_at_rate(port_id: String, good_id: String, rate: float, is_buy: bool) 
 		v *= (1.0 - ie)
 	elif role == "consumer":
 		v *= (1.0 + ie)
-	if is_buy:
-		return int(round(v * (1.0 + _effective_tariff(port_id)) * (1.0 - edge)))
-	return int(round(v * (1.0 - _effective_broker()) * (1.0 + edge)))
+	var bare_buy := v * (1.0 + _base_tariff(port_id))
+	var bare_sell := v * (1.0 - broker_fee)
+	var cap := bare_buy / PRICE_SPREAD_MIN
+	var sell_v := minf(v * (1.0 - _effective_broker()) * (1.0 + edge), cap)
+	sell_v = maxf(sell_v, minf(bare_sell, cap))
+	if not is_buy:
+		return int(round(sell_v))
+	var buy_v := maxf(v * (1.0 + _effective_tariff(port_id)) * (1.0 - edge), sell_v * PRICE_SPREAD_MIN)
+	return int(round(minf(buy_v, maxf(bare_buy, sell_v * PRICE_SPREAD_MIN))))
 
 
 ## 玩家买入单价（含抽解）

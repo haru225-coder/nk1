@@ -522,6 +522,17 @@ print("  泉州→博多 青白瓷单件利润随职事递进："
 check(all(ladder[i][2] <= ladder[i + 1][2] for i in range(len(ladder) - 1)),
       "核心商路利润随职事等级单调不降（雇人不会反而更亏）")
 
+# Lane ea：上面全是 Python 镜像。生产 price_at_rate 曾只声明 PRICE_SPREAD_MIN 而不用它，
+# 镜像恒绿、游戏里通事三级即可在博多原地买卖印钱。这里锁住生产源码真的走地板裁法。
+_pa_src = open(os.path.join(ROOT, "scripts/core/Economy.gd"), encoding="utf-8").read()
+_pa_fn = _pa_src.split("func price_at_rate", 1)[1].split("\nfunc ", 1)[0] if "func price_at_rate" in _pa_src else ""
+check(_pa_fn.count("PRICE_SPREAD_MIN") >= 3
+      and "var cap := bare_buy / PRICE_SPREAD_MIN" in _pa_fn
+      and "sell_v = maxf(sell_v, minf(bare_sell, cap))" in _pa_fn
+      and "maxf(bare_buy, sell_v * PRICE_SPREAD_MIN)" in _pa_fn
+      and "(1.0 - edge)))" not in _pa_fn and "(1.0 + edge)))" not in _pa_fn,
+      "生产 Economy.price_at_rate 按镜像同式裁价差地板（卖价封顶、买价兜底、两侧不劣于光杆）")
+
 
 def sell_revenue(pid, gid, amount, rate=1.0):
     depth = ports[pid]["depth"]
