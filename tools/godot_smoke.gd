@@ -11,7 +11,7 @@ func _init() -> void:
 ## Main.gd 拆出去的件（与 tools/check_symbols.py 的 MAIN_SPLITS 同步，check_symbols 会对账）。
 ## 源码断言读 Main.gd + 这些件接在一起的全文：函数搬走后「某字样须在 / 不得在」不因 Main 里只剩一行转发而误判。
 ## （按 func 切函数体的断言仍切 Main 里的 func；要断言搬走的函数体，去拆出件里切。）
-const MAIN_SPLITS := ["res://scripts/ui/SlipKit.gd", "res://scripts/ui/LedgerPage.gd"]
+const MAIN_SPLITS := ["res://scripts/ui/SlipKit.gd", "res://scripts/ui/LedgerPage.gd", "res://scripts/ui/ChapterSheet.gd"]
 
 
 func _main_family_src() -> String:

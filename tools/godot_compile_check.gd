@@ -47,6 +47,8 @@ const SCRIPTS := [
 	"res://scripts/ui/SlipKit.gd",
 	# Lane mz Main.gd 第二刀拆出的船籍簿整页
 	"res://scripts/ui/LedgerPage.gd",
+	# Lane ms2 Main.gd 第三刀拆出的升章 / 了结册页
+	"res://scripts/ui/ChapterSheet.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
