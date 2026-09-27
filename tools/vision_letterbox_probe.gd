@@ -20,6 +20,9 @@ var _fails: Array = []
 var _saved: Array = []
 var _covered_hits := 0
 var _on_black_hits := 0
+## covered 当帧的墨边高与布景海战是否已结算：covered 先于 on_black 发，须在信号回调里当场记
+var _shut_at_cover := -1.0
+var _resolved_at_cover := false
 
 
 func _init() -> void:
@@ -51,6 +54,10 @@ func _run() -> void:
 	root.add_child(wm)
 	for _i in 30:
 		await process_frame
+	# 布景冻住（lane pg）：WorldMap 是真海战，照常开炮结算。约 8–10 s 旗舰被击沉 → _battle_exit("lose")
+	# 自己起一副出战墨边，把探针这副在停拍时顶掉（_abort 提前补调 on_black，揭开是拆了场的灰底）→ 05 中线
+	# v=0.302 偶发红，10 次红 5。不是渲染时序，不能靠重试/多等帧遮掉；冻住后仍出图，只是不再推进战斗。
+	wm.process_mode = Node.PROCESS_MODE_DISABLED
 	await _shot("00_combat_plain")
 
 	# 入战
@@ -85,13 +92,22 @@ func _run() -> void:
 	if ex == null:
 		_report()
 		return
-	ex.covered.connect(func() -> void: _covered_hits += 1)
+	ex.covered.connect(func() -> void:
+		_covered_hits += 1
+		_shut_at_cover = (ex.get("_top") as Control).size.y
+		_resolved_at_cover = is_instance_valid(wm) and bool(wm.get("resolved")))
 	var exit_done := [false]
 	ex.finished.connect(func() -> void: exit_done[0] = true)
 	await ex.caption_shown
 	await _shot("04_exit_caption")
 	_check_layout(ex, "出战")
-	await ex.covered
+	# 已被顶掉时 covered 早发过了，再 await 会挂死
+	if _covered_hits == 0:
+		await ex.covered
+	_expect(not _resolved_at_cover,
+		"布景海战在墨边演示中自行结算，WorldMap 自己的出战墨边顶掉了探针这副（探针布景没冻住，不是墨边回归）")
+	_expect(_shut_at_cover >= VIEW.y * 0.5,
+		"出战 covered 时墨边未合到中线（上边高 %.1f < %d）：被新墨边顶掉提前补调了 on_black" % [_shut_at_cover, VIEW.y / 2])
 	var img: Image = await _shot("05_exit_black", true)
 	if img != null:
 		var mid := img.get_pixel(VIEW.x / 2, VIEW.y / 2)

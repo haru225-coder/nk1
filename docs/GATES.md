@@ -25,7 +25,7 @@
 | 11 | compile | 必跑 | `godot --headless --path . -s res://tools/godot_compile_check.gd` | `python3 tools/gate_json.py --godot compile` | 清单脚本 `load()` + `can_instantiate()`；场景解析（lane m2：ext_resource / 子资源 / 脚本坏）；守护清单 | `COMPILE_CHECK SUMMARY bad=0/N` | `COMPILE_CHECK FAIL …` 行；`bad=k/N` |
 | 12 | story | 必跑 | `godot --headless --path . -s res://tools/godot_story_check.gd` | `python3 tools/gate_json.py --godot story` | 新闻按月投放不重复、1268 身份结算恰一次、存档 round-trip、真机抵港路由 | `STORY_CHECK SUMMARY fails=0` | `STORY_CHECK FAIL …`；`fails=k` |
 | 13 | p7 | 必跑 | `godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd` | `python3 tools/gate_json.py --godot p7` | 行会入行 / 贡院赴试 / 誊录：扣费门槛、每章一次、跨月结算时序 | `P7_GUILD_EXAM_SMOKE_OK` | `FAIL …` 行；`P7_GUILD_EXAM_SMOKE_FAIL k` |
-| 14 | patrol | 必跑 | `DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd` | `DISPLAY=:2 python3 tools/gate_json.py --godot patrol` | 挂主场景走开局、三港、九设施、海图：1280×720 按钮不越界、焦点色、航向牌、终局港口页 | `PATROL SHELL PASS` | `✗` 行；`PATROL SHELL FAIL` + 复述 |
+| 14 | patrol | 必跑 | `DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd` | `DISPLAY=:2 python3 tools/gate_json.py --godot patrol` | 挂主场景走开局、三港、九设施、海图：1280×720 按钮不越界、焦点色、航向牌、终局港口页；截图旁证一色判据（lane pg，一色只记 ⚠） | `PATROL SHELL PASS`（前一行 `✓ 截图旁证 n/n 张非一色`） | `✗` 行；`PATROL SHELL FAIL` + 复述 |
 | 15 | 截图门禁（24 支，见下表） | 加跑：动画面 / UI / 过场 | `DISPLAY=:2 godot --path . -s res://tools/<探针>.gd` | `DISPLAY=:2 python3 tools/gate_json.py --godot <探针>` | （lane m3 立、sg2 扩到全部截图脚本，新截图脚本一律接它）`tools/shot_gate.gd`：零截图 / 空视口 / 一色空图 / 张数不足一律红；契约模式须显式 `-- --contract` | `<TAG>_OK shots=n/n -> 目录`；契约模式 `<TAG>_CONTRACT_OK…` | `✗ …` + `<TAG>_FAIL k（shots=…）`；headless 下 `<TAG>_FAIL headless（…不是画面回归）` |
 | 16 | save_robust_probe | 加跑：动 SaveLoad / 存档 | `godot --headless --path . -s res://tools/save_robust_probe.gd` | `python3 tools/gate_json.py --godot save_robust_probe` | （lane h1h2 / rt）坏分区退 .bak、只剩 .bak 取标签、两份皆坏不抛错 | `SAVE_ROBUST_PROBE PASS`（大量 `ERROR: 存档结构异常…` 是故意喂坏档，属预期） | `✗` 行 / 非零退出；输出含 `SCRIPT ERROR` 即算失败 |
 | 17 | check_sidecars | 加跑：提交新 .gd / .gdshader / 素材，或挪删它们 | `python3 tools/check_sidecars.py` | `python3 tools/check_sidecars.py --json` | （lane ag）只看 git 索引：已跟踪 .gd/.gdshader 须有已跟踪 `.uid`，可导入素材须有 `.import`；反向不许只提侧车 | `结果：全部通过` | `FAIL: …` 行（缺侧车 / 孤儿侧车）；`结果：N 项失败` |
@@ -216,13 +216,14 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 
 ### 14. patrol
 - 读：`✓/✗` 行，末行 `PATROL SHELL PASS/FAIL`。开头的 `ERROR: Required extension VK_KHR_surface not found` 等 3 行是 Vulkan 回落 OpenGL 的环境噪声（`--json` 里记 `engine_errors: 3`，不影响 ok）。
+- 截图旁证（lane pg）：存 `/tmp/patrol-shots/` 前按像素种类数 / 直方图熵判一色（每 4px 取点、每通道 16 级；种类 ≤ 2 或熵 < 0.1 bit）。一色或拿不到图逐张打 `⚠ 截图旁证 <页> …`，**只记 warn、不改退出码**（`--json` 的 `counts.warn`）；headless 打一行 `⚠ 截图旁证未判（n 张跳过）`。判据开头自检 4 条（纯色 / 量化格边界两色抖动必判一色、杂色图不判、空图判拿不到图），自检 `✗` 即 FAIL。
 - 常见红因：没设 `DISPLAY`；按钮越出 1280×720；设施页 / 终局港口页按钮文案改名（断言按文案找钮）。
 
 ### 15. 截图门禁（shot_gate.gd + 截图探针）
 - 读：`<TAG>_OK shots=n/n -> 目录`；红时先列 `✗ 真失败：…`，再 `<TAG>_FAIL k（shots=…）`。
 - headless 不加 `-- --contract` **必红**（`_FAIL headless …此为环境不具备，不是画面回归`）——这是设计，不是回归。只验契约：`godot --headless … -- --contract` → `<TAG>_CONTRACT_OK`。
 - 注意：截图落在**绝对路径** `/workspace/nk1-qa-shots/…`，任何 worktree 里跑都会覆盖同一批证据图。
-- 常见红因：空视口 / 一色图（窗口没真正绘制）；张数不足；letterbox 类时序断言（如「出战合拢时画面中线未全黑」）在机器繁忙时可能偶发。
+- 常见红因：空视口 / 一色图（窗口没真正绘制）；张数不足。`vision_letterbox_probe` 旧有的「出战合拢时画面中线未全黑（v=0.302）」偶发红不是时序：布景是真海战，约 8–10 s 旗舰被击沉、WorldMap 自起出战墨边顶掉探针那副（lane pg 已冻住布景；再现时会先报「布景海战在墨边演示中自行结算」）。
 
 ### 16. save_robust_probe
 - 读：`✓` 行 + `SAVE_ROBUST_PROBE PASS`；上百行 `ERROR: 存档结构异常 …` 是探针故意喂的坏档，预期存在；`SCRIPT ERROR` 才算失败。
