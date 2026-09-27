@@ -2725,6 +2725,15 @@ if "visible = false" in _node_block(main_tscn, "InvestigationMode") and "visible
 else:
     print("  ✗ 调查页或船籍簿开场仍展开")
     problems.append("开场占位层未收起")
+# 反向（lane auditfix3）：底图 / 外层横排 / 中区三层 Main.gd 从不改 visible（各页开合只动 CenterArea 下的 *Mode
+# 与船籍簿 LeftPanel），场景里一写 `visible = false` 开场就整屏空着。节点改名 / 删了时 _node_block 给 ""，这条照样绿——
+# 靠十三节记账判红（变异对照见 tools/check_symbols_mutants.py N1–N5）。
+_hidden_shell = [n for n in ("Background", "HBoxContainer", "CenterArea") if "visible = false" in _node_block(main_tscn, n)]
+if _hidden_shell:
+    print("  ✗ Main.tscn 开场收起了 %s（Main.gd 不会再打开它，整屏空着）" % "、".join(_hidden_shell))
+    problems.append("Main.tscn 外层容器开场收起")
+else:
+    print("  ✓ 底图 / 外层横排 / 中区开场不收起")
 if "按 Enter 停靠" in wm_tscn:
     print("  ✗ 海战港名仍写停靠教程")
     problems.append("海战港名仍写停靠教程")
@@ -4412,6 +4421,8 @@ if not _body_missed:
 # 清单齐不齐由本脚本自扫——上面几类字面量里点到、当前确有定义的函数名都须登记（新写这类断言就得登记，漏登判红）；
 # 自扫只到名字（字面量看不出指哪个文件），登在哪个文件下由登记的人按断言读的源码定。
 # 本来就要「保持删除」的旧函数（`"func _add_sail_button" not in main_src`）没有定义，自扫不收，也不必登记。
+# lane auditfix3：分支形反向断言——单行 `if / elif …"X(" in 体…:`、下一行就打 ✗（`elif "_sail_next_day(" in inv …:`）——
+# 字面量在不带 not 的 `in` 左边，前几类都不收，原先要靠别处碰巧点过同名才登上；现同样自扫。条件折成多行的不在此列。
 NAMED_FUNCS = {
     "scripts/Main.gd": (
         "_add_guild_join_slip", "_add_leave_button", "_attention_desc", "_begin_benches", "_end_benches", "_fit_rank",
@@ -4514,6 +4525,8 @@ for _ln_no, _ln in enumerate(_nf_self, 1):
     _ms += list(re.finditer(r'"((?:static )?func [A-Za-z_]\w*)"\s+(?:not\s+)?in\b', _ln))
     if re.search(r'\bany\(', _ln) or re.search(r'\bfor\s+\w+\s+in\s+\(', _ln):
         _ms += list(re.finditer(_NF_LIT, _ln))
+    if re.match(r'\s*(?:el)?if\b.*:\s*$', _ln) and _ln_no < len(_nf_self) and "✗" in _nf_self[_ln_no]:
+        _ms += list(re.finditer(_NF_LIT + r'\s+in\b', _ln))  # 分支形反向断言（lane auditfix3）
     for _m in _ms:
         for _n in _nf_names(_m.group(1)):
             if _n in _nf_defined and _n not in _NF_VIRTUAL:
