@@ -13,7 +13,7 @@ func _init() -> void:
 ## Main.gd 拆出去的件（与 tools/check_symbols.py 的 MAIN_SPLITS 同步，check_symbols 会对账）。
 ## 源码断言读 Main.gd + 这些件接在一起的全文：函数搬走后「某字样须在 / 不得在」不因 Main 里只剩一行转发而误判。
 ## （按 func 切函数体的断言仍切 Main 里的 func；要断言搬走的函数体，去拆出件里切。）
-const MAIN_SPLITS := ["res://scripts/ui/SlipKit.gd", "res://scripts/ui/LedgerPage.gd", "res://scripts/ui/ChapterSheet.gd", "res://scripts/ui/TavernPage.gd", "res://scripts/ui/NpcPage.gd"]
+const MAIN_SPLITS := ["res://scripts/ui/SlipKit.gd", "res://scripts/ui/LedgerPage.gd", "res://scripts/ui/ChapterSheet.gd", "res://scripts/ui/TavernPage.gd", "res://scripts/ui/NpcPage.gd", "res://scripts/ui/SaveSheet.gd"]
 
 
 func _main_family_src() -> String:
@@ -385,9 +385,11 @@ func _run() -> void:
 		and main_src.find("存档 / 读档") < 0 and saveload_src.find("%d 钱") >= 0,
 		"航海日志空卷写成未记", fails)
 	_check(str(root.get_node("SaveLoad").call("save_label", 9)) == "未记", "空卷读出来是未记", fails)
-	var save_at := main_src.find("func _show_save_dialog")
-	var save_end := main_src.find("\nfunc ", save_at + 1)
-	var save_body := main_src.substr(save_at, save_end - save_at) if save_at >= 0 and save_end > save_at else ""
+	# 航海日志册页在 SaveSheet（Lane main6 拆出），Main 里只剩一行转发：函数体去拆出件里切，去掉 main. 前缀即搬走前的原文
+	var save_src := FileAccess.get_file_as_string("res://scripts/ui/SaveSheet.gd")
+	var save_at := save_src.find("static func show_save_dialog(")
+	var save_end := save_src.find("\nstatic func ", save_at + 1)
+	var save_body := save_src.substr(save_at, save_end - save_at).replace("main.", "") if save_at >= 0 and save_end > save_at else ""
 	_check(save_body.find("SaveSheet") >= 0 and save_body.find("_begin_benches(col)") >= 0
 		and save_body.find("SIZE_SHRINK_CENTER") >= 0
 		and save_body.find("Vector2(520, 0)") < 0

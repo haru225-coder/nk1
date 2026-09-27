@@ -111,6 +111,9 @@ const _TAVERN := preload("res://scripts/ui/TavernPage.gd")
 ## _add_npc_button / _on_meet_npc / _show_npc_mode / _set_npc_speech / _on_npc_intel / _on_npc_bribe / _on_npc_leave 都是同名同签名
 ## 一行转发，调用点与信号目标不变；招呼常量 NPC_GREETING 随簇搬走。
 const _NPC := preload("res://scripts/ui/NpcPage.gd")
+## 航海日志册页（三卷工席 + 合上、暗幕点下即合、港名匾让开、记录 / 翻阅两个回调）的实现在 scripts/ui/SaveSheet.gd
+## （Lane main6 第六刀拆出）；Main 保留同名一行转发，调用点与信号目标不变，状态 _save_host 仍在这里。
+const _SAVE := preload("res://scripts/ui/SaveSheet.gd")
 ## 活背景幅度：比引擎默认再收一档（正文底下的画不能晃得人头晕）
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
@@ -3418,124 +3421,23 @@ func _on_set_sail() -> void:
 
 ## read_only：从标题页「续卷」进来——还没开局，「记录」不可用，只留「翻阅」。
 func _show_save_dialog(read_only := false) -> void:
-	if is_instance_valid(_save_host):
-		_save_host.queue_free()
-	_dismiss_banner()
-	# 日志册页上沿正落在港名匾字脚上：匾先淡去，合上时回来（第 2 轮美术 minor 2）
-	if port_mode.visible:
-		_show_port_layer(false, 0.15, true)
-	var host := Control.new()
-	host.name = "SaveSheet"
-	host.set_anchors_preset(Control.PRESET_FULL_RECT)
-	host.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(host)
-	_save_host = host
-
-	var dim := ColorRect.new()
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.color = UiTheme.DIM
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	dim.gui_input.connect(_on_save_dim_input)
-	host.add_child(dim)
-
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	host.add_child(center)
-
-	var sheet := PanelContainer.new()
-	# 两张 480 工席并排，间距 12，左右边距各 22。
-	sheet.custom_minimum_size = Vector2(1016, 0)
-	sheet.add_theme_stylebox_override("panel", UiTheme.panel())
-	center.add_child(sheet)
-
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 22)
-	margin.add_theme_constant_override("margin_right", 22)
-	margin.add_theme_constant_override("margin_top", 18)
-	margin.add_theme_constant_override("margin_bottom", 16)
-	sheet.add_child(margin)
-
-	var col := VBoxContainer.new()
-	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	col.add_theme_constant_override("separation", 8)
-	margin.add_child(col)
-
-	var head := Label.new()
-	head.text = "航海日志"
-	UiTheme.style_heading(head)
-	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	col.add_child(head)
-
-	_begin_benches(col)
-	for slot in range(1, SaveLoad.SLOTS + 1):
-		var n := int(slot)
-		var slip := _slip_body()
-		# 卷号写中文数字：马善政的「1」像小写 l（第 1 轮评审 minor 12）
-		_slip_title(slip, "第%s卷" % _cn_chapter(n), SaveLoad.save_label(n))
-		var tip := SaveLoad.save_tip(n)
-		if tip != "":
-			var tip_color := UiTheme.CINNABAR if SaveLoad.slot_source(n) in ["corrupt", "future"] else UiTheme.TEXT_DIM
-			_slip_note(slip, tip, tip_color)
-		var row := _slip_row(slip)
-		var write := _slip_chip(row, "记录", _on_save_slot.bind(n), true)
-		write.disabled = read_only
-		var read := _slip_chip(row, "翻阅", _on_load_slot.bind(n))
-		read.disabled = not SaveLoad.has_save(n)
-	var benches := col.get_node("Benches") as HFlowContainer
-	var row_h := 0.0
-	for child in benches.get_children():
-		if child is Control:
-			row_h = maxf(row_h, (child as Control).get_combined_minimum_size().y)
-	benches.custom_minimum_size = Vector2(972, row_h * 2.0 + 8.0)
-	_end_benches()
-
-	var close := Button.new()
-	close.text = "合上"
-	close.custom_minimum_size = Vector2(160, 42)
-	close.pressed.connect(_close_save_sheet)
-	col.add_child(close)
-	UiTheme.style_button(close, true)
-	close.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UiTheme.pop_in(sheet)
+	_SAVE.show_save_dialog(self, read_only)
 
 
 func _on_save_dim_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		var click := event as InputEventMouseButton
-		if click.pressed:
-			_close_save_sheet()
+	_SAVE.on_save_dim_input(self, event)
 
 
 func _close_save_sheet() -> void:
-	if is_instance_valid(_save_host):
-		_save_host.queue_free()
-	_save_host = null
-	if port_mode.visible and not is_instance_valid(_chapter_host):
-		_show_port_layer(true, 0.15, true)
+	_SAVE.close_save_sheet(self)
 
 
 func _on_save_slot(slot: int) -> void:
-	if not SaveLoad.save_game(slot, current_scene_id):
-		log_msg("第 %d 卷誊写未成，笔墨未落定。" % slot)
-		return
-	_close_save_sheet()
-	log_msg("已记入航海日志第 %d 卷。" % slot)
+	_SAVE.on_save_slot(self, slot)
 
 
 func _on_load_slot(slot: int) -> void:
-	var scene_id := SaveLoad.saved_scene(slot)
-	var from_bak := SaveLoad.slot_source(slot) == "bak"
-	if not SaveLoad.load_game(slot):
-		log_msg("第 %d 卷%s" % [slot, SaveLoad.load_fail_note(slot)])
-		return
-	_close_save_sheet()
-	update_status_panel()
-	load_scene(scene_id if scene_id != "" else GameState.last_port)
-	log_msg("翻开日志第 %d 卷，回到 %s。" % [slot, Calendar.get_date_string()])
-	if from_bak:
-		log_msg("第 %d 卷正本卷页损了，已从副抄翻出。" % slot)
+	_SAVE.on_load_slot(self, slot)
 
 
 # ══════════════════════════════════════════════════════

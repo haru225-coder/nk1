@@ -116,3 +116,55 @@ H / A / E / I / K 在核心流程上或被 Python 门禁多处直读；C 被 ver
 2. **G2 行会 / 贡院**（200 / 11）风险中。check_symbols 的 66 处引用都经 read_main_src；verify_economy / simulate_run 用 `gd_const("scripts/Main.gd", "GUILD_*")` 直读常量，常量留在 Main 就不受影响。`play_transition` 不要一起搬。
 3. **A / C / H / I / K / E** 风险高。先单开一个门禁 lane，给 verify_economy / verify_story_data / check_assets / simulate_endgame / simulate_run 共用一个「读 Main 家族源码」的 helper。本刀的旅店断言直接读 TavernPage.gd，也应该改走这个 helper。
 4. 门禁小事：`MAIN_SPLITS` 已经登记到第 5 件，两份清单（check_symbols / smoke）靠对账同步，建议抽成 `tools/main_splits.txt` 共读（ms2 待议 6、第四刀候选 5）。
+
+---
+
+## 第六刀（lane main6，2026-09-28）：航海日志 → `scripts/ui/SaveSheet.gd`
+
+### 调查（基 `537826b`：Main.gd 4929 行，第五刀之后）
+
+口径同前两刀（跨度从簇首 `##` 注释算到末支 func 最后一行；「他处引用」不含 Main.gd，也不含本刀新增的 SaveSheet.gd）。
+F 航海日志是第五刀台账列的下一刀首选，连续一段：**3419–3538，120 行 / 5 支**。
+
+| 支 | 行段 | 行 | 做什么 | 被簇外调（Main 内 / 他处） |
+|---|---|---|---|---|
+| `_show_save_dialog(read_only := false)` | 3419–3501（含 `##` 注释） | 83 | 旧 host 先释放 → 让开港名匾 → 建 `SaveSheet` 浮层（暗幕 + 居中绢本册页 + 标题「航海日志」）→ 三卷工席（卷号、题签、坏档脚注、「记录」「翻阅」）→ 按两行工席高定 Benches 高 →「合上」→ `pop_in` | Main 3 处：标题页「续卷」`.bind(true)`（454）、岸带动作行「航海日志」（3104）、`_add_save_button`（3998）；ShotTour `_site_save` 1 处 `call` |
+| `_on_save_dim_input(event)` | 3504–3508 | 5 | 暗幕上鼠标**按下**才合上（松开、移动不合） | 无（只是暗幕 `gui_input` 的目标） |
+| `_close_save_sheet()` | 3511–3516 | 6 | 释放 host、清 `_save_host`；港页可见且升章册页不在时港名匾回来 | Main 1 处：`_unhandled_input` 的 ui_accept（3905） |
+| `_on_save_slot(slot)` | 3519–3524 | 6 | `SaveLoad.save_game(slot, current_scene_id)`；失败记「誊写未成」、册页不合；成了先合上再记事 | 无（「记录」钮的目标） |
+| `_on_load_slot(slot)` | 3527–3538 | 12 | 先取卷里的场景和是否副抄 → `load_game`；失败记 `load_fail_note`、册页不合；成了合上 → 刷状态栏 → `load_scene`（卷里没场景就回 `last_port`）→ 记事，副抄另记一句 | 无（「翻阅」钮的目标） |
+
+**跨切依赖**（全部经 `main.` 取，搬出件不存状态）：
+- Main 成员：`_save_host` 6（读写，唯一的簇状态，留在 Main；`_unhandled_input` 也读它）、`port_mode` 2、`_chapter_host` 1、`current_scene_id` 1。
+- Main 方法：`log_msg` 5、`_show_port_layer` 2、`_slip_chip` 2、`_slip_body` / `_slip_title` / `_slip_note` / `_slip_row` / `_begin_benches` / `_end_benches` / `_cn_chapter` / `_dismiss_banner` / `update_status_panel` / `load_scene` 各 1；还有回连的 4 个信号目标 `_on_save_dim_input` / `_on_save_slot` / `_on_load_slot` / `_close_save_sheet`。
+- autoload：`SaveLoad` 10、`UiTheme` 7、`GameState` 1（`last_port`）、`Calendar` 1。
+
+**断言 / 探针引用点**（拆前逐个核过）：
+
+| 引用点 | 怎么读 | 拆后 |
+|---|---|---|
+| `godot_smoke.gd:388`「航海日志三卷走工席，合上不再拉满宽」 | 在 `_main_family_src()`（Main + MAIN_SPLITS **原样拼接**，不去前缀、不换函数体）里切 `func _show_save_dialog` | 会切到一行转发，假红 → **改去 SaveSheet.gd 里切** `static func show_save_dialog(`，切完去 `main.` 前缀再比；5 个子条件原样不动 |
+| `godot_smoke.gd:380-386`「航海日志空卷写成未记」里的 `main_src.find("存档 / 读档") < 0` | family src 全文反向查 | MAIN_SPLITS 加上 SaveSheet 后搬走的文字仍在扫描范围内，不用改 |
+| `check_symbols.py:2034` 两条（绢本册页 / 三卷走工席） | `_func_body(main_src, "_show_save_dialog")`，`main_src = read_main_src()`（1792 行） | `read_main_src()` 把转发就地换回 SaveSheet 的函数体、去 `main.` 前缀，切到的就是原文 → **不用改**（加 MAIN_SPLITS 登记即可；漏登记则这几条判红，见 Verify M10） |
+| `check_symbols.py:3854-3856`（坏档脚注 / 翻阅副抄句 / 记录失败句） | `func_bodies(main_src)` 取 `_show_save_dialog` / `_on_load_slot` / `_on_save_slot`，`main_src = read_main_src()`（3429 行） | 同上，不用改 |
+| `tools/art/ShotTour.gd:577` `_site_save` | `_main.call("_show_save_dialog")` | Main 保留同名转发，不用改 |
+| `tools/art/ShotTour.gd:172` 浮层清单 | 按节点名 `SaveSheet` 找 | 节点名不变，不用改 |
+| `tools/qa_save_slot_tip_probe.gd` | 只读 SaveLoad 槽态，不碰册页 | 无关 |
+
+**为什么现在做 F**：簇内只有一个状态成员（留 Main），5 支全是浮层自己的建与回调，不碰核心流程；
+Python 门禁里没有直读 Main.gd 的（全经 `read_main_src()`），只有 smoke 一处要改切片位置。剩下的 G2（200 / 11）风险中，A / C / E / H / I / K 风险高（理由见第五刀）。
+
+### 落地
+
+- `scripts/ui/SaveSheet.gd`（新增，131 行，`.uid` `uid://cjwulshq3w8jx` 同 commit）：5 支原样搬成 `static func`（show_save_dialog / on_save_dim_input / close_save_sheet / on_save_slot / on_load_slot），Main 成员一律加 `main.` 前缀。
+  信号目标仍是 Main 的同名方法（`main._on_save_dim_input` / `main._on_save_slot.bind(n)` / `main._on_load_slot.bind(n)` / `main._close_save_sheet`），`read_main_src()` 去前缀后与原文同。
+  经 `main.` 取值推断不出类型，4 处 `:=` 改为与原推断相同的显式类型（`slip: VBoxContainer`、`row: HFlowContainer`、`write` / `read: Button`）。
+- Main.gd **4929 → 4831（−98）**，func 数不变（233，5 支都留同名同签名一行转发，`const _SAVE := preload(...)`）；`_save_host` 与 `_unhandled_input` 留在 Main。
+- 门禁同步：两处 `MAIN_SPLITS`（check_symbols / smoke）都加 SaveSheet.gd；`godot_compile_check` 的 SCRIPTS 加 1 行（124 → 125）；smoke 的那一处切片改去 SaveSheet 里切（上表）。**断言条件一条没改、没放宽。**
+- 拼回原文：`read_main_src()` 拼回的 5 支和基线逐行比，除上面 4 行 `:=` 外完全一致（末支后少一个空行，是拼接时拆出件文件尾只有一个换行，断言不看空行）。
+
+### 下一刀候选（行数按基 537826b）
+
+1. **G2 行会 / 贡院**（200 / 11）是剩下唯一风险「中」的页面簇：check_symbols 的 66 处引用都经 read_main_src；verify_economy / simulate_run 用 `gd_const("scripts/Main.gd", "GUILD_*")` 直读常量（常量留 Main 即可）；p7 只经方法名调用；`play_transition` 是公共件，不要一起搬。
+2. **A / C / E / H / I / K** 风险高，先做「Main 家族源码」共用 helper 的门禁 lane（第五刀候选 3）。
+3. `MAIN_SPLITS` 已到第 6 件，两份清单靠对账同步，建议抽 `tools/main_splits.txt` 共读（ms2 待议 6 起一直挂着）。
