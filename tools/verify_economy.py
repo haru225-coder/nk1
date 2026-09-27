@@ -1958,6 +1958,49 @@ check(_row_fn.count("_market_buy_tip(") == 2 and _row_fn.count("_market_sell_tip
 _adv_fn = open(os.path.join(ROOT, "scripts/GameManager.gd"), encoding="utf-8").read().split("func advance_days", 1)[1].split("\nfunc ", 1)[0]
 check("interest := GameState.accrue_interest()" in _adv_fn and "【月息】" in _adv_fn and "monthly_notice.emit" in _adv_fn.split("accrue_interest", 1)[1].split("pay_wages", 1)[0],
       "月初结息有通告：欠债时写出本月息钱与现欠")
+# lane main5：歇息钮上写的房钱 = 钮上日数 × 费率，按下去 _on_rest 照同一日数、同一费率扣（lane main4 M11：钮文改成 nights * 16 全门禁照绿）。
+# 旅店页在 TavernPage（lane main4 拆出，经 main. 取 Main 的常量与方法，去掉前缀即原文）；住处「下处」歇息在 Main，走 HOME_RATE。
+# Main 的 INN_RATE 与 simulate_run 算候风成本的 INN_RATE 须是同一个数。
+def _gd_fn(src, name):
+    m = re.search(rf"^(?:static )?func {name}\(.*?(?=^(?:static )?func |^const |\Z)", src, re.S | re.M)
+    return m.group(0) if m else ""
+def _rest_chips(body):
+    """body 里接 _on_rest.bind(...) 的每个 _slip_chip(...) → (钮文日数, 价的日数, 价的费率, bind 实参)；钮文拆不出算式记 None。"""
+    out, at = [], 0
+    while (i := body.find("_slip_chip(", at)) >= 0:
+        j, depth = i + len("_slip_chip("), 1
+        while j < len(body) and depth:
+            depth += {"(": 1, ")": -1}.get(body[j], 0)
+            j += 1
+        call, at = body[i:j], j
+        b = re.search(r"_on_rest\.bind\(([^()]*)\)", call)
+        if not b:
+            continue
+        m = re.search(r"%\s*\[\s*(\w+)\s*,\s*(\w+)\s*\*\s*(\w+)\s*[,\]]", call)
+        out.append((m.groups() if m else (None, None, None)) + ([a.strip() for a in b.group(1).split(",")],))
+    return out
+_tavern_src = open(os.path.join(ROOT, "scripts/ui/TavernPage.gd"), encoding="utf-8").read().replace("main.", "")
+_inn_fn = _gd_fn(_tavern_src, "setup_inn") or _gd_fn(main_src, "_setup_inn")
+_home_fn = _gd_fn(main_src, "_setup_residence")
+_rest_fn = _gd_fn(main_src, "_on_rest")
+_rest_sig = re.match(r"func _on_rest\((\w+): int, \w+: String, (\w+): int = (\w+)", _rest_fn)
+_rest_cost = re.search(r"var cost := (\w+) \* (\w+)\n", _rest_fn)
+_inn_const = int(gd_const("scripts/Main.gd", "INN_RATE"))
+_sim_inn = re.search(r"^INN_RATE = (\d+)$", open(os.path.join(ROOT, "tools/simulate_run.py"), encoding="utf-8").read(), re.M)
+def _rest_ok(chips, rate, bind_rate):
+    return all(d is not None and d == n == a[0] and r == rate and len(a) >= 2
+               and (a[2] if len(a) > 2 else "INN_RATE") == bind_rate for d, n, r, a in chips)
+_inn_chips, _home_chips = _rest_chips(_inn_fn), _rest_chips(_home_fn)
+check(_rest_sig is not None and _rest_sig.group(3) == "INN_RATE" and _rest_cost is not None
+      and _rest_cost.groups() == (_rest_sig.group(1), _rest_sig.group(2)) and "spend_money(cost)" in _rest_fn
+      and "付房钱 %d" in _rest_fn,
+      "歇息扣钱 = 日数 × 费率（_on_rest 默认旅店 INN_RATE），扣的与记事写的是同一笔")
+check(len(_inn_chips) >= 2 and _rest_ok(_inn_chips, "INN_RATE", "INN_RATE"),
+      f"旅店歇 N 日 / 候 N 日钮上房钱 = 日数 × INN_RATE，按下扣同一日数、同一费率（源码 {len(_inn_chips)} 处钮）")
+check(len(_home_chips) >= 1 and _rest_ok(_home_chips, "HOME_RATE", "HOME_RATE"),
+      f"住处歇 N 日钮上房钱 = 日数 × HOME_RATE，按下照 HOME_RATE 扣（源码 {len(_home_chips)} 处钮）")
+check(_sim_inn is not None and int(_sim_inn.group(1)) == _inn_const,
+      f"Main.INN_RATE {_inn_const} 与 simulate_run 候风成本用的 INN_RATE {_sim_inn.group(1) if _sim_inn else '缺'} 一致")
 check("hold_tenths" in plan_body and "cargo_hold_chance(order, known, open, expected)" in plan_body,
       "保货按遇事日数写进航程，期限仍用静风")
 check("cargo_hold_chance(order, known, open, safe)" not in plan_body,
