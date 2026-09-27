@@ -316,3 +316,50 @@ Y 是第七刀台账列的下一刀首选，连续一段：**1766–1886，121 �
 1. **T 住处 / 寺观**（117 / 6）风险中低：smoke 两处在 family src 里切 `_on_temple_look` / `_on_temple_rub`，verify_economy 直读 Main 的 `_setup_residence`，都要改切片位置（lane main9 已派）。
 2. 做拆分前先 grep 门禁里「扫真文件 + `func_bodies`」的写法：`func_bodies` 不认 `static func`，拆走的函数在这类断言里会消失（本刀那一条是这样红的）。建议并进「Main 家族源码」共用 helper lane。
 3. **A / C / E / H / I / K** 风险高，先做上面那个 helper lane。拆出件到第 8 件（`tools/main_splits.txt` 已由 cs13 落地）。
+
+---
+
+## 第九刀（lane main9，2026-09-28）：住处 / 寺观 → `scripts/ui/ResidencePage.gd`
+
+基 `26bca91`（第八刀之后，Main.gd 4612 行，233 支 func；开工时基 `e8b8221`，第八刀落地后 rebase，T 簇行号整体 −87）。本刀是第七刀「下一刀候选」第 2 条 T 簇（第 1 条 Y 市舶司即第八刀），两刀不重叠。
+
+**T 的切面**（2389–2505，117 行 / 6 支；夹在中间的 `TEMPLE_LOOK_DAYS` / `TEMPLE_RUB_DAYS` 2422–2423 是簇间常量，不搬）：
+
+| 支 | 行段（含 `##`） | 做什么 | 被谁调（Main 内 / 他处） |
+|---|---|---|---|
+| `_setup_residence(port_id)` | 2389–2419 | 兴化转 `_setup_residence_chen`；别港「边记」卡（倾向 + ledger_notes）+「歇息」卡（歇 1 / 3 日，钮文 `nights * HOME_RATE`，bind `_on_rest(nights, port_id, HOME_RATE, "下处")`） | `_setup_dynamic_scene`（1115） |
+| `_setup_temple(port_id)` | 2426–2463 | 近侧旧迹逐张工席：未勘「细看一日」、已入册 / 已呈案、已拓 / 「拓碑一日」；`japan_temple_network` 加一句 | `_setup_dynamic_scene`（1117） |
+| `_temple_rub_note(name, hook)` | 2466–2470 | 拓记字样 `拓「名」　hook` / `拓「名」。` | 簇内 1 处；smoke 在 Main 实例上直调 |
+| `_has_temple_rub(name)` | 2473–2478 | ledger_notes 里有 `拓「名」` 开头的记事（旧冒号也算） | 簇内 2 处；smoke 直调 |
+| `_on_temple_look(did, name)` | 2481–2489 | advance_days → `record_discovery` → 记事 → 重载本页 | 「细看一日」钮 |
+| `_on_temple_rub(did, name, hook)` | 2492–2505 | 未勘 / 空 id 拦下；advance_days → 未拓则 `add_ledger_note` → 记事 → 重载本页 | 「拓碑一日」钮 |
+
+**跨切依赖**（全部经 `main.` 取，搬出件不存状态）：
+- state：簇内没有状态成员；读 `current_scene_id` 3 次（重载本页）。
+- ui：`scene_title` / `body_text` / `choices_label`；工席小件 `_slip_body` / `_slip_title` / `_slip_note` / `_slip_row` / `_slip_chip`、`_begin_benches` / `_end_benches` / `_add_leave_button`。
+- msg：`log_msg` 5、`load_scene` 3。
+- 留在 Main 的：`HOME_RATE`（verify_economy / check_symbols / smoke 直读 Main.gd）、`TEMPLE_LOOK_DAYS` / `TEMPLE_RUB_DAYS`、`_setup_residence_chen`（兴化玉湖陈宅，别的簇）、`_on_rest`（旅店 / 住处共用）。
+- 回连的信号目标 3 个：`_on_rest.bind(...)`、`_on_temple_look.bind(did, name)`、`_on_temple_rub.bind(did, name, hook)`，都仍指向 Main。
+
+**断言 / 探针引用点**（拆前逐个核过，行号按基 `26bca91`）：
+
+| 引用点 | 怎么读 | 拆后 |
+|---|---|---|
+| `verify_economy.py:2057`（lane main5 住处歇息门禁：钮文日数 = 价的日数 = bind 日数，费率 HOME_RATE） | `_gd_fn(main_src, "_setup_residence")` **直读 Main.gd** | 切到一行转发，0 处钮 → 假红（实测）→ **改去 ResidencePage.gd 里切** `setup_residence`（去 `main.` 前缀，和旅店切 TavernPage 同一写法）；**不回落去切 Main**（旅店那行有 `or _gd_fn(main_src, "_setup_inn")` 回落，这里不加：挪回 Main 就该红）。条件原样 |
+| `godot_smoke.gd:579 / 585`「寺观细看只记入册」「寺观拓碑只写入边记」 | 在 `_main_family_src()` 里切 `func _on_temple_look` / `_on_temple_rub` | 切到转发，假红（实测）→ **改去 ResidencePage.gd 里切** `static func on_temple_look(` / `on_temple_rub(`，去 `main.` 前缀；`on_temple_rub` 是拆出件末支，切到文件尾。条件原样 |
+| `godot_smoke.gd:568 / 570`（四个动态页有定义、HOME_RATE / INN_RATE 都在） | family src 全文查 | Main 留同名转发、常量留 Main，不用改 |
+| `godot_smoke.gd:597–603`（拓记字样、旧冒号仍算拓过） | 在 Main 实例上 `call("_temple_rub_note")` / `call("_has_temple_rub")` | 走转发，不用改 |
+| `check_symbols.py:2619`（`拓「%s」　%s` 须在、`拓「%s」：` 不得在）、`:2930–2932`（函数定义）、`:2939`（HOME_RATE < INN_RATE）、`:3342 / 3354`（细看走 record_discovery、拓碑走 add_ledger_note）、`:3368`、`:3896–3911`（Lane AC 寺观题签 / 勘见记事） | 都经 `read_main_src()` | 拼回即原文 → **不用改**（登记 MAIN_SPLITS 即可；漏登记实测 13 条红） |
+
+### 落地
+
+- `scripts/ui/ResidencePage.gd`（新增，`.uid` `uid://cc0mjjqawj626` 同 commit）：6 支原样搬成 `static func`（setup_residence / setup_temple / temple_rub_note / has_temple_rub / on_temple_look / on_temple_rub）。
+  `temple_rub_note` / `has_temple_rub` 不碰 Main，不带 `main` 形参；其余的 Main 成员一律加 `main.` 前缀，簇内互调也经 `main.` 走转发。
+  7 处 `:=` 改为与原推断相同的显式类型（VBoxContainer ×4、HFlowContainer、Button ×2）。
+- Main.gd **4612 → 4527（−85）**，func 数不变（233）：6 支都留同名同签名一行转发（`const _RESIDENCE := preload(...)`）。
+- 门禁同步：本节标题登记拆出件，`python3 tools/gen_main_splits.py --write` 重生成 `tools/main_splits.txt`（lane cs13 起 check_symbols / smoke 都只读它）；`godot_compile_check` 的 SCRIPTS 加 1 行；smoke 两处切片、verify_economy 一处切片改去 ResidencePage 里切（见上表）。**断言条件一条没改、没放宽。**
+- 拼回原文：`read_main_src()` 拼回的 6 支和基线逐行比，只差上面 7 行 `:=`。
+
+### 下一刀候选
+
+1. **A / C / E / H / I / K** 风险高（理由见第五 / 七刀）。先做「Main 家族源码」共用 helper 的门禁 lane：verify_economy 直读拆出件的写法已有旅店（TavernPage）、行会 / 贡院（GuildExamPage）、住处（ResidencePage）三处，smoke 也有贡院、寺观三处，应一起收进 helper。

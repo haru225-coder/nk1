@@ -2031,7 +2031,8 @@ _adv_fn = _locate_func(open(os.path.join(ROOT, "scripts/GameManager.gd"), encodi
 check("interest := GameState.accrue_interest()" in _adv_fn and "【月息】" in _adv_fn and "monthly_notice.emit" in _adv_fn.split("accrue_interest", 1)[1].split("pay_wages", 1)[0],
       "月初结息有通告：欠债时写出本月息钱与现欠")
 # lane main5：歇息钮上写的房钱 = 钮上日数 × 费率，按下去 _on_rest 照同一日数、同一费率扣（lane main4 M11：钮文改成 nights * 16 全门禁照绿）。
-# 旅店页在 TavernPage（lane main4 拆出，经 main. 取 Main 的常量与方法，去掉前缀即原文）；住处「下处」歇息在 Main，走 HOME_RATE。
+# 旅店页在 TavernPage（lane main4 拆出，经 main. 取 Main 的常量与方法，去掉前缀即原文）；住处「下处」歇息在 ResidencePage
+# （lane main9 拆出，同样去 main. 前缀即原文），走 HOME_RATE。住处只认拆出件里的 setup_residence：Main 里只剩一行转发，不回落去切 Main。
 # Main 的 INN_RATE 与 simulate_run 算候风成本的 INN_RATE 须是同一个数。
 def _gd_fn(src, name):  # 体到下一个 func / const 为止；取不到记账（func_body.body_ask）
     m = re.search(rf"^(?:static )?func {name}\(.*?(?=^(?:static )?func |^const |\Z)", src, re.S | re.M)
@@ -2054,7 +2055,8 @@ def _rest_chips(body):
     return out
 _tavern_src = open(os.path.join(ROOT, "scripts/ui/TavernPage.gd"), encoding="utf-8").read().replace("main.", "")
 _inn_fn = _gd_fn(_tavern_src, "setup_inn") or _gd_fn(main_src, "_setup_inn")
-_home_fn = _gd_fn(main_src, "_setup_residence")
+_residence_src = open(os.path.join(ROOT, "scripts/ui/ResidencePage.gd"), encoding="utf-8").read().replace("main.", "")
+_home_fn = _gd_fn(_residence_src, "setup_residence")
 _rest_fn = _gd_fn(main_src, "_on_rest")
 _rest_sig = re.match(r"func _on_rest\((\w+): int, \w+: String, (\w+): int = (\w+)", _rest_fn)
 _rest_cost = re.search(r"var cost := (\w+) \* (\w+)\n", _rest_fn)

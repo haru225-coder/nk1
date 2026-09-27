@@ -59,6 +59,8 @@ const SCRIPTS := [
 	"res://scripts/ui/GuildExamPage.gd",
 	# Lane main8 Main.gd 第八刀拆出的市舶司页
 	"res://scripts/ui/MaritimeOfficePage.gd",
+	# Lane main9 Main.gd 第九刀拆出的住处 / 寺观页
+	"res://scripts/ui/ResidencePage.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",

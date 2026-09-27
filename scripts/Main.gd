@@ -124,6 +124,10 @@ const _GUILD := preload("res://scripts/ui/GuildExamPage.gd")
 ## _on_report_discovery / _setup_title_and_invest / _on_invest_port / _attention_desc 都是同名同签名一行转发，调用点与信号目标不变；
 ## _setup_quanzhou_standoff、_duty_per_hundred 仍在这里。
 const _MARITIME := preload("res://scripts/ui/MaritimeOfficePage.gd")
+## 住处 / 寺观页（住处边记 / 歇息工席、寺观近侧旧迹工席与细看 / 拓碑回调、拓记字样小件）的实现在 scripts/ui/ResidencePage.gd
+## （Lane main9 第九刀拆出）；这里的 _setup_residence / _setup_temple / _temple_rub_note / _has_temple_rub / _on_temple_look /
+## _on_temple_rub 都是同名同签名一行转发，调用点与信号目标不变；HOME_RATE / TEMPLE_* 常量、_setup_residence_chen、_on_rest 仍在这里。
+const _RESIDENCE := preload("res://scripts/ui/ResidencePage.gd")
 ## 活背景幅度：比引擎默认再收一档（正文底下的画不能晃得人头晕）
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
@@ -2388,35 +2392,7 @@ func _on_exam_sit(port_id: String) -> void:
 
 ## 住宅：看边记、便宜歇息。候风仍去旅店——下处等不到风向。
 func _setup_residence(port_id: String) -> void:
-	if port_id == "xinghua":
-		_setup_residence_chen(port_id)
-		return
-	scene_title.text = "%s・住处" % GameManager.get_port_name(port_id)
-	body_text.text = "租来的下处。比旅店便宜，听不见风信。"
-	_begin_benches()
-
-	var book := _slip_body()
-	_slip_title(book, "边记", "学者 %d　海路 %d" % [GameState.scholar_tendency, GameState.sea_tendency])
-	if GameState.ledger_notes.is_empty():
-		_slip_note(book, "案上只有叔父那几卷未清的旧账。")
-	else:
-		for note in GameState.ledger_notes:
-			_slip_note(book, str(note))
-
-	var home := _slip_body()
-	_slip_title(home, "歇息", "候风仍去旅店")
-	var home_row := _slip_row(home)
-	for n in [1, 3]:
-		var nights := int(n)
-		_slip_chip(
-			home_row,
-			"歇 %d 日　%d" % [nights, nights * HOME_RATE],
-			_on_rest.bind(nights, port_id, HOME_RATE, "下处")
-		)
-
-	_end_benches()
-	_add_leave_button(port_id)
-	choices_label.visible = false
+	_RESIDENCE.setup_residence(self, port_id)
 
 
 const TEMPLE_LOOK_DAYS := 1
@@ -2425,84 +2401,23 @@ const TEMPLE_RUB_DAYS := 1
 
 ## 寺观：上陆勘见近侧旧迹。记入册子，拓纸入边记；赏格仍回市舶司呈报——不在这里发名声。
 func _setup_temple(port_id: String) -> void:
-	scene_title.text = "%s・寺观" % GameManager.get_port_name(port_id)
-	body_text.text = "住持不谈功名。细看记入册子，拓纸带回住处，赏格回市舶司。"
-	if GameState.has_flag("japan_temple_network"):
-		body_text.text += "\n袖底那张寺社短札，这里的沙弥看过一眼就不再多问。"
-	_begin_benches()
-
-	var near: Array = GameManager.discoveries_near(port_id)
-	if near.is_empty():
-		var empty := _slip_body()
-		_slip_title(empty, "近侧旧迹", "没有可勘的")
-		_slip_note(empty, "海上撞见的，回市舶司呈报即可。")
-	else:
-		for d in near:
-			var did := str(d.get("id", ""))
-			var name := str(d.get("name", did))
-			var hook := str(d.get("historical_hook", ""))
-			var slip := _slip_body()
-			if not GameState.has_found(did):
-				_slip_title(slip, name, "未勘")
-				var look := _slip_chip(_slip_row(slip), "细看一日", _on_temple_look.bind(did, name), true)
-				look.tooltip_text = "%s\n%s" % [d.get("location", ""), hook]
-				continue
-			if did in GameState.discoveries_found:
-				_slip_title(slip, name, "已入册")
-				_slip_note(slip, "赏格回市舶司。")
-			else:
-				_slip_title(slip, name, "已呈案")
-			if _has_temple_rub(name):
-				_slip_note(slip, "拓纸已入边记，回住处可翻。", UiTheme.MOSS)
-			else:
-				var rub := _slip_chip(_slip_row(slip), "拓碑一日", _on_temple_rub.bind(did, name, hook))
-				rub.tooltip_text = hook
-
-	_end_benches()
-	_add_leave_button(port_id)
-	choices_label.visible = false
+	_RESIDENCE.setup_temple(self, port_id)
 
 
 func _temple_rub_note(name: String, hook: String) -> String:
-	var body := hook.strip_edges()
-	if body == "":
-		return "拓「%s」。" % name
-	return "拓「%s」　%s" % [name, body]
+	return _RESIDENCE.temple_rub_note(name, hook)
 
 
 func _has_temple_rub(name: String) -> bool:
-	var needle := "拓「%s」" % name
-	for note in GameState.ledger_notes:
-		if str(note).begins_with(needle):
-			return true
-	return false
+	return _RESIDENCE.has_temple_rub(name)
 
 
 func _on_temple_look(did: String, name: String) -> void:
-	GameManager.advance_days(TEMPLE_LOOK_DAYS)
-	if GameState.record_discovery(did):
-		log_msg("【勘见】廊下细看 %d 日，「%s」记入册子。赏格回市舶司呈报。如今是 %s。" % [
-			TEMPLE_LOOK_DAYS, name, Calendar.get_date_string(),
-		])
-	else:
-		log_msg("沿廊走了一圈，「%s」与册上所记并无出入。" % name)
-	load_scene(current_scene_id)
+	_RESIDENCE.on_temple_look(self, did, name)
 
 
 func _on_temple_rub(did: String, name: String, hook: String) -> void:
-	if did == "" or not GameState.has_found(did):
-		log_msg("还没细看过，「%s」纸上拓不出字。" % name)
-		load_scene(current_scene_id)
-		return
-	GameManager.advance_days(TEMPLE_RUB_DAYS)
-	if _has_temple_rub(name):
-		log_msg("纸上墨迹未干，「%s」已经拓过了。" % name)
-	else:
-		GameState.add_ledger_note(_temple_rub_note(name, hook))
-		log_msg("【拓碑】在寺观廊下拓了 %d 日，把「%s」写入边记。回住处可翻。如今是 %s。" % [
-			TEMPLE_RUB_DAYS, name, Calendar.get_date_string(),
-		])
-	load_scene(current_scene_id)
+	_RESIDENCE.on_temple_rub(self, did, name, hook)
 
 
 ## 提示下一次季风转向还有多久

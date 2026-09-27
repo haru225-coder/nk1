@@ -576,15 +576,19 @@ func _run() -> void:
 	var exam_body := guild_src.substr(exam_i, exam_j - exam_i).replace("main.", "") if exam_i >= 0 and exam_j > exam_i else ""
 	_check(exam_body.find("scholar_tendency") >= 0 and exam_body.find("add_fame") < 0,
 		"贡院誊录只加学者倾向、不给名声", fails)
-	var look_i := main_src.find("func _on_temple_look")
-	var look_j := main_src.find("\nfunc ", look_i + 1) if look_i >= 0 else -1
-	var look_body := main_src.substr(look_i, look_j - look_i) if look_i >= 0 and look_j > look_i else ""
+	# 寺观细看 / 拓碑在 ResidencePage（Lane main9 拆出），Main 里只剩一行转发：函数体去拆出件里切，去掉 main. 前缀即搬走前的原文
+	var res_src := FileAccess.get_file_as_string("res://scripts/ui/ResidencePage.gd")
+	var look_i := res_src.find("static func on_temple_look(")
+	var look_j := res_src.find("\nstatic func ", look_i + 1) if look_i >= 0 else -1
+	var look_body := res_src.substr(look_i, look_j - look_i).replace("main.", "") if look_i >= 0 and look_j > look_i else ""
 	_check(look_body.find("record_discovery") >= 0 and look_body.find("add_fame") < 0
 		and look_body.find("report_discovery") < 0,
 		"寺观细看只记入册、不给名声", fails)
-	var rub_i := main_src.find("func _on_temple_rub")
-	var rub_j := main_src.find("\nfunc ", rub_i + 1) if rub_i >= 0 else -1
-	var rub_body := main_src.substr(rub_i, rub_j - rub_i) if rub_i >= 0 and rub_j > rub_i else ""
+	var rub_i := res_src.find("static func on_temple_rub(")
+	var rub_j := res_src.find("\nstatic func ", rub_i + 1) if rub_i >= 0 else -1
+	if rub_i >= 0 and rub_j < 0:
+		rub_j = res_src.length()  # on_temple_rub 是拆出件末支，切到文件尾
+	var rub_body := res_src.substr(rub_i, rub_j - rub_i).replace("main.", "") if rub_i >= 0 and rub_j > rub_i else ""
 	_check(rub_body.find("add_ledger_note") >= 0 and rub_body.find("add_fame") < 0
 		and rub_body.find("report_discovery") < 0,
 		"寺观拓碑只写入边记、不给名声", fails)
