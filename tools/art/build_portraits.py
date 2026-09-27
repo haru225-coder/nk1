@@ -24,6 +24,8 @@
 依赖：python3 + Pillow + numpy + fontTools。同一 id 同一结果（随机数全部按 id 取种子）。
 Codex 源图在仓库外（nk1-codex），默认 ~/tmp/nk1-codex/assets/portraits（按本机 $HOME 展开；lane gd13 去掉写死的 Mac 家目录
 绝对路径，Mac 上默认不变），环境变量 NK1_CODEX_PORTRAITS 覆盖；缺源图时跳过该张、保留已有产物。
+取不到时明确报错（lane doc8）：环境变量显式设了却指向不存在的目录 → 直接退出；缺省根不在 → 开跑先打一行 WARN
+（写明根与该设的变量、将跳过几张 codex: 油画），末行 done 带跳过张数。
 """
 import json
 import math
@@ -1163,8 +1165,15 @@ def main(argv):
         os.makedirs(titled_dir, exist_ok=True)
     chars = load_chars()
     cast = load_cast()
+    if do_p and not os.path.isdir(CODEX):
+        if "NK1_CODEX_PORTRAITS" in os.environ:
+            raise SystemExit("FAIL 环境变量 NK1_CODEX_PORTRAITS=%s 指向的目录不在" % CODEX)
+        n_codex = sum(1 for c in chars if (not only or c["id"] in only) and c["portrait_status"] == "painted"
+                      and PAINTED.get(c["id"], ("",))[0].startswith("codex:"))
+        print("WARN Codex 源图根不在：%s（缺省；设 NK1_CODEX_PORTRAITS 指向 nk1-codex/assets/portraits）"
+              "——%d 张 codex: 油画将跳过、保留已有产物" % (CODEX, n_codex))
     os.makedirs(OUT_DIR, exist_ok=True)
-    n_p = n_c = 0
+    n_p = n_c = n_skip = 0
     for c in chars:
         cid = c["id"]
         if only and cid not in only:
@@ -1182,6 +1191,7 @@ def main(argv):
             spec, fn = PAINTED[cid]
             im = build_painted(cid, spec, fn)
             if im is None:
+                n_skip += 1
                 continue
             im.save(dst, optimize=True)
             n_p += 1
@@ -1202,7 +1212,7 @@ def main(argv):
                 tcard.save(os.path.join(titled_dir, cid + ".png"), optimize=True)
             n_c += 1
         print("  %-18s %s" % (cid, "painted" if c["portrait_status"] == "painted" else "card"))
-    print("done: painted %d, cards %d → %s" % (n_p, n_c, OUT_DIR))
+    print("done: painted %d, cards %d, skipped %d（源图不在）→ %s" % (n_p, n_c, n_skip, OUT_DIR))
     if "--sheet" in argv:
         contact_sheet([c["id"] for c in chars], argv[argv.index("--sheet") + 1])
     if "--mix" in argv:

@@ -9,11 +9,18 @@ PortableCompressedTexture2D，StyleBoxTexture 按逻辑像素切九宫、按 2×
   python3 tools/art/build_ui_textures.py                 # 全部
   python3 tools/art/build_ui_textures.py --only seal,logo
   python3 tools/art/build_ui_textures.py --sheet /tmp/sheet.jpg   # 另出一张总览小样
+  python3 tools/art/build_ui_textures.py --roots         # 干跑：只打印 rsvg-convert 实际路径与输出目录，不出图
+
+依赖：python3 + Pillow + numpy + rsvg-convert（librsvg 命令行；Debian/Ubuntu `apt install librsvg2-bin`，
+macOS `brew install librsvg`）。rsvg-convert 取环境变量 NK1_RSVG（可执行文件路径或命令名），未设则在 PATH 里找；
+都取不到时，第一次要栅格化 SVG 就退出并提示安装（lane doc8：原写死 Homebrew 下的绝对路径；Mac 上 Homebrew 在 PATH 里，默认不变）。
 """
 import argparse
 import io
 import math
+import os
 import pathlib
+import shutil
 import subprocess
 import sys
 
@@ -24,7 +31,30 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT = ROOT / "assets" / "ui" / "nk1"
 MASHAN = str(ROOT / "assets" / "fonts" / "MaShanZheng-Regular.ttf")
 WENKAI = str(ROOT / "assets" / "fonts" / "LXGWWenKai-Medium.ttf")
-RSVG = "/opt/homebrew/bin/rsvg-convert"
+RSVG_ENV = "NK1_RSVG"
+RSVG_HINT = ("装 librsvg 命令行：Debian/Ubuntu `sudo apt install librsvg2-bin`，macOS `brew install librsvg`；"
+             "或设 NK1_RSVG=/path/to/rsvg-convert")
+
+
+def find_rsvg():
+    """→ (rsvg-convert 可执行路径或 None, 取自哪里)。NK1_RSVG 优先（路径或命令名），否则按 PATH 找。"""
+    env = os.environ.get(RSVG_ENV)
+    if env:
+        return shutil.which(env), f"环境变量 {RSVG_ENV}={env}"
+    return shutil.which("rsvg-convert"), "PATH"
+
+
+_RSVG = []
+
+
+def rsvg() -> str:
+    """第一次栅格化 SVG 时解析 rsvg-convert；取不到就明确退出（不用 SVG 的生成器不受影响）。"""
+    if not _RSVG:
+        path, how = find_rsvg()
+        if not path:
+            raise SystemExit(f"FAIL 找不到 rsvg-convert（{how}）。{RSVG_HINT}")
+        _RSVG.append(path)
+    return _RSVG[0]
 
 
 def hexc(h: str) -> np.ndarray:
@@ -181,7 +211,7 @@ def svg_rgba(body, W, H, vb=None):
     vb = vb or f"0 0 {W} {H}"
     svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
            f'viewBox="{vb}">{body}</svg>')
-    out = subprocess.run([RSVG, "-w", str(W), "-h", str(H)], input=svg.encode(),
+    out = subprocess.run([rsvg(), "-w", str(W), "-h", str(H)], input=svg.encode(),
                          capture_output=True, check=True).stdout
     return np.asarray(Image.open(io.BytesIO(out)).convert("RGBA"), np.float32) / 255.0
 
@@ -1531,7 +1561,16 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", default="")
     ap.add_argument("--sheet", default="")
+    ap.add_argument("--roots", action="store_true", help="干跑：只打印 rsvg-convert 实际路径与输出目录")
     args = ap.parse_args()
+    if args.roots:
+        path, how = find_rsvg()
+        print(f"rsvg    {path or '（找不到）'}  [{how}]")
+        print(f"out     {OUT}  [{'在' if OUT.is_dir() else '不在'}；仓库内]")
+        if not path:
+            print(f"FAIL 找不到 rsvg-convert。{RSVG_HINT}")
+            return 1
+        return 0
     names = [n for n in args.only.split(",") if n] or list(GENERATORS)
     for n in names:
         if n not in GENERATORS:
