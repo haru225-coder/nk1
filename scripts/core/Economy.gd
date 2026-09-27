@@ -109,6 +109,14 @@ func _effective_tariff(port_id: String = "") -> float:
 	return _base_tariff(port_id) * Crew.trade_cost_factor() * GameState.title_duty_factor()
 
 
+## 市舶抽解的实际税率（战况 × 站蒲家 × 杂事 × 职衔），给 GameState.customs_duty 办引用。
+## 买价里的抽解与验引抽解是同一个市舶司的税，吃同一套倍率；两处只在计税基数上分工：
+## 买价按本港成交价（产地/消费地 × 行情 × 修埠）随单付，验引按 base_value 定额报舱货。
+## 牙人佣金是 broker_fee，只在卖价里扣，不是抽解。见 docs/市舶验引与牙行抽解.md。
+func duty_rate(port_id: String = "") -> float:
+	return _effective_tariff(port_id)
+
+
 func _effective_broker() -> float:
 	return broker_fee * Crew.trade_cost_factor() * GameState.title_duty_factor()
 

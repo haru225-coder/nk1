@@ -65,6 +65,7 @@ const SCRIPTS := [
 	"res://tools/qa_patrol_pack_screenshots.gd",
 	"res://tools/qa_fine_text_probe.gd",
 	"res://tools/qa_money_notices_probe.gd",
+	"res://tools/qa_customs_duty_probe.gd",
 	"res://tools/combat_vfx_probe.gd", "res://tools/combat_wire_probe.gd",
 	"res://tools/vision_stage_probe.gd", "res://tools/vision_letterbox_probe.gd",
 	"res://tools/art/vision_fill_gen.gd", "res://tools/art/vision_fill_shots.gd",

@@ -705,15 +705,18 @@ func contraband_units() -> int:
 	return n
 
 
-## 按当前舱货估算抽解税额（办正规货引的花费）
-func customs_duty() -> int:
+## 按当前舱货估算抽解税额（办正规货引的花费）。
+## 税率走 Economy.duty_rate：与买价抽解同吃战况、杂事、职衔——降元港「市舶司换了旗，抽解加倍」
+## 对货引也作数。计税基数仍是 base_value 定额，不随本港行情。port_id 缺省取 last_port（出港查验同港）。
+func customs_duty(port_id: String = "") -> int:
+	var rate := Economy.duty_rate(port_id if port_id != "" else last_port)
 	var total := 0.0
 	for gid in Fleet.cargo.keys():
 		var g := GameManager.get_good_by_id(gid)
 		if g.get("contraband", false):
 			continue  # 违禁货无法报关，不计入
 		var qty: int = Fleet.cargo[gid].get("qty", 0)
-		total += float(g.get("base_value", 0)) * qty * Economy.tariff_rate * title_duty_factor()
+		total += float(g.get("base_value", 0)) * qty * rate
 	return maxi(20, int(round(total)))
 
 
