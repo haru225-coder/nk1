@@ -9,7 +9,9 @@ extends SceneTree
 
 const VIEW := Vector2(1280, 720)
 const GateReport := preload("res://tools/gate_report.gd")  # -- --json 时只打一行 JSON（lane g2）
-const SHOT_DIR := "/tmp/patrol-shots"
+## 截图旁证目录：默认 /tmp/patrol-shots；设 NK1_SHOT_DIR 则落 <该目录>/patrol（与 ShotGate.out_dir 同口径，lane pg3；
+## 不 preload shot_gate.gd——gates_md 会把 preload 它的脚本当截图探针要求入册）。
+var SHOT_DIR := _shot_dir()
 ## 一色判据：每 4px 取一点、每通道量化到 16 级，种类 ≤ 2 或香农熵 < 0.1 bit 即判一色（种类 2 兜住纯色恰落量化格边界）。
 ## 实测：巡检正常页 150–283 种 / 4.2–5.6 bit；最稀的正当画面（墨幕题签帧）41 种 / 0.25 bit；纯色 1 种 / 0 bit。
 const FLAT_MAX_KINDS := 2
@@ -370,6 +372,16 @@ func _color_near(a: Color, b: Color) -> bool:
 
 func _shot_chart(_chart: Node, name: String) -> void:
 	_save_shot(name)
+
+
+## 同 ShotGate.out_dir：NK1_SHOT_DIR 为空取默认；相对路径按启动时的 $PWD 展开。
+static func _shot_dir() -> String:
+	var root := OS.get_environment("NK1_SHOT_DIR").strip_edges()
+	if root == "":
+		return "/tmp/patrol-shots"
+	if not root.is_absolute_path():
+		root = OS.get_environment("PWD").path_join(root)
+	return root.path_join("patrol")
 
 
 ## 截一张旁证：一色 / 拿不到图记 warn（一色图照存，便于人看）；headless 只计数，收尾统一说明。

@@ -1,6 +1,6 @@
 extends SceneTree
 ## Lane Q：酒馆新闻墙 / 市井札薄巡检。
-## 截图落 /workspace/nk1-qa-shots/tavern/（空墙 + 有札两条）。
+## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/tavern/（空墙 + 有札两条）。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_tavern_news_wall_screenshots.gd
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_tavern_news_wall_screenshots.gd -- --contract   # 只验接线，不截图
 ## 默认严格须出 2 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。

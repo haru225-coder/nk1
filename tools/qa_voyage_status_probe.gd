@@ -1,6 +1,6 @@
 extends SceneTree
 ## Lane Z1：海图船况面板 / 顶匾札记旁注纪实短标签巡检。
-## 截图落 /workspace/nk1-qa-shots/voyage/
+## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/voyage/
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_voyage_status_probe.gd   # 截图门禁（须出 6 张）
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_voyage_status_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 默认严格须出 6 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。

@@ -1,6 +1,6 @@
 extends SceneTree
 ## Lane AD：CombatLetterbox / VisionStage 题签文案论文纪实巡检。
-## 截图落 /workspace/nk1-qa-shots/letterbox/（裱框 + 入战墨边题签 + 出战题签）。
+## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/letterbox/（裱框 + 入战墨边题签 + 出战题签）。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_letterbox_copy_probe.gd
 ## 默认严格：须出 4 张；headless / 空视口 / 一色空图 / 张数不足一律非零退出（shot_gate.gd）。
 ## 契约模式（显式）：godot --headless --path /workspace/nk1 -s res://tools/qa_letterbox_copy_probe.gd -- --contract

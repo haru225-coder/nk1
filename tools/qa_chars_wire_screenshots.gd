@@ -1,5 +1,5 @@
 extends SceneTree
-## chars 线薄接入巡检：打开 CharsShoreOverlay，截 wire_*.png 到 /workspace/nk1-qa-shots/chars/。
+## chars 线薄接入巡检：打开 CharsShoreOverlay，截 wire_*.png 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/chars/。
 ## 用法：NK1_CHARS_SYNC=1 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chars_wire_screenshots.gd   # 截图门禁（须出 4 张）
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_chars_wire_screenshots.gd -- --contract   # 只验非渲染断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。

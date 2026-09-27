@@ -1,7 +1,7 @@
 ## 展示台截屏探针。用法：
 ##   DISPLAY=:2 godot --path . -s res://tools/vision_stage_probe.gd            # 截图门禁（默认严格，须出 2 张）
 ##   godot --headless --path . -s res://tools/vision_stage_probe.gd -- --contract   # 只验契约（场景可载、stage_ready 发出）
-## 帧写入 /workspace/nk1-qa-shots/vision/（不擦 polish/）。headless 下不加 --contract 必红。
+## 帧写入 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/vision/（不擦 polish/）。headless 下不加 --contract 必红。
 extends SceneTree
 
 var OUT_DIR := ShotGate.out_dir("vision")

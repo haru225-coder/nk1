@@ -84,10 +84,14 @@ def render(reg):
         cmd = code(c["cmd"]) + ("（或 " + code(c["alt"]) + "）" if c.get("alt") else "")
         out.append(f"| {i} | {c['id']} | {num.get(c['parent'], '?')}. {c['parent']}（lane {c['lane']}） | {c['family']} "
                    f"| {yes(c['oneclick'])} | {cmd} | {c['expect']} | {c['fail']} |")
+    env = reg["shot_env"]
     out += ["", f"**截图门禁明细**（接 `tools/shot_gate.gd` 的全部 {len(shots)} 支；TAG / 张数 / 截图目录现读脚本源码。"
                 "headless 只验契约：本地命令换 `--headless` 并加 `-- --contract`，`--json` 写 "
-                "`godot --headless --quiet --path . -s res://tools/<探针>.gd -- --contract --json`）：", "",
-            "| # | 探针 | 接入 | TAG | 张数 | 截图目录 | 本地命令 | `--json` |",
+                "`godot --headless --quiet --path . -s res://tools/<探针>.gd -- --contract --json`）。"
+                f"「截图目录」列是不设 `{env['var']}` 时的默认（根 `{env['default_root']}`，只在刷新共享证据图时用）；"
+                f"**worktree / 自测推荐一律加前缀 `{env['recommended']}`**，全部探针改落 `<该目录>/<子目录>`、"
+                "patrol 旁证落 `<该目录>/patrol`，默认目录不动：", "",
+            "| # | 探针 | 接入 | TAG | 张数 | 截图目录（默认） | 本地命令 | `--json` |",
             "|---|---|---|---|---|---|---|---|"]
     for i, s in enumerate(shots, 1):
         out.append(f"| {i} | {s['id']} | {s['lane']} | {code(str(s['tag']))} | {s['shots']} | {code(str(s['out_dir']))} "
@@ -224,6 +228,24 @@ def main(argv):
         refs = re.findall(r"tools/[\w./-]+", c["cmd"])
         lost = [r for r in refs if not os.path.exists(os.path.join(ROOT, r))]
         check(not lost, f"CI 步骤「{c['id']}」引用的文件都在" + (f"；缺：{lost}" if lost else ""))
+    # lane pg3：截图落盘根一律可由 NK1_SHOT_DIR 改，免得 worktree / 自测覆盖共享证据图
+    env = reg.get("shot_env") or {}
+    bad = [s["file"] for s in shots if not s.get("sub")]
+    check(not bad, f"截图脚本目录都走 ShotGate.out_dir（{env.get('var')} 可改根）" + (f"；写死：{', '.join(bad)}" if bad else ""))
+    root = env.get("default_root")
+    hard = []
+    for f in tools_gd():
+        if f == "tools/shot_gate.gd" or not root:
+            continue
+        for i, ln in enumerate(open(os.path.join(ROOT, f), encoding="utf-8", errors="replace"), 1):
+            if root in ln and not ln.lstrip().startswith("#"):
+                hard.append(f"{f}:{i}")
+    check(not hard, f"tools/ 已跟踪 .gd 代码里不写死默认截图根 {root}（只许 shot_gate.gd）" + (f"；写死：{', '.join(hard)}" if hard else ""))
+    try:
+        patrol = open(os.path.join(ROOT, "tools", "patrol_shell.gd"), encoding="utf-8", errors="replace").read()
+    except OSError:
+        patrol = ""
+    check(bool(env.get("var")) and env["var"] in patrol, f"patrol_shell.gd 截图旁证目录读 {env.get('var')}")
     uses = re.compile(r'preload\(\s*"res://tools/shot_gate\.gd"\s*\)')
     users = [f for f in tools_gd() if f != "tools/shot_gate.gd"
              and uses.search(open(os.path.join(ROOT, f), encoding="utf-8", errors="replace").read())]

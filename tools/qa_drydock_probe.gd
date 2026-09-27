@@ -1,5 +1,5 @@
 extends SceneTree
-## 船屋坞位工席巡检：截 01..N 到 /workspace/nk1-qa-shots/drydock/。
+## 船屋坞位工席巡检：截 01..N 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/drydock/。
 ## 摆场：泉州船屋坞位 → 伤船体修船题签 → 购入客舟 → 换坞题签 → 升帆题签。
 ## -s 工具脚本下 play_transition 当帧直通，题签帧直接调 UiTransition.drydock_open。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_drydock_probe.gd   # 截图门禁（须出 9 张）

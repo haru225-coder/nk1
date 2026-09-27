@@ -1,5 +1,5 @@
 extends SceneTree
-## 港口三扇岸门巡检：泉州 / 福州 / 兴化截 ShoreDoors 到 /workspace/nk1-qa-shots/port-doors/。
+## 港口三扇岸门巡检：泉州 / 福州 / 兴化截 ShoreDoors 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/port-doors/。
 ## 断言：三扇门 title/subtitle 论文纪实；热区 Button 挂 tooltip；关着的门有「今日未开」提示。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_port_doors_probe.gd   # 截图门禁（须出 5 张）
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_port_doors_probe.gd -- --contract   # 只验非渲染断言，不截图

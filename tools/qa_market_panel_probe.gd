@@ -1,5 +1,5 @@
 extends SceneTree
-## 牙行/市舶过秤面板巡检：截图到 /workspace/nk1-qa-shots/market/。
+## 牙行/市舶过秤面板巡检：截图到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/market/。
 ## 断言：价格行「买/卖」下有手续脚注「含抽解・扣佣」；正文含过秤短注；市舶修埠短句纪实。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_market_panel_probe.gd   # 截图门禁（须出 5 张）
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_market_panel_probe.gd -- --contract   # 只验非渲染断言，不截图

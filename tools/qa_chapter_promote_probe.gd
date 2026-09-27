@@ -1,5 +1,5 @@
 extends SceneTree
-## 章晋升册页巡检：截 01..N 到 /workspace/nk1-qa-shots/chapter/。
+## 章晋升册页巡检：截 01..N 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/chapter/。
 ## 摆场仿 ShotTour._site_chapter_dialog：伪造章一→二晋升（years=2），_cinema 直通弹册页；
 ## 再调 UiTransition.promote_open 截「两年后・旧账」晋印题签帧。
 ## -s 工具脚本下 play_transition 当帧直通；这里直接调助手截墨幕那一帧。

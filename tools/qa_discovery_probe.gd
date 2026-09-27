@@ -1,5 +1,5 @@
 extends SceneTree
-## 发现录巡检：寺观近侧旧迹（未勘 / 已入册 / 已呈案）与市舶司呈报工席，截到 /workspace/nk1-qa-shots/discovery/。
+## 发现录巡检：寺观近侧旧迹（未勘 / 已入册 / 已呈案）与市舶司呈报工席，截到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/discovery/。
 ## 断言：呈报签副题「赏钱 N　声名 N」、chip「呈报」挂 tooltip；呈报后挪入 discoveries_reported、日志「入案」。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_discovery_probe.gd   # 截图门禁（须出 5 张）
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_discovery_probe.gd -- --contract   # 只验非渲染断言，不截图

@@ -1,5 +1,5 @@
 extends SceneTree
-## Lane Y：巡检证据包（入行/赴试/名册/海图）→ /workspace/nk1-qa-shots/patrol-pack/
+## Lane Y：巡检证据包（入行/赴试/名册/海图）→ ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/patrol-pack/
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_patrol_pack_screenshots.gd
 ## 只截证据，不改玩法。
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_patrol_pack_screenshots.gd -- --contract   # 只验非渲染断言，不截图

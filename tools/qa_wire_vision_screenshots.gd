@@ -1,6 +1,6 @@
 extends SceneTree
 ## Lane L：VisionStage / CombatLetterbox 主流程薄接入巡检。
-## 截图落 /workspace/nk1-qa-shots/wire/（至少 2 张：裱框、入战墨边）。
+## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/wire/（至少 2 张：裱框、入战墨边）。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_wire_vision_screenshots.gd
 ## 默认严格：须出 2 张；headless / 空视口 / 一色空图 / 张数不足一律非零退出（shot_gate.gd）。
 ## 契约模式（显式）：godot --headless --path /workspace/nk1 -s res://tools/qa_wire_vision_screenshots.gd -- --contract

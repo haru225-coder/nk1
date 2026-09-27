@@ -1,5 +1,5 @@
 extends SceneTree
-## 酒馆募人与水手雇请工席巡检（Lane AB）：截 01..06 到 /workspace/nk1-qa-shots/crew/。
+## 酒馆募人与水手雇请工席巡检（Lane AB）：截 01..06 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/crew/。
 ## 摆场：泉州酒馆募人（有候选）→ 雇入一人（在船・辞退）→ 雇满本港职事（空态）
 ##       → 泉州船屋坞位添人 chip → 减员后补齐 chip → 船籍簿职事行。
 ## 断言只查文案与钮字；入伙钱、月俸、码头每人 20 的算式照旧，这里顺带核一遍数没动。

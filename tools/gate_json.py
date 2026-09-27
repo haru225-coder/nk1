@@ -217,6 +217,9 @@ def _shot_root():
 
 
 SHOT_ROOT = _shot_root()
+# 截图落盘根的环境变量（shot_gate.gd 的 out_dir 与 patrol_shell 同读）；worktree / 自测推荐一律带上这个前缀，免得覆盖共享证据图（lane pg3）
+SHOT_ENV = "NK1_SHOT_DIR"
+SHOT_ENV_PREFIX = SHOT_ENV + "=/tmp/<lane>/shots "
 
 
 def _shot_probe(path, lane):
@@ -236,9 +239,11 @@ def _shot_probe(path, lane):
     if out is None and sub and SHOT_ROOT:
         out = SHOT_ROOT + "/" + sub.group(1)
     res = "res://" + path
+    # sub：走 ShotGate.out_dir 的子目录（设 NK1_SHOT_DIR 落 <根>/<sub>）；写死目录的为 None，gates_md 判红（lane pg3）
     return {"id": os.path.splitext(os.path.basename(path))[0], "file": path, "lane": lane,
             "tag": tag.group(1) if tag else None, "shots": int(n.group(1)) if n else None,
-            "out_dir": out, "args": ["--path", ".", "-s", res], "display": True}
+            "out_dir": out, "sub": sub.group(1) if sub else None,
+            "args": ["--path", ".", "-s", res], "display": True}
 
 
 def _native_json(path):
@@ -276,9 +281,9 @@ def registry():
             else:
                 g["json"] = disp + "python3 tools/gate_json.py --godot " + g["id"]
         else:
-            g["cmd"] = "DISPLAY=:2 godot --path . -s res://tools/<探针>.gd"
-            g["json"] = ("DISPLAY=:2 godot --quiet --path . -s res://tools/<探针>.gd -- --json" if shots_native
-                         else "DISPLAY=:2 python3 tools/gate_json.py --godot <探针>")
+            g["cmd"] = SHOT_ENV_PREFIX + "DISPLAY=:2 godot --path . -s res://tools/<探针>.gd"
+            g["json"] = SHOT_ENV_PREFIX + ("DISPLAY=:2 godot --quiet --path . -s res://tools/<探针>.gd -- --json" if shots_native
+                                           else "DISPLAY=:2 python3 tools/gate_json.py --godot <探针>")
         gates.append(g)
     shots = [_shot_probe(p, lane) for p, lane in SHOT_PROBES]
     for s in shots:
@@ -303,7 +308,7 @@ def registry():
     must_json = [{"id": g["id"], "tier": g["tier"], "json": g["json"]} for g in order]
     ci = [dict(c) for c in CI_STEPS]
     return {"gates": gates, "shot_probes": shots, "subchecks": subs, "oneclick": must, "oneclick_json": must_json,
-            "ci_steps": ci}
+            "ci_steps": ci, "shot_env": {"var": SHOT_ENV, "default_root": SHOT_ROOT, "recommended": SHOT_ENV_PREFIX.strip()}}
 
 
 # `--godot <预设>`：注册表里的 Godot 门禁 + 截图脚本（带窗口的不加 --headless）

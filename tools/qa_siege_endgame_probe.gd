@@ -1,5 +1,5 @@
 extends SceneTree
-## 守城页 / 终局港口页巡检：截 01..N 到 /workspace/nk1-qa-shots/siege/。
+## 守城页 / 终局港口页巡检：截 01..N 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/siege/。
 ## 摆场仿 ShotTour._site_siege / _site_ended_port：先进泉州港页，再立守城（1276-11 兴化）或落定结局回泉州。
 ## 触发：首次进守城 / 终局岸带各演一次纪实题签（「兴化军・围城」印「城」、「港名・结局」印「终」）；
 ## -s 工具脚本下 play_transition 当帧直通，这里直接调 UiTransition 助手截墨幕那一帧。

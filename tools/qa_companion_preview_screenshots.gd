@@ -1,5 +1,5 @@
 extends SceneTree
-## Lane Z3：伙伴草案预览浮页巡检。F7 开关；截图落 /workspace/nk1-qa-shots/companions/。
+## Lane Z3：伙伴草案预览浮页巡检。F7 开关；截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/companions/。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_companion_preview_screenshots.gd   # 截图门禁（须出 4 张）
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_companion_preview_screenshots.gd -- --contract
 ## 截图缺张 / 空视口 / 一色空图 / headless 未开 --contract 一律非零退出（shot_gate.gd）；浮页断言仍只记 warn。

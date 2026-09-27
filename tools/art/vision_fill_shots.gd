@@ -2,7 +2,7 @@
 ##   DISPLAY=:2 godot --path . -s res://tools/art/vision_fill_shots.gd            # 截图门禁（须出 4 张）
 ##   godot --headless --path . -s res://tools/art/vision_fill_shots.gd -- --contract   # 只验序列帧与角花节点
 ## headless 下不加 --contract 立即判红（旧写法会卡在 frame_post_draw 等到超时）。
-## 截图落 /workspace/nk1-qa-shots/vision-fill/（绝对路径，不进仓库）。另验序列帧与角花节点都在场。
+## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/vision-fill/（绝对路径，不进仓库）。另验序列帧与角花节点都在场。
 extends SceneTree
 
 var OUT_DIR := ShotGate.out_dir("vision-fill")

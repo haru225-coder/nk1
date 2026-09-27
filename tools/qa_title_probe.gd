@@ -1,5 +1,5 @@
 extends SceneTree
-## 标题页 / 序章题签巡检：截 title_*.png 到 /workspace/nk1-qa-shots/title/。
+## 标题页 / 序章题签巡检：截 title_*.png 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/title/。
 ## 触发：开机进 cg_title；点「开卷」见「序章・卷首」；四方沙盘末页「翻页」见「序章・兴化海口」。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_title_probe.gd   # 截图门禁（须出 5 张）
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_title_probe.gd -- --contract   # 只验非渲染断言，不截图

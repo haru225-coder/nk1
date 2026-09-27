@@ -1,5 +1,5 @@
 extends SceneTree
-## 终局港口「重读结局」入口巡检：截 01..06 到 /workspace/nk1-qa-shots/ending/。
+## 终局港口「重读结局」入口巡检：截 01..06 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/ending/。
 ## 摆场仿 qa_siege_endgame_probe 终局段：先进泉州港页，落定一个结局再回泉州。
 ## 锁：札记抬头旁注终局时地、笺脚注文；「重读结局」是动作行主钮（有 tooltip）；点按只翻开既有册页，
 ## 不重播岸带题签（_shore_title_seen 仍只一条）；合上后港名匾不累加、札记仍一方、动作行钮数不变；册页已开时再点不叠。
