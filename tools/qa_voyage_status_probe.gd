@@ -36,7 +36,7 @@ func _run() -> void:
 	if not _contract:
 		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_VOYAGE_BEGIN")
-	Clock.frame_pressure(self)
+	ShotGate.frame_pressure(self)
 	_check_wiring()
 
 	var packed: PackedScene = load("res://scenes/Main.tscn")

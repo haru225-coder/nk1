@@ -38,7 +38,7 @@ func _run() -> void:
 		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_CHARS_BEGIN")
 	_demo = (load("res://scenes/chars/CharsDemo.tscn") as PackedScene).instantiate()
-	Clock.frame_pressure(self)
+	ShotGate.frame_pressure(self)
 	root.add_child(_demo)
 	await _settle(12)
 

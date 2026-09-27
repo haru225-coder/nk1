@@ -33,12 +33,11 @@ extends RefCounted
 ##     settle 等补间（chart_hud / patrol_pack / voyage）：4 帧 / 15 s → ≈ 3750 ms；其余 9 支没有撞得到的墙钟等待，只剩进程 timeout
 ##   超上界一律判红并写明「超时 / 没收场 / 墙钟上界先到」，不许绿、也不许报成被测件的错。
 ##
-## 四、frame_pressure(tree)：环境变量 NK1_PROBE_SLOW_MS=<毫秒> 时挂一个节点、每帧 OS.delay_msec 压帧
-##   （gd10 复现手法；与 combat_probe_stage.frame_pressure 同一个变量名，lane gd11）；未设什么也不挂。
+## 四、压帧自检：环境变量 NK1_PROBE_SLOW_MS=<毫秒> 时每帧 OS.delay_msec 压帧（gd10 复现手法，与 gd11 同一个变量名）：
 ##     NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_title_probe.gd
+##   实现 lane gd18 起收进 ShotGate.frame_pressure（全体有窗口探针一个口径），本文件不再留一份；各探针开场直接调它。
 
 const WAIT_MS := 15000
-const ENV_SLOW := "NK1_PROBE_SLOW_MS"
 
 
 ## 此刻在跑的有限补间个数（无限循环的不算）。
@@ -95,26 +94,3 @@ static func wait_hold(tree: SceneTree, node, max_ms := WAIT_MS) -> String:
 	if not holding(node):
 		return "错过（等 %d ms 墨幕已收场，停拍一帧也没等到）" % (Time.get_ticks_msec() - t0)
 	return ""
-
-
-## NK1_PROBE_SLOW_MS>0 时挂压帧节点，返回每帧压的毫秒数；未设返回 0、什么也不挂。见头注释「四」。
-static func frame_pressure(tree: SceneTree) -> int:
-	var ms := int(OS.get_environment(ENV_SLOW).strip_edges())
-	if ms <= 0:
-		return 0
-	var n := _FramePressure.new()
-	n.ms = ms
-	n.name = "ProbeFramePressure"
-	tree.root.add_child(n)
-	print("  %s=%d：每帧压 %d ms（约 %.1f fps 以下）" % [ENV_SLOW, ms, ms, 1000.0 / ms])
-	return ms
-
-
-class _FramePressure extends Node:
-	var ms := 0
-
-	func _ready() -> void:
-		process_mode = Node.PROCESS_MODE_ALWAYS
-
-	func _process(_delta: float) -> void:
-		OS.delay_msec(ms)

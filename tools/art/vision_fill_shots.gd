@@ -3,7 +3,8 @@
 ##   godot --headless --path . -s res://tools/art/vision_fill_shots.gd -- --contract   # 只验序列帧与角花节点
 ## headless 下不加 --contract 立即判红（旧写法会卡在 frame_post_draw 等到超时）。
 ## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/vision-fill/（绝对路径，不进仓库）。另验序列帧与角花节点都在场，
-## 02–04 按序列帧进度取景并复核截到的是哪一帧（出膛 / 柱顶 / 塌落）。
+## 02–04 按序列帧进度取景并复核截到的是哪一帧（出膛 / 柱顶 / 塌落）；在画完的那一帧上判、当帧截，上界按墙钟（lane gd18）。
+## 压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/art/vision_fill_shots.gd（见 shot_gate.gd）
 extends SceneTree
 
 var OUT_DIR := ShotGate.out_dir("vision-fill")
@@ -15,7 +16,9 @@ const ShotGate := preload("res://tools/shot_gate.gd")
 const MUZZLE_PEAK := 1
 const SPLASH_PEAK := 3
 const SPLASH_FALL := 6
-const WAIT_CAP := 240
+## 等序列帧走到取景格的墙钟上界（lane gd18；原 240 帧，快机 1 s、压帧 3 fps 下 72 s，与演出时长对不上）。
+## 齐射后最晚一格（水花第 6 格）约 0.42 + 0.5 s 游戏时间；每帧 delta 封顶约 0.133 s，1 fps 下也只要约 7 s
+const WAIT_MS := 15000
 
 var _fails: Array = []
 var _saved: Array = []
@@ -36,6 +39,7 @@ func _run() -> void:
 	if not _contract:
 		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	var stage: Control = (load(STAGE) as PackedScene).instantiate()
+	ShotGate.frame_pressure(self)  # NK1_PROBE_SLOW_MS 压帧自检（lane gd18）；未设不挂
 	root.add_child(stage)
 	for _i in 3:
 		await process_frame
@@ -72,16 +76,28 @@ func _run() -> void:
 	_finish()
 
 
-## 等到序列帧走到 want 再截；上限 WAIT_CAP 帧，没等到照截并判红，不挂死。截完复核当帧仍在该段。
+## 截「画出序列帧走到 want」的那一帧（lane gd18，照 combat_probe_stage.shot_when）：每帧画完（frame_post_draw）后
+## 在已画出的状态上查 cond，成立就当帧截 root——截到的正是满足 cond 的那一帧。原先在 process 里判成立、再等下一帧
+## 画完才截：压帧 300 ms 下序列帧一帧跳约 1.6 格，04_smoke 截到时 Splash0 已播完隐去（gd18 全支压帧实测红一次）。
+## 相位已过（这一段一格也没画到就播完 / 越过取景段）判「错过」、满 WAIT_MS 判「超时」，两种都照截一张再判红，不挂死。
 func _shot_at(name: String, cond: Callable, seq: AnimatedSprite2D, want: int) -> void:
-	var n := 0
-	while not cond.call() and n < WAIT_CAP:
-		await process_frame
-		n += 1
-	var met: bool = cond.call()
-	_expect(met, "%s：%d 帧内 %s 没走到第 %d 帧（现第 %d 帧 visible=%s）" % [name, WAIT_CAP, seq.name, want, seq.frame, seq.visible])
-	await _shot(name)
-	if met:
+	var deadline := Time.get_ticks_msec() + WAIT_MS
+	var seen := false
+	var why := ""
+	while true:
+		await RenderingServer.frame_post_draw
+		if cond.call():
+			break
+		seen = seen or seq.visible
+		if seen and (not seq.visible or seq.frame > want + 2):
+			why = "%s：错过——%s 没画到第 %d–%d 格就过了（现第 %d 格 visible=%s）" % [name, seq.name, want, want + 2, seq.frame, seq.visible]
+			break
+		if Time.get_ticks_msec() >= deadline:
+			why = "%s：超时——%d ms 内 %s 没走到第 %d 格（现第 %d 格 visible=%s）" % [name, WAIT_MS, seq.name, want, seq.frame, seq.visible]
+			break
+	_expect(why == "", why)
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _fails)
+	if why == "":
 		_expect(seq.visible and seq.frame <= want + 2, "%s：截到时 %s 已过第 %d 帧（现第 %d 帧 visible=%s）" % [name, seq.name, want + 2, seq.frame, seq.visible])
 
 

@@ -275,13 +275,24 @@ def main(argv):
               f"{u['file']}（{u['what']}）读 {env.get('var')} → <根>/{u['sub']}，默认 {u['default']}"
               + (f"；源码里找不到：{lost}" if lost else ""))
     uses = re.compile(r'preload\(\s*"res://tools/shot_gate\.gd"\s*\)')
-    users = [f for f in tools_gd() if f != "tools/shot_gate.gd"
-             and uses.search(open(os.path.join(ROOT, f), encoding="utf-8", errors="replace").read())]
+    code_of = {}
+    for f in tools_gd():
+        if f == "tools/shot_gate.gd":
+            continue
+        src = open(os.path.join(ROOT, f), encoding="utf-8", errors="replace").read()
+        if uses.search(src):
+            code_of[f] = "\n".join(ln for ln in src.splitlines() if not ln.lstrip().startswith("#"))
+    # lane gd18：只借 shot_gate 挂压帧、不用它收尾截图的定向探针（letterbox_signal / qa_yard）不算截图脚本、不入册
+    users = [f for f, src in code_of.items() if "ShotGate.finish_shots(" in src]
     listed = {s["file"] for s in shots}
     missing, stale = sorted(set(users) - listed), sorted(listed - set(users))
-    check(not missing, "接 shot_gate 的截图脚本（git 已跟踪）都已入册"
+    check(not missing, "接 shot_gate 收尾截图的脚本（git 已跟踪）都已入册"
           + (f"；未入册：{', '.join(missing)}" if missing else f"（{len(users)} 支）"))
-    check(not stale, "入册的截图脚本都真接了 shot_gate" + (f"；没接：{', '.join(stale)}" if stale else ""))
+    check(not stale, "入册的截图脚本都真接了 shot_gate 收尾" + (f"；没接：{', '.join(stale)}" if stale else ""))
+    # lane gd18：「压帧下也绿」是全体有窗口探针的口径——接 shot_gate 的脚本开场都挂 ShotGate.frame_pressure（注释里写了不算）
+    bare = sorted(f for f, src in code_of.items() if "ShotGate.frame_pressure(" not in src)
+    check(not bare, f"接 shot_gate 的脚本都挂了压帧 ShotGate.frame_pressure（{len(code_of)} 支，NK1_PROBE_SLOW_MS 一个口径）"
+          + (f"；漏挂：{', '.join(bare)}" if bare else ""))
 
     print("二、docs/GATES.md")
     gen = render(reg)

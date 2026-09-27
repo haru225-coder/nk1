@@ -50,7 +50,7 @@ func _run() -> void:
 		return
 
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
-	CombatStage.frame_pressure(self)  # NK1_PROBE_SLOW_MS 压帧自检（lane gd11）；未设不挂
+	ShotGate.frame_pressure(self)  # NK1_PROBE_SLOW_MS 压帧自检（lane gd11；gd18 收进 shot_gate）；未设不挂
 	var gm := root.get_node("GameManager")
 	var enemy := [{"type": "sea_falcon", "count": 2}]
 	gm.pending_battle = {"battle": true, "power": 300.0, "player_power": 300.0,

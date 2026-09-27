@@ -39,7 +39,7 @@ func _run() -> void:
 	var packed := load(STAGE) as PackedScene
 	var stage: Control = packed.instantiate()
 	stage.set("auto_volley", false)
-	Clock.frame_pressure(self)
+	ShotGate.frame_pressure(self)
 	# GDScript 闭包对 bool 是拷贝赋值；用数组作可变旗标。
 	var flag: Array = [false]
 	if stage.has_signal("stage_ready"):

@@ -9,9 +9,17 @@ extends RefCounted
 ## `-- --json`：三个收尾函数改打一行 JSON（gate_report.gd，lane g2），门禁名取入口脚本文件名；调用方不用改。
 ## finish_shots / finish_contract 的 error：判红时写进 JSON 的 error 字段（如 _bail 的 "no_signal"，lane gd12），
 ##   让「中途等不到信号收尾」与「张数不足」等普通红分得开；人读输出不变，不判红时不写。
+## 压帧自检 frame_pressure(tree)（lane gd18 收口：gd11 / gd14 在 combat_probe_stage / probe_clock 各起过一份，都收进这里）：
+##   环境变量 NK1_PROBE_SLOW_MS=<毫秒> 时在 root 下挂一个节点、每帧 OS.delay_msec 压帧（模拟满载慢帧，gd10 复现手法）；
+##   未设什么也不挂；重复调只挂一次，不叠压。「压帧下也绿」是全体有窗口探针的口径：截图探针与只借本文件挂压帧的
+##   定向探针（letterbox_signal / qa_yard_transition，不截图、不入截图册）开场都调它；
+##   gates_md 查每个接本文件的脚本代码行里都调了 ShotGate.frame_pressure，漏挂判红。
+##     NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path . -s res://tools/qa_title_probe.gd
 
 const DEFAULT_SHOT_ROOT := "/workspace/nk1-qa-shots"
 const GateReport := preload("res://tools/gate_report.gd")
+const ENV_SLOW := "NK1_PROBE_SLOW_MS"
+const PRESSURE_NODE := "ProbeFramePressure"
 
 
 ## 截图输出目录：NK1_SHOT_DIR 为空取默认根；相对路径按启动时的 $PWD 展开。
@@ -22,6 +30,32 @@ static func out_dir(sub: String) -> String:
 	elif not root.is_absolute_path():
 		root = OS.get_environment("PWD").path_join(root)
 	return root.path_join(sub)
+
+
+## NK1_PROBE_SLOW_MS>0 时挂压帧节点，返回每帧压的毫秒数；未设返回 0、什么也不挂。已挂过的不再挂，返回那一份的毫秒数。
+static func frame_pressure(tree: SceneTree) -> int:
+	var ms := int(OS.get_environment(ENV_SLOW).strip_edges())
+	if ms <= 0 or tree == null:
+		return 0
+	var had := tree.root.get_node_or_null(PRESSURE_NODE)
+	if had != null:
+		return int(had.get("ms"))
+	var n := _FramePressure.new()
+	n.ms = ms
+	n.name = PRESSURE_NODE
+	tree.root.add_child(n)
+	print("  %s=%d：每帧压 %d ms（约 %.1f fps 以下）" % [ENV_SLOW, ms, ms, 1000.0 / ms])
+	return ms
+
+
+class _FramePressure extends Node:
+	var ms := 0
+
+	func _ready() -> void:
+		process_mode = Node.PROCESS_MODE_ALWAYS
+
+	func _process(_delta: float) -> void:
+		OS.delay_msec(ms)
 
 
 static func contract_mode() -> bool:

@@ -40,7 +40,7 @@ func _run() -> void:
 	if not _contract:
 		DirAccess.make_dir_recursive_absolute(_out_dir)
 	print("QA_CHART_HUD_BEGIN")
-	Clock.frame_pressure(self)
+	ShotGate.frame_pressure(self)
 	_check_wiring()
 
 	# 先挂 Main，让 autoload / class_name 与游戏一致（与 patrol_shell 同路径）

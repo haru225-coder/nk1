@@ -46,7 +46,7 @@ func _run() -> void:
 		_report()
 		return
 
-	CombatStage.frame_pressure(self)  # NK1_PROBE_SLOW_MS 压帧自检（lane gd11）；未设不挂
+	ShotGate.frame_pressure(self)  # NK1_PROBE_SLOW_MS 压帧自检（lane gd11；gd18 收进 shot_gate）；未设不挂
 	# 1) VisionStage 裱框（与岸上「市舶纪事」/ F8 叠层同场景）
 	if not ResourceLoader.exists(STAGE):
 		_fails.append("缺 VisionStage 场景")

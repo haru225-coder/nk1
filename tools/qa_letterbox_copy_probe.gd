@@ -60,7 +60,7 @@ func _run() -> void:
 	var packed := load(STAGE) as PackedScene
 	var stage: Control = packed.instantiate()
 	stage.set("auto_volley", false)
-	Clock.frame_pressure(self)
+	ShotGate.frame_pressure(self)
 	var ready_flag: Array = [false]
 	if stage.has_signal("stage_ready"):
 		stage.stage_ready.connect(func(): ready_flag[0] = true)

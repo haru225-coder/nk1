@@ -42,7 +42,7 @@ func _run() -> void:
 
 	_gs = root.get_node("GameState")
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
-	Clock.frame_pressure(self)
+	ShotGate.frame_pressure(self)
 	root.add_child(_main)
 	await _settle(8)
 

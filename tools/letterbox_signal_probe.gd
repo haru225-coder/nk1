@@ -20,6 +20,8 @@ const CombatStage := preload("res://tools/combat_probe_stage.gd")
 const GateReport := preload("res://tools/gate_report.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const Clock := preload("res://tools/probe_clock.gd")
+## 只借它挂压帧（NK1_PROBE_SLOW_MS，lane gd18 收口）；本探针不截图，不入截图册
+const ShotGate := preload("res://tools/shot_gate.gd")
 const TAG := "LETTERBOX_SIGNAL_PROBE"
 const VIEW := Vector2i(1280, 720)
 ## 每幕墙钟上界：最长一幕（出战带 on_black）约 3.5 s 游戏时间。原 8 s：慢过 7.5 fps 时每帧 delta 封顶 0.133 s，
@@ -52,7 +54,7 @@ func _run() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--only="):
 			only = a.trim_prefix("--only=")
-	Clock.frame_pressure(self)
+	ShotGate.frame_pressure(self)
 	if only != "" and not only in PATHS:
 		_fails.append("--only=%s 不认（可选 %s）" % [only, "/".join(PATHS)])
 		_report()

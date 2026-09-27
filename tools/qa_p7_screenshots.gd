@@ -35,7 +35,7 @@ func _run() -> void:
 		return
 	if not _contract:
 		DirAccess.make_dir_recursive_absolute(OUT_DIR)
-	Clock.frame_pressure(self)
+	ShotGate.frame_pressure(self)
 	_gs = root.get_node("GameState")
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
 	root.add_child(_main)

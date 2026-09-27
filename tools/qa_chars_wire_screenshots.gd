@@ -37,7 +37,7 @@ func _run() -> void:
 	var bg := ColorRect.new()
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.color = Color(0.08, 0.07, 0.055, 1.0)
-	Clock.frame_pressure(self)
+	ShotGate.frame_pressure(self)
 	root.add_child(bg)
 	# 经场景实例化，等 autoload（GameManager）就绪后再解析脚本
 	_ov = (load("res://scenes/chars/CharsShoreOverlay.tscn") as PackedScene).instantiate()
