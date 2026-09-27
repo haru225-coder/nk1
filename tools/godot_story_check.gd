@@ -5,6 +5,7 @@
 ## 首帧另实例化 Main 走真机抵港路由（2026-09-14）：与港口同名的 load_scene 必须记 visited_ports 并能晋升。任一失败 quit(1)。
 extends SceneTree
 
+const GateReport := preload("res://tools/gate_report.gd")  # -- --json 时只打一行 JSON（lane g2）
 var _fails := 0
 var _notices: Array = []
 # autoload 在 SceneTree 脚本里不能当标识符用，运行时从 root 取
@@ -15,6 +16,7 @@ var GS: Node
 
 func _check(cond: bool, msg: String) -> void:
 	print("STORY_CHECK ", "OK   " if cond else "FAIL ", msg)
+	GateReport.check(cond, msg)
 	if not cond:
 		_fails += 1
 
@@ -468,6 +470,7 @@ func _process(_delta: float) -> bool:
 	_route_pending = false
 	_route_check()
 	print("STORY_CHECK SUMMARY fails=", _fails)
+	GateReport.finish("godot_story_check", 1 if _fails > 0 else 0, "STORY_CHECK SUMMARY fails=%d" % _fails)
 	quit(1 if _fails > 0 else 0)
 	return true
 

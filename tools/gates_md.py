@@ -78,7 +78,7 @@ def render(reg):
                    f"| {yes(c['oneclick'])} | {cmd} | {c['expect']} | {c['fail']} |")
     out += ["", f"**截图门禁明细**（接 `tools/shot_gate.gd` 的全部 {len(shots)} 支；TAG / 张数 / 截图目录现读脚本源码。"
                 "headless 只验契约：本地命令换 `--headless` 并加 `-- --contract`，`--json` 写 "
-                "`python3 tools/gate_json.py --godot res://tools/<探针>.gd -- --contract`）：", "",
+                "`godot --headless --quiet --path . -s res://tools/<探针>.gd -- --contract --json`）：", "",
             "| # | 探针 | 接入 | TAG | 张数 | 截图目录 | 本地命令 | `--json` |",
             "|---|---|---|---|---|---|---|---|"]
     for i, s in enumerate(shots, 1):

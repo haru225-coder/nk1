@@ -6,6 +6,7 @@ extends SceneTree
 const JOIN_TEXT := "交会费入行"
 const SIT_TEXT := "入场赴试"
 const COPY_TEXT := "替人抄三日"
+const GateReport := preload("res://tools/gate_report.gd")  # -- --json 时只打一行 JSON（lane g2）
 
 var _fails: Array = []
 var _gs
@@ -25,10 +26,12 @@ func _initialize() -> void:
 func _fail(msg: String) -> void:
 	_fails.append(msg)
 	print("FAIL ", msg)
+	GateReport.check(false, msg)
 
 
 func _ok(msg: String) -> void:
 	print("OK   ", msg)
+	GateReport.check(true, msg)
 
 
 func _button_with_text(root_node: Node, text: String) -> Button:
@@ -389,7 +392,9 @@ func _run(main) -> void:
 
 	if _fails.is_empty():
 		print("P7_GUILD_EXAM_SMOKE_OK")
+		GateReport.finish("p7_guild_exam_smoke", 0, "P7_GUILD_EXAM_SMOKE_OK")
 		quit(0)
 	else:
 		print("P7_GUILD_EXAM_SMOKE_FAIL %d" % _fails.size())
+		GateReport.finish("p7_guild_exam_smoke", 1, "P7_GUILD_EXAM_SMOKE_FAIL %d" % _fails.size())
 		quit(1)

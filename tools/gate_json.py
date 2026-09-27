@@ -229,9 +229,19 @@ def _shot_probe(path, lane):
             "out_dir": out, "args": ["--path", ".", "-s", res], "display": True}
 
 
+def _native_json(path):
+    """GDScript 门禁接了 tools/gate_report.gd（lane g2 原生 --json）没有；截图脚本看 shot_gate.gd。"""
+    try:
+        with open(os.path.join(ROOT, path), encoding="utf-8", errors="replace") as f:
+            return 'preload("res://tools/gate_report.gd")' in f.read()
+    except OSError:
+        return False
+
+
 def registry():
     """`--list` 输出的清单：门禁（带人读 / --json 命令、族、是否一键跑）+ 截图脚本明细 + 附属自检 + 一键跑命令 + CI 步骤。"""
     gates = []
+    shots_native = _native_json("tools/shot_gate.gd")
     for g in REGISTRY:
         g = dict(g)
         g.setdefault("gate", g["id"])
@@ -248,15 +258,21 @@ def registry():
             g["json"] = g["cmd"] + " --json" if hooked else " ".join(["python3 tools/gate_json.py", g["file"]] + usage)
         elif g["kind"] == "godot":
             g["cmd"] = disp + "godot " + " ".join(g["args"])
-            g["json"] = disp + "python3 tools/gate_json.py --godot " + g["id"]
+            # 接了 gate_report.gd 的写原生（--quiet 去引擎横幅，stdout 恰一行 JSON）；没接的（editor 等）由本脚本外包
+            if g.get("file") and _native_json(g["file"]):
+                g["json"] = disp + "godot --quiet " + " ".join(g["args"]) + " -- --json"
+            else:
+                g["json"] = disp + "python3 tools/gate_json.py --godot " + g["id"]
         else:
             g["cmd"] = "DISPLAY=:2 godot --path . -s res://tools/<探针>.gd"
-            g["json"] = "DISPLAY=:2 python3 tools/gate_json.py --godot <探针>"
+            g["json"] = ("DISPLAY=:2 godot --quiet --path . -s res://tools/<探针>.gd -- --json" if shots_native
+                         else "DISPLAY=:2 python3 tools/gate_json.py --godot <探针>")
         gates.append(g)
     shots = [_shot_probe(p, lane) for p, lane in SHOT_PROBES]
     for s in shots:
         s["cmd"] = "DISPLAY=:2 godot " + " ".join(s["args"])
-        s["json"] = "DISPLAY=:2 python3 tools/gate_json.py --godot " + s["id"]
+        s["json"] = ("DISPLAY=:2 godot --quiet " + " ".join(s["args"]) + " -- --json" if shots_native
+                     else "DISPLAY=:2 python3 tools/gate_json.py --godot " + s["id"])
     for g in gates:
         g["family"] = FAMILY[g["kind"]]
         g["oneclick"] = g["tier"] in ("must", "step")

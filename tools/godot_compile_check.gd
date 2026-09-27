@@ -60,7 +60,7 @@ const SCRIPTS := [
 	"res://scripts/core/ShoreDraft.gd", "res://scripts/core/UiTheme.gd",
 	# 门禁本体与共用件
 	"res://tools/godot_smoke.gd", "res://tools/godot_story_check.gd", "res://tools/p7_guild_exam_smoke.gd",
-	"res://tools/patrol_shell.gd", "res://tools/shot_gate.gd", "res://tools/p7_smoke.gd",
+	"res://tools/patrol_shell.gd", "res://tools/shot_gate.gd", "res://tools/gate_report.gd", "res://tools/p7_smoke.gd",
 	"res://tools/gen_builtin_list.gd",
 	# 各 lane 专项探针 / 截图脚本
 	"res://tools/save_robust_probe.gd", "res://tools/save_migrate_probe.gd",
@@ -122,6 +122,7 @@ const MUST_STAY_CLEAN := [
 	"res://scenes/ImpactExplosion.tscn",
 ]
 
+const GateReport := preload("res://tools/gate_report.gd")  # -- --json 时只打一行 JSON（lane g2）
 const SCENE_ROOT := "res://scenes"
 const SCENE_SKIP_DIRS := ["res://scenes/vision"]
 
@@ -135,40 +136,49 @@ func _initialize() -> void:
 		var s = load(p)
 		if s == null:
 			print("COMPILE_CHECK FAIL load-null ", p)
+			GateReport.check(false, p, "load-null")
 			bad += 1
 			continue
 		var ok: bool = s.can_instantiate()
 		print("COMPILE_CHECK ", "OK   " if ok else "FAIL ", p)
+		GateReport.check(ok, p, "" if ok else "can_instantiate=false")
 		if not ok:
 			bad += 1
 	total += 1
 	var inv_why := _check_inventory()
 	if inv_why.is_empty():
 		print("COMPILE_CHECK OK   inventory SCRIPTS == tracked *.gd under ", "/".join(INVENTORY_ROOTS), " (exempt ", INVENTORY_EXEMPT.size(), ")")
+		GateReport.check(true, "inventory SCRIPTS == tracked *.gd under %s (exempt %d)" % ["/".join(INVENTORY_ROOTS), INVENTORY_EXEMPT.size()])
 	else:
 		bad += 1
 		for w in inv_why:
 			print("COMPILE_CHECK FAIL inventory ", w)
+			GateReport.check(false, "inventory " + w)
 	for gp in MUST_STAY_CLEAN:
 		if not SCENES.has(gp):
 			total += 1
 			bad += 1
 			print("COMPILE_CHECK FAIL guard-unlisted ", gp)
+			GateReport.check(false, gp, "guard-unlisted")
 	var scenes: Array = SCENES.duplicate()
 	for extra in _discover_scenes(SCENE_ROOT):
 		if not scenes.has(extra):
 			print("COMPILE_CHECK NOTE unlisted scene, checking anyway ", extra)
+			GateReport.warn(extra, "unlisted scene, checking anyway")
 			scenes.append(extra)
 	for sp in scenes:
 		total += 1
 		var why := _check_scene(sp)
 		if why.is_empty():
 			print("COMPILE_CHECK OK   ", sp)
+			GateReport.check(true, sp)
 		else:
 			bad += 1
 			var tag := "FAIL guard " if MUST_STAY_CLEAN.has(sp) else "FAIL "
 			print("COMPILE_CHECK ", tag, sp, " :: ", "; ".join(why))
+			GateReport.check(false, sp, ("guard：" if MUST_STAY_CLEAN.has(sp) else "") + "; ".join(why))
 	print("COMPILE_CHECK SUMMARY bad=", bad, "/", total)
+	GateReport.finish("godot_compile_check", 1 if bad > 0 else 0, "COMPILE_CHECK SUMMARY bad=%d/%d" % [bad, total])
 	quit(1 if bad > 0 else 0)
 
 
@@ -287,6 +297,7 @@ func _tracked_gd() -> Array:
 				out.append(rel)
 	else:
 		print("COMPILE_CHECK NOTE inventory git ls-files unavailable (rc=", rc, "), falling back to disk scan")
+		GateReport.warn("inventory git ls-files unavailable (rc=%d), falling back to disk scan" % rc)
 		for r in INVENTORY_ROOTS:
 			out.append_array(_disk_gd(r))
 	out.sort()

@@ -6,8 +6,10 @@ extends RefCounted
 ## 用法：const ShotGate := preload("res://tools/shot_gate.gd")
 ## 输出目录：`var OUT_DIR := ShotGate.out_dir("vision")`。默认落 /workspace/nk1-qa-shots/<子目录>；
 ## 设环境变量 NK1_SHOT_DIR=<目录> 则整体改落 <目录>/<子目录>（worktree / 自测别覆盖证据图，lane gd2）。
+## `-- --json`：三个收尾函数改打一行 JSON（gate_report.gd，lane g2），门禁名取入口脚本文件名；调用方不用改。
 
 const DEFAULT_SHOT_ROOT := "/workspace/nk1-qa-shots"
+const GateReport := preload("res://tools/gate_report.gd")
 
 
 ## 截图输出目录：NK1_SHOT_DIR 为空取默认根；相对路径按启动时的 $PWD 展开。
@@ -88,28 +90,46 @@ static func shot(root: Window, path: String, saved: Array, fails: Array, allow_b
 static func finish_shots(tag: String, saved: Array, expected: int, out_dir: String, fails: Array) -> int:
 	if saved.size() < expected:
 		fails.append("真失败：声明 %d 张截图，实得 %d 张" % [expected, saved.size()])
+	for p in saved:
+		GateReport.check(true, str(p).get_file(), "shot")
+	for f in fails:
+		GateReport.check(false, str(f))
+	var extra := {"tag": tag, "shots": saved.size(), "expected_shots": expected, "out_dir": out_dir}
 	if fails.is_empty():
-		print("%s_OK shots=%d/%d -> %s" % [tag, saved.size(), expected, out_dir])
+		var ok_line := "%s_OK shots=%d/%d -> %s" % [tag, saved.size(), expected, out_dir]
+		print(ok_line)
+		GateReport.finish(GateReport.main_script_name(), 0, ok_line, extra)
 		return 0
 	for f in fails:
 		print("  ✗ ", f)
-	print("%s_FAIL %d（shots=%d/%d -> %s）" % [tag, fails.size(), saved.size(), expected, out_dir])
+	var fail_line := "%s_FAIL %d（shots=%d/%d -> %s）" % [tag, fails.size(), saved.size(), expected, out_dir]
+	print(fail_line)
+	GateReport.finish(GateReport.main_script_name(), 1, fail_line, extra)
 	return 1
 
 
 ## 无渲染又未开契约模式：直接判红。返回退出码 1。
 static func fail_no_render(tag: String, reason: String, expected: int) -> int:
 	print("  ✗ ", reason)
-	print("%s_FAIL headless（声明 %d 张截图，实得 0；此为环境不具备，不是画面回归）" % [tag, expected])
+	var line := "%s_FAIL headless（声明 %d 张截图，实得 0；此为环境不具备，不是画面回归）" % [tag, expected]
+	print(line)
+	GateReport.check(false, reason, "no-render")
+	GateReport.finish(GateReport.main_script_name(), 1, line, {"tag": tag, "shots": 0, "expected_shots": expected, "no_render": true})
 	return 1
 
 
 ## 契约模式收尾：只报契约断言，不报张数。返回退出码。
 static func finish_contract(tag: String, fails: Array) -> int:
+	for f in fails:
+		GateReport.check(false, str(f))
 	if fails.is_empty():
-		print("%s_CONTRACT_OK（契约模式：未截图，截图门禁须另用 DISPLAY 跑）" % tag)
+		var ok_line := "%s_CONTRACT_OK（契约模式：未截图，截图门禁须另用 DISPLAY 跑）" % tag
+		print(ok_line)
+		GateReport.finish(GateReport.main_script_name(), 0, ok_line, {"tag": tag, "contract": true})
 		return 0
 	for f in fails:
 		print("  ✗ ", f)
-	print("%s_CONTRACT_FAIL %d" % [tag, fails.size()])
+	var fail_line := "%s_CONTRACT_FAIL %d" % [tag, fails.size()]
+	print(fail_line)
+	GateReport.finish(GateReport.main_script_name(), 1, fail_line, {"tag": tag, "contract": true})
 	return 1

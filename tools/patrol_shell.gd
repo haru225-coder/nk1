@@ -8,6 +8,7 @@ extends SceneTree
 ## godot --path . -s res://tools/patrol_shell.gd
 
 const VIEW := Vector2(1280, 720)
+const GateReport := preload("res://tools/gate_report.gd")  # -- --json 时只打一行 JSON（lane g2）
 const SHOT_DIR := "/tmp/patrol-shots"
 ## 一色判据：每 4px 取一点、每通道量化到 16 级，种类 ≤ 2 或香农熵 < 0.1 bit 即判一色（种类 2 兜住纯色恰落量化格边界）。
 ## 实测：巡检正常页 150–283 种 / 4.2–5.6 bit；最稀的正当画面（墨幕题签帧）41 种 / 0.25 bit；纯色 1 种 / 0 bit。
@@ -510,29 +511,39 @@ func _inside_scroll(node: Node) -> bool:
 
 func _check(cond: bool, msg: String) -> void:
 	print(("  ✓ " if cond else "  ✗ ") + msg)
+	GateReport.check(cond, msg)
 	if not cond:
 		_fails.append(msg)
 
 
 func _report_shots() -> void:
 	if _no_render:
-		print("  ⚠ 截图旁证未判（%d 张跳过）：无渲染环境（DisplayServer=%s），带窗口请 DISPLAY=:2 跑" % [_shots, DisplayServer.get_name()])
+		var why := "截图旁证未判（%d 张跳过）：无渲染环境（DisplayServer=%s），带窗口请 DISPLAY=:2 跑" % [_shots, DisplayServer.get_name()]
+		print("  ⚠ ", why)
+		GateReport.warn(why)
 		return
 	for w in _shot_warns:
 		print("  ⚠ ", w)
+		GateReport.warn(str(w))
 	if _shot_warns.is_empty():
-		print("  ✓ 截图旁证 %d/%d 张非一色 -> %s" % [_shots, _shots, SHOT_DIR])
+		var ok_line := "截图旁证 %d/%d 张非一色 -> %s" % [_shots, _shots, SHOT_DIR]
+		print("  ✓ ", ok_line)
+		GateReport.check(true, ok_line)
 	else:
-		print("  ⚠ 截图旁证 %d/%d 张一色或拿不到图 -> %s" % [_shot_warns.size(), _shots, SHOT_DIR])
+		var warn_line := "截图旁证 %d/%d 张一色或拿不到图 -> %s" % [_shot_warns.size(), _shots, SHOT_DIR]
+		print("  ⚠ ", warn_line)
+		GateReport.warn(warn_line)
 
 
 func _finish() -> void:
 	_report_shots()
 	if _fails.is_empty():
 		print("PATROL SHELL PASS")
+		GateReport.finish("patrol_shell", 0, "PATROL SHELL PASS")
 		quit(0)
 	else:
 		print("PATROL SHELL FAIL")
 		for f in _fails:
 			print("  ✗ ", f)
+		GateReport.finish("patrol_shell", 1, "PATROL SHELL FAIL")
 		quit(1)

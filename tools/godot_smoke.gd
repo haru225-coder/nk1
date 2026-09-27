@@ -3,6 +3,8 @@ extends SceneTree
 ## --script 没有 autoload 全局名，必须走 /root。
 ## godot --headless --path . -s res://tools/godot_smoke.gd
 
+const GateReport := preload("res://tools/gate_report.gd")  # -- --json 时只打一行 JSON（lane g2）
+
 
 func _init() -> void:
 	call_deferred("_run")
@@ -759,6 +761,7 @@ func _check_characters(gm: Node, main_src: String, fails: Array) -> void:
 
 func _check(cond: bool, msg: String, fails: Array) -> void:
 	print(("  ✓ " if cond else "  ✗ ") + msg)
+	GateReport.check(cond, msg)
 	if not cond:
 		fails.append(msg)
 
@@ -783,9 +786,11 @@ func _is_seal_text(c: Color) -> bool:
 func _finish(fails: Array) -> void:
 	if fails.is_empty():
 		print("GODOT SMOKE PASS")
+		GateReport.finish("godot_smoke", 0, "GODOT SMOKE PASS")
 		quit(0)
 	else:
 		print("GODOT SMOKE FAIL")
 		for f in fails:
 			print("  ✗ ", f)
+		GateReport.finish("godot_smoke", 1, "GODOT SMOKE FAIL")
 		quit(1)
