@@ -1581,10 +1581,11 @@ func _on_requisition_flee() -> void:
 		_log(_ink(UiTheme.MOSS, "熄灯落帆，借夜潮漂出哨船视线，多走了一程。"))
 	else:
 		var fine: int = maxi(80, int(GameState.money * 0.25))
+		fine = mini(fine, GameState.money)
+		_log("[color=red]被哨船追上。「抗征」二字记入册子，罚钱 %d，名声 −4。[/color]" % fine)
 		GameState.add_money(-fine)
 		GameState.fame -= 4
 		Fleet.morale = maxi(0, Fleet.morale - 5)
-		_log("[color=red]被哨船追上。「抗征」二字记入册子，罚钱 %d，名声 −4。[/color]" % fine)
 	_refresh_status()
 	_on_event_continue()
 
@@ -1595,10 +1596,11 @@ func _on_patrol_submit() -> void:
 	var contraband := GameState.contraband_units()
 	if contraband > 0:
 		var fine: int = mini(400, maxi(60, int(GameState.money * 0.2)))
+		fine = mini(fine, GameState.money)
+		_log("[color=red]舱底被翻了个底朝天。%d 件违禁之物起获，罚钱 %d。那个泉州口音的人说：「往后规矩变了。」[/color]" % [contraband, fine])
 		GameState.confiscate_contraband()
 		GameState.add_money(-fine)
 		Fleet.morale = maxi(0, Fleet.morale - 6)
-		_log("[color=red]舱底被翻了个底朝天。%d 件违禁之物起获，罚钱 %d。那个泉州口音的人说：「往后规矩变了。」[/color]" % [contraband, fine])
 	else:
 		Fleet.morale = maxi(0, Fleet.morale - 2)
 		_log("[color=yellow]查了半日，没查出什么。对方在你的引目上盖了一个你不认得的印，放行。[/color]")

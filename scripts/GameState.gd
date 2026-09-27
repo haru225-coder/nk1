@@ -748,6 +748,7 @@ func customs_inspection() -> Dictionary:
 				result["confiscated"] = true
 				# 罚金以现有资金为比例，不把玩家一次罚到无法翻身
 				var fine: int = mini(300, maxi(50, int(money * 0.4)))
+				fine = mini(fine, money)
 				result["msg"] = "【查扣】货引虽全，抽查却翻到了舱底。%d 件违禁之物当场起获，罚钱 %d，货引作废。" % [contraband, fine]
 				_confiscate_contraband()
 				add_money(-fine)
@@ -763,6 +764,7 @@ func customs_inspection() -> Dictionary:
 	# 无引
 	if float(pu_attention) * war_mul > 50.0:
 		var fine: int = mini(500, maxi(50, int(money * 0.4)))
+		fine = mini(fine, money)
 		result["passed"] = false
 		result["confiscated"] = true
 		result["msg"] = "【严重警告】蒲氏暗桩早已盯上你。市舶司当场查扣所有无证货物，罚钱 %d。" % fine
