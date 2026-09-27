@@ -1865,11 +1865,11 @@ else:
     print("  ✗ Ship 齐射弹数未挂钩 cannon_slots 或仍写死 range(3)")
     problems.append("Ship 齐射未挂 cannon_slots")
 
-# 2. PirateShip：声明 cannon_count 字段，且 _process_firing 用 range(cannon_count)
-if "cannon_count" in pirate_src and "range(cannon_count)" in pirate_src:
+# 2. PirateShip：声明 cannon_count 字段（行首 var），且 _process_firing 函数体里用 range(cannon_count)（lane cs11：原先两条都是全文件口径）
+if re.search(r'^var\s+cannon_count\b', pirate_src, re.M) and "range(cannon_count)" in _locate_func(pirate_src, "_process_firing"):
     print("  ✓ PirateShip 声明 cannon_count 且 _process_firing 用 range(cannon_count)")
 else:
-    print("  ✗ PirateShip 缺 cannon_count 字段或未用 range(cannon_count)")
+    print("  ✗ PirateShip 缺 cannon_count 字段或 _process_firing 未用 range(cannon_count)")
     problems.append("PirateShip 弹数未挂 cannon_count")
 
 # 3. WorldMap：_spawn_enemy 写入 cannon_count
@@ -3273,6 +3273,8 @@ _confirm_ch = _p7_code(p7_bodies.get("_confirm_chapter_sheet", ""))
 _era_body = _p7_code(p7_bodies.get("_era_summary_lines", ""))
 _show_ch = _p7_code(p7_bodies.get("_show_chapter_dialog", ""))
 _gm_skip = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
+# skip_years 末行（lane cs11：原先「自%s至于%s」查的是整份 GameManager，文案却点名 skip_years 末行；改成取体、看最后一条 lines.append）
+_skip_apps = re.findall(r'\blines\.append\((.*)', _locate_func(_gm_skip, "skip_years"))
 if ("func promote_title" not in ut_src or "func promote_open" not in ut_src
         or "年后" not in ut_src or '"晋")' not in ut_src):
     print("  ✗ UiTransition 缺晋升翻页题签助手（promote_title / 印「晋」）")
@@ -3288,7 +3290,7 @@ elif not ("这一路" in _show_ch and "代价" in _show_ch
 elif "span :=" not in _era_body:
     print("  ✗ _era_summary_lines 未按跳年数写「这两年/这三年」")
     problems.append("跳年摘要年数笼统")
-elif "自%s至于%s" not in _gm_skip or "SKIP_HULL_DECAY" not in _gm_skip:
+elif not _skip_apps or "自%s至于%s" not in _skip_apps[-1] or "SKIP_HULL_DECAY" not in _gm_skip:
     print("  ✗ skip_years 末行未改「自…至于…」或 SKIP_* 常量丢失")
     problems.append("跳年代价末行漂移")
 elif not os.path.exists(os.path.join(ROOT, "tools", "qa_chapter_promote_probe.gd")):
@@ -4232,11 +4234,12 @@ for bad in ("十次约有八次", "逃走没被抢走货", "日速 ×", "今日�
         problems.append(f"SeaChart 回潮:{bad}")
     else:
         print(f"  ✓ SeaChart 无「{bad}」")
+# 查的是 Voyage 全文件可见文案（lane cs11：原文案点名 order_blurb，口径其实是整份文件；不收窄——别的函数写出日速公式同样该红）
 if "日速 ×" in _voy_vis:
-    print("  ✗ Voyage.order_blurb 仍写日速公式")
-    problems.append("order_blurb 日速公式")
+    print("  ✗ Voyage 可见文案仍写日速公式（「日速 ×」，原在 order_blurb）")
+    problems.append("Voyage 可见文案日速公式")
 else:
-    print("  ✓ Voyage.order_blurb 无日速公式")
+    print("  ✓ Voyage 可见文案无日速公式（order_blurb 等全文件）")
 if "限今日" in _main_z1 and "UiTheme.hex(UiTheme.CINNABAR)" in _main_z1 and 'color=#%s' in _main_z1:
     print("  ✓ Main 船籍簿委办短限日 + hex 色")
 else:
@@ -4311,28 +4314,77 @@ if not _body_missed:
 # 反向断言（`"_sail_next_day(" not in body`、`any(tok in body for tok in ("add_fame", …))`）、find 定位锚
 # （`body.find("_end_benches")` 取不到得 -1，「A 在 B 之后」照样成立）、存在性探查（`"func shore_door" in src`
 # 会认到 shore_door_hover）。被点名的函数一改名，调用点跟着改，这些断言就空转——反向断言照样绿。
-# 所以：NAMED_FUNCS 里每个名字须在 scripts/ 下仍有行首 `[static ]func 名字(` 定义（改名 / 删了判红，断言跟着改）；
-# 清单齐不齐由本脚本自扫——上面几类字面量里点到、当前确有定义的函数名都须登记（新写这类断言就得登记，漏登判红）。
+# 所以：NAMED_FUNCS 按 (文件, 名字) 登记——键是断言所指那支函数的定义文件，每个名字须在**该文件**仍有行首
+# `[static ]func 名字(` 定义（改名 / 删了 / 挪到别的文件都判红，断言跟着改）。lane cs11：原先只查「scripts/ 下有无此定义」，
+# finish / mount / advance_days 这类通用名在别的文件还有同名（Calendar.advance_days 之于 GameManager.advance_days），
+# 断言所指那支改了名照样绿。scripts/Main.gd 按断言实际读的拼回源码（read_main_src，Main + MAIN_SPLITS）认：搬进拆出件、
+# 拼回还读得到的不算挪走。
+# 清单齐不齐由本脚本自扫——上面几类字面量里点到、当前确有定义的函数名都须登记（新写这类断言就得登记，漏登判红）；
+# 自扫只到名字（字面量看不出指哪个文件），登在哪个文件下由登记的人按断言读的源码定。
 # 本来就要「保持删除」的旧函数（`"func _add_sail_button" not in main_src`）没有定义，自扫不收，也不必登记。
-NAMED_FUNCS = (
-    "_add_guild_join_slip", "_add_leave_button", "_bak_path", "_battle_player_sunk", "_bearing_phrase",
-    "_begin_benches", "_end_benches", "_enter_battle", "_fit_rank", "_guild_join_block", "_harden_state",
-    "_interior_lead", "_interior_title", "_lift_ledger", "_log_shook_pursuers", "_mount_condition",
-    "_mount_status_strip", "_normalise_flags", "_normalise_ids", "_on_battle_result", "_on_event_continue",
-    "_on_exam_sit", "_on_guild_join", "_on_mutiny_bribe", "_on_mutiny_dismiss", "_on_mutiny_suppress", "_on_upgrade",
-    "_sail_next_day", "_setup_guild", "_setup_news_wall", "_skill_rank", "_valid_flag_name", "add_fame", "add_money",
-    "advance_days", "armor_damage_reduction", "board_begin_subtitle", "captain_power", "clear_cargo",
-    "combat_strength", "damage_each_ship", "damage_fleet", "discoveries_near", "drydock_open", "drydock_seal",
-    "drydock_title", "endgame_title", "finish", "has_flag", "has_found", "has_save", "hire_crew", "invest",
-    "invest_cost", "invest_edge", "investment_level", "is_headless", "live", "load_scene", "lose_cargo_ratio",
-    "lose_crew_random", "mount", "mutiny_bribe_cost", "mutiny_event", "mutiny_ready", "next_title", "paper_card",
-    "plain_log", "play_transition", "price_at_rate", "prologue_open_title", "prologue_shore_title", "promote_open",
-    "promote_title", "rank_word", "recent_news", "report_discovery", "resolve_identity_1268", "resolve_mutiny",
-    "sea_flee_ok_note", "sea_win_note", "set_flag", "ship_crew", "ship_crew_max", "ship_crew_min", "ship_crew_room",
-    "shore_door", "show_choices", "siege_title", "spend_money", "style_button", "style_chip", "style_choice_button",
-    "title_duty_factor", "title_rank", "total_durability", "update_status_panel", "upgrade_armor", "upgrade_sail",
-    "visit_port",
-)
+NAMED_FUNCS = {
+    "scripts/Main.gd": (
+        "_add_guild_join_slip", "_add_leave_button", "_begin_benches", "_end_benches", "_fit_rank",
+        "_guild_join_block", "_interior_lead", "_interior_title", "_lift_ledger", "_mount_status_strip",
+        "_on_exam_sit", "_on_guild_join", "_on_upgrade", "_setup_guild", "_setup_news_wall", "_skill_rank",
+        "load_scene", "play_transition", "show_choices", "update_status_panel",
+    ),
+    "scripts/GameManager.gd": (
+        "advance_days", "discoveries_near",
+    ),
+    "scripts/GameState.gd": (
+        "add_fame", "add_money", "finish", "has_flag", "has_found", "next_title", "recent_news",
+        "report_discovery", "resolve_identity_1268", "set_flag", "spend_money", "title_duty_factor",
+        "title_rank", "visit_port",
+    ),
+    "scripts/PirateShip.gd": (
+        "combat_strength",
+    ),
+    "scripts/SeaChart.gd": (
+        "_bearing_phrase", "_enter_battle", "_log_shook_pursuers", "_mount_condition", "_on_battle_result",
+        "_on_event_continue", "_on_mutiny_bribe", "_on_mutiny_dismiss", "_on_mutiny_suppress", "_sail_next_day",
+    ),
+    "scripts/WorldMap.gd": (
+        "_battle_player_sunk",
+    ),
+    "scripts/combat/CombatFx.gd": (
+        "board_begin_subtitle", "sea_flee_ok_note", "sea_win_note",
+    ),
+    "scripts/core/Crew.gd": (
+        "rank_word",
+    ),
+    "scripts/core/Economy.gd": (
+        "invest", "invest_cost", "invest_edge", "investment_level", "price_at_rate",
+    ),
+    "scripts/core/Fleet.gd": (
+        "armor_damage_reduction", "captain_power", "clear_cargo", "damage_each_ship", "damage_fleet",
+        "hire_crew", "lose_cargo_ratio", "lose_crew_random", "mutiny_bribe_cost", "mutiny_ready",
+        "resolve_mutiny", "ship_crew", "ship_crew_max", "ship_crew_min", "ship_crew_room", "total_durability",
+        "upgrade_armor", "upgrade_sail",
+    ),
+    "scripts/core/SaveLoad.gd": (
+        "_bak_path", "_harden_state", "_normalise_flags", "_normalise_ids", "_valid_flag_name", "has_save",
+    ),
+    "scripts/core/UiTheme.gd": (
+        "paper_card", "plain_log", "shore_door", "style_button", "style_chip", "style_choice_button",
+    ),
+    "scripts/core/Voyage.gd": (
+        "mutiny_event",
+    ),
+    "scripts/cutscene/Cinematics.gd": (
+        "live",
+    ),
+    "scripts/cutscene/cs_kit.gd": (
+        "is_headless",
+    ),
+    "scripts/ui/TavernNewsWall.gd": (
+        "mount",
+    ),
+    "scripts/ui/UiTransition.gd": (
+        "drydock_open", "drydock_seal", "drydock_title", "endgame_title", "prologue_open_title",
+        "prologue_shore_title", "promote_open", "promote_title", "siege_title",
+    ),
+}
 _NF_VIRTUAL = {"_ready", "_process", "_physics_process", "_input", "_unhandled_input", "_gui_input",
                "_notification", "_init", "_draw", "_enter_tree", "_exit_tree"}
 _NF_LIT = r'"((?:[^"\\\n]|\\.)*)"'
@@ -4349,12 +4401,16 @@ def _nf_names(lit):
     return out
 
 
-_nf_defined = set()
+_NF_DEF = re.compile(r'^[ \t]*(?:static\s+)?func\s+([A-Za-z_]\w*)\s*\(', re.M)
+_nf_where = {}  # 函数名 -> 定义它的 scripts/ 文件（相对 ROOT）
 for _dp, _dn, _fs in os.walk(SCRIPTS):
     for _fn in _fs:
         if _fn.endswith(".gd"):
+            _rel = os.path.relpath(os.path.join(_dp, _fn), ROOT).replace(os.sep, "/")
             with open(os.path.join(_dp, _fn), encoding="utf-8") as f:
-                _nf_defined |= set(re.findall(r'^[ \t]*(?:static\s+)?func\s+([A-Za-z_]\w*)\s*\(', f.read(), re.M))
+                for _n in set(_NF_DEF.findall(f.read())):
+                    _nf_where.setdefault(_n, []).append(_rel)
+_nf_defined = set(_nf_where)
 _nf_seen = {}  # 函数名 -> 本脚本里点到它的行号
 with open(os.path.abspath(__file__), encoding="utf-8") as f:
     _nf_self = f.read().split("\n")
@@ -4370,16 +4426,42 @@ for _ln_no, _ln in enumerate(_nf_self, 1):
         for _n in _nf_names(_m.group(1)):
             if _n in _nf_defined and _n not in _NF_VIRTUAL:
                 _nf_seen.setdefault(_n, _ln_no)
-_nf_gone = [n for n in NAMED_FUNCS if n not in _nf_defined]
-_nf_unlisted = sorted(n for n in _nf_seen if n not in NAMED_FUNCS)
-for _n in _nf_gone:
-    print(f"  ✗ 断言点名的函数 {_n} 在 scripts/ 下已无定义（改名 / 删了？点到它的反向断言 / find 锚在空转，断言跟着改，NAMED_FUNCS 同步）")
-    problems.append(f"断言点名的函数已无定义：{_n}")
+_nf_pairs = [(rel, n) for rel, names in NAMED_FUNCS.items() for n in names]
+_nf_listed = {n for _, n in _nf_pairs}
+_nf_bad = []
+for _rel in NAMED_FUNCS:
+    _path = os.path.join(ROOT, _rel)
+    if not os.path.isfile(_path):
+        print(f"  ✗ NAMED_FUNCS 登记的文件 {_rel} 不存在（改名 / 挪目录？登记的函数跟着挪到新路径下）")
+        problems.append(f"NAMED_FUNCS 文件不存在：{_rel}")
+        _nf_bad.append(_rel)
+        continue
+    if _rel == "scripts/Main.gd":
+        _text = read_main_src()  # 断言读的是拼回的 Main（Main + MAIN_SPLITS）
+    else:
+        with open(_path, encoding="utf-8") as f:
+            _text = f.read()
+    _here = set(_NF_DEF.findall(_text))
+    for _n in NAMED_FUNCS[_rel]:
+        if _n in _here:
+            continue
+        _else = [r for r in _nf_where.get(_n, []) if r != _rel]
+        if _else:
+            print(f"  ✗ 断言点名的函数 {_n} 在 {_rel} 已无定义，别处还有同名（{'、'.join(_else)}）——挪走 / 改名了？"
+                  f"点到它的反向断言 / find 锚在空转；真挪了就把断言读的源码和 NAMED_FUNCS 登记一起改")
+        else:
+            print(f"  ✗ 断言点名的函数 {_n} 在 {_rel} 已无定义（scripts/ 下也没有；改名 / 删了？"
+                  f"点到它的反向断言 / find 锚在空转，断言跟着改，NAMED_FUNCS 同步）")
+        problems.append(f"断言点名的函数已无定义：{_rel} · {_n}")
+        _nf_bad.append((_rel, _n))
+_nf_unlisted = sorted(n for n in _nf_seen if n not in _nf_listed)
 for _n in _nf_unlisted:
-    print(f"  ✗ check_symbols.py:{_nf_seen[_n]} 的断言点到函数 {_n}，没登记进 NAMED_FUNCS（登记后改名才会判红）")
+    print(f"  ✗ check_symbols.py:{_nf_seen[_n]} 的断言点到函数 {_n}，没登记进 NAMED_FUNCS"
+          f"（登在断言所指那支的定义文件下，现定义于 {'、'.join(_nf_where[_n])}；登记后改名 / 挪走才会判红）")
     problems.append(f"NAMED_FUNCS 漏登：{_n}")
-if not _nf_gone and not _nf_unlisted:
-    print(f"  ✓ 断言点名的 {len(NAMED_FUNCS)} 支函数都还在（反向断言 / find 锚 / 存在性探查；NAMED_FUNCS 与本脚本自扫一致）")
+if not _nf_bad and not _nf_unlisted:
+    print(f"  ✓ 断言点名的 {len(_nf_pairs)} 支函数都还在登记的文件里（{len(NAMED_FUNCS)} 个文件，按 (文件, 名字) 认；"
+          f"反向断言 / find 锚 / 存在性探查；NAMED_FUNCS 与本脚本自扫一致）")
 
 print()
 print()
