@@ -1,3 +1,6 @@
+# 【历史留档，勿运行】（lane doc7 定级）早期一次性补丁：按相对路径往 data/scenes.json 追加 prologue_tabletop 幕后整文件回写。
+# 注意：data/scenes.json 仍在用（scripts/GameManager.gd 读），在仓库根跑会直接改写在用数据。
+# 不是门禁、无调用方，仅供查来历。
 import json
 
 with open('data/scenes.json', 'r', encoding='utf-8') as f:

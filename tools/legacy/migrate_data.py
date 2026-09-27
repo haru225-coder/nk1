@@ -1,3 +1,6 @@
+# 【历史留档，勿运行】（lane doc7 定级）早期一次性迁移：从 Mac 旧机 /Users/snowchan27/d4/east-sea-chronicle/data 拷 JSON 到 /Users/snowchan27/nk-1/data 并合并 scenes.json。
+# 本机跑会 FileNotFoundError；改路径去跑会用旧仓数据覆盖现行 data/*.json。
+# 不是门禁、无调用方，仅供查来历。
 import json
 import shutil
 import os
