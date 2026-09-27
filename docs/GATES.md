@@ -32,10 +32,10 @@
 | 18 | save_migrate_probe | Godot | 加跑：动存档结构 / save_schema | — | `godot --headless --path . -s res://tools/save_migrate_probe.gd` | `python3 tools/gate_json.py --godot save_migrate_probe` | （lane sv）v1 老档读入补字段、回写 v2、原件留 .v1；未来档明确拒读、不退副抄、文件不动 | `SAVE_MIGRATE_PROBE PASS` | `✗` 行；`SAVE_MIGRATE_PROBE FAIL fails=k`；输出含 `SCRIPT ERROR` 即算失败 |
 | 19 | gates_md | Python | 加跑：动门禁清单 / docs/GATES.md | — | `python3 tools/gates_md.py` | `python3 tools/gates_md.py --json` | （lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 收尾截图的脚本全部入册、接 shot_gate 的脚本都挂压帧 `ShotGate.frame_pressure`（lane gd18）；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序 | `结果：全部通过` | `✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write` |
 | 20 | RefsMacPath | Python | 必跑 | ✓ | `python3 tools/check_mac_paths.py` | `python3 tools/check_mac_paths.py --json` | （lane doc9）git 已跟踪的文本文件里不许写 Mac / Homebrew 专属绝对路径（Mac 家目录、Homebrew 前缀、Godot 应用包、用户资料库目录等 10 条，模式与理由见脚本 `PATTERNS`；lane cs20 起每行另把字面量 / 家目录之间的拼接折成一段再对，与 RefsHostPath 共用 `tools/path_scan.py`；lane gd21 起脚本自身也扫，只按行排除 `PATTERNS` / `SAMPLES` 块的条目行，块里夹了别的行即判红）；每次先跑「零、模式自检」（lane auditfix2）：`SAMPLES` 正向样本（含独立审计原反例两行）须全认出、`CLEAN` 反向样本须全不命中；已定级的留档进白名单 `ALLOW`：按文件登记命中行数、头部横幅 / 回指注字样与理由，行数不符、字样丢了、条目失效都判红；未跟踪文件只记 `⚠` | `白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS / SAMPLES 块除外）` + `结果：全部通过` | `✗` 行（白名单外命中逐行列 `文件:行 … ← 命中串`；白名单文件行数不符；横幅 / 回指注丢了；失效条目；本脚本 PATTERNS / SAMPLES 块形状不对；零节样本漏认 / 误报）；`结果：N 项问题` |
-| 21 | RefsHostPath | Python | 加跑：新增 / 改动脚本或文档里写外部路径的地方（照抄命令、引擎路径、截图 / 简报等仓外默认根） | — | `python3 tools/check_host_paths.py` | `python3 tools/check_host_paths.py --json` | （lane gd22）git 已跟踪的文本文件里不许写本机 Linux 绝对路径：`/home/<用户>` 与 `/workspace/<目录>`（仓库根本身一律红，命令写 `--path .`）；仓外根登记在脚本 `ROOTS`（截图根 `NK1_SHOT_DIR`、简报目录 `NK1_BRIEFS` 两条）：文档 / 注释（lane cs20 起按注释起点切行，行尾注释也算）里随便写，代码段只许 owner 写一次默认值（字面量拼接折成一段再判，与 RefsMacPath 共用 `tools/path_scan.py`），owner 丢了默认值或环境变量名判失效；本脚本自身也扫（只放过 `ROOTS` 登记行），未跟踪文件只记 `⚠` | `登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本）` + `结果：全部通过` | `✗` 行（逐行列 `文件:行 … ← 命中串`；非 owner 代码行写死仓外根另注；ROOTS 条目失效）；`结果：N 项问题` |
+| 21 | RefsHostPath | Python | 必跑 | ✓ | `python3 tools/check_host_paths.py` | `python3 tools/check_host_paths.py --json` | （lane gd22）git 已跟踪的文本文件里不许写本机 Linux 绝对路径：`/home/<用户>` 与 `/workspace/<目录>`（仓库根本身一律红，命令写 `--path .`）；仓外根登记在脚本 `ROOTS`（截图根 `NK1_SHOT_DIR`、简报目录 `NK1_BRIEFS` 两条）：文档 / 注释（lane cs20 起按注释起点切行，行尾注释也算）里随便写，代码段只许 owner 写一次默认值（字面量拼接折成一段再判，与 RefsMacPath 共用 `tools/path_scan.py`），owner 丢了默认值或环境变量名判失效；每次先跑「零、样本自检」（lane cs21）：`SAMPLES` 正向样本（含 gd22 清掉的原文三行、cs20 的拼接写法）在 .gd 代码段 / 注释行 / .md 三处须全判红、`CLEAN` 反向样本三处须全不判红、`ROOTS` 每条按 owner 代码行 / 非 owner 代码行 / 拼接 / 行尾注释 / .py 文档串 / .md 各判一次；本脚本自身也扫（只放过 `ROOTS` 登记行，按行排除 `SAMPLES` 块，块形状不对即判红），未跟踪文件只记 `⚠` | `登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 SAMPLES 块除外）` + `结果：全部通过` | `✗` 行（逐行列 `文件:行 … ← 命中串`；非 owner 代码行写死仓外根另注；ROOTS 条目失效；本脚本 SAMPLES 块形状不对；零节样本漏判 / 误报、owner 口径不对）；`结果：N 项问题` |
 | 22 | check_decision_refs | Python | 必跑 | ✓ | `python3 tools/check_decision_refs.py` | `python3 tools/check_decision_refs.py --json` | （lane dec3 / dec4）`docs/待策划拍板清单_2026-09-28.md` 反引号里的每处「文件:行」：文件在、行号不越界、指的还是清单头部锚（「行号：……按 HEAD `x`」）那个提交里的同一段内容；挪了位的按 diff / 同文件原文 / 函数名（照 main_splits 改名表进拆出件）/ 跨文件原文四层算出新号；清单里不许留 `--fix` 打的「〔跟号待核：…〕」；改号自证：和上一版清单逐对比「旧锚旧号那段 == 本版锚本版号那段」，旧那段原文还在别处即号写歪了（lane auditfix1）；仓外 brief 引用只查越界（`$NK1_BRIEFS` 不在只记 `⚠`） | `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红） | `✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；`结果：有问题（DRIFT 先跑 --fix 自动跟号…）`；修法 `python3 tools/check_decision_refs.py --fix`（所引文件先提交） |
 
-每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「九道 Python + smoke/compile/story/p7/patrol」十四道门禁；8、15、16、17、18、19、21 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十道 Python + smoke/compile/story/p7/patrol」十五道门禁；8、15、16、17、18、19 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（8 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -151,7 +151,7 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 
 <!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-# 必跑十五条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+# 必跑十六条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
 rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
 python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
 python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
@@ -167,6 +167,7 @@ godot --quiet --headless --path . -s res://tools/godot_story_check.gd -- --json 
 godot --quiet --headless --path . -s res://tools/p7_guild_exam_smoke.gd -- --json > /tmp/gates/p7.json
 DISPLAY=:2 godot --quiet --path . -s res://tools/patrol_shell.gd -- --json > /tmp/gates/patrol.json
 python3 tools/check_mac_paths.py --json > /tmp/gates/RefsMacPath.json
+python3 tools/check_host_paths.py --json > /tmp/gates/RefsHostPath.json
 python3 tools/check_decision_refs.py --json > /tmp/gates/check_decision_refs.json
 python3 tools/gate_json.py --judge /tmp/gates/*.json   # 汇总：逐道一行 ✓/✗；任一道红或没有 JSON 行 → 退 1
 ```
@@ -211,6 +212,7 @@ godot --headless --path . -s res://tools/godot_story_check.gd
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 python3 tools/check_mac_paths.py
+python3 tools/check_host_paths.py
 python3 tools/check_decision_refs.py
 ```
 
@@ -340,13 +342,13 @@ python3 tools/check_decision_refs.py
 
 ### 20. RefsMacPath（`tools/check_mac_paths.py`，Mac 专属绝对路径防回归）
 - 读：`零、模式自检`（lane auditfix2，每次跑都先过：`✓ 正向样本 N 行都被认出` / `✓ 反向样本 N 行都不命中` / `✓ 独立审计原反例…整段扫出 2/2 行`；`SAMPLES` 里有一行漏认或 `CLEAN` 里有一行误报即 `✗`，模式表回退 / 改窄了在这里先红，不等真文件写进来）→ `一、白名单条目都有效`（`ALLOW` 每条：文件在且已跟踪、头 5 行还有登记的横幅 / 回指注字样）→ `二、git 已跟踪文件里的 Mac 路径`（白名单文件逐条 `命中 N 行，登记 N 行（理由）`，本脚本自扫两条 `✓ tools/check_mac_paths.py：自扫按行排除 PATTERNS 块 10 行`（lane gd21）、`…SAMPLES 块 N 行`（lane auditfix2）；末条 `白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS / SAMPLES 块除外）`）；红时白名单外的命中逐行列 `文件:行  原文  ← 命中串`。读工作树内容（已暂存的新文件也扫），二进制跳过；本脚本自身也扫（lane gd21）：只按行排除 `PATTERNS = [` 到 `]` 之间的条目行，块里每行须是一条 `("名字", r"正则", "理由")` 且行数等于条目数，夹进注释 / 别的字符串即 `✗ tools/check_mac_paths.py：自扫按行排除 PATTERNS 块…——块里第 N 行不是一条…`；`SAMPLES = [` 块同理（每行须是一条 `r"样本行"`，且每行都得被零节认出，塞不进漏网的路径），块外（docstring、ALLOW、判词）写了 Mac 路径照常按白名单外命中判红；未跟踪文件有命中只记 `⚠`（别的 lane 没提交的不染红共用树，同 check_docs_index）。模式 10 条及每条为什么算 Mac 专属写在脚本 `PATTERNS`（lane auditfix2 补：家目录写成 `$HOME` / `${HOME}` / `"$HOME"` / `Path.home()` 拼接的资料库目录，Intel Homebrew 前缀下的 opt / Caskroom 目录）；`~/tmp/…` 草稿区、走查署名、安装提示里的 `brew install`、下载 URL 里的 `macos` 字样不算。拼接也认（lane cs20）：每行先按原文对模式，不中再用 `tools/path_scan.py` 的 `fold` 把「字面量 / 家目录」之间的 `+`、`.path_join(…)`、`os.path.join(…)`、`Path(…) / …`、`% …` 折成一段再对一遍——GDScript / Java / Python 取 HOME 环境变量（`OS.get_environment` / `System.getenv` / `os.getenv` / `os.environ`）、`Path.home()`、f-string 里的家目录都折成 `$HOME`，所以家目录派生再拼资料库目录、字面量拆开写都中；变量名不追。`fold` 与 §三.21 共用一份。本道不分代码 / 注释：注释、文档串里的 Mac 路径照红（Mac 路径在活跃文件里没有该写的场合，留档走 `ALLOW`），这是与 §三.21「仓外根在注释里放行」刻意不同之处。
-- 口径：lane doc7 / doc8 / gd13 清完后剩下的命中只有 `tools/legacy/` 5 支（带「勿运行」横幅）与 2 份带日期的历史稿（头部回指注），都登记在 `ALLOW`，按命中行数卡死——往留档里再加一行也红。加白名单条目须写理由，且只限留档 / 历史稿；活跃脚本与文档一律改成本机口径（env → PATH → 取不到明确报错，见 `build_ui_textures.py` 的 `NK1_RSVG`、`tour.sh` 的 `GODOT`）。lane gd21 升进必跑档、排一键跑末条（原为 lane 加跑档 + CI §四 步骤 5，步骤 5 随之删掉，免得 CI 跑两遍）：什么时候「写了外部路径」自己判不准——照抄 Mac 上的命令、默认根最容易顺手带进来，正是不会想起加跑的时候；跑一次 <1s（本机实测见 lane gd21 Verify），只要 python3 + git，只读不写盘，未跟踪文件只记 `⚠`，共用树里别的 lane 没提交的不染红。
+- 口径：lane doc7 / doc8 / gd13 清完后剩下的命中只有 `tools/legacy/` 5 支（带「勿运行」横幅）与 2 份带日期的历史稿（头部回指注），都登记在 `ALLOW`，按命中行数卡死——往留档里再加一行也红。加白名单条目须写理由，且只限留档 / 历史稿；活跃脚本与文档一律改成本机口径（env → PATH → 取不到明确报错，见 `build_ui_textures.py` 的 `NK1_RSVG`、`tour.sh` 的 `GODOT`）。lane gd21 升进必跑档、排一键跑末条（其后 lane cs21 的 RefsHostPath、lane auditfix1 的 check_decision_refs 又排在它后面；原为 lane 加跑档 + CI §四 步骤 5，步骤 5 随之删掉，免得 CI 跑两遍）：什么时候「写了外部路径」自己判不准——照抄 Mac 上的命令、默认根最容易顺手带进来，正是不会想起加跑的时候；跑一次 <1s（本机实测见 lane gd21 Verify），只要 python3 + git，只读不写盘，未跟踪文件只记 `⚠`，共用树里别的 lane 没提交的不染红。
 - 常见红因：照抄 Mac 上的命令 / 默认根进脚本或文档；清掉了留档里的几处却没改 `ALLOW` 的行数；挪 / 删了留档文件没删条目。
 
 ### 21. RefsHostPath（`tools/check_host_paths.py`，本机 Linux 绝对路径防回归）
-- 读：`一、仓外根登记（ROOTS）都有效`（每条：owner 已跟踪、代码行里还写着这个默认根、还读登记的环境变量）→ `二、git 已跟踪文件里的本机路径`（每个仓外根一行 `· 根：文档 / 注释 N 处（不判红；理由）`；末条 `登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本）`）；红时逐行列 `文件:行  原文  ← 命中串`。读工作树内容（已暂存的新文件也扫），二进制跳过；未跟踪文件只记 `⚠`（同 §三.20）。本脚本自身也扫：模式写成占位不会自命中，只放过 `ROOTS` 登记行。
-- 口径：模式 2 条——`/home/<用户>`（家目录，写 `~/…` 或走 PATH / `$GODOT`）、`/workspace/<目录>`（本机工作区；仓库根本身永不登记，命令一律 `--path .`，否则在隔离 worktree / 软链里照抄会悄悄跑主树）。登记的仓外根只有两条：截图证据根 `/workspace/nk1-qa-shots`（owner `tools/shot_gate.gd` 的 `DEFAULT_SHOT_ROOT`，`NK1_SHOT_DIR` 覆盖）与简报目录 `/workspace/nk1-agent-briefs`（owner `tools/check_decision_refs.py`，`NK1_BRIEFS` 覆盖）；文档与注释里写它们不红，代码段只许 owner 写。代码 / 注释按位置切（lane cs20，切法在 `tools/path_scan.py` 的 `comment_spans`）：.gd / .py / .sh / .gdshader 每行在注释起点切开，切后只有代码段算代码——行尾注释里写仓外根不红（改前整行算代码、偏严）；字符串里的 `#`、shell 的 `$#` / `${#a}` 不起注释；.py 各级文档串、GDScript 独占语句的三引号串（块注释写法）整段算文档，赋给变量的三引号串仍是代码；.sh 的 heredoc 正文不认（照代码判，偏严）；其余文件整份算文档。ROOTS 一节同口径：owner 的默认根只剩行尾注释里写着即判条目失效。拼接也认（lane cs20，与 §三.20 共用 `path_scan.fold`）：`"/<根>" + "/<目录>"`、`.path_join(…)`、`os.path.join(…)`、`Path(…) / …` 折成一段再对模式，字面量拆开写照样命中；家目录取法折成 `$HOME`，与 `~/…` 同算合规（所以 HOME 派生只在 §三.20 那边可能红）。与 §三.19 gates_md「`tools/` 代码里不写死默认截图根」同向，本道扫全仓、两条根都管。Godot 节点路径 `/root/…`、`~/.local/…`、`/tmp/…` 不算。lane 加跑档（不进一键跑），CI 里作 §四 步骤 5（lane gd22）。
-- 常见红因：照抄本机命令把仓库根写成 `--path /workspace/<仓库>`（改 `--path .`）；文档写引擎绝对路径 `/home/<用户>/.local/bin/godot`（写 `godot` / `~/.local/bin/godot`）；新探针在代码里拼 `/workspace/nk1-qa-shots/…`（改走 `ShotGate.out_dir`）；挪了 owner 文件没改 `ROOTS`。
+- 读：`零、样本自检`（lane cs21，每次跑都先过，与 §三.20 的「零」同规格：`✓ 正向样本 N 行在 .gd 代码行 / 注释行 / .md 三处都判红` / `✓ 反向样本 N 行三处都不判红` / 每条仓外根一行 `✓ 根：owner 代码行绿；非 owner 代码行、拼接写法红；非 owner 行尾注释、.py 文档串、.md 绿`；`SAMPLES` 有一行在某处没判红、`CLEAN` 有一行在某处判了红、owner 口径有一处不对即 `✗`，并注明漏在哪一处——模式表回退 / 改窄了、`offending` 的 owner 判断或 `path_scan` 的注释切法 / 拼接折叠改坏了在这里先红，不等真文件写进来）→ `一、仓外根登记（ROOTS）都有效`（每条：owner 已跟踪、代码行里还写着这个默认根、还读登记的环境变量）→ `二、git 已跟踪文件里的本机路径`（每个仓外根一行 `· 根：文档 / 注释 N 处（不判红；理由）`；本脚本自扫一条 `✓ tools/check_host_paths.py：自扫按行排除 SAMPLES 块 N 行`；末条 `登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 SAMPLES 块除外）`）；红时逐行列 `文件:行  原文  ← 命中串`。读工作树内容（已暂存的新文件也扫），二进制跳过；未跟踪文件只记 `⚠`（同 §三.20）。本脚本自身也扫：模式写成占位不会自命中，只放过 `ROOTS` 登记行；`SAMPLES = [` 块按行排除（lane cs21），块里每行须是一条 `r"样本行"` 且行数等于条目数，夹进注释 / 别的行即 `✗ tools/check_host_paths.py：自扫按行排除 SAMPLES 块…——块里第 N 行不是一条 r"样本行"；整份照扫`，块里每行又都得在零节判红，塞不进漏网的路径。
+- 口径：模式 2 条——`/home/<用户>`（家目录，写 `~/…` 或走 PATH / `$GODOT`）、`/workspace/<目录>`（本机工作区；仓库根本身永不登记，命令一律 `--path .`，否则在隔离 worktree / 软链里照抄会悄悄跑主树）。登记的仓外根只有两条：截图证据根 `/workspace/nk1-qa-shots`（owner `tools/shot_gate.gd` 的 `DEFAULT_SHOT_ROOT`，`NK1_SHOT_DIR` 覆盖）与简报目录 `/workspace/nk1-agent-briefs`（owner `tools/check_decision_refs.py`，`NK1_BRIEFS` 覆盖）；文档与注释里写它们不红，代码段只许 owner 写。代码 / 注释按位置切（lane cs20，切法在 `tools/path_scan.py` 的 `comment_spans`）：.gd / .py / .sh / .gdshader 每行在注释起点切开，切后只有代码段算代码——行尾注释里写仓外根不红（改前整行算代码、偏严）；字符串里的 `#`、shell 的 `$#` / `${#a}` 不起注释；.py 各级文档串、GDScript 独占语句的三引号串（块注释写法）整段算文档，赋给变量的三引号串仍是代码；.sh 的 heredoc 正文不认（照代码判，偏严）；其余文件整份算文档。ROOTS 一节同口径：owner 的默认根只剩行尾注释里写着即判条目失效。拼接也认（lane cs20，与 §三.20 共用 `path_scan.fold`）：`"/<根>" + "/<目录>"`、`.path_join(…)`、`os.path.join(…)`、`Path(…) / …` 折成一段再对模式，字面量拆开写照样命中；家目录取法折成 `$HOME`，与 `~/…` 同算合规（所以 HOME 派生只在 §三.20 那边可能红）。与 §三.19 gates_md「`tools/` 代码里不写死默认截图根」同向，本道扫全仓、两条根都管。Godot 节点路径 `/root/…`、`~/.local/…`、`/tmp/…` 不算。lane cs21 升进必跑档、排一键跑 RefsMacPath 之后（原为 lane 加跑档 + CI §四 步骤 5（lane gd22），步骤 5 随之删掉，免得 CI 跑两遍）：理由同 §三.20——什么时候「写了本机路径」自己判不准，照抄本机命令、`--path` 写仓库根最容易顺手带进来；跑一次 <1s（本机实测见 lane cs21 Verify），只要 python3 + git，只读不写盘，未跟踪文件只记 `⚠`，共用树里别的 lane 没提交的不染红。
+- 常见红因：照抄本机命令把仓库根写成 `--path /workspace/<仓库>`（改 `--path .`）；文档写引擎绝对路径 `/home/<用户>/.local/bin/godot`（写 `godot` / `~/.local/bin/godot`）；新探针在代码里拼 `/workspace/nk1-qa-shots/…`（改走 `ShotGate.out_dir`）；挪了 owner 文件没改 `ROOTS`；改了 `PATTERNS` / `offending` / `tools/path_scan.py` 没跑通零节（改窄了就补 `SAMPLES` 看它红，放宽了就补 `CLEAN` 看它不误报）。
 
 ### 22. check_decision_refs（`tools/check_decision_refs.py`，拍板清单「文件:行」跟号）
 - 读：逐处问题一行 `✗ NOFILE` / `✗ OOR` / `✗ DRIFT L<清单行> 文件:行：…该处内容变了；可跟号 → :新号（diff / 同文件原文 / 函数名 / 跨文件原文）` 或 `跟不上，要人工：…`（附所在函数现在在哪、同文件最像的行）/ `✗ 待核 L<清单行>`；末两行 `锚 X：引用 N 处（仓外 brief M 处只查越界），跳过「原文作」K 处；NOFILE/OOR 0，DRIFT 0（可自动跟号 0、要人工 0），待核标记 0` + `结果：全部通过`。比的是清单头部锚（「行号：……按 HEAD 某提交」）那个提交里的原文和**工作树**里同一行号的原文，所以没提交的改动也会让它红（同 check_symbols）；`--show` 逐处印原文回读，`--since REV` 自证改号前后指的是同一段（MISMATCH = 号改错了或有意换了所指，后者在 Verify 里写明）。仓外 brief（`lane-*.md` / `COORDINATION*.md`，`$NK1_BRIEFS`）只查越界，目录不在只记 `⚠`。
@@ -356,11 +358,11 @@ python3 tools/check_decision_refs.py
 
 ## 四、CI 建议步骤
 
-只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑十五道（含导入步骤），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
+只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑十六道（含导入步骤），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑十五条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑十六条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
 godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
@@ -375,6 +377,7 @@ godot --headless --path . -s res://tools/godot_story_check.gd
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 python3 tools/check_mac_paths.py
+python3 tools/check_host_paths.py
 python3 tools/check_decision_refs.py
 # 1. 侧车成对 / 一致
 python3 tools/check_sidecars.py
@@ -384,8 +387,6 @@ python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api
 python3 tools/gates_md.py
 # 4. docs 索引与文件一致
 python3 tools/check_docs_index.py --check
-# 5. 本机 Linux 绝对路径（RefsHostPath）
-python3 tools/check_host_paths.py
 ```
 
 | # | 步骤 | 接入 | 需要 | 命令 | 期望输出 | 失败含义 |
@@ -394,5 +395,4 @@ python3 tools/check_host_paths.py
 | 2 | builtin_api 漂移 | cs3 / gd4 | godot（与清单头部同版本） | `python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt` | `✓ --regen：…逐字节一致，未改动` + check_symbols `结果：全部通过`，`git diff` 无输出、退 0 | `git diff` 打出 `tools/builtin_api.txt` 的差异、退 1 = 提交的清单与本机 Godot 的 ClassDB 导出不一致（升级了 Godot / 改了 `gen_builtin_list.gd` 的 CLASSES 却没连同提交重导结果）；`--regen` 本身失败则 check_symbols 先退 1 |
 | 3 | GATES.md 与注册表一致 | gd3 | python3 + git | `python3 tools/gates_md.py` | `结果：全部通过` | 有人手改了 §一 / §二批量巡检 / §四 生成块、改了注册表没 `--write`、§三 或 `.claude/todo.md` 验证段的一键跑命令与必跑清单不符，或注册的脚本挪走了 |
 | 4 | docs 索引与文件一致 | doc3 / doc4 | python3 + git | `python3 tools/check_docs_index.py --check` | `结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`） | `✗` 行、退 1：`MISSING` = 提交了 docs 下的 .md 没在 docs/README.md 补一行；`DEAD` = 索引链的文件挪走 / 改名 / 删了；`DUP` = 同一份文档链了两次。修法：改 docs/README.md |
-| 5 | 本机 Linux 绝对路径（RefsHostPath） | gd22 | python3 + git | `python3 tools/check_host_paths.py` | `结果：全部通过`（前面两条 ROOTS `✓ owner … 代码里写这个默认根、可由 $… 覆盖`、`登记外 0 处命中（扫 N 个已跟踪文本文件…）`） | `✗` 行、退 1：已跟踪文件写了 `/home/<用户>` / `/workspace/<目录>`（逐行列出命中串；仓库根改 `--path .` / 仓库相对路径，家目录改 `~/…`，引擎走 PATH / `$GODOT`）；登记的仓外根写进了非 owner 的代码行（改走 `ShotGate.out_dir` / 环境变量）；ROOTS 条目的 owner 不在、不再写默认根或丢了环境变量名。修法：改文件，或改 `tools/check_host_paths.py` 的 `ROOTS`（写明理由） |
 <!-- GATES-CI:END -->

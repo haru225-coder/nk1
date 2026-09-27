@@ -44,5 +44,6 @@ godot --headless --path . -s res://tools/godot_story_check.gd
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 python3 tools/check_mac_paths.py
+python3 tools/check_host_paths.py
 python3 tools/check_decision_refs.py
 ```

@@ -129,13 +129,17 @@ REGISTRY = [
               "行数不符、字样丢了、条目失效都判红；未跟踪文件只记 `⚠`",
      "green": "`白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS / SAMPLES 块除外）` + `结果：全部通过`",
      "red": "`✗` 行（白名单外命中逐行列 `文件:行 … ← 命中串`；白名单文件行数不符；横幅 / 回指注丢了；失效条目；本脚本 PATTERNS / SAMPLES 块形状不对；零节样本漏认 / 误报）；`结果：N 项问题`"},
-    {"id": "RefsHostPath", "tier": "lane", "when": "新增 / 改动脚本或文档里写外部路径的地方（照抄命令、引擎路径、截图 / 简报等仓外默认根）", "kind": "py",
+    # lane cs21 升进必跑（同 gd21 升 RefsMacPath）：「写没写本机路径」自己判不准，跑一次 <1s、只要 python3 + git、不写盘
+    {"id": "RefsHostPath", "tier": "must", "kind": "py",
      "file": "tools/check_host_paths.py",
      "judge": "（lane gd22）git 已跟踪的文本文件里不许写本机 Linux 绝对路径：`/home/<用户>` 与 `/workspace/<目录>`（仓库根本身一律红，"
               "命令写 `--path .`）；仓外根登记在脚本 `ROOTS`（截图根 `NK1_SHOT_DIR`、简报目录 `NK1_BRIEFS` 两条）：文档 / 注释（lane cs20 起按注释起点切行，行尾注释也算）里随便写，"
-              "代码段只许 owner 写一次默认值（字面量拼接折成一段再判，与 RefsMacPath 共用 `tools/path_scan.py`），owner 丢了默认值或环境变量名判失效；本脚本自身也扫（只放过 `ROOTS` 登记行），未跟踪文件只记 `⚠`",
-     "green": "`登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本）` + `结果：全部通过`",
-     "red": "`✗` 行（逐行列 `文件:行 … ← 命中串`；非 owner 代码行写死仓外根另注；ROOTS 条目失效）；`结果：N 项问题`"},
+              "代码段只许 owner 写一次默认值（字面量拼接折成一段再判，与 RefsMacPath 共用 `tools/path_scan.py`），owner 丢了默认值或环境变量名判失效；每次先跑「零、样本自检」（lane cs21）：`SAMPLES` 正向样本"
+              "（含 gd22 清掉的原文三行、cs20 的拼接写法）在 .gd 代码段 / 注释行 / .md 三处须全判红、`CLEAN` 反向样本三处须全不判红、"
+              "`ROOTS` 每条按 owner 代码行 / 非 owner 代码行 / 拼接 / 行尾注释 / .py 文档串 / .md 各判一次；"
+              "本脚本自身也扫（只放过 `ROOTS` 登记行，按行排除 `SAMPLES` 块，块形状不对即判红），未跟踪文件只记 `⚠`",
+     "green": "`登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 SAMPLES 块除外）` + `结果：全部通过`",
+     "red": "`✗` 行（逐行列 `文件:行 … ← 命中串`；非 owner 代码行写死仓外根另注；ROOTS 条目失效；本脚本 SAMPLES 块形状不对；零节样本漏判 / 误报、owner 口径不对）；`结果：N 项问题`"},
     # lane auditfix1 入册即必跑（一键跑末条）：dec3 立了没进注册表，自 cs14 a8ff603 起主干红到 abb3f05（DRIFT 47）没人看见；跑一次 ~1s、只读不写盘
     {"id": "check_decision_refs", "tier": "must", "kind": "py", "file": "tools/check_decision_refs.py",
      "judge": "（lane dec3 / dec4）`docs/待策划拍板清单_2026-09-28.md` 反引号里的每处「文件:行」：文件在、行号不越界、"
@@ -295,7 +299,7 @@ SUBCHECKS = [
 ]
 
 # CI 建议步骤（lane gd4）：docs/GATES.md §四 由它生成，**只是建议，不进 repo 的 CI 配置**。
-# 先跑一键跑十五条（导入步骤 tier=step + 必跑十四道 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
+# 先跑一键跑十六条（导入步骤 tier=step + 必跑十五道 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
 CI_STEPS = [
     {"id": "侧车成对 / 一致", "lane": "ag / ag2 / gd5", "needs": "python3 + git（紧跟第 0 步的导入步骤之后跑）",
      "cmd": "python3 tools/check_sidecars.py",
@@ -316,11 +320,6 @@ CI_STEPS = [
      "expect": "`结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`）",
      "fail": "`✗` 行、退 1：`MISSING` = 提交了 docs 下的 .md 没在 docs/README.md 补一行；`DEAD` = 索引链的文件挪走 / 改名 / 删了；"
              "`DUP` = 同一份文档链了两次。修法：改 docs/README.md"},
-    {"id": "本机 Linux 绝对路径（RefsHostPath）", "lane": "gd22", "needs": "python3 + git",
-     "cmd": "python3 tools/check_host_paths.py",
-     "expect": "`结果：全部通过`（前面两条 ROOTS `✓ owner … 代码里写这个默认根、可由 $… 覆盖`、`登记外 0 处命中（扫 N 个已跟踪文本文件…）`）",
-     "fail": "`✗` 行、退 1：已跟踪文件写了 `/home/<用户>` / `/workspace/<目录>`（逐行列出命中串；仓库根改 `--path .` / 仓库相对路径，家目录改 `~/…`，引擎走 PATH / `$GODOT`）；"
-             "登记的仓外根写进了非 owner 的代码行（改走 `ShotGate.out_dir` / 环境变量）；ROOTS 条目的 owner 不在、不再写默认根或丢了环境变量名。修法：改文件，或改 `tools/check_host_paths.py` 的 `ROOTS`（写明理由）"},
 ]
 
 
