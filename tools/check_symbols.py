@@ -24,6 +24,119 @@ AUTOLOADS = {
     "SaveLoad":    "scripts/core/SaveLoad.gd",
 }
 
+# Main.gd 拆出去的件（lane ms 起）。Main 留同名同签名一行转发 `[return |await ]_K.fn(…)`，
+# 真身在这些文件里；源码断言照旧读 main_src，由 read_main_src() 拼回「未拆时」的 Main。
+# 新拆一件就在这里登记；登记了却没接上转发会直接判红（见「一之零」）。
+MAIN_SPLITS = (
+    "scripts/ui/SlipKit.gd",
+    "scripts/ui/LedgerPage.gd",
+)
+_SPLIT_FWD = re.compile(r'^\t(?:return |await )?(_[A-Z][A-Z0-9_]*)\.([A-Za-z_]\w*)\((.*)\)\s*$')
+_split_report = []
+_split_fwd_count = {}
+
+
+def _top_level_chunks(src):
+    """按顶格行切块：[(头行, [续行…])]。func 的签名 + 函数体、const、注释都各成一块；
+    多行签名 / 括号续行归前一块（缩进行与空行都算续行）。"""
+    chunks = []
+    for ln in src.split("\n"):
+        if chunks and (ln == "" or ln[0].isspace() or ln.startswith(")")):
+            chunks[-1][1].append(ln)
+        else:
+            chunks.append((ln, []))
+    return chunks
+
+
+def _split_args(s):
+    out, depth, cur = [], 0, ""
+    for c in s:
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        if c == "," and depth == 0:
+            out.append(cur.strip()); cur = ""
+        else:
+            cur += c
+    if cur.strip():
+        out.append(cur.strip())
+    return out
+
+
+def read_main_src():
+    """Main.gd + MAIN_SPLITS 拼成一份「未拆时」的 Main 源码：
+    - Main 里一行转发到拆出件的 func，函数体就地换成拆出件里那支 static func 的函数体；
+      转发时传 self 的形参（如 main），函数体里的 `main.` 前缀去掉、裸 `main` 换回 self——拼出来就是搬走前的原文；
+    - 拆出件里没被转发到的其余部分（helper / 常量）追加在末尾，static func 记成 func，func_bodies() 照样切得到。
+    拆走函数后，断言不会因为只看见一行转发而假绿（尤其是「某字样不得出现」一类的反向断言）。"""
+    _split_report.clear()
+    _split_fwd_count.clear()
+    with open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8") as f:
+        main_text = f.read()
+    const_of = {}
+    for m in re.finditer(r'^const\s+(_[A-Z][A-Z0-9_]*)\s*:?=\s*preload\("res://([^"]+)"\)', main_text, re.M):
+        if m.group(2) in MAIN_SPLITS:
+            const_of[m.group(1)] = m.group(2)
+    parts = {}
+    for rel in MAIN_SPLITS:
+        with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
+            funcs, rest = {}, []
+            for head, tail in _top_level_chunks(f.read()):
+                m = re.match(r'^static\s+func\s+([A-Za-z_]\w*)\s*\(', head)
+                if m:
+                    funcs[m.group(1)] = (head, tail)
+                elif not head.startswith(("extends ", "class_name ")):
+                    rest.append((head, tail))
+            parts[rel] = {"funcs": funcs, "rest": rest, "used": set(), "fwd": 0}
+    out = []
+    for head, tail in _top_level_chunks(main_text):
+        m = re.match(r'^func\s+[A-Za-z_]\w*', head)
+        code = [ln for ln in tail if ln.strip() and not ln.strip().startswith("#")]
+        fwd = _SPLIT_FWD.match(code[0]) if m and len(code) == 1 else None
+        rel = const_of.get(fwd.group(1)) if fwd else None
+        if rel is None:
+            out.append((head, tail))
+            continue
+        part, name = parts[rel], fwd.group(2)
+        if name not in part["funcs"]:
+            _split_report.append(f"{head.split('(')[0]} 转发到 {rel} 的 {name}，那边没有这支 static func")
+            out.append((head, tail))
+            continue
+        p_head, p_tail = part["funcs"][name]
+        part["used"].add(name)
+        part["fwd"] += 1
+        # 签名可能折行：括号配平、以 : 收尾的那行之后才是函数体
+        sig_lines, depth = [], 0
+        for ln in [p_head] + p_tail:
+            sig_lines.append(ln)
+            depth += sum(ln.count(c) for c in "([{") - sum(ln.count(c) for c in ")]}")
+            if depth == 0 and ln.rstrip().endswith(":"):
+                break
+        sig = " ".join(sig_lines)
+        sig = sig[sig.index("(") + 1:sig.rindex(")")]
+        params = [a.split(":")[0].split("=")[0].strip() for a in _split_args(sig)]
+        args = _split_args(fwd.group(3))
+        body = "\n".join(p_tail[len(sig_lines) - 1:])
+        for pname, arg in zip(params, args):
+            if arg == "self" and pname:
+                body = re.sub(rf'\b{pname}\.', "", body)
+                body = re.sub(rf'\b{pname}\b', "self", body)
+        # 转发体里的注释照留，转发那一行由搬来的函数体顶上
+        notes = [ln for ln in tail if ln.strip().startswith("#")]
+        out.append((head, notes + body.split("\n")))
+    for rel in MAIN_SPLITS:
+        part = parts[rel]
+        _split_fwd_count[rel] = part["fwd"]
+        if part["fwd"] == 0:
+            _split_report.append(f"{rel} 登记为 Main 拆出件，但 Main 里没有一行转发接到它（或没 preload）")
+        out.append((f"# ── 以下自 {rel} 拼入（未被转发的 helper / 常量） ──", []))
+        for name, (p_head, p_tail) in part["funcs"].items():
+            if name not in part["used"]:
+                out.append((re.sub(r'^static\s+', "", p_head), p_tail))
+        out.extend(part["rest"])
+    return "\n".join("\n".join([h] + t) for h, t in out)
+
 def code_only(src):
     """去掉字符串和注释，只留代码。字符串里的 [color=#…]、Economy.xx 不算语法，
     注释里的 foo.emit() 也不算；字符串/注释里的换行原样保留，行号不走样。"""
@@ -155,6 +268,29 @@ with open(os.path.join(ROOT, "project.godot"), encoding="utf-8") as f:
     pg = f.read()
 declared = dict(re.findall(r'^(\w+)="\*(res://[^"]+)"', pg, re.M))
 problems = []
+
+print("=" * 68)
+print("一之零、Main.gd 拆出件（MAIN_SPLITS）与转发")
+print("=" * 68)
+print("  源码断言读的 main_src = Main.gd + 拆出件拼回的「未拆时」Main（read_main_src）。")
+read_main_src()  # 填 _split_report / _split_fwd_count
+for rel in MAIN_SPLITS:
+    _n = _split_fwd_count.get(rel, 0)
+    print(f"  {'✓' if _n else '✗'} {rel}：{_n} 支转发拼回函数体")
+for _msg in _split_report:
+    print(f"  ✗ {_msg}")
+    problems.append(f"Main 拆出件：{_msg}")
+if not _split_report:
+    print("  ✓ 登记的拆出件都有转发接上，转发目标都在")
+# godot_smoke 的源码断言也读 Main + 拆出件（它那份 MAIN_SPLITS 须与这里一致）
+with open(os.path.join(ROOT, "tools", "godot_smoke.gd"), encoding="utf-8") as f:
+    _smoke_m = re.search(r'^const MAIN_SPLITS := \[(.*?)\]', f.read(), re.M)
+_smoke_splits = tuple(re.findall(r'"res://([^"]+)"', _smoke_m.group(1))) if _smoke_m else ()
+if _smoke_splits == MAIN_SPLITS:
+    print("  ✓ godot_smoke.gd 的 MAIN_SPLITS 与此一致")
+else:
+    print(f"  ✗ godot_smoke.gd 的 MAIN_SPLITS {_smoke_splits} 与 check_symbols {MAIN_SPLITS} 不一致")
+    problems.append("godot_smoke MAIN_SPLITS 未同步")
 
 print("=" * 68)
 print("一、project.godot 的 autoload 注册")
@@ -1050,12 +1186,7 @@ for c in ("SAIL_LEVEL_MAX", "ARMOR_LEVEL_MAX", "UPGRADE_BASE_RATIO"):
         print(f"  ✗ Fleet.{c} 常量未定义")
         problems.append(f"Fleet.{c} 未定义")
 
-main_src = ""
-for dirpath, _, files in os.walk(SCRIPTS):
-    for fn in files:
-        if fn == "Main.gd":
-            with open(os.path.join(dirpath, fn), encoding="utf-8") as f:
-                main_src = f.read()
+main_src = read_main_src()
 if re.search(r'^func\s+_on_upgrade\b', main_src, re.M):
     print("  ✓ Main._on_upgrade 已定义（船屋升级按钮 connect 目标）")
 else:
@@ -1361,9 +1492,7 @@ for f in gs_need:
         print(f"  ✗ GameState.{f} 未定义")
         problems.append(f"GameState.{f} 未定义")
 
-main_path = os.path.join(SCRIPTS, "Main.gd")
-with open(main_path, encoding="utf-8") as f:
-    main_src = f.read()
+main_src = read_main_src()
 for needle, label in (
     ("choice_visible", "Main.show_choices 过滤不可见选项"),
     ("scene_unlocked", "Main.load_scene 守剧情门槛"),
@@ -2999,7 +3128,7 @@ else:
 print("九之三、审计硬伤回归（进港 / 旅店 / 发现一日 / 沉船货舱）（云端 c148）")
 print("=" * 68)
 
-main_src = open(os.path.join(ROOT, "scripts/Main.gd"), encoding="utf-8").read()
+main_src = read_main_src()
 fac_m = re.search(r'^func _on_facility_pressed\(.*?(?=^func )', main_src, re.M | re.S)
 fac_body = fac_m.group(0) if fac_m else ""
 # 主干把改写名单收成常量 REMAPPED_FACILITIES；函数体引用常量、常量里含 city_inn 即算改写
@@ -3210,7 +3339,7 @@ print("=" * 68)
 print("  勘见只入 discoveries_found；呈报只在市舶司，挪进 discoveries_reported 才给赏格名声。两键都进存档。")
 
 _disc_gs = open(os.path.join(SCRIPTS, "GameState.gd"), encoding="utf-8").read()
-_disc_main = open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read()
+_disc_main = read_main_src()
 _disc_gs_fn = func_bodies(_disc_gs)
 _disc_main_fn = func_bodies(_disc_main)
 for sym in ("discoveries_found", "discoveries_reported", "has_found",
@@ -3484,7 +3613,7 @@ else:
     print("  ✓ characters.json 原稿无工程词（placeholder/本作/玩家/士人线/海商线/乡土线）")
 _l1_art = open(os.path.join(ROOT, "scripts", "ui", "CharacterArt.gd"), encoding="utf-8").read()
 _l1_codex = open(os.path.join(ROOT, "scripts", "ui", "CharacterCodex.gd"), encoding="utf-8").read()
-_l1_main = open(os.path.join(ROOT, "scripts", "Main.gd"), encoding="utf-8").read()
+_l1_main = read_main_src()
 if "characters_codex.json" in _l1_art and "codex_bio(" in _l1_codex and "codex_short(" in _l1_main:
     print("  ✓ 展示入口走 characters_codex（CharacterArt/Codex/Main）")
 else:
@@ -3502,7 +3631,7 @@ print("=" * 68)
 _wm_n = open(os.path.join(SCRIPTS, "WorldMap.gd"), encoding="utf-8").read()
 _sc_n = open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()
 _fx_n = open(os.path.join(SCRIPTS, "combat", "CombatFx.gd"), encoding="utf-8").read()
-_main_n = open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read()
+_main_n = read_main_src()
 _hook_path = os.path.join(SCRIPTS, "combat", "CombatShoreHook.gd")
 if os.path.isfile(_hook_path):
     print("  ✓ scripts/combat/CombatShoreHook.gd 存在")
@@ -3550,7 +3679,7 @@ for bad in ("惊艳", "沉浸", "视觉盛宴", "夺下敌船"):
 print("=" * 68)
 print("Lane L — VisionStage / CombatLetterbox 主流程薄接入")
 print("=" * 68)
-_main_l = open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read()
+_main_l = read_main_src()
 _sc_l = open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()
 _wm_l = open(os.path.join(SCRIPTS, "WorldMap.gd"), encoding="utf-8").read()
 _vs_path = os.path.join(SCRIPTS, "ui", "VisionStage.gd")
@@ -3660,7 +3789,7 @@ print("Lane Z1 — 船况面板 / 航海札记旁注纪实短标签")
 print("=" * 68)
 _sc_z1 = open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()
 _voy_z1 = open(os.path.join(SCRIPTS, "core", "Voyage.gd"), encoding="utf-8").read()
-_main_z1 = open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read()
+_main_z1 = read_main_src()
 
 def _z1_visible(src: str) -> str:
     out = []
@@ -3732,7 +3861,7 @@ else:
     print("  ✗ 缺 CompanionPreview.gd")
     problems.append("缺 CompanionPreview.gd")
     _comp_src = ""
-_main_z3 = open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read()
+_main_z3 = read_main_src()
 if "KEY_F7" in _main_z3 and "_toggle_companion_preview" in _main_z3 and "_COMPANION_PREVIEW" in _main_z3:
     print("  ✓ Main F7 → CompanionPreview 开关")
 else:

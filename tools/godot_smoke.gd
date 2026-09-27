@@ -8,6 +8,19 @@ func _init() -> void:
 	call_deferred("_run")
 
 
+## Main.gd 拆出去的件（与 tools/check_symbols.py 的 MAIN_SPLITS 同步，check_symbols 会对账）。
+## 源码断言读 Main.gd + 这些件接在一起的全文：函数搬走后「某字样须在 / 不得在」不因 Main 里只剩一行转发而误判。
+## （按 func 切函数体的断言仍切 Main 里的 func；要断言搬走的函数体，去拆出件里切。）
+const MAIN_SPLITS := ["res://scripts/ui/SlipKit.gd", "res://scripts/ui/LedgerPage.gd"]
+
+
+func _main_family_src() -> String:
+	var src := FileAccess.get_file_as_string("res://scripts/Main.gd")
+	for p in MAIN_SPLITS:
+		src += "\n" + FileAccess.get_file_as_string(p)
+	return src
+
+
 func _run() -> void:
 	var fails: Array = []
 	var gm: Node = root.get_node_or_null("GameManager")
@@ -358,7 +371,7 @@ func _run() -> void:
 	var disc_save: Dictionary = gs.to_dict()
 	_check(disc_save.has("discoveries_found") and "beacon_ruin" in disc_save.get("discoveries_reported", []),
 		"存档含 discoveries_found / discoveries_reported", fails)
-	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
+	var main_src := _main_family_src()
 	_check(main_src.find("ChapterSheet") >= 0 and main_src.find("AcceptDialog.new()") < 0,
 		"升章了结走居中册页，主场景不再弹系统对话框", fails)
 	var saveload_src := FileAccess.get_file_as_string("res://scripts/core/SaveLoad.gd")

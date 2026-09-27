@@ -45,6 +45,8 @@ const SCRIPTS := [
 	"res://scripts/ui/TavernNewsWall.gd", "res://tools/qa_tavern_news_wall_screenshots.gd",
 	# Lane ms Main.gd 首刀拆出的工席纸条小件
 	"res://scripts/ui/SlipKit.gd",
+	# Lane mz Main.gd 第二刀拆出的船籍簿整页
+	"res://scripts/ui/LedgerPage.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
