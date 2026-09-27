@@ -486,6 +486,19 @@ def func_bodies(src):
 #   取不到给 "" 并记账（_body_ask），「十三、按函数名取函数体」逐条判红。新写按名取体的断言用它或 _func_body，别再手切。
 #   _locate_func 定义在 tools/func_body.py（上面已 import，切法原样搬过去）。
 
+
+# 按函数定义 / 调用认名（lane cs10：光秃子串存在性断言收口）。`"_can_fire" in ship_src` 这类只按子串认名：
+# 函数改名成 `_can_fire_v2`（调用点同改）照样打「已定义」，函数里写什么都不会红。一律改走这两支：
+#   _has_func：行首 `[static ]func 名字(`（名尾须紧跟括号，不认 X_v2 / 注释 / 文案里的字样）；
+#   _calls：按名调用 `名字(` 或取 Callable `名字.bind(` / `.call(`（名前不接标识符或点、名尾不吃后缀）；
+#           名字可带宿主（`ShoreDraft.deal`），宿主前同样不接标识符或点。新写「有没有这支函数 / 调没调」的断言用它们。
+def _has_func(src, name):
+    return re.search(rf"^[ \t]*(?:static\s+)?func\s+{re.escape(name)}\s*\(", src, re.M) is not None
+
+
+def _calls(src, name):
+    return re.search(rf"(?<![\w.]){re.escape(name)}\s*(?:\(|\.(?:bind|call|callv)\s*\()", src) is not None
+
 order_idx = {name: i for i, name in enumerate(order)}
 ready_problems = []
 for name, rel in AUTOLOADS.items():
@@ -1824,7 +1837,7 @@ for f in wm_need4:
         problems.append(f"WorldMap.{f} 未定义")
 
 # 5. Ship 白刃禁炮击
-if "_can_fire" in ship_src and "boarding" in ship_src:
+if _has_func(ship_src, "_can_fire") and "boarding" in ship_src:
     print("  ✓ Ship._can_fire 已定义（白刃阶段禁炮击）")
 else:
     print("  ✗ Ship._can_fire 缺失（白刃禁炮击）")
@@ -1905,16 +1918,16 @@ for f in gs_need:
         problems.append(f"GameState.{f} 未定义")
 
 main_src = read_main_src()
-for needle, label in (
-    ("choice_visible", "Main.show_choices 过滤不可见选项"),
-    ("scene_unlocked", "Main.load_scene 守剧情门槛"),
-    ("story_hooks_at", "Main 酒馆接旧事钩子"),
-    ('"network"', "Main.apply_effects 写入人脉"),
-    ('"merchant_credit"', "Main.apply_effects 写入海商信用"),
-    ('"ledger_note"', "Main.apply_effects 写入边记"),
-    ("try_advance_chapter", "Main 入港结算晋升/了结"),
+for ok, label in (
+    (_calls(main_src, "GameState.choice_visible"), "Main.show_choices 过滤不可见选项"),
+    (_calls(main_src, "GameState.scene_unlocked"), "Main.load_scene 守剧情门槛"),
+    (_calls(main_src, "GameState.story_hooks_at"), "Main 酒馆接旧事钩子"),
+    ('"network"' in main_src, "Main.apply_effects 写入人脉"),
+    ('"merchant_credit"' in main_src, "Main.apply_effects 写入海商信用"),
+    ('"ledger_note"' in main_src, "Main.apply_effects 写入边记"),
+    (_calls(main_src, "GameState.try_advance_chapter"), "Main 入港结算晋升/了结"),
 ):
-    if needle in main_src:
+    if ok:
         print(f"  ✓ {label}")
     else:
         print(f"  ✗ {label}")
@@ -1923,7 +1936,7 @@ for needle, label in (
 crew_src = ""
 with open(os.path.join(SCRIPTS, "core", "Crew.gd"), encoding="utf-8") as f:
     crew_src = f.read()
-if "flag_requirement_met" in crew_src and "candidates_at" in crew_src:
+if "flag_requirement_met" in crew_src and _has_func(crew_src, "candidates_at"):
     print("  ✓ Crew.candidates_at 守旗标门槛")
 else:
     print("  ✗ Crew.candidates_at 未守旗标门槛")
@@ -1952,7 +1965,7 @@ if "pirate_sighting" in defined.get("Voyage", set()):
 else:
     print("  ✗ Voyage.pirate_sighting 未定义")
     problems.append("Voyage.pirate_sighting 未定义")
-if "_debug_force_pirate" in chart_src and "KEY_F10" in chart_src:
+if _has_func(chart_src, "_debug_force_pirate") and "KEY_F10" in chart_src:
     print("  ✓ SeaChart F10 可强行遭遇海盗")
 else:
     print("  ✗ SeaChart 无 F10 海盗点验入口")
@@ -1979,7 +1992,7 @@ if "class_name PirateShip" in open(os.path.join(SCRIPTS, "PirateShip.gd"), encod
 else:
     print("  ✗ PirateShip 无 class_name")
     problems.append("PirateShip 无 class_name")
-if "_format_left_hud" in wm_src:
+if _has_func(wm_src, "_format_left_hud"):
     print("  ✓ WorldMap._format_left_hud 已定义（顶匾文案单独拼）")
 else:
     print("  ✗ WorldMap 无 _format_left_hud")
@@ -2188,7 +2201,7 @@ else:
     print("  ✗ 升章/了结弹窗未套绢本主题")
     problems.append("升章/了结弹窗未套绢本主题")
 market_body = _func_body(main_src, "_setup_market")
-if "OptionButton" not in market_body and "_select_market_ship" in market_body:
+if "OptionButton" not in market_body and _calls(market_body, "_select_market_ship"):
     print("  ✓ 牙行选船走账条小钮")
 else:
     print("  ✗ 牙行仍用系统下拉选船")
@@ -2204,7 +2217,7 @@ if '买%d' not in main_src and '卖%d' not in main_src and "只购得 %d。" in 
 else:
     print("  ✗ 牙行小钮或买卖日志仍挤在一起")
     problems.append("牙行小钮或买卖日志仍挤在一起")
-if "塞　50" in main_src and "关注　减 15" in main_src and "塞 50" not in main_src and "关注减 15" not in main_src and "UiTheme.plain_log(_gather_price_intel" in main_src:
+if "塞　50" in main_src and "关注　减 15" in main_src and "塞 50" not in main_src and "关注减 15" not in main_src and re.search(r"(?<![\w.])UiTheme\.plain_log\(_gather_price_intel\s*\(", main_src):
     print("  ✓ 见面册疏通留出字距，行情去掉方括号")
 else:
     print("  ✗ 见面册疏通或行情仍是挤字")
@@ -2291,7 +2304,7 @@ if (
     and "看风" in main_src
     and "升帆出海" not in main_src
     and '"draft_salt"' in gs_src_draft
-    and "heading_card" in theme_src_tide
+    and _has_func(theme_src_tide, "heading_card")
     and "port_list" not in chart_src_draft
 ):
     print("  ✓ 出海改成晨潮三向")
@@ -2305,7 +2318,7 @@ if (
     and "在岸上又候了一日，门又换了几处。" in main_src
     and "再候一日" in main_src
     and "今日只开三处。" in main_src
-    and "ShoreDraft.deal" in main_src
+    and _calls(main_src, "ShoreDraft.deal")
     and '"shore_salt"' in gs_src_draft
     and "func shore_door" in theme_src_tide
     and "func _add_sail_button" not in main_src
@@ -2335,7 +2348,7 @@ broker_src = open(os.path.join(SCRIPTS, "core", "BrokerSlip.gd"), encoding="utf-
 market_fn = _func_body(main_src, "_setup_market")
 if (
     "class_name BrokerSlip" in broker_src
-    and "BrokerSlip.deal" in market_fn
+    and _calls(market_fn, "BrokerSlip.deal")
     and "明日再看" in market_fn
     and (
         "柜上只摆三样。要看别的，明日再来。" in main_src
@@ -2345,7 +2358,7 @@ if (
     and "柜上换了一手，日子过了一天。" in main_src
     and '"broker_salt"' in gs_src_draft
     and "OptionButton" not in market_fn
-    and "_select_market_ship" in market_fn
+    and _calls(market_fn, "_select_market_ship")
 ):
     print("  ✓ 牙行改成柜上三样")
 else:
@@ -2389,7 +2402,7 @@ switch_fn = _func_body(main_src, "_on_berth_switch")
 if (
     "class_name DrydockBerth" in dry_src
     and "DrydockBerth.berth_index" in yard_fn
-    and "DrydockBerth.sale_ids" in yard_fn
+    and _calls(yard_fn, "DrydockBerth.sale_ids")
     and "坞上只搁一艘。帆和甲对着这一艘。水粮与赊贷仍在码头。" in yard_fn
     and "换上　" in yard_fn
     and "把「%s」拖上坞位。帆和甲对着这一艘。" in switch_fn
@@ -2548,7 +2561,7 @@ else:
     problems.append("海图日志仍写发舶标签")
 if (
     "func _bearing_phrase" in seachart_src
-    and "UiTheme.heading_card" in seachart_src
+    and _calls(seachart_src, "UiTheme.heading_card")
     and "回港（不出海）" not in seachart_src
     and "目的：" not in seachart_src
     and "绕过去看看（费 1 日）" not in seachart_src
@@ -2833,12 +2846,12 @@ if '"investments"' in eco_src:
 else:
     print("  ✗ Economy 存档缺 investments")
     problems.append("Economy 存档缺 investments")
-if "title_loan_bonus" in gs_src and "borrow_limit" in gs_src:
+if "title_loan_bonus" in gs_src and _has_func(gs_src, "borrow_limit"):
     print("  ✓ 赊贷上限吃职衔加成")
 else:
     print("  ✗ 赊贷上限未吃职衔加成")
     problems.append("borrow_limit 未接职衔")
-if "title_duty_factor" in gs_src and "customs_duty" in gs_src:
+if "title_duty_factor" in gs_src and _has_func(gs_src, "customs_duty"):
     print("  ✓ 货引抽解吃职衔折让")
 else:
     print("  ✗ 货引抽解未吃职衔")
@@ -4044,12 +4057,12 @@ if os.path.isfile(_hook_path):
 else:
     print("  ✗ 缺 CombatShoreHook.gd")
     problems.append("缺 CombatShoreHook.gd")
-for tok, label in (
-    ("_await_boarding_fx", "WorldMap 等待接舷题签"),
-    ("board_begin_subtitle", "WorldMap 开场副题走 CombatFx"),
-    ('"boarded"', "WorldMap 传 boarded 标记"),
+for ok, label in (
+    (_has_func(_wm_n, "_await_boarding_fx"), "WorldMap 等待接舷题签"),
+    ("board_begin_subtitle" in _wm_n, "WorldMap 开场副题走 CombatFx"),
+    ('"boarded"' in _wm_n, "WorldMap 传 boarded 标记"),
 ):
-    if tok in _wm_n:
+    if ok:
         print(f"  ✓ {label}")
     else:
         print(f"  ✗ {label}")
@@ -4100,12 +4113,12 @@ if os.path.isfile(_lb_path):
 else:
     print("  ✗ 缺 CombatLetterbox.gd")
     problems.append("缺 CombatLetterbox.gd")
-if "KEY_F8" in _main_l and "_open_vision_stage" in _main_l and "市舶纪事" in _main_l:
+if "KEY_F8" in _main_l and _has_func(_main_l, "_open_vision_stage") and "市舶纪事" in _main_l:
     print("  ✓ Main F8 / 市舶纪事 → VisionStage")
 else:
     print("  ✗ Main 未薄接入 VisionStage（F8 / 市舶纪事）")
     problems.append("Main 未接 VisionStage")
-if "_battle_sea_name" in _sc_l and '"sea_name"' in _sc_l:
+if _has_func(_sc_l, "_battle_sea_name") and '"sea_name"' in _sc_l:
     print("  ✓ SeaChart pending_battle 写 sea_name")
 else:
     print("  ✗ SeaChart 未写 sea_name")
@@ -4269,7 +4282,7 @@ else:
     problems.append("缺 CompanionPreview.gd")
     _comp_src = ""
 _main_z3 = read_main_src()
-if "KEY_F7" in _main_z3 and "_toggle_companion_preview" in _main_z3 and "_COMPANION_PREVIEW" in _main_z3:
+if "KEY_F7" in _main_z3 and _has_func(_main_z3, "_toggle_companion_preview") and "_COMPANION_PREVIEW" in _main_z3:
     print("  ✓ Main F7 → CompanionPreview 开关")
 else:
     print("  ✗ Main 未薄接入 CompanionPreview/F7")
