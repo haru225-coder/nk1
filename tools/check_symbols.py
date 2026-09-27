@@ -19,25 +19,110 @@ AUTOLOADS = {
     "SaveLoad":    "scripts/core/SaveLoad.gd",
 }
 
+def code_only(src):
+    """去掉字符串和注释，只留代码。字符串里的 [color=#…]、Economy.xx 不算语法，
+    注释里的 foo.emit() 也不算；字符串/注释里的换行原样保留，行号不走样。"""
+    out = []
+    i = 0
+    n = len(src)
+    while i < n:
+        c = src[i]
+        if c in ('"', "'"):
+            q = c * 3 if src.startswith(c * 3, i) else c
+            start = i
+            i += len(q)
+            while i < n:
+                if src[i] == "\\":
+                    i += 2
+                    continue
+                if src.startswith(q, i):
+                    i += len(q)
+                    break
+                i += 1
+            out.append(" " + "\n" * src.count("\n", start, i))
+            continue
+        if c == "#":
+            while i < n and src[i] != "\n":
+                i += 1
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def line_starts_code(src):
+    """逐行返回 (行号, 该行是否为「逻辑行」的开头)。
+    在括号里续写、在 \\ 之后续写、落在多行字符串里的行，缩进不归 GDScript 管，返回 False。"""
+    res = []
+    depth, in_str, cont = 0, None, False
+    i, n, line = 0, len(src), 1
+    res.append((1, True))
+    while i < n:
+        c = src[i]
+        if in_str:
+            if c == "\\":
+                i += 2
+                continue
+            if src.startswith(in_str, i):
+                i += len(in_str)
+                in_str = None
+                continue
+            if c == "\n":
+                line += 1
+                res.append((line, False))
+            i += 1
+            continue
+        if c in ('"', "'"):
+            in_str = c * 3 if src.startswith(c * 3, i) else c
+            i += len(in_str)
+            continue
+        if c == "#":
+            while i < n and src[i] != "\n":
+                i += 1
+            continue
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth = max(0, depth - 1)
+        elif c == "\\" and src.startswith("\n", i + 1):
+            cont = True
+            i += 1
+            continue
+        if c == "\n":
+            line += 1
+            res.append((line, depth == 0 and not cont))
+            cont = False
+        i += 1
+    return dict(res)
+
+
 def parse_members(path):
     """返回该脚本定义的 func / var / const / signal / enum 名集合"""
     members, enums = set(), {}
     with open(path, encoding="utf-8") as f:
         src = f.read()
-    for m in re.finditer(r'^\s*func\s+([A-Za-z_]\w*)', src, re.M):
-        members.add(m.group(1))
-    for m in re.finditer(r'^\s*(?:@export\s+)?var\s+([A-Za-z_]\w*)', src, re.M):
-        members.add(m.group(1))
-    for m in re.finditer(r'^\s*const\s+([A-Za-z_]\w*)', src, re.M):
-        members.add(m.group(1))
-    for m in re.finditer(r'^\s*signal\s+([A-Za-z_]\w*)', src, re.M):
-        members.add(m.group(1))
-    for m in re.finditer(r'^\s*enum\s+([A-Za-z_]\w*)\s*\{([^}]*)\}', src, re.M | re.S):
+    code = code_only(src)
+    # 前缀可带注解（@onready / @export_range(…) 等）与 static
+    pre = r'^\s*(?:@\w+(?:\([^)\n]*\))?\s+)*(?:static\s+)?'
+    for kw in ("func", "var", "const", "signal", "class"):
+        for m in re.finditer(pre + kw + r'\s+([A-Za-z_]\w*)', code, re.M):
+            members.add(m.group(1))
+    for m in re.finditer(r'^\s*enum\s*([A-Za-z_]\w*)?\s*\{([^}]*)\}', code, re.M | re.S):
         name, body = m.group(1), m.group(2)
-        members.add(name)
         vals = {v.split("=")[0].strip() for v in body.split(",") if v.strip()}
-        enums[name] = vals
+        if name:
+            members.add(name)
+            enums[name] = vals
+        else:
+            members |= vals  # 匿名 enum 的值直接挂在脚本上
     return members, enums, src
+
+# project.godot 里注册了、上表却漏写的 autoload：照样纳入检查，免得它的引用整片不受检
+with open(os.path.join(ROOT, "project.godot"), encoding="utf-8") as f:
+    _pg_autoloads = re.findall(r'^(\w+)="\*res://([^"]+\.gd)"', f.read(), re.M)
+EXTRA_AUTOLOADS = [n for n, _ in _pg_autoloads if n not in AUTOLOADS]
+for _n, _rel in _pg_autoloads:
+    AUTOLOADS.setdefault(_n, _rel)
 
 # 收集所有 autoload 的成员
 defined, enum_map = {}, {}
@@ -61,7 +146,8 @@ for name, rel in AUTOLOADS.items():
     want = "res://" + rel
     got = declared.get(name)
     ok = got == want
-    print(f"  {'✓' if ok else '✗'} {name:<12} {got or '(未注册)'}")
+    note = "（上表漏写，已自动纳入检查，请补进 AUTOLOADS）" if name in EXTRA_AUTOLOADS else ""
+    print(f"  {'✓' if ok else '✗'} {name:<12} {got or '(未注册)'}{note}")
     if not ok:
         problems.append(f"autoload {name} 注册不符：期望 {want}，实际 {got}")
 
@@ -81,35 +167,6 @@ print("=" * 68)
 print("一之二、_ready 期间的 autoload 依赖顺序")
 print("=" * 68)
 print("  autoload 按注册顺序逐个 _ready；在 _ready 里碰排在自己后面的 autoload 会拿到 null。")
-
-def code_only(src):
-    """去掉字符串和注释后再数括号。字符串里的 [color= 不算语法括号。"""
-    out = []
-    i = 0
-    n = len(src)
-    while i < n:
-        c = src[i]
-        if c in ('"', "'"):
-            q = c * 3 if src.startswith(c * 3, i) else c
-            i += len(q)
-            while i < n:
-                if len(q) == 1 and src[i] == "\\":
-                    i += 2
-                    continue
-                if src.startswith(q, i):
-                    i += len(q)
-                    break
-                i += 1
-            out.append(" ")
-            continue
-        if c == "#":
-            while i < n and src[i] != "\n":
-                i += 1
-            continue
-        out.append(c)
-        i += 1
-    return "".join(out)
-
 
 def func_bodies(src):
     """粗略切分出每个 func 的函数体（按缩进）"""
@@ -161,11 +218,29 @@ print("=" * 68)
 print("二、跨文件引用检查")
 print("=" * 68)
 
-# Godot 内置成员，出现在 autoload 上是合法的
+# Godot 内置成员，出现在 autoload 上是合法的（autoload 都 extends Node：Object + Node 的常用 API 与信号）
 BUILTIN = {
     "new", "free", "queue_free", "connect", "disconnect", "emit", "call",
     "get", "set", "has_method", "get_tree", "add_child", "name", "duplicate",
     "call_deferred", "is_connected", "get_children", "bind", "size", "keys",
+    # Object
+    "callv", "set_deferred", "has_signal", "emit_signal", "get_class", "is_class",
+    "get_script", "set_script", "get_meta", "set_meta", "has_meta", "remove_meta",
+    "get_instance_id", "is_queued_for_deletion", "notification", "tr",
+    "get_property_list", "get_method_list", "get_signal_list", "get_signal_connection_list",
+    "set_block_signals", "is_blocking_signals", "property_list_changed", "script_changed",
+    # Node
+    "remove_child", "get_child", "get_child_count", "get_node", "get_node_or_null",
+    "has_node", "find_child", "find_children", "get_parent", "get_viewport", "get_window",
+    "is_inside_tree", "is_node_ready", "set_process", "set_physics_process",
+    "set_process_input", "set_process_unhandled_input", "set_process_unhandled_key_input",
+    "is_processing", "is_physics_processing", "get_process_delta_time",
+    "get_physics_process_delta_time", "process_mode", "owner", "get_path", "create_tween",
+    "add_to_group", "remove_from_group", "is_in_group", "get_index", "move_child",
+    "reparent", "propagate_call", "propagate_notification", "set_name", "get_name",
+    "scene_file_path", "unique_name_in_owner", "process_priority",
+    "ready", "tree_entered", "tree_exiting", "tree_exited", "renamed",
+    "child_entered_tree", "child_exiting_tree", "child_order_changed",
 }
 
 miss_count = 0
@@ -177,8 +252,9 @@ for dirpath, _, files in os.walk(SCRIPTS):
         rel = os.path.relpath(path, ROOT)
         with open(path, encoding="utf-8") as f:
             src = f.read()
-        # 去掉注释行，避免文档里的示例被当成引用
-        src_nc = "\n".join(re.sub(r'#.*$', '', ln) for ln in src.split("\n"))
+        # 去掉注释与字符串：文档示例、文案里的 "Economy.xx" 不算引用；
+        # 也不能按 # 截行——"[color=#c00]" + str(Economy.xx) 的后半截要照查
+        src_nc = code_only(src)
 
         file_problems = []
         for auto, members in defined.items():
@@ -222,10 +298,10 @@ for dirpath, _, files in os.walk(SCRIPTS):
             continue
         path = os.path.join(dirpath, fn)
         with open(path, encoding="utf-8") as f:
-            src = f.read()
+            src = code_only(f.read())  # 注释、字符串里的 xx.emit() 不算
         declared = set(re.findall(r'^\s*signal\s+([A-Za-z_]\w*)', src, re.M))
-        # 前面带点的是跨对象 emit（Autoload.sig.emit），不归本文件管
-        emitted = set(re.findall(r'(?<![.\w])([A-Za-z_]\w*)\.emit\s*\(', src))
+        # 前面带点的是跨对象 emit（Autoload.sig.emit），不归本文件管；self.sig.emit 仍算本文件
+        emitted = set(re.findall(r'(?:(?<![.\w])self\.|(?<![.\w]))([A-Za-z_]\w*)\.emit\s*\(', src))
         for o in sorted(emitted - declared):
             print(f"  ✗ {os.path.relpath(path, ROOT)}: {o}.emit() 但本文件无此 signal")
             problems.append(f"{os.path.relpath(path, ROOT)} emit 已删除的 {o}")
@@ -245,9 +321,12 @@ for dirpath, _, files in os.walk(SCRIPTS):
         rel = os.path.relpath(path, ROOT)
         with open(path, encoding="utf-8") as f:
             lines = f.readlines()
-        # GDScript 用 Tab 缩进；混入空格缩进会报错
+        # GDScript 用 Tab 缩进；逻辑行的缩进里混进空格（含 Tab 后跟空格）会报 Parse Error。
+        # 括号内 / \\ 后的续行、多行字符串里的行，缩进不作数，不查。
+        starts = line_starts_code("".join(lines))
         bad_indent = [i+1 for i, ln in enumerate(lines)
-                      if ln.startswith(" ") and ln.strip() and not ln.lstrip().startswith("#")]
+                      if starts.get(i+1) and ln.strip() and not ln.lstrip().startswith("#")
+                      and " " in ln[:len(ln) - len(ln.lstrip())]]
         if bad_indent:
             print(f"  ✗ {rel}: 第 {bad_indent[:5]} 行用空格缩进（GDScript 需 Tab）")
             problems.append(f"{rel} 空格缩进")
@@ -268,9 +347,10 @@ print("=" * 68)
 print("四、场景文件引用的脚本是否存在")
 print("=" * 68)
 scenes_dir = os.path.join(ROOT, "scenes")
-for fn in sorted(os.listdir(scenes_dir)):
-    if not fn.endswith(".tscn"):
-        continue
+# 连子目录（scenes/vision/、scenes/chars/ …）一起查
+scene_files = sorted(os.path.relpath(os.path.join(d, x), scenes_dir).replace(os.sep, "/")
+                     for d, _, xs in os.walk(scenes_dir) for x in xs if x.endswith(".tscn"))
+for fn in scene_files:
     with open(os.path.join(scenes_dir, fn), encoding="utf-8") as f:
         content = f.read()
     for m in re.finditer(r'path="(res://[^"]+\.gd)"', content):
@@ -315,7 +395,7 @@ for dirpath, _, files in os.walk(SCRIPTS):
             continue  # Fleet.gd 内部只走 ships[i]["cargo"]
         with open(path, encoding="utf-8") as f:
             src = f.read()
-        src_nc = "\n".join(re.sub(r'#.*$', '', ln) for ln in src.split("\n"))
+        src_nc = code_only(src)
         # 跳过链式访问片段（[..] / .ident），再看是否落到赋值符
         for m in re.finditer(r'\bFleet\.cargo', src_nc):
             pos = m.end()
