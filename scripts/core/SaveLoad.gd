@@ -13,6 +13,13 @@ const EXAM_FLAG := "exam_sat"
 const EXAM_FLAG_PREFIX := "exam_sat_ch"
 const GUILD_FLAG_PREFIX := "guild_"
 const DISCOVERY_LIST_KEYS := ["discoveries_found", "discoveries_reported"]
+## 四个内核单例分区；读档前逐一体检，非对象或关键结构不合法即判坏档。
+const PARTITIONS := ["calendar", "economy", "fleet", "crew"]
+const STATE_NUM_KEYS := [
+	"money", "debt", "fame", "martial", "chapter", "pu_attention", "peak_money",
+	"network", "merchant_credit", "sea_tendency", "scholar_tendency", "hometown_tendency",
+	"draft_salt", "shore_salt", "broker_salt", "berth_index", "era_trips", "era_profit",
+]
 
 
 func _ready() -> void:
@@ -144,11 +151,91 @@ func _read(path: String) -> Dictionary:
 		push_error("存档结构异常 %s：顶层不是对象" % path)
 		return {}
 	var data: Dictionary = json.data
-	var ver := int(data.get("version", 0))
+	var ver_raw = data.get("version", 0)
+	if not _is_num(ver_raw):
+		push_error("存档结构异常 %s：version 不是数字" % path)
+		return {}
+	var ver := int(ver_raw)
 	if ver > VERSION:
 		push_error("存档 %s 版本 %d 高于本版 %d，拒读" % [path, ver, VERSION])
 		return {}
+	var bad := _check_partitions(data)
+	if bad != "":
+		push_error("存档结构异常 %s：%s" % [path, bad])
+		return {}
 	return data
+
+
+func _is_num(v) -> bool:
+	return typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT
+
+
+## 字段缺省可以（from_dict 有默认值）；给了却类型不对才算坏。
+func _bad_fields(part: Dictionary, nums: Array, dicts: Array, arrays: Array = []) -> String:
+	for k in nums:
+		if part.has(k) and not _is_num(part[k]):
+			return "%s 不是数字" % k
+	for k in dicts:
+		if part.has(k) and typeof(part[k]) != TYPE_DICTIONARY:
+			return "%s 不是对象" % k
+	for k in arrays:
+		if part.has(k) and typeof(part[k]) != TYPE_ARRAY:
+			return "%s 不是数组" % k
+	return ""
+
+
+## 四分区 + state 的结构体检；返回空串为好档，否则为坏因。
+## 放在 _read 里：正式档结构坏与 JSON 坏同等对待，_read_slot 自然退 .bak。
+func _check_partitions(data: Dictionary) -> String:
+	for key in PARTITIONS + ["state"]:
+		if data.has(key) and typeof(data[key]) != TYPE_DICTIONARY:
+			return "%s 分区不是对象" % key
+
+	var cal: Dictionary = _as_dict(data.get("calendar", {}))
+	if not cal.is_empty():
+		for k in ["year", "month", "day"]:
+			if not _is_num(cal.get(k)):
+				return "calendar.%s 缺失或不是数字" % k
+		if int(cal["month"]) < 1 or int(cal["month"]) > Calendar.MONTHS_PER_YEAR:
+			return "calendar.month 越界"
+		if int(cal["day"]) < 1 or int(cal["day"]) > Calendar.DAYS_PER_MONTH:
+			return "calendar.day 越界"
+
+	var eco: Dictionary = _as_dict(data.get("economy", {}))
+	var why := _bad_fields(eco, ["tariff", "broker"], ["rates", "investments"])
+	if why != "":
+		return "economy." + why
+
+	var fleet: Dictionary = _as_dict(data.get("fleet", {}))
+	why = _bad_fields(fleet, ["water", "food", "morale", "mutiny_cooldown"], ["cargo"])
+	if why != "":
+		return "fleet." + why
+	if fleet.has("ships"):
+		if typeof(fleet["ships"]) != TYPE_ARRAY:
+			return "fleet.ships 不是数组"
+		for s in fleet["ships"]:
+			if typeof(s) != TYPE_DICTIONARY:
+				return "fleet.ships 含非对象条目"
+
+	var crew: Dictionary = _as_dict(data.get("crew", {}))
+	why = _bad_fields(crew, ["unpaid_months"], ["hired"])
+	if why != "":
+		return "crew." + why
+	for r in _as_dict(crew.get("hired", {})).values():
+		if typeof(r) != TYPE_DICTIONARY:
+			return "crew.hired 含非对象条目"
+
+	# GameState.from_dict 直赋强类型字段；flags / 发现录另由 _harden_state 清洗，rumors 等自带兜底。
+	var state: Dictionary = _as_dict(data.get("state", {}))
+	why = _bad_fields(state, STATE_NUM_KEYS, ["era_routes", "port_bans", "siege"],
+			["ledger_notes", "visited_ports", "news_seen", "crew_history"])
+	if why != "":
+		return "state." + why
+	if state.has("has_customs_permit") and typeof(state["has_customs_permit"]) != TYPE_BOOL:
+		return "state.has_customs_permit 不是布尔"
+	if state.has("last_port") and typeof(state["last_port"]) != TYPE_STRING:
+		return "state.last_port 不是字符串"
+	return ""
 
 
 ## 正式档优先，坏了退 .bak
@@ -171,7 +258,7 @@ func load_game(slot: int) -> bool:
 	if data.is_empty():
 		return false
 
-	# 坏档分区可能是字符串/数组；from_dict 要 Dictionary，缺省用空表兜底。
+	# _read 已体检过结构；这里仍按 Dictionary 兜底，缺省分区用空表。
 	Calendar.from_dict(_as_dict(data.get("calendar", {})))
 	Economy.from_dict(_as_dict(data.get("economy", {})))
 	Fleet.from_dict(_as_dict(data.get("fleet", {})))
