@@ -26,7 +26,7 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-一次改动闭环 = 下面十二道门禁全绿。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
+一次改动闭环 = 下面十三道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
 
 ```bash
 # 七道 Python（无 Godot 也能跑）
@@ -38,15 +38,16 @@ python3 tools/check_assets.py       # 代码引用的 res://assets 都在
 python3 tools/verify_story_data.py  # 剧情效果键白名单、存档字段对称
 python3 tools/simulate_endgame.py   # 跳年 / 终局窗口 / 守城数值
 
-# 五道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
+# 六道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
 godot --headless --editor --path . --quit
-godot --headless --path . -s res://tools/godot_smoke.gd          # 云端冒烟 139 项
+godot --headless --path . -s res://tools/godot_smoke.gd          # 云端冒烟（逐项 ✓，末行 GODOT SMOKE PASS）
 godot --headless --path . -s res://tools/godot_compile_check.gd  # 全部脚本可编译
 godot --headless --path . -s res://tools/godot_story_check.gd    # 剧情脊柱与存档 round-trip（用完会清第 9 槽）
+godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd  # 行会入行 / 贡院赴试 / 誊录：扣费门槛、每章一次、跨月结算时序
 godot --path . -s res://tools/patrol_shell.gd                    # 有窗口：三港九页 + 海图三向牌都在 1280×720 内
 ```
 
-`tools/patrol.py` 是云端留下的一键巡检（静态三套 + 冒烟 + 巡检）；`tools/verify_narrative.py` 与 `tools/p7_smoke.gd` 绑定云端 21ce 的 P7 平行实现，本分支未收该实现，两个脚本仅留档。
+`tools/patrol.py` 是云端留下的一键巡检（静态三套 + 冒烟 + 巡检）；`tools/verify_narrative.py` 与 `tools/p7_smoke.gd` 绑定云端 21ce 的 P7 平行实现，本分支未收该实现，两个脚本仅留档、不算门禁（别与上面的 `p7_guild_exam_smoke.gd` 混淆）。
 
 海图（2026-09-25 重制，见 `docs/海图重制设计_2026-09-25.md`）：图面在 `scripts/chart/MapView.gd`，投影 `scripts/chart/ChartProjection.gd`（等距圆锥，参数 `data/chart_projection.json`），底图 `assets/map/terrain_4096.png` + `mapdata_2048.png` 由 `tools/build_terrain.py` 离线生成（ETOPO 2022 高程 + Natural Earth 1:10m 岸线；需 numpy / scipy / shapely / pyshp / tifffile / pillow）。改投影参数必须同时改 json 并重出底图。
 
@@ -76,7 +77,7 @@ python3 tools/cut_ship_sprites.py   # 需 numpy / Pillow / scipy（仅美术管�
 data/       港口、货物、船种、章节、职事等 JSON 数据
 scripts/    游戏脚本（core/ 为 autoload 单例：Fleet/Economy/Voyage/…）
 scenes/     场景与 UI
-tools/      三套 Python 静态校验 + 引擎冒烟 + 船图精修管线（art_src/ 为生成原稿，gdignore）
+tools/      七道 Python 静态门禁 + Godot 门禁与探针 + 美术 / 船图管线（art_src/ 为生成原稿，gdignore）
 docs/       复刻设计文档
 assets/     美术资源
 ```
@@ -107,14 +108,14 @@ assets/     美术资源
 - ✅ 真实岸线（Natural Earth 386 环）+ 沿 sealanes 折线计里程、逐段罗经；海名岛名标注
 - ✅ 本地剧情脊柱：跳年（2+3+4 年）、按月新闻、1268 殿试身份、战况机与战时三遭遇、守城 / 泉州对峙 / 涵江 / 崖山 / 辞呈 / 纲首收官、终局态与结局图；终局特殊卡不受「今日只开三处」限制
 - 📎 云端两套 P7（b05c 纪事与终章、21ce 剧情闭环）：与主干 p6 结局系统同名平行实现，未收；设计稿、`data/endings.json`、`data/port_beats.json` 留档待挑
-- ⏳ 真机手感待 Snow 点验：headless 十二道门禁与有窗口巡检全过，未在有人操作的窗口里看过
+- ⏳ 真机手感待 Snow 点验：十三道门禁（含有窗口巡检）全过，未在有人操作的窗口里看过
 
 ## 已知坑（点验/改图前必读）
 
 - `assets/icon_*.png` 现已全是真 PNG（2026-09-25 随本地 main 进入）；`GameManager.load_texture` 仍**先按文件头解码**，纹理没有 `resource_path`，门禁核对底图用 `Main._bg_file`。窗口里灰叉多半是 `.godot` 缓存与 4.6 二进制不匹配
 - 死生态位图（crate / 海鸟 / 鲸影）已从 `assets/` 与 WorldMap 删除，`godot_smoke.gd` 故意引用它们断言不存在，`check_assets.py` 对该文件放行
 - `godot_story_check.gd` 与 `godot_smoke.gd` 共用 `user://saves/` 第 9 槽：前者用完即删，后者断言空卷；别手工往第 9 槽存档
-- 海图 386 环岸线按视窗缓存（`SeaChart._land_polygons`）；平滑后自交的环三角化失败只描线不填色
+- 海图 386 环岸线投影后缓存在 `MapView.coast_rings` / `coast_boxes`（`scripts/chart/MapView.gd`），按视窗包围盒裁剪、只描线不填色——陆地色由底图 `terrain_4096.png` 出；数据包围盒裁边处断成开放折线
 - 新素材的 `.import` 与脚本的 `.uid` 侧车随**本 commit 的源文件**一起提交（仓库现行做法，2026-09-26 起统一；`.gitignore` 故意不忽略它们）：不带的话别处 `git clean` 后重导，uid 会全变、场景引用断开。并行窗口共享工作区时用显式 pathspec，**禁止** `git add .` / 盲加别人 lane 留下的未跟踪侧车噪声
 - 视觉资产：皮肤在 `scripts/core/UiTheme.gd` 的 `const SKIN`（`juanben` 绢本 / `yechao` 夜潮）；立绘由 `tools/art/build_portraits.py` 生成，出了新油画直接覆盖 `assets/portraits/<id>.png` 并把 `data/characters.json` 该人 `portrait_status` 改 `painted`；新剧情文字落地后重跑 `python3 tools/art/subset_fonts.py` 补字
 
