@@ -42,10 +42,10 @@ HARDENED = {"flags", "discoveries_found", "discoveries_reported"}
 
 
 def func_bodies(src):
-    """粗略切分出每个 func 的函数体（按缩进；与 check_symbols.py 同法）"""
+    """粗略切分出每个顶格 [static ]func 的函数体（按缩进；与 check_symbols.py 同法，lane cs16 起认 static func）"""
     out, cur, body = {}, None, []
     for ln in src.split("\n"):
-        m = re.match(r'^func\s+([A-Za-z_]\w*)', ln)
+        m = re.match(r'^(?:static\s+)?func\s+([A-Za-z_]\w*)', ln)
         if m:
             if cur: out[cur] = "\n".join(body)
             cur, body = m.group(1), []

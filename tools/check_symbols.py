@@ -461,11 +461,14 @@ class _Bodies(dict):
         return super().get(name, default)
 
 
+# lane cs16：顶格 `static func` 与 `func` 同样认（原先只认 `func`：拆出件 / UiTheme 一类全是 static func，
+# 扫真文件的断言遍历 .items() / 用 `in` 展开调用链时，那几支静默不在视野里，拆走一支反向断言就空转）。
+# 切法不变：体到下一个顶格非注释行为止；`static func` 行本来就会截断上一支，认它只多出它自己那一支。
 def func_bodies(src):
-    """粗略切分出每个 func 的函数体（按缩进）；返回 _Bodies，.get 取不到判红"""
+    """粗略切分出每个顶格 [static ]func 的函数体（按缩进）；返回 _Bodies，.get 取不到判红"""
     out, cur, body = {}, None, []
     for ln in src.split("\n"):
-        m = re.match(r'^func\s+([A-Za-z_]\w*)', ln)
+        m = re.match(r'^(?:static\s+)?func\s+([A-Za-z_]\w*)', ln)
         if m:
             if cur: out[cur] = "\n".join(body)
             cur, body = m.group(1), []
@@ -2155,8 +2158,8 @@ else:
     print("  ✗ UiTheme.style_dialog 未定义")
     problems.append("UiTheme.style_dialog 未定义")
 def _func_body(src: str, name: str) -> str:
-    """取 src 里 `func name` 连签名的函数体；取不到给 "" 并记账判红（见 _body_asks）。"""
-    m = re.search(rf"^func {name}\b.*?(?=^func |\Z)", src, re.M | re.S)
+    """取 src 里 `[static ]func name` 连签名的函数体，到下一个顶格 [static ]func 为止；取不到给 "" 并记账判红（见 _body_asks）。"""
+    m = re.search(rf"^(?:static\s+)?func {name}\b.*?(?=^(?:static\s+)?func |\Z)", src, re.M | re.S)
     _body_ask(name, m is not None)
     return m.group(0) if m else ""
 
@@ -3851,13 +3854,13 @@ else:
     problems.append("_on_report_discovery 接线")
 
 # 呈报回调真身在 MaritimeOfficePage（lane main8 拆出），Main._on_report_discovery 只剩一行转发（拼回由上面 _disc_main_fn 查）。
-# 这里扫真文件：拆出件里是 static func，func_bodies 只认顶格 func，先把 static func 记成 func 再切，拆出件里的调用方才扫得到。
+# 这里扫真文件：拆出件里是 static func，func_bodies 认顶格 [static ]func（lane cs16），拆出件里的调用方照样扫得到。
 _rep_callers = []
 for _dp, _dn, _fs in os.walk(SCRIPTS):
     for _fn in _fs:
         if not _fn.endswith(".gd"):
             continue
-        _src = re.sub(r'^static\s+func\b', "func", open(os.path.join(_dp, _fn), encoding="utf-8").read(), flags=re.M)
+        _src = open(os.path.join(_dp, _fn), encoding="utf-8").read()
         for _name, _body in func_bodies(_src).items():
             if re.search(r'(?<![\w_])(?:GameState\.)?report_discovery\(', _code_only(_body)):
                 _rep_callers.append(f"{_fn}:{_name}")
