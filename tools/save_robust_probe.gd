@@ -147,6 +147,8 @@ func _check(name: String, want_load: bool, want_src: String, want_label: String,
 func _good(label: String, year: int, month: int) -> Dictionary:
 	return {
 		"version": int(sl.get("VERSION")),
+		# lane sv：带本版结构号；不带就是 v1 老档，load_game 会迁移回写并留 .v1（迁移另见 save_migrate_probe）
+		str(sl.get("SCHEMA_KEY")): int(sl.get("SAVE_SCHEMA")),
 		"calendar": {"year": year, "month": month, "day": 1},
 		"economy": {"rates": {}, "tariff": 0.1, "broker": 0.05, "investments": {}},
 		"fleet": {"ships": [{"type": "fuchuan", "cargo": {}, "crew": 20}], "water": 30, "food": 30, "morale": 70, "mutiny_cooldown": 0},
@@ -173,7 +175,7 @@ func _write_raw(path: String, text: String) -> void:
 
 
 func _cleanup() -> void:
-	for suffix in ["", ".bak", ".tmp"]:
+	for suffix in ["", ".bak", ".tmp", ".v1", ".bak.v1"]:
 		var p: String = _primary() + suffix
 		if FileAccess.file_exists(p):
 			DirAccess.remove_absolute(p)

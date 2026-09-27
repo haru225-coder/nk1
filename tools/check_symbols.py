@@ -2758,8 +2758,11 @@ else:
     print("  ✗ load_game 分区未做 Dictionary 兜底")
     problems.append("load_game 分区未类型兜底")
 # save_label 须走 _read_slot（正式档坏了读 .bak），不得只开正式档。
+# lane sv：_read_slot / save_label / slot_source 同经 _resolve 定槽态，经 _resolve 也算。
 _label_body = _code_only(_saveload_fn.get("save_label", ""))
-if "_read_slot(slot)" in _label_body:
+_resolve_body = _code_only(_saveload_fn.get("_resolve", ""))
+_via_resolve = "_resolve(slot)" in _code_only(_saveload_fn.get("_read_slot", "")) and "_bak_path(slot)" in _resolve_body
+if "_read_slot(slot)" in _label_body or (_via_resolve and "_resolve(slot)" in _label_body):
     print("  ✓ save_label 经 _read_slot（含 .bak 回退）")
 else:
     print("  ✗ save_label 未走 _read_slot")
@@ -2767,9 +2770,13 @@ else:
 # Lane T：正本坏、副抄可读时册页须有脚注；提示另走 save_tip，不塞进 save_label。
 _source_body = _code_only(_saveload_fn.get("slot_source", ""))
 _tip_body = _code_only(_saveload_fn.get("save_tip", ""))
+if _via_resolve and "_resolve(slot)" in _source_body:
+    _source_body += "\n" + _resolve_body
 if (
     all(tok in _source_body for tok in ('"none"', '"primary"', '"bak"', '"corrupt"', "has_save(slot)", "_bak_path(slot)"))
-    and "slot_source(slot)" in _tip_body
+    and ("slot_source(slot)" in _tip_body or (_via_resolve and "_resolve(slot)" in _tip_body))
+    # lane sv：新版档第五态 future 须有脚注，且题签不说成「卷页损了」
+    and ('"future"' not in _source_body or ("新版所记" in _tip_body and "新版所记" in _label_body))
     and "副抄" in _tip_body and "正本" in _tip_body
     and not re.search(r"（[^）]*）", _tip_body + _source_body + _label_body)
     and "副抄" not in _label_body

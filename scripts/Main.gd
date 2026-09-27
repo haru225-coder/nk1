@@ -4089,7 +4089,7 @@ func _show_save_dialog(read_only := false) -> void:
 		_slip_title(slip, "第%s卷" % _cn_chapter(n), SaveLoad.save_label(n))
 		var tip := SaveLoad.save_tip(n)
 		if tip != "":
-			var tip_color := UiTheme.CINNABAR if SaveLoad.slot_source(n) == "corrupt" else UiTheme.TEXT_DIM
+			var tip_color := UiTheme.CINNABAR if SaveLoad.slot_source(n) in ["corrupt", "future"] else UiTheme.TEXT_DIM
 			_slip_note(slip, tip, tip_color)
 		var row := _slip_row(slip)
 		var write := _slip_chip(row, "记录", _on_save_slot.bind(n), true)
@@ -4142,7 +4142,7 @@ func _on_load_slot(slot: int) -> void:
 	var scene_id := SaveLoad.saved_scene(slot)
 	var from_bak := SaveLoad.slot_source(slot) == "bak"
 	if not SaveLoad.load_game(slot):
-		log_msg("第 %d 卷正本与副抄皆不可读。" % slot)
+		log_msg("第 %d 卷%s" % [slot, SaveLoad.load_fail_note(slot)])
 		return
 	_close_save_sheet()
 	update_status_panel()
