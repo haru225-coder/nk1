@@ -204,6 +204,11 @@ CI_STEPS = [
      "cmd": "python3 tools/gates_md.py",
      "expect": "`结果：全部通过`",
      "fail": "有人手改了 §一 / §二批量巡检 / §四 生成块、改了注册表没 `--write`、§三 或 `.claude/todo.md` 验证段的一键跑命令与必跑清单不符，或注册的脚本挪走了"},
+    {"id": "docs 索引与文件一致", "lane": "doc3 / doc4", "needs": "python3 + git",
+     "cmd": "python3 tools/check_docs_index.py --check",
+     "expect": "`结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`）",
+     "fail": "`✗` 行、退 1：`MISSING` = 提交了 docs 下的 .md 没在 docs/README.md 补一行；`DEAD` = 索引链的文件挪走 / 改名 / 删了；"
+             "`DUP` = 同一份文档链了两次。修法：改 docs/README.md"},
 ]
 
 

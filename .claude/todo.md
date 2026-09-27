@@ -29,7 +29,7 @@
 - [ ] 54 张剪影占位卡待出油画：提示词 `docs/立绘生成提示词_2026-09-25.md`，出图台 `~/tmp/nk1-art-work/artifact/立绘出图台.html`；优先黄氏、陈瓒、断臂老兵、王直库、蒲阿烈、林阿五
 - [ ] 标题底图选稿：A 保持现图（有西式罗盘与海怪）/ B 换程序绘制的宋绢本候选 `~/tmp/nk1-art-work/title_bg/cand2_a_qinglv.jpg`（史实对、画意弱）/ C 用 Grok 另出
 - [x] 史实：「岸上的根」结算年号改为景炎二年三月，已与 1277 涵江海口卡、`ending_root` 过场对齐（check_symbols 回归）
-- [ ] 史实待定：`bg_customs_room.jpg` 画里有元以后的大青花罐
+- [ ] 史实待修：`bg_customs_room.jpg` 青花大罐（C1）+ 案上算盘（C2）——逐条证据、分野、处置、重出提示词见 `docs/资产史实待修_2026-09-27.md` §八（8.2 C1 / C2 行、8.3 P1）；这张归「自动修」（§三 B 龙泉重釉样稿已出），不在 `docs/资产重出工单.md` 三行里，工单收的是同批必须重出的 zhangzhou / ledger / fanfang。待 Snow：A / B 选法（原文 §七 待议 1）、算盘口径（§九 决策包，C2 随之定）
 - [ ] 伙伴系统设计稿拍板：`~/tmp/nk1-art-work/companions/伙伴系统设计_草案.md`（40 人，6 个待定问题）
 
 ## 验证

@@ -333,6 +333,8 @@ python3 tools/check_sidecars.py
 python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt
 # 3. GATES.md 与注册表一致
 python3 tools/gates_md.py
+# 4. docs 索引与文件一致
+python3 tools/check_docs_index.py --check
 ```
 
 | # | 步骤 | 接入 | 需要 | 命令 | 期望输出 | 失败含义 |
@@ -340,4 +342,5 @@ python3 tools/gates_md.py
 | 1 | 侧车成对 / 一致 | ag / ag2 / gd5 | python3 + git（紧跟第 0 步的导入步骤之后跑） | `python3 tools/check_sidecars.py` | `结果：全部通过`（前一行报 uid 个数、VRAM 纹理张数与基线、`工作树侧车无漂移`） | `FAIL: …` 行、退 1 = 提交的 .gd / .gdshader / 素材缺侧车或多了孤儿侧车、侧车内容与源文件 / 场景引用 / VRAM 基线不一致；或第 0 步导入把已跟踪 `.import` / `.uid` 改写了（工作树漂移：CI 机器的 Godot 版本 / 平台与入库基线不符）。口径见 docs/侧车口径.md |
 | 2 | builtin_api 漂移 | cs3 / gd4 | godot（与清单头部同版本） | `python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt` | `✓ --regen：…逐字节一致，未改动` + check_symbols `结果：全部通过`，`git diff` 无输出、退 0 | `git diff` 打出 `tools/builtin_api.txt` 的差异、退 1 = 提交的清单与本机 Godot 的 ClassDB 导出不一致（升级了 Godot / 改了 `gen_builtin_list.gd` 的 CLASSES 却没连同提交重导结果）；`--regen` 本身失败则 check_symbols 先退 1 |
 | 3 | GATES.md 与注册表一致 | gd3 | python3 + git | `python3 tools/gates_md.py` | `结果：全部通过` | 有人手改了 §一 / §二批量巡检 / §四 生成块、改了注册表没 `--write`、§三 或 `.claude/todo.md` 验证段的一键跑命令与必跑清单不符，或注册的脚本挪走了 |
+| 4 | docs 索引与文件一致 | doc3 / doc4 | python3 + git | `python3 tools/check_docs_index.py --check` | `结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`） | `✗` 行、退 1：`MISSING` = 提交了 docs 下的 .md 没在 docs/README.md 补一行；`DEAD` = 索引链的文件挪走 / 改名 / 删了；`DUP` = 同一份文档链了两次。修法：改 docs/README.md |
 <!-- GATES-CI:END -->
