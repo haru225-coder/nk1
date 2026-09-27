@@ -448,16 +448,23 @@ print("  autoload 按注册顺序逐个 _ready；在 _ready 里碰排在自己�
 # 所以 `_func_body(src, name)` 与 `func_bodies(src).get(name, …)` 一律记账：取不到记下「本脚本行号 + 函数名」，
 # 「十三、按函数名取函数体」逐条判红。只想探有没有这支函数、不想判红的，用 `name in func_bodies(src)`（不记账）。
 # 场景节点按名取块的 _node_block 同记这本账（键 `[node name="X"]`，lane cs12）。
+# 取到的只是一行转发（`func X(…):\n\t_K.x(self, …)`，真身在别的文件）同样记成取不到（lane cs17，判据见 func_body.forward_of）：
+# main_src 走 read_main_src() 拼回，拆出件转发已换成真身；直读 Main.gd / 别的文件时切到转发就判红。
 # 账本与 _locate_func 在 tools/func_body.py（lane cs14 抽出，verify_economy 共用同一份，别另起一套）：
 # _body_asks = (本脚本行号, 函数名) -> 取到没有；同一行多次取（循环 / 变异自检）按一处计，有一次取不到就算取不到。
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from func_body import body_asks as _body_asks, body_ask as _body_ask, locate_func as _locate_func
+from func_body import body_asks as _body_asks, body_ask as _body_ask, locate_func as _locate_func, miss_why as _miss_why
 
 
 class _Bodies(dict):
-    """func_bodies 的结果：.get(name, …) 取不到时记账（见 _body_asks），其余同 dict。"""
-    def get(self, name, default=None):
-        _body_ask(name, name in self)
+    """func_bodies 的结果：.get(name, …) 取不到 / 只取到一行转发时记账（见 _body_asks），其余同 dict。
+    本来就要读转发那一行的（顺调用链展开、钉「Main 只许一行转发」），.get(name, …, forward_ok=True)。"""
+    def __init__(self, bodies, heads):
+        super().__init__(bodies)
+        self.heads = heads  # 函数名 -> 签名首行（func_bodies 切出的体不带签名，判转发要看形参）
+
+    def get(self, name, default=None, forward_ok=False):
+        _body_ask(name, name in self, body=name in self and self.heads[name] + "\n" + self[name], forward_ok=forward_ok)
         return super().get(name, default)
 
 
@@ -466,19 +473,20 @@ class _Bodies(dict):
 # 切法不变：体到下一个顶格非注释行为止；`static func` 行本来就会截断上一支，认它只多出它自己那一支。
 def func_bodies(src):
     """粗略切分出每个顶格 [static ]func 的函数体（按缩进）；返回 _Bodies，.get 取不到判红"""
-    out, cur, body = {}, None, []
+    out, heads, cur, body = {}, {}, None, []
     for ln in src.split("\n"):
         m = re.match(r'^(?:static\s+)?func\s+([A-Za-z_]\w*)', ln)
         if m:
             if cur: out[cur] = "\n".join(body)
             cur, body = m.group(1), []
+            heads[cur] = ln
         elif cur is not None:
             if ln and not ln[0].isspace() and not ln.startswith(("#", ")")):
                 out[cur] = "\n".join(body); cur, body = None, []
             else:
                 body.append(ln)
     if cur: out[cur] = "\n".join(body)
-    return _Bodies(out)
+    return _Bodies(out, heads)
 
 
 # 按名先定位、再取体（lane cs9：函数改名误绿收口）。原先各节手写的切法——`src.find("func X")` 切片、
@@ -515,11 +523,11 @@ for name, rel in AUTOLOADS.items():
     frontier = ["_ready"]
     while frontier:
         fn = frontier.pop()
-        for local in re.findall(r'\b([a-z_]\w*)\s*\(', bodies.get(fn, "")):
+        for local in re.findall(r'\b([a-z_]\w*)\s*\(', bodies.get(fn, "", forward_ok=True)):  # 顺调用链展开，转发照跟
             if local in bodies and local not in seen_fn:
                 seen_fn.add(local)
                 frontier.append(local)
-    reach = "\n".join(bodies.get(fn, "") for fn in seen_fn)
+    reach = "\n".join(bodies.get(fn, "", forward_ok=True) for fn in seen_fn)
     touched = {o for o in AUTOLOADS if o != name and re.search(rf'\b{o}\.', reach)}
     for t in touched:
         if order_idx.get(t, 99) > order_idx.get(name, 99):
@@ -2160,7 +2168,7 @@ else:
 def _func_body(src: str, name: str) -> str:
     """取 src 里 `[static ]func name` 连签名的函数体，到下一个顶格 [static ]func 为止；取不到给 "" 并记账判红（见 _body_asks）。"""
     m = re.search(rf"^(?:static\s+)?func {name}\b.*?(?=^(?:static\s+)?func |\Z)", src, re.M | re.S)
-    _body_ask(name, m is not None)
+    _body_ask(name, m is not None, body=m and m.group(0))
     return m.group(0) if m else ""
 
 
@@ -3878,7 +3886,7 @@ _mo_raw_fn = func_bodies(open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8"
 _mo_bad = []
 for _mo_name in ("_setup_yamen", "_on_apply_permit", "_setup_reporting", "_on_report_discovery",
                  "_setup_title_and_invest", "_on_invest_port", "_attention_desc"):
-    _mo_code = [ln for ln in _mo_raw_fn.get(_mo_name, "").split("\n") if ln.strip() and not ln.strip().startswith("#")]
+    _mo_code = [ln for ln in _mo_raw_fn.get(_mo_name, "", forward_ok=True).split("\n") if ln.strip() and not ln.strip().startswith("#")]
     _mo_fwd = _SPLIT_FWD.match(_mo_code[0]) if len(_mo_code) == 1 else None
     if not (_mo_fwd and _mo_fwd.group(1) == "_MARITIME" and _mo_fwd.group(2) == _mo_name[1:]):
         _mo_bad.append(f"Main.{_mo_name} 不是一行转发到 _MARITIME.{_mo_name[1:]}")
@@ -4338,7 +4346,7 @@ else:
 
 print()
 print("=" * 68)
-print("十三、按函数名取函数体（lane gd16 / cs9 / cs12：取不到判红）")
+print("十三、按函数名取函数体（lane gd16 / cs9 / cs12 / cs17：取不到、只取到一行转发判红）")
 print("=" * 68)
 _body_missed = sorted(k for k, found in _body_asks.items() if not found)
 for _ln, _name in _body_missed:
@@ -4346,7 +4354,7 @@ for _ln, _name in _body_missed:
         print(f"  ✗ check_symbols.py:{_ln} 取场景节点块 {_name} 取不到（节点改名 / 删了 / 挪进子场景），这处断言在空转")
         problems.append(f"取不到场景节点块：{_name}（check_symbols.py:{_ln}）")
         continue
-    print(f"  ✗ check_symbols.py:{_ln} 取函数体 {_name} 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转")
+    print(f"  ✗ {_miss_why((_ln, _name), 'check_symbols.py')}")
     problems.append(f"取不到函数体：{_name}（check_symbols.py:{_ln}）")
 if not _body_missed:
     _n_node = sum(1 for _ln, _name in _body_asks if _name.startswith("[node "))

@@ -238,31 +238,40 @@ SUBCHECKS = [
      "fail": "`✗ --write：有问题，tools/main_splits.txt 未改动` + 各条 `✗`（台账登记的拆出件不存在、拆出件有 static func 没有 Main 转发、"
              "拆前 Main.gd 里找不到转发的 Main 函数、台账逐支行段与重算不符）→ 退 1。**会改写 `tools/main_splits.txt`**，"
              "所以不进一键跑；新拆一刀的 lane 追加台账一节后跑它、连同提交"},
-    {"id": "按函数名取函数体（十三）", "parent": "check_symbols", "lane": "gd16 / cs9 / cs12 / cs11", "oneclick": True,
+    {"id": "按函数名取函数体（十三）", "parent": "check_symbols", "lane": "gd16 / cs9 / cs12 / cs11 / cs17", "oneclick": True,
      "cmd": "python3 tools/check_symbols.py",
-     "marks": ["十三、按函数名取函数体", "class _Bodies(dict)", "_body_ask(name, m is not None)", "处按名取用都取到函数体",
+     "marks": ["十三、按函数名取函数体", "class _Bodies(dict)", "_body_ask(name, m is not None, body=m and m.group(0))", "处按名取用都取到函数体",
+               "_miss_why(", "forward_ok=True",
                "from func_body import", "NAMED_FUNCS = {", "支函数都还在登记的文件里",
                '_body_ask(token + "]", at >= 0)', "处按名取用都取到场景节点块", "def body(name):"],
      "expect": "「十三、按函数名取函数体」`✓ _func_body / func_bodies().get / _locate_func 的 N 处按名取用都取到函数体，_node_block 的 M 处按名取用都取到场景节点块`"
                "（N / M = 本脚本「行号 + 名字」去重后的取用处；_node_block 按 `[node name=\"X\"` 取场景节点块，lane cs12 纳入同一本账）。"
                "各节按名取体一律先定位再取体（lane cs9：原先手切的 find / split / 无锚正则 / _static_body 都收进 `_locate_func`，只认行首 `[static ]func 名字(`）；"
+               "取到的只是一行转发（`func X(…):\\n\\t_K.x(self, …)` / 原样传形参给别的函数，判据 `func_body.forward_of`）同样记成取不到（lane cs17）；"
+               "本来就读转发那一行的（顺调用链展开、钉「Main 只许一行转发」）写 `.get(name, …, forward_ok=True)`。"
                "只探有没有这支函数、不想判红的写 `name in func_bodies(src)`（不记账）；本身要跑在变异源码上的契约（`_guild_remap_contract`）一律 `in` 探、缺了记成契约错误「缺 X」，不走 .get 记账（lane cs12）。"
                "+ `✓ 断言点名的 N 支函数都还在登记的文件里（M 个文件，按 (文件, 名字) 认；反向断言 / find 锚 / 存在性探查；NAMED_FUNCS 与本脚本自扫一致）`（lane cs9 / cs11）",
      "fail": "`✗ check_symbols.py:<行> 取函数体 <fn> 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转` = 被读的函数改了名 / 删了 / "
-             "搬走没拼回，或断言里函数名写错；`✗ check_symbols.py:<行> 取场景节点块 [node name=\"X\"] 取不到（节点改名 / 删了 / 挪进子场景）` = 同上、对象是 .tscn 节点（lane cs12）；改前这里给 `\"\"`（手切的还会落到整份文件 / 最后一个字 / 前缀同名的别的函数），"
+             "搬走没拼回，或断言里函数名写错；`✗ check_symbols.py:<行> 取函数体 <fn> 只取到一行转发（→ <目标>），真身不在这份源码里（拆走没拼回 / 该改读拆出件），这处断言在空转` = "
+             "读的那份源码里这支只剩一行转发（Main 拆走一刀、转发到没登记 / 没 preload 的件，或直读 Main.gd / 别的文件时切到转发），改读真身所在的文件（lane cs17）；"
+             "`✗ check_symbols.py:<行> 取场景节点块 [node name=\"X\"] 取不到（节点改名 / 删了 / 挪进子场景）` = 同上、对象是 .tscn 节点（lane cs12）；改前这里给 `\"\"`（手切的还会落到整份文件 / 最后一个字 / 前缀同名的别的函数），"
              "反向断言（`\"X\" not in body`）照样绿；`✗ 断言点名的函数 X 在 <文件> 已无定义，别处还有同名（…）` / `…（scripts/ 下也没有…）` = "
              "反向断言 / find 锚 / 存在性探查点到的函数在登记的文件里改了名、删了或挪到别的文件（lane cs11：同名函数在别的文件还在也红），"
              "断言与 NAMED_FUNCS 跟着改；`✗ NAMED_FUNCS 登记的文件 <文件> 不存在` = 登记路径写错 / 文件挪了目录；"
              "`✗ check_symbols.py:<行> 的断言点到函数 X，没登记进 NAMED_FUNCS` = 新写这类断言没登记。计入 check_symbols 问题、退 1"},
-    {"id": "按函数名取函数体（十一）", "parent": "verify_economy", "lane": "cs14", "oneclick": True,
+    {"id": "按函数名取函数体（十一）", "parent": "verify_economy", "lane": "cs14 / cs17", "oneclick": True,
      "cmd": "python3 tools/verify_economy.py",
-     "marks": ["十一、按函数名取函数体", "from func_body import", "_body_ask(name, m is not None)", "处按名取用都取到函数体"],
+     "marks": ["十一、按函数名取函数体", "from func_body import", "_body_ask(name, m is not None, body=m and m.group(0)", "处按名取用都取到函数体",
+               "_miss_why(", "forward_ok=True"],
      "expect": "「十一、按函数名取函数体」`✓ _locate_func / _gd_body / _gd_fn 的 N 处按名取用都取到函数体`（N = 本脚本「行号 + 函数名」去重后的取用处）。"
                "账本与 `_locate_func` 在 `tools/func_body.py`，与 check_symbols 十三节同一份（lane cs14）；原先手切的 "
                "`src.split(\"func X\", 1)[1].split(\"\\nfunc \", 1)[0]`（有 / 无 `in` 守卫）与 `guild_body` 一律改走 `_locate_func`，"
-               "`_gd_body` / `_gd_fn` 切法不变、取完记同一本账",
+               "`_gd_body` / `_gd_fn` 切法不变、取完记同一本账。取到的只是一行转发同样记成取不到（lane cs17，判据 `func_body.forward_of`）；"
+               "`_on_npc_bribe` 那处本来就读 Main 的转发再顺藤去 NpcPage 取真身，写 `forward_ok=True`",
      "fail": "`✗ verify_economy.py:<行> 取函数体 <fn> 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转` = 被读的函数改了名 / 删了 / 搬走（Main 拆出件没跟着改读哪份），"
              "或断言里函数名写错；改前守卫版给 `\"\"`、`or 整份文件` 兜底，无守卫 split 按前缀认名（`X` 改成 `X_v2` 照样切到它），反向断言照样绿。"
+             "`✗ verify_economy.py:<行> 取函数体 <fn> 只取到一行转发（→ <目标>），…这处断言在空转` = 直读的 Main.gd / 别的文件里这支已拆走、只剩一行转发，"
+             "改读拆出件（去 `main.` 前缀）或真身所在文件（lane cs17；如 main9 把 `_setup_residence` 改读 ResidencePage.setup_residence）。"
              "计入 verify_economy 未通过项、退 1"},
     {"id": "compile 清单自检（inventory）", "parent": "compile", "lane": "ea4", "oneclick": True,
      "cmd": "godot --headless --path . -s res://tools/godot_compile_check.gd",

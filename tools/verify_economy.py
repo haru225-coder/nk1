@@ -15,7 +15,7 @@ ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 # 按函数名取函数体一律经 tools/func_body.py（与 check_symbols 同一份 helper，lane cs14）：取不到给 "" 并记账，
 # 末节「十一、按函数名取函数体」逐条判红——原先取不到静默给 ""，反向断言（"X" not in body）在函数改名 / 搬走时空转变绿。
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from func_body import body_asks as _body_asks, body_ask as _body_ask, locate_func as _locate_func, missed as _body_missed
+from func_body import body_asks as _body_asks, body_ask as _body_ask, locate_func as _locate_func, missed as _body_missed, miss_why as _miss_why
 
 def load(name):
     with open(os.path.join(ROOT, "data", name), encoding="utf-8") as f:
@@ -991,13 +991,13 @@ BRIBE_COST, BRIBE_ATTENTION = 50, 15
 print("\n  市舶关注：见面册疏通、征船名册，钮上写的数 = 按下去扣的数")
 def _src(rel):
     return open(os.path.join(ROOT, rel), encoding="utf-8").read()
-def _gd_body(src, name):  # 体到下一个 func / const / ## 为止；取不到记账（func_body.body_ask）
+def _gd_body(src, name, forward_ok=False):  # 体到下一个 func / const / ## 为止；取不到、只取到一行转发记账（func_body.body_ask）
     m = re.search(rf"^(?:static )?func {name}\(.*?(?=^(?:static )?func |^const |^## |\Z)", src, re.S | re.M)
-    _body_ask(name, m is not None)
+    _body_ask(name, m is not None, body=m and m.group(0), forward_ok=forward_ok)
     return m.group(0) if m else ""
 _npc_src = _src("scripts/ui/NpcPage.gd").replace("main.", "")
 _main_ea9 = _src("scripts/Main.gd")
-_fwd = _gd_body(_main_ea9, "_on_npc_bribe")
+_fwd = _gd_body(_main_ea9, "_on_npc_bribe", forward_ok=True)  # 本来就读转发那一行，下一行顺它去 NpcPage 取真身
 _bribe_fn = _gd_body(_npc_src, "on_npc_bribe") if "_NPC.on_npc_bribe(self, n_name)" in _fwd else _fwd
 _pay = re.findall(r"if GameState\.spend_money\((\d+)\):", _bribe_fn)
 _cut = re.findall(r"GameState\.pu_attention = maxi\(0, GameState\.pu_attention - (\d+)\)", _bribe_fn)
@@ -2034,9 +2034,9 @@ check("interest := GameState.accrue_interest()" in _adv_fn and "【月息】" in
 # 旅店页在 TavernPage（lane main4 拆出，经 main. 取 Main 的常量与方法，去掉前缀即原文）；住处「下处」歇息在 ResidencePage
 # （lane main9 拆出，同样去 main. 前缀即原文），走 HOME_RATE。住处只认拆出件里的 setup_residence：Main 里只剩一行转发，不回落去切 Main。
 # Main 的 INN_RATE 与 simulate_run 算候风成本的 INN_RATE 须是同一个数。
-def _gd_fn(src, name):  # 体到下一个 func / const 为止；取不到记账（func_body.body_ask）
+def _gd_fn(src, name):  # 体到下一个 func / const 为止；取不到、只取到一行转发记账（func_body.body_ask）
     m = re.search(rf"^(?:static )?func {name}\(.*?(?=^(?:static )?func |^const |\Z)", src, re.S | re.M)
-    _body_ask(name, m is not None)
+    _body_ask(name, m is not None, body=m and m.group(0))
     return m.group(0) if m else ""
 def _rest_chips(body):
     """body 里接 _on_rest.bind(...) 的每个 _slip_chip(...) → (钮文日数, 价的日数, 价的费率, bind 实参)；钮文拆不出算式记 None。"""
@@ -2239,11 +2239,11 @@ for n in mk_news:
 
 print()
 print("=" * 68)
-print("十一、按函数名取函数体（lane cs14：取不到判红，与 check_symbols 十三节同一 helper）")
+print("十一、按函数名取函数体（lane cs14 / cs17：取不到、只取到一行转发判红，与 check_symbols 十三节同一 helper）")
 print("=" * 68)
 # 账本来自 tools/func_body.py：_locate_func / _gd_body / _gd_fn 每处取用按「本脚本行号 + 函数名」记一笔。
 for _ln, _name in _body_missed():
-    check(False, f"verify_economy.py:{_ln} 取函数体 {_name} 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转")
+    check(False, _miss_why((_ln, _name), "verify_economy.py"))
 if not _body_missed():
     check(True, f"_locate_func / _gd_body / _gd_fn 的 {len(_body_asks)} 处按名取用都取到函数体")
 
