@@ -78,7 +78,7 @@ data/       港口、货物、船种、章节、职事等 JSON 数据
 scripts/    游戏脚本（core/ 为 autoload 单例：Fleet/Economy/Voyage/…）
 scenes/     场景与 UI
 tools/      七道 Python 静态门禁 + Godot 门禁与探针 + 美术 / 船图管线（art_src/ 为生成原稿，gdignore）
-docs/       复刻设计文档
+docs/       设计文档、台账与门禁说明（索引见 docs/README.md）
 assets/     美术资源
 ```
 
