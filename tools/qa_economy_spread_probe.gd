@@ -4,12 +4,17 @@ extends SceneTree
 ## 扫 杂事 0..3 × 通事 0..3 × 职衔（光杆/都保）× 修埠（0/满）× 行情（地板/1.0/顶）× 全部（港, 货）。
 ## 用法：godot --headless --path . -s res://tools/qa_economy_spread_probe.gd
 ## 输出末行 EA_PROBE fails=N；N>0 时 exit 1。
+## Lane ea2：加 `-- --dump-out <path>` 时先把生产报价逐格落盘，供 Python 镜像逐格对账：
+##   python3 tools/verify_economy.py --prod-dump <path>
 
 var eco: Node
 var crew: Node
 var gs: Node
 var gm: Node
 var fails := 0
+
+## ea2 dump 的行情取点：两端 + 1.0 + 几处非整数（让 int(round) 的 .5 边界有机会露面）
+const DUMP_RATES := [0.4, 0.515, 0.73, 0.815, 1.0, 1.045, 1.37, 1.625, 2.2]
 
 
 func _init() -> void:
@@ -32,6 +37,10 @@ func _run() -> void:
 	var saved_inv: Dictionary = eco.investments.duplicate(true)
 	var saved_rates: Dictionary = eco.rates.duplicate(true)
 
+	var args := OS.get_cmdline_user_args()
+	for i in range(args.size() - 1):
+		if args[i] == "--dump-out":
+			_dump(args[i + 1])
 	_bare_unchanged()
 	_scan_floor()
 	_round_trip()
@@ -177,3 +186,35 @@ func _crew_monotone() -> void:
 	if not ok:
 		_fail("泉州→博多青白瓷利润随职事下降 %s" % str(ladder))
 	print("  %s 泉州→博多青白瓷单件利润随职事不降 %s" % ["✓" if ok else "✗", str(ladder)])
+
+
+## Lane ea2：生产报价逐格落盘。扫 杂事 0..3 × 通事 0..3 × 职衔（光杆/顶档）× 修埠（0/满）× DUMP_RATES × 全部（港, 货）。
+## 每行：pid gid 杂事 通事 职衔档(0|顶=名册末位) 修埠 行情 买价 卖价 抽解基率；打印 EA2_MIRROR_DUMP rows=N。
+func _dump(out_path: String) -> void:
+	var f := FileAccess.open(out_path, FileAccess.WRITE)
+	if f == null:
+		_fail("dump 打不开 " + out_path)
+		return
+	var ranks: Array = gs.title_ranks()
+	var top := ranks.size() - 1
+	var max_inv: int = eco.invest_max_level()
+	var rows := 0
+	for z in range(4):
+		for t in range(4):
+			_set_crew(z, t)
+			for rank in [0, top]:
+				gs.fame = int(ranks[rank].get("min_fame", 0))
+				for inv in [0, max_inv]:
+					for pid in _ports():
+						eco.investments = {pid: inv} if inv > 0 else {}
+						for gid in eco.goods_at(pid):
+							for rate in DUMP_RATES:
+								f.store_line("%s\t%s\t%d\t%d\t%d\t%d\t%.3f\t%d\t%d\t%.4f" % [
+									pid, gid, z, t, rank, inv, rate,
+									eco.price_at_rate(pid, gid, rate, true),
+									eco.price_at_rate(pid, gid, rate, false),
+									eco._base_tariff(pid)])
+								rows += 1
+	f.close()
+	eco.investments = {}
+	print("EA2_MIRROR_DUMP rows=%d -> %s" % [rows, out_path])

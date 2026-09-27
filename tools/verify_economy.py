@@ -33,11 +33,51 @@ def role(pid, gid):
 def unit_value(pid, gid, rate=1.0):
     return goods[gid]["base_value"] * ROLE_MOD[role(pid, gid)] * rate
 
+# 复现 Crew.gd 的交易加成（一之三节另验其余职事）
+def trade_cost(lv):        return max(0.0, 1.0 - 0.12 * lv)
+def interp_edge(lv):       return 0.07 * lv
+## titles.json invest.edge_per_level：修埠压产地价、抬消费地价
+INVEST_EDGE_PER = load("titles.json")["invest"]["edge_per_level"]
+
+def gd_round(x):
+    """GDScript round()：.5 远离零。Python round() 是银行家舍入（66.5 → 66），
+    旧镜像因此与生产差 1 文（lane ea2 对生产 dump 实测光杆价 16/1512 格）。"""
+    return int(math.floor(abs(x) + 0.5)) * (1 if x >= 0 else -1)
+
+def price_core(v, foreign, zashi=0, tongshi=0, title_duty=1.0):
+    """Economy.price_at_rate 的**唯一**镜像：给定共有因子 v，返回未取整的（买, 卖）。
+    运算次序与生产逐行一致（浮点取整边界也对得上）；各节行情/职事/修埠/职衔一律经此，改公式时只改这里。
+    价差地板的裁法：卖价先封顶在「光杆买价 ÷ 地板」，超出的部分改从买价折扣里扣回来；
+    且买、卖两侧都不得劣于光杆——只压卖价的话，雇齐职事反而比光杆赚得少。
+    v=1.0 时即买卖倍率（二之二节倍率层断言用）。"""
+    edge = interp_edge(tongshi) if foreign else 0.0
+    tc = trade_cost(zashi)
+    bare_buy = v * (1.0 + TARIFF)
+    bare_sell = v * (1.0 - BROKER)
+    cap = bare_buy / SPREAD_MIN
+    sell_v = min(v * (1.0 - BROKER * tc * title_duty) * (1.0 + edge), cap)
+    sell_v = max(sell_v, min(bare_sell, cap))
+    buy_v = max(v * (1.0 + TARIFF * tc * title_duty) * (1.0 - edge), sell_v * SPREAD_MIN)
+    return min(buy_v, max(bare_buy, sell_v * SPREAD_MIN)), sell_v
+
+def price_at(pid, gid, is_buy, zashi=0, tongshi=0, title_duty=1.0, inv=0, rate=1.0):
+    """复现 Economy.price_at_rate(pid, gid, rate, is_buy)：职事等级、职衔抽解折、修埠等级显式传入。
+    抽解基率取 TARIFF（忠宋港、未站蒲家；战况倍率不在此镜像）。"""
+    r = role(pid, gid)
+    v = goods[gid]["base_value"] * ROLE_MOD.get(r, 1.0) * rate
+    ie = INVEST_EDGE_PER * inv
+    if r == "origin":
+        v *= (1.0 - ie)
+    elif r == "consumer":
+        v *= (1.0 + ie)
+    b, s = price_core(v, pid in FOREIGN_PORTS, zashi, tongshi, title_duty)
+    return gd_round(b if is_buy else s)
+
 def buy_price(pid, gid, rate=1.0):
-    return round(unit_value(pid, gid, rate) * (1 + TARIFF))
+    return price_at(pid, gid, True, rate=rate)
 
 def sell_price(pid, gid, rate=1.0):
-    return round(unit_value(pid, gid, rate) * (1 - BROKER))
+    return price_at(pid, gid, False, rate=rate)
 
 lanes = load("sealanes.json").get("lanes", {})
 
@@ -282,12 +322,10 @@ crew = load("crew.json")
 roles = {r["id"]: r for r in crew["roles"]}
 cands = crew["candidates"]
 
-# 复现 Crew.gd 的加成公式
+# 复现 Crew.gd 的加成公式（trade_cost / interp_edge 在文件头，与定价镜像同处）
 def speed_factor(lv):      return 1.0 + 0.06 * lv
 def wind_floor(lv):        return 0.40 + 0.05 * lv
 def cargo_loss(lv):        return max(0.0, 1.0 - 0.17 * lv)
-def trade_cost(lv):        return max(0.0, 1.0 - 0.12 * lv)
-def interp_edge(lv):       return 0.07 * lv
 def crew_loss(lv):         return max(0.0, 1.0 - 0.23 * lv)
 
 MAXLV = 3
@@ -309,27 +347,13 @@ print(f"\n  各职事可得的最高等级：{ {roles[r]['name']: v for r, v in 
 
 # 满编后的核心商路利润膨胀幅度
 def price_muls(is_foreign, zashi, tongshi):
-    """复现 Economy.price_at_rate 的买卖两个倍率（已除去共有因子 v）。改公式时这里必须同步。
-    价差地板的裁法：卖价先封顶在「光杆买价 ÷ 地板」，超出的部分改从买价折扣里扣回来；
-    且买、卖两侧都不得劣于光杆——只压卖价的话，雇齐职事反而比光杆赚得少。"""
-    edge = interp_edge(tongshi) if is_foreign else 0.0
-    bare_buy = 1.0 + TARIFF
-    bare_sell = 1.0 - BROKER
-    cap = bare_buy / SPREAD_MIN
-    sell_m = min((1.0 - BROKER * trade_cost(zashi)) * (1 + edge), cap)
-    sell_m = max(sell_m, min(bare_sell, cap))
-    buy_m = max((1 + TARIFF * trade_cost(zashi)) * (1 - edge), sell_m * SPREAD_MIN)
-    return min(buy_m, max(bare_buy, sell_m * SPREAD_MIN)), sell_m
-
-def price_with_crew(pid, gid, is_buy, zashi=0, tongshi=0, rate=1.0):
-    v = goods[gid]["base_value"] * ROLE_MOD[role(pid, gid)] * rate
-    bm, sm = price_muls(pid in FOREIGN_PORTS, zashi, tongshi)
-    return round(v * (bm if is_buy else sm))
+    """买卖两个倍率（已除去共有因子 v）＝ price_core(1.0, …)，不另立公式。"""
+    return price_core(1.0, is_foreign, zashi, tongshi)
 
 gid = "qingbai_porcelain"
 bare = sell_price("hakata", gid) - buy_price("quanzhou", gid)
-full = (price_with_crew("hakata", gid, False, best_lv.get("zashi",0), best_lv.get("tongshi",0))
-        - price_with_crew("quanzhou", gid, True, best_lv.get("zashi",0), best_lv.get("tongshi",0)))
+full = (price_at("hakata", gid, False, best_lv.get("zashi",0), best_lv.get("tongshi",0))
+        - price_at("quanzhou", gid, True, best_lv.get("zashi",0), best_lv.get("tongshi",0)))
 infl = (full / bare - 1) * 100 if bare else 0
 print(f"  泉州→博多 青白瓷单件利润：无职事 {bare} → 满编 {full}（+{infl:.0f}%）")
 check(infl < 60, f"满编职事使核心商路利润膨胀 {infl:.0f}%，未失控（阈值 60%）")
@@ -467,9 +491,9 @@ MAX_Z = best_lv.get("zashi", 0)
 MAX_T = best_lv.get("tongshi", 0)
 
 def same_port_pair(pid, gid, zashi, tongshi, rate=1.0):
-    """复现 Economy.price_at_rate 的同港买卖两价。改公式时这里必须同步。"""
-    return (price_with_crew(pid, gid, True, zashi, tongshi),
-            price_with_crew(pid, gid, False, zashi, tongshi))
+    """同港买卖两价（经 price_at，不另立公式）。"""
+    return (price_at(pid, gid, True, zashi, tongshi, rate=rate),
+            price_at(pid, gid, False, zashi, tongshi, rate=rate))
 
 inverted = []
 for pid in ports:
@@ -517,8 +541,8 @@ check(not thin,
 _gid = "qingbai_porcelain"
 ladder = []
 for z, t in ((0, 0), (min(2, MAX_Z), min(2, MAX_T)), (MAX_Z, MAX_T)):
-    _b = price_with_crew("quanzhou", _gid, True, z, t)
-    _s = price_with_crew("hakata", _gid, False, z, t)
+    _b = price_at("quanzhou", _gid, True, z, t)
+    _s = price_at("hakata", _gid, False, z, t)
     ladder.append((z, t, _s - _b))
 print("  泉州→博多 青白瓷单件利润随职事递进："
       + " → ".join(f"杂{z}通{t} {p}" for z, t, p in ladder))
@@ -541,7 +565,7 @@ def sell_revenue(pid, gid, amount, rate=1.0):
     depth = ports[pid]["depth"]
     total, r = 0, rate
     for _ in range(amount):
-        total += round(unit_value(pid, gid, r) * (1 - BROKER))
+        total += sell_price(pid, gid, r)
         r = max(0.4, min(2.2, r - 1.0/depth))
     return total
 
@@ -1136,44 +1160,29 @@ check(sum(costs) < 80000, f"单港修满 {sum(costs)} < 了结本钱 80000")
 check(edge_per * max_lv <= 0.15, f"满级修埠价沿 {edge_per*max_lv:.3f} ≤ 0.15")
 check(0 < depth_per * max_lv <= 0.80, f"满级深度 +{depth_per*max_lv*100:.0f}% 只加深不改角色")
 
-FOREIGN = {"hakata", "kagoshima", "jeju", "champa"}
 max_title = ranks[-1]["duty_factor"]
 max_zashi = best_lv.get("zashi", 0)
 max_tong = best_lv.get("tongshi", 0)
+check(edge_per == INVEST_EDGE_PER, f"定价镜像的修埠价沿取同一份 titles.json（{INVEST_EDGE_PER}）")
 
-def stacked_price(pid, gid, is_buy, zashi=0, tongshi=0, title_duty=1.0, inv=0, rate=1.0):
-    r = role(pid, gid)
-    if not r:
-        return None
-    v = goods[gid]["base_value"] * ROLE_MOD[r] * rate
-    ie = inv * edge_per
-    if r == "origin":
-        v *= (1.0 - ie)
-    elif r == "consumer":
-        v *= (1.0 + ie)
-    tc = trade_cost(zashi)
-    ie_t = interp_edge(tongshi) if pid in FOREIGN else 0.0
-    if is_buy:
-        return round(v * (1 + TARIFF * tc * title_duty) * (1 - ie_t))
-    return round(v * (1 - BROKER * tc * title_duty) * (1 + ie_t))
-
+# Lane ea2：本节原有自带的 stacked_price 镜像，不含同港价差地板（与二之二节、与生产都不同式），
+# 故只敢扫「不通事」——带通事一扫必倒挂。现统一经 price_at（含地板），通事 0..满级一并扫。
 local_arb = []
 for pid, p in ports.items():
     for gid in p.get("market", {}):
-        b = stacked_price(pid, gid, True, max_zashi, 0, max_title, max_lv)
-        s = stacked_price(pid, gid, False, max_zashi, 0, max_title, max_lv)
-        if b is None or s is None:
-            continue
-        if s > b:
-            local_arb.append(f"{p.get('name', pid)}/{gid} 卖{s}>买{b}")
+        for t in range(max_tong + 1):
+            b = price_at(pid, gid, True, max_zashi, t, max_title, max_lv)
+            s = price_at(pid, gid, False, max_zashi, t, max_title, max_lv)
+            if s > b:
+                local_arb.append(f"{p.get('name', pid)}/{gid} 通事{t} 卖{s}>买{b}")
 check(not local_arb,
-      f"满修埠+满职衔+满杂事、不通事时同港无正套利（违例 {local_arb[:3] or '无'}）")
+      f"满修埠+满职衔+满杂事、通事 0..{max_tong} 级时同港无正套利（违例 {local_arb[:3] or '无'}）")
 
 gid = "qingbai_porcelain"
 bare = sell_price("hakata", gid) - buy_price("quanzhou", gid)
 full_crew_title_inv = (
-    stacked_price("hakata", gid, False, max_zashi, max_tong, max_title, max_lv)
-    - stacked_price("quanzhou", gid, True, max_zashi, 0, max_title, max_lv)
+    price_at("hakata", gid, False, max_zashi, max_tong, max_title, max_lv)
+    - price_at("quanzhou", gid, True, max_zashi, max_tong, max_title, max_lv)
 )
 infl_all = (full_crew_title_inv / bare - 1) * 100 if bare else 0
 print(f"  泉州→博多 青白瓷：裸价差 {bare} → 满编+都保+满修埠 {full_crew_title_inv}（+{infl_all:.0f}%）")
@@ -1996,7 +2005,7 @@ for n in mk_news:
         for r0 in (0.85, 1.0, 1.15, RATE_MIN_E, RATE_MAX_E):
             r1 = min(RATE_MAX_E, max(RATE_MIN_E, r0 * mul))
             worst.append(r1)
-            b, sl = price_with_crew(pid, gid, True, 0, 0, r1), price_with_crew(pid, gid, False, 0, 0, r1)
+            b, sl = price_at(pid, gid, True, rate=r1), price_at(pid, gid, False, rate=r1)
             check(RATE_MIN_E <= r1 <= RATE_MAX_E and 0 < sl <= b,
                   f"{n['id']}@{pid} 起价率 {r0:.2f} → {r1:.3f}：在带内，买 {b} ≥ 卖 {sl} > 0")
         # 最坏：从开局扰动下沿砸下去，60 日后须回到 1.0 的 5% 以内
@@ -2005,7 +2014,7 @@ for n in mk_news:
         for _ in range(60):
             r = r + (1.0 - r) * RECOVERY_E
         print(f"  {n['id']} @ {ports[pid]['name']} {goods[gid]['name']}×{mul}："
-              f"买价 {price_with_crew(pid, gid, True, 0, 0, 1.0)} → {price_with_crew(pid, gid, True, 0, 0, r_start)}，60 日后率 {r:.3f}")
+              f"买价 {price_at(pid, gid, True, rate=1.0)} → {price_at(pid, gid, True, rate=r_start)}，60 日后率 {r:.3f}")
         check(abs(1.0 - r) < 0.05, f"{n['id']}@{pid} 冲击 60 日后回到 1.0±5%（{r:.3f}）——可逆，不打坏价带")
 
 print()
@@ -2087,6 +2096,89 @@ for n in mk_news:
     twice = min(RATE_MAX_E, max(RATE_MIN_E, expected * mul)) if targets else expected
     check(not math.isclose(twice, expected),
           f"{n['id']}：重复乘法会产生不同结果，故接线必须保持单次消费")
+
+
+# ── 以下两节只在显式开关下跑，不带开关时本门禁输出与判据不变 ──
+if "--prod-dump" in sys.argv[1:]:
+    print()
+    print("=" * 68)
+    print("附一、镜像对生产逐格对账（lane ea2；dump 由 tools/qa_economy_spread_probe.gd -- --dump-out 产出）")
+    print("=" * 68)
+    _dump = sys.argv[sys.argv.index("--prod-dump") + 1]
+    _ranks = sorted(titles_doc["ranks"], key=lambda r: r["min_fame"])
+    _n, _bad, _tariff_off, _ex = 0, 0, 0, []
+    with open(_dump, encoding="utf-8") as _f:
+        for _line in _f:
+            pid, gid, z, t, rk, inv, rate, b, sl, tb = _line.rstrip("\n").split("\t")
+            _n += 1
+            if abs(float(tb) - TARIFF) > 1e-9:  # 战况/站蒲家改了抽解基率：镜像不管这一格
+                _tariff_off += 1
+                continue
+            z, t, rk, inv, rate = int(z), int(t), int(rk), int(inv), float(rate)
+            duty = _ranks[rk]["duty_factor"]
+            got = (price_at(pid, gid, True, z, t, duty, inv, rate),
+                   price_at(pid, gid, False, z, t, duty, inv, rate))
+            if got != (int(b), int(sl)):
+                _bad += 1
+                if len(_ex) < 3:
+                    _ex.append(f"{pid}/{gid} 杂{z}通{t} 职衔档{rk} 修埠{inv} 行情{rate} 镜像{got} 生产{(int(b), int(sl))}")
+    print(f"  dump {_n} 格（抽解基率非 {TARIFF} 跳过 {_tariff_off}）")
+    check(_n > 0 and _tariff_off < _n, f"对账样本非空（{_n - _tariff_off} 格）")
+    check(_bad == 0, f"price_at 与生产 Economy.price_at_rate 逐格一致（不符 {_bad}{'；例 ' + '；'.join(_ex) if _ex else ''}）")
+
+if "--tongshi-table" in sys.argv[1:]:
+    print()
+    print("=" * 68)
+    print("附二、通事收益敏感性表（lane ea2；只出数据，不判红绿）")
+    print("=" * 68)
+    print("  口径：行情 1.0、散商、未修埠、无杂事；价格经 price_at（＝生产含地板式）。")
+    print("  「B 只压买价」为假设式（非生产）：卖价不吃通事，买价 = max(光杆买价×(1−议价), 光杆卖价×地板)。")
+    print("  回本件数 = ⌈月俸 ÷ 单件溢价⌉；溢价 ≤ 0 记「—」。")
+    TS_WAGE = 200
+    wage_of = {}
+    for c in cands:
+        if c["role"] == "tongshi":
+            wage_of[c["level"]] = min(wage_of.get(c["level"], 10**9), c["wage"])
+    TS_ROUTES = [
+        ("quanzhou", "hakata", "qingbai_porcelain"),
+        ("quanzhou", "jeju", "silk_fabric"),
+        ("hakata", "quanzhou", "japanese_copper"),
+        ("jeju", "quanzhou", "korean_ginseng"),
+        ("champa", "hakata", "ivory"),
+    ]
+    def _b_only(pid, gid, is_buy, t):
+        v = unit_value(pid, gid)
+        sb = price_core(v, pid in FOREIGN_PORTS, 0, 0)[1]
+        if not is_buy:
+            return gd_round(sb)
+        edge = interp_edge(t) if pid in FOREIGN_PORTS else 0.0
+        return gd_round(max(v * (1.0 + TARIFF) * (1.0 - edge), sb * SPREAD_MIN))
+    cap_sampan = ships["sampan"]["capacity"]
+    print()
+    print("| 航线 · 货 | 通事 | 买价 | 卖价 | 单件利润 | 溢价/件 | 溢价 % | 回本件数@200 | 回本件数@实俸 | B 利润 | B 溢价 % | B 回本@200 |")
+    print("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for src, dst, gid in TS_ROUTES:
+        name = f"{ports[src]['name']}→{ports[dst]['name']} {goods[gid]['name']}"
+        base_p = price_at(dst, gid, False) - price_at(src, gid, True)
+        base_b = _b_only(dst, gid, False, 0) - _b_only(src, gid, True, 0)
+        for t in range(4):
+            bp, sp = price_at(src, gid, True, 0, t), price_at(dst, gid, False, 0, t)
+            prof = sp - bp
+            d = prof - base_p
+            pb = _b_only(dst, gid, False, t) - _b_only(src, gid, True, t)
+            db = pb - base_b
+            wage = wage_of.get(t, 0)
+            back = lambda w, dd: "—" if t == 0 else (f"{math.ceil(w / dd)}" if dd > 0 else "—")
+            print(f"| {name if t == 0 else ''} | {t}{'（俸 ' + str(wage) + '）' if t else ''} | {bp} | {sp} | {prof} | {d:+d} | "
+                  f"{d / base_p * 100:+.1f}% | {back(TS_WAGE, d)} | {back(wage, d)} | {pb} | {db / base_b * 100:+.1f}% | {back(TS_WAGE, db)} |")
+    print()
+    _mz = best_lv.get("zashi", 0)
+    for src, dst, gid in TS_ROUTES:
+        lad = [price_at(dst, gid, False, _mz, t) - price_at(src, gid, True, _mz, t) for t in range(4)]
+        print(f"  杂事 {_mz} 级时 {ports[src]['name']}→{ports[dst]['name']} {goods[gid]['name']}"
+              f" 通事 0→3 单件利润 {lad}")
+    print(f"  参照：小艍船舱位 {cap_sampan} 料；青白瓷每件 {goods['qingbai_porcelain']['bulk']} 料 → 满舱约 "
+          f"{int(cap_sampan / goods['qingbai_porcelain']['bulk'])} 件（未扣水粮）。")
 
 print()
 print("=" * 68)
