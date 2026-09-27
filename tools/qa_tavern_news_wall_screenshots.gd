@@ -6,7 +6,7 @@ extends SceneTree
 ## 默认严格须出 2 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2i(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/tavern"
+var OUT_DIR := ShotGate.out_dir("tavern")
 const TAG := "QA_TAVERN_NEWS_WALL"
 const EXPECTED_SHOTS := 2
 const ShotGate := preload("res://tools/shot_gate.gd")

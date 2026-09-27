@@ -5,7 +5,7 @@
 ## 截图落 /workspace/nk1-qa-shots/vision-fill/（绝对路径，不进仓库）。另验序列帧与角花节点都在场。
 extends SceneTree
 
-const OUT_DIR := "/workspace/nk1-qa-shots/vision-fill"
+var OUT_DIR := ShotGate.out_dir("vision-fill")
 const STAGE := "res://scenes/vision/VisionStage.tscn"
 const TAG := "vision_fill_shots"
 const EXPECTED_SHOTS := 4

@@ -34,10 +34,10 @@
 
 ## 验证
 ```
+godot --headless --import --path .   # 导入步骤：刷新缓存、不判红绿，先跑（docs/GATES.md §三.9）
 python3 tools/check_symbols.py && python3 tools/verify_economy.py && python3 tools/simulate_run.py \
  && python3 tools/verify_coastline.py && python3 tools/check_assets.py \
  && python3 tools/verify_story_data.py && python3 tools/simulate_endgame.py
-godot --headless --editor --path . --quit
 godot --headless --path . -s res://tools/godot_smoke.gd
 godot --headless --path . -s res://tools/godot_compile_check.gd
 godot --headless --path . -s res://tools/godot_story_check.gd

@@ -20,7 +20,7 @@
 | 6 | verify_story_data | Python | 必跑 | ✓ | `python3 tools/verify_story_data.py` | `python3 tools/verify_story_data.py --json` | news / scenes effects / npcs / 结局年号 / 人物原稿与上屏字段：数据里写的键代码必须接住 | 一行统计 + `结果：全部通过`（**过了不逐条打印**） | `FAIL: …` 行；`结果：N 项失败` |
 | 7 | simulate_endgame | Python | 必跑 | ✓ | `python3 tools/simulate_endgame.py` | `python3 tools/simulate_endgame.py --json` | 1268 后终局：身份判定、守城胜率、崖山门槛、窗口宽度、「花钱买过关」；比对 GameState/Main 常量 | `结果：全部通过　—— 终局窗口够宽…` | `✗` 行 + `FAIL:` 复述；`结果：N 项失败`；常量找不到时 `AssertionError` 崩（无 FAIL 行） |
 | 8 | verify_save_robustness | Python | 加跑：动 SaveLoad / 存档 | — | `python3 tools/verify_save_robustness.py [--source X.gd]` | `python3 tools/verify_save_robustness.py [--source X.gd] --json` | （lane t2）SaveLoad 守卫存在性与顺序 + 源码驱动模型跑坏档/好档/槽态 fixture + 变异自检 | `结果：全部通过`；可能有 `⚠ 未体检的强类型字段（不计失败）` | `✗` 行；`结果：N 项问题` |
-| 9 | editor | Godot | 必跑 | ✓ | `godot --headless --editor --path . --quit` | `python3 tools/gate_json.py --godot editor` | 工程能打开、资源导入缓存（`.godot/`、`*.import`）刷新 | exit 0，只有进度条 | exit 非 0（**注意：脚本语法错它照样 exit 0，见 §三.9**） |
+| 9 | import | Godot | 必跑·步骤（不判红绿） | ✓ | `godot --headless --import --path .` | `python3 tools/gate_json.py --godot import` | 刷新资源导入缓存（`.godot/`、`*.import`）；须先于 check_assets 与 Godot 门禁跑 | exit 0，只有进度条 | **无红长相**（不判红绿） |
 | 10 | smoke | Godot | 必跑 | ✓ | `godot --headless --path . -s res://tools/godot_smoke.gd` | `python3 tools/gate_json.py --godot smoke` | autoload 起得来、章节/旗标/结局按数据走、headless 零延迟旁路 | `GODOT SMOKE PASS` | `✗` 行；`GODOT SMOKE FAIL` + 复述 |
 | 11 | compile | Godot | 必跑 | ✓ | `godot --headless --path . -s res://tools/godot_compile_check.gd` | `python3 tools/gate_json.py --godot compile` | 清单脚本 `load()` + `can_instantiate()`；场景解析（lane m2：ext_resource / 子资源 / 脚本坏）；守护清单 | `COMPILE_CHECK SUMMARY bad=0/N` | `COMPILE_CHECK FAIL …` 行；`bad=k/N` |
 | 12 | story | Godot | 必跑 | ✓ | `godot --headless --path . -s res://tools/godot_story_check.gd` | `python3 tools/gate_json.py --godot story` | 新闻按月投放不重复、1268 身份结算恰一次、存档 round-trip、真机抵港路由 | `STORY_CHECK SUMMARY fails=0` | `STORY_CHECK FAIL …`；`fails=k` |
@@ -32,7 +32,7 @@
 | 18 | save_migrate_probe | Godot | 加跑：动存档结构 / save_schema | — | `godot --headless --path . -s res://tools/save_migrate_probe.gd` | `python3 tools/gate_json.py --godot save_migrate_probe` | （lane sv）v1 老档读入补字段、回写 v2、原件留 .v1；未来档明确拒读、不退副抄、文件不动 | `SAVE_MIGRATE_PROBE PASS` | `✗` 行；`SAVE_MIGRATE_PROBE FAIL fails=k`；输出含 `SCRIPT ERROR` 即算失败 |
 | 19 | gates_md | Python | 加跑：动门禁清单 / docs/GATES.md | — | `python3 tools/gates_md.py` | `python3 tools/gates_md.py --json` | （lane gd3 / gd4）本注册表 vs docs/GATES.md §一、§四逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；附属自检的开关还在源码里；§三 小节编号与一键跑命令对得上 | `结果：全部通过` | `✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write` |
 
-「七道 Python + editor/smoke/compile/story/p7/patrol」是每轮必跑的十三道（`.claude/todo.md` 验证段）；8、15、16、17、18、19 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「七道 Python + smoke/compile/story/p7/patrol」十二道门禁；8、15、16、17、18、19 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（4 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -76,7 +76,7 @@
 
 | 脚本 | 本地命令 | `--json` | 为什么不算 |
 |---|---|---|---|
-| `tools/verify_narrative.py` | `python3 tools/verify_narrative.py` | `python3 tools/gate_json.py tools/verify_narrative.py` | P7 剧情闭环旧静态门禁，当前 main 上本来就红（开局链 monk / borrow_ceiling 等旧契约），长期红、未列入必跑；修契约还是挪 `tools/legacy/` 待 lane gd2 拍板 |
+| `tools/legacy/verify_narrative.py` | `python3 tools/legacy/verify_narrative.py` | `python3 tools/gate_json.py tools/legacy/verify_narrative.py` | （lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖 |
 | `tools/p7_smoke.gd` | `godot --headless --path . -s res://tools/p7_smoke.gd` | `python3 tools/gate_json.py --godot p7_smoke` | 旧 P7 冒烟，`borrow_ceiling` 一带早已失配，干净 worktree 也红（lane l1 已记）；P7 行会 / 贡院由 p7（`p7_guild_exam_smoke.gd`）接管 |
 | 其余 `tools/qa_*_probe.gd` / `*_probe.gd` 专项探针（未接 shot_gate 的） | 见各脚本头注释 | — | 各 lane 的专项探针，只在对应 lane 里跑；要升格为门禁就进 `tools/gate_json.py` 注册表 |
 <!-- GATES:END -->
@@ -146,7 +146,8 @@ mkdir -p /tmp/gates
 for g in check_symbols verify_economy simulate_run verify_coastline check_assets verify_story_data simulate_endgame; do
   python3 tools/$g.py --json > /tmp/gates/$g.json
 done
-for g in editor smoke compile story p7; do python3 tools/gate_json.py --godot $g > /tmp/gates/$g.json; done
+python3 tools/gate_json.py --godot import > /tmp/gates/import.json   # 导入步骤，先跑、不判红绿
+for g in smoke compile story p7; do python3 tools/gate_json.py --godot $g > /tmp/gates/$g.json; done
 DISPLAY=:2 python3 tools/gate_json.py --godot patrol > /tmp/gates/patrol.json
 python3 -c "import json,glob;[print(f'{d[\"gate\"]:24}',d['ok'],d['counts']) for d in map(lambda p: json.load(open(p)), sorted(glob.glob('/tmp/gates/*.json')))]"
 ```
@@ -156,10 +157,10 @@ python3 -c "import json,glob;[print(f'{d[\"gate\"]:24}',d['ok'],d['counts']) for
 一键人读全跑（与 `.claude/todo.md` 验证段一致）：
 
 ```sh
+godot --headless --import --path .
 python3 tools/check_symbols.py && python3 tools/verify_economy.py && python3 tools/simulate_run.py \
  && python3 tools/verify_coastline.py && python3 tools/check_assets.py \
  && python3 tools/verify_story_data.py && python3 tools/simulate_endgame.py
-godot --headless --editor --path . --quit
 godot --headless --path . -s res://tools/godot_smoke.gd
 godot --headless --path . -s res://tools/godot_compile_check.gd
 godot --headless --path . -s res://tools/godot_story_check.gd
@@ -188,7 +189,7 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 
 ### 5. check_assets
 - 读：绿时只有一行统计；红时每条 `FAIL: … 文件不存在` / `缺 .import`。
-- 常见红因：代码引用了还没入库的图；新图没跑过 editor 导入（缺 `.import`，先跑 §9）；挪 / 改名资产没改前缀拼接表。
+- 常见红因：代码引用了还没入库的图；新图没跑过导入步骤（缺 `.import`，先跑 §9）；图坏导入失败则 `.import` 记 `valid=false`，本道判红；挪 / 改名资产没改前缀拼接表。
 
 ### 6. verify_story_data
 - 读：绿时一行统计（结局年号对照 / scenes / news / npcs …）；红时 `FAIL: …`。
@@ -202,10 +203,23 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 - 读：`一、SaveLoad 源码契约` → fixture 模型 → 变异自检（每个变体都应「判红」）；`⚠` 行不计失败。
 - 常见红因：改 `SaveLoad.gd` 守卫顺序 / 函数名而没同步本脚本的抽取规则；新增强类型字段未进 `_check_partitions`（先以 `⚠` 提示）。`--source X.gd` 可对历史版本自证。
 
-### 9. editor
-- 读：只看退出码；输出是导入进度条。
-- **它不判脚本语法**：本轮实测给 `scripts/FloatingText.gd` 塞语法错，`--editor --quit` 仍 exit 0 且不打任何 ERROR；语法 / 场景解析靠 §11 compile。它的作用是刷新 `.godot/` 导入缓存（新资产、新 `class_name` 后先跑它，check_assets 的 `.import` 也靠它）。
-- 常见红因：工程文件损坏、`project.godot` 写坏。
+### 9. import（导入步骤，lane gd2 由 editor 降级，不判红绿）
+- 命令：`godot --headless --import --path .`（Godot 4.6.3 的 `--import`：起编辑器、等资源导入完再退）。旧写法 `--headless --editor --path . --quit` 实测等价（下表两列逐项相同，新图同样生成 `.import`），仍可用；`gate_json.py --godot editor` 保留为旧名。一键跑里排第一条。
+- **为什么不算门禁**（lane gd2 在干净 worktree 逐项注入故障实测；格内为 退出码 / `ERROR` 行数 / `SCRIPT ERROR` 行数）：
+
+  | 注入的故障 | `--editor --quit` | `--import` | 谁判红 |
+  |---|---|---|---|
+  | 普通脚本语法错（`scripts/FloatingText.gd`） | 0 / 0 / 0 | 0 / 0 / 0 | 11 compile rc=1（`bad=2/79`：脚本 + 挂它的场景） |
+  | autoload 脚本语法错（`GameManager.gd`） | 0 / 23 / 18 | 0 / 23 / 18 | 11 compile rc=1 |
+  | `class_name` 脚本语法错（`UiTheme.gd`） | 0 / 324 / 322 | 0 / 324 / 322 | 11 compile rc=1 |
+  | 主场景 `ext_resource` 写坏（`Main.tscn`） | 0 / 4 / 0 | 0 / 2 / 0 | 11 compile rc=1 |
+  | `project.godot` 写坏 | 0 / 2 / 0 | 0 / 2 / 0 | 11 compile rc=1 |
+  | 图片坏（随机字节 `.png`） | 0 / 3 / 0 | 0 / 3 / 0 | 5 check_assets rc=1（`.import` 记 `valid=false`） |
+  | 无故障 | 0 / 0 / 0 | 0 / 0 / 0 | — |
+
+  两种写法**六类故障全 exit 0**；改用 `--import` 再 grep `SCRIPT ERROR` 也兜不住第一行（普通脚本语法错一行 ERROR 都不打），而它 grep 得到的五类 compile / check_assets 已经判红。所以既不当门禁、也不加 grep 壳，只当导入步骤（注册表 `tier: step`）。
+- 必须跑、且先跑：它刷新 `.godot/` 导入缓存与 `*.import`（新资产、新 `class_name` 后尤甚），5 check_assets 的 `.import` 检查与 10–18 的 Godot 门禁都依赖它。输出里的 `ERROR:` 行可作线索，判红绿看 compile / check_assets。
+- 副作用：可能改写被跟踪的 `*.import`，提交前看 `git status`，别把导入噪声混进本 lane。
 
 ### 10. smoke
 - 读：`✓/✗` 行，末行 `GODOT SMOKE PASS/FAIL`，FAIL 后复述。
@@ -232,7 +246,7 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 ### 15. 截图门禁（shot_gate.gd + 截图探针）
 - 读：`<TAG>_OK shots=n/n -> 目录`；红时先列 `✗ 真失败：…`，再 `<TAG>_FAIL k（shots=…）`。
 - headless 不加 `-- --contract` **必红**（`_FAIL headless …此为环境不具备，不是画面回归`）——这是设计，不是回归。只验契约：`godot --headless … -- --contract` → `<TAG>_CONTRACT_OK`。
-- 注意：截图落在**绝对路径** `/workspace/nk1-qa-shots/…`，任何 worktree 里跑都会覆盖同一批证据图。
+- 输出目录（lane gd2）：默认 `/workspace/nk1-qa-shots/<子目录>`（§一明细表「截图目录」列）；设 `NK1_SHOT_DIR=<目录>` 则整体改落 `<目录>/<子目录>`（相对路径按 `$PWD` 展开）。**worktree / 自测一律设它**，否则会覆盖共享证据图：`NK1_SHOT_DIR=/tmp/<lane>-shots DISPLAY=:2 godot --path . -s res://tools/vision_stage_probe.gd`。脚本里统一写 `var OUT_DIR := ShotGate.out_dir("<子目录>")`，新探针别再写死绝对路径（gates_md 按这个写法读目录）。
 - 常见红因：空视口 / 一色图（窗口没真正绘制）；张数不足。`vision_letterbox_probe` 旧有的「出战合拢时画面中线未全黑（v=0.302）」偶发红不是时序：布景是真海战，约 8–10 s 旗舰被击沉、WorldMap 自起出战墨边顶掉探针那副（lane pg 已冻住布景；再现时会先报「布景海战在墨边演示中自行结算」）。
 
 ### 16. save_robust_probe
@@ -259,7 +273,8 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑十三道（= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑十三条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
 python3 tools/simulate_run.py
@@ -267,7 +282,6 @@ python3 tools/verify_coastline.py
 python3 tools/check_assets.py
 python3 tools/verify_story_data.py
 python3 tools/simulate_endgame.py
-godot --headless --editor --path . --quit
 godot --headless --path . -s res://tools/godot_smoke.gd
 godot --headless --path . -s res://tools/godot_compile_check.gd
 godot --headless --path . -s res://tools/godot_story_check.gd

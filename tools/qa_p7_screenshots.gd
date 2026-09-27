@@ -7,7 +7,7 @@ extends SceneTree
 ##   只验按钮与 flag 写入，不截图，收尾打 QA_P7_SHOTS_CONTRACT_OK。
 
 const VIEW := Vector2(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/polish"
+var OUT_DIR := ShotGate.out_dir("polish")
 const TAG := "QA_P7_SHOTS"
 const EXPECTED_SHOTS := 8
 const ShotGate := preload("res://tools/shot_gate.gd")

@@ -13,7 +13,7 @@ const TAG := "QA_CHART_HUD"
 const EXPECTED_SHOTS := 5
 const ShotGate := preload("res://tools/shot_gate.gd")
 
-var _out_dir := "/workspace/nk1-qa-shots/chart"
+var _out_dir := ShotGate.out_dir("chart")
 var _chart: Node
 var _saved: Array = []
 var _fails: Array = []

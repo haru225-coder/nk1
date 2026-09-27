@@ -6,7 +6,7 @@ extends SceneTree
 ## 本脚本不写任何游戏状态，只在末了 quit。
 
 const VIEW := Vector2(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/chars"
+var OUT_DIR := ShotGate.out_dir("chars")
 const TAG := "QA_CHARS_SHOTS"
 const EXPECTED_SHOTS := 10
 const ShotGate := preload("res://tools/shot_gate.gd")

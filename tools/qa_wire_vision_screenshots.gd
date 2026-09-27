@@ -7,7 +7,7 @@ extends SceneTree
 ##   只验接线符号与题签静态契约，不截图。
 
 const VIEW := Vector2i(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/wire"
+var OUT_DIR := ShotGate.out_dir("wire")
 const STAGE := "res://scenes/vision/VisionStage.tscn"
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const TAG := "QA_WIRE_VISION"

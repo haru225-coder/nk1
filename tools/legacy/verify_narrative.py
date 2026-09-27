@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """P7 剧情闭环的静态门禁。不启动 Godot。
 
+【留档，不是门禁】（lane gd2 挪入 tools/legacy/）绑定云端 21ce 的 P7 平行实现（borrow_ceiling / _discovery_extra /
+seen_scenes / 开局链截断 monk / 删 chapter 臂），主干未收该实现（docs/云端优先合并台账_2026-09-25.md 第 14 行）。
+主干上恒红 23 项，属预期；其中仍成立的「效果键必须接住」由 tools/verify_story_data.py 覆盖。
+
 开局链的判定按任务书 §3.1，不按 §8.3 第一句的字面「剩余场必须 legacy」。
 序章 cg_* 与两条 path_start 必须留在开局链上，不能标成 legacy。
 §8.3 的可执行条件是：开局链不得再走到 monk，其余不可达草稿必须带 legacy 或 deprecated。
 """
 import json, os, re, sys, pathlib
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+ROOT = pathlib.Path(__file__).resolve().parents[2]
 fails = []
 
 def check(cond, msg):

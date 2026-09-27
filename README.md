@@ -39,7 +39,7 @@ python3 tools/verify_story_data.py  # 剧情效果键白名单、存档字段对
 python3 tools/simulate_endgame.py   # 跳年 / 终局窗口 / 守城数值
 
 # 六道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
-godot --headless --editor --path . --quit
+godot --headless --import --path .                               # 导入步骤：刷新缓存、不判红绿（docs/GATES.md §三.9）
 godot --headless --path . -s res://tools/godot_smoke.gd          # 云端冒烟（逐项 ✓，末行 GODOT SMOKE PASS）
 godot --headless --path . -s res://tools/godot_compile_check.gd  # 全部脚本可编译
 godot --headless --path . -s res://tools/godot_story_check.gd    # 剧情脊柱与存档 round-trip（用完会清第 9 槽）
@@ -47,7 +47,7 @@ godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd  # 行会入行 
 godot --path . -s res://tools/patrol_shell.gd                    # 有窗口：三港九页 + 海图三向牌都在 1280×720 内
 ```
 
-`tools/patrol.py` 是云端留下的一键巡检（静态三套 + 冒烟 + 巡检）；`tools/verify_narrative.py` 与 `tools/p7_smoke.gd` 绑定云端 21ce 的 P7 平行实现，本分支未收该实现，两个脚本仅留档、不算门禁（别与上面的 `p7_guild_exam_smoke.gd` 混淆）。
+`tools/patrol.py` 是云端留下的一键巡检（静态三套 + 冒烟 + 巡检）；`tools/legacy/verify_narrative.py` 与 `tools/p7_smoke.gd` 绑定云端 21ce 的 P7 平行实现，本分支未收该实现，两个脚本仅留档、不算门禁（别与上面的 `p7_guild_exam_smoke.gd` 混淆）。
 
 海图（2026-09-25 重制，见 `docs/海图重制设计_2026-09-25.md`）：图面在 `scripts/chart/MapView.gd`，投影 `scripts/chart/ChartProjection.gd`（等距圆锥，参数 `data/chart_projection.json`），底图 `assets/map/terrain_4096.png` + `mapdata_2048.png` 由 `tools/build_terrain.py` 离线生成（ETOPO 2022 高程 + Natural Earth 1:10m 岸线；需 numpy / scipy / shapely / pyshp / tifffile / pillow）。改投影参数必须同时改 json 并重出底图。
 

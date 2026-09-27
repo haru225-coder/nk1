@@ -5,7 +5,7 @@ extends SceneTree
 ## headless 下不加 --contract 必红（shot_gate.gd）。
 
 const VIEW := Vector2i(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/combat"
+var OUT_DIR := ShotGate.out_dir("combat")
 const CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const BoardingStage := preload("res://scripts/combat/BoardingStage.gd")
 const CombatShoreHook := preload("res://scripts/combat/CombatShoreHook.gd")

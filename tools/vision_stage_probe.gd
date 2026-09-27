@@ -4,7 +4,7 @@
 ## 帧写入 /workspace/nk1-qa-shots/vision/（不擦 polish/）。headless 下不加 --contract 必红。
 extends SceneTree
 
-const OUT_DIR := "/workspace/nk1-qa-shots/vision"
+var OUT_DIR := ShotGate.out_dir("vision")
 const STAGE := "res://scenes/vision/VisionStage.tscn"
 const TAG := "VISION_STAGE_PROBE"
 const EXPECTED_SHOTS := 2

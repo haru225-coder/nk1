@@ -4,6 +4,20 @@ extends RefCounted
 ## 契约模式须显式开：命令行 `-- --contract`（或环境变量 NK1_SHOT_CONTRACT=1）；此时不截图，只验非渲染断言，
 ## 收尾打 `<TAG>_CONTRACT_OK`，绝不打 `OK shots=0`。
 ## 用法：const ShotGate := preload("res://tools/shot_gate.gd")
+## 输出目录：`var OUT_DIR := ShotGate.out_dir("vision")`。默认落 /workspace/nk1-qa-shots/<子目录>；
+## 设环境变量 NK1_SHOT_DIR=<目录> 则整体改落 <目录>/<子目录>（worktree / 自测别覆盖证据图，lane gd2）。
+
+const DEFAULT_SHOT_ROOT := "/workspace/nk1-qa-shots"
+
+
+## 截图输出目录：NK1_SHOT_DIR 为空取默认根；相对路径按启动时的 $PWD 展开。
+static func out_dir(sub: String) -> String:
+	var root := OS.get_environment("NK1_SHOT_DIR").strip_edges()
+	if root == "":
+		root = DEFAULT_SHOT_ROOT
+	elif not root.is_absolute_path():
+		root = OS.get_environment("PWD").path_join(root)
+	return root.path_join(sub)
 
 
 static func contract_mode() -> bool:

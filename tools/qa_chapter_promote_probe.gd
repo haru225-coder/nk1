@@ -8,7 +8,7 @@ extends SceneTree
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/chapter"
+var OUT_DIR := ShotGate.out_dir("chapter")
 const TAG := "QA_CHAPTER"
 const EXPECTED_SHOTS := 4
 const ShotGate := preload("res://tools/shot_gate.gd")

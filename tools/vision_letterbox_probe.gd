@@ -7,7 +7,7 @@ extends SceneTree
 ##   只验静态题签与 headless 下入口返回 null，收尾打 VISION_LETTERBOX_PROBE_CONTRACT_OK，不报张数。
 
 const VIEW := Vector2i(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/vision"
+var OUT_DIR := ShotGate.out_dir("vision")
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const ShotGate := preload("res://tools/shot_gate.gd")

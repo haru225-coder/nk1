@@ -6,7 +6,7 @@ extends SceneTree
 ## -s 勿用 autoload 标识符（Calendar/Voyage 等）；Main 用 load 实例化。
 
 const VIEW := Vector2(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/companions"
+var OUT_DIR := ShotGate.out_dir("companions")
 const TAG := "QA_COMPANION"
 const EXPECTED_SHOTS := 4
 const ShotGate := preload("res://tools/shot_gate.gd")

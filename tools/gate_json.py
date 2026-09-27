@@ -30,7 +30,8 @@ ROOT = os.path.dirname(TOOLS)
 REC_ENV = "NK1_GATE_JSON_REC"
 
 # ── 门禁注册表：docs/GATES.md §一（及 §四 CI 块）由它生成（tools/gates_md.py --write），文档与它不一致即 FAIL（tools/gates_md.py）──
-# tier：must = 每轮必跑；lane = 按 lane 内容加跑（when 写何时）；no = 不算门禁（why 写原因）。
+# tier：must = 每轮必跑；step = 每轮必跑、先跑但不判红绿的步骤（why 写原因）；lane = 按 lane 内容加跑（when 写何时）；
+#       no = 不算门禁（why 写原因）。
 # kind：py = python3 tools/<file>；godot = godot <args>；shots = 截图门禁一行（明细见 SHOT_PROBES）。
 # 改门禁清单（增删、降级、改命令）只改这里，再 `python3 tools/gates_md.py --write`。
 REGISTRY = [
@@ -61,10 +62,11 @@ REGISTRY = [
      "file": "tools/verify_save_robustness.py", "usage": "[--source X.gd]",
      "judge": "（lane t2）SaveLoad 守卫存在性与顺序 + 源码驱动模型跑坏档/好档/槽态 fixture + 变异自检",
      "green": "`结果：全部通过`；可能有 `⚠ 未体检的强类型字段（不计失败）`", "red": "`✗` 行；`结果：N 项问题`"},
-    {"id": "editor", "gate": "godot_editor", "tier": "must", "kind": "godot",
-     "args": ["--headless", "--editor", "--path", ".", "--quit"],
-     "judge": "工程能打开、资源导入缓存（`.godot/`、`*.import`）刷新",
-     "green": "exit 0，只有进度条", "red": "exit 非 0（**注意：脚本语法错它照样 exit 0，见 §三.9**）"},
+    {"id": "import", "gate": "godot_import", "tier": "step", "kind": "godot",
+     "args": ["--headless", "--import", "--path", "."],
+     "why": "（lane gd2 由 editor 降级）六类故障注入全 exit 0，红由 compile / check_assets 判，见 §三.9",
+     "judge": "刷新资源导入缓存（`.godot/`、`*.import`）；须先于 check_assets 与 Godot 门禁跑",
+     "green": "exit 0，只有进度条", "red": "**无红长相**（不判红绿）"},
     {"id": "smoke", "gate": "godot_smoke", "tier": "must", "kind": "godot", "file": "tools/godot_smoke.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/godot_smoke.gd"],
      "judge": "autoload 起得来、章节/旗标/结局按数据走、headless 零延迟旁路",
@@ -105,8 +107,8 @@ REGISTRY = [
     {"id": "gates_md", "tier": "lane", "when": "动门禁清单 / docs/GATES.md", "kind": "py", "file": "tools/gates_md.py",
      "judge": "（lane gd3 / gd4）本注册表 vs docs/GATES.md §一、§四逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；附属自检的开关还在源码里；§三 小节编号与一键跑命令对得上",
      "green": "`结果：全部通过`", "red": "`✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write`"},
-    {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/verify_narrative.py",
-     "why": "P7 剧情闭环旧静态门禁，当前 main 上本来就红（开局链 monk / borrow_ceiling 等旧契约），长期红、未列入必跑；修契约还是挪 `tools/legacy/` 待 lane gd2 拍板"},
+    {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/legacy/verify_narrative.py",
+     "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
     {"id": "p7_smoke", "tier": "no", "kind": "godot", "file": "tools/p7_smoke.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/p7_smoke.gd"],
      "why": "旧 P7 冒烟，`borrow_ceiling` 一带早已失配，干净 worktree 也红（lane l1 已记）；P7 行会 / 贡院由 p7（`p7_guild_exam_smoke.gd`）接管"},
@@ -179,7 +181,7 @@ SUBCHECKS = [
 ]
 
 # CI 建议步骤（lane gd4）：docs/GATES.md §四 由它生成，**只是建议，不进 repo 的 CI 配置**。
-# 先跑必跑十三道（命令即 REGISTRY 里 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
+# 先跑一键跑十三条（导入步骤 tier=step + 必跑十二道 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
 CI_STEPS = [
     {"id": "builtin_api 漂移", "lane": "cs3 / gd4", "needs": "godot（与清单头部同版本）",
      "cmd": "python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt",
@@ -193,6 +195,18 @@ CI_STEPS = [
 ]
 
 
+def _shot_root():
+    try:
+        with open(os.path.join(TOOLS, "shot_gate.gd"), encoding="utf-8") as f:
+            m = re.search(r'^const DEFAULT_SHOT_ROOT\s*:?=\s*"([^"]+)"', f.read(), re.M)
+        return m.group(1) if m else None
+    except OSError:  # 读不到：out_dir 记 None，由 gates_md 判红
+        return None
+
+
+SHOT_ROOT = _shot_root()
+
+
 def _shot_probe(path, lane):
     """截图脚本一条：TAG / EXPECTED_SHOTS / 截图目录现读源码；读不到的字段为 None（gates_md 判红）。"""
     src = ""
@@ -204,10 +218,15 @@ def _shot_probe(path, lane):
     tag = re.search(r'^const TAG\s*:?=\s*"([^"]+)"', src, re.M)
     n = re.search(r"^const EXPECTED_SHOTS\s*:?=\s*(\d+)", src, re.M)
     out = re.search(r'^(?:const OUT_DIR|var _out_dir)\s*:?=\s*"([^"]+)"', src, re.M)
+    out = out.group(1) if out else None
+    # lane gd2：`var OUT_DIR := ShotGate.out_dir("vision")` → 默认根 + 子目录（NK1_SHOT_DIR 可整体改根）
+    sub = re.search(r'^var (?:OUT_DIR|_out_dir)\s*:?=\s*ShotGate\.out_dir\("([^"]+)"\)', src, re.M)
+    if out is None and sub and SHOT_ROOT:
+        out = SHOT_ROOT + "/" + sub.group(1)
     res = "res://" + path
     return {"id": os.path.splitext(os.path.basename(path))[0], "file": path, "lane": lane,
             "tag": tag.group(1) if tag else None, "shots": int(n.group(1)) if n else None,
-            "out_dir": out.group(1) if out else None, "args": ["--path", ".", "-s", res], "display": True}
+            "out_dir": out, "args": ["--path", ".", "-s", res], "display": True}
 
 
 def registry():
@@ -240,7 +259,7 @@ def registry():
         s["json"] = "DISPLAY=:2 python3 tools/gate_json.py --godot " + s["id"]
     for g in gates:
         g["family"] = FAMILY[g["kind"]]
-        g["oneclick"] = g["tier"] == "must"
+        g["oneclick"] = g["tier"] in ("must", "step")
     by_id = {g["id"]: g for g in gates}
     subs = []
     for c in SUBCHECKS:
@@ -249,13 +268,15 @@ def registry():
         c["family"] = parent["family"] if parent else None  # 所属门禁不在注册表：gates_md 判红
         c["file"] = parent.get("file") if parent else None
         subs.append(c)
-    must = [g["cmd"] for g in gates if g["oneclick"]]
+    # 一键跑顺序：导入步骤（step）先跑，再按注册表顺序跑必跑门禁
+    must = [g["cmd"] for g in gates if g["tier"] == "step"] + [g["cmd"] for g in gates if g["tier"] == "must"]
     ci = [dict(c) for c in CI_STEPS]
     return {"gates": gates, "shot_probes": shots, "subchecks": subs, "oneclick": must, "ci_steps": ci}
 
 
 # `--godot <预设>`：注册表里的 Godot 门禁 + 截图脚本（带窗口的不加 --headless）
 GODOT_PRESETS = {g["id"]: (g.get("gate", g["id"]), g["args"]) for g in REGISTRY if g["kind"] == "godot"}
+GODOT_PRESETS["editor"] = ("godot_editor", ["--headless", "--editor", "--path", ".", "--quit"])  # 旧名，与 import 实测等价
 GODOT_PRESETS.update({os.path.splitext(os.path.basename(p))[0]: (os.path.splitext(os.path.basename(p))[0],
                       ["--path", ".", "-s", "res://" + p]) for p, _ in SHOT_PROBES})
 

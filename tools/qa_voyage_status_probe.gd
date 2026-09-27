@@ -8,7 +8,7 @@ extends SceneTree
 
 const VIEW := Vector2i(1280, 720)
 const CHART_SCENE := "res://scenes/SeaChart.tscn"
-const OUT_DIR := "/workspace/nk1-qa-shots/voyage"
+var OUT_DIR := ShotGate.out_dir("voyage")
 const TAG := "QA_VOYAGE"
 const EXPECTED_SHOTS := 6
 const ShotGate := preload("res://tools/shot_gate.gd")

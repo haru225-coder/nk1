@@ -56,14 +56,16 @@ def render(reg):
            "|---|---|---|---|---|---|---|---|---|---|"]
     for i, g in enumerate(live, 1):
         name = g["id"] + (f"（{len(shots)} 支，见下表）" if g["kind"] == "shots" else "")
-        tier = "必跑" if g["tier"] == "must" else "加跑：" + g["when"]
+        tier = {"must": "必跑", "step": "必跑·步骤（不判红绿）"}.get(g["tier"]) or "加跑：" + g["when"]
         out.append(f"| {i} | {name} | {g['family']} | {tier} | {yes(g['oneclick'])} | {code(g['cmd'])} | {code(g['json'])} "
                    f"| {g['judge']} | {g['green']} | {g['red']} |")
     must = [g for g in live if g["tier"] == "must"]
     py = [g for g in must if g["kind"] == "py"]
     other = [g["id"] for g in must if g["kind"] != "py"]
+    steps = [(i, g["id"]) for i, g in enumerate(live, 1) if g["tier"] == "step"]
     extra = "、".join(str(i) for i, g in enumerate(live, 1) if g["tier"] == "lane")
-    out += ["", f"「{cn(len(py))}道 Python + {'/'.join(other)}」是每轮必跑的{cn(len(must))}道（`.claude/todo.md` 验证段）；"
+    pre = "".join(f"先跑步骤 {i} {gid}（不判红绿），再跑" for i, gid in steps)
+    out += ["", f"每轮必跑（`.claude/todo.md` 验证段）：{pre}「{cn(len(py))}道 Python + {'/'.join(other)}」{cn(len(must))}道门禁；"
                 f"{extra} 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。"]
     subs = reg["subchecks"]
     num = {g["id"]: i for i, g in enumerate(live, 1)}
@@ -98,7 +100,7 @@ def yes(b):
 
 def render_ci(reg):
     steps = reg["ci_steps"]
-    out = ["```sh", f"# 0. 必跑{cn(len(reg['oneclick']))}道（= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）"]
+    out = ["```sh", f"# 0. 必跑{cn(len(reg['oneclick']))}条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）"]
     out += reg["oneclick"]
     for i, c in enumerate(steps, 1):
         out += [f"# {i}. {c['id']}", c["cmd"]]
@@ -166,7 +168,7 @@ def main(argv):
             check(os.path.isfile(os.path.join(ROOT, g["file"])), f"{g['id']} → {g['file']} 存在")
         if g["tier"] == "lane":
             check(bool(g.get("when")), f"{g['id']} 是加跑档，写了何时跑（when）")
-        if g["tier"] == "no":
+        if g["tier"] in ("no", "step"):
             check(bool(g.get("why")), f"{g['id']} 不算门禁，写了原因（why）")
     for s in shots:
         check(os.path.isfile(os.path.join(ROOT, s["file"])) and None not in (s["tag"], s["shots"], s["out_dir"]),

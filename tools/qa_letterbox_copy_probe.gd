@@ -7,7 +7,7 @@ extends SceneTree
 ##   只验静态题签契约与禁词，不截图。
 
 const VIEW := Vector2i(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/letterbox"
+var OUT_DIR := ShotGate.out_dir("letterbox")
 const STAGE := "res://scenes/vision/VisionStage.tscn"
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const TAG := "QA_LETTERBOX_COPY"

@@ -6,7 +6,7 @@ extends SceneTree
 ## 默认严格须出 11 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/patrol-pack"
+var OUT_DIR := ShotGate.out_dir("patrol-pack")
 const CHART_SCENE := "res://scenes/SeaChart.tscn"
 const TAG := "QA_PATROL_PACK"
 const EXPECTED_SHOTS := 11
