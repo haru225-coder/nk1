@@ -846,6 +846,17 @@ check(0 <= _i_busy < _i_cost < _i_up < _i_notok < _i_spend < _i_roll < _i_set,
 check("spend_money(shown_cost)" not in _up_body, "升级扣费不用按钮 bind 的旧价")
 check(_up_body.rstrip().endswith("_upgrade_busy = false"), "升级过场落定后才放开连点闸")
 
+# 2c) 修船 / 购船同闸（lane fo）：墨幕不吞 ui_accept 动作，过场未落前旧页钮还能按到 → 先看闸、扣成才上闸、过场落定再放
+for _fn, _what in (("_on_repair_hull", "修船"), ("_on_buy_ship", "购船")):
+    _yb = _main_up.split("func %s(" % _fn, 1)[1].split("\nfunc ", 1)[0] if ("func %s(" % _fn) in _main_up else ""
+    _j_busy = _yb.find("if _upgrade_busy:")
+    _j_spend = _yb.find("if GameState.spend_money(")
+    _j_set = _yb.find("_upgrade_busy = true")
+    _j_await = _yb.find("await _yard_success_transition(")
+    _j_free = _yb.find("_upgrade_busy = false")
+    check(_yb.count("spend_money(") == 1 and 0 <= _j_busy < _j_spend < _j_set < _j_await < _j_free,
+          "%s回调：连点闸 → 扣钱 → 上闸 → 过场 → 放闸（过场期间旧页钮不二次扣费）" % _what)
+
 # 3) armor 满级船体伤系数 = 0.80 > 0——风暴依旧要命，不能归零
 def armor_reduction(max_durabilities, armor_levels):
     num = sum(w * (a - 1) for w, a in zip(max_durabilities, armor_levels))

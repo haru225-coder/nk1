@@ -67,6 +67,7 @@ const SCRIPTS := [
 	"res://tools/qa_fine_text_probe.gd",
 	"res://tools/qa_money_notices_probe.gd",
 	"res://tools/qa_customs_duty_probe.gd",
+	"res://tools/qa_yard_transition_probe.gd",
 	"res://tools/combat_vfx_probe.gd", "res://tools/combat_wire_probe.gd",
 	"res://tools/vision_stage_probe.gd", "res://tools/vision_letterbox_probe.gd",
 	"res://tools/art/vision_fill_gen.gd", "res://tools/art/vision_fill_shots.gd",
@@ -104,6 +105,8 @@ const SCENES := [
 	"res://scenes/cutscene/CutscenePreview.tscn",
 	"res://scenes/ui/TavernFacilityPreview.tscn",
 	"res://scenes/ui/TavernFacilitySlip.tscn",
+	# 探针场景（-s 放不出过场的探针以场景启动）
+	"res://tools/qa_yard_transition_probe.tscn",
 ]
 
 ## lane-z4 把 Ship/PirateShip 的炮弹场景改成 lazy load() 后，这几个弹道场景已确认无解析错误；

@@ -40,7 +40,7 @@ var _market_ship: int = 0
 var _market_hold: bool = false
 ## 牙行委办「细则」展开与否（会话内 UI 状态，不入存档；买卖刷新页面时保留）
 var _contract_detail_open := false
-## 船屋升级过场未落时挡住二次点按（会话内 UI 状态，不入存档）
+## 船屋升级 / 修船 / 购船过场未落时挡住二次点按（会话内 UI 状态，不入存档）
 var _upgrade_busy := false
 ## 账条暂时写入的容器。酒馆募人收进内滚，离开钮留在外面。
 var _slip_host: Node = null
@@ -2116,7 +2116,8 @@ func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> 
 		actual = affordable
 		cost = Economy.estimate_buy_cost(port_id, good_id, actual)
 
-	GameState.spend_money(cost)
+	if not GameState.spend_money(cost):
+		return
 	Fleet.add_cargo(good_id, actual, float(cost) / float(actual), ship_index)
 	Economy.apply_buy_impact(port_id, good_id, actual)
 
@@ -2153,7 +2154,8 @@ func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) ->
 	var revenue := Economy.estimate_sell_revenue(port_id, good_id, actual)
 	var cost_basis := Fleet.cargo_cost(good_id, ship_index) * actual
 
-	Fleet.remove_cargo(good_id, actual, ship_index)
+	if not Fleet.remove_cargo(good_id, actual, ship_index):
+		return
 	GameState.add_money(revenue)
 	Economy.apply_sell_impact(port_id, good_id, actual)
 
@@ -2551,10 +2553,15 @@ func _on_berth_switch(ship_index: int) -> void:
 
 
 func _on_repair_hull(cost: int) -> void:
+	# 过场未落前旧页的修船钮一律不理（墨幕不吞 ui_accept 动作）：一次修船只扣一次钱
+	if _upgrade_busy:
+		return
 	if GameState.spend_money(cost):
+		_upgrade_busy = true
 		Fleet.repair_all()
 		log_msg("船匠敲了一日。船体按簿修好。")
 		await _yard_success_transition("修船")
+		_upgrade_busy = false
 	else:
 		log_msg("【钱不够】船匠摇摇头，把凿子收了。")
 		load_scene(current_scene_id)
@@ -2584,10 +2591,15 @@ func _on_repay(pay: int) -> void:
 
 
 func _on_buy_ship(type_id: String, price: int) -> void:
+	# 同修船：过场未落前旧页的购入钮不再买第二条
+	if _upgrade_busy:
+		return
 	if GameState.spend_money(price):
+		_upgrade_busy = true
 		Fleet.add_ship(type_id)
 		log_msg("买下一条%s，泊在坞外。水手未齐。" % Fleet.ship_def(type_id).get("name", "船"))
 		await _yard_success_transition("购入")
+		_upgrade_busy = false
 	else:
 		log_msg("【钱不够】船行掌柜未点头。")
 		load_scene(current_scene_id)
