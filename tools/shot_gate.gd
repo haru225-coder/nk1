@@ -7,6 +7,8 @@ extends RefCounted
 ## 输出目录：`var OUT_DIR := ShotGate.out_dir("vision")`。默认落 /workspace/nk1-qa-shots/<子目录>；
 ## 设环境变量 NK1_SHOT_DIR=<目录> 则整体改落 <目录>/<子目录>（worktree / 自测别覆盖证据图，lane gd2）。
 ## `-- --json`：三个收尾函数改打一行 JSON（gate_report.gd，lane g2），门禁名取入口脚本文件名；调用方不用改。
+## finish_shots / finish_contract 的 error：判红时写进 JSON 的 error 字段（如 _bail 的 "no_signal"，lane gd12），
+##   让「中途等不到信号收尾」与「张数不足」等普通红分得开；人读输出不变，不判红时不写。
 
 const DEFAULT_SHOT_ROOT := "/workspace/nk1-qa-shots"
 const GateReport := preload("res://tools/gate_report.gd")
@@ -87,7 +89,7 @@ static func shot(root: Window, path: String, saved: Array, fails: Array, allow_b
 
 
 ## 截图模式收尾：实得张数 < 声明张数也判失败。返回退出码。
-static func finish_shots(tag: String, saved: Array, expected: int, out_dir: String, fails: Array) -> int:
+static func finish_shots(tag: String, saved: Array, expected: int, out_dir: String, fails: Array, error := "") -> int:
 	if saved.size() < expected:
 		fails.append("真失败：声明 %d 张截图，实得 %d 张" % [expected, saved.size()])
 	for p in saved:
@@ -104,6 +106,8 @@ static func finish_shots(tag: String, saved: Array, expected: int, out_dir: Stri
 		print("  ✗ ", f)
 	var fail_line := "%s_FAIL %d（shots=%d/%d -> %s）" % [tag, fails.size(), saved.size(), expected, out_dir]
 	print(fail_line)
+	if error != "":
+		extra["error"] = error
 	GateReport.finish(GateReport.main_script_name(), 1, fail_line, extra)
 	return 1
 
@@ -119,7 +123,7 @@ static func fail_no_render(tag: String, reason: String, expected: int) -> int:
 
 
 ## 契约模式收尾：只报契约断言，不报张数。返回退出码。
-static func finish_contract(tag: String, fails: Array) -> int:
+static func finish_contract(tag: String, fails: Array, error := "") -> int:
 	for f in fails:
 		GateReport.check(false, str(f))
 	if fails.is_empty():
@@ -131,5 +135,8 @@ static func finish_contract(tag: String, fails: Array) -> int:
 		print("  ✗ ", f)
 	var fail_line := "%s_CONTRACT_FAIL %d" % [tag, fails.size()]
 	print(fail_line)
-	GateReport.finish(GateReport.main_script_name(), 1, fail_line, {"tag": tag, "contract": true})
+	var extra := {"tag": tag, "contract": true}
+	if error != "":
+		extra["error"] = error
+	GateReport.finish(GateReport.main_script_name(), 1, fail_line, extra)
 	return 1

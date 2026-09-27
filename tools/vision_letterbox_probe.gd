@@ -37,7 +37,7 @@ func _run() -> void:
 	if _contract:
 		if Kit.is_headless():
 			_expect(Letterbox.enter(root, "刺桐外海・接舷") == null, "headless 下静态入口应返回 null")
-		_report()
+		_end(null)
 		return
 	var no_render := ShotGate.no_render_reason()
 	if no_render != "":
@@ -68,7 +68,7 @@ func _run() -> void:
 	var lb := Letterbox.enter(root, Letterbox.sea_title("刺桐外海", "接舷"), sub)
 	_expect(lb != null, "有窗口时入战墨边未上场")
 	if lb == null:
-		_report()
+		_end(wm)
 		return
 	var enter_done := [false]
 	lb.finished.connect(func() -> void: enter_done[0] = true)
@@ -97,7 +97,7 @@ func _run() -> void:
 			wm.queue_free())
 	_expect(ex != null, "出战墨边未上场")
 	if ex == null:
-		_report()
+		_end(wm)
 		return
 	ex.covered.connect(func() -> void:
 		_covered_hits += 1
@@ -133,17 +133,13 @@ func _run() -> void:
 
 	# 同时只留一副：新的顶掉旧的，旧的若带 on_black 须补调
 	var hits := [0]
-	var a := Letterbox.exit(root, "外洋・脱战", "", func() -> void: hits[0] += 1)
+	Letterbox.exit(root, "外洋・脱战", "", func() -> void: hits[0] += 1)
 	await process_frame
-	var b := Letterbox.enter(root, "外洋・遇敌")
+	Letterbox.enter(root, "外洋・遇敌")
 	await process_frame
 	_expect(hits[0] == 1, "被顶掉的出战未补调 on_black")
 	_expect(root.get_tree().get_nodes_in_group(Letterbox.GROUP).size() == 1, "同时留了不止一副墨边")
-	if is_instance_valid(b):
-		b.call("_abort")
-	if is_instance_valid(a):
-		a.call("_abort")
-	_report()
+	_end(wm)
 
 
 func _check_titles() -> void:
@@ -179,18 +175,17 @@ func _expect(ok: bool, msg: String) -> void:
 		_fails.append(msg)
 
 
-## 等不到信号时判红收尾：拆掉还在的布景与墨边，照常出报告（不挂死）
-func _bail(msg: String, wm: Node) -> void:
+## 等不到信号时判红收尾：与正常收尾同走 _end，另带 error=no_signal 进 --json（不挂死）
+func _bail(msg: String, wm) -> void:
 	_fails.append(msg)
-	for n in root.get_tree().get_nodes_in_group(Letterbox.GROUP):
-		n.call("_abort")
-	if is_instance_valid(wm):
-		wm.queue_free()
-	_report()
+	_end(wm, CombatStage.NO_SIGNAL)
 
 
-func _report() -> void:
+## 唯一收尾：场上墨边 _abort（挂着的等待方都收到 finished）、放掉布景，再出报告（lane gd12）。
+## wm 不写类型：已被 on_black 放掉的实例传进带类型形参会 SCRIPT ERROR。
+func _end(wm, error := "") -> void:
+	CombatStage.teardown(self, wm)
 	if _contract:
-		quit(ShotGate.finish_contract(TAG, _fails))
+		quit(ShotGate.finish_contract(TAG, _fails, error))
 	else:
-		quit(ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+		quit(ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails, error))

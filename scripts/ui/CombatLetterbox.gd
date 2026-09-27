@@ -6,6 +6,10 @@
 ##   var lb := CombatLetterbox.exit(self, CombatLetterbox.outcome_title("win", "刺桐外海"), sub, on_black)
 ##   if lb != null: await lb.finished
 ##
+## 信号契约（lane gd12）：finished 是终止信号，每副墨边不论怎么收尾——演完 / 被新墨边顶掉（_abort）/ 随父节点释放或被摘下——
+## 都恰好发一次，所以裸 await finished 不会挂死。caption_shown / covered 是进度信号，只在真演到时发、最多一次：
+## 题签前被顶掉就没有 caption_shown，随父释放不补 covered / on_black；等进度信号的一方须带上界，或拿 finished 当放弃的边。
+##
 ## 出战带 on_black 时墨边一直合到中线（全黑）再调它，调用方趁黑换场景，墨边随后退开；不带就和入战一样只留边。
 ## headless 与 -s 工具脚本（门禁、smoke）下静态入口不建节点、返回 null——调用方自己当帧调 on_black（同 Main.play_transition）。
 ## 入战不吞输入（开炮倒计时照走，题签只盖在上下边里）；出战合拢时吞键盘和鼠标，防止连按。不暂停游戏、不入存档。
@@ -64,6 +68,8 @@ var _tween: Tween
 var _swallow := false
 var _black_done := false
 var _on_black := Callable()
+## finished 已发（本幕终结）：_abort / 离树 / 同帧重入都不再补发
+var _done := false
 
 
 ## 「海名・事由」。海名空着就只写事由，不在这里补地名。
@@ -293,6 +299,7 @@ func _start(p_title: String, p_subtitle: String, p_seal: String) -> void:
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
 	_black_done = false
+	_done = false
 	_on_black = Callable()
 	_swallow = false
 	title = p_title
@@ -418,8 +425,24 @@ func _abort() -> void:
 	_finish()
 
 
-func _finish() -> void:
+## 三条收尾（演完 / _abort / 离树）都走这里：finished 恰好一次，随后自删。
+## 已终结的（演完还没真释放，同帧又被 _spawn / 探针收尾扫到再 _abort）在这里挡掉，不再补发。
+func _finish(free_self := true) -> void:
+	if _done:
+		return
+	_done = true
 	_swallow = false
 	finished.emit()
-	if get_meta(&"auto_free", false):
+	if free_self and get_meta(&"auto_free", false):
 		queue_free()
+
+
+## 没演完就离树（挂在布景下随布景释放 / 被摘下）不经 _abort，也得发 finished，否则裸 await 的一方永远不醒。
+## 不补调 on_black、不发 covered：父都拆了，换场是往拆了的场里调；进度信号只在真演到时发。
+## 离了树的节点归让它离树的一方处置（随父释放的已在释放），这里不再 queue_free。
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_EXIT_TREE and not _done:
+		_run_id += 1
+		if _tween != null and _tween.is_valid():
+			_tween.kill()
+		_finish(false)

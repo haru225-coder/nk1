@@ -43,13 +43,13 @@ func _run() -> void:
 		if Kit.is_headless():
 			_expect(Letterbox.enter(root, Letterbox.sea_title("刺桐外海", "遇敌"), "咸淳三年六月十二　海鹘二艘") == null,
 				"headless 下 Letterbox.enter 应返回 null")
-		_report()
+		_end(null, null)
 		return
 
 	# 1) VisionStage 裱框题签
 	if not ResourceLoader.exists(STAGE):
 		_fails.append("缺 VisionStage 场景")
-		_report()
+		_end(null, null)
 		return
 	var packed := load(STAGE) as PackedScene
 	var stage: Control = packed.instantiate()
@@ -130,10 +130,7 @@ func _run() -> void:
 	# 冻住后布景不该自己结算；万一又被释放（去掉冻结 / WorldMap 改了结算时序），报红收尾，不挂死
 	var why := CombatStage.standing_fail(wm)
 	_expect(why == "", why if why != "" else "布景海战在探针演示中未自行结算")
-	if is_instance_valid(wm):
-		wm.queue_free()
-	gm.pending_battle = {}
-	_report()
+	_end(wm, gm)
 
 
 func _check_copy_contracts() -> void:
@@ -191,16 +188,15 @@ func _shot(stem: String) -> void:
 	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)
 
 
-## 等不到信号时判红收尾：拆掉还在的布景与墨边，照常出报告（不挂死）
-func _bail(msg: String, wm: Node, gm: Node) -> void:
+## 等不到信号时判红收尾：与正常收尾同走 _end，另带 error=no_signal 进 --json（不挂死）
+func _bail(msg: String, wm, gm: Node) -> void:
 	_expect(false, msg)
-	for n in root.get_tree().get_nodes_in_group(Letterbox.GROUP):
-		n.call("_abort")
-	if is_instance_valid(wm):
-		wm.queue_free()
-	gm.pending_battle = {}
-	_report()
+	_end(wm, gm, CombatStage.NO_SIGNAL)
 
 
-func _report() -> void:
-	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+## 唯一收尾：场上墨边 _abort（挂着的等待方都收到 finished）、放掉布景、清战况，再出报告（lane gd12）。
+## wm 不写类型：布景自行结算释放后传进带类型形参会 SCRIPT ERROR。
+func _end(wm, gm, error := "") -> void:
+	CombatStage.teardown(self, wm, gm)
+	quit(ShotGate.finish_contract(TAG, _fails, error) if _contract
+		else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails, error))

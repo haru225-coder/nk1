@@ -1,6 +1,7 @@
 extends RefCounted
-## 有窗口探针用真海战布景（WorldMap + pending_battle）时的两件防挂死小工具（lane gd10）。
-## 接的探针：combat_vfx_probe / combat_wire_probe / vision_letterbox_probe / qa_letterbox_copy_probe。
+## 有窗口探针用真海战布景（WorldMap + pending_battle）时的防挂死小工具（lane gd10；三、收尾 lane gd12）。
+## 接的探针：combat_vfx_probe / combat_wire_probe / vision_letterbox_probe / qa_letterbox_copy_probe；
+## 收尾信号契约的定向探针：letterbox_signal_probe。
 ##
 ## 一、布景不自己结算：freeze_enemy_fire(wm)，在 root.add_child(wm) 之后当帧调（WorldMap._ready 已同步刷好敌船）。
 ##   WorldMap 是真海战：敌船 3.5 s 首轮齐射、此后 3 s 一轮，探针不开船、不回炮，旗舰被击沉 →
@@ -20,10 +21,19 @@ extends RefCounted
 ##   随布景一起被释放（不走 _abort）则 caption_shown 与 finished 都不发——裸 await 一律挂死（lane gd10 复现）。
 ##   不在 _abort 里补发：题签没演就说「题签已出」是假信号，截图探针会把一张没题签的图当题签图收下；也管不到随父释放那条路。
 ##   这里改成「帧数上界 + 断言最后状态」：对象被释放立刻返回 false，否则最多等 max_frames 帧；调用方拿 false 判红收尾。
+##   墨边的 finished 是终止信号、每条收尾路径都恰好发一次（lane gd12，见 CombatLetterbox 头注释），所以等进度信号时
+##   finished 先来就立刻返回 false，不必干等到上界；上界只兜「演出本身卡住」。
+##
+## 三、收尾一条路：teardown(tree, wm, gm)。探针正常收尾、等不到信号的 _bail、墨边没上场的早退都先走它再出报告：
+##   场上每副墨边走 _abort（与被新墨边顶掉同一条，经 _finish 发 finished，挂着的等待方都醒）→ 放掉布景 → 清战况。
+##   _bail 另带 error=NO_SIGNAL 进 --json，与「张数不足」等普通红分得开（ShotGate.finish_* 的 error 参数）。
 ##
 ## wm / obj 形参故意不写类型：已释放的实例传给带类型的形参当场 SCRIPT ERROR、协程中断——正是要防的挂死。
 
+const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const FIRE_FROZEN := INF
+## _bail 的 --json error 码：等的信号没来（墨边提前终结，或到上界）
+const NO_SIGNAL := "no_signal"
 ## 默认上界：墨边最长一幕（带 on_black 的出战）约 3.5 s，本机约 235 fps ≈ 820 帧；留足余量给快机与慢帧
 const WAIT_FRAMES := 6000
 
@@ -60,14 +70,33 @@ static func wait_until(tree: SceneTree, cond: Callable, max_frames := WAIT_FRAME
 	return true
 
 
-## 等 obj 的无参信号 sig：收到返回 true；obj 被释放或满 max_frames 帧返回 false。
-static func wait_signal(tree: SceneTree, obj, sig: StringName, max_frames := WAIT_FRAMES) -> bool:
+## 等 obj 的无参信号 sig：收到返回 true；obj 被释放、先收到终止信号 stop（缺省 finished）、或满 max_frames 帧返回 false。
+static func wait_signal(tree: SceneTree, obj, sig: StringName, max_frames := WAIT_FRAMES, stop := &"finished") -> bool:
 	if obj == null or not is_instance_valid(obj):
 		return false
 	var hit := [false]
+	var ended := [false]
 	var cb := func() -> void: hit[0] = true
+	var cb_stop := func() -> void: ended[0] = true
 	obj.connect(sig, cb, Object.CONNECT_ONE_SHOT)
-	await wait_until(tree, func() -> bool: return hit[0] or not is_instance_valid(obj), max_frames)
-	if is_instance_valid(obj) and obj.is_connected(sig, cb):
-		obj.disconnect(sig, cb)
+	var watch_stop: bool = stop != sig and obj.has_signal(stop)
+	if watch_stop:
+		obj.connect(stop, cb_stop, Object.CONNECT_ONE_SHOT)
+	await wait_until(tree, func() -> bool: return hit[0] or ended[0] or not is_instance_valid(obj), max_frames)
+	if is_instance_valid(obj):
+		if obj.is_connected(sig, cb):
+			obj.disconnect(sig, cb)
+		if watch_stop and obj.is_connected(stop, cb_stop):
+			obj.disconnect(stop, cb_stop)
 	return hit[0]
+
+
+## 探针收尾（正常 / _bail / 早退同走这里）：场上墨边一律 _abort（发 finished、带 on_black 的先补调），
+## 布景没释放就放掉，给了 gm 就清 pending_battle。之后调用方照常出报告、quit。
+static func teardown(tree: SceneTree, wm, gm = null) -> void:
+	for n in tree.get_nodes_in_group(Letterbox.GROUP):
+		n.call("_abort")
+	if wm != null and is_instance_valid(wm) and not wm.is_queued_for_deletion():
+		wm.queue_free()
+	if gm != null and is_instance_valid(gm):
+		gm.set("pending_battle", {})
