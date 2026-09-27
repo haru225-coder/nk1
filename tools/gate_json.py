@@ -136,6 +136,15 @@ REGISTRY = [
               "代码行只许 owner 写一次默认值，owner 丢了默认值或环境变量名判失效；本脚本自身也扫（只放过 `ROOTS` 登记行），未跟踪文件只记 `⚠`",
      "green": "`登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本）` + `结果：全部通过`",
      "red": "`✗` 行（逐行列 `文件:行 … ← 命中串`；非 owner 代码行写死仓外根另注；ROOTS 条目失效）；`结果：N 项问题`"},
+    # lane auditfix1 入册即必跑（一键跑末条）：dec3 立了没进注册表，自 cs14 a8ff603 起主干红到 abb3f05（DRIFT 47）没人看见；跑一次 ~1s、只读不写盘
+    {"id": "check_decision_refs", "tier": "must", "kind": "py", "file": "tools/check_decision_refs.py",
+     "judge": "（lane dec3 / dec4）`docs/待策划拍板清单_2026-09-28.md` 反引号里的每处「文件:行」：文件在、行号不越界、"
+              "指的还是清单头部锚（「行号：……按 HEAD `x`」）那个提交里的同一段内容；挪了位的按 diff / 同文件原文 / 函数名（照 main_splits 改名表进拆出件）/ 跨文件原文四层算出新号；"
+              "清单里不许留 `--fix` 打的「〔跟号待核：…〕」；改号自证：和上一版清单逐对比「旧锚旧号那段 == 本版锚本版号那段」，旧那段原文还在别处即号写歪了（lane auditfix1）；"
+              "仓外 brief 引用只查越界（`$NK1_BRIEFS` 不在只记 `⚠`）",
+     "green": "`锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）",
+     "red": "`✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；"
+            "`结果：有问题（DRIFT 先跑 --fix 自动跟号…）`；修法 `python3 tools/check_decision_refs.py --fix`（所引文件先提交）"},
     {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/legacy/verify_narrative.py",
      "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
     {"id": "p7_smoke", "tier": "no", "kind": "godot", "file": "tools/legacy/p7_smoke.gd",
@@ -230,14 +239,17 @@ SUBCHECKS = [
      "file": "tools/gen_main_splits.py",
      "cmd": "python3 tools/gen_main_splits.py --write",
      "alt": "python3 tools/gen_main_splits.py",
-     "marks": ['"--write"', "docs/Main拆解台账.md", "与重算逐字节一致，未改动", "已重写", "未验", "拆出 commit 自己记的 `-`：照认"],
+     "marks": ['"--write"', "docs/Main拆解台账.md", "与重算逐字节一致，未改动", "已重写", "未验", "拆出 commit 自己记的 `-`：HEAD 就是它时照认", "已不是 HEAD"],
      "expect": "`✓ --write：tools/main_splits.txt 与重算逐字节一致，未改动`；有差异则 `↻ --write：已重写 tools/main_splits.txt（N 件；请连同提交）`，"
                "之后照常对账一遍、`结果：全部通过`。不带 `--write` 只对账不写盘（与 check_symbols「一之零」同一个 check()）。"
                "拆出件 / lane ← 台账节标题，拆出函数 ← Main 一行转发，commit / 原 Main 行范围 ← git（拆出 commit 父版 Main.gd），"
-               "台账写了逐支行段的逐支对账。浅克隆取不到拆出 commit 父版时那一行报 `⚠ … 未验`、沿用清单原值，不判红",
+               "台账写了逐支行段的逐支对账。浅克隆取不到拆出 commit 父版时那一行报 `⚠ … 未验`、沿用清单原值，不判红。"
+               "commit 列的 `-`：只在 HEAD 就是拆出 commit 时照认（lane auditfix1），HEAD 往前走了对账即红、`--write` 补成哈希",
      "fail": "`✗ --write：有问题，tools/main_splits.txt 未改动` + 各条 `✗`（台账登记的拆出件不存在、拆出件有 static func 没有 Main 转发、"
              "拆前 Main.gd 里找不到转发的 Main 函数、台账逐支行段与重算不符）→ 退 1。**会改写 `tools/main_splits.txt`**，"
-             "所以不进一键跑；新拆一刀的 lane 追加台账一节后跑它、连同提交"},
+             "所以不进一键跑；新拆一刀的 lane 追加台账一节后跑它、连同提交。"
+             "对账（check_symbols「一之零」）的 `✗ <件>：拆出 commit X 已不是 HEAD（其后又有 N 个提交），清单 commit 列还记 -…` = "
+             "拆分那笔之后没补哈希（lane auditfix1 前这一格放行到下一刀才补）：跑 `--write`、另提一笔，与拆分同一次落地"},
     {"id": "按函数名取函数体（十三）", "parent": "check_symbols", "lane": "gd16 / cs9 / cs12 / cs11 / cs17", "oneclick": True,
      "cmd": "python3 tools/check_symbols.py",
      "marks": ["十三、按函数名取函数体", "class _Bodies(dict)", "_body_ask(name, m is not None, body=m and m.group(0))", "处按名取用都取到函数体",
@@ -283,7 +295,7 @@ SUBCHECKS = [
 ]
 
 # CI 建议步骤（lane gd4）：docs/GATES.md §四 由它生成，**只是建议，不进 repo 的 CI 配置**。
-# 先跑一键跑十四条（导入步骤 tier=step + 必跑十三道 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
+# 先跑一键跑十五条（导入步骤 tier=step + 必跑十四道 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
 CI_STEPS = [
     {"id": "侧车成对 / 一致", "lane": "ag / ag2 / gd5", "needs": "python3 + git（紧跟第 0 步的导入步骤之后跑）",
      "cmd": "python3 tools/check_sidecars.py",

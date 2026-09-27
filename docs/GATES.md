@@ -33,8 +33,9 @@
 | 19 | gates_md | Python | 加跑：动门禁清单 / docs/GATES.md | — | `python3 tools/gates_md.py` | `python3 tools/gates_md.py --json` | （lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序 | `结果：全部通过` | `✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write` |
 | 20 | RefsMacPath | Python | 必跑 | ✓ | `python3 tools/check_mac_paths.py` | `python3 tools/check_mac_paths.py --json` | （lane doc9）git 已跟踪的文本文件里不许写 Mac / Homebrew 专属绝对路径（Mac 家目录、Homebrew 前缀、Godot 应用包、用户资料库目录等 10 条，模式与理由见脚本 `PATTERNS`；lane gd21 起脚本自身也扫，只按行排除 `PATTERNS` / `SAMPLES` 块的条目行，块里夹了别的行即判红）；每次先跑「零、模式自检」（lane auditfix2）：`SAMPLES` 正向样本（含独立审计原反例两行）须全认出、`CLEAN` 反向样本须全不命中；已定级的留档进白名单 `ALLOW`：按文件登记命中行数、头部横幅 / 回指注字样与理由，行数不符、字样丢了、条目失效都判红；未跟踪文件只记 `⚠` | `白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS / SAMPLES 块除外）` + `结果：全部通过` | `✗` 行（白名单外命中逐行列 `文件:行 … ← 命中串`；白名单文件行数不符；横幅 / 回指注丢了；失效条目；本脚本 PATTERNS / SAMPLES 块形状不对；零节样本漏认 / 误报）；`结果：N 项问题` |
 | 21 | RefsHostPath | Python | 加跑：新增 / 改动脚本或文档里写外部路径的地方（照抄命令、引擎路径、截图 / 简报等仓外默认根） | — | `python3 tools/check_host_paths.py` | `python3 tools/check_host_paths.py --json` | （lane gd22）git 已跟踪的文本文件里不许写本机 Linux 绝对路径：`/home/<用户>` 与 `/workspace/<目录>`（仓库根本身一律红，命令写 `--path .`）；仓外根登记在脚本 `ROOTS`（截图根 `NK1_SHOT_DIR`、简报目录 `NK1_BRIEFS` 两条）：文档 / 注释里随便写，代码行只许 owner 写一次默认值，owner 丢了默认值或环境变量名判失效；本脚本自身也扫（只放过 `ROOTS` 登记行），未跟踪文件只记 `⚠` | `登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本）` + `结果：全部通过` | `✗` 行（逐行列 `文件:行 … ← 命中串`；非 owner 代码行写死仓外根另注；ROOTS 条目失效）；`结果：N 项问题` |
+| 22 | check_decision_refs | Python | 必跑 | ✓ | `python3 tools/check_decision_refs.py` | `python3 tools/check_decision_refs.py --json` | （lane dec3 / dec4）`docs/待策划拍板清单_2026-09-28.md` 反引号里的每处「文件:行」：文件在、行号不越界、指的还是清单头部锚（「行号：……按 HEAD `x`」）那个提交里的同一段内容；挪了位的按 diff / 同文件原文 / 函数名（照 main_splits 改名表进拆出件）/ 跨文件原文四层算出新号；清单里不许留 `--fix` 打的「〔跟号待核：…〕」；改号自证：和上一版清单逐对比「旧锚旧号那段 == 本版锚本版号那段」，旧那段原文还在别处即号写歪了（lane auditfix1）；仓外 brief 引用只查越界（`$NK1_BRIEFS` 不在只记 `⚠`） | `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红） | `✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；`结果：有问题（DRIFT 先跑 --fix 自动跟号…）`；修法 `python3 tools/check_decision_refs.py --fix`（所引文件先提交） |
 
-每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「八道 Python + smoke/compile/story/p7/patrol」十三道门禁；8、15、16、17、18、19、21 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「九道 Python + smoke/compile/story/p7/patrol」十四道门禁；8、15、16、17、18、19、21 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（8 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -44,7 +45,7 @@
 | 2 | check_symbols --regen | 1. check_symbols（lane cs3） | Python | — | `python3 tools/check_symbols.py --regen` | `✓ --regen：ClassDB 导出与 tools/builtin_api.txt 逐字节一致，未改动`；有漂移则 `↻ --regen：已按 ClassDB 重写 tools/builtin_api.txt（+a / −b 行；请连同提交）`。之后照常跑完整道 check_symbols，退出码按整道算 | `✗ --regen：找不到 godot` / `gen_builtin_list.gd 失败（rc=…）` → 计入问题、退 1。**会改写 `tools/builtin_api.txt`**，所以不进一键跑；漂移只在 CI 步骤里配 `git diff --exit-code` 判红（见 §四） |
 | 3 | check_symbols --suggest | 1. check_symbols（lane cs4） | Python | — | `python3 tools/check_symbols.py --suggest`（或 `CHECK_SYMBOLS_SUGGEST=1 python3 tools/check_symbols.py`） | 多出「二之三、字符串派发候选提示」一节（`emit_signal` / `X.call` / `call_deferred` / `callv` / `Callable(obj, …)` 字面量），没疑点时没有 `⚠ WARN` 行；不开时输出逐字节不变，开了退出码也不变 | **不判红**：`⚠ WARN <文件>:L<行> <调用>  ← <作用域>：无此 func` / `…：无此 signal` = 字面量名在对应作用域里找不到，人工判真死引用 / 误报；`--json --suggest` 里记 `level: warn`（ok=true，不计 pass/fail） |
 | 4 | Main 拆出件拼回（一之零） | 1. check_symbols（lane ms / cs8 / gd16 / cs13） | Python | ✓ | `python3 tools/check_symbols.py` | 「一之零」每件 `✓ scripts/ui/<件>.gd：N 支转发拼回函数体` + `✓ 头注写「从 Main.gd 原样搬出」的 N 件与 MAIN_SPLITS 一一对上；Main 调拆出件处都是一行转发；非拆出件的一行委托 N 处都在 MAIN_NOT_SPLITS` + `✓ MAIN_NOT_SPLITS N 条都有效：文件在、Main 一行转发到它、目标函数在、注明与实际转发一致` + `✓ tools/main_splits.txt 与重算逐字节一致（N 件；…）` + `✓ godot_smoke.gd 与此同读 tools/main_splits.txt（_main_family_src → _main_splits，不自带清单）`。清单只有 `tools/main_splits.txt` 一份（lane cs13），两边都读它的第一列；**拼回只对源码字符串断言有效**：行号、`main.` 前缀、static / 实例语义不在此列（口径见 §三.1） | `✗ … 转发到 <件> 的 fn，那边没有这支 static func` = 拆出件改名 / 删了没跟转发；`登记为 Main 拆出件，但 Main 里没有一行转发` = 登记了没接；`调了拆出件 … 却不是一行转发` = 转发带行尾注释 / 两行 / 折行签名，拼回不认；`一行转发到 <件>，它没登记进 MAIN_SPLITS` / `头注写「从 Main.gd 原样搬出」，却没登记` = 新拆一刀忘登记；`登记为拆出件，头注…没写` = 约定字样丢了；`tools/main_splits.txt 第 N 行与重算不一致` = 手改了清单，或台账 / 拆出件 / Main 转发改了没 `gen_main_splits.py --write`；`台账登记的拆出件 … 文件不存在` / `登记在 tools/main_splits.txt，文件却不存在` = 删了拆出件没更新台账和清单；`godot_smoke.gd 没改成读 tools/main_splits.txt` = smoke 又自带了一份清单 / 写死了路径；`MAIN_NOT_SPLITS 条目 <件> 文件不存在` / `Main 没 preload 它或没有一行转发到它` / `转发到 <件> 的 fn，那边没有这支 func（…指向不存在的目标）` / `注明「A → B」，Main 里实际一行转发是 …` / `同时登记在 MAIN_SPLITS 与 MAIN_NOT_SPLITS` = 放行清单过时（lane gd16），删条目或改注。都计入 check_symbols 问题、退 1 |
-| 5 | gen_main_splits --write | 1. check_symbols（lane cs13） | Python | — | `python3 tools/gen_main_splits.py --write`（或 `python3 tools/gen_main_splits.py`） | `✓ --write：tools/main_splits.txt 与重算逐字节一致，未改动`；有差异则 `↻ --write：已重写 tools/main_splits.txt（N 件；请连同提交）`，之后照常对账一遍、`结果：全部通过`。不带 `--write` 只对账不写盘（与 check_symbols「一之零」同一个 check()）。拆出件 / lane ← 台账节标题，拆出函数 ← Main 一行转发，commit / 原 Main 行范围 ← git（拆出 commit 父版 Main.gd），台账写了逐支行段的逐支对账。浅克隆取不到拆出 commit 父版时那一行报 `⚠ … 未验`、沿用清单原值，不判红 | `✗ --write：有问题，tools/main_splits.txt 未改动` + 各条 `✗`（台账登记的拆出件不存在、拆出件有 static func 没有 Main 转发、拆前 Main.gd 里找不到转发的 Main 函数、台账逐支行段与重算不符）→ 退 1。**会改写 `tools/main_splits.txt`**，所以不进一键跑；新拆一刀的 lane 追加台账一节后跑它、连同提交 |
+| 5 | gen_main_splits --write | 1. check_symbols（lane cs13） | Python | — | `python3 tools/gen_main_splits.py --write`（或 `python3 tools/gen_main_splits.py`） | `✓ --write：tools/main_splits.txt 与重算逐字节一致，未改动`；有差异则 `↻ --write：已重写 tools/main_splits.txt（N 件；请连同提交）`，之后照常对账一遍、`结果：全部通过`。不带 `--write` 只对账不写盘（与 check_symbols「一之零」同一个 check()）。拆出件 / lane ← 台账节标题，拆出函数 ← Main 一行转发，commit / 原 Main 行范围 ← git（拆出 commit 父版 Main.gd），台账写了逐支行段的逐支对账。浅克隆取不到拆出 commit 父版时那一行报 `⚠ … 未验`、沿用清单原值，不判红。commit 列的 `-`：只在 HEAD 就是拆出 commit 时照认（lane auditfix1），HEAD 往前走了对账即红、`--write` 补成哈希 | `✗ --write：有问题，tools/main_splits.txt 未改动` + 各条 `✗`（台账登记的拆出件不存在、拆出件有 static func 没有 Main 转发、拆前 Main.gd 里找不到转发的 Main 函数、台账逐支行段与重算不符）→ 退 1。**会改写 `tools/main_splits.txt`**，所以不进一键跑；新拆一刀的 lane 追加台账一节后跑它、连同提交。对账（check_symbols「一之零」）的 `✗ <件>：拆出 commit X 已不是 HEAD（其后又有 N 个提交），清单 commit 列还记 -…` = 拆分那笔之后没补哈希（lane auditfix1 前这一格放行到下一刀才补）：跑 `--write`、另提一笔，与拆分同一次落地 |
 | 6 | 按函数名取函数体（十三） | 1. check_symbols（lane gd16 / cs9 / cs12 / cs11 / cs17） | Python | ✓ | `python3 tools/check_symbols.py` | 「十三、按函数名取函数体」`✓ _func_body / func_bodies().get / _locate_func 的 N 处按名取用都取到函数体，_node_block 的 M 处按名取用都取到场景节点块`（N / M = 本脚本「行号 + 名字」去重后的取用处；_node_block 按 `[node name="X"` 取场景节点块，lane cs12 纳入同一本账）。各节按名取体一律先定位再取体（lane cs9：原先手切的 find / split / 无锚正则 / _static_body 都收进 `_locate_func`，只认行首 `[static ]func 名字(`）；取到的只是一行转发（`func X(…):\n\t_K.x(self, …)` / 原样传形参给别的函数，判据 `func_body.forward_of`）同样记成取不到（lane cs17）；本来就读转发那一行的（顺调用链展开、钉「Main 只许一行转发」）写 `.get(name, …, forward_ok=True)`。只探有没有这支函数、不想判红的写 `name in func_bodies(src)`（不记账）；本身要跑在变异源码上的契约（`_guild_remap_contract`）一律 `in` 探、缺了记成契约错误「缺 X」，不走 .get 记账（lane cs12）。+ `✓ 断言点名的 N 支函数都还在登记的文件里（M 个文件，按 (文件, 名字) 认；反向断言 / find 锚 / 存在性探查；NAMED_FUNCS 与本脚本自扫一致）`（lane cs9 / cs11） | `✗ check_symbols.py:<行> 取函数体 <fn> 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转` = 被读的函数改了名 / 删了 / 搬走没拼回，或断言里函数名写错；`✗ check_symbols.py:<行> 取函数体 <fn> 只取到一行转发（→ <目标>），真身不在这份源码里（拆走没拼回 / 该改读拆出件），这处断言在空转` = 读的那份源码里这支只剩一行转发（Main 拆走一刀、转发到没登记 / 没 preload 的件，或直读 Main.gd / 别的文件时切到转发），改读真身所在的文件（lane cs17）；`✗ check_symbols.py:<行> 取场景节点块 [node name="X"] 取不到（节点改名 / 删了 / 挪进子场景）` = 同上、对象是 .tscn 节点（lane cs12）；改前这里给 `""`（手切的还会落到整份文件 / 最后一个字 / 前缀同名的别的函数），反向断言（`"X" not in body`）照样绿；`✗ 断言点名的函数 X 在 <文件> 已无定义，别处还有同名（…）` / `…（scripts/ 下也没有…）` = 反向断言 / find 锚 / 存在性探查点到的函数在登记的文件里改了名、删了或挪到别的文件（lane cs11：同名函数在别的文件还在也红），断言与 NAMED_FUNCS 跟着改；`✗ NAMED_FUNCS 登记的文件 <文件> 不存在` = 登记路径写错 / 文件挪了目录；`✗ check_symbols.py:<行> 的断言点到函数 X，没登记进 NAMED_FUNCS` = 新写这类断言没登记。计入 check_symbols 问题、退 1 |
 | 7 | 按函数名取函数体（十一） | 2. verify_economy（lane cs14 / cs17） | Python | ✓ | `python3 tools/verify_economy.py` | 「十一、按函数名取函数体」`✓ _locate_func / _gd_body / _gd_fn 的 N 处按名取用都取到函数体`（N = 本脚本「行号 + 函数名」去重后的取用处）。账本与 `_locate_func` 在 `tools/func_body.py`，与 check_symbols 十三节同一份（lane cs14）；原先手切的 `src.split("func X", 1)[1].split("\nfunc ", 1)[0]`（有 / 无 `in` 守卫）与 `guild_body` 一律改走 `_locate_func`，`_gd_body` / `_gd_fn` 切法不变、取完记同一本账。取到的只是一行转发同样记成取不到（lane cs17，判据 `func_body.forward_of`）；`_on_npc_bribe` 那处本来就读 Main 的转发再顺藤去 NpcPage 取真身，写 `forward_ok=True` | `✗ verify_economy.py:<行> 取函数体 <fn> 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转` = 被读的函数改了名 / 删了 / 搬走（Main 拆出件没跟着改读哪份），或断言里函数名写错；改前守卫版给 `""`、`or 整份文件` 兜底，无守卫 split 按前缀认名（`X` 改成 `X_v2` 照样切到它），反向断言照样绿。`✗ verify_economy.py:<行> 取函数体 <fn> 只取到一行转发（→ <目标>），…这处断言在空转` = 直读的 Main.gd / 别的文件里这支已拆走、只剩一行转发，改读拆出件（去 `main.` 前缀）或真身所在文件（lane cs17；如 main9 把 `_setup_residence` 改读 ResidencePage.setup_residence）。计入 verify_economy 未通过项、退 1 |
 | 8 | compile 清单自检（inventory） | 11. compile（lane ea4） | Godot | ✓ | `godot --headless --path . -s res://tools/godot_compile_check.gd` | `COMPILE_CHECK OK   inventory SCRIPTS == tracked *.gd under scripts/tools (exempt N)` | `COMPILE_CHECK FAIL inventory <原因> …`（原因 `unlisted` / `listed-missing` / `dup` / `exempt-stale` / `exempt-but-listed`） = `git ls-files` 里已跟踪的 `.gd` 没进 `SCRIPTS`（或 `INVENTORY_EXEMPT` 没写理由）、清单路径不存在 / 重复 / 豁免失效，整体计 bad+1；`COMPILE_CHECK NOTE inventory git ls-files unavailable` = 没 git，退回扫盘（warn，不判红） |
@@ -150,7 +151,7 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 
 <!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-# 必跑十四条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+# 必跑十五条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
 rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
 python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
 python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
@@ -166,6 +167,7 @@ godot --quiet --headless --path . -s res://tools/godot_story_check.gd -- --json 
 godot --quiet --headless --path . -s res://tools/p7_guild_exam_smoke.gd -- --json > /tmp/gates/p7.json
 DISPLAY=:2 godot --quiet --path . -s res://tools/patrol_shell.gd -- --json > /tmp/gates/patrol.json
 python3 tools/check_mac_paths.py --json > /tmp/gates/RefsMacPath.json
+python3 tools/check_decision_refs.py --json > /tmp/gates/check_decision_refs.json
 python3 tools/gate_json.py --judge /tmp/gates/*.json   # 汇总：逐道一行 ✓/✗；任一道红或没有 JSON 行 → 退 1
 ```
 <!-- GATES-BATCH:END -->
@@ -209,6 +211,7 @@ godot --headless --path . -s res://tools/godot_story_check.gd
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 python3 tools/check_mac_paths.py
+python3 tools/check_decision_refs.py
 ```
 
 **共同的坑：工作树是多 lane 共用的。** 别的 lane 未提交的改动（例如正在改 `SaveLoad.gd`）会让你的门禁红。判「是不是我弄红的」：`git worktree add --detach /tmp/x HEAD`，只放进自己的改动再跑（Godot 门禁先 `cp -a .godot /tmp/x/` 省掉重新导入）。
@@ -344,13 +347,19 @@ python3 tools/check_mac_paths.py
 - 口径：模式 2 条——`/home/<用户>`（家目录，写 `~/…` 或走 PATH / `$GODOT`）、`/workspace/<目录>`（本机工作区；仓库根本身永不登记，命令一律 `--path .`，否则在隔离 worktree / 软链里照抄会悄悄跑主树）。登记的仓外根只有两条：截图证据根 `/workspace/nk1-qa-shots`（owner `tools/shot_gate.gd` 的 `DEFAULT_SHOT_ROOT`，`NK1_SHOT_DIR` 覆盖）与简报目录 `/workspace/nk1-agent-briefs`（owner `tools/check_decision_refs.py`，`NK1_BRIEFS` 覆盖）；文档与注释（`#` / `//` 行、.py 文档串）里写它们不红，代码行只许 owner 写。与 §三.19 gates_md「`tools/` 代码里不写死默认截图根」同向，本道扫全仓、两条根都管。Godot 节点路径 `/root/…`、`~/.local/…`、`/tmp/…` 不算。lane 加跑档（不进一键跑），CI 里作 §四 步骤 5（lane gd22）。
 - 常见红因：照抄本机命令把仓库根写成 `--path /workspace/<仓库>`（改 `--path .`）；文档写引擎绝对路径 `/home/<用户>/.local/bin/godot`（写 `godot` / `~/.local/bin/godot`）；新探针在代码里拼 `/workspace/nk1-qa-shots/…`（改走 `ShotGate.out_dir`）；挪了 owner 文件没改 `ROOTS`。
 
+### 22. check_decision_refs（`tools/check_decision_refs.py`，拍板清单「文件:行」跟号）
+- 读：逐处问题一行 `✗ NOFILE` / `✗ OOR` / `✗ DRIFT L<清单行> 文件:行：…该处内容变了；可跟号 → :新号（diff / 同文件原文 / 函数名 / 跨文件原文）` 或 `跟不上，要人工：…`（附所在函数现在在哪、同文件最像的行）/ `✗ 待核 L<清单行>`；末两行 `锚 X：引用 N 处（仓外 brief M 处只查越界），跳过「原文作」K 处；NOFILE/OOR 0，DRIFT 0（可自动跟号 0、要人工 0），待核标记 0` + `结果：全部通过`。比的是清单头部锚（「行号：……按 HEAD 某提交」）那个提交里的原文和**工作树**里同一行号的原文，所以没提交的改动也会让它红（同 check_symbols）；`--show` 逐处印原文回读，`--since REV` 自证改号前后指的是同一段（MISMATCH = 号改错了或有意换了所指，后者在 Verify 里写明）。仓外 brief（`lane-*.md` / `COORDINATION*.md`，`$NK1_BRIEFS`）只查越界，目录不在只记 `⚠`。
+- 改号自证（lane auditfix1，默认跑）：`改号自证 [对 HEAD 版 / 对最近改清单那笔的父版]（旧锚 A → 新锚 B）：对上 N 对，…MISMATCH 0…`。为什么要这步：锚 = HEAD 时，清单里的号写歪了，锚里那行和工作树同号那行照样一致，上面的 DRIFT 看不出来（本片实测：`:1942` 改成 `:1941` 改前 rc=0）。所以和上一版清单（工作树改了没提交 → HEAD 版；没改 → 最近改清单那个提交的父版）按 `--since` 的口径配对，要「旧锚旧号那段 == 本版锚本版号那段」；不等、而旧那段原文在新处文件里还找得到 → `✗ MISMATCH …旧锚那段原文在 B 里还在 文件:行——行号改歪了？`。旧那段原文已找不到（所指那段自己被改写了，`--fix` 给「跟不上」的多是这种）只记 `⚠ 改指未验`，不判红；确是有意把引用换指到别处的，在那处引用后括注「原文作 `:旧号`」认账。
+- 口径：lane dec3 立、dec4 加四层跟号与 `--fix`，lane auditfix1 入册即必跑、排一键跑末条（原先不在注册表里，自 cs14 `a8ff603` 起主干一直红、到 `abb3f05` 积了 DRIFT 47 没人看见，独立审计 audit1 点名）。跑一次约 1s，只要 python3 + git，不带 `--fix` 只读不写盘。修法：`python3 tools/check_decision_refs.py --fix`——跟得上的改号、头部锚改成 HEAD，跟不上的插「〔跟号待核：锚 X 里是 文件:行〕」（照线索回读、改号、删标记）；`--fix` 要求所引文件与 HEAD 一致，所以**改了所引文件的 lane 先提交代码，再 --fix、另提一笔清单**（拆 Main 的与 `gen_main_splits.py --write` 补哈希同一笔），两笔同一次落地，一键跑以第二笔之后的 rc 为准。
+- 常见红因：拆 Main / 往 check_symbols、verify_economy 里加断言挪了清单所引的行（DRIFT，`--fix` 多半全自动跟上）；所引那段自己被改写（cs10 收紧正则、cs14 改取体写法这类，`--fix` 给「跟不上，要人工」，按线索找同一条断言的新行）；`--fix` 打的「待核」标记没删；清单头部锚被手改成不存在的提交。
+
 ## 四、CI 建议步骤
 
-只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑十四道（含导入步骤），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
+只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑十五道（含导入步骤），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑十四条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑十五条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
 godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
@@ -365,6 +374,7 @@ godot --headless --path . -s res://tools/godot_story_check.gd
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 python3 tools/check_mac_paths.py
+python3 tools/check_decision_refs.py
 # 1. 侧车成对 / 一致
 python3 tools/check_sidecars.py
 # 2. builtin_api 漂移

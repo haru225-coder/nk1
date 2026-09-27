@@ -32,6 +32,11 @@
   行内序号」配，只改了号 / 搬了文件的靠这一步配上；改了文字的行再按文件名序列对齐），对上的每一对都要
   「旧锚里旧行号那段 == 工作树里新行号那段」（.gd 按上面的归一化比，搬进拆出件的函数头照改名表比），不等判红（MISMATCH：行号改错了，或有意换了所指——后者在 Verify 里写明）；
   新版多出来的引用只计数，要 --show 人工回读。
+  · 改号自证（lane auditfix1，默认跑，--since 时不跑）：和上一版清单（工作树改了没提交 → HEAD 版；否则 → 最近改清单那个提交的父版）
+    按 --since 的口径配对，「旧锚旧号那段 == 本版锚本版号那段」，不等且旧那段原文在新处文件里还找得到 → MISMATCH（号写歪了）。
+    锚 = HEAD 时，号写歪了锚里那行和工作树同号那行照样一致，DRIFT 看不出来，靠这一步。旧那段原文已找不到（所指那段自己被改写，
+    --fix 给「跟不上」的多是这种）只记 ⚠ 改指未验，不判红——人工回读、改号是 --fix 流程本来就要做的。
+    有意把引用换指别处（旧那段还在）的，同一行括注「原文作 `:旧号`」认账（原文作括注本就不查，见下）。
 不判红：
   · 「原文作 `:N`」括注里的行号：清单有意保留的原稿旧行号，跳过（从「原文作」到下一个「）」「，」「；」为止）；
   · 仓外 brief（`lane-*.md` / `COORDINATION*.md`，在 $NK1_BRIEFS，默认 /workspace/nk1-agent-briefs）：只查行号不越界，不跟号；
@@ -43,12 +48,19 @@
 而且策划要的是点得开的 `文件:行`；函数名也会改（拆出件把 `_setup_yamen` 改成 `setup_yamen`）。所以清单照旧写行号，
 符号名只当跟号的线索（③），由脚本把行号跟上。
 改了清单所引文件（拆 Main / 改 check_symbols 之类）的 lane，收尾跑本脚本：红了就 --fix，回读「待核」，提交清单。
-本脚本不进必跑门禁（任何 lane 挪动所引文件的行都会让它红，这正是它要报的）。
+lane auditfix1 起进必跑门禁（一键跑末条，docs/GATES.md §三.22）：dec3 入库后没进注册表，自 cs14 `a8ff603` 起主干一直红
+（到 `abb3f05` 积了 DRIFT 47）没人看见。任何 lane 挪动所引文件的行都会让它红，这正是它要报的；--fix 只认已提交的文件，
+所以改了所引文件的 lane 先提交代码，再 --fix、回读「待核」、另提一笔清单（拆 Main 的与 gen_main_splits --write 补哈希同一笔），
+两笔同一次落地，一键跑以第二笔之后的 rc 为准。
+  python3 tools/check_decision_refs.py --json           # 机读（同 docs/GATES.md §二）
 """
 import argparse, difflib, os, re, subprocess, sys
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
+if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+    sys.path.insert(0, TOOLS)
+    import gate_json; gate_json.maybe_json(__file__)
 DEFAULT_DOC = os.path.join(ROOT, "docs", "待策划拍板清单_2026-09-28.md")
 BRIEFS = os.environ.get("NK1_BRIEFS", "/workspace/nk1-agent-briefs")
 
@@ -542,12 +554,17 @@ def skeleton(line):
     return MARK.sub("", TOKEN.sub("§", line))
 
 
-def since(o, repo, refs, lines):
+def since(o, repo, refs, lines, rev=None, new_rev=None, label=None):
+    """rev 版清单（缺省 o.since）的引用与本版逐对比内容，返回 MISMATCH 数（取不到 rev 版清单返回 None）。
+    new_rev：本版引用按这个提交里的内容比（改号自证传本版头部的锚），缺省比工作树（--since）；
+    传了 new_rev 的，内容不同而旧锚那段原文在新处文件里已经找不到（所指那段自己被改写了）只记 ⚠、不判红。"""
+    rev = rev or o.since
+    label = label or f"--since {rev}"
     rel = os.path.relpath(os.path.abspath(o.doc), ROOT)
-    old_text = git("show", f"{o.since}:{rel}")
+    old_text = git("show", f"{rev}:{rel}")
     old_anchor = old_text and anchor_of(old_text)
     if not old_anchor:
-        print(f"  ✗ --since {o.since}：取不到 {rel} 或它头部的锚")
+        print(f"  ✗ {label}：取不到 {rel} 或它头部的锚")
         return None
     old_lines = old_text.splitlines()
     old_refs, _ = parse_refs(old_lines)
@@ -569,11 +586,14 @@ def since(o, repo, refs, lines):
     pairs += [(ro[i + k], rn[j + k]) for i, j, n in sm.get_matching_blocks() for k in range(n)]
     # 同一行里同一文件新插了一处引用时，按文件名对齐会错位：先看同一行里还没对上的新引用有没有正好是旧内容的
     unpaired = set(range(len(refs))) - {j for _, j in pairs}
-    same = moved = mismatch = marked = 0
+    same = moved = mismatch = marked = rewritten = acked = 0
+
+    def new_lines(p):
+        return repo.at_rev(new_rev, p) if new_rev else repo.work(p)
 
     def content(k):
         p, e = repo.resolve(refs[k][1])
-        w = repo.work(p) if not e else None
+        w = new_lines(p) if not e else None
         return [norm(x, ext_of(p)) for x in w[refs[k][2] - 1:refs[k][3]]] if w is not None else None
     for i, j in pairs:
         ol, f, oa, ob = old_refs[i]
@@ -595,8 +615,29 @@ def since(o, repo, refs, lines):
                 if f"里是 {path}:{span_str(oa, ob)}〕" in lines[refs[j][0] - 1]:
                     marked += 1
                     continue
+                tag = f"L{refs[j][0]} `{refs[j][1]}:{span_str(refs[j][2], refs[j][3])}`（旧版 L{ol} `{f}:{span_str(oa, ob)}` @ {old_anchor}）"
+                if new_rev:
+                    # 改号自证（lane auditfix1）：旧锚那段原文在新处文件里还找得到 → 号改歪了；找不到 → 那段自己被改写，只能人工回读；
+                    # 有意换了所指的，本行括注「原文作 `:旧号`」认账
+                    nl = [norm(x, ext_of(np_)) for x in (new_lines(np_) or [])]
+                    still = find_seg(nl, want)
+                    line = lines[refs[j][0] - 1]
+                    old_ref = span_str(oa, ob)
+                    noted = {m.group(1).strip() for a, b in (x.span() for x in OLD_NOTE.finditer(line))
+                             for m in TOKEN.finditer(line[a:b])}
+                    if noted & {f":{old_ref}", f"{f}:{old_ref}", f"{path}:{old_ref}"}:
+                        acked += 1
+                        continue
+                    if not still:
+                        rewritten += 1
+                        print(f"  ⚠ 改指未验 {tag}：旧锚那段在 {new_rev} 的 {np_} 里已找不到原文（所指那段被改写过），人工回读过就不用管")
+                        continue
+                    mismatch += 1
+                    print(f"  ✗ MISMATCH {tag}：两处内容不同，旧锚那段原文在 {new_rev} 里还在 {np_}:"
+                          + "、:".join(span_str(i, i + ob - oa) for i in still[:3]) + "——行号改歪了？")
+                    continue
                 mismatch += 1
-                print(f"  ✗ MISMATCH L{refs[j][0]} `{refs[j][1]}:{refs[j][2]}`（旧版 L{ol} `{f}:{oa}` @ {old_anchor}）：两处内容不同")
+                print(f"  ✗ MISMATCH {tag}：两处内容不同")
                 continue
             unpaired.discard(alt[0])
             unpaired.add(j)
@@ -605,10 +646,28 @@ def since(o, repo, refs, lines):
             same += 1
         else:
             moved += 1
-    print(f"  --since {o.since}（旧锚 {old_anchor}）：对上 {same + moved + mismatch + marked} 对（仓外 brief 不比），行号没变 {same}、"
-          f"改了行号且内容一致 {moved}、MISMATCH {mismatch}、所在行带「待核」不比 {marked}；"
+    print(f"  {label}（旧锚 {old_anchor}{f' → 新锚 {new_rev}' if new_rev else ''}）：对上 {same + moved + mismatch + marked + rewritten + acked} 对（仓外 brief 不比），行号没变 {same}、"
+          f"改了行号且内容一致 {moved}、MISMATCH {mismatch}、所在行带「待核」不比 {marked}"
+          + (f"、所指那段被改写（⚠ 改指未验）{rewritten}、括注「原文作」认账改指 {acked}" if new_rev else "") + "；"
           f"新版多出 {len(unpaired)} 处引用（--show 回读）")
     return mismatch
+
+
+def prev_rev(doc):
+    """改号自证的比对基准：工作树里的清单和 HEAD 版不同 → HEAD；相同 → 最近一次改清单那个提交的父版。
+    返回 (rev | None, 说明)；None = 没有可比的上一版（清单首版 / 还没提交 / 浅克隆取不到父版）。"""
+    rel = os.path.relpath(os.path.abspath(doc), ROOT)
+    head_text = git("show", f"HEAD:{rel}")
+    if head_text is None:
+        return None, "清单还没提交过"
+    if head_text != open(doc, encoding="utf-8").read():
+        return "HEAD", "工作树里的清单改过、未提交：对 HEAD 版"
+    c = (git("log", "-1", "--format=%h", "--", rel) or "").strip()
+    if not c or git("rev-parse", "--verify", "-q", c + "^") is None:
+        return None, "取不到最近改清单那个提交的父版（浅克隆？）"
+    if git("show", f"{c}^:{rel}") is None:
+        return None, f"清单是 {c} 新建的，没有上一版"
+    return c + "^", f"清单最近改于 {c}：对它的父版"
 
 
 def main():
@@ -641,9 +700,24 @@ def main():
         mismatch = since(o, repo, refs, text.splitlines())
         if mismatch is None:
             return 1
+    else:
+        # 改号自证（lane auditfix1）：锚 = HEAD 时清单里的号写歪了，锚里那行和工作树同号那行照样一致，上面的 DRIFT 看不出来；
+        # 所以再和上一版清单逐对比：旧锚旧号那段 == 本版锚本版号那段
+        rev, why = prev_rev(o.doc)
+        if rev is None:
+            print(f"  ⚠ 改号自证跳过：{why}")
+        else:
+            mismatch = since(o, repo, refs, text.splitlines(), rev=rev, new_rev=anchor, label=f"改号自证 [{why}]")
+            if mismatch is None:
+                return 1
 
     if n["bad"] or n["drift"] or n["marks"] or mismatch:
-        print("结果：有问题（DRIFT 先跑 --fix 自动跟号；「要人工」「待核」的回读后改号、删标记，再提交清单）")
+        how = []
+        if n["bad"] or n["drift"] or n["marks"]:
+            how.append("DRIFT 先跑 --fix 自动跟号；「要人工」「待核」的回读后改号、删标记，再提交清单")
+        if mismatch and not o.since:
+            how.append("MISMATCH 是本版清单的号和上一版指的不是同一段：改回提示的号；确是有意换了所指，在那处引用后括注「原文作 `:旧号`」")
+        print(f"结果：有问题（{'；'.join(how) or '见上'}）")
         return 1
     print("结果：全部通过")
     return 0

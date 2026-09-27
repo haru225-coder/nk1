@@ -18,7 +18,9 @@ main_splits.txt 是 Main.gd 拆出件的唯一清单：check_symbols（一之零
     只隔空行的相邻段并成一段；台账里写了逐支行段的（表格行「| `_fn(…)` | a–b」），与重算的逐支行段对账
 
 git 历史的两条放行（其余一律逐字节比）：
-  · 拆出的那个 commit 自己不可能写进自己的哈希：清单里记 `-`、而该 commit 版的清单也记 `-` 的，照认（下次 --write 会补上哈希）；
+  · 拆出的那个 commit 自己不可能写进自己的哈希：清单里记 `-`、该 commit 版的清单也记 `-`、且 **HEAD 就是这个 commit** 的，照认；
+    HEAD 已往前走（拆出 commit 之后又有提交）还记 `-` 即判红，要 --write 补上哈希（lane auditfix1：原先不看 HEAD，
+    `-` 能一直绿下去，只等下一刀顺手补）。所以拆 Main 的 lane 提交拆分后紧跟着 --write、另提一笔补哈希，两笔同一次落地；
   · 浅克隆取不到拆出 commit 或其父版（如 CI 只拉 1 层）：这一行的 commit / 行范围两格沿用清单原值，报「未验」，不判红。
 """
 import os, re, subprocess, sys
@@ -141,7 +143,7 @@ def _add_commit(rel):
 
 def build(old_rows=None, backfill=False):
     """重算清单。返回 (全文, 问题列表, 备注列表)。old_rows：现清单按路径的各列，git 取不到时沿用。
-    backfill：--write 用，拆出 commit 自己记的 `-` 补成哈希；对账时不补（照认 `-`）。"""
+    backfill：--write 用，拆出 commit 自己记的 `-` 补成哈希；对账时不补（HEAD 就是拆出 commit 才照认 `-`，否则判红）。"""
     problems, notes = [], []
     old_rows = old_rows or {}
     try:
@@ -190,7 +192,15 @@ def build(old_rows=None, backfill=False):
             elif old and old[2] == "-" and not backfill:
                 was = _git("show", f"{commit}:{TXT_REL}")
                 if was is not None and any(ln.split("\t")[:3] == [rel, lane, "-"] for ln in was.split("\n")):
-                    commit = "-"  # 拆出 commit 自己记的 `-`：照认
+                    head, full = _git("rev-parse", "HEAD"), _git("rev-parse", commit)
+                    if not (head and full and head.strip() == full.strip()):
+                        # lane auditfix1：只在 HEAD 就是拆出 commit 时放行。原先只看「该 commit 版的清单也记 `-`」，
+                        # 那永远成立，`-` 就一直绿到下一刀 --write 才补（main8 的 `-` 靠 main9 顺手补上，main9 的留成敞口）
+                        n = (_git("rev-list", "--count", f"{commit}..HEAD") or "?").strip()
+                        problems.append(f"{rel}：拆出 commit {commit} 已不是 HEAD（其后又有 {n} 个提交），清单 commit 列还记 `-`"
+                                        f"——跑 python3 tools/gen_main_splits.py --write 补成 {commit} 并提交"
+                                        f"（拆 Main 的 lane 提交拆分后就补，另提一笔、与拆分同一次落地）")
+                    commit = "-"  # 拆出 commit 自己记的 `-`：HEAD 就是它时照认（不是 HEAD 的上面已记问题，这里不再重复报逐字节不一致）
         rows.append([rel, lane, commit, rng, " ".join(f"{m}→{s}" for m, s in pairs)])
     return HEADER + "".join("\t".join(r) + "\n" for r in rows), problems, notes
 
