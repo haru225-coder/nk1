@@ -3,16 +3,22 @@ extends SceneTree
 ## 摆场仿 ShotTour._site_siege / _site_ended_port：先进泉州港页，再立守城（1276-11 兴化）或落定结局回泉州。
 ## 触发：首次进守城 / 终局岸带各演一次纪实题签（「兴化军・围城」印「城」、「港名・结局」印「终」）；
 ## -s 工具脚本下 play_transition 当帧直通，这里直接调 UiTransition 助手截墨幕那一帧。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_siege_endgame_probe.gd
+## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_siege_endgame_probe.gd   # 截图门禁（须出 8 张）
+##       godot --headless --path /workspace/nk1 -s res://tools/qa_siege_endgame_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/siege"
+const TAG := "QA_SIEGE"
+const EXPECTED_SHOTS := 8
+const ShotGate := preload("res://tools/shot_gate.gd")
 const _UT := preload("res://scripts/ui/UiTransition.gd")
 const ENDING := "泉州蒲氏的船"
 
 var _main: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -21,7 +27,13 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_SIEGE_BEGIN")
 
 	_expect(str(_UT.siege_title()) == "兴化军・围城", "守城题签「%s」" % _UT.siege_title())
@@ -109,16 +121,7 @@ func _run() -> void:
 	gs.from_dict({})
 	cal.from_dict({"year": 1255, "month": 3, "day": 1})
 
-	print("QA_SIEGE_SHOTS_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if _fails.is_empty():
-		print("QA_SIEGE_OK")
-	else:
-		print("QA_SIEGE_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-	quit(0 if _fails.is_empty() else 1)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 
 
 func _expect(ok: bool, what: String) -> void:
@@ -174,14 +177,7 @@ func _settle(n: int) -> void:
 
 func _shot(stem: String) -> void:
 	await _settle(2)
-	var img: Image = root.get_viewport().get_texture().get_image()
-	if img == null:
-		_fails.append("空帧 %s" % stem)
+	if _contract:
 		return
-	var path := "%s/%s.png" % [OUT_DIR, stem]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("写失败 %s (%s)" % [stem, str(err)])
-		return
-	_saved.append(path)
-	print("QA_SIEGE_SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)

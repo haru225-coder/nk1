@@ -3,16 +3,22 @@ extends SceneTree
 ## 摆场：泉州酒馆募人（有候选）→ 雇入一人（在船・辞退）→ 雇满本港职事（空态）
 ##       → 泉州船屋坞位添人 chip → 减员后补齐 chip → 船籍簿职事行。
 ## 断言只查文案与钮字；入伙钱、月俸、码头每人 20 的算式照旧，这里顺带核一遍数没动。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_crew_hire_probe.gd
+## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_crew_hire_probe.gd   # 截图门禁（须出 6 张）
+##       godot --headless --path /workspace/nk1 -s res://tools/qa_crew_hire_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/crew"
+const TAG := "QA_CREW_HIRE"
+const EXPECTED_SHOTS := 6
+const ShotGate := preload("res://tools/shot_gate.gd")
 ## 泉州 ch1 可雇之人（data/crew.json）：火长、总管、杂事、通事、医人各一
 const QZ_ALL := ["wu_zhen", "wang_zhiku", "huang_zhangfang", "pu_alie", "monk_puji"]
 
 var _main: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -21,7 +27,13 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_CREW_HIRE_BEGIN")
 
 	var cine_src: GDScript = load("res://scripts/cutscene/Cinematics.gd") as GDScript
@@ -142,16 +154,7 @@ func _run() -> void:
 		await _settle(8)
 	await _shot("06_ledger_crew_roster")
 
-	print("QA_CREW_HIRE_SHOTS_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if _fails.is_empty():
-		print("QA_CREW_HIRE_OK")
-	else:
-		print("QA_CREW_HIRE_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-	quit(0 if _fails.is_empty() else 1)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 
 
 func _expect(ok: bool, what: String) -> void:
@@ -194,14 +197,7 @@ func _settle(n: int) -> void:
 
 func _shot(stem: String) -> void:
 	await _settle(2)
-	var img: Image = root.get_viewport().get_texture().get_image()
-	if img == null:
-		_fails.append("空帧 %s" % stem)
+	if _contract:
 		return
-	var path := "%s/%s.png" % [OUT_DIR, stem]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("写失败 %s (%s)" % [stem, str(err)])
-		return
-	_saved.append(path)
-	print("QA_CREW_HIRE_SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)

@@ -1,15 +1,21 @@
 extends SceneTree
 ## 标题页 / 序章题签巡检：截 title_*.png 到 /workspace/nk1-qa-shots/title/。
 ## 触发：开机进 cg_title；点「开卷」见「序章・卷首」；四方沙盘末页「翻页」见「序章・兴化海口」。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_title_probe.gd
+## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_title_probe.gd   # 截图门禁（须出 5 张）
+##       godot --headless --path /workspace/nk1 -s res://tools/qa_title_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/title"
+const TAG := "QA_TITLE"
+const EXPECTED_SHOTS := 5
+const ShotGate := preload("res://tools/shot_gate.gd")
 const _UT := preload("res://scripts/ui/UiTransition.gd")
 
 var _main: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -18,7 +24,13 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_TITLE_BEGIN")
 
 	var open_t := str(_UT.prologue_open_title())
@@ -77,16 +89,7 @@ func _run() -> void:
 	await _settle(8)
 	await _shot("05_wine_shed")
 
-	print("QA_TITLE_SHOTS_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if _fails.is_empty():
-		print("QA_TITLE_OK")
-	else:
-		print("QA_TITLE_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-	quit(0 if _fails.is_empty() else 1)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 
 
 func _finish_title_stage() -> void:
@@ -109,14 +112,7 @@ func _settle(n: int) -> void:
 
 func _shot(stem: String) -> void:
 	await _settle(2)
-	var img: Image = root.get_viewport().get_texture().get_image()
-	if img == null:
-		_fails.append("空帧 %s" % stem)
+	if _contract:
 		return
-	var path := "%s/%s.png" % [OUT_DIR, stem]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("写失败 %s (%s)" % [stem, str(err)])
-		return
-	_saved.append(path)
-	print("QA_TITLE_SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)

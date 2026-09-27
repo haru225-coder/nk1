@@ -2,15 +2,21 @@ extends SceneTree
 ## Lane Y：巡检证据包（入行/赴试/名册/海图）→ /workspace/nk1-qa-shots/patrol-pack/
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_patrol_pack_screenshots.gd
 ## 只截证据，不改玩法。
+##       godot --headless --path /workspace/nk1 -s res://tools/qa_patrol_pack_screenshots.gd -- --contract   # 只验非渲染断言，不截图
+## 默认严格须出 11 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/patrol-pack"
 const CHART_SCENE := "res://scenes/SeaChart.tscn"
+const TAG := "QA_PATROL_PACK"
+const EXPECTED_SHOTS := 11
+const ShotGate := preload("res://tools/shot_gate.gd")
 
 var _main: Node
 var _gs: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -20,7 +26,13 @@ func _init() -> void:
 func _run() -> void:
 	OS.set_environment("NK1_CHARS_SYNC", "1")
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_PATROL_PACK_BEGIN")
 
 	_gs = root.get_node("GameState")
@@ -190,16 +202,14 @@ func _goto(scene_id: String) -> void:
 
 
 func _shot(name: String) -> void:
+	if _contract:
+		return
 	RenderingServer.force_draw()
 	await process_frame
 	await process_frame
-	var tex = root.get_texture()
-	if tex == null:
-		_fails.append("截屏失败 %s (null texture)" % name)
-		return
-	var img: Image = tex.get_image()
+	await RenderingServer.frame_post_draw
+	var img := ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _fails)
 	if img == null:
-		_fails.append("截屏失败 %s (null image)" % name)
 		return
 	var w := img.get_width()
 	var h := img.get_height()
@@ -218,12 +228,6 @@ func _shot(name: String) -> void:
 	var avg_lum := lum_sum / float(samples.size())
 	if avg_lum < 0.04:
 		_fails.append("截屏过暗 %s avg_lum=%.3f" % [name, avg_lum])
-	var path := "%s/%s.png" % [OUT_DIR, name]
-	if img.save_png(path) != OK:
-		_fails.append("save_png %s" % path)
-		return
-	_saved.append(path)
-	print("SHOT ", path, " ", img.get_width(), "x", img.get_height())
 
 
 func _frames(n: int) -> void:
@@ -247,16 +251,4 @@ func _collect_buttons(n: Node, text: String, hits: Array) -> void:
 
 
 func _report() -> void:
-	print("QA_PATROL_PACK_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if _saved.size() < 8:
-		_fails.append("不足 8 张（现 %d）" % _saved.size())
-	if not _fails.is_empty():
-		print("QA_PATROL_PACK_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-		quit(1)
-		return
-	print("QA_PATROL_PACK_OK")
-	quit(0)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))

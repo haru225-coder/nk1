@@ -1,15 +1,22 @@
 extends SceneTree
 ## 人物呈现巡检：打开 scenes/chars/CharsDemo.tscn，逐档截帧到 /workspace/nk1-qa-shots/chars/。
 ## 用法：NK1_CHARS_SYNC=1 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chars_screenshots.gd
+##       godot --headless --path /workspace/nk1 -s res://tools/qa_chars_screenshots.gd -- --contract   # 只验非渲染断言
+## 截图缺张 / 空视口 / 一色空图 / headless 未开 --contract 一律非零退出（shot_gate.gd）；面板断言仍只记 warn。
 ## 本脚本不写任何游戏状态，只在末了 quit。
 
 const VIEW := Vector2(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/chars"
+const TAG := "QA_CHARS_SHOTS"
+const EXPECTED_SHOTS := 10
+const ShotGate := preload("res://tools/shot_gate.gd")
 const SHOT_ORDER := ["chen_wenlong", "chen_zan", "merchant_lin", "monk_jinghai"]
 
 var _demo: Node
 var _saved: Array = []
 var _fails: Array = []
+var _shot_fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -19,7 +26,13 @@ func _init() -> void:
 func _run() -> void:
 	OS.set_environment("NK1_CHARS_SYNC", "1")
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_CHARS_BEGIN")
 	_demo = (load("res://scenes/chars/CharsDemo.tscn") as PackedScene).instantiate()
 	root.add_child(_demo)
@@ -54,16 +67,11 @@ func _run() -> void:
 		await _settle(4)
 		await _shot("%02d_%s" % [int(spec[2]), str(spec[1])])
 
-	print("QA_CHARS_SHOTS_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if _fails.is_empty():
-		print("QA_CHARS_SHOTS_OK")
-	else:
+	if not _fails.is_empty():
 		print("QA_CHARS_SHOTS_WARN")
 		for f in _fails:
 			print("  warn ", f)
-	quit(0)
+	quit(ShotGate.finish_contract(TAG, _shot_fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _shot_fails))
 
 
 func _settle(n: int) -> void:
@@ -88,18 +96,9 @@ func _tab(tab_name: String) -> void:
 
 func _shot(name: String) -> void:
 	await _settle(2)
-	var img: Image = root.get_texture().get_image()
-	if img == null:
-		_fails.append("截屏失败 %s（null image）" % name)
-		print("QA_CHARS_SHOT_FAIL ", name)
-		return
-	var path := "%s/%s.png" % [OUT_DIR, name]
-	if img.save_png(path) != OK:
-		_fails.append("save_png 失败 %s" % path)
-		print("QA_CHARS_SHOT_FAIL ", name)
-		return
-	_saved.append(path)
-	print("SHOT ", path, " ", img.get_width(), "x", img.get_height())
+	if not _contract:
+		await RenderingServer.frame_post_draw
+		ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _shot_fails)
 	_assert_scene()
 
 

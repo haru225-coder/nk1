@@ -1,10 +1,15 @@
 extends SceneTree
 ## 港口三扇岸门巡检：泉州 / 福州 / 兴化截 ShoreDoors 到 /workspace/nk1-qa-shots/port-doors/。
 ## 断言：三扇门 title/subtitle 论文纪实；热区 Button 挂 tooltip；关着的门有「今日未开」提示。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_port_doors_probe.gd
+## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_port_doors_probe.gd   # 截图门禁（须出 5 张）
+##       godot --headless --path /workspace/nk1 -s res://tools/qa_port_doors_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/port-doors"
+const TAG := "QA_PORT_DOORS"
+const EXPECTED_SHOTS := 5
+const ShotGate := preload("res://tools/shot_gate.gd")
 
 ## 与 Main.GENERIC_FACILITIES / DOOR_TIP 对齐的契约（副题短标签）
 const EXPECT_SUB := {
@@ -22,6 +27,7 @@ const EXPECT_SUB := {
 var _main: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -30,7 +36,13 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_PORT_DOORS_BEGIN")
 
 	var cine_src: GDScript = load("res://scripts/cutscene/Cinematics.gd") as GDScript
@@ -84,13 +96,7 @@ func _run() -> void:
 			await _settle(4)
 	await _shot("05_quanzhou_shut_tooltip")
 
-	if _fails.is_empty():
-		print("QA_PORT_DOORS_OK shots=%d" % _saved.size())
-		quit(0)
-	else:
-		for f in _fails:
-			print("QA_PORT_DOORS_FAIL ", f)
-		quit(1)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 
 
 func _expect_doors(port_id: String) -> void:
@@ -175,14 +181,7 @@ func _settle(n: int) -> void:
 
 func _shot(stem: String) -> void:
 	await _settle(2)
-	var img: Image = root.get_viewport().get_texture().get_image()
-	if img == null:
-		_fails.append("空帧 %s" % stem)
+	if _contract:
 		return
-	var path := "%s/%s.png" % [OUT_DIR, stem]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("写失败 %s (%s)" % [stem, str(err)])
-		return
-	_saved.append(path)
-	print("QA_PORT_DOORS_SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)

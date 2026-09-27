@@ -1,15 +1,21 @@
 extends SceneTree
 ## 发现录巡检：寺观近侧旧迹（未勘 / 已入册 / 已呈案）与市舶司呈报工席，截到 /workspace/nk1-qa-shots/discovery/。
 ## 断言：呈报签副题「赏钱 N　声名 N」、chip「呈报」挂 tooltip；呈报后挪入 discoveries_reported、日志「入案」。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_discovery_probe.gd
+## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_discovery_probe.gd   # 截图门禁（须出 5 张）
+##       godot --headless --path /workspace/nk1 -s res://tools/qa_discovery_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/discovery"
+const TAG := "QA_DISCOVERY"
+const EXPECTED_SHOTS := 5
+const ShotGate := preload("res://tools/shot_gate.gd")
 
 var _main: Node
 var _gs: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -18,7 +24,13 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_DISCOVERY_BEGIN")
 
 	var cine_src: GDScript = load("res://scripts/cutscene/Cinematics.gd") as GDScript
@@ -82,13 +94,7 @@ func _run() -> void:
 	_expect(_has_label("已呈案"), "福州寺观 废烽堠 已呈案")
 	await _shot("05_fuzhou_temple_reported")
 
-	if _fails.is_empty():
-		print("QA_DISCOVERY_OK shots=%d" % _saved.size())
-		quit(0)
-	else:
-		for f in _fails:
-			print("QA_DISCOVERY_FAIL ", f)
-		quit(1)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 
 
 func _report_chips() -> Array:
@@ -144,14 +150,7 @@ func _settle(n: int) -> void:
 
 func _shot(stem: String) -> void:
 	await _settle(2)
-	var img: Image = root.get_viewport().get_texture().get_image()
-	if img == null:
-		_fails.append("空帧 %s" % stem)
+	if _contract:
 		return
-	var path := "%s/%s.png" % [OUT_DIR, stem]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("写失败 %s (%s)" % [stem, str(err)])
-		return
-	_saved.append(path)
-	print("QA_DISCOVERY_SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)

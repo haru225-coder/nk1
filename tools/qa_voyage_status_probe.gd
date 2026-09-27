@@ -1,16 +1,22 @@
 extends SceneTree
 ## Lane Z1：海图船况面板 / 顶匾札记旁注纪实短标签巡检。
 ## 截图落 /workspace/nk1-qa-shots/voyage/
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_voyage_status_probe.gd
+## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_voyage_status_probe.gd   # 截图门禁（须出 6 张）
+##       godot --headless --path /workspace/nk1 -s res://tools/qa_voyage_status_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 默认严格须出 6 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## -s 勿用 autoload 标识符。
 
 const VIEW := Vector2i(1280, 720)
 const CHART_SCENE := "res://scenes/SeaChart.tscn"
 const OUT_DIR := "/workspace/nk1-qa-shots/voyage"
+const TAG := "QA_VOYAGE"
+const EXPECTED_SHOTS := 6
+const ShotGate := preload("res://tools/shot_gate.gd")
 
 var _chart: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -19,7 +25,13 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = VIEW
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_VOYAGE_BEGIN")
 	_check_wiring()
 
@@ -186,19 +198,13 @@ func _frames(n: int) -> void:
 
 
 func _shot(name: String) -> void:
+	if _contract:
+		return
 	RenderingServer.force_draw()
 	await process_frame
 	await process_frame
-	var img: Image = root.get_texture().get_image()
-	if img == null:
-		_fails.append("截屏失败 %s" % name)
-		return
-	var path := "%s/%s.png" % [OUT_DIR, name]
-	if img.save_png(path) != OK:
-		_fails.append("save_png %s" % path)
-		return
-	_saved.append(path)
-	print("SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _fails)
 
 
 func _expect(cond: bool, msg: String) -> void:
@@ -210,16 +216,4 @@ func _expect(cond: bool, msg: String) -> void:
 
 
 func _report() -> void:
-	print("QA_VOYAGE_SHOTS %d" % _saved.size())
-	if not _fails.is_empty():
-		print("QA_VOYAGE_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-		quit(1)
-		return
-	if _saved.size() < 4:
-		print("QA_VOYAGE_FAIL need ≥4 shots")
-		quit(1)
-		return
-	print("QA_VOYAGE_OK")
-	quit(0)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))

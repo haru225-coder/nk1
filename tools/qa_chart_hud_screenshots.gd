@@ -1,17 +1,23 @@
 extends SceneTree
 ## Lane U：海图 HUD 信息密度巡检（港名密区 / 航行中 HUD / 告警朱字）。
 ## 截图落 /workspace/nk1-qa-shots/chart/
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chart_hud_screenshots.gd
+## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chart_hud_screenshots.gd   # 截图门禁（须出 5 张）
+##       godot --headless --path /workspace/nk1 -s res://tools/qa_chart_hud_screenshots.gd -- --contract   # 只验非渲染断言，不截图
+## 默认严格须出 5 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## 注意：本脚本勿在顶层类型标注 MapView（-s SceneTree 编译期尚无 autoload，会连带 MapView 编不过）。
 
 const VIEW := Vector2i(1280, 720)
 const CHART_SCENE := "res://scenes/SeaChart.tscn"
 const WM_SCENE := "res://scenes/WorldMap.tscn"
+const TAG := "QA_CHART_HUD"
+const EXPECTED_SHOTS := 5
+const ShotGate := preload("res://tools/shot_gate.gd")
 
 var _out_dir := "/workspace/nk1-qa-shots/chart"
 var _chart: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -23,7 +29,13 @@ func _run() -> void:
 		if str(a).begins_with("--out="):
 			_out_dir = str(a).substr(6)
 	root.size = VIEW
-	DirAccess.make_dir_recursive_absolute(_out_dir)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(_out_dir)
 	print("QA_CHART_HUD_BEGIN")
 	_check_wiring()
 
@@ -162,19 +174,13 @@ func _frames(n: int) -> void:
 
 
 func _shot(name: String) -> void:
+	if _contract:
+		return
 	RenderingServer.force_draw()
 	await process_frame
 	await process_frame
-	var img: Image = root.get_texture().get_image()
-	if img == null:
-		_fails.append("截屏失败 %s" % name)
-		return
-	var path := "%s/%s.png" % [_out_dir, name]
-	if img.save_png(path) != OK:
-		_fails.append("save_png %s" % path)
-		return
-	_saved.append(path)
-	print("SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [_out_dir, name], _saved, _fails)
 
 
 func _expect(cond: bool, msg: String) -> void:
@@ -186,16 +192,4 @@ func _expect(cond: bool, msg: String) -> void:
 
 
 func _report() -> void:
-	print("QA_CHART_HUD_SHOTS %d" % _saved.size())
-	if not _fails.is_empty():
-		print("QA_CHART_HUD_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-		quit(1)
-		return
-	if _saved.size() < 3:
-		print("QA_CHART_HUD_FAIL need ≥3 shots")
-		quit(1)
-		return
-	print("QA_CHART_HUD_OK")
-	quit(0)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, _out_dir, _fails))

@@ -2,12 +2,17 @@ extends SceneTree
 ## Lane AD：CombatLetterbox / VisionStage 题签文案论文纪实巡检。
 ## 截图落 /workspace/nk1-qa-shots/letterbox/（裱框 + 入战墨边题签 + 出战题签）。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_letterbox_copy_probe.gd
-## headless：只验静态题签契约与禁词，不强制截图。
+## 默认严格：须出 4 张；headless / 空视口 / 一色空图 / 张数不足一律非零退出（shot_gate.gd）。
+## 契约模式（显式）：godot --headless --path /workspace/nk1 -s res://tools/qa_letterbox_copy_probe.gd -- --contract
+##   只验静态题签契约与禁词，不截图。
 
 const VIEW := Vector2i(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/letterbox"
 const STAGE := "res://scenes/vision/VisionStage.tscn"
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
+const TAG := "QA_LETTERBOX_COPY"
+const EXPECTED_SHOTS := 4
+const ShotGate := preload("res://tools/shot_gate.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 
 ## 玩家可见禁词（营销腔 + 残留现代 UI）
@@ -15,6 +20,7 @@ const BAD := ["惊艳", "沉浸", "打造", "视觉盛宴", "离开展示", "立
 
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -23,12 +29,19 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = VIEW
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_LETTERBOX_COPY_BEGIN")
 	_check_copy_contracts()
-	if Kit.is_headless():
-		_expect(Letterbox.enter(root, Letterbox.sea_title("刺桐外海", "遇敌"), "咸淳三年六月十二　海鹘二艘") == null,
-			"headless 下 Letterbox.enter 应返回 null")
+	if _contract:
+		if Kit.is_headless():
+			_expect(Letterbox.enter(root, Letterbox.sea_title("刺桐外海", "遇敌"), "咸淳三年六月十二　海鹘二艘") == null,
+				"headless 下 Letterbox.enter 应返回 null")
 		_report()
 		return
 
@@ -97,9 +110,10 @@ func _run() -> void:
 		ex.finished.connect(func() -> void: exit_done[0] = true)
 		while not exit_done[0]:
 			await process_frame
+	# 墨边退场后、海战场面拆掉前截：旧写法先 queue_free 再截，得的是一色空视口（lane sg2）
+	await _shot("04_after_exit")
 	wm.queue_free()
 	gm.pending_battle = {}
-	await _shot("04_after_exit")
 	_report()
 
 
@@ -152,36 +166,11 @@ func _expect(cond: bool, label: String) -> void:
 func _shot(stem: String) -> void:
 	await process_frame
 	await process_frame
-	var tex = root.get_texture()
-	if tex == null:
-		_fails.append("无视口纹理 %s" % stem)
+	if _contract:
 		return
-	var img: Image = tex.get_image()
-	if img == null or img.get_width() < 8:
-		_fails.append("空帧 %s" % stem)
-		return
-	var path := "%s/%s.png" % [OUT_DIR, stem]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("写失败 %s (%s)" % [stem, str(err)])
-		return
-	_saved.append(path)
-	print("QA_LETTERBOX_COPY_SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)
 
 
 func _report() -> void:
-	print("QA_LETTERBOX_COPY_SHOTS_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if not _fails.is_empty():
-		print("QA_LETTERBOX_COPY_FAIL %d" % _fails.size())
-		for f in _fails:
-			print("  ✗ ", f)
-		quit(1)
-		return
-	if not Kit.is_headless() and _saved.size() < 3:
-		print("QA_LETTERBOX_COPY_FAIL 期望 ≥3 张截图，实得 %d" % _saved.size())
-		quit(1)
-		return
-	print("QA_LETTERBOX_COPY_OK")
-	quit(0)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))

@@ -1,14 +1,17 @@
 extends SceneTree
 ## Lane N：接舷/海战真实钩子探针 + wire_*.png
-## Run: DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/combat_wire_probe.gd
-## headless：只验文案与接线符号。
+## Run: DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/combat_wire_probe.gd            # 截图门禁（默认严格，须出 4 张）
+##      godot --headless --path /workspace/nk1 -s res://tools/combat_wire_probe.gd -- --contract   # 只验文案与接线符号
+## headless 下不加 --contract 必红（shot_gate.gd）。
 
 const VIEW := Vector2i(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/combat"
 const CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const BoardingStage := preload("res://scripts/combat/BoardingStage.gd")
 const CombatShoreHook := preload("res://scripts/combat/CombatShoreHook.gd")
-const Kit := preload("res://scripts/cutscene/cs_kit.gd")
+const ShotGate := preload("res://tools/shot_gate.gd")
+const TAG := "COMBAT_WIRE_PROBE"
+const EXPECTED_SHOTS := 4
 
 var _fails: Array = []
 var _saved: Array = []
@@ -20,12 +23,16 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = VIEW
+	var no_render := ShotGate.no_render_reason()
+	if not ShotGate.contract_mode() and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
 	_check_wiring()
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 
-	if Kit.is_headless():
+	if ShotGate.contract_mode():
 		_report()
 		return
+	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 
 	var gm := root.get_node("GameManager")
 	gm.pending_battle = {
@@ -95,11 +102,8 @@ func _check_wiring() -> void:
 
 func _shot(name: String) -> void:
 	await process_frame
-	var img: Image = root.get_viewport().get_texture().get_image()
-	var path := "%s/%s.png" % [OUT_DIR, name]
-	img.save_png(path)
-	_saved.append(path)
-	print("SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _fails)
 
 
 func _expect(cond: bool, msg: String) -> void:
@@ -111,12 +115,7 @@ func _expect(cond: bool, msg: String) -> void:
 
 
 func _report() -> void:
-	print("SAVED ", _saved.size(), " shots")
-	for p in _saved:
-		print("  ", p)
-	if _fails.is_empty():
-		print("COMBAT_WIRE_PROBE_PASS")
-		quit(0)
+	if ShotGate.contract_mode():
+		quit(ShotGate.finish_contract(TAG, _fails))
 	else:
-		print("COMBAT_WIRE_PROBE_FAIL ", _fails)
-		quit(1)
+		quit(ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))

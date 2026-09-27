@@ -1,13 +1,17 @@
 extends SceneTree
 ## Lane C 接舷/海战 VFX 探针：开战 → 入战墨边（若有）→ 接舷题签 → 截屏。
-## Run: DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/combat_vfx_probe.gd
-## 截图：/workspace/nk1-qa-shots/combat/
+## Run: DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/combat_vfx_probe.gd            # 截图门禁（默认严格，须出 4 张）
+##      godot --headless --path /workspace/nk1 -s res://tools/combat_vfx_probe.gd -- --contract   # 只验文案契约，不截图
+## 截图：/workspace/nk1-qa-shots/combat/。headless 下不加 --contract 必红（shot_gate.gd）。
 
 const VIEW := Vector2i(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/combat"
 const CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const BoardingStage := preload("res://scripts/combat/BoardingStage.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
+const ShotGate := preload("res://tools/shot_gate.gd")
+const TAG := "COMBAT_VFX_PROBE"
+const EXPECTED_SHOTS := 4
 
 var _fails: Array = []
 var _saved: Array = []
@@ -19,19 +23,25 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = VIEW
+	var no_render := ShotGate.no_render_reason()
+	if not ShotGate.contract_mode() and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
 	_check_copy()
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 
-	if Kit.is_headless():
-		_expect(BoardingStage.begin(root, null, null) == null, "headless 下接舷层应返回 null")
-		_expect(CombatFx.board_win_note("海鹘").find("并入本队") >= 0, "夺船注记")
-		_expect(CombatFx.board_lose_note(3).find("减员") >= 0, "脱钩注记")
-		_expect(CombatFx.board_win_note("海鹘").find("！") < 0, "夺船注记无叹号")
+	_expect(CombatFx.board_win_note("海鹘").find("并入本队") >= 0, "夺船注记")
+	_expect(CombatFx.board_lose_note(3).find("减员") >= 0, "脱钩注记")
+	_expect(CombatFx.board_win_note("海鹘").find("！") < 0, "夺船注记无叹号")
+
+	if ShotGate.contract_mode():
+		if Kit.is_headless():
+			_expect(BoardingStage.begin(root, null, null) == null, "headless 下接舷层应返回 null")
 		_report()
 		return
 
 	var gm := root.get_node("GameManager")
 	var enemy := [{"type": "sea_falcon", "count": 2}]
+	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	gm.pending_battle = {
 		"battle": true, "power": 300.0, "player_power": 400.0,
 		"enemy": enemy, "source": {"scene": "combat_probe"}
@@ -89,11 +99,8 @@ func _check_copy() -> void:
 
 func _shot(name: String) -> void:
 	await process_frame
-	var img: Image = root.get_viewport().get_texture().get_image()
-	var path := "%s/%s.png" % [OUT_DIR, name]
-	img.save_png(path)
-	_saved.append(path)
-	print("SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _fails)
 
 
 func _expect(cond: bool, msg: String) -> void:
@@ -105,12 +112,7 @@ func _expect(cond: bool, msg: String) -> void:
 
 
 func _report() -> void:
-	print("SAVED ", _saved.size(), " shots")
-	for p in _saved:
-		print("  ", p)
-	if _fails.is_empty():
-		print("COMBAT_VFX_PROBE_PASS")
-		quit(0)
+	if ShotGate.contract_mode():
+		quit(ShotGate.finish_contract(TAG, _fails))
 	else:
-		print("COMBAT_VFX_PROBE_FAIL ", _fails)
-		quit(1)
+		quit(ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))

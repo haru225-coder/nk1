@@ -2,16 +2,20 @@ extends SceneTree
 ## Lane Q：酒馆新闻墙 / 市井札薄巡检。
 ## 截图落 /workspace/nk1-qa-shots/tavern/（空墙 + 有札两条）。
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_tavern_news_wall_screenshots.gd
-## headless：只验接线，不强制截图。
+##       godot --headless --path /workspace/nk1 -s res://tools/qa_tavern_news_wall_screenshots.gd -- --contract   # 只验接线，不截图
+## 默认严格须出 2 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2i(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/tavern"
-const Kit := preload("res://scripts/cutscene/cs_kit.gd")
+const TAG := "QA_TAVERN_NEWS_WALL"
+const EXPECTED_SHOTS := 2
+const ShotGate := preload("res://tools/shot_gate.gd")
 
 var _main: Node
 var _gs: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -20,10 +24,16 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = VIEW
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_TAVERN_NEWS_WALL_BEGIN")
 	_check_wiring()
-	if Kit.is_headless():
+	if _contract:
 		_report()
 		return
 
@@ -77,27 +87,18 @@ func _goto(scene_id: String) -> void:
 
 
 func _shot(name: String) -> void:
+	if _contract:
+		return
 	RenderingServer.force_draw()
 	await process_frame
-	var tex = root.get_texture()
-	if tex == null:
-		_fails.append("截屏失败 %s (null texture)" % name)
-		return
-	var img: Image = tex.get_image()
+	await RenderingServer.frame_post_draw
+	var img := ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _fails)
 	if img == null:
-		_fails.append("截屏失败 %s (null image)" % name)
 		return
 	var sample := img.get_pixel(img.get_width() / 2, img.get_height() / 2)
 	var corner := img.get_pixel(8, 8)
 	if sample.get_luminance() < 0.02 and corner.get_luminance() < 0.02:
 		_fails.append("截屏过暗 %s lum=%.3f/%.3f" % [name, sample.get_luminance(), corner.get_luminance()])
-	var path := "%s/%s.png" % [OUT_DIR, name]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("save_png %s err=%d" % [path, err])
-		return
-	_saved.append(path)
-	print("SHOT ", path, " size=", img.get_width(), "x", img.get_height())
 
 
 func _find_label(n: Node, text: String) -> Label:
@@ -130,16 +131,5 @@ func _expect(cond: bool, msg: String) -> void:
 
 
 func _report() -> void:
-	print("QA_TAVERN_NEWS_WALL_SHOTS %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if not _fails.is_empty():
-		print("QA_TAVERN_NEWS_WALL_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-		quit(1)
-	if not Kit.is_headless() and _saved.size() < 2:
-		print("QA_TAVERN_NEWS_WALL_FAIL need ≥2 shots")
-		quit(1)
-	print("QA_TAVERN_NEWS_WALL_OK")
-	quit(0)
+	# 旧写法 quit(1) 后未 return 又落到 quit(0)：有失败也退 0。统一交 ShotGate 收尾。
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))

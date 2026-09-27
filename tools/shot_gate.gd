@@ -35,14 +35,18 @@ static func grab(root: Window, name: String, fails: Array) -> Image:
 	return img
 
 
-## 画面是否为一色（空视口/未绘制）：5×5 网格采样全都几乎相同即判空。
+## 画面是否为一色（空视口/未绘制）：32×18 网格采样全都几乎相同即判空。
+## 网格要密：墨幕题签帧只有正中一条题签（约占纵向 36%–47%），5×5 网格会整条跨过去误判一色（lane sg2）。
+const BLANK_GRID := Vector2i(32, 18)
+
+
 static func is_blank(img: Image) -> bool:
 	var w := img.get_width()
 	var h := img.get_height()
-	var first := img.get_pixel(w / 10, h / 10)
-	for gy in 5:
-		for gx in 5:
-			var c := img.get_pixel(int(w * (0.1 + 0.2 * gx)), int(h * (0.1 + 0.2 * gy)))
+	var first := img.get_pixel(w / (2 * BLANK_GRID.x), h / (2 * BLANK_GRID.y))
+	for gy in BLANK_GRID.y:
+		for gx in BLANK_GRID.x:
+			var c := img.get_pixel(int(w * (gx + 0.5) / BLANK_GRID.x), int(h * (gy + 0.5) / BLANK_GRID.y))
 			if absf(c.r - first.r) + absf(c.g - first.g) + absf(c.b - first.b) > 0.03:
 				return false
 	return true
