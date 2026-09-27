@@ -49,7 +49,34 @@ const SCRIPTS := [
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
 	"res://tools/art/portrait_svg/PortraitWall.gd", "res://tools/art/ShotTour.gd",
+	# lane ea4 清单漂移补列：此前各 lane 各自追加、漏掉的已跟踪脚本（由下方 INVENTORY 自检兜底）
+	"res://scripts/audio/AudioHooks.gd", "res://scripts/audio/SfxSynth.gd",
+	"res://scripts/chart/ChartProjection.gd", "res://scripts/chart/MapView.gd", "res://scripts/chart/ShipMarker.gd",
+	"res://scripts/core/BrokerSlip.gd", "res://scripts/core/DrydockBerth.gd", "res://scripts/core/HeadingDraft.gd",
+	"res://scripts/core/ShoreDraft.gd", "res://scripts/core/UiTheme.gd",
+	# 门禁本体与共用件
+	"res://tools/godot_smoke.gd", "res://tools/godot_story_check.gd", "res://tools/p7_guild_exam_smoke.gd",
+	"res://tools/patrol_shell.gd", "res://tools/shot_gate.gd", "res://tools/p7_smoke.gd",
+	# 各 lane 专项探针 / 截图脚本
+	"res://tools/save_robust_probe.gd", "res://tools/save_migrate_probe.gd",
+	"res://tools/qa_economy_spread_probe.gd", "res://tools/qa_save_slot_tip_probe.gd",
+	"res://tools/qa_discovery_probe.gd", "res://tools/qa_chapter_promote_probe.gd",
+	"res://tools/qa_chart_hud_screenshots.gd", "res://tools/qa_p7_screenshots.gd",
+	"res://tools/qa_patrol_pack_screenshots.gd",
+	"res://tools/qa_fine_text_probe.gd",
+	"res://tools/combat_vfx_probe.gd", "res://tools/combat_wire_probe.gd",
+	"res://tools/vision_stage_probe.gd", "res://tools/vision_letterbox_probe.gd",
+	"res://tools/art/vision_fill_gen.gd", "res://tools/art/vision_fill_shots.gd",
 ]
+
+## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
+## SCRIPTS 里的路径必须真实存在。任一差集非空 → bad+1（整体算一项 inventory）。
+## 「已跟踪」取 `git ls-files`：别的 lane 未提交的新脚本不会让共用工作树变红；git 不可用时退回扫盘并打 NOTE。
+const INVENTORY_ROOTS := ["scripts", "tools"]
+const INVENTORY_SKIP_DIRS := ["tools/legacy"]
+const INVENTORY_EXEMPT := {
+	"tools/godot_compile_check.gd": "门禁本体：它自己编不过就根本跑不到这里，列入无增益",
+}
 
 ## 关键场景：脚本门禁通过后仍可能因 ext_resource 解析失败而坏档（ASTRA_AUDIT M2）。
 ## 4.6.3 实测：ext_resource 指向不存在的文件时 load() 仍返回 PackedScene、instantiate() 也成功，
@@ -103,6 +130,14 @@ func _initialize() -> void:
 		print("COMPILE_CHECK ", "OK   " if ok else "FAIL ", p)
 		if not ok:
 			bad += 1
+	total += 1
+	var inv_why := _check_inventory()
+	if inv_why.is_empty():
+		print("COMPILE_CHECK OK   inventory SCRIPTS == tracked *.gd under ", "/".join(INVENTORY_ROOTS), " (exempt ", INVENTORY_EXEMPT.size(), ")")
+	else:
+		bad += 1
+		for w in inv_why:
+			print("COMPILE_CHECK FAIL inventory ", w)
 	for gp in MUST_STAY_CLEAN:
 		if not SCENES.has(gp):
 			total += 1
@@ -200,3 +235,71 @@ func _discover_scenes(dir_path: String) -> Array:
 		out.append_array(_discover_scenes(dir_path.path_join(sub)))
 	out.sort()
 	return out
+
+
+## 返回差集条目；空 = 清单与已跟踪脚本对齐。
+func _check_inventory() -> PackedStringArray:
+	var why := PackedStringArray()
+	var listed := {}
+	for p in SCRIPTS:
+		var rel: String = p.trim_prefix("res://")
+		if listed.has(rel):
+			why.append("dup %s" % p)
+		listed[rel] = true
+		if not FileAccess.file_exists(p):
+			why.append("listed-missing %s" % p)
+	var tracked := _tracked_gd()
+	for rel in tracked:
+		if listed.has(rel):
+			if INVENTORY_EXEMPT.has(rel):
+				why.append("exempt-but-listed res://%s" % rel)
+		elif not INVENTORY_EXEMPT.has(rel):
+			why.append("unlisted res://%s" % rel)
+	for rel in INVENTORY_EXEMPT:
+		if not tracked.has(rel):
+			why.append("exempt-stale res://%s" % rel)
+	return why
+
+
+func _tracked_gd() -> Array:
+	var out: Array = []
+	var root_abs := ProjectSettings.globalize_path("res://")
+	# 不用 -z：OS.execute 把输出转成 String 时会在 NUL 处截断；改关 quotepath 按行切。
+	var args := PackedStringArray(["-C", root_abs, "-c", "core.quotepath=off", "ls-files", "--"])
+	for r in INVENTORY_ROOTS:
+		args.append("%s/*.gd" % r)
+	var stdout: Array = []
+	var rc := OS.execute("git", args, stdout, true)
+	if rc == 0 and not stdout.is_empty():
+		for rel in String(stdout[0]).split("\n", false):
+			if not _inventory_skipped(rel):
+				out.append(rel)
+	else:
+		print("COMPILE_CHECK NOTE inventory git ls-files unavailable (rc=", rc, "), falling back to disk scan")
+		for r in INVENTORY_ROOTS:
+			out.append_array(_disk_gd(r))
+	out.sort()
+	return out
+
+
+func _disk_gd(rel_dir: String) -> Array:
+	var out: Array = []
+	if _inventory_skipped(rel_dir + "/"):
+		return out
+	var d := DirAccess.open("res://" + rel_dir)
+	if d == null:
+		return out
+	for f in d.get_files():
+		if f.ends_with(".gd"):
+			out.append(rel_dir.path_join(f))
+	for sub in d.get_directories():
+		if not sub.begins_with("."):
+			out.append_array(_disk_gd(rel_dir.path_join(sub)))
+	return out
+
+
+func _inventory_skipped(rel: String) -> bool:
+	for sd in INVENTORY_SKIP_DIRS:
+		if rel.begins_with(sd + "/"):
+			return true
+	return false
