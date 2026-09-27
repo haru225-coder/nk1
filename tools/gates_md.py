@@ -220,6 +220,15 @@ def main(argv):
             t = g.get("timeout")
             check(bool(t) and g["cmd"].startswith(f"timeout {t:g} "),
                   f"{g['id']} 是 legacy 条目，带强制超时（注册表 timeout={t}，本地命令以 `timeout {t}` 开头）")
+        if g.get("marks"):
+            # lane gd13：登记的输出契约字样（如 tour.sh 的 `TOUR PASS` / `TOUR FAIL`）还在脚本代码行里，注释里写了不算
+            try:
+                lines = open(os.path.join(ROOT, g["file"]), encoding="utf-8", errors="replace").read().splitlines()
+            except OSError:
+                lines = []
+            src = "\n".join(ln for ln in lines if not ln.lstrip().startswith("#"))
+            lost = [k for k in g["marks"] if k not in src]
+            check(not lost, f"{g['id']} 的输出契约字样还在 {g['file']} 代码行里" + (f"；找不到：{lost}" if lost else ""))
     for s in shots:
         check(os.path.isfile(os.path.join(ROOT, s["file"])) and None not in (s["tag"], s["shots"], s["out_dir"]),
               f"截图脚本 {s['file']}：TAG={s['tag']} 张数={s['shots']} 目录={s['out_dir']}（源码读得到）")

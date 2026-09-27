@@ -8,15 +8,19 @@
 #   -r  运行副本目录，默认 ~/tmp/nk1-art-cloud-run-port（须先拷一份仓库——rsync / `git archive HEAD | tar -x -C <副本>` 皆可——
 #       并在副本里 godot --headless --editor --quit 导入过一次）
 #   -o  输出根，默认 ~/tmp/nk1-art-work/tour；设了环境变量 NK1_SHOT_DIR 则默认改为 <该目录>/tour（-o 仍优先；相对路径按 $PWD 展开，lane pg4）
-#   GODOT 环境变量指定引擎；缺省取 PATH 里的 godot，没有再退回 Mac 旧位置 ~/tmp/godot-4.6.3/Godot.app/…
+#   GODOT 环境变量指定引擎；缺省取 PATH 里的 godot，都没有退 2（lane gd13 去掉 Mac 旧位置的 .app 兜底）
 #   无窗口的机器要给 DISPLAY（Movie Maker 要真渲染，不能 --headless）
 #   站点缺省 = 下面 ALL（基础站点全集）；另可给 cutscene_<id> / chapter_card_<n> / banner_<port> 等，见 ShotTour.gd 的 SITES。
 #   过场接线站点（cinematics 线，走 Main 真实流程，时长长，按需给 -n）：cutscene_opening（开机开场）、chapter_card_<n>、
 #   banner_<港>（海图回港横幅）、ending_cs_<结局>（结局过场 + 结算册页）、title_anim（标题演出；TOUR_ARGS="--rewatch" 看重看开场）。
 #   额外参数：环境变量 TOUR_ARGS 原样追加在 -- 之后（如 TOUR_ARGS="--shot=3"）。
 # 一次只开一个 Godot 进程（逐站串行）。本脚本只读运行副本，不改仓库。
+# 输出契约（lane gd13；不算门禁，理由见 docs/GATES.md §一「不算门禁」，机读走 `python3 tools/gate_json.py -- tools/art/tour.sh …`）：
+#   每站一行 `✓ <站点> rc= frames= errors= <TOUR_READY…>`（✗ 行尾另注红因），末行 `TOUR PASS n/n` / `TOUR FAIL k/n`；
+#   一站红 = 引擎退出码非 0 / 未打 TOUR_READY / 报错计数非 0 / 一帧没出 / 小样（last.png、sheet.jpg）没出。
+#   退出码：全绿 0、有站红 1、用法错 / 运行副本不在 / 找不到引擎 2。
 set -u
-GODOT=${GODOT:-$(command -v godot || echo "$HOME/tmp/godot-4.6.3/Godot.app/Contents/MacOS/Godot")}
+GODOT=${GODOT:-$(command -v godot)}
 HERE=$(cd "$(dirname "$0")" && pwd)
 N=30
 RUN=$HOME/tmp/nk1-art-cloud-run-port
@@ -42,9 +46,11 @@ ALL=(title port_quanzhou tavern_quanzhou
      seachart)
 [ $# -eq 0 ] && set -- "${ALL[@]}"
 [ -f "$RUN/project.godot" ] || { echo "运行副本不在：$RUN"; exit 2; }
+[ -n "$GODOT" ] || { echo "找不到 godot：PATH 里没有，设 GODOT=<引擎路径>"; exit 2; }
 mkdir -p "$OUT"
 fail=0
 for site in "$@"; do
+  why=()
   d="$OUT/$site"
   rm -rf "$d"; mkdir -p "$d"
   # shellcheck disable=SC2086
@@ -63,11 +69,17 @@ for site in "$@"; do
     if [ $? -ne 0 ] || [ ! -s "$d/last.png" ] || [ ! -s "$d/sheet.jpg" ]; then
       echo "$sheet_out" | grep -E 'TOUR_SHEET|ERROR' >&2
       echo "$site: 小样没出（tour_sheet.gd 失败）" >&2
-      fail=1
+      why+=("小样没出")
     fi
   fi
   nf=$(ls "$d"/f*.png 2>/dev/null | wc -l | tr -d ' ')
-  printf "%-26s rc=%s frames=%s errors=%s %s\n" "$site" "$rc" "$nf" "$errs" "${ready:-（未就位）}"
-  { [ "$rc" -ne 0 ] || [ -z "$ready" ] || [ "$errs" -ne 0 ]; } && fail=1
+  [ "$rc" -ne 0 ] && why+=("引擎退出码 $rc")
+  [ -z "$ready" ] && why+=("未就位")
+  [ "$errs" -ne 0 ] && why+=("报错 $errs 行")
+  [ "$nf" -eq 0 ] && why+=("一帧没出")
+  mark="✓"; [ ${#why[@]} -gt 0 ] && { mark="✗"; fail=$((fail + 1)); }
+  printf "%s %-26s rc=%s frames=%s errors=%s %s%s\n" "$mark" "$site" "$rc" "$nf" "$errs" "${ready:-（未就位）}" \
+    "$([ ${#why[@]} -gt 0 ] && printf '  ← %s' "$(IFS=/; echo "${why[*]}")")"
 done
-exit $fail
+if [ "$fail" -eq 0 ]; then echo "TOUR PASS $#/$#"; else echo "TOUR FAIL $fail/$#"; fi
+[ "$fail" -eq 0 ]

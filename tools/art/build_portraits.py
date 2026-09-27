@@ -20,8 +20,10 @@
   python3 tools/art/build_portraits.py --cards-only --mix /tmp/mix.jpg   # 人物志网格尺寸混排（104×130）
   python3 tools/art/build_portraits.py --cards-only --titled /tmp/titled  # 另出带题签版（仓库外，单张展示用）
   NK1_INK_S=1 python3 tools/art/build_portraits.py ...          # 1× 快速小样（默认 2× 超采样出成品）
+  python3 tools/art/build_portraits.py --roots          # 干跑：只打印 Codex 源图根（在 / 不在），不出图
 依赖：python3 + Pillow + numpy + fontTools。同一 id 同一结果（随机数全部按 id 取种子）。
-Codex 源图在仓库外（nk1-codex），缺源图时跳过该张、保留已有产物。
+Codex 源图在仓库外（nk1-codex），默认 ~/tmp/nk1-codex/assets/portraits（按本机 $HOME 展开；lane gd13 去掉写死的 Mac 家目录
+绝对路径，Mac 上默认不变），环境变量 NK1_CODEX_PORTRAITS 覆盖；缺源图时跳过该张、保留已有产物。
 """
 import json
 import math
@@ -38,7 +40,7 @@ import inkbrush  # noqa: E402
 import inkcard  # noqa: E402
 
 OUT_DIR = os.path.join(ROOT, "assets", "portraits")
-CODEX = os.environ.get("NK1_CODEX_PORTRAITS", "/Users/snowchan27/tmp/nk1-codex/assets/portraits")
+CODEX = os.environ.get("NK1_CODEX_PORTRAITS", os.path.join(os.path.expanduser("~"), "tmp", "nk1-codex", "assets", "portraits"))
 MAIN = os.path.join(ROOT, "assets")
 FONT_TITLE = os.path.join(ROOT, "assets", "fonts", "MaShanZheng-Regular.ttf")
 FONT_BODY = os.path.join(ROOT, "assets", "fonts", "LXGWWenKai-Medium.ttf")
@@ -1133,6 +1135,11 @@ def metrics(chars, titled_dir=""):
 
 
 def main(argv):
+    if "--roots" in argv:  # 干跑：只打印源图根
+        how = "环境变量 NK1_CODEX_PORTRAITS" if "NK1_CODEX_PORTRAITS" in os.environ else "缺省"
+        print("codex   %s  [%s；%s]" % (CODEX, "在" if os.path.isdir(CODEX) else "不在", how))
+        print("main    %s  [%s；仓库内]" % (MAIN, "在" if os.path.isdir(MAIN) else "不在"))
+        return
     global OUT_DIR
     only = None
     if "--only" in argv:

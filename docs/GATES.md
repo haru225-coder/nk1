@@ -79,6 +79,7 @@
 |---|---|---|---|
 | `tools/legacy/verify_narrative.py` | `timeout 60 python3 tools/legacy/verify_narrative.py` | `python3 tools/gate_json.py tools/legacy/verify_narrative.py` | （lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖 |
 | `tools/legacy/p7_smoke.gd` | `timeout 60 godot --headless --path . -s res://tools/legacy/p7_smoke.gd` | `python3 tools/gate_json.py --godot p7_smoke` | （lane gd8 挪入 legacy）与 verify_narrative 同源，绑定 21ce 未收的 P7 平行实现（开局链进泉州、港口节拍、`seen_scenes`、`borrow_ceiling`），合并台账第 14 行定「留档不入门禁」；主干上 4 项 FAIL 后在 `borrow_ceiling()` 处 SCRIPT ERROR、不 quit 挂死（干净 worktree 同，lane l1 已记；lane gd9 起 legacy 条目强制超时 60 秒，到点 rc=124 判红）；P7 行会 / 贡院由 p7（`p7_guild_exam_smoke.gd`）接管 |
+| `tools/art/tour.sh` | `timeout 900 env NK1_SHOT_DIR=/tmp/<lane>/shots DISPLAY=:2 tools/art/tour.sh -r <运行副本> [站点…]` | `NK1_SHOT_DIR=/tmp/<lane>/shots DISPLAY=:2 python3 tools/gate_json.py -- tools/art/tour.sh -r <运行副本> [站点…]` | （lane gd13 判不进）美术巡检截帧，产物是给人看的 sheet.jpg：每站一个带窗口 Godot（Movie Maker，不能 `--headless`），全集 21 站实测 348 秒（8 核、负载 8–11；单站 title 17 秒），另要先 `git archive` 出运行副本并导入一次（12 秒）；只判引擎退出码 / TOUR_READY / 报错计数 / 帧与小样在不在，不看像素——画面回归由截图门禁 24 支探针判。动 ShotTour / tour_sheet / 过场站点时手跑。输出契约：逐站 `✓` / `✗ …  ← 红因` 一行，末行 `TOUR PASS n/n` / `TOUR FAIL k/n`，退出码 0 全绿 / 1 有站红 / 2 用法错 · 运行副本不在 · 找不到引擎；`--json` 外包后 checks 逐站一条，强制超时 900 秒 |
 | 其余 `tools/qa_*_probe.gd` / `*_probe.gd` 专项探针（未接 shot_gate 的） | 见各脚本头注释 | — | 各 lane 的专项探针，只在对应 lane 里跑；要升格为门禁就进 `tools/gate_json.py` 注册表 |
 <!-- GATES:END -->
 
@@ -296,6 +297,7 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
   ```
 
   脚本里统一写 `var OUT_DIR := ShotGate.out_dir("<子目录>")`，新探针别再写死绝对路径：gates_md 按这个写法读目录，并判红「截图脚本没走 `ShotGate.out_dir`」「`tools/` 已跟踪 `.gd` 代码行里写死默认根（只许 `shot_gate.gd`）」「patrol_shell 不读 `NK1_SHOT_DIR`」（lane pg3）；注册表 `shot_env.users` 登记的 patrol / CutscenePreview / tour.sh 代码行里读不到 `NK1_SHOT_DIR`、子目录或原默认也判红（lane pg4）。
+- `tools/art/tour.sh` 巡检截帧**不算门禁**（lane gd13 实测判定，理由写在 §一「不算门禁」表）：全集 21 站实测 348 秒、另要运行副本并导入一次（12 秒），要 DISPLAY；只判引擎退出码 / TOUR_READY / 报错计数 / 帧与小样在不在，不看像素，画面回归归上面的截图探针。动 ShotTour / tour_sheet / 过场站点时手跑。输出契约固定：逐站一行 `✓ <站点> rc= frames= errors= …` / `✗ …  ← 红因`（引擎退出码 · 未就位 · 报错 k 行 · 一帧没出 · 小样没出），末行 `TOUR PASS n/n` / `TOUR FAIL k/n`，退出码 0 全绿 / 1 有站红 / 2 用法错 · 运行副本不在 · 找不到引擎；机读 `python3 tools/gate_json.py -- tools/art/tour.sh -r <运行副本> [站点…]`（checks 逐站一条、summary 取末行，注册表 timeout 强制 900 秒）；gates_md 判这几个字样还在 tour.sh 代码行里。
 - 常见红因：空视口 / 一色图（窗口没真正绘制）；张数不足。`vision_letterbox_probe` 旧有的「出战合拢时画面中线未全黑（v=0.302）」偶发红不是时序：布景是真海战，约 8–10 s 旗舰被击沉、WorldMap 自起出战墨边顶掉探针那副（lane pg 已冻住布景；再现时会先报「布景海战在墨边演示中自行结算」）。
 
 ### 16. save_robust_probe

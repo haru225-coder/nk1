@@ -13,10 +13,12 @@
   python3 tools/art/import_cutscene_bgs.py --force      # 全部重导
   python3 tools/art/import_cutscene_bgs.py --check      # 校验：产物规格 + 数据契约；来源目录在就顺带核对来源与裁切
   python3 tools/art/import_cutscene_bgs.py --data-only  # 只校验产物（按 .import_manifest.json 的 sha1/尺寸）+ 数据契约，不碰来源——CI 用这个
+  python3 tools/art/import_cutscene_bgs.py --roots      # 干跑：只打印三个来源根（在 / 不在、取自环境变量还是缺省），不读不写图
 
-来源目录（Codex 线 assets/）默认 /Users/snowchan27/tmp/nk1-codex/assets，可用环境变量 NK1_CODEX_ASSETS 覆盖。
+来源目录（Codex 线 assets/）默认 ~/tmp/nk1-codex/assets（按本机 $HOME 展开），可用环境变量 NK1_CODEX_ASSETS 覆盖。
 旧底来源（第一轮 worktree 的 assets/，即 main 9233852 落地、云端 da29e49 又换掉的旧图）默认
-/Users/snowchan27/tmp/nk1-art/assets，可用 NK1_LEGACY_ASSETS 覆盖。
+~/tmp/nk1-art/assets，可用 NK1_LEGACY_ASSETS 覆盖。（lane gd13：原写死 Mac 家目录下的绝对路径，即 Mac 上 ~ 的展开，
+Mac 上默认路径不变；清单只记 codex: / legacy: / repo: 相对路径，换根不影响产物与 .import_manifest.json。）
 来源目录不在时（新克隆、别的机器、合回 main 后），--check 自动退化为 --data-only：只核对产物与清单一致，不报「来源缺失」。
 """
 import hashlib
@@ -30,10 +32,12 @@ from PIL import Image
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT_DIR = ROOT / "assets" / "cutscene"
 STAMP = OUT_DIR / ".import_manifest.json"
-CODEX = pathlib.Path(os.environ.get("NK1_CODEX_ASSETS", "/Users/snowchan27/tmp/nk1-codex/assets"))
+# 仓库外来源根：缺省挂在本机 ~/tmp 下（lane gd13 去 Mac 写死），环境变量覆盖
+HOME_TMP = pathlib.Path.home() / "tmp"
+CODEX = pathlib.Path(os.environ.get("NK1_CODEX_ASSETS", HOME_TMP / "nk1-codex" / "assets"))
 POOLS = CODEX / "port_pools"
 INGESTED = CODEX / "_ingested"
-LEGACY = pathlib.Path(os.environ.get("NK1_LEGACY_ASSETS", "/Users/snowchan27/tmp/nk1-art/assets"))
+LEGACY = pathlib.Path(os.environ.get("NK1_LEGACY_ASSETS", HOME_TMP / "nk1-art" / "assets"))
 # 仓库自己 assets/ 里、游戏没引用的旧图（如 bg_gpt_*.png）：转成 16:9 JPEG 供过场用，来源永远在
 REPO_ASSETS = ROOT / "assets"
 
@@ -465,7 +469,18 @@ def check_data() -> list:
     return bad
 
 
+def roots() -> int:
+    """--roots：干跑，只打印来源根，不读不写任何图。"""
+    for tag, root, env in (("codex", CODEX, "NK1_CODEX_ASSETS"), ("legacy", LEGACY, "NK1_LEGACY_ASSETS"),
+                           ("repo", REPO_ASSETS, None)):
+        how = ("环境变量 " + env) if env and env in os.environ else ("缺省" if env else "仓库内")
+        print(f"{tag:7} {root}  [{'在' if root.is_dir() else '不在'}；{how}]")
+    return 0
+
+
 if __name__ == "__main__":
+    if "--roots" in sys.argv:
+        sys.exit(roots())
     if "--data-only" in sys.argv:
         sys.exit(check(data_only=True))
     if "--check" in sys.argv:
