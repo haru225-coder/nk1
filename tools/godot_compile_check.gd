@@ -82,6 +82,7 @@ const SCRIPTS := [
 	"res://tools/combat_vfx_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
 	"res://tools/vision_stage_probe.gd", "res://tools/vision_letterbox_probe.gd",
 	"res://tools/art/vision_fill_gen.gd", "res://tools/art/vision_fill_shots.gd",
+	"res://tools/art/tour_sheet.gd",
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；

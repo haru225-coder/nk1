@@ -286,7 +286,7 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
   NK1_SHOT_DIR=/tmp/<lane>/shots DISPLAY=:2 godot --path . -s res://tools/vision_stage_probe.gd
   NK1_SHOT_DIR=/tmp/<lane>/shots DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd   # 旁证 → /tmp/<lane>/shots/patrol/
   NK1_SHOT_DIR=/tmp/<lane>/shots DISPLAY=:2 godot --path . res://scenes/cutscene/CutscenePreview.tscn -- --cs=<id> --snap=1.5 --autoquit   # → /tmp/<lane>/shots/cutscene-preview/
-  NK1_SHOT_DIR=/tmp/<lane>/shots GODOT=godot tools/art/tour.sh -r <运行副本> title   # → /tmp/<lane>/shots/tour/title/
+  NK1_SHOT_DIR=/tmp/<lane>/shots DISPLAY=:2 tools/art/tour.sh -r <运行副本> title   # → /tmp/<lane>/shots/tour/title/（含 last.png / sheet.jpg：tools/art/tour_sheet.gd 用 Godot 拼，不要 PIL，lane pg5）
   ```
 
   脚本里统一写 `var OUT_DIR := ShotGate.out_dir("<子目录>")`，新探针别再写死绝对路径：gates_md 按这个写法读目录，并判红「截图脚本没走 `ShotGate.out_dir`」「`tools/` 已跟踪 `.gd` 代码行里写死默认根（只许 `shot_gate.gd`）」「patrol_shell 不读 `NK1_SHOT_DIR`」（lane pg3）；注册表 `shot_env.users` 登记的 patrol / CutscenePreview / tour.sh 代码行里读不到 `NK1_SHOT_DIR`、子目录或原默认也判红（lane pg4）。
