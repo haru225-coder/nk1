@@ -13,11 +13,19 @@
 ## 出战带 on_black 时墨边一直合到中线（全黑）再调它，调用方趁黑换场景，墨边随后退开；不带就和入战一样只留边。
 ## headless 与 -s 工具脚本（门禁、smoke）下静态入口不建节点、返回 null——调用方自己当帧调 on_black（同 Main.play_transition）。
 ## 入战不吞输入（开炮倒计时照走，题签只盖在上下边里）；出战合拢时吞键盘和鼠标，防止连按。不暂停游戏、不入存档。
+##
+## 协程不许挂死（lane gd15）：演出里的等待只走 _await_tween / _await_frame 两个挂起点，不直接 await tween 的 finished
+## 或 get_tree().process_frame——kill 掉的 tween 永不发 finished，随父释放 / 退出时 process_frame 不再来，挂着的协程
+## 永不醒，退出时报 ObjectDB 泄漏（GDScriptFunctionState），随父释放还报「after await, but class instance is gone」。
+## 本幕作废（新一幕 / _abort / 离树）一律走 _cancel_waits：kill tween 并唤醒挂起点，协程醒来见 _run_id 已变就自退。
+## waiters 记全部墨边里还挂着的协程数，探针收尾后断言为 0。
 extends CanvasLayer
 
 signal caption_shown
 signal covered
 signal finished
+## 内部：挂起点的唤醒（tween 放完 / 下一帧到 / 本幕作废），只由 _wake 与 _cancel_waits 发
+signal _woken
 
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 
@@ -70,6 +78,10 @@ var _black_done := false
 var _on_black := Callable()
 ## finished 已发（本幕终结）：_abort / 离树 / 同帧重入都不再补发
 var _done := false
+## 挂起序号：每次挂起 +1、作废 +1；过期的 tween.finished / process_frame 回调序号对不上，不唤醒后来的挂起
+var _wait_seq := 0
+## 全部墨边实例里挂在 _await_tween / _await_frame 上的协程数（探针查：场上墨边全收尾后须为 0，否则就是挂死的协程）
+static var waiters := 0
 
 
 ## 「海名・事由」。海名空着就只写事由，不在这里补地名。
@@ -181,21 +193,17 @@ func play_exit(p_title: String, p_subtitle := "", on_black := Callable()) -> voi
 	_tween.parallel().tween_property(_bottom, "position:y", half - 1.0, T_SHUT).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	_tween.parallel().tween_property(_top_line, "modulate:a", 0.0, T_SHUT)
 	_tween.parallel().tween_property(_bottom_line, "modulate:a", 0.0, T_SHUT)
-	await _tween.finished
-	if id != _run_id:
+	if not await _await_tween(id):
 		return
 	_black()
 	# 换场景那一帧常卡一下，停两帧再揭，揭开就是新页
-	await get_tree().process_frame
-	await get_tree().process_frame
-	if id != _run_id:
+	if not await _await_frame(id) or not await _await_frame(id):
 		return
 	_tween = create_tween()
 	_tween.tween_property(_top, "size:y", 0.0, T_BAR_OUT).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_tween.parallel().tween_property(_bottom, "size:y", 0.0, T_BAR_OUT).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_tween.parallel().tween_property(_bottom, "position:y", half * 2.0, T_BAR_OUT).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	await _tween.finished
-	if id != _run_id:
+	if not await _await_tween(id):
 		return
 	_swallow = false
 	_finish()
@@ -296,8 +304,7 @@ func _hairline() -> ColorRect:
 func _start(p_title: String, p_subtitle: String, p_seal: String) -> void:
 	_build()
 	_run_id += 1
-	if _tween != null and _tween.is_valid():
-		_tween.kill()
+	_cancel_waits()
 	_black_done = false
 	_done = false
 	_on_black = Callable()
@@ -350,6 +357,44 @@ func _layout() -> void:
 	_clip.modulate.a = 1.0
 
 
+## 挂起点一：等刚排好的 _tween 放完。醒来本幕还是 id 才返回 true；中途作废返回 false，调用方自退。
+func _await_tween(id: int) -> bool:
+	if id != _run_id:
+		return false
+	_wait_seq += 1
+	_tween.finished.connect(_wake.bind(_wait_seq), CONNECT_ONE_SHOT)
+	waiters += 1
+	await _woken
+	waiters -= 1
+	return id == _run_id
+
+
+## 挂起点二：等下一帧（同 await get_tree().process_frame 的时机）。已离树或本幕已作废直接返回 false。
+func _await_frame(id: int) -> bool:
+	if id != _run_id or not is_inside_tree():
+		return false
+	_wait_seq += 1
+	get_tree().process_frame.connect(_wake.bind(_wait_seq), CONNECT_ONE_SHOT)
+	waiters += 1
+	await _woken
+	waiters -= 1
+	return id == _run_id
+
+
+func _wake(seq: int) -> void:
+	if seq == _wait_seq:
+		_woken.emit()
+
+
+## 作废本幕的等待（调用方先 _run_id += 1）：kill tween、让还没到的回调过期，并当场唤醒挂着的协程。
+## kill 掉的 tween 不发 finished、离树后 process_frame 不再唤醒本节点，不在这里补这一声，协程就永远挂着。
+func _cancel_waits() -> void:
+	if _tween != null and _tween.is_valid():
+		_tween.kill()
+	_wait_seq += 1
+	_woken.emit()
+
+
 ## 墨边合拢 + 题签擦出。被新一幕打断时返回 false。
 func _bars_in(id: int) -> bool:
 	var cv := Kit.canvas_size(self)
@@ -367,8 +412,7 @@ func _bars_in(id: int) -> bool:
 	if _sub.visible:
 		_sub.modulate.a = 0.0
 		_tween.tween_property(_sub, "modulate:a", 1.0, T_SUB)
-	await _tween.finished
-	if id != _run_id:
+	if not await _await_tween(id):
 		return false
 	caption_shown.emit()
 	return true
@@ -376,10 +420,11 @@ func _bars_in(id: int) -> bool:
 
 func _hold(id: int) -> bool:
 	var left := T_HOLD
-	while left > 0.0 and id == _run_id:
-		await get_tree().process_frame
+	while left > 0.0:
+		if not await _await_frame(id):
+			return false
 		left -= get_process_delta_time()
-	return id == _run_id
+	return true
 
 
 func _hold_and_open(id: int) -> void:
@@ -393,8 +438,7 @@ func _hold_and_open(id: int) -> void:
 	_tween.tween_property(_top, "size:y", 0.0, T_BAR_OUT).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_tween.parallel().tween_property(_bottom, "size:y", 0.0, T_BAR_OUT).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_tween.parallel().tween_property(_bottom, "position:y", cv.y, T_BAR_OUT).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	await _tween.finished
-	if id != _run_id:
+	if not await _await_tween(id):
 		return
 	_finish()
 
@@ -417,8 +461,7 @@ func _black() -> void:
 func _abort() -> void:
 	remove_from_group(GROUP)
 	_run_id += 1
-	if _tween != null and _tween.is_valid():
-		_tween.kill()
+	_cancel_waits()
 	# 出战没到全黑就被顶掉：补调 on_black，调用方的换场不丢
 	if _on_black.is_valid():
 		_black()
@@ -443,6 +486,5 @@ func _finish(free_self := true) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_EXIT_TREE and not _done:
 		_run_id += 1
-		if _tween != null and _tween.is_valid():
-			_tween.kill()
+		_cancel_waits()
 		_finish(false)

@@ -226,6 +226,10 @@ func _check(ok: bool, pass_msg: String, fail_msg: String) -> void:
 
 
 func _report() -> void:
+	# 每一幕都已终结（上面逐行判过 finished），墨边协程须全部醒来自退、一个不剩（lane gd15：没醒的退出时报 ObjectDB 泄漏）
+	if not Kit.is_headless():
+		_check(Letterbox.waiters == 0, "收尾：墨边协程全部醒来（waiters=0）",
+			"收尾：仍有 %d 个墨边协程挂在等待上（没被唤醒，退出会报 ObjectDB 泄漏）" % Letterbox.waiters)
 	for f in _fails:
 		GateReport.check(false, str(f))
 	var line := ("%s_OK rows=%d" % [TAG, _rows]) if _fails.is_empty() \

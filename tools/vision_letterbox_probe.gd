@@ -34,6 +34,7 @@ func _run() -> void:
 	root.size = VIEW
 	_contract = ShotGate.contract_mode()
 	_check_titles()
+	_check_await_src()
 	if _contract:
 		if Kit.is_headless():
 			_expect(Letterbox.enter(root, "刺桐外海・接舷") == null, "headless 下静态入口应返回 null")
@@ -153,6 +154,30 @@ func _check_titles() -> void:
 		_expect(not src.contains(w), "墨边脚本里出现了禁词「%s」" % w)
 
 
+## 墨边协程只许挂在可取消的挂起点上（lane gd15）：代码行里的 await 只能等 _woken，或等本文件自己的协程函数。
+## 直接 await tween.finished / process_frame / 计时器，被 kill、随父释放或退出时协程永不醒 → ObjectDB 泄漏。
+func _check_await_src() -> void:
+	var src := FileAccess.get_file_as_string("res://scripts/ui/CombatLetterbox.gd")
+	var own := {}
+	for m in RegEx.create_from_string("(?m)^func (_\\w+)\\(").search_all(src):
+		own[m.get_string(1)] = true
+	var parked := 0
+	var ln := 0
+	for line in src.split("\n"):
+		ln += 1
+		var code := line.get_slice("#", 0)
+		var at := code.find("await ")
+		while at >= 0:
+			var expr := code.substr(at + 6).strip_edges()
+			var callee := expr.get_slice("(", 0)
+			if expr == "_woken":
+				parked += 1
+			elif not (expr.contains("(") and own.has(callee)):
+				_fails.append("CombatLetterbox.gd:%d 直接 await「%s」：须走 _await_tween / _await_frame（kill 或随父释放后协程永不醒）" % [ln, expr])
+			at = code.find("await ", at + 6)
+	_expect(parked == 2, "CombatLetterbox 的挂起点应恰好 2 处 await _woken（_await_tween / _await_frame），实为 %d" % parked)
+
+
 func _check_layout(lb: CanvasLayer, tag: String) -> void:
 	var h: float = lb.call("bar_height")
 	var r: Rect2 = lb.call("caption_rect")
@@ -185,6 +210,8 @@ func _bail(msg: String, wm) -> void:
 ## wm 不写类型：已被 on_black 放掉的实例传进带类型形参会 SCRIPT ERROR。
 func _end(wm, error := "") -> void:
 	CombatStage.teardown(self, wm)
+	# teardown 已把场上墨边全 _abort：挂着的协程当场醒来自退，一个都不许剩（剩了就是退出时的 ObjectDB 泄漏，lane gd15）
+	_expect(Letterbox.waiters == 0, "墨边收尾后仍有 %d 个协程挂在等待上（没被唤醒，退出会报 ObjectDB 泄漏）" % Letterbox.waiters)
 	if _contract:
 		quit(ShotGate.finish_contract(TAG, _fails, error))
 	else:
