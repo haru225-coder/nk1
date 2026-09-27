@@ -103,7 +103,7 @@ REGISTRY = [
      "judge": "（lane h1h2 / rt）坏分区退 .bak、只剩 .bak 取标签、两份皆坏不抛错",
      "green": "`SAVE_ROBUST_PROBE PASS`（大量 `ERROR: 存档结构异常…` 是故意喂坏档，属预期）",
      "red": "`✗` 行 / 非零退出；输出含 `SCRIPT ERROR` 即算失败"},
-    {"id": "check_sidecars", "tier": "lane", "when": "提交新 .gd / .gdshader / 素材，或挪删它们", "kind": "py",
+    {"id": "check_sidecars", "tier": "lane", "when": "提交新 .gd / .gdshader / 素材，或挪删它们（同车规则：新源文件的侧车同 commit 带上）", "kind": "py",
      "file": "tools/check_sidecars.py",
      "judge": "（lane ag / ag2）按 git 索引：已跟踪 .gd/.gdshader 须有已跟踪 `.uid`，可导入素材须有 `.import`；反向不许只提侧车 / 多余侧车；侧车内容与源文件、场景引用、VRAM 基线一致，uid 唯一；工作树里已跟踪侧车不许漂移。口径表见 docs/侧车口径.md",
      "green": "`结果：全部通过`", "red": "`FAIL: …` 行（缺侧车 / 孤儿·多余侧车 / 内容漂移 / 非基线形态 / 工作树漂移）；`结果：N 项失败`"},
