@@ -3,6 +3,9 @@
 起因：序章 effects 里的 sea_tendency / scholar_tendency 曾在 Main.apply_effects 里无分支，
 静默丢弃了两年。此脚本把「数据里写了的效果键，代码必须接住」做成门禁。"""
 import copy, json, os, re, sys, pathlib
+if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gate_json; gate_json.maybe_json(__file__)
 
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 FAIL = []

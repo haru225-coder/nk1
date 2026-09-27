@@ -16,6 +16,9 @@ import math
 import os
 import re
 import sys
+if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gate_json; gate_json.maybe_json(__file__)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAX_INLAND_KM = 180.0

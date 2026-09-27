@@ -2,6 +2,9 @@
 """静态检查 GDScript：autoload 单例的跨文件引用是否都真实存在。
 GDScript 是动态语言，Autoload.missing_method() 只有跑到那一行才报错。"""
 import json, re, os, sys, collections
+if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gate_json; gate_json.maybe_json(__file__)
 
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)

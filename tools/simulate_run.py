@@ -3,6 +3,9 @@
 完整复现 Fleet 的舱位/补给（多船分装）、Economy 的行情冲击与回归、Voyage 的季风与航速。
 目的是找出设计死锁（卡补给、卡舱位、卡钱），而不是验证单条公式。"""
 import json, math, os, re, sys, random
+if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gate_json; gate_json.maybe_json(__file__)
 
 random.seed(20260727)
 import pathlib

@@ -23,6 +23,9 @@ good/bad fixture 在临时目录里跑。体检或守卫被注释掉时模型随
   python3 tools/verify_save_robustness.py --dump-fixtures DIR  # 写出 fixture 供 Godot 手测
 """
 import json, os, re, sys, tempfile, pathlib
+if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gate_json; gate_json.maybe_json(__file__)
 
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 SAVELOAD = os.path.join(ROOT, "scripts", "core", "SaveLoad.gd")
