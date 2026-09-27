@@ -27,6 +27,7 @@ func _init() -> void:
 
 
 func _run() -> void:
+	CombatStage.watch_captures()  # 收尾断言 lambda 没捕获到已释放的节点（lane gd17）
 	root.size = VIEW
 	_contract = ShotGate.contract_mode()
 	var no_render := ShotGate.no_render_reason()
@@ -99,10 +100,12 @@ func _run() -> void:
 		var shown := [false]
 		lb.caption_shown.connect(func() -> void: shown[0] = true, CONNECT_ONE_SHOT)
 		var path := "%s/wire_02_letterbox_enter.png" % OUT_DIR
+		# 条件只捕获弱引用：墨边在等待中演完自删 / 随布景释放后再调，直接捕获 lb 就报 Lambda capture freed（lane gd17）
+		var lb_ref: WeakRef = weakref(lb)
 		await CombatStage.shot_when(self, path.get_file(), _fails,
 				func() -> void: ShotGate.shot(root, path, _saved, _fails),
-				func() -> bool: return shown[0] and is_instance_valid(lb) and not lb.is_queued_for_deletion(),
-				func() -> bool: return not is_instance_valid(lb) or lb.is_queued_for_deletion())
+				func() -> bool: return shown[0] and _live(lb_ref),
+				func() -> bool: return not _live(lb_ref))
 		if is_instance_valid(lb) and shown[0]:
 			_expect(str(lb.get("title")) == "泉州外海・遇敌", "入战题名「%s」" % lb.get("title"))
 	var why := CombatStage.standing_fail(wm)
@@ -148,5 +151,13 @@ func _shot(stem: String) -> void:
 	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)
 
 
+## 弱引用的节点还在且没排队释放
+func _live(ref: WeakRef) -> bool:
+	var n: Node = ref.get_ref()
+	return n != null and not n.is_queued_for_deletion()
+
+
 func _report() -> void:
+	var freed := CombatStage.captures_freed()
+	_expect(freed == 0, "探针 lambda 没碰到已释放的捕获（Lambda capture … was freed %d 次，须 0；改捕获 weakref，见 combat_probe_stage 头注释「六」）" % freed)
 	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))

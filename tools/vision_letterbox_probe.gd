@@ -32,6 +32,7 @@ func _init() -> void:
 
 
 func _run() -> void:
+	CombatStage.watch_captures()  # 收尾断言 lambda 没捕获到已释放的节点（lane gd17）
 	root.size = VIEW
 	_contract = ShotGate.contract_mode()
 	_check_titles()
@@ -56,6 +57,8 @@ func _run() -> void:
 		"enemy": enemy, "source": {"scene": "probe"}}
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
+	# 下面的 lambda 只捕获弱引用：wm / lb / ex 都会在等待中被释放，直接捕获再调就报 Lambda capture freed（lane gd17）
+	var wm_ref: WeakRef = weakref(wm)
 	# 布景不自己结算（lane pg 立、gd10 改冻开炮）：WorldMap 是真海战，照常开炮结算。约 8–10 s 旗舰被击沉 →
 	# _battle_exit("lose") 自己起一副出战墨边，把探针这副在停拍时顶掉（_abort 提前补调 on_black，揭开是拆了场的灰底）
 	# → 05 中线 v=0.302 偶发红，10 次红 5。不是渲染时序，不能靠重试/多等帧遮掉。add_child 当帧就冻（原先等 30 帧再
@@ -64,8 +67,8 @@ func _run() -> void:
 	# 00 / 01 按演出相位截，不数帧（lane gd11）：原 30 帧在快机上 WorldMap 自己那副入战墨边（挂在 wm 下，约 3.2 s）
 	# 还没收，「combat_plain」截的是「外海・遇敌」墨边；原 6 帧在慢帧（每帧 160 ms）下墨边早合满、题签已在擦出，不是「合拢中」
 	if not await _shot_when("00_combat_plain",
-			func() -> bool: return CombatStage.letterbox_under(self, wm) == null,
-			func() -> bool: return CombatStage.standing_fail(wm) != ""):
+			func() -> bool: return CombatStage.letterbox_under(self, wm_ref.get_ref()) == null,
+			func() -> bool: return CombatStage.standing_fail(wm_ref.get_ref()) != ""):
 		_bail("布景入战墨边没收场，截不到海战素面", wm)
 		return
 
@@ -77,12 +80,13 @@ func _run() -> void:
 	if lb == null:
 		_end(wm)
 		return
+	var lb_ref: WeakRef = weakref(lb)
 	var enter_done := [false]
 	lb.finished.connect(func() -> void: enter_done[0] = true)
 	# 01：墨边合到三成以上、还没合满（合拢 0.46 s）
 	if not await _shot_when("01_enter_closing",
-			func() -> bool: return _bar_frac(lb) >= 0.3 and _bar_frac(lb) < 1.0,
-			func() -> bool: return _bar_frac(lb) >= 1.0):
+			func() -> bool: return _bar_frac(lb_ref.get_ref()) >= 0.3 and _bar_frac(lb_ref.get_ref()) < 1.0,
+			func() -> bool: return _bar_frac(lb_ref.get_ref()) >= 1.0):
 		_bail("入战墨边合拢中一帧也没画到", wm)
 		return
 	# 裸 await caption_shown 在墨边被顶掉 / 随布景释放时永不返回（lane gd10）：一律带上界（gd11 起按墙钟），没等到就判红收尾
@@ -91,7 +95,7 @@ func _run() -> void:
 		return
 	await _shot("02_enter_caption")
 	_check_layout(lb, "入战")
-	if not await CombatStage.wait_until(self, func() -> bool: return enter_done[0] or not is_instance_valid(lb)) \
+	if not await CombatStage.wait_until(self, func() -> bool: return enter_done[0] or lb_ref.get_ref() == null) \
 			or not enter_done[0]:
 		_bail("入战墨边没演完（finished 未发）", wm)
 		return
@@ -104,15 +108,19 @@ func _run() -> void:
 	var ex := Letterbox.exit(root, Letterbox.outcome_title("board", "刺桐外海"),
 		"咸淳三年六月十二　夺得海鹘一艘", func() -> void:
 			_on_black_hits += 1
-			wm.queue_free())
+			var w: Node = wm_ref.get_ref()
+			if w != null:
+				w.queue_free())
 	_expect(ex != null, "出战墨边未上场")
 	if ex == null:
 		_end(wm)
 		return
+	var ex_ref: WeakRef = weakref(ex)
 	ex.covered.connect(func() -> void:
 		_covered_hits += 1
-		_shut_at_cover = (ex.get("_top") as Control).size.y
-		_resolved_at_cover = is_instance_valid(wm) and bool(wm.get("resolved")))
+		_shut_at_cover = (ex_ref.get_ref().get("_top") as Control).size.y  # 发信号的就是 ex，此刻必在
+		var w: Node = wm_ref.get_ref()
+		_resolved_at_cover = w != null and bool(w.get("resolved")))
 	var exit_done := [false]
 	ex.finished.connect(func() -> void: exit_done[0] = true)
 	if not await CombatStage.wait_signal(self, ex, &"caption_shown"):
@@ -121,7 +129,7 @@ func _run() -> void:
 	await _shot("04_exit_caption")
 	_check_layout(ex, "出战")
 	# 已被顶掉时 covered 早发过了，裸 await 会挂死；按计数等、带上界
-	if not await CombatStage.wait_until(self, func() -> bool: return _covered_hits > 0 or not is_instance_valid(ex)) \
+	if not await CombatStage.wait_until(self, func() -> bool: return _covered_hits > 0 or ex_ref.get_ref() == null) \
 			or _covered_hits == 0:
 		_bail("出战墨边没合到全黑（covered 未发）", wm)
 		return
@@ -133,7 +141,7 @@ func _run() -> void:
 	if img != null:
 		var mid := img.get_pixel(VIEW.x / 2, VIEW.y / 2)
 		_expect(mid.v < 0.08, "出战合拢时画面中线未全黑（v=%.3f）" % mid.v)
-	if not await CombatStage.wait_until(self, func() -> bool: return exit_done[0] or not is_instance_valid(ex)) \
+	if not await CombatStage.wait_until(self, func() -> bool: return exit_done[0] or ex_ref.get_ref() == null) \
 			or not exit_done[0]:
 		_bail("出战墨边没演完（finished 未发）", wm)
 		return
@@ -235,6 +243,8 @@ func _end(wm, error := "") -> void:
 	CombatStage.teardown(self, wm)
 	# teardown 已把场上墨边全 _abort：挂着的协程当场醒来自退，一个都不许剩（剩了就是退出时的 ObjectDB 泄漏，lane gd15）
 	_expect(Letterbox.waiters == 0, "墨边收尾后仍有 %d 个协程挂在等待上（没被唤醒，退出会报 ObjectDB 泄漏）" % Letterbox.waiters)
+	var freed := CombatStage.captures_freed()
+	_expect(freed == 0, "探针 lambda 没碰到已释放的捕获（Lambda capture … was freed %d 次，须 0；改捕获 weakref，见 combat_probe_stage 头注释「六」）" % freed)
 	if _contract:
 		quit(ShotGate.finish_contract(TAG, _fails, error))
 	else:

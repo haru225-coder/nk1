@@ -34,6 +34,7 @@ func _init() -> void:
 
 
 func _run() -> void:
+	CombatStage.watch_captures()  # 收尾断言 lambda 没捕获到已释放的节点（lane gd17）
 	root.size = VIEW
 	_contract = ShotGate.contract_mode()
 	var no_render := ShotGate.no_render_reason()
@@ -93,7 +94,8 @@ func _run() -> void:
 	_expect(CombatStage.freeze_enemy_fire(wm) == 2, "布景敌船开炮已冻住（2 艘）")
 	# 等布景自带的入战墨边（挂在 wm 下，约 3.2 s）收场再起本探针那副（lane gd14）：原先数 30 帧，快机上只合 0.13 s，
 	# 本探针的墨边上场把它顶掉（_abort）；慢帧下它已自己演完——走哪条路随帧率变
-	if not await Clock.until(self, func() -> bool: return _letterbox_under(wm) == null):
+	var wm_ref: WeakRef = weakref(wm)  # 条件只捕获弱引用：布景万一自行结算释放后再调，直接捕获 wm 就报 Lambda capture freed（lane gd17）
+	if not await Clock.until(self, func() -> bool: return _letterbox_under(wm_ref.get_ref()) == null):
 		_bail("布景自带的入战墨边 %d ms 内没收场" % Clock.WAIT_MS, wm, gm)
 		return
 	if CombatStage.standing_fail(wm) != "":
@@ -112,7 +114,9 @@ func _run() -> void:
 		_expect("海鹘二艘" in str(lb.get("subtitle")), "入战副题含中文船数")
 		var enter_done := [false]
 		lb.finished.connect(func() -> void: enter_done[0] = true)
-		if not await CombatStage.wait_until(self, func() -> bool: return enter_done[0] or not is_instance_valid(lb)) \
+		# 条件只捕获弱引用：墨边演完自删后再调一次，直接捕获 lb 就报 Lambda capture freed（lane gd17）
+		var lb_ref: WeakRef = weakref(lb)
+		if not await CombatStage.wait_until(self, func() -> bool: return enter_done[0] or lb_ref.get_ref() == null) \
 				or not enter_done[0]:
 			_bail("入战墨边没演完（finished 未发）", wm, gm)
 			return
@@ -131,7 +135,8 @@ func _run() -> void:
 		_expect(str(ex.get("title")) == "刺桐外海・夺船", "出战题名「%s」" % ex.get("title"))
 		var exit_done := [false]
 		ex.finished.connect(func() -> void: exit_done[0] = true)
-		if not await CombatStage.wait_until(self, func() -> bool: return exit_done[0] or not is_instance_valid(ex)) \
+		var ex_ref: WeakRef = weakref(ex)
+		if not await CombatStage.wait_until(self, func() -> bool: return exit_done[0] or ex_ref.get_ref() == null) \
 				or not exit_done[0]:
 			_bail("出战墨边没演完（finished 未发）", wm, gm)
 			return
@@ -218,5 +223,7 @@ func _bail(msg: String, wm, gm: Node) -> void:
 ## wm 不写类型：布景自行结算释放后传进带类型形参会 SCRIPT ERROR。
 func _end(wm, gm, error := "") -> void:
 	CombatStage.teardown(self, wm, gm)
+	var freed := CombatStage.captures_freed()
+	_expect(freed == 0, "探针 lambda 没碰到已释放的捕获（Lambda capture … was freed %d 次，须 0；改捕获 weakref，见 combat_probe_stage 头注释「六」）" % freed)
 	quit(ShotGate.finish_contract(TAG, _fails, error) if _contract
 		else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails, error))

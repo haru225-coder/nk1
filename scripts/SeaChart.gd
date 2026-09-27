@@ -2,6 +2,9 @@ extends Control
 ## 海图。风每一手发至多三向，选定后按日推进，逐日抽事件，到港。
 ## 实时操船（WorldMap.tscn）降级为海战/风涛时切入的战术场景。
 
+## 内部：船标一日走完 / 作废的唤醒（lane gd17），只由 _wake_marker 与 _cancel_marker 发
+signal _marker_woken
+
 const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 
 var origin_port: String = ""
@@ -51,6 +54,8 @@ var _latest_note := ""
 const DAY_SECONDS := 0.42
 const DAY_SECONDS_FAST := 0.05
 var _sail_serial: int = 0
+## 船标挂起点序号：作废（下一段顶掉 / 离树）后 +1，醒来对不上就是被作废
+var _marker_seq: int = 0
 ## 二十四向（自正北顺时针，每向 15 度）：宋元罗盘的方位字，海图罗盘与「某针」文案用它
 const COMPASS_24 := ["子", "癸", "丑", "艮", "寅", "甲", "卯", "乙", "辰", "巽", "巳", "丙", "午", "丁", "未", "坤", "申", "庚", "酉", "辛", "戌", "乾", "亥", "壬"]
 const MAP_INK := Color(0.165, 0.141, 0.114)
@@ -1172,8 +1177,7 @@ func _sail_next_day() -> void:
 
 	# 船标沿折线走完这一日（按住空格加速）。回港或换场景后协程作废。
 	var serial := _sail_serial
-	await _advance_ship_marker()
-	if serial != _sail_serial or not sailing or not is_inside_tree():
+	if not await _advance_ship_marker() or serial != _sail_serial or not sailing or not is_inside_tree():
 		return
 
 	# 补给见底的警告
@@ -1196,18 +1200,42 @@ func _sail_next_day() -> void:
 	_sail_next_day()
 
 
-## 把船标推到当前已行里程处；返回后这一日的动画已走完
-func _advance_ship_marker() -> void:
+## 把船标推到当前已行里程处；这一日的动画走完返回 true。被下一段顶掉或离树返回 false，调用方自退。
+## 不直接 await 补间的 finished（lane gd17）：move_ship_* 起新一段会 kill 上一段，kill 掉的补间永不发 finished；
+## 回港换场景时补间随 MapView 作废也不发。协程永不醒，栈上的补间与挂起的协程互相引住，退出报 ObjectDB 泄漏。
+## 改等自有信号：补间放完 / 作废（_cancel_marker：起新一段前、离树时）都会唤醒，按序号分辨。
+func _advance_ship_marker() -> bool:
+	_cancel_marker()
 	if map == null:
-		return
+		return true
 	var traveled := clampf(total_li - remaining_li, 0.0, total_li)
 	var at: Dictionary = Voyage.point_along_track(origin_port, selected_port, traveled)
 	var heading := Voyage.bearing_at(origin_port, selected_port, traveled)
 	var dur := DAY_SECONDS_FAST if Input.is_key_pressed(KEY_SPACE) else DAY_SECONDS
 	var frac := 0.0 if total_li <= 0.0 else traveled / total_li
 	var tw := map.move_ship_lonlat(float(at["lon"]), float(at["lat"]), heading, frac, dur)
-	if tw:
-		await tw.finished
+	if tw == null:
+		return true
+	var seq := _marker_seq
+	tw.finished.connect(_wake_marker.bind(seq), CONNECT_ONE_SHOT)
+	await _marker_woken
+	return seq == _marker_seq
+
+
+func _wake_marker(seq: int) -> void:
+	if seq == _marker_seq:
+		_marker_woken.emit()
+
+
+## 作废还挂着的船标等待并当场唤醒（醒来见序号已变返回 false）；没人等时空发一声无妨。
+func _cancel_marker() -> void:
+	_marker_seq += 1
+	_marker_woken.emit()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_EXIT_TREE:
+		_cancel_marker()
 
 
 func _show_event(event: Dictionary) -> void:

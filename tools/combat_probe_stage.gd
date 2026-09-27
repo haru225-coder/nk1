@@ -43,6 +43,13 @@ extends RefCounted
 ##   压帧（gd10 复现手法，模拟满载慢帧）；未设不挂。探针照常跑，用来证明推进与帧率无关：
 ##     NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path . -s res://tools/combat_vfx_probe.gd
 ##
+## 六、lambda 不直接捕获会被释放的节点（lane gd17）。wait_until / shot_when 的条件每帧都调，节点在等待里被释放
+##   （墨边演完自删、布景结算释放）后再调一次，Godot 就报 `Lambda capture at index N was freed. Passed "null" instead.`
+##   ——判定照旧（null 进 is_instance_valid 为 false），但每次跑都多两行引擎 ERROR（gd15 待议 1）。
+##   写法：捕获 `weakref(node)`，条件里 `ref.get_ref()` 取（已释放得 null，本文件的 helper 都收 null）；下标盒子 [false]
+##   照旧直接捕获（Array 是值容器，不会被释放）。watch_captures() / captures_freed() 在探针进程里挂一个 Logger 数这类
+##   ERROR（只数调用栈落在 res://tools/ 的），探针收尾断言为 0，防回退。
+##
 ## wm / obj / parent 形参故意不写类型：已释放的实例传给带类型的形参当场 SCRIPT ERROR、协程中断——正是要防的挂死。
 
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
@@ -102,7 +109,8 @@ static func wait_signal(tree: SceneTree, obj, sig: StringName, max_ms := WAIT_MS
 	var watch_stop: bool = stop != sig and obj.has_signal(stop)
 	if watch_stop:
 		obj.connect(stop, cb_stop, Object.CONNECT_ONE_SHOT)
-	await wait_until(tree, func() -> bool: return hit[0] or ended[0] or not is_instance_valid(obj), max_ms)
+	var ref: WeakRef = weakref(obj)  # 不直接捕获 obj：等待中被释放后再调条件会报 Lambda capture freed（头注释「六」）
+	await wait_until(tree, func() -> bool: return hit[0] or ended[0] or ref.get_ref() == null, max_ms)
 	if is_instance_valid(obj):
 		if obj.is_connected(sig, cb):
 			obj.disconnect(sig, cb)
@@ -184,6 +192,40 @@ static func letterbox_under(tree: SceneTree, parent) -> Node:
 		if n.get_parent() == parent and not n.is_queued_for_deletion():
 			return n
 	return null
+
+
+## 开始数本进程里探针脚本的「Lambda capture … was freed」引擎 ERROR（头注释「六」）；重复调只挂一个。
+static func watch_captures() -> void:
+	if _capture_log == null:
+		_capture_log = _CaptureLog.new()
+		OS.add_logger(_capture_log)
+
+
+## 摘下 watch_captures 挂的 Logger，返回期间数到的次数；没挂过返回 0。探针收尾（报告前）调一次，断言为 0。
+static func captures_freed() -> int:
+	if _capture_log == null:
+		return 0
+	OS.remove_logger(_capture_log)
+	var n := _capture_log.hits
+	_capture_log = null
+	return n
+
+
+static var _capture_log: _CaptureLog = null
+
+
+class _CaptureLog extends Logger:
+	var hits := 0
+
+	func _log_error(_function: String, _file: String, _line: int, code: String, rationale: String,
+			_editor_notify: bool, _error_type: int, script_backtraces: Array[ScriptBacktrace]) -> void:
+		if not ("Lambda capture" in rationale or "Lambda capture" in code):
+			return
+		for bt in script_backtraces:
+			for i in bt.get_frame_count():
+				if bt.get_frame_file(i).begins_with("res://tools/"):
+					hits += 1
+					return
 
 
 ## NK1_PROBE_SLOW_MS>0 时挂压帧节点，返回每帧压的毫秒数；未设返回 0、什么也不挂。见头注释「五」。

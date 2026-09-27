@@ -77,8 +77,12 @@ static func holding(node) -> bool:
 ## 等墨幕演到停拍：到了返回 ""；已收场（相位已过）返回「错过」、满 max_ms 返回「超时」。调用方截完再用 holding 复核。
 static func wait_hold(tree: SceneTree, node, max_ms := WAIT_MS) -> String:
 	var t0 := Time.get_ticks_msec()
-	var gone := func() -> bool: return node == null or not is_instance_valid(node) or bool(node.get("_done"))
-	if not await until(tree, func() -> bool: return holding(node) or gone.call(), max_ms):
+	# 条件只捕获弱引用（lane gd17）：墨幕收场自删后再调，直接捕获 node 就报 Lambda capture freed（错过那条路）
+	var ref: WeakRef = weakref(node) if node != null and is_instance_valid(node) else null
+	var gone := func() -> bool:
+		var n = null if ref == null else ref.get_ref()
+		return n == null or bool(n.get("_done"))
+	if not await until(tree, func() -> bool: return holding(null if ref == null else ref.get_ref()) or gone.call(), max_ms):
 		return "超时（%d ms 未到停拍）" % max_ms
 	if not holding(node):
 		return "错过（等 %d ms 墨幕已收场，停拍一帧也没等到）" % (Time.get_ticks_msec() - t0)

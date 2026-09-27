@@ -24,6 +24,7 @@ func _init() -> void:
 
 
 func _run() -> void:
+	CombatStage.watch_captures()  # 收尾断言 lambda 没捕获到已释放的节点（lane gd17）
 	root.size = VIEW
 	var no_render := ShotGate.no_render_reason()
 	if not ShotGate.contract_mode() and no_render != "":
@@ -52,13 +53,15 @@ func _run() -> void:
 
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
+	# 下面等相位的 lambda 只捕获弱引用：布景万一自行结算释放后再调，直接捕获 wm 就报 Lambda capture freed（lane gd17）
+	var wm_ref: WeakRef = weakref(wm)
 	# 布景不自己结算（lane gd10）：只冻敌船开炮，接舷演出照常跑；理由见 combat_probe_stage.gd 头注释
 	_expect(CombatStage.freeze_enemy_fire(wm) == 2, "布景敌船开炮已冻住（2 艘）")
 	# 按演出相位截图，不数帧（lane gd11）：原 36 / 18 / 50 / 20 帧只在某一帧率下对得上，快机截到墨边、慢帧截到空海面
 	# wire_01：WorldMap 自己那副入战墨边（约 3.2 s，挂在 wm 下）收场后才是海战场面
 	if not await _shot_when("wire_01_naval",
-			func() -> bool: return CombatStage.letterbox_under(self, wm) == null,
-			func() -> bool: return CombatStage.standing_fail(wm) != ""):
+			func() -> bool: return CombatStage.letterbox_under(self, wm_ref.get_ref()) == null,
+			func() -> bool: return CombatStage.standing_fail(wm_ref.get_ref()) != ""):
 		_finish(wm)
 		return
 
@@ -73,20 +76,20 @@ func _run() -> void:
 			wm._board_enemy(enemy_node)
 			# wire_02：「接舷」题签显满（淡入 0.22 s）、白刃判定（0.42 s 后）还没出
 			if not await _shot_when("wire_02_board_begin",
-					func() -> bool: return _board_is(wm, ["接舷"]),
-					func() -> bool: return CombatStage.board_caption(self, wm)[0] != "接舷"):
+					func() -> bool: return _board_is(wm_ref.get_ref(), ["接舷"]),
+					func() -> bool: return CombatStage.board_caption(self, wm_ref.get_ref())[0] != "接舷"):
 				_finish(wm)
 				return
 			# wire_03：结算题签（夺船 / 脱钩）显满、还在停拍（0.55 s）没淡出
 			if not await _shot_when("wire_03_board_resolve",
-					func() -> bool: return _board_is(wm, RESOLVE_TITLES),
+					func() -> bool: return _board_is(wm_ref.get_ref(), RESOLVE_TITLES),
 					func() -> bool:
-						var cap: Array = CombatStage.board_caption(self, wm)
+						var cap: Array = CombatStage.board_caption(self, wm_ref.get_ref())
 						return cap[0] == "" or (cap[0] in RESOLVE_TITLES and cap[1] < 0.99)):
 				_finish(wm)
 				return
 			# 等海上这层接舷题签演完再起岸上预览：否则 BoardingStage.begin 按组顶掉它，顶在哪一拍随帧率变
-			if not await CombatStage.wait_until(self, func() -> bool: return CombatStage.boarding_stage(self, wm) == null):
+			if not await CombatStage.wait_until(self, func() -> bool: return CombatStage.boarding_stage(self, wm_ref.get_ref()) == null):
 				_expect(false, "海上接舷题签没收场（finished 未发）")
 				_finish(wm)
 				return
@@ -153,6 +156,8 @@ func _expect(cond: bool, msg: String) -> void:
 
 
 func _report() -> void:
+	var freed := CombatStage.captures_freed()
+	_expect(freed == 0, "探针 lambda 没碰到已释放的捕获（Lambda capture … was freed %d 次，须 0；改捕获 weakref，见 combat_probe_stage 头注释「六」）" % freed)
 	if ShotGate.contract_mode():
 		quit(ShotGate.finish_contract(TAG, _fails))
 	else:
