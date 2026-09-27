@@ -155,7 +155,10 @@ func advance_days(n: int) -> void:
 		var prev_month: int = Calendar.month
 		Calendar.advance_days(1)
 		if Calendar.month != prev_month:
-			GameState.accrue_interest()
+			# 结息与赊贷工席的「每月生息」同式；欠着就月月通告，不让债在状态栏里悄悄涨
+			var interest := GameState.accrue_interest()
+			if interest > 0:
+				monthly_notice.emit("【月息】蕃商结息 %d 钱，现欠 %d。" % [interest, GameState.debt])
 			var notice := Crew.pay_wages()
 			if notice != "":
 				monthly_notice.emit(notice)

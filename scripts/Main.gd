@@ -1825,14 +1825,15 @@ func _add_contract_panel(port_id: String) -> void:
 			var need_qty := int(offer.get("qty", 0))
 			var unit_cost := Economy.buy_price(port_id, gid)
 			var held_qty := Fleet.cargo_qty(gid)
-			var can_buy := 0
-			if unit_cost > 0:
-				can_buy = int(float(GameState.money) / float(unit_cost))
-			var can_carry := held_qty + mini(can_buy, Fleet.max_loadable(gid))
+			# 与牙行结算同口径：舱位逐船算（一笔货只进一艘船），钱按逐件加价的总价算
+			var room := 0
+			for si in Fleet.ships.size():
+				room += Fleet.max_loadable(gid, si)
+			var can_carry := held_qty + _affordable_qty(port_id, gid, room)
 			if can_carry < need_qty:
 				var purse_lbl := Label.new()
 				purse_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				purse_lbl.text = "此地一件 %d 钱。现银与舱货凑得出 %d 件，单须 %d 件。可接；交不齐则拿不满酬，不加声名。" % [
+				purse_lbl.text = "此地首件 %d 钱，逐件加价。现银与舱货凑得出 %d 件，单须 %d 件。可接；交不齐则拿不满酬，不加声名。" % [
 					unit_cost, can_carry, need_qty,
 				]
 				purse_lbl.add_theme_font_size_override("font_size", 16)
@@ -2001,6 +2002,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.custom_minimum_size = Vector2(0, 28)
 		b.pressed.connect(_on_buy.bind(port_id, good_id, n, _market_ship))
+		b.tooltip_text = _market_buy_tip(port_id, good_id, n, _market_ship)
 		buy_row.add_child(b)
 		UiTheme.style_chip(b)
 	var bmax := Button.new()
@@ -2008,6 +2010,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	bmax.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bmax.custom_minimum_size = Vector2(0, 28)
 	bmax.pressed.connect(_on_buy_max.bind(port_id, good_id, _market_ship))
+	bmax.tooltip_text = _market_buy_tip(port_id, good_id, -1, _market_ship)
 	buy_row.add_child(bmax)
 	UiTheme.style_chip(bmax, true)
 
@@ -2022,6 +2025,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 		s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		s.custom_minimum_size = Vector2(0, 28)
 		s.pressed.connect(_on_sell.bind(port_id, good_id, n2, _market_ship))
+		s.tooltip_text = _market_sell_tip(port_id, good_id, n2, held)
 		sell_row.add_child(s)
 		UiTheme.style_chip(s)
 	var sall := Button.new()
@@ -2030,10 +2034,63 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	sall.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sall.custom_minimum_size = Vector2(0, 28)
 	sall.pressed.connect(_on_sell.bind(port_id, good_id, held, _market_ship))
+	sall.tooltip_text = _market_sell_tip(port_id, good_id, held, held)
 	sell_row.add_child(sall)
 	UiTheme.style_chip(sall)
 
 	return card
+
+
+## 现银按逐件加价最多买得起几件（不超过 cap）。总价随件数只增不减，二分与 _on_buy 逐件递减同解。
+func _affordable_qty(port_id: String, good_id: String, cap: int) -> int:
+	var lo := 0
+	var hi := maxi(0, cap)
+	while lo < hi:
+		var mid := (lo + hi + 1) / 2
+		if Economy.estimate_buy_cost(port_id, good_id, mid) <= GameState.money:
+			lo = mid
+		else:
+			hi = mid - 1
+	return lo
+
+
+## 牙行买钮悬停：与 _on_buy / _on_buy_max 同一口径（舱位按本船，钱不够按逐件总价减件）。amount < 0 为买满。
+func _market_buy_tip(port_id: String, good_id: String, amount: int, ship_index: int) -> String:
+	var room := Fleet.max_loadable(good_id, ship_index)
+	if room <= 0:
+		return "舱满，这艘船装不下。"
+	var want := room if amount < 0 else mini(amount, room)
+	var n := _affordable_qty(port_id, good_id, want)
+	if n <= 0:
+		return "现银不够一件。"
+	var cost := Economy.estimate_buy_cost(port_id, good_id, n)
+	if n == 1:
+		return "付 %d 钱。" % cost
+	var head := ""
+	if amount < 0:
+		head = "买满 %d 件" % n
+	elif n < amount and n == room:
+		head = "舱只容 %d 件" % n
+	elif n < amount:
+		head = "现银只够 %d 件" % n
+	else:
+		head = "%d 件" % n
+	return "%s，共付 %d 钱，均价 %d。逐件加价，首件 %d。" % [
+		head, cost, int(round(float(cost) / float(n))), Economy.buy_price(port_id, good_id),
+	]
+
+
+## 牙行卖钮悬停：与 _on_sell 同一口径（逐件压价的实得）。
+func _market_sell_tip(port_id: String, good_id: String, amount: int, held: int) -> String:
+	var n := mini(amount, held)
+	if n <= 0:
+		return "舱里没有这件。" if held <= 0 else "舱里不足 %d 件。" % amount
+	var revenue := Economy.estimate_sell_revenue(port_id, good_id, n)
+	if n == 1:
+		return "得 %d 钱。" % revenue
+	return "%d 件共得 %d 钱，均价 %d。逐件压价，首件 %d。" % [
+		n, revenue, int(round(float(revenue) / float(n))), Economy.sell_price(port_id, good_id),
+	]
 
 
 func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> void:

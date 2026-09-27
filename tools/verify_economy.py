@@ -545,6 +545,22 @@ def sell_revenue(pid, gid, amount, rate=1.0):
         r = max(0.4, min(2.2, r - 1.0/depth))
     return total
 
+def buy_cost(pid, gid, amount, rate=1.0):
+    """镜像 Economy.estimate_buy_cost：逐件加价累计。"""
+    depth = ports[pid]["depth"]
+    total, r = 0, rate
+    for _ in range(amount):
+        total += buy_price(pid, gid, r)
+        r = max(0.4, min(2.2, r + 1.0/depth))
+    return total
+
+def affordable_qty(pid, gid, money, cap=9999):
+    """镜像 Main._affordable_qty：现银按逐件总价最多买几件。"""
+    n = 0
+    while n < cap and buy_cost(pid, gid, n + 1) <= money:
+        n += 1
+    return n
+
 for amt in (10, 50, 200):
     rev = sell_revenue("hakata", "qingbai_porcelain", amt)
     flat = sell_price("hakata", "qingbai_porcelain") * amt
@@ -1752,9 +1768,9 @@ check(wz_safe >= wz_mean and wz_safe <= march_walk + CONTRACT_SLACK,
       f"开局泉州→温州针路八成 {wz_safe} 日，仍落在期限 {march_walk + CONTRACT_SLACK} 内")
 if offer:
     unit = buy_price("quanzhou", offer["good_id"])
-    afford = (1000 // unit) if unit else 0
-    check(unit > 0 and unit * offer["qty"] > 1000 and afford < offer["qty"],
-          f"开局本金 1000 买不满这单：一件 {unit} 钱，凑得出 {afford} 件，单子要 {offer['qty']} 件")
+    afford = affordable_qty("quanzhou", offer["good_id"], 1000)
+    check(unit > 0 and buy_cost("quanzhou", offer["good_id"], offer["qty"]) > 1000 and afford < offer["qty"],
+          f"开局本金 1000 买不满这单：首件 {unit} 钱，逐件加价凑得出 {afford} 件，单子要 {offer['qty']} 件")
 hk_calm, _hk_changed = walk_calm_days("quanzhou", "hakata", 3, 1)
 hk_deadline = hk_calm + CONTRACT_SLACK
 hk_mean = walk_event_days("quanzhou", "hakata", 3, 1, "offshore", False)
@@ -1824,7 +1840,7 @@ def spoil_hold_chance(rate, qty, days, factor=1.0):
 
 if offer:
     spoil_rate = goods[offer["good_id"]]["perishable"]
-    have_qty = 1000 // buy_price("quanzhou", offer["good_id"])
+    have_qty = affordable_qty("quanzhou", offer["good_id"], 1000)
     st_r = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_safe))
     st_o = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_off_safe))
     st_c = cargo_hold_tenths(spoil_hold_chance(spoil_rate, have_qty, wz_coast_safe))
@@ -1893,6 +1909,22 @@ check("八成" in sea_src and "未稳" in main_src and "未稳" in sea_src,
       "平均数卡进期限、八成超出时，界面写明未稳")
 check("凑得出" in main_src and "拿不满酬" in main_src,
       "钱不够买满委办时，牙行把缺口写在单子上")
+# lane iz：凑得出 N 件按逐件加价总价与逐船舱位算，不再是 现银÷首件价 × 全队空舱
+_purse_ui = main_src.split("var need_qty := int(offer.get(\"qty\", 0))", 1)[1].split("var purse_lbl", 1)[0]
+_afford_fn = main_src.split("func _affordable_qty", 1)[1].split("\nfunc ", 1)[0] if "func _affordable_qty" in main_src else ""
+check("_affordable_qty(port_id, gid" in _purse_ui and "max_loadable(gid, si)" in _purse_ui
+      and "GameState.money) / float(unit_cost)" not in _purse_ui and "estimate_buy_cost" in _afford_fn,
+      "委办凑得出件数按逐件加价总价、逐船舱位算，与牙行结算同口径")
+_row_fn = main_src.split("func _make_market_row", 1)[1].split("\nfunc ", 1)[0]
+_btip_fn = main_src.split("func _market_buy_tip", 1)[1].split("\nfunc ", 1)[0] if "func _market_buy_tip" in main_src else ""
+_stip_fn = main_src.split("func _market_sell_tip", 1)[1].split("\nfunc ", 1)[0] if "func _market_sell_tip" in main_src else ""
+check(_row_fn.count("_market_buy_tip(") == 2 and _row_fn.count("_market_sell_tip(") == 2
+      and "estimate_buy_cost" in _btip_fn and "max_loadable(good_id, ship_index)" in _btip_fn
+      and "estimate_sell_revenue" in _stip_fn,
+      "牙行买十/买满/卖十/全卖的悬停印逐件累计的实价，与结算同一函数")
+_adv_fn = open(os.path.join(ROOT, "scripts/GameManager.gd"), encoding="utf-8").read().split("func advance_days", 1)[1].split("\nfunc ", 1)[0]
+check("interest := GameState.accrue_interest()" in _adv_fn and "【月息】" in _adv_fn and "monthly_notice.emit" in _adv_fn.split("accrue_interest", 1)[1].split("pay_wages", 1)[0],
+      "月初结息有通告：欠债时写出本月息钱与现欠")
 check("hold_tenths" in plan_body and "cargo_hold_chance(order, known, open, expected)" in plan_body,
       "保货按遇事日数写进航程，期限仍用静风")
 check("cargo_hold_chance(order, known, open, safe)" not in plan_body,
