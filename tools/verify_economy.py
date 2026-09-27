@@ -775,6 +775,23 @@ all_full_cost0 = all(upgrade_cost(sid, "sail", 3) == 0 and upgrade_cost(sid, "ar
                      for sid in ships)
 check(all_full_cost0, "满级（Lv3）后升级成本为 0——上限 3 级生效")
 
+# 2b) 船屋升级回调：按当前等级重算、升级 true 才扣钱、扣不成回滚、连点不二次扣（ASTRA M1）
+_main_up = open(os.path.join(os.path.dirname(__file__), "..", "scripts", "Main.gd"),
+                encoding="utf-8").read()
+_up_body = _main_up.split("func _on_upgrade(", 1)[1].split("\nfunc ", 1)[0] if "func _on_upgrade(" in _main_up else ""
+_i_busy = _up_body.find("if _upgrade_busy:")
+_i_cost = _up_body.find("Fleet.upgrade_cost(ship_index, kind)")
+_i_up = _up_body.find("Fleet.upgrade_armor(ship_index) if is_armor else Fleet.upgrade_sail(ship_index)")
+_i_notok = _up_body.find("if not ok:")
+_i_spend = _up_body.find("GameState.spend_money(cost)")
+_i_roll = _up_body.find("Fleet.ships[ship_index][level_key] = prev_lv")
+_i_set = _up_body.find("_upgrade_busy = true")
+check(_up_body.count("spend_money(") == 1, "升级回调只一处扣钱")
+check(0 <= _i_busy < _i_cost < _i_up < _i_notok < _i_spend < _i_roll < _i_set,
+      "升级回调：连点闸 → 按当前等级重算费用 → 升级 → 失败不扣 → 扣钱 → 扣不成回滚 → 上闸过场")
+check("spend_money(shown_cost)" not in _up_body, "升级扣费不用按钮 bind 的旧价")
+check(_up_body.rstrip().endswith("_upgrade_busy = false"), "升级过场落定后才放开连点闸")
+
 # 3) armor 满级船体伤系数 = 0.80 > 0——风暴依旧要命，不能归零
 def armor_reduction(max_durabilities, armor_levels):
     num = sum(w * (a - 1) for w, a in zip(max_durabilities, armor_levels))

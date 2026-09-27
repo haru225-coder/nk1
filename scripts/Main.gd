@@ -40,6 +40,8 @@ var _market_ship: int = 0
 var _market_hold: bool = false
 ## 牙行委办「细则」展开与否（会话内 UI 状态，不入存档；买卖刷新页面时保留）
 var _contract_detail_open := false
+## 船屋升级过场未落时挡住二次点按（会话内 UI 状态，不入存档）
+var _upgrade_busy := false
 ## 账条暂时写入的容器。酒馆募人收进内滚，离开钮留在外面。
 var _slip_host: Node = null
 var _ledger_layer: Control
@@ -2652,40 +2654,50 @@ func _on_hire_crew(ship_index: int, hire_n: int, hire_cost: int) -> void:
 	load_scene(current_scene_id)
 
 
-func _on_upgrade(ship_index: int, kind: String, cost: int) -> void:
-	if GameState.money < cost:
+func _on_upgrade(ship_index: int, kind: String, shown_cost: int) -> void:
+	# 过场未落前的连点、旧页按钮一律不理：一次升级只扣一次钱
+	if _upgrade_busy:
+		return
+	if ship_index < 0 or ship_index >= Fleet.ships.size():
+		load_scene(current_scene_id)
+		return
+	var is_armor := kind == "armor"
+	var level_key := "armor_level" if is_armor else "sail_level"
+	var prev_lv: int = Fleet.armor_level(ship_index) if is_armor else Fleet.sail_level(ship_index)
+	if (Fleet.is_armor_max(ship_index) if is_armor else Fleet.is_sail_max(ship_index)):
+		log_msg("【满级】甲已无可再加。" if is_armor else "【满级】帆已无可再换。")
+		load_scene(current_scene_id)
+		return
+	# 按眼下等级重算，不信按钮上 bind 的旧价
+	var cost: int = Fleet.upgrade_cost(ship_index, kind)
+	if cost <= 0 or GameState.money < cost:
 		log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
 		load_scene(current_scene_id)
 		return
-	var ok := false
-	var act := ""
-	if kind == "armor":
-		ok = Fleet.upgrade_armor(ship_index)
-		if ok and GameState.spend_money(cost):
-			var s: Dictionary = Fleet.ships[ship_index]
-			log_msg("「%s」加厚了船壳，甲升至%s。" % [s.get("name", "船"), _fit_rank(Fleet.armor_level(ship_index))])
-			act = "升甲"
-		elif ok:
-			# 钱在回调前被别处花掉：回滚等级，避免白升
-			Fleet.ships[ship_index]["armor_level"] = Fleet.armor_level(ship_index) - 1
-			log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
-		else:
-			log_msg("【满级】甲已无可再加。")
-	else:
-		ok = Fleet.upgrade_sail(ship_index)
-		if ok and GameState.spend_money(cost):
-			var s2: Dictionary = Fleet.ships[ship_index]
-			log_msg("「%s」换了新帆，帆升至%s。" % [s2.get("name", "船"), _fit_rank(Fleet.sail_level(ship_index))])
-			act = "升帆"
-		elif ok:
-			Fleet.ships[ship_index]["sail_level"] = Fleet.sail_level(ship_index) - 1
-			log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
-		else:
-			log_msg("【满级】帆已无可再换。")
-	if act != "":
-		await _yard_success_transition(act)
-	else:
+	var ok: bool = Fleet.upgrade_armor(ship_index) if is_armor else Fleet.upgrade_sail(ship_index)
+	if not ok:
+		log_msg("【满级】甲已无可再加。" if is_armor else "【满级】帆已无可再换。")
 		load_scene(current_scene_id)
+		return
+	if not GameState.spend_money(cost):
+		# 升级已落而钱没扣成：还原到原等级，不白升
+		Fleet.ships[ship_index][level_key] = prev_lv
+		log_msg("【钱不够】船匠掂了掂银袋，摇了摇头。")
+		load_scene(current_scene_id)
+		return
+	_upgrade_busy = true
+	var s: Dictionary = Fleet.ships[ship_index]
+	if cost != shown_cost:
+		log_msg("船匠照眼下的等重开了价，%d 钱。" % cost)
+	var act := ""
+	if is_armor:
+		log_msg("「%s」加厚了船壳，甲升至%s。" % [s.get("name", "船"), _fit_rank(Fleet.armor_level(ship_index))])
+		act = "升甲"
+	else:
+		log_msg("「%s」换了新帆，帆升至%s。" % [s.get("name", "船"), _fit_rank(Fleet.sail_level(ship_index))])
+		act = "升帆"
+	await _yard_success_transition(act)
+	_upgrade_busy = false
 
 
 func _on_buy_supplies(n: int, wp: int, gp: int) -> void:
