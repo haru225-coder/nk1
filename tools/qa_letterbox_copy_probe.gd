@@ -1,14 +1,14 @@
 extends SceneTree
 ## Lane AD：CombatLetterbox / VisionStage 题签文案论文纪实巡检。
 ## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/letterbox/（裱框 + 入战墨边题签 + 出战题签）。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_letterbox_copy_probe.gd
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_letterbox_copy_probe.gd
 ## 默认严格：须出 4 张；headless / 空视口 / 一色空图 / 张数不足一律非零退出（shot_gate.gd）。
-## 契约模式（显式）：godot --headless --path /workspace/nk1 -s res://tools/qa_letterbox_copy_probe.gd -- --contract
+## 契约模式（显式）：godot --headless --path . -s res://tools/qa_letterbox_copy_probe.gd -- --contract
 ##   只验静态题签契约与禁词，不截图。
 ## 推进口径（lane gd14）：stage_ready 与布景自带墨边收场按墙钟上界等；VisionStage 开场按 process_frame 逐帧演，
 ##   40 帧（题签 20 帧擦满、飘字 18 帧升到顶）照旧按帧；台上唯一按 delta 走的自动齐射关掉（auto_volley=false）。
 ##   墨边 caption_shown / finished 的上界在 combat_probe_stage.wait_signal / wait_until（lane gd11 改墙钟）。
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_letterbox_copy_probe.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_letterbox_copy_probe.gd
 
 const VIEW := Vector2i(1280, 720)
 var OUT_DIR := ShotGate.out_dir("letterbox")

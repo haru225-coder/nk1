@@ -129,6 +129,13 @@ REGISTRY = [
               "行数不符、字样丢了、条目失效都判红；未跟踪文件只记 `⚠`",
      "green": "`白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS 块除外）` + `结果：全部通过`",
      "red": "`✗` 行（白名单外命中逐行列 `文件:行 … ← 命中串`；白名单文件行数不符；横幅 / 回指注丢了；失效条目；本脚本 PATTERNS 块形状不对）；`结果：N 项问题`"},
+    {"id": "RefsHostPath", "tier": "lane", "when": "新增 / 改动脚本或文档里写外部路径的地方（照抄命令、引擎路径、截图 / 简报等仓外默认根）", "kind": "py",
+     "file": "tools/check_host_paths.py",
+     "judge": "（lane gd22）git 已跟踪的文本文件里不许写本机 Linux 绝对路径：`/home/<用户>` 与 `/workspace/<目录>`（仓库根本身一律红，"
+              "命令写 `--path .`）；仓外根登记在脚本 `ROOTS`（截图根 `NK1_SHOT_DIR`、简报目录 `NK1_BRIEFS` 两条）：文档 / 注释里随便写，"
+              "代码行只许 owner 写一次默认值，owner 丢了默认值或环境变量名判失效；本脚本自身也扫（只放过 `ROOTS` 登记行），未跟踪文件只记 `⚠`",
+     "green": "`登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本）` + `结果：全部通过`",
+     "red": "`✗` 行（逐行列 `文件:行 … ← 命中串`；非 owner 代码行写死仓外根另注；ROOTS 条目失效）；`结果：N 项问题`"},
     {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/legacy/verify_narrative.py",
      "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
     {"id": "p7_smoke", "tier": "no", "kind": "godot", "file": "tools/legacy/p7_smoke.gd",
@@ -288,6 +295,11 @@ CI_STEPS = [
      "expect": "`结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`）",
      "fail": "`✗` 行、退 1：`MISSING` = 提交了 docs 下的 .md 没在 docs/README.md 补一行；`DEAD` = 索引链的文件挪走 / 改名 / 删了；"
              "`DUP` = 同一份文档链了两次。修法：改 docs/README.md"},
+    {"id": "本机 Linux 绝对路径（RefsHostPath）", "lane": "gd22", "needs": "python3 + git",
+     "cmd": "python3 tools/check_host_paths.py",
+     "expect": "`结果：全部通过`（前面两条 ROOTS `✓ owner … 代码里写这个默认根、可由 $… 覆盖`、`登记外 0 处命中（扫 N 个已跟踪文本文件…）`）",
+     "fail": "`✗` 行、退 1：已跟踪文件写了 `/home/<用户>` / `/workspace/<目录>`（逐行列出命中串；仓库根改 `--path .` / 仓库相对路径，家目录改 `~/…`，引擎走 PATH / `$GODOT`）；"
+             "登记的仓外根写进了非 owner 的代码行（改走 `ShotGate.out_dir` / 环境变量）；ROOTS 条目的 owner 不在、不再写默认根或丢了环境变量名。修法：改文件，或改 `tools/check_host_paths.py` 的 `ROOTS`（写明理由）"},
 ]
 
 

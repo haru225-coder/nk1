@@ -3,11 +3,11 @@ extends SceneTree
 ## 摆场：泉州酒馆募人（有候选）→ 雇入一人（在船・辞退）→ 雇满本港职事（空态）
 ##       → 泉州船屋坞位添人 chip → 减员后补齐 chip → 船籍簿职事行。
 ## 断言只查文案与钮字；入伙钱、月俸、码头每人 20 的算式照旧，这里顺带核一遍数没动。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_crew_hire_probe.gd   # 截图门禁（须出 6 张）
-##       godot --headless --path /workspace/nk1 -s res://tools/qa_crew_hire_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_crew_hire_probe.gd   # 截图门禁（须出 6 张）
+##       godot --headless --path . -s res://tools/qa_crew_hire_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_crew_hire_probe.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_crew_hire_probe.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("crew")

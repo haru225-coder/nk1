@@ -1,11 +1,11 @@
 extends SceneTree
 ## Lane Q：酒馆新闻墙 / 市井札薄巡检。
 ## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/tavern/（空墙 + 有札两条）。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_tavern_news_wall_screenshots.gd
-##       godot --headless --path /workspace/nk1 -s res://tools/qa_tavern_news_wall_screenshots.gd -- --contract   # 只验接线，不截图
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_tavern_news_wall_screenshots.gd
+##       godot --headless --path . -s res://tools/qa_tavern_news_wall_screenshots.gd -- --contract   # 只验接线，不截图
 ## 默认严格须出 2 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_tavern_news_wall_screenshots.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_tavern_news_wall_screenshots.gd
 
 const VIEW := Vector2i(1280, 720)
 var OUT_DIR := ShotGate.out_dir("tavern")

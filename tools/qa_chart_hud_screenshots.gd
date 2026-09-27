@@ -1,11 +1,11 @@
 extends SceneTree
 ## Lane U：海图 HUD 信息密度巡检（港名密区 / 航行中 HUD / 告警朱字）。
 ## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/chart/
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chart_hud_screenshots.gd   # 截图门禁（须出 5 张）
-##       godot --headless --path /workspace/nk1 -s res://tools/qa_chart_hud_screenshots.gd -- --contract   # 只验非渲染断言，不截图
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_chart_hud_screenshots.gd   # 截图门禁（须出 5 张）
+##       godot --headless --path . -s res://tools/qa_chart_hud_screenshots.gd -- --contract   # 只验非渲染断言，不截图
 ## 默认严格须出 5 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chart_hud_screenshots.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_chart_hud_screenshots.gd
 ## 注意：本脚本勿在顶层类型标注 MapView（-s SceneTree 编译期尚无 autoload，会连带 MapView 编不过）。
 
 const VIEW := Vector2i(1280, 720)

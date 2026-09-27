@@ -3,11 +3,11 @@ extends SceneTree
 ## 摆场仿 ShotTour._site_chapter_dialog：伪造章一→二晋升（years=2），_cinema 直通弹册页；
 ## 再调 UiTransition.promote_open 截「两年后・旧账」晋印题签帧。
 ## -s 工具脚本下 play_transition 当帧直通；这里直接调助手截墨幕那一帧。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chapter_promote_probe.gd   # 截图门禁（须出 4 张）
-##       godot --headless --path /workspace/nk1 -s res://tools/qa_chapter_promote_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_chapter_promote_probe.gd   # 截图门禁（须出 4 张）
+##       godot --headless --path . -s res://tools/qa_chapter_promote_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截、墨幕按停拍相位截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chapter_promote_probe.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_chapter_promote_probe.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("chapter")

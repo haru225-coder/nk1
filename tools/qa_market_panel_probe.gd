@@ -1,11 +1,11 @@
 extends SceneTree
 ## 牙行/市舶过秤面板巡检：截图到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/market/。
 ## 断言：价格行「买/卖」下有手续脚注「含抽解・扣佣」；正文含过秤短注；市舶修埠短句纪实。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_market_panel_probe.gd   # 截图门禁（须出 5 张）
-##       godot --headless --path /workspace/nk1 -s res://tools/qa_market_panel_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_market_panel_probe.gd   # 截图门禁（须出 5 张）
+##       godot --headless --path . -s res://tools/qa_market_panel_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 默认严格须出 5 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_market_panel_probe.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_market_panel_probe.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("market")

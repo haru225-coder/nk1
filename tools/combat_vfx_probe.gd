@@ -1,8 +1,8 @@
 extends SceneTree
 ## Lane C 接舷/海战 VFX 探针：开战 → 入战墨边（若有）→ 接舷题签 → 截屏。每张按演出相位截（lane gd11），不数帧。
-## Run: DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/combat_vfx_probe.gd            # 截图门禁（默认严格，须出 4 张）
-##      godot --headless --path /workspace/nk1 -s res://tools/combat_vfx_probe.gd -- --contract   # 只验文案契约，不截图
-##      NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/combat_vfx_probe.gd   # 压帧自检（lane gd11）
+## Run: DISPLAY=:2 godot --path . -s res://tools/combat_vfx_probe.gd            # 截图门禁（默认严格，须出 4 张）
+##      godot --headless --path . -s res://tools/combat_vfx_probe.gd -- --contract   # 只验文案契约，不截图
+##      NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path . -s res://tools/combat_vfx_probe.gd   # 压帧自检（lane gd11）
 ## 截图：${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/combat/。headless 下不加 --contract 必红（shot_gate.gd）。
 
 const VIEW := Vector2i(1280, 720)

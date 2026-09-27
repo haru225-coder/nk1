@@ -1,10 +1,10 @@
 extends SceneTree
 ## Lane L：VisionStage / CombatLetterbox 主流程薄接入巡检。
 ## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/wire/（至少 2 张：裱框、入战墨边）。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_wire_vision_screenshots.gd
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_wire_vision_screenshots.gd
 ## 默认严格：须出 2 张；headless / 空视口 / 一色空图 / 张数不足一律非零退出（shot_gate.gd）。
-## 压帧自检（lane gd11）：NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_wire_vision_screenshots.gd
-## 契约模式（显式）：godot --headless --path /workspace/nk1 -s res://tools/qa_wire_vision_screenshots.gd -- --contract
+## 压帧自检（lane gd11）：NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path . -s res://tools/qa_wire_vision_screenshots.gd
+## 契约模式（显式）：godot --headless --path . -s res://tools/qa_wire_vision_screenshots.gd -- --contract
 ##   只验接线符号与题签静态契约，不截图。
 
 const VIEW := Vector2i(1280, 720)

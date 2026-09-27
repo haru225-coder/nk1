@@ -1,11 +1,11 @@
 extends SceneTree
 ## 港口三扇岸门巡检：泉州 / 福州 / 兴化截 ShoreDoors 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/port-doors/。
 ## 断言：三扇门 title/subtitle 论文纪实；热区 Button 挂 tooltip；关着的门有「今日未开」提示。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_port_doors_probe.gd   # 截图门禁（须出 5 张）
-##       godot --headless --path /workspace/nk1 -s res://tools/qa_port_doors_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_port_doors_probe.gd   # 截图门禁（须出 5 张）
+##       godot --headless --path . -s res://tools/qa_port_doors_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_port_doors_probe.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_port_doors_probe.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("port-doors")

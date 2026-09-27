@@ -1,7 +1,7 @@
 extends SceneTree
 ## 海战墨边（scripts/ui/CombatLetterbox.gd）收尾信号契约的定向探针（lane gd12）：逐条走完每一种收尾路径，
 ## 查等待方能不能收到终止信号——每幕都挂一个裸 `await lb.finished`（墨边头注释推荐的写法），没被唤醒就是挂死。
-## Run: DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/letterbox_signal_probe.gd [-- --only=finish|abort|bail|parent] [--json]
+## Run: DISPLAY=:2 godot --path . -s res://tools/letterbox_signal_probe.gd [-- --only=finish|abort|bail|parent] [--json]
 ## 不截图；headless 下墨边静态入口不建节点，本探针判红（须 DISPLAY=:2）。
 ##
 ## 契约（CombatLetterbox 头注释）：finished 是终止信号，每副墨边无论怎么收尾都恰好发一次；
@@ -13,7 +13,7 @@ extends SceneTree
 ## 推进口径（lane gd14）：「题签前 / 全黑前」收尾按墨边相位下手（已上场、进度信号还没发），下手当刻把前提写成断言，
 ##   不数帧（原先数 3 帧：每帧 delta 封顶 0.133 s，3 帧至多 0.4 s，落不过 1.12 s 题签，本不会错；改写是让前提可见）。
 ##   每幕只按墙钟 SCENE_MS 等（原另有 6000 帧兜底，快机上 6000 帧只合 25 s，从来不先到，删）。
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/letterbox_signal_probe.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/letterbox_signal_probe.gd
 
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const CombatStage := preload("res://tools/combat_probe_stage.gd")

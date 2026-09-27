@@ -1,9 +1,9 @@
 extends SceneTree
 ## 进出海战墨边（scripts/ui/CombatLetterbox.gd）的有窗口探针：在真海战场面（WorldMap + pending_battle）上
 ## 演一次入战、一次带 on_black 的出战，按节拍截屏，并量排版与信号。
-## Run: DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/vision_letterbox_probe.gd
+## Run: DISPLAY=:2 godot --path . -s res://tools/vision_letterbox_probe.gd
 ## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/vision/（绝对路径，不进仓库）。默认严格：须出 7 张，headless / 空视口 / 张数不足必红。
-## 压帧自检（lane gd11）：NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/vision_letterbox_probe.gd
+## 压帧自检（lane gd11）：NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path . -s res://tools/vision_letterbox_probe.gd
 ## 契约模式（显式）：godot --headless --path . -s res://tools/vision_letterbox_probe.gd -- --contract
 ##   只验静态题签与 headless 下入口返回 null，收尾打 VISION_LETTERBOX_PROBE_CONTRACT_OK，不报张数。
 

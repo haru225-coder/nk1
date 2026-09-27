@@ -3,11 +3,11 @@ extends SceneTree
 ## 摆场仿 ShotTour._site_siege / _site_ended_port：先进泉州港页，再立守城（1276-11 兴化）或落定结局回泉州。
 ## 触发：首次进守城 / 终局岸带各演一次纪实题签（「兴化军・围城」印「城」、「港名・结局」印「终」）；
 ## -s 工具脚本下 play_transition 当帧直通，这里直接调 UiTransition 助手截墨幕那一帧。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_siege_endgame_probe.gd   # 截图门禁（须出 8 张）
-##       godot --headless --path /workspace/nk1 -s res://tools/qa_siege_endgame_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_siege_endgame_probe.gd   # 截图门禁（须出 8 张）
+##       godot --headless --path . -s res://tools/qa_siege_endgame_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截、墨幕按停拍相位截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_siege_endgame_probe.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_siege_endgame_probe.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("siege")

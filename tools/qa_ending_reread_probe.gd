@@ -4,11 +4,11 @@ extends SceneTree
 ## 锁：札记抬头旁注终局时地、笺脚注文；「重读结局」是动作行主钮（有 tooltip）；点按只翻开既有册页，
 ## 不重播岸带题签（_shore_title_seen 仍只一条）；合上后港名匾不累加、札记仍一方、动作行钮数不变；册页已开时再点不叠。
 ## -s 工具脚本下 play_transition 当帧直通，02 帧直接调 UiTransition.endgame_open 截墨幕。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_ending_reread_probe.gd   # 截图门禁（须出 6 张）
-##       godot --headless --path /workspace/nk1 -s res://tools/qa_ending_reread_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_ending_reread_probe.gd   # 截图门禁（须出 6 张）
+##       godot --headless --path . -s res://tools/qa_ending_reread_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截、墨幕按停拍相位截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_ending_reread_probe.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_ending_reread_probe.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("ending")

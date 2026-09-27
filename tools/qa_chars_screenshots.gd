@@ -1,11 +1,11 @@
 extends SceneTree
 ## 人物呈现巡检：打开 scenes/chars/CharsDemo.tscn，逐档截帧到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/chars/。
-## 用法：NK1_CHARS_SYNC=1 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chars_screenshots.gd
-##       godot --headless --path /workspace/nk1 -s res://tools/qa_chars_screenshots.gd -- --contract   # 只验非渲染断言
+## 用法：NK1_CHARS_SYNC=1 DISPLAY=:2 godot --path . -s res://tools/qa_chars_screenshots.gd
+##       godot --headless --path . -s res://tools/qa_chars_screenshots.gd -- --contract   # 只验非渲染断言
 ## 截图缺张 / 空视口 / 一色空图 / headless 未开 --contract 一律非零退出（shot_gate.gd）；面板断言仍只记 warn。
 ## 本脚本不写任何游戏状态，只在末了 quit。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chars_screenshots.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_chars_screenshots.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("chars")

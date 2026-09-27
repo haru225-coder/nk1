@@ -3,7 +3,7 @@
 每轮 lane 收尾都要跑的门禁、各自判什么、红了长什么样、怎么机读。
 机读开关 `--json`：Python 门禁由 `tools/gate_json.py` 统一实现（纯 stdlib）；GDScript 门禁（smoke / compile / story / p7 / patrol 与全部接 `shot_gate` 的截图探针）另有 `tools/gate_report.gd` 原生实现（lane g2，见 §二末）。**不加开关时每道门禁的人读输出与退出码一字不变**。
 
-- Godot：`/home/box/.local/bin/godot`（4.6.3，下文写 `godot`）；工作目录为仓库根。
+- Godot：4.6.3，下文写 `godot`，须在 PATH 上（本机装在 `~/.local/bin/godot`；Python 侧调引擎的先认 `$GODOT`）；工作目录为仓库根，命令一律 `--path .`，不写本机绝对路径（lane gd22，`RefsHostPath` 守）。
 - 退出码语义（人读 / `--json` 相同）：`0` 绿，非 `0` 红。`gate_json.py` 自身参数错为 `2`。
 - 带窗口的门禁（patrol、截图探针）须 `DISPLAY=:2`。
 
@@ -32,8 +32,9 @@
 | 18 | save_migrate_probe | Godot | 加跑：动存档结构 / save_schema | — | `godot --headless --path . -s res://tools/save_migrate_probe.gd` | `python3 tools/gate_json.py --godot save_migrate_probe` | （lane sv）v1 老档读入补字段、回写 v2、原件留 .v1；未来档明确拒读、不退副抄、文件不动 | `SAVE_MIGRATE_PROBE PASS` | `✗` 行；`SAVE_MIGRATE_PROBE FAIL fails=k`；输出含 `SCRIPT ERROR` 即算失败 |
 | 19 | gates_md | Python | 加跑：动门禁清单 / docs/GATES.md | — | `python3 tools/gates_md.py` | `python3 tools/gates_md.py --json` | （lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序 | `结果：全部通过` | `✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write` |
 | 20 | RefsMacPath | Python | 必跑 | ✓ | `python3 tools/check_mac_paths.py` | `python3 tools/check_mac_paths.py --json` | （lane doc9）git 已跟踪的文本文件里不许写 Mac / Homebrew 专属绝对路径（Mac 家目录、Homebrew 前缀、Godot 应用包、用户资料库目录等 10 条，模式与理由见脚本 `PATTERNS`；lane gd21 起脚本自身也扫，只按行排除 `PATTERNS` 块的条目行，块里夹了别的行即判红）；已定级的留档进白名单 `ALLOW`：按文件登记命中行数、头部横幅 / 回指注字样与理由，行数不符、字样丢了、条目失效都判红；未跟踪文件只记 `⚠` | `白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS 块除外）` + `结果：全部通过` | `✗` 行（白名单外命中逐行列 `文件:行 … ← 命中串`；白名单文件行数不符；横幅 / 回指注丢了；失效条目；本脚本 PATTERNS 块形状不对）；`结果：N 项问题` |
+| 21 | RefsHostPath | Python | 加跑：新增 / 改动脚本或文档里写外部路径的地方（照抄命令、引擎路径、截图 / 简报等仓外默认根） | — | `python3 tools/check_host_paths.py` | `python3 tools/check_host_paths.py --json` | （lane gd22）git 已跟踪的文本文件里不许写本机 Linux 绝对路径：`/home/<用户>` 与 `/workspace/<目录>`（仓库根本身一律红，命令写 `--path .`）；仓外根登记在脚本 `ROOTS`（截图根 `NK1_SHOT_DIR`、简报目录 `NK1_BRIEFS` 两条）：文档 / 注释里随便写，代码行只许 owner 写一次默认值，owner 丢了默认值或环境变量名判失效；本脚本自身也扫（只放过 `ROOTS` 登记行），未跟踪文件只记 `⚠` | `登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本）` + `结果：全部通过` | `✗` 行（逐行列 `文件:行 … ← 命中串`；非 owner 代码行写死仓外根另注；ROOTS 条目失效）；`结果：N 项问题` |
 
-每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「八道 Python + smoke/compile/story/p7/patrol」十三道门禁；8、15、16、17、18、19 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「八道 Python + smoke/compile/story/p7/patrol」十三道门禁；8、15、16、17、18、19、21 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（8 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -337,6 +338,11 @@ python3 tools/check_mac_paths.py
 - 口径：lane doc7 / doc8 / gd13 清完后剩下的命中只有 `tools/legacy/` 5 支（带「勿运行」横幅）与 2 份带日期的历史稿（头部回指注），都登记在 `ALLOW`，按命中行数卡死——往留档里再加一行也红。加白名单条目须写理由，且只限留档 / 历史稿；活跃脚本与文档一律改成本机口径（env → PATH → 取不到明确报错，见 `build_ui_textures.py` 的 `NK1_RSVG`、`tour.sh` 的 `GODOT`）。lane gd21 升进必跑档、排一键跑末条（原为 lane 加跑档 + CI §四 步骤 5，步骤 5 随之删掉，免得 CI 跑两遍）：什么时候「写了外部路径」自己判不准——照抄 Mac 上的命令、默认根最容易顺手带进来，正是不会想起加跑的时候；跑一次 <1s（本机实测见 lane gd21 Verify），只要 python3 + git，只读不写盘，未跟踪文件只记 `⚠`，共用树里别的 lane 没提交的不染红。
 - 常见红因：照抄 Mac 上的命令 / 默认根进脚本或文档；清掉了留档里的几处却没改 `ALLOW` 的行数；挪 / 删了留档文件没删条目。
 
+### 21. RefsHostPath（`tools/check_host_paths.py`，本机 Linux 绝对路径防回归）
+- 读：`一、仓外根登记（ROOTS）都有效`（每条：owner 已跟踪、代码行里还写着这个默认根、还读登记的环境变量）→ `二、git 已跟踪文件里的本机路径`（每个仓外根一行 `· 根：文档 / 注释 N 处（不判红；理由）`；末条 `登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本）`）；红时逐行列 `文件:行  原文  ← 命中串`。读工作树内容（已暂存的新文件也扫），二进制跳过；未跟踪文件只记 `⚠`（同 §三.20）。本脚本自身也扫：模式写成占位不会自命中，只放过 `ROOTS` 登记行。
+- 口径：模式 2 条——`/home/<用户>`（家目录，写 `~/…` 或走 PATH / `$GODOT`）、`/workspace/<目录>`（本机工作区；仓库根本身永不登记，命令一律 `--path .`，否则在隔离 worktree / 软链里照抄会悄悄跑主树）。登记的仓外根只有两条：截图证据根 `/workspace/nk1-qa-shots`（owner `tools/shot_gate.gd` 的 `DEFAULT_SHOT_ROOT`，`NK1_SHOT_DIR` 覆盖）与简报目录 `/workspace/nk1-agent-briefs`（owner `tools/check_decision_refs.py`，`NK1_BRIEFS` 覆盖）；文档与注释（`#` / `//` 行、.py 文档串）里写它们不红，代码行只许 owner 写。与 §三.19 gates_md「`tools/` 代码里不写死默认截图根」同向，本道扫全仓、两条根都管。Godot 节点路径 `/root/…`、`~/.local/…`、`/tmp/…` 不算。lane 加跑档（不进一键跑），CI 里作 §四 步骤 5（lane gd22）。
+- 常见红因：照抄本机命令把仓库根写成 `--path /workspace/<仓库>`（改 `--path .`）；文档写引擎绝对路径 `/home/<用户>/.local/bin/godot`（写 `godot` / `~/.local/bin/godot`）；新探针在代码里拼 `/workspace/nk1-qa-shots/…`（改走 `ShotGate.out_dir`）；挪了 owner 文件没改 `ROOTS`。
+
 ## 四、CI 建议步骤
 
 只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑十四道（含导入步骤），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
@@ -366,6 +372,8 @@ python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api
 python3 tools/gates_md.py
 # 4. docs 索引与文件一致
 python3 tools/check_docs_index.py --check
+# 5. 本机 Linux 绝对路径（RefsHostPath）
+python3 tools/check_host_paths.py
 ```
 
 | # | 步骤 | 接入 | 需要 | 命令 | 期望输出 | 失败含义 |
@@ -374,4 +382,5 @@ python3 tools/check_docs_index.py --check
 | 2 | builtin_api 漂移 | cs3 / gd4 | godot（与清单头部同版本） | `python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt` | `✓ --regen：…逐字节一致，未改动` + check_symbols `结果：全部通过`，`git diff` 无输出、退 0 | `git diff` 打出 `tools/builtin_api.txt` 的差异、退 1 = 提交的清单与本机 Godot 的 ClassDB 导出不一致（升级了 Godot / 改了 `gen_builtin_list.gd` 的 CLASSES 却没连同提交重导结果）；`--regen` 本身失败则 check_symbols 先退 1 |
 | 3 | GATES.md 与注册表一致 | gd3 | python3 + git | `python3 tools/gates_md.py` | `结果：全部通过` | 有人手改了 §一 / §二批量巡检 / §四 生成块、改了注册表没 `--write`、§三 或 `.claude/todo.md` 验证段的一键跑命令与必跑清单不符，或注册的脚本挪走了 |
 | 4 | docs 索引与文件一致 | doc3 / doc4 | python3 + git | `python3 tools/check_docs_index.py --check` | `结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`） | `✗` 行、退 1：`MISSING` = 提交了 docs 下的 .md 没在 docs/README.md 补一行；`DEAD` = 索引链的文件挪走 / 改名 / 删了；`DUP` = 同一份文档链了两次。修法：改 docs/README.md |
+| 5 | 本机 Linux 绝对路径（RefsHostPath） | gd22 | python3 + git | `python3 tools/check_host_paths.py` | `结果：全部通过`（前面两条 ROOTS `✓ owner … 代码里写这个默认根、可由 $… 覆盖`、`登记外 0 处命中（扫 N 个已跟踪文本文件…）`） | `✗` 行、退 1：已跟踪文件写了 `/home/<用户>` / `/workspace/<目录>`（逐行列出命中串；仓库根改 `--path .` / 仓库相对路径，家目录改 `~/…`，引擎走 PATH / `$GODOT`）；登记的仓外根写进了非 owner 的代码行（改走 `ShotGate.out_dir` / 环境变量）；ROOTS 条目的 owner 不在、不再写默认根或丢了环境变量名。修法：改文件，或改 `tools/check_host_paths.py` 的 `ROOTS`（写明理由） |
 <!-- GATES-CI:END -->

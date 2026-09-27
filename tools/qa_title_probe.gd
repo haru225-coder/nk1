@@ -1,11 +1,11 @@
 extends SceneTree
 ## 标题页 / 序章题签巡检：截 title_*.png 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/title/。
 ## 触发：开机进 cg_title；点「开卷」见「序章・卷首」；四方沙盘末页「翻页」见「序章・兴化海口」。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_title_probe.gd   # 截图门禁（须出 5 张）
-##       godot --headless --path /workspace/nk1 -s res://tools/qa_title_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_title_probe.gd   # 截图门禁（须出 5 张）
+##       godot --headless --path . -s res://tools/qa_title_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截、墨幕按停拍相位截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_title_probe.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_title_probe.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("title")

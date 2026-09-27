@@ -1,12 +1,12 @@
 extends SceneTree
 ## P7 visual QA: open guild join + exam sit panels and save PNGs.
-## Run: DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_p7_screenshots.gd
+## Run: DISPLAY=:2 godot --path . -s res://tools/qa_p7_screenshots.gd
 ## Shots land in ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/polish/ (absolute; 01–06 originals one level up are kept). Leaves tools script untracked.
 ## 默认严格：须出 8 张；headless / 空视口 / 一色空图 / 张数不足一律非零退出。
 ## 契约模式（显式）：godot --headless --path . -s res://tools/qa_p7_screenshots.gd -- --contract
 ##   只验按钮与 flag 写入，不截图，收尾打 QA_P7_SHOTS_CONTRACT_OK。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_p7_screenshots.gd
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_p7_screenshots.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("polish")
