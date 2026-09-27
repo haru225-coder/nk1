@@ -1,6 +1,8 @@
 extends SceneTree
 ## 无界面驱动 P7：开局落港、节拍不连播、流求入港不演正文、效果进账、旅店、终局。
-## 跑法：godot --headless --path . -s res://tools/p7_smoke.gd
+## 跑法：godot --headless --path . -s res://tools/legacy/p7_smoke.gd
+## 留档（lane gd8 挪入 legacy）：绑定云端 21ce 未收的 P7 平行实现，与 verify_narrative 同源；主干上必红，
+## 且在 borrow_ceiling() 处 SCRIPT ERROR 后不 quit、一直挂着。不算门禁，别拿来判红绿；P7 行会 / 贡院看 p7_guild_exam_smoke.gd。
 ## -s 入口在编译期看不到自动加载名，单例一律在 _initialize 之后从根节点取。
 
 var _fails: Array = []

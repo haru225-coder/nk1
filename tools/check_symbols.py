@@ -237,7 +237,7 @@ def parse_members(path):
     return members, enums, src
 
 # 检查面（lane cv）：scripts/ 与 tools/ 下全部 .gd（含 tools/art/ 等子目录）。路径里带 legacy 段的目录整棵不查
-# （与 check_assets、compile 门禁 inventory 同一排除法）：tools/legacy/ 是已退役的一次性 Python 补丁、现无 .gd、没有门禁会跑。
+# （与 check_assets、compile 门禁 inventory 同一排除法）：tools/legacy/ 是已退役的一次性 Python 补丁与 21ce 留档脚本（含 p7_smoke.gd，lane gd8 挪入），没有门禁会跑。
 def gd_scope():
     out = []
     for base in (SCRIPTS, os.path.join(ROOT, "tools")):
