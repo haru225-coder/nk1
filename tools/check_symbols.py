@@ -317,6 +317,37 @@ if "GameManager" in order:
     print(f"  {'✓' if all(order.index(d) > gm_idx for d in ('Economy','Fleet','Voyage') if d in order) else '✗'}"
           f" GameManager 先于 Economy/Fleet/Voyage")
 
+# 入库版须是 GUI 编辑器的规范形（lane ag3 df01703）：编辑器存盘时按 ConfigFile 重写，
+# 只留引擎自带的 7 行文件头、删其余 `;` 注释、删默认值（resizable=true）。手编回那种形式
+# 下次开编辑器就被改写，工作树常驻 M。autoload 顺序说明在 GameManager.gd 头部。
+PG_HEADER = [
+    "; Engine configuration file.",
+    "; It's best edited using the editor UI and not directly,",
+    "; since the parameters that go here are not all obvious.",
+    ";",
+    "; Format:",
+    ";   [section] ; section goes between []",
+    ";   param=value ; assign values to parameters",
+]
+_pg_lines = pg.split("\n")
+_pg_head = 0
+while _pg_head < len(_pg_lines) and _pg_lines[_pg_head].lstrip().startswith(";"):
+    _pg_head += 1
+_pg_stray = [i + 1 for i, ln in enumerate(_pg_lines) if i >= _pg_head and ln.lstrip().startswith(";")]
+_pg_badhead = _pg_lines[:_pg_head] not in ([], PG_HEADER)
+_pg_resizable = re.search(r'^window/size/resizable=true\s*$', pg, re.M)
+if _pg_badhead:
+    print(f"  ✗ project.godot 文件头 {_pg_head} 行与编辑器自带头不同（编辑器会改写回去）")
+    problems.append("project.godot 文件头非编辑器规范形")
+if _pg_stray:
+    print(f"  ✗ project.godot 第 {', '.join(map(str, _pg_stray))} 行是 `;` 注释（编辑器存盘会删掉，注释写 GameManager.gd 头部）")
+    problems.append("project.godot 含编辑器会删的注释行")
+if _pg_resizable:
+    print("  ✗ project.godot 写了默认值 window/size/resizable=true（编辑器存盘会删掉）")
+    problems.append("project.godot 含默认值 resizable=true")
+if not (_pg_badhead or _pg_stray or _pg_resizable):
+    print("  ✓ project.godot 是编辑器规范形（无额外 `;` 注释、无 resizable=true 默认值）")
+
 print()
 print("=" * 68)
 print("一之二、_ready 期间的 autoload 依赖顺序")
@@ -1597,6 +1628,37 @@ elif "uid://xnp7vjyfjnp1" in wm_tscn:
 else:
     print("  ✗ WorldMap.tscn 未引用 ocean_water 导入 UID")
     problems.append("WorldMap.tscn 海洋 UID 未对齐")
+
+def real_uid(res_path):
+    """res:// 资源的真 uid：场景 / 资源读头部，脚本 / 着色器读 .uid 侧车，导入资源读 .import。无则 None。"""
+    p = os.path.join(ROOT, res_path[len("res://"):])
+    for side, pat in ((p + ".uid", r'^(uid://\S+)'), (p + ".import", r'^uid="(uid://[^"]+)"')):
+        if os.path.exists(side):
+            with open(side, encoding="utf-8") as f:
+                m = re.search(pat, f.read(), re.M)
+            return m.group(1) if m else None
+    if p.endswith((".tscn", ".tres")) and os.path.exists(p):
+        with open(p, encoding="utf-8") as f:
+            m = re.match(r'\[gd_(?:scene|resource)\b[^\]]*\buid="(uid://[^"]+)"', f.readline())
+        return m.group(1) if m else None
+    return None
+
+# 手编假 uid（lane ag3 删掉的 ship_node_1234 同类）：每个 ext_resource 的 uid 须是目标资源自己的 uid
+if "ship_node_1234" in wm_tscn:
+    print("  ✗ WorldMap.tscn 仍用假 UID ship_node_1234")
+    problems.append("WorldMap.tscn Ship 假 UID")
+_wm_fake = []
+for _m in re.finditer(r'^\[ext_resource\b[^\n]*?\buid="([^"]*)"[^\n]*?\bpath="(res://[^"]+)"', wm_tscn, re.M):
+    _uid, _path = _m.groups()
+    _want = real_uid(_path)
+    if not re.fullmatch(r'uid://[a-y0-9]+', _uid) or _uid != _want:
+        _wm_fake.append(f"{_path} 写 {_uid}，目标实为 {_want or '无 uid'}")
+if _wm_fake:
+    for _x in _wm_fake:
+        print(f"  ✗ WorldMap.tscn 手编假 uid：{_x}")
+    problems.append("WorldMap.tscn 手编假 uid")
+else:
+    print("  ✓ WorldMap.tscn 的 ext_resource uid 都与目标资源一致（无手编假 uid）")
 
 # 7. PirateShip 不再掉拾取箱（赏金只走 SeaChart 结算）
 if "drops_loot" in pirate_src or "Crate.tscn" in pirate_src:
