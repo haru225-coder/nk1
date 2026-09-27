@@ -24,12 +24,18 @@ const TAG := "LETTERBOX_SIGNAL_PROBE"
 const VIEW := Vector2i(1280, 720)
 ## 每幕墙钟上界：最长一幕（出战带 on_black）约 3.5 s 游戏时间。原 8 s：慢过 7.5 fps 时每帧 delta 封顶 0.133 s，
 ## 游戏时间比墙钟慢（每帧 400 ms 时 3 倍，这一幕要 10.5 s 墙钟），压帧下误报「挂死」（lane gd14 实测）；
-## 20 s：每帧 400 ms 时仍留近一倍余量
+## 20 s：每帧 400 ms 时仍留近一倍余量。
+## 上界（lane gd20 实测）：最长一幕在封顶下要 28 帧，墙钟每帧（压帧 + 渲染）过 ≈ 700 ms 就等不完——本机 NK1_PROBE_SLOW_MS=500 绿、
+## 950 红。超上界不许靠「多停 4 帧」碰运气变绿，也不许报成「挂死」：墨边还在演就记「墙钟上界先到」判红（见 _settle）。
 const SCENE_MS := 20000
+## 最长一幕的游戏时长留量：上界先到时本幕已走的游戏时间不到它，才算「压帧过重、没演完」；过了它还在演就是墨边卡住
+const SCENE_GAME_S := 5.0
 const PATHS := ["finish", "abort", "bail", "parent"]
 
 var _fails: Array = []
 var _rows := 0
+## 墙钟上界先到、本幕游戏时间还没走够的行数（压帧过重）；--json 里带 error=wall_clock 单列，与契约回归 / 墨边卡住分得开
+var _timeouts := 0
 
 
 func _init() -> void:
@@ -163,7 +169,7 @@ func _path_parent() -> void:
 ## 给一副墨边挂上计数与一个裸 await finished 的等待方；返回记账字典。
 func _watch(lb: CanvasLayer) -> Dictionary:
 	var w := {"lb": lb, "spawned": lb != null, "caption": 0, "covered": 0, "on_black": 0, "finished": 0,
-		"raw_await": false, "ms": 0, "t0": Time.get_ticks_msec()}
+		"raw_await": false, "ms": 0, "t0": Time.get_ticks_msec(), "timeout": "", "pressure": false}
 	if lb == null:
 		return w
 	lb.caption_shown.connect(func() -> void: w.caption += 1)
@@ -192,9 +198,27 @@ func _raw_waiter(lb: CanvasLayer, w: Dictionary) -> void:
 
 
 ## 等这一幕终结（裸 await 醒了）或到墙钟上界；再多停 4 帧，让「同帧又起一副」之类的补发有机会冒出来
-## （补发走 call_deferred / 下一帧的 _process，按帧等是对的）
+## （补发走 call_deferred / 下一帧的 _process，按帧等是对的）。
+## 上界先到、墨边还在演（仍在树上、未终结），按这段等待实走的游戏时间分两种，本行都判红，且不看那 4 帧里 finished
+## 来没来（lane gd20：每帧 950 ms 时有的行靠这 4 帧碰上 finished 变绿、有的没碰上报「挂死」）：
+##   不到 SCENE_GAME_S：压帧过重、本幕没演完，报上界（不是挂死，也不是墨边的错）；
+##   过了 SCENE_GAME_S：游戏时间够了还在演，是墨边卡住。
+## 墨边已终结 / 已释放而裸 await 仍没醒，才是真挂死，照旧由 _expect_row 报。
 func _settle(w: Dictionary) -> void:
-	await Clock.until(self, func() -> bool: return w.raw_await, SCENE_MS)
+	var f0 := Engine.get_process_frames()
+	var game_s := [0.0]
+	if not await Clock.until(self, func() -> bool:
+			game_s[0] += root.get_process_delta_time()
+			return w.raw_await, SCENE_MS):
+		var lb = w.lb
+		if lb != null and is_instance_valid(lb) and lb.is_inside_tree() and not bool(lb.get("_done")):
+			var n := Engine.get_process_frames() - f0
+			w.pressure = game_s[0] < SCENE_GAME_S
+			if w.pressure:
+				w.timeout = "墙钟上界 %d ms 先到、墨边还在演（%d 帧只走了 %.1f s 游戏时间，本幕最长约 3.5 s）：压帧过重、本行判不了，不是挂死；上界见 SCENE_MS 注释" % [
+					SCENE_MS, n, game_s[0]]
+			else:
+				w.timeout = "墨边卡住：已走 %.1f s 游戏时间（%d 帧）仍未收尾，本幕最长约 3.5 s" % [game_s[0], n]
 	await _frames(4)
 
 
@@ -218,6 +242,11 @@ func _expect_row(name: String, w: Dictionary, want: Dictionary) -> void:
 	var got := "caption=%d covered=%d on_black=%d finished=%d raw_await=%s ms=%d" % [
 		w.caption, w.covered, w.on_black, w.finished, "resumed" if w.raw_await else "HUNG", w.ms]
 	var bad: PackedStringArray = []
+	if str(w.timeout) != "":
+		_rows += 1
+		_timeouts += 1 if w.pressure else 0
+		_check(false, "", "%s：%s  [%s]" % [name, w.timeout, got])
+		return
 	# 已释放的实例在 4.x 里 == null 也为真，只能看上场那一刻记下的 spawned
 	if not w.spawned:
 		bad.append("墨边没上场")
@@ -252,5 +281,9 @@ func _report() -> void:
 		else ("%s_FAIL %d（rows=%d）" % [TAG, _fails.size(), _rows])
 	print(line)
 	var rc := 0 if _fails.is_empty() else 1
-	GateReport.finish(GateReport.main_script_name(), rc, line, {"tag": TAG, "rows": _rows})
+	var extra := {"tag": TAG, "rows": _rows}
+	if _timeouts > 0:
+		extra["error"] = "wall_clock"
+		extra["timeouts"] = _timeouts
+	GateReport.finish(GateReport.main_script_name(), rc, line, extra)
 	quit(rc)

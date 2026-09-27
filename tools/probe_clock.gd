@@ -24,6 +24,14 @@ extends RefCounted
 ##   OS.delay_msec(400) 下 delta 恒 0.133）——慢过 7.5 fps 时游戏时间比墙钟慢，一段 T 秒的演出要 T ×（每帧墙钟 / 0.133）
 ##   秒墙钟。WAIT_MS 15 s：这里等的最长一段是墨幕进停拍（约 1.0 s 游戏时间）与补间（最长 0.66 s），
 ##   1 fps 下也只要约 7.5 s；本片实测最慢的一次静下来 1.1 s（chart_hud 05，3 fps）。
+##   〔更正 lane gd20〕「1 fps 也够」只对上面两种等待成立；拿 until + WAIT_MS 等更长演出的探针，上界要按它自己那段算。
+##   封顶后每帧游戏时间恒为 8/60 s，相位落在第几帧与压多重无关，压帧加重只会先撞墙钟上界。
+##   上界 =（等待上界 ÷ 封顶下所需帧数），单位是墙钟每帧（压帧 + 渲染），gd20 实测（NK1_PROBE_SLOW_MS=150 记帧）：
+##     qa_letterbox_copy：等布景自带入战墨边收场 24 帧 / 15 s → ≈ 625 ms（SLOW 400 绿、850 红「15000 ms 内没收场」）
+##     letterbox_signal：每幕 SCENE_MS 20 s、最长一幕 28 帧 → ≈ 714 ms（SLOW 500 绿、950 红「墙钟上界先到」，见该探针 _settle）
+##     wait_hold（title / chapter / drydock / ending / siege）：10 帧 / 15 s → ≈ 1500 ms（title：SLOW 1300 绿、1800 红「超时」）
+##     settle 等补间（chart_hud / patrol_pack / voyage）：4 帧 / 15 s → ≈ 3750 ms；其余 9 支没有撞得到的墙钟等待，只剩进程 timeout
+##   超上界一律判红并写明「超时 / 没收场 / 墙钟上界先到」，不许绿、也不许报成被测件的错。
 ##
 ## 四、frame_pressure(tree)：环境变量 NK1_PROBE_SLOW_MS=<毫秒> 时挂一个节点、每帧 OS.delay_msec 压帧
 ##   （gd10 复现手法；与 combat_probe_stage.frame_pressure 同一个变量名，lane gd11）；未设什么也不挂。
