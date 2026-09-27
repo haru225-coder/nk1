@@ -2801,7 +2801,36 @@ print("=" * 68)
 print("  海图回港、旅店、发现计日、沉船货损。改数据或结算顺序时这里会红。")
 
 def _code_only(src):
-    return "\n".join(re.sub(r'#.*$', '', ln) for ln in src.split("\n"))
+    # 只截字符串外的 #（lane bs）：逐字符扫 ' / " / """ / ''' 引号状态，
+    # "[color=#aabbcc]" + Foo.bar 这类行后半截代码不再被当注释丢掉。
+    # 单行串到行尾即收（未闭合不吞下一行）；三引号串可跨行；\ 转义下一字符。
+    out, quote, i, n = [], None, 0, len(src)
+    while i < n:
+        ch = src[i]
+        if quote is None:
+            if ch == "#":
+                j = src.find("\n", i)
+                i = n if j < 0 else j
+                continue
+            if ch in "\"'":
+                quote = ch * 3 if src.startswith(ch * 3, i) else ch
+                out.append(quote)
+                i += len(quote)
+                continue
+        elif ch == "\\":
+            out.append(src[i:i + 2])
+            i += 2
+            continue
+        elif src.startswith(quote, i):
+            out.append(quote)
+            i += len(quote)
+            quote = None
+            continue
+        elif ch == "\n" and len(quote) == 1:
+            quote = None
+        out.append(ch)
+        i += 1
+    return "".join(out)
 
 fac = _code_only(func_bodies(main_src).get("_on_facility_pressed", ""))
 # 主干把改写名单收成常量 REMAPPED_FACILITIES（含 city_inn）
