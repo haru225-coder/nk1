@@ -1531,18 +1531,18 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 
 func _setup_market(port_id: String) -> void:
 	scene_title.text = "%s・牙行" % GameManager.get_port_name(port_id)
-	body_text.text = "柜上只摆三样。要看别的，明日再来。"
+	body_text.text = "柜上只摆三样。牙人过秤开票；要看别的，明日再来。"
 
 	_add_contract_panel(port_id)
 
 	if not Economy.is_market_open(port_id):
-		body_text.text += "\n\n牙行的门板上了闸。%s，城里只剩米价在动，没人敢开秤。" % Economy.war_label(port_id)
+		body_text.text += "\n\n牙行上了门闸。%s，城中只剩米价在动，无人开秤。" % Economy.war_label(port_id)
 		_add_leave_button(port_id)
 		return
 
 	var goods_ids: Array = Economy.goods_at(port_id)
 	if goods_ids.is_empty():
-		body_text.text = "此地并无正经牙行，只有几个渔妇在晒网。"
+		body_text.text = "此地无正经牙行，只几个渔妇晒网。"
 		_add_leave_button(port_id)
 		return
 
@@ -1783,7 +1783,7 @@ func _add_contract_panel(port_id: String) -> void:
 				int(plan_r.get("expected_days", 0)), int(plan_o.get("expected_days", 0)), int(plan_c.get("expected_days", 0)),
 			]
 			if bool(plan_r.get("wind_changes", false)) or bool(plan_o.get("wind_changes", false)) or bool(plan_c.get("wind_changes", false)) or bool(plan_r.get("departs_on_new_wind", false)):
-				calm_note.text += " 启航后的风和今天不一定相同，日数已按逐日累加。"
+				calm_note.text += " 启航后风向或变，日数按逐日累加。"
 			calm_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			calm_note.add_theme_font_size_override("font_size", 16)
 			calm_note.add_theme_color_override("font_color", note_col)
@@ -1796,7 +1796,7 @@ func _add_contract_panel(port_id: String) -> void:
 			var off_thin := int(plan_o.get("expected_days", 0)) <= deadline and int(plan_o.get("safe_days", 0)) > deadline
 			var coast_thin := int(plan_c.get("expected_days", 0)) <= deadline and int(plan_c.get("safe_days", 0)) > deadline
 			if rumb_thin or off_thin or coast_thin:
-				safe_note.text += " 有航法平均数赶得上，八成日数超过期限，未稳。"
+				safe_note.text += " 遇事约赶得上，八成日数逾限，未稳。"
 			safe_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			safe_note.add_theme_font_size_override("font_size", 16)
 			safe_note.add_theme_color_override("font_color", note_col)
@@ -1814,7 +1814,7 @@ func _add_contract_panel(port_id: String) -> void:
 				cargo_bits += ("、" if cargo_bits != "" else "") + "傍岸"
 			var risks := PackedStringArray()
 			if cargo_bits != "":
-				hold_note.text += " %s按八成日数赶得上，保货不到八成。小船打不赢，这数不含买路。" % cargo_bits
+				hold_note.text += " %s按八成日数赶得上，保货不到八成。不含买路。" % cargo_bits
 				hold_note.add_theme_color_override("font_color", warn_col)
 				risks.append("保货")
 			else:
@@ -1832,7 +1832,7 @@ func _add_contract_panel(port_id: String) -> void:
 			if can_carry < need_qty:
 				var purse_lbl := Label.new()
 				purse_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				purse_lbl.text = "这里一件 %d 钱。钱和舱里现有的，凑得出 %d 件，单子要 %d 件。不够也能接，交不齐就拿不满酬，也没有名声。" % [
+				purse_lbl.text = "此地一件 %d 钱。现银与舱货凑得出 %d 件，单须 %d 件。可接；交不齐则拿不满酬，不加声名。" % [
 					unit_cost, can_carry, need_qty,
 				]
 				purse_lbl.add_theme_font_size_override("font_size", 16)
@@ -1922,7 +1922,7 @@ func _on_abandon_contract() -> void:
 
 func _make_market_row(port_id: String, good_id: String) -> Control:
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(200, 188)
+	card.custom_minimum_size = Vector2(200, 208)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	UiTheme.paper_card(card)
 	var margin := MarginContainer.new()
@@ -1977,6 +1977,13 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	price_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 	price_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_child(price_lbl)
+	# 手续脚注：买价已含市舶抽解，卖价已扣牙人佣金；只点事实，不印费率
+	var fee_lbl := Label.new()
+	fee_lbl.name = "PriceFee"
+	fee_lbl.text = "含抽解・扣佣"
+	UiTheme.style_footnote(fee_lbl)
+	fee_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_child(fee_lbl)
 
 	var held_lbl := Label.new()
 	held_lbl.text = "舱 %d" % held
@@ -2047,7 +2054,7 @@ func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> 
 		while affordable > 0 and Economy.estimate_buy_cost(port_id, good_id, affordable) > GameState.money:
 			affordable -= 1
 		if affordable <= 0:
-			log_msg("【钱不够】牙人翻了翻眼皮，把货单收了回去。")
+			log_msg("【钱不够】牙人翻了翻眼皮，货单收回。")
 			return
 		actual = affordable
 		cost = Economy.estimate_buy_cost(port_id, good_id, actual)
@@ -2059,7 +2066,7 @@ func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> 
 	var note := ""
 	if actual < amount:
 		note = "只购得 %d。" % actual
-	log_msg("买入 %s ×%d，付 %d 钱。%s" % [GameManager.get_good_name(good_id), actual, cost, note])
+	log_msg("过秤买入 %s ×%d，付 %d 钱，抽解在内。%s" % [GameManager.get_good_name(good_id), actual, cost, note])
 	_market_hold = true
 	load_scene(current_scene_id)
 
@@ -2095,7 +2102,7 @@ func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) ->
 
 	var profit := revenue - int(round(cost_basis))
 	var profit_str := "赚 %d" % profit if profit >= 0 else "亏 %d" % (-profit)
-	log_msg("卖出 %s ×%d，得 %d 钱，%s。" % [GameManager.get_good_name(good_id), actual, revenue, profit_str])
+	log_msg("过秤卖出 %s ×%d，得 %d 钱，佣已扣，%s。" % [GameManager.get_good_name(good_id), actual, revenue, profit_str])
 	_market_hold = true
 	load_scene(current_scene_id)
 
@@ -2196,11 +2203,11 @@ func _setup_title_and_invest(port_id: String) -> void:
 		inv_aside = "已修至 %d 等" % lv
 	_slip_title(inv, "修埠", inv_aside)
 	if cost <= 0:
-		_slip_note(inv, "本港埠头已修至 %d 等。产地更廉、紧缺更好卖，市场也更深。" % lv)
+		_slip_note(inv, "本港埠头已修至 %d 等。产货更廉，紧缺易售，市面更宽。" % lv)
 	elif lv <= 0:
-		_slip_note(inv, "向本港投钱修埠，可加深市场、让本地所产更廉、紧缺货更好卖。")
+		_slip_note(inv, "修埠则埠头加深。本地产货更廉，紧缺货易售。")
 	else:
-		_slip_note(inv, "向本港投钱修埠，再升一等。产地买入更廉、紧缺货更好卖、市场更深。")
+		_slip_note(inv, "再修一等。埠头加深，产货更廉，紧缺易售，市面更宽。")
 	if cost > 0:
 		var chip := _slip_chip(_slip_row(inv), "投钱　%d" % cost, _on_invest_port.bind(port_id), true)
 		chip.tooltip_text = "向本港投钱修埠"

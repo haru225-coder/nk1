@@ -148,9 +148,9 @@ func invest(port_id: String) -> Dictionary:
 		return {"ok": false, "msg": "【修埠】查无此港。"}
 	var cost := invest_cost(port_id)
 	if cost <= 0:
-		return {"ok": false, "msg": "【修埠】本港埠头已修至最高等。"}
+		return {"ok": false, "msg": "【修埠】本港埠头已修至顶等。"}
 	if not GameState.spend_money(cost):
-		return {"ok": false, "msg": "【修埠】再投 %d 钱才能动工，你囊中不足。" % cost}
+		return {"ok": false, "msg": "【修埠】动工须 %d 钱，囊中不足。" % cost}
 	var lv := investment_level(port_id) + 1
 	investments[port_id] = lv
 	var fame_res: Dictionary = GameState.add_fame(invest_fame_gain(lv))
@@ -225,7 +225,7 @@ func price_hint(port_id: String, good_id: String) -> String:
 	elif rate <= 0.65:
 		rate_hint = "价贱"
 	elif rate <= 0.88:
-		rate_hint = "价平偏低"
+		rate_hint = "价略平"
 	if base_hint != "" and rate_hint != "":
 		return base_hint + "・" + rate_hint
 	return base_hint + rate_hint

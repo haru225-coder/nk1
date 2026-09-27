@@ -1231,6 +1231,34 @@ else:
     print("  ✗ 柜上三样未接上")
     problems.append("柜上三样未接上")
 
+# Lane AA：牙行/市舶过秤面板——价格行手续脚注、过秤短注、委办细则与修埠短句纪实；数值公式不动
+_aa_econ = open(os.path.join(SCRIPTS, "core", "Economy.gd"), encoding="utf-8").read()
+_aa_row = _func_body(main_src, "_make_market_row")
+_aa_inv = _func_body(main_src, "_setup_title_and_invest")
+_aa_contract = _func_body(main_src, "_add_contract_panel")
+if (
+    '"买 %d　卖 %d" % [buy_p, sell_p]' in _aa_row
+    and 'fee_lbl.text = "含抽解・扣佣"' in _aa_row
+    and "tariff" not in _aa_row and "broker" not in _aa_row
+    and "牙人过秤开票" in market_fn
+    and "过秤・买卖" in main_src
+    and "牙人过秤开票。市舶抽解另计。" in main_src
+    and "遇事约赶得上，八成日数逾限，未稳。" in _aa_contract
+    and "保货不到八成。不含买路。" in _aa_contract
+    and "可接；交不齐则拿不满酬，不加声名。" in _aa_contract
+    and "启航后风向或变，日数按逐日累加。" in _aa_contract
+    and "埠头加深" in _aa_inv and "市面更宽" in _aa_inv
+    and 'rate_hint = "价略平"' in _aa_econ
+    and all(bad not in main_src + _aa_econ for bad in ("平均数赶得上", "加深市场", "价平偏低", "小船打不赢", "市场更深", "不够也能接"))
+    and "var tariff_rate: float = 0.10" in _aa_econ
+    and "var broker_fee: float = 0.05" in _aa_econ
+    and os.path.exists(os.path.join(ROOT, "tools", "qa_market_panel_probe.gd"))
+):
+    print("  ✓ 牙行市舶过秤面板价格行与手续短句纪实（Lane AA）")
+else:
+    print("  ✗ 牙行市舶过秤面板纪实未接上（Lane AA）")
+    problems.append("牙行过秤面板 Lane AA 契约未接")
+
 
 
 dry_src = open(os.path.join(SCRIPTS, "core", "DrydockBerth.gd"), encoding="utf-8").read()
@@ -1464,7 +1492,7 @@ gs_chapter_src = open(os.path.join(SCRIPTS, "GameState.gd"), encoding="utf-8").r
 if (
     "%s　%s　%d / %d" in main_src
     and "%s %s %d/%d" not in main_src
-    and "再升一等。" in main_src
+    and ("再升一等。" in main_src or "再修一等" in main_src)
     and "再升一等：" not in main_src
     and "拓「%s」　%s" in main_src
     and "拓「%s」：" not in main_src

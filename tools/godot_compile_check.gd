@@ -32,6 +32,7 @@ const SCRIPTS := [
 	"res://scripts/ui/UiTransition.gd", "res://tools/qa_title_probe.gd", "res://tools/qa_siege_endgame_probe.gd", "res://tools/qa_ending_reread_probe.gd",
 	"res://tools/qa_drydock_probe.gd",
 	"res://tools/qa_voyage_status_probe.gd",
+	"res://tools/qa_market_panel_probe.gd",
 	"res://tools/qa_port_doors_probe.gd",
 	"res://tools/qa_crew_hire_probe.gd",
 	# Lane Z3 伙伴草案预览浮页
