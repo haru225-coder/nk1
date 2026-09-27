@@ -183,6 +183,11 @@ SUBCHECKS = [
 # CI 建议步骤（lane gd4）：docs/GATES.md §四 由它生成，**只是建议，不进 repo 的 CI 配置**。
 # 先跑一键跑十三条（导入步骤 tier=step + 必跑十二道 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
 CI_STEPS = [
+    {"id": "侧车成对 / 一致", "lane": "ag / ag2 / gd5", "needs": "python3 + git（紧跟第 0 步的导入步骤之后跑）",
+     "cmd": "python3 tools/check_sidecars.py",
+     "expect": "`结果：全部通过`（前一行报 uid 个数、VRAM 纹理张数与基线、`工作树侧车无漂移`）",
+     "fail": "`FAIL: …` 行、退 1 = 提交的 .gd / .gdshader / 素材缺侧车或多了孤儿侧车、侧车内容与源文件 / 场景引用 / VRAM 基线不一致；"
+             "或第 0 步导入把已跟踪 `.import` / `.uid` 改写了（工作树漂移：CI 机器的 Godot 版本 / 平台与入库基线不符）。口径见 docs/侧车口径.md"},
     {"id": "builtin_api 漂移", "lane": "cs3 / gd4", "needs": "godot（与清单头部同版本）",
      "cmd": "python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt",
      "expect": "`✓ --regen：…逐字节一致，未改动` + check_symbols `结果：全部通过`，`git diff` 无输出、退 0",
