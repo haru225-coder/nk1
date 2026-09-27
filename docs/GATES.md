@@ -31,9 +31,9 @@
 | 17 | check_sidecars | Python | 加跑：提交新 .gd / .gdshader / 素材，或挪删它们（同车规则：新源文件的侧车同 commit 带上） | — | `python3 tools/check_sidecars.py` | `python3 tools/check_sidecars.py --json` | （lane ag / ag2）按 git 索引：已跟踪 .gd/.gdshader 须有已跟踪 `.uid`，可导入素材须有 `.import`；反向不许只提侧车 / 多余侧车；侧车内容与源文件、场景引用、VRAM 基线一致，uid 唯一；工作树里已跟踪侧车不许漂移。口径表见 docs/侧车口径.md | `结果：全部通过` | `FAIL: …` 行（缺侧车 / 孤儿·多余侧车 / 内容漂移 / 非基线形态 / 工作树漂移）；`结果：N 项失败` |
 | 18 | save_migrate_probe | Godot | 加跑：动存档结构 / save_schema | — | `godot --headless --path . -s res://tools/save_migrate_probe.gd` | `python3 tools/gate_json.py --godot save_migrate_probe` | （lane sv）v1 老档读入补字段、回写 v2、原件留 .v1；未来档明确拒读、不退副抄、文件不动 | `SAVE_MIGRATE_PROBE PASS` | `✗` 行；`SAVE_MIGRATE_PROBE FAIL fails=k`；输出含 `SCRIPT ERROR` 即算失败 |
 | 19 | gates_md | Python | 加跑：动门禁清单 / docs/GATES.md | — | `python3 tools/gates_md.py` | `python3 tools/gates_md.py --json` | （lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序 | `结果：全部通过` | `✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write` |
-| 20 | RefsMacPath | Python | 加跑：新增 / 改动脚本或文档里写外部路径的地方（引擎 / 工具路径、素材与截图默认根、安装与照抄命令） | — | `python3 tools/check_mac_paths.py` | `python3 tools/check_mac_paths.py --json` | （lane doc9）git 已跟踪的文本文件里不许写 Mac / Homebrew 专属绝对路径（Mac 家目录、Homebrew 前缀、Godot 应用包、用户资料库目录等 10 条，模式与理由见脚本 `PATTERNS`，脚本自身不扫）；已定级的留档进白名单 `ALLOW`：按文件登记命中行数、头部横幅 / 回指注字样与理由，行数不符、字样丢了、条目失效都判红；未跟踪文件只记 `⚠` | `白名单外 0 处命中（扫 N 个已跟踪文本文件，本脚本自身除外）` + `结果：全部通过` | `✗` 行（白名单外命中逐行列 `文件:行 … ← 命中串`；白名单文件行数不符；横幅 / 回指注丢了；失效条目）；`结果：N 项问题` |
+| 20 | RefsMacPath | Python | 必跑 | ✓ | `python3 tools/check_mac_paths.py` | `python3 tools/check_mac_paths.py --json` | （lane doc9）git 已跟踪的文本文件里不许写 Mac / Homebrew 专属绝对路径（Mac 家目录、Homebrew 前缀、Godot 应用包、用户资料库目录等 10 条，模式与理由见脚本 `PATTERNS`；lane gd21 起脚本自身也扫，只按行排除 `PATTERNS` 块的条目行，块里夹了别的行即判红）；已定级的留档进白名单 `ALLOW`：按文件登记命中行数、头部横幅 / 回指注字样与理由，行数不符、字样丢了、条目失效都判红；未跟踪文件只记 `⚠` | `白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS 块除外）` + `结果：全部通过` | `✗` 行（白名单外命中逐行列 `文件:行 … ← 命中串`；白名单文件行数不符；横幅 / 回指注丢了；失效条目；本脚本 PATTERNS 块形状不对）；`结果：N 项问题` |
 
-每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「七道 Python + smoke/compile/story/p7/patrol」十二道门禁；8、15、16、17、18、19、20 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「八道 Python + smoke/compile/story/p7/patrol」十三道门禁；8、15、16、17、18、19 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（8 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -149,7 +149,7 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 
 <!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-# 必跑十三条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+# 必跑十四条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
 rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
 python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
 python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
@@ -164,6 +164,7 @@ godot --quiet --headless --path . -s res://tools/godot_compile_check.gd -- --jso
 godot --quiet --headless --path . -s res://tools/godot_story_check.gd -- --json > /tmp/gates/story.json
 godot --quiet --headless --path . -s res://tools/p7_guild_exam_smoke.gd -- --json > /tmp/gates/p7.json
 DISPLAY=:2 godot --quiet --path . -s res://tools/patrol_shell.gd -- --json > /tmp/gates/patrol.json
+python3 tools/check_mac_paths.py --json > /tmp/gates/RefsMacPath.json
 python3 tools/gate_json.py --judge /tmp/gates/*.json   # 汇总：逐道一行 ✓/✗；任一道红或没有 JSON 行 → 退 1
 ```
 <!-- GATES-BATCH:END -->
@@ -206,6 +207,7 @@ godot --headless --path . -s res://tools/godot_compile_check.gd
 godot --headless --path . -s res://tools/godot_story_check.gd
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
+python3 tools/check_mac_paths.py
 ```
 
 **共同的坑：工作树是多 lane 共用的。** 别的 lane 未提交的改动（例如正在改 `SaveLoad.gd`）会让你的门禁红。判「是不是我弄红的」：`git worktree add --detach /tmp/x HEAD`，只放进自己的改动再跑（Godot 门禁先 `cp -a .godot /tmp/x/` 省掉重新导入）。
@@ -330,17 +332,17 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 - 常见红因：手改了标记块；改了必跑档只改 §三 没改 `.claude/todo.md` 验证段（gd4 查出的 patrol 缺 `DISPLAY=:2` 即此类）；新截图脚本接了 `shot_gate` 却没进 `SHOT_PROBES`；某道门禁挪走 / 改名（如 `verify_narrative` 挪 `tools/legacy/`）没改注册表；加了门禁没补 §三 小节；改了 `--suggest` / `--regen` 等开关名或判词没改 `SUBCHECKS[].marks`；升降必跑档没同步 §三 一键跑命令段。
 
 ### 20. RefsMacPath（`tools/check_mac_paths.py`，Mac 专属绝对路径防回归）
-- 读：`一、白名单条目都有效`（`ALLOW` 每条：文件在且已跟踪、头 5 行还有登记的横幅 / 回指注字样）→ `二、git 已跟踪文件里的 Mac 路径`（白名单文件逐条 `命中 N 行，登记 N 行（理由）`；末条 `白名单外 0 处命中（扫 N 个已跟踪文本文件，本脚本自身除外）`）；红时白名单外的命中逐行列 `文件:行  原文  ← 命中串`。读工作树内容（已暂存的新文件也扫），二进制跳过；未跟踪文件有命中只记 `⚠`（别的 lane 没提交的不染红共用树，同 check_docs_index）。模式 10 条及每条为什么算 Mac 专属写在脚本 `PATTERNS`；`~/tmp/…` 草稿区、走查署名、安装提示里的 `brew install`、下载 URL 里的 `macos` 字样不算。
-- 口径：lane doc7 / doc8 / gd13 清完后剩下的命中只有 `tools/legacy/` 5 支（带「勿运行」横幅）与 2 份带日期的历史稿（头部回指注），都登记在 `ALLOW`，按命中行数卡死——往留档里再加一行也红。加白名单条目须写理由，且只限留档 / 历史稿；活跃脚本与文档一律改成本机口径（env → PATH → 取不到明确报错，见 `build_ui_textures.py` 的 `NK1_RSVG`、`tour.sh` 的 `GODOT`）。lane 加跑档（不进一键跑），CI 里作 §四 步骤 5（lane doc9）。
+- 读：`一、白名单条目都有效`（`ALLOW` 每条：文件在且已跟踪、头 5 行还有登记的横幅 / 回指注字样）→ `二、git 已跟踪文件里的 Mac 路径`（白名单文件逐条 `命中 N 行，登记 N 行（理由）`，本脚本自扫一条 `✓ tools/check_mac_paths.py：自扫按行排除 PATTERNS 块 10 行`（lane gd21）；末条 `白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS 块除外）`）；红时白名单外的命中逐行列 `文件:行  原文  ← 命中串`。读工作树内容（已暂存的新文件也扫），二进制跳过；本脚本自身也扫（lane gd21）：只按行排除 `PATTERNS = [` 到 `]` 之间的条目行，块里每行须是一条 `("名字", r"正则", "理由")` 且行数等于条目数，夹进注释 / 别的字符串即 `✗ tools/check_mac_paths.py：自扫按行排除 PATTERNS 块…——块里第 N 行不是一条…`，块外（docstring、ALLOW、判词）写了 Mac 路径照常按白名单外命中判红；未跟踪文件有命中只记 `⚠`（别的 lane 没提交的不染红共用树，同 check_docs_index）。模式 10 条及每条为什么算 Mac 专属写在脚本 `PATTERNS`；`~/tmp/…` 草稿区、走查署名、安装提示里的 `brew install`、下载 URL 里的 `macos` 字样不算。
+- 口径：lane doc7 / doc8 / gd13 清完后剩下的命中只有 `tools/legacy/` 5 支（带「勿运行」横幅）与 2 份带日期的历史稿（头部回指注），都登记在 `ALLOW`，按命中行数卡死——往留档里再加一行也红。加白名单条目须写理由，且只限留档 / 历史稿；活跃脚本与文档一律改成本机口径（env → PATH → 取不到明确报错，见 `build_ui_textures.py` 的 `NK1_RSVG`、`tour.sh` 的 `GODOT`）。lane gd21 升进必跑档、排一键跑末条（原为 lane 加跑档 + CI §四 步骤 5，步骤 5 随之删掉，免得 CI 跑两遍）：什么时候「写了外部路径」自己判不准——照抄 Mac 上的命令、默认根最容易顺手带进来，正是不会想起加跑的时候；跑一次 <1s（本机实测见 lane gd21 Verify），只要 python3 + git，只读不写盘，未跟踪文件只记 `⚠`，共用树里别的 lane 没提交的不染红。
 - 常见红因：照抄 Mac 上的命令 / 默认根进脚本或文档；清掉了留档里的几处却没改 `ALLOW` 的行数；挪 / 删了留档文件没删条目。
 
 ## 四、CI 建议步骤
 
-只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑十三道，其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
+只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑十四道（含导入步骤），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑十三条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑十四条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
 godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
@@ -354,6 +356,7 @@ godot --headless --path . -s res://tools/godot_compile_check.gd
 godot --headless --path . -s res://tools/godot_story_check.gd
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
+python3 tools/check_mac_paths.py
 # 1. 侧车成对 / 一致
 python3 tools/check_sidecars.py
 # 2. builtin_api 漂移
@@ -362,8 +365,6 @@ python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api
 python3 tools/gates_md.py
 # 4. docs 索引与文件一致
 python3 tools/check_docs_index.py --check
-# 5. Mac 专属绝对路径（RefsMacPath）
-python3 tools/check_mac_paths.py
 ```
 
 | # | 步骤 | 接入 | 需要 | 命令 | 期望输出 | 失败含义 |
@@ -372,5 +373,4 @@ python3 tools/check_mac_paths.py
 | 2 | builtin_api 漂移 | cs3 / gd4 | godot（与清单头部同版本） | `python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt` | `✓ --regen：…逐字节一致，未改动` + check_symbols `结果：全部通过`，`git diff` 无输出、退 0 | `git diff` 打出 `tools/builtin_api.txt` 的差异、退 1 = 提交的清单与本机 Godot 的 ClassDB 导出不一致（升级了 Godot / 改了 `gen_builtin_list.gd` 的 CLASSES 却没连同提交重导结果）；`--regen` 本身失败则 check_symbols 先退 1 |
 | 3 | GATES.md 与注册表一致 | gd3 | python3 + git | `python3 tools/gates_md.py` | `结果：全部通过` | 有人手改了 §一 / §二批量巡检 / §四 生成块、改了注册表没 `--write`、§三 或 `.claude/todo.md` 验证段的一键跑命令与必跑清单不符，或注册的脚本挪走了 |
 | 4 | docs 索引与文件一致 | doc3 / doc4 | python3 + git | `python3 tools/check_docs_index.py --check` | `结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`） | `✗` 行、退 1：`MISSING` = 提交了 docs 下的 .md 没在 docs/README.md 补一行；`DEAD` = 索引链的文件挪走 / 改名 / 删了；`DUP` = 同一份文档链了两次。修法：改 docs/README.md |
-| 5 | Mac 专属绝对路径（RefsMacPath） | doc9 | python3 + git | `python3 tools/check_mac_paths.py` | `结果：全部通过`（前面每条白名单 `✓ 命中 N 行，登记 N 行（理由）`、`白名单外 0 处命中（扫 N 个已跟踪文本文件…）`） | `✗` 行、退 1：白名单外的已跟踪文件写了 Mac / Homebrew 专属路径（逐行列出命中串；改成 env / PATH / 仓库相对路径）；白名单文件命中行数与登记不符、头部「勿运行」横幅 / 历史回指注被删、条目文件已不在。修法：改文件，或改 `tools/check_mac_paths.py` 的 `ALLOW`（写明理由） |
 <!-- GATES-CI:END -->

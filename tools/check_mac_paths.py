@@ -5,7 +5,9 @@
   python3 tools/check_mac_paths.py --json   # 机读（同 docs/GATES.md §二）
 
 扫什么：git 已跟踪的全部文本文件（读工作树里的内容，已暂存的新文件也算；含 NUL 字节的二进制跳过）。
-本脚本自身不扫——下面 PATTERNS 本身就是命中。模式逐条写了为什么算 Mac 专属。
+本脚本自身也扫（lane gd21）：只按行排除下面 `PATTERNS = [` 到 `]` 之间的条目行（它们本身就是命中），块外照常判；
+块里每行须是一条 `("名字", r"正则", "理由")`、行数与条目数相等，夹进别的行（注释 / 字符串）即判红，免得拿它藏路径。
+模式逐条写了为什么算 Mac 专属。
 判红：
   · 不在 ALLOW 里的文件有命中（修法：改成 env / PATH / 仓库相对路径，见 build_ui_textures 的 NK1_RSVG、tour.sh 的 GODOT）；
   · ALLOW 里的文件命中行数 ≠ 登记的 lines（多了 = 往留档里又加了；少了 = 清掉了几处，条目跟着改）；
@@ -58,6 +60,26 @@ ALLOW = {
 }
 
 fails = []
+
+
+def self_block():
+    """本脚本 PATTERNS 块里条目行的行号集合（按行排除用）；块找不到 / 形状不对 → (None, 原因)。"""
+    with open(os.path.join(ROOT, SELF), encoding="utf-8", errors="replace") as f:
+        lines = f.read().splitlines()
+    starts = [i for i, ln in enumerate(lines) if ln == "PATTERNS = ["]
+    if len(starts) != 1:
+        return None, f"`PATTERNS = [` 行有 {len(starts)} 处（须恰 1 处）"
+    a = starts[0]
+    b = next((i for i in range(a + 1, len(lines)) if lines[i] == "]"), None)
+    if b is None:
+        return None, "`PATTERNS = [` 之后找不到收尾的 `]` 行"
+    inner = range(a + 1, b)
+    odd = [i + 1 for i in inner if not re.fullmatch(r'    \("[^"]*", r"[^"]*", "[^"]*"\),', lines[i])]
+    if odd:
+        return None, f"块里第 {'、'.join(map(str, odd))} 行不是一条 (\"名字\", r\"正则\", \"理由\")"
+    if len(inner) != len(PATTERNS):
+        return None, f"块里 {len(inner)} 行，PATTERNS {len(PATTERNS)} 条（须一条一行）"
+    return {i + 1 for i in inner}, None
 
 
 def check(cond, msg):
@@ -127,11 +149,14 @@ def main(argv):
     scanned = 0
     stray = []
     for rel in tracked:
-        if rel == SELF:
-            continue
         hs = hits(rel)
         if hs is None:
             continue
+        if rel == SELF:  # 自扫：按行排除 PATTERNS 条目行，块外的照常算（lane gd21）
+            block, why = self_block()
+            if check(block is not None, f"{SELF}：自扫按行排除 PATTERNS 块 {len(block or ())} 行"
+                     + ("" if block is not None else f"——{why}；整份照扫")):
+                hs = [h for h in hs if h[0] not in block]
         scanned += 1
         a = ALLOW.get(rel)
         if a is None:
@@ -144,7 +169,7 @@ def main(argv):
     for rel, hs in stray:
         check(False, f"{rel}：{len(hs)} 行 Mac 专属路径，不在白名单（改成 env / PATH / 仓库相对路径）")
         show(rel, hs)
-    check(not stray, f"白名单外 {sum(len(h) for _, h in stray)} 处命中（扫 {scanned} 个已跟踪文本文件，本脚本自身除外）"
+    check(not stray, f"白名单外 {sum(len(h) for _, h in stray)} 处命中（扫 {scanned} 个已跟踪文本文件，含本脚本、其 PATTERNS 块除外）"
           + (f"：{len(stray)} 个文件" if stray else ""))
 
     for rel in untracked:
