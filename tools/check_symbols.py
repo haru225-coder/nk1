@@ -3971,6 +3971,29 @@ else:
         print(f"  ✗ {_m}")
     problems.append("船屋页没钉在 ShipyardPage")
 
+# 标题页 / 开场 5 支真身钉在 TitlePage（lane main11，口径同上面市舶司页的钉子）：Main 里每支只许是一行转发到 _TITLE 的同名 static func，
+# 拆出件里须真有那支、Main 真 preload 了它。挪回 Main 再 `gen_main_splits --write`：lane cs18 之前清单跟着改、「一之零」变绿，
+# 标题页的源码断言经 read_main_src 也照样绿（实测 5 支里 4 支全绿），cs18 之后生成器自己判红；这里再钉 preload 常量名与拆出件那支。
+_tp_src = open(os.path.join(SCRIPTS, "ui", "TitlePage.gd"), encoding="utf-8").read()
+_tp_static = set(re.findall(r'^static\s+func\s+([A-Za-z_]\w*)\s*\(', _tp_src, re.M))
+_tp_raw_fn = func_bodies(open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read())
+_tp_bad = []
+for _tp_name in ("_play_opening", "_on_opening_finished", "_on_rewatch_opening", "_setup_title_mode", "_on_start_game_pressed"):
+    _tp_code = [ln for ln in _tp_raw_fn.get(_tp_name, "", forward_ok=True).split("\n") if ln.strip() and not ln.strip().startswith("#")]
+    _tp_fwd = _SPLIT_FWD.match(_tp_code[0]) if len(_tp_code) == 1 else None
+    if not (_tp_fwd and _tp_fwd.group(1) == "_TITLE" and _tp_fwd.group(2) == _tp_name[1:]):
+        _tp_bad.append(f"Main.{_tp_name} 不是一行转发到 _TITLE.{_tp_name[1:]}")
+    elif _tp_name[1:] not in _tp_static:
+        _tp_bad.append(f"TitlePage.gd 缺 static func {_tp_name[1:]}")
+if re.search(r'^const _TITLE := preload\("res://scripts/ui/TitlePage\.gd"\)', open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read(), re.M) is None:
+    _tp_bad.append("Main 没有 const _TITLE := preload(TitlePage.gd)")
+if not _tp_bad:
+    print("  ✓ 标题页 / 开场 5 支真身在 TitlePage，Main 只留一行转发（lane main11）")
+else:
+    for _m in _tp_bad:
+        print(f"  ✗ {_m}")
+    problems.append("标题页 / 开场没钉在 TitlePage")
+
 # Lane AC：发现录列表与呈报确认改纪实短句；存档键、呈报顺序与赏格公式不动
 _ac_slips = _disc_main_fn.get("_setup_reporting", "")
 _ac_onrep = _disc_main_fn.get("_on_report_discovery", "")
@@ -4453,10 +4476,11 @@ NAMED_FUNCS = {
         "_guild_join_block", "_interior_lead", "_interior_title", "_lift_ledger", "_mount_status_strip",
         "_on_apply_permit", "_on_berth_switch", "_on_borrow", "_on_buy_ship", "_on_buy_supplies", "_on_dismiss_crew",
         "_on_exam_sit", "_on_guild_join", "_on_hire_candidate", "_on_hire_crew", "_on_hire_to_min", "_on_invest_port",
-        "_on_repair_hull", "_on_repay", "_on_report_discovery", "_on_upgrade", "_setup_guild", "_setup_news_wall",
-        "_setup_reporting", "_setup_shipyard", "_setup_title_and_invest", "_setup_yamen", "_skill_rank", "_yard_offer",
-        "_yard_port_name", "_yard_success_transition", "load_scene", "play_transition", "show_choices",
-        "update_status_panel",
+        "_on_opening_finished", "_on_repair_hull", "_on_repay", "_on_report_discovery", "_on_rewatch_opening",
+        "_on_start_game_pressed", "_on_upgrade", "_play_opening", "_setup_guild", "_setup_news_wall",
+        "_setup_reporting", "_setup_shipyard", "_setup_title_and_invest", "_setup_title_mode", "_setup_yamen",
+        "_skill_rank", "_yard_offer", "_yard_port_name", "_yard_success_transition", "load_scene", "play_transition",
+        "show_choices", "update_status_panel",
     ),
     "scripts/GameManager.gd": (
         "advance_days", "discoveries_near",

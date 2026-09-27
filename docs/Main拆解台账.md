@@ -427,3 +427,89 @@ lane main10 的 brief 也点了「把 verify_economy / smoke 的直读改到拆�
 
 1. 剩下的 **A 牙行 / E 岸带 / H 守城·终局 / I 调查页 / K 场景分发** 全是高风险。A 被 verify_economy 直读最多（`_affordable_qty` / `_setup_market` / `_add_contract_panel` / `_make_market_row` / 两支 tip，另有 `_purse_ui` 这类按锚文切片段），拆它之前先把 verify_economy 的「直读 Main」统一接到 check_symbols 的 `read_main_src()` 拼回（cs14 待议 2），不然每拆一簇都要手改一批切片。
 2. 第八刀和本刀各手写了一条「真身钉在拆出件」的钉子（main8 待议 3）。两条同形，可以改由 `main_splits.txt` 的「拆出函数」列反查、对全部拆出件生效，但要先定口径（不能靠 `--write` 自愈）。
+
+---
+
+## 第十一刀（lane main11，2026-09-28）：标题页 / 开场 → `scripts/ui/TitlePage.gd`
+
+### 调查（基 `c9d0e14`：Main.gd 4275 行，233 支 func，第十刀之后；开工基 `08ca2a4` 上 4527 行，第十刀船屋 C 由 lane main10 同时在做、先落地，本刀不碰，rebase 后按本基重算）
+
+口径：把 Main 里**还没拆**的函数（一行转发不算）按源码位置 / 页面归成 16 簇（开工基上是 17 簇，C 船屋 15 支 1.6 排第 6，归 main10 第十刀），逐簇算
+「引用数 = 被簇外调（Main 内簇外非注释行按名出现次数，含 `call_deferred("start_game")` 这类字符串名）+ 他处引用（scripts / tools / scenes 其余文件去掉注释行后按名出现次数，含已拆出件经 `main.` 调）」，
+再除以支数，按比值升序排。「直读 Main.gd 的门禁」只列不经 `read_main_src()` / `_main_family_src()`、会切到一行转发的读法；「写 Main 成员」是函数体里对 Main 顶层 var 的赋值。
+
+| # | 簇（基 c9d0e14 行段） | 支 / 行 | 簇外调 | 他处（代码） | 引用 / 支 | 直读 Main.gd 的门禁 | 写 Main 成员 | 风险 |
+|---|---|---|---|---|---|---|---|---|
+| 1 | P 开局 / 开场（`_on_monthly_notice` … `_on_rewatch_opening`，615–652） | 5 / 30 | 3 | 0 | **0.6** | 无 | `_arrival_banner` | 低（start_game 是开局入口，见下） |
+| 2 | R 玉湖陈宅（`_setup_residence_chen`，1960–2006） | 1 / 47 | 0 | 1（ResidencePage） | 1.0 | 无 | 无 | 低，但只 1 支 |
+| 3 | A 牙行（`_setup_market` … `_on_sell`，1133–1778） | 15 / 618 | 1 | 20 | 1.4 | verify_economy 12、qa_contract_stock 3、qa_money_notices 1 | 4 个（`_market_ship` / `_market_hold` / `broker_hand` / `_contract_detail_open`） | 高 |
+| 4 | Q 标题页（`_setup_title_mode` / `_on_start_game_pressed`，2296–2354） | 2 / 57 | 1 | 2（check_symbols，经 read_main_src） | 1.5 | 无 | `title_button_connected` | 低 |
+| 5 | H 守城 / 终局（`_check_absent_from_xinghua` … `_special_cards`，3349–4272） | 27 / 833 | 14 | 29 | 1.6 | verify_story_data 4、check_assets 1、verify_economy 1、smoke 1 | `_shore_mode` / `_shore_facilities` | 高 |
+| 6 | D 调试（`_debug_jump_port` / `_debug_preview_ending`，3287–3324） | 2 / 36 | 2 | 2 | 2.0 | 无 | 无 | 低，但只是 F11 / F12 点验钩子 |
+| 7 | E 岸带（`_setup_port_mode` … `_on_set_sail`，2357–2862） | 19 / 469 | 15 | 27 | 2.2 | smoke 1、ShotTour 1 | 4 个 | 高 |
+| 8 | O 浮页（`_open_codex` … `_close_vision_stage`，655–750） | 8 / 82 | 6 | 14 | 2.5 | qa_wire_vision 2、qa_letterbox_copy 1（直读 Main.gd 查 `_open_vision_stage` 字样） | 4 个浮页句柄 | 中（两个 lambda 回写句柄） |
+| 9 | F 船况措辞（`_fit_rank` … `_duty_per_hundred`，789–833） | 5 / 37 | 0 | 19 | 3.8 | smoke 8（Main 实例直调） | 无 | 中低（船屋 / 船籍簿 / 市舶司三个拆出件共用） |
+| 10 | M 店中杂项（`_monsoon_forecast` … `_gather_price_intel`，2171–2257） | 5 / 79 | 0 | 19 | 3.8 | verify_economy 5、smoke 1 | 无 | 中 |
+| 11 | N 内景题（`_interior_title` / `_interior_lead`，836–871） | 2 / 34 | 2 | 6 | 4.0 | smoke 2 | 无 | 中低 |
+| 12 | I 调查页 / 选项 / 效果（2993–3284） | 14 / 266 | 14 | 55 | 4.9 | verify_story_data 6、smoke 1 | 无 | 高（`_gui_input` / `_unhandled_input` 虚函数） |
+| 13 | B 壳 / 装裱（`_ready` … `_fit_dialogue`，227–612） | 14 / 312 | 10 | 65 | 5.4 | ShotTour 1 | 6 个 | 高（`_ready`） |
+| 14 | X 入港 / 设施分发（`_on_enter_port` / `_select_market_ship` / `_cn_chapter` / `_on_facility_pressed`，2891–2990） | 4 / 70 | 5 | 20 | 6.2 | verify_story_data 1、smoke 2、ShotTour 1 | 2 个 | 高（章节推进入口） |
+| 15 | W 工席台（`_begin_benches` … `_uncenter_benches`，1815–1848） | 4 / 28 | 1 | 34 | 8.8 | smoke 5 | `_slip_host` | 中（9 个拆出件都在用） |
+| 16 | K 场景加载 / 分发（`load_scene` … `_setup_dynamic_scene`，878–1128） | 10 / 223 | 54 | 156 | 21.0 | 多处 | 4 个 | 高（所有页面都经过） |
+
+（另有一支 `_add_save_button`（3340–3345）全仓 0 调用方，是死代码，不归簇、本刀不动。）
+
+**为什么选「标题页 / 开场」**：按比值，P（0.6）和 Q（1.5）一个排第 1、一个排第 4。两簇其实是同一张页，只是在源码里分成两段：
+Q 的 `_setup_title_mode` 排卷首标题页和四方沙盘（type=title 各页），`_on_start_game_pressed` 是「开卷 / 翻页」钮的回调；
+P 里的 `_play_opening` / `_on_opening_finished` / `_on_rewatch_opening` 是标题页上「重看开场」钮和开场演完后重演标题演出的那一套，和 Q 共用 `title_mode`、TitleStage、`_rewatch_button`。
+P 另外两支 `start_game`（开局入口，`_ready` 里 `call_deferred("start_game")`、海图回港也走它）和 `_on_monthly_notice`（月报信号）是开局流程，不属页面，**不搬**。
+合起来 5 支：簇外调 3（`start_game` → `_play_opening`、`_dress_title` 接「重看开场」钮、`_load_scene_inner` → `_setup_title_mode`），他处代码引用 2（check_symbols 两处，都经 read_main_src），**引用 / 支 = 1.0**。
+没有门禁直读 Main.gd 切这 5 支，verify_economy / smoke / verify_story_data 都不读它们；唯一写的 Main 成员是 `title_button_connected`；不含虚函数；没有 lambda。
+比值更低或相近的其余几簇：A、H 高风险（理由见第五 / 七刀）；R 只 1 支，是住处的兴化分支，更适合以后并进 ResidencePage；D 只是两支调试钩子。
+
+**切面**（两段；`start_game` / `_on_monthly_notice` 夹在第一段前面，留 Main）：
+
+| 支 | 行段（含 `##`） | 做什么 | 被谁调（Main 内 / 他处） |
+|---|---|---|---|
+| `_play_opening(from_black := false)` | 636–639 | `_CS_PLAYER.play` 起播开场；有节点就把 `finished` 一次性接到 `_on_opening_finished` | `start_game`（新开一局）、`_on_rewatch_opening` |
+| `_on_opening_finished()` | 642–648 | 开场演完：还停在标题页就让 TitleStage `replay` | 开场过场 `finished` 信号 |
+| `_on_rewatch_opening()` | 651–652 | `_play_opening(false)` | 「重看开场」钮（`_dress_title` 接线） |
+| `_setup_title_mode(scene_data)` | 2296–2338 | 切到标题模式，题名 / 副题换行居中，断开旧连接后把「开卷」钮 bind 到 `_on_start_game_pressed(next)`，占位钮文改「开卷 / 翻页」，三副钮显隐，`_TITLE_STAGE.present` | `_load_scene_inner`（type=title） |
+| `_on_start_game_pressed(next_scene)` | 2341–2354 | 从卷首 / 入酒棚走序章题签 `play_transition`（全黑时 `load_scene`），沙盘中间翻页直接 `load_scene` | 「开卷 / 翻页」钮（协程） |
+
+**跨切依赖**（全部经 `main.` 取，搬出件不存状态）：
+- state：写 `title_button_connected` 1 处（读 1 处）；读 `current_scene_id` 2。
+- ui：`start_button` 7、`main_title` 5、`title_mode` / `sub_title` / `_rewatch_button` 各 4、`_resume_button` / `_codex_title_button` 各 3，`port_mode` / `npc_mode` / `investigation_mode` 各 1；`_show_strip` / `_close_ledger` / `_unescape_scene_text` 各 1。
+- msg：`load_scene` 3（1 直调 + 2 个 bind）、`play_transition` 2。
+- 常量（preload）：`_CINE` 4、`_CS_PLAYER` / `_UI_TRANSITION` 各 2、`_TITLE_STAGE` 1，都留 Main。
+- autoload：GameManager 3、Calendar 2、SaveLoad 2、UiTheme 1。
+- 回连的信号目标 3 个：`_on_start_game_pressed.bind(next_scene)`、`_on_opening_finished`（CONNECT_ONE_SHOT）、`_on_rewatch_opening`（在 `_dress_title` 里接），都仍指向 Main。
+
+**断言 / 探针引用点**（拆前逐个核过，行号按基 `c9d0e14`）：
+
+| 引用点 | 怎么读 | 拆后 |
+|---|---|---|
+| `check_symbols.py:3270`（序章开卷 / 入酒棚走 `play_transition` + 两个题签助手 + `begins_with("cg_narrate")`） | `func_bodies(read_main_src())` 取 `_on_start_game_pressed` | 拼回即原文 → **不用改**（登记 main_splits 即可；漏登记实测红，cs17 另报「只取到一行转发」） |
+| `check_symbols.py:3692`（标题模式读 cg_title / cg_sub、`\A` 经 `_unescape_scene_text` 换行） | 同上，取 `_setup_title_mode` | 同上 |
+| `qa_title_probe.gd`（卷首 / 序章题签截图 5 张；`--contract` 验非渲染断言）、ShotTour title / title_anim / page_cg_* 站点、`qa_companion_preview_screenshots.gd` | 走真页面（`load_scene("cg_title")`、按「开卷」「重看开场」钮、找 TitleStage） | 页面、钮文、节点名都不变，不用改 |
+| `p7_guild_exam_smoke.gd`、`legacy/p7_smoke.gd`、`godot_story_check.gd`、ShotTour 里提到 `start_game` 的几处 | 注释 / `call_deferred("start_game")` 的等待 | `start_game` 留 Main，不用改 |
+| verify_economy / smoke / verify_story_data / check_assets / simulate_* | 不读这 5 支 | 无关 |
+
+### 落地
+
+- `scripts/ui/TitlePage.gd`（新增，`.uid` 同 commit）：5 支原样搬成 `static func`（play_opening / on_opening_finished / on_rewatch_opening / setup_title_mode / on_start_game_pressed），都带 `main` 形参，Main 成员一律加 `main.` 前缀，簇内互调、信号目标也经 `main.` 走 Main 的转发；
+  `_CS_PLAYER.play(self, …)` 的 `self` 写成 `main`（拼回规则把裸 `main` 换回 `self`）。经 `main.` 取值推断不出类型，3 处 `:=` 改为与原推断相同的显式类型（Node、bool ×2）。
+- Main.gd **4275 → 4220（−55）**（开工基 `08ca2a4` 上是 4527 → 4472），func 数不变（233）：5 支都留同名同签名一行转发（`const _TITLE := preload(...)`）；`_on_start_game_pressed` 转发写 `await`，协程语义不变。
+- 门禁同步：本节标题登记拆出件，`python3 tools/gen_main_splits.py --write` 重生成 `tools/main_splits.txt`；`godot_compile_check` 的 SCRIPTS 加 1 行。
+  verify_economy / smoke 没有读这 5 支的切片，**读取口径不用改**；check_symbols 两处源码断言经 read_main_src 拼回，条件一条没改、没放宽。
+  verify_story_data 的 L1B 人物原稿读取入口清单加 `scripts/ui/TitlePage.gd`（`{"api"}`：标题页「人物志」钮显隐的 `all_characters()` 随 `_setup_title_mode` 搬过来；不登记实测红「不在 L1B 读取入口清单却读人物数据」）。清单按类别与实际读取一字不差比，Main.gd 岸带仍读 `all_characters()`，它那条照留、只改说明。
+- 新加一条钉子（check_symbols 九之七，只收紧，口径同第八刀市舶司页）：5 支在 Main 里须是一行转发到 `_TITLE` 的同名 static func、拆出件里真有那支、Main 真 preload 了它；5 个名字登记进 `NAMED_FUNCS` 的 `scripts/Main.gd` 组。
+  起因：只把某一支挪回 Main 再跑 `gen_main_splits --write`，清单跟着改、「一之零」变绿，两处源码断言拼回的还是同一段原文，也绿（lane cs18 在收的那类静默跳过）。
+- 拼回原文：`read_main_src()` 拼回的 5 支和基线逐行比，只差上面 3 行 `:=`。
+
+### 下一刀候选（行数按基 c9d0e14）
+
+1. **R 玉湖陈宅**（1 / 47）并进 ResidencePage：只 ResidencePage 经 `main.` 调它，没有门禁直读；住处这一页就齐了。
+2. **D 调试**（2 / 36）：check_symbols 一处经 read_main_src 读 `_debug_jump_port`，F11 / F12 键位判断留在 `_unhandled_input`。顺带定一下死代码 `_add_save_button` 删不删（要拍板，不归拆刀）。
+3. **O 浮页**（8 / 82）：两个 lambda 回写 Main 的浮页句柄，qa_wire_vision / qa_letterbox_copy 直读 Main.gd 查 `_open_vision_stage` 字样（转发留名，不会红）；中风险。
+4. **A / E / H / I / K / B / X** 风险高，仍先做「Main 家族源码」共用 helper 的门禁 lane（第五 / 七 / 九刀候选）。

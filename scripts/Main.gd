@@ -134,6 +134,10 @@ const _RESIDENCE := preload("res://scripts/ui/ResidencePage.gd")
 ## _on_hire_crew / _on_upgrade / _on_buy_supplies 都是同名同签名一行转发，调用点与信号目标不变；_upgrade_busy、_fit_rank /
 ## _sail_fit_phrase / _armor_fit_phrase 仍在这里。
 const _YARD := preload("res://scripts/ui/ShipyardPage.gd")
+## 标题页 / 开场（卷首标题页与四方沙盘的版面、「开卷 / 翻页」路由与序章题签、三个副钮显隐、开场过场起播与演完重演标题演出）的实现在
+## scripts/ui/TitlePage.gd（Lane main11 第十一刀拆出）；这里的 _play_opening / _on_opening_finished / _on_rewatch_opening /
+## _setup_title_mode / _on_start_game_pressed 都是同名同签名一行转发，调用点与信号目标不变；start_game、title_button_connected 仍在这里。
+const _TITLE := preload("res://scripts/ui/TitlePage.gd")
 ## 活背景幅度：比引擎默认再收一档（正文底下的画不能晃得人头晕）
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
@@ -634,22 +638,16 @@ func start_game() -> void:
 
 
 func _play_opening(from_black := false) -> void:
-	var p: Node = _CS_PLAYER.play(self, _CINE.OPENING, _CINE.DATA, from_black)
-	if p != null:
-		p.connect("finished", _on_opening_finished, CONNECT_ONE_SHOT)
+	_TITLE.play_opening(self, from_black)
 
 
 ## 开场演完（此刻全黑）：还停在标题页就把标题演出从头再来，黑幕退去时正好看见题名写出、印落下
 func _on_opening_finished() -> void:
-	if not title_mode.visible:
-		return
-	var stage := title_mode.get_node_or_null("TitleStage")
-	if stage != null:
-		stage.call("replay")
+	_TITLE.on_opening_finished(self)
 
 
 func _on_rewatch_opening() -> void:
-	_play_opening(false)
+	_TITLE.on_rewatch_opening(self)
 
 
 ## 人物志：一层浮页盖在当前画面上（港口页底、标题页进）。focus_id 非空直接开此人详页。不入存档。
@@ -2294,64 +2292,11 @@ func _on_npc_leave() -> void:
 # ══════════════════════════════════════════════════════
 
 func _setup_title_mode(scene_data: Dictionary) -> void:
-	_show_strip(false)
-	_close_ledger()
-	investigation_mode.visible = false
-	port_mode.visible = false
-	npc_mode.visible = false
-	title_mode.visible = true
-
-	main_title.text = scene_data.get("cg_title", "东亚海域立志传")
-	# 长标题与分段副标题按宽换行居中（云端 c148/00b4）；盒宽与字号由 Main.tscn / 绢本主题定，不在此覆盖。
-	main_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	main_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UiTheme.sync_title_logo(main_title)
-	sub_title.text = _unescape_scene_text(str(scene_data.get("cg_sub", "")))
-	sub_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sub_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-	if title_button_connected:
-		for c in start_button.pressed.get_connections():
-			start_button.pressed.disconnect(c.callable)
-
-	var choices = scene_data.get("choices", [])
-	var next_scene = "prologue_tabletop"
-	if choices.size() > 0:
-		start_button.text = choices[0].get("label", "开始旅程")
-		next_scene = choices[0].get("next", "prologue_tabletop")
-
-	start_button.pressed.connect(_on_start_game_pressed.bind(next_scene))
-	title_button_connected = true
-
-	# 起始标题页：占位的「…………」换成「开卷」（路由照旧取 choices[0].next），另给「重看开场」；
-	# 卷首四方沙盘的「…………」只改显示为「翻页」（数据与路由不动）。标题演出（书法写出、引首章、分段逐行洇出）见 TitleStage。
-	var is_start := current_scene_id == str(GameManager.scenes_data.get("start_scene", "cg_title"))
-	if start_button.text.replace("…", "").strip_edges() == "":
-		start_button.text = "开卷" if is_start else "翻页"
-	_rewatch_button.visible = is_start and _CS_PLAYER.has_cutscene(_CINE.OPENING, _CINE.DATA)
-	_codex_title_button.visible = is_start and not GameManager.all_characters().is_empty()
-	var has_save := false
-	for slot in range(1, SaveLoad.SLOTS + 1):
-		has_save = has_save or SaveLoad.has_save(slot)
-	_resume_button.visible = is_start and has_save
-	_rewatch_button.get_parent().visible = _rewatch_button.visible or _codex_title_button.visible or _resume_button.visible
-	_TITLE_STAGE.present(title_mode, main_title, sub_title, [start_button, _resume_button, _rewatch_button, _codex_title_button], is_start)
+	_TITLE.setup_title_mode(self, scene_data)
 
 
 func _on_start_game_pressed(next_scene: String) -> void:
-	# 卷首「开卷」与沙盘末翻入酒棚：走论文纪实题签（UiTransition）；四方沙盘中间翻页仍靠 TitleStage 节奏，不加墨幕。
-	# headless / 巡检下 play_transition 当帧直通，不拖门禁。
-	var start_id := str(GameManager.scenes_data.get("start_scene", "cg_title"))
-	var from_start := current_scene_id == start_id
-	var into_shed := str(next_scene).begins_with("cg_narrate")
-	if from_start:
-		await play_transition(_UI_TRANSITION.prologue_open_title(), Calendar.get_date_string(),
-			load_scene.bind(next_scene), "序")
-	elif into_shed:
-		await play_transition(_UI_TRANSITION.prologue_shore_title(), Calendar.get_date_string(),
-			load_scene.bind(next_scene), "序")
-	else:
-		load_scene(next_scene)
+	await _TITLE.on_start_game_pressed(self, next_scene)
 
 
 func _setup_port_mode(scene_data: Dictionary) -> void:
