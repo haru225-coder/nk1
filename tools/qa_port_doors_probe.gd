@@ -4,12 +4,15 @@ extends SceneTree
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_port_doors_probe.gd   # 截图门禁（须出 5 张）
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_port_doors_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_port_doors_probe.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("port-doors")
 const TAG := "QA_PORT_DOORS"
 const EXPECTED_SHOTS := 5
 const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
 ## 与 Main.GENERIC_FACILITIES / DOOR_TIP 对齐的契约（副题短标签）
 const EXPECT_SUB := {
@@ -54,6 +57,7 @@ func _run() -> void:
 	var cal: Node = root.get_node("/root/Calendar")
 	var packed: PackedScene = load("res://scenes/Main.tscn")
 	_main = packed.instantiate()
+	Clock.frame_pressure(self)
 	root.add_child(_main)
 	await _settle(10)
 
@@ -174,9 +178,11 @@ func _expect(cond: bool, msg: String) -> void:
 		_fails.append(msg)
 
 
+## 先过 n 帧（排版 / 延迟调用 / 逐帧演出按帧走），再等补间演完；墙钟上界见 probe_clock.gd
 func _settle(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_fails.append("演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+		print("  ✗ 演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
 
 
 func _shot(stem: String) -> void:

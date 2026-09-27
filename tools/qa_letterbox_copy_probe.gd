@@ -5,6 +5,10 @@ extends SceneTree
 ## 默认严格：须出 4 张；headless / 空视口 / 一色空图 / 张数不足一律非零退出（shot_gate.gd）。
 ## 契约模式（显式）：godot --headless --path /workspace/nk1 -s res://tools/qa_letterbox_copy_probe.gd -- --contract
 ##   只验静态题签契约与禁词，不截图。
+## 推进口径（lane gd14）：stage_ready 与布景自带墨边收场按墙钟上界等；VisionStage 开场按 process_frame 逐帧演，
+##   40 帧（题签 20 帧擦满、飘字 18 帧升到顶）照旧按帧；台上唯一按 delta 走的自动齐射关掉（auto_volley=false）。
+##   墨边 caption_shown / finished 的上界在 combat_probe_stage.wait_signal / wait_until（lane gd11 改墙钟）。
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_letterbox_copy_probe.gd
 
 const VIEW := Vector2i(1280, 720)
 var OUT_DIR := ShotGate.out_dir("letterbox")
@@ -15,6 +19,7 @@ const EXPECTED_SHOTS := 4
 const ShotGate := preload("res://tools/shot_gate.gd")
 const CombatStage := preload("res://tools/combat_probe_stage.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
 ## 玩家可见禁词（营销腔 + 残留现代 UI）
 const BAD := ["惊艳", "沉浸", "打造", "视觉盛宴", "离开展示", "立绘裱框"]
@@ -53,14 +58,13 @@ func _run() -> void:
 		return
 	var packed := load(STAGE) as PackedScene
 	var stage: Control = packed.instantiate()
+	stage.set("auto_volley", false)
+	Clock.frame_pressure(self)
 	var ready_flag: Array = [false]
 	if stage.has_signal("stage_ready"):
 		stage.stage_ready.connect(func(): ready_flag[0] = true)
 	root.add_child(stage)
-	var frames := 0
-	while frames < 90 and not ready_flag[0]:
-		await process_frame
-		frames += 1
+	_expect(await Clock.until(self, func() -> bool: return ready_flag[0]), "VisionStage 发出 stage_ready")
 	for _i in 40:
 		await process_frame
 	await _shot("01_vision_slip")
@@ -87,8 +91,14 @@ func _run() -> void:
 	# → queue_free()；下面再调 wm.queue_free() 就报「previously freed instance」，_run 协程中断、
 	# quit() 没人调，DISPLAY 下挂到 timeout。add_child 当帧只冻敌炮，理由见 combat_probe_stage.gd。
 	_expect(CombatStage.freeze_enemy_fire(wm) == 2, "布景敌船开炮已冻住（2 艘）")
-	for _i in 30:
-		await process_frame
+	# 等布景自带的入战墨边（挂在 wm 下，约 3.2 s）收场再起本探针那副（lane gd14）：原先数 30 帧，快机上只合 0.13 s，
+	# 本探针的墨边上场把它顶掉（_abort）；慢帧下它已自己演完——走哪条路随帧率变
+	if not await Clock.until(self, func() -> bool: return _letterbox_under(wm) == null):
+		_bail("布景自带的入战墨边 %d ms 内没收场" % Clock.WAIT_MS, wm, gm)
+		return
+	if CombatStage.standing_fail(wm) != "":
+		_bail(CombatStage.standing_fail(wm), wm, gm)
+		return
 	var sub := "咸淳三年六月十二　%s" % Letterbox.enemy_note(enemy)
 	var lb := Letterbox.enter(root, Letterbox.sea_title("刺桐外海", "遇敌"), sub)
 	_expect(lb != null, "有窗口时入战墨边未上场")
@@ -131,6 +141,16 @@ func _run() -> void:
 	var why := CombatStage.standing_fail(wm)
 	_expect(why == "", why if why != "" else "布景海战在探针演示中未自行结算")
 	_end(wm, gm)
+
+
+## parent 下正在演的墨边；parent 已释放也返回 null（调用方另查 standing_fail）
+func _letterbox_under(parent) -> Node:
+	if parent == null or not is_instance_valid(parent):
+		return null
+	for n in get_nodes_in_group(Letterbox.GROUP):
+		if n.get_parent() == parent and not n.is_queued_for_deletion():
+			return n
+	return null
 
 
 func _check_copy_contracts() -> void:

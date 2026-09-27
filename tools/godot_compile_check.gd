@@ -85,6 +85,7 @@ const SCRIPTS := [
 	"res://tools/qa_yard_transition_probe.gd",
 	"res://tools/combat_vfx_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
 	"res://tools/vision_stage_probe.gd", "res://tools/vision_letterbox_probe.gd", "res://tools/letterbox_signal_probe.gd",
+	"res://tools/probe_clock.gd",
 	"res://tools/art/vision_fill_gen.gd", "res://tools/art/vision_fill_shots.gd",
 	"res://tools/art/tour_sheet.gd",
 ]

@@ -4,6 +4,8 @@ extends SceneTree
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_voyage_status_probe.gd   # 截图门禁（须出 6 张）
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_voyage_status_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 默认严格须出 6 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_voyage_status_probe.gd
 ## -s 勿用 autoload 标识符。
 
 const VIEW := Vector2i(1280, 720)
@@ -12,6 +14,7 @@ var OUT_DIR := ShotGate.out_dir("voyage")
 const TAG := "QA_VOYAGE"
 const EXPECTED_SHOTS := 6
 const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
 var _chart: Node
 var _saved: Array = []
@@ -33,6 +36,7 @@ func _run() -> void:
 	if not _contract:
 		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_VOYAGE_BEGIN")
+	Clock.frame_pressure(self)
 	_check_wiring()
 
 	var packed: PackedScene = load("res://scenes/Main.tscn")
@@ -79,6 +83,7 @@ func _run() -> void:
 	_expect(body.find("十次") < 0, "船况无「十次」教程括注")
 	_expect(body.find("日速") < 0, "船况无「日速」工程口吻")
 	_expect(body.find("航段") >= 0 or dest == "", "有航段细节或无去处")
+	_expect_condition_full()
 	await _shot("01_condition_baseline")
 	_chart.call("_close_condition")
 	await _frames(4)
@@ -98,6 +103,7 @@ func _run() -> void:
 	body = _status_bbcode()
 	_expect(body.find("剩") >= 0 or body.find("限今日") >= 0 or body.find("已逾") >= 0, "船况委办短限日")
 	_expect(body.find("截止") < 0 and body.find("逾期") < 0, "船况无「截止/逾期」现代词")
+	_expect_condition_full()
 	await _shot("02_condition_contract")
 	_chart.call("_close_condition")
 	await _frames(3)
@@ -122,6 +128,7 @@ func _run() -> void:
 		body = _status_bbcode()
 		_expect(body.find("行成") >= 0, "船况航行「行成」")
 		_expect(body.find("/ 100") < 0, "船况无「/ 100」")
+		_expect_condition_full()
 		await _shot("05_condition_sailing")
 		_chart.call("_close_condition")
 		await _frames(2)
@@ -141,6 +148,7 @@ func _run() -> void:
 	await _frames(3)
 	_chart.call("_toggle_condition")
 	await _frames(8)
+	_expect_condition_full()
 	await _shot("06_condition_alert")
 
 	_report()
@@ -192,9 +200,17 @@ func _strip_bbcode() -> String:
 	return "" if lab == null else str(lab.text)
 
 
+## 先过 n 帧（排版 / 延迟调用按帧），再等补间演完（进海图面纱 0.55 s、船况层淡入 0.16 s）；墙钟上界见 probe_clock.gd
 func _frames(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_expect(false, "演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+
+
+## 截船况层前：层已淡入满（原先数 8–10 帧，快机上只合 40 ms，截的是半透明层）
+func _expect_condition_full() -> void:
+	var layer = _chart.get("_condition_layer") if is_instance_valid(_chart) else null
+	var a: float = float(layer.modulate.a) if layer != null and bool(layer.visible) else 0.0
+	_expect(a >= 1.0, "船况层已淡入满（a=%.2f）" % a)
 
 
 func _shot(name: String) -> void:

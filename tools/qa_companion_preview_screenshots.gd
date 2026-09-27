@@ -4,12 +4,15 @@ extends SceneTree
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_companion_preview_screenshots.gd -- --contract
 ## 截图缺张 / 空视口 / 一色空图 / headless 未开 --contract 一律非零退出（shot_gate.gd）；浮页断言仍只记 warn。
 ## -s 勿用 autoload 标识符（Calendar/Voyage 等）；Main 用 load 实例化。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_companion_preview_screenshots.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("companions")
 const TAG := "QA_COMPANION"
 const EXPECTED_SHOTS := 4
 const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
 var _main: Node
 var _saved: Array = []
@@ -40,6 +43,7 @@ func _run() -> void:
 
 	var packed: PackedScene = load("res://scenes/Main.tscn")
 	_main = packed.instantiate()
+	Clock.frame_pressure(self)
 	root.add_child(_main)
 	await _settle(12)
 
@@ -95,9 +99,11 @@ func _run() -> void:
 		quit(ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _shot_fails))
 
 
+## 先过 n 帧（排版 / 延迟调用 / 逐帧演出按帧走），再等补间演完；墙钟上界见 probe_clock.gd
 func _settle(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_fails.append("演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+		print("  ✗ 演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
 
 
 func _shot(name: String) -> void:

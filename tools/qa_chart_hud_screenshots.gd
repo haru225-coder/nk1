@@ -4,6 +4,8 @@ extends SceneTree
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chart_hud_screenshots.gd   # 截图门禁（须出 5 张）
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_chart_hud_screenshots.gd -- --contract   # 只验非渲染断言，不截图
 ## 默认严格须出 5 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chart_hud_screenshots.gd
 ## 注意：本脚本勿在顶层类型标注 MapView（-s SceneTree 编译期尚无 autoload，会连带 MapView 编不过）。
 
 const VIEW := Vector2i(1280, 720)
@@ -12,6 +14,7 @@ const WM_SCENE := "res://scenes/WorldMap.tscn"
 const TAG := "QA_CHART_HUD"
 const EXPECTED_SHOTS := 5
 const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
 var _out_dir := ShotGate.out_dir("chart")
 var _chart: Node
@@ -37,6 +40,7 @@ func _run() -> void:
 	if not _contract:
 		DirAccess.make_dir_recursive_absolute(_out_dir)
 	print("QA_CHART_HUD_BEGIN")
+	Clock.frame_pressure(self)
 	_check_wiring()
 
 	# 先挂 Main，让 autoload / class_name 与游戏一致（与 patrol_shell 同路径）
@@ -87,8 +91,9 @@ func _run() -> void:
 		var traveled := far_d * 0.58
 		var at: Dictionary = voyage.point_along_track("quanzhou", far, traveled)
 		var tw = map.call("move_ship_lonlat", float(at["lon"]), float(at["lat"]), voyage.bearing_at("quanzhou", far, traveled), 0.58, 0.01)
-		if tw is Tween:
-			await (tw as Tween).finished
+		# 裸 await finished：补间被 kill（再调 move_ship_lonlat）就永不返回；改带墙钟上界
+		if tw is Tween and not await Clock.until(self, func() -> bool: return not (tw as Tween).is_running()):
+			_expect(false, "船标补间 %d ms 内没走完" % Clock.WAIT_MS)
 		var ship: Node2D = map.get("ship")
 		if ship:
 			map.call("frame_rect", Rect2(ship.position, Vector2.ZERO), 0.0, 0.0)
@@ -119,6 +124,7 @@ func _run() -> void:
 	await _shot("03_alert_strip")
 	_chart.call("_toggle_condition")
 	await _frames(12)
+	_expect(_condition_alpha() >= 1.0, "船况层已淡入满（a=%.2f）" % _condition_alpha())
 	await _shot("04_alert_condition")
 
 	# ── 05 小地图：卸海图、藏 Main，只留 WorldMap HUD 雷达 ──
@@ -168,9 +174,16 @@ func _visible_strings(src: String) -> String:
 	return "\n".join(out)
 
 
+## 先过 n 帧（排版 / 延迟调用按帧），再等补间演完（进海图面纱 0.55 s、船况层淡入 0.16 s）；墙钟上界见 probe_clock.gd
 func _frames(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_expect(false, "演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+
+
+## 船况层不透明度（0 = 未开）
+func _condition_alpha() -> float:
+	var layer = _chart.get("_condition_layer") if is_instance_valid(_chart) else null
+	return float(layer.modulate.a) if layer != null and bool(layer.visible) else 0.0
 
 
 func _shot(name: String) -> void:

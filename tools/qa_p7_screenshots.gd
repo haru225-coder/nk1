@@ -5,12 +5,15 @@ extends SceneTree
 ## 默认严格：须出 8 张；headless / 空视口 / 一色空图 / 张数不足一律非零退出。
 ## 契约模式（显式）：godot --headless --path . -s res://tools/qa_p7_screenshots.gd -- --contract
 ##   只验按钮与 flag 写入，不截图，收尾打 QA_P7_SHOTS_CONTRACT_OK。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_p7_screenshots.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("polish")
 const TAG := "QA_P7_SHOTS"
 const EXPECTED_SHOTS := 8
 const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
 var _main: Node
 var _gs: Node
@@ -32,11 +35,11 @@ func _run() -> void:
 		return
 	if not _contract:
 		DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	Clock.frame_pressure(self)
 	_gs = root.get_node("GameState")
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
 	root.add_child(_main)
-	for _i in 8:
-		await process_frame
+	await _settle(8)
 
 	# Enough cash + credit to show join as available (fee 2000, credit 8).
 	_gs.money = maxi(int(_gs.money), 5000)
@@ -66,8 +69,7 @@ func _run() -> void:
 		_fails.append("泉州入行按钮缺失，无法拍已入行态")
 	else:
 		join_btn.pressed.emit()
-		for _i in 4:
-			await process_frame
+		await _settle(4)
 		await _shot("05_quanzhou_guild_joined")
 		if not _gs.has_flag("guild_quanzhou"):
 			_fails.append("入行后未写 guild_quanzhou")
@@ -79,8 +81,7 @@ func _run() -> void:
 		_fails.append("贡院赴试按钮缺失，无法拍已赴试态")
 	else:
 		sit_btn.pressed.emit()
-		for _i in 4:
-			await process_frame
+		await _settle(4)
 		await _shot("06_quanzhou_exam_sat")
 		if not _gs.has_flag("exam_sat_ch1"):
 			_fails.append("赴试后未写 exam_sat_ch1")
@@ -108,8 +109,7 @@ func _open_and_shot(scene_id: String, name: String, must_btn: String) -> void:
 
 func _goto(scene_id: String) -> void:
 	_main.load_scene(scene_id)
-	for _i in 5:
-		await process_frame
+	await _settle(5)
 	# Force a draw so get_texture is not a prior frame.
 	RenderingServer.force_draw()
 	await process_frame
@@ -127,6 +127,12 @@ func _shot(name: String) -> void:
 		var corner := img.get_pixel(8, 8)
 		if sample.get_luminance() < 0.02 and corner.get_luminance() < 0.02:
 			_fails.append("真失败：%s 截屏过暗 lum=%.3f/%.3f" % [name, sample.get_luminance(), corner.get_luminance()])
+
+
+## 先过 n 帧（排版 / 延迟调用按帧），再等补间演完；墙钟上界见 probe_clock.gd
+func _settle(n: int) -> void:
+	if not await Clock.settle(self, n):
+		_fails.append("演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
 
 
 func _button_with_text(root_node: Node, text: String) -> Button:

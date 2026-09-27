@@ -3,6 +3,8 @@ extends SceneTree
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_patrol_pack_screenshots.gd
 ## 只截证据，不改玩法。
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_patrol_pack_screenshots.gd -- --contract   # 只验非渲染断言，不截图
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_patrol_pack_screenshots.gd
 ## 默认严格须出 11 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2(1280, 720)
@@ -11,6 +13,7 @@ const CHART_SCENE := "res://scenes/SeaChart.tscn"
 const TAG := "QA_PATROL_PACK"
 const EXPECTED_SHOTS := 11
 const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
 var _main: Node
 var _gs: Node
@@ -34,6 +37,7 @@ func _run() -> void:
 	if not _contract:
 		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_PATROL_PACK_BEGIN")
+	Clock.frame_pressure(self)
 
 	_gs = root.get_node("GameState")
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
@@ -88,6 +92,8 @@ func _run() -> void:
 	root.add_child(ov)
 	ov.call("begin", "chen_wenlong")
 	await _frames(14)
+	# 名册浮页淡入 0.18 s（原先数 14 帧，快机上只合 60 ms）
+	_expect(ov.modulate.a >= 1.0, "名册浮页已淡入满（a=%.2f）" % ov.modulate.a)
 	await _shot("06_roster_panel")
 	var roster = ov.get("_roster")
 	if roster != null and roster.has_method("_on_tab"):
@@ -143,8 +149,9 @@ func _run() -> void:
 		var traveled := far_d * 0.58
 		var at: Dictionary = voyage.point_along_track("quanzhou", far, traveled)
 		var tw = map.call("move_ship_lonlat", float(at["lon"]), float(at["lat"]), voyage.bearing_at("quanzhou", far, traveled), 0.58, 0.01)
-		if tw is Tween:
-			await (tw as Tween).finished
+		# 裸 await finished：补间被 kill（再调 move_ship_lonlat）就永不返回；改带墙钟上界
+		if tw is Tween and not await Clock.until(self, func() -> bool: return not (tw as Tween).is_running()):
+			_expect(false, "船标补间 %d ms 内没走完" % Clock.WAIT_MS)
 		var ship: Node2D = map.get("ship")
 		if ship:
 			map.call("frame_rect", Rect2(ship.position, Vector2.ZERO), 0.0, 0.0)
@@ -230,9 +237,19 @@ func _shot(name: String) -> void:
 		_fails.append("截屏过暗 %s avg_lum=%.3f" % [name, avg_lum])
 
 
+## 先过 n 帧（排版 / 延迟调用按帧），再等补间演完（名册淡入 0.18 s、立像淡入 0.22 s、进海图面纱 0.55 s）；
+## 墙钟上界见 probe_clock.gd
 func _frames(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_expect(false, "演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+
+
+func _expect(cond: bool, msg: String) -> void:
+	if cond:
+		print("OK ", msg)
+	else:
+		_fails.append(msg)
+		print("FAIL ", msg)
 
 
 func _button_with_text(root_node: Node, text: String) -> Button:

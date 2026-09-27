@@ -10,15 +10,22 @@ extends SceneTree
 ##   abort ：被新墨边顶掉（题签前 / 全黑前），以及演完当帧又起一副（旧的还在组里）
 ##   bail  ：探针等不到信号判红收尾——CombatStage.teardown（探针 _bail 与正常收尾同走这一条）
 ##   parent：墨边挂在布景下、随布景一起被释放，不经 _abort（WorldMap._try_letterbox_enter 即此形状）
+## 推进口径（lane gd14）：「题签前 / 全黑前」收尾按墨边相位下手（已上场、进度信号还没发），下手当刻把前提写成断言，
+##   不数帧（原先数 3 帧：每帧 delta 封顶 0.133 s，3 帧至多 0.4 s，落不过 1.12 s 题签，本不会错；改写是让前提可见）。
+##   每幕只按墙钟 SCENE_MS 等（原另有 6000 帧兜底，快机上 6000 帧只合 25 s，从来不先到，删）。
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/letterbox_signal_probe.gd
 
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const CombatStage := preload("res://tools/combat_probe_stage.gd")
 const GateReport := preload("res://tools/gate_report.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 const TAG := "LETTERBOX_SIGNAL_PROBE"
 const VIEW := Vector2i(1280, 720)
-## 每幕墙钟上界：最长一幕（出战带 on_black）约 3.5 s；帧数另有 CombatStage.WAIT_FRAMES 兜底
-const SCENE_MS := 8000
+## 每幕墙钟上界：最长一幕（出战带 on_black）约 3.5 s 游戏时间。原 8 s：慢过 7.5 fps 时每帧 delta 封顶 0.133 s，
+## 游戏时间比墙钟慢（每帧 400 ms 时 3 倍，这一幕要 10.5 s 墙钟），压帧下误报「挂死」（lane gd14 实测）；
+## 20 s：每帧 400 ms 时仍留近一倍余量
+const SCENE_MS := 20000
 const PATHS := ["finish", "abort", "bail", "parent"]
 
 var _fails: Array = []
@@ -39,6 +46,7 @@ func _run() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--only="):
 			only = a.trim_prefix("--only=")
+	Clock.frame_pressure(self)
 	if only != "" and not only in PATHS:
 		_fails.append("--only=%s 不认（可选 %s）" % [only, "/".join(PATHS)])
 		_report()
@@ -70,7 +78,7 @@ func _path_finish() -> void:
 func _path_abort() -> void:
 	# 题签擦出前被顶掉：caption_shown 不补发（假信号），finished 照发
 	var w := _watch(Letterbox.enter(root, "外洋・遇敌"))
-	await _frames(3)
+	await _before(w, "abort/题签前")
 	var nx := _watch(Letterbox.enter(root, "外洋・再遇"))
 	await _settle(w)
 	_expect_row("abort/题签前", w, {"caption": 0, "covered": 0, "on_black": 0})
@@ -79,7 +87,7 @@ func _path_abort() -> void:
 
 	# 全黑前被顶掉：补调 on_black（先发 covered），finished 照发
 	w = _watch_exit_black()
-	await _frames(3)
+	await _before(w, "abort/全黑前")
 	nx = _watch(Letterbox.enter(root, "外洋・遇敌"))
 	await _settle(w)
 	_expect_row("abort/全黑前", w, {"caption": 0, "covered": 1, "on_black": 1})
@@ -111,7 +119,7 @@ func _path_bail() -> void:
 	wm.name = "StandInWorldMap"
 	root.add_child(wm)
 	var w := _watch_exit_black(func() -> void: wm.queue_free())
-	await _frames(3)
+	await _before(w, "bail/全黑前")
 	CombatStage.teardown(self, wm, null)
 	await _settle(w)
 	_expect_row("bail/出战带on_black（全黑前）", w, {"caption": 0, "covered": 1, "on_black": 1})
@@ -135,7 +143,7 @@ func _path_parent() -> void:
 	host.name = "StandInWorldMap"
 	root.add_child(host)
 	var w := _watch(Letterbox.enter(host, "刺桐外海・遇敌"))
-	await _frames(3)
+	await _before(w, "parent/题签前")
 	host.queue_free()
 	await _settle(w)
 	_expect_row("parent/题签前随父释放", w, {"caption": 0, "covered": 0, "on_black": 0})
@@ -183,14 +191,22 @@ func _raw_waiter(lb: CanvasLayer, w: Dictionary) -> void:
 	w.raw_await = true
 
 
-## 等这一幕终结（裸 await 醒了）或到墙钟 / 帧数上界；再多停几帧，让「同帧又起一副」之类的补发有机会冒出来
+## 等这一幕终结（裸 await 醒了）或到墙钟上界；再多停 4 帧，让「同帧又起一副」之类的补发有机会冒出来
+## （补发走 call_deferred / 下一帧的 _process，按帧等是对的）
 func _settle(w: Dictionary) -> void:
-	var deadline := Time.get_ticks_msec() + SCENE_MS
-	var frames := 0
-	while not w.raw_await and Time.get_ticks_msec() < deadline and frames < CombatStage.WAIT_FRAMES:
-		await process_frame
-		frames += 1
+	await Clock.until(self, func() -> bool: return w.raw_await, SCENE_MS)
 	await _frames(4)
+
+
+## 「题签前 / 全黑前」下手的时刻：墨边已真演起来（上边合拢补间走过一帧），进度信号一个都还没发。
+## 下手当刻复核：已发了说明墨边时序变了（题签 / 全黑比合拢先到），本行前提不成立——记红，不把别的路径当这条验。
+func _before(w: Dictionary, tag: String) -> void:
+	var lb = w.lb
+	await Clock.until(self, func() -> bool:
+		return lb == null or not is_instance_valid(lb) or (lb.get("_top") as Control).size.y > 0.0, SCENE_MS)
+	_check(w.caption == 0 and w.covered == 0 and w.finished == 0,
+		"%s：下手时墨边已上场、进度信号未发" % tag,
+		"%s：下手时进度信号已发（题签 %d / 全黑 %d / 终结 %d），前提不成立" % [tag, w.caption, w.covered, w.finished])
 
 
 func _frames(n: int) -> void:

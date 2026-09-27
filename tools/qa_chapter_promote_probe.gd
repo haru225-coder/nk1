@@ -6,12 +6,15 @@ extends SceneTree
 ## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chapter_promote_probe.gd   # 截图门禁（须出 4 张）
 ##       godot --headless --path /workspace/nk1 -s res://tools/qa_chapter_promote_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截、墨幕按停拍相位截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chapter_promote_probe.gd
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("chapter")
 const TAG := "QA_CHAPTER"
 const EXPECTED_SHOTS := 4
 const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 const _UT := preload("res://scripts/ui/UiTransition.gd")
 
 var _main: Node
@@ -49,6 +52,7 @@ func _run() -> void:
 	var gm: Node = root.get_node("/root/GameManager")
 	var packed: PackedScene = load("res://scenes/Main.tscn")
 	_main = packed.instantiate()
+	Clock.frame_pressure(self)
 	root.add_child(_main)
 	await _settle(10)
 
@@ -161,16 +165,26 @@ func _hold_shot(node: CanvasLayer, stem: String) -> void:
 	if node == null:
 		print("QA_CHAPTER_SKIP_TRANSITION %s (headless)" % stem)
 		return
-	await _settle(36)
-	await _shot(stem)
+	# 截题签停拍那一拍：按墨幕相位等，不数帧（原 36 帧：快机上只合 153 ms 还在淡入，满载慢帧下已整幕收场，lane gd14）
+	var why := await Clock.wait_hold(self, node)
+	if why != "":
+		_fails.append("%s 没截到墨幕停拍：%s" % [stem, why])
+		print("  ✗ %s 没截到墨幕停拍：%s" % [stem, why])
+	else:
+		await _shot(stem)
+		if not Clock.holding(node):
+			_fails.append("%s 截图时墨幕已过停拍" % stem)
+			print("  ✗ %s 截图时墨幕已过停拍" % stem)
 	if is_instance_valid(node):
 		node.call("_abort")
 	await _settle(4)
 
 
+## 先过 n 帧（排版 / 延迟调用 / 逐帧演出按帧走），再等补间演完；墙钟上界见 probe_clock.gd
 func _settle(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_fails.append("演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+		print("  ✗ 演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
 
 
 func _shot(stem: String) -> void:
