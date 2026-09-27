@@ -216,7 +216,7 @@ SUBCHECKS = [
     {"id": "按函数名取函数体（十三）", "parent": "check_symbols", "lane": "gd16 / cs9 / cs12", "oneclick": True,
      "cmd": "python3 tools/check_symbols.py",
      "marks": ["十三、按函数名取函数体", "class _Bodies(dict)", "_body_ask(name, m is not None)", "处按名取用都取到函数体",
-               "def _locate_func(src, name)", "NAMED_FUNCS = (", "支函数都还在",
+               "from func_body import", "NAMED_FUNCS = (", "支函数都还在",
                '_body_ask(token + "]", at >= 0)', "处按名取用都取到场景节点块", "def body(name):"],
      "expect": "「十三、按函数名取函数体」`✓ _func_body / func_bodies().get / _locate_func 的 N 处按名取用都取到函数体，_node_block 的 M 处按名取用都取到场景节点块`"
                "（N / M = 本脚本「行号 + 名字」去重后的取用处；_node_block 按 `[node name=\"X\"` 取场景节点块，lane cs12 纳入同一本账）。"
@@ -227,6 +227,16 @@ SUBCHECKS = [
              "搬走没拼回，或断言里函数名写错；`✗ check_symbols.py:<行> 取场景节点块 [node name=\"X\"] 取不到（节点改名 / 删了 / 挪进子场景）` = 同上、对象是 .tscn 节点（lane cs12）；改前这里给 `\"\"`（手切的还会落到整份文件 / 最后一个字 / 前缀同名的别的函数），"
              "反向断言（`\"X\" not in body`）照样绿；`✗ 断言点名的函数 X 在 scripts/ 下已无定义` = 反向断言 / find 锚 / 存在性探查点到的函数改了名或删了，"
              "断言与 NAMED_FUNCS 跟着改；`✗ check_symbols.py:<行> 的断言点到函数 X，没登记进 NAMED_FUNCS` = 新写这类断言没登记。计入 check_symbols 问题、退 1"},
+    {"id": "按函数名取函数体（十一）", "parent": "verify_economy", "lane": "cs14", "oneclick": True,
+     "cmd": "python3 tools/verify_economy.py",
+     "marks": ["十一、按函数名取函数体", "from func_body import", "_body_ask(name, m is not None)", "处按名取用都取到函数体"],
+     "expect": "「十一、按函数名取函数体」`✓ _locate_func / _gd_body / _gd_fn 的 N 处按名取用都取到函数体`（N = 本脚本「行号 + 函数名」去重后的取用处）。"
+               "账本与 `_locate_func` 在 `tools/func_body.py`，与 check_symbols 十三节同一份（lane cs14）；原先手切的 "
+               "`src.split(\"func X\", 1)[1].split(\"\\nfunc \", 1)[0]`（有 / 无 `in` 守卫）与 `guild_body` 一律改走 `_locate_func`，"
+               "`_gd_body` / `_gd_fn` 切法不变、取完记同一本账",
+     "fail": "`✗ verify_economy.py:<行> 取函数体 <fn> 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转` = 被读的函数改了名 / 删了 / 搬走（Main 拆出件没跟着改读哪份），"
+             "或断言里函数名写错；改前守卫版给 `\"\"`、`or 整份文件` 兜底，无守卫 split 按前缀认名（`X` 改成 `X_v2` 照样切到它），反向断言照样绿。"
+             "计入 verify_economy 未通过项、退 1"},
     {"id": "compile 清单自检（inventory）", "parent": "compile", "lane": "ea4", "oneclick": True,
      "cmd": "godot --headless --path . -s res://tools/godot_compile_check.gd",
      "marks": ["inventory SCRIPTS == tracked *.gd", "ls-files", "INVENTORY_EXEMPT", "unlisted", "exempt-stale"],

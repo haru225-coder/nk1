@@ -429,12 +429,10 @@ print("  autoload 按注册顺序逐个 _ready；在 _ready 里碰排在自己�
 # 所以 `_func_body(src, name)` 与 `func_bodies(src).get(name, …)` 一律记账：取不到记下「本脚本行号 + 函数名」，
 # 「十三、按函数名取函数体」逐条判红。只想探有没有这支函数、不想判红的，用 `name in func_bodies(src)`（不记账）。
 # 场景节点按名取块的 _node_block 同记这本账（键 `[node name="X"]`，lane cs12）。
-_body_asks = {}  # (本脚本行号, 函数名) -> 取到没有；同一行多次取（循环 / 变异自检）按一处计，有一次取不到就算取不到
-
-
-def _body_ask(name, found, depth=2):
-    key = (sys._getframe(depth).f_lineno, name)
-    _body_asks[key] = _body_asks.get(key, True) and found
+# 账本与 _locate_func 在 tools/func_body.py（lane cs14 抽出，verify_economy 共用同一份，别另起一套）：
+# _body_asks = (本脚本行号, 函数名) -> 取到没有；同一行多次取（循环 / 变异自检）按一处计，有一次取不到就算取不到。
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from func_body import body_asks as _body_asks, body_ask as _body_ask, locate_func as _locate_func
 
 
 class _Bodies(dict):
@@ -467,10 +465,7 @@ def func_bodies(src):
 # 函数一改名，正向断言跟着红还算露馅，反向断言（"X" not in body）照样绿。一律改走这里：
 #   只认行首 `[static ]func 名字(`（名尾须紧跟括号，不吃前缀、不认注释），体到下一个行首 func / static func 为止；
 #   取不到给 "" 并记账（_body_ask），「十三、按函数名取函数体」逐条判红。新写按名取体的断言用它或 _func_body，别再手切。
-def _locate_func(src, name):
-    m = re.search(rf"^(?:static\s+)?func\s+{re.escape(name)}\s*\(.*?(?=\n(?:static\s+)?func\s|\Z)", src, re.M | re.S)
-    _body_ask(name, m is not None)
-    return m.group(0) if m else ""
+#   _locate_func 定义在 tools/func_body.py（上面已 import，切法原样搬过去）。
 
 order_idx = {name: i for i, name in enumerate(order)}
 ready_problems = []
