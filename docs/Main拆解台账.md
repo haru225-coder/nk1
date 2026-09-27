@@ -3,6 +3,7 @@
 `scripts/Main.gd` 按页面簇往 `scripts/ui/` 拆。每刀一节，只往后追加，不改前面各节。
 手法（lane ms / mz / ms2 起一直沿用）：隔离 worktree 里改，Main 保留同名同签名的一行转发，信号目标仍是 Main 的同名方法；
 新文件登记到 `check_symbols.py` 和 `godot_smoke.gd` 的 `MAIN_SPLITS`，以及 `godot_compile_check.gd` 的 SCRIPTS；
+新文件头注写「从 Main.gd 原样搬出」，转发独占函数体、行尾不带注释（漏一样 check_symbols「一之零」判红，口径见 `docs/GATES.md` §三.1，lane cs8）；
 拆分前后跑同一组固定种子探针，输出逐字节对比；最后用 `update-ref` 带旧值 CAS 快进 main。
 
 已拆（前三刀，详见各 lane brief 的 Verify）：

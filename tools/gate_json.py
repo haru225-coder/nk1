@@ -183,6 +183,16 @@ SUBCHECKS = [
                "没疑点时没有 `⚠ WARN` 行；不开时输出逐字节不变，开了退出码也不变",
      "fail": "**不判红**：`⚠ WARN <文件>:L<行> <调用>  ← <作用域>：无此 func` / `…：无此 signal` = 字面量名在对应作用域里找不到，"
              "人工判真死引用 / 误报；`--json --suggest` 里记 `level: warn`（ok=true，不计 pass/fail）"},
+    {"id": "Main 拆出件拼回（一之零）", "parent": "check_symbols", "lane": "ms / cs8", "oneclick": True,
+     "cmd": "python3 tools/check_symbols.py",
+     "marks": ["一之零、Main.gd 拆出件", "MAIN_NOT_SPLITS", "SPLIT_MARK", "却不是一行转发", "拼回只对源码字符串断言有效"],
+     "expect": "「一之零」每件 `✓ scripts/ui/<件>.gd：N 支转发拼回函数体` + `✓ 头注写「从 Main.gd 原样搬出」的 N 件与 MAIN_SPLITS 一一对上；"
+               "Main 调拆出件处都是一行转发；非拆出件的一行委托 N 处都在 MAIN_NOT_SPLITS` + `✓ godot_smoke.gd 的 MAIN_SPLITS 与此一致`。"
+               "**拼回只对源码字符串断言有效**：行号、`main.` 前缀、static / 实例语义不在此列（口径见 §三.1）",
+     "fail": "`✗ … 转发到 <件> 的 fn，那边没有这支 static func` = 拆出件改名 / 删了没跟转发；`登记为 Main 拆出件，但 Main 里没有一行转发` = 登记了没接；"
+             "`调了拆出件 … 却不是一行转发` = 转发带行尾注释 / 两行 / 折行签名，拼回不认；`一行转发到 <件>，它没登记进 MAIN_SPLITS` / "
+             "`头注写「从 Main.gd 原样搬出」，却没登记` = 新拆一刀忘登记；`登记为拆出件，头注…没写` = 约定字样丢了；"
+             "`godot_smoke.gd 的 MAIN_SPLITS … 不一致` = 两份清单只改了一份。都计入 check_symbols 问题、退 1"},
     {"id": "compile 清单自检（inventory）", "parent": "compile", "lane": "ea4", "oneclick": True,
      "cmd": "godot --headless --path . -s res://tools/godot_compile_check.gd",
      "marks": ["inventory SCRIPTS == tracked *.gd", "ls-files", "INVENTORY_EXEMPT", "unlisted", "exempt-stale"],

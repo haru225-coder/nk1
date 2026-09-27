@@ -27,6 +27,10 @@ AUTOLOADS = {
 # Main.gd 拆出去的件（lane ms 起）。Main 留同名同签名一行转发 `[return |await ]_K.fn(…)`，
 # 真身在这些文件里；源码断言照旧读 main_src，由 read_main_src() 拼回「未拆时」的 Main。
 # 新拆一件就在这里登记；登记了却没接上转发会直接判红（见「一之零」）。
+# 拼回只对「源码字符串断言」有效（lane cs8，口径见 docs/GATES.md §三.1）：拼出来的行号不对应任何真文件、
+# `main.` 前缀已去掉、static / 实例语义不看；这些要读拆出件原文或交 compile / 探针。
+# 拼回漏不漏由「一之零」兜住：拆出件头注写「从 Main.gd 原样搬出」却没登记、Main 一行转发到未登记的件、
+# Main 里调拆出件却不是一行转发（行尾注释 / 两行 / 折行签名，拼回不认）都判红。
 MAIN_SPLITS = (
     "scripts/ui/SlipKit.gd",
     "scripts/ui/LedgerPage.gd",
@@ -35,6 +39,12 @@ MAIN_SPLITS = (
     "scripts/ui/NpcPage.gd",
     "scripts/ui/SaveSheet.gd",
 )
+# Main 里一行转发形状、但目标不是拆出件的委托（本来就是别的模块的 API，不拼回）。新增一条须注明为什么不是拆出件。
+MAIN_NOT_SPLITS = {
+    "scripts/cutscene/LivingBackdrop.gd": "过场背景调色（_grade_backdrop → set_grade），公共件，不是从 Main 搬出",
+    "scripts/ui/TavernNewsWall.gd": "酒馆市井札薄（_setup_news_wall → mount），自成一件，不是从 Main 搬出",
+}
+SPLIT_MARK = "从 Main.gd 原样搬出"  # 拆出件头注（前 10 行）的约定字样；有它就必须登记，登记了就必须有它
 _SPLIT_FWD = re.compile(r'^\t(?:return |await )?(_[A-Z][A-Z0-9_]*)\.([A-Za-z_]\w*)\((.*)\)\s*$')
 _split_report = []
 _split_fwd_count = {}
@@ -78,10 +88,10 @@ def read_main_src():
     _split_fwd_count.clear()
     with open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8") as f:
         main_text = f.read()
-    const_of = {}
+    const_of, other_of = {}, {}
     for m in re.finditer(r'^const\s+(_[A-Z][A-Z0-9_]*)\s*:?=\s*preload\("res://([^"]+)"\)', main_text, re.M):
-        if m.group(2) in MAIN_SPLITS:
-            const_of[m.group(1)] = m.group(2)
+        (const_of if m.group(2) in MAIN_SPLITS else other_of)[m.group(1)] = m.group(2)
+    _uses = re.compile(r'\b(' + "|".join(map(re.escape, const_of)) + r')\.') if const_of else None
     parts = {}
     for rel in MAIN_SPLITS:
         with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
@@ -99,6 +109,15 @@ def read_main_src():
         code = [ln for ln in tail if ln.strip() and not ln.strip().startswith("#")]
         fwd = _SPLIT_FWD.match(code[0]) if m and len(code) == 1 else None
         rel = const_of.get(fwd.group(1)) if fwd else None
+        fname = head.split("(")[0]
+        if m and rel is None and _uses and _uses.search("\n".join(code)):
+            _k = _uses.search("\n".join(code)).group(1)
+            _split_report.append(f"{fname} 调了拆出件 {const_of[_k]}（{_k}.…）却不是一行转发，拼回不认、"
+                                 f"函数体断言只看得到 Main 这几行（转发须独占函数体：`\\t[return |await ]{_k}.fn(…)`，"
+                                 f"行尾不带注释、签名不折行）")
+        if fwd and fwd.group(1) in other_of and other_of[fwd.group(1)] not in MAIN_NOT_SPLITS:
+            _split_report.append(f"{fname} 一行转发到 {other_of[fwd.group(1)]}，它没登记进 MAIN_SPLITS，函数体不拼回"
+                                 f"（是拆出件就两处 MAIN_SPLITS 都登记；不是就加进 check_symbols 的 MAIN_NOT_SPLITS 并注明）")
         if rel is None:
             out.append((head, tail))
             continue
@@ -277,10 +296,28 @@ print("=" * 68)
 print("一之零、Main.gd 拆出件（MAIN_SPLITS）与转发")
 print("=" * 68)
 print("  源码断言读的 main_src = Main.gd + 拆出件拼回的「未拆时」Main（read_main_src）。")
+print("  拼回只对源码字符串断言有效：行号、`main.` 前缀、static / 实例语义不在此列（见 docs/GATES.md §三.1）。")
 read_main_src()  # 填 _split_report / _split_fwd_count
 for rel in MAIN_SPLITS:
     _n = _split_fwd_count.get(rel, 0)
     print(f"  {'✓' if _n else '✗'} {rel}：{_n} 支转发拼回函数体")
+# 头注约定：写了「从 Main.gd 原样搬出」的件必须登记；登记了的件头注必须写它（新拆一刀忘登记在这里红）
+_marked = set()
+for _dp, _dn, _fn in os.walk(SCRIPTS):
+    for _f in _fn:
+        if _f.endswith(".gd"):
+            _p = os.path.join(_dp, _f)
+            with open(_p, encoding="utf-8") as f:
+                if SPLIT_MARK in "".join(f.readline() for _ in range(10)):
+                    _marked.add(os.path.relpath(_p, ROOT).replace(os.sep, "/"))
+for _rel in sorted(_marked - set(MAIN_SPLITS)):
+    _split_report.append(f"{_rel} 头注写「{SPLIT_MARK}」，却没登记进 MAIN_SPLITS（拼回不读它，搬走的函数体断言看不到）")
+for _rel in MAIN_SPLITS:
+    if _rel not in _marked:
+        _split_report.append(f"{_rel} 登记为拆出件，头注前 10 行却没写「{SPLIT_MARK}」（约定字样，漏登记靠它查）")
+if not _split_report:
+    print(f"  ✓ 头注写「{SPLIT_MARK}」的 {len(_marked)} 件与 MAIN_SPLITS 一一对上；"
+          f"Main 调拆出件处都是一行转发；非拆出件的一行委托 {len(MAIN_NOT_SPLITS)} 处都在 MAIN_NOT_SPLITS")
 for _msg in _split_report:
     print(f"  ✗ {_msg}")
     problems.append(f"Main 拆出件：{_msg}")
