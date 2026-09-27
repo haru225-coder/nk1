@@ -119,6 +119,11 @@ const _SAVE := preload("res://scripts/ui/SaveSheet.gd")
 ## _exam_slip / _on_exam_copy / _exam_sat_flag / _on_exam_sit 都是同名同签名一行转发，调用点与信号目标不变；GUILD_* / EXAM_* 常量与
 ## play_transition 仍在这里。
 const _GUILD := preload("res://scripts/ui/GuildExamPage.gd")
+## 市舶司页（货引 / 抽解 / 违禁 / 蒲家留意工席与请领回调、未呈报发现的「呈报」工席与呈报回调、职衔与修埠工席和投钱回调、蒲家留意档位）
+## 的实现在 scripts/ui/MaritimeOfficePage.gd（Lane main8 第八刀拆出）；这里的 _setup_yamen / _on_apply_permit / _setup_reporting /
+## _on_report_discovery / _setup_title_and_invest / _on_invest_port / _attention_desc 都是同名同签名一行转发，调用点与信号目标不变；
+## _setup_quanzhou_standoff、_duty_per_hundred 仍在这里。
+const _MARITIME := preload("res://scripts/ui/MaritimeOfficePage.gd")
 ## 活背景幅度：比引擎默认再收一档（正文底下的画不能晃得人头晕）
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
@@ -1766,124 +1771,32 @@ func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) ->
 # ── 市舶司 ──────────────────────────────────────────
 
 func _setup_yamen(port_id: String) -> void:
-	scene_title.text = "%s・市舶司" % GameManager.get_port_name(port_id)
-	body_text.text = "案上压着未批的货单。验引、呈报、修埠都在这里。"
-	_begin_benches()
-
-	_add_npc_button("customs_official", "市舶司小吏")
-
-	var permit := _slip_body()
-	var duty := GameState.customs_duty()
-	var contraband := GameState.contraband_units()
-	if GameState.has_customs_permit:
-		_slip_title(permit, "货引", "已在手")
-		_slip_note(permit, "本次出港可合法验放。", UiTheme.MOSS)
-	else:
-		_slip_title(permit, "货引", "按舱货抽解")
-		_slip_chip(_slip_row(permit), "请领　%d" % duty, _on_apply_permit, true)
-	if contraband > 0:
-		_slip_note(permit, "舱底尚有违禁 %d 件。报不进明账，验引也遮不住。" % contraband, UiTheme.CINNABAR)
-	_slip_note(permit, "蒲家留意 %d　%s" % [GameState.pu_attention, _attention_desc()])
-
-	_setup_reporting()
-	# 本地 main：泉州对峙期（1276-77）征船名册三选一，非对峙期内部自行返回
-	_setup_quanzhou_standoff(port_id)
-	_setup_title_and_invest(port_id)
-
-	_end_benches()
-	_add_leave_button(port_id)
-	choices_label.visible = false
+	_MARITIME.setup_yamen(self, port_id)
 
 
 func _on_apply_permit() -> void:
-	var res: Dictionary = GameState.apply_for_permit()
-	log_msg(str(res.get("msg", "")))
-	load_scene(current_scene_id)
+	_MARITIME.on_apply_permit(self)
 
 
 ## 上报发现：航中或寺观记下的东西要回市舶司呈报才换得赏格与名声
 func _setup_reporting() -> void:
-	var pending := GameState.unreported_discoveries()
-	if pending.is_empty():
-		return
-
-	for did in pending:
-		var d := GameManager.get_discovery_by_id(did)
-		if d.is_empty():
-			continue
-		var value: int = int(d.get("value", 50))
-		var slip := _slip_body()
-		_slip_title(slip, str(d.get("name", did)), "赏钱 %d　声名 %d" % [value, maxi(1, value / 10)])
-		var chip := _slip_chip(_slip_row(slip), "呈报", _on_report_discovery.bind(str(did)), true)
-		var tip := str(d.get("location", ""))
-		var hook := str(d.get("historical_hook", "")).strip_edges()
-		if hook != "":
-			tip += "\n" + hook
-		chip.tooltip_text = tip + "\n呈报入案，赏钱声名同领。"
+	_MARITIME.setup_reporting(self)
 
 
 func _on_report_discovery(did: String) -> void:
-	var res: Dictionary = GameState.report_discovery(did)
-	if not res.is_empty():
-		var extra := ""
-		if res.get("promoted", false):
-			extra = "案册改题「%s」。" % str(res.get("title", {}).get("name", ""))
-		log_msg("【呈报】「%s」入案。赏钱 %d，声名添 %d。%s" % [
-			res["name"], res["gold"], res["fame"], extra,
-		])
-	load_scene(current_scene_id)
+	_MARITIME.on_report_discovery(self, did)
 
 
 func _setup_title_and_invest(port_id: String) -> void:
-	var rank: Dictionary = GameState.title_rank()
-	var nxt: Dictionary = GameState.next_title()
-	var rank_slip := _slip_body()
-	_slip_title(rank_slip, "职衔", str(rank.get("name", "")))
-	var duty_line := "抽解每百 %d　赊贷上限 %d" % [
-		_duty_per_hundred(float(rank.get("duty_factor", 1.0))),
-		GameState.DEBT_CEILING + GameState.title_loan_bonus(),
-	]
-	if nxt.is_empty():
-		_slip_note(rank_slip, duty_line + "。")
-	else:
-		var need: int = maxi(0, int(nxt.get("min_fame", 0)) - GameState.fame)
-		_slip_note(rank_slip, "再记 %d 声名可题「%s」。%s。" % [
-			need, str(nxt.get("name", "")), duty_line,
-		])
-
-	var lv: int = Economy.investment_level(port_id)
-	var cost: int = Economy.invest_cost(port_id)
-	var inv := _slip_body()
-	var inv_aside := "尚未修埠"
-	if lv > 0:
-		inv_aside = "已修至 %d 等" % lv
-	_slip_title(inv, "修埠", inv_aside)
-	if cost <= 0:
-		_slip_note(inv, "本港埠头已修至 %d 等。产货更廉，紧缺易售，市面更宽。" % lv)
-	elif lv <= 0:
-		_slip_note(inv, "修埠则埠头加深。本地产货更廉，紧缺货易售。")
-	else:
-		_slip_note(inv, "再修一等。埠头加深，产货更廉，紧缺易售，市面更宽。")
-	if cost > 0:
-		var chip := _slip_chip(_slip_row(inv), "投钱　%d" % cost, _on_invest_port.bind(port_id), true)
-		chip.tooltip_text = "向本港投钱修埠"
+	_MARITIME.setup_title_and_invest(self, port_id)
 
 
 func _on_invest_port(port_id: String) -> void:
-	var res: Dictionary = Economy.invest(port_id)
-	log_msg(str(res.get("msg", "")))
-	load_scene(current_scene_id)
+	_MARITIME.on_invest_port(self, port_id)
 
 
 func _attention_desc() -> String:
-	var a := GameState.pu_attention
-	if a >= 70:
-		return "暗桩已盯死，出港必查"
-	elif a >= 50:
-		return "起了疑心"
-	elif a >= 25:
-		return "偶有闲话传出"
-	return "尚无人留意"
+	return _MARITIME.attention_desc()
 
 
 # ── 工席 ────────────────────────────────────────────

@@ -3850,20 +3850,45 @@ else:
     print("  ✗ _on_report_discovery 未走 report_discovery 或未重载页面")
     problems.append("_on_report_discovery 接线")
 
+# 呈报回调真身在 MaritimeOfficePage（lane main8 拆出），Main._on_report_discovery 只剩一行转发（拼回由上面 _disc_main_fn 查）。
+# 这里扫真文件：拆出件里是 static func，func_bodies 只认顶格 func，先把 static func 记成 func 再切，拆出件里的调用方才扫得到。
 _rep_callers = []
 for _dp, _dn, _fs in os.walk(SCRIPTS):
     for _fn in _fs:
         if not _fn.endswith(".gd"):
             continue
-        _src = open(os.path.join(_dp, _fn), encoding="utf-8").read()
+        _src = re.sub(r'^static\s+func\b', "func", open(os.path.join(_dp, _fn), encoding="utf-8").read(), flags=re.M)
         for _name, _body in func_bodies(_src).items():
             if re.search(r'(?<![\w_])(?:GameState\.)?report_discovery\(', _code_only(_body)):
                 _rep_callers.append(f"{_fn}:{_name}")
-if _rep_callers == ["Main.gd:_on_report_discovery"]:
-    print("  ✓ report_discovery 只由 Main._on_report_discovery 调（航中/寺观不当场呈报）")
+if _rep_callers == ["MaritimeOfficePage.gd:on_report_discovery"]:
+    print("  ✓ report_discovery 只由 MaritimeOfficePage.on_report_discovery 调（Main._on_report_discovery 转发；航中/寺观不当场呈报）")
 else:
     print("  ✗ report_discovery 调用方漂移：%s" % _rep_callers)
     problems.append("report_discovery 调用方漂移")
+
+# 市舶司页 7 支真身钉在 MaritimeOfficePage（lane main8）：Main 里每支只许是一行转发到 _MARITIME 的同名 static func，
+# 拆出件里须真有那支。挪回 Main（整支写回、或拆出件留一份副本）在「一之零」里不红（件里还有别的转发），这里红。
+_mo_src = open(os.path.join(SCRIPTS, "ui", "MaritimeOfficePage.gd"), encoding="utf-8").read()
+_mo_static = set(re.findall(r'^static\s+func\s+([A-Za-z_]\w*)\s*\(', _mo_src, re.M))
+_mo_raw_fn = func_bodies(open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read())
+_mo_bad = []
+for _mo_name in ("_setup_yamen", "_on_apply_permit", "_setup_reporting", "_on_report_discovery",
+                 "_setup_title_and_invest", "_on_invest_port", "_attention_desc"):
+    _mo_code = [ln for ln in _mo_raw_fn.get(_mo_name, "").split("\n") if ln.strip() and not ln.strip().startswith("#")]
+    _mo_fwd = _SPLIT_FWD.match(_mo_code[0]) if len(_mo_code) == 1 else None
+    if not (_mo_fwd and _mo_fwd.group(1) == "_MARITIME" and _mo_fwd.group(2) == _mo_name[1:]):
+        _mo_bad.append(f"Main.{_mo_name} 不是一行转发到 _MARITIME.{_mo_name[1:]}")
+    elif _mo_name[1:] not in _mo_static:
+        _mo_bad.append(f"MaritimeOfficePage.gd 缺 static func {_mo_name[1:]}")
+if re.search(r'^const _MARITIME := preload\("res://scripts/ui/MaritimeOfficePage\.gd"\)', open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read(), re.M) is None:
+    _mo_bad.append("Main 没有 const _MARITIME := preload(MaritimeOfficePage.gd)")
+if not _mo_bad:
+    print("  ✓ 市舶司页 7 支真身在 MaritimeOfficePage，Main 只留一行转发（lane main8）")
+else:
+    for _m in _mo_bad:
+        print(f"  ✗ {_m}")
+    problems.append("市舶司页没钉在 MaritimeOfficePage")
 
 # Lane AC：发现录列表与呈报确认改纪实短句；存档键、呈报顺序与赏格公式不动
 _ac_slips = _disc_main_fn.get("_setup_reporting", "")
@@ -4339,9 +4364,10 @@ if not _body_missed:
 # 本来就要「保持删除」的旧函数（`"func _add_sail_button" not in main_src`）没有定义，自扫不收，也不必登记。
 NAMED_FUNCS = {
     "scripts/Main.gd": (
-        "_add_guild_join_slip", "_add_leave_button", "_begin_benches", "_end_benches", "_fit_rank",
+        "_add_guild_join_slip", "_add_leave_button", "_attention_desc", "_begin_benches", "_end_benches", "_fit_rank",
         "_guild_join_block", "_interior_lead", "_interior_title", "_lift_ledger", "_mount_status_strip",
-        "_on_exam_sit", "_on_guild_join", "_on_upgrade", "_setup_guild", "_setup_news_wall", "_skill_rank",
+        "_on_apply_permit", "_on_exam_sit", "_on_guild_join", "_on_invest_port", "_on_report_discovery", "_on_upgrade",
+        "_setup_guild", "_setup_news_wall", "_setup_reporting", "_setup_title_and_invest", "_setup_yamen", "_skill_rank",
         "load_scene", "play_transition", "show_choices", "update_status_panel",
     ),
     "scripts/GameManager.gd": (

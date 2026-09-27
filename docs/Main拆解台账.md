@@ -263,3 +263,56 @@ check_symbols 的 51 处引用都经 read_main_src。要改的门禁有 2 道：
 - `tools/main_splits.txt`：拆出件唯一清单，每件一行（拆出件 / lane / 拆出 commit / 原 Main 行范围 / 拆出函数）。`check_symbols` 与 `godot_smoke` 都只读第一列，两份脚本里的 `MAIN_SPLITS` 常量删掉了。
 - `tools/gen_main_splits.py` 生成它：拆出件、顺序、lane 读本台账（开头「已拆（前三刀…）」那行 + 各刀节标题），所以**节标题的写法是契约**：``## 第N刀（lane X，日期）：… → `scripts/ui/X.gd` ``。拆出函数读 Main 的一行转发，commit 和行范围读 git（拆出 commit 父版的 Main.gd）；本台账表格里写了逐支行段的（第六、七刀共 15 支），生成时逐支对账。
 - check_symbols「一之零」每轮重算、与清单逐字节比：手改清单、台账加了一刀没 `--write`、删了拆出件没更新，都判红。
+
+---
+
+## 第八刀（lane main8，2026-09-28）：市舶司 / 呈报 / 职衔 → `scripts/ui/MaritimeOfficePage.gd`
+
+### 切面（基 `e8b8221`：Main.gd 4699 行，第七刀之后）
+
+Y 是第七刀台账列的下一刀首选，连续一段：**1766–1886，121 行 / 7 支**（簇首 `# ── 市舶司 ──` 起，到 `_attention_desc` 末行；第七刀按基 59254f5 记 1763–1881、119 行）。
+
+| 支 | 做什么 | 被簇外调（Main 内 / 他处） |
+|---|---|---|
+| `_setup_yamen(port_id)` | 题签 / 正文 → 市舶司小吏 → 货引工席（已在手 / 请领钮、违禁提示、蒲家留意）→ 呈报 → 泉州对峙征船名册 → 职衔与修埠 → 离开钮 | Main 1 处：`_setup_dynamic_scene` 的 `_yamen`（1100） |
+| `_on_apply_permit()` | `GameState.apply_for_permit()` → 记事 → 重载本页 | 无（「请领」钮的目标） |
+| `_setup_reporting()` | 未呈报发现逐件一张工席（赏钱 / 声名、「呈报」钮、地点 + 史实钩子 tooltip） | 无（簇内 `_setup_yamen` 调） |
+| `_on_report_discovery(did)` | `GameState.report_discovery` → 呈报记事（升衔另记「案册改题」）→ 重载 | qa_discovery_probe 经 Main `call` 1 处（「呈报」钮的目标） |
+| `_setup_title_and_invest(port_id)` | 职衔工席（抽解每百 / 赊贷上限 / 下一档还差几声名）+ 修埠工席（等级、短句、投钱钮） | 无（簇内调） |
+| `_on_invest_port(port_id)` | `Economy.invest` → 记事 → 重载 | 无（「投钱」钮的目标） |
+| `_attention_desc()` | 蒲家留意四档短句 | 无（簇内调；smoke 在 family src 里查四档字样） |
+
+**跨切依赖**（全部经 `main.` 取，搬出件不存状态）：
+- Main 成员：`current_scene_id` 3、`scene_title` / `body_text` / `choices_label` 各 1。
+- Main 方法：`_slip_note` 8、`_slip_title` 5、`_slip_body` 4、`_slip_row` / `_slip_chip` / `log_msg` / `load_scene` 各 3，`_begin_benches` / `_end_benches` / `_add_npc_button` / `_add_leave_button` / `_duty_per_hundred` / `_setup_quanzhou_standoff` 各 1；
+  簇内互调与 3 个信号目标（`_on_apply_permit` / `_on_report_discovery.bind` / `_on_invest_port.bind`）也经 `main.` 走 Main 的转发。
+- autoload：`GameState` 13、`Economy` 3、`GameManager` 2、`UiTheme` 2。
+
+**断言 / 探针引用点**（拆前逐个核过）：
+
+| 引用点 | 怎么读 | 拆后 |
+|---|---|---|
+| check_symbols 九之七「report_discovery 只由 … 调」 | **扫 scripts/ 下真文件**，`func_bodies` 只认顶格 `func`，期望 `["Main.gd:_on_report_discovery"]` | 第七刀台账说 Y「全经 read_main_src」，这一条例外：不改就红（实测 `调用方漂移：[]`，拆出件里的 `static func` 扫不到）→ **改指新文件**：扫描前把 `static func` 记成 `func`，期望改成 `["MaritimeOfficePage.gd:on_report_discovery"]`，仍是整列表相等（顺带补上「拆出件里另有调用方也扫不到」的旧洞，只收紧） |
+| check_symbols 九之七其余 5 条（挂呈报签、呈报签只在市舶司、呈报 chip 绑定、回调接线）、Lane AC 文案、Lane AA 修埠短句、「市舶司有职衔说明与修埠钮」、「职衔说明不写纲首」 | `func_bodies` / `_func_body` / `_locate_func` 读 `read_main_src()` | 转发就地换回拆出件函数体、去 `main.` 前缀 → **不用改**（拆出件进 `main_splits.txt` 即可） |
+| smoke「蒲家留意四档不带括号」「抽解每百 %d」 | `_main_family_src()` 全文正 / 反向 `find` | 拆出件进 `main_splits.txt` 后字样仍在扫描范围内 → 不用改 |
+| smoke `yard_node.call("_duty_per_hundred", …)` | 直调 Main | `_duty_per_hundred` 留 Main → 不用改 |
+| qa_discovery_probe / qa_market_panel_probe | `load_scene("quanzhou_yamen")`、`call("_on_report_discovery", …)` | Main 保留同名转发 → 不用改 |
+| verify_economy / simulate_run / verify_story_data | 不读这 7 支 | 无关 |
+
+### 落地
+
+- `scripts/ui/MaritimeOfficePage.gd`（新增，129 行，`.uid` 同 commit）：7 支原样搬成 `static func`（setup_yamen / on_apply_permit / setup_reporting / on_report_discovery / setup_title_and_invest / on_invest_port / attention_desc）。
+  `attention_desc` 不碰 Main，不带 `main` 形参；其余 Main 成员一律加 `main.` 前缀。经 `main.` 取值推断不出类型，6 处 `:=` 改为与原推断相同的显式类型（VBoxContainer ×4、Button ×2）。
+- Main.gd **4699 → 4612（−87）**，func 数不变：7 支都留同名同签名一行转发（`const _MARITIME := preload(...)`，均非协程）。
+  留在 Main 的：`_setup_quanzhou_standoff`（终局 H 簇）、`_duty_per_hundred`（smoke 直调，不属页面簇）、工席小件、`_add_npc_button`、`_add_leave_button`。
+- 门禁同步：按 cs13 的新流程，本节标题登记后跑 `gen_main_splits.py --write`，`tools/main_splits.txt` 多一行（check_symbols / smoke 都读它）；`godot_compile_check` 的 SCRIPTS 加 1 行（128 → 129）；check_symbols 调用方那一条改指新文件（上表）。**别的断言条件一条没改、没放宽。**
+- 新加一条钉子（check_symbols 九之七，只收紧）：7 支在 Main 里须是一行转发到 `_MARITIME` 的同名 static func、拆出件里真有那支、Main 真 preload 了它。
+  起因：只把某一支挪回 Main（整支写回、或拆出件留一份副本），「一之零」不红（件里还有别的转发），除 `_on_report_discovery` 外别的断言也不红。
+  7 个函数名按 cs9 / cs11 口径登记进 `NAMED_FUNCS` 的 `scripts/Main.gd` 组（按拼回源码认；共 100 → 107 支），改名也红。
+- 拼回原文：`read_main_src()` 拼回的 7 支和基线逐行比，只差 6 行 `:=`，外加 1 行注释「本地 main：泉州对峙期…」被拼回规则（裸 `main` → `self`）改成「本地 self」——在注释里，`code_only` 不看，断言不受影响。
+
+### 下一刀候选（行数按基 e8b8221）
+
+1. **T 住处 / 寺观**（117 / 6）风险中低：smoke 两处在 family src 里切 `_on_temple_look` / `_on_temple_rub`，verify_economy 直读 Main 的 `_setup_residence`，都要改切片位置（lane main9 已派）。
+2. 做拆分前先 grep 门禁里「扫真文件 + `func_bodies`」的写法：`func_bodies` 不认 `static func`，拆走的函数在这类断言里会消失（本刀那一条是这样红的）。建议并进「Main 家族源码」共用 helper lane。
+3. **A / C / E / H / I / K** 风险高，先做上面那个 helper lane。拆出件到第 8 件（`tools/main_splits.txt` 已由 cs13 落地）。

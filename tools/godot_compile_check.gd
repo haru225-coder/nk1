@@ -57,6 +57,8 @@ const SCRIPTS := [
 	"res://scripts/ui/SaveSheet.gd",
 	# Lane main7 Main.gd 第七刀拆出的行会 / 贡院页
 	"res://scripts/ui/GuildExamPage.gd",
+	# Lane main8 Main.gd 第八刀拆出的市舶司页
+	"res://scripts/ui/MaritimeOfficePage.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
