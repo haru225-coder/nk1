@@ -165,7 +165,8 @@ const GENERIC_FACILITIES := [
 
 ## 岸门悬停提示：论文纪实短注，不写「点击进入」类 UI 腔。key 去 city_ 前缀。
 const DOOR_TIP := {
-	"market": "牙人过秤开票。市舶抽解另计。",
+	# 买价已含市舶抽解（同页脚注「含抽解・扣佣」）；出港验引另按舱货纳一次（GameState.customs_duty）
+	"market": "牙人过秤开票。买价含抽解，出港验引另纳。",
 	"guild": "会馆议价、立会籍。入行另有会费。",
 	"tavern": "酒桌边听市井动静，也可雇水手。",
 	"shipyard": "坞上修舱、上水、雇手。船开不出去时必开此门。",

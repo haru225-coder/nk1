@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """复现 Economy.gd / Voyage.gd 的公式，验证核心贸易循环与航海数值是否成立。
-不依赖 Godot，纯数学校验。"""
+不依赖 Godot，纯数学校验。
+
+口径：**不含验引**。各节「利润 / 净赚 / 每料收益」只算牙行买卖价（买价含抽解、卖价扣佣），
+不扣出港验引（GameState.customs_duty，约 base_value × 件数 × 一成）与无引塞钱；走私一节因此
+偏向违禁货（违禁货本就报不进货引）。验引与贿赂的对照见 docs/市舶验引与牙行抽解.md §五。"""
 import json, math, re, sys, os
 if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -151,6 +155,7 @@ def check(cond, msg):
     if not cond:
         fails.append(msg)
 
+print("  口径：利润只算牙行买卖价（含抽解・扣佣），不含出港验引与无引塞钱")
 print("=" * 68)
 print("一、数据完整性")
 print("=" * 68)
@@ -922,6 +927,7 @@ print()
 print("=" * 68)
 print("七、违禁品走私的风险回报")
 print("=" * 68)
+print("  （不含验引：合法货出港另纳约一成 base_value 的货引抽解，下列合法货每料收益偏高）")
 
 for gid in [g for g in goods if goods[g].get("contraband")]:
     print(f"\n  {goods[gid]['name']}：")

@@ -1840,7 +1840,8 @@ if (
     and "tariff" not in _aa_row and "broker" not in _aa_row
     and "牙人过秤开票" in market_fn
     and "过秤・买卖" in main_src
-    and "牙人过秤开票。市舶抽解另计。" in main_src
+    and "牙人过秤开票。买价含抽解，出港验引另纳。" in main_src
+    and "市舶抽解另计" not in main_src  # lane ea5：旧句与脚注「含抽解・扣佣」互斥
     and "遇事约赶得上，八成日数逾限，未稳。" in _aa_contract
     and "保货不到八成。不含买路。" in _aa_contract
     and "可接；交不齐则拿不满酬，不加声名。" in _aa_contract

@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """端到端模拟一局：从开局 1000 钱、一条小艍船出发，跑近海商路攒钱换船。
 完整复现 Fleet 的舱位/补给（多船分装）、Economy 的行情冲击与回归、Voyage 的季风与航速。
-目的是找出设计死锁（卡补给、卡舱位、卡钱），而不是验证单条公式。"""
+目的是找出设计死锁（卡补给、卡舱位、卡钱），而不是验证单条公式。
+
+口径：**不含验引**。「本/得/净」只算牙行买卖价（买价含抽解、卖价扣佣），不扣出港验引
+（GameState.customs_duty 的货引抽解）、无引塞钱与疏通；走私查扣是 28% 定概率近似，不走
+customs_inspection 的关注度门槛。验引该不该进账取决于无引贿赂规则（待议，见
+docs/市舶验引与牙行抽解.md §五），规则定前不镜像；只在跑商段末印一行「若逐趟办引」的量级。"""
 import json, math, os, re, sys, random
 if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -479,6 +484,8 @@ def one_trip(trip):
     rev = 0 if (seized or empty) else do_sell(gid, qty)
     profit = rev - spent - (fine if seized else 0)
     history.append(profit)
+    if not (empty or smuggle):
+        duty_skipped.append((profit, max(20, int(math.floor(goods[gid]["base_value"] * qty * TARIFF + 0.5)))))
     promoted = resolve_progress()
     tag = ""
     if empty:
@@ -622,6 +629,7 @@ check(verify_invariants(), "开局分船账目不变量成立")
 
 # 已解锁港口轮换——优先未走通/必须亲至的港，避免熟港套利卡晋升
 history = []
+duty_skipped = []  # 合法货趟若办引应纳的验引（光杆、平时税率），只印量级，不进账
 print()
 hand0 = deal("quanzhou", 0)
 check(len(hand0) <= 3 and bool(hand0) and hand0[0] == "ryukyu",
@@ -765,6 +773,11 @@ check(len(history) >= 20, f"连跑 {len(history)} 趟未卡死")
 check(G.money > 1000, f"{len(history)} 趟后资金 {G.money}（开局 1000）")
 check(sum(1 for p in history if p > 0) >= len(history)*0.7,
       f"{sum(1 for p in history if p>0)}/{len(history)} 趟盈利")
+_dn = sum(p for p, _ in duty_skipped)
+_dd = sum(d for _, d in duty_skipped)
+print(f"    不含验引：合法货 {len(duty_skipped)} 趟若逐趟办引（光杆平时税率），共应纳约 {_dd} 钱，"
+      f"为这几趟净利 {_dn} 的 {_dd / max(1, _dn) * 100:.0f}%，其中 {sum(1 for p, d in duty_skipped if 0 < p <= d)} 趟转亏；"
+      f"无引塞钱现为定额 50（待议）")
 
 print()
 print("  ── 行情是否被跑崩（反复走同一条线的自我限制）──")
