@@ -458,6 +458,18 @@ def func_bodies(src):
     if cur: out[cur] = "\n".join(body)
     return _Bodies(out)
 
+
+# 按名先定位、再取体（lane cs9：函数改名误绿收口）。原先各节手写的切法——`src.find("func X")` 切片、
+# `src.split("func X", 1)[-1]`、不锚行首 / 不锚名尾的 `re.search(r"func X.*?")`、_static_body——取不到时各有各的落点：
+# 空串、None、整份文件（split 的 [-1]）、最后一个字（find 的 -1），名字又只按前缀认（X 会切到 X_old / 注释里的字样）。
+# 函数一改名，正向断言跟着红还算露馅，反向断言（"X" not in body）照样绿。一律改走这里：
+#   只认行首 `[static ]func 名字(`（名尾须紧跟括号，不吃前缀、不认注释），体到下一个行首 func / static func 为止；
+#   取不到给 "" 并记账（_body_ask），「十三、按函数名取函数体」逐条判红。新写按名取体的断言用它或 _func_body，别再手切。
+def _locate_func(src, name):
+    m = re.search(rf"^(?:static\s+)?func\s+{re.escape(name)}\s*\(.*?(?=\n(?:static\s+)?func\s|\Z)", src, re.M | re.S)
+    _body_ask(name, m is not None)
+    return m.group(0) if m else ""
+
 order_idx = {name: i for i, name in enumerate(order)}
 ready_problems = []
 for name, rel in AUTOLOADS.items():
@@ -1931,8 +1943,8 @@ else:
     problems.append("SeaChart 无 F10")
 if "_debug_jump_port" in main_src and "KEY_F11" in main_src:
     print("  ✓ Main F11 可跳到泉州港")
-    dbg = re.search(r"func _debug_jump_port.*?(?=\nfunc |\Z)", main_src, re.S)
-    if dbg and "fuzhou" in dbg.group(0) and "xinghua" in dbg.group(0):
+    dbg = _locate_func(main_src, "_debug_jump_port")
+    if "fuzhou" in dbg and "xinghua" in dbg:
         print("  ✓ F11 点验链含福州通用港与兴化回访")
     else:
         print("  ✗ F11 不能跳到福州/兴化")
@@ -2238,8 +2250,7 @@ if _skin == "yechao":
         print("  ✗ 面板仍是熟漆描金")
         problems.append("面板仍是熟漆描金")
 else:
-    _panel_body = theme_src_tide[theme_src_tide.find("static func panel()"):]
-    _panel_body = _panel_body[:_panel_body.find("\nstatic func ", 10)]
+    _panel_body = _locate_func(theme_src_tide, "panel")
     if (
         _skin == "juanben"
         and "const JUANBEN := {" in theme_src_tide
@@ -2401,19 +2412,10 @@ else:
     problems.append("船屋成功题签未接上")
 
 
-def _static_body(src, name):
-    key = f"static func {name}"
-    i = src.find(key)
-    if i < 0:
-        return ""
-    j = src.find("\nstatic func ", i + len(key))
-    return src[i:] if j < 0 else src[i:j]
-
-
 _ink_line = 'var ink := INK_SOLID if accent else TEXT'
 _focus_ok = True
 for _fn in ("style_button", "style_chip"):
-    _body = _static_body(theme_src_tide, _fn)
+    _body = _locate_func(theme_src_tide, _fn)
     if (
         _ink_line not in _body
         or 'font_focus_color", ink)' not in _body
@@ -2427,8 +2429,8 @@ if _focus_ok:
     print("  ✓ 珊瑚主钮和小钮聚焦、按下都用深字")
 # 绢本分支另查（第 2 轮工程 m1）：朱砂印钮 / 朱砂小钮聚焦、按下都是印面浅字 SEAL_TEXT
 if _skin == "juanben":
-    _bj = _static_body(theme_src_tide, "_style_button_juanben")
-    _cj = _static_body(theme_src_tide, "_style_chip_juanben")
+    _bj = _locate_func(theme_src_tide, "_style_button_juanben")
+    _cj = _locate_func(theme_src_tide, "_style_chip_juanben")
     if (
         'font_focus_color", SEAL_TEXT)' in _bj
         and 'font_pressed_color", SEAL_TEXT)' in _bj
@@ -2450,9 +2452,7 @@ if (
 else:
     print("  ✗ 日期仍是半角空格，或酒馆行情仍写费 1 日")
     problems.append("日期或酒馆行情仍是半角记法")
-tavern_i = main_src.find("func _setup_tavern")
-tavern_j = main_src.find("\nfunc ", tavern_i + 1)
-tavern_body = main_src[tavern_i:tavern_j] if tavern_i >= 0 and tavern_j > tavern_i else ""
+tavern_body = _locate_func(main_src, "_setup_tavern")
 if "_begin_benches" in tavern_body and tavern_body.find("_add_leave_button") > tavern_body.find("_end_benches"):
     print("  ✓ 酒馆募人排成工席，离开留在下面")
 else:
@@ -2493,9 +2493,7 @@ if (
 else:
     print("  ✗ 酒馆募人/水手雇请纪实未接上（Lane AB）")
     problems.append("酒馆募人 Lane AB 契约未接")
-port_i = main_src.find("func _setup_port_mode")
-port_j = main_src.find("\nfunc ", port_i + 1)
-port_body = main_src[port_i:port_j] if port_i >= 0 and port_j > port_i else ""
+port_body = _locate_func(main_src, "_setup_port_mode")
 if (
     "func _mount_status_strip" in main_src
     and "func _lift_ledger" in main_src
@@ -2599,9 +2597,7 @@ if (
 else:
     print("  ✗ 章目、修埠或拓碑仍是半角或冒号")
     problems.append("章目、修埠或拓碑仍是半角或冒号")
-enter_i = main_src.find("func _on_enter_port")
-enter_j = main_src.find("\nfunc ", enter_i + 1)
-enter_body = main_src[enter_i:enter_j] if enter_i >= 0 and enter_j > enter_i else ""
+enter_body = _locate_func(main_src, "_on_enter_port")
 if "visit_port" in enter_body and enter_body.find("update_status_panel") > enter_body.find("visit_port"):
     print("  ✓ 进港后船籍簿按已走通的港重写")
 else:
@@ -2841,8 +2837,8 @@ if "_setup_title_and_invest" in main_src and "向本港投钱修埠" in main_src
 else:
     print("  ✗ 市舶司未接职衔/修埠")
     problems.append("市舶司未接职衔修埠")
-dyn = re.search(r"func _setup_dynamic_scene.*?(?=\nfunc )", main_src, re.S)
-if dyn and "update_status_panel()" in dyn.group(0):
+dyn = _locate_func(main_src, "_setup_dynamic_scene")
+if "update_status_panel()" in dyn:
     print("  ✓ 设施页重载刷新状态栏（修埠/买卖后金钱可见）")
 else:
     print("  ✗ _setup_dynamic_scene 未刷新状态栏")
@@ -2858,14 +2854,13 @@ else:
     print("  ✗ 海战胜仗仍直接改 fame")
     problems.append("海战名声未走 add_fame")
 
-pressed = re.search(r"func _on_facility_pressed.*?(?=\nfunc |\Z)", main_src, re.S)
-if pressed and "REMAPPED_FACILITIES" in pressed.group(0) and "city_inn" in main_src:
+pressed_body = _locate_func(main_src, "_on_facility_pressed")
+if "REMAPPED_FACILITIES" in pressed_body and "city_inn" in main_src:
     print("  ✓ 旅店按港改写成 {港}_inn（不再 _setup_inn(\"city\")）")
 else:
     print("  ✗ 旅店未列入港卡改写")
     problems.append("city_inn 未改写")
 if "PROLOGUE_ONLY_FACILITIES" in main_src and 'current_scene_id == "xinghua"' in main_src:
-    pressed_body = pressed.group(0) if pressed else ""
     if "visited_ports" in pressed_body and "quanzhou" in pressed_body:
         print("  ✓ 兴化序章调查页仅在未到泉州前；回访走动态页")
     else:
@@ -2920,11 +2915,11 @@ if "HOME_RATE" in main_src and "INN_RATE" in main_src:
 else:
     print("  ✗ 缺 HOME_RATE / INN_RATE")
     problems.append("缺房价常量")
-exam_fn = re.search(r"func _on_exam_copy.*?(?=\nfunc |\Z)", main_src, re.S)
-if exam_fn and "add_fame" in exam_fn.group(0):
+exam_fn = _locate_func(main_src, "_on_exam_copy")
+if "add_fame" in exam_fn:
     print("  ✗ 贡院誊录给了名声（会绕过修埠/呈报）")
     problems.append("贡院不得给名声")
-elif exam_fn and "scholar_tendency" in exam_fn.group(0):
+elif "scholar_tendency" in exam_fn:
     print("  ✓ 贡院誊录只加学者倾向，不给名声")
 else:
     print("  ✗ 贡院誊录未接线")
@@ -3300,26 +3295,26 @@ if "discoveries_near" not in defined.get("GameManager", set()):
     problems.append("缺 discoveries_near")
 else:
     print("  ✓ GameManager.discoveries_near 已定义")
-temple_fn = re.search(r"func _on_temple_look.*?(?=\nfunc |\Z)", main_src, re.S)
+temple_fn = _locate_func(main_src, "_on_temple_look")
 if not temple_fn:
     print("  ✗ 寺观细看未接线")
     problems.append("缺 _on_temple_look")
-elif any(tok in temple_fn.group(0) for tok in ("add_fame", "report_discovery")):
+elif any(tok in temple_fn for tok in ("add_fame", "report_discovery")):
     print("  ✗ 寺观勘见给了名声或当场呈报（赏格须回市舶司）")
     problems.append("寺观不得给名声/呈报")
-elif "record_discovery" in temple_fn.group(0) and "TEMPLE_LOOK_DAYS" in temple_fn.group(0):
+elif "record_discovery" in temple_fn and "TEMPLE_LOOK_DAYS" in temple_fn:
     print("  ✓ 寺观细看只记入册、耗日，不给名声")
 else:
     print("  ✗ 寺观细看未走 record_discovery")
     problems.append("寺观未记入册")
-rub_fn = re.search(r"func _on_temple_rub.*?(?=\nfunc |\Z)", main_src, re.S)
+rub_fn = _locate_func(main_src, "_on_temple_rub")
 if not rub_fn:
     print("  ✗ 寺观拓碑未接线")
     problems.append("缺 _on_temple_rub")
-elif any(tok in rub_fn.group(0) for tok in ("add_fame", "report_discovery")):
+elif any(tok in rub_fn for tok in ("add_fame", "report_discovery")):
     print("  ✗ 寺观拓碑给了名声或当场呈报")
     problems.append("寺观拓碑不得给名声/呈报")
-elif "add_ledger_note" in rub_fn.group(0) and "TEMPLE_RUB_DAYS" in rub_fn.group(0):
+elif "add_ledger_note" in rub_fn and "TEMPLE_RUB_DAYS" in rub_fn:
     print("  ✓ 寺观拓碑只写入边记、耗日，不给名声")
 else:
     print("  ✗ 寺观拓碑未走 add_ledger_note")
@@ -3340,9 +3335,8 @@ else:
     print("  ✗ 旅店缺设施背景")
     problems.append("旅店缺 FACILITY_BG")
 
-lt = re.search(r"func load_texture.*?(?=\nfunc |\Z)", gm_src, re.S)
-if lt:
-    body = lt.group(0)
+body = _locate_func(gm_src, "load_texture")
+if body:
     fi = body.find("get_file_as_bytes")
     li = body.find("load(path)")
     if fi >= 0 and (li < 0 or fi < li):
@@ -3448,8 +3442,8 @@ if "beacon_ruin" in fuzhou_ids:
 else:
     print("  ✗ 福州近侧没有废烽堠")
     problems.append("福州缺 beacon_ruin")
-title_ui = re.search(r"func _setup_title_and_invest.*?(?=\nfunc |\Z)", main_src, re.S)
-if title_ui and "纲首" in title_ui.group(0):
+title_ui = _locate_func(main_src, "_setup_title_and_invest")
+if "纲首" in title_ui:
     print("  ✗ 职衔说明文案写了纲首")
     problems.append("职衔 UI 含纲首")
 elif title_ui:
@@ -3516,8 +3510,7 @@ print("九之三、审计硬伤回归（进港 / 旅店 / 发现一日 / 沉船�
 print("=" * 68)
 
 main_src = read_main_src()
-fac_m = re.search(r'^func _on_facility_pressed\(.*?(?=^func )', main_src, re.M | re.S)
-fac_body = fac_m.group(0) if fac_m else ""
+fac_body = _locate_func(main_src, "_on_facility_pressed")
 # 主干把改写名单收成常量 REMAPPED_FACILITIES；函数体引用常量、常量里含 city_inn 即算改写
 _remap_m = re.search(r'REMAPPED_FACILITIES\s*:?=\s*\[([^\]]+)\]', main_src, re.S)
 _remap_has_inn = _remap_m is not None and '"city_inn"' in _remap_m.group(1) and "REMAPPED_FACILITIES" in fac_body
@@ -3528,9 +3521,7 @@ else:
     problems.append("city_inn 未改写")
 
 seachart_src_full = open(os.path.join(ROOT, "scripts/SeaChart.gd"), encoding="utf-8").read()
-inv_m = re.search(r'^func _on_investigate_discovery\(\) -> void:.*?(?=^func )',
-                  seachart_src_full, re.M | re.S)
-inv_body = inv_m.group(0) if inv_m else ""
+inv_body = _locate_func(seachart_src_full, "_on_investigate_discovery")
 inv_code = "\n".join(re.sub(r'#.*$', '', ln) for ln in inv_body.split("\n"))
 if inv_code.count("advance_days") == 1 and "_sail_next_day" not in inv_code and "_on_event_continue()" not in inv_code:
     print("  ✓ 发现调查只 advance_days 一次，不在同一次点击里续航")
@@ -3539,8 +3530,7 @@ else:
     problems.append("发现调查叠日")
 
 ship_src_full = open(os.path.join(ROOT, "scripts/Ship.gd"), encoding="utf-8").read()
-sink_m = re.search(r'^func _sink_ship\(\) -> void:.*?(?=^func |\Z)', ship_src_full, re.M | re.S)
-sink_body = sink_m.group(0) if sink_m else ""
+sink_body = _locate_func(ship_src_full, "_sink_ship")
 battle_ret = sink_body.find("_battle_player_sunk")
 clear_at = sink_body.find("Fleet.clear_cargo()")
 if battle_ret != -1 and (clear_at == -1 or clear_at > battle_ret):
@@ -3669,7 +3659,7 @@ else:
     print("  ✗ Voyage.EventKind 缺少 MUTINY")
     problems.append("Voyage.EventKind 缺少 MUTINY")
 if "func mutiny_event" in voyage_src and "roll_day_event" in voyage_src:
-    roll_body = voyage_src.split("func roll_day_event", 1)[-1].split("\nfunc ", 1)[0]
+    roll_body = _locate_func(voyage_src, "roll_day_event")
     if "MUTINY" in roll_body:
         print("  ✗ roll_day_event 把哗变放进了随机表")
         problems.append("哗变进入随机表")
@@ -3706,13 +3696,13 @@ if "damage_each_ship" in defined.get("Fleet", set()):
 else:
     print("  ✗ Fleet.damage_each_ship 未定义")
     problems.append("Fleet.damage_each_ship 未定义")
-storm_body = voyage_src.split("func _storm_event", 1)[-1].split("\nfunc ", 1)[0]
+storm_body = _locate_func(voyage_src, "_storm_event")
 if "damage_each_ship" in storm_body and "damage_fleet" not in storm_body and "ships.size()" not in storm_body:
     print("  ✓ 风涛按艘分摊，不再乘船数打旗舰")
 else:
     print("  ✗ 风涛仍把伤害堆进旗舰")
     problems.append("风涛未分摊")
-flee_body = seachart_src.split("func _on_flee_pirates", 1)[-1].split("\nfunc ", 1)[0]
+flee_body = _locate_func(seachart_src, "_on_flee_pirates")
 if "damage_fleet" in flee_body and "damage_each_ship" not in flee_body:
     print("  ✓ 逃走失败仍只打旗舰")
 else:
@@ -4275,14 +4265,88 @@ else:
 
 print()
 print("=" * 68)
-print("十三、按函数名取函数体（lane gd16：取不到判红）")
+print("十三、按函数名取函数体（lane gd16 / cs9：取不到判红）")
 print("=" * 68)
 _body_missed = sorted(k for k, found in _body_asks.items() if not found)
 for _ln, _name in _body_missed:
     print(f"  ✗ check_symbols.py:{_ln} 取函数体 {_name} 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转")
     problems.append(f"取不到函数体：{_name}（check_symbols.py:{_ln}）")
 if not _body_missed:
-    print(f"  ✓ _func_body / func_bodies().get 的 {len(_body_asks)} 处按名取用都取到函数体")
+    print(f"  ✓ _func_body / func_bodies().get / _locate_func 的 {len(_body_asks)} 处按名取用都取到函数体")
+
+# 断言点名的函数须仍在（lane cs9：函数改名误绿）。按名取体之外，断言还会在字面量里点函数名：
+# 反向断言（`"_sail_next_day(" not in body`、`any(tok in body for tok in ("add_fame", …))`）、find 定位锚
+# （`body.find("_end_benches")` 取不到得 -1，「A 在 B 之后」照样成立）、存在性探查（`"func shore_door" in src`
+# 会认到 shore_door_hover）。被点名的函数一改名，调用点跟着改，这些断言就空转——反向断言照样绿。
+# 所以：NAMED_FUNCS 里每个名字须在 scripts/ 下仍有行首 `[static ]func 名字(` 定义（改名 / 删了判红，断言跟着改）；
+# 清单齐不齐由本脚本自扫——上面几类字面量里点到、当前确有定义的函数名都须登记（新写这类断言就得登记，漏登判红）。
+# 本来就要「保持删除」的旧函数（`"func _add_sail_button" not in main_src`）没有定义，自扫不收，也不必登记。
+NAMED_FUNCS = (
+    "_add_guild_join_slip", "_add_leave_button", "_bak_path", "_battle_player_sunk", "_bearing_phrase",
+    "_begin_benches", "_end_benches", "_enter_battle", "_fit_rank", "_guild_join_block", "_harden_state",
+    "_interior_lead", "_interior_title", "_lift_ledger", "_log_shook_pursuers", "_mount_condition",
+    "_mount_status_strip", "_normalise_flags", "_normalise_ids", "_on_battle_result", "_on_event_continue",
+    "_on_exam_sit", "_on_guild_join", "_on_mutiny_bribe", "_on_mutiny_dismiss", "_on_mutiny_suppress", "_on_upgrade",
+    "_sail_next_day", "_setup_guild", "_setup_news_wall", "_skill_rank", "_valid_flag_name", "add_fame", "add_money",
+    "advance_days", "armor_damage_reduction", "board_begin_subtitle", "captain_power", "clear_cargo",
+    "combat_strength", "damage_each_ship", "damage_fleet", "discoveries_near", "drydock_open", "drydock_seal",
+    "drydock_title", "endgame_title", "finish", "has_flag", "has_found", "has_save", "hire_crew", "invest",
+    "invest_cost", "invest_edge", "investment_level", "is_headless", "live", "load_scene", "lose_cargo_ratio",
+    "lose_crew_random", "mount", "mutiny_bribe_cost", "mutiny_event", "mutiny_ready", "next_title", "paper_card",
+    "plain_log", "play_transition", "price_at_rate", "prologue_open_title", "prologue_shore_title", "promote_open",
+    "promote_title", "rank_word", "recent_news", "report_discovery", "resolve_identity_1268", "resolve_mutiny",
+    "sea_flee_ok_note", "sea_win_note", "set_flag", "ship_crew", "ship_crew_max", "ship_crew_min", "ship_crew_room",
+    "shore_door", "show_choices", "siege_title", "spend_money", "style_button", "style_chip", "style_choice_button",
+    "title_duty_factor", "title_rank", "total_durability", "update_status_panel", "upgrade_armor", "upgrade_sail",
+    "visit_port",
+)
+_NF_VIRTUAL = {"_ready", "_process", "_physics_process", "_input", "_unhandled_input", "_gui_input",
+               "_notification", "_init", "_draw", "_enter_tree", "_exit_tree"}
+_NF_LIT = r'"((?:[^"\\\n]|\\.)*)"'
+
+
+def _nf_names(lit):
+    """字面量里点到的函数名：`func X` / `static func X`、`X(`、整串就是标识符、`Obj.X` 收尾。"""
+    out = set(re.findall(r'([A-Za-z_]\w*)\s*\(', lit)) | set(re.findall(r'\.([A-Za-z_]\w*)\s*$', lit))
+    m = re.match(r'(?:static\s+)?func\s+([A-Za-z_]\w*)', lit)
+    if m:
+        out.add(m.group(1))
+    if re.fullmatch(r'[A-Za-z_]\w*', lit):
+        out.add(lit)
+    return out
+
+
+_nf_defined = set()
+for _dp, _dn, _fs in os.walk(SCRIPTS):
+    for _fn in _fs:
+        if _fn.endswith(".gd"):
+            with open(os.path.join(_dp, _fn), encoding="utf-8") as f:
+                _nf_defined |= set(re.findall(r'^[ \t]*(?:static\s+)?func\s+([A-Za-z_]\w*)\s*\(', f.read(), re.M))
+_nf_seen = {}  # 函数名 -> 本脚本里点到它的行号
+with open(os.path.abspath(__file__), encoding="utf-8") as f:
+    _nf_self = f.read().split("\n")
+for _ln_no, _ln in enumerate(_nf_self, 1):
+    if _ln.lstrip().startswith("#"):
+        continue
+    _ms = list(re.finditer(_NF_LIT + r'\s+not\s+in\b', _ln))
+    _ms += list(re.finditer(r'\.(?:find|rfind|count)\(\s*' + _NF_LIT, _ln))
+    _ms += list(re.finditer(r'"((?:static )?func [A-Za-z_]\w*)"\s+(?:not\s+)?in\b', _ln))
+    if re.search(r'\bany\(', _ln) or re.search(r'\bfor\s+\w+\s+in\s+\(', _ln):
+        _ms += list(re.finditer(_NF_LIT, _ln))
+    for _m in _ms:
+        for _n in _nf_names(_m.group(1)):
+            if _n in _nf_defined and _n not in _NF_VIRTUAL:
+                _nf_seen.setdefault(_n, _ln_no)
+_nf_gone = [n for n in NAMED_FUNCS if n not in _nf_defined]
+_nf_unlisted = sorted(n for n in _nf_seen if n not in NAMED_FUNCS)
+for _n in _nf_gone:
+    print(f"  ✗ 断言点名的函数 {_n} 在 scripts/ 下已无定义（改名 / 删了？点到它的反向断言 / find 锚在空转，断言跟着改，NAMED_FUNCS 同步）")
+    problems.append(f"断言点名的函数已无定义：{_n}")
+for _n in _nf_unlisted:
+    print(f"  ✗ check_symbols.py:{_nf_seen[_n]} 的断言点到函数 {_n}，没登记进 NAMED_FUNCS（登记后改名才会判红）")
+    problems.append(f"NAMED_FUNCS 漏登：{_n}")
+if not _nf_gone and not _nf_unlisted:
+    print(f"  ✓ 断言点名的 {len(NAMED_FUNCS)} 支函数都还在（反向断言 / find 锚 / 存在性探查；NAMED_FUNCS 与本脚本自扫一致）")
 
 print()
 print()
