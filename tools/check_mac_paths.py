@@ -9,6 +9,9 @@
 块里每行须是一条 `("名字", r"正则", "理由")`、行数与条目数相等，夹进别的行（注释 / 字符串）即判红，免得拿它藏路径。
 `SAMPLES = [` 块同样按行排除（lane auditfix2），块里每行须是一条 `r"样本行"`。
 模式逐条写了为什么算 Mac 专属。
+拼接也认（lane cs20，与 check_host_paths 共用 tools/path_scan.fold）：每行先按原文对模式，再把「字面量 / 家目录」之间的
+`+`、`.path_join(…)`、`os.path.join(…)`、`Path(…) / …`、`% …` 拼接折成一段、家目录取法（GDScript / Java / Python 取 HOME 环境变量、Path.home()）
+折成 `$HOME` 再对一遍，任一命中即算；注释、文档里也照判（本道不分代码 / 注释，与 check_host_paths 的仓外根放行不同，见 GATES §三.20）。
 判红：
   · 零、模式自检（lane auditfix2，每次跑都先过）：SAMPLES 有一行没被认出（含独立审计原反例两行：家目录写成 $HOME 的资料库目录、
     Intel Homebrew 的 opt 目录，修前 rc=0），或 CLEAN 有一行被误认，即判红——模式表回退 / 改窄了在这里先红，不等真文件写进来；
@@ -26,6 +29,9 @@ ROOT = os.path.dirname(TOOLS)
 if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
     sys.path.insert(0, TOOLS)
     import gate_json; gate_json.maybe_json(__file__)
+
+sys.path.insert(0, TOOLS)
+import path_scan
 
 SELF = "tools/check_mac_paths.py"
 HEAD_LINES = 5
@@ -62,6 +68,12 @@ SAMPLES = [
     r"/usr/local/Homebrew/bin/brew",
     r"/opt/homebrew/bin/rsvg-convert",
     r"/Applications/Godot.app/Contents/MacOS/Godot --path .",
+    r'var d = OS.get_environment("HOME") + "/Library/Godot"',
+    r'String d = System.getenv("HOME") + "/Library/Caches";',
+    r"var d = OS.get_environment('HOME').path_join('Library').path_join('Logs')",
+    r'fonts = os.path.join(os.getenv("HOME"), "Library/Fonts")',
+    r'var d = "%s/Library/Godot" % OS.get_environment("HOME")',
+    r'brew_opt = "/usr/local/op" + "t/librsvg"',
 ]
 # 反向样本：须不命中（误报即判红）。docstring 末尾「不算 Mac 路径」那几类 + 本仓库里真有的相近写法。
 CLEAN = [
@@ -76,6 +88,9 @@ CLEAN = [
     "brew install librsvg",
     "const HOME_RATE := 5",
     "MyLibrary/notes.md",
+    'codex_dir = OS.get_environment("HOME").path_join("tmp/nk1-codex/assets/portraits")',
+    'var d = OS.get_environment("HOME") + "/.local/share/godot"',
+    'var lib = OS.get_environment("HOME_LIB") + "/Library"',
 ]
 
 # 已定级、允许留着的命中：file → lines（命中行数，须相等）、keep（须在文件头 HEAD_LINES 行里的字样）、why（理由）。
@@ -129,11 +144,11 @@ def self_block(name):
 def pattern_selftest():
     """「零」：SAMPLES 每行须命中、CLEAN 每行须不命中；原反例两行整段过一遍 hits_text（与扫文件同一条路）。"""
     def who(ln):
-        return "、".join(n for n, p, _ in PATTERNS if re.search(p, ln)) or "无"
-    missed = [ln for ln in SAMPLES if not PAT.search(ln)]
+        return "、".join(n for n, p, _ in PATTERNS if re.search(p, ln) or re.search(p, path_scan.fold(ln))) or "无"
+    missed = [ln for ln in SAMPLES if not hits_text(ln)]
     check(not missed, f"正向样本 {len(SAMPLES)} 行都被认出（{len(PATTERNS)} 条模式）"
           + ("" if not missed else "；漏认：" + " | ".join(missed)))
-    false = [ln for ln in CLEAN if PAT.search(ln)]
+    false = [ln for ln in CLEAN if hits_text(ln)]
     check(not false, f"反向样本 {len(CLEAN)} 行都不命中（~/tmp 草稿区、/usr/local/bin、HOME_RATE 等）"
           + ("" if not false else "；误报：" + " | ".join(f"{ln} ← {who(ln)}" for ln in false)))
     audit = "\n".join(SAMPLES[:2]) + "\n"
@@ -177,13 +192,18 @@ def hits(rel):
     return hits_text(raw.decode("utf-8", errors="replace"))
 
 
+def hit(ln):
+    """一行的命中：原文先对，不中再对拼接折后的一行（tools/path_scan.fold）；都不中 → None。"""
+    return PAT.search(ln) or PAT.search(path_scan.fold(ln))
+
+
 def hits_text(text):
-    return [(n, ln) for n, ln in enumerate(text.splitlines(), 1) if PAT.search(ln)]
+    return [(n, ln) for n, ln in enumerate(text.splitlines(), 1) if hit(ln)]
 
 
 def show(rel, hs, limit=6):
     for n, ln in hs[:limit]:
-        m = PAT.search(ln)
+        m = hit(ln)
         print(f"      {rel}:{n}  {ln.strip()[:140]}" + (f"  ← {m.group(0)}" if m else ""))
     if len(hs) > limit:
         print(f"      …另 {len(hs) - limit} 行")

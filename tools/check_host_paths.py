@@ -10,20 +10,29 @@
 本脚本自身也扫：PATTERNS 写成 `/home/<用户>` 这类占位不会命中，只放过 ROOTS 登记行里的仓外根（当 owner 看）。
 判红：
   · 命中 `/home/<用户>` 或 `/workspace/<目录>`，且不是 ROOTS 登记的仓外根（仓库根本身不在 ROOTS 里，一律红）；
-  · ROOTS 登记的仓外根出现在代码行里（.gd / .py / .sh / .gdshader 去掉注释与 .py 文档串），而文件不是该根的 owner——
+  · ROOTS 登记的仓外根出现在代码段里，而文件不是该根的 owner——
     代码只许 owner 写一次默认值，其余走 owner / 环境变量（截图根走 ShotGate.out_dir，简报目录读 $NK1_BRIEFS）；
   · ROOTS 条目失效：owner 不在 / 不再跟踪、owner 代码里不再写这个根、owner 里找不到登记的环境变量名。
 文档与注释里写仓外根不红（说明默认值落在哪，本来就该写全）。
+代码 / 注释按位置切（lane cs20，口径在 tools/path_scan.py 与 check_mac_paths 共用）：.gd / .py / .sh / .gdshader 每行在注释起点切开，
+  切后只有代码段算代码——行尾注释里写仓外根不红，字符串里的 `#`、shell 的 `$#` / `${#a}` 不起注释；.py 文档串、
+  GDScript 独占语句的三引号串整段算文档；其余文件整份算文档。
+拼接也认（lane cs20，同 path_scan.fold）：`"/<根>" + "/<目录>"`、`.path_join(…)`、`os.path.join(…)`、`Path(…) / …` 折成一段再对模式，
+  字面量拆开写照样命中；家目录取法（`OS.get_environment("HOME")` 等）折成 `$HOME`，与 `~/…` 同算合规。
 工作树里未跟踪的文件有命中只记 ⚠、不判红，与 check_mac_paths / check_docs_index 同口径；git 不可用时退回扫盘。
 不在此列：Godot 节点路径 `/root/…`、`~/.local/…` 这类家目录相对写法、`/tmp/…`。
 """
-import ast, os, re, subprocess, sys
+import os, re, subprocess, sys
+from collections import Counter
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
 if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
     sys.path.insert(0, TOOLS)
     import gate_json; gate_json.maybe_json(__file__)
+
+sys.path.insert(0, TOOLS)
+import path_scan
 
 SELF = "tools/check_host_paths.py"
 
@@ -45,7 +54,7 @@ ROOTS = {
         "env": "NK1_BRIEFS", "owners": ("tools/check_decision_refs.py",),
         "why": "lane 简报目录：仓外、不随仓库分发（docs/README.md「协调台账」）；代码里只有 check_decision_refs.py 拿它作 $NK1_BRIEFS 的默认值"},
 }
-CODE_EXT = (".gd", ".py", ".sh", ".gdshader")
+CODE_EXT = path_scan.CODE_EXT
 
 fails = []
 
@@ -85,37 +94,33 @@ def read_text(rel):
     return raw.decode("utf-8", errors="replace")
 
 
-def doc_lines(rel, text):
-    """不算代码的行号：非代码文件全算；代码文件里 `#` / `//` 开头的注释行，.py 另加各级文档串。"""
+def segments(rel, text):
+    """[(代码段, 注释 / 文档段)]，逐行；非代码文件整行算文档（切法见 tools/path_scan.py）。"""
     lines = text.splitlines()
-    if not rel.endswith(CODE_EXT):
-        return set(range(1, len(lines) + 1))
-    out = {n for n, ln in enumerate(lines, 1) if ln.lstrip().startswith(("#", "//"))}
-    if rel.endswith(".py"):
-        try:
-            tree = ast.parse(text)
-        except (SyntaxError, ValueError):
-            return out
-        for node in ast.walk(tree):
-            body = getattr(node, "body", None)
-            if isinstance(body, list) and body and isinstance(body[0], ast.Expr) \
-                    and isinstance(getattr(body[0], "value", None), ast.Constant) and isinstance(body[0].value.value, str):
-                out |= set(range(body[0].lineno, body[0].end_lineno + 1))
-    return out
+    spans = path_scan.comment_spans(rel, text)
+    if spans is None:
+        return [("", ln) for ln in lines]
+    return [path_scan.split(ln, spans.get(n)) for n, ln in enumerate(lines, 1)]
+
+
+def tokens(seg):
+    """一段里的命中串：原文与拼接折后各扫一遍，按串取并集（同一处不重复算）。"""
+    raw = Counter(m.group(0) for m in PAT.finditer(seg))
+    folded = Counter(m.group(0) for m in PAT.finditer(path_scan.fold(seg))) if seg.strip() else Counter()
+    return list((raw | folded).elements())
 
 
 def hits(rel):
-    """[(行号, 行, 命中串, 是否文档 / 注释行)]；读不到 / 二进制 → None。"""
+    """[(行号, 行, 命中串, 是否文档 / 注释段)]；读不到 / 二进制 → None。"""
     text = read_text(rel)
     if text is None:
         return None
-    docs = None
+    lines = text.splitlines()
+    if not any(tokens(ln) for ln in lines):  # 整行（原文 / 折后）都不中就不必切注释（切 .py 要 tokenize + ast，全仓逐个切太慢）
+        return []
     out = []
-    for n, ln in enumerate(text.splitlines(), 1):
-        for m in PAT.finditer(ln):
-            if docs is None:
-                docs = doc_lines(rel, text)
-            out.append((n, ln, m.group(0), n in docs))
+    for n, (ln, (code, doc)) in enumerate(zip(lines, segments(rel, text)), 1):
+        out += [(n, ln, t, False) for t in tokens(code)] + [(n, ln, t, True) for t in tokens(doc)]
     return out
 
 
@@ -147,10 +152,9 @@ def main(argv):
             if text is None:
                 check(False, f"{root}：owner {own} 不在 / 没跟踪，条目失效（改 owners 或删条目）")
                 continue
-            docs = doc_lines(own, text)
-            code = [ln for n, ln in enumerate(text.splitlines(), 1) if n not in docs]
-            has_root = any(root in ln for ln in code)
-            has_env = any(r["env"] in ln for ln in code)
+            code = [c for c, _ in segments(own, text) if c.strip()]
+            has_root = any(root in tokens(c) for c in code)
+            has_env = any(r["env"] in c for c in code)
             check(has_root and has_env, f"{root}：owner {own} 代码里写这个默认根、可由 ${r['env']} 覆盖"
                   + ("" if has_root else "——代码里已不写它（条目失效：删掉，或挪到新 owner）")
                   + ("" if has_env else f"——代码里找不到 {r['env']}（覆盖口子没了，默认根就成了写死）"))
