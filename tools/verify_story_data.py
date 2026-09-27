@@ -470,6 +470,191 @@ if os.path.isfile(_vs_path):
 check('["bio"]' not in codex_src and ".bio_short" not in codex_src,
       "CharacterCodex 仍直接读 bio/bio_short 原稿字段")
 
+# ── Astra L1b：人物原稿读取入口锁（docs/人物原稿与上屏契约.md §读取入口）────────────
+# 上面那段只查「已知几个 UI 文件读了哪些键」；新脚本绕过它直接开 characters.json、或自己调 GameManager 取数口
+# 把原稿送上屏，上面一条都不会响。这里把入口锁成清单：
+#   ① 全仓 .gd / .py / .tscn / .tres（去注释）里凡是 raw（characters.json 路径 / CHARACTERS_PATH / characters_data）、
+#      codex（characters_codex.json / CODEX_PATH）、api（get_character / character_for_npc / character_for_crew /
+#      all_characters / character_meta）三类读取，文件必须登记在 L1B_READERS，且实际读取类别与登记一字不差
+#      （多读即越权，少读即清单过宽，都失败）；开发工具可读原稿，但正式流程（scripts/ scenes/ project.godot）不得引用它们。
+#   ② 上屏字段锁：运行时入口（L1_UI_FILES ∪ 清单里 scripts/ 下的文件）按变量追踪人物字典——ch / cch / other / character、
+#      由取数口赋值的变量、遍历 all_characters() 的循环变量；对它们的 .get("键") / ["键"] / .键 以及取数口链式读取，
+#      键只许 CHAR_ONSCREEN | CHAR_STRUCT；动态键、整份 keys() / values() / str() / stringify 一律失败（门禁无法核对）。
+#      清单外的 scripts/ 文件拿 ch / cch / character 读人物专有键，同样失败（没登记就在读人物字典）。
+#   ③ 自证：往扫描器喂合成源码，六种越界写法必须逐条判红、两种合法写法必须判绿。
+L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
+    "scripts/GameManager.gd": ({"raw", "api"}, "runtime", "原稿唯一运行时加载器：建索引，对外只给取数口"),
+    "scripts/ui/CharacterArt.gd": ({"codex", "api"}, "runtime", "文本层唯一加载器；立绘 / 五维 / 特技 / 称谓取数"),
+    "scripts/ui/CharacterCodex.gd": ({"api"}, "runtime", "人物志：列表、关系、小传（小传走 codex_bio）"),
+    "scripts/Main.gd": ({"api"}, "runtime", "见面页、酒馆募人卡、船籍簿、人物志钮"),
+    "scripts/ui/VisionStage.gd": ({"raw", "api"}, "runtime", "异象幕：先走取数口，GameManager 缺席（单跑场景）才兜底直读；只取 id"),
+    "scripts/companions/CompanionPreview.gd": ({"api"}, "runtime", "同伴预览立绘"),
+    "scripts/chars/CharRoster.gd": ({"api"}, "runtime", "人物名册"),
+    "scripts/chars/CharsDemo.gd": ({"api"}, "runtime", "人物演示场"),
+    "scripts/chars/CharsShoreOverlay.gd": ({"api"}, "runtime", "岸上人物叠层"),
+    "tools/art/ShotTour.gd": ({"raw", "api"}, "dev", "美术巡检截图（开发工具，不进正式流程）"),
+    "tools/art/ThemePreview.gd": ({"raw"}, "dev", "主题预览，编辑器下读 portrait_src 找原画（开发工具）"),
+    "tools/art/portrait_svg/PortraitWall.gd": ({"raw"}, "dev", "立绘墙（开发工具）"),
+    "tools/art/build_portraits.py": ({"raw"}, "dev", "立绘产线：按原稿 portrait / portrait_src 出图"),
+    "tools/art/subset_fonts.py": ({"raw"}, "dev", "字库子集：收全部人物文字的字形"),
+    "tools/verify_story_data.py": ({"raw", "codex", "api"}, "gate", "本门禁（自证合成源码里写着取数口）"),
+    "tools/check_symbols.py": ({"raw", "codex"}, "gate", "L1 工程词 / 展示入口契约"),
+    "tools/check_assets.py": ({"raw"}, "gate", "立绘资源存在性"),
+    "tools/godot_smoke.gd": ({"raw", "api"}, "gate", "冒烟：阵营表、见面页立绘"),
+}
+_L1B_KIND_RE = {
+    "raw": re.compile(r"characters\.json|\bCHARACTERS_PATH\b|\bcharacters_data\b"),
+    "codex": re.compile(r"characters_codex\.json|\bCODEX_PATH\b"),
+    "api": re.compile(r"\b(?:get_character|character_for_npc|character_for_crew|all_characters|character_meta)\s*\(|"
+                      r"[\"'](?:get_character|character_for_npc|character_for_crew|all_characters|character_meta)[\"']"),
+}
+_L1B_ACC = r"(?:get_character|character_for_npc|character_for_crew|_resolve_character)\s*\("
+_L1B_SPECIFIC = {"alt_names", "courtesy", "tier", "attrs", "traits", "portrait", "portrait_status"} | CHAR_DRAFT - {"bio"}
+
+
+def _l1b_strip(src):
+    """去掉 # 注释（GDScript / Python 同法），字符串原样保留；单行串遇换行即收，防一个孤引号吞掉后文。"""
+    out, i, n, q = [], 0, len(src), None
+    while i < n:
+        c = src[i]
+        if q:
+            if c == "\\":
+                out.append(src[i:i + 2]); i += 2; continue
+            if src.startswith(q, i):
+                out.append(q); i += len(q); q = None; continue
+            if c == "\n" and len(q) == 1:
+                q = None
+            out.append(c); i += 1; continue
+        if c == "#":
+            j = src.find("\n", i)
+            i = n if j < 0 else j
+            continue
+        if c in "\"'":
+            q = src[i:i + 3] if src[i:i + 3] in ('"""', "'''") else c
+            out.append(q); i += len(q); continue
+        out.append(c); i += 1
+    return "".join(out)
+
+
+def _l1b_code(rel, src):
+    return _l1b_strip(src) if rel.endswith((".gd", ".py")) else src
+
+
+def _l1b_kinds(code):
+    return {k for k, r in _L1B_KIND_RE.items() if r.search(code)}
+
+
+def _l1b_char_vars(code):
+    names = {"ch", "cch", "other", "character"}
+    names |= set(re.findall(r"\bvar\s+([A-Za-z_]\w*)\s*(?::\s*\w+\s*)?:?=\s*(?:[\w.]+\.)?" + _L1B_ACC, code))
+    names |= set(re.findall(r"(?m)^\s*([A-Za-z_]\w*)\s*=\s*(?:[\w.]+\.)?" + _L1B_ACC, code))
+    lists = set(re.findall(r"\bvar\s+([A-Za-z_]\w*)\s*(?::\s*[\w\[\]]+\s*)?:?=\s*(?:[\w.]+\.)?all_characters\s*\(", code))
+    for v, it in re.findall(r"\bfor\s+([A-Za-z_]\w*)(?:\s*:\s*\w+)?\s+in\s+([^\n]*?):\s*$", code, re.M):
+        if re.search(r"\ball_characters\s*\(", it) or it.strip() in lists:
+            names.add(v)
+    return names
+
+
+def _l1b_field_problems(rel, code):
+    """运行时上屏入口：对人物字典读到的键 → [(键或写法, 出错说明)]；另回读取次数供防失明。"""
+    out, reads = [], 0
+    alt = "|".join(sorted(_l1b_char_vars(code)))
+    recv = r"(?<![\w.])(?:" + alt + r")"
+    for m in re.finditer(recv + r"\s*(?:\.get\(\s*\"(\w+)\"|\[\s*\"(\w+)\"\s*\]|\.([a-z_]\w*)\b(?!\s*\())", code):
+        k = m.group(1) or m.group(2) or m.group(3)
+        reads += 1
+        if k not in CHAR_ONSCREEN | CHAR_STRUCT:
+            out.append((k, f"{rel} 读人物字典「{m.group(0).strip()}」：键「{k}」不在 L1 上屏 / 结构白名单"))
+    for m in re.finditer(_L1B_ACC + r"[^()\n]*\)\s*(?:\.get\(\s*\"(\w+)\"|\[\s*\"(\w+)\"\s*\]|\.([a-z_]\w*)\b(?!\s*\())", code):
+        k = m.group(1) or m.group(2) or m.group(3)
+        reads += 1
+        if k not in CHAR_ONSCREEN | CHAR_STRUCT:
+            out.append((k, f"{rel} 取数口链式读「{m.group(0).strip()}」：键「{k}」不在 L1 上屏 / 结构白名单"))
+    for m in re.finditer(recv + r"\s*(?:\.get\(\s*(?![\s\"])|\[\s*(?![\s\"\]]))", code):
+        out.append(("<动态键>", f"{rel} 以动态键读人物字典「{m.group(0).strip()}…」：门禁无法核对，改写成字面键"))
+    for m in re.finditer(recv + r"\s*\.(?:keys|values)\s*\(|(?:\bstr|stringify)\(\s*(?:" + alt + r")\s*\)", code):
+        out.append(("<整份>", f"{rel} 整份倒出人物字典「{m.group(0).strip()}」：原稿字段会跟着上屏"))
+    return out, reads
+
+
+def _l1b_scan_file(rel, src, field_files, listed):
+    """单个文件的入口 / 字段问题 → [(类别, 说明)]；自证与真仓共用。"""
+    code = _l1b_code(rel, src)
+    probs = []
+    kinds = _l1b_kinds(code)
+    if rel in listed:
+        want = listed[rel][0]
+        if kinds - want:
+            probs.append(("entry", f"{rel} 越权读人物数据 {sorted(kinds - want)}（清单只许 {sorted(want)}）"))
+        if not kinds:
+            probs.append(("stale", f"{rel} 已不读人物数据，却仍登记在 L1B_READERS：从清单删去"))
+        elif want - kinds:
+            probs.append(("stale", f"{rel} 登记了 {sorted(want - kinds)} 却已不读：清单收窄到 {sorted(kinds)}"))
+    elif kinds:
+        probs.append(("entry", f"{rel} 不在 L1B 读取入口清单却读人物数据 {sorted(kinds)}：原稿只许经清单里的入口，上屏走文本层"))
+    reads = 0
+    if rel in field_files:
+        fp, reads = _l1b_field_problems(rel, code)
+        probs += [("field", msg) for _, msg in fp]
+    elif rel.startswith("scripts/") and rel.endswith(".gd"):
+        for k in re.findall(r"(?<![\w.])(?:ch|cch|character)\s*(?:\.get\(\s*\"(\w+)\"|\[\s*\"(\w+)\"\s*\])", code):
+            k = k[0] or k[1]
+            if k in _L1B_SPECIFIC:
+                probs.append(("field", f"{rel} 未登记为上屏入口，却在读人物字典专有键「{k}」：先进 L1B_READERS / L1_UI_FILES"))
+    return probs, reads
+
+
+_l1b_skip = {".git", ".godot", "__pycache__"}
+_l1b_files = {}
+for p in pathlib.Path(ROOT).rglob("*"):
+    if p.suffix in (".gd", ".py", ".tscn", ".tres") and p.is_file() and not (_l1b_skip & set(p.relative_to(ROOT).parts)):
+        _l1b_files[p.relative_to(ROOT).as_posix()] = p.read_text(encoding="utf-8", errors="replace")
+L1B_FIELD_FILES = set(L1_UI_FILES) | {r for r, v in L1B_READERS.items() if v[1] == "runtime"}
+for rel in sorted(L1B_READERS):
+    check(rel in _l1b_files, f"L1B 读取入口 {rel} 不见了：改了路径须同步 L1B_READERS")
+_l1b_found, _l1b_reads = {}, 0
+for rel, src in sorted(_l1b_files.items()):
+    kinds = _l1b_kinds(_l1b_code(rel, src))
+    if kinds:
+        _l1b_found[rel] = kinds
+    probs, n = _l1b_scan_file(rel, src, L1B_FIELD_FILES, L1B_READERS)
+    _l1b_reads += n
+    for _, msg in probs:
+        check(False, msg)
+check(len(_l1b_found) >= 15, f"L1B 只扫到 {len(_l1b_found)} 个人物数据读取点，疑似扫描失明")
+check(_l1b_reads >= 40, f"L1B 运行时入口只追到 {_l1b_reads} 处人物字典读取，疑似变量追踪失效")
+check(sum(1 for v in L1B_READERS.values() if "raw" in v[0] and v[1] == "runtime") <= 2,
+      "L1B：运行时直读原稿的入口超过 GameManager + VisionStage 兜底两处")
+# 开发工具可读原稿，但正式流程不得引用（否则原稿经工具脚本上屏）
+_l1b_prod = "\n".join(src for rel, src in _l1b_files.items() if rel.startswith(("scripts/", "scenes/")))
+_l1b_prod += open(os.path.join(ROOT, "project.godot"), encoding="utf-8").read()
+for rel, (_, role, _) in L1B_READERS.items():
+    if role != "runtime":
+        check(("res://" + rel) not in _l1b_prod, f"正式流程引用了只许开发 / 门禁用的原稿读取者 {rel}")
+
+# 自证：非白名单直读 / 非白名单取数 / 白名单读 bio 原稿 / 链式读原稿 / 循环变量读原稿 / 动态键——必须逐条判红
+_l1b_red = [
+    ("entry", "scripts/ui/EvilPanel.gd", 'func f():\n\tvar s := FileAccess.get_file_as_string("res://data/characters.json")\n'),
+    ("entry", "scripts/ui/EvilPanel.gd", 'func f(id):\n\tlbl.text = str(GameManager.get_character(id).get("name", ""))\n'),
+    ("entry", "scenes/Evil.tscn", '[sub_resource type="GDScript"]\nscript/source = "var d = GameManager.characters_data"\n'),
+    ("field", "scripts/Main.gd", 'func f(id):\n\tvar p: Dictionary = GameManager.get_character(id)\n\tlbl.text = p.get("bio", "")\n'),
+    ("field", "scripts/Main.gd", 'func f(id):\n\tlbl.text = GameManager.character_for_npc(id).get("portrait_note", "")\n'),
+    ("field", "scripts/ui/CharacterCodex.gd", 'func f():\n\tfor who in GameManager.all_characters():\n\t\tlbl.text = who["bio_short"]\n'),
+    ("field", "scripts/ui/CharacterCodex.gd", 'func f(k):\n\tlbl.text = str(ch.get(k, ""))\n'),
+    ("field", "scripts/ui/CharacterArt.gd", 'func f():\n\tlbl.text = ch.bio\n'),
+    ("field", "scripts/ui/NewCard.gd", 'func f(ch):\n\tlbl.text = ch.get("portrait_src", "")\n'),
+]
+for want, rel, src in _l1b_red:
+    got = {kind for kind, _ in _l1b_scan_file(rel, src, L1B_FIELD_FILES, {r: v for r, v in L1B_READERS.items() if r != rel})[0]}
+    check(want in got, f"L1B 自证：{rel} 合成越界（{src.strip().splitlines()[-1].strip()}）门禁没判红")
+_l1b_green = [
+    ("scripts/ui/Note.gd", '# 立绘以 characters.json 的 portrait 为准；GameManager.get_character(id) 只在注释里\nfunc f():\n\tpass\n'),
+    ("scripts/Main.gd", 'func f(id):\n\tvar ch: Dictionary = GameManager.character_for_npc(id)\n\tlbl.text = Art.codex_short(ch) + str(ch.get("name", ""))\n'),
+]
+for rel, src in _l1b_green:
+    got = [msg for _, msg in _l1b_scan_file(rel, src, L1B_FIELD_FILES, {"scripts/Main.gd": ({"api"}, "runtime", "")})[0]]
+    check(not got, f"L1B 自证：合法写法被误判 {got[:1]}")
+
 # 上屏的场景文字（标题、正文、选项、调查项、speaker）引号一律用「」『』，不用 “” ‘’（第 2 轮 UX M7：
 # 人物志、册页、见面页、过场全用「」，只有 scenes.json 混着西式引号）。deprecated 场景不上屏，不查。
 # 序章正文不得点破主角结局（岳王庙、孤城、改名陈文龙）与现代腔（世界地图的迷雾、命运的指针、宏大沙盘）。
