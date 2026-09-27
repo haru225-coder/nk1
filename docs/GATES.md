@@ -43,7 +43,7 @@
 | 3 | check_symbols --suggest | 1. check_symbols（lane cs4） | Python | — | `python3 tools/check_symbols.py --suggest`（或 `CHECK_SYMBOLS_SUGGEST=1 python3 tools/check_symbols.py`） | 多出「二之三、字符串派发候选提示」一节（`emit_signal` / `X.call` / `call_deferred` / `callv` / `Callable(obj, …)` 字面量），没疑点时没有 `⚠ WARN` 行；不开时输出逐字节不变，开了退出码也不变 | **不判红**：`⚠ WARN <文件>:L<行> <调用>  ← <作用域>：无此 func` / `…：无此 signal` = 字面量名在对应作用域里找不到，人工判真死引用 / 误报；`--json --suggest` 里记 `level: warn`（ok=true，不计 pass/fail） |
 | 4 | compile 清单自检（inventory） | 11. compile（lane ea4） | Godot | ✓ | `godot --headless --path . -s res://tools/godot_compile_check.gd` | `COMPILE_CHECK OK   inventory SCRIPTS == tracked *.gd under scripts/tools (exempt N)` | `COMPILE_CHECK FAIL inventory <原因> …`（原因 `unlisted` / `listed-missing` / `dup` / `exempt-stale` / `exempt-but-listed`） = `git ls-files` 里已跟踪的 `.gd` 没进 `SCRIPTS`（或 `INVENTORY_EXEMPT` 没写理由）、清单路径不存在 / 重复 / 豁免失效，整体计 bad+1；`COMPILE_CHECK NOTE inventory git ls-files unavailable` = 没 git，退回扫盘（warn，不判红） |
 
-**截图门禁明细**（接 `tools/shot_gate.gd` 的全部 24 支；TAG / 张数 / 截图目录现读脚本源码。headless 只验契约：本地命令换 `--headless` 并加 `-- --contract`，`--json` 写 `godot --headless --quiet --path . -s res://tools/<探针>.gd -- --contract --json`）。「截图目录」列是不设 `NK1_SHOT_DIR` 时的默认（根 `/workspace/nk1-qa-shots`，只在刷新共享证据图时用）；**worktree / 自测推荐一律加前缀 `NK1_SHOT_DIR=/tmp/<lane>/shots`**，全部探针改落 `<该目录>/<子目录>`、patrol 旁证落 `<该目录>/patrol`，默认目录不动：
+**截图门禁明细**（接 `tools/shot_gate.gd` 的全部 24 支；TAG / 张数 / 截图目录现读脚本源码。headless 只验契约：本地命令换 `--headless` 并加 `-- --contract`，`--json` 写 `godot --headless --quiet --path . -s res://tools/<探针>.gd -- --contract --json`）。「截图目录」列是不设 `NK1_SHOT_DIR` 时的默认（根 `/workspace/nk1-qa-shots`，只在刷新共享证据图时用）；**worktree / 自测推荐一律加前缀 `NK1_SHOT_DIR=/tmp/<lane>/shots`**，全部探针改落 `<该目录>/<子目录>`、patrol 旁证落 `<该目录>/patrol`，默认目录不动；`CutscenePreview --snap` 存图缺省 `/tmp` → `<该目录>/cutscene-preview`（`--snapdir` 仍优先）；`tools/art/tour.sh` 巡检截帧缺省 `~/tmp/nk1-art-work/tour` → `<该目录>/tour`（`-o` 仍优先）：
 
 | # | 探针 | 接入 | TAG | 张数 | 截图目录（默认） | 本地命令 | `--json` |
 |---|---|---|---|---|---|---|---|
@@ -273,20 +273,22 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 
 ### 14. patrol
 - 读：`✓/✗` 行，末行 `PATROL SHELL PASS/FAIL`。开头的 `ERROR: Required extension VK_KHR_surface not found` 等 3 行是 Vulkan 回落 OpenGL 的环境噪声（`--json` 里记 `engine_errors: 3`，不影响 ok）。
-- 截图旁证（lane pg）：存盘（默认 `/tmp/patrol-shots/`；设 `NK1_SHOT_DIR=<目录>` 则落 `<目录>/patrol/`，lane pg3）前按像素种类数 / 直方图熵判一色（每 4px 取点、每通道 16 级；种类 ≤ 2 或熵 < 0.1 bit）。一色或拿不到图逐张打 `⚠ 截图旁证 <页> …`，**只记 warn、不改退出码**（`--json` 的 `counts.warn`）；headless 打一行 `⚠ 截图旁证未判（n 张跳过）`。判据开头自检 4 条（纯色 / 量化格边界两色抖动必判一色、杂色图不判、空图判拿不到图），自检 `✗` 即 FAIL。
+- 截图旁证（lane pg）：存盘（默认 `/tmp/patrol-shots/`；设 `NK1_SHOT_DIR=<目录>` 则落 `<目录>/patrol/`，lane pg3。默认**有意不放进** `/workspace/nk1-qa-shots/patrol`：patrol 是必跑门禁，§二 批量块、§四 CI、`.claude/todo.md` 验证段都不带前缀跑，挪进共享证据根就成了每条 lane 每轮都覆盖证据图，lane pg4 否证）前按像素种类数 / 直方图熵判一色（每 4px 取点、每通道 16 级；种类 ≤ 2 或熵 < 0.1 bit）。一色或拿不到图逐张打 `⚠ 截图旁证 <页> …`，**只记 warn、不改退出码**（`--json` 的 `counts.warn`）；headless 打一行 `⚠ 截图旁证未判（n 张跳过）`。判据开头自检 4 条（纯色 / 量化格边界两色抖动必判一色、杂色图不判、空图判拿不到图），自检 `✗` 即 FAIL。
 - 常见红因：没设 `DISPLAY`；按钮越出 1280×720；设施页 / 终局港口页按钮文案改名（断言按文案找钮）。
 
 ### 15. 截图门禁（shot_gate.gd + 截图探针）
 - 读：`<TAG>_OK shots=n/n -> 目录`；红时先列 `✗ 真失败：…`，再 `<TAG>_FAIL k（shots=…）`。
 - headless 不加 `-- --contract` **必红**（`_FAIL headless …此为环境不具备，不是画面回归`）——这是设计，不是回归。只验契约：`godot --headless … -- --contract` → `<TAG>_CONTRACT_OK`。
-- 输出目录（lane gd2 / pg3）：默认 `/workspace/nk1-qa-shots/<子目录>`（§一明细表「截图目录（默认）」列）；设 `NK1_SHOT_DIR=<目录>` 则全部 24 支探针整体改落 `<目录>/<子目录>`（`vision/`、`title/`、`chars/`…照原样建），patrol 旁证落 `<目录>/patrol/`（相对路径按 `$PWD` 展开）。**推荐用法：worktree / 自测一律设它**，否则会覆盖共享证据图；不设只用于刷新共享证据图：
+- 输出目录（lane gd2 / pg3）：默认 `/workspace/nk1-qa-shots/<子目录>`（§一明细表「截图目录（默认）」列）；设 `NK1_SHOT_DIR=<目录>` 则全部 24 支探针整体改落 `<目录>/<子目录>`（`vision/`、`title/`、`chars/`…照原样建），patrol 旁证落 `<目录>/patrol/`；截图门禁以外的两个出图工具也认它（lane pg4）：`CutscenePreview --snap` 缺省 `/tmp` → `<目录>/cutscene-preview/`（给了 `--snapdir` 仍按它），`tools/art/tour.sh` 缺省 `~/tmp/nk1-art-work/tour` → `<目录>/tour/`（给了 `-o` 仍按它）。相对路径一律按 `$PWD` 展开。**推荐用法：worktree / 自测一律设它**，否则会覆盖共享证据图；不设只用于刷新共享证据图：
 
   ```sh
   NK1_SHOT_DIR=/tmp/<lane>/shots DISPLAY=:2 godot --path . -s res://tools/vision_stage_probe.gd
   NK1_SHOT_DIR=/tmp/<lane>/shots DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd   # 旁证 → /tmp/<lane>/shots/patrol/
+  NK1_SHOT_DIR=/tmp/<lane>/shots DISPLAY=:2 godot --path . res://scenes/cutscene/CutscenePreview.tscn -- --cs=<id> --snap=1.5 --autoquit   # → /tmp/<lane>/shots/cutscene-preview/
+  NK1_SHOT_DIR=/tmp/<lane>/shots GODOT=godot tools/art/tour.sh -r <运行副本> title   # → /tmp/<lane>/shots/tour/title/
   ```
 
-  脚本里统一写 `var OUT_DIR := ShotGate.out_dir("<子目录>")`，新探针别再写死绝对路径：gates_md 按这个写法读目录，并判红「截图脚本没走 `ShotGate.out_dir`」「`tools/` 已跟踪 `.gd` 代码行里写死默认根（只许 `shot_gate.gd`）」「patrol_shell 不读 `NK1_SHOT_DIR`」（lane pg3）。
+  脚本里统一写 `var OUT_DIR := ShotGate.out_dir("<子目录>")`，新探针别再写死绝对路径：gates_md 按这个写法读目录，并判红「截图脚本没走 `ShotGate.out_dir`」「`tools/` 已跟踪 `.gd` 代码行里写死默认根（只许 `shot_gate.gd`）」「patrol_shell 不读 `NK1_SHOT_DIR`」（lane pg3）；注册表 `shot_env.users` 登记的 patrol / CutscenePreview / tour.sh 代码行里读不到 `NK1_SHOT_DIR`、子目录或原默认也判红（lane pg4）。
 - 常见红因：空视口 / 一色图（窗口没真正绘制）；张数不足。`vision_letterbox_probe` 旧有的「出战合拢时画面中线未全黑（v=0.302）」偶发红不是时序：布景是真海战，约 8–10 s 旗舰被击沉、WorldMap 自起出战墨边顶掉探针那副（lane pg 已冻住布景；再现时会先报「布景海战在墨边演示中自行结算」）。
 
 ### 16. save_robust_probe

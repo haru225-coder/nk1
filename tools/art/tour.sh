@@ -5,7 +5,7 @@
 # 用法：tools/art/tour.sh [-n 每站帧数] [-r 运行副本] [-o 输出根] [站点…]
 #   -n  默认 30（3 秒；站点一般第 8–12 帧就位，之后画面静止）
 #   -r  运行副本目录，默认 ~/tmp/nk1-art-cloud-run-port（须先 rsync 并 --headless --editor --quit 导入过一次）
-#   -o  输出根，默认 ~/tmp/nk1-art-work/tour
+#   -o  输出根，默认 ~/tmp/nk1-art-work/tour；设了环境变量 NK1_SHOT_DIR 则默认改为 <该目录>/tour（-o 仍优先；相对路径按 $PWD 展开，lane pg4）
 #   站点缺省 = 下面 ALL（基础站点全集）；另可给 cutscene_<id> / chapter_card_<n> / banner_<port> 等，见 ShotTour.gd 的 SITES。
 #   过场接线站点（cinematics 线，走 Main 真实流程，时长长，按需给 -n）：cutscene_opening（开机开场）、chapter_card_<n>、
 #   banner_<港>（海图回港横幅）、ending_cs_<结局>（结局过场 + 结算册页）、title_anim（标题演出；TOUR_ARGS="--rewatch" 看重看开场）。
@@ -16,6 +16,10 @@ GODOT=${GODOT:-$HOME/tmp/godot-4.6.3/Godot.app/Contents/MacOS/Godot}
 N=30
 RUN=$HOME/tmp/nk1-art-cloud-run-port
 OUT=$HOME/tmp/nk1-art-work/tour
+if [ -n "${NK1_SHOT_DIR:-}" ]; then
+  OUT=$NK1_SHOT_DIR/tour
+  case $OUT in /*) ;; *) OUT=$PWD/$OUT ;; esac
+fi
 while getopts "n:r:o:" opt; do
   case $opt in
     n) N=$OPTARG ;;

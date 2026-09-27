@@ -90,7 +90,11 @@ def render(reg):
                 "`godot --headless --quiet --path . -s res://tools/<探针>.gd -- --contract --json`）。"
                 f"「截图目录」列是不设 `{env['var']}` 时的默认（根 `{env['default_root']}`，只在刷新共享证据图时用）；"
                 f"**worktree / 自测推荐一律加前缀 `{env['recommended']}`**，全部探针改落 `<该目录>/<子目录>`、"
-                "patrol 旁证落 `<该目录>/patrol`，默认目录不动：", "",
+                "patrol 旁证落 `<该目录>/patrol`，默认目录不动"
+                + "".join(f"；{u['what']}缺省 `{u['default']}` → `<该目录>/{u['sub']}`"
+                          + (f"（`{u['flag']}` 仍优先）" if u["flag"] else "")
+                          for u in env.get("users", []) if u["sub"] != "patrol")
+                + "：", "",
             "| # | 探针 | 接入 | TAG | 张数 | 截图目录（默认） | 本地命令 | `--json` |",
             "|---|---|---|---|---|---|---|---|"]
     for i, s in enumerate(shots, 1):
@@ -241,11 +245,21 @@ def main(argv):
             if root in ln and not ln.lstrip().startswith("#"):
                 hard.append(f"{f}:{i}")
     check(not hard, f"tools/ 已跟踪 .gd 代码里不写死默认截图根 {root}（只许 shot_gate.gd）" + (f"；写死：{', '.join(hard)}" if hard else ""))
-    try:
-        patrol = open(os.path.join(ROOT, "tools", "patrol_shell.gd"), encoding="utf-8", errors="replace").read()
-    except OSError:
-        patrol = ""
-    check(bool(env.get("var")) and env["var"] in patrol, f"patrol_shell.gd 截图旁证目录读 {env.get('var')}")
+    # lane pg4：探针以外的出图工具（patrol 旁证 / CutscenePreview --snap / tour.sh）也读 NK1_SHOT_DIR，且源码里还留着各自默认
+    users = env.get("users") or []
+    check(any(u["file"] == "tools/patrol_shell.gd" for u in users), "注册表 shot_env.users 登记了 patrol_shell.gd")
+    for u in users:
+        try:
+            lines = open(os.path.join(ROOT, u["file"]), encoding="utf-8", errors="replace").read().splitlines()
+        except OSError:
+            lines = []
+        src = "\n".join(ln for ln in lines if not ln.lstrip().startswith("#"))  # 只认代码行，注释里写了不算
+        sh = u["file"].endswith(".sh")
+        lost = [k for k in (env.get("var"), "/" + u["sub"] if sh else f'"{u["sub"]}"',
+                            u["default"].replace("~/", "$HOME/") if sh else f'"{u["default"]}"') if k and k not in src]
+        check(bool(env.get("var")) and not lost,
+              f"{u['file']}（{u['what']}）读 {env.get('var')} → <根>/{u['sub']}，默认 {u['default']}"
+              + (f"；源码里找不到：{lost}" if lost else ""))
     uses = re.compile(r'preload\(\s*"res://tools/shot_gate\.gd"\s*\)')
     users = [f for f in tools_gd() if f != "tools/shot_gate.gd"
              and uses.search(open(os.path.join(ROOT, f), encoding="utf-8", errors="replace").read())]

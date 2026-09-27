@@ -225,6 +225,14 @@ SHOT_ROOT = _shot_root()
 # 截图落盘根的环境变量（shot_gate.gd 的 out_dir 与 patrol_shell 同读）；worktree / 自测推荐一律带上这个前缀，免得覆盖共享证据图（lane pg3）
 SHOT_ENV = "NK1_SHOT_DIR"
 SHOT_ENV_PREFIX = SHOT_ENV + "=/tmp/<lane>/shots "
+# 截图探针以外也认 NK1_SHOT_DIR 的出图工具：不设走各自默认，设了落 <根>/<sub>；显式参数仍优先（lane pg3 / pg4）。
+# patrol 默认留 /tmp（必跑门禁、各 lane 例行不带前缀跑，挪进共享证据根会被每轮覆盖，lane pg4 否证统一默认根）
+SHOT_ENV_USERS = [
+    {"file": "tools/patrol_shell.gd", "what": "patrol 截图旁证", "default": "/tmp/patrol-shots", "sub": "patrol", "flag": None},
+    {"file": "scripts/cutscene/CutscenePreview.gd", "what": "`CutscenePreview --snap` 存图", "default": "/tmp",
+     "sub": "cutscene-preview", "flag": "--snapdir"},
+    {"file": "tools/art/tour.sh", "what": "`tools/art/tour.sh` 巡检截帧", "default": "~/tmp/nk1-art-work/tour", "sub": "tour", "flag": "-o"},
+]
 
 
 def _shot_probe(path, lane):
@@ -313,7 +321,8 @@ def registry():
     must_json = [{"id": g["id"], "tier": g["tier"], "json": g["json"]} for g in order]
     ci = [dict(c) for c in CI_STEPS]
     return {"gates": gates, "shot_probes": shots, "subchecks": subs, "oneclick": must, "oneclick_json": must_json,
-            "ci_steps": ci, "shot_env": {"var": SHOT_ENV, "default_root": SHOT_ROOT, "recommended": SHOT_ENV_PREFIX.strip()}}
+            "ci_steps": ci, "shot_env": {"var": SHOT_ENV, "default_root": SHOT_ROOT, "recommended": SHOT_ENV_PREFIX.strip(),
+                         "users": SHOT_ENV_USERS}}
 
 
 # `--godot <预设>`：注册表里的 Godot 门禁 + 截图脚本（带窗口的不加 --headless）

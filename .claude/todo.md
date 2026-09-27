@@ -19,7 +19,7 @@
 ## 排队（换皮收尾后）
 - [x] merge `fix/siege-shore-band`（2026-09-26 由 -54 收尾合入：守城页 / 终局港口页取视觉线第二轮重写的 `_build_shore` 页型重排（功能覆盖 feb0499，另修残留、翻倍、匾名累加），年号表取 main，跳年摘要取中文数字版；02 的三条守城岸带探针保留并通过）
 - [x] 接 b05c 两项：行会入行、贡院赴试（见 `docs/P7留档评估_2026-09-25.md`），其余 P7 留档不动——09-26 接入：泉州 / 博多 / 广州行会加「入行」工席（2000 / 商誉 8 → 商誉 +4、人脉 +2、`guild_<港>`），贡院加「赴试」工席（每章一次 `exam_sat_ch<章>`、15 日、倾向结算记 `exam_sat`），1268 殿试打平先读 `exam_sat`；check_symbols 补契约。本机无 Godot，未跑 smoke / compile，待真机点验
-- [x] 工席成功态 JRPG 过渡（09-26）：`scripts/ui/UiTransition.gd` + `Main.play_transition(title, subtitle, at_black, seal)`——淡入焦墨 → 旧绢题签自左擦出（马善政题名 + 小朱印）、副题浮起 → 停 1 秒（点一下或按键提前收）→ 淡出，约 2.4 秒；全黑时 `load_scene` 换页。接在行会入行成功（「行会・入行」）与贡院赴试成功（「贡院・赴试」+ 日期）。headless / -s 工具脚本 / 巡检下不演、当帧换页。**手动触发**：泉州行会凑够 2000 钱、商誉 8 点「交会费入行」；或泉州 / 兴化贡院本章未赴时点「入场赴试」。中帧 `/workspace/nk1-qa-shots/polish/transition_*.png`；待 Snow 真机看节奏
+- [x] 工席成功态 JRPG 过渡（09-26）：`scripts/ui/UiTransition.gd` + `Main.play_transition(title, subtitle, at_black, seal)`——淡入焦墨 → 旧绢题签自左擦出（马善政题名 + 小朱印）、副题浮起 → 停 1 秒（点一下或按键提前收）→ 淡出，约 2.4 秒；全黑时 `load_scene` 换页。接在行会入行成功（「行会・入行」）与贡院赴试成功（「贡院・赴试」+ 日期）。headless / -s 工具脚本 / 巡检下不演、当帧换页。**手动触发**：泉州行会凑够 2000 钱、商誉 8 点「交会费入行」；或泉州 / 兴化贡院本章未赴时点「入场赴试」。中帧 `/workspace/nk1-qa-shots/polish/transition_*.png`（共享证据图；自测重截加 `NK1_SHOT_DIR=/tmp/<lane>/shots` 落 `<该目录>/polish/`，别覆盖）；待 Snow 真机看节奏
 - [ ] push main（Snow 已授权「全部 ready 后」；先 `gh auth login`，本机现无 GitHub 写凭据）
 
 ## 视觉资产线（2026-09-26 合入 main，待 Snow）

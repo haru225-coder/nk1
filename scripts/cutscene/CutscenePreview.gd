@@ -9,6 +9,8 @@
 ##   --autoquit                播完退出（headless 自测用）
 ##   --click=<秒,秒…>          在这些时刻模拟一次左键点击（验证跳字 / 跳镜）
 ##   --esc=<秒>                在该时刻模拟 Esc
+##   --snap=<秒,秒…>           在这些时刻整张画布存图 snap_<秒>.png（headless 不存）
+##   --snapdir=<目录>          存图目录；缺省 /tmp，设了环境变量 NK1_SHOT_DIR 则落 <该目录>/cutscene-preview（lane pg4）
 ## 什么都不给：依次播数据里第一段过场。
 extends Control
 
@@ -86,6 +88,18 @@ func _ready() -> void:
 		var p := CutscenePlayer.play(self, id, _data)
 		if p != null:
 			p.finished.connect(_on_done.bind("cs:" + id))
+
+
+## --snapdir 优先；没给时 NK1_SHOT_DIR 为空取 /tmp，否则 <根>/cutscene-preview（同 tools/shot_gate.gd 的 out_dir：相对路径按启动时的 $PWD 展开）。
+func _snap_dir() -> String:
+	if _args.has("snapdir"):
+		return str(_args["snapdir"])
+	var root := OS.get_environment("NK1_SHOT_DIR").strip_edges()
+	if root == "":
+		return "/tmp"
+	if not root.is_absolute_path():
+		root = OS.get_environment("PWD").path_join(root)
+	return root.path_join("cutscene-preview")
 
 
 func _parse(argv: PackedStringArray) -> Dictionary:
@@ -212,7 +226,8 @@ func _process(delta: float) -> void:
 	if not _snaps.is_empty() and _t >= float(_snaps[0]) and not Kit.is_headless():
 		var at := float(_snaps.pop_front())
 		var img := get_viewport().get_texture().get_image()
-		var dir := str(_args.get("snapdir", "/tmp"))
+		var dir := _snap_dir()
+		DirAccess.make_dir_recursive_absolute(dir)
 		var path := "%s/snap_%05.2f.png" % [dir, at]
 		img.save_png(path)
 		print("PREVIEW snap ", path, " ", img.get_size())
