@@ -158,22 +158,7 @@ godot --quiet --headless --path . -s res://tools/godot_compile_check.gd -- --jso
 godot --quiet --headless --path . -s res://tools/godot_story_check.gd -- --json > /tmp/gates/story.json
 godot --quiet --headless --path . -s res://tools/p7_guild_exam_smoke.gd -- --json > /tmp/gates/p7.json
 DISPLAY=:2 godot --quiet --path . -s res://tools/patrol_shell.gd -- --json > /tmp/gates/patrol.json
-python3 - <<'EOF'   # 汇总：逐道 ok / counts；任一道红或没有 JSON → 退 1
-import glob, json, os, sys
-red = 0
-for p in sorted(glob.glob("/tmp/gates/*.json")):
-    s = open(p, encoding="utf-8").read()
-    try:
-        d = json.loads(s)
-    except ValueError:
-        try:
-            d = json.loads(s.strip().splitlines()[-1])
-        except (IndexError, ValueError):
-            d = {"gate": os.path.basename(p)[:-5], "ok": False, "counts": "没有 JSON"}
-    red += not d["ok"]
-    print(f"{d['gate']:24}", d["ok"], d["counts"])
-sys.exit(1 if red else 0)
-EOF
+python3 tools/gate_json.py --judge /tmp/gates/*.json   # 汇总：逐道一行 ✓/✗；任一道红或没有 JSON 行 → 退 1
 ```
 <!-- GATES-BATCH:END -->
 
@@ -195,7 +180,10 @@ godot --headless --quiet --path . -s res://tools/qa_title_probe.gd -- --contract
 - 形状同上表；`ok` 仍恒等于 `exit_code == 0`。`checks` 由各门禁的检查 helper 显式登记（`GateReport.check / warn`），不解析文本，逐条与外包解析结果相同。
 - 截图探针：每张存下的图记一条 `{name: 文件名, ok: true, detail: "shot"}`，`fails` 每条记一条失败；另带 `tag`、`shots`、`expected_shots`、`out_dir`（契约模式带 `contract: true`，headless 判红带 `no_render: true`）。`gate` 取入口脚本文件名（如 `qa_title_probe`）。
 - `engine_errors` / `errors` 由一个只数 ERROR / SCRIPT ERROR / SHADER ERROR 的 Logger 收（WARNING 不计），**只收脚本加载之后的**：patrol 开头 3 行 Vulkan 回落，外包记 `engine_errors: 3`，原生记 0。仍只报数、不改 `ok`。
-- 与外包的差别：没有 `tail`（stdout 已关，原输出不留）；`cmd` 只含引擎没吞掉的参数（`--headless` / `--path` 不在其中）；门禁没走到收尾（中途卡死、在 `finish` 前 `quit`）就**不打 JSON**，消费方把「stdout 里没有 JSON 行」当红——要崩溃兜底（`exit_code` 条目 + `tail`）用外包。
+- 与外包的差别：没有 `tail`（stdout 已关，原输出不留）；`cmd` 只含引擎没吞掉的参数（`--headless` / `--path` 不在其中）。
+- 崩溃兜底（lane gd7）：带 `--json` 时本件在首帧前给 `root.tree_exiting` 挂钩。门禁没走到 `finish()` 就退出——`finish` 前 `quit()`、窗口被关（`WM_CLOSE_REQUEST` 自动 quit）——SceneTree 收尾拆 root 时补打**一行** `{"ok": false, "error": "no_finish", …}`（`checks` 末尾一条 `no_finish` 失败，前面照录已登记的条目），并把进程退出码改成 1（`quit()` 传的原码 OS 不给读；`ok == (exit_code == 0)` 照旧成立）。走过 `finish()` 的不再打，stdout 仍只一行。**进程被信号杀（`timeout` 掐断卡死的门禁）、引擎崩溃时什么钩子都不走，stdout 仍没有 JSON 行**——这一类只能由消费方判红：
+  - `python3 tools/gate_json.py --native <预设|res://….gd> [--display] [--timeout N] [-- 用户参数]`（或 `--native [--timeout N] -- <完整命令>`）：自动补 `--quiet` / `-- --json` 跑原生门禁，原样转出 JSON；没 JSON 行合成 `ok: false, error: "no_json"`（`no_json_line` 条目 + `tail`，退出码沿用，0 也改 1，超时记 124）；JSON 不止一行、`exit_code` 与进程退出码不符、`ok` 与 `exit_code` 不符也判红。
+  - `python3 tools/gate_json.py --judge <文件…>`：批量落盘的 stdout 逐个判（同上规则，退出码不可知时只看 JSON），任一红退 1。
 
 ## 三、逐道：怎么跑、怎么读、常见红因
 

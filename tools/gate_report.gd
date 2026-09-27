@@ -6,6 +6,9 @@ extends RefCounted
 ## 带 `--json`：本脚本一被 preload（门禁脚本编译时即加载，早于 _init）就在 _static_init 关掉 stdout，门禁与游戏代码的
 ##   print 一律不外泄；另挂一个 Logger 只数引擎 ERROR / SCRIPT ERROR。收尾 finish() 临时打开 stdout，打一行 JSON。
 ##   引擎横幅「Godot Engine v…」在脚本加载前就已打出，脚本管不着：要 stdout 恰好一行，命令里加 `--quiet`。
+## 崩溃兜底（lane gd7，也只在 `--json` 下）：没走到 finish() 就退出（finish 前 quit、窗口被关）时，SceneTree 收尾拆 root
+##   发 tree_exiting，本件在那里补打一行 ok=false、error="no_finish" 的 JSON，并把退出码改成 1。被信号杀掉（timeout）/
+##   引擎崩溃时进程里什么钩子都不走，stdout 仍没有 JSON 行，由消费方判红（`gate_json.py --native` / `--judge`）。
 ## 用法：const GateReport := preload("res://tools/gate_report.gd")
 ##   GateReport.check(ok, name[, detail])   GateReport.warn(name[, detail])
 ##   收尾：GateReport.finish("门禁名", rc, "人读判词行")，然后照旧 quit(rc)。
@@ -21,6 +24,8 @@ static func _static_init() -> void:
 	Engine.print_to_stdout = false
 	_logger = _ErrorCounter.new()
 	OS.add_logger(_logger)
+	# 门禁脚本加载时主循环还没建（-s 的脚本本身就是主循环），挂钩延到首帧前的消息队列
+	_arm_exit_hook.call_deferred()
 
 
 static func json_mode() -> bool:
@@ -48,7 +53,31 @@ static func finish(gate: String, rc: int, summary: String, extra := {}) -> void:
 	if not json_mode() or _finished:
 		return
 	_finished = true
+	_emit(gate, rc, summary, _checks.duplicate(true), extra)
+
+
+static func _arm_exit_hook() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree != null and not tree.root.tree_exiting.is_connected(_on_exit_without_finish):
+		tree.root.tree_exiting.connect(_on_exit_without_finish)
+
+
+## 兜底：root 离树时还没 finish() 过 = 门禁没走到收尾。quit() 传的原退出码读不到（OS 不给），一律改 1，保持 ok == (exit_code == 0)。
+static func _on_exit_without_finish() -> void:
+	if _finished:
+		return
+	_finished = true
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree != null:
+		tree.quit(1)
+	var gate := main_script_name()
 	var checks := _checks.duplicate(true)
+	checks.append({"name": "no_finish", "ok": false,
+		"detail": "没走到 GateReport.finish() 就退出（finish 前 quit / 窗口被关 / 中途出错跳过收尾）；退出码改为 1"})
+	_emit(gate, 1, "%s 未收尾（no_finish）" % gate, checks, {"error": "no_finish"})
+
+
+static func _emit(gate: String, rc: int, summary: String, checks: Array, extra: Dictionary) -> void:
 	var hard := checks.filter(func(c): return c.get("level", "") != "warn")
 	if rc != 0 and hard.all(func(c): return c["ok"]):
 		var why := "退出码 %d，但没登记到失败条目（中途崩溃或提前退出）" % rc

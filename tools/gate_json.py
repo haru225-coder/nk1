@@ -11,6 +11,11 @@
      python3 tools/gate_json.py --godot res://tools/vision_stage_probe.gd [--display] [-- 用户参数]
      python3 tools/gate_json.py tools/verify_economy.py  # 等同 verify_economy.py --json
      python3 tools/gate_json.py -- <任意命令 ...>
+  2b. GDScript 原生 `--json`（tools/gate_report.gd）的消费方（lane gd7）：**stdout 里没有 JSON 行一律判红**
+     python3 tools/gate_json.py --native smoke [--timeout 300]          # 预设同 --godot；自动补 --quiet 与 -- --json
+     python3 tools/gate_json.py --native res://tools/qa_title_probe.gd --display [-- --contract]
+     python3 tools/gate_json.py --native [--timeout N] -- godot --headless --quiet --path . -s res://tools/X.gd -- --json
+     python3 tools/gate_json.py --judge /tmp/gates/*.json               # 批量落盘的 stdout 逐个判；缺 JSON / ok=false 即退 1
   3. 门禁清单：`python3 tools/gate_json.py --list` 输出注册表 JSON（REGISTRY + SHOT_PROBES + SUBCHECKS + CI_STEPS）；
      docs/GATES.md §一、§二批量巡检块、§四由它生成，`python3 tools/gates_md.py` 校验、`--write` 重生成。
 
@@ -22,6 +27,8 @@
   · engine_errors：Godot 引擎打的 ERROR 类行数；script_errors 是其中 SCRIPT ERROR 行数。只报数，不改判定
     （patrol 的 Vulkan 回落、save_robust_probe 故意喂坏档都会打 ERROR:，属预期）。
   · 红了却没解析到失败行（脚本中途崩、提前 exit）时补一条 name="exit_code" 的失败条目，并附 tail。
+  · --native / --judge：原生 JSON 原样转出；没 JSON 行时合成 ok=false、error="no_json"（name="no_json_line" 失败条目 + tail），
+    exit_code 为进程退出码（0 也改 1）；JSON 与进程退出码对不上、或 JSON 不止一行也判红。
 """
 import json, os, re, subprocess, sys, tempfile
 
@@ -425,6 +432,99 @@ def run_command(gate, cmd, cwd=None):
     return build(gate, cmd, p.returncode, p.stdout.decode("utf-8", "replace"))
 
 
+def _json_lines(text):
+    """stdout 里能解析成门禁 JSON（带 gate / ok 的对象）的行；Python 门禁的多行缩进 JSON 整段算一行。"""
+    try:
+        doc = json.loads(text)
+        if isinstance(doc, dict) and "gate" in doc and "ok" in doc:
+            return [doc]
+    except ValueError:
+        pass
+    docs = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            doc = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(doc, dict) and "gate" in doc and "ok" in doc:
+            docs.append(doc)
+    return docs
+
+
+def judge_native(gate, cmd, rc, out, err="", timed_out=None):
+    """原生 `--json` 的判定：有且只有一行门禁 JSON、且与进程退出码一致才可能绿；没 JSON 行 = 红（lane gd7）。
+    rc=None 表示退出码不可知（--judge 读落盘文件），只看 JSON。"""
+    docs = _json_lines(out)
+    if not docs:
+        why = f"stdout 里没有 JSON 行；退出码 {rc}"
+        if timed_out:
+            why += f"（超时 {timed_out} 秒被掐断）"
+        why += "。进程被信号杀 / 引擎崩溃 / 卡死被掐断时 gate_report.gd 的退出钩子不走，只能在这里判红"
+        code = rc if rc else 1
+        doc = {"gate": gate, "ok": False, "exit_code": code, "summary": "", "error": "no_json",
+               "checks": [{"name": "no_json_line", "ok": False, "detail": why}],
+               "counts": {"total": 1, "pass": 0, "fail": 1, "warn": 0, "engine_errors": 0, "script_errors": 0},
+               "cmd": cmd}
+        tail = [ANSI.sub("", l) for l in (out + err).splitlines() if l.strip()][-20:]
+        if tail:
+            doc["tail"] = tail
+        return doc
+    doc = docs[-1]
+    problems = []
+    if len(docs) > 1:
+        problems.append(("multi_json", f"stdout 里有 {len(docs)} 行门禁 JSON，只许一行"))
+    if rc is not None and rc != doc.get("exit_code"):
+        problems.append(("exit_code_mismatch", f"JSON 写 exit_code={doc.get('exit_code')}，进程实际退出 {rc}"))
+    if doc.get("ok") != (doc.get("exit_code") == 0):
+        problems.append(("ok_mismatch", f"JSON 的 ok={doc.get('ok')} 与 exit_code={doc.get('exit_code')} 不一致"))
+    if problems:
+        doc = dict(doc, ok=False, checks=list(doc.get("checks", [])))
+        for name, why in problems:
+            doc["checks"].append({"name": name, "ok": False, "detail": why})
+        if not doc.get("exit_code"):
+            doc["exit_code"] = rc if rc else 1
+        c = dict(doc.get("counts", {}))
+        c["total"] = c.get("total", 0) + len(problems)
+        c["fail"] = c.get("fail", 0) + len(problems)
+        doc["counts"] = c
+    return doc
+
+
+def run_native(gate, cmd, cwd=None, timeout=None):
+    timed_out = None
+    try:
+        p = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
+        rc, out, err = p.returncode, p.stdout, p.stderr
+    except subprocess.TimeoutExpired as e:  # 同 timeout(1)：记 124
+        rc, out, err, timed_out = 124, e.stdout or b"", e.stderr or b"", timeout
+    return judge_native(gate, cmd, rc, out.decode("utf-8", "replace"), err.decode("utf-8", "replace"), timed_out)
+
+
+def judge_files(paths):
+    """--judge：每个文件是一道门禁 `--json` 的 stdout 落盘；逐个判，一行一道，任何一道红 / 缺 JSON 即退 1。"""
+    red = 0
+    for path in paths:
+        name = os.path.splitext(os.path.basename(path))[0]
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+        except OSError as e:
+            text = ""
+            name += f"（读不到：{e.strerror}）"
+        doc = judge_native(name, [], None, text)
+        mark = "✓" if doc["ok"] else "✗"
+        red += not doc["ok"]
+        why = doc.get("error") or ", ".join(c["name"] for c in doc.get("checks", [])
+                                             if not c.get("ok") and c.get("level") != "warn")[:120]
+        print(f"{mark} {doc.get('gate') or name:28} ok={doc['ok']!s:5} exit={doc.get('exit_code')} "
+              f"counts={json.dumps(doc.get('counts', {}), ensure_ascii=False)}" + (f"  ← {why}" if not doc["ok"] else ""))
+    print("结果：全部通过" if red == 0 else f"结果：{red} 项失败（共 {len(paths)} 道）")
+    return 1 if red else 0
+
+
 def _child(path, args):
     """子进程：照原样跑门禁，同时实录门禁文件里 check(cond, msg) 的每次调用。"""
     import runpy
@@ -486,6 +586,38 @@ def main(argv):
             doc.setdefault("notes", []).append("未设 DISPLAY：带窗口的门禁（patrol / 截图探针）需 DISPLAY=:2")
         emit(doc)
         return doc["exit_code"]
+    if argv[0] == "--native":
+        rest, timeout = argv[1:], None
+        if rest[:1] == ["--timeout"]:
+            timeout, rest = float(rest[1]), rest[2:]
+        if rest[:1] == ["--"]:
+            cmd = rest[1:]
+            named = [a for a in cmd if a.endswith(".gd")] or cmd[:1]
+            gate = os.path.splitext(os.path.basename(named[0]))[0] if named else ""
+            cwd = None
+        else:
+            target, rest = rest[0] if rest else "", rest[1:]
+            display = "--display" in rest
+            rest = [a for a in rest if a != "--display"]
+            if "--timeout" in rest:
+                i = rest.index("--timeout")
+                timeout, rest = float(rest[i + 1]), rest[:i] + rest[i + 2:]
+            user = rest[rest.index("--") + 1:] if "--" in rest else []
+            if target in GODOT_PRESETS:
+                gate, gargs = GODOT_PRESETS[target]
+            elif target.startswith("res://") and target.endswith(".gd"):
+                gate = os.path.splitext(os.path.basename(target))[0]
+                gargs = ([] if display else ["--headless"]) + ["--path", ".", "-s", target]
+            else:
+                print(f"未知 Godot 门禁：{target!r}（预设：{' '.join(GODOT_PRESETS)}，或 res://….gd）", file=sys.stderr)
+                return 2
+            cmd = [_godot_bin(), "--quiet"] + list(gargs) + ["--"] + [a for a in user if a != "--json"] + ["--json"]
+            cwd = ROOT
+        doc = run_native(gate, cmd, cwd=cwd, timeout=timeout)
+        emit(doc)
+        return doc["exit_code"]  # judge_native 保证 ok=false 时非 0
+    if argv[0] == "--judge":
+        return judge_files(argv[1:])
     if argv[0] == "--":
         cmd = argv[1:]
         named = [a for a in cmd if a.endswith((".py", ".gd"))] or cmd[:1]

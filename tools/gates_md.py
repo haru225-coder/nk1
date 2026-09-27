@@ -28,24 +28,9 @@ BATCH_BEGIN = "<!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --wri
 BATCH_END = "<!-- GATES-BATCH:END -->"
 BATCH_HEAD = "## 二、`--json` 机读输出"
 BATCH_DIR = "/tmp/gates"
-# 批量巡检收尾汇总：Python / 外包是整段多行 JSON，原生是末行一行 JSON（不加 --quiet 时前面有引擎横幅）；
-# 原生 --json 的门禁中途崩 / 卡死不出 JSON 行（docs/GATES.md §二末），按红计
-BATCH_SUM = """python3 - <<'EOF'   # 汇总：逐道 ok / counts；任一道红或没有 JSON → 退 1
-import glob, json, os, sys
-red = 0
-for p in sorted(glob.glob("%s/*.json")):
-    s = open(p, encoding="utf-8").read()
-    try:
-        d = json.loads(s)
-    except ValueError:
-        try:
-            d = json.loads(s.strip().splitlines()[-1])
-        except (IndexError, ValueError):
-            d = {"gate": os.path.basename(p)[:-5], "ok": False, "counts": "没有 JSON"}
-    red += not d["ok"]
-    print(f"{d['gate']:24}", d["ok"], d["counts"])
-sys.exit(1 if red else 0)
-EOF""" % BATCH_DIR
+# 批量巡检收尾汇总交 gate_json.py --judge（lane gd7）：Python / 外包的整段多行 JSON、原生的一行 JSON 都认；
+# 原生 --json 被信号杀 / 引擎崩溃时不出 JSON 行（docs/GATES.md §二末），按红计；多行 JSON、ok 与 exit_code 不符也红
+BATCH_SUM = "python3 tools/gate_json.py --judge %s/*.json   # 汇总：逐道一行 ✓/✗；任一道红或没有 JSON 行 → 退 1" % BATCH_DIR
 CN = "零一二三四五六七八九十"
 
 fails = []
