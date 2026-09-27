@@ -41,3 +41,8 @@
 - [nk-1双线融合方案_2026-09-03.md](nk-1双线融合方案_2026-09-03.md)：双线融合分析（历史稿，指 09-03 两棵旧树）
 - [审计-2026-09-23-全量.md](审计-2026-09-23-全量.md)：2026-09-23 全量审计（基线 993edc1）
 - [审计-全量-2026-09-23.md](审计-全量-2026-09-23.md)：2026-09-23 全量审计另一份（基线 993edc1）
+
+## 协调台账（repo 外，不在 git 里）
+下面两份在简报目录 `/workspace/nk1-agent-briefs/`，不随仓库分发，只写路径、不写链接，`check_docs_index` 不核它们。
+- `/workspace/nk1-agent-briefs/COORDINATION.md`：lane 协调台账正本（规矩、简报头部模板、各 lane SETTLED 行；只追加，过时的事实标注更正时间）
+- `/workspace/nk1-agent-briefs/COORDINATION_INDEX.md`：上面台账的结构化索引（按 lane 一行：commit / 结果 / 待议闭并开 / 门禁；未闭合待议总表；协调者结论），lane cr2 起建
