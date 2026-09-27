@@ -1910,6 +1910,14 @@ if 0 <= sit_body.find('set_flag("exam_sat")') < sit_body.find("advance_days(EXAM
 else:
     print("  ✗ 赴试 exam_sat 写在 advance_days 之后（跨月会先锁身份）")
     problems.append("赴试跨月身份时序")
+# 誊录同理：工钱与学者倾向须先于 advance_days(EXAM_COPY_DAYS)，三月末誊录跨四月同样触发身份结算。
+copy_body = _p7_code(p7_bodies.get("_on_exam_copy", ""))
+copy_adv = copy_body.find("advance_days(EXAM_COPY_DAYS)")
+if 0 <= copy_body.find("scholar_tendency += 1") < copy_adv and 0 <= copy_body.find("add_money(EXAM_STIPEND)") < copy_adv:
+    print("  ✓ 誊录先记工钱与学者倾向再 advance_days（跨月身份结算）")
+else:
+    print("  ✗ 誊录工钱/学者倾向写在 advance_days 之后（跨月会先锁身份）")
+    problems.append("誊录跨月身份时序")
 # 赴试只兴化、泉州（P7 §贡院）。city_exam 在通用九卡里，每港都进得了 {港}_exam，须在工席与处理函数两头拦。
 sit_ports = re.search(r"const EXAM_SIT_PORTS\s*:=\s*\[(.*?)\]", main_src, re.S)
 exam_setup = _p7_code(p7_bodies.get("_setup_exam", ""))

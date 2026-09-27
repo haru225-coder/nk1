@@ -1,10 +1,11 @@
 extends SceneTree
-## 无界面驱动 P7 行会入行 / 贡院赴试：扣费与门槛、赴试两支、每章一次、1268 打平读 exam_sat、三月下旬跨月赴试。
+## 无界面驱动 P7 行会入行 / 贡院赴试：扣费与门槛、赴试两支、每章一次、1268 打平读 exam_sat、三月下旬跨月赴试 / 誊录。
 ## 跑法：godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 ## -s 入口在编译期看不到自动加载名，单例一律在 _initialize 之后从根节点取。
 
 const JOIN_TEXT := "交会费入行"
 const SIT_TEXT := "入场赴试"
+const COPY_TEXT := "替人抄三日"
 
 var _fails: Array = []
 var _gs
@@ -353,6 +354,38 @@ func _run(main) -> void:
 			_fail("跨月赴试士人结算未写 renamed_wenlong")
 		else:
 			_ok("1268 三月下旬赴试跨四月：exam_sat 先于身份结算 → 士人陈文龙")
+
+	# ── 8. 1268 三月廿九誊录跨入四月：身份结算须读到本趟学者 +1（与 7 同型） ──
+	_clear_flag("exam_sat")
+	_clear_flag("chose_land_first")
+	_clear_flag("renamed_wenlong")
+	_clear_flag("name_unchanged")
+	_gs.hometown_tendency = 0
+	_gs.scholar_tendency = 4
+	_gs.sea_tendency = 4
+	_gs.identity = "undecided"
+	_gs.player_name = "陈子龙"
+	_cal.year = 1268
+	_cal.month = 3
+	_cal.day = 29
+	main.load_scene("mingzhou_exam")
+	var copy_late := _button_with_text(main, COPY_TEXT)
+	if copy_late == null:
+		_fail("1268 三月下旬明州贡院没有「%s」" % COPY_TEXT)
+	else:
+		var b8 := _snap()
+		copy_late.pressed.emit()
+		var a8 := _snap()
+		if a8["day"] - b8["day"] != 3:
+			_fail("三月下旬誊录推进 %d 日，应为 3" % (a8["day"] - b8["day"]))
+		elif int(_cal.year) != 1268 or int(_cal.month) != 4:
+			_fail("三月廿九 +3 日应到 1268 四月，现 %d年%d月%d日" % [int(_cal.year), int(_cal.month), int(_cal.day)])
+		elif a8["scholar"] != b8["scholar"] + 1 or a8["fame"] != b8["fame"]:
+			_fail("誊录应学者 +1、不记名声，现学者 %d→%d 名声 %d→%d" % [b8["scholar"], a8["scholar"], b8["fame"], a8["fame"]])
+		elif str(_gs.identity) != "scholar" or str(_gs.player_name) != "陈文龙":
+			_fail("跨月誊录应先记学者 +1 再结算为士人，现 identity=%s name=%s" % [str(_gs.identity), str(_gs.player_name)])
+		else:
+			_ok("1268 三月下旬誊录跨四月：学者 +1 先于身份结算 → 士人陈文龙")
 
 	if _fails.is_empty():
 		print("P7_GUILD_EXAM_SMOKE_OK")

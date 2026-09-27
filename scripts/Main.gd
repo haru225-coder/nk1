@@ -3187,10 +3187,12 @@ func _exam_slip() -> VBoxContainer:
 	return body
 
 
+## 誊录：与赴试同一时序——工钱与学者倾向先落袋，再 advance_days。
+## 三月末誊录会跨入四月，月初 _settle_history 按倾向锁 1268 身份、pay_wages 按现银发饷。
 func _on_exam_copy(_port_id: String) -> void:
-	GameManager.advance_days(EXAM_COPY_DAYS)
 	GameState.add_money(EXAM_STIPEND)
 	GameState.scholar_tendency += 1
+	GameManager.advance_days(EXAM_COPY_DAYS)
 	log_msg("【誊录】在贡院廊下抄了 %d 日试卷，得工钱 %d。学者倾向 %d。如今是 %s。" % [
 		EXAM_COPY_DAYS, EXAM_STIPEND, GameState.scholar_tendency, Calendar.get_date_string(),
 	])
