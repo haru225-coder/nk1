@@ -775,6 +775,23 @@ all_full_cost0 = all(upgrade_cost(sid, "sail", 3) == 0 and upgrade_cost(sid, "ar
                      for sid in ships)
 check(all_full_cost0, "满级（Lv3）后升级成本为 0——上限 3 级生效")
 
+# 2b) 船屋升级回调：按当前等级重算、升级 true 才扣钱、扣不成回滚、连点不二次扣（ASTRA M1）
+_main_up = open(os.path.join(os.path.dirname(__file__), "..", "scripts", "Main.gd"),
+                encoding="utf-8").read()
+_up_body = _main_up.split("func _on_upgrade(", 1)[1].split("\nfunc ", 1)[0] if "func _on_upgrade(" in _main_up else ""
+_i_busy = _up_body.find("if _upgrade_busy:")
+_i_cost = _up_body.find("Fleet.upgrade_cost(ship_index, kind)")
+_i_up = _up_body.find("Fleet.upgrade_armor(ship_index) if is_armor else Fleet.upgrade_sail(ship_index)")
+_i_notok = _up_body.find("if not ok:")
+_i_spend = _up_body.find("GameState.spend_money(cost)")
+_i_roll = _up_body.find("Fleet.ships[ship_index][level_key] = prev_lv")
+_i_set = _up_body.find("_upgrade_busy = true")
+check(_up_body.count("spend_money(") == 1, "升级回调只一处扣钱")
+check(0 <= _i_busy < _i_cost < _i_up < _i_notok < _i_spend < _i_roll < _i_set,
+      "升级回调：连点闸 → 按当前等级重算费用 → 升级 → 失败不扣 → 扣钱 → 扣不成回滚 → 上闸过场")
+check("spend_money(shown_cost)" not in _up_body, "升级扣费不用按钮 bind 的旧价")
+check(_up_body.rstrip().endswith("_upgrade_busy = false"), "升级过场落定后才放开连点闸")
+
 # 3) armor 满级船体伤系数 = 0.80 > 0——风暴依旧要命，不能归零
 def armor_reduction(max_durabilities, armor_levels):
     num = sum(w * (a - 1) for w, a in zip(max_durabilities, armor_levels))
@@ -1858,8 +1875,8 @@ check("voyage_started" in back_body, "发舶之后不能点回港躲开海难")
 check("voyage_days" in offer_body and "expected_days" not in offer_body and "safe_days" not in offer_body,
       "委办期限不改用遇事日数或八成日数")
 check("·误期" in main_src and "交不齐" in sea_src, "旅店歇过期限、舱里货不够，界面会写出来")
-check("八成" in sea_src and "不算稳" in main_src and "不算稳" in sea_src,
-      "平均数卡进期限、八成超出时，界面写明不算稳")
+check("八成" in sea_src and "未稳" in main_src and "未稳" in sea_src,
+      "平均数卡进期限、八成超出时，界面写明未稳")
 check("凑得出" in main_src and "拿不满酬" in main_src,
       "钱不够买满委办时，牙行把缺口写在单子上")
 check("hold_tenths" in plan_body and "cargo_hold_chance(order, known, open, expected)" in plan_body,
@@ -1892,11 +1909,138 @@ check("safe_days" in spoil_ui and "expected_days" not in spoil_ui and "can_carry
 check('int(plan_r.get("safe_days", 0)) <= deadline and sr < 8' in spoil_ui
       and 'int(plan_c.get("safe_days", 0)) <= deadline and sc < 8' in spoil_ui,
       "受潮警告按同一条航法看八成日数")
-check("一件没潮" in main_src and "一件没潮" in sea_src and "受潮不到八成" in main_src and "受潮只有" in sea_src,
-      "会潮的货，牙行和海图都写出一件没潮的成数")
+check("受潮" in main_src and "受潮" in sea_src and "受潮不到八成" in main_src and "受潮只有" in sea_src,
+      "会潮的货，牙行和海图都写出受潮成数")
 check("dampest_aboard" in sea_src and "good_perish_rate" in sea_src,
       "海图按舱里会潮的货来写，委办货优先")
 check("·换风" in sea_src and "逐日累加" in main_src, "途中换风写在海图和委办上")
+
+print()
+print("=" * 68)
+print("九之六、新闻市场副作用（news.json market → Economy.apply_news_market，一次性冲击后按 RECOVERY 回归）")
+print("=" * 68)
+
+E_GD = "scripts/core/Economy.gd"
+RATE_MIN_E = gd_const(E_GD, "RATE_MIN")
+RATE_MAX_E = gd_const(E_GD, "RATE_MAX")
+RECOVERY_E = gd_const(E_GD, "RECOVERY")
+eco_src = open(os.path.join(ROOT, E_GD), encoding="utf-8").read()
+gm_src = open(os.path.join(ROOT, "scripts/GameManager.gd"), encoding="utf-8").read()
+nm_fn = eco_src.split("func apply_news_market", 1)[1].split("\nfunc ", 1)[0] if "func apply_news_market" in eco_src else ""
+check("clampf(" in nm_fn and "RATE_MIN" in nm_fn and "RATE_MAX" in nm_fn and "* mul" in nm_fn,
+      "apply_news_market 按 mul 乘行情并钳在 RATE_MIN–RATE_MAX（不另开常驻倍率层）")
+settle_fn = gm_src.split("func _settle_history", 1)[1].split("\nfunc ", 1)[0]
+check('n.get("market"' in settle_fn and "Economy.apply_news_market(" in settle_fn,
+      "GameManager._settle_history 投放新闻时消费 market 字段")
+check('str(n.get("date", "")) == "%04d-%02d" % [Calendar.year, Calendar.month]' in settle_fn,
+      "market 只在新闻本月投放时生效，补发旧闻不追溯砸盘")
+day_fn = eco_src.split("func on_day_passed", 1)[1].split("\nfunc ", 1)[0]
+check("(1.0 - r) * RECOVERY" in day_fn, "冲击后的行情仍走 on_day_passed 的 RECOVERY 回归，无永久层")
+
+news_all = load("news.json")["news"]
+mk_news = [n for n in news_all if "market" in n]
+check(bool(mk_news), f"至少一条新闻挂 market 副作用（{[n['id'] for n in mk_news]}）")
+for n in mk_news:
+    mk = n["market"]
+    gid, mul = mk["good_id"], float(mk["mul"])
+    tgt = mk.get("ports") or [pid for pid in ports if gid in ports[pid].get("market", {})]
+    for pid in tgt:
+        check(gid in ports[pid].get("market", {}), f"{n['id']}：{pid} 交易 {goods[gid]['name']}")
+        worst = []
+        for r0 in (0.85, 1.0, 1.15, RATE_MIN_E, RATE_MAX_E):
+            r1 = min(RATE_MAX_E, max(RATE_MIN_E, r0 * mul))
+            worst.append(r1)
+            b, sl = price_with_crew(pid, gid, True, 0, 0, r1), price_with_crew(pid, gid, False, 0, 0, r1)
+            check(RATE_MIN_E <= r1 <= RATE_MAX_E and 0 < sl <= b,
+                  f"{n['id']}@{pid} 起价率 {r0:.2f} → {r1:.3f}：在带内，买 {b} ≥ 卖 {sl} > 0")
+        # 最坏：从开局扰动下沿砸下去，60 日后须回到 1.0 的 5% 以内
+        r = min(worst[:3]) if mul < 1 else max(worst[:3])
+        r_start = r
+        for _ in range(60):
+            r = r + (1.0 - r) * RECOVERY_E
+        print(f"  {n['id']} @ {ports[pid]['name']} {goods[gid]['name']}×{mul}："
+              f"买价 {price_with_crew(pid, gid, True, 0, 0, 1.0)} → {price_with_crew(pid, gid, True, 0, 0, r_start)}，60 日后率 {r:.3f}")
+        check(abs(1.0 - r) < 0.05, f"{n['id']}@{pid} 冲击 60 日后回到 1.0±5%（{r:.3f}）——可逆，不打坏价带")
+
+print()
+print("=" * 68)
+print("九之七、行会 / 贡院账目隔离与新闻倍率边界")
+print("=" * 68)
+
+def main_body(name):
+    marker = "func " + name
+    if marker not in main_src:
+        return ""
+    return main_src.split(marker, 1)[1].split("\nfunc ", 1)[0]
+
+# 行会入行是一次性会费与账本增量，不应悄悄叠到行情、抽解或佣金倍率。
+guild_join = main_body("_on_guild_join")
+guild_fee = int(gd_const("scripts/Main.gd", "GUILD_JOIN_FEE"))
+guild_credit_req = int(gd_const("scripts/Main.gd", "GUILD_JOIN_CREDIT"))
+guild_credit_gain = int(gd_const("scripts/Main.gd", "GUILD_JOIN_CREDIT_GAIN"))
+guild_network_gain = int(gd_const("scripts/Main.gd", "GUILD_JOIN_NETWORK_GAIN"))
+check(guild_fee > 0 and guild_credit_req > 0 and guild_credit_gain > 0 and guild_network_gain > 0,
+      f"行会常量为正：会费 {guild_fee}、信用门槛 {guild_credit_req}、商誉 +{guild_credit_gain}、人脉 +{guild_network_gain}")
+check(guild_join.count("spend_money(GUILD_JOIN_FEE)") == 1 and
+      "merchant_credit += GUILD_JOIN_CREDIT_GAIN" in guild_join and
+      "network += GUILD_JOIN_NETWORK_GAIN" in guild_join and
+      'set_flag("guild_%s" % port_id)' in guild_join,
+      "入行一次扣会费、加商誉/人脉并写 guild_<港> 旗标")
+check("Economy." not in guild_join and "apply_buy_impact" not in guild_join and
+      "apply_sell_impact" not in guild_join,
+      "入行不改行情、抽解、佣金（不偷偷开常驻倍率）")
+# 小账本复刻成功与重复点击：会费只出一次，收益只记一次。
+g_cash, g_credit, g_network, g_flag = guild_fee + 1, guild_credit_req, 0, False
+g_cash -= guild_fee; g_credit += guild_credit_gain; g_network += guild_network_gain; g_flag = True
+g_after_repeat = (g_cash, g_credit, g_network, g_flag)
+check(g_after_repeat == (1, guild_credit_req + guild_credit_gain, guild_network_gain, True),
+      "行会成功账本：钱 -会费、商誉/人脉一次性增加，重复点击不再产生第二笔倍率")
+
+# 赴试只推进日期并改变身份倾向/名声；明确不发钱、不改行情。
+exam_sit = main_body("_on_exam_sit")
+exam_days = int(gd_const("scripts/Main.gd", "EXAM_SIT_DAYS"))
+exam_ports_src = main_body("_setup_exam")
+check(exam_days > 0 and exam_days == 15, f"赴试耗时 {exam_days} 日（固定为 15 日，不以经济倍率折算）")
+check("advance_days(EXAM_SIT_DAYS)" in exam_sit and "add_money" not in exam_sit and
+      "spend_money" not in exam_sit and "apply_buy_impact" not in exam_sit and
+      "apply_sell_impact" not in exam_sit,
+      "赴试只耗日并结算身份倾向/名声，不发钱、不砸盘")
+check('"exam_sat"' in exam_sit and "add_fame(4)" in exam_sit and
+      "add_fame(1)" in exam_sit and "scholar_tendency += 2" in exam_sit and
+      "sea_tendency += 1" in exam_sit,
+      "赴试士人/海路两支的名声与倾向增量完整")
+check('const EXAM_SIT_PORTS := ["xinghua", "quanzhou"]' in main_src and
+      "EXAM_SIT_PORTS.has(port_id)" in exam_ports_src,
+      "赴试港限制仍为兴化、泉州，不把其误当成全港经济倍率")
+
+# 新闻倍率是单次 market mul：验证原始倍率、显式港口范围、只调用一次和回归。
+news_calls = settle_fn.count("Economy.apply_news_market(")
+check(news_calls == 1, f"新闻 market 每次投放只消费一次（接线调用 {news_calls} 处）")
+for n in mk_news:
+    mk = n["market"]
+    gid, mul = mk["good_id"], float(mk["mul"])
+    explicit = mk.get("ports")
+    targets = list(explicit) if explicit else [pid for pid in ports if gid in ports[pid].get("market", {})]
+    check(0.4 <= mul <= 1.6 and not math.isclose(mul, 1.0),
+          f"{n['id']}：market mul={mul:g} 在 0.4–1.6 且确有冲击")
+    check(bool(targets) and all(gid in ports[pid].get("market", {}) for pid in targets),
+          f"{n['id']}：market 只落在交易 {goods[gid]['name']} 的声明港口")
+    # 以 1.0 为基线，显式港口以外必须保持原率；倍率不可因补发或重复消费再乘一次。
+    probe = {pid: 1.0 for pid in ports if gid in ports[pid].get("market", {})}
+    before_probe = dict(probe)
+    for pid in targets:
+        if pid in probe:
+            probe[pid] = min(RATE_MAX_E, max(RATE_MIN_E, probe[pid] * mul))
+    check(all(probe[pid] == before_probe[pid] for pid in probe if pid not in targets),
+          f"{n['id']}：未列港行情不变（无越界倍率）")
+    expected = min(RATE_MAX_E, max(RATE_MIN_E, mul))
+    for pid in targets:
+        if pid in probe:
+            check(abs(probe[pid] - expected) < 1e-9,
+                  f"{n['id']}@{pid}：一次性行情率 1.0×{mul:g} → {probe[pid]:.3f}")
+    twice = min(RATE_MAX_E, max(RATE_MIN_E, expected * mul)) if targets else expected
+    check(not math.isclose(twice, expected),
+          f"{n['id']}：重复乘法会产生不同结果，故接线必须保持单次消费")
 
 print()
 print("=" * 68)

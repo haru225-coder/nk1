@@ -6,7 +6,7 @@
   1. painted（portrait_status=painted）：从 Codex / main 旧油画按人物逐张修瑕后落地——
      去日文招牌字、阿那紫皮改古铜并做厚涂化、净海换掉樱花和式寺檐、市舶小吏压掉明式补子、
      施那帏蓝天改暮色等，处理逐条写在 PAINTED 表里，可复现。
-  2. placeholder：在油画到位前，生成一套同规格「绢本墨影」兜底卡——减笔泼墨（梁楷一路）：人物立在暖光旧绢前，
+  2. ink_card（旧名 placeholder）：在油画到位前，生成一套同规格「绢本墨影」兜底卡——减笔泼墨（梁楷一路）：人物立在暖光旧绢前，
      焦墨发冠、淡墨加赭石的中间调面（朝向侧受暖侧光、背光侧沉下）、几笔焦墨眉眼，身形三层墨（湿墨底、侧锋大笔、
      焦墨外廓），下缘淡墨山水 / 海浪入雾。游戏用无字版（不烤姓名题签与阵营印，名牌由界面给）；
      带题签版只在 --titled DIR 时另出。部件与墨法见 tools/art/portrait_svg/
@@ -665,7 +665,7 @@ def build_painted(cid, spec, fn):
     return im
 
 
-# ───────────────────────── placeholder：绢本墨影兜底卡 ─────────────────────────
+# ───────────────────────── ink_card：绢本墨影兜底卡 ─────────────────────────
 def _noise(shape, scale, seed):
     """多倍频值噪声，0..1。"""
     rng = np.random.default_rng(seed)
@@ -1182,7 +1182,7 @@ def main(argv):
             if not do_c:
                 continue
             if cid not in cast:
-                raise SystemExit("placeholder 人物 %s 不在 portrait_svg/cast.json" % cid)
+                raise SystemExit("ink_card 人物 %s 不在 portrait_svg/cast.json" % cid)
             # 墨影卡有灯笼暖光、公服浅绛与朱印，256 色调色板会在这些渐变上起色阶（实测灯笼处误差 1.0–2.5/255
             # 且肉眼可见条带），故存 RGB
             if mode == "silhouette":

@@ -1,7 +1,8 @@
 class_name DrydockBerth
 extends RefCounted
 ## 坞位一艘。帆、甲、添人只对着坞上这一艘。
-## 换船不过日子。本章买得到的船全部留在坞外。
+## 换船不过日子、不花钱、不加名声。本章买得到的船全部留在坞外，不自动占坞。
+## 本脚本不读钱、不推进日历；成功题签见 UiTransition.drydock_*。
 ## 本脚本不在解析期写 autoload 名。
 
 

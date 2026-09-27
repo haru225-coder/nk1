@@ -119,7 +119,7 @@ func _build_mock_game() -> void:
 	panel.size = Vector2(300, 720)
 	add_child(panel)
 	var lbl := Label.new()
-	lbl.text = "（模拟游戏 UI）\n泉州・刺桐港\n金钱：5200\n名声：37"
+	lbl.text = "泉州・刺桐港\n金钱：5200\n名声：37"
 	lbl.position = Vector2(24, 24)
 	lbl.add_theme_font_override("font", Kit.body_font())
 	lbl.add_theme_font_size_override("font_size", 18)

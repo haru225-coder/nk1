@@ -56,6 +56,23 @@ func _run_case(scholar: int, sea: int, first_flag: String, expect_name: String, 
 	var again: Dictionary = GS.resolve_identity_1268()
 	_check(not again.get("resolved", false), "重复结算被拒")
 
+	# 新闻市场副作用：1273-03 蕃坊恐慌 → 泉州香药行情 ×0.6，之后按 RECOVERY 回归；别港不受波及
+	var Eco0: Node = root.get_node("Economy")
+	_advance_to(1273, 2)
+	Eco0.initialize()
+	if Eco0.rates.has("quanzhou") and Eco0.rates.has("xinghua"):
+		Eco0.rates["quanzhou"]["aromatic_medicine"] = 1.0
+		Eco0.rates["xinghua"]["aromatic_medicine"] = 1.0
+		_advance_to(1273, 3)
+		var qz: float = Eco0.get_rate("quanzhou", "aromatic_medicine")
+		_check(GS.news_seen.has("n_1273_03_fanfang_panic") and qz > 0.55 and qz < 0.65, "1273-03 蕃坊恐慌：泉州香药行情砸到约六成（%.3f）" % qz)
+		_check(is_equal_approx(Eco0.get_rate("xinghua", "aromatic_medicine"), 1.0), "恐慌只落在 market.ports 所列港口")
+		_advance_to(1273, 6)
+		qz = Eco0.get_rate("quanzhou", "aromatic_medicine")
+		_check(qz > 0.95, "三个月后泉州香药行情回到 1.0 附近（%.3f）" % qz)
+	else:
+		_check(false, "Economy.rates 未初始化，无法验恐慌行情")
+
 	# 新闻不重复：统计所有通知中每条 news 文本出现次数
 	_advance_to(1277, 1)
 	var seen_all: int = GS.news_seen.size()

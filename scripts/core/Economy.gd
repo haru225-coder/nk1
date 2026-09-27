@@ -295,6 +295,24 @@ func on_month_changed() -> Array:
 	return notices
 
 
+## 新闻市场副作用（data/news.json 可选 `market: {good_id, mul, ports?}`）。
+## 投放当月把该货行情乘以 mul 一次，之后仍按 RECOVERY 回归 1.0——恐慌是一阵风，不是价带。
+## ports 省略则凡交易此货的港口皆受波及。返回实际受冲击的港口 id。
+func apply_news_market(m: Dictionary) -> Array:
+	var hit := []
+	var gid := str(m.get("good_id", ""))
+	var mul := float(m.get("mul", 1.0))
+	if gid == "" or mul <= 0.0 or is_equal_approx(mul, 1.0):
+		return hit
+	var pids: Array = m.get("ports", rates.keys())
+	for pid in pids:
+		if not rates.has(pid) or not rates[pid].has(gid):
+			continue
+		rates[pid][gid] = clampf(float(rates[pid][gid]) * mul, RATE_MIN, RATE_MAX)
+		hit.append(pid)
+	return hit
+
+
 # ── 交易冲击 ──────────────────────────────────────────
 
 func _depth(port_id: String) -> float:

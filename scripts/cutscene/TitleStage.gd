@@ -27,8 +27,8 @@ const HEAD_DUR := 0.6
 ## 每行洇出用时；段与段之间的衔接（下一段在上一段走到这个比例时起）
 const LINE_T := 0.55
 const OVERLAP := 0.8
-const BTN_FADE := 0.6
-const BTN_STAGGER := 0.18
+const BTN_FADE := 0.55
+const BTN_STAGGER := 0.24
 ## 可用区：TitleMode 下 VBox 的设计尺寸（Main.tscn 960×600）
 const BOX_H := 600.0
 const LEAD_W := 860.0
@@ -136,7 +136,7 @@ func _restart() -> void:
 				(it["node"] as CanvasItem).material = m
 				it["mat"] = m
 		last = maxf(last, float(it["start"]) + float(it["dur"]))
-	_t_btn = maxf(last - 0.35, (T_SEAL + 0.3) if _seal != null else 0.6)
+	_t_btn = maxf(last - 0.35, (T_SEAL + 0.45) if _seal != null else 0.6)
 	_end = maxf(last, (T_LOGO + LOGO_DUR) if _logo != null else HEAD_DUR)
 	_end = maxf(_end, _t_btn + BTN_STAGGER * maxf(float(_buttons.size() - 1), 0.0) + BTN_FADE)
 	if still:

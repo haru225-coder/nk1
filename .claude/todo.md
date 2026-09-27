@@ -18,15 +18,17 @@
 
 ## 排队（换皮收尾后）
 - [x] merge `fix/siege-shore-band`（2026-09-26 由 -54 收尾合入：守城页 / 终局港口页取视觉线第二轮重写的 `_build_shore` 页型重排（功能覆盖 feb0499，另修残留、翻倍、匾名累加），年号表取 main，跳年摘要取中文数字版；02 的三条守城岸带探针保留并通过）
-- [ ] 接 b05c 两项：行会入行、贡院赴试（见 `docs/P7留档评估_2026-09-25.md`），其余 P7 留档不动
+- [x] 接 b05c 两项：行会入行、贡院赴试（见 `docs/P7留档评估_2026-09-25.md`），其余 P7 留档不动——09-26 接入：泉州 / 博多 / 广州行会加「入行」工席（2000 / 商誉 8 → 商誉 +4、人脉 +2、`guild_<港>`），贡院加「赴试」工席（每章一次 `exam_sat_ch<章>`、15 日、倾向结算记 `exam_sat`），1268 殿试打平先读 `exam_sat`；check_symbols 补契约。本机无 Godot，未跑 smoke / compile，待真机点验
+- [x] 工席成功态 JRPG 过渡（09-26）：`scripts/ui/UiTransition.gd` + `Main.play_transition(title, subtitle, at_black, seal)`——淡入焦墨 → 旧绢题签自左擦出（马善政题名 + 小朱印）、副题浮起 → 停 1 秒（点一下或按键提前收）→ 淡出，约 2.4 秒；全黑时 `load_scene` 换页。接在行会入行成功（「行会・入行」）与贡院赴试成功（「贡院・赴试」+ 日期）。headless / -s 工具脚本 / 巡检下不演、当帧换页。**手动触发**：泉州行会凑够 2000 钱、商誉 8 点「交会费入行」；或泉州 / 兴化贡院本章未赴时点「入场赴试」。中帧 `/workspace/nk1-qa-shots/polish/transition_*.png`；待 Snow 真机看节奏
 - [ ] push main（Snow 已授权「全部 ready 后」；先 `gh auth login`，本机现无 GitHub 写凭据）
 
 ## 视觉资产线（2026-09-26 合入 main，待 Snow）
 - [ ] 真机点验：开场过场的 Esc / 点击手感、标题书法写出、章节卡节奏、抵港横幅、活背景幅度、人物志滚轮与悬停、酒馆整卡点按、「续卷」流程、Retina 下字与剪影卡清晰度
 - [ ] 序章与四方沙盘文案重写（`data/scenes.json` 31 幕：去现代腔、引号统一为「」、场景与分支不变）——审稿，不满意可整份退回
+- [ ] VisionStage（`scenes/vision/VisionStage.tscn`）待补：舷侧炮焰/水花手绘序列帧；大裱框泥金角花；海战定格底可用宋绢海图残片替换程序椭圆
 - [ ] 54 张剪影占位卡待出油画：提示词 `docs/立绘生成提示词_2026-09-25.md`，出图台 `~/tmp/nk1-art-work/artifact/立绘出图台.html`；优先黄氏、陈瓒、断臂老兵、王直库、蒲阿烈、林阿五
 - [ ] 标题底图选稿：A 保持现图（有西式罗盘与海怪）/ B 换程序绘制的宋绢本候选 `~/tmp/nk1-art-work/title_bg/cand2_a_qinglv.jpg`（史实对、画意弱）/ C 用 Grok 另出
-- [x] 史实待定两处（09-26 -54 修，考证见 `docs/史实核对_兴化1277与底图穿帮_2026-09-26.md`）：「岸上的根」结算标题改为按日历现算（景炎二年，与终局落款同源，剧情门禁加了断言）；`bg_customs_room.jpg` 的青花罐改成龙泉粉青素面罐（`tools/art/fix_bg_customs_jar.py`，两位独立评审通过）
+- [x] 史实待定两处（09-26 -54 修，考证见 `docs/史实核对_兴化1277与底图穿帮_2026-09-26.md`）：「岸上的根」结算标题改为景炎二年（远端 beaa9d0 与本地 0417da0 同修；合并取远端写死的「景炎二年三月」，因为 verify_story_data 要静态核对题头、过场和触发闸的年月；本地的 godot_story_check 断言「标题与落款同为景炎二年」一并保留）；`bg_customs_room.jpg` 的青花罐改成龙泉粉青素面罐（`tools/art/fix_bg_customs_jar.py`，两位独立评审通过）
 - [ ] 史实待 Snow 定（同文第一节）：①涵江卡窗口定在二三月，史实城破在十月——A 保留窗口，改「元兵已经进城了」那句；B 挪到九十月，连带改 ports.json / news / 门禁；②「四十日」没有原典依据；③崖山卡写陈瓒「听说起了兵」，但史实上陈瓒 1277 年已死；④人物志陈瓒、唆都的 1277 段在正月就上屏，有剧透
 - [x] 底图穿帮程序修（09-26/27 -54，状态见同文第三节）：市舶司匾改成右起横排；急递铺路牌已抹；酒棚改作「家釀」「雨夜客來」，青幡伪字改「新酒」；行会页、泉州港、账房、番坊的青花改成单色釉。过场图导入后会自动修（`import_cutscene_bgs.py` POSTFIX）。每张都经独立评审通过，十二道门禁全绿
 - [ ] 出图待做已打包到 LA1 `/root/nk1-art-todo/`（09-27 -54；README 里有任务表、红线、逐项中英文提示词、交付规则，交付物放 `交付/<任务号>/`）：T1 漳州工业烟囱、T2 行会页煤油灯（只能局部重绘）、T3 福州左上补块（09-26 程序补的树冠和屋脊是镜像拼的，有竖缝和矩形边，比原先记的「极淡直线」重）、54 张立绘（P1 12 / P2 18 / P3 24）；T4 世界图罗经等标题底图选稿；T5 酒棚「酒肆来」小牌可选。交付后由哈德收图：查红线，入库，跑门禁
@@ -41,5 +43,6 @@ godot --headless --editor --path . --quit
 godot --headless --path . -s res://tools/godot_smoke.gd
 godot --headless --path . -s res://tools/godot_compile_check.gd
 godot --headless --path . -s res://tools/godot_story_check.gd
+godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 godot --path . -s res://tools/patrol_shell.gd
 ```

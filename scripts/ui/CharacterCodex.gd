@@ -7,6 +7,8 @@ extends Control
 signal closed
 
 const Art := preload("res://scripts/ui/CharacterArt.gd")
+const _CharRosterScr := preload("res://scripts/chars/CharRoster.gd")
+const _CharPortraitScr := preload("res://scripts/chars/CharPortraitPanel.gd")
 
 ## 名册一格：画 104×130（立绘 4:5），九列；1280 宽里扣掉浮页边距与滚动条正好排下
 const CELL_PIC := Vector2i(104, 130)
@@ -239,7 +241,56 @@ func show_grid() -> void:
 		_style_tab(b, key == last_filter)
 		_header_right.add_child(b)
 		_tabs[key] = b
+	# chars 线：立绘册 → 合上人物志，改开 CharRoster / PortraitPanel 浮页
+	_header_right.add_child(_small_button("立绘册", _open_chars_wire, 88))
 	_swap_page(_build_grid(last_filter))
+
+
+## 薄接入：优先交给 Main._open_chars_wire；否则本浮页内嵌名册+立绘面板。
+func _open_chars_wire() -> void:
+	var focus := _current
+	var host := get_parent()
+	if host != null and host.has_method("_open_chars_wire"):
+		close_codex()
+		host.call_deferred("_open_chars_wire", focus)
+		return
+	_clear_header_right()
+	_header_right.add_child(_small_button("返回名册", show_grid, 108))
+	_swap_page(_build_wire_inline(focus))
+
+
+func _build_wire_inline(focus_id := "") -> Control:
+	var row := HBoxContainer.new()
+	row.name = "CharsWire"
+	row.add_theme_constant_override("separation", 16)
+	var left := PanelContainer.new()
+	left.add_theme_stylebox_override("panel", UiTheme.panel())
+	left.custom_minimum_size.x = 404
+	row.add_child(left)
+	var lm := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		lm.add_theme_constant_override("margin_%s" % side, 12)
+	left.add_child(lm)
+	var roster: VBoxContainer = _CharRosterScr.new()
+	lm.add_child(roster)
+	var panel: PanelContainer = _CharPortraitScr.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	row.add_child(panel)
+	roster.picked.connect(func(id: String) -> void:
+		var ch: Dictionary = GameManager.get_character(id)
+		if not ch.is_empty():
+			panel.call("show_character", ch)
+			_current = id)
+	if focus_id != "" and not GameManager.get_character(focus_id).is_empty():
+		roster.call("select_id", focus_id)
+		panel.call("show_character", GameManager.get_character(focus_id))
+		_current = focus_id
+	elif str(roster.call("selected_id")) != "":
+		var sid := str(roster.call("selected_id"))
+		panel.call("show_character", GameManager.get_character(sid))
+		_current = sid
+	return row
 
 
 func _style_tab(b: Button, on: bool) -> void:

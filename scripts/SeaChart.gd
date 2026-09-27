@@ -2,6 +2,8 @@ extends Control
 ## 海图。风每一手发至多三向，选定后按日推进，逐日抽事件，到港。
 ## 实时操船（WorldMap.tscn）降级为海战/风涛时切入的战术场景。
 
+const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
+
 var origin_port: String = ""
 var selected_port: String = ""
 var _hand: PackedStringArray = PackedStringArray()
@@ -42,6 +44,8 @@ var event_text: RichTextLabel
 var event_actions: VBoxContainer
 var _strip_line: RichTextLabel
 var _condition_layer: Control
+var _event_tween: Tween
+var _condition_tween: Tween
 var _latest_note := ""
 ## 逐日推进时船标在图上走的秒数；按住空格加速。serial 用来作废回港后仍在等的协程。
 const DAY_SECONDS := 0.42
@@ -107,6 +111,9 @@ func _toggle_deck() -> void:
 			c.visible = not _deck_hidden
 	if _deck_hint:
 		_deck_hint.visible = _deck_hidden
+	# Visibility changes resize the exposed map band on the next layout pass.
+	# Re-push after that pass so the camera never leaves the ship under the deck.
+	call_deferred("_push_view_inset")
 
 
 # ══════════════════════════════════════════════════════
@@ -628,11 +635,19 @@ func _toggle_condition() -> void:
 		_close_condition()
 		return
 	_condition_layer.visible = true
+	_condition_layer.modulate.a = 0.0
 	move_child(_condition_layer, get_child_count() - 1)
+	if _condition_tween and _condition_tween.is_valid():
+		_condition_tween.kill()
+	_condition_tween = create_tween()
+	_condition_tween.tween_property(_condition_layer, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 func _close_condition() -> void:
 	if _condition_layer != null:
+		if _condition_tween and _condition_tween.is_valid():
+			_condition_tween.kill()
+		_condition_layer.modulate.a = 1.0
 		_condition_layer.visible = false
 
 
@@ -646,6 +661,11 @@ func _on_condition_dim(event: InputEvent) -> void:
 func _open_event_panel() -> void:
 	_close_condition()
 	event_panel.visible = true
+	event_panel.modulate.a = 0.0
+	if _event_tween and _event_tween.is_valid():
+		_event_tween.kill()
+	_event_tween = create_tween()
+	_event_tween.tween_property(event_panel, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 func _monsoon_short() -> String:
@@ -680,13 +700,23 @@ func _refresh_strip() -> void:
 		UiTheme.hex(supply_color),
 		supply_d,
 	]
+	# 委办在身：顶匾第一行短标（≤3 日或逾期朱砂），不折行
+	var cst_strip := GameState.contract_status()
+	if not cst_strip.is_empty():
+		var left_st: int = int(cst_strip.get("days_left", 0))
+		var tag := "委办已逾" if left_st < 0 else ("委办 %d 日" % left_st)
+		var tag_col := UiTheme.CINNABAR if left_st <= 3 else UiTheme.HONEY
+		line1 += "　[color=#%s]%s[/color]" % [UiTheme.hex(tag_col), tag]
 	var note := _latest_note
 	if sailing:
 		var pct := 0
 		if total_li > 0.0:
 			pct = int(clampf((total_li - remaining_li) / total_li, 0.0, 1.0) * 100.0)
 		# 验收 sail:SAIL-3：末日进度会冲过头，余程钳到 0，不显示负数
-		note = "航行中　第 %d 日　已行 %d / 100　余程 %d 里" % [days_elapsed, pct, maxi(0, int(remaining_li))]
+		note = "航行　第 %d 日　行成 %d　余 %d 里" % [days_elapsed, pct, maxi(0, int(remaining_li))]
+	# Lane U：顶匾第二行截短，告警朱字与航讯不折行（strip 已 AUTOWRAP_OFF）
+	if note.length() > 28:
+		note = note.substr(0, 27) + "…"
 	var dim := UiTheme.hex(UiTheme.TEXT_DIM)
 	_strip_line.text = line1 + "\n[color=#%s]%s[/color]" % [dim, note]
 
@@ -766,14 +796,14 @@ func _refresh_status() -> void:
 		if total_li > 0.0:
 			pct = clampf((total_li - remaining_li) / total_li, 0.0, 1.0)
 		# 余程钳 0（验收 sail:SAIL-3）
-		t += "[color=#%s]航行中　第 %d 日・%s[/color]\n已行　%d / 100\n余程　%d 里\n" % [
+		t += "[color=#%s]航行　第 %d 日・%s[/color]\n行成　%d\n余程　%d 里\n" % [
 			UiTheme.hex(UiTheme.HONEY), days_elapsed, Voyage.order_name(course_order), int(pct * 100), maxi(0, int(remaining_li)),
 		]
 	# 在身委办（云端 bed9）
 	var cst := GameState.contract_status()
 	if not cst.is_empty():
 		var left: int = int(cst.get("days_left", 0))
-		var left_s := "今日截止" if left == 0 else ("%d 日后截止" % left if left > 0 else "已逾期")
+		var left_s := "限今日" if left == 0 else ("剩 %d 日" % left if left > 0 else "已逾")
 		t += "[color=#%s][b]委办[/b][/color]\n%s ×%d 运往 %s　%s\n" % [
 			gold,
 			GameManager.get_good_name(str(cst.get("good_id", ""))),
@@ -782,7 +812,7 @@ func _refresh_status() -> void:
 			left_s,
 		]
 	t += "金钱　[b]%d[/b]\n名声　%d　%s\n" % [GameState.money, GameState.fame, GameState.title_name()]
-	t += "[color=#%s][b]舰队[/b][/color]\n船数　%d　水手　%d\n舱位　%d / %d 料\n耐久　%d / %d\n士气　%d\n" % [
+	t += "[color=#%s][b]船队[/b][/color]\n船数　%d　水手　%d\n舱位　%d / %d 料\n耐久　%d / %d\n士气　%d\n" % [
 		gold,
 		Fleet.ships.size(), Fleet.total_crew(),
 		int(Fleet.used_capacity()), int(Fleet.total_capacity()),
@@ -818,10 +848,10 @@ func _course_detail_text(gold: String) -> String:
 	t += "遇事　针路 %d　外洋 %d　傍岸 %d 日\n" % [
 		int(plan_rumb["expected_days"]), int(plan_off["expected_days"]), int(plan_coast["expected_days"]),
 	]
-	t += "八成　针路 %d　外洋 %d　傍岸 %d 日（十次约有八次不迟于这个数）\n" % [
+	t += "八成　针路 %d　外洋 %d　傍岸 %d 日\n" % [
 		int(plan_rumb["safe_days"]), int(plan_off["safe_days"]), int(plan_coast["safe_days"]),
 	]
-	t += "保货　针路 %d　外洋 %d　傍岸 %d（十次里至少有这么多次，逃走没被抢走货）\n" % [
+	t += "保货　针路 %d　外洋 %d　傍岸 %d\n" % [
 		int(plan_rumb["hold_tenths"]), int(plan_off["hold_tenths"]), int(plan_coast["hold_tenths"]),
 	]
 	t += _ink(UiTheme.TEXT_DIM, Voyage.order_blurb(course_order)) + "\n"
@@ -839,7 +869,7 @@ func _course_detail_text(gold: String) -> String:
 		if maybe_qty > 0 and maybe_rate > 0.0:
 			damp = {"good_id": maybe_id, "qty": maybe_qty, "rate": maybe_rate}
 	if not damp.is_empty():
-		t += "受潮　%s　针路 %d　外洋 %d　傍岸 %d（按八成日数，十次里至少有这么多次一件没潮）\n" % [
+		t += "受潮　%s　针路 %d　外洋 %d　傍岸 %d\n" % [
 			GameManager.get_good_name(str(damp["good_id"])),
 			Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(float(damp["rate"]), int(damp["qty"]), int(plan_rumb["safe_days"]))),
 			Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(float(damp["rate"]), int(damp["qty"]), int(plan_off["safe_days"]))),
@@ -851,27 +881,27 @@ func _course_detail_text(gold: String) -> String:
 		var rough_days := int(plan["expected_days"])
 		var safe_days := int(plan["safe_days"])
 		if calm_days > left:
-			t += _ink(UiTheme.CINNABAR, "委办只剩 %d 日，静风预计就要 %d 日，赶不上。" % [left, calm_days]) + "\n"
+			t += _ink(UiTheme.CINNABAR, "委办剩 %d 日　静风 %d 日　赶不上" % [left, calm_days]) + "\n"
 		elif rough_days > left:
-			t += _ink(UiTheme.HONEY, "委办还剩 %d 日。静风 %d 日赶得上，遇事约 %d 日，可能误期。" % [left, calm_days, rough_days]) + "\n"
+			t += _ink(UiTheme.HONEY, "委办剩 %d 日　静风 %d　遇事约 %d　或误期" % [left, calm_days, rough_days]) + "\n"
 		elif safe_days > left:
-			t += _ink(UiTheme.HONEY, "委办还剩 %d 日。遇事约 %d 日，八成要 %d 日，不算稳。" % [left, rough_days, safe_days]) + "\n"
+			t += _ink(UiTheme.HONEY, "委办剩 %d 日　遇事约 %d　八成 %d　未稳" % [left, rough_days, safe_days]) + "\n"
 		else:
 			var hold_shown := int(plan.get("hold_tenths", 0))
 			var spoil_shown := 10
 			if not damp.is_empty() and str(damp.get("good_id", "")) == str(cst.get("good_id", "")):
 				spoil_shown = Voyage.cargo_hold_tenths(Voyage.spoil_hold_chance(float(damp["rate"]), int(damp["qty"]), safe_days))
 			if hold_shown < 8:
-				t += _ink(UiTheme.HONEY, "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。保货只有 %d，不到八成。" % [left, rough_days, safe_days, hold_shown]) + "\n"
+				t += _ink(UiTheme.HONEY, "委办剩 %d 日　遇事约 %d　八成 %d　保货 %d，不到八成" % [left, rough_days, safe_days, hold_shown]) + "\n"
 			elif spoil_shown < 8:
-				t += _ink(UiTheme.HONEY, "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。受潮只有 %d，不到八成。" % [left, rough_days, safe_days, spoil_shown]) + "\n"
+				t += _ink(UiTheme.HONEY, "委办剩 %d 日　遇事约 %d　八成 %d　受潮只有 %d" % [left, rough_days, safe_days, spoil_shown]) + "\n"
 			else:
-				t += _ink(UiTheme.MOSS, "委办还剩 %d 日。遇事约 %d 日，八成 %d 日。" % [left, rough_days, safe_days]) + "\n"
+				t += _ink(UiTheme.MOSS, "委办剩 %d 日　遇事约 %d　八成 %d" % [left, rough_days, safe_days]) + "\n"
 	if not cst.is_empty():
 		var need := int(cst.get("remaining", 0))
 		var have := Fleet.cargo_qty(str(cst.get("good_id", "")))
 		if have < need:
-			t += _ink(UiTheme.HONEY, "舱里的%s只有 %d，委办还要 %d。不够也能开船，到港交不齐。" % [
+			t += _ink(UiTheme.HONEY, "舱中%s　%d／委办 %d　到港或交不齐" % [
 				GameManager.get_good_name(str(cst.get("good_id", ""))), have, need,
 			]) + "\n"
 	if not Voyage.is_known_route(origin_port, selected_port):
@@ -881,9 +911,9 @@ func _course_detail_text(gold: String) -> String:
 	var supply_safe := int(plan["safe_days"])
 	if supply_have < supply_safe:
 		if supply_have < supply_mean:
-			t += _ink(UiTheme.CINNABAR, "水粮只够 %d 日，遇事大约要 %d 日，半途必要死人。" % [supply_have, supply_mean]) + "\n"
+			t += _ink(UiTheme.CINNABAR, "水粮 %d 日　遇事约 %d 日　半途必尽" % [supply_have, supply_mean]) + "\n"
 		else:
-			t += _ink(UiTheme.HONEY, "水粮够遇事约 %d 日，八成要 %d 日，可能中途断粮。" % [supply_mean, supply_safe]) + "\n"
+			t += _ink(UiTheme.HONEY, "水粮够遇事约 %d　八成 %d　或断粮" % [supply_mean, supply_safe]) + "\n"
 	return t
 
 
@@ -972,6 +1002,15 @@ func _make_heading_card(pid: String) -> Control:
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 		hit.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	hit.pressed.connect(_select_heading.bind(pid))
+	# A quiet lift on hover makes the three route slips feel tactile without
+	# changing their layout or adding a modern glow to the paper palette.
+	hit.mouse_entered.connect(func():
+		if not sailing:
+			panel.modulate = Color(1.08, 1.08, 1.08, 1.0)
+	)
+	hit.mouse_exited.connect(func():
+		panel.modulate = Color.WHITE
+	)
 	wrap.add_child(hit)
 	if sailing:
 		wrap.modulate = Color(1, 1, 1, 0.45)
@@ -982,6 +1021,8 @@ func _card_line(text: String, color: Color) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+	lbl.clip_text = true
 	UiTheme.style_footnote(lbl)
 	lbl.add_theme_color_override("font_color", color)
 	return lbl
@@ -1137,7 +1178,7 @@ func _sail_next_day() -> void:
 
 	# 补给见底的警告
 	if Fleet.supply_days() <= 0 and Fleet.total_crew() > 0:
-		_log(_ink(UiTheme.CINNABAR, "第 %d 日・水粮已尽，舱里开始有人病倒。" % days_elapsed))
+		_log(_ink(UiTheme.CINNABAR, "第 %d 日・水粮已尽　舱中有人病倒" % days_elapsed))
 
 	if kind != Voyage.EventKind.NONE:
 		_log("第 %d 日・%s" % [days_elapsed, event.get("title", "")])
@@ -1351,6 +1392,17 @@ func _fleet_power() -> float:
 	return (Fleet.total_durability() * 0.5 + Fleet.total_crew() * 4.0 + cannons * 25.0 + Fleet.fleet_armor_level() * 30.0) * Fleet.morale_factor()
 
 
+## Lane L：海战题签用港外海域名（「泉州外海」）；无起运港则退回「外海」。
+func _battle_sea_name() -> String:
+	var pid := str(origin_port)
+	if pid == "":
+		pid = str(GameState.last_port)
+	var pname := str(GameManager.get_port_name(pid))
+	if pname.strip_edges() == "" or pname == pid:
+		return "外海"
+	return "%s外海" % pname
+
+
 func _on_fight_pirates() -> void:
 	event_panel.visible = false
 	var power := _fleet_power()
@@ -1361,6 +1413,7 @@ func _on_fight_pirates() -> void:
 		"power": enemy,
 		"player_power": power,
 		"enemy": [{"type": "sea_falcon", "count": 2, "hull_hp": 100.0}],
+		"sea_name": _battle_sea_name(),
 		"source": {"scene": "SeaChart", "event": "pirate"},
 	}
 	_enter_battle()
@@ -1395,7 +1448,11 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 		var promo := ""
 		if fame_res.get("promoted", false):
 			promo = "案册改题「%s」。" % str(fame_res.get("title", {}).get("name", ""))
-		_log(_ink(UiTheme.MOSS, "击退海盗，夺得财货 %d 钱。战损 %d。%s" % [spoil, int(dmg), promo]))
+		# Lane N：战果注记走 CombatFx 论文纪实句；接舷夺船时附一句并入注记
+		var win_msg := _CombatFx.sea_win_note(spoil, int(dmg), promo)
+		if bool(data.get("boarded", false)):
+			win_msg = "接舷既定。" + win_msg
+		_log(_ink(UiTheme.MOSS, win_msg))
 	elif outcome == "lose":
 		Fleet.morale = maxi(0, Fleet.morale - 12)
 		# WorldMap 只在旗舰沉没时发 lose。先按该船货舱全损记账，
@@ -1405,16 +1462,13 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			var lost_str := ""
 			for gid in lost.keys():
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-			if Fleet.total_durability() <= 0.0:
-				_log(_ink(UiTheme.CINNABAR, "旗舰沉没，货舱随船没了。%s船体受损 %d。" % [lost_str, int(dmg)]))
-			else:
-				_log(_ink(UiTheme.CINNABAR, "旗舰沉没，该船货物随船没了。%s其余船只还在。船体受损 %d。" % [lost_str, int(dmg)]))
+			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_sunk_note(lost_str, int(dmg), Fleet.total_durability() <= 0.0)))
 		else:
 			var lost := Fleet.lose_cargo_ratio(0.25)
 			var lost_str := ""
 			for gid in lost.keys():
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-			_log(_ink(UiTheme.CINNABAR, "接舷失利，被夺去部分货物。%s船体受损 %d。" % [lost_str, int(dmg)]))
+			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_board_lose_note(lost_str, int(dmg))))
 	else:  # flee
 		if data.get("flee_ok", false):
 			remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
@@ -1425,7 +1479,7 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			var lost_str := ""
 			for gid in lost.keys():
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-			_log(_ink(UiTheme.CINNABAR, "没能甩脱，被追上跳帮，抢走了货。%s" % lost_str))
+			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_flee_fail_note(lost_str)))
 	GameManager.pending_battle = {}
 	back_button.disabled = voyage_started
 	for c in get_children():
@@ -1437,7 +1491,7 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 
 
 func _log_shook_pursuers() -> void:
-	_log(_ink(UiTheme.MOSS, "转舵抢上风头，把那两条快船甩在了后面。绕了些路。"))
+	_log(_ink(UiTheme.MOSS, _CombatFx.sea_flee_ok_note()))
 
 
 func _on_flee_pirates() -> void:
@@ -1453,7 +1507,7 @@ func _on_flee_pirates() -> void:
 		for gid in lost.keys():
 			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
 		Fleet.damage_fleet(30.0 * Fleet.armor_damage_reduction())
-		_log(_ink(UiTheme.CINNABAR, "没能甩脱，被追上跳帮，抢走了货。%s" % lost_str))
+		_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_flee_fail_note(lost_str)))
 	_refresh_status()
 	_after_combat()
 
@@ -1561,6 +1615,7 @@ func _on_fight_patrol() -> void:
 		"power": enemy,
 		"player_power": power,
 		"enemy": [{"type": "sea_falcon", "count": 3, "hull_hp": 120.0}],
+		"sea_name": _battle_sea_name(),
 		"source": {"scene": "SeaChart", "event": "yuan_patrol"},
 	}
 	_enter_battle()
@@ -1607,7 +1662,7 @@ func _on_investigate_discovery() -> void:
 	var d := GameManager.get_discovery_by_id(did)
 	var note := ""
 	if GameState.record_discovery(did):
-		note = "近岸细看，果然是%s。记入册子——回港上报市舶司，当有赏格。" % d.get("name", "旧泊地")
+		note = "近岸细看，果然是%s。记入册子，赏格回市舶司呈报。" % d.get("name", "旧泊地")
 		_log(_ink(UiTheme.MOSS, note))
 	else:
 		note = "绕过去看了一圈，与册上所记并无出入。"

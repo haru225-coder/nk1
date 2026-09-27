@@ -2,7 +2,7 @@
 """剧情数据静态校验：news.json / scenes.json effects / npcs.json。
 起因：序章 effects 里的 sea_tendency / scholar_tendency 曾在 Main.apply_effects 里无分支，
 静默丢弃了两年。此脚本把「数据里写了的效果键，代码必须接住」做成门禁。"""
-import json, os, re, sys, pathlib
+import copy, json, os, re, sys, pathlib
 
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 FAIL = []
@@ -92,8 +92,10 @@ nids = [n.get("id", "") for n in news]
 check(all(nids), "news.json 有条目缺 id")
 check(len(nids) == len(set(nids)), "news.json id 重复")
 DATE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
-ALLOWED = {"id", "date", "speaker", "text", "text_S", "text_M", "only", "flag"}
+ALLOWED = {"id", "date", "speaker", "text", "text_S", "text_M", "only", "flag", "market"}
 IDENTITIES = {"scholar", "merchant", "hometown"}
+NEWS_GOODS = {g["id"] for g in load("goods.json")["goods"]}
+NEWS_PORTS = {p["id"]: p for p in load("ports.json")["ports"]}
 for n in news:
     nid = n.get("id", "?")
     check(DATE.match(str(n.get("date", ""))) is not None, f"news {nid} date 须为 YYYY-MM")
@@ -108,12 +110,58 @@ for n in news:
     if "only" in n:
         check(n["only"] in IDENTITIES, f"news {nid} only=`{n['only']}` 不是合法身份 {sorted(IDENTITIES)}")
         check(str(n.get("date", "")) > "1268-04", f"news {nid} 带 only 但日期早于 1268-04 殿试结算，那时 identity 还是 undecided，永远发不出去")
+    if "market" in n:
+        mk = n["market"]
+        check(isinstance(mk, dict) and set(mk) <= {"good_id", "mul", "ports"},
+              f"news {nid}.market 只认 good_id/mul/ports（Economy.apply_news_market 不读别的键）")
+        gid = mk.get("good_id", "") if isinstance(mk, dict) else ""
+        check(gid in NEWS_GOODS, f"news {nid}.market good_id=`{gid}` 不在 goods.json")
+        mul = mk.get("mul") if isinstance(mk, dict) else None
+        check(isinstance(mul, (int, float)) and 0.4 <= mul <= 1.6 and mul != 1.0,
+              f"news {nid}.market mul={mul} 须在 0.4–1.6 且 ≠1（冲击在 RATE_MIN–RATE_MAX 内才有意义）")
+        mports = mk.get("ports", None) if isinstance(mk, dict) else None
+        traders = [pid for pid, p in NEWS_PORTS.items() if gid in p.get("market", {})]
+        if mports is None:
+            check(bool(traders), f"news {nid}.market 省略 ports 但无港交易 {gid}")
+        else:
+            check(isinstance(mports, list) and mports and all(pid in traders for pid in mports),
+                  f"news {nid}.market ports={mports} 须全部是交易 {gid} 的港口（否则冲击落空）")
     y = int(str(n.get("date", "0000"))[:4] or 0)
     check(1255 <= y <= 1279, f"news {nid} 年份 {y} 超出 1255–1279")
 
 # 1268 结算月之前不得出现任何依赖 identity 锁定的措辞（S/M 双版允许，按倾向选）
 # 这里只保证 1268-04 那个月本身没有新闻抢在结算前投放
 check(not any(n.get("date") == "1268-04" for n in news), "news.json 不得在 1268-04 投放（与殿试结算同月）")
+panic = next((n for n in news if n.get("id") == "n_1273_03_fanfang_panic"), {})
+check(panic.get("market", {}).get("good_id") == "aromatic_medicine" and panic.get("market", {}).get("mul", 1) < 1,
+      "1273-03 蕃坊恐慌挂香药抛售 market（剧情打磨 §二：香药 −40%）")
+
+# Lane P：新闻上屏字段禁工程/现代/AI 腔；酒馆墙与传闻标签仍被消费
+_NEWS_ENG = re.compile(
+    r"placeholder|本作|玩家|士人线|海商线|乡土线|TODO|WIP|pipeline|LLM|ChatGPT|大模型|"
+    r"玩法循环|核心循环|用户体验|垂直切片|沉浸式|赋能|视觉盛宴"
+)
+for n in news:
+    nid = n.get("id", "?")
+    for f in ("text", "text_S", "text_M", "speaker"):
+        raw = str(n.get(f, ""))
+        if not raw:
+            continue
+        hit = _NEWS_ENG.search(raw)
+        check(hit is None, f"news {nid}.{f} 含工程/现代腔「{hit.group(0) if hit else ''}」")
+_gm = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
+_gs = open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read()
+check("【酒馆传闻】" in _gm, "GameManager 投放新闻须用【酒馆传闻】前缀（空 speaker）")
+check("传闻约卖" in _gs and "func rumor_label" in _gs, "GameState.rumor_label 须保留「传闻约卖」上屏标签")
+check("_setup_news_wall" in main_src and "_TAVERN_NEWS_WALL" in main_src,
+      "酒馆须接新闻墙上墙（Main._setup_news_wall → _TAVERN_NEWS_WALL）")
+_tnw_path = os.path.join(ROOT, "scripts", "ui", "TavernNewsWall.gd")
+check(os.path.isfile(_tnw_path), "缺 scripts/ui/TavernNewsWall.gd（市井札薄）")
+if os.path.isfile(_tnw_path):
+    _tnw = open(_tnw_path, encoding="utf-8").read()
+    check("paper_card" in _tnw and "recent_news" in _tnw and "news_text" in _tnw,
+          "TavernNewsWall 须用 paper_card 渲 recent_news/news_text")
+    check("_TAVERN_NEWS_WALL.mount" in main_src, "Main._setup_news_wall 须调 _TAVERN_NEWS_WALL.mount")
 
 # ── npcs.json ─────────────────────────────────────────
 npcs = load("npcs.json")["npcs"]
@@ -300,6 +348,125 @@ check('get("bio"' not in codex_src and "codex_bio(" in codex_src, "人物志小�
 check('"bio_short"' not in main_src and "codex_short(" in main_src, "见面页简介仍读 characters.json 的 bio_short 原稿")
 check("characters_codex.json" in art_src, "CharacterArt 未接人物志上屏文本层")
 
+# ── Astra L1：人物「原稿 vs 上屏」契约（docs/人物原稿与上屏契约.md）────────────
+# characters.json 是设定集原稿，characters_codex.json 是上屏文本层。上屏的字只有三条来路：
+#   ① 文本层 CODEX_ONSCREEN 各段；② 原稿里 UI 直读或文本层缺省时回落的 CHAR_ONSCREEN 字段、relations[].rel；
+#   ③ 原稿 meta 的 attr_def / trait_def 的 name·desc 与 faction_def 的 name。
+# 三条来路上出现 ONSCREEN_BAN 即失败；原稿 CHAR_DRAFT（bio / bio_short / 画像备注）与两份 meta.note 只供策划，不上屏。
+# 新增字段必须先在这里归类，UI 直读的原稿键必须落在「上屏 / 结构」两类里，否则门禁失败。
+ONSCREEN_BAN = re.compile(CODEX_META.pattern + r"|placeholder|TODO|WIP|FIXME|pipeline|LLM|ChatGPT|大模型")
+CHAR_ONSCREEN = {"name", "alt_names", "courtesy", "title", "origin", "personality", "look", "lines"}
+CHAR_STRUCT = {"id", "faction", "traits", "relations", "born", "died", "tier", "chapters", "attrs",
+               "portrait", "portrait_status", "sources", "historical"}  # 键、数值、枚举，不作正文上屏
+CHAR_DRAFT = {"bio", "bio_short", "portrait_src", "portrait_note"}
+CODEX_ONSCREEN = {"bio", "short", "lines", "title", "courtesy", "alt", "look", "personality"}
+check(not (CHAR_ONSCREEN & CHAR_STRUCT or CHAR_ONSCREEN & CHAR_DRAFT or CHAR_STRUCT & CHAR_DRAFT), "L1 字段分类有交叠")
+
+
+def onscreen_texts(chars_doc, codex_doc):
+    """列出人物线全部上屏文字 (出处, 文字)。门禁与自证共用同一份清单。"""
+    out = []
+    meta = chars_doc.get("meta", {})
+    for a in meta.get("attr_def", []):
+        for k in ("name", "desc"):
+            out.append((f"meta.attr_def.{a.get('key', '?')}.{k}", str(a.get(k, ""))))
+    for tk, t in meta.get("trait_def", {}).items():
+        for k in ("name", "desc"):
+            out.append((f"meta.trait_def.{tk}.{k}", str(t.get(k, ""))))
+    for fk, fd in meta.get("faction_def", {}).items():
+        out.append((f"meta.faction_def.{fk}.name", str(fd.get("name", ""))))
+    for c in chars_doc.get("characters", []):
+        cid = c.get("id", "?")
+        for k in sorted(CHAR_ONSCREEN):
+            v = c.get(k)
+            for i, s in enumerate(v if isinstance(v, list) else [v]):
+                if s is not None:
+                    out.append((f"characters.json {cid}.{k}[{i}]", str(s)))
+        for r in c.get("relations", []):
+            out.append((f"characters.json {cid}.relations→{r.get('id', '?')}", str(r.get("rel", ""))))
+    for cid, e in codex_doc.get("characters", {}).items():
+        for k in CODEX_ONSCREEN & set(e):
+            segs = e[k]
+            for i, s in enumerate(segs if isinstance(segs, list) else [segs]):
+                txt = s[1] if isinstance(s, list) and len(s) == 2 else s
+                out.append((f"characters_codex.json {cid}.{k}[{i}]", str(txt)))
+    return out
+
+
+def onscreen_hits(chars_doc, codex_doc):
+    return [(w, m.group(0), t) for w, t in onscreen_texts(chars_doc, codex_doc) for m in [ONSCREEN_BAN.search(t)] if m]
+
+
+_chars_doc = load("characters.json")
+_codex_doc = load("characters_codex.json") if os.path.isfile(codex_path) else {"characters": {}}
+for c in _chars_doc.get("characters", []):
+    unk = set(c) - CHAR_ONSCREEN - CHAR_STRUCT - CHAR_DRAFT
+    check(not unk, f"characters.json {c.get('id', '?')} 有未归类字段 {sorted(unk)}：先在 L1 契约里定上屏 / 结构 / 原稿")
+for cid, e in _codex_doc.get("characters", {}).items():
+    unk = set(e) - CODEX_ONSCREEN
+    check(not unk, f"characters_codex.json {cid} 有未登记字段 {sorted(unk)}：上屏文本层字段须进 CODEX_ONSCREEN 受查")
+_onscreen = onscreen_texts(_chars_doc, _codex_doc)
+check(len(_onscreen) >= 1200, f"人物上屏文字只收到 {len(_onscreen)} 条，疑似清单漏载")
+for where, word, txt in onscreen_hits(_chars_doc, _codex_doc):
+    check(False, f"{where} 上屏字段含禁词「{word}」：{txt[:40]}")
+
+# 自证：往每条来路各塞一个带记号的禁词，扫描必须逐条抓到那个记号（防止日后改清单时某条来路静默失明）
+_PROBE = "placeholder·L1自证"
+_probe_paths = []
+if _chars_doc.get("characters") and _codex_doc.get("characters"):
+    _x0 = next(iter(_codex_doc["characters"]))
+    _probe_paths = [("attr", lambda cd, xd: cd["meta"]["attr_def"][0].__setitem__("desc", _PROBE)),
+                    ("trait", lambda cd, xd: next(iter(cd["meta"]["trait_def"].values())).__setitem__("name", _PROBE)),
+                    ("faction", lambda cd, xd: next(iter(cd["meta"]["faction_def"].values())).__setitem__("name", _PROBE)),
+                    ("rel", lambda cd, xd: cd["characters"][0]["relations"].append({"id": "x", "rel": _PROBE}))]
+    for k in sorted(CHAR_ONSCREEN):
+        _probe_paths.append((f"raw.{k}", lambda cd, xd, k=k: cd["characters"][0].__setitem__(k, [_PROBE])))
+    for k in sorted(CODEX_ONSCREEN):
+        _probe_paths.append((f"codex.{k}", lambda cd, xd, k=k: xd["characters"][_x0].__setitem__(k, [[0, _PROBE]])))
+for tag, poke in _probe_paths:
+    cd, xd = copy.deepcopy(_chars_doc), copy.deepcopy(_codex_doc)
+    poke(cd, xd)
+    check(any(_PROBE in t for _, _, t in onscreen_hits(cd, xd)), f"L1 自证：往 {tag} 塞禁词后门禁没抓到，该上屏来路失明")
+check(len(_probe_paths) >= 20, f"L1 自证只探了 {len(_probe_paths)} 条来路")
+# 原稿兜底：设定集整份仍不许出现最硬的六个工程词（bio / bio_short 原稿亦然，防止回落时带出）
+_CHARS_ENG = re.compile(r"placeholder|本作|玩家|士人线|海商线|乡土线")
+_chars_raw = open(os.path.join(ROOT, "data", "characters.json"), encoding="utf-8").read()
+_eng_hit = _CHARS_ENG.search(_chars_raw)
+check(_eng_hit is None, f"characters.json 原稿仍含工程词「{_eng_hit.group(0) if _eng_hit else ''}」")
+
+# UI 读取入口锁：凡拿人物字典直读的 .get("键")，键只许是「上屏 / 结构」两类；文本层 layer(ch).get 只许 CODEX_ONSCREEN
+L1_UI_FILES = ["scripts/ui/CharacterArt.gd", "scripts/ui/CharacterCodex.gd", "scripts/ui/VisionStage.gd", "scripts/Main.gd",
+               "scripts/companions/CompanionPreview.gd"] + sorted(
+    os.path.relpath(str(p), ROOT) for p in pathlib.Path(ROOT, "scripts", "chars").glob("*.gd"))
+_ui_raw_keys = 0
+for rel in L1_UI_FILES:
+    p = os.path.join(ROOT, rel)
+    check(os.path.isfile(p), f"L1 上屏入口 {rel} 不见了：改了路径须同步契约")
+    if not os.path.isfile(p):
+        continue
+    src = open(p, encoding="utf-8").read()
+    for k in re.findall(r'(?<![A-Za-z_])(?:ch|cch|other|character)\.get\("([a-z_]+)"', src):
+        _ui_raw_keys += 1
+        check(k in CHAR_ONSCREEN | CHAR_STRUCT, f"{rel} 直读人物原稿字段「{k}」：不在 L1 上屏 / 结构白名单")
+    for k in re.findall(r'layer\([^)]*\)\.get\("([a-z_]+)"', src):
+        check(k in CODEX_ONSCREEN, f"{rel} 读文本层未登记字段「{k}」：须进 CODEX_ONSCREEN 受查")
+    for k in re.findall(r'character_meta\(\)\.get\("([a-z_]+)"', src):
+        check(k in {"attr_def", "trait_def", "faction_def"}, f"{rel} 读设定集 meta.{k}：meta 只许三张定义表上屏")
+    check(re.search(r'"bio_short"|"portrait_note"|"portrait_src"', src) is None,
+          f"{rel} 出现原稿专用键（bio_short / portrait_note / portrait_src）")
+check(_ui_raw_keys >= 40, f"L1 只扫到 {_ui_raw_keys} 处人物字典直读，疑似正则失效")
+# CharacterArt / CharacterCodex / Main 上屏路径：bio 原稿不得经 get("bio") / bio_short 直出
+check("codex_bio(" in art_src or "codex_bio(" in codex_src, "上屏层未走 CharacterArt.codex_bio")
+check("codex_short(" in art_src or "codex_short(" in main_src, "上屏层未走 CharacterArt.codex_short")
+# 禁止 UI 脚本直接 FileAccess 打开 characters.json 的 bio 字段上屏（VisionStage 只取立绘允许）
+_vs_path = os.path.join(ROOT, "scripts", "ui", "VisionStage.gd")
+if os.path.isfile(_vs_path):
+    _vs = open(_vs_path, encoding="utf-8").read()
+    check('get("bio"' not in _vs, "VisionStage 疑似把 characters.json bio 送到控件")
+# 人物志与见面页不得出现「直接读 GameManager.characters[*].bio」类路径
+check('["bio"]' not in codex_src and ".bio_short" not in codex_src,
+      "CharacterCodex 仍直接读 bio/bio_short 原稿字段")
+
 # 上屏的场景文字（标题、正文、选项、调查项、speaker）引号一律用「」『』，不用 “” ‘’（第 2 轮 UX M7：
 # 人物志、册页、见面页、过场全用「」，只有 scenes.json 混着西式引号）。deprecated 场景不上屏，不查。
 # 序章正文不得点破主角结局（岳王庙、孤城、改名陈文龙）与现代腔（世界地图的迷雾、命运的指针、宏大沙盘）。
@@ -333,11 +500,235 @@ for s in scenes:
             hit = PROLOGUE_SPOIL.search(v)
             check(hit is None, f"scenes.json {s.get('id')}.{k} 序章文字剧透 / 现代腔「{hit.group(0) if hit else ''}」")
 
+# 序章史实校勘必修 5 处（docs/剧情打磨_序章与终局_2026-09-04.md §一）：小暑与三月开局矛盾、1255 年襄阳未战、
+# 丁大全 1258 才拜相、蒙哥南征非「大捷」、青瓷当私盐抄不通、陈文龙非绞刑、「新大陆」现代词——锁住不回退。
+# cg_world_north / cg_decision 已按后续稿重写（改后原句含「孤城 / 岳王庙」，与上面的剧透禁词冲突），只查不回退旧写法。
+PROLOGUE_HISTORY_OLD = re.compile(r"小暑|襄阳|汉水|排斥异己|大捷|当私盐抄|绞索|新大陆")
+PROLOGUE_HISTORY_KEEP = {
+    "cg_narrate_table": "三月，春雷，暴雨将至",
+    "cg_veteran_3": "大理去岁也叫鞑子拿了，下一步就是绕到咱们背后来",
+    "cg_world_north": "宦官董宋臣",
+    "cg_ana_speak_3": "箱底垫的是什么，市舶司不问也知道",
+    "cg_decision": "没有官图的海",
+}
+_scene_by_id = {s.get("id"): s for s in scenes}
+for sid, keep in PROLOGUE_HISTORY_KEEP.items():
+    s = _scene_by_id.get(sid)
+    check(s is not None, f"scenes.json 缺序章场景 {sid}")
+    if s is None:
+        continue
+    texts = [v for _, v in _scene_texts(s)] + [s.get("objective") or ""]
+    check(any(keep in v for v in texts), f"scenes.json {sid} 史实校勘改后文字丢失：{keep}")
+    for v in texts:
+        hit = PROLOGUE_HISTORY_OLD.search(v)
+        check(hit is None, f"scenes.json {sid} 回退到史实校勘前写法「{hit.group(0) if hit else ''}」")
+
+# 序章史实校勘建议 6–7（Q11）：阿那进场是赤脚踩水不是木屐（读者第一反应是日本）；南宋无「路试」，
+# 士人线入口是 1256 临安太学补试。只锁这两处正文；#8 家丁「明年丙辰大考」口吻允许不准确，不查。
+PROLOGUE_SUGGEST = {
+    "cg_ana_enter": ("赤脚踩水的啪啪声", re.compile(r"木屐")),
+    "scholar_path_start": ("临安太学补试是第一步", re.compile(r"福州路试")),
+}
+for sid, (keep, old) in PROLOGUE_SUGGEST.items():
+    body = (_scene_by_id.get(sid) or {}).get("body") or ""
+    check(keep in body, f"scenes.json {sid}.body 史实校勘建议改后文字丢失：{keep}")
+    hit = old.search(body)
+    check(hit is None, f"scenes.json {sid}.body 回退到史实校勘建议前写法「{hit.group(0) if hit else ''}」")
+
+# 序章长文去现代腔（Q5）：开卷、四方沙盘、酒棚各幕与旧 prologue_* 长文（含 deprecated，防复活时带回）
+# 不得再写「新大陆 / 崭新大陆 / 历史车轮 / 绞索 / 注定要砸下来的孤城」，开局是三月春雷，不得出现小暑。
+PROLOGUE_MODERN = re.compile(r"新大陆|历史车轮|绞索|注定要砸|小暑")
+for s in scenes:
+    sid = str(s.get("id", ""))
+    if not (s.get("chapter") == "prologue" or sid.startswith(("cg_", "prologue_")) or sid == "start"):
+        continue
+    for k, v in list(_scene_texts(s)) + [("objective", s.get("objective") or "")]:
+        hit = PROLOGUE_MODERN.search(v)
+        check(hit is None, f"scenes.json {sid}.{k} 序章现代腔 / 开局季节矛盾「{hit.group(0) if hit else ''}」")
+
+# ── 结局年号：过场 ↔ 结算册页 ↔ Calendar（Q8）───────────────
+# 「岸上的根」曾写景炎三年三月，而该卡只在 1277（景炎二年）出现。结局年号有三处镜像：cutscenes.json 过场的
+# era 字幕、Main._show_notice_dialog 的册页题头、触发该结局的 Calendar 日期闸；年号推算以 Calendar.ERAS /
+# ERA_START 为准（照 Calendar._era_row 抄）。三处任一漂移即红。忠肃 / 岸上的根 / 纲首必须在对照之列。
+cal_src = open(os.path.join(ROOT, "scripts", "core", "Calendar.gd"), encoding="utf-8").read()
+_eras_m = re.search(r"const ERAS := \[(.*?)\n\]", cal_src, re.S)
+CAL_ERAS = [(int(a), int(b), n) for a, b, n in re.findall(r'\[(\d{4}), (\d{4}), "(.+?)"\]', _eras_m.group(1))] if _eras_m else []
+_start_m = re.search(r"const ERA_START := \{(.*?)\n\}", cal_src, re.S)
+CAL_ERA_START = {n: (int(y), int(m)) for n, y, m in re.findall(r'"(.+?)": \[(\d{4}), (\d+)\]', _start_m.group(1))} if _start_m else {}
+check(len(CAL_ERAS) >= 6 and {"景炎", "祥兴", "至元"} <= set(CAL_ERA_START), "Calendar.ERAS / ERA_START 解析失败")
+_cal_y = re.search(r"var year: int = (\d{4})", cal_src)
+_cal_mo = re.search(r"var month: int = (\d+)", cal_src)
+
+
+def cal_era(year, month):
+    """Calendar._era_row + get_era_year 的镜像：→ (年号, 年号年数)，表外 None。"""
+    found = None
+    for e0, e1, name in CAL_ERAS:
+        sy, sm = CAL_ERA_START.get(name, (e0, 1))
+        if (year > sy or (year == sy and month >= sm)) and year <= e1:
+            found = (name, year - e0 + 1)
+    return found
+
+
+_SEASON = {"春": {1, 2, 3}, "夏": {4, 5, 6}, "秋": {7, 8, 9}, "冬": {10, 11, 12}}
+_ERA_NAMES = "|".join(sorted({e[2] for e in CAL_ERAS}, key=len, reverse=True)) or "宝祐"
+_DATE_RE = re.compile(r"(" + _ERA_NAMES + r")(?:([元一二三四五六七八九十]{1,3})年(?:(正|冬|腊|[一二三四五六七八九十]{1,2})月|([春夏秋冬]))?|年间)")
+
+
+def parse_era_date(s):
+    """「兴化・景炎元年十二月」→ {era, n, ce, months}；「至元年间」n/ce 为 None。无年号 → None。"""
+    m = _DATE_RE.search(s or "")
+    if not m:
+        return None
+    era, n, mo, season = m.groups()
+    d = {"era": era, "n": None, "ce": None, "months": set(range(1, 13)), "text": m.group(0)}
+    if n:
+        d["n"] = _cn_n(n)
+        e0 = next((e[0] for e in CAL_ERAS if e[2] == era), None)
+        d["ce"] = e0 + d["n"] - 1 if e0 is not None else None
+    if mo:
+        d["months"] = {{"正": 1, "冬": 11, "腊": 12}.get(mo) or _cn_n(mo)}
+    elif season:
+        d["months"] = set(_SEASON[season])
+    return d
+
+
+def cal_ok(d):
+    """年号年数落在 Calendar 会显示该年号的某个月里（如景炎元年须五月后、祥兴二年不得到至元）。"""
+    if d["ce"] is None:
+        return any(e[2] == d["era"] for e in CAL_ERAS)
+    return any(cal_era(d["ce"], mo) == (d["era"], d["n"]) for mo in d["months"])
+
+
+# 全部过场的 era 字幕都要是 Calendar 推得出的年号年
+cutscenes_all = load("cutscenes.json")
+era_caps = 0
+for cid, cs in cutscenes_all.get("cutscenes", {}).items():
+    for shot in cs.get("shots", []) or []:
+        for cap in shot.get("captions", []) or []:
+            if cap.get("style") != "era":
+                continue
+            d = parse_era_date(cap.get("text", ""))
+            if d:
+                era_caps += 1
+                check(cal_ok(d), f"cutscenes.{cid} 年号字幕「{cap.get('text')}」与 Calendar.ERAS 推算不符")
+check(era_caps >= 8, f"cutscenes.json 只认出 {era_caps} 条年号字幕，疑似解析失败")
+# 开场字幕 = Calendar 开局年月
+_open = next((parse_era_date(c.get("text", "")) for sh in cutscenes_all["cutscenes"].get("opening", {}).get("shots", [])
+              for c in sh.get("captions", []) if c.get("style") == "era" and parse_era_date(c.get("text", ""))), None)
+if _cal_y and _cal_mo and _open:
+    check(_open["ce"] == int(_cal_y.group(1)) and cal_era(int(_cal_y.group(1)), int(_cal_mo.group(1))) == (_open["era"], _open["n"]),
+          f"开场字幕「{_open['text']}」≠ Calendar 开局 {_cal_y.group(1)}-{_cal_mo.group(1)}")
+else:
+    check(False, "开场过场年号字幕或 Calendar 开局年月解析失败")
+
+
+def _enclosing_func(src, pos):
+    a = src.rfind("\nfunc ", 0, pos)
+    b = src.find("\nfunc ", pos)
+    return src[a:b if b >= 0 else len(src)]
+
+
+# 册页题头：_show_notice_dialog(标题, 题头, …)；标题可是 "甲" if … else "乙"，题头可是本函数里的 var head := "…"
+notice_head = {}
+for m in re.finditer(r'_show_notice_dialog\(\s*([^,\n]*?),\s*("[^"\n]*"|[A-Za-z_]\w*)\s*,', main_src):
+    titles = re.findall(r'"([^"\n]*)"', m.group(1))
+    head = m.group(2)
+    if not head.startswith('"'):
+        hv = re.search(r"var " + head + r' := "([^"\n]*)"', _enclosing_func(main_src, m.start()))
+        head = hv.group(1) if hv else ""
+    else:
+        head = head.strip('"')
+    for t in titles:
+        notice_head.setdefault(t, head)
+
+
+def _cs_eras(cid):
+    return [d for sh in cutscenes_all["cutscenes"].get(cid, {}).get("shots", []) or []
+            for c in sh.get("captions", []) or [] if c.get("style") == "era" and (d := parse_era_date(c.get("text", "")))]
+
+
+# 触发日期闸：_special_cards 各卡的 Calendar 条件；忠肃 / 未归共用兴化城破日（_check_absent_from_xinghua）
+_special = re.search(r"func _special_cards\(.*?\n(?=\nfunc |\Z)", main_src, re.S)
+_special_src = _special.group(0) if _special else ""
+
+
+def _card_gate(card):
+    chunks = _special_src.split("out.append(")
+    for i, ch in enumerate(chunks[1:], 1):
+        if ch.lstrip().startswith('{"id": ' + card):
+            return chunks[i - 1].rsplit("\n\n", 1)[-1]
+    return ""
+
+
+def _gate_from(src):
+    """→ (年下限, 年上限, 允许月份)；认 Calendar.year ==/>= N 与 Calendar.month in [...] / <= / >= N。"""
+    y = re.search(r"Calendar\.year (==|>=) (\d{4})", src)
+    if not y:
+        return None
+    lo = int(y.group(2))
+    hi = lo if y.group(1) == "==" else 99999
+    months = set(range(1, 13))
+    if (mi := re.search(r"Calendar\.month in \[([\d, ]+)\]", src)):
+        months = {int(x) for x in re.findall(r"\d+", mi.group(1))}
+    elif (ml := re.search(r"Calendar\.month (<=|>=) (\d+)", src)):
+        k = int(ml.group(2))
+        months = set(range(1, k + 1)) if ml.group(1) == "<=" else set(range(k, 13))
+    return lo, hi, months
+
+
+_absent = re.search(r"func _check_absent_from_xinghua\(.*?\n(?=\nfunc |\Z)", main_src, re.S)
+_fall_m = re.search(r"Calendar\.year == (\d{4}) and Calendar\.month >= (\d+)", _absent.group(0) if _absent else "")
+_fall_gate = (int(_fall_m.group(1)), int(_fall_m.group(1)), set(range(int(_fall_m.group(2)), 13))) if _fall_m else None
+ENDING_GATE = {
+    "忠肃": _fall_gate, "未归": _fall_gate,
+    "岸上的根": _gate_from(_card_gate("CARD_HANJIANG")),
+    "海上宋鬼": _gate_from(_card_gate("CARD_YASHAN")),
+    "纲首": _gate_from(_card_gate("CARD_GANGSHOU")),
+    "泉州蒲氏的船": _gate_from(_card_gate("CARD_GANGSHOU")),
+}
+for must in ("忠肃", "岸上的根", "纲首"):
+    check(ENDING_GATE.get(must) is not None, f"结局「{must}」的 Calendar 触发闸解析失败")
+    check(must in notice_head and must in cutscenes_all.get("endings", {}), f"结局「{must}」缺册页题头或过场，年号无从对照")
+
+def _mo(ms):
+    return "全年" if len(ms) == 12 else f"{sorted(ms)} 月"
+
+
+mirrored = 0
+for title, cid in cutscenes_all.get("endings", {}).items():
+    head = notice_head.get(title)
+    if head is None:
+        continue
+    # 过场可跨年（蒲氏的船：景炎元年冬 → 至元年间），字幕须按时序；册页题头对的是最后落定的那一年
+    cds = _cs_eras(cid)
+    ces = [d["ce"] for d in cds if d["ce"] is not None]
+    check(ces == sorted(ces), f"结局「{title}」过场 {cid} 年号字幕不按时序：{[d['text'] for d in cds]}")
+    hd, cd = parse_era_date(head), (cds[-1] if cds else None)
+    if title in ENDING_GATE:
+        check(hd is not None and hd["ce"] is not None, f"结局「{title}」册页题头「{head}」没有年号年")
+        check(cd is not None, f"结局「{title}」过场 {cid} 没有年号字幕")
+    if hd is None or cd is None:
+        continue
+    mirrored += 1
+    check(cal_ok(hd), f"结局「{title}」册页题头「{head}」与 Calendar.ERAS 推算不符")
+    # 过场 ↔ 册页：同一年号；两边都写到年数时年数相同；两边都写到月 / 季时须有交集（「冬」含十二月）
+    same = hd["era"] == cd["era"] and (hd["n"] is None or cd["n"] is None or hd["n"] == cd["n"]) \
+        and bool(hd["months"] & cd["months"])
+    check(same, f"结局「{title}」过场 {cid}「{cd['text']}」与册页题头「{hd['text']}」年号不一致")
+    gate = ENDING_GATE.get(title)
+    if gate and hd["ce"] is not None:
+        lo, hi, months = gate
+        check(lo <= hd["ce"] <= hi and bool(hd["months"] & months),
+              f"结局「{title}」题头「{hd['text']}」（{hd['ce']} 年 {_mo(hd['months'])}）落在触发闸 "
+              f"{lo}{'' if hi == lo else '+'} 年 {_mo(months)}之外")
+check(mirrored >= 5, f"结局年号只对照到 {mirrored} 个，疑似解析失败")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:
         print("FAIL:", f)
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
-print(f"scenes {len(scenes)} · news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
+print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · scenes {len(scenes)} · news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
 print("结果：全部通过")
