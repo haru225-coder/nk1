@@ -372,7 +372,8 @@ print("二、跨文件引用检查")
 print("=" * 68)
 
 # Godot 内置成员，出现在 autoload 上是合法的。lane cs3：不再手写，改读 ClassDB 导出的清单——
-#   tools/gen_builtin_list.gd → tools/builtin_api.txt（每类只列本类新增成员，inherits 行给继承链）；
+#   tools/gen_builtin_list.gd → tools/builtin_api.txt（每类只列本类新增成员，inherits 行给继承链；
+#   「== signal ==」之后是只导信号的类，供二之二 / 二之三，lane cs5）；
 #   重生成：python3 tools/check_symbols.py --regen。每个 autoload 按自己的 extends 链合并放行。
 BUILTIN_LIST = os.path.join(ROOT, "tools", "builtin_api.txt")
 # 手写补充段：ClassDB 里查不到、GDScript 语法层却合法的名字（脚本类 .new()、Signal.emit / Callable.bind、容器 size / keys）
@@ -420,28 +421,39 @@ def _regen_builtin_list():
 
 
 def _read_builtin_list():
-    """返回 (godot 版本, {类: (父类, 成员集)}, 问题列表)。头三行：说明 / godot 版本 / 正文 sha256。"""
+    """返回 (godot 版本, {类: (父类, 成员集)}, {类: (父类, 信号集)}, 问题列表)。头三行：说明 / godot 版本 / 正文 sha256。"""
     import hashlib
     if not os.path.exists(BUILTIN_LIST):
-        return None, {}, ["tools/builtin_api.txt 不存在"]
+        return None, {}, {}, ["tools/builtin_api.txt 不存在"]
     text = open(BUILTIN_LIST, encoding="utf-8").read()
     head = text.split("\n", 3)
     if len(head) < 4 or not head[1].startswith("# godot ") or not head[2].startswith("# sha256 "):
-        return None, {}, ["tools/builtin_api.txt 头部缺 godot 版本 / sha256 行"]
+        return None, {}, {}, ["tools/builtin_api.txt 头部缺 godot 版本 / sha256 行"]
     ver, want, body = head[1][len("# godot "):], head[2][len("# sha256 "):], head[3]
     errs = []
     if hashlib.sha256(body.encode("utf-8")).hexdigest() != want:
         errs.append("tools/builtin_api.txt 正文与头部 sha256 不符（被手改或截断）")
-    classes, cur = {}, None
+    # 「== signal ==」之前是全量段（成员放行用）；之后是只导信号的类（lane cs5，二之二 / 二之三认基类信号用）
+    full, sigs, cur, sig_only = {}, {}, None, False
     for ln in body.split("\n"):
-        if ln.startswith("[") and ln.endswith("]"):
+        if ln == "== signal ==":
+            cur, sig_only = None, True
+        elif ln.startswith("[") and ln.endswith("]"):
             cur = ln[1:-1]
-            classes[cur] = ["", set()]
+            sigs[cur] = ["", set()]
+            if not sig_only:
+                full[cur] = ["", set()]
         elif cur and ln.startswith("inherits"):
-            classes[cur][0] = ln[len("inherits"):].strip()
+            sigs[cur][0] = ln[len("inherits"):].strip()
+            if not sig_only:
+                full[cur][0] = sigs[cur][0]
         elif cur and ln:
-            classes[cur][1].add(ln.split(" ", 1)[-1])
-    return ver, {k: (p, m) for k, (p, m) in classes.items()}, errs
+            kind, _, name = ln.partition(" ")
+            if kind == "signal":
+                sigs[cur][1].add(name)
+            if not sig_only:
+                full[cur][1].add(name)
+    return ver, {k: tuple(v) for k, v in full.items()}, {k: tuple(v) for k, v in sigs.items()}, errs
 
 
 def builtin_members(cls):
@@ -459,7 +471,7 @@ def builtin_members(cls):
 
 if "--regen" in sys.argv[1:] and not _regen_builtin_list():
     problems.append("--regen 重导内置清单失败")
-BUILTIN_VER, BUILTIN_CLASSES, _bl_errs = _read_builtin_list()
+BUILTIN_VER, BUILTIN_CLASSES, BUILTIN_SIGNALS, _bl_errs = _read_builtin_list()
 _bl_godot = _godot_bin()
 _bl_local = None
 if _bl_godot and BUILTIN_VER:
@@ -539,132 +551,19 @@ print("二之二、emit 的信号是否都还存在")
 print("=" * 68)
 print("  删掉 signal 却漏了某处 emit，只有跑到那一行才炸。")
 print("  本文件 / extends 链上的父脚本 / 引擎基类内置信号 / 声明为 Signal 的变量与形参 都算有来处。")
-# 引擎基类的自有信号：{类: (父类, "信号 …")}。Godot 4.6.3 ClassDB.class_get_signal_list(类, true) 导出
-# （lane cs2）；只收本仓与常见节点，链走到表外的引擎类就不再放宽——照旧只认脚本里的声明
-NATIVE_SIGNALS = {
-    "Object": ("", "property_list_changed script_changed"),
-    "RefCounted": ("Object", ""),
-    "Resource": ("RefCounted", "changed setup_local_to_scene_requested"),
-    "Node": ("Object", "child_entered_tree child_exiting_tree child_order_changed editor_description_changed editor_state_changed ready renamed replacing_by tree_entered tree_exited tree_exiting"),
-    "CanvasItem": ("Node", "draw hidden item_rect_changed visibility_changed"),
-    "Node2D": ("CanvasItem", ""),
-    "Node3D": ("Node", "visibility_changed"),
-    "Control": ("CanvasItem", "focus_entered focus_exited gui_input minimum_size_changed mouse_entered mouse_exited resized size_flags_changed theme_changed"),
-    "Container": ("Control", "pre_sort_children sort_children"),
-    "BoxContainer": ("Container", ""),
-    "VBoxContainer": ("BoxContainer", ""),
-    "HBoxContainer": ("BoxContainer", ""),
-    "FlowContainer": ("Container", ""),
-    "HFlowContainer": ("FlowContainer", ""),
-    "VFlowContainer": ("FlowContainer", ""),
-    "PanelContainer": ("Container", ""),
-    "MarginContainer": ("Container", ""),
-    "CenterContainer": ("Container", ""),
-    "GridContainer": ("Container", ""),
-    "ScrollContainer": ("Container", "scroll_ended scroll_started"),
-    "SubViewportContainer": ("Container", ""),
-    "AspectRatioContainer": ("Container", ""),
-    "SplitContainer": ("Container", "drag_ended drag_started dragged"),
-    "HSplitContainer": ("SplitContainer", ""),
-    "VSplitContainer": ("SplitContainer", ""),
-    "TabContainer": ("Container", "active_tab_rearranged pre_popup_pressed tab_button_pressed tab_changed tab_clicked tab_hovered tab_selected"),
-    "TabBar": ("Control", "active_tab_rearranged tab_button_pressed tab_changed tab_clicked tab_close_pressed tab_hovered tab_rmb_clicked tab_selected"),
-    "Panel": ("Control", ""),
-    "Label": ("Control", ""),
-    "RichTextLabel": ("Control", "finished meta_clicked meta_hover_ended meta_hover_started"),
-    "BaseButton": ("Control", "button_down button_up pressed toggled"),
-    "Button": ("BaseButton", ""),
-    "TextureButton": ("BaseButton", ""),
-    "CheckBox": ("Button", ""),
-    "CheckButton": ("Button", ""),
-    "LinkButton": ("BaseButton", ""),
-    "OptionButton": ("Button", "item_focused item_selected"),
-    "MenuButton": ("Button", "about_to_popup"),
-    "TextureRect": ("Control", ""),
-    "NinePatchRect": ("Control", "texture_changed"),
-    "ColorRect": ("Control", ""),
-    "ReferenceRect": ("Control", ""),
-    "LineEdit": ("Control", "editing_toggled text_change_rejected text_changed text_submitted"),
-    "TextEdit": ("Control", "caret_changed gutter_added gutter_clicked gutter_removed lines_edited_from text_changed text_set"),
-    "CodeEdit": ("TextEdit", "breakpoint_toggled code_completion_requested symbol_hovered symbol_lookup symbol_validate"),
-    "ItemList": ("Control", "empty_clicked item_activated item_clicked item_selected multi_selected"),
-    "Tree": ("Control", "button_clicked cell_selected check_propagated_to_item column_title_clicked custom_item_clicked custom_popup_edited empty_clicked item_activated item_collapsed item_edited item_icon_double_clicked item_mouse_selected item_selected multi_selected nothing_selected"),
-    "Range": ("Control", "changed value_changed"),
-    "Slider": ("Range", "drag_ended drag_started"),
-    "HSlider": ("Slider", ""),
-    "VSlider": ("Slider", ""),
-    "ProgressBar": ("Range", ""),
-    "TextureProgressBar": ("Range", ""),
-    "ScrollBar": ("Range", "scrolling"),
-    "HScrollBar": ("ScrollBar", ""),
-    "VScrollBar": ("ScrollBar", ""),
-    "SpinBox": ("Range", ""),
-    "Separator": ("Control", ""),
-    "HSeparator": ("Separator", ""),
-    "VSeparator": ("Separator", ""),
-    "CanvasLayer": ("Node", "visibility_changed"),
-    "ParallaxBackground": ("CanvasLayer", ""),
-    "CollisionObject2D": ("Node2D", "input_event mouse_entered mouse_exited mouse_shape_entered mouse_shape_exited"),
-    "PhysicsBody2D": ("CollisionObject2D", ""),
-    "CharacterBody2D": ("PhysicsBody2D", ""),
-    "RigidBody2D": ("PhysicsBody2D", "body_entered body_exited body_shape_entered body_shape_exited sleeping_state_changed"),
-    "StaticBody2D": ("PhysicsBody2D", ""),
-    "AnimatableBody2D": ("StaticBody2D", ""),
-    "Area2D": ("CollisionObject2D", "area_entered area_exited area_shape_entered area_shape_exited body_entered body_exited body_shape_entered body_shape_exited"),
-    "Sprite2D": ("Node2D", "frame_changed texture_changed"),
-    "AnimatedSprite2D": ("Node2D", "animation_changed animation_finished animation_looped frame_changed sprite_frames_changed"),
-    "Camera2D": ("Node2D", ""),
-    "Line2D": ("Node2D", ""),
-    "Polygon2D": ("Node2D", ""),
-    "Path2D": ("Node2D", ""),
-    "PathFollow2D": ("Node2D", ""),
-    "Marker2D": ("Node2D", ""),
-    "GPUParticles2D": ("Node2D", "finished"),
-    "CPUParticles2D": ("Node2D", "finished"),
-    "VisibleOnScreenNotifier2D": ("Node2D", "screen_entered screen_exited"),
-    "TileMapLayer": ("Node2D", "changed"),
-    "Timer": ("Node", "timeout"),
-    "AnimationMixer": ("Node", "animation_finished animation_libraries_updated animation_list_changed animation_started caches_cleared mixer_applied mixer_updated"),
-    "AnimationPlayer": ("AnimationMixer", "animation_changed current_animation_changed"),
-    "AnimationTree": ("AnimationMixer", "animation_player_changed"),
-    "Viewport": ("Node", "gui_focus_changed size_changed"),
-    "SubViewport": ("Viewport", ""),
-    "Window": ("Viewport", "about_to_popup close_requested dpi_changed files_dropped focus_entered focus_exited go_back_requested mouse_entered mouse_exited nonclient_window_input theme_changed title_changed titlebar_changed visibility_changed window_input"),
-    "Popup": ("Window", "popup_hide"),
-    "PopupPanel": ("Popup", ""),
-    "PopupMenu": ("Popup", "id_focused id_pressed index_pressed menu_changed"),
-    "AcceptDialog": ("Window", "canceled confirmed custom_action"),
-    "ConfirmationDialog": ("AcceptDialog", ""),
-    "AudioStreamPlayer": ("Node", "finished"),
-    "AudioStreamPlayer2D": ("Node2D", "finished"),
-    "HTTPRequest": ("Node", "request_completed"),
-    "CollisionObject3D": ("Node3D", "input_event mouse_entered mouse_exited"),
-    "PhysicsBody3D": ("CollisionObject3D", ""),
-    "CharacterBody3D": ("PhysicsBody3D", ""),
-    "Area3D": ("CollisionObject3D", "area_entered area_exited area_shape_entered area_shape_exited body_entered body_exited body_shape_entered body_shape_exited"),
-    "VisualInstance3D": ("Node3D", ""),
-    "GeometryInstance3D": ("VisualInstance3D", ""),
-    "MeshInstance3D": ("GeometryInstance3D", ""),
-    "Camera3D": ("Node3D", ""),
-    "Light3D": ("VisualInstance3D", ""),
-    "DirectionalLight3D": ("Light3D", ""),
-    "OmniLight3D": ("Light3D", ""),
-    "Marker3D": ("Node3D", ""),
-    "WorldEnvironment": ("Node", ""),
-    "Tween": ("RefCounted", "finished loop_finished step_finished"),
-    "MainLoop": ("Object", "on_request_permissions_result"),
-    "SceneTree": ("MainLoop", "node_added node_configuration_warning_changed node_removed node_renamed physics_frame process_frame scene_changed tree_changed tree_process_mode_changed"),
-}
+# 引擎基类的自有信号读 tools/builtin_api.txt（全量段 + 「== signal ==」段，lane cs5 并掉 cs2 手抄表）；
+# 链走到清单外的引擎类就不再放宽——照旧只认脚本里的声明。要认新基类：加进 gen_builtin_list.gd 的 SIGNAL_CLASSES 再 --regen
 
 
 def _native_signals(cls):
-    """引擎类 cls 连同祖先的内置信号；表外的类返回 None"""
-    if cls not in NATIVE_SIGNALS:
-        return None
-    out = set()
-    while cls:
-        parent, sigs = NATIVE_SIGNALS[cls]
-        out.update(sigs.split())
+    """引擎类 cls 连同祖先的内置信号；链上有类不在清单里返回 None"""
+    out, seen = set(), set()
+    while cls and cls not in seen:
+        seen.add(cls)
+        if cls not in BUILTIN_SIGNALS:
+            return None
+        parent, sigs = BUILTIN_SIGNALS[cls]
+        out |= sigs
         cls = parent
     return out
 
@@ -775,7 +674,7 @@ if SUGGEST:
             i += 1
         return mask
 
-    # Object / Node / CanvasItem / Control 常见方法与信号——扫描字面量时视为引擎内置，不提示
+    # Object / Node / CanvasItem / Control 常见方法——扫描字面量时视为引擎内置，不提示（信号走清单，见 _sg_scope）
     ENGINE_METHODS = BUILTIN | {
         "add_sibling", "queue_redraw", "show", "hide", "grab_focus", "release_focus",
         "set_position", "set_size", "set_visible", "set_modulate", "set_text", "set_process_input",
@@ -785,17 +684,6 @@ if SUGGEST:
         # SceneTree（tools/ 探针多 extends SceneTree）
         "quit", "create_timer", "change_scene_to_file", "change_scene_to_packed",
         "reload_current_scene", "call_group", "set_pause",
-    }
-    ENGINE_SIGNALS = {
-        "ready", "tree_entered", "tree_exiting", "tree_exited", "renamed",
-        "child_entered_tree", "child_exiting_tree", "child_order_changed", "script_changed",
-        "property_list_changed", "visibility_changed", "draw", "item_rect_changed", "hidden",
-        "resized", "gui_input", "mouse_entered", "mouse_exited", "focus_entered", "focus_exited",
-        "size_flags_changed", "minimum_size_changed", "theme_changed",
-        "pressed", "toggled", "button_down", "button_up", "timeout", "finished",
-        "animation_finished", "text_changed", "text_submitted", "item_selected", "value_changed",
-        "body_entered", "body_exited", "area_entered", "area_exited", "input_event",
-        "process_frame", "physics_frame", "node_added", "node_removed",
     }
 
     _sg_files = []
@@ -821,20 +709,22 @@ if SUGGEST:
                          "ext": (ext.group(1) or ext.group(2)) if ext else None}
 
     def _sg_scope(rel, seen=None):
-        """本脚本 + extends 链上各脚本的 (func, signal)；链尾落到引擎类时补引擎内置。"""
+        """本脚本 + extends 链上各脚本的 (func, signal)。func 链尾落到引擎类时补 ENGINE_METHODS；
+        signal 与二之二同走 _chain_signals（脚本声明 + 清单里该引擎基类链的信号，链出清单不放宽）。"""
         seen = seen or set()
         info = _sg_info.get(rel)
         if info is None or rel in seen:
-            return set(ENGINE_METHODS), set(ENGINE_SIGNALS)
+            return set(ENGINE_METHODS), set()
         seen.add(rel)
-        funcs, sigs = set(info["funcs"]), set(info["sigs"])
+        funcs = set(info["funcs"])
         parent = info["ext"]
         parent_rel = parent if parent and parent.endswith(".gd") else _sg_class.get(parent)
-        pf, ps = _sg_scope(parent_rel, seen) if parent_rel else (set(ENGINE_METHODS), set(ENGINE_SIGNALS))
-        return funcs | pf, sigs | ps
+        pf = _sg_scope(parent_rel, seen)[0] if parent_rel else set(ENGINE_METHODS)
+        return funcs | pf, _chain_signals(os.path.join(ROOT, rel))[0]
 
     _sg_all_funcs = set(ENGINE_METHODS).union(*(i["funcs"] for i in _sg_info.values()))
-    _sg_all_sigs = set(ENGINE_SIGNALS).union(*(i["sigs"] for i in _sg_info.values()))
+    # 接收者类型未知：清单里全部引擎信号 + 全仓脚本 signal 的并集
+    _sg_all_sigs = set().union(*(g for _, g in BUILTIN_SIGNALS.values()), *(i["sigs"] for i in _sg_info.values()))
     _sg_auto = {a: _sg_scope(r) for a, r in AUTOLOADS.items() if r in _sg_info}
 
     _SG_DISPATCH = re.compile(r'\b(emit_signal|call_deferred|callv|call)\s*\(\s*&?"([^"\\\n]*)"')

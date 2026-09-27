@@ -1,6 +1,6 @@
 # 由 tools/gen_builtin_list.gd 从 ClassDB 导出，勿手改；重生成：python3 tools/check_symbols.py --regen
 # godot 4.6.3.stable.official.7d41c59c4
-# sha256 5f941500b6479ba01d2d1c510a6b4d0d8d520eb50bd251cf11e6aa768e87c23c
+# sha256 76a5fc82df8f05b397e793a912c9236ce3cb777157025becaa548ec7bb0eeddc
 [Object]
 inherits
 constant CONNECT_APPEND_SOURCE_OBJECT
@@ -936,3 +936,485 @@ property scale
 property transform
 property visible
 signal visibility_changed
+
+== signal ==
+[AcceptDialog]
+inherits Window
+signal canceled
+signal confirmed
+signal custom_action
+
+[AnimatableBody2D]
+inherits StaticBody2D
+
+[AnimatedSprite2D]
+inherits Node2D
+signal animation_changed
+signal animation_finished
+signal animation_looped
+signal frame_changed
+signal sprite_frames_changed
+
+[AnimationMixer]
+inherits Node
+signal animation_finished
+signal animation_libraries_updated
+signal animation_list_changed
+signal animation_started
+signal caches_cleared
+signal mixer_applied
+signal mixer_updated
+
+[AnimationPlayer]
+inherits AnimationMixer
+signal animation_changed
+signal current_animation_changed
+
+[AnimationTree]
+inherits AnimationMixer
+signal animation_player_changed
+
+[Area2D]
+inherits CollisionObject2D
+signal area_entered
+signal area_exited
+signal area_shape_entered
+signal area_shape_exited
+signal body_entered
+signal body_exited
+signal body_shape_entered
+signal body_shape_exited
+
+[Area3D]
+inherits CollisionObject3D
+signal area_entered
+signal area_exited
+signal area_shape_entered
+signal area_shape_exited
+signal body_entered
+signal body_exited
+signal body_shape_entered
+signal body_shape_exited
+
+[AspectRatioContainer]
+inherits Container
+
+[AudioStreamPlayer]
+inherits Node
+signal finished
+
+[AudioStreamPlayer2D]
+inherits Node2D
+signal finished
+
+[BaseButton]
+inherits Control
+signal button_down
+signal button_up
+signal pressed
+signal toggled
+
+[BoxContainer]
+inherits Container
+
+[Button]
+inherits BaseButton
+
+[CPUParticles2D]
+inherits Node2D
+signal finished
+
+[Camera2D]
+inherits Node2D
+
+[Camera3D]
+inherits Node3D
+
+[CenterContainer]
+inherits Container
+
+[CharacterBody2D]
+inherits PhysicsBody2D
+
+[CharacterBody3D]
+inherits PhysicsBody3D
+
+[CheckBox]
+inherits Button
+
+[CheckButton]
+inherits Button
+
+[CodeEdit]
+inherits TextEdit
+signal breakpoint_toggled
+signal code_completion_requested
+signal symbol_hovered
+signal symbol_lookup
+signal symbol_validate
+
+[CollisionObject2D]
+inherits Node2D
+signal input_event
+signal mouse_entered
+signal mouse_exited
+signal mouse_shape_entered
+signal mouse_shape_exited
+
+[CollisionObject3D]
+inherits Node3D
+signal input_event
+signal mouse_entered
+signal mouse_exited
+
+[ColorRect]
+inherits Control
+
+[ConfirmationDialog]
+inherits AcceptDialog
+
+[Container]
+inherits Control
+signal pre_sort_children
+signal sort_children
+
+[DirectionalLight3D]
+inherits Light3D
+
+[FlowContainer]
+inherits Container
+
+[GPUParticles2D]
+inherits Node2D
+signal finished
+
+[GeometryInstance3D]
+inherits VisualInstance3D
+
+[GridContainer]
+inherits Container
+
+[HBoxContainer]
+inherits BoxContainer
+
+[HFlowContainer]
+inherits FlowContainer
+
+[HScrollBar]
+inherits ScrollBar
+
+[HSeparator]
+inherits Separator
+
+[HSlider]
+inherits Slider
+
+[HSplitContainer]
+inherits SplitContainer
+
+[HTTPRequest]
+inherits Node
+signal request_completed
+
+[ItemList]
+inherits Control
+signal empty_clicked
+signal item_activated
+signal item_clicked
+signal item_selected
+signal multi_selected
+
+[Label]
+inherits Control
+
+[Light3D]
+inherits VisualInstance3D
+
+[Line2D]
+inherits Node2D
+
+[LineEdit]
+inherits Control
+signal editing_toggled
+signal text_change_rejected
+signal text_changed
+signal text_submitted
+
+[LinkButton]
+inherits BaseButton
+
+[MainLoop]
+inherits Object
+signal on_request_permissions_result
+
+[MarginContainer]
+inherits Container
+
+[Marker2D]
+inherits Node2D
+
+[Marker3D]
+inherits Node3D
+
+[MenuButton]
+inherits Button
+signal about_to_popup
+
+[MeshInstance3D]
+inherits GeometryInstance3D
+
+[NinePatchRect]
+inherits Control
+signal texture_changed
+
+[Node3D]
+inherits Node
+signal visibility_changed
+
+[OmniLight3D]
+inherits Light3D
+
+[OptionButton]
+inherits Button
+signal item_focused
+signal item_selected
+
+[Panel]
+inherits Control
+
+[PanelContainer]
+inherits Container
+
+[ParallaxBackground]
+inherits CanvasLayer
+
+[Path2D]
+inherits Node2D
+
+[PathFollow2D]
+inherits Node2D
+
+[PhysicsBody2D]
+inherits CollisionObject2D
+
+[PhysicsBody3D]
+inherits CollisionObject3D
+
+[Polygon2D]
+inherits Node2D
+
+[Popup]
+inherits Window
+signal popup_hide
+
+[PopupMenu]
+inherits Popup
+signal id_focused
+signal id_pressed
+signal index_pressed
+signal menu_changed
+
+[PopupPanel]
+inherits Popup
+
+[ProgressBar]
+inherits Range
+
+[Range]
+inherits Control
+signal changed
+signal value_changed
+
+[ReferenceRect]
+inherits Control
+
+[RichTextLabel]
+inherits Control
+signal finished
+signal meta_clicked
+signal meta_hover_ended
+signal meta_hover_started
+
+[RigidBody2D]
+inherits PhysicsBody2D
+signal body_entered
+signal body_exited
+signal body_shape_entered
+signal body_shape_exited
+signal sleeping_state_changed
+
+[SceneTree]
+inherits MainLoop
+signal node_added
+signal node_configuration_warning_changed
+signal node_removed
+signal node_renamed
+signal physics_frame
+signal process_frame
+signal scene_changed
+signal tree_changed
+signal tree_process_mode_changed
+
+[ScrollBar]
+inherits Range
+signal scrolling
+
+[ScrollContainer]
+inherits Container
+signal scroll_ended
+signal scroll_started
+
+[Separator]
+inherits Control
+
+[Slider]
+inherits Range
+signal drag_ended
+signal drag_started
+
+[SpinBox]
+inherits Range
+
+[SplitContainer]
+inherits Container
+signal drag_ended
+signal drag_started
+signal dragged
+
+[Sprite2D]
+inherits Node2D
+signal frame_changed
+signal texture_changed
+
+[StaticBody2D]
+inherits PhysicsBody2D
+
+[SubViewport]
+inherits Viewport
+
+[SubViewportContainer]
+inherits Container
+
+[TabBar]
+inherits Control
+signal active_tab_rearranged
+signal tab_button_pressed
+signal tab_changed
+signal tab_clicked
+signal tab_close_pressed
+signal tab_hovered
+signal tab_rmb_clicked
+signal tab_selected
+
+[TabContainer]
+inherits Container
+signal active_tab_rearranged
+signal pre_popup_pressed
+signal tab_button_pressed
+signal tab_changed
+signal tab_clicked
+signal tab_hovered
+signal tab_selected
+
+[TextEdit]
+inherits Control
+signal caret_changed
+signal gutter_added
+signal gutter_clicked
+signal gutter_removed
+signal lines_edited_from
+signal text_changed
+signal text_set
+
+[TextureButton]
+inherits BaseButton
+
+[TextureProgressBar]
+inherits Range
+
+[TextureRect]
+inherits Control
+
+[TileMapLayer]
+inherits Node2D
+signal changed
+
+[Timer]
+inherits Node
+signal timeout
+
+[Tree]
+inherits Control
+signal button_clicked
+signal cell_selected
+signal check_propagated_to_item
+signal column_title_clicked
+signal custom_item_clicked
+signal custom_popup_edited
+signal empty_clicked
+signal item_activated
+signal item_collapsed
+signal item_edited
+signal item_icon_double_clicked
+signal item_mouse_selected
+signal item_selected
+signal multi_selected
+signal nothing_selected
+
+[Tween]
+inherits RefCounted
+signal finished
+signal loop_finished
+signal step_finished
+
+[VBoxContainer]
+inherits BoxContainer
+
+[VFlowContainer]
+inherits FlowContainer
+
+[VScrollBar]
+inherits ScrollBar
+
+[VSeparator]
+inherits Separator
+
+[VSlider]
+inherits Slider
+
+[VSplitContainer]
+inherits SplitContainer
+
+[Viewport]
+inherits Node
+signal gui_focus_changed
+signal size_changed
+
+[VisibleOnScreenNotifier2D]
+inherits Node2D
+signal screen_entered
+signal screen_exited
+
+[VisualInstance3D]
+inherits Node3D
+
+[Window]
+inherits Viewport
+signal about_to_popup
+signal close_requested
+signal dpi_changed
+signal files_dropped
+signal focus_entered
+signal focus_exited
+signal go_back_requested
+signal mouse_entered
+signal mouse_exited
+signal nonclient_window_input
+signal theme_changed
+signal title_changed
+signal titlebar_changed
+signal visibility_changed
+signal window_input
+
+[WorldEnvironment]
+inherits Node
