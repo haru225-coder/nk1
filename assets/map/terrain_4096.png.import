@@ -3,15 +3,16 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bawq5lfm5vffr"
-path="res://.godot/imported/terrain_4096.png-5b506bc3245da8d9ccc549330dfe3ce4.ctex"
+path.s3tc="res://.godot/imported/terrain_4096.png-5b506bc3245da8d9ccc549330dfe3ce4.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/map/terrain_4096.png"
-dest_files=["res://.godot/imported/terrain_4096.png-5b506bc3245da8d9ccc549330dfe3ce4.ctex"]
+dest_files=["res://.godot/imported/terrain_4096.png-5b506bc3245da8d9ccc549330dfe3ce4.s3tc.ctex"]
 
 [params]
 
