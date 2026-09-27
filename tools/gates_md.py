@@ -215,6 +215,11 @@ def main(argv):
             check(bool(g.get("when")), f"{g['id']} 是加跑档，写了何时跑（when）")
         if g["tier"] in ("no", "step"):
             check(bool(g.get("why")), f"{g['id']} 不算门禁，写了原因（why）")
+        if g["tier"] == "no" or (g.get("file") or "").startswith("tools/legacy/"):
+            # lane gd9：legacy 条目（p7_smoke 会挂死）gate_json 强制超时，人读命令也得带上限
+            t = g.get("timeout")
+            check(bool(t) and g["cmd"].startswith(f"timeout {t:g} "),
+                  f"{g['id']} 是 legacy 条目，带强制超时（注册表 timeout={t}，本地命令以 `timeout {t}` 开头）")
     for s in shots:
         check(os.path.isfile(os.path.join(ROOT, s["file"])) and None not in (s["tag"], s["shots"], s["out_dir"]),
               f"截图脚本 {s['file']}：TAG={s['tag']} 张数={s['shots']} 目录={s['out_dir']}（源码读得到）")

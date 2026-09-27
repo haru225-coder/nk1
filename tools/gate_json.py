@@ -16,6 +16,8 @@
      python3 tools/gate_json.py --native res://tools/qa_title_probe.gd --display [-- --contract]
      python3 tools/gate_json.py --native [--timeout N] -- godot --headless --quiet --path . -s res://tools/X.gd -- --json
      python3 tools/gate_json.py --judge /tmp/gates/*.json               # 批量落盘的 stdout 逐个判；缺 JSON / ok=false 即退 1
+  2c. legacy 条目（注册表 tier=no，或路径在 tools/legacy/ 下）强制超时（lane gd9）：默认 LEGACY_TIMEOUT 秒，`--timeout N` 可改、不可关；
+     到点掐断，照样出 JSON：ok=false、exit_code=124、error="timeout"（p7_smoke 在 SCRIPT ERROR 后不 quit，不加这层会一直挂着）
   3. 门禁清单：`python3 tools/gate_json.py --list` 输出注册表 JSON（REGISTRY + SHOT_PROBES + SUBCHECKS + CI_STEPS）；
      docs/GATES.md §一、§二批量巡检块、§四由它生成，`python3 tools/gates_md.py` 校验、`--write` 重生成。
 
@@ -27,7 +29,7 @@
   · engine_errors：Godot 引擎打的 ERROR 类行数；script_errors 是其中 SCRIPT ERROR 行数。只报数，不改判定
     （patrol 的 Vulkan 回落、save_robust_probe 故意喂坏档都会打 ERROR:，属预期）。
   · 红了却没解析到失败行（脚本中途崩、提前 exit）时补一条 name="exit_code" 的失败条目，并附 tail。
-  · --native / --judge：原生 JSON 原样转出；没 JSON 行时合成 ok=false、error="no_json"（name="no_json_line" 失败条目 + tail），
+  · --native / --judge：原生 JSON 原样转出；没 JSON 行时合成 ok=false、error="no_json"（超时掐断的记 "timeout"；name="no_json_line" 失败条目 + tail），
     exit_code 为进程退出码（0 也改 1）；JSON 与进程退出码对不上、或 JSON 不止一行也判红。
 """
 import json, os, re, subprocess, sys, tempfile
@@ -35,6 +37,9 @@ import json, os, re, subprocess, sys, tempfile
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
 REC_ENV = "NK1_GATE_JSON_REC"
+# legacy 条目（tier=no 或 tools/legacy/ 下）跑子进程的强制超时，秒（lane gd9）。p7_smoke 1.7 s 内就走到 SCRIPT ERROR 挂死，
+# verify_narrative 0 s 退；60 秒留足余量。到点按 timeout(1) 记 124、error="timeout" 判红
+LEGACY_TIMEOUT = 60
 
 # ── 门禁注册表：docs/GATES.md §一（及 §四 CI 块）由它生成（tools/gates_md.py --write），文档与它不一致即 FAIL（tools/gates_md.py）──
 # tier：must = 每轮必跑；step = 每轮必跑、先跑但不判红绿的步骤（why 写原因）；lane = 按 lane 内容加跑（when 写何时）；
@@ -118,7 +123,7 @@ REGISTRY = [
      "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
     {"id": "p7_smoke", "tier": "no", "kind": "godot", "file": "tools/legacy/p7_smoke.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/legacy/p7_smoke.gd"],
-     "why": "（lane gd8 挪入 legacy）与 verify_narrative 同源，绑定 21ce 未收的 P7 平行实现（开局链进泉州、港口节拍、`seen_scenes`、`borrow_ceiling`），合并台账第 14 行定「留档不入门禁」；主干上 4 项 FAIL 后在 `borrow_ceiling()` 处 SCRIPT ERROR、不 quit 挂死（干净 worktree 同，lane l1 已记）；P7 行会 / 贡院由 p7（`p7_guild_exam_smoke.gd`）接管"},
+     "why": "（lane gd8 挪入 legacy）与 verify_narrative 同源，绑定 21ce 未收的 P7 平行实现（开局链进泉州、港口节拍、`seen_scenes`、`borrow_ceiling`），合并台账第 14 行定「留档不入门禁」；主干上 4 项 FAIL 后在 `borrow_ceiling()` 处 SCRIPT ERROR、不 quit 挂死（干净 worktree 同，lane l1 已记；lane gd9 起 legacy 条目强制超时 60 秒，到点 rc=124 判红）；P7 行会 / 贡院由 p7（`p7_guild_exam_smoke.gd`）接管"},
 ]
 
 # 接 shot_gate.gd 的截图脚本（lane m3 三支 + lane sg2 二十支 + 之后各 lane 新接的）。TAG / 张数 / 截图目录从脚本源码现读，不在此抄。
@@ -268,6 +273,20 @@ def _native_json(path):
         return False
 
 
+def _legacy(g):
+    """legacy 条目：注册表 tier=no，或文件在 tools/legacy/ 下（lane gd9：一律强制超时）。"""
+    return g.get("tier") == "no" or (g.get("file") or "").startswith("tools/legacy/")
+
+
+def _legacy_target(*names):
+    """命令行指到的是 legacy 条目：注册表 id、tools/legacy/ 路径（相对 / 绝对 / res://）任一即算。"""
+    for n in names:
+        n = str(n)
+        if n in LEGACY_IDS or "tools/legacy/" in n.replace(os.sep, "/"):
+            return True
+    return False
+
+
 def registry():
     """`--list` 输出的清单：门禁（带人读 / --json 命令、族、是否一键跑）+ 截图脚本明细 + 附属自检 + 一键跑命令 + CI 步骤。"""
     gates = []
@@ -276,9 +295,12 @@ def registry():
         g = dict(g)
         g.setdefault("gate", g["id"])
         disp = "DISPLAY=:2 " if g.get("display") else ""
+        if _legacy(g):  # 人读命令也带上限；`--json` 那条由本脚本内部掐（lane gd9）
+            g["timeout"] = LEGACY_TIMEOUT
+            disp = f"timeout {LEGACY_TIMEOUT} " + disp
         if g["kind"] == "py":
             usage = [g["usage"]] if g.get("usage") else []
-            g["cmd"] = " ".join(["python3", g["file"]] + usage)
+            g["cmd"] = disp + " ".join(["python3", g["file"]] + usage)
             # 自带三行转接的写 `--json`，没接的（如 verify_narrative）由本脚本外包
             try:
                 with open(os.path.join(ROOT, g["file"]), encoding="utf-8", errors="replace") as f:
@@ -292,7 +314,7 @@ def registry():
             if g.get("file") and _native_json(g["file"]):
                 g["json"] = disp + "godot --quiet " + " ".join(g["args"]) + " -- --json"
             else:
-                g["json"] = disp + "python3 tools/gate_json.py --godot " + g["id"]
+                g["json"] = ("" if _legacy(g) else disp) + "python3 tools/gate_json.py --godot " + g["id"]
         else:
             g["cmd"] = SHOT_ENV_PREFIX + "DISPLAY=:2 godot --path . -s res://tools/<探针>.gd"
             g["json"] = SHOT_ENV_PREFIX + ("DISPLAY=:2 godot --quiet --path . -s res://tools/<探针>.gd -- --json" if shots_native
@@ -327,6 +349,7 @@ def registry():
 
 # `--godot <预设>`：注册表里的 Godot 门禁 + 截图脚本（带窗口的不加 --headless）
 GODOT_PRESETS = {g["id"]: (g.get("gate", g["id"]), g["args"]) for g in REGISTRY if g["kind"] == "godot"}
+LEGACY_IDS = {g["id"] for g in REGISTRY if _legacy(g)}
 GODOT_PRESETS["editor"] = ("godot_editor", ["--headless", "--editor", "--path", ".", "--quit"])  # 旧名，与 import 实测等价
 GODOT_PRESETS.update({os.path.splitext(os.path.basename(p))[0]: (os.path.splitext(os.path.basename(p))[0],
                       ["--path", ".", "-s", "res://" + p]) for p, _ in SHOT_PROBES})
@@ -427,14 +450,37 @@ def emit(doc):
     sys.stdout.flush()
 
 
-def run_python_gate(path, args):
+def _timed_out(doc, timeout, out):
+    """子进程被掐断（lane gd9）：ok=false、exit_code=124、error="timeout"，另记一条 timeout 失败条目；已解析到的 FAIL 照留。"""
+    doc["checks"] = [c for c in doc["checks"] if c["name"] != "exit_code"]
+    doc["checks"].append({"name": "timeout", "ok": False,
+                          "detail": f"超时 {timeout:g} 秒被掐断（进程没自己退出：挂死 / 卡死）；见 tail"})
+    hard = [c for c in doc["checks"] if c.get("level") != "warn"]
+    n_pass = sum(1 for c in hard if c["ok"])
+    doc["counts"].update({"total": len(hard), "pass": n_pass, "fail": len(hard) - n_pass})
+    doc.update(ok=False, exit_code=124, error="timeout", timeout=timeout)
+    doc["tail"] = [ANSI.sub("", l) for l in out.splitlines()[-20:]]
+    return doc
+
+
+def _run(cmd, timeout, **kw):
+    """subprocess.run 合并 stdout/stderr；超时掐断时返回 (124, 已有输出, True)。"""
+    try:
+        p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout, **kw)
+        return p.returncode, p.stdout.decode("utf-8", "replace"), False
+    except subprocess.TimeoutExpired as e:  # run() 已 kill 子进程并收完残余输出
+        return 124, (e.stdout or b"").decode("utf-8", "replace"), True
+
+
+def run_python_gate(path, args, timeout=None):
     path = os.path.abspath(path)
+    if timeout is None and _legacy_target(path):
+        timeout = LEGACY_TIMEOUT
     fd, rec = tempfile.mkstemp(prefix="gate_json_", suffix=".jsonl")
     os.close(fd)
     env = dict(os.environ, **{REC_ENV: rec, "PYTHONIOENCODING": "utf-8"})
     cmd = [sys.executable, os.path.abspath(__file__), "--child", path] + list(args)
-    p = subprocess.run(cmd, cwd=os.getcwd(), env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    out = p.stdout.decode("utf-8", "replace")
+    rc, out, killed = _run(cmd, timeout, cwd=os.getcwd(), env=env)
     recorded = []
     try:
         with open(rec, encoding="utf-8") as f:
@@ -443,12 +489,14 @@ def run_python_gate(path, args):
         os.unlink(rec)
     gate = os.path.splitext(os.path.basename(path))[0]
     shown = ["python3", os.path.relpath(path, ROOT)] + list(args)
-    return build(gate, shown, p.returncode, out, recorded or None)
+    doc = build(gate, shown, rc, out, recorded or None)
+    return _timed_out(doc, timeout, out) if killed else doc
 
 
-def run_command(gate, cmd, cwd=None):
-    p = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    return build(gate, cmd, p.returncode, p.stdout.decode("utf-8", "replace"))
+def run_command(gate, cmd, cwd=None, timeout=None):
+    rc, out, killed = _run(cmd, timeout, cwd=cwd)
+    doc = build(gate, cmd, rc, out)
+    return _timed_out(doc, timeout, out) if killed else doc
 
 
 def _json_lines(text):
@@ -483,10 +531,13 @@ def judge_native(gate, cmd, rc, out, err="", timed_out=None):
             why += f"（超时 {timed_out} 秒被掐断）"
         why += "。进程被信号杀 / 引擎崩溃 / 卡死被掐断时 gate_report.gd 的退出钩子不走，只能在这里判红"
         code = rc if rc else 1
-        doc = {"gate": gate, "ok": False, "exit_code": code, "summary": "", "error": "no_json",
+        # 超时掐断的记 error="timeout"（lane gd9），其余（信号杀 / 崩溃）记 no_json；两者都带 no_json_line 条目
+        doc = {"gate": gate, "ok": False, "exit_code": code, "summary": "", "error": "timeout" if timed_out else "no_json",
                "checks": [{"name": "no_json_line", "ok": False, "detail": why}],
                "counts": {"total": 1, "pass": 0, "fail": 1, "warn": 0, "engine_errors": 0, "script_errors": 0},
                "cmd": cmd}
+        if timed_out:
+            doc["timeout"] = timed_out
         tail = [ANSI.sub("", l) for l in (out + err).splitlines() if l.strip()][-20:]
         if tail:
             doc["tail"] = tail
@@ -590,6 +641,13 @@ def main(argv):
         target, rest = argv[1] if len(argv) > 1 else "", argv[2:]
         display = "--display" in rest
         rest = [a for a in rest if a != "--display"]
+        timeout = None
+        head = rest[:rest.index("--")] if "--" in rest else rest
+        if "--timeout" in head:
+            i = rest.index("--timeout")
+            timeout, rest = float(rest[i + 1]), rest[:i] + rest[i + 2:]
+        if timeout is None and _legacy_target(target):
+            timeout = LEGACY_TIMEOUT
         user = rest[rest.index("--"):] if "--" in rest else []
         if target in GODOT_PRESETS:
             gate, gargs = GODOT_PRESETS[target]
@@ -600,7 +658,7 @@ def main(argv):
         else:
             print(f"未知 Godot 门禁：{target!r}（预设：{' '.join(GODOT_PRESETS)}，或 res://….gd）", file=sys.stderr)
             return 2
-        doc = run_command(gate, [_godot_bin()] + gargs + user, cwd=ROOT)
+        doc = run_command(gate, [_godot_bin()] + gargs + user, cwd=ROOT, timeout=timeout)
         if "--headless" not in gargs and not os.environ.get("DISPLAY"):
             doc.setdefault("notes", []).append("未设 DISPLAY：带窗口的门禁（patrol / 截图探针）需 DISPLAY=:2")
         emit(doc)
@@ -632,6 +690,8 @@ def main(argv):
                 return 2
             cmd = [_godot_bin(), "--quiet"] + list(gargs) + ["--"] + [a for a in user if a != "--json"] + ["--json"]
             cwd = ROOT
+        if timeout is None and _legacy_target(*cmd):
+            timeout = LEGACY_TIMEOUT
         doc = run_native(gate, cmd, cwd=cwd, timeout=timeout)
         emit(doc)
         return doc["exit_code"]  # judge_native 保证 ok=false 时非 0
@@ -640,7 +700,8 @@ def main(argv):
     if argv[0] == "--":
         cmd = argv[1:]
         named = [a for a in cmd if a.endswith((".py", ".gd"))] or cmd[:1]
-        doc = run_command(os.path.splitext(os.path.basename(named[0]))[0] if named else "", cmd)
+        doc = run_command(os.path.splitext(os.path.basename(named[0]))[0] if named else "", cmd,
+                          timeout=LEGACY_TIMEOUT if _legacy_target(*cmd) else None)
         emit(doc)
         return doc["exit_code"]
     if argv[0].endswith(".py"):
