@@ -977,6 +977,73 @@ for v, gid in ry_smug[:3]:
 check(ry_smug and ry_legal and ry_smug[0][0] > ry_legal[0][0],
       f"流求线走私每料收益（{ry_smug[0][0]:.1f}）高于最佳合法货（{ry_legal[0][0]:.1f}）")
 
+# lane ea9：塞钱疏通的口径——一次疏通花 BRIBE_COST 钱、减 BRIBE_ATTENTION 点蒲家关注（GameState.pu_attention）。
+# 现值出处：scripts/ui/NpcPage.gd:247 `spend_money(50)`、:248 `pu_attention - 15`（on_npc_bribe，main5 从 Main 拆出，
+# Main._on_npc_bribe 一行转发）；钮文在同文件 :218「关注　减 15」、:220「塞　50」。
+# 为什么这样钉：钮文、实扣、口径三处各自从源码抠数，两两相等才绿。只改扣数（−15→−16）→ 钮文仍写 15，「钮文 == 实扣」红；
+# 钮文连扣数一起改 → 口径红。改平衡要先经策划拍板（待策划拍板清单 MAIN5-1），再同步改这里的常量和
+# docs/无引贿赂定额对照表.md 的「疏通稳态」——ea6 三个方案都按这个稳态算，所以稳态式也在这里对一遍。
+BRIBE_COST, BRIBE_ATTENTION = 50, 15
+print("\n  市舶关注：见面册疏通、征船名册，钮上写的数 = 按下去扣的数")
+def _src(rel):
+    return open(os.path.join(ROOT, rel), encoding="utf-8").read()
+def _gd_body(src, name):
+    m = re.search(rf"^(?:static )?func {name}\(.*?(?=^(?:static )?func |^const |^## |\Z)", src, re.S | re.M)
+    return m.group(0) if m else ""
+_npc_src = _src("scripts/ui/NpcPage.gd").replace("main.", "")
+_main_ea9 = _src("scripts/Main.gd")
+_fwd = _gd_body(_main_ea9, "_on_npc_bribe")
+_bribe_fn = _gd_body(_npc_src, "on_npc_bribe") if "_NPC.on_npc_bribe(self, n_name)" in _fwd else _fwd
+_pay = re.findall(r"if GameState\.spend_money\((\d+)\):", _bribe_fn)
+_cut = re.findall(r"GameState\.pu_attention = maxi\(0, GameState\.pu_attention - (\d+)\)", _bribe_fn)
+_else_at = _bribe_fn.find("\telse:")
+_writes = len(re.findall(r"pu_attention\s*(?:[-+*/]?=)(?!=)", _bribe_fn))
+check(len(_pay) == 1 and len(_cut) == 1 and _writes == 1
+      and _bribe_fn.find("spend_money(") < _bribe_fn.find("pu_attention =") < _else_at,
+      f"疏通只在付得起时扣一次关注（{'Main._on_npc_bribe' if _bribe_fn == _fwd else 'NpcPage.on_npc_bribe'}：付 {'/'.join(_pay) or '缺'}、减 {'/'.join(_cut) or '缺'}、写关注 {_writes} 处）")
+_meet_fn = _gd_body(_npc_src, "show_npc_mode") or _npc_src
+_title = re.search(r'_slip_title\((\w+), "疏通", "关注　减 (\d+)"\)', _meet_fn)
+_chip = _title and re.search(rf'_slip_chip\(_slip_row\({_title.group(1)}\), "塞　(\d+)", _on_npc_bribe\.bind\(', _meet_fn)
+say_cut, say_pay = (int(_title.group(2)) if _title else None), (int(_chip.group(1)) if _chip else None)
+got_cut, got_pay = (int(_cut[0]) if len(_cut) == 1 else None), (int(_pay[0]) if len(_pay) == 1 else None)
+check(say_cut is not None and say_cut == got_cut,
+      f"疏通钮文「关注　减 {say_cut}」= 实扣 pu_attention − {got_cut}")
+check(say_pay is not None and say_pay == got_pay,
+      f"疏通钮文「塞　{say_pay}」= 实付 spend_money({got_pay})")
+check((got_pay, got_cut) == (BRIBE_COST, BRIBE_ATTENTION),
+      f"疏通口径：一次 {BRIBE_COST} 钱减 {BRIBE_ATTENTION} 关注（源码实付 {got_pay}、实减 {got_cut}；改平衡先过策划 MAIN5-1）")
+_gs_ea9 = _src("scripts/GameState.gd")
+_nopermit = re.search(r"var bribe := (\d+) \+ contraband \* \d+\n", _gs_ea9)
+_rise = re.search(r"pu_attention \+= (\d+) \+ contraband \* \d+\n", _gs_ea9)
+_steady = (int(_nopermit.group(1)) * (1 + int(_rise.group(1)) / BRIBE_ATTENTION)) if _nopermit and _rise else None
+_ea6 = _src("docs/无引贿赂定额对照表.md")
+_steady_txt = f"{BRIBE_COST} × {_rise.group(1) if _rise else '?'}/{BRIBE_ATTENTION}"
+check(_steady is not None and _nopermit.group(1) == str(BRIBE_COST) and _steady_txt in _ea6 and f"≈ {_steady:.1f}" in _ea6,
+      f"疏通稳态 = 无引塞 {_nopermit.group(1) if _nopermit else '?'} + {_steady_txt} ≈ {_steady if _steady is None else round(_steady, 1)} 钱/航次，"
+      "与 ea6 对照表同式（GameState 无引塞钱 / 涨关注 + 本口径）")
+# 同类：泉州征船名册两颗钮写了名声 / 海商信用 / 水粮 / 抽解八折，按下去的实扣也钉住（原先只有文案，数改了不红）
+_stand = _gd_body(_main_ea9, "_setup_quanzhou_standoff")
+_zhang_txt = re.findall(r'zhang\.text = "船借张世杰——[^"]*（名声 ([+−])(\d+)，海商信用 ([+−])(\d+)(，水粮减半)?）"', _stand)
+_zhang_fn = _stand.split("zhang.pressed.connect", 1)[1].split("choices_container.add_child(zhang)", 1)[0] if "zhang.pressed.connect" in _stand else ""
+_pu_txt = re.search(r'pu\.text = "跟蒲家——泉州抽解永久八折（海商信用 ([+−])(\d+)，名声 ([+−])(\d+)）"', _stand)
+_pu_fn = _stand.split("pu.pressed.connect", 1)[1].split("choices_container.add_child(pu)", 1)[0] if "pu.pressed.connect" in _stand else ""
+def _delta(body, var):
+    ds = re.findall(rf"GameState\.{var} ([+-])= (\d+)\n", body)
+    return (-1 if ds[0][0] == "-" else 1) * int(ds[0][1]) if len(ds) == 1 else None
+def _said(sign, n):
+    return (-1 if sign == "−" else 1) * int(n)
+_zf, _zc = _delta(_zhang_fn, "fame"), _delta(_zhang_fn, "merchant_credit")
+check(len(_zhang_txt) == 2 and all(_said(a, b) == _zf and _said(c, d) == _zc for a, b, c, d, _ in _zhang_txt)
+      and [bool(t[4]) for t in _zhang_txt] == [False, True]
+      and "Fleet.water = Fleet.water / 2" in _zhang_fn and "Fleet.food = Fleet.food / 2" in _zhang_fn,
+      f"征船名册「船借张世杰」两种钮文的名声 / 海商信用 = 实扣 {_zf} / {_zc}，只此一船那颗写的「水粮减半」= 水、粮各 / 2")
+_pc, _pf = _delta(_pu_fn, "merchant_credit"), _delta(_pu_fn, "fame")
+_tariff = _gd_body(_src("scripts/core/Economy.gd"), "_base_tariff")
+check(_pu_txt is not None and _said(*_pu_txt.groups()[:2]) == _pc and _said(*_pu_txt.groups()[2:]) == _pf
+      and 'GameState.set_flag("sided_pu")' in _pu_fn
+      and re.search(r'if port_id == "quanzhou" and GameState\.has_flag\("sided_pu"\):\n\t\twar_mul \*= 0\.8\n', _tariff) is not None,
+      f"征船名册「跟蒲家」钮文的海商信用 / 名声 = 实扣 {_pc} / {_pf}，「泉州抽解永久八折」= Economy._base_tariff 泉州 sided_pu × 0.8")
+
 print()
 print("=" * 68)
 print("八、海战数值（P4-1：WorldMap 炮击接入的战力/战损/货损/奖励边界）")
