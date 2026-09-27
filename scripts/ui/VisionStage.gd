@@ -1,7 +1,8 @@
 ## 市舶纪事册页：旧绢墨边 + 题签擦出 + 立像裱框 + 海战定格示意。
 ## 独立场景，不改海战物理与人物志深逻辑。玩家可见文案用论文纪实文法。
 ## 炮焰 / 水花序列帧、泥金角花、宋绢海图残片由 tools/art/vision_fill_gen.gd 程序生成（scenes/vision/fill/）；
-## 贴图缺失时回落旧的粒子点与程序椭圆。Snow 后续：油画立绘替换绢本墨影。
+## 贴图缺失时回落旧的粒子点与程序椭圆。四张都是程序仿绘：序列帧不是手绘、海图不是绢本实物；
+## 待出图替换见 docs/VisionStage待补工单.md（lane vs1）。Snow 后续：油画立绘替换绢本墨影。
 extends Control
 
 const Art := preload("res://scripts/ui/CharacterArt.gd")
@@ -369,7 +370,7 @@ func _build_combat_pane(_cv: Vector2) -> void:
 
 	var chart_tex := _fill_tex(FILL_CHART)
 	if chart_tex != null:
-		# 宋绢海图残片作定格底图；夜色里压暗一层，旧绢不抢船
+		# 仿宋绢海图残片（程序绘，非绢本实物）作定格底图；夜色里压暗一层，旧绢不抢船
 		var chart := Sprite2D.new()
 		chart.name = "ChartFragment"
 		chart.texture = chart_tex
