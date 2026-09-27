@@ -7,8 +7,11 @@
 扫什么：git 已跟踪的全部文本文件（读工作树里的内容，已暂存的新文件也算；含 NUL 字节的二进制跳过）。
 本脚本自身也扫（lane gd21）：只按行排除下面 `PATTERNS = [` 到 `]` 之间的条目行（它们本身就是命中），块外照常判；
 块里每行须是一条 `("名字", r"正则", "理由")`、行数与条目数相等，夹进别的行（注释 / 字符串）即判红，免得拿它藏路径。
+`SAMPLES = [` 块同样按行排除（lane auditfix2），块里每行须是一条 `r"样本行"`。
 模式逐条写了为什么算 Mac 专属。
 判红：
+  · 零、模式自检（lane auditfix2，每次跑都先过）：SAMPLES 有一行没被认出（含独立审计原反例两行：家目录写成 $HOME 的资料库目录、
+    Intel Homebrew 的 opt 目录，修前 rc=0），或 CLEAN 有一行被误认，即判红——模式表回退 / 改窄了在这里先红，不等真文件写进来；
   · 不在 ALLOW 里的文件有命中（修法：改成 env / PATH / 仓库相对路径，见 build_ui_textures 的 NK1_RSVG、tour.sh 的 GODOT）；
   · ALLOW 里的文件命中行数 ≠ 登记的 lines（多了 = 往留档里又加了；少了 = 清掉了几处，条目跟着改）；
   · ALLOW 条目的 keep 字样不在文件头 5 行里（「勿运行」横幅 / 历史回指注被删，留档就不再算已定级）；
@@ -31,16 +34,49 @@ HEAD_LINES = 5
 PATTERNS = [
     ("/Users/", r"/Users/", "Mac 用户家目录（Linux 是 /home/）"),
     ("/opt/homebrew", r"/opt/homebrew\b", "Apple Silicon 上 Homebrew 的前缀"),
-    ("/usr/local/Cellar|Homebrew", r"/usr/local/(?:Cellar|Homebrew)\b", "Intel Mac 上 Homebrew 的前缀"),
+    ("/usr/local/Cellar|Homebrew|Caskroom|opt", r"/usr/local/(?:Cellar|Homebrew|Caskroom|opt)\b", "Intel Mac 上 Homebrew 的前缀与装包目录（opt 是各包的稳定软链，lane auditfix2 补）"),
     ("Godot.app", r"Godot[\w.-]*\.app\b", "Mac 版 Godot 应用包"),
     ("*.app/Contents/", r"\.app/Contents/", "Mac 应用包内部路径"),
     ("/Applications/", r"/Applications/", "Mac 应用目录"),
-    ("~/Library/", r"~/Library/|Library/Application Support", "Mac 用户资料目录（Godot user:// 在 Linux 是 ~/.local/share/godot/）"),
+    ("~ / $HOME / ${HOME}/Library", r"(?:~|\x22?\$(?:HOME\b|\{HOME(?::?[-=?+][^}]*)?\})\x22?)/Library\b|(?:home\(\)\s*/\s*|join\([^)]*)[\x22']Library\b|Library/Application Support", "Mac 用户资料目录，家目录写成 ~ / $HOME / ${HOME} / Path.home() 拼接都算（lane auditfix2 补后几种；Godot user:// 在 Linux 是 ~/.local/share/godot/）"),
     ("/Volumes/", r"/Volumes/", "Mac 外接卷挂载点"),
     ("/private/tmp|var", r"/private/(?:tmp|var)/|/var/folders/", "Mac 的临时目录"),
     ("~/Projects/", r"~/Projects/", "09-03 前 Mac 旧机的仓库位置（~/Projects/app/nk-1）"),
 ]
 PAT = re.compile("|".join(f"(?:{p})" for _, p, _ in PATTERNS))
+
+# 模式自检（lane auditfix2）：每次跑都先过「零」——下面每行都须被 PATTERNS 认出，漏认即判红（模式表回退 / 改窄了）。
+# 头两行是独立审计「未做实清单 #3」的原反例（往 tools/art/tour.sh 追加这两行，修前 rc=0）。
+# 本块同 PATTERNS 块按行排除自扫：块里每行须是一条 r"样本行"，且每行都得命中，所以塞不进漏网的路径。
+SAMPLES = [
+    r"GODOT=$HOME/Library/Godot",
+    r"export P=/usr/local/opt/foo",
+    r"GODOT=${HOME}/Library/Godot",
+    r"cp save.json ${HOME:-/tmp}/Library/Preferences/",
+    r'cd "$HOME"/Library/Caches',
+    r"ls ~/Library/Logs",
+    r"USERDATA = Path.home() / 'Library' / 'Application Support'",
+    r"os.path.join(os.environ['HOME'], 'Library', 'Fonts')",
+    r"export PATH=/usr/local/Cellar/godot/4.6/bin:$PATH",
+    r"/usr/local/opt/librsvg/bin/rsvg-convert in.svg",
+    r"/usr/local/Homebrew/bin/brew",
+    r"/opt/homebrew/bin/rsvg-convert",
+    r"/Applications/Godot.app/Contents/MacOS/Godot --path .",
+]
+# 反向样本：须不命中（误报即判红）。docstring 末尾「不算 Mac 路径」那几类 + 本仓库里真有的相近写法。
+CLEAN = [
+    "RUN=$HOME/tmp/nk1-art-cloud-run-port",
+    "codex = ${HOME}/tmp/nk1-codex/assets",
+    "${HOME_RATE}/Library",
+    "默认 ~/tmp/nk1-codex/assets/portraits",
+    "GODOT_BIN=\"/usr/local/bin/godot\"",
+    "/usr/local/optional/thing",
+    "~/.local/share/godot/app_userdata/nk1/saves",
+    "HOME_TMP = pathlib.Path.home() / \"tmp\"",
+    "brew install librsvg",
+    "const HOME_RATE := 5",
+    "MyLibrary/notes.md",
+]
 
 # 已定级、允许留着的命中：file → lines（命中行数，须相等）、keep（须在文件头 HEAD_LINES 行里的字样）、why（理由）。
 # 要加条目先想清楚能不能改掉；lane doc7 的口径：活跃脚本 / 文档一律改成本机口径，只有留档与带日期的历史稿可以进这里。
@@ -62,24 +98,48 @@ ALLOW = {
 fails = []
 
 
-def self_block():
-    """本脚本 PATTERNS 块里条目行的行号集合（按行排除用）；块找不到 / 形状不对 → (None, 原因)。"""
+# 自扫按行排除的块：块名 → (块里每行须全匹配的形状, 形状的人话, 条目数)
+SELF_BLOCKS = {
+    "PATTERNS": (r'    \("[^"]*", r"[^"]*", "[^"]*"\),', '("名字", r"正则", "理由")', len(PATTERNS)),
+    "SAMPLES": (r"""    r(?:"[^"]*"|'[^']*'),""", 'r"样本行"', len(SAMPLES)),
+}
+
+
+def self_block(name):
+    """本脚本 name 块（PATTERNS / SAMPLES）里条目行的行号集合（按行排除用）；块找不到 / 形状不对 → (None, 原因)。"""
+    shape, human, count = SELF_BLOCKS[name]
     with open(os.path.join(ROOT, SELF), encoding="utf-8", errors="replace") as f:
         lines = f.read().splitlines()
-    starts = [i for i, ln in enumerate(lines) if ln == "PATTERNS = ["]
+    starts = [i for i, ln in enumerate(lines) if ln == f"{name} = ["]
     if len(starts) != 1:
-        return None, f"`PATTERNS = [` 行有 {len(starts)} 处（须恰 1 处）"
+        return None, f"`{name} = [` 行有 {len(starts)} 处（须恰 1 处）"
     a = starts[0]
     b = next((i for i in range(a + 1, len(lines)) if lines[i] == "]"), None)
     if b is None:
-        return None, "`PATTERNS = [` 之后找不到收尾的 `]` 行"
+        return None, f"`{name} = [` 之后找不到收尾的 `]` 行"
     inner = range(a + 1, b)
-    odd = [i + 1 for i in inner if not re.fullmatch(r'    \("[^"]*", r"[^"]*", "[^"]*"\),', lines[i])]
+    odd = [i + 1 for i in inner if not re.fullmatch(shape, lines[i])]
     if odd:
-        return None, f"块里第 {'、'.join(map(str, odd))} 行不是一条 (\"名字\", r\"正则\", \"理由\")"
-    if len(inner) != len(PATTERNS):
-        return None, f"块里 {len(inner)} 行，PATTERNS {len(PATTERNS)} 条（须一条一行）"
+        return None, f"块里第 {'、'.join(map(str, odd))} 行不是一条 {human}"
+    if len(inner) != count:
+        return None, f"块里 {len(inner)} 行，{name} {count} 条（须一条一行）"
     return {i + 1 for i in inner}, None
+
+
+def pattern_selftest():
+    """「零」：SAMPLES 每行须命中、CLEAN 每行须不命中；原反例两行整段过一遍 hits_text（与扫文件同一条路）。"""
+    def who(ln):
+        return "、".join(n for n, p, _ in PATTERNS if re.search(p, ln)) or "无"
+    missed = [ln for ln in SAMPLES if not PAT.search(ln)]
+    check(not missed, f"正向样本 {len(SAMPLES)} 行都被认出（{len(PATTERNS)} 条模式）"
+          + ("" if not missed else "；漏认：" + " | ".join(missed)))
+    false = [ln for ln in CLEAN if PAT.search(ln)]
+    check(not false, f"反向样本 {len(CLEAN)} 行都不命中（~/tmp 草稿区、/usr/local/bin、HOME_RATE 等）"
+          + ("" if not false else "；误报：" + " | ".join(f"{ln} ← {who(ln)}" for ln in false)))
+    audit = "\n".join(SAMPLES[:2]) + "\n"
+    got = [n for n, _ in hits_text(audit)]
+    check(got == [1, 2], f"独立审计原反例（追加到 tools/art/tour.sh 的两行）整段扫出 {len(got)}/2 行"
+          + "（" + "；".join(f"{ln} ← {who(ln)}" for ln in SAMPLES[:2]) + "）")
 
 
 def check(cond, msg):
@@ -114,7 +174,10 @@ def hits(rel):
         return None
     if b"\0" in raw:
         return None
-    text = raw.decode("utf-8", errors="replace")
+    return hits_text(raw.decode("utf-8", errors="replace"))
+
+
+def hits_text(text):
     return [(n, ln) for n, ln in enumerate(text.splitlines(), 1) if PAT.search(ln)]
 
 
@@ -135,6 +198,9 @@ def main(argv):
     tracked, untracked = repo_files()
     tset = set(tracked)
 
+    print("零、模式自检（lane auditfix2：模式表回退 / 改窄了在这里先红）")
+    pattern_selftest()
+
     print("一、白名单条目都有效")
     for rel, a in ALLOW.items():
         if not os.path.isfile(os.path.join(ROOT, rel)) or rel not in tset:
@@ -152,11 +218,12 @@ def main(argv):
         hs = hits(rel)
         if hs is None:
             continue
-        if rel == SELF:  # 自扫：按行排除 PATTERNS 条目行，块外的照常算（lane gd21）
-            block, why = self_block()
-            if check(block is not None, f"{SELF}：自扫按行排除 PATTERNS 块 {len(block or ())} 行"
-                     + ("" if block is not None else f"——{why}；整份照扫")):
-                hs = [h for h in hs if h[0] not in block]
+        if rel == SELF:  # 自扫：按行排除 PATTERNS / SAMPLES 条目行，块外的照常算（lane gd21 / auditfix2）
+            for name in SELF_BLOCKS:
+                block, why = self_block(name)
+                if check(block is not None, f"{SELF}：自扫按行排除 {name} 块 {len(block or ())} 行"
+                         + ("" if block is not None else f"——{why}；整份照扫")):
+                    hs = [h for h in hs if h[0] not in block]
         scanned += 1
         a = ALLOW.get(rel)
         if a is None:
@@ -169,7 +236,7 @@ def main(argv):
     for rel, hs in stray:
         check(False, f"{rel}：{len(hs)} 行 Mac 专属路径，不在白名单（改成 env / PATH / 仓库相对路径）")
         show(rel, hs)
-    check(not stray, f"白名单外 {sum(len(h) for _, h in stray)} 处命中（扫 {scanned} 个已跟踪文本文件，含本脚本、其 PATTERNS 块除外）"
+    check(not stray, f"白名单外 {sum(len(h) for _, h in stray)} 处命中（扫 {scanned} 个已跟踪文本文件，含本脚本、其 PATTERNS / SAMPLES 块除外）"
           + (f"：{len(stray)} 个文件" if stray else ""))
 
     for rel in untracked:

@@ -125,10 +125,10 @@ REGISTRY = [
     {"id": "RefsMacPath", "tier": "must", "kind": "py",
      "file": "tools/check_mac_paths.py",
      "judge": "（lane doc9）git 已跟踪的文本文件里不许写 Mac / Homebrew 专属绝对路径（Mac 家目录、Homebrew 前缀、Godot 应用包、用户资料库目录等 10 条，"
-              "模式与理由见脚本 `PATTERNS`；lane gd21 起脚本自身也扫，只按行排除 `PATTERNS` 块的条目行，块里夹了别的行即判红）；已定级的留档进白名单 `ALLOW`：按文件登记命中行数、头部横幅 / 回指注字样与理由，"
+              "模式与理由见脚本 `PATTERNS`；lane gd21 起脚本自身也扫，只按行排除 `PATTERNS` / `SAMPLES` 块的条目行，块里夹了别的行即判红）；每次先跑「零、模式自检」（lane auditfix2）：`SAMPLES` 正向样本（含独立审计原反例两行）须全认出、`CLEAN` 反向样本须全不命中；已定级的留档进白名单 `ALLOW`：按文件登记命中行数、头部横幅 / 回指注字样与理由，"
               "行数不符、字样丢了、条目失效都判红；未跟踪文件只记 `⚠`",
-     "green": "`白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS 块除外）` + `结果：全部通过`",
-     "red": "`✗` 行（白名单外命中逐行列 `文件:行 … ← 命中串`；白名单文件行数不符；横幅 / 回指注丢了；失效条目；本脚本 PATTERNS 块形状不对）；`结果：N 项问题`"},
+     "green": "`白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS / SAMPLES 块除外）` + `结果：全部通过`",
+     "red": "`✗` 行（白名单外命中逐行列 `文件:行 … ← 命中串`；白名单文件行数不符；横幅 / 回指注丢了；失效条目；本脚本 PATTERNS / SAMPLES 块形状不对；零节样本漏认 / 误报）；`结果：N 项问题`"},
     {"id": "RefsHostPath", "tier": "lane", "when": "新增 / 改动脚本或文档里写外部路径的地方（照抄命令、引擎路径、截图 / 简报等仓外默认根）", "kind": "py",
      "file": "tools/check_host_paths.py",
      "judge": "（lane gd22）git 已跟踪的文本文件里不许写本机 Linux 绝对路径：`/home/<用户>` 与 `/workspace/<目录>`（仓库根本身一律红，"
