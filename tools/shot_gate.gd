@@ -1,0 +1,97 @@
+extends RefCounted
+## 截图门禁小工具（Lane m3 / ASTRA_AUDIT M3）：把「截图探针」与「无渲染契约探针」分开。
+## 默认严格：headless / 空视口 / 空图 / 实得张数不足声明张数 → 非零退出，并写明是 headless 还是真失败。
+## 契约模式须显式开：命令行 `-- --contract`（或环境变量 NK1_SHOT_CONTRACT=1）；此时不截图，只验非渲染断言，
+## 收尾打 `<TAG>_CONTRACT_OK`，绝不打 `OK shots=0`。
+## 用法：const ShotGate := preload("res://tools/shot_gate.gd")
+
+
+static func contract_mode() -> bool:
+	if OS.get_environment("NK1_SHOT_CONTRACT") == "1":
+		return true
+	return "--contract" in OS.get_cmdline_user_args()
+
+
+## 无渲染环境时返回中文原因；有渲染返回 ""。
+static func no_render_reason() -> String:
+	if DisplayServer.get_name() == "headless":
+		return "headless 无渲染环境（DisplayServer=headless）：截图门禁无法判定，请用 DISPLAY=:2 跑；只验契约请显式加 -- --contract"
+	var drv := RenderingServer.get_current_rendering_driver_name()
+	if drv == "" or drv == "dummy":
+		return "渲染驱动为 dummy（%s）：无渲染环境，截图门禁无法判定，请用 DISPLAY=:2 跑；只验契约请显式加 -- --contract" % drv
+	return ""
+
+
+## 取当前视口图；空视口/空图返回 null 并把真失败原因写进 fails。
+static func grab(root: Window, name: String, fails: Array) -> Image:
+	var tex := root.get_texture()
+	if tex == null:
+		fails.append("真失败：%s 视口纹理为空（有窗口却无纹理）" % name)
+		return null
+	var img := tex.get_image()
+	if img == null or img.is_empty() or img.get_width() == 0 or img.get_height() == 0:
+		fails.append("真失败：%s 视口图像为空（有窗口却取不到画面）" % name)
+		return null
+	return img
+
+
+## 画面是否为一色（空视口/未绘制）：5×5 网格采样全都几乎相同即判空。
+static func is_blank(img: Image) -> bool:
+	var w := img.get_width()
+	var h := img.get_height()
+	var first := img.get_pixel(w / 10, h / 10)
+	for gy in 5:
+		for gx in 5:
+			var c := img.get_pixel(int(w * (0.1 + 0.2 * gx)), int(h * (0.1 + 0.2 * gy)))
+			if absf(c.r - first.r) + absf(c.g - first.g) + absf(c.b - first.b) > 0.03:
+				return false
+	return true
+
+
+## 截一张：空视口 / 一色空图（allow_blank=false 时）/ 存盘失败都记为真失败；成功把路径追加进 saved。
+static func shot(root: Window, path: String, saved: Array, fails: Array, allow_blank := false) -> Image:
+	var name := path.get_file()
+	var img := grab(root, name, fails)
+	if img == null:
+		return null
+	if not allow_blank and is_blank(img):
+		fails.append("真失败：%s 画面一色（空视口或未绘制）" % name)
+		return img
+	var err := img.save_png(path)
+	if err != OK:
+		fails.append("真失败：%s 存盘失败（err=%d）" % [path, err])
+		return img
+	saved.append(path)
+	print("  shot %s %dx%d" % [path, img.get_width(), img.get_height()])
+	return img
+
+
+## 截图模式收尾：实得张数 < 声明张数也判失败。返回退出码。
+static func finish_shots(tag: String, saved: Array, expected: int, out_dir: String, fails: Array) -> int:
+	if saved.size() < expected:
+		fails.append("真失败：声明 %d 张截图，实得 %d 张" % [expected, saved.size()])
+	if fails.is_empty():
+		print("%s_OK shots=%d/%d -> %s" % [tag, saved.size(), expected, out_dir])
+		return 0
+	for f in fails:
+		print("  ✗ ", f)
+	print("%s_FAIL %d（shots=%d/%d -> %s）" % [tag, fails.size(), saved.size(), expected, out_dir])
+	return 1
+
+
+## 无渲染又未开契约模式：直接判红。返回退出码 1。
+static func fail_no_render(tag: String, reason: String, expected: int) -> int:
+	print("  ✗ ", reason)
+	print("%s_FAIL headless（声明 %d 张截图，实得 0；此为环境不具备，不是画面回归）" % [tag, expected])
+	return 1
+
+
+## 契约模式收尾：只报契约断言，不报张数。返回退出码。
+static func finish_contract(tag: String, fails: Array) -> int:
+	if fails.is_empty():
+		print("%s_CONTRACT_OK（契约模式：未截图，截图门禁须另用 DISPLAY 跑）" % tag)
+		return 0
+	for f in fails:
+		print("  ✗ ", f)
+	print("%s_CONTRACT_FAIL %d" % [tag, fails.size()])
+	return 1

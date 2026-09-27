@@ -2,14 +2,21 @@ extends SceneTree
 ## P7 visual QA: open guild join + exam sit panels and save PNGs.
 ## Run: DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_p7_screenshots.gd
 ## Shots land in /workspace/nk1-qa-shots/polish/ (absolute; 01–06 originals one level up are kept). Leaves tools script untracked.
+## 默认严格：须出 8 张；headless / 空视口 / 一色空图 / 张数不足一律非零退出。
+## 契约模式（显式）：godot --headless --path . -s res://tools/qa_p7_screenshots.gd -- --contract
+##   只验按钮与 flag 写入，不截图，收尾打 QA_P7_SHOTS_CONTRACT_OK。
 
 const VIEW := Vector2(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/polish"
+const TAG := "QA_P7_SHOTS"
+const EXPECTED_SHOTS := 8
+const ShotGate := preload("res://tools/shot_gate.gd")
 
 var _main: Node
 var _gs: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -18,7 +25,13 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	_gs = root.get_node("GameState")
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
 	root.add_child(_main)
@@ -76,19 +89,11 @@ func _run() -> void:
 	await _open_and_shot("mingzhou_guild", "07_mingzhou_guild_nojoin", "本港无会籍")
 	await _open_and_shot("mingzhou_exam", "08_mingzhou_exam_nosit", "本港无贡院科场")
 
-	print("QA_P7_SHOTS_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	# 截图门禁：无图或逻辑失败都非零退出（headless 空视口不得假绿）。
-	if _saved.is_empty():
-		_fails.append("未产出任何截图（headless 空视口？请用 DISPLAY 跑）")
-	if not _fails.is_empty():
-		print("QA_P7_SHOTS_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-		quit(1)
-	print("QA_P7_SHOTS_OK")
-	quit(0)
+	# 截图门禁：张数不足或逻辑失败都非零退出（headless 空视口不得假绿）。
+	if _contract:
+		quit(ShotGate.finish_contract(TAG, _fails))
+	else:
+		quit(ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 
 
 func _open_and_shot(scene_id: String, name: String, must_btn: String) -> void:
@@ -111,28 +116,17 @@ func _goto(scene_id: String) -> void:
 
 
 func _shot(name: String) -> void:
+	if _contract:
+		return
 	RenderingServer.force_draw()
 	await process_frame
-	var tex = root.get_texture()
-	if tex == null:
-		_fails.append("截屏失败 %s (null texture)" % name)
-		return
-	var img: Image = tex.get_image()
-	if img == null:
-		_fails.append("截屏失败 %s (null image)" % name)
-		return
-	# Reject near-black frames (headless / no draw).
-	var sample := img.get_pixel(img.get_width() / 2, img.get_height() / 2)
-	var corner := img.get_pixel(8, 8)
-	if sample.get_luminance() < 0.02 and corner.get_luminance() < 0.02:
-		_fails.append("截屏过暗 %s lum=%.3f/%.3f" % [name, sample.get_luminance(), corner.get_luminance()])
-	var path := "%s/%s.png" % [OUT_DIR, name]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("save_png %s err=%d" % [path, err])
-		return
-	_saved.append(path)
-	print("SHOT ", path, " size=", img.get_width(), "x", img.get_height())
+	var img := ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _fails)
+	# Reject near-black frames (no draw) even if not perfectly uniform.
+	if img != null:
+		var sample := img.get_pixel(img.get_width() / 2, img.get_height() / 2)
+		var corner := img.get_pixel(8, 8)
+		if sample.get_luminance() < 0.02 and corner.get_luminance() < 0.02:
+			_fails.append("真失败：%s 截屏过暗 lum=%.3f/%.3f" % [name, sample.get_luminance(), corner.get_luminance()])
 
 
 func _button_with_text(root_node: Node, text: String) -> Button:

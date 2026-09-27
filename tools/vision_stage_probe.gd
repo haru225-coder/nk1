@@ -1,10 +1,14 @@
 ## 展示台截屏探针。用法：
-##   DISPLAY=:2 godot --path . -s res://tools/vision_stage_probe.gd
-## 帧写入 /workspace/nk1-qa-shots/vision/（不擦 polish/）。
+##   DISPLAY=:2 godot --path . -s res://tools/vision_stage_probe.gd            # 截图门禁（默认严格，须出 2 张）
+##   godot --headless --path . -s res://tools/vision_stage_probe.gd -- --contract   # 只验契约（场景可载、stage_ready 发出）
+## 帧写入 /workspace/nk1-qa-shots/vision/（不擦 polish/）。headless 下不加 --contract 必红。
 extends SceneTree
 
 const OUT_DIR := "/workspace/nk1-qa-shots/vision"
 const STAGE := "res://scenes/vision/VisionStage.tscn"
+const TAG := "VISION_STAGE_PROBE"
+const EXPECTED_SHOTS := 2
+const ShotGate := preload("res://tools/shot_gate.gd")
 
 
 func _init() -> void:
@@ -17,10 +21,14 @@ var _fails: Array = []
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	var contract := ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
 	if not ResourceLoader.exists(STAGE):
-		push_error("VisionStage missing: %s" % STAGE)
-		quit(1)
+		_fails.append("VisionStage 场景缺失：%s" % STAGE)
+		quit(ShotGate.finish_contract(TAG, _fails) if contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 		return
 	var packed := load(STAGE) as PackedScene
 	var stage: Control = packed.instantiate()
@@ -28,45 +36,27 @@ func _run() -> void:
 	var flag: Array = [false]
 	if stage.has_signal("stage_ready"):
 		stage.stage_ready.connect(func(): flag[0] = true)
+	else:
+		_fails.append("VisionStage 缺 stage_ready 信号")
 	root.add_child(stage)
 	var frames := 0
 	while frames < 90 and not flag[0]:
 		await process_frame
 		frames += 1
+	if not flag[0]:
+		_fails.append("90 帧内未收到 stage_ready")
+	if contract:
+		print("  contract frames=%d ready=%s" % [frames, flag[0]])
+		quit(ShotGate.finish_contract(TAG, _fails))
+		return
+	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	for _i in 50:
 		await process_frame
-	_shot("01_vision_stage_open.png")
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/01_vision_stage_open.png" % OUT_DIR, _saved, _fails)
 	for _i in 30:
 		await process_frame
-	_shot("02_vision_stage_hold.png")
-	# 截图探针：空视口/零截图必须失败（与 headless 契约探针区分）。
-	if _saved.size() < 2:
-		_fails.append("期望 2 张截图，实得 %d（headless 空视口？请用 DISPLAY 跑）" % _saved.size())
-	if _fails.is_empty():
-		print("vision_stage_probe OK frames=%d ready=%s shots=%d -> %s" % [frames, flag[0], _saved.size(), OUT_DIR])
-		quit(0)
-	else:
-		for f in _fails:
-			print("  ✗ ", f)
-		print("vision_stage_probe FAIL %d" % _fails.size())
-		quit(1)
-
-
-func _shot(name: String) -> void:
-	var tex = root.get_texture()
-	if tex == null:
-		_fails.append("no viewport texture for %s" % name)
-		push_error("no viewport texture for %s" % name)
-		return
-	var img: Image = tex.get_image()
-	if img == null:
-		_fails.append("no viewport image for %s" % name)
-		push_error("no viewport image for %s" % name)
-		return
-	var path := "%s/%s" % [OUT_DIR, name]
-	var err := img.save_png(path)
-	print("shot %s err=%d" % [path, err])
-	if err != OK:
-		_fails.append("save failed %s (%d)" % [path, err])
-	else:
-		_saved.append(path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/02_vision_stage_hold.png" % OUT_DIR, _saved, _fails)
+	print("  frames=%d ready=%s" % [frames, flag[0]])
+	quit(ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))

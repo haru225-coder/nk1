@@ -2,12 +2,19 @@ extends SceneTree
 ## 进出海战墨边（scripts/ui/CombatLetterbox.gd）的有窗口探针：在真海战场面（WorldMap + pending_battle）上
 ## 演一次入战、一次带 on_black 的出战，按节拍截屏，并量排版与信号。
 ## Run: DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/vision_letterbox_probe.gd
-## 截图落 /workspace/nk1-qa-shots/vision/（绝对路径，不进仓库）。headless 下墨边不上场，本探针只验静态题签就退出。
+## 截图落 /workspace/nk1-qa-shots/vision/（绝对路径，不进仓库）。默认严格：须出 7 张，headless / 空视口 / 张数不足必红。
+## 契约模式（显式）：godot --headless --path . -s res://tools/vision_letterbox_probe.gd -- --contract
+##   只验静态题签与 headless 下入口返回 null，收尾打 VISION_LETTERBOX_PROBE_CONTRACT_OK，不报张数。
 
 const VIEW := Vector2i(1280, 720)
 const OUT_DIR := "/workspace/nk1-qa-shots/vision"
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
+const ShotGate := preload("res://tools/shot_gate.gd")
+const TAG := "VISION_LETTERBOX_PROBE"
+const EXPECTED_SHOTS := 7
+
+var _contract := false
 
 var _fails: Array = []
 var _saved: Array = []
@@ -21,10 +28,18 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = VIEW
+	_contract = ShotGate.contract_mode()
 	_check_titles()
-	if Kit.is_headless():
-		_expect(Letterbox.enter(root, "刺桐外海・接舷") == null, "headless 下静态入口应返回 null")
+	if _contract:
+		if Kit.is_headless():
+			_expect(Letterbox.enter(root, "刺桐外海・接舷") == null, "headless 下静态入口应返回 null")
 		_report()
+		return
+	var no_render := ShotGate.no_render_reason()
+	if no_render != "":
+		for f in _fails:
+			print("  ✗ ", f)
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
 		return
 
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
@@ -77,13 +92,13 @@ func _run() -> void:
 	await _shot("04_exit_caption")
 	_check_layout(ex, "出战")
 	await ex.covered
-	await _shot("05_exit_black")
-	var img := root.get_texture().get_image()
-	var mid := img.get_pixel(VIEW.x / 2, VIEW.y / 2)
-	_expect(mid.v < 0.08, "出战合拢时画面中线未全黑（v=%.3f）" % mid.v)
+	var img: Image = await _shot("05_exit_black", true)
+	if img != null:
+		var mid := img.get_pixel(VIEW.x / 2, VIEW.y / 2)
+		_expect(mid.v < 0.08, "出战合拢时画面中线未全黑（v=%.3f）" % mid.v)
 	while not exit_done[0]:
 		await process_frame
-	await _shot("06_exit_done")
+	await _shot("06_exit_done", true)  # on_black 已换成空场，本就一色
 	_expect(_on_black_hits == 1 and _covered_hits == 1,
 		"出战 on_black / covered 应各调一次（%d / %d）" % [_on_black_hits, _covered_hits])
 
@@ -123,14 +138,11 @@ func _check_layout(lb: CanvasLayer, tag: String) -> void:
 	print("  %s 墨边 %.0f  题签 %s" % [tag, h, r])
 
 
-func _shot(name: String) -> void:
+## allow_blank：05_exit_black 本该全黑、06_exit_done 是 on_black 换上的空场，都不按「一色空图」判红；
+## 其余 5 张仍防空视口。
+func _shot(name: String, allow_blank := false) -> Image:
 	await RenderingServer.frame_post_draw
-	var path := "%s/letterbox_%s.png" % [OUT_DIR, name]
-	var err := root.get_texture().get_image().save_png(path)
-	if err == OK:
-		_saved.append(path)
-	else:
-		_fails.append("截图失败 %s（%d）" % [path, err])
+	return ShotGate.shot(root, "%s/letterbox_%s.png" % [OUT_DIR, name], _saved, _fails, allow_blank)
 
 
 func _expect(ok: bool, msg: String) -> void:
@@ -139,16 +151,7 @@ func _expect(ok: bool, msg: String) -> void:
 
 
 func _report() -> void:
-	for p in _saved:
-		print("  shot ", p)
-	# headless 契约探针允许 shots=0；有窗口路径若零截图则失败。
-	if not Kit.is_headless() and _saved.is_empty() and _fails.is_empty():
-		_fails.append("有窗口路径未产出截图")
-	if _fails.is_empty():
-		print("VISION_LETTERBOX_PROBE_OK shots=%d" % _saved.size())
-		quit(0)
+	if _contract:
+		quit(ShotGate.finish_contract(TAG, _fails))
 	else:
-		for f in _fails:
-			print("  ✗ ", f)
-		print("VISION_LETTERBOX_PROBE_FAIL %d" % _fails.size())
-		quit(1)
+		quit(ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
