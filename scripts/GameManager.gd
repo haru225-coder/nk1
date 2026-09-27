@@ -1,6 +1,8 @@
 extends Node
 ## 数据加载与全局时间推进中枢。
 ## 时间推进走 advance_days() 这一个入口，避免各系统各自监听信号导致结算顺序不确定。
+## autoload 顺序即初始化顺序：GameManager 必须最先加载 JSON，Economy/Fleet 的 _ready 依赖它。
+## （原注释在 project.godot [autoload] 上方；编辑器保存时会删 project.godot 里的注释，故挪到这里。）
 
 ## 月结产生的通知（欠饷等），供 UI 显示
 signal monthly_notice(text: String)
