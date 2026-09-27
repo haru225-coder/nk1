@@ -26,20 +26,16 @@ AUTOLOADS = {
 
 # Main.gd 拆出去的件（lane ms 起）。Main 留同名同签名一行转发 `[return |await ]_K.fn(…)`，
 # 真身在这些文件里；源码断言照旧读 main_src，由 read_main_src() 拼回「未拆时」的 Main。
-# 新拆一件就在这里登记；登记了却没接上转发会直接判红（见「一之零」）。
+# 清单只有一份：tools/main_splits.txt（lane cs13）。本脚本与 godot_smoke 都读它的第一列；它由 tools/gen_main_splits.py
+# 从拆解台账 + Main 转发 + git 生成，「一之零」每轮重算对账（手改一格、台账 / 拆出件改了没 --write 都红）。
+# 新拆一件：docs/Main拆解台账.md 追加一节，跑 `python3 tools/gen_main_splits.py --write`；登记了却没接上转发会直接判红（见「一之零」）。
 # 拼回只对「源码字符串断言」有效（lane cs8，口径见 docs/GATES.md §三.1）：拼出来的行号不对应任何真文件、
 # `main.` 前缀已去掉、static / 实例语义不看；这些要读拆出件原文或交 compile / 探针。
 # 拼回漏不漏由「一之零」兜住：拆出件头注写「从 Main.gd 原样搬出」却没登记、Main 一行转发到未登记的件、
 # Main 里调拆出件却不是一行转发（行尾注释 / 两行 / 折行签名，拼回不认）都判红。
-MAIN_SPLITS = (
-    "scripts/ui/SlipKit.gd",
-    "scripts/ui/LedgerPage.gd",
-    "scripts/ui/ChapterSheet.gd",
-    "scripts/ui/TavernPage.gd",
-    "scripts/ui/NpcPage.gd",
-    "scripts/ui/SaveSheet.gd",
-    "scripts/ui/GuildExamPage.gd",
-)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gen_main_splits
+MAIN_SPLITS = gen_main_splits.read_splits()
 # Main 里一行转发形状、但目标不是拆出件的委托（本来就是别的模块的 API，不拼回）。新增一条须注明为什么不是拆出件。
 # 条目失效判红（lane gd16，见「一之零」）：文件在、Main preload 了它、Main 里真有一行转发到它、转发的目标函数它真有、
 # 注明里的「（Main 函数 → 目标函数）」对得上实际转发——任一条不成立就是过时条目（该删 / 该改注），不能留着白放行。
@@ -99,6 +95,10 @@ def read_main_src():
     _uses = re.compile(r'\b(' + "|".join(map(re.escape, const_of)) + r')\.') if const_of else None
     parts = {}
     for rel in MAIN_SPLITS:
+        if not os.path.isfile(os.path.join(ROOT, rel)):
+            _split_report.append(f"{rel} 登记在 tools/main_splits.txt，文件却不存在（删了拆出件没更新清单），拼回跳过它")
+            parts[rel] = {"funcs": {}, "rest": [], "used": set(), "fwd": 0, "gone": True}
+            continue
         with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
             funcs, rest = {}, []
             for head, tail in _top_level_chunks(f.read()):
@@ -124,7 +124,7 @@ def read_main_src():
             _nonsplit_fwd.setdefault(other_of[fwd.group(1)], []).append((fname[len("func "):].strip(), fwd.group(2)))
         if fwd and fwd.group(1) in other_of and other_of[fwd.group(1)] not in MAIN_NOT_SPLITS:
             _split_report.append(f"{fname} 一行转发到 {other_of[fwd.group(1)]}，它没登记进 MAIN_SPLITS，函数体不拼回"
-                                 f"（是拆出件就两处 MAIN_SPLITS 都登记；不是就加进 check_symbols 的 MAIN_NOT_SPLITS 并注明）")
+                                 f"（是拆出件就在 docs/Main拆解台账.md 追加一节、跑 tools/gen_main_splits.py --write；不是就加进 check_symbols 的 MAIN_NOT_SPLITS 并注明）")
         if rel is None:
             out.append((head, tail))
             continue
@@ -158,6 +158,8 @@ def read_main_src():
     for rel in MAIN_SPLITS:
         part = parts[rel]
         _split_fwd_count[rel] = part["fwd"]
+        if part.get("gone"):
+            continue
         if part["fwd"] == 0:
             _split_report.append(f"{rel} 登记为 Main 拆出件，但 Main 里没有一行转发接到它（或没 preload）")
         out.append((f"# ── 以下自 {rel} 拼入（未被转发的 helper / 常量） ──", []))
@@ -300,7 +302,7 @@ declared = dict(re.findall(r'^(\w+)="\*(res://[^"]+)"', pg, re.M))
 problems = []
 
 print("=" * 68)
-print("一之零、Main.gd 拆出件（MAIN_SPLITS）与转发")
+print("一之零、Main.gd 拆出件（MAIN_SPLITS ← tools/main_splits.txt）与转发")
 print("=" * 68)
 print("  源码断言读的 main_src = Main.gd + 拆出件拼回的「未拆时」Main（read_main_src）。")
 print("  拼回只对源码字符串断言有效：行号、`main.` 前缀、static / 实例语义不在此列（见 docs/GATES.md §三.1）。")
@@ -354,15 +356,32 @@ for _msg in _split_report:
     problems.append(f"Main 拆出件：{_msg}")
 if not _split_report:
     print("  ✓ 登记的拆出件都有转发接上，转发目标都在")
-# godot_smoke 的源码断言也读 Main + 拆出件（它那份 MAIN_SPLITS 须与这里一致）
+# 清单本身：tools/main_splits.txt 与生成器重算逐字节一致（lane cs13：拆出件 / lane ← 台账，拆出函数 ← Main 转发，commit / 行范围 ← git）
+if not MAIN_SPLITS:
+    print("  ✗ tools/main_splits.txt 不存在或一件都没有（拼回什么都不读，搬走的函数体断言全看不到）")
+    problems.append("Main 拆出件：tools/main_splits.txt 读不到拆出件")
+_, _ms_lines, _ms_problems = gen_main_splits.check()
+for _ln in _ms_lines:
+    print("  " + _ln)
+problems.extend(f"Main 拆出件：{_p}" for _p in _ms_problems)
+# 两边都读它（cs8 定的口径）：godot_smoke 的源码断言也读 Main + 拆出件，它不许再自带一份清单，只读 tools/main_splits.txt
 with open(os.path.join(ROOT, "tools", "godot_smoke.gd"), encoding="utf-8") as f:
-    _smoke_m = re.search(r'^const MAIN_SPLITS := \[(.*?)\]', f.read(), re.M)
-_smoke_splits = tuple(re.findall(r'"res://([^"]+)"', _smoke_m.group(1))) if _smoke_m else ()
-if _smoke_splits == MAIN_SPLITS:
-    print("  ✓ godot_smoke.gd 的 MAIN_SPLITS 与此一致")
+    _smoke_code = "\n".join(ln for ln in f.read().splitlines() if not ln.lstrip().startswith("#"))
+_smoke_bad = []
+if not re.search(r'^const MAIN_SPLITS_TXT\s*:?=\s*"res://tools/main_splits\.txt"', _smoke_code, re.M):
+    _smoke_bad.append("没有 `const MAIN_SPLITS_TXT := \"res://tools/main_splits.txt\"`")
+if not re.search(r'^func _main_family_src\(\)[^\n]*\n(?:\t[^\n]*\n)*?\tfor p in _main_splits\(\):', _smoke_code, re.M):
+    _smoke_bad.append("_main_family_src() 不是 `for p in _main_splits():` 读清单")
+_smoke_readers = "".join(m.group(0) for m in re.finditer(r'^func _main_(?:splits|family_src)\(\)[^\n]*\n(?:[\t ][^\n]*\n|\n)*', _smoke_code, re.M))
+if re.search(r'"res://scripts/ui/\w+\.gd"', _smoke_readers):
+    _smoke_bad.append("_main_splits / _main_family_src 里写死了拆出件路径")
+if re.search(r'^const MAIN_SPLITS\s*:?=', _smoke_code, re.M):
+    _smoke_bad.append("还自带一份 `const MAIN_SPLITS`")
+if not _smoke_bad:
+    print("  ✓ godot_smoke.gd 与此同读 tools/main_splits.txt（_main_family_src → _main_splits，不自带清单）")
 else:
-    print(f"  ✗ godot_smoke.gd 的 MAIN_SPLITS {_smoke_splits} 与 check_symbols {MAIN_SPLITS} 不一致")
-    problems.append("godot_smoke MAIN_SPLITS 未同步")
+    print(f"  ✗ godot_smoke.gd 没改成读 tools/main_splits.txt：{'；'.join(_smoke_bad)}")
+    problems.append("godot_smoke 不读 tools/main_splits.txt")
 
 print("=" * 68)
 print("一、project.godot 的 autoload 注册")

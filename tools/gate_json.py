@@ -199,20 +199,37 @@ SUBCHECKS = [
                "没疑点时没有 `⚠ WARN` 行；不开时输出逐字节不变，开了退出码也不变",
      "fail": "**不判红**：`⚠ WARN <文件>:L<行> <调用>  ← <作用域>：无此 func` / `…：无此 signal` = 字面量名在对应作用域里找不到，"
              "人工判真死引用 / 误报；`--json --suggest` 里记 `level: warn`（ok=true，不计 pass/fail）"},
-    {"id": "Main 拆出件拼回（一之零）", "parent": "check_symbols", "lane": "ms / cs8 / gd16", "oneclick": True,
+    {"id": "Main 拆出件拼回（一之零）", "parent": "check_symbols", "lane": "ms / cs8 / gd16 / cs13", "oneclick": True,
      "cmd": "python3 tools/check_symbols.py",
      "marks": ["一之零、Main.gd 拆出件", "MAIN_NOT_SPLITS", "SPLIT_MARK", "却不是一行转发", "拼回只对源码字符串断言有效",
-               "条都有效：文件在、Main 一行转发到它"],
+               "条都有效：文件在、Main 一行转发到它", "gen_main_splits.read_splits()", "gen_main_splits.check()",
+               "同读 tools/main_splits.txt", "文件却不存在（删了拆出件没更新清单）"],
      "expect": "「一之零」每件 `✓ scripts/ui/<件>.gd：N 支转发拼回函数体` + `✓ 头注写「从 Main.gd 原样搬出」的 N 件与 MAIN_SPLITS 一一对上；"
                "Main 调拆出件处都是一行转发；非拆出件的一行委托 N 处都在 MAIN_NOT_SPLITS` + `✓ MAIN_NOT_SPLITS N 条都有效：文件在、Main 一行转发到它、"
-               "目标函数在、注明与实际转发一致` + `✓ godot_smoke.gd 的 MAIN_SPLITS 与此一致`。"
+               "目标函数在、注明与实际转发一致` + `✓ tools/main_splits.txt 与重算逐字节一致（N 件；…）` + "
+               "`✓ godot_smoke.gd 与此同读 tools/main_splits.txt（_main_family_src → _main_splits，不自带清单）`。"
+               "清单只有 `tools/main_splits.txt` 一份（lane cs13），两边都读它的第一列；"
                "**拼回只对源码字符串断言有效**：行号、`main.` 前缀、static / 实例语义不在此列（口径见 §三.1）",
      "fail": "`✗ … 转发到 <件> 的 fn，那边没有这支 static func` = 拆出件改名 / 删了没跟转发；`登记为 Main 拆出件，但 Main 里没有一行转发` = 登记了没接；"
              "`调了拆出件 … 却不是一行转发` = 转发带行尾注释 / 两行 / 折行签名，拼回不认；`一行转发到 <件>，它没登记进 MAIN_SPLITS` / "
              "`头注写「从 Main.gd 原样搬出」，却没登记` = 新拆一刀忘登记；`登记为拆出件，头注…没写` = 约定字样丢了；"
-             "`godot_smoke.gd 的 MAIN_SPLITS … 不一致` = 两份清单只改了一份；`MAIN_NOT_SPLITS 条目 <件> 文件不存在` / `Main 没 preload 它或没有一行转发到它` / "
+             "`tools/main_splits.txt 第 N 行与重算不一致` = 手改了清单，或台账 / 拆出件 / Main 转发改了没 `gen_main_splits.py --write`；"
+             "`台账登记的拆出件 … 文件不存在` / `登记在 tools/main_splits.txt，文件却不存在` = 删了拆出件没更新台账和清单；"
+             "`godot_smoke.gd 没改成读 tools/main_splits.txt` = smoke 又自带了一份清单 / 写死了路径；`MAIN_NOT_SPLITS 条目 <件> 文件不存在` / `Main 没 preload 它或没有一行转发到它` / "
              "`转发到 <件> 的 fn，那边没有这支 func（…指向不存在的目标）` / `注明「A → B」，Main 里实际一行转发是 …` / `同时登记在 MAIN_SPLITS 与 MAIN_NOT_SPLITS` "
              "= 放行清单过时（lane gd16），删条目或改注。都计入 check_symbols 问题、退 1"},
+    {"id": "gen_main_splits --write", "parent": "check_symbols", "lane": "cs13", "oneclick": False,
+     "file": "tools/gen_main_splits.py",
+     "cmd": "python3 tools/gen_main_splits.py --write",
+     "alt": "python3 tools/gen_main_splits.py",
+     "marks": ['"--write"', "docs/Main拆解台账.md", "与重算逐字节一致，未改动", "已重写", "未验", "拆出 commit 自己记的 `-`：照认"],
+     "expect": "`✓ --write：tools/main_splits.txt 与重算逐字节一致，未改动`；有差异则 `↻ --write：已重写 tools/main_splits.txt（N 件；请连同提交）`，"
+               "之后照常对账一遍、`结果：全部通过`。不带 `--write` 只对账不写盘（与 check_symbols「一之零」同一个 check()）。"
+               "拆出件 / lane ← 台账节标题，拆出函数 ← Main 一行转发，commit / 原 Main 行范围 ← git（拆出 commit 父版 Main.gd），"
+               "台账写了逐支行段的逐支对账。浅克隆取不到拆出 commit 父版时那一行报 `⚠ … 未验`、沿用清单原值，不判红",
+     "fail": "`✗ --write：有问题，tools/main_splits.txt 未改动` + 各条 `✗`（台账登记的拆出件不存在、拆出件有 static func 没有 Main 转发、"
+             "拆前 Main.gd 里找不到转发的 Main 函数、台账逐支行段与重算不符）→ 退 1。**会改写 `tools/main_splits.txt`**，"
+             "所以不进一键跑；新拆一刀的 lane 追加台账一节后跑它、连同提交"},
     {"id": "按函数名取函数体（十三）", "parent": "check_symbols", "lane": "gd16 / cs9 / cs12", "oneclick": True,
      "cmd": "python3 tools/check_symbols.py",
      "marks": ["十三、按函数名取函数体", "class _Bodies(dict)", "_body_ask(name, m is not None)", "处按名取用都取到函数体",
@@ -404,7 +421,7 @@ def registry():
         c = dict(c)
         parent = by_id.get(c["parent"])
         c["family"] = parent["family"] if parent else None  # 所属门禁不在注册表：gates_md 判红
-        c["file"] = parent.get("file") if parent else None
+        c["file"] = c.get("file") or (parent.get("file") if parent else None)  # 附属自检的开关不在所属门禁脚本里的，自报 file（lane cs13）
         subs.append(c)
     # 一键跑顺序：导入步骤（step）先跑，再按注册表顺序跑必跑门禁
     order = [g for g in gates if g["tier"] == "step"] + [g for g in gates if g["tier"] == "must"]

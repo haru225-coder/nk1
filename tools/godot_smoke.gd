@@ -10,15 +10,25 @@ func _init() -> void:
 	call_deferred("_run")
 
 
-## Main.gd 拆出去的件（与 tools/check_symbols.py 的 MAIN_SPLITS 同步，check_symbols 会对账）。
+## Main.gd 拆出去的件：读 tools/main_splits.txt 第一列（lane cs13；与 tools/check_symbols.py 同读这一份，
+## 清单由 tools/gen_main_splits.py 生成，check_symbols 对账）。跳过空行与 # 开头的行，取第一个制表符前的部分。
 ## 源码断言读 Main.gd + 这些件接在一起的全文：函数搬走后「某字样须在 / 不得在」不因 Main 里只剩一行转发而误判。
 ## （按 func 切函数体的断言仍切 Main 里的 func；要断言搬走的函数体，去拆出件里切。）
-const MAIN_SPLITS := ["res://scripts/ui/SlipKit.gd", "res://scripts/ui/LedgerPage.gd", "res://scripts/ui/ChapterSheet.gd", "res://scripts/ui/TavernPage.gd", "res://scripts/ui/NpcPage.gd", "res://scripts/ui/SaveSheet.gd", "res://scripts/ui/GuildExamPage.gd"]
+const MAIN_SPLITS_TXT := "res://tools/main_splits.txt"
+
+
+func _main_splits() -> Array:
+	var out: Array = []
+	for ln in FileAccess.get_file_as_string(MAIN_SPLITS_TXT).split("\n"):
+		if ln.strip_edges() == "" or ln.begins_with("#"):
+			continue
+		out.append("res://" + ln.split("\t")[0].strip_edges())
+	return out
 
 
 func _main_family_src() -> String:
 	var src := FileAccess.get_file_as_string("res://scripts/Main.gd")
-	for p in MAIN_SPLITS:
+	for p in _main_splits():
 		src += "\n" + FileAccess.get_file_as_string(p)
 	return src
 
@@ -374,6 +384,11 @@ func _run() -> void:
 	var disc_save: Dictionary = gs.to_dict()
 	_check(disc_save.has("discoveries_found") and "beacon_ruin" in disc_save.get("discoveries_reported", []),
 		"存档含 discoveries_found / discoveries_reported", fails)
+	var splits := _main_splits()
+	var splits_missing: Array = splits.filter(func(p): return FileAccess.get_file_as_string(p).is_empty())
+	_check(not splits.is_empty() and splits_missing.is_empty(),
+		"Main 拆出件清单读自 tools/main_splits.txt（%d 件%s）" % [splits.size(),
+		"，都读得到" if splits_missing.is_empty() else "；读不到：" + ", ".join(PackedStringArray(splits_missing))], fails)
 	var main_src := _main_family_src()
 	_check(main_src.find("ChapterSheet") >= 0 and main_src.find("AcceptDialog.new()") < 0,
 		"升章了结走居中册页，主场景不再弹系统对话框", fails)

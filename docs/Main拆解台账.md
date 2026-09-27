@@ -2,7 +2,7 @@
 
 `scripts/Main.gd` 按页面簇往 `scripts/ui/` 拆。每刀一节，只往后追加，不改前面各节。
 手法（lane ms / mz / ms2 起一直沿用）：隔离 worktree 里改，Main 保留同名同签名的一行转发，信号目标仍是 Main 的同名方法；
-新文件登记到 `check_symbols.py` 和 `godot_smoke.gd` 的 `MAIN_SPLITS`，以及 `godot_compile_check.gd` 的 SCRIPTS；
+新文件登记：本台账追加一节、节标题写成「## 第N刀（lane X，日期）：… → `scripts/ui/X.gd`」，跑 `python3 tools/gen_main_splits.py --write` 重生成 `tools/main_splits.txt`（lane cs13 起；check_symbols 和 godot_smoke 都只读它），另加 `godot_compile_check.gd` 的 SCRIPTS；
 新文件头注写「从 Main.gd 原样搬出」，转发独占函数体、行尾不带注释（漏一样 check_symbols「一之零」判红，口径见 `docs/GATES.md` §三.1，lane cs8）；
 拆分前后跑同一组固定种子探针，输出逐字节对比；最后用 `update-ref` 带旧值 CAS 快进 main。
 
@@ -253,3 +253,13 @@ check_symbols 的 51 处引用都经 read_main_src。要改的门禁有 2 道：
 2. **T 住处 / 寺观**（117 / 6）风险中低：smoke 有两处在 family src 里切 `_on_temple_look` / `_on_temple_rub`，verify_economy 的旅店门禁直读 Main 的 `_setup_residence`（第五刀加的），都要改切片位置。
 3. **A / C / E / H / I / K** 风险高。先做「Main 家族源码」共用 helper 的门禁 lane（第五刀候选 3）。本刀又给 verify_economy 加了一处「直接读拆出件」的切片，和旅店那处（TavernPage）是同一种写法，应该一起收进这个 helper。
 4. `MAIN_SPLITS` 已到第 7 件，两份清单靠对账同步，建议抽 `tools/main_splits.txt` 共读（ms2 待议 6 起一直挂着）。
+
+---
+
+## 拆出件清单改由本台账生成（lane cs13，2026-09-28）
+
+不是一刀，只登记门禁变化（拍板清单 E-5；ms2 待议 6、上面第四 / 五 / 六 / 七刀的候选里一直挂着的那条）。
+
+- `tools/main_splits.txt`：拆出件唯一清单，每件一行（拆出件 / lane / 拆出 commit / 原 Main 行范围 / 拆出函数）。`check_symbols` 与 `godot_smoke` 都只读第一列，两份脚本里的 `MAIN_SPLITS` 常量删掉了。
+- `tools/gen_main_splits.py` 生成它：拆出件、顺序、lane 读本台账（开头「已拆（前三刀…）」那行 + 各刀节标题），所以**节标题的写法是契约**：``## 第N刀（lane X，日期）：… → `scripts/ui/X.gd` ``。拆出函数读 Main 的一行转发，commit 和行范围读 git（拆出 commit 父版的 Main.gd）；本台账表格里写了逐支行段的（第六、七刀共 15 支），生成时逐支对账。
+- check_symbols「一之零」每轮重算、与清单逐字节比：手改清单、台账加了一刀没 `--write`、删了拆出件没更新，都判红。
