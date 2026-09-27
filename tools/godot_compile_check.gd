@@ -57,6 +57,7 @@ const SCRIPTS := [
 	# 门禁本体与共用件
 	"res://tools/godot_smoke.gd", "res://tools/godot_story_check.gd", "res://tools/p7_guild_exam_smoke.gd",
 	"res://tools/patrol_shell.gd", "res://tools/shot_gate.gd", "res://tools/p7_smoke.gd",
+	"res://tools/gen_builtin_list.gd",
 	# 各 lane 专项探针 / 截图脚本
 	"res://tools/save_robust_probe.gd", "res://tools/save_migrate_probe.gd",
 	"res://tools/qa_economy_spread_probe.gd", "res://tools/qa_save_slot_tip_probe.gd",

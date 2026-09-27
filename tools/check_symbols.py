@@ -223,30 +223,126 @@ print("=" * 68)
 print("二、跨文件引用检查")
 print("=" * 68)
 
-# Godot 内置成员，出现在 autoload 上是合法的（autoload 都 extends Node：Object + Node 的常用 API 与信号）
-BUILTIN = {
-    "new", "free", "queue_free", "connect", "disconnect", "emit", "call",
-    "get", "set", "has_method", "get_tree", "add_child", "name", "duplicate",
-    "call_deferred", "is_connected", "get_children", "bind", "size", "keys",
-    # Object
-    "callv", "set_deferred", "has_signal", "emit_signal", "get_class", "is_class",
-    "get_script", "set_script", "get_meta", "set_meta", "has_meta", "remove_meta",
-    "get_instance_id", "is_queued_for_deletion", "notification", "tr",
-    "get_property_list", "get_method_list", "get_signal_list", "get_signal_connection_list",
-    "set_block_signals", "is_blocking_signals", "property_list_changed", "script_changed",
-    # Node
-    "remove_child", "get_child", "get_child_count", "get_node", "get_node_or_null",
-    "has_node", "find_child", "find_children", "get_parent", "get_viewport", "get_window",
-    "is_inside_tree", "is_node_ready", "set_process", "set_physics_process",
-    "set_process_input", "set_process_unhandled_input", "set_process_unhandled_key_input",
-    "is_processing", "is_physics_processing", "get_process_delta_time",
-    "get_physics_process_delta_time", "process_mode", "owner", "get_path", "create_tween",
-    "add_to_group", "remove_from_group", "is_in_group", "get_index", "move_child",
-    "reparent", "propagate_call", "propagate_notification", "set_name", "get_name",
-    "scene_file_path", "unique_name_in_owner", "process_priority",
-    "ready", "tree_entered", "tree_exiting", "tree_exited", "renamed",
-    "child_entered_tree", "child_exiting_tree", "child_order_changed",
-}
+# Godot 内置成员，出现在 autoload 上是合法的。lane cs3：不再手写，改读 ClassDB 导出的清单——
+#   tools/gen_builtin_list.gd → tools/builtin_api.txt（每类只列本类新增成员，inherits 行给继承链）；
+#   重生成：python3 tools/check_symbols.py --regen。每个 autoload 按自己的 extends 链合并放行。
+BUILTIN_LIST = os.path.join(ROOT, "tools", "builtin_api.txt")
+# 手写补充段：ClassDB 里查不到、GDScript 语法层却合法的名字（脚本类 .new()、Signal.emit / Callable.bind、容器 size / keys）
+BUILTIN_EXTRA = {"new", "emit", "bind", "size", "keys"}
+
+
+def _godot_bin():
+    import shutil
+    for c in (os.environ.get("GODOT"), shutil.which("godot"), os.path.expanduser("~/.local/bin/godot")):
+        if c and os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return None
+
+
+def _regen_builtin_list():
+    """--regen：跑 godot 从 ClassDB 重导清单；与现有逐字节比对，不同才落盘。返回是否成功。"""
+    import subprocess, tempfile
+    godot = _godot_bin()
+    if not godot:
+        print("  ✗ --regen：找不到 godot（$GODOT / PATH / ~/.local/bin/godot）")
+        return False
+    fd, tmp = tempfile.mkstemp(suffix=".txt")
+    os.close(fd)
+    try:
+        r = subprocess.run([godot, "--headless", "--path", ROOT, "-s", "res://tools/gen_builtin_list.gd", "--", tmp],
+                           capture_output=True, text=True, timeout=300)
+        new = open(tmp, encoding="utf-8").read() if os.path.exists(tmp) else ""
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+    if r.returncode != 0 or "GEN_BUILTIN_LIST OK" not in r.stdout or not new:
+        print(f"  ✗ --regen：gen_builtin_list.gd 失败（rc={r.returncode}）")
+        for ln in (r.stdout + r.stderr).strip().splitlines()[-5:]:
+            print(f"      {ln}")
+        return False
+    old = open(BUILTIN_LIST, encoding="utf-8").read() if os.path.exists(BUILTIN_LIST) else ""
+    if old == new:
+        print("  ✓ --regen：ClassDB 导出与 tools/builtin_api.txt 逐字节一致，未改动")
+        return True
+    ol, nl = set(old.splitlines()[3:]), set(new.splitlines()[3:])
+    with open(BUILTIN_LIST, "w", encoding="utf-8") as f:
+        f.write(new)
+    print(f"  ↻ --regen：已按 ClassDB 重写 tools/builtin_api.txt（+{len(nl - ol)} / −{len(ol - nl)} 行；请连同提交）")
+    return True
+
+
+def _read_builtin_list():
+    """返回 (godot 版本, {类: (父类, 成员集)}, 问题列表)。头三行：说明 / godot 版本 / 正文 sha256。"""
+    import hashlib
+    if not os.path.exists(BUILTIN_LIST):
+        return None, {}, ["tools/builtin_api.txt 不存在"]
+    text = open(BUILTIN_LIST, encoding="utf-8").read()
+    head = text.split("\n", 3)
+    if len(head) < 4 or not head[1].startswith("# godot ") or not head[2].startswith("# sha256 "):
+        return None, {}, ["tools/builtin_api.txt 头部缺 godot 版本 / sha256 行"]
+    ver, want, body = head[1][len("# godot "):], head[2][len("# sha256 "):], head[3]
+    errs = []
+    if hashlib.sha256(body.encode("utf-8")).hexdigest() != want:
+        errs.append("tools/builtin_api.txt 正文与头部 sha256 不符（被手改或截断）")
+    classes, cur = {}, None
+    for ln in body.split("\n"):
+        if ln.startswith("[") and ln.endswith("]"):
+            cur = ln[1:-1]
+            classes[cur] = ["", set()]
+        elif cur and ln.startswith("inherits"):
+            classes[cur][0] = ln[len("inherits"):].strip()
+        elif cur and ln:
+            classes[cur][1].add(ln.split(" ", 1)[-1])
+    return ver, {k: (p, m) for k, (p, m) in classes.items()}, errs
+
+
+def builtin_members(cls):
+    """cls 及其清单内祖先的全部内置成员；链上有类不在清单里则返回 None。"""
+    out, seen = set(), set()
+    while cls and cls not in seen:
+        seen.add(cls)
+        if cls not in BUILTIN_CLASSES:
+            return None
+        parent, mem = BUILTIN_CLASSES[cls]
+        out |= mem
+        cls = parent
+    return out
+
+
+if "--regen" in sys.argv[1:] and not _regen_builtin_list():
+    problems.append("--regen 重导内置清单失败")
+BUILTIN_VER, BUILTIN_CLASSES, _bl_errs = _read_builtin_list()
+_bl_godot = _godot_bin()
+_bl_local = None
+if _bl_godot and BUILTIN_VER:
+    try:
+        import subprocess
+        _bl_local = subprocess.run([_bl_godot, "--version"], capture_output=True, text=True, timeout=30).stdout.strip()
+    except Exception:
+        _bl_local = None
+if _bl_local and BUILTIN_VER != _bl_local:
+    _bl_errs.append(f"tools/builtin_api.txt 导自 godot {BUILTIN_VER}，本机 godot {_bl_local}，ClassDB 可能已变")
+# 各 autoload 按 extends 链放行（不写 extends 的 GDScript 默认 RefCounted）
+BUILTIN_FOR = {}
+for _auto, _rel in AUTOLOADS.items():
+    _ext = re.search(r'^extends\s+([A-Za-z_]\w*|"[^"]*")', code_only(open(os.path.join(ROOT, _rel), encoding="utf-8").read()), re.M)
+    _base = _ext.group(1) if _ext else "RefCounted"
+    _mem = builtin_members(_base)
+    if _mem is None:
+        if BUILTIN_CLASSES:
+            _bl_errs.append(f"autoload {_auto} extends {_base}，清单链上缺类：把它加进 tools/gen_builtin_list.gd 的 CLASSES")
+        _mem = set()
+    BUILTIN_FOR[_auto] = _mem | BUILTIN_EXTRA
+# 供别节沿用的 Node 链全集（autoload 都 extends Node）
+BUILTIN = (builtin_members("Node") or set()) | BUILTIN_EXTRA
+if _bl_errs:
+    for _e in _bl_errs:
+        print(f"  ✗ {_e} → 跑 python3 tools/check_symbols.py --regen")
+        problems.append(_e)
+else:
+    _node_n = len(builtin_members("Node") or ())
+    print(f"  ✓ 内置清单 tools/builtin_api.txt（godot {BUILTIN_VER}{'' if _bl_local else '；未找到本机 godot，未比对版本'}）："
+          f"{len(BUILTIN_CLASSES)} 类，Object→Node 链 {_node_n} 名 + 手写补充 {len(BUILTIN_EXTRA)} 名")
 
 miss_count = 0
 for dirpath, _, files in os.walk(SCRIPTS):
@@ -268,7 +364,7 @@ for dirpath, _, files in os.walk(SCRIPTS):
                 continue
             for m in re.finditer(rf'\b{auto}\.([A-Za-z_]\w*)', src_nc):
                 attr = m.group(1)
-                if attr in members or attr in BUILTIN:
+                if attr in members or attr in BUILTIN_FOR[auto]:
                     continue
                 line = src_nc[:m.start()].count("\n") + 1
                 file_problems.append((line, f"{auto}.{attr}"))
@@ -698,22 +794,167 @@ for fn in scene_files:
             print(f"  ✗ {fn} 引用了不存在的脚本 {m.group(1)}")
             problems.append(f"{fn} -> {m.group(1)} 缺失")
 
-# 代码里 change_scene_to_file 的目标是否存在
-for dirpath, _, files in os.walk(SCRIPTS):
-    for fn in files:
-        if not fn.endswith(".gd"):
+# 代码里切场景的目标是否存在。lane cs3：扩到 change_scene_to_packed，与「已知常量 / 常量拼接」路径：
+# 能静态定值的才核——字面量、本文件 const、Autoload / class_name 的 const（Foo.BAR）、以上各项的 + 拼接、
+# preload / load(可定值) [as PackedScene]；变量、函数返回值、% 格式化等未知形式一律不报（宁少报），只计数。
+def _code_mask(src):
+    """与 code_only 同一套切分，逐字符标注：c 代码 / s 字符串 / # 注释（偏移不走样）。"""
+    mask, i, n = [], 0, len(src)
+    while i < n:
+        c = src[i]
+        if c in ('"', "'"):
+            q = c * 3 if src.startswith(c * 3, i) else c
+            j = i + len(q)
+            while j < n:
+                if src[j] == "\\":
+                    j += 2
+                    continue
+                if src.startswith(q, j):
+                    j += len(q)
+                    break
+                j += 1
+            j = min(j, n)
+            mask.extend("s" * (j - i))
+            i = j
             continue
-        path = os.path.join(dirpath, fn)
-        with open(path, encoding="utf-8") as f:
-            src = f.read()
-        for m in re.finditer(r'change_scene_to_file\("(res://[^"]+)"\)', src):
-            tp = os.path.join(ROOT, m.group(1).replace("res://", ""))
-            rel = os.path.relpath(path, ROOT)
-            if not os.path.exists(tp):
-                print(f"  ✗ {rel} 切换到不存在的场景 {m.group(1)}")
-                problems.append(f"{rel} -> {m.group(1)} 缺失")
-            else:
-                print(f"  ✓ {rel} → {m.group(1)}")
+        if c == "#":
+            j = src.find("\n", i)
+            j = n if j < 0 else j
+            mask.extend("#" * (j - i))
+            i = j
+            continue
+        mask.append("c")
+        i += 1
+    return "".join(mask)
+
+
+def _call_arg(src, mask, pos):
+    """pos 指向 '(' 之后：取到配对的 ')'，返回实参原文；不配对返回 None。"""
+    depth = 1
+    for j in range(pos, len(src)):
+        if mask[j] != "c":
+            continue
+        if src[j] in "([{":
+            depth += 1
+        elif src[j] in ")]}":
+            depth -= 1
+            if depth == 0:
+                return src[pos:j]
+    return None
+
+
+def _split_plus(expr):
+    """在顶层（括号 / 字符串外）按 + 切开。"""
+    mask, parts, depth, last = _code_mask(expr), [], 0, 0
+    for j, ch in enumerate(expr):
+        if mask[j] != "c":
+            continue
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == "+" and depth == 0:
+            parts.append(expr[last:j])
+            last = j + 1
+    parts.append(expr[last:])
+    return parts
+
+
+_SC_CONST = re.compile(r'^[ \t]*const\s+([A-Za-z_]\w*)\s*(?::\s*[A-Za-z_][\w.]*(?:\[[^\]\n]*\])?\s*)?:?=\s*(.*)$', re.M)
+_sc_consts = {}   # 文件相对路径 -> {常量名: 右值原文 或 None（同名多处定义，不猜）}
+_sc_owner = {}    # Autoload 名 / class_name -> 文件相对路径
+
+
+def _sc_file_consts(rel):
+    if rel not in _sc_consts:
+        tab = {}
+        p = os.path.join(ROOT, rel)
+        src = open(p, encoding="utf-8").read() if os.path.exists(p) else ""
+        mask = _code_mask(src)
+        for m in _SC_CONST.finditer(src):
+            if mask[m.start(1)] != "c":
+                continue
+            rhs = src[m.start(2):m.end(2)]
+            cut = mask[m.start(2):m.end(2)].find("#")
+            rhs = (rhs if cut < 0 else rhs[:cut]).strip()
+            name = m.group(1)
+            tab[name] = rhs if name not in tab or tab[name] == rhs else None
+        _sc_consts[rel] = tab
+    return _sc_consts[rel]
+
+
+def _sc_eval(expr, rel, seen=()):
+    """静态定值：返回 ("str", 路径) / ("packed", 路径) / None（未知形式）。"""
+    expr = expr.strip()
+    expr = re.sub(r'\s+as\s+PackedScene$', "", expr)
+    parts = _split_plus(expr)
+    if len(parts) > 1:
+        vals = [_sc_eval(x, rel, seen) for x in parts]
+        if all(v and v[0] == "str" for v in vals):
+            return ("str", "".join(v[1] for v in vals))
+        return None
+    m = re.fullmatch(r'"([^"\\\n]*)"|\'([^\'\\\n]*)\'', expr)
+    if m:
+        return ("str", m.group(1) if m.group(1) is not None else m.group(2))
+    m = re.fullmatch(r'\((.*)\)', expr, re.S)
+    if m and _call_arg(expr, _code_mask(expr), 1) == m.group(1):
+        return _sc_eval(m.group(1), rel, seen)
+    m = re.fullmatch(r'(?:preload|load|ResourceLoader\.load)\s*\((.*)\)', expr, re.S)
+    if m:
+        v = _sc_eval(m.group(1), rel, seen)
+        return ("packed", v[1]) if v and v[0] == "str" else None
+    m = re.fullmatch(r'(?:([A-Za-z_]\w*)\.)?([A-Za-z_]\w*)', expr)
+    if m:
+        owner = _sc_owner.get(m.group(1)) if m.group(1) else rel
+        key = (owner, m.group(2))
+        if not owner or key in seen:
+            return None
+        rhs = _sc_file_consts(owner).get(m.group(2))
+        return _sc_eval(rhs, owner, seen + (key,)) if rhs else None
+    return None
+
+
+_sc_files = sorted(os.path.relpath(os.path.join(d, x), ROOT).replace(os.sep, "/")
+                   for d, _, xs in os.walk(SCRIPTS) for x in xs if x.endswith(".gd"))
+_sc_owner.update({k: v.replace(os.sep, "/") for k, v in AUTOLOADS.items()})
+for _rel in _sc_files:
+    _cn = re.search(r'^class_name\s+([A-Za-z_]\w*)', code_only(open(os.path.join(ROOT, _rel), encoding="utf-8").read()), re.M)
+    if _cn:
+        _sc_owner.setdefault(_cn.group(1), _rel)
+_sc_stat = collections.Counter()
+for rel in _sc_files:
+    src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+    mask = _code_mask(src)
+    for m in re.finditer(r'\bchange_scene_to_(file|packed)\s*\(', src):
+        if mask[m.start()] != "c":
+            continue  # 注释 / 字符串里的不算
+        kind, line = m.group(1), src.count("\n", 0, m.start()) + 1
+        arg = _call_arg(src, mask, m.end())
+        val = _sc_eval(arg, rel) if arg is not None else None
+        form = ("字面量" if arg is not None and re.fullmatch(r'\s*"[^"]*"\s*', arg) else
+                "拼接" if arg is not None and len(_split_plus(arg)) > 1 else "常量")
+        if val is None:
+            _sc_stat["未知"] += 1
+            print(f"  · {rel}:L{line} change_scene_to_{kind}({(arg or '').strip()}) 形式未知，不核")
+            continue
+        want = "str" if kind == "file" else "packed"
+        if val[0] != want:
+            _sc_stat["未知"] += 1
+            print(f"  · {rel}:L{line} change_scene_to_{kind}({arg.strip()}) 实参类型对不上（{val[0]}），不核")
+            continue
+        if kind == "packed":
+            form = "packed"
+        _sc_stat[form] += 1
+        note = "" if form == "字面量" else f"（{form}：{arg.strip()}）"
+        tp = val[1]
+        if not tp.startswith("res://") or not os.path.exists(os.path.join(ROOT, tp[len("res://"):])):
+            print(f"  ✗ {rel}:L{line} 切换到不存在的场景 {tp}{note}")
+            problems.append(f"{rel} -> {tp} 缺失")
+        else:
+            print(f"  ✓ {rel} → {tp}{note}")
+_sc_done = sum(v for k, v in _sc_stat.items() if k != "未知")
+print(f"  场景切换 {_sc_done + _sc_stat['未知']} 处：已核 {_sc_done}（字面量 {_sc_stat['字面量']} / 常量 {_sc_stat['常量']}"
+      f" / 拼接 {_sc_stat['拼接']} / packed {_sc_stat['packed']}），形式未知不核 {_sc_stat['未知']}")
 
 print()
 print("=" * 68)
