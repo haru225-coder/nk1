@@ -52,6 +52,19 @@ static func clear_streams() -> void:
 	_streams.clear()
 
 
+## Call before quitting a tool/test tree: frees transient players that are still
+## sounding and drops the synth cache, so exit does not report leaked
+## AudioStreamWAV / AudioStreamPlaybackWAV instances.
+static func shutdown(tree: SceneTree) -> void:
+	if tree != null and tree.root != null:
+		for child in tree.root.get_children():
+			if child.has_meta(_META):
+				child.free()
+	_streams.clear()
+	_last_ms.clear()
+	_SYNTH.clear_cache()
+
+
 static func has_stream(cue: StringName) -> bool:
 	return stream_for(cue) != null
 

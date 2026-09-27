@@ -6,6 +6,7 @@ extends SceneTree
 ## godot --path . -s res://tools/patrol_shell.gd
 
 const VIEW := Vector2(1280, 720)
+const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
 const PORTS := ["quanzhou", "fuzhou", "xinghua"]
 const FACILITIES := [
 	"market", "yamen", "shipyard", "tavern", "inn",
@@ -453,6 +454,8 @@ func _check(cond: bool, msg: String) -> void:
 
 
 func _finish() -> void:
+	# 过渡音可能还在响：退出前释放播放器与合成缓存，免得退出时报 AudioStreamWAV 泄漏
+	_AUDIO.shutdown(self)
 	if _fails.is_empty():
 		print("PATROL SHELL PASS")
 		quit(0)
