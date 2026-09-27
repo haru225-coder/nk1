@@ -646,6 +646,9 @@ if SUGGEST:
     print("=" * 68)
     print("  emit_signal(\"…\") / X.call|call_deferred|callv(\"…\") / Callable(obj, \"…\") 的字面量当候选名；")
     print("  接收者是本文件（裸写 / self）→ 查本文件及 extends 链，是 autoload → 查该 autoload，")
+    print("  裸标识符接收者能静态定型的（lane cs6：preload/load(…gd).new()、Const/ClassName.new()、")
+    print("  `: ClassName` 注解含参数、set_script(…)、.tscn.instantiate()、get_node(\"/root/Autoload\")、")
+    print("  经局部变量转手）→ 查该类及 extends 链（注解另并子类）；")
     print("  其余类型未知 → 只查全仓 func / signal 并集。名字压根不存在才打 ⚠ WARN，需人工判。")
 
     def _code_mask(src):
@@ -727,6 +730,340 @@ if SUGGEST:
     _sg_all_sigs = set().union(*(g for _, g in BUILTIN_SIGNALS.values()), *(i["sigs"] for i in _sg_info.values()))
     _sg_auto = {a: _sg_scope(r) for a, r in AUTOLOADS.items() if r in _sg_info}
 
+    # —— lane cs6：裸标识符接收者的轻量类型推断（宁可推不出，推不出就落回全仓并集）——
+    # 定型来源（脚本表达式 S = preload|load("res://X.gd") / 本文件 const 指向 .gd / class_name / 只赋一次的局部别名）：
+    # ① `var x := / = S.new()`（可包 `(S as GDScript)`、尾随 `as T`）；② 注解 `var x: ClassName` 与参数
+    # `x: ClassName`（ClassName 为 class_name 或本文件 const 脚本）→ 该类 + 全部子类；③ `x.set_script(S)`；
+    # ④ `x = y`，y 在该处同样能定型（至多 3 跳）；⑤ `P.instantiate()`，P 为 .tscn 的 preload/load / const / 别名
+    # → 场景根节点脚本（根节点无脚本即推不出）；⑥ `root.get_node("Auto")` / `get_node("/root/Auto")`（含 _or_null）
+    # → 该 autoload 脚本；⑦ 脚本资源本身（`var s = load("res://X.gd")`，`s.call("静态函数")`）；⑧ 读属性
+    # `y.get("p")` / `y.p`（y 能定型、p 在其类型上是能定型的成员 var）。
+    # 赋 null 的不计（不改类型），其余只要一处推不出即未知。
+    # 无工程类注解时，作用域内对 x 的**每一次**赋值（含声明初值）都须能定型才算定型，取并集；有一处推不出即未知。
+    # 作用域：接收者所在 func 里有 `var x` / 参数 x 就按局部，否则按本文件顶层 `var x`（全文件赋值都算）。
+    _SG_ID = r'[A-Za-z_]\w*'
+    _sg_children = collections.defaultdict(set)  # rel -> 直接子类 rel
+
+    def _sg_parent_rel(rel):
+        parent = _sg_info[rel]["ext"]
+        return parent if parent and parent.endswith(".gd") else _sg_class.get(parent)
+
+    for _r in _sg_info:
+        _pr = _sg_parent_rel(_r)
+        if _pr:
+            _sg_children[_pr].add(_r)
+
+    def _sg_subtree(rel):
+        out, todo = set(), [rel]
+        while todo:
+            r = todo.pop()
+            if r not in out:
+                out.add(r)
+                todo += _sg_children.get(r, ())
+        return out
+
+    def _sg_engine_tail(rel, seen=()):
+        """extends 链落到的引擎类名（Control / CanvasLayer …）；链断或成环返回 None。"""
+        while rel in _sg_info and rel not in seen:
+            seen = seen + (rel,)
+            parent = _sg_info[rel]["ext"]
+            nxt = _sg_parent_rel(rel)
+            if not nxt:
+                return parent if parent and not parent.endswith(".gd") else None
+            rel = nxt
+        return None
+
+    def _sg_type_scope(rels):
+        """一组可能类型的 (func, signal) 并集。func 链尾引擎类在 builtin_api.txt 全量段里的，把它的内置成员也并上
+        （ENGINE_METHODS 只是 Node 一带）；signal 照 _sg_scope 走 _chain_signals，不另放宽。"""
+        funcs, sigs = set(), set()
+        for r in rels:
+            f, g = _sg_scope(r)
+            tail = _sg_engine_tail(r)
+            funcs |= f | ((builtin_members(tail) if tail else None) or set())
+            sigs |= g
+        return funcs, sigs
+
+    _sg_text_cache = {}
+
+    def _sg_text(rel):
+        """源码去注释（注释字符换成空格）、字符串原样保留——偏移与原文一一对应。"""
+        if rel not in _sg_text_cache:
+            src = _sg_info[rel]["src"]
+            mask = _code_mask(src)
+            out = list(src)
+            i, n = 0, len(src)
+            while i < n:
+                if not mask[i] and src[i] == "#":
+                    while i < n and src[i] != "\n":
+                        out[i] = " "
+                        i += 1
+                    continue
+                if not mask[i] and src[i] in ('"', "'"):
+                    q = src[i] * 3 if src.startswith(src[i] * 3, i) else src[i]
+                    i += len(q)
+                    while i < n:
+                        if src[i] == "\\":
+                            i += 2
+                            continue
+                        if src.startswith(q, i):
+                            i += len(q)
+                            break
+                        i += 1
+                    continue
+                i += 1
+            _sg_text_cache[rel] = "".join(out)
+        return _sg_text_cache[rel]
+
+    _sg_consts_cache = {}
+
+    def _sg_consts(rel):
+        """本文件顶层 const：名 -> 右值表达式。"""
+        if rel not in _sg_consts_cache:
+            _sg_consts_cache[rel] = {m.group(1): m.group(2) for m in re.finditer(
+                r'^const\s+(' + _SG_ID + r')\s*(?::\s*\w+\s*)?:?=\s*(.+?)\s*$', _sg_text(rel), re.M)}
+        return _sg_consts_cache[rel]
+
+    def _sg_balanced(e):
+        d = 0
+        for c in e:
+            d += (c == "(") - (c == ")")
+            if d < 0:
+                return False
+        return d == 0
+
+    def _sg_strip(e):
+        e = e.strip()
+        while True:
+            m = re.fullmatch(r'(.+?)\s+as\s+' + _SG_ID, e, re.S)
+            if m and _sg_balanced(m.group(1)):
+                e = m.group(1).strip()
+                continue
+            if e.startswith("(") and e.endswith(")") and _sg_balanced(e[1:-1]):
+                e = e[1:-1].strip()
+                continue
+            return e
+
+    _sg_scene_cache = {}
+
+    def _sg_scene_script(path, depth=0):
+        """.tscn 根节点脚本 rel（根是另一场景实例则顺下去）；无脚本 / 读不到返回 None。"""
+        if path in _sg_scene_cache:
+            return _sg_scene_cache[path]
+        _sg_scene_cache[path] = None
+        fp = os.path.join(ROOT, path)
+        if depth > 4 or not os.path.exists(fp):
+            return None
+        with open(fp, encoding="utf-8") as f:
+            txt = f.read()
+        ext = {m.group(2): m.group(1) for m in re.finditer(
+            r'^\[ext_resource\b[^\]]*?\bpath="res://([^"]+)"[^\]]*?\bid="([^"]+)"', txt, re.M)}
+        ext.update({m.group(1): m.group(2) for m in re.finditer(
+            r'^\[ext_resource\b[^\]]*?\bid="([^"]+)"[^\]]*?\bpath="res://([^"]+)"', txt, re.M)})
+        root = re.search(r'^\[node\b(?![^\]]*\bparent=)([^\]]*)\]\n((?:(?!\[).*\n?)*)', txt, re.M)
+        out = None
+        if root:
+            sm = re.search(r'^script\s*=\s*ExtResource\(\s*"([^"]+)"\s*\)', root.group(2), re.M)
+            im = re.search(r'\binstance=ExtResource\(\s*"([^"]+)"\s*\)', root.group(1))
+            if sm and ext.get(sm.group(1), "").endswith(".gd"):
+                out = ext[sm.group(1)] if ext[sm.group(1)] in _sg_info else None
+            elif not sm and im and ext.get(im.group(1), "").endswith(".tscn"):
+                out = _sg_scene_script(ext[im.group(1)], depth + 1)
+        _sg_scene_cache[path] = out
+        return out
+
+    def _sg_res(e, rel, ctx, depth):
+        """资源表达式 → ('gd', rel) | ('tscn', path) | None。ctx=(text, 基准偏移, 所在位置)。"""
+        e = _sg_strip(e)
+        m = re.fullmatch(r'(?:preload|load|ResourceLoader\.load)\(\s*(?:"res://([^"]+)"|(' + _SG_ID + r'))\s*\)', e)
+        if m:
+            path = m.group(1)
+            if not path:
+                c = _sg_consts(rel).get(m.group(2), "")
+                path = c[7:-1] if re.fullmatch(r'"res://[^"\\]+"', c) else None
+        elif re.fullmatch(_SG_ID, e) and depth < 3:
+            c = _sg_consts(rel).get(e)
+            if c is not None:
+                return _sg_res(c, rel, None, depth + 1)
+            if e in _sg_class:
+                return ("gd", _sg_class[e])
+            if ctx is None:
+                return None
+            decl = _sg_decl(rel, e, ctx[2])  # 局部别名：作用域里恰好一处赋值
+            if decl is None or len(decl[2]) != 1 or decl[2][0][0] is None:
+                return None
+            return _sg_res(decl[2][0][0], rel, (decl[0], decl[1], decl[2][0][1]), depth + 1)
+        else:
+            return None
+        if path and path.endswith(".gd") and path in _sg_info:
+            return ("gd", path)
+        if path and path.endswith(".tscn"):
+            return ("tscn", path)
+        return None
+
+    def _sg_call_head(e, meth):
+        """`<head>.meth(…)` → head；否则 None。"""
+        e = _sg_strip(e)
+        if not e.endswith(")"):
+            return None
+        d, i = 0, len(e) - 1
+        while i >= 0:
+            d += (e[i] == ")") - (e[i] == "(")
+            if d == 0:
+                break
+            i -= 1
+        head = e[:i].rstrip()
+        if i <= 0 or not head.endswith("." + meth) or not _sg_balanced(e[i + 1:-1]):
+            return None
+        return head[:-len(meth) - 1]
+
+    def _sg_value(e, rel, ctx, depth):
+        """赋值右值 → 可能的脚本 rel 集合；推不出 None。"""
+        if e is None or depth > 3:
+            return None
+        h = _sg_call_head(e, "new")
+        if h is not None:
+            r = _sg_res(h, rel, ctx, depth)
+            return {r[1]} if r and r[0] == "gd" else None
+        h = _sg_call_head(e, "instantiate")
+        if h is not None:
+            r = _sg_res(h, rel, ctx, depth)
+            s_ = _sg_scene_script(r[1]) if r and r[0] == "tscn" else None
+            return {s_} if s_ else None
+        e2 = _sg_strip(e)
+        if re.fullmatch(r'(?:preload|load|ResourceLoader\.load)\(.*\)', e2):
+            r = _sg_res(e2, rel, ctx, depth)  # 脚本资源本身：x.call("静态函数")
+            return {r[1]} if r and r[0] == "gd" else None
+        pm = re.fullmatch(r'(' + _SG_ID + r')(?:\.get\(\s*&?"(' + _SG_ID + r')"\s*\)|\.(' + _SG_ID + r'))', e2)
+        if pm and ctx is not None and pm.group(1) != "self":
+            # 读属性：y.get("p") / y.p，y 能定型、p 是其各类型上能定型的成员 var
+            owners = _sg_infer(rel, pm.group(1), ctx[2], depth + 1)
+            if not owners:
+                return None
+            out = set()
+            for o in owners:
+                r = _sg_infer(o, pm.group(2) or pm.group(3), -1, depth + 1)
+                if not r:
+                    return None
+                out |= r
+            return out
+        am = re.fullmatch(r'(?:(?:root|get_tree\(\)\.root)\.get_node(?:_or_null)?\(\s*"(?:/root/)?|'
+                          r'(?:\w+\.)?get_node(?:_or_null)?\(\s*"/root/)(' + _SG_ID + r')"\s*\)', e2)
+        if am:
+            return {AUTOLOADS[am.group(1)]} if AUTOLOADS.get(am.group(1)) in _sg_info else None
+        if re.fullmatch(_SG_ID, e2) and e2 not in ("self", "null") and ctx is not None:
+            r = _sg_infer(rel, e2, ctx[2], depth + 1)
+            if r is None and (e2 in _sg_class or e2 in _sg_consts(rel)):
+                r2 = _sg_res(e2, rel, None, depth)
+                r = {r2[1]} if r2 and r2[0] == "gd" else None
+            return r
+        return None
+
+    def _sg_assigns(name, text, base):
+        """text 里对 name 的全部赋值：[(右值 | None, 文件偏移)]。`var name` 无初值不计；续行未合上记 None。"""
+        out = []
+        pat = re.compile(r'^[ \t]*(?:var\s+' + re.escape(name) + r'\s*(?::\s*[\w.]*\s*)?(:?=)?|(?:self\.)?'
+                         + re.escape(name) + r'\s*(=))(?!=)[ \t]*(.*)$', re.M)
+        for m in pat.finditer(text):
+            if m.group(1) is None and m.group(2) is None:
+                continue
+            v = m.group(3).strip()
+            out.append((v if v and _sg_balanced(v) else None, base + m.start()))
+        return out
+
+    def _sg_annot_rel(t, rel):
+        if not t:
+            return None
+        r = _sg_res(t, rel, None, 0)
+        return r[1] if r and r[0] == "gd" else None
+
+    _sg_funcspans = {}
+
+    def _sg_enclosing(rel, pos):
+        """pos 所在（最内层）func 的 (起点偏移, 签名行, 函数体文本)；不在 func 里返回 None。"""
+        if rel not in _sg_funcspans:
+            code = _sg_text(rel)
+            lines = code.split("\n")
+            spans, starts, off = [], [], 0
+            for ln in lines:
+                starts.append(off)
+                off += len(ln) + 1
+            for k, ln in enumerate(lines):
+                fm = re.match(r'^([ \t]*)(?:static\s+)?func\s+' + _SG_ID, ln)
+                if not fm:
+                    continue
+                ind = len(fm.group(1))
+                e = k + 1
+                while e < len(lines):
+                    t = lines[e]
+                    if t.strip() and len(t) - len(t.lstrip()) <= ind and not t.lstrip().startswith(")"):
+                        break
+                    e += 1
+                spans.append((starts[k], starts[e] if e < len(lines) else len(code), ln, "\n".join(lines[k:e])))
+            _sg_funcspans[rel] = spans
+        best = None
+        for a, b, sig, body in _sg_funcspans[rel]:
+            if a <= pos < b and (best is None or a >= best[0]):
+                best = (a, sig, body)
+        return best
+
+    def _sg_decl(rel, name, pos):
+        """name 在 pos 处的声明：(作用域文本, 基准偏移, 赋值表, 注解类型名 | None, 是否参数)；找不到 None。"""
+        enc = _sg_enclosing(rel, pos)
+        if enc is not None:
+            base, sig, body = enc
+            pm = re.search(r'[(,]\s*' + re.escape(name) + r'\s*(?::\s*(' + _SG_ID + r'))?\s*(?::?=[^,)]*)?\s*[,)]', sig)
+            if pm:
+                return (body, base, [], pm.group(1), True)
+            dm = re.search(r'^[ \t]*var\s+' + re.escape(name) + r'\b\s*(?::\s*(' + _SG_ID + r'))?', body, re.M)
+            if dm:
+                return (body, base, _sg_assigns(name, body, base), dm.group(1), False)
+            if re.search(r'^[ \t]*for\s+' + re.escape(name) + r'\b|\bfunc\s*\([^)]*\b' + re.escape(name) + r'\b',
+                         body, re.M):
+                return None  # for 变量 / lambda 参数
+        code = _sg_text(rel)
+        dm = re.search(r'^var\s+' + re.escape(name) + r'\b\s*(?::\s*(' + _SG_ID + r'))?', code, re.M)
+        if not dm:
+            return None
+        return (code, 0, _sg_assigns(name, code, 0), dm.group(1), False)
+
+    def _sg_infer(rel, recv, pos, depth=0):
+        """推出接收者可能的脚本 rel 集合；推不出返回 None。"""
+        if depth > 3 or not re.fullmatch(_SG_ID, recv) or recv in AUTOLOADS or recv in _sg_class:
+            return None
+        decl = _sg_decl(rel, recv, pos)
+        if decl is None:
+            return None
+        text, base, vals, annot, is_param = decl
+        t = _sg_annot_rel(annot, rel)
+        if t:
+            return _sg_subtree(t)
+        if is_param:
+            return None  # 无注解 / 引擎类注解的参数：来路不明
+        types = set()
+        for sm in re.finditer(r'\b' + re.escape(recv) + r'\.set_script\(', text):
+            j, d = sm.end(), 1
+            while j < len(text) and d:
+                d += (text[j] == "(") - (text[j] == ")")
+                j += 1
+            r = _sg_res(text[sm.end():j - 1], rel, (text, base, base + sm.start()), depth)
+            if not r or r[0] != "gd":
+                return None
+            types.add(r[1])
+        if not types and all(v == "null" for v, _ in vals):
+            return None
+        for v, at in vals:
+            if v == "null":
+                continue  # 置空不改类型（对 null 调用本来就会炸，不归这里管）
+            if types and (_bm := re.fullmatch(r'(' + _SG_ID + r')\.new\(\s*\)', v or "")) \
+                    and _bm.group(1) in BUILTIN_CLASSES and _bm.group(1) not in _sg_consts(rel):
+                continue  # 有 set_script 时，`Node.new()` 这类裸引擎对象只是挂脚本前的底子
+            r = _sg_value(v, rel, (text, base, at), depth)
+            if not r:
+                return None
+            types |= r
+        return types
+
     _SG_DISPATCH = re.compile(r'\b(emit_signal|call_deferred|callv|call)\s*\(\s*&?"([^"\\\n]*)"')
     _SG_CALLABLE = re.compile(r'\bCallable\s*\(\s*((?:[^,()\n]|\(\))+?)\s*,\s*&?"([^"\\\n]*)"')
     _sg_tally = collections.Counter()
@@ -739,7 +1076,7 @@ if SUGGEST:
         for m in _SG_DISPATCH.finditer(src):
             if not mask[m.start()]:
                 continue
-            before = src[:m.start()].rstrip()
+            before = _sg_text(rel)[:m.start()].rstrip()  # 去注释再看，免得上一行注释末的「.」被当成接收者
             if before.endswith("."):
                 rm = re.search(r'([A-Za-z_]\w*)\s*$', before[:-1])
                 recv = rm.group(1) if rm and not before[:-1].rstrip()[:rm.start()].rstrip().endswith(".") else None
@@ -759,6 +1096,11 @@ if SUGGEST:
             elif recv in _sg_auto:
                 scope, where = _sg_auto[recv][1 if want_sig else 0], f"autoload {recv}"
                 _sg_tally["autoload"] += 1
+            elif (_inf := _sg_infer(rel, recv, pos)):
+                scope = _sg_type_scope(_inf)[1 if want_sig else 0]
+                _names = sorted(os.path.basename(r)[:-3] for r in _inf)
+                where = f"推断 {recv}: {' | '.join(_names[:3])}{' …' if len(_names) > 3 else ''} 及 extends 链"
+                _sg_tally["推断"] += 1
             else:
                 scope = _sg_all_sigs if want_sig else _sg_all_funcs
                 where = f"全仓（接收者 {recv} 类型未知）"
@@ -770,7 +1112,7 @@ if SUGGEST:
                 shown = f"{recv}.{shown}"
             _sg_warns.append(f"{rel}:L{line} {shown}  ← {where}：无此 {'signal' if want_sig else 'func'}")
     print(f"  字面量 {sum(_sg_tally.values())} 处：本文件 {_sg_tally['本文件']} · autoload {_sg_tally['autoload']}"
-          f" · 未知接收者 {_sg_tally['未知接收者']}（扫 scripts/ + tools/ 共 {len(_sg_info)} 个 .gd）")
+          f" · 推断定型 {_sg_tally['推断']} · 未知接收者 {_sg_tally['未知接收者']}（扫 scripts/ + tools/ 共 {len(_sg_info)} 个 .gd）")
     for w in _sg_warns:
         print(f"  ⚠ WARN {w}")
     if not _sg_warns:
