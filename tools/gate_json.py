@@ -11,8 +11,8 @@
      python3 tools/gate_json.py --godot res://tools/vision_stage_probe.gd [--display] [-- 用户参数]
      python3 tools/gate_json.py tools/verify_economy.py  # 等同 verify_economy.py --json
      python3 tools/gate_json.py -- <任意命令 ...>
-  3. 门禁清单：`python3 tools/gate_json.py --list` 输出注册表 JSON（REGISTRY + SHOT_PROBES）；
-     docs/GATES.md §一由它生成，`python3 tools/gates_md.py` 校验、`--write` 重生成。
+  3. 门禁清单：`python3 tools/gate_json.py --list` 输出注册表 JSON（REGISTRY + SHOT_PROBES + SUBCHECKS + CI_STEPS）；
+     docs/GATES.md §一、§四由它生成，`python3 tools/gates_md.py` 校验、`--write` 重生成。
 
 输出（stdout 只有这一段 JSON）：
   {"gate", "ok", "exit_code", "summary", "checks": [{"name", "ok", "detail"}...],
@@ -29,7 +29,7 @@ TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
 REC_ENV = "NK1_GATE_JSON_REC"
 
-# ── 门禁注册表：docs/GATES.md §一 由它生成（tools/gates_md.py --write），文档与它不一致即 FAIL（tools/gates_md.py）──
+# ── 门禁注册表：docs/GATES.md §一（及 §四 CI 块）由它生成（tools/gates_md.py --write），文档与它不一致即 FAIL（tools/gates_md.py）──
 # tier：must = 每轮必跑；lane = 按 lane 内容加跑（when 写何时）；no = 不算门禁（why 写原因）。
 # kind：py = python3 tools/<file>；godot = godot <args>；shots = 截图门禁一行（明细见 SHOT_PROBES）。
 # 改门禁清单（增删、降级、改命令）只改这里，再 `python3 tools/gates_md.py --write`。
@@ -103,7 +103,7 @@ REGISTRY = [
      "judge": "（lane sv）v1 老档读入补字段、回写 v2、原件留 .v1；未来档明确拒读、不退副抄、文件不动",
      "green": "`SAVE_MIGRATE_PROBE PASS`", "red": "`✗` 行；`SAVE_MIGRATE_PROBE FAIL fails=k`；输出含 `SCRIPT ERROR` 即算失败"},
     {"id": "gates_md", "tier": "lane", "when": "动门禁清单 / docs/GATES.md", "kind": "py", "file": "tools/gates_md.py",
-     "judge": "（lane gd3）本注册表 vs docs/GATES.md §一逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；§三 小节编号对得上",
+     "judge": "（lane gd3 / gd4）本注册表 vs docs/GATES.md §一、§四逐字一致；注册的脚本都在；接 shot_gate 的截图脚本全部入册；附属自检的开关还在源码里；§三 小节编号与一键跑命令对得上",
      "green": "`结果：全部通过`", "red": "`✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write`"},
     {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/verify_narrative.py",
      "why": "P7 剧情闭环旧静态门禁，当前 main 上本来就红（开局链 monk / borrow_ceiling 等旧契约），长期红、未列入必跑；修契约还是挪 `tools/legacy/` 待 lane gd2 拍板"},
@@ -141,6 +141,58 @@ SHOT_PROBES = [
 ]
 
 
+# 门禁族：总表「族」列按 kind 定（截图门禁单成一族）；「一键跑」= 必跑档 = docs/GATES.md §三「一键人读全跑」那段命令。
+FAMILY = {"py": "Python", "godot": "Godot", "shots": "截图"}
+
+# 门禁开关与附属自检（lane gd4）：不另立一道门禁，随所属门禁（parent，须是 REGISTRY 里的 id）默认跑，或开关手动开。
+# oneclick = 随所属门禁的默认命令跑到，即进「一键跑」；marks = 所属门禁源码里必须还在的字样（开关 / 判词改名了 gates_md 判红）。
+SUBCHECKS = [
+    {"id": "builtin_api 头部自检", "parent": "check_symbols", "lane": "cs3", "oneclick": True,
+     "cmd": "python3 tools/check_symbols.py",
+     "marks": ["tools/builtin_api.txt", "# sha256 ", "ClassDB 可能已变", "清单链上缺类"],
+     "expect": "「二、跨文件引用检查」首行 `✓ 内置清单 tools/builtin_api.txt（godot 4.6.3…）：N 类，Object→Node 链 M 名 + 手写补充 5 名`",
+     "fail": "`✗ tools/builtin_api.txt 正文与头部 sha256 不符` / `头部缺 godot 版本 / sha256 行` / `不存在` = 清单被手改或截断；"
+             "`导自 godot X，本机 godot Y` = 本机换了 Godot 版本；`extends …清单链上缺类` = autoload 基类不在导出范围"
+             "（先加进 `tools/gen_builtin_list.gd` 的 CLASSES）。都计入 check_symbols 问题、退 1，修法 `--regen`"},
+    {"id": "check_symbols --regen", "parent": "check_symbols", "lane": "cs3", "oneclick": False,
+     "cmd": "python3 tools/check_symbols.py --regen",
+     "marks": ['"--regen"', "gen_builtin_list.gd", "逐字节一致，未改动", "已按 ClassDB 重写"],
+     "expect": "`✓ --regen：ClassDB 导出与 tools/builtin_api.txt 逐字节一致，未改动`；有漂移则 `↻ --regen：已按 ClassDB 重写 "
+               "tools/builtin_api.txt（+a / −b 行；请连同提交）`。之后照常跑完整道 check_symbols，退出码按整道算",
+     "fail": "`✗ --regen：找不到 godot` / `gen_builtin_list.gd 失败（rc=…）` → 计入问题、退 1。**会改写 `tools/builtin_api.txt`**，"
+             "所以不进一键跑；漂移只在 CI 步骤里配 `git diff --exit-code` 判红（见 §四）"},
+    {"id": "check_symbols --suggest", "parent": "check_symbols", "lane": "cs4", "oneclick": False,
+     "cmd": "python3 tools/check_symbols.py --suggest",
+     "alt": "CHECK_SYMBOLS_SUGGEST=1 python3 tools/check_symbols.py",
+     "marks": ['"--suggest"', '"CHECK_SYMBOLS_SUGGEST"', "二之三、字符串派发候选提示"],
+     "expect": "多出「二之三、字符串派发候选提示」一节（`emit_signal` / `X.call` / `call_deferred` / `callv` / `Callable(obj, …)` 字面量），"
+               "没疑点时没有 `⚠ WARN` 行；不开时输出逐字节不变，开了退出码也不变",
+     "fail": "**不判红**：`⚠ WARN <文件>:L<行> <调用>  ← <作用域>：无此 func` / `…：无此 signal` = 字面量名在对应作用域里找不到，"
+             "人工判真死引用 / 误报；`--json --suggest` 里记 `level: warn`（ok=true，不计 pass/fail）"},
+    {"id": "compile 清单自检（inventory）", "parent": "compile", "lane": "ea4", "oneclick": True,
+     "cmd": "godot --headless --path . -s res://tools/godot_compile_check.gd",
+     "marks": ["inventory SCRIPTS == tracked *.gd", "ls-files", "INVENTORY_EXEMPT", "unlisted", "exempt-stale"],
+     "expect": "`COMPILE_CHECK OK   inventory SCRIPTS == tracked *.gd under scripts/tools (exempt N)`",
+     "fail": "`COMPILE_CHECK FAIL inventory <原因> …`（原因 `unlisted` / `listed-missing` / `dup` / `exempt-stale` / `exempt-but-listed`） = `git ls-files` 里已跟踪的 "
+             "`.gd` 没进 `SCRIPTS`（或 `INVENTORY_EXEMPT` 没写理由）、清单路径不存在 / 重复 / 豁免失效，整体计 bad+1；"
+             "`COMPILE_CHECK NOTE inventory git ls-files unavailable` = 没 git，退回扫盘（warn，不判红）"},
+]
+
+# CI 建议步骤（lane gd4）：docs/GATES.md §四 由它生成，**只是建议，不进 repo 的 CI 配置**。
+# 先跑必跑十三道（命令即 REGISTRY 里 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
+CI_STEPS = [
+    {"id": "builtin_api 漂移", "lane": "cs3 / gd4", "needs": "godot（与清单头部同版本）",
+     "cmd": "python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt",
+     "expect": "`✓ --regen：…逐字节一致，未改动` + check_symbols `结果：全部通过`，`git diff` 无输出、退 0",
+     "fail": "`git diff` 打出 `tools/builtin_api.txt` 的差异、退 1 = 提交的清单与本机 Godot 的 ClassDB 导出不一致"
+             "（升级了 Godot / 改了 `gen_builtin_list.gd` 的 CLASSES 却没连同提交重导结果）；`--regen` 本身失败则 check_symbols 先退 1"},
+    {"id": "GATES.md 与注册表一致", "lane": "gd3", "needs": "python3 + git",
+     "cmd": "python3 tools/gates_md.py",
+     "expect": "`结果：全部通过`",
+     "fail": "有人手改了 §一 / §四 生成块、改了注册表没 `--write`、§三 一键跑命令与必跑清单不符，或注册的脚本挪走了"},
+]
+
+
 def _shot_probe(path, lane):
     """截图脚本一条：TAG / EXPECTED_SHOTS / 截图目录现读源码；读不到的字段为 None（gates_md 判红）。"""
     src = ""
@@ -159,7 +211,7 @@ def _shot_probe(path, lane):
 
 
 def registry():
-    """`--list` 输出的清单：门禁（带人读 / --json 命令）+ 截图脚本明细。"""
+    """`--list` 输出的清单：门禁（带人读 / --json 命令、族、是否一键跑）+ 截图脚本明细 + 附属自检 + 一键跑命令 + CI 步骤。"""
     gates = []
     for g in REGISTRY:
         g = dict(g)
@@ -186,7 +238,20 @@ def registry():
     for s in shots:
         s["cmd"] = "DISPLAY=:2 godot " + " ".join(s["args"])
         s["json"] = "DISPLAY=:2 python3 tools/gate_json.py --godot " + s["id"]
-    return {"gates": gates, "shot_probes": shots}
+    for g in gates:
+        g["family"] = FAMILY[g["kind"]]
+        g["oneclick"] = g["tier"] == "must"
+    by_id = {g["id"]: g for g in gates}
+    subs = []
+    for c in SUBCHECKS:
+        c = dict(c)
+        parent = by_id.get(c["parent"])
+        c["family"] = parent["family"] if parent else None  # 所属门禁不在注册表：gates_md 判红
+        c["file"] = parent.get("file") if parent else None
+        subs.append(c)
+    must = [g["cmd"] for g in gates if g["oneclick"]]
+    ci = [dict(c) for c in CI_STEPS]
+    return {"gates": gates, "shot_probes": shots, "subchecks": subs, "oneclick": must, "ci_steps": ci}
 
 
 # `--godot <预设>`：注册表里的 Godot 门禁 + 截图脚本（带窗口的不加 --headless）
