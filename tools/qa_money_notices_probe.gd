@@ -235,8 +235,14 @@ func _contract_purse() -> void:
 	var port := str(picked["port"])
 	var gid := str(picked["gid"])
 	_reset(port, int(picked["money"]))
-	_main.load_scene(port + "_market")
-	await _settle(4)
+	# 只算今日柜上的货（lane iz2）：换柜序直到这件上柜，买卖走真 broker_hand
+	for salt in 12:
+		gs.broker_salt = salt
+		_main.load_scene(port + "_market")
+		await _settle(4)
+		if gid in _main.get("broker_hand"):
+			break
+	_expect(gid in _main.get("broker_hand"), "柜序 %d 上 %s 在柜上" % [gs.broker_salt, gm.get_good_name(gid)])
 	var lbl := _label_containing("凑得出")
 	var shown := _ints(lbl)
 	print("   %s 现银 %d 委办 %s ×%d：旧口径 %d 件；牙行现写「%s」" % [
@@ -245,7 +251,6 @@ func _contract_purse() -> void:
 		"单上首件价与凑得出件数按新口径（%s）" % str(shown))
 	# 逐船照单去买，能买到的就是单上写的件数
 	for si in fleet.ships.size():
-		_main.set("broker_hand", PackedStringArray([gid]))
 		_main.call("_on_buy", port, gid, int(picked["need"]), si)
 		await _settle(1)
 	var bought: int = fleet.cargo_qty(gid)

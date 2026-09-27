@@ -1941,6 +1941,13 @@ _afford_fn = main_src.split("func _affordable_qty", 1)[1].split("\nfunc ", 1)[0]
 check("_affordable_qty(port_id, gid" in _purse_ui and "max_loadable(gid, si)" in _purse_ui
       and "GameState.money) / float(unit_cost)" not in _purse_ui and "estimate_buy_cost" in _afford_fn,
       "委办凑得出件数按逐件加价总价、逐船舱位算，与牙行结算同口径")
+# lane iz2：只有今日柜上的货买得到（_on_buy 查 broker_hand），凑得出按柜上现货算；柜要先发，单子才读得到今日的柜
+_market_fn = main_src.split("func _setup_market", 1)[1].split("\nfunc ", 1)[0]
+_contract_fn = main_src.split("func _add_contract_panel", 1)[1].split("\nfunc ", 1)[0]
+check("gid in broker_hand" in _purse_ui and "if on_counter else 0" in _purse_ui and "此货今日不在柜上" in _contract_fn
+      and "BrokerSlip.deal" in _market_fn and "_add_contract_panel(port_id)" in _market_fn
+      and _market_fn.index("BrokerSlip.deal") < _market_fn.index("_add_contract_panel(port_id)"),
+      "委办货不在今日柜上时凑得出只算舱货、单上写明不在柜上；柜上三样先于委办单发出")
 _row_fn = main_src.split("func _make_market_row", 1)[1].split("\nfunc ", 1)[0]
 _btip_fn = main_src.split("func _market_buy_tip", 1)[1].split("\nfunc ", 1)[0] if "func _market_buy_tip" in main_src else ""
 _stip_fn = main_src.split("func _market_sell_tip", 1)[1].split("\nfunc ", 1)[0] if "func _market_sell_tip" in main_src else ""

@@ -1226,6 +1226,25 @@ func _setup_market(port_id: String) -> void:
 	scene_title.text = "%s・牙行" % GameManager.get_port_name(port_id)
 	body_text.text = "柜上只摆三样。牙人过秤开票；要看别的，明日再来。"
 
+	var goods_ids: Array = Economy.goods_at(port_id)
+	# 多船时选船装货。从别的页进来回到旗舰；本页刷新则留下刚才那艘。
+	if not _market_hold or _market_ship < 0 or _market_ship >= Fleet.ships.size():
+		_market_ship = 0
+	_market_hold = false
+
+	# 柜上三样先发，委办单上的「凑得出」按今日柜上现货算；上了门闸或无牙行则柜上空
+	broker_hand = PackedStringArray()
+	if Economy.is_market_open(port_id) and not goods_ids.is_empty():
+		var catalog: Array = []
+		for raw_gid in goods_ids:
+			var gid := str(raw_gid)
+			catalog.append({
+				"id": gid,
+				"role": str(Economy.get_role(port_id, gid)),
+				"buy": Economy.buy_price(port_id, gid),
+			})
+		broker_hand = BrokerSlip.deal(catalog, GameState.broker_salt, _broker_held_id(port_id))
+
 	_add_contract_panel(port_id)
 
 	if not Economy.is_market_open(port_id):
@@ -1233,16 +1252,11 @@ func _setup_market(port_id: String) -> void:
 		_add_leave_button(port_id)
 		return
 
-	var goods_ids: Array = Economy.goods_at(port_id)
 	if goods_ids.is_empty():
 		body_text.text = "此地无正经牙行，只几个渔妇晒网。"
 		_add_leave_button(port_id)
 		return
 
-	# 多船时选船装货。从别的页进来回到旗舰；本页刷新则留下刚才那艘。
-	if not _market_hold or _market_ship < 0 or _market_ship >= Fleet.ships.size():
-		_market_ship = 0
-	_market_hold = false
 	if Fleet.ships.size() > 1:
 		var sel := HFlowContainer.new()
 		sel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1263,16 +1277,6 @@ func _setup_market(port_id: String) -> void:
 			sel.add_child(chip)
 			UiTheme.style_chip(chip, idx == _market_ship)
 		choices_container.add_child(sel)
-
-	var catalog: Array = []
-	for raw_gid in goods_ids:
-		var gid := str(raw_gid)
-		catalog.append({
-			"id": gid,
-			"role": str(Economy.get_role(port_id, gid)),
-			"buy": Economy.buy_price(port_id, gid),
-		})
-	broker_hand = BrokerSlip.deal(catalog, GameState.broker_salt, _broker_held_id(port_id))
 
 	var slips := HBoxContainer.new()
 	slips.name = "BrokerSlips"
@@ -1522,13 +1526,20 @@ func _add_contract_panel(port_id: String) -> void:
 			var room := 0
 			for si in Fleet.ships.size():
 				room += Fleet.max_loadable(gid, si)
-			var can_carry := held_qty + _affordable_qty(port_id, gid, room)
+			# 只有今日柜上的货买得到（_on_buy 查 broker_hand）；不在柜上只算舱货
+			var on_counter := gid in broker_hand
+			var can_carry := held_qty + (_affordable_qty(port_id, gid, room) if on_counter else 0)
 			if can_carry < need_qty:
 				var purse_lbl := Label.new()
 				purse_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				purse_lbl.text = "此地首件 %d 钱，逐件加价。现银与舱货凑得出 %d 件，单须 %d 件。可接；交不齐则拿不满酬，不加声名。" % [
-					unit_cost, can_carry, need_qty,
-				]
+				if on_counter:
+					purse_lbl.text = "此地首件 %d 钱，逐件加价。现银与舱货凑得出 %d 件，单须 %d 件。可接；交不齐则拿不满酬，不加声名。" % [
+						unit_cost, can_carry, need_qty,
+					]
+				else:
+					purse_lbl.text = "此货今日不在柜上，现银买不到一件。舱货凑得出 %d 件，单须 %d 件。明日再看，柜上或换上此货。可接；交不齐则拿不满酬，不加声名。" % [
+						can_carry, need_qty,
+					]
 				purse_lbl.add_theme_font_size_override("font_size", 16)
 				purse_lbl.add_theme_color_override("font_color", warn_col)
 				detail.add_child(purse_lbl)
