@@ -42,6 +42,8 @@ const SCRIPTS := [
 	# Lane G/Q 酒馆设施纸笺与新闻墙
 	"res://scripts/ui/TavernFacilitySlip.gd", "res://scripts/ui/TavernFacilityPreview.gd",
 	"res://scripts/ui/TavernNewsWall.gd", "res://tools/qa_tavern_news_wall_screenshots.gd",
+	# Lane ms Main.gd 首刀拆出的工席纸条小件
+	"res://scripts/ui/SlipKit.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
