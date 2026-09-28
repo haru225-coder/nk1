@@ -701,6 +701,7 @@ func _route_check() -> void:
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
+	_v0928_hanjiang_check(main)
 	main.queue_free()
 
 
@@ -1053,3 +1054,288 @@ func _find_button(box: Node, needle: String, exact: bool) -> Button:
 			if (exact and t == needle) or (not exact and t.find(needle) >= 0):
 				return b as Button
 	return null
+
+
+## ── 09-28 涵江线修复（实机验收 digest「hanjiang」节 + visual 节「设施页题头字号」）──
+## 涵江卡水粮不足直进本港船屋、船屋「离开」回带卡的港页；七日航程真吃水粮、状态条最上面是出海一句、落款旧避风澳；
+## 10 月下旬点卡跨进冬月，册页与终局港页不挂「降元」；再陷前一月下旬副题催促；陈瓒船股只到兴化第一段 besieged 起点前；
+## 围城米价撑在围城目标、城破后回落；战况通告按节点覆写；牙行闭门不占三门、闭门页不写柜上三样不出委办；
+## 设施页题头统一 SIZE_HEAD；n_1277_07 传闻不把泉州围城写成已落地。月份一律从战况表推，数字只写门槛。
+func _v0928_hanjiang_check(main: Node) -> void:
+	var Eco: Node = root.get_node("Economy")
+	var Flt: Node = root.get_node("Fleet")
+	var card := "special_hanjiang_escape"
+	var out_line := "四条船出了涵江海口，没有回头。"
+	var war_x: Dictionary = GM.get_port_by_id("xinghua").get("war", {})
+	var wkeys: Array = war_x.keys()
+	wkeys.sort()
+	var siege0 := ""
+	for k in wkeys:
+		if str(war_x[k]) == "besieged":
+			siege0 = str(k)
+			break
+	var falls: Array = main._xinghua_fall_yms()
+	_check(siege0 != "" and falls.size() >= 2, "兴化战况表有第一段围城起点（%s）与再陷（%s）" % [siege0, falls])
+	if siege0 == "" or falls.size() < 2:
+		return
+	var zan_fall := str(falls[1])
+	var zfy := int(zan_fall.split("-")[0])
+	var zfm := int(zan_fall.split("-")[1])
+	# 再陷前一月（涵江卡窗口的最后一月）
+	var last_y := zfy if zfm > 1 else zfy - 1
+	var last_m := zfm - 1 if zfm > 1 else 12
+	var reset_root := func(y: int, m: int, d: int) -> void:
+		GS.from_dict({})
+		GS.identity = "merchant"
+		GS.record_discovery("nameless_shelter_bay")
+		Cal.from_dict({"year": y, "month": m, "day": d})
+		var ym := "%04d-%02d" % [y, m]
+		for nw in GM.news_data.get("news", []):
+			if str(nw.get("date", "9999-99")) < ym:
+				GS.mark_news_seen(str(nw.get("id", "")))
+		Flt.at_sea = false
+		GS.last_port = "xinghua"
+		main.load_scene("xinghua")
+	# 前面各段用 Fleet.from_dict({}) 清过船队：这里给一条开局船，才有船员吃水粮
+	if Flt.ships.is_empty():
+		Flt._grant_starter_ship()
+	var use: int = Flt.daily_supply_use()
+	_check(use > 0, "船队每日耗水粮 > 0（%d），七日航程才有得吃" % use)
+
+	# ① 水粮不足：直进本港船屋；船屋「离开」回到带卡的港页，卡还在
+	reset_root.call(last_y, last_m, 10)
+	Flt.water = use * 3
+	Flt.food = use * 3
+	_check(card in main.shore_hand, "再陷前一月兴化岸上有涵江卡（名单 %s）" % [main.shore_hand])
+	main._on_facility_pressed({"id": card})
+	_check(main.current_scene_id == "xinghua_shipyard" and not GS.is_ended(),
+		"水粮不足七日点涵江卡 → 直进本港船屋（页 %s，结局「%s」）" % [main.current_scene_id, GS.ended])
+	_check(main._latest_log().find("族里四条船的人，也要吃你船上的水粮") >= 0 and main._latest_log().find("七日") >= 0,
+		"水粮不足的提示说清是族里四条船吃你的水粮、至少七日（「%s」）" % main._latest_log())
+	var leave: Button = null
+	for b in main.find_children("*", "Button", true, false):
+		if (b as Button).text == "离开":
+			leave = b as Button
+	_check(leave != null, "船屋页有「离开」")
+	if leave != null:
+		leave.pressed.emit()
+	_check(main.current_scene_id == "xinghua" and card in main.shore_hand,
+		"船屋「离开」回到兴化港页、涵江卡还在（页 %s，名单 %s）" % [main.current_scene_id, main.shore_hand])
+
+	# ② 水粮够：七日按海上日子吃水粮、推完 at_sea 复位；状态条最上面是出海一句；落款旧避风澳
+	reset_root.call(last_y, last_m, 10)
+	Flt.water = use * 20
+	Flt.food = use * 20
+	var w0: int = Flt.water
+	var f0: int = Flt.food
+	main._on_facility_pressed({"id": card})
+	var days: int = main.HANJIANG_DAYS
+	_check(GS.ended == "岸上的根" and w0 - int(Flt.water) >= days * use and f0 - int(Flt.food) >= days * use and not Flt.at_sea,
+		"涵江七日航程吃掉 ≥%d 日水粮、推完仍泊港（水 %d→%d，粮 %d→%d，日耗 %d，at_sea=%s）" % [days, w0, Flt.water, f0, Flt.food, use, Flt.at_sea])
+	_check(main._latest_log() == out_line, "结局册页弹出时状态条最上面是「%s」（实为「%s」）" % [out_line, main._latest_log()])
+	_check(GS.ended_at.ends_with("・" + main.HANJIANG_END_PLACE) and GS.ended_at.find("兴化") < 0,
+		"岸上的根落款写到岸的旧避风澳、不写兴化（「%s」）" % GS.ended_at)
+	main._confirm_chapter_sheet()
+	_close_dialogs(main)
+
+	# ③ 再陷前一月下旬点卡，七日跨进再陷月：路上翻牌的城破通告照记，册页与终局港页不挂「降元」，状态条仍是出海一句
+	reset_root.call(last_y, last_m, 28)
+	Flt.water = use * 20
+	Flt.food = use * 20
+	_check(card in main.shore_hand, "%d-%02d-28 兴化岸上仍有涵江卡" % [last_y, last_m])
+	var n0 := _notices.size()
+	main._on_facility_pressed({"id": card})
+	var crossed := "%04d-%02d" % [Cal.year, Cal.month] >= zan_fall
+	var saw_fall := false
+	var saw_jiang := false
+	for t in _notices.slice(n0):
+		var s := str(t)
+		if s.find("兴化城破") >= 0:
+			saw_fall = true
+		if s.find("兴化") >= 0 and s.find("降元") >= 0:
+			saw_jiang = true
+	_check(crossed and GS.ended == "岸上的根" and GS.ended_at.ends_with("・" + main.HANJIANG_END_PLACE),
+		"%d-%02d-28 点卡七日跨进再陷月 %s（现 %s，落款「%s」）" % [last_y, last_m, zan_fall, Cal.get_date_string(), GS.ended_at])
+	_check(saw_fall and not saw_jiang, "跨月时路上发的是「兴化城破」覆写通告、没有「兴化已降元」（城破 %s，降元 %s）" % [saw_fall, saw_jiang])
+	var sheet_jiang := _find_label_text(main.get("_chapter_host"), "降元")
+	_check(main._latest_log() == out_line and sheet_jiang == "",
+		"跨月结局册页：状态条最上面是出海一句（「%s」），册页不挂降元（「%s」）" % [main._latest_log(), sheet_jiang])
+	main._confirm_chapter_sheet()
+	_close_dialogs(main)
+	var port_jiang := _find_label_text(main.port_mode, "降元")
+	var port_fall := _find_label_text(main.port_mode, "城破")
+	_check(main._shore_mode == "ended" and main._latest_log() == out_line and port_jiang == "" and port_fall == "",
+		"跨月终局港页：状态条是出海一句、不挂降元或城破通告（页型 %s，「%s」／%s／%s）" % [main._shore_mode, main._latest_log(), port_jiang, port_fall])
+
+	# ④ 副题：再陷前一月 HANJIANG_URGENT_DAY 起催促，此前、再前一月都写去处
+	var urgent_day: int = main.HANJIANG_URGENT_DAY
+	var sub_cases := [[last_y, last_m, urgent_day - 1, false], [last_y, last_m, urgent_day, true], [last_y, last_m, 30, true]]
+	if last_m > 1:
+		sub_cases.append([last_y, last_m - 1, 25, false])
+	for sc in sub_cases:
+		reset_root.call(sc[0], sc[1], sc[2])
+		var sub := ""
+		for c in main._special_cards():
+			if str(c.get("id", "")) == card:
+				sub = str(c.get("subtitle", ""))
+		var urgent := sub.find("撑不过这个月") >= 0
+		_check(sub != "" and urgent == bool(sc[3]),
+			"涵江卡 %d-%02d-%02d 副题%s（「%s」）" % [sc[0], sc[1], sc[2], "催促" if sc[3] else "写去处", sub])
+	# 卡的图标借「宅」（带族人走），不再和船屋门撞同一张大船
+	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
+	_check(main_src.find("\"special_hanjiang_escape\": \"residence\"") >= 0, "SPECIAL_ICON 里涵江卡借 residence 图标")
+
+	# ⑤ 陈瓒船股：围城起点前一月有；起点当月、再陷前一月（陈瓒仍活着）没有；已立股那行照旧显示
+	var s0y := int(siege0.split("-")[0])
+	var s0m := int(siege0.split("-")[1])
+	var pre_y := s0y if s0m > 1 else s0y - 1
+	var pre_m := s0m - 1 if s0m > 1 else 12
+	var stake_cases := [[pre_y, pre_m, true, false], [s0y, s0m, false, false], [last_y, last_m, false, false], [last_y, last_m, false, true]]
+	for zc in stake_cases:
+		GS.from_dict({})
+		GS.identity = "hometown"
+		GS.fame = 40
+		if bool(zc[3]):
+			GS.set_flag("chen_zan_stake")
+		Cal.from_dict({"year": zc[0], "month": zc[1], "day": 5})
+		main.load_scene("xinghua_residence")
+		var has_btn := false
+		var has_line := false
+		for node in main.choices_container.get_children():
+			if node is Button and (node as Button).text.find("陈瓒愿入船股") >= 0:
+				has_btn = true
+			if node is Label and (node as Label).text.find("族叔陈瓒的船股一分") >= 0:
+				has_line = true
+		_check(main._chen_zan_alive() and has_btn == bool(zc[2]) and has_line == bool(zc[3]),
+			"玉湖陈宅 %d-%02d（围城起点 %s）%s「陈瓒愿入船股」%s" % [zc[0], zc[1], siege0, "有" if zc[2] else "没有", "，已立股那行照旧" if zc[3] else ""])
+
+	# ⑥ 围城米价 + ⑦ 战况通告：1276-12 开门降（通用句不改、海口不写市舶司）；再围两月米价撑住；再陷写城破、之后回落
+	var fall0 := str(falls[0])
+	var f0y := int(fall0.split("-")[0])
+	var f0m := int(fall0.split("-")[1])
+	var mark_seen := func() -> void:
+		var ym_now := "%04d-%02d" % [Cal.year, Cal.month]
+		for nw in GM.news_data.get("news", []):
+			if str(nw.get("date", "9999-99")) <= ym_now:
+				GS.mark_news_seen(str(nw.get("id", "")))
+	GS.from_dict({})
+	Cal.from_dict({"year": f0y if f0m > 1 else f0y - 1, "month": f0m - 1 if f0m > 1 else 12, "day": 28})
+	mark_seen.call()
+	var n1 := _notices.size()
+	_advance_to(f0y, f0m)
+	var first_fall := ""
+	var harbor_first := ""
+	for t in _notices.slice(n1):
+		var s := str(t)
+		if s.begins_with("【战况】兴化已降元"):
+			first_fall = s
+		if s.begins_with("【战况】") and s.find("海口") >= 0:
+			harbor_first = s
+	_check(first_fall != "", "首次城破 %s 兴化是开门降，通用「已降元」句不改（「%s」）" % [fall0, first_fall])
+	var harbor_first_ok := harbor_first != "" and harbor_first.find("市舶司") < 0
+	_check(harbor_first_ok,
+		"首次城破 %s 兴化海口的通告不写海口没有的市舶司（「%s」）" % [fall0, harbor_first])
+	# 再围起点：再陷之前最后一个 besieged 键
+	var siege1 := ""
+	for k in wkeys:
+		if str(war_x[k]) == "besieged" and str(k) < zan_fall:
+			siege1 = str(k)
+	var s1y := int(siege1.split("-")[0])
+	var s1m := int(siege1.split("-")[1])
+	GS.from_dict({})
+	Cal.from_dict({"year": s1y if s1m > 1 else s1y - 1, "month": s1m - 1 if s1m > 1 else 12, "day": 28})
+	mark_seen.call()
+	for pid in ["xinghua", "xinghua_harbor", "quanzhou"]:
+		if Eco.rates.has(pid) and Eco.rates[pid].has("grain"):
+			Eco.rates[pid]["grain"] = 1.0
+	var n2 := _notices.size()
+	var p_before: int = Eco.buy_price("xinghua", "grain")
+	var guard := 0
+	while not (Cal.year == last_y and Cal.month == last_m and Cal.day >= 28) and guard < 400:
+		GM.advance_days(1)
+		guard += 1
+	var r_siege: float = Eco.get_rate("xinghua", "grain")
+	var r_peace: float = Eco.get_rate("quanzhou", "grain")
+	var p_siege: int = Eco.buy_price("xinghua", "grain")
+	_check(r_siege >= 1.7 and absf(r_peace - 1.0) < 0.05 and p_siege > p_before,
+		"再围到 %d-%02d-28 兴化米行情仍撑在围城目标（%.3f ≥ 1.7，买价 %d→%d），不在围城的泉州回到平年（%.3f）" % [last_y, last_m, r_siege, p_before, p_siege, r_peace])
+	_advance_to(zfy, zfm)
+	var harbor_siege := ""
+	var fall_xh := ""
+	var fall_xhh := ""
+	var bad_jiang := []
+	for t in _notices.slice(n2):
+		var s := str(t)
+		if s.begins_with("【战况】") and s.find("海口的船还走得动") >= 0:
+			harbor_siege = s
+		if s.begins_with("【战况】兴化城破"):
+			fall_xh = s
+		if s.begins_with("【战况】") and s.find("城破") >= 0 and s.find("海口") >= 0:
+			fall_xhh = s
+		if s.begins_with("【战况】") and s.find("兴化") >= 0 and s.find("降元") >= 0:
+			bad_jiang.append(s)
+	_check(bad_jiang.is_empty(), "再围到再陷之间不发「兴化…降元」战况通告（%s）" % [bad_jiang])
+	_check(harbor_siege != "", "再围 %s 兴化海口通告写城被围、海口的船还走得动（「%s」）" % [siege1, harbor_siege])
+	_check(fall_xh.find("巷战") >= 0 and fall_xhh != "", "再陷 %s 兴化与海口都写城破巷战（「%s」／「%s」）" % [zan_fall, fall_xh, fall_xhh])
+	var after_guard := 0
+	while after_guard < 60:
+		GM.advance_days(1)
+		after_guard += 1
+	var r_after: float = Eco.get_rate("xinghua", "grain")
+	_check(r_after < 1.2, "城破后两个月兴化米行情按平年回落（%.3f < 1.2），不再按围城目标撑着" % r_after)
+
+	# ⑨ 牙行闭门：不占今日三门、落进「未开」一排；闭门页只一句门闸，不写柜上三样、不出委办
+	var facs := [{"id": "city_market"}, {"id": "city_shipyard"}, {"id": "city_guild"}, {"id": "city_tavern"}, {"id": "city_inn"}]
+	var dealt_shut: PackedStringArray = ShoreDraft.deal(facs, 0, false, false)
+	var dealt_open: PackedStringArray = ShoreDraft.deal(facs, 0, false, true)
+	_check(dealt_shut.size() == 3 and not ("city_market" in dealt_shut) and dealt_open[0] == "city_market",
+		"ShoreDraft.deal：闭门的牙行不占席（%s），开门照旧占第一席（%s）" % [dealt_shut, dealt_open])
+	reset_root.call(last_y, last_m, 10)
+	var shut_btn := false
+	var shut_row: Node = main._shore_band().get_node_or_null("ShoreShut")
+	if shut_row != null:
+		for b in shut_row.get_children():
+			if b is Button and (b as Button).text == "牙行":
+				shut_btn = true
+	var regular_n := 0
+	for fid in main.shore_hand:
+		if str(fid).begins_with("city_"):
+			regular_n += 1
+	_check(not Eco.is_market_open("xinghua") and not ("city_market" in main.shore_hand) and shut_btn and regular_n >= 3,
+		"兴化围城：牙行不在今日三门、在「未开」一排，三扇寻常门都给别处（名单 %s）" % [main.shore_hand])
+	main.load_scene("xinghua_market")
+	var body: String = main.body_text.text
+	_check(body.find("门闸") >= 0 and body.find("柜上只摆三样") < 0 and main.find_child("ContractPanel", true, false) == null,
+		"围城牙行页只写门闸一句、不写柜上三样、不出委办（「%s」）" % body.replace("\n", "⏎"))
+	GS.from_dict({})
+	Cal.from_dict({"year": s1y if s1m > 1 else s1y - 1, "month": s1m - 1 if s1m > 1 else 12, "day": 10})
+	GS.last_port = "xinghua"
+	main.load_scene("xinghua_market")
+	_check(Eco.is_market_open("xinghua") and main.body_text.text.find("柜上只摆三样") >= 0 and main.find_child("ContractPanel", true, false) != null,
+		"开秤的兴化牙行照旧写柜上三样、出委办")
+
+	# ⑪ 设施页题头字号：先走序章 cg_ 对白页（24），再进设施页，题头回到 SIZE_HEAD
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main.load_scene("cg_veteran")
+	var cg_px: int = main.scene_title.get_theme_font_size("font_size")
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou_market")
+	var fac_px: int = main.scene_title.get_theme_font_size("font_size")
+	_check(cg_px == 24 and fac_px == UiTheme.SIZE_HEAD,
+		"序章 cg_ 页题头 24 照旧（%d），之后进牙行题头是 SIZE_HEAD（%d，应 %d）" % [cg_px, fac_px, UiTheme.SIZE_HEAD])
+
+	# ⑧ n_1277_07 传闻：泉州当时照常开市（战况表不改），传闻不把张世杰围泉州写成已落地
+	var rumor: Dictionary = GM.get_news_by_id("n_1277_07_xinghua_again")
+	var rumor_ym := str(rumor.get("date", ""))
+	var rty := int(rumor_ym.split("-")[0]) if rumor_ym != "" else 0
+	var rtm := int(rumor_ym.split("-")[1]) if rumor_ym != "" else 0
+	Cal.from_dict({"year": rty, "month": rtm, "day": 5})
+	var qz_open: bool = Eco.is_market_open("quanzhou") and not (Eco.war_status("quanzhou") in ["besieged", "contested"])
+	var rt := str(rumor.get("text", ""))
+	_check(not qz_open or (rt.find("围了泉州") < 0 and rt.find("闭城") < 0 and rt.find("泉州") >= 0),
+		"%s 泉州照常开市（%s）时，传闻只写张世杰要去打泉州、不写已围城闭城（「%s」）" % [rumor_ym, Eco.war_status("quanzhou"), rt])
+	GS.from_dict({})
+	Flt.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_close_dialogs(main)
