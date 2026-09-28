@@ -2,13 +2,17 @@ extends SceneTree
 ## 海寇快船（备忘 #7）+ 船图契约探针（lane pirate-boat-0928）：真走 SeaChart 的两条敌船条目 → WorldMap 开战 →
 ## _spawn_enemy 生成 → 接舷夺船 → Fleet 入列；再验缺图回落、有图就用、旧档里夺来的海鹘照读。
 ## 用法：godot --headless --path . -s res://tools/qa_pirate_boat_probe.gd
+##      godot --path . -s res://tools/qa_pirate_boat_probe.gd -- --shots <目录>   # 有窗口时另截海战 5 张（不接 shot_gate、不入截图册）
 ## 只动存档位 93（不碰正式位 1..SLOTS），跑完删掉；Fleet / pending_battle 跑完还原。输出含 SCRIPT ERROR 即视为失败。
 
 const CombatFx := preload("res://scripts/combat/CombatFx.gd")
+const CombatStage := preload("res://tools/combat_probe_stage.gd")
 const SLOT := 93
 const TAG := "QA_PIRATE_BOAT_PROBE"
+const VIEW := Vector2i(1280, 720)
 
 var _fails: Array = []
+var _shots: Array = []
 
 
 func _init() -> void:
@@ -44,11 +48,96 @@ func _run() -> void:
 	_check_lookup()
 	# ── 四、存档：旧档里夺来的海鹘、新档里的快船都照读 ──
 	_check_save(fleet, sl)
+	# ── 五、有窗口且给了 --shots：截海战（缺图回落，画面应与改前一致；墨边副题写快船）──
+	var shot_dir := _shot_dir()
+	if shot_dir != "" and DisplayServer.get_name() != "headless":
+		await _take_shots(gm, fleet, pirate, patrol, shot_dir)
 
 	fleet.set("ships", saved_ships)
 	gm.set("pending_battle", saved_battle)
-	print("%s %s（%d 项不合）" % [TAG, "PASS" if _fails.is_empty() else "FAIL", _fails.size()])
+	print("%s %s（%d 项不合；截图 %d 张）" % [TAG, "PASS" if _fails.is_empty() else "FAIL", _fails.size(), _shots.size()])
 	quit(0 if _fails.is_empty() else 1)
+
+
+func _shot_dir() -> String:
+	var args := OS.get_cmdline_user_args()
+	for i in args.size():
+		if args[i].begins_with("--shots="):
+			return args[i].substr(8)
+		if args[i] == "--shots" and i + 1 < args.size():
+			return args[i + 1]
+	return ""
+
+
+func _shoot(dir: String, name: String, want: Callable) -> bool:
+	var why: String = await CombatStage.wait_drawn(self, want)
+	if why != "":
+		_expect(false, "截图 %s 没等到该相位：%s" % [name, why])
+		return false
+	var path := dir.path_join(name + ".png")
+	var err := root.get_texture().get_image().save_png(path)
+	_expect(err == OK, "截图 %s（%s）" % [name, path])
+	if err == OK:
+		_shots.append(path)
+	await process_frame
+	return err == OK
+
+
+## 敌船停航停炮、摆进镜头：刷在 300—420 外，镜头 1.5 倍只看得到半圈
+func _pose(wm: Node, offsets: Array) -> void:
+	var own: Node2D = wm.get("ship")
+	CombatStage.freeze_enemy_fire(wm)
+	var foes := _enemies(wm)
+	for i in foes.size():
+		var foe: Node2D = foes[i]
+		foe.set_physics_process(false)
+		foe.position = own.position + (offsets[i % offsets.size()] as Vector2)
+		foe.rotation = (own.position - foe.position).angle() + PI * 0.5
+
+
+func _lb_ready(wm_ref: WeakRef, needle: String) -> bool:
+	var lb: Node = CombatStage.letterbox_under(self, wm_ref.get_ref())
+	if lb == null:
+		return false
+	var sub: Label = lb.get("_sub")
+	return str(lb.get("subtitle")).find(needle) >= 0 and sub != null and sub.modulate.a >= 0.99
+
+
+func _take_shots(gm: Node, fleet: Node, pirate: Dictionary, patrol: Dictionary, dir: String) -> void:
+	DirAccess.make_dir_recursive_absolute(dir)
+	root.size = VIEW
+	var offsets := [Vector2(190, -70), Vector2(-170, -110), Vector2(20, -210)]
+	# 海寇一战
+	_battle_fleet(fleet)
+	var wm := _start(gm, pirate)
+	var ref: WeakRef = weakref(wm)
+	_pose(wm, offsets)
+	await _shoot(dir, "01_海寇入战墨边_快船二艘", func() -> bool: return _lb_ready(ref, "快船二艘"))
+	await _shoot(dir, "02_海寇海战_敌船回落ship_falcon", func() -> bool:
+		return ref.get_ref() != null and CombatStage.letterbox_under(self, ref.get_ref()) == null)
+	var foes := _enemies(wm)
+	if not foes.is_empty():
+		var foe: Node2D = foes[0]
+		foe.set("crew", 0)
+		foe.position = (wm.get("ship") as Node2D).position + Vector2(90, 0)
+		wm.call("_board_enemy", foe)
+		await _shoot(dir, "03_接舷夺船_快船并入本队", func() -> bool:
+			var cap: Array = CombatStage.board_caption(self, ref.get_ref())
+			var note: Label = ref.get_ref().get("_notice") if ref.get_ref() != null else null
+			return cap[0] == "夺船" and cap[1] >= 0.99 and note != null and note.text.find("快船") >= 0)
+	CombatStage.teardown(self, ref.get_ref(), gm)
+	await process_frame
+	await process_frame
+	# 元军哨船一战
+	_battle_fleet(fleet)
+	var wm2 := _start(gm, patrol)
+	var ref2: WeakRef = weakref(wm2)
+	_pose(wm2, offsets)
+	await _shoot(dir, "04_元军哨船入战墨边_海鹘三艘", func() -> bool: return _lb_ready(ref2, "海鹘三艘"))
+	await _shoot(dir, "05_元军哨船海战_缺yuan_patrol回落ship_falcon", func() -> bool:
+		return ref2.get_ref() != null and CombatStage.letterbox_under(self, ref2.get_ref()) == null)
+	CombatStage.teardown(self, ref2.get_ref(), gm)
+	await process_frame
 
 
 func _battle_fleet(fleet: Node) -> void:
@@ -89,17 +178,18 @@ func _pirate_battle(gm: Node, fleet: Node, pirate: Dictionary) -> void:
 	var foes := _enemies(wm)
 	_expect(foes.size() == int(pirate.get("count", 0)), "海寇生成 %d 艘（条目 count=%d）" % [foes.size(), int(pirate.get("count", 0))])
 	if foes.is_empty():
-		wm.free()
+		await _drop(wm)
 		return
 	var foe: Node = foes[0]
 	_expect(str(foe.get("ship_type")) == "pirate_boat" and str(foe.get("ship_name")) == "快船",
 		"敌船 ship_type=pirate_boat、船名「快船」（得 %s / %s）" % [foe.get("ship_type"), foe.get("ship_name")])
 	_expect(str(foe.call("sprite_key")) == "pirate_boat" and _tex_path(foe) == CombatFx.SHIP_SPRITE_ENEMY,
 		"海寇缺 ship_pirate_boat.png → 敌船精灵回落 ship_falcon.png（得 %s）" % _tex_path(foe))
-	# 白刃必胜：敌船水手清零 → 敌战力 0 → 胜率 1
+	# 白刃必胜：敌船水手清零 → 敌战力 0 → 胜率 1。有窗口时 _board_enemy 先停 0.42 s 再结算，等船队变了再验
 	foe.set("crew", 0)
 	var n0: int = (fleet.get("ships") as Array).size()
-	await wm.call("_board_enemy", foe)
+	wm.call("_board_enemy", foe)
+	await CombatStage.wait_until(self, func() -> bool: return (fleet.get("ships") as Array).size() > n0, 5000)
 	var ships: Array = fleet.get("ships")
 	var got: Dictionary = ships[ships.size() - 1] if ships.size() > n0 else {}
 	_expect(ships.size() == n0 + 1, "接舷得胜，船队多一艘（%d → %d）" % [n0, ships.size()])
@@ -111,7 +201,14 @@ func _pirate_battle(gm: Node, fleet: Node, pirate: Dictionary) -> void:
 	var notice: Label = wm.get("_notice")
 	var note_txt := notice.text if notice != null else ""
 	_expect(note_txt.find("敌船「快船」并入本队") >= 0 and note_txt.find("海鹘") < 0, "夺船浮字写快船（得「%s」）" % note_txt)
-	wm.free()
+	await _drop(wm)
+
+
+## 拆场：墨边 _abort、布景 queue_free（有窗口时接舷题签 / 墨边还在演，不直接 free），空两帧让释放落地
+func _drop(wm: Node) -> void:
+	CombatStage.teardown(self, wm)
+	await process_frame
+	await process_frame
 
 
 func _patrol_battle(gm: Node, fleet: Node, patrol: Dictionary) -> void:
@@ -128,7 +225,7 @@ func _patrol_battle(gm: Node, fleet: Node, patrol: Dictionary) -> void:
 			"WorldMap 把 entry.sprite 传给敌船（sprite_id=yuan_patrol）")
 		_expect(_tex_path(foe) == CombatFx.SHIP_SPRITE_ENEMY,
 			"缺 ship_yuan_patrol.png → 回落 ship_falcon.png（得 %s）" % _tex_path(foe))
-	wm.free()
+	await _drop(wm)
 
 
 func _check_lookup() -> void:
