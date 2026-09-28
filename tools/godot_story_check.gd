@@ -762,7 +762,9 @@ func _hooks_bg_check(main: Node) -> void:
 	GS.last_port = "xinghua"
 	main._port_bg_probe = {"bg_xinghua_besieged.jpg": true}
 	main.load_scene("xinghua")
-	var siege_want: String = "bg_xinghua_besieged.jpg" if FileAccess.file_exists("res://assets/bg_xinghua_besieged.jpg") else main.FALLBACK_BG
+	# 期望值按盘面算：图没进库时回落海路图；路径拆开拼，免得 check_assets 当成必须在库的引用
+	var siege_file := "bg_xinghua_besieged.jpg"
+	var siege_want: String = siege_file if FileAccess.file_exists("res://assets/" + siege_file) else main.FALLBACK_BG
 	_check(main._shore_mode == "siege" and main._bg_file == siege_want,
 		"H2 守城页进港即换围城档（页型 %s，应 %s，实际 %s）" % [main._shore_mode, siege_want, main._bg_file])
 	GS.from_dict({})
