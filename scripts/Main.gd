@@ -4314,13 +4314,18 @@ func _siege_lin_hua() -> void:
 	choices_container.add_child(go)
 
 	var stay := Button.new()
-	stay.text = "不去。关城门，谁也不出"
+	# 「谁也不出」先不写：关了城门，囊山第三阵照样能出城设伏（禁不禁第三阵待策划定）
+	stay.text = "不去。关城门"
 	stay.pressed.connect(func():
+		# 落闸当下城里一乱，官仓丢粮：上屏照实际扣掉的数写，城防账少了多少、日志就交代多少
+		# （林华请命只在囊山有粮打下一阵时出，粮总够扣；mini 只防别处调进来）
+		var lost: int = mini(30, GameState.siege_get("grain"))
 		GameState.siege_set("lin_hua_sent", true)
-		GameState.siege_add("grain", -30)
+		GameState.siege_add("grain", -lost)
 		GameState.set_flag("cao_opened")
-		# 只作铺垫，城还在：门是后来城破时才开的（_siege_fall 按 cao_opened 写林华缒城出降、曹澄孙开东门）。不写天数，日历没动
-		log_msg("城门关了。当夜林华从城上缒了下去，再没有回来。东门下，有人看见通判曹澄孙转了几回。")
+		# 只作铺垫，城还在、林华也还在：缒城出降、曹澄孙开东门都是城破那夜的事（_siege_fall 按 cao_opened 写，过场第 2 镜同旗换句）。
+		# 不写天数、不写「当夜」，日历没动，玩家这一天还能接着打第三阵
+		log_msg("城门落了闸。城里人心惶惶，官仓前挤了一场，丢了%s石米。林华没再请命，在垛口那捆缒绳边站了一会儿。东门下，有人看见通判曹澄孙转了几回。" % _cn_num(lost))
 		load_scene(current_scene_id)
 	)
 	choices_container.add_child(stay)
