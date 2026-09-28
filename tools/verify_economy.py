@@ -399,6 +399,17 @@ check(len(ch1_roles) >= 5,
 missing = set(roles) - {c["role"] for c in cands}
 check(not missing, f"每种职事都有候选人（缺：{[roles[m]['name'] for m in missing] or '无'}）")
 
+# 史实辞船（Crew.left_by_history / hireable_by_history，comp 线评审第 8 条）：leave_from 与 news.json 的 date 同口径 "YYYY-MM"，
+# Crew.gd 按月序判日子，写成 "1276-9" 或 "景炎元年十月" 就对不上口径；有 leave_from 必有 leave_note（上屏【辞船】那一句），反之亦然
+_ym = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+_leavers = [c for c in cands if "leave_from" in c]
+_bad_ym = [c["id"] for c in _leavers if not _ym.match(str(c["leave_from"]))]
+_unpaired = [c["id"] for c in cands
+             if ("leave_from" in c) != bool(str(c.get("leave_note", "")).strip())]
+check(len(_leavers) >= 1 and not _bad_ym,
+      f"带史实辞船的候选 {len(_leavers)} 人，leave_from 都写成 YYYY-MM（不合的：{_bad_ym or '无'}）")
+check(not _unpaired, f"leave_from 与 leave_note 成对出现（落单的：{_unpaired or '无'}）")
+
 print()
 print("=" * 68)
 print("一之四、海图投影（scripts/chart/ChartProjection.gd 的等距圆锥投影，参数取 data/chart_projection.json）")

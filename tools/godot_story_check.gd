@@ -662,6 +662,7 @@ func _route_check() -> void:
 				zan_btn = true
 		_check(zan_btn == bool(zc[2]),
 			"玉湖陈宅 %d-%02d%s「陈瓒愿入船股」（再陷 %s）" % [zc[0], zc[1], "有" if zc[2] else "没有", zan_falls[1] if zan_falls.size() >= 2 else "?"])
+	_lin_hua_check(main)
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
@@ -908,3 +909,110 @@ func _find_label_text(node: Node, needle: String) -> String:
 		if t != "":
 			return t
 	return ""
+
+
+## ── 林华伏笔（拍板清单 DESIGN1-8 ①，comp 线 09-28）──
+## 修前 lin_hua 不在 crew.json：crew_history 只由 Crew.hire 写，hire 先查 candidate_def，查无此人即返回，
+## 所以 Main._siege_lin_hua 的 known 恒假，「你的缆绳系得好」一钮和城破时 lin_hua_reminded 那句都是死分支。
+## 修后：第二章起泉州酒馆可雇（舵工）；雇过即记 crew_history；景炎元年十月（1276-10，leave_from）史实辞船，
+## 酒馆不再列名，crew_history 照留。守城第三阵前，雇过的多一钮，没雇过的照旧只有「让他去」「不去」。
+## 评审后补（comp 线评审第 4、10 条）：离辞船不足两个月（1276-09 起）酒馆就不再列他；十月初一先下船、后发饷，不扣他的十月俸；
+## 跳年跨过 1276-10，册页的跳年摘要里有他辞船那一句。
+func _lin_hua_check(main: Node) -> void:
+	var Crw: Node = root.get_node("Crew")
+	GS.from_dict({})
+	Crw.from_dict({})
+	Cal.from_dict({"year": 1258, "month": 3, "day": 1})
+	var lin: Dictionary = Crw.candidate_def("lin_hua")
+	_check(not lin.is_empty() and str(lin.get("port", "")) == "quanzhou", "crew.json 有林华候选，在泉州候雇")
+	GS.chapter = 1
+	_check(not _has_id(Crw.candidates_at("quanzhou"), "lin_hua"), "第一章泉州酒馆不列林华")
+	GS.chapter = 2
+	_check(_has_id(Crw.candidates_at("quanzhou"), "lin_hua"), "第二章起泉州酒馆可雇林华")
+	# 候雇截止：1276-08 仍列名，1276-09 起不列（离 leave_from 只剩一个月，雇进来当月就走、白付入伙钱）
+	Cal.from_dict({"year": 1276, "month": 8, "day": 28})
+	_check(_has_id(Crw.candidates_at("quanzhou"), "lin_hua"), "1276-08 泉州酒馆仍列林华（候雇窗口的最后一个月）")
+	Cal.from_dict({"year": 1276, "month": 9, "day": 2})
+	_check(not _has_id(Crw.candidates_at("quanzhou"), "lin_hua"), "1276-09 起泉州酒馆不再列林华（离辞船不足两个月即截止）")
+	Cal.from_dict({"year": 1258, "month": 3, "day": 1})
+	GS.money = 100000
+	var res: Dictionary = Crw.hire("lin_hua")
+	_check(res.get("ok", false) and "lin_hua" in GS.crew_history, "雇林华即记入 crew_history（守城认人的判据）")
+	# 史实辞船：九月还在船，十月初一通告一条、下船；酒馆不再列名
+	Cal.from_dict({"year": 1276, "month": 9, "day": 25})
+	_check(_has_id(Crw.roster(), "lin_hua"), "1276-09 林华仍在船")
+	var n0 := _notices.size()
+	var money0 := int(GS.money)
+	_advance_to(1276, 10)
+	var leave_n := 0
+	for t in _notices.slice(n0):
+		if str(t).begins_with("【辞船】") and str(t).find("林华") >= 0:
+			leave_n += 1
+	_check(not _has_id(Crw.roster(), "lin_hua") and leave_n == 1, "1276-10 林华史实辞船，月初通告恰一条（%d 条）" % leave_n)
+	# 下船先于发饷：十月初一只剩他一个职事，这个月的俸不该扣（扣了就是 money0 − 现银 ≥ 他的月俸）
+	_check(money0 - int(GS.money) < int(lin.get("wage", 0)), "十月初一先下船后发饷，不扣林华的十月俸（钱 %d → %d，月俸 %d）" % [money0, int(GS.money), int(lin.get("wage", 0))])
+	_check("lin_hua" in GS.crew_history, "辞船后 crew_history 仍留着林华")
+	_check(not _has_id(Crw.candidates_at("quanzhou"), "lin_hua"), "辞船后泉州酒馆不再列林华")
+	# 守城第三阵前的林华事件：雇过才多「缆绳」一钮；按下写 lin_hua_reminded、城防士气 +5
+	GS.set_flag("renamed_wenlong")
+	GS.identity = "scholar"
+	Cal.from_dict({"year": 1276, "month": 11, "day": 3})
+	GS.siege_begin()
+	GS.last_port = "xinghua"
+	main.load_scene("xinghua")
+	main._siege_lin_hua()
+	var rope: Button = _find_button(main.choices_container, "你的缆绳系得好", false)
+	_check(rope != null, "雇过林华：守城第三阵前多「你的缆绳系得好」一钮")
+	if rope != null:
+		var m0: int = GS.siege_get("morale")
+		rope.pressed.emit()
+		_check(GS.has_flag("lin_hua_reminded") and GS.siege_get("morale") == m0 + 5 and GS.siege.get("lin_hua_sent", false),
+			"按下缆绳钮：写 lin_hua_reminded、城防士气 +5（%d → %d）" % [m0, GS.siege_get("morale")])
+		# 城破册页读 lin_hua_reminded：多「那个结松了」一句（_siege_fall 的 elif 分支，修前同样走不到）
+		main._siege_fall("三阵毕")
+		_check(GS.ended_text.find("那个结松了") >= 0, "提醒过林华：城破册页多「那个结松了」一句")
+		main._confirm_chapter_sheet()
+	# 反例：没雇过林华，只有「让他去」「不去」；城破册页没有那一句
+	GS.from_dict({})
+	GS.set_flag("renamed_wenlong")
+	GS.identity = "scholar"
+	GS.siege_begin()
+	main._siege_lin_hua()
+	_check(_find_button(main.choices_container, "你的缆绳系得好", false) == null and _find_button(main.choices_container, "让他去", true) != null,
+		"没雇过林华：守城第三阵前没有缆绳钮，「让他去」照旧")
+	main._siege_fall("三阵毕")
+	_check(GS.ended_text.find("林华出去两天") >= 0 and GS.ended_text.find("那个结松了") < 0, "没提醒过林华：城破册页只写「林华出去两天」")
+	main._confirm_chapter_sheet()
+	# 跳年跨过 1276-10（1273-06 跳四年）：月初【辞船】只进日志，册页的跳年摘要也要有他辞船那一句（草案 §1.4、§4.7 第 3 条）
+	GS.from_dict({})
+	Crw.from_dict({})
+	GS.chapter = 2
+	GS.money = 100000
+	Cal.from_dict({"year": 1273, "month": 6, "day": 1})
+	var hired_ok: bool = Crw.hire("lin_hua").get("ok", false)
+	var skip_lines: Array = GM.skip_years(4)
+	var note: String = Crw.leave_note(lin)
+	_check(hired_ok and not _has_id(Crw.roster(), "lin_hua") and note != "" and note in skip_lines,
+		"1273-06 跳四年跨过 1276-10：林华下船，跳年摘要有「%s」一行（摘要 %s）" % [note, skip_lines])
+	_check(not skip_lines.is_empty() and str(skip_lines[-1]).begins_with("——自"), "跳年摘要末行仍是「——自…至于…」")
+	GS.from_dict({})
+	Crw.from_dict({})
+
+
+func _has_id(list: Array, cid: String) -> bool:
+	for c in list:
+		if typeof(c) == TYPE_DICTIONARY and str(c.get("id", "")) == cid:
+			return true
+	return false
+
+
+## 在 box 的直接子节点里找钮：exact 时全文相等，否则包含 needle 即可；找不到返回 null
+func _find_button(box: Node, needle: String, exact: bool) -> Button:
+	if box == null:
+		return null
+	for b in box.get_children():
+		if b is Button:
+			var t := (b as Button).text
+			if (exact and t == needle) or (not exact and t.find(needle) >= 0):
+				return b as Button
+	return null

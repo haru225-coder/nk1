@@ -161,10 +161,11 @@ func advance_days(n: int) -> void:
 			var interest := GameState.accrue_interest()
 			if interest > 0:
 				monthly_notice.emit("【月息】蕃商结息 %d 钱，现欠 %d。" % [interest, GameState.debt])
+			var gone := Crew.history_leave()  # 史实辞船先于发饷：到月下船的人不扣当月俸；通告仍排在新闻之后
 			var notice := Crew.pay_wages()
 			if notice != "":
 				monthly_notice.emit(notice)
-			_settle_history()
+			_settle_history(gone)
 			for w in Economy.on_month_changed():
 				monthly_notice.emit(w)
 		Economy.on_day_passed()
@@ -209,8 +210,11 @@ func skip_years(n: int) -> Array:
 	var from_date := Calendar.get_date_string()
 
 	# 先把这几年的日子真的走完——新闻、月结、行情回归都照常发生
+	_skipping = true
+	_skip_gone.clear()
 	for i in range(n):
 		advance_days(Calendar.DAYS_PER_MONTH * Calendar.MONTHS_PER_YEAR)
+	_skipping = false
 
 	# 船况折旧
 	var decayed := 0
@@ -227,6 +231,11 @@ func skip_years(n: int) -> Array:
 			lines.append("船板泡了%s年海水，船该进坞了。" % cn_num(n, true))
 		else:
 			lines.append("船板泡了%s年海水，%s条船都该进坞了。" % [cn_num(n, true), cn_num(decayed, true)])
+
+	# 史实辞船：跳年途中到了 leave_from 的人，月初的【辞船】只进了日志，摘要里补他那一句（草案 §1.4、§4.7 第 3 条）
+	for c in _skip_gone:
+		lines.append(Crew.leave_note(c))
+	_skip_gone.clear()
 
 	# 水手流失
 	var left := []
@@ -250,9 +259,17 @@ func skip_years(n: int) -> Array:
 	return lines
 
 
+## 跳年途中史实辞船的人（crew.json 候选条目）：_settle_history 在 _skipping 时记下，skip_years 摘要补一行后清空
+var _skipping := false
+var _skip_gone: Array = []
+
+
 ## 月初结算历史压力：到期新闻投放；1268 年四月殿试一次性锁定身份。
 ## 历史是天气不是过场——全部走 monthly_notice，不开新场景。
-func _settle_history() -> void:
+## gone：本月初已先于发饷下船的史实辞船者（Crew.history_leave），通告排在新闻之后发。
+func _settle_history(gone: Array = []) -> void:
+	if _skipping:
+		_skip_gone.append_array(gone)
 	if GameState.is_ended():
 		return
 	if Calendar.year > GameState.IDENTITY_YEAR or (Calendar.year == GameState.IDENTITY_YEAR and Calendar.month >= GameState.IDENTITY_MONTH):
@@ -269,6 +286,10 @@ func _settle_history() -> void:
 		var speaker: String = str(n.get("speaker", ""))
 		var prefix := "【酒馆传闻】" if speaker == "" else "【%s】" % speaker
 		monthly_notice.emit(prefix + GameState.news_text(n))
+	# 史实辞船（crew.json 的 leave_from）：林华景炎元年十月去兴化投军。人在 advance_days 里已先于发饷下船，
+	# 这里只发通告，排在新闻之后，同一个月里先闻募兵、后见人走
+	for c in gone:
+		monthly_notice.emit("【辞船】" + Crew.leave_note(c))
 
 
 ## 按文件头而非扩展名加载图片。

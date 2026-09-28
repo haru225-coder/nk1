@@ -111,6 +111,18 @@
       "bio": "温州人，据说曾在逆季风里把一条广船从耽罗带回明州。船主没敢再用他第二次。"
     },
     {
+      "id": "lin_hua",
+      "name": "林华",
+      "role": "duogong",
+      "level": 2,
+      "wage": 120,
+      "port": "quanzhou",
+      "unlock": "ch2",
+      "leave_from": "1276-10",
+      "leave_note": "林华把缆绳盘好，辞了船，说要去兴化投军。",
+      "bio": "泉州码头上的水手，在林阿舶的船上系过几年缆。话少，手上活好，缆绳系得从不松。"
+    },
+    {
       "id": "wang_zhiku",
       "name": "王直库",
       "role": "zongguan",
