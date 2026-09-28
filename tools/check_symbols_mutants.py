@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""check_symbols 反向断言空转的变异对照（lane auditfix3）：_node_block 记账（lane cs12）与 NAMED_FUNCS 按 (文件, 名字)
+"""check_symbols 反向断言空转的变异对照（lane auditfix3 / auditfix5）：_node_block 记账（lane cs12）与 NAMED_FUNCS 按 (文件, 名字)
 认（lane cs11）这两道护栏，各有一条真的反向断言、一个真能落上的变异，证明「没有护栏时缺陷在、门禁绿」。
 
   python3 tools/check_symbols_mutants.py          # 跑全部变异；有问题退 1，环境问题（无 git / 建不了 worktree）退 2
@@ -18,10 +18,17 @@
 （这就是空转）→ 改名跟全 + 缺陷由反向断言本身判红 → 改名跟全、无缺陷 rc=0（变异本身不带出别的红）。
 另两格（F6 / F7）守 NAMED_FUNCS 自扫：单行 `if …"X(" in 体:` 下一行打 ✗ 的分支形反向断言原先不在自扫形状里，
 新写一条不登记照样绿（日后 X 改名即空转、无人报）；现漏登判红，退回旧扫法 rc=0。
+lane auditfix5 加三组：
+  · F2c / F3c：F2 之后按红字把 advance_days 改登到还有定义的 Calendar.gd 下（auditfix3 @1494633 实测 rc=0 的那一手）：
+    现行由 NF 标注判红（断言行标明 GameManager.advance_days，登记却在 Calendar.gd），不查标注 rc=0。
+  · S0–S9：分支形七形（条件折多行 / ✗ 在 else 支 / ✗ 不在紧下一行 / match / match 守卫 / any 元组折行 / _calls 与
+    re.search 当条件）逐形漏登判红；七形一起退回 auditfix3 口径（单行条件 + 下一行 ✗）rc=0；S0 证明旧口径补丁如实还原。
+  · T1–T6：NF 标注（同名多处定义的名字断言行须标 `# NF: 接收者.名字`）——没标 / 日后出现同名各有现行红、不查 rc=0 一对，
+    另有接收者写错、标错行两格。
 做法：把当前工作树的已跟踪文件（含未提交改动，`git stash create`，不动 stash 列表）检出到临时 worktree，逐格施变异、
 跑整道 `python3 tools/check_symbols.py`，比 rc 与「  ✗」行：期望的每条都得出现，期望外的一条也不许有。
 判红：任一格 rc 或 ✗ 行与期望不符；变异 / 旧口径补丁没落上（替换处数不对，说明源码改了、这支变异该跟着改）。
-只读主树：临时 worktree 跑完即删（`git worktree remove --force`）。一格 2–4 s，全套 13 格约半分钟。
+只读主树：临时 worktree 跑完即删（`git worktree remove --force`）。一格 2–4 s，全套 31 格约一分钟。
 """
 import os, re, shutil, subprocess, sys, tempfile
 
@@ -108,7 +115,9 @@ _ADV = r"(?<!Calendar\.)\badvance_days\b"
 
 
 def f_yard_step(fn):
-    return lambda wt: sub(wt, "scripts/Main.gd", r"^(func _setup_shipyard\(port_id: String\) -> void:\n)",
+    # lane main10 起 _setup_shipyard 真身在 ShipyardPage.setup_shipyard（Main 只留一行转发，往转发里加一行转发判据先红）
+    return lambda wt: sub(wt, "scripts/ui/ShipyardPage.gd",
+                          r"^(static func setup_shipyard\(main: Control, port_id: String\) -> void:\n)",
                           r"\1\tGameManager.%s(1)\n" % fn)
 
 
@@ -136,13 +145,83 @@ def f_branch_assert(wt):
         r'\1if "_monsoon_short(" in yard_fn:\n    print("  ✗ 船屋报季风")\n    problems.append("船屋报季风")\n')
 
 
+_AST_SCAN = r"^for _ln_no, _ns in sorted\(_nf_branch_sites\(.*# 分支形反向断言（lane auditfix5）\n    _nf_take\(_ln_no, _ns\)\n"
+
+
 def f_pre_branch_scan(wt):
     # auditfix3 前：自扫不收分支形反向断言
-    sub(wt, SYM, r"^    if re\.match\(r'\\s\*\(\?:el\)\?if\\b.*\n.*# 分支形反向断言（lane auditfix3）\n", "")
+    sub(wt, SYM, _AST_SCAN, "")
+
+
+def f_af3_branch_scan(wt):
+    # auditfix5 前（auditfix3 口径）：分支形只认「单行 `if / elif …"X" in …:`、下一行就打 ✗」
+    sub(wt, SYM, _AST_SCAN, "")
+    sub(wt, SYM, r"^(    for _m in _ms:\n        _nf_take\(_ln_no, _nf_names\(_m\.group\(1\)\)\)\n)",
+        lambda m: ("    if re.match(r'\\s*(?:el)?if\\b.*:\\s*$', _ln) and _ln_no < len(_nf_self) and \"✗\" in _nf_self[_ln_no]:\n"
+                   "        _ms += list(re.finditer(_NF_LIT + r'\\s+in\\b', _ln))\n") + m.group(1))
+
+
+# 分支形各形状（lane auditfix5）：都点到 _seal_mark（只 Main 一处定义、未登记；船屋两支里本来没有），插在「坞位一艘」之后
+_BRANCH = {
+    "multiline": ('if (\n    "_seal_mark(" in yard_fn\n    or "_seal_mark(" in switch_fn\n):\n'
+                  '    print("  ✗ 船屋盖了朱印")\n    problems.append("船屋盖印")\n'),
+    "else": ('if not ("_seal_mark(" in yard_fn):\n    print("  ✓ 船屋不盖印")\nelse:\n'
+             '    print("  ✗ 船屋盖了朱印")\n    problems.append("船屋盖印")\n'),
+    "later": ('if "_seal_mark(" in yard_fn:\n    _why = "船屋盖了朱印"\n    print(f"  ✗ {_why}")\n'
+              '    problems.append(_why)\n'),
+    "match": ('match "_seal_mark(" in yard_fn:\n    case True:\n        print("  ✗ 船屋盖了朱印")\n'
+              '        problems.append("船屋盖印")\n'),
+    "guard": ('match yard_fn:\n    case _ if "_seal_mark(" in yard_fn:\n        print("  ✗ 船屋盖了朱印")\n'
+              '        problems.append("船屋盖印")\n'),
+    "anyfold": ('if any(tok in yard_fn for tok in (\n    "_seal_mark(",\n)):\n'
+                '    print("  ✗ 船屋盖了朱印")\n    problems.append("船屋盖印")\n'),
+    "probe": ('if _calls(yard_fn, "_seal_mark") or re.search(r"\\b_seal_mark\\(", switch_fn):\n'
+              '    print("  ✗ 船屋盖了朱印")\n    problems.append("船屋盖印")\n'),
+}
+
+
+def f_branch(*kinds):
+    return lambda wt: sub(wt, SYM, r'^(    problems\.append\("坞位一艘未接上"\)\n)',
+                          lambda m: m.group(1) + "".join(_BRANCH[k] for k in kinds))
+
+
+# ---- NF 标注（lane auditfix5：同名多处定义须在断言行标明指哪支） --------------------------------------------------
+def f_move_reg_calendar(wt):
+    # F2 之后「按红字把 advance_days 改登到还有定义的 Calendar.gd 下」——auditfix3 @1494633 实测 rc=0 的那一手
+    sub(wt, SYM, r'^        "advance_days", "discoveries_near", "pass_days",$',
+        '        "discoveries_near", "pass_days",\n    ),\n    "scripts/core/Calendar.gd": (\n        "advance_days",')
+
+
+def f_pre_af5_tag(wt):
+    # auditfix5 前：不查 NF 标注
+    sub(wt, SYM, r"^_nf_tag_bad = _nf_tag_check\(\)", "_nf_tag_bad = []")
+
+
+def f_untag_yard(wt):
+    # 新写 / 挪动的断言没标：船屋那行的标注掉了
+    sub(wt, SYM, r'^(    and "advance_days" not in yard_fn)  # NF: GameManager\.advance_days$', r"\1")
+
+
+def f_new_homonym(wt):
+    # 日后别的文件也定义了同名函数：Economy 加一支 record_discovery，:3422 那条 simulate_run 反向断言没标
+    sub(wt, "scripts/core/Economy.gd", r"\Z", "\n\nfunc record_discovery() -> void:\n\tpass\n")
+
+
+def f_bad_recv(wt):
+    sub(wt, SYM, r'^(    and "advance_days" not in switch_fn  # NF: )GameManager(\.advance_days)$', r"\1GameManagr\2")
+
+
+def f_stale_tag(wt):
+    sub(wt, SYM, r'^(yard_fn = _func_body\(main_src, "_setup_shipyard"\))$', r"\1  # NF: GameManager.advance_days")
 
 
 NODE_MISS = '取场景节点块 [node name="CenterArea"] 取不到'
 NF_MOVED = "断言点名的函数 advance_days 在 scripts/GameManager.gd 已无定义，别处还有同名（scripts/core/Calendar.gd）"
+NF_WRONG = "的断言标明指 scripts/GameManager.gd 的 advance_days，NAMED_FUNCS 却登在 scripts/core/Calendar.gd"
+NF_UNTAGGED = "的断言点到同名多处定义的函数 advance_days（scripts/GameManager.gd、scripts/core/Calendar.gd）"
+NF_HOMONYM = "的断言点到同名多处定义的函数 record_discovery（scripts/GameState.gd、scripts/core/Economy.gd）"
+NF_BADRECV = "的 NF 标注 GameManagr.advance_days 认不出文件"
+SEAL = "的断言点到函数 _seal_mark，没登记进 NAMED_FUNCS"
 # (组, 编号, 说明, 变异, 期望 rc, 期望 ✗ 行须含的字样)
 CASES = [
     ("—", "B0", "基线（不变异）", [], 0, []),
@@ -166,11 +245,38 @@ CASES = [
     ("NAMED_FUNCS", "F6", "新写分支形反向断言 `if \"_monsoon_short(\" in yard_fn:` 没登记，现行", [f_branch_assert], 1,
      ["的断言点到函数 _monsoon_short，没登记进 NAMED_FUNCS"]),
     ("NAMED_FUNCS", "F7", "同 F6，自扫退回 auditfix3 前（不收分支形）", [f_branch_assert, f_pre_branch_scan], 0, []),
+    ("NAMED_FUNCS", "F2c", "同 F2，再按红字把 advance_days 改登到 Calendar.gd 下，现行", [f_rename_fix_reds,
+     f_yard_step("pass_days"), f_move_reg_calendar], 1, [NF_WRONG]),
+    ("NAMED_FUNCS", "F3c", "同 F2c，不查 NF 标注（auditfix5 前；auditfix3 @1494633 实测的缺口）", [f_rename_fix_reds,
+     f_yard_step("pass_days"), f_move_reg_calendar, f_pre_af5_tag], 0, []),
+    ("分支形", "S0", "F6 那条单行分支形，分支形退回 auditfix3 口径（旧口径本来收得到：补丁如实还原）",
+     [f_branch_assert, f_af3_branch_scan], 1, ["的断言点到函数 _monsoon_short，没登记进 NAMED_FUNCS"]),
+    ("分支形", "S1", "条件折成多行 `if (\\n \"X(\" in 体 … \\n):`", [f_branch("multiline")], 1, [SEAL]),
+    ("分支形", "S2", "✗ 在 else 支 `if not (\"X(\" in 体): ✓ else: ✗`", [f_branch("else")], 1, [SEAL]),
+    ("分支形", "S3", "✗ 不在紧下一行（先起变量、f 串打 ✗）", [f_branch("later")], 1, [SEAL]),
+    ("分支形", "S4", "match 分支 `match \"X(\" in 体: case True: ✗`", [f_branch("match")], 1, [SEAL]),
+    ("分支形", "S5", "match 守卫 `case _ if \"X(\" in 体: ✗`", [f_branch("guard")], 1, [SEAL]),
+    ("分支形", "S6", "`any(t in 体 for t in (\\n \"X(\",\\n))` 折行", [f_branch("anyfold")], 1, [SEAL]),
+    ("分支形", "S7", "`_calls(体, \"X\")` / `re.search(r\"\\bX\\(\", 体)` 当条件", [f_branch("probe")], 1, [SEAL]),
+    ("分支形", "S8", "S1–S7 七形一起、现行", [f_branch(*_BRANCH)], 1, [SEAL]),
+    ("分支形", "S9", "同 S8，分支形退回 auditfix3 口径（单行条件 + 下一行 ✗）", [f_branch(*_BRANCH), f_af3_branch_scan], 0,
+     []),
+    ("NF 标注", "T1", "同名多处定义的 advance_days，船屋那行标注掉了，现行", [f_untag_yard], 1, [NF_UNTAGGED]),
+    ("NF 标注", "T2", "同 T1，不查 NF 标注（auditfix5 前）", [f_untag_yard, f_pre_af5_tag], 0, []),
+    ("NF 标注", "T3", "日后别处也定义 record_discovery（:3422 那行没标），现行", [f_new_homonym], 1, [NF_HOMONYM]),
+    ("NF 标注", "T4", "同 T3，不查 NF 标注（auditfix5 前）", [f_new_homonym, f_pre_af5_tag], 0, []),
+    ("NF 标注", "T5", "标注的接收者写错（GameManagr）", [f_bad_recv], 1, [NF_BADRECV, NF_UNTAGGED]),
+    ("NF 标注", "T6", "标注写在没点到这个名字的行上", [f_stale_tag], 1, ["的 NF 标注 GameManager.advance_days：这一行自扫没点到"]),
 ]
 # 空转对照：旧口径那格 rc=0、现行那格 rc=1，两格同一个变异
 _IDLE = "反向断言空转，缺陷在、门禁绿"
+_UNREG = "新反向断言漏登照样绿，日后改名即空转"
 PAIRS = [("_node_block（lane cs12）", "N3", "N2", _IDLE), ("NAMED_FUNCS (文件, 名字)（lane cs11）", "F3", "F2", _IDLE),
-         ("NAMED_FUNCS 自扫分支形（lane auditfix3）", "F7", "F6", "新反向断言漏登照样绿，日后改名即空转")]
+         ("NAMED_FUNCS 自扫分支形（lane auditfix3）", "F7", "F6", _UNREG),
+         ("NAMED_FUNCS 错登同名另一支（lane auditfix5）", "F3c", "F2c", "登到还有定义的 Calendar.gd 下即绿，" + _IDLE),
+         ("NAMED_FUNCS 自扫分支形七形（lane auditfix5）", "S9", "S8", "多行 / else / match / 折行 any / 探查函数 七形全漏，" + _UNREG),
+         ("NF 标注：同名多处须标明（lane auditfix5）", "T2", "T1", "没标照样绿，登在哪个文件无从判"),
+         ("NF 标注：日后出现同名（lane auditfix5）", "T4", "T3", "新同名一出现，原先不含糊的字面量就含糊了，照样绿")]
 
 
 def _run_case(wt, snap, muts):

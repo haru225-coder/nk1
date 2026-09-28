@@ -150,13 +150,16 @@ REGISTRY = [
      "red": "`✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；"
             "`结果：有问题（DRIFT 先跑 --fix 自动跟号…）`；修法 `python3 tools/check_decision_refs.py --fix`（所引文件先提交）"},
     # lane auditfix3：审计 audit1 判 cs12 / cs11「半实」（护栏现状下无能单独触发的实例），这里固化实例；跑一次约半分钟、要 git worktree
-    {"id": "check_symbols_mutants", "tier": "lane", "when": "动 check_symbols 十三节的护栏（_node_block 记账 / NAMED_FUNCS 按 (文件, 名字) 认 / 自扫形状）或它们守的反向断言",
+    {"id": "check_symbols_mutants", "tier": "lane", "when": "动 check_symbols 十三节的护栏（_node_block 记账 / NAMED_FUNCS 按 (文件, 名字) 认 / 自扫形状 / NF 标注）或它们守的反向断言",
      "kind": "py", "file": "tools/check_symbols_mutants.py",
      "judge": "（lane auditfix3）check_symbols 反向断言空转的变异对照：当前工作树检出到临时 worktree，逐格施变异、跑整道 check_symbols 比 rc 与 `  ✗` 行。"
               "_node_block 一支（「底图 / 外层横排 / 中区开场不收起」+ 全仓改名 CenterArea、只漏这条反向断言、再收起中区）与 NAMED_FUNCS 一支"
               "（船屋 `\"advance_days\" not in yard_fn` + 改名 GameManager.advance_days、只修弹红的正向断言、再让船屋推一天）各五格；"
-              "护栏退回旧口径（cs12 前不记账 / cs11 前 scripts/ 下有定义就算）那格须 rc=0、现行须 rc=1 且只有护栏那一行红；另两格守自扫收分支形反向断言",
-     "green": "`✓ B0 …` 起 13 格逐格 `✓ <编号> … rc=N` + 「二、空转对照」3 条 `✓ … 旧口径 rc=0 → … 现行 rc=1` + `结果：全部通过`",
+              "护栏退回旧口径（cs12 前不记账 / cs11 前 scripts/ 下有定义就算）那格须 rc=0、现行须 rc=1 且只有护栏那一行红；另两格守自扫收分支形反向断言。"
+              "lane auditfix5 加：F2c / F3c（F2 之后按红字把 advance_days 改登到 Calendar.gd 下：现行 NF 标注不符一行红 / 不查标注 rc=0）；"
+              "S0–S9 分支形七形（条件折多行 / else 支 / ✗ 不在紧下一行 / match / match 守卫 / 折行 any / 探查函数与正则当条件）逐形漏登判红、"
+              "退回 auditfix3 口径（单行条件 + 下一行 ✗）rc=0；T1–T6 NF 标注（同名多处没标 / 日后出现同名 / 接收者认不出 / 标错行）",
+     "green": "`✓ B0 …` 起 31 格逐格 `✓ <编号> … rc=N` + 「二、空转对照」7 条 `✓ … 旧口径 rc=0 → … 现行 rc=1` + `结果：全部通过`",
      "red": "`✗ <编号> …：期望 rc=a，实得 rc=b` 附 `缺 ✗ …` / `多 ✗ …`；`变异没落上` = 源码改了、这支变异的替换处数不对（跟着改变异）；空转对照 `应 0 → 1`；`结果：N 项问题`；无 git / 建不了 worktree 退 2"},
     {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/legacy/verify_narrative.py",
      "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
@@ -267,7 +270,8 @@ SUBCHECKS = [
      "cmd": "python3 tools/check_symbols.py",
      "marks": ["十三、按函数名取函数体", "class _Bodies(dict)", "_body_ask(name, m is not None, body=m and m.group(0), src=src)", "处按名取用都取到函数体",
                "_miss_why(", "forward_ok=True", "src=self.src", "if bodies.forward(name):",
-               "from func_body import", "NAMED_FUNCS = {", "支函数都还在登记的文件里",
+               "from func_body import", "NAMED_FUNCS = {", "支函数都还在登记的文件里", "def _nf_branch_sites(src):",
+               "_nf_tag_bad = _nf_tag_check()", "逐行标明、与登记一致",
                '_body_ask(token + "]", at >= 0)', "处按名取用都取到场景节点块", "def body(name):"],
      "expect": "「十三、按函数名取函数体」`✓ _func_body / func_bodies().get / _locate_func 的 N 处按名取用都取到函数体，_node_block 的 M 处按名取用都取到场景节点块`"
                "（N / M = 本脚本「行号 + 名字」去重后的取用处；_node_block 按 `[node name=\"X\"` 取场景节点块，lane cs12 纳入同一本账）。"
@@ -275,7 +279,8 @@ SUBCHECKS = [
                "取到的只是一行转发（`func X(…):\\n\\t_K.x(self, …)` / 原样传形参给别的函数 / 零实参调同文件另一支，判据 `func_body.forward_of(body, src)`）同样记成取不到（lane cs17 / gd23，三片口径对账见 §三 1）；"
                "本来就读转发那一行的（顺调用链展开、钉「Main 只许一行转发」）写 `.get(name, …, forward_ok=True)`。"
                "只探有没有这支函数、不想判红的写 `name in func_bodies(src)`（不记账）；本身要跑在变异源码上的契约（`_guild_remap_contract`）一律 `in` 探、缺了记成契约错误「缺 X」、只剩一行转发记成「X 只剩一行转发」，不走 .get 记账（lane cs12 / gd23）。"
-               "+ `✓ 断言点名的 N 支函数都还在登记的文件里（M 个文件，按 (文件, 名字) 认；反向断言 / find 锚 / 存在性探查；NAMED_FUNCS 与本脚本自扫一致）`（lane cs9 / cs11）",
+               "+ `✓ 断言点名的 N 支函数都还在登记的文件里（M 个文件，按 (文件, 名字) 认；反向断言 / find 锚 / 存在性探查 / 分支形；NAMED_FUNCS 与本脚本自扫一致；"
+               "同名多处定义的 K 支（…）逐行标明、与登记一致）`（lane cs9 / cs11 / auditfix5）",
      "fail": "`✗ check_symbols.py:<行> 取函数体 <fn> 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转` = 被读的函数改了名 / 删了 / "
              "搬走没拼回，或断言里函数名写错；`✗ check_symbols.py:<行> 取函数体 <fn> 只取到一行转发（→ <目标>），真身不在这份源码里（拆走没拼回 / 该改读拆出件），这处断言在空转` = "
              "读的那份源码里这支只剩一行转发（Main 拆走一刀、转发到没登记 / 没 preload 的件，或直读 Main.gd / 别的文件时切到转发），改读真身所在的文件（lane cs17）；"
@@ -284,7 +289,10 @@ SUBCHECKS = [
              "反向断言（`\"X\" not in body`）照样绿；`✗ 断言点名的函数 X 在 <文件> 已无定义，别处还有同名（…）` / `…（scripts/ 下也没有…）` = "
              "反向断言 / find 锚 / 存在性探查点到的函数在登记的文件里改了名、删了或挪到别的文件（lane cs11：同名函数在别的文件还在也红），"
              "断言与 NAMED_FUNCS 跟着改；`✗ NAMED_FUNCS 登记的文件 <文件> 不存在` = 登记路径写错 / 文件挪了目录；"
-             "`✗ check_symbols.py:<行> 的断言点到函数 X，没登记进 NAMED_FUNCS` = 新写这类断言没登记。计入 check_symbols 问题、退 1"},
+             "`✗ check_symbols.py:<行> 的断言点到函数 X，没登记进 NAMED_FUNCS` = 新写这类断言没登记；"
+             "`✗ check_symbols.py:<行…> 的断言点到同名多处定义的函数 X（…），字面量看不出指哪一支…` = X 在 scripts/ 下 ≥ 2 个文件有定义（Main 拆出件并回 Main），"
+             "这几行没在行尾标 `# NF: 接收者.X`；`✗ …的断言标明指 <文件> 的 X，NAMED_FUNCS 却登在 <文件>…` = 错登到同名的另一支（登记跟断言读的那支走）；"
+             "`✗ …的 NF 标注 … 认不出文件` / `…这一行自扫没点到 X` = 标注写错 / 标错行（lane auditfix5）。计入 check_symbols 问题、退 1"},
     {"id": "按函数名取函数体（十一）", "parent": "verify_economy", "lane": "cs14 / cs17 / gd23", "oneclick": True,
      "cmd": "python3 tools/verify_economy.py",
      "marks": ["十一、按函数名取函数体", "from func_body import", "_body_ask(name, m is not None, body=m and m.group(0)", "处按名取用都取到函数体",
