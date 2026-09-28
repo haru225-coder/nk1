@@ -7,8 +7,8 @@
     32 向风玫瑰。这是地中海波特兰海图（13—14 世纪欧洲）的画法，宋人看方位用二十四向针位和针路簿，海图上不画它。
     风玫瑰大半压在龟裂做旧的米黄纸面上，左缘压着蓝色洗染边，底下不是海。它左边的浪花带里还盘着一条西洋古地图式的海蛇，
     也是西式装饰母题。
-  · assets/cutscene/cs_world_map_gold.jpg（1792x1008，开场 opening 第 1 镜「舆图总纲」）右上有一枚细线八向风玫瑰，
-    落在金纸和淡蓝洗染上，紧贴竖排题字「宋理宗宝祐三年」，镜头前段一直在画内。
+  · assets/cutscene/cs_world_map_gold.jpg（1792x1008，开场 opening 第 1 镜「舆图总纲」）右上有一枚十六尖细线风玫瑰
+    （4 正、4 隅长臂，外加 8 个短尖），落在金纸和淡蓝洗染上，紧贴竖排题字「宋理宗宝祐三年」，镜头前段一直在画内。
   2026-09-28 Snow 拍板走 A′（决策备忘 #4、#5）：程序抹掉这两处，其余不动，两张图共用本脚本。
   原型、试错和引擎内截帧的记录在决策材料 title.md、title_notes.md 里（~/tmp/nk1-arttodo/decide/，未入库）。
 
@@ -17,16 +17,21 @@
     膨胀 4px。x≥1627 不补：东尖离内框竖线（x≈1630）只有 7px。
   · bg / serpent：海蛇只抠头颈和浪花带以上的盘身（多边形），浪花带留作浪头，蛇身余段混进浪花里。两条虚线航路原本汇到蛇头，
     现在止于一团浪。
-  · cs / compass：圆盘 r66 加八臂粗线，整体膨胀 3px。
+  · cs / compass：圆盘 r66（盖住外环和 8 个短尖）加 8 条长臂粗线，整体膨胀 3px。
   保护区（羽化权重强制为 0，一个像素都不合成）：bg 的右框线（x≥1628）、下框线（y≥903）、西南角朱印 (1346–1427, 822–903)。
 
 做法（纯 numpy + PIL；不依赖 cv2 / scipy）：
   1. 低频（底色）：先做一次排除洞的归一化模糊（盒式 r10，三遍），再用多重网格 Jacobi 做调和填充。洞里的底色是周边颜色的平滑延续，
      蓝洗到纸面的过渡、右下角的暗角都能自然接上，不出色块边。
-  2. 高频（龟裂、纸纹、海纹）：拼贴法（quilting）。块 40px（cs 36px）、重叠 12px，用 FFT 算 SSD 挑供体块。
+  2. 高频（龟裂、纸纹、海纹）：拼贴法（quilting）。块 40px（cs 36px，海蛇 32px）、重叠 12px（海蛇 10px），用 FFT 算 SSD 挑供体块。
      代价 = 与已知或已填高频的差 + 0.25 × 供体底色与目标底色的差，所以海面块只配海面、纸面块只配纸面。
      在同一块附近（半块以内）不重复取；重叠处加权平均；洞外 8px 羽化，羽化只混高频。不做镜像拼接
      （09-26 福州 T3 程序补块镜像拼接，留下了竖缝和矩形边）。
+     网格收尾（tail）：按步长排到头以后，旧做法（"pad"）只要没盖满外扩 O 的包围框就再补一块贴边的，
+     这块可能和末块几乎重合。两块近乎等权平均，高频被削成一条糊带。海蛇区改用 "fz"：末块已经盖住要合成的区
+     （洞外扩 F），就不再补。09-28 评审 F1 查出的就是这个问题：旧网格末两行 y786 / y790 重叠 36px，
+     浪花带上沿发糊；块 40 时最底一排压着浪花带的强高频，SSD 又只能挑低能量供体，所以一并改小块。
+     罗经两区的补块是必需的（不补就盖不到合成区），仍用 "pad"，产物与 09-28 首版逐字节相同。
   3. 供体池按区分开，各用各的：
      bg 罗经只取纸面（上方 x≥1400 的纸面、罗经四周、下方 x≥1356），海蛇只取海面和浪花。
      原型第一轮两处合用一个池，浪花带底部偏米色，被当成纸面借到罗经南臂边，冒出两道米色小浪花，所以分开。
@@ -63,7 +68,8 @@
   python3 tools/art/erase_world_map_compass.py --only bg --src A.jpg --out B.jpg   # 只出候选，不动仓库文件
   python3 tools/art/erase_world_map_compass.py --out-dir /tmp/cand         # 两张都出候选到目录（文件名同仓库）
 每次运行都打印的自检数字：判据前后值（放射纹强度、暗圈深度、焦墨占比）、锚点、每区补洞像素、羽化像素、拼块数与不同供体数、
-补区肌理（亮度减模糊后的标准差：洞内对照供体池和洞外一圈）、接缝色阶 ΔE76（洞内一圈比洞外一圈，洞外两圈之间的自然起伏作参照）、
+补区肌理（亮度减模糊后的标准差：洞内对照供体池和洞外一圈；洞内底边 20px 一带对照洞内其余，查 F1 那种糊带）、
+接缝色阶 ΔE76（洞内一圈比洞外一圈，洞外两圈之间的自然起伏作参照）、
 改动像素与外接框、改动 MCU 数与嵌回块数、块外变动像素（DCT 口径 / 默认解码口径）、羽化外平均绝对差、保护区变动（编码前 / 编码后）。
 两张图合计约 40 秒（M 系 CPU）。
 """
@@ -105,13 +111,14 @@ IMAGES = [
                   judge=dict(kind="ink", ref=(1175, 480, 1340, 682)),
                   # 海面 / 浪花供体：蛇上方海面、船下方海面、浪花带左段
                   pools=[(1175, 480, 1340, 682), (470, 650, 940, 790), (1000, 806, 1140, 895)],
-                  exclude=[], T=40, O=12, F=8, lf_r=10, lam=0.25, seed=101),
+                  # 评审 F1：块 40 / 重叠 12 + 旧收尾时浪花带上沿（y788–808）发糊，见文件头「网格收尾」
+                  exclude=[], T=32, O=10, F=8, lf_r=10, lam=0.25, seed=101, tail="fz"),
          ]),
     dict(key="cs", label="开场首镜「舆图总纲」", path=os.path.join("assets", "cutscene", "cs_world_map_gold.jpg"),
          size=(1792, 1008), protect=[],
          anchors=[((96, 600, 128, 632), (97.7, 67.8, 24.5)), ((900, 300, 932, 332), (45.3, 57.1, 58.7))],
          regions=[
-             dict(key="compass", label="罗经（八向细线风玫瑰）", build="cs_compass",
+             dict(key="compass", label="罗经（十六尖细线风玫瑰）", build="cs_compass",
                   judge=dict(kind="rose", cx=1592, cy=314, r=(15, 60), ks=(4, 8, 16), ring=(30, 80)),
                   # 罗经四周的金纸（右侧浪纹边框从 x≈1725 起，池不到那里）
                   pools=[(1505, 110, 1700, 200), (1505, 200, 1700, 425), (1590, 425, 1700, 500)],
@@ -230,9 +237,10 @@ def _box_sum_valid(m, T):
 
 
 def inpaint(img, hole, pool_rects, protect=None, T=40, O=12, F=8, lf_r=10,
-            lam=0.25, seed=1, tol=0.12, exclude=None):
+            lam=0.25, seed=1, tol=0.12, exclude=None, tail="pad"):
     """img HxWx3 float32；hole 要补的像素；pool_rects [(x0,y0,x1,y1)] 供体区；protect 必须原样保留的像素；
-    exclude 不补、也不当已知底色参照的像素（另一处待补区）。返回 (结果, 调试 dict)。"""
+    exclude 不补、也不当已知底色参照的像素（另一处待补区）；tail 网格收尾（"pad" 盖满外扩包围框 / "fz" 只盖合成区，
+    见文件头）。返回 (结果, 调试 dict)。"""
     rng = np.random.default_rng(seed)
     H, W, _ = img.shape
     if protect is None:
@@ -279,9 +287,17 @@ def inpaint(img, hole, pool_rects, protect=None, T=40, O=12, F=8, lf_r=10,
     placed = []
     ny = list(range(by0, max(by0 + 1, by1 - T + 1), S))
     nx = list(range(bx0, max(bx0 + 1, bx1 - T + 1), S))
-    if ny[-1] + T < by1:
+    if tail == "fz":
+        # 末块已盖住合成区就不再补（补的那块会和末块近乎重合、平均掉高频）
+        fy, fx = np.nonzero(fz)
+        end_y, end_x = int(fy.max()) + 1, int(fx.max()) + 1
+    elif tail == "pad":
+        end_y, end_x = by1, bx1
+    else:
+        raise ValueError("tail 只能是 pad / fz：%r" % (tail,))
+    if ny[-1] + T < end_y:
         ny.append(min(by1, H) - T)
-    if nx[-1] + T < bx1:
+    if nx[-1] + T < end_x:
         nx.append(min(bx1, W) - T)
     for ty in ny:
         for tx in nx:
@@ -528,7 +544,8 @@ def process(spec, src_path, out_path, force=False):
             others |= masks[k]
         hole = masks[rg["key"]] & ~protect
         cur, dbg = inpaint(cur, hole, rg["pools"], protect=protect | others, T=rg["T"], O=rg["O"], F=rg["F"],
-                           lf_r=rg["lf_r"], lam=rg["lam"], seed=rg["seed"], exclude=others if rg["exclude"] else None)
+                           lf_r=rg["lf_r"], lam=rg["lam"], seed=rg["seed"], exclude=others if rg["exclude"] else None,
+                           tail=rg.get("tail", "pad"))
         alpha_all = np.maximum(alpha_all, dbg["alpha"])
         donors = {(sy, sx) for _, _, sy, sx in dbg["placed"]}
         info[rg["key"]] = dict(hole=hole, others=others, alpha=dbg["alpha"], tiles=len(dbg["placed"]), donors=len(donors))
@@ -587,15 +604,22 @@ def process(spec, src_path, out_path, force=False):
         else:
             jtxt = "焦墨占比 %.4f → %.4f（海面参照 %.4f → %.4f）" % (vb["ink"], va["ink"], vb["ref"], va["ref"])
         inner = erode(hole, 3)
+        # 洞内底边 20px 一带：往下 20px 已出洞的洞内像素（F1 糊带就在这里）
+        below = np.zeros_like(hole)
+        below[:-20] = hole[20:]
+        bot = inner & ~below
         ring = dilate(hole, rg["F"] + 20) & ~dilate(hole, rg["F"] + 2) & ~protect & ~inf["others"]
         pool = rect_mask(sh, rg["pools"]) & ~dilate(hole, 4) & ~protect & ~inf["others"]
         s = seam_step(af, hole, protect, inf["others"], rg["F"])
         print("  [%s %s] %s" % (k, rg["label"], jtxt))
-        print("    补洞 %d px，羽化合成 %d px；拼块 %d 块、不同供体 %d 处" % (
-            int(hole.sum()), int(((inf["alpha"] > 0) & ~hole).sum()), inf["tiles"], inf["donors"]))
+        print("    补洞 %d px，羽化合成 %d px；拼块 %d 块（%dpx、重叠 %dpx、收尾 %s）、不同供体 %d 处" % (
+            int(hole.sum()), int(((inf["alpha"] > 0) & ~hole).sum()), inf["tiles"], rg["T"], rg["O"],
+            rg.get("tail", "pad"), inf["donors"]))
         print("    补区肌理 std(Y−模糊)：洞内（内缩 3px）%.2f；供体池 %.2f、洞外一圈 %.2f（原图同圈 %.2f）"
               "→ 洞内/供体池 %.2f" % (hf_std(Ya, inner), hf_std(Yb, pool), hf_std(Ya, ring), hf_std(Yb, ring),
                                    hf_std(Ya, inner) / max(hf_std(Yb, pool), 1e-6)))
+        print("    洞内底边 20px 一带肌理 %.2f、洞内其余 %.2f → 底带/其余 %.2f（糊带会明显低于 1）" % (
+            hf_std(Ya, bot), hf_std(Ya, inner & ~bot), hf_std(Ya, bot) / max(hf_std(Ya, inner & ~bot), 1e-6)))
         print("    接缝色阶 ΔE76 中位 %.2f、p95 %.2f（参照：洞外两圈之间自然起伏 中位 %.2f、p95 %.2f）" % s)
     return 0
 
