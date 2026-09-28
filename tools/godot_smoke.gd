@@ -278,6 +278,7 @@ func _run() -> void:
 		{"id": "keel_boat", "unlock": "ch1"},
 		{"id": "fu_ship_medium", "unlock": "ch1"},
 		{"id": "canton_ship", "unlock": "ch2"},
+		{"id": "pirate_boat", "for_sale": false},
 	]
 	var yard_ch1 := PackedStringArray(["ch1"])
 	var yard_sale: PackedStringArray = DrydockBerth.sale_ids(yard_offers, yard_ch1)
@@ -287,6 +288,18 @@ func _run() -> void:
 	var yard_sale2: PackedStringArray = DrydockBerth.sale_ids(yard_offers, yard_ch2)
 	_check(yard_sale2.size() == 4 and yard_sale2[3] == "canton_ship",
 		"第二章广船也在坞外", fails)
+	# 真表（ShipyardPage 交进来的就是这份）：快船第一到第四章都不上架；海鹘照自己的 unlock 上架
+	var yard_catalog: Array = gm.ships_data.get("ships", [])
+	var falcon_unlock := "ch1"
+	for yard_row in yard_catalog:
+		if yard_row is Dictionary and str(yard_row.get("id", "")) == "sea_falcon":
+			falcon_unlock = str(yard_row.get("unlock", "ch1"))
+	var yard_reached := PackedStringArray()
+	for yard_n in range(1, 5):
+		yard_reached.append("ch%d" % yard_n)
+		var yard_sale_n: PackedStringArray = DrydockBerth.sale_ids(yard_catalog, yard_reached)
+		_check(not yard_sale_n.has("pirate_boat") and yard_sale_n.has("sea_falcon") == yard_reached.has(falcon_unlock),
+			"第%d章船屋不卖快船（海鹘照 unlock 上架）" % yard_n, fails)
 	_check(DrydockBerth.berth_index(1, 5) == 0 and DrydockBerth.berth_index(3, 5) == 2,
 		"坞位夹回船队里", fails)
 	var yard_others := DrydockBerth.other_hulls(3, 0)
