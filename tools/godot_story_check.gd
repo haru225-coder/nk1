@@ -1269,6 +1269,18 @@ func _v0928_siege_check(main: Node) -> void:
 	_check(not sheet_before and GS.ended == "未归" and Cal.absolute_day() == fall_abs and is_instance_valid(main.get("_chapter_host"))
 			and main.shore_hand.is_empty() and wg.begins_with("消息是从城里传出来的"),
 		"海口候进城破那个月：当下结「%s」、首句「%s」、岸带已清（%s）" % [GS.ended, wg, main.shore_hand])
+	# 结局过场第 1 镜同句按 weigui_at_harbor 换：海口结算写「从城里传出来」，别处照旧「在别处听到」
+	var wz: Dictionary = cs.get("cutscenes", {}).get(str(cs.get("endings", {}).get("未归", "")), {})
+	var wshots: Array = wz.get("shots", [])
+	var wcap: Array = (wshots[0] as Dictionary).get("captions", []) if not wshots.is_empty() else []
+	var wprobe: Node = CP.new()
+	var w_harbor := _v0928_siege_caps(wprobe, wcap)
+	var had_flag: bool = GS.has_flag("weigui_at_harbor")
+	GS.flags.erase("weigui_at_harbor")
+	var w_else := _v0928_siege_caps(wprobe, wcap)
+	wprobe.free()
+	_check(had_flag and w_harbor.find("从城里传出来") >= 0 and w_harbor.find("在别处") < 0 and w_else.find("在别处听到") >= 0 and w_else.find("从城里") < 0,
+		"未归过场第 1 镜按海口换句（海口「%s」／别处「%s」）" % [w_harbor, w_else])
 	main._confirm_chapter_sheet()
 	_check(main._shore_kind_now == "ended", "海口「未归」合上册页是终局港页（%s）" % main._shore_kind_now)
 	# 10c. 海口旧档：城防开着、还没到城破时点，读回海口直接入城开守城页（不给带「看风」的寻常港页、不能带着城防出海）
