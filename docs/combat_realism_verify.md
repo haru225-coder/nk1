@@ -109,13 +109,7 @@ git checkout -- scripts/WorldMap.gd                                             
 
 ## 六、已知缺陷（`KNOWN_DEFECTS`，修好即删）
 
-下面三条属主都不是本 lane，本 lane 只登记、不修。在 HEAD `df89ef6` 上实测，combat02 的 `a3e554c` 里仍在。
-
-| key | 属主 | 缘由 | 修法 |
-|---|---|---|---|
-| `story.capture.boarded` | `scripts/WorldMap.gd`（本波 combat02 独占） | 夺下**末一艘**时，被夺的船已 `queue_free`、还在树上、hull_hp>0，`_enemies_alive()` 仍数到它。于是 `_board_enemy` 的 boarded=true 收战分支走不到，下一帧 `_process` 以 `win {}` 收战 | 夺船分支 queue_free 之前把敌船 hull_hp 置 0，或让 `_is_live_pirate` 排除 `is_queued_for_deletion()` |
-| `story.capture.writeback` | 同上 | 上一条的连带：SeaChart 不记「接舷既定」，出战墨边出不了「夺船」（combat09 的题签在真机上走不到） | 修好上一条即好 |
-| `story.capture.damage` | `scripts/WorldMap.gd` | `player_damage` = 开战时舰队总耐久 − 现总耐久。夺来的船入列后总耐久变大，战损成负数（夺两艘快船得 −1400），战果注记被 `maxi` 压成「船体受损 0」 | 战损只算开战时在册的那几条船 |
+**已清（combat11）**：`story.capture.boarded` / `story.capture.damage` / `story.capture.writeback` 三条属主 `scripts/WorldMap.gd`——夺船前 `hull_hp=0` 且 `_is_live_pirate` 排除 `is_queued_for_deletion()`；战损只按开战在册船（`_roster_durability`）；末船接舷夺下走 `boarded=true` 收战，海图记「接舷既定」。`KNOWN_DEFECTS` 表现空。
 
 ## 七、和别的门禁的关系
 

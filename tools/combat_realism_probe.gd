@@ -35,15 +35,7 @@ const SECTIONS := [
 ## 修好了（判据转绿）反倒判红，逼着把这条删掉——登记不许烂在表里（同 check_data_family 的 known_orphans 基线）。
 ## --strict 下一律判红。属主不是本 lane 的文件，本 lane 只登记、不修。
 const KNOWN_DEFECTS := {
-	"story.capture.boarded": {"owner": "scripts/WorldMap.gd（本波 combat02 独占）",
-		"why": "_board_enemy 夺下末一艘时，那艘已 queue_free 但还在树上、hull_hp>0，_enemies_alive() 仍数到它，boarded=true 的收战分支走不到；下一帧 _process 以 win {} 收战——海图不记「接舷既定」、出战墨边出不了「夺船」",
-		"fix": "夺船分支 queue_free 前把敌船 hull_hp 置 0，或 _is_live_pirate 排除 is_queued_for_deletion()"},
-	"story.capture.writeback": {"owner": "scripts/WorldMap.gd（同上一条）",
-		"why": "上一条的连带：boarded 没传回，SeaChart._on_battle_result 不前缀「接舷既定。」",
-		"fix": "修好上一条即好"},
-	"story.capture.damage": {"owner": "scripts/WorldMap.gd（本波 combat02 独占）",
-		"why": "player_damage = 开战时舰队总耐久 − 现总耐久；夺来的船并入舰队后总耐久变大，战损成负数（夺两艘快船得 −1400），海图战果注记被 maxi 压成「船体受损 0」，旗舰真挨的炮看不出",
-		"fix": "战损只按开战时在册的那几条船算，不把夺来的船算进去"},
+	# combat11：story.capture.boarded / damage / writeback 已在 WorldMap 清掉，表空。
 }
 
 var _strict := false
