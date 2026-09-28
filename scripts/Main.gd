@@ -3261,8 +3261,8 @@ func _check_absent_from_xinghua() -> bool:
 		return false
 	if GameState.siege_open() or GameState.has_flag("siege_fought"):
 		return false
-	# 按日期判，不按当前战况：1277-02/03 陈瓒复城时兴化会回 loyal，
-	# 若看当前战况，士人线玩家在那两个月入港就躲过了这个结局。城破发生过就是发生过。
+	# 按日期判，不按当前战况：1277-02 至 08 陈瓒复城时兴化会回 loyal（09 起唆都再围），
+	# 若看当前战况，士人线玩家在那几个月入港就躲过了这个结局。城破发生过就是发生过。
 	if not (Calendar.year > 1276 or (Calendar.year == 1276 and Calendar.month >= 12)):
 		return false
 
@@ -3270,7 +3270,7 @@ func _check_absent_from_xinghua() -> bool:
 		"未归", "兴化・景炎元年十二月",
 		"消息是在别处听到的。
 
-兴化城破了。城中兵不满千，元兵来攻，没有攻下来。城头上挂过一幅白布，八个字，来往的人都说见过。
+兴化城破了。城中兵不满千，守了一个多月。城头上挂过一幅白布，八个字，来往的人都说见过。
 部将林华出去侦敌，回来时后面跟着一万人。通判曹澄孙开的东门。
 
 母亲黄氏和幼子璥被扣在福州一座尼寺里。有人说，只要城里那个人肯出来，当天就放。

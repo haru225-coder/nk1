@@ -375,9 +375,9 @@ func _initialize() -> void:
 	GS.set_flag("siege_fought")
 	_check(GS.has_flag("siege_fought"), "打过囊山即留痕，未归判据可排除")
 
-	# ── 「未归」不得被陈瓒复城的两个月钻空子 ──
-	# 兴化 war 表：1277-02 loyal / 1277-04 fallen。若判据只看当前 war_status，
-	# 士人线玩家在 1277-02、03 入港就躲过了结局。
+	# ── 「未归」不得被陈瓒复城的那几个月钻空子 ──
+	# 兴化 war 表：1277-02 loyal / 1277-09 besieged / 1277-11 fallen。若判据只看当前 war_status，
+	# 士人线玩家在 1277-02 至 08 复城期间入港就躲过了结局。
 	Cal.from_dict({"year": 1277, "month": 2, "day": 10})
 	_check(Eco.war_status("xinghua") == "loyal", "1277-02 兴化确实回 loyal（复城）")
 	var past_fall: bool = (Cal.year > 1276) or (Cal.year == 1276 and Cal.month >= 12)
