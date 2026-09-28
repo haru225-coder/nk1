@@ -269,6 +269,9 @@ func _settle_history() -> void:
 		var speaker: String = str(n.get("speaker", ""))
 		var prefix := "【酒馆传闻】" if speaker == "" else "【%s】" % speaker
 		monthly_notice.emit(prefix + GameState.news_text(n))
+	# 史实辞船（crew.json 的 leave_from）：林华景炎元年秋回兴化投军。排在新闻之后，同一个月里先闻募兵、后见人走
+	for t in Crew.history_leave():
+		monthly_notice.emit(t)
 
 
 ## 按文件头而非扩展名加载图片。
