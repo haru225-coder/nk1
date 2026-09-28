@@ -968,22 +968,22 @@
       "note": "舷炮退回机动前要连续够不着的秒数，免得在射程边上来回跳"
     },
     "ai_broadside_bu": {
-      "v": 75.0,
+      "v": 67.5,
       "unit": "bu",
-      "legacy": "PirateShip._physics_process：dist < 600 px 转舷",
-      "note": "现行敌船转舷距离"
+      "legacy": "EnemyCaptainAI.RANGE_MAX := 540 px（舷炮守距上沿）",
+      "note": "敌将保持舷炮的射距带上沿；下沿 RANGE_MIN=260 px=32.5 步"
     },
     "ai_fire_max_bu": {
-      "v": 100.0,
+      "v": 95.0,
       "unit": "bu",
-      "legacy": "PirateShip._process_firing：dist > 800 px 不放",
-      "note": "现行敌船开火上限，正合弩的有效射程上下"
+      "legacy": "EnemyCaptainAI.FIRE_RANGE := 760 px；fire_side 顺风可再远约一成二",
+      "note": "横风估的最远一射；顺风 ×1.12、逆风缩短"
     },
     "ai_sleep_bu": {
       "v": 312.5,
       "unit": "bu",
       "legacy": "PirateShip：dist > 2500 px 不动",
-      "note": "现行敌船休眠距离"
+      "note": "敌船休眠距离（未改）"
     },
     "escape_bu": {
       "v": 160.0,
@@ -1022,10 +1022,10 @@
       "note": "J / K 两阵之间的最短间隔；各舷位另按兵器 cycle_s 装填"
     },
     "enemy_volley_cycle_s": {
-      "v": 3.0,
+      "v": 1.2,
       "unit": "s",
-      "legacy": "PirateShip._process_firing：fire_timer = 3.0",
-      "note": "现行敌船一阵的间隔"
+      "legacy": "PirateShip.VOLLEY_GAP := 1.2；_process_firing：fire_timer = VOLLEY_GAP",
+      "note": "敌船一轮放完到下一轮最短间隔；同舷另等 EnemyCaptainAI.reload_time / SIDE_RELOAD"
     }
   },
   "queries": [
