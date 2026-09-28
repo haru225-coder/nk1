@@ -2773,6 +2773,10 @@ func _on_shore_wait() -> void:
 	GameState.shore_salt += 1
 	GameManager.advance_days(1)
 	log_msg("在岸上又候了一日，门又换了几处。")
+	# 守城页候过城破时点：按城破结算，不退回寻常岸带
+	if _settle_overdue_siege():
+		update_status_panel()
+		return
 	# 按页型重排（守城页候一日仍是守城页，不会退回寻常岸带多出「看风」）
 	_build_shore()
 	update_status_panel()
@@ -2840,6 +2844,9 @@ func _on_load_slot(slot: int) -> void:
 ## 只有 ports.json 里登记的港口算数——剧情场景不是港口。
 func _on_enter_port(port_id: String) -> void:
 	if GameManager.get_port_by_id(port_id).is_empty():
+		return
+	# 城防没了结的旧档过了城破时点：先按城破结算（不然「未归」见城防开着会跳过，陈文龙接着跑商）
+	if _settle_overdue_siege():
 		return
 	if _check_absent_from_xinghua():
 		return
@@ -3802,6 +3809,33 @@ func _siege_active() -> bool:
 	if Economy.war_status("xinghua") != "besieged":
 		return false
 	GameState.siege_begin()
+	return true
+
+
+## 兴化首守的城破时点（"YYYY-MM"）：战况表第一段 besieged 结束、转成别的战况的那个月。
+## 只认第一段——1277 秋唆都再围是第二段 besieged，那是陈瓒的城，不是陈文龙的。表里没有就返回 ""。
+func _first_siege_fall_ym() -> String:
+	var war: Dictionary = GameManager.get_port_by_id("xinghua").get("war", {})
+	var keys: Array = war.keys()
+	keys.sort()
+	var in_siege := false
+	for ym in keys:
+		if str(war[ym]) == "besieged":
+			in_siege = true
+		elif in_siege:
+			return str(ym)
+	return ""
+
+
+## 城防记录还开着、日历却已过首守城破时点（守城页「再候一日」候过去，或这样留下的旧档）：
+## 走城破结算，不许回寻常港页接着跑商、躲掉结局。结算了返回 true。
+func _settle_overdue_siege() -> bool:
+	if GameState.is_ended() or not GameState.siege_open():
+		return false
+	var fall := _first_siege_fall_ym()
+	if fall == "" or "%04d-%02d" % [Calendar.year, Calendar.month] < fall:
+		return false
+	_siege_fall("援绝")
 	return true
 
 

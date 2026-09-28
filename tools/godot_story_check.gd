@@ -558,6 +558,17 @@ func _route_check() -> void:
 	main.load_scene("xinghua")
 	_check(Eco.war_status("xinghua") == "besieged", "1277-09 唆都再围（涵江卡前提）")
 	_check("special_hanjiang_escape" in main.shore_hand, "1277-09 兴化岸上有涵江海口卡（名单 %s）" % [main.shore_hand])
+	# S3 不得误触发：1277 秋再围不是陈文龙的城。没改名的玩家在兴化候过 1277-11 再陷，不得冒出城防记录或城破结算
+	Cal.from_dict({"year": 1277, "month": 10, "day": 25})
+	main.load_scene("xinghua")
+	var waited_root := 0
+	while Eco.war_status("xinghua") == "besieged" and waited_root < 45:
+		main._on_shore_wait()
+		waited_root += 1
+	_check(Eco.war_status("xinghua") == "fallen" and not GS.is_ended() and not GS.siege_open(),
+		"没改名的玩家候过 1277 再围（候 %d 日到 %s）不冒城防、不结算（结局「%s」）" % [waited_root, Cal.get_date_string(), GS.ended])
+	Cal.from_dict({"year": 1277, "month": 9, "day": 10})
+	main.load_scene("xinghua")
 	# 涵江出海：结算标题的年号跟出海后的日历走、与终局落款同年（原先硬写「景炎三年三月」，卡却只在景炎二年出现，门禁一直绿）
 	var fleet: Node = root.get_node("Fleet")
 	fleet.water = maxi(fleet.water, 999)
@@ -593,6 +604,36 @@ func _route_check() -> void:
 	Cal.from_dict({"year": 1277, "month": 9, "day": 3})
 	main.load_scene("xinghua")
 	_check(not ("siege_muster" in main.shore_hand), "1277-09 再围不重开 1276 的守城页（名单 %s）" % [main.shore_hand])
+	# S3：城防没了结的旧档，日历已过首守城破时点 → 进港即按城破结算，不当作 1277 的再围、也不回寻常港页接着跑商
+	_check(GS.ended == "忠肃" and not GS.siege_open(),
+		"城防没了结的旧档 1277-09 进兴化 → 按首守城破结算「忠肃」（结局「%s」）" % GS.ended)
+	_close_dialogs(main)
+	# S3：守城页「再候一日」候过首守城破时点（兴化战况表第一段 besieged 的尽头，不写死月份），城防还开着 → 走城破结算
+	var fall_ym: String = main._first_siege_fall_ym()
+	_check(fall_ym.begins_with("1276-"),
+		"首守城破时点取战况表第一段 besieged 的尽头、落在陈文龙守城那一年（%s），不取 1277 秋再围" % fall_ym)
+	GS.from_dict({})
+	GS.set_flag("renamed_wenlong")
+	GS.identity = "scholar"
+	Cal.from_dict({"year": 1276, "month": 11, "day": 3})
+	GS.last_port = "xinghua"
+	main.load_scene("xinghua")
+	_check(GS.siege_open() and main._shore_mode == "siege", "1276-11 进兴化开守城页（页型 %s）" % main._shore_mode)
+	main._on_shore_wait()
+	_check(not GS.is_ended() and main._shore_mode == "siege", "围城中候一日仍是守城页、不结算（%s）" % Cal.get_date_string())
+	var waited_siege := 1
+	while not GS.is_ended() and Eco.war_status("xinghua") == "besieged" and waited_siege < 45:
+		main._on_shore_wait()
+		waited_siege += 1
+	var now_ym := "%04d-%02d" % [Cal.year, Cal.month]
+	var wait_sail := false
+	var wa: Node = main._shore_band().get_node_or_null("ShoreActions")
+	if wa != null:
+		for b in wa.get_children():
+			if b is Button and (b as Button).text == "看风":
+				wait_sail = true
+	_check(GS.ended == "忠肃" and not GS.siege_open() and now_ym >= fall_ym and not wait_sail,
+		"守城页候 %d 日到 %s（城破时点 %s）→ 按城破结算「%s」，不回寻常港页、没有「看风」" % [waited_siege, Cal.get_date_string(), fall_ym, GS.ended])
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
