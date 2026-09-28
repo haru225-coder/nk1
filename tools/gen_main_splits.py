@@ -17,7 +17,9 @@ main_splits.txt 是 Main.gd 拆出件的唯一清单：check_symbols（一之零
   · 原 Main 行范围 ← 拆出 commit 父版的 Main.gd（还没提交就用 HEAD 版）里这些函数的行段（含紧贴其上的 # / ## 注释），
     只隔空行的相邻段并成一段；台账里写了逐支行段的（表格行「| `_fn(…)` | a–b」），与重算的逐支行段对账
   · 台账那节函数表（「| `_fn(…)` |」行，写没写行段都算）列了的函数，现 Main 必须仍一行转发到本件，否则判红
-    （lane cs18：挪回 Main 再 --write，拆出函数 / 行范围两栏跟着缩、清单照样逐字节一致，不查这条就一路全绿）
+    （lane cs18：挪回 Main 再 --write，拆出函数 / 行范围两栏跟着缩、清单照样逐字节一致，不查这条就一路全绿）；
+    反过来，那节有函数表的，现 Main 一行转发到本件的每支也都得列在表里，漏列即判红（lane cs22：有表就须列全）。
+    没有函数表的节（前三刀、第四 / 五刀）两个方向都不查
 
 git 历史的两条放行（其余一律逐字节比）：
   · 拆出的那个 commit 自己不可能写进自己的哈希：清单里记 `-`、该 commit 版的清单也记 `-`、且 **HEAD 就是这个 commit** 的，照认；
@@ -155,7 +157,13 @@ def build(old_rows=None, backfill=False):
         problems.append(f"{MAIN_REL} 读不到")
         fwd = {}
     rows = []
-    for rel, lane, section in ledger_splits(problems):
+    splits = ledger_splits(problems)
+    table_re = re.compile(r'^\| `(_?\w+)\([^`]*\)` \|(?: (\d+)–(\d+))?', re.M)
+    tabled = {}  # 函数表列了 fn 的是哪几件（漏列时提示「列到别件那节去了」）
+    for rel, _, section in splits:
+        for fn, _, _ in table_re.findall(section):
+            tabled.setdefault(fn, []).append(rel)
+    for rel, lane, section in splits:
         path = os.path.join(ROOT, rel)
         if not os.path.isfile(path):
             problems.append(f"台账登记的拆出件 {rel} 文件不存在（删了拆出件就把台账那条和清单一起改掉）")
@@ -171,7 +179,7 @@ def build(old_rows=None, backfill=False):
             problems.append(f"{rel}：Main 里没有一行转发到它，拆出函数一栏是空的")
         # 台账那节函数表列了的（「| `_fn(…)` |」行，写没写逐支行段都算）须仍是 Main 一行转发到本件的：
         # 挪回 Main / 改名 / 转去别件后再 --write，重算结果里就没有它了，不在这里判红就只剩清单跟着改、一路全绿
-        listed = re.findall(r'^\| `(_?\w+)\([^`]*\)` \|(?: (\d+)–(\d+))?', section, re.M)
+        listed = table_re.findall(section)
         moved = {m for m, _ in pairs}
         for fn, a, b in listed:
             if fn not in moved:
@@ -179,6 +187,16 @@ def build(old_rows=None, backfill=False):
                 problems.append(f"{lane} 族 {rel}：台账函数表列了 {fn}（期望拆前 Main.gd {f'{a}–{b} 行' if a else '行段台账未写'}），"
                                 f"现 Main.gd 却{f'一行转发到 {elsewhere[0]}' if elsewhere else '没有一行转发到本件'}"
                                 f"（挪回 Main / 改名 / 转去别件了？台账、拆出件、清单要一起改）")
+        # 反向（lane cs22）：有表就须列全——现 Main 一行转发到本件的，表里没列即判红。不查的话新搬一支进来、
+        # 台账没补，--write 照样把它写进清单拆出函数一栏，逐支行段也无从对账，一路全绿
+        if listed:
+            names = {fn for fn, _, _ in listed}
+            for m, s in pairs:
+                if m not in names:
+                    other = [r for r in tabled.get(m, ()) if r != rel]
+                    problems.append(f"{lane} 族 {rel}：现 Main.gd 的 {m} 一行转发到本件 {s}，台账那节函数表却没列它"
+                                    f"（{f'表里列在了 {other[0]} 那节；' if other else ''}"
+                                    f"新搬进本件的补一行「| `{m}(…)` | 拆前行段 |」，有函数表就须列全）")
         commit, pre = _add_commit(rel)
         old = old_rows.get(rel)
         if pre is None:

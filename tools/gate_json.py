@@ -256,10 +256,10 @@ SUBCHECKS = [
      "expect": "`✓ --write：tools/main_splits.txt 与重算逐字节一致，未改动`；有差异则 `↻ --write：已重写 tools/main_splits.txt（N 件；请连同提交）`，"
                "之后照常对账一遍、`结果：全部通过`。不带 `--write` 只对账不写盘（与 check_symbols「一之零」同一个 check()）。"
                "拆出件 / lane ← 台账节标题，拆出函数 ← Main 一行转发，commit / 原 Main 行范围 ← git（拆出 commit 父版 Main.gd），"
-               "台账写了逐支行段的逐支对账；台账函数表列了的函数现 Main 须仍一行转发到本件（lane cs18）。浅克隆取不到拆出 commit 父版时那一行报 `⚠ … 未验`、沿用清单原值，不判红。"
+               "台账写了逐支行段的逐支对账；台账函数表列了的函数现 Main 须仍一行转发到本件（lane cs18），反过来那节有函数表的、现 Main 一行转发到本件的每支都须列在表里（lane cs22，有表就须列全）。浅克隆取不到拆出 commit 父版时那一行报 `⚠ … 未验`、沿用清单原值，不判红。"
                "commit 列的 `-`：只在 HEAD 就是拆出 commit 时照认（lane auditfix1），HEAD 往前走了对账即红、`--write` 补成哈希",
      "fail": "`✗ --write：有问题，tools/main_splits.txt 未改动` + 各条 `✗`（台账登记的拆出件不存在、拆出件有 static func 没有 Main 转发、"
-             "拆前 Main.gd 里找不到转发的 Main 函数、台账逐支行段与重算不符、`<lane> 族 <件>：台账函数表列了 fn（期望拆前 Main.gd a–b 行）…没有一行转发到本件` = 挪回 Main / 改名 / 转去别件没改台账，lane cs18）→ 退 1。**会改写 `tools/main_splits.txt`**，"
+             "拆前 Main.gd 里找不到转发的 Main 函数、台账逐支行段与重算不符、`<lane> 族 <件>：台账函数表列了 fn（期望拆前 Main.gd a–b 行）…没有一行转发到本件` = 挪回 Main / 改名 / 转去别件没改台账，lane cs18；`<lane> 族 <件>：现 Main.gd 的 fn 一行转发到本件 X，台账那节函数表却没列它` = 新搬一支进本件没补台账表，lane cs22）→ 退 1。**会改写 `tools/main_splits.txt`**，"
              "所以不进一键跑；新拆一刀的 lane 追加台账一节后跑它、连同提交。"
              "对账（check_symbols「一之零」）的 `✗ <件>：拆出 commit X 已不是 HEAD（其后又有 N 个提交），清单 commit 列还记 -…` = "
              "拆分那笔之后没补哈希（lane auditfix1 前这一格放行到下一刀才补）：跑 `--write`、另提一笔，与拆分同一次落地"},

@@ -261,7 +261,7 @@ check_symbols 的 51 处引用都经 read_main_src。要改的门禁有 2 道：
 不是一刀，只登记门禁变化（拍板清单 E-5；ms2 待议 6、上面第四 / 五 / 六 / 七刀的候选里一直挂着的那条）。
 
 - `tools/main_splits.txt`：拆出件唯一清单，每件一行（拆出件 / lane / 拆出 commit / 原 Main 行范围 / 拆出函数）。`check_symbols` 与 `godot_smoke` 都只读第一列，两份脚本里的 `MAIN_SPLITS` 常量删掉了。
-- `tools/gen_main_splits.py` 生成它：拆出件、顺序、lane 读本台账（开头「已拆（前三刀…）」那行 + 各刀节标题），所以**节标题的写法是契约**：``## 第N刀（lane X，日期）：… → `scripts/ui/X.gd` ``。拆出函数读 Main 的一行转发，commit 和行范围读 git（拆出 commit 父版的 Main.gd）；本台账表格里写了逐支行段的（第六、七刀共 15 支），生成时逐支对账。
+- `tools/gen_main_splits.py` 生成它：拆出件、顺序、lane 读本台账（开头「已拆（前三刀…）」那行 + 各刀节标题），所以**节标题的写法是契约**：``## 第N刀（lane X，日期）：… → `scripts/ui/X.gd` ``。拆出函数读 Main 的一行转发，commit 和行范围读 git（拆出 commit 父版的 Main.gd）；各刀一节的函数表（「| `_fn(…)` |」行）与 Main 转发双向对账：表里列了的，现 Main 须仍一行转发到本件（lane cs18，挪回 Main / 改名 / 转去别件没改表即红）；那节有表的，现 Main 一行转发到本件的每支都须列在表里（lane cs22，有表就须列全）；表格行写了逐支行段的，再与拆出 commit 父版 Main.gd 重算的行段逐支对账。没有函数表的节（前三刀、第四 / 五刀）不查这两条。
 - check_symbols「一之零」每轮重算、与清单逐字节比：手改清单、台账加了一刀没 `--write`、删了拆出件没更新，都判红。
 
 ---
