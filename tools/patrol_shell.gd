@@ -76,6 +76,7 @@ func _run() -> void:
 	await _check_sea_chart()
 	await _check_market_fold()
 	await _check_endgame_pages()
+	await _v0928_crew_board_check()
 	_finish()
 
 
@@ -563,3 +564,106 @@ func _finish() -> void:
 			print("  ✗ ", f)
 		GateReport.finish("patrol_shell", 1, "PATROL SHELL FAIL")
 		quit(1)
+
+
+## crew 线 09-29 返修（复核 4）：接舷夺下末艘，「夺船」题签全显的游戏时 ≥ T_HOLD 的八成、全显 ≥ 3 帧，出战墨边写「……・夺船」。
+## 09-28 修前末艘夺下当帧就出战：题签只留 1 帧、墨边写「战罢」。这两条原先只在 git 忽略的验收探针里，合并后没门禁拦，这里进巡检。
+## 真起一场海战（海寇只刷一艘：首艘即末艘），冻住敌炮，敌船水手清零保证白刃必胜；主场景先藏起、演完还原，船队与战况复原。
+## 题签停留按游戏时累加（process delta，顿帧压低 time_scale 时照样是游戏时），不看墙钟、不按帧率。headless 下题签起不来，打 ⚠ 不判。
+const _CrewStage := preload("res://tools/combat_probe_stage.gd")
+const _CrewBoarding := preload("res://scripts/combat/BoardingStage.gd")
+
+
+func _v0928_crew_board_check() -> void:
+	if _no_render:
+		var why_skip := "末艘夺船题签与出战墨边未判：无渲染环境（DisplayServer=%s）" % DisplayServer.get_name()
+		print("  ⚠ ", why_skip)
+		GateReport.warn(why_skip)
+		return
+	var gm: Node = root.get_node("GameManager")
+	var fleet: Node = root.get_node("Fleet")
+	var saved_ships: Array = (fleet.get("ships") as Array).duplicate(true)
+	var saved_battle: Dictionary = (gm.get("pending_battle") as Dictionary).duplicate(true)
+	var saved_morale: int = int(fleet.get("morale"))
+	var consts: Dictionary = (load("res://scripts/SeaChart.gd") as GDScript).get_script_constant_map()
+	var entry: Dictionary = (consts.get("PIRATE_ENEMY", {}) as Dictionary).duplicate()
+	entry["count"] = 1
+	fleet.set("ships", [])
+	fleet.call("add_ship", "fu_ship_medium", "")
+	gm.set("pending_battle", {"battle": true, "power": 300.0, "player_power": 400.0, "enemy": [entry],
+		"sea_name": "泉州外海", "source": {"scene": "patrol_shell", "event": "pirate"}})
+	var main_vis: bool = _main is CanvasItem and (_main as CanvasItem).visible
+	if _main is CanvasItem:
+		(_main as CanvasItem).visible = false
+	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
+	root.add_child(wm)
+	var ref: WeakRef = weakref(wm)
+	_CrewStage.freeze_enemy_fire(wm)
+	var result: Array = []
+	wm.connect("battle_finished", func(o: String, d: Dictionary) -> void: result.append([o, d]))
+	# 入战墨边（挂在 wm 下）收了再接舷
+	await _CrewStage.wait_until(self, func() -> bool:
+		return ref.get_ref() == null or _CrewStage.letterbox_under(self, ref.get_ref()) == null)
+	var foe: Node2D = null
+	if ref.get_ref() != null:
+		for c in wm.get_children():
+			if String(c.name).begins_with("PirateShip") and not c.is_queued_for_deletion():
+				foe = c
+	_check(foe != null, "巡检海战刷出一艘海寇（首艘即末艘）")
+	var hold_ok := false
+	var hold_note := "未量到"
+	if foe != null:
+		foe.set("crew", 0)
+		foe.set_physics_process(false)
+		foe.position = (wm.get("ship") as Node2D).position + Vector2(95, 0)
+		wm.call("_board_enemy", foe)
+		var why: String = await _CrewStage.wait_drawn(self, func() -> bool:
+			var cap: Array = _CrewStage.board_caption(self, ref.get_ref())
+			return cap[0] == "夺船" and float(cap[1]) >= 0.99, func() -> bool: return ref.get_ref() == null, 8000)
+		if why == "":
+			_save_shot("crew_末艘夺船题签")
+			var full_frames := 1
+			var game_hold := 0.0
+			var dropped := false
+			while ref.get_ref() != null:
+				await process_frame
+				await RenderingServer.frame_post_draw
+				var cap: Array = _CrewStage.board_caption(self, ref.get_ref())
+				if cap[0] == "夺船" and float(cap[1]) >= 0.99:
+					game_hold += root.get_process_delta_time()
+					full_frames += 1
+				elif not dropped:
+					# 淡出起步的那一帧：这一帧的 delta 里前一段题签仍全显
+					dropped = true
+					game_hold += root.get_process_delta_time()
+			hold_ok = game_hold >= _CrewBoarding.T_HOLD * 0.8 and full_frames >= 3
+			hold_note = "全显 %d 帧、游戏时 %.2f s" % [full_frames, game_hold]
+		else:
+			hold_note = why
+	_check(hold_ok, "末艘「夺船」题签停满 T_HOLD %.2f s 的八成、全显 ≥ 3 帧（%s）" % [_CrewBoarding.T_HOLD, hold_note])
+	# 出战墨边挂在布景的父节点（root）下：等题签整行擦出再读题
+	var lbref: Array = [null]
+	var why3: String = await _CrewStage.wait_drawn(self, func() -> bool:
+		var lb: Node = _CrewStage.letterbox_under(self, root)
+		if lb == null:
+			return false
+		lbref[0] = weakref(lb)
+		var sub: Label = lb.get("_sub")
+		var clip: Control = lb.get("_clip")
+		return sub != null and sub.modulate.a >= 0.99 and clip != null and clip.modulate.a >= 0.99, Callable(), 8000)
+	var lbn: Node = (lbref[0] as WeakRef).get_ref() if lbref[0] != null else null
+	var exit_title := str(lbn.get("title")) if lbn != null else ""
+	if why3 == "":
+		_save_shot("crew_出战墨边_夺船")
+	var d: Dictionary = result[0][1] if result.size() == 1 else {}
+	_check(why3 == "" and exit_title.ends_with("・夺船") and result.size() == 1 and result[0][0] == "win" and bool(d.get("boarded", false)),
+		"末艘夺下以 boarded 出战、出战墨边写「%s」（以「・夺船」结尾；%s）" % [exit_title, why3 if why3 != "" else "墨边已擦出"])
+	_CrewStage.teardown(self, ref.get_ref(), gm)
+	await process_frame
+	await process_frame
+	fleet.set("ships", saved_ships)
+	fleet.set("morale", saved_morale)
+	gm.set("pending_battle", saved_battle)
+	root.canvas_transform = Transform2D()
+	if _main is CanvasItem:
+		(_main as CanvasItem).visible = main_vis
