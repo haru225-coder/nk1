@@ -634,6 +634,8 @@ func _route_check() -> void:
 				wait_sail = true
 	_check(GS.ended == "忠肃" and not GS.siege_open() and now_ym >= fall_ym and not wait_sail,
 		"守城页候 %d 日到 %s（城破时点 %s）→ 按城破结算「%s」，不回寻常港页、没有「看风」" % [waited_siege, Cal.get_date_string(), fall_ym, GS.ended])
+	_close_dialogs(main)
+	_life_line_check(main)
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
@@ -671,6 +673,79 @@ func _close_dialogs(main: Node) -> void:
 
 
 ## 在节点树里找第一个含 needle 的 Label 文本（册页标题等）；找不到返回空串
+## 生卒一行：卒年到次年才写（#11）；主角只在「忠肃」这条世界线写卒年（查漏 §四.B.8）。
+## 人物志详页、见面页人物栏、立绘面板三处都走 CharacterArt.life_line，逐处实建控件看上屏字。
+func _life_line_check(main: Node) -> void:
+	var Art = load("res://scripts/ui/CharacterArt.gd")
+	var pc: Dictionary = GM.get_character("chen_wenlong")
+	var pc_born := str(int(pc.get("born", 0)))
+	var pc_died := str(int(pc.get("died", 0)))
+	_check(pc_born != "0" and pc_died != "0", "主角原稿有生卒（%s—%s），下面才测得出卒年藏没藏" % [pc_born, pc_died])
+	# [身份, 改名文龙, 年, 月, 结局, 该不该写卒年]
+	var cases := [
+		["merchant", false, 1278, 3, "", false],
+		["hometown", false, 1277, 10, "岸上的根", false],
+		["merchant", false, 1279, 2, "海上宋鬼", false],
+		["merchant", false, 1285, 5, "纲首", false],
+		["merchant", false, 1285, 5, "泉州蒲氏的船", false],
+		["scholar", true, 1277, 1, "未归", false],
+		["scholar", true, 1276, 12, "忠肃", true],
+	]
+	for cs in cases:
+		GS.from_dict({})
+		GS.identity = cs[0]
+		if cs[1]:
+			GS.set_flag("renamed_wenlong")
+		Cal.from_dict({"year": cs[2], "month": cs[3], "day": 5})
+		if str(cs[4]) != "":
+			GS.finish(cs[4], "正文")
+		var ll: String = Art.life_line(pc)
+		_check((ll.find(pc_died) >= 0) == bool(cs[5]),
+			"主角生卒「%s」（%s・%d-%02d・结局「%s」）%s" % [ll, cs[0], cs[2], cs[3], cs[4], "写卒年" if cs[5] else "不写卒年"])
+	# 三处上屏：活着的世界线（海商 1278，未了结）与「忠肃」各看一遍
+	var cp_scr = load("res://scripts/chars/CharPortraitPanel.gd")
+	var cx_scr = load("res://scripts/ui/CharacterCodex.gd")
+	for dead in [false, true]:
+		GS.from_dict({})
+		if dead:
+			GS.identity = "scholar"
+			GS.set_flag("renamed_wenlong")
+			Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+			GS.finish("忠肃", "正文")
+		else:
+			GS.identity = "merchant"
+			Cal.from_dict({"year": 1278, "month": 3, "day": 5})
+		var tag := "忠肃" if dead else "海商 1278 未了结"
+		var cx: Control = cx_scr.new()
+		root.add_child(cx)
+		cx.call("begin", "chen_wenlong")
+		var t_codex := _find_label_text(cx, pc_born)
+		var pp: Node = cp_scr.new()
+		root.add_child(pp)
+		pp.call("show_character", pc)
+		var t_panel := _find_label_text(pp, pc_born)
+		main._fill_npc_profile(pc)
+		var t_npc := _find_label_text(main.get("_npc_profile"), pc_born)
+		for pair in [["人物志", t_codex], ["立绘面板", t_panel], ["见面页", t_npc]]:
+			var t: String = pair[1]
+			_check(t != "" and (t.find(pc_died) >= 0) == dead,
+				"%s主角生卒（%s）%s卒年：「%s」" % [pair[0], tag, "写" if dead else "不写", t])
+		cx.queue_free()
+		pp.queue_free()
+	# #11 卒年到次年才写：陈瓒卒于 1277（冬），1277 年里不写，1278 年写
+	var cz: Dictionary = GM.get_character("chen_zan")
+	var cz_died := int(cz.get("died", 0))
+	_check(cz_died > 0, "陈瓒原稿有卒年（%d）" % cz_died)
+	GS.from_dict({})
+	Cal.from_dict({"year": cz_died, "month": 11, "day": 5})
+	var cz_same: String = Art.life_line(cz)
+	Cal.from_dict({"year": cz_died + 1, "month": 1, "day": 1})
+	var cz_next: String = Art.life_line(cz)
+	_check(cz_same.find(str(cz_died)) < 0 and cz_next.find(str(cz_died)) >= 0,
+		"卒年到次年才写：陈瓒 %d 年里「%s」，%d 年正月「%s」" % [cz_died, cz_same, cz_died + 1, cz_next])
+	GS.from_dict({})
+
+
 func _find_label_text(node: Node, needle: String) -> String:
 	if node == null or not is_instance_valid(node):
 		return ""
