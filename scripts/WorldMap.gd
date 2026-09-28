@@ -5,6 +5,8 @@ const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const _BoardingStage := preload("res://scripts/combat/BoardingStage.gd")
 const _LETTERBOX_PATH := "res://scripts/ui/CombatLetterbox.gd"
 const _Kit := preload("res://scripts/cutscene/cs_kit.gd")
+const _SeaState := preload("res://scripts/combat/SeaState.gd")
+const _Maneuver := preload("res://scripts/combat/ManeuverModel.gd")
 
 ## 战斗结束信号：outcome 为 "win"/"lose"/"flee"，data 携带战损等结算信息
 signal battle_finished(outcome: String, data: Dictionary)
@@ -23,7 +25,18 @@ var time_of_day: float = 12.0
 var is_storm: bool = false
 var storm_timer: float = 0.0
 var lightning_timer: float = 0.0
+## 参考风力：海战里是 SeaState 按月令季风定本场风力的基准（季风盛时约等于它），自由航行（孤儿场景）照旧直接用
 var base_wind_strength: float = 80.0
+
+# ── 风流与机动（lane combat02）──
+## 本场海况（SeaState：风向 / 风力 / 阵风 / 海流），_setup_sea 建；没开战为 null。别处用 sea_state() 取
+var _sea: _SeaState = null
+## 旗舰机动模型（ManeuverModel 实例）：_physics_process 里按它换掉 Ship 自己那一步的转向与位移
+var _helm: _Maneuver = null
+## 旗舰船首向（rad）：模型的航向，每物理帧写回 ship.rotation
+var _helm_rot: float = 0.0
+## 旗舰船型（ships.json id），开战时从 Fleet 旗舰取
+var _flagship_type: String = ""
 
 # ── 战斗模式（P4-1 接入）──
 ## 由 SeaChart._on_fight_pirates 开启：遭遇海盗进入本场景即战斗专用
@@ -50,7 +63,8 @@ const COMBAT_FIRE_DELAY := 3.5
 ## 第一轮约 100，停着打第二轮才沉，B 来得及按。
 const COMBAT_CANNON_CAP := 2
 
-## P4-2 接舷距离：低于此距离可按 G 钩住敌船进入白刃
+## P4-2 接舷距离：低于此距离可按 G 钩住敌船进入白刃。lane combat02 起是基准够距：
+## 实际够距按风压差、上风位、相对航速在它上下浮（_board_check → ManeuverModel.boarding_approach）
 const BOARD_DISTANCE := 140.0
 ## 白刃阶段（接舷中）：玩家已钩住某船，停炮击、禁逃离，只等白刃判定
 var boarding: bool = false
@@ -110,6 +124,17 @@ func _process(delta: float) -> void:
 			_battle_exit("win", {})
 
 	_update_hud()
+
+
+## lane combat02：海况逐物理帧推进，旗舰按机动模型走。本节点 process_physics_priority 调到船后面（_setup_sea），
+## 这里拿到的是 Ship 本帧已按旧式风力转过向、挪过位的状态，再换成模型的（Ship.gd 不归本 lane，出航接口不动）。
+func _physics_process(delta: float) -> void:
+	if not combat_mode or resolved or _sea == null or _helm == null or not is_instance_valid(ship):
+		return
+	_sea.step(delta)
+	_feed_ship_wind()
+	if ship.hull_hp > 0.0:
+		_steer_flagship(delta)
 
 
 ## 战斗模式下存活敌船数（PirateShip 爆炸后 hull_hp 归零仍存活一帧，按血量判定）
@@ -268,11 +293,7 @@ func _show_combat_notice(text: String) -> void:
 
 
 func _update_hud() -> void:
-	var wind_desc = "无风"
-	if ship.wind_vector.y > 0: wind_desc = "北风"
-	elif ship.wind_vector.y < 0: wind_desc = "南风"
-	elif ship.wind_vector.x > 0: wind_desc = "西风"
-	elif ship.wind_vector.x < 0: wind_desc = "东风"
+	var wind_desc := _wind_desc()
 
 	var hp_color := "#" + UiTheme.hex(UiTheme.MOSS)
 	if ship.hull_hp < 50:
@@ -289,9 +310,13 @@ func _update_hud() -> void:
 			boarding_hint = "[color=#%s]已钩住[/color]" % UiTheme.hex(UiTheme.HONEY)
 		else:
 			var ne := _nearest_enemy()
-			if ne.size() == 2 and ne[1] < BOARD_DISTANCE:
-				tail = "接舷　G　弃战　B"
-				boarding_hint = "[color=#%s]舷边可接[/color]" % UiTheme.hex(UiTheme.HONEY)
+			if ne.size() == 2:
+				var bc := _board_check(ne[0])
+				if bool(bc.get("ok", false)):
+					tail = "接舷　G　弃战　B"
+					boarding_hint = "[color=#%s]舷边可接[/color]" % UiTheme.hex(UiTheme.HONEY)
+				elif str(bc.get("reason", "")) != "":
+					boarding_hint = "[color=#%s]%s[/color]" % [UiTheme.hex(UiTheme.TEXT_DIM), str(bc["reason"])]
 	label.text = _format_left_hud(
 		mission, boarding_hint, wind_desc, int(ship.wind_strength),
 		ship.sail_gear, hp_color, int(ship.hull_hp), int(ship.max_hp), tail,
@@ -338,8 +363,7 @@ func _process_weather_and_time(delta: float) -> void:
 		is_storm = false
 		rain_particles.emitting = false
 		# 战斗目标提示由 _setup_combat 设置，这里不覆盖
-		ship.wind_strength = base_wind_strength
-		ship.wind_vector = Vector2(0, 1)
+		_feed_ship_wind()
 		canvas_modulate.color = canvas_modulate.color.lerp(Color(1, 1, 1, 1), 2.0 * delta)
 		return
 
@@ -407,7 +431,8 @@ func _setup_combat(pb: Dictionary) -> void:
 		var count: int = entry.get("count", 1)
 		# sprite 只管海战精灵（船图契约）；元军哨船 type 仍是 sea_falcon，另挂 sprite=yuan_patrol
 		_spawn_enemy(type_id, count, pb, str(entry.get("sprite", "")))
-	weather_status.text = "海战"
+	_setup_sea(pb)
+	weather_status.text = "海战　%s" % _sea.current_desc()
 	weather_status.add_theme_color_override("font_color", UiTheme.HONEY)
 	_try_letterbox_enter(pb)
 
@@ -456,12 +481,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_G:
-			if boarding or _nearest_enemy().size() != 2:
-				return
 			var ne := _nearest_enemy()
-			if ne[1] < BOARD_DISTANCE:
+			if boarding or ne.size() != 2:
+				return
+			var bc := _board_check(ne[0])
+			if bool(bc.get("ok", false)):
 				get_viewport().set_input_as_handled()
 				_board_enemy(ne[0])
+			elif str(bc.get("note", "")) != "":
+				get_viewport().set_input_as_handled()
+				_show_combat_notice(str(bc["note"]))
 		elif event.keycode == KEY_B or event.keycode == KEY_ESCAPE:
 			if boarding:
 				return # 白刃已钩住，不能逃
@@ -487,6 +516,7 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 		data["boarded"] = true
 	_AUDIO.combat_result(self, outcome)
 	_try_letterbox_exit(outcome)
+	_SeaState.clear_active(_sea)
 	battle_finished.emit(outcome, data)
 	queue_free()
 
@@ -558,3 +588,160 @@ func _try_letterbox_exit(outcome: String) -> void:
 			sea_x = sn
 	LB.exit(parent, LB.outcome_title(act_outcome, sea_x), Calendar.get_date_string())
 
+
+# ══ 风流与机动（lane combat02）══════════════════════════════════
+# 海况（SeaState）按月令季风与海域定风、定流；旗舰按 ManeuverModel 走：顶风减速、侧风横漂（风压差）、顺风加速，
+# 转向半径按船型、舵效随对水航速，海流叠成对地航速；接舷够距吃风压差、上风位与相对航速。
+# 敌船怎么走归 PirateShip / EnemyCaptainAI，这里不挪敌船（免得与之重算海流）；它们要风流读数走下面的查询口或 SeaState.active()。
+
+## 开战建海况与旗舰机动模型。pending_battle 可选键（剧情 / 探针定场用，SeaChart 不写）：
+##   sea_seed 随机种子 · wind_bearing 吹向方位（度，0 北 90 东）· wind_strength 风力
+func _setup_sea(pb: Dictionary) -> void:
+	var month := Calendar.month
+	_sea = _SeaState.new()
+	_sea.setup(Calendar.wind_bearing_of(month), Calendar.monsoon_strength_of(month), base_wind_strength,
+		str(pb.get("sea_name", "外海")), int(pb.get("sea_seed", -1)))
+	if pb.has("wind_bearing") or pb.has("wind_strength"):
+		var to_b: float = float(pb.get("wind_bearing", _SeaState.bearing_of(_sea.wind_to)))
+		_sea.force_wind(to_b, float(pb.get("wind_strength", _sea.wind_mean)))
+	_SeaState.bind_active(_sea)
+	var fs := Fleet.flagship()
+	_flagship_type = str(fs.get("type", ""))
+	_helm = _Maneuver.new(_flagship_type, int(fs.get("sail_level", 1)), Crew.level_of("duogong"))
+	_helm_rot = ship.rotation
+	# 先读一次帆向（dt = 0 不改航速），顶匾第一帧就写对
+	_helm.step(Vector2.UP.rotated(_helm_rot), 0.0, int(ship.sail_gear), _sea.wind_to, _sea.wind_speed,
+		_sea.current_at(ship.position), 0.0)
+	# 物理帧排在船后面：Ship / PirateShip 先走完本帧，_physics_process 再按模型改旗舰
+	process_physics_priority = 10
+	_feed_ship_wind()
+
+
+## 海况的风喂给旗舰：Ship 拿它算侧倾（旧式推力已被模型换掉）。海战风力封顶在风暴伤线以下（SeaState.WIND_CAP）
+func _feed_ship_wind() -> void:
+	ship.wind_strength = _wind_speed()
+	ship.wind_vector = _wind_to()
+
+
+## 旗舰按机动模型走一帧：航向按舵效转（对水航速 / 船型转向半径），航速按帆向，外加风压差横漂与海流。
+## Ship 这一帧按旧式风力挪过的那段位移补差成模型的；钩住敌船时两船绑在一处，停航停舵、不随流走开。
+func _steer_flagship(delta: float) -> void:
+	var heading := Vector2.UP.rotated(_helm_rot)
+	var want: Vector2
+	if boarding:
+		want = _helm.hold(heading, delta)
+	else:
+		want = _helm.step(heading, _helm_input(), int(ship.sail_gear), _sea.wind_to, _sea.wind_speed,
+			_sea.current_at(ship.position), delta, _maneuver_mods(ship))
+		_helm_rot = wrapf(_helm_rot + _helm.yaw_rate * delta, -PI, PI)
+	ship.rotation = _helm_rot
+	var fix: Vector2 = (want - ship.velocity) * delta
+	if fix.length_squared() > 0.0001:
+		ship.move_and_collide(fix)
+	ship.velocity = want
+
+
+## 旗舰操舵输入（同 Ship：方向键左右或 A / D；−1 左舵 … 1 右舵）
+func _helm_input() -> float:
+	var t := Input.get_axis("ui_left", "ui_right")
+	if Input.is_physical_key_pressed(KEY_A):
+		t -= 1.0
+	if Input.is_physical_key_pressed(KEY_D):
+		t += 1.0
+	return clampf(t, -1.0, 1.0)
+
+
+## 船体损伤对机动的折减（可选接口）：船节点有 maneuver_mods() 就用它（键见 ManeuverModel 头注释：
+## sail / rudder / hull / oar / row），没有按完好算
+func _maneuver_mods(n: Object) -> Dictionary:
+	if n != null and n.has_method("maneuver_mods"):
+		var m = n.call("maneuver_mods")
+		if m is Dictionary:
+			return m
+	return {}
+
+
+## 船节点 → ManeuverModel 查询用的船况：位置、对地速度、船首向、船型、升帆几成（敌船不报 sail_gear 的按满帆算）
+func _hull_state(n: Node2D) -> Dictionary:
+	var v = n.get("velocity")
+	var g = n.get("sail_gear")
+	return {
+		"pos": n.position,
+		"vel": v if v is Vector2 else Vector2.ZERO,
+		"heading": Vector2.UP.rotated(n.rotation),
+		"type": _flagship_type if n == ship else _node_str(n, "ship_type", ""),
+		"gear": int(g) if g != null else 2,
+	}
+
+
+## 接舷够不够得着：吃风压差、上风位与相对航速（旗舰钩 enemy）
+func _board_check(enemy: Node2D) -> Dictionary:
+	return boarding_approach_of(ship, enemy)
+
+
+## 顶匾的风：海况的八方风名 + 旗舰此刻帆向（顶风 / 抢风 / 侧风 / 顺风）；没建海况（孤儿场景）照旧按 Ship 的风写四向
+func _wind_desc() -> String:
+	if _sea != null and _helm != null:
+		return "%s　%s" % [_sea.wind_name(), _helm.sail_state]
+	var wv: Vector2 = ship.wind_vector
+	if wv.y > 0:
+		return "北风"
+	if wv.y < 0:
+		return "南风"
+	if wv.x > 0:
+		return "西风"
+	if wv.x < 0:
+		return "东风"
+	return "无风"
+
+
+func _wind_to() -> Vector2:
+	return _sea.wind_to if _sea != null else Vector2(0, 1)
+
+
+func _wind_speed() -> float:
+	return _sea.wind_speed if _sea != null else base_wind_strength
+
+
+## 离树（出战 queue_free、探针拆布景）放掉当前海况，别处 SeaState.active() 不再拿到这一场
+func _exit_tree() -> void:
+	_SeaState.clear_active(_sea)
+
+
+# ── 查询口（只读：给敌船 AI、指令面板、弹道、白刃取用）──
+
+## 本场海况（SeaState 实例：wind_to / wind_speed / current_at / wind_name / current_desc / snapshot）；没开战为 null
+func sea_state() -> RefCounted:
+	return _sea
+
+
+## 旗舰机动读数（帆向、对水 / 对地航速、风压差角、转向半径……，ManeuverModel.snapshot）并上海况读数（SeaState.snapshot）
+func maneuver_snapshot() -> Dictionary:
+	var out := {}
+	if _sea != null:
+		out.merge(_sea.snapshot())
+	if _helm != null:
+		out.merge(_helm.snapshot())
+	return out
+
+
+## shooter 打 target 的舷角：哪一舷、离正横几度、在不在射界，顺逆风与侧倾对射程、准头的修正（ManeuverModel.fire_arc）。
+## 两个形参故意不写类型：调用方手里的船可能刚被打沉释放，带类型的形参收到已释放实例当场报错；这里判了才用，失效返回 {}
+func fire_arc_of(shooter, target, arc_half_deg := 30.0) -> Dictionary:
+	if not (_valid_hull(shooter) and _valid_hull(target)):
+		return {}
+	var st := _hull_state(shooter)
+	return _Maneuver.fire_arc(shooter.position, st["heading"], target.position, _wind_to(), _wind_speed(),
+		int(st["gear"]), arc_half_deg)
+
+
+## a 钩 b 的接舷接近：够距按风压差、上风位、相对航速在 BOARD_DISTANCE 上下浮（ManeuverModel.boarding_approach）。
+## 形参不写类型同 fire_arc_of；失效返回 {}
+func boarding_approach_of(a, b) -> Dictionary:
+	if not (_valid_hull(a) and _valid_hull(b)):
+		return {}
+	return _Maneuver.boarding_approach(_hull_state(a), _hull_state(b), _wind_to(), _wind_speed(), BOARD_DISTANCE)
+
+
+func _valid_hull(n) -> bool:
+	return is_instance_valid(n) and n is Node2D
