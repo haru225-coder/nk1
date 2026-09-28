@@ -71,7 +71,13 @@ func _physics_process(delta: float) -> void:
 	if dist < 600.0:
 		if angle_diff > 0: target_angle_diff -= PI/2.0
 		else: target_angle_diff += PI/2.0
-		
+	# 敌船之间分离：几艘都从左右两舷往本船同一侧兜，会在船头汇成一团叠成一艘（crew 线 09-28 实机）。
+	# 只偏航向，不改航速、转向上限与开炮判定（开炮仍按对本船的 angle_diff）。
+	var push := _separation_push()
+	if push != Vector2.ZERO:
+		var want: Vector2 = (ship_dir.rotated(target_angle_diff) + push * SEPARATION_WEIGHT).normalized()
+		target_angle_diff = ship_dir.angle_to(want)
+
 	rotation += clamp(target_angle_diff, -base_turn_speed*delta, base_turn_speed*delta)
 	
 	velocity = ship_dir * max_speed
@@ -79,7 +85,8 @@ func _physics_process(delta: float) -> void:
 	
 	var speed_ratio = velocity.length() / max_speed
 	wake_particles.emitting = true
-	wake_particles.scale_amount_max = 2.0 + speed_ratio * 4.0
+	# 尾迹挂 soft_dot（64 px 柔点）：原先无贴图时 scale 即边长像素（2—6），换贴图按半透明芯径约 28 px 折算
+	wake_particles.scale_amount_max = (2.0 + speed_ratio * 4.0) * DOT_PX_SCALE
 	
 	_process_firing(delta, angle_diff, dist)
 
@@ -127,3 +134,31 @@ func _explode() -> void:
 func combat_strength() -> float:
 	var morale_factor := 0.6 + 0.4 * (float(enemy_morale) / 100.0)
 	return float(crew) * morale_factor * captain_force
+
+
+## 分离：船图约 317 px 长（512 × 0.62），碰撞圆只有 24，物理上不相撞、画面上却能整条压住。
+## 与别的活敌船相距不足 SEPARATION_DIST 就往外推，越近推得越狠；返回各邻船推力之和（无邻船为零向量）。
+const SEPARATION_DIST := 300.0
+## 推力并进航向时的权重：贴身（推力≈1）时压过绕舷侧的本意，相距一半以上时只偏一点
+const SEPARATION_WEIGHT := 2.0
+## 无贴图粒子的 scale 是方块边长（像素）；挂 assets/fx/soft_dot.png（64 px，半透明芯径约 28 px）后按 1/28 折成同样大小的柔点
+const DOT_PX_SCALE := 1.0 / 28.0
+
+
+func _separation_push() -> Vector2:
+	var push := Vector2.ZERO
+	var host := get_parent()
+	if host == null:
+		return push
+	for n in host.get_children():
+		if n == self or not (n is PirateShip) or n.is_queued_for_deletion():
+			continue
+		var other := n as PirateShip
+		if other.hull_hp <= 0.0:
+			continue
+		var away := position - other.position
+		var d := away.length()
+		if d < 0.001 or d >= SEPARATION_DIST:
+			continue
+		push += away / d * (1.0 - d / SEPARATION_DIST)
+	return push

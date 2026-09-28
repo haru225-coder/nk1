@@ -112,6 +112,22 @@ func add_ship(type_id: String, ship_name: String = "") -> bool:
 	return true
 
 
+## 夺来的船按序号起名：底字＋「・一」「・二」…（快船・一、元哨船・二）。两艘同名时船屋两枚「换上　快船」分不清是哪一艘
+## （crew 线 09-28 实机）。序号取船队里同底字已用的最大号＋1；type 不动，底字空时写「敌船」。
+func prize_name(base: String) -> String:
+	var b := base.strip_edges()
+	if b == "":
+		b = "敌船"
+	var top := 0
+	for k in range(1, 100):
+		var nm := "%s・%s" % [b, GameManager.cn_num(k)]
+		for s in ships:
+			if str(s.get("name", "")) == nm:
+				top = k
+				break
+	return "%s・%s" % [b, GameManager.cn_num(top + 1)]
+
+
 func flagship() -> Dictionary:
 	return ships[0] if not ships.is_empty() else {}
 

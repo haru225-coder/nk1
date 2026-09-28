@@ -21,8 +21,10 @@ func _process(delta: float) -> void:
 	position += direction * speed * delta
 
 func _on_body_entered(body: Node2D) -> void:
-	if body == shooter: return
-	
+	# 发炮的船可能已被打沉 / 夺下释放（炮弹还在飞）：已释放的实例不能再拿来比较或传进带类型的形参
+	var live_shooter: Node2D = shooter if is_instance_valid(shooter) else null
+	if live_shooter != null and body == live_shooter: return
+
 	if body.has_method("take_damage"):
 		# P4-3：玩家船（Ship）受击乘甲减伤；敌船（PirateShip）保持原伤害
 		var dmg := damage
@@ -30,7 +32,7 @@ func _on_body_entered(body: Node2D) -> void:
 			dmg = damage * Fleet.armor_damage_reduction()
 		body.take_damage(dmg)
 		_AUDIO.combat_hit(get_parent())
-		_CombatFx.on_cannon_hit(get_parent(), position, shooter)
+		_CombatFx.on_cannon_hit(get_parent(), position, live_shooter)
 		_explode_and_die()
 		_spawn_floating_text("-" + str(int(dmg)), Color.RED)
 	else:
