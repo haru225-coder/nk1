@@ -15,9 +15,13 @@ extends RefCounted
 ##   定向探针（letterbox_signal / qa_yard_transition，不截图、不入截图册）开场都调它；
 ##   gates_md 查每个接本文件的脚本代码行里都调了 ShotGate.frame_pressure，漏挂判红。
 ##     NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path . -s res://tools/qa_title_probe.gd
+## 墙钟上界兜底（lane gd24）：两个收尾函数先看 probe_clock 的账——本进程有等待撞了上界，而调用方没判红（没看返回、
+##   靠多停几帧碰运气），补一条红；error 没给且有「压帧过重」的撞界时填 wall_clock，JSON 另带 timeouts（压帧过重次数）/
+##   stalls（卡住次数）。口径见 probe_clock 头注释「三」。
 
 const DEFAULT_SHOT_ROOT := "/workspace/nk1-qa-shots"
 const GateReport := preload("res://tools/gate_report.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 const ENV_SLOW := "NK1_PROBE_SLOW_MS"
 const PRESSURE_NODE := "ProbeFramePressure"
 
@@ -122,15 +126,35 @@ static func shot(root: Window, path: String, saved: Array, fails: Array, allow_b
 	return img
 
 
+## 墙钟上界兜底（头注释）：有撞界而 fails 为空时补一条红；返回要写进 JSON 的 error，timeouts / stalls 写进 extra。
+static func _wall_clock(fails: Array, error: String, extra: Dictionary) -> String:
+	var hits := Clock.pressure_hits + Clock.stall_hits
+	if hits == 0:
+		return error
+	extra["timeouts"] = Clock.pressure_hits
+	if Clock.stall_hits > 0:
+		extra["stalls"] = Clock.stall_hits
+	if Clock.pressure_hits > 0:
+		print("  注：本跑 %d 次等待墙钟上界先到、压帧过重（不是挂死，也不是被测件的错；--json error=%s）" % [
+			Clock.pressure_hits, Clock.WALL_CLOCK])
+	if fails.is_empty():
+		fails.append("有 %d 次等待撞了墙钟上界（压帧过重 %d / 卡住 %d）却没判红：调用方没看返回，这一跑是碰运气得来的绿，判不了" % [
+			hits, Clock.pressure_hits, Clock.stall_hits])
+	if error == "" and Clock.pressure_hits > 0:
+		return Clock.WALL_CLOCK
+	return error
+
+
 ## 截图模式收尾：实得张数 < 声明张数也判失败。返回退出码。
 static func finish_shots(tag: String, saved: Array, expected: int, out_dir: String, fails: Array, error := "") -> int:
 	if saved.size() < expected:
 		fails.append("真失败：声明 %d 张截图，实得 %d 张" % [expected, saved.size()])
+	var extra := {"tag": tag, "shots": saved.size(), "expected_shots": expected, "out_dir": out_dir}
+	error = _wall_clock(fails, error, extra)
 	for p in saved:
 		GateReport.check(true, str(p).get_file(), "shot")
 	for f in fails:
 		GateReport.check(false, str(f))
-	var extra := {"tag": tag, "shots": saved.size(), "expected_shots": expected, "out_dir": out_dir}
 	if fails.is_empty():
 		var ok_line := "%s_OK shots=%d/%d -> %s" % [tag, saved.size(), expected, out_dir]
 		print(ok_line)
@@ -158,18 +182,19 @@ static func fail_no_render(tag: String, reason: String, expected: int) -> int:
 
 ## 契约模式收尾：只报契约断言，不报张数。返回退出码。
 static func finish_contract(tag: String, fails: Array, error := "") -> int:
+	var extra := {"tag": tag, "contract": true}
+	error = _wall_clock(fails, error, extra)
 	for f in fails:
 		GateReport.check(false, str(f))
 	if fails.is_empty():
 		var ok_line := "%s_CONTRACT_OK（契约模式：未截图，截图门禁须另用 DISPLAY 跑）" % tag
 		print(ok_line)
-		GateReport.finish(GateReport.main_script_name(), 0, ok_line, {"tag": tag, "contract": true})
+		GateReport.finish(GateReport.main_script_name(), 0, ok_line, extra)
 		return 0
 	for f in fails:
 		print("  ✗ ", f)
 	var fail_line := "%s_CONTRACT_FAIL %d" % [tag, fails.size()]
 	print(fail_line)
-	var extra := {"tag": tag, "contract": true}
 	if error != "":
 		extra["error"] = error
 	GateReport.finish(GateReport.main_script_name(), 1, fail_line, extra)

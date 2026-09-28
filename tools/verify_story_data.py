@@ -69,7 +69,7 @@ for s in scenes:
 
 # 2026-09-14 审计 P0：剧情幕 id 与港口 id 同名却不是 type=port 时，海图抵港 load_scene 命中剧情表、
 # 走调查页而不调 _on_enter_port，visited_ports 永不记录——章节 must_visit 在真机上不可完成。
-# 七道门禁对此全盲（simulate_run 自管 visited）。此处把「同名必是港」做成静态门禁。
+# 七道门禁（2026-09-14 审计时口径；现行 16 道）对此全盲（simulate_run 自管 visited）。此处把「同名必是港」做成静态门禁。
 for s in scenes:
     if s["id"] in port_ids:
         check(s.get("type") == "port",
@@ -508,6 +508,7 @@ L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
     "tools/verify_story_data.py": ({"raw", "codex", "api"}, "gate", "本门禁（自证合成源码里写着取数口）"),
     "tools/check_symbols.py": ({"raw", "codex"}, "gate", "L1 工程词 / 展示入口契约"),
     "tools/check_assets.py": ({"raw"}, "gate", "立绘资源存在性"),
+    "tools/check_data_family.py": ({"raw"}, "gate", "data/ 同族结构门禁：普查 data/*.json 的 id 表 / 自引用（characters.json 是候选、登 not_family），变异自证改它验不误红；不上屏"),
     "tools/godot_smoke.gd": ({"raw", "api"}, "gate", "冒烟：阵营表、见面页立绘"),
 }
 _L1B_KIND_RE = {
@@ -745,11 +746,13 @@ for s in scenes:
 # 场景文案二轮去现代腔（lane seq1 / seq2）：全文件非 deprecated 场景的全部上屏字段（_scene_texts 之外还有
 # objective、result、设施 title / subtitle / body、调查项）不得回退到已改掉的现代 / 工程 / 外来词与存疑判改项
 # （大马士革 1255 非大食都城、拔锚→解缆、罗盘→针盘、船厂→船场、福州的贡院、南宋无路试），不得有西式引号，
-# 标题分隔号只用「・」。镜像到 characters.json lines 的原句（林阿舶「这趟先验中继路」、商长「按照大宋律例」）不在禁列。
+# 标题分隔号只用「・」。lane seq3 收口 seq2 留的镜像句：林阿舶「中继路」→「半程的水路」、商长「按照大宋律例」→
+# 「依大宋律」（characters.json lines 同步改，镜像见下方 SEQ3_MIRRORS）；1255 年襄阳无战，city_tavern「溃兵讲襄阳的仗」→
+# 蜀口、yangji_yuan 改写成二十年前（端平三年）襄阳城破逃来的人。
 SCENE_MODERN = re.compile(
-    r"期票|单方面|违约|路径入口|海商路径|网络|远景中继|中继段|证据|样本|交付成果|风险|防波堤|羊皮纸|催款单|通行证|"
+    r"期票|单方面|违约|路径入口|海商路径|网络|中继|证据|样本|交付成果|风险|防波堤|羊皮纸|催款单|通行证|"
     r"接头人|瞬间凝固|战局|科考|税率表|文书训练|沉默本身|对你而言|这个时代|人生|点触|点击|"
-    r"大马士革|拔锚|罗盘|船厂|福州的贡院|路试|番商|番文|蝉声"
+    r"大马士革|拔锚|罗盘|船厂|福州的贡院|路试|番商|番文|蝉声|按照大宋律例|襄阳的仗|讲襄阳逃来"
 )
 def _scene_onscreen(s):
     yield from _scene_texts(s)
@@ -790,6 +793,329 @@ for tag, probe in (("body", {"body": "寺社网络"}), ("objective", {"objective
                    ("choice", {"choices": [{"label": "拔锚"}]}), ("option", {"options": [{"label": "点击"}]}),
                    ("quote", {"result": ["“陈公子”"]}), ("title", {"title": "兴化海口 · 酒棚"})):
     check(bool(_scene_modern_hits(dict(probe, id="_probe"))), f"SCENE_MODERN 自证：往 {tag} 塞禁词后门禁没抓到，该上屏来路失明")
+
+# lane seq3：seq2 留下的镜像句两头一起改，此后两头必须逐字同在；旧写法在 scenes.json 之外的出处（人物原稿 / 文本层 /
+# 职事表 / 航程旁白）也不许回来。SCENE_MODERN 只扫 scenes.json，这里补上镜像与场外四处。
+SEQ3_MIRRORS = {  # 镜像句 → 它在 scenes.json 里的幕
+    "这趟先验半程的水路。货不能潮，信不能皱。": "merchant",
+    "依大宋律，同居共财，这笔债自然落到了你的名下。": "prologue_ledger",
+}
+_chars_lines = [ln for ch in load("characters.json").get("characters", []) for ln in ch.get("lines", []) or []]
+for line, sid in SEQ3_MIRRORS.items():
+    check(line in _chars_lines, f"characters.json lines 里找不到镜像句「{line}」（lane seq3 与 scenes.json {sid} 同步改的）")
+    check(any(line in v for _, v in _scene_onscreen(_scene_by_id.get(sid) or {})),
+          f"scenes.json {sid} 里找不到镜像句「{line}」——与 characters.json lines 断了镜像")
+SEQ3_ELSEWHERE = {  # 文件 → 旧写法；.gd 只查字符串字面量（SeaChart 注释里画罗盘的「罗盘」是控件名，不上屏）
+    "data/characters.json": re.compile(r"中继路|按照大宋律例|防波堤"),
+    "data/characters_codex.json": re.compile(r"中继|按照大宋律例|防波堤"),
+    "data/crew.json": re.compile(r"罗盘"),
+    "scripts/core/Voyage.gd": re.compile(r"罗盘"),
+}
+for rel, pat in SEQ3_ELSEWHERE.items():
+    src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+    for ln, row in enumerate(src.splitlines(), 1):
+        texts = re.findall(r'"(?:[^"\\\n]|\\.)*"', row) if rel.endswith(".gd") else [row]
+        for t in texts:
+            hit = pat.search(t)
+            check(hit is None, f"{rel}:{ln} 回退到 lane seq2 / seq3 已判改的写法「{hit.group(0) if hit else ''}」")
+
+# ── scenes.json 结构门禁（lane seq3）────────────────────────────────
+# seq1 / seq2 的「结构不变」只在 /tmp 里的一次性 prove.py 证过（改前 vs 改后逐键比），没进库，下一次改文案没人再证。
+# 这里不和旧版比，直接把结构本身锁住：
+#   ① 字段齐备：顶层只许 start_scene / scenes；每幕按形状取必填键，不许有形状外的键（键拼错 Main 读不到，按缺省静默走）；
+#      choices / investigations / facilities / options 每条同理。形状：type=title 卷首四方、type=port 港页、
+#      type=investigation 兴化调查页；不写 type 的，有 result 是「详情场」（调查项的长稿，归档不上屏），否则是剧情幕。
+#   ② 类型与取值：str / list / dict / int（bool 不算 int）/ bool；type、chapter、location、cg、require_chapter 只许在册的值；
+#      效果值按 SCENE_EFFECT_TYPES 定型。
+#   ③ 引用存在：start_scene；choices / investigations 的 next（四类，同上面 next_resolves）；调查项 id → 同名详情场；
+#      港页设施 id → Main.REMAPPED_FACILITIES；require_any / require_flag / hide_if_flag 的旗标要有人写
+#      （scenes.json 的 flag 效果或 scripts/ 里 set_flag("…") 字面量）；cargo → goods.json；discovery → discoveries.json 名或 id；
+#      chapters.json 的 advance_scene / endings[].scene → scenes.json；非 deprecated 幕不许跳进 deprecated 幕。
+#   ④ 无孤儿：从真机入口走——start_scene、type=port 幕（海图抵港）、chapters.json 引的幕（晋升册页 / 结局）、
+#      Main.PROLOGUE_ONLY_FACILITIES 里港卡直进的幕（其余 city_* 港卡被 REMAPPED 改写成 {港}_{后缀} 动态页，进不到 scenes.json）——
+#      沿 choices / investigations 的 next 走不到的非 deprecated 幕，必须登记在 SCENE_ARCHIVE。
+#      名单外走不到 → 红（新加的幕忘了接入口）；名单里的被接回入口 → 红（从名单删掉）；名单里的 id 不存在或是 deprecated → 红。
+# 结构没变时本节零输出；改了结构（加键、加形状、接回归档场）要先改这里的表，改表即留痕。
+SCENE_ARCHIVE = {
+    # docs/P7-剧情闭环-任务书.md §3.3 / 裁定 J：剧情图不可达、不是入口的旧稿，「归档场不删除、不做入口」。
+    # 当时名单 42 个（对 993edc1）；P7 的实现没有并进 main，本表按 ff82b17 现走一遍重列：
+    # 其中 city_guild / city_residence 经 PROLOGUE_ONLY_FACILITIES 可进、sail 在海路链上，不在此表；共 39 个。
+    # 剧情幕 4：云端旧开局（酒棚总页、回家 / 去泉州两分支、候试页）
+    "prologue_wine_shed", "prologue_return_home", "prologue_go_quanzhou", "chapter1_scholar_wait",
+    # 调查页 2：港卡 city_tavern / city_shipyard 在 REMAPPED 里、不在 PROLOGUE_ONLY，真机进的是 {港}_tavern / {港}_shipyard 动态页
+    "city_tavern", "city_shipyard",
+    # 详情场 33：result 长稿。Main 不读 result / options（scripts/ 里 0 处），调查页上屏的是 investigations[].text
+    "prologue_draft", "prologue_ledger", "prologue_permit", "prologue_veteran", "prologue_catalyst",
+    "study_desk", "family_house", "city_gate", "harbor_wine_shed", "ferry_jetty", "messenger_post", "customs_shed",
+    "merchant_house", "shipyard", "fuzhou_road", "recommendation_letter", "guest_house", "sutra_room", "stele_walk",
+    "guest_hall", "reef_sound", "lead_line", "old_berth_note", "academy_gate", "paper_shop", "mulan_bei", "yangji_yuan",
+    "customs_room", "yahang", "arab_mosque", "beacon_tower", "relay_post", "fuzhou_yamen",
+}
+# 放行口子的到期判据（GATES §五.3）：名单只减不增。条目被接回入口即红、要删；幕删了即红、要删；新孤儿不许登记进来
+# （接上入口，或标 deprecated）。上界随删减往下调，不许往上调；P7 港口节拍（data/port_beats.json，拍板清单 E-10）若接回，逐条删。
+SCENE_ARCHIVE_MAX = 39
+check(len(SCENE_ARCHIVE) <= SCENE_ARCHIVE_MAX,
+      f"SCENE_ARCHIVE 只许减不许增：现 {len(SCENE_ARCHIVE)} 条 > 上界 {SCENE_ARCHIVE_MAX}（新孤儿要接入口，不要登记）")
+_SCENE_OPT_REQ = {"require_chapter", "require_any", "require_flag", "hide_if_flag"}
+SCENE_SHAPES = {  # 形状 → (必填键, 可选键)
+    "title": ({"id", "type", "chapter", "title", "location", "cg", "cg_title", "cg_sub", "body", "choices"}, set()),
+    "port": ({"id", "type", "title", "location", "facilities"}, set()),
+    "investigation": ({"id", "type", "title", "body", "choices", "investigations"}, set()),
+    "story": ({"id", "title", "chapter", "location", "body", "choices"},
+              {"objective", "speaker", "cg", "deprecated"} | _SCENE_OPT_REQ),
+    "detail": ({"id", "title", "result"}, {"options"}),
+}
+SCENE_SUB_SHAPES = {  # 列表字段 → (每条必填, 每条可选)
+    "choices": ({"label", "next"}, {"effects"} | _SCENE_OPT_REQ),
+    "investigations": ({"id", "label", "text", "effects", "next"}, set()),
+    "facilities": ({"id", "title", "subtitle", "body"}, set()),
+    "options": ({"label"}, set()),
+}
+SCENE_FIELD_TYPES = {
+    **{k: str for k in ("id", "type", "chapter", "title", "location", "cg", "cg_title", "cg_sub", "body", "objective",
+                        "speaker", "label", "next", "text", "subtitle", "require_flag", "hide_if_flag")},
+    **{k: list for k in ("choices", "facilities", "investigations", "options", "require_any")},
+    "effects": dict, "require_chapter": int, "deprecated": bool, "result": (str, list),
+}
+SCENE_EFFECT_TYPES = {
+    **{k: int for k in ("money", "fame", "days", "chapter", "network", "merchant_credit", "supplies", "ship",
+                        "sea_tendency", "scholar_tendency")},
+    **{k: str for k in ("flag", "ledger_note", "cargo_loss", "discovery")},
+    "cargo": list,
+}
+# Main 现不读 cg（背景按 type / location / cg_ 前缀定）；只收现有两个值，防拼错。location "sea" 只有 sail 一幕，落 FALLBACK_BG。
+SCENE_CG = {"dark", "fade"}
+SCENE_LOCATION_EXTRA = {"sea"}
+check(set(SCENE_EFFECT_TYPES) >= handled, f"SCENE_EFFECT_TYPES 缺 Main.apply_effects 新接的键 {sorted(handled - set(SCENE_EFFECT_TYPES))}：先定类型")
+
+
+def _main_const_list(name):
+    m = re.search(rf"const {name} := \[(.*?)\]", main_src, re.S)
+    check(m is not None, f"Main.gd 缺 {name}（scenes.json 结构门禁要读它）")
+    return re.findall(r'"([a-z_]+)"', m.group(1)) if m else []
+
+
+SCENE_CTX = {
+    "ports": port_ids,
+    "chapters": load("chapters.json"),
+    "goods": {g.get("id") for g in load("goods.json").get("goods", [])},
+    "discoveries": {x for d in load("discoveries.json").get("discoveries", []) for x in (d.get("id"), d.get("name"))},
+    "remapped": set(_main_const_list("REMAPPED_FACILITIES")),
+    "prologue_only": set(_main_const_list("PROLOGUE_ONLY_FACILITIES")),
+    "code_flags": {f for p in pathlib.Path(ROOT, "scripts").rglob("*.gd")
+                   for f in re.findall(r'set_flag\("([a-z0-9_]+)"\)', p.read_text(encoding="utf-8"))},
+    "archive": SCENE_ARCHIVE,
+}
+check(len(SCENE_CTX["remapped"]) >= 9 and SCENE_CTX["prologue_only"], "Main.REMAPPED / PROLOGUE_ONLY_FACILITIES 解析失败")
+
+
+def _is_type(v, t):
+    ts = t if isinstance(t, tuple) else (t,)
+    return any(isinstance(v, x) and not (x is int and isinstance(v, bool)) for x in ts)
+
+
+def scene_structure_problems(doc, ctx):
+    """scenes.json 整份 → 结构问题列表（空 = 过）。纯函数，自证拿改过的副本喂它。"""
+    out = []
+    if not isinstance(doc, dict) or set(doc) != {"start_scene", "scenes"}:
+        return [f"scenes.json 顶层键须恰为 start_scene / scenes，实为 {sorted(doc) if isinstance(doc, dict) else type(doc).__name__}"]
+    scs = doc["scenes"]
+    if not isinstance(scs, list) or not all(isinstance(s, dict) for s in scs):
+        return ["scenes.json scenes 须为对象列表"]
+    by = {}
+    for s in scs:
+        sid = s.get("id")
+        if not isinstance(sid, str) or not sid:
+            out.append(f"scenes.json 有幕缺 id 或 id 不是非空字符串：{str(s)[:60]}")
+        elif sid in by:
+            out.append(f"scenes.json 幕 id 重复：{sid}")
+        else:
+            by[sid] = s
+    chdoc = ctx["chapters"]
+    ch_ids = [int(c.get("id", 0)) for c in chdoc.get("chapters", [])]
+    enums = {"type": {"title", "port", "investigation"},
+             "chapter": {"prologue"} | {f"chapter_{i}" for i in ch_ids},
+             "location": set(ctx["ports"]) | SCENE_LOCATION_EXTRA, "cg": SCENE_CG}
+    ids = set(by)
+    writers = set(ctx["code_flags"])
+    for s in scs:
+        for lst in ("choices", "investigations"):
+            for c in s.get(lst) or []:
+                eff = c.get("effects") if isinstance(c, dict) else None
+                if isinstance(eff, dict) and isinstance(eff.get("flag"), str):
+                    writers.add(eff["flag"])
+
+    def resolves(nxt):
+        if nxt in ids or nxt in ctx["ports"] or nxt in PLACEHOLDERS:
+            return True
+        return any(nxt.endswith(suf) and nxt[: -len(suf)] in set(ctx["ports"]) | ids for suf in FACILITY_SUFFIXES)
+
+    def fields(where, obj, req, opt):
+        for k in sorted(req - set(obj)):
+            out.append(f"{where} 缺必填字段 `{k}`")
+        for k in sorted(set(obj) - req - opt):
+            out.append(f"{where} 有形状外的字段 `{k}`（拼错？新字段先登记进 SCENE_SHAPES / SCENE_SUB_SHAPES）")
+        for k, v in obj.items():
+            t = SCENE_FIELD_TYPES.get(k)
+            if t is not None and not _is_type(v, t):
+                out.append(f"{where}.{k} 类型应为 {getattr(t, '__name__', t)}，实为 {type(v).__name__}")
+            elif k in enums and v not in enums[k]:
+                out.append(f"{where}.{k} = {v!r} 不在册（可选 {sorted(enums[k])}）")
+        if isinstance(obj.get("require_any"), list):
+            for f in obj["require_any"]:
+                if not isinstance(f, str) or f not in writers:
+                    out.append(f"{where}.require_any 旗标 `{f}` 没人写（scenes flag 效果与 scripts/ set_flag 都没有）")
+        for k in ("require_flag", "hide_if_flag"):
+            if isinstance(obj.get(k), str) and obj[k] not in writers:
+                out.append(f"{where}.{k} 旗标 `{obj[k]}` 没人写")
+        rc = obj.get("require_chapter")
+        if _is_type(rc, int) and not (1 <= rc <= max(ch_ids or [1])):
+            out.append(f"{where}.require_chapter = {rc} 不在 1..{max(ch_ids or [1])}")
+
+    for s in scs:
+        sid = s.get("id")
+        t = s.get("type")
+        shape = t if t in ("title", "port", "investigation") else ("detail" if "result" in s else "story")
+        if "type" in s and t not in enums["type"]:
+            out.append(f"scenes.json {sid}.type = {t!r} 不在册（可选 {sorted(enums['type'])}）")
+            continue
+        req, opt = SCENE_SHAPES[shape]
+        fields(f"scenes.json {sid}", s, req, opt)
+        if s.get("deprecated") is False:
+            out.append(f"scenes.json {sid}.deprecated 只许写 true（不废弃就删掉这个键）")
+        res = s.get("result")
+        if isinstance(res, list) and not all(isinstance(x, str) for x in res):
+            out.append(f"scenes.json {sid}.result 列表里须全是字符串")
+        for lst, (sreq, sopt) in SCENE_SUB_SHAPES.items():
+            items = s.get(lst)
+            if not isinstance(items, list):
+                continue
+            for i, c in enumerate(items):
+                where = f"scenes.json {sid}.{lst}[{i}]"
+                if not isinstance(c, dict):
+                    out.append(f"{where} 须为对象")
+                    continue
+                fields(where, c, sreq, sopt)
+                for ek, ev in (c.get("effects") or {}).items() if isinstance(c.get("effects"), dict) else ():
+                    et = SCENE_EFFECT_TYPES.get(ek)
+                    if et is None:
+                        out.append(f"{where}.effects 键 `{ek}` 未定类型（Main.apply_effects 也不接）")
+                    elif not _is_type(ev, et):
+                        out.append(f"{where}.effects.{ek} 类型应为 {et.__name__}，实为 {type(ev).__name__}")
+                    elif ek == "cargo" and any(g not in ctx["goods"] for g in ev):
+                        out.append(f"{where}.effects.cargo 有 goods.json 里没有的货 {[g for g in ev if g not in ctx['goods']]}")
+                    elif ek == "discovery" and ev not in ctx["discoveries"]:
+                        out.append(f"{where}.effects.discovery `{ev}` 不是 discoveries.json 的名或 id")
+                nxt = c.get("next")
+                if lst in ("choices", "investigations") and isinstance(nxt, str):
+                    if lst == "choices" and not nxt:
+                        out.append(f"{where}.next 为空（选项必须有去处）")
+                    elif nxt and not resolves(nxt):
+                        out.append(f"{where}.next `{nxt}` 悬空（不在 scenes / ports / 设施 / 占位任何一类）")
+                    elif nxt in by and by[nxt].get("deprecated") and not s.get("deprecated"):
+                        out.append(f"{where}.next `{nxt}` 跳进了 deprecated 幕")
+                cid = c.get("id")
+                if lst == "investigations" and isinstance(cid, str) and "result" not in by.get(cid, {}):
+                    out.append(f"{where}.id `{cid}` 没有同名详情场（带 result 的幕）")
+                if lst == "facilities" and isinstance(cid, str) and cid not in ctx["remapped"]:
+                    out.append(f"{where}.id `{cid}` 不是 Main.REMAPPED_FACILITIES 里的港卡")
+        if shape == "port" and sid not in ctx["ports"]:
+            out.append(f"scenes.json {sid} 是 type=port 却不在 ports.json（海图到不了）")
+
+    start = doc.get("start_scene")
+    if not isinstance(start, str) or start not in by or by[start].get("deprecated"):
+        out.append(f"scenes.json start_scene `{start}` 悬空或是 deprecated 幕")
+    ch_refs = []
+    for c in chdoc.get("chapters", []):
+        if c.get("advance_scene"):
+            ch_refs.append((f"chapters {c.get('id')}.advance_scene", c["advance_scene"]))
+        for j, e in enumerate(c.get("endings") or []):
+            if isinstance(e, dict) and e.get("scene"):
+                ch_refs.append((f"chapters {c.get('id')}.endings[{j}].scene", e["scene"]))
+    for where, ref in ch_refs:
+        if ref not in by:
+            out.append(f"{where} `{ref}` 在 scenes.json 里不存在")
+
+    # ④ 孤儿：真机入口出发，沿 next 走
+    roots = {start} | {x for x, s in by.items() if s.get("type") == "port"} | {r for _, r in ch_refs}
+    for s in by.values():
+        for f in s.get("facilities") or []:
+            if isinstance(f, dict) and (f.get("id") in ctx["prologue_only"] or f.get("id") not in ctx["remapped"]):
+                roots.add(f.get("id"))
+    seen, todo = set(), [r for r in roots if r in by]
+    while todo:
+        x = todo.pop()
+        if x in seen:
+            continue
+        seen.add(x)
+        for lst in ("choices", "investigations"):
+            for c in by[x].get(lst) or []:
+                if isinstance(c, dict) and c.get("next") in by:
+                    todo.append(c["next"])
+    for x, s in by.items():
+        if s.get("deprecated"):
+            continue
+        if x not in seen and x not in ctx["archive"]:
+            out.append(f"scenes.json {x} 是孤儿：从 start_scene / 港页 / chapters.json / 港卡直进都走不到，也不在 SCENE_ARCHIVE")
+        if x in seen and x in ctx["archive"]:
+            out.append(f"scenes.json {x} 在 SCENE_ARCHIVE 里却已接回入口：从归档名单删掉")
+    for x in sorted(set(ctx["archive"]) - set(by)):
+        out.append(f"SCENE_ARCHIVE 里的 `{x}` 在 scenes.json 里不存在")
+    for x in sorted(x for x in ctx["archive"] if by.get(x, {}).get("deprecated")):
+        out.append(f"SCENE_ARCHIVE 里的 `{x}` 已是 deprecated，不必再登记")
+    scene_structure_problems.stats = f"入口可达 {len(seen)} · 归档 {len(set(ctx['archive']) & set(by))} · deprecated {sum(1 for s in by.values() if s.get('deprecated'))}"
+    return out
+
+
+_scene_doc = load("scenes.json")
+for msg in scene_structure_problems(_scene_doc, SCENE_CTX):
+    check(False, msg)
+SCENE_STRUCT_STATS = scene_structure_problems.stats
+# 反向自证：每类问题各造一个副本，必须报出含指定字样的那一条（防日后改表 / 改遍历时某类静默失明）
+def _sv_mut(fn, chapters=None):
+    d = copy.deepcopy(_scene_doc)
+    fn(d, {s["id"]: s for s in d["scenes"]})
+    ctx = dict(SCENE_CTX, chapters=chapters) if chapters is not None else SCENE_CTX
+    return scene_structure_problems(d, ctx)
+def _sv_ch(fn):
+    c = copy.deepcopy(SCENE_CTX["chapters"])
+    fn(c)
+    return c
+_SV_MUTANTS = [
+    ("删必填 body", lambda d, b: b["merchant"].pop("body"), None, "merchant 缺必填字段 `body`"),
+    ("删选项 next", lambda d, b: b["merchant"]["choices"][0].pop("next"), None, "merchant.choices[0] 缺必填字段 `next`"),
+    ("删设施 subtitle", lambda d, b: b["quanzhou"]["facilities"][0].pop("subtitle"), None, "facilities[0] 缺必填字段 `subtitle`"),
+    ("删详情场 result", lambda d, b: b["customs_room"].pop("result"), None, "customs_room 缺必填字段"),
+    ("next 悬空", lambda d, b: b["merchant"]["choices"][0].update(next="merchant_x"), None, "`merchant_x` 悬空"),
+    ("调查项 next 悬空", lambda d, b: b["city_guild"]["investigations"][0].update(next="nowhere_x"), None, "`nowhere_x` 悬空"),
+    ("调查项 id 悬空", lambda d, b: b["city_guild"]["investigations"][0].update(id="ledger_x"), None, "`ledger_x` 没有同名详情场"),
+    ("start_scene 悬空", lambda d, b: d.update(start_scene="cg_title_x"), None, "start_scene `cg_title_x` 悬空"),
+    ("chapters 引用悬空", lambda d, b: None, _sv_ch(lambda c: c["chapters"][1].update(advance_scene="chapter3_x")), "`chapter3_x` 在 scenes.json 里不存在"),
+    ("设施 id 悬空", lambda d, b: b["xinghua"]["facilities"][0].update(id="city_dock"), None, "`city_dock` 不是 Main.REMAPPED_FACILITIES"),
+    ("旗标没人写", lambda d, b: b["chapter2_letter"]["require_any"].append("flag_x"), None, "旗标 `flag_x` 没人写"),
+    ("货 id 悬空", lambda d, b: b["merchant"]["choices"][0]["effects"].update(cargo=["porcelain_x"]), None, "goods.json 里没有的货"),
+    ("发现悬空", lambda d, b: b["island"]["choices"][0]["effects"].update(discovery="无名湾"), None, "`无名湾` 不是 discoveries.json"),
+    ("跳进 deprecated", lambda d, b: b["merchant"]["choices"][0].update(next="prologue_study"), None, "跳进了 deprecated 幕"),
+    ("类型错 int→str", lambda d, b: b["chapter3_gangshou"].update(require_chapter="3"), None, "require_chapter 类型应为 int"),
+    ("bool 冒充 int", lambda d, b: b["merchant"]["choices"][0]["effects"].update(money=True), None, "effects.money 类型应为 int"),
+    ("类型错 list→str", lambda d, b: b["merchant"].update(choices="x"), None, "merchant.choices 类型应为 list"),
+    ("键拼错", lambda d, b: b["merchant"]["choices"][0].update(nxet="dock"), None, "形状外的字段 `nxet`"),
+    ("枚举外 location", lambda d, b: b["merchant"].update(location="quanzhouu"), None, "location = 'quanzhouu' 不在册"),
+    ("枚举外 chapter", lambda d, b: b["merchant"].update(chapter="chapter_9"), None, "chapter = 'chapter_9' 不在册"),
+    ("id 重复", lambda d, b: d["scenes"].append(dict(b["merchant"])), None, "幕 id 重复：merchant"),
+    ("新孤儿", lambda d, b: d["scenes"].append({"id": "orphan_x", "title": "", "chapter": "chapter_1", "location": "quanzhou",
+                                               "body": "", "choices": [{"label": "续", "next": "quanzhou", "effects": {}}]}),
+     None, "orphan_x 是孤儿"),
+    ("归档场接回", lambda d, b: b["merchant"]["choices"][0].update(next="prologue_return_home"), None, "prologue_return_home 在 SCENE_ARCHIVE 里却已接回入口"),
+    ("归档名单悬空", lambda d, b: d["scenes"].remove(b["yahang"]), None, "`yahang` 在 scenes.json 里不存在"),
+]
+for tag, fn, chs, want in _SV_MUTANTS:
+    try:
+        got = _sv_mut(fn, chs)
+    except (KeyError, IndexError, ValueError, AttributeError, StopIteration) as e:
+        check(False, f"scenes.json 结构门禁自证：「{tag}」套不上现数据（{e!r}）——样本幕 / 字段没了，先看上面的结构 FAIL，再改 _SV_MUTANTS")
+        continue
+    check(any(want in m for m in got), f"scenes.json 结构门禁自证：「{tag}」后没报出「{want}」（实报 {got[:2]}）")
 
 # ── 结局年号：过场 ↔ 结算册页 ↔ Calendar（Q8）───────────────
 # 「岸上的根」曾写景炎三年三月，而该卡只在 1277（景炎二年）出现。结局年号有三处镜像：cutscenes.json 过场的
@@ -975,5 +1301,5 @@ if FAIL:
         print("FAIL:", f)
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
-print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · scenes {len(scenes)} · news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
+print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · scenes {len(scenes)}（结构：{SCENE_STRUCT_STATS} · 自证 {len(_SV_MUTANTS)} 类）· news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
 print("结果：全部通过")

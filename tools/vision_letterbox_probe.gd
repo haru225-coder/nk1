@@ -69,7 +69,7 @@ func _run() -> void:
 	if not await _shot_when("00_combat_plain",
 			func() -> bool: return CombatStage.letterbox_under(self, wm_ref.get_ref()) == null,
 			func() -> bool: return CombatStage.standing_fail(wm_ref.get_ref()) != ""):
-		_bail("布景入战墨边没收场，截不到海战素面", wm)
+		_bail(CombatStage.why_not("截不到海战素面", "布景入战墨边没收场"), wm)
 		return
 
 	# 入战
@@ -87,17 +87,17 @@ func _run() -> void:
 	if not await _shot_when("01_enter_closing",
 			func() -> bool: return _bar_frac(lb_ref.get_ref()) >= 0.3 and _bar_frac(lb_ref.get_ref()) < 1.0,
 			func() -> bool: return _bar_frac(lb_ref.get_ref()) >= 1.0):
-		_bail("入战墨边合拢中一帧也没画到", wm)
+		_bail(CombatStage.why_not("入战墨边合拢中一帧也没画到", "合拢已过"), wm)
 		return
 	# 裸 await caption_shown 在墨边被顶掉 / 随布景释放时永不返回（lane gd10）：一律带上界（gd11 起按墙钟），没等到就判红收尾
 	if not await CombatStage.wait_signal(self, lb, &"caption_shown"):
-		_bail("入战题签没擦出（caption_shown 未发：墨边被顶掉或随布景释放）", wm)
+		_bail(CombatStage.why_not("入战题签没擦出", "caption_shown 未发：墨边被顶掉或随布景释放"), wm)
 		return
 	await _shot("02_enter_caption")
 	_check_layout(lb, "入战")
 	if not await CombatStage.wait_until(self, func() -> bool: return enter_done[0] or lb_ref.get_ref() == null) \
 			or not enter_done[0]:
-		_bail("入战墨边没演完（finished 未发）", wm)
+		_bail(CombatStage.why_not("入战墨边没演完", "finished 未发"), wm)
 		return
 	for _i in 3:
 		await process_frame
@@ -124,14 +124,14 @@ func _run() -> void:
 	var exit_done := [false]
 	ex.finished.connect(func() -> void: exit_done[0] = true)
 	if not await CombatStage.wait_signal(self, ex, &"caption_shown"):
-		_bail("出战题签没擦出（caption_shown 未发：墨边被顶掉或随布景释放）", wm)
+		_bail(CombatStage.why_not("出战题签没擦出", "caption_shown 未发：墨边被顶掉或随布景释放"), wm)
 		return
 	await _shot("04_exit_caption")
 	_check_layout(ex, "出战")
 	# 已被顶掉时 covered 早发过了，裸 await 会挂死；按计数等、带上界
 	if not await CombatStage.wait_until(self, func() -> bool: return _covered_hits > 0 or ex_ref.get_ref() == null) \
 			or _covered_hits == 0:
-		_bail("出战墨边没合到全黑（covered 未发）", wm)
+		_bail(CombatStage.why_not("出战墨边没合到全黑", "covered 未发"), wm)
 		return
 	_expect(not _resolved_at_cover,
 		"布景海战在墨边演示中自行结算，WorldMap 自己的出战墨边顶掉了探针这副（探针布景没冻住，不是墨边回归）")
@@ -143,7 +143,7 @@ func _run() -> void:
 		_expect(mid.v < 0.08, "出战合拢时画面中线未全黑（v=%.3f）" % mid.v)
 	if not await CombatStage.wait_until(self, func() -> bool: return exit_done[0] or ex_ref.get_ref() == null) \
 			or not exit_done[0]:
-		_bail("出战墨边没演完（finished 未发）", wm)
+		_bail(CombatStage.why_not("出战墨边没演完", "finished 未发"), wm)
 		return
 	await _shot("06_exit_done", true)  # on_black 已换成空场，本就一色
 	_expect(_on_black_hits == 1 and _covered_hits == 1,
@@ -231,10 +231,11 @@ func _expect(ok: bool, msg: String) -> void:
 		_fails.append(msg)
 
 
-## 等不到信号时判红收尾：与正常收尾同走 _end，另带 error=no_signal 进 --json（不挂死）
+## 等不到信号时判红收尾：与正常收尾同走 _end，另带 error 进 --json（不挂死）：墙钟上界先到、压帧过重为 wall_clock，
+## 其余 no_signal（lane gd24，见 combat_probe_stage 头注释「二」）
 func _bail(msg: String, wm) -> void:
 	_fails.append(msg)
-	_end(wm, CombatStage.NO_SIGNAL)
+	_end(wm, CombatStage.bail_error())
 
 
 ## 唯一收尾：场上墨边 _abort（挂着的等待方都收到 finished）、放掉布景，再出报告（lane gd12）。

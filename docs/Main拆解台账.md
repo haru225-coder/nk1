@@ -1,6 +1,6 @@
 # Main.gd 拆解台账
 
-`scripts/Main.gd` 按页面簇往 `scripts/ui/` 拆。每刀一节，只往后追加，不改前面各节。
+`scripts/Main.gd` 按页面簇往 `scripts/ui/` 拆。每刀一节，只往后追加，不改前面各节（lane main12 起的例外：前面各节与现状不符的事实，在原句上就地改准并在「第十二刀 · 前十一刀对账」登记，不改那一刀的结论与数字口径）。
 手法（lane ms / mz / ms2 起一直沿用）：隔离 worktree 里改，Main 保留同名同签名的一行转发，信号目标仍是 Main 的同名方法；
 新文件登记：本台账追加一节、节标题写成「## 第N刀（lane X，日期）：… → `scripts/ui/X.gd`」，跑 `python3 tools/gen_main_splits.py --write` 重生成 `tools/main_splits.txt`（lane cs13 起；check_symbols 和 godot_smoke 都只读它），另加 `godot_compile_check.gd` 的 SCRIPTS；
 新文件头注写「从 Main.gd 原样搬出」，转发独占函数体、行尾不带注释（漏一样 check_symbols「一之零」判红，口径见 `docs/GATES.md` §三.1，lane cs8）；
@@ -32,12 +32,12 @@ ms2 台账的口径是「页面簇」，不计 I、K 两段核心流程，那样
 | 5 | I 调查页 / 选项 / 效果（`_setup_investigation_mode` … `_activate_first_choice`，4045–4340） | 296 / 14 | 3（`_add_leave_button` 全部设施页都用） | check_symbols 9、verify_story_data 7，另有 WorldMap / SeaChart / MapView / CharacterCodex / GameState 各 1–2 | 14 个；GameState 15、Fleet 7；含 `_gui_input` / `_unhandled_input` 两个引擎虚函数 | verify_story_data 直接切 `func apply_effects`（效果字段消费方） | 高：核心流程，虚函数不宜转发 |
 | 6 | J 见面页（`_frame_portrait` … `_fill_npc_profile` 498–643，加上 `_add_npc_button` … `_on_npc_leave` 3133–3242） | 257 / 11 | 3 | smoke 2、ShotTour 2、check_assets 1、check_symbols 1 | 13 个：_npc_profile 14、npc_portrait 11、_npc_codex_btn 11、npc_name_lbl / npc_dialog_lbl 各 7；GameState 4；log_msg 0 | smoke 有两处切 `_show_npc_mode`，一处直读 Main.gd、一处读 family src；verify_story_data 直读 Main.gd 查 `codex_short(`；两段都拆走后 Main 就不再读人物 API，L1B 里 Main 的登记要跟着改 | 中：两段分离，_ready 里要装版面，要改 4 处门禁 |
 | 7 | K 场景加载 / 分发（`load_scene` … `_setup_dynamic_scene`，974–1228） | 255 / 11 | 5 | check_symbols 20、story 19、p7 11、ShotTour 11、patrol 8、各 qa 探针 6–8 | 15 个；GameState 10 | 常量表 `PORT_BG` / `FACILITY_BG` / `FACILITY_SUFFIXES` 被 check_assets 和 verify_story_data 直读（常量可留在 Main） | 高：所有页面都经过这里 |
-| 8 | **D 酒馆 / 旅店（`_setup_tavern` … `_setup_inn`，2457–2697）** | **241 / 11** | 4（`_person_slip` / `_person_foot` 被见面页复用） | check_symbols 8、qa_tavern_news_wall 4、verify_story_data 3、smoke 1、TavernNewsWall 1、LedgerPage 1（`_skill_rank`） | **5 个**：choices_container 3、current_scene_id 3、scene_title / body_text / choices_label 各 2；Crew 8、GameManager 5、Calendar 4、GameState 3；log_msg 2、load_scene 2 | verify_story_data 与 qa_tavern_news_wall 直读 Main.gd 查 `_TAVERN_NEWS_WALL.mount`（`_setup_news_wall` 留在 Main，不受影响）；simulate_run 直读 `const INN_RATE`（常量留在 Main）；smoke 按 family src 切 `_setup_tavern`（本刀改去 TavernPage 里切）；L1B 新增一个 character_for_crew 读取口要登记 | **最低 → 本刀** |
+| 8 | **D 酒馆 / 旅店（`_setup_tavern` … `_setup_inn`，2457–2697）** | **241 / 11** | 4（`_person_slip` / `_person_foot` 被见面页复用） | check_symbols 8、qa_tavern_news_wall 4、verify_story_data 3、smoke 1、TavernNewsWall 1、LedgerPage 1（`_skill_rank`） | **5 个**：choices_container 3、current_scene_id 3、scene_title / body_text / choices_label 各 2；Crew 8、GameManager 5、Calendar 4、GameState 3；log_msg 2、load_scene 2 | verify_story_data 与 qa_tavern_news_wall 直读 Main.gd 查 `_TAVERN_NEWS_WALL.mount`（`_setup_news_wall` 留在 Main，不受影响）；simulate_run 自带 `INN_RATE = 15`、从来不读 Main.gd（与 Main.INN_RATE 同数由第五刀起的 verify_economy 断言 4 钉住）；smoke 按 family src 切 `_setup_tavern`（本刀改去 TavernPage 里切）；L1B 新增一个 character_for_crew 读取口要登记 | **最低 → 本刀** |
 
 另两簇更小，也都独立：F 航海日志 127 / 5（只用 `_save_host`，Python 门禁里没有直读它的）；G2 行会 / 贡院 203 / 11（check_symbols 有 66 处源码断言，p7 专门盯它）。
 
 **为什么选 D**：连续一段，簇内不存状态（只读 5 个 Main 的 UI 成员），回调全是 bind 到 Main 的同名方法。
-直读 Main.gd 的门禁里，3 处可以原地不动（`_setup_news_wall` 和 `INN_RATE` 本来就留在 Main），1 处改切拆出件，1 处在 L1B 登记新入口，一共只改 2 道门禁。
+直读 Main.gd 的门禁里，2 处可以原地不动（verify_story_data 与 qa_tavern_news_wall 查 `_setup_news_wall`，它本来就留在 Main；simulate_run 的 `INN_RATE` 是自带常量、不读 Main），1 处改切拆出件，1 处在 L1B 登记新入口，一共只改 2 道门禁。
 J 与它大小相当，但要改 4 处门禁，还牵涉 Main 在 L1B 的登记；I / K / E / H 都在核心流程上或互相调用；A / C 被 verify_economy 直读。
 
 ### 落地
@@ -54,7 +54,7 @@ J 与它大小相当，但要改 4 处门禁，还牵涉 Main 在 L1B 的登记�
 ### 下一刀候选（行数按基 d56ba1d）
 
 1. **F 航海日志**（127 / 5）风险低，和 ChapterSheet 同属浮层册页，可以直接做。
-2. **J 见面页**（257 / 11）风险中。要改 smoke 的两处切片，verify_story_data 查 `codex_short(` 的那处改读 family src；两段都拆走后 Main 不再读人物 API，L1B 里 Main 的登记要改。
+2. **J 见面页**（257 / 11）风险中。要改 smoke 的两处切片，verify_story_data 查 `codex_short(` 的那处改读 family src（第五刀实际直读 NpcPage.gd）；两段都拆走后 Main 不再读人物 API，L1B 里 Main 的登记要改。
 3. **G2 行会 / 贡院**（203 / 11）风险中。check_symbols 有 66 处断言，都经 read_main_src 读；p7 只经方法名调用。`play_transition` 是公共件，不要一起搬。
 4. **A / C / H / I / K** 风险高。先单开一个门禁 lane，给 verify_economy / verify_story_data / check_assets / simulate_endgame / simulate_run 共用一个「读 Main 家族源码」的 helper。
 5. 门禁小事：`MAIN_SPLITS` 已经登记到第 4 件，建议抽成 `tools/main_splits.txt`，check_symbols 和 smoke 共读（ms2 待议 6）。
@@ -114,7 +114,7 @@ H / A / E / I / K 在核心流程上或被 Python 门禁多处直读；C 被 ver
 ### 下一刀候选（行数按基 6ff3d01）
 
 1. **F 航海日志**（120 / 5）风险低，和 ChapterSheet 同属浮层册页。check_symbols 的 `_show_save_dialog` / `_on_save_slot` / `_on_load_slot` 断言都经 read_main_src，不用改；smoke 有一处在 family src 里切 `func _show_save_dialog`（会切到转发），要改去拆出件里切。
-2. **G2 行会 / 贡院**（200 / 11）风险中。check_symbols 的 66 处引用都经 read_main_src；verify_economy / simulate_run 用 `gd_const("scripts/Main.gd", "GUILD_*")` 直读常量，常量留在 Main 就不受影响。`play_transition` 不要一起搬。
+2. **G2 行会 / 贡院**（200 / 11）风险中。check_symbols 的 66 处引用都经 read_main_src；verify_economy 用 `gd_const("scripts/Main.gd", "GUILD_*")`、simulate_run 用自带的 `main_const("GUILD_*")` 直读常量，常量留在 Main 就不受影响。`play_transition` 不要一起搬。
 3. **A / C / H / I / K / E** 风险高。先单开一个门禁 lane，给 verify_economy / verify_story_data / check_assets / simulate_endgame / simulate_run 共用一个「读 Main 家族源码」的 helper。本刀的旅店断言直接读 TavernPage.gd，也应该改走这个 helper。
 4. 门禁小事：`MAIN_SPLITS` 已经登记到第 5 件，两份清单（check_symbols / smoke）靠对账同步，建议抽成 `tools/main_splits.txt` 共读（ms2 待议 6、第四刀候选 5）。
 
@@ -129,7 +129,7 @@ F 航海日志是第五刀台账列的下一刀首选，连续一段：**3419–
 
 | 支 | 行段 | 行 | 做什么 | 被簇外调（Main 内 / 他处） |
 |---|---|---|---|---|
-| `_show_save_dialog(read_only := false)` | 3419–3501（含 `##` 注释） | 83 | 旧 host 先释放 → 让开港名匾 → 建 `SaveSheet` 浮层（暗幕 + 居中绢本册页 + 标题「航海日志」）→ 三卷工席（卷号、题签、坏档脚注、「记录」「翻阅」）→ 按两行工席高定 Benches 高 →「合上」→ `pop_in` | Main 3 处：标题页「续卷」`.bind(true)`（454）、岸带动作行「航海日志」（3104）、`_add_save_button`（3998）；ShotTour `_site_save` 1 处 `call` |
+| `_show_save_dialog(read_only := false)` | 3419–3501（含 `##` 注释） | 83 | 旧 host 先释放 → 让开港名匾 → 建 `SaveSheet` 浮层（暗幕 + 居中绢本册页 + 标题「航海日志」）→ 三卷工席（卷号、题签、坏档脚注、「记录」「翻阅」）→ 按两行工席高定 Benches 高 →「合上」→ `pop_in` | Main 3 处：标题页「续卷」`.bind(true)`（454）、岸带动作行「航海日志」（3104）、`_add_save_button`（3998；它自己 0 调用方，lane main12 已删）；ShotTour `_site_save` 1 处 `call` |
 | `_on_save_dim_input(event)` | 3504–3508 | 5 | 暗幕上鼠标**按下**才合上（松开、移动不合） | 无（只是暗幕 `gui_input` 的目标） |
 | `_close_save_sheet()` | 3511–3516 | 6 | 释放 host、清 `_save_host`；港页可见且升章册页不在时港名匾回来 | Main 1 处：`_unhandled_input` 的 ui_accept（3905） |
 | `_on_save_slot(slot)` | 3519–3524 | 6 | `SaveLoad.save_game(slot, current_scene_id)`；失败记「誊写未成」、册页不合；成了先合上再记事 | 无（「记录」钮的目标） |
@@ -166,7 +166,7 @@ Python 门禁里没有直读 Main.gd 的（全经 `read_main_src()`），只有 
 
 ### 下一刀候选（行数按基 537826b）
 
-1. **G2 行会 / 贡院**（200 / 11）是剩下唯一风险「中」的页面簇：check_symbols 的 66 处引用都经 read_main_src；verify_economy / simulate_run 用 `gd_const("scripts/Main.gd", "GUILD_*")` 直读常量（常量留 Main 即可）；p7 只经方法名调用；`play_transition` 是公共件，不要一起搬。
+1. **G2 行会 / 贡院**（200 / 11）是剩下唯一风险「中」的页面簇：check_symbols 的 66 处引用都经 read_main_src；verify_economy 用 `gd_const("scripts/Main.gd", "GUILD_*")`、simulate_run 用自带的 `main_const("GUILD_*")` 直读常量（常量留 Main 即可）；p7 只经方法名调用；`play_transition` 是公共件，不要一起搬。
 2. **A / C / E / H / I / K** 风险高，先做「Main 家族源码」共用 helper 的门禁 lane（第五刀候选 3）。
 3. `MAIN_SPLITS` 已到第 6 件，两份清单靠对账同步，建议抽 `tools/main_splits.txt` 共读（ms2 待议 6 起一直挂着）。
 
@@ -227,8 +227,8 @@ Python 门禁里没有直读 Main.gd 的（全经 `read_main_src()`），只有 
 | `godot_smoke.gd:557`「贡院誊录只加学者倾向、不给名声」 | 在 `_main_family_src()` 里切 `func _on_exam_copy` | 会切到转发，假红（实测）→ **改去 GuildExamPage.gd 里切** `static func on_exam_copy(`，去 `main.` 前缀再比；条件原样 |
 | `godot_smoke.gd:499`、`check_symbols.py:2487`（账条字样：`"运往 %s　多 %d"` 须在） | family src / `read_main_src()` 全文查 | 这句随 `_setup_guild` 搬走；MAIN_SPLITS 登记上就还在扫描范围内。**漏登记就判红**（实测两道都红） |
 | `godot_smoke.gd:552`（四个动态页有定义） | family src 查 `func _setup_guild` / `func _setup_exam` | Main 留着同名转发，不用改 |
-| `check_symbols.py:2819 / 2835 / 2862–3060`（函数定义、誊录不给名声、入行接线 / 门槛 / 已入行、remap 契约 `_guild_remap_contract`、赴试每章一次 / 时序 / 港限制、誊录时序） | 都经 `read_main_src()`（:1793），`func_bodies` / 正则切 | `read_main_src()` 把转发就地换回拆出件的函数体、去 `main.` 前缀 → **不用改**（登记 MAIN_SPLITS 即可） |
-| `check_symbols.py:2979` remap 变异自检（6 份变异源码） | 在 `read_main_src()` 结果上做**逐字字符串替换**（如 `"func _on_guild_join(port_id: String) -> void:\n\tport_id = _guild_port_id(port_id)\n"`） | 拼回文本和原文逐字相同，替换仍然命中；拆后「6 份变异均被拦下」照旧 |
+| `check_symbols.py:2819 / 2835 / 2862–3060`（函数定义、誊录不给名声、入行接线 / 门槛 / 已入行、remap 契约 `_guild_remap_contract`、赴试每章一次 / 时序 / 港限制、誊录时序） | 多数经 `read_main_src()`（:1793），`func_bodies` / 正则切；其中「函数定义」那处（:2819）lane cs19 `ba3b8c3` 起改查 Main.gd 原文 `_main_gd_raw`（认一行转发；`32195a4` 上在 check_symbols.py:2861–2872） | `read_main_src()` 把转发就地换回拆出件的函数体、去 `main.` 前缀 → **不用改**（登记 MAIN_SPLITS 即可） |
+| `check_symbols.py:2979` remap 变异自检（6 份变异源码） | 在 `read_main_src()` 结果上做**逐字字符串替换**（如 `"func _on_guild_join(port_id: String) -> void:\n\tport_id = _guild_port_id(port_id)\n"`） | 拼回文本和原文逐字相同，替换仍然命中；拆后「6 份变异均被拦下」照旧（lane cs12 `2726a4c` 又加「删入行门槛函数」一份，现为 7 份；`32195a4` 上在 check_symbols.py:3039–3058） |
 | `check_symbols.py:2926`（`_setup_dynamic_scene` 里有 `_setup_guild(base_loc)`） | `read_main_src()` | `_setup_dynamic_scene` 留在 Main，不用改 |
 | `tools/p7_guild_exam_smoke.gd:101–276` | `load_scene("*_guild" / "*_exam")` 走真页面；直调 `main._on_guild_join(...)` ×4、`main._on_exam_sit(...)` ×1 | Main 保留同名转发（带 `await`），不用改 |
 | `tools/qa_p7_screenshots.gd` / `qa_patrol_pack_screenshots.gd` | 按场景 id 开页、按钮文找「交会费入行」 | 页面、钮文不变，不用改 |
@@ -243,7 +243,7 @@ check_symbols 的 51 处引用都经 read_main_src。要改的门禁有 2 道：
   经 `main.` 取值推断不出类型，10 处 `:=` 改为与原推断相同的显式类型（VBoxContainer ×6、Label、Button、String ×2）。
 - Main.gd **4831 → 4699（−132）**，func 数不变（233）：10 支都留同名同签名一行转发（`const _GUILD := preload(...)`）。`_on_guild_join` / `_on_exam_sit` 转发写 `await`，协程语义不变。
   留在 Main 的：`GUILD_*` / `EXAM_*` 常量、`play_transition`、`_collect_spreads`、工席小件。
-- 门禁同步：两处 `MAIN_SPLITS`（check_symbols / smoke）都加 GuildExamPage.gd；`godot_compile_check` 的 SCRIPTS 加 1 行（126 → 127）；
+- 门禁同步：两处 `MAIN_SPLITS`（check_symbols / smoke）都加 GuildExamPage.gd；`godot_compile_check` 的 SCRIPTS 加 1 行（落地 commit 上是 compile SUMMARY 总项 127 → 128、SCRIPTS 条目 109 → 110；126 → 127 是开工基 59254f5 上的数，rebase 越过 `7a47d15` 多了 letterbox_signal_probe.gd）；
   smoke 的誊录切片、verify_economy 的 3 处切片改去 GuildExamPage 里切（见上表）。**断言条件一条没改、没放宽。**
 - 拼回原文：`read_main_src()` 拼回的 10 支和基线逐行比，只差上面 10 行 `:=`（末支后少一个空行，原因同第六刀：拆出件文件尾只有一个换行）。
 
@@ -261,7 +261,7 @@ check_symbols 的 51 处引用都经 read_main_src。要改的门禁有 2 道：
 不是一刀，只登记门禁变化（拍板清单 E-5；ms2 待议 6、上面第四 / 五 / 六 / 七刀的候选里一直挂着的那条）。
 
 - `tools/main_splits.txt`：拆出件唯一清单，每件一行（拆出件 / lane / 拆出 commit / 原 Main 行范围 / 拆出函数）。`check_symbols` 与 `godot_smoke` 都只读第一列，两份脚本里的 `MAIN_SPLITS` 常量删掉了。
-- `tools/gen_main_splits.py` 生成它：拆出件、顺序、lane 读本台账（开头「已拆（前三刀…）」那行 + 各刀节标题），所以**节标题的写法是契约**：``## 第N刀（lane X，日期）：… → `scripts/ui/X.gd` ``。拆出函数读 Main 的一行转发，commit 和行范围读 git（拆出 commit 父版的 Main.gd）；本台账表格里写了逐支行段的（第六、七刀共 15 支），生成时逐支对账。
+- `tools/gen_main_splits.py` 生成它：拆出件、顺序、lane 读本台账（开头「已拆（前三刀…）」那行 + 各刀节标题），所以**节标题的写法是契约**：``## 第N刀（lane X，日期）：… → `scripts/ui/X.gd` ``。拆出函数读 Main 的一行转发，commit 和行范围读 git（拆出 commit 父版的 Main.gd）；各刀一节的函数表（「| `_fn(…)` |」行）与 Main 转发双向对账：表里列了的，现 Main 须仍一行转发到本件（lane cs18，挪回 Main / 改名 / 转去别件没改表即红）；那节有表的，现 Main 一行转发到本件的每支都须列在表里（lane cs22，有表就须列全）；表格行写了逐支行段的，再与拆出 commit 父版 Main.gd 重算的行段逐支对账。没有函数表的节（前三刀、第四 / 五刀）不查这两条。
 - check_symbols「一之零」每轮重算、与清单逐字节比：手改清单、台账加了一刀没 `--write`、删了拆出件没更新，都判红。
 
 ---
@@ -292,7 +292,7 @@ Y 是第七刀台账列的下一刀首选，连续一段：**1766–1886，121 �
 
 | 引用点 | 怎么读 | 拆后 |
 |---|---|---|
-| check_symbols 九之七「report_discovery 只由 … 调」 | **扫 scripts/ 下真文件**，`func_bodies` 只认顶格 `func`，期望 `["Main.gd:_on_report_discovery"]` | 第七刀台账说 Y「全经 read_main_src」，这一条例外：不改就红（实测 `调用方漂移：[]`，拆出件里的 `static func` 扫不到）→ **改指新文件**：扫描前把 `static func` 记成 `func`，期望改成 `["MaritimeOfficePage.gd:on_report_discovery"]`，仍是整列表相等（顺带补上「拆出件里另有调用方也扫不到」的旧洞，只收紧） |
+| check_symbols 九之七「report_discovery 只由 … 调」 | **扫 scripts/ 下真文件**，`func_bodies` 只认顶格 `func`，期望 `["Main.gd:_on_report_discovery"]` | 第七刀台账说 Y「全经 read_main_src」，这一条例外：不改就红（实测 `调用方漂移：[]`，拆出件里的 `static func` 扫不到）→ **改指新文件**：期望改成 `["MaritimeOfficePage.gd:on_report_discovery"]`，仍是整列表相等（落地时扫描前把 `static func` 记成 `func`；lane cs16 `d114eae` 起 `func_bodies` 自认顶格 `static func`，这步绕行已删；`32195a4` 上在 check_symbols.py:3798–3810）（顺带补上「拆出件里另有调用方也扫不到」的旧洞，只收紧） |
 | check_symbols 九之七其余 5 条（挂呈报签、呈报签只在市舶司、呈报 chip 绑定、回调接线）、Lane AC 文案、Lane AA 修埠短句、「市舶司有职衔说明与修埠钮」、「职衔说明不写纲首」 | `func_bodies` / `_func_body` / `_locate_func` 读 `read_main_src()` | 转发就地换回拆出件函数体、去 `main.` 前缀 → **不用改**（拆出件进 `main_splits.txt` 即可） |
 | smoke「蒲家留意四档不带括号」「抽解每百 %d」 | `_main_family_src()` 全文正 / 反向 `find` | 拆出件进 `main_splits.txt` 后字样仍在扫描范围内 → 不用改 |
 | smoke `yard_node.call("_duty_per_hundred", …)` | 直调 Main | `_duty_per_hundred` 留 Main → 不用改 |
@@ -314,7 +314,7 @@ Y 是第七刀台账列的下一刀首选，连续一段：**1766–1886，121 �
 ### 下一刀候选（行数按基 e8b8221）
 
 1. **T 住处 / 寺观**（117 / 6）风险中低：smoke 两处在 family src 里切 `_on_temple_look` / `_on_temple_rub`，verify_economy 直读 Main 的 `_setup_residence`，都要改切片位置（lane main9 已派）。
-2. 做拆分前先 grep 门禁里「扫真文件 + `func_bodies`」的写法：`func_bodies` 不认 `static func`，拆走的函数在这类断言里会消失（本刀那一条是这样红的）。建议并进「Main 家族源码」共用 helper lane。
+2. 做拆分前先 grep 门禁里「扫真文件 + `func_bodies`」的写法：`func_bodies` 不认 `static func`，拆走的函数在这类断言里会消失（本刀那一条是这样红的；已由 lane cs16 `d114eae` 收口——`func_bodies` / `_func_body` 认顶格 `static func`）。建议并进「Main 家族源码」共用 helper lane。
 3. **A / C / E / H / I / K** 风险高，先做上面那个 helper lane。拆出件到第 8 件（`tools/main_splits.txt` 已由 cs13 落地）。
 
 ---
@@ -338,7 +338,7 @@ Y 是第七刀台账列的下一刀首选，连续一段：**1766–1886，121 �
 - state：簇内没有状态成员；读 `current_scene_id` 3 次（重载本页）。
 - ui：`scene_title` / `body_text` / `choices_label`；工席小件 `_slip_body` / `_slip_title` / `_slip_note` / `_slip_row` / `_slip_chip`、`_begin_benches` / `_end_benches` / `_add_leave_button`。
 - msg：`log_msg` 5、`load_scene` 3。
-- 留在 Main 的：`HOME_RATE`（verify_economy / check_symbols / smoke 直读 Main.gd）、`TEMPLE_LOOK_DAYS` / `TEMPLE_RUB_DAYS`、`_setup_residence_chen`（兴化玉湖陈宅，别的簇）、`_on_rest`（旅店 / 住处共用）。
+- 留在 Main 的：`HOME_RATE`（check_symbols 经 read_main_src 取值与 INN_RATE 比、smoke 经 family src 查字样；verify_economy 只在 setup_residence 的钮里认 `HOME_RATE` 这个名字，不读它的值）、`TEMPLE_LOOK_DAYS` / `TEMPLE_RUB_DAYS`、`_setup_residence_chen`（兴化玉湖陈宅，别的簇）、`_on_rest`（旅店 / 住处共用）。
 - 回连的信号目标 3 个：`_on_rest.bind(...)`、`_on_temple_look.bind(did, name)`、`_on_temple_rub.bind(did, name, hook)`，都仍指向 Main。
 
 **断言 / 探针引用点**（拆前逐个核过，行号按基 `26bca91`）：
@@ -349,7 +349,7 @@ Y 是第七刀台账列的下一刀首选，连续一段：**1766–1886，121 �
 | `godot_smoke.gd:579 / 585`「寺观细看只记入册」「寺观拓碑只写入边记」 | 在 `_main_family_src()` 里切 `func _on_temple_look` / `_on_temple_rub` | 切到转发，假红（实测）→ **改去 ResidencePage.gd 里切** `static func on_temple_look(` / `on_temple_rub(`，去 `main.` 前缀；`on_temple_rub` 是拆出件末支，切到文件尾。条件原样 |
 | `godot_smoke.gd:568 / 570`（四个动态页有定义、HOME_RATE / INN_RATE 都在） | family src 全文查 | Main 留同名转发、常量留 Main，不用改 |
 | `godot_smoke.gd:597–603`（拓记字样、旧冒号仍算拓过） | 在 Main 实例上 `call("_temple_rub_note")` / `call("_has_temple_rub")` | 走转发，不用改 |
-| `check_symbols.py:2619`（`拓「%s」　%s` 须在、`拓「%s」：` 不得在）、`:2930–2932`（函数定义）、`:2939`（HOME_RATE < INN_RATE）、`:3342 / 3354`（细看走 record_discovery、拓碑走 add_ledger_note）、`:3368`、`:3896–3911`（Lane AC 寺观题签 / 勘见记事） | 都经 `read_main_src()` | 拼回即原文 → **不用改**（登记 MAIN_SPLITS 即可；漏登记实测 13 条红） |
+| `check_symbols.py:2619`（`拓「%s」　%s` 须在、`拓「%s」：` 不得在）、`:2930–2932`（函数定义；lane cs19 `ba3b8c3` 起改查 Main.gd 原文，`32195a4` 上 check_symbols.py:2861–2872）、`:2939`（HOME_RATE < INN_RATE）、`:3342 / 3354`（细看走 record_discovery、拓碑走 add_ledger_note）、`:3896–3911`（Lane AC 寺观题签 / 勘见记事） | 除标注的那处外都经 `read_main_src()`（原列的 `:3368` 读的是 tools/simulate_run.py，与拆分无关，已删） | 拼回即原文 → **不用改**（登记 MAIN_SPLITS 即可；漏登记实测 13 条红） |
 
 ### 落地
 
@@ -406,8 +406,9 @@ lane main10 的 brief 也点了「把 verify_economy / smoke 的直读改到拆�
 |---|---|---|
 | verify_economy 二之 2b / 2c（升级回调 4 条、修船 / 购船同闸 2 条） | **直读 Main.gd**（`_main_up`），`_locate_func` 切 `_on_upgrade` / `_on_repair_hull` / `_on_buy_ship` | 会切到一行转发，6 条里 5 条假红（实测）→ **改去 ShipyardPage.gd 里切** `on_upgrade` / `on_repair_hull` / `on_buy_ship`，切前去 `main.` 前缀；条件原样 |
 | verify_economy 哗变「散钱 > 事后补 N 人」 | **直读 Main.gd** 全文正则 `below_min \* (\d+)` | 字样随 `_setup_shipyard` 搬走，补人单价取成 0、假红（实测）→ **改去 ShipyardPage 里按名取 `setup_shipyard` 的函数体再找**（原先在整份 Main 泛搜，现在只认这一支，只收紧；取不到进「十一、按函数名取函数体」判红） |
-| verify_economy 其余直读 Main.gd 的（牙行 `_affordable_qty` / `_setup_market` …、委办字样、`INN_RATE` / `GUILD_*` / `EXAM_*` 常量、住处 `_setup_residence` / `_on_rest`） | 直读 Main.gd | 都不在 C 簇里（逐条核过），不用改 |
-| check_symbols「船屋改成坞位一艘」「船屋成功题签」、Lane AB 雇请文案（`_on_hire_crew` / `_on_hire_to_min`）、「Main._on_upgrade 已定义」 | `_func_body` / 正则读 `read_main_src()` | 转发就地换回拆出件函数体、去 `main.` 前缀 → **不用改**（拆出件进 `main_splits.txt` 即可） |
+| verify_economy 其余直读 Main.gd 的（牙行 `_affordable_qty` / `_setup_market` …、委办字样、`INN_RATE` / `GUILD_*` / `EXAM_*` 常量、住处 `_on_rest`；`_setup_residence` 第九刀 `ebd28e7` 起已改切 ResidencePage） | 直读 Main.gd | 都不在 C 簇里（逐条核过），不用改 |
+| check_symbols「船屋改成坞位一艘」「船屋成功题签」、Lane AB 雇请文案（`_on_hire_crew` / `_on_hire_to_min`） | `_func_body` / 正则读 `read_main_src()` | 转发就地换回拆出件函数体、去 `main.` 前缀 → **不用改**（拆出件进 `main_splits.txt` 即可） |
+| check_symbols「Main._on_upgrade 已定义」 | 查 Main.gd 原文（lane cs19 `ba3b8c3` 起 `inst_func_missing`，该笔在落地父 `5c70f05` 之前，本刀落地时已如此；`32195a4` 上 check_symbols.py:1497–1504） | Main 留同名同签名一行转发 → **不用改** |
 | smoke「船屋加成写成成数…」（`月息每百 %d`、`添 %d 人`、`水手 %d 至 %d`、`水粮各 %d　付 %d` 正向；`月息 %d%%`、`+%d` 反向） | `_main_family_src()` 全文 `find` | 拆出件进 `main_splits.txt` 后字样仍在扫描范围内 → 不用改（漏登记则正向红） |
 | smoke `yard_node.call("_sail_fit_phrase" / "_armor_fit_phrase" / "_duty_per_hundred", …)`、`func _fit_rank` | 直调 / family src | 这几支不属本簇、留 Main → 不用改 |
 | qa_drydock_probe / qa_yard_transition_probe / qa_money_notices_probe | `load_scene("quanzhou_shipyard")`、按钮文找钮、`_main.get("_upgrade_busy")` | 页面、钮文不变，闸留 Main → 不用改 |
@@ -441,7 +442,7 @@ lane main10 的 brief 也点了「把 verify_economy / smoke 的直读改到拆�
 | # | 簇（基 c9d0e14 行段） | 支 / 行 | 簇外调 | 他处（代码） | 引用 / 支 | 直读 Main.gd 的门禁 | 写 Main 成员 | 风险 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | P 开局 / 开场（`_on_monthly_notice` … `_on_rewatch_opening`，615–652） | 5 / 30 | 3 | 0 | **0.6** | 无 | `_arrival_banner` | 低（start_game 是开局入口，见下） |
-| 2 | R 玉湖陈宅（`_setup_residence_chen`，1960–2006） | 1 / 47 | 0 | 1（ResidencePage） | 1.0 | 无 | 无 | 低，但只 1 支 |
+| 2 | R 玉湖陈宅（`_setup_residence_chen`，1960–2006） | 1 / 47 | 0 | 1（ResidencePage） | 1.0 | simulate_endgame 1（:77 在 Main.gd 全文正则找陈宅跑腿；原填「无」是漏了，第十二刀对账改） | 无 | 低中，但只 1 支 |
 | 3 | A 牙行（`_setup_market` … `_on_sell`，1133–1778） | 15 / 618 | 1 | 20 | 1.4 | verify_economy 12、qa_contract_stock 3、qa_money_notices 1 | 4 个（`_market_ship` / `_market_hold` / `broker_hand` / `_contract_detail_open`） | 高 |
 | 4 | Q 标题页（`_setup_title_mode` / `_on_start_game_pressed`，2296–2354） | 2 / 57 | 1 | 2（check_symbols，经 read_main_src） | 1.5 | 无 | `title_button_connected` | 低 |
 | 5 | H 守城 / 终局（`_check_absent_from_xinghua` … `_special_cards`，3349–4272） | 27 / 833 | 14 | 29 | 1.6 | verify_story_data 4、check_assets 1、verify_economy 1、smoke 1 | `_shore_mode` / `_shore_facilities` | 高 |
@@ -457,7 +458,7 @@ lane main10 的 brief 也点了「把 verify_economy / smoke 的直读改到拆�
 | 15 | W 工席台（`_begin_benches` … `_uncenter_benches`，1815–1848） | 4 / 28 | 1 | 34 | 8.8 | smoke 5 | `_slip_host` | 中（9 个拆出件都在用） |
 | 16 | K 场景加载 / 分发（`load_scene` … `_setup_dynamic_scene`，878–1128） | 10 / 223 | 54 | 156 | 21.0 | 多处 | 4 个 | 高（所有页面都经过） |
 
-（另有一支 `_add_save_button`（3340–3345）全仓 0 调用方，是死代码，不归簇、本刀不动。）
+（另有一支 `_add_save_button`（3340–3345）全仓 0 调用方，是死代码，不归簇、本刀不动；lane main12 已删，见第十二刀「死代码」。）
 
 **为什么选「标题页 / 开场」**：按比值，P（0.6）和 Q（1.5）一个排第 1、一个排第 4。两簇其实是同一张页，只是在源码里分成两段：
 Q 的 `_setup_title_mode` 排卷首标题页和四方沙盘（type=title 各页），`_on_start_game_pressed` 是「开卷 / 翻页」钮的回调；
@@ -491,7 +492,7 @@ P 另外两支 `start_game`（开局入口，`_ready` 里 `call_deferred("start_
 |---|---|---|
 | `check_symbols.py:3270`（序章开卷 / 入酒棚走 `play_transition` + 两个题签助手 + `begins_with("cg_narrate")`） | `func_bodies(read_main_src())` 取 `_on_start_game_pressed` | 拼回即原文 → **不用改**（登记 main_splits 即可；漏登记实测红，cs17 另报「只取到一行转发」） |
 | `check_symbols.py:3692`（标题模式读 cg_title / cg_sub、`\A` 经 `_unescape_scene_text` 换行） | 同上，取 `_setup_title_mode` | 同上 |
-| `qa_title_probe.gd`（卷首 / 序章题签截图 5 张；`--contract` 验非渲染断言）、ShotTour title / title_anim / page_cg_* 站点、`qa_companion_preview_screenshots.gd` | 走真页面（`load_scene("cg_title")`、按「开卷」「重看开场」钮、找 TitleStage） | 页面、钮文、节点名都不变，不用改 |
+| `qa_title_probe.gd`（卷首 / 序章题签截图 5 张；`--contract` 验非渲染断言）、ShotTour title / title_anim / page_cg_* 站点、`qa_companion_preview_screenshots.gd` | 走真页面（`load_scene("cg_title")`、找 TitleStage；qa_title_probe 直调 `UiTransition.prologue_open / prologue_shore` 截题签、不按「开卷」钮；ShotTour `title_anim --rewatch` 按「重看开场」RewatchButton） | 页面、钮文、节点名都不变，不用改 |
 | `p7_guild_exam_smoke.gd`、`legacy/p7_smoke.gd`、`godot_story_check.gd`、ShotTour 里提到 `start_game` 的几处 | 注释 / `call_deferred("start_game")` 的等待 | `start_game` 留 Main，不用改 |
 | verify_economy / smoke / verify_story_data / check_assets / simulate_* | 不读这 5 支 | 无关 |
 
@@ -509,7 +510,140 @@ P 另外两支 `start_game`（开局入口，`_ready` 里 `call_deferred("start_
 
 ### 下一刀候选（行数按基 c9d0e14）
 
-1. **R 玉湖陈宅**（1 / 47）并进 ResidencePage：只 ResidencePage 经 `main.` 调它，没有门禁直读；住处这一页就齐了。
-2. **D 调试**（2 / 36）：check_symbols 一处经 read_main_src 读 `_debug_jump_port`，F11 / F12 键位判断留在 `_unhandled_input`。顺带定一下死代码 `_add_save_button` 删不删（要拍板，不归拆刀）。
+1. **R 玉湖陈宅**（1 / 47）并进 ResidencePage：只 ResidencePage 经 `main.` 调它；门禁里 simulate_endgame `:77` 直读 Main.gd（原写「没有门禁直读」有误，第十二刀对账改），并入时要改它的切片；住处这一页就齐了。
+2. **D 调试**（2 / 36）：check_symbols 一处经 read_main_src 读 `_debug_jump_port`，F11 / F12 键位判断留在 `_unhandled_input`。顺带定一下死代码 `_add_save_button` 删不删（要拍板，不归拆刀；lane main12 已删）。
 3. **O 浮页**（8 / 82）：两个 lambda 回写 Main 的浮页句柄，qa_wire_vision / qa_letterbox_copy 直读 Main.gd 查 `_open_vision_stage` 字样（转发留名，不会红）；中风险。
+4. **A / E / H / I / K / B / X** 风险高，仍先做「Main 家族源码」共用 helper 的门禁 lane（第五 / 七 / 九刀候选）。
+
+---
+
+## 第十二刀（lane main12，2026-09-28）：调试钩子 → `scripts/ui/DebugHooks.gd`
+
+### 调查（基 = 本 lane 头两笔之后〔删死代码 `_add_save_button` + 拍板清单跟号，见下「死代码」〕：Main.gd 4211 行，232 支 func。本片开工基 `ff82b17`，落地前主干进了几批，都没动 Main.gd，行段不变；排序表按落地前主干 `32195a4` 上的基重算）
+
+口径同第十一刀（lane main11 的算法原样复用：在基 `c9d0e14` 上重跑，16 簇的比值与第十一刀表逐格相同）：Main 里**还没拆**的函数（一行转发不算）按源码位置 / 页面归簇，
+「引用数 = 被簇外调（Main 内簇外非注释行按名出现次数）+ 他处引用（scripts / tools / scenes 其余文件去掉注释行后按名出现次数，含已拆出件经 `main.` 调）」，除以支数，按比值升序。
+第十一刀拆走 P 里的开场三支与 Q 整簇，剩 15 簇；P 只剩 `start_game` / `_on_monthly_notice` 两支。「直读 Main.gd 的门禁」只列不经 `read_main_src()` / `_main_family_src()`、拆了会切到一行转发的读法。
+
+| # | 簇（基上行段） | 支 / 行 | 簇外调 | 他处（代码） | 引用 / 支 | 直读 Main.gd 的门禁 | 写 Main 成员 | 风险 |
+|---|---|---|---|---|---|---|---|---|
+| 1 | P 开局（`_on_monthly_notice` / `start_game`，619–637） | 2 / 17 | 2 | 0 | **1.0** | 无 | `_arrival_banner` | 不拆：开局入口（`_ready` 里 `call_deferred("start_game")`、海图回港也走它）与月报信号，不属页面 |
+| 2 | R 玉湖陈宅（`_setup_residence_chen`，1958–2004） | 1 / 47 | 0 | 1（ResidencePage） | **1.0** | **simulate_endgame 1**（`:77` 在 Main.gd 全文正则 `hometown_tendency \+= (\d+)\n\t\t\tGameManager\.advance_days`，「玉湖陈宅跑腿是 1268 前的乡土写入点」；第十一刀记「无」，漏了这处） | 无（两个 lambda 回调） | 低中：要改一道门禁；自然归宿是并进 ResidencePage，但 main_splits 一件一刀（见下） |
+| 3 | A 牙行（`_setup_market` … `_on_sell`，1131–1776） | 15 / 618 | 1 | 20 | 1.4 | qa_contract_stock 3、qa_money_notices 1（verify_economy 那 12 处 lane auditfix6 `981697d` 起改读 main_stitch 拼回，不再是直读） | 4 个 | 高 |
+| 4 | **D 调试（`_debug_jump_port` / `_debug_preview_ending`，3232–3269）** | **2 / 36** | 2（`_unhandled_input` 的 F11 / F12） | 2（check_symbols，经 read_main_src） | **2.0** | **无** | **无** | **低 → 本刀** |
+| 5 | H 守城 / 终局（`_check_absent_from_xinghua` … `_special_cards`，3285–4208） | 27 / 833 | 14 | 40 | 2.0 | verify_story_data 4、check_assets 1、smoke 1（verify_economy 取 `_setup_quanzhou_standoff` 那处 auditfix6 起改读拼回） | `_shore_mode` / `_shore_facilities` | 高 |
+| 6 | E 岸带（`_setup_port_mode` … `_on_set_sail`，2302–2807） | 19 / 469 | 15 | 27 | 2.2 | smoke 1、ShotTour 1 | 4 个 | 高 |
+| 7 | O 浮页（`_open_codex` … `_close_vision_stage`，653–748） | 8 / 82 | 6 | 14 | 2.5 | qa_wire_vision 2、qa_letterbox_copy 1 | 4 个浮页句柄 | 中（两个 lambda 回写句柄） |
+| 8 | F 船况措辞（`_fit_rank` … `_duty_per_hundred`，787–831） | 5 / 37 | 0 | 19 | 3.8 | smoke 8（Main 实例直调） | 无 | 中低 |
+| 9 | M 店中杂项（`_monsoon_forecast` … `_gather_price_intel`，2169–2255） | 5 / 79 | 0 | 19 | 3.8 | smoke 1（verify_economy 5 处 auditfix6 起改读拼回） | 无 | 中低 |
+| 10 | N 内景题（`_interior_title` / `_interior_lead`，834–869） | 2 / 34 | 2 | 6 | 4.0 | smoke 2 | 无 | 中低 |
+| 11 | I 调查页 / 选项 / 效果（2938–3229） | 14 / 266 | 14 | 59 | 5.2 | verify_story_data 6、smoke 1 | 无 | 高（`_gui_input` / `_unhandled_input` 虚函数） |
+| 12 | B 壳 / 装裱（`_ready` … `_fit_dialogue`，231–616） | 14 / 312 | 10 | 66 | 5.4 | ShotTour 1 | 6 个 | 高（`_ready`） |
+| 13 | X 入港 / 设施分发（2836–2935 里 4 支） | 4 / 70 | 5 | 20 | 6.2 | verify_story_data 1、smoke 2、ShotTour 1 | 2 个 | 高（章节推进入口） |
+| 14 | W 工席台（`_begin_benches` … `_uncenter_benches`，1813–1846） | 4 / 28 | 1 | 34 | 8.8 | smoke 5 | `_slip_host` | 中（9 个拆出件都在用） |
+| 15 | K 场景加载 / 分发（`load_scene` … `_setup_dynamic_scene`，876–1126） | 10 / 223 | 50 | 164 | 21.4 | 多处 | 4 个 | 高（所有页面都经过） |
+
+（开工基 `ff82b17` 上：多一行 `_add_save_button` 1 支 0 引用、比值 0.0；H 他处 29、比值 1.6，排在 D 前面；I / B / K 他处 55 / 65 / 160；H 与之后的行段多 9 行，其余格相同。H / I / B / K 的他处数涨，来自其间主干 seq4 / auditfix5 / cs23 新增的门禁代码，名次除 H、D 对调外不变，选择不受影响。）
+
+**为什么选 D，不选 R**：比值上 R（1.0）排在 D（2.0）前面，P 不属页面不拆，A、H 高风险（A 虽已没有 verify_economy 直读，仍写 4 个 Main 成员、618 行、两个探针直读）。R 不做本刀，有三条原因：
+1. 它的自然归宿是并进第九刀的 `ResidencePage.gd`（住处这一页，`setup_residence` 在兴化就转它）。可 `gen_main_splits.py` 是一件一刀：同一个拆出件在台账里登记两次即判红；commit / 原 Main 行范围两列按「新增这个文件的 commit」取。往已有拆出件里追加一刀，现行清单表达不了。硬写的话，行范围会记成 `ebd28e7^` 里陈宅的旧位置，名不副实；不登记节标题又没有 cs18「台账函数表列了的须仍转发」这道判据，挪回 Main 再 `--write` 会全绿。单开一个一支的拆出件则是把一页拆成两份。要做 R，先给 gen_main_splits 加「追加刀」的口径（记待议）。
+2. 第十一刀记它「没有门禁直读」，实测不对：simulate_endgame `:77` 在整份 Main.gd 里按三层缩进正则找陈宅跑腿（上表）。拆了要改这道门禁的读取口径。
+3. 陈宅两个钮回调是 lambda（捕获 `log_msg` / `load_scene` / `current_scene_id`），搬成 static func 后要改成捕获 `main`。
+
+D 两支连续一段，不含 lambda，不写 Main 成员，不碰引擎虚函数：F11 / F12 键位判断在 `_unhandled_input` 里，留在 Main，照旧调 Main 的同名方法。
+没有门禁直读 Main.gd 切这两支。check_symbols 的 F11 断言经 `read_main_src()` 读，verify_economy / smoke / verify_story_data / simulate_* / 探针都不读它们。风险最低，又是第十一刀「下一刀候选」第 2 条。
+
+### 死代码 `_add_save_button`（第十一刀待议 3）：删
+
+- **来历**：只查得到根提交 `908b46f`（2026-09-26，仓库历史从这笔压平的导入开始，更早的提交不在本仓）。那一版里它就已经 0 调用方（`git show 908b46f:scripts/Main.gd` 里只有定义一处）。
+  它排在 Main.gd 那条横线 `# ══ 以下为本地 main 的新增函数，合并时因所在区块让位云端而被丢，按「本地纯新增保留」原样补回（2026-09-25） ══` 底下，是 `docs/云端优先合并台账_2026-09-25.md` 规则⑤「本地 main 冲突让位云端、纯新增保留」补回来的本地 main 旧件。
+  它做的事是往旧右栏 `right_facilities` 塞一颗「航海日志」钮。
+- **现状**：云端港页不用左右栏，`_clear_shore` / `_refresh_shore` 每次都把 `left_facilities` / `right_facilities` 清空并设 `visible = false`。
+  航海日志早由岸带动作行 `_shore_action("航海日志", …, _show_save_dialog)` 接上（基上 Main.gd `:2496`），标题页「续卷」也另接了 `_show_save_dialog.bind(true)`。
+  `git log -G'_add_save_button'` 只有三笔：908b46f（定义）、7c00b06（第六刀台账记它是 `_show_save_dialog` 的调用方之一，那是按函数名数的，它自己从没被调过）、e2bf505（第十一刀台账记死代码）。
+- **处置：删**。接线只会在一直隐藏的栏里多一颗重复的钮；留注释没有读者。
+  本 lane 头一笔 `chore(lane-main12)` 删 9 行（函数 6 行 + 其后多余空行），func 233 → 232，Main.gd 4220 → 4211；第二笔让拍板清单跟号（DRIFT 23 → 0）。两笔的哈希见 brief Verify。
+  全仓 `grep -rn _add_save_button --include=*.gd --include=*.py` 删后 0 处。门禁全绿的证据见 lane main12 brief 的 Verify §2：删后那一版上 23 道 rc=0，check_symbols ✓ 431 = 431 且逐行输出与 `ff82b17` 相同，smoke 160 = 160，verify_economy 320 = 320。
+
+### 切面
+
+| 支 | 行段（含 `##`） | 做什么 | 被谁调（Main 内 / 他处） |
+|---|---|---|---|
+| `_debug_jump_port()` | 3232–3250 | 设施页先剥 `FACILITY_SUFFIXES` 回基港；泉州 → 福州 → 兴化 → 泉州轮着跳（写 `last_port` 再 `load_scene`） | `_unhandled_input` F11（调试构建） |
+| `_debug_preview_ending()` | 3253–3269 | 沙盒凑齐第四章、八万钱（`peak_money` 同抬）、十三港、没有结局线旗标就补 `chen_line_open`，落在占城，再 `try_resolve_ending`：了结就开升章册页，没了结记一句 | `_unhandled_input` F12（调试构建） |
+
+**跨切依赖**（全部经 `main.` 取，搬出件不存状态）：
+- state：读 `current_scene_id` 1；不写 Main 成员。
+- 常量：`FACILITY_SUFFIXES` 1，留在 Main（`_load_scene_inner` 也用）。
+- msg：`load_scene` 3、`_show_chapter_dialog` 1（转 ChapterSheet）、`log_msg` 1、`update_status_panel` 1。
+- autoload：GameState 17（`last_port` 4、`has_flag` 3、`money` / `peak_money` 各 2、`chapter` / `add_money` / `visit_port` / `set_flag` / `try_resolve_ending` 各 1）。
+- 信号目标：无。两支只由 `_unhandled_input` 直调。
+
+**断言 / 探针引用点**（拆前逐个核过，行号按基）：
+
+| 引用点 | 怎么读 | 拆后 |
+|---|---|---|
+| `check_symbols.py:1894`「Main F11 可跳到泉州港」（`_has_func(main_src, "_debug_jump_port") and "KEY_F11" in main_src`）、`:1896`「F11 点验链含福州通用港与兴化回访」（`_locate_func(main_src, "_debug_jump_port")` 里要有 `fuzhou` / `xinghua`） | `main_src = read_main_src()`（`:1839`） | 拼回即原文 → **不用改**。登记 main_splits 即可；实测漏登记红 3 条：「F11 不能跳到福州/兴化」、cs17「取函数体 `_debug_jump_port` 只取到一行转发」，外加「一之零」3 条 |
+| `KEY_F11` / `KEY_F12` 键位判断（Main `_unhandled_input` `:3200–3206`） | — | 留在 Main，不用改 |
+| verify_economy / smoke / verify_story_data / check_assets / simulate_run / simulate_endgame / 各 qa 探针 | 不读这两支（全仓 grep 只有 check_symbols 两处） | 无关 |
+| check_symbols「X 只由 … 调」一类扫真文件的调用方断言（第八刀那类 `func_bodies` 不认 `static func` 的坑） | 两支调的 `try_resolve_ending` / `visit_port` / `set_flag` / `add_money` 都没有这类断言（实测拆后未同步时只红上面那几条） | 无关 |
+
+### 落地
+
+- `scripts/ui/DebugHooks.gd`（新增，`.uid` 同 commit）：2 支原样搬成 `static func`（debug_jump_port / debug_preview_ending），都带 `main` 形参，Main 成员一律加 `main.` 前缀。
+  经 `main.` 取值推断不出类型，1 处 `:=` 改为与原推断相同的显式类型（`var here: String = main.current_scene_id`）；`var res := GameState.try_resolve_ending()` 经 autoload 取，照留。
+- Main.gd **4211 → 4185（−26）**（相对开工基 `ff82b17` 的 4220 共 −35），func 数不变（232）：2 支都留同名同签名一行转发（`const _DEBUG := preload(...)`，都不是协程）。
+- 门禁同步：本节标题登记拆出件，跑 `python3 tools/gen_main_splits.py --write` 重生成 `tools/main_splits.txt`；`godot_compile_check` 的 SCRIPTS 加 1 行。
+  verify_economy / smoke / verify_story_data 没有读这两支的切片，**读取口径不用改**；check_symbols 两处源码断言经 read_main_src 拼回，条件一条没改、没放宽。
+- 新加一条钉子（check_symbols 九之七，只收紧，口径同第十一刀标题页那条）：2 支在 Main 里须是一行转发到 `_DEBUG` 的同名 static func，拆出件里真有那支，Main 真 preload 了它；2 个名字登记进 `NAMED_FUNCS` 的 `scripts/Main.gd` 组。
+  cs18 之后「挪回 + `--write`」已由 gen_main_splits 判红，钉子独有的是 preload 常量名与「拆出件真有那支」两项（第十一刀待议 1 建议抽成通用判据，本刀照惯例先手写）。
+- 拼回原文：`read_main_src()` 拼回的 2 支和基线逐行比，只差上面 1 行 `:=`。
+
+### 前十一刀对账（行段 / 拆出 commit / 引用点）
+
+对账快照是开工基 `ff82b17`（引用点逐条回读都在这一版上做）。落地前主干又进了三批，下面两批碰到这些读法，已按 `32195a4` 复核，结论照旧：
+- lane auditfix6 `981697d`：verify_economy 的 main_src / `gd_const("scripts/Main.gd", …)` / `_setup_quanzhou_standoff` 取体改读 `tools/main_stitch.py` 拼回。各节记的「verify_economy 直读 Main.gd」，从这笔起都不再是直读，拆刀不会再切到转发。这是门禁变化，不逐句改；直读拆出件的旅店 / 住处 / 行会 / 船屋几处照旧。
+- lane cs23 `6fbda77`：台账格式硬校验。本节标题因此不以「第…刀」起头。
+
+逐刀三项：
+- **行段**：台账写的簇跨度 / 逐支行段，对 `tools/main_splits.txt` 第 4 列。第 4 列由 gen_main_splits 从拆出 commit 父版 Main.gd 重算。
+- **拆出 commit**：`git log --diff-filter=A` 新增拆出件的那笔，及其父版；对台账各节写的「基」。
+- **引用点**：各节「断言 / 探针引用点」表和落地 / 门禁同步里每处 `文件:行` 与「拆后怎么读」，逐条对快照回读。按基的旧行号用 `git show <基>:<文件>` 认出所指代码，再在快照上按内容找现位置。
+
+引用点逐条表（173 行）在 lane main12 brief Verify §4 引的证据文件里。本节只记汇总，以及改了哪几句（上面各节已就地改准）。
+
+| 刀 | 拆出件（lane） | 拆出 commit（父版） | 台账写的基 | 基 vs 父版 Main.gd | 行段：台账 / main_splits | Main 行数 台账 = git | 引用点：核 / 一致 / 改 / 后文已记 / 已由清单取代 |
+|---|---|---|---|---|---|---|---|
+| 一 | SlipKit（ms） | `080ca1b`（`6323807`） | 无节，只有开头一行 | — | 未写 / 2263-2402 | 未写（git 5872 → 5770） | 无节，不适用 |
+| 二 | LedgerPage（mz） | `c56bb13`（`f842d3e`） | 同上 | — | 未写 / 260-372 等 7 段 | 未写（git 5846 → 5538） | 同上 |
+| 三 | ChapterSheet（ms2） | `4d141b2`（`160c99e`） | 同上 | — | 未写 / 3962-4210 | 未写（git 5550 → 5327） | 同上 |
+| 四 | TavernPage（main4） | `3a527eb`（`db4d944`） | `d56ba1d` | 逐字节同 | 2457–2697 / 2457-2480,2488-2658,2666-2697（两处缺口是留 Main 的 `_setup_news_wall` / `_skill_rank`）✓ | 5327 → 5134 ✓ | 15 / 11 / **3** / 0 / 1 |
+| 五 | NpcPage（main5） | `537826b`（`ca6c817`） | `6ff3d01` | 逐字节同 | 502–643 + 2940–3047 / 502-643,2940-3016,3026-3047（缺口 3017–3025 是随簇搬走的 `NPC_GREETING` 常量）✓ | 5134 → 4929 ✓ | 22 / 18 / **1** / 2 / 1 |
+| 六 | SaveSheet（main6） | `7c00b06`（`b95eebe`） | `537826b` | 逐字节同 | 3419–3538，逐支 5 支 / 3419-3538 ✓（逐支由 gen_main_splits 对账） | 4929 → 4831 ✓ | 17 / 15 / **1** / 0 / 1 |
+| 七 | GuildExamPage（main7） | `e8b8221`（`0567483`） | `59254f5` | 逐字节同 | 2404–2500 + 2519–2605，逐支 10 支 / 同 ✓ | 4831 → 4699 ✓ | 39 / 30 / **3** / 5 / 1 |
+| 八 | MaritimeOfficePage（main8） | `b30aaa8`（`2651531`） | `e8b8221` | 逐字节同 | 1766–1886 / 1768-1886（台账多算簇首横线 + 空行 2 行，口径差，不改）✓ | 4699 → 4612 ✓ | 23 / 21 / **2** / 0 / 0 |
+| 九 | ResidencePage（main9） | `ebd28e7`（`67da0a3`） | `26bca91` | 逐字节同 | 2389–2505，逐支 6 支 / 2389-2419,2426-2505 ✓ | 4612 → 4527 ✓ | 21 / 18 / **3** / 0 / 0 |
+| 十 | ShipyardPage（main10） | `61e17bf`（`5c70f05`） | `abb3f05` | 逐字节同 | 1883–2203，逐支 15 支 / 1886-2203（簇首横线口径差）✓ | 4527 → 4275 ✓ | 19 / 17 / **2** / 0 / 0 |
+| 十一 | TitlePage（main11） | `e2bf505`（`c9d0e14`） | `c9d0e14` | 就是父版 | 636–652 + 2296–2354，逐支 5 支 / 同 ✓ | 4275 → 4220 ✓ | 17 / 16 / **1** / 0 / 0，另本刀查出 R 行 **2** 处 |
+
+- **行段 11 / 11、Main 行数 8 / 8 对得上**，没有要改的。func 数每刀前后都是 233。各节函数表、拆出件 `static func`、main_splits 末列三者 8 / 8 逐支同序，`.uid` 与拆出件同 commit（第四刀 TavernPage 当时没带 `.uid`）。
+- **拆出 commit**：第四至第十刀写的「基」都是开工基，不是拆出 commit 的父版。各 lane 开工后 rebase 过，但基与父版的 Main.gd 逐字节相同（`git diff <基> <父版> -- scripts/Main.gd` 空），所以各节行号照样对。
+  各节正文没写拆出 commit，以上表和 `tools/main_splits.txt` 第 3 列为准。前三刀只有开头一行登记，与清单一致。
+- **引用点**：共 173 处。146 处一致，只是行号漂移。7 处已由后面某刀改读、后文已记（第五刀旅店门禁里的住处、第七刀调查表里的船屋 / 市舶司 / 住处几处）。4 处「两处 MAIN_SPLITS 都加」已由 `tools/main_splits.txt` 取代。
+  **16 处与现状不一致**，都是「怎么读」写错或已过时，各刀当时「不用改 / 留 Main」的结论都成立。已就地改准的有：
+  - 第四刀 simulate_run 的 `INN_RATE`：它自带常量，从不读 Main.gd。「3 处可原地不动」改为 2 处。候选 J 的 `codex_short(` 实际改读 NpcPage。
+  - 第五 / 六刀候选：simulate_run 读 GUILD_* 用的是自带 `main_const`，不是 `gd_const`。
+  - 第七刀：「函数定义」那处 cs19 `ba3b8c3` 起改查 Main.gd 原文；remap 变异 cs12 起是 7 份；compile 数落地时是 127 → 128。
+  - 第八刀：「扫描前把 static func 记成 func」那步 cs16 `d114eae` 起已删；候选 2 的 `func_bodies` 不认 static 已收口。
+  - 第九刀：HOME_RATE 三道门禁的读法；函数定义那处同第七刀；`:3368` 读的是 simulate_run，与拆分无关，已删。
+  - 第十刀：住处 `_setup_residence` 早由第九刀改切 ResidencePage；「Main._on_upgrade 已定义」查 Main.gd 原文（cs19）。
+  - 第十一刀：qa_title_probe 直调 UiTransition、不按「开卷」钮。另外本刀查出 R 玉湖陈宅「无直读」有误（排序表与候选 1 两处，simulate_endgame `:77`）。
+  - 第六 / 第十一刀提到的 `_add_save_button`：已加注「lane main12 已删」。
+- **口径注**（结论对，没改）：第六 / 八刀的「124 → 125」「128 → 129」是 compile SUMMARY 总项，不是 SCRIPTS 条目数；第十刀没写 NAMED_FUNCS +14（Main 组 27 → 41）。
+
+### 下一刀候选（行数按本刀的基）
+
+1. **R 玉湖陈宅**（1 / 47）并进 ResidencePage：先给 `gen_main_splits.py` 定「往已有拆出件追加一刀」的口径（台账节标题怎么写、commit / 行范围列记哪一刀），再改 simulate_endgame `:77` 的读取口径（改读 ResidencePage、去 `main.` 前缀，不回落切 Main），两个 lambda 改捕获 `main`。
+2. **O 浮页**（8 / 82）：两个 lambda 回写 Main 的浮页句柄；qa_wire_vision / qa_letterbox_copy 直读 Main.gd 查 `_open_vision_stage` 字样（转发留名，不会红）；中风险。
+3. **F 船况措辞 / N 内景题**（中低）：smoke 在 Main 实例上直调，转发留名即可；F 被船屋 / 船籍簿 / 市舶司三个拆出件经 `main.` 共用。
 4. **A / E / H / I / K / B / X** 风险高，仍先做「Main 家族源码」共用 helper 的门禁 lane（第五 / 七 / 九刀候选）。

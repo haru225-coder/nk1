@@ -97,7 +97,7 @@ func _run() -> void:
 	# 本探针的墨边上场把它顶掉（_abort）；慢帧下它已自己演完——走哪条路随帧率变
 	var wm_ref: WeakRef = weakref(wm)  # 条件只捕获弱引用：布景万一自行结算释放后再调，直接捕获 wm 就报 Lambda capture freed（lane gd17）
 	if not await Clock.until(self, func() -> bool: return _letterbox_under(wm_ref.get_ref()) == null):
-		_bail("布景自带的入战墨边 %d ms 内没收场" % Clock.WAIT_MS, wm, gm)
+		_bail(CombatStage.why_not("布景自带的入战墨边 %d ms 内没收场" % Clock.WAIT_MS, "还挂在布景下"), wm, gm)
 		return
 	if CombatStage.standing_fail(wm) != "":
 		_bail(CombatStage.standing_fail(wm), wm, gm)
@@ -107,7 +107,7 @@ func _run() -> void:
 	_expect(lb != null, "有窗口时入战墨边未上场")
 	# 裸 await caption_shown 在墨边被顶掉 / 随布景释放时永不返回（lane gd10）：一律带帧数上界，没等到就判红收尾
 	if lb != null and not await CombatStage.wait_signal(self, lb, &"caption_shown"):
-		_bail("入战题签没擦出（caption_shown 未发：墨边被顶掉或随布景释放）", wm, gm)
+		_bail(CombatStage.why_not("入战题签没擦出", "caption_shown 未发：墨边被顶掉或随布景释放"), wm, gm)
 		return
 	if lb != null:
 		await _shot("02_enter_caption")
@@ -119,7 +119,7 @@ func _run() -> void:
 		var lb_ref: WeakRef = weakref(lb)
 		if not await CombatStage.wait_until(self, func() -> bool: return enter_done[0] or lb_ref.get_ref() == null) \
 				or not enter_done[0]:
-			_bail("入战墨边没演完（finished 未发）", wm, gm)
+			_bail(CombatStage.why_not("入战墨边没演完", "finished 未发"), wm, gm)
 			return
 	for _i in 4:
 		await process_frame
@@ -129,7 +129,7 @@ func _run() -> void:
 		"咸淳三年六月十二　夺得海鹘一艘")
 	_expect(ex != null, "出战墨边未上场")
 	if ex != null and not await CombatStage.wait_signal(self, ex, &"caption_shown"):
-		_bail("出战题签没擦出（caption_shown 未发：墨边被顶掉或随布景释放）", wm, gm)
+		_bail(CombatStage.why_not("出战题签没擦出", "caption_shown 未发：墨边被顶掉或随布景释放"), wm, gm)
 		return
 	if ex != null:
 		await _shot("03_exit_caption")
@@ -139,7 +139,7 @@ func _run() -> void:
 		var ex_ref: WeakRef = weakref(ex)
 		if not await CombatStage.wait_until(self, func() -> bool: return exit_done[0] or ex_ref.get_ref() == null) \
 				or not exit_done[0]:
-			_bail("出战墨边没演完（finished 未发）", wm, gm)
+			_bail(CombatStage.why_not("出战墨边没演完", "finished 未发"), wm, gm)
 			return
 	# 墨边退场后、海战场面拆掉前截：旧写法先 queue_free 再截，得的是一色空视口（lane sg2）
 	await _shot("04_after_exit")
@@ -214,10 +214,11 @@ func _shot(stem: String) -> void:
 	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)
 
 
-## 等不到信号时判红收尾：与正常收尾同走 _end，另带 error=no_signal 进 --json（不挂死）
+## 等不到信号时判红收尾：与正常收尾同走 _end，另带 error 进 --json（不挂死）：墙钟上界先到、压帧过重为 wall_clock，
+## 其余 no_signal（lane gd24，见 combat_probe_stage 头注释「二」）
 func _bail(msg: String, wm, gm: Node) -> void:
 	_expect(false, msg)
-	_end(wm, gm, CombatStage.NO_SIGNAL)
+	_end(wm, gm, CombatStage.bail_error())
 
 
 ## 唯一收尾：场上墨边 _abort（挂着的等待方都收到 finished）、放掉布景、清战况，再出报告（lane gd12）。

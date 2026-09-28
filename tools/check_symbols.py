@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """静态检查 GDScript：autoload 单例的跨文件引用是否都真实存在。
 GDScript 是动态语言，Autoload.missing_method() 只有跑到那一行才报错。"""
-import json, re, os, sys, collections
+import ast, io, json, re, os, sys, collections, tokenize
 if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gate_json; gate_json.maybe_json(__file__)
@@ -44,130 +44,16 @@ MAIN_NOT_SPLITS = {
     "scripts/ui/TavernNewsWall.gd": "酒馆市井札薄（_setup_news_wall → mount），自成一件，不是从 Main 搬出",
 }
 SPLIT_MARK = "从 Main.gd 原样搬出"  # 拆出件头注（前 10 行）的约定字样；有它就必须登记，登记了就必须有它
-_SPLIT_FWD = re.compile(r'^\t(?:return |await )?(_[A-Z][A-Z0-9_]*)\.([A-Za-z_]\w*)\((.*)\)\s*$')
-_split_report = []
-_split_fwd_count = {}
-_nonsplit_fwd = {}  # 非拆出件路径 -> [(Main 函数名, 目标函数名)]：Main 里一行转发到它的各支（MAIN_NOT_SPLITS 失效判据用）
-
-
-def _top_level_chunks(src):
-    """按顶格行切块：[(头行, [续行…])]。func 的签名 + 函数体、const、注释都各成一块；
-    多行签名 / 括号续行归前一块（缩进行与空行都算续行）。"""
-    chunks = []
-    for ln in src.split("\n"):
-        if chunks and (ln == "" or ln[0].isspace() or ln.startswith(")")):
-            chunks[-1][1].append(ln)
-        else:
-            chunks.append((ln, []))
-    return chunks
-
-
-def _split_args(s):
-    out, depth, cur = [], 0, ""
-    for c in s:
-        if c in "([{":
-            depth += 1
-        elif c in ")]}":
-            depth -= 1
-        if c == "," and depth == 0:
-            out.append(cur.strip()); cur = ""
-        else:
-            cur += c
-    if cur.strip():
-        out.append(cur.strip())
-    return out
+# 拼回的实现在 tools/main_stitch.py（lane auditfix6 从这里抽出，verify_economy 共用）；下面三张表是它每次拼回时重填的，「一之零」读。
+import main_stitch
+from main_stitch import _SPLIT_FWD, _split_report, _split_fwd_count, _nonsplit_fwd
 
 
 def read_main_src():
-    """Main.gd + MAIN_SPLITS 拼成一份「未拆时」的 Main 源码：
-    - Main 里一行转发到拆出件的 func，函数体就地换成拆出件里那支 static func 的函数体；
-      转发时传 self 的形参（如 main），函数体里的 `main.` 前缀去掉、裸 `main` 换回 self——拼出来就是搬走前的原文；
-    - 拆出件里没被转发到的其余部分（helper / 常量）追加在末尾，static func 记成 func，func_bodies() 照样切得到。
+    """Main.gd + MAIN_SPLITS 拼成一份「未拆时」的 Main 源码（实现与口径见 tools/main_stitch.py）：
     拆走函数后，断言不会因为只看见一行转发而假绿（尤其是「某字样不得出现」一类的反向断言）。"""
-    _split_report.clear()
-    _split_fwd_count.clear()
-    _nonsplit_fwd.clear()
-    with open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8") as f:
-        main_text = f.read()
-    const_of, other_of = {}, {}
-    for m in re.finditer(r'^const\s+(_[A-Z][A-Z0-9_]*)\s*:?=\s*preload\("res://([^"]+)"\)', main_text, re.M):
-        (const_of if m.group(2) in MAIN_SPLITS else other_of)[m.group(1)] = m.group(2)
-    _uses = re.compile(r'\b(' + "|".join(map(re.escape, const_of)) + r')\.') if const_of else None
-    parts = {}
-    for rel in MAIN_SPLITS:
-        if not os.path.isfile(os.path.join(ROOT, rel)):
-            _split_report.append(f"{rel} 登记在 tools/main_splits.txt，文件却不存在（删了拆出件没更新清单），拼回跳过它")
-            parts[rel] = {"funcs": {}, "rest": [], "used": set(), "fwd": 0, "gone": True}
-            continue
-        with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
-            funcs, rest = {}, []
-            for head, tail in _top_level_chunks(f.read()):
-                m = re.match(r'^static\s+func\s+([A-Za-z_]\w*)\s*\(', head)
-                if m:
-                    funcs[m.group(1)] = (head, tail)
-                elif not head.startswith(("extends ", "class_name ")):
-                    rest.append((head, tail))
-            parts[rel] = {"funcs": funcs, "rest": rest, "used": set(), "fwd": 0}
-    out = []
-    for head, tail in _top_level_chunks(main_text):
-        m = re.match(r'^func\s+[A-Za-z_]\w*', head)
-        code = [ln for ln in tail if ln.strip() and not ln.strip().startswith("#")]
-        fwd = _SPLIT_FWD.match(code[0]) if m and len(code) == 1 else None
-        rel = const_of.get(fwd.group(1)) if fwd else None
-        fname = head.split("(")[0]
-        if m and rel is None and _uses and _uses.search("\n".join(code)):
-            _k = _uses.search("\n".join(code)).group(1)
-            _split_report.append(f"{fname} 调了拆出件 {const_of[_k]}（{_k}.…）却不是一行转发，拼回不认、"
-                                 f"函数体断言只看得到 Main 这几行（转发须独占函数体：`\\t[return |await ]{_k}.fn(…)`，"
-                                 f"行尾不带注释、签名不折行）")
-        if fwd and fwd.group(1) in other_of:
-            _nonsplit_fwd.setdefault(other_of[fwd.group(1)], []).append((fname[len("func "):].strip(), fwd.group(2)))
-        if fwd and fwd.group(1) in other_of and other_of[fwd.group(1)] not in MAIN_NOT_SPLITS:
-            _split_report.append(f"{fname} 一行转发到 {other_of[fwd.group(1)]}，它没登记进 MAIN_SPLITS，函数体不拼回"
-                                 f"（是拆出件就在 docs/Main拆解台账.md 追加一节、跑 tools/gen_main_splits.py --write；不是就加进 check_symbols 的 MAIN_NOT_SPLITS 并注明）")
-        if rel is None:
-            out.append((head, tail))
-            continue
-        part, name = parts[rel], fwd.group(2)
-        if name not in part["funcs"]:
-            _split_report.append(f"{head.split('(')[0]} 转发到 {rel} 的 {name}，那边没有这支 static func")
-            out.append((head, tail))
-            continue
-        p_head, p_tail = part["funcs"][name]
-        part["used"].add(name)
-        part["fwd"] += 1
-        # 签名可能折行：括号配平、以 : 收尾的那行之后才是函数体
-        sig_lines, depth = [], 0
-        for ln in [p_head] + p_tail:
-            sig_lines.append(ln)
-            depth += sum(ln.count(c) for c in "([{") - sum(ln.count(c) for c in ")]}")
-            if depth == 0 and ln.rstrip().endswith(":"):
-                break
-        sig = " ".join(sig_lines)
-        sig = sig[sig.index("(") + 1:sig.rindex(")")]
-        params = [a.split(":")[0].split("=")[0].strip() for a in _split_args(sig)]
-        args = _split_args(fwd.group(3))
-        body = "\n".join(p_tail[len(sig_lines) - 1:])
-        for pname, arg in zip(params, args):
-            if arg == "self" and pname:
-                body = re.sub(rf'\b{pname}\.', "", body)
-                body = re.sub(rf'\b{pname}\b', "self", body)
-        # 转发体里的注释照留，转发那一行由搬来的函数体顶上
-        notes = [ln for ln in tail if ln.strip().startswith("#")]
-        out.append((head, notes + body.split("\n")))
-    for rel in MAIN_SPLITS:
-        part = parts[rel]
-        _split_fwd_count[rel] = part["fwd"]
-        if part.get("gone"):
-            continue
-        if part["fwd"] == 0:
-            _split_report.append(f"{rel} 登记为 Main 拆出件，但 Main 里没有一行转发接到它（或没 preload）")
-        out.append((f"# ── 以下自 {rel} 拼入（未被转发的 helper / 常量） ──", []))
-        for name, (p_head, p_tail) in part["funcs"].items():
-            if name not in part["used"]:
-                out.append((re.sub(r'^static\s+', "", p_head), p_tail))
-        out.extend(part["rest"])
-    return "\n".join("\n".join([h] + t) for h, t in out)
+    return main_stitch.read_main_src(MAIN_NOT_SPLITS)
+
 
 def code_only(src):
     """去掉字符串和注释，只留代码。字符串里的 [color=#…]、Economy.xx 不算语法，
@@ -2442,8 +2328,8 @@ if (
     and "换上　" in yard_fn
     and "把「%s」拖上坞位。帆和甲对着这一艘。" in switch_fn
     and "_begin_slip_scroll" not in yard_fn
-    and "advance_days" not in yard_fn
-    and "advance_days" not in switch_fn
+    and "advance_days" not in yard_fn  # NF: GameManager.advance_days
+    and "advance_days" not in switch_fn  # NF: GameManager.advance_days
     and '"berth_index"' in gs_src_draft
     and _has_func(main_src, "_on_upgrade")
 ):
@@ -3199,14 +3085,14 @@ elif _tok_find(sit_body, 'set_flag("exam_sat")') > sit_body.find("else:"):
 else:
     print("  ✓ 赴试每章一次、费 15 日；学者不输海路记 exam_sat")
 # 身份相关写入必须早于 advance_days：三月下旬赴试会跨入四月触发 _settle_history。
-if 0 <= _tok_find(sit_body, 'set_flag("exam_sat")') < _tok_find(sit_body, "advance_days(EXAM_SIT_DAYS)"):
+if 0 <= _tok_find(sit_body, 'set_flag("exam_sat")') < _tok_find(sit_body, "advance_days(EXAM_SIT_DAYS)"):  # NF: GameManager.advance_days
     print("  ✓ 赴试先写 exam_sat 再 advance_days（跨月身份结算）")
 else:
     print("  ✗ 赴试 exam_sat 写在 advance_days 之后（跨月会先锁身份）")
     problems.append("赴试跨月身份时序")
 # 誊录同理：工钱与学者倾向须先于 advance_days(EXAM_COPY_DAYS)，三月末誊录跨四月同样触发身份结算。
 copy_body = _p7_code(p7_bodies.get("_on_exam_copy", ""))
-copy_adv = _tok_find(copy_body, "advance_days(EXAM_COPY_DAYS)")
+copy_adv = _tok_find(copy_body, "advance_days(EXAM_COPY_DAYS)")  # NF: GameManager.advance_days
 if 0 <= copy_body.find("scholar_tendency += 1") < copy_adv and 0 <= _tok_find(copy_body, "add_money(EXAM_STIPEND)") < copy_adv:
     print("  ✓ 誊录先记工钱与学者倾向再 advance_days（跨月身份结算）")
 else:
@@ -3620,7 +3506,7 @@ else:
 seachart_src_full = open(os.path.join(ROOT, "scripts/SeaChart.gd"), encoding="utf-8").read()
 inv_body = _locate_func(seachart_src_full, "_on_investigate_discovery")
 inv_code = "\n".join(re.sub(r'#.*$', '', ln) for ln in inv_body.split("\n"))
-if _tok_count(inv_code, "advance_days", call=True) == 1 and "_sail_next_day" not in inv_code and "_on_event_continue()" not in inv_code:
+if _tok_count(inv_code, "advance_days", call=True) == 1 and "_sail_next_day" not in inv_code and "_on_event_continue()" not in inv_code:  # NF: GameManager.advance_days
     print("  ✓ 发现调查只 advance_days 一次，不在同一次点击里续航")
 else:
     print("  ✗ 发现调查仍会叠日（advance_days 与 _sail_next_day 同一次点击）")
@@ -3699,8 +3585,8 @@ else:
 
 inv = _code_only(func_bodies(seachart_src).get("_on_investigate_discovery", ""))
 # 取 be04/c148 语义：调查日只 advance_days 一次、不在同一次点击里直接续航（00b4 原版要求不调 advance_days）
-if _tok_count(inv, "advance_days", call=True) != 1:
-    print("  ✗ 发现调查应恰好 advance_days 一次（现 %d 次）" % _tok_count(inv, "advance_days", call=True))
+if _tok_count(inv, "advance_days", call=True) != 1:  # NF: GameManager.advance_days
+    print("  ✗ 发现调查应恰好 advance_days 一次（现 %d 次）" % _tok_count(inv, "advance_days", call=True))  # NF: GameManager.advance_days
     problems.append("发现调查计日次数不对")
 elif "_sail_next_day(" in inv or "_on_event_continue()" in inv:
     print("  ✗ 发现调查在同一次点击里直接续航，会与调查日叠成两日")
@@ -3993,6 +3879,28 @@ else:
     for _m in _tp_bad:
         print(f"  ✗ {_m}")
     problems.append("标题页 / 开场没钉在 TitlePage")
+
+# 调试钩子 2 支真身钉在 DebugHooks（lane main12，口径同上面标题页的钉子）：Main 里每支只许是一行转发到 _DEBUG 的同名 static func，
+# 拆出件里须真有那支、Main 真 preload 了它。挪回 Main 再 `gen_main_splits --write` 由生成器判红（lane cs18）；这里再钉 preload 常量名与拆出件那支。
+_dh_src = open(os.path.join(SCRIPTS, "ui", "DebugHooks.gd"), encoding="utf-8").read()
+_dh_static = set(re.findall(r'^static\s+func\s+([A-Za-z_]\w*)\s*\(', _dh_src, re.M))
+_dh_raw_fn = func_bodies(open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read())
+_dh_bad = []
+for _dh_name in ("_debug_jump_port", "_debug_preview_ending"):
+    _dh_code = [ln for ln in _dh_raw_fn.get(_dh_name, "", forward_ok=True).split("\n") if ln.strip() and not ln.strip().startswith("#")]
+    _dh_fwd = _SPLIT_FWD.match(_dh_code[0]) if len(_dh_code) == 1 else None
+    if not (_dh_fwd and _dh_fwd.group(1) == "_DEBUG" and _dh_fwd.group(2) == _dh_name[1:]):
+        _dh_bad.append(f"Main.{_dh_name} 不是一行转发到 _DEBUG.{_dh_name[1:]}")
+    elif _dh_name[1:] not in _dh_static:
+        _dh_bad.append(f"DebugHooks.gd 缺 static func {_dh_name[1:]}")
+if re.search(r'^const _DEBUG := preload\("res://scripts/ui/DebugHooks\.gd"\)', open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read(), re.M) is None:
+    _dh_bad.append("Main 没有 const _DEBUG := preload(DebugHooks.gd)")
+if not _dh_bad:
+    print("  ✓ 调试钩子 2 支真身在 DebugHooks，Main 只留一行转发（lane main12）")
+else:
+    for _m in _dh_bad:
+        print(f"  ✗ {_m}")
+    problems.append("调试钩子没钉在 DebugHooks")
 
 # Lane AC：发现录列表与呈报确认改纪实短句；存档键、呈报顺序与赏格公式不动
 _ac_slips = _disc_main_fn.get("_setup_reporting", "")
@@ -4466,18 +4374,29 @@ if not _body_missed:
 # 断言所指那支改了名照样绿。scripts/Main.gd 按断言实际读的拼回源码（read_main_src，Main + MAIN_SPLITS）认：搬进拆出件、
 # 拼回还读得到的不算挪走。
 # 清单齐不齐由本脚本自扫——上面几类字面量里点到、当前确有定义的函数名都须登记（新写这类断言就得登记，漏登判红）；
-# 自扫只到名字（字面量看不出指哪个文件），登在哪个文件下由登记的人按断言读的源码定。
+# 自扫只到名字（字面量看不出指哪个文件），登在哪个文件下由登记的人按断言读的源码定（同名多处定义的由断言行标明，见下）。
 # 本来就要「保持删除」的旧函数（`"func _add_sail_button" not in main_src`）没有定义，自扫不收，也不必登记。
-# lane auditfix3：分支形反向断言——单行 `if / elif …"X(" in 体…:`、下一行就打 ✗（`elif "_sail_next_day(" in inv …:`）——
-# 字面量在不带 not 的 `in` 左边，前几类都不收，原先要靠别处碰巧点过同名才登上；现同样自扫。条件折成多行的不在此列。
+# lane auditfix3：分支形反向断言——`if / elif …"X(" in 体…:` 那一支打 ✗（`elif "_sail_next_day(" in inv …:`）——
+# 字面量在不带 not 的 `in` 左边，前几类都不收，原先要靠别处碰巧点过同名才登上；现同样自扫。
+# lane auditfix5：分支形改按 AST 认（_nf_branch_sites），不再只认「单行条件 + 下一行 ✗」：条件折成多行（`if (\n … \n):`）、
+# ✗ 不在紧下一行、✗ 在 else 支（`if not ("X(" in 体): ✓ else: ✗`）、`match` 分支（`match "X(" in 体: case True: ✗`、
+# `case _ if "X(" in 体:`）、`any(t in 体 for t in (\n "X(", …))` 折行、`_has_tok / _calls / _has_func(体, "X")` 与
+# `re.search(r"…X\(", 体)` 当条件，都按「X 在时走进的那一支里有 ✗」收；X 在时落进的是 elif 链（这条过了、查下一条）、
+# ✗ 嵌在那一支里层 if / for / match 里的不算（那是里层条件的 ✗）。
+# lane auditfix5：登在哪个文件——字面量 `"advance_days"` 本身看不出指哪一支，机判不了；所以**同名多处定义**的名字
+# （scripts/ 下 ≥ 2 个文件有定义；Main 拆出件并回 Main 算）改由断言那一行标明：行尾 `# NF: 接收者.名字`（接收者按
+# project.godot 的 autoload 名 / class_name 认文件，或直接写 `scripts/….gd:名字`），标明的文件须与 NAMED_FUNCS 登记一致。
+# 没标、标的接收者认不出文件、标的与登记不符、标了却那一行没点到这个名字，都判红。
 NAMED_FUNCS = {
     "scripts/Main.gd": (
-        "_add_guild_join_slip", "_add_leave_button", "_attention_desc", "_begin_benches", "_end_benches", "_fit_rank",
-        "_guild_join_block", "_interior_lead", "_interior_title", "_lift_ledger", "_mount_status_strip",
+        "_add_guild_join_slip", "_add_leave_button", "_attention_desc", "_begin_benches", "_debug_jump_port",
+        "_debug_preview_ending", "_end_benches", "_fit_rank", "_guild_join_block", "_interior_lead", "_interior_title",
+        "_lift_ledger", "_mount_status_strip",
         "_on_apply_permit", "_on_berth_switch", "_on_borrow", "_on_buy_ship", "_on_buy_supplies", "_on_dismiss_crew",
         "_on_exam_sit", "_on_guild_join", "_on_hire_candidate", "_on_hire_crew", "_on_hire_to_min", "_on_invest_port",
         "_on_opening_finished", "_on_repair_hull", "_on_repay", "_on_report_discovery", "_on_rewatch_opening",
-        "_on_start_game_pressed", "_on_upgrade", "_play_opening", "_setup_guild", "_setup_news_wall",
+        "_on_start_game_pressed", "_on_temple_look", "_on_temple_rub", "_on_upgrade", "_play_opening", "_setup_guild",
+        "_setup_news_wall",
         "_setup_reporting", "_setup_shipyard", "_setup_title_and_invest", "_setup_title_mode", "_setup_yamen",
         "_skill_rank", "_yard_offer", "_yard_port_name", "_yard_success_transition", "load_scene", "play_transition",
         "show_choices", "update_status_panel",
@@ -4487,7 +4406,7 @@ NAMED_FUNCS = {
     ),
     "scripts/GameState.gd": (
         "add_fame", "add_money", "finish", "has_flag", "has_found", "next_title", "recent_news",
-        "report_discovery", "resolve_identity_1268", "set_flag", "spend_money", "title_duty_factor",
+        "record_discovery", "report_discovery", "resolve_identity_1268", "set_flag", "spend_money", "title_duty_factor",
         "title_rank", "visit_port",
     ),
     "scripts/PirateShip.gd": (
@@ -4556,17 +4475,139 @@ def _nf_names(lit):
 
 _NF_DEF = re.compile(r'^[ \t]*(?:static\s+)?func\s+([A-Za-z_]\w*)\s*\(', re.M)
 _nf_where = {}  # 函数名 -> 定义它的 scripts/ 文件（相对 ROOT）
+_nf_recv = dict(AUTOLOADS)  # NF 标注的接收者 -> 文件：autoload 名 + class_name（lane auditfix5）
 for _dp, _dn, _fs in os.walk(SCRIPTS):
     for _fn in _fs:
         if _fn.endswith(".gd"):
             _rel = os.path.relpath(os.path.join(_dp, _fn), ROOT).replace(os.sep, "/")
             with open(os.path.join(_dp, _fn), encoding="utf-8") as f:
-                for _n in set(_NF_DEF.findall(f.read())):
-                    _nf_where.setdefault(_n, []).append(_rel)
+                _text = f.read()
+            for _n in set(_NF_DEF.findall(_text)):
+                _nf_where.setdefault(_n, []).append(_rel)
+            for _c in re.findall(r"^class_name\s+([A-Za-z_]\w*)", _text, re.M):
+                _nf_recv.setdefault(_c, _rel)
 _nf_defined = set(_nf_where)
-_nf_seen = {}  # 函数名 -> 本脚本里点到它的行号
+_nf_seen = {}  # 函数名 -> 本脚本里点到它的行号（第一处）
+_nf_sites = collections.defaultdict(set)  # 函数名 -> 本脚本里点到它的全部行号（lane auditfix5：同名多处须逐行标明）
 with open(os.path.abspath(__file__), encoding="utf-8") as f:
-    _nf_self = f.read().split("\n")
+    _nf_self_src = f.read()
+_nf_self = _nf_self_src.split("\n")
+
+
+def _nf_re_lit(pat):
+    """正则字面量里点到的函数名：去掉 `\\b` / `\\s` 这类转义、`\\(` 还原成 `(`，再按 _nf_names 认。"""
+    return _nf_names(re.sub(r"\\(.)", lambda m: " " if m.group(1).isalpha() else m.group(1), pat))
+
+
+def _nf_branch_sites(src):
+    """分支形反向断言（lane auditfix3 / auditfix5）：按 AST 找「X 在时走进的那一支里打 ✗」的字面量，给 [(行号, 名字集)]。
+    认的条件：`"X" in 体`（not / not in 翻极性，and / or 不翻）、`any/all(t in 体 for t in ("X", …))`、
+    `_has_tok / _calls / _has_func / has_tok / calls / has_func(体, "X")`、`re.search / match / fullmatch / findall(r"…", 体)`；
+    认的分支：if / elif / else、条件表达式 `a if c else b`、match（subject 真值对 `case True / False`、case 守卫、
+    case 字面量模式）；`for t in ("X", …):` 的循环变量也认。条件折几行都一样（AST 不看换行）。"""
+    out = []
+    probes = {"_has_tok", "_calls", "_has_func", "has_tok", "calls", "has_func"}
+
+    nested = (ast.If, ast.For, ast.While, ast.Match, ast.Try, ast.With, ast.FunctionDef)
+
+    def has_x(nodes):
+        # 只认这一支自己直接打的 ✗：嵌在里层 if / for / match 里的 ✗ 是那层条件的事（`if _has_func(…, "X"): ✓ …
+        # if 别的: ✓ else: ✗` 不是 X 的反向断言）
+        return any(isinstance(n, ast.Constant) and isinstance(n.value, str) and "✗" in n.value
+                   for top in nodes if not isinstance(top, nested) for n in ast.walk(top))
+
+    def consts(node, env):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return [(node.lineno, _nf_names(node.value))]
+        if isinstance(node, ast.Name):
+            return env.get(node.id, [])
+        if isinstance(node, (ast.Tuple, ast.List)):
+            return [c for e in node.elts for c in consts(e, env)]
+        return []
+
+    def bind(env, gens):
+        env = dict(env)
+        for g in gens:
+            if isinstance(g.target, ast.Name) and isinstance(g.iter, (ast.Tuple, ast.List)):
+                env[g.target.id] = consts(g.iter, env)
+        return env
+
+    def present(e, pos, env):  # [(行号, 名字集, 极性)]：极性 True = 名字在时 e 为真
+        if isinstance(e, ast.UnaryOp) and isinstance(e.op, ast.Not):
+            return present(e.operand, not pos, env)
+        if isinstance(e, ast.BoolOp):
+            return [x for v in e.values for x in present(v, pos, env)]
+        if isinstance(e, ast.Compare) and len(e.ops) == 1 and isinstance(e.ops[0], (ast.In, ast.NotIn)):
+            p = pos if isinstance(e.ops[0], ast.In) else not pos
+            return [(ln, ns, p) for ln, ns in consts(e.left, env)]
+        if isinstance(e, ast.Call):
+            f, a = e.func, e.args
+            fn = f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else ""
+            if fn in ("any", "all") and a and isinstance(a[0], (ast.GeneratorExp, ast.ListComp)):
+                return present(a[0].elt, pos, bind(env, a[0].generators))
+            if fn in probes and len(a) >= 2:
+                return [(ln, ns, pos) for ln, ns in consts(a[1], env)]
+            if (isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) and f.value.id == "re"
+                    and fn in ("search", "match", "fullmatch", "findall") and a
+                    and isinstance(a[0], ast.Constant) and isinstance(a[0].value, str)):
+                return [(a[0].lineno, _nf_re_lit(a[0].value), pos)]
+        return []
+
+    def take(test, yes, no, env):
+        for ln, ns, p in present(test, True, env):
+            if has_x(yes if p else no):
+                out.append((ln, ns))
+
+    def truth(pat):
+        if isinstance(pat, ast.MatchSingleton) and isinstance(pat.value, bool):
+            return pat.value
+        if isinstance(pat, ast.MatchValue) and isinstance(pat.value, ast.Constant) and isinstance(pat.value.value, bool):
+            return pat.value.value
+        return None
+
+    def walk(node, env):
+        if isinstance(node, ast.For) and isinstance(node.target, ast.Name) and isinstance(node.iter, (ast.Tuple, ast.List)):
+            inner = dict(env, **{node.target.id: consts(node.iter, env)})
+            for s in node.body:
+                walk(s, inner)
+            for s in node.orelse:
+                walk(s, env)
+            return
+        if isinstance(node, ast.If):
+            # X 在时落到 orelse、而 orelse 是 elif 链：那是「这条过了、接着查下一条」，后面各支的 ✗ 不归 X
+            elif_chain = (len(node.orelse) == 1 and isinstance(node.orelse[0], ast.If)
+                          and node.orelse[0].col_offset == node.col_offset)
+            take(node.test, node.body, [] if elif_chain else node.orelse, env)
+        elif isinstance(node, ast.IfExp):
+            take(node.test, [node.body], [node.orelse], env)
+        elif isinstance(node, (ast.GeneratorExp, ast.ListComp, ast.SetComp, ast.DictComp)):
+            env = bind(env, node.generators)
+        elif isinstance(node, ast.Match):
+            for case in node.cases:
+                if not has_x(case.body):
+                    continue
+                t = truth(case.pattern)
+                if t is not None:
+                    out.extend((ln, ns) for ln, ns, p in present(node.subject, True, env) if p == t)
+                out.extend((n.value.lineno, _nf_names(n.value.value)) for n in ast.walk(case.pattern)
+                           if isinstance(n, ast.MatchValue) and isinstance(n.value, ast.Constant)
+                           and isinstance(n.value.value, str))
+                if case.guard is not None:
+                    out.extend((ln, ns) for ln, ns, p in present(case.guard, True, env) if p)
+        for child in ast.iter_child_nodes(node):
+            walk(child, env)
+
+    walk(ast.parse(src), {})
+    return out
+
+
+def _nf_take(ln_no, names):
+    for _n in names:
+        if _n in _nf_defined and _n not in _NF_VIRTUAL:
+            _nf_seen[_n] = min(_nf_seen.get(_n, ln_no), ln_no)
+            _nf_sites[_n].add(ln_no)
+
+
 for _ln_no, _ln in enumerate(_nf_self, 1):
     if _ln.lstrip().startswith("#"):
         continue
@@ -4576,14 +4617,23 @@ for _ln_no, _ln in enumerate(_nf_self, 1):
     _ms += list(re.finditer(r'"((?:static )?func [A-Za-z_]\w*)"\s+(?:not\s+)?in\b', _ln))
     if re.search(r'\bany\(', _ln) or re.search(r'\bfor\s+\w+\s+in\s+\(', _ln):
         _ms += list(re.finditer(_NF_LIT, _ln))
-    if re.match(r'\s*(?:el)?if\b.*:\s*$', _ln) and _ln_no < len(_nf_self) and "✗" in _nf_self[_ln_no]:
-        _ms += list(re.finditer(_NF_LIT + r'\s+in\b', _ln))  # 分支形反向断言（lane auditfix3）
     for _m in _ms:
-        for _n in _nf_names(_m.group(1)):
-            if _n in _nf_defined and _n not in _NF_VIRTUAL:
-                _nf_seen.setdefault(_n, _ln_no)
+        _nf_take(_ln_no, _nf_names(_m.group(1)))
+for _ln_no, _ns in sorted(_nf_branch_sites(_nf_self_src), key=lambda x: x[0]):  # 分支形反向断言（lane auditfix5）
+    _nf_take(_ln_no, _ns)
 _nf_pairs = [(rel, n) for rel, names in NAMED_FUNCS.items() for n in names]
 _nf_listed = {n for _, n in _nf_pairs}
+
+
+def _nf_unit(rel):
+    """Main 拆出件并回 Main：断言读的是拼回的 Main，拆出件里的真身与 Main 的一行转发算同一支。"""
+    return "scripts/Main.gd" if rel in MAIN_SPLITS else rel
+
+
+def _nf_units(name):
+    return sorted({_nf_unit(r) for r in _nf_where.get(name, [])})
+
+
 _nf_bad = []
 for _rel in NAMED_FUNCS:
     _path = os.path.join(ROOT, _rel)
@@ -4612,12 +4662,64 @@ for _rel in NAMED_FUNCS:
         _nf_bad.append((_rel, _n))
 _nf_unlisted = sorted(n for n in _nf_seen if n not in _nf_listed)
 for _n in _nf_unlisted:
+    _hint = "；同名多处定义，登记后断言行还须标 NF 注（见下）" if len(_nf_units(_n)) > 1 else ""
     print(f"  ✗ check_symbols.py:{_nf_seen[_n]} 的断言点到函数 {_n}，没登记进 NAMED_FUNCS"
-          f"（登在断言所指那支的定义文件下，现定义于 {'、'.join(_nf_where[_n])}；登记后改名 / 挪走才会判红）")
+          f"（登在断言所指那支的定义文件下，现定义于 {'、'.join(_nf_where[_n])}；登记后改名 / 挪走才会判红{_hint}）")
     problems.append(f"NAMED_FUNCS 漏登：{_n}")
-if not _nf_bad and not _nf_unlisted:
+
+
+def _nf_tag_check():
+    """lane auditfix5：登在哪个文件。字面量看不出指哪一支，所以同名多处定义的名字由断言行标明：行尾注释
+    `# NF: 接收者.名字[, …]`（接收者 = autoload 名 / class_name）或 `# NF: scripts/….gd:名字`。判红：
+    ① 同名多处定义、已登记的名字，点到它的行没标；② 标的接收者 / 路径认不出文件；③ 标了名字、这一行自扫没点到它；
+    ④ 标明的文件（Main 拆出件并回 Main）与 NAMED_FUNCS 登记的不符。给出问题列表（每条已打印）。"""
+    bad, tags = [], collections.defaultdict(dict)  # 名字 -> {行号: 标明的文件}
+    for tok in tokenize.generate_tokens(io.StringIO(_nf_self_src).readline):
+        m = re.match(r"#\s*NF:\s*(.*)$", tok.string) if tok.type == tokenize.COMMENT else None
+        if not m or _nf_self[tok.start[0] - 1].lstrip().startswith("#"):
+            continue
+        ln = tok.start[0]
+        for item in filter(None, re.split(r"[,，\s]+", m.group(1).strip())):
+            im = re.fullmatch(r"(scripts/[\w/]+\.gd):([A-Za-z_]\w*)|([A-Za-z_]\w*)\.([A-Za-z_]\w*)", item)
+            rel = (im.group(1) if im.group(1) else _nf_recv.get(im.group(3))) if im else None
+            if not rel or not os.path.isfile(os.path.join(ROOT, rel)):
+                bad.append(f"check_symbols.py:{ln} 的 NF 标注 {item} 认不出文件（接收者写 autoload 名 / class_name，"
+                           f"或写 scripts/….gd:名字）")
+                continue
+            name = im.group(2) or im.group(4)
+            if ln not in _nf_sites.get(name, ()):
+                bad.append(f"check_symbols.py:{ln} 的 NF 标注 {item}：这一行自扫没点到 {name}（断言改了 / 标错行 / 名字写错）")
+                continue
+            tags[name][ln] = _nf_unit(rel)
+    for name in sorted(_nf_sites):
+        if name not in _nf_listed:
+            continue
+        units = _nf_units(name)
+        untagged = sorted(set(_nf_sites[name]) - set(tags.get(name, {})))
+        if len(units) > 1 and untagged:
+            bad.append(f"check_symbols.py:{'、'.join(map(str, untagged))} 的断言点到同名多处定义的函数 {name}"
+                       f"（{'、'.join(units)}），字面量看不出指哪一支：行尾标 NF 注（# NF: 接收者.{name}），"
+                       f"标明的文件须与 NAMED_FUNCS 登记一致")
+        reg = sorted({_nf_unit(r) for r, n in _nf_pairs if n == name})
+        by_unit = collections.defaultdict(list)
+        for ln, unit in tags.get(name, {}).items():
+            if unit not in reg:
+                by_unit[unit].append(ln)
+        for unit, lns in sorted(by_unit.items()):
+            bad.append(f"check_symbols.py:{'、'.join(map(str, sorted(lns)))} 的断言标明指 {unit} 的 {name}，"
+                       f"NAMED_FUNCS 却登在 {'、'.join(reg)}——错登到同名的另一支了？登记跟断言读的那支走")
+    for b in bad:
+        print(f"  ✗ {b}")
+    return bad
+
+
+_nf_tag_bad = _nf_tag_check()  # lane auditfix5：同名多处定义须在断言行标明指哪支
+problems.extend(f"NAMED_FUNCS 标注：{b}" for b in _nf_tag_bad)
+if not _nf_bad and not _nf_unlisted and not _nf_tag_bad:
+    _nf_amb = sorted(n for n in _nf_sites if n in _nf_listed and len(_nf_units(n)) > 1)
     print(f"  ✓ 断言点名的 {len(_nf_pairs)} 支函数都还在登记的文件里（{len(NAMED_FUNCS)} 个文件，按 (文件, 名字) 认；"
-          f"反向断言 / find 锚 / 存在性探查；NAMED_FUNCS 与本脚本自扫一致）")
+          f"反向断言 / find 锚 / 存在性探查 / 分支形；NAMED_FUNCS 与本脚本自扫一致；"
+          f"同名多处定义的 {len(_nf_amb)} 支（{'、'.join(_nf_amb) or '无'}）逐行标明、与登记一致）")
 
 print()
 print()

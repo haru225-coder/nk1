@@ -66,7 +66,7 @@ REGISTRY = [
      "judge": "脚本/场景里 `res://assets/…` 引用、PORT_BG/FACILITY_BG、前缀拼接、人物立绘都存在且有 `.import`",
      "green": "`资产引用 N 个…全部存在` + `结果：全部通过`（**过了不逐条打印**）", "red": "`FAIL: …` 行；`结果：N 项失败`"},
     {"id": "verify_story_data", "tier": "must", "kind": "py", "file": "tools/verify_story_data.py",
-     "judge": "news / scenes effects / npcs / 结局年号 / 人物原稿与上屏字段：数据里写的键代码必须接住",
+     "judge": "news / scenes effects / npcs / 结局年号 / 人物原稿与上屏字段：数据里写的键代码必须接住；（lane seq3）scenes.json 结构：字段齐备 / 类型 / 引用 id 存在 / 无孤儿（归档场登记 `SCENE_ARCHIVE`），附 24 类反向自证",
      "green": "一行统计 + `结果：全部通过`（**过了不逐条打印**）", "red": "`FAIL: …` 行；`结果：N 项失败`"},
     {"id": "simulate_endgame", "tier": "must", "kind": "py", "file": "tools/simulate_endgame.py",
      "judge": "1268 后终局：身份判定、守城胜率、崖山门槛、窗口宽度、「花钱买过关」；比对 GameState/Main 常量",
@@ -145,19 +145,45 @@ REGISTRY = [
      "judge": "（lane dec3 / dec4）`docs/待策划拍板清单_2026-09-28.md` 反引号里的每处「文件:行」：文件在、行号不越界、"
               "指的还是清单头部锚（「行号：……按 HEAD `x`」）那个提交里的同一段内容；挪了位的按 diff / 同文件原文 / 函数名（照 main_splits 改名表进拆出件）/ 跨文件原文四层算出新号；"
               "清单里不许留 `--fix` 打的「〔跟号待核：…〕」；改号自证：和上一版清单逐对比「旧锚旧号那段 == 本版锚本版号那段」，旧那段原文还在别处即号写歪了（lane auditfix1）；"
-              "仓外 brief 引用只查越界（`$NK1_BRIEFS` 不在只记 `⚠`）",
-     "green": "`锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）",
+              "仓外 brief 引用只查越界（`$NK1_BRIEFS` 不在只记 `⚠`）；落点所在函数只剩一行转发（func_body.forward_of）的穿透到真体再跟号，穿透不下去报「跟到一行转发」，"
+              "每次先跑内存里的「转发穿透自检」10 形（lane auditfix6）；输出确定序（lane cs23）：逐处的 ⚠ / ✗ 行先收齐、按「清单行号 → 行内第几处引用 → 类别」排好再印，"
+              "`--since` / 改号自证的新旧配对也按新版引用的清单顺序逐对比——原先配对取 `ko.keys() & kn.keys()`（集合，遍历顺序随 PYTHONHASHSEED 变），有 2 处以上 ⚠ / MISMATCH 时同基连跑每次行序不同、「逐字节同」比对偶发假 DIFF（lane cs18 待议 4）",
+     "green": "`✓ 转发穿透自检 10/10（…）` + `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）。同一基连跑 5 次 stdout 逐字节同（lane cs23 实测：六个历史基 × 默认 / `--show`、5 个 `--since` 旧版与号写歪的脏树各 5 次同 md5）",
      "red": "`✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；"
+            "`…可跟号 → 文件:新号（穿透一行转发 …）` / `…跟不上，要人工：跟到一行转发：…` / `✗ 转发穿透自检 S… 期望 … 实得 …`（脚本自身坏了）；"
             "`结果：有问题（DRIFT 先跑 --fix 自动跟号…）`；修法 `python3 tools/check_decision_refs.py --fix`（所引文件先提交）"},
     # lane auditfix3：审计 audit1 判 cs12 / cs11「半实」（护栏现状下无能单独触发的实例），这里固化实例；跑一次约半分钟、要 git worktree
-    {"id": "check_symbols_mutants", "tier": "lane", "when": "动 check_symbols 十三节的护栏（_node_block 记账 / NAMED_FUNCS 按 (文件, 名字) 认 / 自扫形状）或它们守的反向断言",
+    {"id": "check_symbols_mutants", "tier": "lane", "when": "动 check_symbols 十三节的护栏（_node_block 记账 / NAMED_FUNCS 按 (文件, 名字) 认 / 自扫形状 / NF 标注）或它们守的反向断言",
      "kind": "py", "file": "tools/check_symbols_mutants.py",
      "judge": "（lane auditfix3）check_symbols 反向断言空转的变异对照：当前工作树检出到临时 worktree，逐格施变异、跑整道 check_symbols 比 rc 与 `  ✗` 行。"
               "_node_block 一支（「底图 / 外层横排 / 中区开场不收起」+ 全仓改名 CenterArea、只漏这条反向断言、再收起中区）与 NAMED_FUNCS 一支"
               "（船屋 `\"advance_days\" not in yard_fn` + 改名 GameManager.advance_days、只修弹红的正向断言、再让船屋推一天）各五格；"
-              "护栏退回旧口径（cs12 前不记账 / cs11 前 scripts/ 下有定义就算）那格须 rc=0、现行须 rc=1 且只有护栏那一行红；另两格守自扫收分支形反向断言",
-     "green": "`✓ B0 …` 起 13 格逐格 `✓ <编号> … rc=N` + 「二、空转对照」3 条 `✓ … 旧口径 rc=0 → … 现行 rc=1` + `结果：全部通过`",
+              "护栏退回旧口径（cs12 前不记账 / cs11 前 scripts/ 下有定义就算）那格须 rc=0、现行须 rc=1 且只有护栏那一行红；另两格守自扫收分支形反向断言。"
+              "lane auditfix5 加：F2c / F3c（F2 之后按红字把 advance_days 改登到 Calendar.gd 下：现行 NF 标注不符一行红 / 不查标注 rc=0）；"
+              "S0–S9 分支形七形（条件折多行 / else 支 / ✗ 不在紧下一行 / match / match 守卫 / 折行 any / 探查函数与正则当条件）逐形漏登判红、"
+              "退回 auditfix3 口径（单行条件 + 下一行 ✗）rc=0；T1–T6 NF 标注（同名多处没标 / 日后出现同名 / 接收者认不出 / 标错行）",
+     "green": "`✓ B0 …` 起 31 格逐格 `✓ <编号> … rc=N` + 「二、空转对照」7 条 `✓ … 旧口径 rc=0 → … 现行 rc=1` + `结果：全部通过`",
      "red": "`✗ <编号> …：期望 rc=a，实得 rc=b` 附 `缺 ✗ …` / `多 ✗ …`；`变异没落上` = 源码改了、这支变异的替换处数不对（跟着改变异）；空转对照 `应 0 → 1`；`结果：N 项问题`；无 git / 建不了 worktree 退 2"},
+    # lane seq4：scenes.json 那套结构检查参数化成多文件（清单 tools/data_family.json），加跑不进必跑——口径仍 16 道；跑一次 <1s、只读不写盘
+    {"id": "check_data_family", "tier": "lane", "when": "动 data/ 下同族文件（scenes.json / ports.json）的条目 / 字段 / 引用，新增 data/*.json，或动 tools/data_family.json",
+     "kind": "py", "file": "tools/check_data_family.py",
+     "judge": "（lane seq4）普查 data/*.json：F1 带唯一字符串 id 的条目表 + F2 字段指回同表 id + F3 scripts/ scenes/ 读它的候选，须登在清单 families（同族）或 not_family（写明图为何无入口）；"
+              "对每个同族文件跑四项：一、字段齐备 / 类型（按形查必填、类型、未登记字段，嵌套列表再查一层）；二、引用 id 存在（refs 每一路落在本表 / 别的数据文件 / GDScript 常量的并集）；"
+              "三、普查出的自引用路径都登了 edge 或 not_edges；四、从 roots 沿 edge 走不到的条目 = 孤儿（形上 orphan_ok 与 known_orphans 基线放过，基线登了却已可达 / 已删即红）；"
+              "每次先跑「零、变异自检」22 格（GATES §五.3；内存里改：同族删必填 / 改类型 / 悬空 / 拼错字段 / 孤儿 / 基线失效 / 入口与常量改名 / 漏登须红且只红在该文件，非族 goods / characters / crew 改了须与基线一致；`--mutants` 逐格打印）；"
+              "scenes 的孤儿基线与 lane seq3 共用 verify_story_data.SCENE_ARCHIVE",
+     "green": "`✓ 22 格全对：…` + `== <文件>` 下逐项 `✓ 一、…` 至 `✓ 四、…`（四：`可达 a / n；不可达 k = 形放过 x + 已登记基线 y`）+ `结果：全部通过`",
+     "red": "`✗ …` 行（`缺必填字段` / `类型应为` / `未登记字段` / `悬空` / `是孤儿` / `known_orphans 登了 X，它已从入口可达` / `满足 F1–F3…却没登记` / `✗ 变异自检 <编号> …`）；`结果：N 项问题`"},
+    # lane gd25：「靠多停几帧碰运气变绿」的跨跑判据；不升 must：全集两档约 25 分钟、要 DISPLAY、写截图盘，触发条件按路径判得准（§五.2）
+    {"id": "probe_pressure", "tier": "lane", "when": "改了探针集里的 .gd（tools/ 下代码行调 `ShotGate.frame_pressure` 的），或 tools/probe_clock.gd / shot_gate.gd / combat_probe_stage.gd",
+     "kind": "py", "file": "tools/probe_pressure.py", "usage": "[--only a,b] [--levels 0,300] [--mutants]", "display": True,
+     "judge": "（lane gd25）有窗口探针（代码行调了 `ShotGate.frame_pressure` 的已跟踪 .gd，截图册 + 定向探针）各在两档 `NK1_PROBE_SLOW_MS`"
+              "（默认 0 不封顶 / 300 封顶）下跑 `-- --json`，结论（exit_code / error / SCRIPT ERROR / 逐条 checks，名字里的 ms·s·帧读数掩掉）须全同且绿；"
+              "每跑各给空 XDG_DATA_HOME。每次先跑「零、判据自检」样本；`--mutants` 在临时 worktree 把两支探针的完成判据改回固定帧数，须判不一致。"
+              "像素不比，归 `tools/shot_consistency.gd`（结尾印出交接命令）",
+     "green": "逐支 `✓ <探针>：两档一致绿——档 0：绿 n/n（s） ｜ 档 300：绿 n/n（s）` + `共 N 支：一致绿 N / …` + `结果：全部通过`",
+     "red": "`✗ <探针>：两档结论不同——…` 附 `rc：档 0 = … · 档 300 = …` / `只在档 X：✗ …`；`✗ …：两档同红`（探针自身红）；`✗ …：跑不成`（没 JSON 行 / 超时）；"
+            "`--mutants`：`✗ B0 …` 基线不绿 / `✗ M<k> …——期望「两档结论不同」` / `变异没落上`；`结果：N 项问题`；找不到 godot / 参数错退 2"},
     {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/legacy/verify_narrative.py",
      "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
     {"id": "p7_smoke", "tier": "no", "kind": "godot", "file": "tools/legacy/p7_smoke.gd",
@@ -230,7 +256,7 @@ SUBCHECKS = [
      "fail": "**不判红**：`⚠ WARN <文件>:L<行> <调用>  ← <作用域>：无此 func` / `…：无此 signal` = 字面量名在对应作用域里找不到，"
              "人工判真死引用 / 误报；`--json --suggest` 里记 `level: warn`（ok=true，不计 pass/fail）"},
     {"id": "Main 拆出件拼回（一之零）", "parent": "check_symbols", "lane": "ms / cs8 / gd16 / cs13", "oneclick": True,
-     "cmd": "python3 tools/check_symbols.py",
+     "cmd": "python3 tools/check_symbols.py", "also": ["tools/main_stitch.py"],  # 拼回本体（lane auditfix6 抽出，verify_economy 共用）
      "marks": ["一之零、Main.gd 拆出件", "MAIN_NOT_SPLITS", "SPLIT_MARK", "却不是一行转发", "拼回只对源码字符串断言有效",
                "条都有效：文件在、Main 一行转发到它", "gen_main_splits.read_splits()", "gen_main_splits.check()",
                "同读 tools/main_splits.txt", "文件却不存在（删了拆出件没更新清单）"],
@@ -252,14 +278,18 @@ SUBCHECKS = [
      "file": "tools/gen_main_splits.py",
      "cmd": "python3 tools/gen_main_splits.py --write",
      "alt": "python3 tools/gen_main_splits.py",
-     "marks": ['"--write"', "docs/Main拆解台账.md", "与重算逐字节一致，未改动", "已重写", "未验", "拆出 commit 自己记的 `-`：HEAD 就是它时照认", "已不是 HEAD"],
+     "marks": ['"--write"', "docs/Main拆解台账.md", "与重算逐字节一致，未改动", "已重写", "未验", "拆出 commit 自己记的 `-`：HEAD 就是它时照认", "已不是 HEAD", "格式硬校验"],
      "expect": "`✓ --write：tools/main_splits.txt 与重算逐字节一致，未改动`；有差异则 `↻ --write：已重写 tools/main_splits.txt（N 件；请连同提交）`，"
                "之后照常对账一遍、`结果：全部通过`。不带 `--write` 只对账不写盘（与 check_symbols「一之零」同一个 check()）。"
                "拆出件 / lane ← 台账节标题，拆出函数 ← Main 一行转发，commit / 原 Main 行范围 ← git（拆出 commit 父版 Main.gd），"
-               "台账写了逐支行段的逐支对账；台账函数表列了的函数现 Main 须仍一行转发到本件（lane cs18）。浅克隆取不到拆出 commit 父版时那一行报 `⚠ … 未验`、沿用清单原值，不判红。"
+               "台账写了逐支行段的逐支对账；台账函数表列了的函数现 Main 须仍一行转发到本件（lane cs18），反过来那节有函数表的、现 Main 一行转发到本件的每支都须列在表里（lane cs22，有表就须列全）。"
+               "另加台账格式硬校验（lane cs23 / docs/Main拆解台账.md 头注；台账写坏时原先这些形状被正则静默漏掉、重算跟着少一件 / 少一支、--write 照写、gen 自己绿）："
+               "① 标题以「第…刀」开头却不合节标题正则的行；②「已拆（前三刀…）」那段里的 `X.gd` 没按「`X.gd`（lane，…」写，或认出来的不是 3 件；③ 刀序（第四节起逐刀 +1，重号 / 跳号 / 认不出的刀号）；"
+               "④ 像函数表行（竖线起头、反引号里 `名字(`）却不合写法、行段写成 ASCII 连字符 / 写错、同一节同一支列两次；⑤ 拆刀节没有函数表（第四、第五刀登记在 `NO_TABLE_OK` 放行）。有任一条时 `--write` 也判红、不写盘。"
+               "浅克隆取不到拆出 commit 父版时那一行报 `⚠ … 未验`、沿用清单原值，不判红。"
                "commit 列的 `-`：只在 HEAD 就是拆出 commit 时照认（lane auditfix1），HEAD 往前走了对账即红、`--write` 补成哈希",
      "fail": "`✗ --write：有问题，tools/main_splits.txt 未改动` + 各条 `✗`（台账登记的拆出件不存在、拆出件有 static func 没有 Main 转发、"
-             "拆前 Main.gd 里找不到转发的 Main 函数、台账逐支行段与重算不符、`<lane> 族 <件>：台账函数表列了 fn（期望拆前 Main.gd a–b 行）…没有一行转发到本件` = 挪回 Main / 改名 / 转去别件没改台账，lane cs18）→ 退 1。**会改写 `tools/main_splits.txt`**，"
+             "拆前 Main.gd 里找不到转发的 Main 函数、台账逐支行段与重算不符、台账格式硬校验 ①–⑤（`… 标题以「第…刀」开头，却不合拆刀节标题写法 …本脚本认不出这一刀、会整件漏掉` / `…「已拆（前三刀…）」那段的 X.gd 没按 …写` / `… 刀序不对：上一刀之后应是第 N 刀` / `… 的刀号认不出` / `…像函数表行、却不合…写法` / `… 的行段写法不认` / `… 函数表把 X 列了两次` / `…那节没有函数表`，lane cs23）、`<lane> 族 <件>：台账函数表列了 fn（期望拆前 Main.gd a–b 行）…没有一行转发到本件` = 挪回 Main / 改名 / 转去别件没改台账，lane cs18；`<lane> 族 <件>：现 Main.gd 的 fn 一行转发到本件 X，台账那节函数表却没列它` = 新搬一支进本件没补台账表，lane cs22）→ 退 1。**会改写 `tools/main_splits.txt`**，"
              "所以不进一键跑；新拆一刀的 lane 追加台账一节后跑它、连同提交。"
              "对账（check_symbols「一之零」）的 `✗ <件>：拆出 commit X 已不是 HEAD（其后又有 N 个提交），清单 commit 列还记 -…` = "
              "拆分那笔之后没补哈希（lane auditfix1 前这一格放行到下一刀才补）：跑 `--write`、另提一笔，与拆分同一次落地"},
@@ -267,7 +297,8 @@ SUBCHECKS = [
      "cmd": "python3 tools/check_symbols.py",
      "marks": ["十三、按函数名取函数体", "class _Bodies(dict)", "_body_ask(name, m is not None, body=m and m.group(0), src=src)", "处按名取用都取到函数体",
                "_miss_why(", "forward_ok=True", "src=self.src", "if bodies.forward(name):",
-               "from func_body import", "NAMED_FUNCS = {", "支函数都还在登记的文件里",
+               "from func_body import", "NAMED_FUNCS = {", "支函数都还在登记的文件里", "def _nf_branch_sites(src):",
+               "_nf_tag_bad = _nf_tag_check()", "逐行标明、与登记一致",
                '_body_ask(token + "]", at >= 0)', "处按名取用都取到场景节点块", "def body(name):"],
      "expect": "「十三、按函数名取函数体」`✓ _func_body / func_bodies().get / _locate_func 的 N 处按名取用都取到函数体，_node_block 的 M 处按名取用都取到场景节点块`"
                "（N / M = 本脚本「行号 + 名字」去重后的取用处；_node_block 按 `[node name=\"X\"` 取场景节点块，lane cs12 纳入同一本账）。"
@@ -275,7 +306,8 @@ SUBCHECKS = [
                "取到的只是一行转发（`func X(…):\\n\\t_K.x(self, …)` / 原样传形参给别的函数 / 零实参调同文件另一支，判据 `func_body.forward_of(body, src)`）同样记成取不到（lane cs17 / gd23，三片口径对账见 §三 1）；"
                "本来就读转发那一行的（顺调用链展开、钉「Main 只许一行转发」）写 `.get(name, …, forward_ok=True)`。"
                "只探有没有这支函数、不想判红的写 `name in func_bodies(src)`（不记账）；本身要跑在变异源码上的契约（`_guild_remap_contract`）一律 `in` 探、缺了记成契约错误「缺 X」、只剩一行转发记成「X 只剩一行转发」，不走 .get 记账（lane cs12 / gd23）。"
-               "+ `✓ 断言点名的 N 支函数都还在登记的文件里（M 个文件，按 (文件, 名字) 认；反向断言 / find 锚 / 存在性探查；NAMED_FUNCS 与本脚本自扫一致）`（lane cs9 / cs11）",
+               "+ `✓ 断言点名的 N 支函数都还在登记的文件里（M 个文件，按 (文件, 名字) 认；反向断言 / find 锚 / 存在性探查 / 分支形；NAMED_FUNCS 与本脚本自扫一致；"
+               "同名多处定义的 K 支（…）逐行标明、与登记一致）`（lane cs9 / cs11 / auditfix5）",
      "fail": "`✗ check_symbols.py:<行> 取函数体 <fn> 取不到（改名 / 删了 / 搬走没拼回），这处断言在空转` = 被读的函数改了名 / 删了 / "
              "搬走没拼回，或断言里函数名写错；`✗ check_symbols.py:<行> 取函数体 <fn> 只取到一行转发（→ <目标>），真身不在这份源码里（拆走没拼回 / 该改读拆出件），这处断言在空转` = "
              "读的那份源码里这支只剩一行转发（Main 拆走一刀、转发到没登记 / 没 preload 的件，或直读 Main.gd / 别的文件时切到转发），改读真身所在的文件（lane cs17）；"
@@ -284,7 +316,10 @@ SUBCHECKS = [
              "反向断言（`\"X\" not in body`）照样绿；`✗ 断言点名的函数 X 在 <文件> 已无定义，别处还有同名（…）` / `…（scripts/ 下也没有…）` = "
              "反向断言 / find 锚 / 存在性探查点到的函数在登记的文件里改了名、删了或挪到别的文件（lane cs11：同名函数在别的文件还在也红），"
              "断言与 NAMED_FUNCS 跟着改；`✗ NAMED_FUNCS 登记的文件 <文件> 不存在` = 登记路径写错 / 文件挪了目录；"
-             "`✗ check_symbols.py:<行> 的断言点到函数 X，没登记进 NAMED_FUNCS` = 新写这类断言没登记。计入 check_symbols 问题、退 1"},
+             "`✗ check_symbols.py:<行> 的断言点到函数 X，没登记进 NAMED_FUNCS` = 新写这类断言没登记；"
+             "`✗ check_symbols.py:<行…> 的断言点到同名多处定义的函数 X（…），字面量看不出指哪一支…` = X 在 scripts/ 下 ≥ 2 个文件有定义（Main 拆出件并回 Main），"
+             "这几行没在行尾标 `# NF: 接收者.X`；`✗ …的断言标明指 <文件> 的 X，NAMED_FUNCS 却登在 <文件>…` = 错登到同名的另一支（登记跟断言读的那支走）；"
+             "`✗ …的 NF 标注 … 认不出文件` / `…这一行自扫没点到 X` = 标注写错 / 标错行（lane auditfix5）。计入 check_symbols 问题、退 1"},
     {"id": "按函数名取函数体（十一）", "parent": "verify_economy", "lane": "cs14 / cs17 / gd23", "oneclick": True,
      "cmd": "python3 tools/verify_economy.py",
      "marks": ["十一、按函数名取函数体", "from func_body import", "_body_ask(name, m is not None, body=m and m.group(0)", "处按名取用都取到函数体",
@@ -300,6 +335,16 @@ SUBCHECKS = [
              "改读拆出件（去 `main.` 前缀）或真身所在文件（lane cs17；如 main9 把 `_setup_residence` 改读 ResidencePage.setup_residence）；"
              "`…只取到一行转发（→ <g>），真身是同一份源码里的 <g>…` = 同文件别名，改取 <g>（lane gd23）。"
              "计入 verify_economy 未通过项、退 1"},
+    {"id": "scenes.json 结构自证", "parent": "verify_story_data", "lane": "seq3", "oneclick": True,
+     "cmd": "python3 tools/verify_story_data.py",
+     "marks": ["def scene_structure_problems", "SCENE_ARCHIVE", "SCENE_ARCHIVE_MAX", "_SV_MUTANTS", "scenes.json 结构门禁自证"],
+     "expect": "末尾统计行 `scenes 104（结构：入口可达 N · 归档 M · deprecated K · 自证 24 类）`；结构没问题时本节零输出。"
+               "每次跑先在整份 scenes.json 上判结构（形状必填 / 形状外键 / 类型与在册取值 / 引用存在 / 从真机入口走不到的非 deprecated 幕须在 `SCENE_ARCHIVE`），"
+               "再拿 24 类反向变异副本（删必填、next / 调查项 id / start_scene / chapters / 港卡 / 旗标 / 货 / 发现悬空、跳 deprecated、类型错、bool 冒充 int、"
+               "键拼错、枚举外、id 重复、新孤儿、归档场接回、归档名单悬空）逐类喂同一个 `scene_structure_problems`，每类须报出指定字样",
+     "fail": "`FAIL: scenes.json <幕>… 缺必填字段 / 有形状外的字段 / 类型应为 / 不在册 / 悬空 / 没人写 / 是孤儿 / 却已接回入口` = 数据结构坏了（修数据，或新字段 / 新形状先登记进表）；"
+             "`FAIL: SCENE_ARCHIVE 只许减不许增` = 有人把新孤儿塞进归档名单（接入口，别登记）；"
+             "`FAIL: scenes.json 结构门禁自证：「X」后没报出…` / `…套不上现数据` = 某类检查失明，或样本幕改了名。都计入 verify_story_data 失败、退 1"},
     {"id": "compile 清单自检（inventory）", "parent": "compile", "lane": "ea4", "oneclick": True,
      "cmd": "godot --headless --path . -s res://tools/godot_compile_check.gd",
      "marks": ["inventory SCRIPTS == tracked *.gd", "ls-files", "INVENTORY_EXEMPT", "unlisted", "exempt-stale"],

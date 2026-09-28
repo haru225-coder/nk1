@@ -3,7 +3,7 @@
 一份文档一行。标「历史稿」的是当时的快照，路径、行号可能已经不对，以各文件头部的声明为准。新增文档请在这里补一行；`python3 tools/check_docs_index.py --check` 核「docs 下已跟踪的 .md 都在这里、这里的链接都存在、不重复」（docs/GATES.md §四 CI 步骤）。
 
 ## 门禁与工程口径
-- [GATES.md](GATES.md)：门禁总表，写每道判什么、红了什么样、`--json` 怎么机读（§一由 `tools/gates_md.py --write` 生成）
+- [GATES.md](GATES.md)：门禁总表，写每道判什么、红了什么样、`--json` 怎么机读（§一由 `tools/gates_md.py --write` 生成）；§五 写门禁生命周期（入册 / 必跑 / 自证 / 跟号，附两例事故）
 - [侧车口径.md](侧车口径.md)：哪些 `.uid` / `.import` 必须入库、哪些不许带（`check_sidecars`）
 - [人物原稿与上屏契约.md](人物原稿与上屏契约.md)：人物原稿与上屏字段的契约（`verify_story_data` Astra L1 段）
 - [Main拆解台账.md](Main拆解台账.md)：`scripts/Main.gd` 往 `scripts/ui/` 拆的逐刀台账，含各簇行数、调用面、直读 Main.gd 的门禁、风险，以及下一刀候选

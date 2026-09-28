@@ -853,7 +853,7 @@ func _lost_event() -> Dictionary:
 	return {
 		"kind": EventKind.LOST,
 		"title": "迷航",
-		"text": "海图上这一段是空白。火长把罗盘转了两圈，承认针位对不上岸影——这一日白走了，还退回去一截。",
+		"text": "海图上这一段是空白。火长把针盘转了两圈，承认针位对不上岸影——这一日白走了，还退回去一截。",
 		"progress_mult": LOST_PROGRESS,
 	}
 
