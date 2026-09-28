@@ -179,7 +179,8 @@
      "transition_in": "cut",
      "shake": 0.25,
      "captions": [
-      {"t": 0.6, "text": "部将林华出城侦敌，回来时，身后是元兵。", "style": "narration", "pos": "lower_left"},
+      {"t": 0.6, "text": "部将林华出城侦敌，回来时，身后是元兵。", "style": "narration", "pos": "lower_left", "unless_flag": "cao_opened"},
+      {"t": 0.6, "text": "部将林华夜里缒城出降，回来时，身后是元兵。", "style": "narration", "pos": "lower_left", "if_flag": "cao_opened"},
       {"t": 3.2, "text": "通判曹澄孙开了城门。", "style": "narration", "pos": "lower_left"}
      ]
     },
