@@ -69,6 +69,8 @@ const SCRIPTS := [
 	"res://scripts/ui/DebugHooks.gd",
 	# lane combat08 海战号令面板 / 状态条
 	"res://scripts/ui/CombatOrdersPanel.gd", "res://scripts/ui/CombatStatusHud.gd",
+	# lane combat07 敌将 AI（PirateShip 每帧喂局势取舵令）
+	"res://scripts/combat/EnemyCaptainAI.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://scripts/combat/MeleeResolve.gd",  # lane combat05 接舷白刃结算（BoardingStage.play 演它）

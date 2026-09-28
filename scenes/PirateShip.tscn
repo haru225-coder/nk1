@@ -30,3 +30,15 @@ scale = Vector2(0.62, 0.62)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_pirate")
+
+[node name="IntentTag" type="Node2D" parent="."]
+top_level = true
+z_index = 30
+
+[node name="Label" type="Label" parent="IntentTag"]
+offset_left = -90.0
+offset_top = -16.0
+offset_right = 90.0
+offset_bottom = 16.0
+horizontal_alignment = 1
+vertical_alignment = 1
