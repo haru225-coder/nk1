@@ -970,7 +970,7 @@ const PORT_BG := {
 
 ## H2 港页变体：同港同机位的战况 / 年份 / 季节档，文件名 bg_<港 id>_<后缀>.jpg（港 id 即 ports.json 的 id，不是 PORT_BG 原图名）。
 ## 找图顺序见 _port_bg：战况（非 loyal）→ 年份 → 季节 → PORT_BG 原图，每档都要文件在才用——图没进库时画面与原图一样，收一张生效一张。
-## 守城页就是兴化港页（_siege_active），bg_xinghua_besieged.jpg 进库即生效，不另写代码。
+## 守城页就是兴化港页（_siege_active），bg_xinghua_besieged.jpg 进库即生效，不另写代码；这一档只在城防记录开着时取（PORT_STATUS_BG_SIEGE_ONLY）。
 ## check_assets 查拼写：assets/bg_<港 id>_<后缀>.jpg 的后缀须是非 loyal 战况（Economy.WAR_LABEL）、下面的季节，或本表登记的年份。
 ## 年份档：取不大于当年的最大一档；年份档压过季节档（博多 1276 年起的防塁档画了石垒，季节图里没有，季节优先会倒退回防塁以前）。
 const PORT_YEAR_BG := {"hakata": [1276]}
@@ -983,6 +983,9 @@ const PORT_SEASON_BY_MONTH := [
 const PORT_SEASON_BORROW := {"hakata": {"summer": "spring", "winter": "autumn"}}
 ## 门禁注入的「文件在不在」表：设成 Dictionary 时 _port_bg 只认表里的文件名、不查盘（godot_story_check 测找图顺序）；平时为 null
 var _port_bg_probe = null
+## 只给守城页用的战况档：bg_xinghua_besieged.jpg 画的是 1276 年冬陈文龙守城（城头白布八字）。寻常港页没有题签，
+## 别的身份线、1277 秋陈瓒那一围进港看见整匹无字白布会读成降旗，所以城防记录没开时跳过这一档（09-28）
+const PORT_STATUS_BG_SIEGE_ONLY := {"xinghua": "besieged"}
 
 ## 设施后缀 → 背景图
 const FACILITY_BG := {
@@ -1055,7 +1058,10 @@ func _apply_background(type: String, loc: String) -> void:
 ## 港页底图（H2）：战况档（非 loyal）→ 年份档 → 季节档 → PORT_BG 原图，每档文件在才用
 func _port_bg(loc: String) -> String:
 	var status := Economy.war_status(loc)
-	if status != "loyal" and _port_bg_has("bg_%s_%s.jpg" % [loc, status]):
+	var status_ok := status != "loyal"
+	if str(PORT_STATUS_BG_SIEGE_ONLY.get(loc, "")) == status and not GameState.siege_open():
+		status_ok = false
+	if status_ok and _port_bg_has("bg_%s_%s.jpg" % [loc, status]):
 		return "bg_%s_%s.jpg" % [loc, status]
 	var year := 0
 	for y in PORT_YEAR_BG.get(loc, []):
@@ -2454,6 +2460,8 @@ func _build_shore() -> void:
 		_shore_title_once("ended", _setup_ended_port)
 		return
 	if _siege_active():
+		# 进港换底图时城防记录还没开（_siege_active 才开），守城专用的战况档在这里补换
+		_refresh_port_bg()
 		_shore_title_once("siege", _setup_siege_port)
 		return
 	_shore_mode = "port"

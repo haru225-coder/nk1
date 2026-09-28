@@ -720,7 +720,7 @@ func _hooks_bg_check(main: Node) -> void:
 	_check(ghost.is_empty(), "H2 查盘时港页底图全是盘上真有的文件（缺 %s）" % [ghost])
 	# H2 找图顺序：战况 > 年份 > 季节 > 原图；loyal 不找战况档；博多夏借春、冬借秋；港 id 按 ports.json（海口不吃兴化城的图）
 	var cases := [
-		[1276, 11, "xinghua", ["bg_xinghua_besieged.jpg", "bg_xinghua_autumn.jpg"], "bg_xinghua_besieged.jpg", "兴化 1276-11 围城：战况档压过季节档（守城页即此图）"],
+		[1276, 11, "xinghua", ["bg_xinghua_besieged.jpg", "bg_xinghua_autumn.jpg"], "bg_xinghua_autumn.jpg", "兴化 1276-11 围城、城防记录没开（寻常港页）：跳过守城专用的围城档，落到秋季档"],
 		[1276, 11, "xinghua", ["bg_xinghua_autumn.jpg"], "bg_xinghua_autumn.jpg", "兴化 1276-11 缺围城图：落到秋季档"],
 		[1276, 11, "xinghua_harbor", ["bg_xinghua_besieged.jpg"], main.PORT_BG["xinghua_harbor"], "兴化海口 1276-11 不借兴化城的围城图"],
 		[1277, 1, "quanzhou", ["bg_quanzhou_fallen.jpg", "bg_quanzhou_contested.jpg", "bg_quanzhou_winter.jpg"], "bg_quanzhou_fallen.jpg", "泉州 1277-01 已降元：取 fallen 档"],
@@ -733,6 +733,7 @@ func _hooks_bg_check(main: Node) -> void:
 		[1275, 12, "hakata", ["bg_hakata_autumn.jpg", "bg_hakata_winter.jpg"], "bg_hakata_autumn.jpg", "博多冬季借秋版"],
 		[1274, 12, "hakata", ["bg_hakata_closed.jpg", "bg_hakata_autumn.jpg"], "bg_hakata_closed.jpg", "博多 1274-12 封港：战况档压过季节档"],
 	]
+	GS.from_dict({})
 	for c in cases:
 		Cal.from_dict({"year": c[0], "month": c[1], "day": 1})
 		var probe := {}
@@ -741,6 +742,31 @@ func _hooks_bg_check(main: Node) -> void:
 		main._port_bg_probe = probe
 		var got: String = main._port_bg(c[2])
 		_check(got == c[4], "H2 %s（实际 %s）" % [c[5], got])
+	# 兴化围城档只给守城页（画的是 1276 冬陈文龙守城的城头白布）：城防记录开着才取；1277 秋陈瓒那一围不取
+	main._port_bg_probe = {"bg_xinghua_besieged.jpg": true, "bg_xinghua_autumn.jpg": true}
+	Cal.from_dict({"year": 1276, "month": 11, "day": 1})
+	GS.siege_begin()
+	var got_siege: String = main._port_bg("xinghua")
+	_check(got_siege == "bg_xinghua_besieged.jpg", "H2 兴化 1276-11 城防记录开着（守城页）：取围城档（实际 %s）" % got_siege)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1277, "month": 9, "day": 1})
+	var got_zan: String = main._port_bg("xinghua")
+	var zan_war: String = root.get_node("Economy").war_status("xinghua")
+	_check(zan_war != "besieged" or got_zan != "bg_xinghua_besieged.jpg",
+		"H2 兴化 1277-09 再围、没有城防记录：不取 1276 的围城档（战况 %s，实际 %s）" % [zan_war, got_zan])
+	# 接线：士人线 1276-11 进兴化开守城页，进港那一下城防记录还没开，_build_shore 要补换成围城档
+	GS.from_dict({})
+	GS.set_flag("renamed_wenlong")
+	GS.identity = "scholar"
+	Cal.from_dict({"year": 1276, "month": 11, "day": 3})
+	GS.last_port = "xinghua"
+	main._port_bg_probe = {"bg_xinghua_besieged.jpg": true}
+	main.load_scene("xinghua")
+	var siege_want: String = "bg_xinghua_besieged.jpg" if FileAccess.file_exists("res://assets/bg_xinghua_besieged.jpg") else main.FALLBACK_BG
+	_check(main._shore_mode == "siege" and main._bg_file == siege_want,
+		"H2 守城页进港即换围城档（页型 %s，应 %s，实际 %s）" % [main._shore_mode, siege_want, main._bg_file])
+	GS.from_dict({})
+	_close_dialogs(main)
 	main._port_bg_probe = null
 	# H2 接线：港页走 _port_bg；岸上候一日（真走 _on_shore_wait）跨了档换图、没跨档不重载。
 	# 注入表只决定 _port_bg 挑哪一档；_set_background_file 真去盘上取图——fallen 图没进库时回落海路图，进了库就是它本身。
