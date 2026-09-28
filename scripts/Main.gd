@@ -3282,15 +3282,6 @@ const CARD_YASHAN := "special_yashan"
 const CARD_GANGSHOU := "special_gangshou_end"
 
 
-func _add_save_button() -> void:
-	var btn = Button.new()
-	btn.text = "航海日志"
-	btn.custom_minimum_size = Vector2(250, 44)
-	btn.pressed.connect(_show_save_dialog)
-	right_facilities.add_child(btn)
-
-
-
 func _check_absent_from_xinghua() -> bool:
 	if GameState.is_ended() or not GameState.has_flag("renamed_wenlong"):
 		return false
