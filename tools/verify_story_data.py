@@ -508,6 +508,7 @@ L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
     "tools/verify_story_data.py": ({"raw", "codex", "api"}, "gate", "本门禁（自证合成源码里写着取数口）"),
     "tools/check_symbols.py": ({"raw", "codex"}, "gate", "L1 工程词 / 展示入口契约"),
     "tools/check_assets.py": ({"raw"}, "gate", "立绘资源存在性"),
+    "tools/check_data_family.py": ({"raw"}, "gate", "data/ 同族结构门禁：普查 data/*.json 的 id 表 / 自引用（characters.json 是候选、登 not_family），变异自证改它验不误红；不上屏"),
     "tools/godot_smoke.gd": ({"raw", "api"}, "gate", "冒烟：阵营表、见面页立绘"),
 }
 _L1B_KIND_RE = {

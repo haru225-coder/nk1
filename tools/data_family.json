@@ -1,0 +1,295 @@
+{
+  "doc": "tools/check_data_family.py 的文件清单（lane seq4）。同族 = scenes.json 那一族：主表是带唯一字符串 id 的条目表（F1），条目里有字段指向同表的 id、成一张图（F2），游戏运行时读它（F3，scripts/ 或 scenes/ 里写了文件名），且图有入口，「从入口走不到 = 孤儿」有定义（F4，人判，写在 roots 里）。F1–F3 由脚本自动普查：data/ 下满足 F1–F3 的文件必须登在 families（同族，跑四项结构检查）或 not_family（写明 F4 为何不成立）之一，漏登即红。新增同族文件怎么接入：见 check_data_family.py 文档串「接入」一段。",
+  "families": [
+    {
+      "file": "data/scenes.json",
+      "table": "scenes",
+      "id": "id",
+      "top": {
+        "start_scene": "str",
+        "scenes": "list"
+      },
+      "kinds": [
+        {
+          "name": "deprecated",
+          "when": {
+            "field": "deprecated",
+            "eq": true
+          },
+          "fields": {
+            "id": "str",
+            "chapter": "str",
+            "title": "str",
+            "location": "str",
+            "body": "str",
+            "choices": "list<@choice>",
+            "deprecated": "bool",
+            "objective?": "str"
+          },
+          "orphan_ok": "显式标了 deprecated: true 的留档幕，本就不进主线"
+        },
+        {
+          "name": "title",
+          "when": {
+            "field": "type",
+            "eq": "title"
+          },
+          "fields": {
+            "id": "str",
+            "type": "str",
+            "chapter": "str",
+            "title": "str",
+            "location": "str",
+            "cg": "str",
+            "cg_title": "str",
+            "cg_sub": "str",
+            "body": "str",
+            "choices": "list<@choice>"
+          }
+        },
+        {
+          "name": "port",
+          "when": {
+            "field": "type",
+            "eq": "port"
+          },
+          "fields": {
+            "id": "str",
+            "type": "str",
+            "title": "str",
+            "location": "str",
+            "facilities": "list<@facility>"
+          }
+        },
+        {
+          "name": "investigation",
+          "when": {
+            "field": "type",
+            "eq": "investigation"
+          },
+          "fields": {
+            "id": "str",
+            "type": "str",
+            "title": "str",
+            "body": "str",
+            "investigations": "list<@investigation>",
+            "choices": "list<@choice>"
+          }
+        },
+        {
+          "name": "result",
+          "when": {
+            "has": "result"
+          },
+          "fields": {
+            "id": "str",
+            "title": "str",
+            "result": "str|list<str>",
+            "options?": "list<@option>"
+          }
+        },
+        {
+          "name": "story",
+          "when": {},
+          "fields": {
+            "id": "str",
+            "chapter": "str",
+            "title": "str",
+            "location": "str",
+            "body": "str",
+            "choices": "list<@choice>",
+            "cg?": "str",
+            "objective?": "str",
+            "speaker?": "str",
+            "require_any?": "list<str>",
+            "require_chapter?": "int"
+          }
+        }
+      ],
+      "shapes": {
+        "choice": {
+          "label": "str",
+          "next": "str",
+          "effects?": "dict"
+        },
+        "investigation": {
+          "id": "str",
+          "label": "str",
+          "text": "str",
+          "effects": "dict",
+          "next": "str"
+        },
+        "facility": {
+          "id": "str",
+          "title": "str",
+          "subtitle": "str",
+          "body": "str"
+        },
+        "option": {
+          "label": "str"
+        }
+      },
+      "refs": [
+        {
+          "path": "choices[].next",
+          "edge": true,
+          "to": [
+            {
+              "self": true
+            },
+            {
+              "file": "data/ports.json",
+              "path": "ports[].id"
+            }
+          ],
+          "why": "Main.load_scene 先查 scenes.json、再查 ports.json（通用港口页）"
+        },
+        {
+          "path": "investigations[].next",
+          "edge": true,
+          "allow_empty": true,
+          "to": [
+            {
+              "self": true
+            }
+          ],
+          "why": "Main._on_investigate_pressed：next 空串 = 留在本页、按钮置灰"
+        },
+        {
+          "path": "investigations[].id",
+          "edge": false,
+          "to": [
+            {
+              "self": true
+            }
+          ],
+          "why": "调查项 id → 同名详情场（带 result 的幕）须存在；Main._on_investigate_pressed 只读 text / effects / next，不按 id 跳，所以不成边（与 lane seq3 口径同）"
+        },
+        {
+          "path": "facilities[].id",
+          "edge": true,
+          "to": [
+            {
+              "self": true
+            },
+            {
+              "gd_const": "scripts/Main.gd",
+              "name": "REMAPPED_FACILITIES"
+            }
+          ],
+          "why": "港卡设施门 id 须是 Main.REMAPPED_FACILITIES 之一；只有 PROLOGUE_ONLY_FACILITIES 里的港卡直进同名 scenes.json 幕（成边），其余被改写成 {港}_{后缀} 动态页、进不到 scenes.json（与 lane seq3 口径同）",
+          "edge_if": {
+            "gd_const": "scripts/Main.gd",
+            "name": "PROLOGUE_ONLY_FACILITIES"
+          }
+        }
+      ],
+      "not_edges": [],
+      "roots": [
+        {
+          "path": "start_scene",
+          "must": true,
+          "why": "开局幕"
+        },
+        {
+          "file": "data/ports.json",
+          "path": "ports[].id",
+          "why": "海图抵港 load_scene(港 id)，同名 type=port 幕由此进"
+        },
+        {
+          "file": "data/chapters.json",
+          "path": "chapters[].advance_scene",
+          "why": "升章过场后进的幕"
+        },
+        {
+          "file": "data/chapters.json",
+          "path": "chapters[].endings[].scene",
+          "why": "第四章结局幕"
+        },
+        {
+          "gd_calls": "load_scene",
+          "why": "scripts/ 里 load_scene(\"字面量\") 直跳"
+        }
+      ],
+      "known_orphans": [
+        {
+          "from": {
+            "py_const": "tools/verify_story_data.py",
+            "name": "SCENE_ARCHIVE"
+          },
+          "why": "基线与 lane seq3 的 scenes.json 结构门禁共用一份：verify_story_data.SCENE_ARCHIVE（39 个：序章旧链 4、city_tavern / city_shipyard 两个港卡被 REMAPPED 改写进不到的调查页、result 形详情场 33），只减不增由那边的 SCENE_ARCHIVE_MAX 管；这里另判名单里的已可达 / 已删 / 已 deprecated"
+        }
+      ]
+    },
+    {
+      "file": "data/ports.json",
+      "table": "ports",
+      "id": "id",
+      "top": {
+        "meta": "dict",
+        "ports": "list"
+      },
+      "kinds": [
+        {
+          "name": "port",
+          "when": {},
+          "fields": {
+            "id": "str",
+            "name": "str",
+            "region": "str",
+            "status": "str",
+            "lat": "num",
+            "lon": "num",
+            "chart": "dict",
+            "depth": "int",
+            "unlock": "str",
+            "tags": "list<str>",
+            "connections": "list<str>",
+            "market": "dict",
+            "war?": "dict"
+          }
+        }
+      ],
+      "shapes": {},
+      "refs": [
+        {
+          "path": "connections[]",
+          "edge": true,
+          "to": [
+            {
+              "self": true
+            }
+          ],
+          "why": "熟路连线；Voyage.is_known_route 按无向认，不相连只能走生路"
+        },
+        {
+          "path": "market{}",
+          "to": [
+            {
+              "file": "data/goods.json",
+              "path": "goods[].id"
+            }
+          ],
+          "why": "牙行货表的键是货物 id"
+        }
+      ],
+      "undirected": true,
+      "not_edges": [],
+      "roots": [
+        {
+          "gd_regex": "scripts/GameState.gd",
+          "pattern": "^var last_port: String = \"([a-z_]+)\"",
+          "must": true,
+          "why": "GameState.last_port 缺省值 = 开局港"
+        }
+      ],
+      "known_orphans": []
+    }
+  ],
+  "not_family": [
+    {
+      "file": "data/characters.json",
+      "why": "F1–F3 成立（relations[].id / sources.npc_id / sources.crew_id 指回同表），F4 不成立：relations 是人物志的注记边、不是跳转，图没有入口；实测 25 人无入边属正常（只在别人传里出现的史实人物），孤儿判据无定义。字段 / 文案层另由 verify_story_data（CHAR_STRUCT 等）守"
+    }
+  ]
+}
