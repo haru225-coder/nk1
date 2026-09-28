@@ -79,7 +79,7 @@
     {
       "id": "pirate_boat",
       "name": "快船",
-      "class": "海寇快船",
+      "class": "多桨快船",
       "capacity": 500,
       "crew_min": 40,
       "crew_max": 100,
@@ -89,7 +89,7 @@
       "price": 15000,
       "unlock": "ch2",
       "for_sale": false,
-      "historical_note": "海寇的狭长多桨快船：头低尾高，一面席帆，不挂旗，桨手比商船多出一倍。船屋不卖，只能从海寇手里夺来。"
+      "historical_note": "狭长多桨，头低尾高，一面席帆，不挂旗；桨手比商船多出一倍。"
     },
     {
       "id": "fu_ship_large",
