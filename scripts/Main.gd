@@ -1219,6 +1219,13 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 
 func _setup_market(port_id: String) -> void:
 	scene_title.text = "%s・牙行" % GameManager.get_port_name(port_id)
+	# 上了门闸：只留闭门这一句。不写「柜上只摆三样」、不出委办——柜上没货，委办也没人接（岸上三门里牙行也不占席，见 ShoreDraft.deal）
+	if not Economy.is_market_open(port_id):
+		broker_hand = PackedStringArray()
+		_market_hold = false
+		body_text.text = "牙行上了门闸。%s，城中只剩米价在动，无人开秤。" % Economy.war_label(port_id)
+		_add_leave_button(port_id)
+		return
 	body_text.text = "柜上只摆三样。牙人过秤开票；要看别的，明日再来。"
 
 	var goods_ids: Array = Economy.goods_at(port_id)
@@ -1227,9 +1234,9 @@ func _setup_market(port_id: String) -> void:
 		_market_ship = 0
 	_market_hold = false
 
-	# 柜上三样先发，委办单上的「凑得出」按今日柜上现货算；上了门闸或无牙行则柜上空
+	# 柜上三样先发，委办单上的「凑得出」按今日柜上现货算；无牙行则柜上空
 	broker_hand = PackedStringArray()
-	if Economy.is_market_open(port_id) and not goods_ids.is_empty():
+	if not goods_ids.is_empty():
 		var catalog: Array = []
 		for raw_gid in goods_ids:
 			var gid := str(raw_gid)
@@ -1241,11 +1248,6 @@ func _setup_market(port_id: String) -> void:
 		broker_hand = BrokerSlip.deal(catalog, GameState.broker_salt, _broker_held_id(port_id))
 
 	_add_contract_panel(port_id)
-
-	if not Economy.is_market_open(port_id):
-		body_text.text += "\n\n牙行上了门闸。%s，城中只剩米价在动，无人开秤。" % Economy.war_label(port_id)
-		_add_leave_button(port_id)
-		return
 
 	if goods_ids.is_empty():
 		body_text.text = "此地无正经牙行，只几个渔妇晒网。"
@@ -2542,7 +2544,7 @@ func _refresh_shore() -> void:
 				specials.append(fid_raw)
 		else:
 			regular.append(raw_fac)
-	shore_hand = ShoreDraft.deal(regular, GameState.shore_salt, _shore_pin_shipyard())
+	shore_hand = ShoreDraft.deal(regular, GameState.shore_salt, _shore_pin_shipyard(), Economy.is_market_open(current_scene_id))
 	for fid_sp in specials:
 		if fid_sp not in shore_hand:
 			shore_hand.append(fid_sp)
@@ -2880,13 +2882,22 @@ func _make_shore_shut(fac: Dictionary) -> Button:
 	# 热区 ≥64×32（美术规范小钮）；关着的门略宽一点，字不挤
 	btn.custom_minimum_size = Vector2(120, 36)
 	btn.set_meta("shore_shut", true)
-	btn.pressed.connect(_on_shore_shut)
 	var tip_key := str(fac.get("id", "")).replace("city_", "")
 	var open_tip := str(DOOR_TIP.get(tip_key, str(fac.get("subtitle", ""))))
-	if open_tip != "":
-		btn.tooltip_text = "今日未开。再候一日，门或另换。\n%s" % open_tip
+	# 围城 / 封港时牙行上了门闸：不是轮转没轮到，候一日也不开，提示照实写
+	if tip_key == "market" and not Economy.is_market_open(current_scene_id):
+		var shut_line := "牙行上了门闸。%s，无人开秤。" % Economy.war_label(current_scene_id)
+		btn.tooltip_text = shut_line
+		btn.pressed.connect(func() -> void:
+			log_msg(shut_line)
+			update_status_panel()
+		)
 	else:
-		btn.tooltip_text = "今日未开。再候一日，门或另换。"
+		btn.pressed.connect(_on_shore_shut)
+		if open_tip != "":
+			btn.tooltip_text = "今日未开。再候一日，门或另换。\n%s" % open_tip
+		else:
+			btn.tooltip_text = "今日未开。再候一日，门或另换。"
 	UiTheme.style_button(btn, false)
 	var shut_box := UiTheme.shore_shut()
 	btn.add_theme_stylebox_override("normal", shut_box)
