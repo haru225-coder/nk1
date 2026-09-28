@@ -276,14 +276,66 @@ def latest_year(text):
     return max(ys) if ys else 0
 
 
+# 可见条件的写法与 scripts/ui/CharacterArt.gd segment_visible 一一对应（09-28 visual 线扩键）：
+#   0 / 公元年 / "YYYY-MM" / "c2"…"c5" / "end"；按世界线的 "end:结局|结局"、"id:身份|身份"、"flag:旗标|旗标"；
+#   「&」连写、一截前加「!」取反。返回这一段最早可能露出的年份（写到的最晚年份不得晚于它），认不得返回 None。
+# 结局名、身份、旗标都要真有：结局名取 Main.ENDING_BG 的键，旗标须在 scripts 里 set_flag 过或是 news.json 的 flag。
+_YM = re.compile(r"^(1[1-3]\d\d)-(0[1-9]|1[0-2])$")
+_IDS = {"scholar", "merchant", "hometown", "undecided"}
+_eb = re.search(r"const ENDING_BG := \{(.*?)\n\}", main_src, re.S)
+ENDINGS = set(re.findall(r'"([^"]+)":', _eb.group(1))) if _eb else set()
+check(len(ENDINGS) >= 6, f"Main.ENDING_BG 只认出 {len(ENDINGS)} 个结局名，可见条件 end:… 无从核对")
+_scripts_src = "\n".join(p.read_text(encoding="utf-8") for p in pathlib.Path(ROOT, "scripts").rglob("*.gd"))
+KNOWN_FLAGS = set(re.findall(r'set_flag\("([a-z0-9_]+)"\)', _scripts_src))
+KNOWN_FLAGS |= {str(n.get("flag")) for n in load("news.json").get("news", []) if n.get("flag")}
+check("renamed_wenlong" in KNOWN_FLAGS, "旗标表里没有 renamed_wenlong，可见条件 flag:… 无从核对")
+
+
 def cond_year(cond):
-    if cond == "end":
-        return 99999
-    if isinstance(cond, str) and cond.startswith("c") and cond[1:].isdigit():
-        return PHASE_YEAR.get(int(cond[1:]), 99999)
+    if isinstance(cond, bool):
+        return None
     if isinstance(cond, (int, float)):
         return max(int(cond), START_YEAR)
+    if not isinstance(cond, str):
+        return None
+    s = cond.strip()
+    if "&" in s:
+        parts = s.split("&")
+        ys = [cond_year(p) for p in parts]
+        if any(p == "" for p in parts) or any(y is None for y in ys):
+            return None
+        return max(ys)
+    if s.startswith("!"):
+        # 取反没有时间下界：按一直可见算（写到的年份仍要靠同段别的截来担保）
+        return None if cond_year(s[1:]) is None else START_YEAR
+    if s == "end":
+        return 99999
+    if s.startswith("end:"):
+        names = [x for x in s[4:].split("|") if x]
+        return 99999 if names and all(x in ENDINGS for x in names) else None
+    if s.startswith("id:"):
+        ids = [x for x in s[3:].split("|") if x]
+        return START_YEAR if ids and all(x in _IDS for x in ids) else None
+    if s.startswith("flag:"):
+        fl = [x for x in s[5:].split("|") if x]
+        return START_YEAR if fl and all(x in KNOWN_FLAGS for x in fl) else None
+    m = _YM.match(s)
+    if m:
+        return max(int(m.group(1)), START_YEAR)
+    if s.startswith("c") and s[1:].isdigit():
+        return PHASE_YEAR.get(int(s[1:]), 99999)
+    if s.isdigit():
+        return max(int(s), START_YEAR)
     return None
+
+
+# 自证：新键认得、写错的认不得（结局名、身份、旗标拼错都要抓到）
+for _c, _want in (("1277-11", 1277), ("1279-04", 1279), ("end:忠肃|未归", 99999), ("id:merchant|hometown", START_YEAR),
+                  ("flag:renamed_wenlong", START_YEAR), ("1268&flag:renamed_wenlong", 1268), ("end&!end:忠肃", 99999),
+                  ("c3&id:merchant|undecided", PHASE_YEAR[3]), (0, START_YEAR), (1276, 1276), ("c2", PHASE_YEAR[2]), ("end", 99999)):
+    check(cond_year(_c) == _want, f"可见条件自证：{_c!r} 应认作 {_want}，实得 {cond_year(_c)}")
+for _c in ("1277-13", "end:忠烈", "id:pirate", "flag:no_such_flag_xyz", "1268&", "&", "YYYY-MM", "!", "lately"):
+    check(cond_year(_c) is None, f"可见条件自证：写错的 {_c!r} 应认不得，实得 {cond_year(_c)}")
 
 
 chars_all = load("characters.json").get("characters", [])
@@ -303,7 +355,7 @@ for c in chars_all:
     if not isinstance(e, dict):
         continue
     fields = {}
-    for k in ("bio", "short", "lines", "title", "courtesy", "alt"):
+    for k in ("bio", "short", "lines", "title", "courtesy", "alt", "annal"):
         if k in e:
             fields[k] = e[k]
     if "alt" not in e:
@@ -364,9 +416,9 @@ check("characters_codex.json" in art_src, "CharacterArt 未接人物志上屏文
 ONSCREEN_BAN = re.compile(CODEX_META.pattern + r"|placeholder|TODO|WIP|FIXME|pipeline|LLM|ChatGPT|大模型")
 CHAR_ONSCREEN = {"name", "alt_names", "courtesy", "title", "origin", "personality", "look", "lines"}
 CHAR_STRUCT = {"id", "faction", "traits", "relations", "born", "died", "tier", "chapters", "attrs",
-               "portrait", "portrait_status", "sources", "historical"}  # 键、数值、枚举，不作正文上屏
+               "portrait", "portrait_before", "portrait_status", "sources", "historical"}  # 键、数值、枚举，不作正文上屏
 CHAR_DRAFT = {"bio", "bio_short", "portrait_src", "portrait_note"}
-CODEX_ONSCREEN = {"bio", "short", "lines", "title", "courtesy", "alt", "look", "personality"}
+CODEX_ONSCREEN = {"bio", "short", "lines", "title", "courtesy", "alt", "look", "personality", "annal"}
 check(not (CHAR_ONSCREEN & CHAR_STRUCT or CHAR_ONSCREEN & CHAR_DRAFT or CHAR_STRUCT & CHAR_DRAFT), "L1 字段分类有交叠")
 
 

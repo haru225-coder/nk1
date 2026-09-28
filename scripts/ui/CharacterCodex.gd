@@ -673,6 +673,13 @@ func _fill_known(body: VBoxContainer, ch: Dictionary) -> void:
 		bio += ("" if bio == "" else "\n") + "此后之事，尚在将来。"
 	body.add_child(_para(bio, UiTheme.SIZE_BODY - 1, UiTheme.TEXT))
 
+	# 史载：正史里的这个人（文本层 annal，只主角有）。了结后各线都露；活着的世界线段首有一句引子，
+	# 与「此世」的小传分开写——不把「绝食死于岳王庙前」接在一个还活着的人的小传后面
+	var annal := Art.codex_annal(ch)
+	if not annal.is_empty():
+		_section(body, "史载")
+		for para in annal:
+			body.add_child(_para(para, UiTheme.SIZE_BODY - 1, UiTheme.TEXT))
 	var lines := Art.codex_lines(ch)
 	if not lines.is_empty():
 		_section(body, "其言")
@@ -718,12 +725,13 @@ func _fill_known(body: VBoxContainer, ch: Dictionary) -> void:
 
 ## 关系签也会透底：「旧识叛将」「恩主亦仇」「车裂之俘」「庙前殉节者」这类签，终局了结前不露；
 ## 对方本人还没到能认识的年份（未出生、未登场）的也先不露。
+## 了结后照样先过 rel_from：「庙前殉节者」「后世齐名」这类按世界线登记的签，活着的那条线里不露。
 const REL_SPOILER := ["叛", "降", "仇", "杀", "诛", "殉", "车裂", "俘", "扣押", "扣留", "城破", "决裂", "所负"]
 
 
 func _rel_visible(rel: String, other: Dictionary) -> bool:
 	if GameState.is_ended():
-		return true
+		return Art.rel_visible(rel)
 	if not Art.rel_visible(rel):
 		return false
 	for w in REL_SPOILER:

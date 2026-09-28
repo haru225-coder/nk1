@@ -131,9 +131,10 @@ func _appear_tail(ch: Dictionary) -> String:
 
 
 func _paint_state(ch: Dictionary) -> String:
-	if str(ch.get("portrait", "")) == "":
+	if Art.portrait_path(ch) == "":
 		return "未画"
-	return "设色" if str(ch.get("portrait_status", "")) == "painted" else "剪影，未设色"
+	# 按日期换画的人（林华辞船前挂剪影墨卡）看此刻挂的那张
+	return "剪影，未设色" if Art.portrait_is_card(ch) else "设色"
 
 
 func _kv(key: String, value: String) -> void:

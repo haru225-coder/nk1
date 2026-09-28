@@ -70,7 +70,7 @@ static func crew_id_of(ch: Dictionary) -> String:
 
 
 ## 字号一行：可见段用「；」连起（人物志上屏文本层 courtesy；无则原稿）。例：开局只见「初字德刚」，
-## 「咸淳四年御赐字君贲」到终局了结才露出来。空则空串。
+## 「咸淳四年御赐字君贲」要殿试改名（renamed_wenlong）那一年起才露，海商、乡土线永不露。空则空串。
 static func courtesy_of(ch: Dictionary) -> String:
 	var segs = layer(ch).get("courtesy")
 	if typeof(segs) == TYPE_ARRAY:
@@ -117,7 +117,7 @@ static func identity_line(ch: Dictionary, with_origin := true) -> String:
 ## 生卒：「1232—」「1232—1277」；只知一头时写「卒于 1274」「生于 1236」；都不详返回空串。
 ## 卒年到了次年（Calendar.year > 卒年）或终局了结后才写——宝祐三年第一次见林阿舶，名下不该写着「卒于 1274」；
 ## 卒年当年也不写：陈瓒死在 1277 冬，正月就写「卒于 1277」是透底；崖山在二月，陆秀夫、张世杰正月不该先写卒年。
-## 这里只管生卒一行；人物志正文按年分段另管（陆、张等人 1279 段的投海、覆舟正月即可见，未在此处理）。
+## 这里只管生卒一行；人物志正文按段另管（陆、张 1279 段的投海、覆舟用月份键 "1279-04"，崖山卡关了才露）。
 ## 主角另算：只有他确实死了的那条世界线（PROTAGONIST_DEATH_ENDINGS）才写卒年，其余结局他都还活着。
 static func life_line(ch: Dictionary) -> String:
 	var born = ch.get("born")
@@ -195,36 +195,85 @@ static func layer(ch: Dictionary) -> Dictionary:
 	return e if typeof(e) == TYPE_DICTIONARY else {}
 
 
-## 一段的可见条件：0 一直可见；公元年 = 那一年到了；"c2"…"c5" = 进度到了第几段；"end" = 终局了结后。了结后全部可见。
+## 一段的可见条件（文本层每段的第一格、rel_from 的值）。按时间走的四种，终局了结后一律可见（历史走完了）：
+##   0（或负数）             一直可见
+##   公元年 1276             Calendar.year 到了
+##   "YYYY-MM"  "1276-12"    年×12+月到了。游戏按农历月走：崖山在祥兴二年二月，就写 "1279-02"，不换公历
+##   "c2"…"c5"               进度到了第几段（story_phase）
+##   "end"                   终局了结后
+## 按世界线走的三种，了结前后都照判（「了结后全露」不管它们——活着的那条线不该露出殉节的事）：
+##   "end:忠肃|未归"         已了结，且结局在列
+##   "id:merchant|hometown"  身份在列（GameState.identity：scholar / merchant / hometown / undecided）
+##   "flag:renamed_wenlong"  旗标立着（"flag:a|b" 任一立着即算）
+## 组合：「&」连写 = 每一截都成立，如 "c3&id:merchant|undecided"、"1268&flag:renamed_wenlong"；
+##   一截前加「!」= 这一截取反，如 "end&!end:忠肃"（了结了、但不是忠肃）。认不得的条件一律不可见。
 static func segment_visible(cond) -> bool:
-	if GameState.is_ended():
-		return true
 	match typeof(cond):
 		TYPE_INT, TYPE_FLOAT:
-			return int(cond) <= 0 or Calendar.year >= int(cond)
+			return GameState.is_ended() or int(cond) <= 0 or Calendar.year >= int(cond)
 		TYPE_STRING:
-			var s := str(cond)
-			if s == "end":
-				return false
-			if s.begins_with("c") and s.substr(1).is_valid_int():
-				return story_phase() >= int(s.substr(1))
+			var s := str(cond).strip_edges()
+			if s.find("&") >= 0:
+				# 「&」两边都得有东西：写成 "1268&" 这样残了一截的，整段不可见（门禁同样认不得）
+				for part in s.split("&"):
+					if part == "" or not segment_visible(part):
+						return false
+				return true
+			if s.begins_with("!"):
+				return not segment_visible(s.substr(1))
+			return _cond_atom(s)
 	return false
 
 
-## 可见的几段文字（已换好人名）。
-static func visible_segments(segs) -> PackedStringArray:
+static func _cond_atom(s: String) -> bool:
+	var ended := GameState.is_ended()
+	if s.begins_with("end:"):
+		return ended and str(GameState.ended) in s.substr(4).split("|", false)
+	if s.begins_with("id:"):
+		return str(GameState.identity) in s.substr(3).split("|", false)
+	if s.begins_with("flag:"):
+		for f in s.substr(5).split("|", false):
+			if GameState.has_flag(f):
+				return true
+		return false
+	if s == "end":
+		return ended
+	var ym := ym_index(s)
+	if ym > 0:
+		return ended or Calendar.year * 12 + Calendar.month >= ym
+	if s.begins_with("c") and s.substr(1).is_valid_int():
+		return ended or story_phase() >= int(s.substr(1))
+	if s.is_valid_int():
+		return ended or int(s) <= 0 or Calendar.year >= int(s)
+	return false
+
+
+## "YYYY-MM" → 年×12+月；不是这个格式返回 -1。
+static func ym_index(s: String) -> int:
+	if s.length() != 7 or s.substr(4, 1) != "-" or not s.substr(0, 4).is_valid_int() or not s.substr(5, 2).is_valid_int():
+		return -1
+	var m := int(s.substr(5, 2))
+	if m < 1 or m > 12:
+		return -1
+	return int(s.substr(0, 4)) * 12 + m
+
+
+## 可见的几段文字（已换好人名）。keep_names=true 只换 {主角}，不把「陈文龙」换成此刻的名字——
+## 「史载」一节写的就是正史里的陈文龙，海商线读作「陈子龙」就错了。
+static func visible_segments(segs, keep_names := false) -> PackedStringArray:
 	var out := PackedStringArray()
 	if typeof(segs) != TYPE_ARRAY:
 		return out
 	for s in segs:
 		if typeof(s) == TYPE_ARRAY and (s as Array).size() >= 2 and segment_visible(s[0]):
-			out.append(fill_names(str(s[1])))
+			out.append(str(s[1]).replace("{主角}", hero_name()) if keep_names else fill_names(str(s[1])))
 	return out
 
 
 ## 这一栏还有没露出来的段（人物志小传末尾据此添一句「此后之事，尚在将来。」）。
+## 了结后不再有「将来」：按世界线挡掉的段（别的身份、别的结局）不算待露。
 static func has_hidden(segs) -> bool:
-	if typeof(segs) != TYPE_ARRAY:
+	if typeof(segs) != TYPE_ARRAY or GameState.is_ended():
 		return false
 	for s in segs:
 		if typeof(s) == TYPE_ARRAY and (s as Array).size() >= 2 and not segment_visible(s[0]):
@@ -264,16 +313,28 @@ static func codex_look(ch: Dictionary) -> String:
 	return fill_names(str(o if o != null else ch.get("look", "")))
 
 
+## 人物志「史载」一节（文本层 annal）：正史里的这个人，了结后按世界线露。名字不换（见 visible_segments）。
+static func codex_annal(ch: Dictionary) -> PackedStringArray:
+	return visible_segments(layer(ch).get("annal", []), true)
+
+
 ## 又称：文本层给了就按段取可见的（「陈文龙」「元世祖」「瀛国公」这类后来才有的名号，到时候才露），没给就用原稿。
+## 和画面上此刻的名字相同的、重复的都去掉（海商线「陈文龙」换人名后成了「陈子龙」，与大名重复）。
 static func codex_alts(ch: Dictionary) -> PackedStringArray:
 	var segs = layer(ch).get("alt")
+	var got := PackedStringArray()
 	if typeof(segs) == TYPE_ARRAY:
-		return visible_segments(segs)
+		got = visible_segments(segs)
+	else:
+		var raw = ch.get("alt_names", [])
+		if typeof(raw) == TYPE_ARRAY:
+			for a in raw:
+				got.append(fill_names(str(a)))
+	var now := display_name(ch)
 	var out := PackedStringArray()
-	var raw = ch.get("alt_names", [])
-	if typeof(raw) == TYPE_ARRAY:
-		for a in raw:
-			out.append(fill_names(str(a)))
+	for a in got:
+		if a != "" and a != now and not (a in out):
+			out.append(a)
 	return out
 
 
@@ -389,8 +450,36 @@ static func hire_port_name(ch: Dictionary) -> String:
 
 # ── 画 ─────────────────────────────────────────────
 
-static func portrait(ch: Dictionary) -> Texture2D:
+## 此刻该挂哪张立绘。characters.json 可选 portrait_before {"YYYY-MM": 路径}：日历早于那个月时挂那一张，
+## 几个键取最早一个还没到的；没有这个字段、或终局已了结（人物志全露，画也不再藏）就挂 portrait 正图。
+## 例：林华 {"1276-10": ".../lin_hua_ink.png"}——景炎元年十月辞船投军之前，他是泉州码头的水手，酒馆卡、在船卡、
+## 船籍簿小头像、人物志都不挂城头铁甲像（那张图既不合身份，也把从军一事提前说破），先挂剪影墨卡。
+## 以后补了水手版，把值换成 age_lin_hua_sailor.png 那一行即可，别处不用动。
+static func portrait_path(ch: Dictionary) -> String:
 	var path := str(ch.get("portrait", ""))
+	var before = ch.get("portrait_before")
+	if typeof(before) != TYPE_DICTIONARY or GameState.is_ended():
+		return path
+	var now := Calendar.year * 12 + Calendar.month
+	var best := -1
+	for k in (before as Dictionary):
+		var ym := ym_index(str(k))
+		if ym > 0 and now < ym and (best < 0 or ym < best):
+			best = ym
+			path = str(before[k])
+	return path
+
+
+## 此刻挂的是不是占位卡（剪影墨卡）：立绘面板「画像」一栏据此写「剪影，未设色」。
+static func portrait_is_card(ch: Dictionary) -> bool:
+	var path := portrait_path(ch)
+	if path != str(ch.get("portrait", "")):
+		return path.get_file().get_basename().ends_with("_ink")
+	return str(ch.get("portrait_status", "")) != "painted"
+
+
+static func portrait(ch: Dictionary) -> Texture2D:
+	var path := portrait_path(ch)
 	if path == "" or not ResourceLoader.exists(path):
 		return null
 	# 后台线程已经读好的直接取走（顺手把线程任务清掉）；否则同步读
@@ -402,7 +491,7 @@ static func portrait(ch: Dictionary) -> Texture2D:
 ## 名册一口气要七十多张：先把读图（解码 + 上传，约占一张缩略图八成的工夫）丢给后台线程，
 ## 读好了再在主线程缩（get_image 只在主线程取）。已缓存或已在读的不重复请求。
 static func request_portrait(ch: Dictionary) -> void:
-	var path := str(ch.get("portrait", ""))
+	var path := portrait_path(ch)
 	if path == "" or not ResourceLoader.exists(path):
 		return
 	if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
@@ -411,15 +500,16 @@ static func request_portrait(ch: Dictionary) -> void:
 
 ## 这张立绘可以拿来缩了（后台读完，或本来就没在后台读 / 读失败——那就同步读或回落）。
 static func portrait_ready(ch: Dictionary) -> bool:
-	var path := str(ch.get("portrait", ""))
+	var path := portrait_path(ch)
 	if path == "":
 		return true
 	return ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_IN_PROGRESS
 
 
+## 缓存键带上此刻挂的那张图的文件名：按日期换了画，缩略图跟着换，不拿旧图的缓存。
 static func _thumb_key(ch: Dictionary, logical: Vector2i, head: bool, edge := Color(0, 0, 0, 0)) -> String:
 	var tail := ("h" if head else "") + ("|" + edge.to_html() if edge.a > 0.0 else "")
-	return "%s@%dx%d%s" % [str(ch.get("id", "")), logical.x, logical.y, tail]
+	return "%s@%dx%d%s#%s" % [str(ch.get("id", "")), logical.x, logical.y, tail, portrait_path(ch).get_file()]
 
 
 ## 已经缩好的那张（没有返回 null，不现做）。
