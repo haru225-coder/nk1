@@ -6,6 +6,15 @@
 ##   var lb := CombatLetterbox.exit(self, CombatLetterbox.outcome_title("win", "刺桐外海"), sub, on_black)
 ##   if lb != null: await lb.finished
 ##
+## 出战事由按怎么收的场分开写（lane combat09）：炮战得胜分击沉 / 焚舟 / 击退，接舷夺船、敌船降幡受降各有一格，
+## 我方分脱战（转舵走开）/ 溃逃（水手溃散）/ 请降（我方降幡）/ 败退（旗舰沉没）。朱印跟着换字（捷 / 获 / 降 / 毕 / 溃 / 败），
+## 溃逃、请降、败退的印色与题名压暗。印字由题名里的事由反查（act_key），旧调用 exit(…, outcome_title(旧键), …) 不改一字也换印。
+## 海战收场一行接线（WorldMap._battle_exit 的 outcome / data 原样递进来，事由、副题、印字都在这里算）：
+##   var lb := CombatLetterbox.exit_for(parent, outcome, data, sea_name, Calendar.get_date_string())
+##   data 里认的键见 outcome_key / fates_of / fate_counts：本 lane 的 fates / losses / surrendered / burned / repelled / routed，
+##   也认士气收场（CombatMorale.battle_outcome）的 morale_verdict / enemy_struck / enemy_fled / struck_types / rout / struck。
+##   都缺省时 win 记击沉（旧口径写战罢，outcome_title("win") 仍是战罢）、lose 记败退、flee 记脱战。
+##
 ## 信号契约（lane gd12）：finished 是终止信号，每副墨边不论怎么收尾——演完 / 被新墨边顶掉（_abort）/ 随父节点释放或被摘下——
 ## 都恰好发一次，所以裸 await finished 不会挂死。caption_shown / covered 是进度信号，只在真演到时发、最多一次：
 ## 题签前被顶掉就没有 caption_shown，随父释放不补 covered / on_black；等进度信号的一方须带上界，或拿 finished 当放弃的边。
@@ -47,12 +56,44 @@ const TITLE_SIZE := 34
 const SEAL_ENTER := "战"
 const SEAL_EXIT := "毕"
 
-## 出战结局 → 事由。结局键与 WorldMap._battle_exit 同名（win / lose / flee），board 为白刃夺船
+## 出战结局 → 事由。结局键与 WorldMap._battle_exit 同名（win / lose / flee），board 为白刃夺船；
+## 其余是按怎么收的场细分的键（lane combat09，由 outcome_key 从 outcome + data 算出）。事由两两不同：act_key 按它反查。
 const OUTCOME_ACT := {
 	"win": "战罢",
+	"gun": "击沉",
+	"burn": "焚舟",
+	"repel": "击退",
 	"board": "夺船",
+	"surrender": "受降",
 	"flee": "脱战",
+	"rout": "溃逃",
+	"yield": "请降",
 	"lose": "败退",
+}
+## 结局键 → 出战朱印字。炮战得胜「捷」、夺船「获」、受降「降」、脱战照旧「毕」、溃逃「溃」、请降与败退「败」
+const OUTCOME_SEAL := {
+	"win": "捷",
+	"gun": "捷",
+	"burn": "捷",
+	"repel": "捷",
+	"board": "获",
+	"surrender": "降",
+	"flee": "毕",
+	"rout": "溃",
+	"yield": "败",
+	"lose": "败",
+}
+## 这几种收场印色压暗、题名改旧绢色：我方失利，不与得胜的泥金题签同一个样子
+const OUTCOME_SOMBER := ["rout", "yield", "lose"]
+## 压暗的朱印：朱砂压三成，印面字仍是 SEAL_TEXT（对比只升不降）
+const SOMBER_SEAL_DARKEN := 0.32
+## 敌船下场 → 副题动词（fate_note）。次序即副题里的先后：受降、夺、焚、击沉、走脱
+const FATE_VERB := {
+	"struck": "受降",
+	"boarded": "夺",
+	"burned": "焚",
+	"sunk": "击沉",
+	"fled": "走脱",
 }
 
 var title := ""
@@ -95,6 +136,147 @@ static func sea_title(sea_name: String, act: String) -> String:
 
 static func outcome_title(outcome: String, sea_name := "") -> String:
 	return sea_title(sea_name, OUTCOME_ACT.get(outcome, "战罢"))
+
+
+## WorldMap._battle_exit 的 (outcome, data) → 出战事由键（OUTCOME_ACT 的键），下场艘数见 fate_counts：
+##   win：有敌船降幡 → surrender；有接舷夺下 → board；烧沉的不少于打沉的 → burn；一艘没沉、只是遁走 → repel；
+##        其余 → gun（矢石、砲把敌船打沉，即炮战得胜）
+##   lose：我方降幡（morale_verdict=player_struck，或 lose 带 struck）→ yield；水手溃散 → rout；否则 lose（旗舰沉没）
+##   flee：水手溃散 → rout；否则 flee（转舵脱离）。溃散认 routed / rout 旗标或 morale_verdict=player_rout。
+##   其余 outcome 原样返回：本就是细分键的直接用，认不得的由 outcome_title 兜底「战罢」。
+static func outcome_key(outcome: String, data := {}) -> String:
+	var verdict := str(data.get("morale_verdict", ""))
+	var routed := _flag(data, "routed") or _flag(data, "rout") or verdict == "player_rout"
+	match outcome:
+		"win":
+			var n := fate_counts(data)
+			if int(n["struck"]) > 0:
+				return "surrender"
+			if int(n["boarded"]) > 0:
+				return "board"
+			if int(n["burned"]) > 0 and int(n["burned"]) >= int(n["sunk"]):
+				return "burn"
+			if int(n["sunk"]) == 0 and int(n["fled"]) > 0:
+				return "repel"
+			return "gun"
+		"lose":
+			if verdict == "player_struck" or _flag(data, "struck"):
+				return "yield"
+			return "rout" if routed else "lose"
+		"flee":
+			return "rout" if routed else "flee"
+	return outcome
+
+
+## data 里敌船下场的明细 [{type, fate, count?}]（fate 取 FATE_VERB 的键）：有 data.fates 就用它；
+## 没有就按士气收场（CombatMorale.battle_outcome）拼——struck_types 逐艘记降幡，enemy_struck 比船种多出的、enemy_fled 各按「敌船」记。
+static func fates_of(data: Dictionary) -> Array:
+	var fates = data.get("fates", [])
+	if fates is Array and not fates.is_empty():
+		return fates
+	var out: Array = []
+	var types = data.get("struck_types", [])
+	if types is Array:
+		for t in types:
+			out.append({"type": str(t), "fate": "struck"})
+	var more_struck := _count(data, "enemy_struck") - out.size()
+	if more_struck > 0:
+		out.append({"type": "", "fate": "struck", "count": more_struck})
+	var fled := _count(data, "enemy_fled")
+	if fled > 0:
+		out.append({"type": "", "fate": "fled", "count": fled})
+	return out
+
+
+## 这一战敌船各落了什么下场：FATE_VERB 的键（struck / boarded / burned / sunk / fled）→ 艘数。
+##   明细走 fates_of；另认旗标 boarded（WorldMap 现有：末一艘是接舷夺下）、surrendered、burned、repelled（敌船遁走），
+##   各记一艘——明细里已有同类下场就不再补记，免得同一艘算两遍。
+##   不认 struck 旗标：士气收场里它是我方降幡（lose 才带），outcome_key 另判。
+static func fate_counts(data: Dictionary) -> Dictionary:
+	var n := {}
+	for f in FATE_VERB:
+		n[f] = 0
+	for entry in fates_of(data):
+		if entry is Dictionary and n.has(str(entry.get("fate", ""))):
+			n[str(entry.get("fate", ""))] += maxi(0, int(entry.get("count", 1)))
+	for pair in [["boarded", "boarded"], ["surrendered", "struck"], ["burned", "burned"], ["repelled", "fled"]]:
+		if _flag(data, pair[0]) and int(n[pair[1]]) == 0:
+			n[pair[1]] = 1
+	return n
+
+
+## data 里的旗标：true 或正数才算；缺、null、字符串一律不算（不在这里对着坏数据报错）
+static func _flag(data: Dictionary, key: String) -> bool:
+	var v = data.get(key, false)
+	if v is bool:
+		return v
+	return (v is int or v is float) and v > 0
+
+
+## data 里的艘数：整数 / 浮点取整，别的一律 0
+static func _count(data: Dictionary, key: String) -> int:
+	var v = data.get(key, 0)
+	return maxi(0, int(v)) if (v is int or v is float) else 0
+
+
+## 题名里的事由反查结局键：「刺桐外海・受降」→ surrender；入战题名、探针自拟的题名认不得，返回 ""。
+static func act_key(p_title: String) -> String:
+	var parts := p_title.strip_edges().split("・")
+	var act := parts[parts.size() - 1].strip_edges()
+	for k in OUTCOME_ACT:
+		if OUTCOME_ACT[k] == act:
+			return k
+	return ""
+
+
+## 出战朱印字：按题名里的事由取 OUTCOME_SEAL，认不得的照旧「毕」。
+static func seal_for(p_title: String) -> String:
+	return str(OUTCOME_SEAL.get(act_key(p_title), SEAL_EXIT))
+
+
+## 副题里的敌船下场：「受降海鹘一艘，夺快船一艘，击沉海鹘二艘」。fates 形同 data.fates（[{type, fate, count?}]）；
+## 同一下场里按船种并数（船名走 enemy_note 的短表），下场按 FATE_VERB 的次序排；没有可写的返回 ""。
+static func fate_note(fates: Array) -> String:
+	var parts: PackedStringArray = []
+	for fate in FATE_VERB:
+		var order: Array = []
+		var counts := {}
+		for entry in fates:
+			if not entry is Dictionary or str(entry.get("fate", "")) != fate:
+				continue
+			var type_id := str(entry.get("type", ""))
+			if not counts.has(type_id):
+				counts[type_id] = 0
+				order.append(type_id)
+			counts[type_id] += int(entry.get("count", 1))
+		var rows: Array = []
+		for type_id in order:
+			rows.append({"type": type_id, "count": counts[type_id]})
+		var ships := enemy_note(rows)
+		if ships != "":
+			parts.append(str(FATE_VERB[fate]) + ships)
+	return "，".join(parts)
+
+
+## 我方折损：「折水手十二人，失船一艘」。losses 认 crew（折损水手人数）/ ships（沉没或被夺的艘数）；都没有返回 ""。
+static func loss_note(losses: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	var crew := int(losses.get("crew", 0))
+	if crew > 0:
+		parts.append("折水手%s人" % _cn_count(crew))
+	var ships := int(losses.get("ships", 0))
+	if ships > 0:
+		parts.append("失船%s艘" % _cn_count(ships))
+	return "，".join(parts)
+
+
+## 出战副题：「历法日期　敌船下场　我方折损」，缺哪段略哪段；三段都空返回 ""。
+static func exit_subtitle(date_str: String, fates := [], losses := {}) -> String:
+	var segs: PackedStringArray = []
+	for seg in [date_str.strip_edges(), fate_note(fates), loss_note(losses)]:
+		if seg != "":
+			segs.append(seg)
+	return "　".join(segs)
 
 
 ## 敌船数副题：「快船二艘」。entry 形同 pending_battle.enemy（type / count）。
@@ -147,6 +329,15 @@ static func exit(parent: Node, p_title: String, p_subtitle := "", on_black := Ca
 	return lb
 
 
+## 海战收场：outcome / data 原样取自 WorldMap._battle_exit，事由走 outcome_key，副题走 exit_subtitle（敌船下场取 fates_of，
+## 我方折损取 data.losses），印字随事由；其余同 exit（headless 下返回 null，调用方当帧自己调 on_black）。
+static func exit_for(parent: Node, outcome: String, data := {}, sea_name := "", date_str := "",
+		on_black := Callable()) -> CanvasLayer:
+	var losses = data.get("losses", {})
+	var sub := exit_subtitle(date_str, fates_of(data), losses if losses is Dictionary else {})
+	return exit(parent, outcome_title(outcome_key(outcome, data), sea_name), sub, on_black)
+
+
 static func _spawn(parent: Node) -> CanvasLayer:
 	if parent == null or not parent.is_inside_tree() or Kit.is_headless():
 		return null
@@ -175,7 +366,7 @@ func play_enter(p_title: String, p_subtitle := "") -> void:
 
 
 func play_exit(p_title: String, p_subtitle := "", on_black := Callable()) -> void:
-	_start(p_title, p_subtitle, SEAL_EXIT)
+	_start(p_title, p_subtitle, seal_for(p_title), act_key(p_title) in OUTCOME_SOMBER)
 	_on_black = on_black
 	var id := _run_id
 	if not await _bars_in(id):
@@ -301,8 +492,8 @@ func _hairline() -> ColorRect:
 	return r
 
 
-## 新的一幕：旧 tween 作废、旧协程按 _run_id 自退，排版从零开始
-func _start(p_title: String, p_subtitle: String, p_seal: String) -> void:
+## 新的一幕：旧 tween 作废、旧协程按 _run_id 自退，排版从零开始。somber：我方失利的出战，印色与题名压暗。
+func _start(p_title: String, p_subtitle: String, p_seal: String, somber := false) -> void:
 	_build()
 	_run_id += 1
 	_cancel_waits()
@@ -321,6 +512,10 @@ func _start(p_title: String, p_subtitle: String, p_seal: String) -> void:
 	_rule.visible = subtitle != ""
 	_sub.visible = subtitle != ""
 	seal_text = ""
+	_head.add_theme_color_override("font_color", UiTheme.TEXT_DIM if somber else UiTheme.GOLD_HI)
+	var seal_box := _seal.get_theme_stylebox("normal") as StyleBoxFlat
+	if seal_box != null:
+		seal_box.bg_color = UiTheme.SEAL.darkened(SOMBER_SEAL_DARKEN) if somber else UiTheme.SEAL
 	_layout()
 
 

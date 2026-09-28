@@ -1,38 +1,77 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" uid="uid://bevsxmpwsgqq3" path="res://assets/fx/spray_drop.png" id="1_drop"]
+[ext_resource type="Texture2D" uid="uid://3q08ajcxw806" path="res://assets/fx/soft_dot.png" id="2_dot"]
+
+[sub_resource type="Gradient" id="Gradient_drop"]
+offsets = PackedFloat32Array(0, 0.08, 0.7, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0.75, 1, 1, 1, 0)
+
+[sub_resource type="Gradient" id="Gradient_foam"]
+offsets = PackedFloat32Array(0, 0.2, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 0.9, 1, 1, 1, 0)
 
 [node name="WaterSplash" type="CPUParticles2D"]
+editor_description = "砲石、箭矢落海（lane combat09 改写实）：根节点是溅起又落回海面的水柱，FoamRing 是一圈散开的白沫，Mist 是一点水雾。"
 z_index = 5
 emitting = false
-amount = 34
-lifetime = 0.65
+amount = 30
+lifetime = 0.75
 one_shot = true
-explosiveness = 0.9
+explosiveness = 0.92
+texture = ExtResource("1_drop")
 emission_shape = 1
-emission_sphere_radius = 5.0
+emission_sphere_radius = 4.0
 direction = Vector2(0, -1)
-spread = 60.0
-gravity = Vector2(0, 300)
-initial_velocity_min = 130.0
-initial_velocity_max = 260.0
-scale_amount_min = 3.0
-scale_amount_max = 10.0
-color = Color(0.9, 0.95, 1, 0.85)
+spread = 26.0
+gravity = Vector2(0, 430)
+initial_velocity_min = 150.0
+initial_velocity_max = 280.0
+scale_amount_min = 0.35
+scale_amount_max = 0.9
+color = Color(0.9, 0.95, 1, 0.9)
+color_ramp = SubResource("Gradient_drop")
 
 [node name="FoamRing" type="CPUParticles2D" parent="."]
 z_index = 4
 amount = 18
-lifetime = 0.9
+lifetime = 1.0
 one_shot = true
-explosiveness = 0.85
-emission_shape = 1
-emission_sphere_radius = 8.0
+explosiveness = 0.9
+texture = ExtResource("2_dot")
+emission_shape = 6
+emission_ring_radius = 8.0
+emission_ring_inner_radius = 4.0
 spread = 180.0
 gravity = Vector2(0, 0)
-initial_velocity_min = 50.0
-initial_velocity_max = 110.0
-scale_amount_min = 6.0
-scale_amount_max = 12.0
-color = Color(0.85, 0.93, 0.98, 0.5)
+initial_velocity_min = 0.0
+initial_velocity_max = 0.0
+radial_accel_min = 40.0
+radial_accel_max = 70.0
+damping_min = 20.0
+damping_max = 40.0
+scale_amount_min = 0.14
+scale_amount_max = 0.28
+color = Color(0.86, 0.93, 0.98, 0.6)
+color_ramp = SubResource("Gradient_foam")
+
+[node name="Mist" type="CPUParticles2D" parent="."]
+z_index = 6
+amount = 5
+lifetime = 1.1
+one_shot = true
+explosiveness = 0.85
+texture = ExtResource("2_dot")
+emission_shape = 1
+emission_sphere_radius = 6.0
+spread = 180.0
+gravity = Vector2(3, -12)
+initial_velocity_min = 8.0
+initial_velocity_max = 24.0
+scale_amount_min = 0.45
+scale_amount_max = 0.8
+color = Color(0.9, 0.94, 0.97, 0.35)
+color_ramp = SubResource("Gradient_foam")
 
 [node name="Timer" type="Timer" parent="."]
 wait_time = 1.2
