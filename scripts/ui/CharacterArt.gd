@@ -117,6 +117,7 @@ static func identity_line(ch: Dictionary, with_origin := true) -> String:
 ## 生卒：「1232—」「1232—1277」；只知一头时写「卒于 1274」「生于 1236」；都不详返回空串。
 ## 卒年到了次年（Calendar.year > 卒年）或终局了结后才写——宝祐三年第一次见林阿舶，名下不该写着「卒于 1274」；
 ## 卒年当年也不写：陈瓒死在 1277 冬，正月就写「卒于 1277」是透底；崖山在二月，陆秀夫、张世杰正月不该先写卒年。
+## 这里只管生卒一行；人物志正文按年分段另管（陆、张等人 1279 段的投海、覆舟正月即可见，未在此处理）。
 ## 主角另算：只有他确实死了的那条世界线（PROTAGONIST_DEATH_ENDINGS）才写卒年，其余结局他都还活着。
 static func life_line(ch: Dictionary) -> String:
 	var born = ch.get("born")
