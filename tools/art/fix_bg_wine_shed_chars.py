@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""背景画修瑕：兴化酒棚底图里的简体字「酿」「来」改回「釀」「來」，中部青幡三个 AI 伪字改写「新酒」（史实纠偏）。
+"""背景画修瑕：兴化酒棚底图里的简体字「酿」「来」改回「釀」「來」，中部青幡三个 AI 伪字改写「新酒」，灯下小竖牌改写「沽酒」（史实纠偏）。
 
 来由：bg_xinghua_wine_shed.jpg（1024×1024，序章酒棚 / 港口酒肆底图，剧情 1255—1290 福建沿海）里三处招牌写的是
 1956 年《汉字简化方案》以后的简化字：左侧幡旗「家酿」、右上木牌「家酿」、右侧立柱竖牌「雨夜客来」。
 宋元刻本、碑版、市招都写「釀」「來」，简体「酿」「来」在这个年代一律穿帮。其余字（家、雨、夜、客）古今同形，不动。
 另有画面中部偏左横杆上那面青色小幡（下缘带流苏，布面 x≈742–779、y≈257–367）写的三个字是 AI 生成的伪字（上像
 简体「韦」、中不成字、下像「家」又不是），不是真字：抹掉重写「新酒」两字竖排——《清明上河图》正店酒旗即书「新酒」，北宋有据。
+还有左侧灯下木柱上挂的小竖牌（板面 x≈503–525、y≈375–456）写三个字，只有头一个「酒」是真字，下面两个是 AI 糊字：三个一起抹掉，
+重写竖排「沽酒」两字（沽 = 氵 + 古，卖酒；《论语》「沽酒市脯不食」，宋元市招常语）。
 
-做法（每块牌单独开一个处理窗，互不牵连；四处都是 SIGNS 表里的一条）：
+做法（每块牌单独开一个处理窗，互不牵连；五处都是 SIGNS 表里的一条）：
 1. 判墨：牌面 mask（幡的黄布面 / 木牌内框里的板面 / 竖牌板面 / 青幡布面，按原图逐行实测的多边形）内，亮度低于局部亮底
    （13×13 邻域牌面像素 85 分位）的 RELATIVE_INK 倍算墨；只留够大、带墨芯、不沿牌边走的连通块——木纹暗线、
    布纹深斑、褶影、板边阴影都进不来。整块牌的笔画一起判；连通块过半落在旧字框里的才算旧字（「家」末笔连着布褶
@@ -49,33 +51,47 @@
    墨芯里的深浅起伏按参照字实测（MAD）补一半——另一半是 JPEG 噪点，新字落盘时自己会带上。
    青幡没有同牌真字，参照 = 三个伪字本身（墨/底比 RGB ≈0.20/0.17/0.08，偏暖的浓墨）；马善政细笔多、覆盖率到不了 1，
    落盘后墨/底亮度比 0.197（旧 0.175）偏淡，墨色再乘 ink_scale 0.88 → 0.170，笔口/墨芯 0.61 与旧字相同。
+   小竖牌（出图方 v1 被退回：牌面成了平涂渐变没有木纹、中段 y≈418–436 把右边木架影子拖进来成一条暗带、字是字库字墨色均匀；
+   这里只参考它的竖排布局，底一概不用）：
+   · 抹字补底：hole_grow 3 + island 40，洞盖满三字区；低频 = 板面受光二次多项式（fill_poly，逐通道拟合离笔画 2px 以外、
+     非钉孔暗斑的板面像素），左上亮、自上而下渐暗照原样接上，两侧斜边与牌外木架影子不进拟合也不进洞；高频全合成（细竖丝 +
+     长竖纹，见 SIGNS 注释）。实测（只抹不写、落盘后）：三字框里判出笔画 486 → 0 像素，旧笔画位置判墨 0%；露底处木纹残差
+     std 0.049 / 原牌 0.051。
+   · 写字：马善政（与青幡「新酒」同一手，同一个「酒」字形），沽 16×18.5、框心 (514.2, 401.0)，酒 16.5×20.5、(513.8, 428.5)，
+     字间 8 行，整组中心 415.2 ≈ 板面中线 415.5，左右各留 2–3px；沽 −1°、酒 +0.8° 微侧，采样坐标加 0.3px 平滑抖动（warp），
+     不是字库那样端正划一。笔宽：酒 加粗 0.8 时「酉」里几横糊成一块（笔宽中位 6），取沽 0.6、酒 0.5。
+   · 墨色：参照 = 旧三字（真「酒」与伪字同墨，墨/底比 RGB ≈0.284/0.106/0，暗红褐浓墨），仍是「补好的底 × 比值」正片叠底；
+     墨芯被覆盖率限住，ink_scale 0.5 才压到旧「酒」的深度（落盘后逐字墨/底亮度比：旧酒 0.148、沽 0.151、酒 0.167）。
+     浓淡两层：ink_lf 让约三成笔段往底色退最多 35%（其余足墨），ink_grad 按笔顺左上→右下墨渐枯 4% / 8%。
 5. 写出：改动像素只落在它们所在的 JPEG MCU 里（本图 4:2:0 抽样，MCU = 16×16）。按 MCU 行把相邻改动块并成矩形，
    每块用原图同一套量化表、同一抽样编码，再用 jpegtran -drop 逐块无损嵌回原图字节流：块外 DCT 系数原样照搬。
    fix_bg_customs_jar.write_jpeg 只走 4:4:4（sampling==0）单矩形，这张 4:2:0 的图进去会退回整图重编码，
    所以这里另写按 MCU 分块的版本；模糊、mask 内归一化、局部分位、Lab 等小工具从 fix_bg_customs_jar import。
    块外一致用 djpeg -nosmooth（色度按块复制放大，逐块独立解码）逐像素核对，不一致就不写；PIL 默认的 fancy
    upsampling 会把色度跨 MCU 边界插值，改动块外紧贴的一圈像素会差几个灰阶，自检里一并打印。
-   青幡的改动块（MCU 列 46–48、行 16–22）和另三块牌的改动块互不相邻，各自成矩形。
+   青幡的改动块（MCU 列 46–48、行 16–22）和另三块牌的改动块互不相邻，各自成矩形。小竖牌的改动块在 MCU 列 31–32、
+   行 23–28（6 块）。自检另用 jpegtran -crop 把没改的 MCU 分片无损裁出，两个文件逐字节比（块外 DCT 系数是否原样）。
 
-幂等：脚本里存着原图四处旧字的笔画指纹（第 1 步判出的布尔笔画图，packbits+base64，--dump-templates 生成）。
+幂等：脚本里存着原图五处旧字的笔画指纹（第 1 步判出的布尔笔画图，packbits+base64，--dump-templates 生成）。
 运行时用同一套判墨量出当前图同一框内的笔画，与指纹求 IoU，低于该牌的 skip_iou（默认 SKIP_IOU 0.70）视为已改，跳过：
   幡 / 木牌 / 竖牌：原图 = 1（重存 q75 仍 ≥0.92、缩半再放大 ≥0.84），换过字后 0.49 / 0.60 / 0.52（重存、缩放后仍 ≤0.60）。
   青幡：原图 = 1（重存 q95/85/75 为 0.97/0.92/0.91，缩半再放大 0.71——伪字细小，缩放掉得多，贴着 0.70），
   写「新酒」后 0.19（重存、缩放后 ≤0.21）：青幡门槛取 0.45，两边都留足余量。
-由此分得清三种状态（运行时打印「状态：」一行）：全新原图（四处都要改）/ 已改「釀」「來」、青幡未改（只改青幡——
-即 HEAD c6be6b4 之后第一轮就地运行的结果）/ 四处全部已改（不写任何文件、rc=0）。判定不依赖字体文件。
-每块牌的处理只读自己的处理窗，四块处理窗互不重叠，所以「对原图一次做完四处」与「对已改三处的文件只补青幡」
-写出的 JPEG 逐字节相同（实测 md5 相同）。所以日后可以直接对仓库文件运行。渲染用固定随机种子，
+  小竖牌：原图 = 1（重存 q95/85/75 为 0.98/0.95/0.92，缩半再放大 0.76），写「沽酒」后 0.17（重存、缩放后 ≤0.20）：门槛取 0.45。
+由此分得清四种状态（运行时打印「状态：」一行）：全新原图（五处都要改）/ 已改「釀」「來」、青幡与小竖牌未改 /
+其他四处已改、小竖牌未改（只改小竖牌——即 b326cb3a 这一版仓库文件）/ 五处全部已改（不写任何文件、rc=0）。判定不依赖字体文件。
+每块牌的处理只读自己的处理窗，五块处理窗互不重叠，所以「对原图一次做完五处」「对已改三处的文件补青幡与小竖牌」
+「对已改四处的文件只补小竖牌」写出的 JPEG 逐字节相同（实测三条路 md5 相同）。所以日后可以直接对仓库文件运行。渲染用固定随机种子，
 同一输入两次运行输出逐字节相同。输出与输入同路径时必须加 --in-place 才写。
 
 用法：
   python3 tools/art/fix_bg_wine_shed_chars.py --in-place           # 就地处理 assets/bg_xinghua_wine_shed.jpg（已处理则跳过）
   python3 tools/art/fix_bg_wine_shed_chars.py --out /tmp/cand.jpg  # 只出候选，不动仓库文件
-  python3 tools/art/fix_bg_wine_shed_chars.py --src A.jpg --out B.jpg [--only banner,plaque,pillar,flag]
+  python3 tools/art/fix_bg_wine_shed_chars.py --src A.jpg --out B.jpg [--only banner,plaque,pillar,flag,lamp]
   字体目录默认 ~/tmp/nk1-art-work/fonts_src（要 LXGWWenKai-Medium.ttf 与 MaShanZheng-Regular.ttf），可用环境变量
   NK1_FONT_SRC 覆盖（仓库 assets/fonts/ 里的文楷是子集，没有「釀」「來」）。
-自检数字（旧字独有笔画区残留、补底肌理洞内/洞外、新字/参照字的笔宽·墨/底比·笔口柔度、改动区外平均绝对差、
-改动块外变动像素、边界 ΔE）每次运行都会打印。
+自检数字（旧字独有笔画区残留、补底肌理洞内/洞外（fill_poly 牌改比去受光残差的 std 与自相关）、新字/参照字的笔宽·墨/底比·
+笔口柔度、改动区外平均绝对差、改动块外变动像素与 DCT 系数分片比对、边界 ΔE）每次运行都会打印。
 """
 import argparse
 import base64
@@ -125,6 +141,9 @@ MARGIN = 16              # 处理窗 = 牌面外接框外扩
 # hole_grow = 挖洞外扩（默认 HOLE_GROW）；island_px = 笔画围住的已知小块小于此面积就并进洞；font = 字库文件名（默认文楷）；
 # glyphs = 多字牌逐字的 ch + 外接框规格（同 glyph）；tex_clip = 合成噪声 tanh 软削峰（σ 倍数）；ink_scale = 墨/底比再乘；
 # skip_iou = 该牌的幂等门槛（默认 SKIP_IOU）。
+# 小竖牌另用（前四块都不写）：fill_poly = 低频改用受光二次多项式（值 = 拟合像素离笔画至少几 px）；tex_streak = ((σx, σy), 方差占比)
+# 在细丝噪声上再叠竖长纹；ink_lf = (σ, amp, e0, e1) 墨色浓淡——覆盖率乘 1 − amp·smoothstep(e0, e1, 平滑噪声)；
+# 字规格 ink_grad = (横, 竖) 一字之内按笔顺墨渐枯，warp = (σ, 幅度 px, 种子) 采样坐标平滑位移（手写抖动）。
 # 实测：幡「家」框 595–625×266–311、旧「酿」594–624×314–356；木牌内框暗线 左 x≈836+0.126(y−140)、右 x≈879.5+0.12(y−140)、
 # 下 y≈226−0.117(x−850)，倾角 ≈6.8°，旧「酿」在该倾角下 34.2×34.2、中心 (867.1,198.7)；竖牌「来」909–943×439–481，
 # 同牌「雨夜客」中轴 x≈926.5。
@@ -132,6 +151,16 @@ MARGIN = 16              # 处理窗 = 牌面外接框外扩
 # 下缘两角 y≈359.5、V 尖 (759.5,367)；三个伪字 749–770×266–293、751–769×295–322、750–771×328–351，墨重心 x 760.2。
 # 青幡 tex_gain 按「只抹不写、落盘后」目看定 0.8（洞里露底处 / 洞外一圈相对高频 0.086 / 0.109；洞外一圈只有 115 像素、
 # 全贴着布边和左侧暗褶，读数偏高；1.0 时字区中间的布面比原图两侧的净布花）。
+# 灯下小竖牌（逐像素亮度实测）：板面 x 503–525、y 375–456，col 503 是左斜边（中下段亮度 ~85，比板面暗四成）、col 525–526 是右侧
+# 板厚、y 457 起是牌下阴影；牌面多边形取 x 504–525（不含两侧斜边，否则补底会被 col 503 拖暗，col 504 补成 98、原图 136）。
+# 钉孔 (514,378)；三字 酒 507–521×383–400（真字）、伪字 507–521×406–425、507–523×430–449，判出 486 像素。
+# 受光：顶 ~180（左 195 右 172，灯在左上）→ y404 ~143 → y427 ~120 → y452 ~106，中段横向平；右边木架的影子落在牌外 x ≥ 528、
+# y 419–435（出图方 v1 的暗带就是从这里拖进来的，牌面多边形不含它）。墨芯 RGB ≈ (54,14,0)，酒与伪字同墨。
+# 木纹（去受光二次多项式后的残差，离笔画 2px 以外 368 像素）：std 0.051，自相关 横 1px 0.39、竖 1px 0.47、竖 4–8px 平均 0.17
+# ——一两像素宽的细竖丝，外加长竖纹。hole_grow 3 + island 后洞盖满三字区（字距只有 4–6 行，两边振铃一合就没有干净像素），
+# 所以低频不用归一化卷积（中间几十行没有已知像素，只能从 col 503 斜边和上下留白外推），改拟合整块板面的受光多项式；
+# 高频全合成：tex (0.6, 0.6) 细丝 + tex_streak ((0.5, 6.0), 0.35) 竖长纹，tex_gain 0.85 按「只抹不写、落盘后」标定
+# （露底处 std 0.049、横1 0.38、竖1 0.57、竖4–8 0.18，与原牌 0.051 / 0.39 / 0.47 / 0.17 相当）。
 SIGNS = [
     dict(key="banner", label="左侧幡旗", old="酿", new="釀",
          face=[(586.5, 255.5), (629.0, 255.5), (629.0, 349.0), (611.5, 371.0), (588.5, 351.5), (586.5, 348.5)],
@@ -160,6 +189,17 @@ SIGNS = [
                  dict(ch="酒", cx=760.0, cy=328.0, w=26.5, h=30.5, rot=0.0, weight=0.0, soft=0.2)],
          fill=[(1.5, 3.0), (2.5, 6.0), (4.0, 12.0)], tex_lp=(1.5, 3.0), tex_from=[],
          tex=(0.5, 1.5), tex_clip=1.6, tex_far=3, tex_edge=2, tex_gain=0.8, ink_scale=0.88, skip_iou=0.45, seed=1274),
+    dict(key="lamp", label="灯下小竖牌", old="酒+两个伪字", new="沽酒",
+         face=[(504.0, 375.0), (525.0, 375.0), (525.0, 456.0), (504.0, 456.0)],
+         erase=(505, 381, 525, 452), refs=[], hole_grow=3, island_px=40, fill_poly=2,
+         font="MaShanZheng-Regular.ttf",
+         glyphs=[dict(ch="沽", cx=514.2, cy=401.0, w=16.0, h=18.5, rot=-1.0, weight=0.6, soft=0.3,
+                      ink_grad=(0.04, 0.08), warp=(2.0, 0.3, 11)),
+                 dict(ch="酒", cx=513.8, cy=428.5, w=16.5, h=20.5, rot=0.8, weight=0.5, soft=0.3,
+                      ink_grad=(0.04, 0.08), warp=(2.0, 0.3, 12))],
+         fill=[(1.5, 4.0), (2.5, 8.0), (4.0, 16.0)], tex_lp=(1.5, 4.0), tex_from=[],
+         tex=(0.6, 0.6), tex_streak=((0.5, 6.0), 0.35), tex_far=2, tex_edge=2, tex_gain=0.85,
+         ink_scale=0.5, ink_lf=(1.5, 0.35, 0.3, 2.0), skip_iou=0.45, seed=1275),
 ]
 # 原图旧字笔画指纹（--dump-templates 从 git HEAD c6be6b4 的原图生成，md5 196ccbb7b719dbb9ff978b7e28fc9c1e；
 # flag 用双阈值判墨，框 745–775×262–356 里 717 像素）：
@@ -169,6 +209,8 @@ TEMPLATES = {
     "plaque": ((843, 178, 890, 224), "AAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAAAAfAAAAAAA/AAAAAAA+AAAAAOAb4AAAB/A/wAAAf+P/gAAP/5//AAAf+H8eAAA/4Hg8AAAx4HH4AAAH3P/wAAAf/f/AAAA/++eAAAP/9w8AAAf87h7AAA/d3v/AABu7v++AAD93fx8AAH/ueHwAAP388PAAAfn5/4AAA/Jz/wAAA6TnPwAAB33OP4AAD//cf+AAH/Od//AAPwc7n/gAcP5/D+AA5/z8BwAA//n4AAAD/PPgAAADwOfAAAAHAI+AAAAEAA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="),
     "pillar": ((906, 436, 948, 486), "AAAAAAAAAAAAAAAAAAAAAAADwAAAAAD4AAAAAD4AAAAAB4AAAAAB4wAAAAB/8AAAIH/8AAAH//+AAAH//8AAAD/+AAAAB/44AAAA94+AAABB5+AAADx58AAAD554AAAD57gAAAB5/PgAAA5//wAAAX//4AAB///4AA////4AB//8AAAB//8AAAA/P+AAAAYf/AAAAAf/gAAAA//4AAAB97+AAAD55/AAAHx4/gAAPh4/4AAfB4f+AB+B4P/gD4B4H/wHwB4D/wCAB4AAAAAP4AAAAAP4AAAAAH4AAAAAD4AAAAAB4AAAAAB4AAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="),
     "flag": ((745, 262, 775, 356), "AAAAAAAAAAAAAAAAAAAAAAAwAAABgAAAfEAAA/+AAA/8AAAf4AAB/gAAD+AAADvwAAAP4AAA/4AAD/wAAHPgAAGe4AABP8AAD/4AAH/BgADn/wAAP/wAB/hgAf2/wD+3/gD4P+ADwHAABgHAAAAGAAAAGAAAAGAAAAAAAAAGAAAAGMAADH8AAHl/AAPt/gAPP/AAHf2AAHbmAAP/+AAP9+AAXvIAA/HAAA8GAAAwAEAAgB+AAAH+AAA/4AAB84AAB34AAB/4AAB/YAADr4AAD/4AAD/YAAHJ8AAGA8AAAA4AAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAegAAAfAAAAPYAAAP+AAA/+AAP8QAAfwQAAeD8AAA/cAAA+8AAA74ABg/gAB3/AAB/PIAA4f4AAA58AAA5/AAB3/gADr/AAH7/wAP7H4Bd/AAB9+AABgAAAAAAAAAAAAAAAAAAAAAAAA="),
+    # lamp：从 b326cb3a（四处已改、小竖牌未动）生成，与 c6be6b4 原图生成的逐字相同；框 505–525×381–452 里 486 像素
+    "lamp": ((505, 381, 525, 452), "AAAAAAAYDwD/8A/+AGMAADgDB/g9/4H/2B3dgB/4AfOAXbgN/4HZ2B2TgZ/4GaeAgDgAAAAAAAAAAAAAAAAAAIADHAB7wB//ATP4D/8D7fAf/4HwsD+fA3/gBw0A//gd/4P4wD+MAADAAAwAAMAACAAAAAAAAAAAAAAABwAAcAAHcAD/AN/gD+YASuAH/gBzEAf/gE/wD/wB/4Aa+AEOwDGmAzJ4P3HA5w4AYAAAAAAAAA=="),
 }
 
 
@@ -380,11 +422,29 @@ def fill_background(img, known, sigmas):
     return res
 
 
+def poly_fill(bd, grow):
+    """牌面受光 = (x, y) 二次多项式，逐通道最小二乘。拟合像素 = 牌面内缩 1px、离任何笔画 grow px 以外、
+    不是暗斑（rel ≥ RELATIVE_INK，钉孔之类）。返回 (低频 HxWx3, 亮度相对残差 = 亮度 ÷ 低频亮度 − 1)。"""
+    fit = erode(bd.face_b, 1) & ~dilate(bd.strokes, grow) & (bd.rel >= RELATIVE_INK)
+    ys, xs = np.nonzero(bd.face_b)
+    cy, hy = (ys.min() + ys.max()) / 2.0, max((ys.max() - ys.min()) / 2.0, 1.0)
+    cx, hx = (xs.min() + xs.max()) / 2.0, max((xs.max() - xs.min()) / 2.0, 1.0)
+    Y, X = np.mgrid[0:bd.shape[0], 0:bd.shape[1]].astype(np.float64)
+    u, v = (X - cx) / hx, (Y - cy) / hy
+    T = np.stack([np.ones_like(u), u, v, u * u, u * v, v * v], -1)
+    co = np.linalg.lstsq(T[fit], bd.img[fit].astype(np.float64), rcond=None)[0]
+    low = (T @ co).astype(np.float32)
+    return low, bd.lum / np.maximum(luma(low), 1.0) - 1.0
+
+
 def fill_hole(bd, hole, sign, rng):
-    """洞里的底色 = 低频（多尺度归一化卷积）+ 高频（顺纹借同牌真实肌理，借不到补合成噪声）。
-    返回 (补好的窗, 借到肌理的像素比例, 合成噪声的相对幅度)。"""
+    """洞里的底色 = 低频（多尺度归一化卷积；牌上有 fill_poly 时用受光多项式）+ 高频（顺纹借同牌真实肌理，
+    借不到补合成噪声）。返回 (补好的窗, 借到肌理的像素比例, 合成噪声的相对幅度)。"""
     known = bd.known & ~hole
-    low = fill_background(bd.img, known, sign["fill"])
+    if sign.get("fill_poly"):
+        low, resid = poly_fill(bd, sign["fill_poly"])
+    else:
+        low = fill_background(bd.img, known, sign["fill"])
     lp = nblur_xy(bd.img, known, *sign["tex_lp"])
     hp = bd.img - lp
     # 借肌理只从离任何笔画 tex_far px 以上、离牌面边 tex_edge px 以上的像素借：笔画边上的振铃、笔口残影、
@@ -398,9 +458,17 @@ def fill_hole(bd, hole, sign, rng):
         tex[take] = shift(hp, dx, dy)[take]
         have |= take
     around = far & dilate(hole, 10)
-    amp = float(luma(hp)[around].std() / max(bd.lum[around].mean(), 1.0))
+    if sign.get("fill_poly"):         # 低频是整块受光面，合成的是受光以外的全部起伏：幅度量去受光残差（暗斑不算）
+        amp = float(resid[around & (bd.rel >= RELATIVE_INK)].std())
+    else:
+        amp = float(luma(hp)[around].std() / max(bd.lum[around].mean(), 1.0))
     n = blur_xy(rng.normal(0, 1, bd.shape).astype(np.float32), *sign["tex"])
     n /= n.std() + 1e-6
+    if sign.get("tex_streak"):        # 细丝之外再叠一层竖长纹（木纹顺纹的长相关），按方差占比混合
+        (ssx, ssy), share = sign["tex_streak"]
+        m = blur_xy(rng.normal(0, 1, bd.shape).astype(np.float32), ssx, ssy)
+        n = np.sqrt(1.0 - share) * n + np.sqrt(share) * m / (m.std() + 1e-6)
+        n /= n.std() + 1e-6
     if sign.get("tex_clip"):          # 软削峰：高斯噪声 2σ 以上的尖峰在细布上是一颗颗亮斑，真布纹没有
         c = sign["tex_clip"]
         n = c * np.tanh(n / c)
@@ -470,6 +538,12 @@ def glyph_coverage(ch, spec, shape, off=(0, 0), font_path=None):
     ys = Y0 + (np.arange((Y1 - Y0) * SS) + 0.5) / SS
     xs = X0 + (np.arange((X1 - X0) * SS) + 0.5) / SS
     Y, X = np.meshgrid(ys, xs, indexing="ij")
+    if spec.get("warp"):               # 手写抖动：采样坐标加一层平滑位移（σ 原图像素、幅度原图像素、种子）
+        ws, wa, wseed = spec["warp"]
+        wr = np.random.default_rng(wseed)
+        for A in (X, Y):
+            d = blur(wr.normal(0, 1, A.shape).astype(np.float32), ws * SS)
+            A += wa * d / (d.std() + 1e-6)
     dx, dy = X - cx, Y - cy
     u = c * dx - s * dy                             # 屏幕 → 字自身坐标（字的竖轴下端偏右 rot 度）
     v = s * dx + c * dy
@@ -482,6 +556,9 @@ def glyph_coverage(ch, spec, shape, off=(0, 0), font_path=None):
     fx, fy = gx - ix, gy - iy
     val = (g[iy, ix] * (1 - fx) * (1 - fy) + g[iy, ix + 1] * fx * (1 - fy)
            + g[iy + 1, ix] * (1 - fx) * fy + g[iy + 1, ix + 1] * fx * fy) * ok
+    if spec.get("ink_grad"):           # 一字之内按笔顺（先左后右、先上后下）墨渐枯：左上 1 → 右下 1 − gx − gy
+        igx, igy = spec["ink_grad"]
+        val = val * (1.0 - igx * np.clip(u / w + 0.5, 0, 1) - igy * np.clip(v / h + 0.5, 0, 1))
     out = np.zeros(shape, np.float32)
     out[Y0:Y1, X0:X1] = val.reshape(Y1 - Y0, SS, X1 - X0, SS).mean(axis=(1, 3))
     if spec.get("soft", 0) > 0:
@@ -523,6 +600,10 @@ def process_sign(src, sign, rng):
         cov[:] = 0
     n = blur(rng.normal(0, 1, bd.shape).astype(np.float32), 0.6)
     n /= n.std() + 1e-6
+    if sign.get("ink_lf"):            # 墨色浓淡：覆盖率乘 1 − amp·smoothstep(e0, e1, f)，f 为 σ 平滑、归一的噪声——
+        sig, amp, e0, e1 = sign["ink_lf"]  # e0 取正时只有一部分笔段变淡（往底色退），其余保持足墨；正片叠底不变
+        f = blur(rng.normal(0, 1, bd.shape).astype(np.float32), sig)
+        cov = cov * (1.0 - amp * smoothstep(e0, e1, f / (f.std() + 1e-6)))
     inkc = base * (ratio * sign.get("ink_scale", 1.0))[None, None, :] * (1.0 + INK_VAR_MIX * ink_var * n)[..., None]
     win = base * (1 - cov[..., None]) + inkc * cov[..., None]
     a = np.maximum(a_hole, np.clip(cov * 4, 0, 1))
@@ -650,6 +731,54 @@ def texture_hf(img, sign, mask_fn):
     return float((bd.lum - lp)[sel].std() / max(bd.lum[sel].mean(), 1.0)), int(sel.sum())
 
 
+def grain_stats(img, sign, mask_fn):
+    """木纹统计（fill_poly 牌用）：亮度 ÷ 该图自己拟合的受光二次多项式 − 1，在 mask_fn(bd) 选出的像素上量
+    标准差、横向 1px 自相关、竖向 1px 与 4–8px 平均自相关（竖长纹）。返回 (std, ax1, ay1, ay48, 像素数)。"""
+    bd = Board(img, sign)
+    _, r = poly_fill(bd, sign["fill_poly"])
+    sel = mask_fn(bd) & (bd.rel >= RELATIVE_INK)
+    r = np.where(sel, r - r[sel].mean(), 0.0)
+
+    def ac(dx, dy):
+        m = sel & shift(sel, dx, dy, False)
+        return float(np.corrcoef(r[m], shift(r, dx, dy)[m])[0, 1]) if m.sum() > 10 else float("nan")
+    return float(r[sel].std()), ac(1, 0), ac(0, 1), float(np.nanmean([ac(0, d) for d in range(4, 9)])), int(sel.sum())
+
+
+def dct_same_outside(src_path, out_path, rects, mcu, size):
+    """改动块以外的 DCT 系数是否逐字节未变：把没改的 MCU 按行切成若干片（整行都没改的相邻行并成一条），
+    两个文件各用 jpegtran -crop 无损裁出同一片逐字节比。返回 (片数, 不同的片数)；没有 jpegtran 返回 None。"""
+    jt = shutil.which("jpegtran")
+    if not jt:
+        return None
+    mw, mh = mcu
+    W, H = size
+    ny, nx = -(-H // mh), -(-W // mw)
+    t = np.zeros((ny, nx), bool)
+    for x0, y0, x1, y1 in rects:
+        t[y0 // mh:-(-y1 // mh), x0 // mw:-(-x1 // mw)] = True
+    regions, j = [], 0
+    while j < ny:
+        if not t[j].any():
+            k = j
+            while k + 1 < ny and not t[k + 1].any():
+                k += 1
+            regions.append((0, j * mh, W, min((k + 1) * mh, H) - j * mh))
+            j = k + 1
+            continue
+        row = np.concatenate([[0], (~t[j]).astype(np.int8), [0]])
+        d = np.diff(row)
+        for a, b in zip(np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]):
+            regions.append((a * mw, j * mh, min(b * mw, W) - a * mw, min((j + 1) * mh, H) - j * mh))
+        j += 1
+
+    def crop(path, r):
+        x, y, w, h = r
+        return subprocess.run([jt, "-copy", "none", "-crop", "%dx%d+%d+%d" % (w, h, x, y), path],
+                              capture_output=True).stdout
+    return len(regions), sum(crop(src_path, r) != crop(out_path, r) for r in regions)
+
+
 def self_check(src, after, alpha, rects, todo, infos, src_path, out_path):
     for s in todo:
         info = infos[s["key"]]
@@ -672,9 +801,15 @@ def self_check(src, after, alpha, rects, todo, infos, src_path, out_path):
         ring = lambda bd: (bd_b.known & dilate(hole, 10) & ~dilate(bd_b.strokes | hole, TEX_FAR)   # noqa: E731
                            & erode(bd_b.face_b, TEX_FAR))
         hf_in, n_in = texture_hf(after, s, bare)
-        hf_out, n_out = texture_hf(src, s, ring)
-        print("    补底肌理（相对高频）：洞里新字笔画 2px 外露底处 %.3f（%d 像素）/ 洞外离笔画与牌边 4px 以外一圈原图 %.3f（%d 像素）"
-              % (hf_in, n_in, hf_out, n_out))
+        if s.get("fill_poly"):           # 整牌几乎全在洞里，洞外一圈只剩牌边：改比「补好露底处」与「原牌干净处」的去受光残差
+            clean = lambda bd: erode(bd.face_b, 1) & ~dilate(bd.strokes, s["fill_poly"])   # noqa: E731
+            g_in, g_out = grain_stats(after, s, lambda bd: bare(bd) & erode(bd.face_b, 1)), grain_stats(src, s, clean)
+            print("    木纹（去受光二次多项式后残差）：补好露底处 std %.3f、自相关 横1 %.2f 竖1 %.2f 竖4–8 %.2f（%d 像素）"
+                  "｜原牌干净处 std %.3f、横1 %.2f 竖1 %.2f 竖4–8 %.2f（%d 像素）" % (g_in + g_out))
+        if ring(bd_b).any():
+            hf_out, n_out = texture_hf(src, s, ring)
+            print("    补底肌理（相对高频）：洞里新字笔画 2px 外露底处 %.3f（%d 像素）/ 洞外离笔画与牌边 4px 以外一圈原图 %.3f（%d 像素）"
+                  % (hf_in, n_in, hf_out, n_out))
         st_new = char_stats(after, s, s["erase"])
         st_old = char_stats(src, s, s["erase"])
         refs = [char_stats(src, s, b) for b in s["refs"]]
@@ -696,6 +831,9 @@ def self_check(src, after, alpha, rects, todo, infos, src_path, out_path):
         print("  改动块外变动像素：djpeg -nosmooth（逐块独立解码）%d；PIL 默认解码 %d（最大差 %d，均在紧贴块边的一圈：色度跨块插值）" % (
             int((a_ns[~inside_rect] != b_ns[~inside_rect]).any(-1).sum()),
             int((diff[~inside_rect].max(-1) > 0).sum()), int(diff[~inside_rect].max())))
+    same = dct_same_outside(src_path, out_path, rects, mcu_size(Image.open(src_path))[0], alpha.shape[::-1])
+    if same is not None:
+        print("  改动块外 DCT 系数：jpegtran -crop 分 %d 片逐字节比对，不同 %d 片" % same)
     labb, laba = srgb_to_lab(src), srgb_to_lab(after)
     dE = np.sqrt(((laba - labb) ** 2).sum(-1))
     m = alpha > 0
@@ -710,7 +848,7 @@ def main(argv):
     ap.add_argument("--out", default=DEFAULT_SRC)
     ap.add_argument("--in-place", action="store_true", help="允许输出覆盖输入文件")
     ap.add_argument("--force", action="store_true", help="跳过幂等检查（调试用）")
-    ap.add_argument("--only", default="", help="只处理这几块牌（逗号分隔 key：banner,plaque,pillar,flag）")
+    ap.add_argument("--only", default="", help="只处理这几块牌（逗号分隔 key：banner,plaque,pillar,flag,lamp）")
     ap.add_argument("--dump-templates", action="store_true", help="从 --src（须为原图）打印旧字笔画指纹，开发用")
     args = ap.parse_args(argv)
     im = Image.open(args.src)
@@ -742,12 +880,14 @@ def main(argv):
                     continue
         todo.append(s)
     if len(signs) == len(SIGNS):
-        state = {(): "全新原图（四处都要改）", ("banner", "plaque", "pillar"): "已改「釀」「來」、青幡未改（只改青幡）",
-                 ("banner", "plaque", "pillar", "flag"): "四处全部已改"}.get(tuple(done_keys), "部分已改（已改：%s）"
-                                                                            % (",".join(done_keys) or "无"))
+        state = {(): "全新原图（五处都要改）",
+                 ("banner", "plaque", "pillar"): "已改「釀」「來」、青幡与小竖牌未改（改青幡与小竖牌）",
+                 ("banner", "plaque", "pillar", "flag"): "其他四处已改、小竖牌未改（只改小竖牌）",
+                 ("banner", "plaque", "pillar", "flag", "lamp"): "五处全部已改"}.get(
+                     tuple(done_keys), "部分已改（已改：%s）" % (",".join(done_keys) or "无"))
         print("  状态：%s" % state)
     if not todo:
-        print("  %s都已换过字，判定已处理，跳过，未写文件。" % ("四处" if len(signs) == len(SIGNS) else "所选牌"))
+        print("  %s都已换过字，判定已处理，跳过，未写文件。" % ("五处" if len(signs) == len(SIGNS) else "所选牌"))
         return 0
     for f in sorted({sign_font(s) for s in todo}):
         if not os.path.isfile(f):
