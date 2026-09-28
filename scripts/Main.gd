@@ -1131,6 +1131,9 @@ func _enter_panel_mode() -> void:
 	_uncenter_benches()
 	_show_investigation_chrome(false)
 	scene_title.visible = true
+	# 设施页题头统一 SIZE_HEAD，不沿用上一页（序章 cg_ 对白页 24、剧情页 28 会漏到下一张设施页）；
+	# 调查页 cg_ 分支在 _setup_investigation_mode 里照旧再覆盖成 24
+	scene_title.add_theme_font_size_override("font_size", UiTheme.SIZE_HEAD)
 	var title_rule := scene_title.get_parent().get_node_or_null("HSeparator") as Control
 	if title_rule != null:
 		title_rule.visible = true
