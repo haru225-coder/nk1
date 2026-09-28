@@ -1,6 +1,6 @@
 # Main.gd 拆解台账
 
-`scripts/Main.gd` 按页面簇往 `scripts/ui/` 拆。每刀一节，只往后追加，不改前面各节（lane main12 起的例外：前面各节与现状不符的事实，在原句上就地改准并在「第十二刀 · 前十一刀对账」登记，不改那一刀的结论与数字口径）。
+`scripts/Main.gd` 按页面簇往 `scripts/ui/` 拆。每刀一节，只往后追加，不改前面各节（lane main12 起的例外：前面各节与现状不符的事实，在原句上就地改准并在「第十二刀 · 前十一刀对账」登记，不改那一刀的结论与数字口径；lane cs25 起另一例：第四、第五刀补了「### 函数表（lane cs25 补）」一小节，只加表、不改原句）。
 手法（lane ms / mz / ms2 起一直沿用）：隔离 worktree 里改，Main 保留同名同签名的一行转发，信号目标仍是 Main 的同名方法；
 新文件登记：本台账追加一节、节标题写成「## 第N刀（lane X，日期）：… → `scripts/ui/X.gd`」，跑 `python3 tools/gen_main_splits.py --write` 重生成 `tools/main_splits.txt`（lane cs13 起；check_symbols 和 godot_smoke 都只读它），另加 `godot_compile_check.gd` 的 SCRIPTS；
 新文件头注写「从 Main.gd 原样搬出」，转发独占函数体、行尾不带注释（漏一样 check_symbols「一之零」判红，口径见 `docs/GATES.md` §三.1，lane cs8）；
@@ -51,6 +51,22 @@ J 与它大小相当，但要改 4 处门禁，还牵涉 Main 在 L1B 的登记�
   `verify_story_data` 的 `L1B_READERS` 加上 TavernPage.gd（`{"api"}`，读 character_for_crew）。
 - 拼回原文：用 `read_main_src()` 拼回的 9 支和基线 Main 逐行比，除上面 12 行 `:=` 外完全一致。
 
+### 函数表（lane cs25 补）
+
+本刀落地时还没有函数表惯例（第六刀起每节有表），lane cs25 补上，gen_main_splits 从此对本节做 cs18 / cs22 两个方向的对账和逐支行段对账（原先登记在 `NO_TABLE_OK` 放行，已删）。行段按拆前 Main.gd：拆出 commit `3a527eb` 的父版 `db4d944`，与本节的基 `d56ba1d` 的 Main.gd 逐字节同；由 `gen_main_splits.func_spans` 重算，起行含紧贴其上的 `##` 注释，止行是函数体最后一个非空行。顺序按拆出件里 `static func` 的顺序（= `tools/main_splits.txt` 末列）。
+
+| 支 | 行段 | 行 | 拆出件 static func |
+|---|---|---|---|
+| `_setup_tavern(port_id)` | 2457–2480 | 24 | `setup_tavern` |
+| `_setup_story_hooks(port_id)` | 2488–2501 | 14 | `setup_story_hooks` |
+| `_on_story_hook(hook, port_id)` | 2504–2512 | 9 | `on_story_hook` |
+| `_on_gather_intel(port_id)` | 2515–2518 | 4 | `on_gather_intel` |
+| `_setup_hiring(port_id)` | 2521–2583（含 `##`） | 63 | `setup_hiring` |
+| `_person_slip(ch, title, aside, level := 0)` | 2586–2632（含 `##`） | 47 | `person_slip` |
+| `_person_foot(info, note)` | 2635–2649（含 `##`） | 15 | `person_foot` |
+| `_seal_chip(btn)` | 2652–2658（含 `##`） | 7 | `seal_chip` |
+| `_setup_inn(port_id)` | 2666–2697（含 `##`） | 32 | `setup_inn` |
+
 ### 下一刀候选（行数按基 d56ba1d）
 
 1. **F 航海日志**（127 / 5）风险低，和 ChapterSheet 同属浮层册页，可以直接做。
@@ -100,6 +116,24 @@ H / A / E / I / K 在核心流程上或被 Python 门禁多处直读；C 被 ver
     「见面册疏通留出字距」查 `UiTheme.plain_log(_gather_price_intel` 的那半句，改成在去掉 `main.` 前缀的 family src 里查：smoke 的 family src 只把文件拼在一起，不像 check_symbols 的 read_main_src 会去前缀。
   - `verify_story_data`：见面页简介改查 NpcPage（Main 里仍不许出现 `"bio_short"`）；`L1B_READERS` 加 NpcPage（`{"api"}`，读 character_for_npc），Main 那条的说明文字改掉；`L1_UI_FILES` 加 NpcPage，让搬走的 `ch.get(...)` 仍在上屏字段白名单的扫描范围内。
 - 拼回原文：`read_main_src()` 拼回的 11 支和基线 Main 逐行比，除上面 13 行 `:=` 外完全一致。
+
+### 函数表（lane cs25 补）
+
+本刀落地时还没有函数表惯例（第六刀起每节有表），lane cs25 补上，gen_main_splits 从此对本节做 cs18 / cs22 两个方向的对账和逐支行段对账（原先登记在 `NO_TABLE_OK` 放行，已删）。行段按拆前 Main.gd：拆出 commit `537826b` 的父版 `ca6c817`，与本节的基 `6ff3d01` 的 Main.gd 逐字节同；由 `gen_main_splits.func_spans` 重算，起行含紧贴其上的 `##` 注释，止行是函数体最后一个非空行。顺序按拆出件里 `static func` 的顺序（= `tools/main_splits.txt` 末列）。
+
+| 支 | 行段 | 行 | 拆出件 static func |
+|---|---|---|---|
+| `_frame_portrait()` | 502–517 | 16 | `frame_portrait` |
+| `_dress_npc_sheet()` | 520–556（含 `##`） | 37 | `dress_npc_sheet` |
+| `_mount_npc_profile(dialog)` | 559–600（含 `##`） | 42 | `mount_npc_profile` |
+| `_fill_npc_profile(ch)` | 603–643 | 41 | `fill_npc_profile` |
+| `_add_npc_button(npc_id, fallback_name)` | 2940–2950 | 11 | `add_npc_button` |
+| `_on_meet_npc(npc_id, fallback_name)` | 2953–2954 | 2 | `on_meet_npc` |
+| `_show_npc_mode(npc_id, fallback_name)` | 2957–3016 | 60 | `show_npc_mode` |
+| `_set_npc_speech(text)` | 3026–3028 | 3 | `set_npc_speech` |
+| `_on_npc_intel(n_name)` | 3031–3033 | 3 | `on_npc_intel` |
+| `_on_npc_bribe(n_name)` | 3036–3042 | 7 | `on_npc_bribe` |
+| `_on_npc_leave()` | 3045–3047 | 3 | `on_npc_leave` |
 
 ### 同刀门禁：旅店房钱算式（第四刀待议 2）
 

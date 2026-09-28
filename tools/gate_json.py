@@ -148,7 +148,7 @@ REGISTRY = [
               "仓外 brief 引用只查越界（`$NK1_BRIEFS` 不在只记 `⚠`）；落点所在函数只剩一行转发（func_body.forward_of）的穿透到真体再跟号，穿透不下去报「跟到一行转发」，"
               "每次先跑内存里的「转发穿透自检」10 形（lane auditfix6）；输出确定序（lane cs23）：逐处的 ⚠ / ✗ 行先收齐、按「清单行号 → 行内第几处引用 → 类别」排好再印，"
               "`--since` / 改号自证的新旧配对也按新版引用的清单顺序逐对比——原先配对取 `ko.keys() & kn.keys()`（集合，遍历顺序随 PYTHONHASHSEED 变），有 2 处以上 ⚠ / MISMATCH 时同基连跑每次行序不同、「逐字节同」比对偶发假 DIFF（lane cs18 待议 4）",
-     "green": "`✓ 转发穿透自检 10/10（…）` + `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）。同一基连跑 5 次 stdout 逐字节同（lane cs23 实测：六个历史基 × 默认 / `--show`、5 个 `--since` 旧版与号写歪的脏树各 5 次同 md5）",
+     "green": "`✓ 转发穿透自检 10/10（…）` + `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）。同一基连跑 5 次 stdout 逐字节同（lane cs23 实测：六个历史基 × 默认 / `--show`、5 个 `--since` 旧版与号写歪的脏树各 5 次同 md5）；lane cs25 起由 ledger_refs_mutants 二节固化（5 个固定种子、去掉排序须判不确定）",
      "red": "`✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；"
             "`…可跟号 → 文件:新号（穿透一行转发 …）` / `…跟不上，要人工：跟到一行转发：…` / `✗ 转发穿透自检 S… 期望 … 实得 …`（脚本自身坏了）；"
             "`结果：有问题（DRIFT 先跑 --fix 自动跟号…）`；修法 `python3 tools/check_decision_refs.py --fix`（所引文件先提交）"},
@@ -184,6 +184,25 @@ REGISTRY = [
      "green": "逐支 `✓ <探针>：两档一致绿——档 0：绿 n/n（s） ｜ 档 300：绿 n/n（s）` + `共 N 支：一致绿 N / …` + `结果：全部通过`",
      "red": "`✗ <探针>：两档结论不同——…` 附 `rc：档 0 = … · 档 300 = …` / `只在档 X：✗ …`；`✗ …：两档同红`（探针自身红）；`✗ …：跑不成`（没 JSON 行 / 超时）；"
             "`--mutants`：`✗ B0 …` 基线不绿 / `✗ M<k> …——期望「两档结论不同」` / `变异没落上`；`结果：N 项问题`；找不到 godot / 参数错退 2"},
+    # lane cs25：cs23 的仓外探针（/tmp/cs23/{mut_gen,det,mut_det}.py）入库；不升 must：约半分钟、要 git worktree（写临时盘），
+    # 触发条件按路径判得准（改了那两支脚本 / 台账被变异锚住的几节），同 check_symbols_mutants（§五.2）
+    {"id": "ledger_refs_mutants", "tier": "lane",
+     "when": "动 tools/gen_main_splits.py（台账格式硬校验 / 函数表对账）或 tools/check_decision_refs.py（逐处行的排序 / since 配对），"
+             "或改台账 docs/Main拆解台账.md 已有的「已拆（前三刀…）」段、第四 / 第五 / 第十一刀节",
+     "kind": "py", "file": "tools/ledger_refs_mutants.py",
+     "judge": "（lane cs25，固化 lane cs23 的探针）当前工作树检出到临时 worktree，逐格施变异、比期望表。"
+              "一、gen_main_splits 台账格式硬校验 ①–⑤：逐格改台账（节标题去反引号 / ### / 无空格 / 半角括号 / 去 lane / 箭头后多字、"
+              "前三刀段半角括号 / 删一件、刀号重号 / 跳号 / 认不出、函数表行少空格 / ASCII 连字符 / 列两次、删光函数表），"
+              "各跑对账 / `--write` / 写后对账：现行对账 rc=1 且 ✗ 行对得上、`--write` 不写盘、写后仍 rc=1；硬校验退回 cs23 前（删两处调用）"
+              "同一变异 `--write` 后 rc=0（漏认、清单跟着少、gen 自己绿）；第四刀删表（M5t）现行红、`NO_TABLE_OK` 放行退回 rc=0，"
+              "N1 / N2 第四、第五刀补的表漏列一支 / 行段写错各一行红；对照 C0–C2。"
+              "二、check_decision_refs 输出确定序：PYTHONHASHSEED=0/1/2/3/42 各跑一次，D0 基线 / D1 清单前 8 处 Main.gd 号 +1 不提交 / "
+              "D2 `--since ccb1d57` stdout 须逐字节同；X1 / X2 同 D1 / D2 但两处排序（Lines.flush、since 配对）都去掉，须出 ≥2 种",
+     "green": "`✓ C0 …` 起 34 格逐格 `✓ <编号> …：对账 rc=N，--write rc=N，写后对账 rc=N` + 二节 5 格 `✓ <编号> …：rc=N，⚠ / ✗ k 条，stdout 1 种`（X1 / X2 `5 种`）"
+              " + 「三、空转对照」15 条 `✓ … 旧口径 … rc=0 → … 现行 …` + `结果：全部通过`",
+     "red": "`✗ <编号> …：期望对账 rc=a / 写后 rc=b，实得 …` 附 `缺 ✗ …` / `多 ✗ …` / `--write 判红却写了盘`；"
+            "`✗ D<k> …：期望 rc=a、逐字节同，实得 … stdout n 种`；`变异没落上` / `⚠ / ✗ 行只有 k 条` = 台账 / 清单 / 源码改了、这支变异该跟着改；"
+            "空转对照 `应 0 → 1` / `应 否 → 是`；`结果：N 项问题`；无 git / 建不了 worktree 退 2"},
     {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/legacy/verify_narrative.py",
      "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
     {"id": "p7_smoke", "tier": "no", "kind": "godot", "file": "tools/legacy/p7_smoke.gd",
@@ -286,7 +305,7 @@ SUBCHECKS = [
                "台账写了逐支行段的逐支对账；台账函数表列了的函数现 Main 须仍一行转发到本件（lane cs18），反过来那节有函数表的、现 Main 一行转发到本件的每支都须列在表里（lane cs22，有表就须列全）。"
                "另加台账格式硬校验（lane cs23 / docs/Main拆解台账.md 头注；台账写坏时原先这些形状被正则静默漏掉、重算跟着少一件 / 少一支、--write 照写、gen 自己绿）："
                "① 标题以「第…刀」开头却不合节标题正则的行；②「已拆（前三刀…）」那段里的 `X.gd` 没按「`X.gd`（lane，…」写，或认出来的不是 3 件；③ 刀序（第四节起逐刀 +1，重号 / 跳号 / 认不出的刀号）；"
-               "④ 像函数表行（竖线起头、反引号里 `名字(`）却不合写法、行段写成 ASCII 连字符 / 写错、同一节同一支列两次；⑤ 拆刀节没有函数表（第四、第五刀登记在 `NO_TABLE_OK` 放行）。有任一条时 `--write` 也判红、不写盘。"
+               "④ 像函数表行（竖线起头、反引号里 `名字(`）却不合写法、行段写成 ASCII 连字符 / 写错、同一节同一支列两次；⑤ 拆刀节没有函数表（lane cs25 起无例外：第四、第五刀补了表、删了 `NO_TABLE_OK` 放行）。有任一条时 `--write` 也判红、不写盘；①–⑤ 的变异对照见 ledger_refs_mutants（lane cs25）。"
                "浅克隆取不到拆出 commit 父版时那一行报 `⚠ … 未验`、沿用清单原值，不判红。"
                "commit 列的 `-`：只在 HEAD 就是拆出 commit 时照认（lane auditfix1），HEAD 往前走了对账即红、`--write` 补成哈希",
      "fail": "`✗ --write：有问题，tools/main_splits.txt 未改动` + 各条 `✗`（台账登记的拆出件不存在、拆出件有 static func 没有 Main 转发、"

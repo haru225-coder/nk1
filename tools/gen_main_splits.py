@@ -19,7 +19,7 @@ main_splits.txt 是 Main.gd 拆出件的唯一清单：check_symbols（一之零
   · 台账那节函数表（「| `_fn(…)` |」行，写没写行段都算）列了的函数，现 Main 必须仍一行转发到本件，否则判红
     （lane cs18：挪回 Main 再 --write，拆出函数 / 行范围两栏跟着缩、清单照样逐字节一致，不查这条就一路全绿）；
     反过来，那节有函数表的，现 Main 一行转发到本件的每支也都得列在表里，漏列即判红（lane cs22：有表就须列全）。
-    没有函数表的节（前三刀、第四 / 五刀）两个方向都不查
+    前三刀没有自己的节，两个方向都不查；第四刀起每节都须有表（⑤）
 
 台账格式硬校验（lane cs23：台账写坏了，原先那一刀 / 那一行被正则漏掉，重算跟着少一件 / 少一支，--write 照写、gen 自己绿，
 只靠 check_symbols 下游兜，单独跑本脚本的人看不到）。下面几种形状本脚本直接判红，--write 也不写盘：
@@ -29,7 +29,10 @@ main_splits.txt 是 Main.gd 拆出件的唯一清单：check_symbols（一之零
   ③ 刀序：节标题「第N刀」的 N（汉字或数字）须从第四刀起逐刀 +1，重号 / 跳号 / 认不出的数都红；
   ④ 拆刀节里像函数表行的（「| `名字(`」起头）却不合函数表行写法，或第二格以数字起头却不是「a–b」（en dash）行段——
     前者整行漏认（cs18 的「列了却不转发」查不到它），后者行段对账静默跳过；同一节函数表同一支列两次；
-  ⑤ 拆刀节没有函数表（第四、第五刀早于函数表惯例，登记在 NO_TABLE_OK 放行）：没表时 cs18 / cs22 两个方向的对账都不查，整节空转。
+  ⑤ 拆刀节没有函数表：没表时 cs18 / cs22 两个方向的对账都不查，整节空转。第四、第五刀早于函数表惯例，原先登记在 NO_TABLE_OK 放行，
+    lane cs25 给两节补了表、删了放行，现无例外。
+
+以上五种的变异对照（现行判红、退回 cs23 前 / 放行退回时 --write 后 rc=0）固化在 tools/ledger_refs_mutants.py（lane cs25）。
 
 git 历史的两条放行（其余一律逐字节比）：
   · 拆出的那个 commit 自己不可能写进自己的哈希：清单里记 `-`、该 commit 版的清单也记 `-`、且 **HEAD 就是这个 commit** 的，照认；
@@ -59,7 +62,6 @@ KNIFE_LIKE = re.compile(r'^#{1,6}[ \t]*第[^（(\n]{1,12}?刀')  # 标题文字�
 LISTED_ROW = re.compile(r'^\| `(_?\w+)\([^`]*\)` \|(?: (\d+)–(\d+))?', re.M)
 FN_ROW_LIKE = re.compile(r'^\|\s*`[A-Za-z_]\w*\(')  # 像函数表行：「| `名字(」起头（引用点表是「| `文件:行`」，不在此列）
 FIRST_KNIFES = 3  # 「已拆（前三刀…）」那段登记的件数；之后的节标题从第四刀起
-NO_TABLE_OK = ("scripts/ui/TavernPage.gd", "scripts/ui/NpcPage.gd")  # 第四 / 第五刀：早于函数表惯例（第六刀起每节有表）
 _CN_DIGIT = {c: i for i, c in enumerate("零一二三四五六七八九")}
 
 
@@ -172,7 +174,7 @@ def _check_ledger_shape(text, problems):
                 problems.append(f"{LEDGER_REL}:{k}（{rel} 那节）函数表把 {row.group(1)} 列了两次"
                                 f"（另一处 :{seen[row.group(1)]}，格式硬校验 ④）")
             seen.setdefault(row.group(1), k)
-        if not seen and rel not in NO_TABLE_OK:
+        if not seen:
             problems.append(f"{LEDGER_REL}:{i}（{rel} 那节）没有函数表（「| `名字(…)` | a–b | …」行），"
                             f"「台账列了却不转发」无从对账（格式硬校验 ⑤）")
 
