@@ -53,13 +53,30 @@ const ENEMY_HULL_BASE := 100.0
 const ENEMY_SCALE_MIN := 0.8
 const ENEMY_SCALE_MAX := 3.0
 ## 开战刷船距离。镜头 zoom 1.5、画布 1280×720 → 可见 853×480，半高 240、半宽 427（09-28 有窗口实量，
-## 探针 verify_crew_fix_battle 打 VIEW_HALF）。刷船距离同时是敌船兜圈半径（PirateShip.orbit_radius，同向兜、半径稳住）：
-## 原 300—420 且兜圈半径不稳、漂到约 600，开局一艘都看不见（P02）。收到 210—235：上限不过半高，兜到哪一头船心都在画内
-## （story_check 按工程画布高与镜头 zoom 实算半高对账），又在接舷距离 140 之外、离本船船身（半长约 160）留得出空。
+## 探针 verify_crew_fix_battle 打 VIEW_HALF）。原 300—420、兜着兜着漂到约 600，开局一艘都看不见（P02）。
+## 收到 210—235：上限不过半高，任何角度刷出船心都在画内（story_check 按工程画布高与镜头 zoom 实算半高对账），
+## 又在接舷距离 140 之外、离本船船身（半长约 160）留得出空。刷出后各船收进下面的兜圈椭圆。
 const COMBAT_SPAWN_DIST_MIN := 210.0
 const COMBAT_SPAWN_DIST_MAX := 235.0
+## 敌船兜圈（PirateShip.orbit_*）：绕本船下方 COMBAT_ORBIT_OFFSET 兜横长椭圆，竖半轴 COMBAT_ORBIT_R、横半轴 ×(1+COMBAT_ORBIT_ELL)。
+## 稳态椭圆横 ±236、竖 −170…+230：上沿压不到顶匾（80 px ≈ 世界 53，顶匾下沿在本船上方 187），下沿不出画（半高 240）。
+## 09-28 初修绕本船兜正圆、半径 210—235：船身永远正对本船，受伤比修前多七成六，小艍遇三艘哨船首轮 3.7 s 必沉（09-29 复核）。
+## 偏心横长椭圆让船头时偏时正，准头回到修前（story_check 对修前口径同种子对账：本船不动 30 s 受伤均值比在上下三成内）。
+## 各数 09-29 按 headless --fixed-fps 60、每组 20 局实测挑定，航速、转向、开炮判定、弹数、散布一概不动。
+const COMBAT_ORBIT_R := 200.0
+const COMBAT_ORBIT_ELL := 0.18
+const COMBAT_ORBIT_OFFSET := Vector2(0.0, 30.0)
+## 开局先兜大横圈（竖半轴 180、横 ×1.8）：弯太急船转不过来、首轮炮打得散，首轮齐射后半秒起用 2.5 s 收成稳态椭圆。
+## 修前开局刷在 300—420 外边转边打，首轮也散。本船不动时三艘哨船首轮吃满 120（小艍耐久）的局数：修前 200 局 9 局，
+## 收拢后 200 局 0—1 局（story_check 同种子对账：不多于修前）。三艘 × 2 门 × 25 = 150 > 120，「首轮必打不沉」要错开首轮开炮，
+## 那是改数，待 Snow 定。
+const COMBAT_OPEN_R := 180.0
+const COMBAT_OPEN_ELL := 0.8
+const COMBAT_SETTLE_LEN := 2.5
 ## 镜头内等于已进 800 射程；不延迟会被 9 门齐射秒掉开局小艍
 const COMBAT_FIRE_DELAY := 3.5
+## 开局大横圈收拢的起点：首轮齐射后半秒
+const COMBAT_SETTLE_FROM := COMBAT_FIRE_DELAY + 0.5
 ## 两艘满编 9 门 × 25 伤 = 450，开局 120 耐久一波沉。封顶 2 门：
 ## 第一轮约 100，停着打第二轮才沉，B 来得及按。
 const COMBAT_CANNON_CAP := 2
@@ -488,8 +505,14 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary, sprite_id := "", 
 		var dist := randf_range(COMBAT_SPAWN_DIST_MIN, COMBAT_SPAWN_DIST_MAX)
 		p.position = ship.position + Vector2(cos(angle), sin(angle)) * dist
 		p.target = ship
-		# 各守一个侧舷位：同向兜圈、半径稳在刷船距离（PirateShip.orbit_radius），起手就顺着切向，不原地掉头兜出画外
-		p.orbit_radius = dist
+		# 同一战各船走同一条兜圈椭圆、同向（PirateShip.orbit_*）；起手顺着绕本船的切向，不原地掉头兜出画外
+		p.orbit_radius = COMBAT_ORBIT_R
+		p.orbit_ell = COMBAT_ORBIT_ELL
+		p.orbit_offset = COMBAT_ORBIT_OFFSET
+		p.orbit_radius_start = COMBAT_OPEN_R
+		p.orbit_ell_start = COMBAT_OPEN_ELL
+		p.orbit_settle_from = COMBAT_SETTLE_FROM
+		p.orbit_settle_len = COMBAT_SETTLE_LEN
 		p.orbit_sense = _orbit_sense
 		var tangent := -Vector2(cos(angle), sin(angle)).rotated(-_orbit_sense * PI / 2.0)
 		p.rotation = Vector2.UP.angle_to(tangent)

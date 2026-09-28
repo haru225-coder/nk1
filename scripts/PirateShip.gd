@@ -15,6 +15,8 @@ const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
 const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 
 var fire_timer: float = 0.0
+## 齐射装填（秒）：放一轮后隔这么久才放下一轮（数不动，起名给门禁读：首轮 = COMBAT_FIRE_DELAY 起这一段）
+const FIRE_INTERVAL := 3.0
 
 ## P4-3 齐射弹数：海战由 _spawn_enemy 按 scale 写入，封顶 COMBAT_CANNON_CAP。
 var cannon_count: int = 3
@@ -33,14 +35,34 @@ var crew: int = 20
 var enemy_morale: int = 60
 ## 敌将武力系数；白刃判定输入
 var captain_force: float = 1.0
-## 兜圈半径（WorldMap._spawn_enemy 按刷船距离写入）：600 内绕本船兜圈时把半径稳在这里；0 = 旧法（转到较近的一侧舷）
+## 兜圈（WorldMap._spawn_enemy 写入，数由 WorldMap.COMBAT_ORBIT_* / COMBAT_OPEN_* 定；orbit_radius 为 0 走旧法「转到较近的一侧舷」）：
+## 600 内绕「本船 + orbit_offset」兜一个横长椭圆——竖半轴 orbit_radius、横半轴 ×(1 + orbit_ell)。同一战各船同路线同向，
+## 按刷船角度隔开，彼此追不上。开局先兜 orbit_radius_start / orbit_ell_start 的大横圈，orbit_settle_from 秒起
+## 用 orbit_settle_len 秒收成稳态椭圆。
+## 为什么不绕本船兜正圆：正圆上船头永远正切，船身永远正对本船，每一炮都是正舷，画内这点距离几乎弹弹中
+## （09-29 复核实测受伤比修前多七成六，小艍遇三艘哨船首轮必沉）。偏心横长椭圆让船头时偏时正，准头回到修前；
+## 开局的大横圈船转不过弯、首轮炮打得散，与修前「开局刷在远处、边转边打」同一个节奏。
 var orbit_radius: float = 0.0
-## 兜圈方向（+1 / −1）：同一战各船同向，按刷船角度隔开就彼此追不上
+## 兜圈方向（+1 / −1）：同一战各船同向
 var orbit_sense: float = 1.0
+## 椭圆中心相对本船的偏移（世界坐标；镜头不随船转，即画面方向）
+var orbit_offset: Vector2 = Vector2.ZERO
+## 横半轴比竖半轴多出的比例
+var orbit_ell: float = 0.0
+## 开局大横圈的竖半轴与横向比例；orbit_settle_len 为 0 时不用
+var orbit_radius_start: float = 0.0
+var orbit_ell_start: float = 0.0
+var orbit_settle_from: float = 0.0
+var orbit_settle_len: float = 0.0
+## 开战后已过的游戏时（秒）
+var _orbit_t: float = 0.0
 ## 半径偏差折成向心 / 离心修正的增益：偏出半径的两成即转 24° 左右往回收
 const ORBIT_GAIN := 2.0
+## 敌船都进这一组：分离只看同一海战里的敌船，不必每帧遍历海战场景的全部子节点（炮弹、港口、顶匾……）
+const GROUP := "nk1_enemy_ship"
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	sprite.modulate = Color.WHITE
 	apply_sprite()
 
@@ -56,31 +78,44 @@ func apply_sprite() -> void:
 		_CombatFx.ship_sprite_path(sprite_key(), _CombatFx.SHIP_SPRITE_ENEMY))
 
 func _physics_process(delta: float) -> void:
-	if not is_instance_valid(target): return
-	if hull_hp <= 0: return
+	var aim := _steer(delta)
+	if aim.is_empty():
+		return
+	move_and_slide()
+
+	var speed_ratio = velocity.length() / max_speed
+	wake_particles.emitting = true
+	# 尾迹挂 soft_dot（64 px 柔点）：原先无贴图时 scale 即边长像素（2—6），换贴图按半透明芯径约 28 px 折算
+	wake_particles.scale_amount_max = (2.0 + speed_ratio * 4.0) * DOT_PX_SCALE
+
+	_process_firing(delta, aim[0], aim[1])
+
+
+## 本帧转舵、定航速；返回 [对本船的 angle_diff, 距离] 给开炮判定，睡着 / 沉了 / 被钩住返回 []（这一帧不动、不开炮）。
+## 与 move_and_slide 拆开：门禁同步推演时自己按 delta 挪位置（move_and_slide 在物理帧外改用 process 的 delta）。
+func _steer(delta: float) -> Array:
+	if not is_instance_valid(target): return []
+	if hull_hp <= 0: return []
 	if grappled:
 		velocity = velocity.lerp(Vector2.ZERO, 5.0 * delta) # P4-2 接舷：被钩住后减速停住
-		return
-	
+		return []
+
 	var dist = position.distance_to(target.position)
-	if dist > 2500.0: return # Too far, sleep
-	
+	if dist > 2500.0: return [] # Too far, sleep
+
 	var dir_to_target = (target.position - position).normalized()
 	var ship_dir = Vector2.UP.rotated(rotation)
-	
+
 	var angle_diff = ship_dir.angle_to(dir_to_target)
-	
-	# AI Logic: 
+
+	# AI Logic:
 	# If far, steer towards player
 	# If close, steer to broadside (90 degrees off) to shoot
 	var target_angle_diff = angle_diff
+	_orbit_t += delta
 	if dist < 600.0:
 		if orbit_radius > 0.0:
-			# 各守一个侧舷位：同向兜圈，半径稳在开战刷船距离（镜头里），几艘按刷船角度隔开、彼此追不上。
-			# 旧法「转到较近的那一侧舷」：左右两艘都朝船头兜，汇成一团；兜着兜着半径漂到约 600，出了画（crew 线 09-28 实测）
-			var tangent: Vector2 = dir_to_target.rotated(-orbit_sense * PI / 2.0)
-			var pull := clampf((dist - orbit_radius) / orbit_radius * ORBIT_GAIN, -1.0, 1.0)
-			target_angle_diff = ship_dir.angle_to((tangent + dir_to_target * pull).normalized())
+			target_angle_diff = ship_dir.angle_to(_orbit_heading())
 		else:
 			if angle_diff > 0: target_angle_diff -= PI/2.0
 			else: target_angle_diff += PI/2.0
@@ -92,16 +127,32 @@ func _physics_process(delta: float) -> void:
 		target_angle_diff = ship_dir.angle_to(want)
 
 	rotation += clamp(target_angle_diff, -base_turn_speed*delta, base_turn_speed*delta)
-	
+
 	velocity = ship_dir * max_speed
-	move_and_slide()
-	
-	var speed_ratio = velocity.length() / max_speed
-	wake_particles.emitting = true
-	# 尾迹挂 soft_dot（64 px 柔点）：原先无贴图时 scale 即边长像素（2—6），换贴图按半透明芯径约 28 px 折算
-	wake_particles.scale_amount_max = (2.0 + speed_ratio * 4.0) * DOT_PX_SCALE
-	
-	_process_firing(delta, angle_diff, dist)
+	return [angle_diff, dist]
+
+## 兜圈的想要航向（单位向量）：椭圆切线（按 orbit_sense 取向）加上把船拉回椭圆的向心 / 离心分量。
+## 椭圆以船所在方位角 θ 取极径 r(θ) = ab / √((b·cosθ)² + (a·sinθ)²)，切线取 dP/dθ = r′·(cosθ, sinθ) + r·(−sinθ, cosθ)。
+func _orbit_heading() -> Vector2:
+	var settle := 1.0
+	if orbit_settle_len > 0.0:
+		settle = clampf((_orbit_t - orbit_settle_from) / orbit_settle_len, 0.0, 1.0)
+	var eb := lerpf(orbit_radius_start, orbit_radius, settle) if orbit_settle_len > 0.0 else orbit_radius
+	var ell := lerpf(orbit_ell_start, orbit_ell, settle) if orbit_settle_len > 0.0 else orbit_ell
+	var ea := eb * (1.0 + ell)
+	var to_c: Vector2 = target.position + orbit_offset - position
+	var dc := maxf(to_c.length(), 0.001)
+	var dir_c: Vector2 = to_c / dc
+	var th := (-dir_c).angle()
+	var c := cos(th)
+	var s := sin(th)
+	var den := sqrt(pow(eb * c, 2) + pow(ea * s, 2))
+	var r := ea * eb / den
+	var dr := -ea * eb * (ea * ea - eb * eb) * s * c / pow(den, 3)
+	var tangent: Vector2 = (Vector2(c, s) * dr + Vector2(-s, c) * r).normalized() * orbit_sense
+	var pull := clampf((dc - r) / r * ORBIT_GAIN, -1.0, 1.0)
+	return (tangent + dir_c * pull).normalized()
+
 
 func _process_firing(delta: float, angle_diff: float, dist: float) -> void:
 	fire_timer -= delta
@@ -112,7 +163,7 @@ func _process_firing(delta: float, angle_diff: float, dist: float) -> void:
 	# Check if player is on broadside (approx 90 degrees left or right)
 	var is_broadside = abs(abs(angle_diff) - PI/2.0) < 0.3
 	if is_broadside:
-		fire_timer = 3.0
+		fire_timer = FIRE_INTERVAL
 		# Fire broadside
 		var ship_dir = Vector2.UP.rotated(rotation)
 		var side_dir = Vector2.RIGHT.rotated(rotation)
@@ -161,10 +212,10 @@ const DOT_PX_SCALE := 1.0 / 28.0
 func _separation_push() -> Vector2:
 	var push := Vector2.ZERO
 	var host := get_parent()
-	if host == null:
+	if host == null or not is_inside_tree():
 		return push
-	for n in host.get_children():
-		if n == self or not (n is PirateShip) or n.is_queued_for_deletion():
+	for n in get_tree().get_nodes_in_group(GROUP):
+		if n == self or n.get_parent() != host or n.is_queued_for_deletion():
 			continue
 		var other := n as PirateShip
 		if other.hull_hp <= 0.0:
