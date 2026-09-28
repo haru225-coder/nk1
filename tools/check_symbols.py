@@ -2128,11 +2128,12 @@ else:
     print("  ✗ 牙行仍用系统下拉选船")
     problems.append("牙行仍用系统下拉选船")
 hanjiang_body = _func_body(main_src, "_on_hanjiang_escape")
-if "旧避风澳・景炎二年三月" in hanjiang_body and "景炎三年" not in hanjiang_body:
-    print("  ✓ 岸上的根结算写景炎二年（1277 卡、ending_root 过场同年）")
+# 标题只写到年、不写月份：09-28 Snow 定 B 方案（卡挪到九十月）时一并定的；合并时别冲回「景炎二年三月」
+if '"旧避风澳・景炎二年"' in hanjiang_body and "景炎三年" not in hanjiang_body:
+    print("  ✓ 岸上的根结算写景炎二年、不写月份（1277 卡、ending_root 过场同年）")
 else:
-    print("  ✗ 岸上的根结算年号不是景炎二年")
-    problems.append("岸上的根结算年号错")
+    print("  ✗ 岸上的根结算标题须为『旧避风澳・景炎二年』（只写年、不写月份），且不得写景炎三年")
+    problems.append("岸上的根结算标题须为『旧避风澳・景炎二年』（只写年、不写月份）")
 if '买%d' not in main_src and '卖%d' not in main_src and "只购得 %d。" in main_src and "钱（" not in main_src:
     print("  ✓ 牙行小钮与买卖日志留出字距")
 else:

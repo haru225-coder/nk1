@@ -510,6 +510,7 @@ L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
     "tools/check_assets.py": ({"raw"}, "gate", "立绘资源存在性"),
     "tools/check_data_family.py": ({"raw"}, "gate", "data/ 同族结构门禁：普查 data/*.json 的 id 表 / 自引用（characters.json 是候选、登 not_family），变异自证改它验不误红；不上屏"),
     "tools/godot_smoke.gd": ({"raw", "api"}, "gate", "冒烟：阵营表、见面页立绘"),
+    "tools/godot_story_check.gd": ({"api"}, "gate", "剧情门禁：生卒一行（主角卒年只在「忠肃」写、卒年到次年才写），实建人物志 / 立绘面板 / 见面页看上屏字"),
 }
 _L1B_KIND_RE = {
     "raw": re.compile(r"characters\.json|\bCHARACTERS_PATH\b|\bcharacters_data\b"),
@@ -1294,6 +1295,14 @@ for title, cid in cutscenes_all.get("endings", {}).items():
               f"结局「{title}」题头「{hd['text']}」（{hd['ce']} 年 {_mo(hd['months'])}）落在触发闸 "
               f"{lo}{'' if hi == lo else '+'} 年 {_mo(months)}之外")
 check(mirrored >= 5, f"结局年号只对照到 {mirrored} 个，疑似解析失败")
+# 「岸上的根」题头只写到年：卡闸跨九、十两月，题头写死哪一月都会和落款错月。
+# 这是 09-28 Snow 定 B 方案时一并定的；云端 beaa9d0 曾写死「景炎二年三月」，合并时别冲回去。
+_root_hd = parse_era_date(notice_head.get("岸上的根", ""))
+_root_gate = ENDING_GATE.get("岸上的根")
+if _root_hd is not None and _root_gate is not None and len(_root_gate[2]) >= 2:
+    check(len(_root_hd["months"]) == 12,
+          f"结局「岸上的根」题头「{notice_head.get('岸上的根')}」写了月份，而卡闸跨 {_mo(_root_gate[2])}——"
+          f"只写年号年（09-28 Snow 定）")
 
 print("=" * 68)
 if FAIL:

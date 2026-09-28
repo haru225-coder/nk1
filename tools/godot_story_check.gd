@@ -153,8 +153,12 @@ func _initialize() -> void:
 	_check(Eco.inspection_factor("quanzhou") == 1.0, "1255 缉私倍率 1.0")
 	Cal.from_dict({"year": 1277, "month": 2, "day": 1})
 	_check(Eco.war_status("xinghua") == "loyal", "1277-02 陈瓒复兴化")
-	Cal.from_dict({"year": 1277, "month": 4, "day": 1})
-	_check(Eco.war_status("xinghua") == "fallen", "1277-04 兴化再陷")
+	Cal.from_dict({"year": 1277, "month": 5, "day": 1})
+	_check(Eco.war_status("xinghua") == "loyal", "1277-05 兴化仍在宋方手里（史实：三月至十月）")
+	Cal.from_dict({"year": 1277, "month": 9, "day": 1})
+	_check(Eco.war_status("xinghua") == "besieged", "1277-09 唆都再围兴化")
+	Cal.from_dict({"year": 1277, "month": 11, "day": 1})
+	_check(Eco.war_status("xinghua") == "fallen", "1277-11 兴化再陷（十月城破，月初翻牌）")
 
 	# 月初战况通告：推进跨过 1276-12 应有泉州降元通告，且 grain 行情被抬
 	Cal.from_dict({"year": 1276, "month": 11, "day": 28})
@@ -310,7 +314,8 @@ func _initialize() -> void:
 	_check(GS.ended_text == "正文若干", "存档 round-trip 保留结局正文")
 
 	# ── 结局可发现性：每条线在窗口前都有预告 ──
-	var hints := {"n_1276_10_xinghua_muster": "scholar", "n_1277_01_chenzan_raises": "merchant", "n_1278_12_yashan": "merchant"}
+	# 陈瓒两条预告不设 only：丙线的主角是乡土身份，only=merchant 时乡土线收不到
+	var hints := {"n_1276_10_xinghua_muster": "scholar", "n_1277_01_chenzan_raises": "", "n_1277_07_xinghua_again": "", "n_1278_12_yashan": "merchant"}
 	for hid in hints:
 		var hn: Dictionary = GM.get_news_by_id(hid)
 		_check(not hn.is_empty(), "预告新闻 %s 存在" % hid)
@@ -318,6 +323,7 @@ func _initialize() -> void:
 	# 预告必须早于对应窗口
 	_check(str(GM.get_news_by_id("n_1276_10_xinghua_muster").get("date", "")) < "1276-11", "守城预告早于 1276-11 围城")
 	_check(str(GM.get_news_by_id("n_1277_01_chenzan_raises").get("date", "")) < "1277-02", "陈瓒预告早于 1277-02 复城")
+	_check(str(GM.get_news_by_id("n_1277_07_xinghua_again").get("date", "")) < "1277-09", "再围预告早于 1277-09 涵江窗口")
 	_check(str(GM.get_news_by_id("n_1278_12_yashan").get("date", "")) < "1279-01", "崖山预告早于 1279 正月")
 
 	# ── 守城粮尽口径与卡面一致 ──
@@ -369,9 +375,9 @@ func _initialize() -> void:
 	GS.set_flag("siege_fought")
 	_check(GS.has_flag("siege_fought"), "打过囊山即留痕，未归判据可排除")
 
-	# ── 「未归」不得被陈瓒复城的两个月钻空子 ──
-	# 兴化 war 表：1277-02 loyal / 1277-04 fallen。若判据只看当前 war_status，
-	# 士人线玩家在 1277-02、03 入港就躲过了结局。
+	# ── 「未归」不得被陈瓒复城的那几个月钻空子 ──
+	# 兴化 war 表：1277-02 loyal / 1277-09 besieged / 1277-11 fallen。若判据只看当前 war_status，
+	# 士人线玩家在 1277-02 至 08 复城期间入港就躲过了结局。
 	Cal.from_dict({"year": 1277, "month": 2, "day": 10})
 	_check(Eco.war_status("xinghua") == "loyal", "1277-02 兴化确实回 loyal（复城）")
 	var past_fall: bool = (Cal.year > 1276) or (Cal.year == 1276 and Cal.month >= 12)
@@ -547,8 +553,22 @@ func _route_check() -> void:
 	Cal.from_dict({"year": 1277, "month": 2, "day": 10})
 	GS.last_port = "xinghua"
 	main.load_scene("xinghua")
-	_check(Eco.war_status("xinghua") == "loyal", "1277-02 兴化复城（涵江卡前提）")
-	_check("special_hanjiang_escape" in main.shore_hand, "1277-02 兴化岸上有涵江海口卡（名单 %s）" % [main.shore_hand])
+	_check(not ("special_hanjiang_escape" in main.shore_hand), "1277-02 复城之初兴化岸上没有涵江卡（名单 %s）" % [main.shore_hand])
+	Cal.from_dict({"year": 1277, "month": 9, "day": 10})
+	main.load_scene("xinghua")
+	_check(Eco.war_status("xinghua") == "besieged", "1277-09 唆都再围（涵江卡前提）")
+	_check("special_hanjiang_escape" in main.shore_hand, "1277-09 兴化岸上有涵江海口卡（名单 %s）" % [main.shore_hand])
+	# S3 不得误触发：1277 秋再围不是陈文龙的城。没改名的玩家在兴化候过 1277-11 再陷，不得冒出城防记录或城破结算
+	Cal.from_dict({"year": 1277, "month": 10, "day": 25})
+	main.load_scene("xinghua")
+	var waited_root := 0
+	while Eco.war_status("xinghua") == "besieged" and waited_root < 45:
+		main._on_shore_wait()
+		waited_root += 1
+	_check(Eco.war_status("xinghua") == "fallen" and not GS.is_ended() and not GS.siege_open(),
+		"没改名的玩家候过 1277 再围（候 %d 日到 %s）不冒城防、不结算（结局「%s」）" % [waited_root, Cal.get_date_string(), GS.ended])
+	Cal.from_dict({"year": 1277, "month": 9, "day": 10})
+	main.load_scene("xinghua")
 	# 涵江出海：结算标题的年号跟出海后的日历走、与终局落款同年（原先硬写「景炎三年三月」，卡却只在景炎二年出现，门禁一直绿）
 	var fleet: Node = root.get_node("Fleet")
 	fleet.water = maxi(fleet.water, 999)
@@ -558,6 +578,9 @@ func _route_check() -> void:
 	var sheet_head := _find_label_text(main.get("_chapter_host"), "旧避风澳・")
 	_check(era_year == "景炎二年" and sheet_head.find("旧避风澳・" + era_year) >= 0 and GS.ended_at.begins_with(era_year),
 		"涵江出海结算标题与终局落款同为景炎二年（标题「%s」／落款「%s」）" % [sheet_head, GS.ended_at])
+	# 标题只写到年：卡在九、十两月都开，写死哪一月都会和落款错月（09-28 Snow 定 B 方案时一并定的，合并时别冲回「三月」）
+	_check(sheet_head.ends_with("旧避风澳・" + era_year),
+		"涵江出海结算标题不写月份（标题「%s」／落款「%s」）" % [sheet_head, GS.ended_at])
 	main._confirm_chapter_sheet()
 	# 守城页走岸带：五张 siege_* 卡全上岸，尼寺不占门，动作行无「看风」
 	GS.from_dict({})
@@ -577,6 +600,68 @@ func _route_check() -> void:
 			if b is Button and (b as Button).text == "看风":
 				siege_sail = true
 	_check(not siege_sail, "围城中动作行没有「看风」")
+	# 1277 秋唆都再围时，陈文龙的守城页不得重开（城防没了结的旧档也一样）
+	Cal.from_dict({"year": 1277, "month": 9, "day": 3})
+	main.load_scene("xinghua")
+	_check(not ("siege_muster" in main.shore_hand), "1277-09 再围不重开 1276 的守城页（名单 %s）" % [main.shore_hand])
+	# S3：城防没了结的旧档，日历已过首守城破时点 → 进港即按城破结算，不当作 1277 的再围、也不回寻常港页接着跑商
+	_check(GS.ended == "忠肃" and not GS.siege_open(),
+		"城防没了结的旧档 1277-09 进兴化 → 按首守城破结算「忠肃」（结局「%s」）" % GS.ended)
+	_close_dialogs(main)
+	# S3：守城页「再候一日」候过首守城破时点（兴化战况表第一段 besieged 的尽头，不写死月份），城防还开着 → 走城破结算
+	var fall_ym: String = main._first_siege_fall_ym()
+	_check(fall_ym.begins_with("1276-"),
+		"首守城破时点取战况表第一段 besieged 的尽头、落在陈文龙守城那一年（%s），不取 1277 秋再围" % fall_ym)
+	GS.from_dict({})
+	GS.set_flag("renamed_wenlong")
+	GS.identity = "scholar"
+	Cal.from_dict({"year": 1276, "month": 11, "day": 3})
+	GS.last_port = "xinghua"
+	main.load_scene("xinghua")
+	_check(GS.siege_open() and main._shore_mode == "siege", "1276-11 进兴化开守城页（页型 %s）" % main._shore_mode)
+	main._on_shore_wait()
+	_check(not GS.is_ended() and main._shore_mode == "siege", "围城中候一日仍是守城页、不结算（%s）" % Cal.get_date_string())
+	var waited_siege := 1
+	while not GS.is_ended() and Eco.war_status("xinghua") == "besieged" and waited_siege < 45:
+		main._on_shore_wait()
+		waited_siege += 1
+	var now_ym := "%04d-%02d" % [Cal.year, Cal.month]
+	var wait_sail := false
+	var wa: Node = main._shore_band().get_node_or_null("ShoreActions")
+	if wa != null:
+		for b in wa.get_children():
+			if b is Button and (b as Button).text == "看风":
+				wait_sail = true
+	_check(GS.ended == "忠肃" and not GS.siege_open() and now_ym >= fall_ym and not wait_sail,
+		"守城页候 %d 日到 %s（城破时点 %s）→ 按城破结算「%s」，不回寻常港页、没有「看风」" % [waited_siege, Cal.get_date_string(), fall_ym, GS.ended])
+	_close_dialogs(main)
+	_life_line_check(main)
+	# S4：玉湖陈宅「族叔陈瓒愿入船股」——陈瓒死于兴化再陷（战况表第二段 besieged 的尽头），死后不再出现
+	var zan_falls: Array = main._xinghua_fall_yms()
+	_check(zan_falls.size() >= 2, "兴化战况表有首守城破与再陷两个城破时点（%s）" % [zan_falls])
+	# 月份从战况表推，不写死：起股那年、首守城破当月（那是陈文龙的城）、再陷前一月该有；再陷当月、次年、1285 该没有
+	var zan_cases: Array = [[main.CHEN_ZAN_FROM_YEAR, 6, true], [1285, 5, false]]
+	if zan_falls.size() >= 2:
+		var fp: PackedStringArray = str(zan_falls[0]).split("-")
+		zan_cases.append([int(fp[0]), int(fp[1]), true])
+		var zp: PackedStringArray = str(zan_falls[1]).split("-")
+		var zy := int(zp[0])
+		var zm := int(zp[1])
+		zan_cases.append([zy if zm > 1 else zy - 1, zm - 1 if zm > 1 else 12, true])
+		zan_cases.append([zy, zm, false])
+		zan_cases.append([zy + 1, 3, false])
+	for zc in zan_cases:
+		GS.from_dict({})
+		GS.identity = "hometown"
+		GS.fame = 40
+		Cal.from_dict({"year": zc[0], "month": zc[1], "day": 5})
+		main.load_scene("xinghua_residence")
+		var zan_btn := false
+		for zb in main.choices_container.get_children():
+			if zb is Button and (zb as Button).text.find("陈瓒愿入船股") >= 0:
+				zan_btn = true
+		_check(zan_btn == bool(zc[2]),
+			"玉湖陈宅 %d-%02d%s「陈瓒愿入船股」（再陷 %s）" % [zc[0], zc[1], "有" if zc[2] else "没有", zan_falls[1] if zan_falls.size() >= 2 else "?"])
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
@@ -611,6 +696,79 @@ func _close_dialogs(main: Node) -> void:
 		if c is AcceptDialog:
 			c.hide()
 			c.free()
+
+
+## 生卒一行：卒年到次年才写（#11）；主角只在「忠肃」这条世界线写卒年（查漏 §四.B.8）。
+## 人物志详页、见面页人物栏、立绘面板三处都走 CharacterArt.life_line，逐处实建控件看上屏字。
+func _life_line_check(main: Node) -> void:
+	var Art = load("res://scripts/ui/CharacterArt.gd")
+	var pc: Dictionary = GM.get_character("chen_wenlong")
+	var pc_born := str(int(pc.get("born", 0)))
+	var pc_died := str(int(pc.get("died", 0)))
+	_check(pc_born != "0" and pc_died != "0", "主角原稿有生卒（%s—%s），下面才测得出卒年藏没藏" % [pc_born, pc_died])
+	# [身份, 改名文龙, 年, 月, 结局, 该不该写卒年]
+	var cases := [
+		["merchant", false, 1278, 3, "", false],
+		["hometown", false, 1277, 10, "岸上的根", false],
+		["merchant", false, 1279, 2, "海上宋鬼", false],
+		["merchant", false, 1285, 5, "纲首", false],
+		["merchant", false, 1285, 5, "泉州蒲氏的船", false],
+		["scholar", true, 1277, 1, "未归", false],
+		["scholar", true, 1276, 12, "忠肃", true],
+	]
+	for cs in cases:
+		GS.from_dict({})
+		GS.identity = cs[0]
+		if cs[1]:
+			GS.set_flag("renamed_wenlong")
+		Cal.from_dict({"year": cs[2], "month": cs[3], "day": 5})
+		if str(cs[4]) != "":
+			GS.finish(cs[4], "正文")
+		var ll: String = Art.life_line(pc)
+		_check((ll.find(pc_died) >= 0) == bool(cs[5]),
+			"主角生卒「%s」（%s・%d-%02d・结局「%s」）%s" % [ll, cs[0], cs[2], cs[3], cs[4], "写卒年" if cs[5] else "不写卒年"])
+	# 三处上屏：活着的世界线（海商 1278，未了结）与「忠肃」各看一遍
+	var cp_scr = load("res://scripts/chars/CharPortraitPanel.gd")
+	var cx_scr = load("res://scripts/ui/CharacterCodex.gd")
+	for dead in [false, true]:
+		GS.from_dict({})
+		if dead:
+			GS.identity = "scholar"
+			GS.set_flag("renamed_wenlong")
+			Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+			GS.finish("忠肃", "正文")
+		else:
+			GS.identity = "merchant"
+			Cal.from_dict({"year": 1278, "month": 3, "day": 5})
+		var tag := "忠肃" if dead else "海商 1278 未了结"
+		var cx: Control = cx_scr.new()
+		root.add_child(cx)
+		cx.call("begin", "chen_wenlong")
+		var t_codex := _find_label_text(cx, pc_born)
+		var pp: Node = cp_scr.new()
+		root.add_child(pp)
+		pp.call("show_character", pc)
+		var t_panel := _find_label_text(pp, pc_born)
+		main._fill_npc_profile(pc)
+		var t_npc := _find_label_text(main.get("_npc_profile"), pc_born)
+		for pair in [["人物志", t_codex], ["立绘面板", t_panel], ["见面页", t_npc]]:
+			var t: String = pair[1]
+			_check(t != "" and (t.find(pc_died) >= 0) == dead,
+				"%s主角生卒（%s）%s卒年：「%s」" % [pair[0], tag, "写" if dead else "不写", t])
+		cx.queue_free()
+		pp.queue_free()
+	# #11 卒年到次年才写：陈瓒卒于 1277（冬），1277 年里不写，1278 年写
+	var cz: Dictionary = GM.get_character("chen_zan")
+	var cz_died := int(cz.get("died", 0))
+	_check(cz_died > 0, "陈瓒原稿有卒年（%d）" % cz_died)
+	GS.from_dict({})
+	Cal.from_dict({"year": cz_died, "month": 11, "day": 5})
+	var cz_same: String = Art.life_line(cz)
+	Cal.from_dict({"year": cz_died + 1, "month": 1, "day": 1})
+	var cz_next: String = Art.life_line(cz)
+	_check(cz_same.find(str(cz_died)) < 0 and cz_next.find(str(cz_died)) >= 0,
+		"卒年到次年才写：陈瓒 %d 年里「%s」，%d 年正月「%s」" % [cz_died, cz_same, cz_died + 1, cz_next])
+	GS.from_dict({})
 
 
 ## 在节点树里找第一个含 needle 的 Label 文本（册页标题等）；找不到返回空串

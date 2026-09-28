@@ -1986,7 +1986,7 @@ func _setup_residence_chen(port_id: String) -> void:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.add_theme_color_override("font_color", Color(0.65, 0.9, 0.7))
 		choices_container.add_child(l)
-	elif Calendar.year >= CHEN_ZAN_FROM_YEAR:
+	elif Calendar.year >= CHEN_ZAN_FROM_YEAR and _chen_zan_alive():
 		var b := Button.new()
 		if GameState.fame >= CHEN_ZAN_MIN_FAME:
 			b.text = "族叔陈瓒愿入船股一分（得 %d 钱，乡土 +5）" % CHEN_ZAN_STAKE
@@ -2773,6 +2773,10 @@ func _on_shore_wait() -> void:
 	GameState.shore_salt += 1
 	GameManager.advance_days(1)
 	log_msg("在岸上又候了一日，门又换了几处。")
+	# 守城页候过城破时点：按城破结算，不退回寻常岸带
+	if _settle_overdue_siege():
+		update_status_panel()
+		return
 	# 按页型重排（守城页候一日仍是守城页，不会退回寻常岸带多出「看风」）
 	_build_shore()
 	update_status_panel()
@@ -2840,6 +2844,9 @@ func _on_load_slot(slot: int) -> void:
 ## 只有 ports.json 里登记的港口算数——剧情场景不是港口。
 func _on_enter_port(port_id: String) -> void:
 	if GameManager.get_port_by_id(port_id).is_empty():
+		return
+	# 城防没了结的旧档过了城破时点：先按城破结算（不然「未归」见城防开着会跳过，陈文龙接着跑商）
+	if _settle_overdue_siege():
 		return
 	if _check_absent_from_xinghua():
 		return
@@ -3261,8 +3268,8 @@ func _check_absent_from_xinghua() -> bool:
 		return false
 	if GameState.siege_open() or GameState.has_flag("siege_fought"):
 		return false
-	# 按日期判，不按当前战况：1277-02/03 陈瓒复城时兴化会回 loyal，
-	# 若看当前战况，士人线玩家在那两个月入港就躲过了这个结局。城破发生过就是发生过。
+	# 按日期判，不按当前战况：1277-02 至 08 陈瓒复城时兴化会回 loyal（09 起唆都再围），
+	# 若看当前战况，士人线玩家在那几个月入港就躲过了这个结局。城破发生过就是发生过。
 	if not (Calendar.year > 1276 or (Calendar.year == 1276 and Calendar.month >= 12)):
 		return false
 
@@ -3270,7 +3277,7 @@ func _check_absent_from_xinghua() -> bool:
 		"未归", "兴化・景炎元年十二月",
 		"消息是在别处听到的。
 
-兴化城破了。城中兵不满千，守了四十天。城头上挂过一幅白布，八个字，来往的人都说见过。
+兴化城破了。城中兵不满千，守了一个多月。城头上挂过一幅白布，八个字，来往的人都说见过。
 部将林华出去侦敌，回来时后面跟着一万人。通判曹澄孙开的东门。
 
 母亲黄氏和幼子璥被扣在福州一座尼寺里。有人说，只要城里那个人肯出来，当天就放。
@@ -3400,8 +3407,8 @@ func _on_hanjiang_escape() -> void:
 	var stake_line := "陈瓒没有上船。他说他姓陈，在这里出生，就死在这里。" if GameState.has_flag("chen_zan_stake") else "陈瓒没有上船。"
 	_show_notice_dialog(
 		"岸上的根",
-		"旧避风澳・景炎二年三月",
-		"四条船。族里能走的都在船上，老夫人也在，她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经进城了。海上没有人追。你看水色。北礁可泊。二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
+		"旧避风澳・景炎二年",
+		"四条船。族里能走的都在船上，老夫人也在，她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经围了城。海上没有人追。你看水色。北礁可泊。二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
 			"子龙", stake_line, "子龙",
 		],
 		"岸上的根"
@@ -3509,7 +3516,7 @@ func _on_yashan() -> void:
 	scene_title.text = "崖山外海"
 	var known_here := GameState.has_flag("sided_zhang")
 	body_text.text = "祥兴二年二月。张世杰的船连成一片，船和船之间用铁索。
-陈瓒的船不在——他回兴化了，听说起了兵，要把兴化夺回来。
+陈瓒的船不在。前年兴化再破，他没有出城。
 "
 	if known_here:
 		body_text.text += "书吏翻册子翻到一半停住了：「泉州借船的那位。少保记着。」
@@ -3796,9 +3803,56 @@ func _siege_active() -> bool:
 		return false
 	if not GameState.has_flag("renamed_wenlong"):
 		return false
+	# 陈文龙守的是 1276 冬那一次；1277 秋唆都再围是陈瓒的城
+	if Calendar.year != 1276:
+		return false
 	if Economy.war_status("xinghua") != "besieged":
 		return false
 	GameState.siege_begin()
+	return true
+
+
+## 兴化战况表里每段 besieged 结束、转成别的战况的那个月（"YYYY-MM"），按时间排。
+## 数据现为 [1276-12 首守城破, 1277-11 唆都再陷]。
+func _xinghua_fall_yms() -> Array:
+	var war: Dictionary = GameManager.get_port_by_id("xinghua").get("war", {})
+	var keys: Array = war.keys()
+	keys.sort()
+	var out := []
+	var in_siege := false
+	for ym in keys:
+		if str(war[ym]) == "besieged":
+			in_siege = true
+		elif in_siege:
+			out.append(str(ym))
+			in_siege = false
+	return out
+
+
+## 兴化首守的城破时点：第一段 besieged 的尽头。
+## 只认第一段——1277 秋唆都再围是第二段 besieged，那是陈瓒的城，不是陈文龙的。表里没有就返回 ""。
+func _first_siege_fall_ym() -> String:
+	var falls := _xinghua_fall_yms()
+	return str(falls[0]) if not falls.is_empty() else ""
+
+
+## 陈瓒还在不在：他死于兴化再陷（唆都回师来攻，城破被执车裂），即第二段 besieged 的尽头。表里没有再陷就不设上限。
+func _chen_zan_alive() -> bool:
+	var falls := _xinghua_fall_yms()
+	if falls.size() < 2:
+		return true
+	return "%04d-%02d" % [Calendar.year, Calendar.month] < str(falls[1])
+
+
+## 城防记录还开着、日历却已过首守城破时点（守城页「再候一日」候过去，或这样留下的旧档）：
+## 走城破结算，不许回寻常港页接着跑商、躲掉结局。结算了返回 true。
+func _settle_overdue_siege() -> bool:
+	if GameState.is_ended() or not GameState.siege_open():
+		return false
+	var fall := _first_siege_fall_ym()
+	if fall == "" or "%04d-%02d" % [Calendar.year, Calendar.month] < fall:
+		return false
+	_siege_fall("援绝")
 	return true
 
 
@@ -4157,10 +4211,10 @@ func _siege_repair_wall() -> void:
 
 func _special_cards() -> Array:
 	var out := []
-	# 涵江海口 → 旧避风澳：1277 年二三月陈瓒复兴化的那四十天，且第一章复核过旧泊地
+	# 涵江海口 → 旧避风澳：1277 年九十月唆都再围兴化（福建通志「九月來攻……逾月」城破），且第一章复核过旧泊地
 	if current_scene_id in ["xinghua", "xinghua_harbor"] \
-			and Calendar.year == 1277 and Calendar.month in [2, 3] \
-			and Economy.war_status("xinghua") == "loyal" \
+			and Calendar.year == 1277 and Calendar.month in [9, 10] \
+			and Economy.war_status("xinghua") == "besieged" \
 			and not GameState.has_flag("renamed_wenlong") \
 			and GameState.has_found("nameless_shelter_bay") \
 			and not GameState.has_flag("ending_root_sea"):

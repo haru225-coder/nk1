@@ -17,6 +17,10 @@ const TIER_ORDER := ["protagonist", "major", "crew", "minor", "historical"]
 const TIER_NAME := {
 	"protagonist": "主角", "major": "要人", "crew": "职事", "minor": "市井", "historical": "史实",
 }
+## 主角条目。characters.json 里他的 died 取史实（1277，杭州不食而死），但那只是「忠肃」这一条世界线：
+## 未归（守臣不知所终）、岸上的根、海上宋鬼、纲首、蒲氏的船、各支了结……他都还活着，生卒只写生年。
+const PROTAGONIST_ID := "chen_wenlong"
+const PROTAGONIST_DEATH_ENDINGS := ["忠肃"]
 
 ## 本会话在见面页见过的人 {id: true}。不入存档：读档后靠进度、雇用记录与传闻重新推得。
 static var met: Dictionary = {}
@@ -111,11 +115,16 @@ static func identity_line(ch: Dictionary, with_origin := true) -> String:
 
 
 ## 生卒：「1232—」「1232—1277」；只知一头时写「卒于 1274」「生于 1236」；都不详返回空串。
-## 卒年只在那一年已到（Calendar.year ≥ 卒年）或终局了结后才写——宝祐三年第一次见林阿舶，名下不该写着「卒于 1274」。
+## 卒年到了次年（Calendar.year > 卒年）或终局了结后才写——宝祐三年第一次见林阿舶，名下不该写着「卒于 1274」；
+## 卒年当年也不写：陈瓒死在 1277 冬，正月就写「卒于 1277」是透底；崖山在二月，陆秀夫、张世杰正月不该先写卒年。
+## 这里只管生卒一行；人物志正文按年分段另管（陆、张等人 1279 段的投海、覆舟正月即可见，未在此处理）。
+## 主角另算：只有他确实死了的那条世界线（PROTAGONIST_DEATH_ENDINGS）才写卒年，其余结局他都还活着。
 static func life_line(ch: Dictionary) -> String:
 	var born = ch.get("born")
 	var died = ch.get("died")
-	if died != null and not (GameState.is_ended() or Calendar.year >= int(died)):
+	if died != null and not (GameState.is_ended() or Calendar.year > int(died)):
+		died = null
+	if str(ch.get("id", "")) == PROTAGONIST_ID and not (GameState.ended in PROTAGONIST_DEATH_ENDINGS):
 		died = null
 	if born == null and died == null:
 		return ""
