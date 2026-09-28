@@ -310,7 +310,8 @@ func _initialize() -> void:
 	_check(GS.ended_text == "正文若干", "存档 round-trip 保留结局正文")
 
 	# ── 结局可发现性：每条线在窗口前都有预告 ──
-	var hints := {"n_1276_10_xinghua_muster": "scholar", "n_1277_01_chenzan_raises": "merchant", "n_1278_12_yashan": "merchant"}
+	# 陈瓒预告不设 only：丙线的主角是乡土身份，only=merchant 时乡土线收不到
+	var hints := {"n_1276_10_xinghua_muster": "scholar", "n_1277_01_chenzan_raises": "", "n_1278_12_yashan": "merchant"}
 	for hid in hints:
 		var hn: Dictionary = GM.get_news_by_id(hid)
 		_check(not hn.is_empty(), "预告新闻 %s 存在" % hid)

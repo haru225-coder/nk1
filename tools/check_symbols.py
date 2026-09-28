@@ -2128,7 +2128,7 @@ else:
     print("  ✗ 牙行仍用系统下拉选船")
     problems.append("牙行仍用系统下拉选船")
 hanjiang_body = _func_body(main_src, "_on_hanjiang_escape")
-if "旧避风澳・景炎二年三月" in hanjiang_body and "景炎三年" not in hanjiang_body:
+if '"旧避风澳・景炎二年"' in hanjiang_body and "景炎三年" not in hanjiang_body:
     print("  ✓ 岸上的根结算写景炎二年（1277 卡、ending_root 过场同年）")
 else:
     print("  ✗ 岸上的根结算年号不是景炎二年")

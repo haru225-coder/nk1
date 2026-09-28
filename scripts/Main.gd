@@ -3270,7 +3270,7 @@ func _check_absent_from_xinghua() -> bool:
 		"未归", "兴化・景炎元年十二月",
 		"消息是在别处听到的。
 
-兴化城破了。城中兵不满千，守了四十天。城头上挂过一幅白布，八个字，来往的人都说见过。
+兴化城破了。城中兵不满千，元兵来攻，没有攻下来。城头上挂过一幅白布，八个字，来往的人都说见过。
 部将林华出去侦敌，回来时后面跟着一万人。通判曹澄孙开的东门。
 
 母亲黄氏和幼子璥被扣在福州一座尼寺里。有人说，只要城里那个人肯出来，当天就放。
@@ -3400,7 +3400,7 @@ func _on_hanjiang_escape() -> void:
 	var stake_line := "陈瓒没有上船。他说他姓陈，在这里出生，就死在这里。" if GameState.has_flag("chen_zan_stake") else "陈瓒没有上船。"
 	_show_notice_dialog(
 		"岸上的根",
-		"旧避风澳・景炎二年三月",
+		"旧避风澳・景炎二年",
 		"四条船。族里能走的都在船上，老夫人也在，她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经进城了。海上没有人追。你看水色。北礁可泊。二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
 			"子龙", stake_line, "子龙",
 		],
@@ -3509,7 +3509,7 @@ func _on_yashan() -> void:
 	scene_title.text = "崖山外海"
 	var known_here := GameState.has_flag("sided_zhang")
 	body_text.text = "祥兴二年二月。张世杰的船连成一片，船和船之间用铁索。
-陈瓒的船不在——他回兴化了，听说起了兵，要把兴化夺回来。
+陈瓒的船不在。前年兴化再破，他没有出城。
 "
 	if known_here:
 		body_text.text += "书吏翻册子翻到一半停住了：「泉州借船的那位。少保记着。」
@@ -4157,7 +4157,7 @@ func _siege_repair_wall() -> void:
 
 func _special_cards() -> Array:
 	var out := []
-	# 涵江海口 → 旧避风澳：1277 年二三月陈瓒复兴化的那四十天，且第一章复核过旧泊地
+	# 涵江海口 → 旧避风澳：1277 年二三月陈瓒复兴化之初，且第一章复核过旧泊地
 	if current_scene_id in ["xinghua", "xinghua_harbor"] \
 			and Calendar.year == 1277 and Calendar.month in [2, 3] \
 			and Economy.war_status("xinghua") == "loyal" \
