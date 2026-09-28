@@ -89,51 +89,6 @@ static func on_start_game_pressed(main: Control, next_scene: String) -> void:
 			main.load_scene.bind(next_scene), "序")
 	else:
 		# 四方沙盘中间翻页：底图不再一帧硬切，旧图压在新图上约 0.3 秒淡去；字照 TitleStage 的节奏洇出（新页 present 照常重演）
-		var ghost := _bg_ghost(main)
+		var ghost: TextureRect = main._TITLE_STAGE.crossfade_ghost(main.background)
 		main.load_scene(next_scene)
-		_fade_ghost(main, ghost)
-
-
-## 翻页交叉淡化用的旧底图：照 Main.background 复制一张（同贴图、同拉伸、同活背景材质），压在它正上方、一切页面之下。
-## 过场层不上场（headless、巡检 -s 脚本主循环）时不做，返回 null——门禁与截图不受影响。
-const CROSSFADE_S := 0.3
-
-
-static func _bg_ghost(main: Control) -> TextureRect:
-	var bg: TextureRect = main.background
-	if bg == null or bg.texture == null or not main._CINE.live():
-		return null
-	var ghost := TextureRect.new()
-	ghost.name = "BgCrossfade"
-	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ghost.texture = bg.texture
-	ghost.expand_mode = bg.expand_mode
-	ghost.stretch_mode = bg.stretch_mode
-	ghost.texture_filter = bg.texture_filter
-	ghost.modulate = bg.modulate
-	ghost.self_modulate = bg.self_modulate
-	if bg.material != null:
-		ghost.material = bg.material.duplicate()
-	ghost.anchor_left = bg.anchor_left
-	ghost.anchor_top = bg.anchor_top
-	ghost.anchor_right = bg.anchor_right
-	ghost.anchor_bottom = bg.anchor_bottom
-	ghost.offset_left = bg.offset_left
-	ghost.offset_top = bg.offset_top
-	ghost.offset_right = bg.offset_right
-	ghost.offset_bottom = bg.offset_bottom
-	main.add_child(ghost)
-	main.move_child(ghost, bg.get_index() + 1)
-	return ghost
-
-
-static func _fade_ghost(main: Control, ghost: TextureRect) -> void:
-	if ghost == null or not is_instance_valid(ghost):
-		return
-	# 换页没换图（同一张底图）就不必淡，直接撤
-	if ghost.texture == main.background.texture:
-		ghost.queue_free()
-		return
-	var tw := ghost.create_tween()
-	tw.tween_property(ghost, "modulate:a", 0.0, CROSSFADE_S).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tw.tween_callback(ghost.queue_free)
+		main._TITLE_STAGE.crossfade_out(ghost, main.background)

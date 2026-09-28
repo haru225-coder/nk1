@@ -77,6 +77,49 @@ func replay() -> void:
 		_restart()
 
 
+# ── 四方沙盘翻页：底图交叉淡化 ─────────────────────────────
+## 中间翻页（TitlePage.on_start_game_pressed）原先底图一帧硬切。翻页前照底图复制一张（同贴图、同拉伸、同活背景材质），
+## 压在它正上方、一切页面之下；换页之后淡去，约 0.3 秒。字不管，照本台的节奏洇出。
+## 过场层不上场（headless、-s 巡检主循环）时不做、返回 null——门禁与巡检截图不受影响。
+const CROSSFADE_S := 0.3
+const CROSSFADE_NAME := "BgCrossfade"
+
+
+static func crossfade_ghost(bg: TextureRect) -> TextureRect:
+	if bg == null or bg.texture == null or bg.get_parent() == null or not Cine.live():
+		return null
+	var ghost := TextureRect.new()
+	ghost.name = CROSSFADE_NAME
+	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ghost.texture = bg.texture
+	ghost.expand_mode = bg.expand_mode
+	ghost.stretch_mode = bg.stretch_mode
+	ghost.texture_filter = bg.texture_filter
+	ghost.modulate = bg.modulate
+	ghost.self_modulate = bg.self_modulate
+	if bg.material != null:
+		ghost.material = bg.material.duplicate()
+	for side in ["left", "top", "right", "bottom"]:
+		ghost.set("anchor_" + side, bg.get("anchor_" + side))
+		ghost.set("offset_" + side, bg.get("offset_" + side))
+	var host := bg.get_parent()
+	host.add_child(ghost)
+	host.move_child(ghost, bg.get_index() + 1)
+	return ghost
+
+
+static func crossfade_out(ghost: TextureRect, bg: TextureRect) -> void:
+	if ghost == null or not is_instance_valid(ghost):
+		return
+	# 翻过去还是同一张底图：不必淡，直接撤
+	if bg == null or ghost.texture == bg.texture:
+		ghost.queue_free()
+		return
+	var tw := ghost.create_tween()
+	tw.tween_property(ghost, "modulate:a", 0.0, CROSSFADE_S).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_callback(ghost.queue_free)
+
+
 func is_revealing() -> bool:
 	return not _done
 
