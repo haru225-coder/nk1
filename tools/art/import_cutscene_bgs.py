@@ -100,7 +100,7 @@ MANIFEST = [
 ]
 
 # 导出后就地修瑕（2026-09-26）：产物名 → tools/art/ 下的脚本与参数。青花是元至正以后的器物，改成宋元单色釉
-# 2026-09-28（A′，决策备忘 #5）：开场首镜右上的西式八向风玫瑰抹掉，补成周边金纸
+# 2026-09-28（A′，决策备忘 #5）：开场首镜右上的西式十六尖细线风玫瑰抹掉，补成周边金纸
 POSTFIX = {
     "cs_counting_house.jpg": ["fix_cs_qinghua.py", "--only", "counting_house", "--in-place"],
     "cs_quanzhou_fanfang.jpg": ["fix_cs_qinghua.py", "--only", "quanzhou_fanfang", "--in-place"],
