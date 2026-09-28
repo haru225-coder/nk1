@@ -4,6 +4,58 @@ extends RefCounted
 ## 契约模式须显式开：命令行 `-- --contract`（或环境变量 NK1_SHOT_CONTRACT=1）；此时不截图，只验非渲染断言，
 ## 收尾打 `<TAG>_CONTRACT_OK`，绝不打 `OK shots=0`。
 ## 用法：const ShotGate := preload("res://tools/shot_gate.gd")
+## 输出目录：`var OUT_DIR := ShotGate.out_dir("vision")`。默认落 /workspace/nk1-qa-shots/<子目录>；
+## 设环境变量 NK1_SHOT_DIR=<目录> 则整体改落 <目录>/<子目录>（worktree / 自测别覆盖证据图，lane gd2）。
+## `-- --json`：三个收尾函数改打一行 JSON（gate_report.gd，lane g2），门禁名取入口脚本文件名；调用方不用改。
+## finish_shots / finish_contract 的 error：判红时写进 JSON 的 error 字段（如 _bail 的 "no_signal"，lane gd12），
+##   让「中途等不到信号收尾」与「张数不足」等普通红分得开；人读输出不变，不判红时不写。
+## 压帧自检 frame_pressure(tree)（lane gd18 收口：gd11 / gd14 在 combat_probe_stage / probe_clock 各起过一份，都收进这里）：
+##   环境变量 NK1_PROBE_SLOW_MS=<毫秒> 时在 root 下挂一个节点、每帧 OS.delay_msec 压帧（模拟满载慢帧，gd10 复现手法）；
+##   未设什么也不挂；重复调只挂一次，不叠压。「压帧下也绿」是全体有窗口探针的口径：截图探针与只借本文件挂压帧的
+##   定向探针（letterbox_signal / qa_yard_transition，不截图、不入截图册）开场都调它；
+##   gates_md 查每个接本文件的脚本代码行里都调了 ShotGate.frame_pressure，漏挂判红。
+##     NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path . -s res://tools/qa_title_probe.gd
+
+const DEFAULT_SHOT_ROOT := "/workspace/nk1-qa-shots"
+const GateReport := preload("res://tools/gate_report.gd")
+const ENV_SLOW := "NK1_PROBE_SLOW_MS"
+const PRESSURE_NODE := "ProbeFramePressure"
+
+
+## 截图输出目录：NK1_SHOT_DIR 为空取默认根；相对路径按启动时的 $PWD 展开。
+static func out_dir(sub: String) -> String:
+	var root := OS.get_environment("NK1_SHOT_DIR").strip_edges()
+	if root == "":
+		root = DEFAULT_SHOT_ROOT
+	elif not root.is_absolute_path():
+		root = OS.get_environment("PWD").path_join(root)
+	return root.path_join(sub)
+
+
+## NK1_PROBE_SLOW_MS>0 时挂压帧节点，返回每帧压的毫秒数；未设返回 0、什么也不挂。已挂过的不再挂，返回那一份的毫秒数。
+static func frame_pressure(tree: SceneTree) -> int:
+	var ms := int(OS.get_environment(ENV_SLOW).strip_edges())
+	if ms <= 0 or tree == null:
+		return 0
+	var had := tree.root.get_node_or_null(PRESSURE_NODE)
+	if had != null:
+		return int(had.get("ms"))
+	var n := _FramePressure.new()
+	n.ms = ms
+	n.name = PRESSURE_NODE
+	tree.root.add_child(n)
+	print("  %s=%d：每帧压 %d ms（约 %.1f fps 以下）" % [ENV_SLOW, ms, ms, 1000.0 / ms])
+	return ms
+
+
+class _FramePressure extends Node:
+	var ms := 0
+
+	func _ready() -> void:
+		process_mode = Node.PROCESS_MODE_ALWAYS
+
+	func _process(_delta: float) -> void:
+		OS.delay_msec(ms)
 
 
 static func contract_mode() -> bool:
@@ -35,14 +87,18 @@ static func grab(root: Window, name: String, fails: Array) -> Image:
 	return img
 
 
-## 画面是否为一色（空视口/未绘制）：5×5 网格采样全都几乎相同即判空。
+## 画面是否为一色（空视口/未绘制）：32×18 网格采样全都几乎相同即判空。
+## 网格要密：墨幕题签帧只有正中一条题签（约占纵向 36%–47%），5×5 网格会整条跨过去误判一色（lane sg2）。
+const BLANK_GRID := Vector2i(32, 18)
+
+
 static func is_blank(img: Image) -> bool:
 	var w := img.get_width()
 	var h := img.get_height()
-	var first := img.get_pixel(w / 10, h / 10)
-	for gy in 5:
-		for gx in 5:
-			var c := img.get_pixel(int(w * (0.1 + 0.2 * gx)), int(h * (0.1 + 0.2 * gy)))
+	var first := img.get_pixel(w / (2 * BLANK_GRID.x), h / (2 * BLANK_GRID.y))
+	for gy in BLANK_GRID.y:
+		for gx in BLANK_GRID.x:
+			var c := img.get_pixel(int(w * (gx + 0.5) / BLANK_GRID.x), int(h * (gy + 0.5) / BLANK_GRID.y))
 			if absf(c.r - first.r) + absf(c.g - first.g) + absf(c.b - first.b) > 0.03:
 				return false
 	return true
@@ -67,31 +123,54 @@ static func shot(root: Window, path: String, saved: Array, fails: Array, allow_b
 
 
 ## 截图模式收尾：实得张数 < 声明张数也判失败。返回退出码。
-static func finish_shots(tag: String, saved: Array, expected: int, out_dir: String, fails: Array) -> int:
+static func finish_shots(tag: String, saved: Array, expected: int, out_dir: String, fails: Array, error := "") -> int:
 	if saved.size() < expected:
 		fails.append("真失败：声明 %d 张截图，实得 %d 张" % [expected, saved.size()])
+	for p in saved:
+		GateReport.check(true, str(p).get_file(), "shot")
+	for f in fails:
+		GateReport.check(false, str(f))
+	var extra := {"tag": tag, "shots": saved.size(), "expected_shots": expected, "out_dir": out_dir}
 	if fails.is_empty():
-		print("%s_OK shots=%d/%d -> %s" % [tag, saved.size(), expected, out_dir])
+		var ok_line := "%s_OK shots=%d/%d -> %s" % [tag, saved.size(), expected, out_dir]
+		print(ok_line)
+		GateReport.finish(GateReport.main_script_name(), 0, ok_line, extra)
 		return 0
 	for f in fails:
 		print("  ✗ ", f)
-	print("%s_FAIL %d（shots=%d/%d -> %s）" % [tag, fails.size(), saved.size(), expected, out_dir])
+	var fail_line := "%s_FAIL %d（shots=%d/%d -> %s）" % [tag, fails.size(), saved.size(), expected, out_dir]
+	print(fail_line)
+	if error != "":
+		extra["error"] = error
+	GateReport.finish(GateReport.main_script_name(), 1, fail_line, extra)
 	return 1
 
 
 ## 无渲染又未开契约模式：直接判红。返回退出码 1。
 static func fail_no_render(tag: String, reason: String, expected: int) -> int:
 	print("  ✗ ", reason)
-	print("%s_FAIL headless（声明 %d 张截图，实得 0；此为环境不具备，不是画面回归）" % [tag, expected])
+	var line := "%s_FAIL headless（声明 %d 张截图，实得 0；此为环境不具备，不是画面回归）" % [tag, expected]
+	print(line)
+	GateReport.check(false, reason, "no-render")
+	GateReport.finish(GateReport.main_script_name(), 1, line, {"tag": tag, "shots": 0, "expected_shots": expected, "no_render": true})
 	return 1
 
 
 ## 契约模式收尾：只报契约断言，不报张数。返回退出码。
-static func finish_contract(tag: String, fails: Array) -> int:
+static func finish_contract(tag: String, fails: Array, error := "") -> int:
+	for f in fails:
+		GateReport.check(false, str(f))
 	if fails.is_empty():
-		print("%s_CONTRACT_OK（契约模式：未截图，截图门禁须另用 DISPLAY 跑）" % tag)
+		var ok_line := "%s_CONTRACT_OK（契约模式：未截图，截图门禁须另用 DISPLAY 跑）" % tag
+		print(ok_line)
+		GateReport.finish(GateReport.main_script_name(), 0, ok_line, {"tag": tag, "contract": true})
 		return 0
 	for f in fails:
 		print("  ✗ ", f)
-	print("%s_CONTRACT_FAIL %d" % [tag, fails.size()])
+	var fail_line := "%s_CONTRACT_FAIL %d" % [tag, fails.size()]
+	print(fail_line)
+	var extra := {"tag": tag, "contract": true}
+	if error != "":
+		extra["error"] = error
+	GateReport.finish(GateReport.main_script_name(), 1, fail_line, extra)
 	return 1

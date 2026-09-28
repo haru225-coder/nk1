@@ -9,6 +9,9 @@
   3. 前缀拼接（`res://assets/sprite_` + id、`icon_` + 设施名）：按数据表逐个展开
 """
 import json, os, re, sys, pathlib
+if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gate_json; gate_json.maybe_json(__file__)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "assets"

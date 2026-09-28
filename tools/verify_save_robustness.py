@@ -7,6 +7,9 @@
      一律在 _read 判坏档，_read_slot 自然退 .bak；任何输入都不得抛脚本错误。
   H2 只剩 .bak：has_save 认副抄，save_label / slot_source 走同一口径，
      题签可读，任何路径都不对空 FileAccess 调 get_as_text。
+  SV 结构版本（lane sv）：save_schema 缺省为 v1；低于本版走 _migrate_vN_to_vN+1 链且链不断档，
+     load_game 迁完回写并留原件 <档名>.v<N>；高于本版（或旧头 version 过新）判 future，
+     明确拒读、不退 .bak；save_schema 非正整数按坏档退 .bak。
 
 做法：从 SaveLoad.gd 抽取守卫、体检规则与调用顺序；从四个内核单例与 GameState 的
 from_dict 抽取强类型赋值（Godot 4.6 实测：数值/布尔互转可行，Dictionary/Array/String
@@ -20,8 +23,12 @@ good/bad fixture 在临时目录里跑。体检或守卫被注释掉时模型随
   python3 tools/verify_save_robustness.py --dump-fixtures DIR  # 写出 fixture 供 Godot 手测
 """
 import json, os, re, sys, tempfile, pathlib
+if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gate_json; gate_json.maybe_json(__file__)
 
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
+from src_probe import has_tok  # 按名认函数的探查一律经 tools/src_probe.py（lane cs15：不按前缀认名）
 SAVELOAD = os.path.join(ROOT, "scripts", "core", "SaveLoad.gd")
 PARTS = (("calendar", "Calendar"), ("economy", "Economy"), ("fleet", "Fleet"), ("crew", "Crew"))
 FROM_DICT_SRC = {
@@ -36,10 +43,10 @@ HARDENED = {"flags", "discoveries_found", "discoveries_reported"}
 
 
 def func_bodies(src):
-    """粗略切分出每个 func 的函数体（按缩进；与 check_symbols.py 同法）"""
+    """粗略切分出每个顶格 [static ]func 的函数体（按缩进；与 check_symbols.py 同法，lane cs16 起认 static func）"""
     out, cur, body = {}, None, []
     for ln in src.split("\n"):
-        m = re.match(r'^func\s+([A-Za-z_]\w*)', ln)
+        m = re.match(r'^(?:static\s+)?func\s+([A-Za-z_]\w*)', ln)
         if m:
             if cur: out[cur] = "\n".join(body)
             cur, body = m.group(1), []
@@ -113,31 +120,66 @@ def parse_from_dict(rel):
     return need
 
 
+# 判坏档的空返回：旧形 return {}，lane sv 起 _inspect 返回 {"status": "missing"/"corrupt"}
+RET_BAD = r'return\s*\{\s*(?:"status"\s*:\s*"(?:missing|corrupt)"\s*)?\}'
+RET_FUTURE = r'return\s*\{\s*"status"\s*:\s*"future"'
+SCHEMA_KEY = "save_schema"
+
+
+def _const_str(src, name, default=None):
+    m = re.search(rf'^const\s+{name}\s*:?=\s*"([^"]*)"', src, re.M)
+    return m.group(1) if m else default
+
+
 def build_model(src):
     fn = {k: _code_only(v) for k, v in func_bodies(src).items()}
     code = _code_only(src)
-    m = {"fn": fn, "version": _const_int(src, "VERSION", 0)}
+    m = {"fn": fn, "version": _const_int(src, "VERSION", 0),
+         "schema": _const_int(src, "SAVE_SCHEMA"), "schema_key": _const_str(src, "SCHEMA_KEY", SCHEMA_KEY)}
 
     hs = fn.get("has_save", "")
-    m["has_primary"] = "_path(slot)" in hs and "file_exists" in hs
-    m["has_bak"] = "_bak_path(slot)" in hs and "file_exists" in hs
+    m["has_primary"] = has_tok(hs, "_path(slot)") and "file_exists" in hs
+    m["has_bak"] = has_tok(hs, "_bak_path(slot)") and "file_exists" in hs
 
-    rd = fn.get("_read", "")
+    # lane sv 起守卫都在 _inspect（_read 只是取 data 的薄壳）；旧形仍在 _read
+    rd = fn.get("_inspect") or fn.get("_read", "")
     m["read_defined"] = "_read" in fn
-    m["read_exists_guard"] = bool(re.search(r'if\s+not\s+FileAccess\.file_exists\(path\)\s*:\s*\n\s*return\s*\{\}', rd))
-    m["read_null_guard"] = bool(re.search(r'if\s+(f\s*==\s*null|not\s+f)\s*:\s*\n\s*return\s*\{\}', rd)) \
+    m["read_exists_guard"] = bool(re.search(r'if\s+not\s+FileAccess\.file_exists\(path\)\s*:\s*\n\s*' + RET_BAD, rd))
+    m["read_null_guard"] = bool(re.search(r'if\s+(f\s*==\s*null|not\s+f)\s*:\s*\n\s*' + RET_BAD, rd)) \
         and _before(rd, r'f\s*==\s*null|not\s+f\s*:', r'get_as_text')
-    m["read_parse_guard"] = bool(re.search(r'\.parse\([^\n]*\)\s*!=\s*OK\s*:[\s\S]*?return\s*\{\}', rd))
-    m["read_dict_guard"] = bool(re.search(r'not\s*\(\s*json\.data\s+is\s+Dictionary\s*\)\s*:[\s\S]*?return\s*\{\}', rd))
-    m["read_version_guard"] = bool(re.search(r'ver\s*>\s*VERSION\s*:[\s\S]*?return\s*\{\}', rd))
+    m["read_parse_guard"] = bool(re.search(r'\.parse\([^\n]*\)\s*!=\s*OK\s*:[\s\S]*?' + RET_BAD, rd))
+    m["read_dict_guard"] = bool(re.search(r'not\s*\(\s*json\.data\s+is\s+Dictionary\s*\)\s*:[\s\S]*?' + RET_BAD, rd))
     isn = fn.get("_is_num", "")
     m["is_num_ok"] = "TYPE_INT" in isn and "TYPE_FLOAT" in isn
     m["version_num_guard"] = m["is_num_ok"] and bool(re.search(
-        r'if\s+not\s+_is_num\((\w+)\)\s*:[\s\S]*?return\s*\{\}[\s\S]*?int\(\1\)', rd))
-    # _check_partitions 须在 _read 里调用、坏因非空即 return {}，且排在版本校验之后、return data 之前
+        r'if\s+not\s+_is_num\((\w+)\)\s*:[\s\S]*?' + RET_BAD + r'[\s\S]*?int\(\1\)', rd))
+    # —— 结构版本（lane sv）——
+    sm = re.search(r'var\s+(\w+)\s*=\s*data\.get\(SCHEMA_KEY,\s*(\w+)\)', rd)
+    m["schema_default"] = (int(sm.group(2)) if sm.group(2).isdigit() else None) if sm else None
+    m["schema_num_guard"] = bool(sm) and m["is_num_ok"] and bool(re.search(
+        rf'if\s+not\s+_is_num\({sm.group(1)}\)\s+or\s+int\({sm.group(1)}\)\s*<\s*1\s*:\s*\n[\s\S]*?' + RET_BAD, rd)) if sm else False
+    fm = re.search(r'if\s+([^\n]*):\s*\n(?:\t\t[^\n]*\n)*?\t\t' + RET_FUTURE, rd)
+    cond = fm.group(1) if fm else ""
+    m["future_status"] = bool(fm)
+    m["future_schema"] = bool(re.search(r'\bschema\s*>\s*SAVE_SCHEMA\b', cond))
+    m["future_ver"] = bool(re.search(r'\bver\s*>\s*VERSION\b', cond)) \
+        or bool(re.search(r'if\s+ver\s*>\s*VERSION\s*:[\s\S]*?' + RET_BAD, rd))
+    m["read_version_guard"] = m["future_ver"]
+    m["migrates"] = bool(re.search(r'if\s+schema\s*<\s*SAVE_SCHEMA\s*:\s*\n\s*data\s*=\s*_migrate\(data,\s*schema\)', rd)) \
+        and _before(rd, r'_migrate\(data', r'_check_partitions\(data\)')
+    mg = fn.get("_migrate", "")
+    m["chain"] = {int(a): b for a, b in re.findall(
+        r'^\t\t\t(\d+)\s*:\s*\n\t\t\t\tout\s*=\s*(_migrate_v\d+_to_v\d+)\(out\)', mg, re.M)}
+    m["chain_loop"] = bool(re.search(r'for\s+(\w+)\s+in\s+range\(\w+,\s*SAVE_SCHEMA\)', mg)) \
+        and bool(re.search(r'out\[SCHEMA_KEY\]\s*=\s*\w+\s*\+\s*1', mg))
+    m["chain_ok"] = m["schema"] is not None and m["chain_loop"] and all(
+        m["chain"].get(v) == f"_migrate_v{v}_to_v{v + 1}" and f"_migrate_v{v}_to_v{v + 1}" in fn
+        for v in range(1, m["schema"]))
+    m["save_writes_schema"] = bool(re.search(r'SCHEMA_KEY\s*:\s*SAVE_SCHEMA', fn.get("save_game", "")))
+    # _check_partitions 须在 _read 里调用、坏因非空即判坏档，且排在版本校验之后、return data 之前
     m["read_checks_parts"] = bool(re.search(
-        r'var\s+(\w+)\s*:?=\s*_check_partitions\(data\)\s*\n\s*if\s+\1\s*!=\s*""\s*:[\s\S]*?return\s*\{\}', rd)) \
-        and _before(rd, r'_check_partitions\(data\)', r'return\s+data\s*$')
+        r'var\s+(\w+)\s*:?=\s*_check_partitions\(data\)\s*\n\s*if\s+\1\s*!=\s*""\s*:[\s\S]*?' + RET_BAD, rd)) \
+        and _before(rd, r'_check_partitions\(data\)', r'return\s+(?:data\s*$|\{\s*"status"\s*:\s*"ok")')
 
     # —— _check_partitions 体检规则 ——
     cp = _live(fn.get("_check_partitions", ""))
@@ -176,7 +218,7 @@ def build_model(src):
         for tm in re.finditer(rf'if\s+{v}\.has\("(\w+)"\)\s+and\s+typeof\({v}\["\1"\]\)\s*!=\s*TYPE_(\w+)\s*:\s*\n\s*return\s+"', cp):
             rules["typed"].setdefault(part, {})[tm.group(1)] = tm.group(2)
     bfb = _live(fn.get("_bad_fields", ""))
-    if not ("_is_num(part[k])" in bfb and "TYPE_DICTIONARY" in bfb and "TYPE_ARRAY" in bfb and m["is_num_ok"]):
+    if not (has_tok(bfb, "_is_num(part[k])") and "TYPE_DICTIONARY" in bfb and "TYPE_ARRAY" in bfb and m["is_num_ok"]):
         rules["nums"], rules["dicts"], rules["arrays"] = {}, {}, {k: [] for k in rules["arrays"]}
         # ships 等单独写的 TYPE_ARRAY 判断不依赖 _bad_fields，保留
         for tm in re.finditer(r'if\s+(\w+)\.has\("(\w+)"\)\s*:\s*\n\s*if\s+typeof\(\1\["\2"\]\)\s*!=\s*TYPE_ARRAY', cp):
@@ -185,9 +227,24 @@ def build_model(src):
     m["rules"] = rules if m["read_checks_parts"] else None
 
     rs = fn.get("_read_slot", "")
-    m["slot_primary_first"] = _before(rs, r'_read\(_path\(slot\)\)', r'_read\(_bak_path\(slot\)\)') \
-        or ("_read(_path(slot))" in rs and "_bak_path" not in rs)
-    m["slot_bak_fallback"] = bool(re.search(r'if\s+data\.is_empty\(\)\s*:[\s\S]*_read\(_bak_path\(slot\)\)', rs))
+    rv = fn.get("_resolve", "")
+    m["resolve"] = bool(rv) and has_tok(rs, "_resolve(slot)")
+    if m["resolve"]:
+        # lane sv：_resolve 统一定出 none / primary / bak / future / corrupt
+        cut = _pos(rv, r'_inspect\(_bak_path\(slot\)\)')
+        pre, post = (rv[:cut], rv[cut:]) if cut >= 0 else (rv, "")
+        m["resolve_none"] = bool(re.search(r'if\s+not\s+has_save\(slot\)\s*:\s*\n\s*return\s*\{\s*"source"\s*:\s*"none"', rv))
+        m["slot_primary_first"] = _before(rv, r'_inspect\(_path\(slot\)\)', r'_inspect\(_bak_path\(slot\)\)')
+        m["slot_bak_fallback"] = bool(re.search(r'"ok"\s*:\s*\n\s*return\s*\{\s*"source"\s*:\s*"bak"', post))
+        fut = r'"future"\s*:\s*\n\s*return\s*\{\s*"source"\s*:\s*"future"'
+        m["primary_future_stops"] = bool(re.search(fut, pre))
+        m["bak_future_reported"] = bool(re.search(fut, post))
+    else:
+        m["resolve_none"] = False
+        m["slot_primary_first"] = _before(rs, r'_read\(_path\(slot\)\)', r'_read\(_bak_path\(slot\)\)') \
+            or (has_tok(rs, "_read(_path(slot))") and "_bak_path" not in rs)
+        m["slot_bak_fallback"] = bool(re.search(r'if\s+data\.is_empty\(\)\s*:[\s\S]*_read\(_bak_path\(slot\)\)', rs))
+        m["primary_future_stops"] = m["bak_future_reported"] = False
 
     ad = fn.get("_as_dict", "")
     m["as_dict_robust"] = bool(re.search(
@@ -195,7 +252,19 @@ def build_model(src):
         or bool(re.search(r'if\s+typeof\(raw\)\s*!=\s*TYPE_DICTIONARY\s*:\s*\n\s*return\s*\{\}', ad))
 
     lg = fn.get("load_game", "")
-    m["load_reader"] = "_read_slot" if "_read_slot(slot)" in lg else ("_read" if "_read(_path(slot))" in lg else None)
+    if has_tok(lg, "_read_slot(slot)") or (m["resolve"] and has_tok(lg, "_resolve(slot)")):
+        m["load_reader"] = "_read_slot"
+    else:
+        m["load_reader"] = "_read" if has_tok(lg, "_read(_path(slot))") else None
+    m["load_writes_back"] = bool(re.search(
+        r'if\s+int\(\w+\["schema"\]\)\s*<\s*SAVE_SCHEMA\s*:\s*\n\s*_write_back_migrated\(', lg)) \
+        and _before(lg, r'_write_back_migrated\(', r'\w+\.from_dict\(')
+    wb = fn.get("_write_back_migrated", "")
+    m["wb_keeps_original"] = bool(re.search(r'var\s+keep\s*:?=\s*"%s\.v%d"\s*%\s*\[path,\s*from_schema\]', wb)) \
+        and bool(re.search(r'if\s+not\s+FileAccess\.file_exists\(keep\)\s+and\s+DirAccess\.copy_absolute\(path,\s*keep\)\s*!=\s*OK\s*:'
+                           r'\s*\n[^\n]*\n\s*return\s+false', wb)) \
+        and _before(wb, r'copy_absolute\(path,\s*keep\)', r'FileAccess\.open\(tmp')
+    m["wb_tmp_rename"] = bool(re.search(r'rename_absolute\(tmp,\s*path\)', wb))
     m["load_empty_guard"] = bool(re.search(r'if\s+data\.is_empty\(\)\s*:\s*\n\s*return\s+false', lg)) \
         and _before(lg, r'data\.is_empty\(\)', r'\w+\.from_dict\(')
     m["load_parts"] = {}
@@ -216,25 +285,29 @@ def build_model(src):
 
     sl = fn.get("save_label", "")
     m["label_none_guard"] = bool(re.search(r'if\s+not\s+has_save\(slot\)\s*:\s*\n\s*return\s+"未记"', sl))
-    if "_read_slot(slot)" in sl:
+    if has_tok(sl, "_read_slot(slot)") or (m["resolve"] and has_tok(sl, "_resolve(slot)")):
         m["label_reader"] = "_read_slot"
-    elif "_read(_path(slot))" in sl:
+    elif has_tok(sl, "_read(_path(slot))"):
         m["label_reader"] = "_read_primary"
     elif re.search(r'FileAccess\.open\(_path\(slot\)', sl):
         m["label_reader"] = "raw_primary"
     else:
         m["label_reader"] = None
     m["label_raw_null_guard"] = bool(re.search(r'if\s+(f\s*==\s*null|not\s+f)\s*:', sl))
-    m["label_order"] = _before(sl, r'has_save\(slot\)', r'_read_slot\(slot\)|_read\(|FileAccess\.open')
+    m["label_order"] = _before(sl, r'has_save\(slot\)', r'_read_slot\(slot\)|_resolve\(slot\)|_read\(|FileAccess\.open')
+    m["label_future"] = bool(re.search(r'if\s+\w+\["source"\]\s*==\s*"future"\s*:\s*\n\s*return\s+"新版所记"', sl))
     m["label_empty_guard"] = bool(re.search(r'if\s+data\.is_empty\(\)\s*:\s*\n\s*return\s+"卷页损了"', sl))
     m["label_str"] = bool(re.search(r'return\s+str\(data\.get\("label"', sl))
 
     ss = fn.get("slot_source", "")
-    m["source_ok"] = bool(re.search(r'if\s+not\s+has_save\(slot\)\s*:\s*\n\s*return\s+"none"', ss)) \
-        and _before(ss, r'_read\(_path\(slot\)\)', r'_read\(_bak_path\(slot\)\)') \
-        and all(t in ss for t in ('"primary"', '"bak"', '"corrupt"'))
+    m["source_ok"] = (bool(re.search(r'if\s+not\s+has_save\(slot\)\s*:\s*\n\s*return\s+"none"', ss))
+                      and _before(ss, r'_read\(_path\(slot\)\)', r'_read\(_bak_path\(slot\)\)')
+                      and all(t in ss for t in ('"primary"', '"bak"', '"corrupt"')))
+    if m["resolve"] and re.search(r'return\s+str\(_resolve\(slot\)\["source"\]\)', ss):
+        m["source_ok"] = m["resolve_none"] and m["slot_primary_first"] \
+            and all(t in rv for t in ('"primary"', '"bak"', '"corrupt"', '"future"'))
 
-    m["scene_via_slot"] = "_read_slot(slot)" in fn.get("saved_scene", "")
+    m["scene_via_slot"] = has_tok(fn.get("saved_scene", ""), "_read_slot(slot)")
     m["chained_open"] = bool(re.search(r'FileAccess\.open\([^)]*\)\s*\.\s*get_as_text', code))
     m["from_dict"] = {part: parse_from_dict(rel) for part, rel in FROM_DICT_SRC.items()}
     return m
@@ -353,51 +426,94 @@ class Sim:
         with open(p, encoding="utf-8") as f:
             return f.read()
 
-    def read(self, p):
+    def inspect(self, p):
+        """_inspect 的镜像：{"status": missing/corrupt/future/ok, "data", "schema"}"""
         m = self.m
+        bad = {"status": "corrupt"}
         if not m["read_defined"]:
             raise ScriptError("_read 未定义")
         if m["read_exists_guard"] and not os.path.exists(p):
-            return {}
+            return {"status": "missing"}
         text = self._open_text(p, m["read_null_guard"])
         if text is None:
-            return {}
+            return bad
         try:
             data = json.loads(text)
         except ValueError:
-            if m["read_parse_guard"]: return {}
+            if m["read_parse_guard"]: return bad
             raise ScriptError("JSON 解析失败后仍取 json.data")
         if not isinstance(data, dict):
-            if m["read_dict_guard"]: return {}
+            if m["read_dict_guard"]: return bad
             raise ScriptError("顶层非对象赋给 Dictionary")
         ver_raw = data.get("version", 0)
         if m["version_num_guard"] and not _is_num(ver_raw):
-            return {}
+            return bad
+        schema = None
+        if m["schema"] is not None and m["schema_default"] is not None:
+            s_raw = data.get(m["schema_key"], m["schema_default"])
+            if m["schema_num_guard"] and (not _is_num(s_raw) or _gd_int(s_raw) < 1):
+                return bad
+            schema = _gd_int(s_raw)
         ver = _gd_int(ver_raw)
-        if m["read_version_guard"] and ver > m["version"]:
-            return {}
+        if (m["future_schema"] and schema is not None and schema > m["schema"]) \
+                or (m["future_ver"] and ver > m["version"]):
+            return {"status": "future", "schema": schema} if m["future_status"] else bad
+        if schema is not None and schema < m["schema"] and m["migrates"]:
+            if not m["chain_ok"] or schema < 1:
+                return bad  # 迁移链断档：_migrate 报错返回空表
+            data = dict(data)
+            data[m["schema_key"]] = m["schema"]
         if m["rules"] is not None and check_partitions(m["rules"], data):
-            return {}
-        return data
+            return bad
+        return {"status": "ok", "data": data, "schema": schema}
+
+    def read(self, p):
+        return self.inspect(p).get("data", {})
+
+    def resolve(self, slot):
+        """_resolve 的镜像：(source, data, 读自哪份, 原结构版本)"""
+        m = self.m
+        if not self.has_save(slot):
+            return "none", {}, None, None
+        prim = self.inspect(self.path(slot))
+        if prim["status"] == "ok":
+            return "primary", prim["data"], self.path(slot), prim["schema"]
+        if prim["status"] == "future" and m["primary_future_stops"]:
+            return "future", {}, None, prim["schema"]
+        if not m["slot_bak_fallback"]:
+            return "corrupt", {}, None, None
+        bak = self.inspect(self.bak(slot))
+        if bak["status"] == "ok":
+            return "bak", bak["data"], self.bak(slot), bak["schema"]
+        if bak["status"] == "future" and m["bak_future_reported"]:
+            return "future", {}, None, bak["schema"]
+        return "corrupt", {}, None, None
 
     def read_slot(self, slot):
-        data = self.read(self.path(slot))
-        if not data and self.m["slot_bak_fallback"]:
-            return self.read(self.bak(slot))
-        return data
+        return self.resolve(slot)[1]
 
     def slot_source(self, slot):
         if not self.has_save(slot): return "none"
         if not self.m["source_ok"]: return "?"
-        if self.read(self.path(slot)): return "primary"
-        if self.read(self.bak(slot)): return "bak"
-        return "corrupt"
+        src = self.resolve(slot)[0]
+        return "corrupt" if src == "future" and not self.m["future_status"] else src
+
+    def write_back(self, path, data, from_schema):
+        """_write_back_migrated 的镜像：先留原件 .vN，再落位"""
+        m = self.m
+        keep = f"{path}.v{from_schema}"
+        if m["wb_keeps_original"] and not os.path.exists(keep):
+            with open(path, encoding="utf-8") as src, open(keep, "w", encoding="utf-8") as dst:
+                dst.write(src.read())
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(_dump(data))
 
     def load_game(self, slot):
         """返回 (ok, 读入的整份 data)；模拟途中类型不符即抛 ScriptError"""
         m = self.m
+        src_path, schema = None, None
         if m["load_reader"] == "_read_slot":
-            data = self.read_slot(slot)
+            _src, data, src_path, schema = self.resolve(slot)
         elif m["load_reader"] == "_read":
             data = self.read(self.path(slot))
         else:
@@ -405,6 +521,8 @@ class Sim:
         if not data:
             if m["load_empty_guard"]: return False, {}
             raise ScriptError("空档仍往下 from_dict")
+        if m["load_writes_back"] and schema is not None and m["schema"] is not None and schema < m["schema"]:
+            self.write_back(src_path, data, schema)
         for key, single in PARTS:
             info = m["load_parts"][key]
             if info is None or not info["reads_key"]:
@@ -429,7 +547,9 @@ class Sim:
             return "未记"
         r = m["label_reader"]
         if r == "_read_slot":
-            data = self.read_slot(slot)
+            src, data, _p, _s = self.resolve(slot)
+            if src == "future" and m["label_future"]:
+                return "新版所记"
         elif r == "_read_primary":
             data = self.read(self.path(slot))
         elif r == "raw_primary":
@@ -454,9 +574,13 @@ LBL_P, LBL_B = "景炎二年　泉州　500 钱", "景炎元年　兴化　300 �
 YEAR_P, YEAR_B = 1256, 1255
 
 
+CUR_SCHEMA = 2  # fixture 里「本版档」的结构号；SAVE_SCHEMA 再升时这些档照样走迁移，仍须读得通
+
+
 def good(label=LBL_P, year=YEAR_P):
     return {
         "version": 3,
+        SCHEMA_KEY: CUR_SCHEMA,
         "calendar": {"year": year, "month": 4, "day": 1},
         "economy": {"rates": {}, "tariff": 0.1, "broker": 0.05, "investments": {}},
         "fleet": {"ships": [{"id": "fuchuan", "cargo": {}}], "water": 20, "food": 20, "morale": 70},
@@ -503,6 +627,16 @@ def bad_cases():
     for tag, val in (("字符串", "3"), ("对象", {}), ("null", None)):
         d = good(); d["version"] = val
         yield f"version 为{tag}", d
+    for tag, val in (("字符串", "二"), ("零", 0), ("负数", -1), ("数组", [2]), ("null", None), ("对象", {})):
+        d = good(); d[SCHEMA_KEY] = val
+        yield f"save_schema 为{tag}", d
+
+
+def v1(label=LBL_P, year=YEAR_P):
+    """lane sv 之前写的档：无 save_schema，state 只有早期原型那几样"""
+    d = good(label, year)
+    del d[SCHEMA_KEY]
+    return d
 
 
 def ok_cases():
@@ -515,6 +649,9 @@ def ok_cases():
     yield "state.flags/发现录坏（_harden_state 清洗）", d, LBL_P
     d = good(); del d["label"]
     yield "缺 label", d, "未题"
+    yield "v1 老档（无 save_schema，迁移后照读）", v1(), LBL_P
+    d = v1(); del d["state"]
+    yield "v1 老档缺 state", d, LBL_P
 
 
 # 槽态 fixture：(名, 正本文本或 None, 副抄文本或 None, 期望 has_save, 期望 label, 期望 load, 期望 slot_source)
@@ -526,7 +663,13 @@ SLOT_CASES = (
     ("正本缺失+副抄",      None,                     _dump(good(LBL_B, YEAR_B)), True, LBL_B, True, "bak"),
     ("正本空文件+副抄",    "",                       _dump(good(LBL_B, YEAR_B)), True, LBL_B, True, "bak"),
     ("正本顶层数组+副抄",  "[1, 2, 3]",              _dump(good(LBL_B, YEAR_B)), True, LBL_B, True, "bak"),
-    ("正本版本过新+副抄",  _dump({**good(), "version": 99}), _dump(good(LBL_B, YEAR_B)), True, LBL_B, True, "bak"),
+    # lane sv：新版档明确拒读，不退副抄
+    ("正本版本过新+副抄",  _dump({**good(), "version": 99}), _dump(good(LBL_B, YEAR_B)), True, "新版所记", False, "future"),
+    ("正本结构过新+副抄",  _dump({**good(), SCHEMA_KEY: 99}), _dump(good(LBL_B, YEAR_B)), True, "新版所记", False, "future"),
+    ("正本缺失+副抄过新",  None, _dump({**good(LBL_B, YEAR_B), SCHEMA_KEY: 3}), True, "新版所记", False, "future"),
+    ("正本半截+副抄过新",  _dump(good())[:40], _dump({**good(LBL_B, YEAR_B), SCHEMA_KEY: 3}), True, "新版所记", False, "future"),
+    ("正本 v1+副抄",       _dump(v1()),              _dump(good(LBL_B, YEAR_B)), True, LBL_P, True, "primary"),
+    ("正本坏+副抄 v1",     "{",                      _dump(v1(LBL_B, YEAR_B)), True, LBL_B, True, "bak"),
     ("两份皆坏",           "{",                      "not json",        True,  "卷页损了", False, "corrupt"),
     ("正本坏+副抄缺",      "{\"version\":",          None,              True,  "卷页损了", False, "corrupt"),
 )
@@ -565,6 +708,21 @@ def run_checks(src, verbose=True):
     ok(m["read_dict_guard"], "_read 顶层非对象返回空表", "_read 未校验顶层为对象")
     ok(m["version_num_guard"], "_read 先 _is_num(version) 再 int()", "_read 未在 int() 前校验 version 为数字")
     ok(m["read_version_guard"], "_read 版本过新拒读", "_read 未拒读过新版本")
+    ok(m["schema"] is not None and m["save_writes_schema"], "SAVE_SCHEMA 存在且 save_game 写出 SCHEMA_KEY",
+       "缺 SAVE_SCHEMA 或 save_game 未写 save_schema")
+    ok(m["schema_default"] == 1, "save_schema 缺省视为 v1", "save_schema 缺省不是 v1")
+    ok(m["schema_num_guard"], "save_schema 非正整数判坏档（先于 int()）", "save_schema 未校验为正整数")
+    ok(m["future_status"] and m["future_schema"] and m["future_ver"],
+       "save_schema / version 高于本版判 future（不是坏档）", "新版档未单独判 future，或漏了 save_schema / version 之一")
+    ok(m["migrates"], "低于本版先 _migrate 再 _check_partitions", "_inspect 未在体检前迁移老结构")
+    ok(m["chain_ok"], f"迁移链 v1→v{m['schema']} 逐步挂齐（{len(m['chain'])} 步）",
+       f"迁移链断档：SAVE_SCHEMA={m['schema']}，已挂 {sorted(m['chain'])}")
+    ok(m["primary_future_stops"], "正本是新版档时不退副抄", "正本是新版档仍会退副抄")
+    ok(m["bak_future_reported"], "副抄是新版档时报 future 而非卷页损了", "副抄是新版档被报成坏档")
+    ok(m["load_writes_back"], "load_game 迁移后回写（先于 from_dict）", "load_game 迁移后未回写")
+    ok(m["wb_keeps_original"] and m["wb_tmp_rename"], "回写先留原件 <档名>.v<N>，留不下不写；经 .tmp 落位",
+       "回写未先留原件或未经 .tmp 落位")
+    ok(m["label_future"], "save_label 新版档题「新版所记」", "save_label 未区分新版档")
     ok(m["read_checks_parts"], "_read 调 _check_partitions，坏因非空即判坏档", "_read 未以 _check_partitions 判坏档")
     r = m["rules"] or {}
     ok(set(r.get("part_types", [])) >= {"calendar", "economy", "fleet", "crew", "state"},
@@ -655,6 +813,37 @@ def run_checks(src, verbose=True):
                f"「{name}」has_save={has} label=「{label}」source={st} load={loaded}",
                f"槽态「{name}」期望 {want_has}/「{want_label}」/{want_src}/{want_load}，"
                f"实得 {has}/「{label}」/{st}/{loaded}")
+        say()
+        say("=" * 68)
+        say("五、迁移回写（v1 读入 → 回写本版结构、原件另存 .v1、副抄不动、二次读不再迁）")
+        say("=" * 68)
+        want = m["schema"]
+        for i, (name, prim, bak, which) in enumerate((
+                ("正本 v1", _dump(v1()), _dump(good(LBL_B, YEAR_B)), "primary"),
+                ("正本坏 + 副抄 v1", "{", _dump(v1(LBL_B, YEAR_B)), "bak"))):
+            slot = 500 + i
+            try:
+                _write(sim.path(slot), prim)
+                _write(sim.bak(slot), bak)
+                loaded, _d = sim.load_game(slot)
+                target = sim.path(slot) if which == "primary" else sim.bak(slot)
+                other = sim.bak(slot) if which == "primary" else sim.path(slot)
+                orig = prim if which == "primary" else bak
+                after = json.load(open(target, encoding="utf-8"))
+                keep = target + ".v1"
+                kept = os.path.exists(keep) and open(keep, encoding="utf-8").read() == orig
+                untouched = open(other, encoding="utf-8").read() == (bak if which == "primary" else prim)
+                first = open(target, encoding="utf-8").read()
+                loaded2, _d = sim.load_game(slot)
+                stable = open(target, encoding="utf-8").read() == first and \
+                    open(keep, encoding="utf-8").read() == orig if kept else False
+            except (ScriptError, OSError, ValueError) as e:
+                ok(False, "", f"迁移「{name}」出错：{e}")
+                continue
+            got = (loaded, after.get(SCHEMA_KEY), kept, untouched, loaded2, stable)
+            ok(got == (True, want, True, True, True, True),
+               f"「{name}」读入、回写 {SCHEMA_KEY}={want}、原件 .v1 逐字一致、另一份不动、二次读稳定",
+               f"迁移「{name}」期望 load/回写/留原件/另一份不动/二次读/稳定 = True/{want}/True/True/True/True，实得 {got}")
     return problems, m
 
 
@@ -667,7 +856,7 @@ def _comment(pattern):
 # 变异自检：每个变体模拟「兜底被注释掉 / 退回旧写法」，门禁都必须判红。
 MUTANTS = (
     ("_read 注释掉 _check_partitions 判坏",
-     _comment(r'^\tvar bad := _check_partitions\(data\)\n\tif bad != "":\n.*\n\t\treturn \{\}$')),
+     _comment(r'^\tvar bad := _check_partitions\(data\)\n\tif bad != "":\n.*\n\t\treturn \{"status": "corrupt"\}$')),
     ("_check_partitions 注释掉分区非对象判定",
      _comment(r'^\tfor key in PARTITIONS.*:\n\t\tif data\.has\(key\).*\n\t\t\treturn .*$')),
     ("_check_partitions 注释掉 calendar 年月日数字判定",
@@ -677,23 +866,47 @@ MUTANTS = (
     ("_bad_fields 直接 return \"\"",
      lambda s: re.sub(r'(func _bad_fields\([^\n]*\n)', r'\1\treturn ""\n', s, count=1)),
     ("_read 注释掉 version 数字判定",
-     _comment(r'^\tif not _is_num\(ver_raw\):\n.*\n\t\treturn \{\}$')),
+     _comment(r'^\tif not _is_num\(ver_raw\):\n.*\n\t\treturn \{"status": "corrupt"\}$')),
     ("load_game 四分区去掉 _as_dict",
      lambda s: re.sub(r'(\w+)\.from_dict\(_as_dict\((data\.get\("(?:calendar|economy|fleet|crew)", \{\}\))\)\)',
                       r'\1.from_dict(\2)', s)),
     ("注释掉 Fleet.from_dict 行", _comment(r'^\tFleet\.from_dict\(.*$')),
-    ("_read_slot 注释掉 .bak 回退",
-     _comment(r'^\tif data\.is_empty\(\):\n\t\tvar bak := _read\(_bak_path\(slot\)\)$')),
-    ("_read 注释掉 f == null 判空", _comment(r'^\tif f == null:\n\t\treturn \{\}$')),
+    ("_resolve 注释掉 .bak 回退",
+     _comment(r'^\tvar bak := _inspect\(_bak_path\(slot\)\)$')),
+    ("_read 注释掉 f == null 判空", _comment(r'^\tif f == null:\n\t\treturn \{"status": "corrupt"\}$')),
     ("has_save 不认 .bak",
      lambda s: s.replace(" or FileAccess.file_exists(_bak_path(slot))", "")),
     ("save_label 退回只开正式档",
-     lambda s: re.sub(r'\tvar data := _read_slot\(slot\)\n\tif data\.is_empty\(\):\n\t\treturn "卷页损了"\n\treturn str\(data\.get\("label", "未题"\)\)',
+     lambda s: re.sub(r'\tvar got := _resolve\(slot\)\n\tif got\["source"\] == "future":\n\t\treturn "新版所记"\n'
+                      r'\tvar data: Dictionary = got\["data"\]\n\tif data\.is_empty\(\):\n\t\treturn "卷页损了"\n\treturn str\(data\.get\("label", "未题"\)\)',
                       "\tvar f := FileAccess.open(_path(slot), FileAccess.READ)\n\tvar json := JSON.new()\n"
                       "\tif json.parse(f.get_as_text()) != OK:\n\t\treturn \"卷页损了\"\n\treturn json.data.get(\"label\", \"未题\")", s)),
     ("load_game 注释掉空档 return false",
      lambda s: re.sub(r'(func load_game[\s\S]*?)\tif data\.is_empty\(\):\n\t\treturn false',
                       r'\1\t#if data.is_empty():\n\t#\treturn false', s, count=1)),
+    # —— lane sv：结构版本 ——
+    ("_resolve 正本是新版档仍退副抄", _comment(r'^\t\t"future":\n\t\t\treturn \{"source": "future".*$')),
+    ("_resolve 副抄是新版档报成坏档",
+     lambda s: s[:s.index("_inspect(_bak_path(slot))")] + re.sub(
+         r'\t\t"future":\n\t\t\treturn \{"source": "future".*', "\t\tpass", s[s.index("_inspect(_bak_path(slot))"):], count=1)
+     if "_inspect(_bak_path(slot))" in s else s),
+    ("_inspect 只看旧头 version、不拒新结构",
+     lambda s: s.replace("if schema > SAVE_SCHEMA or ver > VERSION:", "if ver > VERSION:")),
+    ("_inspect 新版档当坏档（会退副抄）",
+     lambda s: s.replace('return {"status": "future", "schema": schema}', 'return {"status": "corrupt"}')),
+    ("save_schema 缺省当本版（老档不迁）",
+     lambda s: s.replace("data.get(SCHEMA_KEY, 1)", "data.get(SCHEMA_KEY, SAVE_SCHEMA)")),
+    ("save_schema 注释掉正整数判定",
+     lambda s: s.replace("if not _is_num(schema_raw) or int(schema_raw) < 1:", "if false:")),
+    ("_inspect 不迁移", lambda s: s.replace("data = _migrate(data, schema)", "pass")),
+    ("迁移链摘掉 v1→v2", lambda s: s.replace("\t\t\t1:\n\t\t\t\tout = _migrate_v1_to_v2(out)\n", "")),
+    ("SAVE_SCHEMA 升 3 却没挂迁移", lambda s: s.replace("const SAVE_SCHEMA := 2", "const SAVE_SCHEMA := 3")),
+    ("load_game 不回写", lambda s: re.sub(r'(\n\t\t)_write_back_migrated\([^\n]*', r'\1pass', s, count=1)),
+    ("回写不留原件",
+     lambda s: s.replace("if not FileAccess.file_exists(keep) and DirAccess.copy_absolute(path, keep) != OK:", "if false:")),
+    ("save_game 不写 save_schema", lambda s: s.replace("\t\tSCHEMA_KEY: SAVE_SCHEMA,\n", "")),
+    ("save_label 不区分新版档",
+     lambda s: s.replace('\tif got["source"] == "future":\n\t\treturn "新版所记"\n', "")),
 )
 
 
@@ -743,7 +956,7 @@ def main(argv):
 
     print()
     print("=" * 68)
-    print("五、变异自检（兜底被注释掉时本门禁必须判红）")
+    print("六、变异自检（兜底被注释掉时本门禁必须判红）")
     print("=" * 68)
     if problems:
         print("  · 原件已红，跳过变异自检")

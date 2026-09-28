@@ -1,17 +1,25 @@
 extends SceneTree
 ## Lane Q：酒馆新闻墙 / 市井札薄巡检。
-## 截图落 /workspace/nk1-qa-shots/tavern/（空墙 + 有札两条）。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_tavern_news_wall_screenshots.gd
-## headless：只验接线，不强制截图。
+## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/tavern/（空墙 + 有札两条）。
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_tavern_news_wall_screenshots.gd
+##       godot --headless --path . -s res://tools/qa_tavern_news_wall_screenshots.gd -- --contract   # 只验接线，不截图
+## 默认严格须出 2 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_tavern_news_wall_screenshots.gd
 
 const VIEW := Vector2i(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/tavern"
-const Kit := preload("res://scripts/cutscene/cs_kit.gd")
+var OUT_DIR := ShotGate.out_dir("tavern")
+const TAG := "QA_TAVERN_NEWS_WALL"
+const SP := preload("res://tools/src_probe.gd")  # 按名认函数的源码探查（lane cs15：不按前缀认名）
+const EXPECTED_SHOTS := 2
+const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
 var _main: Node
 var _gs: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -20,18 +28,24 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = VIEW
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_TAVERN_NEWS_WALL_BEGIN")
 	_check_wiring()
-	if Kit.is_headless():
+	if _contract:
 		_report()
 		return
 
 	_gs = root.get_node("GameState")
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
+	ShotGate.frame_pressure(self)
 	root.add_child(_main)
-	for _i in 8:
-		await process_frame
+	await _settle(8)
 
 	_gs.last_port = "quanzhou"
 	_gs.money = maxi(int(_gs.money), 500)
@@ -58,11 +72,11 @@ func _run() -> void:
 
 func _check_wiring() -> void:
 	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
-	_expect("_setup_news_wall" in main_src and "_TAVERN_NEWS_WALL.mount" in main_src, "Main 薄调 _TAVERN_NEWS_WALL.mount")
-	_expect("_setup_news_wall()" in main_src, "_setup_tavern 调用 _setup_news_wall")
+	_expect(SP.has_func(main_src, "_setup_news_wall") and SP.calls(main_src, "_TAVERN_NEWS_WALL.mount"), "Main 薄调 _TAVERN_NEWS_WALL.mount")
+	_expect(SP.has_tok(main_src, "_setup_news_wall()"), "_setup_tavern 调用 _setup_news_wall")
 	var wall_src := FileAccess.get_file_as_string("res://scripts/ui/TavernNewsWall.gd")
-	_expect("recent_news" in wall_src and "news_text" in wall_src, "TavernNewsWall 消费 recent_news/news_text")
-	_expect("paper_card" in wall_src, "札记用 UiTheme.paper_card")
+	_expect(SP.has_tok(wall_src, "recent_news", true) and SP.has_tok(wall_src, "news_text", true), "TavernNewsWall 消费 recent_news/news_text")
+	_expect(SP.has_tok(wall_src, "paper_card", true), "札记用 UiTheme.paper_card")
 	_expect("墙上" in wall_src, "分区题「墙上」")
 	for bad in ["惊艳", "沉浸", "打造", "视觉盛宴", "placeholder", "玩家"]:
 		_expect(bad not in wall_src, "TavernNewsWall 无「%s」" % bad)
@@ -70,34 +84,30 @@ func _check_wiring() -> void:
 
 func _goto(scene_id: String) -> void:
 	_main.load_scene(scene_id)
-	for _i in 6:
-		await process_frame
+	await _settle(6)
 	RenderingServer.force_draw()
 	await process_frame
 
 
 func _shot(name: String) -> void:
+	if _contract:
+		return
 	RenderingServer.force_draw()
 	await process_frame
-	var tex = root.get_texture()
-	if tex == null:
-		_fails.append("截屏失败 %s (null texture)" % name)
-		return
-	var img: Image = tex.get_image()
+	await RenderingServer.frame_post_draw
+	var img := ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _fails)
 	if img == null:
-		_fails.append("截屏失败 %s (null image)" % name)
 		return
 	var sample := img.get_pixel(img.get_width() / 2, img.get_height() / 2)
 	var corner := img.get_pixel(8, 8)
 	if sample.get_luminance() < 0.02 and corner.get_luminance() < 0.02:
 		_fails.append("截屏过暗 %s lum=%.3f/%.3f" % [name, sample.get_luminance(), corner.get_luminance()])
-	var path := "%s/%s.png" % [OUT_DIR, name]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("save_png %s err=%d" % [path, err])
-		return
-	_saved.append(path)
-	print("SHOT ", path, " size=", img.get_width(), "x", img.get_height())
+
+
+## 先过 n 帧（排版 / 延迟调用按帧），再等补间演完；墙钟上界见 probe_clock.gd
+func _settle(n: int) -> void:
+	if not await Clock.settle(self, n):
+		_expect(false, "演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
 
 
 func _find_label(n: Node, text: String) -> Label:
@@ -130,16 +140,5 @@ func _expect(cond: bool, msg: String) -> void:
 
 
 func _report() -> void:
-	print("QA_TAVERN_NEWS_WALL_SHOTS %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if not _fails.is_empty():
-		print("QA_TAVERN_NEWS_WALL_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-		quit(1)
-	if not Kit.is_headless() and _saved.size() < 2:
-		print("QA_TAVERN_NEWS_WALL_FAIL need ≥2 shots")
-		quit(1)
-	print("QA_TAVERN_NEWS_WALL_OK")
-	quit(0)
+	# 旧写法 quit(1) 后未 return 又落到 quit(0)：有失败也退 0。统一交 ShotGate 收尾。
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))

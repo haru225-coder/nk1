@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 """端到端模拟一局：从开局 1000 钱、一条小艍船出发，跑近海商路攒钱换船。
 完整复现 Fleet 的舱位/补给（多船分装）、Economy 的行情冲击与回归、Voyage 的季风与航速。
-目的是找出设计死锁（卡补给、卡舱位、卡钱），而不是验证单条公式。"""
+目的是找出设计死锁（卡补给、卡舱位、卡钱），而不是验证单条公式。
+
+口径：**不含验引**。「本/得/净」只算牙行买卖价（买价含抽解、卖价扣佣），不扣出港验引
+（GameState.customs_duty 的货引抽解）、无引塞钱与疏通；走私查扣是 28% 定概率近似，不走
+customs_inspection 的关注度门槛。验引该不该进账取决于无引贿赂规则（待议，见
+docs/市舶验引与牙行抽解.md §五），规则定前不镜像；只在跑商段末印一行「若逐趟办引」的量级。"""
 import json, math, os, re, sys, random
+if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gate_json; gate_json.maybe_json(__file__)
 
 random.seed(20260727)
 import pathlib
@@ -476,6 +484,8 @@ def one_trip(trip):
     rev = 0 if (seized or empty) else do_sell(gid, qty)
     profit = rev - spent - (fine if seized else 0)
     history.append(profit)
+    if not (empty or smuggle):
+        duty_skipped.append((profit, max(20, int(math.floor(goods[gid]["base_value"] * qty * TARIFF + 0.5)))))
     promoted = resolve_progress()
     tag = ""
     if empty:
@@ -619,6 +629,7 @@ check(verify_invariants(), "开局分船账目不变量成立")
 
 # 已解锁港口轮换——优先未走通/必须亲至的港，避免熟港套利卡晋升
 history = []
+duty_skipped = []  # 合法货趟若办引应纳的验引（光杆、平时税率），只印量级，不进账
 print()
 hand0 = deal("quanzhou", 0)
 check(len(hand0) <= 3 and bool(hand0) and hand0[0] == "ryukyu",
@@ -762,6 +773,11 @@ check(len(history) >= 20, f"连跑 {len(history)} 趟未卡死")
 check(G.money > 1000, f"{len(history)} 趟后资金 {G.money}（开局 1000）")
 check(sum(1 for p in history if p > 0) >= len(history)*0.7,
       f"{sum(1 for p in history if p>0)}/{len(history)} 趟盈利")
+_dn = sum(p for p, _ in duty_skipped)
+_dd = sum(d for _, d in duty_skipped)
+print(f"    不含验引：合法货 {len(duty_skipped)} 趟若逐趟办引（光杆平时税率），共应纳约 {_dd} 钱，"
+      f"为这几趟净利 {_dn} 的 {_dd / max(1, _dn) * 100:.0f}%，其中 {sum(1 for p, d in duty_skipped if 0 < p <= d)} 趟转亏；"
+      f"无引塞钱现为定额 50（待议）")
 
 print()
 print("  ── 行情是否被跑崩（反复走同一条线的自我限制）──")
@@ -1253,7 +1269,9 @@ print()
 print("风涛分摊：护航船自己吃一份，旗舰不替它挨（云端 storm-7d9f）")
 print("="*70)
 voyage_src = open(os.path.join(ROOT, "scripts", "core", "Voyage.gd"), encoding="utf-8").read()
-storm_body = voyage_src.split("func _storm_event", 1)[1].split("\nfunc ", 1)[0]
+from func_body import locate_func  # lane cs15：原先 split("func _storm_event") 按前缀切，认得到 _storm_event_v2
+from src_probe import has_tok
+storm_body = locate_func(voyage_src, "_storm_event")
 hit_m = re.search(r"var each := ([0-9.]+) \* severity", storm_body)
 storm_base = float(hit_m.group(1)) if hit_m else 0.0
 flag_h = float(ships["fu_ship_medium"]["durability"])
@@ -1265,7 +1283,7 @@ piled = flag_h - each * 2
 print(f"  满风涛每艘 {each:.0f}：福船 {flag_h:.0f}→{flag_after:.0f}，小艍 {esc_h:.0f}→{esc_after:.0f}")
 check(flag_after == flag_h - each and esc_after == esc_h - each, "两艘各掉一份")
 check(flag_after > piled, f"旗舰剩 {flag_after:.0f}，没有吃掉护航的那份（堆旗舰会剩 {piled:.0f}）")
-check("damage_each_ship" in storm_body and "ships.size()" not in storm_body,
+check(has_tok(storm_body, "damage_each_ship", call=True) and "ships.size()" not in storm_body,
       "风涛脚本按艘扣，不再乘船数")
 print("航法与委办：接一单、针路送到、交货不砸盘")
 print("="*70)

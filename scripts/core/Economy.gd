@@ -109,6 +109,14 @@ func _effective_tariff(port_id: String = "") -> float:
 	return _base_tariff(port_id) * Crew.trade_cost_factor() * GameState.title_duty_factor()
 
 
+## 市舶抽解的实际税率（战况 × 站蒲家 × 杂事 × 职衔），给 GameState.customs_duty 办引用。
+## 买价里的抽解与验引抽解是同一个市舶司的税，吃同一套倍率；两处只在计税基数上分工：
+## 买价按本港成交价（产地/消费地 × 行情 × 修埠）随单付，验引按 base_value 定额报舱货。
+## 牙人佣金是 broker_fee，只在卖价里扣，不是抽解。见 docs/市舶验引与牙行抽解.md。
+func duty_rate(port_id: String = "") -> float:
+	return _effective_tariff(port_id)
+
+
 func _effective_broker() -> float:
 	return broker_fee * Crew.trade_cost_factor() * GameState.title_duty_factor()
 
@@ -148,9 +156,9 @@ func invest(port_id: String) -> Dictionary:
 		return {"ok": false, "msg": "【修埠】查无此港。"}
 	var cost := invest_cost(port_id)
 	if cost <= 0:
-		return {"ok": false, "msg": "【修埠】本港埠头已修至最高等。"}
+		return {"ok": false, "msg": "【修埠】本港埠头已修至顶等。"}
 	if not GameState.spend_money(cost):
-		return {"ok": false, "msg": "【修埠】再投 %d 钱才能动工，你囊中不足。" % cost}
+		return {"ok": false, "msg": "【修埠】动工须 %d 钱，囊中不足。" % cost}
 	var lv := investment_level(port_id) + 1
 	investments[port_id] = lv
 	var fame_res: Dictionary = GameState.add_fame(invest_fame_gain(lv))
@@ -184,9 +192,15 @@ func price_at_rate(port_id: String, good_id: String, rate: float, is_buy: bool) 
 		v *= (1.0 - ie)
 	elif role == "consumer":
 		v *= (1.0 + ie)
-	if is_buy:
-		return int(round(v * (1.0 + _effective_tariff(port_id)) * (1.0 - edge)))
-	return int(round(v * (1.0 - _effective_broker()) * (1.0 + edge)))
+	var bare_buy := v * (1.0 + _base_tariff(port_id))
+	var bare_sell := v * (1.0 - broker_fee)
+	var cap := bare_buy / PRICE_SPREAD_MIN
+	var sell_v := minf(v * (1.0 - _effective_broker()) * (1.0 + edge), cap)
+	sell_v = maxf(sell_v, minf(bare_sell, cap))
+	if not is_buy:
+		return int(round(sell_v))
+	var buy_v := maxf(v * (1.0 + _effective_tariff(port_id)) * (1.0 - edge), sell_v * PRICE_SPREAD_MIN)
+	return int(round(minf(buy_v, maxf(bare_buy, sell_v * PRICE_SPREAD_MIN))))
 
 
 ## 玩家买入单价（含抽解）
@@ -219,7 +233,7 @@ func price_hint(port_id: String, good_id: String) -> String:
 	elif rate <= 0.65:
 		rate_hint = "价贱"
 	elif rate <= 0.88:
-		rate_hint = "价平偏低"
+		rate_hint = "价略平"
 	if base_hint != "" and rate_hint != "":
 		return base_hint + "・" + rate_hint
 	return base_hint + rate_hint

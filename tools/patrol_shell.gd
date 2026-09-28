@@ -3,10 +3,20 @@ extends SceneTree
 ## 非滚动区的按钮必须落在 1280×720 里；珊瑚主钮聚焦时仍是深字。
 ## 海图三张航向牌必须整张在画面内，水粮不够时牌上写着告警，账条变高时海图不低于自己的最小高度。
 ## （合并时按 7f92 晨潮三向改写：原版量的是已拆掉的港口列表。）
+## 截图旁证（lane pg）：存盘前按像素种类数 / 直方图熵判一色，一色或拿不到图打 ⚠（不改退出码，--json 记 warn）；
+## headless 不截，打一行 ⚠ 说明未判——不再静默跳过。
 ## godot --path . -s res://tools/patrol_shell.gd
 
 const VIEW := Vector2(1280, 720)
 const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
+const GateReport := preload("res://tools/gate_report.gd")  # -- --json 时只打一行 JSON（lane g2）
+## 截图旁证目录：默认 /tmp/patrol-shots；设 NK1_SHOT_DIR 则落 <该目录>/patrol（与 ShotGate.out_dir 同口径，lane pg3；
+## 不 preload shot_gate.gd——gates_md 会把 preload 它的脚本当截图探针要求入册）。
+var SHOT_DIR := _shot_dir()
+## 一色判据：每 4px 取一点、每通道量化到 16 级，种类 ≤ 2 或香农熵 < 0.1 bit 即判一色（种类 2 兜住纯色恰落量化格边界）。
+## 实测：巡检正常页 150–283 种 / 4.2–5.6 bit；最稀的正当画面（墨幕题签帧）41 种 / 0.25 bit；纯色 1 种 / 0 bit。
+const FLAT_MAX_KINDS := 2
+const FLAT_MIN_ENTROPY := 0.1
 const PORTS := ["quanzhou", "fuzhou", "xinghua"]
 const FACILITIES := [
 	"market", "yamen", "shipyard", "tavern", "inn",
@@ -15,6 +25,9 @@ const FACILITIES := [
 
 var _main: Node
 var _fails: Array = []
+var _no_render := false
+var _shots := 0
+var _shot_warns: Array = []
 
 
 func _init() -> void:
@@ -26,6 +39,10 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(VIEW)
+	# 与 shot_gate.no_render_reason 同判据；不 preload 它，patrol 不是按张数判红的截图门禁（gates_md 按 preload 认册）
+	_no_render = DisplayServer.get_name() == "headless" \
+		or RenderingServer.get_current_rendering_driver_name() in ["", "dummy"]
+	_check_flat_selftest()
 	var packed: PackedScene = load("res://scenes/Main.tscn")
 	_main = packed.instantiate()
 	root.add_child(_main)
@@ -357,13 +374,75 @@ func _color_near(a: Color, b: Color) -> bool:
 	return absf(a.r - b.r) < 0.05 and absf(a.g - b.g) < 0.05 and absf(a.b - b.b) < 0.05
 
 
-func _shot_chart(chart: Node, name: String) -> void:
-	var img := root.get_texture().get_image()
-	if img == null:
+func _shot_chart(_chart: Node, name: String) -> void:
+	_save_shot(name)
+
+
+## 同 ShotGate.out_dir：NK1_SHOT_DIR 为空取默认；相对路径按启动时的 $PWD 展开。
+static func _shot_dir() -> String:
+	var root := OS.get_environment("NK1_SHOT_DIR").strip_edges()
+	if root == "":
+		return "/tmp/patrol-shots"
+	if not root.is_absolute_path():
+		root = OS.get_environment("PWD").path_join(root)
+	return root.path_join("patrol")
+
+
+## 截一张旁证：一色 / 拿不到图记 warn（一色图照存，便于人看）；headless 只计数，收尾统一说明。
+func _save_shot(tag: String) -> void:
+	_shots += 1
+	if _no_render:
 		return
-	var dir := "/tmp/patrol-shots"
-	DirAccess.make_dir_recursive_absolute(dir)
-	img.save_png("%s/%s.png" % [dir, name])
+	var img := root.get_texture().get_image()
+	var bad := _flat_reason(img)
+	if bad != "":
+		_shot_warns.append("截图旁证 %s %s" % [tag, bad])
+	if img == null or img.is_empty():
+		return
+	DirAccess.make_dir_recursive_absolute(SHOT_DIR)
+	img.save_png("%s/%s.png" % [SHOT_DIR, tag])
+
+
+## 一色返回原因（含种类数与熵），正常返回 ""。
+func _flat_reason(img: Image) -> String:
+	if img == null or img.is_empty():
+		return "拿不到图（视口纹理为空）"
+	var im := img.duplicate() as Image
+	im.convert(Image.FORMAT_RGB8)
+	var d := im.get_data()
+	var w := im.get_width()
+	var hist := {}
+	var n := 0
+	for y in range(0, im.get_height(), 4):
+		for x in range(0, w, 4):
+			var i := (y * w + x) * 3
+			var k := ((d[i] >> 4) << 8) | ((d[i + 1] >> 4) << 4) | (d[i + 2] >> 4)
+			hist[k] = int(hist.get(k, 0)) + 1
+			n += 1
+	var e := 0.0
+	for c in hist.values():
+		var p := float(c) / n
+		e -= p * log(p) / log(2.0)
+	if hist.size() <= FLAT_MAX_KINDS or e < FLAT_MIN_ENTROPY:
+		return "画面一色（种类 %d · 熵 %.3f bit）：窗口未绘制或空视口" % [hist.size(), e]
+	return ""
+
+
+## 判据自证：纯色、纯色落在量化格边界的两色抖动都必须判一色，杂色图必须不判。
+func _check_flat_selftest() -> void:
+	var solid := Image.create(128, 72, false, Image.FORMAT_RGB8)
+	solid.fill(Color(0.3, 0.3, 0.3))
+	var dither := Image.create(128, 72, false, Image.FORMAT_RGB8)
+	var busy := Image.create(128, 72, false, Image.FORMAT_RGB8)
+	for y in 72:
+		for x in 128:
+			var v := 127 + ((x + y) & 1)
+			dither.set_pixel(x, y, Color8(v, v, v))
+			busy.set_pixel(x, y, Color8((x * 37 + y * 11) & 255, (x * 5 + y * 53) & 255, (x * y) & 255))
+	_check(_flat_reason(solid) != "", "截图判据自检：纯色图判一色")
+	_check(_flat_reason(dither) != "", "截图判据自检：量化格边界两色抖动判一色")
+	_check(_flat_reason(busy) == "", "截图判据自检：杂色图不判一色")
+	_check(_flat_reason(null) != "", "截图判据自检：空图判拿不到图")
 
 
 func _check_accent_focus() -> void:
@@ -416,11 +495,7 @@ func _check_screen(tag: String, shot: bool) -> void:
 	var stray := _offscreen_buttons(_main)
 	_check(stray.is_empty(), "%s 按钮都在画面里（越界 %s）" % [tag, stray])
 	if shot:
-		var img := root.get_texture().get_image()
-		if img != null:
-			var dir := "/tmp/patrol-shots"
-			DirAccess.make_dir_recursive_absolute(dir)
-			img.save_png("%s/%s.png" % [dir, tag])
+		_save_shot(tag)
 
 
 func _offscreen_buttons(node: Node) -> Array:
@@ -452,16 +527,39 @@ func _inside_scroll(node: Node) -> bool:
 
 func _check(cond: bool, msg: String) -> void:
 	print(("  ✓ " if cond else "  ✗ ") + msg)
+	GateReport.check(cond, msg)
 	if not cond:
 		_fails.append(msg)
 
 
+func _report_shots() -> void:
+	if _no_render:
+		var why := "截图旁证未判（%d 张跳过）：无渲染环境（DisplayServer=%s），带窗口请 DISPLAY=:2 跑" % [_shots, DisplayServer.get_name()]
+		print("  ⚠ ", why)
+		GateReport.warn(why)
+		return
+	for w in _shot_warns:
+		print("  ⚠ ", w)
+		GateReport.warn(str(w))
+	if _shot_warns.is_empty():
+		var ok_line := "截图旁证 %d/%d 张非一色 -> %s" % [_shots, _shots, SHOT_DIR]
+		print("  ✓ ", ok_line)
+		GateReport.check(true, ok_line)
+	else:
+		var warn_line := "截图旁证 %d/%d 张一色或拿不到图 -> %s" % [_shot_warns.size(), _shots, SHOT_DIR]
+		print("  ⚠ ", warn_line)
+		GateReport.warn(warn_line)
+
+
 func _finish() -> void:
+	_report_shots()
 	if _fails.is_empty():
 		print("PATROL SHELL PASS")
+		GateReport.finish("patrol_shell", 0, "PATROL SHELL PASS")
 		quit(0)
 	else:
 		print("PATROL SHELL FAIL")
 		for f in _fails:
 			print("  ✗ ", f)
+		GateReport.finish("patrol_shell", 1, "PATROL SHELL FAIL")
 		quit(1)

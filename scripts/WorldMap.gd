@@ -183,7 +183,17 @@ func _board_enemy(enemy: Node2D) -> void:
 	var stage: CanvasLayer = _BoardingStage.begin(self, ship, enemy, _CombatFx.board_begin_subtitle())
 	_CombatFx.punch_camera(ship, 5.0)
 	if not _Kit.is_headless():
-		await get_tree().create_timer(0.42).timeout
+		# 计时器挂在本节点下（lane gd17）：原 get_tree().create_timer 挂在 SceneTree 上，这 0.42 s 里 WorldMap 被释放
+		# （别的敌船把旗舰打沉 → _battle_exit / 退出）后协程醒不来也放不掉，退出报 ObjectDB 泄漏（GDScriptFunctionState）。
+		# 挂在自己下面则随本节点一起释放，挂起的协程随信号源丢弃。PROCESS_MODE_ALWAYS 同 create_timer 默认。
+		var pause := Timer.new()
+		pause.one_shot = true
+		pause.process_mode = Node.PROCESS_MODE_ALWAYS
+		pause.wait_time = 0.42
+		add_child(pause)
+		pause.start()
+		await pause.timeout
+		pause.queue_free()
 	if not is_instance_valid(enemy) or not _boarding_target_valid():
 		boarding = false
 		boarding_target = null

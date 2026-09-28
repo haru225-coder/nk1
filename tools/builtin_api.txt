@@ -1,0 +1,1420 @@
+# 由 tools/gen_builtin_list.gd 从 ClassDB 导出，勿手改；重生成：python3 tools/check_symbols.py --regen
+# godot 4.6.3.stable.official.7d41c59c4
+# sha256 76a5fc82df8f05b397e793a912c9236ce3cb777157025becaa548ec7bb0eeddc
+[Object]
+inherits
+constant CONNECT_APPEND_SOURCE_OBJECT
+constant CONNECT_DEFERRED
+constant CONNECT_ONE_SHOT
+constant CONNECT_PERSIST
+constant CONNECT_REFERENCE_COUNTED
+constant NOTIFICATION_EXTENSION_RELOADED
+constant NOTIFICATION_POSTINITIALIZE
+constant NOTIFICATION_PREDELETE
+enum ConnectFlags
+method _get
+method _get_property_list
+method _init
+method _iter_get
+method _iter_init
+method _iter_next
+method _notification
+method _property_can_revert
+method _property_get_revert
+method _set
+method _to_string
+method _validate_property
+method add_user_signal
+method call
+method call_deferred
+method callv
+method can_translate_messages
+method cancel_free
+method connect
+method disconnect
+method emit_signal
+method free
+method get
+method get_class
+method get_incoming_connections
+method get_indexed
+method get_instance_id
+method get_meta
+method get_meta_list
+method get_method_argument_count
+method get_method_list
+method get_property_list
+method get_script
+method get_signal_connection_list
+method get_signal_list
+method get_translation_domain
+method has_connections
+method has_meta
+method has_method
+method has_signal
+method has_user_signal
+method is_blocking_signals
+method is_class
+method is_connected
+method is_queued_for_deletion
+method notification
+method notify_property_list_changed
+method property_can_revert
+method property_get_revert
+method remove_meta
+method remove_user_signal
+method set
+method set_block_signals
+method set_deferred
+method set_indexed
+method set_message_translation
+method set_meta
+method set_script
+method set_translation_domain
+method to_string
+method tr
+method tr_n
+signal property_list_changed
+signal script_changed
+
+[RefCounted]
+inherits Object
+method get_reference_count
+method init_ref
+method reference
+method unreference
+
+[Resource]
+inherits RefCounted
+constant DEEP_DUPLICATE_ALL
+constant DEEP_DUPLICATE_INTERNAL
+constant DEEP_DUPLICATE_NONE
+enum DeepDuplicateMode
+method _get_rid
+method _reset_state
+method _set_path_cache
+method _setup_local_to_scene
+method duplicate
+method duplicate_deep
+method emit_changed
+method generate_scene_unique_id
+method get_id_for_path
+method get_local_scene
+method get_name
+method get_path
+method get_rid
+method get_scene_unique_id
+method is_built_in
+method is_local_to_scene
+method reset_state
+method set_id_for_path
+method set_local_to_scene
+method set_name
+method set_path
+method set_path_cache
+method set_scene_unique_id
+method setup_local_to_scene
+method take_over_path
+property resource_local_to_scene
+property resource_name
+property resource_path
+property resource_scene_unique_id
+signal changed
+signal setup_local_to_scene_requested
+
+[Node]
+inherits Object
+constant AUTO_TRANSLATE_MODE_ALWAYS
+constant AUTO_TRANSLATE_MODE_DISABLED
+constant AUTO_TRANSLATE_MODE_INHERIT
+constant DUPLICATE_DEFAULT
+constant DUPLICATE_GROUPS
+constant DUPLICATE_INTERNAL_STATE
+constant DUPLICATE_SCRIPTS
+constant DUPLICATE_SIGNALS
+constant DUPLICATE_USE_INSTANTIATION
+constant FLAG_PROCESS_THREAD_MESSAGES
+constant FLAG_PROCESS_THREAD_MESSAGES_ALL
+constant FLAG_PROCESS_THREAD_MESSAGES_PHYSICS
+constant INTERNAL_MODE_BACK
+constant INTERNAL_MODE_DISABLED
+constant INTERNAL_MODE_FRONT
+constant NOTIFICATION_ACCESSIBILITY_INVALIDATE
+constant NOTIFICATION_ACCESSIBILITY_UPDATE
+constant NOTIFICATION_APPLICATION_FOCUS_IN
+constant NOTIFICATION_APPLICATION_FOCUS_OUT
+constant NOTIFICATION_APPLICATION_PAUSED
+constant NOTIFICATION_APPLICATION_RESUMED
+constant NOTIFICATION_CHILD_ORDER_CHANGED
+constant NOTIFICATION_CRASH
+constant NOTIFICATION_DISABLED
+constant NOTIFICATION_DRAG_BEGIN
+constant NOTIFICATION_DRAG_END
+constant NOTIFICATION_EDITOR_POST_SAVE
+constant NOTIFICATION_EDITOR_PRE_SAVE
+constant NOTIFICATION_ENABLED
+constant NOTIFICATION_ENTER_TREE
+constant NOTIFICATION_EXIT_TREE
+constant NOTIFICATION_INTERNAL_PHYSICS_PROCESS
+constant NOTIFICATION_INTERNAL_PROCESS
+constant NOTIFICATION_MOVED_IN_PARENT
+constant NOTIFICATION_OS_IME_UPDATE
+constant NOTIFICATION_OS_MEMORY_WARNING
+constant NOTIFICATION_PARENTED
+constant NOTIFICATION_PATH_RENAMED
+constant NOTIFICATION_PAUSED
+constant NOTIFICATION_PHYSICS_PROCESS
+constant NOTIFICATION_POST_ENTER_TREE
+constant NOTIFICATION_PROCESS
+constant NOTIFICATION_READY
+constant NOTIFICATION_RESET_PHYSICS_INTERPOLATION
+constant NOTIFICATION_SCENE_INSTANTIATED
+constant NOTIFICATION_TEXT_SERVER_CHANGED
+constant NOTIFICATION_TRANSLATION_CHANGED
+constant NOTIFICATION_UNPARENTED
+constant NOTIFICATION_UNPAUSED
+constant NOTIFICATION_VP_MOUSE_ENTER
+constant NOTIFICATION_VP_MOUSE_EXIT
+constant NOTIFICATION_WM_ABOUT
+constant NOTIFICATION_WM_CLOSE_REQUEST
+constant NOTIFICATION_WM_DPI_CHANGE
+constant NOTIFICATION_WM_GO_BACK_REQUEST
+constant NOTIFICATION_WM_MOUSE_ENTER
+constant NOTIFICATION_WM_MOUSE_EXIT
+constant NOTIFICATION_WM_POSITION_CHANGED
+constant NOTIFICATION_WM_SIZE_CHANGED
+constant NOTIFICATION_WM_WINDOW_FOCUS_IN
+constant NOTIFICATION_WM_WINDOW_FOCUS_OUT
+constant PHYSICS_INTERPOLATION_MODE_INHERIT
+constant PHYSICS_INTERPOLATION_MODE_OFF
+constant PHYSICS_INTERPOLATION_MODE_ON
+constant PROCESS_MODE_ALWAYS
+constant PROCESS_MODE_DISABLED
+constant PROCESS_MODE_INHERIT
+constant PROCESS_MODE_PAUSABLE
+constant PROCESS_MODE_WHEN_PAUSED
+constant PROCESS_THREAD_GROUP_INHERIT
+constant PROCESS_THREAD_GROUP_MAIN_THREAD
+constant PROCESS_THREAD_GROUP_SUB_THREAD
+enum AutoTranslateMode
+enum DuplicateFlags
+enum InternalMode
+enum PhysicsInterpolationMode
+enum ProcessMode
+enum ProcessThreadGroup
+enum ProcessThreadMessages
+method _enter_tree
+method _exit_tree
+method _get_accessibility_configuration_warnings
+method _get_configuration_warnings
+method _get_focused_accessibility_element
+method _input
+method _physics_process
+method _process
+method _ready
+method _set_property_pinned
+method _shortcut_input
+method _unhandled_input
+method _unhandled_key_input
+method add_child
+method add_sibling
+method add_to_group
+method atr
+method atr_n
+method call_deferred_thread_group
+method call_thread_safe
+method can_auto_translate
+method can_process
+method create_tween
+method duplicate
+method find_child
+method find_children
+method find_parent
+method get_accessibility_element
+method get_auto_translate_mode
+method get_child
+method get_child_count
+method get_children
+method get_editor_description
+method get_groups
+method get_index
+method get_last_exclusive_window
+method get_multiplayer
+method get_multiplayer_authority
+method get_name
+method get_node
+method get_node_and_resource
+method get_node_or_null
+method get_node_rpc_config
+method get_orphan_node_ids
+method get_owner
+method get_parent
+method get_path
+method get_path_to
+method get_physics_interpolation_mode
+method get_physics_process_delta_time
+method get_physics_process_priority
+method get_process_delta_time
+method get_process_mode
+method get_process_priority
+method get_process_thread_group
+method get_process_thread_group_order
+method get_process_thread_messages
+method get_scene_file_path
+method get_scene_instance_load_placeholder
+method get_tree
+method get_tree_string
+method get_tree_string_pretty
+method get_viewport
+method get_window
+method has_node
+method has_node_and_resource
+method is_ancestor_of
+method is_displayed_folded
+method is_editable_instance
+method is_greater_than
+method is_in_group
+method is_inside_tree
+method is_multiplayer_authority
+method is_node_ready
+method is_part_of_edited_scene
+method is_physics_interpolated
+method is_physics_interpolated_and_enabled
+method is_physics_processing
+method is_physics_processing_internal
+method is_processing
+method is_processing_input
+method is_processing_internal
+method is_processing_shortcut_input
+method is_processing_unhandled_input
+method is_processing_unhandled_key_input
+method is_unique_name_in_owner
+method move_child
+method notify_deferred_thread_group
+method notify_thread_safe
+method print_orphan_nodes
+method print_tree
+method print_tree_pretty
+method propagate_call
+method propagate_notification
+method queue_accessibility_update
+method queue_free
+method remove_child
+method remove_from_group
+method reparent
+method replace_by
+method request_ready
+method reset_physics_interpolation
+method rpc
+method rpc_config
+method rpc_id
+method set_auto_translate_mode
+method set_deferred_thread_group
+method set_display_folded
+method set_editable_instance
+method set_editor_description
+method set_multiplayer_authority
+method set_name
+method set_owner
+method set_physics_interpolation_mode
+method set_physics_process
+method set_physics_process_internal
+method set_physics_process_priority
+method set_process
+method set_process_input
+method set_process_internal
+method set_process_mode
+method set_process_priority
+method set_process_shortcut_input
+method set_process_thread_group
+method set_process_thread_group_order
+method set_process_thread_messages
+method set_process_unhandled_input
+method set_process_unhandled_key_input
+method set_scene_file_path
+method set_scene_instance_load_placeholder
+method set_thread_safe
+method set_translation_domain_inherited
+method set_unique_name_in_owner
+method update_configuration_warnings
+property auto_translate_mode
+property editor_description
+property multiplayer
+property name
+property owner
+property physics_interpolation_mode
+property process_mode
+property process_physics_priority
+property process_priority
+property process_thread_group
+property process_thread_group_order
+property process_thread_messages
+property scene_file_path
+property unique_name_in_owner
+signal child_entered_tree
+signal child_exiting_tree
+signal child_order_changed
+signal editor_description_changed
+signal editor_state_changed
+signal ready
+signal renamed
+signal replacing_by
+signal tree_entered
+signal tree_exited
+signal tree_exiting
+
+[CanvasItem]
+inherits Node
+constant CLIP_CHILDREN_AND_DRAW
+constant CLIP_CHILDREN_DISABLED
+constant CLIP_CHILDREN_MAX
+constant CLIP_CHILDREN_ONLY
+constant NOTIFICATION_DRAW
+constant NOTIFICATION_ENTER_CANVAS
+constant NOTIFICATION_EXIT_CANVAS
+constant NOTIFICATION_LOCAL_TRANSFORM_CHANGED
+constant NOTIFICATION_TRANSFORM_CHANGED
+constant NOTIFICATION_VISIBILITY_CHANGED
+constant NOTIFICATION_WORLD_2D_CHANGED
+constant TEXTURE_FILTER_LINEAR
+constant TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+constant TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+constant TEXTURE_FILTER_MAX
+constant TEXTURE_FILTER_NEAREST
+constant TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+constant TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC
+constant TEXTURE_FILTER_PARENT_NODE
+constant TEXTURE_REPEAT_DISABLED
+constant TEXTURE_REPEAT_ENABLED
+constant TEXTURE_REPEAT_MAX
+constant TEXTURE_REPEAT_MIRROR
+constant TEXTURE_REPEAT_PARENT_NODE
+enum ClipChildrenMode
+enum TextureFilter
+enum TextureRepeat
+method _draw
+method _edit_get_pivot
+method _edit_get_position
+method _edit_get_rect
+method _edit_get_rotation
+method _edit_get_scale
+method _edit_get_state
+method _edit_get_transform
+method _edit_set_pivot
+method _edit_set_position
+method _edit_set_rect
+method _edit_set_rotation
+method _edit_set_scale
+method _edit_set_state
+method _edit_use_pivot
+method _edit_use_rect
+method _edit_use_rotation
+method _top_level_raise_self
+method draw_animation_slice
+method draw_arc
+method draw_char
+method draw_char_outline
+method draw_circle
+method draw_colored_polygon
+method draw_dashed_line
+method draw_ellipse
+method draw_ellipse_arc
+method draw_end_animation
+method draw_lcd_texture_rect_region
+method draw_line
+method draw_mesh
+method draw_msdf_texture_rect_region
+method draw_multiline
+method draw_multiline_colors
+method draw_multiline_string
+method draw_multiline_string_outline
+method draw_multimesh
+method draw_polygon
+method draw_polyline
+method draw_polyline_colors
+method draw_primitive
+method draw_rect
+method draw_set_transform
+method draw_set_transform_matrix
+method draw_string
+method draw_string_outline
+method draw_style_box
+method draw_texture
+method draw_texture_rect
+method draw_texture_rect_region
+method force_update_transform
+method get_canvas
+method get_canvas_item
+method get_canvas_layer_node
+method get_canvas_transform
+method get_clip_children_mode
+method get_global_mouse_position
+method get_global_transform
+method get_global_transform_with_canvas
+method get_instance_shader_parameter
+method get_light_mask
+method get_local_mouse_position
+method get_material
+method get_modulate
+method get_screen_transform
+method get_self_modulate
+method get_texture_filter
+method get_texture_repeat
+method get_transform
+method get_use_parent_material
+method get_viewport_rect
+method get_viewport_transform
+method get_visibility_layer
+method get_visibility_layer_bit
+method get_world_2d
+method get_z_index
+method hide
+method is_draw_behind_parent_enabled
+method is_local_transform_notification_enabled
+method is_set_as_top_level
+method is_transform_notification_enabled
+method is_visible
+method is_visible_in_tree
+method is_y_sort_enabled
+method is_z_relative
+method make_canvas_position_local
+method make_input_local
+method move_to_front
+method queue_redraw
+method set_as_top_level
+method set_clip_children_mode
+method set_draw_behind_parent
+method set_instance_shader_parameter
+method set_light_mask
+method set_material
+method set_modulate
+method set_notify_local_transform
+method set_notify_transform
+method set_self_modulate
+method set_texture_filter
+method set_texture_repeat
+method set_use_parent_material
+method set_visibility_layer
+method set_visibility_layer_bit
+method set_visible
+method set_y_sort_enabled
+method set_z_as_relative
+method set_z_index
+method show
+property clip_children
+property light_mask
+property material
+property modulate
+property self_modulate
+property show_behind_parent
+property texture_filter
+property texture_repeat
+property top_level
+property use_parent_material
+property visibility_layer
+property visible
+property y_sort_enabled
+property z_as_relative
+property z_index
+signal draw
+signal hidden
+signal item_rect_changed
+signal visibility_changed
+
+[Node2D]
+inherits CanvasItem
+method apply_scale
+method get_angle_to
+method get_global_position
+method get_global_rotation
+method get_global_rotation_degrees
+method get_global_scale
+method get_global_skew
+method get_position
+method get_relative_transform_to_parent
+method get_rotation
+method get_rotation_degrees
+method get_scale
+method get_skew
+method global_translate
+method look_at
+method move_local_x
+method move_local_y
+method rotate
+method set_global_position
+method set_global_rotation
+method set_global_rotation_degrees
+method set_global_scale
+method set_global_skew
+method set_global_transform
+method set_position
+method set_rotation
+method set_rotation_degrees
+method set_scale
+method set_skew
+method set_transform
+method to_global
+method to_local
+method translate
+property global_position
+property global_rotation
+property global_rotation_degrees
+property global_scale
+property global_skew
+property global_transform
+property position
+property rotation
+property rotation_degrees
+property scale
+property skew
+property transform
+
+[Control]
+inherits CanvasItem
+constant ANCHOR_BEGIN
+constant ANCHOR_END
+constant CURSOR_ARROW
+constant CURSOR_BDIAGSIZE
+constant CURSOR_BUSY
+constant CURSOR_CAN_DROP
+constant CURSOR_CROSS
+constant CURSOR_DRAG
+constant CURSOR_FDIAGSIZE
+constant CURSOR_FORBIDDEN
+constant CURSOR_HELP
+constant CURSOR_HSIZE
+constant CURSOR_HSPLIT
+constant CURSOR_IBEAM
+constant CURSOR_MOVE
+constant CURSOR_POINTING_HAND
+constant CURSOR_VSIZE
+constant CURSOR_VSPLIT
+constant CURSOR_WAIT
+constant FOCUS_ACCESSIBILITY
+constant FOCUS_ALL
+constant FOCUS_BEHAVIOR_DISABLED
+constant FOCUS_BEHAVIOR_ENABLED
+constant FOCUS_BEHAVIOR_INHERITED
+constant FOCUS_CLICK
+constant FOCUS_NONE
+constant GROW_DIRECTION_BEGIN
+constant GROW_DIRECTION_BOTH
+constant GROW_DIRECTION_END
+constant LAYOUT_DIRECTION_APPLICATION_LOCALE
+constant LAYOUT_DIRECTION_INHERITED
+constant LAYOUT_DIRECTION_LOCALE
+constant LAYOUT_DIRECTION_LTR
+constant LAYOUT_DIRECTION_MAX
+constant LAYOUT_DIRECTION_RTL
+constant LAYOUT_DIRECTION_SYSTEM_LOCALE
+constant MOUSE_BEHAVIOR_DISABLED
+constant MOUSE_BEHAVIOR_ENABLED
+constant MOUSE_BEHAVIOR_INHERITED
+constant MOUSE_FILTER_IGNORE
+constant MOUSE_FILTER_PASS
+constant MOUSE_FILTER_STOP
+constant NOTIFICATION_FOCUS_ENTER
+constant NOTIFICATION_FOCUS_EXIT
+constant NOTIFICATION_LAYOUT_DIRECTION_CHANGED
+constant NOTIFICATION_MOUSE_ENTER
+constant NOTIFICATION_MOUSE_ENTER_SELF
+constant NOTIFICATION_MOUSE_EXIT
+constant NOTIFICATION_MOUSE_EXIT_SELF
+constant NOTIFICATION_RESIZED
+constant NOTIFICATION_SCROLL_BEGIN
+constant NOTIFICATION_SCROLL_END
+constant NOTIFICATION_THEME_CHANGED
+constant PRESET_BOTTOM_LEFT
+constant PRESET_BOTTOM_RIGHT
+constant PRESET_BOTTOM_WIDE
+constant PRESET_CENTER
+constant PRESET_CENTER_BOTTOM
+constant PRESET_CENTER_LEFT
+constant PRESET_CENTER_RIGHT
+constant PRESET_CENTER_TOP
+constant PRESET_FULL_RECT
+constant PRESET_HCENTER_WIDE
+constant PRESET_LEFT_WIDE
+constant PRESET_MODE_KEEP_HEIGHT
+constant PRESET_MODE_KEEP_SIZE
+constant PRESET_MODE_KEEP_WIDTH
+constant PRESET_MODE_MINSIZE
+constant PRESET_RIGHT_WIDE
+constant PRESET_TOP_LEFT
+constant PRESET_TOP_RIGHT
+constant PRESET_TOP_WIDE
+constant PRESET_VCENTER_WIDE
+constant SIZE_EXPAND
+constant SIZE_EXPAND_FILL
+constant SIZE_FILL
+constant SIZE_SHRINK_BEGIN
+constant SIZE_SHRINK_CENTER
+constant SIZE_SHRINK_END
+constant TEXT_DIRECTION_AUTO
+constant TEXT_DIRECTION_INHERITED
+constant TEXT_DIRECTION_LTR
+constant TEXT_DIRECTION_RTL
+enum Anchor
+enum CursorShape
+enum FocusBehaviorRecursive
+enum FocusMode
+enum GrowDirection
+enum LayoutDirection
+enum LayoutPreset
+enum LayoutPresetMode
+enum MouseBehaviorRecursive
+enum MouseFilter
+enum SizeFlags
+enum TextDirection
+method _accessibility_get_contextual_info
+method _can_drop_data
+method _drop_data
+method _get_accessibility_container_name
+method _get_anchors_layout_preset
+method _get_drag_data
+method _get_layout_mode
+method _get_minimum_size
+method _get_tooltip
+method _gui_input
+method _has_point
+method _make_custom_tooltip
+method _set_anchor
+method _set_anchors_layout_preset
+method _set_global_position
+method _set_layout_mode
+method _set_position
+method _set_size
+method _structured_text_parser
+method accept_event
+method accessibility_drag
+method accessibility_drop
+method add_theme_color_override
+method add_theme_constant_override
+method add_theme_font_override
+method add_theme_font_size_override
+method add_theme_icon_override
+method add_theme_stylebox_override
+method begin_bulk_theme_override
+method end_bulk_theme_override
+method find_next_valid_focus
+method find_prev_valid_focus
+method find_valid_focus_neighbor
+method force_drag
+method get_accessibility_controls_nodes
+method get_accessibility_described_by_nodes
+method get_accessibility_description
+method get_accessibility_flow_to_nodes
+method get_accessibility_labeled_by_nodes
+method get_accessibility_live
+method get_accessibility_name
+method get_anchor
+method get_begin
+method get_combined_minimum_size
+method get_combined_pivot_offset
+method get_cursor_shape
+method get_custom_minimum_size
+method get_default_cursor_shape
+method get_end
+method get_focus_behavior_recursive
+method get_focus_mode
+method get_focus_mode_with_override
+method get_focus_neighbor
+method get_focus_next
+method get_focus_previous
+method get_global_position
+method get_global_rect
+method get_h_grow_direction
+method get_h_size_flags
+method get_layout_direction
+method get_minimum_size
+method get_mouse_behavior_recursive
+method get_mouse_filter
+method get_mouse_filter_with_override
+method get_offset
+method get_parent_area_size
+method get_parent_control
+method get_pivot_offset
+method get_pivot_offset_ratio
+method get_position
+method get_rect
+method get_rotation
+method get_rotation_degrees
+method get_scale
+method get_screen_position
+method get_shortcut_context
+method get_size
+method get_stretch_ratio
+method get_theme
+method get_theme_color
+method get_theme_constant
+method get_theme_default_base_scale
+method get_theme_default_font
+method get_theme_default_font_size
+method get_theme_font
+method get_theme_font_size
+method get_theme_icon
+method get_theme_stylebox
+method get_theme_type_variation
+method get_tooltip
+method get_tooltip_auto_translate_mode
+method get_tooltip_text
+method get_v_grow_direction
+method get_v_size_flags
+method grab_click_focus
+method grab_focus
+method has_focus
+method has_theme_color
+method has_theme_color_override
+method has_theme_constant
+method has_theme_constant_override
+method has_theme_font
+method has_theme_font_override
+method has_theme_font_size
+method has_theme_font_size_override
+method has_theme_icon
+method has_theme_icon_override
+method has_theme_stylebox
+method has_theme_stylebox_override
+method is_auto_translating
+method is_clipping_contents
+method is_drag_successful
+method is_force_pass_scroll_events
+method is_layout_rtl
+method is_localizing_numeral_system
+method release_focus
+method remove_theme_color_override
+method remove_theme_constant_override
+method remove_theme_font_override
+method remove_theme_font_size_override
+method remove_theme_icon_override
+method remove_theme_stylebox_override
+method reset_size
+method set_accessibility_controls_nodes
+method set_accessibility_described_by_nodes
+method set_accessibility_description
+method set_accessibility_flow_to_nodes
+method set_accessibility_labeled_by_nodes
+method set_accessibility_live
+method set_accessibility_name
+method set_anchor
+method set_anchor_and_offset
+method set_anchors_and_offsets_preset
+method set_anchors_preset
+method set_auto_translate
+method set_begin
+method set_clip_contents
+method set_custom_minimum_size
+method set_default_cursor_shape
+method set_drag_forwarding
+method set_drag_preview
+method set_end
+method set_focus_behavior_recursive
+method set_focus_mode
+method set_focus_neighbor
+method set_focus_next
+method set_focus_previous
+method set_force_pass_scroll_events
+method set_global_position
+method set_h_grow_direction
+method set_h_size_flags
+method set_layout_direction
+method set_localize_numeral_system
+method set_mouse_behavior_recursive
+method set_mouse_filter
+method set_offset
+method set_offsets_preset
+method set_pivot_offset
+method set_pivot_offset_ratio
+method set_position
+method set_rotation
+method set_rotation_degrees
+method set_scale
+method set_shortcut_context
+method set_size
+method set_stretch_ratio
+method set_theme
+method set_theme_type_variation
+method set_tooltip_auto_translate_mode
+method set_tooltip_text
+method set_v_grow_direction
+method set_v_size_flags
+method update_minimum_size
+method warp_mouse
+property accessibility_controls_nodes
+property accessibility_described_by_nodes
+property accessibility_description
+property accessibility_flow_to_nodes
+property accessibility_labeled_by_nodes
+property accessibility_live
+property accessibility_name
+property anchor_bottom
+property anchor_left
+property anchor_right
+property anchor_top
+property anchors_preset
+property auto_translate
+property clip_contents
+property custom_minimum_size
+property focus_behavior_recursive
+property focus_mode
+property focus_neighbor_bottom
+property focus_neighbor_left
+property focus_neighbor_right
+property focus_neighbor_top
+property focus_next
+property focus_previous
+property global_position
+property grow_horizontal
+property grow_vertical
+property layout_direction
+property layout_mode
+property localize_numeral_system
+property mouse_behavior_recursive
+property mouse_default_cursor_shape
+property mouse_filter
+property mouse_force_pass_scroll_events
+property offset_bottom
+property offset_left
+property offset_right
+property offset_top
+property pivot_offset
+property pivot_offset_ratio
+property position
+property rotation
+property rotation_degrees
+property scale
+property shortcut_context
+property size
+property size_flags_horizontal
+property size_flags_stretch_ratio
+property size_flags_vertical
+property theme
+property theme_type_variation
+property tooltip_auto_translate_mode
+property tooltip_text
+signal focus_entered
+signal focus_exited
+signal gui_input
+signal minimum_size_changed
+signal mouse_entered
+signal mouse_exited
+signal resized
+signal size_flags_changed
+signal theme_changed
+
+[CanvasLayer]
+inherits Node
+method get_canvas
+method get_custom_viewport
+method get_final_transform
+method get_follow_viewport_scale
+method get_layer
+method get_offset
+method get_rotation
+method get_scale
+method get_transform
+method hide
+method is_following_viewport
+method is_visible
+method set_custom_viewport
+method set_follow_viewport
+method set_follow_viewport_scale
+method set_layer
+method set_offset
+method set_rotation
+method set_scale
+method set_transform
+method set_visible
+method show
+property custom_viewport
+property follow_viewport_enabled
+property follow_viewport_scale
+property layer
+property offset
+property rotation
+property scale
+property transform
+property visible
+signal visibility_changed
+
+== signal ==
+[AcceptDialog]
+inherits Window
+signal canceled
+signal confirmed
+signal custom_action
+
+[AnimatableBody2D]
+inherits StaticBody2D
+
+[AnimatedSprite2D]
+inherits Node2D
+signal animation_changed
+signal animation_finished
+signal animation_looped
+signal frame_changed
+signal sprite_frames_changed
+
+[AnimationMixer]
+inherits Node
+signal animation_finished
+signal animation_libraries_updated
+signal animation_list_changed
+signal animation_started
+signal caches_cleared
+signal mixer_applied
+signal mixer_updated
+
+[AnimationPlayer]
+inherits AnimationMixer
+signal animation_changed
+signal current_animation_changed
+
+[AnimationTree]
+inherits AnimationMixer
+signal animation_player_changed
+
+[Area2D]
+inherits CollisionObject2D
+signal area_entered
+signal area_exited
+signal area_shape_entered
+signal area_shape_exited
+signal body_entered
+signal body_exited
+signal body_shape_entered
+signal body_shape_exited
+
+[Area3D]
+inherits CollisionObject3D
+signal area_entered
+signal area_exited
+signal area_shape_entered
+signal area_shape_exited
+signal body_entered
+signal body_exited
+signal body_shape_entered
+signal body_shape_exited
+
+[AspectRatioContainer]
+inherits Container
+
+[AudioStreamPlayer]
+inherits Node
+signal finished
+
+[AudioStreamPlayer2D]
+inherits Node2D
+signal finished
+
+[BaseButton]
+inherits Control
+signal button_down
+signal button_up
+signal pressed
+signal toggled
+
+[BoxContainer]
+inherits Container
+
+[Button]
+inherits BaseButton
+
+[CPUParticles2D]
+inherits Node2D
+signal finished
+
+[Camera2D]
+inherits Node2D
+
+[Camera3D]
+inherits Node3D
+
+[CenterContainer]
+inherits Container
+
+[CharacterBody2D]
+inherits PhysicsBody2D
+
+[CharacterBody3D]
+inherits PhysicsBody3D
+
+[CheckBox]
+inherits Button
+
+[CheckButton]
+inherits Button
+
+[CodeEdit]
+inherits TextEdit
+signal breakpoint_toggled
+signal code_completion_requested
+signal symbol_hovered
+signal symbol_lookup
+signal symbol_validate
+
+[CollisionObject2D]
+inherits Node2D
+signal input_event
+signal mouse_entered
+signal mouse_exited
+signal mouse_shape_entered
+signal mouse_shape_exited
+
+[CollisionObject3D]
+inherits Node3D
+signal input_event
+signal mouse_entered
+signal mouse_exited
+
+[ColorRect]
+inherits Control
+
+[ConfirmationDialog]
+inherits AcceptDialog
+
+[Container]
+inherits Control
+signal pre_sort_children
+signal sort_children
+
+[DirectionalLight3D]
+inherits Light3D
+
+[FlowContainer]
+inherits Container
+
+[GPUParticles2D]
+inherits Node2D
+signal finished
+
+[GeometryInstance3D]
+inherits VisualInstance3D
+
+[GridContainer]
+inherits Container
+
+[HBoxContainer]
+inherits BoxContainer
+
+[HFlowContainer]
+inherits FlowContainer
+
+[HScrollBar]
+inherits ScrollBar
+
+[HSeparator]
+inherits Separator
+
+[HSlider]
+inherits Slider
+
+[HSplitContainer]
+inherits SplitContainer
+
+[HTTPRequest]
+inherits Node
+signal request_completed
+
+[ItemList]
+inherits Control
+signal empty_clicked
+signal item_activated
+signal item_clicked
+signal item_selected
+signal multi_selected
+
+[Label]
+inherits Control
+
+[Light3D]
+inherits VisualInstance3D
+
+[Line2D]
+inherits Node2D
+
+[LineEdit]
+inherits Control
+signal editing_toggled
+signal text_change_rejected
+signal text_changed
+signal text_submitted
+
+[LinkButton]
+inherits BaseButton
+
+[MainLoop]
+inherits Object
+signal on_request_permissions_result
+
+[MarginContainer]
+inherits Container
+
+[Marker2D]
+inherits Node2D
+
+[Marker3D]
+inherits Node3D
+
+[MenuButton]
+inherits Button
+signal about_to_popup
+
+[MeshInstance3D]
+inherits GeometryInstance3D
+
+[NinePatchRect]
+inherits Control
+signal texture_changed
+
+[Node3D]
+inherits Node
+signal visibility_changed
+
+[OmniLight3D]
+inherits Light3D
+
+[OptionButton]
+inherits Button
+signal item_focused
+signal item_selected
+
+[Panel]
+inherits Control
+
+[PanelContainer]
+inherits Container
+
+[ParallaxBackground]
+inherits CanvasLayer
+
+[Path2D]
+inherits Node2D
+
+[PathFollow2D]
+inherits Node2D
+
+[PhysicsBody2D]
+inherits CollisionObject2D
+
+[PhysicsBody3D]
+inherits CollisionObject3D
+
+[Polygon2D]
+inherits Node2D
+
+[Popup]
+inherits Window
+signal popup_hide
+
+[PopupMenu]
+inherits Popup
+signal id_focused
+signal id_pressed
+signal index_pressed
+signal menu_changed
+
+[PopupPanel]
+inherits Popup
+
+[ProgressBar]
+inherits Range
+
+[Range]
+inherits Control
+signal changed
+signal value_changed
+
+[ReferenceRect]
+inherits Control
+
+[RichTextLabel]
+inherits Control
+signal finished
+signal meta_clicked
+signal meta_hover_ended
+signal meta_hover_started
+
+[RigidBody2D]
+inherits PhysicsBody2D
+signal body_entered
+signal body_exited
+signal body_shape_entered
+signal body_shape_exited
+signal sleeping_state_changed
+
+[SceneTree]
+inherits MainLoop
+signal node_added
+signal node_configuration_warning_changed
+signal node_removed
+signal node_renamed
+signal physics_frame
+signal process_frame
+signal scene_changed
+signal tree_changed
+signal tree_process_mode_changed
+
+[ScrollBar]
+inherits Range
+signal scrolling
+
+[ScrollContainer]
+inherits Container
+signal scroll_ended
+signal scroll_started
+
+[Separator]
+inherits Control
+
+[Slider]
+inherits Range
+signal drag_ended
+signal drag_started
+
+[SpinBox]
+inherits Range
+
+[SplitContainer]
+inherits Container
+signal drag_ended
+signal drag_started
+signal dragged
+
+[Sprite2D]
+inherits Node2D
+signal frame_changed
+signal texture_changed
+
+[StaticBody2D]
+inherits PhysicsBody2D
+
+[SubViewport]
+inherits Viewport
+
+[SubViewportContainer]
+inherits Container
+
+[TabBar]
+inherits Control
+signal active_tab_rearranged
+signal tab_button_pressed
+signal tab_changed
+signal tab_clicked
+signal tab_close_pressed
+signal tab_hovered
+signal tab_rmb_clicked
+signal tab_selected
+
+[TabContainer]
+inherits Container
+signal active_tab_rearranged
+signal pre_popup_pressed
+signal tab_button_pressed
+signal tab_changed
+signal tab_clicked
+signal tab_hovered
+signal tab_selected
+
+[TextEdit]
+inherits Control
+signal caret_changed
+signal gutter_added
+signal gutter_clicked
+signal gutter_removed
+signal lines_edited_from
+signal text_changed
+signal text_set
+
+[TextureButton]
+inherits BaseButton
+
+[TextureProgressBar]
+inherits Range
+
+[TextureRect]
+inherits Control
+
+[TileMapLayer]
+inherits Node2D
+signal changed
+
+[Timer]
+inherits Node
+signal timeout
+
+[Tree]
+inherits Control
+signal button_clicked
+signal cell_selected
+signal check_propagated_to_item
+signal column_title_clicked
+signal custom_item_clicked
+signal custom_popup_edited
+signal empty_clicked
+signal item_activated
+signal item_collapsed
+signal item_edited
+signal item_icon_double_clicked
+signal item_mouse_selected
+signal item_selected
+signal multi_selected
+signal nothing_selected
+
+[Tween]
+inherits RefCounted
+signal finished
+signal loop_finished
+signal step_finished
+
+[VBoxContainer]
+inherits BoxContainer
+
+[VFlowContainer]
+inherits FlowContainer
+
+[VScrollBar]
+inherits ScrollBar
+
+[VSeparator]
+inherits Separator
+
+[VSlider]
+inherits Slider
+
+[VSplitContainer]
+inherits SplitContainer
+
+[Viewport]
+inherits Node
+signal gui_focus_changed
+signal size_changed
+
+[VisibleOnScreenNotifier2D]
+inherits Node2D
+signal screen_entered
+signal screen_exited
+
+[VisualInstance3D]
+inherits Node3D
+
+[Window]
+inherits Viewport
+signal about_to_popup
+signal close_requested
+signal dpi_changed
+signal files_dropped
+signal focus_entered
+signal focus_exited
+signal go_back_requested
+signal mouse_entered
+signal mouse_exited
+signal nonclient_window_input
+signal theme_changed
+signal title_changed
+signal titlebar_changed
+signal visibility_changed
+signal window_input
+
+[WorldEnvironment]
+inherits Node

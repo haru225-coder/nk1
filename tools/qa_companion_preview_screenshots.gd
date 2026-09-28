@@ -1,14 +1,24 @@
 extends SceneTree
-## Lane Z3：伙伴草案预览浮页巡检。F7 开关；截图落 /workspace/nk1-qa-shots/companions/。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_companion_preview_screenshots.gd
+## Lane Z3：伙伴草案预览浮页巡检。F7 开关；截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/companions/。
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_companion_preview_screenshots.gd   # 截图门禁（须出 4 张）
+##       godot --headless --path . -s res://tools/qa_companion_preview_screenshots.gd -- --contract
+## 截图缺张 / 空视口 / 一色空图 / headless 未开 --contract 一律非零退出（shot_gate.gd）；浮页断言仍只记 warn。
 ## -s 勿用 autoload 标识符（Calendar/Voyage 等）；Main 用 load 实例化。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_companion_preview_screenshots.gd
 
 const VIEW := Vector2(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/companions"
+var OUT_DIR := ShotGate.out_dir("companions")
+const TAG := "QA_COMPANION"
+const EXPECTED_SHOTS := 4
+const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
 var _main: Node
 var _saved: Array = []
 var _fails: Array = []
+var _shot_fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -17,7 +27,13 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_COMPANION_BEGIN")
 
 	var cine_src: GDScript = load("res://scripts/cutscene/Cinematics.gd") as GDScript
@@ -27,6 +43,7 @@ func _run() -> void:
 
 	var packed: PackedScene = load("res://scenes/Main.tscn")
 	_main = packed.instantiate()
+	ShotGate.frame_pressure(self)
 	root.add_child(_main)
 	await _settle(12)
 
@@ -72,38 +89,29 @@ func _run() -> void:
 	_main.call("_toggle_companion_preview")
 	await _settle(6)
 
-	print("QA_COMPANION_SHOTS_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if _fails.is_empty():
-		print("QA_COMPANION_OK")
-		quit(0)
-	else:
+	if not _fails.is_empty():
 		print("QA_COMPANION_WARN")
 		for f in _fails:
 			print("  warn ", f)
-		quit(0)
+	if _contract:
+		quit(ShotGate.finish_contract(TAG, _shot_fails))
+	else:
+		quit(ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _shot_fails))
 
 
+## 先过 n 帧（排版 / 延迟调用 / 逐帧演出按帧走），再等补间演完；墙钟上界见 probe_clock.gd
 func _settle(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_fails.append("演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+		print("  ✗ 演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
 
 
 func _shot(name: String) -> void:
 	await _settle(2)
-	var img: Image = root.get_texture().get_image()
-	if img == null:
-		_fails.append("截屏失败 %s" % name)
-		print("QA_COMPANION_SHOT_FAIL ", name)
+	if _contract:
 		return
-	var path := "%s/%s.png" % [OUT_DIR, name]
-	if img.save_png(path) != OK:
-		_fails.append("save_png 失败 %s" % path)
-		print("QA_COMPANION_SHOT_FAIL ", name)
-		return
-	_saved.append(path)
-	print("QA_COMPANION_SHOT ", name)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _shot_fails)
 
 
 func _find(node: Node, target: String) -> Node:

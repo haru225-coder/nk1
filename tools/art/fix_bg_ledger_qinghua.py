@@ -99,8 +99,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 DEFAULT_SRC = os.path.join(ROOT, "assets", "bg_quanzhou_ledger.jpg")
 DEFAULT_OUT = DEFAULT_SRC
 SIZE = (1672, 941)
-JPEGTRAN = shutil.which("jpegtran") or "/opt/homebrew/bin/jpegtran"
-DJPEG = shutil.which("djpeg") or "/opt/homebrew/bin/djpeg"
+JPEGTRAN = os.environ.get("NK1_JPEGTRAN") or shutil.which("jpegtran")  # libjpeg-turbo；取不到时写出前报错
+DJPEG = os.environ.get("NK1_DJPEG") or shutil.which("djpeg")
 
 # ---- 判据 ----
 BLUE_HUE, BLUE_SAT, BLUE_VMIN = (190.0, 250.0), 0.18, 0.10     # 任务口径（与 fix_bg_customs_jar 相同）
@@ -823,6 +823,8 @@ def changed_mcu_rects(mask, mw, mh):
 
 
 def _drop_all(src_path, inp, rects, qt, sampling, td, tag):
+    if not JPEGTRAN:
+        raise SystemExit("找不到 jpegtran：装 libjpeg-turbo（放进 PATH），或设环境变量 NK1_JPEGTRAN 指向它")
     cur = src_path
     for i, (x0, y0, x1, y1) in enumerate(rects):
         drop = os.path.join(td, "%s_drop%d.jpg" % (tag, i))
@@ -856,6 +858,8 @@ def write_jpeg_mcu(src_path, src_img, new_img, rects, out_path):
 
 
 def decode_nosmooth(path):
+    if not DJPEG:
+        raise SystemExit("找不到 djpeg：装 libjpeg-turbo（放进 PATH），或设环境变量 NK1_DJPEG 指向它")
     with tempfile.TemporaryDirectory() as td:
         p = os.path.join(td, "a.ppm")
         subprocess.run([DJPEG, "-nosmooth", "-ppm", "-outfile", p, path], check=True)

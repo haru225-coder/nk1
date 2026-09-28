@@ -1,16 +1,25 @@
 extends SceneTree
-## Lane Y：巡检证据包（入行/赴试/名册/海图）→ /workspace/nk1-qa-shots/patrol-pack/
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_patrol_pack_screenshots.gd
+## Lane Y：巡检证据包（入行/赴试/名册/海图）→ ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/patrol-pack/
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_patrol_pack_screenshots.gd
 ## 只截证据，不改玩法。
+##       godot --headless --path . -s res://tools/qa_patrol_pack_screenshots.gd -- --contract   # 只验非渲染断言，不截图
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_patrol_pack_screenshots.gd
+## 默认严格须出 11 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 
 const VIEW := Vector2(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/patrol-pack"
+var OUT_DIR := ShotGate.out_dir("patrol-pack")
 const CHART_SCENE := "res://scenes/SeaChart.tscn"
+const TAG := "QA_PATROL_PACK"
+const EXPECTED_SHOTS := 11
+const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
 var _main: Node
 var _gs: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -20,8 +29,15 @@ func _init() -> void:
 func _run() -> void:
 	OS.set_environment("NK1_CHARS_SYNC", "1")
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_PATROL_PACK_BEGIN")
+	ShotGate.frame_pressure(self)
 
 	_gs = root.get_node("GameState")
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
@@ -76,6 +92,8 @@ func _run() -> void:
 	root.add_child(ov)
 	ov.call("begin", "chen_wenlong")
 	await _frames(14)
+	# 名册浮页淡入 0.18 s（原先数 14 帧，快机上只合 60 ms）
+	_expect(ov.modulate.a >= 1.0, "名册浮页已淡入满（a=%.2f）" % ov.modulate.a)
 	await _shot("06_roster_panel")
 	var roster = ov.get("_roster")
 	if roster != null and roster.has_method("_on_tab"):
@@ -131,8 +149,9 @@ func _run() -> void:
 		var traveled := far_d * 0.58
 		var at: Dictionary = voyage.point_along_track("quanzhou", far, traveled)
 		var tw = map.call("move_ship_lonlat", float(at["lon"]), float(at["lat"]), voyage.bearing_at("quanzhou", far, traveled), 0.58, 0.01)
-		if tw is Tween:
-			await (tw as Tween).finished
+		# 裸 await finished：补间被 kill（再调 move_ship_lonlat）就永不返回；改带墙钟上界
+		if tw is Tween and not await Clock.until(self, func() -> bool: return not (tw as Tween).is_running()):
+			_expect(false, "船标补间 %d ms 内没走完" % Clock.WAIT_MS)
 		var ship: Node2D = map.get("ship")
 		if ship:
 			map.call("frame_rect", Rect2(ship.position, Vector2.ZERO), 0.0, 0.0)
@@ -190,16 +209,14 @@ func _goto(scene_id: String) -> void:
 
 
 func _shot(name: String) -> void:
+	if _contract:
+		return
 	RenderingServer.force_draw()
 	await process_frame
 	await process_frame
-	var tex = root.get_texture()
-	if tex == null:
-		_fails.append("截屏失败 %s (null texture)" % name)
-		return
-	var img: Image = tex.get_image()
+	await RenderingServer.frame_post_draw
+	var img := ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _fails)
 	if img == null:
-		_fails.append("截屏失败 %s (null image)" % name)
 		return
 	var w := img.get_width()
 	var h := img.get_height()
@@ -218,17 +235,21 @@ func _shot(name: String) -> void:
 	var avg_lum := lum_sum / float(samples.size())
 	if avg_lum < 0.04:
 		_fails.append("截屏过暗 %s avg_lum=%.3f" % [name, avg_lum])
-	var path := "%s/%s.png" % [OUT_DIR, name]
-	if img.save_png(path) != OK:
-		_fails.append("save_png %s" % path)
-		return
-	_saved.append(path)
-	print("SHOT ", path, " ", img.get_width(), "x", img.get_height())
 
 
+## 先过 n 帧（排版 / 延迟调用按帧），再等补间演完（名册淡入 0.18 s、立像淡入 0.22 s、进海图面纱 0.55 s）；
+## 墙钟上界见 probe_clock.gd
 func _frames(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_expect(false, "演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+
+
+func _expect(cond: bool, msg: String) -> void:
+	if cond:
+		print("OK ", msg)
+	else:
+		_fails.append(msg)
+		print("FAIL ", msg)
 
 
 func _button_with_text(root_node: Node, text: String) -> Button:
@@ -247,16 +268,4 @@ func _collect_buttons(n: Node, text: String, hits: Array) -> void:
 
 
 func _report() -> void:
-	print("QA_PATROL_PACK_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if _saved.size() < 8:
-		_fails.append("不足 8 张（现 %d）" % _saved.size())
-	if not _fails.is_empty():
-		print("QA_PATROL_PACK_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-		quit(1)
-		return
-	print("QA_PATROL_PACK_OK")
-	quit(0)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))

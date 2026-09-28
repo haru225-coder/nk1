@@ -1,18 +1,27 @@
 extends SceneTree
-## 守城页 / 终局港口页巡检：截 01..N 到 /workspace/nk1-qa-shots/siege/。
+## 守城页 / 终局港口页巡检：截 01..N 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/siege/。
 ## 摆场仿 ShotTour._site_siege / _site_ended_port：先进泉州港页，再立守城（1276-11 兴化）或落定结局回泉州。
 ## 触发：首次进守城 / 终局岸带各演一次纪实题签（「兴化军・围城」印「城」、「港名・结局」印「终」）；
 ## -s 工具脚本下 play_transition 当帧直通，这里直接调 UiTransition 助手截墨幕那一帧。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_siege_endgame_probe.gd
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_siege_endgame_probe.gd   # 截图门禁（须出 8 张）
+##       godot --headless --path . -s res://tools/qa_siege_endgame_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截、墨幕按停拍相位截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_siege_endgame_probe.gd
 
 const VIEW := Vector2(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/siege"
+var OUT_DIR := ShotGate.out_dir("siege")
+const TAG := "QA_SIEGE"
+const EXPECTED_SHOTS := 8
+const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 const _UT := preload("res://scripts/ui/UiTransition.gd")
 const ENDING := "泉州蒲氏的船"
 
 var _main: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -21,7 +30,13 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_SIEGE_BEGIN")
 
 	_expect(str(_UT.siege_title()) == "兴化军・围城", "守城题签「%s」" % _UT.siege_title())
@@ -37,6 +52,7 @@ func _run() -> void:
 	var cal: Node = root.get_node("/root/Calendar")
 	var packed: PackedScene = load("res://scenes/Main.tscn")
 	_main = packed.instantiate()
+	ShotGate.frame_pressure(self)
 	root.add_child(_main)
 	await _settle(10)
 
@@ -109,16 +125,7 @@ func _run() -> void:
 	gs.from_dict({})
 	cal.from_dict({"year": 1255, "month": 3, "day": 1})
 
-	print("QA_SIEGE_SHOTS_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if _fails.is_empty():
-		print("QA_SIEGE_OK")
-	else:
-		print("QA_SIEGE_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-	quit(0 if _fails.is_empty() else 1)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 
 
 func _expect(ok: bool, what: String) -> void:
@@ -160,28 +167,31 @@ func _hold_shot(node: CanvasLayer, stem: String) -> void:
 	if node == null:
 		print("QA_SIEGE_SKIP_TRANSITION %s (headless)" % stem)
 		return
-	await _settle(36)
-	await _shot(stem)
+	# 截题签停拍那一拍：按墨幕相位等，不数帧（原 36 帧：快机上只合 153 ms 还在淡入，满载慢帧下已整幕收场，lane gd14）
+	var why := await Clock.wait_hold(self, node)
+	if why != "":
+		_fails.append("%s 没截到墨幕停拍：%s" % [stem, why])
+		print("  ✗ %s 没截到墨幕停拍：%s" % [stem, why])
+	else:
+		await _shot(stem)
+		if not Clock.holding(node):
+			_fails.append("%s 截图时墨幕已过停拍" % stem)
+			print("  ✗ %s 截图时墨幕已过停拍" % stem)
 	if is_instance_valid(node):
 		node.call("_abort")
 	await _settle(4)
 
 
+## 先过 n 帧（排版 / 延迟调用 / 逐帧演出按帧走），再等补间演完；墙钟上界见 probe_clock.gd
 func _settle(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_fails.append("演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+		print("  ✗ 演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
 
 
 func _shot(stem: String) -> void:
 	await _settle(2)
-	var img: Image = root.get_viewport().get_texture().get_image()
-	if img == null:
-		_fails.append("空帧 %s" % stem)
+	if _contract:
 		return
-	var path := "%s/%s.png" % [OUT_DIR, stem]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("写失败 %s (%s)" % [stem, str(err)])
-		return
-	_saved.append(path)
-	print("QA_SIEGE_SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)

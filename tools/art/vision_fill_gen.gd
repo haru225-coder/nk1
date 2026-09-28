@@ -6,6 +6,8 @@
 ##   vs_corner_gilt.png      96×96   大裱框泥金角花，左上角朝向（其余三角由 flip 得）
 ##   vs_chart_fragment.png  768×400  宋绢海图残片：计里画方 + 鱼鳞水纹 + 岸线 + 山形符 + 残边虫蛀
 ## 风格约束：宋绢 + 暖墨，焰用赭金朱砂、烟用暖墨、水花用绢白靛影；不做渐变玻璃与现代滤镜。
+## 这四张是程序仿绘占位：炮焰 / 水花不是手绘序列帧，海图残片不是宋绢实物扫描。换手绘 / 绢本见
+## docs/VisionStage待补工单.md；换上后别再整跑本脚本（会把四张一起重写回程序版）。
 extends SceneTree
 
 const OUT := "res://scenes/vision/fill"

@@ -1,18 +1,27 @@
 extends SceneTree
-## 酒馆募人与水手雇请工席巡检（Lane AB）：截 01..06 到 /workspace/nk1-qa-shots/crew/。
+## 酒馆募人与水手雇请工席巡检（Lane AB）：截 01..06 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/crew/。
 ## 摆场：泉州酒馆募人（有候选）→ 雇入一人（在船・辞退）→ 雇满本港职事（空态）
 ##       → 泉州船屋坞位添人 chip → 减员后补齐 chip → 船籍簿职事行。
 ## 断言只查文案与钮字；入伙钱、月俸、码头每人 20 的算式照旧，这里顺带核一遍数没动。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_crew_hire_probe.gd
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_crew_hire_probe.gd   # 截图门禁（须出 6 张）
+##       godot --headless --path . -s res://tools/qa_crew_hire_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_crew_hire_probe.gd
 
 const VIEW := Vector2(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/crew"
+var OUT_DIR := ShotGate.out_dir("crew")
+const TAG := "QA_CREW_HIRE"
+const EXPECTED_SHOTS := 6
+const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 ## 泉州 ch1 可雇之人（data/crew.json）：火长、总管、杂事、通事、医人各一
 const QZ_ALL := ["wu_zhen", "wang_zhiku", "huang_zhangfang", "pu_alie", "monk_puji"]
 
 var _main: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -21,7 +30,13 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_CREW_HIRE_BEGIN")
 
 	var cine_src: GDScript = load("res://scripts/cutscene/Cinematics.gd") as GDScript
@@ -35,6 +50,7 @@ func _run() -> void:
 	var crew: Node = root.get_node("/root/Crew")
 	var packed: PackedScene = load("res://scenes/Main.tscn")
 	_main = packed.instantiate()
+	ShotGate.frame_pressure(self)
 	root.add_child(_main)
 	await _settle(10)
 
@@ -142,16 +158,7 @@ func _run() -> void:
 		await _settle(8)
 	await _shot("06_ledger_crew_roster")
 
-	print("QA_CREW_HIRE_SHOTS_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if _fails.is_empty():
-		print("QA_CREW_HIRE_OK")
-	else:
-		print("QA_CREW_HIRE_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-	quit(0 if _fails.is_empty() else 1)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 
 
 func _expect(ok: bool, what: String) -> void:
@@ -187,21 +194,16 @@ func _find(n: Node, pred: Callable) -> Node:
 	return null
 
 
+## 先过 n 帧（排版 / 延迟调用 / 逐帧演出按帧走），再等补间演完；墙钟上界见 probe_clock.gd
 func _settle(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_fails.append("演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+		print("  ✗ 演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
 
 
 func _shot(stem: String) -> void:
 	await _settle(2)
-	var img: Image = root.get_viewport().get_texture().get_image()
-	if img == null:
-		_fails.append("空帧 %s" % stem)
+	if _contract:
 		return
-	var path := "%s/%s.png" % [OUT_DIR, stem]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("写失败 %s (%s)" % [stem, str(err)])
-		return
-	_saved.append(path)
-	print("QA_CREW_HIRE_SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)

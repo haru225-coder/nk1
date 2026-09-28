@@ -6,6 +6,9 @@ simulate_run.py 验的是 1255–1256 的经济闭环；本脚本验的是 1268 
 不跑引擎，直接复刻 GDScript 里的公式；公式改了这里必须同步改（门禁会比对常量）。
 """
 import json, os, re, random, statistics, sys, pathlib
+if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gate_json; gate_json.maybe_json(__file__)
 
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 random.seed(20260904)

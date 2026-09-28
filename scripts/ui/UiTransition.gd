@@ -8,10 +8,19 @@
 ## on_black 在墨幕全黑那一刻调一次（Main 在这时 load_scene，页面在黑幕底下换好，揭开就是新页）。
 ## headless 与 -s 工具脚本（门禁、巡检、smoke）下不建节点、返回 null——调用方自己当帧调 on_black（见 Main.play_transition）。
 ## 墨幕在场时吞掉鼠标，防止连点；不暂停游戏、不入存档。
+##
+## 协程不许挂死（lane gd17，同 CombatLetterbox gd15 写法）：_run 的等待只走 _await_tween / _await_frame 两个挂起点，
+## 不直接 await tween 的 finished 或 get_tree().process_frame——被顶掉（_abort）后本节点释放、tween 随之作废不发 finished，
+## 协程永不醒，栈上的 tween 与挂起的 GDScriptFunctionState 互相引住，退出报 ObjectDB 泄漏；停拍中随父释放还报
+## 「after await, but class instance is gone」。收场（演完 / _abort / 离树）一律走 _cancel_waits：kill tween、当场唤醒，
+## 协程醒来见 _done 就自退。随父释放 / 退出不补发 finished：唯一的等待方 Main.play_transition 就是父，一起释放
+## （等在别人信号上的协程随信号源释放而丢弃，不泄漏）；补发反倒让 Main 在拆树途中接着跑调用方的后续逻辑。
 extends CanvasLayer
 
 signal covered
 signal finished
+## 内部：挂起点的唤醒（tween 放完 / 下一帧到 / 收场），只由 _wake 与 _cancel_waits 发
+signal _woken
 
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 
@@ -39,6 +48,9 @@ var _holding := false
 var _go_early := false
 var _black_done := false
 var _done := false
+var _tween: Tween
+## 挂起点序号：作废后才到的回调（已 kill 的 tween 不会再来，但 process_frame 的会）对不上就丢掉
+var _wait_seq := 0
 
 
 ## 题签标题只写可核对的事实：章次 / 章节名 / 抵达港名；日期、年号由调用方从历法传入。
@@ -290,41 +302,72 @@ func _layout() -> void:
 
 
 func _run() -> void:
-	var tw := create_tween()
-	tw.tween_property(_shade, "modulate:a", 1.0, T_FADE_IN).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	await tw.finished
-	if _done:
+	_tween = create_tween()
+	_tween.tween_property(_shade, "modulate:a", 1.0, T_FADE_IN).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	if not await _await_tween():
 		return
 	_black()
 
 	_clip.size.x = 0.0
-	tw = create_tween()
-	tw.tween_property(_clip, "size:x", float(_clip.get_meta(&"full_w")), T_WIPE) \
+	_tween = create_tween()
+	_tween.tween_property(_clip, "size:x", float(_clip.get_meta(&"full_w")), T_WIPE) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.parallel().tween_property(_slip, "position:x", 0.0, T_WIPE).from(-24.0) \
+	_tween.parallel().tween_property(_slip, "position:x", 0.0, T_WIPE).from(-24.0) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	if _sub.visible:
-		tw.tween_property(_sub, "modulate:a", 1.0, T_SUB)
-		tw.parallel().tween_property(_sub, "position:y", _sub.position.y, T_SUB).from(_sub.position.y + 8.0)
-	await tw.finished
-	if _done:
+		_tween.tween_property(_sub, "modulate:a", 1.0, T_SUB)
+		_tween.parallel().tween_property(_sub, "position:y", _sub.position.y, T_SUB).from(_sub.position.y + 8.0)
+	if not await _await_tween():
 		return
 
 	_holding = true
 	var left := T_HOLD
-	while left > 0.0 and not _go_early and not _done:
-		await get_tree().process_frame
+	while left > 0.0 and not _go_early:
+		if not await _await_frame():
+			return
 		left -= get_process_delta_time()
 	_holding = false
-	if _done:
-		return
 
-	tw = create_tween()
-	tw.tween_property(_clip, "modulate:a", 0.0, T_OUT * 0.5)
-	tw.parallel().tween_property(_sub, "modulate:a", 0.0, T_OUT * 0.5)
-	tw.tween_property(_shade, "modulate:a", 0.0, T_OUT).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	await tw.finished
+	_tween = create_tween()
+	_tween.tween_property(_clip, "modulate:a", 0.0, T_OUT * 0.5)
+	_tween.parallel().tween_property(_sub, "modulate:a", 0.0, T_OUT * 0.5)
+	_tween.tween_property(_shade, "modulate:a", 0.0, T_OUT).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	if not await _await_tween():
+		return
 	_finish()
+
+
+## 挂起点一：等刚排好的 _tween 放完。醒来仍在演返回 true；中途收场返回 false，调用方自退。
+func _await_tween() -> bool:
+	if _done:
+		return false
+	_wait_seq += 1
+	_tween.finished.connect(_wake.bind(_wait_seq), CONNECT_ONE_SHOT)
+	await _woken
+	return not _done
+
+
+## 挂起点二：等下一帧（同 await get_tree().process_frame 的时机）。已离树或已收场直接返回 false。
+func _await_frame() -> bool:
+	if _done or not is_inside_tree():
+		return false
+	_wait_seq += 1
+	get_tree().process_frame.connect(_wake.bind(_wait_seq), CONNECT_ONE_SHOT)
+	await _woken
+	return not _done
+
+
+func _wake(seq: int) -> void:
+	if seq == _wait_seq:
+		_woken.emit()
+
+
+## 收场时作废等待（调用方先置 _done）：kill tween、让还没到的回调过期，并当场唤醒挂着的协程。
+func _cancel_waits() -> void:
+	if _tween != null and _tween.is_valid():
+		_tween.kill()
+	_wait_seq += 1
+	_woken.emit()
 
 
 ## 墨幕在场时吞掉键盘（Esc 等热键不穿到底下的页面）；停顿中按键或点一下直接收场。鼠标由 _root 挡住。
@@ -357,5 +400,13 @@ func _finish() -> void:
 	if _done:
 		return
 	_done = true
+	_cancel_waits()
 	finished.emit()
 	queue_free()
+
+
+## 没演完就离树（随父释放 / 退出）：只唤醒协程让它自退，不补发 finished、不补调 on_black，理由见头注释。
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_EXIT_TREE and not _done:
+		_done = true
+		_cancel_waits()

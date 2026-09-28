@@ -1,3 +1,6 @@
+# 【历史留档，勿运行】（lane doc7 定级）早期一次性补丁：按相对路径改写 data/scenes.json（start_scene 等）后整文件回写。
+# 注意：data/scenes.json 仍在用（scripts/GameManager.gd 读），在仓库根跑会直接改写在用数据。
+# 不是门禁、无调用方，仅供查来历。
 import json
 
 with open('data/scenes.json', 'r', encoding='utf-8') as f:

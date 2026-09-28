@@ -16,8 +16,13 @@ import math
 import os
 import re
 import sys
+if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gate_json; gate_json.maybe_json(__file__)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+from src_probe import has_tok  # 按名认函数的探查一律经 tools/src_probe.py（lane cs15：不按前缀认名）
 MAX_INLAND_KM = 180.0
 MAX_OFFSHORE_KM = 45.0
 ## 绕岸航点是照着建线时的几何摆的，落在最终简化岸线里 0.1~6.7 km（2026-09-24 实测 9 处）；作图无害。
@@ -263,7 +268,7 @@ gm = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").rea
 sc = open(os.path.join(ROOT, "scripts", "SeaChart.gd"), encoding="utf-8").read()
 vo = open(os.path.join(ROOT, "scripts", "core", "Voyage.gd"), encoding="utf-8").read()
 for name in ("coastline", "sealanes", "chart_labels"):
-    check(f'_load_json("res://data/{name}.json")' in gm, f"GameManager 加载 data/{name}.json")
+    check(has_tok(gm, f'_load_json("res://data/{name}.json")'), f"GameManager 加载 data/{name}.json")
 # 主干接线：岸线与标注在 SeaChart._coast_data 读；sealanes 由 Voyage.track_lonlat 读，SeaChart 经它取折线
 check("GameManager.coastline_data" in sc, "SeaChart 读 GameManager.coastline_data")
 check("GameManager.chart_labels_data" in sc, "SeaChart 读 GameManager.chart_labels_data")
@@ -276,7 +281,7 @@ check("MapView.new()" in sc and "map.setup(GameManager.unlocked_ports(), GameMan
 check("ChartProjection.from_json(" in mv and 'res://data/chart_projection.json' in cp,
       "MapView 经 ChartProjection 读 data/chart_projection.json 投影")
 check("coast_rings" in mv and "draw_polyline(" in mv, "MapView 把岸线环投影后按视窗描墨线")
-check("Voyage.point_along_track(origin_port, selected_port" in sc and "move_ship_lonlat(" in mv,
+check("Voyage.point_along_track(origin_port, selected_port" in sc and has_tok(mv, "move_ship_lonlat("),
       "航行中船标沿 sealanes 折线按已行里程走（Voyage.point_along_track）")
 check("Voyage.bearing_at(origin_port, selected_port" in sc,
       "航行中每日罗经按折线所在段取（2d51 风向按段变）")

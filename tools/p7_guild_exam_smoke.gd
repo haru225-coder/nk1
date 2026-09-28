@@ -1,10 +1,12 @@
 extends SceneTree
-## 无界面驱动 P7 行会入行 / 贡院赴试：扣费与门槛、赴试两支、每章一次、1268 打平读 exam_sat、三月下旬跨月赴试。
+## 无界面驱动 P7 行会入行 / 贡院赴试：扣费与门槛、赴试两支、每章一次、1268 打平读 exam_sat、三月下旬跨月赴试 / 誊录。
 ## 跑法：godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 ## -s 入口在编译期看不到自动加载名，单例一律在 _initialize 之后从根节点取。
 
 const JOIN_TEXT := "交会费入行"
 const SIT_TEXT := "入场赴试"
+const COPY_TEXT := "替人抄三日"
+const GateReport := preload("res://tools/gate_report.gd")  # -- --json 时只打一行 JSON（lane g2）
 
 var _fails: Array = []
 var _gs
@@ -24,10 +26,12 @@ func _initialize() -> void:
 func _fail(msg: String) -> void:
 	_fails.append(msg)
 	print("FAIL ", msg)
+	GateReport.check(false, msg)
 
 
 func _ok(msg: String) -> void:
 	print("OK   ", msg)
+	GateReport.check(true, msg)
 
 
 func _button_with_text(root_node: Node, text: String) -> Button:
@@ -78,6 +82,59 @@ func _snap() -> Dictionary:
 	}
 
 
+## 行会页上「运往 X　多 N」的行情抄本（树序），跳过同帧待删的旧条子。
+func _spread_hints(root_node: Node) -> Array:
+	var out: Array = []
+	if root_node.is_queued_for_deletion():
+		return out
+	if root_node is Label:
+		var t: String = (root_node as Label).text
+		if t.begins_with("运往 ") and t.contains("　多 "):
+			out.append(t)
+	for c in root_node.get_children():
+		out.append_array(_spread_hints(c))
+	return out
+
+
+## ── 0. 行情抄本条数（lane gd19）：商誉 < 8 抄 3 条、≥ 8 抄 5 条，再高也不多抄 ──
+## 条数、门槛用字面量（不读 main.GUILD_CREDIT_WIDE），改常量也判红。行情钉平（rate 1.0），
+## 可抄总数须 ≥ 6，否则两档上限压不住、5→4 这类改动测不出，直接判红而不是空转。
+func _check_spread_rows(main) -> void:
+	var eco = root.get_node("Economy")
+	var saved: Dictionary = eco.rates.duplicate(true)
+	for pid in eco.rates.keys():
+		for gid in eco.rates[pid].keys():
+			eco.rates[pid][gid] = 1.0
+	var all_rows: Array = main._collect_spreads("quanzhou", 0)
+	# 期望条目取自同一 _collect_spreads，排序另由这里独立核：利润须不增，否则「前 N 条」就不是最赚的 N 条
+	var sorted_ok := true
+	for i in range(1, all_rows.size()):
+		if int(all_rows[i]["profit"]) > int(all_rows[i - 1]["profit"]):
+			sorted_ok = false
+	if all_rows.size() < 6:
+		_fail("行情钉平后泉州只有 %d 条可抄价差（须 ≥ 6 才测得出上限）" % all_rows.size())
+	elif not sorted_ok:
+		_fail("_collect_spreads 没按利润降序：%s" % str(all_rows.map(func(r): return int(r["profit"]))))
+	else:
+		for case in [{"credit": 7, "rows": 3}, {"credit": 8, "rows": 5}, {"credit": 30, "rows": 5}]:
+			_gs.merchant_credit = int(case["credit"])
+			main.load_scene("quanzhou_guild")
+			if str(main.current_scene_id) != "quanzhou_guild":
+				_fail("没能打开泉州行会，现为 %s" % str(main.current_scene_id))
+				continue
+			var want: Array = []
+			for row in all_rows.slice(0, int(case["rows"])):
+				want.append("运往 %s　多 %d" % [_gm.get_port_name(row["port"]), int(row["profit"])])
+			var got: Array = _spread_hints(main)
+			if got.size() != want.size():
+				_fail("泉州行会商誉 %d 抄了 %d 条行情，应 %d 条" % [case["credit"], got.size(), want.size()])
+			elif got != want:
+				_fail("泉州行会商誉 %d 的行情不是利润前 %d 条：%s ≠ %s" % [case["credit"], want.size(), got, want])
+			else:
+				_ok("泉州行会商誉 %d：抄利润前 %d 条行情（可抄 %d 条）" % [case["credit"], want.size(), all_rows.size()])
+	eco.rates = saved
+
+
 func _run(main) -> void:
 	# Main._ready 里 call_deferred(start_game)，空等几帧直到开场场景写上。
 	for _i in 8:
@@ -89,6 +146,8 @@ func _run(main) -> void:
 	_gs.last_port = "quanzhou"
 	for port in ["quanzhou", "hakata", "guangzhou"]:
 		_clear_flag("guild_%s" % port)
+
+	_check_spread_rows(main)
 
 	# ── 1. 泉州入行成功 ──
 	_gs.money = 5000
@@ -354,9 +413,43 @@ func _run(main) -> void:
 		else:
 			_ok("1268 三月下旬赴试跨四月：exam_sat 先于身份结算 → 士人陈文龙")
 
+	# ── 8. 1268 三月廿九誊录跨入四月：身份结算须读到本趟学者 +1（与 7 同型） ──
+	_clear_flag("exam_sat")
+	_clear_flag("chose_land_first")
+	_clear_flag("renamed_wenlong")
+	_clear_flag("name_unchanged")
+	_gs.hometown_tendency = 0
+	_gs.scholar_tendency = 4
+	_gs.sea_tendency = 4
+	_gs.identity = "undecided"
+	_gs.player_name = "陈子龙"
+	_cal.year = 1268
+	_cal.month = 3
+	_cal.day = 29
+	main.load_scene("mingzhou_exam")
+	var copy_late := _button_with_text(main, COPY_TEXT)
+	if copy_late == null:
+		_fail("1268 三月下旬明州贡院没有「%s」" % COPY_TEXT)
+	else:
+		var b8 := _snap()
+		copy_late.pressed.emit()
+		var a8 := _snap()
+		if a8["day"] - b8["day"] != 3:
+			_fail("三月下旬誊录推进 %d 日，应为 3" % (a8["day"] - b8["day"]))
+		elif int(_cal.year) != 1268 or int(_cal.month) != 4:
+			_fail("三月廿九 +3 日应到 1268 四月，现 %d年%d月%d日" % [int(_cal.year), int(_cal.month), int(_cal.day)])
+		elif a8["scholar"] != b8["scholar"] + 1 or a8["fame"] != b8["fame"]:
+			_fail("誊录应学者 +1、不记名声，现学者 %d→%d 名声 %d→%d" % [b8["scholar"], a8["scholar"], b8["fame"], a8["fame"]])
+		elif str(_gs.identity) != "scholar" or str(_gs.player_name) != "陈文龙":
+			_fail("跨月誊录应先记学者 +1 再结算为士人，现 identity=%s name=%s" % [str(_gs.identity), str(_gs.player_name)])
+		else:
+			_ok("1268 三月下旬誊录跨四月：学者 +1 先于身份结算 → 士人陈文龙")
+
 	if _fails.is_empty():
 		print("P7_GUILD_EXAM_SMOKE_OK")
+		GateReport.finish("p7_guild_exam_smoke", 0, "P7_GUILD_EXAM_SMOKE_OK")
 		quit(0)
 	else:
 		print("P7_GUILD_EXAM_SMOKE_FAIL %d" % _fails.size())
+		GateReport.finish("p7_guild_exam_smoke", 1, "P7_GUILD_EXAM_SMOKE_FAIL %d" % _fails.size())
 		quit(1)

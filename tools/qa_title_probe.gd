@@ -1,15 +1,24 @@
 extends SceneTree
-## 标题页 / 序章题签巡检：截 title_*.png 到 /workspace/nk1-qa-shots/title/。
+## 标题页 / 序章题签巡检：截 title_*.png 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/title/。
 ## 触发：开机进 cg_title；点「开卷」见「序章・卷首」；四方沙盘末页「翻页」见「序章・兴化海口」。
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_title_probe.gd
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_title_probe.gd   # 截图门禁（须出 5 张）
+##       godot --headless --path . -s res://tools/qa_title_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截、墨幕按停拍相位截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_title_probe.gd
 
 const VIEW := Vector2(1280, 720)
-const OUT_DIR := "/workspace/nk1-qa-shots/title"
+var OUT_DIR := ShotGate.out_dir("title")
+const TAG := "QA_TITLE"
+const EXPECTED_SHOTS := 5
+const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 const _UT := preload("res://scripts/ui/UiTransition.gd")
 
 var _main: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -18,7 +27,13 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(VIEW)
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_TITLE_BEGIN")
 
 	var open_t := str(_UT.prologue_open_title())
@@ -36,6 +51,7 @@ func _run() -> void:
 
 	var packed: PackedScene = load("res://scenes/Main.tscn")
 	_main = packed.instantiate()
+	ShotGate.frame_pressure(self)
 	root.add_child(_main)
 	await _settle(10)
 
@@ -55,8 +71,7 @@ func _run() -> void:
 	var sub := _date_sub()
 	var node: CanvasLayer = _UT.prologue_open(_main, sub, Callable())
 	if node != null:
-		await _settle(36)
-		await _shot("03_transition_prologue_open")
+		await _hold_shot(node, "03_transition_prologue_open")
 		if is_instance_valid(node):
 			node.call("_abort")
 		await _settle(4)
@@ -65,8 +80,7 @@ func _run() -> void:
 
 	node = _UT.prologue_shore(_main, sub, Callable())
 	if node != null:
-		await _settle(36)
-		await _shot("04_transition_prologue_shore")
+		await _hold_shot(node, "04_transition_prologue_shore")
 		if is_instance_valid(node):
 			node.call("_abort")
 		await _settle(4)
@@ -77,16 +91,7 @@ func _run() -> void:
 	await _settle(8)
 	await _shot("05_wine_shed")
 
-	print("QA_TITLE_SHOTS_SAVED %d" % _saved.size())
-	for p in _saved:
-		print("  ", p)
-	if _fails.is_empty():
-		print("QA_TITLE_OK")
-	else:
-		print("QA_TITLE_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-	quit(0 if _fails.is_empty() else 1)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 
 
 func _finish_title_stage() -> void:
@@ -102,21 +107,29 @@ func _date_sub() -> String:
 	return "宝祐三年　三月初一"
 
 
+## 截题签停拍那一拍：按墨幕相位等，不数帧（原 36 帧：快机上只合 153 ms 还在淡入，满载慢帧下已整幕收场，lane gd14）
+func _hold_shot(node: CanvasLayer, stem: String) -> void:
+	var why := await Clock.wait_hold(self, node)
+	if why != "":
+		_fails.append("%s 没截到墨幕停拍：%s" % [stem, why])
+		print("  ✗ %s 没截到墨幕停拍：%s" % [stem, why])
+		return
+	await _shot(stem)
+	if not Clock.holding(node):
+		_fails.append("%s 截图时墨幕已过停拍" % stem)
+		print("  ✗ %s 截图时墨幕已过停拍" % stem)
+
+
+## 先过 n 帧（排版 / 延迟调用 / 逐帧演出按帧走），再等补间演完；墙钟上界见 probe_clock.gd
 func _settle(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_fails.append("演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+		print("  ✗ 演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
 
 
 func _shot(stem: String) -> void:
 	await _settle(2)
-	var img: Image = root.get_viewport().get_texture().get_image()
-	if img == null:
-		_fails.append("空帧 %s" % stem)
+	if _contract:
 		return
-	var path := "%s/%s.png" % [OUT_DIR, stem]
-	var err := img.save_png(path)
-	if err != OK:
-		_fails.append("写失败 %s (%s)" % [stem, str(err)])
-		return
-	_saved.append(path)
-	print("QA_TITLE_SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)

@@ -1,3 +1,6 @@
+# 【历史留档，勿运行】（lane doc7 定级）早期一次性补丁：读写写死的 Mac 旧路径 /Users/snowchan27/nk-1/scripts/Main.gd，用正则把 _setup_investigation_mode 整段换成旧函数体后整文件回写。
+# 本机跑会 FileNotFoundError；改路径去跑，正则在现行 Main.gd 上仍命中 1 处，会拿旧函数体覆盖现行实现。
+# 不是门禁、无调用方，仅供查来历。
 import re
 with open("/Users/snowchan27/nk-1/scripts/Main.gd", "r", encoding="utf-8") as f:
     code = f.read()

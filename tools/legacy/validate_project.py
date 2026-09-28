@@ -1,3 +1,6 @@
+# 【历史留档，勿运行】（lane doc7 定级）早期一次性自查：只读 data/scenes.json 查 choices 断链，不写文件；不在门禁注册表里，结果不作红绿依据
+# （现行剧情数据校验看 tools/verify_story_data.py）。
+# 不是门禁、无调用方，仅供查来历。
 import json
 
 with open('data/scenes.json', 'r', encoding='utf-8') as f:

@@ -13,13 +13,17 @@
   python3 tools/art/import_cutscene_bgs.py --force      # 全部重导
   python3 tools/art/import_cutscene_bgs.py --check      # 校验：产物规格 + 数据契约；来源目录在就顺带核对来源与裁切
   python3 tools/art/import_cutscene_bgs.py --data-only  # 只校验产物（按 .import_manifest.json 的 sha1/尺寸）+ 数据契约，不碰来源——CI 用这个
+  python3 tools/art/import_cutscene_bgs.py --roots      # 干跑：只打印三个来源根（在 / 不在、取自环境变量还是缺省），不读不写图
 
-来源目录（Codex 线 assets/）默认 /Users/snowchan27/tmp/nk1-codex/assets，可用环境变量 NK1_CODEX_ASSETS 覆盖。
+来源目录（Codex 线 assets/）默认 ~/tmp/nk1-codex/assets（按本机 $HOME 展开），可用环境变量 NK1_CODEX_ASSETS 覆盖。
 旧底来源（第一轮 worktree 的 assets/，即 main 9233852 落地、云端 da29e49 又换掉的旧图）默认
-/Users/snowchan27/tmp/nk1-art/assets，可用 NK1_LEGACY_ASSETS 覆盖。
+~/tmp/nk1-art/assets，可用 NK1_LEGACY_ASSETS 覆盖。（lane gd13：原写死 Mac 家目录下的绝对路径，即 Mac 上 ~ 的展开，
+Mac 上默认路径不变；清单只记 codex: / legacy: / repo: 相对路径，换根不影响产物与 .import_manifest.json。）
 来源目录不在时（新克隆、别的机器、合回 main 后），--check 自动退化为 --data-only：只核对产物与清单一致，不报「来源缺失」。
 导出后要修瑕的图登记在 POSTFIX：写出后立即就地跑对应脚本（素材池原图带晚于宋元的器物，如青花），清单 out_sha1 记修后的图，
 所以 --force 重导也不会把修过的地方冲回去。
+取不到时明确报错（lane doc8）：导入缺来源根 / 缺源图时 FAIL 行写明根取自环境变量还是缺省、该设哪个变量；
+环境变量显式设了却指向不存在的目录，导入与 --check 都直接 FAIL（不静默退化）；--data-only 不看来源，不受影响。
 """
 import hashlib
 import json
@@ -33,10 +37,12 @@ from PIL import Image
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT_DIR = ROOT / "assets" / "cutscene"
 STAMP = OUT_DIR / ".import_manifest.json"
-CODEX = pathlib.Path(os.environ.get("NK1_CODEX_ASSETS", "/Users/snowchan27/tmp/nk1-codex/assets"))
+# 仓库外来源根：缺省挂在本机 ~/tmp 下（lane gd13 去 Mac 写死），环境变量覆盖
+HOME_TMP = pathlib.Path.home() / "tmp"
+CODEX = pathlib.Path(os.environ.get("NK1_CODEX_ASSETS", HOME_TMP / "nk1-codex" / "assets"))
 POOLS = CODEX / "port_pools"
 INGESTED = CODEX / "_ingested"
-LEGACY = pathlib.Path(os.environ.get("NK1_LEGACY_ASSETS", "/Users/snowchan27/tmp/nk1-art/assets"))
+LEGACY = pathlib.Path(os.environ.get("NK1_LEGACY_ASSETS", HOME_TMP / "nk1-art" / "assets"))
 # 仓库自己 assets/ 里、游戏没引用的旧图（如 bg_gpt_*.png）：转成 16:9 JPEG 供过场用，来源永远在
 REPO_ASSETS = ROOT / "assets"
 
@@ -112,6 +118,21 @@ def _file_sha1(path: pathlib.Path) -> str:
     return hashlib.sha1(path.read_bytes()).hexdigest()
 
 
+ROOT_ENV = {"codex": "NK1_CODEX_ASSETS", "legacy": "NK1_LEGACY_ASSETS"}
+
+
+def _root_how(tag: str) -> str:
+    env = ROOT_ENV[tag]
+    return f"取自环境变量 {env}" if env in os.environ else f"缺省；设 {env} 覆盖"
+
+
+def _env_roots_missing() -> list:
+    """环境变量显式指定、目录却不在的来源根 → 报错文本（缺省根不在不算错，按新克隆处理）。"""
+    return [f"环境变量 {ROOT_ENV[tag]}={os.environ[ROOT_ENV[tag]]} 指向的目录不在"
+            for tag, root in (("codex", CODEX), ("legacy", LEGACY))
+            if ROOT_ENV[tag] in os.environ and not root.is_dir()]
+
+
 def _src_root(src: pathlib.Path) -> pathlib.Path:
     for root in (LEGACY, REPO_ASSETS):
         try:
@@ -158,14 +179,21 @@ def convert(src: pathlib.Path, dst: pathlib.Path, crop) -> tuple:
 
 
 def run(force: bool) -> int:
+    miss = _env_roots_missing()
+    if miss:
+        for m in miss:
+            print("FAIL", m)
+        return 1
     if not CODEX.is_dir():
-        print(f"FAIL 来源目录不在：{CODEX}（导入需要来源；只校验请用 --check / --data-only）")
+        print(f"FAIL 来源目录不在：{CODEX}（{_root_how('codex')}；导入需要来源；只校验请用 --check / --data-only）")
         return 1
     stamp = _load_stamp()
     changed = 0
     for name, src, crop, note in MANIFEST:
         if not src.is_file():
-            print(f"FAIL 来源缺失：{src}")
+            root = _src_root(src)
+            tag = next((t for t, r in (("codex", CODEX), ("legacy", LEGACY)) if r == root), None)
+            print(f"FAIL 来源缺失：{src}" + (f"（根 {root}：{_root_how(tag)}）" if tag else ""))
             return 1
         dst = OUT_DIR / name
         dg = _digest(src, crop)
@@ -202,8 +230,10 @@ def check(data_only: bool) -> int:
     bad = []
     notes = []
     with_src = not data_only and CODEX.is_dir()
+    if not data_only:
+        bad += _env_roots_missing()
     if not data_only and not with_src:
-        notes.append(f"来源目录不在（{CODEX}），跳过来源核对，只按 .import_manifest.json 核对产物")
+        notes.append(f"来源目录不在（{CODEX}；{_root_how('codex')}），跳过来源核对，只按 .import_manifest.json 核对产物")
     stamp = _load_stamp()
     if len(MANIFEST) > 24:
         bad.append(f"新增图 {len(MANIFEST)} 张，超过 24 张上限")
@@ -484,7 +514,18 @@ def check_data() -> list:
     return bad
 
 
+def roots() -> int:
+    """--roots：干跑，只打印来源根，不读不写任何图。"""
+    for tag, root, env in (("codex", CODEX, "NK1_CODEX_ASSETS"), ("legacy", LEGACY, "NK1_LEGACY_ASSETS"),
+                           ("repo", REPO_ASSETS, None)):
+        how = ("环境变量 " + env) if env and env in os.environ else ("缺省" if env else "仓库内")
+        print(f"{tag:7} {root}  [{'在' if root.is_dir() else '不在'}；{how}]")
+    return 0
+
+
 if __name__ == "__main__":
+    if "--roots" in sys.argv:
+        sys.exit(roots())
     if "--data-only" in sys.argv:
         sys.exit(check(data_only=True))
     if "--check" in sys.argv:

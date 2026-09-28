@@ -1,16 +1,26 @@
 extends SceneTree
 ## Lane Z1：海图船况面板 / 顶匾札记旁注纪实短标签巡检。
-## 截图落 /workspace/nk1-qa-shots/voyage/
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_voyage_status_probe.gd
+## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/voyage/
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_voyage_status_probe.gd   # 截图门禁（须出 6 张）
+##       godot --headless --path . -s res://tools/qa_voyage_status_probe.gd -- --contract   # 只验非渲染断言，不截图
+## 默认严格须出 6 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_voyage_status_probe.gd
 ## -s 勿用 autoload 标识符。
 
 const VIEW := Vector2i(1280, 720)
 const CHART_SCENE := "res://scenes/SeaChart.tscn"
-const OUT_DIR := "/workspace/nk1-qa-shots/voyage"
+const SP := preload("res://tools/src_probe.gd")  # 按名认函数的源码探查（lane cs15：不按前缀认名）
+var OUT_DIR := ShotGate.out_dir("voyage")
+const TAG := "QA_VOYAGE"
+const EXPECTED_SHOTS := 6
+const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
 var _chart: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -19,8 +29,15 @@ func _init() -> void:
 
 func _run() -> void:
 	root.size = VIEW
-	DirAccess.make_dir_recursive_absolute(OUT_DIR)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	print("QA_VOYAGE_BEGIN")
+	ShotGate.frame_pressure(self)
 	_check_wiring()
 
 	var packed: PackedScene = load("res://scenes/Main.tscn")
@@ -67,6 +84,7 @@ func _run() -> void:
 	_expect(body.find("十次") < 0, "船况无「十次」教程括注")
 	_expect(body.find("日速") < 0, "船况无「日速」工程口吻")
 	_expect(body.find("航段") >= 0 or dest == "", "有航段细节或无去处")
+	_expect_condition_full()
 	await _shot("01_condition_baseline")
 	_chart.call("_close_condition")
 	await _frames(4)
@@ -86,6 +104,7 @@ func _run() -> void:
 	body = _status_bbcode()
 	_expect(body.find("剩") >= 0 or body.find("限今日") >= 0 or body.find("已逾") >= 0, "船况委办短限日")
 	_expect(body.find("截止") < 0 and body.find("逾期") < 0, "船况无「截止/逾期」现代词")
+	_expect_condition_full()
 	await _shot("02_condition_contract")
 	_chart.call("_close_condition")
 	await _frames(3)
@@ -110,6 +129,7 @@ func _run() -> void:
 		body = _status_bbcode()
 		_expect(body.find("行成") >= 0, "船况航行「行成」")
 		_expect(body.find("/ 100") < 0, "船况无「/ 100」")
+		_expect_condition_full()
 		await _shot("05_condition_sailing")
 		_chart.call("_close_condition")
 		await _frames(2)
@@ -129,6 +149,7 @@ func _run() -> void:
 	await _frames(3)
 	_chart.call("_toggle_condition")
 	await _frames(8)
+	_expect_condition_full()
 	await _shot("06_condition_alert")
 
 	_report()
@@ -144,8 +165,10 @@ func _check_wiring() -> void:
 	for bad in ["十次约有八次", "逃走没被抢走货", "日速 ×", "今日截止", "已逾期", "[b]舰队[/b]"]:
 		_expect(bad not in vis, "可见文案无「%s」" % bad)
 	var voy := FileAccess.get_file_as_string("res://scripts/core/Voyage.gd")
-	_expect("日行较快" in voy or "日行较缓" in voy, "order_blurb 纪实短注")
-	_expect("日速 ×" not in _visible_strings(voy), "order_blurb 无日速公式")
+	# 文案点名 order_blurb 的，按 order_blurb 函数体认；日速公式查的是整份 Voyage 可见文案，文案就说全文件（lane cs15）
+	var blurb := SP.func_body(voy, "order_blurb")
+	_expect("日行较快" in blurb or "日行较缓" in blurb, "order_blurb 纪实短注")
+	_expect("日速 ×" not in _visible_strings(voy), "Voyage 全文件可见文案无日速公式")
 
 
 func _visible_strings(src: String) -> String:
@@ -180,25 +203,27 @@ func _strip_bbcode() -> String:
 	return "" if lab == null else str(lab.text)
 
 
+## 先过 n 帧（排版 / 延迟调用按帧），再等补间演完（进海图面纱 0.55 s、船况层淡入 0.16 s）；墙钟上界见 probe_clock.gd
 func _frames(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_expect(false, "演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+
+
+## 截船况层前：层已淡入满（原先数 8–10 帧，快机上只合 40 ms，截的是半透明层）
+func _expect_condition_full() -> void:
+	var layer = _chart.get("_condition_layer") if is_instance_valid(_chart) else null
+	var a: float = float(layer.modulate.a) if layer != null and bool(layer.visible) else 0.0
+	_expect(a >= 1.0, "船况层已淡入满（a=%.2f）" % a)
 
 
 func _shot(name: String) -> void:
+	if _contract:
+		return
 	RenderingServer.force_draw()
 	await process_frame
 	await process_frame
-	var img: Image = root.get_texture().get_image()
-	if img == null:
-		_fails.append("截屏失败 %s" % name)
-		return
-	var path := "%s/%s.png" % [OUT_DIR, name]
-	if img.save_png(path) != OK:
-		_fails.append("save_png %s" % path)
-		return
-	_saved.append(path)
-	print("SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _fails)
 
 
 func _expect(cond: bool, msg: String) -> void:
@@ -210,16 +235,4 @@ func _expect(cond: bool, msg: String) -> void:
 
 
 func _report() -> void:
-	print("QA_VOYAGE_SHOTS %d" % _saved.size())
-	if not _fails.is_empty():
-		print("QA_VOYAGE_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-		quit(1)
-		return
-	if _saved.size() < 4:
-		print("QA_VOYAGE_FAIL need ≥4 shots")
-		quit(1)
-		return
-	print("QA_VOYAGE_OK")
-	quit(0)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))

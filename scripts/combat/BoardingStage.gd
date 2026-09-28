@@ -1,5 +1,10 @@
 ## 接舷阶段覆盖层：钩索线 + 旧绢阶段题签（接舷 / 白刃 / 夺船 / 脱钩）。
 ## 不改白刃公式；只在判定前后加观感节拍。headless 下静态入口返回 null。
+##
+## finished 契约（lane gd17）：演完或被新一层顶掉（_abort）都恰好发一次——WorldMap._await_boarding_fx 裸 await 它，
+## 顶掉不发的话那头永不醒。随父释放（WorldMap 结算 / 退出）不补发：唯一的等待方就是父 WorldMap，一起释放，
+## 挂在本层信号上的协程随本层释放而丢弃、不泄漏；补发反倒让 WorldMap 在拆树途中接着跑 _battle_exit。
+## 本层自己不 await：节拍全在 tween 回调里，被 kill / 随父释放不留挂起的协程。
 extends CanvasLayer
 
 signal finished
@@ -157,7 +162,6 @@ func _finish() -> void:
 
 
 func _abort() -> void:
-	_done = true
 	if is_instance_valid(_rope):
 		_rope.queue_free()
-	queue_free()
+	_finish()

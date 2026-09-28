@@ -705,15 +705,18 @@ func contraband_units() -> int:
 	return n
 
 
-## 按当前舱货估算抽解税额（办正规货引的花费）
-func customs_duty() -> int:
+## 按当前舱货估算抽解税额（办正规货引的花费）。
+## 税率走 Economy.duty_rate：与买价抽解同吃战况、杂事、职衔——降元港「市舶司换了旗，抽解加倍」
+## 对货引也作数。计税基数仍是 base_value 定额，不随本港行情。port_id 缺省取 last_port（出港查验同港）。
+func customs_duty(port_id: String = "") -> int:
+	var rate := Economy.duty_rate(port_id if port_id != "" else last_port)
 	var total := 0.0
 	for gid in Fleet.cargo.keys():
 		var g := GameManager.get_good_by_id(gid)
 		if g.get("contraband", false):
 			continue  # 违禁货无法报关，不计入
 		var qty: int = Fleet.cargo[gid].get("qty", 0)
-		total += float(g.get("base_value", 0)) * qty * Economy.tariff_rate * title_duty_factor()
+		total += float(g.get("base_value", 0)) * qty * rate
 	return maxi(20, int(round(total)))
 
 
@@ -748,6 +751,7 @@ func customs_inspection() -> Dictionary:
 				result["confiscated"] = true
 				# 罚金以现有资金为比例，不把玩家一次罚到无法翻身
 				var fine: int = mini(300, maxi(50, int(money * 0.4)))
+				fine = mini(fine, money)
 				result["msg"] = "【查扣】货引虽全，抽查却翻到了舱底。%d 件违禁之物当场起获，罚钱 %d，货引作废。" % [contraband, fine]
 				_confiscate_contraband()
 				add_money(-fine)
@@ -763,6 +767,7 @@ func customs_inspection() -> Dictionary:
 	# 无引
 	if float(pu_attention) * war_mul > 50.0:
 		var fine: int = mini(500, maxi(50, int(money * 0.4)))
+		fine = mini(fine, money)
 		result["passed"] = false
 		result["confiscated"] = true
 		result["msg"] = "【严重警告】蒲氏暗桩早已盯上你。市舶司当场查扣所有无证货物，罚钱 %d。" % fine

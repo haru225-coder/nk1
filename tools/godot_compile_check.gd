@@ -32,6 +32,7 @@ const SCRIPTS := [
 	"res://scripts/ui/UiTransition.gd", "res://tools/qa_title_probe.gd", "res://tools/qa_siege_endgame_probe.gd", "res://tools/qa_ending_reread_probe.gd",
 	"res://tools/qa_drydock_probe.gd",
 	"res://tools/qa_voyage_status_probe.gd",
+	"res://tools/qa_market_panel_probe.gd",
 	"res://tools/qa_port_doors_probe.gd",
 	"res://tools/qa_crew_hire_probe.gd",
 	# Lane Z3 伙伴草案预览浮页
@@ -42,11 +43,68 @@ const SCRIPTS := [
 	# Lane G/Q 酒馆设施纸笺与新闻墙
 	"res://scripts/ui/TavernFacilitySlip.gd", "res://scripts/ui/TavernFacilityPreview.gd",
 	"res://scripts/ui/TavernNewsWall.gd", "res://tools/qa_tavern_news_wall_screenshots.gd",
+	# Lane ms Main.gd 首刀拆出的工席纸条小件
+	"res://scripts/ui/SlipKit.gd",
+	# Lane mz Main.gd 第二刀拆出的船籍簿整页
+	"res://scripts/ui/LedgerPage.gd",
+	# Lane ms2 Main.gd 第三刀拆出的升章 / 了结册页
+	"res://scripts/ui/ChapterSheet.gd",
+	# Lane main4 Main.gd 第四刀拆出的酒馆 / 旅店页
+	"res://scripts/ui/TavernPage.gd",
+	# Lane main5 Main.gd 第五刀拆出的见面页
+	"res://scripts/ui/NpcPage.gd",
+	# Lane main6 Main.gd 第六刀拆出的航海日志册页
+	"res://scripts/ui/SaveSheet.gd",
+	# Lane main7 Main.gd 第七刀拆出的行会 / 贡院页
+	"res://scripts/ui/GuildExamPage.gd",
+	# Lane main8 Main.gd 第八刀拆出的市舶司页
+	"res://scripts/ui/MaritimeOfficePage.gd",
+	# Lane main9 Main.gd 第九刀拆出的住处 / 寺观页
+	"res://scripts/ui/ResidencePage.gd",
+	# Lane main10 Main.gd 第十刀拆出的船屋页
+	"res://scripts/ui/ShipyardPage.gd",
+	# Lane main11 Main.gd 第十一刀拆出的标题页 / 开场
+	"res://scripts/ui/TitlePage.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
 	"res://tools/art/portrait_svg/PortraitWall.gd", "res://tools/art/ShotTour.gd",
+	# lane ea4 清单漂移补列：此前各 lane 各自追加、漏掉的已跟踪脚本（由下方 INVENTORY 自检兜底）
+	"res://scripts/audio/AudioHooks.gd", "res://scripts/audio/SfxSynth.gd",
+	"res://scripts/chart/ChartProjection.gd", "res://scripts/chart/MapView.gd", "res://scripts/chart/ShipMarker.gd",
+	"res://scripts/core/BrokerSlip.gd", "res://scripts/core/DrydockBerth.gd", "res://scripts/core/HeadingDraft.gd",
+	"res://scripts/core/ShoreDraft.gd", "res://scripts/core/UiTheme.gd",
+	# 门禁本体与共用件
+	"res://tools/godot_smoke.gd", "res://tools/godot_story_check.gd", "res://tools/p7_guild_exam_smoke.gd",
+	"res://tools/patrol_shell.gd", "res://tools/shot_gate.gd", "res://tools/gate_report.gd",
+	"res://tools/src_probe.gd",  # 按名认函数的源码探查（lane cs15）
+	"res://tools/gen_builtin_list.gd",
+	# 各 lane 专项探针 / 截图脚本
+	"res://tools/save_robust_probe.gd", "res://tools/save_migrate_probe.gd",
+	"res://tools/qa_economy_spread_probe.gd", "res://tools/qa_save_slot_tip_probe.gd",
+	"res://tools/qa_discovery_probe.gd", "res://tools/qa_chapter_promote_probe.gd",
+	"res://tools/qa_chart_hud_screenshots.gd", "res://tools/qa_p7_screenshots.gd",
+	"res://tools/qa_patrol_pack_screenshots.gd",
+	"res://tools/qa_fine_text_probe.gd",
+	"res://tools/qa_money_notices_probe.gd",
+	"res://tools/qa_contract_stock_probe.gd",
+	"res://tools/qa_customs_duty_probe.gd",
+	"res://tools/qa_yard_transition_probe.gd",
+	"res://tools/combat_vfx_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
+	"res://tools/vision_stage_probe.gd", "res://tools/vision_letterbox_probe.gd", "res://tools/letterbox_signal_probe.gd",
+	"res://tools/probe_clock.gd", "res://tools/shot_consistency.gd",
+	"res://tools/art/vision_fill_gen.gd", "res://tools/art/vision_fill_shots.gd",
+	"res://tools/art/tour_sheet.gd",
 ]
+
+## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
+## SCRIPTS 里的路径必须真实存在。任一差集非空 → bad+1（整体算一项 inventory）。
+## 「已跟踪」取 `git ls-files`：别的 lane 未提交的新脚本不会让共用工作树变红；git 不可用时退回扫盘并打 NOTE。
+const INVENTORY_ROOTS := ["scripts", "tools"]
+const INVENTORY_SKIP_DIRS := ["tools/legacy"]
+const INVENTORY_EXEMPT := {
+	"tools/godot_compile_check.gd": "门禁本体：它自己编不过就根本跑不到这里，列入无增益",
+}
 
 ## 关键场景：脚本门禁通过后仍可能因 ext_resource 解析失败而坏档（ASTRA_AUDIT M2）。
 ## 4.6.3 实测：ext_resource 指向不存在的文件时 load() 仍返回 PackedScene、instantiate() 也成功，
@@ -71,6 +129,8 @@ const SCENES := [
 	"res://scenes/cutscene/CutscenePreview.tscn",
 	"res://scenes/ui/TavernFacilityPreview.tscn",
 	"res://scenes/ui/TavernFacilitySlip.tscn",
+	# 探针场景（-s 放不出过场的探针以场景启动）
+	"res://tools/qa_yard_transition_probe.tscn",
 ]
 
 ## lane-z4 把 Ship/PirateShip 的炮弹场景改成 lazy load() 后，这几个弹道场景已确认无解析错误；
@@ -81,6 +141,7 @@ const MUST_STAY_CLEAN := [
 	"res://scenes/ImpactExplosion.tscn",
 ]
 
+const GateReport := preload("res://tools/gate_report.gd")  # -- --json 时只打一行 JSON（lane g2）
 const SCENE_ROOT := "res://scenes"
 const SCENE_SKIP_DIRS := ["res://scenes/vision"]
 
@@ -94,32 +155,49 @@ func _initialize() -> void:
 		var s = load(p)
 		if s == null:
 			print("COMPILE_CHECK FAIL load-null ", p)
+			GateReport.check(false, p, "load-null")
 			bad += 1
 			continue
 		var ok: bool = s.can_instantiate()
 		print("COMPILE_CHECK ", "OK   " if ok else "FAIL ", p)
+		GateReport.check(ok, p, "" if ok else "can_instantiate=false")
 		if not ok:
 			bad += 1
+	total += 1
+	var inv_why := _check_inventory()
+	if inv_why.is_empty():
+		print("COMPILE_CHECK OK   inventory SCRIPTS == tracked *.gd under ", "/".join(INVENTORY_ROOTS), " (exempt ", INVENTORY_EXEMPT.size(), ")")
+		GateReport.check(true, "inventory SCRIPTS == tracked *.gd under %s (exempt %d)" % ["/".join(INVENTORY_ROOTS), INVENTORY_EXEMPT.size()])
+	else:
+		bad += 1
+		for w in inv_why:
+			print("COMPILE_CHECK FAIL inventory ", w)
+			GateReport.check(false, "inventory " + w)
 	for gp in MUST_STAY_CLEAN:
 		if not SCENES.has(gp):
 			total += 1
 			bad += 1
 			print("COMPILE_CHECK FAIL guard-unlisted ", gp)
+			GateReport.check(false, gp, "guard-unlisted")
 	var scenes: Array = SCENES.duplicate()
 	for extra in _discover_scenes(SCENE_ROOT):
 		if not scenes.has(extra):
 			print("COMPILE_CHECK NOTE unlisted scene, checking anyway ", extra)
+			GateReport.warn(extra, "unlisted scene, checking anyway")
 			scenes.append(extra)
 	for sp in scenes:
 		total += 1
 		var why := _check_scene(sp)
 		if why.is_empty():
 			print("COMPILE_CHECK OK   ", sp)
+			GateReport.check(true, sp)
 		else:
 			bad += 1
 			var tag := "FAIL guard " if MUST_STAY_CLEAN.has(sp) else "FAIL "
 			print("COMPILE_CHECK ", tag, sp, " :: ", "; ".join(why))
+			GateReport.check(false, sp, ("guard：" if MUST_STAY_CLEAN.has(sp) else "") + "; ".join(why))
 	print("COMPILE_CHECK SUMMARY bad=", bad, "/", total)
+	GateReport.finish("godot_compile_check", 1 if bad > 0 else 0, "COMPILE_CHECK SUMMARY bad=%d/%d" % [bad, total])
 	quit(1 if bad > 0 else 0)
 
 
@@ -197,3 +275,72 @@ func _discover_scenes(dir_path: String) -> Array:
 		out.append_array(_discover_scenes(dir_path.path_join(sub)))
 	out.sort()
 	return out
+
+
+## 返回差集条目；空 = 清单与已跟踪脚本对齐。
+func _check_inventory() -> PackedStringArray:
+	var why := PackedStringArray()
+	var listed := {}
+	for p in SCRIPTS:
+		var rel: String = p.trim_prefix("res://")
+		if listed.has(rel):
+			why.append("dup %s" % p)
+		listed[rel] = true
+		if not FileAccess.file_exists(p):
+			why.append("listed-missing %s" % p)
+	var tracked := _tracked_gd()
+	for rel in tracked:
+		if listed.has(rel):
+			if INVENTORY_EXEMPT.has(rel):
+				why.append("exempt-but-listed res://%s" % rel)
+		elif not INVENTORY_EXEMPT.has(rel):
+			why.append("unlisted res://%s" % rel)
+	for rel in INVENTORY_EXEMPT:
+		if not tracked.has(rel):
+			why.append("exempt-stale res://%s" % rel)
+	return why
+
+
+func _tracked_gd() -> Array:
+	var out: Array = []
+	var root_abs := ProjectSettings.globalize_path("res://")
+	# 不用 -z：OS.execute 把输出转成 String 时会在 NUL 处截断；改关 quotepath 按行切。
+	var args := PackedStringArray(["-C", root_abs, "-c", "core.quotepath=off", "ls-files", "--"])
+	for r in INVENTORY_ROOTS:
+		args.append("%s/*.gd" % r)
+	var stdout: Array = []
+	var rc := OS.execute("git", args, stdout, true)
+	if rc == 0 and not stdout.is_empty():
+		for rel in String(stdout[0]).split("\n", false):
+			if not _inventory_skipped(rel):
+				out.append(rel)
+	else:
+		print("COMPILE_CHECK NOTE inventory git ls-files unavailable (rc=", rc, "), falling back to disk scan")
+		GateReport.warn("inventory git ls-files unavailable (rc=%d), falling back to disk scan" % rc)
+		for r in INVENTORY_ROOTS:
+			out.append_array(_disk_gd(r))
+	out.sort()
+	return out
+
+
+func _disk_gd(rel_dir: String) -> Array:
+	var out: Array = []
+	if _inventory_skipped(rel_dir + "/"):
+		return out
+	var d := DirAccess.open("res://" + rel_dir)
+	if d == null:
+		return out
+	for f in d.get_files():
+		if f.ends_with(".gd"):
+			out.append(rel_dir.path_join(f))
+	for sub in d.get_directories():
+		if not sub.begins_with("."):
+			out.append_array(_disk_gd(rel_dir.path_join(sub)))
+	return out
+
+
+func _inventory_skipped(rel: String) -> bool:
+	for sd in INVENTORY_SKIP_DIRS:
+		if rel.begins_with(sd + "/"):
+			return true
+	return false

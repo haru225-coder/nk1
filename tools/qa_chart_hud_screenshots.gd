@@ -1,17 +1,27 @@
 extends SceneTree
 ## Lane U：海图 HUD 信息密度巡检（港名密区 / 航行中 HUD / 告警朱字）。
-## 截图落 /workspace/nk1-qa-shots/chart/
-## 用法：DISPLAY=:2 godot --path /workspace/nk1 -s res://tools/qa_chart_hud_screenshots.gd
+## 截图落 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/chart/
+## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_chart_hud_screenshots.gd   # 截图门禁（须出 5 张）
+##       godot --headless --path . -s res://tools/qa_chart_hud_screenshots.gd -- --contract   # 只验非渲染断言，不截图
+## 默认严格须出 5 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
+## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
+##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_chart_hud_screenshots.gd
 ## 注意：本脚本勿在顶层类型标注 MapView（-s SceneTree 编译期尚无 autoload，会连带 MapView 编不过）。
 
 const VIEW := Vector2i(1280, 720)
 const CHART_SCENE := "res://scenes/SeaChart.tscn"
 const WM_SCENE := "res://scenes/WorldMap.tscn"
+const SP := preload("res://tools/src_probe.gd")  # 按名认函数的源码探查（lane cs15：不按前缀认名）
+const TAG := "QA_CHART_HUD"
+const EXPECTED_SHOTS := 5
+const ShotGate := preload("res://tools/shot_gate.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 
-var _out_dir := "/workspace/nk1-qa-shots/chart"
+var _out_dir := ShotGate.out_dir("chart")
 var _chart: Node
 var _saved: Array = []
 var _fails: Array = []
+var _contract := false
 
 
 func _init() -> void:
@@ -23,8 +33,15 @@ func _run() -> void:
 		if str(a).begins_with("--out="):
 			_out_dir = str(a).substr(6)
 	root.size = VIEW
-	DirAccess.make_dir_recursive_absolute(_out_dir)
+	_contract = ShotGate.contract_mode()
+	var no_render := ShotGate.no_render_reason()
+	if not _contract and no_render != "":
+		quit(ShotGate.fail_no_render(TAG, no_render, EXPECTED_SHOTS))
+		return
+	if not _contract:
+		DirAccess.make_dir_recursive_absolute(_out_dir)
 	print("QA_CHART_HUD_BEGIN")
+	ShotGate.frame_pressure(self)
 	_check_wiring()
 
 	# 先挂 Main，让 autoload / class_name 与游戏一致（与 patrol_shell 同路径）
@@ -75,8 +92,9 @@ func _run() -> void:
 		var traveled := far_d * 0.58
 		var at: Dictionary = voyage.point_along_track("quanzhou", far, traveled)
 		var tw = map.call("move_ship_lonlat", float(at["lon"]), float(at["lat"]), voyage.bearing_at("quanzhou", far, traveled), 0.58, 0.01)
-		if tw is Tween:
-			await (tw as Tween).finished
+		# 裸 await finished：补间被 kill（再调 move_ship_lonlat）就永不返回；改带墙钟上界
+		if tw is Tween and not await Clock.until(self, func() -> bool: return not (tw as Tween).is_running()):
+			_expect(false, "船标补间 %d ms 内没走完" % Clock.WAIT_MS)
 		var ship: Node2D = map.get("ship")
 		if ship:
 			map.call("frame_rect", Rect2(ship.position, Vector2.ZERO), 0.0, 0.0)
@@ -107,6 +125,7 @@ func _run() -> void:
 	await _shot("03_alert_strip")
 	_chart.call("_toggle_condition")
 	await _frames(12)
+	_expect(_condition_alpha() >= 1.0, "船况层已淡入满（a=%.2f）" % _condition_alpha())
 	await _shot("04_alert_condition")
 
 	# ── 05 小地图：卸海图、藏 Main，只留 WorldMap HUD 雷达 ──
@@ -140,7 +159,7 @@ func _check_wiring() -> void:
 	_expect("子" in mini and "卯" in mini, "小地图子午卯酉短标")
 	var mv := FileAccess.get_file_as_string("res://scripts/chart/MapView.gd")
 	_expect("size_px := 16" in mv or "size_px := 16 if" in mv, "港名字号抬升")
-	_expect("_px(26.0)" in mv, "船标避让放大")
+	_expect(SP.has_tok(mv, "_px(26.0)"), "船标避让放大")
 	for bad in ["惊艳", "沉浸", "打造", "视觉盛宴", "placeholder", "玩家", "点击"]:
 		_expect(bad not in _visible_strings(src), "SeaChart 可见文案无「%s」" % bad)
 
@@ -156,25 +175,26 @@ func _visible_strings(src: String) -> String:
 	return "\n".join(out)
 
 
+## 先过 n 帧（排版 / 延迟调用按帧），再等补间演完（进海图面纱 0.55 s、船况层淡入 0.16 s）；墙钟上界见 probe_clock.gd
 func _frames(n: int) -> void:
-	for _i in n:
-		await process_frame
+	if not await Clock.settle(self, n):
+		_expect(false, "演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+
+
+## 船况层不透明度（0 = 未开）
+func _condition_alpha() -> float:
+	var layer = _chart.get("_condition_layer") if is_instance_valid(_chart) else null
+	return float(layer.modulate.a) if layer != null and bool(layer.visible) else 0.0
 
 
 func _shot(name: String) -> void:
+	if _contract:
+		return
 	RenderingServer.force_draw()
 	await process_frame
 	await process_frame
-	var img: Image = root.get_texture().get_image()
-	if img == null:
-		_fails.append("截屏失败 %s" % name)
-		return
-	var path := "%s/%s.png" % [_out_dir, name]
-	if img.save_png(path) != OK:
-		_fails.append("save_png %s" % path)
-		return
-	_saved.append(path)
-	print("SHOT ", path)
+	await RenderingServer.frame_post_draw
+	ShotGate.shot(root, "%s/%s.png" % [_out_dir, name], _saved, _fails)
 
 
 func _expect(cond: bool, msg: String) -> void:
@@ -186,16 +206,4 @@ func _expect(cond: bool, msg: String) -> void:
 
 
 func _report() -> void:
-	print("QA_CHART_HUD_SHOTS %d" % _saved.size())
-	if not _fails.is_empty():
-		print("QA_CHART_HUD_FAIL")
-		for f in _fails:
-			print("  fail ", f)
-		quit(1)
-		return
-	if _saved.size() < 3:
-		print("QA_CHART_HUD_FAIL need ≥3 shots")
-		quit(1)
-		return
-	print("QA_CHART_HUD_OK")
-	quit(0)
+	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, _out_dir, _fails))
