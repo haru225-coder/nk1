@@ -47,7 +47,7 @@ godot --headless --path . -s res://tools/godot_smoke.gd          # 云端冒烟�
 godot --headless --path . -s res://tools/godot_compile_check.gd  # 全部脚本可编译
 godot --headless --path . -s res://tools/godot_story_check.gd    # 剧情脊柱与存档 round-trip（用完会清第 9 槽）
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd  # 行会入行 / 贡院赴试 / 誊录：扣费门槛、每章一次、跨月结算时序
-godot --path . -s res://tools/patrol_shell.gd                    # 有窗口：三港九页 + 海图三向牌都在 1280×720 内
+DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd         # 有窗口：三港九页 + 海图三向牌都在 1280×720 内
 ```
 
 `tools/patrol.py` 是云端留下的一键巡检（静态三套 + 冒烟 + 巡检）；`tools/legacy/verify_narrative.py` 与 `tools/legacy/p7_smoke.gd` 绑定云端 21ce 的 P7 平行实现，本分支未收该实现，两个脚本仅留档、不算门禁（别与上面的 `p7_guild_exam_smoke.gd` 混淆）。
@@ -80,7 +80,7 @@ python3 tools/cut_ship_sprites.py   # 需 numpy / Pillow / scipy（仅美术管�
 data/       港口、货物、船种、章节、职事等 JSON 数据
 scripts/    游戏脚本（core/ 为 autoload 单例：Fleet/Economy/Voyage/…）
 scenes/     场景与 UI
-tools/      七道 Python 静态门禁 + Godot 门禁与探针 + 美术 / 船图管线（art_src/ 为生成原稿，gdignore）
+tools/      Python 静态门禁（必跑十道，另有加跑档）+ Godot 门禁与探针 + 美术 / 船图管线（art_src/ 为生成原稿，gdignore）
 docs/       设计文档、台账与门禁说明（索引见 docs/README.md）
 assets/     美术资源
 ```
@@ -111,7 +111,7 @@ assets/     美术资源
 - ✅ 真实岸线（Natural Earth 386 环）+ 沿 sealanes 折线计里程、逐段罗经；海名岛名标注
 - ✅ 本地剧情脊柱：跳年（2+3+4 年）、按月新闻、1268 殿试身份、战况机与战时三遭遇、守城 / 泉州对峙 / 涵江 / 崖山 / 辞呈 / 纲首收官、终局态与结局图；终局特殊卡不受「今日只开三处」限制
 - 📎 云端两套 P7（b05c 纪事与终章、21ce 剧情闭环）：与主干 p6 结局系统同名平行实现，未收；设计稿、`data/endings.json`、`data/port_beats.json` 留档待挑
-- ⏳ 真机手感待 Snow 点验：十三道门禁（含有窗口巡检）全过，未在有人操作的窗口里看过
+- ⏳ 真机手感待 Snow 点验：十三道门禁（2026-09-27 当时口径；现行十六道见上文「验证」）（含有窗口巡检）全过，未在有人操作的窗口里看过
 
 ## 已知坑（点验/改图前必读）
 

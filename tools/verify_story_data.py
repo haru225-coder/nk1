@@ -69,7 +69,7 @@ for s in scenes:
 
 # 2026-09-14 审计 P0：剧情幕 id 与港口 id 同名却不是 type=port 时，海图抵港 load_scene 命中剧情表、
 # 走调查页而不调 _on_enter_port，visited_ports 永不记录——章节 must_visit 在真机上不可完成。
-# 七道门禁对此全盲（simulate_run 自管 visited）。此处把「同名必是港」做成静态门禁。
+# 七道门禁（2026-09-14 审计时口径；现行 16 道）对此全盲（simulate_run 自管 visited）。此处把「同名必是港」做成静态门禁。
 for s in scenes:
     if s["id"] in port_ids:
         check(s.get("type") == "port",

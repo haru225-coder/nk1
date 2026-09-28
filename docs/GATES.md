@@ -95,7 +95,7 @@
 ### 怎么开
 
 ```sh
-# Python 门禁：直接加开关（1–8 都有）
+# Python 门禁：直接加开关（1–8、17、19–23 都有）
 python3 tools/check_symbols.py --json
 python3 tools/verify_save_robustness.py --source /tmp/old_SaveLoad.gd --json   # 其余参数照传
 
@@ -144,8 +144,8 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 | `notes` | 如带窗口门禁却没设 `DISPLAY` |
 
 明细怎么来：
-- 用 `check(cond, msg)` 的 Python 门禁（2–7）：子进程里挂 `sys.setprofile` 实录每次 `check()` 调用，所以连「过了不打印」的 check_assets / verify_story_data 也有逐条明细（这两道的 `name` 是失败时的措辞，`detail` 标「过时不打印」）。
-- 其余（check_symbols、verify_save_robustness、Godot 门禁）：解析 `✓ / ✗ / ⚠ / FAIL: / COMPILE_CHECK / STORY_CHECK / OK   / FAIL ` 行；收尾判词之后的 `✗` 视为复述，不重复计数。
+- 用 `check(cond, msg)` 的 Python 门禁（2–7、19–21）：子进程里挂 `sys.setprofile` 实录每次 `check()` 调用，所以连「过了不打印」的 check_assets / verify_story_data 也有逐条明细（这两道的 `name` 是失败时的措辞，`detail` 标「过时不打印」）。22 check_decision_refs 另有同名 `check(o, doc_text, …)`（不是 `(cond, msg)` 形），钩子照样会录，明细被录成一条 name 为清单首行的假条目（`ok` 与退出码不受影响；lane doc11 待议）。
+- 其余（check_symbols、verify_save_robustness、check_sidecars、check_symbols_mutants、Godot 门禁）：解析 `✓ / ✗ / ⚠ / FAIL: / COMPILE_CHECK / STORY_CHECK / OK   / FAIL ` 行；收尾判词之后的 `✗` 视为复述，不重复计数。
 - 红了却一条失败都没解析到（脚本崩溃、提前 `exit`）：补一条 `{"name": "exit_code", "ok": false}`，看 `tail`。
 
 批量巡检（CI / 夜巡；下块由注册表生成——增删必跑门禁、改 `--json` 写法后 `python3 tools/gates_md.py --write` 随之更新，勿手改）：
