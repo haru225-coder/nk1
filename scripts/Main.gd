@@ -2661,7 +2661,9 @@ func _on_reread_ending() -> void:
 	if is_instance_valid(_chapter_host) or GameState.ended_text == "":
 		return
 	var kicker := "重读" if GameState.ended_at == "" else "重读・%s" % GameState.ended_at
-	_show_chapter_dialog({"title": GameState.ended, "text": GameState.ended_text, "resolved": true,
+	# 初读大题里结局名后面那截（忠肃的时地与城破原因）记在 ended_head，重读照初读写，援绝 / 粮尽 / 力竭分得出来
+	var title := GameState.ended if GameState.ended_head == "" else "%s　%s" % [GameState.ended, GameState.ended_head]
+	_show_chapter_dialog({"title": title, "text": GameState.ended_text, "resolved": true,
 		"scene": "", "ending": "", "kicker": kicker, "ok_text": "合上册页"})
 
 
@@ -4257,11 +4259,13 @@ func _siege_fall(reason: String) -> void:
 	if word != "":
 		head += "・" + word
 	GameState.siege = {}
-	# 先落定结局再改落款（finish 只认第一次，_show_notice_dialog 里那次不再改写）
+	# 先落定结局再改落款、记大题（finish 只认第一次，_show_notice_dialog 里那次不再改写）
 	GameState.finish("忠肃", text)
 	var signoff := _siege_fall_signoff() if overdue else ""
 	if signoff != "":
 		GameState.ended_at = signoff
+	# 大题那截存档：重读结局、航海札记照它写，城破原因不只在初读册页露一次
+	GameState.ended_head = head
 	_show_notice_dialog("忠肃", head, text, "忠肃")
 
 
