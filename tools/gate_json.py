@@ -66,7 +66,7 @@ REGISTRY = [
      "judge": "脚本/场景里 `res://assets/…` 引用、PORT_BG/FACILITY_BG、前缀拼接、人物立绘都存在且有 `.import`",
      "green": "`资产引用 N 个…全部存在` + `结果：全部通过`（**过了不逐条打印**）", "red": "`FAIL: …` 行；`结果：N 项失败`"},
     {"id": "verify_story_data", "tier": "must", "kind": "py", "file": "tools/verify_story_data.py",
-     "judge": "news / scenes effects / npcs / 结局年号 / 人物原稿与上屏字段：数据里写的键代码必须接住",
+     "judge": "news / scenes effects / npcs / 结局年号 / 人物原稿与上屏字段：数据里写的键代码必须接住；（lane seq3）scenes.json 结构：字段齐备 / 类型 / 引用 id 存在 / 无孤儿（归档场登记 `SCENE_ARCHIVE`），附 24 类反向自证",
      "green": "一行统计 + `结果：全部通过`（**过了不逐条打印**）", "red": "`FAIL: …` 行；`结果：N 项失败`"},
     {"id": "simulate_endgame", "tier": "must", "kind": "py", "file": "tools/simulate_endgame.py",
      "judge": "1268 后终局：身份判定、守城胜率、崖山门槛、窗口宽度、「花钱买过关」；比对 GameState/Main 常量",
@@ -308,6 +308,16 @@ SUBCHECKS = [
              "改读拆出件（去 `main.` 前缀）或真身所在文件（lane cs17；如 main9 把 `_setup_residence` 改读 ResidencePage.setup_residence）；"
              "`…只取到一行转发（→ <g>），真身是同一份源码里的 <g>…` = 同文件别名，改取 <g>（lane gd23）。"
              "计入 verify_economy 未通过项、退 1"},
+    {"id": "scenes.json 结构自证", "parent": "verify_story_data", "lane": "seq3", "oneclick": True,
+     "cmd": "python3 tools/verify_story_data.py",
+     "marks": ["def scene_structure_problems", "SCENE_ARCHIVE", "SCENE_ARCHIVE_MAX", "_SV_MUTANTS", "scenes.json 结构门禁自证"],
+     "expect": "末尾统计行 `scenes 104（结构：入口可达 N · 归档 M · deprecated K · 自证 24 类）`；结构没问题时本节零输出。"
+               "每次跑先在整份 scenes.json 上判结构（形状必填 / 形状外键 / 类型与在册取值 / 引用存在 / 从真机入口走不到的非 deprecated 幕须在 `SCENE_ARCHIVE`），"
+               "再拿 24 类反向变异副本（删必填、next / 调查项 id / start_scene / chapters / 港卡 / 旗标 / 货 / 发现悬空、跳 deprecated、类型错、bool 冒充 int、"
+               "键拼错、枚举外、id 重复、新孤儿、归档场接回、归档名单悬空）逐类喂同一个 `scene_structure_problems`，每类须报出指定字样",
+     "fail": "`FAIL: scenes.json <幕>… 缺必填字段 / 有形状外的字段 / 类型应为 / 不在册 / 悬空 / 没人写 / 是孤儿 / 却已接回入口` = 数据结构坏了（修数据，或新字段 / 新形状先登记进表）；"
+             "`FAIL: SCENE_ARCHIVE 只许减不许增` = 有人把新孤儿塞进归档名单（接入口，别登记）；"
+             "`FAIL: scenes.json 结构门禁自证：「X」后没报出…` / `…套不上现数据` = 某类检查失明，或样本幕改了名。都计入 verify_story_data 失败、退 1"},
     {"id": "compile 清单自检（inventory）", "parent": "compile", "lane": "ea4", "oneclick": True,
      "cmd": "godot --headless --path . -s res://tools/godot_compile_check.gd",
      "marks": ["inventory SCRIPTS == tracked *.gd", "ls-files", "INVENTORY_EXEMPT", "unlisted", "exempt-stale"],
