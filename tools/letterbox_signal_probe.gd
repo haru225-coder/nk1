@@ -30,8 +30,6 @@ const VIEW := Vector2i(1280, 720)
 ## 上界（lane gd20 实测）：最长一幕在封顶下要 28 帧，墙钟每帧（压帧 + 渲染）过 ≈ 700 ms 就等不完——本机 NK1_PROBE_SLOW_MS=500 绿、
 ## 950 红。超上界不许靠「多停 4 帧」碰运气变绿，也不许报成「挂死」：墨边还在演就记「墙钟上界先到」判红（见 _settle）。
 const SCENE_MS := 20000
-## 最长一幕的游戏时长留量：上界先到时本幕已走的游戏时间不到它，才算「压帧过重、没演完」；过了它还在演就是墨边卡住
-const SCENE_GAME_S := 5.0
 const PATHS := ["finish", "abort", "bail", "parent"]
 
 var _fails: Array = []
@@ -99,7 +97,7 @@ func _path_abort() -> void:
 	nx = _watch(Letterbox.enter(root, "外洋・遇敌"))
 	await _settle(w)
 	_expect_row("abort/全黑前", w, {"caption": 0, "covered": 1, "on_black": 1})
-	await _settle(nx)
+	await _drain(nx, "abort/全黑前：顶掉它的那副")
 
 	# 演完当帧又起一副：旧的已 queue_free、还没真释放，_spawn 扫组会再 _abort 它一次
 	w = _watch(Letterbox.enter(root, "外洋・遇敌"))
@@ -109,7 +107,7 @@ func _path_abort() -> void:
 	await _settle(w)
 	_expect_row("abort/演完当帧又起一副", w, {"caption": 1})
 	if chained[0] != null:
-		await _settle(chained[0])
+		await _drain(chained[0], "abort/演完当帧又起的那副")
 
 	# 演完当帧有人直接再 _abort 它（探针收尾 / 调用方自己收场）
 	w = _watch(Letterbox.enter(root, "外洋・遇敌"))
@@ -138,7 +136,7 @@ func _path_bail() -> void:
 	var host := Node.new()
 	root.add_child(host)
 	w = _watch(Letterbox.enter(root, "刺桐外海・接舷"))
-	await CombatStage.wait_signal(self, w.lb, &"caption_shown")
+	await _wait_caption(w)
 	CombatStage.teardown(self, host, null)
 	await _settle(w)
 	_expect_row("bail/停拍中", w, {"caption": 1, "covered": 0, "on_black": 0})
@@ -159,7 +157,7 @@ func _path_parent() -> void:
 	host = Node.new()
 	root.add_child(host)
 	w = _watch(Letterbox.exit(host, "外洋・脱战", "", func() -> void: pass))
-	await CombatStage.wait_signal(self, w.lb, &"caption_shown")
+	await _wait_caption(w)
 	host.queue_free()
 	await _settle(w)
 	# 随父释放时不补调 on_black、不发 covered：换场的一方（父）自己都没了，补调是往拆了的场里调
@@ -203,33 +201,55 @@ func _raw_waiter(lb: CanvasLayer, w: Dictionary) -> void:
 ## （补发走 call_deferred / 下一帧的 _process，按帧等是对的）。
 ## 上界先到、墨边还在演（仍在树上、未终结），按这段等待实走的游戏时间分两种，本行都判红，且不看那 4 帧里 finished
 ## 来没来（lane gd20：每帧 950 ms 时有的行靠这 4 帧碰上 finished 变绿、有的没碰上报「挂死」）：
-##   不到 SCENE_GAME_S：压帧过重、本幕没演完，报上界（不是挂死，也不是墨边的错）；
-##   过了 SCENE_GAME_S：游戏时间够了还在演，是墨边卡住。
+##   游戏时间落后墙钟、且不到 Clock.STALL_GAME_S（5 s，最长一幕 3.5 s 留量）：压帧过重、本幕没演完，报上界（不是挂死，
+##   也不是墨边的错）；否则：游戏时间照墙钟走够了还在演，是墨边卡住（分法见 probe_clock「三」、Clock.pressured）。（lane gd24：这条分法收进 probe_clock「三」，原本探针自带的 SCENE_GAME_S 并掉）
 ## 墨边已终结 / 已释放而裸 await 仍没醒，才是真挂死，照旧由 _expect_row 报。
 func _settle(w: Dictionary) -> void:
-	var f0 := Engine.get_process_frames()
-	var game_s := [0.0]
-	if not await Clock.until(self, func() -> bool:
-			game_s[0] += root.get_process_delta_time()
-			return w.raw_await, SCENE_MS):
+	# 帧数 / 游戏时间取 probe_clock 的账（lane gd24：分法收进 Clock.mark / pressured，本探针原先自己累加）
+	if not await Clock.until(self, func() -> bool: return w.raw_await, SCENE_MS):
 		var lb = w.lb
 		if lb != null and is_instance_valid(lb) and lb.is_inside_tree() and not bool(lb.get("_done")):
-			var n := Engine.get_process_frames() - f0
-			w.pressure = game_s[0] < SCENE_GAME_S
+			var n := int(Clock.last.frames)
+			var game_s := float(Clock.last.game_s)
+			w.pressure = Clock.pressured()
 			if w.pressure:
 				w.timeout = "墙钟上界 %d ms 先到、墨边还在演（%d 帧只走了 %.1f s 游戏时间，本幕最长约 3.5 s）：压帧过重、本行判不了，不是挂死；上界见 SCENE_MS 注释" % [
-					SCENE_MS, n, game_s[0]]
+					SCENE_MS, n, game_s]
 			else:
-				w.timeout = "墨边卡住：已走 %.1f s 游戏时间（%d 帧）仍未收尾，本幕最长约 3.5 s" % [game_s[0], n]
+				w.timeout = "墨边卡住：已走 %.1f s 游戏时间（%d 帧）仍未收尾，本幕最长约 3.5 s" % [game_s, n]
 	await _frames(4)
+
+
+## 只为收场、不比计数的那几副（下一幕开场前把它演完）：撞了墙钟上界照样记一行红（lane gd24 普查：原先 _settle 完不看
+## timeout，上界先到也不报，下一幕开场会把还在演的它顶掉——碰运气）；等到了不记行。
+func _drain(w: Dictionary, name: String) -> void:
+	await _settle(w)
+	if str(w.timeout) != "":
+		_rows += 1
+		_timeouts += 1 if w.pressure else 0
+		_check(false, "", "%s：%s" % [name, w.timeout])
+
+
+## 等本幕题签擦出再下手（bail / parent 的「停拍中」两幕）。等不到时：撞了墙钟上界记进本行 timeout（压帧过重 / 卡住，
+## 与 _settle 同口径，_expect_row 照 timeout 报、不再往下比计数）；先收到 finished 不记——那是契约那条路，由计数行报。
+## 原先不看返回（lane gd24 普查）：压帧过重时题签没出就下手，本行报「caption 应 1（0）」，误诊成墨边契约坏了。
+func _wait_caption(w: Dictionary) -> void:
+	if await CombatStage.wait_signal(self, w.lb, &"caption_shown", SCENE_MS) or not bool(Clock.last.timed_out):
+		return
+	w.pressure = Clock.pressured()
+	w.timeout = "等题签擦出再下手：%s" % Clock.overrun()
 
 
 ## 「题签前 / 全黑前」下手的时刻：墨边已真演起来（上边合拢补间走过一帧），进度信号一个都还没发。
 ## 下手当刻复核：已发了说明墨边时序变了（题签 / 全黑比合拢先到），本行前提不成立——记红，不把别的路径当这条验。
+## 等墨边上场撞了墙钟上界（lane gd24：原先不看返回，前提没验到也记 ✓）：记进本行 timeout、不验前提，本行照 timeout 报红。
 func _before(w: Dictionary, tag: String) -> void:
 	var lb = w.lb
-	await Clock.until(self, func() -> bool:
-		return lb == null or not is_instance_valid(lb) or (lb.get("_top") as Control).size.y > 0.0, SCENE_MS)
+	if not await Clock.until(self, func() -> bool:
+			return lb == null or not is_instance_valid(lb) or (lb.get("_top") as Control).size.y > 0.0, SCENE_MS):
+		w.pressure = Clock.pressured()
+		w.timeout = "%s：等墨边上场再下手，%s" % [tag, Clock.overrun()]
+		return
 	_check(w.caption == 0 and w.covered == 0 and w.finished == 0,
 		"%s：下手时墨边已上场、进度信号未发" % tag,
 		"%s：下手时进度信号已发（题签 %d / 全黑 %d / 终结 %d），前提不成立" % [tag, w.caption, w.covered, w.finished])

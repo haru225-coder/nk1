@@ -12,6 +12,8 @@ const STAGE := "res://scenes/vision/VisionStage.tscn"
 const TAG := "vision_fill_shots"
 const EXPECTED_SHOTS := 4
 const ShotGate := preload("res://tools/shot_gate.gd")
+## 等待记账与「压帧过重 / 卡住」的分法（lane gd24，见 probe_clock 头注释「三」）
+const Clock := preload("res://tools/probe_clock.gd")
 ## 取景帧（序列帧见 tools/art/vision_fill_gen.gd）：炮焰第 1 帧出膛、水花第 3 帧柱顶最高、第 6 帧塌落烟散
 const MUZZLE_PEAK := 1
 const SPLASH_PEAK := 3
@@ -80,12 +82,17 @@ func _run() -> void:
 ## 在已画出的状态上查 cond，成立就当帧截 root——截到的正是满足 cond 的那一帧。原先在 process 里判成立、再等下一帧
 ## 画完才截：压帧 300 ms 下序列帧一帧跳约 1.6 格，04_smoke 截到时 Splash0 已播完隐去（gd18 全支压帧实测红一次）。
 ## 相位已过（这一段一格也没画到就播完 / 越过取景段）判「错过」、满 WAIT_MS 判「超时」，两种都照截一张再判红，不挂死。
+## 超时记进 probe_clock 的账（lane gd24）：红话带「压帧过重 / 卡住」那句，--json 按账填 error=wall_clock。
 func _shot_at(name: String, cond: Callable, seq: AnimatedSprite2D, want: int) -> void:
-	var deadline := Time.get_ticks_msec() + WAIT_MS
+	var t0 := Time.get_ticks_msec()
+	var f0 := Engine.get_process_frames()
+	var game_s := 0.0
+	var deadline := t0 + WAIT_MS
 	var seen := false
 	var why := ""
 	while true:
 		await RenderingServer.frame_post_draw
+		game_s += root.get_process_delta_time()
 		if cond.call():
 			break
 		seen = seen or seq.visible
@@ -93,7 +100,9 @@ func _shot_at(name: String, cond: Callable, seq: AnimatedSprite2D, want: int) ->
 			why = "%s：错过——%s 没画到第 %d–%d 格就过了（现第 %d 格 visible=%s）" % [name, seq.name, want, want + 2, seq.frame, seq.visible]
 			break
 		if Time.get_ticks_msec() >= deadline:
-			why = "%s：超时——%d ms 内 %s 没走到第 %d 格（现第 %d 格 visible=%s）" % [name, WAIT_MS, seq.name, want, seq.frame, seq.visible]
+			Clock.mark(true, t0, f0, game_s, WAIT_MS)
+			why = "%s：超时——%d ms 内 %s 没走到第 %d 格（现第 %d 格 visible=%s；%s）" % [
+				name, WAIT_MS, seq.name, want, seq.frame, seq.visible, Clock.overrun()]
 			break
 	_expect(why == "", why)
 	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _fails)

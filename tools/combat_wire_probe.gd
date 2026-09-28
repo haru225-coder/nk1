@@ -91,7 +91,7 @@ func _run() -> void:
 				return
 			# 等海上这层接舷题签演完再起岸上预览：否则 BoardingStage.begin 按组顶掉它，顶在哪一拍随帧率变
 			if not await CombatStage.wait_until(self, func() -> bool: return CombatStage.boarding_stage(self, wm_ref.get_ref()) == null):
-				_expect(false, "海上接舷题签没收场（finished 未发）")
+				_expect(false, CombatStage.why_not("海上接舷题签没收场", "finished 未发"))
 				_finish(wm)
 				return
 

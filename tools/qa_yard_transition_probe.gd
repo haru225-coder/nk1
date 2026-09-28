@@ -10,9 +10,14 @@ extends Node
 ##   FIRST_CLICK_MISS 首点没扣钱：got_press 说明钮收没收到按下（false = 点没落到钮上，true = 钮收到了却没扣）
 ##   DOUBLE_CHARGE    首点扣对了，补的那次输入又扣了一次——本探针真正要抓的回归
 ##   WRONG_CHARGE     扣的数目不对（首点不等于价、或总扣不等于一次），SHIP_COUNT 购船后船数不对
+##   WALL_CLOCK       等过场落定 / 点前就绪撞了墙钟上界、本段游戏时间还不够（压帧过重，不是挂死、不是被测件的错），
+##                    本路判不了、不数钱（lane gd24；原先上界到了照样往下数，碰运气；就绪超时一律报 NOT_READY）
+##   STUCK            过场游戏时间走够了仍没落定（真卡住），或落定后闸没放开
 ## 压帧自检：NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path . res://tools/qa_yard_transition_probe.tscn（见 shot_gate.gd）
 
 const ShotGate := preload("res://tools/shot_gate.gd")
+## 等待记账与「压帧过重 / 卡住」的分法（lane gd24，见 probe_clock 头注释「三」）
+const Clock := preload("res://tools/probe_clock.gd")
 const START_MONEY := 50000
 ## 点前就绪上界（墙钟）：页是同步重建的，排版几帧就稳；留足压帧 / 满载余量
 const READY_MS := 5000
@@ -114,6 +119,8 @@ func _click(pos: Vector2) -> void:
 ## 本机实测换页后第一帧就排稳（40 次 × 12 路都是最短的 2 帧成立），原先那次点空不是排版没稳，真因见 _input。
 func _ready_to_click(btn: Button) -> String:
 	var t0 := Time.get_ticks_msec()
+	var f0 := Engine.get_process_frames()
+	var game_s := 0.0
 	var deadline := t0 + READY_MS
 	var last := Rect2()
 	var still := 0
@@ -138,9 +145,11 @@ func _ready_to_click(btn: Button) -> String:
 		if first_why == "" and not why.begins_with("rect 未稳"):
 			first_why = why
 		if Time.get_ticks_msec() >= deadline:
-			return "%d ms 未就绪：%s" % [READY_MS, why]
+			Clock.mark(true, t0, f0, game_s, READY_MS)
+			return "%d ms 未就绪：%s（%s）" % [READY_MS, why, Clock.overrun()]
 		frames += 1
 		await get_tree().process_frame
+		game_s += get_process_delta_time()
 	return why
 
 
@@ -267,15 +276,28 @@ func _dump(tag: String, btn: Variant) -> String:
 const SETTLE_MS := 15000
 
 
-func _settle() -> void:
-	var deadline := Time.get_ticks_msec() + SETTLE_MS
-	while _transition() != null and Time.get_ticks_msec() < deadline:
-		await get_tree().process_frame
+## 等到了返回 ""；撞上界返回红话（probe_clock.overrun：压帧过重 / 卡住），调用方记 _limit_verdict、不再数钱
+## ——原先上界到了照样往下数（lane gd24 普查：过场还在演就数，重复扣费的那次可能还没发生，碰运气绿）。
+func _settle() -> String:
+	var ok: bool = await Clock.until(get_tree(), func() -> bool: return _transition() == null, SETTLE_MS)
+	var why := "" if ok else "过场 %d ms 内没落定：%s" % [SETTLE_MS, Clock.overrun()]
 	for _i in 4:
 		await get_tree().process_frame
+	return why
 
 
-func _case_repair(how: String) -> void:
+## 撞了墙钟上界的那一路记哪个判词：压帧过重 WALL_CLOCK，游戏时间够了还没落定 STUCK
+func _limit_verdict() -> String:
+	return "WALL_CLOCK" if Clock.pressured() else "STUCK"
+
+
+## 点前就绪等满上界：本段游戏时间不够（压帧过重）记 WALL_CLOCK，够了仍不成立才是 NOT_READY（探针前提真不成立）
+func _not_ready_verdict() -> String:
+	return "WALL_CLOCK" if Clock.pressured() else "NOT_READY"
+
+
+## 返回本路等过场落定撞上界的红话（没撞 / 早退为 ""）：_case_release 借这一路铺垫，撞了就不往下判
+func _case_repair(how: String) -> String:
 	await _open_yard()
 	var s: Dictionary = _fleet().get("ships")[0]
 	s["durability"] = int(s["max_durability"]) - 40
@@ -287,25 +309,31 @@ func _case_repair(how: String) -> void:
 	if btn == null or rc <= 0:
 		_tally("NO_BUTTON")
 		print("FO_CASE repair/%s NO_BUTTON 找不到修船钮 rc=%d" % [how, rc])
-		return
+		return ""
 	var not_ready := await _ready_to_click(btn)
 	if not_ready != "":
-		_tally("NOT_READY")
-		print("FO_CASE repair/%s NOT_READY %s" % [how, not_ready])
-		return
+		var nv := _not_ready_verdict()
+		_tally(nv)
+		print("FO_CASE repair/%s %s %s" % [how, nv, not_ready])
+		return ""
 	var pos := btn.get_global_rect().get_center()
 	var got_press := await _first_click(btn, pos)
 	var after_first: int = _gs().get("money")
 	var d1 := _dump("after_click1", btn)
 	await _poke(how, btn, pos)
 	var d2 := _dump("after_poke", btn)
-	await _settle()
+	var unsettled := await _settle()
+	if unsettled != "":
+		_tally(_limit_verdict())
+		print("FO_CASE repair/%s %s %s（本路不数钱）| %s | %s" % [how, _limit_verdict(), unsettled, d1, d2])
+		return unsettled
 	var final: int = _gs().get("money")
 	var charges := float(START_MONEY - final) / float(rc)
 	var v := _verdict(START_MONEY - after_first, START_MONEY - final, rc)
 	_tally(v)
 	print("FO_CASE repair/%s %s rc=%d first=%d final=%d charges=%.1f got_press=%s %s %s | %s | %s" % [
 		how, v, rc, START_MONEY - after_first, START_MONEY - final, charges, got_press, _click_note, _ready_note, d1, d2])
+	return ""
 
 
 func _case_buy_ship(how: String) -> void:
@@ -318,8 +346,9 @@ func _case_buy_ship(how: String) -> void:
 	var n0: int = (_fleet().get("ships") as Array).size()
 	var not_ready := await _ready_to_click(btn)
 	if not_ready != "":
-		_tally("NOT_READY")
-		print("FO_CASE buy_ship/%s NOT_READY %s" % [how, not_ready])
+		var nv := _not_ready_verdict()
+		_tally(nv)
+		print("FO_CASE buy_ship/%s %s %s" % [how, nv, not_ready])
 		return
 	var pos := btn.get_global_rect().get_center()
 	var label := btn.text
@@ -330,7 +359,13 @@ func _case_buy_ship(how: String) -> void:
 	var d1 := _dump("after_click1", btn)
 	await _poke(how, btn, pos)
 	var d2 := _dump("after_poke", btn)
-	await _settle()
+	var unsettled := await _settle()
+	if unsettled != "":
+		_tally(_limit_verdict())
+		print("FO_CASE buy_ship/%s %s [%s] %s（本路不数钱）| %s | %s" % [how, _limit_verdict(), label, unsettled, d1, d2])
+		while (_fleet().get("ships") as Array).size() > n0:
+			(_fleet().get("ships") as Array).pop_back()
+		return
 	var final: int = _gs().get("money")
 	var n1: int = (_fleet().get("ships") as Array).size()
 	var v := _verdict(price, START_MONEY - final, list_price)
@@ -346,7 +381,12 @@ func _case_buy_ship(how: String) -> void:
 
 ## 闸只挡过场期间：落定后再修一次照常扣一次
 func _case_release() -> void:
-	await _case_repair("mouse")
+	var unsettled := await _case_repair("mouse")
+	if unsettled != "":
+		# 铺垫那一路的过场没落定：下面「闸没放开」就不是被测件卡住，是还在演（原先报 STUCK，压帧过重时误诊）
+		_tally(_limit_verdict())
+		print("FO_CASE release %s 铺垫一路（repair/mouse）%s，本路判不了" % [_limit_verdict(), unsettled])
+		return
 	var s: Dictionary = _fleet().get("ships")[0]
 	s["durability"] = int(s["max_durability"]) - 20
 	_main.call("load_scene", "quanzhou_shipyard")
@@ -362,11 +402,16 @@ func _case_release() -> void:
 		return
 	var not_ready := await _ready_to_click(btn)
 	if not_ready != "":
-		_tally("NOT_READY")
-		print("FO_CASE release NOT_READY %s" % not_ready)
+		var nv := _not_ready_verdict()
+		_tally(nv)
+		print("FO_CASE release %s %s" % [nv, not_ready])
 		return
 	var got_press := await _first_click(btn, btn.get_global_rect().get_center())
-	await _settle()
+	unsettled = await _settle()
+	if unsettled != "":
+		_tally(_limit_verdict())
+		print("FO_CASE release %s %s（本路不数钱）" % [_limit_verdict(), unsettled])
+		return
 	var ok := int(_gs().get("money")) == m0 - rc and int(s["durability"]) == int(s["max_durability"])
 	var v := "OK"
 	if not ok:

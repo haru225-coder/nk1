@@ -80,9 +80,11 @@ func _run() -> void:
 
 ## 先过 n 帧（排版 / 延迟调用 / 逐帧演出按帧走），再等补间演完；墙钟上界见 probe_clock.gd
 func _settle(n: int) -> void:
+	# 记进判红的 _shot_fails（lane gd24 普查）：原先进 _fails，那一份只打 warn、不判红——超上界照样绿，是碰运气
 	if not await Clock.settle(self, n):
-		_fails.append("演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
-		print("  ✗ 演出 %d ms 内没静下来（有限补间仍在跑）" % Clock.WAIT_MS)
+		var why := "演出 %d ms 内没静下来（%s）" % [Clock.WAIT_MS, Clock.overrun()]
+		_shot_fails.append(why)
+		print("  ✗ ", why)
 
 
 func _pick(id: String) -> void:

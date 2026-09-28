@@ -31,13 +31,37 @@ extends RefCounted
 ##     letterbox_signal：每幕 SCENE_MS 20 s、最长一幕 28 帧 → ≈ 714 ms（SLOW 500 绿、950 红「墙钟上界先到」，见该探针 _settle）
 ##     wait_hold（title / chapter / drydock / ending / siege）：10 帧 / 15 s → ≈ 1500 ms（title：SLOW 1300 绿、1800 红「超时」）
 ##     settle 等补间（chart_hud / patrol_pack / voyage）：4 帧 / 15 s → ≈ 3750 ms；其余 9 支没有撞得到的墙钟等待，只剩进程 timeout
+##     〔lane gd24 补 gd18 新接压帧的两支，按同一公式推算、未逐支实测〕qa_yard_transition：等过场落定约 2.4 s（18 帧）/ SETTLE_MS 15 s
+##     → ≈ 830 ms，点前就绪 3 帧 / READY_MS 5 s；vision_fill_shots：齐射后最晚一格约 0.9 s（7 帧）/ 15 s → ≈ 2100 ms
 ##   超上界一律判红并写明「超时 / 没收场 / 墙钟上界先到」，不许绿、也不许报成被测件的错。
+##   〔lane gd24〕口径收进本文件，不再各支自写：settle / until / wait_hold（及 combat_probe_stage 的 wait_until /
+##   wait_signal / wait_drawn，都经 mark 记账）每次等待记下实走的墙钟 / 帧数 / 游戏时间（每帧 delta 累加）进 last。
+##   上界先到时按这段游戏时间分两种（gd20 letterbox_signal 的分法推广）：游戏时间落后墙钟（≤ PRESSURE_RATIO × 墙钟，
+##   每帧 delta 封顶才会这样，即慢过 7.5 fps）且不到 STALL_GAME_S＝压帧过重、判不了，不是挂死、不是被测件的错
+##   （计入 pressure_hits，--json 带 error=wall_clock）；否则＝被等的东西卡住（真毛病，计入 stall_hits）。
+##   只看 STALL_GAME_S 不够：上界本身不比它长的等待（qa_yard 点前就绪 5 s）在正常帧率下游戏时间≈墙钟≈5 s，
+##   会在两边来回跳（gd24 变异 M4 实测：墨幕卡死时 12 路里 4 路记成压帧过重）。调用方拿 false 时用 overrun() 取这句话；ShotGate 收尾兜底：本进程有等待撞了上界而没判红
+##   （调用方没看返回＝靠多停几帧碰运气）一律补一条红，error 没给时按 pressure_hits 填 wall_clock。
 ##
 ## 四、压帧自检：环境变量 NK1_PROBE_SLOW_MS=<毫秒> 时每帧 OS.delay_msec 压帧（gd10 复现手法，与 gd11 同一个变量名）：
 ##     NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_title_probe.gd
 ##   实现 lane gd18 起收进 ShotGate.frame_pressure（全体有窗口探针一个口径），本文件不再留一份；各探针开场直接调它。
 
 const WAIT_MS := 15000
+## --json 的 error 码：墙钟上界先到、压帧过重（lane gd20 letterbox_signal 起用，gd24 各支统一）
+const WALL_CLOCK := "wall_clock"
+## 探针等的最长一段演出是墨边（带 on_black 的出战约 3.5 s 游戏时间）；上界先到时这段等待实走的游戏时间不到它，
+## 算压帧过重（没演完是因为墙钟不够）；过了它仍没等到，是被等的东西卡住。见头注释「三」〔lane gd24〕。
+const STALL_GAME_S := 5.0
+## 游戏时间 / 墙钟不到这个比才算「压帧」：不封顶时 delta 就是真实帧间隔，两者几乎相等；封顶后（慢过 7.5 fps）游戏时间落后，
+## 每帧 300 ms 时约 0.38、1000 ms 时约 0.13。见头注释「三」〔lane gd24〕。
+const PRESSURE_RATIO := 0.8
+
+## 最近一次等待的账（mark 写）：timed_out / ms / frames / game_s / max_ms。只记最近一次：探针的等待是串行的。
+static var last := {"timed_out": false, "ms": 0, "frames": 0, "game_s": 0.0, "max_ms": 0}
+## 本进程里撞上界的等待次数：压帧过重 / 卡住。ShotGate 收尾兜底看它（头注释「三」）
+static var pressure_hits := 0
+static var stall_hits := 0
 
 
 ## 此刻在跑的有限补间个数（无限循环的不算）。
@@ -51,28 +75,77 @@ static func live_tweens(tree: SceneTree) -> int:
 
 ## 先过 n 帧，再等到连着两帧没有在跑的有限补间；满 max_ms 毫秒（墙钟）返回 false。见头注释「一」。
 static func settle(tree: SceneTree, n := 2, max_ms := WAIT_MS) -> bool:
+	var t0 := Time.get_ticks_msec()
+	var f0 := Engine.get_process_frames()
+	var game_s := 0.0
 	for _i in n:
 		await tree.process_frame
+		game_s += tree.root.get_process_delta_time()
 	var deadline := Time.get_ticks_msec() + max_ms
 	var quiet := 0
 	while true:
 		quiet = quiet + 1 if live_tweens(tree) == 0 else 0
 		if quiet >= 2:
+			mark(false, t0, f0, game_s, max_ms)
 			return true
 		if Time.get_ticks_msec() >= deadline:
+			mark(true, t0, f0, game_s, max_ms)
 			return false
 		await tree.process_frame
+		game_s += tree.root.get_process_delta_time()
 	return false
 
 
-## 每帧查 cond，成立返回 true；满 max_ms 毫秒（墙钟）仍不成立返回 false。
+## 每帧查 cond，成立返回 true；满 max_ms 毫秒（墙钟）仍不成立返回 false（记进 last，调用方用 overrun() 报）。
 static func until(tree: SceneTree, cond: Callable, max_ms := WAIT_MS) -> bool:
-	var deadline := Time.get_ticks_msec() + max_ms
+	var t0 := Time.get_ticks_msec()
+	var f0 := Engine.get_process_frames()
+	var game_s := 0.0
 	while not cond.call():
-		if Time.get_ticks_msec() >= deadline:
+		if Time.get_ticks_msec() - t0 >= max_ms:
+			mark(true, t0, f0, game_s, max_ms)
 			return false
 		await tree.process_frame
+		game_s += tree.root.get_process_delta_time()
+	mark(false, t0, f0, game_s, max_ms)
 	return true
+
+
+## 记一次等待的账（本文件与 combat_probe_stage 的等待都调）；超时按游戏时间分压帧过重 / 卡住计数。
+static func mark(timed_out: bool, t0: int, f0: int, game_s: float, max_ms: int) -> void:
+	last = {"timed_out": timed_out, "ms": Time.get_ticks_msec() - t0, "frames": Engine.get_process_frames() - f0,
+		"game_s": game_s, "max_ms": max_ms}
+	if timed_out:
+		if _pressure(game_s, int(last.ms)):
+			pressure_hits += 1
+		else:
+			stall_hits += 1
+
+
+## 一段撞了上界的等待算不算压帧过重：游戏时间落后墙钟、且没走到最长一段演出的留量（头注释「三」）
+static func _pressure(game_s: float, ms: int) -> bool:
+	return game_s < STALL_GAME_S and game_s <= PRESSURE_RATIO * ms / 1000.0
+
+
+## 最近一次等待没撞上界（等到了 / 对象释放 / 先收到终止信号）时调，免得调用方读到更早那次的账。
+static func mark_none() -> void:
+	last = {"timed_out": false, "ms": 0, "frames": 0, "game_s": 0.0, "max_ms": 0}
+
+
+## 最近一次等待撞上界、且游戏时间落后墙钟又不到 STALL_GAME_S：压帧过重（不是挂死、不是被测件的错）。
+static func pressured() -> bool:
+	return bool(last.timed_out) and _pressure(float(last.game_s), int(last.ms))
+
+
+## 最近一次等待撞上界时怎么说（没撞返回 ""）。见头注释「三」〔lane gd24〕。
+static func overrun() -> String:
+	if not bool(last.timed_out):
+		return ""
+	if pressured():
+		return "墙钟上界 %d ms 先到（%d 帧只走了 %.1f s 游戏时间，最长一段演出约 3.5 s）：压帧过重、判不了，不是挂死；上界见 probe_clock 头注释「三」" % [
+			int(last.max_ms), int(last.frames), float(last.game_s)]
+	return "卡住：已走 %.1f s 游戏时间（%d 帧、%d ms 墙钟）仍没等到，最长一段演出约 3.5 s" % [
+		float(last.game_s), int(last.frames), int(last.ms)]
 
 
 ## 墨幕（UiTransition）是否正停在题签那一拍：淡入 0.32 + 擦出 0.42 + 副题 0.28 后停 T_HOLD 1.0 s，
@@ -90,7 +163,7 @@ static func wait_hold(tree: SceneTree, node, max_ms := WAIT_MS) -> String:
 		var n = null if ref == null else ref.get_ref()
 		return n == null or bool(n.get("_done"))
 	if not await until(tree, func() -> bool: return holding(null if ref == null else ref.get_ref()) or gone.call(), max_ms):
-		return "超时（%d ms 未到停拍）" % max_ms
+		return "超时（%d ms 未到停拍；%s）" % [max_ms, overrun()]
 	if not holding(node):
 		return "错过（等 %d ms 墨幕已收场，停拍一帧也没等到）" % (Time.get_ticks_msec() - t0)
 	return ""

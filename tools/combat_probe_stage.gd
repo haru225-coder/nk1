@@ -24,6 +24,10 @@ extends RefCounted
 ##   上界按墙钟（lane gd11；gd10 原是 6000 帧）：演出按 delta 走，帧上界随帧率伸缩——235 fps 下 25 s、压到 7 fps 下 14 min。
 ##   墨边的 finished 是终止信号、每条收尾路径都恰好发一次（lane gd12，见 CombatLetterbox 头注释），所以等进度信号时
 ##   finished 先来就立刻返回 false，不必干等到上界；上界只兜「演出本身卡住」。
+##   〔lane gd24〕返回 false 有两种来由，报法要分开：先收到 finished / 对象被释放＝墨边契约那条路（原话照报）；
+##   撞了墙钟上界＝等待记进 probe_clock 的账，按实走游戏时间分「压帧过重、不是挂死」/「卡住」。调用方用
+##   why_not(话, 原因) 取这一句、_bail 用 bail_error() 取 --json 的 error（wall_clock / no_signal），不再一律
+##   报「墨边被顶掉或随布景释放」「finished 未发」——压帧过重时那是误诊（gd24 超上界实测）。
 ##
 ## 三、收尾一条路：teardown(tree, wm, gm)。探针正常收尾、等不到信号的 _bail、墨边没上场的早退都先走它再出报告：
 ##   场上每副墨边走 _abort（与被新墨边顶掉同一条，经 _finish 发 finished，挂着的等待方都醒）→ 放掉布景 → 清战况。
@@ -53,8 +57,9 @@ extends RefCounted
 ## wm / obj / parent 形参故意不写类型：已释放的实例传给带类型的形参当场 SCRIPT ERROR、协程中断——正是要防的挂死。
 
 const Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 const FIRE_FROZEN := INF
-## _bail 的 --json error 码：等的信号没来（墨边提前终结，或到上界）
+## _bail 的 --json error 码：等的信号没来（墨边提前终结，或卡住到上界）；压帧过重撞上界改报 probe_clock.WALL_CLOCK，见 bail_error
 const NO_SIGNAL := "no_signal"
 ## 默认墙钟上界：等的最长一幕是墨边（带 on_black 的出战约 3.5 s）。delta 不封顶，压帧 / 慢机下游戏时间照墙钟走，
 ## 所以上界与帧率无关；留约 5 倍给满载机、hitstop 降速与截图存盘。
@@ -86,19 +91,15 @@ static func standing_fail(wm) -> String:
 	return ""
 
 
-## 每帧查 cond，成立返回 true；满 max_ms 毫秒（墙钟）仍不成立返回 false。
+## 每帧查 cond，成立返回 true；满 max_ms 毫秒（墙钟）仍不成立返回 false。即 Clock.until，上界 20 s（lane gd24 并过去记账）。
 static func wait_until(tree: SceneTree, cond: Callable, max_ms := WAIT_MS) -> bool:
-	var deadline := Time.get_ticks_msec() + max_ms
-	while not cond.call():
-		if Time.get_ticks_msec() >= deadline:
-			return false
-		await tree.process_frame
-	return true
+	return await Clock.until(tree, cond, max_ms)
 
 
 ## 等 obj 的无参信号 sig：收到返回 true；obj 被释放、先收到终止信号 stop（缺省 finished）、或满 max_ms 毫秒返回 false。
 static func wait_signal(tree: SceneTree, obj, sig: StringName, max_ms := WAIT_MS, stop := &"finished") -> bool:
 	if obj == null or not is_instance_valid(obj):
+		Clock.mark_none()
 		return false
 	var hit := [false]
 	var ended := [false]
@@ -109,6 +110,7 @@ static func wait_signal(tree: SceneTree, obj, sig: StringName, max_ms := WAIT_MS
 	if watch_stop:
 		obj.connect(stop, cb_stop, Object.CONNECT_ONE_SHOT)
 	var ref: WeakRef = weakref(obj)  # 不直接捕获 obj：等待中被释放后再调条件会报 Lambda capture freed（头注释「六」）
+	# 先收到 finished / 对象被释放时 wait_until 返回 true、账上不记超时；只有撞上界才记（why_not / bail_error 看它）
 	await wait_until(tree, func() -> bool: return hit[0] or ended[0] or ref.get_ref() == null, max_ms)
 	if is_instance_valid(obj):
 		if obj.is_connected(sig, cb):
@@ -116,6 +118,18 @@ static func wait_signal(tree: SceneTree, obj, sig: StringName, max_ms := WAIT_MS
 		if watch_stop and obj.is_connected(stop, cb_stop):
 			obj.disconnect(stop, cb_stop)
 	return hit[0]
+
+
+## 等待返回 false 后的红话：最近一次等待撞了墙钟上界时报「what：压帧过重 / 卡住」那句（probe_clock.overrun），
+## 否则照原样报「what（cause）」——cause 是契约那条路（信号没发 / 被顶掉 / 随布景释放）。见头注释「二」〔lane gd24〕。
+static func why_not(what: String, cause: String) -> String:
+	var o := Clock.overrun()
+	return "%s：%s" % [what, o] if o != "" else "%s（%s）" % [what, cause]
+
+
+## _bail 的 --json error：最近一次等待压帧过重撞上界为 wall_clock，否则 no_signal。
+static func bail_error() -> String:
+	return Clock.WALL_CLOCK if Clock.pressured() else NO_SIGNAL
 
 
 ## 探针收尾（正常 / _bail / 早退同走这里）：场上墨边一律 _abort（发 finished、带 on_black 的先补调），
@@ -133,16 +147,22 @@ static func teardown(tree: SceneTree, wm, gm = null) -> void:
 ## gone 成立返回「错过」、满 max_ms 返回「超时」（都带已等毫秒数），调用方记红收尾。
 static func wait_drawn(tree: SceneTree, want: Callable, gone := Callable(), max_ms := WAIT_MS) -> String:
 	var t0 := Time.get_ticks_msec()
+	var f0 := Engine.get_process_frames()
+	var game_s := 0.0
 	while true:
 		await tree.process_frame
+		game_s += tree.root.get_process_delta_time()
 		await RenderingServer.frame_post_draw
 		if want.call():
+			Clock.mark(false, t0, f0, game_s, max_ms)
 			return ""
 		var waited := Time.get_ticks_msec() - t0
 		if gone.is_valid() and gone.call():
+			Clock.mark(false, t0, f0, game_s, max_ms)
 			return "错过（等 %d ms 该相位已过，一帧也没画到）" % waited
 		if waited >= max_ms:
-			return "超时（%d ms 未到该相位）" % max_ms
+			Clock.mark(true, t0, f0, game_s, max_ms)
+			return "超时（%d ms 未到该相位；%s）" % [max_ms, Clock.overrun()]
 	return ""
 
 
