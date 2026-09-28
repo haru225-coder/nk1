@@ -687,7 +687,133 @@ func _route_check() -> void:
 	_check(main._bg_file == "bg_end_temple.jpg", "终局「忠肃」港页压 bg_end_temple.jpg（实际 %s）" % main._bg_file)
 	GS.from_dict({})
 	_close_dialogs(main)
+	_hooks_bg_check(main)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_close_dialogs(main)
 	main.queue_free()
+
+
+## 扩充包钩子第一批（2026-09-28）：H2 港页变体、H4 序章分页、牙行货图槽。
+## 断言不钉图在不在：缺图时画面与原图一致、找图顺序用注入的「文件在不在」表测，图进库后照样绿。
+func _hooks_bg_check(main: Node) -> void:
+	var sweep := [[1255, 3], [1274, 10], [1274, 12], [1275, 7], [1276, 5], [1276, 7], [1276, 11], [1277, 1], [1277, 4], [1278, 3], [1290, 12]]
+	# H2 缺图：注入空表（一张变体都没有）→ 各港各年月都是 PORT_BG 原图
+	main._port_bg_probe = {}
+	var drift := []
+	for ym in sweep:
+		Cal.from_dict({"year": ym[0], "month": ym[1], "day": 1})
+		for pid in main.PORT_BG.keys():
+			if main._port_bg(pid) != main.PORT_BG[pid]:
+				drift.append("%s@%d-%d" % [pid, ym[0], ym[1]])
+	_check(drift.is_empty(), "H2 缺图时 %d 港 × %d 个年月的港页底图都是 PORT_BG 原图（偏离 %s）" % [main.PORT_BG.size(), sweep.size(), drift])
+	# H2 查盘：不注入时只会给出盘上真有的文件
+	main._port_bg_probe = null
+	var ghost := []
+	for ym in sweep:
+		Cal.from_dict({"year": ym[0], "month": ym[1], "day": 1})
+		for pid in main.PORT_BG.keys():
+			var f: String = main._port_bg(pid)
+			if not FileAccess.file_exists("res://assets/" + f):
+				ghost.append(f)
+	_check(ghost.is_empty(), "H2 查盘时港页底图全是盘上真有的文件（缺 %s）" % [ghost])
+	# H2 找图顺序：战况 > 年份 > 季节 > 原图；loyal 不找战况档；博多夏借春、冬借秋；港 id 按 ports.json（海口不吃兴化城的图）
+	var cases := [
+		[1276, 11, "xinghua", ["bg_xinghua_besieged.jpg", "bg_xinghua_autumn.jpg"], "bg_xinghua_besieged.jpg", "兴化 1276-11 围城：战况档压过季节档（守城页即此图）"],
+		[1276, 11, "xinghua", ["bg_xinghua_autumn.jpg"], "bg_xinghua_autumn.jpg", "兴化 1276-11 缺围城图：落到秋季档"],
+		[1276, 11, "xinghua_harbor", ["bg_xinghua_besieged.jpg"], main.PORT_BG["xinghua_harbor"], "兴化海口 1276-11 不借兴化城的围城图"],
+		[1277, 1, "quanzhou", ["bg_quanzhou_fallen.jpg", "bg_quanzhou_contested.jpg", "bg_quanzhou_winter.jpg"], "bg_quanzhou_fallen.jpg", "泉州 1277-01 已降元：取 fallen 档"],
+		[1277, 1, "quanzhou", ["bg_quanzhou_contested.jpg", "bg_quanzhou_winter.jpg"], "bg_quanzhou_winter.jpg", "泉州 1277-01 不取过期的对峙档，落到冬季档"],
+		[1255, 3, "quanzhou", ["bg_quanzhou_loyal.jpg"], main.PORT_BG["quanzhou"], "loyal 不找 bg_<港>_loyal.jpg"],
+		[1276, 7, "hakata", ["bg_hakata_1276.jpg", "bg_hakata_spring.jpg"], "bg_hakata_1276.jpg", "博多 1276-07：年份档压过季节档"],
+		[1290, 12, "hakata", ["bg_hakata_1276.jpg", "bg_hakata_autumn.jpg"], "bg_hakata_1276.jpg", "博多 1290：取不大于当年的最大登记年份"],
+		[1275, 7, "hakata", ["bg_hakata_1276.jpg", "bg_hakata_spring.jpg"], "bg_hakata_spring.jpg", "博多 1275-07 未到防塁年：夏季借春版"],
+		[1276, 7, "hakata", ["bg_hakata_spring.jpg"], "bg_hakata_spring.jpg", "博多 1276-07 缺防塁图：落到夏借春"],
+		[1275, 12, "hakata", ["bg_hakata_autumn.jpg", "bg_hakata_winter.jpg"], "bg_hakata_autumn.jpg", "博多冬季借秋版"],
+		[1274, 12, "hakata", ["bg_hakata_closed.jpg", "bg_hakata_autumn.jpg"], "bg_hakata_closed.jpg", "博多 1274-12 封港：战况档压过季节档"],
+	]
+	for c in cases:
+		Cal.from_dict({"year": c[0], "month": c[1], "day": 1})
+		var probe := {}
+		for f in c[3]:
+			probe[f] = true
+		main._port_bg_probe = probe
+		var got: String = main._port_bg(c[2])
+		_check(got == c[4], "H2 %s（实际 %s）" % [c[5], got])
+	main._port_bg_probe = null
+	# H2 接线：港页走 _port_bg；岸上候一日（真走 _on_shore_wait）跨了档换图、没跨档不重载。
+	# 注入表只决定 _port_bg 挑哪一档；_set_background_file 真去盘上取图——fallen 图没进库时回落海路图，进了库就是它本身。
+	# 期望值按盘面算，所以 01 批的 bg_quanzhou_fallen.jpg 进不进库都绿（2026-09-28 评审 M1）；路径拆开拼，免得 check_assets 当成必须在库的引用
+	var fallen_file := "bg_quanzhou_fallen.jpg"
+	var fallen_want: String = fallen_file if FileAccess.file_exists("res://assets/" + fallen_file) else main.FALLBACK_BG
+	main._port_bg_probe = {fallen_file: true}
+	GS.from_dict({})
+	Cal.from_dict({"year": 1277, "month": 1, "day": 5})
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou")
+	_check(main._bg_file == fallen_want, "H2 泉州 1277-01 港页底图走 _port_bg：注入 fallen 档即换（应 %s，实际 %s）" % [fallen_want, main._bg_file])
+	# 1276-11-29 泉州对峙：注入表里没有对峙档和秋季档 → 原图；候到 11-30 没跨月 → 同一张纹理（不重载）；再候到 12-01 降元 → 换 fallen 档
+	GS.from_dict({})
+	Cal.from_dict({"year": 1276, "month": 11, "day": 29})
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou")
+	_check(main._bg_file == main.PORT_BG["quanzhou"], "H2 泉州 1276-11 对峙、注入表无此档：港页压原图（实际 %s）" % main._bg_file)
+	var tex_before: Texture2D = main.background.texture
+	main._on_shore_wait()
+	_check(Cal.month == 11 and main.background.texture == tex_before and main._bg_file == main.PORT_BG["quanzhou"],
+		"H2 候一日没跨月：港页底图不重载（%d-%d，纹理同一实例 %s，%s）" % [Cal.month, Cal.day, main.background.texture == tex_before, main._bg_file])
+	main._on_shore_wait()
+	_check(Cal.month == 12 and main._bg_file == fallen_want and main.background.texture != tex_before,
+		"H2 候一日跨到降元月：港页底图跟着换（%d-%d，应 %s，实际 %s）" % [Cal.month, Cal.day, fallen_want, main._bg_file])
+	main._port_bg_probe = null
+	_close_dialogs(main)
+
+	# H4 序章分页：cg_title 不进表；每个 cg_ 页 = 表里有且文件在的专属图，否则 title 型压标题海图、其余压酒棚（不落海路图）
+	_check(not main.PROLOGUE_PAGE_BG.has("cg_title"), "H4 PROLOGUE_PAGE_BG 不收 cg_title")
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	var wrong := []
+	var mapped := 0
+	for s in GM.scenes_data.get("scenes", []):
+		var sid := str(s.get("id", ""))
+		if not sid.begins_with("cg_"):
+			continue
+		main.load_scene(sid)
+		var want: String = main.PROLOGUE_BG
+		if str(s.get("type", "")) == "title":
+			want = "bg_world_map.jpg"
+		var own := str(main.PROLOGUE_PAGE_BG.get(sid, ""))
+		if own != "" and FileAccess.file_exists("res://assets/" + own):
+			want = own
+			mapped += 1
+		if main._bg_file != want:
+			wrong.append("%s=%s（应 %s）" % [sid, main._bg_file, want])
+	_check(wrong.is_empty() and mapped >= 3, "H4 序章各页底图按表取、缺图回落酒棚或标题海图（换图 %d 页，不符 %s）" % [mapped, wrong])
+	_check(main._prologue_page_bg("cg_veteran", {"cg_veteran": "bg_prologue_missing_probe.jpg"}) == "",
+		"H4 表里登记了但文件缺：_prologue_page_bg 给空，调用方回落酒棚")
+	_close_dialogs(main)
+
+	# 牙行货图槽：图在才挂 GoodIcon；缺图不加节点，手续脚注仍直接挂在卡的五行列里（卡面与原先一样）
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	GS.last_port = "quanzhou"
+	GS.money = 5000
+	main.load_scene("quanzhou_market")
+	var slips: Node = main.find_child("BrokerSlips", true, false)
+	var hand: PackedStringArray = main.broker_hand
+	var bad := []
+	if slips != null:
+		for i in range(mini(slips.get_child_count(), hand.size())):
+			var card: Node = slips.get_child(i)
+			var has_art := FileAccess.file_exists("res://assets/goods/good_%s.png" % hand[i])
+			var icon := card.find_child("GoodIcon", true, false)
+			var fee := card.find_child("PriceFee", true, false)
+			var body: Node = card.get_child(0).get_child(0)
+			if (icon != null) != has_art:
+				bad.append("%s 图%s而 GoodIcon %s" % [hand[i], "在" if has_art else "缺", "挂了" if icon != null else "没挂"])
+			if not has_art and (fee == null or fee.get_parent() != body or card.find_child("GoodTop", true, false) != null):
+				bad.append("%s 缺图时卡面结构变了" % hand[i])
+	_check(slips != null and slips.get_child_count() > 0 and bad.is_empty(), "牙行货图槽：图在才挂、缺图卡面不变（%d 张卡，不符 %s）" % [slips.get_child_count() if slips != null else 0, bad])
 
 
 ## 关掉 Main 弹出的 AcceptDialog（章节晋升 / 通告），等价于玩家按下确认

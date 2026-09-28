@@ -927,10 +927,15 @@ func _load_scene_inner(scene_id: String) -> void:
 	if str(scene_id).begins_with("cg_"):
 		# 卷首题名与四方沙盘（title 型）压在世界图上；其余 cg_ 序章页的戏都在兴化海口那间漏风的酒棚里（雨夜、惊雷），
 		# 换成酒棚油画并压成夜色——原先一律世界地图，酒棚、老兵的戏也压在标题同款地图上（第 2 轮 UX M6）
-		if type == "title":
+		# H4：PROLOGUE_PAGE_BG 里登记了、文件也在的页换专属底图；缺图照旧回落这两张，不走 _set_background_file 的海路图兜底
+		var page_bg := _prologue_page_bg(scene_id)
+		if page_bg != "":
+			_set_background_file(page_bg)
+		elif type == "title":
 			_set_background_file("bg_world_map.jpg")
 		else:
 			_set_background_file(PROLOGUE_BG)
+		if type != "title":
 			_CS_BACKDROP.set_grade(background, "night")
 	else:
 		_apply_background(type, loc)
@@ -963,6 +968,22 @@ const PORT_BG := {
 	"guangzhou": "bg_arab_mosque.jpg",
 }
 
+## H2 港页变体：同港同机位的战况 / 年份 / 季节档，文件名 bg_<港 id>_<后缀>.jpg（港 id 即 ports.json 的 id，不是 PORT_BG 原图名）。
+## 找图顺序见 _port_bg：战况（非 loyal）→ 年份 → 季节 → PORT_BG 原图，每档都要文件在才用——图没进库时画面与原图一样，收一张生效一张。
+## 守城页就是兴化港页（_siege_active），bg_xinghua_besieged.jpg 进库即生效，不另写代码。
+## check_assets 查拼写：assets/bg_<港 id>_<后缀>.jpg 的后缀须是非 loyal 战况（Economy.WAR_LABEL）、下面的季节，或本表登记的年份。
+## 年份档：取不大于当年的最大一档；年份档压过季节档（博多 1276 年起的防塁档画了石垒，季节图里没有，季节优先会倒退回防塁以前）。
+const PORT_YEAR_BG := {"hakata": [1276]}
+## 季节按月（和 monsoon 的口径不同）：春 3—4、夏 5—8、秋 9—11、冬 12—2。下标 = 月 - 1
+const PORT_SEASON_BY_MONTH := [
+	"winter", "winter", "spring", "spring", "summer", "summer",
+	"summer", "summer", "autumn", "autumn", "autumn", "winter",
+]
+## 某港某季借别季的图：博多原图樱花红叶同框，夏季用春版、冬季用秋版
+const PORT_SEASON_BORROW := {"hakata": {"summer": "spring", "winter": "autumn"}}
+## 门禁注入的「文件在不在」表：设成 Dictionary 时 _port_bg 只认表里的文件名、不查盘（godot_story_check 测找图顺序）；平时为 null
+var _port_bg_probe = null
+
 ## 设施后缀 → 背景图
 const FACILITY_BG := {
 	"_market": "bg_yahang.jpg",
@@ -981,6 +1002,32 @@ const FACILITY_BG := {
 const FALLBACK_BG := "bg_sea_route.jpg"
 ## 序章酒棚（cg_narrate / veteran / wine_shed / ana / servant / decision / choice 各页）
 const PROLOGUE_BG := "bg_xinghua_wine_shed.jpg"
+## H4 序章分页底图：页 id → assets/ 下的文件（可带子目录，_set_background_file 前面拼 res://assets/）。
+## 不在表里的页照旧：title 型压 bg_world_map.jpg，其余压 PROLOGUE_BG 并调夜色；在表里而文件缺，也回落这两张（不回落海路图）。
+## check_assets 查表值与键，所以一页一行、跟着一张图进，不写指向不存在文件的行。cg_title 不进表：godot_story_check 断言标题屏用 bg_world_map.jpg。
+const PROLOGUE_PAGE_BG := {
+	# 四方沙盘（title 型）：北、南、西三页借开场过场的现成图
+	"cg_world_north": "cutscene/cs_north_mongol.jpg",
+	"cg_world_south": "cutscene/cs_south_champa.jpg",
+	"cg_world_west": "cutscene/cs_west_caravan.jpg",
+	# 以下随 02 批出图一页一行补进来（文件名以扩充包为准），图没进库之前不写：
+	#   东方沙盘 cg_world_east ← bg_prologue_world_east.jpg
+	#   桌上三物 cg_narrate_table_2 至 _5、cg_wine_shed_2 至 _4（7 页）← bg_prologue_table.jpg
+	#   老兵 cg_veteran、cg_veteran_2、_3、_3a、_4、_5、_6（7 页）← bg_prologue_veteran.jpg
+	#   阿那 cg_ana_enter、cg_ana_speak、_2、_3（4 页）← bg_prologue_ana.jpg
+	#   家丁 cg_servant_enter、cg_servant_speak（2 页）← bg_prologue_servant.jpg
+	#   抉择 cg_decision ← bg_prologue_decision.jpg
+	#   收束 cg_choice_sea ← bg_prologue_choice_sea.jpg；cg_choice_land ← bg_prologue_choice_land.jpg
+	#   cg_narrate_table 首页、cg_wine_shed、cg_wine_shed_5 仍压 PROLOGUE_BG；bg_wine_shed_hd 重画后同名覆盖即生效（09-28 Snow 选重画）
+}
+
+
+## 序章页专属底图（H4）：表里有、文件也在才给，否则 ""（调用方回落酒棚或标题海图）。table 可注入，门禁测缺图回落用
+func _prologue_page_bg(scene_id: String, table: Dictionary = PROLOGUE_PAGE_BG) -> String:
+	var file := str(table.get(scene_id, ""))
+	if file != "" and FileAccess.file_exists("res://assets/" + file):
+		return file
+	return ""
 
 ## 结局名 → 结算底图。结局对话框弹出时换上，之后的终局港页也一直压着它——游戏已经结束了，
 ## 港口不再是港口，是尾声。键必须与 GameState.finish() 收到的结局名一字不差。
@@ -1001,8 +1048,41 @@ func _apply_background(type: String, loc: String) -> void:
 	elif type == "title":
 		file = "bg_world_map.jpg"
 	elif PORT_BG.has(loc):
-		file = PORT_BG[loc]
+		file = _port_bg(loc)
 	_set_background_file(file)
+
+
+## 港页底图（H2）：战况档（非 loyal）→ 年份档 → 季节档 → PORT_BG 原图，每档文件在才用
+func _port_bg(loc: String) -> String:
+	var status := Economy.war_status(loc)
+	if status != "loyal" and _port_bg_has("bg_%s_%s.jpg" % [loc, status]):
+		return "bg_%s_%s.jpg" % [loc, status]
+	var year := 0
+	for y in PORT_YEAR_BG.get(loc, []):
+		if int(y) <= Calendar.year and int(y) > year:
+			year = int(y)
+	if year > 0 and _port_bg_has("bg_%s_%d.jpg" % [loc, year]):
+		return "bg_%s_%d.jpg" % [loc, year]
+	var season := str(PORT_SEASON_BY_MONTH[clampi(Calendar.month, 1, 12) - 1])
+	season = str(PORT_SEASON_BORROW.get(loc, {}).get(season, season))
+	if _port_bg_has("bg_%s_%s.jpg" % [loc, season]):
+		return "bg_%s_%s.jpg" % [loc, season]
+	return str(PORT_BG.get(loc, FALLBACK_BG))
+
+
+func _port_bg_has(file_name: String) -> bool:
+	if _port_bg_probe is Dictionary:
+		return (_port_bg_probe as Dictionary).has(file_name)
+	return FileAccess.file_exists("res://assets/" + file_name)
+
+
+## 岸上候一日可能跨月：战况、季节换了档，港页底图跟着换；同一张不重载，终局页不动
+func _refresh_port_bg() -> void:
+	if GameState.is_ended() or not PORT_BG.has(current_scene_id):
+		return
+	var file := _port_bg(current_scene_id)
+	if file != _bg_file:
+		_set_background_file(file)
 
 
 func _set_background_file(file_name: String) -> void:
@@ -1550,6 +1630,22 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_theme_constant_override("separation", 4)
 	margin.add_child(body)
+	# 货物图槽：名称到舱位五行的右边挂一枚约 96px 的货图（1280×720 下这块空着约 250×130，卡不加高）；
+	# 图在 assets/goods/good_<id>.png 才挂，缺图不加节点，五行照旧直接进 body，卡面与原先一样
+	var info: VBoxContainer = body
+	var good_icon := _market_good_icon(good_id)
+	if good_icon != null:
+		var top := HBoxContainer.new()
+		top.name = "GoodTop"
+		top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		top.add_theme_constant_override("separation", 8)
+		body.add_child(top)
+		info = VBoxContainer.new()
+		info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		info.add_theme_constant_override("separation", 4)
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		top.add_child(info)
+		top.add_child(good_icon)
 
 	var g := GameManager.get_good_by_id(good_id)
 	var buy_p := Economy.buy_price(port_id, good_id)
@@ -1566,7 +1662,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	if g.get("contraband", false):
 		name_lbl.add_theme_color_override("font_color", UiTheme.CINNABAR)
 		name_lbl.tooltip_text = "违禁　宋法不许出海，验引护不住"
-	body.add_child(name_lbl)
+	info.add_child(name_lbl)
 
 	var hint_lbl := Label.new()
 	var hint := Economy.price_hint(port_id, good_id)
@@ -1582,7 +1678,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 		hint_lbl.add_theme_color_override("font_color", UiTheme.MOSS)
 	elif role == "consumer":
 		hint_lbl.add_theme_color_override("font_color", UiTheme.HONEY)
-	body.add_child(hint_lbl)
+	info.add_child(hint_lbl)
 
 	var price_lbl := Label.new()
 	price_lbl.text = "买 %d　卖 %d" % [buy_p, sell_p]
@@ -1590,20 +1686,20 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	price_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	price_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 	price_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.add_child(price_lbl)
+	info.add_child(price_lbl)
 	# 手续脚注：买价已含市舶抽解，卖价已扣牙人佣金；只点事实，不印费率
 	var fee_lbl := Label.new()
 	fee_lbl.name = "PriceFee"
 	fee_lbl.text = "含抽解・扣佣"
 	UiTheme.style_footnote(fee_lbl)
 	fee_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.add_child(fee_lbl)
+	info.add_child(fee_lbl)
 
 	var held_lbl := Label.new()
 	held_lbl.text = "舱 %d" % held
 	UiTheme.style_footnote(held_lbl)
 	held_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.add_child(held_lbl)
+	info.add_child(held_lbl)
 
 	var buy_row := HBoxContainer.new()
 	buy_row.add_theme_constant_override("separation", 6)
@@ -1652,6 +1748,37 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	UiTheme.style_chip(sall)
 
 	return card
+
+
+## 牙行货卡的货图（06 批，512² 透明 PNG）：缺图返回 null，调用方不加节点。
+## 图先缩到 GOOD_ICON_SRC 再上卡（512 直接压到 96、又没有 mipmap 会起毛），缩好的按货 id 记在本会话里，买卖重排货卡不再解码
+const GOOD_ICON_SIZE := 96
+const GOOD_ICON_SRC := 192
+var _good_icon_cache: Dictionary = {}
+
+
+func _market_good_icon(good_id: String) -> TextureRect:
+	var tex: Texture2D = _good_icon_cache.get(good_id)
+	if tex == null:
+		tex = GameManager.load_texture("res://assets/goods/good_%s.png" % good_id)
+		if tex == null:
+			return null
+		var img := tex.get_image()
+		if img != null and not img.is_compressed() and maxi(img.get_width(), img.get_height()) > GOOD_ICON_SRC:
+			img.fix_alpha_edges()  # 抠底后透明像素还带着品红 / 绿底色，缩图会把它混进描边
+			var k := float(GOOD_ICON_SRC) / float(maxi(img.get_width(), img.get_height()))
+			img.resize(maxi(1, roundi(img.get_width() * k)), maxi(1, roundi(img.get_height() * k)), Image.INTERPOLATE_LANCZOS)
+			tex = ImageTexture.create_from_image(img)
+		_good_icon_cache[good_id] = tex
+	var icon := TextureRect.new()
+	icon.name = "GoodIcon"
+	icon.texture = tex
+	icon.custom_minimum_size = Vector2(GOOD_ICON_SIZE, GOOD_ICON_SIZE)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return icon
 
 
 ## 现银按逐件加价最多买得起几件（不超过 cap）。总价随件数只增不减，二分与 _on_buy 逐件递减同解。
@@ -2777,6 +2904,7 @@ func _on_shore_wait() -> void:
 	if _settle_overdue_siege():
 		update_status_panel()
 		return
+	_refresh_port_bg()
 	# 按页型重排（守城页候一日仍是守城页，不会退回寻常岸带多出「看风」）
 	_build_shore()
 	update_status_panel()
