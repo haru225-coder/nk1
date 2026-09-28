@@ -1,10 +1,26 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/Ship.gd" id="1_ship"]
 [ext_resource type="Texture2D" uid="uid://bs4vafdk65gsh" path="res://assets/ship_fu.png" id="2_ship_tex"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ship"]
 radius = 24.0
+
+[sub_resource type="Gradient" id="Gradient_fire"]
+offsets = PackedFloat32Array(0, 0.22, 0.55, 1)
+colors = PackedColorArray(1, 0.86, 0.45, 0.95, 0.94, 0.42, 0.12, 0.9, 0.3, 0.24, 0.2, 0.55, 0.16, 0.15, 0.14, 0)
+
+[sub_resource type="Gradient" id="Gradient_puff"]
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.5, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_puff"]
+gradient = SubResource("Gradient_puff")
+width = 32
+height = 32
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
 
 [node name="Ship" type="CharacterBody2D"]
 script = ExtResource("1_ship")
@@ -72,9 +88,74 @@ color = Color(0.6, 0.4, 0.2, 1)
 texture = ExtResource("2_ship_tex")
 scale = Vector2(0.62, 0.62)
 
+[node name="DamageFx" type="Node2D" parent="."]
+z_index = 2
+
+[node name="FireBow" type="CPUParticles2D" parent="DamageFx"]
+position = Vector2(0, -78)
+emitting = false
+texture = SubResource("GradientTexture2D_puff")
+amount = 32
+lifetime = 1.2
+local_coords = false
+emission_shape = 1
+emission_sphere_radius = 12.0
+direction = Vector2(0, -1)
+spread = 40.0
+gravity = Vector2(0, 28)
+initial_velocity_min = 8.0
+initial_velocity_max = 26.0
+scale_amount_min = 0.35
+scale_amount_max = 0.6
+color_ramp = SubResource("Gradient_fire")
+
+[node name="FireMid" type="CPUParticles2D" parent="DamageFx"]
+position = Vector2(0, 4)
+emitting = false
+texture = SubResource("GradientTexture2D_puff")
+amount = 32
+lifetime = 1.2
+local_coords = false
+emission_shape = 1
+emission_sphere_radius = 14.0
+direction = Vector2(0, -1)
+spread = 40.0
+gravity = Vector2(0, 28)
+initial_velocity_min = 8.0
+initial_velocity_max = 26.0
+scale_amount_min = 0.35
+scale_amount_max = 0.6
+color_ramp = SubResource("Gradient_fire")
+
+[node name="FireStern" type="CPUParticles2D" parent="DamageFx"]
+position = Vector2(0, 82)
+emitting = false
+texture = SubResource("GradientTexture2D_puff")
+amount = 32
+lifetime = 1.2
+local_coords = false
+emission_shape = 1
+emission_sphere_radius = 12.0
+direction = Vector2(0, -1)
+spread = 40.0
+gravity = Vector2(0, 28)
+initial_velocity_min = 8.0
+initial_velocity_max = 26.0
+scale_amount_min = 0.35
+scale_amount_max = 0.6
+color_ramp = SubResource("Gradient_fire")
+
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_ship")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 zoom = Vector2(1.5, 1.5)
 position_smoothing_enabled = true
+
+[node name="DamageTag" type="Label" parent="."]
+visible = false
+top_level = true
+z_index = 30
+offset_right = 40.0
+offset_bottom = 23.0
+horizontal_alignment = 1
