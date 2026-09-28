@@ -1222,13 +1222,7 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 
 func _setup_market(port_id: String) -> void:
 	scene_title.text = "%s・牙行" % GameManager.get_port_name(port_id)
-	# 上了门闸：只留闭门这一句。不写「柜上只摆三样」、不出委办——柜上没货，委办也没人接（岸上三门里牙行也不占席，见 ShoreDraft.deal）
-	if not Economy.is_market_open(port_id):
-		broker_hand = PackedStringArray()
-		_market_hold = false
-		body_text.text = "牙行上了门闸。%s，城中只剩米价在动，无人开秤。" % Economy.war_label(port_id)
-		_add_leave_button(port_id)
-		return
+	var market_open := Economy.is_market_open(port_id)
 	body_text.text = "柜上只摆三样。牙人过秤开票；要看别的，明日再来。"
 
 	var goods_ids: Array = Economy.goods_at(port_id)
@@ -1237,9 +1231,9 @@ func _setup_market(port_id: String) -> void:
 		_market_ship = 0
 	_market_hold = false
 
-	# 柜上三样先发，委办单上的「凑得出」按今日柜上现货算；无牙行则柜上空
+	# 柜上三样先发，委办单上的「凑得出」按今日柜上现货算；上了门闸或无牙行则柜上空
 	broker_hand = PackedStringArray()
-	if not goods_ids.is_empty():
+	if market_open and not goods_ids.is_empty():
 		var catalog: Array = []
 		for raw_gid in goods_ids:
 			var gid := str(raw_gid)
@@ -1249,6 +1243,17 @@ func _setup_market(port_id: String) -> void:
 				"buy": Economy.buy_price(port_id, gid),
 			})
 		broker_hand = BrokerSlip.deal(catalog, GameState.broker_salt, _broker_held_id(port_id))
+
+	# 上了门闸：正文只一句门闸（不写「柜上只摆三样」）、不开新委办（岸上三门里牙行也不占席，见 ShoreDraft.deal）。
+	# 在身委办的交货地就是本港时，那一行（交货 / 毁约）照旧补出：委办 due_day 不因围城停表，
+	# 不留这条路，送兴化的委办撞上围城月就必逾期（09-29 复核 major）。「未开」一排的牙行此时点得进来，见 _make_shore_shut。
+	if not market_open:
+		body_text.text = _market_shut_line(port_id, true)
+		if _contract_due_here(port_id):
+			body_text.text += "\n\n" + MARKET_SIDE_DOOR
+			_add_contract_panel(port_id)
+		_add_leave_button(port_id)
+		return
 
 	_add_contract_panel(port_id)
 
@@ -1337,6 +1342,26 @@ func _setup_market(port_id: String) -> void:
 
 	choices_label.visible = true
 	choices_label.text = "舱位 %d / %d 料" % [int(Fleet.used_capacity()), int(Fleet.total_capacity())]
+
+
+## 闭门牙行开侧门只收先前订下的委办货（交货地是本港时）
+const MARKET_SIDE_DOOR := "牙人开了侧门，只收先前订下的委办货。"
+
+
+## 牙行上了门闸的那一句。海口不是城，不写「城中」，也不借城里的战况名（海口跟着城一起闭门）。
+## page 为真是牙行页正文，否则是岸上「未开」一排的悬停 / 点按提示。
+func _market_shut_line(port_id: String, page: bool) -> String:
+	if "海口" in (GameManager.get_port_by_id(port_id).get("tags", []) as Array):
+		return "海口的牙行也上了门闸，无人开秤。"
+	if page:
+		return "牙行上了门闸。%s，城中只剩米价在动，无人开秤。" % Economy.war_label(port_id)
+	return "牙行上了门闸。%s，无人开秤。" % Economy.war_label(port_id)
+
+
+## 在身委办的交货地就是这里
+func _contract_due_here(port_id: String) -> bool:
+	var cst := GameState.contract_status()
+	return not cst.is_empty() and str(cst.get("dest", "")) == port_id
 
 
 func _broker_held_id(port_id: String) -> String:
@@ -2899,14 +2924,22 @@ func _make_shore_shut(fac: Dictionary) -> Button:
 	btn.set_meta("shore_shut", true)
 	var tip_key := str(fac.get("id", "")).replace("city_", "")
 	var open_tip := str(DOOR_TIP.get(tip_key, str(fac.get("subtitle", ""))))
-	# 围城 / 封港时牙行上了门闸：不是轮转没轮到，候一日也不开，提示照实写
+	# 围城 / 封港时牙行上了门闸：不是轮转没轮到，候一日也不开，提示照实写。
+	# 在身委办的交货地就是本港：这扇门仍在「未开」一排、不占今日三门，但点得进闭门页交货 / 毁约（见 _setup_market）
 	if tip_key == "market" and not Economy.is_market_open(current_scene_id):
-		var shut_line := "牙行上了门闸。%s，无人开秤。" % Economy.war_label(current_scene_id)
-		btn.tooltip_text = shut_line
-		btn.pressed.connect(func() -> void:
-			log_msg(shut_line)
-			update_status_panel()
-		)
+		var shut_line := _market_shut_line(current_scene_id, false)
+		if _contract_due_here(current_scene_id):
+			btn.tooltip_text = "%s\n%s" % [shut_line, MARKET_SIDE_DOOR]
+			btn.set_meta("side_door", true)
+			btn.pressed.connect(func() -> void:
+				load_scene(current_scene_id + "_market")
+			)
+		else:
+			btn.tooltip_text = shut_line
+			btn.pressed.connect(func() -> void:
+				log_msg(shut_line)
+				update_status_panel()
+			)
 	else:
 		btn.pressed.connect(_on_shore_shut)
 		if open_tip != "":
@@ -3566,7 +3599,8 @@ const HANJIANG_URGENT_DAY := 20
 func _on_hanjiang_escape() -> void:
 	if Fleet.supply_days() < HANJIANG_DAYS:
 		# 直接进本港船屋补水粮：船屋平时靠轮转，不一定在今日三门里；船屋页「离开」回到带卡的港页
-		log_msg("【水粮不足】族里四条船的人，也要吃你船上的水粮。至少备足七日。")
+		# 门槛只按自家船队日耗算七日（族人的四条船各带水粮，不吃你的）：文案照机制写，不说族人吃你船上的粮
+		log_msg("【水粮不足】族里四条船各带了水粮；你船上的，也得够七日。")
 		load_scene(current_scene_id + "_shipyard")
 		return
 	# 七日航程：借 at_sea 让 Fleet.on_day_passed 按海上日子扣水粮，推完复位（仍在港页上结算）
@@ -3584,7 +3618,7 @@ func _on_hanjiang_escape() -> void:
 	_show_notice_dialog(
 		"岸上的根",
 		"旧避风澳・景炎二年",
-		"四条船。族里能走的都在船上，老夫人也在，\n她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经围了城。海上没有人追。你看水色。北礁可泊。\n二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。\n纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
+		"四条船。\n族里能走的都在船上，老夫人也在，她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经围了城。海上没有人追。你看水色。北礁可泊。\n二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。\n纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
 			"子龙", stake_line, "子龙",
 		],
 		"岸上的根"

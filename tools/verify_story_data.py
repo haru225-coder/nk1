@@ -221,13 +221,21 @@ for p in ports:
         check(ym in war, f"ports {pid} war_notice[{ym}] 不是本港 war 表里的节点（{sorted(war)}），月初不会翻牌")
         check(isinstance(txt, str) and txt.strip() != "" and not txt.startswith("【"),
               f"ports {pid} war_notice[{ym}] 须为非空文案、不带【战况】头")
-# 兴化 1277 秋是破城巷战、不是开门降：再陷那一节点须有覆写，且不写「降元」（通用句对开城降的港口才对）
+# 兴化 1277 秋是破城巷战、不是开门降：再陷那一节点城与海口都须覆写，且都不写「降元」（通用句对开城降的港口才对）。
+# 城写城破；海口只写海口自己换旗，不重抄城里的首句——两条同一天连发，重抄读着像一件事记了两遍（09-29 复核）
 _xh_fall2 = sorted(k for k, v in (xh or {}).items() if v == "fallen")[-1:] if xh else []
-for pid in ("xinghua", "xinghua_harbor"):
-    _wn = next((p for p in ports if p["id"] == pid), {}).get("war_notice") or {}
-    for ym in _xh_fall2:
-        check("城破" in _wn.get(ym, "") and "降元" not in _wn.get(ym, ""),
-              f"ports {pid} war_notice[{ym}]（兴化再陷）须写城破、不写降元（现「{_wn.get(ym, '')}」）")
+_xh_wn = next((p for p in ports if p["id"] == "xinghua"), {}).get("war_notice") or {}
+_xhh_wn = next((p for p in ports if p["id"] == "xinghua_harbor"), {}).get("war_notice") or {}
+for ym in _xh_fall2:
+    check("城破" in _xh_wn.get(ym, "") and "降元" not in _xh_wn.get(ym, ""),
+          f"ports xinghua war_notice[{ym}]（兴化再陷）须写城破、不写降元（现「{_xh_wn.get(ym, '')}」）")
+    check("海口" in _xhh_wn.get(ym, "") and "换了旗" in _xhh_wn.get(ym, "") and "降元" not in _xhh_wn.get(ym, ""),
+          f"ports xinghua_harbor war_notice[{ym}]（兴化再陷）须写海口换旗、不写降元（现「{_xhh_wn.get(ym, '')}」）")
+# 城与海口同月都有覆写的节点：海口那条不重抄城里那条的首句
+for ym in sorted(set(_xh_wn) & set(_xhh_wn)):
+    _city_head = str(_xh_wn[ym]).split("。")[0]
+    check(_city_head == "" or _city_head not in str(_xhh_wn[ym]),
+          f"ports xinghua_harbor war_notice[{ym}] 重抄了城里那条的首句「{_city_head}」")
 check(notice_ports >= 2, f"ports.json 只有 {notice_ports} 港有 war_notice，兴化与兴化海口的再陷通告须覆写")
 
 # ── 守城卡路由完整 ─────────────────────────────────────
