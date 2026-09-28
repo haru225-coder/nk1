@@ -188,8 +188,9 @@
    1792,
    1008
   ],
-  "out_sha1": "71c1add1d6eaa9960c14e6e5790b48b171c6d542",
-  "note": "开场首镜「舆图总纲」：旧底 main 9233852 的泥金靛海舆图（华南海岸、台湾、琉球弧、日本）。云端 da29e49 把 assets/bg_world_map.jpg 换成了带西式罗盘玫瑰与海怪、海岸不对应真实地理的另一张（标题页仍用它），开场镜头是按旧图取景的，改指这张"
+  "out_sha1": "eea37ec84289e17a532b463c6315a963295285f1",
+  "note": "开场首镜「舆图总纲」：旧底 main 9233852 的泥金靛海舆图（华南海岸、台湾、琉球弧、日本）。云端 da29e49 把 assets/bg_world_map.jpg 换成了带西式罗盘玫瑰与海怪、海岸不对应真实地理的另一张（标题页仍用它），开场镜头是按旧图取景的，改指这张",
+  "post": "erase_world_map_compass.py --only cs --in-place"
  },
  "cs_quanzhou_bay_gold.jpg": {
   "digest": "358c0c64df430c53",
