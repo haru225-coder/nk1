@@ -639,7 +639,18 @@ func _route_check() -> void:
 	# S4：玉湖陈宅「族叔陈瓒愿入船股」——陈瓒死于兴化再陷（战况表第二段 besieged 的尽头），死后不再出现
 	var zan_falls: Array = main._xinghua_fall_yms()
 	_check(zan_falls.size() >= 2, "兴化战况表有首守城破与再陷两个城破时点（%s）" % [zan_falls])
-	for zc in [[1277, 5, true], [1277, 10, true], [1277, 11, false], [1278, 3, false], [1285, 5, false]]:
+	# 月份从战况表推，不写死：起股那年、首守城破当月（那是陈文龙的城）、再陷前一月该有；再陷当月、次年、1285 该没有
+	var zan_cases: Array = [[main.CHEN_ZAN_FROM_YEAR, 6, true], [1285, 5, false]]
+	if zan_falls.size() >= 2:
+		var fp: PackedStringArray = str(zan_falls[0]).split("-")
+		zan_cases.append([int(fp[0]), int(fp[1]), true])
+		var zp: PackedStringArray = str(zan_falls[1]).split("-")
+		var zy := int(zp[0])
+		var zm := int(zp[1])
+		zan_cases.append([zy if zm > 1 else zy - 1, zm - 1 if zm > 1 else 12, true])
+		zan_cases.append([zy, zm, false])
+		zan_cases.append([zy + 1, 3, false])
+	for zc in zan_cases:
 		GS.from_dict({})
 		GS.identity = "hometown"
 		GS.fame = 40
@@ -651,7 +662,6 @@ func _route_check() -> void:
 				zan_btn = true
 		_check(zan_btn == bool(zc[2]),
 			"玉湖陈宅 %d-%02d%s「陈瓒愿入船股」（再陷 %s）" % [zc[0], zc[1], "有" if zc[2] else "没有", zan_falls[1] if zan_falls.size() >= 2 else "?"])
-	GS.from_dict({})
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
@@ -688,7 +698,6 @@ func _close_dialogs(main: Node) -> void:
 			c.free()
 
 
-## 在节点树里找第一个含 needle 的 Label 文本（册页标题等）；找不到返回空串
 ## 生卒一行：卒年到次年才写（#11）；主角只在「忠肃」这条世界线写卒年（查漏 §四.B.8）。
 ## 人物志详页、见面页人物栏、立绘面板三处都走 CharacterArt.life_line，逐处实建控件看上屏字。
 func _life_line_check(main: Node) -> void:
@@ -762,6 +771,7 @@ func _life_line_check(main: Node) -> void:
 	GS.from_dict({})
 
 
+## 在节点树里找第一个含 needle 的 Label 文本（册页标题等）；找不到返回空串
 func _find_label_text(node: Node, needle: String) -> String:
 	if node == null or not is_instance_valid(node):
 		return ""
