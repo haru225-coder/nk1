@@ -186,9 +186,12 @@ static func refresh_strip(main: Control) -> void:
 		note = tag_n if note == "" else ("%s　%s" % [tag_n, note])
 	main._status_line.text = line1
 	if main._status_note != null:
-		var plain := note.replace("\n", "　")
+		# 记事可能带色标（plain_log 放行的【辞船】整句上蜜色墨）：这一格是纯 Label，去掉 bbcode，辞船那句改用蜜色字
+		var plain := UiTheme.strip_bbcode(note).replace("\n", "　")
 		main._status_note.text = plain
-		main._status_note.tooltip_text = note if note.length() > 30 else ""
+		main._status_note.add_theme_color_override("font_color",
+			UiTheme.HONEY if plain.find("【辞船】") >= 0 else UiTheme.TEXT_DIM)
+		main._status_note.tooltip_text = UiTheme.strip_bbcode(note) if note.length() > 30 else ""
 
 
 ## 船籍簿记事栏：最近 8 条，新的在上（宣纸色），旧的淡一档；一条没有时写一行淡字，不留空墨框
@@ -249,7 +252,8 @@ static func update_panel(main: Control) -> void:
 
 	# 职事行前的小头像（characters 线）：富文本里只能 add_image，先在串里留记号，末尾 _set_status_text 换图
 	var heads: Array = []
-	if not Crew.hired.is_empty():
+	var gone_lines: PackedStringArray = Crew.departed_lines()
+	if not Crew.hired.is_empty() or not gone_lines.is_empty():
 		t += "[color=#%s][b]职事[/b][/color]\n" % gold
 		for c in Crew.roster():
 			var head_tex: Texture2D = main._roster_head(str(c.get("id", "")))
@@ -260,6 +264,10 @@ static func update_panel(main: Control) -> void:
 				Crew.role_def(c.get("role", "")).get("name", ""),
 				c.get("name", ""), main._skill_rank(int(c.get("level", 1))),
 			]
+		# 史实辞船的人留一行淡字（「舵工　林华已于景炎元年十月辞船」）：月初【辞船】通告常被战况句、候日句压住，这里翻得到
+		for gl in gone_lines:
+			t += "[color=#%s]%s[/color]\n" % [dim, gl]
+	if not Crew.hired.is_empty():
 		var wage := Crew.monthly_wage()
 		var wage_color := UiTheme.HONEY if Crew.unpaid_months > 0 else UiTheme.TEXT
 		t += "[color=#%s]月俸共 %d" % [UiTheme.hex(wage_color), wage]
@@ -273,7 +281,9 @@ static func update_panel(main: Control) -> void:
 		t += "[color=#%s]舱底违禁　%d 件[/color]\n" % [UiTheme.hex(UiTheme.CINNABAR), contraband]
 	t += "[color=#%s][b]船舱[/b][/color]\n%s" % [gold, cargo_str]
 
-	# 多船时追加每船明细
+	# 多船时追加每船明细。一艘拆两行：上行「船名　船型　舱位」，下行缩进「帆　甲　水手　舱货」；
+	# 原先一行放不下，在词中间断开（「帆一 / 等」「水 / 手 40 / 100」，crew 线 09-28 实机）。词内再垫 U+2060 连字、数目里的空格换不断行空格，
+	# 窄栏里也只在词与词之间折。船名与船型相同（「福船（中）　福船（中）」）只写一次。
 	if Fleet.ships.size() > 1:
 		for i in range(Fleet.ships.size()):
 			var s: Dictionary = Fleet.ships[i]
@@ -282,17 +292,23 @@ static func update_panel(main: Control) -> void:
 			if sc.is_empty():
 				per_ship = "空"
 			else:
+				var bits := PackedStringArray()
 				for gid in sc.keys():
-					per_ship += "%s ×%d　" % [GameManager.get_good_name(gid), sc[gid].get("qty", 0)]
-			var crew_str := "水手 %d / %d" % [Fleet.ship_crew(i), Fleet.ship_crew_max(i)]
+					bits.append(UiTheme.nobreak("%s ×%d" % [GameManager.get_good_name(gid), sc[gid].get("qty", 0)]))
+				per_ship = "　".join(bits)
+			var crew_str := UiTheme.nobreak("水手 %d / %d" % [Fleet.ship_crew(i), Fleet.ship_crew_max(i)])
 			var crew_color := UiTheme.hex(UiTheme.TEXT)
 			if Fleet.ship_crew(i) < Fleet.ship_crew_min(i):
 				crew_color = UiTheme.hex(UiTheme.CINNABAR)
-				crew_str += "　缺 %d 人" % (Fleet.ship_crew_min(i) - Fleet.ship_crew(i))
-			t += "　%s　%s　%d / %d 料　帆%s　甲%s　[color=#%s]%s[/color]　%s\n" % [
-				s.get("name", ""), Fleet.ship_def(s.get("type", "")).get("name", ""),
-				int(Fleet.ship_cargo_bulk(i)), int(Fleet.ship_capacity(i)),
-				main._fit_rank(Fleet.sail_level(i)), main._fit_rank(Fleet.armor_level(i)),
+				crew_str += "　" + UiTheme.nobreak("缺 %d 人" % (Fleet.ship_crew_min(i) - Fleet.ship_crew(i)))
+			var sname := str(s.get("name", ""))
+			var tname := str(Fleet.ship_def(s.get("type", "")).get("name", ""))
+			var head := UiTheme.nobreak(sname)
+			if tname != "" and tname != sname:
+				head += "　" + UiTheme.nobreak(tname)
+			t += "　%s　%s\n　　%s　%s　[color=#%s]%s[/color]　%s\n" % [
+				head, UiTheme.nobreak("%d / %d 料" % [int(Fleet.ship_cargo_bulk(i)), int(Fleet.ship_capacity(i))]),
+				UiTheme.nobreak("帆" + main._fit_rank(Fleet.sail_level(i))), UiTheme.nobreak("甲" + main._fit_rank(Fleet.armor_level(i))),
 				crew_color, crew_str, per_ship,
 			]
 

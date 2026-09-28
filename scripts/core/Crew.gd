@@ -14,6 +14,9 @@ var hired: Dictionary = {}
 ## 连续欠饷的月数。久之则求去。
 var unpaid_months: int = 0
 
+## 史实辞船下船的人：{候选 id: {role, name, when「景炎元年十月」}}。入存档；旧档没有这一格按空读。
+var departed: Dictionary = {}
+
 ## 非宋土港口。通事在此处才真正派上用场。
 const FOREIGN_PORTS := ["hakata", "kagoshima", "jeju", "champa"]
 
@@ -215,6 +218,7 @@ func hireable_by_history(c: Dictionary) -> bool:
 ## 月初由 GameManager.advance_days 调用，排在发饷之前，到月下船的人不再扣当月俸。
 ## 返回下船的候选（crew.json 条目）；通告由 GameManager._settle_history 排在新闻之后发，跳年时另进摘要。
 ## 按候选 id 回查 crew.json 判日子，不看存档里的快照，旧档里已雇的人也照样下船。
+## 下船的人记进 departed（船籍簿职事栏留一行淡字「舵工　林华已于景炎元年十月辞船」，辞船通告被别的行压住也看得到）。
 func history_leave() -> Array:
 	var out := []
 	for r in hired.keys().duplicate():
@@ -222,6 +226,24 @@ func history_leave() -> Array:
 		if left_by_history(c):
 			hired.erase(r)
 			out.append(c)
+			departed[str(c.get("id", ""))] = {
+				"role": str(c.get("role", r)),
+				"name": str(c.get("name", "")),
+				"when": Calendar.get_era_year_string() + Calendar.get_month_name(),
+			}
+	return out
+
+
+## 船籍簿职事栏的辞船淡字：「舵工　林华已于景炎元年十月辞船」，按辞船先后
+func departed_lines() -> PackedStringArray:
+	var out := PackedStringArray()
+	for cid in departed.keys():
+		var e = departed[cid]
+		if typeof(e) != TYPE_DICTIONARY:
+			continue
+		out.append("%s　%s已于%s辞船" % [
+			role_def(str(e.get("role", ""))).get("name", "职事"), str(e.get("name", "")), str(e.get("when", "")),
+		])
 	return out
 
 
@@ -233,9 +255,11 @@ func leave_note(c: Dictionary) -> String:
 # ── 存档 ──────────────────────────────────────────────
 
 func to_dict() -> Dictionary:
-	return {"hired": hired, "unpaid_months": unpaid_months}
+	return {"hired": hired, "unpaid_months": unpaid_months, "departed": departed}
 
 
 func from_dict(d: Dictionary) -> void:
 	hired = d.get("hired", {})
 	unpaid_months = d.get("unpaid_months", 0)
+	var dp = d.get("departed", {})
+	departed = dp if typeof(dp) == TYPE_DICTIONARY else {}
