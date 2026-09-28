@@ -99,23 +99,67 @@ for p, src in sources.items():
             check(exists(cm.group(1)), f"{p.relative_to(ROOT)} 写 _set_background_file({const})，{const} = {cm.group(1)} 不存在——缺图会静默回落海路图")
 
 # ── 2c. 港页变体拼写（H2）─────────────────────────────────
-# Main._port_bg 按 bg_<港 id>_<后缀>.jpg 找图，后缀只认：非 loyal 战况（Economy.WAR_LABEL）、季节（PORT_SEASON_BY_MONTH）、
-# PORT_YEAR_BG 给该港登记的年份。拼错的图不报错，只是永远不上屏。判法：assets/ 根下的 bg_* 图取最长的港 id 前缀——
-# 后缀合法即变体，须是 .jpg；后缀不合法、或港 id 不对，而代码与数据里又没有一处写到这个文件名 → FAIL。
+# Main._port_bg 按 bg_<港 id>_<后缀>.jpg 找图，后缀只认：该港 ports.json 战况表里出现过的非 loyal 战况、季节（PORT_SEASON_BY_MONTH，
+# 被 PORT_SEASON_BORROW 借走的季节除外）、PORT_YEAR_BG 给该港登记的年份。拼错或该港用不上的图不报错，只是永远不上屏。
+# 判法：assets/ 根下的 bg_* 图取最长的港 id 前缀——后缀对该港合法即变体，须是 .jpg；否则代码与数据里又没有一处写到这个文件名 → FAIL。
+def const_block(src, name):
+    """取 `const NAME := {…}` / `[…]` 括号里的整段：配平括号，单行、多行写法都认；字符串里的括号不算，# 注释整段剥掉。没有这个常量给 None"""
+    m = re.search(r'^const %s := ([\[{])' % name, src, re.M)
+    if not m:
+        return None
+    depth, in_str, i, out = 0, False, m.start(1), []
+    while i < len(src):
+        c = src[i]
+        if in_str:
+            out.append(c)
+            if c == "\\":
+                out.append(src[i + 1:i + 2])
+                i += 1
+            elif c == '"':
+                in_str = False
+        elif c == "#":
+            i = src.find("\n", i)
+            if i < 0:
+                return None
+            continue
+        else:
+            if c == '"':
+                in_str = True
+            elif c in "[{":
+                depth += 1
+            elif c in "]}":
+                depth -= 1
+                if depth == 0:
+                    return "".join(out[1:])
+            out.append(c)
+        i += 1
+    return None
+
 econ_src = (ROOT / "scripts" / "core" / "Economy.gd").read_text(encoding="utf-8")
-wl = re.search(r'const WAR_LABEL := \{(.*?)\}', econ_src, re.S)
-war_suffix = set(re.findall(r'"([a-z_]+)":', wl.group(1))) - {"loyal"} if wl else set()
+wl = const_block(econ_src, "WAR_LABEL")
+war_suffix = set(re.findall(r'"([a-z_]+)":', wl)) - {"loyal"} if wl else set()
 check(bool(war_suffix), "Economy.gd 缺 WAR_LABEL 或其中没有非 loyal 战况——港页变体拼写检查取不到战况名")
-sm = re.search(r'const PORT_SEASON_BY_MONTH := \[(.*?)\]', main_src, re.S)
-season_suffix = set(re.findall(r'"([a-z]+)"', sm.group(1))) if sm else set()
+sm = const_block(main_src, "PORT_SEASON_BY_MONTH")
+season_suffix = set(re.findall(r'"([a-z]+)"', sm)) if sm else set()
 check(bool(season_suffix), "Main.gd 缺 PORT_SEASON_BY_MONTH——港页变体拼写检查取不到季节名")
-ym = re.search(r'const PORT_YEAR_BG := \{(.*?)\}\n', main_src, re.S)
-port_years = {k: set(re.findall(r'\d{4}', v)) for k, v in re.findall(r'"([a-z_]+)":\s*\[([^\]]*)\]', ym.group(1))} if ym else {}
+ym = const_block(main_src, "PORT_YEAR_BG")
+port_years = {k: set(re.findall(r'\d{4}', v)) for k, v in re.findall(r'"([a-z_]+)":\s*\[([^\]]*)\]', ym)} if ym is not None else {}
 check(ym is not None, "Main.gd 缺 PORT_YEAR_BG")
-port_ids = sorted((p["id"] for p in load("ports.json")["ports"]), key=len, reverse=True)
-bm = re.search(r'const PORT_SEASON_BORROW := \{(.*?)\n', main_src)
-for pid in list(port_years) + (re.findall(r'"([a-z_]+)":\s*\{', bm.group(1)) if bm else []):
+bm = const_block(main_src, "PORT_SEASON_BORROW")
+check(bm is not None, "Main.gd 缺 PORT_SEASON_BORROW")
+# {港 id: {本季: 借哪季}}；内层 [^{}]* 跨行，多行写法也认
+port_borrow = {k: dict(re.findall(r'"([a-z]+)":\s*"([a-z]+)"', v)) for k, v in re.findall(r'"([a-z_]+)":\s*\{([^{}]*)\}', bm or "")}
+check(bm is None or (len(re.findall(r'"[^"]*":\s*\{', bm)) == len(port_borrow) and (bool(port_borrow) or '"' not in bm)),
+      "Main.PORT_SEASON_BORROW 的写法认不出（应为 {\"港 id\": {\"本季\": \"借哪季\"}}）")
+ports_list = load("ports.json")["ports"]
+port_ids = sorted((p["id"] for p in ports_list), key=len, reverse=True)
+# 各港 ports.json 战况表里出现过的非 loyal 战况：Economy.war_status 只从这张表取，表里没有的档永远轮不到
+port_war = {p["id"]: {str(v) for v in p.get("war", {}).values()} - {"loyal"} for p in ports_list}
+for pid in list(port_years) + list(port_borrow):
     check(pid in port_ids, f"Main.PORT_YEAR_BG / PORT_SEASON_BORROW 的键 {pid} 不是 ports.json 的港 id")
+for pid, pairs in port_borrow.items():
+    for a, b in pairs.items():
+        check(a in season_suffix and b in season_suffix, f"Main.PORT_SEASON_BORROW[{pid}] 的 {a} → {b} 不是季节名 {sorted(season_suffix)}")
 ref_text = "\n".join(src for p, src in sources.items() if "scripts" in p.relative_to(ROOT).parts[:1] or p.suffix == ".tscn")
 ref_text += "\n".join(f.read_text(encoding="utf-8") for f in (ROOT / "data").rglob("*.json"))
 # 美术管线脚本（tools/art）点名的图也算「有人用」：例如 H1 换下福州港页后，bg_fuzhou_yamen.jpg 仍由抹字脚本维护、待转作衙门图
@@ -127,18 +171,25 @@ for f in sorted(ASSETS.glob("bg_*")):
     stem = f.stem[len("bg_"):]
     pid = next((q for q in port_ids if stem.startswith(q + "_")), "")
     suffix = stem[len(pid) + 1:] if pid else stem.rsplit("_", 1)[-1]
-    legal = suffix in war_suffix or suffix in season_suffix or (pid != "" and suffix in port_years.get(pid, set()))
-    if pid and legal:
+    borrowed = port_borrow.get(pid, {})
+    legal = pid != "" and (suffix in port_war.get(pid, set())
+                           or (suffix in season_suffix and suffix not in borrowed)
+                           or suffix in port_years.get(pid, set()))
+    if legal:
         variant_n += 1
         check(f.suffix == ".jpg", f"assets/{f.name}：港页变体只认 .jpg（Main._port_bg 拼 bg_{pid}_{suffix}.jpg），这张永远不上屏")
         continue
     if f.name in ref_text:
         continue  # 不是变体：有代码或数据用着的普通底图（bg_xinghua_study.jpg 之类）
-    if pid and suffix.isdigit():
+    if pid and suffix in war_suffix:
+        check(False, f"assets/{f.name}：{pid} 在 ports.json 的战况表里没有「{suffix}」（该港只有 {sorted(port_war.get(pid, set())) or '无战况'}），这档永远不上屏")
+    elif pid and suffix in borrowed:
+        check(False, f"assets/{f.name}：{pid} 的 {suffix} 借 {borrowed[suffix]} 版（Main.PORT_SEASON_BORROW），这张永远不上屏")
+    elif pid and suffix.isdigit():
         check(False, f"assets/{f.name}：{pid} 没在 Main.PORT_YEAR_BG 登记 {suffix} 年，年份档不会上屏")
     elif pid:
-        check(False, f"assets/{f.name}：后缀「{suffix}」不是合法战况 {sorted(war_suffix)}、季节 {sorted(season_suffix)} 或登记年份，也没有代码引用——拼错了永远不上屏")
-    elif legal:
+        check(False, f"assets/{f.name}：后缀「{suffix}」不是该港战况 {sorted(port_war.get(pid, set()))}、季节 {sorted(season_suffix)} 或登记年份，也没有代码引用——拼错了永远不上屏")
+    elif suffix in war_suffix or suffix in season_suffix:
         check(False, f"assets/{f.name}：后缀是港页变体，但「{stem[:-len(suffix) - 1]}」不是 ports.json 的港 id，永远不上屏")
 
 # ── 3. 前缀拼接 ────────────────────────────────────────

@@ -276,7 +276,7 @@ python3 tools/check_decision_refs.py
 ### 5. check_assets
 - 读：绿时只有一行统计；红时每条 `FAIL: … 文件不存在` / `缺 .import`。
 - 常见红因：代码引用了还没入库的图；新图没跑过导入步骤（缺 `.import`，先跑 §9）；图坏导入失败则 `.import` 记 `valid=false`，本道判红；挪 / 改名资产没改前缀拼接表。
-- 2026-09-28 补（扩充包钩子第一批）：`PROLOGUE_PAGE_BG` 也按表查值，键须是 scenes.json 的 cg_ 页且不收 `cg_title`；scripts/ 里 `_set_background_file("…")` 直写的文件名与大写常量实参逐个查（缺图原先静默回落海路图）；`assets/bg_<港 id>_<后缀>.*` 后缀须是非 loyal 战况 / 季节 / `PORT_YEAR_BG` 登记年份且是 `.jpg`，拼错又无人引用即红；`assets/goods/good_<id>.png` 的 id 须在 goods.json。
+- 2026-09-28 补（扩充包钩子第一批）：`PROLOGUE_PAGE_BG` 也按表查值，键须是 scenes.json 的 cg_ 页且不收 `cg_title`；scripts/ 里 `_set_background_file("…")` 直写的文件名与大写常量实参逐个查（缺图原先静默回落海路图）；`assets/bg_<港 id>_<后缀>.*` 后缀须是该港 ports.json 战况表里的非 loyal 战况 / 没被 `PORT_SEASON_BORROW` 借走的季节 / `PORT_YEAR_BG` 登记年份且是 `.jpg`，拼错或该港用不上又无人引用即红（09-28 评审补：原先只和 WAR_LABEL 全集比，`bg_quanzhou_besieged` 这类该港没有的战况能过）；`assets/goods/good_<id>.png` 的 id 须在 goods.json。
 
 ### 6. verify_story_data
 - 读：绿时一行统计（结局年号对照 / scenes / news / npcs …）；红时 `FAIL: …`。
