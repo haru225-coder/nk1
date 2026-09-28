@@ -4126,7 +4126,7 @@ func _settle_siege_before_shore() -> bool:
 func _siege_buy_grain() -> void:
 	_enter_panel_mode()
 	scene_title.text = "兴化・市场"
-	body_text.text = "牙行闭着，只有米在动。每打一阵，米价就涨一截。
+	body_text.text = "牙行闭着，只有米在动。米价跟着仗走，打一阵涨一截。
 粮就是守城的日子：每打一阵，耗粮 %d。" % GameState.SIEGE_GRAIN_PER_ROUND
 
 	# 围城米价：随已打轮次上涨（候日不涨，文案照这个写）
