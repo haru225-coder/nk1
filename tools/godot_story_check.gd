@@ -153,8 +153,12 @@ func _initialize() -> void:
 	_check(Eco.inspection_factor("quanzhou") == 1.0, "1255 缉私倍率 1.0")
 	Cal.from_dict({"year": 1277, "month": 2, "day": 1})
 	_check(Eco.war_status("xinghua") == "loyal", "1277-02 陈瓒复兴化")
-	Cal.from_dict({"year": 1277, "month": 4, "day": 1})
-	_check(Eco.war_status("xinghua") == "fallen", "1277-04 兴化再陷")
+	Cal.from_dict({"year": 1277, "month": 5, "day": 1})
+	_check(Eco.war_status("xinghua") == "loyal", "1277-05 兴化仍在宋方手里（史实：三月至十月）")
+	Cal.from_dict({"year": 1277, "month": 9, "day": 1})
+	_check(Eco.war_status("xinghua") == "besieged", "1277-09 唆都再围兴化")
+	Cal.from_dict({"year": 1277, "month": 11, "day": 1})
+	_check(Eco.war_status("xinghua") == "fallen", "1277-11 兴化再陷（十月城破，月初翻牌）")
 
 	# 月初战况通告：推进跨过 1276-12 应有泉州降元通告，且 grain 行情被抬
 	Cal.from_dict({"year": 1276, "month": 11, "day": 28})
@@ -310,8 +314,8 @@ func _initialize() -> void:
 	_check(GS.ended_text == "正文若干", "存档 round-trip 保留结局正文")
 
 	# ── 结局可发现性：每条线在窗口前都有预告 ──
-	# 陈瓒预告不设 only：丙线的主角是乡土身份，only=merchant 时乡土线收不到
-	var hints := {"n_1276_10_xinghua_muster": "scholar", "n_1277_01_chenzan_raises": "", "n_1278_12_yashan": "merchant"}
+	# 陈瓒两条预告不设 only：丙线的主角是乡土身份，only=merchant 时乡土线收不到
+	var hints := {"n_1276_10_xinghua_muster": "scholar", "n_1277_01_chenzan_raises": "", "n_1277_07_xinghua_again": "", "n_1278_12_yashan": "merchant"}
 	for hid in hints:
 		var hn: Dictionary = GM.get_news_by_id(hid)
 		_check(not hn.is_empty(), "预告新闻 %s 存在" % hid)
@@ -319,6 +323,7 @@ func _initialize() -> void:
 	# 预告必须早于对应窗口
 	_check(str(GM.get_news_by_id("n_1276_10_xinghua_muster").get("date", "")) < "1276-11", "守城预告早于 1276-11 围城")
 	_check(str(GM.get_news_by_id("n_1277_01_chenzan_raises").get("date", "")) < "1277-02", "陈瓒预告早于 1277-02 复城")
+	_check(str(GM.get_news_by_id("n_1277_07_xinghua_again").get("date", "")) < "1277-09", "再围预告早于 1277-09 涵江窗口")
 	_check(str(GM.get_news_by_id("n_1278_12_yashan").get("date", "")) < "1279-01", "崖山预告早于 1279 正月")
 
 	# ── 守城粮尽口径与卡面一致 ──
@@ -548,8 +553,11 @@ func _route_check() -> void:
 	Cal.from_dict({"year": 1277, "month": 2, "day": 10})
 	GS.last_port = "xinghua"
 	main.load_scene("xinghua")
-	_check(Eco.war_status("xinghua") == "loyal", "1277-02 兴化复城（涵江卡前提）")
-	_check("special_hanjiang_escape" in main.shore_hand, "1277-02 兴化岸上有涵江海口卡（名单 %s）" % [main.shore_hand])
+	_check(not ("special_hanjiang_escape" in main.shore_hand), "1277-02 复城之初兴化岸上没有涵江卡（名单 %s）" % [main.shore_hand])
+	Cal.from_dict({"year": 1277, "month": 9, "day": 10})
+	main.load_scene("xinghua")
+	_check(Eco.war_status("xinghua") == "besieged", "1277-09 唆都再围（涵江卡前提）")
+	_check("special_hanjiang_escape" in main.shore_hand, "1277-09 兴化岸上有涵江海口卡（名单 %s）" % [main.shore_hand])
 	# 涵江出海：结算标题的年号跟出海后的日历走、与终局落款同年（原先硬写「景炎三年三月」，卡却只在景炎二年出现，门禁一直绿）
 	var fleet: Node = root.get_node("Fleet")
 	fleet.water = maxi(fleet.water, 999)
@@ -578,6 +586,10 @@ func _route_check() -> void:
 			if b is Button and (b as Button).text == "看风":
 				siege_sail = true
 	_check(not siege_sail, "围城中动作行没有「看风」")
+	# 1277 秋唆都再围时，陈文龙的守城页不得重开（城防没了结的旧档也一样）
+	Cal.from_dict({"year": 1277, "month": 9, "day": 3})
+	main.load_scene("xinghua")
+	_check(not ("siege_muster" in main.shore_hand), "1277-09 再围不重开 1276 的守城页（名单 %s）" % [main.shore_hand])
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)

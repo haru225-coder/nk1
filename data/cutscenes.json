@@ -527,7 +527,7 @@
      "transition_in": "fade",
      "shake": 0.0,
      "captions": [
-      {"t": 0.7, "text": "出海口的时候，元兵已经进城了。", "style": "narration", "pos": "lower_left"},
+      {"t": 0.7, "text": "出海口的时候，元兵已经围了城。", "style": "narration", "pos": "lower_left"},
       {"t": 3.4, "text": "海上没有人追。", "style": "narration", "pos": "lower_left"}
      ]
     },

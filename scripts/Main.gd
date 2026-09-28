@@ -3401,7 +3401,7 @@ func _on_hanjiang_escape() -> void:
 	_show_notice_dialog(
 		"岸上的根",
 		"旧避风澳・景炎二年",
-		"四条船。族里能走的都在船上，老夫人也在，她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经进城了。海上没有人追。你看水色。北礁可泊。二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
+		"四条船。族里能走的都在船上，老夫人也在，她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经围了城。海上没有人追。你看水色。北礁可泊。二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
 			"子龙", stake_line, "子龙",
 		],
 		"岸上的根"
@@ -3796,6 +3796,9 @@ func _siege_active() -> bool:
 		return false
 	if not GameState.has_flag("renamed_wenlong"):
 		return false
+	# 陈文龙守的是 1276 冬那一次；1277 秋唆都再围是陈瓒的城
+	if Calendar.year != 1276:
+		return false
 	if Economy.war_status("xinghua") != "besieged":
 		return false
 	GameState.siege_begin()
@@ -4157,10 +4160,10 @@ func _siege_repair_wall() -> void:
 
 func _special_cards() -> Array:
 	var out := []
-	# 涵江海口 → 旧避风澳：1277 年二三月陈瓒复兴化之初，且第一章复核过旧泊地
+	# 涵江海口 → 旧避风澳：1277 年九十月唆都再围兴化（福建通志「九月來攻……逾月」城破），且第一章复核过旧泊地
 	if current_scene_id in ["xinghua", "xinghua_harbor"] \
-			and Calendar.year == 1277 and Calendar.month in [2, 3] \
-			and Economy.war_status("xinghua") == "loyal" \
+			and Calendar.year == 1277 and Calendar.month in [9, 10] \
+			and Economy.war_status("xinghua") == "besieged" \
 			and not GameState.has_flag("renamed_wenlong") \
 			and GameState.has_found("nameless_shelter_bay") \
 			and not GameState.has_flag("ending_root_sea"):

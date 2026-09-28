@@ -219,7 +219,7 @@ print("\n  ── 结局窗口宽度与预告 ──")
 xh = ports["xinghua"]["war"]
 windows = {
     "忠肃（守城）": ("1276-11", "1276-12", "n_1276_10_xinghua_muster"),
-    "岸上的根（涵江）": ("1277-02", "1277-03", "n_1277_01_chenzan_raises"),
+    "岸上的根（涵江）": ("1277-09", "1277-10", "n_1277_07_xinghua_again"),
     "海上宋鬼（崖山）": ("1279-01", "1279-03", "n_1278_12_yashan"),
 }
 by_id = {n["id"]: n for n in news}
@@ -235,8 +235,8 @@ for name, (start, end, hint_id) in windows.items():
         check(1 <= lead <= 6, f"{name} 预告提前 {lead} 个月（1–6 个月内，够反应又不至于忘）")
     check(months >= 2, f"{name} 窗口 {months} 个月 ≥ 2（一次远航来得及）")
 
-check(xh.get("1277-02") == "loyal" and xh.get("1277-04") == "fallen",
-      "兴化 1277-02~03 复城窗口存在（丙线的四十天）")
+check(xh.get("1277-02") == "loyal" and xh.get("1277-09") == "besieged" and xh.get("1277-11") == "fallen",
+      "兴化 1277-02 复城、1277-09 唆都再围、1277-11 再陷（丙线窗口在再围的九十月）")
 
 # ── 五、经济压力 ───────────────────────────────────────
 print("\n  ── 守城开销 vs 1276 年身家 ──")
