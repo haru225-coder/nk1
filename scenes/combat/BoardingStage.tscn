@@ -4,3 +4,4 @@
 
 [node name="BoardingStage" type="CanvasLayer"]
 script = ExtResource("1_bs")
+demo_on_ready = true
