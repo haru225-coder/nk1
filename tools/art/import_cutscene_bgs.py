@@ -20,7 +20,7 @@
 ~/tmp/nk1-art/assets，可用 NK1_LEGACY_ASSETS 覆盖。（lane gd13：原写死 Mac 家目录下的绝对路径，即 Mac 上 ~ 的展开，
 Mac 上默认路径不变；清单只记 codex: / legacy: / repo: 相对路径，换根不影响产物与 .import_manifest.json。）
 来源目录不在时（新克隆、别的机器、合回 main 后），--check 自动退化为 --data-only：只核对产物与清单一致，不报「来源缺失」。
-导出后要修瑕的图登记在 POSTFIX：写出后立即就地跑对应脚本（素材池原图带晚于宋元的器物，如青花），清单 out_sha1 记修后的图，
+导出后要修瑕的图登记在 POSTFIX：写出后立即就地跑对应脚本（素材池原图带晚于宋元的器物，如青花；或西式母题，如风玫瑰），清单 out_sha1 记修后的图，
 所以 --force 重导也不会把修过的地方冲回去。
 取不到时明确报错（lane doc8）：导入缺来源根 / 缺源图时 FAIL 行写明根取自环境变量还是缺省、该设哪个变量；
 环境变量显式设了却指向不存在的目录，导入与 --check 都直接 FAIL（不静默退化）；--data-only 不看来源，不受影响。
@@ -100,9 +100,11 @@ MANIFEST = [
 ]
 
 # 导出后就地修瑕（2026-09-26）：产物名 → tools/art/ 下的脚本与参数。青花是元至正以后的器物，改成宋元单色釉
+# 2026-09-28（A′，决策备忘 #5）：开场首镜右上的西式八向风玫瑰抹掉，补成周边金纸
 POSTFIX = {
     "cs_counting_house.jpg": ["fix_cs_qinghua.py", "--only", "counting_house", "--in-place"],
     "cs_quanzhou_fanfang.jpg": ["fix_cs_qinghua.py", "--only", "quanzhou_fanfang", "--in-place"],
+    "cs_world_map_gold.jpg": ["erase_world_map_compass.py", "--only", "cs", "--in-place"],
 }
 
 
