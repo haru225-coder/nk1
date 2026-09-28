@@ -174,6 +174,16 @@ REGISTRY = [
               "scenes 的孤儿基线与 lane seq3 共用 verify_story_data.SCENE_ARCHIVE",
      "green": "`✓ 22 格全对：…` + `== <文件>` 下逐项 `✓ 一、…` 至 `✓ 四、…`（四：`可达 a / n；不可达 k = 形放过 x + 已登记基线 y`）+ `结果：全部通过`",
      "red": "`✗ …` 行（`缺必填字段` / `类型应为` / `未登记字段` / `悬空` / `是孤儿` / `known_orphans 登了 X，它已从入口可达` / `满足 F1–F3…却没登记` / `✗ 变异自检 <编号> …`）；`结果：N 项问题`"},
+    # lane gd25：「靠多停几帧碰运气变绿」的跨跑判据；不升 must：全集两档约 25 分钟、要 DISPLAY、写截图盘，触发条件按路径判得准（§五.2）
+    {"id": "probe_pressure", "tier": "lane", "when": "改了探针集里的 .gd（tools/ 下代码行调 `ShotGate.frame_pressure` 的），或 tools/probe_clock.gd / shot_gate.gd / combat_probe_stage.gd",
+     "kind": "py", "file": "tools/probe_pressure.py", "usage": "[--only a,b] [--levels 0,300] [--mutants]", "display": True,
+     "judge": "（lane gd25）有窗口探针（代码行调了 `ShotGate.frame_pressure` 的已跟踪 .gd，截图册 + 定向探针）各在两档 `NK1_PROBE_SLOW_MS`"
+              "（默认 0 不封顶 / 300 封顶）下跑 `-- --json`，结论（exit_code / error / SCRIPT ERROR / 逐条 checks，名字里的 ms·s·帧读数掩掉）须全同且绿；"
+              "每跑各给空 XDG_DATA_HOME。每次先跑「零、判据自检」样本；`--mutants` 在临时 worktree 把两支探针的完成判据改回固定帧数，须判不一致。"
+              "像素不比，归 `tools/shot_consistency.gd`（结尾印出交接命令）",
+     "green": "逐支 `✓ <探针>：两档一致绿——档 0：绿 n/n（s） ｜ 档 300：绿 n/n（s）` + `共 N 支：一致绿 N / …` + `结果：全部通过`",
+     "red": "`✗ <探针>：两档结论不同——…` 附 `rc：档 0 = … · 档 300 = …` / `只在档 X：✗ …`；`✗ …：两档同红`（探针自身红）；`✗ …：跑不成`（没 JSON 行 / 超时）；"
+            "`--mutants`：`✗ B0 …` 基线不绿 / `✗ M<k> …——期望「两档结论不同」` / `变异没落上`；`结果：N 项问题`；找不到 godot / 参数错退 2"},
     {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/legacy/verify_narrative.py",
      "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
     {"id": "p7_smoke", "tier": "no", "kind": "godot", "file": "tools/legacy/p7_smoke.gd",
