@@ -656,19 +656,32 @@ func _hooks_bg_check(main: Node) -> void:
 		var got: String = main._port_bg(c[2])
 		_check(got == c[4], "H2 %s（实际 %s）" % [c[5], got])
 	main._port_bg_probe = null
-	# H2 接线：港页走 _port_bg；岸上候一日跨了档会换图（注入的图不在盘上，落到兜底海路图，说明确实换过）
+	# H2 接线：港页走 _port_bg；岸上候一日（真走 _on_shore_wait）跨了档换图、没跨档不重载。
+	# 注入表只决定 _port_bg 挑哪一档；_set_background_file 真去盘上取图——fallen 图没进库时回落海路图，进了库就是它本身。
+	# 期望值按盘面算，所以 01 批的 bg_quanzhou_fallen.jpg 进不进库都绿（2026-09-28 评审 M1）；路径拆开拼，免得 check_assets 当成必须在库的引用
+	var fallen_file := "bg_quanzhou_fallen.jpg"
+	var fallen_want: String = fallen_file if FileAccess.file_exists("res://assets/" + fallen_file) else main.FALLBACK_BG
+	main._port_bg_probe = {fallen_file: true}
 	GS.from_dict({})
 	Cal.from_dict({"year": 1277, "month": 1, "day": 5})
 	GS.last_port = "quanzhou"
 	main.load_scene("quanzhou")
-	_check(main._bg_file == main._port_bg("quanzhou"), "H2 泉州港页底图走 _port_bg（%s）" % main._bg_file)
-	main._port_bg_probe = {}
-	main._refresh_port_bg()
-	_check(main._bg_file == main._port_bg("quanzhou"), "H2 候一日没跨档：港页底图不动（%s）" % main._bg_file)
-	main._port_bg_probe = {"bg_quanzhou_fallen.jpg": true}
-	main._refresh_port_bg()
-	_check(main._bg_file == main.FALLBACK_BG, "H2 候一日跨到有图的档：港页底图跟着换（%s）" % main._bg_file)
+	_check(main._bg_file == fallen_want, "H2 泉州 1277-01 港页底图走 _port_bg：注入 fallen 档即换（应 %s，实际 %s）" % [fallen_want, main._bg_file])
+	# 1276-11-29 泉州对峙：注入表里没有对峙档和秋季档 → 原图；候到 11-30 没跨月 → 同一张纹理（不重载）；再候到 12-01 降元 → 换 fallen 档
+	GS.from_dict({})
+	Cal.from_dict({"year": 1276, "month": 11, "day": 29})
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou")
+	_check(main._bg_file == main.PORT_BG["quanzhou"], "H2 泉州 1276-11 对峙、注入表无此档：港页压原图（实际 %s）" % main._bg_file)
+	var tex_before: Texture2D = main.background.texture
+	main._on_shore_wait()
+	_check(Cal.month == 11 and main.background.texture == tex_before and main._bg_file == main.PORT_BG["quanzhou"],
+		"H2 候一日没跨月：港页底图不重载（%d-%d，纹理同一实例 %s，%s）" % [Cal.month, Cal.day, main.background.texture == tex_before, main._bg_file])
+	main._on_shore_wait()
+	_check(Cal.month == 12 and main._bg_file == fallen_want and main.background.texture != tex_before,
+		"H2 候一日跨到降元月：港页底图跟着换（%d-%d，应 %s，实际 %s）" % [Cal.month, Cal.day, fallen_want, main._bg_file])
 	main._port_bg_probe = null
+	_close_dialogs(main)
 
 	# H4 序章分页：cg_title 不进表；每个 cg_ 页 = 表里有且文件在的专属图，否则 title 型压标题海图、其余压酒棚（不落海路图）
 	_check(not main.PROLOGUE_PAGE_BG.has("cg_title"), "H4 PROLOGUE_PAGE_BG 不收 cg_title")
