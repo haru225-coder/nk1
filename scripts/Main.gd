@@ -145,6 +145,10 @@ const _DEBUG := preload("res://scripts/ui/DebugHooks.gd")
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
 var _arrival_banner := false
+## 本次进港排的岸带页型（port / siege / ended，_build_shore 当帧定）：守城 / 终局页不出太平时节的抵港挂签。UI 状态，不入存档
+var _shore_kind_now := ""
+## 本次进港在排岸带之前就按城破结算了（_settle_siege_before_shore）：_on_enter_port 不再记港、不再出横幅。UI 状态，不入存档
+var _siege_fell_on_entry := false
 ## 起始标题页的「重看开场」
 var _rewatch_button: Button
 ## 起始标题页的「续卷」（有存档才显示）
@@ -2447,6 +2451,12 @@ func _setup_port_mode(scene_data: Dictionary) -> void:
 	# 终局匾再拿旧字拼「・结局名」，进出一次设施就累加一截（第 2 轮 UX B1）
 	port_title.text = str(scene_data.get("title", "未知港口"))
 	_port_scene_facilities = scene_data.get("facilities", []).duplicate()
+	_shore_kind_now = ""
+	# 守城待结的城破（第三阵战报之后、旧档过了城破时点）在排岸带之前结算：底下不先排一遍寻常港页
+	_siege_fell_on_entry = _settle_siege_before_shore()
+	if _siege_fell_on_entry:
+		update_status_panel()
+		return
 	_build_shore()
 	update_status_panel()
 
@@ -2457,13 +2467,16 @@ func _build_shore() -> void:
 	_clear_shore()
 	# 本地 main 的终局线入口：终局后港口页 / 兴化守城页（函数在文件末尾补回段）
 	if GameState.is_ended():
+		_shore_kind_now = "ended"
 		_shore_title_once("ended", _setup_ended_port)
 		return
 	if _siege_active():
+		_shore_kind_now = "siege"
 		# 进港换底图时城防记录还没开（_siege_active 才开），守城专用的战况档在这里补换
 		_refresh_port_bg()
 		_shore_title_once("siege", _setup_siege_port)
 		return
+	_shore_kind_now = "port"
 	_shore_mode = "port"
 	_fit_port_title()
 	var shore_list: Array = _port_scene_facilities.duplicate()
@@ -2768,6 +2781,7 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 		"siege_envoy": "tavern", "siege_nangshan": "yamen", "siege_nunnery": "temple",
 		"special_hanjiang_escape": "shipyard", "special_resign_1275": "exam",
 		"special_yashan": "shipyard", "special_gangshou_end": "yamen",
+		"siege_enter": "yamen",
 	}
 	if SPECIAL_ICON.has(icon_id):
 		icon_id = SPECIAL_ICON[icon_id]
@@ -2846,6 +2860,7 @@ const DOOR_MARK := {
 	"residence": "宅", "temple": "寺", "yamen": "舶",
 	"siege_muster": "兵", "siege_grain": "粮", "siege_wall": "城", "siege_envoy": "使", "siege_nangshan": "伏",
 	"special_hanjiang_escape": "帆", "special_resign_1275": "辞", "special_yashan": "崖", "special_gangshou_end": "纲",
+	"siege_enter": "城",
 }
 
 
@@ -2906,9 +2921,13 @@ func _on_shore_shut() -> void:
 
 func _on_shore_wait() -> void:
 	GameState.shore_salt += 1
+	# 候日这句先写、再推日子：当天的月初通告（战况、月息、辞船）排在它上面，不被压住。
+	# 守城页五扇门是固定的，候一日不换门，另写一句守城的
+	log_msg("城上又守了一日。" if _shore_mode == "siege" else "在岸上又候了一日，门又换了几处。")
 	GameManager.advance_days(1)
-	log_msg("在岸上又候了一日，门又换了几处。")
-	# 守城页候过城破时点：按城破结算，不退回寻常岸带
+	# 守城页候过城破时点：先记一句城破那天，再按城破结算，不退回寻常岸带
+	if _siege_overdue():
+		log_msg("%s%s。援兵没有来。" % [Calendar.get_month_name(), Calendar.get_day_name()])
 	if _settle_overdue_siege():
 		update_status_panel()
 		return
@@ -2981,8 +3000,10 @@ func _on_load_slot(slot: int) -> void:
 func _on_enter_port(port_id: String) -> void:
 	if GameManager.get_port_by_id(port_id).is_empty():
 		return
-	# 城防没了结的旧档过了城破时点：先按城破结算（不然「未归」见城防开着会跳过，陈文龙接着跑商）
-	if _settle_overdue_siege():
+	# 城防没了结的旧档过了城破时点：先按城破结算（不然「未归」见城防开着会跳过，陈文龙接着跑商）。
+	# 进港时已在排岸带之前结算过（_setup_port_mode）的，这里不再往下走
+	if _siege_fell_on_entry or _settle_overdue_siege():
+		_siege_fell_on_entry = false
 		return
 	if _check_absent_from_xinghua():
 		return
@@ -2995,9 +3016,10 @@ func _on_enter_port(port_id: String) -> void:
 		# 序章走完、第一次踏上港口（岸页开张）：第一章开卷。只演卡，不弹册页。
 		# 卡紧跟在港页 load_scene 之后：黑场第 0 帧就压满，不先露出港页再压黑（第 2 轮美术 M1）
 		_CS_CARD.play(self, 1, _CINE.DATA, _CINE.year_text(Calendar.year, Calendar.ERAS), true)
-	elif _arrival_banner and _CINE.live():
+	elif _arrival_banner and _CINE.live() and _shore_kind_now == "port":
 		# 海图回港的真正抵港：旧绢挂签报副题（港名已在顶上的墨刷匾里，同屏不写第二遍），居中挂在匾下；
 		# 不拦输入、2.65 秒自退；开章 / 了结时让位给章节卡与结局过场。
+		# 这次进港排的是守城 / 终局岸带（要演「兴化军・围城」一类题签）：太平时节的挂签不出，不压在题签底下白演一遍
 		_CS_BANNER.show_banner(self, port_id, _CINE.DATA, 0.285, false)
 	update_status_panel()
 
@@ -3394,6 +3416,7 @@ const CARD_SIEGE_WALL := "siege_wall"          # 船厂・修城墙
 const CARD_SIEGE_ENVOY := "siege_envoy"        # 酒馆・使者
 const CARD_SIEGE_NANGSHAN := "siege_nangshan"  # 囊山设伏
 const CARD_SIEGE_NUNNERY := "siege_nunnery"    # 福州尼寺（不可操作）
+const CARD_SIEGE_ENTER := "siege_enter"        # 兴化海口・入城（守城页只在城里开）
 const CARD_RESIGN := "special_resign_1275"
 const CARD_YASHAN := "special_yashan"
 const CARD_GANGSHOU := "special_gangshou_end"
@@ -3644,6 +3667,10 @@ func _on_siege_card(card_id: String) -> void:
 
 你在城头上站了很久。这件事没有选项。"
 			)
+		CARD_SIEGE_ENTER:
+			# 兴化海口 → 兴化城：短途陆路，当天就到（同一座城的两个节点，不过海图、不走日子）
+			log_msg("你从海口进了城。城门在身后合上。")
+			load_scene("xinghua")
 
 
 
@@ -3866,9 +3893,10 @@ func _siege_stat_slip() -> Control:
 	var fought: int = GameState.siege_get("round")
 	_band_head(col, "城头白布八字　生为宋臣　死为宋鬼", "城",
 		"三阵・尚未接战" if fought <= 0 else "三阵・已守%s阵" % _cn_num(fought))
-	_band_line(col, "兵 %d（上限 %d）　粮 %d・够打%s阵　城墙 %d / %d　士气 %d%s" % [
+	_band_line(col, "兵 %d（上限 %d）　粮 %d・%s　城墙 %d / %d　士气 %d%s" % [
 		GameState.siege_get("troops"), GameState.siege_troop_cap(),
-		grain, _cn_num(rounds_left), GameState.siege_get("wall"), GameState.SIEGE_WALL_MAX,
+		grain, "一阵也不够" if rounds_left <= 0 else "够打%s阵" % _cn_num(rounds_left),
+		GameState.siege_get("wall"), GameState.SIEGE_WALL_MAX,
 		GameState.siege_get("morale"),
 		"　石手军在城" if str(GameState.siege.get("shishou", "")) == "kept" else "",
 	], UiTheme.TEXT, 16)
@@ -3885,10 +3913,50 @@ func _siege_stat_slip() -> Control:
 		row.add_child(_seal_mark("急"))
 		var wl := _band_line(row, warn, UiTheme.CINNABAR if rounds_left < 1 else UiTheme.HONEY, 16)
 		wl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	# 城破前约十日起告急：候日这些天城防账不能一个字都不变，玩家得知道再候下去就是城破
+	var dire := _siege_dire_warning()
+	if dire != "":
+		var drow := HBoxContainer.new()
+		drow.name = "SiegeDire"
+		drow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		drow.add_theme_constant_override("separation", 8)
+		col.add_child(drow)
+		drow.add_child(_seal_mark("急"))
+		var dl := _band_line(drow, dire, UiTheme.CINNABAR, 16)
+		dl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	for fac in _siege_cards():
 		if str(fac.get("id", "")) == CARD_SIEGE_NUNNERY:
 			_band_line(col, "%s：%s。这件事没有选项。" % [str(fac.get("title", "福州尼寺")), str(fac.get("subtitle", ""))], UiTheme.TEXT_DIM, 16)
 	return slip
+
+
+## 城破前几日起城防账告急（天数从首守城破时点倒推，不写死日期）
+const SIEGE_DIRE_DAYS := 10
+
+
+## 城防账的告急行：离首守城破时点不足 SIEGE_DIRE_DAYS 日时给一句，其余日子空串
+func _siege_dire_warning() -> String:
+	var fp := _siege_fall_point()
+	if fp.is_empty():
+		return ""
+	var left: int = int(fp["abs"]) - Calendar.absolute_day()
+	if left <= 0 or left > SIEGE_DIRE_DAYS:
+		return ""
+	return "援兵音信断绝。城中都说，捱不到%s。" % str(fp["month"])
+
+
+## 首守城破时点那一天（该月初一）的历法写法：{abs 绝对日, era 「景炎元年」, month 「腊月」}；表里没有返回空表。
+## 借 Calendar 自己的写法算（临时拨到那一天、算完拨回），年号月名和顶栏同一套
+func _siege_fall_point() -> Dictionary:
+	var ym := _first_siege_fall_ym()
+	if ym == "":
+		return {}
+	var p := ym.split("-")
+	var keep: Dictionary = Calendar.to_dict()
+	Calendar.from_dict({"year": int(p[0]), "month": int(p[1]), "day": 1})
+	var out := {"abs": Calendar.absolute_day(), "era": Calendar.get_era_year_string(), "month": Calendar.get_month_name()}
+	Calendar.from_dict(keep)
+	return out
 
 
 ## 一枚朱砂小印（方 26，马善政印面字）：代替告警前的「⚠」
@@ -3935,17 +4003,23 @@ func _show_notice_dialog(title: String, head: String, text: String, ending: Stri
 ## 上报发现：航中勘见的东西要回衙门报了才换得赏格与名声
 
 func _siege_active() -> bool:
-	if not (current_scene_id in ["xinghua", "xinghua_harbor"]):
+	# 守城页只在兴化城里开：海口在城外（底图是商港、城破正文写「你在城楼上」），海口只给一张「入城」卡（_special_cards）
+	if current_scene_id != "xinghua":
 		return false
-	if not GameState.has_flag("renamed_wenlong"):
+	if not _siege_due():
+		return false
+	GameState.siege_begin()
+	return true
+
+
+## 该不该守城（不看人在哪、不开城防记录）：士人线改了名、1276 年、兴化正被围。海口「入城」卡与守城页共用这一判据。
+func _siege_due() -> bool:
+	if GameState.is_ended() or not GameState.has_flag("renamed_wenlong"):
 		return false
 	# 陈文龙守的是 1276 冬那一次；1277 秋唆都再围是陈瓒的城
 	if Calendar.year != 1276:
 		return false
-	if Economy.war_status("xinghua") != "besieged":
-		return false
-	GameState.siege_begin()
-	return true
+	return Economy.war_status("xinghua") == "besieged"
 
 
 ## 兴化战况表里每段 besieged 结束、转成别的战况的那个月（"YYYY-MM"），按时间排。
@@ -3983,12 +4057,45 @@ func _chen_zan_alive() -> bool:
 ## 城防记录还开着、日历却已过首守城破时点（守城页「再候一日」候过去，或这样留下的旧档）：
 ## 走城破结算，不许回寻常港页接着跑商、躲掉结局。结算了返回 true。
 func _settle_overdue_siege() -> bool:
+	if not _siege_overdue():
+		return false
+	_siege_fall("援绝")
+	return true
+
+
+## 城防记录还开着、日历已到首守城破时点（含当月）：该按「援绝」结算了
+func _siege_overdue() -> bool:
 	if GameState.is_ended() or not GameState.siege_open():
 		return false
 	var fall := _first_siege_fall_ym()
-	if fall == "" or "%04d-%02d" % [Calendar.year, Calendar.month] < fall:
+	return fall != "" and "%04d-%02d" % [Calendar.year, Calendar.month] >= fall
+
+
+## 第三阵打完先出战报册页（城防记录里记 pending_fall），玩家按「回城」回到兴化、排岸带之前才走城破。
+## 存档里留着这个记号的（战报册页开着时不能存档，保险起见也认），读进任何港都照样结算。结算了返回 true。
+func _settle_pending_siege_fall() -> bool:
+	if GameState.is_ended() or not GameState.siege_open():
 		return false
-	_siege_fall("援绝")
+	var pend := str(GameState.siege.get("pending_fall", ""))
+	if pend == "":
+		return false
+	_siege_fall(pend)
+	return true
+
+
+## 进港排岸带之前的守城结算：第三阵战报后待结的城破、城防开着却已过城破时点的旧档。
+## 先清岸带再结算，城破过场淡出前露的是空岸带，不先闪一下带「看风」的寻常港页。结算了返回 true。
+func _settle_siege_before_shore() -> bool:
+	if GameState.is_ended() or not GameState.siege_open():
+		return false
+	if str(GameState.siege.get("pending_fall", "")) == "" and not _siege_overdue():
+		return false
+	_clear_shore()
+	if current_scene_id == "xinghua":
+		port_title.text = _UI_TRANSITION.siege_title()
+		_fit_port_title()
+	if not _settle_pending_siege_fall():
+		_settle_overdue_siege()
 	return true
 
 
@@ -3996,10 +4103,10 @@ func _settle_overdue_siege() -> bool:
 func _siege_buy_grain() -> void:
 	_enter_panel_mode()
 	scene_title.text = "兴化・市场"
-	body_text.text = "牙行闭着，只有米在动。价一天一个样。
+	body_text.text = "牙行闭着，只有米在动。每打一阵，米价就涨一截。
 粮就是守城的日子：每打一阵，耗粮 %d。" % GameState.SIEGE_GRAIN_PER_ROUND
 
-	# 围城米价：随已打轮次上涨
+	# 围城米价：随已打轮次上涨（候日不涨，文案照这个写）
 	var unit: int = 12 + GameState.siege_get("round") * 8
 	for n in [40, 120]:
 		var cost: int = n * unit
@@ -4009,7 +4116,7 @@ func _siege_buy_grain() -> void:
 		b.pressed.connect(func():
 			if GameState.spend_money(cost):
 				GameState.siege_add("grain", n)
-				log_msg("买进粮 %d。米价一天一个样，明日只会更贵。" % n)
+				log_msg("买进粮 %d。再打一阵，米价还要涨一截。" % n)
 			load_scene(current_scene_id)
 		)
 		choices_container.add_child(b)
@@ -4041,7 +4148,7 @@ func _siege_envoy() -> void:
 	scene_title.text = "兴化・城下使者"
 
 	if not GameState.siege.get("envoy_wang", false):
-		body_text.text = "福州知军王刚中派了两个使者来，带着一封劝降书。正使在城下念。念到第三句时，你让人开了城门。"
+		body_text.text = "知福州王刚中派了两个使者来，带着一封劝降书。正使在城下念。念到第三句时，你让人从城上缒下绳去，把两个人吊了上来。"
 		var kill := Button.new()
 		kill.text = "斩正使，放副使回去，带一封信给王刚中"
 		kill.pressed.connect(func():
@@ -4097,18 +4204,27 @@ func _siege_envoy() -> void:
 	_add_leave_button("xinghua")
 
 
-## 囊山设伏：数值判定，最多三阵。粮尽或三阵毕即城破。
+## 囊山设伏：数值判定，最多三阵。粮尽或三阵打完（力竭）即城破。
+
+## 城破原因上屏的字：内部键不改（"三阵毕" 仍是键），题头写「援绝」「粮尽」「力竭」——成语「粮尽援绝」两半加一个「力竭」，同一路文言
+const SIEGE_FALL_WORD := {"援绝": "援绝", "粮尽": "粮尽", "三阵毕": "力竭"}
+
 
 func _siege_fall(reason: String) -> void:
+	# 援绝是候过城破时点才结算的（S3 候日、旧档、停在别港的旧档）：题头写城破那个月，落款拉回城破时点；
+	# 粮尽、力竭是当场打破的：落款照当日，题头只写到「冬」，不和同屏顶栏的冬月日期打架
+	var overdue := _siege_overdue()
+	var word := str(SIEGE_FALL_WORD.get(reason, reason))
 	var betrayal := ""
 	if GameState.has_flag("cao_opened"):
-		betrayal = "通判曹澄孙开了东门。"
+		# 第三阵前没放林华出侦、关了城门：史实照旧——林华降、曹澄孙开门，两件事都发生了（《宋史·陈文龙传》）
+		betrayal = "林华是夜里缒城出去的，出去就降了。他领着元兵回到城下的那天夜里，通判曹澄孙开了东门。他后来说，是城里的人求他开的。这话可能是真的。"
 	elif GameState.has_flag("lin_hua_reminded"):
 		betrayal = "林华出去两天。第三天早上他回来了，后面跟着一万人。他在城下抬头看了你一眼，很快低下去。那个结松了。"
 	else:
 		betrayal = "林华出去两天。第三天早上他回来了，后面跟着一万人。"
 
-	var text := "%s（%s）
+	var text := "%s
 城破的时候你在城楼上。白布还挂着。
 
 他们没有动手，把你和家人押去了福州。董文炳的军帐里点着很多灯。他们让你跪，你不跪。有人来扯你的胳膊，有人骂，有人试着往你脸上打。
@@ -4133,10 +4249,28 @@ func _siege_fall(reason: String) -> void:
 渔民不知道尚书是什么官。他们只知道出海前拜一拜，海上会平安。
 官船出洋，头号船请妈祖，二号船请尚书公。
 
-供在里面的那个人，一辈子没出过海。" % [betrayal, reason]
+供在里面的那个人，一辈子没出过海。" % betrayal
 
+	var head := "兴化・景炎元年十二月"
+	if not overdue:
+		head = "兴化・景炎元年冬"
+	if word != "":
+		head += "・" + word
 	GameState.siege = {}
-	_show_notice_dialog("忠肃", "兴化・景炎元年十二月", text, "忠肃")
+	# 先落定结局再改落款（finish 只认第一次，_show_notice_dialog 里那次不再改写）
+	GameState.finish("忠肃", text)
+	var signoff := _siege_fall_signoff() if overdue else ""
+	if signoff != "":
+		GameState.ended_at = signoff
+	_show_notice_dialog("忠肃", head, text, "忠肃")
+
+
+## 忠肃落款的城破时点：「景炎元年　腊月・兴化」——年号、月名从兴化战况表首守城破那个月推（_siege_fall_point），不写死
+func _siege_fall_signoff() -> String:
+	var fp := _siege_fall_point()
+	if fp.is_empty():
+		return ""
+	return "%s　%s・%s" % [str(fp["era"]), str(fp["month"]), GameManager.get_port_name("xinghua")]
 
 
 ## 士人线错过守城：1276 年兴化陷落时你不在城里。
@@ -4145,12 +4279,14 @@ func _siege_fall(reason: String) -> void:
 func _siege_lin_hua() -> void:
 	_enter_panel_mode()
 	scene_title.text = "兴化・城头"
+	# 当面见过他：人物志里记为已识（没雇过他的士人线玩家也一样；会话内记号，同酒馆见卡）
+	_CHAR_ART.note_met("lin_hua")
 	var known := "lin_hua" in GameState.crew_history
 	body_text.text = "部将林华上来请命：「大人，元兵在江口。我带五十人出去看看虚实。」"
 	if known:
 		body_text.text += "
 
-你认得这张脸。二十年前他在林阿舶的船上系过缆，缆绳系得很好。"
+你认得这张脸。二十年前他在林阿舶的船上系缆，后来在你的船上把过舵。缆绳系得很好。"
 
 	if known:
 		var remind := Button.new()
@@ -4159,7 +4295,7 @@ func _siege_lin_hua() -> void:
 			GameState.siege_set("lin_hua_sent", true)
 			GameState.siege_add("morale", 5)
 			GameState.set_flag("lin_hua_reminded")
-			log_msg("他愣了一下，说大人还记得。城里人看见你认得出一个水手的名字，士气 +5。")
+			log_msg("他愣了一下，说大人还记得。城头的人见你叫得出自家旧舵工的名字，士气 +5。")
 			load_scene(current_scene_id)
 		)
 		choices_container.add_child(remind)
@@ -4179,7 +4315,8 @@ func _siege_lin_hua() -> void:
 		GameState.siege_set("lin_hua_sent", true)
 		GameState.siege_add("grain", -30)
 		GameState.set_flag("cao_opened")
-		log_msg("城门关了七天。第八天夜里，通判曹澄孙开了东门。他后来说，是城里的人求他开的。这话可能是真的。")
+		# 只作铺垫，城还在：门是后来城破时才开的（_siege_fall 按 cao_opened 写林华缒城出降、曹澄孙开东门）。不写天数，日历没动
+		log_msg("城门关了，谁也不出。当夜林华从城上缒了下去，再没有回来。东门下，有人看见通判曹澄孙转了几回。")
 		load_scene(current_scene_id)
 	)
 	choices_container.add_child(stay)
@@ -4222,7 +4359,9 @@ func _siege_muster() -> void:
 	if str(GameState.siege.get("shishou", "")) == "":
 		var sep := Label.new()
 		sep.text = "── 石手军 ──"
-		sep.add_theme_font_size_override("font_size", 13)
+		# 分节小题同册页眉题：泥金小题样式，字号 16（本作岸带与册页的下限）
+		UiTheme.style_section_label(sep)
+		sep.add_theme_font_size_override("font_size", 16)
 		choices_container.add_child(sep)
 		var info := Label.new()
 		info.text = "两百个能把石头掷中人头的乡兵站在木兰陂上。朝廷议者说「不足用」，把他们裁了。他们说：不是反朝廷，是朝廷不要我们。"
@@ -4237,7 +4376,7 @@ func _siege_muster() -> void:
 			GameState.siege_add("troops", 200)
 			GameState.siege_add("morale", 8)
 			GameState.hometown_tendency += 5
-			log_msg("他们把石头放下了，没有走。以后五个月，城头上多了两百个不领饷的人。")
+			log_msg("他们把石头放下了，没有走。从这天起，城头上多了两百个不领饷的人。")
 			load_scene(current_scene_id)
 		)
 		choices_container.add_child(keep)
@@ -4298,14 +4437,23 @@ func _siege_nangshan() -> void:
 		txt = "伏没设成。元兵从背面上了山脊，石头砸下去砸的是自己人。
 退回城里的时候少了 %d 人。" % killed2
 
+	# 战报册页：不是结局，眉题「战报」、钮「回城」（重读结局同一个 kicker / ok_text 口子）；大题中文数字，胜负不再重复「囊山」
+	var head := "囊山・第%s阵　%s" % [_cn_num(rd), "退敌" if won else "失利"]
 	if GameState.siege_get("round") >= GameState.SIEGE_ROUNDS_MAX:
-		_show_notice_dialog("囊山・第 %d 阵" % rd, "囊山" if won else "囊山失利", txt + "
+		# 第三阵：先出战报，玩家按「回城」回到兴化、排岸带之前才走城破（_settle_siege_before_shore），
+		# 战报停多久由玩家定，不再被结局过场当帧吞掉
+		GameState.siege_set("pending_fall", "三阵毕")
+		_show_siege_report(head, txt + "
 
 粮快尽了。这是最后一阵。")
-		_siege_fall("三阵毕")
 		return
 
-	_show_notice_dialog("囊山・第 %d 阵" % rd, "囊山" if won else "囊山失利", txt)
+	_show_siege_report(head, txt)
+
+
+## 囊山一阵的战报册页（ChapterSheet 的了结版式，眉题、钮字换成战报口吻；不 finish、不演过场）
+func _show_siege_report(head: String, text: String) -> void:
+	_show_chapter_dialog({"title": head, "text": text, "resolved": true, "scene": "", "kicker": "战报", "ok_text": "回城"})
 
 
 ## 部将林华请出侦。史实不变——他仍然降。
@@ -4368,6 +4516,10 @@ func _special_cards() -> Array:
 	# 海商线收官：1285 年后，一局跑到底（乡土线同样收在这里）
 	if GameState.identity != "scholar" and Calendar.year >= 1285:
 		out.append({"id": CARD_GANGSHOU, "title": "市舶司・新册", "subtitle": "封面换了，名字还在"})
+
+	# 士人线守城：守城页只在兴化城里开，兴化海口在该守城的月份给一张「入城」卡（siege_ 前缀，走 _on_siege_card）
+	if current_scene_id == "xinghua_harbor" and _siege_due():
+		out.append({"id": CARD_SIEGE_ENTER, "title": "入城", "subtitle": "城被围了。你该在城里"})
 
 	return out
 
