@@ -11,6 +11,8 @@ const RATE_MAX := 2.20
 ## 每日向 1.0 回归的比例。0.045 约合 15 日回复一半——跑一趟近海回来行情已缓过大半，
 ## 否则同一条商路走两次就废了。
 const RECOVERY := 0.045
+## 围城（besieged）期间米行情每日回归的目标：与月初围城冲击 1.0 + 0.8 同档，围多久米价就撑多久
+const SIEGE_GRAIN_TARGET := 1.8
 
 ## 市舶司抽解（进口税），随货物与港口可调
 var tariff_rate: float = 0.10
@@ -378,9 +380,14 @@ func estimate_buy_cost(port_id: String, good_id: String, amount: int) -> int:
 func on_day_passed() -> void:
 	for pid in rates.keys():
 		var port_rates: Dictionary = rates[pid]
+		# 围城期间米价回归的目标抬到 SIEGE_GRAIN_TARGET：月初那一冲之后不再逐日落回平年价（验收 09-28：围得越久粮越便宜）
+		var besieged := war_status(str(pid)) == "besieged"
 		for gid in port_rates.keys():
 			var r: float = port_rates[gid]
-			port_rates[gid] = r + (1.0 - r) * RECOVERY
+			if besieged and gid == "grain":
+				port_rates[gid] = r + (SIEGE_GRAIN_TARGET - r) * RECOVERY
+			else:
+				port_rates[gid] = r + (1.0 - r) * RECOVERY
 
 
 # ── 存档 ──────────────────────────────────────────────
