@@ -1335,6 +1335,15 @@ func _v0928_hanjiang_check(main: Node) -> void:
 	var rt := str(rumor.get("text", ""))
 	_check(not qz_open or (rt.find("围了泉州") < 0 and rt.find("闭城") < 0 and rt.find("泉州") >= 0),
 		"%s 泉州照常开市（%s）时，传闻只写张世杰要去打泉州、不写已围城闭城（「%s」）" % [rumor_ym, Eco.war_status("quanzhou"), rt])
+	# ⑩ 过场 ending_root：泊澳那句字幕从出现到镜末 ≥3.5 秒（修前 2.6，实录在屏 2.3 秒读不完）
+	var cs_all: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes.json"))
+	var moor_left := -1.0
+	if cs_all is Dictionary:
+		for shot in ((cs_all as Dictionary).get("cutscenes", {}).get("ending_root", {}).get("shots", []) as Array):
+			for cap in (shot as Dictionary).get("captions", []):
+				if str(cap.get("text", "")).find("旧避风澳泊了六天") >= 0:
+					moor_left = float(shot.get("duration", 0.0)) - float(cap.get("t", 0.0))
+	_check(moor_left >= 3.5, "ending_root「船在旧避风澳泊了六天」字幕到镜末 %.1f 秒（≥3.5）" % moor_left)
 	GS.from_dict({})
 	Flt.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
