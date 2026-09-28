@@ -1958,13 +1958,13 @@ else:
 ship_tscn = open(os.path.join(ROOT, "scenes", "Ship.tscn"), encoding="utf-8").read()
 pirate_tscn = open(os.path.join(ROOT, "scenes", "PirateShip.tscn"), encoding="utf-8").read()
 if "ship_fu.png" in ship_tscn and "ship_falcon.png" in pirate_tscn and "ship_topdown.png" not in ship_tscn:
-    print("  ✓ 玩家福船 / 敌船海鹘用精绘精灵，不再用照片底板")
+    print("  ✓ 玩家福船 / 敌船快船用精绘精灵，不再用照片底板")
 else:
     print("  ✗ 船精灵仍是照片底板或未换新图")
-    problems.append("船精灵未换成福船/海鹘")
+    problems.append("船精灵未换成福船/快船")
 if "Color(1, 0.5, 0.5)" in pirate_src:
     print("  ✗ 海盗还在用红色 modulate 盖船图")
-    problems.append("海盗红色 modulate 会脏掉海鹘精灵")
+    problems.append("海盗红色 modulate 会脏掉快船精灵")
 else:
     print("  ✓ 海盗不再用红色 modulate 盖船图")
 cb_tscn = open(os.path.join(ROOT, "scenes", "Cannonball.tscn"), encoding="utf-8").read()
@@ -2065,8 +2065,9 @@ else:
 
 # 船图契约（备忘 #7 海寇快船 + 钩子第一批第 5 条「海战精灵按船型」，lane pirate-boat-0928）：
 # 海战精灵 = assets/ship_<id>.png，文件在才用、不在回落两张默认贴图（上面已锁）。己方 id = 旗舰 type（回落 ship_fu），
-# 敌船 id = enemy.sprite 或 type（回落 ship_falcon）。这里查三件：① 入库的 ship_<x>.png 都是 512² RGBA8，x 是 ships.json 的
-# type 或 CombatFx.SHIP_SPRITE_EXTRA 里的名字——名字画错永远不上屏，规格画错上屏走样（碰撞半径 24、scale 0.62 共用）；
+# 敌船 id = enemy.sprite 或 type（回落 ship_falcon）。这里查三件：① assets 下 ship_* 文件（不分大小写，除默认贴图、shader、.import）
+# 都得是小写 ship_<x>.png、512² RGBA8，x 是 ships.json 的
+# type 或 CombatFx.SHIP_SPRITE_EXTRA 里的名字——名字 / 扩展名画错永远不上屏，规格画错上屏走样（碰撞半径 24、scale 0.62 共用）；
 # ② 取图接线还在；③ 海寇 / 元军哨船两条敌船条目，墨边名表里的船名与 ships.json 对得上。
 def _png_ihdr(path):
     """只读 PNG 头：(宽, 高, 位深, 色型)；不是 PNG 给 None。色型 6 = RGBA。"""
@@ -2085,18 +2086,26 @@ _fx_src = open(os.path.join(SCRIPTS, "combat", "CombatFx.gd"), encoding="utf-8")
 _m_extra = re.search(r"SHIP_SPRITE_EXTRA\s*:=\s*\[([^\]]*)\]", _fx_src)
 _sprite_extra = set(re.findall(r'"([^"]+)"', _m_extra.group(1))) if _m_extra else set()
 # 不按船型取的旧文件：两张默认贴图（上面已查真 RGBA / 精绘），ship_topdown 是海图旧照片底板（ShipMarker 已改矢量，不进海战）
-_SHIP_SPRITE_LEGACY = {"fu", "falcon", "topdown"}
+_SHIP_SPRITE_LEGACY = {"ship_fu.png", "ship_falcon.png", "ship_topdown.png"}
+# 不是图的同名前缀文件：海战精灵抠色 shader 与它的 uid
+_SHIP_SPRITE_SIDECAR = {"ship_colorkey.gdshader", "ship_colorkey.gdshader.uid"}
 _sprite_bad, _sprite_ok = [], []
-for _fn in sorted(os.listdir(os.path.join(ROOT, "assets"))):
+_assets_dir = os.path.join(ROOT, "assets")
+# 扫 ship_* 的全部文件（前缀、扩展名都不分大小写）：运行期只找小写 ship_<id>.png，.PNG / .webp / .jpg 交进来永远不上屏，要判红
+for _fn in sorted(os.listdir(_assets_dir)):
+    _fl = _fn.lower()
+    if not _fl.startswith("ship_") or not os.path.isfile(os.path.join(_assets_dir, _fn)):
+        continue
+    if _fl.endswith(".import") or _fn in _SHIP_SPRITE_SIDECAR or _fn in _SHIP_SPRITE_LEGACY:
+        continue
     if not (_fn.startswith("ship_") and _fn.endswith(".png")):
+        _sprite_bad.append(f"{_fn}：运行期只找小写 ship_<id>.png，这个文件名 / 扩展名永远不上屏（改名并转成 PNG）")
         continue
     _x = _fn[len("ship_"):-len(".png")]
-    if _x in _SHIP_SPRITE_LEGACY:
-        continue
     if _x not in _ship_names and _x not in _sprite_extra:
         _sprite_bad.append(f"{_fn}：{_x} 不是 ships.json 的 type，也不在 CombatFx.SHIP_SPRITE_EXTRA（永远不上屏）")
         continue
-    _ih = _png_ihdr(os.path.join(ROOT, "assets", _fn))
+    _ih = _png_ihdr(os.path.join(_assets_dir, _fn))
     if _ih is None or _ih[:2] != (512, 512) or _ih[2:] != (8, 6):
         _sprite_bad.append(f"{_fn} 须 512x512 RGBA8（实为 {_ih if _ih else '不是 PNG'}；宽×高×位深×色型）")
         continue
