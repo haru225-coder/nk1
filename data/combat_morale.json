@@ -1,0 +1,200 @@
+{
+  "meta": {
+    "title": "海战士气：崩坏、溃逃、降幡、拒接舷",
+    "era": "南宋末，约1255-1277，东亚近海",
+    "owner": "scripts/combat/CombatMorale.gd（lane combat06）",
+    "note": "战斗里的士气另记一本：开战时从航行士气起算（我方读 Fleet.morale，敌船读 enemy_morale），战中只在这本账上加减，不回写 Fleet；战后回写多少由 carry 给建议值、调用方定。伤亡、失火、被钩舷、船体受创、主将倒下、僚船沉降都会压士气；落到 bands.wavering（加各船风气的 rout_offset）以下即溃逃，一击之下跌破 rout.panic_line 也溃；再往下到 strike.line，且被围、矢石尽、被钩、船将沉、折损过半、主将倒下等压力凑够 strike.pressure_need，就降幡。数值是 0–100 的士气点、秒、像素（海战场景坐标）。type_temper 按 ships.json 船型定风气，ai_profile_temper 按敌将 AI（EnemyCaptainAI）的档案定风气。",
+    "source": "焦山之战（1275）：宋舟十船一方、铁索连舫碇江中，元军以火矢射其篷，舟焚兵溃，赴水者众（《元史·阿术传》）——失火与连舟不得走是崩坏、降溃的两条正路。「降幡」取刘禹锡《西塞山怀古》「一片降幡出石头」。"
+  },
+  "bands": {
+    "steady": 55,
+    "shaken": 35,
+    "wavering": 20,
+    "hysteresis": 3
+  },
+  "rout": {
+    "rally_line": 32,
+    "rally_distance": 650,
+    "escape_distance": 1000,
+    "panic_shock": 12,
+    "panic_line": 30,
+    "player_grace_s": 2.0,
+    "flee_factor": 0.6
+  },
+  "strike": {
+    "line": 12,
+    "collapse_line": 4,
+    "pressure_need": 2.0,
+    "board_lost_line": 30,
+    "hull_critical_frac": 0.25,
+    "heavy_losses_frac": 0.5
+  },
+  "pressure": {
+    "surrounded": 1.0,
+    "ammo_out": 1.0,
+    "captain_down": 1.5,
+    "grappled": 1.0,
+    "hull_critical": 1.0,
+    "heavy_losses": 1.0,
+    "on_fire": 0.5,
+    "immobile": 1.0
+  },
+  "shock": {
+    "casualty_per_pct": 0.6,
+    "casualty_quarter": 6,
+    "casualty_half": 12,
+    "hull_per_pct": 0.35,
+    "hull_half": 6,
+    "hull_quarter": 12,
+    "fire_start": 6,
+    "grappled": 8,
+    "boarding_lost": 15,
+    "boarding_refused": 3
+  },
+  "lift": {
+    "boarding_won": 6,
+    "boarder_elan": 2,
+    "fire_out": 3
+  },
+  "contagion": {
+    "ally_sunk": 10,
+    "ally_struck": 8,
+    "ally_routed": 4,
+    "ally_captured": 8,
+    "lead_hurt": 4,
+    "lead_sunk": 16,
+    "lead_struck": 14,
+    "lead_captured": 14
+  },
+  "cheer": {
+    "foe_sunk": 6,
+    "foe_struck": 5,
+    "foe_routed": 3,
+    "foe_captured": 6
+  },
+  "drain_per_s": {
+    "fire": 1.2,
+    "surrounded": 0.5,
+    "ammo_out": 0.5,
+    "ammo_low": 0.2,
+    "ammo_low_frac": 0.2,
+    "grappled": 0.4,
+    "immobile": 0.3
+  },
+  "rally": {
+    "per_s": 0.6,
+    "calm_seconds": 4.0,
+    "command_base": 0.5
+  },
+  "command": {
+    "shock_relief": 0.3,
+    "captain_down_shock": 20,
+    "captain_down_base": 0.7,
+    "captain_down_command": 0.6,
+    "after_down": 0.1,
+    "down_casualty_frac": 0.6,
+    "enemy_base": 0.35,
+    "enemy_per_force": 0.5
+  },
+  "officers": {
+    "yiren_casualty_relief": 0.08
+  },
+  "surround": {
+    "radius": 450,
+    "spread_deg": 135,
+    "crowd": 3
+  },
+  "melee": {
+    "base": 0.6,
+    "span": 0.4
+  },
+  "boarding": {
+    "willing_floor": 15,
+    "willing_full": 45,
+    "cut_grapple_floor": 40,
+    "cut_grapple_max": 0.6
+  },
+  "carry": {
+    "ratio": 0.3,
+    "routed": 4,
+    "struck": 8
+  },
+  "factors": {
+    "steady": {"fire": 1.0, "melee": 1.0, "sail": 1.0},
+    "shaken": {"fire": 0.9, "melee": 0.95, "sail": 1.0},
+    "wavering": {"fire": 0.75, "melee": 0.85, "sail": 1.0},
+    "routing": {"fire": 0.3, "melee": 0.6, "sail": 1.08},
+    "struck": {"fire": 0.0, "melee": 0.0, "sail": 0.0}
+  },
+  "tempers": {
+    "merchant": {"name": "商船水手", "shock_mult": 1.15, "rout_offset": 0, "strike_offset": -0.5, "elan": 0.5, "captain_mult": 1.0},
+    "pirate": {"name": "海寇", "shock_mult": 1.0, "rout_offset": 4, "strike_offset": 1.0, "elan": 1.5, "captain_mult": 1.5},
+    "navy": {"name": "水军", "shock_mult": 0.8, "rout_offset": -5, "strike_offset": 0.5, "elan": 1.0, "captain_mult": 1.0}
+  },
+  "temper_default": "merchant",
+  "type_temper": {
+    "sampan": "merchant",
+    "keel_boat": "merchant",
+    "fu_ship_medium": "merchant",
+    "canton_ship": "merchant",
+    "fu_ship_large": "merchant",
+    "divine_ship": "navy",
+    "sea_falcon": "navy",
+    "pirate_boat": "pirate"
+  },
+  "ai_profile_temper": {
+    "pirate": "pirate",
+    "patrol": "navy",
+    "default": "merchant"
+  },
+  "sides": {
+    "player": {"strike_offset": 1.0, "captain_can_fall": false},
+    "enemy": {"strike_offset": 0.0, "captain_can_fall": true}
+  },
+  "labels": {
+    "steady": "如常",
+    "shaken": "动摇",
+    "wavering": "思退",
+    "routing": "溃逃",
+    "struck": "降幡"
+  },
+  "hud": {
+    "prefix": "士气"
+  },
+  "causes": {
+    "surrounded": "陷围",
+    "ammo_out": "矢石尽",
+    "captain_down": "失主将",
+    "grappled": "被钩",
+    "hull_critical": "船将沉",
+    "heavy_losses": "折损过半",
+    "on_fire": "失火",
+    "immobile": "舵篷毁"
+  },
+  "notes": {
+    "player": {
+      "to_shaken": "舱面人声渐乱，有人回头看后梢。",
+      "to_wavering": "号令要喊两遍才有人动，还击稀了。",
+      "to_routing": "水手弃了舷边，争着去扯篷索，船头在掉转。",
+      "panic": "一声喊起，舱面的人先乱了，船头在掉转。",
+      "to_struck": "有人把降幡挂上了桅，舵工松了舵。",
+      "rally": "你喝住了人，舷边又站上了人手。",
+      "steady_again": "阵脚稳住了。",
+      "boarding_refused": "水手挤在舷边不肯过去，接舷作罢。",
+      "captain_down": "后梢的舵工倒了，一时没人喊号。"
+    },
+    "enemy": {
+      "to_shaken": "敌船上喊声乱了。",
+      "to_wavering": "敌船有人往舱里躲，还击稀了。",
+      "to_routing": "敌船转篷遁走。",
+      "panic": "敌船上一片乱喊，掉头便走。",
+      "to_struck": "敌船落帆，竖起降幡。",
+      "rally": "敌船头目喝住了人，船头又转了回来。",
+      "steady_again": "敌船重整了阵脚。",
+      "boarding_refused": "敌船贴近了又退开，没人肯跳帮。",
+      "captain_down": "敌船头目倒了，船上没了号令。",
+      "escaped": "敌船遁出海面，追之不及。",
+      "lead_lost": "敌头船一失，余船阵脚大乱。"
+    }
+  }
+}
