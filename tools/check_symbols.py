@@ -3880,6 +3880,28 @@ else:
         print(f"  ✗ {_m}")
     problems.append("标题页 / 开场没钉在 TitlePage")
 
+# 调试钩子 2 支真身钉在 DebugHooks（lane main12，口径同上面标题页的钉子）：Main 里每支只许是一行转发到 _DEBUG 的同名 static func，
+# 拆出件里须真有那支、Main 真 preload 了它。挪回 Main 再 `gen_main_splits --write` 由生成器判红（lane cs18）；这里再钉 preload 常量名与拆出件那支。
+_dh_src = open(os.path.join(SCRIPTS, "ui", "DebugHooks.gd"), encoding="utf-8").read()
+_dh_static = set(re.findall(r'^static\s+func\s+([A-Za-z_]\w*)\s*\(', _dh_src, re.M))
+_dh_raw_fn = func_bodies(open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read())
+_dh_bad = []
+for _dh_name in ("_debug_jump_port", "_debug_preview_ending"):
+    _dh_code = [ln for ln in _dh_raw_fn.get(_dh_name, "", forward_ok=True).split("\n") if ln.strip() and not ln.strip().startswith("#")]
+    _dh_fwd = _SPLIT_FWD.match(_dh_code[0]) if len(_dh_code) == 1 else None
+    if not (_dh_fwd and _dh_fwd.group(1) == "_DEBUG" and _dh_fwd.group(2) == _dh_name[1:]):
+        _dh_bad.append(f"Main.{_dh_name} 不是一行转发到 _DEBUG.{_dh_name[1:]}")
+    elif _dh_name[1:] not in _dh_static:
+        _dh_bad.append(f"DebugHooks.gd 缺 static func {_dh_name[1:]}")
+if re.search(r'^const _DEBUG := preload\("res://scripts/ui/DebugHooks\.gd"\)', open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read(), re.M) is None:
+    _dh_bad.append("Main 没有 const _DEBUG := preload(DebugHooks.gd)")
+if not _dh_bad:
+    print("  ✓ 调试钩子 2 支真身在 DebugHooks，Main 只留一行转发（lane main12）")
+else:
+    for _m in _dh_bad:
+        print(f"  ✗ {_m}")
+    problems.append("调试钩子没钉在 DebugHooks")
+
 # Lane AC：发现录列表与呈报确认改纪实短句；存档键、呈报顺序与赏格公式不动
 _ac_slips = _disc_main_fn.get("_setup_reporting", "")
 _ac_onrep = _disc_main_fn.get("_on_report_discovery", "")
@@ -4367,8 +4389,9 @@ if not _body_missed:
 # 没标、标的接收者认不出文件、标的与登记不符、标了却那一行没点到这个名字，都判红。
 NAMED_FUNCS = {
     "scripts/Main.gd": (
-        "_add_guild_join_slip", "_add_leave_button", "_attention_desc", "_begin_benches", "_end_benches", "_fit_rank",
-        "_guild_join_block", "_interior_lead", "_interior_title", "_lift_ledger", "_mount_status_strip",
+        "_add_guild_join_slip", "_add_leave_button", "_attention_desc", "_begin_benches", "_debug_jump_port",
+        "_debug_preview_ending", "_end_benches", "_fit_rank", "_guild_join_block", "_interior_lead", "_interior_title",
+        "_lift_ledger", "_mount_status_strip",
         "_on_apply_permit", "_on_berth_switch", "_on_borrow", "_on_buy_ship", "_on_buy_supplies", "_on_dismiss_crew",
         "_on_exam_sit", "_on_guild_join", "_on_hire_candidate", "_on_hire_crew", "_on_hire_to_min", "_on_invest_port",
         "_on_opening_finished", "_on_repair_hull", "_on_repay", "_on_report_discovery", "_on_rewatch_opening",

@@ -65,6 +65,8 @@ const SCRIPTS := [
 	"res://scripts/ui/ShipyardPage.gd",
 	# Lane main11 Main.gd 第十一刀拆出的标题页 / 开场
 	"res://scripts/ui/TitlePage.gd",
+	# Lane main12 Main.gd 第十二刀拆出的调试钩子（F11 跳港 / F12 预览了结）
+	"res://scripts/ui/DebugHooks.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",

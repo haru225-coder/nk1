@@ -138,6 +138,9 @@ const _YARD := preload("res://scripts/ui/ShipyardPage.gd")
 ## scripts/ui/TitlePage.gd（Lane main11 第十一刀拆出）；这里的 _play_opening / _on_opening_finished / _on_rewatch_opening /
 ## _setup_title_mode / _on_start_game_pressed 都是同名同签名一行转发，调用点与信号目标不变；start_game、title_button_connected 仍在这里。
 const _TITLE := preload("res://scripts/ui/TitlePage.gd")
+## 调试钩子（F11 跳港、F12 预览了结册页）的实现在 scripts/ui/DebugHooks.gd（Lane main12 第十二刀拆出）；这里的 _debug_jump_port /
+## _debug_preview_ending 都是同名同签名一行转发，F11 / F12 键位判断仍在 _unhandled_input。
+const _DEBUG := preload("res://scripts/ui/DebugHooks.gd")
 ## 活背景幅度：比引擎默认再收一档（正文底下的画不能晃得人头晕）
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
@@ -3232,41 +3235,12 @@ func _activate_first_choice() -> bool:
 ## 调试局跳港。第一次泉州（剧情九卡），再按福州（通用九卡），再按兴化回访。
 ## 设施页 current_scene_id 是 {港}_guild，要剥后缀，否则会误跳回泉州。
 func _debug_jump_port() -> void:
-	var here := current_scene_id
-	if not here.begins_with("city_"):
-		for suffix in FACILITY_SUFFIXES:
-			if here.ends_with(suffix):
-				here = here.trim_suffix(suffix)
-				break
-	if here == "quanzhou":
-		GameState.last_port = "fuzhou"
-		load_scene("fuzhou")
-		return
-	if here == "fuzhou":
-		GameState.last_port = "xinghua"
-		load_scene("xinghua")
-		return
-	GameState.last_port = "quanzhou"
-	load_scene("quanzhou")
+	_DEBUG.debug_jump_port(self)
 
 
 ## 调试局预览了结弹窗。沙盒攒到八万+占城太慢，云电脑点验用。
 func _debug_preview_ending() -> void:
-	GameState.chapter = 4
-	if GameState.money < 80000:
-		GameState.add_money(80000 - GameState.money)
-	GameState.peak_money = maxi(GameState.peak_money, 80000)
-	for pid in ["quanzhou", "xinghua", "fuzhou", "wenzhou", "zhangzhou", "penghu", "ryukyu", "mingzhou", "hakata", "jeju", "kagoshima", "guangzhou", "champa"]:
-		GameState.visit_port(pid)
-	if not GameState.has_flag("chen_line_open") and not GameState.has_flag("merchant_distance") and not GameState.has_flag("history_pressure_seen"):
-		GameState.set_flag("chen_line_open")
-	GameState.last_port = "champa"
-	var res := GameState.try_resolve_ending()
-	if res.get("resolved", false):
-		_show_chapter_dialog(res)
-	else:
-		log_msg("预览了结未触发。")
-	update_status_panel()
+	_DEBUG.debug_preview_ending(self)
 
 
 # ══ 以下为本地 main 的新增函数，合并时因所在区块让位云端而被丢，按「本地纯新增保留」原样补回（2026-09-25） ══
