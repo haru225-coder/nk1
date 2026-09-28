@@ -28,6 +28,12 @@ lane auditfix5 加三组：
 做法：把当前工作树的已跟踪文件（含未提交改动，`git stash create`，不动 stash 列表）检出到临时 worktree，逐格施变异、
 跑整道 `python3 tools/check_symbols.py`，比 rc 与「  ✗」行：期望的每条都得出现，期望外的一条也不许有。
 判红：任一格 rc 或 ✗ 行与期望不符；变异 / 旧口径补丁没落上（替换处数不对，说明源码改了、这支变异该跟着改）。
+往函数体里插行的变异按当前源码找真身（lane cs24，locate_body）：给的是 check_symbols 读的那支（Main.gd 的 _setup_shipyard），
+取到一行转发（func_body.forward_of，与十三节同一判据）就顺 preload 常量 / 同文件别名跟到真身再插；找不到 / 同名多处 /
+转发目标认不出文件 → 变异没落上、判红。lane main10 把 _setup_shipyard 拆去 ShipyardPage 后，原先按签名行直插 Main 仍「落上 1 处」
+——插进的是一行转发，F1–F4 连带一串转发判据的红（61e17bf–5d5920c 七笔全红，auditfix5 c020050 手改靶子才绿）；跟转发后
+下一刀再拆也不用手改。「零、靶子定位自检」每次先跑：临时目录里的合成样本逐格判落点（旧定位法落在转发上 / 新定位法落在真身），
+不跑 check_symbols、不要 worktree。
 只读主树：临时 worktree 跑完即删（`git worktree remove --force`）。一格 2–4 s，全套 31 格约一分钟。
 """
 import os, re, shutil, subprocess, sys, tempfile
@@ -37,6 +43,9 @@ ROOT = os.path.dirname(TOOLS)
 if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
     sys.path.insert(0, TOOLS)
     import gate_json; gate_json.maybe_json(__file__)
+
+sys.path.insert(0, TOOLS)
+from func_body import forward_of  # noqa: E402  判「一行转发」与 check_symbols 十三节同一份（lane cs17 / gd23）
 
 SYM = "tools/check_symbols.py"
 SELF = "tools/check_symbols_mutants.py"
@@ -62,8 +71,11 @@ def _write(wt, rel, text):
 
 
 def sub(wt, rel, pattern, repl, n=1):
-    """rel 里按正则替换，须恰好 n 处（n=None：至少 1 处）。"""
-    text = _read(wt, rel)
+    """rel 里按正则替换，须恰好 n 处（n=None：至少 1 处）。文件不在（改名 / 挪走）同算没落上。"""
+    try:
+        text = _read(wt, rel)
+    except OSError:
+        raise Miss(f"{rel} 不在（改名 / 挪走了？）")
     new, k = re.subn(pattern, repl, text, flags=re.M)
     if (n is None and k == 0) or (n is not None and k != n):
         raise Miss(f"{rel} 里 {pattern!r} 替换了 {k} 处，应 {'≥1' if n is None else n} 处")
@@ -92,6 +104,64 @@ def rename(wt, pattern, repl, skip=(), lines=None):
         raise Miss(f"全仓改名 {pattern!r} 一处没落上")
 
 
+def _func_re(name):
+    return re.compile(rf"^(?:static\s+)?func\s+{re.escape(name)}\s*\(", re.M)
+
+
+def _sig_end(text, at):
+    """at = 签名左括号之后；给签名行（可折行）行尾换行之后的偏移。签名同行带函数体的（`func x(): pass`）插不进，给 None。"""
+    depth, i = 1, at
+    while i < len(text) and depth:
+        depth += {"(": 1, ")": -1}.get(text[i], 0)
+        i += 1
+    colon, nl = text.find(":", i), text.find("\n", i)
+    if colon < 0 or nl < 0 or colon > nl or re.sub(r"#.*", "", text[colon + 1:nl]).strip():
+        return None
+    return nl + 1
+
+
+def locate_body(wt, rel, name, hops=4):
+    """按当前源码找 rel 里 name 的真身（lane cs24）：签名须恰好一处；体是一行转发（forward_of）就跟——`_K.fn(…)` 顺
+    `const _K := preload("res://…")` 到拆出件的 fn、不带点号的是同文件别名。给 (真身文件, 函数名, 插行偏移, 路径)；落不上抛 Miss。"""
+    trail = []
+    for _ in range(hops):
+        try:
+            text = _read(wt, rel)
+        except OSError:
+            raise Miss(f"{' → '.join(trail + [rel])}：文件不在")
+        heads = list(_func_re(name).finditer(text))
+        where = f"{rel}:{text.count(chr(10), 0, heads[0].start()) + 1} {name}" if len(heads) == 1 else f"{rel} {name}"
+        trail.append(where)
+        if len(heads) != 1:
+            raise Miss(f"{' → '.join(trail)}：func {name}( 有 {len(heads)} 处，应 1 处")
+        body = re.compile(_func_re(name).pattern + r".*?(?=\n(?:static\s+)?func\s|\Z)", re.M | re.S).search(text).group(0)
+        fwd = forward_of(body, text)
+        if not fwd:
+            at = _sig_end(text, heads[0].end())
+            if at is None:
+                raise Miss(f"{' → '.join(trail)}：签名认不出行尾 / 同行带函数体，插不进")
+            return rel, name, at, trail
+        recv, _, fn = fwd.rpartition(".")
+        if recv:
+            pm = re.search(rf'^const\s+{re.escape(recv)}\b[^=\n]*=\s*preload\("res://([^"]+)"\)', text, re.M)
+            if not pm:
+                raise Miss(f"{' → '.join(trail)}：是一行转发到 {fwd}，{recv} 不是 preload 常量、认不出真身在哪个文件")
+            rel = pm.group(1)
+        name = fn
+    raise Miss(f"{' → '.join(trail)}：转发超过 {hops} 层")
+
+
+LANDED = {}  # (文件, 函数名) -> 真身路径（「三、靶子落点」打印）
+
+
+def inject(wt, rel, name, line):
+    """往 rel 里 name 的真身（locate_body）函数体第一行前插 `\t<line>`。"""
+    got, fn, at, trail = locate_body(wt, rel, name)
+    LANDED[(rel, name)] = trail
+    text = _read(wt, got)
+    _write(wt, got, text[:at] + "\t" + line + "\n" + text[at:])
+
+
 # ---- _node_block 一支（lane cs12 护栏） ----------------------------------------------------------------------
 def n_hide(name):
     return lambda wt: sub(wt, "scenes/Main.tscn", r'^(\[node name="%s"[^\n]*\n)' % name, r"\1visible = false\n")
@@ -115,10 +185,9 @@ _ADV = r"(?<!Calendar\.)\badvance_days\b"
 
 
 def f_yard_step(fn):
-    # lane main10 起 _setup_shipyard 真身在 ShipyardPage.setup_shipyard（Main 只留一行转发，往转发里加一行转发判据先红）
-    return lambda wt: sub(wt, "scripts/ui/ShipyardPage.gd",
-                          r"^(static func setup_shipyard\(main: Control, port_id: String\) -> void:\n)",
-                          r"\1\tGameManager.%s(1)\n" % fn)
+    # 靶子写 check_symbols 读的那支（yard_fn = main_src 的 _setup_shipyard）；lane main10 起 Main 只留一行转发、真身在
+    # ShipyardPage.setup_shipyard，locate_body 顺转发跟过去（往转发里插一行，转发判据先红——61e17bf–5d5920c 就是这么红的）
+    return lambda wt: inject(wt, "scripts/Main.gd", "_setup_shipyard", "GameManager.%s(1)" % fn)
 
 
 def f_rename_fix_reds(wt):
@@ -203,7 +272,7 @@ def f_untag_yard(wt):
 
 
 def f_new_homonym(wt):
-    # 日后别的文件也定义了同名函数：Economy 加一支 record_discovery，:3422 那条 simulate_run 反向断言没标
+    # 日后别的文件也定义了同名函数：Economy 加一支 record_discovery，simulate_run 那条 `any(tok in sim_src …)` 反向断言没标
     sub(wt, "scripts/core/Economy.gd", r"\Z", "\n\nfunc record_discovery() -> void:\n\tpass\n")
 
 
@@ -263,7 +332,7 @@ CASES = [
      []),
     ("NF 标注", "T1", "同名多处定义的 advance_days，船屋那行标注掉了，现行", [f_untag_yard], 1, [NF_UNTAGGED]),
     ("NF 标注", "T2", "同 T1，不查 NF 标注（auditfix5 前）", [f_untag_yard, f_pre_af5_tag], 0, []),
-    ("NF 标注", "T3", "日后别处也定义 record_discovery（:3422 那行没标），现行", [f_new_homonym], 1, [NF_HOMONYM]),
+    ("NF 标注", "T3", "日后别处也定义 record_discovery（simulate_run 那条反向断言没标），现行", [f_new_homonym], 1, [NF_HOMONYM]),
     ("NF 标注", "T4", "同 T3，不查 NF 标注（auditfix5 前）", [f_new_homonym, f_pre_af5_tag], 0, []),
     ("NF 标注", "T5", "标注的接收者写错（GameManagr）", [f_bad_recv], 1, [NF_BADRECV, NF_UNTAGGED]),
     ("NF 标注", "T6", "标注写在没点到这个名字的行上", [f_stale_tag], 1, ["的 NF 标注 GameManager.advance_days：这一行自扫没点到"]),
@@ -279,6 +348,75 @@ PAIRS = [("_node_block（lane cs12）", "N3", "N2", _IDLE), ("NAMED_FUNCS (文�
          ("NF 标注：日后出现同名（lane auditfix5）", "T4", "T3", "新同名一出现，原先不含糊的字面量就含糊了，照样绿")]
 
 
+# ---- 零、靶子定位自检（lane cs24）：合成样本，不跑 check_symbols、不要 worktree --------------------------------------
+_DRILL_FILES = {
+    "scripts/Main.gd": (
+        'extends Control\nconst _P := preload("res://scripts/ui/P.gd")\nconst _TINT := {"a": 1}\n\n'
+        "func _a(x: int) -> void:\n\t_P.a(self, x)\n\n"
+        "func _b() -> void:\n\t_b_real()\n\nfunc _b_real() -> void:\n\tpass\n\n"
+        "func _c(x: int) -> void:\n\t_Q.c(self, x)\n\n"
+        "func _d(x: int) -> void:\n\t_P.d2(self, x)\n\n"
+        "func _e(x: int) -> void:\n\tGameManager.e(x)\n\n"
+        "func _f(x: int) -> void:\n\t_P.gone(self, x)\n\n"
+        "func _g() -> void:\n\tpass\n\nfunc _g() -> void:\n\tpass\n\n"
+        "func _h(\n\tx: int,\n\ty: int\n) -> void:  # 签名折行\n\t_P.h(self, x, y)\n\n"
+        "func _i() -> void: pass\n"),
+    "scripts/ui/P.gd": (
+        'const _R := preload("res://scripts/ui/R.gd")\n\n'
+        "static func a(main: Control, x: int) -> void:\n\tprint(x)\n\n"
+        "static func d2(main: Control, x: int) -> void:\n\t_R.d3(main, x)\n\n"
+        "static func h(main: Control, x: int, y: int) -> void:\n\tprint(x + y)\n"),
+    "scripts/ui/R.gd": "static func d3(main: Control, x: int) -> void:\n\tprint(x)\n",
+}
+# (编号, 说明, Main.gd 里的函数名, 期望落点 (文件, 函数名) / None = 须判「变异没落上」且报错含该字样)
+DRILL = [
+    ("K1", "一行转发 `_P.a(self, x)` → 拆出件", "_a", ("scripts/ui/P.gd", "a"), None),
+    ("K2", "拆出件再转发一层 `_R.d3(main, x)`", "_d", ("scripts/ui/R.gd", "d3"), None),
+    ("K3", "同文件别名 `_b_real()`", "_b", ("scripts/Main.gd", "_b_real"), None),
+    ("K4", "签名折行的转发", "_h", ("scripts/ui/P.gd", "h"), None),
+    ("K5", "转发到 `_Q.c`，_Q 不是 preload 常量", "_c", None, "不是 preload 常量"),
+    ("K6", "转发到 autoload `GameManager.e(x)`", "_e", None, "不是 preload 常量"),
+    ("K7", "拆出件里没有转发目标", "_f", None, "func gone( 有 0 处"),
+    ("K8", "同名两处定义", "_g", None, "func _g( 有 2 处"),
+    ("K9", "函数不在", "_nope", None, "func _nope( 有 0 处"),
+    ("K10", "签名同行带函数体", "_i", None, "插不进"),
+]
+
+
+def drill(root):
+    """给 problems 条目列表。K0：旧定位法（按签名行直插，c020050 前 f_yard_step 的写法）落上 1 处、落的却是一行转发。"""
+    for rel, text in _DRILL_FILES.items():
+        os.makedirs(os.path.dirname(os.path.join(root, rel)), exist_ok=True)
+        _write(root, rel, text)
+    bad = []
+    text = _read(root, "scripts/Main.gd")
+    k = len(re.findall(r"^func _a\(x: int\) -> void:\n", text, re.M))
+    body = re.search(r"^func _a\(.*?(?=\n(?:static\s+)?func\s|\Z)", text, re.M | re.S).group(0)
+    if k == 1 and forward_of(body, text):
+        print(f"  ✓ K0 旧定位法（按签名行直插 Main.gd _a）：落上 {k} 处——落的是一行转发 {forward_of(body, text)}（61e17bf–5d5920c 的形状）")
+    else:
+        print(f"  ✗ K0 合成样本没复现旧形状（签名 {k} 处、转发 {forward_of(body, text)!r}）")
+        bad.append("K0 合成样本失效")
+    for cid, what, name, want, why in DRILL:
+        try:
+            got, fn, at, trail = locate_body(root, "scripts/Main.gd", name)
+        except Miss as e:
+            if want is None and why in str(e):
+                print(f"  ✓ {cid} {what}：变异没落上（{e}）")
+            else:
+                print(f"  ✗ {cid} {what}：期望落在 {want}，实得没落上——{e}")
+                bad.append(f"{cid} 靶子定位与期望不符")
+            continue
+        src = _read(root, got)
+        ok = want == (got, fn) and _func_re(fn).search(src[:at]) and not src[at:].startswith(("func", "static func"))
+        if ok:
+            print(f"  ✓ {cid} {what}：落在 {' → '.join(trail)}")
+        else:
+            print(f"  ✗ {cid} {what}：期望 {'没落上' if want is None else want}，实得落在 {' → '.join(trail)}")
+            bad.append(f"{cid} 靶子定位与期望不符")
+    return bad
+
+
 def _run_case(wt, snap, muts):
     if _git("reset", "-q", "--hard", snap, cwd=wt).returncode:
         raise RuntimeError("临时 worktree 复位失败")
@@ -291,18 +429,27 @@ def _run_case(wt, snap, muts):
 
 
 def main():
-    if _git("rev-parse", "--git-dir").returncode:
+    try:
+        in_git = _git("rev-parse", "--git-dir").returncode == 0
+    except OSError as e:  # PATH 里没有 git（lane cs24 前这里抛 FileNotFoundError、退 1）
+        print(f"  ✗ 找不到 git（要建临时 worktree）：{e}")
+        return 2
+    if not in_git:
         print("  ✗ 不在 git 仓库里（要建临时 worktree）")
         return 2
-    snap = _git("stash", "create").stdout.strip() or _git("rev-parse", "HEAD").stdout.strip()
     tmp = tempfile.mkdtemp(prefix="nk1-symbols-mutants-")
+    print("=" * 68)
+    print("零、靶子定位自检（合成样本：往函数体插行的变异顺一行转发找真身，落不上判红）")
+    print("=" * 68)
+    problems, rcs = drill(os.path.join(tmp, "drill")), {}
+    print()
+    snap = _git("stash", "create").stdout.strip() or _git("rev-parse", "HEAD").stdout.strip()
     wt = os.path.join(tmp, "wt")
     add = _git("worktree", "add", "--detach", "-q", wt, snap)
     if add.returncode:
         print(f"  ✗ 建临时 worktree 失败：{add.stderr.strip()}")
         shutil.rmtree(tmp, ignore_errors=True)
         return 2
-    problems, rcs = [], {}
     try:
         print("=" * 68)
         print("一、逐格变异（临时 worktree 跑整道 check_symbols，比 rc 与「  ✗」行）")
@@ -343,6 +490,12 @@ def main():
             else:
                 print(f"  ✗ {name}：{old} rc={rcs.get(old)}，{new} rc={rcs.get(new)}（应 0 → 1）")
                 problems.append(f"空转对照不成立：{name}")
+        print()
+        print("=" * 68)
+        print("三、靶子落点（往函数体插行的变异，按当前源码顺转发找到的真身）")
+        print("=" * 68)
+        for (rel, name), trail in sorted(LANDED.items()):
+            print(f"  ✓ {rel} {name}：{' → '.join(trail)}")
     finally:
         _git("worktree", "remove", "--force", wt)
         shutil.rmtree(tmp, ignore_errors=True)
