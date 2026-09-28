@@ -115,14 +115,12 @@ static func identity_line(ch: Dictionary, with_origin := true) -> String:
 
 
 ## 生卒：「1232—」「1232—1277」；只知一头时写「卒于 1274」「生于 1236」；都不详返回空串。
-## 卒年到了次年（Calendar.year > 卒年）或终局了结后才写——宝祐三年第一次见林阿舶，名下不该写着「卒于 1274」；
-## 卒年当年也不写：陈瓒死在 1277 冬，正月就写「卒于 1277」是透底；崖山在二月，陆秀夫、张世杰正月不该先写卒年。
-## 这里只管生卒一行；人物志正文按段另管（陆、张 1279 段的投海、覆舟用月份键 "1279-04"，崖山卡关了才露）。
+## 卒年到了才写（died_known），或终局了结后写——宝祐三年第一次见林阿舶，名下不该写着「卒于 1274」。
 ## 主角另算：只有他确实死了的那条世界线（PROTAGONIST_DEATH_ENDINGS）才写卒年，其余结局他都还活着。
 static func life_line(ch: Dictionary) -> String:
 	var born = ch.get("born")
 	var died = ch.get("died")
-	if died != null and not (GameState.is_ended() or Calendar.year > int(died)):
+	if died != null and not (GameState.is_ended() or died_known(ch)):
 		died = null
 	if str(ch.get("id", "")) == PROTAGONIST_ID and not (GameState.ended in PROTAGONIST_DEATH_ENDINGS):
 		died = null
@@ -133,6 +131,20 @@ static func life_line(ch: Dictionary) -> String:
 	if died == null:
 		return "生于 %d" % int(born)
 	return "%d—%d" % [int(born), int(died)]
+
+
+## 卒年此刻写不写（未了结时）。characters.json 可选 died_ym "YYYY-MM"：到了那一月才写，取人物志文本层露出死讯的
+## 同一月（陆秀夫、张世杰的崖山卡开到 1279-03，投海、覆舟的段键是 "1279-04"，卒年也从 1279-04 起写，
+## 不再小传写着投海、生卒一行只有「生于 1236」）。没有 died_ym 的按次年正月：卒年当年不写——
+## 陈瓒死在 1277 冬，正月就写「卒于 1277」是透底。
+static func died_known(ch: Dictionary) -> bool:
+	var died = ch.get("died")
+	if died == null:
+		return false
+	var ym := ym_index(str(ch.get("died_ym", "")))
+	if ym > 0:
+		return Calendar.year * 12 + Calendar.month >= ym
+	return Calendar.year > int(died)
 
 
 ## 五维的一字简称（迷你条用）：航 / 商 / 武 / 学 / 望。

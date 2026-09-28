@@ -415,7 +415,7 @@ check("characters_codex.json" in art_src, "CharacterArt 未接人物志上屏文
 # 新增字段必须先在这里归类，UI 直读的原稿键必须落在「上屏 / 结构」两类里，否则门禁失败。
 ONSCREEN_BAN = re.compile(CODEX_META.pattern + r"|placeholder|TODO|WIP|FIXME|pipeline|LLM|ChatGPT|大模型")
 CHAR_ONSCREEN = {"name", "alt_names", "courtesy", "title", "origin", "personality", "look", "lines"}
-CHAR_STRUCT = {"id", "faction", "traits", "relations", "born", "died", "tier", "chapters", "attrs",
+CHAR_STRUCT = {"id", "faction", "traits", "relations", "born", "died", "died_ym", "tier", "chapters", "attrs",
                "portrait", "portrait_before", "portrait_status", "sources", "historical"}  # 键、数值、枚举，不作正文上屏
 CHAR_DRAFT = {"bio", "bio_short", "portrait_src", "portrait_note"}
 CODEX_ONSCREEN = {"bio", "short", "lines", "title", "courtesy", "alt", "look", "personality", "annal"}
@@ -461,6 +461,12 @@ _codex_doc = load("characters_codex.json") if os.path.isfile(codex_path) else {"
 for c in _chars_doc.get("characters", []):
     unk = set(c) - CHAR_ONSCREEN - CHAR_STRUCT - CHAR_DRAFT
     check(not unk, f"characters.json {c.get('id', '?')} 有未归类字段 {sorted(unk)}：先在 L1 契约里定上屏 / 结构 / 原稿")
+    # died_ym（CharacterArt.died_known）：卒年从哪一月起写。须是 YYYY-MM、要有 died，年份落在卒年或次年
+    if "died_ym" in c:
+        _dm = _YM.match(str(c.get("died_ym", "")))
+        _dd = c.get("died")
+        check(_dm is not None and isinstance(_dd, int) and _dd <= int(_dm.group(1)) <= _dd + 1,
+              f"characters.json {c.get('id', '?')} 的 died_ym {c.get('died_ym')!r} 须为卒年（{_dd}）或次年的 YYYY-MM")
 for cid, e in _codex_doc.get("characters", {}).items():
     unk = set(e) - CODEX_ONSCREEN
     check(not unk, f"characters_codex.json {cid} 有未登记字段 {sorted(unk)}：上屏文本层字段须进 CODEX_ONSCREEN 受查")

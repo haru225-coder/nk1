@@ -2589,6 +2589,7 @@
       "origin": "涿州范阳",
       "born": null,
       "died": 1279,
+      "died_ym": "1279-04",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -2653,6 +2654,7 @@
       "origin": "楚州盐城（幼居镇江京口）",
       "born": 1236,
       "died": 1279,
+      "died_ym": "1279-04",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -2711,6 +2713,7 @@
       "origin": "台州天台",
       "born": 1213,
       "died": 1275,
+      "died_ym": "1275-09",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -3645,6 +3648,7 @@
       "origin": "蒙古",
       "born": 1209,
       "died": 1259,
+      "died_ym": "1259-08",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -3758,6 +3762,7 @@
       "origin": "日本相模镰仓",
       "born": 1227,
       "died": 1263,
+      "died_ym": "1263-11",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -3877,6 +3882,7 @@
       "origin": "绍兴府",
       "born": 1240,
       "died": 1274,
+      "died_ym": "1274-07",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -4006,6 +4012,7 @@
       "origin": "临安",
       "born": 1269,
       "died": 1278,
+      "died_ym": "1278-05",
       "historical": true,
       "tier": "historical",
       "chapters": [
