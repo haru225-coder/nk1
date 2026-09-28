@@ -2929,6 +2929,8 @@ func _make_shore_shut(fac: Dictionary) -> Button:
 	if tip_key == "market" and not Economy.is_market_open(current_scene_id):
 		var shut_line := _market_shut_line(current_scene_id, false)
 		if _contract_due_here(current_scene_id):
+			# 门字写明「交货」：关着的门一排里只有这扇点得进，不靠悬停才知道
+			btn.text = "%s・交货" % btn.text
 			btn.tooltip_text = "%s\n%s" % [shut_line, MARKET_SIDE_DOOR]
 			btn.set_meta("side_door", true)
 			btn.pressed.connect(func() -> void:

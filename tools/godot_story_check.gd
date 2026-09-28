@@ -1322,7 +1322,7 @@ func _v0928_hanjiang_check(main: Node) -> void:
 		var row: Node = main._shore_band().get_node_or_null("ShoreShut")
 		if row != null:
 			for b in row.get_children():
-				if b is Button and (b as Button).text == "牙行":
+				if b is Button and (b as Button).text.begins_with("牙行"):
 					return b as Button
 		return null
 	var c_good := "lacquerware"
@@ -1341,8 +1341,8 @@ func _v0928_hanjiang_check(main: Node) -> void:
 	Flt.add_cargo(c_good, c_qty, 10.0)
 	main.load_scene("xinghua")
 	var side: Button = shut_market.call()
-	_check(side != null and not ("city_market" in main.shore_hand) and side.tooltip_text.find("委办") >= 0,
-		"围城 + 在身委办送兴化：牙行仍在「未开」一排、不占三门，悬停写明收委办货（「%s」）" % (side.tooltip_text.replace("\n", "⏎") if side != null else "无钮"))
+	_check(side != null and not ("city_market" in main.shore_hand) and side.text.find("交货") >= 0 and side.tooltip_text.find("委办") >= 0,
+		"围城 + 在身委办送兴化：牙行仍在「未开」一排、不占三门，门字写交货、悬停写明收委办货（「%s」／「%s」）" % [side.text if side != null else "无钮", side.tooltip_text.replace("\n", "⏎") if side != null else ""])
 	if side != null:
 		side.pressed.emit()
 	var c_panel: Node = main.find_child("ContractPanel", true, false)
@@ -1373,8 +1373,8 @@ func _v0928_hanjiang_check(main: Node) -> void:
 	var other: Button = shut_market.call()
 	if other != null:
 		other.pressed.emit()
-	_check(other != null and main.current_scene_id == "xinghua" and main._latest_log().find("门闸") >= 0,
-		"委办交货地不在兴化：闭门的牙行点不进，只记门闸一句（页 %s，「%s」）" % [main.current_scene_id, main._latest_log()])
+	_check(other != null and other.text == "牙行" and main.current_scene_id == "xinghua" and main._latest_log().find("门闸") >= 0,
+		"委办交货地不在兴化：闭门的牙行门字照旧、点不进，只记门闸一句（页 %s，「%s」）" % [main.current_scene_id, main._latest_log()])
 	GS.contract = {}
 	# 海口不是城：海口牙行闭门页不写「城中」（09-29 复核）
 	GS.last_port = "xinghua_harbor"
