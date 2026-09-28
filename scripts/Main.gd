@@ -4345,8 +4345,8 @@ func _siege_lin_hua() -> void:
 		GameState.siege_add("grain", -lost)
 		GameState.set_flag("cao_opened")
 		# 只作铺垫，城还在、林华也还在：缒城出降、曹澄孙开东门都是城破那夜的事（_siege_fall 按 cao_opened 写，过场第 2 镜同旗换句）。
-		# 不写天数、不写「当夜」，日历没动，玩家这一天还能接着打第三阵
-		log_msg("城门落了闸。城里人心惶惶，官仓前挤了一场，丢了%s石米。林华没再请命，在垛口那捆缒绳边站了一会儿。东门下，有人看见通判曹澄孙转了几回。" % _cn_num(lost))
+		# 不写天数、不写「当夜」，日历没动，玩家这一天还能接着打第三阵。顶栏一行约容 57 字，这句压在 52 字内，曹澄孙那半句不被截掉
+		log_msg("城门落了闸，人心一乱，官仓前挤抢，丢了%s石米。林华在垛口缒绳边站了一会儿。东门下，通判曹澄孙转了几回。" % _cn_num(lost))
 		load_scene(current_scene_id)
 	)
 	choices_container.add_child(stay)
