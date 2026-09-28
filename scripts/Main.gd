@@ -2121,7 +2121,7 @@ func _setup_residence_chen(port_id: String) -> void:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.add_theme_color_override("font_color", Color(0.65, 0.9, 0.7))
 		choices_container.add_child(l)
-	elif Calendar.year >= CHEN_ZAN_FROM_YEAR and _chen_zan_alive():
+	elif Calendar.year >= CHEN_ZAN_FROM_YEAR and _chen_zan_alive() and _chen_zan_stake_open():
 		var b := Button.new()
 		if GameState.fame >= CHEN_ZAN_MIN_FAME:
 			b.text = "族叔陈瓒愿入船股一分（得 %d 钱，乡土 +5）" % CHEN_ZAN_STAKE
@@ -2140,6 +2140,18 @@ func _setup_residence_chen(port_id: String) -> void:
 
 	choices_label.visible = true
 	_add_leave_button(port_id)
+
+
+## 陈瓒入船股只在兴化第一段 besieged 起点之前出（从战况表推，不写死月份）：
+## 围城起他在城里募兵守城、倾家财起兵，不再拿钱入你的船股。生死另归 _chen_zan_alive 管。
+func _chen_zan_stake_open() -> bool:
+	var war: Dictionary = GameManager.get_port_by_id("xinghua").get("war", {})
+	var keys: Array = war.keys()
+	keys.sort()
+	for ym in keys:
+		if str(war[ym]) == "besieged":
+			return "%04d-%02d" % [Calendar.year, Calendar.month] < str(ym)
+	return true
 
 
 # ── 酒馆 ────────────────────────────────────────────

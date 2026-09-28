@@ -639,8 +639,16 @@ func _route_check() -> void:
 	# S4：玉湖陈宅「族叔陈瓒愿入船股」——陈瓒死于兴化再陷（战况表第二段 besieged 的尽头），死后不再出现
 	var zan_falls: Array = main._xinghua_fall_yms()
 	_check(zan_falls.size() >= 2, "兴化战况表有首守城破与再陷两个城破时点（%s）" % [zan_falls])
-	# 月份从战况表推，不写死：起股那年、首守城破当月（那是陈文龙的城）、再陷前一月该有；再陷当月、次年、1285 该没有
+	# 月份从战况表推，不写死：起股那年、首守城破当月（那是陈文龙的城）、再陷前一月「陈瓒还活着」；再陷当月、次年、1285 已死。
+	# 09-28 起船股另只在兴化第一段 besieged 起点之前出（围城起陈瓒在城里募兵守城）：活着但已过起点的几格期望「没有」（细则见 _v0928_hanjiang_check）
 	var zan_cases: Array = [[main.CHEN_ZAN_FROM_YEAR, 6, true], [1285, 5, false]]
+	var zan_stake_until := "9999-99"
+	var zan_war_keys: Array = GM.get_port_by_id("xinghua").get("war", {}).keys()
+	zan_war_keys.sort()
+	for zk in zan_war_keys:
+		if str(GM.get_port_by_id("xinghua")["war"][zk]) == "besieged":
+			zan_stake_until = str(zk)
+			break
 	if zan_falls.size() >= 2:
 		var fp: PackedStringArray = str(zan_falls[0]).split("-")
 		zan_cases.append([int(fp[0]), int(fp[1]), true])
@@ -660,8 +668,9 @@ func _route_check() -> void:
 		for zb in main.choices_container.get_children():
 			if zb is Button and (zb as Button).text.find("陈瓒愿入船股") >= 0:
 				zan_btn = true
-		_check(zan_btn == bool(zc[2]),
-			"玉湖陈宅 %d-%02d%s「陈瓒愿入船股」（再陷 %s）" % [zc[0], zc[1], "有" if zc[2] else "没有", zan_falls[1] if zan_falls.size() >= 2 else "?"])
+		var zan_want: bool = bool(zc[2]) and ("%04d-%02d" % [zc[0], zc[1]]) < zan_stake_until
+		_check(zan_btn == zan_want,
+			"玉湖陈宅 %d-%02d%s「陈瓒愿入船股」（再陷 %s，陈瓒%s；船股只到围城起点 %s 前）" % [zc[0], zc[1], "有" if zan_want else "没有", zan_falls[1] if zan_falls.size() >= 2 else "?", "在" if zc[2] else "已死", zan_stake_until])
 	_lin_hua_check(main)
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
