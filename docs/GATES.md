@@ -1,6 +1,6 @@
 # 门禁总表（GATES）
 
-每轮 lane 收尾都要跑的门禁、各自判什么、红了长什么样、怎么机读。
+每轮 lane 收尾都要跑的门禁、各自判什么、红了长什么样、怎么机读；新门禁怎样才算活的（入册 / 必跑 / 自证 / 跟号）见 §五。
 机读开关 `--json`：Python 门禁由 `tools/gate_json.py` 统一实现（纯 stdlib）；GDScript 门禁（smoke / compile / story / p7 / patrol 与全部接 `shot_gate` 的截图探针）另有 `tools/gate_report.gd` 原生实现（lane g2，见 §二末）。**不加开关时每道门禁的人读输出与退出码一字不变**。
 
 - Godot：4.6.3，下文写 `godot`，须在 PATH 上（本机装在 `~/.local/bin/godot`；Python 侧调引擎的先认 `$GODOT`）；工作目录为仓库根，命令一律 `--path .`，不写本机绝对路径（lane gd22，`RefsHostPath` 守）。
@@ -354,23 +354,23 @@ python3 tools/check_decision_refs.py
 
 ### 19. gates_md（本文件 §一 的自检）
 - 读：`一、注册表`（`tools/gate_json.py --list` 能出、注册的脚本都在、用 `ShotGate.finish_shots` 收尾的截图脚本全入册且 TAG / 张数 / 目录读得到、目录都走 `ShotGate.out_dir`，接 `shot_gate` 的脚本（含只借它挂压帧的 letterbox_signal / qa_yard_transition）代码行里都调了 `ShotGate.frame_pressure`（lane gd18，`NK1_PROBE_SLOW_MS` 压帧一个口径），`tools/` 代码里不写死默认截图根、patrol 读 `NK1_SHOT_DIR`（lane pg3）；附属自检的所属门禁在册、开关 / 判词字样还在其源码里；CI 步骤引用的 `tools/…` 都在）→ `二、docs/GATES.md`（生成表格列数整齐；§一、§四 两个标记块逐字一致，红时打首处差异的「文档 / 注册表」两行；§二「批量巡检」标记块逐字一致且在 §二 里；§三 `### N.` 编号对得上；§三「一键人读全跑」与 `.claude/todo.md`「## 验证」代码块拆出的命令（续行拼回、按 `&&` 切、去行尾 `# 注释`）都与必跑档 `cmd` 逐条同序）。
-- 改法：**只改 `tools/gate_json.py` 的 `REGISTRY` / `SHOT_PROBES` / `SUBCHECKS` / `CI_STEPS`**，再 `python3 tools/gates_md.py --write`；块外（§二、§三、§四的标题）是手写，编号小节随注册表增删要补，一键跑命令段与 `.claude/todo.md` 验证段随必跑档改（这两处 `--write` 不代写）。
+- 改法：**只改 `tools/gate_json.py` 的 `REGISTRY` / `SHOT_PROBES` / `SUBCHECKS` / `CI_STEPS`**，再 `python3 tools/gates_md.py --write`；块外（§二、§三、§四的标题）是手写，编号小节随注册表增删要补，一键跑命令段与 `.claude/todo.md` 验证段随必跑档改（这两处 `--write` 不代写）。新门禁入册、升降档的全套步骤（含 gates_md 管不到的 CI_STEPS / README / 在途口径）见 §五.1 / §五.2。
 - 常见红因：手改了标记块；改了必跑档只改 §三 没改 `.claude/todo.md` 验证段（gd4 查出的 patrol 缺 `DISPLAY=:2` 即此类）；新截图脚本接了 `shot_gate` 却没进 `SHOT_PROBES`；某道门禁挪走 / 改名（如 `verify_narrative` 挪 `tools/legacy/`）没改注册表；加了门禁没补 §三 小节；改了 `--suggest` / `--regen` 等开关名或判词没改 `SUBCHECKS[].marks`；升降必跑档没同步 §三 一键跑命令段。
 
 ### 20. RefsMacPath（`tools/check_mac_paths.py`，Mac 专属绝对路径防回归）
 - 读：`零、模式自检`（lane auditfix2，每次跑都先过：`✓ 正向样本 N 行都被认出` / `✓ 反向样本 N 行都不命中` / `✓ 独立审计原反例…整段扫出 2/2 行`；`SAMPLES` 里有一行漏认或 `CLEAN` 里有一行误报即 `✗`，模式表回退 / 改窄了在这里先红，不等真文件写进来）→ `一、白名单条目都有效`（`ALLOW` 每条：文件在且已跟踪、头 5 行还有登记的横幅 / 回指注字样）→ `二、git 已跟踪文件里的 Mac 路径`（白名单文件逐条 `命中 N 行，登记 N 行（理由）`，本脚本自扫两条 `✓ tools/check_mac_paths.py：自扫按行排除 PATTERNS 块 10 行`（lane gd21）、`…SAMPLES 块 N 行`（lane auditfix2）；末条 `白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS / SAMPLES 块除外）`）；红时白名单外的命中逐行列 `文件:行  原文  ← 命中串`。读工作树内容（已暂存的新文件也扫），二进制跳过；本脚本自身也扫（lane gd21）：只按行排除 `PATTERNS = [` 到 `]` 之间的条目行，块里每行须是一条 `("名字", r"正则", "理由")` 且行数等于条目数，夹进注释 / 别的字符串即 `✗ tools/check_mac_paths.py：自扫按行排除 PATTERNS 块…——块里第 N 行不是一条…`；`SAMPLES = [` 块同理（每行须是一条 `r"样本行"`，且每行都得被零节认出，塞不进漏网的路径），块外（docstring、ALLOW、判词）写了 Mac 路径照常按白名单外命中判红；未跟踪文件有命中只记 `⚠`（别的 lane 没提交的不染红共用树，同 check_docs_index）。模式 10 条及每条为什么算 Mac 专属写在脚本 `PATTERNS`（lane auditfix2 补：家目录写成 `$HOME` / `${HOME}` / `"$HOME"` / `Path.home()` 拼接的资料库目录，Intel Homebrew 前缀下的 opt / Caskroom 目录）；`~/tmp/…` 草稿区、走查署名、安装提示里的 `brew install`、下载 URL 里的 `macos` 字样不算。拼接也认（lane cs20）：每行先按原文对模式，不中再用 `tools/path_scan.py` 的 `fold` 把「字面量 / 家目录」之间的 `+`、`.path_join(…)`、`os.path.join(…)`、`Path(…) / …`、`% …` 折成一段再对一遍——GDScript / Java / Python 取 HOME 环境变量（`OS.get_environment` / `System.getenv` / `os.getenv` / `os.environ`）、`Path.home()`、f-string 里的家目录都折成 `$HOME`，所以家目录派生再拼资料库目录、字面量拆开写都中；变量名不追。`fold` 与 §三.21 共用一份。本道不分代码 / 注释：注释、文档串里的 Mac 路径照红（Mac 路径在活跃文件里没有该写的场合，留档走 `ALLOW`），这是与 §三.21「仓外根在注释里放行」刻意不同之处。
-- 口径：lane doc7 / doc8 / gd13 清完后剩下的命中只有 `tools/legacy/` 5 支（带「勿运行」横幅）与 2 份带日期的历史稿（头部回指注），都登记在 `ALLOW`，按命中行数卡死——往留档里再加一行也红。加白名单条目须写理由，且只限留档 / 历史稿；活跃脚本与文档一律改成本机口径（env → PATH → 取不到明确报错，见 `build_ui_textures.py` 的 `NK1_RSVG`、`tour.sh` 的 `GODOT`）。lane gd21 升进必跑档、排一键跑末条（其后 lane cs21 的 RefsHostPath、lane auditfix1 的 check_decision_refs 又排在它后面；原为 lane 加跑档 + CI §四 步骤 5，步骤 5 随之删掉，免得 CI 跑两遍）：什么时候「写了外部路径」自己判不准——照抄 Mac 上的命令、默认根最容易顺手带进来，正是不会想起加跑的时候；跑一次 <1s（本机实测见 lane gd21 Verify），只要 python3 + git，只读不写盘，未跟踪文件只记 `⚠`，共用树里别的 lane 没提交的不染红。
+- 口径：lane doc7 / doc8 / gd13 清完后剩下的命中只有 `tools/legacy/` 5 支（带「勿运行」横幅）与 2 份带日期的历史稿（头部回指注），都登记在 `ALLOW`，按命中行数卡死——往留档里再加一行也红。加白名单条目须写理由，且只限留档 / 历史稿；活跃脚本与文档一律改成本机口径（env → PATH → 取不到明确报错，见 `build_ui_textures.py` 的 `NK1_RSVG`、`tour.sh` 的 `GODOT`）。lane gd21 升进必跑档、排一键跑末条（其后 lane cs21 的 RefsHostPath、lane auditfix1 的 check_decision_refs 又排在它后面；原为 lane 加跑档 + CI §四 步骤 5，步骤 5 随之删掉）。升格判据（自己判不准 / 1 秒量级 / 只读不写盘 / 未跟踪只 `⚠`）见 §五.2；本道：「写了外部路径」自己判不准——照抄 Mac 上的命令、默认根最容易顺手带进来；实测 0.23 s（lane gd21 Verify）。零节的规格即 §五.3 的规则表型自证，由来见 §五.5 例二。
 - 常见红因：照抄 Mac 上的命令 / 默认根进脚本或文档；清掉了留档里的几处却没改 `ALLOW` 的行数；挪 / 删了留档文件没删条目。
 
 ### 21. RefsHostPath（`tools/check_host_paths.py`，本机 Linux 绝对路径防回归）
 - 读：`零、样本自检`（lane cs21，每次跑都先过，与 §三.20 的「零」同规格：`✓ 正向样本 N 行在 .gd 代码行 / 注释行 / .md 三处都判红` / `✓ 反向样本 N 行三处都不判红` / 每条仓外根一行 `✓ 根：owner 代码行绿；非 owner 代码行、拼接写法红；非 owner 行尾注释、.py 文档串、.md 绿`；`SAMPLES` 有一行在某处没判红、`CLEAN` 有一行在某处判了红、owner 口径有一处不对即 `✗`，并注明漏在哪一处——模式表回退 / 改窄了、`offending` 的 owner 判断或 `path_scan` 的注释切法 / 拼接折叠改坏了在这里先红，不等真文件写进来）→ `一、仓外根登记（ROOTS）都有效`（每条：owner 已跟踪、代码行里还写着这个默认根、还读登记的环境变量）→ `二、git 已跟踪文件里的本机路径`（每个仓外根一行 `· 根：文档 / 注释 N 处（不判红；理由）`；本脚本自扫一条 `✓ tools/check_host_paths.py：自扫按行排除 SAMPLES 块 N 行`；末条 `登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 SAMPLES 块除外）`）；红时逐行列 `文件:行  原文  ← 命中串`。读工作树内容（已暂存的新文件也扫），二进制跳过；未跟踪文件只记 `⚠`（同 §三.20）。本脚本自身也扫：模式写成占位不会自命中，只放过 `ROOTS` 登记行；`SAMPLES = [` 块按行排除（lane cs21），块里每行须是一条 `r"样本行"` 且行数等于条目数，夹进注释 / 别的行即 `✗ tools/check_host_paths.py：自扫按行排除 SAMPLES 块…——块里第 N 行不是一条 r"样本行"；整份照扫`，块里每行又都得在零节判红，塞不进漏网的路径。
-- 口径：模式 2 条——`/home/<用户>`（家目录，写 `~/…` 或走 PATH / `$GODOT`）、`/workspace/<目录>`（本机工作区；仓库根本身永不登记，命令一律 `--path .`，否则在隔离 worktree / 软链里照抄会悄悄跑主树）。登记的仓外根只有两条：截图证据根 `/workspace/nk1-qa-shots`（owner `tools/shot_gate.gd` 的 `DEFAULT_SHOT_ROOT`，`NK1_SHOT_DIR` 覆盖）与简报目录 `/workspace/nk1-agent-briefs`（owner `tools/check_decision_refs.py`，`NK1_BRIEFS` 覆盖）；文档与注释里写它们不红，代码段只许 owner 写。代码 / 注释按位置切（lane cs20，切法在 `tools/path_scan.py` 的 `comment_spans`）：.gd / .py / .sh / .gdshader 每行在注释起点切开，切后只有代码段算代码——行尾注释里写仓外根不红（改前整行算代码、偏严）；字符串里的 `#`、shell 的 `$#` / `${#a}` 不起注释；.py 各级文档串、GDScript 独占语句的三引号串（块注释写法）整段算文档，赋给变量的三引号串仍是代码；.sh 的 heredoc 正文不认（照代码判，偏严）；其余文件整份算文档。ROOTS 一节同口径：owner 的默认根只剩行尾注释里写着即判条目失效。拼接也认（lane cs20，与 §三.20 共用 `path_scan.fold`）：`"/<根>" + "/<目录>"`、`.path_join(…)`、`os.path.join(…)`、`Path(…) / …` 折成一段再对模式，字面量拆开写照样命中；家目录取法折成 `$HOME`，与 `~/…` 同算合规（所以 HOME 派生只在 §三.20 那边可能红）。与 §三.19 gates_md「`tools/` 代码里不写死默认截图根」同向，本道扫全仓、两条根都管。Godot 节点路径 `/root/…`、`~/.local/…`、`/tmp/…` 不算。lane cs21 升进必跑档、排一键跑 RefsMacPath 之后（原为 lane 加跑档 + CI §四 步骤 5（lane gd22），步骤 5 随之删掉，免得 CI 跑两遍）：理由同 §三.20——什么时候「写了本机路径」自己判不准，照抄本机命令、`--path` 写仓库根最容易顺手带进来；跑一次 <1s（本机实测见 lane cs21 Verify），只要 python3 + git，只读不写盘，未跟踪文件只记 `⚠`，共用树里别的 lane 没提交的不染红。
+- 口径：模式 2 条——`/home/<用户>`（家目录，写 `~/…` 或走 PATH / `$GODOT`）、`/workspace/<目录>`（本机工作区；仓库根本身永不登记，命令一律 `--path .`，否则在隔离 worktree / 软链里照抄会悄悄跑主树）。登记的仓外根只有两条：截图证据根 `/workspace/nk1-qa-shots`（owner `tools/shot_gate.gd` 的 `DEFAULT_SHOT_ROOT`，`NK1_SHOT_DIR` 覆盖）与简报目录 `/workspace/nk1-agent-briefs`（owner `tools/check_decision_refs.py`，`NK1_BRIEFS` 覆盖）；文档与注释里写它们不红，代码段只许 owner 写。代码 / 注释按位置切（lane cs20，切法在 `tools/path_scan.py` 的 `comment_spans`）：.gd / .py / .sh / .gdshader 每行在注释起点切开，切后只有代码段算代码——行尾注释里写仓外根不红（改前整行算代码、偏严）；字符串里的 `#`、shell 的 `$#` / `${#a}` 不起注释；.py 各级文档串、GDScript 独占语句的三引号串（块注释写法）整段算文档，赋给变量的三引号串仍是代码；.sh 的 heredoc 正文不认（照代码判，偏严）；其余文件整份算文档。ROOTS 一节同口径：owner 的默认根只剩行尾注释里写着即判条目失效。拼接也认（lane cs20，与 §三.20 共用 `path_scan.fold`）：`"/<根>" + "/<目录>"`、`.path_join(…)`、`os.path.join(…)`、`Path(…) / …` 折成一段再对模式，字面量拆开写照样命中；家目录取法折成 `$HOME`，与 `~/…` 同算合规（所以 HOME 派生只在 §三.20 那边可能红）。与 §三.19 gates_md「`tools/` 代码里不写死默认截图根」同向，本道扫全仓、两条根都管。Godot 节点路径 `/root/…`、`~/.local/…`、`/tmp/…` 不算。lane cs21 升进必跑档、排一键跑 RefsMacPath 之后（原为 lane 加跑档 + CI §四 步骤 5（lane gd22），步骤 5 随之删掉）。升格判据见 §五.2，与 §三.20 同；本道：「写了本机路径」自己判不准，照抄本机命令、`--path` 写仓库根最容易顺手带进来；实测墙钟 0.70–1.02 s（lane cs21 Verify）。零节与 §三.20 同规格（§五.3）。
 - 常见红因：照抄本机命令把仓库根写成 `--path /workspace/<仓库>`（改 `--path .`）；文档写引擎绝对路径 `/home/<用户>/.local/bin/godot`（写 `godot` / `~/.local/bin/godot`）；新探针在代码里拼 `/workspace/nk1-qa-shots/…`（改走 `ShotGate.out_dir`）；挪了 owner 文件没改 `ROOTS`；改了 `PATTERNS` / `offending` / `tools/path_scan.py` 没跑通零节（改窄了就补 `SAMPLES` 看它红，放宽了就补 `CLEAN` 看它不误报）。
 
 ### 22. check_decision_refs（`tools/check_decision_refs.py`，拍板清单「文件:行」跟号）
 - 读：逐处问题一行 `✗ NOFILE` / `✗ OOR` / `✗ DRIFT L<清单行> 文件:行：…该处内容变了；可跟号 → :新号（diff / 同文件原文 / 函数名 / 跨文件原文）` 或 `跟不上，要人工：…`（附所在函数现在在哪、同文件最像的行）/ `✗ 待核 L<清单行>`；末两行 `锚 X：引用 N 处（仓外 brief M 处只查越界），跳过「原文作」K 处；NOFILE/OOR 0，DRIFT 0（可自动跟号 0、要人工 0），待核标记 0` + `结果：全部通过`。比的是清单头部锚（「行号：……按 HEAD 某提交」）那个提交里的原文和**工作树**里同一行号的原文，所以没提交的改动也会让它红（同 check_symbols）；`--show` 逐处印原文回读，`--since REV` 自证改号前后指的是同一段（MISMATCH = 号改错了或有意换了所指，后者在 Verify 里写明）。仓外 brief（`lane-*.md` / `COORDINATION*.md`，`$NK1_BRIEFS`）只查越界，目录不在只记 `⚠`。
 - 改号自证（lane auditfix1，默认跑）：`改号自证 [对 HEAD 版 / 对最近改清单那笔的父版]（旧锚 A → 新锚 B）：对上 N 对，…MISMATCH 0…`。为什么要这步：锚 = HEAD 时，清单里的号写歪了，锚里那行和工作树同号那行照样一致，上面的 DRIFT 看不出来（本片实测：`:1942` 改成 `:1941` 改前 rc=0）。所以和上一版清单（工作树改了没提交 → HEAD 版；没改 → 最近改清单那个提交的父版）按 `--since` 的口径配对，要「旧锚旧号那段 == 本版锚本版号那段」；不等、而旧那段原文在新处文件里还找得到 → `✗ MISMATCH …旧锚那段原文在 B 里还在 文件:行——行号改歪了？`。旧那段原文已找不到（所指那段自己被改写了，`--fix` 给「跟不上」的多是这种）只记 `⚠ 改指未验`，不判红；确是有意把引用换指到别处的，在那处引用后括注「原文作 `:旧号`」认账。
-- 口径：lane dec3 立、dec4 加四层跟号与 `--fix`，lane auditfix1 入册即必跑、排一键跑末条（原先不在注册表里，自 cs14 `a8ff603` 起主干一直红、到 `abb3f05` 积了 DRIFT 47 没人看见，独立审计 audit1 点名）。跑一次约 1s，只要 python3 + git，不带 `--fix` 只读不写盘。修法：`python3 tools/check_decision_refs.py --fix`——跟得上的改号、头部锚改成 HEAD，跟不上的插「〔跟号待核：锚 X 里是 文件:行〕」（照线索回读、改号、删标记）；`--fix` 要求所引文件与 HEAD 一致，所以**改了所引文件的 lane 先提交代码，再 --fix、另提一笔清单**（拆 Main 的与 `gen_main_splits.py --write` 补哈希同一笔），两笔同一次落地，一键跑以第二笔之后的 rc 为准。
+- 口径：lane dec3 立、dec4 加四层跟号与 `--fix`，lane auditfix1 入册即必跑、排一键跑末条（原先不在注册表里，自 cs14 `a8ff603` 起主干一直红、到 `abb3f05` 积了 DRIFT 47 没人看见，独立审计 audit1 点名）。跑一次约 1s（auditfix1 实测 0.5–0.6 s），只要 python3 + git，不带 `--fix` 只读不写盘；入册缺位的教训见 §五.5 例一。修法：`python3 tools/check_decision_refs.py --fix`——跟得上的改号、头部锚改成 HEAD，跟不上的插「〔跟号待核：锚 X 里是 文件:行〕」；`--fix` 要求所引文件与 HEAD 一致。谁来跟（挪了被引行的那一片自己跟，不交下一片）、两笔式落地（代码 → `--fix` 另提清单，拆 Main 的与 `gen_main_splits.py --write` 同一笔）、人工回读口径，统一见 §五.4。
 - 常见红因：拆 Main / 往 check_symbols、verify_economy 里加断言挪了清单所引的行（DRIFT，`--fix` 多半全自动跟上）；所引那段自己被改写（cs10 收紧正则、cs14 改取体写法这类，`--fix` 给「跟不上，要人工」，按线索找同一条断言的新行）；`--fix` 打的「待核」标记没删；清单头部锚被手改成不存在的提交。
 
 ### 23. check_symbols_mutants（`tools/check_symbols_mutants.py`，反向断言空转的变异对照）
@@ -419,3 +419,122 @@ python3 tools/check_docs_index.py --check
 | 3 | GATES.md 与注册表一致 | gd3 | python3 + git | `python3 tools/gates_md.py` | `结果：全部通过` | 有人手改了 §一 / §二批量巡检 / §四 生成块、改了注册表没 `--write`、§三 或 `.claude/todo.md` 验证段的一键跑命令与必跑清单不符，或注册的脚本挪走了 |
 | 4 | docs 索引与文件一致 | doc3 / doc4 | python3 + git | `python3 tools/check_docs_index.py --check` | `结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`） | `✗` 行、退 1：`MISSING` = 提交了 docs 下的 .md 没在 docs/README.md 补一行；`DEAD` = 索引链的文件挪走 / 改名 / 删了；`DUP` = 同一份文档链了两次。修法：改 docs/README.md |
 <!-- GATES-CI:END -->
+
+## 五、门禁生命周期：入册 / 必跑 / 自证 / 跟号（lane doc10）
+
+§一–§四 写的是「有哪几道、怎么跑、红了什么样」；本节写**一道门禁怎样才算活的**：入册、必跑、自证、跟号四件都做到才算。缺一件，门禁本身做实了也没人会看见它红——独立审计 audit1 的结论就是「实质缺口在门禁的生命周期而非门禁本身」。规矩从哪来见 五.5 的两例事故。本节和 §三 各小节、`.claude/todo.md` 验证段、`COORDINATION.md` 头部模板、`COORDINATION_INDEX.md` 头部口径与 §七 ④（后两份在简报目录，不在 git 里）有重合的地方，**以本节为准**，逐条裁决见 五.6。
+
+### 五.1 入册：进注册表、定档
+
+- **什么算门禁**：能判红绿（退出码 0 / 非 0）、判什么写得出来、要别的 lane 据它下结论的，都进 `tools/gate_json.py` 的 `REGISTRY`。不进注册表的就是专项探针，只在自己的 lane 里跑，别人不认它的绿（§一「不算门禁」表末行）。**脚本入库不等于入册**：没入册的门禁，它的 rc 没人会看（五.5 例一）。
+- **入册一次做齐**（前三步漏了哪步，gates_md 就在哪步红）：
+  1. `REGISTRY` 条目写全 `id` / `tier` / `kind` / `file` / `judge` / `green` / `red`；lane 档写 `when`，step / no 档写 `why`；开关与附属自检进 `SUBCHECKS`（`marks` 写判词字样，改名了 gates_md 红）；CI 专属步骤进 `CI_STEPS`。
+  2. `--json`：Python 门禁接 `gate_json` 的三行转接（check_decision_refs 在 auditfix1 的接法），Godot 门禁接 `tools/gate_report.gd`（§二末）。
+  3. `python3 tools/gates_md.py --write` 重生成 §一 / §二批量 / §四；§三 手写小节 `### N. <id>`，编号跟注册表顺序（gates_md 判）。
+  4. 定的是 must，另做 五.2 的升格同步。
+  5. Verify 贴入册证据：`grep -n <id> tools/gate_json.py docs/GATES.md` 有命中；`python3 tools/gates_md.py` rc=0；带上它的一键跑（lane 档跑 `when` 那条命令）rc=0。
+- **四档与 CI 名单**：档由 `REGISTRY` 头注定义，只有 must / step / lane / no 四档。口头说的「ci 档」其实是 `CI_STEPS` 名单，跟档是两回事，一个步骤可以既是 lane 档又在 CI 名单里（check_sidecars、gates_md 就是）。
+
+| 档 | 含义 | 判据 | 现例（数目以 §一「档」列为准） |
+|---|---|---|---|
+| must | 每轮必跑，进一键跑 | 见 五.2 | 十道 Python + smoke / compile / story / p7 / patrol |
+| step | 每轮必跑、最先跑，不判红绿 | 别的门禁依赖它的副作用 | import（lane gd2 由 editor 降级） |
+| lane | 按 lane 内容加跑 | `when` 要能**按「改了哪些路径 / 哪类东西」客观判定**；lane 自己判不准该不该跑的，不许放 lane 档，要么升 must，要么别入册 | verify_save_robustness、截图门禁、check_sidecars、gates_md、check_symbols_mutants 等 |
+| no | 不算门禁 | `why` 写原因；legacy 条目强制超时（lane gd9） | verify_narrative、p7_smoke、tour |
+| `CI_STEPS`（不是档） | 只适合放 CI 跑：会写盘（`--regen`），或要干净工作树 / 导入后的状态 | 本仓没有 CI 文件，§四 只是建议，所以**只挂在 `CI_STEPS` 上的步骤等于没人跑**：CI 步骤必须另有 `REGISTRY` 条目（给出 lane 档和 `when`），或者挂在某道门禁的 `SUBCHECKS` 下，写明什么时候手跑 | check_sidecars / gates_md（lane 档 + CI）；builtin_api 漂移（check_symbols 的 `--regen` 附属自检） |
+
+### 五.2 必跑：什么时候升 must
+
+- **下面三条同时成立就升**。先例两次：lane gd21 升 RefsMacPath、lane cs21 升 RefsHostPath，理由逐字相同；lane auditfix1 让 check_decision_refs 入册即 must，也是同一理由：
+  1. **触发条件自己判不准**：lane 自己说不清这次改动该不该跑它。Mac 路径、本机路径恰恰是照抄命令、照抄默认根时顺手带进来的，这时候正想不起来要加跑；拍板清单引了哪几行，挪行的人多半不知道。
+  2. **快**：跑一次在 1 秒量级。实测：RefsMacPath 0.23 s（gd21）；RefsHostPath 墙钟 0.70–1.02 s（cs21，负载约 20 / 8 核）；check_decision_refs 0.5–0.6 s（auditfix1）。对照：一键跑其余各道合计约 60 s，patrol 一道就占 24 s。
+  3. **只读、不写盘**：只要 python3 + git。会改写入库文件的开关（`--regen` / `--write` / `--fix`）永远不进一键跑，只当修法用。
+  另有一条前提：**不许扩大误红面**。未跟踪文件只记 `⚠`（同 check_docs_index），共用工作树里别的 lane 没提交的东西不许把它染红。
+- **判定不升的，写清理由和上界**（gd21 brief 的「二选一，要理由」）。例：check_symbols_mutants 要约半分钟、要 git worktree，只在动护栏时才有意义 → lane 档；tour.sh 全集 348 s，产物是给人看的 sheet → no 档。
+- **升格要同步五处**：
+  1. 注册表 `tier` 改 must，然后 `gates_md --write`（§一 必跑句、§二批量块、§四第 0 步随之更新）；
+  2. §三「一键人读全跑」段；
+  3. `.claude/todo.md` 验证段（与第 2 处同序；gates_md 逐条比这两处，漏一处即红：gd21 / cs21 的接线变异 W1 / W2）；
+  4. 原先在 `CI_STEPS` 里的删掉，免得 CI 跑两遍（gd21、cs21 各删了一次步骤 5）；
+  5. README 的「N 道」，以及在途 lane 的口径：在 `COORDINATION_INDEX.md` 头部补〔口径注〕（cs21 的做法；历史行照当时口径，不回改）。
+  gates_md 只查得到第 1–3 处，第 4、5 处靠人。**降档也是这五处**，还要写明理由：为什么现在自己判得准了。
+- **升 must 的前提是 main 尖上它是绿的**。入册时就是红的，先在同一片里把现存的红收到 0 再升（auditfix1 同片做到 DRIFT 47 → 0）。否则一键跑从此恒红，谁也分不清哪条红是新的。
+
+### 五.3 自证：门禁自己会红
+
+- **最低要求**：每道新门禁、每次收紧，Verify 里都要贴**反向变异**：把它声称能抓的缺陷造回去，现行版 rc=1；在父版上做同一变异 rc=0，这就是「改前误绿、改后判红」。审计 audit1 判「做实 / 半实」用的就是这个标准。变异跑完原样复原，`cmp` 或 porcelain 0 为证。
+- **规则表型门禁**（按模式表 / 登记表判的）另外**必须自带样本自检**：每次跑都先过这一节，不另开开关。规格照 check_mac_paths 的「零、模式自检」（lane auditfix2）和 check_host_paths 的「零、样本自检」（lane cs21），两份同规格：
+  1. 正向样本 `SAMPLES` 必须全判红，**事故原反例原样收进去**（mac 版头两行就是 audit1 追加进 tour.sh 的那两行）；反向样本 `CLEAN` 必须全不判红，边界例要有（`/usr/local/optional`、`${HOME_RATE}`、占位 `/home/<用户>`、行尾注释里写登记根）。
+  2. 样本走扫真文件的同一条路（`hits_text` / `judge`），不另写一套判法。host 版的样本放进 `.gd` 代码行、注释行、`.md` 三处各判一次；登记根按 owner / 非 owner / 拼接 / 行尾注释 / 文档串逐格判。
+  3. 脚本扫自己，只按行排除模式块和样本块，块形状卡死：每行必须是一条条目，行数 = 条目数；形状不对就整份照扫（fail closed）。块里每行又都必须在零节判红，所以塞不进漏网的路径（gd21 / auditfix2 / cs21）。
+  4. 对照：删一条模式，或把模式退回旧版，零节必须先红（auditfix2 R3、cs21 M1；本片在 `ff82b17` 上复跑见 五.5 例二）。
+- **护栏型门禁**（内置不了样本的）用外置变异对照，例如 check_symbols_mutants（lane auditfix3）：护栏退回旧口径那一格必须 rc=0；现行那一格必须 rc=1，而且只有护栏那一行红。
+- **放行口子要写到期判据**。`⚠ 只记`、`-` 照认这类放行，必须写明什么时候失效，否则就是永久敞口。例：cs13 在 main_splits 里对 `-` 的放行，main8 落地后一直绿着，直到 auditfix1 收成「只在 HEAD 就是拆出 commit 时照认」（auditfix1 变异 V10 / V11）。
+
+### 五.4 跟号：改了被引文件，就把清单跟上
+
+- **对象**：`docs/待策划拍板清单_2026-09-28.md` 反引号里的「文件:行」。check_decision_refs 只管这一份，读法见 §三.22。
+- **谁跟：挪了被引行的那一片自己跟**。清单跟号算在任何 lane 的范围内，不另派 decide 片。auditfix1 起它是必跑，每片都会跑到；「改了被引文件」（拆 Main，改 check_symbols / verify_economy / godot_smoke 之类）这个条件现在决定的是**谁来修**，不再决定跑不跑。
+- **怎么跟**（dec4 的 `--fix` 四层跟号 + auditfix1 的改号自证 + main10 / main11 的两笔式）：
+  1. **代码先提交**。`--fix` 要求所引文件与 HEAD 一致，没提交就拒绝（dec4 T1）。
+  2. `python3 tools/check_decision_refs.py --fix`：跟得上的改成新号，头部锚改成 HEAD；跟不上的插「〔跟号待核：锚 X 里是 文件:行〕」。
+  3. **人工回读**，口径照 auditfix1 那 4 处：
+     - 每处待核按线索（所在函数的新位置、同文件最像的行），`sed -n` 逐行对照旧锚那段和新号那段；认定是同一条断言、同一段内容后再改号、删标记。改法和依据写进 Verify：`清单行 | 旧锚号 | 现号 | 依据`。
+     - `--fix` 只改带行号的 token，不动描述文字（如「改 `scripts/Main.gd` `_setup_yamen`」）。照它印出的「旧 → 新」对照表回读、手改（main10 改 EA6-4 / EA9-1）。
+     - 有意换指的，在那处引用后括注「原文作 `:旧号`」认账。
+  4. **默认跑到 rc=0**：DRIFT 0、待核 0、改号自证 MISMATCH 0。auditfix1 起默认模式就和上一版清单比，不必另跑 `--since`；只有清单跨了好几笔、要对某个基线比时，才加 `--since <改前 HEAD>`。`⚠ 改指未验` 不判红，下次改清单时自然消失。
+  5. **清单单独一笔**，显式 pathspec。拆 Main 的，`gen_main_splits.py --write` 回填拆出 commit 也放进这一笔（main10 `c9d0e14`、main11 `ff82b17`）。两笔一次 CAS 落地。代码那笔单看是红的，因为锚必须是真实存在的 commit；一键跑以第二笔之后的 rc 为准。
+- **不许**：把 DRIFT 留在 main 上交给下一片；手改头部锚、不跑 `--fix`；为了绿删引用。
+
+### 五.5 规矩从哪来：两例事故
+
+**例一：check_decision_refs 入库了没入册，DRIFT 挂了 1 小时 39 分（缺的是入册 + 必跑）**
+- dec3 `b432862`（05:26）入库时 rc=0；下一笔 cs14 `a8ff603`（05:28:45）起就是 rc=1。注册表和 GATES.md 里都没有它，一直到 auditfix1 `7f266d4`（07:06:50）才入册，`c20b3f1`（07:07:35）收到 DRIFT 0。main 上一共红了 18 笔（`a8ff603`…`7f266d4`）。
+- 看见了也没人修：`COORDINATION.md` 第 500–519 行里有 8 条 SETTLED 行（cs14 / cr3 / cs11 / main8 / cs16 / gd22 / cr4 / cs17）记了它是红的，多半注一句「非必跑」就收了。**没进必跑，就没有哪一片有义务把它修绿**。
+- 复现（lane doc10 在隔离 worktree 里逐个检出实跑）：
+
+| 提交 | `grep -c check_decision_refs tools/gate_json.py` | `python3 tools/check_decision_refs.py` |
+|---|---|---|
+| `b432862` dec3 | 0 | rc=0，DRIFT 0 |
+| `a8ff603` cs14 | 0 | rc=1，DRIFT 6 |
+| `26bca91` gd14 | 0 | rc=1，DRIFT 47 |
+| `08ca2a4` cs17（auditfix1 的基） | 0 | rc=1，DRIFT 47（可自动跟号 43、要人工 4） |
+| `7f266d4` auditfix1 入册 | 2 | rc=1，DRIFT 47（入册那笔还没收清单） |
+| `c20b3f1` auditfix1 清单 | 2 | rc=0，DRIFT 0 |
+| `ff82b17` main11（本节写成时） | 2 | rc=0，DRIFT 0 |
+
+- 留下的规矩：五.1「入库不等于入册」、五.2「入册时就是红的，先收到 0 再升」、五.4「谁挪谁跟，不许交下一片」。
+
+**例二：check_mac_paths 模式缺口，升了必跑也没人复核（缺的是自证）**
+- doc9 `442b2f8`（05:24）立 RefsMacPath，10 条模式，但家目录写成 `$HOME` / `${HOME}` 再拼用户资料库目录的写法、Intel Homebrew 前缀下的 opt 目录都不在表里（资料库分支只认字面 `~`）。gd21 `b9a9040`（06:27）把它升进必跑时，只验了自扫和插一行 Mac 家目录路径（变异 M1–M7），没有复核模式覆盖。缺口一直开到 audit1 拿反例打出来，auditfix2 `7181c7f`（06:56）补模式、加零节；期间 main 上 16 笔都带着这个缺口。
+- 复现（审计原命令：往 `tools/art/tour.sh` 末尾追加两行再跑门禁；那两行 auditfix2 已原样收作 `SAMPLES` 头两行，这里从那一笔取出，免得本文自己写 Mac 路径被 RefsMacPath 判红。lane doc10 在隔离 worktree 里逐个检出实跑，跑完 `git checkout -- tools/art/tour.sh`，复原后 rc=0）：
+  ```sh
+  git show 7181c7f:tools/check_mac_paths.py | sed -n '/^SAMPLES = \[/{n;p;n;p;q}' | sed -E 's/^    r"(.*)",$/\1/' >> tools/art/tour.sh
+  python3 tools/check_mac_paths.py
+  ```
+
+| 提交 | 反例 rc | 输出 |
+|---|---|---|
+| `442b2f8` doc9 立门禁 | 0 | `结果：全部通过` |
+| `b9a9040` gd21 升必跑 | 0 | `结果：全部通过` |
+| `abb3f05`（= `7181c7f^`） | 0 | `结果：全部通过` |
+| `7181c7f` auditfix2 | 1 | `✗ tools/art/tour.sh：2 行 Mac 专属路径，不在白名单…`；`结果：2 项问题` |
+| `ff82b17` 本节写成时 | 1 | 同上（扫 685 个文件） |
+
+- 自证对照（`ff82b17` 上实跑，改完即复原）：
+  - 把 PATTERNS 的两行退回 `442b2f8` 版：零节自己红，rc=1，`✗ 正向样本 19 行都被认出（10 条模式）；漏认：<审计原反例两行> | …`（共 8 行），外加 `✗ 独立审计原反例…整段扫出 0/2 行`。这一刀不用等真文件写进来就能抓到。
+  - check_host_paths 删掉 `/home/<用户>` 模式：rc=1，`✗ 正向样本 13 行在 .gd 代码行 / 注释行 / .md 三处都判红（1 条模式）；漏判：…`。
+- 留下的规矩：五.3「规则表型门禁必须自带样本自检，原反例原样收进去」；五.2 升格时要连覆盖一起复核，不能只验「它会跑」。
+
+### 五.6 与既有口径的对齐（重复的合并、矛盾的裁决）
+
+| 出处 | 原说法 | 处置 |
+|---|---|---|
+| §三.20 / §三.21 口径段 | 各写一遍升格理由（自己判不准 / <1 s / 只读不写盘 / 未跟踪只 ⚠） | **合并**：理由统一收到 五.2，两小节只留本道的实测数和「见 §五.2」 |
+| §三.22 口径段 | 「先提交代码，再 `--fix`、另提一笔清单，两笔同一次落地」 | **合并**：流程收到 五.4，§三.22 只留修法命令和「见 §五.4」 |
+| §三.19 改法 | 「只改注册表再 `--write`；§三 小节、一键跑段、todo 验证段随必跑档改」 | 不矛盾，是 五.1 第 3 步、五.2 第 1–3 处的机械部分；补一句指向 §五 |
+| `.claude/todo.md` 验证段 | 16 行命令，与 §三 一键跑同序 | 一致（gates_md 逐条比）；段后补一行指向 §五 |
+| `COORDINATION.md` 头部模板「清单跟号」句（lane dec4） | 「改了被引文件的收尾**必跑**…；跟不上又不在本 lane 范围的，SETTLED 行写 DRIFT N 交 decide 片」 | **裁决**：auditfix1 起它是 must，「交 decide 片」等于让 main 尖恒红，这一条**作废**，改为「谁挪谁跟、清单算在本 lane 范围」（五.4）。「必跑」的条件也改成「每片都跑，挪了被引行的负责修」。`--since <改前 HEAD>` MISMATCH 0 改为默认跑 MISMATCH 0（`--since` 可选）。模板句已按此改写 |
+| `COORDINATION_INDEX.md` 头部「拍板清单跟号（lane dec4 口径）」 | 同上两句 | 同上裁决；那份索引由 cr 片重生成、各 lane 不改写，所以只补〔口径注 · lane doc10〕，下一个 cr 片重生成时带上 |
+| `COORDINATION_INDEX.md` §七 ④（lane cr3） | 「按 ✗ 行的提示改号，并把锚改成自己的 commit；清单不在范围的，SETTLED 行写 DRIFT N 交下一个 decide 片」 | 前半句早已被 dec4 的 `--fix` 取代（dec4 口径里写了「§七 ④ 的做法不变，只是改号不必再手算」），后半句同上**作废**；补〔口径注〕 |
+| `COORDINATION.md` 头部「门禁 = Python 7 + editor / smoke / compile / story / p7 / patrol」 | 09-27 的口径 | 已过时。道数以 §一 注册表为准（现在一键跑 16 条：导入步骤 + 十五道）；补〔口径注〕，不改写 |

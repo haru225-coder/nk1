@@ -47,3 +47,4 @@ python3 tools/check_mac_paths.py
 python3 tools/check_host_paths.py
 python3 tools/check_decision_refs.py
 ```
+上面这段与 `docs/GATES.md` §三「一键人读全跑」逐条同序（`python3 tools/gates_md.py` 判）；新门禁入册、升降档、样本自检、改了被引文件后的清单跟号，规矩见 `docs/GATES.md` §五。
