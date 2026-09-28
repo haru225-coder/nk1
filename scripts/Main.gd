@@ -3446,8 +3446,12 @@ func _check_absent_from_xinghua() -> bool:
 	if not (Calendar.year > 1276 or (Calendar.year == 1276 and Calendar.month >= 12)):
 		return false
 
-	# 在兴化海口结算的（海口候进腊月、腊月进了海口）：人就在城外，消息不是「在别处听到的」
-	var lead := "消息是从城里传出来的。你就在城外的海口。" if current_scene_id == "xinghua_harbor" else "消息是在别处听到的。"
+	# 在兴化海口结算的（海口候进腊月、腊月进了海口）：人就在城外，消息不是「在别处听到的」。
+	# 立 weigui_at_harbor 旗，结局过场第 1 镜同句按旗换（cutscenes.json ending_weigui 的 if_flag / unless_flag）
+	var at_harbor := current_scene_id == "xinghua_harbor"
+	if at_harbor:
+		GameState.set_flag("weigui_at_harbor")
+	var lead := "消息是从城里传出来的。你就在城外的海口。" if at_harbor else "消息是在别处听到的。"
 	_show_notice_dialog(
 		"未归", "兴化・景炎元年十二月",
 		"%s
