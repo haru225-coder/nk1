@@ -525,8 +525,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				_board_enemy(ne[0])
 		elif event.keycode == KEY_B or event.keycode == KEY_ESCAPE:
-			if boarding:
-				return # 白刃已钩住，不能逃
+			if boarding or _board_win_pending:
+				return # 白刃已钩住不能逃；末艘已夺下、题签在演，等它带 boarded 出战
 			get_viewport().set_input_as_handled()
 			var chance := Voyage.flee_success_chance()
 			var ok := randf() < chance
