@@ -630,8 +630,10 @@ func _find_label_text(node: Node, needle: String) -> String:
 ## ── 林华伏笔（拍板清单 DESIGN1-8 ①，comp 线 09-28）──
 ## 修前 lin_hua 不在 crew.json：crew_history 只由 Crew.hire 写，hire 先查 candidate_def，查无此人即返回，
 ## 所以 Main._siege_lin_hua 的 known 恒假，「你的缆绳系得好」一钮和城破时 lin_hua_reminded 那句都是死分支。
-## 修后：第二章起泉州酒馆可雇（舵工）；雇过即记 crew_history；景炎元年秋（1276-10，leave_from）史实辞船，
+## 修后：第二章起泉州酒馆可雇（舵工）；雇过即记 crew_history；景炎元年十月（1276-10，leave_from）史实辞船，
 ## 酒馆不再列名，crew_history 照留。守城第三阵前，雇过的多一钮，没雇过的照旧只有「让他去」「不去」。
+## 评审后补（comp 线评审第 4、10 条）：离辞船不足两个月（1276-09 起）酒馆就不再列他；十月初一先下船、后发饷，不扣他的十月俸；
+## 跳年跨过 1276-10，册页的跳年摘要里有他辞船那一句。
 func _lin_hua_check(main: Node) -> void:
 	var Crw: Node = root.get_node("Crew")
 	GS.from_dict({})
@@ -643,6 +645,12 @@ func _lin_hua_check(main: Node) -> void:
 	_check(not _has_id(Crw.candidates_at("quanzhou"), "lin_hua"), "第一章泉州酒馆不列林华")
 	GS.chapter = 2
 	_check(_has_id(Crw.candidates_at("quanzhou"), "lin_hua"), "第二章起泉州酒馆可雇林华")
+	# 候雇截止：1276-08 仍列名，1276-09 起不列（离 leave_from 只剩一个月，雇进来当月就走、白付入伙钱）
+	Cal.from_dict({"year": 1276, "month": 8, "day": 28})
+	_check(_has_id(Crw.candidates_at("quanzhou"), "lin_hua"), "1276-08 泉州酒馆仍列林华（候雇窗口的最后一个月）")
+	Cal.from_dict({"year": 1276, "month": 9, "day": 2})
+	_check(not _has_id(Crw.candidates_at("quanzhou"), "lin_hua"), "1276-09 起泉州酒馆不再列林华（离辞船不足两个月即截止）")
+	Cal.from_dict({"year": 1258, "month": 3, "day": 1})
 	GS.money = 100000
 	var res: Dictionary = Crw.hire("lin_hua")
 	_check(res.get("ok", false) and "lin_hua" in GS.crew_history, "雇林华即记入 crew_history（守城认人的判据）")
@@ -650,12 +658,15 @@ func _lin_hua_check(main: Node) -> void:
 	Cal.from_dict({"year": 1276, "month": 9, "day": 25})
 	_check(_has_id(Crw.roster(), "lin_hua"), "1276-09 林华仍在船")
 	var n0 := _notices.size()
+	var money0 := int(GS.money)
 	_advance_to(1276, 10)
 	var leave_n := 0
 	for t in _notices.slice(n0):
 		if str(t).begins_with("【辞船】") and str(t).find("林华") >= 0:
 			leave_n += 1
 	_check(not _has_id(Crw.roster(), "lin_hua") and leave_n == 1, "1276-10 林华史实辞船，月初通告恰一条（%d 条）" % leave_n)
+	# 下船先于发饷：十月初一只剩他一个职事，这个月的俸不该扣（扣了就是 money0 − 现银 ≥ 他的月俸）
+	_check(money0 - int(GS.money) < int(lin.get("wage", 0)), "十月初一先下船后发饷，不扣林华的十月俸（钱 %d → %d，月俸 %d）" % [money0, int(GS.money), int(lin.get("wage", 0))])
 	_check("lin_hua" in GS.crew_history, "辞船后 crew_history 仍留着林华")
 	_check(not _has_id(Crw.candidates_at("quanzhou"), "lin_hua"), "辞船后泉州酒馆不再列林华")
 	# 守城第三阵前的林华事件：雇过才多「缆绳」一钮；按下写 lin_hua_reminded、城防士气 +5
@@ -688,6 +699,18 @@ func _lin_hua_check(main: Node) -> void:
 	main._siege_fall("三阵毕")
 	_check(GS.ended_text.find("林华出去两天") >= 0 and GS.ended_text.find("那个结松了") < 0, "没提醒过林华：城破册页只写「林华出去两天」")
 	main._confirm_chapter_sheet()
+	# 跳年跨过 1276-10（1273-06 跳四年）：月初【辞船】只进日志，册页的跳年摘要也要有他辞船那一句（草案 §1.4、§4.7 第 3 条）
+	GS.from_dict({})
+	Crw.from_dict({})
+	GS.chapter = 2
+	GS.money = 100000
+	Cal.from_dict({"year": 1273, "month": 6, "day": 1})
+	var hired_ok: bool = Crw.hire("lin_hua").get("ok", false)
+	var skip_lines: Array = GM.skip_years(4)
+	var note: String = Crw.leave_note(lin)
+	_check(hired_ok and not _has_id(Crw.roster(), "lin_hua") and note != "" and note in skip_lines,
+		"1273-06 跳四年跨过 1276-10：林华下船，跳年摘要有「%s」一行（摘要 %s）" % [note, skip_lines])
+	_check(not skip_lines.is_empty() and str(skip_lines[-1]).begins_with("——自"), "跳年摘要末行仍是「——自…至于…」")
 	GS.from_dict({})
 	Crw.from_dict({})
 

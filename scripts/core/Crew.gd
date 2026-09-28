@@ -45,7 +45,7 @@ func candidates_at(port_id: String) -> Array:
 			continue
 		if not GameState.is_chapter_reached(c.get("unlock", "ch1")):
 			continue
-		if not GameState.flag_requirement_met(c) or left_by_history(c):
+		if not GameState.flag_requirement_met(c) or not hireable_by_history(c):
 			continue
 		if hired.has(c.get("role", "")):
 			continue
@@ -183,15 +183,37 @@ func pay_wages() -> String:
 
 # ── 史实辞船 ──────────────────────────────────────────
 
-## crew.json 候选可带 leave_from（"YYYY-MM"，与 news.json 的 date 同口径）和 leave_note：到了那个月，
-## 此人不再候雇；已在船的，当月初下船，crew_history 照留（守城认人靠它）。
-## 现在只有林华：景炎元年秋回兴化投军，腊月守城时就是那位部将。不让他下船，他就同时是你的舵工和城头的部将。
+## crew.json 候选可带 leave_from（"YYYY-MM"，与 news.json 的 date 同口径；verify_economy 守格式）和 leave_note：
+## 离辞船月不足 HISTORY_HIRE_LEAD 个月就不再候雇；到了 leave_from 那个月，已在船的月初下船，crew_history 照留（守城认人靠它）。
+## 现在只有林华：景炎元年十月去兴化投军，腊月守城时就是那位部将。不让他下船，他就同时是你的舵工和城头的部将。
+
+## 人要走了不再找新东家，也免得雇进来一个月就走、白付入伙钱。
+## 取 2：林华候雇到 1276-08 为止（离 1276-10 还有两个月），与草案的候雇窗口同止。
+const HISTORY_HIRE_LEAD := 2
+
+
+## "YYYY-MM" → 月序（年×12＋月−1）；没写或写得不对返回 -1，当作没有史实辞船
+func _month_seq(ym: String) -> int:
+	var p := ym.split("-")
+	if p.size() != 2 or not p[0].is_valid_int() or not p[1].is_valid_int():
+		return -1
+	return int(p[0]) * 12 + int(p[1]) - 1
+
+
+## 已到辞船那个月
 func left_by_history(c: Dictionary) -> bool:
-	var at := str(c.get("leave_from", ""))
-	return at != "" and "%04d-%02d" % [Calendar.year, Calendar.month] >= at
+	var at := _month_seq(str(c.get("leave_from", "")))
+	return at >= 0 and Calendar.year * 12 + Calendar.month - 1 >= at
 
 
-## 月初由 GameManager._settle_history 调用。返回通告行，没人下船时返回空数组。
+## 还能候雇：没有 leave_from，或离辞船月至少还有 HISTORY_HIRE_LEAD 个月
+func hireable_by_history(c: Dictionary) -> bool:
+	var at := _month_seq(str(c.get("leave_from", "")))
+	return at < 0 or Calendar.year * 12 + Calendar.month - 1 <= at - HISTORY_HIRE_LEAD
+
+
+## 月初由 GameManager.advance_days 调用，排在发饷之前，到月下船的人不再扣当月俸。
+## 返回下船的候选（crew.json 条目）；通告由 GameManager._settle_history 排在新闻之后发，跳年时另进摘要。
 ## 按候选 id 回查 crew.json 判日子，不看存档里的快照，旧档里已雇的人也照样下船。
 func history_leave() -> Array:
 	var out := []
@@ -199,8 +221,13 @@ func history_leave() -> Array:
 		var c := candidate_def(str(hired[r].get("id", "")))
 		if left_by_history(c):
 			hired.erase(r)
-			out.append("【辞船】" + str(c.get("leave_note", "%s辞了船。" % c.get("name", "有人"))))
+			out.append(c)
 	return out
+
+
+## 辞船那一句（不带【辞船】）：月初通告和跳年摘要共用
+func leave_note(c: Dictionary) -> String:
+	return str(c.get("leave_note", "%s辞了船。" % c.get("name", "有人")))
 
 
 # ── 存档 ──────────────────────────────────────────────
