@@ -2766,7 +2766,7 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	const SPECIAL_ICON := {
 		"siege_muster": "yamen", "siege_grain": "market", "siege_wall": "shipyard",
 		"siege_envoy": "tavern", "siege_nangshan": "yamen", "siege_nunnery": "temple",
-		"special_hanjiang_escape": "shipyard", "special_resign_1275": "exam",
+		"special_hanjiang_escape": "residence", "special_resign_1275": "exam",
 		"special_yashan": "shipyard", "special_gangshou_end": "yamen",
 	}
 	if SPECIAL_ICON.has(icon_id):
@@ -3530,12 +3530,26 @@ func _on_gangshou_end() -> void:
 
 ## 「岸上的根」：陈瓒守城，你带族人出海。第一章那次复核在二十二年后变现。
 
+## 涵江出海到旧避风澳：原地结算七日（不走海图），航程里真吃船上的水粮；落款地名写到岸的地方
+const HANJIANG_DAYS := 7
+const HANJIANG_END_PLACE := "旧避风澳"
+## 兴化再陷前一月的这一日起，涵江卡的副题改成催促（城破月从战况表推，不写死）
+const HANJIANG_URGENT_DAY := 20
+
+
 func _on_hanjiang_escape() -> void:
-	if Fleet.supply_days() < 7:
-		log_msg("【水粮不足】四条船的人，至少要撑七日。先去船屋补齐。")
-		update_status_panel()
+	if Fleet.supply_days() < HANJIANG_DAYS:
+		# 直接进本港船屋补水粮：船屋平时靠轮转，不一定在今日三门里；船屋页「离开」回到带卡的港页
+		log_msg("【水粮不足】族里四条船的人，也要吃你船上的水粮。至少备足七日。")
+		load_scene(current_scene_id + "_shipyard")
 		return
-	GameManager.advance_days(7)
+	# 七日航程：借 at_sea 让 Fleet.on_day_passed 按海上日子扣水粮，推完复位（仍在港页上结算）
+	var was_at_sea: bool = Fleet.at_sea
+	Fleet.at_sea = true
+	GameManager.advance_days(HANJIANG_DAYS)
+	Fleet.at_sea = was_at_sea
+	# 路上月初翻牌的通告（冬月初一兴化城破等）照常记进船籍簿；状态条最上面留出海这一句——城破时人已在海上
+	log_msg("四条船出了涵江海口，没有回头。")
 	GameState.set_flag("ending_root_sea")
 	GameState.fame += 10
 	GameState.hometown_tendency += 10
@@ -3544,11 +3558,14 @@ func _on_hanjiang_escape() -> void:
 	_show_notice_dialog(
 		"岸上的根",
 		"旧避风澳・景炎二年",
-		"四条船。族里能走的都在船上，老夫人也在，她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经围了城。海上没有人追。你看水色。北礁可泊。二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
+		"四条船。族里能走的都在船上，老夫人也在，\n她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经围了城。海上没有人追。你看水色。北礁可泊。\n二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。\n纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
 			"子龙", stake_line, "子龙",
 		],
 		"岸上的根"
 	)
+	# finish 取 last_port 落款（兴化 / 兴化海口）；这一局是在旧避风澳收的，落款改写成到岸的地方
+	if GameState.ended == "岸上的根":
+		GameState.ended_at = "%s・%s" % [Calendar.get_date_string(), HANJIANG_END_PLACE]
 
 
 ## 通用结算对话框（章节晋升以外的历史节点与结局用）。
@@ -4354,7 +4371,7 @@ func _special_cards() -> Array:
 			and not GameState.has_flag("renamed_wenlong") \
 			and GameState.has_found("nameless_shelter_bay") \
 			and not GameState.has_flag("ending_root_sea"):
-		out.append({"id": CARD_HANJIANG, "title": "涵江海口", "subtitle": "带族人走旧避风澳"})
+		out.append({"id": CARD_HANJIANG, "title": "涵江海口", "subtitle": _hanjiang_card_subtitle()})
 
 	# 士人线：辞呈已批，出不出国门（1275-12 起，未决则一直挂着）
 	if GameState.has_flag("vice_councillor") and not _resign_decided():
@@ -4370,6 +4387,16 @@ func _special_cards() -> Array:
 		out.append({"id": CARD_GANGSHOU, "title": "市舶司・新册", "subtitle": "封面换了，名字还在"})
 
 	return out
+
+
+## 涵江卡副题：兴化再陷前一月的下旬（HANJIANG_URGENT_DAY 起）改成催促，其余日子写去处。
+## 城破月取战况表里 besieged 段的尽头（_xinghua_fall_yms），不写死十月。
+func _hanjiang_card_subtitle() -> String:
+	var ny := Calendar.year + (1 if Calendar.month == 12 else 0)
+	var nm := 1 if Calendar.month == 12 else Calendar.month + 1
+	if Calendar.day >= HANJIANG_URGENT_DAY and ("%04d-%02d" % [ny, nm]) in _xinghua_fall_yms():
+		return "城撑不过这个月了"
+	return "带族人走旧避风澳"
 
 
 
