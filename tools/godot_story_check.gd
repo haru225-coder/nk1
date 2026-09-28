@@ -1173,7 +1173,7 @@ func _v0928_crew_check(main: Node) -> void:
 	for path in ["res://scenes/ImpactExplosion.tscn", "res://scenes/WaterSplash.tscn", "res://scenes/PirateShip.tscn", "res://scenes/Ship.tscn"]:
 		var inst: Node = (load(path) as PackedScene).instantiate()
 		for p in _crew_particles(inst):
-			if (p as CPUParticles2D).texture == null and p.name != "SplinterParticles":
+			if (p as CPUParticles2D).texture == null:
 				bare.append("%s:%s" % [path.get_file(), p.name])
 		inst.free()
 	var smoke: CPUParticles2D = FX._spawn_ember_smoke(root, Vector2.ZERO)

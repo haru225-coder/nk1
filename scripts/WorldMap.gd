@@ -39,6 +39,8 @@ var _boarded_crew: int = 0
 ## 最后一艘刚被接舷夺下、「夺船」题签还在演：_process 不判胜，演完由 _board_enemy 带 boarded 退出。
 ## 不拦的话下一帧 _process 见敌船已空先以 {} 退出，出战墨边写「战罢」、注记缺「接舷既定。」（09-28 实测只留 1 帧）。
 var _board_win_pending: bool = false
+## 这一战敌船兜圈的方向（+1 / −1，_setup_combat 随机定，各船一致）
+var _orbit_sense: float = 1.0
 ## 防 _battle_exit 重入（信号同步触发期间 WorldMap 仍存活一帧）
 var resolved: bool = false
 ## 最近一次终结是否经接舷夺船（出战题签用「夺船」）
@@ -51,8 +53,8 @@ const ENEMY_HULL_BASE := 100.0
 const ENEMY_SCALE_MIN := 0.8
 const ENEMY_SCALE_MAX := 3.0
 ## 开战刷船距离。镜头 zoom 1.5、画布 1280×720 → 可见 853×480，半高 240、半宽 427（09-28 有窗口实量，
-## 探针 verify_crew_fix_battle 打 VIEW_HALF）。敌船刷出即在 600 内转舷侧、绕本船兜圈，兜的半径约等于刷船距离：
-## 原 300—420 兜到正上 / 正下就出了画（P02 开局一艘都看不见）。收到 210—235：上限不过半高，任何角度刷出船心都在画内
+## 探针 verify_crew_fix_battle 打 VIEW_HALF）。刷船距离同时是敌船兜圈半径（PirateShip.orbit_radius，同向兜、半径稳住）：
+## 原 300—420 且兜圈半径不稳、漂到约 600，开局一艘都看不见（P02）。收到 210—235：上限不过半高，兜到哪一头船心都在画内
 ## （story_check 按工程画布高与镜头 zoom 实算半高对账），又在接舷距离 140 之外、离本船船身（半长约 160）留得出空。
 const COMBAT_SPAWN_DIST_MIN := 210.0
 const COMBAT_SPAWN_DIST_MAX := 235.0
@@ -451,6 +453,8 @@ func _setup_combat(pb: Dictionary) -> void:
 	_boarded_n = 0
 	_boarded_crew = 0
 	_board_win_pending = false
+	# 这一战敌船同向兜圈（顺逆随机，各船一致）
+	_orbit_sense = 1.0 if randf() < 0.5 else -1.0
 	total_enemies = 0
 	var enemy_list: Array = pb.get("enemy", [])
 	for entry in enemy_list:
@@ -484,6 +488,11 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary, sprite_id := "", 
 		var dist := randf_range(COMBAT_SPAWN_DIST_MIN, COMBAT_SPAWN_DIST_MAX)
 		p.position = ship.position + Vector2(cos(angle), sin(angle)) * dist
 		p.target = ship
+		# 各守一个侧舷位：同向兜圈、半径稳在刷船距离（PirateShip.orbit_radius），起手就顺着切向，不原地掉头兜出画外
+		p.orbit_radius = dist
+		p.orbit_sense = _orbit_sense
+		var tangent := -Vector2(cos(angle), sin(angle)).rotated(-_orbit_sense * PI / 2.0)
+		p.rotation = Vector2.UP.angle_to(tangent)
 		p.hull_hp = hull
 		# P4-2：白刃/夺船输入。节点名保持 "PirateShip" 前缀（_enemies_alive 依赖），
 		# 夺船后的船名底字另存 ship_name（海寇「快船」、元军哨船「元哨船」，入列时加序号）。

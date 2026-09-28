@@ -33,6 +33,12 @@ var crew: int = 20
 var enemy_morale: int = 60
 ## 敌将武力系数；白刃判定输入
 var captain_force: float = 1.0
+## 兜圈半径（WorldMap._spawn_enemy 按刷船距离写入）：600 内绕本船兜圈时把半径稳在这里；0 = 旧法（转到较近的一侧舷）
+var orbit_radius: float = 0.0
+## 兜圈方向（+1 / −1）：同一战各船同向，按刷船角度隔开就彼此追不上
+var orbit_sense: float = 1.0
+## 半径偏差折成向心 / 离心修正的增益：偏出半径的两成即转 24° 左右往回收
+const ORBIT_GAIN := 2.0
 
 func _ready() -> void:
 	sprite.modulate = Color.WHITE
@@ -69,9 +75,16 @@ func _physics_process(delta: float) -> void:
 	# If close, steer to broadside (90 degrees off) to shoot
 	var target_angle_diff = angle_diff
 	if dist < 600.0:
-		if angle_diff > 0: target_angle_diff -= PI/2.0
-		else: target_angle_diff += PI/2.0
-	# 敌船之间分离：几艘都从左右两舷往本船同一侧兜，会在船头汇成一团叠成一艘（crew 线 09-28 实机）。
+		if orbit_radius > 0.0:
+			# 各守一个侧舷位：同向兜圈，半径稳在开战刷船距离（镜头里），几艘按刷船角度隔开、彼此追不上。
+			# 旧法「转到较近的那一侧舷」：左右两艘都朝船头兜，汇成一团；兜着兜着半径漂到约 600，出了画（crew 线 09-28 实测）
+			var tangent: Vector2 = dir_to_target.rotated(-orbit_sense * PI / 2.0)
+			var pull := clampf((dist - orbit_radius) / orbit_radius * ORBIT_GAIN, -1.0, 1.0)
+			target_angle_diff = ship_dir.angle_to((tangent + dir_to_target * pull).normalized())
+		else:
+			if angle_diff > 0: target_angle_diff -= PI/2.0
+			else: target_angle_diff += PI/2.0
+	# 敌船之间分离：兜圈时被本船甩乱了阵脚（本船开船、掉头）也不压成一艘。
 	# 只偏航向，不改航速、转向上限与开炮判定（开炮仍按对本船的 angle_diff）。
 	var push := _separation_push()
 	if push != Vector2.ZERO:
