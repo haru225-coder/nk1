@@ -92,6 +92,7 @@ const SCRIPTS := [
 	"res://tools/qa_contract_stock_probe.gd",
 	"res://tools/qa_customs_duty_probe.gd",
 	"res://tools/qa_yard_transition_probe.gd",
+	"res://tools/qa_pirate_boat_probe.gd",  # 海寇快船 + 船图契约（lane pirate-boat-0928）
 	"res://tools/combat_vfx_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
 	"res://tools/vision_stage_probe.gd", "res://tools/vision_letterbox_probe.gd", "res://tools/letterbox_signal_probe.gd",
 	"res://tools/probe_clock.gd", "res://tools/shot_consistency.gd",

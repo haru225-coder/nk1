@@ -211,7 +211,7 @@ func _board_enemy(enemy: Node2D) -> void:
 	# 白刃必死人：胜方损失 8%-15%，负方损失 20%-30%（下限 1，保火种）
 	var lose_n := maxi(1, int(Fleet.total_crew() * (0.08 + randf() * 0.07)))
 	if win:
-		var type_id := _node_str(enemy, "ship_type", "sea_falcon")
+		var type_id := _node_str(enemy, "ship_type", "pirate_boat")
 		var ship_name := _node_str(enemy, "ship_name", "")
 		Fleet.lose_crew_random(lose_n)
 		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 4)
@@ -403,16 +403,17 @@ func _setup_combat(pb: Dictionary) -> void:
 	total_enemies = 0
 	var enemy_list: Array = pb.get("enemy", [])
 	for entry in enemy_list:
-		var type_id: String = entry.get("type", "sea_falcon")
+		var type_id: String = entry.get("type", "pirate_boat")
 		var count: int = entry.get("count", 1)
-		_spawn_enemy(type_id, count, pb)
+		# sprite 只管海战精灵（船图契约）；元军哨船 type 仍是 sea_falcon，另挂 sprite=yuan_patrol
+		_spawn_enemy(type_id, count, pb, str(entry.get("sprite", "")))
 	weather_status.text = "海战"
 	weather_status.add_theme_color_override("font_color", UiTheme.HONEY)
 	_try_letterbox_enter(pb)
 
 
-## 生成一支敌舰队，绕玩家船散布；hull_hp 按战力比缩放
-func _spawn_enemy(type_id: String, count: int, pb: Dictionary) -> void:
+## 生成一支敌舰队，绕玩家船散布；hull_hp 按战力比缩放。sprite_id 空则精灵按 type 取（PirateShip.apply_sprite）
+func _spawn_enemy(type_id: String, count: int, pb: Dictionary, sprite_id := "") -> void:
 	var enemy_power: float = float(pb.get("power", 300.0))
 	var player_power: float = float(pb.get("player_power", 1.0))
 	if player_power <= 0.0:
@@ -432,9 +433,10 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary) -> void:
 		p.target = ship
 		p.hull_hp = hull
 		# P4-2：白刃/夺船输入。节点名保持 "PirateShip" 前缀（_enemies_alive 依赖），
-		# 夺船后的船名另存 ship_name（沿用敌船名，如「海鹘」）。
+		# 夺船后的船名另存 ship_name（沿用敌船名，如「快船」）。
 		p.ship_name = "%s" % type_name
 		p.ship_type = type_id
+		p.sprite_id = sprite_id
 		p.crew = randi_range(crew_low, crew_high)
 		p.enemy_morale = randi_range(50, 75)
 		p.captain_force = 1.0 + 0.3 * float(scale - 1.0)  # 强敌水手多，头目更悍

@@ -705,9 +705,53 @@ func _run() -> void:
 				_check(false, "WorldMap._format_left_hud 已定义", fails)
 			wm_inst.free()
 
+	_check_pirate_boat(fails)
 	_check_characters(gm, main_src, fails)
 	await _check_headless_bypass(fails)
 	_finish(fails)
+
+
+## 海寇快船（备忘 #7）+ 船图契约（钩子第一批第 5 条）：海寇出 pirate_boat、夺来按快船入列、墨边写真实船名、
+## 精灵缺图回落两张默认贴图。WorldMap 真开战 → 接舷夺船的全流程另见 tools/qa_pirate_boat_probe.gd。
+func _check_pirate_boat(fails: Array) -> void:
+	var fx: GDScript = load("res://scripts/combat/CombatFx.gd")
+	var lb: GDScript = load("res://scripts/ui/CombatLetterbox.gd")
+	var consts: Dictionary = (load("res://scripts/SeaChart.gd") as GDScript).get_script_constant_map()
+	var pirate: Dictionary = consts.get("PIRATE_ENEMY", {})
+	var patrol: Dictionary = consts.get("PATROL_ENEMY", {})
+	_check(str(pirate.get("type", "")) == "pirate_boat" and str(patrol.get("type", "")) == "sea_falcon"
+			and str(patrol.get("sprite", "")) == "yuan_patrol",
+		"海寇迎战出快船（pirate_boat）；元军哨船 type 不动、另挂 sprite=yuan_patrol", fails)
+	_check(str(lb.call("enemy_note", [pirate])) == "快船二艘" and str(lb.call("enemy_note", [patrol])) == "海鹘三艘",
+		"海战墨边副题按真实船名：海寇「快船二艘」、元军哨船「海鹘三艘」", fails)
+	var fx_consts: Dictionary = fx.get_script_constant_map()
+	var own_fb: String = fx_consts.get("SHIP_SPRITE_OWN", "")
+	var foe_fb: String = fx_consts.get("SHIP_SPRITE_ENEMY", "")
+	var foe: Node = (load("res://scenes/PirateShip.tscn") as PackedScene).instantiate()
+	foe.set("ship_type", str(pirate.get("type", "")))
+	foe.call("apply_sprite")
+	var foe_tex := (foe.get_node("Sprite2D") as Sprite2D).texture
+	_check(foe_fb != "" and foe_tex != null and foe_tex.resource_path == foe_fb,
+		"快船缺 ship_pirate_boat.png 时敌船精灵回落 ship_falcon.png", fails)
+	foe.free()
+	var own: Node = (load("res://scenes/Ship.tscn") as PackedScene).instantiate()
+	own.call("apply_type_sprite", "sampan")
+	var own_tex := (own.get_node("Sprite2D") as Sprite2D).texture
+	_check(own_fb != "" and own_tex != null and own_tex.resource_path == own_fb,
+		"旗舰小艍船缺 ship_sampan.png 时己船精灵回落 ship_fu.png", fails)
+	own.free()
+	var fleet: Node = root.get_node_or_null("Fleet")
+	if fleet == null:
+		_check(false, "Fleet autoload 在 /root", fails)
+		return
+	var saved: Array = (fleet.get("ships") as Array).duplicate(true)
+	var n0: int = saved.size()
+	var ok := bool(fleet.call("add_ship", "pirate_boat", "快船"))
+	var ships: Array = fleet.get("ships")
+	var got: Dictionary = ships[ships.size() - 1] if ships.size() > n0 else {}
+	_check(ok and str(got.get("type", "")) == "pirate_boat" and str(got.get("name", "")) == "快船",
+		"夺船按 ship_type=pirate_boat 调 Fleet.add_ship 能入列，船名「快船」", fails)
+	fleet.set("ships", saved)
 
 
 ## headless 零延迟旁路（第 2 轮工程 m4：原先只查源码里有没有 ChapterSheet 字样；live() 在 headless 下误判为真时，

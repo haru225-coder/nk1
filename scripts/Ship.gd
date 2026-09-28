@@ -26,16 +26,25 @@ var target_zoom = Vector2(1.5, 1.5)
 # lazy load：避免 compile 时 Cannonball.gd → class Ship → preload 场景 → 再要 Cannonball.gd 的环
 var cannonball_scene: PackedScene = null
 const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
+const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 var fire_cooldown: float = 0.0
 
 func _ready() -> void:
 	# 战术场景反映旗舰状态；舰队数据以 Fleet 为准
 	var fs: Dictionary = Fleet.flagship()
+	apply_type_sprite(str(fs.get("type", "")))
 	max_hp = float(fs.get("max_durability", 100.0))
 	hull_hp = float(fs.get("durability", max_hp))
 	var sail_lv: int = int(fs.get("sail_level", 1))
 	max_speed = 300.0 + (sail_lv - 1) * 50.0
 	base_turn_speed = 1.8 + (sail_lv - 1) * 0.2
+
+
+## 船图契约：旗舰按 ships.json type 取 assets/ship_<type>.png，缺图留 Ship.tscn 里的 ship_fu.png。
+## 不读 autoload、不依赖 @onready（没进树也能调），探针直接拿 Ship.tscn 实例验回落。
+func apply_type_sprite(type_id: String) -> void:
+	_CombatFx.apply_ship_sprite(get_node_or_null("Sprite2D") as Sprite2D,
+		_CombatFx.ship_sprite_path(type_id, _CombatFx.SHIP_SPRITE_OWN))
 
 func _input(event: InputEvent) -> void:
 	# HUD 写 W/S 升降帆；工程默认 input map 只有方向键，两边都认。

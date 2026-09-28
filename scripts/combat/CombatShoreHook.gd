@@ -22,7 +22,7 @@ static func preview_boarding(parent: Node, win := true) -> bool:
 	t.timeout.connect(func() -> void:
 		if not is_instance_valid(parent):
 			return
-		var detail := CombatFx.board_win_note("海鹘") if win else CombatFx.board_lose_note(3)
+		var detail := CombatFx.board_win_note("快船") if win else CombatFx.board_lose_note(3)
 		BoardingStage.resolve(parent, "win" if win else "lose", detail)
 		CombatFx.hitstop(parent, 0.07, 0.22)
 	)
