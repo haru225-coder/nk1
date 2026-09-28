@@ -16,9 +16,11 @@ extends RefCounted
 ##   var helm = ManeuverModel.new("fu_ship_medium", sail_level, helmsman_level)
 ##   var v: Vector2 = helm.step(heading, helm_input, gear, sea.wind_to, sea.wind_speed, sea.current_at(pos), dt, mods)
 ##   rotation += helm.yaw_rate * dt        # v 为对地速度（px/s），helm.snapshot() 取帆向 / 风压差角 / 转向半径
-## mods（可选；缺键时 sail / rudder / hull / oar 按 1、row 按 0）：sail 帆完好度 · rudder 舵完好度 ·
-##   hull 船体（进水 / 破损拖慢）· oar 橹桨人手 · row 摇橹划桨出力（多桨船抢上风、无风时用）。都是 0–1 的乘数，
-##   给损伤模型、敌船 AI 接；WorldMap 对旗舰取船节点的 maneuver_mods()（有就用）。
+## mods（可选；缺键时 sail / rudder / hull / oar 按 1、row / yaw_drift 按 0）：sail 帆完好度 · rudder 舵完好度 ·
+##   hull 船体（进水 / 破损拖慢）· oar 橹桨人手 · row 摇橹划桨出力（多桨船抢上风、无风时用），以上都是 0–1 的乘数；
+##   yaw_drift 舵失灵时满速下每秒自偏的弧度（正为往右偏，随对水航速按比例）· gear_cap 帆装还挂得起几成（0–2，压住 gear）。
+##   给损伤模型、敌船 AI 接；WorldMap 对旗舰取船节点的 maneuver_mods()，没有就取 maneuver_factors()（lane combat04 的
+##   speed / turn / yaw_drift / gear_cap 口径，换成 hull / rudder / yaw_drift / gear_cap）。
 
 ## 满帆、最佳帆向、参考风力下的对水航速（px/s）：与旧式 Ship 满帆顺风约 280–310 同量级，不改海战节奏
 const V_REF := 285.0
@@ -95,6 +97,11 @@ const PROFILES := {
 const DEFAULT_PROFILE := {"hull": 0.95, "radius": 270.0, "yaw_max": 0.90, "pinch": 50.0, "leeway": 0.18,
 	"windage": 0.12, "accel": 0.85, "oar": 25.0, "oar_yaw": 0.18}
 
+## 查询没给风时按当场海况取（接舷接近用）；没开战再读船节点身上的 wind_vector / wind_strength，都没有按北风、参考风力
+const _SeaState := preload("res://scripts/combat/SeaState.gd")
+## 船节点上记船型的 meta 键：旗舰（Ship）身上没有 ship_type，WorldMap 开战时把 Fleet 旗舰船型记在这里
+const META_HULL_TYPE := &"hull_type"
+
 ## 船型（ships.json id）与其机动参数
 var hull_type := ""
 var profile: Dictionary = DEFAULT_PROFILE
@@ -143,7 +150,7 @@ func step(heading: Vector2, helm_input: float, gear: int, wind_to: Vector2, wind
 	var h := heading.normalized() if heading.length_squared() > 0.0 else Vector2.UP
 	facing = h
 	var r := Vector2(-h.y, h.x)
-	var g := clampi(gear, 0, 2)
+	var g := clampi(mini(gear, int(mods.get("gear_cap", 2))), 0, 2)
 	var sail_mod := clampf(float(mods.get("sail", 1.0)), 0.0, 1.0)
 	var rudder_mod := clampf(float(mods.get("rudder", 1.0)), 0.0, 1.0)
 	var hull_mod := clampf(float(mods.get("hull", 1.0)), 0.1, 1.0)
@@ -175,6 +182,8 @@ func step(heading: Vector2, helm_input: float, gear: int, wind_to: Vector2, wind
 	if theta < pinch and g > 0:
 		yaw_cap = maxf(yaw_cap, TACK_YAW * float(GEAR_SAIL[g]) * sail_mod * wind_mul(w) * float(profile["yaw_max"]))
 	var yaw_target := clampf(helm_input, -1.0, 1.0) * yaw_cap * rudder_mod
+	# 舵失灵自偏：随对水航速按比例（满速 V_REF 时即 yaw_drift）
+	yaw_target += float(mods.get("yaw_drift", 0.0)) * clampf(v_fwd / V_REF, -1.0, 1.0)
 	yaw_rate += (yaw_target - yaw_rate) * (1.0 - exp(-YAW_RESPONSE * dt))
 	drift = current
 	ground = h * v_fwd + r * v_lat + current
@@ -289,6 +298,12 @@ static func sail_speed(type_id: String, theta_deg: float, gear: int, wind_speed:
 	return drive - float(p["windage"]) * maxf(wind_speed, 0.0) * cos(deg_to_rad(theta_deg))
 
 
+## 航速系数：某船首向在此风下满帆能走几成（最佳帆向、参考风力为 1，顶风为 0；船型按缺省参数）。
+## 形参恰为 (船首向, 风去向, 风力)：敌船 AI 挑航向用（lane combat07 EnemyCaptainAI 的 speed_factor 钩子按这个形认）
+static func speed_factor(heading: Vector2, wind_to: Vector2, wind_speed: float) -> float:
+	return polar(angle_off_wind(heading, wind_to), float(DEFAULT_PROFILE["pinch"])) * wind_mul(wind_speed)
+
+
 ## 某船型在此航速、帆档下的转向半径（px）：低速按最小半径（再慢就是原地拨头），高速被 yaw_max 封住、半径随航速放大
 static func turn_radius_of(type_id: String, speed: float, gear := 1, helmsman_level := 0) -> float:
 	var p := profile_of(type_id)
@@ -306,6 +321,31 @@ static func leeway_drift(type_id: String, heading: Vector2, gear: int, wind_to: 
 	var wt := wind_to.normalized() if wind_to.length_squared() > 0.0 else Vector2.ZERO
 	var coef := float(p["leeway"]) * float(GEAR_SAIL[clampi(gear, 0, 2)]) + float(p["windage"])
 	return r * coef * maxf(wind_speed, 0.0) * wt.dot(r)
+
+
+## 船节点 → 查询用的船况 {pos, vel, heading, type, gear}：位置取 global_position、船首 = Vector2.UP 转 global_rotation；
+## 船型先认 ship_type（PirateShip），再认 meta hull_type（旗舰，WorldMap 开战时记）；帆档认 sail_gear，没有按满帆（2）
+## 形参故意不写类型：传进来的船可能刚被打沉释放，带类型的形参收到已释放实例当场报错；判了才用，失效给缺省船况
+static func hull_state_of(n) -> Dictionary:
+	var out := {"pos": Vector2.ZERO, "vel": Vector2.ZERO, "heading": Vector2.UP, "type": "", "gear": 2}
+	# 先判 is_instance_valid：对已释放实例做 is 判断当场报错（4.6.3 实测）
+	if not is_instance_valid(n):
+		return out
+	if n is Node2D:
+		out["pos"] = (n as Node2D).global_position
+		out["heading"] = Vector2.UP.rotated((n as Node2D).global_rotation)
+	var v = n.get("velocity")
+	if v is Vector2:
+		out["vel"] = v
+	var t = n.get("ship_type")
+	if t == null and n.has_meta(META_HULL_TYPE):
+		t = n.get_meta(META_HULL_TYPE)
+	if t != null:
+		out["type"] = str(t)
+	var g = n.get("sail_gear")
+	if g != null:
+		out["gear"] = int(g)
+	return out
 
 
 ## a 相对 b 的上风程度（−1–1）：1 = b 在 a 的正下风（a 占上风），−1 = a 在 b 的正下风
@@ -388,27 +428,38 @@ static func fire_arc(shooter_pos: Vector2, heading: Vector2, target_pos: Vector2
 	}
 
 
-## 接舷接近：a 想钩 b。a / b 各是 {pos, vel, heading, type, gear}（vel 取对地速度即可：两船同在一股流里，相对速度里流抵消）。
+## 接舷接近：a 想钩 b。a / b 各是 {pos, vel, heading, type, gear}（vel 取对地速度即可：两船同在一股流里，相对速度里流抵消），
+## 也可以直接给船节点（按 hull_state_of 取）。风可省：wind_to 为零向量 / wind_speed < 0 时依次取当场海况（SeaState.active()）、
+## a / b 身上的 wind_vector / wind_strength，都没有按北风、参考风力。
 ## 够距 = base_reach × 相对航速折扣 × 上风增减 + 风压差（两船横漂之差把 a 压向 b 的分量 × 抛钩拉拢的工夫）。返回：
-##   distance · closing_speed 接近速度（正为在靠拢）· relative_speed · weather_gauge / gauge_word（a 的上风位）·
-##   drift_closing 风压差压拢速度（px/s，正为风把 a 压向 b）· speed_mod · wind_mod · reach · base_reach ·
-##   ok 够得着且不对冲 · reason 顶匾短语 / note 浮字整句（只在旧口径够得着、新口径被风或航速挡下时才写，其余为空）
-static func boarding_approach(a: Dictionary, b: Dictionary, wind_to: Vector2, wind_speed: float, base_reach := 140.0) -> Dictionary:
-	var pa: Vector2 = a.get("pos", Vector2.ZERO)
-	var pb: Vector2 = b.get("pos", Vector2.ZERO)
-	var va: Vector2 = a.get("vel", Vector2.ZERO)
-	var vb: Vector2 = b.get("vel", Vector2.ZERO)
+##   distance · closing_speed 接近速度（正为在靠拢）· relative_speed（同 rel_speed）· weather_gauge / gauge_word（a 的上风位，
+##   windward 取整成 1 / 0 / −1）· wind 用到的风力 · drift_closing 风压差压拢速度（px/s，正为风把 a 压向 b）· speed_mod ·
+##   wind_mod · reach · base_reach · ok 够得着且不对冲 · reason 顶匾短语 / note 浮字整句（只在旧口径够得着、新口径被风或航速
+##   挡下时才写，其余为空）
+static func boarding_approach(a, b, wind_to := Vector2.ZERO, wind_speed := -1.0, base_reach := 140.0) -> Dictionary:
+	# 船节点已释放 / 给了空：够不着（不按原点上两条假船算）
+	if not (a is Dictionary or is_instance_valid(a)) or not (b is Dictionary or is_instance_valid(b)):
+		return {"distance": INF, "relative_speed": 0.0, "rel_speed": 0.0, "reach": 0.0, "base_reach": base_reach,
+			"ok": false, "reason": "", "note": ""}
+	var sa: Dictionary = a if a is Dictionary else hull_state_of(a)
+	var sb: Dictionary = b if b is Dictionary else hull_state_of(b)
+	var wind := _query_wind(wind_to, wind_speed, a, b)
+	wind_to = wind[0]
+	var pa: Vector2 = sa.get("pos", Vector2.ZERO)
+	var pb: Vector2 = sb.get("pos", Vector2.ZERO)
+	var va: Vector2 = sa.get("vel", Vector2.ZERO)
+	var vb: Vector2 = sb.get("vel", Vector2.ZERO)
 	var d := pa.distance_to(pb)
 	var u := (pb - pa) / d if d > 0.001 else Vector2.ZERO
 	var rel := va - vb
 	var rel_speed := rel.length()
-	var ws := maxf(wind_speed, 0.0)
+	var ws: float = wind[1]
 	var wr := clampf(ws / WIND_REF, 0.0, 1.3)
 	var gauge := weather_gauge(pa, pb, wind_to)
-	var ha: Vector2 = a.get("heading", Vector2.UP)
-	var hb: Vector2 = b.get("heading", Vector2.UP)
-	var drift_a := leeway_drift(str(a.get("type", "")), ha, int(a.get("gear", 1)), wind_to, ws)
-	var drift_b := leeway_drift(str(b.get("type", "")), hb, int(b.get("gear", 1)), wind_to, ws)
+	var ha: Vector2 = sa.get("heading", Vector2.UP)
+	var hb: Vector2 = sb.get("heading", Vector2.UP)
+	var drift_a := leeway_drift(str(sa.get("type", "")), ha, int(sa.get("gear", 1)), wind_to, ws)
+	var drift_b := leeway_drift(str(sb.get("type", "")), hb, int(sb.get("gear", 1)), wind_to, ws)
 	var drift_closing := (drift_a - drift_b).dot(u)
 	var speed_mod := clampf(1.1 - rel_speed / GRAPPLE_REL_SOFT, 0.55, 1.1)
 	var wind_mod := 1.0 + WEATHER_REACH * gauge * wr
@@ -437,8 +488,11 @@ static func boarding_approach(a: Dictionary, b: Dictionary, wind_to: Vector2, wi
 		"distance": d,
 		"closing_speed": rel.dot(u),
 		"relative_speed": rel_speed,
+		"rel_speed": rel_speed,
 		"weather_gauge": gauge,
+		"windward": 1 if gauge > 0.35 else (-1 if gauge < -0.35 else 0),
 		"gauge_word": gauge_word(gauge),
+		"wind": ws,
 		"drift_closing": drift_closing,
 		"speed_mod": speed_mod,
 		"wind_mod": wind_mod,
@@ -448,3 +502,32 @@ static func boarding_approach(a: Dictionary, b: Dictionary, wind_to: Vector2, wi
 		"reason": reason,
 		"note": note,
 	}
+
+
+## 查询的风 [吹向单位向量, 风力]：给了用给的；没给按当场海况；没开战读 a / b 船节点身上的 wind_vector / wind_strength；
+## 都没有按北风（吹向正南）、参考风力
+static func _query_wind(wind_to: Vector2, wind_speed: float, a = null, b = null) -> Array:
+	var wt := wind_to
+	var ws := wind_speed
+	var sea = _SeaState.active()
+	if sea != null:
+		if wt.length_squared() == 0.0:
+			wt = sea.wind_to
+		if ws < 0.0:
+			ws = sea.wind_speed
+	for n in [a, b]:
+		if not is_instance_valid(n):
+			continue
+		if wt.length_squared() == 0.0:
+			var nv = n.get("wind_vector")
+			if nv is Vector2 and nv.length_squared() > 0.0:
+				wt = nv
+		if ws < 0.0:
+			var nw = n.get("wind_strength")
+			if nw != null:
+				ws = float(nw)
+	if wt.length_squared() == 0.0:
+		wt = Vector2(0, 1)
+	if ws < 0.0:
+		ws = WIND_REF
+	return [wt.normalized(), ws]

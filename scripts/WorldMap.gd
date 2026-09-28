@@ -607,6 +607,8 @@ func _setup_sea(pb: Dictionary) -> void:
 	_SeaState.bind_active(_sea)
 	var fs := Fleet.flagship()
 	_flagship_type = str(fs.get("type", ""))
+	# 旗舰节点上记一笔船型：别的模块拿船节点问 ManeuverModel（hull_state_of）时认得出是什么船
+	ship.set_meta(_Maneuver.META_HULL_TYPE, _flagship_type)
 	_helm = _Maneuver.new(_flagship_type, int(fs.get("sail_level", 1)), Crew.level_of("duogong"))
 	_helm_rot = ship.rotation
 	# 先读一次帆向（dt = 0 不改航速），顶匾第一帧就写对
@@ -651,27 +653,34 @@ func _helm_input() -> float:
 	return clampf(t, -1.0, 1.0)
 
 
-## 船体损伤对机动的折减（可选接口）：船节点有 maneuver_mods() 就用它（键见 ManeuverModel 头注释：
-## sail / rudder / hull / oar / row），没有按完好算
+## 船体损伤对机动的折减（可选接口）：船节点有 maneuver_mods() 就原样用（键见 ManeuverModel 头注释）；
+## 没有而有 maneuver_factors()（lane combat04 损伤模型：speed 走力 / turn 转向 / yaw_drift 舵失灵自偏 / gear_cap 帆挂得起几成）
+## 就换成 hull / rudder / yaw_drift / gear_cap；都没有按完好算
 func _maneuver_mods(n: Object) -> Dictionary:
-	if n != null and n.has_method("maneuver_mods"):
+	if n == null:
+		return {}
+	if n.has_method("maneuver_mods"):
 		var m = n.call("maneuver_mods")
 		if m is Dictionary:
 			return m
+	if n.has_method("maneuver_factors"):
+		var f = n.call("maneuver_factors")
+		if f is Dictionary:
+			var out := {}
+			for pair in [["speed", "hull"], ["turn", "rudder"], ["yaw_drift", "yaw_drift"], ["gear_cap", "gear_cap"]]:
+				if f.has(pair[0]):
+					out[pair[1]] = f[pair[0]]
+			return out
 	return {}
 
 
-## 船节点 → ManeuverModel 查询用的船况：位置、对地速度、船首向、船型、升帆几成（敌船不报 sail_gear 的按满帆算）
+## 船节点 → ManeuverModel 查询用的船况（ManeuverModel.hull_state_of：位置、对地速度、船首向、船型、升帆几成，
+## 敌船不报 sail_gear 的按满帆算）；旗舰船型按开战时 Fleet 旗舰的
 func _hull_state(n: Node2D) -> Dictionary:
-	var v = n.get("velocity")
-	var g = n.get("sail_gear")
-	return {
-		"pos": n.position,
-		"vel": v if v is Vector2 else Vector2.ZERO,
-		"heading": Vector2.UP.rotated(n.rotation),
-		"type": _flagship_type if n == ship else _node_str(n, "ship_type", ""),
-		"gear": int(g) if g != null else 2,
-	}
+	var st := _Maneuver.hull_state_of(n)
+	if n == ship:
+		st["type"] = _flagship_type
+	return st
 
 
 ## 接舷够不够得着：吃风压差、上风位与相对航速（旗舰钩 enemy）
