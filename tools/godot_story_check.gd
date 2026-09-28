@@ -1363,4 +1363,22 @@ func _v0928_visual_recheck(Art, pc: Dictionary, zan: Dictionary, lu: Dictionary,
 			and t_7605 == "参知政事" and b_7605.find("复以他为参知政事") >= 0 and b_7605.find("知兴化军") < 0
 			and t_7608.find("知兴化军") >= 0 and id_7608.count("・") == 1,
 		"士人线 1275-06「%s」、1275-12「%s」、1276-05「%s」、1276-08 身份行「%s」（称谓与籍贯之间只一个分隔点）" % [t_7506, t_7512, t_7605, id_7608])
+	# 立绘面板身份行：籍贯逐字垫了字连接符，窄栏折行只折在「・」之后，不从「兴化军莆田／县玉湖」中间折；去掉连接符与原串一字不差
+	var wj := String.chr(0x2060)
+	var pp: Node = load("res://scripts/chars/CharPortraitPanel.gd").new()
+	root.add_child(pp)
+	pp.call("show_character", pc)
+	var shown := _find_label_text(pp, "・")
+	var origin_at := id_7608.rfind("・") + 1
+	var para := TextParagraph.new()
+	para.add_string(shown, UiTheme.font(), UiTheme.SIZE_FOOT + 1)
+	para.width = UiTheme.font().get_string_size(id_7608, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT + 1).x * 0.8
+	var breaks_ok := para.get_line_count() >= 2
+	for i in range(1, para.get_line_count()):
+		var start := shown.substr(0, para.get_line_range(i).x).replace(wj, "").length()
+		if start > origin_at:
+			breaks_ok = false
+	_check(shown.replace(wj, "") == id_7608 and shown.find(wj) > 0 and breaks_ok,
+		"立绘面板身份行垫字连接符：去掉后与原串相同，按八成宽折成 %d 行、只在「・」之后折" % para.get_line_count())
+	pp.queue_free()
 	GS.from_dict({})
