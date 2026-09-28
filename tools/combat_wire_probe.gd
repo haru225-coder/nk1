@@ -4,6 +4,8 @@ extends SceneTree
 ##      godot --headless --path . -s res://tools/combat_wire_probe.gd -- --contract   # 只验文案与接线符号
 ##      NK1_PROBE_SLOW_MS=160 DISPLAY=:2 godot --path . -s res://tools/combat_wire_probe.gd   # 压帧自检（lane gd11）
 ## headless 下不加 --contract 必红（shot_gate.gd）。
+## lane combat10：_check_wiring 另验剧情挂钩锚点（遇盗 → 开战 → 夺船 → 回写，字样表在 CombatDirector.STORY_ANCHORS）；
+##   写实海战五块与这条挂钩的真跑冒烟在 tools/combat_realism_probe.gd（headless，见 docs/combat_realism_verify.md）。
 
 const VIEW := Vector2i(1280, 720)
 var OUT_DIR := ShotGate.out_dir("combat")
@@ -13,6 +15,7 @@ const SP := preload("res://tools/src_probe.gd")  # 按名认函数的源码探�
 const CombatShoreHook := preload("res://scripts/combat/CombatShoreHook.gd")
 const ShotGate := preload("res://tools/shot_gate.gd")
 const CombatStage := preload("res://tools/combat_probe_stage.gd")
+const Director := preload("res://scripts/combat/CombatDirector.gd")  # 剧情挂钩锚点表（lane combat10）
 const TAG := "COMBAT_WIRE_PROBE"
 const EXPECTED_SHOTS := 4
 
@@ -146,6 +149,12 @@ func _check_wiring() -> void:
 	var main := FileAccess.get_file_as_string("res://scripts/Main.gd")
 	_expect(main.find("CombatShoreHook") >= 0 or main.find("scripts/combat/CombatShoreHook") >= 0,
 		"Main 应薄接入 CombatShoreHook（F9）")
+	# lane combat10：剧情挂钩锚点逐条验——剧情日后在「遇盗开打」「夺得敌船」上挂旗标 / 新闻就挂在这几支函数上，锚点动了先红
+	var probs := Director.anchor_problems()
+	for a in Director.STORY_ANCHORS:
+		var mine := probs.filter(func(p): return str(p).begins_with(str(a["id"]) + "："))
+		_expect(mine.is_empty(), "剧情锚点 %s：%s.%s（%s）%s" % [a["id"], str(a["file"]).get_file(), a["func"], a["what"],
+			"" if mine.is_empty() else "——" + "; ".join(mine)])
 
 
 func _expect(cond: bool, msg: String) -> void:
