@@ -8,6 +8,39 @@ const IMPACT_PATH := "res://scenes/ImpactExplosion.tscn"
 const SPLASH_PATH := "res://scenes/WaterSplash.tscn"
 const GROUP := "nk1_combat_fx"
 
+## 船图契约（钩子线、海寇线、美术包线共用）：海战精灵 = assets/ship_<id>.png，文件在才用，不在就回落默认贴图。
+##   己方旗舰：id = 旗舰 ships.json type，回落 ship_fu.png（Ship.tscn 里挂的那张）
+##   敌船：id = enemy.sprite，没有就用 type，回落 ship_falcon.png（PirateShip.tscn 里挂的那张）
+## 两张默认贴图由出图方同名重画；新槽（ship_pirate_boat / ship_sea_falcon / ship_yuan_patrol …）收一张生效一张。
+## 门禁（check_symbols 十节）：ship_<x>.png 若存在须 512² RGBA，x 须是 ships.json 的 type 或 SHIP_SPRITE_EXTRA 里的名字。
+const SHIP_SPRITE_FMT := "res://assets/ship_%s.png"
+const SHIP_SPRITE_OWN := "res://assets/ship_fu.png"
+const SHIP_SPRITE_ENEMY := "res://assets/ship_falcon.png"
+## 不是 ships.json type、却可以当精灵 id 的名字：enemy.sprite 专用（元军哨船 type 仍是 sea_falcon）
+const SHIP_SPRITE_EXTRA := ["yuan_patrol"]
+
+
+## 按船图契约取精灵路径。id 空、或 assets/ship_<id>.png 不在，就回落 fallback；不读 autoload，-s 探针可直接调。
+static func ship_sprite_path(sprite_id: String, fallback: String) -> String:
+	var sid := sprite_id.strip_edges()
+	if sid == "" or not sid.is_valid_filename():
+		return fallback
+	var path := SHIP_SPRITE_FMT % sid
+	if ResourceLoader.exists(path, "Texture2D"):
+		return path
+	return fallback
+
+
+## 把 sprite 换成 path 指的贴图；已是这张就不动。load 失败保留原贴图（画面零变化）。
+static func apply_ship_sprite(sprite: Sprite2D, path: String) -> void:
+	if sprite == null:
+		return
+	if sprite.texture != null and sprite.texture.resource_path == path:
+		return
+	var tex := load(path) as Texture2D
+	if tex != null:
+		sprite.texture = tex
+
 ## 顿帧：短时压低 time_scale，结束后复原。叠加以最后一次为准。
 static var _hitstop_token := 0
 

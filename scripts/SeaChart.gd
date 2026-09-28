@@ -62,6 +62,12 @@ const MAP_INK := Color(0.165, 0.141, 0.114)
 const MAP_PAPER := Color(0.894, 0.827, 0.682)
 const MAP_CINNABAR := Color(0.659, 0.196, 0.165)
 const MAP_AZURITE := Color(0.208, 0.376, 0.498)
+## 海战敌船条目（pending_battle.enemy 的一格）。type 决定船名、水手区间、夺船后按什么船型入列；
+## sprite 只管海战精灵 assets/ship_<sprite>.png，缺省用 type，缺图回落 ship_falcon.png（船图契约，见 CombatFx.ship_sprite_path）。
+## 海寇一律 pirate_boat「快船」（备忘 #7：海鹘只指船屋卖的宋水军战船）。
+const PIRATE_ENEMY := {"type": "pirate_boat", "count": 2, "hull_hp": 100.0}
+## 元军哨船：type 不动（ships.json 没有 yuan_patrol 这一型，改 type 夺船会悄悄失败），另挂 sprite。
+const PATROL_ENEMY := {"type": "sea_falcon", "sprite": "yuan_patrol", "count": 3, "hull_hp": 120.0}
 
 
 func _ready() -> void:
@@ -1440,7 +1446,7 @@ func _on_fight_pirates() -> void:
 		"battle": true,
 		"power": enemy,
 		"player_power": power,
-		"enemy": [{"type": "sea_falcon", "count": 2, "hull_hp": 100.0}],
+		"enemy": [PIRATE_ENEMY.duplicate()],
 		"sea_name": _battle_sea_name(),
 		"source": {"scene": "SeaChart", "event": "pirate"},
 	}
@@ -1644,7 +1650,7 @@ func _on_fight_patrol() -> void:
 		"battle": true,
 		"power": enemy,
 		"player_power": power,
-		"enemy": [{"type": "sea_falcon", "count": 3, "hull_hp": 120.0}],
+		"enemy": [PATROL_ENEMY.duplicate()],
 		"sea_name": _battle_sea_name(),
 		"source": {"scene": "SeaChart", "event": "yuan_patrol"},
 	}

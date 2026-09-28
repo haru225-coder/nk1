@@ -3,7 +3,7 @@
     "title": "东亚海域立志传船种",
     "era": "南宋末，约1260-1277",
     "prototype": "v1.0-uw",
-    "note": "capacity 载重以宋制「料」计；base_speed 为无风修正时的日行里数（宋里，1里约576米）；crew_min 低于此数无法出海。"
+    "note": "capacity 载重以宋制「料」计；base_speed 为无风修正时的日行里数（宋里，1里约576米）；crew_min 低于此数无法出海。for_sale 为 false 的船型船屋不上架（缺省视为可售），只能夺船得来。"
   },
   "ships": [
     {
@@ -75,6 +75,21 @@
       "price": 15000,
       "unlock": "ch2",
       "historical_note": "两侧置浮板如鹘翼，遇风涛不易倾侧。宋水军战船，商人得之多为护航。"
+    },
+    {
+      "id": "pirate_boat",
+      "name": "快船",
+      "class": "多桨快船",
+      "capacity": 500,
+      "crew_min": 40,
+      "crew_max": 100,
+      "durability": 700,
+      "cannon_slots": 12,
+      "base_speed": 170,
+      "price": 15000,
+      "unlock": "ch2",
+      "for_sale": false,
+      "historical_note": "狭长多桨，头低尾高，一面席帆，不挂旗；桨手比商船多出一倍。"
     },
     {
       "id": "fu_ship_large",

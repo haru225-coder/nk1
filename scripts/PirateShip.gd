@@ -12,6 +12,7 @@ var target: Node2D = null
 # lazy load：与 Ship.gd 同因，打断 Cannonball 场景自引用环
 var cannonball_scene: PackedScene = null
 const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
+const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 
 var fire_timer: float = 0.0
 
@@ -20,8 +21,10 @@ var cannon_count: int = 3
 
 ## P4-2 接舷：被玩家钩住后停止航行/开炮，进入白刃判定
 var grappled: bool = false
-## 敌船型号（_spawn_enemy 传入；白刃夺船时 Fleet.add_ship 用）
-var ship_type: String = "sea_falcon"
+## 敌船型号（_spawn_enemy 传入；白刃夺船时 Fleet.add_ship 用）。缺省是海寇快船
+var ship_type: String = "pirate_boat"
+## 海战精灵 id（_spawn_enemy 传 enemy.sprite；空则用 ship_type）→ assets/ship_<id>.png，缺图回落 ship_falcon.png
+var sprite_id: String = ""
 ## 敌船名（夺船后并入舰队沿用；节点名保持 "PirateShip" 前缀供 WorldMap 计数）
 var ship_name: String = ""
 ## 敌船水手数（_spawn_enemy 按船型初始化）；白刃判定输入
@@ -33,6 +36,18 @@ var captain_force: float = 1.0
 
 func _ready() -> void:
 	sprite.modulate = Color.WHITE
+	apply_sprite()
+
+
+## 船图契约：敌船精灵取 assets/ship_<sprite_id 或 ship_type>.png，缺图留 PirateShip.tscn 里的 ship_falcon.png。
+## 不依赖 @onready（没进树也能调），探针直接拿 PirateShip.tscn 实例验回落。
+func sprite_key() -> String:
+	return sprite_id if sprite_id.strip_edges() != "" else ship_type
+
+
+func apply_sprite() -> void:
+	_CombatFx.apply_ship_sprite(get_node_or_null("Sprite2D") as Sprite2D,
+		_CombatFx.ship_sprite_path(sprite_key(), _CombatFx.SHIP_SPRITE_ENEMY))
 
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(target): return

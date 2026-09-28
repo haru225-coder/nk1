@@ -149,6 +149,7 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 	for mark in ["ch1", "ch2", "ch3", "ch4"]:
 		if GameState.is_chapter_reached(mark):
 			reached.append(mark)
+	# ships.json 全表交给 sale_ids：缺 unlock 按第一章算，for_sale=false（海寇快船）在 sale_ids 里滤掉，哪章都不上架
 	var catalog: Array = GameManager.ships_data.get("ships", [])
 	var for_sale := DrydockBerth.sale_ids(catalog, reached)
 	if for_sale.size() > 0:

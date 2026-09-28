@@ -26,6 +26,8 @@ static func other_hulls(count: int, index: int) -> PackedInt32Array:
 	return out
 
 
+## offers 是 ships.json 全表（ShipyardPage 原样交进来）。缺 unlock 视为第一章；for_sale 为 false 的船型
+## （海寇快船 pirate_boat，只能夺船得来）哪一章都不上架——不在这里滤掉，第一章船屋就会把它摆出来。
 static func sale_ids(offers: Array, reached: PackedStringArray) -> PackedStringArray:
 	var out := PackedStringArray()
 	var seen := {}
@@ -36,6 +38,8 @@ static func sale_ids(offers: Array, reached: PackedStringArray) -> PackedStringA
 		var sid := str(row.get("id", ""))
 		var unlock := str(row.get("unlock", "ch1"))
 		if sid == "" or bool(seen.get(sid, false)):
+			continue
+		if not bool(row.get("for_sale", true)):
 			continue
 		if not reached.has(unlock):
 			continue

@@ -2,7 +2,7 @@
 ## 停一拍 → 题签淡去、墨边退开。底下的海面始终看得见，不是 UiTransition 那种全黑墨幕。
 ## 题签写法与 UiTransition 同一路：只写可核对的事实——「海名・事由」，副题是历法日期与敌船数，不写评语。
 ##
-##   var lb := CombatLetterbox.enter(self, CombatLetterbox.sea_title("刺桐外海", "接舷"), "咸淳三年六月十二　海鹘二艘")
+##   var lb := CombatLetterbox.enter(self, CombatLetterbox.sea_title("刺桐外海", "接舷"), "咸淳三年六月十二　快船二艘")
 ##   var lb := CombatLetterbox.exit(self, CombatLetterbox.outcome_title("win", "刺桐外海"), sub, on_black)
 ##   if lb != null: await lb.finished
 ##
@@ -97,10 +97,11 @@ static func outcome_title(outcome: String, sea_name := "") -> String:
 	return sea_title(sea_name, OUTCOME_ACT.get(outcome, "战罢"))
 
 
-## 敌船数副题：「海鹘二艘」。entry 形同 pending_battle.enemy（type / count）。
-## 船名用本地短表，避免 -s 探针编译期依赖 Fleet/GameManager。
+## 敌船数副题：「快船二艘」。entry 形同 pending_battle.enemy（type / count）。
+## 船名用本地短表，避免 -s 探针编译期依赖 Fleet/GameManager；表里凡是 ships.json 的 type，名字须与 ships.json 的 name 一致（check_symbols 对账）。
 static func enemy_note(enemy_list: Array) -> String:
 	var type_names := {
+		"pirate_boat": "快船",
 		"sea_falcon": "海鹘",
 		"fu_ship": "福船",
 		"iron_child": "铁子",

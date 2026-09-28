@@ -1958,13 +1958,13 @@ else:
 ship_tscn = open(os.path.join(ROOT, "scenes", "Ship.tscn"), encoding="utf-8").read()
 pirate_tscn = open(os.path.join(ROOT, "scenes", "PirateShip.tscn"), encoding="utf-8").read()
 if "ship_fu.png" in ship_tscn and "ship_falcon.png" in pirate_tscn and "ship_topdown.png" not in ship_tscn:
-    print("  ✓ 玩家福船 / 敌船海鹘用精绘精灵，不再用照片底板")
+    print("  ✓ 玩家福船 / 敌船快船用精绘精灵，不再用照片底板")
 else:
     print("  ✗ 船精灵仍是照片底板或未换新图")
-    problems.append("船精灵未换成福船/海鹘")
+    problems.append("船精灵未换成福船/快船")
 if "Color(1, 0.5, 0.5)" in pirate_src:
     print("  ✗ 海盗还在用红色 modulate 盖船图")
-    problems.append("海盗红色 modulate 会脏掉海鹘精灵")
+    problems.append("海盗红色 modulate 会脏掉快船精灵")
 else:
     print("  ✓ 海盗不再用红色 modulate 盖船图")
 cb_tscn = open(os.path.join(ROOT, "scenes", "Cannonball.tscn"), encoding="utf-8").read()
@@ -2062,6 +2062,112 @@ if os.path.exists(_bg_map) and open(_bg_map, "rb").read(2) == b"\xff\xd8":
 else:
     print("  ✗ 缺 bg_world_map.jpg 或不是真 JPEG（海图背景留黑）")
     problems.append("缺 bg_world_map.jpg")
+
+# 船图契约（备忘 #7 海寇快船 + 钩子第一批第 5 条「海战精灵按船型」，lane pirate-boat-0928）：
+# 海战精灵 = assets/ship_<id>.png，文件在才用、不在回落两张默认贴图（上面已锁）。己方 id = 旗舰 type（回落 ship_fu），
+# 敌船 id = enemy.sprite 或 type（回落 ship_falcon）。这里查三件：① assets 下 ship_* 文件（不分大小写，除默认贴图、shader、.import）
+# 都得是小写 ship_<x>.png、512² RGBA8，x 是 ships.json 的
+# type 或 CombatFx.SHIP_SPRITE_EXTRA 里的名字——名字 / 扩展名画错永远不上屏，规格画错上屏走样（碰撞半径 24、scale 0.62 共用）；
+# ② 取图接线还在；③ 海寇 / 元军哨船两条敌船条目，墨边名表里的船名与 ships.json 对得上。
+def _png_ihdr(path):
+    """只读 PNG 头：(宽, 高, 位深, 色型)；不是 PNG 给 None。色型 6 = RGBA。"""
+    import struct as _st
+    with open(path, "rb") as _f:
+        _head = _f.read(33)
+    if len(_head) < 33 or _head[:8] != b"\x89PNG\r\n\x1a\n" or _head[12:16] != b"IHDR":
+        return None
+    return _st.unpack(">IIBB", _head[16:26])
+
+
+with open(os.path.join(ROOT, "data", "ships.json"), encoding="utf-8") as _f:
+    _ships_rows = json.load(_f)["ships"]
+_ship_names = {s["id"]: s.get("name", "") for s in _ships_rows}
+_fx_src = open(os.path.join(SCRIPTS, "combat", "CombatFx.gd"), encoding="utf-8").read()
+_m_extra = re.search(r"SHIP_SPRITE_EXTRA\s*:=\s*\[([^\]]*)\]", _fx_src)
+_sprite_extra = set(re.findall(r'"([^"]+)"', _m_extra.group(1))) if _m_extra else set()
+# 不按船型取的旧文件：两张默认贴图（上面已查真 RGBA / 精绘），ship_topdown 是海图旧照片底板（ShipMarker 已改矢量，不进海战）
+_SHIP_SPRITE_LEGACY = {"ship_fu.png", "ship_falcon.png", "ship_topdown.png"}
+# 不是图的同名前缀文件：海战精灵抠色 shader 与它的 uid
+_SHIP_SPRITE_SIDECAR = {"ship_colorkey.gdshader", "ship_colorkey.gdshader.uid"}
+_sprite_bad, _sprite_ok = [], []
+_assets_dir = os.path.join(ROOT, "assets")
+# 扫 ship_* 的全部文件（前缀、扩展名都不分大小写）：运行期只找小写 ship_<id>.png，.PNG / .webp / .jpg 交进来永远不上屏，要判红
+for _fn in sorted(os.listdir(_assets_dir)):
+    _fl = _fn.lower()
+    if not _fl.startswith("ship_") or not os.path.isfile(os.path.join(_assets_dir, _fn)):
+        continue
+    if _fl.endswith(".import") or _fn in _SHIP_SPRITE_SIDECAR or _fn in _SHIP_SPRITE_LEGACY:
+        continue
+    if not (_fn.startswith("ship_") and _fn.endswith(".png")):
+        _sprite_bad.append(f"{_fn}：运行期只找小写 ship_<id>.png，这个文件名 / 扩展名永远不上屏（改名并转成 PNG）")
+        continue
+    _x = _fn[len("ship_"):-len(".png")]
+    if _x not in _ship_names and _x not in _sprite_extra:
+        _sprite_bad.append(f"{_fn}：{_x} 不是 ships.json 的 type，也不在 CombatFx.SHIP_SPRITE_EXTRA（永远不上屏）")
+        continue
+    _ih = _png_ihdr(os.path.join(_assets_dir, _fn))
+    if _ih is None or _ih[:2] != (512, 512) or _ih[2:] != (8, 6):
+        _sprite_bad.append(f"{_fn} 须 512x512 RGBA8（实为 {_ih if _ih else '不是 PNG'}；宽×高×位深×色型）")
+        continue
+    _sprite_ok.append(_fn)
+if _m_extra and "yuan_patrol" in _sprite_extra and not _sprite_bad:
+    print(f"  ✓ 船图契约：按船型的海战精灵 {len(_sprite_ok)} 张，都是 512² RGBA 且名字对得上 ships.json / 白名单"
+          f"（{'、'.join(_sprite_ok) or '暂无，全部回落默认贴图'}）")
+else:
+    for _b in _sprite_bad or ["CombatFx.SHIP_SPRITE_EXTRA 取不到或缺 yuan_patrol"]:
+        print(f"  ✗ 船图契约：{_b}")
+    problems.append("船图契约：海战精灵文件名或规格不合")
+_fx_b = func_bodies(_fx_src)
+_ship_b = func_bodies(ship_src)
+_pirate_b = func_bodies(pirate_src)
+_wm_b = func_bodies(wm_src)
+if (
+    'SHIP_SPRITE_FMT := "res://assets/ship_%s.png"' in _fx_src
+    and 'SHIP_SPRITE_OWN := "res://assets/ship_fu.png"' in _fx_src
+    and 'SHIP_SPRITE_ENEMY := "res://assets/ship_falcon.png"' in _fx_src
+    and "ResourceLoader.exists(path" in _fx_b.get("ship_sprite_path", "")
+    and "return fallback" in _fx_b.get("ship_sprite_path", "")
+    and "apply_type_sprite(" in _ship_b.get("_ready", "") and "Fleet.flagship()" in _ship_b.get("_ready", "")
+    and "SHIP_SPRITE_OWN" in _ship_b.get("apply_type_sprite", "")
+    and "apply_sprite()" in _pirate_b.get("_ready", "")
+    and "SHIP_SPRITE_ENEMY" in _pirate_b.get("apply_sprite", "")
+    and "sprite_id" in _pirate_b.get("sprite_key", "") and "ship_type" in _pirate_b.get("sprite_key", "")
+    and 'entry.get("sprite"' in _wm_b.get("_setup_combat", "")
+    and "p.sprite_id = sprite_id" in _wm_b.get("_spawn_enemy", "")
+):
+    print("  ✓ 船图契约接线：旗舰按 type、敌船按 sprite 或 type 取 assets/ship_<id>.png，缺图回落 ship_fu / ship_falcon")
+else:
+    print("  ✗ 船图契约接线断了（CombatFx.ship_sprite_path / Ship.apply_type_sprite / PirateShip.apply_sprite / WorldMap 传 sprite）")
+    problems.append("船图契约接线断了")
+_sc_ships = open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()
+_sc_ships_b = func_bodies(_sc_ships)
+_m_pir = re.search(r"^const PIRATE_ENEMY := (\{.*\})$", _sc_ships, re.M)
+_m_pat = re.search(r"^const PATROL_ENEMY := (\{.*\})$", _sc_ships, re.M)
+_pir = json.loads(_m_pir.group(1)) if _m_pir else {}
+_pat = json.loads(_m_pat.group(1)) if _m_pat else {}
+if (
+    _pir.get("type") == "pirate_boat" and "sprite" not in _pir
+    and _pat.get("type") == "sea_falcon" and _pat.get("sprite") == "yuan_patrol"
+    and _pir.get("type") in _ship_names and _pat.get("type") in _ship_names
+    and _pat.get("sprite") in _sprite_extra
+    and "PIRATE_ENEMY.duplicate()" in _sc_ships_b.get("_on_fight_pirates", "")
+    and "PATROL_ENEMY.duplicate()" in _sc_ships_b.get("_on_fight_patrol", "")
+):
+    print("  ✓ 海寇迎战出 pirate_boat（快船，夺来按快船入列）；元军哨船 type 仍是 sea_falcon，精灵另挂 sprite=yuan_patrol")
+else:
+    print(f"  ✗ 海战敌船条目不合契约（海寇 {_pir or '取不到'}；元军哨船 {_pat or '取不到'}）")
+    problems.append("海战敌船条目不合契约")
+_lb_ships = open(os.path.join(SCRIPTS, "ui", "CombatLetterbox.gd"), encoding="utf-8").read()
+_m_names = re.search(r"var type_names := \{(.*?)\n\t\}", func_bodies(_lb_ships).get("enemy_note", ""), re.S)
+_lb_names = dict(re.findall(r'"(\w+)":\s*"([^"]+)"', _m_names.group(1))) if _m_names else {}
+_lb_off = [f"{k}→{v}（ships.json 作「{_ship_names[k]}」）" for k, v in _lb_names.items()
+           if k in _ship_names and v != _ship_names[k]]
+_lb_miss = [t for t in (_pir.get("type"), _pat.get("type")) if t and t not in _lb_names]
+if _lb_names and not _lb_off and not _lb_miss:
+    print(f"  ✓ 海战墨边副题按真实船名：{'、'.join(f'{k}={v}' for k, v in _lb_names.items() if k in _ship_names)}")
+else:
+    print(f"  ✗ 海战墨边名表与 ships.json 不合：名字不符 {_lb_off or '无'}；海战敌船 type 不在表里 {_lb_miss or '无'}")
+    problems.append("海战墨边名表与 ships.json 不合")
 
 print()
 print("=" * 68)

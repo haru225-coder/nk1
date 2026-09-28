@@ -737,12 +737,13 @@ def other_hulls(count, index):
     return [i for i in range(count) if i != on]
 
 def sale_ids(offers, reached):
+    """与 DrydockBerth.sale_ids 同一规则：缺 unlock 按第一章；for_sale 为 False 的船型（海寇快船）哪章都不上架。"""
     out = []
     seen = set()
     for row in offers:
         sid = row["id"]
         unlock = row.get("unlock", "ch1")
-        if not sid or sid in seen or unlock not in reached:
+        if not sid or sid in seen or not row.get("for_sale", True) or unlock not in reached:
             continue
         seen.add(sid)
         out.append(sid)
@@ -753,11 +754,19 @@ YARD_OFFERS = [
     {"id": "keel_boat", "unlock": "ch1"},
     {"id": "fu_ship_medium", "unlock": "ch1"},
     {"id": "canton_ship", "unlock": "ch2"},
+    {"id": "pirate_boat", "for_sale": False},
 ]
 sale_ch1 = sale_ids(YARD_OFFERS, ["ch1"])
 sale_ch2 = sale_ids(YARD_OFFERS, ["ch1", "ch2"])
 check(sale_ch1 == ["sampan", "keel_boat", "fu_ship_medium"], f"第一章坞外待售 {sale_ch1}")
 check(len(sale_ch2) == 4 and sale_ch2[-1] == "canton_ship", f"第二章坞外待售 {sale_ch2}")
+# 真表：快船（pirate_boat）第一到第四章都不上架；海鹘照它自己的 unlock 上架（快船不上架不能连海鹘一起滤掉）
+_catalog = load("ships.json")["ships"]
+_falcon_ch = ch_num(ships["sea_falcon"].get("unlock", "ch1"))
+for _n in range(1, 5):
+    _sale_n = sale_ids(_catalog, [f"ch{i}" for i in range(1, _n + 1)])
+    check("pirate_boat" not in _sale_n and ("sea_falcon" in _sale_n) == (_n >= _falcon_ch),
+          f"第{_n}章船屋不卖快船，海鹘{'在' if _n >= _falcon_ch else '未到'}（{len(_sale_n)} 艘待售）")
 check(berth_index(1, 5) == 0 and berth_index(3, 5) == 2 and other_hulls(3, 0) == [1, 2],
       "坞位夹在船队里，坞上这一艘不进换船")
 print(f"  ── 跑商 24 趟（起始第 {G.chapter} 章，可达 {len(open_ports())} 港）──")
@@ -973,7 +982,7 @@ G.morale = 70
 power = fleet_power_py()
 print(f"  标准舰队战力 {power:.1f}（士气 70）")
 
-# 构造 pending_battle：敌船区间 randf_range(180,520)，enemy 两条海鹘战船
+# 构造 pending_battle：敌船区间 randf_range(180,520)，enemy 两条海寇快船（pirate_boat，数值同海鹘）
 enemy_power = 350.0  # 敌力中位（设计上标准舰队可胜）
 hull = 100.0 * max(0.8, min(3.0, enemy_power / power))
 print(f"  敌力 {enemy_power}，单船血 {hull:.0f}（战力比缩放）")

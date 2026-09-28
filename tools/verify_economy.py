@@ -34,6 +34,8 @@ def load(name):
 goods = {g["id"]: g for g in load("goods.json")["goods"]}
 ports = {p["id"]: p for p in load("ports.json")["ports"]}
 ships = {s["id"]: s for s in load("ships.json")["ships"]}
+## 船屋上架的船型（DrydockBerth.sale_ids 滤掉 for_sale=false 的海寇快船）。「全船队」的船价总和只算这些。
+sale_ships = {sid: s for sid, s in ships.items() if s.get("for_sale", True)}
 
 ROLE_MOD = {"origin": 0.65, "normal": 1.0, "consumer": 1.75}
 TARIFF = 0.10
@@ -318,6 +320,14 @@ check(declared <= set(range(1, max_ch + 1)),
 ship_ch = {ch_num(s.get("unlock", "ch1")) for s in ships.values()}
 check(ship_ch <= set(range(1, max_ch + 1)),
       f"ships.json 引用的章节号 {sorted(ship_ch)} 均在定义范围内")
+# 海寇快船（备忘 #7）：夺船所得从海鹘改名快船，平衡零变化——海战、白刃、载重、航速、改装费用到的数值逐项照抄海鹘；
+# 船屋不上架。日后要单调快船，先改这条断言，再跑一遍 simulate_run 看夺船后的账。
+_PIRATE_SAME = ("capacity", "crew_min", "crew_max", "durability", "cannon_slots", "base_speed", "price")
+_pb, _sf = ships.get("pirate_boat", {}), ships.get("sea_falcon", {})
+_pb_diff = [k for k in _PIRATE_SAME if _pb.get(k) != _sf.get(k)]
+check(bool(_pb) and not _pb_diff, f"快船 pirate_boat 数值照抄海鹘（不一致：{_pb_diff or '无'}）")
+check(bool(_pb) and _pb.get("for_sale") is False and "pirate_boat" not in sale_ships,
+      "快船 for_sale=false，不进船屋上架表")
 
 finals = [c for c in chapters if not c.get("next_requires")]
 check(len(finals) == 1, "恰好有一个最终章（next_requires 为空）")
@@ -924,9 +934,9 @@ full_costs = {cid: full_upgrade_cost(cid) for cid in ships}
 check(all(full_costs[cid] <= ships[cid]["price"] * 0.6 for cid in ships),
       f"单船升满帆甲成本 ≤ 船价 60%（最贵 {max(full_costs.values())} 钱）")
 
-# 7) 全船队升满总成本 ≥ 舰队船价总和 15%——真实资金沉淀
-fleet_total = sum(s["price"] for s in ships.values())
-fleet_full = sum(full_costs.values())
+# 7) 全船队升满总成本 ≥ 舰队船价总和 15%——真实资金沉淀（只算船屋上架的船型：夺来的快船不在船价表里）
+fleet_total = sum(s["price"] for s in sale_ships.values())
+fleet_full = sum(full_costs[cid] for cid in sale_ships)
 print(f"  全船队升满帆甲总成本 {fleet_full} 钱，船价总和 {fleet_total} 钱（占比 {fleet_full/fleet_total*100:.1f}%）")
 check(fleet_full >= fleet_total * 0.15,
       f"全船队升满总成本占船价 {fleet_full/fleet_total*100:.1f}% ≥ 15%（改装是真实资金沉淀）")

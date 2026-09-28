@@ -29,7 +29,7 @@ const SPLASH_FRAMES := 8
 const SPLASH_CELL := Vector2(96, 128)
 const SPLASH_ORIGIN := Vector2(48, 112)
 const SEQ_FPS := 12.0
-## 一轮齐射的节拍（秒）：三门炮错开出焰，弹落海鹘近旁起两柱水花
+## 一轮齐射的节拍（秒）：三门炮错开出焰，弹落海寇快船近旁起两柱水花
 const VOLLEY_PERIOD := 2.8
 const VOLLEY_FIRST := 0.6
 const GUN_STAGGER := 0.12
@@ -38,7 +38,7 @@ const CORNER_PX := 58.0
 
 const SLIP_TITLE := "市舶纪事"
 const SLIP_SEAL := "舷"
-const SLIP_SUB := "外洋遇劫　福船对海鹘"
+const SLIP_SUB := "外洋遇劫　福船对快船"
 const NOTE_COMBAT := "左舷齐射　烟未散"
 const NOTE_PORTRAIT := "绢本立像　名册可核"
 const HINT_ESC := "B　合上纪事"
@@ -86,7 +86,7 @@ func _process(delta: float) -> void:
 			i += 1
 
 
-## 放一轮舷侧齐射：炮焰按门错开，火星随第一门迸出；稍后海鹘近旁起水花。探针可直接调用。
+## 放一轮舷侧齐射：炮焰按门错开，火星随第一门迸出；稍后快船近旁起水花。探针可直接调用。
 func volley() -> void:
 	volley_count += 1
 	for gi in _guns.size():
@@ -402,7 +402,7 @@ func _build_combat_pane(_cv: Vector2) -> void:
 	var muzzle_frames := _strip_frames(FILL_MUZZLE, MUZZLE_FRAMES, MUZZLE_CELL)
 	var splash_frames := _strip_frames(FILL_SPLASH, SPLASH_FRAMES, SPLASH_CELL)
 	var seq_ok := muzzle_frames != null and splash_frames != null
-	# 右舷炮位：沿船身轴向排开，炮口朝海鹘
+	# 右舷炮位：沿船身轴向排开，炮口朝快船（ship_falcon.png 按船图契约同名重画成海寇快船）
 	var axis := Vector2(0, -1).rotated(fu_rot)
 	var side := Vector2(1, 0).rotated(fu_rot)
 	if seq_ok:

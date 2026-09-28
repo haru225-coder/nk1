@@ -176,6 +176,7 @@ func _check_copy_contracts() -> void:
 	_expect(Letterbox.outcome_title("flee", "刺桐外海") == "刺桐外海・脱战", "outcome flee")
 	_expect(Letterbox.outcome_title("lose", "刺桐外海") == "刺桐外海・败退", "outcome lose")
 	_expect(Letterbox.enemy_note([{"type": "sea_falcon", "count": 2}]) == "海鹘二艘", "enemy_note 中文船数")
+	_expect(Letterbox.enemy_note([{"type": "pirate_boat", "count": 2}]) == "快船二艘", "enemy_note 海寇写快船（备忘 #7）")
 
 
 func _expect_label_has(root_n: Node, name: String, needle: String) -> void:
