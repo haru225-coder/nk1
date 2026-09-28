@@ -264,6 +264,21 @@ if chars_file.is_file():
         check(exists(rel), f"人物 {cid} 的立绘 {pth} 文件不存在")
         check((ASSETS / (rel + ".import")).is_file(), f"人物 {cid} 的立绘 {pth} 缺 .import（编辑器未导入，load() 取不到）")
         portrait_checked += 1
+        # 按日期换画（portrait_before {"YYYY-MM": 路径}，CharacterArt.portrait_path）：每张同样要在库、有 .import，键须是年月
+        before = c.get("portrait_before") if isinstance(c, dict) else None
+        if before is not None:
+            check(isinstance(before, dict) and len(before) > 0, f"人物 {cid} 的 portrait_before 须是非空的 {{\"YYYY-MM\": 路径}}")
+            for ym, vp in (before.items() if isinstance(before, dict) else []):
+                check(re.fullmatch(r"1[1-3]\d\d-(0[1-9]|1[0-2])", str(ym)) is not None,
+                      f"人物 {cid} 的 portrait_before 键 {ym!r} 不是 YYYY-MM")
+                vp = str(vp)
+                if not vp.startswith("res://assets/"):
+                    check(False, f"人物 {cid} 的 portrait_before 图不在 res://assets/ 下：{vp!r}")
+                    continue
+                vrel = vp[len("res://assets/"):]
+                check(exists(vrel), f"人物 {cid} 的按日期换画 {vp} 文件不存在")
+                check((ASSETS / (vrel + ".import")).is_file(), f"人物 {cid} 的按日期换画 {vp} 缺 .import")
+                portrait_checked += 1
 
 print("=" * 68)
 if FAIL:
