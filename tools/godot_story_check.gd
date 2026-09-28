@@ -1134,10 +1134,15 @@ func _v0928_crew_check(main: Node) -> void:
 	_check(win_note.begins_with("接舷既定。") and win_note.find("已退") < 0 and win_note.find(want_clause) >= 0
 		and win_note.find(FX.cn_count(sd) + "日") >= 0 and win_note.find("船体受损 40") >= 0,
 		"尽数夺下的注记：接舷既定开头、不说已退、交代「%s」与水粮 %d 日（得「%s」）" % [want_clause, sd, win_note])
+	# 句序（09-29 复核）：钱数、战损紧跟「接舷既定。」，夺船交代放句末——海图顶匾第二行只留 28 字（SeaChart._refresh_strip：
+	# 超 28 取前 27 加「…」），截断只截交代的尾巴
+	var strip_cut := win_note.substr(0, 27) if win_note.length() > 28 else win_note
+	_check(win_note.find("船体受损") < win_note.find("夺来") and strip_cut.find("获财货 300 钱。") >= 0 and strip_cut.find("船体受损 40。") >= 0,
+		"夺船注记钱数战损在夺船交代之前，顶匾截成 28 字仍看得见（顶匾「%s」）" % strip_cut)
 	_check(FX.sea_win_note(100, 10, "").begins_with("海盗已退。") and FX.sea_win_note(100, 10, "", "yuan_patrol").begins_with("哨船退去。"),
 		"没夺船的注记：海寇「海盗已退」、元军哨船「哨船退去」")
 	GM.pending_battle = {}
-	# 三、元军哨船：先击沉一艘，再夺两艘 → 接舷既定＋哨船退去；夺来的叫「元哨船・一」，type 仍是海鹘
+	# 三、元军哨船：先击沉一艘，再夺两艘 → 接舷既定、不说退去、交代击沉一船；夺来的叫「元哨船・一」，type 仍是海鹘
 	Flt.set("ships", [])
 	Flt.call("add_ship", "fu_ship_medium", "")
 	got.clear()
@@ -1151,8 +1156,17 @@ func _v0928_crew_check(main: Node) -> void:
 	var d2: Dictionary = got[0][1] if got.size() == 1 else {}
 	var ships2: Array = Flt.get("ships")
 	var p_note: String = FX.sea_win_note(300, 0, "", "yuan_patrol", FX.sea_win_taken(d2, Flt.supply_days()))
-	_check(bool(d2.get("boarded", false)) and p_note.begins_with("接舷既定。哨船退去。夺来" + FX.cn_count(foes2.size() - 1, true) + "船") and p_note.find("海盗") < 0,
-		"元军哨船沉一夺二：注记「接舷既定。哨船退去。夺来…」，不叫海盗（得「%s」）" % p_note)
+	# 沉一夺二（09-29 复核）：一艘沉了、两艘归了你，没有一艘退走——不写「哨船退去」，交代击沉数
+	var sunk_clause := "击沉%s船，夺来%s船" % [FX.cn_count(1, true), FX.cn_count(foes2.size() - 1, true)]
+	_check(bool(d2.get("boarded", false)) and p_note.begins_with("接舷既定。获财货 300 钱。") and p_note.find("退") < 0
+		and p_note.find(sunk_clause) >= 0 and p_note.find("海盗") < 0,
+		"元军哨船沉一夺二：注记「接舷既定。获财货…」、不说退去、交代「%s」，不叫海盗（得「%s」）" % [sunk_clause, p_note])
+	# 海寇沉一夺一、末艘炮沉而中途夺过船：同样不说「海盗已退」；只有全靠炮击打赢的才沿用旧句（上一条）
+	var mix_board: String = FX.sea_win_note(200, 30, "", "pirate", FX.sea_win_taken({"boarded": true, "boarded_n": 1, "boarded_crew": 40, "enemies": 2}, 5))
+	var mix_gun: String = FX.sea_win_note(200, 30, "", "pirate", FX.sea_win_taken({"boarded": false, "boarded_n": 1, "boarded_crew": 40, "enemies": 2}, 5))
+	_check(mix_board.begins_with("接舷既定。获财货 200 钱。船体受损 30。击沉一船，夺来一船，添水手四十，")
+		and mix_gun.begins_with("获财货 200 钱。船体受损 30。击沉一船，夺来一船，") and mix_board.find("已退") < 0 and mix_gun.find("已退") < 0,
+		"海寇沉一夺一：末艘夺下「%s」／末艘炮沉「%s」，都不说已退" % [mix_board, mix_gun])
 	_check(ships2.size() >= 2 and str(ships2[1].get("name", "")) == str(patrol.get("prize_name", "")) + "・一" and str(ships2[1].get("type", "")) == "sea_falcon",
 		"夺来的元军哨船叫「%s・一」、type 仍是 sea_falcon（得 %s / %s）" % [patrol.get("prize_name", ""), ships2[1].get("name", "") if ships2.size() >= 2 else "无", ships2[1].get("type", "") if ships2.size() >= 2 else "无"])
 	GM.pending_battle = {}

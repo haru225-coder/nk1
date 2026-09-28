@@ -151,41 +151,49 @@ static func board_begin_subtitle() -> String:
 ## 海图战果注记（SeaChart._on_battle_result 用）：克制纪实，无叹号。
 ## source 是遭遇来源（pending_battle.source.event）：pirate 写「海盗已退」，yuan_patrol 写「哨船退去」——元军不叫海盗。
 ## taken 是夺船交代（缺省 {} = 没夺船，句子与改前一字不差）：
-##   boarded 末艘经接舷夺下 → 以「接舷既定。」开头；all 敌船尽数夺下 → 不再说「已退」（人家没退，是船归了你）；
-##   n 夺来艘数、crew 随船入列水手、supply_days 战后水粮可支日数 → 「夺来两船，添水手八十，水粮只够五日。」，数都由调用方实算。
+##   全靠炮击打赢（没夺船）才沿用「海盗已退 / 哨船退去」旧句。夺过船就不说退：场上的船要么沉了要么归了你，
+##   没有一艘退走（09-29 复核：沉一夺二写「哨船退去」读来像剩下的船跑了）。
+##   boarded 末艘经接舷夺下 → 以「接舷既定。」开头；
+##   钱数、战损紧跟在头上，夺船交代放句末：海图顶匾第二行只留 28 字，截断只截交代的尾巴，钱数战损不被挤掉（09-29 复核）；
+##   交代写「击沉一船，夺来两船，添水手八十，水粮只够五日。」——sunk 击沉艘数（0 不写）、n 夺来艘数、crew 随船入列水手、
+##   supply_days 战后水粮可支日数，数都由调用方实算。
 static func sea_win_note(spoil: int, damage: int, promo := "", source := "pirate", taken := {}) -> String:
 	var n := int(taken.get("n", 0))
-	var head := "接舷既定。" if bool(taken.get("boarded", false)) else ""
-	if not (n > 0 and bool(taken.get("all", false))):
+	var boarded := bool(taken.get("boarded", false))
+	var head := "接舷既定。" if boarded else ""
+	if n <= 0 and not boarded:
 		head += "哨船退去。" if source == "yuan_patrol" else "海盗已退。"
-	if n > 0:
-		head += prize_note(n, int(taken.get("crew", 0)), int(taken.get("supply_days", 0)))
 	var base := head + "获财货 %d 钱。船体受损 %d。" % [maxi(0, spoil), maxi(0, damage)]
+	if n > 0:
+		base += prize_note(n, int(taken.get("crew", 0)), int(taken.get("supply_days", 0)), int(taken.get("sunk", 0)))
 	var p := promo.strip_edges()
 	return base if p == "" else base + p
 
 
 ## WorldMap 获胜退出带的战果（battle_finished 的 data：boarded / boarded_n / boarded_crew / enemies）→ sea_win_note 的 taken。
-## supply_days 由调用方取战后实数（Fleet.supply_days()）；本文件不读 autoload。
+## 获胜时场上不剩活船，没夺下的都是击沉的：sunk = enemies − n。supply_days 由调用方取战后实数（Fleet.supply_days()）；本文件不读 autoload。
 static func sea_win_taken(data: Dictionary, supply_days: int) -> Dictionary:
 	var n := int(data.get("boarded_n", 0))
 	return {
 		"boarded": bool(data.get("boarded", false)),
 		"n": n,
 		"crew": int(data.get("boarded_crew", 0)),
+		"sunk": maxi(0, int(data.get("enemies", 0)) - n),
 		"all": n > 0 and n >= int(data.get("enemies", 0)),
 		"supply_days": supply_days,
 	}
 
 
-## 夺船交代一句：「夺来两船，添水手八十，水粮只够五日。」可支七日以内写「只够」，多写「尚可支」，断了写「已尽」。
-static func prize_note(n: int, crew: int, supply_days: int) -> String:
+## 夺船交代一句：「击沉一船，夺来两船，添水手八十，水粮只够五日。」sunk 为 0 不写击沉。
+## 可支七日以内写「只够」，多写「尚可支」，断了写「已尽」。
+static func prize_note(n: int, crew: int, supply_days: int, sunk := 0) -> String:
 	var supply := "水粮已尽"
 	if supply_days > 7:
 		supply = "水粮尚可支%s日" % cn_count(supply_days)
 	elif supply_days > 0:
 		supply = "水粮只够%s日" % cn_count(supply_days)
-	return "夺来%s船，添水手%s，%s。" % [cn_count(n, true), cn_count(maxi(0, crew)), supply]
+	var sunk_part := "击沉%s船，" % cn_count(sunk, true) if sunk > 0 else ""
+	return "%s夺来%s船，添水手%s，%s。" % [sunk_part, cn_count(n, true), cn_count(maxi(0, crew)), supply]
 
 
 ## 小数目写中文（零 至 九百九十九；liang=true 时单独的二写「两」：两船）。本文件不读 autoload，与 GameManager.cn_num 同写法、多到百位

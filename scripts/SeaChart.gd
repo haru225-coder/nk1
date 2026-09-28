@@ -1486,8 +1486,8 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 		var promo := ""
 		if fame_res.get("promoted", false):
 			promo = "案册改题「%s」。" % str(fame_res.get("title", {}).get("name", ""))
-		# Lane N：战果注记走 CombatFx 论文纪实句。按遭遇来源分句（海寇「海盗已退」、元军哨船「哨船退去」），
-		# 末艘接舷夺下以「接舷既定。」开头，尽数夺下不再说「已退」，另交代夺来几船、添多少水手、水粮还够几日（crew 线 09-28）
+		# Lane N：战果注记走 CombatFx 论文纪实句。全靠炮击打赢按遭遇来源分句（海寇「海盗已退」、元军哨船「哨船退去」）；
+		# 夺过船就不说退，末艘接舷夺下以「接舷既定。」开头，钱数战损在前、句末交代击沉几船夺来几船、添多少水手、水粮还够几日（crew 线 09-28／29）
 		var src_v = GameManager.pending_battle.get("source", {})
 		var src_event := str((src_v as Dictionary).get("event", "pirate")) if src_v is Dictionary else "pirate"
 		var taken := _CombatFx.sea_win_taken(data, Fleet.supply_days())
