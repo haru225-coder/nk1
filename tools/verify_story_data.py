@@ -206,6 +206,29 @@ check(war_ports >= 8, f"ports.json 只有 {war_ports} 港有 war 表，1276 年�
 xh = next((p for p in ports if p["id"] == "xinghua"), {}).get("war")
 xhh = next((p for p in ports if p["id"] == "xinghua_harbor"), {}).get("war")
 check(xh == xhh, "xinghua 与 xinghua_harbor 的 war 表须一致")
+# war_notice：按节点覆写月初战况通告（Economy.on_month_changed 有就用、没有用通用句）。
+# 键必须是本港 war 表里的节点（别处的月份不会翻牌、写了也不出），文案非空、不自带【战况】头（代码统一加）
+notice_ports = 0
+for p in ports:
+    wn = p.get("war_notice")
+    if wn is None:
+        continue
+    notice_ports += 1
+    pid = p["id"]
+    war = p.get("war") or {}
+    check(isinstance(wn, dict) and wn, f"ports {pid} war_notice 须为非空对象")
+    for ym, txt in (wn.items() if isinstance(wn, dict) else []):
+        check(ym in war, f"ports {pid} war_notice[{ym}] 不是本港 war 表里的节点（{sorted(war)}），月初不会翻牌")
+        check(isinstance(txt, str) and txt.strip() != "" and not txt.startswith("【"),
+              f"ports {pid} war_notice[{ym}] 须为非空文案、不带【战况】头")
+# 兴化 1277 秋是破城巷战、不是开门降：再陷那一节点须有覆写，且不写「降元」（通用句对开城降的港口才对）
+_xh_fall2 = sorted(k for k, v in (xh or {}).items() if v == "fallen")[-1:] if xh else []
+for pid in ("xinghua", "xinghua_harbor"):
+    _wn = next((p for p in ports if p["id"] == pid), {}).get("war_notice") or {}
+    for ym in _xh_fall2:
+        check("城破" in _wn.get(ym, "") and "降元" not in _wn.get(ym, ""),
+              f"ports {pid} war_notice[{ym}]（兴化再陷）须写城破、不写降元（现「{_wn.get(ym, '')}」）")
+check(notice_ports >= 2, f"ports.json 只有 {notice_ports} 港有 war_notice，兴化与兴化海口的再陷通告须覆写")
 
 # ── 守城卡路由完整 ─────────────────────────────────────
 card_ids = set(re.findall(r'const (CARD_SIEGE_\w+) := "(\w+)"', main_src))
