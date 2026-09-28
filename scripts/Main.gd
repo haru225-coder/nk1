@@ -889,6 +889,10 @@ func load_scene(scene_id: String) -> void:
 
 
 func _load_scene_inner(scene_id: String) -> void:
+	# 旧档：兴化海口从前也开守城页，在海口开过城防的档读回海口，直接入城（城防没了结，不给带「看风」的寻常港页）
+	if scene_id == "xinghua_harbor" and GameState.siege_open() and not GameState.is_ended():
+		log_msg(SIEGE_ENTER_LOG)
+		scene_id = "xinghua"
 	if current_scene_id != "" and current_scene_id != scene_id:
 		previous_scene_id = current_scene_id
 	current_scene_id = scene_id
@@ -2933,6 +2937,12 @@ func _on_shore_wait() -> void:
 	if _settle_overdue_siege():
 		update_status_panel()
 		return
+	# 士人线没进城（停在兴化海口不点「入城」、或在别港）候进城破那个月：跨月当下就结「未归」，
+	# 不等下次进港；岸带先清，册页底下不留昨日的「入城」卡、也不冒出新月的寻常卡
+	if _check_absent_from_xinghua():
+		_clear_shore()
+		update_status_panel()
+		return
 	_refresh_port_bg()
 	# 按页型重排（守城页候一日仍是守城页，不会退回寻常岸带多出「看风」）
 	_build_shore()
@@ -3419,6 +3429,8 @@ const CARD_SIEGE_ENVOY := "siege_envoy"        # 酒馆・使者
 const CARD_SIEGE_NANGSHAN := "siege_nangshan"  # 囊山设伏
 const CARD_SIEGE_NUNNERY := "siege_nunnery"    # 福州尼寺（不可操作）
 const CARD_SIEGE_ENTER := "siege_enter"        # 兴化海口・入城（守城页只在城里开）
+## 从兴化海口进城那一句（「入城」卡与海口旧档自动入城共用）
+const SIEGE_ENTER_LOG := "你从海口进了城。城门在身后合上。"
 const CARD_RESIGN := "special_resign_1275"
 const CARD_YASHAN := "special_yashan"
 const CARD_GANGSHOU := "special_gangshou_end"
@@ -3434,9 +3446,11 @@ func _check_absent_from_xinghua() -> bool:
 	if not (Calendar.year > 1276 or (Calendar.year == 1276 and Calendar.month >= 12)):
 		return false
 
+	# 在兴化海口结算的（海口候进腊月、腊月进了海口）：人就在城外，消息不是「在别处听到的」
+	var lead := "消息是从城里传出来的。你就在城外的海口。" if current_scene_id == "xinghua_harbor" else "消息是在别处听到的。"
 	_show_notice_dialog(
 		"未归", "兴化・景炎元年十二月",
-		"消息是在别处听到的。
+		"%s
 
 兴化城破了。城中兵不满千，守了一个多月。城头上挂过一幅白布，八个字，来往的人都说见过。
 部将林华出去侦敌，回来时后面跟着一万人。通判曹澄孙开的东门。
@@ -3451,7 +3465,7 @@ func _check_absent_from_xinghua() -> bool:
 一百多年后，福州台江，泗洲。江边没有庙。
 渔民出海前拜妈祖，只拜妈祖。官船出洋，二号封舟空着。
 
-这个世界少了一位海神。也没有多出几条回来的船。",
+这个世界少了一位海神。也没有多出几条回来的船。" % lead,
 		"未归"
 	)
 	return true
@@ -3671,7 +3685,7 @@ func _on_siege_card(card_id: String) -> void:
 			)
 		CARD_SIEGE_ENTER:
 			# 兴化海口 → 兴化城：短途陆路，当天就到（同一座城的两个节点，不过海图、不走日子）
-			log_msg("你从海口进了城。城门在身后合上。")
+			log_msg(SIEGE_ENTER_LOG)
 			load_scene("xinghua")
 
 
@@ -3944,7 +3958,14 @@ func _siege_dire_warning() -> String:
 	var left: int = int(fp["abs"]) - Calendar.absolute_day()
 	if left <= 0 or left > SIEGE_DIRE_DAYS:
 		return ""
-	return "援兵音信断绝。城中都说，捱不到%s。" % str(fp["month"])
+	return "援兵音信断绝。城中都说，捱不过%s。" % str(fp["month"])
+
+
+## 兴化海口「入城」卡副题：平日一句提醒；城破前 SIEGE_DIRE_DAYS 日起换告急口吻（同城防账告急行一个判据，月名同样倒推）
+func _siege_enter_subtitle() -> String:
+	if _siege_dire_warning() == "":
+		return "城被围了。你该在城里"
+	return "援兵断了。城中捱不过%s" % str(_siege_fall_point()["month"])
 
 
 ## 首守城破时点那一天（该月初一）的历法写法：{abs 绝对日, era 「景炎元年」, month 「腊月」}；表里没有返回空表。
@@ -4528,7 +4549,7 @@ func _special_cards() -> Array:
 
 	# 士人线守城：守城页只在兴化城里开，兴化海口在该守城的月份给一张「入城」卡（siege_ 前缀，走 _on_siege_card）
 	if current_scene_id == "xinghua_harbor" and _siege_due():
-		out.append({"id": CARD_SIEGE_ENTER, "title": "入城", "subtitle": "城被围了。你该在城里"})
+		out.append({"id": CARD_SIEGE_ENTER, "title": "入城", "subtitle": _siege_enter_subtitle()})
 
 	return out
 
