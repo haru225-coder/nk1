@@ -567,6 +567,9 @@ func _route_check() -> void:
 	var sheet_head := _find_label_text(main.get("_chapter_host"), "旧避风澳・")
 	_check(era_year == "景炎二年" and sheet_head.find("旧避风澳・" + era_year) >= 0 and GS.ended_at.begins_with(era_year),
 		"涵江出海结算标题与终局落款同为景炎二年（标题「%s」／落款「%s」）" % [sheet_head, GS.ended_at])
+	# 标题只写到年：卡在九、十两月都开，写死哪一月都会和落款错月（09-28 Snow 定 B 方案时一并定的，合并时别冲回「三月」）
+	_check(sheet_head.ends_with("旧避风澳・" + era_year),
+		"涵江出海结算标题不写月份（标题「%s」／落款「%s」）" % [sheet_head, GS.ended_at])
 	main._confirm_chapter_sheet()
 	# 守城页走岸带：五张 siege_* 卡全上岸，尼寺不占门，动作行无「看风」
 	GS.from_dict({})
