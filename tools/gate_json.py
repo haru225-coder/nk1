@@ -145,9 +145,11 @@ REGISTRY = [
      "judge": "（lane dec3 / dec4）`docs/待策划拍板清单_2026-09-28.md` 反引号里的每处「文件:行」：文件在、行号不越界、"
               "指的还是清单头部锚（「行号：……按 HEAD `x`」）那个提交里的同一段内容；挪了位的按 diff / 同文件原文 / 函数名（照 main_splits 改名表进拆出件）/ 跨文件原文四层算出新号；"
               "清单里不许留 `--fix` 打的「〔跟号待核：…〕」；改号自证：和上一版清单逐对比「旧锚旧号那段 == 本版锚本版号那段」，旧那段原文还在别处即号写歪了（lane auditfix1）；"
-              "仓外 brief 引用只查越界（`$NK1_BRIEFS` 不在只记 `⚠`）",
-     "green": "`锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）",
+              "仓外 brief 引用只查越界（`$NK1_BRIEFS` 不在只记 `⚠`）；落点所在函数只剩一行转发（func_body.forward_of）的穿透到真体再跟号，穿透不下去报「跟到一行转发」，"
+              "每次先跑内存里的「转发穿透自检」10 形（lane auditfix6）",
+     "green": "`✓ 转发穿透自检 10/10（…）` + `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）",
      "red": "`✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；"
+            "`…可跟号 → 文件:新号（穿透一行转发 …）` / `…跟不上，要人工：跟到一行转发：…` / `✗ 转发穿透自检 S… 期望 … 实得 …`（脚本自身坏了）；"
             "`结果：有问题（DRIFT 先跑 --fix 自动跟号…）`；修法 `python3 tools/check_decision_refs.py --fix`（所引文件先提交）"},
     # lane auditfix3：审计 audit1 判 cs12 / cs11「半实」（护栏现状下无能单独触发的实例），这里固化实例；跑一次约半分钟、要 git worktree
     {"id": "check_symbols_mutants", "tier": "lane", "when": "动 check_symbols 十三节的护栏（_node_block 记账 / NAMED_FUNCS 按 (文件, 名字) 认 / 自扫形状 / NF 标注）或它们守的反向断言",
@@ -233,7 +235,7 @@ SUBCHECKS = [
      "fail": "**不判红**：`⚠ WARN <文件>:L<行> <调用>  ← <作用域>：无此 func` / `…：无此 signal` = 字面量名在对应作用域里找不到，"
              "人工判真死引用 / 误报；`--json --suggest` 里记 `level: warn`（ok=true，不计 pass/fail）"},
     {"id": "Main 拆出件拼回（一之零）", "parent": "check_symbols", "lane": "ms / cs8 / gd16 / cs13", "oneclick": True,
-     "cmd": "python3 tools/check_symbols.py",
+     "cmd": "python3 tools/check_symbols.py", "also": ["tools/main_stitch.py"],  # 拼回本体（lane auditfix6 抽出，verify_economy 共用）
      "marks": ["一之零、Main.gd 拆出件", "MAIN_NOT_SPLITS", "SPLIT_MARK", "却不是一行转发", "拼回只对源码字符串断言有效",
                "条都有效：文件在、Main 一行转发到它", "gen_main_splits.read_splits()", "gen_main_splits.check()",
                "同读 tools/main_splits.txt", "文件却不存在（删了拆出件没更新清单）"],

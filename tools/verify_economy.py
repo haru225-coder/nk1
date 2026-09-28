@@ -17,6 +17,15 @@ ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from func_body import body_asks as _body_asks, body_ask as _body_ask, locate_func as _locate_func, missed as _body_missed, miss_why as _miss_why
 from src_probe import has_func, calls, has_tok, tok_find, tok_count, tok_rx  # 按名认函数的探查一律经 tools/src_probe.py（lane cs15：不按前缀认名）
+# Main 的源码断言读拼回的「未拆时」Main（tools/main_stitch.py，与 check_symbols 的 main_src 同一份，lane auditfix6）：
+# 直读 Main.gd 时拆走一刀，按名取体只取到一行转发（十一节判红）、子串断言跟着假红，每刀都得逐条改读拆出件。
+# 本来就要读 Main 原文的（_on_npc_bribe 先读转发再顺藤去 NpcPage）照旧直读。
+import main_stitch as _main_stitch
+_MAIN_FAMILY = []
+def main_family_src():
+    if not _MAIN_FAMILY:
+        _MAIN_FAMILY.append(_main_stitch.read_main_src())
+    return _MAIN_FAMILY[0]
 
 def load(name):
     with open(os.path.join(ROOT, "data", name), encoding="utf-8") as f:
@@ -1029,7 +1038,7 @@ check(_steady is not None and _nopermit.group(1) == str(BRIBE_COST) and _steady_
       f"疏通稳态 = 无引塞 {_nopermit.group(1) if _nopermit else '?'} + {_steady_txt} ≈ {_steady if _steady is None else round(_steady, 1)} 钱/航次，"
       "与 ea6 对照表同式（GameState 无引塞钱 / 涨关注 + 本口径）")
 # 同类：泉州征船名册两颗钮写了名声 / 海商信用 / 水粮 / 抽解八折，按下去的实扣也钉住（原先只有文案，数改了不红）
-_stand = _gd_body(_main_ea9, "_setup_quanzhou_standoff")
+_stand = _gd_body(main_family_src(), "_setup_quanzhou_standoff")
 _zhang_txt = re.findall(r'zhang\.text = "船借张世杰——[^"]*（名声 ([+−])(\d+)，海商信用 ([+−])(\d+)(，水粮减半)?）"', _stand)
 _zhang_fn = _stand.split("zhang.pressed.connect", 1)[1].split("choices_container.add_child(zhang)", 1)[0] if "zhang.pressed.connect" in _stand else ""
 _pu_txt = re.search(r'pu\.text = "跟蒲家——泉州抽解永久八折（海商信用 ([+−])(\d+)，名声 ([+−])(\d+)）"', _stand)
@@ -1437,8 +1446,8 @@ print("  海上买卖不得压过港口；委办是小批量、有期限、交�
 
 import re
 
-def gd_const(rel, name):
-    src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+def gd_const(rel, name):  # scripts/Main.gd 读拼回（常量随拆刀搬进拆出件也找得到）
+    src = main_family_src() if rel == "scripts/Main.gd" else open(os.path.join(ROOT, rel), encoding="utf-8").read()
     m = re.search(rf"const {name} := (-?[0-9.]+)", src)
     if not m:
         raise SystemExit(f"找不到 {rel} 的 const {name}")
@@ -1991,7 +2000,7 @@ check(has_tok(walk_body, "progress_moments", call=True) and has_tok(walk_body, "
       "遇事与八成从次日启航起按逐日风信累加")
 check("wind_changes" in plan_body and "departs_on_new_wind" in plan_body,
       "换季和途中换风会标出来")
-main_src = open(os.path.join(ROOT, "scripts/Main.gd"), encoding="utf-8").read()
+main_src = main_family_src()  # 拼回的 Main（见文件头 main_family_src）：牙行 / 委办 / 旅店这些下一刀拆走，下面的取体与子串断言不用跟
 check("hint_lbl.text = rumor" in main_src, "牙行行上直接写出传闻卖价，不只藏在悬停里")
 offer_body = _locate_func(gs_src, "contract_offer")
 fail_body = _locate_func(gs_src, "_fail_contract")

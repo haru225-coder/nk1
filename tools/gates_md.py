@@ -236,12 +236,15 @@ def main(argv):
     for c in reg["subchecks"]:
         if not check(c["parent"] in ids and bool(c.get("file")), f"附属自检「{c['id']}」所属门禁 {c['parent']} 在注册表里且有脚本"):
             continue
-        try:
-            src = open(os.path.join(ROOT, c["file"]), encoding="utf-8", errors="replace").read()
-        except OSError:
-            src = ""
+        src = ""
+        for f in [c["file"]] + c.get("also", []):  # also：判词由门禁 import 的共用件印的（lane auditfix6：拼回抽进 main_stitch）
+            try:
+                src += open(os.path.join(ROOT, f), encoding="utf-8", errors="replace").read()
+            except OSError:
+                pass
         lost = [k for k in c["marks"] if k not in src]
-        check(not lost, f"附属自检「{c['id']}」的开关 / 判词还在 {c['file']} 里" + (f"；找不到：{lost}" if lost else ""))
+        where = " / ".join([c["file"]] + c.get("also", []))
+        check(not lost, f"附属自检「{c['id']}」的开关 / 判词还在 {where} 里" + (f"；找不到：{lost}" if lost else ""))
     for c in reg["ci_steps"]:
         refs = re.findall(r"tools/[\w./-]+", c["cmd"])
         lost = [r for r in refs if not os.path.exists(os.path.join(ROOT, r))]

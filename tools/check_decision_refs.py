@@ -25,12 +25,21 @@
      函数头照改名表换名」只对上一处（.gd 函数体到下一处顶层声明为止，多行字符串里顶格的行不算）；
   ④ 跨文件原文：同后缀的仓内文件里，归一化后的那段在锚里本文件、工作树全仓都只出现一次（太短的行不认，免得撞车）。
   都找不到就是「跟不上」：印出所在函数现在在哪、同偏移是哪行、函数体里最像的一行（顶层散代码给同文件最像的几行），交人工。
+  穿透一行转发（lane auditfix6）：锚里那段在一支真函数里，落点（① ~ ④ 找到的、或原号原文都没动）所在的 .gd 函数却只剩一行转发
+  （判据就是 func_body.forward_of，与 check_symbols 十三节 / verify_economy 十一节同一份）——拆走一刀后函数头原样留在 Main、
+  体搬进拆出件，diff 会把函数头跟到转发上，原号没挪的连 DRIFT 都不报。现在顺转发走到真体（`_K.fn` 按 preload 常量、
+  `Crew.fn` 按 autoload / class_name、`fn` / `self.fn` 在本文件，最多 4 跳），在真体里重找那段（含函数头的段只比头之后几行，
+  头认真体那支的头——换了名、多了 main 形参）；③ 按名找到的那支是转发的，也先穿透再比。找到印「穿透一行转发 …」可跟号，
+  穿透不下去（目标解析不到 / 那段在真体里对不上）印「跟到一行转发」交人工，都判红，不许静默落在转发上。
+  锚里那支本来就是转发的（清单有意指着转发，如 EA6-4 的 `scripts/Main.gd:1781`）不穿透。
+  零、转发穿透自检：每次先在内存里造一对锚 / 工作树跑 10 种形状（见 _ST_CASES + S10），不过就退 1——穿透逻辑被改坏，必跑门禁先红。
 --fix：先要求所引文件在工作树里和 HEAD 一致（没提交的改动先提交，不然新锚对不上）。跟得上的全改成新号
   （搬到别的文件的改写成全路径，后面挂在它身上的裸 `:行` 也按需补全路径），跟不上的在引用后面插「〔跟号待核：锚 X 里是 文件:行〕」，
   头部锚改成 HEAD，再按新锚复查一遍。有「待核」就退 1。
 --since REV（改行号那一片自证用）：取 REV 里的清单和它头部的锚，把新旧两版的引用配对（先按「同一清单行骨架 +
   行内序号」配，只改了号 / 搬了文件的靠这一步配上；改了文字的行再按文件名序列对齐），对上的每一对都要
-  「旧锚里旧行号那段 == 工作树里新行号那段」（.gd 按上面的归一化比，搬进拆出件的函数头照改名表比），不等判红（MISMATCH：行号改错了，或有意换了所指——后者在 Verify 里写明）；
+  「旧锚里旧行号那段 == 工作树里新行号那段」（.gd 按上面的归一化比，搬进拆出件的函数头照改名表比；旧那段所在函数已成一行转发的，
+  只认穿透算出的那一行，别的号判 MISMATCH），不等判红（MISMATCH：行号改错了，或有意换了所指——后者在 Verify 里写明）；
   新版多出来的引用只计数，要 --show 人工回读。
   · 改号自证（lane auditfix1，默认跑，--since 时不跑）：和上一版清单（工作树改了没提交 → HEAD 版；否则 → 最近改清单那个提交的父版）
     按 --since 的口径配对，「旧锚旧号那段 == 本版锚本版号那段」，不等且旧那段原文在新处文件里还找得到 → MISMATCH（号写歪了）。
@@ -58,9 +67,10 @@ import argparse, difflib, os, re, subprocess, sys
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
+sys.path.insert(0, TOOLS)
 if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
-    sys.path.insert(0, TOOLS)
     import gate_json; gate_json.maybe_json(__file__)
+from func_body import forward_of  # 一行转发判据只有这一份（lane cs17 / gd23），本脚本不另起
 DEFAULT_DOC = os.path.join(ROOT, "docs", "待策划拍板清单_2026-09-28.md")
 BRIEFS = os.environ.get("NK1_BRIEFS", "/workspace/nk1-agent-briefs")
 
@@ -85,6 +95,8 @@ TOP_GD = re.compile(r"^(?:static\s+|@\w+(?:\([^)]*\))?\s+)*(?:func|var|const|sig
 DEF_PY = re.compile(r"^(\s*)(?:async\s+)?(?:def|class)\s+(\w+)")
 HEAD_MD = re.compile(r"^(#{1,6})\s+(.*\S)")
 MIN_CROSS = 16  # ④ 跨文件认原文：归一化后这么多字以下的段不认
+PRELOAD = r'^const\s+{}\b[^=\n]*=\s*preload\("res://([^"]+)"\)'
+FWD_HOPS = 4  # 转发链最多走几跳（Main → 拆出件 → 再转一手）
 
 
 def git(*args):
@@ -236,6 +248,22 @@ class Repo:
             off += m - n
         return L + off
 
+    def class_file(self, name):
+        """autoload（project.godot）/ class_name 的名字 → 工作树里的脚本路径；找不到或不唯一给 None（穿透转发 `Crew.x(…)` 用）。"""
+        if "K" not in self.cache:
+            tab = {}
+            for l in self.work("project.godot") or []:
+                m = re.match(r'^(\w+)="\*?res://([^"]+)"', l)
+                if m:
+                    tab.setdefault(m.group(1), set()).add(m.group(2))
+            for p in self.candidates("gd"):
+                for l in self.work(p) or []:
+                    m = re.match(r"^class_name\s+(\w+)", l)
+                    if m:
+                        tab.setdefault(m.group(1), set()).add(p)
+            self.cache["K"] = {k: v.pop() for k, v in tab.items() if len(v) == 1}
+        return self.cache["K"].get(name)
+
     def splits(self):
         """Main.gd 拆出件改名表 {Main 函数名: (拆出件, 新函数名)}，读工作树的 tools/main_splits.txt。"""
         if "S" not in self.cache:
@@ -341,9 +369,106 @@ def locate(repo, path, sym, ext):
     return out
 
 
+def fwd_of_func(lines, d):
+    """lines 第 d 行起的 .gd func 若只是一行转发，给转发目标（`_K.fn` / `obj.fn` / 同文件的 `fn`），否则 None。
+    判据就是 func_body.forward_of(体, 源码)——check_symbols 十三节 / verify_economy 十一节「只取到一行转发」同一份（lane cs17 / gd23）。"""
+    e = body_end(lines, d, "func", "gd")
+    return forward_of("\n".join(lines[d - 1:e]), "\n".join(lines))
+
+
+def fwd_dest(repo, path, lines, target):
+    """转发目标 → (真身所在文件, 函数名)；解析不到给 None。`_K.fn` 按本文件 `const _K := preload(…)` 找，
+    `fn` / `self.fn` 在本文件，`Crew.fn` 一类按 autoload / class_name 找；转给形参（`main._x(…)`）的不猜。"""
+    if "." not in target:
+        return path, target
+    recv, fn = target.rsplit(".", 1)
+    if recv == "self":
+        return path, fn
+    if "." in recv:
+        return None
+    m = re.search(PRELOAD.format(re.escape(recv)), "\n".join(lines), re.M)
+    if m:
+        return m.group(1), fn
+    p = repo.class_file(recv)
+    return (p, fn) if p else None
+
+
+def through(repo, path, d, get):
+    """顺一行转发走到真体（lane auditfix6）。path 第 d 行起的 func 不是转发 → None；
+    是转发：走通给 (真体文件, 定义行, 体末行, [每跳说明])，走不通给 (None, [每跳说明 + 断在哪])。get(路径) 取那份文件的行。"""
+    chain = []
+    for _ in range(FWD_HOPS):
+        lines = get(path)
+        tgt = fwd_of_func(lines, d) if lines else None
+        if not tgt:
+            return (path, d, body_end(lines, d, "func", "gd"), chain) if chain else None
+        chain.append(f"{path}:{d} → `{tgt}`")
+        dest = fwd_dest(repo, path, lines, tgt)
+        if not dest:
+            return None, chain + [f"`{tgt}` 解析不到所在文件"]
+        p2, fn = dest
+        defs = [i + 1 for i, t in enumerate(get(p2) or []) if (m := FUNC_GD.match(t)) and m.group(1) == fn]
+        if len(defs) != 1:
+            return None, chain + [f"{p2} 里{'没有' if not defs else '不止一处'} func {fn}"]
+        path, d = p2, defs[0]
+    return None, chain + [f"转发链超过 {FWD_HOPS} 跳"]
+
+
+def seg_at(want, lines, d, e, k):
+    """want（归一化后的锚里那段；k = 它的首行离所在函数头几行）落在 lines 的函数 d..e 里哪一行（1 起），对不上 / 不唯一给 None。
+    穿透转发用：真体的函数头换了名、多了 main 形参，所以含函数头的段（k == 0）只比头之后那几行，头就认真体那支的头。"""
+    if k == 0:
+        rest = want[1:]
+        return d if [norm(x, "gd") for x in lines[d:d + len(rest)]] == rest else None
+    pos = find_seg([norm(x, "gd") for x in lines[d - 1:e]], want)
+    return d - 1 + pos[0] if len(pos) == 1 else None
+
+
+def anchored_real(repo, anchor, path, a):
+    """锚里 path 第 a 行所在的 .gd func（不是转发的）：(名字, 定义行)；不在 func 里、或锚里那支本就是一行转发（清单有意指着转发，
+    如 EA6-4 的 `scripts/Main.gd:1781`）给 None——这种不穿透。"""
+    if ext_of(path) != "gd":
+        return None
+    old = repo.at_rev(anchor, path)
+    so = old and enclosing(old, a, "gd")
+    if not so or so[0] != "func" or fwd_of_func(old, so[2]):
+        return None
+    return so[1], so[2]
+
+
+def via_forward(repo, anchor, path, a, b, np, na, get=None):
+    """锚里 path:a-b 在一支真函数里、落点 np:na 所在的函数却只剩一行转发（拆走 / 改名留别名）时，穿透到真体里重找那段（lane auditfix6）。
+    不涉转发 → None；穿透找到 → (真体文件, 起, 止, 凭什么)；找不到 → (None, 「跟到一行转发」线索)——不许静默落在转发上。"""
+    real = anchored_real(repo, anchor, path, a)
+    if not real or ext_of(np) != "gd":
+        return None
+    get = get or repo.work
+    nl = get(np)
+    sn = nl and enclosing(nl, na, "gd")
+    if not sn or sn[0] != "func":
+        return None
+    th = through(repo, np, sn[2], get)
+    if th is None:
+        return None
+    if th[0] is None:
+        return None, f"跟到一行转发：落点 {np}:{na} 所在 `{sn[1]}` 只剩一行转发，穿透不下去（{'；'.join(th[1])}）"
+    rp, rd, re_, chain = th
+    want = [norm(x, "gd") for x in repo.at_rev(anchor, path)[a - 1:b]]
+    hit = seg_at(want, get(rp), rd, re_, a - real[1])
+    if hit:
+        return rp, hit, hit + b - a, f"穿透一行转发 {'；'.join(chain)}"
+    return None, (f"跟到一行转发：落点 {np}:{na} 所在 `{sn[1]}` 只剩一行转发，真体在 {rp}:{rd}（{'；'.join(chain)}），"
+                  f"但那段在真体里对不上（改写过？）")
+
+
 def track(repo, anchor, path, a, b):
-    """锚里 path:a-b 那段在工作树里的去处。
+    """锚里 path:a-b 那段在工作树里的去处。落点所在函数只剩一行转发的，穿透到真体（via_forward）。
     跟得上：(新路径, 新起, 新止, 凭什么)；跟不上：(None, 线索)。"""
+    t = track_raw(repo, anchor, path, a, b)
+    return (t if not t[0] else via_forward(repo, anchor, path, a, b, t[0], t[1]) or t)
+
+
+def track_raw(repo, anchor, path, a, b):
     old = repo.at_rev(anchor, path)
     seg = old[a - 1:b]
     ext = ext_of(path)
@@ -360,7 +485,19 @@ def track(repo, anchor, path, a, b):
     sym = enclosing(old, a, ext)
     if sym:
         k = a - sym[2]
+        real = sym[0] == "func" and anchored_real(repo, anchor, path, a)
         for p, d, e, why, ren in locate(repo, path, sym, ext):
+            th = through(repo, p, d, repo.work) if real else None
+            if th and th[0] is None:
+                hints.append(f"{why} 现在在 {p}:{d}，跟到一行转发、穿透不下去（{'；'.join(th[1])}）")
+                continue
+            if th:  # 按名找到的那支只剩一行转发：去真体里找，不在转发上认
+                rp, rd, re_, chain = th
+                hit = seg_at(nseg, repo.work(rp), rd, re_, k)
+                if hit:
+                    return (rp, hit, hit + b - a, f"按函数（{why}）穿透一行转发 {'；'.join(chain)}")
+                hints.append(f"{why} 现在在 {p}:{d}，只剩一行转发，真体在 {rp}:{rd}（{'；'.join(chain)}），那段在真体里对不上")
+                continue
             wl = repo.work(p)
             nb = [norm(x, ext) for x in wl[d - 1:e]]
             want = nseg if not ren else [renamed(x, repo, p) for x in nseg]
@@ -410,7 +547,7 @@ def check(o, doc_text, repo, anchor, quiet=False):
     say = (lambda *_: None) if quiet else print
     lines = doc_text.splitlines()
     refs, skipped, toks = parse_doc(lines)
-    n = dict(bad=0, drift=0, auto=0, manual=0, brief=0, marks=0, skipped=skipped, refs=len(refs))
+    n = dict(bad=0, drift=0, auto=0, manual=0, fwd=0, brief=0, marks=0, skipped=skipped, refs=len(refs))
     fixes = {}
     warned_briefs = False
     for k, (ln, f, a, b, _ti) in enumerate(refs):
@@ -453,11 +590,18 @@ def check(o, doc_text, repo, anchor, quiet=False):
             n["bad"] += 1
             continue
         if w is not None and w[a - 1:b] == old[a - 1:b]:
-            continue
+            # 原号原文都没动，所在函数却成了一行转发（函数头留在原行、体搬走了）：不穿透就静默绿、清单指着转发（lane auditfix6）
+            t = via_forward(repo, anchor, path, a, b, path, a)
+            if t is None:
+                continue
+            gone = "原号那几行没变，但所在函数只剩一行转发"
+        else:
+            t = track(repo, anchor, path, a, b)
+            gone = "工作树里没有这个文件了" if w is None else "该处内容变了"
         n["drift"] += 1
-        t = track(repo, anchor, path, a, b)
+        if "一行转发" in (t[3] if t[0] else t[1]):
+            n["fwd"] += 1
         fixes[k] = t
-        gone = "工作树里没有这个文件了" if w is None else "该处内容变了"
         if t[0]:
             n["auto"] += 1
             where = (f"{t[0]}:" if t[0] != path else ":") + span_str(t[1], t[2])
@@ -471,7 +615,8 @@ def check(o, doc_text, repo, anchor, quiet=False):
             say(f"  ✗ 待核 L{ln}：{m.group(0)}（回读、改号后删掉这个标记）")
     say(f"  锚 {anchor}：引用 {n['refs']} 处（仓外 brief {n['brief']} 处只查越界），"
         f"跳过「原文作」{skipped} 处；NOFILE/OOR {n['bad']}，DRIFT {n['drift']}"
-        f"（可自动跟号 {n['auto']}、要人工 {n['manual']}），待核标记 {n['marks']}")
+        f"（可自动跟号 {n['auto']}、要人工 {n['manual']}"
+        + (f"；其中跟到一行转发 {n['fwd']}" if n["fwd"] else "") + f"），待核标记 {n['marks']}")
     return n, fixes, refs, toks
 
 
@@ -550,6 +695,18 @@ def renamed(x, repo, split):
     return x
 
 
+def thru_target(repo, old_anchor, path, oa, ob, get):
+    """旧锚 path:oa-ob 所在的真函数，在新版里（get 取文件行）按名找回、它只剩一行转发时穿透到真体：给 (真体文件, 起)，否则 None。
+    --fix 穿透改的号函数头换了名、多了 main 形参，逐字比不上，改号自证 / --since 按这个认（lane auditfix6）。"""
+    real = anchored_real(repo, old_anchor, path, oa)
+    for i, t in enumerate(get(path) or [] if real else []):
+        m = FUNC_GD.match(t)
+        if m and m.group(1) == real[0]:
+            v = via_forward(repo, old_anchor, path, oa, ob, path, i + 1, get)
+            return (v[0], v[1]) if v and v[0] else None
+    return None
+
+
 def skeleton(line):
     return MARK.sub("", TOKEN.sub("§", line))
 
@@ -609,6 +766,15 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None):
         np_ = repo.resolve(refs[j][1])[0]
         if path == "scripts/Main.gd" and np_ != path:  # 搬进拆出件的，函数头照改名表比
             want = [renamed(x, repo, np_) for x in want]
+        tt = content(j) != want and thru_target(repo, old_anchor, path, oa, ob, new_lines)
+        if tt and tt[0] == np_:  # 所在函数成了一行转发、号改进了真体（lane auditfix6）：只认穿透算出的那一行
+            if tt[1] == refs[j][2]:
+                moved += 1
+                continue
+            mismatch += 1
+            print(f"  ✗ MISMATCH L{refs[j][0]} `{refs[j][1]}:{span_str(refs[j][2], refs[j][3])}`（旧版 L{ol} `{f}:{span_str(oa, ob)}` @ {old_anchor}）："
+                  f"旧锚那段所在函数已只剩一行转发，穿透到真体应是 {np_}:{span_str(tt[1], tt[1] + ob - oa)}——行号改歪了？")
+            continue
         if content(j) != want:
             alt = [k for k in sorted(unpaired) if refs[k][0] == refs[j][0] and content(k) == want]
             if not alt:
@@ -670,6 +836,158 @@ def prev_rev(doc):
     return c + "^", f"清单最近改于 {c}：对它的父版"
 
 
+class MemRepo(Repo):
+    """自检用：锚 / 工作树都在内存里（{路径: 文本}），不碰 git；diff 用 difflib 算成 `git diff -U0` 的块。"""
+
+    def __init__(self, before, after):
+        self.files = {"A": before, "W": after}
+        self.tracked = set(before) | set(after)
+        self.by_name = {}
+        for p in sorted(self.tracked):
+            self.by_name.setdefault(os.path.basename(p), []).append(p)
+        self.cache = {}
+
+    def work(self, path):
+        t = self.files["W"].get(path)
+        return t.splitlines() if t is not None else None
+
+    def at_rev(self, rev, path):
+        t = self.files["A"].get(path)
+        return t.splitlines() if t is not None else None
+
+    def candidates(self, ext):
+        return sorted(p for p in self.files["W"] if ext_of(p) == ext)
+
+    def hunks(self, anchor, path):
+        a, b = self.at_rev(anchor, path) or [], self.work(path) or []
+        return [(i1 + 1 if i2 > i1 else i1, i2 - i1, j1 + 1 if j2 > j1 else j1, j2 - j1)
+                for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes() if tag != "equal"]
+
+
+# 零、转发穿透自检（lane auditfix6）：每次都跑，在内存里造一对「锚 / 工作树」，钉住按名锚穿透一行转发的几种形状。
+# 去掉穿透（via_forward / ③ 里的 through）、或 forward_of 判据退化，这里先红——反向自证跟着必跑门禁进 CI，不靠 lane 手跑变异。
+_ST_HOST_A = """extends Node
+const _PAGE := preload("res://scripts/t/Page.gd")
+
+
+func open_page(port_id: String) -> void:
+	title.text = "市舶司・%s" % port_id
+	var duty := GameState.customs_duty()
+	add_chip("请领　%d" % duty, _on_apply)
+
+
+func stay_forward(n: int) -> void:
+	_PAGE.stay_forward(self, n)
+
+
+func lost_forward(n: int) -> void:
+	var lost_total := n * 7 + 1
+	print_rich("lost %d" % lost_total)
+
+
+func chain_fn(n: int) -> int:
+	var chained := n * 11
+	return chained - 2
+
+
+func keep_real(n: int) -> int:
+	var total := n * 3
+	return total + 1
+"""
+_ST_HOST_W = """extends Node
+const _PAGE := preload("res://scripts/t/Page.gd")
+
+
+func open_page(port_id: String) -> void:
+	_PAGE.open_page(self, port_id)
+
+
+func stay_forward(n: int) -> void:
+	_PAGE.stay_forward(self, n)
+
+
+func lost_forward(n: int) -> void:
+	Nowhere.lost_forward(n)
+
+
+func chain_fn(n: int) -> int:
+	return _PAGE.chain_fn(self, n)
+
+
+func keep_real(n: int) -> int:
+	var total := n * 3
+	return total + 1
+"""
+_ST_PAGE_A = """extends RefCounted
+
+
+static func stay_forward(main, n: int) -> void:
+	main.print(n)
+"""
+_ST_PAGE_W = """extends RefCounted
+const _DEEP := preload("res://scripts/t/Deep.gd")
+
+
+static func stay_forward(main, n: int) -> void:
+	main.print(n)
+
+
+static func open_page(main, port_id: String) -> void:
+	main.title.text = "市舶司・%s" % port_id
+	var duty := GameState.customs_duty()
+	main.add_chip("请领　%d" % duty, main._on_apply)
+
+
+static func chain_fn(main, n: int) -> int:
+	return _DEEP.chain_fn(main, n)
+"""
+_ST_DEEP_W = """extends RefCounted
+
+
+static func chain_fn(main, n: int) -> int:
+	var chained := n * 11
+	return chained - 2
+"""
+# (清单里的引用, 期望)：期望 = (文件, 起, 止) 须跟到这里；"MANUAL" = 须报「跟到一行转发」交人工；None = 原号不动、不算 DRIFT
+_ST_CASES = [
+    ("scripts/t/Host.gd:5", ("scripts/t/Page.gd", 9, 9), "S1 函数头原号没挪、体成了转发：旧版静默绿"),
+    ("scripts/t/Host.gd:8", ("scripts/t/Page.gd", 12, 12), "S2 体里一行：按名找到的是转发，穿透进真体"),
+    ("scripts/t/Host.gd:5-7", ("scripts/t/Page.gd", 9, 11), "S3 函数头连体：真体头换名加 main 形参"),
+    ("scripts/t/Host.gd:15", "MANUAL", "S4 转发目标解析不到（Nowhere.x）：报跟到转发，不静默"),
+    ("scripts/t/Host.gd:16", "MANUAL", "S5 解析不到的转发、引的是体里一行"),
+    ("scripts/t/Host.gd:20-22", ("scripts/t/Deep.gd", 4, 6), "S6 两跳转发链 Host → Page → Deep"),
+    ("scripts/t/Host.gd:11", ("scripts/t/Host.gd", 9, 9), "S7 锚里本就是转发（有意指着转发）：照 diff 跟到转发，不穿透"),
+    ("scripts/t/Host.gd:25-27", ("scripts/t/Host.gd", 21, 23), "S8 真函数只挪了号：照旧 diff，不误穿透"),
+    ("scripts/t/Host.gd:2", None, "S9 顶层 const 没动：不算 DRIFT"),
+]
+
+
+def self_check():
+    """跑自检，返回判红的条数（0 = 过）。"""
+    repo = MemRepo({"scripts/t/Host.gd": _ST_HOST_A, "scripts/t/Page.gd": _ST_PAGE_A},
+                   {"scripts/t/Host.gd": _ST_HOST_W, "scripts/t/Page.gd": _ST_PAGE_W, "scripts/t/Deep.gd": _ST_DEEP_W})
+    doc = "行号：按 HEAD `0000000`\n" + "".join(f"- `{r}`\n" for r, _, _ in _ST_CASES)
+    _n, fixes, refs, _ = check(argparse.Namespace(show=False), doc, repo, "0000000", quiet=True)
+    bad = 0
+    for k, (ref, want, why) in enumerate(_ST_CASES):
+        got = fixes.get(k)
+        ok = (got is None) if want is None else \
+            (got is not None and got[0] is None and "跟到一行转发" in got[1]) if want == "MANUAL" else \
+            (got is not None and tuple(got[:3]) == want)
+        if not ok:
+            bad += 1
+            print(f"  ✗ 转发穿透自检 {why}：`{ref}` 期望 {want or '不算 DRIFT'}，实得 {got}")
+    # 改号自证 / --since 那一侧：S1 那段按名找回、穿透后须正落在真体函数头（--fix 穿透改的号它才认，别的号判 MISMATCH）
+    tt = thru_target(repo, "0000000", "scripts/t/Host.gd", 5, 5, repo.work)
+    if tt != ("scripts/t/Page.gd", 9):
+        bad += 1
+        print(f"  ✗ 转发穿透自检 S10 改号自证按名找回穿透：`scripts/t/Host.gd:5` 期望 ('scripts/t/Page.gd', 9)，实得 {tt}")
+    if not bad:
+        print(f"  ✓ 转发穿透自检 {len(_ST_CASES) + 1}/{len(_ST_CASES) + 1}（函数成了一行转发：穿透到真体 / 穿透不下去报「跟到一行转发」；"
+              "锚里本就是转发的、只挪了号的真函数不穿透；改号自证按穿透认号）")
+    return bad
+
+
 def main():
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument("doc", nargs="?", default=DEFAULT_DOC)
@@ -686,6 +1004,9 @@ def main():
         return 1
     if git("rev-parse", "--verify", "-q", anchor + "^{commit}") is None:
         print(f"  ✗ 锚 {anchor} 不是本仓的提交")
+        return 1
+    if self_check():
+        print("结果：有问题（转发穿透自检没过：本脚本的跟号逻辑坏了，先修脚本，清单的结果不可信）")
         return 1
     repo = Repo()
     if o.fix:
