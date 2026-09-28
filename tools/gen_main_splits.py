@@ -21,6 +21,16 @@ main_splits.txt 是 Main.gd 拆出件的唯一清单：check_symbols（一之零
     反过来，那节有函数表的，现 Main 一行转发到本件的每支也都得列在表里，漏列即判红（lane cs22：有表就须列全）。
     没有函数表的节（前三刀、第四 / 五刀）两个方向都不查
 
+台账格式硬校验（lane cs23：台账写坏了，原先那一刀 / 那一行被正则漏掉，重算跟着少一件 / 少一支，--write 照写、gen 自己绿，
+只靠 check_symbols 下游兜，单独跑本脚本的人看不到）。下面几种形状本脚本直接判红，--write 也不写盘：
+  ① 标题文字以「第…刀」开头、却不合节标题正则（`## 第N刀（lane X，…）：… → `scripts/…/X.gd``）的行——少了反引号 / lane /
+    全角括号、写成 ### 或 ##第N刀、路径不在 scripts/ 下、箭头后面还有字；
+  ② 「已拆（前三刀…）」那段里的 `X.gd` 没按「`X.gd`（lane，…」写（那一件会被漏掉），或认出来的不是 3 件；
+  ③ 刀序：节标题「第N刀」的 N（汉字或数字）须从第四刀起逐刀 +1，重号 / 跳号 / 认不出的数都红；
+  ④ 拆刀节里像函数表行的（「| `名字(`」起头）却不合函数表行写法，或第二格以数字起头却不是「a–b」（en dash）行段——
+    前者整行漏认（cs18 的「列了却不转发」查不到它），后者行段对账静默跳过；同一节函数表同一支列两次；
+  ⑤ 拆刀节没有函数表（第四、第五刀早于函数表惯例，登记在 NO_TABLE_OK 放行）：没表时 cs18 / cs22 两个方向的对账都不查，整节空转。
+
 git 历史的两条放行（其余一律逐字节比）：
   · 拆出的那个 commit 自己不可能写进自己的哈希：清单里记 `-`、该 commit 版的清单也记 `-`、且 **HEAD 就是这个 commit** 的，照认；
     HEAD 已往前走（拆出 commit 之后又有提交）还记 `-` 即判红，要 --write 补上哈希（lane auditfix1：原先不看 HEAD，
@@ -43,6 +53,14 @@ HEADER = (
     "原 Main 行范围（拆出 commit 父版 Main.gd，含紧贴的注释）\t拆出函数（Main 函数→拆出件 static func）\n"
 )
 COLS = 5
+# 拆刀节标题 / 函数表行（lane cs18 / cs22 / cs23）：ledger_splits 按它认刀、build 按它读表（两个方向与逐支行段对账），格式硬校验也按同一对正则判
+KNIFE_HEAD = re.compile(r'^## 第(\S+?)刀（lane (\w+)，[^）\n]*）：[^\n]*→ `(scripts/[\w/]+\.gd)`\s*$', re.M)
+KNIFE_LIKE = re.compile(r'^#{1,6}[ \t]*第[^（(\n]{1,12}?刀')  # 标题文字以「第…刀」开头的行（「### 同刀门禁…（第四刀…）」不算）
+LISTED_ROW = re.compile(r'^\| `(_?\w+)\([^`]*\)` \|(?: (\d+)–(\d+))?', re.M)
+FN_ROW_LIKE = re.compile(r'^\|\s*`[A-Za-z_]\w*\(')  # 像函数表行：「| `名字(」起头（引用点表是「| `文件:行`」，不在此列）
+FIRST_KNIFES = 3  # 「已拆（前三刀…）」那段登记的件数；之后的节标题从第四刀起
+NO_TABLE_OK = ("scripts/ui/TavernPage.gd", "scripts/ui/NpcPage.gd")  # 第四 / 第五刀：早于函数表惯例（第六刀起每节有表）
+_CN_DIGIT = {c: i for i, c in enumerate("零一二三四五六七八九")}
 
 
 def read_splits(path=TXT):
@@ -79,16 +97,84 @@ def ledger_splits(problems):
     else:
         for name, lane in re.findall(r'`(\w+\.gd)`（(\w+)，', head.group(1)):
             out.append(("scripts/ui/" + name, lane, ""))
-    heads = re.finditer(r'^## 第\S+?刀（lane (\w+)，[^）\n]*）：[^\n]*→ `(scripts/[\w/]+\.gd)`\s*$', text, re.M)
-    for m in heads:
+        _check_first_knifes(head.group(1), len(out), problems)
+    for m in KNIFE_HEAD.finditer(text):
         nxt = re.search(r'^## ', text[m.end():], re.M)  # 节到下一个二级标题为止（含别的 lane 追加的非拆刀节）
-        out.append((m.group(2), m.group(1), text[m.end():m.end() + nxt.start()] if nxt else text[m.end():]))
+        out.append((m.group(3), m.group(2), text[m.end():m.end() + nxt.start()] if nxt else text[m.end():]))
+    _check_ledger_shape(text, problems)
     seen = set()
     for rel, _, _ in out:
         if rel in seen:
             problems.append(f"{LEDGER_REL} 把 {rel} 登记了两次")
         seen.add(rel)
     return out
+
+
+def _cn_num(s):
+    """「第N刀」的 N：阿拉伯数字，或一到九十九的汉字写法（四 / 十 / 十一 / 二十三）。认不出返回 None。"""
+    if s.isdigit():
+        return int(s)
+    tens, sep, ones = s.partition("十")
+    if not sep:
+        return _CN_DIGIT.get(s) if len(s) == 1 else None
+    if len(tens) > 1 or len(ones) > 1 or (tens and tens not in _CN_DIGIT) or (ones and ones not in _CN_DIGIT):
+        return None
+    return (_CN_DIGIT[tens] if tens else 1) * 10 + (_CN_DIGIT[ones] if ones else 0)
+
+
+def _check_first_knifes(block, n, problems):
+    """「已拆（前三刀…）」那段（lane cs23 ②）：反引号里的 X.gd 都得按「`X.gd`（lane，…」写，认出来的正好 FIRST_KNIFES 件。"""
+    named = re.findall(r'`([^`\n]+\.gd)`', block)
+    ok = re.findall(r'`(\w+\.gd)`（\w+，', block)
+    bad = [x for x in named if x not in ok]
+    if bad:
+        problems.append(f"{LEDGER_REL}「已拆（前三刀…）」那段的 {'、'.join(bad)} 没按「`X.gd`（lane，…」写，"
+                        f"本脚本认不出，这件会被漏掉（格式硬校验 ②）")
+    if n != FIRST_KNIFES:
+        problems.append(f"{LEDGER_REL}「已拆（前三刀…）」那段认出 {n} 件，应为 {FIRST_KNIFES} 件（格式硬校验 ②）")
+
+
+def _check_ledger_shape(text, problems):
+    """台账格式硬校验（lane cs23 ①③④⑤）：结构写坏、原先被正则静默漏掉的形状，一律判红。"""
+    lines = text.split("\n")
+    heads = {text.count("\n", 0, m.start()) + 1: m for m in KNIFE_HEAD.finditer(text)}
+    for i, ln in enumerate(lines, 1):  # ① 像拆刀节标题、却不合节标题正则
+        if KNIFE_LIKE.match(ln) and i not in heads:
+            problems.append(f"{LEDGER_REL}:{i} 标题以「第…刀」开头，却不合拆刀节标题写法"
+                            f"「## 第N刀（lane X，…）：… → `scripts/…/X.gd`」，本脚本认不出这一刀、会整件漏掉"
+                            f"（格式硬校验 ①）：{ln.strip()[:120]}")
+    want = FIRST_KNIFES + 1
+    for i, m in sorted(heads.items()):  # ③ 刀序
+        n = _cn_num(m.group(1))
+        if n is None:
+            problems.append(f"{LEDGER_REL}:{i}「第{m.group(1)}刀」的刀号认不出（写汉字一到九十九或阿拉伯数字，格式硬校验 ③）")
+        elif n != want:
+            problems.append(f"{LEDGER_REL}:{i}「第{m.group(1)}刀」刀序不对：上一刀之后应是第 {want} 刀（重号 / 跳号，格式硬校验 ③）")
+        want = (n if n is not None else want) + 1
+    for i, m in sorted(heads.items()):  # ④ 函数表行写法、⑤ 有没有表
+        rel = m.group(3)
+        nxt = re.search(r'^## ', text[m.end():], re.M)
+        end = i + text[m.end():m.end() + nxt.start()].count("\n") if nxt else len(lines)
+        seen = {}
+        for k in range(i + 1, end + 1):
+            ln = lines[k - 1]
+            if not FN_ROW_LIKE.match(ln):
+                continue
+            row = LISTED_ROW.match(ln)
+            if not row:
+                problems.append(f"{LEDGER_REL}:{k}（{rel} 那节）像函数表行、却不合「| `名字(…)` | a–b | …」写法，"
+                                f"本脚本漏认这一支（格式硬校验 ④）：{ln.strip()[:120]}")
+                continue
+            if not row.group(2) and re.match(r'\s*\d', ln[row.end():]):
+                problems.append(f"{LEDGER_REL}:{k}（{rel} 那节）{row.group(1)} 的行段写法不认（要「a–b」、en dash、"
+                                f"「|」后一个空格），逐支行段对账会静默跳过（格式硬校验 ④）：{ln.strip()[:120]}")
+            if row.group(1) in seen:
+                problems.append(f"{LEDGER_REL}:{k}（{rel} 那节）函数表把 {row.group(1)} 列了两次"
+                                f"（另一处 :{seen[row.group(1)]}，格式硬校验 ④）")
+            seen.setdefault(row.group(1), k)
+        if not seen and rel not in NO_TABLE_OK:
+            problems.append(f"{LEDGER_REL}:{i}（{rel} 那节）没有函数表（「| `名字(…)` | a–b | …」行），"
+                            f"「台账列了却不转发」无从对账（格式硬校验 ⑤）")
 
 
 def _forwards(main_text):
@@ -158,10 +244,9 @@ def build(old_rows=None, backfill=False):
         fwd = {}
     rows = []
     splits = ledger_splits(problems)
-    table_re = re.compile(r'^\| `(_?\w+)\([^`]*\)` \|(?: (\d+)–(\d+))?', re.M)
     tabled = {}  # 函数表列了 fn 的是哪几件（漏列时提示「列到别件那节去了」）
     for rel, _, section in splits:
-        for fn, _, _ in table_re.findall(section):
+        for fn, _, _ in LISTED_ROW.findall(section):
             tabled.setdefault(fn, []).append(rel)
     for rel, lane, section in splits:
         path = os.path.join(ROOT, rel)
@@ -179,7 +264,7 @@ def build(old_rows=None, backfill=False):
             problems.append(f"{rel}：Main 里没有一行转发到它，拆出函数一栏是空的")
         # 台账那节函数表列了的（「| `_fn(…)` |」行，写没写逐支行段都算）须仍是 Main 一行转发到本件的：
         # 挪回 Main / 改名 / 转去别件后再 --write，重算结果里就没有它了，不在这里判红就只剩清单跟着改、一路全绿
-        listed = table_re.findall(section)
+        listed = LISTED_ROW.findall(section)
         moved = {m for m, _ in pairs}
         for fn, a, b in listed:
             if fn not in moved:

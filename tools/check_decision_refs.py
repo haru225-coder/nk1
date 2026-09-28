@@ -56,6 +56,10 @@
 为什么不把清单改成「按符号名」锚（lane dec4 评估）：清单里六成引用是 md / json 行（没有函数名可锚），
 而且策划要的是点得开的 `文件:行`；函数名也会改（拆出件把 `_setup_yamen` 改成 `setup_yamen`）。所以清单照旧写行号，
 符号名只当跟号的线索（③），由脚本把行号跟上。
+输出确定序（lane cs23）：逐处的 ⚠ / ✗ 行（NOFILE / OOR / DRIFT 跟号 / 待核 / MISMATCH / 改指未验）先收齐、再按
+「清单行号 → 行内第几处引用 → 类别」排好印（--show 的原文行跟在所属引用的 DRIFT 前，待核标记排在全部引用之后）；
+--since / 改号自证的新旧配对也按新版引用的清单顺序逐对比。原先配对取 `ko.keys() & kn.keys()`（集合，遍历顺序随
+PYTHONHASHSEED 变），有 2 处以上 ⚠ / MISMATCH 时同一基连跑每次行序不同、「逐字节同」比对会偶发假 DIFF（lane cs18 待议 4）。
 改了清单所引文件（拆 Main / 改 check_symbols 之类）的 lane，收尾跑本脚本：红了就 --fix，回读「待核」，提交清单。
 lane auditfix1 起进必跑门禁（一键跑末条，docs/GATES.md §三.22）：dec3 入库后没进注册表，自 cs14 `a8ff603` 起主干一直红
 （到 `abb3f05` 积了 DRIFT 47）没人看见。任何 lane 挪动所引文件的行都会让它红，这正是它要报的；--fix 只认已提交的文件，
@@ -177,6 +181,21 @@ def find_seg(hay, seg, lo=0, hi=None):
     hi = len(hay) if hi is None else hi
     n = len(seg)
     return [i + 1 for i in range(lo, hi - n + 1) if hay[i:i + n] == seg]
+
+
+class Lines:
+    """逐处问题行先收齐、按键排好再印（lane cs23：输出确定序，不随集合遍历顺序 / PYTHONHASHSEED 变）。
+    键 = (组, 清单行号, 行内第几处引用, 类别, 次序)：组 0 = 逐处引用、1 = 清单里的「待核」标记；类别见各处调用。"""
+    def __init__(self, say):
+        self.say, self.rows = say, []
+
+    def add(self, key, text):
+        self.rows.append((key, text))
+
+    def flush(self):
+        for _, text in sorted(self.rows, key=lambda r: r[0]):
+            self.say(text)
+        self.rows = []
 
 
 class Repo:
@@ -550,43 +569,45 @@ def check(o, doc_text, repo, anchor, quiet=False):
     n = dict(bad=0, drift=0, auto=0, manual=0, fwd=0, brief=0, marks=0, skipped=skipped, refs=len(refs))
     fixes = {}
     warned_briefs = False
-    for k, (ln, f, a, b, _ti) in enumerate(refs):
+    out = Lines(say)
+    for k, (ln, f, a, b, ti) in enumerate(refs):
         tag = f"L{ln} `{f}:{span_str(a, b)}`"
+        key = lambda cat, sub=0: (0, ln, ti, cat, sub)  # 类别：0 ⚠ brief 目录、1 NOFILE / OOR、2 --show 原文、3 DRIFT
         if offrepo(f):
             n["brief"] += 1
             if not os.path.isdir(BRIEFS):
                 if not warned_briefs:
-                    say(f"  ⚠ brief 目录 {BRIEFS} 不存在，仓外引用只跳过不判")
+                    out.add(key(0), f"  ⚠ brief 目录 {BRIEFS} 不存在，仓外引用只跳过不判")
                     warned_briefs = True
                 continue
         path, err = repo.resolve(f)
         if err:
-            say(f"  ✗ NOFILE {tag}：{err}")
+            out.add(key(1), f"  ✗ NOFILE {tag}：{err}")
             n["bad"] += 1
             continue
         w = repo.work(path)
         old = None if offrepo(f) else repo.at_rev(anchor, path)
         if w is None and old is None:
-            say(f"  ✗ NOFILE {tag}：{path} 不存在")
+            out.add(key(1), f"  ✗ NOFILE {tag}：{path} 不存在")
             n["bad"] += 1
             continue
         if w is not None and (a < 1 or b < a or b > len(w)) and (offrepo(f) or old is None):
-            say(f"  ✗ OOR {tag}：{path} 只有 {len(w)} 行")
+            out.add(key(1), f"  ✗ OOR {tag}：{path} 只有 {len(w)} 行")
             n["bad"] += 1
             continue
         if o.show and w is not None and b <= len(w):
             for i in range(a, b + 1):
-                say(f"    {tag} → {path}:{i}: {w[i - 1].strip()[:140]}")
+                out.add(key(2, i), f"    {tag} → {path}:{i}: {w[i - 1].strip()[:140]}")
         if offrepo(f):
             continue
         if old is None:
-            say(f"  ✗ DRIFT {tag}：锚 {anchor} 里没有 {path}（新文件？把头部的锚改到含它的提交）")
+            out.add(key(3), f"  ✗ DRIFT {tag}：锚 {anchor} 里没有 {path}（新文件？把头部的锚改到含它的提交）")
             n["drift"] += 1
             n["manual"] += 1
             fixes[k] = (None, "锚里没有这个文件")
             continue
         if a < 1 or b < a or b > len(old):
-            say(f"  ✗ OOR {tag}：锚 {anchor} 里 {path} 只有 {len(old)} 行")
+            out.add(key(1), f"  ✗ OOR {tag}：锚 {anchor} 里 {path} 只有 {len(old)} 行")
             n["bad"] += 1
             continue
         if w is not None and w[a - 1:b] == old[a - 1:b]:
@@ -605,14 +626,15 @@ def check(o, doc_text, repo, anchor, quiet=False):
         if t[0]:
             n["auto"] += 1
             where = (f"{t[0]}:" if t[0] != path else ":") + span_str(t[1], t[2])
-            say(f"  ✗ DRIFT {tag}：{path} {gone}；可跟号 → {where}（{t[3]}）")
+            out.add(key(3), f"  ✗ DRIFT {tag}：{path} {gone}；可跟号 → {where}（{t[3]}）")
         else:
             n["manual"] += 1
-            say(f"  ✗ DRIFT {tag}：{path} {gone}；跟不上，要人工：{t[1]}")
+            out.add(key(3), f"  ✗ DRIFT {tag}：{path} {gone}；跟不上，要人工：{t[1]}")
     for ln, line in enumerate(lines, 1):
         for m in MARK.finditer(line):
             n["marks"] += 1
-            say(f"  ✗ 待核 L{ln}：{m.group(0)}（回读、改号后删掉这个标记）")
+            out.add((1, ln, m.start(), 4, 0), f"  ✗ 待核 L{ln}：{m.group(0)}（回读、改号后删掉这个标记）")
+    out.flush()
     say(f"  锚 {anchor}：引用 {n['refs']} 处（仓外 brief {n['brief']} 处只查越界），"
         f"跳过「原文作」{skipped} 处；NOFILE/OOR {n['bad']}，DRIFT {n['drift']}"
         f"（可自动跟号 {n['auto']}、要人工 {n['manual']}"
@@ -741,9 +763,13 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None):
     rn = [j for j in range(len(refs)) if j not in pn]
     sm = difflib.SequenceMatcher(None, [old_refs[i][1] for i in ro], [refs[j][1] for j in rn], autojunk=False)
     pairs += [(ro[i + k], rn[j + k]) for i, j, n in sm.get_matching_blocks() for k in range(n)]
+    # 按新版引用的清单顺序逐对比（lane cs23）：上面集合交集的遍历顺序随 PYTHONHASHSEED 变，下面同一行里的换位认领
+    # （unpaired 增删）和计数都吃这个顺序，不排就连同 ⚠ / MISMATCH 行序一起每次跑不同
+    pairs.sort(key=lambda p: (p[1], p[0]))
     # 同一行里同一文件新插了一处引用时，按文件名对齐会错位：先看同一行里还没对上的新引用有没有正好是旧内容的
     unpaired = set(range(len(refs))) - {j for _, j in pairs}
     same = moved = mismatch = marked = rewritten = acked = 0
+    out = Lines(print)  # 键 (0, 新版清单行号, 新版引用序号, 类别 0 ⚠ 改指未验 / 1 MISMATCH, 0)
 
     def new_lines(p):
         return repo.at_rev(new_rev, p) if new_rev else repo.work(p)
@@ -772,8 +798,9 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None):
                 moved += 1
                 continue
             mismatch += 1
-            print(f"  ✗ MISMATCH L{refs[j][0]} `{refs[j][1]}:{span_str(refs[j][2], refs[j][3])}`（旧版 L{ol} `{f}:{span_str(oa, ob)}` @ {old_anchor}）："
-                  f"旧锚那段所在函数已只剩一行转发，穿透到真体应是 {np_}:{span_str(tt[1], tt[1] + ob - oa)}——行号改歪了？")
+            out.add((0, refs[j][0], j, 1, 0),
+                    f"  ✗ MISMATCH L{refs[j][0]} `{refs[j][1]}:{span_str(refs[j][2], refs[j][3])}`（旧版 L{ol} `{f}:{span_str(oa, ob)}` @ {old_anchor}）："
+                    f"旧锚那段所在函数已只剩一行转发，穿透到真体应是 {np_}:{span_str(tt[1], tt[1] + ob - oa)}——行号改歪了？")
             continue
         if content(j) != want:
             alt = [k for k in sorted(unpaired) if refs[k][0] == refs[j][0] and content(k) == want]
@@ -796,14 +823,15 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None):
                         continue
                     if not still:
                         rewritten += 1
-                        print(f"  ⚠ 改指未验 {tag}：旧锚那段在 {new_rev} 的 {np_} 里已找不到原文（所指那段被改写过），人工回读过就不用管")
+                        out.add((0, refs[j][0], j, 0, 0),
+                                f"  ⚠ 改指未验 {tag}：旧锚那段在 {new_rev} 的 {np_} 里已找不到原文（所指那段被改写过），人工回读过就不用管")
                         continue
                     mismatch += 1
-                    print(f"  ✗ MISMATCH {tag}：两处内容不同，旧锚那段原文在 {new_rev} 里还在 {np_}:"
-                          + "、:".join(span_str(i, i + ob - oa) for i in still[:3]) + "——行号改歪了？")
+                    out.add((0, refs[j][0], j, 1, 0), f"  ✗ MISMATCH {tag}：两处内容不同，旧锚那段原文在 {new_rev} 里还在 {np_}:"
+                            + "、:".join(span_str(i, i + ob - oa) for i in still[:3]) + "——行号改歪了？")
                     continue
                 mismatch += 1
-                print(f"  ✗ MISMATCH {tag}：两处内容不同")
+                out.add((0, refs[j][0], j, 1, 0), f"  ✗ MISMATCH {tag}：两处内容不同")
                 continue
             unpaired.discard(alt[0])
             unpaired.add(j)
@@ -812,6 +840,7 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None):
             same += 1
         else:
             moved += 1
+    out.flush()
     print(f"  {label}（旧锚 {old_anchor}{f' → 新锚 {new_rev}' if new_rev else ''}）：对上 {same + moved + mismatch + marked + rewritten + acked} 对（仓外 brief 不比），行号没变 {same}、"
           f"改了行号且内容一致 {moved}、MISMATCH {mismatch}、所在行带「待核」不比 {marked}"
           + (f"、所指那段被改写（⚠ 改指未验）{rewritten}、括注「原文作」认账改指 {acked}" if new_rev else "") + "；"
