@@ -53,6 +53,7 @@ class Ctx:
     def __init__(self, root):
         self.root, self.files = root, {}
         self.manifest = self.load(MANIFEST)
+        self.py = {}  # py_const 读的 Python 源码另放，不许混进 src（F3 只认 scripts/ scenes/）
         self.src = {}
         for pat in ("scripts/**/*.gd", "scenes/**/*.tscn"):
             for p in sorted(glob.glob(os.path.join(root, pat), recursive=True)):
@@ -182,13 +183,12 @@ def gd_const(ctx, rel, name):
 
 def py_const(ctx, rel, name):
     """Python 源文件模块级 `NAME = {字面量}` → 其中的字符串集合（ast 取，不执行）。取不到给 None。"""
-    key = "py:" + rel
-    if key not in ctx.src:
+    if rel not in ctx.py:
         p = os.path.join(ctx.root, rel)
-        ctx.src[key] = open(p, encoding="utf-8").read() if os.path.isfile(p) else None
-    if ctx.src[key] is None:
+        ctx.py[rel] = open(p, encoding="utf-8").read() if os.path.isfile(p) else None
+    if ctx.py[rel] is None:
         return None
-    for node in ast.parse(ctx.src[key]).body:
+    for node in ast.parse(ctx.py[rel]).body:
         if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == name for t in node.targets):
             try:
                 v = ast.literal_eval(node.value)
@@ -502,7 +502,12 @@ def mutants(ctx):
 
     def m_archive_gone(c):
         py_const(c, "tools/verify_story_data.py", "SCENE_ARCHIVE")
-        c.src["py:tools/verify_story_data.py"] = c.src["py:tools/verify_story_data.py"].replace("SCENE_ARCHIVE = {", "SCENE_ARCHIVED = {")
+        c.py["tools/verify_story_data.py"] = c.py["tools/verify_story_data.py"].replace("SCENE_ARCHIVE = {", "SCENE_ARCHIVED = {")
+
+    def m_unread_ports(c):
+        for k in c.src:
+            if k.startswith(("scripts/", "scenes/")):
+                c.src[k] = c.src[k].replace("ports.json", "harbors.json")
 
     def m_goods(c):
         c.files["data/goods.json"]["goods"][0].pop("name")
@@ -539,6 +544,7 @@ def mutants(ctx):
         ("P6", "GameState.last_port 缺省改成不存在的港", m_root_drift, ("入口", "data/ports.json")),
         ("C1", "清单漏登同族 ports.json", m_unregister_ports, ("data/ports.json 满足 F1–F3", "data/ports.json 满足")),
         ("C2", "清单漏登非族 characters.json", m_unregister_chars, ("data/characters.json 满足 F1–F3", "data/characters.json 满足")),
+        ("C3", "scripts/ scenes/ 不再读 ports.json（别的门禁还读它不算 F3）", m_unread_ports, ("data/ports.json 登为同族，但 scripts/ scenes/ 已不读它", "data/ports.json")),
         ("N1", "非族 goods.json 删 name、base_value 改字符串", m_goods, None),
         ("N2", "非族 characters.json 删 name、relations 加悬空 id", m_chars, None),
         ("N3", "非族 crew.json role 改悬空、删 wage", m_crew, None),
@@ -546,7 +552,7 @@ def mutants(ctx):
     res = []
     for mid, desc, fn, want in M:
         c = copy.copy(ctx)
-        c.files, c.manifest, c.src = copy.deepcopy(ctx.files), copy.deepcopy(ctx.manifest), dict(ctx.src)
+        c.files, c.manifest, c.src, c.py = copy.deepcopy(ctx.files), copy.deepcopy(ctx.manifest), dict(ctx.src), dict(ctx.py)
         for rel in ("data/goods.json", "data/characters.json", "data/crew.json"):
             c.load(rel)
             c.files[rel] = copy.deepcopy(c.files[rel])

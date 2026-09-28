@@ -170,9 +170,9 @@ REGISTRY = [
      "judge": "（lane seq4）普查 data/*.json：F1 带唯一字符串 id 的条目表 + F2 字段指回同表 id + F3 scripts/ scenes/ 读它的候选，须登在清单 families（同族）或 not_family（写明图为何无入口）；"
               "对每个同族文件跑四项：一、字段齐备 / 类型（按形查必填、类型、未登记字段，嵌套列表再查一层）；二、引用 id 存在（refs 每一路落在本表 / 别的数据文件 / GDScript 常量的并集）；"
               "三、普查出的自引用路径都登了 edge 或 not_edges；四、从 roots 沿 edge 走不到的条目 = 孤儿（形上 orphan_ok 与 known_orphans 基线放过，基线登了却已可达 / 已删即红）；"
-              "每次先跑「零、变异自检」21 格（GATES §五.3；内存里改：同族删必填 / 改类型 / 悬空 / 拼错字段 / 孤儿 / 基线失效 / 入口与常量改名 / 漏登须红且只红在该文件，非族 goods / characters / crew 改了须与基线一致；`--mutants` 逐格打印）；"
+              "每次先跑「零、变异自检」22 格（GATES §五.3；内存里改：同族删必填 / 改类型 / 悬空 / 拼错字段 / 孤儿 / 基线失效 / 入口与常量改名 / 漏登须红且只红在该文件，非族 goods / characters / crew 改了须与基线一致；`--mutants` 逐格打印）；"
               "scenes 的孤儿基线与 lane seq3 共用 verify_story_data.SCENE_ARCHIVE",
-     "green": "`✓ 21 格全对：…` + `== <文件>` 下逐项 `✓ 一、…` 至 `✓ 四、…`（四：`可达 a / n；不可达 k = 形放过 x + 已登记基线 y`）+ `结果：全部通过`",
+     "green": "`✓ 22 格全对：…` + `== <文件>` 下逐项 `✓ 一、…` 至 `✓ 四、…`（四：`可达 a / n；不可达 k = 形放过 x + 已登记基线 y`）+ `结果：全部通过`",
      "red": "`✗ …` 行（`缺必填字段` / `类型应为` / `未登记字段` / `悬空` / `是孤儿` / `known_orphans 登了 X，它已从入口可达` / `满足 F1–F3…却没登记` / `✗ 变异自检 <编号> …`）；`结果：N 项问题`"},
     {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/legacy/verify_narrative.py",
      "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
