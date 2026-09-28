@@ -636,6 +636,22 @@ func _route_check() -> void:
 		"守城页候 %d 日到 %s（城破时点 %s）→ 按城破结算「%s」，不回寻常港页、没有「看风」" % [waited_siege, Cal.get_date_string(), fall_ym, GS.ended])
 	_close_dialogs(main)
 	_life_line_check(main)
+	# S4：玉湖陈宅「族叔陈瓒愿入船股」——陈瓒死于兴化再陷（战况表第二段 besieged 的尽头），死后不再出现
+	var zan_falls: Array = main._xinghua_fall_yms()
+	_check(zan_falls.size() >= 2, "兴化战况表有首守城破与再陷两个城破时点（%s）" % [zan_falls])
+	for zc in [[1277, 5, true], [1277, 10, true], [1277, 11, false], [1278, 3, false], [1285, 5, false]]:
+		GS.from_dict({})
+		GS.identity = "hometown"
+		GS.fame = 40
+		Cal.from_dict({"year": zc[0], "month": zc[1], "day": 5})
+		main.load_scene("xinghua_residence")
+		var zan_btn := false
+		for zb in main.choices_container.get_children():
+			if zb is Button and (zb as Button).text.find("陈瓒愿入船股") >= 0:
+				zan_btn = true
+		_check(zan_btn == bool(zc[2]),
+			"玉湖陈宅 %d-%02d%s「陈瓒愿入船股」（再陷 %s）" % [zc[0], zc[1], "有" if zc[2] else "没有", zan_falls[1] if zan_falls.size() >= 2 else "?"])
+	GS.from_dict({})
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)

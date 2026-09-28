@@ -1986,7 +1986,7 @@ func _setup_residence_chen(port_id: String) -> void:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.add_theme_color_override("font_color", Color(0.65, 0.9, 0.7))
 		choices_container.add_child(l)
-	elif Calendar.year >= CHEN_ZAN_FROM_YEAR:
+	elif Calendar.year >= CHEN_ZAN_FROM_YEAR and _chen_zan_alive():
 		var b := Button.new()
 		if GameState.fame >= CHEN_ZAN_MIN_FAME:
 			b.text = "族叔陈瓒愿入船股一分（得 %d 钱，乡土 +5）" % CHEN_ZAN_STAKE
@@ -3812,19 +3812,36 @@ func _siege_active() -> bool:
 	return true
 
 
-## 兴化首守的城破时点（"YYYY-MM"）：战况表第一段 besieged 结束、转成别的战况的那个月。
-## 只认第一段——1277 秋唆都再围是第二段 besieged，那是陈瓒的城，不是陈文龙的。表里没有就返回 ""。
-func _first_siege_fall_ym() -> String:
+## 兴化战况表里每段 besieged 结束、转成别的战况的那个月（"YYYY-MM"），按时间排。
+## 数据现为 [1276-12 首守城破, 1277-11 唆都再陷]。
+func _xinghua_fall_yms() -> Array:
 	var war: Dictionary = GameManager.get_port_by_id("xinghua").get("war", {})
 	var keys: Array = war.keys()
 	keys.sort()
+	var out := []
 	var in_siege := false
 	for ym in keys:
 		if str(war[ym]) == "besieged":
 			in_siege = true
 		elif in_siege:
-			return str(ym)
-	return ""
+			out.append(str(ym))
+			in_siege = false
+	return out
+
+
+## 兴化首守的城破时点：第一段 besieged 的尽头。
+## 只认第一段——1277 秋唆都再围是第二段 besieged，那是陈瓒的城，不是陈文龙的。表里没有就返回 ""。
+func _first_siege_fall_ym() -> String:
+	var falls := _xinghua_fall_yms()
+	return str(falls[0]) if not falls.is_empty() else ""
+
+
+## 陈瓒还在不在：他死于兴化再陷（唆都回师来攻，城破被执车裂），即第二段 besieged 的尽头。表里没有再陷就不设上限。
+func _chen_zan_alive() -> bool:
+	var falls := _xinghua_fall_yms()
+	if falls.size() < 2:
+		return true
+	return "%04d-%02d" % [Calendar.year, Calendar.month] < str(falls[1])
 
 
 ## 城防记录还开着、日历却已过首守城破时点（守城页「再候一日」候过去，或这样留下的旧档）：
