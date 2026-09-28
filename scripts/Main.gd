@@ -4316,7 +4316,7 @@ func _siege_lin_hua() -> void:
 		GameState.siege_add("grain", -30)
 		GameState.set_flag("cao_opened")
 		# 只作铺垫，城还在：门是后来城破时才开的（_siege_fall 按 cao_opened 写林华缒城出降、曹澄孙开东门）。不写天数，日历没动
-		log_msg("城门关了，谁也不出。当夜林华从城上缒了下去，再没有回来。东门下，有人看见通判曹澄孙转了几回。")
+		log_msg("城门关了。当夜林华从城上缒了下去，再没有回来。东门下，有人看见通判曹澄孙转了几回。")
 		load_scene(current_scene_id)
 	)
 	choices_container.add_child(stay)
