@@ -1018,7 +1018,7 @@ const PROLOGUE_PAGE_BG := {
 	#   家丁 cg_servant_enter、cg_servant_speak（2 页）← bg_prologue_servant.jpg
 	#   抉择 cg_decision ← bg_prologue_decision.jpg
 	#   收束 cg_choice_sea ← bg_prologue_choice_sea.jpg；cg_choice_land ← bg_prologue_choice_land.jpg
-	#   cg_narrate_table 首页、cg_wine_shed、cg_wine_shed_5 仍压酒棚（等 bg_wine_shed_hd 重画还是 T5 的二选一）
+	#   cg_narrate_table 首页、cg_wine_shed、cg_wine_shed_5 仍压 PROLOGUE_BG；bg_wine_shed_hd 重画后同名覆盖即生效（09-28 Snow 选重画）
 }
 
 
