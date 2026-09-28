@@ -1,0 +1,3126 @@
+{
+  "meta": {
+    "title": "海战阶段、转移、指令、编制与结局契约",
+    "era": "南宋末，约1255-1279，东亚近海",
+    "version": 1,
+    "lane": "combat01",
+    "note": "战术层海战（WorldMap）的共用契约：阶段 phases 与转移 transitions（边表，谓词取 queries）、门限 thresholds、指令 orders、水手岗位与分派、职事加成、钩连与白刃参数、敌将意图与性情、结局 outcomes（含与现行 battle_finished 的对照）、事件 cues、状态条字段 hud_fields、各系统归属 systems。阶段顺序：遭遇→机动→舷炮→接舷→白刃→缴获/溃逃。设计见 docs/combat_realism_design.md，逐字段说明见 docs/combat_phases_schema.md。同表条目之间不互指（转移另立 transitions 边表），跨表、跨文件引用由字段说明列明。",
+    "copy_style": "上屏文案：纪实短句，不用叹号；不写「玩家」，写我船、本队；用宋代叫法（碇、针盘、纲首、舵工），不写拔锚、罗盘；「炮」指抛石机"
+  },
+  "scale": {
+    "px_per_bu": 8.0,
+    "bu_m": 1.6,
+    "li_bu": 360,
+    "note": "距离尺：1 步（宋制五尺，约 1.6 米）= 8 px，360 步 = 1 里（Voyage.KM_PER_LI 0.576 公里）。船图按可读性放大约 1.8 倍，与距离不同尺；航速在战术层压缩，投射物飞行不压缩，见设计文档「战术尺」"
+  },
+  "phases": [
+    {
+      "id": "encounter",
+      "seq": 1,
+      "name": "遭遇",
+      "short": "遭遇",
+      "summary": "望见敌船到开始交射之间：认船、看风、定打还是走，敌我都还不放",
+      "enter_copy": "望见帆影",
+      "systems": [
+        "maneuver_model",
+        "combat_morale",
+        "captain_ai"
+      ],
+      "orders": [
+        "sail_up",
+        "sail_down",
+        "steer",
+        "gain_wind",
+        "hold_broadside",
+        "prepare_boarding",
+        "wet_screens",
+        "ammo_fire",
+        "ammo_plain",
+        "oars_out",
+        "oars_in",
+        "anchor",
+        "weigh",
+        "hook",
+        "call_surrender",
+        "strike_colors",
+        "flee"
+      ],
+      "intents": [
+        "approach",
+        "gain_wind",
+        "shadow",
+        "stand_off"
+      ],
+      "hud": [
+        "phase",
+        "wind",
+        "sail_wind",
+        "target_bearing",
+        "range",
+        "enemy_intent",
+        "crew",
+        "morale",
+        "tide",
+        "current"
+      ],
+      "fire_allowed": false,
+      "can_flee": true,
+      "camera": "wide",
+      "legacy": "开战后 WorldMap.COMBAT_FIRE_DELAY 秒内：敌船 fire_timer 还没走完，不放"
+    },
+    {
+      "id": "maneuver",
+      "seq": 2,
+      "name": "机动",
+      "short": "机动",
+      "summary": "都不在射程或不在舷角里：抢上风、调舷角、拉近或拉开",
+      "enter_copy": "转舵抢风",
+      "systems": [
+        "maneuver_model",
+        "reload_ammo",
+        "damage_model",
+        "flood_fire",
+        "combat_morale",
+        "captain_ai"
+      ],
+      "orders": [
+        "sail_up",
+        "sail_down",
+        "steer",
+        "volley_left",
+        "volley_right",
+        "gain_wind",
+        "hold_broadside",
+        "ammo_fire",
+        "ammo_plain",
+        "fight_fire",
+        "bail",
+        "spare_rudder",
+        "wet_screens",
+        "prepare_boarding",
+        "hook",
+        "call_surrender",
+        "strike_colors",
+        "oars_out",
+        "oars_in",
+        "anchor",
+        "weigh",
+        "flee"
+      ],
+      "intents": [
+        "approach",
+        "gain_wind",
+        "hold_broadside",
+        "close_board",
+        "stand_off",
+        "shadow",
+        "disengage"
+      ],
+      "hud": [
+        "phase",
+        "wind",
+        "sail_wind",
+        "target_bearing",
+        "range",
+        "ammo",
+        "hull",
+        "sails",
+        "rudder",
+        "flood",
+        "fire",
+        "crew",
+        "morale",
+        "enemy_intent",
+        "tide",
+        "current"
+      ],
+      "fire_allowed": true,
+      "can_flee": true,
+      "camera": "normal",
+      "legacy": "现码无此分段：combat_mode 且未 boarding、双方兵器都够不着对方"
+    },
+    {
+      "id": "broadside",
+      "seq": 3,
+      "name": "舷炮",
+      "short": "矢石",
+      "summary": "进了射程、占了舷角：弓弩成阵放，大船上的床子弩、旋风炮也放；打人、打帆、放火，少有能把船打沉的",
+      "enter_copy": "矢石交加",
+      "systems": [
+        "maneuver_model",
+        "ballistics",
+        "reload_ammo",
+        "damage_model",
+        "flood_fire",
+        "combat_morale",
+        "captain_ai"
+      ],
+      "orders": [
+        "sail_up",
+        "sail_down",
+        "steer",
+        "volley_left",
+        "volley_right",
+        "gain_wind",
+        "hold_broadside",
+        "ammo_fire",
+        "ammo_plain",
+        "fight_fire",
+        "bail",
+        "spare_rudder",
+        "wet_screens",
+        "prepare_boarding",
+        "hook",
+        "call_surrender",
+        "strike_colors",
+        "oars_out",
+        "oars_in",
+        "anchor",
+        "weigh",
+        "flee"
+      ],
+      "intents": [
+        "hold_broadside",
+        "gain_wind",
+        "close_board",
+        "stand_off",
+        "disengage",
+        "flee",
+        "strike"
+      ],
+      "hud": [
+        "phase",
+        "wind",
+        "sail_wind",
+        "target_bearing",
+        "range",
+        "ammo",
+        "hull",
+        "sails",
+        "rudder",
+        "flood",
+        "fire",
+        "crew",
+        "morale",
+        "enemy_intent",
+        "tide",
+        "current"
+      ],
+      "fire_allowed": true,
+      "can_flee": true,
+      "camera": "normal",
+      "legacy": "现码 combat_mode 且 boarding == false 的常态：J / K 齐射，敌船转舷放"
+    },
+    {
+      "id": "grapple",
+      "seq": 4,
+      "name": "接舷",
+      "short": "接舷",
+      "summary": "下了接舷令：拢船、抛钩、系缆。被接的一方砍缆、掷火罐灰瓶阻挡；钩不住或被砍断就分开",
+      "enter_copy": "钩索已抛",
+      "systems": [
+        "maneuver_model",
+        "damage_model",
+        "flood_fire",
+        "melee_resolve",
+        "combat_morale",
+        "captain_ai"
+      ],
+      "orders": [
+        "steer",
+        "sail_down",
+        "cut_hooks",
+        "repel",
+        "prepare_boarding",
+        "fight_fire",
+        "bail",
+        "call_surrender",
+        "strike_colors"
+      ],
+      "intents": [
+        "boarding",
+        "disengage",
+        "strike"
+      ],
+      "hud": [
+        "phase",
+        "wind",
+        "range",
+        "hull",
+        "fire",
+        "crew",
+        "morale",
+        "enemy_intent"
+      ],
+      "fire_allowed": false,
+      "can_flee": false,
+      "camera": "close",
+      "legacy": "现码 _board_enemy 开头：boarding = true、grappled = true、BoardingStage.begin 到 0.42 秒停顿结束；J / K 照旧不放（Ship._can_fire），掷器由接舷队在白刃结算里放"
+    },
+    {
+      "id": "melee",
+      "seq": 5,
+      "name": "白刃",
+      "short": "白刃",
+      "summary": "两船系住，跳帮的人过舷，甲板上一合一合地打；火枪、灰瓶、蒺藜管头几合，一方溃了或降了分胜负，打不下来就退回本船、砍缆分开",
+      "enter_copy": "短兵相接",
+      "systems": [
+        "melee_resolve",
+        "damage_model",
+        "flood_fire",
+        "combat_morale",
+        "captain_ai"
+      ],
+      "orders": [
+        "repel",
+        "call_surrender",
+        "strike_colors",
+        "fight_fire",
+        "bail"
+      ],
+      "intents": [
+        "boarding",
+        "strike"
+      ],
+      "hud": [
+        "phase",
+        "hull",
+        "fire",
+        "crew",
+        "morale",
+        "enemy_intent"
+      ],
+      "fire_allowed": false,
+      "can_flee": false,
+      "camera": "close",
+      "legacy": "现码 _board_enemy 里 p_win = 我 / (我 + 敌) 那一掷；多合结算见 melee"
+    },
+    {
+      "id": "capture",
+      "seq": 6,
+      "name": "缴获",
+      "short": "缴获",
+      "summary": "敌船降了或被夺了：收船（要分人手驾回）、搬货、焚船、放人；别的敌船还在就回到机动",
+      "enter_copy": "清点缴获",
+      "systems": [
+        "maneuver_model",
+        "damage_model",
+        "flood_fire",
+        "combat_morale",
+        "captain_ai"
+      ],
+      "orders": [
+        "take_prize",
+        "plunder",
+        "burn_prize",
+        "release_crew",
+        "steer",
+        "sail_up",
+        "sail_down",
+        "volley_left",
+        "volley_right",
+        "fight_fire",
+        "bail",
+        "flee"
+      ],
+      "intents": [
+        "approach",
+        "gain_wind",
+        "hold_broadside",
+        "disengage",
+        "flee"
+      ],
+      "hud": [
+        "phase",
+        "hull",
+        "crew",
+        "morale",
+        "enemy_intent"
+      ],
+      "fire_allowed": true,
+      "can_flee": true,
+      "camera": "normal",
+      "legacy": "现码白刃胜：Fleet.add_ship 并入、enemy.queue_free；敌降现码没有"
+    },
+    {
+      "id": "rout",
+      "seq": 6,
+      "name": "溃逃",
+      "short": "溃逃",
+      "summary": "一方士气溃了：溃的一方转舵逃，另一方追或放；追上了可再接舷，溃船多半不打就降；逃出 escape_bu 就散",
+      "enter_copy": "敌船转舵逃走",
+      "enter_copy_by_side": {
+        "enemy": "敌船转舵逃走",
+        "player": "众人无心再战，转舵脱离"
+      },
+      "systems": [
+        "maneuver_model",
+        "ballistics",
+        "reload_ammo",
+        "damage_model",
+        "flood_fire",
+        "combat_morale",
+        "captain_ai"
+      ],
+      "orders": [
+        "pursue",
+        "let_go",
+        "sail_up",
+        "sail_down",
+        "steer",
+        "volley_left",
+        "volley_right",
+        "hook",
+        "call_surrender",
+        "fight_fire",
+        "bail",
+        "oars_out",
+        "oars_in",
+        "strike_colors",
+        "flee"
+      ],
+      "intents": [
+        "flee",
+        "strike",
+        "approach",
+        "close_board",
+        "disengage"
+      ],
+      "hud": [
+        "phase",
+        "wind",
+        "sail_wind",
+        "range",
+        "ammo",
+        "hull",
+        "sails",
+        "rudder",
+        "fire",
+        "crew",
+        "morale",
+        "enemy_intent"
+      ],
+      "fire_allowed": true,
+      "can_flee": true,
+      "camera": "wide",
+      "legacy": "现码没有：敌船从不逃"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "t_player_sunk",
+      "from": [
+        "*"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "player_sunk",
+      "when": [
+        {
+          "q": "flagship_sunk",
+          "op": "==",
+          "v": true
+        }
+      ],
+      "priority": 1,
+      "note": "旗舰沉：Ship._sink_ship → WorldMap._battle_player_sunk（现码即此）"
+    },
+    {
+      "id": "t_player_strikes",
+      "from": [
+        "*"
+      ],
+      "except": [
+        "capture"
+      ],
+      "to": "end",
+      "outcome": "player_struck",
+      "when": [
+        {
+          "q": "order",
+          "op": "==",
+          "v": "strike_colors"
+        }
+      ],
+      "priority": 2,
+      "note": "我船竖降幡（界面须二次确认）"
+    },
+    {
+      "id": "t_flee_ok",
+      "from": [
+        "encounter",
+        "maneuver",
+        "broadside",
+        "capture",
+        "rout"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "player_fled",
+      "when": [
+        {
+          "q": "flee_roll",
+          "op": "==",
+          "v": "ok"
+        }
+      ],
+      "priority": 3,
+      "note": "B / Esc：Voyage.flee_success_chance() 掷骰，海图逃走同一条（现码即此）"
+    },
+    {
+      "id": "t_flee_caught",
+      "from": [
+        "encounter",
+        "maneuver",
+        "broadside",
+        "capture",
+        "rout"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "player_caught",
+      "when": [
+        {
+          "q": "flee_roll",
+          "op": "==",
+          "v": "caught"
+        }
+      ],
+      "priority": 3,
+      "note": "没甩脱：SeaChart 按 flee_ok = false 结算"
+    },
+    {
+      "id": "t_deck_lost",
+      "from": [
+        "melee"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "player_overrun",
+      "when": [
+        {
+          "q": "melee_attacker",
+          "op": "==",
+          "v": "enemy"
+        },
+        {
+          "q": "melee_state",
+          "op": "==",
+          "v": "attacker_won"
+        }
+      ],
+      "priority": 4,
+      "note": "敌人跳上来占了我船甲板：搬货走人"
+    },
+    {
+      "id": "t_deck_taken",
+      "from": [
+        "melee"
+      ],
+      "except": [],
+      "to": "capture",
+      "when": [
+        {
+          "q": "melee_attacker",
+          "op": "==",
+          "v": "player"
+        },
+        {
+          "q": "melee_state",
+          "op": "==",
+          "v": "attacker_won"
+        }
+      ],
+      "priority": 5,
+      "note": "我方占了敌船甲板"
+    },
+    {
+      "id": "t_deck_held",
+      "from": [
+        "melee"
+      ],
+      "except": [],
+      "to": "broadside",
+      "when": [
+        {
+          "q": "melee_state",
+          "op": "==",
+          "v": "defender_held"
+        }
+      ],
+      "priority": 6,
+      "note": "守方守住：攻方退回本船、砍缆，两船分开（现码白刃败即此：敌船脱钩）"
+    },
+    {
+      "id": "t_hook_held",
+      "from": [
+        "grapple"
+      ],
+      "except": [],
+      "to": "melee",
+      "when": [
+        {
+          "q": "grapple_state",
+          "op": "==",
+          "v": "held"
+        }
+      ],
+      "priority": 7,
+      "note": "钩住系牢"
+    },
+    {
+      "id": "t_hook_lost",
+      "from": [
+        "grapple"
+      ],
+      "except": [],
+      "to": "broadside",
+      "when": [
+        {
+          "q": "grapple_state",
+          "op": "in",
+          "v": [
+            "failed",
+            "cut"
+          ]
+        }
+      ],
+      "priority": 8,
+      "note": "钩不住或被砍断"
+    },
+    {
+      "id": "t_enemy_struck",
+      "from": [
+        "maneuver",
+        "broadside",
+        "rout"
+      ],
+      "except": [],
+      "to": "capture",
+      "when": [
+        {
+          "q": "struck_pending",
+          "op": ">=",
+          "v": 1
+        }
+      ],
+      "priority": 9,
+      "note": "有敌船竖了降幡、还没处置"
+    },
+    {
+      "id": "t_field_clear",
+      "from": [
+        "maneuver",
+        "broadside",
+        "rout"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "resolve",
+      "when": [
+        {
+          "q": "enemy_alive",
+          "op": "==",
+          "v": 0
+        }
+      ],
+      "priority": 10,
+      "note": "敌船全没了（沉、夺、降、逃）：按 outcomes.precedence 定结局（现码「敌全灭 → 获胜」，接舷中不判）"
+    },
+    {
+      "id": "t_capture_end",
+      "from": [
+        "capture"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "resolve",
+      "when": [
+        {
+          "q": "capture_done",
+          "op": "==",
+          "v": true
+        },
+        {
+          "q": "enemy_alive",
+          "op": "==",
+          "v": 0
+        }
+      ],
+      "priority": 11,
+      "note": "处置完，场上已无敌船"
+    },
+    {
+      "id": "t_capture_more",
+      "from": [
+        "capture"
+      ],
+      "except": [],
+      "to": "maneuver",
+      "when": [
+        {
+          "q": "capture_done",
+          "op": "==",
+          "v": true
+        }
+      ],
+      "priority": 12,
+      "note": "处置完，还有敌船"
+    },
+    {
+      "id": "t_hook_start",
+      "from": [
+        "encounter",
+        "maneuver",
+        "broadside",
+        "rout"
+      ],
+      "except": [],
+      "to": "grapple",
+      "when": [
+        {
+          "q": "grapple_state",
+          "op": "==",
+          "v": "closing"
+        }
+      ],
+      "priority": 13,
+      "note": "我方 G（距离 ≤ grapple_order_bu）或敌将 close_board 抛钩"
+    },
+    {
+      "id": "t_enemy_routs",
+      "from": [
+        "maneuver",
+        "broadside"
+      ],
+      "except": [],
+      "to": "rout",
+      "when": [
+        {
+          "q": "enemy_side_morale",
+          "op": "==",
+          "v": "broken"
+        }
+      ],
+      "priority": 14,
+      "note": "在场敌船都溃了"
+    },
+    {
+      "id": "t_player_routs",
+      "from": [
+        "maneuver",
+        "broadside"
+      ],
+      "except": [],
+      "to": "rout",
+      "when": [
+        {
+          "q": "own_side_morale",
+          "op": "==",
+          "v": "broken"
+        }
+      ],
+      "priority": 15,
+      "note": "本队溃了：只剩逃、降两条路"
+    },
+    {
+      "id": "t_enemy_escaped",
+      "from": [
+        "rout"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "resolve",
+      "when": [
+        {
+          "q": "routing_side",
+          "op": "==",
+          "v": "enemy"
+        },
+        {
+          "q": "escape_bu",
+          "op": ">=",
+          "v": "$escape_bu"
+        }
+      ],
+      "priority": 16,
+      "note": "溃船逃出，记 enemy_fled"
+    },
+    {
+      "id": "t_let_go",
+      "from": [
+        "rout"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "resolve",
+      "when": [
+        {
+          "q": "routing_side",
+          "op": "==",
+          "v": "enemy"
+        },
+        {
+          "q": "order",
+          "op": "==",
+          "v": "let_go"
+        }
+      ],
+      "priority": 17,
+      "note": "放它走"
+    },
+    {
+      "id": "t_player_escaped",
+      "from": [
+        "rout"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "player_routed",
+      "when": [
+        {
+          "q": "routing_side",
+          "op": "==",
+          "v": "player"
+        },
+        {
+          "q": "escape_bu",
+          "op": ">=",
+          "v": "$escape_bu"
+        }
+      ],
+      "priority": 18,
+      "note": "我方溃逃出去"
+    },
+    {
+      "id": "t_rallied",
+      "from": [
+        "rout"
+      ],
+      "except": [],
+      "to": "maneuver",
+      "when": [
+        {
+          "q": "routing_side",
+          "op": "==",
+          "v": "none"
+        }
+      ],
+      "priority": 19,
+      "note": "溃的一方重整"
+    },
+    {
+      "id": "t_encounter_fire",
+      "from": [
+        "encounter"
+      ],
+      "except": [],
+      "to": "broadside",
+      "when": [
+        {
+          "q": "phase_elapsed_s",
+          "op": ">=",
+          "v": "$encounter_s"
+        },
+        {
+          "q": "weapons_bear",
+          "op": "==",
+          "v": true
+        }
+      ],
+      "priority": 20,
+      "note": "遭遇完一开场就在射程里（现行刷船 37.5–52.5 步，弓已够得着）"
+    },
+    {
+      "id": "t_encounter_move",
+      "from": [
+        "encounter"
+      ],
+      "except": [],
+      "to": "maneuver",
+      "when": [
+        {
+          "q": "phase_elapsed_s",
+          "op": ">=",
+          "v": "$encounter_s"
+        }
+      ],
+      "priority": 21,
+      "note": "遭遇完还够不着"
+    },
+    {
+      "id": "t_open_fire",
+      "from": [
+        "maneuver"
+      ],
+      "except": [],
+      "to": "broadside",
+      "when": [
+        {
+          "q": "weapons_bear",
+          "op": "==",
+          "v": true
+        }
+      ],
+      "priority": 22,
+      "note": "有一方够得着了"
+    },
+    {
+      "id": "t_cease_fire",
+      "from": [
+        "broadside"
+      ],
+      "except": [],
+      "to": "maneuver",
+      "when": [
+        {
+          "q": "out_of_range_s",
+          "op": ">=",
+          "v": "$range_hysteresis_s"
+        }
+      ],
+      "priority": 23,
+      "note": "两边都够不着满 range_hysteresis_s 秒"
+    },
+    {
+      "id": "t_time_up",
+      "from": [
+        "encounter",
+        "maneuver",
+        "broadside",
+        "rout"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "disengaged",
+      "when": [
+        {
+          "q": "battle_elapsed_s",
+          "op": ">=",
+          "v": "$battle_limit_s"
+        }
+      ],
+      "priority": 90,
+      "note": "天色晚了，各自收帆"
+    },
+    {
+      "id": "t_gale",
+      "from": [
+        "encounter",
+        "maneuver",
+        "broadside"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "disengaged",
+      "when": [
+        {
+          "q": "wind_combat_ok",
+          "op": "==",
+          "v": false
+        }
+      ],
+      "priority": 91,
+      "note": "风到七级以上不能战（combat_sea_state.json wind_levels.combat_ok）"
+    }
+  ],
+  "thresholds": {
+    "encounter_s": {
+      "v": 3.5,
+      "unit": "s",
+      "legacy": "WorldMap.COMBAT_FIRE_DELAY",
+      "note": "遭遇段长；火长每级另加 officer_effects.huozhang"
+    },
+    "spawn_min_bu": {
+      "v": 37.5,
+      "unit": "bu",
+      "legacy": "WorldMap.COMBAT_SPAWN_DIST_MIN 300 px ÷ px_per_bu",
+      "note": "开战刷船近端"
+    },
+    "spawn_max_bu": {
+      "v": 52.5,
+      "unit": "bu",
+      "legacy": "WorldMap.COMBAT_SPAWN_DIST_MAX 420 px ÷ px_per_bu",
+      "note": "开战刷船远端"
+    },
+    "grapple_order_bu": {
+      "v": 17.5,
+      "unit": "bu",
+      "legacy": "WorldMap.BOARD_DISTANCE 140 px ÷ px_per_bu",
+      "note": "下得了接舷令的距离；真正抛钩要拢到 hook_throw_bu"
+    },
+    "hook_throw_bu": {
+      "v": 10.0,
+      "unit": "bu",
+      "legacy": null,
+      "note": "飞钩掷得到（weapons.json feigou.range_bu.eff）"
+    },
+    "hook_rel_speed_bus": {
+      "v": 4.0,
+      "unit": "bus",
+      "legacy": null,
+      "note": "相对速度超过这个，钩了也挂不住（见 melee.hook.rel_speed_bands）"
+    },
+    "range_hysteresis_s": {
+      "v": 2.0,
+      "unit": "s",
+      "legacy": null,
+      "note": "舷炮退回机动前要连续够不着的秒数，免得在射程边上来回跳"
+    },
+    "ai_broadside_bu": {
+      "v": 75.0,
+      "unit": "bu",
+      "legacy": "PirateShip._physics_process：dist < 600 px 转舷",
+      "note": "现行敌船转舷距离"
+    },
+    "ai_fire_max_bu": {
+      "v": 100.0,
+      "unit": "bu",
+      "legacy": "PirateShip._process_firing：dist > 800 px 不放",
+      "note": "现行敌船开火上限，正合弩的有效射程上下"
+    },
+    "ai_sleep_bu": {
+      "v": 312.5,
+      "unit": "bu",
+      "legacy": "PirateShip：dist > 2500 px 不动",
+      "note": "现行敌船休眠距离"
+    },
+    "escape_bu": {
+      "v": 160.0,
+      "unit": "bu",
+      "legacy": null,
+      "note": "溃逃一方拉开到这个距离即算逃出（约一屏半）"
+    },
+    "capture_timeout_s": {
+      "v": 8.0,
+      "unit": "s",
+      "legacy": null,
+      "note": "缴获令不下，到时按 orders.take_prize 默认处置（与现码白刃胜即并船一致）"
+    },
+    "battle_limit_s": {
+      "v": 300.0,
+      "unit": "s",
+      "legacy": null,
+      "note": "一场最长；到时两散"
+    },
+    "call_surrender_cooldown_s": {
+      "v": 10.0,
+      "unit": "s",
+      "legacy": null,
+      "note": "喊话劝降的间隔"
+    },
+    "enemy_projectile_cap": {
+      "v": 2,
+      "unit": "发",
+      "legacy": "WorldMap.COMBAT_CANNON_CAP",
+      "note": "敌船每阵至多两发（check_symbols 八节锁）"
+    },
+    "player_volley_cooldown_s": {
+      "v": 2.0,
+      "unit": "s",
+      "legacy": "Ship._fire_broadside：fire_cooldown = 2.0",
+      "note": "J / K 两阵之间的最短间隔；各舷位另按兵器 cycle_s 装填"
+    },
+    "enemy_volley_cycle_s": {
+      "v": 3.0,
+      "unit": "s",
+      "legacy": "PirateShip._process_firing：fire_timer = 3.0",
+      "note": "现行敌船一阵的间隔"
+    }
+  },
+  "queries": [
+    {
+      "id": "phase_elapsed_s",
+      "name": "本阶段已过秒数",
+      "type": "float",
+      "unit": "s",
+      "owner": "director",
+      "source": "阶段机自记",
+      "fallback": null
+    },
+    {
+      "id": "battle_elapsed_s",
+      "name": "开战已过秒数",
+      "type": "float",
+      "unit": "s",
+      "owner": "director",
+      "source": "阶段机自记",
+      "fallback": null
+    },
+    {
+      "id": "flagship_sunk",
+      "name": "旗舰沉没",
+      "type": "bool",
+      "unit": null,
+      "owner": "damage_model",
+      "source": "Ship._sink_ship 调 WorldMap._battle_player_sunk",
+      "fallback": "现码即此"
+    },
+    {
+      "id": "order",
+      "name": "本帧指令",
+      "type": "enum",
+      "values_from": "orders",
+      "unit": null,
+      "owner": "orders_ui",
+      "source": "CombatOrdersPanel 发出的指令 id",
+      "fallback": "按键：G → hook，B / Esc → flee，J / K → volley_left / volley_right"
+    },
+    {
+      "id": "flee_roll",
+      "name": "弃战掷骰",
+      "type": "enum",
+      "values": [
+        "none",
+        "ok",
+        "caught"
+      ],
+      "unit": null,
+      "owner": "director",
+      "source": "randf() < Voyage.flee_success_chance()",
+      "fallback": "现码 WorldMap._unhandled_input 同式"
+    },
+    {
+      "id": "melee_attacker",
+      "name": "白刃攻方",
+      "type": "enum",
+      "values": [
+        "none",
+        "player",
+        "enemy"
+      ],
+      "unit": null,
+      "owner": "melee_resolve",
+      "source": "MeleeResolve",
+      "fallback": "现码攻方恒为我方"
+    },
+    {
+      "id": "melee_state",
+      "name": "白刃状态",
+      "type": "enum",
+      "values": [
+        "none",
+        "fighting",
+        "attacker_won",
+        "defender_held"
+      ],
+      "unit": null,
+      "owner": "melee_resolve",
+      "source": "MeleeResolve",
+      "fallback": "现码一掷：胜 → attacker_won，负 → defender_held"
+    },
+    {
+      "id": "grapple_state",
+      "name": "钩连状态",
+      "type": "enum",
+      "values": [
+        "none",
+        "closing",
+        "held",
+        "failed",
+        "cut"
+      ],
+      "unit": null,
+      "owner": "melee_resolve",
+      "source": "MeleeResolve",
+      "fallback": "现码按 G 即 held"
+    },
+    {
+      "id": "struck_pending",
+      "name": "待处置的降船数",
+      "type": "int",
+      "unit": "艘",
+      "owner": "combat_morale",
+      "source": "CombatMorale：竖了降幡、还没进缴获的敌船",
+      "fallback": 0
+    },
+    {
+      "id": "enemy_alive",
+      "name": "在场敌船数",
+      "type": "int",
+      "unit": "艘",
+      "owner": "director",
+      "source": "WorldMap._enemies_alive()",
+      "fallback": "现码即此"
+    },
+    {
+      "id": "capture_done",
+      "name": "缴获处置完",
+      "type": "bool",
+      "unit": null,
+      "owner": "director",
+      "source": "缴获令都下完，或 capture_timeout_s 到",
+      "fallback": true
+    },
+    {
+      "id": "enemy_side_morale",
+      "name": "敌方士气",
+      "type": "enum",
+      "values_from": "morale_states",
+      "unit": null,
+      "owner": "combat_morale",
+      "source": "CombatMorale：在场敌船都溃、降或在逃才算 broken，都降才算 struck",
+      "fallback": "steady"
+    },
+    {
+      "id": "own_side_morale",
+      "name": "本队士气",
+      "type": "enum",
+      "values_from": "morale_states",
+      "unit": null,
+      "owner": "combat_morale",
+      "source": "CombatMorale：以旗舰为准",
+      "fallback": "steady"
+    },
+    {
+      "id": "routing_side",
+      "name": "溃逃的一方",
+      "type": "enum",
+      "values": [
+        "none",
+        "enemy",
+        "player"
+      ],
+      "unit": null,
+      "owner": "combat_morale",
+      "source": "CombatMorale",
+      "fallback": "none"
+    },
+    {
+      "id": "escape_bu",
+      "name": "溃逃拉开的距离",
+      "type": "float",
+      "unit": "bu",
+      "owner": "maneuver_model",
+      "source": "溃逃一方与另一方最近船的距离",
+      "fallback": "WorldMap._nearest_enemy() 距离 ÷ px_per_bu"
+    },
+    {
+      "id": "weapons_bear",
+      "name": "兵器够得着",
+      "type": "bool",
+      "unit": null,
+      "owner": "ballistics",
+      "source": "任一方有兵器的舷角（mounts.arc_deg）与射程（range_bu.max）够得着对方",
+      "fallback": "PirateShip 口径：距离 ≤ ai_fire_max_bu 且 |舷角 − 90°| < 17°；或我方舷墙 30–150° 内有敌、距离 ≤ 80 步"
+    },
+    {
+      "id": "out_of_range_s",
+      "name": "够不着的秒数",
+      "type": "float",
+      "unit": "s",
+      "owner": "ballistics",
+      "source": "weapons_bear 连续为假的秒数",
+      "fallback": 0.0
+    },
+    {
+      "id": "nearest_enemy_bu",
+      "name": "最近敌船距离",
+      "type": "float",
+      "unit": "bu",
+      "owner": "maneuver_model",
+      "source": "ManeuverModel 距离查询",
+      "fallback": "WorldMap._nearest_enemy()[1] ÷ px_per_bu"
+    },
+    {
+      "id": "rel_speed_bus",
+      "name": "与接舷目标的相对速度",
+      "type": "float",
+      "unit": "bus",
+      "owner": "maneuver_model",
+      "source": "两船速度差的模",
+      "fallback": 0.0
+    },
+    {
+      "id": "wind_combat_ok",
+      "name": "风级能战",
+      "type": "bool",
+      "unit": null,
+      "owner": "maneuver_model",
+      "source": "当前风级 wind_levels.combat_ok（SeaState）",
+      "fallback": true
+    },
+    {
+      "id": "tally_captured",
+      "name": "已夺敌船数",
+      "type": "int",
+      "unit": "艘",
+      "owner": "director",
+      "source": "白刃夺下的",
+      "fallback": 0
+    },
+    {
+      "id": "tally_struck",
+      "name": "已降敌船数",
+      "type": "int",
+      "unit": "艘",
+      "owner": "director",
+      "source": "降幡后处置了的",
+      "fallback": 0
+    },
+    {
+      "id": "tally_sunk",
+      "name": "已沉敌船数",
+      "type": "int",
+      "unit": "艘",
+      "owner": "director",
+      "source": "hull_hp 归零的",
+      "fallback": 0
+    },
+    {
+      "id": "tally_fled",
+      "name": "已逃敌船数",
+      "type": "int",
+      "unit": "艘",
+      "owner": "director",
+      "source": "溃逃出 escape_bu 或被放走的",
+      "fallback": 0
+    }
+  ],
+  "resolve": {
+    "by": "outcomes 里带 precedence 的几项，按 precedence 从小到大，头一个 tally 大于 0 的即结局",
+    "fallback": "enemy_sunk",
+    "note": "敌船有夺有沉有逃时，题签写夺船（与现码 _last_boarded 同向）"
+  },
+  "systems": [
+    {
+      "id": "director",
+      "name": "阶段机",
+      "lane": null,
+      "module": null,
+      "role": "每帧按 transitions 求值、记 phase_trail、发 cues、出结局；本轮未派独占（combat10 的 CombatDirector 只作探测装配），见设计文档「接线归属」"
+    },
+    {
+      "id": "maneuver_model",
+      "name": "操船海况",
+      "lane": "combat02",
+      "module": "scripts/combat/ManeuverModel.gd、scripts/combat/SeaState.gd",
+      "role": "风、流、潮、风舷角航速、横漂、转向、上风下风、距离与舷角查询"
+    },
+    {
+      "id": "ballistics",
+      "name": "弹道",
+      "lane": "combat03",
+      "module": "scripts/combat/Ballistics.gd、scripts/Cannonball.gd",
+      "role": "射程、舷角可及、命中、散布、飞行时间"
+    },
+    {
+      "id": "reload_ammo",
+      "name": "装填与矢石",
+      "lane": "combat03",
+      "module": "scripts/combat/ReloadAmmo.gd",
+      "role": "各舷位装填、存量、缺弹"
+    },
+    {
+      "id": "damage_model",
+      "name": "损伤",
+      "lane": "combat04",
+      "module": "scripts/combat/DamageModel.gd、scripts/Ship.gd",
+      "role": "船体、帆、舵、人手伤亡与查询"
+    },
+    {
+      "id": "flood_fire",
+      "name": "水火",
+      "lane": "combat04",
+      "module": "scripts/combat/FloodFire.gd",
+      "role": "起火蔓延、破舱进水、救火戽水"
+    },
+    {
+      "id": "melee_resolve",
+      "name": "钩连白刃",
+      "lane": "combat05",
+      "module": "scripts/combat/MeleeResolve.gd、scripts/combat/BoardingStage.gd",
+      "role": "抛钩、系缆、砍缆、白刃多合、夺船"
+    },
+    {
+      "id": "combat_morale",
+      "name": "战时士气",
+      "lane": "combat06",
+      "module": "scripts/combat/CombatMorale.gd、data/combat_morale.json",
+      "role": "士气起落、动摇、溃、降、劝降"
+    },
+    {
+      "id": "captain_ai",
+      "name": "敌将",
+      "lane": "combat07",
+      "module": "scripts/combat/EnemyCaptainAI.gd、scripts/PirateShip.gd",
+      "role": "按 intents 与 captains 行事"
+    },
+    {
+      "id": "orders_ui",
+      "name": "指令",
+      "lane": "combat08",
+      "module": "scripts/ui/CombatOrdersPanel.gd",
+      "role": "按 orders 出令"
+    },
+    {
+      "id": "status_hud",
+      "name": "状态条",
+      "lane": "combat08",
+      "module": "scripts/ui/CombatStatusHud.gd",
+      "role": "按 hud_fields 显示"
+    },
+    {
+      "id": "combat_fx",
+      "name": "观感",
+      "lane": "combat09",
+      "module": "scripts/combat/CombatFx.gd",
+      "role": "按 cues 出浮字、粒子、顿帧"
+    },
+    {
+      "id": "letterbox",
+      "name": "出战题签",
+      "lane": "combat09",
+      "module": "scripts/ui/CombatLetterbox.gd",
+      "role": "按 outcomes.letterbox_key 出题"
+    }
+  ],
+  "subsystems": [
+    {
+      "id": "hull",
+      "name": "船体",
+      "max": "Ship.max_hp（= 旗舰 max_durability；敌船 = _spawn_enemy 写的 hull_hp）",
+      "unit": "点",
+      "owner": "damage_model",
+      "effect": "归零即沉，沉船判据只此一条（Ship._sink_ship / PirateShip._explode，现码）"
+    },
+    {
+      "id": "sails",
+      "name": "帆",
+      "max": 100,
+      "unit": "%",
+      "owner": "damage_model",
+      "effect": "帆力 × (0.25 + 0.75 × 帆 ÷ 100)；折桅后帆封顶 30"
+    },
+    {
+      "id": "rudder",
+      "name": "舵",
+      "max": 100,
+      "unit": "%",
+      "owner": "damage_model",
+      "effect": "转向 × (0.3 + 0.7 × 舵 ÷ 100)；0 为失舵，只能靠帆橹转；有副舵可换到 70"
+    },
+    {
+      "id": "compartments",
+      "name": "隔舱",
+      "max": "weapons.json ship_fits.hull.compartments",
+      "unit": "舱",
+      "owner": "flood_fire",
+      "effect": "见 flood_model：进满一舱减速、减转向，进满过半下沉"
+    },
+    {
+      "id": "fire",
+      "name": "火",
+      "max": 3,
+      "unit": "档",
+      "owner": "flood_fire",
+      "effect": "见 fire_model"
+    },
+    {
+      "id": "crew",
+      "name": "人手",
+      "max": "该船水手数",
+      "unit": "人",
+      "owner": "damage_model",
+      "effect": "可战 = 总数 − 伤 − 亡；可战低于 crew_min 时缭帆、把舵按 可战 ÷ crew_min 打折，低于三分之一 crew_min 帆力、转向各 × 0.3"
+    },
+    {
+      "id": "morale",
+      "name": "士气",
+      "max": 100,
+      "unit": "点",
+      "owner": "combat_morale",
+      "effect": "起点 = Fleet.morale（我方）/ PirateShip.enemy_morale（敌船）；起落见 data/combat_morale.json"
+    }
+  ],
+  "fire_model": {
+    "levels": [
+      {
+        "level": 0,
+        "name": "无火",
+        "hull_per_s": 0.0,
+        "sails_per_s": 0.0,
+        "crew_per_s": 0.0,
+        "grow_chance_per_s": 0.0,
+        "hands_to_hold": 0
+      },
+      {
+        "level": 1,
+        "name": "小火",
+        "hull_per_s": 0.3,
+        "sails_per_s": 1.0,
+        "crew_per_s": 0.0,
+        "grow_chance_per_s": 0.08,
+        "hands_to_hold": 3
+      },
+      {
+        "level": 2,
+        "name": "火起",
+        "hull_per_s": 0.8,
+        "sails_per_s": 3.0,
+        "crew_per_s": 0.02,
+        "grow_chance_per_s": 0.06,
+        "hands_to_hold": 8
+      },
+      {
+        "level": 3,
+        "name": "大火",
+        "hull_per_s": 2.0,
+        "sails_per_s": 6.0,
+        "crew_per_s": 0.08,
+        "grow_chance_per_s": 0.0,
+        "hands_to_hold": 16
+      }
+    ],
+    "ignite": "命中带 fire 的矢石：几率 = ammo.hit.fire × 着处系数（打在帆上取 sail_polar.flammability，打在船身取 hull_builds.fire_mul）× weather.fire_ignite_mul × 张湿毡 0.5；着了从一档起，已着的再着升一档",
+    "grow": "每秒几率 grow_chance_per_s × wind_levels.fire_spread_mul × weather.fire_spread_mul × max(0, 1 − 救火人手 ÷ hands_to_hold) 升一档",
+    "shrink_chance_per_s": 0.15,
+    "shrink": "救火人手 ≥ 本档 hands_to_hold 时每秒以 shrink_chance_per_s 降一档（总管每级另加一成）；一档压住 3 秒即灭",
+    "where": [
+      "sail",
+      "deck",
+      "hold"
+    ],
+    "magazine": {
+      "level": 3,
+      "after_s": 20,
+      "chance_per_s": 0.05,
+      "hull_frac": 0.4,
+      "crew_frac": 0.15,
+      "note": "船上还有火药矢石（ammo.gunpowder 且存量 > 0）、大火烧满 after_s 秒才可能爆燃"
+    },
+    "self_fire": "本船放火器（ammo.hit.self_fire）失手，本船按一档起火"
+  },
+  "flood_model": {
+    "breach_inflow_per_s": 0.02,
+    "bail_per_s_per_4_hands": 0.01,
+    "flooded_speed_mul": 0.04,
+    "flooded_turn_mul": 0.03,
+    "list_warn_frac": 0.3,
+    "sink_frac": 0.5,
+    "sinking_hull_frac_per_s": 0.03,
+    "note": "破口一舱每秒进水 breach_inflow_per_s（约 50 秒进满），每四个救护人手每秒戽出 bail_per_s_per_4_hands；进满的舱隔板挡住不再漫（水密隔舱），每满一舱航速、转向各减 flooded_speed_mul / flooded_turn_mul；满舱过 list_warn_frac 报倾侧，过 sink_frac 即下沉：每秒掉满值 sinking_hull_frac_per_s 的船体，沉船仍走 hull 归零",
+    "breach_sources": "矢石 hit.breach；凿船 zao_chuan；相撞（相对速度 ≥ 10 步/秒，舷低的一方破一舱）；擦礁（waters.shoal_risk × tides.shoal_mul，傍岸、港湾急转时掷）"
+  },
+  "casualty_rules": {
+    "split": "一发的伤亡 = hit.crew × 目标 cover（抛石取 0.8）× 张湿毡 flat_casualty_mul（平射才乘）× slot_rule 效力倍数 k；其中 lethality 成死、其余成伤",
+    "wounded_return_base": 0.5,
+    "after_battle": "战后死者照 Fleet.lose_crew_random 扣；伤者 wounded_return_base 归队（医人每级另加 officer_effects.yiren.wounded_recover_frac），其余也扣",
+    "cargo_knock": "现码每中一发颠掉一件舱面货（Ship.take_damage）；写实后只在一发船体伤 ≥ 5（炮石、大箭）时颠，箭矢不颠"
+  },
+  "crew_duties": [
+    {
+      "id": "sail",
+      "name": "缭帆",
+      "song_term": "缭手",
+      "does": "升落篷帆、收放缭绳",
+      "shortfall": "升落帆慢，帆势打折"
+    },
+    {
+      "id": "helm",
+      "name": "把舵",
+      "song_term": "舵工",
+      "does": "掌舵，换副舵",
+      "shortfall": "转向慢"
+    },
+    {
+      "id": "oar",
+      "name": "摇橹",
+      "song_term": "橹手",
+      "does": "静风时摇橹划桨",
+      "shortfall": "静风里不动"
+    },
+    {
+      "id": "missile",
+      "name": "弓弩",
+      "song_term": "弓弩手",
+      "does": "舷墙上放弓弩",
+      "shortfall": "齐射一发的效力按人头折（weapons.json slot_rule.effect_scale）"
+    },
+    {
+      "id": "engine",
+      "name": "重器",
+      "song_term": "弩手、拽手",
+      "does": "张床子弩、拽旋风炮",
+      "shortfall": "一架凑不够人就不放"
+    },
+    {
+      "id": "damage",
+      "name": "救护",
+      "song_term": "水手",
+      "does": "救火、戽水、抢修、抬伤者",
+      "shortfall": "火压不住、水戽不完"
+    },
+    {
+      "id": "boarding",
+      "name": "接舷",
+      "song_term": "甲士",
+      "does": "抛钩、跳帮、护舷、掷火罐灰瓶",
+      "shortfall": "钩不住、打不过"
+    },
+    {
+      "id": "reserve",
+      "name": "预备",
+      "song_term": "余丁",
+      "does": "补缺",
+      "shortfall": "—"
+    }
+  ],
+  "crew_allocs": [
+    {
+      "id": "standard",
+      "name": "常备",
+      "shares": {
+        "sail": 0.25,
+        "helm": 0.05,
+        "oar": 0.0,
+        "missile": 0.35,
+        "engine": 0.1,
+        "damage": 0.1,
+        "boarding": 0.1,
+        "reserve": 0.05
+      }
+    },
+    {
+      "id": "sail_heavy",
+      "name": "抢风",
+      "shares": {
+        "sail": 0.4,
+        "helm": 0.1,
+        "oar": 0.0,
+        "missile": 0.2,
+        "engine": 0.05,
+        "damage": 0.1,
+        "boarding": 0.1,
+        "reserve": 0.05
+      }
+    },
+    {
+      "id": "missile_heavy",
+      "name": "保舷",
+      "shares": {
+        "sail": 0.15,
+        "helm": 0.05,
+        "oar": 0.0,
+        "missile": 0.5,
+        "engine": 0.15,
+        "damage": 0.08,
+        "boarding": 0.05,
+        "reserve": 0.02
+      }
+    },
+    {
+      "id": "damage_heavy",
+      "name": "救护",
+      "shares": {
+        "sail": 0.15,
+        "helm": 0.05,
+        "oar": 0.0,
+        "missile": 0.15,
+        "engine": 0.0,
+        "damage": 0.5,
+        "boarding": 0.1,
+        "reserve": 0.05
+      }
+    },
+    {
+      "id": "boarding_heavy",
+      "name": "备接舷",
+      "shares": {
+        "sail": 0.15,
+        "helm": 0.05,
+        "oar": 0.0,
+        "missile": 0.15,
+        "engine": 0.05,
+        "damage": 0.05,
+        "boarding": 0.55,
+        "reserve": 0.0
+      }
+    },
+    {
+      "id": "repel_heavy",
+      "name": "护舷",
+      "shares": {
+        "sail": 0.05,
+        "helm": 0.05,
+        "oar": 0.0,
+        "missile": 0.15,
+        "engine": 0.0,
+        "damage": 0.1,
+        "boarding": 0.65,
+        "reserve": 0.0
+      }
+    },
+    {
+      "id": "rowing",
+      "name": "摇橹",
+      "shares": {
+        "sail": 0.05,
+        "helm": 0.05,
+        "oar": 0.5,
+        "missile": 0.2,
+        "engine": 0.0,
+        "damage": 0.1,
+        "boarding": 0.1,
+        "reserve": 0.0
+      }
+    }
+  ],
+  "alloc_rules": {
+    "count_from": "可战人手（crew.fit：总数减伤亡）",
+    "no_oars": "船没有橹桨（ship_fits.handling.oars.count = 0）时 oar 份额并入 reserve",
+    "no_heavy": "没有床子弩、旋风炮时 engine 份额并入 missile",
+    "heavy_first": "重器按 weapons.hands × 架数先配满；配不满的那架不放",
+    "rounding": "按份额取整，余数给份额最大的岗位",
+    "default": "standard"
+  },
+  "orders": [
+    {
+      "id": "sail_up",
+      "name": "升帆",
+      "group": "操船",
+      "key": "W",
+      "legacy": true,
+      "alloc": null,
+      "effects": {
+        "sail_gear": 1
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": true,
+      "copy": ""
+    },
+    {
+      "id": "sail_down",
+      "name": "落帆",
+      "group": "操船",
+      "key": "S",
+      "legacy": true,
+      "alloc": null,
+      "effects": {
+        "sail_gear": -1
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": true,
+      "copy": ""
+    },
+    {
+      "id": "steer",
+      "name": "操舵",
+      "group": "操船",
+      "key": "A D",
+      "legacy": true,
+      "alloc": null,
+      "effects": {},
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": true,
+      "copy": ""
+    },
+    {
+      "id": "volley_left",
+      "name": "左舷齐射",
+      "group": "矢石",
+      "key": "J",
+      "legacy": true,
+      "alloc": null,
+      "effects": {
+        "fire_side": "left"
+      },
+      "cooldown_s": 2.0,
+      "requires": [],
+      "ai": true,
+      "copy": "左舷放"
+    },
+    {
+      "id": "volley_right",
+      "name": "右舷齐射",
+      "group": "矢石",
+      "key": "K",
+      "legacy": true,
+      "alloc": null,
+      "effects": {
+        "fire_side": "right"
+      },
+      "cooldown_s": 2.0,
+      "requires": [],
+      "ai": true,
+      "copy": "右舷放"
+    },
+    {
+      "id": "gain_wind",
+      "name": "抢上风",
+      "group": "操船",
+      "key": "1",
+      "legacy": false,
+      "alloc": "sail_heavy",
+      "effects": {
+        "no_go_deg": -5,
+        "turn_mul": 1.1
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": true,
+      "copy": "转舵抢上风头"
+    },
+    {
+      "id": "hold_broadside",
+      "name": "保舷",
+      "group": "矢石",
+      "key": "2",
+      "legacy": false,
+      "alloc": "missile_heavy",
+      "effects": {
+        "turn_mul": 0.9
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": true,
+      "copy": "横过船身，弓弩上舷"
+    },
+    {
+      "id": "ammo_fire",
+      "name": "换火箭",
+      "group": "矢石",
+      "key": "3",
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "ammo_pref": "fire"
+      },
+      "cooldown_s": 4.0,
+      "requires": [
+        "ammo:fire"
+      ],
+      "ai": true,
+      "copy": "点火箭"
+    },
+    {
+      "id": "ammo_plain",
+      "name": "换常矢",
+      "group": "矢石",
+      "key": "3",
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "ammo_pref": "plain"
+      },
+      "cooldown_s": 2.0,
+      "requires": [],
+      "ai": true,
+      "copy": "换常箭"
+    },
+    {
+      "id": "fight_fire",
+      "name": "救火",
+      "group": "救护",
+      "key": "4",
+      "legacy": false,
+      "alloc": "damage_heavy",
+      "effects": {
+        "damage_focus": "fire",
+        "firefight_mul": 2.0
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": true,
+      "copy": "提水救火"
+    },
+    {
+      "id": "bail",
+      "name": "戽水",
+      "group": "救护",
+      "key": "5",
+      "legacy": false,
+      "alloc": "damage_heavy",
+      "effects": {
+        "damage_focus": "flood",
+        "bail_mul": 2.0
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": true,
+      "copy": "下舱戽水"
+    },
+    {
+      "id": "spare_rudder",
+      "name": "换副舵",
+      "group": "救护",
+      "key": "6",
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "rudder_set": 70,
+        "work_s": 20,
+        "hands": 8
+      },
+      "cooldown_s": 0,
+      "requires": [
+        "spare_rudder",
+        "rudder_below:50"
+      ],
+      "ai": true,
+      "copy": "卸下坏舵，换上副舵"
+    },
+    {
+      "id": "wet_screens",
+      "name": "张湿毡",
+      "group": "救护",
+      "key": "7",
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "setup_s": 6,
+        "duration_s": 60,
+        "fire_ignite_mul": 0.5,
+        "flat_casualty_mul": 0.7,
+        "own_flat_missile_mul": 0.8
+      },
+      "cooldown_s": 30.0,
+      "requires": [],
+      "ai": true,
+      "copy": "舷边张起湿毡"
+    },
+    {
+      "id": "prepare_boarding",
+      "name": "备接舷",
+      "group": "接舷",
+      "key": "8",
+      "legacy": false,
+      "alloc": "boarding_heavy",
+      "effects": {
+        "hook_mul": 1.15,
+        "melee_mul": 1.1
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": true,
+      "copy": "甲士聚到舷边"
+    },
+    {
+      "id": "hook",
+      "name": "接舷",
+      "group": "接舷",
+      "key": "G",
+      "legacy": true,
+      "alloc": null,
+      "effects": {
+        "start_grapple": true
+      },
+      "cooldown_s": 0,
+      "requires": [
+        "range_within:grapple_order_bu",
+        "ammo:gou_suo"
+      ],
+      "refuse_if_morale": [
+        "broken"
+      ],
+      "ai": true,
+      "copy": "拢船抛钩"
+    },
+    {
+      "id": "cut_hooks",
+      "name": "砍缆",
+      "group": "接舷",
+      "key": "9",
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "cut_chance_mul": 1.5
+      },
+      "cooldown_s": 0,
+      "requires": [
+        "grappled"
+      ],
+      "ai": true,
+      "copy": "砍断钩索"
+    },
+    {
+      "id": "repel",
+      "name": "护舷",
+      "group": "接舷",
+      "key": "9",
+      "legacy": false,
+      "alloc": "repel_heavy",
+      "effects": {
+        "defend_mul": 1.25,
+        "rounds": 3
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": true,
+      "copy": "全船上舷拒敌"
+    },
+    {
+      "id": "call_surrender",
+      "name": "劝降",
+      "group": "号令",
+      "key": "0",
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "chance_by_state": {
+          "steady": 0.02,
+          "shaken": 0.25,
+          "broken": 0.6
+        },
+        "tongshi_per_level": 0.05,
+        "fame_per_100": 0.1
+      },
+      "cooldown_s": 10.0,
+      "requires": [],
+      "ai": true,
+      "copy": "隔船喊话，叫对面降"
+    },
+    {
+      "id": "strike_colors",
+      "name": "降幡",
+      "group": "号令",
+      "key": null,
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "end": "player_struck"
+      },
+      "cooldown_s": 0,
+      "requires": [
+        "confirm"
+      ],
+      "ai": true,
+      "copy": "竖起降幡"
+    },
+    {
+      "id": "oars_out",
+      "name": "摇橹",
+      "group": "操船",
+      "key": null,
+      "legacy": false,
+      "alloc": "rowing",
+      "effects": {
+        "calm_speed": true
+      },
+      "cooldown_s": 0,
+      "requires": [
+        "oars"
+      ],
+      "ai": true,
+      "copy": "放下橹来"
+    },
+    {
+      "id": "oars_in",
+      "name": "收橹",
+      "group": "操船",
+      "key": null,
+      "legacy": false,
+      "alloc": "standard",
+      "effects": {
+        "calm_speed": false
+      },
+      "cooldown_s": 0,
+      "requires": [
+        "oars"
+      ],
+      "ai": true,
+      "copy": "收橹"
+    },
+    {
+      "id": "anchor",
+      "name": "下碇",
+      "group": "操船",
+      "key": null,
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "hold_current": true,
+        "turn_mul": 0.2,
+        "setup_s": 4
+      },
+      "cooldown_s": 0,
+      "requires": [
+        "waters:coast|harbor"
+      ],
+      "ai": true,
+      "copy": "下碇"
+    },
+    {
+      "id": "weigh",
+      "name": "起碇",
+      "group": "操船",
+      "key": null,
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "hold_current": false,
+        "setup_s": 8
+      },
+      "cooldown_s": 0,
+      "requires": [
+        "anchored"
+      ],
+      "ai": true,
+      "copy": "起碇"
+    },
+    {
+      "id": "flee",
+      "name": "弃战",
+      "group": "号令",
+      "key": "B Esc",
+      "legacy": true,
+      "alloc": null,
+      "effects": {
+        "flee_roll": "Voyage.flee_success_chance"
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": false,
+      "copy": ""
+    },
+    {
+      "id": "pursue",
+      "name": "追击",
+      "group": "号令",
+      "key": null,
+      "legacy": false,
+      "alloc": "sail_heavy",
+      "effects": {},
+      "cooldown_s": 0,
+      "requires": [
+        "routing:enemy"
+      ],
+      "ai": true,
+      "copy": "扯满帆追上去"
+    },
+    {
+      "id": "let_go",
+      "name": "放走",
+      "group": "号令",
+      "key": null,
+      "legacy": false,
+      "alloc": null,
+      "effects": {},
+      "cooldown_s": 0,
+      "requires": [
+        "routing:enemy"
+      ],
+      "ai": false,
+      "copy": "由它去"
+    },
+    {
+      "id": "take_prize",
+      "name": "收船",
+      "group": "缴获",
+      "key": null,
+      "legacy": true,
+      "alloc": null,
+      "effects": {
+        "prize_rule": "melee.prize.rule_default"
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": false,
+      "default": true,
+      "copy": "分人手驾回"
+    },
+    {
+      "id": "plunder",
+      "name": "搬货",
+      "group": "缴获",
+      "key": null,
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "spoil": true
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": false,
+      "copy": "把舱里的东西搬过来"
+    },
+    {
+      "id": "burn_prize",
+      "name": "焚船",
+      "group": "缴获",
+      "key": null,
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "sink_prize": true
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": false,
+      "copy": "放一把火，由它沉"
+    },
+    {
+      "id": "release_crew",
+      "name": "放人",
+      "group": "缴获",
+      "key": null,
+      "legacy": false,
+      "alloc": null,
+      "effects": {
+        "prisoners": "release"
+      },
+      "cooldown_s": 0,
+      "requires": [],
+      "ai": false,
+      "copy": "放俘虏上小艇"
+    }
+  ],
+  "key_rules": {
+    "avoid": [
+      "T",
+      "F",
+      "H",
+      "F7",
+      "F8",
+      "F9",
+      "F10",
+      "F11",
+      "F12"
+    ],
+    "why": "SeaChart._unhandled_key_input 收 T / F / H，Godot 先派它、后派 WorldMap._unhandled_input，WorldMap 截不住；F7–F12 是调试键（Main、SeaChart）",
+    "note": "orders.key 只是建议，定键归 combat08；现有 W / S / A / D / J / K / G / B / Esc 不改"
+  },
+  "officer_effects": [
+    {
+      "id": "huozhang",
+      "name": "火长",
+      "per_level": {
+        "encounter_s": 0.5,
+        "wind_shift_warn_s": 5
+      },
+      "note": "早望见；风转、潮转先报。读 Crew.level_of(\"huozhang\")"
+    },
+    {
+      "id": "duogong",
+      "name": "舵工",
+      "per_level": {
+        "turn_mul": 0.05,
+        "no_go_deg": -3,
+        "hook_mul": 0.05,
+        "spare_rudder_work_s": -3
+      },
+      "note": "抢风、拢船、换舵"
+    },
+    {
+      "id": "zongguan",
+      "name": "总管",
+      "per_level": {
+        "damage_control_mul": 0.1
+      },
+      "note": "救火戽水；中箭颠货沿用 Crew.cargo_loss_factor()"
+    },
+    {
+      "id": "zashi",
+      "name": "杂事",
+      "per_level": {
+        "spoil_mul": 0.05
+      },
+      "note": "清点缴获"
+    },
+    {
+      "id": "tongshi",
+      "name": "通事",
+      "per_level": {
+        "call_surrender": 0.05
+      },
+      "note": "隔船喊话"
+    },
+    {
+      "id": "yiren",
+      "name": "医人",
+      "per_level": {
+        "wounded_die_mul": -0.2,
+        "wounded_recover_frac": 0.15
+      },
+      "note": "伤者少死，战后回来一部分"
+    }
+  ],
+  "melee": {
+    "mode_default": "rounds",
+    "modes": [
+      "rounds",
+      "legacy_single_roll"
+    ],
+    "round_s": 2.5,
+    "max_rounds": 8,
+    "casualty_rate": 0.15,
+    "lethality": 0.5,
+    "strength": "战力 = 上阵人数 × 士气系数 × 将领系数（白刃三要素，同现码）× 兵器 × 舷高 × 疲劳",
+    "morale_factor": "0.6 + 0.4 × 士气 ÷ 100（与 Fleet.morale_factor、PirateShip.combat_strength 同式）",
+    "captain_player": "Fleet.captain_power()",
+    "captain_enemy": "PirateShip.captain_force",
+    "defender_join_after_round": 1,
+    "defender_join_frac": 0.5,
+    "freeboard_up_mul": 0.8,
+    "freeboard_down_mul": 1.05,
+    "fatigue_after_round": 4,
+    "fatigue_mul": 0.9,
+    "round_luck": [
+      0.7,
+      1.3
+    ],
+    "attacker_break_loss": 0.6,
+    "defender_break_loss": 0.7,
+    "surrender_ratio": 4.0,
+    "break_check": {
+      "start_loss": 0.05,
+      "slope": 1.2,
+      "ratio_exp": 0.25,
+      "attacker_mul": 1.15,
+      "morale_ref": 1.5,
+      "note": "每合各做一次溃退检定：几率 = (折损比 − start_loss) × slope × (对方战力 ÷ 本方)^ratio_exp × 攻方另乘 attacker_mul × (morale_ref − 士气 ÷ 100)，夹在 0–0.95；折损到 attacker_break_loss / defender_break_loss 必退。CombatMorale 在时由它接管"
+    },
+    "legacy_losses": {
+      "win": [
+        0.08,
+        0.15
+      ],
+      "lose": [
+        0.2,
+        0.3
+      ]
+    },
+    "hook": {
+      "base": 0.55,
+      "rel_speed_bands": [
+        [
+          2.0,
+          1.0
+        ],
+        [
+          4.0,
+          0.7
+        ],
+        [
+          999.0,
+          0.3
+        ]
+      ],
+      "hooks_full": 2,
+      "one_hook_mul": 0.8,
+      "close_window_s": 6.0,
+      "lash_s": 3.0,
+      "cut_chance_per_2s": 0.35,
+      "evading_mul": 0.8,
+      "shaken_mul": 0.7,
+      "refuse_if_morale": [
+        "broken"
+      ]
+    },
+    "prize": {
+      "rule_default": "legacy_free_crew_min",
+      "rules": {
+        "legacy_free_crew_min": "Fleet.add_ship 照旧：满耐久入列、白送 crew_min 水手（现码）",
+        "prize_crew": "要从本队可战人手里分出 crew_min 驾回，投效的俘虏可补；耐久按残值、不低于满值三成（待策划拍板）"
+      },
+      "volunteer_rate": {
+        "pirate": 0.2,
+        "yuan": 0.0,
+        "song_navy": 0.1,
+        "merchant": 0.3
+      }
+    }
+  },
+  "morale_states": [
+    {
+      "id": "steady",
+      "name": "稳",
+      "hint": {}
+    },
+    {
+      "id": "shaken",
+      "name": "动摇",
+      "hint": {
+        "accuracy_mul": 0.85,
+        "reload_mul": 1.2,
+        "hook_mul": 0.7
+      }
+    },
+    {
+      "id": "broken",
+      "name": "溃",
+      "hint": {
+        "no_attack": true,
+        "intent": "flee"
+      }
+    },
+    {
+      "id": "struck",
+      "name": "降",
+      "hint": {
+        "stop": true
+      }
+    }
+  ],
+  "morale_note": "状态名与转移谓词归本表；门限、各事件扣多少、投降条件的数值归 data/combat_morale.json（combat06）。hint 只是建议值",
+  "intents": [
+    {
+      "id": "approach",
+      "name": "逼近",
+      "hud_copy": "敌船逼近",
+      "note": "离得远时直取"
+    },
+    {
+      "id": "gain_wind",
+      "name": "抢上风",
+      "hud_copy": "敌船在抢上风",
+      "note": "绕到我船上风头"
+    },
+    {
+      "id": "hold_broadside",
+      "name": "保舷",
+      "hud_copy": "敌船横过船身",
+      "note": "保住舷角放矢石"
+    },
+    {
+      "id": "close_board",
+      "name": "贴船",
+      "hud_copy": "敌船贴过来了",
+      "note": "拢近要抛钩"
+    },
+    {
+      "id": "boarding",
+      "name": "接舷中",
+      "hud_copy": "敌船钩住了",
+      "note": "钩连与白刃中"
+    },
+    {
+      "id": "stand_off",
+      "name": "远射",
+      "hud_copy": "敌船隔远放箭",
+      "note": "守在自己射程边上"
+    },
+    {
+      "id": "shadow",
+      "name": "尾随",
+      "hud_copy": "敌船远远跟着",
+      "note": "等风息或天黑再动手"
+    },
+    {
+      "id": "disengage",
+      "name": "脱离",
+      "hud_copy": "敌船要走",
+      "note": "打不过，有序退"
+    },
+    {
+      "id": "flee",
+      "name": "溃走",
+      "hud_copy": "敌船逃了",
+      "note": "士气溃"
+    },
+    {
+      "id": "strike",
+      "name": "降幡",
+      "hud_copy": "敌船竖了降幡",
+      "note": "不再抵抗"
+    },
+    {
+      "id": "fire_ship",
+      "name": "纵火船",
+      "hud_copy": "有火船顺风漂来",
+      "note": "只供剧情战（崖山一类）"
+    }
+  ],
+  "captains": [
+    {
+      "id": "haikou_toumu",
+      "name": "海寇头目",
+      "faction": "pirate",
+      "range_pref_bu": [
+        8,
+        30
+      ],
+      "board_bias": 0.8,
+      "wind_bias": 0.5,
+      "fire_bias": 0.3,
+      "aim": "crew",
+      "retreat_losses_frac": 0.35,
+      "retreat_hull_frac": 0.4,
+      "strike_when_broken": 0.25,
+      "calls_surrender": false,
+      "ammo_low_frac_board": 0.3,
+      "uses_calm_oars": true,
+      "note": "要货不要船：先放箭掷枪压住舷边，再钩上来；死伤过三成多半就走"
+    },
+    {
+      "id": "yuan_shaoguan",
+      "name": "元军哨官",
+      "faction": "yuan",
+      "range_pref_bu": [
+        60,
+        110
+      ],
+      "board_bias": 0.4,
+      "wind_bias": 0.7,
+      "fire_bias": 0.5,
+      "aim": "sails",
+      "retreat_losses_frac": 0.5,
+      "retreat_hull_frac": 0.25,
+      "strike_when_broken": 0.1,
+      "calls_surrender": true,
+      "ammo_low_frac_board": 0.2,
+      "uses_calm_oars": true,
+      "note": "先远射打帆索，喊话叫你降；你人少了才靠上来"
+    },
+    {
+      "id": "song_shuijun",
+      "name": "宋水军将校",
+      "faction": "song_navy",
+      "range_pref_bu": [
+        40,
+        80
+      ],
+      "board_bias": 0.5,
+      "wind_bias": 0.9,
+      "fire_bias": 0.8,
+      "aim": "sails",
+      "retreat_losses_frac": 0.45,
+      "retreat_hull_frac": 0.3,
+      "strike_when_broken": 0.15,
+      "calls_surrender": true,
+      "ammo_low_frac_board": 0.25,
+      "uses_calm_oars": true,
+      "note": "抢上风放火箭火炮烧帆，火起再跳帮（唐岛之役的打法）；剧情战用"
+    }
+  ],
+  "captain_rules": [
+    {
+      "match": {
+        "type": "pirate_boat"
+      },
+      "captain": "haikou_toumu"
+    },
+    {
+      "match": {
+        "sprite": "yuan_patrol"
+      },
+      "captain": "yuan_shaoguan"
+    },
+    {
+      "match": {},
+      "captain": "haikou_toumu",
+      "note": "兜底；pending_battle.enemy[].captain 给了就用给的"
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "enemy_captured",
+      "name": "夺船",
+      "side": "win",
+      "letterbox_key": "board",
+      "letterbox_act": "夺船",
+      "legacy_outcome": "win",
+      "legacy_data": {
+        "boarded": true
+      },
+      "precedence": 1,
+      "tally": "tally_captured",
+      "log": "接舷既定。敌船「{ship}」并入本队。",
+      "cue": "ship_captured",
+      "morale_hint": 4,
+      "spoil_rule": "legacy",
+      "note": "现码 CombatFx.board_win_note 同句"
+    },
+    {
+      "id": "enemy_struck",
+      "name": "敌降",
+      "side": "win",
+      "letterbox_key": "surrender",
+      "letterbox_act": "受降",
+      "legacy_outcome": "win",
+      "legacy_data": {
+        "boarded": true
+      },
+      "precedence": 2,
+      "tally": "tally_struck",
+      "log": "敌船竖了降幡。",
+      "cue": "colors_struck",
+      "morale_hint": 3,
+      "spoil_rule": "legacy",
+      "note": "letterbox_key surrender 待 combat09 接；未接前按 board 出「夺船」"
+    },
+    {
+      "id": "enemy_sunk",
+      "name": "击沉",
+      "side": "win",
+      "letterbox_key": "win",
+      "letterbox_act": "战罢",
+      "legacy_outcome": "win",
+      "legacy_data": {},
+      "precedence": 3,
+      "tally": "tally_sunk",
+      "log": "敌船沉了。",
+      "cue": "ship_sinking",
+      "morale_hint": 0,
+      "spoil_rule": "legacy",
+      "note": "SeaChart 胜：赏 150–600 钱、名声 +3、士气 +5（现码）"
+    },
+    {
+      "id": "enemy_fled",
+      "name": "敌遁",
+      "side": "win",
+      "letterbox_key": "win",
+      "letterbox_act": "战罢",
+      "legacy_outcome": "win",
+      "legacy_data": {},
+      "precedence": 4,
+      "tally": "tally_fled",
+      "log": "敌船带伤逃了。",
+      "cue": "rout_begin",
+      "morale_hint": 0,
+      "spoil_rule": "half",
+      "note": "spoil_rule half 待 SeaChart 接；未接前照胜局给赏"
+    },
+    {
+      "id": "player_fled",
+      "name": "脱战",
+      "side": "escape",
+      "letterbox_key": "flee",
+      "letterbox_act": "脱战",
+      "legacy_outcome": "flee",
+      "legacy_data": {
+        "flee_ok": true
+      },
+      "precedence": null,
+      "tally": null,
+      "log": "转舵抢上风头，把追船甩在后面。绕了些路。",
+      "cue": null,
+      "morale_hint": 0,
+      "spoil_rule": "none",
+      "note": "现码 CombatFx.sea_flee_ok_note 同句"
+    },
+    {
+      "id": "player_caught",
+      "name": "未能甩脱",
+      "side": "loss",
+      "letterbox_key": "flee",
+      "letterbox_act": "脱战",
+      "legacy_outcome": "flee",
+      "legacy_data": {
+        "flee_ok": false
+      },
+      "precedence": null,
+      "tally": null,
+      "log": "未能甩脱。被追上跳帮，货舱被夺。",
+      "cue": null,
+      "morale_hint": 0,
+      "spoil_rule": "none",
+      "note": "现码 CombatFx.sea_flee_fail_note 同句"
+    },
+    {
+      "id": "player_routed",
+      "name": "溃逃",
+      "side": "loss",
+      "letterbox_key": "rout",
+      "letterbox_act": "溃逃",
+      "legacy_outcome": "flee",
+      "legacy_data": {
+        "flee_ok": true,
+        "routed": true
+      },
+      "precedence": null,
+      "tally": null,
+      "log": "众人无心再战，转舵逃开。",
+      "cue": "rout_begin",
+      "morale_hint": -8,
+      "spoil_rule": "none",
+      "note": "letterbox_key rout 待 combat09 接"
+    },
+    {
+      "id": "player_struck",
+      "name": "降幡",
+      "side": "loss",
+      "letterbox_key": "strike",
+      "letterbox_act": "降幡",
+      "legacy_outcome": "lose",
+      "legacy_data": {
+        "struck": true
+      },
+      "precedence": null,
+      "tally": null,
+      "log": "竖了降幡，由着对方搬货。",
+      "cue": "colors_struck",
+      "morale_hint": -6,
+      "spoil_rule": "none",
+      "note": "SeaChart 现按败局非沉船分支结算：货损二成五"
+    },
+    {
+      "id": "player_overrun",
+      "name": "失船面",
+      "side": "loss",
+      "letterbox_key": "lose",
+      "letterbox_act": "败退",
+      "legacy_outcome": "lose",
+      "legacy_data": {
+        "overrun": true
+      },
+      "precedence": null,
+      "tally": null,
+      "log": "白刃不利，货舱被夺。",
+      "cue": null,
+      "morale_hint": -10,
+      "spoil_rule": "none",
+      "note": "现码 CombatFx.sea_board_lose_note 同句"
+    },
+    {
+      "id": "player_sunk",
+      "name": "旗舰沉没",
+      "side": "loss",
+      "letterbox_key": "lose",
+      "letterbox_act": "败退",
+      "legacy_outcome": "lose",
+      "legacy_data": {
+        "sunk": true
+      },
+      "precedence": null,
+      "tally": null,
+      "log": "旗舰沉没，货舱随船。",
+      "cue": "ship_sinking",
+      "morale_hint": -12,
+      "spoil_rule": "none",
+      "note": "现码 CombatFx.sea_sunk_note 同向"
+    },
+    {
+      "id": "disengaged",
+      "name": "两散",
+      "side": "draw",
+      "letterbox_key": "parted",
+      "letterbox_act": "两散",
+      "legacy_outcome": "flee",
+      "legacy_data": {
+        "flee_ok": true,
+        "parted": true
+      },
+      "precedence": null,
+      "tally": null,
+      "log": "天色晚了，两边各自收帆。",
+      "cue": null,
+      "morale_hint": 0,
+      "spoil_rule": "none",
+      "note": "letterbox_key parted 待 combat09 接"
+    }
+  ],
+  "cues": [
+    {
+      "id": "battle_start",
+      "name": "开战",
+      "copy": "望见{ship}{n}艘",
+      "morale_tag": null,
+      "fx": "letterbox_enter",
+      "audio": "combat_start"
+    },
+    {
+      "id": "phase_enter",
+      "name": "进阶段",
+      "copy": "{phase_copy}",
+      "morale_tag": null,
+      "fx": "caption",
+      "audio": null
+    },
+    {
+      "id": "volley",
+      "name": "齐射",
+      "copy": "{side}舷放",
+      "morale_tag": null,
+      "fx": "muzzle",
+      "audio": "combat_fire"
+    },
+    {
+      "id": "hit_hull",
+      "name": "中船体",
+      "copy": "船板中石",
+      "morale_tag": "hit_light",
+      "fx": "splinter",
+      "audio": "combat_hit"
+    },
+    {
+      "id": "hit_sail",
+      "name": "中帆",
+      "copy": "篷帆中箭",
+      "morale_tag": null,
+      "fx": "sail_tear",
+      "audio": "combat_hit"
+    },
+    {
+      "id": "hit_rudder",
+      "name": "中舵",
+      "copy": "舵叶受伤",
+      "morale_tag": "hit_heavy",
+      "fx": "splinter",
+      "audio": "combat_hit"
+    },
+    {
+      "id": "hit_crew",
+      "name": "伤人",
+      "copy": "伤{n}人",
+      "morale_tag": "casualty",
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "mast_down",
+      "name": "折桅",
+      "copy": "桅折了",
+      "morale_tag": "hit_heavy",
+      "fx": "mast_fall",
+      "audio": "combat_hit"
+    },
+    {
+      "id": "fire_start",
+      "name": "起火",
+      "copy": "{where}起火",
+      "morale_tag": "fire",
+      "fx": "fire",
+      "audio": null
+    },
+    {
+      "id": "fire_spread",
+      "name": "火势蔓延",
+      "copy": "火势延开",
+      "morale_tag": "fire",
+      "fx": "fire",
+      "audio": null
+    },
+    {
+      "id": "fire_out",
+      "name": "火灭",
+      "copy": "火扑灭了",
+      "morale_tag": "relief",
+      "fx": "smoke",
+      "audio": null
+    },
+    {
+      "id": "magazine_blast",
+      "name": "火药爆燃",
+      "copy": "火药舱爆燃",
+      "morale_tag": "disaster",
+      "fx": "blast",
+      "audio": "combat_hit"
+    },
+    {
+      "id": "breach",
+      "name": "破舱",
+      "copy": "船底破口，水进一舱",
+      "morale_tag": "flood",
+      "fx": "splash",
+      "audio": null
+    },
+    {
+      "id": "flood_rising",
+      "name": "进满一舱",
+      "copy": "又一舱进满了水",
+      "morale_tag": "flood",
+      "fx": "splash",
+      "audio": null
+    },
+    {
+      "id": "flood_held",
+      "name": "水止",
+      "copy": "水势止住了",
+      "morale_tag": "relief",
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "list_heavy",
+      "name": "倾侧",
+      "copy": "船身倾侧",
+      "morale_tag": "flood",
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "ship_sinking",
+      "name": "下沉",
+      "copy": "{ship}在往下沉",
+      "morale_tag": "ally_lost",
+      "fx": "sink",
+      "audio": null
+    },
+    {
+      "id": "rudder_lost",
+      "name": "舵毁",
+      "copy": "舵毁了，船不应舵",
+      "morale_tag": "hit_heavy",
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "rudder_spare",
+      "name": "换副舵",
+      "copy": "换上副舵",
+      "morale_tag": "relief",
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "ammo_low",
+      "name": "矢石将尽",
+      "copy": "{what}将尽",
+      "morale_tag": "ammo_low",
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "ammo_out",
+      "name": "矢石尽",
+      "copy": "{what}用完了",
+      "morale_tag": "ammo_out",
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "hooks_thrown",
+      "name": "抛钩",
+      "copy": "钩索已抛",
+      "morale_tag": null,
+      "fx": "rope",
+      "audio": "combat_board"
+    },
+    {
+      "id": "hooks_held",
+      "name": "钩住",
+      "copy": "钩住了",
+      "morale_tag": "boarded",
+      "fx": "rope",
+      "audio": null
+    },
+    {
+      "id": "hooks_cut",
+      "name": "砍缆",
+      "copy": "钩索砍断，两船分开",
+      "morale_tag": "relief",
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "boarders_cross",
+      "name": "跳帮",
+      "copy": "跳帮",
+      "morale_tag": "boarded",
+      "fx": "hitstop",
+      "audio": "combat_board"
+    },
+    {
+      "id": "melee_round",
+      "name": "白刃一合",
+      "copy": "短兵相接",
+      "morale_tag": "casualty",
+      "fx": "hitstop",
+      "audio": "combat_hit"
+    },
+    {
+      "id": "repelled",
+      "name": "打退",
+      "copy": "跳上来的人被打了回去",
+      "morale_tag": "relief",
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "leader_down",
+      "name": "头目倒下",
+      "copy": "敌船头目倒下了",
+      "morale_tag": "leader_down",
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "colors_struck",
+      "name": "降幡",
+      "copy": "{ship}竖起降幡",
+      "morale_tag": "struck",
+      "fx": "flag",
+      "audio": null
+    },
+    {
+      "id": "rout_begin",
+      "name": "溃走",
+      "copy": "{ship}转舵逃走",
+      "morale_tag": "rout",
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "ship_captured",
+      "name": "夺船",
+      "copy": "敌船「{ship}」并入本队",
+      "morale_tag": "victory",
+      "fx": "flag",
+      "audio": null
+    },
+    {
+      "id": "prisoners",
+      "name": "俘获",
+      "copy": "俘{n}人",
+      "morale_tag": null,
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "wind_shift",
+      "name": "风转",
+      "copy": "风转{dir}",
+      "morale_tag": null,
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "tide_turn",
+      "name": "潮转",
+      "copy": "潮转{flow}",
+      "morale_tag": null,
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "calm_falls",
+      "name": "风息",
+      "copy": "风息了，帆垂下来",
+      "morale_tag": null,
+      "fx": "none",
+      "audio": null
+    },
+    {
+      "id": "blind_cloud",
+      "name": "灰烟",
+      "copy": "灰烟迷目",
+      "morale_tag": "hit_light",
+      "fx": "smoke",
+      "audio": null
+    },
+    {
+      "id": "divers",
+      "name": "凿船",
+      "copy": "有人潜到船底凿孔",
+      "morale_tag": "flood",
+      "fx": "splash",
+      "audio": null
+    },
+    {
+      "id": "surrender_called",
+      "name": "喊话",
+      "copy": "隔船喊话叫降",
+      "morale_tag": "surrender_call",
+      "fx": "none",
+      "audio": null
+    }
+  ],
+  "hud_fields": [
+    {
+      "id": "phase",
+      "label": "阶段",
+      "source": "phases[当前].short",
+      "fmt": "{short}",
+      "panel": "top"
+    },
+    {
+      "id": "wind",
+      "label": "风",
+      "source": "SeaState：风向 compass.wind_name + 风级 wind_levels.name",
+      "fmt": "{wind_name}　{level_name}",
+      "panel": "top"
+    },
+    {
+      "id": "sail_wind",
+      "label": "帆风",
+      "source": "ManeuverModel：本船风舷角",
+      "fmt": "顺风 / 横风 / 抢风 / 顶风",
+      "panel": "top"
+    },
+    {
+      "id": "target_bearing",
+      "label": "舷角",
+      "source": "ManeuverModel：最近敌船舷角",
+      "fmt": "左舷 60° / 正艏 / 右舷艉",
+      "panel": "top"
+    },
+    {
+      "id": "range",
+      "label": "距离",
+      "source": "queries.nearest_enemy_bu",
+      "fmt": "约 {n} 步",
+      "panel": "top"
+    },
+    {
+      "id": "ammo",
+      "label": "矢石",
+      "source": "ReloadAmmo：本船存量",
+      "fmt": "箭 {n}　火箭 {n}",
+      "panel": "status"
+    },
+    {
+      "id": "hull",
+      "label": "船体",
+      "source": "Ship.hull_hp / max_hp（现顶匾已有）",
+      "fmt": "{n} / {max}",
+      "panel": "top"
+    },
+    {
+      "id": "sails",
+      "label": "帆",
+      "source": "DamageModel：帆势",
+      "fmt": "帆 {pct}%",
+      "panel": "status"
+    },
+    {
+      "id": "rudder",
+      "label": "舵",
+      "source": "DamageModel：舵况与副舵",
+      "fmt": "舵 {pct}%（副舵 {n}）",
+      "panel": "status"
+    },
+    {
+      "id": "flood",
+      "label": "进水",
+      "source": "FloodFire：进满的舱数 / 总舱数",
+      "fmt": "进水 {n}/{max} 舱",
+      "panel": "status"
+    },
+    {
+      "id": "fire",
+      "label": "火",
+      "source": "FloodFire：火势档",
+      "fmt": "无火 / 小火 / 火起 / 大火",
+      "panel": "status"
+    },
+    {
+      "id": "crew",
+      "label": "人手",
+      "source": "DamageModel：可战 / 伤 / 亡",
+      "fmt": "可战 {fit}　伤 {wounded}　亡 {killed}",
+      "panel": "status"
+    },
+    {
+      "id": "morale",
+      "label": "士气",
+      "source": "CombatMorale：本队状态",
+      "fmt": "稳 / 动摇 / 溃",
+      "panel": "status"
+    },
+    {
+      "id": "enemy_intent",
+      "label": "敌意",
+      "source": "EnemyCaptainAI：看得见的意图 intents.hud_copy",
+      "fmt": "{hud_copy}",
+      "panel": "status"
+    },
+    {
+      "id": "tide",
+      "label": "潮",
+      "source": "SeaState：潮候（傍岸、港湾才显示）",
+      "fmt": "涨潮 / 满潮 / 落潮 / 干潮",
+      "panel": "status"
+    },
+    {
+      "id": "current",
+      "label": "流",
+      "source": "SeaState：海流与流向",
+      "fmt": "{current_name}　往{dir}",
+      "panel": "status"
+    }
+  ]
+}

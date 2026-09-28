@@ -47,6 +47,8 @@
 - [审计-2026-09-23-全量.md](审计-2026-09-23-全量.md)：2026-09-23 全量审计（基线 993edc1）
 - [审计-全量-2026-09-23.md](审计-全量-2026-09-23.md)：2026-09-23 全量审计另一份（基线 993edc1）
 
+- [combat_realism_design.md](combat_realism_design.md) / [combat_phases_schema.md](combat_phases_schema.md)：海战写实设计与三份数据契约（阶段 / 兵器 / 海况；lane combat01）
+
 ## 协调台账（repo 外，不在 git 里）
 下面两份在简报目录 `/workspace/nk1-agent-briefs/`，不随仓库分发，只写路径、不写链接，`check_docs_index` 不核它们。
 - `/workspace/nk1-agent-briefs/COORDINATION.md`：lane 协调台账正本（规矩、简报头部模板、各 lane SETTLED 行；只追加，过时的事实标注更正时间）

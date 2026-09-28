@@ -1,0 +1,98 @@
+{
+  "meta": {
+    "title": "海战海况：风向、风级、季风缺省、水域、海流、潮候、帆型与天气",
+    "era": "南宋末，约1255-1279，东亚近海（闽浙粤沿海、澎湖、南岛海道、耽罗博多一线）",
+    "version": 1,
+    "lane": "combat01",
+    "note": "战术层海况的共用词表与缺省。风级名取唐李淳风《乙巳占》八级，另加静风；风力 wind_strength = 级 × 20，与 Ship.wind_strength、SeaState.wind_speed 同单位（现行海战固定 80 = 四级），也合 CombatStatusHud「风力 ÷ 20 取级」。方位角 0=北 90=东、顺时针；风向叫法按来向（东北风 = 从东北吹来），数值 toward_deg 取吹向，与 Calendar.wind_bearing_of、SeaState.wind_to 同口径。海况的逐帧推演（风向缓转、阵风、洋流、潮流）归 scripts/combat/SeaState.gd（combat02），它在时以它为准；本表给名目、档位与 SeaState 不在时的回落。设计与字段说明见 docs/combat_realism_design.md、docs/combat_phases_schema.md。",
+    "units": {
+      "deg": "方位角，度，0=北 90=东，顺时针；Godot 向量 = Vector2(sin, -cos)",
+      "bu": "步，宋制五尺，约 1.6 米；1 步 = 8 px（data/combat_phases.json scale）",
+      "bus": "步/秒；× 8 即 px/s",
+      "wind_strength": "Ship.wind_strength / SeaState.wind_speed 同单位"
+    }
+  },
+  "compass": [
+    {"id": "n", "name": "北", "wind_name": "北风", "from_deg": 0, "toward_deg": 180},
+    {"id": "ne", "name": "东北", "wind_name": "东北风", "from_deg": 45, "toward_deg": 225},
+    {"id": "e", "name": "东", "wind_name": "东风", "from_deg": 90, "toward_deg": 270},
+    {"id": "se", "name": "东南", "wind_name": "东南风", "from_deg": 135, "toward_deg": 315},
+    {"id": "s", "name": "南", "wind_name": "南风", "from_deg": 180, "toward_deg": 0},
+    {"id": "sw", "name": "西南", "wind_name": "西南风", "from_deg": 225, "toward_deg": 45},
+    {"id": "w", "name": "西", "wind_name": "西风", "from_deg": 270, "toward_deg": 90},
+    {"id": "nw", "name": "西北", "wind_name": "西北风", "from_deg": 315, "toward_deg": 135}
+  ],
+  "wind_levels": [
+    {"id": "jing", "level": 0, "name": "静", "yisi_sign": "（乙巳占无此级）", "sea_sign": "海面平如镜，帆垂", "beaufort": [0, 0], "wind_strength": 0, "sea": 0, "sea_name": "平", "engine_ok": true, "sail_limit": 2, "combat_ok": true},
+    {"id": "dongye", "level": 1, "name": "一级・动叶", "yisi_sign": "动叶", "sea_sign": "微波，帆时鼓时垂", "beaufort": [1, 2], "wind_strength": 20, "sea": 0, "sea_name": "平", "engine_ok": true, "sail_limit": 2, "combat_ok": true},
+    {"id": "mingtiao", "level": 2, "name": "二级・鸣条", "yisi_sign": "鸣条", "sea_sign": "细浪，帆吃得住风", "beaufort": [3, 3], "wind_strength": 40, "sea": 1, "sea_name": "微浪", "engine_ok": true, "sail_limit": 2, "combat_ok": true},
+    {"id": "yaozhi", "level": 3, "name": "三级・摇枝", "yisi_sign": "摇枝", "sea_sign": "浪头间起白花", "beaufort": [4, 4], "wind_strength": 60, "sea": 1, "sea_name": "微浪", "engine_ok": true, "sail_limit": 2, "combat_ok": true},
+    {"id": "duoye", "level": 4, "name": "四级・堕叶", "yisi_sign": "堕叶", "sea_sign": "白浪成片，船身起伏", "beaufort": [5, 5], "wind_strength": 80, "sea": 2, "sea_name": "中浪", "engine_ok": true, "sail_limit": 2, "combat_ok": true},
+    {"id": "zhexiaozhi", "level": 5, "name": "五级・折小枝", "yisi_sign": "折小枝", "sea_sign": "浪大，舷边溅水，射手站不稳", "beaufort": [6, 6], "wind_strength": 100, "sea": 3, "sea_name": "大浪", "engine_ok": true, "sail_limit": 2, "combat_ok": true},
+    {"id": "zhedazhi", "level": 6, "name": "六级・折大枝", "yisi_sign": "折大枝", "sea_sign": "巨浪连排，抛石打不准", "beaufort": [7, 7], "wind_strength": 120, "sea": 3, "sea_name": "大浪", "engine_ok": false, "sail_limit": 2, "combat_ok": true},
+    {"id": "zhemu", "level": 7, "name": "七级・折木飞沙", "yisi_sign": "折木飞砂石", "sea_sign": "浪如山，只顾保船", "beaufort": [8, 9], "wind_strength": 140, "sea": 4, "sea_name": "狂涛", "engine_ok": false, "sail_limit": 2, "combat_ok": false},
+    {"id": "bashu", "level": 8, "name": "八级・拔树", "yisi_sign": "拔大树及根", "sea_sign": "飓风，不能交战", "beaufort": [10, 12], "wind_strength": 160, "sea": 4, "sea_name": "狂涛", "engine_ok": false, "sail_limit": 1, "combat_ok": false}
+  ],
+  "wind_level_rule": "wind_strength → 级：floor(风力 ÷ 20)，封顶八级。sea 为浪档 0 平 / 1 微浪 / 2 中浪 / 3 大浪 / 4 狂涛，与 MeleeResolve.SEA_NAMES 同档（抛钩按 MeleeResolve.SEA_HOOK 折）。sail_limit 与 Ship._process_storm_damage 同口径：风力过 150 挂满帆掉船体。SeaState.WIND_CAP 130，寻常海战到不了七级",
+  "monsoon_defaults": [
+    {"id": "northeast", "name": "东北季风", "calendar_monsoon": "NORTHEAST", "seastate_id": "ne", "months": [10, 11, 12, 1, 2], "peak_months": [11, 12, 1], "from_compass": "ne", "toward_deg": 225, "from_jitter_deg": 20, "level_weights": {"mingtiao": 0.2, "yaozhi": 0.4, "duoye": 0.3, "zhexiaozhi": 0.1}, "level_weights_peak": {"yaozhi": 0.25, "duoye": 0.4, "zhexiaozhi": 0.25, "zhedazhi": 0.1}, "shift_chance_per_min": 0.05, "coastal_current_toward_deg": 225, "note": "北风下南洋；toward_deg 与 Calendar.NE_MONSOON_BEARING 同值"},
+    {"id": "southwest", "name": "西南季风", "calendar_monsoon": "SOUTHWEST", "seastate_id": "sw", "months": [5, 6, 7, 8], "peak_months": [6, 7], "from_compass": "sw", "toward_deg": 45, "from_jitter_deg": 20, "level_weights": {"mingtiao": 0.25, "yaozhi": 0.4, "duoye": 0.25, "zhexiaozhi": 0.1}, "level_weights_peak": {"yaozhi": 0.3, "duoye": 0.4, "zhexiaozhi": 0.2, "zhedazhi": 0.1}, "shift_chance_per_min": 0.05, "coastal_current_toward_deg": 45, "note": "南风回唐山；toward_deg 与 Calendar.SW_MONSOON_BEARING 同值"},
+    {"id": "transition", "name": "季风转换期", "calendar_monsoon": "TRANSITION", "seastate_id": "mid", "months": [3, 4, 9], "peak_months": [], "from_compass": null, "toward_deg": null, "from_jitter_deg": 180, "level_weights": {"jing": 0.15, "dongye": 0.3, "mingtiao": 0.35, "yaozhi": 0.2}, "level_weights_peak": {}, "shift_chance_per_min": 0.2, "coastal_current_toward_deg": null, "note": "风微而多变：风向每场随机，开战后也容易转；from_compass 为 null 即八向等概率"}
+  ],
+  "waters": [
+    {"id": "coast", "name": "傍岸", "course_order": "COAST", "tide_mul": 1.0, "current_mul": 0.6, "swell_add": 0, "shoal_risk": 0.04, "default_current": "coastal", "visibility_bu": 400, "note": "岸影、礁线、潮流作主；快船多在这里等人"},
+    {"id": "rumb", "name": "针路", "course_order": "RUMB", "tide_mul": 0.4, "current_mul": 1.0, "swell_add": 0, "shoal_risk": 0.0, "default_current": "coastal", "visibility_bu": 500, "note": "熟路针位，寻常海况"},
+    {"id": "offshore", "name": "外洋", "course_order": "OFFSHORE", "tide_mul": 0.0, "current_mul": 1.3, "swell_add": 1, "shoal_risk": 0.0, "default_current": "kuroshio", "visibility_bu": 600, "note": "不见岸影，涌大；潮水不管用，只有洋流"},
+    {"id": "harbor", "name": "港湾", "course_order": null, "tide_mul": 1.4, "current_mul": 0.4, "swell_add": -1, "shoal_risk": 0.08, "default_current": "tidal", "visibility_bu": 300, "note": "港口、海湾、河口。剧情战用（守港、崖山一类），寻常遇敌不落在这里"}
+  ],
+  "currents": [
+    {"id": "slack", "name": "平流", "seastate_kind": "平潮", "toward_rule": "none", "toward_deg": null, "speed_bus": 0.0, "note": "无流"},
+    {"id": "coastal", "name": "季风流", "seastate_kind": "季风流", "toward_rule": "monsoon", "toward_deg": null, "speed_bus": 2.5, "note": "顺岸随季风转向：东北季风往西南流，西南季风往东北流；取 monsoon_defaults.coastal_current_toward_deg，转换期当平流"},
+    {"id": "kuroshio", "name": "黑潮", "seastate_kind": "黑潮", "toward_rule": "fixed", "toward_deg": 45, "speed_bus": 2.5, "note": "东海外洋终年往东北流；今名，宋元无定称，沿用 SeaState 的叫法（REGIONS kuroshio：45°、20 px/s）"},
+    {"id": "luoji", "name": "落漈", "seastate_kind": "落漈", "toward_rule": "fixed", "toward_deg": 40, "speed_bus": 3.75, "note": "南岛海道一带急流，宋元人说澎湖以东水趋下不回；SeaState REGIONS luoji：40°、30 px/s"},
+    {"id": "tidal", "name": "潮流", "seastate_kind": "涨潮 / 落潮", "toward_rule": "tide", "toward_deg": null, "speed_bus": 2.5, "note": "涨潮朝岸流、落潮离岸流；岸的方位取 sea_state.shore_deg（缺省 270，岸在西），速度再乘 tides.current_mul 与 tide_amplitude.mul"}
+  ],
+  "tides": [
+    {"id": "zhang", "name": "涨潮", "flow": "flood", "seastate_word": "涨", "current_mul": 1.0, "shoal_mul": 0.7, "note": "水涨，浅处可过"},
+    {"id": "man", "name": "满潮", "flow": "slack", "seastate_word": "平", "current_mul": 0.1, "shoal_mul": 0.5, "note": "平潮，流最缓"},
+    {"id": "luo", "name": "落潮", "flow": "ebb", "seastate_word": "落", "current_mul": 1.0, "shoal_mul": 1.3, "note": "水退，礁滩渐露"},
+    {"id": "gan", "name": "干潮", "flow": "slack", "seastate_word": "平", "current_mul": 0.1, "shoal_mul": 1.8, "note": "滩涂出水，大船不可近岸"}
+  ],
+  "tide_amplitude": [
+    {"id": "dachao", "name": "大潮", "lunar_days": [1, 2, 3, 15, 16, 17, 18], "mul": 1.4, "note": "初一十五涨大潮；Calendar.day 即月内日序（每月 30 日）"},
+    {"id": "xiaochao", "name": "小潮", "lunar_days": [7, 8, 9, 22, 23, 24], "mul": 0.6, "note": "上下弦前后"},
+    {"id": "zhongchao", "name": "中潮", "lunar_days": [], "mul": 1.0, "note": "其余日子"}
+  ],
+  "sail_polar": [
+    {"id": "mat_batten", "name": "篾篷硬帆", "no_go_deg": 48, "points": [[0, 0.0], [42, 0.0], [48, 0.3], [72, 0.58], [90, 0.82], [120, 0.97], [140, 1.0], [160, 0.96], [180, 0.9]], "flammability": 1.1, "note": "福船、广船、海鹘：竹篾编篷带撑条，吃侧风好，中箭破洞不撕开；晒干了怕火"},
+    {"id": "mat_single", "name": "一面席帆", "no_go_deg": 55, "points": [[0, 0.0], [49, 0.0], [55, 0.3], [72, 0.58], [90, 0.82], [120, 0.97], [140, 1.0], [160, 0.96], [180, 0.9]], "flammability": 1.2, "note": "小艍、快船：一桅一帆贴不了风，靠橹桨补"},
+    {"id": "cloth_mat", "name": "布帆兼利篷", "no_go_deg": 50, "points": [[0, 0.0], [44, 0.0], [50, 0.3], [72, 0.58], [90, 0.82], [120, 0.97], [140, 1.0], [160, 0.96], [180, 0.9]], "flammability": 1.0, "note": "客舟、神舟：风正张布帆，稍偏换利篷（《宣和奉使高丽图经》客舟条）"}
+  ],
+  "sail_polar_rule": "θ = 船首与风来向的夹角（0 顶风、180 正顺风），线性插值；曲线形状照 ManeuverModel.POLAR（combat02），顶风区 no_go_deg 取各船型 ManeuverModel.PROFILES.pinch 的同类平均（硬帆 48、席帆 55、布帆 50），舵工每级再贴风 ManeuverModel.HELMSMAN_PINCH 度。帆向分档照 ManeuverModel.sail_word：θ < no_go 顶风、< 80 抢风、< 135 侧风、其余顺风。flammability 为引火倍数（打在篷帆上）",
+  "weather": [
+    {"id": "clear", "name": "晴", "visibility_bu": 600, "bow_range_mul": 1.0, "crossbow_range_mul": 1.0, "fire_ignite_mul": 1.0, "combat_ok": true, "scripted_only": false, "note": "现行海战固定晴（WorldMap._process_weather_and_time：风暴伤会污染战损统计）"},
+    {"id": "overcast", "name": "阴", "visibility_bu": 450, "bow_range_mul": 1.0, "crossbow_range_mul": 1.0, "fire_ignite_mul": 0.9, "combat_ok": true, "scripted_only": true, "note": "只供剧情战"},
+    {"id": "rain", "name": "雨", "visibility_bu": 250, "bow_range_mul": 0.8, "crossbow_range_mul": 0.9, "fire_ignite_mul": 0.4, "combat_ok": true, "scripted_only": true, "note": "弓弦受潮乏力，火难点着（FloodFire.RAIN_DOUSE 另管已着的火）。只供剧情战"},
+    {"id": "fog", "name": "雾", "visibility_bu": 80, "bow_range_mul": 1.0, "crossbow_range_mul": 1.0, "fire_ignite_mul": 0.8, "combat_ok": true, "scripted_only": true, "note": "望不出八十步，远射几乎无准头，易被贴近跳帮。只供剧情战"},
+    {"id": "night", "name": "夜", "visibility_bu": 120, "bow_range_mul": 1.0, "crossbow_range_mul": 1.0, "fire_ignite_mul": 1.0, "combat_ok": true, "scripted_only": true, "note": "火光暴露自己的位置。只供剧情战"}
+  ],
+  "defaults": {
+    "wind_from": "n",
+    "wind_level": "duoye",
+    "current": "slack",
+    "tide": "man",
+    "tide_amplitude": "zhongchao",
+    "waters": "rumb",
+    "weather": "clear",
+    "shore_deg": 270,
+    "note": "零改动回落：WorldMap 旧海战 wind_vector = Vector2(0, 1)（吹向南 = 北风）、wind_strength = base_wind_strength 80（= 四级・堕叶）、固定晴。SeaState 模块不在、或 pending_battle 不带 sea_state 时用它"
+  },
+  "derive": {
+    "order": ["pending_battle.sea_state", "SeaState（combat02）", "monsoon_defaults", "defaults"],
+    "wind": "SeaState 按 Calendar 月令季风方位与强度、sea_name 所属海域（SeaState.REGIONS）定本场风，风向缓转、阵风封顶 130。SeaState 不在时：按 Calendar.monsoon_of(月) 取 monsoon_defaults，风向 = from_compass 来向 ± from_jitter_deg 内均匀抽，风级按 level_weights（peak_months 用 level_weights_peak）抽；转换期八向等概率",
+    "waters": "按当日航法 Voyage.CourseOrder：COAST→coast、RUMB→rumb、OFFSHORE→offshore；剧情战可指定 harbor。海域（闽海、澎湖水道、浙海、南岛海道、东海外洋、南海）归 SeaState.REGIONS，水域与海域相乘",
+    "current": "SeaState 在时照它（季风流 + 定向洋流 + 潮流，CURRENT_CAP 42 px/s）；不在时 waters.default_current，速度再乘 waters.current_mul",
+    "tide": "coast / harbor 才看潮：四档等概率抽，tide_amplitude 按 Calendar.day 取",
+    "weather": "寻常遇敌固定 clear（现行口径）；其余只在 pending_battle.sea_state.weather 指定时用"
+  }
+}
