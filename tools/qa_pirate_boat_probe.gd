@@ -10,6 +10,9 @@ const CombatStage := preload("res://tools/combat_probe_stage.gd")
 const SLOT := 93
 const TAG := "QA_PIRATE_BOAT_PROBE"
 const VIEW := Vector2i(1280, 720)
+## 保证不在库的精灵 id：验「缺图回落」只拿它。真 type（pirate_boat / sampan / yuan_patrol …）美术按契约会交图，
+## 它们的期望值由 _want 按图在不在算——收一张生效一张，探针不随收图变红。
+const ABSENT := "__nk1_absent__"
 
 var _fails: Array = []
 var _shots: Array = []
@@ -23,6 +26,20 @@ func _expect(ok: bool, what: String) -> void:
 	print(("  ✓ " if ok else "  ✗ ") + what)
 	if not ok:
 		_fails.append(what)
+
+
+## 船图契约的期望值：assets/ship_<id>.png 在库就是它，不在是 fallback（与 CombatFx.ship_sprite_path 同规则的独立写法）
+func _want(sid: String, fallback: String) -> String:
+	var p := CombatFx.SHIP_SPRITE_FMT % sid
+	return p if sid != "" and ResourceLoader.exists(p, "Texture2D") else fallback
+
+
+## 断言文案用：有图写「有 ship_<id>.png → 用它」，缺图写「缺 ship_<id>.png → 回落 <fallback>」
+func _want_note(sid: String, fallback: String) -> String:
+	var w := _want(sid, fallback)
+	if w == fallback:
+		return "缺 ship_%s.png → 回落 %s" % [sid, fallback.get_file()]
+	return "有 ship_%s.png → 用它" % sid
 
 
 func _run() -> void:
@@ -40,15 +57,15 @@ func _run() -> void:
 	_expect(str(patrol.get("type", "")) == "sea_falcon" and str(patrol.get("sprite", "")) == "yuan_patrol",
 		"SeaChart 元军哨船条目 type 仍是 sea_falcon，sprite=yuan_patrol")
 
-	# ── 一、海寇一战：生成、精灵回落、夺船得快船 ──
+	# ── 一、海寇一战：生成、精灵按契约取图、夺船得快船 ──
 	await _pirate_battle(gm, fleet, pirate)
-	# ── 二、元军哨船一战：精灵按 sprite 取，缺图回落；船名仍是海鹘 ──
+	# ── 二、元军哨船一战：精灵按 sprite 取，有图用图、缺图回落；船名仍是海鹘 ──
 	await _patrol_battle(gm, fleet, patrol)
 	# ── 三、有图就用（拿仓里现成的两张默认贴图当「按船型的图」）──
 	_check_lookup()
 	# ── 四、存档：旧档里夺来的海鹘、新档里的快船都照读 ──
 	_check_save(fleet, sl)
-	# ── 五、有窗口且给了 --shots：截海战（缺图回落，画面应与改前一致；墨边副题写快船）──
+	# ── 五、有窗口且给了 --shots：截海战（精灵有图用图、缺图回落默认贴图；墨边副题写快船）──
 	var shot_dir := _shot_dir()
 	if shot_dir != "" and DisplayServer.get_name() != "headless":
 		await _take_shots(gm, fleet, pirate, patrol, shot_dir)
@@ -113,7 +130,7 @@ func _take_shots(gm: Node, fleet: Node, pirate: Dictionary, patrol: Dictionary, 
 	var ref: WeakRef = weakref(wm)
 	_pose(wm, offsets)
 	await _shoot(dir, "01_海寇入战墨边_快船二艘", func() -> bool: return _lb_ready(ref, "快船二艘"))
-	await _shoot(dir, "02_海寇海战_敌船回落ship_falcon", func() -> bool:
+	await _shoot(dir, "02_海寇海战", func() -> bool:
 		return ref.get_ref() != null and CombatStage.letterbox_under(self, ref.get_ref()) == null)
 	var foes := _enemies(wm)
 	if not foes.is_empty():
@@ -134,14 +151,14 @@ func _take_shots(gm: Node, fleet: Node, pirate: Dictionary, patrol: Dictionary, 
 	var ref2: WeakRef = weakref(wm2)
 	_pose(wm2, offsets)
 	await _shoot(dir, "04_元军哨船入战墨边_海鹘三艘", func() -> bool: return _lb_ready(ref2, "海鹘三艘"))
-	await _shoot(dir, "05_元军哨船海战_缺yuan_patrol回落ship_falcon", func() -> bool:
+	await _shoot(dir, "05_元军哨船海战", func() -> bool:
 		return ref2.get_ref() != null and CombatStage.letterbox_under(self, ref2.get_ref()) == null)
 	CombatStage.teardown(self, ref2.get_ref(), gm)
 	await process_frame
 
 
 func _battle_fleet(fleet: Node) -> void:
-	# 开局旗舰小艍船：assets/ship_sampan.png 不在 → 己船精灵回落 ship_fu.png
+	# 开局旗舰小艍船：有 assets/ship_sampan.png 就用，不在回落 ship_fu.png（断言按 _want 算）
 	fleet.set("ships", [{"type": "sampan", "name": "无名小艍", "crew": 15, "sail_level": 1, "armor_level": 1,
 		"cargo": {}, "durability": 120.0, "max_durability": 120.0}])
 	fleet.set("morale", 70)
@@ -173,8 +190,8 @@ func _pirate_battle(gm: Node, fleet: Node, pirate: Dictionary) -> void:
 	var wm := _start(gm, pirate)
 	await process_frame
 	var own: Node = wm.get("ship")
-	_expect(own != null and _tex_path(own) == CombatFx.SHIP_SPRITE_OWN,
-		"旗舰小艍船缺 ship_sampan.png → 己船精灵回落 ship_fu.png（得 %s）" % (_tex_path(own) if own != null else "无旗舰"))
+	_expect(own != null and _tex_path(own) == _want("sampan", CombatFx.SHIP_SPRITE_OWN),
+		"旗舰小艍船：%s（得 %s）" % [_want_note("sampan", CombatFx.SHIP_SPRITE_OWN), _tex_path(own) if own != null else "无旗舰"])
 	var foes := _enemies(wm)
 	_expect(foes.size() == int(pirate.get("count", 0)), "海寇生成 %d 艘（条目 count=%d）" % [foes.size(), int(pirate.get("count", 0))])
 	if foes.is_empty():
@@ -183,8 +200,8 @@ func _pirate_battle(gm: Node, fleet: Node, pirate: Dictionary) -> void:
 	var foe: Node = foes[0]
 	_expect(str(foe.get("ship_type")) == "pirate_boat" and str(foe.get("ship_name")) == "快船",
 		"敌船 ship_type=pirate_boat、船名「快船」（得 %s / %s）" % [foe.get("ship_type"), foe.get("ship_name")])
-	_expect(str(foe.call("sprite_key")) == "pirate_boat" and _tex_path(foe) == CombatFx.SHIP_SPRITE_ENEMY,
-		"海寇缺 ship_pirate_boat.png → 敌船精灵回落 ship_falcon.png（得 %s）" % _tex_path(foe))
+	_expect(str(foe.call("sprite_key")) == "pirate_boat" and _tex_path(foe) == _want("pirate_boat", CombatFx.SHIP_SPRITE_ENEMY),
+		"海寇敌船精灵：%s（得 %s）" % [_want_note("pirate_boat", CombatFx.SHIP_SPRITE_ENEMY), _tex_path(foe)])
 	# 白刃必胜：敌船水手清零 → 敌战力 0 → 胜率 1。有窗口时 _board_enemy 先停 0.42 s 再结算，等船队变了再验
 	foe.set("crew", 0)
 	var n0: int = (fleet.get("ships") as Array).size()
@@ -223,32 +240,41 @@ func _patrol_battle(gm: Node, fleet: Node, patrol: Dictionary) -> void:
 			"元军哨船 type 不动（sea_falcon / 海鹘），夺来仍按海鹘入列")
 		_expect(str(foe.get("sprite_id")) == "yuan_patrol" and str(foe.call("sprite_key")) == "yuan_patrol",
 			"WorldMap 把 entry.sprite 传给敌船（sprite_id=yuan_patrol）")
-		_expect(_tex_path(foe) == CombatFx.SHIP_SPRITE_ENEMY,
-			"缺 ship_yuan_patrol.png → 回落 ship_falcon.png（得 %s）" % _tex_path(foe))
+		_expect(_tex_path(foe) == _want("yuan_patrol", CombatFx.SHIP_SPRITE_ENEMY),
+			"元军哨船精灵：%s（得 %s）" % [_want_note("yuan_patrol", CombatFx.SHIP_SPRITE_ENEMY), _tex_path(foe)])
 	await _drop(wm)
 
 
 func _check_lookup() -> void:
 	# ship_fu / ship_falcon 按契约也是「ship_<id>.png」：id=fu / falcon 时取到的是它们，证明文件在就用、不回落
 	_expect(CombatFx.ship_sprite_path("fu", CombatFx.SHIP_SPRITE_ENEMY) == CombatFx.SHIP_SPRITE_OWN, "文件在：id=fu 取 ship_fu.png 不回落")
-	_expect(CombatFx.ship_sprite_path("no_such_ship", CombatFx.SHIP_SPRITE_ENEMY) == CombatFx.SHIP_SPRITE_ENEMY, "文件不在：回落 fallback")
+	_expect(CombatFx.ship_sprite_path(ABSENT, CombatFx.SHIP_SPRITE_ENEMY) == CombatFx.SHIP_SPRITE_ENEMY, "文件不在：回落 fallback")
 	_expect(CombatFx.ship_sprite_path("", CombatFx.SHIP_SPRITE_OWN) == CombatFx.SHIP_SPRITE_OWN, "id 空：回落 fallback")
 	_expect(CombatFx.ship_sprite_path("../icon", CombatFx.SHIP_SPRITE_OWN) == CombatFx.SHIP_SPRITE_OWN, "id 带路径字符：不拼路径，回落")
 	var foe: Node = (load("res://scenes/PirateShip.tscn") as PackedScene).instantiate()
 	foe.set("sprite_id", "fu")
 	foe.call("apply_sprite")
 	_expect(_tex_path(foe) == CombatFx.SHIP_SPRITE_OWN, "敌船 sprite_id 指向在库的图就换上（得 %s）" % _tex_path(foe))
+	# 先换成别的图再指向不在库的 id：回落要真把默认贴图换回来，不是原地没动
 	foe.set("sprite_id", "")
+	foe.set("ship_type", ABSENT)
+	foe.call("apply_sprite")
+	_expect(str(foe.call("sprite_key")) == ABSENT and _tex_path(foe) == CombatFx.SHIP_SPRITE_ENEMY,
+		"敌船清掉 sprite_id 后按 type 取，type 缺图换回 ship_falcon（得 %s）" % _tex_path(foe))
 	foe.set("ship_type", "pirate_boat")
 	foe.call("apply_sprite")
-	_expect(_tex_path(foe) == CombatFx.SHIP_SPRITE_ENEMY, "敌船清掉 sprite_id 后按 type 取，缺图回落 ship_falcon（得 %s）" % _tex_path(foe))
+	_expect(_tex_path(foe) == _want("pirate_boat", CombatFx.SHIP_SPRITE_ENEMY),
+		"敌船按 type=pirate_boat：%s（得 %s）" % [_want_note("pirate_boat", CombatFx.SHIP_SPRITE_ENEMY), _tex_path(foe)])
 	foe.free()
 	var own: Node = (load("res://scenes/Ship.tscn") as PackedScene).instantiate()
 	own.call("apply_type_sprite", "falcon")
 	_expect(_tex_path(own) == CombatFx.SHIP_SPRITE_ENEMY, "旗舰 type 指向在库的图就换上（得 %s）" % _tex_path(own))
+	own.call("apply_type_sprite", ABSENT)
+	_expect(_tex_path(own) == CombatFx.SHIP_SPRITE_OWN, "旗舰 type 缺图换回 ship_fu.png（得 %s）" % _tex_path(own))
 	for t in ["sampan", "sea_falcon", "pirate_boat", "divine_ship"]:
 		own.call("apply_type_sprite", t)
-		_expect(_tex_path(own) == CombatFx.SHIP_SPRITE_OWN, "旗舰 %s 缺图回落 ship_fu.png（得 %s）" % [t, _tex_path(own)])
+		_expect(_tex_path(own) == _want(t, CombatFx.SHIP_SPRITE_OWN),
+			"旗舰 %s：%s（得 %s）" % [t, _want_note(t, CombatFx.SHIP_SPRITE_OWN), _tex_path(own)])
 	own.free()
 
 

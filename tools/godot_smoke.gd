@@ -712,7 +712,7 @@ func _run() -> void:
 
 
 ## 海寇快船（备忘 #7）+ 船图契约（钩子第一批第 5 条）：海寇出 pirate_boat、夺来按快船入列、墨边写真实船名、
-## 精灵缺图回落两张默认贴图。WorldMap 真开战 → 接舷夺船的全流程另见 tools/qa_pirate_boat_probe.gd。
+## 精灵有图就用、缺图回落两张默认贴图。WorldMap 真开战 → 接舷夺船的全流程另见 tools/qa_pirate_boat_probe.gd。
 func _check_pirate_boat(fails: Array) -> void:
 	var fx: GDScript = load("res://scripts/combat/CombatFx.gd")
 	var lb: GDScript = load("res://scripts/ui/CombatLetterbox.gd")
@@ -725,20 +725,32 @@ func _check_pirate_boat(fails: Array) -> void:
 	_check(str(lb.call("enemy_note", [pirate])) == "快船二艘" and str(lb.call("enemy_note", [patrol])) == "海鹘三艘",
 		"海战墨边副题按真实船名：海寇「快船二艘」、元军哨船「海鹘三艘」", fails)
 	var fx_consts: Dictionary = fx.get_script_constant_map()
+	var fmt: String = fx_consts.get("SHIP_SPRITE_FMT", "")
 	var own_fb: String = fx_consts.get("SHIP_SPRITE_OWN", "")
 	var foe_fb: String = fx_consts.get("SHIP_SPRITE_ENEMY", "")
+	# 回落拿保证不在库的 id 验；真 type 的期望值按图在不在算（美术按契约交图后真 type 就不再回落，收一张生效一张，门禁不随收图变红）
+	var absent_id := "__nk1_absent__"
+	var absent_in := fmt != "" and not ResourceLoader.exists(fmt % absent_id)
+	var foe_type := str(pirate.get("type", ""))
 	var foe: Node = (load("res://scenes/PirateShip.tscn") as PackedScene).instantiate()
-	foe.set("ship_type", str(pirate.get("type", "")))
+	foe.set("ship_type", absent_id)
 	foe.call("apply_sprite")
-	var foe_tex := (foe.get_node("Sprite2D") as Sprite2D).texture
-	_check(foe_fb != "" and foe_tex != null and foe_tex.resource_path == foe_fb,
-		"快船缺 ship_pirate_boat.png 时敌船精灵回落 ship_falcon.png", fails)
+	_check(absent_in and foe_fb != "" and _sprite_tex_path(foe) == foe_fb,
+		"敌船精灵缺图（ship_%s.png 不在库）回落 ship_falcon.png" % absent_id, fails)
+	foe.set("ship_type", foe_type)
+	foe.call("apply_sprite")
+	var foe_want := _ship_sprite_want(fmt, foe_type, foe_fb)
+	_check(foe_type != "" and _sprite_tex_path(foe) == foe_want,
+		"快船精灵：有 ship_%s.png 就用、没有回落 ship_falcon.png（应 %s，得 %s）" % [foe_type, foe_want, _sprite_tex_path(foe)], fails)
 	foe.free()
 	var own: Node = (load("res://scenes/Ship.tscn") as PackedScene).instantiate()
+	own.call("apply_type_sprite", absent_id)
+	_check(absent_in and own_fb != "" and _sprite_tex_path(own) == own_fb,
+		"旗舰精灵缺图（ship_%s.png 不在库）回落 ship_fu.png" % absent_id, fails)
 	own.call("apply_type_sprite", "sampan")
-	var own_tex := (own.get_node("Sprite2D") as Sprite2D).texture
-	_check(own_fb != "" and own_tex != null and own_tex.resource_path == own_fb,
-		"旗舰小艍船缺 ship_sampan.png 时己船精灵回落 ship_fu.png", fails)
+	var own_want := _ship_sprite_want(fmt, "sampan", own_fb)
+	_check(_sprite_tex_path(own) == own_want,
+		"旗舰小艍船精灵：有 ship_sampan.png 就用、没有回落 ship_fu.png（应 %s，得 %s）" % [own_want, _sprite_tex_path(own)], fails)
 	own.free()
 	var fleet: Node = root.get_node_or_null("Fleet")
 	if fleet == null:
@@ -752,6 +764,20 @@ func _check_pirate_boat(fails: Array) -> void:
 	_check(ok and str(got.get("type", "")) == "pirate_boat" and str(got.get("name", "")) == "快船",
 		"夺船按 ship_type=pirate_boat 调 Fleet.add_ship 能入列，船名「快船」", fails)
 	fleet.set("ships", saved)
+
+
+## 船图契约的期望值：assets/ship_<id>.png 在库就是它，不在是 fallback。与 CombatFx.ship_sprite_path 同规则的独立写法，
+## 断言跟着库里有没有图走，不写死「必须回落」。
+func _ship_sprite_want(fmt: String, sid: String, fallback: String) -> String:
+	if fmt == "" or sid == "":
+		return fallback
+	var p := fmt % sid
+	return p if ResourceLoader.exists(p, "Texture2D") else fallback
+
+
+func _sprite_tex_path(n: Node) -> String:
+	var spr := n.get_node_or_null("Sprite2D") as Sprite2D
+	return spr.texture.resource_path if spr != null and spr.texture != null else ""
 
 
 ## headless 零延迟旁路（第 2 轮工程 m4：原先只查源码里有没有 ChapterSheet 字样；live() 在 headless 下误判为真时，
