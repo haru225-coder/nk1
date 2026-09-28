@@ -118,6 +118,8 @@ for pid in list(port_years) + (re.findall(r'"([a-z_]+)":\s*\{', bm.group(1)) if 
     check(pid in port_ids, f"Main.PORT_YEAR_BG / PORT_SEASON_BORROW 的键 {pid} 不是 ports.json 的港 id")
 ref_text = "\n".join(src for p, src in sources.items() if "scripts" in p.relative_to(ROOT).parts[:1] or p.suffix == ".tscn")
 ref_text += "\n".join(f.read_text(encoding="utf-8") for f in (ROOT / "data").rglob("*.json"))
+# 美术管线脚本（tools/art）点名的图也算「有人用」：例如 H1 换下福州港页后，bg_fuzhou_yamen.jpg 仍由抹字脚本维护、待转作衙门图
+ref_text += "\n".join(f.read_text(encoding="utf-8") for f in (ROOT / "tools" / "art").rglob("*") if f.suffix in (".py", ".gd"))
 variant_n = 0
 for f in sorted(ASSETS.glob("bg_*")):
     if f.suffix.lower() not in (".jpg", ".jpeg", ".png", ".webp"):
