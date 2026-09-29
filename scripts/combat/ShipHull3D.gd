@@ -36,6 +36,7 @@ func _build_view() -> void:
 	_vp.transparent_bg = true
 	_vp.own_world_3d = true
 	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_vp.mesh_lod_threshold = 0.0
 	_vp.msaa_3d = SubViewport.MSAA_DISABLED
 	_vp.handle_input_locally = false
 	add_child(_vp)

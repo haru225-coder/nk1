@@ -109,20 +109,19 @@ def z_of(t: float) -> float:
 
 
 def beam_half(t: float) -> float:
-    bow = smoothstep(0.0, 0.14, t) ** 1.05
-    full = math.sin(math.pi * clamp(t, 0.0, 1.0)) ** 0.48
-    full = max(full, 0.62 * smoothstep(0.62, 1.0, t))
-    transom = 1.0 - 0.34 * smoothstep(0.80, 1.0, t)
-    # 0.02 会把艏端削成一段等宽平面，近景就是一块棱。只留防退化的极窄下限。
-    return BEAM * max(1e-4, bow * (0.42 + 0.58 * full) * transom)
+    """船宽是一条 C2 曲线。不用 max 拼接，肩部和艉肩不再折出棱。"""
+    t = clamp(t, 0.0, 1.0)
+    bow = smoothstep(0.0, 0.18, t)
+    body = 0.64 + 0.36 * math.sin(math.pi * t)
+    narrow = 1.0 - 0.22 * smoothstep(0.68, 1.0, t)
+    return BEAM * max(1e-4, bow * body * narrow)
 
 
 def sheer(t: float) -> float:
-    # 舯部压低，艏艉抬高。弧更陡，仍是一条舷弧，不是甲板层。
-    bow = 1.28 * math.exp(-((t - 0.0) / 0.150) ** 2)
-    stern = 0.98 * math.exp(-((t - 1.0) / 0.140) ** 2)
-    waist = 0.07 * math.sin(math.pi * clamp(t, 0.0, 1.0))
-    return bow + stern - waist
+    """整条舷弧是一段余弦，舯低、艏艉高，中段不再是直线再突然折起。"""
+    t = clamp(t, 0.0, 1.0)
+    # t=0 → 1.10，t=0.5 → -0.10，t=1 → 0.78。干舷仍低，不是第二层甲板。
+    return 0.42 + 0.16 * math.cos(math.pi * t) + 0.52 * math.cos(2.0 * math.pi * t)
 
 
 def deck_side_y(t: float) -> float:
@@ -137,28 +136,22 @@ def keel_y(t: float) -> float:
 
 
 def section_pts(t: float):
-    """右舷：龙骨尖底 → 水线 → 一层甲板边 → 低舷墙。上半舷板更密，缝才读得出。"""
+    """右舷：龙骨尖底 → 甲板边 → 低舷墙。横剖面多切，舷侧是弧不是一叠平板。"""
     bh = beam_half(t)
     deck = deck_side_y(t)
     keel = keel_y(t)
+    n = 32
     pts = []
-    hs = []
-    for i in range(7):
-        hs.append(0.52 * i / 6.0)
-    for i in range(1, 12):
-        hs.append(0.52 + 0.48 * i / 11.0)
-    for h in hs:
-        # 指数 > 1：近龙骨先窄，底是尖的，不是圆肚子
-        x = bh * (h ** 1.22)
-        if h > 0.84:
-            flare = (h - 0.84) / 0.16
-            x *= 1.0 + 0.05 * flare
-        y = lerp(keel, deck, h ** 1.08)
+    for i in range(n):
+        h = i / (n - 1)
+        # 近龙骨先窄，底是尖的。外飘是 h 的平滑项，不在某处折一下。
+        flare = 1.0 + 0.045 * (h * h)
+        x = bh * (h ** 1.16) * flare
+        y = lerp(keel, deck, h ** 1.04)
         pts.append((x, y))
-    # 低舷墙，不是第二层甲板
-    top_y = deck + 0.18 + 0.03 * smoothstep(0.12, 0.40, t) * (1.0 - smoothstep(0.78, 0.96, t))
-    pts.append((bh * 0.975, lerp(deck, top_y, 0.42)))
-    pts.append((bh * 0.935, top_y))
+    top_y = deck + 0.15 + 0.025 * math.sin(math.pi * clamp(t, 0.0, 1.0))
+    pts.append((bh * 0.985, lerp(deck, top_y, 0.48)))
+    pts.append((bh * 0.955, top_y))
     return pts
 
 
@@ -470,70 +463,63 @@ def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head,
 
 
 def add_mat_shed(fit):
-    """低席棚：拱从舷墙两侧升起，没有箱壁。"""
-    t_a, t_b = 0.802, 0.930
-    H = 0.58
-    seg_u, seg_v = 18, 14
+    """艉部一只低席拱。口朝艏，十七度艏舷看得到拱腹，不是箱子，也不是第三层甲板。"""
+    t_a, t_b = 0.835, 0.962
+    H = 0.86
+    seg_u, seg_v = 28, 16
 
     def pt(u, v, lift=0.0):
         x_norm = u * 2.0 - 1.0
         t = lerp(t_a, t_b, v)
-        bh = beam_half(t) * 0.88
+        bh = beam_half(t) * 0.90
         x = x_norm * bh
-        arch = math.cos(clamp(x_norm, -1.0, 1.0) * math.pi * 0.5) ** 1.08
-        # 纵剖面也收成弧：两端落到舷墙，侧面不是一条平顶箱子
-        long_arch = math.sin(clamp(v, 0.0, 1.0) * math.pi) ** 0.72
-        y_rail = deck_side_y(t) + 0.16 + 0.04 * (1.0 - x_norm * x_norm)
+        arch = math.cos(clamp(x_norm, -1.0, 1.0) * math.pi * 0.5) ** 1.15
+        # 两端不落到舷墙上，口始终开着，侧面才是一道拱
+        long_arch = 0.82 + 0.18 * math.sin(math.pi * clamp(v, 0.0, 1.0))
+        y_rail = deck_side_y(t) + 0.14
         y = y_rail + max(0.0, (H * long_arch + lift) * arch)
-        return (x, y, z_of(t)), arch
+        return (x, y, z_of(t))
 
     for iu in range(seg_u):
         for iv in range(seg_v):
             u0, u1 = iu / seg_u, (iu + 1) / seg_u
             v0, v1 = iv / seg_v, (iv + 1) / seg_v
-            a, _ = pt(u0, v0)
-            b, _ = pt(u1, v0)
-            c, _ = pt(u1, v1)
-            d, _ = pt(u0, v1)
-            # 席纹：横条为主，间一条深缝，仍是低拱不是箱子
-            stripe = 0.0 if (iu % 3 == 2) else (0.55 if iu % 3 == 1 else 1.0)
+            a = pt(u0, v0)
+            b = pt(u1, v0)
+            c = pt(u1, v1)
+            d = pt(u0, v1)
+            stripe = 0.15 if iu % 4 == 3 else 1.0
             col = mix(ROOF_DK, ROOF, stripe)
-            col = tint(col, 0.90 + 0.12 * hsh(iu * 5.1 + iv * 0.37))
+            col = tint(col, 0.92 + 0.10 * hsh(iu * 4.1 + iv * 0.27))
             fit.quad_out(a, b, c, d, col, (0, 1, 0))
-            ai, _ = pt(u0, v0, -0.032)
-            bi, _ = pt(u1, v0, -0.032)
-            ci, _ = pt(u1, v1, -0.032)
-            di, _ = pt(u0, v1, -0.032)
-            fit.quad_out(ai, di, ci, bi, mix(ROOF_DK, TAR, 0.40), (0, -1, 0))
-    for u in (0.05, 0.20, 0.38, 0.62, 0.80, 0.95):
-        prev = None
-        rad = 0.024 if u in (0.05, 0.95) else 0.016
-        for iv in range(seg_v + 1):
-            p, _ = pt(u, iv / seg_v, 0.012)
-            if prev:
-                add_cyl(fit, prev, p, rad, BATTEN, 5, caps=False)
-            prev = p
-    for iv in (1, 4, 7, 10, 13):
-        prev = None
-        v = iv / seg_v
-        for iu in range(seg_u + 1):
-            p, _ = pt(iu / seg_u, v, 0.02)
-            if prev:
-                add_cyl(fit, prev, p, 0.013, BATTEN, 5, caps=False)
-            prev = p
-    for v, rad in ((0.0, 0.030), (1.0, 0.022)):
+            ai = pt(u0, v0, -0.028)
+            bi = pt(u1, v0, -0.028)
+            ci = pt(u1, v1, -0.028)
+            di = pt(u0, v1, -0.028)
+            fit.quad_out(ai, di, ci, bi, mix(ROOF_DK, TAR, 0.55), (0, -1, 0))
+    # 口沿是一根连续的拱，对着艏舷相机
+    for v, rad, col in ((0.0, 0.046, mix(TEAK_LT, (0.82, 0.62, 0.36, 1), 0.45)), (1.0, 0.024, mix(BATTEN, TEAK_DK, 0.25))):
         prev = None
         for iu in range(seg_u + 1):
-            p, _ = pt(iu / seg_u, v, 0.0)
+            p = pt(iu / seg_u, v, 0.02)
             if prev:
-                add_cyl(fit, prev, p, rad, mix(BATTEN, TEAK_DK, 0.35), 6, caps=False)
+                add_cyl(fit, prev, p, rad, col, 7, caps=False)
             prev = p
-    for u, v in ((0.04, 0.10), (0.96, 0.10), (0.07, 0.90), (0.93, 0.90)):
-        p, _ = pt(u, v, 0.0)
-        t = lerp(t_a, t_b, v)
-        sgn = -1.0 if u < 0.5 else 1.0
-        rail = (sgn * beam_half(t) * 0.90, deck_side_y(t) + 0.18, z_of(t))
-        rope(fit, p, rail, 0.03, 0.008, ROPE, n=4)
+    for u in (0.18, 0.38, 0.62, 0.82):
+        prev = None
+        for iv in range(0, seg_v + 1, 2):
+            p = pt(u, iv / seg_v, 0.016)
+            if prev:
+                add_cyl(fit, prev, p, 0.012, BATTEN, 5, caps=False)
+            prev = p
+    # 拱腹里一块退进的席，口才有深度，不是一张贴皮
+    for iu in range(seg_u):
+        u0, u1 = iu / seg_u, (iu + 1) / seg_u
+        a = pt(u0, 0.02, -0.16)
+        b = pt(u1, 0.02, -0.16)
+        c = pt(u1, 0.62, -0.16)
+        d = pt(u0, 0.62, -0.16)
+        fit.quad_out(a, d, c, b, (0.05, 0.025, 0.016, 1), (0, 0.2, 1))
 
 
 def add_partner(fit, t, scale):
@@ -1005,7 +991,11 @@ def add_stem_detail(fit):
     """艏柱贴着尖端。板头是壳上的薄片，跟着舷弧，不探出成方块。"""
     ring = section_pts(0.02)
     z0 = z_of(0.0)
-    idxs = [j for j in (2, 5, 8, 11, len(ring) - 1) if 0 <= j < len(ring)]
+    idxs = []
+    for frac in (0.22, 0.42, 0.62, 0.80, 1.0):
+        j = int(round(frac * (len(ring) - 1)))
+        if j not in idxs:
+            idxs.append(j)
     samples = []
     for j in idxs:
         y = ring[j][1]
@@ -1030,9 +1020,8 @@ def add_stem_detail(fit):
         for t in (0.028, 0.046, 0.064, 0.084):
             ring_t = section_pts(t)
             z = z_of(t)
-            for j in (6, 10, 14):
-                if j >= len(ring_t):
-                    continue
+            for frac in (0.55, 0.72, 0.88):
+                j = int(round(frac * (len(ring_t) - 1)))
                 x, y = ring_t[j]
                 add_box(
                     fit,
@@ -1100,28 +1089,9 @@ def add_song_weapons(fit):
 
 
 def station_ts():
-    """线型不变。艏艉转弯多切站，折线才贴上连续的舷弧，而不是几块大平面。"""
-    ts = []
-
-    def add_span(a, b, count, bias):
-        for i in range(count):
-            u = i / (count - 1)
-            if bias == "start":
-                u = u ** 1.65
-            elif bias == "end":
-                u = 1.0 - (1.0 - u) ** 1.45
-            t = a + (b - a) * u
-            if ts and t <= ts[-1] + 1e-4:
-                continue
-            ts.append(min(1.0, max(0.0, t)))
-
-    add_span(0.0, 0.06, 28, "start")
-    add_span(0.06, 0.20, 44, "none")
-    add_span(0.20, 0.78, 46, "none")
-    add_span(0.78, 1.0, 30, "end")
-    if ts[-1] < 1.0 - 1e-6:
-        ts.append(1.0)
-    return ts
+    """沿船长均匀多切。弯已经是连续函数，站距均匀才不会在拼接处又切出棱。"""
+    n = 120
+    return [i / n for i in range(n + 1)]
 
 
 def build():
@@ -1133,7 +1103,7 @@ def build():
 
     stations = []
     for t in station_ts():
-        t_use = max(t, 0.004)
+        t_use = max(t, 1e-4)
         ring = section_pts(t_use)
         z = z_of(t)
         stations.append((t, z, ring))
@@ -1143,108 +1113,82 @@ def build():
         t0, z0, r0 = stations[i]
         t1, z1, r1 = stations[i + 1]
         nring = len(r0)
-        along = t0
+        along = (t0 + t1) * 0.5
         for j in range(nring - 1):
-            piece = math.floor((along * 1.25 + j * 0.19) / 0.13)
-            prev_along = stations[i - 1][0] if i else along
-            prev_piece = math.floor((prev_along * 1.25 + j * 0.19) / 0.13)
-            butt = piece != prev_piece and 1 < i < nst - 2
-            # 板面几乎贴壳。缝是凹进去的一条，不是鼓出的厚架。
-            face_push = -0.010 if butt else 0.014
-            crown = 0.0 if butt else 0.005
-            seam_push = -0.018
-            col_face = wood_at((t0 + t1) * 0.5, j, nring, along)
-            if butt:
-                col_face = mix(col_face, (0.05, 0.025, 0.014, 1), 0.82)
-            caulk = (0.012, 0.006, 0.004, 1)
-
-            def at(ring, z, f, push):
-                x0, y0 = ring[j]
-                x1, y1 = ring[j + 1]
-                return (
-                    lerp(x0, x1, f) + push,
-                    lerp(y0, y1, f) + push * 0.16,
-                    z,
-                )
-
-            def mx(p):
-                return (-p[0], p[1], p[2])
-
-            def band(f0, f1, push, col, extra):
-                a = at(r0, z0, f0, push)
-                b = at(r1, z1, f0, push)
-                c = at(r1, z1, f1, push)
-                d = at(r0, z0, f1, push)
-                if extra:
-                    fm = (f0 + f1) * 0.5
-                    am = at(r0, z0, fm, push + extra)
-                    bm = at(r1, z1, fm, push + extra)
-                    hull.quad_out(a, b, bm, am, col, (am[0], 0.3, 0.0))
-                    hull.quad_out(am, bm, c, d, col, (am[0], 0.3, 0.0))
-                    hull.quad_out(mx(a), mx(am), mx(bm), mx(b), col, (-am[0], 0.3, 0.0))
-                    hull.quad_out(mx(am), mx(d), mx(c), mx(bm), col, (-am[0], 0.3, 0.0))
-                else:
-                    hull.quad_out(a, b, c, d, col, (a[0], 0.2, 0.0))
-                    hull.quad_out(mx(a), mx(d), mx(c), mx(b), col, (-a[0], 0.2, 0.0))
-
-            # 窄油灰缝。板面自己只微微上亮，不靠厚凸边。
-            band(0.00, 0.07, seam_push, caulk, 0.0)
-            band(0.07, 0.24, face_push, tint(col_face, 0.82), 0.0)
-            band(0.24, 0.76, face_push, col_face, crown)
-            band(0.76, 0.93, face_push, tint(col_face, 1.06), 0.0)
-            band(0.93, 1.00, seam_push, caulk, 0.0)
-            for f, outward_y in ((0.07, -1.0), (0.93, 1.0)):
-                sa = at(r0, z0, f, seam_push)
-                sb = at(r1, z1, f, seam_push)
-                fa = at(r0, z0, f, face_push)
-                fb = at(r1, z1, f, face_push)
-                cheek = tint(col_face, 0.72)
-                hull.quad_out(sa, sb, fb, fa, cheek, (sa[0], outward_y, 0.0))
-                hull.quad_out(mx(sa), mx(fa), mx(fb), mx(sb), cheek, (-sa[0], outward_y, 0.0))
-
-    t0, z0, r0 = stations[0]
-    # 艏柱不再是从首站拉到中线的一块平面。沿原尖端插值，平面上外鼓成弧。
-    stem_steps = 12
-    prev = []
-    for x, y in r0:
-        prev.append((x + 0.018, y + 0.003, z0))
-    nring = len(r0)
-    for s in range(1, stem_steps + 1):
-        f = s / stem_steps
-        shrink = (1.0 - f) ** 0.55
-        ring = []
-        for j, (x, y) in enumerate(r0):
-            hf = j / (nring - 1)
-            z = lerp(z0, z0 + 0.035 + 0.11 * hf, f)
-            yy = lerp(y + 0.003, y + 0.012 * hf, f)
-            xx = 0.0 if s == stem_steps else (x + 0.018 * (1.0 - f)) * shrink
-            ring.append((xx, yy, z))
-        for j in range(nring - 1):
-            col = wood_at(0.02, j, nring)
-            a = prev[j]
-            b = prev[j + 1]
-            c = ring[j + 1]
-            d = ring[j]
-            hull.quad_out(a, b, c, d, col, (max(a[0], 0.02), 0.15, 1))
+            col = wood_at(along, j, nring, along)
+            # 缝只留在颜色上。壳是同一张弧，不再一板一个鼓面。
+            if j % 5 == 0:
+                col = mix(col, (0.08, 0.04, 0.022, 1), 0.55)
+            a = (r0[j][0], r0[j][1], z0)
+            b = (r1[j][0], r1[j][1], z1)
+            c = (r1[j + 1][0], r1[j + 1][1], z1)
+            d = (r0[j + 1][0], r0[j + 1][1], z0)
+            hull.quad_out(a, b, c, d, col, (max(a[0], 0.02), 0.25, 0.0))
             hull.quad_out(
                 (-a[0], a[1], a[2]),
                 (-d[0], d[1], d[2]),
                 (-c[0], c[1], c[2]),
                 (-b[0], b[1], b[2]),
                 col,
-                (-max(a[0], 0.02), 0.15, 1),
+                (-max(a[0], 0.02), 0.25, 0.0),
             )
-        prev = ring
 
-    rt = stations[-1][2]
-    zt = stations[-1][1]
-    for j in range(len(rt) - 1):
-        a = (rt[j][0] + 0.018, rt[j][1] + 0.003, zt)
-        b = (rt[j + 1][0] + 0.018, rt[j + 1][1] + 0.003, zt)
-        c = (-rt[j + 1][0] - 0.018, rt[j + 1][1] + 0.003, zt)
-        d = (-rt[j][0] - 0.018, rt[j][1] + 0.003, zt)
-        col = wood_at(0.98, j, len(rt))
-        hull.quad_out(a, d, c, b, col, (0, 0, -1))
+    def round_end(ring, z_start, sign, steps):
+        """sign>0 艏向前收到尖，sign<0 艉向后收到一条弯尾封。端头是弧，不是一块板。"""
+        prev = [(x, y, z_start) for x, y in ring]
+        nring = len(ring)
+        for s in range(1, steps + 1):
+            f = s / steps
+            e = f * f * (3.0 - 2.0 * f)
+            nxt = []
+            for j, (x, y) in enumerate(ring):
+                hf = j / (nring - 1)
+                if sign > 0:
+                    shrink = (1.0 - e) ** 0.80
+                    z = z_start + (0.015 + 0.22 * (hf ** 0.75)) * e
+                    yy = y + 0.04 * hf * e
+                    xx = 0.0 if s == steps else x * shrink
+                else:
+                    shrink = 1.0 - 0.38 * e
+                    z = z_start - (0.02 + 0.18 * (hf ** 0.70)) * e
+                    yy = y + 0.03 * hf * e
+                    xx = x * shrink
+                nxt.append((xx, yy, z))
+            for j in range(nring - 1):
+                col = wood_at(0.015 if sign > 0 else 0.985, j, nring)
+                a, b = prev[j], prev[j + 1]
+                d, c = nxt[j], nxt[j + 1]
+                hull.quad_out(a, b, c, d, col, (max(abs(a[0]), 0.02), 0.2, float(sign)))
+                hull.quad_out(
+                    (-a[0], a[1], a[2]),
+                    (-d[0], d[1], d[2]),
+                    (-c[0], c[1], c[2]),
+                    (-b[0], b[1], b[2]),
+                    col,
+                    (-max(abs(a[0]), 0.02), 0.2, float(sign)),
+                )
+            prev = nxt
+        if sign < 0:
+            port = [(-pp[0], pp[1], pp[2]) for pp in reversed(prev)]
+            full = port + prev[1:]
+            rows = [full]
+            extra = 7
+            for s in range(1, extra + 1):
+                f = s / extra
+                row = []
+                for q in full:
+                    row.append((q[0] * (1.0 - 0.22 * f), q[1] - 0.01 * f, q[2] - 0.055 * math.sin(f * math.pi * 0.5)))
+                rows.append(row)
+            for ri in range(len(rows) - 1):
+                row_a, row_b = rows[ri], rows[ri + 1]
+                for j in range(len(row_a) - 1):
+                    a, b = row_a[j], row_a[j + 1]
+                    c, d = row_b[j + 1], row_b[j]
+                    col = wood_at(0.99, j % nring, nring)
+                    hull.quad_out(a, b, c, d, col, (0.0, 0.15, -1.0))
+
+    round_end(stations[0][2], stations[0][1], 1, 16)
+    round_end(stations[-1][2], stations[-1][1], -1, 14)
 
     hull.smooth()
 
