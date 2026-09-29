@@ -5,12 +5,15 @@
 但带笔刷纹理与暗角，不能用单点色键：先在 HSV 空间圈出品红域，再从四边洪水
 填充，只删与画布边相连的背景，船体内部的近似色不受影响。
 
-用法：python3 tools/cut_ship_sprites.py
+用法：python3 tools/cut_ship_sprites.py --legacy
+  2026-09-29 起海战船图改由 tools/paint_oblique_song_ship.py 画（泉州湾宋船斜俯 3/4 视）；
+  本管线出的是被否掉的正俯视旧图，不带 --legacy 直接退出（exit 2），不写 assets/。
 产物：assets/ship_fu.png / assets/ship_falcon.png + /tmp/ship_preview.png（蓝海预览，不进仓库）
 """
 from __future__ import annotations
 
 import os
+import sys
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
@@ -196,6 +199,11 @@ def preview(sprites: dict[str, Image.Image]) -> None:
 
 
 def main() -> None:
+    if "--legacy" not in sys.argv[1:]:
+        print("海战船图已改由 tools/paint_oblique_song_ship.py 绘制（斜俯 3/4 泉州湾宋船）；本脚本出的是被否掉的正俯视旧图，要跑请加 --legacy。\n"
+              "Combat ship sprites are now painted by tools/paint_oblique_song_ship.py (oblique 3/4 Song ship); "
+              "this cutter restores the rejected top-down look. Pass --legacy to run it anyway.")
+        sys.exit(2)
     sprites = {}
     for raw_name, (out_name, long_axis, bow_f, sh_cy, sh_ry) in SHIPS.items():
         sprites[out_name] = cut(os.path.join(SRC, raw_name), out_name, long_axis, bow_f, sh_cy, sh_ry)

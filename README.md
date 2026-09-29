@@ -66,13 +66,13 @@ debug 构建下：**F11** 跳泉州港，再按跳福州（通用九卡），再
 
 ## 海战船图管线
 
-海战精灵（福船 / 海鹘 / 铁子）是真 RGBA 位图，不靠抠像着色器。福船、海鹘由生成原稿精修：
+海战精灵（福船 / 海鹘 / 铁子）是真 RGBA 位图，不靠抠像着色器。`ship_fu.png` / `ship_falcon.png` 由确定性脚本重画：
 
 ```bash
-python3 tools/cut_ship_sprites.py   # 需 numpy / Pillow / scipy（仅美术管线用，游戏本身无第三方依赖）
+python3 tools/paint_oblique_song_ship.py   # 需 numpy / Pillow / scipy（仅美术管线用，游戏本身无第三方依赖）
 ```
 
-原稿在 `tools/art_src/`（`.gdignore`，不进 Godot 导入与导出），管线负责抠品红底、去溢色、清孤岛、按长轴归一化到 512² 画布。改完必须重跑 `check_symbols.py`——PNG 取证会拦下平涂占位图和烤进底板的 RGB 图。
+脚本在船体坐标里画一条泉州湾宋代海船的斜俯 3/4 视（舷弧、右舷干舷、两面竹席硬篷，船首朝上），两张图共用同一船壳，只差帆色与桅顶小旗；不烤投影与白沫，自检不过 exit 1，预览出到 `/tmp/nk1-combat-wave3/oblique-ship/`。旧的正俯视抠图管线 `tools/cut_ship_sprites.py` 只在 `--legacy` 下运行（铁子 `shot_iron.png` 仍由它出）。改完必须重跑 `check_symbols.py`——PNG 取证会拦下平涂占位图和烤进底板的 RGB 图。
 
 ## 目录结构
 
