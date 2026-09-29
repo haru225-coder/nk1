@@ -110,8 +110,8 @@ const SCRIPTS := [
 	"res://tools/combat_vfx_probe.gd", "res://tools/ship_vfx_probe.gd", "res://tools/atmos_water_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
 	"res://scripts/combat/ShipHull3D.gd", "res://tools/ship_exquisite_probe.gd",
 	"res://tools/ship_dashi_probe.gd",  # 大食缝合船朝向探针（lane ship-dashi）
-	"res://tools/japan_ship_probe.gd",  # 日本式船朝向探针（lane ship-japan）
-	"res://tools/shot_champa_ship.gd",  # 占城船近景镜头（lane ship-champa）
+	"res://tools/japan_ship_probe.gd",  # 日本关船朝向探针（lane ship-japan）
+	"res://tools/shot_champa_ship.gd",  # 占城船朝向探针（lane ship-champa）
 	"res://tools/combat_realism_probe.gd", "res://scripts/combat/CombatDirector.gd",  # lane combat10 写实海战冒烟探针 + 装配台
 	"res://tools/vision_stage_probe.gd", "res://tools/vision_letterbox_probe.gd", "res://tools/letterbox_signal_probe.gd",
 	"res://tools/probe_clock.gd", "res://tools/shot_consistency.gd",
