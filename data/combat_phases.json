@@ -2572,7 +2572,7 @@
       "cue": "rout_begin",
       "morale_hint": 0,
       "spoil_rule": "half",
-      "note": "combat12 已接：WorldMap 遁走计数 → win{enemy_fled, morale_verdict=enemy_fled, repelled}，SeaChart 半赏 75–300 走 sea_fled_note；题签现码出 repel「击退」，非本表 win（见§九）"
+      "note": "combat12 已接：WorldMap 收战把各船下场（沉 / 夺 / 受降 / 遁）记进 win data.fates，SeaChart.win_kind 只在一艘没沉没夺没降、只是遁走时半赏 75–300 走 sea_fled_note，先沉后遁照击沉全赏；题签现码出 repel「击退」，非本表 win（见§九）"
     },
     {
       "id": "player_fled",
@@ -2700,7 +2700,7 @@
       "cue": null,
       "morale_hint": 0,
       "spoil_rule": "none",
-      "note": "combat12 已接：WorldMap 开战满 BATTLE_LIMIT_S 300 秒 → flee{flee_ok, parted} → 题签 parted「两散」，SeaChart sea_parted_note 与本条 log 同句"
+      "note": "combat12 已接（限时一路）：WorldMap 开战满 thresholds.battle_limit_s（300 秒，开战时读本文件；接舷白刃中不计时）→ flee{flee_ok, parted} → 题签 parted「两散」，SeaChart sea_parted_note 与本条 log 同句，不给赏、不绕路；t_gale 一路无来路（见§九）"
     }
   ],
   "cues": [

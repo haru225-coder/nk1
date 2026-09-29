@@ -79,11 +79,18 @@ var _morale = null
 var _battle_roster_n: int = 0
 ## 末船接舷夺下后等题签播完再收战：挡住 _process 的 win{} 抢先（await 即便 headless 也会让出一帧）
 var _finishing_boarded: bool = false
-## combat12：敌船 left_battle(escaped) 计数；全灭且有遁走时 win data 带 enemy_fled
+## combat12：敌船 left_battle(escaped) 计数（HUD / 探针读）；收战下场明细另记 _enemy_fates
 var _enemies_escaped: int = 0
-## combat12：开战经过秒数；到 battle_limit_s（默认 300）两散 parted
+## combat12：敌船下场账 instance_id → {type, fate}（fate 取 CombatLetterbox.FATE_VERB 的键：struck / boarded / sunk / fled）。
+## 遁走在 left_battle、夺船在 _board_enemy 当场记，其余离树时按船体记沉；收战时并进 win data.fates，
+## 题签（fates_of）与 SeaChart 分账（半赏只给「一艘没沉没夺没降、只是遁走」）都按它算——士气收场的 morale_verdict 只看在场的船，
+## 先沉一艘、后遁一艘也报 enemy_fled，不能单凭它给半赏。
+var _enemy_fates: Dictionary = {}
+## combat12：开战经过秒数；到 battle_limit_s（combat_phases.json thresholds，缺省 BATTLE_LIMIT_S）两散 parted
 var _battle_elapsed_s: float = 0.0
+var _battle_limit_s: float = 300.0
 const BATTLE_LIMIT_S := 300.0
+const _PHASES_PATH := "res://data/combat_phases.json"
 
 func _ready() -> void:
 	var hud := $CanvasLayer/HUD
@@ -132,23 +139,16 @@ func _process(delta: float) -> void:
 				boarding = false
 				boarding_target = null
 
-	# combat12：限时两散（battle_limit_s）
-	if combat_mode and not resolved and not boarding:
-		_battle_elapsed_s += delta
-		if _battle_elapsed_s >= BATTLE_LIMIT_S:
-			_battle_exit("flee", {"flee_ok": true, "parted": true})
-			_update_hud()
-			return
-
-	# 敌全灭 → 获胜（接舷中 / 末船夺下等题签 不判定：避免抢掉 boarded=true）
+	# 敌全灭 → 获胜（接舷中 / 末船夺下等题签 不判定：避免抢掉 boarded=true）。各船下场由 _battle_exit 并进 data.fates
 	if combat_mode and not resolved:
 		if not boarding and not _finishing_boarded and _enemies_alive() == 0:
-			var win_data := {}
-			if _enemies_escaped > 0:
-				win_data["enemy_fled"] = _enemies_escaped
-				win_data["morale_verdict"] = "enemy_fled"
-				win_data["repelled"] = true
-			_battle_exit("win", win_data)
+			_battle_exit("win", {})
+
+	# combat12：限时两散（阶段图 t_time_up → disengaged，legacy flee{flee_ok, parted}）；钩住白刃时不计时
+	if combat_mode and not resolved and not boarding and not _finishing_boarded:
+		_battle_elapsed_s += delta
+		if _battle_elapsed_s >= _battle_limit_s:
+			_battle_exit("flee", {"flee_ok": true, "parted": true})
 
 	_update_hud()
 
@@ -310,6 +310,8 @@ func _board_enemy(enemy: Node2D) -> void:
 			stage = resolved_stage
 		_show_combat_notice(notice)
 		_CombatFx.hitstop(self, 0.09, 0.16)
+		# 下场先记（降了的收船记受降），再清血量：离树时按船体记沉会把夺来的船记成击沉
+		_note_fate(enemy, "struck" if yield_sheet != null and yield_sheet.yields_to_boarding() else "boarded")
 		# 清血量再释放：避免 queue_free 后仍被 _enemies_alive 数到
 		enemy.set("hull_hp", 0.0)
 		enemy.queue_free()
@@ -471,7 +473,9 @@ func _strike_lightning() -> void:
 ## 自由航行刷怪（crate / 海鸟 / 鲸影 / 野海盗）已拆除：WorldMap 只作战术层。
 func _setup_combat(pb: Dictionary) -> void:
 	_enemies_escaped = 0
+	_enemy_fates = {}
 	_battle_elapsed_s = 0.0
+	_battle_limit_s = _phases_battle_limit_s()
 	combat_mode = true
 	_AUDIO.combat_start(self)
 	# 战斗专用：禁掉 PortZone 停靠出口（否则 Enter 会切回 Main 丢战斗）
@@ -585,6 +589,10 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 	_last_boarded = bool(data.get("boarded", false))
 	if _last_boarded:
 		data["boarded"] = true
+	if outcome == "win" and not data.has("fates"):
+		var fates := _battle_fates()
+		if not fates.is_empty():
+			data["fates"] = fates
 	_AUDIO.combat_result(self, outcome)
 	_CombatShoreHook.unmount_combat_ui(self)
 	_try_letterbox_exit(outcome, data)
@@ -638,10 +646,67 @@ func _wire_enemy_signals(p: Node) -> void:
 		var cb_l := Callable(self, "_on_enemy_left_battle").bind(p)
 		if not p.is_connected("left_battle", cb_l):
 			p.connect("left_battle", cb_l)
+	var cb_x := Callable(self, "_on_enemy_exiting").bind(p)
+	if not p.tree_exiting.is_connected(cb_x):
+		p.tree_exiting.connect(cb_x)
 	if p.has_signal("grapple_thrown"):
 		var cb_g := Callable(self, "_on_enemy_grapple_thrown").bind(p)
 		if not p.is_connected("grapple_thrown", cb_g):
 			p.connect("grapple_thrown", cb_g)
+
+
+## combat12：记一艘敌船的下场（先记者为准：遁走 / 夺船当场记，离树时的「沉」不改写）
+func _note_fate(enemy: Node, fate: String) -> void:
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	var id := enemy.get_instance_id()
+	if not _enemy_fates.has(id):
+		_enemy_fates[id] = {"type": _node_str(enemy, "ship_type", ""), "fate": fate}
+
+
+## 敌船离树：没记过下场、船体见底的记沉（击沉 / 焚毁都走 PirateShip._explode）；船体还在的是收场拆树，不记
+func _on_enemy_exiting(enemy: Node) -> void:
+	if enemy != null and is_instance_valid(enemy) and _node_float(enemy, "hull_hp") <= 0.0:
+		_note_fate(enemy, "sunk")
+
+
+## 收战时的敌船下场明细 [{type, fate}]（形同 CombatLetterbox.fates_of）：已离场的取 _enemy_fates；
+## 同帧刚沉、还没离树的按船体补记沉；还在场的按士气簿补记降幡 / 遁出（士气收场的那几艘）
+func _battle_fates() -> Array:
+	for child in get_children():
+		if child is Node2D and String(child.name).begins_with("PirateShip") \
+				and (child.is_queued_for_deletion() or _node_float(child, "hull_hp") <= 0.0):
+			_note_fate(child, "sunk")
+	var out: Array = []
+	for id in _enemy_fates:
+		out.append((_enemy_fates[id] as Dictionary).duplicate())
+	if _morale != null and is_instance_valid(_morale):
+		for child in get_children():
+			if not _is_live_pirate(child) or _enemy_fates.has(child.get_instance_id()):
+				continue
+			var sheet = _morale.sheet_of(child)
+			if sheet == null:
+				continue
+			if sheet.has_struck():
+				out.append({"type": _node_str(child, "ship_type", ""), "fate": "struck"})
+			elif sheet.escaped:
+				out.append({"type": _node_str(child, "ship_type", ""), "fate": "fled"})
+	return out
+
+
+## 一场最长秒数：combat_phases.json thresholds.battle_limit_s.v，读不到用 BATTLE_LIMIT_S
+static func _phases_battle_limit_s() -> float:
+	var f := FileAccess.open(_PHASES_PATH, FileAccess.READ)
+	if f == null:
+		return BATTLE_LIMIT_S
+	var d = JSON.parse_string(f.get_as_text())
+	if d is Dictionary:
+		var t = d.get("thresholds", {})
+		if t is Dictionary and t.get("battle_limit_s") is Dictionary:
+			var v = t["battle_limit_s"].get("v")
+			if (v is float or v is int) and float(v) > 0.0:
+				return float(v)
+	return BATTLE_LIMIT_S
 
 
 func _on_captain_state_changed(state: StringName, label: String, reason: String, enemy: Node = null) -> void:
@@ -665,6 +730,7 @@ func _on_enemy_left_battle(how: String, enemy: Node = null) -> void:
 			nm = str(sn)
 		if how == "escaped":
 			_enemies_escaped += 1
+			_note_fate(enemy, "fled")
 			_show_combat_notice("敌船「%s」脱离远遁" % nm)
 		else:
 			_show_combat_notice("敌船「%s」离场（%s）" % [nm, how])

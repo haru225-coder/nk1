@@ -6,6 +6,7 @@ extends Control
 signal _marker_woken
 
 const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
+const _Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 
 var origin_port: String = ""
 var selected_port: String = ""
@@ -1475,12 +1476,10 @@ func _enter_battle() -> void:
 func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	var dmg := float(data.get("player_damage", 0.0))
 	if outcome == "win":
-		# combat12：士气收场分账——敌降（enemy_struck / enemy_broken）全赏走受降句；敌遁半赏走敌遁句
-		var verdict := str(data.get("morale_verdict", ""))
-		var surrendered := verdict == "enemy_struck" or verdict == "enemy_broken"
-		var fled_only := verdict == "enemy_fled" or (not surrendered and _battle_count(data, "enemy_fled") > 0 \
-				and not _battle_flag(data, "boarded") and _battle_count(data, "enemy_struck") == 0 \
-				and not _battle_flag(data, "surrendered") and _battle_count(data, "sunk") == 0)
+		# combat12：按敌船下场分账（win_kind）——敌降全赏走受降句；只是遁走的赏半（spoil_rule half）走敌遁句
+		var kind := win_kind(data)
+		var surrendered := kind == "surrender"
+		var fled_only := kind == "fled"
 		var spoil := int(randf_range(75, 300)) if fled_only else int(randf_range(150, 600))
 		GameState.add_money(spoil)
 		var fame_res: Dictionary = GameState.add_fame(3)
@@ -1536,18 +1535,18 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	_after_combat()
 
 
-## 战果 data 的艘数：int / float 取整，bool true 记 1；缺、null、字符串记 0
-static func _battle_count(data: Dictionary, key: String) -> int:
-	var v = data.get(key, 0)
-	if v is bool:
-		return 1 if v else 0
-	if v is int or v is float:
-		return maxi(0, int(v))
-	return 0
-
-
-static func _battle_flag(data: Dictionary, key: String) -> bool:
-	return _battle_count(data, key) > 0
+## 胜局分账（combat12）：surrender = 有敌船降幡（士气收场 enemy_struck / enemy_broken，或下场明细里有受降）；
+## fled = 敌船一艘没沉、没焚、没夺、没降，只是遁走（combat_phases.json enemy_fled.spoil_rule half）；其余 ""（照胜局全赏）。
+## 下场艘数走 CombatLetterbox.fate_counts（data.fates / struck_types / enemy_fled / 旗标），与出战题签同一口径：
+## 士气收场的 morale_verdict 只看收场时在场的船，先沉一艘、后遁一艘也报 enemy_fled，所以不单凭它。
+static func win_kind(data: Dictionary) -> String:
+	var n: Dictionary = _Letterbox.fate_counts(data)
+	var verdict := str(data.get("morale_verdict", ""))
+	if int(n["struck"]) > 0 or verdict == "enemy_struck" or verdict == "enemy_broken":
+		return "surrender"
+	if bool(data.get("boarded", false)) or int(n["boarded"]) > 0 or int(n["sunk"]) > 0 or int(n["burned"]) > 0:
+		return ""
+	return "fled" if int(n["fled"]) > 0 else ""
 
 
 func _log_shook_pursuers() -> void:

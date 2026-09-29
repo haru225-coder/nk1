@@ -146,6 +146,18 @@ func _check_wiring() -> void:
 	_expect(CombatFx.board_win_note("海鹘").find("！") < 0, "无叹号")
 	for bad in ["惊艳", "沉浸", "打造", "视觉盛宴", "史诗", "premium", "pipeline"]:
 		_expect(fx.find(bad) < 0, "CombatFx 无营销词：" + bad)
+	# lane combat12：胜局按各船下场分账（先沉后遁照全赏，士气 verdict 只看在场的船）、限时两散出「两散」题签
+	var chart_gd: GDScript = load("res://scripts/SeaChart.gd")
+	var lb_gd: GDScript = load("res://scripts/ui/CombatLetterbox.gd")
+	var mixed := {"morale_verdict": "enemy_fled", "enemy_fled": 1,
+		"fates": [{"type": "pirate_boat", "fate": "sunk"}, {"type": "pirate_boat", "fate": "fled"}]}
+	_expect(str(chart_gd.call("win_kind", {"morale_verdict": "enemy_fled", "enemy_fled": 1})) == "fled", "SeaChart 敌遁半赏（win_kind=fled）")
+	_expect(str(chart_gd.call("win_kind", mixed)) == "", "SeaChart 先沉后遁照击沉全赏")
+	_expect(str(chart_gd.call("win_kind", {"morale_verdict": "enemy_broken", "enemy_struck": 1, "enemy_fled": 1})) == "surrender",
+		"SeaChart 降遁皆有走受降")
+	_expect(str(lb_gd.call("outcome_key", "flee", {"flee_ok": true, "parted": true})) == "parted"
+		and str(lb_gd.call("outcome_key", "disengaged", {})) == "parted", "题签两散 parted")
+	_expect(SP.has_func(wm, "_battle_fates") and wm.find('"parted": true') >= 0, "WorldMap 收战带下场明细、限时两散")
 	var main := FileAccess.get_file_as_string("res://scripts/Main.gd")
 	_expect(main.find("CombatShoreHook") >= 0 or main.find("scripts/combat/CombatShoreHook") >= 0,
 		"Main 应薄接入 CombatShoreHook（F9）")
