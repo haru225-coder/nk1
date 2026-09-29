@@ -593,16 +593,17 @@ def add_partner(fit, t, scale):
     add_cyl(fit, (0, y + thick, z), (0, y + thick + 0.018, z), r_in * 0.72, IRON, 8)
 
 
-# t, 沿船长的口长, 沿船宽的口宽。口要大，口沿高于周围甲板，十七度才看得见两面内壁和舱底。
+# t, 沿船长的口长, 沿船宽的口宽。口开在中线，两侧和两口之间仍是一整块露天甲板。
+# 口本身要够大、口沿高于周围甲板，十七度才看得见两面内壁和舱底。
 HOLDS = (
-    (0.215, 1.05, 2.15),
-    (0.445, 1.60, 2.20),
-    (0.650, 1.15, 2.15),
+    (0.218, 1.10, 1.40),
+    (0.450, 1.28, 1.55),
+    (0.672, 1.10, 1.42),
 )
 
 
-def hold_covers(z, x, pad=0.12):
-    """甲板该挖掉的范围。比口大一圈，板头不许横过舱口。"""
+def hold_covers(z, x, pad=0.02):
+    """只挖三个舱口。板铺到口沿，不把口外的甲板挖成梁格。"""
     for tc, length, width in HOLDS:
         if abs(z - z_of(tc)) <= length * 0.5 + pad and abs(x) <= width * 0.5 + pad:
             return True
@@ -1452,7 +1453,8 @@ def build():
 
     hull.smooth()
 
-    caulk = (0.04, 0.022, 0.013, 1)
+    # 缝要看得见，但只是板上的一条暗线。槽太宽，十七度会看成空梁格。
+    caulk = (0.18, 0.10, 0.055, 1)
     n_planks = 16
     for i in range(nst - 1):
         t0, z0, r0 = stations[i]
@@ -1468,7 +1470,7 @@ def build():
         for k in range(n_planks):
             u0 = -1.0 + 2.0 * k / n_planks
             u1 = -1.0 + 2.0 * (k + 1) / n_planks
-            du = 0.070 / max((b0 + b1) * 0.5, 0.2)
+            du = 0.018 / max((b0 + b1) * 0.5, 0.2)
             ua, ub = u0 + du * 0.35, u1 - du * 0.35
             tone = 0.84 + 0.20 * hsh(k * 17.3)
             grain = 0.93 + 0.09 * hsh(k * 9.2 + (i // 6) * 2.3)
@@ -1505,20 +1507,21 @@ def build():
                 deck.quad_out(a, d, c, bpt, col, (0, 1, 0))
             if k < n_planks - 1:
                 s0, s1 = ub, u1 + du * 0.35
-                drop = 0.034
+                drop = 0.008
                 ga = Dp(s0, b0, y0, z0, drop)
                 gb = Dp(s0, b1, y1, z1, drop)
                 gc = Dp(s1, b1, y1, z1, drop)
                 gd = Dp(s1, b0, y0, z0, drop)
-                if not hold_covers((ga[2] + gc[2]) * 0.5, (ga[0] + gc[0]) * 0.5, pad=0.10):
+                # 缝只留在实板上。口里不留纵梁，免得舱口之间看起来是空梁格。
+                if not hold_covers((ga[2] + gc[2]) * 0.5, (ga[0] + gc[0]) * 0.5, pad=0.0):
                     deck.quad_out(ga, gd, gc, gb, caulk, (0, 1, 0))
-                la = Dp(s0, b0, y0, z0, 0.0)
-                lb = Dp(s0, b1, y1, z1, 0.0)
-                deck.quad_out(la, lb, gb, ga, tint(caulk, 1.15), (1 if s0 > 0 else -1, 0, 0))
-                ra = Dp(s1, b0, y0, z0, 0.0)
-                rb = Dp(s1, b1, y1, z1, 0.0)
-                deck.quad_out(gc, gb, rb, ra, tint(caulk, 1.15), (1 if s1 > 0 else -1, 0, 0))
-            # 横缝：板头这一站沟里填油灰
+                    la = Dp(s0, b0, y0, z0, 0.0)
+                    lb = Dp(s0, b1, y1, z1, 0.0)
+                    deck.quad_out(la, lb, gb, ga, tint(caulk, 1.15), (1 if s0 > 0 else -1, 0, 0))
+                    ra = Dp(s1, b0, y0, z0, 0.0)
+                    rb = Dp(s1, b1, y1, z1, 0.0)
+                    deck.quad_out(gc, gb, rb, ra, tint(caulk, 1.15), (1 if s1 > 0 else -1, 0, 0))
+            # 横缝：板头这一站沟里填油灰。口内不填，避免横梁横过舱口。
             if butt:
                 cz0 = lerp(z0, z1, 0.36)
                 cz1 = lerp(z0, z1, 0.64)
@@ -1526,7 +1529,8 @@ def build():
                 qb = Dp(ua, b1, y1, cz1, 0.028)
                 qc = Dp(ub, b1, y1, cz1, 0.028)
                 qd = Dp(ub, b0, y0, cz0, 0.028)
-                deck.quad_out(qa, qd, qc, qb, (0.028, 0.014, 0.009, 1), (0, 1, 0))
+                if not hold_covers((qa[2] + qc[2]) * 0.5, (qa[0] + qc[0]) * 0.5, pad=0.0):
+                    deck.quad_out(qa, qd, qc, qb, (0.12, 0.065, 0.035, 1), (0, 1, 0))
             # 隔几档一颗木钉。少而粗，近景才不是光板
             ivn = int(round(t0 * 51.0))
             nail_here = False
@@ -1537,6 +1541,9 @@ def build():
             if nail_here:
                 um = (ua + ub) * 0.5
                 nail = Dp(um, (b0 + b1) * 0.5, (y0 + y1) * 0.5, (z0 + z1) * 0.5, -0.002)
+                if hold_covers(nail[2], nail[0], pad=0.0):
+                    nail_here = False
+            if nail_here:
                 add_cyl(
                     deck,
                     (nail[0], nail[1] - 0.006, nail[2]),
