@@ -117,46 +117,47 @@ def beam_half(t: float) -> float:
 
 
 def sheer(t: float) -> float:
-    bow = 1.12 * math.exp(-((t - 0.0) / 0.175) ** 2)
-    stern = 0.78 * math.exp(-((t - 1.0) / 0.16) ** 2)
-    return 0.015 + bow + stern
+    # 舯部压低，艏艉抬高。弧更陡，仍是一条舷弧，不是甲板层。
+    bow = 1.28 * math.exp(-((t - 0.0) / 0.150) ** 2)
+    stern = 0.98 * math.exp(-((t - 1.0) / 0.140) ** 2)
+    waist = 0.07 * math.sin(math.pi * clamp(t, 0.0, 1.0))
+    return bow + stern - waist
 
 
 def deck_side_y(t: float) -> float:
-    # 舯部干舷仍低，但要能看见舷侧板，不是一条贴水的边
-    return 0.50 + sheer(t)
+    # 舯部干舷低，艏艉随舷弧抬起
+    return 0.40 + sheer(t)
 
 
 def keel_y(t: float) -> float:
-    # 只露出吃水线下一窄条尖底，整条水下船壳不画进透明视口
-    body = math.sin(math.pi * clamp(t, 0.0, 1.0)) ** 0.75
-    return -0.20 * max(body, 0.15 * smoothstep(0.05, 0.2, t) * (1.0 - smoothstep(0.88, 1.0, t)))
+    # 尖底只露出水线下一窄条，整条水下船壳不画进透明视口
+    body = math.sin(math.pi * clamp(t, 0.0, 1.0)) ** 0.90
+    return -0.30 * max(body, 0.12 * smoothstep(0.05, 0.2, t) * (1.0 - smoothstep(0.88, 1.0, t)))
 
 
 def section_pts(t: float):
-    """右舷：龙骨 → 舭 → 水线 → 舷墙顶。x,y。"""
+    """右舷：龙骨尖底 → 水线 → 一层甲板边 → 低舷墙。上半舷板更密，缝才读得出。"""
     bh = beam_half(t)
     deck = deck_side_y(t)
     keel = keel_y(t)
-    # 高度参数 0 龙骨 … 1 甲板边
     pts = []
-    n = 12
-    for i in range(n):
-        h = i / (n - 1)
-        # 尖底：近龙骨收得快
-        x = bh * (h ** 0.55)
-        if h > 0.72:
-            flare = (h - 0.72) / 0.28
-            x *= 1.0 + 0.06 * flare
-        y = lerp(keel, deck, h ** 0.92)
-        # 水线附近略外凸，读得出舷
-        if 0.55 < h < 0.85:
-            x += 0.02 * math.sin((h - 0.55) / 0.30 * math.pi)
+    hs = []
+    for i in range(7):
+        hs.append(0.52 * i / 6.0)
+    for i in range(1, 12):
+        hs.append(0.52 + 0.48 * i / 11.0)
+    for h in hs:
+        # 指数 > 1：近龙骨先窄，底是尖的，不是圆肚子
+        x = bh * (h ** 1.22)
+        if h > 0.84:
+            flare = (h - 0.84) / 0.16
+            x *= 1.0 + 0.05 * flare
+        y = lerp(keel, deck, h ** 1.08)
         pts.append((x, y))
-    # 舷墙：略内倾
-    top_y = deck + 0.34 + 0.05 * smoothstep(0.15, 0.45, t) * (1.0 - smoothstep(0.75, 0.95, t))
-    pts.append((bh * 0.985, lerp(deck, top_y, 0.45)))
-    pts.append((bh * 0.94, top_y))
+    # 低舷墙，不是第二层甲板
+    top_y = deck + 0.18 + 0.03 * smoothstep(0.12, 0.40, t) * (1.0 - smoothstep(0.78, 0.96, t))
+    pts.append((bh * 0.975, lerp(deck, top_y, 0.42)))
+    pts.append((bh * 0.935, top_y))
     return pts
 
 
@@ -396,16 +397,18 @@ def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head,
         return (x, y, z)
 
     def sp(u, v):
-        # 布就是这一张弯面。格与格之间不再起伏，光才不会把每一格切成一块板。
+        # 竹间只鼓一点点，仍是同一张面。鼓出量小于竹条离布的距离，竹还是贴在布上的扁条。
         belly = scallop_of(v)
-        return yaw_pt(base_pt(u, v)), belly, sheet_of(u, v)
+        p = base_pt(u, v)
+        p = (p[0] - belly * 0.007, p[1], p[2])
+        return yaw_pt(p), belly, sheet_of(u, v)
 
     def shade(belly, sheet, u):
-        # 几乎平涂。竹间的亮带会把绛红涂成一层层板，弧交给网格本身。
-        g = 0.93 + 0.05 * sheet
-        g *= 1.0 - 0.015 * u
-        g = clamp(g, 0.88, 1.0)
-        return (g, g * 0.99, g * 0.94, 1.0)
+        # 竹间略亮，对比很小，不把绛红切成一层层板。篾纹在着色器里。
+        g = 0.90 + 0.05 * sheet + 0.055 * belly
+        g *= 1.0 - 0.018 * u
+        g = clamp(g, 0.86, 1.0)
+        return (g, g * 0.988, g * 0.94, 1.0)
 
     for iv in range(n_v):
         for iu in range(n_u):
@@ -479,7 +482,7 @@ def add_mat_shed(fit):
         arch = math.cos(clamp(x_norm, -1.0, 1.0) * math.pi * 0.5) ** 1.08
         # 纵剖面也收成弧：两端落到舷墙，侧面不是一条平顶箱子
         long_arch = math.sin(clamp(v, 0.0, 1.0) * math.pi) ** 0.72
-        y_rail = deck_side_y(t) + 0.30 + 0.05 * (1.0 - x_norm * x_norm)
+        y_rail = deck_side_y(t) + 0.16 + 0.04 * (1.0 - x_norm * x_norm)
         y = y_rail + max(0.0, (H * long_arch + lift) * arch)
         return (x, y, z_of(t)), arch
 
@@ -528,7 +531,7 @@ def add_mat_shed(fit):
         p, _ = pt(u, v, 0.0)
         t = lerp(t_a, t_b, v)
         sgn = -1.0 if u < 0.5 else 1.0
-        rail = (sgn * beam_half(t) * 0.90, deck_side_y(t) + 0.32, z_of(t))
+        rail = (sgn * beam_half(t) * 0.90, deck_side_y(t) + 0.18, z_of(t))
         rope(fit, p, rail, 0.03, 0.008, ROPE, n=4)
 
 
@@ -1040,23 +1043,25 @@ def add_fire_arrows(fit, t, x):
     z = z_of(t)
     y = deck_side_y(t) + 0.20
     inward = -1.0 if x > 0.0 else 1.0
-    add_box(fit, (x, y, z), (0.46, 0.11, 1.55), TEAK)
-    add_box(fit, (x, y + 0.20, z - 0.74), (0.46, 0.32, 0.09), TEAK_DK)
-    add_box(fit, (x, y + 0.18, z + 0.74), (0.46, 0.26, 0.08), TEAK)
-    add_box(fit, (x - inward * 0.18, y + 0.14, z), (0.07, 0.22, 1.55), mix(TEAK_DK, TEAK, 0.3))
-    shaft = (0.82, 0.66, 0.36, 1)
-    tube = (0.86, 0.09, 0.045, 1)
-    fletch = (0.62, 0.16, 0.08, 1)
+    add_box(fit, (x, y, z), (0.42, 0.10, 0.78), TEAK)
+    add_box(fit, (x, y + 0.18, z - 0.36), (0.42, 0.28, 0.07), TEAK_DK)
+    add_box(fit, (x, y + 0.16, z + 0.36), (0.42, 0.22, 0.06), TEAK)
+    add_box(fit, (x - inward * 0.16, y + 0.12, z), (0.06, 0.18, 0.78), mix(TEAK_DK, TEAK, 0.3))
+    shaft = (0.94, 0.91, 0.84, 1)
+    tube = (0.82, 0.07, 0.04, 1)
+    fletch = (0.72, 0.12, 0.06, 1)
     n_arr = 4
+    # 向外舷倾，红纸筒落在帆的空档里，不插进席面，也不伸到拍竿头上
+    outward = -inward
     for i in range(n_arr):
-        spread = (i - (n_arr - 1) * 0.5) * 0.28
+        spread = (i - (n_arr - 1) * 0.5) * 0.16
         zz = z + spread
-        tail = (x - inward * 0.02, y + 0.22, zz)
-        head = (x + inward * 0.62, y + 1.72, zz)
+        tail = (x, y + 0.16, zz)
+        head = (x + outward * 0.22, y + 1.48, zz)
         add_cyl(fit, tail, head, 0.042, shaft, 6, caps=False)
         a = tuple(lerp(tail[k], head[k], 0.40) for k in range(3))
         b = tuple(lerp(tail[k], head[k], 0.68) for k in range(3))
-        add_cyl(fit, a, b, 0.095, tube, 7, caps=False)
+        add_cyl(fit, a, b, 0.11, tube, 7, caps=False)
         for frac in (0.40, 0.68):
             c0 = tuple(lerp(tail[k], head[k], frac) for k in range(3))
             c1 = tuple(lerp(tail[k], head[k], frac + 0.035) for k in range(3))
@@ -1067,14 +1072,14 @@ def add_fire_arrows(fit, t, x):
         feather = tuple(lerp(tail[k], head[k], 0.10) for k in range(3))
         add_box(fit, feather, (0.022, 0.22, 0.12), fletch)
         add_box(fit, feather, (0.12, 0.22, 0.022), fletch)
-    bow_z = z - 0.98
+    bow_z = z + 0.50
     pts = []
     for i in range(9):
         u = i / 8
         pts.append((
             x - inward * 0.02,
-            y + 0.05 + math.sin(u * math.pi) * 1.38,
-            bow_z + (u - 0.5) * 0.12,
+            y + 0.04 + math.sin(u * math.pi) * 0.95,
+            bow_z + (u - 0.5) * 0.08,
         ))
     for i in range(8):
         add_cyl(fit, pts[i], pts[i + 1], 0.042, mix(TEAK_DK, TEAK, 0.2), 5, caps=False)
@@ -1084,9 +1089,9 @@ def add_fire_arrows(fit, t, x):
 def add_song_weapons(fit):
     add_pai_gan(fit)
     add_traction_trebuchet(fit)
-    # 前桅前左舷、尾棚前右舷，都在帆的另一侧，不插进席面
-    add_fire_arrows(fit, 0.22, -0.98)
-    add_fire_arrows(fit, 0.48, -1.05)
+    # 艏舷空档、两帆之间的左舷。17° 近景看得到红白箭束，不挡绛帆，不挡石锤。
+    add_fire_arrows(fit, 0.075, -0.50)
+    add_fire_arrows(fit, 0.355, -1.15)
 
 
 def build():
@@ -1111,17 +1116,18 @@ def build():
         nring = len(r0)
         along = i / (nst - 1)
         for j in range(nring - 1):
-            piece = math.floor((along + j * 0.37) / 0.22)
+            piece = math.floor((along * 1.25 + j * 0.19) / 0.13)
             prev_along = (i - 1) / (nst - 1) if i else along
-            prev_piece = math.floor((prev_along + j * 0.37) / 0.22)
+            prev_piece = math.floor((prev_along * 1.25 + j * 0.19) / 0.13)
             butt = piece != prev_piece and 1 < i < nst - 2
-            face_push = -0.018 if butt else 0.086
-            crown = 0.0 if butt else 0.050
-            seam_push = -0.074
+            # 板面几乎贴壳。缝是凹进去的一条，不是鼓出的厚架。
+            face_push = -0.010 if butt else 0.014
+            crown = 0.0 if butt else 0.005
+            seam_push = -0.018
             col_face = wood_at((t0 + t1) * 0.5, j, nring, along)
             if butt:
-                col_face = mix(col_face, (0.08, 0.042, 0.022, 1), 0.72)
-            caulk = (0.028, 0.015, 0.009, 1)
+                col_face = mix(col_face, (0.05, 0.025, 0.014, 1), 0.82)
+            caulk = (0.012, 0.006, 0.004, 1)
 
             def at(ring, z, f, push):
                 x0, y0 = ring[j]
@@ -1152,14 +1158,13 @@ def build():
                     hull.quad_out(a, b, c, d, col, (a[0], 0.2, 0.0))
                     hull.quad_out(mx(a), mx(d), mx(c), mx(b), col, (-a[0], 0.2, 0.0))
 
-            # 窄缝 + 板面自身上亮下暗，远看也是一块块木头，不是平涂条
-            band(0.00, 0.09, seam_push, caulk, 0.0)
-            band(0.09, 0.28, face_push, tint(col_face, 0.72), 0.0)
-            band(0.28, 0.72, face_push, col_face, crown)
-            band(0.72, 0.91, face_push, tint(col_face, 1.12), 0.0)
-            band(0.91, 1.00, seam_push, caulk, 0.0)
-            # 板厚：缝和板面之间的侧壁，让凹凸是刻出来的，不是两条错开的皮
-            for f, outward_y in ((0.09, -1.0), (0.91, 1.0)):
+            # 窄油灰缝。板面自己只微微上亮，不靠厚凸边。
+            band(0.00, 0.07, seam_push, caulk, 0.0)
+            band(0.07, 0.24, face_push, tint(col_face, 0.82), 0.0)
+            band(0.24, 0.76, face_push, col_face, crown)
+            band(0.76, 0.93, face_push, tint(col_face, 1.06), 0.0)
+            band(0.93, 1.00, seam_push, caulk, 0.0)
+            for f, outward_y in ((0.07, -1.0), (0.93, 1.0)):
                 sa = at(r0, z0, f, seam_push)
                 sb = at(r1, z1, f, seam_push)
                 fa = at(r0, z0, f, face_push)
