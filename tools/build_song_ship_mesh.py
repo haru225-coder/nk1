@@ -378,9 +378,10 @@ def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head,
         billow = (math.sin(math.pi * u) ** 0.85) * (0.48 + 0.52 * math.sin(math.pi * v))
         pouch = sag * (math.sin(math.pi * u) ** 0.72)
         # 鼓腹再向外、再向下：两条竹之间是一块掉下去的席，不是贴在竹上的平板
-        x = camber * billow * 0.96 + pouch * camber * 1.05
-        y -= sag * (0.16 + 0.72 * (u ** 1.02))
-        z += pouch * 0.10
+        # 鼓腹再深一档：竹条仍硬，布在两条竹之间向外掉、后缘更垂
+        x = camber * billow * 1.18 + pouch * camber * 1.32
+        y -= sag * (0.24 + 1.02 * (u ** 0.92))
+        z += pouch * 0.16
         return (x, y, z), sag, local, billow
 
     def shade(sag, local, billow, u):
@@ -420,22 +421,21 @@ def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head,
             if prev:
                 add_cyl(fit, prev, p, rad, col, 5, caps=False)
             prev = p
-    # 缩帆绳眼：竹条上垂下的短绳和木扣，不是画在布上的点
+    # 缩帆绳眼：每条竹上两根，绳和木扣在斜俯里成点
     for batten in range(1, n_bat):
-        if batten % 2 == 0:
-            continue
         v = batten / n_bat
-        for u in (0.34, 0.58, 0.82):
+        for u in (0.42, 0.74):
             p, *_ = sp(u, v)
-            p = (p[0] + 0.045, p[1] - 0.01, p[2])
-            drop = (p[0] + 0.03, p[1] - 0.26, p[2] + 0.05)
-            rope(fit, p, drop, 0.015, 0.009, ROPE, n=3)
+            p = (p[0] + 0.07, p[1] - 0.02, p[2])
+            drop = (p[0] + 0.10, p[1] - 0.46, p[2] + 0.07)
+            rope(fit, p, drop, 0.02, 0.018, ROPE, n=3)
             add_cyl(
                 fit,
-                (drop[0] - 0.045, drop[1], drop[2]),
-                (drop[0] + 0.045, drop[1], drop[2]),
-                0.014, BATTEN, 5, caps=False,
+                (drop[0] - 0.08, drop[1], drop[2]),
+                (drop[0] + 0.08, drop[1], drop[2]),
+                0.024, BATTEN, 5, caps=False,
             )
+            add_sphere(fit, (drop[0], drop[1] - 0.01, drop[2]), 0.030, TEAK_DK, 5, 4)
     prev = None
     for iv in range(n_v + 1):
         v = iv / n_v
@@ -876,55 +876,142 @@ def add_traction_trebuchet(fit):
         add_bomb(fit, (crib[0] + dx, crib[1] + 0.06, crib[2] + dz), 0.16)
 
 
+
+def deck_surface(t, u):
+    ring = section_pts(max(t, 0.012))
+    b = ring[-3][0] * 0.90
+    y = ring[-3][1] + 0.012 + 0.072 * (1.0 - u * u)
+    return (u * b, y, z_of(clamp(t, 0.0, 1.0)))
+
+
+def add_deck_scarfs(deck):
+    """少数斜口接：两截板错叠，斜缝里一条油灰。不在每条板上切齿。"""
+    caulk = (0.02, 0.012, 0.008, 1)
+    wood_a = (0.74, 0.54, 0.32, 1)
+    wood_b = (0.36, 0.22, 0.12, 1)
+    # 左舷露天甲板，斜俯近景看得到，不塞进帆和箭槽底下
+    spots = (
+        (0.34, -0.55),
+        (0.50, -0.28),
+        (0.63, -0.58),
+        (0.74, -0.22),
+    )
+    for ti, (t, u) in enumerate(spots):
+        x, y, z = deck_surface(t, u)
+        y += 0.045
+        w = 0.20
+        wood_l = wood_a if ti % 2 == 0 else wood_b
+        wood_r = wood_b if ti % 2 == 0 else wood_a
+
+        def diag_z(xx, z=z, x=x, w=w):
+            f = (xx - (x - w)) / (2.0 * w)
+            return z - 0.08 + f * 0.28
+
+        z_aft = z - 0.62
+        z_fore = z + 0.58
+        aft_a = (x - w, y, z_aft)
+        aft_b = (x + w, y, z_aft)
+        aft_c = (x + w, y, diag_z(x + w) - 0.016)
+        aft_d = (x - w, y, diag_z(x - w) - 0.016)
+        deck.quad_out(aft_a, aft_d, aft_c, aft_b, wood_l, (0, 1, 0))
+        lift = 0.014
+        fore_a = (x - w, y + lift, diag_z(x - w) + 0.016)
+        fore_b = (x + w, y + lift, diag_z(x + w) + 0.016)
+        fore_c = (x + w, y + lift, z_fore)
+        fore_d = (x - w, y + lift, z_fore)
+        deck.quad_out(fore_a, fore_d, fore_c, fore_b, wood_r, (0, 1, 0))
+        gap_a = (x - w, y - 0.008, diag_z(x - w) - 0.014)
+        gap_b = (x + w, y - 0.008, diag_z(x + w) - 0.014)
+        gap_c = (x + w, y - 0.008, diag_z(x + w) + 0.014)
+        gap_d = (x - w, y - 0.008, diag_z(x - w) + 0.014)
+        deck.quad_out(gap_a, gap_d, gap_c, gap_b, caulk, (0, 1, 0))
+        cheek = (0.05, 0.028, 0.016, 1)
+        deck.quad_out(aft_d, (aft_d[0], aft_d[1] - 0.016, aft_d[2]), (aft_c[0], aft_c[1] - 0.016, aft_c[2]), aft_c, cheek, (0, 0, 1))
+        deck.quad_out(fore_a, fore_b, (fore_b[0], fore_b[1] - 0.012, fore_b[2]), (fore_a[0], fore_a[1] - 0.012, fore_a[2]), cheek, (0, 0, -1))
+
+
+def add_stem_detail(fit):
+    """艏柱加厚成一根材，两道斜口，两侧三块板头。不改船壳线型。"""
+    ring = section_pts(0.02)
+    z0 = z_of(0.0)
+    idxs = [j for j in (2, 5, 8, 11, len(ring) - 1) if 0 <= j < len(ring)]
+    samples = []
+    for j in idxs:
+        y = ring[j][1]
+        f = j / (len(ring) - 1)
+        samples.append((y, z0 + 0.055 + 0.18 * f))
+    for i in range(len(samples) - 1):
+        y0, z_a = samples[i]
+        y1, z_b = samples[i + 1]
+        scarf = i in (1, 3)
+        jog = 0.055 if scarf else 0.0
+        col = (0.16, 0.09, 0.05, 1) if scarf else mix(TEAK_LT, (0.78, 0.58, 0.34, 1), 0.35)
+        side = 0.06 if scarf else 0.0
+        add_cyl(fit, (side, y0, z_a + jog), (-side * 0.3, y1, z_b), 0.045 if scarf else 0.085, col, 6, caps=False)
+        if scarf:
+            add_box(
+                fit,
+                (0.0, (y0 + y1) * 0.5, (z_a + z_b) * 0.5 + 0.06),
+                (0.20, 0.055, 0.07),
+                (0.03, 0.015, 0.009, 1),
+            )
+    for s in (-1.0, 1.0):
+        for j in (3, 6, 9, 12):
+            if j >= len(ring):
+                continue
+            y = ring[j][1]
+            f = j / (len(ring) - 1)
+            z = z0 + 0.04 + 0.12 * f
+            x = max(0.22, ring[j][0] * 0.55)
+            add_box(fit, (s * x, y, z - 0.04), (0.16, 0.07, 0.26), mix(TEAK_LT, TEAK, 0.25))
+            add_box(fit, (s * x * 0.35, y, z + 0.12), (0.06, 0.045, 0.04), (0.025, 0.012, 0.008, 1))
+
+
 def add_fire_arrows(fit, t, x):
-    """火箭：平行的一束箭，箭身中段是红纸火药筒。不是扇、不是盾、不是火门枪。"""
+    """火箭：四支分开的箭。箭杆、中段红纸筒、箭簇、尾羽，槽边一张弓。
+    宽景里要能认出是箭，不是一排红点。不是扇面，不是火门枪。"""
     z = z_of(t)
-    y = deck_side_y(t) + 0.18
+    y = deck_side_y(t) + 0.20
     inward = -1.0 if x > 0.0 else 1.0
-    add_box(fit, (x, y, z), (0.28, 0.07, 1.05), TEAK)
-    add_box(fit, (x, y + 0.14, z - 0.50), (0.28, 0.22, 0.07), TEAK_DK)
-    add_box(fit, (x, y + 0.14, z + 0.50), (0.28, 0.18, 0.06), TEAK)
-    add_box(fit, (x - inward * 0.12, y + 0.11, z), (0.045, 0.14, 1.05), mix(TEAK_DK, TEAK, 0.35))
-    shaft = (0.72, 0.55, 0.30, 1)
-    tube = (0.78, 0.12, 0.06, 1)
-    n_arr = 5
+    add_box(fit, (x, y, z), (0.46, 0.11, 1.55), TEAK)
+    add_box(fit, (x, y + 0.20, z - 0.74), (0.46, 0.32, 0.09), TEAK_DK)
+    add_box(fit, (x, y + 0.18, z + 0.74), (0.46, 0.26, 0.08), TEAK)
+    add_box(fit, (x - inward * 0.18, y + 0.14, z), (0.07, 0.22, 1.55), mix(TEAK_DK, TEAK, 0.3))
+    shaft = (0.82, 0.66, 0.36, 1)
+    tube = (0.86, 0.09, 0.045, 1)
+    fletch = (0.62, 0.16, 0.08, 1)
+    n_arr = 4
     for i in range(n_arr):
-        # 几乎平行，只错开一指，避免并成一块扇面
-        spread = (i - (n_arr - 1) * 0.5) * 0.09
-        zz = z - 0.32 + i * 0.16
-        tail = (x + spread * 0.15, y + 0.18, zz)
-        head = (x + inward * 0.28 + spread * 0.2, y + 1.05, zz + 0.08)
-        add_cyl(fit, tail, head, 0.030, shaft, 5, caps=False)
-        a = tuple(lerp(tail[k], head[k], 0.52) for k in range(3))
-        b = tuple(lerp(tail[k], head[k], 0.74) for k in range(3))
-        add_cyl(fit, a, b, 0.072, tube, 6, caps=False)
-        add_sphere(fit, head, 0.045, (0.95, 0.48, 0.14, 1), 5, 4)
-        feather = tuple(lerp(tail[k], head[k], 0.12) for k in range(3))
-        add_cyl(fit, feather, (feather[0], feather[1] + 0.08, feather[2]), 0.012, (0.55, 0.18, 0.10, 1), 4, caps=False)
-    for i in range(4):
-        zz = z - 0.30 + i * 0.20
-        tail = (x - inward * 0.02, y + 0.14, zz - 0.12)
-        tip = (x + inward * 0.06, y + 0.16, zz + 0.16)
-        add_cyl(fit, tail, tip, 0.026, shaft, 4, caps=False)
-        mid = tuple(lerp(tail[k], tip[k], 0.5) for k in range(3))
-        add_cyl(
-            fit,
-            tuple(lerp(tail[k], tip[k], 0.35) for k in range(3)),
-            tuple(lerp(tail[k], tip[k], 0.65) for k in range(3)),
-            0.055, tube, 5, caps=False,
-        )
-    bow_z = z - 0.62
+        spread = (i - (n_arr - 1) * 0.5) * 0.28
+        zz = z + spread
+        tail = (x - inward * 0.02, y + 0.22, zz)
+        head = (x + inward * 0.62, y + 1.72, zz)
+        add_cyl(fit, tail, head, 0.042, shaft, 6, caps=False)
+        a = tuple(lerp(tail[k], head[k], 0.40) for k in range(3))
+        b = tuple(lerp(tail[k], head[k], 0.68) for k in range(3))
+        add_cyl(fit, a, b, 0.095, tube, 7, caps=False)
+        for frac in (0.40, 0.68):
+            c0 = tuple(lerp(tail[k], head[k], frac) for k in range(3))
+            c1 = tuple(lerp(tail[k], head[k], frac + 0.035) for k in range(3))
+            add_cyl(fit, c0, c1, 0.108, ROPE, 6, caps=False)
+        tip = tuple(lerp(tail[k], head[k], 0.90) for k in range(3))
+        add_cyl(fit, tip, head, 0.030, (0.16, 0.15, 0.13, 1), 5, caps=False)
+        add_sphere(fit, head, 0.058, (0.95, 0.45, 0.12, 1), 6, 4)
+        feather = tuple(lerp(tail[k], head[k], 0.10) for k in range(3))
+        add_box(fit, feather, (0.022, 0.22, 0.12), fletch)
+        add_box(fit, feather, (0.12, 0.22, 0.022), fletch)
+    bow_z = z - 0.98
     pts = []
-    for i in range(8):
-        u = i / 7
+    for i in range(9):
+        u = i / 8
         pts.append((
-            x - inward * 0.04,
-            y + 0.08 + math.sin(u * math.pi) * 0.92,
-            bow_z + (u - 0.5) * 0.08,
+            x - inward * 0.02,
+            y + 0.05 + math.sin(u * math.pi) * 1.38,
+            bow_z + (u - 0.5) * 0.12,
         ))
-    for i in range(7):
-        add_cyl(fit, pts[i], pts[i + 1], 0.028, mix(TEAK_DK, TEAK, 0.25), 5, caps=False)
-    rope(fit, pts[0], pts[-1], 0.03, 0.009, ROPE, n=4)
+    for i in range(8):
+        add_cyl(fit, pts[i], pts[i + 1], 0.042, mix(TEAK_DK, TEAK, 0.2), 5, caps=False)
+    rope(fit, pts[0], pts[-1], 0.05, 0.014, ROPE, n=5)
 
 
 def add_song_weapons(fit):
@@ -961,13 +1048,13 @@ def build():
             prev_along = (i - 1) / (nst - 1) if i else along
             prev_piece = math.floor((prev_along + j * 0.37) / 0.22)
             butt = piece != prev_piece and 1 < i < nst - 2
-            face_push = -0.016 if butt else 0.064
-            crown = 0.0 if butt else 0.030
-            seam_push = -0.046
+            face_push = -0.018 if butt else 0.086
+            crown = 0.0 if butt else 0.050
+            seam_push = -0.074
             col_face = wood_at((t0 + t1) * 0.5, j, nring, along)
             if butt:
                 col_face = mix(col_face, (0.08, 0.042, 0.022, 1), 0.72)
-            caulk = (0.045, 0.026, 0.016, 1)
+            caulk = (0.028, 0.015, 0.009, 1)
 
             def at(ring, z, f, push):
                 x0, y0 = ring[j]
@@ -999,13 +1086,13 @@ def build():
                     hull.quad_out(mx(a), mx(d), mx(c), mx(b), col, (-a[0], 0.2, 0.0))
 
             # 窄缝 + 板面自身上亮下暗，远看也是一块块木头，不是平涂条
-            band(0.00, 0.06, seam_push, caulk, 0.0)
-            band(0.06, 0.28, face_push, tint(col_face, 0.74), 0.0)
+            band(0.00, 0.09, seam_push, caulk, 0.0)
+            band(0.09, 0.28, face_push, tint(col_face, 0.72), 0.0)
             band(0.28, 0.72, face_push, col_face, crown)
-            band(0.72, 0.94, face_push, tint(col_face, 1.10), 0.0)
-            band(0.94, 1.00, seam_push, caulk, 0.0)
+            band(0.72, 0.91, face_push, tint(col_face, 1.12), 0.0)
+            band(0.91, 1.00, seam_push, caulk, 0.0)
             # 板厚：缝和板面之间的侧壁，让凹凸是刻出来的，不是两条错开的皮
-            for f, outward_y in ((0.06, -1.0), (0.94, 1.0)):
+            for f, outward_y in ((0.09, -1.0), (0.91, 1.0)):
                 sa = at(r0, z0, f, seam_push)
                 sb = at(r1, z1, f, seam_push)
                 fa = at(r0, z0, f, face_push)
@@ -1038,7 +1125,7 @@ def build():
 
     hull.smooth()
 
-    caulk = (0.09, 0.055, 0.035, 1)
+    caulk = (0.04, 0.022, 0.013, 1)
     n_planks = 16
     for i in range(nst - 1):
         t0, z0, r0 = stations[i]
@@ -1054,7 +1141,7 @@ def build():
         for k in range(n_planks):
             u0 = -1.0 + 2.0 * k / n_planks
             u1 = -1.0 + 2.0 * (k + 1) / n_planks
-            du = 0.018 / max((b0 + b1) * 0.5, 0.2)
+            du = 0.070 / max((b0 + b1) * 0.5, 0.2)
             ua, ub = u0 + du * 0.35, u1 - du * 0.35
             tone = 0.84 + 0.20 * hsh(k * 17.3)
             grain = 0.93 + 0.09 * hsh(k * 9.2 + (i // 6) * 2.3)
@@ -1076,7 +1163,7 @@ def build():
             deck.quad_out(a, d, c, bpt, col, (0, 1, 0))
             if k < n_planks - 1:
                 s0, s1 = ub, u1 + du * 0.35
-                drop = 0.014
+                drop = 0.034
                 ga = Dp(s0, b0, y0, z0, drop)
                 gb = Dp(s0, b1, y1, z1, drop)
                 gc = Dp(s1, b1, y1, z1, drop)
@@ -1088,15 +1175,26 @@ def build():
                 ra = Dp(s1, b0, y0, z0, 0.0)
                 rb = Dp(s1, b1, y1, z1, 0.0)
                 deck.quad_out(gc, gb, rb, ra, tint(caulk, 1.15), (1 if s1 > 0 else -1, 0, 0))
-            # 隔几档一颗木钉，近景才不是光板
-            if i % 5 == (k % 5) and 2 < i < nst - 3 and k % 2 == 0:
+            # 横缝：板头这一站沟里填油灰
+            if butt:
+                cz0 = lerp(z0, z1, 0.36)
+                cz1 = lerp(z0, z1, 0.64)
+                qa = Dp(ua, b0, y0, cz0, 0.028)
+                qb = Dp(ua, b1, y1, cz1, 0.028)
+                qc = Dp(ub, b1, y1, cz1, 0.028)
+                qd = Dp(ub, b0, y0, cz0, 0.028)
+                deck.quad_out(qa, qd, qc, qb, (0.028, 0.014, 0.009, 1), (0, 1, 0))
+            # 隔几档一颗木钉。少而粗，近景才不是光板
+            if i % 9 == (k * 2) % 9 and 4 < i < nst - 6 and k % 3 == 1:
                 um = (ua + ub) * 0.5
-                nail = Dp(um, (b0 + b1) * 0.5, (y0 + y1) * 0.5, (z0 + z1) * 0.5, 0.0)
-                deck.tri(
-                    (nail[0] - 0.012, nail[1] + 0.012, nail[2]),
-                    (nail[0] + 0.012, nail[1] + 0.012, nail[2]),
-                    (nail[0], nail[1] + 0.012, nail[2] + 0.012),
-                    (0.12, 0.07, 0.04, 1), (0.12, 0.07, 0.04, 1), (0.12, 0.07, 0.04, 1),
+                nail = Dp(um, (b0 + b1) * 0.5, (y0 + y1) * 0.5, (z0 + z1) * 0.5, -0.002)
+                add_cyl(
+                    deck,
+                    (nail[0], nail[1] - 0.006, nail[2]),
+                    (nail[0], nail[1] + 0.018, nail[2]),
+                    0.018,
+                    (0.11, 0.065, 0.035, 1),
+                    5,
                 )
 
     add_hatch(fit, 0.30, 0.62, 0.78)
@@ -1122,13 +1220,13 @@ def build():
         sail, fit,
         deck_side_y(0.30) + 0.85, deck_side_y(0.30) + 3.55,
         z_of(0.16), z_of(0.40), z_of(0.20), z_of(0.38),
-        camber=0.98, n_bat=7, n_u=16,
+        camber=1.16, n_bat=7, n_u=16,
     )
     junk_sail(
         sail, fit,
         deck_side_y(0.56) + 0.70, deck_side_y(0.56) + 4.70,
         z_of(0.42), z_of(0.72), z_of(0.46), z_of(0.68),
-        camber=1.22, n_bat=9, n_u=18,
+        camber=1.46, n_bat=9, n_u=18,
     )
     sail.smooth()
     sail.reverse_shell(0.70)
@@ -1172,6 +1270,8 @@ def build():
 
     add_waterline(fit, stations)
     add_gunwale(fit, stations)
+    add_deck_scarfs(deck)
+    add_stem_detail(fit)
     add_song_weapons(fit)
 
     add_cyl(fit, (0.62, deck_side_y(0.50) + 0.02, z_of(0.50)), (0.62, deck_side_y(0.50) + 0.30, z_of(0.50)), 0.11, mix(TEAK, IRON, 0.15), 8)

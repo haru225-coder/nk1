@@ -8,7 +8,7 @@ extends Node
 const MESH_PATH := "res://assets/ships/song_quanzhou.glb"
 const VIEW := 832
 ## 视口像素 → 世界像素。船在画面里约占 0.62 高时，832×0.40 ≈ 旧船图 512×0.62 的船长。
-const VIS_SCALE := 0.50
+const VIS_SCALE := 0.78
 
 @export var sail_crimson := false
 
@@ -97,12 +97,12 @@ func _build_view() -> void:
 	_yaw.add_child(_mast)
 
 	_cam = Camera3D.new()
+	var look := Vector3(0.0, 1.55, 0.05)
+	# 斜俯约 17°，拉远到方视口装得下横侧全长、拍竿和开孔舵。
+	# 太近时横侧被视锥切成一条；顺着艉看又只剩甲板。
+	var dir := Vector3(1.05, 0.34, -0.96).normalized()
+	_cam.position = look + dir * 36.0
 	_cam.fov = 34.0
-	var look := Vector3(0.0, 1.65, 0.0)
-	# 压低相机：舷侧、水线、开孔舵要露出来，不能只剩一块甲板
-	var dir := Vector3(1.15, 0.58, -1.05).normalized()
-	_cam.position = look + dir * 19.0
-	_cam.fov = 28.0
 	world.add_child(_cam)
 	_cam.current = true
 	_cam.look_at_from_position(_cam.position, look, Vector3.UP)

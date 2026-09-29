@@ -1,10 +1,10 @@
 extends SceneTree
 ## 泉州湾宋船三维朝向探针。
 ## DISPLAY=:2 godot --path . -s res://tools/ship_exquisite_probe.gd
-## 截图：/tmp/nk1-combat-wave3/ship-polish4/  close_own / close_enemy / wide / angles/angle_XX.png
+## 截图：/tmp/nk1-combat-wave3/ship-polish5/  close_own / close_enemy / wide / angles/angle_XX.png
 
 const ShotGate := preload("res://tools/shot_gate.gd")
-const OUT := "/tmp/nk1-combat-wave3/ship-polish4"
+const OUT := "/tmp/nk1-combat-wave3/ship-polish5"
 const FACINGS := 16
 
 func _init() -> void:
@@ -57,34 +57,35 @@ func _run() -> void:
 	for _i in 6:
 		await process_frame
 
-	# 近景己方：斜一个角度，甲板和干舷一起看见
+	# 近景己方：艏舷四分之三，整船在画面里，水线露出来。不是艉视正俯。
 	foe.visible = false
-	ship.position = Vector2(0, 30)
-	ship.rotation = 0.95
+	ship.position = Vector2(0, 10)
+	ship.rotation = 1.35
 	cam.position = ship.position
-	cam.zoom = Vector2(1.38, 1.38)
+	cam.zoom = Vector2(2.05, 2.05)
 	for _i in 4:
 		await process_frame
 	_shot(OUT + "/close_own.png")
 	_save_contract(ship, "res://assets/ship_fu.png")
 
-	# 近景敌船
+	# 近景敌船：另一舷的四分之三，同样整船入画
 	ship.visible = false
 	foe.visible = true
-	foe.position = Vector2(0, 30)
-	foe.rotation = -0.85
+	foe.position = Vector2(0, 8)
+	foe.rotation = 2.45
 	cam.position = foe.position
+	cam.zoom = Vector2(1.85, 1.85)
 	for _i in 4:
 		await process_frame
 	_shot(OUT + "/close_enemy.png")
 	_save_contract(foe, "res://assets/ship_falcon.png")
 
-	# 十六向：同一条船，只改航向
+	# 十六向：同一条船，只改航向。拉远一点，横侧也不被画面切掉。
 	foe.visible = false
 	ship.visible = true
 	ship.position = Vector2.ZERO
 	cam.position = Vector2.ZERO
-	cam.zoom = Vector2(1.28, 1.28)
+	cam.zoom = Vector2(1.72, 1.72)
 	for i in FACINGS:
 		ship.rotation = float(i) * TAU / float(FACINGS)
 		for _k in 3:
@@ -92,13 +93,13 @@ func _run() -> void:
 		_shot(OUT + "/angles/angle_%02d.png" % i)
 
 	# 宽景：两船不同朝向，证明不是一张图在转
-	ship.rotation = 0.4
-	ship.position = Vector2(-180, 40)
+	ship.rotation = 1.35
+	ship.position = Vector2(-340, 20)
 	foe.visible = true
-	foe.rotation = PI + 0.7
-	foe.position = Vector2(230, -10)
-	cam.zoom = Vector2(0.72, 0.72)
-	cam.position = Vector2(20, 10)
+	foe.rotation = 2.55
+	foe.position = Vector2(360, -16)
+	cam.zoom = Vector2(0.95, 0.95)
+	cam.position = Vector2(10, 4)
 	for _i in 4:
 		await process_frame
 	_shot(OUT + "/wide.png")
