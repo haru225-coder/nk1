@@ -593,20 +593,29 @@ def add_partner(fit, t, scale):
     add_cyl(fit, (0, y + thick, z), (0, y + thick + 0.018, z), r_in * 0.72, IRON, 8)
 
 
-# t, 沿船长的口长, 沿船宽的口宽。口要宽，舱要深过甲板，十七度才看见内壁而不是一块黑面。
+# t, 沿船长的口长, 沿船宽的口宽。口要大，口沿高于周围甲板，十七度才看得见两面内壁和舱底。
 HOLDS = (
-    (0.200, 1.18, 1.58),
-    (0.448, 1.26, 2.02),
-    (0.688, 1.14, 1.64),
+    (0.215, 1.05, 2.15),
+    (0.445, 1.60, 2.20),
+    (0.650, 1.15, 2.15),
 )
 
 
-def hold_covers(z, x, pad=0.05):
-    """甲板该挖掉的范围。比口略大一圈，围板压住毛边。"""
+def hold_covers(z, x, pad=0.12):
+    """甲板该挖掉的范围。比口大一圈，板头不许横过舱口。"""
     for tc, length, width in HOLDS:
         if abs(z - z_of(tc)) <= length * 0.5 + pad and abs(x) <= width * 0.5 + pad:
             return True
     return False
+
+
+def deck_height_at(t, x):
+    """露天甲板在这一点的高度。舱口口沿必须高过它，不然近舷甲板把内壁挡住。"""
+    t = clamp(t, 0.02, 0.98)
+    ring = section_pts(t)
+    b = max(ring[-3][0] * 0.90, 0.05)
+    u = clamp(x / b, -1.0, 1.0)
+    return ring[-3][1] + 0.012 + 0.072 * (1.0 - u * u)
 
 
 def hull_half_at(t, y):
@@ -623,135 +632,145 @@ def hull_half_at(t, y):
 
 
 def add_hatch(fit, t, w, length):
-    """中线一处深货舱。甲板挖空，四壁落到舱底，分成几条板。
-    艏舷十七度看见的是艉壁和舷壁，不是盖在甲板上的一块黑。仍是一层露天甲板。"""
+    """中线一处敞口货舱。口沿取周围甲板的最高点再抬一截，四壁从这道口沿斜收到舱底。
+    十七度从艏舷看，艉壁和右舷壁都露在近舷甲板之上，舱底铺板跟壁面交成一个角。
+    不是盖在甲板上的黑面。仍是一层露天甲板。"""
     zc = z_of(t)
-    rim = deck_side_y(t) + 0.118
     hw = w * 0.5
     hl = length * 0.5
-    keel = keel_y(t)
-    floor_y = max(keel + 0.14, rim - 0.70)
-    hw_f = hw * 0.58
-    hl_f = hl * 0.62
-    for _try in range(8):
+    around = []
+    for sz in (-1.0, -0.5, 0.0, 0.5, 1.0):
+        for sx in (-1.0, 0.0, 1.0):
+            tt = clamp(t + (sz * hl) / L, 0.02, 0.98)
+            around.append(deck_height_at(tt, sx * hw * 0.82))
+    rim = max(around) + 0.10
+    floor_y = rim - 0.72
+    hw_f = hw * 0.68
+    hl_f = hl * 0.68
+    for _try in range(14):
         ok = True
         for sz in (-1.0, 1.0):
-            tt = clamp(t + (sz * hl_f) / L, 0.02, 0.96)
-            if hw_f > hull_half_at(tt, floor_y) - 0.05:
-                ok = False
-        if ok and floor_y < rim - 0.42:
+            for sx in (-1.0, 1.0):
+                tt = clamp(t + (sz * hl_f) / L, 0.02, 0.98)
+                if hw_f > hull_half_at(tt, floor_y) - 0.05:
+                    ok = False
+        if ok and rim - floor_y >= 0.42:
             break
-        hw_f *= 0.88
-        hl_f *= 0.92
-        floor_y = min(rim - 0.28, floor_y + 0.035)
+        floor_y += 0.035
+        if rim - floor_y < 0.42:
+            hw_f *= 0.94
+            hl_f *= 0.94
+            floor_y = rim - 0.50
     print(
-        f"hold t={t:.3f} open={w:.2f}x{length:.2f} floor_y={floor_y:.2f} "
-        f"floor={hw_f*2:.2f}x{hl_f*2:.2f} depth={rim-floor_y:.2f}"
+        f"hold t={t:.3f} open={w:.2f}x{length:.2f} rim={rim:.2f} floor_y={floor_y:.2f} "
+        f"floor={hw_f*2:.2f}x{hl_f*2:.2f} depth={rim-floor_y:.2f} deck_max={max(around):.2f}"
     )
 
-    def corner(hx, hy, hz):
-        return (hx, hy, zc + hz)
+    def P(x, y, zrel):
+        return (x, y, zc + zrel)
 
-    # 口沿垂直一圈内壁，先给出舱口的厚度，再斜收到舱底。
-    skirt = 0.20
-    y1 = rim - skirt
-    bands = 5
-    # 0 艏(近,背对相机) 1 右舷 2 艉(对着相机) 3 左舷
-    tops = [
-        [corner(-hw, rim, hl), corner(hw, rim, hl)],
-        [corner(hw, rim, hl), corner(hw, rim, -hl)],
-        [corner(hw, rim, -hl), corner(-hw, rim, -hl)],
-        [corner(-hw, rim, -hl), corner(-hw, rim, hl)],
-    ]
-    skirts = [
-        [corner(-hw, y1, hl), corner(hw, y1, hl)],
-        [corner(hw, y1, hl), corner(hw, y1, -hl)],
-        [corner(hw, y1, -hl), corner(-hw, y1, -hl)],
-        [corner(-hw, y1, -hl), corner(-hw, y1, hl)],
-    ]
-    floors = [
-        [corner(-hw_f, floor_y, hl_f), corner(hw_f, floor_y, hl_f)],
-        [corner(hw_f, floor_y, hl_f), corner(hw_f, floor_y, -hl_f)],
-        [corner(hw_f, floor_y, -hl_f), corner(-hw_f, floor_y, -hl_f)],
-        [corner(-hw_f, floor_y, -hl_f), corner(-hw_f, floor_y, hl_f)],
-    ]
-    # 朝相机的艉壁、右舷壁亮一档，板缝是深色。近壁暗。
-    # 对着相机的艉壁、右舷壁用亮桐油，板缝压暗。太暗的话十七度近景又变成一块黑。
-    face_col = (
-        (0.55, 0.36, 0.20, 1),
-        (0.78, 0.54, 0.32, 1),
-        (0.86, 0.62, 0.36, 1),
-        (0.64, 0.42, 0.24, 1),
+    top = (
+        P(-hw, rim, hl),
+        P(hw, rim, hl),
+        P(hw, rim, -hl),
+        P(-hw, rim, -hl),
     )
-    seam = (0.07, 0.04, 0.025, 1)
-    inward = ((0, 0, -1), (-1, 0, 0), (0, 0, 1), (1, 0, 0))
+    bot = (
+        P(-hw_f, floor_y, hl_f),
+        P(hw_f, floor_y, hl_f),
+        P(hw_f, floor_y, -hl_f),
+        P(-hw_f, floor_y, -hl_f),
+    )
+    # 0 艏 1 右舷 2 艉 3 左舷。相机在左舷偏艏，看见的是艉壁和右舷壁。
+    inward = ((0.0, 0.55, -1.0), (-1.0, 0.55, 0.0), (0.0, 0.55, 1.0), (1.0, 0.55, 0.0))
+    light = (
+        (0.74, 0.50, 0.28, 1),
+        (0.94, 0.70, 0.40, 1),
+        (0.97, 0.76, 0.44, 1),
+        (0.70, 0.46, 0.24, 1),
+    )
+    dark = (
+        (0.40, 0.24, 0.12, 1),
+        (0.55, 0.34, 0.17, 1),
+        (0.60, 0.38, 0.19, 1),
+        (0.38, 0.22, 0.11, 1),
+    )
+    bands = 6
 
-    def band_color(base, i):
-        # 隔一条就压暗，近景能数出舱壁的板，不是一块平色。
-        if i % 2 == 1:
-            return tint(base, 0.55)
-        return base
+    def at(a0, b0, a1, b1, v, u):
+        toppt = tuple(lerp(a0[k], b0[k], u) for k in range(3))
+        botpt = tuple(lerp(a1[k], b1[k], u) for k in range(3))
+        return tuple(lerp(toppt[k], botpt[k], v) for k in range(3))
 
     for face in range(4):
-        a0, b0 = tops[face]
-        a1, b1 = skirts[face]
-        nseg = 6
-        for s in range(nseg):
-            u0 = s / nseg
-            u1 = (s + 1) / nseg
-            col = band_color(face_col[face], s)
-            if s % 3 == 2:
-                col = mix(col, seam, 0.35)
-            aa = tuple(lerp(a0[k], b0[k], u0) for k in range(3))
-            bb = tuple(lerp(a0[k], b0[k], u1) for k in range(3))
-            cc = tuple(lerp(a1[k], b1[k], u1) for k in range(3))
-            dd = tuple(lerp(a1[k], b1[k], u0) for k in range(3))
-            fit.quad_out(aa, bb, cc, dd, col, inward[face])
-        a0, b0 = skirts[face]
-        a1, b1 = floors[face]
+        a0, b0 = top[face], top[(face + 1) % 4]
+        a1, b1 = bot[face], bot[(face + 1) % 4]
         for i in range(bands):
             v0 = i / bands
             v1 = (i + 1) / bands
-            col = band_color(face_col[face], i + 1)
-            for s in range(nseg):
-                u0 = s / nseg
-                u1 = (s + 1) / nseg
-                piece = col if s % 3 != 2 else mix(col, seam, 0.45)
-
-                def at(v, u, pa, pb, qa, qb):
-                    top = tuple(lerp(pa[k], pb[k], u) for k in range(3))
-                    bot = tuple(lerp(qa[k], qb[k], u) for k in range(3))
-                    return tuple(lerp(top[k], bot[k], v) for k in range(3))
-
+            # 缝留在两条板之间，不把整面压暗。
+            gap = 0.08
+            vv0 = v0 + (gap / bands if i else 0.0)
+            vv1 = v1 - (gap / bands if i < bands - 1 else 0.0)
+            col = light[face] if i % 2 == 0 else dark[face]
+            p00 = at(a0, b0, a1, b1, vv0, 0.0)
+            p10 = at(a0, b0, a1, b1, vv0, 1.0)
+            p11 = at(a0, b0, a1, b1, vv1, 1.0)
+            p01 = at(a0, b0, a1, b1, vv1, 0.0)
+            fit.quad_out(p00, p10, p11, p01, col, inward[face])
+            # 板缝是更靠里的一条深木，近景能数出壁板。
+            if i < bands - 1:
+                s0 = at(a0, b0, a1, b1, v1 - gap / bands * 0.15, 0.0)
+                s1 = at(a0, b0, a1, b1, v1 - gap / bands * 0.15, 1.0)
+                s2 = at(a0, b0, a1, b1, v1 + gap / bands * 0.85, 1.0)
+                s3 = at(a0, b0, a1, b1, v1 + gap / bands * 0.85, 0.0)
+                # 缝略收进舱里，避免和板面叠在同一平面上闪。
+                nudge = vmul(vnorm(inward[face]), 0.012)
                 fit.quad_out(
-                    at(v0, u0, a0, b0, a1, b1),
-                    at(v0, u1, a0, b0, a1, b1),
-                    at(v1, u1, a0, b0, a1, b1),
-                    at(v1, u0, a0, b0, a1, b1),
-                    piece,
-                    inward[face],
+                    vadd(s0, nudge), vadd(s1, nudge), vadd(s2, nudge), vadd(s3, nudge),
+                    (0.16, 0.09, 0.05, 1), inward[face],
                 )
-    floor_c = (0.16, 0.09, 0.05, 1)
-    fit.quad_out(
-        floors[0][0], floors[0][1], floors[2][0], floors[2][1],
-        floor_c, (0, 1, 0),
-    )
-    # 舱底一条龙骨，斜看才不是一整块平面
+    # 舱底先铺一层深板，再铺浅色纵板，缝是透视里的线，不是一块黑。
+    under = (0.28, 0.16, 0.08, 1)
+    fit.quad_out(bot[0], bot[1], bot[2], bot[3], under, (0, 1, 0))
+    npl = 5
+    for i in range(npl):
+        u0 = -1.0 + 2.0 * i / npl
+        u1 = -1.0 + 2.0 * (i + 1) / npl
+        inset = 0.06
+        a = u0 + inset * (0.35 if i else 0.0)
+        b = u1 - inset * (0.35 if i < npl - 1 else 0.0)
+        x0 = a * hw_f
+        x1 = b * hw_f
+        col = (0.86, 0.60, 0.34, 1) if i % 2 == 0 else (0.64, 0.42, 0.22, 1)
+        yf = floor_y + 0.012
+        fit.quad_out(
+            P(x0, yf, hl_f * 0.90), P(x1, yf, hl_f * 0.90),
+            P(x1, yf, -hl_f * 0.90), P(x0, yf, -hl_f * 0.90),
+            col, (0, 1, 0),
+        )
+    # 纵梁压在舱底中线上，斜看是一根方木，不是平面。
     add_box(
         fit,
-        (0.0, floor_y + 0.045, zc),
-        (0.07, 0.09, hl_f * 1.7),
-        (0.16, 0.09, 0.05, 1),
+        (0.0, floor_y + 0.07, zc),
+        (0.11, 0.12, hl_f * 1.55),
+        (0.52, 0.32, 0.16, 1),
     )
-    wood = mix(TEAK_LT, (0.94, 0.78, 0.50, 1), 0.58)
-    beam = 0.16
-    lip = 0.075
-    # 围板压得很矮，口不被木框吃掉。朝相机的艏沿、左舷沿更矮。
-    add_box(fit, (0, rim + 0.02, zc + hl + beam * 0.35), (w + beam * 1.4, lip * 0.7, beam), wood)
-    add_box(fit, (0, rim + 0.035, zc - hl - beam * 0.35), (w + beam * 1.4, lip, beam), tint(wood, 0.86))
-    add_box(fit, (hw + beam * 0.35, rim + 0.03, zc), (beam, lip * 0.85, length + beam), wood)
-    add_box(fit, (-hw - beam * 0.35, rim + 0.015, zc), (beam, lip * 0.55, length + beam), wood)
-    add_box(fit, (0, rim + 0.055, zc + hl + beam * 0.15), (w * 0.46, 0.026, 0.035), CINNABAR)
+    # 四角立柱，把两面壁的交线立起来。
+    post_c = (0.46, 0.28, 0.14, 1)
+    for sx, sz in ((1.0, 1.0), (1.0, -1.0), (-1.0, 1.0), (-1.0, -1.0)):
+        x = sx * (hw_f + (hw - hw_f) * 0.45)
+        zrel = sz * (hl_f + (hl - hl_f) * 0.45)
+        add_box(fit, (x, (rim + floor_y) * 0.5, zc + zrel), (0.075, (rim - floor_y) * 0.98, 0.075), post_c)
+    # 口沿是一圈矮框，压在口外，不往舱里伸。
+    lip = 0.055
+    beam = 0.09
+    wood = (0.90, 0.68, 0.40, 1)
+    add_box(fit, (0, rim + lip * 0.5, zc + hl + beam * 0.45), (w + beam * 1.6, lip, beam), wood)
+    add_box(fit, (0, rim + lip * 0.5, zc - hl - beam * 0.45), (w + beam * 1.6, lip, beam), tint(wood, 0.92))
+    add_box(fit, (hw + beam * 0.45, rim + lip * 0.5, zc), (beam, lip, length + beam * 0.2), wood)
+    add_box(fit, (-hw - beam * 0.45, rim + lip * 0.5, zc), (beam, lip, length + beam * 0.2), tint(wood, 0.88))
+    add_box(fit, (0, rim + lip + 0.012, zc - hl - beam * 0.15), (w * 0.42, 0.022, 0.03), CINNABAR)
 
 
 def add_bitts(fit, t, x):
@@ -795,7 +814,7 @@ def add_low_cabin(fit):
     """左舷一块矮席棚。两根柱加一张弯席，口朝艏。
     不成箱子堆，也不升成第二层甲板。"""
     t = 0.515
-    x = -1.36
+    x = -1.52
     z = z_of(t)
     y = deck_side_y(t) + 0.12
     lx, lz = 0.58, 0.72
@@ -1194,6 +1213,8 @@ def add_deck_scarfs(deck):
     )
     for ti, (t, u) in enumerate(spots):
         x, y, z = deck_surface(t, u)
+        if hold_covers(z, x, pad=0.02):
+            continue
         y += 0.045
         w = 0.20
         wood_l = wood_a if ti % 2 == 0 else wood_b
@@ -1489,7 +1510,7 @@ def build():
                 gb = Dp(s0, b1, y1, z1, drop)
                 gc = Dp(s1, b1, y1, z1, drop)
                 gd = Dp(s1, b0, y0, z0, drop)
-                if not hold_covers((ga[2] + gc[2]) * 0.5, (ga[0] + gc[0]) * 0.5, pad=0.02):
+                if not hold_covers((ga[2] + gc[2]) * 0.5, (ga[0] + gc[0]) * 0.5, pad=0.10):
                     deck.quad_out(ga, gd, gc, gb, caulk, (0, 1, 0))
                 la = Dp(s0, b0, y0, z0, 0.0)
                 lb = Dp(s0, b1, y1, z1, 0.0)
