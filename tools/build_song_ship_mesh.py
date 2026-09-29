@@ -360,9 +360,8 @@ def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head,
     竹条贴在这张面上。不再一格一格地下坠，否则侧看就是一叠板。"""
     n_sub = 8
     n_v = n_bat * n_sub
-    panel_h = max(0.05, (head_y - foot_y) / float(n_bat))
-    # 绕桅偏转。敌船近景对着船尾时，若不偏，镜头只看见后缘，竹条就被读成一层层架子。
-    sail_yaw = -0.62
+    # 帆面法线大约朝 118°。己方从艏舷看、敌船从艉舷看，看见的都是布面，不是后缘的一叠架子。
+    sail_yaw = 1.08
     cy, sy = math.cos(sail_yaw), math.sin(sail_yaw)
     z_pivot = (z_luff_foot + z_luff_head) * 0.5
 
@@ -422,20 +421,33 @@ def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head,
                 shade(bc, sc, u1), shade(bd, sd, u0),
                 (u0, v0), (u1, v0), (u1, v1), (u0, v1),
             )
+    # 竹是贴在布上的扁条，不是圆棍。正面看是一条细线；即便稍侧，也没有棍子那么厚。
+    # 法线（帆在偏转前朝 -X）转到世界：(-cy, 0, sy)。条贴在这一面，并在背面再贴一条同样细的，两台相机都看得见。
+    face_n = vnorm((-cy, 0.0, sy))
     for batten in range(n_bat + 1):
         v = batten / n_bat
-        prev = None
-        rad = 0.020 if batten in (0, n_bat) else 0.011
-        col = mix(BATTEN, TEAK_DK, 0.22 if batten in (0, n_bat) else 0.0)
+        half_h = 0.016 if batten in (0, n_bat) else 0.009
+        col = mix(CINNABAR, BATTEN, 0.42 if batten in (0, n_bat) else 0.55)
         steps = n_u * 2
+        pts = []
         for iu in range(steps + 1):
             u = iu / steps
-            # 竹贴在整张席面上，只比布凸出一指，不另做一层板
-            p = yaw_pt(base_pt(u, v))
-            p = (p[0] - 0.028 * cy, p[1], p[2] + 0.028 * sy)
-            if prev:
-                add_cyl(fit, prev, p, rad, col, 5, caps=False)
-            prev = p
+            # 收到布边里面，竹头不伸出后缘，后缘才是一条弧
+            u = 0.015 + u * 0.955
+            pts.append(yaw_pt(base_pt(u, v)))
+        for sgn in (1.0, -1.0):
+            off = vmul(face_n, 0.010 * sgn)
+            prev = None
+            for p in pts:
+                q = vadd(p, off)
+                if prev:
+                    up = (0.0, half_h, 0.0)
+                    a = vadd(prev, up)
+                    b = vadd(q, up)
+                    c = vsub(q, up)
+                    d = vsub(prev, up)
+                    fit.quad_out(a, b, c, d, col, vmul(face_n, sgn))
+                prev = q
     for batten in range(1, n_bat, 2):
         v = batten / n_bat
         p = yaw_pt(base_pt(0.72, v))
@@ -449,7 +461,7 @@ def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head,
         p, *_ = sp(1.0, v)
         p = (p[0] + 0.012, p[1], p[2])
         if prev:
-            add_cyl(fit, prev, p, 0.008, ROPE, 4, caps=False)
+            add_cyl(fit, prev, p, 0.006, ROPE, 4, caps=False)
         prev = p
 
 
@@ -775,43 +787,62 @@ def add_bomb(fit, c, r=0.16):
 
 
 
-def add_pounder(prim, center, axis, length, r_mid, r_end, color, n=6, rings=5):
-    """石锤：长轴明显长过截面，截面压扁，两端收平。低模，不是球。"""
+def add_pounder(prim, center, axis, length, width, height, color):
+    """石锤：一根压扁的方头石。长轴横在画面里，截面是倒角方，两端平切。不是球。"""
     d = vnorm(axis)
-    up = (0.0, 1.0, 0.0) if abs(d[1]) < 0.85 else (1.0, 0.0, 0.0)
-    x = vnorm(vcross(d, up))
-    y = vnorm(vcross(d, x))
-    flat = 0.68
-
-    def radius_at(t):
-        return lerp(r_mid, r_end, abs(t) ** 1.2)
+    side = vnorm(vcross(d, (0.0, 1.0, 0.0)))
+    up = vnorm(vcross(side, d))
+    hw = width * 0.5
+    hh = height * 0.5
+    # 八边倒角方。直棱，不收成圆。
+    k = 0.86
+    profile = [
+        (hw, hh * k),
+        (hw * k, hh),
+        (-hw * k, hh),
+        (-hw, hh * k),
+        (-hw, -hh * k),
+        (-hw * k, -hh),
+        (hw * k, -hh),
+        (hw, -hh * k),
+    ]
+    n = len(profile)
 
     def ring(t):
         c = vadd(center, vmul(d, t * length * 0.5))
-        r = radius_at(t)
-        col = tint(color, 0.82 + 0.18 * (1.0 - abs(t)))
         pts = []
-        for i in range(n):
-            a = i / n * math.tau
-            o = vadd(vmul(x, math.cos(a) * r), vmul(y, math.sin(a) * r * flat))
-            pts.append(vadd(c, o))
-        return pts, c, col
+        for sx, sy in profile:
+            pts.append(vadd(c, vadd(vmul(side, sx), vmul(up, sy))))
+        return pts, c
 
-    ts = [-1.0 + 2.0 * i / rings for i in range(rings + 1)]
-    built = [ring(t) for t in ts]
-    for i in range(rings):
-        r0, _, c0 = built[i]
-        r1, _, c1 = built[i + 1]
-        col = mix(c0, c1, 0.5)
-        for j in range(n):
-            k = (j + 1) % n
-            prim.quad(r0[j], r1[j], r1[k], r0[k], col)
-    r0, c0, col0 = built[0]
-    r1, c1, col1 = built[-1]
+    r0, c0 = ring(-1.0)
+    r1, c1 = ring(1.0)
+    body = color
+    end = tint(color, 0.62)
     for j in range(n):
-        k = (j + 1) % n
-        prim.tri(c0, r0[k], r0[j], col0, col0, col0)
-        prim.tri(c1, r1[j], r1[k], col1, col1, col1)
+        m = (j + 1) % n
+        mid = vmul(vadd(vadd(r0[j], r0[m]), vadd(r1[j], r1[m])), 0.25)
+        outward = vsub(mid, center)
+        sy = profile[j][1] + profile[m][1]
+        sx = abs(profile[j][0]) + abs(profile[m][0])
+        if sy > 0.2 * sx:
+            face = tint(body, 1.08)
+        elif sy < -0.2 * sx:
+            face = tint(body, 0.70)
+        else:
+            face = tint(body, 0.88)
+        prim.quad_out(r0[j], r1[j], r1[m], r0[m], face, outward)
+    def tri_out(a, b, c, col, outward):
+        nrm = vcross(vsub(b, a), vsub(c, a))
+        if vdot(nrm, outward) < 0.0:
+            prim.tri(a, c, b, col, col, col)
+        else:
+            prim.tri(a, b, c, col, col, col)
+
+    for j in range(n):
+        m = (j + 1) % n
+        tri_out(c0, r0[m], r0[j], end, vmul(d, -1.0))
+        tri_out(c1, r1[j], r1[m], end, d)
 
 
 def add_pai_gan(fit):
@@ -840,10 +871,10 @@ def add_pai_gan(fit):
         band_d = tuple(lerp(pivot[k], head[k], f + 0.045) for k in range(3))
         add_cyl(fit, band_c, band_d, 0.20, IRON, 8, caps=False)
     add_cyl(fit, pivot, (0.0, pivot[1], pivot[2] + 0.02), 0.18, IRON, 8)
-    stone = (0.78, 0.74, 0.66, 1)
-    # 锤轴横过杆，17° 相机看见的是一块拉长的石头，不是杆端的球。
-    side = vnorm(vcross(direction, (0.0, 1.0, 0.0)))
-    add_pounder(fit, head, side, 1.15, 0.34, 0.16, stone)
+    stone = (0.64, 0.60, 0.54, 1)
+    # 长轴取 28°：己方艏舷和敌船艉舷两台相机都不顺着锤轴看，剪影是一条方石，不是圆。
+    axis = (math.cos(math.radians(28.0)), 0.0, math.sin(math.radians(28.0)))
+    add_pounder(fit, head, axis, 1.62, 0.52, 0.36, stone)
     # 杆插进锤背，铁箍卡住，不再有一根木从石心穿出去
     add_cyl(
         fit,
