@@ -9,10 +9,16 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("4_shader")
-shader_parameter/wave_speed = 0.5
-shader_parameter/wave_freq = 15.0
-shader_parameter/wave_amp = 0.02
-shader_parameter/water_color = Color(0.1, 0.4, 0.6, 1)
+shader_parameter/wave_speed = 0.28
+shader_parameter/swell_scale = 0.0036
+shader_parameter/foam_amount = 0.45
+shader_parameter/glint_amount = 0.22
+shader_parameter/wind_angle = 0.7
+shader_parameter/deep_color = Color(0.06, 0.16, 0.28, 1)
+shader_parameter/mid_color = Color(0.1, 0.32, 0.42, 1)
+shader_parameter/shoal_color = Color(0.22, 0.48, 0.5, 1)
+shader_parameter/foam_color = Color(0.78, 0.88, 0.9, 1)
+shader_parameter/glint_color = Color(0.92, 0.9, 0.78, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glass"]
 bg_color = Color(0.145, 0.098, 0.064, 0.94)

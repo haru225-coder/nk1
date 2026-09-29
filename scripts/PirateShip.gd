@@ -110,6 +110,9 @@ func _ready() -> void:
 	sprite.modulate = Color.WHITE
 	apply_sprite()
 	add_to_group(GROUP)
+	set_meta(&"nk1_sprite_base_scale", sprite.scale if sprite else Vector2.ONE)
+	_CombatFx.dress_ship(self)
+	_polish_wake()
 	_rng.randomize()
 	_ensure_captain()
 	_setup_tag()
@@ -164,7 +167,8 @@ func _physics_process(delta: float) -> void:
 
 	var speed_ratio = velocity.length() / max_speed
 	wake_particles.emitting = speed_ratio > 0.05
-	wake_particles.scale_amount_max = 2.0 + speed_ratio * 4.0
+	wake_particles.scale_amount_min = 0.16
+	wake_particles.scale_amount_max = 0.28 + speed_ratio * 0.25
 
 	var ship_dir = Vector2.UP.rotated(rotation)
 	var angle_diff = ship_dir.angle_to((target.position - position).normalized())
@@ -278,6 +282,8 @@ func _process_firing(delta: float, angle_diff: float, dist: float) -> void:
 	if side < 0: side_dir = Vector2.LEFT.rotated(rotation)
 
 	_AUDIO.combat_fire(get_parent())
+	_CombatFx.muzzle_flash(self, side, cannon_count)
+	_CombatFx.hull_shudder(self, 0.55, side)
 	if cannonball_scene == null:
 		cannonball_scene = load("res://scenes/Cannonball.tscn") as PackedScene
 	var spread_k: float = captain.spread()
@@ -448,9 +454,24 @@ func _note_state() -> void:
 	_flash_tag(label, st == _Captain.STRIKE)
 
 
+func _polish_wake() -> void:
+	if wake_particles == null:
+		return
+	wake_particles.texture = preload("res://assets/fx/soft_dot.png")
+	wake_particles.color = Color(0.88, 0.94, 0.97, 0.5)
+	wake_particles.scale_amount_min = 0.16
+	wake_particles.scale_amount_max = 0.4
+	var g := Gradient.new()
+	g.offsets = PackedFloat32Array([0.0, 0.4, 1.0])
+	g.colors = PackedColorArray([Color(1,1,1,0.8), Color(1,1,1,0.4), Color(1,1,1,0.0)])
+	wake_particles.color_ramp = g
+	wake_particles.local_coords = false
+
+
 func take_damage(amount: float) -> void:
 	hull_hp -= amount
 	sprite.modulate = Color(1.2, 0.5, 0.45)
+	_CombatFx.hull_shudder(self, clampf(amount / 25.0, 0.5, 1.4), 0)
 	_hit_tween = create_tween()
 	_hit_tween.tween_property(sprite, "modulate", _rest_modulate(), 0.2)
 	# lane combat07：矢石落在甲板上也伤人（每 25 伤约死 0–2 人），敌将按受创掉士气

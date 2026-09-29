@@ -487,6 +487,9 @@ func _setup_combat(pb: Dictionary) -> void:
 		# sprite 只管海战精灵（船图契约）；元军哨船 type 仍是 sea_falcon，另挂 sprite=yuan_patrol
 		_spawn_enemy(type_id, count, pb, str(entry.get("sprite", "")))
 	_setup_sea(pb)
+	_sync_ocean_look()
+	if is_instance_valid(ship):
+		_CombatFx.dress_ship(ship, _wind_to() * clampf(_wind_speed() / 150.0, 0.0, 1.0))
 	weather_status.text = "海战　%s" % _sea.current_desc()
 	weather_status.add_theme_color_override("font_color", UiTheme.HONEY)
 	_try_letterbox_enter(pb)
@@ -869,6 +872,24 @@ func _exit_tree() -> void:
 ## 本场海况（SeaState 实例：wind_to / wind_speed / current_at / wind_name / current_desc / snapshot）；没开战为 null
 func sea_state() -> RefCounted:
 	return _sea
+
+
+## 海面着色器跟风向：涌浪带沿季风拉长；开战时调一次，阵风大变时可再调。
+func _sync_ocean_look() -> void:
+	var ocean := get_node_or_null("Ocean") as CanvasItem
+	if ocean == null or ocean.material == null:
+		return
+	var mat := ocean.material as ShaderMaterial
+	if mat == null:
+		return
+	var w := _wind_to()
+	if w.length() > 0.01:
+		mat.set_shader_parameter("wind_angle", w.angle())
+	var spd := clampf(_wind_speed() / 180.0, 0.15, 1.0)
+	mat.set_shader_parameter("wave_speed", lerpf(0.18, 0.42, spd))
+	mat.set_shader_parameter("foam_amount", lerpf(0.28, 0.62, spd))
+	mat.set_shader_parameter("glint_amount", lerpf(0.12, 0.32, spd))
+
 
 
 ## 旗舰机动读数（帆向、对水 / 对地航速、风压差角、转向半径……，ManeuverModel.snapshot）并上海况读数（SeaState.snapshot）

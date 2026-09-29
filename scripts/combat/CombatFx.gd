@@ -118,7 +118,171 @@ static func punch_camera(ship: Node, intensity := 6.0) -> void:
 # ── 矢石命中 ─────────────────────────────────────────────────────────
 
 ## 炮弹命中（Cannonball 现调这一支，ship 传的是开火方）：按砲石算；落点在本船身上才震镜头，不顿帧。
+## 出海船着装：接触阴影 + 福船 shader（帆抖 / 暖 rim）。每船只挂一次；可反复调以刷新风向。
+## wind：世界坐标风向（长度 0–1）；缺省无风。返回阴影节点（已有则复用）。
+const SHADOW_NODE := "FxHullShadow"
+const SHIP_SHADER := "res://assets/shaders/ship_seagoing.gdshader"
+const MUZZLE_SPACING := 20.0
+const MUZZLE_OUTBOARD := 34.0
+
+
+static func dress_ship(ship: Node2D, wind := Vector2.ZERO) -> Node2D:
+	if ship == null or not is_instance_valid(ship):
+		return null
+	var sprite := ship.get_node_or_null("Sprite2D") as Sprite2D
+	if sprite != null:
+		_apply_seagoing_mat(sprite, wind)
+	var shadow := ship.get_node_or_null(SHADOW_NODE) as Node2D
+	if shadow == null:
+		shadow = _make_hull_shadow(ship)
+	return shadow
+
+
+static func _apply_seagoing_mat(sprite: Sprite2D, wind: Vector2) -> void:
+	var mat := sprite.material as ShaderMaterial
+	if mat == null or mat.shader == null or mat.shader.resource_path != SHIP_SHADER:
+		var sh := load(SHIP_SHADER) as Shader
+		if sh == null:
+			return
+		mat = ShaderMaterial.new()
+		mat.shader = sh
+		sprite.material = mat
+	var w := wind.limit_length(1.0)
+	# 精灵局部：船首 -y，把世界风旋进船局部
+	var ship := sprite.get_parent() as Node2D
+	var local := w
+	if ship != null:
+		local = w.rotated(-ship.rotation)
+	mat.set_shader_parameter("wind_dir", local if local.length() > 0.05 else Vector2(0.12, -0.35))
+	mat.set_shader_parameter("wind_strength", clampf(w.length(), 0.15, 1.0))
+
+
+static func _make_hull_shadow(ship: Node2D) -> Node2D:
+	var fx := Node2D.new()
+	fx.name = SHADOW_NODE
+	fx.z_index = -2
+	fx.add_to_group(GROUP)
+	# 橄榄形接触影：船身约 280×100 @0.62，影略宽扁、略偏艉
+	var poly := Polygon2D.new()
+	poly.name = "Blob"
+	poly.color = Color(0.04, 0.07, 0.10, 0.38)
+	var pts := PackedVector2Array()
+	for i in 16:
+		var a := TAU * float(i) / 16.0
+		pts.append(Vector2(cos(a) * 52.0, sin(a) * 118.0 + 10.0))
+	poly.polygon = pts
+	fx.add_child(poly)
+	# 软边：再套一圈更淡的大影
+	var soft := Polygon2D.new()
+	soft.name = "Soft"
+	soft.color = Color(0.04, 0.08, 0.12, 0.16)
+	var pts2 := PackedVector2Array()
+	for i in 16:
+		var a := TAU * float(i) / 16.0
+		pts2.append(Vector2(cos(a) * 68.0, sin(a) * 138.0 + 14.0))
+	soft.polygon = pts2
+	fx.add_child(soft)
+	ship.add_child(fx)
+	ship.move_child(fx, 0)
+	return fx
+
+
+## 舷侧齐射炮口焰：side -1 左舷 / +1 右舷；ports 炮位数。宋元近海——暖闪 + 浅火药烟，不是近代火球。
+## 挂在战场（ship 父节点）下，世界坐标；放完自删。
+static func muzzle_flash(ship: Node2D, side: int, ports := 3) -> void:
+	if ship == null or not is_instance_valid(ship):
+		return
+	var world := ship.get_parent()
+	if world == null:
+		return
+	var n := maxi(1, ports)
+	var ship_dir := Vector2.UP.rotated(ship.rotation)
+	var side_dir := (Vector2.RIGHT if side >= 0 else Vector2.LEFT).rotated(ship.rotation)
+	for i in n:
+		var along := (float(i) - float(n - 1) * 0.5) * MUZZLE_SPACING
+		var at: Vector2 = ship.position + ship_dir * along + side_dir * MUZZLE_OUTBOARD
+		_spawn_muzzle_at(world, at, side_dir)
+
+
+static func _spawn_muzzle_at(world: Node, at: Vector2, out_dir: Vector2) -> void:
+	# 暖闪（加色）——齐射要一眼看见
+	var flash := _burst(world, at, 5, 0.2, 24, "glow_warm.png")
+	flash.material = _add_mat()
+	flash.explosiveness = 1.0
+	flash.direction = out_dir
+	flash.spread = 34.0
+	flash.initial_velocity_min = 8.0
+	flash.initial_velocity_max = 36.0
+	flash.scale_amount_min = 0.7
+	flash.scale_amount_max = 1.35
+	flash.color_ramp = _ramp("muzzle_flash", [
+		[0.0, Color(1.0, 0.96, 0.82, 1.0)], [0.3, Color(1.0, 0.7, 0.32, 0.7)], [1.0, Color(0.55, 0.25, 0.08, 0.0)],
+	])
+	# 火药烟
+	var smoke := _burst(world, at, 12, 1.0, 22, "mist_puff.png")
+	smoke.direction = out_dir
+	smoke.spread = 42.0
+	smoke.gravity = Vector2(0, -14)
+	smoke.initial_velocity_min = 35.0
+	smoke.initial_velocity_max = 95.0
+	smoke.damping_min = 35.0
+	smoke.damping_max = 75.0
+	smoke.scale_amount_min = 0.55
+	smoke.scale_amount_max = 1.15
+	smoke.scale_amount_curve = _grow_curve()
+	smoke.color = C_POWDER
+	smoke.color_ramp = _puff_ramp()
+	# 火星
+	var spark := _burst(world, at, 9, 0.42, 25, "ember.png")
+	spark.material = _add_mat()
+	spark.direction = out_dir
+	spark.spread = 48.0
+	spark.initial_velocity_min = 70.0
+	spark.initial_velocity_max = 180.0
+	spark.damping_min = 70.0
+	spark.damping_max = 130.0
+	spark.scale_amount_min = 0.45
+	spark.scale_amount_max = 0.95
+	spark.color_ramp = _spark_ramp()
+
+
+## 甲板颤：本船挨打 / 本船齐射后坐时，船身 scale 一挤、略侧倾，再弹回。叠加以最后一次为准。
+## intensity 约 0.5–1.5；headless 跳过（探针仍可数 tween 前的 scale 元数据）。
+static func hull_shudder(ship: Node2D, intensity := 1.0, side := 0) -> void:
+	if ship == null or not is_instance_valid(ship):
+		return
+	var sprite := ship.get_node_or_null("Sprite2D") as Sprite2D
+	if sprite == null:
+		return
+	var iv := clampf(intensity, 0.25, 2.0)
+	if not ship.has_meta(&"nk1_sprite_base_scale"):
+		ship.set_meta(&"nk1_sprite_base_scale", sprite.scale)
+	var base: Vector2 = ship.get_meta(&"nk1_sprite_base_scale")
+	# 挤扁：横向按舷侧方向略压，纵向略抻
+	var squash := Vector2(1.0 - 0.06 * iv, 1.0 + 0.04 * iv)
+	if side != 0:
+		squash = Vector2(1.0 + 0.03 * iv * sign(float(side)), 1.0 - 0.05 * iv)
+	sprite.scale = base * squash
+	var roll := 0.07 * iv * (1.0 if side == 0 else float(side))
+	sprite.rotation = roll
+	if Kit.is_headless():
+		# headless：立刻复位，只留一帧可观测的 scale 变化痕迹
+		sprite.scale = base
+		sprite.rotation = 0.0
+		return
+	if ship.has_meta(&"nk1_shudder_tween"):
+		var old = ship.get_meta(&"nk1_shudder_tween")
+		if old is Tween and (old as Tween).is_valid():
+			(old as Tween).kill()
+	var tw := ship.create_tween()
+	ship.set_meta(&"nk1_shudder_tween", tw)
+	tw.set_parallel(true)
+	tw.tween_property(sprite, "scale", base, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(sprite, "rotation", 0.0, 0.28).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
 static func on_cannon_hit(world: Node, at: Vector2, ship: Node = null) -> void:
+
 	if world == null or not is_instance_valid(world):
 		return
 	on_missile_hit(world, at, "stone", _hits_own_ship(world, at, ship))
@@ -129,22 +293,28 @@ static func on_missile_hit(world: Node, at: Vector2, kind := "stone", own_hit :=
 	if world == null or not is_instance_valid(world):
 		return
 	if own_hit:
-		# combat12：本船中弹——屏震分层 + 极短顿帧，箭矢轻、霹雳重
+		# combat12 屏震分层 + ship-vfx 甲板颤：箭矢轻、霹雳重
+		var own := world.get("ship") as Node2D
 		var punch := 3.5
 		var stop_d := 0.028
 		var stop_s := 0.22
+		var shudder := 1.0
 		match kind:
 			"bolt":
 				punch = 2.4
 				stop_d = 0.018
+				shudder = 0.65
 			"fire":
 				punch = 4.0
+				shudder = 1.1
 			"bomb":
 				punch = 7.0
 				stop_d = 0.05
 				stop_s = 0.14
-		punch_camera(world.get("ship") as Node, punch)
+				shudder = 1.45
+		punch_camera(own, punch)
 		hitstop(world, stop_d, stop_s)
+		hull_shudder(own, shudder, 0)
 	match kind:
 		"bolt":
 			_spawn_splinters(world, at, 6)

@@ -67,6 +67,7 @@ var immobile := false
 var _sprite_base_scale := Vector2.ONE
 var _fx_fire_lv := 0.0
 var _fx_flood_lv := 0.0
+var _dress_t := 0.0
 var _tag_t := 0.0
 var _note_t := 0.0
 var _note_queue: Array = []
@@ -82,6 +83,9 @@ func _ready() -> void:
 	max_speed = 300.0 + (sail_lv - 1) * 50.0
 	base_turn_speed = 1.8 + (sail_lv - 1) * 0.2
 	_sprite_base_scale = sprite.scale
+	set_meta(&"nk1_sprite_base_scale", _sprite_base_scale)
+	_CombatFx.dress_ship(self, wind_vector * clampf(wind_strength / 150.0, 0.0, 1.0))
+	_polish_wake()
 	_setup_damage_model(fs)
 	_style_damage_tag()
 
@@ -150,6 +154,8 @@ func _fire_broadside(side: int) -> void:
 		get_parent().add_child(cb)
 		
 	_AUDIO.combat_fire(get_parent())
+	_CombatFx.muzzle_flash(self, side, shots)
+	_CombatFx.hull_shudder(self, 0.7, side)
 
 	# Recoil shake
 	camera.offset = -side_dir * 30.0
@@ -226,14 +232,18 @@ func _update_visuals(delta: float) -> void:
 		wake_particles.emitting = true
 		wake_particles.initial_velocity_min = 20.0 + speed_ratio * 80.0
 		wake_particles.initial_velocity_max = 40.0 + speed_ratio * 120.0
-		wake_particles.scale_amount_max = 4.0 + speed_ratio * 6.0
+		# soft_dot 贴图：尺度用 0.2–0.55，旧无贴图方点才用 4–10
+		wake_particles.scale_amount_min = 0.18
+		wake_particles.scale_amount_max = 0.32 + speed_ratio * 0.28
 		
 		var bow_emit = current_speed > 100.0
 		bow_wave_left.emitting = bow_emit
 		bow_wave_right.emitting = bow_emit
 		if bow_emit:
-			bow_wave_left.scale_amount_max = 2.0 + speed_ratio * 4.0
-			bow_wave_right.scale_amount_max = 2.0 + speed_ratio * 4.0
+			bow_wave_left.scale_amount_min = 0.12
+			bow_wave_left.scale_amount_max = 0.22 + speed_ratio * 0.2
+			bow_wave_right.scale_amount_min = 0.12
+			bow_wave_right.scale_amount_max = 0.22 + speed_ratio * 0.2
 	else:
 		wake_particles.emitting = false
 		bow_wave_left.emitting = false
@@ -248,7 +258,37 @@ func _update_visuals(delta: float) -> void:
 		camera.offset = Vector2(randf_range(-shake_intensity, shake_intensity), randf_range(-shake_intensity, shake_intensity))
 	else:
 		camera.offset = camera.offset.lerp(Vector2.ZERO, 5.0 * delta)
+	_dress_t -= delta
+	if _dress_t <= 0.0:
+		_dress_t = 0.4
+		_CombatFx.dress_ship(self, wind_vector * clampf(wind_strength / 150.0, 0.0, 1.0))
 	_update_damage_visuals(delta)
+
+## 尾迹 / 艏波：泡沫贴图 + 淡出色阶，速度联动仍由 _update_visuals 写初速。
+func _polish_wake() -> void:
+	for pair in [
+		[wake_particles, Color(0.88, 0.94, 0.97, 0.55)],
+		[bow_wave_left, Color(0.92, 0.96, 0.98, 0.62)],
+		[bow_wave_right, Color(0.92, 0.96, 0.98, 0.62)],
+	]:
+		var p: CPUParticles2D = pair[0]
+		if p == null:
+			continue
+		p.texture = preload("res://assets/fx/soft_dot.png")
+		p.color = pair[1]
+		p.scale_amount_min = 0.16
+		p.scale_amount_max = 0.4
+		var g := Gradient.new()
+		g.offsets = PackedFloat32Array([0.0, 0.35, 1.0])
+		g.colors = PackedColorArray([
+			Color(1, 1, 1, 0.85), Color(1, 1, 1, 0.45), Color(1, 1, 1, 0.0),
+		])
+		p.color_ramp = g
+		p.local_coords = false
+		if p == wake_particles:
+			p.amount = maxi(p.amount, 120)
+			p.lifetime = 1.7
+
 
 func take_damage(amount: float) -> void:
 	take_hit({"amount": amount})
