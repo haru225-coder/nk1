@@ -1475,7 +1475,13 @@ func _enter_battle() -> void:
 func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	var dmg := float(data.get("player_damage", 0.0))
 	if outcome == "win":
-		var spoil := int(randf_range(150, 600))
+		# combat12：士气收场分账——敌降（enemy_struck / enemy_broken）全赏走受降句；敌遁半赏走敌遁句
+		var verdict := str(data.get("morale_verdict", ""))
+		var surrendered := verdict == "enemy_struck" or verdict == "enemy_broken"
+		var fled_only := verdict == "enemy_fled" or (not surrendered and _battle_count(data, "enemy_fled") > 0 \
+				and not _battle_flag(data, "boarded") and _battle_count(data, "enemy_struck") == 0 \
+				and not _battle_flag(data, "surrendered") and _battle_count(data, "sunk") == 0)
+		var spoil := int(randf_range(75, 300)) if fled_only else int(randf_range(150, 600))
 		GameState.add_money(spoil)
 		var fame_res: Dictionary = GameState.add_fame(3)
 		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 5)
@@ -1484,6 +1490,10 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			promo = "案册改题「%s」。" % str(fame_res.get("title", {}).get("name", ""))
 		# Lane N：战果注记走 CombatFx 论文纪实句；接舷夺船时附一句并入注记
 		var win_msg := _CombatFx.sea_win_note(spoil, int(dmg), promo)
+		if surrendered:
+			win_msg = _CombatFx.sea_surrender_note(spoil, int(dmg), promo)
+		elif fled_only:
+			win_msg = _CombatFx.sea_fled_note(spoil, int(dmg), promo)
 		if bool(data.get("boarded", false)):
 			win_msg = "接舷既定。" + win_msg
 		_log(_ink(UiTheme.MOSS, win_msg))
@@ -1522,6 +1532,20 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	_close_condition()
 	_refresh_status()
 	_after_combat()
+
+
+## 战果 data 的艘数：int / float 取整，bool true 记 1；缺、null、字符串记 0
+static func _battle_count(data: Dictionary, key: String) -> int:
+	var v = data.get(key, 0)
+	if v is bool:
+		return 1 if v else 0
+	if v is int or v is float:
+		return maxi(0, int(v))
+	return 0
+
+
+static func _battle_flag(data: Dictionary, key: String) -> bool:
+	return _battle_count(data, key) > 0
 
 
 func _log_shook_pursuers() -> void:

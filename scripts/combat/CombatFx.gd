@@ -694,6 +694,13 @@ static func sea_surrender_note(spoil: int, damage: int, promo := "") -> String:
 	return base if p == "" else base + p
 
 
+## 敌船遁走（出战「击退」）：没沉没降，只捞到些漂散的货，所以赏半。账目写法同 sea_win_note
+static func sea_fled_note(spoil: int, damage: int, promo := "") -> String:
+	var base := "敌船转篷遁走，只拾得些漂散的货。获财货 %d 钱。船体受损 %d。" % [maxi(0, spoil), maxi(0, damage)]
+	var p := promo.strip_edges()
+	return base if p == "" else base + p
+
+
 ## 我方溃逃（出战「溃逃」）：弃货奔逃
 static func sea_rout_note(cargo_str: String, crew_lost: int) -> String:
 	return "水手溃散，弃货奔逃。%s水手减员 %d。" % [cargo_str.strip_edges(), maxi(0, crew_lost)]
