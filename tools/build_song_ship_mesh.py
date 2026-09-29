@@ -356,43 +356,41 @@ def tint(color, k):
 
 
 def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head, z_leech_head, camber, n_bat=8, n_u=14):
-    """竹条是硬的，布在两条竹之间鼓出去、后缘垂成月牙。不是一块平板。"""
-    n_sub = 5
+    """一条连续的席。竹条是面上的横肋，布在肋间向外鼓成同一张腹，不分成一块块浮板。"""
+    n_sub = 6
     n_v = n_bat * n_sub
+    panel_h = max(0.05, (head_y - foot_y) / float(n_bat))
 
     def sp(u, v):
         z_luff = lerp(z_luff_foot, z_luff_head, v)
         z_leech = lerp(z_leech_foot, z_leech_head, v)
-        z_leech += 0.05 * math.sin(math.pi * v)
-        z = lerp(z_luff, z_leech, u ** 0.94)
+        # 后缘轻轻外弯，仍是硬篷，不是三角软帆
+        z_leech += 0.10 * math.sin(math.pi * v)
+        z = lerp(z_luff, z_leech, u ** 0.92)
         y = lerp(foot_y, head_y, v)
-        y += 0.12 * u * (0.30 + 0.70 * v)
+        y += 0.06 * u * (0.20 + 0.25 * v)
         panel = v * n_bat
         nearest = round(panel)
-        if abs(panel - nearest) < 1e-5:
+        if abs(panel - nearest) < 1e-4:
             local = 0.0
         else:
             local = panel - math.floor(panel)
-        # 竹条上 sag=0，布只在两条竹之间掉下去
-        sag = math.sin(math.pi * local) ** 1.05
-        billow = (math.sin(math.pi * u) ** 0.85) * (0.48 + 0.52 * math.sin(math.pi * v))
-        pouch = sag * (math.sin(math.pi * u) ** 0.72)
-        # 鼓腹再向外、再向下：两条竹之间是一块掉下去的席，不是贴在竹上的平板
-        # 鼓腹再深一档：竹条仍硬，布在两条竹之间向外掉、后缘更垂
-        x = camber * billow * 1.18 + pouch * camber * 1.32
-        y -= sag * (0.24 + 1.02 * (u ** 0.92))
-        z += pouch * 0.16
-        return (x, y, z), sag, local, billow
+        sag = math.sin(math.pi * local) ** 1.15
+        # 整张帆一个腹，竹间只再鼓一截，不把每格布掉到下一根竹下面
+        # 整张帆一个弧：中段最鼓，头脚收回。竹间只轻轻再鼓，不成一层层板。
+        sheet = (math.sin(math.pi * u) ** 0.70) * (0.55 + 0.45 * math.sin(math.pi * clamp(v, 0.0, 1.0)))
+        pouch = sag * (math.sin(math.pi * u) ** 0.9)
+        x = camber * (1.15 * sheet + 0.10 * pouch)
+        y -= pouch * panel_h * 0.045
+        z += pouch * 0.015
+        return (x, y, z), sag, local, sheet
 
-    def shade(sag, local, billow, u):
-        crown = sag * math.sin(math.pi * u)
-        # 鼓腹有明暗，但底不要压成墨色，否则牙白席远看是一块黑布
-        g = 0.42 + 0.48 * crown + 0.16 * billow
-        near = math.exp(-(local * 7.0) ** 2) + math.exp(-((1.0 - local) * 7.0) ** 2)
-        g *= 1.0 - 0.28 * min(1.0, near)
-        g *= 1.0 - 0.06 * u
-        g = clamp(g, 0.30, 1.0)
-        return (g, g * 0.97, g * 0.86, 1.0)
+    def shade(sag, local, sheet, u):
+        belly = sag * math.sin(math.pi * u)
+        g = 0.74 + 0.22 * sheet - 0.08 * belly
+        g *= 1.0 - 0.04 * u
+        g = clamp(g, 0.62, 1.0)
+        return (g, g * 0.985, g * 0.90, 1.0)
 
     for iv in range(n_v):
         for iu in range(n_u):
@@ -411,38 +409,32 @@ def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head,
     for batten in range(n_bat + 1):
         v = batten / n_bat
         prev = None
-        rad = 0.040 if batten in (0, n_bat) else 0.026
-        col = mix(BATTEN, TEAK_DK, 0.25 if batten in (0, n_bat) else 0.0)
+        rad = 0.026 if batten in (0, n_bat) else 0.015
+        col = mix(BATTEN, TEAK_DK, 0.15 if batten in (0, n_bat) else 0.0)
         steps = n_u * 2
         for iu in range(steps + 1):
             u = iu / steps
             p, *_ = sp(u, v)
-            p = (p[0] + 0.032, p[1], p[2])
+            # 竹贴在席面上，只探出一点点，不悬成另一层板
+            p = (p[0] + 0.018, p[1] + 0.004, p[2])
             if prev:
                 add_cyl(fit, prev, p, rad, col, 5, caps=False)
             prev = p
-    # 缩帆绳眼：每条竹上两根，绳和木扣在斜俯里成点
     for batten in range(1, n_bat):
         v = batten / n_bat
-        for u in (0.42, 0.74):
+        for u in (0.46, 0.78):
             p, *_ = sp(u, v)
-            p = (p[0] + 0.07, p[1] - 0.02, p[2])
-            drop = (p[0] + 0.10, p[1] - 0.46, p[2] + 0.07)
-            rope(fit, p, drop, 0.02, 0.018, ROPE, n=3)
-            add_cyl(
-                fit,
-                (drop[0] - 0.08, drop[1], drop[2]),
-                (drop[0] + 0.08, drop[1], drop[2]),
-                0.024, BATTEN, 5, caps=False,
-            )
-            add_sphere(fit, (drop[0], drop[1] - 0.01, drop[2]), 0.030, TEAK_DK, 5, 4)
+            p = (p[0] + 0.03, p[1], p[2])
+            drop = (p[0] + 0.02, p[1] - 0.10, p[2])
+            rope(fit, p, drop, 0.004, 0.010, ROPE, n=3)
+            add_sphere(fit, drop, 0.022, TEAK_DK, 5, 4)
     prev = None
-    for iv in range(n_v + 1):
+    for iv in range(0, n_v + 1, 2):
         v = iv / n_v
         p, *_ = sp(1.0, v)
-        p = (p[0] + 0.02, p[1], p[2])
+        p = (p[0] + 0.012, p[1], p[2])
         if prev:
-            add_cyl(fit, prev, p, 0.011, ROPE, 4, caps=False)
+            add_cyl(fit, prev, p, 0.008, ROPE, 4, caps=False)
         prev = p
 
 

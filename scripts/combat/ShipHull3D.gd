@@ -1,6 +1,6 @@
 extends Node
 ## 海战船身是一条三维泉州湾宋船（assets/ships/song_quanzhou.glb），不是一张贴图在转。
-## 斜俯相机固定在视口里，船体绕 Y 跟 CharacterBody2D.rotation 走，所以每一向看到的是
+## 低斜俯相机固定在视口里，船体绕 Y 跟 CharacterBody2D.rotation 走，所以每一向看到的是
 ## 同一条船的另一面（舷弧、干舷、硬篷、甲板），不是把一张船图旋过去。
 ## Sprite2D 只负责把这张视口贴到海面上，并抵消船体航向，让透视跟相机一致。
 ## 敌我同一船壳，帆色由 Sail 材质区分。
@@ -97,15 +97,21 @@ func _build_view() -> void:
 	_yaw.add_child(_mast)
 
 	_cam = Camera3D.new()
-	var look := Vector3(0.0, 1.55, 0.05)
-	# 斜俯约 17°，拉远到方视口装得下横侧全长、拍竿和开孔舵。
-	# 太近时横侧被视锥切成一条；顺着艉看又只剩甲板。
-	var dir := Vector3(1.05, 0.34, -0.96).normalized()
-	_cam.position = look + dir * 36.0
-	_cam.fov = 34.0
+	# 贴近海面的艏舷四分之三。28° 在这条低干舷船上仍是看甲板，所以用 17°。
+	# 注视点抬到帆腹中部，船在方视口里居中。俯角见 SHIP_CAM。
+	var look := Vector3(0.0, 2.35, 0.05)
+	var elev := deg_to_rad(17.0)
+	var az := deg_to_rad(-55.0)
+	var dist := 22.5
+	var dir := Vector3(sin(az) * cos(elev), sin(elev), cos(az) * cos(elev))
+	_cam.fov = 40.0
+	_cam.position = look + dir * dist
 	world.add_child(_cam)
 	_cam.current = true
 	_cam.look_at_from_position(_cam.position, look, Vector3.UP)
+	var fwd := -_cam.global_transform.basis.z
+	var got := rad_to_deg(asin(clampf(-fwd.y, -1.0, 1.0)))
+	print("SHIP_CAM elev_deg=%.1f dist=%.1f fov=%.1f az_deg=%.1f pos=%s" % [got, dist, _cam.fov, rad_to_deg(az), _cam.global_position])
 	_ready_visual = true
 
 

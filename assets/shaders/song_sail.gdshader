@@ -14,24 +14,24 @@ void fragment() {
 	float slat_i = floor(slat_f);
 	float sy = fract(slat_f);
 	float tone = 0.90 + 0.10 * fract(sin(slat_i * 17.13) * 43758.5);
-	float body = smoothstep(0.0, 0.08, sy) * smoothstep(1.0, 0.90, sy);
-	float fiber = 0.90 + 0.10 * fract(sin(UV.x * 90.0 + slat_i * 3.7) * 12543.7);
-	float grain = 0.94 + 0.06 * sin(UV.x * 180.0 + sy * 14.0 + slat_i);
+	float body = smoothstep(0.0, 0.04, sy) * smoothstep(1.0, 0.94, sy);
+	float fiber = 0.94 + 0.06 * fract(sin(UV.x * 90.0 + slat_i * 3.7) * 12543.7);
+	float grain = 0.96 + 0.04 * sin(UV.x * 180.0 + sy * 14.0 + slat_i);
 	float cord_f = UV.x * 9.0;
 	float cx = abs(fract(cord_f) - 0.5);
-	float cord = smoothstep(0.09, 0.0, cx - 0.38);
+	float cord = smoothstep(0.06, 0.0, cx - 0.42);
 	float over = mod(slat_i + floor(cord_f), 2.0);
-	float bite = cord * (0.06 + 0.08 * over);
+	float bite = cord * (0.03 + 0.03 * over);
 	base *= tone * fiber * grain;
-	base *= mix(0.68, 1.0, body);
+	base *= mix(0.97, 1.0, body);
 	base *= 1.0 - bite;
 	float sheen = smoothstep(0.18, 0.40, sy) * smoothstep(0.72, 0.52, sy) * body;
 	base += sail_color.rgb * sheen * 0.05 * shade;
 
 	float bat = abs(fract(UV.y * 9.0 + 0.02) - 0.5);
 	float ex = min(min(abs(UV.x - 0.34), abs(UV.x - 0.58)), abs(UV.x - 0.82));
-	float eye = smoothstep(0.040, 0.010, length(vec2(ex * 2.4, bat * 4.0)));
-	base *= 1.0 - eye * 0.45;
+	float eye = smoothstep(0.028, 0.006, length(vec2(ex * 2.8, bat * 6.0)));
+	base *= 1.0 - eye * 0.28;
 
 	ALBEDO = base;
 	ROUGHNESS = mix(0.82, 0.55, shade * body);

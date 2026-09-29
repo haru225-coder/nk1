@@ -1,10 +1,10 @@
 extends SceneTree
 ## 泉州湾宋船三维朝向探针。
 ## DISPLAY=:2 godot --path . -s res://tools/ship_exquisite_probe.gd
-## 截图：/tmp/nk1-combat-wave3/ship-polish5/  close_own / close_enemy / wide / angles/angle_XX.png
+## 截图：/tmp/nk1-combat-wave3/ship-polish6/  close_own / close_enemy / wide / angles/angle_XX.png
 
 const ShotGate := preload("res://tools/shot_gate.gd")
-const OUT := "/tmp/nk1-combat-wave3/ship-polish5"
+const OUT := "/tmp/nk1-combat-wave3/ship-polish6"
 const FACINGS := 16
 
 func _init() -> void:
@@ -50,31 +50,31 @@ func _run() -> void:
 
 	var foe := (load("res://scenes/PirateShip.tscn") as PackedScene).instantiate()
 	foe.position = Vector2(280, 40)
-	foe.rotation = 2.15
+	foe.rotation = 4.712
 	foe.set_physics_process(false)
 	world.add_child(foe)
 
 	for _i in 6:
 		await process_frame
 
-	# 近景己方：艏舷四分之三，整船在画面里，水线露出来。不是艉视正俯。
+	# 近景己方：相机已是左舷偏艏。航向只把这张四分之三摆正，整船入画。
 	foe.visible = false
-	ship.position = Vector2(0, 10)
-	ship.rotation = 1.35
+	ship.position = Vector2(0, 18)
+	ship.rotation = 0.15
 	cam.position = ship.position
-	cam.zoom = Vector2(2.05, 2.05)
+	cam.zoom = Vector2(1.48, 1.48)
 	for _i in 4:
 		await process_frame
 	_shot(OUT + "/close_own.png")
 	_save_contract(ship, "res://assets/ship_fu.png")
 
-	# 近景敌船：另一舷的四分之三，同样整船入画
+	# 近景敌船：转到艉舷，不是正侧。同一套相机。
 	ship.visible = false
 	foe.visible = true
-	foe.position = Vector2(0, 8)
-	foe.rotation = 2.45
+	foe.position = Vector2(0, 16)
+	foe.rotation = 4.712
 	cam.position = foe.position
-	cam.zoom = Vector2(1.85, 1.85)
+	cam.zoom = Vector2(1.42, 1.42)
 	for _i in 4:
 		await process_frame
 	_shot(OUT + "/close_enemy.png")
@@ -85,7 +85,7 @@ func _run() -> void:
 	ship.visible = true
 	ship.position = Vector2.ZERO
 	cam.position = Vector2.ZERO
-	cam.zoom = Vector2(1.72, 1.72)
+	cam.zoom = Vector2(1.28, 1.28)
 	for i in FACINGS:
 		ship.rotation = float(i) * TAU / float(FACINGS)
 		for _k in 3:
@@ -93,13 +93,13 @@ func _run() -> void:
 		_shot(OUT + "/angles/angle_%02d.png" % i)
 
 	# 宽景：两船不同朝向，证明不是一张图在转
-	ship.rotation = 1.35
-	ship.position = Vector2(-340, 20)
+	ship.rotation = 0.35
+	ship.position = Vector2(-390, 30)
 	foe.visible = true
-	foe.rotation = 2.55
-	foe.position = Vector2(360, -16)
-	cam.zoom = Vector2(0.95, 0.95)
-	cam.position = Vector2(10, 4)
+	foe.rotation = 4.35
+	foe.position = Vector2(400, -20)
+	cam.zoom = Vector2(0.78, 0.78)
+	cam.position = Vector2(8, 6)
 	for _i in 4:
 		await process_frame
 	_shot(OUT + "/wide.png")
