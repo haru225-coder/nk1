@@ -128,18 +128,18 @@
 | id | 名 | 说明 |
 |---|---|---|
 | `enemy_captured` | 夺船 | 现码 CombatFx.board_win_note 同句；末船夺下当帧 _battle_exit(win, boarded=true)，combat11 已清 KNOWN_DEFECTS |
-| `enemy_struck` | 敌降 | letterbox surrender + SeaChart sea_surrender_note（combat09/12） |
+| `enemy_struck` | 敌降 | combat09+11+12 已接：士气收场 morale_verdict=enemy_struck → 题签 surrender「受降」，SeaChart 全赏走 sea_surrender_note；legacy_data.boarded 与实发不符（见§九） |
 | `enemy_sunk` | 击沉 | SeaChart 胜：赏 150–600 钱、名声 +3、士气 +5（现码） |
-| `enemy_fled` | 敌遁 | spoil_rule half + sea_fled_note；WorldMap 遁走计数（combat12） |
+| `enemy_fled` | 敌遁 | combat12 已接：WorldMap 遁走计数 → win{enemy_fled, morale_verdict=enemy_fled, repelled}，SeaChart 半赏 75–300 走 sea_fled_note；题签现码出 repel「击退」，非本表 win（见§九） |
 | `player_fled` | 脱战 | 现码 CombatFx.sea_flee_ok_note 同句 |
 | `player_caught` | 未能甩脱 | 现码 CombatFx.sea_flee_fail_note 同句 |
-| `player_routed` | 溃逃 | letterbox rout（CombatMorale + exit_for，combat09/11） |
-| `player_struck` | 降幡 | combat11 已接：CombatMorale 我方降幡 → lose{struck} → 题签出 yield「请降」；SeaChart 按败局非沉船分支结算：货损二成五 |
-| `player_overrun` | 失船面 | 文案同 CombatFx.sea_board_lose_note；现码白刃失利只解钩缆、不收场，无发 overrun 之处 |
+| `player_routed` | 溃逃 | combat09+11 已接：CombatMorale 我方溃逃满 player_grace_s → flee{rout, morale_verdict=player_rout} → 题签 rout「溃逃」；SeaChart 仍走通用 flee 分支，flee_ok 由士气件掷骰（见§九） |
+| `player_struck` | 降幡 | combat11 已接：CombatMorale 我方降幡 → lose{struck}，题签现码出 yield「请降」，非本表 strike；SeaChart 走败局非沉船分支：货损二成五，log 出 sea_board_lose_note（见§九） |
+| `player_overrun` | 失船面 | 文案同 CombatFx.sea_board_lose_note；现码白刃失利只解钩缆、不收场，此结局暂无来路（见§九） |
 | `player_sunk` | 旗舰沉没 | 现码 CombatFx.sea_sunk_note 同向 |
-| `disengaged` | 两散 | letterbox parted；WorldMap battle_limit_s → flee+parted（combat12） |
+| `disengaged` | 两散 | combat12 已接：WorldMap 开战满 BATTLE_LIMIT_S 300 秒 → flee{flee_ok, parted} → 题签 parted「两散」，SeaChart sea_parted_note 与本条 log 同句 |
 
-与现行 `battle_finished(outcome, data)` 对照写在各 outcome 的 `legacy` 字段；combat09 出战题签按事由取朱印，combat11 起 `WorldMap._battle_exit` 把 data（含士气收场的 `morale_verdict`）原样递给 `CombatLetterbox.exit_for`。「接线中」指 combat12 改动尚未入库，不算已接。
+与现行 `battle_finished(outcome, data)` 对照写在各 outcome 的 `legacy` 字段；combat09 出战题签按事由取朱印，combat11 起 `WorldMap._battle_exit` 把 data（含士气收场的 `morale_verdict`）原样递给 `CombatLetterbox.exit_for`；combat12 补上敌遁半赏与两散。
 
 ## 八、文案口径
 
@@ -147,15 +147,14 @@
 
 ## 九、对齐与待接线
 
-combat11 已清 combat10 `KNOWN_DEFECTS`（夺末船 `boarded=true`、`player_damage` 负值、回写），表空；SeaState / ManeuverModel / `boarding_approach_of`、号令面板、敌将 AI、士气收场与题签均已在 WorldMap 接上。下列是仍未对上的：
+已接、不再列：combat11 清空 combat10 `KNOWN_DEFECTS`（夺末船 `boarded=true`、`player_damage` 负值、回写）；敌降「受降」、我方溃逃「溃逃」由 combat09+11 接；敌遁半赏、限时两散由 combat12 接。下列是仍未对上的：
 
-- **敌遁半赏**（`enemy_fled` · `spoil_rule: half`）：combat12 接线中；落地前 SeaChart 照胜局全赏 150–600。
-- **两散**（`disengaged` · `parted`）：题签键 combat12 接线中；即便落地，WorldMap 也还没有发两散的收场口（限时、入夜都不收场），此结局暂无来路。
-- **失船面**（`player_overrun`）：白刃失利现码只解钩缆、战斗照打，不发 `lose{overrun}`；此结局暂无来路。
+- **失船面无来路**（`player_overrun`）：白刃失利现码只解钩缆、战斗照打，不发 `lose{overrun}`。
+- **击沉兼遁走按敌遁算**：WorldMap 收场时只要有一艘遁走就标 `morale_verdict=enemy_fled`，余船即便击沉也半赏，题签出「击退」；与 `precedence`（击沉 3 先于敌遁 4）不符。
 - **题签键与本表不符**：`player_struck` 本表 `strike`「降幡」，现码出 `yield`「请降」（`strike` 不在 `OUTCOME_ACT`）；`enemy_fled` 本表 `win`「战罢」，现码出 `repel`「击退」。二者择一回写。
-- **SeaChart 败/逃分账不分结局**：我方降幡走败局非沉船分支，log 出 `sea_board_lose_note`「白刃不利」而非本条降幡句；溃逃走通用 flee 分支，不出本条句、不扣 `morale_hint`；溃逃 `flee_ok` 由士气件掷骰，与本表 `legacy_data.flee_ok: true` 不符。
-- **`legacy_data` 与实发 data 不符**：`enemy_struck` 本表带 `boarded: true`，士气收场实发 `enemy_struck` / `struck_types` / `morale_verdict`，不带 `boarded`。
-- **`outcomes` 无代码读**：`morale_hint`、`spoil_rule`、`log`、`precedence` 目前只是契约；SeaChart 胜 +5 / 败 −12 士气写死，`CombatDirector` 只查本文件在不在。
+- **SeaChart 我方失利不分结局**：我方降幡走败局非沉船分支，log 出 `sea_board_lose_note`「白刃不利」而非本条降幡句；溃逃走通用 flee 分支，不出本条句。士气也不按 `morale_hint`：降幡照败局扣 12（本表 −6），溃逃 flee 分支不扣（本表 −8）。
+- **`legacy_data` 与实发 data 不符**：`enemy_struck` 本表带 `boarded: true`，实发 `enemy_struck` / `struck_types` / `morale_verdict`，不带 `boarded`；`player_routed` 本表 `flee_ok: true`，实发由士气件掷骰。
+- **本表无玩法代码读**：`morale_hint`、`spoil_rule`、`log`、`precedence` 与 `thresholds` 目前只是契约；SeaChart 赏罚与士气写死，WorldMap `BATTLE_LIMIT_S` 写死 300（与 `thresholds.battle_limit_s` 同值），`CombatDirector` 只查本文件在不在。
 
 数值与实现常量若有出入，以落地模块为准，回写本表时开对齐行。
 

@@ -2540,7 +2540,7 @@
       "cue": "colors_struck",
       "morale_hint": 3,
       "spoil_rule": "legacy",
-      "note": "letterbox surrender + SeaChart sea_surrender_note（combat09/12）"
+      "note": "combat09+11+12 已接：士气收场 morale_verdict=enemy_struck → 题签 surrender「受降」，SeaChart 全赏走 sea_surrender_note；legacy_data.boarded 与实发不符（见§九）"
     },
     {
       "id": "enemy_sunk",
@@ -2572,7 +2572,7 @@
       "cue": "rout_begin",
       "morale_hint": 0,
       "spoil_rule": "half",
-      "note": "spoil_rule half + sea_fled_note；WorldMap 遁走计数（combat12）"
+      "note": "combat12 已接：WorldMap 遁走计数 → win{enemy_fled, morale_verdict=enemy_fled, repelled}，SeaChart 半赏 75–300 走 sea_fled_note；题签现码出 repel「击退」，非本表 win（见§九）"
     },
     {
       "id": "player_fled",
@@ -2627,7 +2627,7 @@
       "cue": "rout_begin",
       "morale_hint": -8,
       "spoil_rule": "none",
-      "note": "letterbox rout（CombatMorale + exit_for，combat09/11）"
+      "note": "combat09+11 已接：CombatMorale 我方溃逃满 player_grace_s → flee{rout, morale_verdict=player_rout} → 题签 rout「溃逃」；SeaChart 仍走通用 flee 分支，flee_ok 由士气件掷骰（见§九）"
     },
     {
       "id": "player_struck",
@@ -2645,7 +2645,7 @@
       "cue": "colors_struck",
       "morale_hint": -6,
       "spoil_rule": "none",
-      "note": "combat11 已接：CombatMorale 我方降幡 → lose{struck} → 题签出 yield「请降」；SeaChart 按败局非沉船分支结算：货损二成五"
+      "note": "combat11 已接：CombatMorale 我方降幡 → lose{struck}，题签现码出 yield「请降」，非本表 strike；SeaChart 走败局非沉船分支：货损二成五，log 出 sea_board_lose_note（见§九）"
     },
     {
       "id": "player_overrun",
@@ -2663,7 +2663,7 @@
       "cue": null,
       "morale_hint": -10,
       "spoil_rule": "none",
-      "note": "文案同 CombatFx.sea_board_lose_note；现码白刃失利只解钩缆、不收场，无发 overrun 之处"
+      "note": "文案同 CombatFx.sea_board_lose_note；现码白刃失利只解钩缆、不收场，此结局暂无来路（见§九）"
     },
     {
       "id": "player_sunk",
@@ -2700,7 +2700,7 @@
       "cue": null,
       "morale_hint": 0,
       "spoil_rule": "none",
-      "note": "letterbox parted；WorldMap battle_limit_s → flee+parted（combat12）"
+      "note": "combat12 已接：WorldMap 开战满 BATTLE_LIMIT_S 300 秒 → flee{flee_ok, parted} → 题签 parted「两散」，SeaChart sea_parted_note 与本条 log 同句"
     }
   ],
   "cues": [
