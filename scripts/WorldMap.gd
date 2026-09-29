@@ -237,6 +237,25 @@ func _board_enemy(enemy: Node2D) -> void:
 	_AUDIO.combat_board(self)
 	enemy.set("grappled", true)  # 敌船停航停炮
 
+	# 钩索题签 + 轻震；窗口下停 0.42 s 再分胜负（combat12：combat11 把这一拍并进了同帧，begin 相位一帧没画就被 resolve 顶掉，
+	# wire / vfx 截图门禁的接舷开场张截不到）。headless 不停：末船夺下仍当帧收战。
+	# 计时器挂在本节点下（lane gd17）：这 0.42 s 里 WorldMap 被释放，挂起的协程随信号源丢弃，不泄漏。
+	var stage: CanvasLayer = _BoardingStage.begin(self, ship, enemy, _CombatFx.board_begin_subtitle())
+	_CombatFx.punch_camera(ship, 5.0)
+	if not _Kit.is_headless():
+		var pause := Timer.new()
+		pause.one_shot = true
+		pause.process_mode = Node.PROCESS_MODE_ALWAYS
+		pause.wait_time = 0.42
+		add_child(pause)
+		pause.start()
+		await pause.timeout
+		pause.queue_free()
+	if resolved or not is_instance_valid(enemy) or not _boarding_target_valid():
+		boarding = false
+		boarding_target = null
+		return
+
 	var detail := ""
 	var notice := ""
 	var do_capture := false
@@ -265,12 +284,6 @@ func _board_enemy(enemy: Node2D) -> void:
 		else:
 			r = _MeleeResolve.from_battle(Fleet, ship, enemy, ctx_extra)
 
-		_CombatFx.punch_camera(ship, 5.0)
-		if not is_instance_valid(enemy) or not _boarding_target_valid():
-			boarding = false
-			boarding_target = null
-			return
-
 		var legacy := str(r.get("legacy", "lose"))
 		var att_dead := int(r.get("att_dead", 0))
 		var morale_delta := int(r.get("att_morale_delta", 0))
@@ -287,12 +300,11 @@ func _board_enemy(enemy: Node2D) -> void:
 			boarding = false
 			boarding_target = null
 			var msg2 := detail if detail != "" else _CombatFx.board_lose_note(att_dead)
-			var stage_l: CanvasLayer = _BoardingStage.begin(self, ship, enemy, _CombatFx.board_begin_subtitle())
 			var lose_stage: CanvasLayer = _BoardingStage.resolve(self, "lose", msg2)
 			if lose_stage != null:
-				stage_l = lose_stage
+				stage = lose_stage
 			_show_combat_notice(msg2)
-			await _await_boarding_fx(stage_l)
+			await _await_boarding_fx(stage)
 			return
 
 	if do_capture:
@@ -304,7 +316,6 @@ func _board_enemy(enemy: Node2D) -> void:
 			notice = _CombatFx.board_win_note(taken)
 		if detail == "":
 			detail = notice
-		var stage: CanvasLayer = _BoardingStage.begin(self, ship, enemy, _CombatFx.board_begin_subtitle())
 		var resolved_stage: CanvasLayer = _BoardingStage.resolve(self, "win", detail)
 		if resolved_stage != null:
 			stage = resolved_stage
