@@ -43,6 +43,9 @@ var ended: String = ""
 var ended_at: String = ""
 ## 结局正文，供札记页回看
 var ended_text: String = ""
+## 结局册页初读时大题里跟在结局名后面的那截（忠肃：「兴化・景炎元年十二月・援绝」）；空串 = 大题只写结局名。
+## 重读结局、航海札记照它写，城破原因（援绝 / 粮尽 / 力竭）不只在初读那一次露面
+var ended_head: String = ""
 
 var money: int = 1000
 var fame: int = 0
@@ -548,6 +551,7 @@ func finish(ending_name: String, text: String = "") -> bool:
 		return false
 	ended = ending_name
 	ended_text = text
+	ended_head = ""
 	ended_at = "%s・%s" % [Calendar.get_date_string(), GameManager.get_port_name(last_port)]
 	set_flag("game_ended")
 	return true
@@ -560,7 +564,11 @@ func epilogue_lines() -> Array:
 	out.append("身份：%s" % {
 		"scholar": "士人", "merchant": "海商", "hometown": "乡土",
 	}.get(identity, "未定"))
-	out.append("终局：%s（%s）" % [ended, ended_at])
+	# 记了大题那截（忠肃的时地与城破原因）就照初读册页的大题写；时地落款已在札记抬头旁注，不再括一遍
+	if ended_head != "":
+		out.append("终局：%s　%s" % [ended, ended_head])
+	else:
+		out.append("终局：%s（%s）" % [ended, ended_at])
 	out.append("本钱峰值 %d 钱・名声 %d・海商信用 %d" % [peak_money, fame, merchant_credit])
 	out.append("走通港口 %d 处・勘见 %d 处" % [visited_ports.size(), discoveries_found.size() + discoveries_reported.size()])
 	if not ledger_notes.is_empty():
@@ -1128,6 +1136,7 @@ func to_dict() -> Dictionary:
 		"ended": ended,
 		"ended_at": ended_at,
 		"ended_text": ended_text,
+		"ended_head": ended_head,
 	}
 
 
@@ -1182,3 +1191,4 @@ func from_dict(d: Dictionary) -> void:
 	ended = str(d.get("ended", ""))
 	ended_at = str(d.get("ended_at", ""))
 	ended_text = str(d.get("ended_text", ""))
+	ended_head = str(d.get("ended_head", ""))
