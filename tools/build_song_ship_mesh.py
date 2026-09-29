@@ -464,7 +464,8 @@ def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head,
 
 def add_mat_shed(fit):
     """艉部一只矮席拱。只是一张弯席盖在柱上，口朝艏。
-    两侧不收到甲板上，所以不是封死的桶。口沿亮，拱里是暗的。"""
+    两侧不收到甲板上，所以不是封死的桶。口沿亮，拱腹看得见。
+    拱里的地板是露天甲板那层浅色纵板，不再另铺一块黑面。"""
     t0, t1 = 0.828, 0.932
     seg_u, seg_v = 18, 6
 
@@ -494,29 +495,25 @@ def add_mat_shed(fit):
             fit.quad_out(a, b, c, d, col, (0, 1, 0))
             ai, bi = pt(u0, v0, -0.035), pt(u1, v0, -0.035)
             ci, di = pt(u1, v1, -0.035), pt(u0, v1, -0.035)
-            fit.quad_out(ai, di, ci, bi, (0.04, 0.02, 0.014, 1), (0, -1, 0))
-    dark = (0.012, 0.007, 0.005, 1)
-    # 后壁填满拱口的投影，从甲板一直到席底。嘴是空的。
-    bv = 0.82
+            # 拱腹要看得见，但不要黑成第四个舱口。比席面略深的木色。
+            fit.quad_out(ai, di, ci, bi, (0.46, 0.30, 0.18, 1), (0, -1, 0))
+    # 口里靠前放一道跟露天甲板同色的纵板，挡住从舷侧透出去的海。
+    # 板在拱口以内，嘴仍朝艏，拱腹留在板的上方。不是第二层甲板，也不是把拱封死。
+    bv = 0.16
     t, half_w, spring, rise = metrics(bv)
-    y_deck = deck_side_y(t) + 0.04
+    y_deck = deck_side_y(t) - 0.45
     z = z_of(t)
+    plank_a = (0.80, 0.60, 0.36, 1)
+    plank_b = (0.76, 0.57, 0.34, 1)
     for iu in range(seg_u):
         u0, u1 = iu / seg_u, (iu + 1) / seg_u
-        a, b = pt(u0, bv, -0.01), pt(u1, bv, -0.01)
+        a, b = pt(u0, bv, -0.02), pt(u1, bv, -0.02)
+        # 比席拱略宽，斜看不会从板边漏出一条海。
+        a = (a[0] * 1.08, a[1], z)
+        b = (b[0] * 1.08, b[1], z)
         fa, fb = (a[0], y_deck, z), (b[0], y_deck, z)
-        fit.quad_out(fa, fb, b, a, dark, (0, 0, 1))
-    # 拱里的暗地板，口才有深度
-    ta, ha, sa, ra = metrics(0.04)
-    tb, hb, sb, rb = metrics(0.78)
-    fit.quad_out(
-        (-ha * 0.94, deck_side_y(ta) + 0.05, z_of(ta)),
-        (ha * 0.94, deck_side_y(ta) + 0.05, z_of(ta)),
-        (hb * 0.94, deck_side_y(tb) + 0.05, z_of(tb)),
-        (-hb * 0.94, deck_side_y(tb) + 0.05, z_of(tb)),
-        (0.018, 0.01, 0.008, 1),
-        (0, 1, 0),
-    )
+        col = plank_a if (iu // 3) % 2 == 0 else plank_b
+        fit.quad_out(fa, fb, b, a, col, (0, 0, 1))
     # 口沿：弯席的前沿加两根落到甲板的柱，剪影是拱门
     rim = mix((0.94, 0.80, 0.52, 1), CINNABAR, 0.10)
     prev = None
