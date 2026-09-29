@@ -1355,6 +1355,97 @@ def station_ts():
     return [i / n for i in range(n + 1)]
 
 
+
+def add_weather_deck(deck):
+    """一层露天甲板，纵铺长板，把梁格盖住。
+    板沿船长走，站与站焊在一起再平滑，十七度看到的是连续木面，不是一格一格的梁。
+    缝是同平面上的窄暗线，不挖槽、不立侧壁。三个舱口照旧留开。"""
+    n_planks = 10
+    n_along = 32
+    ts = [0.012 + 0.976 * i / n_along for i in range(n_along + 1)]
+    # 缝宽约 1.2 厘米。再宽，低角度会看成空档。
+    du = 0.012 / 1.50
+
+    def tone(k):
+        # 邻板几乎同色。差得太大，低角度会把浅板看成铺板、深板看成梁。
+        base = (0.70, 0.50, 0.29, 1) if k % 2 == 0 else (0.64, 0.45, 0.26, 1)
+        return tint(base, 0.98 + 0.04 * hsh(k * 5.3))
+
+    seam_col = (0.32, 0.20, 0.10, 1)
+
+    def inside_hold(x, z):
+        for tc, length, width in HOLDS:
+            if abs(z - z_of(tc)) <= length * 0.5 and abs(x) <= width * 0.5:
+                return True
+        return False
+
+    def bbox_hits(xs, zs):
+        minx, maxx = min(xs), max(xs)
+        minz, maxz = min(zs), max(zs)
+        for tc, length, width in HOLDS:
+            zc = z_of(tc)
+            if maxx < -width * 0.5 or minx > width * 0.5:
+                continue
+            if maxz < zc - length * 0.5 or minz > zc + length * 0.5:
+                continue
+            return True
+        return False
+
+    def emit(u0, u1, t0, t1, col, depth=0):
+        corners = (
+            deck_surface(t0, u0),
+            deck_surface(t1, u0),
+            deck_surface(t1, u1),
+            deck_surface(t0, u1),
+        )
+        xs = [c[0] for c in corners]
+        zs = [c[2] for c in corners]
+        cx = sum(xs) / 4.0
+        cz = sum(zs) / 4.0
+        if bbox_hits(xs, zs) and depth < 4:
+            um = (u0 + u1) * 0.5
+            tm = (t0 + t1) * 0.5
+            emit(u0, um, t0, tm, col, depth + 1)
+            emit(um, u1, t0, tm, col, depth + 1)
+            emit(u0, um, tm, t1, col, depth + 1)
+            emit(um, u1, tm, t1, col, depth + 1)
+            return
+        inn = sum(1 for c in corners if inside_hold(c[0], c[2]))
+        if inside_hold(cx, cz) or inn >= 2:
+            return
+        a, b, c, d = corners
+        deck.quad_out(a, b, c, d, col, (0, 1, 0))
+
+    for k in range(n_planks):
+        u0 = -1.0 + 2.0 * k / n_planks
+        u1 = -1.0 + 2.0 * (k + 1) / n_planks
+        ua = u0 if k == 0 else u0 + du * 0.5
+        ub = u1 if k == n_planks - 1 else u1 - du * 0.5
+        col = tone(k)
+        for i in range(n_along):
+            emit(ua, ub, ts[i], ts[i + 1], col)
+        if k < n_planks - 1:
+            for i in range(n_along):
+                emit(ub, u1 + du * 0.5, ts[i], ts[i + 1], seam_col)
+
+    deck.smooth()
+    # 钉很少，只证明是木板，不排成第二套格子。
+    for k in (2, 6):
+        u = -1.0 + 2.0 * (k + 0.5) / n_planks
+        for t in (0.30, 0.56, 0.80):
+            x, y, z = deck_surface(t, u)
+            if inside_hold(x, z):
+                continue
+            add_cyl(
+                deck,
+                (x, y - 0.004, z),
+                (x, y + 0.012, z),
+                0.015,
+                (0.18, 0.10, 0.05, 1),
+                5,
+            )
+
+
 def build():
     hull = Prim("Hull", "Wood")
     deck = Prim("Deck", "Wood")
@@ -1453,105 +1544,7 @@ def build():
 
     hull.smooth()
 
-    # 缝要看得见，但只是板上的一条暗线。槽太宽，十七度会看成空梁格。
-    caulk = (0.18, 0.10, 0.055, 1)
-    n_planks = 16
-    for i in range(nst - 1):
-        t0, z0, r0 = stations[i]
-        t1, z1, r1 = stations[i + 1]
-        b0 = r0[-3][0] * 0.90
-        b1 = r1[-3][0] * 0.90
-        y0 = r0[-3][1] + 0.012
-        y1 = r1[-3][1] + 0.012
-
-        def deck_y(u, y):
-            return y + 0.072 * (1.0 - u * u)
-
-        for k in range(n_planks):
-            u0 = -1.0 + 2.0 * k / n_planks
-            u1 = -1.0 + 2.0 * (k + 1) / n_planks
-            du = 0.018 / max((b0 + b1) * 0.5, 0.2)
-            ua, ub = u0 + du * 0.35, u1 - du * 0.35
-            tone = 0.84 + 0.20 * hsh(k * 17.3)
-            grain = 0.93 + 0.09 * hsh(k * 9.2 + (i // 6) * 2.3)
-            # 一站宽的错缝，不是整段甲板涂黑
-            # 错缝仍落在原来均匀 52 站的那些 t 上，只取最近的一站，不因加密变成一排密缝。
-            phase = (k * 4 + 3) % 15
-            iv = int(round(t0 * 51.0))
-            butt = False
-            if iv % 15 == phase and 3 < iv < 46:
-                seam_t = iv / 51.0
-                prev_t = stations[i - 1][0] if i else -1.0
-                butt = abs(t0 - seam_t) <= abs(prev_t - seam_t) and abs(t0 - seam_t) < abs(t1 - seam_t)
-            base = mix(DECK_DK, DECK, tone)
-            col = tint(base, grain * (0.72 if butt else 1.0) * (0.86 if abs((u0 + u1) * 0.5) > 0.88 else 1.0))
-            if k % 2 == 1:
-                col = tint(col, 0.90)
-
-            def Dp(u, b, y, z, drop=0.0):
-                return (u * b, deck_y(u, y) - drop, z)
-
-            drop_b = 0.008 if butt else 0.0
-            slices = 4
-            for sli in range(slices):
-                su0 = lerp(ua, ub, sli / slices)
-                su1 = lerp(ua, ub, (sli + 1) / slices)
-                a = Dp(su0, b0, y0, z0, drop_b)
-                bpt = Dp(su0, b1, y1, z1, drop_b)
-                c = Dp(su1, b1, y1, z1, drop_b)
-                d = Dp(su1, b0, y0, z0, drop_b)
-                zmid = (a[2] + c[2]) * 0.5
-                xmid = (a[0] + c[0]) * 0.5
-                if hold_covers(zmid, xmid):
-                    continue
-                deck.quad_out(a, d, c, bpt, col, (0, 1, 0))
-            if k < n_planks - 1:
-                s0, s1 = ub, u1 + du * 0.35
-                drop = 0.008
-                ga = Dp(s0, b0, y0, z0, drop)
-                gb = Dp(s0, b1, y1, z1, drop)
-                gc = Dp(s1, b1, y1, z1, drop)
-                gd = Dp(s1, b0, y0, z0, drop)
-                # 缝只留在实板上。口里不留纵梁，免得舱口之间看起来是空梁格。
-                if not hold_covers((ga[2] + gc[2]) * 0.5, (ga[0] + gc[0]) * 0.5, pad=0.0):
-                    deck.quad_out(ga, gd, gc, gb, caulk, (0, 1, 0))
-                    la = Dp(s0, b0, y0, z0, 0.0)
-                    lb = Dp(s0, b1, y1, z1, 0.0)
-                    deck.quad_out(la, lb, gb, ga, tint(caulk, 1.15), (1 if s0 > 0 else -1, 0, 0))
-                    ra = Dp(s1, b0, y0, z0, 0.0)
-                    rb = Dp(s1, b1, y1, z1, 0.0)
-                    deck.quad_out(gc, gb, rb, ra, tint(caulk, 1.15), (1 if s1 > 0 else -1, 0, 0))
-            # 横缝：板头这一站沟里填油灰。口内不填，避免横梁横过舱口。
-            if butt:
-                cz0 = lerp(z0, z1, 0.36)
-                cz1 = lerp(z0, z1, 0.64)
-                qa = Dp(ua, b0, y0, cz0, 0.028)
-                qb = Dp(ua, b1, y1, cz1, 0.028)
-                qc = Dp(ub, b1, y1, cz1, 0.028)
-                qd = Dp(ub, b0, y0, cz0, 0.028)
-                if not hold_covers((qa[2] + qc[2]) * 0.5, (qa[0] + qc[0]) * 0.5, pad=0.0):
-                    deck.quad_out(qa, qd, qc, qb, (0.12, 0.065, 0.035, 1), (0, 1, 0))
-            # 隔几档一颗木钉。少而粗，近景才不是光板
-            ivn = int(round(t0 * 51.0))
-            nail_here = False
-            if k % 3 == 1 and ivn % 9 == (k * 2) % 9 and 4 < ivn < 45:
-                seam_t = ivn / 51.0
-                prev_t = stations[i - 1][0] if i else -1.0
-                nail_here = abs(t0 - seam_t) <= abs(prev_t - seam_t) and abs(t0 - seam_t) < abs(t1 - seam_t)
-            if nail_here:
-                um = (ua + ub) * 0.5
-                nail = Dp(um, (b0 + b1) * 0.5, (y0 + y1) * 0.5, (z0 + z1) * 0.5, -0.002)
-                if hold_covers(nail[2], nail[0], pad=0.0):
-                    nail_here = False
-            if nail_here:
-                add_cyl(
-                    deck,
-                    (nail[0], nail[1] - 0.006, nail[2]),
-                    (nail[0], nail[1] + 0.018, nail[2]),
-                    0.018,
-                    (0.11, 0.065, 0.035, 1),
-                    5,
-                )
+    add_weather_deck(deck)
 
     # 三处深舱口落在中线上。口宽、壁深，不盖第二层甲板。
     for ht, hlen, hwid in HOLDS:
@@ -1633,7 +1626,6 @@ def build():
 
     add_waterline(fit, stations)
     add_gunwale(fit, stations)
-    add_deck_scarfs(deck)
     add_stem_detail(fit)
     add_song_weapons(fit)
 
