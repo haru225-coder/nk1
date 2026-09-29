@@ -676,6 +676,15 @@ def _prop(r, p):
               pale=0.35, dry=0.25, wet=0.3, profile="flat")
         stroke(r, [(c[0] + f * 44 * s, c[1] - 14 * s), (c[0] + f * 78 * s, c[1] - 26 * s)], 6, ink=0.9, dry=0.2,
                profile="even")
+    elif p == "coil":                      # 肩上盘缆：一盘粗缆挎在近侧肩头，缆圈鼓出肩线（码头水手）；斜过前胸一道缆
+        a, = r.B3([(-66, 106, 12)])
+        b, = r.B3([(64, 262, 30)])
+        mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 8 * s)
+        stroke(r, [a, mid, b], 8.0, ink=0.9, dry=0.35, profile="even")
+        c, = r.B3([(-92, 118, 0)])
+        for k in range(4):
+            loop = ell(c[0] + k * 2 * s, c[1] + k * 3 * s, (40 - k * 5) * s, (30 - k * 4) * s, n=30, rot=-0.35 * f)
+            stroke(r, loop, 6.5, ink=0.88, dry=0.3, profile="even")
     elif p == "oar":                       # 橹：斜贯全身，两头伸出身外
         h = pick(r, "oar")
         wx, wy = h[0]

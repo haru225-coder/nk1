@@ -106,7 +106,7 @@ func _fill_info(ch: Dictionary, nm: String) -> void:
 	if courtesy != "":
 		_info.add_child(_para(courtesy, UiTheme.SIZE_FOOT, UiTheme.TEXT_DIM))
 	_info.add_child(Art.rule())
-	_kv("身份", Art.identity_line(ch))
+	_kv("身份", _glue_origin(Art.identity_line(ch)))
 	_kv("生卒", Art.life_line(ch))
 	_kv("登场", _appear_tail(ch))
 	var short := Art.codex_short(ch)
@@ -130,10 +130,20 @@ func _appear_tail(ch: Dictionary) -> String:
 	return line
 
 
+## 身份一行在这一栏里常要折行：别从地名中间折开（「参知政事、知兴化军・兴化军莆田／县玉湖」）。
+## 最后一个「・」后面的籍贯逐字垫字连接符 U+2060（零宽、禁折），要折就折在「・」之后。只作显示，别处照读原串。
+func _glue_origin(ident: String) -> String:
+	var cut := ident.rfind("・")
+	if cut < 0 or cut == ident.length() - 1:
+		return ident
+	return ident.substr(0, cut + 1) + String.chr(0x2060).join(ident.substr(cut + 1).split(""))
+
+
 func _paint_state(ch: Dictionary) -> String:
-	if str(ch.get("portrait", "")) == "":
+	if Art.portrait_path(ch) == "":
 		return "未画"
-	return "设色" if str(ch.get("portrait_status", "")) == "painted" else "剪影，未设色"
+	# 按日期换画的人（林华辞船前挂剪影墨卡）看此刻挂的那张
+	return "剪影，未设色" if Art.portrait_is_card(ch) else "设色"
 
 
 func _kv(key: String, value: String) -> void:

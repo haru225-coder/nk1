@@ -21,6 +21,7 @@
   python3 tools/art/build_portraits.py --cards-only --titled /tmp/titled  # 另出带题签版（仓库外，单张展示用）
   NK1_INK_S=1 python3 tools/art/build_portraits.py ...          # 1× 快速小样（默认 2× 超采样出成品）
   python3 tools/art/build_portraits.py --roots          # 干跑：只打印 Codex 源图根（在 / 不在），不出图
+  python3 tools/art/build_portraits.py --variants [--only lin_hua] [--preview DIR]   # 只出按日期换画的剪影卡（portrait_before 里的 *_ink.png）
 依赖：python3 + Pillow + numpy + fontTools。同一 id 同一结果（随机数全部按 id 取种子）。
 Codex 源图在仓库外（nk1-codex），默认 ~/tmp/nk1-codex/assets/portraits（按本机 $HOME 展开；lane gd13 去掉写死的 Mac 家目录
 绝对路径，Mac 上默认不变），环境变量 NK1_CODEX_PORTRAITS 覆盖；缺源图时跳过该张、保留已有产物。
@@ -1165,6 +1166,26 @@ def main(argv):
         os.makedirs(titled_dir, exist_ok=True)
     chars = load_chars()
     cast = load_cast()
+    # --variants：只出按日期换画的剪影卡（characters.json portrait_before 里以 _ink.png 结尾的那几张），
+    # 选角取 cast.json 里同 id 的一条（正图是油画的人也可以有一张早年的剪影，如林华辞船前）
+    if "--variants" in argv:
+        n_v = 0
+        for c in chars:
+            if only and c["id"] not in only:
+                continue
+            for _ym, pth in sorted((c.get("portrait_before") or {}).items()):
+                if not str(pth).endswith("_ink.png"):
+                    continue
+                if c["id"] not in cast:
+                    raise SystemExit("剪影变体 %s 缺 portrait_svg/cast.json 选角" % c["id"])
+                card, _info = build_silhouette(c, cast)
+                dst = os.path.join(OUT_DIR, os.path.basename(str(pth)))
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                card.save(dst, optimize=True)
+                print("  %-18s variant → %s" % (c["id"], dst))
+                n_v += 1
+        print("done: variants %d → %s" % (n_v, OUT_DIR))
+        return
     if do_p and not os.path.isdir(CODEX):
         if "NK1_CODEX_PORTRAITS" in os.environ:
             raise SystemExit("FAIL 环境变量 NK1_CODEX_PORTRAITS=%s 指向的目录不在" % CODEX)

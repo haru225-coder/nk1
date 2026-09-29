@@ -689,6 +689,7 @@ func _route_check() -> void:
 	GS.from_dict({})
 	_close_dialogs(main)
 	_hooks_bg_check(main)
+	_v0928_visual_check(main)
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
@@ -1415,3 +1416,340 @@ func _crew_sim(entry: Dictionary, event: String, ship_type: String, hull: float,
 	if is_instance_valid(wm):
 		wm.free()
 	return [dmg_total, 0, sunk_at]
+
+
+## ── visual 线 09-28 修复：人物志防剧透与世界线门控、林华按日期换画、立绘册页签 ──
+## 可见条件扩了 "YYYY-MM"（按月）、"end:结局|结局"、"id:身份"、"flag:旗标"、「&」连写与「!」取反（CharacterArt.segment_visible）。
+## 断言只钉「该露 / 不该露」的字，不钉整段文案；每条剧透都配一条「到时候确实露了」的对照，免得全藏也绿。
+func _v0928_visual_check(_main: Node) -> void:
+	var Art = load("res://scripts/ui/CharacterArt.gd")
+	var zan: Dictionary = GM.get_character("chen_zan")
+	var lu: Dictionary = GM.get_character("lu_xiufu")
+	var zhang: Dictionary = GM.get_character("zhang_shijie")
+	var lin: Dictionary = GM.get_character("lin_hua")
+	var pc: Dictionary = GM.get_character("chen_wenlong")
+	# 条件解析：月份键、残了一截的组合、认不得的键
+	GS.from_dict({})
+	Cal.from_dict({"year": 1277, "month": 10, "day": 5})
+	_check(not Art.segment_visible("1277-11") and Art.segment_visible("1277-10") and Art.segment_visible("1276-12"),
+		"月份键：1277-10 时 \"1277-10\" 已到、\"1277-11\" 未到")
+	_check(not Art.segment_visible("1268&") and not Art.segment_visible("lately") and not Art.segment_visible("end:忠肃"),
+		"残缺组合「1268&」、认不得的键、未了结时的 end:… 一律不可见")
+	# 陈瓒：再陷（1277-11）之前不露「就死在这里」与车裂；复城（1277-02）之前不露复城
+	var zan_lines_10 := "".join(Art.codex_lines(zan))
+	Cal.from_dict({"year": 1277, "month": 11, "day": 5})
+	var zan_lines_11 := "".join(Art.codex_lines(zan))
+	_check(zan_lines_10.find("死在这里") < 0 and zan_lines_11.find("死在这里") >= 0,
+		"陈瓒其言：1277-10 不含「死在这里」、1277-11 起才有（10 月 %d 句）" % Art.codex_lines(zan).size())
+	Cal.from_dict({"year": 1277, "month": 1, "day": 5})
+	var zan_bio_01: String = Art.codex_bio(zan) + Art.codex_short(zan)
+	Cal.from_dict({"year": 1277, "month": 6, "day": 5})
+	var zan_bio_06: String = Art.codex_bio(zan) + Art.codex_short(zan)
+	Cal.from_dict({"year": 1277, "month": 12, "day": 5})
+	var zan_bio_12: String = Art.codex_bio(zan)
+	_check(zan_bio_01.find("复") < 0 and zan_bio_06.find("复了兴化城") >= 0 and zan_bio_06.find("车裂") < 0 and zan_bio_12.find("车裂") >= 0,
+		"陈瓒小传：1277-01 未复城不写复城，1277-06 写复城不写车裂，1277-12 写车裂")
+	# 陆秀夫、张世杰：崖山卡开到 1279-03，1279-04 起才露投海、覆舟
+	Cal.from_dict({"year": 1279, "month": 2, "day": 5})
+	var lu_02: String = Art.codex_bio(lu) + Art.codex_short(lu) + "".join(Art.codex_lines(lu))
+	var zhang_02: String = Art.codex_bio(zhang) + Art.codex_short(zhang)
+	Cal.from_dict({"year": 1279, "month": 4, "day": 5})
+	var lu_04: String = Art.codex_bio(lu)
+	_check(lu_02.find("投海") < 0 and lu_02.find("为国死") < 0 and zhang_02.find("覆舟") < 0 and lu_04.find("投海") >= 0,
+		"陆秀夫 1279-02 小传、简介、其言不含「投海」「为国死」，张世杰不含「覆舟」；1279-04 起露")
+	# 林华：1276-08 还在船上当舵工，小传不写降、称谓不是部将；1277-01 城破后写
+	Cal.from_dict({"year": 1276, "month": 8, "day": 5})
+	var lin_08: String = Art.codex_bio(lin) + Art.codex_short(lin) + "".join(Art.codex_lines(lin))
+	var lin_title_08: String = Art.codex_title(lin)
+	Cal.from_dict({"year": 1277, "month": 1, "day": 5})
+	var lin_01: String = Art.codex_bio(lin)
+	_check(lin_08.find("降") < 0 and lin_08.find("元兵") < 0 and lin_title_08.find("部将") < 0 and lin_01.find("降") >= 0,
+		"林华 1276-08 小传 / 简介 / 其言不含「降」「元兵」，称谓「%s」不是部将；1277-01 起写降" % lin_title_08)
+	# 林华立绘按日期换：辞船（1276-10）之前挂剪影墨卡，之后与了结后挂甲胄正图
+	Cal.from_dict({"year": 1276, "month": 8, "day": 5})
+	var lin_pic_08: String = Art.portrait_path(lin)
+	Cal.from_dict({"year": 1276, "month": 10, "day": 5})
+	var lin_pic_10: String = Art.portrait_path(lin)
+	_check(lin_pic_08 != str(lin.get("portrait", "")) and ResourceLoader.exists(lin_pic_08) and Art.portrait_is_card(lin) == false
+			and lin_pic_10 == str(lin.get("portrait", "")),
+		"林华立绘 1276-08 挂 %s（在库）、1276-10 起挂正图 %s" % [lin_pic_08.get_file(), lin_pic_10.get_file()])
+	Cal.from_dict({"year": 1276, "month": 8, "day": 5})
+	_check(Art.portrait_is_card(lin) and Art.thumb(lin, Vector2i(34, 34), true) != null,
+		"林华 1276-08 立绘面板记作剪影卡，缩略图取得到")
+	# 主角世界线：[身份, 改名, 年, 月, 结局]
+	var lines_of := func() -> String: return "".join(Art.codex_lines(pc))
+	# 纲首（海商）了结：字号无君贲，其言无节义文章，又称不重名、有陈纲首，史载有引子，称谓是纲首
+	GS.from_dict({})
+	GS.identity = "merchant"
+	Cal.from_dict({"year": 1285, "month": 5, "day": 5})
+	GS.finish("纲首", "正文")
+	var gs_alts: PackedStringArray = Art.codex_alts(pc)
+	var gs_annal := "".join(Art.codex_annal(pc))
+	_check(Art.courtesy_of(pc).find("君贲") < 0 and str(lines_of.call()).find("节义文章") < 0,
+		"纲首线了结：主角字号「%s」不含君贲，其言不含「此皆节义文章也」" % Art.courtesy_of(pc))
+	_check(not (Art.display_name(pc) in gs_alts) and "陈纲首" in gs_alts and Art.codex_title(pc).find("纲首") >= 0,
+		"纲首线了结：又称 %s 不含大名、有陈纲首；称谓「%s」" % [gs_alts, Art.codex_title(pc)])
+	_check(gs_annal.find("另一条路") >= 0 and gs_annal.find("岳王庙") >= 0 and Art.codex_bio(pc).find("岳王庙") < 0,
+		"纲首线了结：岳王庙那段只在「史载」一节（带「此世他走了另一条路」引子），不在小传里")
+	_check(not Art.rel_visible("庙前殉节者") and not Art.rel_visible("后世齐名") and not Art.rel_visible("赐名状元"),
+		"纲首线了结：关系签「庙前殉节者」「后世齐名」「赐名状元」不露")
+	# 岸上的根（乡土）了结：同样不露君贲、节义文章，没有陈纲首
+	GS.from_dict({})
+	GS.identity = "hometown"
+	Cal.from_dict({"year": 1277, "month": 10, "day": 20})
+	GS.finish("岸上的根", "正文")
+	_check(Art.courtesy_of(pc).find("君贲") < 0 and str(lines_of.call()).find("节义文章") < 0 and not ("陈纲首" in Art.codex_alts(pc))
+			and "".join(Art.codex_annal(pc)).find("另一条路") >= 0,
+		"岸上的根了结：无君贲、无节义文章、无陈纲首，史载有引子")
+	# 未归（士人）：史载一节有本世界的史书「不知所终」，引子写明城破时他不在城里（未归 = 没打守城，Main._check_absent_from_xinghua），
+	# 不重述小传里已有的殿试改名；其言仍无「节义文章」；君贲照露
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	GS.player_name = "陈文龙"
+	Cal.from_dict({"year": 1277, "month": 1, "day": 5})
+	GS.finish("未归", "正文")
+	var wg_annal := "".join(Art.codex_annal(pc))
+	_check(wg_annal.find("不知所终") >= 0 and wg_annal.find("不在城里") >= 0 and str(lines_of.call()).find("节义文章") < 0
+			and Art.courtesy_of(pc).find("君贲") >= 0 and not Art.rel_visible("庙前殉节者") and Art.rel_visible("赐名状元"),
+		"未归线：史载有「不知所终」与「城破时他不在城里」引子，其言无节义文章，字号有君贲，「赐名状元」露、「庙前殉节者」不露")
+	_check(wg_annal.find("殿试") < 0 and wg_annal.find("不呈稿") < 0 and wg_annal.find("岳王庙") >= 0 and Art.codex_bio(pc).find("殿试") >= 0,
+		"未归线：史载不再重述小传里的殿试改名、不呈稿，只接城破以后；小传仍有殿试")
+	# 人物志详页实建：未归线「史载」一节真的上屏
+	var cx_scr = load("res://scripts/ui/CharacterCodex.gd")
+	var cx: Control = cx_scr.new()
+	root.add_child(cx)
+	cx.call("begin", "chen_wenlong")
+	_check(_find_label_text(cx, "史载") != "" and _find_label_text(cx, "不知所终") != "",
+		"未归线人物志详页有「史载」一节、上屏「不知所终」")
+	cx.queue_free()
+	# 忠肃：其言有节义文章，史载没有引子，三枚关系签都露
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	GS.player_name = "陈文龙"
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	GS.finish("忠肃", "正文")
+	var zs_annal := "".join(Art.codex_annal(pc))
+	_check(str(lines_of.call()).find("节义文章") >= 0 and zs_annal.find("岳王庙") >= 0 and zs_annal.find("另一条路") < 0
+			and Art.rel_visible("庙前殉节者") and Art.rel_visible("后世齐名") and Art.rel_visible("赐名状元"),
+		"忠肃线：其言有「此皆节义文章也」，史载无引子，三枚关系签都露")
+	_check(zs_annal.find("殿试") < 0 and zs_annal.find("不知所终") < 0,
+		"忠肃线：史载不重述小传里的殿试改名，也没有未归线的「不知所终」")
+	# 士人线守城中（1276-11，未了结）：字号有君贲，称谓是知兴化军，小传补了殿试改名与知兴化军，没有陈纲首
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	GS.player_name = "陈文龙"
+	GS.chapter = 4
+	Cal.from_dict({"year": 1276, "month": 11, "day": 5})
+	GS.siege_begin()
+	var sc_bio: String = Art.codex_bio(pc)
+	_check(Art.courtesy_of(pc).find("君贲") >= 0 and Art.codex_title(pc).find("知兴化军") >= 0 and sc_bio.find("殿试") >= 0
+			and sc_bio.find("知兴化军") >= 0 and not ("陈纲首" in Art.codex_alts(pc)) and sc_bio.find("岳王庙") < 0
+			and Art.codex_look(pc).find("宝祐三年") >= 0,
+		"士人线守城中：字号有君贲，称谓「%s」，小传有殿试改名、知兴化军，无陈纲首、无死法，形貌标宝祐三年" % Art.codex_title(pc))
+	# 海商线第三章（1270-06）：有陈纲首；士人线同年没有
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.chapter = 3
+	GS.visited_ports.append("quanzhou")
+	Cal.from_dict({"year": 1270, "month": 6, "day": 5})
+	var m_alts: PackedStringArray = Art.codex_alts(pc)
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	GS.player_name = "陈文龙"
+	var s_alts: PackedStringArray = Art.codex_alts(pc)
+	_check("陈纲首" in m_alts and not ("陈纲首" in s_alts) and not ("陈文龙" in s_alts),
+		"又称按身份：海商 1270-06 %s 有陈纲首，士人同年 %s 没有、也不重列大名" % [m_alts, s_alts])
+	# 立绘册：从人物志点进史实人物，左栏翻到他所在的页签并选中他（原先停在「主」页签高亮陈子龙）
+	GS.from_dict({})
+	Cal.from_dict({"year": 1280, "month": 1, "day": 5})
+	var roster: Node = load("res://scripts/chars/CharRoster.gd").new()
+	root.add_child(roster)
+	roster.call("select_id", "lu_xiufu")
+	var tab_now := str(roster.get("tab"))
+	_check(tab_now == "史实" and str(roster.call("selected_id")) == "lu_xiufu",
+		"立绘册 select_id(陆秀夫)：翻到「%s」页签并选中（%s）" % [tab_now, roster.call("selected_id")])
+	roster.call("select_id", "chen_wenlong")
+	_check(str(roster.get("tab")) == "主" and str(roster.call("selected_id")) == "chen_wenlong",
+		"立绘册 select_id(主角)：翻回「主」页签并选中")
+	roster.queue_free()
+	var roster2: Node = load("res://scripts/chars/CharRoster.gd").new()
+	roster2.call("select_id", "sodu")
+	root.add_child(roster2)
+	_check(str(roster2.get("tab")) == "史实" and str(roster2.call("selected_id")) == "sodu",
+		"立绘册未进树先 select_id(唆都)：进树后停在「史实」页签选中唆都（%s / %s）" % [roster2.get("tab"), roster2.call("selected_id")])
+	roster2.queue_free()
+	_v0928_visual_recheck(Art, pc, zan, lu, zhang)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+
+
+## 09-28 visual 线复核返修：全表扫漏网的整年键、晚投海商那一支的戏、称谓与小传同月、关系签拆签、卒年按月。
+func _v0928_visual_recheck(Art, pc: Dictionary, zan: Dictionary, lu: Dictionary, zhang: Dictionary) -> void:
+	var ws: Dictionary = GM.get_character("wang_shiqiang")
+	var ws_text := func() -> String: return Art.codex_short(ws) + Art.codex_bio(ws)
+	# 王世强：福州降在景炎元年十一月、泉州蒲寿庚降在十二月；年初不露，也不在建元（1276-05）前写「景炎」
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.chapter = 4
+	GS.visited_ports.append("quanzhou")
+	Cal.from_dict({"year": 1276, "month": 1, "day": 5})
+	var ws_01: String = ws_text.call()
+	Cal.from_dict({"year": 1276, "month": 10, "day": 5})
+	var ws_10: String = ws_text.call()
+	Cal.from_dict({"year": 1276, "month": 11, "day": 5})
+	var ws_11: String = ws_text.call()
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	var ws_12: String = ws_text.call()
+	_check(ws_01.find("景炎") < 0 and ws_10.find("泉州") < 0 and ws_10.find("福州") < 0 and ws_11.find("福州") >= 0
+			and ws_11.find("泉州") < 0 and ws_12.find("泉州") >= 0,
+		"王世强简介+小传：1276-01 无「景炎」，1276-10 无泉州、福州，1276-11 起有福州，1276-12 起有泉州")
+	# 同月两页一个说法：端宗页的「张世杰与蒲寿庚决裂」、陈瓒页的「渡海助张世杰」与张、蒲本人页同在 1276-12 露
+	var duan: Dictionary = GM.get_character("song_duanzong")
+	Cal.from_dict({"year": 1276, "month": 11, "day": 5})
+	var duan_11: String = Art.codex_bio(duan)
+	var zan_11: String = Art.codex_bio(zan)
+	var zhang_11: String = Art.codex_bio(zhang)
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	_check(duan_11.find("决裂") < 0 and zhang_11.find("蒲寿庚") < 0 and Art.codex_bio(duan).find("决裂") >= 0 and zan_11.find("三百万缗") < 0
+			and Art.codex_bio(zan).find("三百万缗") >= 0,
+		"端宗页决裂、陈瓒页输财与张世杰页同在 1276-12 露（1276-11 都不露）")
+	# 陈宜中、王爚：焦山兵败后（1275-07）的那场朝议，年初不露；王爚七月已罢，不写成十月
+	var cyz: Dictionary = GM.get_character("chen_yizhong")
+	var wy: Dictionary = GM.get_character("wang_yue")
+	Cal.from_dict({"year": 1275, "month": 6, "day": 5})
+	var yi_06: String = Art.codex_bio(cyz) + Art.codex_bio(wy)
+	Cal.from_dict({"year": 1275, "month": 7, "day": 5})
+	var yi_07: String = Art.codex_bio(cyz) + Art.codex_bio(wy)
+	_check(yi_06.find("该走") < 0 and yi_07.find("该走") >= 0 and yi_07.find("十月") < 0,
+		"陈宜中、王爚：1275-06 小传无「该走」那场朝议，1275-07 起有，且不写「十月」")
+	# 陆秀夫、张世杰卒年跟文本层同月（died_ym）：1279-03 生卒不写卒年，1279-04 起写
+	Cal.from_dict({"year": 1279, "month": 3, "day": 5})
+	var lu_l3: String = Art.life_line(lu)
+	var zh_l3: String = Art.life_line(zhang)
+	Cal.from_dict({"year": 1279, "month": 4, "day": 5})
+	var lu_l4: String = Art.life_line(lu)
+	var zh_l4: String = Art.life_line(zhang)
+	var lu_died := str(int(lu.get("died", 0)))
+	_check(lu_died != "0" and lu_l3.find(lu_died) < 0 and zh_l3.find(lu_died) < 0 and lu_l4.find(lu_died) >= 0 and zh_l4.find(lu_died) >= 0
+			and Art.codex_bio(lu).find("投海") >= 0,
+		"陆、张生卒：1279-03「%s」「%s」不写卒年，1279-04「%s」「%s」起写，与小传投海同月" % [lu_l3, zh_l3, lu_l4, zh_l4])
+	# 林家后人：「陈大人……姓陈的读书人……船股一分」是晚投海商那一支的戏，别的世界线了结后也不露
+	var heir: Dictionary = GM.get_character("lin_heir")
+	var heir_text := func() -> String: return Art.codex_bio(heir) + "".join(Art.codex_lines(heir))
+	GS.from_dict({})
+	GS.identity = "merchant"
+	Cal.from_dict({"year": 1285, "month": 5, "day": 5})
+	GS.finish("纲首", "正文")
+	var heir_gs: String = heir_text.call()
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	GS.finish("忠肃", "正文")
+	var heir_zs: String = heir_text.call()
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.set_flag("renamed_wenlong")
+	GS.set_flag("late_defection")
+	Cal.from_dict({"year": 1276, "month": 1, "day": 5})
+	var heir_ld: String = heir_text.call()
+	_check(heir_gs.find("船股") < 0 and heir_gs.find("陈大人") < 0 and heir_zs.find("船股") < 0 and heir_zs.find("一铺之地") < 0
+			and heir_ld.find("船股") >= 0 and heir_ld.find("一铺之地") >= 0,
+		"林家后人：纲首、忠肃了结后无「陈大人」「船股一分」，晚投海商那一支 1276-01 未了结就有")
+	# 市舶小吏「添纲首二字」与主角称谓同一口径（c3 且身份是海商 / 未定）：士人线第三章不露
+	var cust: Dictionary = GM.get_character("customs_official")
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	GS.chapter = 3
+	GS.visited_ports.append("quanzhou")
+	Cal.from_dict({"year": 1272, "month": 6, "day": 5})
+	var cust_sc: String = Art.codex_bio(cust)
+	var pc_title_sc: String = Art.codex_title(pc)
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.chapter = 3
+	GS.visited_ports.append("quanzhou")
+	var cust_m: String = Art.codex_bio(cust)
+	_check(cust_sc.find("纲首") < 0 and pc_title_sc.find("纲首") < 0 and cust_m.find("纲首") >= 0 and Art.codex_title(pc).find("纲首") >= 0,
+		"市舶小吏「添纲首二字」：士人线 1272-06 第三章不露（主角称谓「%s」），海商线同月露" % pc_title_sc)
+	# 蒲寿庚那句「非不忠义」点谁的名跟着世界线：士人线挂在主角页（点其名者），别的线挂在陈瓒页（点名之人）
+	var pc_rel := ""
+	for r in pc.get("relations", []):
+		if str(r.get("id", "")) == "pu_shougeng":
+			pc_rel = str(r.get("rel", ""))
+	var zan_rel := ""
+	for r in zan.get("relations", []):
+		if str(r.get("id", "")) == "pu_shougeng":
+			zan_rel = str(r.get("rel", ""))
+	GS.from_dict({})
+	GS.identity = "merchant"
+	Cal.from_dict({"year": 1285, "month": 5, "day": 5})
+	GS.finish("纲首", "正文")
+	var m_pc: bool = Art.rel_visible(pc_rel)
+	var m_zan: bool = Art.rel_visible(zan_rel)
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	GS.finish("忠肃", "正文")
+	var s_pc: bool = Art.rel_visible(pc_rel)
+	var s_zan: bool = Art.rel_visible(zan_rel)
+	_check(pc_rel != "" and zan_rel != "" and pc_rel != zan_rel and not m_pc and m_zan and s_pc and not s_zan,
+		"蒲寿庚点名签：主角页「%s」只在士人线露、陈瓒页「%s」只在未改名的线露（纲首 %s/%s，忠肃 %s/%s）" % [pc_rel, zan_rel, m_pc, m_zan, s_pc, s_zan])
+	# 士人线称谓与小传同月：知抚州要等襄阳陷（1273-02）；侍御史、参知政事、辞官、复参政、知兴化军各在其月
+	var scholar_at := func(y: int, m: int) -> void:
+		GS.from_dict({})
+		GS.identity = "scholar"
+		GS.set_flag("renamed_wenlong")
+		GS.player_name = "陈文龙"
+		GS.chapter = 4
+		Cal.from_dict({"year": y, "month": m, "day": 5})
+	scholar_at.call(1273, 1)
+	var t_7301: String = Art.codex_title(pc)
+	var b_7301: String = Art.codex_bio(pc)
+	scholar_at.call(1273, 2)
+	var t_7302: String = Art.codex_title(pc)
+	var b_7302: String = Art.codex_bio(pc)
+	scholar_at.call(1274, 6)
+	var t_7406: String = Art.codex_title(pc)
+	_check(t_7301 == "监察御史" and b_7301.find("抚州") < 0 and b_7301.find("不呈稿") >= 0 and t_7302.find("知抚州") >= 0
+			and b_7302.find("抚州") >= 0 and t_7406 == t_7302,
+		"士人线 1273-01 称谓「%s」、小传未写贬抚州；1273-02 起称谓「%s」、小传写贬抚州；1274-06 仍「%s」" % [t_7301, t_7302, t_7406])
+	scholar_at.call(1275, 6)
+	var t_7506: String = Art.codex_title(pc)
+	var b_7506: String = Art.codex_bio(pc)
+	scholar_at.call(1275, 12)
+	var t_7512: String = Art.codex_title(pc)
+	scholar_at.call(1276, 5)
+	var t_7605: String = Art.codex_title(pc)
+	var b_7605: String = Art.codex_bio(pc)
+	scholar_at.call(1276, 8)
+	var t_7608: String = Art.codex_title(pc)
+	var id_7608: String = Art.identity_line(pc)
+	_check(t_7506 == "侍御史" and b_7506.find("侍御史") >= 0 and b_7506.find("参知政事") < 0 and t_7512.begins_with("前")
+			and t_7605 == "参知政事" and b_7605.find("复以他为参知政事") >= 0 and b_7605.find("知兴化军") < 0
+			and t_7608.find("知兴化军") >= 0 and id_7608.count("・") == 1,
+		"士人线 1275-06「%s」、1275-12「%s」、1276-05「%s」、1276-08 身份行「%s」（称谓与籍贯之间只一个分隔点）" % [t_7506, t_7512, t_7605, id_7608])
+	# 立绘面板身份行：籍贯逐字垫了字连接符，窄栏折行只折在「・」之后，不从「兴化军莆田／县玉湖」中间折；去掉连接符与原串一字不差
+	var wj := String.chr(0x2060)
+	var pp: Node = load("res://scripts/chars/CharPortraitPanel.gd").new()
+	root.add_child(pp)
+	pp.call("show_character", pc)
+	var shown := _find_label_text(pp, "・")
+	var origin_at := id_7608.rfind("・") + 1
+	var para := TextParagraph.new()
+	para.add_string(shown, UiTheme.font(), UiTheme.SIZE_FOOT + 1)
+	para.width = UiTheme.font().get_string_size(id_7608, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT + 1).x * 0.8
+	var breaks_ok := para.get_line_count() >= 2
+	for i in range(1, para.get_line_count()):
+		var start := shown.substr(0, para.get_line_range(i).x).replace(wj, "").length()
+		if start > origin_at:
+			breaks_ok = false
+	_check(shown.replace(wj, "") == id_7608 and shown.find(wj) > 0 and breaks_ok,
+		"立绘面板身份行垫字连接符：去掉后与原串相同，按八成宽折成 %d 行、只在「・」之后折" % para.get_line_count())
+	pp.queue_free()
+	GS.from_dict({})

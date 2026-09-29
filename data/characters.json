@@ -226,7 +226,7 @@
         },
         {
           "id": "pu_shougeng",
-          "rel": "点名之人"
+          "rel": "点其名者"
         },
         {
           "id": "lin_hua",
@@ -686,7 +686,7 @@
       ],
       "personality": "话少，手上活好，缆绳系得从不松；心里的结，旁人看不见。",
       "bio_short": "泉州码头的水手，缆绳系得极好。景炎元年为兴化部将，奉命出侦即降，引元兵万人至城下。",
-      "bio": "泉州码头上的水手，曾在林阿舶的船上系缆，话少，手上活好，缆绳系得从不松。宝祐六年后可雇上船，这段交情会被记住。史实：景炎元年十二月，他已是兴化军部将，奉陈文龙之命率五十人出城侦敌，出城即降，两日后引元兵万人回到城下，兴化随之失陷。次年陈瓒起兵夜袭复城，林华在知军衙门被拖出，天亮前死。若当年雇过他，守城时尚可提一句「你的缆绳系得好」——史实不变，他仍然降。",
+      "bio": "泉州码头上的水手，曾在林阿舶的船上系缆，话少，手上活好，缆绳系得从不松。第二章起可雇上船，这段交情会被记住。史实：景炎元年十二月，他已是兴化军部将，奉陈文龙之命率五十人出城侦敌，出城即降，两日后引元兵万人回到城下，兴化随之失陷。次年陈瓒起兵夜袭复城，林华在知军衙门被拖出，天亮前死。若当年雇过他，守城时尚可提一句「你的缆绳系得好」——史实不变，他仍然降。生年史无明文，据史设人：约 1237 年生，宝祐三年约十八岁在林阿舶船上学系缆，1257 年约二十岁可雇，1276 年近四十为部将。",
       "lines": [
         "大人，元兵在江口。我带五十人出去看看虚实。",
         "林老大的缆，我系了三年，没松过一回。",
@@ -706,11 +706,14 @@
           "rel": "杀他之人"
         }
       ],
-      "look": "三十岁上下（1276），黝黑精悍，薄唇少言；乌黑铁札甲外罩战袍，黑巾裹头，手执长枪；早年为短褐赤足的水手。",
+      "look": "近四十（1276，据史设人），黝黑精悍，薄唇少言；乌黑铁札甲外罩战袍，黑巾裹头，手执长枪；早年为短褐赤足的水手。",
       "portrait": "res://assets/portraits/lin_hua.png",
+      "portrait_before": {
+        "1276-10": "res://assets/portraits/lin_hua_ink.png"
+      },
       "portrait_src": "codex:portrait_patrol_soldier.png",
       "portrait_status": "painted",
-      "portrait_note": ""
+      "portrait_note": "甲胄像只挂景炎元年十月辞船投军以后（portrait_before）；此前挂剪影墨卡 lin_hua_ink.png（与王直库同一种占位）。【待出水手版 age_lin_hua_sailor：短褐赤足、肩上盘缆，二十上下，出图后把 portrait_before 的值换过去】"
     },
     {
       "id": "huang_quan",
@@ -2586,6 +2589,7 @@
       "origin": "涿州范阳",
       "born": null,
       "died": 1279,
+      "died_ym": "1279-04",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -2650,6 +2654,7 @@
       "origin": "楚州盐城（幼居镇江京口）",
       "born": 1236,
       "died": 1279,
+      "died_ym": "1279-04",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -2708,6 +2713,7 @@
       "origin": "台州天台",
       "born": 1213,
       "died": 1275,
+      "died_ym": "1275-09",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -3642,6 +3648,7 @@
       "origin": "蒙古",
       "born": 1209,
       "died": 1259,
+      "died_ym": "1259-08",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -3755,6 +3762,7 @@
       "origin": "日本相模镰仓",
       "born": 1227,
       "died": 1263,
+      "died_ym": "1263-11",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -3874,6 +3882,7 @@
       "origin": "绍兴府",
       "born": 1240,
       "died": 1274,
+      "died_ym": "1274-07",
       "historical": true,
       "tier": "historical",
       "chapters": [
@@ -4003,6 +4012,7 @@
       "origin": "临安",
       "born": 1269,
       "died": 1278,
+      "died_ym": "1278-05",
       "historical": true,
       "tier": "historical",
       "chapters": [
