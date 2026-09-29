@@ -645,8 +645,10 @@ SHORE_IDS = [
     "city_exam", "city_residence", "city_temple", "city_yamen",
 ]
 
-def shore_deal(ids, salt, pin_shipyard):
-    """与 ShoreDraft.deal 同一规则。跑商不调用它。"""
+def shore_deal(ids, salt, pin_shipyard, market_open=True):
+    """与 ShoreDraft.deal 同一规则。跑商不调用它。market_open=False（围城 / 封港上了门闸）时牙行不占席。"""
+    if not market_open:
+        ids = [fid for fid in ids if fid != "city_market"]
     seats = []
     if "city_market" in ids:
         seats.append("city_market")
@@ -675,6 +677,9 @@ shore_seen = set()
 for salt in range(len(SHORE_IDS) - 1):
     shore_seen.update(shore_deal(SHORE_IDS, salt, False))
 check(set(SHORE_IDS) <= shore_seen, "盐位转一圈，九处都会开门")
+shore_shut = shore_deal(SHORE_IDS, 0, False, market_open=False)
+check(len(shore_shut) == 3 and "city_market" not in shore_shut,
+      f"牙行上了门闸时 {shore_shut} 不占席，三扇门都给别的去处")
 
 def broker_deal(goods, salt, held_id):
     """与 BrokerSlip.deal 同一规则。跑商不调用它。"""

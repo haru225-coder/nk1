@@ -1131,6 +1131,9 @@ func _enter_panel_mode() -> void:
 	_uncenter_benches()
 	_show_investigation_chrome(false)
 	scene_title.visible = true
+	# 设施页题头统一 SIZE_HEAD，不沿用上一页（序章 cg_ 对白页 24、剧情页 28 会漏到下一张设施页）；
+	# 调查页 cg_ 分支在 _setup_investigation_mode 里照旧再覆盖成 24
+	scene_title.add_theme_font_size_override("font_size", UiTheme.SIZE_HEAD)
 	var title_rule := scene_title.get_parent().get_node_or_null("HSeparator") as Control
 	if title_rule != null:
 		title_rule.visible = true
@@ -1219,6 +1222,7 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 
 func _setup_market(port_id: String) -> void:
 	scene_title.text = "%s・牙行" % GameManager.get_port_name(port_id)
+	var market_open := Economy.is_market_open(port_id)
 	body_text.text = "柜上只摆三样。牙人过秤开票；要看别的，明日再来。"
 
 	var goods_ids: Array = Economy.goods_at(port_id)
@@ -1229,7 +1233,7 @@ func _setup_market(port_id: String) -> void:
 
 	# 柜上三样先发，委办单上的「凑得出」按今日柜上现货算；上了门闸或无牙行则柜上空
 	broker_hand = PackedStringArray()
-	if Economy.is_market_open(port_id) and not goods_ids.is_empty():
+	if market_open and not goods_ids.is_empty():
 		var catalog: Array = []
 		for raw_gid in goods_ids:
 			var gid := str(raw_gid)
@@ -1240,12 +1244,18 @@ func _setup_market(port_id: String) -> void:
 			})
 		broker_hand = BrokerSlip.deal(catalog, GameState.broker_salt, _broker_held_id(port_id))
 
-	_add_contract_panel(port_id)
-
-	if not Economy.is_market_open(port_id):
-		body_text.text += "\n\n牙行上了门闸。%s，城中只剩米价在动，无人开秤。" % Economy.war_label(port_id)
+	# 上了门闸：正文只一句门闸（不写「柜上只摆三样」）、不开新委办（岸上三门里牙行也不占席，见 ShoreDraft.deal）。
+	# 在身委办的交货地就是本港时，那一行（交货 / 毁约）照旧补出：委办 due_day 不因围城停表，
+	# 不留这条路，送兴化的委办撞上围城月就必逾期（09-29 复核 major）。「未开」一排的牙行此时点得进来，见 _make_shore_shut。
+	if not market_open:
+		body_text.text = _market_shut_line(port_id, true)
+		if _contract_due_here(port_id):
+			body_text.text += "\n\n" + MARKET_SIDE_DOOR
+			_add_contract_panel(port_id)
 		_add_leave_button(port_id)
 		return
+
+	_add_contract_panel(port_id)
 
 	if goods_ids.is_empty():
 		body_text.text = "此地无正经牙行，只几个渔妇晒网。"
@@ -1332,6 +1342,26 @@ func _setup_market(port_id: String) -> void:
 
 	choices_label.visible = true
 	choices_label.text = "舱位 %d / %d 料" % [int(Fleet.used_capacity()), int(Fleet.total_capacity())]
+
+
+## 闭门牙行开侧门只收先前订下的委办货（交货地是本港时）
+const MARKET_SIDE_DOOR := "牙人开了侧门，只收先前订下的委办货。"
+
+
+## 牙行上了门闸的那一句。海口不是城，不写「城中」，也不借城里的战况名（海口跟着城一起闭门）。
+## page 为真是牙行页正文，否则是岸上「未开」一排的悬停 / 点按提示。
+func _market_shut_line(port_id: String, page: bool) -> String:
+	if "海口" in (GameManager.get_port_by_id(port_id).get("tags", []) as Array):
+		return "海口的牙行也上了门闸，无人开秤。"
+	if page:
+		return "牙行上了门闸。%s，城中只剩米价在动，无人开秤。" % Economy.war_label(port_id)
+	return "牙行上了门闸。%s，无人开秤。" % Economy.war_label(port_id)
+
+
+## 在身委办的交货地就是这里
+func _contract_due_here(port_id: String) -> bool:
+	var cst := GameState.contract_status()
+	return not cst.is_empty() and str(cst.get("dest", "")) == port_id
 
 
 func _broker_held_id(port_id: String) -> String:
@@ -2119,7 +2149,7 @@ func _setup_residence_chen(port_id: String) -> void:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.add_theme_color_override("font_color", Color(0.65, 0.9, 0.7))
 		choices_container.add_child(l)
-	elif Calendar.year >= CHEN_ZAN_FROM_YEAR and _chen_zan_alive():
+	elif Calendar.year >= CHEN_ZAN_FROM_YEAR and _chen_zan_alive() and _chen_zan_stake_open():
 		var b := Button.new()
 		if GameState.fame >= CHEN_ZAN_MIN_FAME:
 			b.text = "族叔陈瓒愿入船股一分（得 %d 钱，乡土 +5）" % CHEN_ZAN_STAKE
@@ -2138,6 +2168,18 @@ func _setup_residence_chen(port_id: String) -> void:
 
 	choices_label.visible = true
 	_add_leave_button(port_id)
+
+
+## 陈瓒入船股只在兴化第一段 besieged 起点之前出（从战况表推，不写死月份）：
+## 围城起他在城里募兵守城、倾家财起兵，不再拿钱入你的船股。生死另归 _chen_zan_alive 管。
+func _chen_zan_stake_open() -> bool:
+	var war: Dictionary = GameManager.get_port_by_id("xinghua").get("war", {})
+	var keys: Array = war.keys()
+	keys.sort()
+	for ym in keys:
+		if str(war[ym]) == "besieged":
+			return "%04d-%02d" % [Calendar.year, Calendar.month] < str(ym)
+	return true
 
 
 # ── 酒馆 ────────────────────────────────────────────
@@ -2542,7 +2584,7 @@ func _refresh_shore() -> void:
 				specials.append(fid_raw)
 		else:
 			regular.append(raw_fac)
-	shore_hand = ShoreDraft.deal(regular, GameState.shore_salt, _shore_pin_shipyard())
+	shore_hand = ShoreDraft.deal(regular, GameState.shore_salt, _shore_pin_shipyard(), Economy.is_market_open(current_scene_id))
 	for fid_sp in specials:
 		if fid_sp not in shore_hand:
 			shore_hand.append(fid_sp)
@@ -2766,7 +2808,7 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	const SPECIAL_ICON := {
 		"siege_muster": "yamen", "siege_grain": "market", "siege_wall": "shipyard",
 		"siege_envoy": "tavern", "siege_nangshan": "yamen", "siege_nunnery": "temple",
-		"special_hanjiang_escape": "shipyard", "special_resign_1275": "exam",
+		"special_hanjiang_escape": "residence", "special_resign_1275": "exam",
 		"special_yashan": "shipyard", "special_gangshou_end": "yamen",
 	}
 	if SPECIAL_ICON.has(icon_id):
@@ -2880,13 +2922,32 @@ func _make_shore_shut(fac: Dictionary) -> Button:
 	# 热区 ≥64×32（美术规范小钮）；关着的门略宽一点，字不挤
 	btn.custom_minimum_size = Vector2(120, 36)
 	btn.set_meta("shore_shut", true)
-	btn.pressed.connect(_on_shore_shut)
 	var tip_key := str(fac.get("id", "")).replace("city_", "")
 	var open_tip := str(DOOR_TIP.get(tip_key, str(fac.get("subtitle", ""))))
-	if open_tip != "":
-		btn.tooltip_text = "今日未开。再候一日，门或另换。\n%s" % open_tip
+	# 围城 / 封港时牙行上了门闸：不是轮转没轮到，候一日也不开，提示照实写。
+	# 在身委办的交货地就是本港：这扇门仍在「未开」一排、不占今日三门，但点得进闭门页交货 / 毁约（见 _setup_market）
+	if tip_key == "market" and not Economy.is_market_open(current_scene_id):
+		var shut_line := _market_shut_line(current_scene_id, false)
+		if _contract_due_here(current_scene_id):
+			# 门字写明「交货」：关着的门一排里只有这扇点得进，不靠悬停才知道
+			btn.text = "%s・交货" % btn.text
+			btn.tooltip_text = "%s\n%s" % [shut_line, MARKET_SIDE_DOOR]
+			btn.set_meta("side_door", true)
+			btn.pressed.connect(func() -> void:
+				load_scene(current_scene_id + "_market")
+			)
+		else:
+			btn.tooltip_text = shut_line
+			btn.pressed.connect(func() -> void:
+				log_msg(shut_line)
+				update_status_panel()
+			)
 	else:
-		btn.tooltip_text = "今日未开。再候一日，门或另换。"
+		btn.pressed.connect(_on_shore_shut)
+		if open_tip != "":
+			btn.tooltip_text = "今日未开。再候一日，门或另换。\n%s" % open_tip
+		else:
+			btn.tooltip_text = "今日未开。再候一日，门或另换。"
 	UiTheme.style_button(btn, false)
 	var shut_box := UiTheme.shore_shut()
 	btn.add_theme_stylebox_override("normal", shut_box)
@@ -3530,12 +3591,27 @@ func _on_gangshou_end() -> void:
 
 ## 「岸上的根」：陈瓒守城，你带族人出海。第一章那次复核在二十二年后变现。
 
+## 涵江出海到旧避风澳：原地结算七日（不走海图），航程里真吃船上的水粮；落款地名写到岸的地方
+const HANJIANG_DAYS := 7
+const HANJIANG_END_PLACE := "旧避风澳"
+## 兴化再陷前一月的这一日起，涵江卡的副题改成催促（城破月从战况表推，不写死）
+const HANJIANG_URGENT_DAY := 20
+
+
 func _on_hanjiang_escape() -> void:
-	if Fleet.supply_days() < 7:
-		log_msg("【水粮不足】四条船的人，至少要撑七日。先去船屋补齐。")
-		update_status_panel()
+	if Fleet.supply_days() < HANJIANG_DAYS:
+		# 直接进本港船屋补水粮：船屋平时靠轮转，不一定在今日三门里；船屋页「离开」回到带卡的港页
+		# 门槛只按自家船队日耗算七日（族人的四条船各带水粮，不吃你的）：文案照机制写，不说族人吃你船上的粮
+		log_msg("【水粮不足】族里四条船各带了水粮；你船上的，也得够七日。")
+		load_scene(current_scene_id + "_shipyard")
 		return
-	GameManager.advance_days(7)
+	# 七日航程：借 at_sea 让 Fleet.on_day_passed 按海上日子扣水粮，推完复位（仍在港页上结算）
+	var was_at_sea: bool = Fleet.at_sea
+	Fleet.at_sea = true
+	GameManager.advance_days(HANJIANG_DAYS)
+	Fleet.at_sea = was_at_sea
+	# 路上月初翻牌的通告（冬月初一兴化城破等）照常记进船籍簿；状态条最上面留出海这一句——城破时人已在海上
+	log_msg("四条船出了涵江海口，没有回头。")
 	GameState.set_flag("ending_root_sea")
 	GameState.fame += 10
 	GameState.hometown_tendency += 10
@@ -3544,11 +3620,14 @@ func _on_hanjiang_escape() -> void:
 	_show_notice_dialog(
 		"岸上的根",
 		"旧避风澳・景炎二年",
-		"四条船。族里能走的都在船上，老夫人也在，她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经围了城。海上没有人追。你看水色。北礁可泊。二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
+		"四条船。\n族里能走的都在船上，老夫人也在，她把箧底那叠策论草稿带上了船，说是「%s的东西」。\n%s\n\n出海口的时候元兵已经围了城。海上没有人追。你看水色。北礁可泊。\n二十二年前，一个舵手教过你。\n\n船在旧避风澳泊了六天，避了一场风。第七天早晨，老夫人把那叠草稿拿出来晒。\n纸都黄了，字还在。她一张一张看，看完了放回去。\n「%s，」她说，「往南走吧。」\n\n——\n一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。\n这个世界少了一位海神，多了几条回来的船。" % [
 			"子龙", stake_line, "子龙",
 		],
 		"岸上的根"
 	)
+	# finish 取 last_port 落款（兴化 / 兴化海口）；这一局是在旧避风澳收的，落款改写成到岸的地方
+	if GameState.ended == "岸上的根":
+		GameState.ended_at = "%s・%s" % [Calendar.get_date_string(), HANJIANG_END_PLACE]
 
 
 ## 通用结算对话框（章节晋升以外的历史节点与结局用）。
@@ -4354,7 +4433,7 @@ func _special_cards() -> Array:
 			and not GameState.has_flag("renamed_wenlong") \
 			and GameState.has_found("nameless_shelter_bay") \
 			and not GameState.has_flag("ending_root_sea"):
-		out.append({"id": CARD_HANJIANG, "title": "涵江海口", "subtitle": "带族人走旧避风澳"})
+		out.append({"id": CARD_HANJIANG, "title": "涵江海口", "subtitle": _hanjiang_card_subtitle()})
 
 	# 士人线：辞呈已批，出不出国门（1275-12 起，未决则一直挂着）
 	if GameState.has_flag("vice_councillor") and not _resign_decided():
@@ -4370,6 +4449,16 @@ func _special_cards() -> Array:
 		out.append({"id": CARD_GANGSHOU, "title": "市舶司・新册", "subtitle": "封面换了，名字还在"})
 
 	return out
+
+
+## 涵江卡副题：兴化再陷前一月的下旬（HANJIANG_URGENT_DAY 起）改成催促，其余日子写去处。
+## 城破月取战况表里 besieged 段的尽头（_xinghua_fall_yms），不写死十月。
+func _hanjiang_card_subtitle() -> String:
+	var ny := Calendar.year + (1 if Calendar.month == 12 else 0)
+	var nm := 1 if Calendar.month == 12 else Calendar.month + 1
+	if Calendar.day >= HANJIANG_URGENT_DAY and ("%04d-%02d" % [ny, nm]) in _xinghua_fall_yms():
+		return "城撑不过这个月了"
+	return "带族人走旧避风澳"
 
 
 

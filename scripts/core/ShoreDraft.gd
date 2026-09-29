@@ -1,10 +1,10 @@
 class_name ShoreDraft
 extends RefCounted
-## 今日岸开三处。牙行占第一席。船开不出去时船屋占下一席。
+## 今日岸开三处。牙行占第一席（围城 / 封港上了门闸时不占席，落进「未开」一排）。船开不出去时船屋占下一席。
 ## 其余去处按 id 次序轮转。本脚本不在解析期写 autoload 名。
 
 
-static func deal(facilities: Array, salt: int, pin_shipyard: bool) -> PackedStringArray:
+static func deal(facilities: Array, salt: int, pin_shipyard: bool, market_open: bool = true) -> PackedStringArray:
 	var ids: PackedStringArray = PackedStringArray()
 	for raw in facilities:
 		if typeof(raw) != TYPE_DICTIONARY:
@@ -12,6 +12,9 @@ static func deal(facilities: Array, salt: int, pin_shipyard: bool) -> PackedStri
 		var fac: Dictionary = raw
 		var fid := str(fac.get("id", ""))
 		if fid == "" or fid in ids:
+			continue
+		# 闭门的牙行不进发牌池：三扇门不白占一扇，船屋等别的去处轮得更快
+		if fid == "city_market" and not market_open:
 			continue
 		ids.append(fid)
 	var seats := PackedStringArray()

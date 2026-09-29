@@ -246,7 +246,8 @@
             "tags": "list<str>",
             "connections": "list<str>",
             "market": "dict",
-            "war?": "dict"
+            "war?": "dict",
+            "war_notice?": "dict"
           }
         }
       ],
