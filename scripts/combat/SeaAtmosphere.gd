@@ -50,6 +50,8 @@ var _drama_from_zoom := Vector2.ONE
 var _drama_mid := Vector2.ZERO
 var _ropes: Array = []
 var _last_pos := {}  # instance_id → [Vector2, 是否敌船]
+var _boardable := {}  # instance_id → 此刻够得着接舷
+var _clock := 0.0
 
 
 ## 挂到 world（WorldMap）下；已挂过返回原节点
@@ -99,11 +101,30 @@ func _ready() -> void:
 	_setup_haze()
 	_scan_hulls()
 	get_tree().node_added.connect(_on_node_added)
+	# ShipLook（combat12）逐帧写 Sprite2D.offset 摇船，出图前也再写一遍：轮廓在同一时刻抄它
+	RenderingServer.frame_pre_draw.connect(_sync_rims)
 
 
 func _exit_tree() -> void:
 	if get_tree() != null and get_tree().node_added.is_connected(_on_node_added):
 		get_tree().node_added.disconnect(_on_node_added)
+	if RenderingServer.frame_pre_draw.is_connected(_sync_rims):
+		RenderingServer.frame_pre_draw.disconnect(_sync_rims)
+
+
+## 轮廓是船图的子节点，吃得到船图的变换，吃不到 offset：逐帧抄过来
+func _sync_rims() -> void:
+	for h in _hulls:
+		if not _hull_ok(h):
+			continue
+		var spr := (h as Node).get_node_or_null("Sprite2D") as Sprite2D
+		if spr == null:
+			continue
+		var rim := spr.get_node_or_null("FoeRim") as Sprite2D
+		if rim != null:
+			rim.offset = spr.offset
+			rim.flip_h = spr.flip_h
+			rim.flip_v = spr.flip_v
 
 
 # ── 海面 ────────────────────────────────────────────────────────────
@@ -135,10 +156,12 @@ func _sea():
 func _process(delta: float) -> void:
 	if world == null or not is_instance_valid(world):
 		return
+	_clock += delta
 	_scan_t -= delta
 	if _scan_t <= 0.0:
-		_scan_t = 0.5
+		_scan_t = 0.25
 		_scan_hulls()
+		_scan_boardable()
 	var wind := Vector2(0, 1)
 	var force := 0.6
 	var gust := 0.0
@@ -250,6 +273,21 @@ func _scan_hulls() -> void:
 		c.tree_exiting.connect(_on_hull_exit.bind(c.get_instance_id()), CONNECT_ONE_SHOT)
 
 
+## 敌船够不够得着接舷：同顶匾「舷边可接」（WorldMap.boarding_approach_of）
+func _scan_boardable() -> void:
+	_boardable.clear()
+	if world == null or not world.has_method("boarding_approach_of") or not _hull_ok(ship):
+		return
+	if bool(world.get("boarding")) or bool(world.get("resolved")):
+		return
+	for h in _hulls:
+		if h == ship or not _hull_ok(h):
+			continue
+		var r = world.call("boarding_approach_of", ship, h)
+		if r is Dictionary and bool((r as Dictionary).get("ok", false)):
+			_boardable[h.get_instance_id()] = true
+
+
 func _on_hull_exit(id: int) -> void:
 	var o := instance_from_id(id) as Node2D
 	if o == null:
@@ -314,12 +352,17 @@ func _feed_pennants(wind: Vector2, force: float) -> void:
 			if p != null:
 				p.set("wind", wind)
 				p.set("force", force)
-		# 敌船换过精灵（apply_sprite）：轮廓跟着换
+		# 敌船换过精灵（apply_sprite）：轮廓跟着换；进了接舷够距，朱边一明一暗
 		var spr := (h as Node).get_node_or_null("Sprite2D") as Sprite2D
 		if spr != null:
 			var rim := spr.get_node_or_null("FoeRim") as Sprite2D
-			if rim != null and rim.texture != spr.texture:
-				rim.texture = spr.texture
+			if rim != null:
+				if rim.texture != spr.texture:
+					rim.texture = spr.texture
+				var pm := rim.material as ShaderMaterial
+				if pm != null:
+					var near := bool(_boardable.get(h.get_instance_id(), false))
+					pm.set_shader_parameter("pulse", (0.5 + 0.5 * sin(_clock * 6.0)) if near else 0.0)
 
 
 # ── 落水 ─────────────────────────────────────────────────────────
@@ -474,8 +517,8 @@ func _throw_ropes(a: Node2D, b: Node2D) -> void:
 		var from := a.position + along * off + ab.normalized() * 30.0
 		var to := b.position + along * off * 0.8 - ab.normalized() * 26.0
 		var line := Line2D.new()
-		line.width = 1.6
-		line.default_color = Color(0.42, 0.32, 0.20, 0.95)
+		line.width = 2.4
+		line.default_color = Color(0.66, 0.53, 0.33, 0.95)
 		line.antialiased = true
 		line.z_index = 8
 		line.begin_cap_mode = Line2D.LINE_CAP_ROUND
@@ -521,6 +564,6 @@ func _flash(at: Vector2) -> void:
 	world.add_child(s)
 	var tw := s.create_tween()
 	tw.tween_property(s, "modulate:a", 0.75, 0.06)
-	tw.parallel().tween_property(s, "scale", Vector2.ONE * 1.5, 0.3)
+	tw.parallel().tween_property(s, "scale", Vector2.ONE * 1.1, 0.3)
 	tw.tween_property(s, "modulate:a", 0.0, 0.45)
 	tw.tween_callback(s.queue_free)

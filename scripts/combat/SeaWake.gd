@@ -10,6 +10,8 @@ const STEP_PX := 7.0
 ## 一点活多久（秒）：航速越高迹越长，这里是上限
 const LIFE_S := 3.4
 const MAX_PTS := 64
+## 相邻两点超过这么远就当是被挪了位，断开重记
+const JUMP_PX := 90.0
 
 var hull: Node2D = null
 ## 船半宽 / 半长（世界像素），SeaAtmosphere 按精灵尺寸给
@@ -39,6 +41,10 @@ func _process(delta: float) -> void:
 		_acc += delta
 		var stern := hull.position + Vector2(0.0, half_len * 0.86).rotated(hull.rotation)
 		var spd := _speed()
+		# 船被整段挪走（摆拍 / 夺船移位）：旧迹不连过去，免得拉出一片直边大三角
+		if _last != Vector2.INF and stern.distance_to(_last) > JUMP_PX:
+			_pts.clear()
+			_last = Vector2.INF
 		if _acc >= STEP_S and (_last == Vector2.INF or stern.distance_to(_last) >= STEP_PX):
 			_acc = 0.0
 			_last = stern

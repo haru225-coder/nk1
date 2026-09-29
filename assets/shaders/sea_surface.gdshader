@@ -29,6 +29,8 @@ uniform float shallows : hint_range(0.0, 1.0) = 0.35;
 uniform float cloud_amount : hint_range(0.0, 1.0) = 0.5;
 /// 涌浪主波长（世界像素）
 uniform float swell_len : hint_range(80.0, 900.0) = 330.0;
+/// 与 ship-vfx 线同名：涌浪的世界空间频率（1/像素）；> 0 时主波长取 1 / swell_scale，盖过 swell_len
+uniform float swell_scale : hint_range(0.0, 0.02) = 0.0;
 
 // ── 色 ──
 uniform vec4 deep_color : source_color = vec4(0.086, 0.188, 0.247, 1.0);
@@ -152,7 +154,7 @@ void fragment() {
 	// ── 涌浪：域扭曲后叠四道 ──
 	vec2 warp = vec2(fbm3(p / 760.0 + vec2(0.0, t * 0.012)), fbm3(p / 760.0 + vec2(5.2, 1.3) - t * 0.01)) - 0.5;
 	vec2 q = p + warp * 150.0;
-	float L = swell_len;
+	float L = swell_scale > 0.0 ? clamp(1.0 / swell_scale, 80.0, 900.0) : swell_len;
 	// 浪群：每道涌的振幅按大尺度噪声起落，免得四道正弦叠成拉远后一眼看穿的菱格
 	float e1 = 0.55 + 0.9 * fn(p / 1500.0 + vec2(2.0, 7.0));
 	float e2 = 0.35 + 1.1 * fn(p / 1150.0 + vec2(-5.0, 3.0));
@@ -194,6 +196,7 @@ void fragment() {
 		vec2 dv = p - r.xy;
 		float d = length(dv);
 		float rad = 10.0 + age * (70.0 + 30.0 * r.w);
+		if (d > rad + 90.0) continue;
 		float fade = 1.0 - age / life;
 		float band = d - rad;
 		float wv = exp(-band * band / (60.0 + 90.0 * age)) * fade;
@@ -214,6 +217,9 @@ void fragment() {
 		vec4 hv = hulls[i];
 		vec4 hb = hulls_b[i];
 		vec2 dv = p - hv.xy;
+		// 远处像素直接跳过：尾浪最长约 船长 + 410 像素
+		float reach_all = hb.y * 1.9 + 460.0;
+		if (dot(dv, dv) > reach_all * reach_all) continue;
 		// 船局部：y 向船首为负（Node2D 船首 -y）
 		vec2 lp = rot(dv, -hv.z);
 		float spd = clamp(hv.w / 260.0, 0.0, 1.2);
@@ -229,13 +235,16 @@ void fragment() {
 		float fleck = fn(dv / 7.0 + vec2(t * 1.3, -t * 0.7)) * 0.6 + fn(dv / 3.0 - t) * 0.4;
 		float fringe = smoothstep(3.0 + 14.0 * spd, 0.0, fr) * step(-2.0, fr);
 		fringe *= smoothstep(0.62 - 0.25 * spd, 0.85, fleck) * (0.35 + 0.65 * spd);
-		// 艏波：船首两侧往后撇开的一对浪
+		// 艏波：从船首贴着船舷往后撇开的一对短浪（约 17° 张角），只到船长的四分之一
 		float bow = 0.0;
-		if (lp.y < -hl * 0.3) {
-			float fwd = -lp.y - hl * 0.3;
-			float spread = abs(abs(lp.x) - (hw * 1.05 - (fwd - hl * 0.7) * 0.9));
-			bow = smoothstep(6.0 + 6.0 * spd, 0.0, spread) * smoothstep(hl * 1.05, hl * 0.6, fwd) * spd;
-			bow *= smoothstep(0.35, 0.75, fleck);
+		float from_tip = lp.y + hl;
+		if (from_tip > 0.0 && from_tip < hl * 0.6) {
+			float yy = clamp(lp.y / hl, -1.0, 1.0);
+			float side_w = hw * sqrt(max(0.0, 1.0 - yy * yy));
+			float wave_x = side_w + from_tip * 0.3 + 3.0;
+			bow = smoothstep(3.5 + 3.0 * spd, 0.0, abs(abs(lp.x) - wave_x));
+			bow *= smoothstep(hl * 0.6, hl * 0.12, from_tip) * spd;
+			bow *= smoothstep(0.3, 0.7, fleck);
 		}
 		// 开尔文尾浪：船尾后约 19.5° 两道斜浪，碎成沫点、越远越散越淡
 		float back = lp.y - hl * 0.85;

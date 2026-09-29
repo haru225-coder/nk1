@@ -2,13 +2,16 @@ extends SceneTree
 ## 海面 / 尾迹 / 敌船轮廓 / 落水 / 接舷氛围截图探针（lane atmos）。真海战布景（WorldMap + pending_battle），冻敌炮，按墙钟推进。
 ## Run: DISPLAY=:4 godot --path . -s res://tools/atmos_water_probe.gd
 ##      NK1_ATMOS_OUT=/tmp/x NK1_ATMOS_PREFIX=00_before_ DISPLAY=:4 godot --path . -s res://tools/atmos_water_probe.gd
-## 截图缺省写 /tmp/nk1-combat-wave3/opus-atmos/。headless 下无渲染，直接判红退出（不假绿）。
-## 另验：WorldMap 海面换上 sea_surface 着色器、每条船挂上尾迹、敌船挂上轮廓（前缀 00_before_ 时跳过这些断言）。
+##      godot --headless --path . -s res://tools/atmos_water_probe.gd   # 只验挂载契约，不截图
+## 截图缺省写 /tmp/nk1-combat-wave3/opus-atmos/。headless 下只跑挂载断言（不出图、不报「截了图」）。
+## 断言：WorldMap 海面换上 sea_surface 着色器且压到船影之下、每条船挂上尾迹、敌船挂上轮廓与黑旒、
+## 落水记涟漪、接舷起钩缆（前缀非空＝拍旧版对照，跳过这些断言）。
 
 const VIEW := Vector2i(1280, 720)
 const CombatStage := preload("res://tools/combat_probe_stage.gd")
 const SPLASH := preload("res://scenes/WaterSplash.tscn")
 const TAG := "ATMOS_WATER_PROBE"
+const Atmos := preload("res://scripts/combat/SeaAtmosphere.gd")
 
 var _out := ""
 var _prefix := ""
@@ -28,10 +31,7 @@ func _run() -> void:
 		_out = "/tmp/nk1-combat-wave3/opus-atmos"
 	_prefix = OS.get_environment("NK1_ATMOS_PREFIX")
 	DirAccess.make_dir_recursive_absolute(_out)
-	if DisplayServer.get_name() == "headless":
-		print("%s FAIL headless：无渲染，截不了图" % TAG)
-		quit(1)
-		return
+	var headless := DisplayServer.get_name() == "headless"
 	var gm := root.get_node("GameManager")
 	var fleet: Node = root.get_node_or_null("Fleet")
 	if fleet != null:
@@ -63,6 +63,12 @@ func _run() -> void:
 
 	if _prefix == "":
 		_check_dress(wm, ship, foes)
+	if headless:
+		await _check_hooks(wm, ship, foes)
+		CombatStage.teardown(self, wm_ref.get_ref(), gm)
+		await _secs(0.1)
+		_finish("contract")
+		return
 
 	# 01 宽：自带镜头拉远到海图尺度
 	_take_cam(wm, ship.global_position + Vector2(0, -40), 0.42)
@@ -112,21 +118,59 @@ func _run() -> void:
 	await _shot("05b_combatfx_water_ring" if _prefix == "" else "water_ring")
 	_drop_cam(ship)
 
-	# 06 接舷
+	# 06 接舷演出预览：两船都在（真接舷夺船当帧就释放敌船，看不到两船之间的钩缆与翻白）
 	var ne: Array = wm._nearest_enemy()
 	if ne.size() == 2:
 		var e: Node2D = ne[0]
+		_place(e, ship.global_position + Vector2(118, 14), ship.rotation + 0.1)
+		await _secs(0.4)
+		Atmos.boarding_drama(wm, ship, e)
+		await _secs(0.3)
+		await _shot("06_boarding_drama" if _prefix == "" else "boarding_preview")
+		await _secs(2.4)
+		# 06b 真接舷（WorldMap._board_enemy：题签 + 镜头 + 钩缆）
 		_place(e, ship.global_position + Vector2(96, 10), ship.rotation + 0.12)
 		wm._board_enemy(e)
 		await _secs(0.34)
-		await _shot("06_boarding_drama" if _prefix == "" else "boarding")
+		await _shot("06b_boarding_real" if _prefix == "" else "boarding")
 	await _secs(0.3)
 	CombatStage.teardown(self, wm_ref.get_ref(), gm)
 	await _secs(0.1)
+	_finish("shots")
+
+
+func _finish(mode: String) -> void:
 	for f in _fails:
 		print("%s FAIL %s" % [TAG, f])
-	print("%s %s shots=%d fails=%d out=%s" % [TAG, "OK" if _fails.is_empty() else "FAIL", _saved.size(), _fails.size(), _out])
+	print("%s %s mode=%s shots=%d fails=%d out=%s" % [TAG, "OK" if _fails.is_empty() else "FAIL", mode, _saved.size(), _fails.size(), _out])
 	quit(0 if _fails.is_empty() else 1)
+
+
+## headless 契约：落水记涟漪、接舷挂钩缆、海面参数随风
+func _check_hooks(wm: Node, ship: Node2D, foes: Array) -> void:
+	var atm := wm.get_node_or_null("SeaAtmosphere")
+	if atm == null:
+		_fails.append("无 SeaAtmosphere")
+		return
+	var s: Node2D = SPLASH.instantiate()
+	s.position = ship.position + Vector2(120, 0)
+	wm.add_child(s)
+	_expect((atm.get("_ripples") as Array).size() >= 1, "WaterSplash 落水记一圈涟漪")
+	await _secs(0.1)
+	var mat := (wm.get_node("Ocean") as CanvasItem).material as ShaderMaterial
+	_expect(int(mat.get_shader_parameter("ripple_count")) >= 1, "涟漪写进海面着色器")
+	_expect(int(mat.get_shader_parameter("hull_count")) == 3, "三条船写进海面着色器（%s）" % mat.get_shader_parameter("hull_count"))
+	var sea = wm.call("sea_state")
+	if sea != null:
+		var want: float = (sea.get("wind_to") as Vector2).angle()
+		_expect(absf(angle_difference(float(mat.get_shader_parameter("wind_angle")), want)) < 0.01, "海面风向跟 SeaState")
+	if foes.size() > 0 and is_instance_valid(foes[0]):
+		Atmos.boarding_drama(wm, ship, foes[0])
+		var ropes := 0
+		for c in wm.get_children():
+			if c is Line2D:
+				ropes += 1
+		_expect(ropes == 3, "接舷抛出三根钩缆（%d）" % ropes)
 
 
 func _check_dress(wm: Node, ship: Node2D, foes: Array) -> void:
@@ -134,6 +178,7 @@ func _check_dress(wm: Node, ship: Node2D, foes: Array) -> void:
 	var mat := ocean.material as ShaderMaterial if ocean != null else null
 	_expect(mat != null and mat.shader != null and mat.shader.resource_path.ends_with("sea_surface.gdshader"),
 		"海面换上 sea_surface 着色器")
+	_expect(ocean != null and ocean.z_index < -2, "海面压到船影之下（z %s）" % (ocean.z_index if ocean else "?"))
 	_expect(wm.get_node_or_null("SeaAtmosphere") != null, "WorldMap 挂上 SeaAtmosphere")
 	var wakes := 0
 	var atm := wm.get_node_or_null("SeaAtmosphere")

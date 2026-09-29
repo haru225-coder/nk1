@@ -19,6 +19,7 @@ shader_parameter/stroke_amount = 0.62
 shader_parameter/shallows = 0.35
 shader_parameter/cloud_amount = 0.5
 shader_parameter/swell_len = 330.0
+shader_parameter/swell_scale = 0.003
 shader_parameter/deep_color = Color(0.086, 0.188, 0.247, 1)
 shader_parameter/mid_color = Color(0.141, 0.337, 0.416, 1)
 shader_parameter/shoal_color = Color(0.247, 0.498, 0.478, 1)
