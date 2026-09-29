@@ -10,6 +10,7 @@ const _LETTERBOX_PATH := "res://scripts/ui/CombatLetterbox.gd"
 const _Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const _SeaState := preload("res://scripts/combat/SeaState.gd")
 const _Maneuver := preload("res://scripts/combat/ManeuverModel.gd")
+const _SeaAtmosphere := preload("res://scripts/combat/SeaAtmosphere.gd")
 
 ## 战斗结束信号：outcome 为 "win"/"lose"/"flee"，data 携带战损等结算信息
 signal battle_finished(outcome: String, data: Dictionary)
@@ -236,6 +237,7 @@ func _board_enemy(enemy: Node2D) -> void:
 	boarding_target = enemy
 	_AUDIO.combat_board(self)
 	enemy.set("grappled", true)  # 敌船停航停炮
+	_SeaAtmosphere.boarding_drama(self, ship, enemy)  # lane atmos：接舷镜头 / 钩缆 / 翻白
 
 	# 钩索题签 + 轻震；窗口下停 0.42 s 再分胜负（combat12：combat11 把这一拍并进了同帧，begin 相位一帧没画就被 resolve 顶掉，
 	# wire / vfx 截图门禁的接舷开场张截不到）。headless 不停：末船夺下仍当帧收战。
@@ -514,6 +516,8 @@ func _setup_combat(pb: Dictionary) -> void:
 		_morale.verdict.connect(_battle_exit)
 		_morale.noted.connect(_on_morale_noted)
 	_CombatShoreHook.mount_combat_ui(self, ship)
+	# lane atmos：海面着色器驱动、航迹、敌我旗旒与轮廓、落水涟漪
+	_SeaAtmosphere.attach(self, ship)
 
 
 ## 生成一支敌舰队，绕玩家船散布；hull_hp 按战力比缩放。sprite_id 空则精灵按 type 取（PirateShip.apply_sprite）

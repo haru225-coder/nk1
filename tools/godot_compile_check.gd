@@ -79,6 +79,7 @@ const SCRIPTS := [
 	"res://scripts/combat/MeleeResolve.gd",  # lane combat05 接舷白刃结算（BoardingStage.play 演它）
 	"res://scripts/combat/CombatMorale.gd",  # lane combat06 海战士气（崩坏 / 溃逃 / 降幡 / 拒接舷）
 	"res://scripts/combat/SeaState.gd", "res://scripts/combat/ManeuverModel.gd",  # lane combat02 风流舷向与机动（海况 / 机动模型，WorldMap 接线）
+	"res://scripts/combat/SeaAtmosphere.gd", "res://scripts/combat/SeaWake.gd", "res://scripts/combat/SeaPennant.gd",  # lane atmos 海面/航迹/旗旒
 	"res://scripts/combat/DamageModel.gd", "res://scripts/combat/FloodFire.gd",  # lane combat04 分系统损伤、浸水失火（Ship.gd 挂用）
 	# lane combat03 舷战弹道 / 分位装填与弹药
 	"res://scripts/combat/Ballistics.gd", "res://scripts/combat/ReloadAmmo.gd",
@@ -106,7 +107,7 @@ const SCRIPTS := [
 	"res://tools/qa_customs_duty_probe.gd",
 	"res://tools/qa_yard_transition_probe.gd",
 	"res://tools/qa_pirate_boat_probe.gd",  # 海寇快船 + 船图契约（lane pirate-boat-0928）
-	"res://tools/combat_vfx_probe.gd", "res://tools/ship_vfx_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
+	"res://tools/combat_vfx_probe.gd", "res://tools/ship_vfx_probe.gd", "res://tools/atmos_water_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
 	"res://tools/combat_realism_probe.gd", "res://scripts/combat/CombatDirector.gd",  # lane combat10 写实海战冒烟探针 + 装配台
 	"res://tools/vision_stage_probe.gd", "res://tools/vision_letterbox_probe.gd", "res://tools/letterbox_signal_probe.gd",
 	"res://tools/probe_clock.gd", "res://tools/shot_consistency.gd",

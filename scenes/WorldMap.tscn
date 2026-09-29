@@ -3,22 +3,29 @@
 [ext_resource type="Script" path="res://scripts/WorldMap.gd" id="1_map"]
 [ext_resource type="PackedScene" path="res://scenes/Ship.tscn" id="2_ship"]
 [ext_resource type="Texture2D" uid="uid://xnp7vjyfjnp1" path="res://assets/ocean_water.png" id="3_ocean"]
-[ext_resource type="Shader" path="res://assets/ocean_shader.gdshader" id="4_shader"]
+[ext_resource type="Shader" path="res://assets/shaders/sea_surface.gdshader" id="4_shader"]
 [ext_resource type="PackedScene" path="res://scenes/PortZone.tscn" id="5_port"]
 [ext_resource type="Script" path="res://scripts/Minimap.gd" id="6_minimap"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("4_shader")
-shader_parameter/wave_speed = 0.28
-shader_parameter/swell_scale = 0.0036
+shader_parameter/wind_angle = 0.7
+shader_parameter/wind_strength = 0.6
+shader_parameter/gust = 0.0
+shader_parameter/wave_speed = 0.3
 shader_parameter/foam_amount = 0.45
 shader_parameter/glint_amount = 0.22
-shader_parameter/wind_angle = 0.7
-shader_parameter/deep_color = Color(0.06, 0.16, 0.28, 1)
-shader_parameter/mid_color = Color(0.1, 0.32, 0.42, 1)
-shader_parameter/shoal_color = Color(0.22, 0.48, 0.5, 1)
-shader_parameter/foam_color = Color(0.78, 0.88, 0.9, 1)
-shader_parameter/glint_color = Color(0.92, 0.9, 0.78, 1)
+shader_parameter/stroke_amount = 0.62
+shader_parameter/shallows = 0.35
+shader_parameter/cloud_amount = 0.5
+shader_parameter/swell_len = 330.0
+shader_parameter/deep_color = Color(0.086, 0.188, 0.247, 1)
+shader_parameter/mid_color = Color(0.141, 0.337, 0.416, 1)
+shader_parameter/shoal_color = Color(0.247, 0.498, 0.478, 1)
+shader_parameter/foam_color = Color(0.867, 0.91, 0.89, 1)
+shader_parameter/glint_color = Color(0.914, 0.835, 0.604, 1)
+shader_parameter/ink_color = Color(0.063, 0.102, 0.125, 1)
+shader_parameter/fiber_amount = 0.5
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glass"]
 bg_color = Color(0.145, 0.098, 0.064, 0.94)
@@ -39,6 +46,7 @@ shadow_offset = Vector2(0, 2)
 script = ExtResource("1_map")
 
 [node name="Ocean" type="TextureRect" parent="."]
+z_index = -10
 material = SubResource("ShaderMaterial_ocean")
 offset_left = -20000.0
 offset_top = -20000.0
