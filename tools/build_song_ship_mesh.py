@@ -2,7 +2,7 @@
 """泉州湾南宋海船 — 一条可转的三维船壳（glTF）。
 
 尖底、低干舷、一层露天甲板、艏艉起翘、两桅竹席硬篷。
-艉是低席拱，不是箱子；帆在竹条之间鼓腹。敌我只差帆色。
+艉是低席拱，不是箱子；竹条之间是鼓起的席腹。敌我只差帆色。
 船械只按南宋：旋风砲抛霹雳炮、火箭、艏部拍竿。没有炮、没有佛郎机、没有炮门。
 船首 +Z，水线 y=0，船长沿 Z，右舷 +X。Y 朝上。
 
@@ -356,78 +356,90 @@ def tint(color, k):
 
 
 def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head, z_leech_head, camber, n_bat=8, n_u=14):
-    """一条连续的席。竹条是面上的横肋，布在肋间向外鼓成同一张腹，不分成一块块浮板。"""
-    n_sub = 6
+    """一张席。竹条贴在肋上，几乎是直的；两根竹之间布向外鼓、向下坠，读成弧腹不是一层层板。"""
+    n_sub = 8
     n_v = n_bat * n_sub
     panel_h = max(0.05, (head_y - foot_y) / float(n_bat))
+    # 竹间鼓出的深度。按格高来，格越高肚子越圆，后缘再加一截，侧看是波浪不是直尺。
+    # 鼓向左舷（低相机在这一侧），肚子才出现在看得见的那一面，不是藏在竹后面。
+    pouch_x = max(0.42, panel_h * 1.20)
 
-    def sp(u, v):
-        z_luff = lerp(z_luff_foot, z_luff_head, v)
-        z_leech = lerp(z_leech_foot, z_leech_head, v)
-        # 后缘轻轻外弯，仍是硬篷，不是三角软帆
-        z_leech += 0.10 * math.sin(math.pi * v)
-        z = lerp(z_luff, z_leech, u ** 0.92)
-        y = lerp(foot_y, head_y, v)
-        y += 0.06 * u * (0.20 + 0.25 * v)
+    def sheet_of(u, v):
+        return (math.sin(math.pi * u) ** 0.72) * (0.48 + 0.52 * math.sin(math.pi * clamp(v, 0.0, 1.0)))
+
+    def belly_of(v):
         panel = v * n_bat
         nearest = round(panel)
+        # 竹上是 0，两竹正中是 1。sin^2 在竹上斜率为 0，布贴上竹，不折成一块板的棱。
         if abs(panel - nearest) < 1e-4:
             local = 0.0
         else:
             local = panel - math.floor(panel)
-        sag = math.sin(math.pi * local) ** 1.15
-        # 整张帆一个腹，竹间只再鼓一截，不把每格布掉到下一根竹下面
-        # 整张帆一个弧：中段最鼓，头脚收回。竹间只轻轻再鼓，不成一层层板。
-        sheet = (math.sin(math.pi * u) ** 0.70) * (0.55 + 0.45 * math.sin(math.pi * clamp(v, 0.0, 1.0)))
-        pouch = sag * (math.sin(math.pi * u) ** 0.9)
-        x = camber * (1.15 * sheet + 0.10 * pouch)
-        y -= pouch * panel_h * 0.045
-        z += pouch * 0.015
-        return (x, y, z), sag, local, sheet
+        return math.sin(math.pi * local) ** 2
 
-    def shade(sag, local, sheet, u):
-        belly = sag * math.sin(math.pi * u)
-        g = 0.74 + 0.22 * sheet - 0.08 * belly
-        g *= 1.0 - 0.04 * u
+    def base_pt(u, v):
+        z_luff = lerp(z_luff_foot, z_luff_head, v)
+        z_leech = lerp(z_leech_foot, z_leech_head, v)
+        z_leech += 0.06 * math.sin(math.pi * v)
+        z = lerp(z_luff, z_leech, u ** 0.92)
+        y = lerp(foot_y, head_y, v)
+        y += 0.04 * u * (0.15 + 0.18 * v)
+        x = camber * 0.92 * sheet_of(u, v)
+        return (x, y, z)
+
+    def sp(u, v):
+        x, y, z = base_pt(u, v)
+        belly = belly_of(v)
+        # 后缘肚子最大，桅边收一点，避免布插进桅。
+        across = 0.72 + 0.28 * u
+        # 负 X：布在两根竹之间朝相机鼓出来。竹仍在基线上，所以是直肋，布是弧。
+        x -= pouch_x * belly * across
+        y -= panel_h * 0.20 * belly * (0.45 + 0.55 * u)
+        z += panel_h * 0.05 * belly * u
+        return (x, y, z), belly, sheet_of(u, v)
+
+    def shade(belly, sheet, u):
+        # 腹冠稍亮，帮助低对比光下读出弧，不是一条条亮板。
+        g = 0.70 + 0.10 * sheet + 0.22 * belly
+        g *= 1.0 - 0.03 * u
         g = clamp(g, 0.62, 1.0)
-        return (g, g * 0.985, g * 0.90, 1.0)
+        return (g, g * 0.99, g * 0.94, 1.0)
 
     for iv in range(n_v):
         for iu in range(n_u):
             u0, u1 = iu / n_u, (iu + 1) / n_u
             v0, v1 = iv / n_v, (iv + 1) / n_v
-            a, sa, la, ba = sp(u0, v0)
-            b, sb, lb, bb = sp(u1, v0)
-            c, sc, lc, bc = sp(u1, v1)
-            d, sd, ld, bd = sp(u0, v1)
+            a, ba, sa = sp(u0, v0)
+            b, bb, sb = sp(u1, v0)
+            c, bc, sc = sp(u1, v1)
+            d, bd, sd = sp(u0, v1)
             sail.quad_vc(
                 a, b, c, d,
-                shade(sa, la, ba, u0), shade(sb, lb, bb, u1),
-                shade(sc, lc, bc, u1), shade(sd, ld, bd, u0),
+                shade(ba, sa, u0), shade(bb, sb, u1),
+                shade(bc, sc, u1), shade(bd, sd, u0),
                 (u0, v0), (u1, v0), (u1, v1), (u0, v1),
             )
     for batten in range(n_bat + 1):
         v = batten / n_bat
         prev = None
-        rad = 0.026 if batten in (0, n_bat) else 0.015
-        col = mix(BATTEN, TEAK_DK, 0.15 if batten in (0, n_bat) else 0.0)
+        rad = 0.020 if batten in (0, n_bat) else 0.011
+        col = mix(BATTEN, TEAK_DK, 0.22 if batten in (0, n_bat) else 0.0)
         steps = n_u * 2
         for iu in range(steps + 1):
             u = iu / steps
-            p, *_ = sp(u, v)
-            # 竹贴在席面上，只探出一点点，不悬成另一层板
-            p = (p[0] + 0.018, p[1] + 0.004, p[2])
+            # 竹走基线，不跟着布肚子走，所以是直肋，布在肋间鼓出来
+            p = base_pt(u, v)
+            p = (p[0] - 0.02, p[1], p[2])
             if prev:
                 add_cyl(fit, prev, p, rad, col, 5, caps=False)
             prev = p
-    for batten in range(1, n_bat):
+    for batten in range(1, n_bat, 2):
         v = batten / n_bat
-        for u in (0.46, 0.78):
-            p, *_ = sp(u, v)
-            p = (p[0] + 0.03, p[1], p[2])
-            drop = (p[0] + 0.02, p[1] - 0.10, p[2])
-            rope(fit, p, drop, 0.004, 0.010, ROPE, n=3)
-            add_sphere(fit, drop, 0.022, TEAK_DK, 5, 4)
+        p = base_pt(0.72, v)
+        p = (p[0] + 0.02, p[1], p[2])
+        drop = (p[0] + 0.015, p[1] - 0.07, p[2])
+        rope(fit, p, drop, 0.004, 0.008, ROPE, n=3)
+        add_sphere(fit, drop, 0.016, TEAK_DK, 5, 4)
     prev = None
     for iv in range(0, n_v + 1, 2):
         v = iv / n_v
@@ -760,112 +772,107 @@ def add_bomb(fit, c, r=0.16):
 
 
 def add_pai_gan(fit):
-    """拍竿：艏部可落下的重木，头是石槌。杆要粗到宽景不只剩一个圆点。不是炮。"""
-    t = 0.07
+    """拍竿：艏部可落下的重木，头是石槌。低相机下把头抬高、加大，不扫帆。不是炮。"""
+    t = 0.06
     z = z_of(t)
     y0 = deck_side_y(t) + 0.16
-    post_h = 1.62
+    post_h = 1.95
     post_top = y0 + post_h
-    add_cyl(fit, (0.0, y0, z), (0.0, post_top, z), 0.115, TEAK_DK, 8)
-    add_box(fit, (0.0, y0 + 0.08, z), (0.52, 0.10, 0.34), mix(TEAK, TEAK_DK, 0.25))
+    add_cyl(fit, (0.0, y0, z), (0.0, post_top, z), 0.13, TEAK_DK, 8)
+    add_box(fit, (0.0, y0 + 0.08, z), (0.58, 0.11, 0.36), mix(TEAK, TEAK_DK, 0.25))
     for s in (-1.0, 1.0):
-        add_cyl(fit, (s * 0.22, y0 + 0.06, z), (s * 0.03, post_top - 0.10, z), 0.045, TEAK, 6, caps=False)
-        add_cyl(fit, (s * 0.55, y0 + 0.04, z - 0.15), (s * 0.04, post_top - 0.35, z), 0.032, mix(TEAK, TEAK_DK, 0.4), 5, caps=False)
-    pivot = (0.0, post_top - 0.08, z)
-    ang = 0.72
-    length = 2.05
-    head = (
-        0.0,
-        pivot[1] + math.sin(ang) * length,
-        pivot[2] + math.cos(ang) * length,
-    )
-    add_cyl(fit, pivot, head, 0.125, mix(TEAK, TEAK_LT, 0.22), 8, caps=False)
-    # 杆上两道铁箍，斜看是一根木头不是一条线
-    for f in (0.28, 0.62):
+        add_cyl(fit, (s * 0.24, y0 + 0.06, z), (s * 0.03, post_top - 0.10, z), 0.048, TEAK, 6, caps=False)
+        add_cyl(fit, (s * 0.58, y0 + 0.04, z - 0.12), (s * 0.04, post_top - 0.32, z), 0.034, mix(TEAK, TEAK_DK, 0.4), 5, caps=False)
+    pivot = (0.0, post_top - 0.06, z)
+    # 更陡，头在艏柱上方的空里。略偏右舷，低相机看得到整颗石，不挡帆。
+    ang = 1.12
+    length = 2.15
+    direction = vnorm((0.22, math.sin(ang), math.cos(ang) * 0.42))
+    head = vadd(pivot, vmul(direction, length))
+    add_cyl(fit, pivot, head, 0.16, mix(TEAK, TEAK_LT, 0.22), 8, caps=False)
+    for f in (0.30, 0.62):
         band_c = tuple(lerp(pivot[k], head[k], f) for k in range(3))
-        band_d = tuple(lerp(pivot[k], head[k], f + 0.035) for k in range(3))
-        add_cyl(fit, band_c, band_d, 0.155, IRON, 8, caps=False)
-    add_cyl(fit, pivot, (0.0, pivot[1], pivot[2] + 0.02), 0.16, IRON, 8)
-    stone = (0.55, 0.52, 0.46, 1)
-    add_sphere(fit, head, 0.36, stone, 10, 8)
-    # 石槌前后加一截，读成锤不是球
+        band_d = tuple(lerp(pivot[k], head[k], f + 0.045) for k in range(3))
+        add_cyl(fit, band_c, band_d, 0.20, IRON, 8, caps=False)
+    add_cyl(fit, pivot, (0.0, pivot[1], pivot[2] + 0.02), 0.18, IRON, 8)
+    stone = (0.62, 0.58, 0.50, 1)
+    add_sphere(fit, head, 0.52, stone, 10, 8)
+    # 石槌沿杆再伸一截，读成锤头不是桅顶的小球
     add_cyl(
         fit,
-        (head[0], head[1] - 0.06, head[2] - 0.18),
-        (head[0], head[1] + 0.02, head[2] + 0.28),
-        0.17,
-        mix(stone, IRON, 0.28),
+        vadd(head, vmul(direction, -0.28)),
+        vadd(head, vmul(direction, 0.34)),
+        0.24,
+        mix(stone, IRON, 0.22),
         8,
         caps=False,
     )
+    side = vnorm(vcross(direction, (0.0, 1.0, 0.0)))
     add_cyl(
         fit,
-        (head[0] - 0.22, head[1], head[2]),
-        (head[0] + 0.22, head[1], head[2]),
-        0.10,
+        vadd(head, vmul(side, -0.30)),
+        vadd(head, vmul(side, 0.30)),
+        0.12,
         IRON,
         6,
         caps=False,
     )
-    mid = tuple(lerp(pivot[k], head[k], 0.42) for k in range(3))
-    for s in (-0.55, 0.55):
-        rope(fit, mid, (s, y0 + 0.10, z - 0.08), 0.14, 0.018, ROPE, n=5)
+    mid = tuple(lerp(pivot[k], head[k], 0.40) for k in range(3))
+    for s in (-0.62, 0.62):
+        rope(fit, mid, (s, y0 + 0.10, z - 0.06), 0.12, 0.020, ROPE, n=5)
 
 
 def add_traction_trebuchet(fit):
-    """旋风砲：人力拽索抛石架，抛纸壳霹雳炮。放在主桅后的左舷空甲板，臂朝外舷，不扫帆。"""
-    t = 0.66
-    x = -0.92
+    """旋风砲：左舷一架。臂朝外舷再扬起，低相机能看出是抛臂，不横过帆面。抛的是纸壳霹雳炮。"""
+    t = 0.75
+    x = -1.18
     z = z_of(t)
-    y = deck_side_y(t) + 0.18
-    h = 2.15
-    half = 0.46
-    leg_r = 0.070
+    y = deck_side_y(t) + 0.16
+    h = 1.00
+    half = 0.50
+    leg_r = 0.078
     for s in (-half, half):
-        add_cyl(fit, (x + s, y, z - 0.28), (x + s * 0.42, y + h, z), leg_r, TEAK_DK, 6)
-        add_cyl(fit, (x + s, y, z + 0.28), (x + s * 0.42, y + h, z), leg_r, TEAK_DK, 6)
-        # 腿间横档，远看是架子不是四根头发
-        add_cyl(fit, (x + s, y + 0.55, z - 0.16), (x + s, y + 0.55, z + 0.16), 0.040, TEAK, 5, caps=False)
-    axle_l = (x - half * 0.42, y + h, z)
-    axle_r = (x + half * 0.42, y + h, z)
-    add_cyl(fit, axle_l, axle_r, 0.048, IRON, 7)
-    add_box(fit, (x, y + 0.07, z), (0.92, 0.12, 0.70), TEAK)
-    # 底座绞盘：一排人拉的横杠
-    add_cyl(fit, (x - 0.15, y + 0.22, z - 0.55), (x - 0.15, y + 0.22, z + 0.15), 0.055, TEAK_DK, 6)
+        add_cyl(fit, (x + s, y, z - 0.32), (x + s * 0.55, y + h, z - 0.06), leg_r, TEAK_DK, 6)
+        add_cyl(fit, (x + s, y, z + 0.32), (x + s * 0.55, y + h, z - 0.06), leg_r, TEAK_DK, 6)
+        add_cyl(fit, (x + s, y + 0.48, z - 0.18), (x + s, y + 0.48, z + 0.18), 0.042, TEAK, 5, caps=False)
+    axle_l = (x - half * 0.55, y + h, z - 0.06)
+    axle_r = (x + half * 0.55, y + h, z - 0.06)
+    add_cyl(fit, axle_l, axle_r, 0.055, IRON, 7)
+    add_box(fit, (x, y + 0.07, z), (1.05, 0.13, 0.78), TEAK)
+    add_cyl(fit, (x - 0.10, y + 0.24, z - 0.62), (x - 0.10, y + 0.24, z + 0.10), 0.060, TEAK_DK, 6)
     for k in range(3):
-        zz = z - 0.40 + k * 0.22
-        add_cyl(fit, (x - 0.55, y + 0.22, zz), (x + 0.15, y + 0.22, zz), 0.028, mix(TEAK, TEAK_LT, 0.3), 5, caps=False)
-    ang = 0.82
-    short_l, long_l = 0.70, 2.25
+        zz = z - 0.46 + k * 0.24
+        add_cyl(fit, (x - 0.62, y + 0.24, zz), (x + 0.22, y + 0.24, zz), 0.032, mix(TEAK, TEAK_LT, 0.3), 5, caps=False)
+    # 臂：向上、向外舷、略向艉。不指向相机，侧面能看出是一根抛臂。
+    pivot = (x, y + h, z - 0.06)
+    # 臂几乎朝外舷扬起。近景己方和近景敌船都能看见整根臂，又不扫到帆。
+    direction = vnorm((-0.94, 0.34, -0.08))
+    short_l, long_l = 0.48, 2.30
 
     def arm_out(dist):
-        return (
-            x - math.cos(ang) * dist,
-            y + h + math.sin(ang) * dist,
-            z + 0.12 * (dist / long_l),
-        )
+        return vadd(pivot, vmul(direction, dist))
 
     short = arm_out(-short_l)
     long = arm_out(long_l)
-    add_cyl(fit, short, long, 0.090, mix(TEAK, TEAK_LT, 0.18), 7, caps=False)
-    for f in (0.35, 0.70):
+    add_cyl(fit, short, long, 0.145, mix(TEAK, TEAK_LT, 0.18), 7, caps=False)
+    for f in (0.34, 0.68):
         a = arm_out(lerp(-short_l, long_l, f))
-        b = arm_out(lerp(-short_l, long_l, f + 0.04))
-        add_cyl(fit, a, b, 0.115, IRON, 6, caps=False)
-    for k in range(5):
+        b = arm_out(lerp(-short_l, long_l, f + 0.045))
+        add_cyl(fit, a, b, 0.175, IRON, 6, caps=False)
+    for k in range(4):
         rope(
             fit, short,
-            (x + 0.35, y + 0.10, z + (k - 2.0) * 0.11),
-            0.10, 0.014, ROPE, n=4,
+            (x + 0.42, y + 0.12, z + (k - 1.5) * 0.13),
+            0.08, 0.016, ROPE, n=4,
         )
-    pouch = (long[0] - 0.06, long[1] - 0.42, long[2])
-    rope(fit, long, (pouch[0], pouch[1] + 0.16, pouch[2]), 0.04, 0.012, ROPE, n=3)
-    rope(fit, (long[0], long[1], long[2] + 0.06), pouch, 0.02, 0.012, ROPE, n=3)
-    add_bomb(fit, pouch, 0.26)
-    crib = (x + 0.15, y + 0.20, z + 0.62)
-    add_box(fit, (crib[0], y + 0.09, crib[2]), (0.62, 0.16, 0.48), TEAK_DK)
-    for i, (dx, dz) in enumerate(((-0.16, -0.12), (0.14, -0.10), (-0.04, 0.12), (0.16, 0.10))):
-        add_bomb(fit, (crib[0] + dx, crib[1] + 0.06, crib[2] + dz), 0.16)
+    pouch = vadd(long, (-0.04, -0.55, -0.02))
+    rope(fit, long, (pouch[0], pouch[1] + 0.20, pouch[2]), 0.05, 0.016, ROPE, n=3)
+    rope(fit, vadd(long, (0.0, 0.0, 0.08)), pouch, 0.03, 0.014, ROPE, n=3)
+    add_bomb(fit, pouch, 0.38)
+    crib = (x + 0.05, y + 0.22, z + 0.70)
+    add_box(fit, (crib[0], y + 0.08, crib[2]), (0.55, 0.14, 0.42), TEAK_DK)
+    for dx, dz in ((-0.12, -0.08), (0.12, 0.06)):
+        add_bomb(fit, (crib[0] + dx, crib[1] + 0.04, crib[2] + dz), 0.15)
 
 
 
@@ -1220,8 +1227,7 @@ def build():
         z_of(0.42), z_of(0.72), z_of(0.46), z_of(0.68),
         camber=1.46, n_bat=9, n_u=18,
     )
-    sail.smooth()
-    sail.reverse_shell(0.70)
+    # 不平滑、不叠背面：每片面有自己的法线，竹间的腹才不会被平均成一块板，也不会和背面抢深度。
 
     rope(fit, (0.42, deck_side_y(0.40) + 0.95, z_of(0.40)), (0.40, deck_side_y(0.46) + 0.16, z_of(0.46)), 0.12, 0.012, ROPE)
     rope(fit, (0.55, deck_side_y(0.72) + 0.78, z_of(0.72)), (0.42, deck_side_y(0.78) + 0.20, z_of(0.78)), 0.16, 0.014, ROPE)
