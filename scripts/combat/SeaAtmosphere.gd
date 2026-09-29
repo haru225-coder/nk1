@@ -28,9 +28,8 @@ const WAKE_Z := -5
 const WIND_CAP := 130.0
 ## 船体尺寸（Sprite2D scale 0.62 时，世界像素）：半宽 / 半长
 const HULL_HALF := Vector2(44.0, 128.0)
-## 桅顶旗旒挂点（船局部，Sprite scale 0.62 时）。
-## 2026-09-29 斜俯船图：头桅顶在贴图左上，不再落在正俯视那条船的舯部（-4, -96 会铺在新船的艏甲板上）。
-const PENNANT_AT := Vector2(-84.0, -116.0)
+## 桅顶旗旒挂点（船局部）。HullRig 每帧按三维主桅投影改写；这只是首帧落点。
+const PENNANT_AT := Vector2(0.0, -70.0)
 ## 接舷镜头：拉近倍数、推进 / 停 / 回的秒数
 const DRAMA_ZOOM := 1.4
 const DRAMA_IN := 0.35

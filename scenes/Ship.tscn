@@ -1,10 +1,11 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/Ship.gd" id="1_ship"]
 [ext_resource type="Texture2D" uid="uid://bs4vafdk65gsh" path="res://assets/ship_fu.png" id="2_ship_tex"]
 [ext_resource type="Shader" path="res://assets/shaders/hull_lit.gdshader" id="look_lit"]
 [ext_resource type="Shader" path="res://assets/shaders/hull_water.gdshader" id="look_water"]
 [ext_resource type="Script" path="res://scripts/combat/ShipLook.gd" id="look_script"]
+[ext_resource type="Script" path="res://scripts/combat/ShipHull3D.gd" id="hull3d"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ship"]
 radius = 24.0
@@ -186,3 +187,6 @@ horizontal_alignment = 1
 
 [node name="ShipLook" type="Node" parent="."]
 script = ExtResource("look_script")
+
+[node name="HullRig" type="Node" parent="."]
+script = ExtResource("hull3d")

@@ -65,6 +65,8 @@ const FIRE_PUFF_GAIN := 0.6
 var fire_level := 0.0
 var immobile := false
 var _sprite_base_scale := Vector2.ONE
+## 转向侧倾（弧度）。有 HullRig 时不直接写 sprite.rotation——那一格要拿来抵消航向。
+var _heel_vis := 0.0
 var _fx_fire_lv := 0.0
 var _fx_flood_lv := 0.0
 var _dress_t := 0.0
@@ -224,7 +226,11 @@ func _update_visuals(delta: float) -> void:
 	turn_input = clampf(turn_input, -1.0, 1.0)
 	roll_angle -= turn_input * (current_speed / max_speed) * 0.3
 	
-	sprite.rotation = lerp_angle(sprite.rotation, roll_angle, 5.0 * delta)
+	_heel_vis = lerp_angle(_heel_vis, roll_angle, 5.0 * delta)
+	if get_node_or_null("HullRig") != null:
+		set_meta(&"nk1_heel", _heel_vis)
+	else:
+		sprite.rotation = _heel_vis
 	
 	var speed_ratio = current_speed / (max_speed * 1.5)
 	

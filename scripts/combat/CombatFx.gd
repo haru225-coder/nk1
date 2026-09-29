@@ -246,11 +246,15 @@ static func hull_shudder(ship: Node2D, intensity := 1.0, side := 0) -> void:
 		squash = Vector2(1.0 + 0.03 * iv * sign(float(side)), 1.0 - 0.05 * iv)
 	sprite.scale = base * squash
 	var roll := 0.07 * iv * (1.0 if side == 0 else float(side))
-	sprite.rotation = roll
+	var rig := ship.get_node_or_null("HullRig")
+	var use_rig := rig != null and rig.has_method("shudder")
+	if not use_rig:
+		sprite.rotation = roll
 	if Kit.is_headless():
 		# headless：立刻复位，只留一帧可观测的 scale 变化痕迹
 		sprite.scale = base
-		sprite.rotation = 0.0
+		if not use_rig:
+			sprite.rotation = 0.0
 		return
 	if ship.has_meta(&"nk1_shudder_tween"):
 		var old = ship.get_meta(&"nk1_shudder_tween")
@@ -260,7 +264,10 @@ static func hull_shudder(ship: Node2D, intensity := 1.0, side := 0) -> void:
 	ship.set_meta(&"nk1_shudder_tween", tw)
 	tw.set_parallel(true)
 	tw.tween_property(sprite, "scale", base, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(sprite, "rotation", 0.0, 0.28).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	if use_rig:
+		rig.call("shudder", roll)
+	else:
+		tw.tween_property(sprite, "rotation", 0.0, 0.28).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 ## 本船挨重的一拍屏幕反应（红蓝错位 + 四角一暗，约 0.15 s）；只旗舰（有镜头的那条）挂得上。push 是世界里的来力方向。

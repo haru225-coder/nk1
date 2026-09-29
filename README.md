@@ -66,13 +66,13 @@ debug 构建下：**F11** 跳泉州港，再按跳福州（通用九卡），再
 
 ## 海战船图管线
 
-海战精灵（福船 / 海鹘 / 铁子）是真 RGBA 位图，不靠抠像着色器。`ship_fu.png` / `ship_falcon.png` 由确定性脚本重画：
+海战船身是一条三维泉州湾南宋海船，不是一张贴图在转。船壳在 `assets/ships/song_quanzhou.glb`（尖底、低干舷、一层露天甲板、艏艉起翘、两桅竹席硬篷）。`Ship` / `PirateShip` 上的 `HullRig` 用固定斜俯相机把这条网格渲进视口，船体绕 Y 跟航向走，至少十六个朝向各是不同的一面。敌我同一船壳，只换帆色（牙白 / 绛红）。
 
 ```bash
-python3 tools/paint_oblique_song_ship.py   # 需 numpy / Pillow / scipy（仅美术管线用，游戏本身无第三方依赖）
+python3 tools/build_song_ship_mesh.py   # 需 Python 标准库；重生 glb
 ```
 
-脚本在船体坐标里画一条泉州湾宋代海船的斜俯 3/4 视（舷弧、右舷干舷、两面竹席硬篷，船首朝上），两张图共用同一船壳，只差帆色与桅顶小旗；不烤投影与白沫，自检不过 exit 1，预览出到 `/tmp/nk1-combat-wave3/oblique-ship/`。旧的正俯视抠图管线 `tools/cut_ship_sprites.py` 只在 `--legacy` 下运行（铁子 `shot_iron.png` 仍由它出）。改完必须重跑 `check_symbols.py`——PNG 取证会拦下平涂占位图和烤进底板的 RGB 图。
+`assets/ship_fu.png` / `ship_falcon.png` 是这条网格的一张朝向，留给船图契约和缺网格时的回落，游戏里不拿它自旋。旧的正俯视抠图 `tools/cut_ship_sprites.py` 只在 `--legacy` 下运行（铁子 `shot_iron.png` 仍由它出）。改完必须重跑 `check_symbols.py`——PNG 取证会拦下平涂占位图和烤进底板的 RGB 图。
 
 ## 目录结构
 
