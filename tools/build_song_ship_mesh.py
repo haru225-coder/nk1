@@ -646,8 +646,9 @@ def add_hatch(fit, t, w, length):
             around.append(deck_height_at(tt, sx * hw * 0.82))
     rim = max(around) + 0.10
     floor_y = rim - 0.72
-    hw_f = hw * 0.68
-    hl_f = hl * 0.68
+    # 舱底几乎铺满口。太小的话，十七度会从口沿看见舱底外面的海。
+    hw_f = hw * 0.90
+    hl_f = hl * 0.90
     for _try in range(14):
         ok = True
         for sz in (-1.0, 1.0):
@@ -691,10 +692,10 @@ def add_hatch(fit, t, w, length):
         (0.70, 0.46, 0.24, 1),
     )
     dark = (
-        (0.40, 0.24, 0.12, 1),
-        (0.55, 0.34, 0.17, 1),
-        (0.60, 0.38, 0.19, 1),
-        (0.38, 0.22, 0.11, 1),
+        (0.62, 0.42, 0.22, 1),
+        (0.78, 0.54, 0.30, 1),
+        (0.84, 0.60, 0.34, 1),
+        (0.58, 0.38, 0.20, 1),
     )
     bands = 6
 
@@ -709,8 +710,8 @@ def add_hatch(fit, t, w, length):
         for i in range(bands):
             v0 = i / bands
             v1 = (i + 1) / bands
-            # 缝留在两条板之间，不把整面压暗。
-            gap = 0.08
+            # 壁板缝收窄，近景看到的是浅色舱壁，不是一排黑格。
+            gap = 0.035
             vv0 = v0 + (gap / bands if i else 0.0)
             vv1 = v1 - (gap / bands if i < bands - 1 else 0.0)
             col = light[face] if i % 2 == 0 else dark[face]
@@ -743,7 +744,7 @@ def add_hatch(fit, t, w, length):
         b = u1 - inset * (0.35 if i < npl - 1 else 0.0)
         x0 = a * hw_f
         x1 = b * hw_f
-        col = (0.86, 0.60, 0.34, 1) if i % 2 == 0 else (0.64, 0.42, 0.22, 1)
+        col = (0.95, 0.78, 0.48, 1) if i % 2 == 0 else (0.88, 0.68, 0.40, 1)
         yf = floor_y + 0.012
         fit.quad_out(
             P(x0, yf, hl_f * 0.90), P(x1, yf, hl_f * 0.90),
@@ -1195,7 +1196,8 @@ def add_traction_trebuchet(fit):
 
 def deck_surface(t, u):
     ring = section_pts(max(t, 0.012))
-    b = ring[-3][0] * 0.90
+    # 铺到舷墙根上。0.90 会在板和壳之间留一道能看见海的槽。
+    b = ring[-3][0] * 0.995
     y = ring[-3][1] + 0.012 + 0.072 * (1.0 - u * u)
     return (u * b, y, z_of(clamp(t, 0.0, 1.0)))
 
@@ -1355,100 +1357,51 @@ def station_ts():
     return [i / n for i in range(n + 1)]
 
 
-
 def add_weather_deck(deck):
-    """一层露天甲板，纵铺长板，把梁格盖住。
-    板沿船长走，站与站焊在一起再平滑，十七度看到的是连续木面，不是一格一格的梁。
-    缝是同平面上的窄暗线，不挖槽、不立侧壁。三个舱口照旧留开。"""
-    n_planks = 10
-    n_along = 32
-    ts = [0.012 + 0.976 * i / n_along for i in range(n_along + 1)]
-    # 缝宽约 1.2 厘米。再宽，低角度会看成空档。
-    du = 0.012 / 1.50
+    """一层露天甲板。纵板沿船长连成几段长板，只在三个舱口中心断开。
+    邻板几乎同色，不另铺深缝，低角度不会把板缝看成透空的梁格。"""
+    n_u = 10
+    # 舷弧缓，沿船长少切。切多了，十七度会把每一截的棱看成横梁。
+    n_t = 5
+    us = [-1.0 + 2.0 * i / n_u for i in range(n_u + 1)]
+    ts = [0.012 + 0.976 * i / n_t for i in range(n_t + 1)]
 
     def tone(k):
-        # 邻板几乎同色。差得太大，低角度会把浅板看成铺板、深板看成梁。
-        base = (0.70, 0.50, 0.29, 1) if k % 2 == 0 else (0.64, 0.45, 0.26, 1)
-        return tint(base, 0.98 + 0.04 * hsh(k * 5.3))
+        base = (0.80, 0.60, 0.36, 1) if k % 2 == 0 else (0.76, 0.57, 0.34, 1)
+        return base
 
-    seam_col = (0.32, 0.20, 0.10, 1)
-
-    def inside_hold(x, z):
+    def inside_hold(u, t):
+        x, _y, z = deck_surface(t, u)
         for tc, length, width in HOLDS:
-            if abs(z - z_of(tc)) <= length * 0.5 and abs(x) <= width * 0.5:
+            # 口沿留一圈板。只挖口心，近景才是实铺甲板围着三个口。
+            if abs(z - z_of(tc)) <= length * 0.5 - 0.04 and abs(x) <= width * 0.5 - 0.04:
                 return True
         return False
 
-    def bbox_hits(xs, zs):
-        minx, maxx = min(xs), max(xs)
-        minz, maxz = min(zs), max(zs)
-        for tc, length, width in HOLDS:
-            zc = z_of(tc)
-            if maxx < -width * 0.5 or minx > width * 0.5:
+    for i in range(n_t):
+        for k in range(n_u):
+            u0, u1 = us[k], us[k + 1]
+            t0, t1 = ts[i], ts[i + 1]
+            samples = []
+            for u in (u0, (u0 + u1) * 0.5, u1):
+                for t in (t0, (t0 + t1) * 0.5, t1):
+                    samples.append(inside_hold(u, t))
+            # 整格都在口心才留空。擦到口沿的仍铺上，口沿由舱框压住。
+            if all(samples):
                 continue
-            if maxz < zc - length * 0.5 or minz > zc + length * 0.5:
-                continue
-            return True
-        return False
-
-    def emit(u0, u1, t0, t1, col, depth=0):
-        corners = (
-            deck_surface(t0, u0),
-            deck_surface(t1, u0),
-            deck_surface(t1, u1),
-            deck_surface(t0, u1),
-        )
-        xs = [c[0] for c in corners]
-        zs = [c[2] for c in corners]
-        cx = sum(xs) / 4.0
-        cz = sum(zs) / 4.0
-        if bbox_hits(xs, zs) and depth < 4:
-            um = (u0 + u1) * 0.5
-            tm = (t0 + t1) * 0.5
-            emit(u0, um, t0, tm, col, depth + 1)
-            emit(um, u1, t0, tm, col, depth + 1)
-            emit(u0, um, tm, t1, col, depth + 1)
-            emit(um, u1, tm, t1, col, depth + 1)
-            return
-        inn = sum(1 for c in corners if inside_hold(c[0], c[2]))
-        if inside_hold(cx, cz) or inn >= 2:
-            return
-        a, b, c, d = corners
-        deck.quad_out(a, b, c, d, col, (0, 1, 0))
-
-    for k in range(n_planks):
-        u0 = -1.0 + 2.0 * k / n_planks
-        u1 = -1.0 + 2.0 * (k + 1) / n_planks
-        ua = u0 if k == 0 else u0 + du * 0.5
-        ub = u1 if k == n_planks - 1 else u1 - du * 0.5
-        col = tone(k)
-        for i in range(n_along):
-            emit(ua, ub, ts[i], ts[i + 1], col)
-        if k < n_planks - 1:
-            for i in range(n_along):
-                emit(ub, u1 + du * 0.5, ts[i], ts[i + 1], seam_col)
+            col = tone(k)
+            a = deck_surface(t0, u0)
+            b = deck_surface(t1, u0)
+            c = deck_surface(t1, u1)
+            d = deck_surface(t0, u1)
+            deck.quad_out(a, b, c, d, col, (0, 1, 0))
 
     deck.smooth()
-    # 钉很少，只证明是木板，不排成第二套格子。
-    for k in (2, 6):
-        u = -1.0 + 2.0 * (k + 0.5) / n_planks
-        for t in (0.30, 0.56, 0.80):
-            x, y, z = deck_surface(t, u)
-            if inside_hold(x, z):
-                continue
-            add_cyl(
-                deck,
-                (x, y - 0.004, z),
-                (x, y + 0.012, z),
-                0.015,
-                (0.18, 0.10, 0.05, 1),
-                5,
-            )
 
 
 def build():
     hull = Prim("Hull", "Wood")
-    deck = Prim("Deck", "Wood")
+    deck = Prim("Deck", "DeckWood")
     fit = Prim("Fittings", "Wood")
     sail = Prim("Sails", "Sail")
     shadow = Prim("Shadow", "Shadow")
@@ -1647,6 +1600,15 @@ def pack_glb(prims):
             },
             "doubleSided": False,
         },
+        "DeckWood": {
+            "name": "DeckWood",
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [1, 1, 1, 1],
+                "metallicFactor": 0.0,
+                "roughnessFactor": 0.82,
+            },
+            "doubleSided": True,
+        },
         "Sail": {
             "name": "Sail",
             "pbrMetallicRoughness": {
@@ -1669,7 +1631,7 @@ def pack_glb(prims):
         },
     }
     # 稳定顺序
-    order = ["Wood", "Sail", "Shadow"]
+    order = ["Wood", "DeckWood", "Sail", "Shadow"]
     used = []
     for p in prims:
         if p.material not in used:
