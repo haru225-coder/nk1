@@ -1,8 +1,10 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/Ship.gd" id="1_ship"]
 [ext_resource type="Texture2D" uid="uid://bs4vafdk65gsh" path="res://assets/ship_fu.png" id="2_ship_tex"]
-[ext_resource type="Script" path="res://scripts/combat/ShipSeakeeping.gd" id="seakeep"]
+[ext_resource type="Shader" path="res://assets/shaders/hull_lit.gdshader" id="look_lit"]
+[ext_resource type="Shader" path="res://assets/shaders/hull_water.gdshader" id="look_water"]
+[ext_resource type="Script" path="res://scripts/combat/ShipLook.gd" id="look_script"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ship"]
 radius = 24.0
@@ -22,6 +24,14 @@ height = 32
 fill = 1
 fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(0.5, 0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hull_water"]
+resource_local_to_scene = true
+shader = ExtResource("look_water")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hull_lit"]
+resource_local_to_scene = true
+shader = ExtResource("look_lit")
 
 [node name="Ship" type="CharacterBody2D"]
 script = ExtResource("1_ship")
@@ -85,7 +95,20 @@ scale_amount_min = 2.0
 scale_amount_max = 5.0
 color = Color(0.6, 0.4, 0.2, 1)
 
+[node name="HullWater" type="Sprite2D" parent="."]
+texture_filter = 4
+material = SubResource("ShaderMaterial_hull_water")
+texture = ExtResource("2_ship_tex")
+scale = Vector2(0.62, 0.62)
+
 [node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 4
+texture = ExtResource("2_ship_tex")
+scale = Vector2(0.62, 0.62)
+
+[node name="HullLight" type="Sprite2D" parent="."]
+texture_filter = 4
+material = SubResource("ShaderMaterial_hull_lit")
 texture = ExtResource("2_ship_tex")
 scale = Vector2(0.62, 0.62)
 
@@ -161,5 +184,5 @@ offset_right = 40.0
 offset_bottom = 23.0
 horizontal_alignment = 1
 
-[node name="Seakeeping" type="Node" parent="."]
-script = ExtResource("seakeep")
+[node name="ShipLook" type="Node" parent="."]
+script = ExtResource("look_script")

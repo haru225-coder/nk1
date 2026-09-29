@@ -1,11 +1,21 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/PirateShip.gd" id="1_pirate"]
 [ext_resource type="Texture2D" uid="uid://w1nfrf7t3o11" path="res://assets/ship_falcon.png" id="2_ship_tex"]
-[ext_resource type="Script" path="res://scripts/combat/ShipSeakeeping.gd" id="seakeep"]
+[ext_resource type="Shader" path="res://assets/shaders/hull_lit.gdshader" id="look_lit"]
+[ext_resource type="Shader" path="res://assets/shaders/hull_water.gdshader" id="look_water"]
+[ext_resource type="Script" path="res://scripts/combat/ShipLook.gd" id="look_script"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_pirate"]
 radius = 24.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hull_water"]
+resource_local_to_scene = true
+shader = ExtResource("look_water")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hull_lit"]
+resource_local_to_scene = true
+shader = ExtResource("look_lit")
 
 [node name="PirateShip" type="CharacterBody2D"]
 script = ExtResource("1_pirate")
@@ -25,7 +35,20 @@ scale_amount_min = 2.0
 scale_amount_max = 6.0
 color = Color(0.9, 0.95, 1, 0.5)
 
+[node name="HullWater" type="Sprite2D" parent="."]
+texture_filter = 4
+material = SubResource("ShaderMaterial_hull_water")
+texture = ExtResource("2_ship_tex")
+scale = Vector2(0.62, 0.62)
+
 [node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 4
+texture = ExtResource("2_ship_tex")
+scale = Vector2(0.62, 0.62)
+
+[node name="HullLight" type="Sprite2D" parent="."]
+texture_filter = 4
+material = SubResource("ShaderMaterial_hull_lit")
 texture = ExtResource("2_ship_tex")
 scale = Vector2(0.62, 0.62)
 
@@ -44,5 +67,5 @@ offset_bottom = 16.0
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Seakeeping" type="Node" parent="."]
-script = ExtResource("seakeep")
+[node name="ShipLook" type="Node" parent="."]
+script = ExtResource("look_script")

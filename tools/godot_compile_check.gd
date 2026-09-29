@@ -74,6 +74,7 @@ const SCRIPTS := [
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd",
 	"res://scripts/combat/ShipSeakeeping.gd",
+	"res://scripts/combat/ShipLook.gd",  # lane combat12-E 海船观感（投影白浪 / 受光 / 微摇，Ship / PirateShip 场景挂）
 	"res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://scripts/combat/MeleeResolve.gd",  # lane combat05 接舷白刃结算（BoardingStage.play 演它）
 	"res://scripts/combat/CombatMorale.gd",  # lane combat06 海战士气（崩坏 / 溃逃 / 降幡 / 拒接舷）
