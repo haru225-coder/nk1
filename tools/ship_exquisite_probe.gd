@@ -1,10 +1,10 @@
 extends SceneTree
 ## 泉州湾宋船三维朝向探针。
 ## DISPLAY=:2 godot --path . -s res://tools/ship_exquisite_probe.gd
-## 截图：/tmp/nk1-combat-wave3/ship-polish10/  close_own / close_enemy / wide / angles/angle_XX.png
+## 截图：/tmp/nk1-combat-wave3/ship-polish11/  close_own / close_enemy / wide / angles/angle_XX.png
 
 const ShotGate := preload("res://tools/shot_gate.gd")
-const OUT := "/tmp/nk1-combat-wave3/ship-polish10"
+const OUT := "/tmp/nk1-combat-wave3/ship-polish11"
 const FACINGS := 16
 
 func _init() -> void:
@@ -68,11 +68,11 @@ func _run() -> void:
 	_shot(OUT + "/close_own.png")
 	_save_contract(ship, "res://assets/ship_fu.png")
 
-	# 近景敌船：艉舷四分之三，抛臂伸在舷外。同一套相机，不是正侧。
+	# 近景敌船：跟己方同一套艏舷四分之三。只改这一帧的航向，相机仍是 17°。
 	ship.visible = false
 	foe.visible = true
 	foe.position = Vector2(0, 16)
-	foe.rotation = 10.0 * TAU / 16.0
+	foe.rotation = 0.15
 	cam.position = foe.position
 	cam.zoom = Vector2(1.42, 1.42)
 	for _i in 4:

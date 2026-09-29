@@ -113,7 +113,8 @@ def beam_half(t: float) -> float:
     full = math.sin(math.pi * clamp(t, 0.0, 1.0)) ** 0.48
     full = max(full, 0.62 * smoothstep(0.62, 1.0, t))
     transom = 1.0 - 0.34 * smoothstep(0.80, 1.0, t)
-    return BEAM * max(0.02, bow * (0.42 + 0.58 * full) * transom)
+    # 0.02 会把艏端削成一段等宽平面，近景就是一块棱。只留防退化的极窄下限。
+    return BEAM * max(1e-4, bow * (0.42 + 0.58 * full) * transom)
 
 
 def sheer(t: float) -> float:
@@ -334,7 +335,7 @@ def wood_at(t, j, nstrake, along=0.0):
 
 
 def x_at_y(t, y_target):
-    ring = section_pts(max(t, 0.012))
+    ring = section_pts(max(t, 0.004))
     best = ring[-1][0]
     best_d = 1e9
     for j in range(len(ring) - 1):
@@ -1001,7 +1002,7 @@ def add_deck_scarfs(deck):
 
 
 def add_stem_detail(fit):
-    """艏柱加厚成一根材，两道斜口，两侧三块板头。不改船壳线型。"""
+    """艏柱贴着尖端。板头是壳上的薄片，跟着舷弧，不探出成方块。"""
     ring = section_pts(0.02)
     z0 = z_of(0.0)
     idxs = [j for j in (2, 5, 8, 11, len(ring) - 1) if 0 <= j < len(ring)]
@@ -1014,27 +1015,31 @@ def add_stem_detail(fit):
         y0, z_a = samples[i]
         y1, z_b = samples[i + 1]
         scarf = i in (1, 3)
-        jog = 0.055 if scarf else 0.0
+        jog = 0.04 if scarf else 0.0
         col = (0.16, 0.09, 0.05, 1) if scarf else mix(TEAK_LT, (0.78, 0.58, 0.34, 1), 0.35)
-        side = 0.06 if scarf else 0.0
-        add_cyl(fit, (side, y0, z_a + jog), (-side * 0.3, y1, z_b), 0.045 if scarf else 0.085, col, 6, caps=False)
+        side = 0.035 if scarf else 0.0
+        add_cyl(fit, (side, y0, z_a + jog), (-side * 0.3, y1, z_b), 0.032 if scarf else 0.048, col, 8, caps=False)
         if scarf:
             add_box(
                 fit,
-                (0.0, (y0 + y1) * 0.5, (z_a + z_b) * 0.5 + 0.06),
-                (0.20, 0.055, 0.07),
+                (0.0, (y0 + y1) * 0.5, (z_a + z_b) * 0.5 + 0.04),
+                (0.10, 0.04, 0.05),
                 (0.03, 0.015, 0.009, 1),
             )
     for s in (-1.0, 1.0):
-        for j in (3, 6, 9, 12):
-            if j >= len(ring):
-                continue
-            y = ring[j][1]
-            f = j / (len(ring) - 1)
-            z = z0 + 0.04 + 0.12 * f
-            x = max(0.22, ring[j][0] * 0.55)
-            add_box(fit, (s * x, y, z - 0.04), (0.16, 0.07, 0.26), mix(TEAK_LT, TEAK, 0.25))
-            add_box(fit, (s * x * 0.35, y, z + 0.12), (0.06, 0.045, 0.04), (0.025, 0.012, 0.008, 1))
+        for t in (0.028, 0.046, 0.064, 0.084):
+            ring_t = section_pts(t)
+            z = z_of(t)
+            for j in (6, 10, 14):
+                if j >= len(ring_t):
+                    continue
+                x, y = ring_t[j]
+                add_box(
+                    fit,
+                    (s * x * 0.96, y, z),
+                    (0.045, 0.032, 0.07),
+                    mix(TEAK_LT, TEAK, 0.25),
+                )
 
 
 def add_fire_arrows(fit, t, x):
@@ -1094,6 +1099,31 @@ def add_song_weapons(fit):
     add_fire_arrows(fit, 0.355, -1.15)
 
 
+def station_ts():
+    """线型不变。艏艉转弯多切站，折线才贴上连续的舷弧，而不是几块大平面。"""
+    ts = []
+
+    def add_span(a, b, count, bias):
+        for i in range(count):
+            u = i / (count - 1)
+            if bias == "start":
+                u = u ** 1.65
+            elif bias == "end":
+                u = 1.0 - (1.0 - u) ** 1.45
+            t = a + (b - a) * u
+            if ts and t <= ts[-1] + 1e-4:
+                continue
+            ts.append(min(1.0, max(0.0, t)))
+
+    add_span(0.0, 0.06, 28, "start")
+    add_span(0.06, 0.20, 44, "none")
+    add_span(0.20, 0.78, 46, "none")
+    add_span(0.78, 1.0, 30, "end")
+    if ts[-1] < 1.0 - 1e-6:
+        ts.append(1.0)
+    return ts
+
+
 def build():
     hull = Prim("Hull", "Wood")
     deck = Prim("Deck", "Wood")
@@ -1101,23 +1131,22 @@ def build():
     sail = Prim("Sails", "Sail")
     shadow = Prim("Shadow", "Shadow")
 
-    nst = 52
     stations = []
-    for i in range(nst):
-        t = i / (nst - 1)
-        t_use = max(t, 0.012)
+    for t in station_ts():
+        t_use = max(t, 0.004)
         ring = section_pts(t_use)
         z = z_of(t)
         stations.append((t, z, ring))
+    nst = len(stations)
 
     for i in range(nst - 1):
         t0, z0, r0 = stations[i]
         t1, z1, r1 = stations[i + 1]
         nring = len(r0)
-        along = i / (nst - 1)
+        along = t0
         for j in range(nring - 1):
             piece = math.floor((along * 1.25 + j * 0.19) / 0.13)
-            prev_along = (i - 1) / (nst - 1) if i else along
+            prev_along = stations[i - 1][0] if i else along
             prev_piece = math.floor((prev_along * 1.25 + j * 0.19) / 0.13)
             butt = piece != prev_piece and 1 < i < nst - 2
             # 板面几乎贴壳。缝是凹进去的一条，不是鼓出的厚架。
@@ -1174,16 +1203,38 @@ def build():
                 hull.quad_out(mx(sa), mx(fa), mx(fb), mx(sb), cheek, (-sa[0], outward_y, 0.0))
 
     t0, z0, r0 = stations[0]
-    stem = []
-    for j, (x, y) in enumerate(r0):
-        f = j / (len(r0) - 1)
-        stem.append((0.0, y + 0.012 * f, z0 + 0.035 + 0.11 * f))
-    for j in range(len(r0) - 1):
-        a = (r0[j][0] + 0.018, r0[j][1] + 0.003, z0)
-        b = (r0[j + 1][0] + 0.018, r0[j + 1][1] + 0.003, z0)
-        col = wood_at(0.02, j, len(r0))
-        hull.quad_out(a, b, stem[j + 1], stem[j], col, (0, 0.15, 1))
-        hull.quad_out((-a[0], a[1], a[2]), stem[j], stem[j + 1], (-b[0], b[1], b[2]), col, (0, 0.15, 1))
+    # 艏柱不再是从首站拉到中线的一块平面。沿原尖端插值，平面上外鼓成弧。
+    stem_steps = 12
+    prev = []
+    for x, y in r0:
+        prev.append((x + 0.018, y + 0.003, z0))
+    nring = len(r0)
+    for s in range(1, stem_steps + 1):
+        f = s / stem_steps
+        shrink = (1.0 - f) ** 0.55
+        ring = []
+        for j, (x, y) in enumerate(r0):
+            hf = j / (nring - 1)
+            z = lerp(z0, z0 + 0.035 + 0.11 * hf, f)
+            yy = lerp(y + 0.003, y + 0.012 * hf, f)
+            xx = 0.0 if s == stem_steps else (x + 0.018 * (1.0 - f)) * shrink
+            ring.append((xx, yy, z))
+        for j in range(nring - 1):
+            col = wood_at(0.02, j, nring)
+            a = prev[j]
+            b = prev[j + 1]
+            c = ring[j + 1]
+            d = ring[j]
+            hull.quad_out(a, b, c, d, col, (max(a[0], 0.02), 0.15, 1))
+            hull.quad_out(
+                (-a[0], a[1], a[2]),
+                (-d[0], d[1], d[2]),
+                (-c[0], c[1], c[2]),
+                (-b[0], b[1], b[2]),
+                col,
+                (-max(a[0], 0.02), 0.15, 1),
+            )
+        prev = ring
 
     rt = stations[-1][2]
     zt = stations[-1][1]
@@ -1218,7 +1269,14 @@ def build():
             tone = 0.84 + 0.20 * hsh(k * 17.3)
             grain = 0.93 + 0.09 * hsh(k * 9.2 + (i // 6) * 2.3)
             # 一站宽的错缝，不是整段甲板涂黑
-            butt = (i % 15 == (k * 4 + 3) % 15) and 3 < i < nst - 5
+            # 错缝仍落在原来均匀 52 站的那些 t 上，只取最近的一站，不因加密变成一排密缝。
+            phase = (k * 4 + 3) % 15
+            iv = int(round(t0 * 51.0))
+            butt = False
+            if iv % 15 == phase and 3 < iv < 46:
+                seam_t = iv / 51.0
+                prev_t = stations[i - 1][0] if i else -1.0
+                butt = abs(t0 - seam_t) <= abs(prev_t - seam_t) and abs(t0 - seam_t) < abs(t1 - seam_t)
             base = mix(DECK_DK, DECK, tone)
             col = tint(base, grain * (0.72 if butt else 1.0) * (0.86 if abs((u0 + u1) * 0.5) > 0.88 else 1.0))
             if k % 2 == 1:
@@ -1257,7 +1315,13 @@ def build():
                 qd = Dp(ub, b0, y0, cz0, 0.028)
                 deck.quad_out(qa, qd, qc, qb, (0.028, 0.014, 0.009, 1), (0, 1, 0))
             # 隔几档一颗木钉。少而粗，近景才不是光板
-            if i % 9 == (k * 2) % 9 and 4 < i < nst - 6 and k % 3 == 1:
+            ivn = int(round(t0 * 51.0))
+            nail_here = False
+            if k % 3 == 1 and ivn % 9 == (k * 2) % 9 and 4 < ivn < 45:
+                seam_t = ivn / 51.0
+                prev_t = stations[i - 1][0] if i else -1.0
+                nail_here = abs(t0 - seam_t) <= abs(prev_t - seam_t) and abs(t0 - seam_t) < abs(t1 - seam_t)
+            if nail_here:
                 um = (ua + ub) * 0.5
                 nail = Dp(um, (b0 + b1) * 0.5, (y0 + y1) * 0.5, (z0 + z1) * 0.5, -0.002)
                 add_cyl(
@@ -1333,8 +1397,13 @@ def build():
         add_sphere(fit, (x + s * 0.045, y, z + 0.10), 0.05, EYE_K, 6, 5)
         add_cyl(fit, (x, y, z - 0.02), (x, y, z + 0.12), 0.155, GOLD, 8, caps=False)
 
-    for i in range(6, nst - 6, 3):
-        t, z, ring = stations[i]
+    last_nail_z = None
+    for t, z, ring in stations:
+        if t < 0.08 or t > 0.92:
+            continue
+        if last_nail_z is not None and abs(z - last_nail_z) < 0.55:
+            continue
+        last_nail_z = z
         x = ring[-2][0]
         y = ring[-4][1]
         add_box(fit, (x, y, z), (0.045, 0.035, 0.06), (0.05, 0.035, 0.028, 1))
