@@ -127,19 +127,19 @@
 
 | id | 名 | 说明 |
 |---|---|---|
-| `enemy_captured` | 夺船 | 现码 CombatFx.board_win_note 同句 |
-| `enemy_struck` | 敌降 | letterbox_key surrender 待 combat09 接；未接前按 board 出「夺船」 |
+| `enemy_captured` | 夺船 | 现码 CombatFx.board_win_note 同句；末船夺下当帧 _battle_exit(win, boarded=true)，combat11 已清 KNOWN_DEFECTS |
+| `enemy_struck` | 敌降 | letterbox surrender + SeaChart sea_surrender_note（combat09/12） |
 | `enemy_sunk` | 击沉 | SeaChart 胜：赏 150–600 钱、名声 +3、士气 +5（现码） |
-| `enemy_fled` | 敌遁 | spoil_rule half 待 SeaChart 接；未接前照胜局给赏 |
+| `enemy_fled` | 敌遁 | spoil_rule half + sea_fled_note；WorldMap 遁走计数（combat12） |
 | `player_fled` | 脱战 | 现码 CombatFx.sea_flee_ok_note 同句 |
 | `player_caught` | 未能甩脱 | 现码 CombatFx.sea_flee_fail_note 同句 |
-| `player_routed` | 溃逃 | letterbox_key rout 待 combat09 接 |
-| `player_struck` | 降幡 | SeaChart 现按败局非沉船分支结算：货损二成五 |
-| `player_overrun` | 失船面 | 现码 CombatFx.sea_board_lose_note 同句 |
+| `player_routed` | 溃逃 | letterbox rout（CombatMorale + exit_for，combat09/11） |
+| `player_struck` | 降幡 | combat11 已接：CombatMorale 我方降幡 → lose{struck} → 题签出 yield「请降」；SeaChart 按败局非沉船分支结算：货损二成五 |
+| `player_overrun` | 失船面 | 文案同 CombatFx.sea_board_lose_note；现码白刃失利只解钩缆、不收场，无发 overrun 之处 |
 | `player_sunk` | 旗舰沉没 | 现码 CombatFx.sea_sunk_note 同向 |
-| `disengaged` | 两散 | letterbox_key parted 待 combat09 接 |
+| `disengaged` | 两散 | letterbox parted；WorldMap battle_limit_s → flee+parted（combat12） |
 
-与现行 `battle_finished(outcome, data)` 对照写在各 outcome 的 `legacy` 字段；combat09 出战题签按事由取朱印。
+与现行 `battle_finished(outcome, data)` 对照写在各 outcome 的 `legacy` 字段；combat09 出战题签按事由取朱印，combat11 起 `WorldMap._battle_exit` 把 data（含士气收场的 `morale_verdict`）原样递给 `CombatLetterbox.exit_for`。「接线中」指 combat12 改动尚未入库，不算已接。
 
 ## 八、文案口径
 
@@ -147,11 +147,18 @@
 
 ## 九、对齐与待接线
 
-- WorldMap（combat02）应读 `SeaState` / `ManeuverModel`，接舷走 `boarding_approach`；夺末船 `boarded=true` 与 `player_damage` 负值缺陷见 combat10 `KNOWN_DEFECTS`。
-- 号令面板（combat08）令 id 须落在本表 `orders`；状态条字段落在 `hud_fields`。
-- 敌将 AI（combat07）意图 id 落在 `intents` / `captains`。
-- 数值与实现常量若有出入，以落地模块为准，回写本表时开对齐行。
+combat11 已清 combat10 `KNOWN_DEFECTS`（夺末船 `boarded=true`、`player_damage` 负值、回写），表空；SeaState / ManeuverModel / `boarding_approach_of`、号令面板、敌将 AI、士气收场与题签均已在 WorldMap 接上。下列是仍未对上的：
+
+- **敌遁半赏**（`enemy_fled` · `spoil_rule: half`）：combat12 接线中；落地前 SeaChart 照胜局全赏 150–600。
+- **两散**（`disengaged` · `parted`）：题签键 combat12 接线中；即便落地，WorldMap 也还没有发两散的收场口（限时、入夜都不收场），此结局暂无来路。
+- **失船面**（`player_overrun`）：白刃失利现码只解钩缆、战斗照打，不发 `lose{overrun}`；此结局暂无来路。
+- **题签键与本表不符**：`player_struck` 本表 `strike`「降幡」，现码出 `yield`「请降」（`strike` 不在 `OUTCOME_ACT`）；`enemy_fled` 本表 `win`「战罢」，现码出 `repel`「击退」。二者择一回写。
+- **SeaChart 败/逃分账不分结局**：我方降幡走败局非沉船分支，log 出 `sea_board_lose_note`「白刃不利」而非本条降幡句；溃逃走通用 flee 分支，不出本条句、不扣 `morale_hint`；溃逃 `flee_ok` 由士气件掷骰，与本表 `legacy_data.flee_ok: true` 不符。
+- **`legacy_data` 与实发 data 不符**：`enemy_struck` 本表带 `boarded: true`，士气收场实发 `enemy_struck` / `struck_types` / `morale_verdict`，不带 `boarded`。
+- **`outcomes` 无代码读**：`morale_hint`、`spoil_rule`、`log`、`precedence` 目前只是契约；SeaChart 胜 +5 / 败 −12 士气写死，`CombatDirector` 只查本文件在不在。
+
+数值与实现常量若有出入，以落地模块为准，回写本表时开对齐行。
 
 ---
 
-*lane combat01 · 勿 push · 数据经 `/tmp/nk1-combat-wave1/combat01/validate_schema.py` 基线 799 ✓ / 变异 14/14 红。*
+*lane combat01 契约 · combat11/12 接线回写 · 勿 push · 数据基线见 wave1 validate_schema。*

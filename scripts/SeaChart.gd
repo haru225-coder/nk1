@@ -1513,8 +1513,10 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			for gid in lost.keys():
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
 			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_board_lose_note(lost_str, int(dmg))))
-	else:  # flee
-		if data.get("flee_ok", false):
+	else:  # flee / disengaged
+		if bool(data.get("parted", false)) or outcome == "disengaged":
+			_log(_ink(UiTheme.INK, _CombatFx.sea_parted_note()))
+		elif data.get("flee_ok", false):
 			remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
 			_log_shook_pursuers()
 		else:

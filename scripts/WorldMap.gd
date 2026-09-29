@@ -79,6 +79,11 @@ var _morale = null
 var _battle_roster_n: int = 0
 ## 末船接舷夺下后等题签播完再收战：挡住 _process 的 win{} 抢先（await 即便 headless 也会让出一帧）
 var _finishing_boarded: bool = false
+## combat12：敌船 left_battle(escaped) 计数；全灭且有遁走时 win data 带 enemy_fled
+var _enemies_escaped: int = 0
+## combat12：开战经过秒数；到 battle_limit_s（默认 300）两散 parted
+var _battle_elapsed_s: float = 0.0
+const BATTLE_LIMIT_S := 300.0
 
 func _ready() -> void:
 	var hud := $CanvasLayer/HUD
@@ -127,10 +132,23 @@ func _process(delta: float) -> void:
 				boarding = false
 				boarding_target = null
 
+	# combat12：限时两散（battle_limit_s）
+	if combat_mode and not resolved and not boarding:
+		_battle_elapsed_s += delta
+		if _battle_elapsed_s >= BATTLE_LIMIT_S:
+			_battle_exit("flee", {"flee_ok": true, "parted": true})
+			_update_hud()
+			return
+
 	# 敌全灭 → 获胜（接舷中 / 末船夺下等题签 不判定：避免抢掉 boarded=true）
 	if combat_mode and not resolved:
 		if not boarding and not _finishing_boarded and _enemies_alive() == 0:
-			_battle_exit("win", {})
+			var win_data := {}
+			if _enemies_escaped > 0:
+				win_data["enemy_fled"] = _enemies_escaped
+				win_data["morale_verdict"] = "enemy_fled"
+				win_data["repelled"] = true
+			_battle_exit("win", win_data)
 
 	_update_hud()
 
@@ -452,6 +470,8 @@ func _strike_lightning() -> void:
 ## 由 _ready 在 pending_battle.battle 时调用：禁用停靠、生成敌舰队
 ## 自由航行刷怪（crate / 海鸟 / 鲸影 / 野海盗）已拆除：WorldMap 只作战术层。
 func _setup_combat(pb: Dictionary) -> void:
+	_enemies_escaped = 0
+	_battle_elapsed_s = 0.0
 	combat_mode = true
 	_AUDIO.combat_start(self)
 	# 战斗专用：禁掉 PortZone 停靠出口（否则 Enter 会切回 Main 丢战斗）
@@ -641,6 +661,7 @@ func _on_enemy_left_battle(how: String, enemy: Node = null) -> void:
 		if sn != null and str(sn).strip_edges() != "":
 			nm = str(sn)
 		if how == "escaped":
+			_enemies_escaped += 1
 			_show_combat_notice("敌船「%s」脱离远遁" % nm)
 		else:
 			_show_combat_notice("敌船「%s」离场（%s）" % [nm, how])

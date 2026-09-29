@@ -129,7 +129,22 @@ static func on_missile_hit(world: Node, at: Vector2, kind := "stone", own_hit :=
 	if world == null or not is_instance_valid(world):
 		return
 	if own_hit:
-		punch_camera(world.get("ship") as Node, 3.5)
+		# combat12：本船中弹——屏震分层 + 极短顿帧，箭矢轻、霹雳重
+		var punch := 3.5
+		var stop_d := 0.028
+		var stop_s := 0.22
+		match kind:
+			"bolt":
+				punch = 2.4
+				stop_d = 0.018
+			"fire":
+				punch = 4.0
+			"bomb":
+				punch = 7.0
+				stop_d = 0.05
+				stop_s = 0.14
+		punch_camera(world.get("ship") as Node, punch)
+		hitstop(world, stop_d, stop_s)
 	match kind:
 		"bolt":
 			_spawn_splinters(world, at, 6)
@@ -699,6 +714,11 @@ static func sea_fled_note(spoil: int, damage: int, promo := "") -> String:
 	var base := "敌船转篷遁走，只拾得些漂散的货。获财货 %d 钱。船体受损 %d。" % [maxi(0, spoil), maxi(0, damage)]
 	var p := promo.strip_edges()
 	return base if p == "" else base + p
+
+
+## 两散（letterbox parted / disengaged）：天色晚了，两边各自收帆
+static func sea_parted_note() -> String:
+	return "天色晚了，两边各自收帆。"
 
 
 ## 我方溃逃（出战「溃逃」）：弃货奔逃

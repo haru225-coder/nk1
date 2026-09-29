@@ -2522,7 +2522,7 @@
       "cue": "ship_captured",
       "morale_hint": 4,
       "spoil_rule": "legacy",
-      "note": "现码 CombatFx.board_win_note 同句"
+      "note": "现码 CombatFx.board_win_note 同句；末船夺下当帧 _battle_exit(win, boarded=true)，combat11 已清 KNOWN_DEFECTS"
     },
     {
       "id": "enemy_struck",
@@ -2540,7 +2540,7 @@
       "cue": "colors_struck",
       "morale_hint": 3,
       "spoil_rule": "legacy",
-      "note": "letterbox_key surrender 待 combat09 接；未接前按 board 出「夺船」"
+      "note": "letterbox surrender + SeaChart sea_surrender_note（combat09/12）"
     },
     {
       "id": "enemy_sunk",
@@ -2572,7 +2572,7 @@
       "cue": "rout_begin",
       "morale_hint": 0,
       "spoil_rule": "half",
-      "note": "spoil_rule half 待 SeaChart 接；未接前照胜局给赏"
+      "note": "spoil_rule half + sea_fled_note；WorldMap 遁走计数（combat12）"
     },
     {
       "id": "player_fled",
@@ -2627,7 +2627,7 @@
       "cue": "rout_begin",
       "morale_hint": -8,
       "spoil_rule": "none",
-      "note": "letterbox_key rout 待 combat09 接"
+      "note": "letterbox rout（CombatMorale + exit_for，combat09/11）"
     },
     {
       "id": "player_struck",
@@ -2645,7 +2645,7 @@
       "cue": "colors_struck",
       "morale_hint": -6,
       "spoil_rule": "none",
-      "note": "SeaChart 现按败局非沉船分支结算：货损二成五"
+      "note": "combat11 已接：CombatMorale 我方降幡 → lose{struck} → 题签出 yield「请降」；SeaChart 按败局非沉船分支结算：货损二成五"
     },
     {
       "id": "player_overrun",
@@ -2663,7 +2663,7 @@
       "cue": null,
       "morale_hint": -10,
       "spoil_rule": "none",
-      "note": "现码 CombatFx.sea_board_lose_note 同句"
+      "note": "文案同 CombatFx.sea_board_lose_note；现码白刃失利只解钩缆、不收场，无发 overrun 之处"
     },
     {
       "id": "player_sunk",
@@ -2700,7 +2700,7 @@
       "cue": null,
       "morale_hint": 0,
       "spoil_rule": "none",
-      "note": "letterbox_key parted 待 combat09 接"
+      "note": "letterbox parted；WorldMap battle_limit_s → flee+parted（combat12）"
     }
   ],
   "cues": [

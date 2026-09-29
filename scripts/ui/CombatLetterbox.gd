@@ -7,7 +7,8 @@
 ##   if lb != null: await lb.finished
 ##
 ## 出战事由按怎么收的场分开写（lane combat09）：炮战得胜分击沉 / 焚舟 / 击退，接舷夺船、敌船降幡受降各有一格，
-## 我方分脱战（转舵走开）/ 溃逃（水手溃散）/ 请降（我方降幡）/ 败退（旗舰沉没）。朱印跟着换字（捷 / 获 / 降 / 毕 / 溃 / 败），
+## 我方分脱战（转舵走开）/ 溃逃（水手溃散）/ 请降（我方降幡）/ 败退（旗舰沉没），天晚起风各自收帆记两散。
+## 朱印跟着换字（捷 / 获 / 降 / 毕 / 散 / 溃 / 败），
 ## 溃逃、请降、败退的印色与题名压暗。印字由题名里的事由反查（act_key），旧调用 exit(…, outcome_title(旧键), …) 不改一字也换印。
 ## 海战收场一行接线（WorldMap._battle_exit 的 outcome / data 原样递进来，事由、副题、印字都在这里算）：
 ##   var lb := CombatLetterbox.exit_for(parent, outcome, data, sea_name, Calendar.get_date_string())
@@ -66,11 +67,12 @@ const OUTCOME_ACT := {
 	"board": "夺船",
 	"surrender": "受降",
 	"flee": "脱战",
+	"parted": "两散",
 	"rout": "溃逃",
 	"yield": "请降",
 	"lose": "败退",
 }
-## 结局键 → 出战朱印字。炮战得胜「捷」、夺船「获」、受降「降」、脱战照旧「毕」、溃逃「溃」、请降与败退「败」
+## 结局键 → 出战朱印字。炮战得胜「捷」、夺船「获」、受降「降」、脱战照旧「毕」、两散「散」、溃逃「溃」、请降与败退「败」
 const OUTCOME_SEAL := {
 	"win": "捷",
 	"gun": "捷",
@@ -79,6 +81,7 @@ const OUTCOME_SEAL := {
 	"board": "获",
 	"surrender": "降",
 	"flee": "毕",
+	"parted": "散",
 	"rout": "溃",
 	"yield": "败",
 	"lose": "败",
@@ -142,7 +145,9 @@ static func outcome_title(outcome: String, sea_name := "") -> String:
 ##   win：有敌船降幡 → surrender；有接舷夺下 → board；烧沉的不少于打沉的 → burn；一艘没沉、只是遁走 → repel；
 ##        其余 → gun（矢石、砲把敌船打沉，即炮战得胜）
 ##   lose：我方降幡（morale_verdict=player_struck，或 lose 带 struck）→ yield；水手溃散 → rout；否则 lose（旗舰沉没）
-##   flee：水手溃散 → rout；否则 flee（转舵脱离）。溃散认 routed / rout 旗标或 morale_verdict=player_rout。
+##   flee：带 parted（天晚 / 起风，两边各自收帆）→ parted，先于溃散与脱战；水手溃散 → rout；否则 flee（转舵脱离）。
+##        溃散认 routed / rout 旗标或 morale_verdict=player_rout。
+##   disengaged（combat_phases.json 阶段图的收场，outcomes.disengaged.letterbox_key=parted）→ parted。
 ##   其余 outcome 原样返回：本就是细分键的直接用，认不得的由 outcome_title 兜底「战罢」。
 static func outcome_key(outcome: String, data := {}) -> String:
 	var verdict := str(data.get("morale_verdict", ""))
@@ -164,7 +169,11 @@ static func outcome_key(outcome: String, data := {}) -> String:
 				return "yield"
 			return "rout" if routed else "lose"
 		"flee":
+			if _flag(data, "parted"):
+				return "parted"
 			return "rout" if routed else "flee"
+		"disengaged":
+			return "parted"
 	return outcome
 
 

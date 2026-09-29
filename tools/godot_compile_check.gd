@@ -72,7 +72,9 @@ const SCRIPTS := [
 	# lane combat07 敌将 AI（PirateShip 每帧喂局势取舵令）
 	"res://scripts/combat/EnemyCaptainAI.gd",
 	# lane-c 接舷/海战 VFX
-	"res://scripts/combat/CombatFx.gd", "res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
+	"res://scripts/combat/CombatFx.gd",
+	"res://scripts/combat/ShipSeakeeping.gd",
+	"res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://scripts/combat/MeleeResolve.gd",  # lane combat05 接舷白刃结算（BoardingStage.play 演它）
 	"res://scripts/combat/CombatMorale.gd",  # lane combat06 海战士气（崩坏 / 溃逃 / 降幡 / 拒接舷）
 	"res://scripts/combat/SeaState.gd", "res://scripts/combat/ManeuverModel.gd",  # lane combat02 风流舷向与机动（海况 / 机动模型，WorldMap 接线）
