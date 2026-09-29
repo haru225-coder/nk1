@@ -157,8 +157,8 @@ func _fire_broadside(side: int) -> void:
 	_CombatFx.muzzle_flash(self, side, shots)
 	_CombatFx.hull_shudder(self, 0.7, side)
 
-	# Recoil shake
-	camera.offset = -side_dir * 30.0
+	# 后坐：镜头往反舷推一下（旧 30 px 硬甩改顺势 11 px + 微收镜头，重量交给船身一颤与出手烟）
+	_CombatFx.punch_camera(self, 11.0, -side_dir, 0.012)
 
 func _physics_process(delta: float) -> void:
 	if hull_hp <= 0: return
@@ -240,10 +240,10 @@ func _update_visuals(delta: float) -> void:
 		bow_wave_left.emitting = bow_emit
 		bow_wave_right.emitting = bow_emit
 		if bow_emit:
-			bow_wave_left.scale_amount_min = 0.12
-			bow_wave_left.scale_amount_max = 0.22 + speed_ratio * 0.2
-			bow_wave_right.scale_amount_min = 0.12
-			bow_wave_right.scale_amount_max = 0.22 + speed_ratio * 0.2
+			bow_wave_left.scale_amount_min = 0.25
+			bow_wave_left.scale_amount_max = 0.35 + speed_ratio * 0.25
+			bow_wave_right.scale_amount_min = 0.25
+			bow_wave_right.scale_amount_max = 0.35 + speed_ratio * 0.25
 	else:
 		wake_particles.emitting = false
 		bow_wave_left.emitting = false
@@ -264,30 +264,24 @@ func _update_visuals(delta: float) -> void:
 		_CombatFx.dress_ship(self, wind_vector * clampf(wind_strength / 150.0, 0.0, 1.0))
 	_update_damage_visuals(delta)
 
-## 尾迹 / 艏波：泡沫贴图 + 淡出色阶，速度联动仍由 _update_visuals 写初速。
+## 艏波：水滴贴图顺速度拉长（water_drop + align_y），速度联动仍由 _update_visuals 写。
+## 尾迹改由 CombatFx 的 FxLook 画（中线翻白 + 开叉浪臂），WakeParticles 由它隐藏，节点保留。
 func _polish_wake() -> void:
-	for pair in [
-		[wake_particles, Color(0.88, 0.94, 0.97, 0.55)],
-		[bow_wave_left, Color(0.92, 0.96, 0.98, 0.62)],
-		[bow_wave_right, Color(0.92, 0.96, 0.98, 0.62)],
-	]:
-		var p: CPUParticles2D = pair[0]
+	for p in [bow_wave_left, bow_wave_right]:
 		if p == null:
 			continue
-		p.texture = preload("res://assets/fx/soft_dot.png")
-		p.color = pair[1]
-		p.scale_amount_min = 0.16
-		p.scale_amount_max = 0.4
+		p.texture = preload("res://assets/fx/water_drop.png")
+		p.particle_flag_align_y = true
+		p.color = Color(0.92, 0.96, 0.98, 0.5)
+		p.scale_amount_min = 0.25
+		p.scale_amount_max = 0.45
+		p.amount = 10
+		p.lifetime = 0.45
 		var g := Gradient.new()
-		g.offsets = PackedFloat32Array([0.0, 0.35, 1.0])
-		g.colors = PackedColorArray([
-			Color(1, 1, 1, 0.85), Color(1, 1, 1, 0.45), Color(1, 1, 1, 0.0),
-		])
+		g.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
+		g.colors = PackedColorArray([Color(1, 1, 1, 0.9), Color(1, 1, 1, 0.5), Color(1, 1, 1, 0.0)])
 		p.color_ramp = g
 		p.local_coords = false
-		if p == wake_particles:
-			p.amount = maxi(p.amount, 120)
-			p.lifetime = 1.7
 
 
 func take_damage(amount: float) -> void:
@@ -304,9 +298,11 @@ func take_hit(hit: Dictionary) -> void:
 	var tween = create_tween()
 	tween.tween_callback(func(): splinter_particles.emitting = false).set_delay(0.5)
 	
-	sprite.modulate = Color(1.25, 0.72, 0.55)
-	var flash = create_tween()
-	flash.tween_property(sprite, "modulate", Color.WHITE, 0.22)
+	# 挂了船身反应节点（CombatFx.dress_ship）就不闪红：命中处一闪、一颤由 Cannonball → CombatFx.hull_impact 出
+	if not _CombatFx.has_look(self):
+		sprite.modulate = Color(1.25, 0.72, 0.55)
+		var flash = create_tween()
+		flash.tween_property(sprite, "modulate", Color.WHITE, 0.22)
 
 	var h := hit.duplicate()
 	if not h.has("local"):

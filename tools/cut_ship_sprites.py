@@ -22,6 +22,10 @@ OUT = os.path.join(ROOT, "assets")
 
 CANVAS = 512  # 输出正方形画布
 MARGIN = 6    # 抠底后包围盒外留边
+# 水线压影 + 艏部白沫弧不再烤进图（lane ship-vfx polish）：海战里接触影（CombatFx FxHullShadow，随日光偏开）、
+# 吃水白沫与艏浪（FxLook）都是实时画的；烤进去的那道灰弧在船头前方悬空、烤影随船转，在新海面上成了一圈灰晕。
+# 要出带压影的静态预览图（如海报）时改 True。
+BAKE_WATERLINE = False
 
 SHIPS = {
     # 原稿 → (输出, 长轴像素, 艏尖位置, 压影中心/半径)。艏朝上，引擎内绕中心旋转。
@@ -166,7 +170,8 @@ def cut(raw_path: str, out_name: str, long_axis: int, bow_f: float, sh_cy: float
 
     canvas = Image.new("RGBA", (CANVAS, CANVAS), (0, 0, 0, 0))
     px, py = (CANVAS - ship.width) // 2, (CANVAS - ship.height) // 2
-    waterline(canvas, (px, py, px + ship.width, py + ship.height), bow_f, sh_cy, sh_ry)
+    if BAKE_WATERLINE:
+        waterline(canvas, (px, py, px + ship.width, py + ship.height), bow_f, sh_cy, sh_ry)
     canvas.paste(ship, (px, py), ship)
     out_path = os.path.join(OUT, out_name)
     canvas.save(out_path)

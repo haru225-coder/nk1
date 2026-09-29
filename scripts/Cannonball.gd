@@ -261,6 +261,8 @@ func _strike(body: Node2D, at: Vector2) -> void:
 	var fx_kind := str(shot.get("fx", "bolt" if heavy else ""))
 	if fx_kind != "":
 		_CombatFx.on_missile_hit(world, _local(at), fx_kind, body is Ship)
+		# 挨打的船自己一闪、顺来力一颤、留焦痕（敌我同一支；按命中点数定轻重）
+		_CombatFx.hull_impact(body, at, _from, fx_kind, amount)
 		if fx_kind == "stone":
 			_spawn_fx(impact_explosion, at)
 	queue_free()

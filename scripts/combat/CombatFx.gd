@@ -3,7 +3,8 @@
 ## 那归损伤、士气模型；本文件只按调用方给的状态出观感与文字。
 ## 调用方：WorldMap（开战/接舷/结算）、Cannonball（命中）、BoardingStage、SeaChart（战果飘字）。
 ## 新入口 on_missile_hit / set_fire / set_flood / strike_colors / on_ship_sunk 与各阶段短注，供弹道、损伤、士气、敌将各线接线。
-## 命中不顿帧；打中敌船不震镜头（远处看得见木屑，手上不该跟着抖），本船挨打才轻颤一下。hitstop 只留给接舷白刃那几拍。
+## 打中敌船不震镜头（远处看得见木屑，手上不该跟着抖）——敌船自己挨：命中处一闪、船身顺来力一颤、留焦痕（hull_impact）；
+## 本船挨打才推镜头（按轻重、顺来力）、重的加一拍屏幕错位与极短顿帧（combat12 分层）。一闪都是星芒短拍，不用软白晕。
 ## headless / -s 工具脚本下顿帧与震屏跳过（Engine.time_scale 仍复位），粒子照常可实例化（探针在 headless 下也能数节点）。
 ## 船上的持续观感挂在船节点下（FxFire / FxFlood / FxStrike，入组 GROUP），随船释放；收尾只用子 Timer 与补间，不 await、不留协程。
 extends RefCounted
@@ -100,8 +101,10 @@ static func hitstop(host: Node, duration := 0.07, scale := 0.18) -> void:
 	)
 
 
-## 在旗舰 Camera2D 上叠加一次短震（与航速震共用 offset，随后被 Ship 平滑拉回）。
-static func punch_camera(ship: Node, intensity := 6.0) -> void:
+## 在旗舰 Camera2D 上叠加一次短震（与航速震共用 offset，随后被 Ship 以 5/s 平滑拉回，约 0.2 s 回正）。
+## dir 给了就顺着它推（本船挨打：顺来力；齐射：反舷后坐），另带一点横向抖；没给按旧式随机方向。
+## zoom_kick：镜头往里一收（× 1 + zoom_kick，封顶 8 %），Ship 按航速缩放镜头时约 1 s 缓回——重的一下有「沉」感。
+static func punch_camera(ship: Node, intensity := 6.0, dir := Vector2.ZERO, zoom_kick := 0.0) -> void:
 	if ship == null or not is_instance_valid(ship):
 		return
 	if Kit.is_headless():
@@ -112,18 +115,52 @@ static func punch_camera(ship: Node, intensity := 6.0) -> void:
 		cam = n as Camera2D
 	if cam == null:
 		return
-	cam.offset = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+	if dir.length_squared() > 0.0001:
+		var d := dir.normalized()
+		cam.offset = d * intensity + d.orthogonal() * randf_range(-0.3, 0.3) * intensity
+	else:
+		cam.offset = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+	if zoom_kick > 0.0:
+		cam.zoom *= 1.0 + clampf(zoom_kick, 0.0, 0.08)
 
 
-# ── 矢石命中 ─────────────────────────────────────────────────────────
+## 命中轻重 0.2–1.2：按弹种给底（箭轻、砲石重、霹雳炮最重）；有杀伤点数（DamageModel 口径，砲石一发 30）就按点数算。
+## 船身一颤、命中一闪、焦痕大小、本船镜头推多远都按它。
+const KIND_SEVERITY := {"bolt": 0.55, "arrow": 0.35, "stone": 0.9, "fire": 0.5, "bomb": 1.1}
 
-## 炮弹命中（Cannonball 现调这一支，ship 传的是开火方）：按砲石算；落点在本船身上才震镜头，不顿帧。
-## 出海船着装：接触阴影 + 福船 shader（帆抖 / 暖 rim）。每船只挂一次；可反复调以刷新风向。
-## wind：世界坐标风向（长度 0–1）；缺省无风。返回阴影节点（已有则复用）。
-const SHADOW_NODE := "FxHullShadow"
+
+static func hit_severity(kind: String, amount := -1.0) -> float:
+	var base := float(KIND_SEVERITY.get(kind, 0.6))
+	if amount < 0.0:
+		return base
+	var s := amount / 30.0
+	match kind:
+		"bomb":
+			s += 0.25
+		"bolt", "arrow":
+			s *= 0.8
+	return clampf(s, 0.2, 1.2)
+
+
+# ── 出海船着装与船身反应（lane ship-vfx）────────────────────────────────
+## 着装：船身 shader ship_seagoing（帆抖、命中一记炽橙、焦痕）+ 船身反应节点 FxLook（_Look：命中一闪衰减、焦痕表、
+## 旗舰挨重时的屏幕一拍；隐藏旧的方点尾迹 WakeParticles）。每船只挂一次，可反复调刷新风向。
+## 与别线分工：投影 / 贴舷白浪 / 受光 / 摇曳归 ShipLook（HullWater、HullLight，combat12-E），航迹白练 / 敌船朱边 / 旗旒 / 涟漪
+## 归 SeaAtmosphere（lane atmos）；这里不再画影子、不再画航迹。一颤仍走 hull_shudder 的 scale / rotation 补间（ShipLook 两层照抄变换）。
+const LOOK_NODE := "FxLook"
 const SHIP_SHADER := "res://assets/shaders/ship_seagoing.gdshader"
-const MUZZLE_SPACING := 20.0
-const MUZZLE_OUTBOARD := 34.0
+const KICK_SHADER := "res://assets/shaders/screen_kick.gdshader"
+const _Ballistics := preload("res://scripts/combat/Ballistics.gd")
+## 舷侧炮位间距上限（船长方向，px）
+const MUZZLE_SPACING := 22.0
+## 齐射 / 命中一闪的暖白
+const C_FLASH := Color(1.0, 0.86, 0.56)
+## 砲石砸碎船板扬起的木尘（深于砲石尘：落在奶油硬帆上也看得见）
+const C_WOOD_DUST := Color(0.46, 0.36, 0.26, 0.82)
+## 出手焰：橙黄（加色在深海上不能太白，太白就成一团白光）
+const C_MUZZLE := Color(1.0, 0.6, 0.24)
+## 火药烟（比砲石尘偏灰、偏冷一点）
+const C_GUNSMOKE := Color(0.80, 0.78, 0.74, 0.88)
 
 
 static func dress_ship(ship: Node2D, wind := Vector2.ZERO) -> Node2D:
@@ -132,10 +169,29 @@ static func dress_ship(ship: Node2D, wind := Vector2.ZERO) -> Node2D:
 	var sprite := ship.get_node_or_null("Sprite2D") as Sprite2D
 	if sprite != null:
 		_apply_seagoing_mat(sprite, wind)
-	var shadow := ship.get_node_or_null(SHADOW_NODE) as Node2D
-	if shadow == null:
-		shadow = _make_hull_shadow(ship)
-	return shadow
+	var look := ship.get_node_or_null(LOOK_NODE) as Node2D
+	if look == null and sprite != null:
+		look = _Look.new()
+		look.name = LOOK_NODE
+		(look as _Look).setup(ship, sprite, not _is_foe(ship))
+		ship.add_child(look)
+	return look
+
+
+## 敌船：PirateShip 有 ship_type、入 nk1_enemy_ships 组；旗舰都没有
+static func _is_foe(ship: Node) -> bool:
+	return ship.is_in_group("nk1_enemy_ships") or ship.get("ship_type") != null
+
+
+static func _look_of(ship) -> _Look:
+	if ship == null or not is_instance_valid(ship):
+		return null
+	return (ship as Node).get_node_or_null(LOOK_NODE) as _Look
+
+
+## 船上已挂船身反应节点（挂了就不再用 modulate 闪红：一闪交给 shader、一颤交给 hull_shudder）
+static func has_look(ship) -> bool:
+	return _look_of(ship) != null
 
 
 static func _apply_seagoing_mat(sprite: Sprite2D, wind: Vector2) -> void:
@@ -157,93 +213,19 @@ static func _apply_seagoing_mat(sprite: Sprite2D, wind: Vector2) -> void:
 	mat.set_shader_parameter("wind_strength", clampf(w.length(), 0.15, 1.0))
 
 
-static func _make_hull_shadow(ship: Node2D) -> Node2D:
-	var fx := Node2D.new()
-	fx.name = SHADOW_NODE
-	fx.z_index = -2
-	fx.add_to_group(GROUP)
-	# 橄榄形接触影：船身约 280×100 @0.62，影略宽扁、略偏艉
-	var poly := Polygon2D.new()
-	poly.name = "Blob"
-	poly.color = Color(0.04, 0.07, 0.10, 0.38)
-	var pts := PackedVector2Array()
-	for i in 16:
-		var a := TAU * float(i) / 16.0
-		pts.append(Vector2(cos(a) * 52.0, sin(a) * 118.0 + 10.0))
-	poly.polygon = pts
-	fx.add_child(poly)
-	# 软边：再套一圈更淡的大影
-	var soft := Polygon2D.new()
-	soft.name = "Soft"
-	soft.color = Color(0.04, 0.08, 0.12, 0.16)
-	var pts2 := PackedVector2Array()
-	for i in 16:
-		var a := TAU * float(i) / 16.0
-		pts2.append(Vector2(cos(a) * 68.0, sin(a) * 138.0 + 14.0))
-	soft.polygon = pts2
-	fx.add_child(soft)
-	ship.add_child(fx)
-	ship.move_child(fx, 0)
-	return fx
-
-
-## 舷侧齐射炮口焰：side -1 左舷 / +1 右舷；ports 炮位数。宋元近海——暖闪 + 浅火药烟，不是近代火球。
-## 挂在战场（ship 父节点）下，世界坐标；放完自删。
-static func muzzle_flash(ship: Node2D, side: int, ports := 3) -> void:
-	if ship == null or not is_instance_valid(ship):
+## 船身挨了一发（Cannonball._strike 在交完杀伤之后调；敌我都调）：命中处一记炽橙、砲石 / 火器 / 重的留焦痕，
+## 船身往背着来力的一舷一颤（hull_shudder，轻重按 hit_severity）。at / from 是全局坐标（落点 / 出膛点）；
+## amount 是 DamageModel 口径的命中点数（缺省按弹种）。没挂 _Look 的船不做。
+static func hull_impact(ship, at: Vector2, from: Vector2, kind := "stone", amount := -1.0) -> void:
+	var look := _look_of(ship)
+	if look == null:
 		return
-	var world := ship.get_parent()
-	if world == null:
-		return
-	var n := maxi(1, ports)
-	var ship_dir := Vector2.UP.rotated(ship.rotation)
-	var side_dir := (Vector2.RIGHT if side >= 0 else Vector2.LEFT).rotated(ship.rotation)
-	for i in n:
-		var along := (float(i) - float(n - 1) * 0.5) * MUZZLE_SPACING
-		var at: Vector2 = ship.position + ship_dir * along + side_dir * MUZZLE_OUTBOARD
-		_spawn_muzzle_at(world, at, side_dir)
-
-
-static func _spawn_muzzle_at(world: Node, at: Vector2, out_dir: Vector2) -> void:
-	# 暖闪（加色）——齐射要一眼看见
-	var flash := _burst(world, at, 5, 0.2, 24, "glow_warm.png")
-	flash.material = _add_mat()
-	flash.explosiveness = 1.0
-	flash.direction = out_dir
-	flash.spread = 34.0
-	flash.initial_velocity_min = 8.0
-	flash.initial_velocity_max = 36.0
-	flash.scale_amount_min = 0.7
-	flash.scale_amount_max = 1.35
-	flash.color_ramp = _ramp("muzzle_flash", [
-		[0.0, Color(1.0, 0.96, 0.82, 1.0)], [0.3, Color(1.0, 0.7, 0.32, 0.7)], [1.0, Color(0.55, 0.25, 0.08, 0.0)],
-	])
-	# 火药烟
-	var smoke := _burst(world, at, 12, 1.0, 22, "mist_puff.png")
-	smoke.direction = out_dir
-	smoke.spread = 42.0
-	smoke.gravity = Vector2(0, -14)
-	smoke.initial_velocity_min = 35.0
-	smoke.initial_velocity_max = 95.0
-	smoke.damping_min = 35.0
-	smoke.damping_max = 75.0
-	smoke.scale_amount_min = 0.55
-	smoke.scale_amount_max = 1.15
-	smoke.scale_amount_curve = _grow_curve()
-	smoke.color = C_POWDER
-	smoke.color_ramp = _puff_ramp()
-	# 火星
-	var spark := _burst(world, at, 9, 0.42, 25, "ember.png")
-	spark.material = _add_mat()
-	spark.direction = out_dir
-	spark.spread = 48.0
-	spark.initial_velocity_min = 70.0
-	spark.initial_velocity_max = 180.0
-	spark.damping_min = 70.0
-	spark.damping_max = 130.0
-	spark.scale_amount_min = 0.45
-	spark.scale_amount_max = 0.95
-	spark.color_ramp = _spark_ramp()
+	var sev := hit_severity(kind, amount)
+	look.impact(at, sev, kind)
+	# 来力从哪一舷进：船局部 x 的正负（+x 右舷）；往另一舷坐
+	var n2 := ship as Node2D
+	var local := (from - n2.global_position).rotated(-n2.global_rotation)
+	hull_shudder(n2, 0.6 + 0.7 * sev, -1 if local.x > 0.0 else 1)
 
 
 ## 甲板颤：本船挨打 / 本船齐射后坐时，船身 scale 一挤、略侧倾，再弹回。叠加以最后一次为准。
@@ -281,53 +263,147 @@ static func hull_shudder(ship: Node2D, intensity := 1.0, side := 0) -> void:
 	tw.tween_property(sprite, "rotation", 0.0, 0.28).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
-static func on_cannon_hit(world: Node, at: Vector2, ship: Node = null) -> void:
+## 本船挨重的一拍屏幕反应（红蓝错位 + 四角一暗，约 0.15 s）；只旗舰（有镜头的那条）挂得上。push 是世界里的来力方向。
+static func screen_kick(ship, severity: float, push := Vector2.ZERO) -> void:
+	var look := _look_of(ship)
+	if look == null or Kit.is_headless():
+		return
+	look.kick(severity, push)
 
+
+## 船体椭圆（半长, 半宽），与弹道判命中同一把尺
+static func _hull_ab(ship: Node) -> Vector2:
+	return _Ballistics.hull_footprint(ship)
+
+
+## 舷侧齐射出手：side -1 左舷 / +1 右舷；ports 炮位数（封顶 9）。每位一记短促暖闪（星芒顺出手方向拉长，约 0.09 s）+
+## 几颗顺出手方向的火星拖线 + 一小团火药烟（菜花形烟团，往外推开、顺风飘、慢慢鼓大散去）。挂在战场下，放完自删。
+static func muzzle_flash(ship: Node2D, side: int, ports := 3) -> void:
+	if ship == null or not is_instance_valid(ship):
+		return
+	var world := ship.get_parent()
+	if world == null:
+		return
+	var n := clampi(ports, 1, 9)
+	var ab := _hull_ab(ship)
+	var ship_dir := Vector2.UP.rotated(ship.rotation)
+	var side_dir := (Vector2.RIGHT if side >= 0 else Vector2.LEFT).rotated(ship.rotation)
+	var gap := minf(MUZZLE_SPACING, ab.x * 1.2 / float(n))
+	for i in n:
+		var along := (float(i) - float(n - 1) * 0.5) * gap
+		var at: Vector2 = ship.position + ship_dir * along + side_dir * (ab.y + 3.0)
+		_spawn_muzzle_at(world, at, side_dir)
+
+
+static func _spawn_muzzle_at(world: Node, at: Vector2, out_dir: Vector2) -> void:
+	_flash_sprite(world, at + out_dir * 9.0, out_dir.angle(), Vector2(0.85, 0.42), C_MUZZLE, 0.1)
+	_flash_sprite(world, at + out_dir * 3.0, randf() * TAU, Vector2(0.3, 0.3), Color(1.0, 0.95, 0.78), 0.07)
+	var spark := _burst(world, at, 5, 0.3, 25, "spark_streak.png")
+	spark.material = _add_mat()
+	spark.particle_flag_align_y = true
+	spark.direction = out_dir
+	spark.spread = 20.0
+	spark.initial_velocity_min = 200.0
+	spark.initial_velocity_max = 380.0
+	spark.damping_min = 380.0
+	spark.damping_max = 620.0
+	spark.scale_amount_min = 0.55
+	spark.scale_amount_max = 0.95
+	spark.color_ramp = _spark_ramp()
+	var smoke := _burst(world, at + out_dir * 6.0, 4, 1.9, 22, "smoke_puff.png")
+	smoke.explosiveness = 0.95
+	smoke.direction = out_dir
+	smoke.spread = 28.0
+	smoke.gravity = Vector2(3, -8)
+	smoke.initial_velocity_min = 55.0
+	smoke.initial_velocity_max = 110.0
+	smoke.damping_min = 70.0
+	smoke.damping_max = 110.0
+	smoke.angle_max = 360.0
+	smoke.scale_amount_min = 0.18
+	smoke.scale_amount_max = 0.3
+	smoke.scale_amount_curve = _billow_curve()
+	smoke.color = C_GUNSMOKE
+	smoke.color_ramp = _puff_ramp()
+
+
+## 敌船沉没 / 焚毁：留一张船身残影（同贴图、同 shader，焦痕都在）原地歪倒、压暗、没入海面，约 1.8 s；
+## 真船节点照旧当帧释放（计数、结算零改动）。连同 on_ship_sunk 的白沫漂木一起出。
+static func founder(ship: Node2D, burned := false) -> void:
+	if ship == null or not is_instance_valid(ship):
+		return
+	var world := ship.get_parent() as Node2D
+	var sprite := ship.get_node_or_null("Sprite2D") as Sprite2D
+	if world == null or sprite == null or sprite.texture == null:
+		return
+	on_ship_sunk(world, ship.position, burned)
+	var ghost := Sprite2D.new()
+	ghost.texture = sprite.texture
+	ghost.material = sprite.material
+	ghost.transform = world.global_transform.affine_inverse() * sprite.global_transform
+	ghost.add_to_group(GROUP)
+	world.call_deferred("add_child", ghost)
+	ghost.ready.connect(func() -> void:
+		var tw := ghost.create_tween().set_parallel(true)
+		var tilt := 0.32 * (1.0 if randf() < 0.5 else -1.0)
+		tw.tween_property(ghost, "rotation", ghost.rotation + tilt, 1.8).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tw.tween_property(ghost, "scale", ghost.scale * 0.84, 1.8).set_ease(Tween.EASE_IN)
+		# 先压暗入水色（0.5 s），再没下去（1.3 s 淡尽）
+		tw.tween_property(ghost, "self_modulate", Color(0.36, 0.46, 0.52, 0.85), 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.chain().tween_property(ghost, "self_modulate", Color(0.2, 0.3, 0.36, 0.0), 1.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.chain().tween_callback(ghost.queue_free), CONNECT_ONE_SHOT)
+
+
+static func on_cannon_hit(world: Node, at: Vector2, ship: Node = null) -> void:
 	if world == null or not is_instance_valid(world):
 		return
 	on_missile_hit(world, at, "stone", _hits_own_ship(world, at, ship))
 
 
-## 矢石命中船体：kind 见 HIT_KINDS（认不得的按 stone）。own_hit：挨打的是本船——镜头轻颤一下，甲板跟着一震。
+## 矢石命中：kind 见 HIT_KINDS（认不得的按 stone）。落点上一记短促星芒（加色，≤ 0.1 s），随后按弹种：
+##   stone 木屑 + 砲石尘 + 舷边溅水；bolt 木屑少、一点尘；fire 火星拖线 + 焦烟；bomb 大一号的闪 + 火星 + 木屑 + 火药烟。
+## own_hit（挨打的是本船）：镜头顺来力推一下（按轻重 5–19 px，另收 0–3.6 % 镜头）、重的加一拍屏幕错位、极短顿帧（combat12 分层：
+## 箭矢轻、霹雳重）。船身自己的一闪一颤不在这里——Cannonball 另调 hull_impact，敌我都一样。
 static func on_missile_hit(world: Node, at: Vector2, kind := "stone", own_hit := false) -> void:
 	if world == null or not is_instance_valid(world):
 		return
 	if own_hit:
-		# combat12 屏震分层 + ship-vfx 甲板颤：箭矢轻、霹雳重
 		var own := world.get("ship") as Node2D
-		var punch := 3.5
+		var sev := hit_severity(kind)
+		var push := Vector2.ZERO
+		if own != null and is_instance_valid(own):
+			push = own.position - at
+		punch_camera(own, 5.0 + 12.0 * sev, push, 0.03 * sev)
+		if sev >= 0.6:
+			screen_kick(own, sev, push)
 		var stop_d := 0.028
 		var stop_s := 0.22
-		var shudder := 1.0
 		match kind:
 			"bolt":
-				punch = 2.4
 				stop_d = 0.018
-				shudder = 0.65
-			"fire":
-				punch = 4.0
-				shudder = 1.1
 			"bomb":
-				punch = 7.0
 				stop_d = 0.05
 				stop_s = 0.14
-				shudder = 1.45
-		punch_camera(own, punch)
 		hitstop(world, stop_d, stop_s)
-		hull_shudder(own, shudder, 0)
 	match kind:
 		"bolt":
-			_spawn_splinters(world, at, 6)
+			_spawn_flash(world, at, 0.35, Color(1.0, 0.78, 0.45))
+			_spawn_splinters(world, at, 7)
+			_spawn_smoke(world, at, C_DUST, 2, 0.14)
 		"fire":
-			_spawn_sparks(world, at)
-			_spawn_smoke(world, at, C_CHAR, 5, 0.6)
+			_spawn_flash(world, at, 0.4, Color(1.0, 0.7, 0.36))
+			_spawn_sparks(world, at, 12)
+			_spawn_smoke(world, at, C_CHAR, 3, 0.2)
 		"bomb":
-			_spawn_flash(world, at)
-			_spawn_splinters(world, at, 18)
-			_spawn_smoke(world, at, C_POWDER, 9, 1.0)
+			_spawn_flash(world, at, 1.4, C_MUZZLE)
+			_spawn_sparks(world, at, 16)
+			_spawn_splinters(world, at, 16)
+			_spawn_smoke(world, at, C_GUNSMOKE, 6, 0.3)
 		_:
-			_spawn_splinters(world, at, 12)
-			_spawn_smoke(world, at, C_DUST, 6, 0.75)
+			_spawn_flash(world, at, 1.05, C_MUZZLE)
+			_spawn_splinters(world, at, 18)
+			_spawn_smoke(world, at, C_WOOD_DUST, 4, 0.24)
+			_spawn_hull_spray(world, at)
 
 
 ## 落点是不是本船：world.ship（WorldMap 的旗舰）在、开火的不是它、落点离它中心不过 OWN_HIT_RADIUS
@@ -338,23 +414,11 @@ static func _hits_own_ship(world: Node, at: Vector2, shooter: Node) -> bool:
 	return own.position.distance_to(at) <= OWN_HIT_RADIUS
 
 
-## 沉船：原地一圈白沫、几块漂木、一串气泡；burned（烧沉的）另加一缕余烟。船节点释放之前调，at 是船的位置。
+## 沉船：几块漂木、一串气泡（一圈大涟漪由 SeaAtmosphere 在海面上画）；burned（烧沉的）另加一缕余烟。船节点释放之前调，at 是船的位置。
 static func on_ship_sunk(world: Node, at: Vector2, burned := false) -> void:
 	if world == null or not is_instance_valid(world):
 		return
-	var ring := _burst(world, at, 20, 1.6, 4, "soft_dot.png")
-	ring.explosiveness = 0.85
-	ring.emission_shape = CPUParticles2D.EMISSION_SHAPE_RING
-	ring.emission_ring_radius = 34.0
-	ring.emission_ring_inner_radius = 24.0
-	ring.radial_accel_min = 26.0
-	ring.radial_accel_max = 48.0
-	ring.damping_min = 8.0
-	ring.damping_max = 16.0
-	ring.scale_amount_min = 0.22
-	ring.scale_amount_max = 0.42
-	ring.color = C_FOAM
-	ring.color_ramp = _fade_ramp()
+	# 船没处的大涟漪归 SeaAtmosphere（海面着色器画），这里只出漂木与气泡
 	var wreck := _burst(world, at, 10, 3.2, 5)
 	wreck.explosiveness = 0.9
 	wreck.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
@@ -367,23 +431,24 @@ static func on_ship_sunk(world: Node, at: Vector2, burned := false) -> void:
 	wreck.angle_max = 360.0
 	wreck.angular_velocity_min = -30.0
 	wreck.angular_velocity_max = 30.0
-	wreck.scale_amount_min = 2.5
-	wreck.scale_amount_max = 5.5
+	wreck.texture = Kit.fx_texture("splinter.png")
+	wreck.scale_amount_min = 1.4
+	wreck.scale_amount_max = 2.6
 	wreck.color = C_WOOD
 	wreck.color_ramp = _fade_ramp()
-	var bubbles := _burst(world, at, 16, 1.1, 5, "spray_drop.png")
+	var bubbles := _burst(world, at, 7, 1.1, 5, "spray_drop.png")
 	bubbles.explosiveness = 0.25
 	bubbles.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	bubbles.emission_sphere_radius = 18.0
 	bubbles.spread = 180.0
 	bubbles.initial_velocity_min = 4.0
 	bubbles.initial_velocity_max = 14.0
-	bubbles.scale_amount_min = 0.25
-	bubbles.scale_amount_max = 0.55
+	bubbles.scale_amount_min = 0.18
+	bubbles.scale_amount_max = 0.32
 	bubbles.color = C_FOAM
 	bubbles.color_ramp = _fade_ramp()
 	if burned:
-		_spawn_smoke(world, at, C_CHAR, 10, 1.3)
+		_spawn_smoke(world, at, C_CHAR, 8, 0.45)
 
 
 # ── 船上的持续观感：失火（焦帆）/ 进水（舀水花）/ 降幡 ──────────────────
@@ -398,7 +463,7 @@ static func set_fire(ship: Node2D, level: float, wind := Vector2.ZERO) -> Node2D
 	var fx := ship.get_node_or_null(FIRE_NODE) as Node2D
 	if level <= 0.0:
 		if fx != null and _wind_down(fx, 3.0):
-			_spawn_smoke(ship.get_parent(), _in_parent(ship, SAIL_CENTER), C_STEAM, 6, 0.7)
+			_spawn_smoke(ship.get_parent(), _in_parent(ship, SAIL_CENTER), C_STEAM, 5, 0.3)
 		return fx
 	if fx == null:
 		fx = _fire_rig(ship)
@@ -486,7 +551,7 @@ static func _fire_rig(ship: Node2D) -> Node2D:
 	fx.position = SAIL_CENTER
 	fx.z_index = 2
 	fx.add_to_group(GROUP)
-	var smoke := _emitter(fx, "Smoke", 14, 3.2, "mist_puff.png")
+	var smoke := _emitter(fx, "Smoke", 14, 3.2, "smoke_puff.png")
 	smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
 	smoke.spread = 180.0
 	smoke.initial_velocity_min = 6.0
@@ -627,73 +692,117 @@ static func _burst(world: Node, at: Vector2, amount: int, lifetime: float, z := 
 	return p
 
 
-## 木屑：船板迸出的碎片（旧板面深、新茬浅），四散、打着转落回水面
+## 木屑：船板迸出的参差碎片（旧板面深、新茬浅），四散打转、很快落回水面
 static func _spawn_splinters(world: Node, at: Vector2, amount: int) -> void:
-	var p := _burst(world, at, amount, 0.9, 19)
+	var p := _burst(world, at, amount, 0.8, 19, "splinter.png")
 	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	p.emission_sphere_radius = 4.0
 	p.spread = 180.0
-	p.gravity = Vector2(0, 90)
-	p.initial_velocity_min = 60.0
-	p.initial_velocity_max = 170.0
-	p.damping_min = 120.0
-	p.damping_max = 200.0
+	p.initial_velocity_min = 90.0
+	p.initial_velocity_max = 230.0
+	p.damping_min = 220.0
+	p.damping_max = 340.0
 	p.angle_max = 360.0
-	p.angular_velocity_min = -540.0
-	p.angular_velocity_max = 540.0
-	p.scale_amount_min = 2.2
-	p.scale_amount_max = 5.0
+	p.angular_velocity_min = -720.0
+	p.angular_velocity_max = 720.0
+	p.scale_amount_min = 0.55
+	p.scale_amount_max = 1.15
 	p.color_initial_ramp = _ramp("wood", [[0.0, C_WOOD], [1.0, C_WOOD_FRESH]])
 	p.color_ramp = _fade_ramp()
 
 
-## 一蓬烟（砲石尘 / 焦烟 / 火药烟 / 扑火白汽，按 tint）：慢慢鼓起、往上飘散
+## 一蓬烟（砲石尘 / 焦烟 / 火药烟 / 扑火白汽，按 tint）：菜花形烟团（smoke_puff 128 px），size 是贴图倍数；
+## 慢慢鼓起、往上风下飘散
 static func _spawn_smoke(world: Node, at: Vector2, tint: Color, amount: int, size: float) -> void:
 	if world == null or not is_instance_valid(world):
 		return
-	var p := _burst(world, at, amount, 1.5, 18, "soft_dot.png")
-	p.explosiveness = 0.75
+	var p := _burst(world, at, amount, 1.7, 18, "smoke_puff.png")
+	p.explosiveness = 0.8
 	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
-	p.emission_sphere_radius = 6.0
+	p.emission_sphere_radius = 5.0
 	p.spread = 180.0
-	p.gravity = Vector2(4, -16)
-	p.initial_velocity_min = 12.0
-	p.initial_velocity_max = 38.0
-	p.damping_min = 18.0
-	p.damping_max = 36.0
+	p.gravity = Vector2(4, -12)
+	p.initial_velocity_min = 14.0
+	p.initial_velocity_max = 40.0
+	p.damping_min = 22.0
+	p.damping_max = 40.0
 	p.angle_max = 360.0
-	p.scale_amount_min = size * 0.6
-	p.scale_amount_max = size * 1.2
-	p.scale_amount_curve = _grow_curve()
+	p.angular_velocity_min = -20.0
+	p.angular_velocity_max = 20.0
+	p.scale_amount_min = size * 0.7
+	p.scale_amount_max = size * 1.15
+	p.scale_amount_curve = _billow_curve()
 	p.color = tint
 	p.color_ramp = _puff_ramp()
 
 
-## 火箭命中：火星四溅，很快熄
-static func _spawn_sparks(world: Node, at: Vector2) -> void:
-	var p := _burst(world, at, 14, 0.6, 20, "ember.png")
+## 火星拖线：细亮线顺速度拉长（spark_streak + align_y），很快熄
+static func _spawn_sparks(world: Node, at: Vector2, amount := 14) -> void:
+	var p := _burst(world, at, amount, 0.38, 20, "spark_streak.png")
 	p.material = _add_mat()
+	p.particle_flag_align_y = true
 	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	p.emission_sphere_radius = 3.0
 	p.spread = 180.0
-	p.gravity = Vector2(0, -30)
-	p.initial_velocity_min = 40.0
-	p.initial_velocity_max = 140.0
-	p.damping_min = 60.0
-	p.damping_max = 120.0
-	p.scale_amount_min = 0.4
-	p.scale_amount_max = 0.9
+	p.initial_velocity_min = 140.0
+	p.initial_velocity_max = 320.0
+	p.damping_min = 260.0
+	p.damping_max = 440.0
+	p.scale_amount_min = 0.5
+	p.scale_amount_max = 1.0
 	p.color_ramp = _spark_ramp()
 
 
-## 霹雳炮炸开的一闪（火药不多，闪一下就没）
-static func _spawn_flash(world: Node, at: Vector2) -> void:
-	var p := _burst(world, at, 2, 0.16, 21, "glow_warm.png")
-	p.material = _add_mat()
-	p.explosiveness = 1.0
-	p.scale_amount_min = 0.45
-	p.scale_amount_max = 0.65
-	p.color_ramp = _ramp("flash", [[0.0, Color(1.0, 0.95, 0.82, 0.9)], [1.0, Color(1.0, 0.7, 0.4, 0.0)]])
+## 落点一闪：七叉星芒（flash_star 64 px × size），随机转角，0.03 s 撑开、0.1–0.12 s 内收掉——只一拍，不留白晕。
+## 落点多在船上（奶油硬帆、亮木板），加色在亮处会冲成白看不见，所以外层星芒用常规混合的炽橙，只有芯是加色
+static func _spawn_flash(world: Node, at: Vector2, size := 0.6, tint := C_FLASH) -> void:
+	_flash_sprite(world, at, randf() * TAU, Vector2(size, size), tint, 0.12, false)
+	_flash_sprite(world, at, randf() * TAU, Vector2(size, size) * 0.45, Color(1.0, 0.95, 0.8), 0.08)
+
+
+## 一张星芒：rot 转角，scl 终尺寸（贴图倍数），life 秒后收尽自删；additive=false 用常规混合（亮底上也看得见）。延迟一帧入场（同 _burst）
+static func _flash_sprite(world: Node, at: Vector2, rot: float, scl: Vector2, tint: Color, life: float, additive := true) -> void:
+	if world == null or not is_instance_valid(world):
+		return
+	var s := Sprite2D.new()
+	s.texture = Kit.fx_texture("flash_star.png")
+	if additive:
+		s.material = _add_mat()
+	s.position = at
+	s.rotation = rot
+	s.z_index = 24
+	s.scale = scl * 0.55
+	s.modulate = tint
+	s.set_meta(&"nk1_flash", true)
+	s.add_to_group(GROUP)
+	s.ready.connect(func() -> void:
+		var tw := s.create_tween()
+		tw.tween_property(s, "scale", scl, life * 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.parallel().tween_property(s, "modulate:a", 0.0, life).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_callback(s.queue_free), CONNECT_ONE_SHOT)
+	world.call_deferred("add_child", s)
+
+
+## 砲石砸在舷上：舷边一小簇溅水（水滴顺速度拉长）+ 一圈白沫
+static func _spawn_hull_spray(world: Node, at: Vector2) -> void:
+	var p := _burst(world, at, 10, 0.55, 17, "water_drop.png")
+	p.particle_flag_align_y = true
+	p.spread = 180.0
+	p.initial_velocity_min = 70.0
+	p.initial_velocity_max = 170.0
+	p.damping_min = 160.0
+	p.damping_max = 260.0
+	p.scale_amount_min = 0.5
+	p.scale_amount_max = 0.9
+	p.color = C_FOAM
+	p.color_ramp = _fade_ramp()
+	var ring := _burst(world, at, 1, 0.9, 16, "foam_ring.png")
+	ring.explosiveness = 1.0
+	ring.scale_amount_min = 0.55
+	ring.scale_amount_max = 0.55
+	ring.scale_amount_curve = _grow_curve()
+	ring.color = Color(C_FOAM, 0.7)
+	ring.color_ramp = _fade_ramp()
 
 
 # ── 色阶与曲线（共用，按名缓存）────────────────────────────────────────
@@ -760,6 +869,119 @@ static func _add_mat() -> CanvasItemMaterial:
 	m.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	_cache["add"] = m
 	return m
+
+
+## 烟团鼓大：出生 0.45 倍，前三成时间撑到八成，末了满倍（火药烟先猛后缓）
+static func _billow_curve() -> Curve:
+	if _cache.has("billow"):
+		return _cache["billow"]
+	var c := Curve.new()
+	c.add_point(Vector2(0.0, 0.45))
+	c.add_point(Vector2(0.3, 0.8))
+	c.add_point(Vector2(1.0, 1.0))
+	_cache["billow"] = c
+	return c
+
+
+# ── 船身反应节点（dress_ship 挂在船下，名 FxLook）───────────────────────
+## 逐帧：命中一记炽橙按帧衰减、写焦痕表（船身 shader 的 hit / scars）；旗舰另挂一层屏幕错位（ScreenKick），挨重一下亮约 0.15 s。
+## 盖掉旧层：船下的 WakeParticles（方点 / 软圆点尾迹；航迹白练已归 SeaAtmosphere 的 SeaWake）隐藏不删——节点照在，Ship / PirateShip 照写不报错。
+class _Look extends Node2D:
+	const SCAR_MAX := 6
+
+	var ship: Node2D
+	var sprite: Sprite2D
+	var own := false
+	var hit_uv := Vector2(0.5, 0.5)
+	var hit_z := 0.0
+	var hit_r := 16.0
+	var scars := PackedVector4Array()
+	var _scar_i := 0
+	var _kick: ColorRect = null
+	var _kick_amt := 0.0
+
+	func setup(host: Node2D, spr: Sprite2D, is_own: bool) -> void:
+		ship = host
+		sprite = spr
+		own = is_own
+
+	func _ready() -> void:
+		top_level = true
+		global_transform = Transform2D.IDENTITY
+
+	func _mat() -> ShaderMaterial:
+		return sprite.material as ShaderMaterial if sprite != null and is_instance_valid(sprite) else null
+
+	## 命中处一记炽橙（UV、半径按轻重），砲石 / 火器 / 重的记一处焦痕（满 SCAR_MAX 轮换最旧的）
+	func impact(at: Vector2, sev: float, kind: String) -> void:
+		if sprite == null or not is_instance_valid(sprite) or sprite.texture == null:
+			return
+		var uv := sprite.to_local(at) / sprite.texture.get_size() + Vector2(0.5, 0.5)
+		hit_uv = uv.clamp(Vector2(0.02, 0.02), Vector2(0.98, 0.98))
+		hit_z = clampf(0.55 + 0.45 * sev, 0.0, 1.0)
+		hit_r = 8.0 + 12.0 * sev
+		if kind in ["stone", "bomb", "fire"] or sev >= 0.6:
+			var sc := Vector4(hit_uv.x, hit_uv.y, 8.0 + 13.0 * sev, clampf(0.5 + 0.45 * sev, 0.0, 1.0))
+			if scars.size() < SCAR_MAX:
+				scars.append(sc)
+			else:
+				scars[_scar_i] = sc
+				_scar_i = (_scar_i + 1) % SCAR_MAX
+			var m := _mat()
+			if m != null:
+				m.set_shader_parameter("scars", scars)
+				m.set_shader_parameter("scar_n", scars.size())
+
+	func kick(sev: float, push: Vector2) -> void:
+		if not own:
+			return
+		if _kick == null:
+			_kick = ColorRect.new()
+			_kick.name = "ScreenKick"
+			_kick.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_kick.z_index = 90
+			var sh := load("res://assets/shaders/screen_kick.gdshader") as Shader
+			if sh != null:
+				var m := ShaderMaterial.new()
+				m.shader = sh
+				_kick.material = m
+			add_child(_kick)
+		_kick_amt = maxf(_kick_amt, clampf(sev, 0.0, 1.2))
+		var m2 := _kick.material as ShaderMaterial
+		if m2 != null:
+			m2.set_shader_parameter("dir", push.normalized() if push.length_squared() > 0.0001 else Vector2.RIGHT)
+
+	func _process(delta: float) -> void:
+		if ship == null or not is_instance_valid(ship) or sprite == null or not is_instance_valid(sprite):
+			return
+		global_transform = Transform2D.IDENTITY
+		var wp := ship.get_node_or_null("WakeParticles") as CanvasItem
+		if wp != null and wp.visible:
+			wp.visible = false
+		if hit_z > 0.001:
+			hit_z *= exp(-delta * 20.0)
+			var m := _mat()
+			if m != null:
+				m.set_shader_parameter("hit", Vector4(hit_uv.x, hit_uv.y, hit_z, hit_r))
+		_step_kick(delta)
+
+	func _step_kick(delta: float) -> void:
+		if _kick == null:
+			return
+		_kick_amt *= exp(-delta * 15.0)
+		_kick.visible = _kick_amt > 0.02
+		if not _kick.visible:
+			return
+		var cam := ship.get("camera") as Camera2D
+		if cam == null:
+			_kick.visible = false
+			return
+		var view := get_viewport().get_visible_rect().size / cam.zoom
+		_kick.position = cam.get_screen_center_position() - view * 0.5
+		_kick.size = view
+		var m := _kick.material as ShaderMaterial
+		if m != null:
+			m.set_shader_parameter("amount", clampf(_kick_amt, 0.0, 1.0))
 
 
 # ── 分阶段纪实短注（进水 / 失火 / 降幡 / 接舷 / 溃逃）──────────────────

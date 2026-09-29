@@ -204,6 +204,7 @@ SHOT_PROBES = [
     ("tools/vision_letterbox_probe.gd", "m3"),
     ("tools/qa_p7_screenshots.gd", "m3"),
     ("tools/combat_vfx_probe.gd", "sg2"),
+    ("tools/ship_vfx_probe.gd", "ship-vfx"),  # 出海船观感 + 命中手感（lane ship-vfx）
     ("tools/combat_wire_probe.gd", "sg2"),
     ("tools/qa_companion_preview_screenshots.gd", "sg2"),
     ("tools/qa_ending_reread_probe.gd", "sg2"),

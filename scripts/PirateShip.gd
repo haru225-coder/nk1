@@ -470,10 +470,11 @@ func _polish_wake() -> void:
 
 func take_damage(amount: float) -> void:
 	hull_hp -= amount
-	sprite.modulate = Color(1.2, 0.5, 0.45)
-	_CombatFx.hull_shudder(self, clampf(amount / 25.0, 0.5, 1.4), 0)
-	_hit_tween = create_tween()
-	_hit_tween.tween_property(sprite, "modulate", _rest_modulate(), 0.2)
+	# 挂了船身反应节点就不闪红：命中处一闪、顺来力一颤、焦痕由 Cannonball → CombatFx.hull_impact 出
+	if not _CombatFx.has_look(self):
+		sprite.modulate = Color(1.2, 0.5, 0.45)
+		_hit_tween = create_tween()
+		_hit_tween.tween_property(sprite, "modulate", _rest_modulate(), 0.2)
 	# lane combat07：矢石落在甲板上也伤人（每 25 伤约死 0–2 人），敌将按受创掉士气
 	var killed := int(roundf(amount / 25.0 * _rng.randf_range(0.3, 1.6)))
 	if killed > 0:
@@ -491,7 +492,8 @@ func _rest_modulate() -> Color:
 
 
 func _explode() -> void:
-	# 赏金走 SeaChart 结算，击沉不再掉拾取箱
+	# 赏金走 SeaChart 结算，击沉不再掉拾取箱。船身残影歪倒没入海面（CombatFx.founder，纯观感），真节点照旧当帧释放
+	_CombatFx.founder(self)
 	queue_free()
 
 
