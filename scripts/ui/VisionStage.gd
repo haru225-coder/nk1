@@ -39,7 +39,7 @@ const CORNER_PX := 58.0
 const SLIP_TITLE := "市舶纪事"
 const SLIP_SEAL := "舷"
 const SLIP_SUB := "外洋遇劫　福船对快船"
-const NOTE_COMBAT := "左舷齐射　烟未散"
+const NOTE_COMBAT := "右舷齐射　烟未散"
 const NOTE_PORTRAIT := "绢本立像　名册可核"
 const HINT_ESC := "B　合上纪事"
 

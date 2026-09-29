@@ -30,6 +30,17 @@ var base_wind_strength: float = 80.0
 var combat_mode: bool = false
 var combat_start_durability: float = 0.0
 var player_damage: float = 0.0
+## 开战时在场各船（Fleet.ships 条目，Dictionary 按引用）与当时耐久：[[ship, durability], …]。
+## 战损只算这几艘的下降量——夺来入列的新船自带满耐久，按全队总耐久算会把战损冲成负数（09-28 实测 −1325，注记钳成「受损 0」）。
+var _start_hulls: Array = []
+## 本战接舷夺下的艘数、随船入列的水手（战果注记交代「夺来两船，添水手八十」用）
+var _boarded_n: int = 0
+var _boarded_crew: int = 0
+## 最后一艘刚被接舷夺下、「夺船」题签还在演：_process 不判胜，演完由 _board_enemy 带 boarded 退出。
+## 不拦的话下一帧 _process 见敌船已空先以 {} 退出，出战墨边写「战罢」、注记缺「接舷既定。」（09-28 实测只留 1 帧）。
+var _board_win_pending: bool = false
+## 这一战敌船兜圈的方向（+1 / −1，_setup_combat 随机定，各船一致）
+var _orbit_sense: float = 1.0
 ## 防 _battle_exit 重入（信号同步触发期间 WorldMap 仍存活一帧）
 var resolved: bool = false
 ## 最近一次终结是否经接舷夺船（出战题签用「夺船」）
@@ -41,11 +52,31 @@ const ENEMY_HULL_BASE := 100.0
 ## 敌船血量缩放 clamp 下限/上限
 const ENEMY_SCALE_MIN := 0.8
 const ENEMY_SCALE_MAX := 3.0
-## 开战刷船距离：镜头 zoom 1.5 时可见约 850×480，1200 外等于空镜
-const COMBAT_SPAWN_DIST_MIN := 300.0
-const COMBAT_SPAWN_DIST_MAX := 420.0
+## 开战刷船距离。镜头 zoom 1.5、画布 1280×720 → 可见 853×480，半高 240、半宽 427（09-28 有窗口实量，
+## 探针 verify_crew_fix_battle 打 VIEW_HALF）。原 300—420、兜着兜着漂到约 600，开局一艘都看不见（P02）。
+## 收到 210—235：上限不过半高，任何角度刷出船心都在画内（story_check 按工程画布高与镜头 zoom 实算半高对账），
+## 又在接舷距离 140 之外、离本船船身（半长约 160）留得出空。刷出后各船收进下面的兜圈椭圆。
+const COMBAT_SPAWN_DIST_MIN := 210.0
+const COMBAT_SPAWN_DIST_MAX := 235.0
+## 敌船兜圈（PirateShip.orbit_*）：绕本船下方 COMBAT_ORBIT_OFFSET 兜横长椭圆，竖半轴 COMBAT_ORBIT_R、横半轴 ×(1+COMBAT_ORBIT_ELL)。
+## 稳态椭圆横 ±236、竖 −170…+230：上沿压不到顶匾（80 px ≈ 世界 53，顶匾下沿在本船上方 187），下沿不出画（半高 240）。
+## 09-28 初修绕本船兜正圆、半径 210—235：船身永远正对本船，受伤比修前多七成六，小艍遇三艘哨船首轮 3.7 s 必沉（09-29 复核）。
+## 偏心横长椭圆让船头时偏时正，准头回到修前（story_check 对修前口径同种子对账：本船不动 30 s 受伤均值比在上下三成内）。
+## 各数 09-29 按 headless --fixed-fps 60、每组 20 局实测挑定，航速、转向、开炮判定、弹数、散布一概不动。
+const COMBAT_ORBIT_R := 200.0
+const COMBAT_ORBIT_ELL := 0.18
+const COMBAT_ORBIT_OFFSET := Vector2(0.0, 30.0)
+## 开局先兜大横圈（竖半轴 180、横 ×1.8）：弯太急船转不过来、首轮炮打得散，首轮齐射后半秒起用 2.5 s 收成稳态椭圆。
+## 修前开局刷在 300—420 外边转边打，首轮也散。本船不动时三艘哨船首轮吃满 120（小艍耐久）的局数：修前 200 局 9 局，
+## 收拢后 200 局 0—1 局（story_check 同种子对账：不多于修前）。三艘 × 2 门 × 25 = 150 > 120，「首轮必打不沉」要错开首轮开炮，
+## 那是改数，待 Snow 定。
+const COMBAT_OPEN_R := 180.0
+const COMBAT_OPEN_ELL := 0.8
+const COMBAT_SETTLE_LEN := 2.5
 ## 镜头内等于已进 800 射程；不延迟会被 9 门齐射秒掉开局小艍
 const COMBAT_FIRE_DELAY := 3.5
+## 开局大横圈收拢的起点：首轮齐射后半秒
+const COMBAT_SETTLE_FROM := COMBAT_FIRE_DELAY + 0.5
 ## 两艘满编 9 门 × 25 伤 = 450，开局 120 耐久一波沉。封顶 2 门：
 ## 第一轮约 100，停着打第二轮才沉，B 来得及按。
 const COMBAT_CANNON_CAP := 2
@@ -93,9 +124,9 @@ func _process(delta: float) -> void:
 	if combat_mode:
 		rain_particles.global_position = ship.global_position
 
-	# 战损统计：以进入战斗时的舰队总耐久为基准（仅战斗期有意义）
+	# 战损统计：只算开战时在场各船的耐久下降（仅战斗期有意义）
 	if combat_mode:
-		player_damage = combat_start_durability - Fleet.total_durability()
+		player_damage = _fleet_damage()
 
 	# P4-2 接舷：boarding 阶段检测白刃目标是否存活（敌被打沉/脱钩则退出）
 	if combat_mode and not resolved:
@@ -104,12 +135,30 @@ func _process(delta: float) -> void:
 				boarding = false
 				boarding_target = null
 
-	# 敌全灭 → 获胜（接舷中不判定：白刃还没分出胜负）
+	# 敌全灭 → 获胜（接舷中、末艘「夺船」题签还在演时不判定：那一路由 _board_enemy 演完带 boarded 退出）
 	if combat_mode and not resolved:
-		if not boarding and _enemies_alive() == 0:
-			_battle_exit("win", {})
+		if not boarding and not _board_win_pending and _enemies_alive() == 0:
+			_battle_exit("win", _win_data({}))
 
 	_update_hud()
+
+
+## 开战时在场各船的耐久下降量之和（夺来入列的船不计）。见 _start_hulls。
+func _fleet_damage() -> float:
+	var d := 0.0
+	for e in _start_hulls:
+		var s: Dictionary = e[0]
+		d += maxf(0.0, float(e[1]) - float(s.get("durability", 0.0)))
+	return d
+
+
+## 获胜退出带的战果：夺船艘数、随船水手、敌船总数（SeaChart 按此组注记）。extra 里的键（boarded）照带。
+func _win_data(extra: Dictionary) -> Dictionary:
+	var d := extra.duplicate()
+	d["boarded_n"] = _boarded_n
+	d["boarded_crew"] = _boarded_crew
+	d["enemies"] = total_enemies
+	return d
 
 
 ## 战斗模式下存活敌船数（PirateShip 爆炸后 hull_hp 归零仍存活一帧，按血量判定）
@@ -128,8 +177,10 @@ func _node_str(n: Object, prop: String, fallback: String = "") -> String:
 	return fallback if v == null else str(v)
 
 
+## 已排队释放的不算（被夺的船 queue_free 到帧末才落地，同帧还挂在树上）
 func _is_live_pirate(n: Node) -> bool:
-	return n != null and n.name.begins_with("PirateShip") and _node_float(n, "hull_hp") > 0.0
+	return n != null and n.name.begins_with("PirateShip") and not n.is_queued_for_deletion() \
+		and _node_float(n, "hull_hp") > 0.0
 
 
 func _enemies_alive() -> int:
@@ -212,25 +263,37 @@ func _board_enemy(enemy: Node2D) -> void:
 	var lose_n := maxi(1, int(Fleet.total_crew() * (0.08 + randf() * 0.07)))
 	if win:
 		var type_id := _node_str(enemy, "ship_type", "pirate_boat")
-		var ship_name := _node_str(enemy, "ship_name", "")
+		# 夺来的船按序号起名（快船・一、元哨船・二），船屋「换上」钮和船籍簿分得清是哪一艘；type 不动
+		var prize := Fleet.prize_name(_node_str(enemy, "ship_name", ""))
 		Fleet.lose_crew_random(lose_n)
 		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 4)
 		GameState.martial = mini(100, GameState.martial + 1)
-		var ok := Fleet.add_ship(type_id, ship_name)
+		var ok := Fleet.add_ship(type_id, prize)
 		var taken: String = str(Fleet.ships[Fleet.ships.size() - 1].get("name", "敌船")) if ok else "敌船"
+		if ok:
+			_boarded_n += 1
+			_boarded_crew += int(Fleet.ships[Fleet.ships.size() - 1].get("crew", 0))
 		var msg := _CombatFx.board_win_note(taken)
+		# 被夺的船当场不算活船：queue_free 到帧末才落地，不先归零的话同帧数活船永远数不到 0
+		enemy.set("hull_hp", 0.0)
+		var last := _enemies_alive() == 0
+		if last:
+			_board_win_pending = true
 		var resolved_stage: CanvasLayer = _BoardingStage.resolve(self, "win", msg)
 		if resolved_stage != null:
 			stage = resolved_stage
-		_show_combat_notice(msg)
+		else:
+			# 题签起不来（headless / 不在树）才用浮字兜底：题签与浮字同一句话不出两遍
+			_show_combat_notice(msg)
 		_CombatFx.hitstop(self, 0.09, 0.16)
 		enemy.queue_free()
 		boarding = false
 		boarding_target = null
-		if _enemies_alive() == 0:
-			# 等接舷题签播完再出战，避免 WorldMap.queue_free 切断演出
+		if last:
+			# 等「夺船」题签停满 T_HOLD、淡出后再出战，免得 WorldMap.queue_free 当帧切断演出
 			await _await_boarding_fx(stage)
-			_battle_exit("win", {"boarded": true})
+			_board_win_pending = false
+			_battle_exit("win", _win_data({"boarded": true}))
 	else:
 		var lose_n2 := maxi(1, int(Fleet.total_crew() * (0.20 + randf() * 0.10)))
 		Fleet.lose_crew_random(lose_n2)
@@ -242,7 +305,8 @@ func _board_enemy(enemy: Node2D) -> void:
 		var lose_stage: CanvasLayer = _BoardingStage.resolve(self, "lose", msg2)
 		if lose_stage != null:
 			stage = lose_stage
-		_show_combat_notice(msg2)
+		else:
+			_show_combat_notice(msg2)
 		await _await_boarding_fx(stage)
 
 
@@ -400,20 +464,30 @@ func _setup_combat(pb: Dictionary) -> void:
 	$Ports.process_mode = Node.PROCESS_MODE_DISABLED
 	$Ports.visible = false
 	combat_start_durability = Fleet.total_durability()
+	_start_hulls.clear()
+	for s in Fleet.ships:
+		_start_hulls.append([s, float(s.get("durability", 0.0))])
+	_boarded_n = 0
+	_boarded_crew = 0
+	_board_win_pending = false
+	# 这一战敌船同向兜圈（顺逆随机，各船一致）
+	_orbit_sense = 1.0 if randf() < 0.5 else -1.0
 	total_enemies = 0
 	var enemy_list: Array = pb.get("enemy", [])
 	for entry in enemy_list:
 		var type_id: String = entry.get("type", "pirate_boat")
 		var count: int = entry.get("count", 1)
-		# sprite 只管海战精灵（船图契约）；元军哨船 type 仍是 sea_falcon，另挂 sprite=yuan_patrol
-		_spawn_enemy(type_id, count, pb, str(entry.get("sprite", "")))
+		# sprite 只管海战精灵（船图契约）；元军哨船 type 仍是 sea_falcon，另挂 sprite=yuan_patrol。
+		# prize_name 是夺来入列时的船名底字（元军哨船写「元哨船」），缺省用船型名
+		_spawn_enemy(type_id, count, pb, str(entry.get("sprite", "")), str(entry.get("prize_name", "")))
 	weather_status.text = "海战"
 	weather_status.add_theme_color_override("font_color", UiTheme.HONEY)
 	_try_letterbox_enter(pb)
 
 
-## 生成一支敌舰队，绕玩家船散布；hull_hp 按战力比缩放。sprite_id 空则精灵按 type 取（PirateShip.apply_sprite）
-func _spawn_enemy(type_id: String, count: int, pb: Dictionary, sprite_id := "") -> void:
+## 生成一支敌舰队，绕玩家船散布；hull_hp 按战力比缩放。sprite_id 空则精灵按 type 取（PirateShip.apply_sprite）。
+## prize 空则夺来入列时按船型名起名（再由 Fleet.prize_name 加序号）。
+func _spawn_enemy(type_id: String, count: int, pb: Dictionary, sprite_id := "", prize := "") -> void:
 	var enemy_power: float = float(pb.get("power", 300.0))
 	var player_power: float = float(pb.get("player_power", 1.0))
 	if player_power <= 0.0:
@@ -431,10 +505,21 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary, sprite_id := "") 
 		var dist := randf_range(COMBAT_SPAWN_DIST_MIN, COMBAT_SPAWN_DIST_MAX)
 		p.position = ship.position + Vector2(cos(angle), sin(angle)) * dist
 		p.target = ship
+		# 同一战各船走同一条兜圈椭圆、同向（PirateShip.orbit_*）；起手顺着绕本船的切向，不原地掉头兜出画外
+		p.orbit_radius = COMBAT_ORBIT_R
+		p.orbit_ell = COMBAT_ORBIT_ELL
+		p.orbit_offset = COMBAT_ORBIT_OFFSET
+		p.orbit_radius_start = COMBAT_OPEN_R
+		p.orbit_ell_start = COMBAT_OPEN_ELL
+		p.orbit_settle_from = COMBAT_SETTLE_FROM
+		p.orbit_settle_len = COMBAT_SETTLE_LEN
+		p.orbit_sense = _orbit_sense
+		var tangent := -Vector2(cos(angle), sin(angle)).rotated(-_orbit_sense * PI / 2.0)
+		p.rotation = Vector2.UP.angle_to(tangent)
 		p.hull_hp = hull
 		# P4-2：白刃/夺船输入。节点名保持 "PirateShip" 前缀（_enemies_alive 依赖），
-		# 夺船后的船名另存 ship_name（沿用敌船名，如「快船」）。
-		p.ship_name = "%s" % type_name
+		# 夺船后的船名底字另存 ship_name（海寇「快船」、元军哨船「元哨船」，入列时加序号）。
+		p.ship_name = prize.strip_edges() if prize.strip_edges() != "" else type_name
 		p.ship_type = type_id
 		p.sprite_id = sprite_id
 		p.crew = randi_range(crew_low, crew_high)
@@ -463,8 +548,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				_board_enemy(ne[0])
 		elif event.keycode == KEY_B or event.keycode == KEY_ESCAPE:
-			if boarding:
-				return # 白刃已钩住，不能逃
+			if boarding or _board_win_pending:
+				return # 白刃已钩住不能逃；末艘已夺下、题签在演，等它带 boarded 出战
 			get_viewport().set_input_as_handled()
 			var chance := Voyage.flee_success_chance()
 			var ok := randf() < chance
@@ -481,6 +566,8 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 	if resolved:
 		return
 	resolved = true
+	if combat_mode:
+		player_damage = _fleet_damage()
 	data["player_damage"] = player_damage
 	_last_boarded = bool(data.get("boarded", false))
 	if _last_boarded:

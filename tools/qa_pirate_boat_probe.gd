@@ -100,7 +100,7 @@ func _shoot(dir: String, name: String, want: Callable) -> bool:
 	return err == OK
 
 
-## 敌船停航停炮、摆进镜头：刷在 300—420 外，镜头 1.5 倍只看得到半圈
+## 敌船停航停炮、摆进镜头：截图要固定机位（开战刷在 210—235，刷出后会绕本船兜圈）
 func _pose(wm: Node, offsets: Array) -> void:
 	var own: Node2D = wm.get("ship")
 	CombatStage.freeze_enemy_fire(wm)
@@ -138,10 +138,12 @@ func _take_shots(gm: Node, fleet: Node, pirate: Dictionary, patrol: Dictionary, 
 		foe.set("crew", 0)
 		foe.position = (wm.get("ship") as Node2D).position + Vector2(90, 0)
 		wm.call("_board_enemy", foe)
+		# 有窗口：夺船那句只写在题签副题里（crew 线 09-28：有题签就不出浮字，一句话不出两遍）
 		await _shoot(dir, "03_接舷夺船_快船并入本队", func() -> bool:
 			var cap: Array = CombatStage.board_caption(self, ref.get_ref())
-			var note: Label = ref.get_ref().get("_notice") if ref.get_ref() != null else null
-			return cap[0] == "夺船" and cap[1] >= 0.99 and note != null and note.text.find("快船") >= 0)
+			var st: Node = CombatStage.boarding_stage(self, ref.get_ref())
+			var sub: Label = st.get("_sub") if st != null else null
+			return cap[0] == "夺船" and cap[1] >= 0.99 and sub != null and sub.text.find("快船・一") >= 0)
 	CombatStage.teardown(self, ref.get_ref(), gm)
 	await process_frame
 	await process_frame
@@ -210,14 +212,19 @@ func _pirate_battle(gm: Node, fleet: Node, pirate: Dictionary) -> void:
 	var ships: Array = fleet.get("ships")
 	var got: Dictionary = ships[ships.size() - 1] if ships.size() > n0 else {}
 	_expect(ships.size() == n0 + 1, "接舷得胜，船队多一艘（%d → %d）" % [n0, ships.size()])
-	_expect(str(got.get("type", "")) == "pirate_boat" and str(got.get("name", "")) == "快船",
-		"夺来的船按 pirate_boat 入列、名「快船」（得 %s / %s）" % [got.get("type", "无"), got.get("name", "无")])
+	_expect(str(got.get("type", "")) == "pirate_boat" and str(got.get("name", "")) == "快船・一",
+		"夺来的船按 pirate_boat 入列、按序号名「快船・一」（得 %s / %s）" % [got.get("type", "无"), got.get("name", "无")])
 	var d: Dictionary = fleet.call("ship_def", "pirate_boat")
 	_expect(float(got.get("max_durability", -1.0)) == float(d.get("durability", -2)) and int(got.get("crew", -1)) == int(d.get("crew_min", -2)),
 		"入列快船耐久、水手照 ships.json 的快船（%s / %s）" % [got.get("max_durability", "无"), got.get("crew", "无")])
+	# headless 题签起不来走浮字兜底；有窗口时这句只在题签副题里，浮字不再出（一句话不出两遍）
 	var notice: Label = wm.get("_notice")
-	var note_txt := notice.text if notice != null else ""
-	_expect(note_txt.find("敌船「快船」并入本队") >= 0 and note_txt.find("海鹘") < 0, "夺船浮字写快船（得「%s」）" % note_txt)
+	var st: Node = CombatStage.boarding_stage(self, wm)
+	var sub: Label = st.get("_sub") if st != null else null
+	var note_txt := notice.text if notice != null else (sub.text if sub != null else "")
+	_expect(note_txt.find("敌船「快船・一」并入本队") >= 0 and note_txt.find("海鹘") < 0, "夺船题签（headless 为浮字）写快船・一（得「%s」）" % note_txt)
+	if DisplayServer.get_name() != "headless":
+		_expect(notice == null or not notice.visible, "有窗口有题签时不再出同一句浮字")
 	await _drop(wm)
 
 
@@ -236,8 +243,8 @@ func _patrol_battle(gm: Node, fleet: Node, patrol: Dictionary) -> void:
 	_expect(foes.size() == int(patrol.get("count", 0)), "元军哨船生成 %d 艘" % foes.size())
 	if not foes.is_empty():
 		var foe: Node = foes[0]
-		_expect(str(foe.get("ship_type")) == "sea_falcon" and str(foe.get("ship_name")) == "海鹘",
-			"元军哨船 type 不动（sea_falcon / 海鹘），夺来仍按海鹘入列")
+		_expect(str(foe.get("ship_type")) == "sea_falcon" and str(foe.get("ship_name")) == str(patrol.get("prize_name", "")) and str(patrol.get("prize_name", "")) == "元哨船",
+			"元军哨船 type 不动（sea_falcon / 海鹘），夺来入列的船名底字是「元哨船」（得 %s / %s）" % [foe.get("ship_type"), foe.get("ship_name")])
 		_expect(str(foe.get("sprite_id")) == "yuan_patrol" and str(foe.call("sprite_key")) == "yuan_patrol",
 			"WorldMap 把 entry.sprite 传给敌船（sprite_id=yuan_patrol）")
 		_expect(_tex_path(foe) == _want("yuan_patrol", CombatFx.SHIP_SPRITE_ENEMY),

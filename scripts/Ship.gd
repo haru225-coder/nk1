@@ -163,14 +163,15 @@ func _update_visuals(delta: float) -> void:
 		wake_particles.emitting = true
 		wake_particles.initial_velocity_min = 20.0 + speed_ratio * 80.0
 		wake_particles.initial_velocity_max = 40.0 + speed_ratio * 120.0
-		wake_particles.scale_amount_max = 4.0 + speed_ratio * 6.0
-		
+		# 尾迹、船头浪挂 soft_dot（64 px 柔点）：scale 原是方块边长像素，按半透明芯径约 28 px 折算（同 PirateShip.DOT_PX_SCALE）
+		wake_particles.scale_amount_max = (4.0 + speed_ratio * 6.0) / 28.0
+
 		var bow_emit = current_speed > 100.0
 		bow_wave_left.emitting = bow_emit
 		bow_wave_right.emitting = bow_emit
 		if bow_emit:
-			bow_wave_left.scale_amount_max = 2.0 + speed_ratio * 4.0
-			bow_wave_right.scale_amount_max = 2.0 + speed_ratio * 4.0
+			bow_wave_left.scale_amount_max = (2.0 + speed_ratio * 4.0) / 28.0
+			bow_wave_right.scale_amount_max = (2.0 + speed_ratio * 4.0) / 28.0
 	else:
 		wake_particles.emitting = false
 		bow_wave_left.emitting = false

@@ -7,6 +7,8 @@ const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const IMPACT_PATH := "res://scenes/ImpactExplosion.tscn"
 const SPLASH_PATH := "res://scenes/WaterSplash.tscn"
 const GROUP := "nk1_combat_fx"
+## 命中焦烟的粒子贴图（与 ImpactExplosion / WaterSplash / PirateShip 尾迹同一张 64 px 柔点）
+const SMOKE_DOT := preload("res://assets/fx/soft_dot.png")
 
 ## 船图契约（钩子线、海寇线、美术包线共用）：海战精灵 = assets/ship_<id>.png，文件在才用，不在就回落默认贴图。
 ##   己方旗舰：id = 旗舰 ships.json type，回落 ship_fu.png（Ship.tscn 里挂的那张）
@@ -81,16 +83,18 @@ static func punch_camera(ship: Node, intensity := 6.0) -> void:
 
 
 ## 炮弹命中：既有爆炸之上再加一缕慢烟，并顿帧 + 轻震。
-static func on_cannon_hit(world: Node, at: Vector2, ship: Node = null) -> void:
+## ship 不写类型：发炮的船可能已被打沉释放，已释放的实例传进带类型的形参当场 SCRIPT ERROR（crew 线 09-28 实机）。
+static func on_cannon_hit(world: Node, at: Vector2, ship = null) -> void:
 	if world == null or not is_instance_valid(world):
 		return
 	hitstop(world, 0.055, 0.22)
-	if ship != null:
+	if is_instance_valid(ship) and ship is Node:
 		punch_camera(ship, 4.5)
 	_spawn_ember_smoke(world, at)
 
 
-static func _spawn_ember_smoke(world: Node, at: Vector2) -> void:
+## 返回这缕烟（已排进 world 的延迟 add_child；门禁拿它验贴图）
+static func _spawn_ember_smoke(world: Node, at: Vector2) -> CPUParticles2D:
 	var smoke := CPUParticles2D.new()
 	smoke.z_index = 18
 	smoke.position = at
@@ -99,14 +103,16 @@ static func _spawn_ember_smoke(world: Node, at: Vector2) -> void:
 	smoke.lifetime = 1.1
 	smoke.one_shot = true
 	smoke.explosiveness = 0.75
+	# 无贴图的 CPUParticles2D 画成硬边方块（本船四周一圈灰方块，crew 线 09-28 实机）；挂柔点，scale 由方块边长 5—11 px 按 1/28 折算
+	smoke.texture = SMOKE_DOT
 	smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	smoke.emission_sphere_radius = 6.0
 	smoke.spread = 180.0
 	smoke.gravity = Vector2(0, -12)
 	smoke.initial_velocity_min = 18.0
 	smoke.initial_velocity_max = 42.0
-	smoke.scale_amount_min = 5.0
-	smoke.scale_amount_max = 11.0
+	smoke.scale_amount_min = 5.0 / 28.0
+	smoke.scale_amount_max = 11.0 / 28.0
 	smoke.color = Color(0.22, 0.18, 0.14, 0.55)
 	world.call_deferred("add_child", smoke)
 	# 延迟一帧再喷，避免未入树
@@ -115,6 +121,7 @@ static func _spawn_ember_smoke(world: Node, at: Vector2) -> void:
 		var t := smoke.get_tree().create_timer(1.4)
 		t.timeout.connect(smoke.queue_free)
 	)
+	return smoke
 
 
 ## 论文纪实短注（飘字用）：无叹号、无营销词。
@@ -142,10 +149,75 @@ static func board_begin_subtitle() -> String:
 
 
 ## 海图战果注记（SeaChart._on_battle_result 用）：克制纪实，无叹号。
-static func sea_win_note(spoil: int, damage: int, promo := "") -> String:
-	var base := "海盗已退。获财货 %d 钱。船体受损 %d。" % [maxi(0, spoil), maxi(0, damage)]
+## source 是遭遇来源（pending_battle.source.event）：pirate 写「海盗已退」，yuan_patrol 写「哨船退去」——元军不叫海盗。
+## taken 是夺船交代（缺省 {} = 没夺船，句子与改前一字不差）：
+##   全靠炮击打赢（没夺船）才沿用「海盗已退 / 哨船退去」旧句。夺过船就不说退：场上的船要么沉了要么归了你，
+##   没有一艘退走（09-29 复核：沉一夺二写「哨船退去」读来像剩下的船跑了）。
+##   boarded 末艘经接舷夺下 → 以「接舷既定。」开头；
+##   钱数、战损紧跟在头上，夺船交代放句末：海图顶匾第二行只留 28 字，截断只截交代的尾巴，钱数战损不被挤掉（09-29 复核）；
+##   交代写「击沉一船，夺来两船，添水手八十，水粮只够五日。」——sunk 击沉艘数（0 不写）、n 夺来艘数、crew 随船入列水手、
+##   supply_days 战后水粮可支日数，数都由调用方实算。
+static func sea_win_note(spoil: int, damage: int, promo := "", source := "pirate", taken := {}) -> String:
+	var n := int(taken.get("n", 0))
+	var boarded := bool(taken.get("boarded", false))
+	var head := "接舷既定。" if boarded else ""
+	if n <= 0 and not boarded:
+		head += "哨船退去。" if source == "yuan_patrol" else "海盗已退。"
+	var base := head + "获财货 %d 钱。船体受损 %d。" % [maxi(0, spoil), maxi(0, damage)]
+	if n > 0:
+		base += prize_note(n, int(taken.get("crew", 0)), int(taken.get("supply_days", 0)), int(taken.get("sunk", 0)))
 	var p := promo.strip_edges()
 	return base if p == "" else base + p
+
+
+## WorldMap 获胜退出带的战果（battle_finished 的 data：boarded / boarded_n / boarded_crew / enemies）→ sea_win_note 的 taken。
+## 获胜时场上不剩活船，没夺下的都是击沉的：sunk = enemies − n。supply_days 由调用方取战后实数（Fleet.supply_days()）；本文件不读 autoload。
+static func sea_win_taken(data: Dictionary, supply_days: int) -> Dictionary:
+	var n := int(data.get("boarded_n", 0))
+	return {
+		"boarded": bool(data.get("boarded", false)),
+		"n": n,
+		"crew": int(data.get("boarded_crew", 0)),
+		"sunk": maxi(0, int(data.get("enemies", 0)) - n),
+		"all": n > 0 and n >= int(data.get("enemies", 0)),
+		"supply_days": supply_days,
+	}
+
+
+## 夺船交代一句：「击沉一船，夺来两船，添水手八十，水粮只够五日。」sunk 为 0 不写击沉。
+## 可支七日以内写「只够」，多写「尚可支」，断了写「已尽」。
+static func prize_note(n: int, crew: int, supply_days: int, sunk := 0) -> String:
+	var supply := "水粮已尽"
+	if supply_days > 7:
+		supply = "水粮尚可支%s日" % cn_count(supply_days)
+	elif supply_days > 0:
+		supply = "水粮只够%s日" % cn_count(supply_days)
+	var sunk_part := "击沉%s船，" % cn_count(sunk, true) if sunk > 0 else ""
+	return "%s夺来%s船，添水手%s，%s。" % [sunk_part, cn_count(n, true), cn_count(maxi(0, crew)), supply]
+
+
+## 小数目写中文（零 至 九百九十九；liang=true 时单独的二写「两」：两船）。本文件不读 autoload，与 GameManager.cn_num 同写法、多到百位
+## （三艘哨船各四十人即一百二十）。千以上照写阿拉伯数字。
+static func cn_count(n: int, liang := false) -> String:
+	var d := ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
+	if n < 0 or n >= 1000:
+		return str(n)
+	if n == 2 and liang:
+		return "两"
+	if n < 10:
+		return d[n]
+	if n < 100:
+		var tens := int(n / 10.0)
+		var ones := n % 10
+		return ("" if tens == 1 else d[tens]) + "十" + ("" if ones == 0 else d[ones])
+	var hundreds := int(n / 100.0)
+	var rest := n % 100
+	var out: String = d[hundreds] + "百"
+	if rest == 0:
+		return out
+	if rest < 10:
+		return out + "零" + d[rest]
+	return out + d[int(rest / 10.0)] + "十" + ("" if rest % 10 == 0 else d[rest % 10])
 
 
 static func sea_sunk_note(cargo_str: String, damage: int, fleet_gone: bool) -> String:

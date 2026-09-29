@@ -607,7 +607,8 @@ func _yuan_patrol_event() -> Dictionary:
 	return {
 		"kind": EventKind.YUAN_PATROL,
 		"title": "元军哨船",
-		"text": "两条船从雾里出来，帆上是你没见过的旗。船头的人用福建话喊：「大元巡海，落帆受检。」\n口音是泉州的。",
+		# 「三条船」与 SeaChart.PATROL_ENEMY.count 同数（按「迎战」后墨边写「海鹘三艘」，也刷三艘）；story_check 对账
+		"text": "三条船从雾里出来，帆上是你没见过的旗。船头的人用福建话喊：「大元巡海，落帆受检。」\n口音是泉州的。",
 	}
 
 
@@ -680,7 +681,7 @@ func pirate_sighting() -> Dictionary:
 	return {
 		"kind": EventKind.PIRATE,
 		"title": "不明船影",
-		"text": "桅斗上的了望手忽然压低嗓子喊了一声。右舷后方跟着两条快船，不挂旗，桨手比商船多出一倍。",
+		"text": "桅斗上的瞭望手忽然压低嗓子喊了一声。右舷后方跟着两条快船，不挂旗，桨手比商船多出一倍。",
 	}
 
 

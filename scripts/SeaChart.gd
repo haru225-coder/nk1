@@ -67,7 +67,8 @@ const MAP_AZURITE := Color(0.208, 0.376, 0.498)
 ## 海寇一律 pirate_boat「快船」（备忘 #7：海鹘只指船屋卖的宋水军战船）。
 const PIRATE_ENEMY := {"type": "pirate_boat", "count": 2, "hull_hp": 100.0}
 ## 元军哨船：type 不动（ships.json 没有 yuan_patrol 这一型，改 type 夺船会悄悄失败），另挂 sprite。
-const PATROL_ENEMY := {"type": "sea_falcon", "sprite": "yuan_patrol", "count": 3, "hull_hp": 120.0}
+## prize_name：夺来入列的船名底字写「元哨船」（再加序号「元哨船・一」），船籍簿显示「元哨船・一　海鹘」，看得出从哪来；数值仍是海鹘。
+const PATROL_ENEMY := {"type": "sea_falcon", "sprite": "yuan_patrol", "count": 3, "hull_hp": 120.0, "prize_name": "元哨船"}
 
 
 func _ready() -> void:
@@ -729,6 +730,9 @@ func _refresh_strip() -> void:
 	if note.length() > 28:
 		note = note.substr(0, 27) + "…"
 	var dim := UiTheme.hex(UiTheme.TEXT_DIM)
+	# 【辞船】（UiTheme.plain_log 放行的标签）停泊时顶匾第二行用蜜色字，与日志栏同色
+	if not sailing and note.find("【辞船】") >= 0:
+		dim = UiTheme.hex(UiTheme.HONEY)
 	_strip_line.text = line1 + "\n[color=#%s]%s[/color]" % [dim, note]
 
 
@@ -1482,10 +1486,12 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 		var promo := ""
 		if fame_res.get("promoted", false):
 			promo = "案册改题「%s」。" % str(fame_res.get("title", {}).get("name", ""))
-		# Lane N：战果注记走 CombatFx 论文纪实句；接舷夺船时附一句并入注记
-		var win_msg := _CombatFx.sea_win_note(spoil, int(dmg), promo)
-		if bool(data.get("boarded", false)):
-			win_msg = "接舷既定。" + win_msg
+		# Lane N：战果注记走 CombatFx 论文纪实句。全靠炮击打赢按遭遇来源分句（海寇「海盗已退」、元军哨船「哨船退去」）；
+		# 夺过船就不说退，末艘接舷夺下以「接舷既定。」开头，钱数战损在前、句末交代击沉几船夺来几船、添多少水手、水粮还够几日（crew 线 09-28／29）
+		var src_v = GameManager.pending_battle.get("source", {})
+		var src_event := str((src_v as Dictionary).get("event", "pirate")) if src_v is Dictionary else "pirate"
+		var taken := _CombatFx.sea_win_taken(data, Fleet.supply_days())
+		var win_msg := _CombatFx.sea_win_note(spoil, int(dmg), promo, src_event, taken)
 		_log(_ink(UiTheme.MOSS, win_msg))
 	elif outcome == "lose":
 		Fleet.morale = maxi(0, Fleet.morale - 12)
