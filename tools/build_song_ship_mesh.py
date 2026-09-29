@@ -3,6 +3,7 @@
 
 尖底、低干舷、一层露天甲板、艏艉起翘、两桅竹席硬篷。
 艉是低席拱，不是箱子；帆在竹条之间鼓腹。敌我只差帆色。
+船械只按南宋：旋风砲抛霹雳炮、火箭、艏部拍竿。没有炮、没有佛郎机、没有炮门。
 船首 +Z，水线 y=0，船长沿 Z，右舷 +X。Y 朝上。
 
 用法：python3 tools/build_song_ship_mesh.py
@@ -199,6 +200,13 @@ class Prim:
         else:
             self.quad(a, b, c, d, color, uva, uvb, uvc, uvd)
 
+    def quad_vc_out(self, a, b, c, d, ca, cb, cc, cd, outward, uva=(0.0, 0.0), uvb=(0.0, 0.0), uvc=(0.0, 0.0), uvd=(0.0, 0.0)):
+        n = vcross(vsub(b, a), vsub(c, a))
+        if vdot(n, outward) < 0.0:
+            self.quad_vc(a, d, c, b, ca, cd, cc, cb, uva, uvd, uvc, uvb)
+        else:
+            self.quad_vc(a, b, c, d, ca, cb, cc, cd, uva, uvb, uvc, uvd)
+
     def reverse_shell(self, darken=0.72):
         """正面法线平滑之后，补一层背面。不能在平滑前把正反面堆在一起，否则法线对消。"""
         base = len(self.pos)
@@ -309,22 +317,19 @@ def rope(prim, a, b, sag, r, color, n=6):
         add_cyl(prim, pts[i], pts[i + 1], r, color, 5, caps=False)
 
 
-def wood_at(t, j, nstrake):
-    """舷板色：水线下松烟，水线一条朱，以上桐油，板缝更暗。"""
+def wood_at(t, j, nstrake, along=0.0):
+    """舷板色：水线下松烟，以上桐油。水线朱不涂在壳上。板与板颜色接近，不靠斑马条。"""
     h = j / max(1, nstrake - 1)
-    if h < 0.48:
-        base = mix(TAR, (0.22, 0.13, 0.08, 1), h / 0.48)
-    elif h < 0.58:
-        base = CINNABAR
+    if h < 0.40:
+        base = mix(TAR, (0.25, 0.15, 0.09, 1), smoothstep(0.0, 0.40, h))
     else:
-        k = (h - 0.58) / 0.42
-        base = mix(TEAK_DK, TEAK_LT, k)
-    jitter = 0.92 + 0.10 * hsh(j * 19.0 + int(t * 80))
-    seam = 0.62 if (j % 2 == 0 and 0 < j < nstrake - 1) else 1.0
-    # 艏艉略深
-    end = 1.0 - 0.12 * (smoothstep(0.0, 0.12, t) * 0 + smoothstep(0.85, 1.0, t))
-    end = 1.0 - 0.10 * max(smoothstep(0.0, 0.08, 0.08 - t), smoothstep(0.9, 1.0, t))
-    return tuple(clamp(c * jitter * seam * end, 0, 1) if i < 3 else c for i, c in enumerate(base))
+        k = clamp((h - 0.40) / 0.60, 0.0, 1.0)
+        base = mix(TEAK, TEAK_LT, 0.18 + 0.62 * (k ** 0.85))
+    piece = math.floor((along + j * 0.37) / 0.22)
+    tone = 0.90 + 0.14 * hsh(j * 13.0 + piece * 5.0)
+    grain = 0.97 + 0.05 * math.sin(along * 37.0 + j * 1.7)
+    end = 1.0 - 0.08 * max(smoothstep(0.92, 1.0, t), smoothstep(0.08, 0.0, t))
+    return tuple(clamp(c * tone * grain * end, 0, 1) if i < 3 else c for i, c in enumerate(base))
 
 
 def x_at_y(t, y_target):
@@ -352,7 +357,7 @@ def tint(color, k):
 
 def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head, z_leech_head, camber, n_bat=8, n_u=14):
     """竹条是硬的，布在两条竹之间鼓出去、后缘垂成月牙。不是一块平板。"""
-    n_sub = 3
+    n_sub = 5
     n_v = n_bat * n_sub
 
     def sp(u, v):
@@ -368,18 +373,23 @@ def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head,
             local = 0.0
         else:
             local = panel - math.floor(panel)
-        sag = math.sin(math.pi * local)
-        billow = math.sin(math.pi * u) * (0.58 + 0.42 * math.sin(math.pi * v))
-        x = camber * billow + sag * camber * 0.36 * math.sin(math.pi * u)
-        y -= sag * (0.05 + 0.20 * (u ** 1.15))
+        # 竹条上 sag=0，布只在两条竹之间掉下去
+        sag = math.sin(math.pi * local) ** 1.2
+        billow = (math.sin(math.pi * u) ** 0.9) * (0.55 + 0.45 * math.sin(math.pi * v))
+        pouch = sag * (math.sin(math.pi * u) ** 0.8)
+        x = camber * billow * 0.82 + pouch * camber * 0.80
+        y -= sag * (0.10 + 0.40 * (u ** 1.05))
+        z += pouch * 0.06
         return (x, y, z), sag, local, billow
 
     def shade(sag, local, billow, u):
-        g = 0.32 + 0.48 * billow + 0.30 * sag * math.sin(math.pi * u)
-        near = math.exp(-(local * 10.0) ** 2) + math.exp(-((1.0 - local) * 10.0) ** 2)
-        g *= 1.0 - 0.42 * min(1.0, near)
-        g = clamp(g, 0.16, 1.0)
-        return (g, g * 0.985, g * 0.90, 1.0)
+        crown = sag * math.sin(math.pi * u)
+        g = 0.18 + 0.62 * crown + 0.16 * billow
+        near = math.exp(-(local * 6.5) ** 2) + math.exp(-((1.0 - local) * 6.5) ** 2)
+        g *= 1.0 - 0.58 * min(1.0, near)
+        g *= 1.0 - 0.10 * u
+        g = clamp(g, 0.08, 1.0)
+        return (g, g * 0.97, g * 0.86, 1.0)
 
     for iv in range(n_v):
         for iu in range(n_u):
@@ -627,19 +637,29 @@ def add_rudder(fit):
 
 
 def add_waterline(fit, stations):
-    bands = (
-        (-0.05, 0.010, TAR),
-        (0.000, 0.018, mix(TAR, CINNABAR, 0.25)),
-        (0.038, 0.032, CINNABAR),
-        (0.072, 0.028, (0.78, 0.62, 0.40, 1)),
-        (0.098, 0.016, WALE),
+    """朱水线是一圈木线脚：上下收进缝，中间鼓出朱漆，不是平涂色带。"""
+    # y, push, color — push 相对船壳向外
+    profile = (
+        (-0.020, 0.000, mix(TAR, TEAK_DK, 0.35)),
+        (0.000, -0.028, (0.06, 0.032, 0.020, 1)),
+        (0.018, 0.004, mix(CINNABAR, (0.18, 0.06, 0.04, 1), 0.55)),
+        (0.040, 0.038, mix(CINNABAR, TEAK_DK, 0.25)),
+        (0.068, 0.072, CINNABAR),
+        (0.096, 0.086, mix(CINNABAR, (0.95, 0.55, 0.32, 1), 0.55)),
+        (0.124, 0.058, CINNABAR),
+        (0.146, 0.012, mix(CINNABAR, TEAK_DK, 0.40)),
+        (0.162, -0.026, (0.07, 0.038, 0.022, 1)),
+        (0.180, 0.010, mix(TEAK, (0.78, 0.60, 0.34, 1), 0.62)),
     )
     for i in range(len(stations) - 1):
         t0, z0, _r0 = stations[i]
         t1, z1, _r1 = stations[i + 1]
-        for bi in range(len(bands) - 1):
-            y_a, p_a, col = bands[bi]
-            y_b, p_b, _col_b = bands[bi + 1]
+        wear = 0.94 + 0.08 * hsh(i * 3.7)
+        for bi in range(len(profile) - 1):
+            y_a, p_a, col_a = profile[bi]
+            y_b, p_b, col_b = profile[bi + 1]
+            ca = tint(col_a, wear)
+            cb = tint(col_b, wear)
 
             def wp(t, z, y, push):
                 return (x_at_y(t, y) + push, y, z)
@@ -648,12 +668,12 @@ def add_waterline(fit, stations):
             b = wp(t1, z1, y_a, p_a)
             c = wp(t1, z1, y_b, p_b)
             d = wp(t0, z0, y_b, p_b)
-            fit.quad_out(a, b, c, d, col, (1, 0, 0))
+            fit.quad_vc_out(a, b, c, d, ca, ca, cb, cb, (1, 0, 0))
 
             def mx(p):
                 return (-p[0], p[1], p[2])
 
-            fit.quad_out(mx(a), mx(d), mx(c), mx(b), col, (-1, 0, 0))
+            fit.quad_vc_out(mx(a), mx(d), mx(c), mx(b), ca, cb, cb, ca, (-1, 0, 0))
 
 
 def add_gunwale(fit, stations):
@@ -678,33 +698,166 @@ def add_gunwale(fit, stations):
 
 
 def add_contact_shadow(shadow):
-    steps = 40
-    layers = ((0.00, 0.55, 0.40), (0.55, 0.82, 0.22), (0.82, 1.08, 0.10), (1.08, 1.28, 0.04))
+    """贴着水线半宽，只在船外留一窄圈，不铺成比甲板还宽的椭圆。"""
+    steps = 56
+    layers = ((0.00, 0.78, 0.50), (0.78, 0.96, 0.32), (0.96, 1.03, 0.16), (1.03, 1.07, 0.05))
+    y = -0.012
 
-    def emit(t0, t1, z0, z1, beam_scale, alpha_scale):
+    def half_wl(t):
+        return max(0.04, x_at_y(clamp(t, 0.012, 0.988), 0.02))
+
+    def emit(z0, z1, h0, h1, alpha_scale):
         for f0, f1, alpha in layers:
-            col = (0.012, 0.028, 0.045, alpha * alpha_scale)
-
-            def xb(t, f):
-                return beam_half(clamp(t, 0.02, 0.98)) * f * 1.04 * beam_scale
-
-            b0, b1 = xb(t0, f0), xb(t1, f0)
-            o0, o1 = xb(t0, f1), xb(t1, f1)
-            y = -0.022
+            col = (0.012, 0.026, 0.040, alpha * alpha_scale)
+            b0, b1 = h0 * f0, h1 * f0
+            o0, o1 = h0 * f1, h1 * f1
             shadow.quad((b0, y, z0), (b1, y, z1), (o1, y, z1), (o0, y, z0), col)
             shadow.quad((-b0, y, z0), (-o0, y, z0), (-o1, y, z1), (-b1, y, z1), col)
 
     for i in range(steps):
         t0 = i / steps
         t1 = (i + 1) / steps
-        emit(t0, t1, z_of(t0), z_of(t1), 1.0, 1.0)
-    for i in range(5):
-        f0 = i / 5
-        f1 = (i + 1) / 5
-        shrink0 = 1.0 - f0
-        shrink1 = 1.0 - f1
-        emit(0.03, 0.03, z_of(0.0) + 0.02 + f0 * 0.62, z_of(0.0) + 0.02 + f1 * 0.62, (shrink0 + shrink1) * 0.5, 0.55 * shrink0)
-        emit(0.97, 0.97, z_of(1.0) - 0.02 - f0 * 0.48, z_of(1.0) - 0.02 - f1 * 0.48, (shrink0 + shrink1) * 0.5, 0.45 * shrink0)
+        emit(z_of(t0), z_of(t1), half_wl(t0), half_wl(t1), 1.0)
+    # 艏艉只顺船尖收一短截，不另伸出一条方影子
+    for i in range(4):
+        f0 = i / 4
+        f1 = (i + 1) / 4
+        s0 = (1.0 - f0) ** 1.55
+        s1 = (1.0 - f1) ** 1.55
+        emit(
+            z_of(0.0) + f0 * 0.16, z_of(0.0) + f1 * 0.16,
+            half_wl(0.02) * s0, half_wl(0.02) * s1, 0.65 * s0,
+        )
+        emit(
+            z_of(1.0) - f0 * 0.14, z_of(1.0) - f1 * 0.14,
+            half_wl(0.98) * s0, half_wl(0.98) * s1, 0.55 * s0,
+        )
+
+
+
+def add_bomb(fit, c, r=0.078):
+    """纸壳霹雳炮：圆球、绳箍、布捻。不是铁弹。"""
+    body = mix((0.46, 0.28, 0.16, 1), (0.24, 0.13, 0.08, 1), hsh(c[0] * 4 + c[2] * 9))
+    add_sphere(fit, c, r, body, 7, 5)
+    add_cyl(fit, (c[0] - r * 0.95, c[1], c[2]), (c[0] + r * 0.95, c[1], c[2]), r * 0.16, ROPE, 6, caps=False)
+    fuse = (c[0] + r * 0.15, c[1] + r * 1.25, c[2])
+    add_cyl(fit, (c[0], c[1] + r * 0.72, c[2]), fuse, r * 0.16, (0.62, 0.18, 0.08, 1), 4)
+    add_sphere(fit, fuse, r * 0.22, (0.78, 0.32, 0.10, 1), 4, 3)
+
+
+def add_pai_gan(fit):
+    """拍竿：艏部一根可落下的重木，头是石槌。不是炮。"""
+    t = 0.08
+    z = z_of(t)
+    y0 = deck_side_y(t) + 0.12
+    post_top = y0 + 1.70
+    add_cyl(fit, (0.0, y0, z), (0.0, post_top, z), 0.065, TEAK_DK, 8)
+    add_box(fit, (0.0, y0 + 0.06, z), (0.34, 0.07, 0.22), mix(TEAK, TEAK_DK, 0.3))
+    for s in (-1.0, 1.0):
+        add_cyl(fit, (s * 0.16, y0 + 0.05, z), (s * 0.02, post_top - 0.08, z), 0.028, TEAK, 5, caps=False)
+    pivot = (0.0, post_top - 0.06, z)
+    ang = 1.15
+    length = 2.05
+    head = (
+        0.0,
+        pivot[1] + math.sin(ang) * length,
+        pivot[2] + math.cos(ang) * length,
+    )
+    add_cyl(fit, pivot, head, 0.075, mix(TEAK, TEAK_LT, 0.25), 7, caps=False)
+    add_cyl(fit, pivot, (0.0, pivot[1], pivot[2] + 0.01), 0.09, IRON, 8)
+    add_sphere(fit, head, 0.26, (0.45, 0.42, 0.36, 1), 8, 6)
+    add_cyl(fit, head, (head[0], head[1] - 0.02, head[2] + 0.10), 0.11, mix((0.33, 0.31, 0.28, 1), IRON, 0.25), 7, caps=False)
+    mid = (
+        lerp(pivot[0], head[0], 0.45),
+        lerp(pivot[1], head[1], 0.45),
+        lerp(pivot[2], head[2], 0.45),
+    )
+    for s in (-0.42, 0.42):
+        rope(fit, mid, (s, y0 + 0.08, z - 0.05), 0.10, 0.01, ROPE, n=4)
+
+
+def add_traction_trebuchet(fit):
+    """旋风砲：人力拽索的抛石架，用来抛霹雳炮和火球。不是火炮。放在左舷空甲板，帆在右舷。"""
+    t = 0.40
+    x = -0.78
+    z = z_of(t)
+    y = deck_side_y(t) + 0.16
+    h = 1.35
+    half = 0.32
+    for s in (-half, half):
+        add_cyl(fit, (x + s, y, z - 0.16), (x + s * 0.55, y + h, z), 0.032, TEAK_DK, 6)
+        add_cyl(fit, (x + s, y, z + 0.16), (x + s * 0.55, y + h, z), 0.032, TEAK_DK, 6)
+    axle_l = (x - half * 0.55, y + h, z)
+    axle_r = (x + half * 0.55, y + h, z)
+    add_cyl(fit, axle_l, axle_r, 0.026, IRON, 6)
+    add_box(fit, (x, y + 0.05, z), (0.62, 0.08, 0.42), TEAK)
+    ang = 0.78
+    short_l, long_l = 0.42, 1.55
+    # 抛臂偏向上方，长端朝外舷，避免插进帆
+    def arm_out(dist):
+        # 这架在左舷，长端朝外（-X），不扫过桅和右舷帆
+        return (
+            x - math.cos(ang) * dist,
+            y + h + math.sin(ang) * dist * 0.55,
+            z + 0.05,
+        )
+    short = arm_out(-short_l)
+    long = arm_out(long_l)
+    add_cyl(fit, short, long, 0.05, mix(TEAK, TEAK_LT, 0.2), 6, caps=False)
+    for k in range(4):
+        rope(
+            fit, short,
+            (x + 0.48, y + 0.06, z + (k - 1.5) * 0.08),
+            0.06, 0.008, ROPE, n=3,
+        )
+    pouch = (long[0] - 0.04, long[1] - 0.26, long[2])
+    rope(fit, long, pouch, 0.02, 0.007, ROPE, n=3)
+    add_bomb(fit, pouch, 0.11)
+    crib = (x - 0.05, y + 0.16, z - 0.48)
+    add_box(fit, (crib[0], y + 0.07, crib[2]), (0.46, 0.12, 0.34), TEAK_DK)
+    for i, (dx, dz) in enumerate(((-0.12, -0.08), (0.10, -0.06), (-0.02, 0.08), (0.12, 0.07))):
+        add_bomb(fit, (crib[0] + dx, crib[1], crib[2] + dz), 0.09)
+
+
+def add_fire_arrows(fit, t, x):
+    """火箭：木槽里一排带火药筒的箭，旁边一张弓。不是火门枪。"""
+    z = z_of(t)
+    y = deck_side_y(t) + 0.18
+    inward = -1.0 if x > 0.0 else 1.0
+    add_box(fit, (x, y, z), (0.18, 0.05, 0.78), TEAK)
+    add_box(fit, (x, y + 0.10, z - 0.36), (0.18, 0.16, 0.05), TEAK_DK)
+    add_box(fit, (x - 0.08, y + 0.08, z), (0.03, 0.10, 0.78), mix(TEAK_DK, TEAK, 0.4))
+    shaft = (0.58, 0.42, 0.24, 1)
+    for i in range(7):
+        zz = z - 0.28 + i * 0.09
+        tail = (x, y + 0.10, zz)
+        head = (x + inward * 0.10, y + 0.78, zz + 0.55)
+        add_cyl(fit, tail, head, 0.018, shaft, 4, caps=False)
+        bundle = tuple(lerp(tail[k], head[k], 0.70) for k in range(3))
+        add_sphere(fit, bundle, 0.055, (0.55, 0.12, 0.05, 1), 5, 4)
+        add_cyl(
+            fit,
+            tuple(lerp(tail[k], head[k], 0.62) for k in range(3)),
+            tuple(lerp(tail[k], head[k], 0.84) for k in range(3)),
+            0.042, (0.30, 0.08, 0.04, 1), 5, caps=False,
+        )
+        add_sphere(fit, head, 0.022, (0.86, 0.38, 0.12, 1), 4, 3)
+    # 弓：一张立在槽后的弯木，说明箭是射出去的
+    bow_z = z - 0.48
+    pts = []
+    for i in range(7):
+        u = i / 6
+        pts.append((x - 0.02, y + 0.08 + math.sin(u * math.pi) * 0.55, bow_z + (u - 0.5) * 0.10))
+    for i in range(6):
+        add_cyl(fit, pts[i], pts[i + 1], 0.018, mix(TEAK_DK, TEAK, 0.3), 5, caps=False)
+    rope(fit, pts[0], pts[-1], 0.02, 0.006, ROPE, n=3)
+
+
+def add_song_weapons(fit):
+    add_pai_gan(fit)
+    add_traction_trebuchet(fit)
+    add_fire_arrows(fit, 0.33, -1.22)
+    add_fire_arrows(fit, 0.75, 1.12)
 
 
 def build():
@@ -727,26 +880,64 @@ def build():
         t0, z0, r0 = stations[i]
         t1, z1, r1 = stations[i + 1]
         nring = len(r0)
+        along = i / (nst - 1)
         for j in range(nring - 1):
-            def P(ring, z, j):
-                x, y = ring[j]
-                if 0 < j < nring - 1 and j % 2 == 0 and j < nring - 3:
-                    y -= 0.006
-                    x *= 0.992
-                return (x, y, z)
+            piece = math.floor((along + j * 0.37) / 0.22)
+            prev_along = (i - 1) / (nst - 1) if i else along
+            prev_piece = math.floor((prev_along + j * 0.37) / 0.22)
+            butt = piece != prev_piece and 1 < i < nst - 2
+            face_push = -0.012 if butt else 0.052
+            crown = 0.0 if butt else 0.016
+            seam_push = -0.030
+            col_face = wood_at((t0 + t1) * 0.5, j, nring, along)
+            if butt:
+                col_face = mix(col_face, (0.10, 0.055, 0.03, 1), 0.62)
+            caulk = (0.065, 0.038, 0.024, 1)
 
-            a = P(r0, z0, j)
-            b = P(r1, z1, j)
-            c = P(r1, z1, j + 1)
-            d = P(r0, z0, j + 1)
-            col = wood_at((t0 + t1) * 0.5, j, nring)
-            mid = vmul(vadd(vadd(a, b), vadd(c, d)), 0.25)
-            hull.quad_out(a, b, c, d, col, (mid[0], 0.15, 0.0))
+            def at(ring, z, f, push):
+                x0, y0 = ring[j]
+                x1, y1 = ring[j + 1]
+                return (
+                    lerp(x0, x1, f) + push,
+                    lerp(y0, y1, f) + push * 0.16,
+                    z,
+                )
 
             def mx(p):
                 return (-p[0], p[1], p[2])
 
-            hull.quad_out(mx(a), mx(d), mx(c), mx(b), col, (-mid[0], 0.15, 0.0))
+            def band(f0, f1, push, col, extra):
+                a = at(r0, z0, f0, push)
+                b = at(r1, z1, f0, push)
+                c = at(r1, z1, f1, push)
+                d = at(r0, z0, f1, push)
+                if extra:
+                    fm = (f0 + f1) * 0.5
+                    am = at(r0, z0, fm, push + extra)
+                    bm = at(r1, z1, fm, push + extra)
+                    hull.quad_out(a, b, bm, am, col, (am[0], 0.3, 0.0))
+                    hull.quad_out(am, bm, c, d, col, (am[0], 0.3, 0.0))
+                    hull.quad_out(mx(a), mx(am), mx(bm), mx(b), col, (-am[0], 0.3, 0.0))
+                    hull.quad_out(mx(am), mx(d), mx(c), mx(bm), col, (-am[0], 0.3, 0.0))
+                else:
+                    hull.quad_out(a, b, c, d, col, (a[0], 0.2, 0.0))
+                    hull.quad_out(mx(a), mx(d), mx(c), mx(b), col, (-a[0], 0.2, 0.0))
+
+            # 窄缝 + 板面自身上亮下暗，远看也是一块块木头，不是平涂条
+            band(0.00, 0.06, seam_push, caulk, 0.0)
+            band(0.06, 0.28, face_push, tint(col_face, 0.74), 0.0)
+            band(0.28, 0.72, face_push, col_face, crown)
+            band(0.72, 0.94, face_push, tint(col_face, 1.10), 0.0)
+            band(0.94, 1.00, seam_push, caulk, 0.0)
+            # 板厚：缝和板面之间的侧壁，让凹凸是刻出来的，不是两条错开的皮
+            for f, outward_y in ((0.06, -1.0), (0.94, 1.0)):
+                sa = at(r0, z0, f, seam_push)
+                sb = at(r1, z1, f, seam_push)
+                fa = at(r0, z0, f, face_push)
+                fb = at(r1, z1, f, face_push)
+                cheek = tint(col_face, 0.72)
+                hull.quad_out(sa, sb, fb, fa, cheek, (sa[0], outward_y, 0.0))
+                hull.quad_out(mx(sa), mx(fa), mx(fb), mx(sb), cheek, (-sa[0], outward_y, 0.0))
 
     t0, z0, r0 = stations[0]
     stem = []
@@ -754,8 +945,8 @@ def build():
         f = j / (len(r0) - 1)
         stem.append((0.0, y + 0.012 * f, z0 + 0.035 + 0.11 * f))
     for j in range(len(r0) - 1):
-        a = (r0[j][0], r0[j][1], z0)
-        b = (r0[j + 1][0], r0[j + 1][1], z0)
+        a = (r0[j][0] + 0.018, r0[j][1] + 0.003, z0)
+        b = (r0[j + 1][0] + 0.018, r0[j + 1][1] + 0.003, z0)
         col = wood_at(0.02, j, len(r0))
         hull.quad_out(a, b, stem[j + 1], stem[j], col, (0, 0.15, 1))
         hull.quad_out((-a[0], a[1], a[2]), stem[j], stem[j + 1], (-b[0], b[1], b[2]), col, (0, 0.15, 1))
@@ -763,10 +954,10 @@ def build():
     rt = stations[-1][2]
     zt = stations[-1][1]
     for j in range(len(rt) - 1):
-        a = (rt[j][0], rt[j][1], zt)
-        b = (rt[j + 1][0], rt[j + 1][1], zt)
-        c = (-rt[j + 1][0], rt[j + 1][1], zt)
-        d = (-rt[j][0], rt[j][1], zt)
+        a = (rt[j][0] + 0.018, rt[j][1] + 0.003, zt)
+        b = (rt[j + 1][0] + 0.018, rt[j + 1][1] + 0.003, zt)
+        c = (-rt[j + 1][0] - 0.018, rt[j + 1][1] + 0.003, zt)
+        d = (-rt[j][0] - 0.018, rt[j][1] + 0.003, zt)
         col = wood_at(0.98, j, len(rt))
         hull.quad_out(a, d, c, b, col, (0, 0, -1))
 
@@ -896,6 +1087,7 @@ def build():
 
     add_waterline(fit, stations)
     add_gunwale(fit, stations)
+    add_song_weapons(fit)
 
     add_cyl(fit, (0.62, deck_side_y(0.50) + 0.02, z_of(0.50)), (0.62, deck_side_y(0.50) + 0.30, z_of(0.50)), 0.11, mix(TEAK, IRON, 0.15), 8)
     add_cyl(fit, (0.62, deck_side_y(0.50) + 0.30, z_of(0.50)), (0.62, deck_side_y(0.50) + 0.33, z_of(0.50)), 0.12, IRON, 8)
