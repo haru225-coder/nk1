@@ -2,7 +2,7 @@
 """泉州湾南宋海船 — 一条可转的三维船壳（glTF）。
 
 尖底、低干舷、一层露天甲板、艏艉起翘、两桅竹席硬篷。
-艉是低席拱，不是箱子。帆是一整张弯席，竹条贴在面上，后缘一截弧。敌我只差帆色。
+艉是一只低席拱，口朝艏。露天甲板中线三处舱口，另有一间矮席棚。帆是一整张弯席，竹条贴在面上，后缘一截弧。敌我只差帆色。
 船械只按南宋：旋风砲抛霹雳炮、火箭、艏部拍竿。没有炮、没有佛郎机、没有炮门。
 船首 +Z，水线 y=0，船长沿 Z，右舷 +X。Y 朝上。
 
@@ -463,20 +463,22 @@ def junk_sail(sail, fit, foot_y, head_y, z_luff_foot, z_leech_foot, z_luff_head,
 
 
 def add_mat_shed(fit):
-    """艉部一只低席拱。口朝艏，十七度艏舷看得到拱腹，不是箱子，也不是第三层甲板。"""
-    t_a, t_b = 0.835, 0.962
-    H = 0.86
-    seg_u, seg_v = 28, 16
+    """艉部一只低席拱。口朝艏，十七度艏舷看得到拱口和口沿。
+    仍是一只拱，不是箱子，不是城楼，也不是第三层甲板。"""
+    # 口再往前探到露天甲板上，拱腹加高，近景才不是艉端一个小包
+    t_a, t_b = 0.768, 0.958
+    H = 1.52
+    seg_u, seg_v = 32, 18
 
     def pt(u, v, lift=0.0):
         x_norm = u * 2.0 - 1.0
         t = lerp(t_a, t_b, v)
-        bh = beam_half(t) * 0.90
+        bh = beam_half(t) * 0.97
         x = x_norm * bh
-        arch = math.cos(clamp(x_norm, -1.0, 1.0) * math.pi * 0.5) ** 1.15
-        # 两端不落到舷墙上，口始终开着，侧面才是一道拱
-        long_arch = 0.82 + 0.18 * math.sin(math.pi * clamp(v, 0.0, 1.0))
-        y_rail = deck_side_y(t) + 0.14
+        arch = math.cos(clamp(x_norm, -1.0, 1.0) * math.pi * 0.5) ** 1.05
+        # 口（v=0，朝艏）几乎全高，往艉才收。侧面仍是一道拱，不是平顶舱楼。
+        long_arch = 0.62 + 0.38 * math.cos(clamp(v, 0.0, 1.0) * math.pi * 0.5)
+        y_rail = deck_side_y(t) + 0.12
         y = y_rail + max(0.0, (H * long_arch + lift) * arch)
         return (x, y, z_of(t))
 
@@ -488,22 +490,26 @@ def add_mat_shed(fit):
             b = pt(u1, v0)
             c = pt(u1, v1)
             d = pt(u0, v1)
-            stripe = 0.15 if iu % 4 == 3 else 1.0
-            col = mix(ROOF_DK, ROOF, stripe)
-            col = tint(col, 0.92 + 0.10 * hsh(iu * 4.1 + iv * 0.27))
+            stripe = 0.22 if iu % 4 == 3 else 1.0
+            col = mix(ROOF_DK, mix(ROOF, CINNABAR, 0.28), stripe)
+            col = tint(col, 0.96 + 0.10 * hsh(iu * 4.1 + iv * 0.27))
             fit.quad_out(a, b, c, d, col, (0, 1, 0))
             ai = pt(u0, v0, -0.028)
             bi = pt(u1, v0, -0.028)
             ci = pt(u1, v1, -0.028)
             di = pt(u0, v1, -0.028)
             fit.quad_out(ai, di, ci, bi, mix(ROOF_DK, TAR, 0.55), (0, -1, 0))
-    # 口沿是一根连续的拱，对着艏舷相机
-    for v, rad, col in ((0.0, 0.046, mix(TEAK_LT, (0.82, 0.62, 0.36, 1), 0.45)), (1.0, 0.024, mix(BATTEN, TEAK_DK, 0.25))):
+    # 口沿是一根粗的亮拱，对着艏舷相机。里圈再压一条朱边，口才不像贴在席上的一条线。
+    for v, rad, lift, col in (
+        (0.0, 0.092, 0.045, mix((0.90, 0.74, 0.46, 1), CINNABAR, 0.18)),
+        (0.0, 0.048, -0.02, mix(CINNABAR, (0.35, 0.08, 0.05, 1), 0.35)),
+        (1.0, 0.032, 0.02, mix(BATTEN, TEAK_DK, 0.25)),
+    ):
         prev = None
         for iu in range(seg_u + 1):
-            p = pt(iu / seg_u, v, 0.02)
+            p = pt(iu / seg_u, v, lift)
             if prev:
-                add_cyl(fit, prev, p, rad, col, 7, caps=False)
+                add_cyl(fit, prev, p, rad, col, 8, caps=False)
             prev = p
     for u in (0.18, 0.38, 0.62, 0.82):
         prev = None
@@ -512,14 +518,24 @@ def add_mat_shed(fit):
             if prev:
                 add_cyl(fit, prev, p, 0.012, BATTEN, 5, caps=False)
             prev = p
-    # 拱腹里一块退进的席，口才有深度，不是一张贴皮
+    # 拱腹里退进的暗席。口要有深度，十七度才看得到是一张嘴，不是鼓包。
     for iu in range(seg_u):
         u0, u1 = iu / seg_u, (iu + 1) / seg_u
-        a = pt(u0, 0.02, -0.16)
-        b = pt(u1, 0.02, -0.16)
-        c = pt(u1, 0.62, -0.16)
-        d = pt(u0, 0.62, -0.16)
-        fit.quad_out(a, d, c, b, (0.05, 0.025, 0.016, 1), (0, 0.2, 1))
+        a = pt(u0, 0.04, -0.34)
+        b = pt(u1, 0.04, -0.34)
+        c = pt(u1, 0.78, -0.34)
+        d = pt(u0, 0.78, -0.34)
+        fit.quad_out(a, d, c, b, (0.03, 0.014, 0.010, 1), (0, 0.15, 1))
+    # 口下沿一条亮木，嘴才从甲板边沿上分开
+    prev = None
+    sill = mix(TEAK_LT, (0.93, 0.78, 0.48, 1), 0.62)
+    for iu in range(seg_u + 1):
+        u = iu / seg_u
+        p = pt(u, 0.0, 0.0)
+        q = (p[0], deck_side_y(t_a) + 0.10, p[2])
+        if prev:
+            fit.quad_out(prev[0], prev[1], q, p, sill, (0, 0, 1))
+        prev = (p, q)
 
 
 def add_partner(fit, t, scale):
@@ -561,40 +577,107 @@ def add_partner(fit, t, scale):
 
 
 def add_hatch(fit, t, w, length):
+    """中线上一处货舱口。围板抬高，口是开的，十七度斜看是一个黑方洞，不是盖平的甲板。"""
     z = z_of(t)
-    y = deck_side_y(t) + 0.095
-    well = (0.055, 0.032, 0.022, 1)
-    add_box(fit, (0, y - 0.01, z), (w * 0.70, 0.045, length * 0.70), well)
-    beam = 0.055
-    h = 0.11
-    wood = mix(TEAK, TEAK_DK, 0.35)
-    add_box(fit, (w * 0.5, y + h * 0.5, z), (beam, h, length), wood)
-    add_box(fit, (-w * 0.5, y + h * 0.5, z), (beam, h, length), wood)
-    add_box(fit, (0, y + h * 0.5, z + length * 0.5), (w, h, beam), tint(wood, 0.92))
-    add_box(fit, (0, y + h * 0.5, z - length * 0.5), (w, h, beam), tint(wood, 0.92))
-    npl = 4
-    lid_y = y + h * 0.72
-    inner_w = w * 0.78
-    inner_l = length * 0.76
-    for k in range(npl):
-        u0 = -0.5 + k / npl
-        u1 = -0.5 + (k + 1) / npl
-        gap = 0.04
-        x0 = (u0 + gap / npl) * inner_w
-        x1 = (u1 - gap / npl) * inner_w
-        cam = 0.012 * (1.0 - ((u0 + u1) ** 2))
-        col = tint(mix(DECK, TEAK_DK, 0.25), 0.90 + 0.12 * hsh(k * 8.2 + t * 20))
-        add_box(fit, ((x0 + x1) * 0.5, lid_y + cam, z), (max(0.04, x1 - x0), 0.028, inner_l), col)
-    for s in (-0.22, 0.22):
-        add_box(fit, (0, lid_y + 0.028, z + s * length), (inner_w * 0.92, 0.022, 0.045), BATTEN)
+    y = deck_side_y(t) + 0.10
+    mouth = (0.012, 0.008, 0.006, 1)
+    add_box(fit, (0, y - 0.04, z), (w * 0.86, 0.10, length * 0.86), mouth)
+    beam = 0.10
+    h = 0.52
+    wood = mix(TEAK_LT, (0.86, 0.68, 0.40, 1), 0.45)
+    # 右舷、艏、艉围板留高。左舷朝相机只留矮槛，十七度从侧面看见黑洞，不是一只箱子。
+    add_box(fit, (w * 0.5, y + h * 0.5, z), (beam, h, length + beam), wood)
+    add_box(fit, (-w * 0.5, y + 0.07, z), (beam, 0.14, length + beam), wood)
+    add_box(fit, (-w * 0.5 - 0.02, y + 0.13, z), (0.045, 0.055, length * 0.78), CINNABAR)
+    add_box(fit, (0, y + h * 0.5, z + length * 0.5), (w, h, beam), tint(wood, 1.05))
+    add_box(fit, (0, y + h * 0.5, z - length * 0.5), (w, h, beam), tint(wood, 0.88))
+    add_box(fit, (0, y + h * 0.55, z), (w * 0.72, h * 0.72, length * 0.72), (0.012, 0.008, 0.006, 1))
+    # 口沿只留四边，不要整块盖板。十七度看见的是黑洞，不是一只木箱。
+    rim_c = mix(wood, (0.93, 0.78, 0.50, 1), 0.45)
+    rim_t = 0.055
+    add_box(fit, (0, y + h + 0.015, z + length * 0.5), (w + beam * 0.2, rim_t, beam * 0.55), rim_c)
+    add_box(fit, (0, y + h + 0.015, z - length * 0.5), (w + beam * 0.2, rim_t, beam * 0.55), rim_c)
+    add_box(fit, (w * 0.5, y + h + 0.015, z), (beam * 0.55, rim_t, length), rim_c)
+    add_box(fit, (-w * 0.5, y + h + 0.015, z), (beam * 0.55, rim_t, length), rim_c)
+    add_box(
+        fit,
+        (0, y + h + 0.045, z + length * 0.5 - beam * 0.2),
+        (w * 0.55, 0.03, 0.05),
+        CINNABAR,
+    )
+    inner_w = max(0.28, w - beam * 1.35)
+    inner_l = max(0.28, length - beam * 1.35)
+    add_box(fit, (0, y + 0.03, z), (inner_w, 0.04, inner_l), mouth)
+    # 后壁涂黑，正对艏舷相机
+    add_box(
+        fit,
+        (0, y + h * 0.46, z - inner_l * 0.5 + 0.025),
+        (inner_w * 0.96, h * 0.78, 0.04),
+        (0.015, 0.009, 0.007, 1),
+    )
+    # 两块舱盖靠在左舷围板上，证明这是舱口，不是破洞。口本身仍开着。
+    for k, dz in enumerate((-0.18, 0.16)):
+        add_box(
+            fit,
+            (-w * 0.5 - 0.02, y + h + 0.04 + k * 0.015, z + dz * length),
+            (0.16, 0.035, length * 0.34),
+            tint(mix(DECK, TEAK_DK, 0.2), 0.92 + 0.08 * k),
+        )
     for sx in (-1, 1):
         for sz in (-1, 1):
             add_box(
                 fit,
                 (sx * w * 0.46, y + h * 0.55, z + sz * length * 0.46),
-                (0.04, 0.025, 0.04),
+                (0.055, 0.04, 0.055),
                 IRON,
             )
+
+
+def add_low_cabin(fit):
+    """露天甲板上的一间矮席棚。只占左舷一块，口朝艏。
+    低于帆脚，不跨成第二层甲板，也不是城楼。"""
+    t = 0.640
+    x = -1.22
+    z = z_of(t)
+    y = deck_side_y(t) + 0.11
+    lx, lz = 0.82, 0.98
+    wh = 0.56
+    wall = mix(TEAK, TEAK_DK, 0.15)
+    wall_dk = mix(TEAK_DK, TAR, 0.25)
+    # 后墙、右墙（朝中线）、左墙留门口。朝艏的一面敞开，十七度看得到暗口。
+    add_box(fit, (x, y + wh * 0.5, z - lz * 0.5), (lx, wh, 0.07), wall_dk)
+    add_box(fit, (x + lx * 0.5, y + wh * 0.5, z), (0.07, wh, lz), wall)
+    add_box(fit, (x - lx * 0.5, y + wh * 0.5, z + lz * 0.22), (0.07, wh, lz * 0.52), wall)
+    add_box(fit, (x, y + 0.05, z), (lx * 0.92, 0.08, lz * 0.92), mix(TAR, TEAK_DK, 0.4))
+    # 门口上沿一根木，棚才不是缺了一块的箱子
+    add_box(fit, (x - lx * 0.5, y + wh - 0.04, z - lz * 0.22), (0.08, 0.08, lz * 0.48), tint(wall, 1.08))
+    # 矮席顶：一道很平的拱，最高不到一米，压不成像一层甲板
+    seg = 10
+    roof_h = 0.30
+    for i in range(seg):
+        u0 = -0.5 + i / seg
+        u1 = -0.5 + (i + 1) / seg
+        def ry(u):
+            return roof_h * math.cos(clamp(u, -0.5, 0.5) * math.pi) ** 1.2
+        y0 = y + wh + ry(u0)
+        y1 = y + wh + ry(u1)
+        xa = x + u0 * lx * 1.06
+        xb = x + u1 * lx * 1.06
+        z0 = z - lz * 0.56
+        z1 = z + lz * 0.56
+        col = mix(ROOF, CINNABAR, 0.22 if i % 3 else 0.05)
+        fit.quad_out((xa, y0, z0), (xb, y1, z0), (xb, y1, z1), (xa, y0, z1), col, (0, 1, 0))
+        fit.quad_out((xa, y0 - 0.03, z1), (xb, y1 - 0.03, z1), (xb, y1 - 0.03, z0), (xa, y0 - 0.03, z0), ROOF_DK, (0, -1, 0))
+    # 口沿亮木，棚口和舱口不是同一种方洞
+    add_cyl(
+        fit,
+        (x - lx * 0.48, y + wh + 0.02, z + lz * 0.50),
+        (x + lx * 0.48, y + wh + roof_h * 0.15, z + lz * 0.50),
+        0.035,
+        mix(TEAK_LT, (0.90, 0.74, 0.46, 1), 0.4),
+        6,
+        caps=False,
+    )
 
 
 def add_rudder(fit):
@@ -1277,9 +1360,11 @@ def build():
                     5,
                 )
 
-    add_hatch(fit, 0.30, 0.62, 0.78)
-    add_hatch(fit, 0.48, 0.70, 0.92)
-    add_hatch(fit, 0.66, 0.56, 0.70)
+    # 分为三处：艏、舯、艉各一处货舱口，都在中线上，落在两帆的空档里，不盖第二层甲板
+    add_hatch(fit, 0.188, 1.05, 0.66)
+    add_hatch(fit, 0.430, 1.36, 0.96)
+    add_hatch(fit, 0.688, 1.42, 0.84)
+    add_low_cabin(fit)
     add_partner(fit, 0.30, 0.40)
     add_partner(fit, 0.56, 0.48)
 
@@ -1296,16 +1381,17 @@ def build():
     fore_top = mast(0.30, 4.15, 0.055)
     main_top = mast(0.56, 5.35, 0.070)
 
+    # 帆脚抬高、后缘收到桅后，中线三处舱口和艉拱口才不被席面挡住。仍是一整张席。
     junk_sail(
         sail, fit,
-        deck_side_y(0.30) + 0.85, deck_side_y(0.30) + 3.55,
-        z_of(0.16), z_of(0.40), z_of(0.20), z_of(0.38),
+        deck_side_y(0.30) + 1.55, deck_side_y(0.30) + 3.55,
+        z_of(0.17), z_of(0.34), z_of(0.20), z_of(0.33),
         camber=1.16, n_bat=7, n_u=16,
     )
     junk_sail(
         sail, fit,
-        deck_side_y(0.56) + 0.70, deck_side_y(0.56) + 4.70,
-        z_of(0.42), z_of(0.72), z_of(0.46), z_of(0.68),
+        deck_side_y(0.56) + 1.50, deck_side_y(0.56) + 4.70,
+        z_of(0.46), z_of(0.63), z_of(0.49), z_of(0.61),
         camber=1.46, n_bat=9, n_u=18,
     )
     # 整张席平滑法线，低模的分面才不会被光切成一层层板。不叠背面。

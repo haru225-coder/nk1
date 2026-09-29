@@ -1,10 +1,10 @@
 extends SceneTree
 ## 泉州湾宋船三维朝向探针。
 ## DISPLAY=:2 godot --path . -s res://tools/ship_exquisite_probe.gd
-## 截图：/tmp/nk1-combat-wave3/ship-polish12/  close_own / close_enemy / wide / angles/angle_XX.png
+## 截图：/tmp/nk1-combat-wave3/ship-polish13/  close_own / close_enemy / wide / angles/angle_XX.png
 
 const ShotGate := preload("res://tools/shot_gate.gd")
-const OUT := "/tmp/nk1-combat-wave3/ship-polish12"
+const OUT := "/tmp/nk1-combat-wave3/ship-polish13"
 const FACINGS := 16
 
 func _init() -> void:
