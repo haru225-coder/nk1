@@ -152,8 +152,13 @@ REGISTRY = [
      "red": "`✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；"
             "`…可跟号 → 文件:新号（穿透一行转发 …）` / `…跟不上，要人工：跟到一行转发：…` / `✗ 转发穿透自检 S… 期望 … 实得 …`（脚本自身坏了）；"
             "`结果：有问题（DRIFT 先跑 --fix 自动跟号…）`；修法 `python3 tools/check_decision_refs.py --fix`（所引文件先提交）"},
-    # lane auditfix3：审计 audit1 判 cs12 / cs11「半实」（护栏现状下无能单独触发的实例），这里固化实例；跑一次约半分钟、要 git worktree
-    {"id": "check_symbols_mutants", "tier": "lane", "when": "动 check_symbols 十三节的护栏（_node_block 记账 / NAMED_FUNCS 按 (文件, 名字) 认 / 自扫形状 / NF 标注）或它们守的反向断言",
+    # lane auditfix3：审计 audit1 判 cs12 / cs11「半实」（护栏现状下无能单独触发的实例），这里固化实例；跑一次约一分钟（负载下 94 s）、要 git worktree。
+    # lane cs27（auditfix7 W8）：升不了 must（§五.2 快 / 不写盘两条不成立），靶子漂移一类由 check_symbols 十四节「落点预检」每次一键跑判（SUBCHECKS）；
+    # when 补上 W8 漏掉的那一手——动了变异的靶子（拆 Main 挪走船屋、改 Main.tscn 中区、改 advance_days / 船屋断言）也要跑全量
+    {"id": "check_symbols_mutants", "tier": "lane",
+     "when": "① 动 check_symbols 十三节的护栏（_node_block 记账 / NAMED_FUNCS 按 (文件, 名字) 认 / 自扫形状 / NF 标注）、它们守的反向断言或判词，"
+             "或动 tools/check_symbols_mutants.py / tools/func_body.py；② 动了变异的靶子：船屋 `_setup_shipyard`（Main.gd / ShipyardPage.gd，拆 Main 挪走它或改转发）、"
+             "Main.tscn 的 CenterArea 节点、GameManager / Calendar 的 advance_days、船屋两行反向断言；③ 一键跑 check_symbols 十四节「落点预检」红了——改完 CASES 必跑一次全量",
      "kind": "py", "file": "tools/check_symbols_mutants.py",
      "judge": "（lane auditfix3）check_symbols 反向断言空转的变异对照：当前工作树检出到临时 worktree，逐格施变异、跑整道 check_symbols 比 rc 与 `  ✗` 行。"
               "_node_block 一支（「底图 / 外层横排 / 中区开场不收起」+ 全仓改名 CenterArea、只漏这条反向断言、再收起中区）与 NAMED_FUNCS 一支"
@@ -162,8 +167,10 @@ REGISTRY = [
               "lane auditfix5 加：F2c / F3c（F2 之后按红字把 advance_days 改登到 Calendar.gd 下：现行 NF 标注不符一行红 / 不查标注 rc=0）；"
               "S0–S9 分支形七形（条件折多行 / else 支 / ✗ 不在紧下一行 / match / match 守卫 / 折行 any / 探查函数与正则当条件）逐形漏登判红、"
               "退回 auditfix3 口径（单行条件 + 下一行 ✗）rc=0；T1–T6 NF 标注（同名多处没标 / 日后出现同名 / 接收者认不出 / 标错行）",
-     "green": "「零、靶子定位自检」K0–K10 11 格 `✓`（lane cs24：插行变异顺一行转发找真身）+ `✓ B0 …` 起 31 格逐格 `✓ <编号> … rc=N` + 「二、空转对照」7 条 `✓ … 旧口径 rc=0 → … 现行 rc=1` + 「三、靶子落点」+ `结果：全部通过`",
-     "red": "`✗ <编号> …：期望 rc=a，实得 rc=b` 附 `缺 ✗ …` / `多 ✗ …`；`变异没落上` = 源码改了、这支变异的替换处数不对 / 插行靶子找不到真身（同名多处、转发目标认不出文件）；`✗ K<n>` 靶子定位判据变了；空转对照 `应 0 → 1`；`结果：N 项问题`；无 git（不在仓库 / PATH 里没有）/ 建不了 worktree 退 2"},
+     "green": "「零、靶子定位自检」K0–K10 11 格 `✓`（lane cs24：插行变异顺一行转发找真身）+ `✓ B0 …` 起 31 格逐格 `✓ <编号> … rc=N` + 「二、空转对照」7 条 `✓ … 旧口径 rc=0 → … 现行 rc=1` + 「三、靶子落点」+ `结果：全部通过`。"
+              "`--landing` 只跑落点预检（= check_symbols 十四节，约 0.5 s）：`✓ check_symbols_mutants 落点预检：K0–K10 11 格判对；31 格变异在当前源码上都落得上（…）` + `结果：全部通过`",
+     "red": "`✗ <编号> …：期望 rc=a，实得 rc=b` 附 `缺 ✗ …` / `多 ✗ …`；`变异没落上` = 源码改了、这支变异的替换处数不对 / 插行靶子找不到真身（同名多处、转发目标认不出文件）；`✗ K<n>` 靶子定位判据变了；空转对照 `应 0 → 1`；`结果：N 项问题`；无 git（不在仓库 / PATH 里没有）/ 建不了 worktree 退 2；"
+            "`--landing`：`✗ check_symbols_mutants 落点预检 · <编号> …：变异没落上——…` 退 1"},
     # lane seq4：scenes.json 那套结构检查参数化成多文件（清单 tools/data_family.json），加跑不进必跑——口径仍 16 道；跑一次 <1s、只读不写盘
     {"id": "check_data_family", "tier": "lane", "when": "动 data/ 下同族文件（scenes.json / ports.json）的条目 / 字段 / 引用，新增 data/*.json，或动 tools/data_family.json",
      "kind": "py", "file": "tools/check_data_family.py",
@@ -340,6 +347,19 @@ SUBCHECKS = [
              "`✗ check_symbols.py:<行…> 的断言点到同名多处定义的函数 X（…），字面量看不出指哪一支…` = X 在 scripts/ 下 ≥ 2 个文件有定义（Main 拆出件并回 Main），"
              "这几行没在行尾标 `# NF: 接收者.X`；`✗ …的断言标明指 <文件> 的 X，NAMED_FUNCS 却登在 <文件>…` = 错登到同名的另一支（登记跟断言读的那支走）；"
              "`✗ …的 NF 标注 … 认不出文件` / `…这一行自扫没点到 X` = 标注写错 / 标错行（lane auditfix5）。计入 check_symbols 问题、退 1"},
+    {"id": "check_symbols_mutants 落点预检（十四）", "parent": "check_symbols", "lane": "cs27", "oneclick": True,
+     "cmd": "python3 tools/check_symbols.py", "also": ["tools/check_symbols_mutants.py"],  # 判词由 check_symbols_mutants.landing() 印
+     "marks": ["十四、check_symbols_mutants 落点预检", "import check_symbols_mutants as _csm", "_csm.landing(ROOT)",
+               "def landing(root=ROOT):", "class Mem:", 'LANDING_OFF = "--no-mutants-landing"', "SYM), LANDING_OFF]", "变异在当前源码上都落得上"],
+     "expect": "「十四、」`✓ check_symbols_mutants 落点预检：K0–K10 11 格判对；31 格变异在当前源码上都落得上（插行靶子 scripts/Main.gd _setup_shipyard → …）；"
+               "期望 ✗ 字样 / rc / 空转对照归全量（lane 档，docs/GATES.md §三.23）`。check_symbols_mutants（lane 档，全量要 git worktree、约一分钟）的 CASES 逐格"
+               "在当前工作树上内存里施一遍（`Mem` 叠层：读主树工作树、写不落盘，不建 worktree、不跑 check_symbols，约 0.5 s），只判变异 / 旧口径补丁落不落得上"
+               "（替换处数、插行靶子顺一行转发找真身）+「零、」K0–K10。起因 auditfix7 W8：aec1ea6 入库 11 分钟后 main10 拆走 `_setup_shipyard`，全量红满 60 分钟、"
+               "7 笔没人跑（lane cs27，§五.5 例三）。关断开关 `--no-mutants-landing` 只给 check_symbols_mutants 在变异过的 worktree 里用（印一行 `⚠ 落点预检未跑`），一键跑命令不许带",
+     "fail": "`✗ check_symbols_mutants 落点预检 · <编号> <说明>：变异没落上——<文件> 里 <模式> 替换了 k 处，应 n 处` / `…func X( 有 k 处，应 1 处` / "
+             "`…是一行转发到 …，… 不是 preload 常量` = 变异的靶子被挪了 / 改了（拆 Main、改节点名、改船屋断言），全量跑下去这一格就是 `变异没落上`；"
+             "`✗ check_symbols_mutants 落点预检 · K<n> …` = locate_body / forward_of 判据变了。修法：照新源码改 tools/check_symbols_mutants.py 的 CASES，"
+             "再跑一次全量 `python3 tools/check_symbols_mutants.py`。计入 check_symbols 问题、退 1"},
     {"id": "按函数名取函数体（十一）", "parent": "verify_economy", "lane": "cs14 / cs17 / gd23", "oneclick": True,
      "cmd": "python3 tools/verify_economy.py",
      "marks": ["十一、按函数名取函数体", "from func_body import", "_body_ask(name, m is not None, body=m and m.group(0)", "处按名取用都取到函数体",

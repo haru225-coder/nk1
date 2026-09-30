@@ -4,6 +4,7 @@
 
   python3 tools/check_symbols_mutants.py          # 跑全部变异；有问题退 1，环境问题（无 git / 建不了 worktree）退 2
   python3 tools/check_symbols_mutants.py --json   # 机读（同 docs/GATES.md §二）
+  python3 tools/check_symbols_mutants.py --landing  # 只跑落点预检（不建 worktree、不跑 check_symbols，约 1 s）；check_symbols 十四节每次调它
 
 为什么：独立审计 audit1 判 cs12 / cs11「半实」——_node_block 两处调用都是正向断言，改节点名正向断言先红；
 (文件, 名字) 只有 advance_days 一支同名，改名后赴试 / 誊录的正向断言先红：护栏在现状下没有能单独触发的实例。
@@ -34,13 +35,22 @@ lane auditfix5 加三组：
 ——插进的是一行转发，F1–F4 连带一串转发判据的红（61e17bf–5d5920c 七笔全红，auditfix5 c020050 手改靶子才绿）；跟转发后
 下一刀再拆也不用手改。「零、靶子定位自检」每次先跑：临时目录里的合成样本逐格判落点（旧定位法落在转发上 / 新定位法落在真身），
 不跑 check_symbols、不要 worktree。
-只读主树：临时 worktree 跑完即删（`git worktree remove --force`）。一格 2–4 s，全套 31 格约一分钟。
+只读主树：临时 worktree 跑完即删（`git worktree remove --force`）。一格 2–4 s，全套 31 格约一分钟（10 路并发负载下实测 94 s）。
+
+生命周期（lane cs27，auditfix7 W8）：全量要 git worktree、一分钟上下，升不了必跑（GATES §五.2），仍是 lane 档；可 W8 那次
+（aec1ea6 07:37 落地，main10 61e17bf 07:48 拆走 _setup_shipyard 即红，到 auditfix5 c020050 08:48 才绿，first-parent 7 笔）红因
+是「靶子漂了、变异没落上 / 落歪」，这一类不用跑 check_symbols 就判得出。所以另立 `landing()` 落点预检：内存里（Mem 叠层，读主树
+工作树、写不落盘）把 CASES 每格的变异 / 旧口径补丁逐格施一遍、只看落不落得上（替换处数、插行靶子的真身），外加「零、」K0–K10；
+挂在必跑的 check_symbols 十四节，一键跑每次都跑到。靶子漂了当场在挪靶子那一笔的一键跑里红，不再等下一个动护栏的人。
+全量才判得出的（期望 ✗ 字样、rc、空转对照）仍靠 lane 档的 when（GATES §三.23「谁在什么时候跑它」）。
+全量跑时 check_symbols 在变异过的 worktree 里跑，十四节必然红（变异本身让别的格落不上），所以 _run_case 传 `--no-mutants-landing`
+关掉它——这个开关只给本脚本用，一键跑命令里不许带（gates_md 逐条比一键跑命令）。
 """
 import os, re, shutil, subprocess, sys, tempfile
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
-if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+if __name__ == "__main__" and "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；被 check_symbols import（十四节）时不接管
     sys.path.insert(0, TOOLS)
     import gate_json; gate_json.maybe_json(__file__)
 
@@ -60,12 +70,37 @@ def _git(*args, cwd=ROOT):
     return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
 
 
+class Mem:
+    """内存工作树（lane cs27 落点预检）：读先看本格写过的，再落到 base 目录（主树工作树，读一次缓存）；写只进 dict、不落盘。
+    base=None 是空树（「零、」合成样本用）。"""
+    _disk = {}
+
+    def __init__(self, base, files=()):
+        self.base, self.over, self.files = base, {}, files
+
+    def read(self, rel):
+        if rel in self.over:
+            return self.over[rel]
+        if self.base is None:
+            raise FileNotFoundError(rel)
+        key = os.path.join(self.base, rel)
+        if key not in Mem._disk:
+            with open(key, encoding="utf-8") as f:
+                Mem._disk[key] = f.read()
+        return Mem._disk[key]
+
+
 def _read(wt, rel):
+    if isinstance(wt, Mem):
+        return wt.read(rel)
     with open(os.path.join(wt, rel), encoding="utf-8") as f:
         return f.read()
 
 
 def _write(wt, rel, text):
+    if isinstance(wt, Mem):
+        wt.over[rel] = text
+        return
     with open(os.path.join(wt, rel), "w", encoding="utf-8") as f:
         f.write(text)
 
@@ -82,14 +117,27 @@ def sub(wt, rel, pattern, repl, n=1):
     _write(wt, rel, new)
 
 
+_HAS = {}
+
+
+def _has(rx, text):
+    """rx 在 text 里有无命中；按 (模式, 原文) 记住——预检各格读的是同一份主树原文（同一个 str 对象），不必每格重扫。"""
+    key = (rx.pattern, text)
+    if key not in _HAS:
+        _HAS[key] = rx.search(text) is not None
+    return _HAS[key]
+
+
 def rename(wt, pattern, repl, skip=(), lines=None):
     """全仓（scenes / scripts / tools 已跟踪文件）改名；skip 的文件不动；lines(path) 给出只改哪些行的判据。"""
-    files = _git("ls-files", *RENAME_DIRS, cwd=wt).stdout.split()
-    hit = 0
+    files = wt.files if isinstance(wt, Mem) else _git("ls-files", *RENAME_DIRS, cwd=wt).stdout.split()
+    hit, rx = 0, re.compile(pattern)
     for rel in files:
         if rel in skip or not rel.endswith((".gd", ".tscn", ".py", ".sh")):
             continue
         text = _read(wt, rel)
+        if not _has(rx, text):  # 整份没有一处命中，逐行也不会命中（lane cs27：预检每格都扫全仓，先整份筛）
+            continue
         keep = lines(rel) if lines else None
         out = []
         for ln in text.split("\n"):
@@ -383,38 +431,68 @@ DRILL = [
 ]
 
 
-def drill(root):
-    """给 problems 条目列表。K0：旧定位法（按签名行直插，c020050 前 f_yard_step 的写法）落上 1 处、落的却是一行转发。"""
+def drill(root, quiet=False, tag=""):
+    """给 problems 条目列表（quiet：✓ 行不印、✗ 行前加 tag，落点预检用）。K0：旧定位法（按签名行直插，c020050 前 f_yard_step 的写法）落上 1 处、落的却是一行转发。"""
     for rel, text in _DRILL_FILES.items():
-        os.makedirs(os.path.dirname(os.path.join(root, rel)), exist_ok=True)
+        if not isinstance(root, Mem):
+            os.makedirs(os.path.dirname(os.path.join(root, rel)), exist_ok=True)
         _write(root, rel, text)
     bad = []
     text = _read(root, "scripts/Main.gd")
     k = len(re.findall(r"^func _a\(x: int\) -> void:\n", text, re.M))
     body = re.search(r"^func _a\(.*?(?=\n(?:static\s+)?func\s|\Z)", text, re.M | re.S).group(0)
     if k == 1 and forward_of(body, text):
-        print(f"  ✓ K0 旧定位法（按签名行直插 Main.gd _a）：落上 {k} 处——落的是一行转发 {forward_of(body, text)}（61e17bf–5d5920c 的形状）")
+        quiet or print(f"  ✓ K0 旧定位法（按签名行直插 Main.gd _a）：落上 {k} 处——落的是一行转发 {forward_of(body, text)}（61e17bf–5d5920c 的形状）")
     else:
-        print(f"  ✗ K0 合成样本没复现旧形状（签名 {k} 处、转发 {forward_of(body, text)!r}）")
+        print(f"  ✗ {tag}K0 合成样本没复现旧形状（签名 {k} 处、转发 {forward_of(body, text)!r}）")
         bad.append("K0 合成样本失效")
     for cid, what, name, want, why in DRILL:
         try:
             got, fn, at, trail = locate_body(root, "scripts/Main.gd", name)
         except Miss as e:
             if want is None and why in str(e):
-                print(f"  ✓ {cid} {what}：变异没落上（{e}）")
+                quiet or print(f"  ✓ {cid} {what}：变异没落上（{e}）")
             else:
-                print(f"  ✗ {cid} {what}：期望落在 {want}，实得没落上——{e}")
+                print(f"  ✗ {tag}{cid} {what}：期望落在 {want}，实得没落上——{e}")
                 bad.append(f"{cid} 靶子定位与期望不符")
             continue
         src = _read(root, got)
         ok = want == (got, fn) and _func_re(fn).search(src[:at]) and not src[at:].startswith(("func", "static func"))
         if ok:
-            print(f"  ✓ {cid} {what}：落在 {' → '.join(trail)}")
+            quiet or print(f"  ✓ {cid} {what}：落在 {' → '.join(trail)}")
         else:
-            print(f"  ✗ {cid} {what}：期望 {'没落上' if want is None else want}，实得落在 {' → '.join(trail)}")
+            print(f"  ✗ {tag}{cid} {what}：期望 {'没落上' if want is None else want}，实得落在 {' → '.join(trail)}")
             bad.append(f"{cid} 靶子定位与期望不符")
     return bad
+
+
+LANDING_OFF = "--no-mutants-landing"  # check_symbols 十四节的关断开关：只给 _run_case 用（变异过的 worktree 里十四节必红）
+
+
+def landing(root=ROOT):
+    """落点预检（lane cs27）：CASES 每格的变异与旧口径补丁在 root 当前工作树上逐格施一遍（Mem 叠层，不落盘、不建 worktree、
+    不跑 check_symbols），只判落不落得上；外加「零、」K0–K10。给 (problems, 摘要)；✗ 行已打印。
+    判不出的（期望 ✗ 字样 / rc / 空转对照）归全量，见 docs/GATES.md §三.23。"""
+    tag = "check_symbols_mutants 落点预检 · "
+    problems = [f"落点预检 {b}" for b in drill(Mem(None), quiet=True, tag=tag)]
+    try:
+        files = _git("ls-files", *RENAME_DIRS, cwd=root).stdout.split()
+    except OSError as e:
+        files = None
+        print(f"  ✗ {tag}找不到 git（全仓改名要 ls-files）：{e}")
+        problems.append("落点预检 找不到 git")
+    LANDED.clear()
+    if files is not None:
+        for grp, cid, what, muts, want_rc, want_reds in CASES:
+            wt = Mem(root, files)
+            try:
+                for m in muts:
+                    m(wt)
+            except Miss as e:
+                print(f"  ✗ {tag}{cid} {what}：变异没落上——{e}（靶子漂了：照新源码改 {SELF} 的 CASES，改完跑全量 python3 {SELF}）")
+                problems.append(f"落点预检 {cid} 变异没落上")
+    spots = "；".join(f"插行靶子 {rel} {name} → {trail[-1]}" for (rel, name), trail in sorted(LANDED.items()))
+    return problems, f"K0–K{len(DRILL)} {len(DRILL) + 1} 格判对；{len(CASES)} 格变异在当前源码上都落得上（{spots}）"
 
 
 def _run_case(wt, snap, muts):
@@ -422,13 +500,19 @@ def _run_case(wt, snap, muts):
         raise RuntimeError("临时 worktree 复位失败")
     for m in muts:
         m(wt)
-    p = subprocess.run([sys.executable, os.path.join(wt, SYM)], cwd=wt, capture_output=True, text=True, timeout=300,
+    p = subprocess.run([sys.executable, os.path.join(wt, SYM), LANDING_OFF], cwd=wt, capture_output=True, text=True, timeout=300,
                        env={k: v for k, v in os.environ.items() if k != "CHECK_SYMBOLS_SUGGEST"})
     reds = [ln.strip() for ln in p.stdout.split("\n") if ln.startswith("  ✗")]
     return p.returncode, reds, p.stdout + p.stderr
 
 
 def main():
+    if "--landing" in sys.argv[1:]:
+        problems, summary = landing()
+        if not problems:
+            print(f"  ✓ check_symbols_mutants 落点预检：{summary}")
+        print("结果：全部通过" if not problems else f"结果：{len(problems)} 项问题")
+        return 1 if problems else 0
     try:
         in_git = _git("rev-parse", "--git-dir").returncode == 0
     except OSError as e:  # PATH 里没有 git（lane cs24 前这里抛 FileNotFoundError、退 1）

@@ -4829,6 +4829,23 @@ if not _nf_bad and not _nf_unlisted and not _nf_tag_bad:
           f"同名多处定义的 {len(_nf_amb)} 支（{'、'.join(_nf_amb) or '无'}）逐行标明、与登记一致）")
 
 print()
+print("=" * 68)
+print("十四、check_symbols_mutants 落点预检（lane cs27：变异靶子漂了，一键跑当场红）")
+print("=" * 68)
+# check_symbols_mutants（十三节护栏的变异对照）全量要 git worktree、约一分钟，只能是 lane 档；auditfix7 W8：它入库 11 分钟就被
+# main10 拆走靶子打红、红满 60 分钟没人跑。靶子漂移这一类不用跑全量就判得出，所以每次在这里内存里逐格试落（不落盘、不建 worktree）。
+# 关断开关只给 check_symbols_mutants 在变异过的 worktree 里用（那里十四节必红），一键跑命令里不许带（gates_md 逐条比）。
+import check_symbols_mutants as _csm
+if _csm.LANDING_OFF in sys.argv[1:]:
+    print(f"  ⚠ 落点预检未跑（{_csm.LANDING_OFF}：只给 check_symbols_mutants 在变异 worktree 里用）")
+else:
+    _lp_bad, _lp_sum = _csm.landing(ROOT)
+    if _lp_bad:
+        problems.extend(f"check_symbols_mutants {b}" for b in _lp_bad)
+    else:
+        print(f"  ✓ check_symbols_mutants 落点预检：{_lp_sum}；期望 ✗ 字样 / rc / 空转对照归全量（lane 档，docs/GATES.md §三.23）")
+
+print()
 print()
 print("=" * 68)
 if problems:
