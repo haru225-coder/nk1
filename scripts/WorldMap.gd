@@ -235,7 +235,8 @@ func _boarding_target_valid() -> bool:
 
 ## P4-2 / combat11：接舷白刃走 MeleeResolve；士气簿 yields 则免白刃直接夺。
 ## 钩缆在 G 键 / 调用方已确认够距后挂上，故 resolve 带 hooked=true（跳过抛钩掷骰，探针远距直调也能夺）。
-## 末船夺下必须当帧 _battle_exit(boarded=true)：await 题签会让出帧，探针只等 30 帧，且 _process 会抢 win{}。
+## 末船夺下：headless 当帧 _battle_exit(boarded=true)（story / realism 探针同帧取 boarded，只等 30 帧）；
+## 窗口下等「夺船」题签停满 T_HOLD、淡出再收战，其间 _finishing_boarded 挡住 _process 的 win{} / 限时两散、B 键弃战与士气簿裁决。
 func _board_enemy(enemy: Node2D) -> void:
 	if not is_instance_valid(enemy):
 		return
@@ -339,8 +340,11 @@ func _board_enemy(enemy: Node2D) -> void:
 		boarding = false
 		boarding_target = null
 		if _enemies_alive() == 0:
-			# 末一艘夺下：当帧收战（不 await，探针 30 帧内要收到 boarded）
+			# 末一艘夺下：headless 当帧收战（不 await，探针 30 帧内要收到 boarded）；窗口下等「夺船」题签停满 T_HOLD、
+			# 淡出后再出战（crew 线 09-28 实机验收 9e35254：当帧出战题签只留 1 帧；09-30 合并按本地线落地时丢了，lane fx8 补回）
 			_finishing_boarded = true
+			if not _Kit.is_headless():
+				await _await_boarding_fx(stage)
 			_battle_exit("win", {"boarded": true})
 		else:
 			await _await_boarding_fx(stage)
@@ -523,7 +527,7 @@ func _setup_combat(pb: Dictionary) -> void:
 	# combat11：士气挂件 + 号令/状态 UI
 	_morale = _CombatMorale.attach(self)
 	if _morale != null:
-		_morale.verdict.connect(_battle_exit)
+		_morale.verdict.connect(_on_morale_verdict)
 		_morale.noted.connect(_on_morale_noted)
 	_CombatShoreHook.mount_combat_ui(self, ship)
 	# lane atmos：海面着色器驱动、航迹、敌我旗旒与轮廓、落水涟漪
@@ -592,8 +596,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				_show_combat_notice(str(bc["note"]))
 		elif event.keycode == KEY_B or event.keycode == KEY_ESCAPE:
-			if boarding:
-				return # 白刃已钩住，不能逃
+			if boarding or _finishing_boarded:
+				return # 白刃已钩住不能逃；末艘已夺下、「夺船」题签在演，等它带 boarded 出战（crew 线 1fe334d）
 			get_viewport().set_input_as_handled()
 			var chance := Voyage.flee_success_chance()
 			var ok := randf() < chance
@@ -603,6 +607,13 @@ func _unhandled_input(event: InputEvent) -> void:
 ## 玩家旗舰在战斗中沉没时由 Ship._sink_ship 调用（战斗期不切场景）
 func _battle_player_sunk() -> void:
 	_battle_exit("lose", {"sunk": true, "player_damage": player_damage})
+
+
+## 士气簿裁决（敌尽降 / 遁、我方溃逃 / 降幡）即收战；末艘已夺下、「夺船」题签在演时不裁决——敌船已尽，那一场由 _board_enemy 带 boarded 收
+func _on_morale_verdict(outcome: String, data: Dictionary) -> void:
+	if _finishing_boarded:
+		return
+	_battle_exit(outcome, data)
 
 
 ## 战斗终结：发信号给 SeaChart 结算，随后释放本场景

@@ -569,6 +569,9 @@ func _finish() -> void:
 ## crew 线 09-29 返修（复核 4）：接舷夺下末艘，「夺船」题签全显的游戏时 ≥ T_HOLD 的八成、全显 ≥ 3 帧，出战墨边写「……・夺船」。
 ## 09-28 修前末艘夺下当帧就出战：题签只留 1 帧、墨边写「战罢」。这两条原先只在 git 忽略的验收探针里，合并后没门禁拦，这里进巡检。
 ## 真起一场海战（海寇只刷一艘：首艘即末艘），冻住敌炮，敌船水手清零保证白刃必胜；主场景先藏起、演完还原，船队与战况复原。
+## lane fx8：本地线 combat06 士气挂件逐物理帧读敌船 crew，清零会记成伤亡过半、再加被钩——接舷停拍 0.42 s 里敌船降幡，
+## 士气簿裁决 enemy_struck 当场收战（墨边「受降」、夺船题签一帧不画），走的是受降一路。清零前先停掉挂件轮询（降幡 / 裁决
+## 都在它的物理帧里），巡检确定地走「白刃夺下末艘」；收战 data.fates 须记 boarded（不是 struck），否则判红。
 ## 题签停留按游戏时累加（process delta，顿帧压低 time_scale 时照样是游戏时），不看墙钟、不按帧率。headless 下题签起不来，打 ⚠ 不判。
 const _CrewStage := preload("res://tools/combat_probe_stage.gd")
 const _CrewBoarding := preload("res://scripts/combat/BoardingStage.gd")
@@ -613,6 +616,9 @@ func _v0928_crew_board_check() -> void:
 	var hold_ok := false
 	var hold_note := "未量到"
 	if foe != null:
+		var tracker = wm.get("_morale")
+		if tracker is Node:
+			(tracker as Node).process_mode = Node.PROCESS_MODE_DISABLED
 		foe.set("crew", 0)
 		foe.set_physics_process(false)
 		foe.position = (wm.get("ship") as Node2D).position + Vector2(95, 0)
@@ -656,8 +662,10 @@ func _v0928_crew_board_check() -> void:
 	if why3 == "":
 		_save_shot("crew_出战墨边_夺船")
 	var d: Dictionary = result[0][1] if result.size() == 1 else {}
-	_check(why3 == "" and exit_title.ends_with("・夺船") and result.size() == 1 and result[0][0] == "win" and bool(d.get("boarded", false)),
-		"末艘夺下以 boarded 出战、出战墨边写「%s」（以「・夺船」结尾；%s）" % [exit_title, why3 if why3 != "" else "墨边已擦出"])
+	var fates: Array = (d.get("fates", []) as Array).map(func(f) -> String: return str((f as Dictionary).get("fate", "")))
+	_check(why3 == "" and exit_title.ends_with("・夺船") and result.size() == 1 and result[0][0] == "win" and bool(d.get("boarded", false))
+			and fates == ["boarded"],
+		"末艘夺下以 boarded 出战、出战墨边写「%s」（以「・夺船」结尾；下场 %s；%s）" % [exit_title, fates, why3 if why3 != "" else "墨边已擦出"])
 	_CrewStage.teardown(self, ref.get_ref(), gm)
 	await process_frame
 	await process_frame
