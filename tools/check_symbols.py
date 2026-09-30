@@ -1918,9 +1918,14 @@ if _has_func(wm_src, "_format_left_hud"):
 else:
     print("  ✗ WorldMap 无 _format_left_hud")
     problems.append("WorldMap 无 _format_left_hud")
+# 刷船上限按旗舰镜头实算半高（720 / 2 / Ship.CAM_ZOOM_REST）；w19-g13 镜头 1.5 → 0.5 前是写死 ≤500（zoom 1.5 半高才 240）。
+# 下限另要不少于两倍船长（约 280 px，Ballistics 头注），免得两船一开场就叠在一起。
 spawn_max = re.search(r"COMBAT_SPAWN_DIST_MAX\s*:=\s*([0-9.]+)", wm_src)
-if spawn_max and float(spawn_max.group(1)) <= 500.0:
-    print("  ✓ 开战刷船距离在镜头内（≤500）")
+spawn_min = re.search(r"COMBAT_SPAWN_DIST_MIN\s*:=\s*([0-9.]+)", wm_src)
+cam_rest = re.search(r"CAM_ZOOM_REST\s*:=\s*([0-9.]+)", ship_src)
+cam_half_h = 720.0 / (2.0 * float(cam_rest.group(1))) if cam_rest and float(cam_rest.group(1)) > 0 else 0.0
+if spawn_max and spawn_min and cam_half_h > 0 and float(spawn_max.group(1)) <= cam_half_h and float(spawn_min.group(1)) >= 560.0:
+    print("  ✓ 开战刷船距离在镜头内（%s—%s：≥ 两倍船长 560，≤ 镜头半高 %.0f）" % (spawn_min.group(1), spawn_max.group(1), cam_half_h))
 else:
     print("  ✗ 开战刷船距离过远或未定义")
     problems.append("开战刷船距离过远")

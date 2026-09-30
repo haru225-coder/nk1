@@ -574,6 +574,8 @@ func _hold_tag() -> void:
 	if tag != null:
 		tag.global_position = global_position + Vector2(0, -tag_lift())
 		tag.global_rotation = 0.0
+		var tk := _CombatFx.world_text_k(self)
+		tag.global_scale = Vector2(tk, tk)
 
 
 ## 标签离船心多高（世界坐标）：船头朝上下时躲过船头，横着时贴着帆顶

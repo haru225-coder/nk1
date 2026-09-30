@@ -101,6 +101,22 @@ static func hitstop(host: Node, duration := 0.07, scale := 0.18) -> void:
 	)
 
 
+## 海战里挂在世界坐标上的字（敌船意图签、本船损伤短注、飘字）与镜头震幅原是按旗舰镜头 zoom 1.5 定的尺寸。
+## w19-g13 把海战镜头拉远到 0.5（Ship.CAM_ZOOM_REST）后，这些按「1.5 ÷ 现镜头 zoom」反缩放，屏上字号、震幅与原先一样。
+const WORLD_TEXT_REF_ZOOM := 1.5
+
+
+## 世界坐标里字 / 震幅的反缩放系数（没有镜头时 1.0）
+static func world_text_k(node: Node) -> float:
+	if node == null or not is_instance_valid(node) or not node.is_inside_tree():
+		return 1.0
+	var vp := node.get_viewport()
+	var cam: Camera2D = vp.get_camera_2d() if vp != null else null
+	if cam == null or cam.zoom.x <= 0.0:
+		return 1.0
+	return WORLD_TEXT_REF_ZOOM / cam.zoom.x
+
+
 ## 在旗舰 Camera2D 上叠加一次短震（与航速震共用 offset，随后被 Ship 以 5/s 平滑拉回，约 0.2 s 回正）。
 ## dir 给了就顺着它推（本船挨打：顺来力；齐射：反舷后坐），另带一点横向抖；没给按旧式随机方向。
 ## zoom_kick：镜头往里一收（× 1 + zoom_kick，封顶 8 %），Ship 按航速缩放镜头时约 1 s 缓回——重的一下有「沉」感。
@@ -115,6 +131,7 @@ static func punch_camera(ship: Node, intensity := 6.0, dir := Vector2.ZERO, zoom
 		cam = n as Camera2D
 	if cam == null:
 		return
+	intensity *= world_text_k(ship)
 	if dir.length_squared() > 0.0001:
 		var d := dir.normalized()
 		cam.offset = d * intensity + d.orthogonal() * randf_range(-0.3, 0.3) * intensity

@@ -99,14 +99,9 @@ func _run() -> void:
 		# 裸 await finished：补间被 kill（再调 move_ship_lonlat）就永不返回；改带墙钟上界
 		if tw is Tween and not await Clock.until(self, func() -> bool: return not (tw as Tween).is_running()):
 			_expect(false, "船标补间 %d ms 内没走完" % Clock.WAIT_MS)
-		var ship: Node2D = map.get("ship")
-		if ship:
-			map.call("frame_rect", Rect2(ship.position, Vector2.ZERO), 0.0, 0.0)
-		var cam: Camera2D = map.get("camera")
-		if cam:
-			cam.zoom = Vector2(1.4, 1.4)
-		map.call("_clamp_camera")
-		map.call("_on_camera_moved")
+		# 取景照游戏发舶那一下（SeaChart._on_sail_pressed：起讫两港、pad 0.30，缩放受 MapView.FRAME_ZOOM_MAX 管）。
+		# 原先对着船标硬设 zoom 1.4，截到的是远洋一片空海、比例尺二百里、不见岸线，不是玩家看到的航行画面（w19-g13）。
+		map.call("frame_ports", ["quanzhou", far], 0.30, 0.0)
 		_chart.call("_refresh_status")
 		await _frames(4)
 	await _shot("02_sailing_hud")

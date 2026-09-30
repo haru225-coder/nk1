@@ -174,7 +174,7 @@ color_ramp = SubResource("Gradient_fire")
 shape = SubResource("CircleShape2D_ship")
 
 [node name="Camera2D" type="Camera2D" parent="."]
-zoom = Vector2(1.5, 1.5)
+zoom = Vector2(0.5, 0.5)
 position_smoothing_enabled = true
 
 [node name="DamageTag" type="Label" parent="."]

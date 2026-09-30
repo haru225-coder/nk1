@@ -736,6 +736,7 @@ func _route_check() -> void:
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
+	_g13_chart_zoom_check()
 	main.queue_free()
 
 
@@ -3134,3 +3135,76 @@ func _script_error_check() -> void:
 	var errs: Array = _script_errs.lines
 	_check(errs.is_empty(), "运行中无 SCRIPT ERROR / Parse Error（%d 条%s）" % [errs.size(),
 		"" if errs.is_empty() else "，首条：" + str(errs[0])])
+
+
+## w19-g13（用户验图「比例尺也太大了 都看不到海岸线了」）：海图自动取景的默认缩放落在合理范围。
+## 一、MapView.FRAME_ZOOM_MAX 在 1.0—1.6（再大一屏只剩港湾一角、底图发糊；再小近港港名挤成一团），且低于滚轮上限 ZOOM_MAX；
+## 二、近港短程照发舶取景（起讫两港、pad 0.30）：缩放不超 FRAME_ZOOM_MAX，图带里两港都在、露出一段岸线（岸线折点 ≥ 40）；
+## 三、玩家滚轮照样放得到 ZOOM_MAX（只改自动取景，不收玩家的缩放）；
+## 四、海战镜头（用户也可能指海战那一屏）：旗舰镜头默认 zoom 0.35—0.6、开战刷船不少于两倍船长且在镜头半高内；
+## 五、海战雷达比例：开战刷船处（COMBAT_SPAWN_DIST_MIN）落在本船脉动圈 9 px 之外，敌船遁走离场距离仍在盘内且用到盘半径六成以上。
+func _g13_chart_zoom_check() -> void:
+	var mv_c: Dictionary = (load("res://scripts/chart/MapView.gd") as GDScript).get_script_constant_map()
+	var fz := float(mv_c.get("FRAME_ZOOM_MAX", INF))
+	var zmin := float(mv_c.get("ZOOM_MIN", 0.0))
+	var zmax := float(mv_c.get("ZOOM_MAX", 0.0))
+	_check(fz >= 1.0 and fz <= 1.6 and fz < zmax,
+		"海图自动取景缩放上限 FRAME_ZOOM_MAX=%.2f 落在 1.0—1.6、低于滚轮上限 ZOOM_MAX=%.2f" % [fz, zmax])
+	GS.from_dict({})
+	GS.chapter = 4
+	GS.last_port = "quanzhou"
+	var sc = (load("res://scenes/SeaChart.tscn") as PackedScene).instantiate()
+	root.add_child(sc)
+	var map = sc.get("map")
+	var cam: Camera2D = map.get("camera") if map != null else null
+	_check(map != null and cam != null, "海图 MapView 与镜头挂上")
+	if map == null or cam == null:
+		sc.queue_free()
+		GS.from_dict({})
+		return
+	# headless 这一帧还没排版：照工程画布把海图子视口铺成 1280×720，顶匾压 104、牌区压 280（DISPLAY=:2 实测）直接写进去
+	var mvp := map.get_viewport() as SubViewport
+	mvp.size = Vector2i(1280, 720); mvp.size_2d_override = Vector2i(1280, 720)
+	map.call("set_view_inset", 104.0, 280.0)
+	var vp_size: Vector2 = map.get_viewport_rect().size
+	_check(vp_size.is_equal_approx(Vector2(1280, 720)), "海图子视口按 1280×720 取景（实得 %s）" % vp_size)
+	var pp: Dictionary = map.get("port_px")
+	for pair in [["quanzhou", "xinghua"], ["xinghua", "xinghua_harbor"], ["quanzhou", "zhangzhou"], ["hakata", "kagoshima"]]:
+		map.call("frame_ports", pair, 0.30, 0.0)
+		var z := cam.zoom.x
+		var band: Rect2 = map.call("_band_world_rect")
+		var both: bool = pp.has(pair[0]) and pp.has(pair[1]) and band.has_point(pp[pair[0]]) and band.has_point(pp[pair[1]])
+		var coast_n := 0
+		for ring in map.get("coast_rings"):
+			for v in ring:
+				if band.has_point(v):
+					coast_n += 1
+		_check(z >= zmin and z <= fz + 0.001 and both and coast_n >= 40,
+			"近港发舶取景 %s—%s：缩放 %.2f ≤ %.2f，两港在图带内（%s），图带露出岸线折点 %d（≥ 40）" % [pair[0], pair[1], z, fz, both, coast_n])
+	map.call("zoom_at", cam.position, 100.0)
+	_check(absf(cam.zoom.x - zmax) < 0.001, "滚轮仍放得到 ZOOM_MAX %.2f（实得 %.2f）" % [zmax, cam.zoom.x])
+	sc.queue_free()
+	GS.from_dict({})
+	# 海战镜头（Ship.tscn 旗舰 Camera2D）：拉远到能同屏看清两船相对方位；开战刷船不少于两倍船长（船长约 280 px，Ballistics 头注）
+	var ship_c: Dictionary = (load("res://scripts/Ship.gd") as GDScript).get_script_constant_map()
+	var ship_n: Node = (load("res://scenes/Ship.tscn") as PackedScene).instantiate()
+	var sc_cam := ship_n.get_node_or_null("Camera2D") as Camera2D
+	var cz := sc_cam.zoom.x if sc_cam != null else 0.0
+	ship_n.free()
+	var rest := float(ship_c.get("CAM_ZOOM_REST", 0.0))
+	var full := float(ship_c.get("CAM_ZOOM_FULL", 0.0))
+	_check(cz >= 0.35 and cz <= 0.6 and absf(cz - rest) < 0.001 and full > 0.3 and full <= rest,
+		"海战镜头默认 zoom %.2f 落在 0.35—0.6（场景 = CAM_ZOOM_REST %.2f，满帆 %.2f 不更近），一屏 %.0f×%.0f 世界 px" % [cz, rest, full, 1280.0 / maxf(cz, 0.01), 720.0 / maxf(cz, 0.01)])
+	var wm_c: Dictionary = (load("res://scripts/WorldMap.gd") as GDScript).get_script_constant_map()
+	var spawn_min := float(wm_c.get("COMBAT_SPAWN_DIST_MIN", 0.0))
+	var spawn_max := float(wm_c.get("COMBAT_SPAWN_DIST_MAX", INF))
+	var half_h := 720.0 / (2.0 * maxf(cz, 0.01))
+	_check(spawn_min >= 2.0 * 280.0 and spawn_max <= half_h,
+		"开战刷船 %.0f—%.0f：下限不少于两倍船长 560，上限不过镜头半高 %.0f" % [spawn_min, spawn_max, half_h])
+	var mm = (load("res://scripts/Minimap.gd") as GDScript).new()
+	var ms := float(mm.get("map_scale"))
+	var rr := float(mm.get("radar_radius"))
+	mm.free()
+	var esc := float((load("res://scripts/combat/EnemyCaptainAI.gd") as GDScript).get_script_constant_map().get("ESCAPE_DIST", INF))
+	_check(spawn_min * ms >= 10.0 and esc * ms <= rr - 8.0 and esc * ms >= rr * 0.6,
+		"海战雷达比例 %.3f：开战刷船处落在离心 %.1f px（本船脉动圈 9 px 之外），敌船遁走离场距离 %.0f 合 %.0f px（在盘半径六成 %.0f 与盘内 %.0f 之间，整局不挤在盘心）" % [ms, spawn_min * ms, esc, esc * ms, rr * 0.6, rr - 8.0])

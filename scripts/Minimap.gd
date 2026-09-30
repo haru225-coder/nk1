@@ -2,7 +2,11 @@ extends Control
 
 var ship: Node2D
 var root: Node
-var map_scale: float = 0.02
+## 雷达比例（屏幕 px / 世界 px）。原 0.02：盘面半径 67 px 合 3350 世界 px，旧刷船处 210—235 只落到离心 4—5 px，
+## 正压在本船朱点的脉动圈（半径 6—9 px）底下，盘上看不到敌船（w19-g13 查小地图比例）。w19-g13 镜头拉远到一屏 2560×1440 后
+## 改 0.04：盘边 67 px 合约 1675 世界 px，比一屏看得远，敌船遁走离场距离 1500（EnemyCaptainAI.ESCAPE_DIST）合 60 px 仍在盘内；
+## 开战刷船处 560—600 合 22—24 px，炮程 760 合 30 px。
+var map_scale: float = 0.04
 var radar_radius: float = 75.0
 var _pulse_phase: float = 0.0
 ## 子正午北、午正南、卯正东、酉正西——雷达十字旁的纪实短标，不写 NESW。
@@ -55,7 +59,9 @@ func _draw() -> void:
 	# Draw Ports
 	if root.has_node("Ports"):
 		for port in root.get_node("Ports").get_children():
-			if not port.visible: continue  # 战斗模式隐藏港口，雷达不画
+			# 战斗模式隐藏港口，雷达不画：WorldMap 藏的是父节点 $Ports，子节点自身 visible 仍为真，原判 port.visible 拦不住，
+			# 海战雷达照画场景里写死的泉州 / 兴化示意位（与真海图对不上，w19-g13）
+			if not port.is_visible_in_tree(): continue
 			var pname := ""
 			if port.has_meta("port_name"):
 				pname = str(port.get_meta("port_name"))

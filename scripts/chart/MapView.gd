@@ -9,6 +9,11 @@ signal camera_changed
 
 const ZOOM_MIN := 0.28   # 4096 画布在 1280 宽下 0.32 才盖满屏；画布外已铺绢底，放宽到 0.28 让远程两港（广州—占城）装进图带
 const ZOOM_MAX := 3.2    # 岸线数据 0.008 度、底图 0.9 km/px，再放大只剩折线与糊纹理（近景实测 3.7 倍已显）
+## 自动取景（选向 / 发舶 / 回全图框港）的缩放上限，玩家滚轮仍可放到 ZOOM_MAX（w19-g13，用户验图「比例尺也太大了 都看不到海岸线了」）。
+## 近港短程（泉州—兴化、兴化—海口）两港相距不足百里，按 120 px 最小框 + pad 0.30 算出来是 1.75（1280×720 图带），
+## 窗口一高还会顶到 3.2：一屏只剩港湾一角、比例尺缩到一百里嫌长，底图 0.9 km/px 放大近两倍已发糊。
+## 收到 1.5：图带（1280×336 屏幕 px）约合 770×200 公里，港口两侧各露出一段岸线与陆地轮廓，底图每像素放大不过 1.5 倍。
+const FRAME_ZOOM_MAX := 1.5
 const DRAG_FRICTION := 6.5
 const KM_PER_LI := 0.576
 
@@ -705,7 +710,7 @@ func _fit_zoom(r: Rect2, pad: float) -> float:
 func frame_rect(r: Rect2, pad: float = 0.28, dur: float = 0.8, anchor: Vector2 = Vector2(INF, INF)) -> void:
 	var vp := get_viewport_rect().size
 	# 露出来的图带：整个视口去掉顶匾与底部牌区；缩放按这段算，目标点落在这段的中央
-	var z := clampf(_fit_zoom(r, pad), ZOOM_MIN, ZOOM_MAX)
+	var z := clampf(_fit_zoom(r, pad), ZOOM_MIN, FRAME_ZOOM_MAX)
 	# 图带中心比屏幕中心低 (top - bottom)/2 像素；镜头中心要反向偏这么多世界单位
 	var target := r.get_center() + Vector2(0.0, (inset_bottom - inset_top) * 0.5 / z)
 	# 最小缩放仍装不下时，把镜头挪到锚点港落进图带内（留 56 px 边，名字与船标都露出来）

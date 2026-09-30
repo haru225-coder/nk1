@@ -29,7 +29,12 @@ var max_hp: float = 100.0
 @onready var damage_fx: Node2D = $DamageFx
 @onready var damage_tag: Label = $DamageTag
 
-var target_zoom = Vector2(1.5, 1.5)
+## 海战镜头（w19-g13，用户「比例尺也太大了 都看不到海岸线了」）：原 1.5（满帆 1.0）时一屏只有 853×480 世界 px，
+## 船长约 280 px 的船身几乎占满竖向，敌将打法距离（EnemyCaptainAI RANGE 260—540、开炮 760）全在画外。
+## 拉到停船 0.5、满帆 0.42：一屏 2560×1440（满帆约 3050×1710），开战刷在 560—600 的敌船与本船同屏，看得出相对方位。
+const CAM_ZOOM_REST := 0.5
+const CAM_ZOOM_FULL := 0.42
+var target_zoom = Vector2(CAM_ZOOM_REST, CAM_ZOOM_REST)
 # lazy load：避免 compile 时 Cannonball.gd → class Ship → preload 场景 → 再要 Cannonball.gd 的环
 var cannonball_scene: PackedScene = null
 const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
@@ -255,12 +260,12 @@ func _update_visuals(delta: float) -> void:
 		bow_wave_left.emitting = false
 		bow_wave_right.emitting = false
 
-	var zoom_val = 1.5 - (speed_ratio * 0.5)
+	var zoom_val = CAM_ZOOM_REST - speed_ratio * (CAM_ZOOM_REST - CAM_ZOOM_FULL)
 	target_zoom = Vector2(zoom_val, zoom_val)
 	camera.zoom = camera.zoom.lerp(target_zoom, 1.0 * delta)
 	
 	if current_speed > 250.0 or wind_strength > 150.0:
-		var shake_intensity = (current_speed / 400.0) * 2.0
+		var shake_intensity = (current_speed / 400.0) * 2.0 * _CombatFx.world_text_k(self)
 		camera.offset = Vector2(randf_range(-shake_intensity, shake_intensity), randf_range(-shake_intensity, shake_intensity))
 	else:
 		camera.offset = camera.offset.lerp(Vector2.ZERO, 5.0 * delta)
@@ -575,7 +580,9 @@ func _update_damage_visuals(delta: float) -> void:
 				damage_tag.reset_size()
 			damage_tag.visible = line != ""
 		if damage_tag.visible:
-			damage_tag.global_position = global_position + Vector2(-damage_tag.size.x * 0.5, -TAG_RISE)
+			var tk := _CombatFx.world_text_k(self)
+			damage_tag.scale = Vector2(tk, tk)
+			damage_tag.global_position = global_position + Vector2(-damage_tag.size.x * 0.5 * tk, -TAG_RISE)
 	_pump_notes(delta)
 
 
