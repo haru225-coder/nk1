@@ -1,5 +1,5 @@
 {
-  "doc": "tools/check_data_family.py 的文件清单（lane seq4）。同族 = scenes.json 那一族：主表是带唯一字符串 id 的条目表（F1），条目里有字段指向同表的 id、成一张图（F2），游戏运行时读它（F3，scripts/ 或 scenes/ 里写了文件名），且图有入口，「从入口走不到 = 孤儿」有定义（F4，人判，写在 roots 里）。F1–F3 由脚本自动普查：data/ 下满足 F1–F3 的文件必须登在 families（同族，跑四项结构检查）或 not_family（写明 F4 为何不成立）之一，漏登即红。新增同族文件怎么接入：见 check_data_family.py 文档串「接入」一段。",
+  "doc": "tools/check_data_family.py 的文件清单（lane seq4；lane seq6 起 scenes 那条的 kinds / shapes 也是 verify_story_data 的形状表——单一来源，改这里两道门禁同时认）。同族 = scenes.json 那一族：主表是带唯一字符串 id 的条目表（F1），条目里有字段指向同表的 id、成一张图（F2），游戏运行时读它（F3，scripts/ 或 scenes/ 里写了文件名），且图有入口，「从入口走不到 = 孤儿」有定义（F4，人判，写在 roots 里）。F1–F3 由脚本自动普查：data/ 下满足 F1–F3 的文件必须登在 families（同族，跑四项结构检查）或 not_family（写明 F4 为何不成立）之一，漏登即红。新增同族文件怎么接入：见 check_data_family.py 文档串「接入」一段。",
   "families": [
     {
       "file": "data/scenes.json",
@@ -102,7 +102,9 @@
             "objective?": "str",
             "speaker?": "str",
             "require_any?": "list<str>",
-            "require_chapter?": "int"
+            "require_chapter?": "int",
+            "require_flag?": "str",
+            "hide_if_flag?": "str"
           }
         }
       ],
@@ -110,7 +112,11 @@
         "choice": {
           "label": "str",
           "next": "str",
-          "effects?": "dict"
+          "effects?": "dict",
+          "require_chapter?": "int",
+          "require_any?": "list<str>",
+          "require_flag?": "str",
+          "hide_if_flag?": "str"
         },
         "investigation": {
           "id": "str",
@@ -166,6 +172,21 @@
           "why": "调查项 id → 同名详情场（带 result 的幕）须存在；Main._on_investigate_pressed 只读 text / effects / next，不按 id 跳，所以不成边（与 lane seq3 口径同）"
         },
         {
+          "path": "location",
+          "edge": false,
+          "to": [
+            {
+              "file": "data/ports.json",
+              "path": "ports[].id"
+            },
+            {
+              "py_const": "tools/verify_story_data.py",
+              "name": "SCENE_LOCATION_EXTRA"
+            }
+          ],
+          "why": "幕的所在地 = 港 id（或 sea）。普查里 29/67 个值恰是本表 id，是因为 type=port 港页的 id 就是港 id——同名，不是跳转，不成边（lane seq6：部分命中的自引用也须登记）"
+        },
+        {
           "path": "facilities[].id",
           "edge": true,
           "to": [
@@ -219,7 +240,8 @@
           },
           "why": "基线与 lane seq3 的 scenes.json 结构门禁共用一份：verify_story_data.SCENE_ARCHIVE（39 个：序章旧链 4、city_tavern / city_shipyard 两个港卡被 REMAPPED 改写进不到的调查页、result 形详情场 33），只减不增由那边的 SCENE_ARCHIVE_MAX 管；这里另判名单里的已可达 / 已删 / 已 deprecated"
         }
-      ]
+      ],
+      "shapes_doc": "lane seq6：本条 kinds / shapes 是 scenes.json 形状的唯一一份。verify_story_data（必跑）不再自带 SCENE_SHAPES / SCENE_SUB_SHAPES / SCENE_FIELD_TYPES，由这里按字段名推出（`名?` = 可选；list<@形> 的字段 = 列表子形；同名字段在各形里类型须一致）；加字段 / 加形改这里一处，两道门禁同时认"
     },
     {
       "file": "data/ports.json",
@@ -284,13 +306,38 @@
           "why": "GameState.last_port 缺省值 = 开局港"
         }
       ],
-      "known_orphans": []
+      "known_orphans": [],
+      "one_way_ok": {
+        "pairs": [
+          [
+            "guangzhou",
+            "zhangzhou"
+          ],
+          [
+            "guangzhou",
+            "quanzhou"
+          ],
+          [
+            "kagoshima",
+            "ryukyu"
+          ]
+        ],
+        "why": "lane seq6 判留：运行时只有 Voyage.is_known_route（两头都查）与 MapView._draw_lanes（按无序对去重）读 connections，都按无向认，玩家看到的熟路不受影响；实测把 3 对的对侧补齐（追加到末尾、插到最前各一次），simulate_run / simulate_endgame / verify_economy 输出逐字节不变。补不补是 ports.json 的数据口径，归策划 / 数据片，本门禁片不改数据；这里把现有 3 对钉成基线：新添单向登记即红（补对侧，或登进来写原因），基线里的某对补齐了 / 连线删了也红（从这里删掉，只减不增）"
+      }
     }
   ],
   "not_family": [
     {
       "file": "data/characters.json",
       "why": "F1–F3 成立（relations[].id / sources.npc_id / sources.crew_id 指回同表），F4 不成立：relations 是人物志的注记边、不是跳转，图没有入口；实测 25 人无入边属正常（只在别人传里出现的史实人物），孤儿判据无定义。字段 / 文案层另由 verify_story_data（CHAR_STRUCT 等）守"
+    }
+  ],
+  "watch": [
+    {
+      "file": "data/port_beats.json",
+      "table": "beats",
+      "key": "entry",
+      "why": "拍板清单 E-10：P7 港口节拍留档、运行时不读（F3 不成立）。它的图按 entry 走（stop_before[] / requires.seen[] / requires.visited[] → 别条的 entry，entry 本身是 scenes.json 的幕 id），不按 id，按 id 普查 F2 认不出。登在这里：普查按 key=entry 判 F1 / F2 须仍成立（不成立 = 本条失效），scripts/ scenes/ 一旦读它（F3）即红，照「接入」登进 families（id: entry）"
     }
   ]
 }

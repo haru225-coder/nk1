@@ -926,7 +926,9 @@ for rel, pat in SEQ3_ELSEWHERE.items():
 #      Main.PROLOGUE_ONLY_FACILITIES 里港卡直进的幕（其余 city_* 港卡被 REMAPPED 改写成 {港}_{后缀} 动态页，进不到 scenes.json）——
 #      沿 choices / investigations 的 next 走不到的非 deprecated 幕，必须登记在 SCENE_ARCHIVE。
 #      名单外走不到 → 红（新加的幕忘了接入口）；名单里的被接回入口 → 红（从名单删掉）；名单里的 id 不存在或是 deprecated → 红。
-# 结构没变时本节零输出；改了结构（加键、加形状、接回归档场）要先改这里的表，改表即留痕。
+# 结构没变时本节零输出；改了结构（加键、加形状、接回归档场）要先改表，改表即留痕。
+# 形状表（lane seq6）：必填 / 可选键与字段类型不在本文件另写，读 tools/data_family.json 里 data/scenes.json 那条的 kinds / shapes
+# （check_data_family 与本门禁同读一份，改一处两边同时认，不会再分叉）；本文件只留在册取值、效果定型、旗标、归档等 scenes 专属规则。
 SCENE_ARCHIVE = {
     # docs/P7-剧情闭环-任务书.md §3.3 / 裁定 J：剧情图不可达、不是入口的旧稿，「归档场不删除、不做入口」。
     # 当时名单 42 个（对 993edc1）；P7 的实现没有并进 main，本表按 ff82b17 现走一遍重列：
@@ -947,27 +949,76 @@ SCENE_ARCHIVE = {
 SCENE_ARCHIVE_MAX = 39
 check(len(SCENE_ARCHIVE) <= SCENE_ARCHIVE_MAX,
       f"SCENE_ARCHIVE 只许减不许增：现 {len(SCENE_ARCHIVE)} 条 > 上界 {SCENE_ARCHIVE_MAX}（新孤儿要接入口，不要登记）")
-_SCENE_OPT_REQ = {"require_chapter", "require_any", "require_flag", "hide_if_flag"}
-SCENE_SHAPES = {  # 形状 → (必填键, 可选键)
-    "title": ({"id", "type", "chapter", "title", "location", "cg", "cg_title", "cg_sub", "body", "choices"}, set()),
-    "port": ({"id", "type", "title", "location", "facilities"}, set()),
-    "investigation": ({"id", "type", "title", "body", "choices", "investigations"}, set()),
-    "story": ({"id", "title", "chapter", "location", "body", "choices"},
-              {"objective", "speaker", "cg", "deprecated"} | _SCENE_OPT_REQ),
-    "detail": ({"id", "title", "result"}, {"options"}),
-}
-SCENE_SUB_SHAPES = {  # 列表字段 → (每条必填, 每条可选)
-    "choices": ({"label", "next"}, {"effects"} | _SCENE_OPT_REQ),
-    "investigations": ({"id", "label", "text", "effects", "next"}, set()),
-    "facilities": ({"id", "title", "subtitle", "body"}, set()),
-    "options": ({"label"}, set()),
-}
-SCENE_FIELD_TYPES = {
-    **{k: str for k in ("id", "type", "chapter", "title", "location", "cg", "cg_title", "cg_sub", "body", "objective",
-                        "speaker", "label", "next", "text", "subtitle", "require_flag", "hide_if_flag")},
-    **{k: list for k in ("choices", "facilities", "investigations", "options", "require_any")},
-    "effects": dict, "require_chapter": int, "deprecated": bool, "result": (str, list),
-}
+SCENE_FAMILY_MANIFEST = "tools/data_family.json"
+_PY_OF = {"str": str, "int": int, "num": (int, float), "bool": bool, "dict": dict, "list": list}
+
+
+def _spec_types(spec):
+    """清单类型写法（str / int / list<@choice> / str|list<str> …）→ Python 类型（元组 = 多选）。认不出给 None。"""
+    out = []
+    for a in (x.strip() for x in spec.split("|")):
+        t = list if a.startswith("list<") else _PY_OF.get(a)
+        if t is None:
+            return None
+        out += list(t) if isinstance(t, tuple) else [t]
+    return out[0] if len(out) == 1 else tuple(dict.fromkeys(out))
+
+
+def scene_shapes_from_manifest(man):
+    """data_family.json → (SCENE_KINDS [(形名, when, 必填键, 可选键)], SCENE_SUB_SHAPES {列表字段: (必填, 可选)},
+    SCENE_FIELD_TYPES {字段名: 类型}, 问题列表)。纯函数，自证拿改过的副本喂它。"""
+    probs, kinds, subs, types = [], [], {}, {}
+    fam = next((f for f in (man or {}).get("families", []) if f.get("file") == "data/scenes.json"), None)
+    if fam is None:
+        return [], {}, {}, [f"{SCENE_FAMILY_MANIFEST} 里没有 data/scenes.json 那条（scenes 形状表的唯一来源）"]
+    shapes = fam.get("shapes", {})
+
+    def split(fields, where):
+        req, opt = set(), set()
+        for k, spec in fields.items():
+            name = k.rstrip("?")
+            (opt if k.endswith("?") else req).add(name)
+            t = _spec_types(spec)
+            if t is None:
+                probs.append(f"{SCENE_FAMILY_MANIFEST} scenes {where}.{name} 类型写法 {spec!r} 认不出")
+            elif types.setdefault(name, t) != t:
+                probs.append(f"{SCENE_FAMILY_MANIFEST} scenes 同名字段 {name} 各形类型不一（{types[name]} / {t}）：本门禁按字段名定型，须统一")
+            sub = re.fullmatch(r"list<@([a-z_]+)>", spec)
+            if sub:
+                if sub.group(1) not in shapes:
+                    probs.append(f"{SCENE_FAMILY_MANIFEST} scenes {where}.{name} 指的子形 {sub.group(1)} 不在 shapes 里")
+                elif subs.setdefault(name, sub.group(1)) != sub.group(1):
+                    probs.append(f"{SCENE_FAMILY_MANIFEST} scenes 列表字段 {name} 各形指的子形不一（{subs[name]} / {sub.group(1)}）")
+        return req, opt
+
+    for kd in fam.get("kinds", []):
+        req, opt = split(kd.get("fields", {}), kd.get("name", "?"))
+        kinds.append((kd.get("name"), kd.get("when", {}), req, opt))
+    sub_shapes = {lst: split(shapes[sh], sh) for lst, sh in subs.items() if sh in shapes}
+    if not any(not w for _, w, _, _ in kinds):
+        probs.append(f"{SCENE_FAMILY_MANIFEST} scenes kinds 缺 when 为 {{}} 的兜底形")
+    return kinds, sub_shapes, types, probs
+
+
+def scene_kind(s, kinds):
+    """与 check_data_family.kind_of 同一判法：按清单顺序取首个命中的形。"""
+    for name, w, req, opt in kinds:
+        if not w or ("field" in w and s.get(w["field"]) == w["eq"]) or ("has" in w and w["has"] in s):
+            return name, req, opt
+    return None
+
+
+try:
+    with open(os.path.join(ROOT, SCENE_FAMILY_MANIFEST), encoding="utf-8") as _f:
+        _FAMILY_MAN = json.load(_f)
+except (OSError, ValueError) as _e:
+    _FAMILY_MAN = None
+    check(False, f"{SCENE_FAMILY_MANIFEST} 读不了（{_e}）：scenes 形状表的唯一来源")
+SCENE_KINDS, SCENE_SUB_SHAPES, SCENE_FIELD_TYPES, _shape_probs = scene_shapes_from_manifest(_FAMILY_MAN)
+for _p in _shape_probs:
+    check(False, _p)
+check({"title", "port", "investigation", "story"} <= {k[0] for k in SCENE_KINDS} and {"choices", "investigations", "facilities"} <= set(SCENE_SUB_SHAPES),
+      f"{SCENE_FAMILY_MANIFEST} 的 scenes 形状解析不全（形 {[k[0] for k in SCENE_KINDS]}，子形 {sorted(SCENE_SUB_SHAPES)}）")
 SCENE_EFFECT_TYPES = {
     **{k: int for k in ("money", "fame", "days", "chapter", "network", "merchant_credit", "supplies", "ship",
                         "sea_tendency", "scholar_tendency")},
@@ -1008,6 +1059,7 @@ def _is_type(v, t):
 def scene_structure_problems(doc, ctx):
     """scenes.json 整份 → 结构问题列表（空 = 过）。纯函数，自证拿改过的副本喂它。"""
     out = []
+    kinds, sub_shapes, ftypes = ctx.get("kinds", SCENE_KINDS), ctx.get("sub_shapes", SCENE_SUB_SHAPES), ctx.get("field_types", SCENE_FIELD_TYPES)
     if not isinstance(doc, dict) or set(doc) != {"start_scene", "scenes"}:
         return [f"scenes.json 顶层键须恰为 start_scene / scenes，实为 {sorted(doc) if isinstance(doc, dict) else type(doc).__name__}"]
     scs = doc["scenes"]
@@ -1045,9 +1097,9 @@ def scene_structure_problems(doc, ctx):
         for k in sorted(req - set(obj)):
             out.append(f"{where} 缺必填字段 `{k}`")
         for k in sorted(set(obj) - req - opt):
-            out.append(f"{where} 有形状外的字段 `{k}`（拼错？新字段先登记进 SCENE_SHAPES / SCENE_SUB_SHAPES）")
+            out.append(f"{where} 有形状外的字段 `{k}`（拼错？新字段先登记进 {SCENE_FAMILY_MANIFEST} 的 scenes kinds / shapes）")
         for k, v in obj.items():
-            t = SCENE_FIELD_TYPES.get(k)
+            t = ftypes.get(k)
             if t is not None and not _is_type(v, t):
                 out.append(f"{where}.{k} 类型应为 {getattr(t, '__name__', t)}，实为 {type(v).__name__}")
             elif k in enums and v not in enums[k]:
@@ -1066,18 +1118,21 @@ def scene_structure_problems(doc, ctx):
     for s in scs:
         sid = s.get("id")
         t = s.get("type")
-        shape = t if t in ("title", "port", "investigation") else ("detail" if "result" in s else "story")
         if "type" in s and t not in enums["type"]:
             out.append(f"scenes.json {sid}.type = {t!r} 不在册（可选 {sorted(enums['type'])}）")
             continue
-        req, opt = SCENE_SHAPES[shape]
+        kd = scene_kind(s, kinds)
+        if kd is None:
+            out.append(f"scenes.json {sid} 没有命中任何形（{SCENE_FAMILY_MANIFEST} scenes kinds 缺兜底形）")
+            continue
+        shape, req, opt = kd
         fields(f"scenes.json {sid}", s, req, opt)
         if s.get("deprecated") is False:
             out.append(f"scenes.json {sid}.deprecated 只许写 true（不废弃就删掉这个键）")
         res = s.get("result")
         if isinstance(res, list) and not all(isinstance(x, str) for x in res):
             out.append(f"scenes.json {sid}.result 列表里须全是字符串")
-        for lst, (sreq, sopt) in SCENE_SUB_SHAPES.items():
+        for lst, (sreq, sopt) in sub_shapes.items():
             items = s.get(lst)
             if not isinstance(items, list):
                 continue
@@ -1207,6 +1262,32 @@ for tag, fn, chs, want in _SV_MUTANTS:
         check(False, f"scenes.json 结构门禁自证：「{tag}」套不上现数据（{e!r}）——样本幕 / 字段没了，先看上面的结构 FAIL，再改 _SV_MUTANTS")
         continue
     check(any(want in m for m in got), f"scenes.json 结构门禁自证：「{tag}」后没报出「{want}」（实报 {got[:2]}）")
+
+
+# 形状单一来源自证（lane seq6）：改 data_family.json 的副本，本门禁须跟着认——形状只在清单里写一份，不许又在这里另起一张表
+def _man_mut(fn):
+    m = copy.deepcopy(_FAMILY_MAN)
+    fn(m, next(f for f in m["families"] if f["file"] == "data/scenes.json"))
+    kinds, subs, types, probs = scene_shapes_from_manifest(m)
+    return probs + scene_structure_problems(_scene_doc, dict(SCENE_CTX, kinds=kinds, sub_shapes=subs, field_types=types))
+def _kind_fields(fam, name):
+    return next(k for k in fam["kinds"] if k["name"] == name)["fields"]
+_SHAPE_MUTANTS = [
+    ("清单 story 形删可选 speaker", lambda m, f: _kind_fields(f, "story").pop("speaker?"), "形状外的字段 `speaker`"),
+    ("清单 story 形 objective 改必填", lambda m, f: _kind_fields(f, "story").__setitem__("objective", _kind_fields(f, "story").pop("objective?")), "缺必填字段 `objective`"),
+    ("清单 choice 子形删可选 effects", lambda m, f: f["shapes"]["choice"].pop("effects?"), "形状外的字段 `effects`"),
+    ("清单 story 形 body 改 int", lambda m, f: _kind_fields(f, "story").__setitem__("body", "int"), "各形类型不一"),
+    ("清单类型写法坏", lambda m, f: _kind_fields(f, "port").__setitem__("title", "string"), "类型写法 'string' 认不出"),
+    ("清单缺 scenes 那条", lambda m, f: m.__setitem__("families", [x for x in m["families"] if x is not f]), "没有 data/scenes.json 那条"),
+]
+if _FAMILY_MAN is not None:
+    for tag, fn, want in _SHAPE_MUTANTS:
+        try:
+            got = _man_mut(fn)
+        except (KeyError, StopIteration, TypeError) as e:
+            check(False, f"scenes 形状单一来源自证：「{tag}」套不上现清单（{e!r}）——{SCENE_FAMILY_MANIFEST} 的 scenes 形改了名，改 _SHAPE_MUTANTS")
+            continue
+        check(any(want in x for x in got), f"scenes 形状单一来源自证：「{tag}」后没报出「{want}」（实报 {got[:2]}）")
 
 # ── 结局年号：过场 ↔ 结算册页 ↔ Calendar（Q8）───────────────
 # 「岸上的根」曾写景炎三年三月，而该卡只在 1277（景炎二年）出现。结局年号有三处镜像：cutscenes.json 过场的
@@ -1425,5 +1506,5 @@ if FAIL:
         print("FAIL:", f)
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
-print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · 底图按旗换 {bg_alts} · scenes {len(scenes)}（结构：{SCENE_STRUCT_STATS} · 自证 {len(_SV_MUTANTS)} 类）· news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
+print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · 底图按旗换 {bg_alts} · scenes {len(scenes)}（结构：{SCENE_STRUCT_STATS} · 自证 {len(_SV_MUTANTS)} 类 + 形状单一来源 {len(_SHAPE_MUTANTS)} 类，形状读 {SCENE_FAMILY_MANIFEST}）· news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
 print("结果：全部通过")
