@@ -51,6 +51,15 @@ var _status_note: Label
 ## 船籍簿记事：最近 LOG_KEEP 条（会话内，不入存档）。原先整串无限拼接，空时是一块空墨框
 var _log_lines: PackedStringArray = PackedStringArray()
 const LOG_KEEP := 8
+## 月初通告连着进来、多到要把下面那句（候一日之类的结果句）顶出 LOG_KEEP 时，整串收成一行（lane fx7）：
+## 键 = 记事栏里那一行的字，值 = {lines: 折起的原文（新的在前）, from: 首则的日子}。会话内，不入存档
+var _log_folds: Dictionary = {}
+## 记事栏里就地点开的那一折（键同 _log_folds），"" 为都收着
+var _log_fold_open := ""
+## 记事栏顶上连着几行是本批月初通告（折起后算一行）；别的记事一写即归零
+var _notice_run := 0
+## 本批月初通告头一则进来的日子（折起那一行写起讫用）
+var _notice_from := ""
 var _page_footer: HBoxContainer
 ## 内页滚动区（_split_page_footer 摘出来的 Scroll）
 var _page_scroll: ScrollContainer
@@ -244,6 +253,7 @@ func _ready() -> void:
 	message_label.text = ""
 	status_label.bbcode_enabled = true
 	message_label.bbcode_enabled = true
+	message_label.meta_clicked.connect(_on_log_meta)
 	scene_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body_text.fit_content = true
@@ -419,6 +429,10 @@ func _monsoon_short() -> String:
 func _latest_log() -> String:
 	if _log_lines.is_empty():
 		return ""
+	# 折起的一串：状态条仍取其中最上那则（与没折时同一则）
+	var fold: Dictionary = _log_folds.get(_log_lines[0], {})
+	if not fold.is_empty():
+		return str(fold["lines"][0]).strip_edges()
 	return _log_lines[0].strip_edges()
 
 
@@ -624,7 +638,9 @@ func _fit_dialogue() -> void:
 
 
 func _on_monthly_notice(text: String) -> void:
-	log_msg(text)
+	_push_notice(text)
+	_render_log()
+	_refresh_strip()
 	update_status_panel()
 
 
@@ -756,15 +772,88 @@ func _close_vision_stage() -> void:
 
 
 func log_msg(text: String) -> void:
+	_notice_run = 0
 	_log_lines.insert(0, UiTheme.plain_log(text))
 	if _log_lines.size() > LOG_KEEP:
 		_log_lines.resize(LOG_KEEP)
+	_prune_log_folds()
 	_render_log()
 	_refresh_strip()
 
 
 func _render_log() -> void:
 	_LEDGER.render_log(self)
+
+
+## 记一则月初通告（GameManager.monthly_notice）。连着进来的通告多到会把下面那句顶出 LOG_KEEP 时，
+## 整串收成一行「冬月初一，月初通告一连 N 则」，原文都留在 _log_folds 里、点开就地看——
+## 玩家这一手的结果句（候日句先写，通告排在它上面）始终留在记事栏里，通告也一则不丢
+func _push_notice(text: String) -> void:
+	var line := UiTheme.plain_log(text)
+	var logs: PackedStringArray = _log_lines
+	var run: int = mini(_notice_run, logs.size())
+	var top: String = logs[0] if run > 0 else ""
+	if run == 0:
+		_notice_from = Calendar.get_date_string()
+	if run > 0 and _log_folds.has(top):
+		var fold: Dictionary = _log_folds[top]
+		_log_folds.erase(top)
+		(fold["lines"] as Array).insert(0, line)
+		var key := _fold_head(fold)
+		_log_folds[key] = fold
+		logs[0] = key
+		if _log_fold_open == top:
+			_log_fold_open = key
+		run = 0
+	elif run + 1 >= LOG_KEEP:
+		var fold := {"lines": [line], "from": _notice_from}
+		for i in run:
+			(fold["lines"] as Array).append(logs[0])
+			logs.remove_at(0)
+		var key := _fold_head(fold)
+		_log_folds[key] = fold
+		logs.insert(0, key)
+		run = 0
+	else:
+		logs.insert(0, line)
+	if logs.size() > LOG_KEEP:
+		logs.resize(LOG_KEEP)
+	_log_lines = logs
+	_notice_run = run + 1
+	_prune_log_folds()
+
+
+## 折起那一行的字：同一天的写「冬月初一，月初通告一连 N 则」；跨了日子（跳年、七日航程）写起讫
+func _fold_head(fold: Dictionary) -> String:
+	var n: int = (fold["lines"] as Array).size()
+	var now := Calendar.get_date_string()
+	if str(fold.get("from", now)) == now:
+		return "%s%s，月初通告一连 %d 则" % [Calendar.get_month_name(), Calendar.get_day_name(), n]
+	return "自%s至于%s，通告一连 %d 则" % [fold["from"], now, n]
+
+
+## 滚出 LOG_KEEP 的折叠一并清掉
+func _prune_log_folds() -> void:
+	for key in _log_folds.keys():
+		if not _log_lines.has(key):
+			_log_folds.erase(key)
+	if _log_fold_open != "" and not _log_folds.has(_log_fold_open):
+		_log_fold_open = ""
+
+
+## 记事栏里点折起的月初通告那一行：就地展开 / 收起
+func _on_log_meta(meta: Variant) -> void:
+	var m := str(meta)
+	if not m.begins_with("fold:"):
+		return
+	var i := int(m.substr(5))
+	if i < 0 or i >= _log_lines.size():
+		return
+	var key: String = _log_lines[i]
+	if not _log_folds.has(key):
+		return
+	_log_fold_open = "" if _log_fold_open == key else key
+	_render_log()
 
 
 # ══════════════════════════════════════════════════════

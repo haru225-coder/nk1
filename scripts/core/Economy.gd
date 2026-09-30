@@ -287,6 +287,10 @@ func inspection_factor(port_id: String) -> float:
 ## 没有才用下面按战况写的通用句（通用「已降元」对开城降的港口是对的，破城巷战的节点另写）。冲击照战况值给，与文案无关。
 func on_month_changed() -> Array:
 	var notices := []
+	# 玩家当前所在港页的那条排到本批最后发：记事栏新的在上、状态条取最上一条，站兴化城页时
+	# 冬月初一最上是「兴化城破」，不是 ports 次序排在后面的海口那条（lane fx7）；其余照 ports 原序。海上不挑
+	var here: String = "" if Fleet.at_sea else str(GameState.last_port)
+	var here_lines := []
 	var now := _ym_now()
 	for p in GameManager.ports_data.get("ports", []):
 		var war: Dictionary = p.get("war", {})
@@ -315,7 +319,8 @@ func on_month_changed() -> Array:
 		if custom != "":
 			line = "【战况】" + custom
 		if line != "":
-			notices.append(line)
+			(here_lines if pid == here else notices).append(line)
+	notices.append_array(here_lines)
 	return notices
 
 

@@ -724,7 +724,116 @@ func _route_check() -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
 	_v0928_hanjiang_check(main)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_close_dialogs(main)
+	_fx7_notice_check(main)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_close_dialogs(main)
 	main.queue_free()
+
+
+## lane fx7（todo「小毛病」两条）：
+## 一、月初【战况】里玩家当前所在港页那条排最上（状态条那一格也是它），其余照 ports 原序——
+##     1277-11-01 站兴化城页，最上是「兴化城破」，不是 ports 里排在后面的海口那条；站海口页反过来。
+## 二、月初通告多到会把候日那句顶出 LOG_KEEP 时，整串折成一行；候日句留在记事栏，折起的原文一则不少，点开就地看全。
+func _fx7_notice_check(main: Node) -> void:
+	var city_line := "兴化城破。元兵入城，巷战终日。市舶司换了旗，抽解加倍，缉私加严。"
+	var harbor_line := "兴化海口也换了旗，抽解加倍，缉私加严。"
+	var wait_line := "在岸上又候了一日，门又换了几处。"
+	for here in ["xinghua", "xinghua_harbor"]:
+		_fx7_wait_into(main, here, 1277, 11, true)
+		var wl: Array = main._log_lines
+		var top_want: String = city_line if here == "xinghua" else harbor_line
+		var next_want: String = harbor_line if here == "xinghua" else city_line
+		_check(wl.size() == 3 and str(wl[0]) == top_want and str(wl[1]) == next_want and str(wl[2]) == wait_line,
+			"1277-11-01 站 %s 页候日跨月：记事栏最上是本港那条战况、另一条在下、候日句垫底（%s）" % [here, wl])
+		var strip: String = main._status_note.text if main._status_note != null else ""
+		_check(strip == top_want and main._latest_log() == top_want,
+			"1277-11-01 站 %s 页：状态条那一格是本港战况「%s」（实得「%s」）" % [here, top_want, strip])
+		_check(main._log_folds.is_empty(), "通告两则不折（%s）" % [main._log_folds.keys()])
+	# 与所在港无关的照 ports 原序：站泉州 1276-11，四条战况按兴化 / 兴化海口 / 福州 / 广州发（记事栏新的在上，故倒着排）
+	_fx7_wait_into(main, "quanzhou", 1276, 11, true)
+	var war_q := _fx7_war_order(main._log_lines)
+	_check(war_q == ["广州", "福州", "兴化海口", "兴化"],
+		"站泉州 1276-11：战况照 ports 原序（记事栏自上而下 %s）" % [war_q])
+	# 站福州：福州那条挪到最上，其余三条相对次序不变
+	_fx7_wait_into(main, "fuzhou", 1276, 11, true)
+	var war_f := _fx7_war_order(main._log_lines)
+	_check(war_f == ["福州", "广州", "兴化海口", "兴化"],
+		"站福州 1276-11：福州那条最上，其余照原序（记事栏自上而下 %s）" % [war_f])
+	# 二、通告一连二十余则（新闻一条未读的局面，与 v0928 候日段同）：候日句仍在、折起的一则不少
+	_fx7_wait_into(main, "quanzhou", 1276, 11, false)
+	var bl: Array = main._log_lines
+	var fresh: Array = _notices.slice(int(main.get_meta(&"fx7_n0", 0)))
+	var keep: int = main.LOG_KEEP
+	_check(fresh.size() >= keep, "1276-11 月初通告够多、会顶出 LOG_KEEP（%d 则 / LOG_KEEP %d）" % [fresh.size(), keep])
+	_check(bl.size() == 2 and str(bl[1]) == wait_line and main._log_folds.has(str(bl[0])),
+		"1276-11 候一日：月初通告折成一行在上、候日句仍在记事栏（%s）" % [bl])
+	var fold: Dictionary = main._log_folds.get(str(bl[0]) if not bl.is_empty() else "", {})
+	var got: Array = fold.get("lines", [])
+	var want: Array = []
+	for t in fresh:
+		want.push_front(UiTheme.plain_log(str(t)))
+	_check(got == want, "折起的原文与本批通告逐则相同、新的在前（折 %d 则 / 发 %d 则）" % [got.size(), want.size()])
+	_check(not bl.is_empty() and str(bl[0]) == "冬月初一，月初通告一连 %d 则" % want.size(),
+		"折起那一行写「冬月初一，月初通告一连 %d 则」（「%s」）" % [want.size(), bl[0] if not bl.is_empty() else ""])
+	_check(not want.is_empty() and main._latest_log() == str(want[0]).strip_edges(),
+		"折起后状态条那一格仍是最上那则通告（「%s」）" % [main._latest_log()])
+	var ml: RichTextLabel = main.message_label
+	var shut_text := ml.text
+	_check(shut_text.find("[url=fold:0]") >= 0 and shut_text.find("点开") >= 0 and shut_text.find(wait_line) >= 0 and (want.is_empty() or shut_text.find(str(want[-1])) < 0),
+		"记事栏收着时只一行可点的「点开」，候日句在，原文不铺开（%s）" % [shut_text.left(80)])
+	main._on_log_meta("fold:0")
+	var open_text := ml.text
+	var missing := 0
+	for t in want:
+		if open_text.find(str(t)) < 0:
+			missing += 1
+	_check(main._log_fold_open == str(bl[0]) and missing == 0 and open_text.find("收起") >= 0 and open_text.find(wait_line) >= 0,
+		"点开折起那一行：本批 %d 则全铺在记事栏里（缺 %d 则），候日句仍在" % [want.size(), missing])
+	main._on_log_meta("fold:0")
+	_check(main._log_fold_open == "" and ml.text == shut_text, "再点一下收起，记事栏回到一行")
+	# 折起那一行照常随 LOG_KEEP 滚出去，折叠一并清掉
+	for i in keep:
+		main.log_msg("第 %d 句。" % i)
+	_check(main._log_folds.is_empty() and main._log_lines.size() == keep, "折起那一行滚出 LOG_KEEP 后折叠清掉（剩 %d 折）" % main._log_folds.size())
+
+
+## 海商线站 port_id 港页，在 year-month 的前一日候一日跨月；seen_old：之前的新闻都当已读（只剩当月战况）
+func _fx7_wait_into(main: Node, port_id: String, year: int, month: int, seen_old: bool) -> void:
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.money = 5000
+	GS.last_port = port_id
+	var ym := "%04d-%02d" % [year, month]
+	if seen_old:
+		for n in GM.news_data.get("news", []):
+			if str(n.get("date", "9999-99")) < ym:
+				GS.mark_news_seen(str(n.get("id", "")))
+	var prev: Dictionary = {"year": year, "month": month - 1, "day": Cal.DAYS_PER_MONTH} if month > 1 else {"year": year - 1, "month": Cal.MONTHS_PER_YEAR, "day": Cal.DAYS_PER_MONTH}
+	Cal.from_dict(prev)
+	main.load_scene(port_id)
+	main._log_lines.clear()
+	main._log_folds.clear()
+	main._log_fold_open = ""
+	main.set_meta(&"fx7_n0", _notices.size())
+	main._on_shore_wait()
+
+
+## 记事栏里的【战况】行按自上而下取港名（只认 Economy 的「X被围 / X已降元」与海口 / 城破两条自定句）
+func _fx7_war_order(lines: Array) -> Array:
+	var out: Array = []
+	for l in lines:
+		var t := str(l)
+		if t.begins_with("元兵围了兴化城") or t.begins_with("兴化海口"):
+			out.append("兴化海口")
+		elif t.begins_with("兴化城破") or t.begins_with("兴化被围"):
+			out.append("兴化")
+		elif t.find("被围。") > 0 or t.find("已降元。") > 0:
+			out.append(t.substr(0, maxi(t.find("被围。"), t.find("已降元。"))))
+	return out
 
 
 ## 扩充包钩子第一批（2026-09-28）：H2 港页变体、H4 序章分页、牙行货图槽。
@@ -2298,10 +2407,9 @@ func _v0928_siege_check(main: Node) -> void:
 	var wl: Array = main._log_lines
 	var fresh: int = _notices.size() - n_note
 	var wait_at := wl.find("在岸上又候了一日，门又换了几处。")
-	# 通告多时候日那句会被挤出日志尾（LOG_KEEP 行）；在的话必须是最下一行
-	_check(Cal.day == 1 and fresh >= 1 and not wl.is_empty() and wait_at != 0
-			and (wait_at == wl.size() - 1 or (wait_at < 0 and fresh >= wl.size())),
-		"寻常港页候日跨月：月初通告 %d 条排在候日那句上面（候日句第 %d 行 / 共 %d 行，顶行「%s」）" % [fresh, wait_at, wl.size(), wl[0] if not wl.is_empty() else ""])
+	# 候日那句必须还在、且是最下一行：通告多到会把它顶出 LOG_KEEP 时整串折成一行（lane fx7），不再许挤出去
+	_check(Cal.day == 1 and fresh >= 1 and not wl.is_empty() and wait_at > 0 and wait_at == wl.size() - 1,
+		"寻常港页候日跨月：月初通告 %d 条排在候日那句上面，候日句仍在记事栏（第 %d 行 / 共 %d 行，顶行「%s」）" % [fresh, wait_at, wl.size(), wl[0] if not wl.is_empty() else ""])
 	# 2. 守城页候日：换守城句，不写「门又换了几处」
 	_v0928_siege_scholar(Crw, fall_abs - dire_days - 5)
 	main.load_scene("xinghua")

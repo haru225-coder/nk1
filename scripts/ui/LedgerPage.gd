@@ -194,7 +194,8 @@ static func refresh_strip(main: Control) -> void:
 		main._status_note.tooltip_text = UiTheme.strip_bbcode(note) if note.length() > 30 else ""
 
 
-## 船籍簿记事栏：最近 8 条，新的在上（宣纸色），旧的淡一档；一条没有时写一行淡字，不留空墨框
+## 船籍簿记事栏：最近 8 条，新的在上（宣纸色），旧的淡一档；一条没有时写一行淡字，不留空墨框。
+## 折起的月初通告那一行可点（lane fx7）：点开后原文逐则列在它下面，缩一格、淡一档
 static func render_log(main: Control) -> void:
 	if main._log_lines.is_empty():
 		main.message_label.text = "[color=#%s]（尚无记事）[/color]" % UiTheme.hex(UiTheme.TEXT_DIM)
@@ -203,7 +204,16 @@ static func render_log(main: Control) -> void:
 	var parts := PackedStringArray()
 	for i in main._log_lines.size():
 		var line: String = main._log_lines[i]
-		parts.append(line if i == 0 else "[color=#%s]%s[/color]" % [dim, line])
+		var fold: Dictionary = main._log_folds.get(line, {})
+		if fold.is_empty():
+			parts.append(line if i == 0 else "[color=#%s]%s[/color]" % [dim, line])
+			continue
+		var open: bool = main._log_fold_open == line
+		var head := "[url=fold:%d]%s（%s）[/url]" % [i, line, "收起" if open else "点开"]
+		parts.append(head if i == 0 else "[color=#%s]%s[/color]" % [dim, head])
+		if open:
+			for sub in fold["lines"]:
+				parts.append("[color=#%s]　%s[/color]" % [dim, sub])
 	main.message_label.text = "\n".join(parts)
 
 
