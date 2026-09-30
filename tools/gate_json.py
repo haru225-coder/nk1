@@ -214,6 +214,20 @@ REGISTRY = [
      "red": "`✗ <编号> …：期望对账 rc=a / 写后 rc=b，实得 …` 附 `缺 ✗ …` / `多 ✗ …` / `--write 判红却写了盘`；"
             "`✗ D<k> …：期望 rc=a、逐字节同，实得 … stdout n 种`；`变异没落上` = 按形状也定位不到（第四 / 第五 / 第十一刀节标题不止或不到一处、那节没有函数表行、前三刀段认不出、两支脚本里调用 / 排序的形状改了）、这支变异该跟着改；"
             "空转对照 `应 0 → 1` / `应 否 → 是`；`结果：N 项问题`；无 git / 建不了 worktree 退 2"},
+    # lane w19-g3：专项探针跟现行代码改绿后入册——不入册时 09-30 合并（夺船存名 / 士气挂件 / 3D 船身）把它悄悄弄红、没人看见（§五.1「入库不等于入册」）。
+    # 不升 must：headless 约 2 s、写 user:// 存档位 93（跑完删），触发条件按路径 / 函数判得准（§五.2）
+    {"id": "qa_pirate_boat_probe", "tier": "lane",
+     "when": "动 SeaChart 敌船条目（PIRATE_ENEMY / PATROL_ENEMY）、WorldMap 的 _spawn_enemy / _board_enemy / _note_fate / _battle_exit、"
+             "Fleet 的 add_ship / prize_name / display_name（夺船存名，V0928-10 拍板落地时必跑）、CombatFx.ship_sprite_path 船图契约、"
+             "PirateShip / Ship 的 apply_sprite / apply_type_sprite、ShipHull3D 或 Ship.tscn / PirateShip.tscn 的 HullRig，或收 / 删 assets/ship_*.png",
+     "kind": "godot", "file": "tools/qa_pirate_boat_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_pirate_boat_probe.gd"],
+     "judge": "（lane pirate-boat-0928 立，lane w19-g3 跟现行代码、入册）真走 SeaChart 两条敌船条目 → WorldMap 开战：海寇 pirate_boat「快船」两艘、元军哨船 sea_falcon「海鹘」挂 sprite=yuan_patrol；"
+              "海战船身是 ShipHull3D 的 3D 宋船视口（敌红帆我素帆），船图契约 ship_<id>.png 有就用、缺图回落（期望按图在不在现算）；"
+              "停士气挂件后清零敌船水手、白刃夺下两艘：存名都是「快船」（V0928-10 待拍板，不按序号起名）、上屏 display_name 加「・甲」「・乙」、下场记 boarded、末艘以 win + boarded 收战；"
+              "带海鹘与快船的船队存读档（位 93）船型原样；本进程 SCRIPT ERROR 即红。`-- --shots <目录>` 有窗口另截 5 张（不接 shot_gate）",
+     "green": "逐条 `  ✓ …` + `QA_PIRATE_BOAT_PROBE PASS（0 项不合；截图 0 张）`",
+     "red": "`  ✗ …` 行（如 `夺来的船…存名沿用敌船名「快船」…得 pirate_boat / 快船・一`、`第一艘记下场 boarded…得 [\"pirate_boat/struck\"]`、`…船身接 3D 宋船视口…Sprite2D 没贴 3D 视口`、`本进程无 SCRIPT ERROR（1 行：…）`）；`QA_PIRATE_BOAT_PROBE FAIL（k 项不合；…）`"},
     {"id": "verify_narrative", "tier": "no", "kind": "py", "file": "tools/legacy/verify_narrative.py",
      "why": "（lane gd2 挪入 legacy）绑定云端 21ce 未收的 P7 平行实现（`borrow_ceiling` / `_discovery_extra` / `seen_scenes` 主干从未有；开局链截断 monk、删 `chapter` 臂与主干设计相反），合并台账第 14 行即定「留档不入门禁」；主干上恒红 23 项属预期，仍成立的「效果键必须接住」由 verify_story_data 覆盖"},
     {"id": "p7_smoke", "tier": "no", "kind": "godot", "file": "tools/legacy/p7_smoke.gd",
