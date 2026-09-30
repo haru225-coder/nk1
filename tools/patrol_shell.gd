@@ -573,8 +573,28 @@ func _finish() -> void:
 ## 士气簿裁决 enemy_struck 当场收战（墨边「受降」、夺船题签一帧不画），走的是受降一路。清零前先停掉挂件轮询（降幡 / 裁决
 ## 都在它的物理帧里），巡检确定地走「白刃夺下末艘」；收战 data.fates 须记 boarded（不是 struck），否则判红。
 ## 题签停留按游戏时累加（process delta，顿帧压低 time_scale 时照样是游戏时），不看墙钟、不按帧率。headless 下题签起不来，打 ⚠ 不判。
+## lane w19-g1：有题签就不出浮字（crew 线 9e35254 定，09-30 合并丢了）——题签在屏的每一帧，WorldMap 中央浮字不许亮着夺船那句
+## （「……并入本队。」或与题签副题同句）；修前浮字「接舷既定。敌船「快船」并入本队。」与「夺船」题签同屏，这条红。
 const _CrewStage := preload("res://tools/combat_probe_stage.gd")
 const _CrewBoarding := preload("res://scripts/combat/BoardingStage.gd")
+
+
+## 题签全显这一帧：WorldMap 中央浮字（_notice）若亮着夺船那句（「并入本队」或与题签副题同句）返回描述，否则空串。
+func _crew_capture_dup(wm) -> String:
+	if wm == null or not is_instance_valid(wm):
+		return ""
+	var nt = wm.get("_notice")
+	if not (nt is Label) or not is_instance_valid(nt):
+		return ""
+	var lab := nt as Label
+	if not lab.is_visible_in_tree() or lab.modulate.a <= 0.01:
+		return ""
+	var st: Node = _CrewStage.boarding_stage(self, wm)
+	var sub = st.get("_sub") if st != null else null
+	var sub_txt := str((sub as Label).text) if sub is Label else ""
+	if lab.text.find("并入本队") >= 0 or (sub_txt != "" and lab.text == sub_txt):
+		return "浮字「%s」与题签副题「%s」同屏" % [lab.text, sub_txt]
+	return ""
 
 
 func _v0928_crew_board_check() -> void:
@@ -615,6 +635,8 @@ func _v0928_crew_board_check() -> void:
 	_check(foe != null, "巡检海战刷出一艘海寇（首艘即末艘）")
 	var hold_ok := false
 	var hold_note := "未量到"
+	var dup_note := ""
+	var dup_measured := false  # 题签全显过、逐帧看过浮字才算判了（没画到题签不许空转成绿）
 	if foe != null:
 		var tracker = wm.get("_morale")
 		if tracker is Node:
@@ -628,6 +650,8 @@ func _v0928_crew_board_check() -> void:
 			return cap[0] == "夺船" and float(cap[1]) >= 0.99, func() -> bool: return ref.get_ref() == null, 8000)
 		if why == "":
 			_save_shot("crew_末艘夺船题签")
+			dup_measured = true
+			dup_note = _crew_capture_dup(ref.get_ref())
 			var full_frames := 1
 			var game_hold := 0.0
 			var dropped := false
@@ -638,6 +662,8 @@ func _v0928_crew_board_check() -> void:
 				if cap[0] == "夺船" and float(cap[1]) >= 0.99:
 					game_hold += root.get_process_delta_time()
 					full_frames += 1
+					if dup_note == "":
+						dup_note = _crew_capture_dup(ref.get_ref())
 				elif not dropped:
 					# 淡出起步的那一帧：这一帧的 delta 里前一段题签仍全显
 					dropped = true
@@ -647,6 +673,9 @@ func _v0928_crew_board_check() -> void:
 		else:
 			hold_note = why
 	_check(hold_ok, "末艘「夺船」题签停满 T_HOLD %.2f s 的八成、全显 ≥ 3 帧（%s）" % [_CrewBoarding.T_HOLD, hold_note])
+	_check(dup_measured and dup_note == "",
+		"末艘「夺船」题签在屏时不出同一件事的浮字（有题签就不出浮字；%s）"
+			% (dup_note if dup_note != "" else ("题签全显各帧浮字未亮夺船句" if dup_measured else "题签没画到，无从判")))
 	# 出战墨边挂在布景的父节点（root）下：等题签整行擦出再读题
 	var lbref: Array = [null]
 	var why3: String = await _CrewStage.wait_drawn(self, func() -> bool:

@@ -312,7 +312,8 @@ func _board_enemy(enemy: Node2D) -> void:
 			var lose_stage: CanvasLayer = _BoardingStage.resolve(self, "lose", msg2)
 			if lose_stage != null:
 				stage = lose_stage
-			_show_combat_notice(msg2)
+			else:
+				_show_combat_notice(msg2)
 			await _await_boarding_fx(stage)
 			return
 
@@ -330,7 +331,10 @@ func _board_enemy(enemy: Node2D) -> void:
 		var resolved_stage: CanvasLayer = _BoardingStage.resolve(self, "win", detail)
 		if resolved_stage != null:
 			stage = resolved_stage
-		_show_combat_notice(notice)
+		else:
+			# 题签起不来（headless / 不在树）才出浮字兜底：有题签就不出浮字，同一件事不在屏上说两遍（白刃失利同）。
+			# crew 线 09-28 9e35254 定的，09-30 合并 a356c16 按本地线落地时丢了（fx8 只补回等题签），lane w19-g1 补回
+			_show_combat_notice(notice)
 		_CombatFx.hitstop(self, 0.09, 0.16)
 		# 下场先记（降了的收船记受降），再清血量：离树时按船体记沉会把夺来的船记成击沉
 		_note_fate(enemy, "struck" if yield_sheet != null and yield_sheet.yields_to_boarding() else "boarded")
