@@ -281,6 +281,11 @@ func inspection_factor(port_id: String) -> float:
 	return WAR_INSPECTION.get(war_status(port_id), 1.0)
 
 
+## 海上时玩家「所在位置」那一港（SeaChart._refresh_status 随船况写：行程未过半是起锚港、过半是去向港；海图退场清空）。
+## on_month_changed 在海上按它挑本批最后发的那条战况，与港页按 last_port 挑同一条规矩（lane w19-g9）；空串即不挑
+var sea_here := ""
+
+
 ## 月初由 GameManager 调用：本月进入新战况的港口，给一次行情冲击，并返回通告文本。
 ## 冲击是一次性的，之后仍按 RECOVERY 回归——战争抬高的米价会慢慢落，但税不会。
 ## 通告按节点覆写：ports.json 每港可选 war_notice {"YYYY-MM": 文案}（不带【战况】头），当月有就用它，
@@ -288,8 +293,9 @@ func inspection_factor(port_id: String) -> float:
 func on_month_changed() -> Array:
 	var notices := []
 	# 玩家当前所在港页的那条排到本批最后发：记事栏新的在上、状态条取最上一条，站兴化城页时
-	# 冬月初一最上是「兴化城破」，不是 ports 次序排在后面的海口那条（lane fx7）；其余照 ports 原序。海上不挑
-	var here: String = "" if Fleet.at_sea else str(GameState.last_port)
+	# 冬月初一最上是「兴化城破」，不是 ports 次序排在后面的海口那条（lane fx7）；其余照 ports 原序。
+	# 海上挑 sea_here（海图札记最上是近处那港的战况，lane w19-g9）；海图没起（涵江七日航程）时为空、不挑
+	var here: String = sea_here if Fleet.at_sea else str(GameState.last_port)
 	var here_lines := []
 	var now := _ym_now()
 	for p in GameManager.ports_data.get("ports", []):

@@ -731,6 +731,10 @@ func _route_check() -> void:
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
+	_g9_log_fold_check(main)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_close_dialogs(main)
 	main.queue_free()
 
 
@@ -799,6 +803,163 @@ func _fx7_notice_check(main: Node) -> void:
 	for i in keep:
 		main.log_msg("第 %d 句。" % i)
 	_check(main._log_folds.is_empty() and main._log_lines.size() == keep, "折起那一行滚出 LOG_KEEP 后折叠清掉（剩 %d 折）" % main._log_folds.size())
+
+
+## lane w19-g9：记事栏折叠抽成公共件 scripts/core/LogFold.gd，港页船籍簿与海图船况札记同一份——
+## 一、海上跨进 1276-11（通告一连二十余则）：札记里收成一行，起锚 / 启程句仍在，折起的原文一则不少、点开就地看全；
+##     「所在位置」那港的战况排最上（行程过半近福州 → 福州那条；未过半近泉州 → 不挑，照 ports 原序广州那条在上）；
+## 二、港页跳两年（一次几十则、跨十来个月）：仍折成一行，点开先列各月一行（各月则数与原文逐月对得上），再点哪月铺哪月；
+## 三、两边都走 LogFold，不各写一份。
+func _g9_log_fold_check(main: Node) -> void:
+	var Flt: Node = root.get_node("Fleet")
+	var Eco: Node = root.get_node("Economy")
+	var fz_line := "福州已降元。市舶司换了旗，抽解加倍，缉私加严。"
+	var gz_line := "广州被围。城中米价腾贵，牙行闭门。"
+	for near_dest in [true, false]:
+		GS.from_dict({})
+		GS.set_flag("renamed_wenlong")
+		GS.identity = "scholar"
+		GS.money = 20000
+		GS.last_port = "quanzhou"
+		Cal.from_dict({"year": 1276, "month": 10, "day": 30})
+		var sc = (load("res://scenes/SeaChart.tscn") as PackedScene).instantiate()
+		root.add_child(sc)
+		sc.set("selected_port", "fuzhou")
+		sc.set("total_li", 400.0)
+		sc.set("remaining_li", 120.0 if near_dest else 320.0)
+		sc.set("days_elapsed", 3)
+		sc.set("sailing", true)
+		Flt.at_sea = true
+		sc.call("_refresh_status")
+		var here_want := "fuzhou" if near_dest else "quanzhou"
+		_check(str(Eco.get("sea_here")) == here_want,
+			"海上「所在位置」：行程%s算 %s（实得 %s）" % ["过半" if near_dest else "未过半", here_want, Eco.get("sea_here")])
+		sc.call("_log", "启程往 福州，航程 400 里。")
+		var n0 := _notices.size()
+		GM.advance_days(1)
+		var fresh: Array = _notices.slice(n0)
+		var want: Array = []
+		for t in fresh:
+			want.push_front(UiTheme.plain_log(str(t)))
+		var sl: PackedStringArray = sc.get("_log_lines")
+		var folds: Dictionary = sc.get("_log_folds")
+		var fold: Dictionary = folds.get(sl[0] if not sl.is_empty() else "", {})
+		_check(fresh.size() >= LogFold.FOLD_AT and sl.size() == 3 and not fold.is_empty()
+			and str(sl[1]) == "启程往 福州，航程 400 里。" and str(sl[2]).begins_with("自 泉州 起锚。"),
+			"海上跨进 1276-11：%d 则通告在札记里收成一行，启程 / 起锚两句仍在（%s）" % [fresh.size(), sl])
+		_check(fold.get("lines", []) == want and str(sl[0] if not sl.is_empty() else "") == "冬月初一，月初通告一连 %d 则" % want.size(),
+			"海上折起的原文与本批通告逐则相同、新的在前，行字写「冬月初一，月初通告一连 %d 则」（折 %d 则，「%s」）" % [want.size(), (fold.get("lines", []) as Array).size(), sl[0] if not sl.is_empty() else ""])
+		var top_want := fz_line if near_dest else gz_line
+		_check(not want.is_empty() and str(want[0]) == top_want and str(sc.get("_latest_note")) == top_want,
+			"海上%s：折里最上、顶匾那一格是「%s」（折首「%s」，匾「%s」）" % ["近福州" if near_dest else "近泉州", top_want, want[0] if not want.is_empty() else "", sc.get("_latest_note")])
+		if near_dest:
+			var ll: RichTextLabel = sc.get("log_label")
+			var shut := ll.text
+			_check(shut.find("[url=fold:0]") >= 0 and shut.find("点开") >= 0 and (want.is_empty() or shut.find(str(want[-1])) < 0),
+				"札记收着时只一行可点的「点开」，原文不铺开（%s）" % shut.left(60))
+			sc.call("_on_log_meta", "fold:0")
+			var opened := ll.text
+			var missing := 0
+			for t in want:
+				if opened.find(str(t)) < 0:
+					missing += 1
+			_check(sc.get("_log_fold_open") == str(sl[0]) and missing == 0 and opened.find("收起") >= 0 and opened.find("启程往 福州") >= 0,
+				"札记点开：本批 %d 则全铺开（缺 %d 则），启程句仍在" % [want.size(), missing])
+			sc.call("_on_log_meta", "fold:0")
+			_check(sc.get("_log_fold_open") == "" and ll.text == shut, "札记再点一下收起，回到一行")
+			sc.call("_log", "第 4 日・风顺。")
+			var sl2: PackedStringArray = sc.get("_log_lines")
+			_check(sl2.size() == 4 and str(sl2[0]) == "第 4 日・风顺。" and folds.has(str(sl2[1])),
+				"札记里折起那一行随后照常压到下面、不再收新记事（%s）" % [sl2])
+		root.remove_child(sc)
+		sc.free()
+		_check(str(Eco.get("sea_here")) == "", "海图退场后 Economy.sea_here 清空（实得「%s」）" % Eco.get("sea_here"))
+		Flt.at_sea = false
+	# 二、港页跳两年：自 1275 正月起，泉州海商线
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.money = 5000
+	GS.last_port = "quanzhou"
+	Cal.from_dict({"year": 1275, "month": 1, "day": 1})
+	main.load_scene("quanzhou")
+	main._log_lines.clear()
+	main._log_folds.clear()
+	main._log_fold_open = ""
+	main.log_msg("升了一章。")
+	var by_month: Dictionary = {}
+	var order: Array = []
+	var dates: Dictionary = {}
+	var tap := func(t: String) -> void:
+		var ym := "%04d-%02d" % [int(Cal.year), int(Cal.month)]
+		if not by_month.has(ym):
+			by_month[ym] = []
+			order.push_front(ym)
+			dates[ym] = str(Cal.get_date_string())
+		(by_month[ym] as Array).push_front(UiTheme.plain_log(t))
+	GM.monthly_notice.connect(tap)
+	var from_d := ""
+	var n1 := _notices.size()
+	GM.skip_years(2)
+	GM.monthly_notice.disconnect(tap)
+	var total: int = _notices.size() - n1
+	var ml: PackedStringArray = main._log_lines
+	var mfold: Dictionary = main._log_folds.get(ml[0] if not ml.is_empty() else "", {})
+	var groups: Array = mfold.get("groups", [])
+	_check(total >= LogFold.FOLD_AT and order.size() >= 2 and ml.size() == 2 and str(ml[1]) == "升了一章。" and not mfold.is_empty(),
+		"跳两年：%d 则通告跨 %d 个月，仍折成一行，下面那句还在（%s）" % [total, order.size(), ml])
+	var got_order: Array = []
+	var bad_month := 0
+	for g in groups:
+		got_order.append(str(g["ym"]))
+		if g["lines"] != by_month.get(str(g["ym"]), []) or str(g["date"]) != str(dates.get(str(g["ym"]), "")):
+			bad_month += 1
+	_check(got_order == order and bad_month == 0 and (mfold.get("lines", []) as Array).size() == total,
+		"跳两年按月分组：%d 组、新的月在前，各月原文与当月通告逐则相同（对不上 %d 组；组序 %s）" % [groups.size(), bad_month, got_order])
+	if not order.is_empty():
+		from_d = str(dates[order[-1]])
+	var head_want := "自%s至于%s，通告一连 %d 则，凡 %d 月" % [from_d, Cal.get_date_string(), total, order.size()]
+	_check(not ml.is_empty() and str(ml[0]) == head_want, "跳两年折起那一行写「%s」（「%s」）" % [head_want, ml[0] if not ml.is_empty() else ""])
+	var lbl: RichTextLabel = main.message_label
+	main._on_log_meta("fold:0")
+	var open_t := lbl.text
+	var heads := 0
+	var leaked := 0
+	for ym in order:
+		if open_t.find("[url=fold:0:%s]" % ym) >= 0 and open_t.find("%s，通告 %d 则（点开）" % [dates[ym], (by_month[ym] as Array).size()]) >= 0:
+			heads += 1
+		for t in by_month[ym]:
+			if open_t.find("　　" + str(t)) >= 0:
+				leaked += 1
+	_check(heads == order.size() and leaked == 0 and open_t.find("升了一章。") >= 0,
+		"跳两年点开：先列 %d 月各一行（列出 %d 行），原文不整串铺开（漏出 %d 则）" % [order.size(), heads, leaked])
+	var pick: String = order[order.size() / 2] if not order.is_empty() else ""
+	main._on_log_meta("fold:0:" + pick)
+	var month_t := lbl.text
+	var shown := 0
+	var others := 0
+	for ym in order:
+		for t in by_month[ym]:
+			if month_t.find("　　" + str(t)) >= 0:
+				if ym == pick:
+					shown += 1
+				else:
+					others += 1
+	_check(shown == (by_month.get(pick, []) as Array).size() and others == 0 and month_t.find("%s，通告 %d 则（收起）" % [dates.get(pick, ""), shown]) >= 0,
+		"跳两年再点 %s 那一月：只铺这一月 %d 则（铺出 %d，别月漏出 %d）" % [pick, (by_month.get(pick, []) as Array).size(), shown, others])
+	main._on_log_meta("fold:0:" + pick)
+	main._on_log_meta("fold:0")
+	_check(main._log_fold_open == "" and lbl.text.find("fold:0:") < 0, "跳两年那一折收起后各月行也收起")
+	# 三、两边同一份：Main / SeaChart 都经 LogFold 记通告、画记事，不各写一份折叠
+	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
+	var sea_src := FileAccess.get_file_as_string("res://scripts/SeaChart.gd")
+	var ledger_src := FileAccess.get_file_as_string("res://scripts/ui/LedgerPage.gd")
+	_check(main_src.find("LogFold.push_notice(") >= 0 and sea_src.find("LogFold.push_notice(") >= 0
+		and ledger_src.find("LogFold.render(") >= 0 and sea_src.find("LogFold.render(") >= 0
+		and main_src.find("func _fold_head") < 0 and sea_src.find("func _fold_head") < 0 and sea_src.find("\"groups\"") < 0,
+		"港页记事栏与海图札记同走 LogFold（push_notice / render），不各写一份折叠")
+	main._log_lines.clear()
+	main._log_folds.clear()
+	main._log_fold_open = ""
 
 
 ## 海商线站 port_id 港页，在 year-month 的前一日候一日跨月；seen_old：之前的新闻都当已读（只剩当月战况）

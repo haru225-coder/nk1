@@ -34,6 +34,13 @@ var _deck_hint: Label
 var terrain_mode: bool = false
 var heading_row: HBoxContainer
 var log_label: RichTextLabel
+## 船况札记：新的在前（会话内，不入存档）。原先整串往 log_label 前头拼；lane w19-g9 起按条存，月初通告与港页记事栏
+## 同一套折叠（scripts/core/LogFold.gd：一连 LogFold.FOLD_AT 则收成一行、跨月按月分组、点开就地看），下面五个字段口径见那边头注
+var _log_lines: PackedStringArray = PackedStringArray()
+var _log_folds: Dictionary = {}
+var _log_fold_open := ""
+var _notice_run := 0
+var _notice_when: Array = []
 var sail_button: Button
 var redraw_button: Button
 var back_button: Button
@@ -79,8 +86,9 @@ func _ready() -> void:
 	_hand = HeadingDraft.deal(origin_port, GameState.draft_salt)
 	_build_ui()
 	_sync_order_buttons()
-	# 连接放在 _build_ui 之后：_log 依赖其中创建的 log_label
-	GameManager.monthly_notice.connect(_log)
+	# 连接放在 _build_ui 之后：_log / _on_monthly_notice 依赖其中创建的 log_label
+	GameManager.monthly_notice.connect(_on_monthly_notice)
+	log_label.meta_clicked.connect(_on_log_meta)
 	# 海图数据接入：岸线、绕岸折线、标注、已至港。船标先停在起点港。
 	map.setup(GameManager.unlocked_ports(), GameManager.coastline_data, GameManager.sealanes_data, GameManager.chart_labels_data, GameState.visited_ports)
 	map.show_ship_at_port(origin_port)
@@ -792,6 +800,8 @@ func _sync_order_buttons() -> void:
 # ══════════════════════════════════════════════════════
 
 func _refresh_status() -> void:
+	# 船况每变一回（起锚、每日行程、遇事）顺手记下海上「所在位置」，月初推日时 Economy 按它排战况
+	Economy.sea_here = _sea_here()
 	var supply_d := Fleet.supply_days()
 	var supply_color := UiTheme.MOSS
 	if supply_d <= 3:
@@ -1075,9 +1085,38 @@ func _bearing_phrase(deg: float) -> String:
 # ══════════════════════════════════════════════════════
 
 func _log(text: String) -> void:
-	log_label.text = UiTheme.plain_log(text) + "\n\n" + log_label.text
+	LogFold.push_line(self, UiTheme.plain_log(text), 0)
+	_render_log()
 	_latest_note = _plain_note(text)
 	_refresh_strip()
+
+
+## 海上的月初通告（GameManager.monthly_notice）：与港页记事栏同一套折叠，一连多则收成一行、原文一则不丢；
+## 顶匾那一格仍取最上那则（「所在位置」那港的战况由 Economy 排在本批最后发，见 Economy.sea_here）
+func _on_monthly_notice(text: String) -> void:
+	LogFold.push_notice(self, UiTheme.plain_log(text), 0)
+	_render_log()
+	_latest_note = _plain_note(LogFold.latest(self))
+	_refresh_strip()
+
+
+## 札记正文：各条照原墨、空一行隔开（新的在上）；折起那一行可点
+func _render_log() -> void:
+	log_label.text = LogFold.render(self, "\n\n", false)
+
+
+## 札记里点折起的通告那一行（或按月分组的某月）：就地展开 / 收起
+func _on_log_meta(meta: Variant) -> void:
+	if LogFold.toggle(self, meta):
+		_render_log()
+
+
+## 海上「所在位置」那一港：已行不到一半算起锚港，过半算去向港（未定去向时即起锚港）。
+## 月初战况里这一港那条排到本批最后发、落在札记最上（与港页「所在港那条排最上」同一条规矩，lane w19-g9）
+func _sea_here() -> String:
+	if selected_port == "" or total_li <= 0.0 or remaining_li > total_li * 0.5:
+		return origin_port
+	return selected_port
 
 
 func _ink(c: Color, text: String) -> String:
@@ -1243,6 +1282,7 @@ func _cancel_marker() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_EXIT_TREE:
 		_cancel_marker()
+		Economy.sea_here = ""
 
 
 func _show_event(event: Dictionary) -> void:
