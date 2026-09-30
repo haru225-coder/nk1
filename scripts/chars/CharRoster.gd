@@ -17,6 +17,11 @@ const TIERS := [
 	["史实", ["historical"]],
 ]
 
+## 名册栏与右侧立绘面板分栏（lane fx1 立于 CharsShoreOverlay，w19-g6 统一到人物志内嵌名册、CharsDemo，三处同走 split_columns）：
+## 名册栏 : 立绘面板 = COLUMN_RATIO : 1，名册栏不窄于 COLUMN_MIN_W；1280×720 下名册栏约 500、立绘面板约 670（面板最小 632）
+const COLUMN_MIN_W := 404.0
+const COLUMN_RATIO := 0.75
+
 var tab := "主"
 var _list: VBoxContainer
 var _tabs_row: HBoxContainer
@@ -34,6 +39,17 @@ func _init() -> void:
 func _ready() -> void:
 	if _list == null:
 		_build()
+
+
+## 按比例分栏：host 为包名册的左栏，partner 为右侧立绘面板（CharsDemo 窄屏时换成站台）；
+## 左右都 EXPAND_FILL，按 COLUMN_RATIO : 1 分余宽，左栏另有最小宽。大分辨率下两栏同比放宽，不再左窄右空
+static func split_columns(host: Control, partner: Control) -> void:
+	host.custom_minimum_size.x = COLUMN_MIN_W
+	host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	host.size_flags_stretch_ratio = COLUMN_RATIO
+	if partner != null:
+		partner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		partner.size_flags_stretch_ratio = 1.0
 
 
 func _build() -> void:

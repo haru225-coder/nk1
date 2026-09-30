@@ -264,8 +264,8 @@ func _build_wire_inline(focus_id := "") -> Control:
 	row.name = "CharsWire"
 	row.add_theme_constant_override("separation", 16)
 	var left := PanelContainer.new()
+	left.name = "RosterHost"
 	left.add_theme_stylebox_override("panel", UiTheme.panel())
-	left.custom_minimum_size.x = 404
 	row.add_child(left)
 	var lm := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
@@ -274,9 +274,10 @@ func _build_wire_inline(focus_id := "") -> Control:
 	var roster: VBoxContainer = _CharRosterScr.new()
 	lm.add_child(roster)
 	var panel: PanelContainer = _CharPortraitScr.new()
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	row.add_child(panel)
+	# 名册 : 立绘面板按比例分栏，与岸上名册浮页同一支（原先左栏钉死 404，大分辨率下左窄右空）
+	_CharRosterScr.split_columns(left, panel)
 	roster.picked.connect(func(id: String) -> void:
 		var ch: Dictionary = GameManager.get_character(id)
 		if not ch.is_empty():

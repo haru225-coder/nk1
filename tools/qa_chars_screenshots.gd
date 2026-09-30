@@ -4,6 +4,8 @@ extends SceneTree
 ##       godot --headless --path . -s res://tools/qa_chars_screenshots.gd -- --contract   # 只验非渲染断言
 ## 截图缺张 / 空视口 / 一色空图 / headless 未开 --contract 一律非零退出（shot_gate.gd）；面板断言仍只记 warn。
 ## 本脚本不写任何游戏状态，只在末了 quit。
+## lane w19-g6：每张截图前查演示页不裁——页身各栏与页头按钮整框在视口内、页身最小宽放得下（判红，进 _shot_fails）；
+##   1280×720 下三栏放不下，演示页改两栏（右栏面板 / 站台二选一），站台两张前由切档 / 转台换到站台，面板几张前换回面板。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
 ##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_chars_screenshots.gd
 
@@ -60,6 +62,11 @@ func _run() -> void:
 	await _settle(4)
 	await _shot("04_stage_turned")
 
+	if _demo.has_method("_show_view"):
+		_demo.call("_show_view", "panel")
+		await _settle(2)
+	else:
+		_shot_fails.append("演示页缺 _show_view，窄屏两栏换不回面板")
 	var idx := 5
 	for id in SHOT_ORDER:
 		await _pick(str(id))
@@ -108,6 +115,37 @@ func _shot(name: String) -> void:
 		await RenderingServer.frame_post_draw
 		ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, name], _saved, _shot_fails)
 	_assert_scene()
+	_assert_fits(name)
+
+
+## lane w19-g6：演示页不出视口（原先名册钉死 404 + 面板 632 + 站台 352，1280 宽里站台与页头「退出」钮切在屏外）
+func _assert_fits(where: String) -> void:
+	var body := _find(_demo, "Body") as Control
+	if body == null:
+		_shot_fails.append("%s：演示页缺页身 Body" % where)
+		print("  ✗ ", _shot_fails[-1])
+		return
+	var vr := root.get_visible_rect()
+	if body.get_combined_minimum_size().x > body.size.x + 0.5:
+		_shot_fails.append("%s：页身最小宽 %.0f 超出可用 %.0f" % [where, body.get_combined_minimum_size().x, body.size.x])
+		print("  ✗ ", _shot_fails[-1])
+	var boxes: Array = [body]
+	for c in body.get_children():
+		if (c as Control).is_visible_in_tree():
+			boxes.append(c)
+	for b in _demo.find_children("*", "Button", true, false):
+		if (b as Control).is_visible_in_tree():
+			boxes.append(b)
+	for c in boxes:
+		var r := (c as Control).get_global_rect()
+		if r.position.x < vr.position.x - 0.5 or r.end.x > vr.end.x + 0.5 or r.end.y > vr.end.y + 0.5:
+			_shot_fails.append("%s：%s %s 出视口 %s" % [where, str((c as Node).name), str(r), str(vr)])
+			print("  ✗ ", _shot_fails[-1])
+	var want := "CharStage3D" if where.contains("stage") else "CharPortraitPanel"
+	var shown := _find(_demo, want) as Control
+	if shown == null or not shown.is_visible_in_tree():
+		_shot_fails.append("%s：该截的 %s 不在屏上" % [where, want])
+		print("  ✗ ", _shot_fails[-1])
 
 
 func _assert_scene() -> void:
