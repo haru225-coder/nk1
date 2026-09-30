@@ -1505,7 +1505,11 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			var lost_str := ""
 			for gid in lost.keys():
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_sunk_note(lost_str, int(dmg), Fleet.total_durability() <= 0.0)))
+			# lane w19-g2：沉前本场夺来、收战时仍在册的船（WorldMap._prize_ledger 按名册格认）在沉船句里交代；全队俱没不写
+			var fleet_gone := Fleet.total_durability() <= 0.0
+			var mv_s: Dictionary = data.get("stores_moved", {})
+			var prize_s := "" if fleet_gone else _CombatFx.sea_prize_note(data.get("prizes", []), int(mv_s.get("water", 0)), int(mv_s.get("food", 0)))
+			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_sunk_note(lost_str, int(dmg), fleet_gone, prize_s)))
 		else:
 			var lost := Fleet.lose_cargo_ratio(0.25)
 			var lost_str := ""

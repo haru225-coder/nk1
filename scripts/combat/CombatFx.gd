@@ -1082,11 +1082,13 @@ static func sea_win_note(spoil: int, damage: int, promo := "") -> String:
 	return base if p == "" else base + p
 
 
-static func sea_sunk_note(cargo_str: String, damage: int, fleet_gone: bool) -> String:
+## 旗舰沉没。prize = sea_prize_note 的夺船句（lane w19-g2），夹在「余船尚在。」与「船体受损」之间：交代在前、账目在后。
+## 全队俱没（fleet_gone）时不写夺船句：夺来的船随后由 SeaChart._sink 一并清掉，写「已入船籍」反成虚账。
+static func sea_sunk_note(cargo_str: String, damage: int, fleet_gone: bool, prize := "") -> String:
 	var cargo := cargo_str.strip_edges()
 	if fleet_gone:
 		return "旗舰沉没，货舱随船。%s船体受损 %d。" % [cargo, maxi(0, damage)]
-	return "旗舰沉没，该船货物随船。%s余船尚在。船体受损 %d。" % [cargo, maxi(0, damage)]
+	return "旗舰沉没，该船货物随船。%s余船尚在。%s船体受损 %d。" % [cargo, prize.strip_edges(), maxi(0, damage)]
 
 
 static func sea_board_lose_note(cargo_str: String, damage: int) -> String:

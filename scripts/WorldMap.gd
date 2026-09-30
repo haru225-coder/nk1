@@ -636,7 +636,8 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 		var fates := _battle_fates()
 		if not fates.is_empty():
 			data["fates"] = fates
-	if outcome == "flee" and not _prizes.is_empty():
+	# lane w19-g2：旗舰沉没（lose + sunk）同带夺船账——夺来的船不上战阵、仍在册，SeaChart 沉船句要交代它
+	if (outcome == "flee" or (outcome == "lose" and bool(data.get("sunk", false)))) and not _prizes.is_empty():
 		_prize_ledger(data)
 	_AUDIO.combat_result(self, outcome)
 	_CombatShoreHook.unmount_combat_ui(self)
@@ -646,7 +647,7 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 	queue_free()
 
 
-## lane fx3：夺船后弃战 / 两散的夺船账——只记收战这一拍仍在册的那几格（按引用认），水粮记本场实际增量
+## lane fx3：夺船后弃战 / 两散的夺船账（w19-g2 起旗舰沉没也走这里）——只记收战这一拍仍在册的那几格（按引用认），水粮记本场实际增量
 func _prize_ledger(data: Dictionary) -> void:
 	var kept: Array = []
 	for p in _prizes:
