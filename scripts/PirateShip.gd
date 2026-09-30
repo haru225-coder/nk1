@@ -160,6 +160,12 @@ func _physics_process(delta: float) -> void:
 
 	_wire_parley(delta)
 	var orders: Dictionary = captain.tick(_situation(), delta)
+	# 敌船之间分离：兜圈时被本船甩乱了阵脚（本船开船、掉头）也不压成一艘。
+	# 只偏航向，不改航速、转向上限与开炮判定（开炮仍按对本船的 angle_diff）。
+	var push := _separation_push()
+	if push != Vector2.ZERO:
+		var heading: Vector2 = orders.get("heading", Vector2.UP.rotated(rotation))
+		orders["heading"] = (heading + push * SEPARATION_WEIGHT).normalized()
 	enemy_morale = int(orders.get("morale", enemy_morale))
 	_note_state()
 	_steer(orders, delta)
@@ -216,9 +222,36 @@ func _situation() -> Dictionary:
 	}
 
 
+## 与别的活敌船相距不足 SEPARATION_DIST 就往外推，越近推得越狠；返回各邻船推力之和（无邻船为零向量）。
+## （09-28 验收返修，09-30 并入本地线：本地线操船换成 EnemyCaptainAI，这条分离推力独立于操船法，照旧生效）
+const SEPARATION_DIST := 300.0
+## 推力并进航向时的权重：贴身（推力≈1）时压过绕舷侧的本意，相距一半以上时只偏一点
+const SEPARATION_WEIGHT := 2.0
+
+
 func _target_velocity() -> Vector2:
 	var tb := target as CharacterBody2D
 	return tb.velocity if tb != null else Vector2.ZERO
+
+
+## 同场敌船互相分离：兜圈时被本船甩乱了阵脚也不压成一艘。只算同父的活敌船；返回合力（零向量＝不推）
+func _separation_push() -> Vector2:
+	var push := Vector2.ZERO
+	var host := get_parent()
+	if host == null or not is_inside_tree():
+		return push
+	for n in get_tree().get_nodes_in_group(GROUP):
+		if n == self or n.get_parent() != host or n.is_queued_for_deletion():
+			continue
+		var other := n as PirateShip
+		if other.hull_hp <= 0.0:
+			continue
+		var away := position - other.position
+		var d := away.length()
+		if d < 0.001 or d >= SEPARATION_DIST:
+			continue
+		push += away / d * (1.0 - d / SEPARATION_DIST)
+	return push
 
 
 ## 玩家一方白刃战力（WorldMap._board_enemy 同式：水手 × 士气系数 × 将领系数）；没有 Fleet 时按中等商船估

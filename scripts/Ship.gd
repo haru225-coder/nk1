@@ -288,6 +288,13 @@ func _polish_wake() -> void:
 		g.colors = PackedColorArray([Color(1, 1, 1, 0.9), Color(1, 1, 1, 0.5), Color(1, 1, 1, 0.0)])
 		p.color_ramp = g
 		p.local_coords = false
+	# 尾迹粒子也挂柔点贴图：Ship.tscn 的 WakeParticles 原本无贴图，画出来是硬边方块（09-28 验收返修，09-30 并入本地线）
+	if wake_particles != null and wake_particles.texture == null:
+		wake_particles.texture = preload("res://assets/fx/soft_dot.png")
+	# 木屑粒子（受击迸屑）也挂贴图：无贴图的 CPUParticles2D 画成硬边方块（09-28 验收返修，09-30 并入本地线）
+	var spl: CPUParticles2D = get_node_or_null("SplinterParticles") as CPUParticles2D
+	if spl != null and spl.texture == null:
+		spl.texture = preload("res://assets/fx/splinter.png")
 
 
 func take_damage(amount: float) -> void:

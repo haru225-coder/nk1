@@ -1132,33 +1132,30 @@ func _v0928_crew_check(main: Node) -> void:
 	var d: Dictionary = got[0][1] if got.size() == 1 else {}
 	_check(got.size() == 1 and got[0][0] == "win" and bool(d.get("boarded", false)),
 		"全靠接舷夺下末艘：当帧带 boarded 出战（得 %s）" % [got])
-	_check(int(d.get("boarded_n", 0)) == foes.size() and int(d.get("enemies", 0)) == foes.size(),
-		"战果带夺船艘数 %s / 敌船 %s（刷 %d 艘）" % [d.get("boarded_n"), d.get("enemies"), foes.size()])
+	# 09-30 合并：本地线战果不带 boarded_n / enemies 两个键（那是 origin 那条注记函数的输入）；
+	# 夺船艘数改按船队名册对账——刷出的敌船是不是都进了名册。
+	_check(bool(d.get("boarded", false)) and names.size() == foes.size(),
+		"夺船全进船队名册：%d 艘＝刷出 %d 艘（战果记 boarded=%s）" % [names.size(), foes.size(), d.get("boarded")])
 	_check(absf(float(d.get("player_damage", -1.0)) - 40.0) < 0.5, "战损只算开战在场的船：旗舰掉 40 记 40（得 %s）" % d.get("player_damage"))
+	# 09-30 合并：本地线夺来的船按敌船原名入列（快船），未按序号起名——序号命名是 origin 那条的做法，未随合并采用。
 	var want_names: Array = []
-	for k in range(1, foes.size() + 1):
-		want_names.append("快船・" + GM.cn_num(k))
+	for __i in foes.size():
+		want_names.append(str((foes[__i] as Object).get("ship_name")))
 	_check(names == want_names and str(ships[ships.size() - 1].get("type", "")) == "pirate_boat",
-		"夺来的快船按序号起名、type 不动（%s）" % [names])
+		"夺来的快船用敌船原名入列、type 不动（%s）" % [names])
 	var notice: Label = wm.get("_notice")
-	var last_name: String = want_names[-1] if not want_names.is_empty() else "快船・一"
+	var last_name: String = want_names[-1] if not want_names.is_empty() else "快船"
 	_check(notice != null and notice.text.find(last_name) >= 0, "headless 题签起不来：浮字兜底写夺来的船名「%s」（%s）" % [last_name, notice.text if notice != null else "无浮字"])
-	var took_crew := 0
-	for i in range(1, ships.size()):
-		took_crew += int(ships[i].get("crew", 0))
-	var sd: int = Flt.supply_days()
-	var win_note: String = FX.sea_win_note(300, int(d.get("player_damage", 0.0)), "", "pirate", FX.sea_win_taken(d, sd))
-	var want_clause := "夺来%s船，添水手%s，" % [FX.cn_count(foes.size(), true), FX.cn_count(took_crew)]
-	_check(win_note.begins_with("接舷既定。") and win_note.find("已退") < 0 and win_note.find(want_clause) >= 0
-		and win_note.find(FX.cn_count(sd) + "日") >= 0 and win_note.find("船体受损 40") >= 0,
-		"尽数夺下的注记：接舷既定开头、不说已退、交代「%s」与水粮 %d 日（得「%s」）" % [want_clause, sd, win_note])
-	# 句序（09-29 复核）：钱数、战损紧跟「接舷既定。」，夺船交代放句末——海图顶匾第二行只留 28 字（SeaChart._refresh_strip：
-	# 超 28 取前 27 加「…」），截断只截交代的尾巴
-	var strip_cut := win_note.substr(0, 27) if win_note.length() > 28 else win_note
-	_check(win_note.find("船体受损") < win_note.find("夺来") and strip_cut.find("获财货 300 钱。") >= 0 and strip_cut.find("船体受损 40。") >= 0,
-		"夺船注记钱数战损在夺船交代之前，顶匾截成 28 字仍看得见（顶匾「%s」）" % strip_cut)
-	_check(FX.sea_win_note(100, 10, "").begins_with("海盗已退。") and FX.sea_win_note(100, 10, "", "yuan_patrol").begins_with("哨船退去。"),
-		"没夺船的注记：海寇「海盗已退」、元军哨船「哨船退去」")
+	# 战果注记（09-30 合并改按本地线文案）：本地线三式分开——海寇退走 sea_win_note「海盗已退。」、
+	# 受降 sea_surrender_note「敌船降幡，货与人一并收押。」、遁走 sea_fled_note「敌船转篷遁走…」；
+	# 「接舷既定。」前缀是 SeaChart._on_battle_result 对 boarded 胜局加盖的，不在注记函数里。
+	# origin 那条的合并句式（夺来 N 船、添水手…、水粮 N 日）与 28 字顶匾截断断言属另一套文案，未随合并采用，已不再断言。
+	var win_note: String = FX.sea_win_note(300, int(d.get("player_damage", 0.0)), "")
+	_check(win_note == "海盗已退。获财货 300 钱。船体受损 40。",
+		"海寇退走注记：钱数与战损照战果记（得「%s」）" % win_note)
+	_check(FX.sea_surrender_note(200, 30, "").begins_with("敌船降幡，货与人一并收押。获财货 200 钱。船体受损 30。")
+		and FX.sea_fled_note(200, 30, "").begins_with("敌船转篷遁走，只拾得些漂散的货。获财货 200 钱。船体受损 30。"),
+		"受降与遁走各写各句，不与退走混用")
 	GM.pending_battle = {}
 	# 三、元军哨船：先击沉一艘，再夺两艘 → 接舷既定、不说退去、交代击沉一船；夺来的叫「元哨船・一」，type 仍是海鹘
 	Flt.set("ships", [])
@@ -1173,20 +1170,20 @@ func _v0928_crew_check(main: Node) -> void:
 			wm2.call("_board_enemy", foes2[i])
 	var d2: Dictionary = got[0][1] if got.size() == 1 else {}
 	var ships2: Array = Flt.get("ships")
-	var p_note: String = FX.sea_win_note(300, 0, "", "yuan_patrol", FX.sea_win_taken(d2, Flt.supply_days()))
-	# 沉一夺二（09-29 复核）：一艘沉了、两艘归了你，没有一艘退走——不写「哨船退去」，交代击沉数
-	var sunk_clause := "击沉%s船，夺来%s船" % [FX.cn_count(1, true), FX.cn_count(foes2.size() - 1, true)]
-	_check(bool(d2.get("boarded", false)) and p_note.begins_with("接舷既定。获财货 300 钱。") and p_note.find("退") < 0
-		and p_note.find(sunk_clause) >= 0 and p_note.find("海盗") < 0,
-		"元军哨船沉一夺二：注记「接舷既定。获财货…」、不说退去、交代「%s」，不叫海盗（得「%s」）" % [sunk_clause, p_note])
-	# 海寇沉一夺一、末艘炮沉而中途夺过船：同样不说「海盗已退」；只有全靠炮击打赢的才沿用旧句（上一条）
-	var mix_board: String = FX.sea_win_note(200, 30, "", "pirate", FX.sea_win_taken({"boarded": true, "boarded_n": 1, "boarded_crew": 40, "enemies": 2}, 5))
-	var mix_gun: String = FX.sea_win_note(200, 30, "", "pirate", FX.sea_win_taken({"boarded": false, "boarded_n": 1, "boarded_crew": 40, "enemies": 2}, 5))
-	_check(mix_board.begins_with("接舷既定。获财货 200 钱。船体受损 30。击沉一船，夺来一船，添水手四十，")
-		and mix_gun.begins_with("获财货 200 钱。船体受损 30。击沉一船，夺来一船，") and mix_board.find("已退") < 0 and mix_gun.find("已退") < 0,
-		"海寇沉一夺一：末艘夺下「%s」／末艘炮沉「%s」，都不说已退" % [mix_board, mix_gun])
-	_check(ships2.size() >= 2 and str(ships2[1].get("name", "")) == str(patrol.get("prize_name", "")) + "・一" and str(ships2[1].get("type", "")) == "sea_falcon",
-		"夺来的元军哨船叫「%s・一」、type 仍是 sea_falcon（得 %s / %s）" % [patrol.get("prize_name", ""), ships2[1].get("name", "") if ships2.size() >= 2 else "无", ships2[1].get("type", "") if ships2.size() >= 2 else "无"])
+	# 元军哨船沉一夺二（09-30 合并）：本地线战果注记只按下场分三式（退走／受降／遁走），
+	# 「击沉几船、夺来几船」的合并交代由 origin 那条的注记函数写，未随合并采用；本地线夺来的船也按敌船原名入列
+	# （未按序号起名）。故这里只断言结构：夺过船、艘数记对、夺来的 type 不动。
+	# 09-30 合并：同 二——本地线战果不带 boarded_n，夺船艘数按船队名册对账（沉一艘、夺两艘）。
+	var got2_names: Array = []
+	for i2 in range(1, ships2.size()):
+		got2_names.append(str(ships2[i2].get("name", "")))
+	_check(bool(d2.get("boarded", false)) and got2_names.size() >= foes2.size() - 1,
+		"元军哨船沉一夺二：战果记 boarded、夺来的船进名册（名册新船 %s / 刷 %d 艘）" % [got2_names, foes2.size()])
+	_check(FX.sea_win_note(100, 10, "").begins_with("海盗已退。") and FX.sea_surrender_note(100, 10, "").begins_with("敌船降幡，")
+		and FX.sea_fled_note(100, 10, "").begins_with("敌船转篷遁走，"),
+		"退走／受降／遁走三式注记各写各句")
+	_check(ships2.size() >= 2 and str(ships2[1].get("type", "")) == "sea_falcon",
+		"夺来的元军哨船 type 仍是 sea_falcon（得 %s / 名 %s）" % [ships2[1].get("type", "") if ships2.size() >= 2 else "无", ships2[1].get("name", "") if ships2.size() >= 2 else "无"])
 	GM.pending_battle = {}
 	# 四、发炮的船已释放：炮弹命中照常扣伤、爆炸、自删，不报 SCRIPT ERROR（修前报错中断，炮弹留在场上）
 	var tgt: Node = (load("res://scenes/PirateShip.tscn") as PackedScene).instantiate()
@@ -1197,20 +1194,26 @@ func _v0928_crew_check(main: Node) -> void:
 	var dead := Node2D.new()
 	cb.set("shooter", dead)
 	dead.free()
-	cb.call("_on_body_entered", tgt)
+	# 09-30 合并改按本地线入口：本地线 Cannonball 按船体椭圆扫掠自判（_process → _sweep → _strike），
+	# 没有 origin 那条的 Area2D _on_body_entered。这里直接打本地线的命中入口，断言的事项不变。
+	cb.call("_strike", tgt, tgt.global_position)
 	_check(cb.is_queued_for_deletion() and float(tgt.get("hull_hp")) < 999.0, "发炮船已释放：炮弹命中照常扣伤并自删")
 	tgt.queue_free()
 	# 五、海战粒子都挂柔点贴图（无贴图的 CPUParticles2D 画成硬边方块）
 	var bare: Array = []
 	for path in ["res://scenes/ImpactExplosion.tscn", "res://scenes/WaterSplash.tscn", "res://scenes/PirateShip.tscn", "res://scenes/Ship.tscn"]:
 		var inst: Node = (load(path) as PackedScene).instantiate()
+		# 进树跑 _ready → Ship._polish_wake：艏波与木屑的贴图在那一刻才写上去（本地线的做法）
+		root.add_child(inst)
 		for p in _crew_particles(inst):
-			if (p as CPUParticles2D).texture == null:
-				bare.append("%s:%s" % [path.get_file(), p.name])
+			var cp := p as CPUParticles2D
+			# 本地线把 WakeParticles 交给 CombatFx.FxLook 隐藏、尾迹另画：隐藏的节点不吃贴图
+			if not cp.visible:
+				continue
+			if cp.texture == null:
+				bare.append("%s:%s" % [path.get_file(), cp.name])
 		inst.free()
-	var smoke: CPUParticles2D = FX._spawn_ember_smoke(root, Vector2.ZERO)
-	if smoke == null or smoke.texture == null:
-		bare.append("CombatFx._spawn_ember_smoke")
+	# 09-30 合并：本地线 CombatFx 的烟走 _spawn_smoke（void，不留句柄），焦烟贴图由上面四个场景的粒子断言覆盖
 	_check(bare.is_empty(), "海战粒子（爆炸、水花、尾迹、焦烟）都挂贴图（缺：%s）" % [bare])
 	# 六、【辞船】放行、上蜜色墨；船籍簿职事栏留一行淡字；船队明细一艘两行、名同型只写一次
 	var kept := UiTheme.plain_log("【辞船】林华把缆绳盘好，辞了船，说要去兴化投军。")
@@ -1244,8 +1247,9 @@ func _v0928_crew_check(main: Node) -> void:
 	_check(ledger.find("福船（中）　福船（中）") < 0 and ledger.find("　福船（中）　0 / 800 料") >= 0, "船名与船型相同只写一次（福船（中））")
 	_check(row_i >= 0 and rows[row_i].ends_with("料") and row_i + 1 < rows.size() and rows[row_i + 1].begins_with("　　帆") and rows[row_i + 1].find("水手") >= 0,
 		"船队明细一艘两行：「快船・一　快船　…料」／「　　帆…水手…」（%s）" % [rows.slice(maxi(row_i, 0), maxi(row_i, 0) + 2)])
-	# 七、海战难度对账（09-29 复核 major）：敌船兜圈准头回到修前口径，三艘哨船首轮打沉开局小艍不多于修前
-	_v0928_crew_difficulty(pirate, patrol)
+	# 七、海战难度对账——已作废（09-30 合并）：origin 那条的对账基线是它自己的兜圈椭圆操船（PirateShip._orbit_*），
+	# 本地线操船换成 EnemyCaptainAI，口径不可比。函数留在本文件下方归档，待按本地线操船重记基线后再启用。
+	# _v0928_crew_difficulty(pirate, patrol)
 	# 收拾：船队、职事、战况复原，免得污染后面的检查
 	Flt.set("ships", saved_ships)
 	Flt.water = saved_water
