@@ -168,6 +168,7 @@ text = ""
 
 [node name="HSeparator" type="HSeparator" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 6
 
 [node name="BodyText" type="RichTextLabel" parent="HBoxContainer/CenterArea/InvestigationMode/MarginContainer/Scroll/VBoxContainer"]
 layout_mode = 2

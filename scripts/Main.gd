@@ -608,9 +608,9 @@ func _frame_sheet(floating: bool, dialogue := false) -> void:
 		investigation_mode.offset_right = 430
 		investigation_mode.offset_bottom = 268
 	else:
-		# 顶栏已经占了 68。内页上下再留 22 会把船屋第四排压进离开。
+		# 上边留 18（lane fx4，原 8）：面板泥金内线在上沿下约 12px，28px 题头字顶原先压在线上，现离线约 7px；多出的 10px 由题头金线收窄抵回（Main.tscn 该 HSeparator separation 6）：滚动区少 10px、内页同少 10px，各页溢出量与原先相同。
 		# 底边留 22：面板泥金内线在内容区里约 10px 处，页脚的离开 / 明日再看要离开它与框饰 ≥12（第 1 轮评审 M3），滚动区少 14px。
-		sheet_margin.add_theme_constant_override("margin_top", 8)
+		sheet_margin.add_theme_constant_override("margin_top", 18)
 		sheet_margin.add_theme_constant_override("margin_bottom", 22)
 		investigation_mode.anchor_left = 0.0
 		investigation_mode.anchor_top = 0.0
