@@ -253,7 +253,7 @@ func _ready() -> void:
 	_letterbox = bool((cs as Dictionary).get("letterbox", true))
 	for s in _shots:
 		if typeof(s) == TYPE_DICTIONARY:
-			Kit.preload_background(str((s as Dictionary).get("bg", "")))
+			Kit.preload_background(str(_shot_view(s as Dictionary)["bg"]))
 	_canvas = Kit.canvas_size(self)
 	_build()
 
@@ -268,7 +268,7 @@ func _exit_tree() -> void:
 	var paths: Array = []
 	for s in _shots:
 		if typeof(s) == TYPE_DICTIONARY:
-			paths.append(str((s as Dictionary).get("bg", "")))
+			paths.append(str(_shot_view(s as Dictionary)["bg"]))
 	Kit.drop_preloads(paths)
 
 
@@ -546,11 +546,12 @@ func _begin_shot(i: int) -> void:
 		if pl["mat"] != null:
 			pl["mat"].set_shader_parameter("dim", 0.0)
 	var L: Dictionary = _layers[nf]
-	var tex := Kit.background(str(shot.get("bg", "")))
+	var view := _shot_view(shot)
+	var tex := Kit.background(str(view["bg"]))
 	var grade := str(shot.get("grade", "neutral"))
 	L["tex_size"] = tex.get_size() if tex != null else Vector2(1672, 941)
-	L["from"] = Kit.cam_of(shot.get("cam_from"))
-	L["to"] = Kit.cam_of(shot.get("cam_to", shot.get("cam_from")))
+	L["from"] = Kit.cam_of(view["cam_from"])
+	L["to"] = Kit.cam_of(view["cam_to"])
 	L["t"] = 0.0
 	L["dur"] = _shot_dur
 	L["shake"] = clampf(Kit.float_of(shot.get("shake"), 0.0), 0.0, 1.0)
@@ -854,7 +855,35 @@ func _build_captions(shot: Dictionary) -> void:
 	_place_captions()
 
 
-## 字幕的旗标条件（cutscenes.json 字幕可选键）：if_flag 立起才出，unless_flag 立起就不出；两键都没有照出。
+## 本镜实际用的底图与运镜：镜头可选键 bg_alt（数组），每项与字幕同一套旗标写法——bg + if_flag / unless_flag，
+## 可另带 cam_from / cam_to（换了图构图不同；不写沿用本镜）。按数组顺序取第一条条件成立的（判据同 _caption_on）；
+## 没有 bg_alt、或一条都不成立，照旧用本镜 bg。没写旗标键的项不算（否则恒成立，等于把本镜 bg 换掉）。
+## 「未归」第 1 镜：海口结算（weigui_at_harbor）换兴化海口港页图，字幕同旗换句。
+func _shot_view(shot: Dictionary) -> Dictionary:
+	var view := {"bg": str(shot.get("bg", "")), "cam_from": shot.get("cam_from"),
+		"cam_to": shot.get("cam_to", shot.get("cam_from"))}
+	var alts: Variant = shot.get("bg_alt", [])
+	if typeof(alts) != TYPE_ARRAY:
+		return view
+	for a in alts:
+		if typeof(a) != TYPE_DICTIONARY:
+			continue
+		var ad: Dictionary = a
+		if str(ad.get("bg", "")) == "" or (str(ad.get("if_flag", "")) == "" and str(ad.get("unless_flag", "")) == ""):
+			continue
+		if not _caption_on(ad):
+			continue
+		view["bg"] = str(ad["bg"])
+		if ad.has("cam_from"):
+			view["cam_from"] = ad["cam_from"]
+			view["cam_to"] = ad.get("cam_to", ad["cam_from"])
+		elif ad.has("cam_to"):
+			view["cam_to"] = ad["cam_to"]
+		return view
+	return view
+
+
+## 字幕的旗标条件（cutscenes.json 字幕可选键；镜头 bg_alt 各项也走这里）：if_flag 立起才出，unless_flag 立起就不出；两键都没有照出。
 ## 同一镜里按玩家的选择换句用（结局「忠肃」第 2 镜：放林华出侦 / 关城门后他缒城出降）。读 GameState 旗标，找不到时按无旗
 func _caption_on(cd: Dictionary) -> bool:
 	var need := str(cd.get("if_flag", ""))

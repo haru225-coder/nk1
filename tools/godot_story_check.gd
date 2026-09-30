@@ -2486,9 +2486,17 @@ func _v0928_siege_check(main: Node) -> void:
 	var wprobe: Node = CP.new()
 	var w_harbor := _v0928_siege_caps(wprobe, wcap)
 	var had_flag: bool = GS.has_flag("weigui_at_harbor")
+	# 同镜底图按同一旗换（lane fx5：bg_alt，CutscenePlayer._shot_view）：海口结算取兴化海口港页图，别处照旧本镜海上图
+	var wshot0: Dictionary = wshots[0] if not wshots.is_empty() and typeof(wshots[0]) == TYPE_DICTIONARY else {}
+	var wview_harbor: Dictionary = wprobe.call("_shot_view", wshot0)
 	GS.flags.erase("weigui_at_harbor")
 	var w_else := _v0928_siege_caps(wprobe, wcap)
+	var wview_else: Dictionary = wprobe.call("_shot_view", wshot0)
 	wprobe.free()
+	var harbor_bg := "res://assets/" + str((main.get_script() as Script).get_script_constant_map().get("PORT_BG", {}).get("xinghua_harbor", "?"))
+	_check(had_flag and str(wview_harbor["bg"]) == harbor_bg and str(wview_else["bg"]) == str(wshot0.get("bg", ""))
+			and str(wview_else["bg"]).ends_with("bg_sea_route.jpg") and wview_harbor["cam_from"] != wview_else["cam_from"],
+		"未归过场第 1 镜底图按海口换（海口 %s／别处 %s；港页图 %s）" % [wview_harbor["bg"], wview_else["bg"], harbor_bg])
 	_check(had_flag and w_harbor.find("从城里传出来") >= 0 and w_harbor.find("在别处") < 0 and w_else.find("在别处听到") >= 0 and w_else.find("从城里") < 0,
 		"未归过场第 1 镜按海口换句（海口「%s」／别处「%s」）" % [w_harbor, w_else])
 	main._confirm_chapter_sheet()

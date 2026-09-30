@@ -1393,11 +1393,36 @@ if _root_hd is not None and _root_gate is not None and len(_root_gate[2]) >= 2:
           f"结局「岸上的根」题头「{notice_head.get('岸上的根')}」写了月份，而卡闸跨 {_mo(_root_gate[2])}——"
           f"只写年号年（09-28 Snow 定）")
 
+# 过场底图按旗换（lane fx5）：镜头可选 bg_alt，每项与字幕同一套旗标写法（if_flag / unless_flag），CutscenePlayer._shot_view 取第一条成立的。
+# 各项旗标须有人写（scripts set_flag / news flag），底图文件须在；「未归」第 1 镜在兴化海口结算（weigui_at_harbor）换成
+# 兴化海口港页那张图（Main.PORT_BG["xinghua_harbor"]），与同镜字幕换句是同一个旗，别处结算照旧海上图
+bg_alts = 0
+for cid, cs in cutscenes_all.get("cutscenes", {}).items():
+    for i, shot in enumerate(cs.get("shots", []) or []):
+        for a in shot.get("bg_alt", []) or []:
+            bg_alts += 1
+            for k in ("if_flag", "unless_flag"):
+                if a.get(k):
+                    check(a[k] in KNOWN_FLAGS, f"cutscenes.{cid}[{i + 1}].bg_alt {k} 旗标 `{a[k]}` 没人写（scripts set_flag 与 news flag 都没有）")
+            abg = str(a.get("bg", ""))
+            check(abg.startswith("res://assets/") and os.path.isfile(os.path.join(ROOT, abg[len("res://"):])),
+                  f"cutscenes.{cid}[{i + 1}].bg_alt 底图不存在：{abg}")
+_pb = re.search(r"const PORT_BG := \{(.*?)\n\}", main_src, re.S)
+_harbor_bg = dict(re.findall(r'"([a-z_]+)":\s*"([^"]+)"', _pb.group(1))).get("xinghua_harbor", "") if _pb else ""
+_wg_id = str(cutscenes_all.get("endings", {}).get("未归", ""))
+_wg = ((cutscenes_all.get("cutscenes", {}).get(_wg_id, {}).get("shots") or [{}])[0])
+_wg_alt = [a for a in _wg.get("bg_alt", []) or [] if a.get("if_flag") == "weigui_at_harbor"]
+_wg_cap_flags = {c.get(k) for c in _wg.get("captions", []) or [] for k in ("if_flag", "unless_flag")}
+check(bool(_harbor_bg) and bool(_wg_alt) and _wg_alt[0].get("bg") == "res://assets/" + _harbor_bg
+      and "weigui_at_harbor" in _wg_cap_flags and _wg.get("bg") != _wg_alt[0].get("bg"),
+      f"「未归」（{_wg_id}）第 1 镜：海口结算（weigui_at_harbor）底图须换兴化海口港页图 res://assets/{_harbor_bg}，"
+      f"与字幕换句同旗，别处照旧本镜 bg（现 bg={_wg.get('bg')} bg_alt={_wg.get('bg_alt')}）")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:
         print("FAIL:", f)
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
-print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · scenes {len(scenes)}（结构：{SCENE_STRUCT_STATS} · 自证 {len(_SV_MUTANTS)} 类）· news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
+print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · 底图按旗换 {bg_alts} · scenes {len(scenes)}（结构：{SCENE_STRUCT_STATS} · 自证 {len(_SV_MUTANTS)} 类）· news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
 print("结果：全部通过")

@@ -397,6 +397,47 @@ def check_data() -> list:
                 (cx, cy), _ = _cover_view(size_cache[f], c[:2], c[2])
                 if abs(cx - c[0]) > 0.012 or abs(cy - c[1]) > 0.012:
                     bad.append(f"{w} {key} {c} 会被引擎夹紧到 ({cx:.3f}, {cy:.3f})——镜头推不到想要的位置")
+            # bg_alt：底图按旗换（同字幕 if_flag / unless_flag 写法），每项照本镜 bg / 运镜的口径查；
+            # 项里不写 cam_from / cam_to 的沿用本镜运镜，所以本镜运镜也要在换上的图上推得到
+            alts = s.get("bg_alt", [])
+            if not isinstance(alts, list):
+                bad.append(f"{w} bg_alt 须为数组")
+                alts = []
+            for j, a in enumerate(alts):
+                wa = f"{w}.bg_alt[{j + 1}]"
+                if not isinstance(a, dict):
+                    bad.append(f"{wa} 须为对象")
+                    continue
+                extra = set(a) - {"bg", "if_flag", "unless_flag", "cam_from", "cam_to"}
+                if extra:
+                    bad.append(f"{wa} 有不认的键 {sorted(extra)}（只认 bg / if_flag / unless_flag / cam_from / cam_to）")
+                if not any(isinstance(a.get(k), str) and a.get(k) for k in ("if_flag", "unless_flag")):
+                    bad.append(f"{wa} 须写 if_flag 或 unless_flag（没有旗标条件的项播放器不认）")
+                abg = a.get("bg", "")
+                if not (isinstance(abg, str) and abg.startswith("res://assets/") and abg.endswith(".jpg")):
+                    bad.append(f"{wa} bg 须为 res://assets/…jpg：{abg}")
+                    continue
+                af = _res_file(abg)
+                if not af.is_file():
+                    bad.append(f"{wa} bg 文件不存在：{abg}")
+                    continue
+                if af.parent == OUT_DIR:
+                    used_cs_files.add(af.name)
+                if af not in size_cache:
+                    with Image.open(af) as im:
+                        size_cache[af] = im.size
+                acam = {"cam_from": a.get("cam_from", s.get("cam_from"))}
+                acam["cam_to"] = a.get("cam_to", a.get("cam_from", s.get("cam_to")))
+                for key, c in acam.items():
+                    if not (isinstance(c, list) and len(c) == 3 and all(isinstance(v, (int, float)) for v in c)):
+                        bad.append(f"{wa} {key} 须为 [cx, cy, zoom]")
+                        continue
+                    if not (0 <= c[0] <= 1 and 0 <= c[1] <= 1) or c[2] < 1.0:
+                        bad.append(f"{wa} {key} {c} 中心越出 0..1 或 zoom < 1")
+                        continue
+                    (cx, cy), _ = _cover_view(size_cache[af], c[:2], c[2])
+                    if abs(cx - c[0]) > 0.012 or abs(cy - c[1]) > 0.012:
+                        bad.append(f"{wa} {key} {c} 会被引擎夹紧到 ({cx:.3f}, {cy:.3f})——镜头推不到想要的位置")
             if s.get("grade") not in GRADES:
                 bad.append(f"{w} grade 非法：{s.get('grade')}")
             fx = s.get("fx")

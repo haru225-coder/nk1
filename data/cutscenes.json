@@ -240,6 +240,7 @@
    "shots": [
     {
      "bg": "res://assets/bg_sea_route.jpg",
+     "bg_alt": [{"bg": "res://assets/bg_xinghua_harbor.jpg", "if_flag": "weigui_at_harbor", "cam_from": [0.44, 0.56, 1.25], "cam_to": [0.4, 0.6, 1.4]}],
      "duration": 7.0,
      "cam_from": [0.655, 0.47, 1.45],
      "cam_to": [0.66, 0.43, 1.55],

@@ -10,6 +10,7 @@
 ##   --click=<秒,秒…>          在这些时刻模拟一次左键点击（验证跳字 / 跳镜）
 ##   --esc=<秒>                在该时刻模拟 Esc
 ##   --snap=<秒,秒…>           在这些时刻整张画布存图 snap_<秒>.png（headless 不存）
+##   --flag=<旗,旗…>           播前在 GameState 立这些旗（看按旗换的字幕 / 底图，如 --flag=weigui_at_harbor）
 ##   --snapdir=<目录>          存图目录；缺省 /tmp，设了环境变量 NK1_SHOT_DIR 则落 <该目录>/cutscene-preview（lane pg4）
 ## 什么都不给：依次播数据里第一段过场。
 extends Control
@@ -45,6 +46,12 @@ func _ready() -> void:
 	for s in str(_args.get("snap", "")).split(",", false):
 		_snaps.append(float(s))
 	_esc_at = float(_args.get("esc", "-1"))
+	var gs := get_node_or_null("/root/GameState")
+	for f in str(_args.get("flag", "")).split(",", false):
+		if gs != null:
+			gs.call("set_flag", f.strip_edges())
+	if _args.has("flag"):
+		print("PREVIEW flags=", _args["flag"], " GameState=", gs != null)
 	if _args.has("window"):
 		# 自测画幅：--window=1600x720（expand 模式下画布随窗口比例变宽 / 变高）
 		var wh := str(_args["window"]).split("x")
