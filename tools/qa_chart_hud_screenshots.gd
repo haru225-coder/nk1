@@ -6,6 +6,8 @@ extends SceneTree
 ## 默认严格须出 5 张：空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
 ##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_chart_hud_screenshots.gd
+## 05 小地图（lane w19-g10）：WorldMap 走真海战布景（pending_battle + 冻敌炮，同 combat_probe_stage.gd），入战墨边收场后截，
+##   断言罗经盘盘心朱点与外圈泥金线真画出来了；不写 pending_battle 时 WorldMap 走孤儿退出，截到的是灰底墨边。
 ## 注意：本脚本勿在顶层类型标注 MapView（-s SceneTree 编译期尚无 autoload，会连带 MapView 编不过）。
 
 const VIEW := Vector2i(1280, 720)
@@ -16,6 +18,8 @@ const TAG := "QA_CHART_HUD"
 const EXPECTED_SHOTS := 5
 const ShotGate := preload("res://tools/shot_gate.gd")
 const Clock := preload("res://tools/probe_clock.gd")
+const CombatStage := preload("res://tools/combat_probe_stage.gd")  # 05 真海战布景：冻敌炮 / 等墨边收场 / 按相位截（lane w19-g10）
+const MINIMAP_PATH := "CanvasLayer/HUD/MinimapPanel/Margin/MinimapRect"
 
 var _out_dir := ShotGate.out_dir("chart")
 var _chart: Node
@@ -129,6 +133,10 @@ func _run() -> void:
 	await _shot("04_alert_condition")
 
 	# ── 05 小地图：卸海图、藏 Main，只留 WorldMap HUD 雷达 ──
+	# lane w19-g10：WorldMap 是海战专用场景，没有 pending_battle 就走「孤儿场景立即退出」（_battle_exit("flee")：
+	# 起一副出战墨边「外海・脱战」再 queue_free），原先这里截到的是灰底墨边、从来没有雷达（gd20 待议 1，一色检查也拦不住）。
+	# 改走真海战同路径：先写 pending_battle、冻敌炮（combat_probe_stage.gd 一），等入战墨边收场、雷达认到本船再截，
+	# 截完断言罗经盘真画出来了（盘心朱点 + 泥金外圈），跑完清场、还原 pending_battle。
 	if ResourceLoader.exists(WM_SCENE):
 		if is_instance_valid(_chart):
 			root.remove_child(_chart)
@@ -139,17 +147,97 @@ func _run() -> void:
 			if c is CanvasItem:
 				(c as CanvasItem).visible = false
 		main.visible = false
-		var wm: Node = (load(WM_SCENE) as PackedScene).instantiate()
-		root.add_child(wm)
-		await _frames(12)
-		await _shot("05_minimap_hud")
-		if is_instance_valid(wm):
-			root.remove_child(wm)
-			wm.free()
-		await _frames(1)
+		await _shot_minimap()
 
 	_report()
 
+
+## 05：真海战布景（pending_battle + 冻敌炮）上截右下罗经盘小地图，并断言雷达画出来了（lane w19-g10）
+func _shot_minimap() -> void:
+	var gm: Node = root.get_node("GameManager")
+	var saved_battle: Dictionary = (gm.get("pending_battle") as Dictionary).duplicate(true)
+	gm.set("pending_battle", {
+		"battle": true, "power": 300.0, "player_power": 400.0,
+		"enemy": [{"type": "sea_falcon", "count": 1}], "source": {"scene": "qa_chart_hud"},
+	})
+	var wm: Node = (load(WM_SCENE) as PackedScene).instantiate()
+	root.add_child(wm)
+	var wm_ref: WeakRef = weakref(wm)  # 条件 lambda 只捕获弱引用（combat_probe_stage.gd 六）
+	_expect(CombatStage.freeze_enemy_fire(wm) >= 1, "05 布景敌船开炮已冻住")
+	_expect(not bool(wm.get("resolved")) and bool(wm.get("combat_mode")), "05 布景 WorldMap 进了海战（未走孤儿退出）")
+	var mini: Control = wm.get_node_or_null(MINIMAP_PATH) as Control
+	_expect(mini != null, "05 WorldMap HUD 有小地图 %s" % MINIMAP_PATH)
+	if mini == null:
+		CombatStage.teardown(self, wm, null)
+		await _frames(2)
+		gm.set("pending_battle", saved_battle)
+		return
+	var mini_ref: WeakRef = weakref(mini)
+	var radar_ready := func() -> bool:
+		var w = wm_ref.get_ref()
+		var m = mini_ref.get_ref()
+		return (CombatStage.standing_fail(w) == "" and CombatStage.letterbox_under(self, w) == null
+				and _radar_live(m))
+	var gone := func() -> bool: return CombatStage.standing_fail(wm_ref.get_ref()) != ""
+	if _contract:
+		# 不截图也验接线：入战墨边收场后雷达认到本船、在树上可见（headless 零延迟旁路下墨边不上场）
+		await CombatStage.wait_until(self, func() -> bool: return radar_ready.call() or gone.call())
+		var live: bool = radar_ready.call()
+		_expect(live, "05 雷达认到本船且可见" if live else "05 雷达没认到本船或不可见：%s" % CombatStage.why_not("等入战墨边收场", "布景已结算或墨边未收"))
+	else:
+		var path := "%s/05_minimap_hud.png" % _out_dir
+		var img_box := [null]
+		var ok := await CombatStage.shot_when(self, path.get_file(), _fails,
+				func() -> void: img_box[0] = ShotGate.shot(root, path, _saved, _fails), radar_ready, gone)
+		if ok and img_box[0] != null and is_instance_valid(mini):
+			_check_radar_pixels(img_box[0] as Image, mini)
+	var why := CombatStage.standing_fail(wm)
+	_expect(why == "", why if why != "" else "05 布景海战在截图前未自行结算")
+	CombatStage.teardown(self, wm, null)
+	await _frames(2)
+	gm.set("pending_battle", saved_battle)
+
+
+## 雷达可画：认到了本船（Minimap._ready 沿父链找 Ship），且在树上可见、有面积
+func _radar_live(m) -> bool:
+	if m == null or not is_instance_valid(m):
+		return false
+	var s = m.get("ship")
+	return s != null and is_instance_valid(s) and (m as Control).is_visible_in_tree() and (m as Control).size.x >= 100.0
+
+
+## 截下来的图里罗经盘真画出来了：盘心 3.5 px 朱点（UiTheme.CINNABAR）+ 外圈泥金线（UiTheme.GOLD），不是空板 / 灰底墨边
+func _check_radar_pixels(img: Image, mini: Control) -> void:
+	var vis := root.get_visible_rect().size
+	var k := Vector2(float(img.get_width()) / vis.x, float(img.get_height()) / vis.y)
+	var r: float = float(mini.get("radar_radius"))
+	var xf := mini.get_global_transform_with_canvas()
+	var c: Vector2 = xf * Vector2(r, r) * k
+	var best_red := 9.0
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
+			var p := Vector2i(int(round(c.x)) + dx, int(round(c.y)) + dy)
+			if Rect2i(Vector2i.ZERO, img.get_size()).has_point(p):
+				best_red = minf(best_red, _cdist(img.get_pixelv(p), UiTheme.CINNABAR))
+	_expect(best_red < 0.12, "05 小地图盘心画出本船朱点（色差 %.3f）" % best_red)
+	var gold_hits := 0
+	var samples := 48
+	for i in samples:
+		var a := TAU * float(i) / float(samples)
+		var hit := false
+		for dr in [-2.5, -1.5, -0.5, 0.5]:
+			var q: Vector2 = xf * (Vector2(r, r) + Vector2(cos(a), sin(a)) * (r + dr)) * k
+			var p := Vector2i(int(round(q.x)), int(round(q.y)))
+			if Rect2i(Vector2i.ZERO, img.get_size()).has_point(p) and _cdist(img.get_pixelv(p), UiTheme.GOLD) < 0.25:
+				hit = true
+				break
+		if hit:
+			gold_hits += 1
+	_expect(gold_hits >= samples * 3 / 4, "05 小地图外圈泥金线画出（%d/%d 向命中）" % [gold_hits, samples])
+
+
+func _cdist(a: Color, b: Color) -> float:
+	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length()
 
 func _check_wiring() -> void:
 	var src := FileAccess.get_file_as_string("res://scripts/SeaChart.gd")
