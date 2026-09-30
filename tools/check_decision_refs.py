@@ -33,6 +33,11 @@
   穿透不下去（目标解析不到 / 那段在真体里对不上）印「跟到一行转发」交人工，都判红，不许静默落在转发上。
   锚里那支本来就是转发的（清单有意指着转发，如 EA6-4 的 `scripts/Main.gd:1781`）不穿透。
   零、转发穿透自检：每次先在内存里造一对锚 / 工作树跑 10 种形状（见 _ST_CASES + S10），不过就退 1——穿透逻辑被改坏，必跑门禁先红。
+  零之二、ledger_refs_mutants 落点预检（lane w19-g8）：ledger_refs_mutants（台账格式硬校验 / 本脚本输出确定序的变异对照）全量要
+    git worktree、约 40 s，只能是 lane 档；它的变异锚在台账第四 / 五 / 十一刀节、前三刀段、gen_main_splits 的调用行、本脚本的两处排序、
+    本清单的 `scripts/Main.gd:N` 引用上，这些被别的片挪了（auditfix7 W8 同形），全量红着没人跑。所以每次在内存里逐格试落
+    （ledger_refs_mutants.landing()：不落盘、不建 worktree、不跑 gen，约 0.1 s），落不上计入问题、退 1；--fix 时不跑。
+    关断开关 --no-ledger-landing 只给 ledger_refs_mutants 在变异过的 worktree 里用，一键跑命令里不许带（gates_md 逐条比）。
 --fix：先要求所引文件在工作树里和 HEAD 一致（没提交的改动先提交，不然新锚对不上）。跟得上的全改成新号
   （搬到别的文件的改写成全路径，后面挂在它身上的裸 `:行` 也按需补全路径），跟不上的在引用后面插「〔跟号待核：锚 X 里是 文件:行〕」，
   头部锚改成 HEAD，再按新锚复查一遍。有「待核」就退 1。
@@ -1017,6 +1022,21 @@ def self_check():
     return bad
 
 
+LANDING_OFF = "--no-ledger-landing"  # 与 ledger_refs_mutants.LANDING_OFF 同值（那边 import 不到本脚本的常量，各写一份，gates_md 查两处 marks）
+
+
+def ledger_landing(off):
+    """零之二、ledger_refs_mutants 落点预检（lane w19-g8）：返回判红条数；✗ / ✓ 行已打印。"""
+    if off:
+        print(f"  ⚠ ledger_refs_mutants 落点预检未跑（{LANDING_OFF}：只给 ledger_refs_mutants 在变异 worktree 里用）")
+        return 0
+    import ledger_refs_mutants as lrm
+    bad, summary = lrm.landing(ROOT)
+    if not bad:
+        print(f"  ✓ ledger_refs_mutants 落点预检：{summary}；rc / 期望 ✗ 字样 / 写盘 / 确定性 / 空转对照归全量（lane 档，docs/GATES.md §三.26）")
+    return len(bad)
+
+
 def main():
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument("doc", nargs="?", default=DEFAULT_DOC)
@@ -1024,6 +1044,8 @@ def main():
     ap.add_argument("--since", help="重锚自证：和 REV 版清单逐对比内容")
     ap.add_argument("--show", action="store_true", help="逐处印出所引行原文")
     ap.add_argument("--fix", action="store_true", help="自动跟号并把头部锚改成 HEAD（所引文件须已提交）")
+    ap.add_argument(LANDING_OFF, dest="no_landing", action="store_true",
+                    help="不跑 ledger_refs_mutants 落点预检（只给 ledger_refs_mutants 在变异过的 worktree 里用，一键跑不许带）")
     o = ap.parse_args()
 
     text = open(o.doc, encoding="utf-8").read()
@@ -1043,6 +1065,7 @@ def main():
             print("  ✗ --fix 只按清单头部的锚改，别和 --anchor / --since 一起用")
             return 1
         return do_fix(o, text, repo, anchor)
+    landing_bad = ledger_landing(o.no_landing)
 
     n, _fixes, refs, _toks = check(o, text, repo, anchor)
     mismatch = 0
@@ -1061,12 +1084,14 @@ def main():
             if mismatch is None:
                 return 1
 
-    if n["bad"] or n["drift"] or n["marks"] or mismatch:
+    if n["bad"] or n["drift"] or n["marks"] or mismatch or landing_bad:
         how = []
         if n["bad"] or n["drift"] or n["marks"]:
             how.append("DRIFT 先跑 --fix 自动跟号；「要人工」「待核」的回读后改号、删标记，再提交清单")
         if mismatch and not o.since:
             how.append("MISMATCH 是本版清单的号和上一版指的不是同一段：改回提示的号；确是有意换了所指，在那处引用后括注「原文作 `:旧号`」")
+        if landing_bad:
+            how.append(f"落点预检 {landing_bad} 项：ledger_refs_mutants 的变异靶子漂了，照新形状改 tools/ledger_refs_mutants.py、跑一次全量")
         print(f"结果：有问题（{'；'.join(how) or '见上'}）")
         return 1
     print("结果：全部通过")

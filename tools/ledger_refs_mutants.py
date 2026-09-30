@@ -3,6 +3,8 @@
 
   python3 tools/ledger_refs_mutants.py          # 跑全部变异；有问题退 1，环境问题（无 git / 建不了 worktree）退 2
   python3 tools/ledger_refs_mutants.py --json   # 机读（同 docs/GATES.md §二）
+  python3 tools/ledger_refs_mutants.py --landing  # 只跑落点预检（内存里，不建 worktree、不跑 gen / check_decision_refs，远不到 1 s）；
+                                                  # check_decision_refs 每次（一键跑末条）调它，见下「生命周期」
 
 为什么：lane cs23 收了两处「门禁自己绿、下游才兜 / 偶发假 DIFF」的缺口，变异实测只在仓外探针
 （/tmp/cs23/{mut_gen,det,mut_det}.py）里跑过，没入库；日后放宽了、正则改了、排序删了，没人会再跑那几支探针。
@@ -25,12 +27,22 @@
 做法：把当前工作树的已跟踪文件（含未提交改动，`git stash create`，不动 stash 列表）检出到临时 worktree，逐格复位、施变异、跑；
 判红：任一格 rc / ✗ 行 / 写盘 / 确定性与期望不符；变异 / 旧口径补丁没落上（替换处数不对，说明源码或台账改了、这支变异该跟着改）。
 只读主树：临时 worktree 跑完即删（`git worktree remove --force`）。全套约半分钟。
+
+生命周期（lane w19-g8，照 lane cs27 给 check_symbols_mutants 的做法）：全量要 git worktree、约 40 s，升不了必跑（GATES §五.2），
+仍是 lane 档；可它和 check_symbols_mutants 是同一种风险（auditfix7 W8：lane 档的变异对照，靶子被别的片挪了，全量红着没人跑）。
+全量判得出的红里，「靶子漂了、变异没落上」这一类（节标题 / 函数表 / 前三刀段 / 调用行 / 排序形状 / 清单 Main.gd 引用条数）不用跑
+gen / check_decision_refs 就判得出。所以另立 `landing()` 落点预检：内存叠层（Mem：读主树工作树、写只进 dict、不落盘）里把
+GEN_CASES / DET_CASES 每格的变异与旧口径补丁逐格施一遍、Facts 现算一遍，只看落不落得上；外加「零、」Z1–Z5（把真树上的靶子按合法
+写法挪一下，预检须点名对应格没落上——预检自己不许空转）。挂在必跑的 check_decision_refs（一键跑末条），靶子漂了当场红。
+全量才判得出的（rc、期望 ✗ 字样、写盘、确定性、空转对照）仍靠 lane 档的 when（GATES §三.26「谁在什么时候跑它」）。
+全量二节在变异过的 worktree 里跑 check_decision_refs（X1 / X2 去了排序，预检必红），所以 _det_case 带 `--no-ledger-landing`
+关掉它——这个开关只给本脚本用，一键跑命令里不许带（gates_md 逐条比一键跑命令）。
 """
 import hashlib, os, re, shutil, subprocess, sys, tempfile
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
-if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
+if __name__ == "__main__" and "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；被 check_decision_refs import（落点预检）时不接管
     sys.path.insert(0, TOOLS)
     import gate_json; gate_json.maybe_json(__file__)
 
@@ -50,12 +62,32 @@ def _git(*args, cwd=ROOT):
     return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
 
 
+class Mem:
+    """内存工作树（lane w19-g8 落点预检，同 check_symbols_mutants.Mem）：读先看本格写过的（over），再落到 base 目录
+    （主树工作树，读一次缓存）；写只进 over、不落盘。"""
+    def __init__(self, base, over=None, cache=None):
+        self.base, self.over, self.cache = base, dict(over or {}), cache if cache is not None else {}
+
+    def read(self, rel):
+        if rel in self.over:
+            return self.over[rel]
+        if rel not in self.cache:
+            with open(os.path.join(self.base, rel), encoding="utf-8") as f:
+                self.cache[rel] = f.read()
+        return self.cache[rel]
+
+
 def _read(wt, rel):
+    if isinstance(wt, Mem):
+        return wt.read(rel)
     with open(os.path.join(wt, rel), encoding="utf-8") as f:
         return f.read()
 
 
 def _write(wt, rel, text):
+    if isinstance(wt, Mem):
+        wt.over[rel] = text
+        return
     with open(os.path.join(wt, rel), "w", encoding="utf-8") as f:
         f.write(text)
 
@@ -419,10 +451,11 @@ def _gen_case(wt, snap, muts):
 
 def _det_case(wt, snap, muts, args):
     _reset(wt, snap, muts)
-    runs = [_py(wt, REFS, args, seed) for seed in SEEDS]
+    runs = [_py(wt, REFS, args + [LANDING_OFF], seed) for seed in SEEDS]  # 变异过的树上预检必红（X1 / X2 去了排序），关掉
     kinds = {hashlib.md5(r.stdout.encode()).hexdigest()[:8] for r in runs}
     rcs = sorted({r.returncode for r in runs})
-    lines = sum(1 for ln in runs[0].stdout.split("\n") if ln.lstrip().startswith(("⚠", "✗")))
+    lines = sum(1 for ln in runs[0].stdout.split("\n")  # 关断那行「⚠ 落点预检未跑」不算条数（不许替变异凑数）
+                if ln.lstrip().startswith(("⚠", "✗")) and LANDING_OFF not in ln)
     return rcs, kinds, lines, runs[0].stdout + runs[0].stderr
 
 
@@ -526,7 +559,120 @@ def run(wt, snap, problems):
             problems.append(f"空转对照不成立：{new}")
 
 
+# ---- 落点预检（lane w19-g8） -------------------------------------------------------------------------------------
+LANDING_OFF = "--no-ledger-landing"  # check_decision_refs 落点预检的关断开关：只给 _det_case 用（变异过的 worktree 里预检必红）
+
+
+def _land(root, drift=None):
+    """drift（{路径: 文本}）叠在 root 工作树上，GEN_CASES / DET_CASES 逐格施变异（每格一份新叠层）、Facts 现算一遍。
+    返回 ({编号: 没落上的原因}, Facts 或 None)。"""
+    cache, missed = {}, {}
+    try:
+        facts, fmiss = Facts(_read(Mem(root, drift, cache), LEDGER), None), None
+    except Miss as e:
+        facts, fmiss = None, e
+    cells = [(cid, muts, want) for _g, cid, _w, muts, _rc, want, _a in GEN_CASES] + \
+            [(cid, muts, None) for _g, cid, _w, muts, *_ in DET_CASES]
+    for cid, muts, want in cells:
+        wt = Mem(root, drift, cache)
+        try:
+            if isinstance(want, str):
+                if facts is None:
+                    raise fmiss
+                facts.want(want)
+            for m in muts:
+                m(wt)
+        except Miss as e:
+            missed[cid] = str(e)
+    return missed, facts
+
+
+def _z_ledger(fn):
+    return lambda root: {LEDGER: fn(_read(Mem(root), LEDGER))}
+
+
+def _z_sub(rel, pattern, repl, count=1):
+    """真树上 rel 按正则改（count=0：全改），须至少落上一处——落不上说明靶子已经换了形状，主预检自己也会红。"""
+    def z(root):
+        new, k = re.subn(pattern, repl, _read(Mem(root), rel), count=count, flags=re.M)
+        if not k:
+            raise Miss(f"{rel} 里 {pattern!r} 一处也没有")
+        return {rel: new}
+    return z
+
+
+def _z_doc_refs(keep):
+    """清单里 `scripts/Main.gd:N` 只留前 keep 处（其余改指 scripts/Main_.gd，只为造条数不够的形状）。"""
+    def z(root):
+        text = _read(Mem(root), DOC)
+        hits = list(re.finditer(r"`scripts/Main\.gd:(\d+)`", text))
+        if len(hits) <= keep:
+            raise Miss(f"{DOC} 里 `scripts/Main.gd:N` 只有 {len(hits)} 处")
+        for m in reversed(hits[keep:]):
+            text = text[:m.start()] + "`scripts/Main_.gd:" + m.group(1) + "`" + text[m.end():]
+        return {DOC: text}
+    return z
+
+
+def _z_title_dash(text):  # 第十一刀函数表的行段全写成「—」（gen 认这种写法：行段可不写，C3 就这么写）
+    _, lo, hi = _section(text, K_TITLE)
+    body, k = re.subn(r"^(\| `_?\w+\([^`\n]*\)` \|) \d+–\d+ \|", r"\1 — |", text[lo:hi], flags=re.M)
+    if not k:
+        raise Miss(f"{LEDGER} 第{_cn(K_TITLE)}刀那节没有带行段的函数表行")
+    return text[:lo] + body + text[hi:]
+
+
+# 「零、」预检自证：把真树上的靶子按合法 / 等价写法挪一下（gen / check_decision_refs 自己照样对），预检须点名这几格没落上。
+# (编号, 说明, 造漂移, 须判没落上的格——至少这些)
+DRILL = [
+    ("Z1", "第十一刀节标题写成 ###（W8 同形：节被并进上一刀）",
+     _z_ledger(lambda t: re.sub(_head_re(K_TITLE), lambda h: "#" + h.group(0), t, count=1, flags=re.M)), ("C1", "C2", "M1a", "M4b", "M5")),
+    ("Z2", "第十一刀函数表行段全写成「—」（合法：行段可不写）", _z_ledger(_z_title_dash), ("C1", "M4b")),
+    ("Z3", "gen 把 _check_first_knifes 改名 _check_first_knives（合法改名）",
+     _z_sub(GEN, r"\b_check_first_knifes\b", "_check_first_knives", 0), ("M1a′", "M2a′", "M5′")),
+    ("Z4", "check_decision_refs 把 pairs.sort(key=…) 写成 pairs = sorted(pairs, key=…)（等价改写）",
+     _z_sub(REFS, r"^([ \t]+)pairs\.sort\(", r"\1pairs = sorted(pairs, "), ("X1", "X2")),
+    ("Z5", "清单里 `scripts/Main.gd:N` 只剩 7 处（拆 Main 后引用陆续改指拆出件）", _z_doc_refs(7), ("D1", "D2", "X1", "X2")),
+]
+
+
+def landing(root=ROOT):
+    """落点预检（lane w19-g8）：root 当前工作树上内存里逐格施变异，只判落不落得上；外加「零、」Z1–Z5。给 (problems, 摘要)；✗ 行已打印。
+    判不出的（rc / 期望 ✗ 字样 / 写盘 / 确定性 / 空转对照）归全量，见 docs/GATES.md §三.26。"""
+    tag = "ledger_refs_mutants 落点预检 · "
+    problems = []
+    for zid, what, make, want in DRILL:
+        try:
+            got, _ = _land(root, make(root))
+        except Miss as e:
+            print(f"  ✗ {tag}{zid} {what}：造漂移没落上——{e}（靶子已换了形状，照新形状改 {os.path.basename(__file__)} 的 DRILL）")
+            problems.append(f"落点预检 {zid} 造漂移没落上")
+            continue
+        lost = [c for c in want if c not in got]
+        if lost:
+            print(f"  ✗ {tag}{zid} {what}：预检应判 {' / '.join(lost)} 没落上，却判落上了（预检空转）")
+            problems.append(f"落点预检 {zid} 空转")
+    missed, facts = _land(root)
+    for cid, why in missed.items():
+        print(f"  ✗ {tag}{cid}：变异没落上——{why}（靶子漂了：照新形状改 tools/ledger_refs_mutants.py 的 M / GEN_CASES / DET_CASES，"
+              f"改完跑全量 python3 tools/ledger_refs_mutants.py）")
+        problems.append(f"落点预检 {cid} 变异没落上")
+    if problems or facts is None:
+        return problems, ""
+    r, n = facts.row, facts.npc_row
+    refs = len(re.findall(r"`scripts/Main\.gd:\d+`", _read(Mem(root), DOC)))
+    return problems, (f"Z1–Z{len(DRILL)} {len(DRILL)} 格判对；{len(GEN_CASES)} + {len(DET_CASES)} 格变异在当前台账 / 两支脚本 / 清单上都落得上"
+                      f"（前{_cn(facts.first)}刀段；第十一刀 → {facts.title_rel} 最后一支 {r.group(1)} {r.group(2)}–{r.group(3)}；"
+                      f"第四刀 → {facts.tavern_last}；第五刀 → {n.group(1)} {n.group(2)}–{n.group(3)}；清单 Main.gd 引用 {refs} 处）")
+
+
 def main():
+    if "--landing" in sys.argv[1:]:
+        problems, summary = landing()
+        if not problems:
+            print(f"  ✓ ledger_refs_mutants 落点预检：{summary}")
+        print("结果：全部通过" if not problems else f"结果：{len(problems)} 项问题")
+        return 1 if problems else 0
     if _git("rev-parse", "--git-dir").returncode:
         print("  ✗ 不在 git 仓库里（要建临时 worktree）")
         return 2

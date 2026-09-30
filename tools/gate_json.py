@@ -149,9 +149,10 @@ REGISTRY = [
               "仓外 brief 引用只查越界（`$NK1_BRIEFS` 不在只记 `⚠`）；落点所在函数只剩一行转发（func_body.forward_of）的穿透到真体再跟号，穿透不下去报「跟到一行转发」，"
               "每次先跑内存里的「转发穿透自检」10 形（lane auditfix6）；输出确定序（lane cs23）：逐处的 ⚠ / ✗ 行先收齐、按「清单行号 → 行内第几处引用 → 类别」排好再印，"
               "`--since` / 改号自证的新旧配对也按新版引用的清单顺序逐对比——原先配对取 `ko.keys() & kn.keys()`（集合，遍历顺序随 PYTHONHASHSEED 变），有 2 处以上 ⚠ / MISMATCH 时同基连跑每次行序不同、「逐字节同」比对偶发假 DIFF（lane cs18 待议 4）",
-     "green": "`✓ 转发穿透自检 10/10（…）` + `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）。同一基连跑 5 次 stdout 逐字节同（lane cs23 实测：六个历史基 × 默认 / `--show`、5 个 `--since` 旧版与号写歪的脏树各 5 次同 md5）；lane cs25 起由 ledger_refs_mutants 二节固化（5 个固定种子、去掉排序须判不确定）",
+     "green": "`✓ 转发穿透自检 10/10（…）` + `✓ ledger_refs_mutants 落点预检：Z1–Z5 5 格判对；40 + 5 格变异…都落得上（…）；…`（lane w19-g8，SUBCHECKS）+ `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）。同一基连跑 5 次 stdout 逐字节同（lane cs23 实测：六个历史基 × 默认 / `--show`、5 个 `--since` 旧版与号写歪的脏树各 5 次同 md5）；lane cs25 起由 ledger_refs_mutants 二节固化（5 个固定种子、去掉排序须判不确定）",
      "red": "`✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；"
             "`…可跟号 → 文件:新号（穿透一行转发 …）` / `…跟不上，要人工：跟到一行转发：…` / `✗ 转发穿透自检 S… 期望 … 实得 …`（脚本自身坏了）；"
+            "`✗ ledger_refs_mutants 落点预检 · <编号>：变异没落上——…`（变异靶子漂了，lane w19-g8，见 SUBCHECKS）；"
             "`结果：有问题（DRIFT 先跑 --fix 自动跟号…）`；修法 `python3 tools/check_decision_refs.py --fix`（所引文件先提交）"},
     # lane auditfix3：审计 audit1 判 cs12 / cs11「半实」（护栏现状下无能单独触发的实例），这里固化实例；跑一次约一分钟（负载下 94 s）、要 git worktree。
     # lane cs27（auditfix7 W8）：升不了 must（§五.2 快 / 不写盘两条不成立），靶子漂移一类由 check_symbols 十四节「落点预检」每次一键跑判（SUBCHECKS）；
@@ -195,10 +196,14 @@ REGISTRY = [
      "red": "`✗ <探针>：两档结论不同——…` 附 `rc：档 0 = … · 档 300 = …` / `只在档 X：✗ …`；`✗ …：两档同红`（探针自身红）；`✗ …：跑不成`（没 JSON 行 / 超时）；"
             "`--mutants`：`✗ B0 …` 基线不绿 / `✗ M<k> …——期望「两档结论不同」` / `变异没落上`；`结果：N 项问题`；找不到 godot / 参数错退 2"},
     # lane cs25：cs23 的仓外探针（/tmp/cs23/{mut_gen,det,mut_det}.py）入库；不升 must：约半分钟、要 git worktree（写临时盘），
-    # 触发条件按路径判得准（改了那两支脚本 / 台账被变异锚住的几节），同 check_symbols_mutants（§五.2）
+    # 触发条件按路径判得准（改了那两支脚本 / 台账被变异锚住的几节），同 check_symbols_mutants（§五.2）。
+    # lane w19-g8（照 cs27）：全量仍升不了 must；靶子漂移一类由 check_decision_refs「零之二、落点预检」每次一键跑判（SUBCHECKS）；
+    # when 补上「动了靶子」——拆 Main 改台账第十一刀函数表 / 清单 Main.gd 引用改指拆出件，也要跑全量
     {"id": "ledger_refs_mutants", "tier": "lane",
-     "when": "动 tools/gen_main_splits.py（台账格式硬校验 / 函数表对账）或 tools/check_decision_refs.py（逐处行的排序 / since 配对），"
-             "或改台账 docs/Main拆解台账.md 已有的「已拆（前三刀…）」段、第四 / 第五 / 第十一刀节的结构（lane cs26 起变异按形状定位：日期 / 题文 / 形参名 / 说明字改了不必跑）",
+     "when": "① 动 tools/gen_main_splits.py（台账格式硬校验 / 函数表对账）或 tools/check_decision_refs.py（逐处行的排序 / since 配对）或 tools/ledger_refs_mutants.py；"
+             "② 动了变异的靶子：台账 docs/Main拆解台账.md 已有的「已拆（前三刀…）」段、第四 / 第五 / 第十一刀节的结构（节标题形状、函数表增删行 / 行段写法；"
+             "lane cs26 起变异按形状定位：日期 / 题文 / 形参名 / 说明字改了不必跑），拍板清单里 `scripts/Main.gd:N` 引用增删 / 改指；"
+             "③ 一键跑 check_decision_refs「零之二、落点预检」红了——改完 M / GEN_CASES / DET_CASES 必跑一次全量",
      "kind": "py", "file": "tools/ledger_refs_mutants.py",
      "judge": "（lane cs25，固化 lane cs23 的探针）当前工作树检出到临时 worktree，逐格施变异、比期望表。"
               "一、gen_main_splits 台账格式硬校验 ①–⑤：逐格改台账（节标题去反引号 / ### / 无空格 / 半角括号 / 去 lane / 箭头后多字、"
@@ -210,10 +215,12 @@ REGISTRY = [
               "二、check_decision_refs 输出确定序：PYTHONHASHSEED=0/1/2/3/42 各跑一次，D0 基线 / D1 清单前 8 处 Main.gd 号 +1 不提交 / "
               "D2 同一脏树 `--since HEAD`（lane cs26 起相对基，原钉死 ccb1d57）stdout 须逐字节同；X1 / X2 同 D1 / D2 但两处排序（Lines.flush、since 配对）都去掉，须出 ≥2 种",
      "green": "`✓ C0 …` 起 40 格逐格 `✓ <编号> …：对账 rc=N，--write rc=N，写后对账 rc=N` + 二节 5 格 `✓ <编号> …：rc=N，⚠ / ✗ k 条，stdout 1 种`（X1 / X2 `5 种`）"
-              " + 「三、空转对照」18 条 `✓ … 旧口径 … rc=0 → … 现行 …`（含 `✓ 刀序起点：C3′ … rc=1 → C3 … rc=0`）+ `结果：全部通过`",
+              " + 「三、空转对照」18 条 `✓ … 旧口径 … rc=0 → … 现行 …`（含 `✓ 刀序起点：C3′ … rc=1 → C3 … rc=0`）+ `结果：全部通过`。"
+              "`--landing` 只跑落点预检（= check_decision_refs「零之二」，约 0.1 s）：`✓ ledger_refs_mutants 落点预检：Z1–Z5 5 格判对；40 + 5 格变异…都落得上（…）` + `结果：全部通过`",
      "red": "`✗ <编号> …：期望对账 rc=a / 写后 rc=b，实得 …` 附 `缺 ✗ …` / `多 ✗ …` / `--write 判红却写了盘`；"
             "`✗ D<k> …：期望 rc=a、逐字节同，实得 … stdout n 种`；`变异没落上` = 按形状也定位不到（第四 / 第五 / 第十一刀节标题不止或不到一处、那节没有函数表行、前三刀段认不出、两支脚本里调用 / 排序的形状改了）、这支变异该跟着改；"
-            "空转对照 `应 0 → 1` / `应 否 → 是`；`结果：N 项问题`；无 git / 建不了 worktree 退 2"},
+            "空转对照 `应 0 → 1` / `应 否 → 是`；`结果：N 项问题`；无 git / 建不了 worktree 退 2；"
+            "`--landing`：`✗ ledger_refs_mutants 落点预检 · <编号>：变异没落上——…` / `· Z<n> …预检空转` 退 1"},
     # lane w19-g3：专项探针跟现行代码改绿后入册——不入册时 09-30 合并（夺船存名 / 士气挂件 / 3D 船身）把它悄悄弄红、没人看见（§五.1「入库不等于入册」）。
     # 不升 must：headless 约 2 s、写 user:// 存档位 93（跑完删），触发条件按路径 / 函数判得准（§五.2）
     {"id": "qa_pirate_boat_probe", "tier": "lane",
@@ -378,6 +385,22 @@ SUBCHECKS = [
              "`…是一行转发到 …，… 不是 preload 常量` = 变异的靶子被挪了 / 改了（拆 Main、改节点名、改船屋断言），全量跑下去这一格就是 `变异没落上`；"
              "`✗ check_symbols_mutants 落点预检 · K<n> …` = locate_body / forward_of 判据变了。修法：照新源码改 tools/check_symbols_mutants.py 的 CASES，"
              "再跑一次全量 `python3 tools/check_symbols_mutants.py`。计入 check_symbols 问题、退 1"},
+    {"id": "ledger_refs_mutants 落点预检（零之二）", "parent": "check_decision_refs", "lane": "w19-g8", "oneclick": True,
+     "cmd": "python3 tools/check_decision_refs.py", "also": ["tools/ledger_refs_mutants.py"],  # 判词由 ledger_refs_mutants.landing() 印
+     "marks": ["零之二、ledger_refs_mutants 落点预检", "import ledger_refs_mutants as lrm", "lrm.landing(ROOT)",
+               'LANDING_OFF = "--no-ledger-landing"', "landing_bad = ledger_landing(o.no_landing)",
+               "def landing(root=ROOT):", "class Mem:", "args + [LANDING_OFF]", "DRILL = [", "变异在当前台账 / 两支脚本 / 清单上都落得上"],
+     "expect": "转发穿透自检之后一行 `✓ ledger_refs_mutants 落点预检：Z1–Z5 5 格判对；40 + 5 格变异在当前台账 / 两支脚本 / 清单上都落得上（前三刀段；第十一刀 → scripts/ui/TitlePage.gd 最后一支 …；"
+               "第四刀 → …；第五刀 → …；清单 Main.gd 引用 N 处）；rc / 期望 ✗ 字样 / 写盘 / 确定性 / 空转对照归全量（lane 档，docs/GATES.md §三.26）`。"
+               "ledger_refs_mutants（lane 档，全量要 git worktree、约 40 s）的 GEN_CASES / DET_CASES 逐格在当前工作树上内存里施一遍（`Mem` 叠层：读主树工作树、写不落盘，"
+               "不建 worktree、不跑 gen / check_decision_refs，约 0.1 s），Facts 现算一遍，只判变异 / 旧口径补丁落不落得上；另跑「零、」Z1–Z5：把真树上的靶子按合法 / 等价写法挪一下"
+               "（第十一刀标题 ###、那节行段写「—」、gen 改名 `_check_first_knives`、`pairs = sorted(pairs, …)`、清单 Main.gd 引用只剩 7 处），预检须点名对应格没落上。"
+               "起因同 check_symbols_mutants 十四节（auditfix7 W8，lane cs27）：lane 档的变异对照靶子被别的片挪了，全量红着没人跑。--fix 时不跑。"
+               "关断开关 `--no-ledger-landing` 只给 ledger_refs_mutants 二节在变异过的 worktree 里用（印一行 `⚠ ledger_refs_mutants 落点预检未跑`，不计入 ⚠ / ✗ 条数），一键跑命令不许带",
+     "fail": "`✗ ledger_refs_mutants 落点预检 · <编号>：变异没落上——<文件> 里「## 第十一刀（」起头的节标题有 k 处，应 1 处` / `…那节找不到带行段的函数表行` / "
+             "`…替换了 k 处，应 n 处` / `…引用只有 k 处，应 ≥8` = 变异的靶子被挪了 / 换了写法（拆 Main 改台账、改 gen / 本脚本的调用或排序写法、清单引用改指），全量跑下去这一格就是 `变异没落上`；"
+             "`✗ … · Z<n> …预检空转` / `…造漂移没落上` = 预检自己的判法被放宽 / 靶子已换形状。修法：照新形状改 tools/ledger_refs_mutants.py 的 M / GEN_CASES / DET_CASES（或 DRILL），"
+             "再跑一次全量 `python3 tools/ledger_refs_mutants.py`。计入 check_decision_refs 问题、退 1"},
     {"id": "按函数名取函数体（十一）", "parent": "verify_economy", "lane": "cs14 / cs17 / gd23", "oneclick": True,
      "cmd": "python3 tools/verify_economy.py",
      "marks": ["十一、按函数名取函数体", "from func_body import", "_body_ask(name, m is not None, body=m and m.group(0)", "处按名取用都取到函数体",
