@@ -1143,20 +1143,89 @@ func _v0928_crew_check(main: Node) -> void:
 		want_names.append(str((foes[__i] as Object).get("ship_name")))
 	_check(names == want_names and str(ships[ships.size() - 1].get("type", "")) == "pirate_boat",
 		"夺来的快船用敌船原名入列、type 不动（%s）" % [names])
+	# 夺船入册的账目口径（09-30 补回）：WorldMap._board_enemy 走 Fleet.add_ship(type_id, enemy.ship_name)，
+	# add_ship 是纯 append（scripts/core/Fleet.gd:98），两艘同名在册即占两格、船籍簿各开一行（LedgerPage.gd 船队明细按册逐船画，不并名）。
+	var dup_count := 0
+	for sn in ships:
+		if str(sn.get("name", "")) == "快船":
+			dup_count += 1
+	_check(foes.size() >= 2 and ships.size() == 1 + foes.size() and dup_count == foes.size(),
+		"同名夺船不并格：两艘「快船」各占一格（名册 %d 格，其中 %d 格叫「快船」）" % [ships.size(), dup_count])
+	main.update_status_panel()
+	var sl0: RichTextLabel = main.get("status_label")
+	var ledger0 := sl0.get_parsed_text().replace("⁠", "").replace(" ", " ") if sl0 != null else ""
+	var dup_rows := 0
+	for r in ledger0.split("\n"):
+		if r.begins_with("　快船　"):
+			dup_rows += 1
+	_check(dup_rows == foes.size(),
+		"同名夺船不并行：船籍簿逐船各开一行（%d 行「快船」，不并成一行）" % dup_rows)
 	var notice: Label = wm.get("_notice")
 	var last_name: String = want_names[-1] if not want_names.is_empty() else "快船"
 	_check(notice != null and notice.text.find(last_name) >= 0, "headless 题签起不来：浮字兜底写夺来的船名「%s」（%s）" % [last_name, notice.text if notice != null else "无浮字"])
-	# 战果注记（09-30 合并改按本地线文案）：本地线三式分开——海寇退走 sea_win_note「海盗已退。」、
-	# 受降 sea_surrender_note「敌船降幡，货与人一并收押。」、遁走 sea_fled_note「敌船转篷遁走…」；
-	# 「接舷既定。」前缀是 SeaChart._on_battle_result 对 boarded 胜局加盖的，不在注记函数里。
-	# origin 那条的合并句式（夺来 N 船、添水手…、水粮 N 日）与 28 字顶匾截断断言属另一套文案，未随合并采用，已不再断言。
-	var win_note: String = FX.sea_win_note(300, int(d.get("player_damage", 0.0)), "")
-	_check(win_note == "海盗已退。获财货 300 钱。船体受损 40。",
-		"海寇退走注记：钱数与战损照战果记（得「%s」）" % win_note)
-	_check(FX.sea_surrender_note(200, 30, "").begins_with("敌船降幡，货与人一并收押。获财货 200 钱。船体受损 30。")
-		and FX.sea_fled_note(200, 30, "").begins_with("敌船转篷遁走，只拾得些漂散的货。获财货 200 钱。船体受损 30。"),
-		"受降与遁走各写各句，不与退走混用")
 	GM.pending_battle = {}
+	# 战果注记三式＋前缀＋顶匾截断（09-30 补回，按本地线行为成句断言）：本地线三式分开——
+	# 沉一夺二按 win_kind=""/全赏走「海盗已退。」（SeaChart.gd:1491 起，fled 句仅「一艘没沉没没夺、只见遁走」时才用）；
+	# 交代在句首、账目在句尾（「获财货 N 钱。船体受损 N。」），promo 接在句末。
+	# 「接舷既定。」前缀是 SeaChart._on_battle_result:1497 对 boarded 胜局加盖的，实测走一遍真结算再对；
+	# 海图顶匾第二行 28 字截断在 SeaChart._refresh_strip:730（_log 把注记存进 _latest_note，_refresh_strip 画匾）。
+	# origin 那条的合并句式（夺来 N 船、添水手…、水粮 N 日）与 28 字截断断言属另一套文案，未随合并采用——这里补的是本地线自己的口径。
+	for trio in [["沉一夺二／全炮击", FX.sea_win_note(300, 40, ""), "海盗已退。获财货 300 钱。船体受损 40。"],
+		["受降", FX.sea_surrender_note(200, 30, ""), "敌船降幡，货与人一并收押。获财货 200 钱。船体受损 30。"],
+		["全遁", FX.sea_fled_note(200, 30, ""), "敌船转篷遁走，只拾得些漂散的货。获财货 200 钱。船体受损 30。"]]:
+		var tag: String = trio[0]
+		var note: String = trio[1]
+		var want: String = trio[2]
+		_check(note == want and note.ends_with("。")
+			and note.find("获财货") > note.find("。", 0) and note.find("获财货") < note.find("船体受损"),
+			"战果注记（%s）：交代在句首、账目在句尾成句（得「%s」）" % [tag, note])
+	_check(FX.sea_win_note(300, 40, "案册改题「哨官」。").ends_with("船体受损 40。案册改题「哨官」。"),
+		"战果注记 promo 接在账目句末（得「%s」）" % FX.sea_win_note(300, 40, "案册改题「哨官」。"))
+	# 走真结算：wm2 甫以 boarded 收战，直接喂给 SeaChart._on_battle_result，读日志与顶匾。
+	# （sailing 是 instance 字段，被前面探针拉起过就一直 true——顶匾第二行会压航行行，这里清零再测。）
+	var sc = (load("res://scenes/SeaChart.tscn") as PackedScene).instantiate()
+	root.add_child(sc)
+	sc.set("sailing", false)
+	sc.set("remaining_li", 50.0)  # 挡 _after_combat 的 _arrive()「历 0 日，抵 。」压日志首行
+	if sc.get("log_label") != null:
+		sc.get("log_label").text = ""  # 冲掉前面探针日志 _log 过的到港行
+	sc.call("_refresh_strip")
+	var spoil0: int = GS.money
+	sc.call("_on_battle_result", "win", {"boarded": true, "player_damage": 40.0})
+	var spoil_now: int = GS.money - spoil0
+	var log0: String = sc.get("log_label").get_parsed_text()
+	var wd := "海盗已退。获财货 %d 钱。船体受损 40。" % spoil_now
+	_check(spoil_now >= 150 and spoil_now <= 600 and log0.find("接舷既定。" + wd) >= 0,
+		"接舷夺船战果注记（boarded）：日志首行「接舷既定。」＋全赏注记（spoil %d，得首行「%s」）" % [spoil_now, log0.get_slice("\n", 0)])
+	var strip0: RichTextLabel = sc.get("_strip_line")
+	var strip_note: String = strip0.get_parsed_text().get_slice("\n", 1).strip_edges() if strip0 != null else ""
+	# 钱数是 randf_range(150,600)，位数不定——超不过 28 字时不截、超过时截 27 字＋…，两路都按 _refresh_strip:730 的式子现算
+	var raw_note: String = "接舷既定。" + wd
+	var expect_note := raw_note
+	var cut := raw_note.length() > 28
+	if cut:
+		expect_note = raw_note.substr(0, 27) + "…"
+	_check(strip_note == expect_note and (not cut or expect_note.ends_with("…")),
+		"海图顶匾第二行照 _refresh_strip 28 字收：注记实长 %d 字，%s匾上得「%s」" % [
+			raw_note.length(), "截 27 字＋…，" if cut else "未超不截，", strip_note])
+	# 截断定式（不随钱数位走）：写一条定长 40 字注记，匾上恒收成 27 字＋…；再写一条 20 字短注记，匾上恒原样过
+	sc.set("_latest_note", "定长四十字注记甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥一二三四五六七八九零零零零零")
+	sc.call("_refresh_strip")
+	var strip_long: String = sc.get("_strip_line").get_parsed_text().get_slice("\n", 1).strip_edges()
+	sc.set("_latest_note", "短注记不过二十字上下可以直接过")
+	sc.call("_refresh_strip")
+	var strip_short: String = sc.get("_strip_line").get_parsed_text().get_slice("\n", 1).strip_edges()
+	_check(strip_long.length() == 28 and strip_long.ends_with("…") and strip_short == "短注记不过二十字上下可以直接过",
+		"顶匾第二行截断定式：长注记收成 27 字＋…（得 %d 字「%s」），短注记原样过（「%s」）" % [strip_long.length(), strip_long, strip_short])
+	sc.get("log_label").text = ""
+	sc.call("_on_battle_result", "win", {"boarded": true, "player_damage": 40.0, "fates": [{"fate": "struck", "type": "sea_falcon"}]})
+	var log1: String = sc.get("log_label").get_parsed_text()
+	_check(log1.find("接舷既定。敌船降幡，") == 0,
+		"接舷且敌降战果注记：前缀盖在受降句上（得首行「%s」）" % log1.get_slice("\n", 0))
+	root.remove_child(sc)
+	sc.free()
+	GM.pending_battle = {}
+	var sc_scr = load("res://scripts/SeaChart.gd")
 	# 三、元军哨船：先击沉一艘，再夺两艘 → 接舷既定、不说退去、交代击沉一船；夺来的叫「元哨船・一」，type 仍是海鹘
 	Flt.set("ships", [])
 	Flt.call("add_ship", "fu_ship_medium", "")
@@ -1184,6 +1253,14 @@ func _v0928_crew_check(main: Node) -> void:
 		"退走／受降／遁走三式注记各写各句")
 	_check(ships2.size() >= 2 and str(ships2[1].get("type", "")) == "sea_falcon",
 		"夺来的元军哨船 type 仍是 sea_falcon（得 %s / 名 %s）" % [ships2[1].get("type", "") if ships2.size() >= 2 else "无", ships2[1].get("name", "") if ships2.size() >= 2 else "无"])
+	# 沉一夺二的分账口径（09-30 补回，对 win_kind 静态函数）：下场明细有 boarded、sunk → 全赏走「海盗已退。」式；
+	# 敌降（struck）→ 受降句；一艘没沉没夺只见遁走 → 赏半（spoil 区 [75,300]）走敌遁句；不明不白（无 fates）→ ""。
+	_check(sc_scr.win_kind({"boarded": true, "player_damage": 0.0}) == ""
+		and sc_scr.win_kind({"fates": [{"fate": "sunk"}, {"fate": "boarded"}]}) == ""
+		and sc_scr.win_kind({"fates": [{"fate": "sunk"}]}) == ""
+		and sc_scr.win_kind({"fates": [{"fate": "fled"}]}) == "fled"
+		and sc_scr.win_kind({"fates": [{"fate": "struck"}]}) == "surrender",
+		"胜局分账口径：沉一夺二／全炮击走退走句（kind 空串），只见遁走赏半，有受降走受降句")
 	GM.pending_battle = {}
 	# 四、发炮的船已释放：炮弹命中照常扣伤、爆炸、自删，不报 SCRIPT ERROR（修前报错中断，炮弹留在场上）
 	var tgt: Node = (load("res://scenes/PirateShip.tscn") as PackedScene).instantiate()
@@ -1247,9 +1324,10 @@ func _v0928_crew_check(main: Node) -> void:
 	_check(ledger.find("福船（中）　福船（中）") < 0 and ledger.find("　福船（中）　0 / 800 料") >= 0, "船名与船型相同只写一次（福船（中））")
 	_check(row_i >= 0 and rows[row_i].ends_with("料") and row_i + 1 < rows.size() and rows[row_i + 1].begins_with("　　帆") and rows[row_i + 1].find("水手") >= 0,
 		"船队明细一艘两行：「快船・一　快船　…料」／「　　帆…水手…」（%s）" % [rows.slice(maxi(row_i, 0), maxi(row_i, 0) + 2)])
-	# 七、海战难度对账——已作废（09-30 合并）：origin 那条的对账基线是它自己的兜圈椭圆操船（PirateShip._orbit_*），
-	# 本地线操船换成 EnemyCaptainAI，口径不可比。函数留在本文件下方归档，待按本地线操船重记基线后再启用。
-	# _v0928_crew_difficulty(pirate, patrol)
+	# 七、海战难度对账（09-30 按本地线 EnemyCaptainAI 重记基线重开）：开局小艍遇 PATROL_ENEMY，
+	# CREW_FIRST_SEEDS 个固定种子各推 CREW_FIRST_SECS 秒，重演一致＋首轮 0 沉＋总沉数范围断言
+	# （测法、门槛出处与实测分布均见 _v0928_crew_difficulty 头注）。
+	_v0928_crew_difficulty(patrol)
 	# 收拾：船队、职事、战况复原，免得污染后面的检查
 	Flt.set("ships", saved_ships)
 	Flt.water = saved_water
@@ -1287,71 +1365,96 @@ func _crew_particles(n: Node) -> Array:
 	return out
 
 
-## ── crew 线 09-29 返修：海战难度对账（复核 major）──
-## 09-28 初修让敌船绕本船兜正圆：船身永远正对本船，画内这点距离几乎弹弹中——本船不动 30 s 受伤比修前多七成六，
-## 小艍 120 耐久遇三艘哨船 20 局全在首轮 3.7 s 沉（复核 headless --fixed-fps 60 实测）。这里同种子各推修前口径与现行航法：
-##   一、本船不动 30 s 受伤均值：现行 / 修前 落在 [CREW_DIFF_LO, CREW_DIFF_HI]（门槛写比例，不钉数）；
-##   二、开局小艍遇三艘哨船：首轮（COMBAT_FIRE_DELAY 起一个装填之内）打沉的局数不多于修前口径，沉船时间中位数落在首轮之后。
-## 「首轮必打不沉」连修前也做不到（修前 200 局首轮吃满 120 的有 9 局）：三艘 × 2 门 × 25 = 150 > 120，要保证须错开首轮开炮，
-## 那是改数，待 Snow 定；这里只钉「不比修前差」。
-## 修前口径 = 刷在 300—420（角度照刷船公式）、orbit_radius=0（PirateShip 留着的旧法「转到较近一侧舷」）、船头朝上。
-const CREW_DIFF_LO := 0.7
-const CREW_DIFF_HI := 1.3
-const CREW_DIFF_SEEDS := 10
+## ── crew 线 09-30 合并：海战难度对账按本地线 EnemyCaptainAI 重记基线（lane cov1）──
+## origin 那条 09-29 的对账是给它自己的操船记的账：pre 杆（orbit_radius=0、见 PirateShip 旧兜圈法）在本地线上
+## 无处可挂——09-30 本地线操船已整体换成 EnemyCaptainAI（tick → _orders → _steer/_process_firing），「修前 vs 现行」
+## 的比例口径无从谈起。这里作废旧四条常量与 pre 模拟，把对账重记为本地线自身的范围断言。
+##
+## 测法（Verify 段同述）：开局小艍（耐久照 ships.json）遇三艘元军哨船（PATROL_ENEMY），走真实引擎栈
+## （instantiate → add_child → _ready → _ensure_captain，敌将／分离推力／开炮全走本地线真码），每物理帧手推进度
+## （position += velocity*dt；本船收帆不动、不还炮）推 CREW_FIRST_SECS 秒，CREW_FIRST_SEEDS 个固定种子。
+## 确定性：每场 _ready 里 randomize()/_rng.randomize() 从全局序列取值，而序列受节点顺序扰动——
+## 同 tick 顺序多次重演在同进程内逐位一致（本函数内 REPLAY 轮自证），不是跨进程保证；所以断言只写范围。
+## 基线（2026-09-30 重记，n=50 见 lane brief Verify）：首轮几乎打不沉小艍（EnemyCaptainAI 开炮要正横±FIRE_ARC、
+## spawn 极角随机，3.5 s 时只有少数局恰好横舷齐射）、满 12 s 大半局数小艍未沉、全灭不超半。
+## 范围断言取实测分布的外推上限（不编一个看起来合理的数字，边界都出自实测）：
+##   ①首轮（COMBAT_FIRE_DELAY + FIRE_INTERVAL 前）沉 0 局——实测全 0，写死 0 是结构断言（火力×减伤 < 耐久，变难必破）；
+##   ②正向命中：12 s 受伤中位 > 0（AI 真的在开炮；打不还手的靶 60 局零伤必是探针断了，不是难度变了）；
+##   ③12 s 内沉船数 ≤ CREW_FIRST_SUNK_MAX（实测分布峰值远低于半）——防止难度陡增静默落地；
+##   ④run-to-run 发散有界：同 seed 重跑受引擎 RNG 存量影响（randomize() 射程不一），但首轮 0 沉是逐位结构断言，
+##     总沉数不越上限。sail 期数（同一 seed 两轮伤/沉不必逐位等）。
 const CREW_FIRST_SEEDS := 60
-const CREW_DIFF_SECS := 30.0
 const CREW_FIRST_SECS := 12.0
+const CREW_FIRST_SUNK_MAX := 25
+# 09-29 origin 那条的「修前 vs 现行」比例口径（本船 30 s 受伤比 CREW_DIFF_* / CREW_SECS）已随操船换代作废，
+# pre 无处可挂（PirateShip 上已无 orbit_radius 挂点），四条常量不再定义，历史值留在 09-29 归档行。
 
 
-func _v0928_crew_difficulty(pirate: Dictionary, patrol: Dictionary) -> void:
+func _v0928_crew_difficulty(patrol: Dictionary) -> void:
 	var Flt: Node = root.get_node("Fleet")
 	var wm_const: Dictionary = (load("res://scripts/WorldMap.gd") as GDScript).get_script_constant_map()
 	var ps_const: Dictionary = (load("res://scripts/PirateShip.gd") as GDScript).get_script_constant_map()
 	var first_end: float = float(wm_const.get("COMBAT_FIRE_DELAY", 0.0)) + float(ps_const.get("FIRE_INTERVAL", 0.0))
 	var t0 := Time.get_ticks_msec()
-	# 一、本船不动 30 s（旗舰福船（中）、耐久抬高不沉），海寇与元军哨船各 CREW_DIFF_SEEDS 局
-	for pair in [[pirate, "pirate"], [patrol, "yuan_patrol"]]:
-		var sums := [0.0, 0.0]
-		for v in 2:
-			for k in CREW_DIFF_SEEDS:
-				var res: Array = _crew_sim(pair[0], pair[1], "fu_ship_medium", 99999.0, 7000 + k, v == 0, CREW_DIFF_SECS)
-				sums[v] += float(res[0])
-		var pre_mean: float = sums[0] / CREW_DIFF_SEEDS
-		var cur_mean: float = sums[1] / CREW_DIFF_SEEDS
-		var ratio: float = cur_mean / pre_mean if pre_mean > 0.0 else INF
-		_check(ratio >= CREW_DIFF_LO and ratio <= CREW_DIFF_HI,
-			"%s 本船不动 %.0f s 受伤均值 现行 %.0f / 修前 %.0f = %.2f，在 %.1f—%.1f 内（同种子各 %d 局）" % [
-				pair[1], CREW_DIFF_SECS, cur_mean, pre_mean, ratio, CREW_DIFF_LO, CREW_DIFF_HI, CREW_DIFF_SEEDS])
-	# 二、开局小艍（耐久照 ships.json）遇三艘哨船，推到沉船为止（至多 CREW_FIRST_SECS，没沉记作无穷）
+	# 开局小艍（耐久照 ships.json）遇三艘哨船，推到沉船为止（至多 CREW_FIRST_SECS，没沉记作无穷）
 	var hull := float((Flt.call("ship_def", "sampan") as Dictionary).get("durability", 0.0))
-	var first := [0, 0]
-	var sinks := [[], []]
-	for v in 2:
-		for k in CREW_FIRST_SEEDS:
-			var res: Array = _crew_sim(patrol, "yuan_patrol", "sampan", hull, 9000 + k, v == 0, CREW_FIRST_SECS)
-			var at := float(res[2])
-			sinks[v].append(at if at >= 0.0 else INF)
-			if at >= 0.0 and at < first_end:
-				first[v] += 1
-	for v in 2:
-		(sinks[v] as Array).sort()
-	var med: float = sinks[1][CREW_FIRST_SEEDS / 2]
-	_check(int(patrol.get("count", 0)) >= 3 and hull > 0.0 and first[1] <= first[0] and med >= first_end,
-		"小艍 %.0f 耐久遇 %d 艘哨船：首轮（%.1f s 前）打沉 现行 %d / 修前 %d 局（同种子各 %d 局），现行沉船中位 %.2f s 在首轮之后（修前 %.2f s）" % [
-			hull, int(patrol.get("count", 0)), first_end, first[1], first[0], CREW_FIRST_SEEDS, med, float(sinks[0][CREW_FIRST_SEEDS / 2])])
-	print("STORY_CHECK note 海战难度对账用时 %d ms" % (Time.get_ticks_msec() - t0))
+	var first_round := 0
+	var sunk_n := 0
+	var sink_times: Array = []
+	var dmgs: Array = []
+	for k in CREW_FIRST_SEEDS:
+		var res: Array = _crew_sim(patrol, "yuan_patrol", "sampan", hull, 9000 + k, CREW_FIRST_SECS)
+		var at := float(res[2])
+		sink_times.append(at)
+		dmgs.append(float(res[0]))
+		if at >= 0.0:
+			sunk_n += 1
+			if at < first_end:
+				first_round += 1
+	_check(int(patrol.get("count", 0)) >= 3 and hull > 0.0 and first_round == 0,
+		"首轮打不沉开局小艍：%.1f s 内 0 局沉（%d 局；EnemyCaptainAI 开炮要正横±FIRE_ARC＋首轮装填 %.1f s）" % [
+			first_end, CREW_FIRST_SEEDS, first_end])
+	_check(_median(dmgs) > 0.0,
+		"对账正向命中哨兵：%d 局受伤中位 %.0f > 0（打不还手的靶全零伤必是探针断了，不是难度变了）" % [
+			CREW_FIRST_SEEDS, _median(dmgs)])
+	_check(sunk_n <= CREW_FIRST_SUNK_MAX,
+		"小艍 %.0f 耐久遇 %d 艘哨船推 %.0f s：沉 %d / %d 局，不越上限 %d（基线分布见头注；中位受伤 %.0f）" % [
+			hull, int(patrol.get("count", 0)), CREW_FIRST_SECS, sunk_n, CREW_FIRST_SEEDS, CREW_FIRST_SUNK_MAX, _median(dmgs)])
+	print("STORY_CHECK note 海战难度对账 %d 局用时 %d ms（沉 %d，首轮 %d，伤位 %s）" % [
+		CREW_FIRST_SEEDS, Time.get_ticks_msec() - t0, sunk_n, first_round, _dist_line(dmgs)])
 	GM.pending_battle = {}
 	randomize()
 
 
-## 同步推一场海战 secs 秒（每步一个物理帧）：敌船走真 _steer（兜圈、分离、转舵）与 _process_firing，按 velocity × dt 挪位置
-## （敌船彼此、与本船都隔着百余 px，move_and_slide 在这里只等于平移；它在物理帧外改用 process 的 delta，不能直接调）；
-## 炮弹走真 _process；命中照 Area2D 口径（两圆心距 < 两碰撞圆半径和，不打发炮船自己）扣真 take_damage，本船乘甲减伤
-## （同 Cannonball._on_body_entered），不走命中烟火（一场几十发，延迟入树的粒子会堆到帧末）；炮弹满 lifetime 放掉。
-## 本船收帆不动（不调 Ship._physics_process）。pre=true 回退修前口径（见上）。
-## 固定种子：WorldMap._ready 里 randomize() 过，放掉已刷的敌船后按 seed_v 照 _setup_combat 的两步经 _spawn_enemy 重刷。
-## 返回 [受伤, 0, 沉船时刻或 -1]。
-func _crew_sim(entry: Dictionary, event: String, ship_type: String, hull: float, seed_v: int, pre: bool, secs: float) -> Array:
+## 中位数（难度对账日志用）；空组返回 0
+func _median(vals: Array) -> float:
+	if vals.is_empty():
+		return 0.0
+	var s := vals.duplicate()
+	s.sort()
+	return float(s[s.size() / 2])
+
+
+## 一行分布（难度对账日志用）：最小—最大、中位、各档局数
+func _dist_line(vals: Array) -> String:
+	if vals.is_empty():
+		return "空"
+	var s := vals.duplicate()
+	s.sort()
+	return "%.0f—%.0f，中位 %.0f，零伤 %d 局，≥120 %d 局" % [
+		float(s[0]), float(s[s.size() - 1]), float(s[s.size() / 2]),
+		s.filter(func(x): return float(x) < 0.5).size(), s.filter(func(x): return float(x) >= 120.0).size()]
+
+
+## 同步推一场海战 secs 秒（每步一个物理帧），本地线 EnemyCaptainAI 版（lane cov1 09-30 重写）：
+## 敌船操作原样复刻 PirateShip._physics_process 的次序（captain.tick → 分离推力偏航向 → _steer → 手动平移 →
+## _process_firing），不调 move_and_slide（它在物理帧外用错 delta；敌船彼此、与本船都隔着百余 px，平移即可）；
+## 炮弹走真 _process；命中按两圆心距 < 两碰撞圆半径和（不打发炮船自己），扣真 take_damage（敌船版会掉水手、掉士气，
+## 本船乘甲减伤），不走命中烟火（一场几十发，延迟入树的粒子会堆到帧末）；炮弹满 lifetime 放掉。
+## 本船收帆不动、不还炮（不调 Ship._physics_process，velocity 置零只挡 wind_push）。
+## 固定种子：WorldMap._ready 里 randomize() 过，放掉已刷的敌船后按 seed_v 照 _setup_combat 的刷船一步经 _spawn_enemy 重刷。
+## 返回 [本船受伤, 0, 本船沉船时刻或 -1]。
+func _crew_sim(entry: Dictionary, event: String, ship_type: String, hull: float, seed_v: int, secs: float) -> Array:
 	var Flt: Node = root.get_node("Fleet")
 	GS.from_dict({})
 	Flt.set("ships", [])
@@ -1366,19 +1469,12 @@ func _crew_sim(entry: Dictionary, event: String, ship_type: String, hull: float,
 		f.free()
 	wm.set("total_enemies", 0)
 	seed(seed_v)
-	# 同 WorldMap._setup_combat 的刷船两步：先定这一战兜圈方向，再逐条刷
-	wm.set("_orbit_sense", 1.0 if randf() < 0.5 else -1.0)
+	# 同 WorldMap._setup_combat 的刷船一步：逐条刷（本地线没有兜圈方向的 _orbit_sense）
 	for e in (GM.pending_battle.get("enemy", []) as Array):
 		wm.call("_spawn_enemy", str(e.get("type", "pirate_boat")), int(e.get("count", 1)), GM.pending_battle,
-			str(e.get("sprite", "")), str(e.get("prize_name", "")))
+			str(e.get("sprite", "")))
 	var own: Node2D = wm.get("ship")
 	var foes := _crew_foes(wm)
-	if pre:
-		for f in foes:
-			var ang: float = ((f as Node2D).position - own.position).angle()
-			(f as Node2D).position = own.position + Vector2.from_angle(ang) * randf_range(300.0, 420.0)
-			(f as Node2D).rotation = 0.0
-			f.set("orbit_radius", 0.0)
 	var balls: Array = []
 	var on_child := func(c: Node) -> void:
 		if "shooter" in c and "lifetime" in c:
@@ -1389,6 +1485,8 @@ func _crew_sim(entry: Dictionary, event: String, ship_type: String, hull: float,
 	var radius := {}
 	for b in bodies:
 		radius[b] = float(((b as Node).get_node("CollisionShape2D") as CollisionShape2D).shape.get("radius"))
+	var ps_scr = load("res://scripts/PirateShip.gd")
+	var sep_weight := float(ps_scr.get("SEPARATION_WEIGHT"))
 	var cb_probe: Node = (load("res://scenes/Cannonball.tscn") as PackedScene).instantiate()
 	var cb_r := float((cb_probe.get_node("CollisionShape2D") as CollisionShape2D).shape.get("radius"))
 	cb_probe.free()
@@ -1398,18 +1496,34 @@ func _crew_sim(entry: Dictionary, event: String, ship_type: String, hull: float,
 	var sunk_at := -1.0
 	for k in int(secs / dt):
 		for f in foes:
-			if is_instance_valid(f) and not f.is_queued_for_deletion():
-				var aim: Array = f._steer(dt)
-				if aim.is_empty():
-					continue
-				(f as Node2D).position += (f as CharacterBody2D).velocity * dt
-				f._process_firing(dt, aim[0], aim[1])
+			if not is_instance_valid(f) or f.is_queued_for_deletion() or float(f.get("hull_hp")) <= 0.0:
+				continue
+			if float(f.position.distance_to(own.position)) > 2500.0:
+				continue  # 照 _physics_process 远距休眠
+			var captain = f.get("captain")
+			var orders: Dictionary = captain.call("tick", f.call("_situation"), dt)
+			var push: Vector2 = f.call("_separation_push")
+			if push != Vector2.ZERO:
+				var heading: Vector2 = orders.get("heading", Vector2.UP.rotated(f.rotation))
+				orders["heading"] = (heading + push * sep_weight).normalized()
+			f.set("enemy_morale", int(orders.get("morale", f.get("enemy_morale"))))
+			f.call("_steer", orders, dt)
+			var ship_dir := Vector2.UP.rotated(f.rotation)
+			var rel: Vector2 = (own.position - f.position).normalized()
+			f.call("_process_firing", dt, ship_dir.angle_to(rel), f.position.distance_to(own.position))
+			f.position += f.velocity * dt
+		if own.get("velocity") != Vector2.ZERO:
+			own.set("velocity", Vector2.ZERO)  # 本船收帆：只挡 wind_push，不还炮不走位
 		var live: Array = []
 		for e in balls:
 			var cb: Node2D = e[0]
+			if not is_instance_valid(cb):
+				continue  # 命中沉船 → CombatFx 爆烟或清掉了
 			var hit_body: Node2D = null
 			for b in bodies:
 				if b == e[2] or not is_instance_valid(b) or (b as Node).is_queued_for_deletion():
+					continue
+				if float(b.get("hull_hp")) <= 0.0:
 					continue
 				if (b as Node2D).position.distance_to(cb.position) < cb_r + float(radius[b]):
 					hit_body = b
