@@ -2,7 +2,7 @@ extends SceneTree
 ## Lane sv：headless 探针——存档结构版本 save_schema 的迁移与拒读。
 ## 用法：godot --headless --path . -s res://tools/save_migrate_probe.gd
 ## 只动存档位 95，不碰正式位 1..SLOTS；输出含 SCRIPT ERROR 即视为失败。
-##   v1 老档（无 save_schema、缺后加的 state 字段）→ 读入成功、字段补齐、回写 v2、原件另存 .v1、副抄不动
+##   v1 老档（无 save_schema、缺后加的 state 字段）→ 读入成功、字段补齐、回写本版（现 save_schema 3，经 v1→v2→v3 迁移链）、原件另存 .v1、副抄不动
 ##   未来档（save_schema / version 高于本版）→ 明确拒读、题签与脚注可读、不退副抄、文件不动
 ##   v2 档（lane fx6，无 state.met_ids）→ 人物志「已识」按雇用记录 / 在船职事 / 守城见林华回填，推不出的留空；原件另存 .v2
 

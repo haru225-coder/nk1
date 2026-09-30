@@ -13,7 +13,7 @@ gd24 在 ShotGate 收尾补了进程内兜底（本进程有等待撞了墙钟�
 一档绿一档红，单跑哪一档都「有理」。本门禁不看探针内部怎么等，只比两档跑出来的结论。
 
 探针集：tools/ 下 git 已跟踪的 .gd 里代码行调了 `ShotGate.frame_pressure(` 的（与 gates_md「接 shot_gate 的都挂压帧」同一口径，
-即截图册 24 支 + 只借 shot_gate 挂压帧的定向探针 letterbox_signal / qa_yard_transition），新探针挂上压帧即自动入集。
+即截图册全部探针 + 只借 shot_gate 挂压帧的定向探针（如 letterbox_signal / qa_yard_transition），现共 31 支），新探针挂上压帧即自动入集。
 
 档：默认 0（不压）与 300。两档必须一档不封顶、一档封顶：引擎每帧 delta 最多记 8 个物理步（8/60 ≈ 0.133 s），
 慢过 7.5 fps（每帧 ≥ 134 ms）后每帧游戏时间恒定，150 与 300 两档相位落在同一帧（lane gd20「四」），只差墙钟——
