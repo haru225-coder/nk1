@@ -831,6 +831,10 @@ func _build_captions(shot: Dictionary) -> void:
 		if typeof(c) != TYPE_DICTIONARY:
 			continue
 		var cd: Dictionary = c
+		if not _caption_on(cd):
+			# 序号照数（和 _prewarm 预建印章的编号对齐），只是这一句不出
+			n += 1
+			continue
 		var style := str(cd.get("style", "line"))
 		var pos := str(cd.get("pos", _default_pos(style)))
 		if not pos in ["center", "bottom", "lower_left", "right_vertical", "left_vertical"]:
@@ -848,6 +852,21 @@ func _build_captions(shot: Dictionary) -> void:
 	_cap_live.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return float(x["t"]) < float(y["t"]))
 	_assign_slots()
 	_place_captions()
+
+
+## 字幕的旗标条件（cutscenes.json 字幕可选键）：if_flag 立起才出，unless_flag 立起就不出；两键都没有照出。
+## 同一镜里按玩家的选择换句用（结局「忠肃」第 2 镜：放林华出侦 / 关城门后他缒城出降）。读 GameState 旗标，找不到时按无旗
+func _caption_on(cd: Dictionary) -> bool:
+	var need := str(cd.get("if_flag", ""))
+	var veto := str(cd.get("unless_flag", ""))
+	if need == "" and veto == "":
+		return true
+	var tree := Engine.get_main_loop() as SceneTree
+	var gs: Node = tree.root.get_node_or_null("GameState") if tree != null else null
+	var has := func(f: String) -> bool: return gs != null and bool(gs.call("has_flag", f))
+	if need != "" and not has.call(need):
+		return false
+	return veto == "" or not has.call(veto)
 
 
 ## 本镜字幕的最早出场时刻：新画面浮现到能托住字的程度。

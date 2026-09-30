@@ -206,6 +206,37 @@ check(war_ports >= 8, f"ports.json 只有 {war_ports} 港有 war 表，1276 年�
 xh = next((p for p in ports if p["id"] == "xinghua"), {}).get("war")
 xhh = next((p for p in ports if p["id"] == "xinghua_harbor"), {}).get("war")
 check(xh == xhh, "xinghua 与 xinghua_harbor 的 war 表须一致")
+# war_notice：按节点覆写月初战况通告（Economy.on_month_changed 有就用、没有用通用句）。
+# 键必须是本港 war 表里的节点（别处的月份不会翻牌、写了也不出），文案非空、不自带【战况】头（代码统一加）
+notice_ports = 0
+for p in ports:
+    wn = p.get("war_notice")
+    if wn is None:
+        continue
+    notice_ports += 1
+    pid = p["id"]
+    war = p.get("war") or {}
+    check(isinstance(wn, dict) and wn, f"ports {pid} war_notice 须为非空对象")
+    for ym, txt in (wn.items() if isinstance(wn, dict) else []):
+        check(ym in war, f"ports {pid} war_notice[{ym}] 不是本港 war 表里的节点（{sorted(war)}），月初不会翻牌")
+        check(isinstance(txt, str) and txt.strip() != "" and not txt.startswith("【"),
+              f"ports {pid} war_notice[{ym}] 须为非空文案、不带【战况】头")
+# 兴化 1277 秋是破城巷战、不是开门降：再陷那一节点城与海口都须覆写，且都不写「降元」（通用句对开城降的港口才对）。
+# 城写城破；海口只写海口自己换旗，不重抄城里的首句——两条同一天连发，重抄读着像一件事记了两遍（09-29 复核）
+_xh_fall2 = sorted(k for k, v in (xh or {}).items() if v == "fallen")[-1:] if xh else []
+_xh_wn = next((p for p in ports if p["id"] == "xinghua"), {}).get("war_notice") or {}
+_xhh_wn = next((p for p in ports if p["id"] == "xinghua_harbor"), {}).get("war_notice") or {}
+for ym in _xh_fall2:
+    check("城破" in _xh_wn.get(ym, "") and "降元" not in _xh_wn.get(ym, ""),
+          f"ports xinghua war_notice[{ym}]（兴化再陷）须写城破、不写降元（现「{_xh_wn.get(ym, '')}」）")
+    check("海口" in _xhh_wn.get(ym, "") and "换了旗" in _xhh_wn.get(ym, "") and "降元" not in _xhh_wn.get(ym, ""),
+          f"ports xinghua_harbor war_notice[{ym}]（兴化再陷）须写海口换旗、不写降元（现「{_xhh_wn.get(ym, '')}」）")
+# 城与海口同月都有覆写的节点：海口那条不重抄城里那条的首句
+for ym in sorted(set(_xh_wn) & set(_xhh_wn)):
+    _city_head = str(_xh_wn[ym]).split("。")[0]
+    check(_city_head == "" or _city_head not in str(_xhh_wn[ym]),
+          f"ports xinghua_harbor war_notice[{ym}] 重抄了城里那条的首句「{_city_head}」")
+check(notice_ports >= 2, f"ports.json 只有 {notice_ports} 港有 war_notice，兴化与兴化海口的再陷通告须覆写")
 
 # ── 守城卡路由完整 ─────────────────────────────────────
 card_ids = set(re.findall(r'const (CARD_SIEGE_\w+) := "(\w+)"', main_src))
@@ -276,14 +307,66 @@ def latest_year(text):
     return max(ys) if ys else 0
 
 
+# 可见条件的写法与 scripts/ui/CharacterArt.gd segment_visible 一一对应（09-28 visual 线扩键）：
+#   0 / 公元年 / "YYYY-MM" / "c2"…"c5" / "end"；按世界线的 "end:结局|结局"、"id:身份|身份"、"flag:旗标|旗标"；
+#   「&」连写、一截前加「!」取反。返回这一段最早可能露出的年份（写到的最晚年份不得晚于它），认不得返回 None。
+# 结局名、身份、旗标都要真有：结局名取 Main.ENDING_BG 的键，旗标须在 scripts 里 set_flag 过或是 news.json 的 flag。
+_YM = re.compile(r"^(1[1-3]\d\d)-(0[1-9]|1[0-2])$")
+_IDS = {"scholar", "merchant", "hometown", "undecided"}
+_eb = re.search(r"const ENDING_BG := \{(.*?)\n\}", main_src, re.S)
+ENDINGS = set(re.findall(r'"([^"]+)":', _eb.group(1))) if _eb else set()
+check(len(ENDINGS) >= 6, f"Main.ENDING_BG 只认出 {len(ENDINGS)} 个结局名，可见条件 end:… 无从核对")
+_scripts_src = "\n".join(p.read_text(encoding="utf-8") for p in pathlib.Path(ROOT, "scripts").rglob("*.gd"))
+KNOWN_FLAGS = set(re.findall(r'set_flag\("([a-z0-9_]+)"\)', _scripts_src))
+KNOWN_FLAGS |= {str(n.get("flag")) for n in load("news.json").get("news", []) if n.get("flag")}
+check("renamed_wenlong" in KNOWN_FLAGS, "旗标表里没有 renamed_wenlong，可见条件 flag:… 无从核对")
+
+
 def cond_year(cond):
-    if cond == "end":
-        return 99999
-    if isinstance(cond, str) and cond.startswith("c") and cond[1:].isdigit():
-        return PHASE_YEAR.get(int(cond[1:]), 99999)
+    if isinstance(cond, bool):
+        return None
     if isinstance(cond, (int, float)):
         return max(int(cond), START_YEAR)
+    if not isinstance(cond, str):
+        return None
+    s = cond.strip()
+    if "&" in s:
+        parts = s.split("&")
+        ys = [cond_year(p) for p in parts]
+        if any(p == "" for p in parts) or any(y is None for y in ys):
+            return None
+        return max(ys)
+    if s.startswith("!"):
+        # 取反没有时间下界：按一直可见算（写到的年份仍要靠同段别的截来担保）
+        return None if cond_year(s[1:]) is None else START_YEAR
+    if s == "end":
+        return 99999
+    if s.startswith("end:"):
+        names = [x for x in s[4:].split("|") if x]
+        return 99999 if names and all(x in ENDINGS for x in names) else None
+    if s.startswith("id:"):
+        ids = [x for x in s[3:].split("|") if x]
+        return START_YEAR if ids and all(x in _IDS for x in ids) else None
+    if s.startswith("flag:"):
+        fl = [x for x in s[5:].split("|") if x]
+        return START_YEAR if fl and all(x in KNOWN_FLAGS for x in fl) else None
+    m = _YM.match(s)
+    if m:
+        return max(int(m.group(1)), START_YEAR)
+    if s.startswith("c") and s[1:].isdigit():
+        return PHASE_YEAR.get(int(s[1:]), 99999)
+    if s.isdigit():
+        return max(int(s), START_YEAR)
     return None
+
+
+# 自证：新键认得、写错的认不得（结局名、身份、旗标拼错都要抓到）
+for _c, _want in (("1277-11", 1277), ("1279-04", 1279), ("end:忠肃|未归", 99999), ("id:merchant|hometown", START_YEAR),
+                  ("flag:renamed_wenlong", START_YEAR), ("1268&flag:renamed_wenlong", 1268), ("end&!end:忠肃", 99999),
+                  ("c3&id:merchant|undecided", PHASE_YEAR[3]), (0, START_YEAR), (1276, 1276), ("c2", PHASE_YEAR[2]), ("end", 99999)):
+    check(cond_year(_c) == _want, f"可见条件自证：{_c!r} 应认作 {_want}，实得 {cond_year(_c)}")
+for _c in ("1277-13", "end:忠烈", "id:pirate", "flag:no_such_flag_xyz", "1268&", "&", "YYYY-MM", "!", "lately"):
+    check(cond_year(_c) is None, f"可见条件自证：写错的 {_c!r} 应认不得，实得 {cond_year(_c)}")
 
 
 chars_all = load("characters.json").get("characters", [])
@@ -303,7 +386,7 @@ for c in chars_all:
     if not isinstance(e, dict):
         continue
     fields = {}
-    for k in ("bio", "short", "lines", "title", "courtesy", "alt"):
+    for k in ("bio", "short", "lines", "title", "courtesy", "alt", "annal"):
         if k in e:
             fields[k] = e[k]
     if "alt" not in e:
@@ -363,10 +446,10 @@ check("characters_codex.json" in art_src, "CharacterArt 未接人物志上屏文
 # 新增字段必须先在这里归类，UI 直读的原稿键必须落在「上屏 / 结构」两类里，否则门禁失败。
 ONSCREEN_BAN = re.compile(CODEX_META.pattern + r"|placeholder|TODO|WIP|FIXME|pipeline|LLM|ChatGPT|大模型")
 CHAR_ONSCREEN = {"name", "alt_names", "courtesy", "title", "origin", "personality", "look", "lines"}
-CHAR_STRUCT = {"id", "faction", "traits", "relations", "born", "died", "tier", "chapters", "attrs",
-               "portrait", "portrait_status", "sources", "historical"}  # 键、数值、枚举，不作正文上屏
+CHAR_STRUCT = {"id", "faction", "traits", "relations", "born", "died", "died_ym", "tier", "chapters", "attrs",
+               "portrait", "portrait_before", "portrait_status", "sources", "historical"}  # 键、数值、枚举，不作正文上屏
 CHAR_DRAFT = {"bio", "bio_short", "portrait_src", "portrait_note"}
-CODEX_ONSCREEN = {"bio", "short", "lines", "title", "courtesy", "alt", "look", "personality"}
+CODEX_ONSCREEN = {"bio", "short", "lines", "title", "courtesy", "alt", "look", "personality", "annal"}
 check(not (CHAR_ONSCREEN & CHAR_STRUCT or CHAR_ONSCREEN & CHAR_DRAFT or CHAR_STRUCT & CHAR_DRAFT), "L1 字段分类有交叠")
 
 
@@ -409,6 +492,12 @@ _codex_doc = load("characters_codex.json") if os.path.isfile(codex_path) else {"
 for c in _chars_doc.get("characters", []):
     unk = set(c) - CHAR_ONSCREEN - CHAR_STRUCT - CHAR_DRAFT
     check(not unk, f"characters.json {c.get('id', '?')} 有未归类字段 {sorted(unk)}：先在 L1 契约里定上屏 / 结构 / 原稿")
+    # died_ym（CharacterArt.died_known）：卒年从哪一月起写。须是 YYYY-MM、要有 died，年份落在卒年或次年
+    if "died_ym" in c:
+        _dm = _YM.match(str(c.get("died_ym", "")))
+        _dd = c.get("died")
+        check(_dm is not None and isinstance(_dd, int) and _dd <= int(_dm.group(1)) <= _dd + 1,
+              f"characters.json {c.get('id', '?')} 的 died_ym {c.get('died_ym')!r} 须为卒年（{_dd}）或次年的 YYYY-MM")
 for cid, e in _codex_doc.get("characters", {}).items():
     unk = set(e) - CODEX_ONSCREEN
     check(not unk, f"characters_codex.json {cid} 有未登记字段 {sorted(unk)}：上屏文本层字段须进 CODEX_ONSCREEN 受查")

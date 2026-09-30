@@ -1219,6 +1219,7 @@ static func style_section_label(lbl: Label) -> void:
 
 ## 日志开头的【舱满】【钱不够】一类标签是原型告警，句子留下。
 ## 色标包在外面时也去掉标签，不拆 bbcode。
+## 放行 LOG_KEEP_TAGS 里的标签：标签留着，整句上蜜色墨（外面已包色标的不再套）。
 static func plain_log(text: String) -> String:
 	var open := text.find("【")
 	if open < 0 or open > 24:
@@ -1229,7 +1230,33 @@ static func plain_log(text: String) -> String:
 	var head := text.substr(0, open).strip_edges()
 	if head != "" and not head.begins_with("[color="):
 		return text
+	if text.substr(open + 1, close - open - 1) in LOG_KEEP_TAGS:
+		return text if head != "" else "[color=#%s]%s[/color]" % [hex(HONEY), text.strip_edges()]
 	return (text.substr(0, open) + text.substr(close + 1)).strip_edges()
+
+
+## plain_log 不去的标签。【辞船】：史实辞船（林华景炎元年十月去兴化投军），舵工一走逆风就慢，
+## 通告同月夹在战况、候日句里，去了标签又没色标，玩家容易漏看（crew 线 09-28 实机）。
+const LOG_KEEP_TAGS := ["辞船"]
+
+
+## 去掉 bbcode 标记（[color=…] [b] …），给纯文本 Label 用；全角【】不动。
+static func strip_bbcode(text: String) -> String:
+	var rx := RegEx.new()
+	rx.compile("\\[/?[a-z_]+(=[^\\]]*)?\\]")
+	return rx.sub(text, "", true)
+
+
+## 一个词组不许从中间折行：字与字之间垫 U+2060（WORD JOINER，零宽不断），半角空格换 U+00A0（不断行空格）。
+## 窄栏自动换行时只在词组之间折（船籍簿船队明细「帆一等」「水手 40 / 100」，crew 线 09-28）。
+static func nobreak(text: String) -> String:
+	var out := ""
+	for i in text.length():
+		var ch := text[i]
+		if ch == " ":
+			ch = "\u00a0"
+		out += ch if i == 0 else "\u2060" + ch
+	return out
 
 
 ## 给 AcceptDialog 套绢本面板。accent_ok=朱砂确定钮。

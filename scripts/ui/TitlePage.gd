@@ -88,4 +88,7 @@ static func on_start_game_pressed(main: Control, next_scene: String) -> void:
 		await main.play_transition(main._UI_TRANSITION.prologue_shore_title(), Calendar.get_date_string(),
 			main.load_scene.bind(next_scene), "序")
 	else:
+		# 四方沙盘中间翻页：底图不再一帧硬切，旧图压在新图上约 0.3 秒淡去；字照 TitleStage 的节奏洇出（新页 present 照常重演）
+		var ghost: TextureRect = main._TITLE_STAGE.crossfade_ghost(main.background)
 		main.load_scene(next_scene)
+		main._TITLE_STAGE.crossfade_out(ghost, main.background)

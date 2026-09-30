@@ -179,7 +179,8 @@
      "transition_in": "cut",
      "shake": 0.25,
      "captions": [
-      {"t": 0.6, "text": "部将林华出城侦敌，回来时，身后是元兵。", "style": "narration", "pos": "lower_left"},
+      {"t": 0.6, "text": "部将林华出城侦敌，回来时，身后是元兵。", "style": "narration", "pos": "lower_left", "unless_flag": "cao_opened"},
+      {"t": 0.6, "text": "部将林华夜里缒城出降，回来时，身后是元兵。", "style": "narration", "pos": "lower_left", "if_flag": "cao_opened"},
       {"t": 3.2, "text": "通判曹澄孙开了城门。", "style": "narration", "pos": "lower_left"}
      ]
     },
@@ -248,7 +249,8 @@
      "shake": 0.0,
      "captions": [
       {"t": 0.6, "text": "景炎元年十二月", "style": "era", "pos": "right_vertical"},
-      {"t": 1.3, "text": "消息是在别处听到的。", "style": "narration", "pos": "lower_left"},
+      {"t": 1.3, "text": "消息是在别处听到的。", "style": "narration", "pos": "lower_left", "unless_flag": "weigui_at_harbor"},
+      {"t": 1.3, "text": "消息是从城里传出来的。", "style": "narration", "pos": "lower_left", "if_flag": "weigui_at_harbor"},
       {"t": 3.6, "text": "兴化城破了。", "style": "narration", "pos": "lower_left"}
      ]
     },
@@ -533,7 +535,7 @@
     },
     {
      "bg": "res://assets/bg_reef_bay.jpg",
-     "duration": 8.0,
+     "duration": 8.8,
      "cam_from": [0.55, 0.6, 1.3],
      "cam_to": [0.45, 0.64, 1.4],
      "grade": "dawn",
@@ -543,14 +545,14 @@
      "captions": [
       {"t": 0.7, "text": "你看水色。北礁可泊。", "style": "narration", "pos": "lower_left"},
       {"t": 2.8, "text": "二十二年前，一个舵手教过你。", "style": "narration", "pos": "lower_left"},
-      {"t": 5.4, "text": "船在旧避风澳泊了六天，避了一场风。", "style": "narration", "pos": "lower_left"}
+      {"t": 4.8, "text": "船在旧避风澳泊了六天，避了一场风。", "style": "narration", "pos": "lower_left"}
      ]
     },
     {
      "bg": "res://assets/bg_end_root.jpg",
      "duration": 9.5,
-     "cam_from": [0.48, 0.5, 1.05],
-     "cam_to": [0.61, 0.6, 1.3],
+     "cam_from": [0.66, 0.69, 1.7],
+     "cam_to": [0.655, 0.686, 1.72],
      "grade": "dawn",
      "fx": ["dust"],
      "transition_in": "fade",

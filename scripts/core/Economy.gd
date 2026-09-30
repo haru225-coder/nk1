@@ -11,6 +11,8 @@ const RATE_MAX := 2.20
 ## 每日向 1.0 回归的比例。0.045 约合 15 日回复一半——跑一趟近海回来行情已缓过大半，
 ## 否则同一条商路走两次就废了。
 const RECOVERY := 0.045
+## 围城（besieged）期间米行情每日回归的目标：与月初围城冲击 1.0 + 0.8 同档，围多久米价就撑多久
+const SIEGE_GRAIN_TARGET := 1.8
 
 ## 市舶司抽解（进口税），随货物与港口可调
 var tariff_rate: float = 0.10
@@ -281,6 +283,8 @@ func inspection_factor(port_id: String) -> float:
 
 ## 月初由 GameManager 调用：本月进入新战况的港口，给一次行情冲击，并返回通告文本。
 ## 冲击是一次性的，之后仍按 RECOVERY 回归——战争抬高的米价会慢慢落，但税不会。
+## 通告按节点覆写：ports.json 每港可选 war_notice {"YYYY-MM": 文案}（不带【战况】头），当月有就用它，
+## 没有才用下面按战况写的通用句（通用「已降元」对开城降的港口是对的，破城巷战的节点另写）。冲击照战况值给，与文案无关。
 func on_month_changed() -> Array:
 	var notices := []
 	var now := _ym_now()
@@ -290,22 +294,28 @@ func on_month_changed() -> Array:
 			continue
 		var pid: String = p.get("id", "")
 		var status := str(war[now])
+		var line := ""
 		match status:
 			"besieged":
 				_shift_rate(pid, "grain", 0.8)
-				notices.append("【战况】%s被围。城中米价腾贵，牙行闭门。" % p.get("name", pid))
+				line = "【战况】%s被围。城中米价腾贵，牙行闭门。" % p.get("name", pid)
 			"fallen":
 				_shift_rate(pid, "grain", 0.5)
 				for gid in goods_at(pid):
 					if gid != "grain":
 						_shift_rate(pid, gid, -0.15)
-				notices.append("【战况】%s已降元。市舶司换了旗，抽解加倍，缉私加严。" % p.get("name", pid))
+				line = "【战况】%s已降元。市舶司换了旗，抽解加倍，缉私加严。" % p.get("name", pid)
 			"contested":
-				notices.append("【战况】%s两军对峙，港内船只都在名册上。" % p.get("name", pid))
+				line = "【战况】%s两军对峙，港内船只都在名册上。" % p.get("name", pid)
 			"closed":
-				notices.append("【战况】%s封港，海路不通。" % p.get("name", pid))
+				line = "【战况】%s封港，海路不通。" % p.get("name", pid)
 			"loyal":
-				notices.append("【战况】%s复归宋土。" % p.get("name", pid))
+				line = "【战况】%s复归宋土。" % p.get("name", pid)
+		var custom := str((p.get("war_notice", {}) as Dictionary).get(now, ""))
+		if custom != "":
+			line = "【战况】" + custom
+		if line != "":
+			notices.append(line)
 	return notices
 
 
@@ -378,9 +388,14 @@ func estimate_buy_cost(port_id: String, good_id: String, amount: int) -> int:
 func on_day_passed() -> void:
 	for pid in rates.keys():
 		var port_rates: Dictionary = rates[pid]
+		# 围城期间米价回归的目标抬到 SIEGE_GRAIN_TARGET：月初那一冲之后不再逐日落回平年价（验收 09-28：围得越久粮越便宜）
+		var besieged := war_status(str(pid)) == "besieged"
 		for gid in port_rates.keys():
 			var r: float = port_rates[gid]
-			port_rates[gid] = r + (1.0 - r) * RECOVERY
+			if besieged and gid == "grain":
+				port_rates[gid] = r + (SIEGE_GRAIN_TARGET - r) * RECOVERY
+			else:
+				port_rates[gid] = r + (1.0 - r) * RECOVERY
 
 
 # ── 存档 ──────────────────────────────────────────────

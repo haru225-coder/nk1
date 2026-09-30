@@ -22,6 +22,8 @@ var _list: VBoxContainer
 var _tabs_row: HBoxContainer
 var _rows: Dictionary = {}
 var _selected := ""
+## 进树之前 select_id 要选的人（见 select_id）
+var _pending := ""
 
 
 func _init() -> void:
@@ -68,13 +70,18 @@ func _build() -> void:
 func _on_tab(key: String) -> void:
 	if tab == key:
 		return
+	_set_tab(key)
+
+
+## 换页签并重排；keep 为换过去以后要选中的人（空则照旧选第一行）。
+func _set_tab(key: String, keep := "") -> void:
 	tab = key
 	for i in TIERS.size():
 		var b := _tabs_row.get_child(i) as Button
 		if b != null:
 			b.button_pressed = str(TIERS[i][0]) == tab
 			UiTheme.style_chip(b, str(TIERS[i][0]) == tab)
-	refresh()
+	refresh(keep)
 
 
 ## 重排名册。keep 为要保留选中态的人物 id。
@@ -99,16 +106,30 @@ func refresh(keep := "") -> void:
 		n += 1
 	if n == 0:
 		_list.add_child(Art.label("本档暂无人物。", UiTheme.SIZE_FOOT + 2, UiTheme.TEXT_DIM))
-	var want := keep if keep != "" else _selected
+	var want := keep if keep != "" else (_pending if _pending != "" else _selected)
+	_pending = ""
 	if want != "" and _rows.has(want):
 		_select(want)
 	elif n > 0:
 		_select(str((_list.get_child(0) as Control).get_meta(&"char_id", "")))
 
 
+## 选中某人。当前页签里没有他（从人物志点「立绘册」进陆秀夫、唆都这类史实人物）：先翻到他所在的页签再选，
+## 不让右边面板是他、左栏却还停在「主」页签高亮陈子龙（上下键一按又跳回第 0 行）。
 func select_id(id: String) -> void:
 	if _rows.has(id):
 		_select(id)
+		return
+	var tier := str(GameManager.get_character(id).get("tier", ""))
+	for spec in TIERS:
+		if tier in spec[1]:
+			if _list == null:
+				# 还没进树（人物志内嵌名册先 select_id、后入树）：记下页签与要选的人，_build 排行时照此选
+				tab = str(spec[0])
+				_pending = id
+			else:
+				_set_tab(str(spec[0]), id)
+			return
 
 
 func selected_id() -> String:

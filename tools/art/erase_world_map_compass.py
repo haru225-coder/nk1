@@ -10,7 +10,7 @@
   · assets/cutscene/cs_world_map_gold.jpg（1792x1008，开场 opening 第 1 镜「舆图总纲」）右上有一枚十六尖细线风玫瑰
     （4 正、4 隅长臂，外加 8 个短尖），落在金纸和淡蓝洗染上，紧贴竖排题字「宋理宗宝祐三年」，镜头前段一直在画内。
   2026-09-28 Snow 拍板走 A′（决策备忘 #4、#5）：程序抹掉这两处，其余不动，两张图共用本脚本。
-  原型、试错和引擎内截帧的记录在决策材料 title.md、title_notes.md 里（~/tmp/nk1-arttodo/decide/，未入库）。
+  原型、试错和引擎内截帧的记录在决策材料 title.md、title_notes.md 里（未入库；原在本机 ~/tmp/nk1-arttodo/decide/，09-29 清盘后文本归档到 LA1 /root/archive-retired/nk1-arttodo-local-20260929/decide/）。
 
 抹什么（表驱动：IMAGES 每张图一条，每个待补区一条）：
   · bg / compass：罗经外环圆盘（心 (1474,700)，r113）加四臂墨线。四臂的包络框里取比局部底色（灰度闭运算 r6）暗 16 以上的像素，

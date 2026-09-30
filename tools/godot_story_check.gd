@@ -639,8 +639,16 @@ func _route_check() -> void:
 	# S4：玉湖陈宅「族叔陈瓒愿入船股」——陈瓒死于兴化再陷（战况表第二段 besieged 的尽头），死后不再出现
 	var zan_falls: Array = main._xinghua_fall_yms()
 	_check(zan_falls.size() >= 2, "兴化战况表有首守城破与再陷两个城破时点（%s）" % [zan_falls])
-	# 月份从战况表推，不写死：起股那年、首守城破当月（那是陈文龙的城）、再陷前一月该有；再陷当月、次年、1285 该没有
+	# 月份从战况表推，不写死：起股那年、首守城破当月（那是陈文龙的城）、再陷前一月「陈瓒还活着」；再陷当月、次年、1285 已死。
+	# 09-28 起船股另只在兴化第一段 besieged 起点之前出（围城起陈瓒在城里募兵守城）：活着但已过起点的几格期望「没有」（细则见 _v0928_hanjiang_check）
 	var zan_cases: Array = [[main.CHEN_ZAN_FROM_YEAR, 6, true], [1285, 5, false]]
+	var zan_stake_until := "9999-99"
+	var zan_war_keys: Array = GM.get_port_by_id("xinghua").get("war", {}).keys()
+	zan_war_keys.sort()
+	for zk in zan_war_keys:
+		if str(GM.get_port_by_id("xinghua")["war"][zk]) == "besieged":
+			zan_stake_until = str(zk)
+			break
 	if zan_falls.size() >= 2:
 		var fp: PackedStringArray = str(zan_falls[0]).split("-")
 		zan_cases.append([int(fp[0]), int(fp[1]), true])
@@ -660,9 +668,14 @@ func _route_check() -> void:
 		for zb in main.choices_container.get_children():
 			if zb is Button and (zb as Button).text.find("陈瓒愿入船股") >= 0:
 				zan_btn = true
-		_check(zan_btn == bool(zc[2]),
-			"玉湖陈宅 %d-%02d%s「陈瓒愿入船股」（再陷 %s）" % [zc[0], zc[1], "有" if zc[2] else "没有", zan_falls[1] if zan_falls.size() >= 2 else "?"])
+		var zan_want: bool = bool(zc[2]) and ("%04d-%02d" % [zc[0], zc[1]]) < zan_stake_until
+		_check(zan_btn == zan_want,
+			"玉湖陈宅 %d-%02d%s「陈瓒愿入船股」（再陷 %s，陈瓒%s；船股只到围城起点 %s 前）" % [zc[0], zc[1], "有" if zan_want else "没有", zan_falls[1] if zan_falls.size() >= 2 else "?", "在" if zc[2] else "已死", zan_stake_until])
+		# 死期边界单独钉住：船股按钮已按围城起点收口，再陷前一月活着、再陷当月已死这条只剩 _chen_zan_alive 管（09-29 复核）
+		_check(main._chen_zan_alive() == bool(zc[2]),
+			"陈瓒 %d-%02d %s（再陷 %s）" % [zc[0], zc[1], "还活着" if zc[2] else "已死", zan_falls[1] if zan_falls.size() >= 2 else "?"])
 	_lin_hua_check(main)
+	_v0928_siege_check(main)
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
@@ -689,9 +702,15 @@ func _route_check() -> void:
 	GS.from_dict({})
 	_close_dialogs(main)
 	_hooks_bg_check(main)
+	_v0928_visual_check(main)
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
+	_v0928_crew_check(main)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_close_dialogs(main)
+	_v0928_hanjiang_check(main)
 	main.queue_free()
 
 
@@ -1044,3 +1063,1437 @@ func _find_button(box: Node, needle: String, exact: bool) -> Button:
 			if (exact and t == needle) or (not exact and t.find(needle) >= 0):
 				return b as Button
 	return null
+
+
+## ── crew 线 09-28 验收修复：海战夺船、战果注记、船籍簿、辞船显眼度 ──
+## 修前：接舷夺下末艘时被夺的船还挂在树上、hull_hp>0，带 boarded 的退出永远走不到（下一帧 _process 以 {} 判胜：
+## 出战墨边「战罢」、注记缺「接舷既定。」）；player_damage 被夺来船的满耐久冲成负数（注记钳成「受损 0」）；
+## 发炮船已释放时炮弹命中报 SCRIPT ERROR、爆炸与 queue_free 都没走；夺来的船都叫「快船」分不清；【辞船】被 plain_log 去掉。
+## 本节全在一帧里同步跑（headless 下接舷不停 0.42 s、题签起不来走浮字兜底），修前「夺下末艘当帧出战」这条就断不出 boarded。
+func _v0928_crew_check(main: Node) -> void:
+	var Flt: Node = root.get_node("Fleet")
+	var Crw: Node = root.get_node("Crew")
+	var Voy: Node = root.get_node("Voyage")
+	var FX = load("res://scripts/combat/CombatFx.gd")
+	var sc_const: Dictionary = (load("res://scripts/SeaChart.gd") as GDScript).get_script_constant_map()
+	var saved_ships: Array = (Flt.get("ships") as Array).duplicate(true)
+	var saved_water: int = Flt.water
+	var saved_food: int = Flt.food
+	var saved_morale: int = Flt.morale
+	# 一、文案：市舶纪事右舷、哨船牌数与刷船数同数、瞭望
+	var note_combat := str((load("res://scripts/ui/VisionStage.gd") as GDScript).get_script_constant_map().get("NOTE_COMBAT", ""))
+	_check(note_combat.begins_with("右舷齐射") and note_combat.find("左舷") < 0, "市舶纪事注记写「右舷齐射」，与右舷炮焰同侧（得「%s」）" % note_combat)
+	var patrol: Dictionary = sc_const.get("PATROL_ENEMY", {})
+	var cn_n: String = GM.cn_num(int(patrol.get("count", 0)))
+	var patrol_text := str(Voy.call("_yuan_patrol_event").get("text", ""))
+	_check(patrol_text.begins_with(cn_n + "条船"), "元军哨船遭遇牌写「%s条船」，与 PATROL_ENEMY.count=%d 同数（得「%s」）" % [cn_n, int(patrol.get("count", 0)), patrol_text.substr(0, 8)])
+	var pirate_text := str(Voy.call("pirate_sighting").get("text", ""))
+	_check(pirate_text.find("瞭望") >= 0 and pirate_text.find("了望") < 0, "海寇遭遇牌写「瞭望手」")
+	# 二、全靠接舷夺下两艘海寇：当帧带 boarded 出战；战损只算开战在场的船；夺来的按序号起名
+	GS.from_dict({})
+	Cal.from_dict({"year": 1258, "month": 4, "day": 10})
+	Flt.set("ships", [])
+	Flt.call("add_ship", "fu_ship_medium", "")
+	var fs0: Dictionary = (Flt.get("ships") as Array)[0]
+	fs0["crew"] = int(Flt.call("ship_crew_max", 0))
+	Flt.water = 300
+	Flt.food = 300
+	Flt.morale = 80
+	var pirate: Dictionary = sc_const.get("PIRATE_ENEMY", {})
+	var got: Array = []
+	var wm := _crew_battle(pirate, "pirate", got)
+	# 开战刷船距离：DIST_MAX 不超过镜头半高（画布高 / 镜头 zoom / 2，都从工程与场景里读），任何角度刷出船心都在画内
+	var cam: Camera2D = (wm.get("ship") as Node).get_node_or_null("Camera2D") as Camera2D
+	var view_h := float(ProjectSettings.get_setting("display/window/size/viewport_height", 720))
+	var half_h := view_h / (2.0 * cam.zoom.y) if cam != null and cam.zoom.y > 0.0 else 0.0
+	var spawn_max := float((wm.get_script() as GDScript).get_script_constant_map().get("COMBAT_SPAWN_DIST_MAX", INF))
+	var foes := _crew_foes(wm)
+	var own_pos: Vector2 = (wm.get("ship") as Node2D).position
+	var far_y := 0.0
+	for f in foes:
+		far_y = maxf(far_y, absf((f as Node2D).position.y - own_pos.y))
+	_check(half_h > 0.0 and spawn_max <= half_h and far_y <= half_h,
+		"开战刷船距离上限 %.0f ≤ 镜头半高 %.0f（本局敌船离本船竖向最远 %.0f）" % [spawn_max, half_h, far_y])
+	# 分离：两艘叠在一处时各自往外推
+	if foes.size() >= 2:
+		(foes[1] as Node2D).position = (foes[0] as Node2D).position + Vector2(40, 0)
+		var push: Vector2 = foes[0].call("_separation_push")
+		_check(push.x < 0.0, "两艘敌船贴在一处时分离推力朝外（%s）" % push)
+	# 开战后旗舰挨了 40：战损只算这 40，夺来入列的满耐久新船不计
+	var flag: Dictionary = (Flt.get("ships") as Array)[0]
+	flag["durability"] = float(flag.get("durability", 0.0)) - 40.0
+	for f in foes:
+		f.set("crew", 0)  # 敌战力 0 → 胜率 1
+		wm.call("_board_enemy", f)
+	var ships: Array = Flt.get("ships")
+	var names: Array = []
+	for i in range(1, ships.size()):
+		names.append(str(ships[i].get("name", "")))
+	var d: Dictionary = got[0][1] if got.size() == 1 else {}
+	_check(got.size() == 1 and got[0][0] == "win" and bool(d.get("boarded", false)),
+		"全靠接舷夺下末艘：当帧带 boarded 出战（得 %s）" % [got])
+	_check(int(d.get("boarded_n", 0)) == foes.size() and int(d.get("enemies", 0)) == foes.size(),
+		"战果带夺船艘数 %s / 敌船 %s（刷 %d 艘）" % [d.get("boarded_n"), d.get("enemies"), foes.size()])
+	_check(absf(float(d.get("player_damage", -1.0)) - 40.0) < 0.5, "战损只算开战在场的船：旗舰掉 40 记 40（得 %s）" % d.get("player_damage"))
+	var want_names: Array = []
+	for k in range(1, foes.size() + 1):
+		want_names.append("快船・" + GM.cn_num(k))
+	_check(names == want_names and str(ships[ships.size() - 1].get("type", "")) == "pirate_boat",
+		"夺来的快船按序号起名、type 不动（%s）" % [names])
+	var notice: Label = wm.get("_notice")
+	var last_name: String = want_names[-1] if not want_names.is_empty() else "快船・一"
+	_check(notice != null and notice.text.find(last_name) >= 0, "headless 题签起不来：浮字兜底写夺来的船名「%s」（%s）" % [last_name, notice.text if notice != null else "无浮字"])
+	var took_crew := 0
+	for i in range(1, ships.size()):
+		took_crew += int(ships[i].get("crew", 0))
+	var sd: int = Flt.supply_days()
+	var win_note: String = FX.sea_win_note(300, int(d.get("player_damage", 0.0)), "", "pirate", FX.sea_win_taken(d, sd))
+	var want_clause := "夺来%s船，添水手%s，" % [FX.cn_count(foes.size(), true), FX.cn_count(took_crew)]
+	_check(win_note.begins_with("接舷既定。") and win_note.find("已退") < 0 and win_note.find(want_clause) >= 0
+		and win_note.find(FX.cn_count(sd) + "日") >= 0 and win_note.find("船体受损 40") >= 0,
+		"尽数夺下的注记：接舷既定开头、不说已退、交代「%s」与水粮 %d 日（得「%s」）" % [want_clause, sd, win_note])
+	# 句序（09-29 复核）：钱数、战损紧跟「接舷既定。」，夺船交代放句末——海图顶匾第二行只留 28 字（SeaChart._refresh_strip：
+	# 超 28 取前 27 加「…」），截断只截交代的尾巴
+	var strip_cut := win_note.substr(0, 27) if win_note.length() > 28 else win_note
+	_check(win_note.find("船体受损") < win_note.find("夺来") and strip_cut.find("获财货 300 钱。") >= 0 and strip_cut.find("船体受损 40。") >= 0,
+		"夺船注记钱数战损在夺船交代之前，顶匾截成 28 字仍看得见（顶匾「%s」）" % strip_cut)
+	_check(FX.sea_win_note(100, 10, "").begins_with("海盗已退。") and FX.sea_win_note(100, 10, "", "yuan_patrol").begins_with("哨船退去。"),
+		"没夺船的注记：海寇「海盗已退」、元军哨船「哨船退去」")
+	GM.pending_battle = {}
+	# 三、元军哨船：先击沉一艘，再夺两艘 → 接舷既定、不说退去、交代击沉一船；夺来的叫「元哨船・一」，type 仍是海鹘
+	Flt.set("ships", [])
+	Flt.call("add_ship", "fu_ship_medium", "")
+	got.clear()
+	var wm2 := _crew_battle(patrol, "yuan_patrol", got)
+	var foes2 := _crew_foes(wm2)
+	if not foes2.is_empty():
+		foes2[0].call("take_damage", 99999.0)
+		for i in range(1, foes2.size()):
+			foes2[i].set("crew", 0)
+			wm2.call("_board_enemy", foes2[i])
+	var d2: Dictionary = got[0][1] if got.size() == 1 else {}
+	var ships2: Array = Flt.get("ships")
+	var p_note: String = FX.sea_win_note(300, 0, "", "yuan_patrol", FX.sea_win_taken(d2, Flt.supply_days()))
+	# 沉一夺二（09-29 复核）：一艘沉了、两艘归了你，没有一艘退走——不写「哨船退去」，交代击沉数
+	var sunk_clause := "击沉%s船，夺来%s船" % [FX.cn_count(1, true), FX.cn_count(foes2.size() - 1, true)]
+	_check(bool(d2.get("boarded", false)) and p_note.begins_with("接舷既定。获财货 300 钱。") and p_note.find("退") < 0
+		and p_note.find(sunk_clause) >= 0 and p_note.find("海盗") < 0,
+		"元军哨船沉一夺二：注记「接舷既定。获财货…」、不说退去、交代「%s」，不叫海盗（得「%s」）" % [sunk_clause, p_note])
+	# 海寇沉一夺一、末艘炮沉而中途夺过船：同样不说「海盗已退」；只有全靠炮击打赢的才沿用旧句（上一条）
+	var mix_board: String = FX.sea_win_note(200, 30, "", "pirate", FX.sea_win_taken({"boarded": true, "boarded_n": 1, "boarded_crew": 40, "enemies": 2}, 5))
+	var mix_gun: String = FX.sea_win_note(200, 30, "", "pirate", FX.sea_win_taken({"boarded": false, "boarded_n": 1, "boarded_crew": 40, "enemies": 2}, 5))
+	_check(mix_board.begins_with("接舷既定。获财货 200 钱。船体受损 30。击沉一船，夺来一船，添水手四十，")
+		and mix_gun.begins_with("获财货 200 钱。船体受损 30。击沉一船，夺来一船，") and mix_board.find("已退") < 0 and mix_gun.find("已退") < 0,
+		"海寇沉一夺一：末艘夺下「%s」／末艘炮沉「%s」，都不说已退" % [mix_board, mix_gun])
+	_check(ships2.size() >= 2 and str(ships2[1].get("name", "")) == str(patrol.get("prize_name", "")) + "・一" and str(ships2[1].get("type", "")) == "sea_falcon",
+		"夺来的元军哨船叫「%s・一」、type 仍是 sea_falcon（得 %s / %s）" % [patrol.get("prize_name", ""), ships2[1].get("name", "") if ships2.size() >= 2 else "无", ships2[1].get("type", "") if ships2.size() >= 2 else "无"])
+	GM.pending_battle = {}
+	# 四、发炮的船已释放：炮弹命中照常扣伤、爆炸、自删，不报 SCRIPT ERROR（修前报错中断，炮弹留在场上）
+	var tgt: Node = (load("res://scenes/PirateShip.tscn") as PackedScene).instantiate()
+	root.add_child(tgt)
+	tgt.set("hull_hp", 999.0)
+	var cb: Node = (load("res://scenes/Cannonball.tscn") as PackedScene).instantiate()
+	root.add_child(cb)
+	var dead := Node2D.new()
+	cb.set("shooter", dead)
+	dead.free()
+	cb.call("_on_body_entered", tgt)
+	_check(cb.is_queued_for_deletion() and float(tgt.get("hull_hp")) < 999.0, "发炮船已释放：炮弹命中照常扣伤并自删")
+	tgt.queue_free()
+	# 五、海战粒子都挂柔点贴图（无贴图的 CPUParticles2D 画成硬边方块）
+	var bare: Array = []
+	for path in ["res://scenes/ImpactExplosion.tscn", "res://scenes/WaterSplash.tscn", "res://scenes/PirateShip.tscn", "res://scenes/Ship.tscn"]:
+		var inst: Node = (load(path) as PackedScene).instantiate()
+		for p in _crew_particles(inst):
+			if (p as CPUParticles2D).texture == null:
+				bare.append("%s:%s" % [path.get_file(), p.name])
+		inst.free()
+	var smoke: CPUParticles2D = FX._spawn_ember_smoke(root, Vector2.ZERO)
+	if smoke == null or smoke.texture == null:
+		bare.append("CombatFx._spawn_ember_smoke")
+	_check(bare.is_empty(), "海战粒子（爆炸、水花、尾迹、焦烟）都挂贴图（缺：%s）" % [bare])
+	# 六、【辞船】放行、上蜜色墨；船籍簿职事栏留一行淡字；船队明细一艘两行、名同型只写一次
+	var kept := UiTheme.plain_log("【辞船】林华把缆绳盘好，辞了船，说要去兴化投军。")
+	_check(kept.begins_with("[color=#%s]" % UiTheme.hex(UiTheme.HONEY)) and kept.find("【辞船】林华") >= 0,
+		"plain_log 放行【辞船】并上蜜色墨（得「%s」）" % kept)
+	GS.from_dict({})
+	Crw.from_dict({})
+	GS.chapter = 2
+	GS.money = 100000
+	Cal.from_dict({"year": 1276, "month": 8, "day": 20})
+	Crw.hire("lin_hua")
+	_advance_to(1276, 10)
+	var gone: PackedStringArray = Crw.departed_lines()
+	_check(gone.size() == 1 and gone[0] == "舵工　林华已于景炎元年十月辞船", "林华辞船记入职事栏淡字（%s）" % [gone])
+	var rt: Dictionary = Crw.to_dict()
+	Crw.from_dict({})
+	Crw.from_dict(rt)
+	_check(Crw.departed_lines() == gone, "辞船记录入存档、读回不丢")
+	Flt.set("ships", [])
+	Flt.call("add_ship", "fu_ship_medium", "")
+	Flt.call("add_ship", "pirate_boat", "快船・一")
+	main.update_status_panel()
+	var sl: RichTextLabel = main.get("status_label")
+	var ledger := sl.get_parsed_text().replace("⁠", "").replace(" ", " ") if sl != null else ""
+	var rows := ledger.split("\n")
+	var row_i := -1
+	for i in rows.size():
+		if rows[i].begins_with("　快船・一　快船　"):
+			row_i = i
+	_check(ledger.find("舵工　林华已于景炎元年十月辞船") >= 0, "船籍簿职事栏有「舵工　林华已于景炎元年十月辞船」")
+	_check(ledger.find("福船（中）　福船（中）") < 0 and ledger.find("　福船（中）　0 / 800 料") >= 0, "船名与船型相同只写一次（福船（中））")
+	_check(row_i >= 0 and rows[row_i].ends_with("料") and row_i + 1 < rows.size() and rows[row_i + 1].begins_with("　　帆") and rows[row_i + 1].find("水手") >= 0,
+		"船队明细一艘两行：「快船・一　快船　…料」／「　　帆…水手…」（%s）" % [rows.slice(maxi(row_i, 0), maxi(row_i, 0) + 2)])
+	# 七、海战难度对账（09-29 复核 major）：敌船兜圈准头回到修前口径，三艘哨船首轮打沉开局小艍不多于修前
+	_v0928_crew_difficulty(pirate, patrol)
+	# 收拾：船队、职事、战况复原，免得污染后面的检查
+	Flt.set("ships", saved_ships)
+	Flt.water = saved_water
+	Flt.food = saved_food
+	Flt.morale = saved_morale
+	GS.from_dict({})
+	Crw.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+
+
+## 起一场 WorldMap 海战（pending_battle 照 SeaChart._on_fight_* 的格式），battle_finished 记进 got
+func _crew_battle(entry: Dictionary, event: String, got: Array) -> Node:
+	GM.pending_battle = {"battle": true, "power": 300.0, "player_power": 400.0, "enemy": [entry.duplicate()],
+		"sea_name": "泉州外海", "source": {"scene": "SeaChart", "event": event}}
+	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
+	root.add_child(wm)
+	wm.connect("battle_finished", func(o: String, d: Dictionary) -> void: got.append([o, d]))
+	return wm
+
+
+func _crew_foes(wm: Node) -> Array:
+	var out: Array = []
+	for c in wm.get_children():
+		if String(c.name).begins_with("PirateShip") and not c.is_queued_for_deletion():
+			out.append(c)
+	return out
+
+
+func _crew_particles(n: Node) -> Array:
+	var out: Array = []
+	if n is CPUParticles2D:
+		out.append(n)
+	for c in n.get_children():
+		out.append_array(_crew_particles(c))
+	return out
+
+
+## ── crew 线 09-29 返修：海战难度对账（复核 major）──
+## 09-28 初修让敌船绕本船兜正圆：船身永远正对本船，画内这点距离几乎弹弹中——本船不动 30 s 受伤比修前多七成六，
+## 小艍 120 耐久遇三艘哨船 20 局全在首轮 3.7 s 沉（复核 headless --fixed-fps 60 实测）。这里同种子各推修前口径与现行航法：
+##   一、本船不动 30 s 受伤均值：现行 / 修前 落在 [CREW_DIFF_LO, CREW_DIFF_HI]（门槛写比例，不钉数）；
+##   二、开局小艍遇三艘哨船：首轮（COMBAT_FIRE_DELAY 起一个装填之内）打沉的局数不多于修前口径，沉船时间中位数落在首轮之后。
+## 「首轮必打不沉」连修前也做不到（修前 200 局首轮吃满 120 的有 9 局）：三艘 × 2 门 × 25 = 150 > 120，要保证须错开首轮开炮，
+## 那是改数，待 Snow 定；这里只钉「不比修前差」。
+## 修前口径 = 刷在 300—420（角度照刷船公式）、orbit_radius=0（PirateShip 留着的旧法「转到较近一侧舷」）、船头朝上。
+const CREW_DIFF_LO := 0.7
+const CREW_DIFF_HI := 1.3
+const CREW_DIFF_SEEDS := 10
+const CREW_FIRST_SEEDS := 60
+const CREW_DIFF_SECS := 30.0
+const CREW_FIRST_SECS := 12.0
+
+
+func _v0928_crew_difficulty(pirate: Dictionary, patrol: Dictionary) -> void:
+	var Flt: Node = root.get_node("Fleet")
+	var wm_const: Dictionary = (load("res://scripts/WorldMap.gd") as GDScript).get_script_constant_map()
+	var ps_const: Dictionary = (load("res://scripts/PirateShip.gd") as GDScript).get_script_constant_map()
+	var first_end: float = float(wm_const.get("COMBAT_FIRE_DELAY", 0.0)) + float(ps_const.get("FIRE_INTERVAL", 0.0))
+	var t0 := Time.get_ticks_msec()
+	# 一、本船不动 30 s（旗舰福船（中）、耐久抬高不沉），海寇与元军哨船各 CREW_DIFF_SEEDS 局
+	for pair in [[pirate, "pirate"], [patrol, "yuan_patrol"]]:
+		var sums := [0.0, 0.0]
+		for v in 2:
+			for k in CREW_DIFF_SEEDS:
+				var res: Array = _crew_sim(pair[0], pair[1], "fu_ship_medium", 99999.0, 7000 + k, v == 0, CREW_DIFF_SECS)
+				sums[v] += float(res[0])
+		var pre_mean: float = sums[0] / CREW_DIFF_SEEDS
+		var cur_mean: float = sums[1] / CREW_DIFF_SEEDS
+		var ratio: float = cur_mean / pre_mean if pre_mean > 0.0 else INF
+		_check(ratio >= CREW_DIFF_LO and ratio <= CREW_DIFF_HI,
+			"%s 本船不动 %.0f s 受伤均值 现行 %.0f / 修前 %.0f = %.2f，在 %.1f—%.1f 内（同种子各 %d 局）" % [
+				pair[1], CREW_DIFF_SECS, cur_mean, pre_mean, ratio, CREW_DIFF_LO, CREW_DIFF_HI, CREW_DIFF_SEEDS])
+	# 二、开局小艍（耐久照 ships.json）遇三艘哨船，推到沉船为止（至多 CREW_FIRST_SECS，没沉记作无穷）
+	var hull := float((Flt.call("ship_def", "sampan") as Dictionary).get("durability", 0.0))
+	var first := [0, 0]
+	var sinks := [[], []]
+	for v in 2:
+		for k in CREW_FIRST_SEEDS:
+			var res: Array = _crew_sim(patrol, "yuan_patrol", "sampan", hull, 9000 + k, v == 0, CREW_FIRST_SECS)
+			var at := float(res[2])
+			sinks[v].append(at if at >= 0.0 else INF)
+			if at >= 0.0 and at < first_end:
+				first[v] += 1
+	for v in 2:
+		(sinks[v] as Array).sort()
+	var med: float = sinks[1][CREW_FIRST_SEEDS / 2]
+	_check(int(patrol.get("count", 0)) >= 3 and hull > 0.0 and first[1] <= first[0] and med >= first_end,
+		"小艍 %.0f 耐久遇 %d 艘哨船：首轮（%.1f s 前）打沉 现行 %d / 修前 %d 局（同种子各 %d 局），现行沉船中位 %.2f s 在首轮之后（修前 %.2f s）" % [
+			hull, int(patrol.get("count", 0)), first_end, first[1], first[0], CREW_FIRST_SEEDS, med, float(sinks[0][CREW_FIRST_SEEDS / 2])])
+	print("STORY_CHECK note 海战难度对账用时 %d ms" % (Time.get_ticks_msec() - t0))
+	GM.pending_battle = {}
+	randomize()
+
+
+## 同步推一场海战 secs 秒（每步一个物理帧）：敌船走真 _steer（兜圈、分离、转舵）与 _process_firing，按 velocity × dt 挪位置
+## （敌船彼此、与本船都隔着百余 px，move_and_slide 在这里只等于平移；它在物理帧外改用 process 的 delta，不能直接调）；
+## 炮弹走真 _process；命中照 Area2D 口径（两圆心距 < 两碰撞圆半径和，不打发炮船自己）扣真 take_damage，本船乘甲减伤
+## （同 Cannonball._on_body_entered），不走命中烟火（一场几十发，延迟入树的粒子会堆到帧末）；炮弹满 lifetime 放掉。
+## 本船收帆不动（不调 Ship._physics_process）。pre=true 回退修前口径（见上）。
+## 固定种子：WorldMap._ready 里 randomize() 过，放掉已刷的敌船后按 seed_v 照 _setup_combat 的两步经 _spawn_enemy 重刷。
+## 返回 [受伤, 0, 沉船时刻或 -1]。
+func _crew_sim(entry: Dictionary, event: String, ship_type: String, hull: float, seed_v: int, pre: bool, secs: float) -> Array:
+	var Flt: Node = root.get_node("Fleet")
+	GS.from_dict({})
+	Flt.set("ships", [])
+	Flt.call("add_ship", ship_type, "")
+	var fs: Dictionary = (Flt.get("ships") as Array)[0]
+	fs["durability"] = hull
+	fs["max_durability"] = hull
+	var got: Array = []
+	var wm := _crew_battle(entry, event, got)
+	for f in _crew_foes(wm):
+		wm.remove_child(f)
+		f.free()
+	wm.set("total_enemies", 0)
+	seed(seed_v)
+	# 同 WorldMap._setup_combat 的刷船两步：先定这一战兜圈方向，再逐条刷
+	wm.set("_orbit_sense", 1.0 if randf() < 0.5 else -1.0)
+	for e in (GM.pending_battle.get("enemy", []) as Array):
+		wm.call("_spawn_enemy", str(e.get("type", "pirate_boat")), int(e.get("count", 1)), GM.pending_battle,
+			str(e.get("sprite", "")), str(e.get("prize_name", "")))
+	var own: Node2D = wm.get("ship")
+	var foes := _crew_foes(wm)
+	if pre:
+		for f in foes:
+			var ang: float = ((f as Node2D).position - own.position).angle()
+			(f as Node2D).position = own.position + Vector2.from_angle(ang) * randf_range(300.0, 420.0)
+			(f as Node2D).rotation = 0.0
+			f.set("orbit_radius", 0.0)
+	var balls: Array = []
+	var on_child := func(c: Node) -> void:
+		if "shooter" in c and "lifetime" in c:
+			balls.append([c, 0.0, c.get("shooter"), float(c.get("lifetime")), float(c.get("damage"))])
+	wm.child_entered_tree.connect(on_child)
+	var bodies: Array = [own]
+	bodies.append_array(foes)
+	var radius := {}
+	for b in bodies:
+		radius[b] = float(((b as Node).get_node("CollisionShape2D") as CollisionShape2D).shape.get("radius"))
+	var cb_probe: Node = (load("res://scenes/Cannonball.tscn") as PackedScene).instantiate()
+	var cb_r := float((cb_probe.get_node("CollisionShape2D") as CollisionShape2D).shape.get("radius"))
+	cb_probe.free()
+	var armor := float(Flt.call("armor_damage_reduction"))
+	var dt := 1.0 / float(Engine.physics_ticks_per_second)
+	var d0 := float(fs.get("durability", 0.0))
+	var sunk_at := -1.0
+	for k in int(secs / dt):
+		for f in foes:
+			if is_instance_valid(f) and not f.is_queued_for_deletion():
+				var aim: Array = f._steer(dt)
+				if aim.is_empty():
+					continue
+				(f as Node2D).position += (f as CharacterBody2D).velocity * dt
+				f._process_firing(dt, aim[0], aim[1])
+		var live: Array = []
+		for e in balls:
+			var cb: Node2D = e[0]
+			var hit_body: Node2D = null
+			for b in bodies:
+				if b == e[2] or not is_instance_valid(b) or (b as Node).is_queued_for_deletion():
+					continue
+				if (b as Node2D).position.distance_to(cb.position) < cb_r + float(radius[b]):
+					hit_body = b
+					break
+			if hit_body != null:
+				hit_body.call("take_damage", float(e[4]) * (armor if hit_body == own else 1.0))
+				cb.free()
+				continue
+			cb.call("_process", dt)
+			e[1] = float(e[1]) + dt
+			if float(e[1]) >= float(e[3]):
+				cb.free()
+				continue
+			live.append(e)
+		# 原地换内容：on_child 捕获的是这个数组本身，重新赋值后新炮弹会记到旧数组里
+		balls.clear()
+		balls.append_array(live)
+		if float(fs.get("durability", 0.0)) <= 0.0:
+			sunk_at = float(k + 1) * dt
+			break
+	var dmg_total := d0 - float(fs.get("durability", 0.0))
+	for e in balls:
+		if is_instance_valid(e[0]):
+			(e[0] as Node).free()
+	if is_instance_valid(wm):
+		wm.free()
+	return [dmg_total, 0, sunk_at]
+
+
+## ── visual 线 09-28 修复：人物志防剧透与世界线门控、林华按日期换画、立绘册页签 ──
+## 可见条件扩了 "YYYY-MM"（按月）、"end:结局|结局"、"id:身份"、"flag:旗标"、「&」连写与「!」取反（CharacterArt.segment_visible）。
+## 断言只钉「该露 / 不该露」的字，不钉整段文案；每条剧透都配一条「到时候确实露了」的对照，免得全藏也绿。
+func _v0928_visual_check(_main: Node) -> void:
+	var Art = load("res://scripts/ui/CharacterArt.gd")
+	var zan: Dictionary = GM.get_character("chen_zan")
+	var lu: Dictionary = GM.get_character("lu_xiufu")
+	var zhang: Dictionary = GM.get_character("zhang_shijie")
+	var lin: Dictionary = GM.get_character("lin_hua")
+	var pc: Dictionary = GM.get_character("chen_wenlong")
+	# 条件解析：月份键、残了一截的组合、认不得的键
+	GS.from_dict({})
+	Cal.from_dict({"year": 1277, "month": 10, "day": 5})
+	_check(not Art.segment_visible("1277-11") and Art.segment_visible("1277-10") and Art.segment_visible("1276-12"),
+		"月份键：1277-10 时 \"1277-10\" 已到、\"1277-11\" 未到")
+	_check(not Art.segment_visible("1268&") and not Art.segment_visible("lately") and not Art.segment_visible("end:忠肃"),
+		"残缺组合「1268&」、认不得的键、未了结时的 end:… 一律不可见")
+	# 陈瓒：再陷（1277-11）之前不露「就死在这里」与车裂；复城（1277-02）之前不露复城
+	var zan_lines_10 := "".join(Art.codex_lines(zan))
+	Cal.from_dict({"year": 1277, "month": 11, "day": 5})
+	var zan_lines_11 := "".join(Art.codex_lines(zan))
+	_check(zan_lines_10.find("死在这里") < 0 and zan_lines_11.find("死在这里") >= 0,
+		"陈瓒其言：1277-10 不含「死在这里」、1277-11 起才有（10 月 %d 句）" % Art.codex_lines(zan).size())
+	Cal.from_dict({"year": 1277, "month": 1, "day": 5})
+	var zan_bio_01: String = Art.codex_bio(zan) + Art.codex_short(zan)
+	Cal.from_dict({"year": 1277, "month": 6, "day": 5})
+	var zan_bio_06: String = Art.codex_bio(zan) + Art.codex_short(zan)
+	Cal.from_dict({"year": 1277, "month": 12, "day": 5})
+	var zan_bio_12: String = Art.codex_bio(zan)
+	_check(zan_bio_01.find("复") < 0 and zan_bio_06.find("复了兴化城") >= 0 and zan_bio_06.find("车裂") < 0 and zan_bio_12.find("车裂") >= 0,
+		"陈瓒小传：1277-01 未复城不写复城，1277-06 写复城不写车裂，1277-12 写车裂")
+	# 陆秀夫、张世杰：崖山卡开到 1279-03，1279-04 起才露投海、覆舟
+	Cal.from_dict({"year": 1279, "month": 2, "day": 5})
+	var lu_02: String = Art.codex_bio(lu) + Art.codex_short(lu) + "".join(Art.codex_lines(lu))
+	var zhang_02: String = Art.codex_bio(zhang) + Art.codex_short(zhang)
+	Cal.from_dict({"year": 1279, "month": 4, "day": 5})
+	var lu_04: String = Art.codex_bio(lu)
+	_check(lu_02.find("投海") < 0 and lu_02.find("为国死") < 0 and zhang_02.find("覆舟") < 0 and lu_04.find("投海") >= 0,
+		"陆秀夫 1279-02 小传、简介、其言不含「投海」「为国死」，张世杰不含「覆舟」；1279-04 起露")
+	# 林华：1276-08 还在船上当舵工，小传不写降、称谓不是部将；1277-01 城破后写
+	Cal.from_dict({"year": 1276, "month": 8, "day": 5})
+	var lin_08: String = Art.codex_bio(lin) + Art.codex_short(lin) + "".join(Art.codex_lines(lin))
+	var lin_title_08: String = Art.codex_title(lin)
+	Cal.from_dict({"year": 1277, "month": 1, "day": 5})
+	var lin_01: String = Art.codex_bio(lin)
+	_check(lin_08.find("降") < 0 and lin_08.find("元兵") < 0 and lin_title_08.find("部将") < 0 and lin_01.find("降") >= 0,
+		"林华 1276-08 小传 / 简介 / 其言不含「降」「元兵」，称谓「%s」不是部将；1277-01 起写降" % lin_title_08)
+	# 林华立绘按日期换：辞船（1276-10）之前挂剪影墨卡，之后与了结后挂甲胄正图
+	Cal.from_dict({"year": 1276, "month": 8, "day": 5})
+	var lin_pic_08: String = Art.portrait_path(lin)
+	Cal.from_dict({"year": 1276, "month": 10, "day": 5})
+	var lin_pic_10: String = Art.portrait_path(lin)
+	_check(lin_pic_08 != str(lin.get("portrait", "")) and ResourceLoader.exists(lin_pic_08) and Art.portrait_is_card(lin) == false
+			and lin_pic_10 == str(lin.get("portrait", "")),
+		"林华立绘 1276-08 挂 %s（在库）、1276-10 起挂正图 %s" % [lin_pic_08.get_file(), lin_pic_10.get_file()])
+	Cal.from_dict({"year": 1276, "month": 8, "day": 5})
+	_check(Art.portrait_is_card(lin) and Art.thumb(lin, Vector2i(34, 34), true) != null,
+		"林华 1276-08 立绘面板记作剪影卡，缩略图取得到")
+	# 主角世界线：[身份, 改名, 年, 月, 结局]
+	var lines_of := func() -> String: return "".join(Art.codex_lines(pc))
+	# 纲首（海商）了结：字号无君贲，其言无节义文章，又称不重名、有陈纲首，史载有引子，称谓是纲首
+	GS.from_dict({})
+	GS.identity = "merchant"
+	Cal.from_dict({"year": 1285, "month": 5, "day": 5})
+	GS.finish("纲首", "正文")
+	var gs_alts: PackedStringArray = Art.codex_alts(pc)
+	var gs_annal := "".join(Art.codex_annal(pc))
+	_check(Art.courtesy_of(pc).find("君贲") < 0 and str(lines_of.call()).find("节义文章") < 0,
+		"纲首线了结：主角字号「%s」不含君贲，其言不含「此皆节义文章也」" % Art.courtesy_of(pc))
+	_check(not (Art.display_name(pc) in gs_alts) and "陈纲首" in gs_alts and Art.codex_title(pc).find("纲首") >= 0,
+		"纲首线了结：又称 %s 不含大名、有陈纲首；称谓「%s」" % [gs_alts, Art.codex_title(pc)])
+	_check(gs_annal.find("另一条路") >= 0 and gs_annal.find("岳王庙") >= 0 and Art.codex_bio(pc).find("岳王庙") < 0,
+		"纲首线了结：岳王庙那段只在「史载」一节（带「此世他走了另一条路」引子），不在小传里")
+	_check(not Art.rel_visible("庙前殉节者") and not Art.rel_visible("后世齐名") and not Art.rel_visible("赐名状元"),
+		"纲首线了结：关系签「庙前殉节者」「后世齐名」「赐名状元」不露")
+	# 岸上的根（乡土）了结：同样不露君贲、节义文章，没有陈纲首
+	GS.from_dict({})
+	GS.identity = "hometown"
+	Cal.from_dict({"year": 1277, "month": 10, "day": 20})
+	GS.finish("岸上的根", "正文")
+	_check(Art.courtesy_of(pc).find("君贲") < 0 and str(lines_of.call()).find("节义文章") < 0 and not ("陈纲首" in Art.codex_alts(pc))
+			and "".join(Art.codex_annal(pc)).find("另一条路") >= 0,
+		"岸上的根了结：无君贲、无节义文章、无陈纲首，史载有引子")
+	# 未归（士人）：史载一节有本世界的史书「不知所终」，引子写明城破时他不在城里（未归 = 没打守城，Main._check_absent_from_xinghua），
+	# 不重述小传里已有的殿试改名；其言仍无「节义文章」；君贲照露
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	GS.player_name = "陈文龙"
+	Cal.from_dict({"year": 1277, "month": 1, "day": 5})
+	GS.finish("未归", "正文")
+	var wg_annal := "".join(Art.codex_annal(pc))
+	_check(wg_annal.find("不知所终") >= 0 and wg_annal.find("不在城里") >= 0 and str(lines_of.call()).find("节义文章") < 0
+			and Art.courtesy_of(pc).find("君贲") >= 0 and not Art.rel_visible("庙前殉节者") and Art.rel_visible("赐名状元"),
+		"未归线：史载有「不知所终」与「城破时他不在城里」引子，其言无节义文章，字号有君贲，「赐名状元」露、「庙前殉节者」不露")
+	_check(wg_annal.find("殿试") < 0 and wg_annal.find("不呈稿") < 0 and wg_annal.find("岳王庙") >= 0 and Art.codex_bio(pc).find("殿试") >= 0,
+		"未归线：史载不再重述小传里的殿试改名、不呈稿，只接城破以后；小传仍有殿试")
+	# 人物志详页实建：未归线「史载」一节真的上屏
+	var cx_scr = load("res://scripts/ui/CharacterCodex.gd")
+	var cx: Control = cx_scr.new()
+	root.add_child(cx)
+	cx.call("begin", "chen_wenlong")
+	_check(_find_label_text(cx, "史载") != "" and _find_label_text(cx, "不知所终") != "",
+		"未归线人物志详页有「史载」一节、上屏「不知所终」")
+	cx.queue_free()
+	# 忠肃：其言有节义文章，史载没有引子，三枚关系签都露
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	GS.player_name = "陈文龙"
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	GS.finish("忠肃", "正文")
+	var zs_annal := "".join(Art.codex_annal(pc))
+	_check(str(lines_of.call()).find("节义文章") >= 0 and zs_annal.find("岳王庙") >= 0 and zs_annal.find("另一条路") < 0
+			and Art.rel_visible("庙前殉节者") and Art.rel_visible("后世齐名") and Art.rel_visible("赐名状元"),
+		"忠肃线：其言有「此皆节义文章也」，史载无引子，三枚关系签都露")
+	_check(zs_annal.find("殿试") < 0 and zs_annal.find("不知所终") < 0,
+		"忠肃线：史载不重述小传里的殿试改名，也没有未归线的「不知所终」")
+	# 士人线守城中（1276-11，未了结）：字号有君贲，称谓是知兴化军，小传补了殿试改名与知兴化军，没有陈纲首
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	GS.player_name = "陈文龙"
+	GS.chapter = 4
+	Cal.from_dict({"year": 1276, "month": 11, "day": 5})
+	GS.siege_begin()
+	var sc_bio: String = Art.codex_bio(pc)
+	_check(Art.courtesy_of(pc).find("君贲") >= 0 and Art.codex_title(pc).find("知兴化军") >= 0 and sc_bio.find("殿试") >= 0
+			and sc_bio.find("知兴化军") >= 0 and not ("陈纲首" in Art.codex_alts(pc)) and sc_bio.find("岳王庙") < 0
+			and Art.codex_look(pc).find("宝祐三年") >= 0,
+		"士人线守城中：字号有君贲，称谓「%s」，小传有殿试改名、知兴化军，无陈纲首、无死法，形貌标宝祐三年" % Art.codex_title(pc))
+	# 海商线第三章（1270-06）：有陈纲首；士人线同年没有
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.chapter = 3
+	GS.visited_ports.append("quanzhou")
+	Cal.from_dict({"year": 1270, "month": 6, "day": 5})
+	var m_alts: PackedStringArray = Art.codex_alts(pc)
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	GS.player_name = "陈文龙"
+	var s_alts: PackedStringArray = Art.codex_alts(pc)
+	_check("陈纲首" in m_alts and not ("陈纲首" in s_alts) and not ("陈文龙" in s_alts),
+		"又称按身份：海商 1270-06 %s 有陈纲首，士人同年 %s 没有、也不重列大名" % [m_alts, s_alts])
+	# 立绘册：从人物志点进史实人物，左栏翻到他所在的页签并选中他（原先停在「主」页签高亮陈子龙）
+	GS.from_dict({})
+	Cal.from_dict({"year": 1280, "month": 1, "day": 5})
+	var roster: Node = load("res://scripts/chars/CharRoster.gd").new()
+	root.add_child(roster)
+	roster.call("select_id", "lu_xiufu")
+	var tab_now := str(roster.get("tab"))
+	_check(tab_now == "史实" and str(roster.call("selected_id")) == "lu_xiufu",
+		"立绘册 select_id(陆秀夫)：翻到「%s」页签并选中（%s）" % [tab_now, roster.call("selected_id")])
+	roster.call("select_id", "chen_wenlong")
+	_check(str(roster.get("tab")) == "主" and str(roster.call("selected_id")) == "chen_wenlong",
+		"立绘册 select_id(主角)：翻回「主」页签并选中")
+	roster.queue_free()
+	var roster2: Node = load("res://scripts/chars/CharRoster.gd").new()
+	roster2.call("select_id", "sodu")
+	root.add_child(roster2)
+	_check(str(roster2.get("tab")) == "史实" and str(roster2.call("selected_id")) == "sodu",
+		"立绘册未进树先 select_id(唆都)：进树后停在「史实」页签选中唆都（%s / %s）" % [roster2.get("tab"), roster2.call("selected_id")])
+	roster2.queue_free()
+	_v0928_visual_recheck(Art, pc, zan, lu, zhang)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+
+
+## 09-28 visual 线复核返修：全表扫漏网的整年键、晚投海商那一支的戏、称谓与小传同月、关系签拆签、卒年按月。
+func _v0928_visual_recheck(Art, pc: Dictionary, zan: Dictionary, lu: Dictionary, zhang: Dictionary) -> void:
+	var ws: Dictionary = GM.get_character("wang_shiqiang")
+	var ws_text := func() -> String: return Art.codex_short(ws) + Art.codex_bio(ws)
+	# 王世强：福州降在景炎元年十一月、泉州蒲寿庚降在十二月；年初不露，也不在建元（1276-05）前写「景炎」
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.chapter = 4
+	GS.visited_ports.append("quanzhou")
+	Cal.from_dict({"year": 1276, "month": 1, "day": 5})
+	var ws_01: String = ws_text.call()
+	Cal.from_dict({"year": 1276, "month": 10, "day": 5})
+	var ws_10: String = ws_text.call()
+	Cal.from_dict({"year": 1276, "month": 11, "day": 5})
+	var ws_11: String = ws_text.call()
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	var ws_12: String = ws_text.call()
+	_check(ws_01.find("景炎") < 0 and ws_10.find("泉州") < 0 and ws_10.find("福州") < 0 and ws_11.find("福州") >= 0
+			and ws_11.find("泉州") < 0 and ws_12.find("泉州") >= 0,
+		"王世强简介+小传：1276-01 无「景炎」，1276-10 无泉州、福州，1276-11 起有福州，1276-12 起有泉州")
+	# 同月两页一个说法：端宗页的「张世杰与蒲寿庚决裂」、陈瓒页的「渡海助张世杰」与张、蒲本人页同在 1276-12 露
+	var duan: Dictionary = GM.get_character("song_duanzong")
+	Cal.from_dict({"year": 1276, "month": 11, "day": 5})
+	var duan_11: String = Art.codex_bio(duan)
+	var zan_11: String = Art.codex_bio(zan)
+	var zhang_11: String = Art.codex_bio(zhang)
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	_check(duan_11.find("决裂") < 0 and zhang_11.find("蒲寿庚") < 0 and Art.codex_bio(duan).find("决裂") >= 0 and zan_11.find("三百万缗") < 0
+			and Art.codex_bio(zan).find("三百万缗") >= 0,
+		"端宗页决裂、陈瓒页输财与张世杰页同在 1276-12 露（1276-11 都不露）")
+	# 陈宜中、王爚：焦山兵败后（1275-07）的那场朝议，年初不露；王爚七月已罢，不写成十月
+	var cyz: Dictionary = GM.get_character("chen_yizhong")
+	var wy: Dictionary = GM.get_character("wang_yue")
+	Cal.from_dict({"year": 1275, "month": 6, "day": 5})
+	var yi_06: String = Art.codex_bio(cyz) + Art.codex_bio(wy)
+	Cal.from_dict({"year": 1275, "month": 7, "day": 5})
+	var yi_07: String = Art.codex_bio(cyz) + Art.codex_bio(wy)
+	_check(yi_06.find("该走") < 0 and yi_07.find("该走") >= 0 and yi_07.find("十月") < 0,
+		"陈宜中、王爚：1275-06 小传无「该走」那场朝议，1275-07 起有，且不写「十月」")
+	# 陆秀夫、张世杰卒年跟文本层同月（died_ym）：1279-03 生卒不写卒年，1279-04 起写
+	Cal.from_dict({"year": 1279, "month": 3, "day": 5})
+	var lu_l3: String = Art.life_line(lu)
+	var zh_l3: String = Art.life_line(zhang)
+	Cal.from_dict({"year": 1279, "month": 4, "day": 5})
+	var lu_l4: String = Art.life_line(lu)
+	var zh_l4: String = Art.life_line(zhang)
+	var lu_died := str(int(lu.get("died", 0)))
+	_check(lu_died != "0" and lu_l3.find(lu_died) < 0 and zh_l3.find(lu_died) < 0 and lu_l4.find(lu_died) >= 0 and zh_l4.find(lu_died) >= 0
+			and Art.codex_bio(lu).find("投海") >= 0,
+		"陆、张生卒：1279-03「%s」「%s」不写卒年，1279-04「%s」「%s」起写，与小传投海同月" % [lu_l3, zh_l3, lu_l4, zh_l4])
+	# 林家后人：「陈大人……姓陈的读书人……船股一分」是晚投海商那一支的戏，别的世界线了结后也不露
+	var heir: Dictionary = GM.get_character("lin_heir")
+	var heir_text := func() -> String: return Art.codex_bio(heir) + "".join(Art.codex_lines(heir))
+	GS.from_dict({})
+	GS.identity = "merchant"
+	Cal.from_dict({"year": 1285, "month": 5, "day": 5})
+	GS.finish("纲首", "正文")
+	var heir_gs: String = heir_text.call()
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	GS.finish("忠肃", "正文")
+	var heir_zs: String = heir_text.call()
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.set_flag("renamed_wenlong")
+	GS.set_flag("late_defection")
+	Cal.from_dict({"year": 1276, "month": 1, "day": 5})
+	var heir_ld: String = heir_text.call()
+	_check(heir_gs.find("船股") < 0 and heir_gs.find("陈大人") < 0 and heir_zs.find("船股") < 0 and heir_zs.find("一铺之地") < 0
+			and heir_ld.find("船股") >= 0 and heir_ld.find("一铺之地") >= 0,
+		"林家后人：纲首、忠肃了结后无「陈大人」「船股一分」，晚投海商那一支 1276-01 未了结就有")
+	# 市舶小吏「添纲首二字」与主角称谓同一口径（c3 且身份是海商 / 未定）：士人线第三章不露
+	var cust: Dictionary = GM.get_character("customs_official")
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	GS.chapter = 3
+	GS.visited_ports.append("quanzhou")
+	Cal.from_dict({"year": 1272, "month": 6, "day": 5})
+	var cust_sc: String = Art.codex_bio(cust)
+	var pc_title_sc: String = Art.codex_title(pc)
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.chapter = 3
+	GS.visited_ports.append("quanzhou")
+	var cust_m: String = Art.codex_bio(cust)
+	_check(cust_sc.find("纲首") < 0 and pc_title_sc.find("纲首") < 0 and cust_m.find("纲首") >= 0 and Art.codex_title(pc).find("纲首") >= 0,
+		"市舶小吏「添纲首二字」：士人线 1272-06 第三章不露（主角称谓「%s」），海商线同月露" % pc_title_sc)
+	# 蒲寿庚那句「非不忠义」点谁的名跟着世界线：士人线挂在主角页（点其名者），别的线挂在陈瓒页（点名之人）
+	var pc_rel := ""
+	for r in pc.get("relations", []):
+		if str(r.get("id", "")) == "pu_shougeng":
+			pc_rel = str(r.get("rel", ""))
+	var zan_rel := ""
+	for r in zan.get("relations", []):
+		if str(r.get("id", "")) == "pu_shougeng":
+			zan_rel = str(r.get("rel", ""))
+	GS.from_dict({})
+	GS.identity = "merchant"
+	Cal.from_dict({"year": 1285, "month": 5, "day": 5})
+	GS.finish("纲首", "正文")
+	var m_pc: bool = Art.rel_visible(pc_rel)
+	var m_zan: bool = Art.rel_visible(zan_rel)
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	Cal.from_dict({"year": 1276, "month": 12, "day": 5})
+	GS.finish("忠肃", "正文")
+	var s_pc: bool = Art.rel_visible(pc_rel)
+	var s_zan: bool = Art.rel_visible(zan_rel)
+	_check(pc_rel != "" and zan_rel != "" and pc_rel != zan_rel and not m_pc and m_zan and s_pc and not s_zan,
+		"蒲寿庚点名签：主角页「%s」只在士人线露、陈瓒页「%s」只在未改名的线露（纲首 %s/%s，忠肃 %s/%s）" % [pc_rel, zan_rel, m_pc, m_zan, s_pc, s_zan])
+	# 士人线称谓与小传同月：知抚州要等襄阳陷（1273-02）；侍御史、参知政事、辞官、复参政、知兴化军各在其月
+	var scholar_at := func(y: int, m: int) -> void:
+		GS.from_dict({})
+		GS.identity = "scholar"
+		GS.set_flag("renamed_wenlong")
+		GS.player_name = "陈文龙"
+		GS.chapter = 4
+		Cal.from_dict({"year": y, "month": m, "day": 5})
+	scholar_at.call(1273, 1)
+	var t_7301: String = Art.codex_title(pc)
+	var b_7301: String = Art.codex_bio(pc)
+	scholar_at.call(1273, 2)
+	var t_7302: String = Art.codex_title(pc)
+	var b_7302: String = Art.codex_bio(pc)
+	scholar_at.call(1274, 6)
+	var t_7406: String = Art.codex_title(pc)
+	_check(t_7301 == "监察御史" and b_7301.find("抚州") < 0 and b_7301.find("不呈稿") >= 0 and t_7302.find("知抚州") >= 0
+			and b_7302.find("抚州") >= 0 and t_7406 == t_7302,
+		"士人线 1273-01 称谓「%s」、小传未写贬抚州；1273-02 起称谓「%s」、小传写贬抚州；1274-06 仍「%s」" % [t_7301, t_7302, t_7406])
+	scholar_at.call(1275, 6)
+	var t_7506: String = Art.codex_title(pc)
+	var b_7506: String = Art.codex_bio(pc)
+	scholar_at.call(1275, 12)
+	var t_7512: String = Art.codex_title(pc)
+	scholar_at.call(1276, 5)
+	var t_7605: String = Art.codex_title(pc)
+	var b_7605: String = Art.codex_bio(pc)
+	scholar_at.call(1276, 8)
+	var t_7608: String = Art.codex_title(pc)
+	var id_7608: String = Art.identity_line(pc)
+	_check(t_7506 == "侍御史" and b_7506.find("侍御史") >= 0 and b_7506.find("参知政事") < 0 and t_7512.begins_with("前")
+			and t_7605 == "参知政事" and b_7605.find("复以他为参知政事") >= 0 and b_7605.find("知兴化军") < 0
+			and t_7608.find("知兴化军") >= 0 and id_7608.count("・") == 1,
+		"士人线 1275-06「%s」、1275-12「%s」、1276-05「%s」、1276-08 身份行「%s」（称谓与籍贯之间只一个分隔点）" % [t_7506, t_7512, t_7605, id_7608])
+	# 立绘面板身份行：籍贯逐字垫了字连接符，窄栏折行只折在「・」之后，不从「兴化军莆田／县玉湖」中间折；去掉连接符与原串一字不差
+	var wj := String.chr(0x2060)
+	var pp: Node = load("res://scripts/chars/CharPortraitPanel.gd").new()
+	root.add_child(pp)
+	pp.call("show_character", pc)
+	var shown := _find_label_text(pp, "・")
+	var origin_at := id_7608.rfind("・") + 1
+	var para := TextParagraph.new()
+	para.add_string(shown, UiTheme.font(), UiTheme.SIZE_FOOT + 1)
+	para.width = UiTheme.font().get_string_size(id_7608, HORIZONTAL_ALIGNMENT_LEFT, -1, UiTheme.SIZE_FOOT + 1).x * 0.8
+	var breaks_ok := para.get_line_count() >= 2
+	for i in range(1, para.get_line_count()):
+		var start := shown.substr(0, para.get_line_range(i).x).replace(wj, "").length()
+		if start > origin_at:
+			breaks_ok = false
+	_check(shown.replace(wj, "") == id_7608 and shown.find(wj) > 0 and breaks_ok,
+		"立绘面板身份行垫字连接符：去掉后与原串相同，按八成宽折成 %d 行、只在「・」之后折" % para.get_line_count())
+	pp.queue_free()
+	GS.from_dict({})
+
+
+## ── 09-28 涵江线修复（实机验收 digest「hanjiang」节 + visual 节「设施页题头字号」）──
+## 涵江卡水粮不足直进本港船屋、船屋「离开」回带卡的港页；七日航程真吃水粮、状态条最上面是出海一句、落款旧避风澳；
+## 10 月下旬点卡跨进冬月，册页与终局港页不挂「降元」；再陷前一月下旬副题催促；陈瓒船股只到兴化第一段 besieged 起点前；
+## 围城米价撑在围城目标、城破后回落；战况通告按节点覆写（海口只说海口换旗）；牙行闭门不占三门、闭门页不写柜上三样不开新委办，
+## 交货地是本港的在身委办照旧能交；
+## 设施页题头统一 SIZE_HEAD；n_1277_07 传闻不把泉州围城写成已落地。月份一律从战况表推，数字只写门槛。
+func _v0928_hanjiang_check(main: Node) -> void:
+	var Eco: Node = root.get_node("Economy")
+	var Flt: Node = root.get_node("Fleet")
+	var card := "special_hanjiang_escape"
+	var out_line := "四条船出了涵江海口，没有回头。"
+	var war_x: Dictionary = GM.get_port_by_id("xinghua").get("war", {})
+	var wkeys: Array = war_x.keys()
+	wkeys.sort()
+	var siege0 := ""
+	for k in wkeys:
+		if str(war_x[k]) == "besieged":
+			siege0 = str(k)
+			break
+	var falls: Array = main._xinghua_fall_yms()
+	_check(siege0 != "" and falls.size() >= 2, "兴化战况表有第一段围城起点（%s）与再陷（%s）" % [siege0, falls])
+	if siege0 == "" or falls.size() < 2:
+		return
+	var zan_fall := str(falls[1])
+	var zfy := int(zan_fall.split("-")[0])
+	var zfm := int(zan_fall.split("-")[1])
+	# 再陷前一月（涵江卡窗口的最后一月）
+	var last_y := zfy if zfm > 1 else zfy - 1
+	var last_m := zfm - 1 if zfm > 1 else 12
+	var reset_root := func(y: int, m: int, d: int) -> void:
+		GS.from_dict({})
+		GS.identity = "merchant"
+		GS.record_discovery("nameless_shelter_bay")
+		Cal.from_dict({"year": y, "month": m, "day": d})
+		var ym := "%04d-%02d" % [y, m]
+		for nw in GM.news_data.get("news", []):
+			if str(nw.get("date", "9999-99")) < ym:
+				GS.mark_news_seen(str(nw.get("id", "")))
+		Flt.at_sea = false
+		GS.last_port = "xinghua"
+		main.load_scene("xinghua")
+	# 前面各段用 Fleet.from_dict({}) 清过船队：这里给一条开局船，才有船员吃水粮
+	if Flt.ships.is_empty():
+		Flt._grant_starter_ship()
+	var use: int = Flt.daily_supply_use()
+	_check(use > 0, "船队每日耗水粮 > 0（%d），七日航程才有得吃" % use)
+
+	# ① 水粮不足：直进本港船屋；船屋「离开」回到带卡的港页，卡还在
+	reset_root.call(last_y, last_m, 10)
+	Flt.water = use * 3
+	Flt.food = use * 3
+	_check(card in main.shore_hand, "再陷前一月兴化岸上有涵江卡（名单 %s）" % [main.shore_hand])
+	main._on_facility_pressed({"id": card})
+	_check(main.current_scene_id == "xinghua_shipyard" and not GS.is_ended(),
+		"水粮不足七日点涵江卡 → 直进本港船屋（页 %s，结局「%s」）" % [main.current_scene_id, GS.ended])
+	# 门槛只按自家船队日耗算七日，提示不说族人吃你船上的粮（09-29 复核：原句与机制对不上）
+	var short_log: String = main._latest_log()
+	_check(short_log.find("族里四条船") >= 0 and short_log.find("七日") >= 0 and short_log.find("吃你船上") < 0,
+		"水粮不足的提示点到族里四条船、你船上的要够七日，不说族人吃你的水粮（「%s」）" % short_log)
+	var leave: Button = null
+	for b in main.find_children("*", "Button", true, false):
+		if (b as Button).text == "离开":
+			leave = b as Button
+	_check(leave != null, "船屋页有「离开」")
+	if leave != null:
+		leave.pressed.emit()
+	_check(main.current_scene_id == "xinghua" and card in main.shore_hand,
+		"船屋「离开」回到兴化港页、涵江卡还在（页 %s，名单 %s）" % [main.current_scene_id, main.shore_hand])
+
+	# ② 水粮够：七日按海上日子吃水粮、推完 at_sea 复位；状态条最上面是出海一句；落款旧避风澳
+	reset_root.call(last_y, last_m, 10)
+	Flt.water = use * 20
+	Flt.food = use * 20
+	var w0: int = Flt.water
+	var f0: int = Flt.food
+	main._on_facility_pressed({"id": card})
+	var days: int = main.HANJIANG_DAYS
+	_check(GS.ended == "岸上的根" and w0 - int(Flt.water) >= days * use and f0 - int(Flt.food) >= days * use and not Flt.at_sea,
+		"涵江七日航程吃掉 ≥%d 日水粮、推完仍泊港（水 %d→%d，粮 %d→%d，日耗 %d，at_sea=%s）" % [days, w0, Flt.water, f0, Flt.food, use, Flt.at_sea])
+	_check(main._latest_log() == out_line, "结局册页弹出时状态条最上面是「%s」（实为「%s」）" % [out_line, main._latest_log()])
+	_check(GS.ended_at.ends_with("・" + main.HANJIANG_END_PLACE) and GS.ended_at.find("兴化") < 0,
+		"岸上的根落款写到岸的旧避风澳、不写兴化（「%s」）" % GS.ended_at)
+	main._confirm_chapter_sheet()
+	_close_dialogs(main)
+
+	# ③ 再陷前一月下旬点卡，七日跨进再陷月：路上翻牌的城破通告照记，册页与终局港页不挂「降元」，状态条仍是出海一句
+	reset_root.call(last_y, last_m, 28)
+	Flt.water = use * 20
+	Flt.food = use * 20
+	_check(card in main.shore_hand, "%d-%02d-28 兴化岸上仍有涵江卡" % [last_y, last_m])
+	var n0 := _notices.size()
+	main._on_facility_pressed({"id": card})
+	var crossed := "%04d-%02d" % [Cal.year, Cal.month] >= zan_fall
+	var saw_fall := false
+	var saw_jiang := false
+	for t in _notices.slice(n0):
+		var s := str(t)
+		if s.find("兴化城破") >= 0:
+			saw_fall = true
+		if s.find("兴化") >= 0 and s.find("降元") >= 0:
+			saw_jiang = true
+	_check(crossed and GS.ended == "岸上的根" and GS.ended_at.ends_with("・" + main.HANJIANG_END_PLACE),
+		"%d-%02d-28 点卡七日跨进再陷月 %s（现 %s，落款「%s」）" % [last_y, last_m, zan_fall, Cal.get_date_string(), GS.ended_at])
+	_check(saw_fall and not saw_jiang, "跨月时路上发的是「兴化城破」覆写通告、没有「兴化已降元」（城破 %s，降元 %s）" % [saw_fall, saw_jiang])
+	var sheet_jiang := _find_label_text(main.get("_chapter_host"), "降元")
+	_check(main._latest_log() == out_line and sheet_jiang == "",
+		"跨月结局册页：状态条最上面是出海一句（「%s」），册页不挂降元（「%s」）" % [main._latest_log(), sheet_jiang])
+	main._confirm_chapter_sheet()
+	_close_dialogs(main)
+	var port_jiang := _find_label_text(main.port_mode, "降元")
+	var port_fall := _find_label_text(main.port_mode, "城破")
+	_check(main._shore_mode == "ended" and main._latest_log() == out_line and port_jiang == "" and port_fall == "",
+		"跨月终局港页：状态条是出海一句、不挂降元或城破通告（页型 %s，「%s」／%s／%s）" % [main._shore_mode, main._latest_log(), port_jiang, port_fall])
+
+	# ④ 副题：再陷前一月 HANJIANG_URGENT_DAY 起催促，此前、再前一月都写去处
+	var urgent_day: int = main.HANJIANG_URGENT_DAY
+	var sub_cases := [[last_y, last_m, urgent_day - 1, false], [last_y, last_m, urgent_day, true], [last_y, last_m, 30, true]]
+	if last_m > 1:
+		sub_cases.append([last_y, last_m - 1, 25, false])
+	for sc in sub_cases:
+		reset_root.call(sc[0], sc[1], sc[2])
+		var sub := ""
+		for c in main._special_cards():
+			if str(c.get("id", "")) == card:
+				sub = str(c.get("subtitle", ""))
+		var urgent := sub.find("撑不过这个月") >= 0
+		_check(sub != "" and urgent == bool(sc[3]),
+			"涵江卡 %d-%02d-%02d 副题%s（「%s」）" % [sc[0], sc[1], sc[2], "催促" if sc[3] else "写去处", sub])
+	# 卡的图标借「宅」（带族人走），不再和船屋门撞同一张大船。撞图对象换成了「住宅」门（同日可并排），待美术出涵江卡专用图标
+	var main_src := FileAccess.get_file_as_string("res://scripts/Main.gd")
+	_check(main_src.find("\"special_hanjiang_escape\": \"residence\"") >= 0, "SPECIAL_ICON 里涵江卡借 residence 图标")
+
+	# ⑤ 陈瓒船股：围城起点前一月有；起点当月、再陷前一月（陈瓒仍活着）没有；已立股那行照旧显示
+	var s0y := int(siege0.split("-")[0])
+	var s0m := int(siege0.split("-")[1])
+	var pre_y := s0y if s0m > 1 else s0y - 1
+	var pre_m := s0m - 1 if s0m > 1 else 12
+	var stake_cases := [[pre_y, pre_m, true, false], [s0y, s0m, false, false], [last_y, last_m, false, false], [last_y, last_m, false, true]]
+	for zc in stake_cases:
+		GS.from_dict({})
+		GS.identity = "hometown"
+		GS.fame = 40
+		if bool(zc[3]):
+			GS.set_flag("chen_zan_stake")
+		Cal.from_dict({"year": zc[0], "month": zc[1], "day": 5})
+		main.load_scene("xinghua_residence")
+		var has_btn := false
+		var has_line := false
+		for node in main.choices_container.get_children():
+			if node is Button and (node as Button).text.find("陈瓒愿入船股") >= 0:
+				has_btn = true
+			if node is Label and (node as Label).text.find("族叔陈瓒的船股一分") >= 0:
+				has_line = true
+		_check(main._chen_zan_alive() and has_btn == bool(zc[2]) and has_line == bool(zc[3]),
+			"玉湖陈宅 %d-%02d（围城起点 %s）%s「陈瓒愿入船股」%s" % [zc[0], zc[1], siege0, "有" if zc[2] else "没有", "，已立股那行照旧" if zc[3] else ""])
+
+	# ⑥ 围城米价 + ⑦ 战况通告：1276-12 开门降（通用句不改、海口不写市舶司）；再围两月米价撑住；再陷写城破、之后回落
+	var fall0 := str(falls[0])
+	var f0y := int(fall0.split("-")[0])
+	var f0m := int(fall0.split("-")[1])
+	var mark_seen := func() -> void:
+		var ym_now := "%04d-%02d" % [Cal.year, Cal.month]
+		for nw in GM.news_data.get("news", []):
+			if str(nw.get("date", "9999-99")) <= ym_now:
+				GS.mark_news_seen(str(nw.get("id", "")))
+	GS.from_dict({})
+	Cal.from_dict({"year": f0y if f0m > 1 else f0y - 1, "month": f0m - 1 if f0m > 1 else 12, "day": 28})
+	mark_seen.call()
+	var n1 := _notices.size()
+	_advance_to(f0y, f0m)
+	var first_fall := ""
+	var harbor_first := ""
+	for t in _notices.slice(n1):
+		var s := str(t)
+		if s.begins_with("【战况】兴化已降元"):
+			first_fall = s
+		if s.begins_with("【战况】") and s.find("海口") >= 0:
+			harbor_first = s
+	_check(first_fall != "", "首次城破 %s 兴化是开门降，通用「已降元」句不改（「%s」）" % [fall0, first_fall])
+	# 海口通告只说海口换旗：同一天城那条已写了降元，海口不再把城降写一遍（09-29 复核）
+	var harbor_first_ok := harbor_first.find("换了旗") >= 0 and harbor_first.find("降") < 0
+	_check(harbor_first_ok,
+		"首次城破 %s 兴化海口通告只说海口换旗、不把城降再写一遍（「%s」）" % [fall0, harbor_first])
+	# 再围起点：再陷之前最后一个 besieged 键
+	var siege1 := ""
+	for k in wkeys:
+		if str(war_x[k]) == "besieged" and str(k) < zan_fall:
+			siege1 = str(k)
+	var s1y := int(siege1.split("-")[0])
+	var s1m := int(siege1.split("-")[1])
+	GS.from_dict({})
+	Cal.from_dict({"year": s1y if s1m > 1 else s1y - 1, "month": s1m - 1 if s1m > 1 else 12, "day": 28})
+	mark_seen.call()
+	for pid in ["xinghua", "xinghua_harbor", "quanzhou"]:
+		if Eco.rates.has(pid) and Eco.rates[pid].has("grain"):
+			Eco.rates[pid]["grain"] = 1.0
+	var n2 := _notices.size()
+	var p_before: int = Eco.buy_price("xinghua", "grain")
+	var guard := 0
+	while not (Cal.year == last_y and Cal.month == last_m and Cal.day >= 28) and guard < 400:
+		GM.advance_days(1)
+		guard += 1
+	var r_siege: float = Eco.get_rate("xinghua", "grain")
+	var r_peace: float = Eco.get_rate("quanzhou", "grain")
+	var p_siege: int = Eco.buy_price("xinghua", "grain")
+	_check(r_siege >= 1.7 and absf(r_peace - 1.0) < 0.05 and p_siege > p_before,
+		"再围到 %d-%02d-28 兴化米行情仍撑在围城目标（%.3f ≥ 1.7，买价 %d→%d），不在围城的泉州回到平年（%.3f）" % [last_y, last_m, r_siege, p_before, p_siege, r_peace])
+	_advance_to(zfy, zfm)
+	var harbor_siege := ""
+	var fall_xh := ""
+	var fall_xhh := ""
+	var bad_jiang := []
+	for t in _notices.slice(n2):
+		var s := str(t)
+		if s.begins_with("【战况】") and s.find("海口的船还走得动") >= 0:
+			harbor_siege = s
+		if s.begins_with("【战况】兴化城破"):
+			fall_xh = s
+		if s.begins_with("【战况】兴化海口"):
+			fall_xhh = s
+		if s.begins_with("【战况】") and s.find("兴化") >= 0 and s.find("降元") >= 0:
+			bad_jiang.append(s)
+	_check(bad_jiang.is_empty(), "再围到再陷之间不发「兴化…降元」战况通告（%s）" % [bad_jiang])
+	_check(harbor_siege != "", "再围 %s 兴化海口通告写城被围、海口的船还走得动（「%s」）" % [siege1, harbor_siege])
+	# 再陷当天两条连发：城写城破巷战；海口只说海口换旗，不重抄城里的「兴化城破」「巷战」（09-29 复核）
+	_check(fall_xh.find("巷战") >= 0 and fall_xhh.find("换了旗") >= 0 and fall_xhh.find("城破") < 0 and fall_xhh.find("巷战") < 0,
+		"再陷 %s 兴化写城破巷战、海口只说海口换旗（「%s」／「%s」）" % [zan_fall, fall_xh, fall_xhh])
+	var after_guard := 0
+	while after_guard < 60:
+		GM.advance_days(1)
+		after_guard += 1
+	var r_after: float = Eco.get_rate("xinghua", "grain")
+	_check(r_after < 1.2, "城破后两个月兴化米行情按平年回落（%.3f < 1.2），不再按围城目标撑着" % r_after)
+
+	# ⑨ 牙行闭门：不占今日三门、落进「未开」一排；闭门页只一句门闸，不写柜上三样、不开新委办（交货地是本港的在身委办另见下）
+	var facs := [{"id": "city_market"}, {"id": "city_shipyard"}, {"id": "city_guild"}, {"id": "city_tavern"}, {"id": "city_inn"}]
+	var dealt_shut: PackedStringArray = ShoreDraft.deal(facs, 0, false, false)
+	var dealt_open: PackedStringArray = ShoreDraft.deal(facs, 0, false, true)
+	_check(dealt_shut.size() == 3 and not ("city_market" in dealt_shut) and dealt_open[0] == "city_market",
+		"ShoreDraft.deal：闭门的牙行不占席（%s），开门照旧占第一席（%s）" % [dealt_shut, dealt_open])
+	reset_root.call(last_y, last_m, 10)
+	var shut_btn := false
+	var shut_row: Node = main._shore_band().get_node_or_null("ShoreShut")
+	if shut_row != null:
+		for b in shut_row.get_children():
+			if b is Button and (b as Button).text == "牙行":
+				shut_btn = true
+	var regular_n := 0
+	for fid in main.shore_hand:
+		if str(fid).begins_with("city_"):
+			regular_n += 1
+	_check(not Eco.is_market_open("xinghua") and not ("city_market" in main.shore_hand) and shut_btn and regular_n >= 3,
+		"兴化围城：牙行不在今日三门、在「未开」一排，三扇寻常门都给别处（名单 %s）" % [main.shore_hand])
+	main.load_scene("xinghua_market")
+	var body: String = main.body_text.text
+	_check(body.find("门闸") >= 0 and body.find("柜上只摆三样") < 0 and main.find_child("ContractPanel", true, false) == null,
+		"围城牙行页只写门闸一句、不写柜上三样、不出委办（「%s」）" % body.replace("\n", "⏎"))
+	# 围城时交货地是本港的在身委办：委办 due_day 不停表，必须能交货，否则送兴化的委办撞上围城月就必逾期（09-29 复核 major）。
+	# 「未开」一排的牙行点得进闭门页，页上只有在身委办那一行（交货 / 毁约），不开新委办、不写柜上三样；交得出货、钱到手
+	var shut_market := func() -> Button:
+		var row: Node = main._shore_band().get_node_or_null("ShoreShut")
+		if row != null:
+			for b in row.get_children():
+				if b is Button and (b as Button).text.begins_with("牙行"):
+					return b as Button
+		return null
+	var c_good := "lacquerware"
+	for raw_g in GM.get_port_by_id("xinghua").get("market", {}).keys():
+		if Eco.get_role("xinghua", str(raw_g)) == "consumer":
+			c_good = str(raw_g)
+			break
+	reset_root.call(last_y, last_m, 10)
+	var c_qty := 6
+	GS.contract = {
+		"good_id": c_good, "qty": c_qty, "remaining": c_qty, "dest": "xinghua", "from": "quanzhou",
+		"purse": 600, "unit_purse": 100.0, "paid": 0, "due_day": Cal.absolute_day() + 5, "deadline_days": 12,
+		"voyage_days": 5, "offer_month": Cal.year * 12 + Cal.month,
+	}
+	var c_have0: int = Flt.cargo_qty(c_good)
+	Flt.add_cargo(c_good, c_qty, 10.0)
+	main.load_scene("xinghua")
+	var side: Button = shut_market.call()
+	_check(side != null and not ("city_market" in main.shore_hand) and side.text.find("交货") >= 0 and side.tooltip_text.find("委办") >= 0,
+		"围城 + 在身委办送兴化：牙行仍在「未开」一排、不占三门，门字写交货、悬停写明收委办货（「%s」／「%s」）" % [side.text if side != null else "无钮", side.tooltip_text.replace("\n", "⏎") if side != null else ""])
+	if side != null:
+		side.pressed.emit()
+	var c_panel: Node = main.find_child("ContractPanel", true, false)
+	var c_deliver: Button = null
+	var c_take := false
+	for b in main.find_children("*", "Button", true, false):
+		if (b as Button).text == "交货":
+			c_deliver = b as Button
+		if (b as Button).text == "接下委办":
+			c_take = true
+	var c_body: String = main.body_text.text
+	_check(main.current_scene_id == "xinghua_market" and c_panel != null and c_deliver != null and not c_deliver.disabled and not c_take
+		and c_body.find("门闸") >= 0 and c_body.find("柜上只摆三样") < 0,
+		"围城闭门页补出在身委办那一行、交货钮可按、不开新委办（页 %s，「%s」）" % [main.current_scene_id, c_body.replace("\n", "⏎")])
+	var c_money0: int = GS.money
+	if c_deliver != null:
+		c_deliver.pressed.emit()
+	_check(GS.contract.is_empty() and GS.money > c_money0 and Flt.cargo_qty(c_good) == c_have0,
+		"围城时在兴化交清委办：委办结清、钱到手（%d→%d）、货卸下（舱里 %d），不逾期" % [c_money0, GS.money, Flt.cargo_qty(c_good)])
+	# 在身委办送别处：闭门的牙行照旧点不进，只记门闸一句
+	reset_root.call(last_y, last_m, 10)
+	GS.contract = {
+		"good_id": c_good, "qty": c_qty, "remaining": c_qty, "dest": "quanzhou", "from": "fuzhou",
+		"purse": 600, "unit_purse": 100.0, "paid": 0, "due_day": Cal.absolute_day() + 5, "deadline_days": 12,
+		"voyage_days": 5, "offer_month": Cal.year * 12 + Cal.month,
+	}
+	main.load_scene("xinghua")
+	var other: Button = shut_market.call()
+	if other != null:
+		other.pressed.emit()
+	_check(other != null and other.text == "牙行" and main.current_scene_id == "xinghua" and main._latest_log().find("门闸") >= 0,
+		"委办交货地不在兴化：闭门的牙行门字照旧、点不进，只记门闸一句（页 %s，「%s」）" % [main.current_scene_id, main._latest_log()])
+	GS.contract = {}
+	# 海口不是城：海口牙行闭门页不写「城中」（09-29 复核）
+	GS.last_port = "xinghua_harbor"
+	main.load_scene("xinghua_harbor_market")
+	var h_body: String = main.body_text.text
+	_check(not Eco.is_market_open("xinghua_harbor") and h_body.find("门闸") >= 0 and h_body.find("海口") >= 0 and h_body.find("城中") < 0,
+		"兴化海口牙行闭门页写海口的门闸，不写城中（「%s」）" % h_body.replace("\n", "⏎"))
+	GS.last_port = "xinghua"
+	GS.from_dict({})
+	Cal.from_dict({"year": s1y if s1m > 1 else s1y - 1, "month": s1m - 1 if s1m > 1 else 12, "day": 10})
+	GS.last_port = "xinghua"
+	main.load_scene("xinghua_market")
+	_check(Eco.is_market_open("xinghua") and main.body_text.text.find("柜上只摆三样") >= 0 and main.find_child("ContractPanel", true, false) != null,
+		"开秤的兴化牙行照旧写柜上三样、出委办")
+
+	# ⑪ 设施页题头字号：先走序章 cg_ 对白页（24），再进设施页，题头回到 SIZE_HEAD
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main.load_scene("cg_veteran")
+	var cg_px: int = main.scene_title.get_theme_font_size("font_size")
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou_market")
+	var fac_px: int = main.scene_title.get_theme_font_size("font_size")
+	_check(cg_px == 24 and fac_px == UiTheme.SIZE_HEAD,
+		"序章 cg_ 页题头 24 照旧（%d），之后进牙行题头是 SIZE_HEAD（%d，应 %d）" % [cg_px, fac_px, UiTheme.SIZE_HEAD])
+
+	# ⑧ n_1277_07 传闻：泉州当时照常开市（战况表不改），传闻不把张世杰围泉州写成已落地
+	var rumor: Dictionary = GM.get_news_by_id("n_1277_07_xinghua_again")
+	var rumor_ym := str(rumor.get("date", ""))
+	var rty := int(rumor_ym.split("-")[0]) if rumor_ym != "" else 0
+	var rtm := int(rumor_ym.split("-")[1]) if rumor_ym != "" else 0
+	Cal.from_dict({"year": rty, "month": rtm, "day": 5})
+	var qz_open: bool = Eco.is_market_open("quanzhou") and not (Eco.war_status("quanzhou") in ["besieged", "contested"])
+	var rt := str(rumor.get("text", ""))
+	_check(not qz_open or (rt.find("围了泉州") < 0 and rt.find("闭城") < 0 and rt.find("泉州") >= 0),
+		"%s 泉州照常开市（%s）时，传闻只写张世杰要去打泉州、不写已围城闭城（「%s」）" % [rumor_ym, Eco.war_status("quanzhou"), rt])
+	# ⑩ 过场 ending_root：泊澳那句字幕从出现到镜末 ≥3.5 秒（修前 2.6，实录在屏 2.3 秒读不完）
+	var cs_all: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes.json"))
+	var moor_left := -1.0
+	if cs_all is Dictionary:
+		for shot in ((cs_all as Dictionary).get("cutscenes", {}).get("ending_root", {}).get("shots", []) as Array):
+			for cap in (shot as Dictionary).get("captions", []):
+				if str(cap.get("text", "")).find("旧避风澳泊了六天") >= 0:
+					moor_left = float(shot.get("duration", 0.0)) - float(cap.get("t", 0.0))
+	_check(moor_left >= 3.5, "ending_root「船在旧避风澳泊了六天」字幕到镜末 %.1f 秒（≥3.5）" % moor_left)
+	GS.from_dict({})
+	Flt.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_close_dialogs(main)
+
+
+## ── 士人线守城与「忠肃」（09-28 验收 siege 线 + crew 线林华几条的修复）──
+## 候日日志次序与守城句；城破前告急与城破那天的日志；第三阵战报先出、按「回城」后才城破；战报眉题 / 钮 / 大题；
+## 关城门一支（铺垫、林华缒城出降、过场第 2 镜按旗换句、不推日子不提天数）；忠肃题头并入原因、落款按城破时点 / 当日；
+## 海口不开守城页、给「入城」卡；旧档排岸带之前先结算；守城 / 终局页不出抵港挂签；小件文案；林华守城页。
+## 日期都从兴化战况表的首守城破时点倒推（main._siege_fall_point），不写死。
+func _v0928_siege_check(main: Node) -> void:
+	var Crw: Node = root.get_node("Crew")
+	var Art = load("res://scripts/ui/CharacterArt.gd")
+	var fp: Dictionary = main._siege_fall_point()
+	_check(not fp.is_empty() and str(fp.get("month", "")) != "", "首守城破时点推得出历法写法（%s）" % [fp])
+	if fp.is_empty():
+		return
+	var fall_abs: int = int(fp["abs"])
+	var signoff := "%s　%s・%s" % [fp["era"], fp["month"], GM.get_port_name("xinghua")]
+	var dire_days: int = main.SIEGE_DIRE_DAYS
+	# 1. 寻常港页候日：候日那句先写、再推日子，跨月时当天的月初通告排在它上面
+	_v0928_siege_scholar(Crw, fall_abs - 31)
+	GS.identity = "merchant"
+	GS.flags.erase("renamed_wenlong")
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou")
+	Cal.from_dict({"year": Cal.year, "month": Cal.month, "day": Cal.DAYS_PER_MONTH})
+	main._log_lines.clear()
+	var n_note := _notices.size()
+	main._on_shore_wait()
+	var wl: Array = main._log_lines
+	var fresh: int = _notices.size() - n_note
+	var wait_at := wl.find("在岸上又候了一日，门又换了几处。")
+	# 通告多时候日那句会被挤出日志尾（LOG_KEEP 行）；在的话必须是最下一行
+	_check(Cal.day == 1 and fresh >= 1 and not wl.is_empty() and wait_at != 0
+			and (wait_at == wl.size() - 1 or (wait_at < 0 and fresh >= wl.size())),
+		"寻常港页候日跨月：月初通告 %d 条排在候日那句上面（候日句第 %d 行 / 共 %d 行，顶行「%s」）" % [fresh, wait_at, wl.size(), wl[0] if not wl.is_empty() else ""])
+	# 2. 守城页候日：换守城句，不写「门又换了几处」
+	_v0928_siege_scholar(Crw, fall_abs - dire_days - 5)
+	main.load_scene("xinghua")
+	main._log_lines.clear()
+	main._on_shore_wait()
+	var sl: Array = main._log_lines
+	_check(main._shore_mode == "siege" and not sl.is_empty() and str(sl[0]) == "城上又守了一日。" and sl.find("在岸上又候了一日，门又换了几处。") < 0,
+		"守城页候一日写「城上又守了一日。」，不写门又换了几处（%s）" % [sl])
+	# 3. 城破前告急：离城破时点 SIEGE_DIRE_DAYS 日起城防账多一行，再早一日没有
+	for off in [dire_days + 1, dire_days, 1]:
+		Cal.from_dict(_v0928_siege_cal(fall_abs - off))
+		main.load_scene("xinghua")
+		var dire: String = _find_label_text(main._shore_band(), "援兵音信断绝")
+		var want: bool = off <= dire_days
+		_check((dire != "") == want and (dire == "" or dire.find(str(fp["month"])) >= 0),
+			"城破前 %d 日（%s）城防账%s告急行（「%s」）" % [off, Cal.get_date_string(), "有" if want else "没有", dire])
+		# 城是那个月初一破的：写「捱不过」那个月，不写「捱不到」
+		_check(dire == "" or (dire.find("捱不过" + str(fp["month"])) >= 0 and dire.find("捱不到") < 0),
+			"告急行写「捱不过%s」（「%s」）" % [fp["month"], dire])
+	# 4. 候日到城破：城破那天先记一句，再按「援绝」结算；题头并入原因、正文首行不带括注、落款是城破时点
+	Cal.from_dict(_v0928_siege_cal(fall_abs - 2))
+	main.load_scene("xinghua")
+	var waited := 0
+	while not GS.is_ended() and waited < 10:
+		main._on_shore_wait()
+		waited += 1
+	var fl: Array = main._log_lines
+	var top := str(fl[0]) if not fl.is_empty() else ""
+	var head := _find_label_text(main.get("_chapter_host"), "忠肃　")
+	_check(GS.ended == "忠肃" and top.begins_with(str(fp["month"])) and top.ends_with("援兵没有来。"),
+		"候到城破那天：日志顶行先记「%s」，再结算「%s」" % [top, GS.ended])
+	_check(head.find("十二月・援绝") >= 0 and GS.ended_at == signoff,
+		"候过城破时点：题头「%s」并入援绝、落款「%s」是城破时点（应 %s）" % [head, GS.ended_at, signoff])
+	_v0928_siege_first_line(main, "援绝")
+	main._confirm_chapter_sheet()
+	_v0928_siege_epi_at(main, "援绝")
+	# 5. 粮尽：当场打破，题头写到冬、落款照当日
+	_v0928_siege_scholar(Crw, fall_abs - 20)
+	main.load_scene("xinghua")
+	GS.siege_set("grain", 0)
+	main.load_scene("xinghua")
+	_check(_find_label_text(main._shore_band(), "一阵也不够") != "" and _find_label_text(main._shore_band(), "零阵") == "",
+		"粮 0 时城防账写「一阵也不够」，不写「够打零阵」")
+	var today: String = Cal.get_date_string()
+	main._on_facility_pressed({"id": "siege_nangshan"})
+	head = _find_label_text(main.get("_chapter_host"), "忠肃　")
+	_check(GS.ended == "忠肃" and head.find("冬・粮尽") >= 0 and head.find("十二月") < 0 and GS.ended_at.begins_with(today),
+		"粮尽当场城破：题头「%s」写到冬、落款「%s」照当日" % [head, GS.ended_at])
+	_v0928_siege_first_line(main, "粮尽")
+	main._confirm_chapter_sheet()
+	_v0928_siege_epi_at(main, "粮尽")
+	# 6. 战报册页：眉题「战报」、钮「回城」、大题中文数字不重复「囊山」；第一阵按钮后仍在守城
+	_v0928_siege_scholar(Crw, fall_abs - 20)
+	main.load_scene("xinghua")
+	main._on_facility_pressed({"id": "siege_nangshan"})
+	var host: Node = main.get("_chapter_host")
+	var rhead := _find_label_text(host, "囊山・")
+	_check(rhead.begins_with("囊山・第一阵　") and rhead.count("囊山") == 1 and _find_label_text(host, "战报") == "战报"
+			and _v0928_siege_btn(host, "回城") != null and _v0928_siege_btn(host, "记下这一纲") == null and _find_label_text(host, "了结") == "",
+		"战报册页：大题「%s」、眉题「战报」、钮「回城」，不用结局口吻" % rhead)
+	main._confirm_chapter_sheet()
+	_check(not GS.is_ended() and main._shore_mode == "siege", "第一阵战报按「回城」后回到守城页")
+	# 7. 第三阵：先出战报，按钮之前不城破；按「回城」后才走城破「力竭」
+	GS.siege_set("round", GS.SIEGE_ROUNDS_MAX - 1)
+	GS.siege_set("grain", GS.SIEGE_GRAIN_PER_ROUND * 2)
+	GS.siege_set("lin_hua_sent", true)
+	main.load_scene("xinghua")
+	today = Cal.get_date_string()
+	main._on_facility_pressed({"id": "siege_nangshan"})
+	host = main.get("_chapter_host")
+	rhead = _find_label_text(host, "囊山・")
+	_check(not GS.is_ended() and rhead.begins_with("囊山・第%s阵　" % main._cn_num(GS.SIEGE_ROUNDS_MAX)) and _find_label_text(host, "这是最后一阵") != ""
+			and str(GS.siege.get("pending_fall", "")) != "",
+		"第三阵：战报「%s」先出，按钮之前不城破（结局「%s」）" % [rhead, GS.ended])
+	main._confirm_chapter_sheet()
+	head = _find_label_text(main.get("_chapter_host"), "忠肃　")
+	_check(GS.ended == "忠肃" and head.find("冬・力竭") >= 0 and head.find("三阵毕") < 0 and GS.ended_at.begins_with(today),
+		"第三阵战报按「回城」后才城破：题头「%s」写「力竭」、落款「%s」照当日" % [head, GS.ended_at])
+	_v0928_siege_first_line(main, "力竭")
+	main._confirm_chapter_sheet()
+	# 7b. 重读结局：大题照初读写（「忠肃　兴化・景炎元年冬・力竭」），城破原因不只露一次；存档来回不丢；札记抬头仍旁注落款
+	var saved_head: String = GS.ended_head
+	GS.from_dict(GS.to_dict())
+	_check(saved_head.find("力竭") >= 0 and GS.ended_head == saved_head, "忠肃大题那截存档来回不丢（「%s」→「%s」）" % [saved_head, GS.ended_head])
+	main.load_scene("xinghua")
+	_v0928_siege_epi_at(main, "力竭")
+	main._on_reread_ending()
+	var reread := _find_label_text(main.get("_chapter_host"), "忠肃　")
+	_check(reread == "忠肃　%s" % saved_head and reread.find("力竭") >= 0 and _find_label_text(main.get("_chapter_host"), "重读") != "",
+		"力竭一局重读结局：大题「%s」看得到城破原因" % reread)
+	main._confirm_chapter_sheet()
+	# 8. 关城门一支：铺垫不写门已开、不提天数不推日子；林华缒城出降；城破句与过场第 2 镜按 cao_opened 换句
+	_v0928_siege_scholar(Crw, fall_abs - 20)
+	main.load_scene("xinghua")
+	GS.siege_set("round", GS.SIEGE_ROUNDS_MAX - 1)
+	GS.siege_set("grain", GS.SIEGE_GRAIN_PER_ROUND * 3)
+	main.load_scene("xinghua")
+	main._on_facility_pressed({"id": "siege_nangshan"})
+	var day0: int = Cal.absolute_day()
+	var shut := _v0928_siege_btn(main, "不去。关城门")
+	_check(shut != null and shut.text.find("谁也不出") < 0, "第三阵前林华请命页有「不去。关城门」，钮上不写「谁也不出」（囊山第三阵照样能出城）")
+	var grain0: int = GS.siege_get("grain")
+	if shut != null:
+		shut.pressed.emit()
+	var cl := str(main._log_lines[0]) if not main._log_lines.is_empty() else ""
+	var grain_lost: int = grain0 - GS.siege_get("grain")
+	_check(not GS.is_ended() and main._shore_mode == "siege" and Cal.absolute_day() == day0 and cl.find("缒") >= 0
+			and cl.find("开了") < 0 and cl.find("七天") < 0 and cl.find("第八天") < 0,
+		"关城门：城还在、日历不动，日志只作铺垫（「%s」）" % cl)
+	# 同一局三处对得上：日志不说林华「再没有回来」（过场写「回来时，身后是元兵」、城破句写他领元兵回到城下），
+	# 也不写还没到的「当夜」；城防账少的粮，日志照数交代
+	_check(cl.find("再没有回来") < 0 and cl.find("当夜") < 0
+			and (grain_lost == 0 or cl.find("丢了%s石米" % main._cn_num(grain_lost)) >= 0),
+		"关城门日志不和过场、城破句打架，少的 %d 石粮有交代（「%s」）" % [grain_lost, cl])
+	main._on_facility_pressed({"id": "siege_nangshan"})
+	main._confirm_chapter_sheet()
+	var cao_first: String = str(GS.ended_text).split("\n")[0]
+	_check(GS.ended == "忠肃" and cao_first.find("缒城") >= 0 and cao_first.find("曹澄孙开了东门") >= 0,
+		"关城门一支城破句写林华缒城出降、曹澄孙开东门（「%s」）" % cao_first)
+	var cs: Dictionary = {}
+	var f := FileAccess.open("res://data/cutscenes.json", FileAccess.READ)
+	if f != null:
+		var parsed = JSON.parse_string(f.get_as_text())
+		if typeof(parsed) == TYPE_DICTIONARY:
+			cs = parsed
+	var zs: Dictionary = cs.get("cutscenes", {}).get(str(cs.get("endings", {}).get("忠肃", "")), {})
+	var shot2: Array = (zs.get("shots", []) as Array)[1].get("captions", []) if (zs.get("shots", []) as Array).size() > 1 else []
+	var CP = load("res://scripts/cutscene/CutscenePlayer.gd")
+	var probe: Node = CP.new()
+	var seen_cao := _v0928_siege_caps(probe, shot2)
+	GS.flags.erase("cao_opened")
+	var seen_plain := _v0928_siege_caps(probe, shot2)
+	probe.free()
+	_check(seen_cao.find("缒城") >= 0 and seen_cao.find("出城侦敌") < 0 and seen_plain.find("出城侦敌") >= 0 and seen_plain.find("缒城") < 0,
+		"忠肃过场第 2 镜按 cao_opened 换句（关城门「%s」／放出侦「%s」）" % [seen_cao, seen_plain])
+	main._confirm_chapter_sheet()
+	# 9. 林华守城页：雇过的正文与日志；没雇过的也记为已识
+	_v0928_siege_scholar(Crw, fall_abs - 20)
+	GS.crew_history = ["lin_hua"]
+	main.load_scene("xinghua")
+	main._siege_lin_hua()
+	_check(str(main.body_text.text).find("后来在你的船上把过舵。缆绳系得很好。") >= 0, "雇过林华：守城页正文提他在你船上把过舵")
+	var rope := _v0928_siege_btn(main, "你的缆绳系得好")
+	if rope != null:
+		rope.pressed.emit()
+	_check(not main._log_lines.is_empty() and str(main._log_lines[0]) == "他愣了一下，说大人还记得。城头的人见你叫得出自家旧舵工的名字，士气 +5。",
+		"缆绳钮后的日志用「自家旧舵工」一句（%s）" % [main._log_lines[0] if not main._log_lines.is_empty() else ""])
+	_v0928_siege_scholar(Crw, fall_abs - 20)
+	Art.met.erase("lin_hua")
+	main.load_scene("xinghua")
+	main._siege_lin_hua()
+	_check(Art.met.has("lin_hua") and not ("lin_hua" in GS.crew_history), "没雇过林华：守城页当面见过即记为已识")
+	# 10. 海口不开守城页：给「入城」卡，点了进兴化城开守城页；守城内页「离开」回城里
+	_v0928_siege_scholar(Crw, fall_abs - 20)
+	GS.last_port = "xinghua_harbor"
+	main.load_scene("xinghua_harbor")
+	_check(main._shore_mode == "port" and not GS.siege_open() and "siege_enter" in main.shore_hand and not ("siege_muster" in main.shore_hand),
+		"围城月兴化海口是寻常港页、有「入城」卡、不开城防（页型 %s，名单 %s）" % [main._shore_mode, main.shore_hand])
+	var enter_sub := _v0928_siege_card_sub(main, "siege_enter")
+	_check(enter_sub.find("你该在城里") >= 0 and enter_sub.find("捱不过") < 0, "城破前 20 日海口「入城」卡副题是平日提醒（「%s」）" % enter_sub)
+	main._on_facility_pressed({"id": "siege_enter"})
+	_check(main.current_scene_id == "xinghua" and main._shore_mode == "siege" and GS.siege_open(),
+		"点「入城」进兴化城开守城页（%s / %s）" % [main.current_scene_id, main._shore_mode])
+	main._on_facility_pressed({"id": "siege_grain"})
+	var leave := _v0928_siege_btn(main, "离开")
+	if leave != null:
+		leave.pressed.emit()
+	_check(main.current_scene_id == "xinghua" and main._shore_mode == "siege", "守城内页「离开」回兴化城的守城页（%s）" % main.current_scene_id)
+	for c in [[fall_abs - 50, "scholar"], [fall_abs - 20, "merchant"]]:
+		_v0928_siege_scholar(Crw, int(c[0]))
+		if str(c[1]) != "scholar":
+			GS.identity = str(c[1])
+			GS.flags.erase("renamed_wenlong")
+		main.load_scene("xinghua_harbor")
+		_check(not ("siege_enter" in main.shore_hand), "兴化海口 %s（%s）没有「入城」卡" % [Cal.get_date_string(), c[1]])
+	# 10b. 海口城破前 SIEGE_DIRE_DAYS 日内：「入城」卡副题换告急口吻；候进城破那个月（不点「入城」）当下就结「未归」，
+	# 首句按海口写（人就在城外），册页底下岸带已清，不冒出新月的寻常卡
+	_v0928_siege_scholar(Crw, fall_abs - dire_days + 1)
+	GS.last_port = "xinghua_harbor"
+	main.load_scene("xinghua_harbor")
+	enter_sub = _v0928_siege_card_sub(main, "siege_enter")
+	_check(enter_sub.find("捱不过" + str(fp["month"])) >= 0, "海口城破前 %d 日内「入城」卡副题告急（%s「%s」）" % [dire_days, Cal.get_date_string(), enter_sub])
+	Cal.from_dict(_v0928_siege_cal(fall_abs - 1))
+	main.load_scene("xinghua_harbor")
+	var sheet_before: bool = is_instance_valid(main.get("_chapter_host"))
+	main._on_shore_wait()
+	var wg: String = str(GS.ended_text).split("\n")[0]
+	_check(not sheet_before and GS.ended == "未归" and Cal.absolute_day() == fall_abs and is_instance_valid(main.get("_chapter_host"))
+			and main.shore_hand.is_empty() and wg.begins_with("消息是从城里传出来的"),
+		"海口候进城破那个月：当下结「%s」、首句「%s」、岸带已清（%s）" % [GS.ended, wg, main.shore_hand])
+	# 结局过场第 1 镜同句按 weigui_at_harbor 换：海口结算写「从城里传出来」，别处照旧「在别处听到」
+	var wz: Dictionary = cs.get("cutscenes", {}).get(str(cs.get("endings", {}).get("未归", "")), {})
+	var wshots: Array = wz.get("shots", [])
+	var wcap: Array = (wshots[0] as Dictionary).get("captions", []) if not wshots.is_empty() else []
+	var wprobe: Node = CP.new()
+	var w_harbor := _v0928_siege_caps(wprobe, wcap)
+	var had_flag: bool = GS.has_flag("weigui_at_harbor")
+	GS.flags.erase("weigui_at_harbor")
+	var w_else := _v0928_siege_caps(wprobe, wcap)
+	wprobe.free()
+	_check(had_flag and w_harbor.find("从城里传出来") >= 0 and w_harbor.find("在别处") < 0 and w_else.find("在别处听到") >= 0 and w_else.find("从城里") < 0,
+		"未归过场第 1 镜按海口换句（海口「%s」／别处「%s」）" % [w_harbor, w_else])
+	main._confirm_chapter_sheet()
+	_check(main._shore_kind_now == "ended", "海口「未归」合上册页是终局港页（%s）" % main._shore_kind_now)
+	# 10c. 海口旧档：城防开着、还没到城破时点，读回海口直接入城开守城页（不给带「看风」的寻常港页、不能带着城防出海）
+	_v0928_siege_scholar(Crw, fall_abs - 20)
+	GS.siege_begin()
+	GS.last_port = "xinghua_harbor"
+	main._log_lines.clear()
+	main.load_scene("xinghua_harbor")
+	_check(main.current_scene_id == "xinghua" and main._shore_mode == "siege" and GS.siege_open() and not GS.is_ended()
+			and _v0928_siege_btn(main._shore_band(), "看风") == null and main._log_lines.has(main.SIEGE_ENTER_LOG),
+		"海口旧档城防开着：读档后进的是城里的守城页（%s / %s，日志 %s）" % [main.current_scene_id, main._shore_mode, main._log_lines])
+	# 11. 抵港挂签只在寻常港页出：守城 / 终局页不出
+	_v0928_siege_scholar(Crw, fall_abs - 20)
+	main.load_scene("xinghua")
+	var kind_siege: String = main._shore_kind_now
+	main.load_scene("quanzhou")
+	_check(kind_siege == "siege" and main._shore_kind_now == "port", "进港页型：守城页 %s、寻常港页 %s（抵港挂签只给寻常港页）" % [kind_siege, main._shore_kind_now])
+	# 12. 旧档：城防开着、日历过了城破时点，读进兴化——排岸带之前先结算，底下没有带「看风」的寻常港页
+	for port in ["xinghua", "quanzhou"]:
+		_v0928_siege_scholar(Crw, fall_abs - 20)
+		GS.siege_begin()
+		Cal.from_dict(_v0928_siege_cal(fall_abs + 9 * Cal.DAYS_PER_MONTH + 2))
+		GS.last_port = port
+		main.load_scene(port)
+		var sail := _v0928_siege_btn(main._shore_band(), "看风")
+		head = _find_label_text(main.get("_chapter_host"), "忠肃　")
+		_check(GS.ended == "忠肃" and sail == null and head.find("十二月・援绝") >= 0 and GS.ended_at == signoff,
+			"旧档 %s 读进%s：先结算、岸带没排寻常港页，题头「%s」、落款「%s」" % [Cal.get_date_string(), port, head, GS.ended_at])
+		main._confirm_chapter_sheet()
+		_check(main._shore_kind_now == "ended", "旧档结算后合上册页是终局港页（%s）" % main._shore_kind_now)
+	# 13. 小件文案：石手军、使者、米价、衙门分节小题
+	_v0928_siege_scholar(Crw, fall_abs - 20)
+	main.load_scene("xinghua")
+	main._on_facility_pressed({"id": "siege_muster"})
+	var sep_fs := 0
+	for ch in main.choices_container.get_children():
+		if ch is Label and (ch as Label).text.find("石手军") >= 0 and (ch as Label).text.begins_with("──"):
+			sep_fs = (ch as Label).get_theme_font_size("font_size")
+	_check(sep_fs >= 16, "衙门页「石手军」分节小题 ≥16px（%d）" % sep_fs)
+	var keep := _v0928_siege_btn(main, "重编石手军")
+	if keep != null:
+		keep.pressed.emit()
+	var ml := str(main._log_lines[0]) if not main._log_lines.is_empty() else ""
+	_check(ml.find("从这天起") >= 0 and ml.find("五个月") < 0, "重编石手军日志不写「五个月」（%s）" % ml)
+	main._on_facility_pressed({"id": "siege_envoy"})
+	var eb := str(main.body_text.text)
+	_check(eb.find("知福州王刚中") >= 0 and eb.find("福州知军") < 0 and eb.find("开了城门") < 0 and eb.find("缒下绳去") >= 0,
+		"城下使者：「知福州王刚中」、缒绳吊上来，不写开城门")
+	main.load_scene("xinghua")
+	main._on_facility_pressed({"id": "siege_grain"})
+	var gb := str(main.body_text.text)
+	_check(gb.find("米价跟着仗走，打一阵涨一截") >= 0 and gb.find("一天一个样") < 0, "市场正文：米价按阵数涨，不写一天一个样")
+	_check(gb.count("每打一阵") <= 1, "市场正文相邻两行不都以「每打一阵」起（%d 处）" % gb.count("每打一阵"))
+	var buy := _v0928_siege_btn(main, "屯粮")
+	if buy != null:
+		buy.pressed.emit()
+	var bl := str(main._log_lines[0]) if not main._log_lines.is_empty() else ""
+	_check(bl.find("一天一个样") < 0 and bl.find("明日") < 0 and bl.find("涨一截") >= 0, "买粮日志和米价机制对得上（%s）" % bl)
+	GS.from_dict({})
+	Crw.from_dict({})
+
+
+## 士人线改名、守城那年、城防没开的局面；日历拨到绝对日 abs_day
+func _v0928_siege_scholar(Crw: Node, abs_day: int) -> void:
+	GS.from_dict({})
+	Crw.from_dict({})
+	GS.set_flag("renamed_wenlong")
+	GS.identity = "scholar"
+	GS.money = 20000
+	GS.fame = 30
+	GS.last_port = "xinghua"
+	Cal.from_dict(_v0928_siege_cal(abs_day))
+
+
+## 绝对日 → 历法（Calendar.absolute_day 的逆：每月 30 日、每年 12 月、自 1255 正月初一起）
+func _v0928_siege_cal(abs_day: int) -> Dictionary:
+	var dpm: int = Cal.DAYS_PER_MONTH
+	var mpy: int = Cal.MONTHS_PER_YEAR
+	var months: int = abs_day / dpm
+	return {"year": 1255 + months / mpy, "month": months % mpy + 1, "day": abs_day % dpm + 1}
+
+
+## 忠肃册页正文首行：不带括注，也不把原因写进正文；原因记进 ended_head，航海札记「终局」一行照初读大题写
+func _v0928_siege_first_line(main: Node, word: String) -> void:
+	var first: String = str(GS.ended_text).split("\n")[0]
+	_check(first.find("（") < 0 and first.find(word) < 0, "忠肃（%s）正文首行不带括注（「%s」）" % [word, first])
+	_check(GS.ended_head.find(word) >= 0 and GS.epilogue_lines().has("终局：忠肃　%s" % GS.ended_head),
+		"终局札记照初读大题写城破原因（大题那截「%s」，札记 %s）" % [GS.ended_head, GS.epilogue_lines().slice(2, 3)])
+
+
+## 合上忠肃册页后的终局港页：札记抬头仍旁注落款（「终局」一行不再括落款，落款只在抬头）
+func _v0928_siege_epi_at(main: Node, word: String) -> void:
+	_check(main._shore_kind_now == "ended" and GS.ended_at != "" and _find_label_text(main._shore_band(), GS.ended_at) != "",
+		"忠肃（%s）终局港页札记抬头旁注落款「%s」" % [word, GS.ended_at])
+
+
+## 岸带上某张卡的副题（按 id 从 _shore_facilities 取）
+func _v0928_siege_card_sub(main: Node, card_id: String) -> String:
+	for fac in main._shore_facilities:
+		if typeof(fac) == TYPE_DICTIONARY and str((fac as Dictionary).get("id", "")) == card_id:
+			return str((fac as Dictionary).get("subtitle", ""))
+	return ""
+
+
+## 递归找看得见的钮（含 needle）
+func _v0928_siege_btn(node: Node, needle: String) -> Button:
+	if node == null or not is_instance_valid(node):
+		return null
+	if node is Button and (node as Button).text.find(needle) >= 0 and (node as Button).visible:
+		return node as Button
+	for c in node.get_children():
+		var r := _v0928_siege_btn(c, needle)
+		if r != null:
+			return r
+	return null
+
+
+## 过场一镜的字幕里，按当前旗标会出的几句，连成一串
+func _v0928_siege_caps(probe: Node, caps: Array) -> String:
+	var out := PackedStringArray()
+	for c in caps:
+		if typeof(c) == TYPE_DICTIONARY and bool(probe.call("_caption_on", c)):
+			out.append(str((c as Dictionary).get("text", "")))
+	return "／".join(out)
