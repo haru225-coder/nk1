@@ -116,7 +116,8 @@ REGISTRY = [
      "green": "`结果：全部通过`", "red": "`FAIL: …` 行（缺侧车 / 孤儿·多余侧车 / 内容漂移 / 非基线形态 / 工作树漂移）；`结果：N 项失败`"},
     {"id": "save_migrate_probe", "tier": "lane", "when": "动存档结构 / save_schema", "kind": "godot",
      "file": "tools/save_migrate_probe.gd", "args": ["--headless", "--path", ".", "-s", "res://tools/save_migrate_probe.gd"],
-     "judge": "（lane sv）v1 老档读入补字段、回写 v2、原件留 .v1；未来档明确拒读、不退副抄、文件不动",
+     "judge": "（lane sv / fx6）老档沿迁移链逐级升到本版（`SaveLoad.SAVE_SCHEMA`，现为 3：v1→v2→v3）：v1 老档读入补字段、回写本版、原件留 .v1；"
+              "v2 档（无 `state.met_ids`）按雇用记录 / 在船职事 / 守城见林华回填人物志「已识」、推不出留空、回写本版、原件留 .v2；未来档明确拒读、不退副抄、文件不动",
      "green": "`SAVE_MIGRATE_PROBE PASS`", "red": "`✗` 行；`SAVE_MIGRATE_PROBE FAIL fails=k`；输出含 `SCRIPT ERROR` 即算失败"},
     {"id": "gates_md", "tier": "lane", "when": "动门禁清单 / docs/GATES.md", "kind": "py", "file": "tools/gates_md.py",
      "judge": "（lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 收尾截图的脚本全部入册、接 shot_gate 的脚本都挂压帧 `ShotGate.frame_pressure`（lane gd18）；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序",
@@ -183,7 +184,7 @@ REGISTRY = [
               "scenes 的孤儿基线与 lane seq3 共用 verify_story_data.SCENE_ARCHIVE",
      "green": "`✓ 32 格全对：…` + `✓ 候补 data/port_beats.json：…` + `== <文件>` 下逐项 `✓ 一、…` 至 `✓ 四、…`（四：`可达 a / n；不可达 k = 形放过 x + 已登记基线 y`）+ `结果：全部通过`",
      "red": "`✗ …` 行（`缺必填字段` / `类型应为` / `未登记字段` / `悬空` / `是孤儿` / `known_orphans 登了 X，它已从入口可达` / `满足 F1–F3…却没登记` / `X→Y 单向登记` / `基线里的 X→Y 已不是单向` / `（未过半…）…却没登 refs` / `已被运行时读…登进 families` / `✗ 变异自检 <编号> …`，其中 `锚落不上：…` = 数据里已没有那种形状的条目、照提示改挑选条件）；`结果：N 项问题`"},
-    # lane gd25：「靠多停几帧碰运气变绿」的跨跑判据；不升 must：全集两档约 25 分钟、要 DISPLAY、写截图盘，触发条件按路径判得准（§五.2）
+    # lane gd25：「靠多停几帧碰运气变绿」的跨跑判据；不升 must：全集两档约 25 分钟（gd25 当时 26 支；现 31 支）、要 DISPLAY、写截图盘，触发条件按路径判得准（§五.2）
     {"id": "probe_pressure", "tier": "lane", "when": "改了探针集里的 .gd（tools/ 下代码行调 `ShotGate.frame_pressure` 的），或 tools/probe_clock.gd / shot_gate.gd / combat_probe_stage.gd",
      "kind": "py", "file": "tools/probe_pressure.py", "usage": "[--only a,b] [--levels 0,300] [--mutants]", "display": True,
      "judge": "（lane gd25）有窗口探针（代码行调了 `ShotGate.frame_pressure` 的已跟踪 .gd，截图册 + 定向探针）各在两档 `NK1_PROBE_SLOW_MS`"
@@ -222,7 +223,7 @@ REGISTRY = [
      "display": True, "shots": True, "timeout": 900, "marks": ["TOUR PASS", "TOUR FAIL", "✓", "✗", "TOUR_READY"],
      "why": "（lane gd13 判不进）美术巡检截帧，产物是给人看的 sheet.jpg：每站一个带窗口 Godot（Movie Maker，不能 `--headless`），"
             "全集 21 站实测 348 秒（8 核、负载 8–11；单站 title 17 秒），另要先 `git archive` 出运行副本并导入一次（12 秒）；"
-            "只判引擎退出码 / TOUR_READY / 报错计数 / 帧与小样在不在，不看像素——画面回归由截图门禁 24 支探针判。"
+            "只判引擎退出码 / TOUR_READY / 报错计数 / 帧与小样在不在，不看像素——画面回归由截图门禁 25 支探针判。"
             "动 ShotTour / tour_sheet / 过场站点时手跑。输出契约：逐站 `✓` / `✗ …  ← 红因` 一行，末行 `TOUR PASS n/n` / `TOUR FAIL k/n`，"
             "退出码 0 全绿 / 1 有站红 / 2 用法错 · 运行副本不在 · 找不到引擎；`--json` 外包后 checks 逐站一条，强制超时 900 秒"},
 ]
