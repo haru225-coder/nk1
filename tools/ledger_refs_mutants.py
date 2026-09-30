@@ -12,9 +12,14 @@
     `--write` 后对账 rc=0——这一刀 / 这一行被正则漏掉、清单跟着少，gen 自己绿（cs23 原探针 15 例里旧 gen 12 例这样）。
     lane cs25 给第四、第五刀补了函数表、删了 NO_TABLE_OK：M5t 删第四刀的表现行判红，放行退回（cs25 前）rc=0；N1 / N2 证明补的
     两张表真在对账（漏列一支 / 行段写错各一行红）。对照 C0–C2：不改、原来就红的（en dash 行段写错）、正文里提「第十一刀」。
+    lane cs26：刀序起点由「已拆（前N刀…）」段推（gen 不再写死 FIRST_KNIFES = 3）——M2c「前三刀」写成「前四刀」、M2d 整段删掉各红，
+    C3 前三刀段改写成三节（第一至第三刀、各带函数表）现行 rc=0、C3′ 起点写死回第四刀 rc=1。
+    变异锚按形状定位（lane cs26）：只锚刀号（第四 / 第五 / 第十一刀；刀号一改 C0 先红）、「## 第N刀（」起头的节标题行、那节函数表
+    最后一支、「已拆（前N刀…）」段第一件、两支脚本里调用 / 排序的形状；期望 ✗ 字样由定位到的内容现算（Facts），日期 / 题文 /
+    形参名 / 件的说明 / 行尾注释改了照样落上，定位不到或不止一处仍判「变异没落上」。
   · 二、输出确定序（check_decision_refs）：同一棵树在 PYTHONHASHSEED = 0 / 1 / 2 / 3 / 42 下各跑一次，stdout 须逐字节同、rc 同。
-    D1 清单里前 8 处 `scripts/Main.gd:N` 号 +1、不提交（改号自证对 HEAD 版逐对比出多条 MISMATCH）、D2 `--since ccb1d57`
-    （多条 ⚠ / MISMATCH）：⚠ / ✗ 行不到 2 条就比不出行序，记「变异没落上」。X1 / X2 = 同上、两处排序（Lines.flush 的
+    D1 清单里前 8 处 `scripts/Main.gd:N` 号 +1、不提交（改号自证对 HEAD 版逐对比出多条 MISMATCH）、D2 同一脏树 `--since HEAD`
+    （lane cs26 起相对基；原先钉死历史基 ccb1d57，清单再改多轮条数会掉、历史改写会丢基）：⚠ / ✗ 行不到 2 条就比不出行序，记「变异没落上」。X1 / X2 = 同上、两处排序（Lines.flush 的
     sorted、since() 的 pairs.sort）都去掉——cs23 前的写法，须 5 个种子出 ≥2 种 stdout；只去一处仍确定（cs23 实测，另一处兜得住），
     所以变异两处一起去。种子固定，本门禁自己的结论逐次相同。
 做法：把当前工作树的已跟踪文件（含未提交改动，`git stash create`，不动 stash 列表）检出到临时 worktree，逐格复位、施变异、跑；
@@ -67,106 +72,287 @@ def sub(rel, pattern, repl, n=1):
 
 
 # ---- 一、台账格式硬校验 -------------------------------------------------------------------------------------
-H11 = r"^## 第十一刀（lane main11，2026-09-28）：标题页 / 开场 → `scripts/ui/TitlePage\.gd`$"
-ROW = r"^\| `_on_rewatch_opening\(\)` \| 651–652 \|"
+# lane cs26：变异锚按形状定位，不按字面。原先锚在台账的整行文字上（第十一刀节标题、`_on_rewatch_opening()` 那行、第四刀
+# `_seal_chip(btn)`、第五刀 `_on_npc_leave()`、前三刀段的 SlipKit、两支脚本里的调用 / 排序行），改一个字（日期、题文、形参名、
+# 件的说明、加一句行尾注释）台账 / 脚本本身照样对，本门禁却「变异没落上」、要人照新文字改（cs26 实测 9 处）。现在只锚三样不会合法变动的：
+#   · 刀号（第四 / 第五 / 第十一刀）：台账只往后追加、刀序 ③ 硬校验，刀号一改 gen 自己先红（C0 就红），不存在「合法改了刀号」；
+#   · 形状：「## 第N刀（」起头那一行、那节里最后一支函数表行（带行段的取带行段的）、「已拆（前N刀…）」段里第一件；
+#   · 期望的 ✗ 字样由定位到的内容现算（函数名、行段、件数、下一刀的刀号），不抄台账原文。
+# 定位不到或不止一处照旧判「变异没落上」（不许静默跳过），替换前后文字相同也算没落上。
+_DIGITS = "零一二三四五六七八九"
 
 
-def l_sub(pattern, repl):
-    return sub(LEDGER, pattern, repl)
+def _cn(n):
+    """1–99 的汉字刀号（四 / 十 / 十一 / 二十三）。"""
+    tens, ones = divmod(n, 10)
+    return (("" if tens == 1 else _DIGITS[tens]) + "十" if tens else "") + (_DIGITS[ones] if ones else "")
 
 
-def l_head(fn):
-    """第十一刀节标题整行换成 fn(原行)。"""
-    return sub(LEDGER, H11, lambda m: fn(m.group(0)))
+def _num(s):
+    """「第N刀」「前N刀」的 N（汉字一到九十九或阿拉伯数字）；认不出返回 None。与 gen 的 _cn_num 同口径、各写一份（本门禁不借被测脚本的解析）。"""
+    if s.isdigit():
+        return int(s)
+    tens, sep, ones = s.partition("十")
+    if not sep:
+        return _DIGITS.index(s) if len(s) == 1 and s in _DIGITS[1:] else None
+    if len(tens) > 1 or len(ones) > 1 or (tens and tens not in _DIGITS) or (ones and ones not in _DIGITS):
+        return None
+    return (_DIGITS.index(tens) if tens else 1) * 10 + (_DIGITS.index(ones) if ones else 0)
 
 
-def l_drop_table(head):
-    """head 那节（到下一个二级标题为止）的函数表行全删。"""
-    def m(wt):
-        text = _read(wt, LEDGER)
-        h = re.search(head, text, re.M)
-        if not h:
-            raise Miss(f"{LEDGER} 里找不到节标题 {head!r}")
-        nxt = re.search(r"^## ", text[h.end():], re.M)
-        end = h.end() + nxt.start() if nxt else len(text)
-        body, k = re.subn(r"^\| `_\w+\(.*\n", "", text[h.end():end], flags=re.M)
-        if not k:
-            raise Miss(f"{LEDGER} {head!r} 那节没有函数表行可删")
-        _write(wt, LEDGER, text[:h.end()] + body + text[end:])
+FIRST_HEAD = r"^已拆（前([^刀\s（）]{1,4})刀[^\n]*\n(.+?)\n\n"
+FIRST_ITEM = r"`(\w+)\.gd`（(\w+)，([^）\n]*)）"
+TABLE_ROW = r"^\| `(_?\w+)\([^`\n]*\)` \|(?: (\d+)–(\d+) \|)?[^\n]*$"
+K_TITLE, K_TAVERN, K_NPC = 11, 4, 5  # 被变异的三刀：第十一刀（cs23 原探针那一刀）、第四 / 第五刀（lane cs25 补的表）
+
+
+def _head_re(n):
+    return rf"^## 第{_cn(n)}刀（[^\n]*$"
+
+
+def _section(text, n):
+    """第 n 刀那节：(标题 match, 节正文起, 节正文止)；标题须恰好一处。"""
+    heads = list(re.finditer(_head_re(n), text, re.M))
+    if len(heads) != 1:
+        raise Miss(f"{LEDGER} 里「## 第{_cn(n)}刀（」起头的节标题有 {len(heads)} 处，应 1 处")
+    h = heads[0]
+    nxt = re.search(r"^## ", text[h.end():], re.M)
+    return h, h.end(), h.end() + nxt.start() if nxt else len(text)
+
+
+def _last_row(text, n, ranged):
+    """第 n 刀那节函数表的最后一支（ranged：只看带「a–b」行段的）。"""
+    _, lo, hi = _section(text, n)
+    rows = [m for m in re.finditer(TABLE_ROW, text[lo:hi], re.M) if m.group(2) or not ranged]
+    if not rows:
+        raise Miss(f"{LEDGER} 第{_cn(n)}刀那节找不到{'带行段的' if ranged else ''}函数表行")
+    m = rows[-1]
+    return lo + m.start(), lo + m.end(), m
+
+
+def _first_block(text):
+    m = re.search(FIRST_HEAD, text, re.M | re.S)
+    if not m:
+        raise Miss(f"{LEDGER} 里找不到「已拆（前N刀…）」段")
     return m
 
 
-H4 = r"^## 第四刀（lane main4，[^\n]*`scripts/ui/TavernPage\.gd`$"
-# 退回 cs23 前：台账格式硬校验两处调用删掉（ledger_splits 照旧认刀，认不出的静默漏掉）
-g_pre_cs23 = [sub(GEN, r"^        _check_first_knifes\(head\.group\(1\), len\(out\), problems\)\n", ""),
-              sub(GEN, r"^    _check_ledger_shape\(text, problems\)\n", "")]
-# 退回 cs25 前：第四 / 第五刀没表照放行
-g_pre_cs25 = [sub(GEN, r"^        if not seen:$",
-                  '        if not seen and rel not in ("scripts/ui/TavernPage.gd", "scripts/ui/NpcPage.gd"):')]
+def _put(wt, old, new):
+    if new == old:
+        raise Miss(f"{LEDGER} 变异前后文字相同")
+    _write(wt, LEDGER, new)
+
+
+def l_head(n, fn):
+    """第 n 刀节标题整行换成 fn(原行)。"""
+    def m(wt):
+        text = _read(wt, LEDGER)
+        h, _, _ = _section(text, n)
+        _put(wt, text, text[:h.start()] + fn(h.group(0)) + text[h.end():])
+    return m
+
+
+def l_row(n, fn, ranged=True):
+    """第 n 刀那节最后一支函数表行换成 fn(原行, match)。"""
+    def m(wt):
+        text = _read(wt, LEDGER)
+        a, b, row = _last_row(text, n, ranged)
+        _put(wt, text, text[:a] + fn(text[a:b], row) + text[b:])
+    return m
+
+
+def l_drop_row(n):
+    def m(wt):
+        text = _read(wt, LEDGER)
+        a, b, _ = _last_row(text, n, False)
+        _put(wt, text, text[:a] + text[b + 1:])
+    return m
+
+
+def l_drop_table(n):
+    """第 n 刀那节（到下一个二级标题为止）的函数表行全删。"""
+    def m(wt):
+        text = _read(wt, LEDGER)
+        _, lo, hi = _section(text, n)
+        body, k = re.subn(TABLE_ROW + r"\n", "", text[lo:hi], flags=re.M)
+        if not k:
+            raise Miss(f"{LEDGER} 第{_cn(n)}刀那节没有函数表行可删")
+        _put(wt, text, text[:lo] + body + text[hi:])
+    return m
+
+
+def l_first(fn):
+    """「已拆（前N刀…）」段：fn(段 match) → (起, 止, 新文字)。"""
+    def m(wt):
+        text = _read(wt, LEDGER)
+        a, b, new = fn(_first_block(text), text)
+        _put(wt, text, text[:a] + new + text[b:])
+    return m
+
+
+def _item_paren(blk, text):  # 第一件的「（」改半角
+    it = re.search(FIRST_ITEM, blk.group(2))
+    if not it:
+        raise Miss(f"{LEDGER}「已拆（前N刀…）」段里没有「`X.gd`（lane，…）」写法的件")
+    a = blk.start(2) + it.start() + len(it.group(1)) + 4
+    return a, a + 1, "("
+
+
+def _item_drop(blk, text):  # 删掉第一件（连同其后的「 · 」）
+    it = re.search(FIRST_ITEM + r"\s*·\s*", blk.group(2))
+    if not it:
+        raise Miss(f"{LEDGER}「已拆（前N刀…）」段里没有后面还跟着一件的「`X.gd`（lane，…）· 」")
+    return blk.start(2) + it.start(), blk.start(2) + it.end(), ""
+
+
+def _count_up(blk, text):  # 「前N刀」的 N +1，件不动
+    n = _num(blk.group(1))
+    if n is None:
+        raise Miss(f"{LEDGER}「已拆（前{blk.group(1)}刀…）」的刀数认不出")
+    return blk.start(1), blk.end(1), _cn(n + 1)
+
+
+def _block_drop(blk, text):  # 整段删掉、不补节
+    return blk.start(), blk.end(), ""
+
+
+def l_first_as_sections(wt):
+    """「已拆（前N刀…）」段改写成 N 节「## 第k刀（lane X，…）：… → `scripts/ui/X.gd`」，每节带函数表（行段不写），
+    函数表按清单第 5 列（Main 函数→static func）列全——前三刀日后改写成三节就是这个形状，现行须 rc=0（lane cs26 ②）。"""
+    text = _read(wt, LEDGER)
+    blk = _first_block(text)
+    table = {}
+    for ln in _read(wt, TXT).split("\n"):
+        cols = ln.split("\t")
+        if len(cols) >= 5 and not ln.startswith("#"):
+            table[cols[0]] = [p.split("→") for p in cols[4].split()]
+    parts = []
+    for k, it in enumerate(re.finditer(FIRST_ITEM, blk.group(2)), 1):
+        rel = f"scripts/ui/{it.group(1)}.gd"
+        if rel not in table:
+            raise Miss(f"{TXT} 里没有 {rel} 那行")
+        rows = "".join(f"| `{f}()` | — | `{g}` |\n" for f, g in table[rel])
+        parts.append(f"## 第{_cn(k)}刀（lane {it.group(2)}，改写）：{it.group(3)} → `{rel}`\n\n"
+                     f"| 支 | 行段 | 拆出件 static func |\n|---|---|---|\n{rows}\n")
+    if not parts:
+        raise Miss(f"{LEDGER}「已拆（前N刀…）」段里一件也认不出")
+    _put(wt, text, text[:blk.start()] + "".join(parts) + text[blk.end():])
+
+
+def _gen_sub(pattern, repl):
+    return sub(GEN, pattern, repl)
+
+
+# 退回 cs23 前：台账格式硬校验两处调用删掉（ledger_splits 照旧认刀，认不出的静默漏掉）。按「行首缩进 + 函数名(」认调用行，
+# 参数 / 行尾注释改了照样落上（def 行以 def 起头，不在此列）
+g_pre_cs23 = [_gen_sub(r"^[ \t]+_check_first_knifes\([^\n]*\n", ""),
+              _gen_sub(r"^[ \t]+_check_ledger_shape\([^\n]*\n", "")]
+# 退回 cs25 前：第四 / 第五刀没表照放行——按「紧跟着报『没有函数表』的那个 if」认，条件怎么写都落得上
+g_pre_cs25 = [_gen_sub(r'^([ \t]+)if (.+):\n(?=[ \t]+problems\.append\(f"[^\n]*没有函数表)',
+                       r'\1if (\2) and rel not in ("scripts/ui/TavernPage.gd", "scripts/ui/NpcPage.gd"):\n')]
+# 退回 cs26 前：刀序起点写死第四刀（FIRST_KNIFES = 3）
+g_pre_cs26 = [_gen_sub(r"^([ \t]+)want = first \+ 1\b[^\n]*$", r"\1want = 3 + 1")]
 
 M = {
-    "M1a": ("①节标题去反引号", [l_head(lambda h: h.replace("`", ""))]),
-    "M1b": ("①节标题写成 ###", [l_head(lambda h: "#" + h)]),
-    "M1c": ("①「##第十一刀」无空格", [l_head(lambda h: h.replace("## ", "##", 1))]),
-    "M1d": ("①半角括号逗号", [l_head(lambda h: h.replace("（lane main11，2026-09-28）", "(lane main11, 2026-09-28)"))]),
-    "M1e": ("①去掉 lane 字样", [l_head(lambda h: h.replace("lane main11", "main11"))]),
-    "M1f": ("①箭头后多字", [l_head(lambda h: h + "（已落地）")]),
-    "M2a": ("②前三刀 SlipKit 半角括号", [l_sub(r"`SlipKit\.gd`（ms，", "`SlipKit.gd`(ms，")]),
-    "M2b": ("②前三刀删掉一件", [l_sub(r"`SlipKit\.gd`（ms，工席纸条小件）· ", "")]),
-    "M3a": ("③第十一刀改成第十刀（重号）", [l_head(lambda h: h.replace("第十一刀", "第十刀"))]),
-    "M3b": ("③第十一刀改成第十三刀（跳号）", [l_head(lambda h: h.replace("第十一刀", "第十三刀"))]),
-    "M3c": ("③刀号写成认不出的「第拾壹刀」", [l_head(lambda h: h.replace("第十一刀", "第拾壹刀"))]),
-    "M4a": ("④函数表行「|」后不空格", [l_sub(ROW, "|`_on_rewatch_opening()` | 651–652 |")]),
-    "M4b": ("④行段写 ASCII 连字符且写错", [l_sub(ROW, "| `_on_rewatch_opening()` | 651-699 |")]),
-    "M4c": ("④同一支列两次", [l_sub(r"^(\| `_on_rewatch_opening\(\)` \| 651–652 \|[^\n]*\n)", r"\1\1")]),
-    "M5": ("⑤第十一刀那节删光函数表行", [l_drop_table(H11)]),
-    "M5t": ("⑤第四刀那节删光函数表行（lane cs25 补的表）", [l_drop_table(H4)]),
+    "M1a": ("①节标题去反引号", [l_head(K_TITLE, lambda h: h.replace("`", ""))]),
+    "M1b": ("①节标题写成 ###", [l_head(K_TITLE, lambda h: "#" + h)]),
+    "M1c": ("①「##第十一刀」无空格", [l_head(K_TITLE, lambda h: h.replace("## ", "##", 1))]),
+    "M1d": ("①半角括号逗号", [l_head(K_TITLE, lambda h: re.sub(r"（(lane \w+)，([^）\n]*)）", r"(\1, \2)", h, count=1))]),
+    "M1e": ("①去掉 lane 字样", [l_head(K_TITLE, lambda h: re.sub(r"（lane (\w+)，", r"（\1，", h, count=1))]),
+    "M1f": ("①箭头后多字", [l_head(K_TITLE, lambda h: h + "（已落地）")]),
+    "M2a": ("②前三刀段第一件半角括号", [l_first(_item_paren)]),
+    "M2b": ("②前三刀段删掉一件", [l_first(_item_drop)]),
+    "M2c": ("②「前三刀」写成「前四刀」、件不动（lane cs26）", [l_first(_count_up)]),
+    "M2d": ("②前三刀段整段删掉、不补节（lane cs26）", [l_first(_block_drop)]),
+    "M3a": ("③第十一刀改成第十刀（重号）", [l_head(K_TITLE, lambda h: h.replace(f"第{_cn(K_TITLE)}刀", f"第{_cn(K_TITLE - 1)}刀", 1))]),
+    "M3b": ("③第十一刀改成第十三刀（跳号）", [l_head(K_TITLE, lambda h: h.replace(f"第{_cn(K_TITLE)}刀", f"第{_cn(K_TITLE + 2)}刀", 1))]),
+    "M3c": ("③刀号写成认不出的「第拾壹刀」", [l_head(K_TITLE, lambda h: h.replace(f"第{_cn(K_TITLE)}刀", "第拾壹刀", 1))]),
+    "M4a": ("④函数表行「|」后不空格", [l_row(K_TITLE, lambda ln, r: "|" + ln[2:])]),
+    "M4b": ("④行段写 ASCII 连字符且写错", [l_row(K_TITLE, lambda ln, r: ln.replace(f"{r[2]}–{r[3]}", f"{r[2]}-{int(r[3]) + 47}", 1))]),
+    "M4c": ("④同一支列两次", [l_row(K_TITLE, lambda ln, r: ln + "\n" + ln)]),
+    "M5": ("⑤第十一刀那节删光函数表行", [l_drop_table(K_TITLE)]),
+    "M5t": ("⑤第四刀那节删光函数表行（lane cs25 补的表）", [l_drop_table(K_TAVERN)]),
 }
 SHAPE = "格式硬校验 {}"
 RESYNC = "与重算不一致"
-# (组, 编号, 说明, 变异, 期望对账 rc, 期望 ✗ 行须含的字样, 期望 --write 后对账 rc)；--write 判红的一律不许写盘
+
+
+class Facts:
+    """期望字样现算：从快照的台账里按同一套形状读出被变异那几处的内容（函数名、行段、件数、下一刀）。"""
+    def __init__(self, text, wt):
+        self.text, self.wt = text, wt
+        self.first = _num(_first_block(text).group(1))
+        if self.first is None:
+            raise Miss(f"{LEDGER}「已拆（前N刀…）」的刀数认不出")
+        self.row = _last_row(text, K_TITLE, True)[2]          # 第十一刀：最后一支带行段的
+        _, lo, hi = _section(text, K_TITLE)
+        self.title_rows = [m.group(1) for m in re.finditer(TABLE_ROW, text[lo:hi], re.M)]
+        self.title_rel = re.search(r"`(scripts/[\w/]+\.gd)`\s*$", _section(text, K_TITLE)[0].group(0)).group(1)
+        self.tavern_rel = re.search(r"`(scripts/[\w/]+\.gd)`\s*$", _section(text, K_TAVERN)[0].group(0)).group(1)
+        self.tavern_last = _last_row(text, K_TAVERN, False)[2].group(1)
+        self.npc_row = _last_row(text, K_NPC, True)[2]
+        self.has_next = bool(re.search(_head_re(K_TITLE + 1), text, re.M))
+
+    def order(self, got, want):
+        return f"「第{_cn(got)}刀」刀序不对：上一刀之后应是第 {want} 刀"
+
+    def cascade(self, want):  # 第十一刀认不出 / 改了号，下一刀（第十二刀）跟着刀序不对；没有下一刀就没有这一条
+        return [self.order(K_TITLE + 1, want)] if self.has_next else []
+
+    def want(self, cid):
+        name, a, b = self.row.group(1), self.row.group(2), int(self.row.group(3))
+        k = K_TITLE
+        w = {
+            "M1a": [SHAPE.format("①"), RESYNC] + self.cascade(k),
+            "M1b": [SHAPE.format("①"), RESYNC] + [f"台账函数表列了 {f}" for f in self.title_rows] + self.cascade(k),
+            "M1d": [SHAPE.format("①"), RESYNC] + self.cascade(k), "M1e": [SHAPE.format("①"), RESYNC] + self.cascade(k),
+            "M1f": [SHAPE.format("①"), RESYNC] + self.cascade(k),
+            "M2a": [SHAPE.format("②"), RESYNC], "M2b": [SHAPE.format("②"), RESYNC],
+            "M2c": [f"那段认出 {self.first} 件，应为 {self.first + 1} 件", self.order(self.first + 1, self.first + 2)],
+            "M2d": [self.order(self.first + 1, 1), RESYNC],
+            "M3a": [self.order(k - 1, k)] + self.cascade(k),
+            "M3b": [self.order(k + 2, k)] + self.cascade(k + 3),
+            "M3c": ["「第拾壹刀」的刀号认不出"],
+            "M4a": [SHAPE.format("④"), f"现 Main.gd 的 {name} 一行转发到本件 "],
+            "M4b": [f"{name} 的行段写法不认"], "M4c": [f"函数表把 {name} 列了两次"],
+            "M5": [f"（{self.title_rel} 那节）没有函数表"], "M5t": [f"（{self.tavern_rel} 那节）没有函数表"],
+            "C1": [f"台账写 {name} 在拆前 Main.gd 的 {a}–{b + 47} 行，重算是 {a}–{b}"],
+            "N1": [f"现 Main.gd 的 {self.tavern_last} 一行转发到本件 "],
+            "N2": [f"台账写 {self.npc_row.group(1)} 在拆前 Main.gd 的 {self.npc_row.group(2)}–{int(self.npc_row.group(3)) + 2} 行，"
+                   f"重算是 {self.npc_row.group(2)}–{self.npc_row.group(3)}"],
+        }
+        w["M1c"] = w["M1b"]
+        return w.get(cid, [])
+
+
+# (组, 编号, 说明, 变异, 期望对账 rc, 期望 ✗ 行须含的字样（编号 → Facts.want 现算）, 期望 --write 后对账 rc)；--write 判红的一律不许写盘
 GEN_CASES = [
     ("对照", "C0", "台账不改", [], 0, [], 0),
-    ("对照", "C1", "行段写 en dash 且写错（cs23 前就红）", [l_sub(ROW, "| `_on_rewatch_opening()` | 651–699 |")], 1,
-     ["台账写 _on_rewatch_opening 在拆前 Main.gd 的 651–699 行，重算是 651–652"], 1),
-    ("对照", "C2", "正文里提「第十一刀」（不是标题）", [l_head(lambda h: h + "\n\n本节即第十一刀，承第十刀。")], 0, [], 0),
+    ("对照", "C1", "第十一刀最后一支行段写 en dash 且写错（cs23 前就红）",
+     [l_row(K_TITLE, lambda ln, r: ln.replace(f"{r[2]}–{r[3]}", f"{r[2]}–{int(r[3]) + 47}", 1))], 1, "C1", 1),
+    ("对照", "C2", "正文里提「第十一刀」（不是标题）",
+     [l_head(K_TITLE, lambda h: h + f"\n\n本节即第{_cn(K_TITLE)}刀，承第{_cn(K_TITLE - 1)}刀。")], 0, [], 0),
+    ("对照", "C3", "前三刀段改写成三节（第一至第三刀、各带函数表），现行（lane cs26：刀序起点由台账推）",
+     [l_first_as_sections], 0, [], 0),
+    ("对照", "C3′", "同 C3，刀序起点写死回第四刀（cs26 前）", [l_first_as_sections] + g_pre_cs26, 1,
+     ["「第一刀」刀序不对：上一刀之后应是第 4 刀"], 1),
 ]
-_WANT = {  # 现行各格的 ✗ 字样；旧口径各格的（下面 _OLD）
-    "M1a": [SHAPE.format("①"), RESYNC], "M1b": [SHAPE.format("①"), "台账函数表列了 _play_opening", "台账函数表列了 _on_opening_finished",
-                                                "台账函数表列了 _on_rewatch_opening", "台账函数表列了 _setup_title_mode",
-                                                "台账函数表列了 _on_start_game_pressed"],
-    "M1d": [SHAPE.format("①"), RESYNC], "M1e": [SHAPE.format("①"), RESYNC], "M1f": [SHAPE.format("①"), RESYNC],
-    "M2a": [SHAPE.format("②"), RESYNC], "M2b": [SHAPE.format("②"), RESYNC],
-    "M3a": ["「第十刀」刀序不对：上一刀之后应是第 11 刀"], "M3b": ["「第十三刀」刀序不对：上一刀之后应是第 11 刀",
-                                                      "「第十二刀」刀序不对：上一刀之后应是第 14 刀"],
-    "M3c": ["「第拾壹刀」的刀号认不出"],
-    "M4a": [SHAPE.format("④"), "现 Main.gd 的 _on_rewatch_opening 一行转发到本件 on_rewatch_opening，台账那节函数表却没列它"],
-    "M4b": ["_on_rewatch_opening 的行段写法不认"], "M4c": ["函数表把 _on_rewatch_opening 列了两次"],
-    "M5": ["（scripts/ui/TitlePage.gd 那节）没有函数表"], "M5t": ["（scripts/ui/TavernPage.gd 那节）没有函数表"],
-}
-_WANT["M1c"] = _WANT["M1b"] = _WANT["M1b"] + [RESYNC]
-# 第十一刀认不出 / 改了号，后面的第十二刀（lane main12）跟着刀序不对——cs23 实测时还没有第十二刀
-for _cid in ("M1a", "M1b", "M1c", "M1d", "M1e", "M1f", "M3a"):
-    _WANT[_cid].append("「第十二刀」刀序不对：上一刀之后应是第 11 刀")
 # 旧口径那格：同一变异，退回 cs23 前（M5t 退回 cs25 前）——(对账 rc, ✗ 字样)，--write 后对账都是 rc=0（空转）
 _OLD = {"M1a": (1, [RESYNC]), "M1d": (1, [RESYNC]), "M1e": (1, [RESYNC]), "M1f": (1, [RESYNC]), "M2a": (1, [RESYNC]),
-        "M2b": (1, [RESYNC]), "M3a": (0, []), "M3b": (0, []), "M3c": (0, []), "M4b": (0, []), "M4c": (0, []), "M5": (0, []),
-        "M5t": (0, [])}
+        "M2b": (1, [RESYNC]), "M2c": (0, []), "M2d": (1, [RESYNC]), "M3a": (0, []), "M3b": (0, []), "M3c": (0, []),
+        "M4b": (0, []), "M4c": (0, []), "M5": (0, []), "M5t": (0, [])}
 for cid, (what, muts) in M.items():
     grp = "⑤ 函数表（lane cs25）" if cid == "M5t" else "台账格式 " + what[0]
-    GEN_CASES.append((grp, cid, what[1:] + "，现行", muts, 1, _WANT[cid], 1))
+    GEN_CASES.append((grp, cid, what[1:] + "，现行", muts, 1, cid, 1))
     if cid in _OLD:
         rc, reds = _OLD[cid]
         pre = g_pre_cs25 if cid == "M5t" else g_pre_cs23
         GEN_CASES.append((grp, cid + "′", what[1:] + ("，NO_TABLE_OK 放行退回（cs25 前）" if cid == "M5t" else "，硬校验退回 cs23 前"),
                           muts + pre, rc, reds, 0))
 GEN_CASES += [
-    ("⑤ 函数表（lane cs25）", "N1", "第四刀函数表漏列 _seal_chip（cs22 有表须列全）",
-     [l_sub(r"^\| `_seal_chip\(btn\)` \|[^\n]*\n", "")], 1,
-     ["现 Main.gd 的 _seal_chip 一行转发到本件 seal_chip，台账那节函数表却没列它"], 1),
-    ("⑤ 函数表（lane cs25）", "N2", "第五刀函数表 _on_npc_leave 行段写错（逐支行段对账）",
-     [l_sub(r"^(\| `_on_npc_leave\(\)` \| )3045–3047", r"\g<1>3045–3049")], 1,
-     ["台账写 _on_npc_leave 在拆前 Main.gd 的 3045–3049 行，重算是 3045–3047"], 1),
+    ("⑤ 函数表（lane cs25）", "N1", "第四刀函数表漏列最后一支（cs22 有表须列全）", [l_drop_row(K_TAVERN)], 1, "N1", 1),
+    ("⑤ 函数表（lane cs25）", "N2", "第五刀函数表最后一支行段写错（逐支行段对账）",
+     [l_row(K_NPC, lambda ln, r: ln.replace(f"{r[2]}–{r[3]}", f"{r[2]}–{int(r[3]) + 2}", 1))], 1, "N2", 1),
 ]
 GEN_PAIRS = [(cid + "′", cid) for cid in M if cid in _OLD]
 
@@ -184,16 +370,20 @@ def d_dirty(wt):
 
 
 # cs23 前的写法：逐处行不排序直接印、since() 的配对不排序（集合交集的遍历顺序随 PYTHONHASHSEED 变）
-d_unsort = [sub(REFS, r"^        for _, text in sorted\(self\.rows, key=lambda r: r\[0\]\):$", "        for _, text in self.rows:"),
-            sub(REFS, r"^    pairs\.sort\(key=lambda p: \(p\[1\], p\[0\]\)\)\n", "")]
-SINCE = ["--since", "ccb1d57"]
+# 按形状认（lane cs26）：`sorted(self.rows, key=lambda …)` 那一处去掉排序、`pairs.sort(…)` 那一整行删掉；lambda 的变量名 / 键怎么写都落得上
+d_unsort = [sub(REFS, r"sorted\(self\.rows, key=lambda \w+: [^\n]*\)(?=:[ \t]*$)", "self.rows"),
+            sub(REFS, r"^[ \t]+pairs\.sort\([^\n]*\n", "")]
+# lane cs26 ③：D2 原用历史基 `--since ccb1d57`，清单再改多轮后 ⚠ / ✗ 会少于 2 条、基还可能被改写的历史丢掉。改成相对基：
+# 同 D1 把清单前 8 处号 +1 不提交，再 `--since HEAD`——走的是 --since 那条路（默认的改号自证不跑、配对取 REV 版清单），
+# 比的是「HEAD 版清单的号 vs 工作树的号」，⚠ / ✗ 条数由变异自己造出来，不随历史变，不会过期。
+SINCE = ["--since", "HEAD"]
 # (组, 编号, 说明, 变异, 参数, 期望 rc, 期望确定, ⚠ / ✗ 行至少几条)
 DET_CASES = [
     ("基线", "D0", "不改、默认口径", [], [], 0, True, 0),
     ("改号自证", "D1", "清单前 8 处 Main.gd 号 +1 不提交、默认口径，现行", [d_dirty], [], 1, True, 2),
     ("改号自证", "X1", "同 D1，两处排序都去掉（cs23 前）", [d_dirty] + d_unsort, [], 1, False, 2),
-    ("--since", "D2", "`--since ccb1d57`，现行", [], SINCE, 1, True, 2),
-    ("--since", "X2", "同 D2，两处排序都去掉（cs23 前）", d_unsort, SINCE, 1, False, 2),
+    ("--since", "D2", "同 D1 的脏树、`--since HEAD`（相对基，lane cs26），现行", [d_dirty], SINCE, 1, True, 2),
+    ("--since", "X2", "同 D2，两处排序都去掉（cs23 前）", [d_dirty] + d_unsort, SINCE, 1, False, 2),
 ]
 DET_PAIRS = [("X1", "D1"), ("X2", "D2")]
 
@@ -245,12 +435,21 @@ def run(wt, snap, problems):
     print("=" * 68)
     print("一、台账格式硬校验（临时 worktree 改台账，gen_main_splits 对账 / --write / 写后对账，比 rc 与「  ✗」行）")
     print("=" * 68)
+    _reset(wt, snap, [])
+    try:  # 期望字样从快照台账里现算（lane cs26）；台账里连被变异那几处都找不到，要现算的各格一律「变异没落上」
+        facts, facts_miss = Facts(_read(wt, LEDGER), wt), None
+    except Miss as e:
+        facts, facts_miss = None, e
     group = None
     for grp, cid, what, muts, want_rc, want_reds, want_after in GEN_CASES:
         if grp != group:
             print(f"  · {grp}")
             group = grp
         try:
+            if isinstance(want_reds, str):
+                if facts is None:
+                    raise facts_miss
+                want_reds = facts.want(want_reds)
             rc, reds, wrc, wrote, after, out = _gen_case(wt, snap, muts)
         except Miss as e:
             print(f"  ✗ {cid} {what}：变异没落上——{e}")
@@ -314,6 +513,11 @@ def run(wt, snap, problems):
         else:
             print(f"  ✗ {what}：{old} 写后 rc={rcs.get(old)}，{new} 写后 rc={rcs.get(new)}（应 0 → 1）")
             problems.append(f"空转对照不成立：{new}")
+    if rcs.get("C3′") == 1 and rcs.get("C3") == 0:  # lane cs26 ②：方向与上面相反——旧口径红、现行绿，证明起点真由台账推
+        print("  ✓ 刀序起点：C3′ 起点写死第四刀，前三刀改写成三节 rc=1 → C3 现行由「已拆（前N刀…）」段推（段不在从第一刀起）rc=0")
+    else:
+        print(f"  ✗ 刀序起点：C3′ 写后 rc={rcs.get('C3′')}，C3 写后 rc={rcs.get('C3')}（应 1 → 0）")
+        problems.append("空转对照不成立：C3")
     for old, new in DET_PAIRS:
         if det.get(old) is False and det.get(new) is True:
             print(f"  ✓ 输出确定序：{old} cs23 前 5 个种子 stdout 不止一种（「逐字节同」比对偶发假 DIFF）→ {new} 现行逐字节同")

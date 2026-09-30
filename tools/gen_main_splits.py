@@ -11,6 +11,8 @@ main_splits.txt 是 Main.gd 拆出件的唯一清单：check_symbols（一之零
 
 各列从哪来（都是重算，没有一格手抄）：
   · 拆出件、顺序、lane ← docs/Main拆解台账.md：开头「已拆（前三刀…）」那行 + 各「## 第N刀（lane X，…）… → `路径`」节标题
+    （「前N刀」的 N 就是那段该登记的件数、也是刀序起点：之后的节标题从第 N+1 刀起；lane cs26 起由台账自己推，脚本里不再写死 3。
+    那段整段不在 = N 为 0、节标题从第一刀起——前三刀日后改写成三节就是这个形状，不用改脚本）
   · 拆出函数 ← 现 Main.gd 的一行转发「Main 函数→拆出件 static func」，按拆出件里 static func 的顺序；
     拆出件里有 static func 不是 Main 转发过去的，记问题（拆出件只装从 Main 搬出的东西）
   · 拆出 commit ← git 里新增该文件的 commit；文件还没提交记 `-`
@@ -25,8 +27,8 @@ main_splits.txt 是 Main.gd 拆出件的唯一清单：check_symbols（一之零
 只靠 check_symbols 下游兜，单独跑本脚本的人看不到）。下面几种形状本脚本直接判红，--write 也不写盘：
   ① 标题文字以「第…刀」开头、却不合节标题正则（`## 第N刀（lane X，…）：… → `scripts/…/X.gd``）的行——少了反引号 / lane /
     全角括号、写成 ### 或 ##第N刀、路径不在 scripts/ 下、箭头后面还有字；
-  ② 「已拆（前三刀…）」那段里的 `X.gd` 没按「`X.gd`（lane，…」写（那一件会被漏掉），或认出来的不是 3 件；
-  ③ 刀序：节标题「第N刀」的 N（汉字或数字）须从第四刀起逐刀 +1，重号 / 跳号 / 认不出的数都红；
+  ② 「已拆（前N刀…）」那段里的 `X.gd` 没按「`X.gd`（lane，…」写（那一件会被漏掉），或认出来的不是 N 件、N 认不出；
+  ③ 刀序：节标题「第N刀」的 N（汉字或数字）须从「前N刀」的下一刀起（现为第四刀）逐刀 +1，重号 / 跳号 / 认不出的数都红；
   ④ 拆刀节里像函数表行的（「| `名字(`」起头）却不合函数表行写法，或第二格以数字起头却不是「a–b」（en dash）行段——
     前者整行漏认（cs18 的「列了却不转发」查不到它），后者行段对账静默跳过；同一节函数表同一支列两次；
   ⑤ 拆刀节没有函数表：没表时 cs18 / cs22 两个方向的对账都不查，整节空转。第四、第五刀早于函数表惯例，原先登记在 NO_TABLE_OK 放行，
@@ -61,7 +63,8 @@ KNIFE_HEAD = re.compile(r'^## 第(\S+?)刀（lane (\w+)，[^）\n]*）：[^\n]*�
 KNIFE_LIKE = re.compile(r'^#{1,6}[ \t]*第[^（(\n]{1,12}?刀')  # 标题文字以「第…刀」开头的行（「### 同刀门禁…（第四刀…）」不算）
 LISTED_ROW = re.compile(r'^\| `(_?\w+)\([^`]*\)` \|(?: (\d+)–(\d+))?', re.M)
 FN_ROW_LIKE = re.compile(r'^\|\s*`[A-Za-z_]\w*\(')  # 像函数表行：「| `名字(」起头（引用点表是「| `文件:行`」，不在此列）
-FIRST_KNIFES = 3  # 「已拆（前三刀…）」那段登记的件数；之后的节标题从第四刀起
+# 「已拆（前N刀…）」那段（lane cs26：N 从这里读，原先 FIRST_KNIFES = 3 写死）：N = 那段登记的件数，之后的节标题从第 N+1 刀起
+FIRST_HEAD = re.compile(r'^已拆（前([^刀\s（）]{1,4})刀[^\n]*\n(.+?)\n\n', re.M | re.S)
 _CN_DIGIT = {c: i for i, c in enumerate("零一二三四五六七八九")}
 
 
@@ -93,17 +96,19 @@ def ledger_splits(problems):
         problems.append(f"{LEDGER_REL} 读不到，拆出件清单无从生成")
         return []
     out = []
-    head = re.search(r'^已拆（前三刀[^\n]*\n(.+?)\n\n', text, re.M | re.S)
-    if not head:
-        problems.append(f"{LEDGER_REL} 里找不到「已拆（前三刀…）」那行（前三刀拆出件的登记）")
-    else:
-        for name, lane in re.findall(r'`(\w+\.gd)`（(\w+)，', head.group(1)):
+    head = FIRST_HEAD.search(text)
+    first = 0  # 没有「已拆（前N刀…）」段：前面没有只登一行的刀，节标题从第一刀起（③ 按这个起点查刀序）
+    if head:
+        for name, lane in re.findall(r'`(\w+\.gd)`（(\w+)，', head.group(2)):
             out.append(("scripts/ui/" + name, lane, ""))
-        _check_first_knifes(head.group(1), len(out), problems)
+        first = _cn_num(head.group(1))
+        _check_first_knifes(head.group(1), head.group(2), len(out), problems)
+        if first is None:
+            first = len(out)
     for m in KNIFE_HEAD.finditer(text):
         nxt = re.search(r'^## ', text[m.end():], re.M)  # 节到下一个二级标题为止（含别的 lane 追加的非拆刀节）
         out.append((m.group(3), m.group(2), text[m.end():m.end() + nxt.start()] if nxt else text[m.end():]))
-    _check_ledger_shape(text, problems)
+    _check_ledger_shape(text, first, bool(head), problems)
     seen = set()
     for rel, _, _ in out:
         if rel in seen:
@@ -124,19 +129,22 @@ def _cn_num(s):
     return (_CN_DIGIT[tens] if tens else 1) * 10 + (_CN_DIGIT[ones] if ones else 0)
 
 
-def _check_first_knifes(block, n, problems):
-    """「已拆（前三刀…）」那段（lane cs23 ②）：反引号里的 X.gd 都得按「`X.gd`（lane，…」写，认出来的正好 FIRST_KNIFES 件。"""
+def _check_first_knifes(num, block, n, problems):
+    """「已拆（前N刀…）」那段（lane cs23 ②）：反引号里的 X.gd 都得按「`X.gd`（lane，…」写，认出来的正好 N 件（lane cs26：N 读自段首）。"""
     named = re.findall(r'`([^`\n]+\.gd)`', block)
     ok = re.findall(r'`(\w+\.gd)`（\w+，', block)
     bad = [x for x in named if x not in ok]
     if bad:
-        problems.append(f"{LEDGER_REL}「已拆（前三刀…）」那段的 {'、'.join(bad)} 没按「`X.gd`（lane，…」写，"
+        problems.append(f"{LEDGER_REL}「已拆（前{num}刀…）」那段的 {'、'.join(bad)} 没按「`X.gd`（lane，…」写，"
                         f"本脚本认不出，这件会被漏掉（格式硬校验 ②）")
-    if n != FIRST_KNIFES:
-        problems.append(f"{LEDGER_REL}「已拆（前三刀…）」那段认出 {n} 件，应为 {FIRST_KNIFES} 件（格式硬校验 ②）")
+    want = _cn_num(num)
+    if want is None:
+        problems.append(f"{LEDGER_REL}「已拆（前{num}刀…）」的刀数认不出（写汉字一到九十九或阿拉伯数字，格式硬校验 ②）")
+    elif n != want:
+        problems.append(f"{LEDGER_REL}「已拆（前{num}刀…）」那段认出 {n} 件，应为 {want} 件（格式硬校验 ②）")
 
 
-def _check_ledger_shape(text, problems):
+def _check_ledger_shape(text, first, has_head, problems):
     """台账格式硬校验（lane cs23 ①③④⑤）：结构写坏、原先被正则静默漏掉的形状，一律判红。"""
     lines = text.split("\n")
     heads = {text.count("\n", 0, m.start()) + 1: m for m in KNIFE_HEAD.finditer(text)}
@@ -145,13 +153,16 @@ def _check_ledger_shape(text, problems):
             problems.append(f"{LEDGER_REL}:{i} 标题以「第…刀」开头，却不合拆刀节标题写法"
                             f"「## 第N刀（lane X，…）：… → `scripts/…/X.gd`」，本脚本认不出这一刀、会整件漏掉"
                             f"（格式硬校验 ①）：{ln.strip()[:120]}")
-    want = FIRST_KNIFES + 1
-    for i, m in sorted(heads.items()):  # ③ 刀序
+    want = first + 1  # 起点由「已拆（前N刀…）」段推（lane cs26）
+    origin = (f"；起点：「已拆（前N刀…）」段 N = {first}" if has_head else
+              "；起点：台账没有「已拆（前N刀…）」段，从第一刀起")
+    for k, (i, m) in enumerate(sorted(heads.items())):  # ③ 刀序
         n = _cn_num(m.group(1))
+        tail = origin if k == 0 else ""
         if n is None:
             problems.append(f"{LEDGER_REL}:{i}「第{m.group(1)}刀」的刀号认不出（写汉字一到九十九或阿拉伯数字，格式硬校验 ③）")
         elif n != want:
-            problems.append(f"{LEDGER_REL}:{i}「第{m.group(1)}刀」刀序不对：上一刀之后应是第 {want} 刀（重号 / 跳号，格式硬校验 ③）")
+            problems.append(f"{LEDGER_REL}:{i}「第{m.group(1)}刀」刀序不对：上一刀之后应是第 {want} 刀（重号 / 跳号，格式硬校验 ③{tail}）")
         want = (n if n is not None else want) + 1
     for i, m in sorted(heads.items()):  # ④ 函数表行写法、⑤ 有没有表
         rel = m.group(3)
