@@ -1115,6 +1115,37 @@ static func sea_fled_note(spoil: int, damage: int, promo := "") -> String:
 	return base if p == "" else base + p
 
 
+## 夺船后弃战脱身 / 两散（lane fx3）：接在脱战句之后交代夺来的船与水粮，交代在前、账目在后，同战果注记三式。
+## prizes = WorldMap 收战时仍在册的夺船 [{name, type}]（同名合计，按先夺先写）；water / food = 本场水粮实际增量
+## （本地线夺船不转水粮，恒 0 → 写「未及搬过」）。不加「接舷既定。」前缀：弃战不是接舷定局。无夺船返回空串。
+static func sea_prize_note(prizes: Array, water := 0, food := 0) -> String:
+	var order: Array = []
+	var count: Dictionary = {}
+	for p in prizes:
+		var n := str((p as Dictionary).get("name", "")).strip_edges() if p is Dictionary else str(p).strip_edges()
+		if n == "":
+			n = "敌船"
+		if not count.has(n):
+			order.append(n)
+			count[n] = 0
+		count[n] = int(count[n]) + 1
+	if order.is_empty():
+		return ""
+	var parts: PackedStringArray = []
+	for n in order:
+		parts.append("「%s」%s艘" % [n, _cn_count(int(count[n]))])
+	var stores := "船上水粮未及搬过。"
+	if water > 0 or food > 0:
+		stores = "搬过水 %d、粮 %d。" % [maxi(0, water), maxi(0, food)]
+	return "所夺%s已入船籍，%s" % ["、".join(parts), stores]
+
+
+## 艘数写汉字（本文件不引 autoload，不借 GameManager.cn_num）；十以上照写阿拉伯数字
+static func _cn_count(n: int) -> String:
+	var d := ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
+	return d[n] if n >= 0 and n < 10 else str(n)
+
+
 ## 两散（letterbox parted / disengaged）：天色晚了，两边各自收帆
 static func sea_parted_note() -> String:
 	return "天色晚了，两边各自收帆。"

@@ -1347,6 +1347,7 @@ func _v0928_crew_check(main: Node) -> void:
 	root.remove_child(sc)
 	sc.free()
 	GM.pending_battle = {}
+	_v0928_prize_flee_check(Flt, FX, pirate)
 	var sc_scr = load("res://scripts/SeaChart.gd")
 	# 三、元军哨船：先击沉一艘，再夺两艘 → 接舷既定、不说退去、交代击沉一船；夺来的叫「元哨船・一」，type 仍是海鹘
 	Flt.set("ships", [])
@@ -1458,6 +1459,108 @@ func _v0928_crew_check(main: Node) -> void:
 	GS.from_dict({})
 	Crw.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+
+
+## 二之二（lane fx3）：夺船后弃战脱身——修前 flee 收战 data 不带夺船账，SeaChart 注记只写「转舵抢上风头…」，
+## 夺来的船其实已在名册、水粮也没转，注记只字不提。现在：WorldMap 按引用记本场入册的那几格，flee 收战并进
+## data.prizes / data.stores_moved；SeaChart 在脱战句后接 CombatFx.sea_prize_note（交代在前、账目在后，同战果注记三式，
+## 不加「接舷既定。」——弃战不是接舷定局）；顶匾第二行照 _refresh_strip 28 字截断定式收。
+## 名册里先放一艘同名「快船」：凭船名认夺船会多记一艘，按引用认才对得上。
+func _v0928_prize_flee_check(Flt: Node, FX, pirate: Dictionary) -> void:
+	var ok_note := str(FX.sea_flee_ok_note())
+	var run := func(flee_data: Dictionary) -> Array:
+		GS.from_dict({})
+		Flt.set("ships", [])
+		Flt.call("add_ship", "fu_ship_medium", "")
+		Flt.call("add_ship", "pirate_boat", "快船")
+		for s0 in Flt.get("ships"):
+			s0["crew"] = 20
+		Flt.water = 300
+		Flt.food = 300
+		var got_f: Array = []
+		var wmf := _crew_battle(pirate, "pirate", got_f)
+		var foes_f := _crew_foes(wmf)
+		var taken_name := ""
+		if foes_f.size() >= 2:
+			foes_f[0].set("crew", 0)
+			taken_name = str((foes_f[0] as Object).get("ship_name"))
+			wmf.call("_board_enemy", foes_f[0])
+		var still := got_f.is_empty()
+		var prize_ref: Variant = (Flt.get("ships") as Array)[-1] if (Flt.get("ships") as Array).size() == 3 else null
+		# 按 B 弃战的同一出口（_unhandled_input 里 flee_ok 取 randf，这里定死成败免得两支随机）
+		wmf.call("_battle_exit", "flee", flee_data)
+		return [got_f, taken_name, still, prize_ref, foes_f.size()]
+	# ① 甩脱：data 带夺船账，名册与水粮账对得上
+	var r1: Array = run.call({"flee_ok": true})
+	var got1: Array = r1[0]
+	var d1: Dictionary = got1[0][1] if got1.size() == 1 else {}
+	var prizes1: Array = d1.get("prizes", [])
+	var ships1: Array = Flt.get("ships")
+	_check(bool(r1[2]) and got1.size() == 1 and got1[0][0] == "flee" and int(r1[4]) >= 2,
+		"夺一艘后弃战：夺船当时不收战，按弃战收战（得 %s）" % [got1])
+	_check(prizes1.size() == 1 and str(prizes1[0].get("name", "")) == r1[1] and str(prizes1[0].get("type", "")) == "pirate_boat"
+		and ships1.size() == 3 and r1[3] != null and is_same(ships1[2], r1[3]),
+		"夺船后脱身：data.prizes 只记本场夺来的一艘（名册先有一艘同名「快船」不算进去），与名册末格同一格（prizes %s / 名册 %d 格）" % [prizes1, ships1.size()])
+	var mv1: Dictionary = d1.get("stores_moved", {})
+	_check(int(mv1.get("water", -1)) == 0 and int(mv1.get("food", -1)) == 0 and Flt.water == 300 and Flt.food == 300,
+		"夺船后脱身：水粮账本场未动（stores_moved %s，水 %d 粮 %d）" % [mv1, Flt.water, Flt.food])
+	var want_prize := "所夺「%s」一艘已入船籍，船上水粮未及搬过。" % r1[1]
+	_check(str(FX.sea_prize_note(prizes1, 0, 0)) == want_prize,
+		"夺船句：「%s」（得「%s」）" % [want_prize, FX.sea_prize_note(prizes1, 0, 0)])
+	# 走真结算：日志首行＝脱战句＋夺船句，不加接舷前缀；结算后夺来的船仍在册、水粮不因夺船变
+	var scf = (load("res://scenes/SeaChart.tscn") as PackedScene).instantiate()
+	root.add_child(scf)
+	scf.set("sailing", false)
+	scf.set("remaining_li", 50.0)
+	scf.get("log_label").text = ""
+	scf.call("_on_battle_result", "flee", d1)
+	var logf: String = scf.get("log_label").get_parsed_text()
+	var raw_f := ok_note + want_prize
+	_check(logf.find(raw_f) == 0 and logf.find("接舷既定。") < 0,
+		"夺船后甩脱战后注记：「%s」（得首行「%s」）" % [raw_f, logf.get_slice("\n", 0)])
+	var in_reg := false
+	for s1 in Flt.get("ships"):
+		if is_same(s1, r1[3]):
+			in_reg = true
+	_check(in_reg and (Flt.get("ships") as Array).size() == 3,
+		"注记说入船籍：结算后夺来的「%s」仍在名册（%d 格）" % [r1[1], (Flt.get("ships") as Array).size()])
+	var strip_f: String = scf.get("_strip_line").get_parsed_text().get_slice("\n", 1).strip_edges()
+	var expect_f := raw_f if raw_f.length() <= 28 else raw_f.substr(0, 27) + "…"
+	_check(strip_f == expect_f,
+		"夺船后甩脱：顶匾第二行照 _refresh_strip 28 字收（实长 %d 字，匾上得「%s」）" % [raw_f.length(), strip_f])
+	# 没夺船的弃战：原句一字不动
+	scf.get("log_label").text = ""
+	scf.call("_on_battle_result", "flee", {"flee_ok": true})
+	_check(scf.get("log_label").get_parsed_text().get_slice("\n", 0) == ok_note,
+		"没夺船的甩脱注记照旧（得「%s」）" % scf.get("log_label").get_parsed_text().get_slice("\n", 0))
+	# ② 未能甩脱（旗舰带货，被夺货物清单后补句号再接夺船句）
+	var r2: Array = run.call({"flee_ok": false})
+	var d2f: Dictionary = (r2[0] as Array)[0][1] if (r2[0] as Array).size() == 1 else {}
+	Flt.call("add_cargo", "pepper", 10, 10.0, 0)
+	scf.get("log_label").text = ""
+	scf.call("_on_battle_result", "flee", d2f)
+	var log2f: String = scf.get("log_label").get_parsed_text().get_slice("\n", 0)
+	_check(log2f.begins_with("未能甩脱。") and log2f.ends_with("。所夺「%s」一艘已入船籍，船上水粮未及搬过。" % r2[1])
+		and log2f.find("胡椒") >= 0 and log2f.find("　。") < 0
+		and (Flt.get("ships") as Array).size() == 3,
+		"夺船后未能甩脱：被夺货物之后交代夺船与水粮，夺来的船仍在册（得「%s」）" % log2f)
+	# ③ 限时两散
+	var r3: Array = run.call({"flee_ok": true, "parted": true})
+	var d3f: Dictionary = (r3[0] as Array)[0][1] if (r3[0] as Array).size() == 1 else {}
+	scf.get("log_label").text = ""
+	scf.call("_on_battle_result", "flee", d3f)
+	var log3f: String = scf.get("log_label").get_parsed_text().get_slice("\n", 0)
+	_check(log3f == str(FX.sea_parted_note()) + "所夺「%s」一艘已入船籍，船上水粮未及搬过。" % r3[1],
+		"夺船后两散：收帆句后交代夺船与水粮（得「%s」）" % log3f)
+	root.remove_child(scf)
+	scf.free()
+	GM.pending_battle = {}
+	# ④ 句式：同名合计、先夺先写；水粮真转了写数；没夺船空串
+	var multi := str(FX.sea_prize_note([{"name": "快船"}, {"name": "元哨船"}, {"name": "快船"}], 0, 0))
+	_check(multi == "所夺「快船」二艘、「元哨船」一艘已入船籍，船上水粮未及搬过。"
+		and str(FX.sea_prize_note([{"name": "快船"}], 20, 15)) == "所夺「快船」一艘已入船籍，搬过水 20、粮 15。"
+		and str(FX.sea_prize_note([], 0, 0)) == "",
+		"夺船句式：同名合计、水粮转了写数、没夺船不写（得「%s」）" % multi)
 
 
 ## 起一场 WorldMap 海战（pending_battle 照 SeaChart._on_fight_* 的格式），battle_finished 记进 got

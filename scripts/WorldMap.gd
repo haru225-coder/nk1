@@ -89,6 +89,10 @@ var _enemies_escaped: int = 0
 ## 题签（fates_of）与 SeaChart 分账（半赏只给「一艘没沉没夺没降、只是遁走」）都按它算——士气收场的 morale_verdict 只看在场的船，
 ## 先沉一艘、后遁一艘也报 enemy_fled，不能单凭它给半赏。
 var _enemy_fates: Dictionary = {}
+## lane fx3：本场接舷夺来入册的船（Fleet.ships 里那一格的引用，不凭船名认——同名「快船」可能早就在册）；
+## 开战时的水粮账。弃战 / 两散收战时并进 data.prizes / data.stores_moved，供 SeaChart 交代夺船下落。
+var _prizes: Array = []
+var _stores_at_start: Vector2i = Vector2i.ZERO
 ## combat12：开战经过秒数；到 battle_limit_s（combat_phases.json thresholds，缺省 BATTLE_LIMIT_S）两散 parted
 var _battle_elapsed_s: float = 0.0
 var _battle_limit_s: float = 300.0
@@ -316,6 +320,8 @@ func _board_enemy(enemy: Node2D) -> void:
 		var ship_name := _node_str(enemy, "ship_name", "")
 		var ok := Fleet.add_ship(type_id, ship_name)
 		var taken: String = str(Fleet.ships[Fleet.ships.size() - 1].get("name", "敌船")) if ok else "敌船"
+		if ok:
+			_prizes.append(Fleet.ships[Fleet.ships.size() - 1])
 		if notice == "":
 			notice = _CombatFx.board_win_note(taken)
 		if detail == "":
@@ -489,6 +495,8 @@ func _strike_lightning() -> void:
 func _setup_combat(pb: Dictionary) -> void:
 	_enemies_escaped = 0
 	_enemy_fates = {}
+	_prizes = []
+	_stores_at_start = Vector2i(Fleet.water, Fleet.food)
 	_battle_elapsed_s = 0.0
 	_battle_limit_s = _phases_battle_limit_s()
 	combat_mode = true
@@ -613,12 +621,26 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 		var fates := _battle_fates()
 		if not fates.is_empty():
 			data["fates"] = fates
+	if outcome == "flee" and not _prizes.is_empty():
+		_prize_ledger(data)
 	_AUDIO.combat_result(self, outcome)
 	_CombatShoreHook.unmount_combat_ui(self)
 	_try_letterbox_exit(outcome, data)
 	_SeaState.clear_active(_sea)
 	battle_finished.emit(outcome, data)
 	queue_free()
+
+
+## lane fx3：夺船后弃战 / 两散的夺船账——只记收战这一拍仍在册的那几格（按引用认），水粮记本场实际增量
+func _prize_ledger(data: Dictionary) -> void:
+	var kept: Array = []
+	for p in _prizes:
+		for s in Fleet.ships:
+			if is_same(s, p):
+				kept.append({"name": str(s.get("name", "")), "type": str(s.get("type", ""))})
+				break
+	data["prizes"] = kept
+	data["stores_moved"] = {"water": Fleet.water - _stores_at_start.x, "food": Fleet.food - _stores_at_start.y}
 
 
 ## Godot 4 的 Object.get() 只收 1 个参数（带默认值的是 Dictionary.get），缺属性时返回 null；

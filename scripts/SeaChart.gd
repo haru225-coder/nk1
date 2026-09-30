@@ -1513,18 +1513,30 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
 			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_board_lose_note(lost_str, int(dmg))))
 	else:  # flee / disengaged
+		# lane fx3：夺过船再脱身，夺船句接在脱战句之后（同一行注记；无夺船时为空串，原句不变）
+		var mv: Dictionary = data.get("stores_moved", {})
+		var prize := _CombatFx.sea_prize_note(data.get("prizes", []), int(mv.get("water", 0)), int(mv.get("food", 0)))
 		if bool(data.get("parted", false)) or outcome == "disengaged":
-			_log(_ink(UiTheme.INK, _CombatFx.sea_parted_note()))
+			_log(_ink(UiTheme.INK, _CombatFx.sea_parted_note() + prize))
 		elif data.get("flee_ok", false):
 			remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
-			_log_shook_pursuers()
+			if prize == "":
+				_log_shook_pursuers()
+			else:
+				_log(_ink(UiTheme.MOSS, _CombatFx.sea_flee_ok_note() + prize))
 		else:
 			Fleet.damage_fleet(30.0 * Fleet.armor_damage_reduction())
 			var lost := Fleet.lose_cargo_ratio(0.18)
 			var lost_str := ""
 			for gid in lost.keys():
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_flee_fail_note(lost_str)))
+			var fail_msg := _CombatFx.sea_flee_fail_note(lost_str)
+			if prize != "":
+				# 被夺货物清单收尾是全角空格、不带句号（strip_edges 不去全角空格）：接夺船句前去掉空格补句号
+				fail_msg = fail_msg.rstrip("　 ")
+				if not fail_msg.ends_with("。"):
+					fail_msg += "。"
+			_log(_ink(UiTheme.CINNABAR, fail_msg + prize))
 	GameManager.pending_battle = {}
 	back_button.disabled = voyage_started
 	for c in get_children():
