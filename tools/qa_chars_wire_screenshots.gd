@@ -3,6 +3,8 @@ extends SceneTree
 ## 用法：NK1_CHARS_SYNC=1 DISPLAY=:2 godot --path . -s res://tools/qa_chars_wire_screenshots.gd   # 截图门禁（须出 4 张）
 ##       godot --headless --path . -s res://tools/qa_chars_wire_screenshots.gd -- --contract   # 只验非渲染断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
+## lane fx1：每张截图前、再逐页签（主 / 职事 / 市井 / 史实）查一遍——浮页整页最小宽不越视口、WireSheet 与「合上」钮整框在视口内
+##   （名册行短注曾不截断，最长一行把浮页顶出 1280 右缘、「合上」钮切掉半截）；契约模式同样查。
 ## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
 ##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_chars_wire_screenshots.gd
 
@@ -59,6 +61,10 @@ func _run() -> void:
 		roster.call("_on_tab", "职事")
 		await _settle(6)
 		await _shot("wire_04_roster_crew")
+		for spec in (load("res://scripts/chars/CharRoster.gd") as GDScript).TIERS:
+			roster.call("_on_tab", str(spec[0]))
+			await _settle(4)
+			_expect_fits("页签「%s」" % str(spec[0]))
 
 	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 
@@ -72,7 +78,31 @@ func _settle(n: int) -> void:
 
 func _shot(stem: String) -> void:
 	await _settle(2)
+	_expect_fits(stem)
 	if _contract:
 		return
 	await RenderingServer.frame_post_draw
 	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)
+
+
+## lane fx1：浮页在视口里放得下——WireSheet 最小宽 ≤ 视口宽减左右边距，整框与「合上」钮不出视口右缘 / 下缘
+func _expect_fits(where: String) -> void:
+	var sheet := _ov.get("_sheet") as Control
+	var close := _ov.find_child("CloseButton", true, false) as Control
+	if sheet == null or close == null:
+		_fail("%s：浮页缺 WireSheet / CloseButton" % where)
+		return
+	var vp := root.get_visible_rect()
+	var room := vp.size.x - sheet.offset_left + sheet.offset_right
+	var min_w := sheet.get_combined_minimum_size().x
+	if min_w > room + 0.5:
+		_fail("%s：浮页最小宽 %.0f 超出视口可用宽 %.0f（名册行 / 立绘面板有字撑宽）" % [where, min_w, room])
+	for pair in [["WireSheet", sheet.get_global_rect()], ["「合上」钮", close.get_global_rect()]]:
+		var r: Rect2 = pair[1]
+		if r.end.x > vp.end.x + 0.5 or r.end.y > vp.end.y + 0.5 or r.position.x < vp.position.x - 0.5:
+			_fail("%s：%s %s 出视口 %s" % [where, str(pair[0]), str(r), str(vp)])
+
+
+func _fail(msg: String) -> void:
+	_fails.append(msg)
+	print("  ✗ " + msg)

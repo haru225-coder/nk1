@@ -8,6 +8,10 @@ const Art := preload("res://scripts/ui/CharacterArt.gd")
 const Roster := preload("res://scripts/chars/CharRoster.gd")
 const PortraitPanel := preload("res://scripts/chars/CharPortraitPanel.gd")
 
+## 名册左栏最小宽，与左栏 : 立绘面板的宽度比（1280×720 下左栏约 490、立绘面板约 660，面板最小 632）
+const ROSTER_MIN_W := 404.0
+const ROSTER_RATIO := 0.75
+
 var _sheet: PanelContainer
 var _roster: VBoxContainer
 var _panel: PanelContainer
@@ -108,7 +112,10 @@ func _build() -> void:
 	var left := PanelContainer.new()
 	left.name = "RosterHost"
 	left.add_theme_stylebox_override("panel", UiTheme.panel())
-	left.custom_minimum_size.x = 404
+	# 左栏按比例分宽（名册 : 立绘面板 = ROSTER_RATIO : 1，不窄于 ROSTER_MIN_W）；短注按栏宽省略，整页最小宽不越视口
+	left.custom_minimum_size.x = ROSTER_MIN_W
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.size_flags_stretch_ratio = ROSTER_RATIO
 	row.add_child(left)
 	var lm := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:

@@ -172,8 +172,14 @@ func _build_row(ch: Dictionary) -> Control:
 	nm.custom_minimum_size.x = 96
 	h.add_child(nm)
 	var sub := Art.label(_subtitle(ch), UiTheme.SIZE_FOOT, UiTheme.TEXT_DIM)
+	sub.name = "Note"
 	sub.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	sub.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# 短注按栏宽收尾加省略号，不再按字长撑宽整行（最长一行曾把名册浮页顶出 1280 右缘）；全句见悬停与右侧立绘面板
+	sub.clip_text = true
+	sub.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	sub.tooltip_text = sub.text
+	sub.mouse_filter = Control.MOUSE_FILTER_PASS
 	h.add_child(sub)
 	var chip := Art.faction_chip(ch, false, 15)
 	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
