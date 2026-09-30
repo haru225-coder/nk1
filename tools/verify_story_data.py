@@ -1209,6 +1209,7 @@ def scene_structure_problems(doc, ctx):
         out.append(f"SCENE_ARCHIVE 里的 `{x}` 在 scenes.json 里不存在")
     for x in sorted(x for x in ctx["archive"] if by.get(x, {}).get("deprecated")):
         out.append(f"SCENE_ARCHIVE 里的 `{x}` 已是 deprecated，不必再登记")
+    scene_structure_problems.seen = seen
     scene_structure_problems.stats = f"入口可达 {len(seen)} · 归档 {len(set(ctx['archive']) & set(by))} · deprecated {sum(1 for s in by.values() if s.get('deprecated'))}"
     return out
 
@@ -1217,51 +1218,306 @@ _scene_doc = load("scenes.json")
 for msg in scene_structure_problems(_scene_doc, SCENE_CTX):
     check(False, msg)
 SCENE_STRUCT_STATS = scene_structure_problems.stats
-# 反向自证：每类问题各造一个副本，必须报出含指定字样的那一条（防日后改表 / 改遍历时某类静默失明）
+# 反向自证：每类问题各造一个副本，必须报出含指定字样的那一条（防日后改表 / 改遍历时某类静默失明）。
+# 锚按形状挑（lane w19-g7，照 seq6r check_data_family 零节的做法）：每格不写死幕 id，按清单形状与现数据挑 scenes.json 里
+# 头一条合条件的幕 / 选项 / 章（形名、必填键、子形都读 SCENE_KINDS / SCENE_SUB_SHAPES，即 tools/data_family.json），
+# 幕改名自己跟上；挑不到即红「锚落不上」并写明挑选条件，不静默绿、不崩。变异用的悬空名都现造、先验不撞现有 id。
+class _NoAnchor(Exception):
+    pass
+
+
+_SV_SEEN = getattr(scene_structure_problems, "seen", set())
+_SV_BY = {s.get("id"): s for s in _scene_doc.get("scenes", []) if isinstance(s, dict)} if isinstance(_scene_doc, dict) else {}
+_SV_FALLBACK = next((k for k in SCENE_KINDS if not k[1]), None)
+_SV_DETAIL = next((k for k in SCENE_KINDS if "has" in k[1]), None)
+_SV_TAKEN = (set(_SV_BY) | set(SCENE_CTX["ports"]) | set(PLACEHOLDERS) | SCENE_CTX["remapped"] | SCENE_CTX["goods"]
+             | SCENE_CTX["discoveries"] | SCENE_CTX["code_flags"])
+
+
+def _sv_fresh(base):
+    """现造一个不撞任何现有 id / 港 / 占位 / 港卡 / 货 / 发现 / 旗标的名字（也不以设施后缀拼回现有港 / 幕）。"""
+    n, name = 0, f"zz_mut_{base}"
+    while name in _SV_TAKEN or any(name.endswith(x) for x in FACILITY_SUFFIXES):
+        n += 1
+        name = f"zz_mut_{base}{n}"
+    return name
+
+
+def _sv_kind(s):
+    k = scene_kind(s, SCENE_KINDS)
+    return k[0] if k else None
+
+
+def _sv_live(s):
+    return not s.get("deprecated") and s.get("id") not in SCENE_ARCHIVE
+
+
+def _sv_pick(cond, pred):
+    """scenes.json 顺序里头一条 pred 为真的幕 id；没有即 _NoAnchor（带挑选条件）。"""
+    for s in _SV_BY.values():
+        try:
+            if pred(s):
+                return s["id"]
+        except (KeyError, IndexError, TypeError, AttributeError):
+            continue
+    raise _NoAnchor(f"scenes.json 找不到「{cond}」的幕")
+
+
+def _sv_first_dict(s, lst):
+    xs = s.get(lst)
+    return xs[0] if isinstance(xs, list) and xs and isinstance(xs[0], dict) else None
+
+
+def _sv_story():
+    """主锚：兜底形（剧情幕）、非 deprecated、不在归档、从真机入口可达、location 是字符串、choices[0] 的 next 指向非 deprecated 幕。"""
+    if _SV_FALLBACK is None:
+        raise _NoAnchor(f"{SCENE_FAMILY_MANIFEST} scenes kinds 没有 when 为 {{}} 的兜底形")
+    fb = _SV_FALLBACK[0]
+
+    def ok(s):
+        c = _sv_first_dict(s, "choices")
+        return (_sv_kind(s) == fb and _sv_live(s) and s["id"] in _SV_SEEN and isinstance(s.get("location"), str) and c is not None
+                and isinstance(c.get("next"), str) and c["next"] in _SV_BY and not _SV_BY[c["next"]].get("deprecated"))
+    return _sv_pick(f"兜底形 {fb}、非 deprecated、不在 SCENE_ARCHIVE、从入口可达、location 是字符串、choices[0] 的 next 指向非 deprecated 幕", ok)
+
+
+def _sv_req_field(req, kind_desc, exclude=("id",), typ=str):
+    fs = sorted(k for k in req if k not in exclude and SCENE_FIELD_TYPES.get(k) is typ)
+    if not fs:
+        raise _NoAnchor(f"{SCENE_FAMILY_MANIFEST} {kind_desc} 没有 {typ.__name__} 型的必填字段（id 除外）")
+    return fs[0]
+
+
+def _sv_sub(lst):
+    if lst not in SCENE_SUB_SHAPES:
+        raise _NoAnchor(f"{SCENE_FAMILY_MANIFEST} scenes 没有列表字段 {lst} 的子形")
+    return SCENE_SUB_SHAPES[lst]
+
+
+def _sv_has_list(lst):
+    return _sv_pick(f"{lst} 是非空列表、{lst}[0] 是对象", lambda s: _sv_first_dict(s, lst) is not None)
+
+
+def _sv_choice_eff(key, want_type=None):
+    """效果锚：头一条 choices[i].effects 已有 key（want_type 给了则按 SCENE_EFFECT_TYPES 找该型的首个键）的非 deprecated 幕 → (幕, i, 键)；
+    都没有则退到头一条 effects 是对象的非 deprecated 幕选项（照原样往里写这个键）。"""
+    fallback = None
+    for s in _SV_BY.values():
+        if s.get("deprecated") or not isinstance(s.get("choices"), list):
+            continue
+        for i, c in enumerate(s["choices"]):
+            eff = c.get("effects") if isinstance(c, dict) else None
+            if not isinstance(eff, dict):
+                continue
+            ks = [k for k in eff if SCENE_EFFECT_TYPES.get(k) is want_type] if want_type else ([key] if key in eff else [])
+            if ks:
+                return s["id"], i, ks[0]
+            if fallback is None and key:
+                fallback = (s["id"], i, key)
+    if fallback:
+        return fallback
+    what = f"效果键为 {want_type.__name__} 型" if want_type else f"effects 有 {key}，或 effects 是对象"
+    raise _NoAnchor(f"scenes.json 找不到「非 deprecated 幕的 choices[i]、{what}」的选项")
+
+
+def _sv_archived():
+    return _sv_pick("在 SCENE_ARCHIVE、非 deprecated", lambda s: s["id"] in SCENE_ARCHIVE and not s.get("deprecated"))
+
+
 def _sv_mut(fn, chapters=None):
     d = copy.deepcopy(_scene_doc)
     fn(d, {s["id"]: s for s in d["scenes"]})
     ctx = dict(SCENE_CTX, chapters=chapters) if chapters is not None else SCENE_CTX
     return scene_structure_problems(d, ctx)
+
+
 def _sv_ch(fn):
     c = copy.deepcopy(SCENE_CTX["chapters"])
     fn(c)
     return c
+
+
+# 每格：(类名, 造格) —— 造格现挑锚，返回 (改副本的 fn(d, b), 改过的 chapters 或 None, 须报出的字样)
+def _m_del_body():
+    a = _sv_story()
+    f = _sv_req_field(_SV_FALLBACK[2], f"兜底形 {_SV_FALLBACK[0]}")
+    return lambda d, b: b[a].pop(f), None, f"scenes.json {a} 缺必填字段 `{f}`"
+
+
+def _m_del_next():
+    a = _sv_story()
+    if "next" not in _sv_sub("choices")[0]:
+        raise _NoAnchor(f"{SCENE_FAMILY_MANIFEST} choice 子形的 next 不是必填")
+    return lambda d, b: b[a]["choices"][0].pop("next"), None, f"scenes.json {a}.choices[0] 缺必填字段 `next`"
+
+
+def _m_del_fac():
+    a = _sv_has_list("facilities")
+    f = _sv_req_field(_sv_sub("facilities")[0], "facility 子形")
+    return lambda d, b: b[a]["facilities"][0].pop(f), None, f"scenes.json {a}.facilities[0] 缺必填字段 `{f}`"
+
+
+def _m_del_result():
+    if _SV_DETAIL is None:
+        raise _NoAnchor(f"{SCENE_FAMILY_MANIFEST} scenes kinds 没有按 has 判的详情形")
+    k = _SV_DETAIL[1]["has"]
+    a = _sv_pick(f"形 {_SV_DETAIL[0]}（带 {k}）", lambda s: _sv_kind(s) == _SV_DETAIL[0])
+    return lambda d, b: b[a].pop(k), None, f"scenes.json {a} 缺必填字段"
+
+
+def _m_next_dangle():
+    a, bad = _sv_story(), _sv_fresh("next")
+    return lambda d, b: b[a]["choices"][0].update(next=bad), None, f"scenes.json {a}.choices[0].next `{bad}` 悬空"
+
+
+def _m_inv_next():
+    a, bad = _sv_has_list("investigations"), _sv_fresh("inv_next")
+    return lambda d, b: b[a]["investigations"][0].update(next=bad), None, f"scenes.json {a}.investigations[0].next `{bad}` 悬空"
+
+
+def _m_inv_id():
+    a, bad = _sv_has_list("investigations"), _sv_fresh("inv_id")
+    return lambda d, b: b[a]["investigations"][0].update(id=bad), None, f"scenes.json {a}.investigations[0].id `{bad}` 没有同名详情场"
+
+
+def _m_start():
+    st = _scene_doc.get("start_scene") if isinstance(_scene_doc, dict) else None
+    if not isinstance(st, str):
+        raise _NoAnchor("scenes.json 没有字符串 start_scene")
+    bad = _sv_fresh("start")
+    return lambda d, b: d.update(start_scene=bad), None, f"start_scene `{bad}` 悬空"
+
+
+def _m_chapters():
+    chs = SCENE_CTX["chapters"].get("chapters", [])
+    i = next((j for j, c in enumerate(chs) if isinstance(c, dict) and c.get("advance_scene")), None)
+    if i is None:
+        raise _NoAnchor("chapters.json 找不到「advance_scene 非空」的章")
+    bad = _sv_fresh("advance")
+    return lambda d, b: None, _sv_ch(lambda c: c["chapters"][i].update(advance_scene=bad)), f"`{bad}` 在 scenes.json 里不存在"
+
+
+def _m_fac_id():
+    a, bad = _sv_has_list("facilities"), _sv_fresh("city")
+    return lambda d, b: b[a]["facilities"][0].update(id=bad), None, f"scenes.json {a}.facilities[0].id `{bad}` 不是 Main.REMAPPED_FACILITIES"
+
+
+def _m_flag():
+    a = _sv_pick("幕上 require_any 是列表", lambda s: isinstance(s.get("require_any"), list))
+    bad = _sv_fresh("flag")
+    return lambda d, b: b[a]["require_any"].append(bad), None, f"scenes.json {a}.require_any 旗标 `{bad}` 没人写"
+
+
+def _m_cargo():
+    a, i, k = _sv_choice_eff("cargo")
+    bad = _sv_fresh("cargo")
+    return lambda d, b: b[a]["choices"][i]["effects"].update(cargo=[bad]), None, f"scenes.json {a}.choices[{i}].effects.cargo 有 goods.json 里没有的货"
+
+
+def _m_discovery():
+    a, i, k = _sv_choice_eff("discovery")
+    bad = _sv_fresh("discovery")
+    return lambda d, b: b[a]["choices"][i]["effects"].update(discovery=bad), None, f"scenes.json {a}.choices[{i}].effects.discovery `{bad}` 不是 discoveries.json"
+
+
+def _m_to_dep():
+    a = _sv_story()
+    dep = _sv_pick("deprecated: true", lambda s: s.get("deprecated") is True)
+    return lambda d, b: b[a]["choices"][0].update(next=dep), None, f"scenes.json {a}.choices[0].next `{dep}` 跳进了 deprecated 幕"
+
+
+def _m_int_str():
+    ints = sorted(k for k, t in SCENE_FIELD_TYPES.items() if t is int)
+    hit = [None]
+
+    def pred(s):
+        hit[0] = next((k for k in ints if k in s and _is_type(s[k], int)), None)
+        return hit[0] is not None
+    a = _sv_pick(f"幕上有 int 型字段（{' / '.join(ints) or '清单里没有 int 型字段'}）且值是 int", pred)
+    k = hit[0]
+    return lambda d, b: b[a].update({k: str(b[a][k])}), None, f"scenes.json {a}.{k} 类型应为 int"
+
+
+def _m_bool_int():
+    a, i, k = _sv_choice_eff(None, want_type=int)
+    return lambda d, b: b[a]["choices"][i]["effects"].update({k: True}), None, f"scenes.json {a}.choices[{i}].effects.{k} 类型应为 int"
+
+
+def _m_list_str():
+    a = _sv_story()
+    return lambda d, b: b[a].update(choices="x"), None, f"scenes.json {a}.choices 类型应为 list"
+
+
+def _m_typo():
+    a = _sv_story()
+    sreq, sopt = _sv_sub("choices")
+    typo = "nxet" if "nxet" not in sreq | sopt else _sv_fresh("key")
+    return lambda d, b: b[a]["choices"][0].update({typo: "x"}), None, f"scenes.json {a}.choices[0] 有形状外的字段 `{typo}`"
+
+
+def _m_location():
+    a = _sv_story()
+    bad = _sv_fresh(_SV_BY[a]["location"])
+    return lambda d, b: b[a].update(location=bad), None, f"scenes.json {a}.location = {bad!r} 不在册"
+
+
+def _m_chapter():
+    a = _sv_story()
+    ids = [int(c.get("id", 0)) for c in SCENE_CTX["chapters"].get("chapters", [])]
+    bad = f"chapter_{max(ids or [0]) + 5}"
+    return lambda d, b: b[a].update(chapter=bad), None, f"scenes.json {a}.chapter = {bad!r} 不在册"
+
+
+def _m_dup():
+    a = _sv_story()
+    return lambda d, b: d["scenes"].append(dict(b[a])), None, f"幕 id 重复：{a}"
+
+
+def _m_orphan():
+    a, oid = _sv_story(), _sv_fresh("orphan")
+
+    def fn(d, b):
+        o = copy.deepcopy(b[a])
+        o["id"] = oid
+        d["scenes"].append(o)
+    return fn, None, f"scenes.json {oid} 是孤儿"
+
+
+def _m_archive_back():
+    a, r = _sv_story(), _sv_archived()
+    return lambda d, b: b[a]["choices"][0].update(next=r), None, f"scenes.json {r} 在 SCENE_ARCHIVE 里却已接回入口"
+
+
+def _m_archive_gone():
+    r = _sv_archived()
+    return lambda d, b: d["scenes"].remove(b[r]), None, f"SCENE_ARCHIVE 里的 `{r}` 在 scenes.json 里不存在"
+
+
 _SV_MUTANTS = [
-    ("删必填 body", lambda d, b: b["merchant"].pop("body"), None, "merchant 缺必填字段 `body`"),
-    ("删选项 next", lambda d, b: b["merchant"]["choices"][0].pop("next"), None, "merchant.choices[0] 缺必填字段 `next`"),
-    ("删设施 subtitle", lambda d, b: b["quanzhou"]["facilities"][0].pop("subtitle"), None, "facilities[0] 缺必填字段 `subtitle`"),
-    ("删详情场 result", lambda d, b: b["customs_room"].pop("result"), None, "customs_room 缺必填字段"),
-    ("next 悬空", lambda d, b: b["merchant"]["choices"][0].update(next="merchant_x"), None, "`merchant_x` 悬空"),
-    ("调查项 next 悬空", lambda d, b: b["city_guild"]["investigations"][0].update(next="nowhere_x"), None, "`nowhere_x` 悬空"),
-    ("调查项 id 悬空", lambda d, b: b["city_guild"]["investigations"][0].update(id="ledger_x"), None, "`ledger_x` 没有同名详情场"),
-    ("start_scene 悬空", lambda d, b: d.update(start_scene="cg_title_x"), None, "start_scene `cg_title_x` 悬空"),
-    ("chapters 引用悬空", lambda d, b: None, _sv_ch(lambda c: c["chapters"][1].update(advance_scene="chapter3_x")), "`chapter3_x` 在 scenes.json 里不存在"),
-    ("设施 id 悬空", lambda d, b: b["xinghua"]["facilities"][0].update(id="city_dock"), None, "`city_dock` 不是 Main.REMAPPED_FACILITIES"),
-    ("旗标没人写", lambda d, b: b["chapter2_letter"]["require_any"].append("flag_x"), None, "旗标 `flag_x` 没人写"),
-    ("货 id 悬空", lambda d, b: b["merchant"]["choices"][0]["effects"].update(cargo=["porcelain_x"]), None, "goods.json 里没有的货"),
-    ("发现悬空", lambda d, b: b["island"]["choices"][0]["effects"].update(discovery="无名湾"), None, "`无名湾` 不是 discoveries.json"),
-    ("跳进 deprecated", lambda d, b: b["merchant"]["choices"][0].update(next="prologue_study"), None, "跳进了 deprecated 幕"),
-    ("类型错 int→str", lambda d, b: b["chapter3_gangshou"].update(require_chapter="3"), None, "require_chapter 类型应为 int"),
-    ("bool 冒充 int", lambda d, b: b["merchant"]["choices"][0]["effects"].update(money=True), None, "effects.money 类型应为 int"),
-    ("类型错 list→str", lambda d, b: b["merchant"].update(choices="x"), None, "merchant.choices 类型应为 list"),
-    ("键拼错", lambda d, b: b["merchant"]["choices"][0].update(nxet="dock"), None, "形状外的字段 `nxet`"),
-    ("枚举外 location", lambda d, b: b["merchant"].update(location="quanzhouu"), None, "location = 'quanzhouu' 不在册"),
-    ("枚举外 chapter", lambda d, b: b["merchant"].update(chapter="chapter_9"), None, "chapter = 'chapter_9' 不在册"),
-    ("id 重复", lambda d, b: d["scenes"].append(dict(b["merchant"])), None, "幕 id 重复：merchant"),
-    ("新孤儿", lambda d, b: d["scenes"].append({"id": "orphan_x", "title": "", "chapter": "chapter_1", "location": "quanzhou",
-                                               "body": "", "choices": [{"label": "续", "next": "quanzhou", "effects": {}}]}),
-     None, "orphan_x 是孤儿"),
-    ("归档场接回", lambda d, b: b["merchant"]["choices"][0].update(next="prologue_return_home"), None, "prologue_return_home 在 SCENE_ARCHIVE 里却已接回入口"),
-    ("归档名单悬空", lambda d, b: d["scenes"].remove(b["yahang"]), None, "`yahang` 在 scenes.json 里不存在"),
+    ("删幕必填字段", _m_del_body), ("删选项 next", _m_del_next), ("删设施必填", _m_del_fac), ("删详情场判形键", _m_del_result),
+    ("next 悬空", _m_next_dangle), ("调查项 next 悬空", _m_inv_next), ("调查项 id 悬空", _m_inv_id), ("start_scene 悬空", _m_start),
+    ("chapters 引用悬空", _m_chapters), ("设施 id 悬空", _m_fac_id), ("旗标没人写", _m_flag), ("货 id 悬空", _m_cargo),
+    ("发现悬空", _m_discovery), ("跳进 deprecated", _m_to_dep), ("类型错 int→str", _m_int_str), ("bool 冒充 int", _m_bool_int),
+    ("类型错 list→str", _m_list_str), ("键拼错", _m_typo), ("枚举外 location", _m_location), ("枚举外 chapter", _m_chapter),
+    ("id 重复", _m_dup), ("新孤儿", _m_orphan), ("归档场接回", _m_archive_back), ("归档名单悬空", _m_archive_gone),
 ]
-for tag, fn, chs, want in _SV_MUTANTS:
+SV_ANCHORS = {}
+for tag, build in _SV_MUTANTS:
+    try:
+        fn, chs, want = build()
+    except _NoAnchor as e:
+        check(False, f"scenes.json 结构门禁自证：「{tag}」锚落不上：{e}——数据里已没有这种形状的条目，照新数据改 _SV_MUTANTS 里这一格的挑选条件（不许删格了事）")
+        continue
+    SV_ANCHORS[tag] = want
     try:
         got = _sv_mut(fn, chs)
-    except (KeyError, IndexError, ValueError, AttributeError, StopIteration) as e:
-        check(False, f"scenes.json 结构门禁自证：「{tag}」套不上现数据（{e!r}）——样本幕 / 字段没了，先看上面的结构 FAIL，再改 _SV_MUTANTS")
+    except (KeyError, IndexError, ValueError, AttributeError, TypeError) as e:
+        check(False, f"scenes.json 结构门禁自证：「{tag}」锚挑到了、变异却套不上（{e!r}）——挑选条件与变异手法不一致，改 _SV_MUTANTS 这一格")
         continue
     check(any(want in m for m in got), f"scenes.json 结构门禁自证：「{tag}」后没报出「{want}」（实报 {got[:2]}）")
+if "--anchors" in sys.argv[1:]:  # 逐格打印本次挑到的锚与须报字样（查锚用；不带开关不打印）
+    for tag, want in SV_ANCHORS.items():
+        print(f"  自证锚 {tag}：须报「{want}」")
 
 
 # 形状单一来源自证（lane seq6）：改 data_family.json 的副本，本门禁须跟着认——形状只在清单里写一份，不许又在这里另起一张表

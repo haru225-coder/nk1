@@ -388,11 +388,14 @@ SUBCHECKS = [
                "与 check_data_family 同读一份（lane seq6）；另 6 类形状自证改清单副本（删可选键 / 改必填 / 删子形键 / 同名字段类型不一 / 类型写法坏 / 缺 scenes 那条），本门禁须跟着报。"
                "每次跑先在整份 scenes.json 上判结构（形状必填 / 形状外键 / 类型与在册取值 / 引用存在 / 从真机入口走不到的非 deprecated 幕须在 `SCENE_ARCHIVE`），"
                "再拿 24 类反向变异副本（删必填、next / 调查项 id / start_scene / chapters / 港卡 / 旗标 / 货 / 发现悬空、跳 deprecated、类型错、bool 冒充 int、"
-               "键拼错、枚举外、id 重复、新孤儿、归档场接回、归档名单悬空）逐类喂同一个 `scene_structure_problems`，每类须报出指定字样",
+               "键拼错、枚举外、id 重复、新孤儿、归档场接回、归档名单悬空）逐类喂同一个 `scene_structure_problems`，每类须报出指定字样；"
+               "每格的锚不写死幕 id，按清单形状从现数据里挑头一条合条件的幕 / 选项 / 章（如主锚 = 兜底形、非 deprecated、不在归档、从入口可达、choices[0] 指向非 deprecated 幕），"
+               "幕改名自己跟上，悬空名现造不撞现有 id（lane w19-g7）；`--anchors` 逐格打印本次挑到的锚与须报字样",
      "fail": "`FAIL: scenes.json <幕>… 缺必填字段 / 有形状外的字段 / 类型应为 / 不在册 / 悬空 / 没人写 / 是孤儿 / 却已接回入口` = 数据结构坏了（修数据，或新字段 / 新形状先登记进 tools/data_family.json 的 scenes kinds / shapes）；"
              "`FAIL: tools/data_family.json …读不了 / 没有 data/scenes.json 那条 / 类型写法 … 认不出 / 同名字段 … 各形类型不一` 与 `FAIL: scenes 形状单一来源自证：「X」…` = 形状清单坏了或本门禁又不读它了（lane seq6）；"
              "`FAIL: SCENE_ARCHIVE 只许减不许增` = 有人把新孤儿塞进归档名单（接入口，别登记）；"
-             "`FAIL: scenes.json 结构门禁自证：「X」后没报出…` / `…套不上现数据` = 某类检查失明，或样本幕改了名。都计入 verify_story_data 失败、退 1"},
+             "`FAIL: scenes.json 结构门禁自证：「X」后没报出…` = 某类检查失明；`…「X」锚落不上：…找不到「<挑选条件>」…` = 数据里已没有这种形状的条目（照新数据改 _SV_MUTANTS 这一格的挑选条件，不许删格）；"
+             "`…锚挑到了、变异却套不上` = 挑选条件与变异手法不一致（lane w19-g7）。都计入 verify_story_data 失败、退 1"},
     {"id": "compile 清单自检（inventory）", "parent": "compile", "lane": "ea4", "oneclick": True,
      "cmd": "godot --headless --path . -s res://tools/godot_compile_check.gd",
      "marks": ["inventory SCRIPTS == tracked *.gd", "ls-files", "INVENTORY_EXEMPT", "unlisted", "exempt-stale"],
