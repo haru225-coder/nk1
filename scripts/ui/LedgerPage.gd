@@ -311,7 +311,7 @@ static func update_panel(main: Control) -> void:
 			if Fleet.ship_crew(i) < Fleet.ship_crew_min(i):
 				crew_color = UiTheme.hex(UiTheme.CINNABAR)
 				crew_str += "　" + UiTheme.nobreak("缺 %d 人" % (Fleet.ship_crew_min(i) - Fleet.ship_crew(i)))
-			var sname := str(s.get("name", ""))
+			var sname := Fleet.display_name(i)
 			var tname := str(Fleet.ship_def(s.get("type", "")).get("name", ""))
 			var head := UiTheme.nobreak(sname)
 			if tname != "" and tname != sname:

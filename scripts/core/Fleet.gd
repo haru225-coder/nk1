@@ -128,6 +128,74 @@ func prize_name(base: String) -> String:
 	return "%s・%s" % [b, GameManager.cn_num(top + 1)]
 
 
+## 船屋购入的船起舟名（lane fx2）：两条福船（中）都叫「福船（中）」，船屋两枚「换上」钮分不清（todo「小毛病」）。
+## 舟名取法《宣和奉使高丽图经》神舟「鼎新利涉怀远康济」「循流安逸通济」「凌虚致远安济」与湄洲神女「顺济」庙额，
+## 按表序取船队里还没用的一个；表用尽时写「第某舟」。只管购入——夺船存名见 prize_name（V0928-10 待拍板，不在此定）。
+const HULL_NAMES := ["安济", "通济", "利涉", "怀远", "康济", "致远", "顺济", "永宁", "广利", "平波", "安流", "镇海"]
+
+
+func hull_name(_type_id: String = "") -> String:
+	var used := {}
+	for s in ships:
+		used[str(s.get("name", ""))] = true
+	for nm in HULL_NAMES:
+		if not used.has(nm):
+			return nm
+	var k := ships.size() + 1
+	while used.has("第%s舟" % GameManager.cn_num(k)):
+		k += 1
+	return "第%s舟" % GameManager.cn_num(k)
+
+
+## 上屏船名（只改显示、不改存档）：名字在船队里不撞就原样；撞名的（旧档两条「福船（中）」、夺来两条「快船」）
+## 按船队次序加「・甲」「・乙」…，跳过船队里已有的名字。越界返回空串。
+const DUP_MARKS := ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"]
+
+
+func display_name(i: int) -> String:
+	if i < 0 or i >= ships.size():
+		return ""
+	var nm := str(ships[i].get("name", ""))
+	var names := {}
+	var same: Array = []
+	for j in range(ships.size()):
+		var nj := str(ships[j].get("name", ""))
+		names[nj] = true
+		if nj == nm:
+			same.append(j)
+	if same.size() <= 1:
+		return nm
+	var k := 0
+	for j in same:
+		var mark := ""
+		while true:
+			mark = "%s・%s" % [nm, DUP_MARKS[k] if k < DUP_MARKS.size() else GameManager.cn_num(k + 1)]
+			k += 1
+			if not names.has(mark):
+				break
+		if j == i:
+			return mark
+	return nm
+
+
+## 船屋坞位题头与「换上」钮用：display_name 里看不出船型（购入的舟名「安济」）时后缀「　船型」；
+## 「福船（中）・甲」「无名小艍」「快船」这类名里已带船型的不重复写。
+func ship_label(i: int) -> String:
+	var nm := display_name(i)
+	if nm == "":
+		return ""
+	var tname := str(ship_def(str(ships[i].get("type", ""))).get("name", ""))
+	var stem := tname
+	var paren := stem.find("（")
+	if paren > 0:
+		stem = stem.substr(0, paren)
+	if stem.length() > 2 and stem.ends_with("船"):
+		stem = stem.substr(0, stem.length() - 1)
+	if tname == "" or nm.contains(stem):
+		return nm
+	return "%s　%s" % [nm, tname]
+
+
 func flagship() -> Dictionary:
 	return ships[0] if not ships.is_empty() else {}
 
@@ -451,7 +519,7 @@ func crew_shortfall() -> Array:
 		if ship_crew(i) < ship_crew_min(i):
 			bad.append({
 				"index": i,
-				"name": ships[i].get("name", ""),
+				"name": display_name(i),
 				"crew": ship_crew(i),
 				"crew_min": ship_crew_min(i),
 			})

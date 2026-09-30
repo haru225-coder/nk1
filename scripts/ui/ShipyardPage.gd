@@ -44,11 +44,11 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 		main._slip_title(empty, "坞位", "眼下没有船")
 	else:
 		var hull: Dictionary = Fleet.ships[on]
-		var sname := str(hull.get("name", "船"))
+		var sname := Fleet.display_name(on)
 		var slv := Fleet.sail_level(on)
 		var alv := Fleet.armor_level(on)
 		var berth: VBoxContainer = main._slip_body()
-		main._slip_title(berth, "坞位　%s" % sname, "帆　%s　甲　%s" % [main._fit_rank(slv), main._fit_rank(alv)])
+		main._slip_title(berth, "坞位　%s" % Fleet.ship_label(on), "帆　%s　甲　%s" % [main._fit_rank(slv), main._fit_rank(alv)])
 		main._slip_note(berth, "水手 %d / %d　耐久 %d / %d　载 %d 料" % [
 			Fleet.ship_crew(on),
 			Fleet.ship_crew_max(on),
@@ -95,8 +95,8 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 		if others.size() > 0:
 			var swap_row: HFlowContainer = main._slip_row(berth)
 			for idx in others:
-				var other: Dictionary = Fleet.ships[idx]
-				main._slip_chip(swap_row, "换上　%s" % str(other.get("name", "船")), main._on_berth_switch.bind(int(idx)))
+				# 同型船撞名时钮上也分得清（lane fx2）：舟名带船型，同名的按次序加「・甲」「・乙」
+				main._slip_chip(swap_row, "换上　%s" % Fleet.ship_label(int(idx)), main._on_berth_switch.bind(int(idx)))
 
 	var grain_price := Economy.buy_price(port_id, "grain") if Economy.is_traded(port_id, "grain") else 12
 	var water_price := 1
@@ -191,8 +191,7 @@ static func on_berth_switch(main: Control, ship_index: int) -> void:
 	if on == GameState.berth_index:
 		return
 	GameState.berth_index = on
-	var hull: Dictionary = Fleet.ships[on]
-	main.log_msg("把「%s」拖上坞位。帆和甲对着这一艘。" % str(hull.get("name", "船")))
+	main.log_msg("把「%s」拖上坞位。帆和甲对着这一艘。" % Fleet.display_name(on))
 	await main._yard_success_transition("换坞")
 
 
@@ -240,8 +239,10 @@ static func on_buy_ship(main: Control, type_id: String, price: int) -> void:
 		return
 	if GameState.spend_money(price):
 		main._upgrade_busy = true
-		Fleet.add_ship(type_id)
-		main.log_msg("买下一条%s，泊在坞外。水手未齐。" % Fleet.ship_def(type_id).get("name", "船"))
+		# 购入起舟名（lane fx2），不再落型名：两条同型都叫「福船（中）」时「换上」钮分不清
+		var hull_nm: String = Fleet.hull_name(type_id)
+		Fleet.add_ship(type_id, hull_nm)
+		main.log_msg("买下一条%s，题名「%s」，泊在坞外。水手未齐。" % [Fleet.ship_def(type_id).get("name", "船"), hull_nm])
 		await main._yard_success_transition("购入")
 		main._upgrade_busy = false
 	else:
@@ -265,8 +266,7 @@ static func on_hire_candidate(main: Control, crew_id: String) -> void:
 static func on_hire_crew(main: Control, ship_index: int, hire_n: int, hire_cost: int) -> void:
 	if GameState.spend_money(hire_cost):
 		var got: int = Fleet.hire_crew(hire_n, ship_index)
-		var s: Dictionary = Fleet.ships[ship_index]
-		main.log_msg("码头上雇了 %d 人，上了「%s」。" % [got, s.get("name", "")])
+		main.log_msg("码头上雇了 %d 人，上了「%s」。" % [got, Fleet.display_name(ship_index)])
 	else:
 		main.log_msg("【钱不够】码头上没人肯赊着上船。")
 	main.load_scene(main.current_scene_id)

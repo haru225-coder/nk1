@@ -763,7 +763,58 @@ func _check_pirate_boat(fails: Array) -> void:
 	var got: Dictionary = ships[ships.size() - 1] if ships.size() > n0 else {}
 	_check(ok and str(got.get("type", "")) == "pirate_boat" and str(got.get("name", "")) == "快船",
 		"夺船按 ship_type=pirate_boat 调 Fleet.add_ship 能入列，船名「快船」", fails)
+	_fleet_dup_names(fleet, fails)
 	fleet.set("ships", saved)
+
+
+## lane fx2：同型船同名，船屋「换上」钮分不清（todo「小毛病」）。旧档 / 直调 add_ship 不给名的两条福船（中）存名照旧同名，
+## 上屏 display_name / ship_label 两两不同且存名不改；购入起名 hull_name 两次不同、不撞船队里已有的名；存档 round-trip 后仍去重。
+## 夺来的两条「快船」只在显示层去重，存名仍是「快船」（V0928-10 夺船命名待拍板，不在此定）。
+func _fleet_dup_names(fleet: Node, fails: Array) -> void:
+	fleet.set("ships", [])
+	fleet.call("add_ship", "sampan", "无名小艍")
+	fleet.call("add_ship", "fu_ship_medium")
+	fleet.call("add_ship", "fu_ship_medium")
+	var rt: Dictionary = JSON.parse_string(JSON.stringify(fleet.call("to_dict")))
+	fleet.call("from_dict", rt)
+	var ships: Array = fleet.get("ships")
+	var stored := [str(ships[1].get("name", "")), str(ships[2].get("name", ""))]
+	var shown := [str(fleet.call("display_name", 1)), str(fleet.call("display_name", 2))]
+	var labels := [str(fleet.call("ship_label", 1)), str(fleet.call("ship_label", 2))]
+	_check(stored == ["福船（中）", "福船（中）"], "旧档两条同型福船读回存名不改（得 %s）" % [stored], fails)
+	_check(shown == ["福船（中）・甲", "福船（中）・乙"] and labels == shown,
+		"旧档同名两条上屏去重「福船（中）・甲」「福船（中）・乙」（得 %s / %s）" % [shown, labels], fails)
+	_check(str(fleet.call("display_name", 0)) == "无名小艍" and str(fleet.call("ship_label", 0)) == "无名小艍",
+		"不撞名的船上屏照旧（无名小艍，名里带船型不再后缀）", fails)
+	var n1 := str(fleet.call("hull_name", "fu_ship_medium"))
+	fleet.call("add_ship", "fu_ship_medium", n1)
+	var n2 := str(fleet.call("hull_name", "fu_ship_medium"))
+	fleet.call("add_ship", "fu_ship_medium", n2)
+	ships = fleet.get("ships")
+	var all_names := {}
+	for i in ships.size():
+		all_names[str(fleet.call("display_name", i))] = true
+	_check(n1 != "" and n2 != "" and n1 != n2 and not n1.contains("福船") and not n1.contains("・")
+		and all_names.size() == ships.size(),
+		"购入起舟名两次不同、不带序号、上屏五条两两不同（%s / %s，%s）" % [n1, n2, all_names.keys()], fails)
+	_check(str(fleet.call("ship_label", 3)) == "%s　福船（中）" % n1 and str(fleet.call("display_name", 3)) == n1,
+		"舟名的船屋题头 / 换上钮后缀船型（%s）" % fleet.call("ship_label", 3), fails)
+	fleet.set("ships", [])
+	fleet.call("add_ship", "fu_ship_medium", "快船")
+	fleet.call("add_ship", "pirate_boat", "快船")
+	fleet.call("add_ship", "pirate_boat", "快船")
+	ships = fleet.get("ships")
+	_check(str(ships[1].get("name", "")) == "快船" and str(ships[2].get("name", "")) == "快船"
+		and str(fleet.call("display_name", 1)) != str(fleet.call("display_name", 2))
+		and str(fleet.call("display_name", 0)) != str(fleet.call("display_name", 1)),
+		"夺来两条快船存名不改、上屏去重（%s / %s / %s）" % [fleet.call("display_name", 0), fleet.call("display_name", 1), fleet.call("display_name", 2)], fails)
+	ships[1]["crew"] = 0
+	ships[2]["crew"] = 0
+	var short: Array = fleet.call("crew_shortfall")
+	var short_names := {}
+	for e in short:
+		short_names[str(e.get("name", ""))] = true
+	_check(short.size() == 2 and short_names.size() == 2, "出海缺员提示按上屏名，同名不混（%s）" % [short_names.keys()], fails)
 
 
 ## 船图契约的期望值：assets/ship_<id>.png 在库就是它，不在是 fallback。与 CombatFx.ship_sprite_path 同规则的独立写法，

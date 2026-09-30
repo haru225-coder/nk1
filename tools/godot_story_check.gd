@@ -1278,10 +1278,10 @@ func _v0928_crew_check(main: Node) -> void:
 	var ledger0 := sl0.get_parsed_text().replace("⁠", "").replace(" ", " ") if sl0 != null else ""
 	var dup_rows := 0
 	for r in ledger0.split("\n"):
-		if r.begins_with("　快船　"):
+		if r.begins_with("　快船・") and r.contains("　快船　"):  # lane fx2：存名仍「快船」，上屏同名按次序加「・甲」「・乙」
 			dup_rows += 1
-	_check(dup_rows == foes.size(),
-		"同名夺船不并行：船籍簿逐船各开一行（%d 行「快船」，不并成一行）" % dup_rows)
+	_check(dup_rows == foes.size() and ledger0.find("　快船・甲　快船　") >= 0 and ledger0.find("　快船・乙　快船　") >= 0,
+		"同名夺船不并行：船籍簿逐船各开一行、上屏分得清（%d 行「快船・甲 / 乙　快船」，不并成一行）" % dup_rows)
 	var notice: Label = wm.get("_notice")
 	var last_name: String = want_names[-1] if not want_names.is_empty() else "快船"
 	_check(notice != null and notice.text.find(last_name) >= 0, "headless 题签起不来：浮字兜底写夺来的船名「%s」（%s）" % [last_name, notice.text if notice != null else "无浮字"])

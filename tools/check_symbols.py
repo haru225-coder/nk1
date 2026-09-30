@@ -2445,6 +2445,29 @@ else:
     print("  ✗ 坞位一艘未接上")
     problems.append("坞位一艘未接上")
 
+# lane fx2：同型船同名（两条「福船（中）」），船屋两枚「换上」钮分不清。购入起舟名，上屏按 Fleet.display_name / ship_label 去重；
+# 存档不动（from_dict 不改名）。夺船存名（WorldMap 传 enemy.ship_name）不在此定——V0928-10 待拍板。
+fleet_src_fx2 = open(os.path.join(SCRIPTS, "core", "Fleet.gd"), encoding="utf-8").read()
+fx2_from = _func_body(fleet_src_fx2, "from_dict")
+fx2_buy = _func_body(main_src, "_on_buy_ship")
+fx2_hire = _func_body(main_src, "_on_hire_crew")
+fx2_short = _func_body(fleet_src_fx2, "crew_shortfall")
+if (
+    _has_func(fleet_src_fx2, "hull_name") and _has_func(fleet_src_fx2, "display_name") and _has_func(fleet_src_fx2, "ship_label")
+    and '"换上　%s" % Fleet.ship_label(' in yard_fn
+    and '"坞位　%s" % Fleet.ship_label(' in yard_fn
+    and 'str(other.get("name"' not in yard_fn
+    and _calls(fx2_buy, "Fleet.hull_name") and "Fleet.add_ship(type_id, hull_nm)" in fx2_buy
+    and "Fleet.add_ship(type_id)\n" not in fx2_buy
+    and _calls(switch_fn, "Fleet.display_name") and _calls(fx2_hire, "Fleet.display_name")
+    and "display_name(i)" in fx2_short
+    and "display_name" not in fx2_from and "hull_name" not in fx2_from  # NF: Fleet.display_name
+):
+    print("  ✓ 同型船同名：购入起舟名、船屋坞位 / 换上钮 / 日志按上屏名去重，存档不改名（lane fx2）")
+else:
+    print("  ✗ 同型船同名去重未接上（lane fx2：hull_name / display_name / ship_label）")
+    problems.append("同型船同名去重未接上")
+
 # Lane V：船屋成功题签（修船／购入／升帆／升甲／换坞）走 UiTransition.drydock_*；失败不演
 ut_src_yard = open(os.path.join(SCRIPTS, "ui", "UiTransition.gd"), encoding="utf-8").read()
 repair_fn = _func_body(main_src, "_on_repair_hull")
@@ -4536,8 +4559,8 @@ NAMED_FUNCS = {
         "invest", "invest_cost", "invest_edge", "investment_level", "price_at_rate",
     ),
     "scripts/core/Fleet.gd": (
-        "armor_damage_reduction", "captain_power", "clear_cargo", "damage_each_ship", "damage_fleet",
-        "hire_crew", "lose_cargo_ratio", "lose_crew_random", "mutiny_bribe_cost", "mutiny_ready",
+        "add_ship", "armor_damage_reduction", "captain_power", "clear_cargo", "damage_each_ship", "damage_fleet",
+        "display_name", "hire_crew", "hull_name", "lose_cargo_ratio", "lose_crew_random", "mutiny_bribe_cost", "mutiny_ready",
         "resolve_mutiny", "ship_crew", "ship_crew_max", "ship_crew_min", "ship_crew_room", "total_durability",
         "upgrade_armor", "upgrade_sail",
     ),

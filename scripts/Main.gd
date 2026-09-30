@@ -1372,9 +1372,9 @@ func _setup_market(port_id: String) -> void:
 		sel.add_child(lbl)
 		for i in range(Fleet.ships.size()):
 			var idx := int(i)
-			var s: Dictionary = Fleet.ships[idx]
+			var sname := Fleet.display_name(idx)
 			var chip := Button.new()
-			chip.text = "%s　空 %d" % [s.get("name", "船"), int(Fleet.ship_free_capacity(idx))]
+			chip.text = "%s　空 %d" % [sname, int(Fleet.ship_free_capacity(idx))]
 			chip.pressed.connect(_select_market_ship.bind(idx))
 			sel.add_child(chip)
 			UiTheme.style_chip(chip, idx == _market_ship)
