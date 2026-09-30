@@ -488,6 +488,7 @@ func _process(_delta: float) -> bool:
 		return false
 	_route_pending = false
 	_route_check()
+	_script_error_check()
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	GateReport.finish("godot_story_check", 1 if _fails > 0 else 0, "STORY_CHECK SUMMARY fails=%d" % _fails)
 	quit(1 if _fails > 0 else 0)
@@ -3089,3 +3090,47 @@ func _v0928_siege_caps(probe: Node, caps: Array) -> String:
 		if typeof(c) == TYPE_DICTIONARY and bool(probe.call("_caption_on", c)):
 			out.append(str((c as Dictionary).get("text", "")))
 	return "／".join(out)
+
+
+# ══ SCRIPT ERROR / Parse Error 判红（lane w19-g11）══════════════════════════
+## 运行中出 SCRIPT ERROR（含 Parse Error / Compile Error）也算失败：原先被依赖脚本解析失败、检查函数中途报错跳出，
+## 那一段断言整段没跑、fails 不涨，退出码照样 0（实测 BoardingStage.gd 坏一行：Parse Error 7 条、OK 483 → 440、fails=0）。
+## 计数器在 _init 挂上（早于 _initialize 与首帧抵港路由），_process 收尾调 _script_error_check 判。
+var _script_errs: _ScriptErrTally = null
+
+
+## 只数 SCRIPT ERROR 类（引擎把 Parse Error / Compile Error / 运行期脚本报错都记成这一类）；ERROR / WARNING 不计——
+## 基线收尾时的「Lambda capture … was freed」与退出时资源泄漏都是 ERROR 类，且在 SUMMARY 之后，不归本门禁判。
+class _ScriptErrTally extends Logger:
+	var lines: Array = []
+	var _mutex := Mutex.new()
+
+	func _log_error(_function: String, file: String, line: int, code: String, rationale: String,
+			_editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		if error_type != ERROR_TYPE_SCRIPT:
+			return
+		_mutex.lock()
+		lines.append("%s（%s:%d）" % [rationale if rationale != "" else code, file, line])
+		_mutex.unlock()
+
+	func _log_message(_message: String, _error: bool) -> void:
+		pass
+
+
+func _init() -> void:
+	_script_errs = _ScriptErrTally.new()
+	OS.add_logger(_script_errs)
+
+
+## 收尾前：本进程跑到这里有没有 SCRIPT ERROR / Parse Error（lane w19-g11）。先自证计数器只认脚本类：
+## 喂一条假 SCRIPT 类、一条假 ERROR 类、一条假 WARNING 类给一只新计数器，须恰数到 1 条；再判真计数为 0。
+func _script_error_check() -> void:
+	var probe := _ScriptErrTally.new()
+	probe._log_error("f", "res://x.gd", 1, "", "自证 SCRIPT", false, Logger.ERROR_TYPE_SCRIPT, [])
+	probe._log_error("f", "res://x.gd", 2, "", "自证 ERROR", false, Logger.ERROR_TYPE_ERROR, [])
+	probe._log_error("f", "res://x.gd", 3, "", "自证 WARNING", false, Logger.ERROR_TYPE_WARNING, [])
+	_check(probe.lines.size() == 1, "SCRIPT ERROR 计数器自证：只数脚本类（喂 SCRIPT / ERROR / WARNING 各一，数到 %d）" % probe.lines.size())
+	OS.remove_logger(_script_errs)
+	var errs: Array = _script_errs.lines
+	_check(errs.is_empty(), "运行中无 SCRIPT ERROR / Parse Error（%d 条%s）" % [errs.size(),
+		"" if errs.is_empty() else "，首条：" + str(errs[0])])

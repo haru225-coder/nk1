@@ -705,10 +705,26 @@ def _l1b_scan_file(rel, src, field_files, listed):
 
 
 _l1b_skip = {".git", ".godot", "__pycache__"}
-_l1b_files = {}
-for p in pathlib.Path(ROOT).rglob("*"):
-    if p.suffix in (".gd", ".py", ".tscn", ".tres") and p.is_file() and not (_l1b_skip & set(p.relative_to(ROOT).parts)):
-        _l1b_files[p.relative_to(ROOT).as_posix()] = p.read_text(encoding="utf-8", errors="replace")
+_L1B_SUFFIX = (".gd", ".py", ".tscn", ".tres")
+
+
+def _l1b_list(root):
+    """L1B 扫描集：只认 git 已跟踪（含已暂存）的文件，工作树里未跟踪 / 被忽略的 tools/verify_* 探针不扫
+    （lane w19-g11：原先 rglob 全盘，放着探针就 FAIL，各线只能跑门禁前挪开）。已跟踪却在工作树删了的跳过。
+    没 git（不在仓库 / PATH 里没有）时退回扫盘并印一行 ⚠，退出码不因此变。"""
+    import subprocess
+    try:
+        out = subprocess.run(["git", "ls-files", "-z"], cwd=root, stdout=subprocess.PIPE,
+                             stderr=subprocess.DEVNULL, check=True).stdout.decode("utf-8")
+        rels = [r for r in out.split("\0") if r]
+    except (OSError, subprocess.CalledProcessError):
+        print("⚠ L1B：取不到 git ls-files，退回扫盘（未跟踪的探针也会扫到）")
+        rels = [p.relative_to(root).as_posix() for p in pathlib.Path(root).rglob("*")]
+    return sorted(r for r in rels if r.endswith(_L1B_SUFFIX) and not (_l1b_skip & set(r.split("/")))
+                  and os.path.isfile(os.path.join(root, r)))
+
+
+_l1b_files = {rel: pathlib.Path(ROOT, rel).read_text(encoding="utf-8", errors="replace") for rel in _l1b_list(ROOT)}
 L1B_FIELD_FILES = set(L1_UI_FILES) | {r for r, v in L1B_READERS.items() if v[1] == "runtime"}
 for rel in sorted(L1B_READERS):
     check(rel in _l1b_files, f"L1B 读取入口 {rel} 不见了：改了路径须同步 L1B_READERS")
