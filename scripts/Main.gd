@@ -4387,7 +4387,7 @@ func _siege_fall_signoff() -> String:
 func _siege_lin_hua() -> void:
 	_enter_panel_mode()
 	scene_title.text = "兴化・城头"
-	# 当面见过他：人物志里记为已识（没雇过他的士人线玩家也一样；会话内记号，同酒馆见卡）
+	# 当面见过他：人物志里记为已识（没雇过他的士人线玩家也一样；记进 GameState.met_ids 随存档，同酒馆见卡）
 	_CHAR_ART.note_met("lin_hua")
 	var known := "lin_hua" in GameState.crew_history
 	body_text.text = "部将林华上来请命：「大人，元兵在江口。我带五十人出去看看虚实。」"

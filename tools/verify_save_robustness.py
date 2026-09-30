@@ -10,6 +10,8 @@
   SV 结构版本（lane sv）：save_schema 缺省为 v1；低于本版走 _migrate_vN_to_vN+1 链且链不断档，
      load_game 迁完回写并留原件 <档名>.v<N>；高于本版（或旧头 version 过新）判 future，
      明确拒读、不退 .bak；save_schema 非正整数按坏档退 .bak。
+  FX6 人物志已识（lane fx6）：save_schema v3 起 state.met_ids 入档；给了却不是数组即判坏档，
+     迁移链末级（v2→v3）摘掉必红；「新版档」fixture 取 SAVE_SCHEMA + 1，不写死。
 
 做法：从 SaveLoad.gd 抽取守卫、体检规则与调用顺序；从四个内核单例与 GameState 的
 from_dict 抽取强类型赋值（Godot 4.6 实测：数值/布尔互转可行，Dictionary/Array/String
@@ -575,6 +577,9 @@ YEAR_P, YEAR_B = 1256, 1255
 
 
 CUR_SCHEMA = 2  # fixture 里「本版档」的结构号；SAVE_SCHEMA 再升时这些档照样走迁移，仍须读得通
+# 「刚好新一版」的结构号：按库里 SaveLoad.gd 的 SAVE_SCHEMA + 1 取（lane fx6 升 v3 后原写死的 3 成了本版档）；
+# --source 查旧版时它仍高于旧版的 SAVE_SCHEMA，照样是新版档。
+NEXT_SCHEMA = (_const_int(open(SAVELOAD, encoding="utf-8").read(), "SAVE_SCHEMA", CUR_SCHEMA) or CUR_SCHEMA) + 1
 
 
 def good(label=LBL_P, year=YEAR_P):
@@ -619,6 +624,8 @@ def bad_cases():
         ("state.money 字符串", "state", {"money": "千贯"}),
         ("state.last_port 数字", "state", {"last_port": 3}),
         ("state.visited_ports 对象", "state", {"visited_ports": {}}),
+        ("state.met_ids 字符串（lane fx6）", "state", {"met_ids": "林华"}),
+        ("state.met_ids 对象（lane fx6）", "state", {"met_ids": {"lin_hua": True}}),
         ("state.has_customs_permit 字符串", "state", {"has_customs_permit": "有"}),
     )
     for name, part, val in structural:
@@ -666,8 +673,8 @@ SLOT_CASES = (
     # lane sv：新版档明确拒读，不退副抄
     ("正本版本过新+副抄",  _dump({**good(), "version": 99}), _dump(good(LBL_B, YEAR_B)), True, "新版所记", False, "future"),
     ("正本结构过新+副抄",  _dump({**good(), SCHEMA_KEY: 99}), _dump(good(LBL_B, YEAR_B)), True, "新版所记", False, "future"),
-    ("正本缺失+副抄过新",  None, _dump({**good(LBL_B, YEAR_B), SCHEMA_KEY: 3}), True, "新版所记", False, "future"),
-    ("正本半截+副抄过新",  _dump(good())[:40], _dump({**good(LBL_B, YEAR_B), SCHEMA_KEY: 3}), True, "新版所记", False, "future"),
+    ("正本缺失+副抄过新",  None, _dump({**good(LBL_B, YEAR_B), SCHEMA_KEY: NEXT_SCHEMA}), True, "新版所记", False, "future"),
+    ("正本半截+副抄过新",  _dump(good())[:40], _dump({**good(LBL_B, YEAR_B), SCHEMA_KEY: NEXT_SCHEMA}), True, "新版所记", False, "future"),
     ("正本 v1+副抄",       _dump(v1()),              _dump(good(LBL_B, YEAR_B)), True, LBL_P, True, "primary"),
     ("正本坏+副抄 v1",     "{",                      _dump(v1(LBL_B, YEAR_B)), True, LBL_B, True, "bak"),
     ("两份皆坏",           "{",                      "not json",        True,  "卷页损了", False, "corrupt"),
@@ -853,6 +860,12 @@ def _comment(pattern):
                             count=1, flags=re.M)
 
 
+def _drop_last_migrate(s):
+    """摘掉 _migrate 里最末一级的 match 分支（v{SAVE_SCHEMA-1}→v{SAVE_SCHEMA}）；--source 查旧版时自动对到旧版的末级"""
+    hits = list(re.finditer(r'^\t\t\t\d+\s*:\s*\n\t\t\t\tout\s*=\s*_migrate_v\d+_to_v\d+\(out\)\n', s, re.M))
+    return s[:hits[-1].start()] + s[hits[-1].end():] if hits else s
+
+
 # 变异自检：每个变体模拟「兜底被注释掉 / 退回旧写法」，门禁都必须判红。
 MUTANTS = (
     ("_read 注释掉 _check_partitions 判坏",
@@ -900,7 +913,12 @@ MUTANTS = (
      lambda s: s.replace("if not _is_num(schema_raw) or int(schema_raw) < 1:", "if false:")),
     ("_inspect 不迁移", lambda s: s.replace("data = _migrate(data, schema)", "pass")),
     ("迁移链摘掉 v1→v2", lambda s: s.replace("\t\t\t1:\n\t\t\t\tout = _migrate_v1_to_v2(out)\n", "")),
-    ("SAVE_SCHEMA 升 3 却没挂迁移", lambda s: s.replace("const SAVE_SCHEMA := 2", "const SAVE_SCHEMA := 3")),
+    ("迁移链摘掉最末一级（lane fx6 起为 v2→v3）", lambda s: _drop_last_migrate(s)),
+    ("SAVE_SCHEMA 再升一版却没挂迁移",
+     lambda s: re.sub(r'^const SAVE_SCHEMA := (\d+)$', lambda mm: f"const SAVE_SCHEMA := {int(mm.group(1)) + 1}", s,
+                      count=1, flags=re.M)),
+    ("_check_partitions 不给 state.met_ids 判数组（lane fx6）",
+     lambda s: s.replace('"crew_history", "met_ids"])', '"crew_history"])')),
     ("load_game 不回写", lambda s: re.sub(r'(\n\t\t)_write_back_migrated\([^\n]*', r'\1pass', s, count=1)),
     ("回写不留原件",
      lambda s: s.replace("if not FileAccess.file_exists(keep) and DirAccess.copy_absolute(path, keep) != OK:", "if false:")),

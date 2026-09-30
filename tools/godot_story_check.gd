@@ -398,13 +398,26 @@ func _initialize() -> void:
 	GS.siege_add("troops", 150)
 	GS.ban_port("quanzhou", "1277-01")
 	GS.add_ledger_note("斩王刚中使")
+	# 人物志「已识」（lane fx6）：酒馆里看过画像、没雇的职事蔡七星，守城页当面见过的林华（没雇过他）——都随存档
+	var Art = load("res://scripts/ui/CharacterArt.gd")
+	var cai: Dictionary = GM.get_character("cai_qixing")
+	var wu: Dictionary = GM.get_character("wu_zhen")
+	Art.note_met("cai_qixing")
+	Art.note_met("lin_hua")
+	_check(not cai.is_empty() and not wu.is_empty() and Art.crew_id_of(cai) != "" and not Art.ever_hired(Art.crew_id_of(cai)),
+		"蔡七星是职事、此档没雇过（已识只能靠见过）")
 	var troops_before: int = GS.siege_get("troops")
 	_check(SL.save_game(9, "xinghua"), "守城中途可存档")
 	_check(SL.save_label(9).find("终") < 0, "未终局的档不带终局标记")
-	# 打乱现场
+	# 打乱现场：另一局里见过吴真、没见过蔡七星
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	Art.note_met("wu_zhen")
+	_check(not Art.is_known(cai) and Art.is_known(wu), "打乱现场：蔡七星未识、吴真已识")
 	_check(SL.load_game(9), "读回守城档")
+	_check(Art.is_known(cai) and GS.has_met("lin_hua") and not ("lin_hua" in GS.crew_history),
+		"读档复原人物志已识：酒馆见过没雇的蔡七星、守城页见过没雇过的林华（met_ids %s）" % [GS.met_ids])
+	_check(not Art.is_known(wu) and not GS.has_met("wu_zhen"), "读档后不串上一局的「见过」：吴真回到未识")
 	_check(Cal.year == 1276 and Cal.month == 11, "读档复原历法")
 	_check(GS.player_name == "陈文龙" and GS.identity == "scholar", "读档复原身份与姓名")
 	_check(GS.siege_open() and GS.siege_get("round") == 1, "读档复原城防轮次")
@@ -2437,10 +2450,10 @@ func _v0928_siege_check(main: Node) -> void:
 	_check(not main._log_lines.is_empty() and str(main._log_lines[0]) == "他愣了一下，说大人还记得。城头的人见你叫得出自家旧舵工的名字，士气 +5。",
 		"缆绳钮后的日志用「自家旧舵工」一句（%s）" % [main._log_lines[0] if not main._log_lines.is_empty() else ""])
 	_v0928_siege_scholar(Crw, fall_abs - 20)
-	Art.met.erase("lin_hua")
+	GS.met_ids.erase("lin_hua")
 	main.load_scene("xinghua")
 	main._siege_lin_hua()
-	_check(Art.met.has("lin_hua") and not ("lin_hua" in GS.crew_history), "没雇过林华：守城页当面见过即记为已识")
+	_check(GS.has_met("lin_hua") and not ("lin_hua" in GS.crew_history), "没雇过林华：守城页当面见过即记为已识（记进 GameState.met_ids，随存档）")
 	# 10. 海口不开守城页：给「入城」卡，点了进兴化城开守城页；守城内页「离开」回城里
 	_v0928_siege_scholar(Crw, fall_abs - 20)
 	GS.last_port = "xinghua_harbor"

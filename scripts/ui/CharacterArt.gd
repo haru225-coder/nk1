@@ -1,7 +1,7 @@
 extends RefCounted
 ## 人物系统的画与小件（characters 线）：立绘 / 缩略图 / 小头像、五维条、特技签、阵营签、品级点、小画框，
 ## 以及人物志的「已识」判定。数据一律经 GameManager（data/characters.json）。
-## 只作展示：不接任何玩法数值，不写存档（「见过」只记在本会话的静态表里）。
+## 只作展示：不接任何玩法数值；「见过」记在 GameState.met_ids（随存档，见 note_met）。
 ## 两套皮肤都能用：绢本走 assets/theme/tex 贴图与纸上墨色，夜潮走平面盒与潮光色（UiTheme.IS_JUANBEN 分支）。
 ## headless（假渲染器）下贴图取不到像素：缩略图直接回落原图，不报错。
 
@@ -22,8 +22,6 @@ const TIER_NAME := {
 const PROTAGONIST_ID := "chen_wenlong"
 const PROTAGONIST_DEATH_ENDINGS := ["忠肃"]
 
-## 本会话在见面页见过的人 {id: true}。不入存档：读档后靠进度、雇用记录与传闻重新推得。
-static var met: Dictionary = {}
 static var _thumbs: Dictionary = {}
 static var _box_tex: Dictionary = {}
 
@@ -371,20 +369,20 @@ static func attr_short(key: String, full: String) -> String:
 
 # ── 已识 ─────────────────────────────────────────────
 
+## 当面见过此人（见面页、酒馆看过画像、守城页）：记进 GameState.met_ids，随存档，读档后仍算已识。
 static func note_met(id: String) -> void:
-	if id != "":
-		met[id] = true
+	GameState.note_met(id)
 
 
-## 人物志里此人是否「已识」。全部由现有状态推得，不新增存档字段：
-##   主角恒识；职事（crew_id）须雇过（GameState.crew_history 或此刻在船）；
-##   其余：本会话见过、传闻里出现过（news_seen 的说话人或正文提到名字），或进度已到其最早出场的一段
+## 人物志里此人是否「已识」：
+##   主角恒识；见过的（GameState.met_ids，随存档）恒识；职事（crew_id）须雇过（GameState.crew_history 或此刻在船）；
+##   其余：传闻里出现过（news_seen 的说话人或正文提到名字），或进度已到其最早出场的一段
 ##   （chapters 0=序章开局即识，1=序章走完，2–4=第几章，5=终局 1275 年十二月起）。
 static func is_known(ch: Dictionary) -> bool:
 	var id := str(ch.get("id", ""))
 	if id == "":
 		return false
-	if str(ch.get("tier", "")) == "protagonist" or met.has(id):
+	if str(ch.get("tier", "")) == "protagonist" or GameState.has_met(id):
 		return true
 	var crew_id := crew_id_of(ch)
 	if crew_id != "":

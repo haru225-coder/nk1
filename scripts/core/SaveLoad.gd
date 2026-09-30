@@ -14,7 +14,7 @@ const SLOTS := 3
 ## 旧读档器认的头：旧版只拒 version > 3。结构兼容的改动只升 SAVE_SCHEMA，旧版仍能照读新档；
 ## 哪天结构真的不兼容，两者同升，让旧版也拒。
 const VERSION := 3
-const SAVE_SCHEMA := 2
+const SAVE_SCHEMA := 3
 const SCHEMA_KEY := "save_schema"
 ## Save-critical progression flags. Keep these names stable across UI/page remaps.
 const EXAM_FLAG := "exam_sat"
@@ -108,6 +108,7 @@ func _harden_state(raw: Dictionary) -> Dictionary:
 			found.append(did)
 	state["discoveries_found"] = found
 	state["discoveries_reported"] = reported
+	state["met_ids"] = _normalise_ids(state.get("met_ids", []))
 	return state
 
 
@@ -206,6 +207,8 @@ func _migrate(data: Dictionary, from_schema: int) -> Dictionary:
 		match v:
 			1:
 				out = _migrate_v1_to_v2(out)
+			2:
+				out = _migrate_v2_to_v3(out)
 			_:
 				push_error("存档迁移链缺 v%d → v%d" % [v, v + 1])
 				return {}
@@ -235,6 +238,40 @@ func _migrate_v1_to_v2(data: Dictionary) -> Dictionary:
 	# 历史最高钱数缺了就从当前钱数起算，与 from_dict 的缺省同口径
 	if not state.has("peak_money") and _is_num(state.get("money")):
 		state["peak_money"] = state["money"]
+	data["state"] = state
+	return data
+
+
+## v2 → v3：人物志「已识」入档（state.met_ids，见 GameState.met_ids）。v2 档没有这一键，按档里推得出的回填：
+## 曾雇 / 此刻在船的职事（state.crew_history、crew.hired 各条的 id → characters.json 人物 id）、
+## 守城页已当面见过林华（state.siege.lin_hua_sent 或旗 lin_hua_reminded）。
+## 推不出的（酒馆里看过没雇、见面页见过）不补，照旧按进度与传闻判；已有 met_ids 的不动。
+func _migrate_v2_to_v3(data: Dictionary) -> Dictionary:
+	var state = data.get("state", {})
+	if typeof(state) != TYPE_DICTIONARY or state.has("met_ids"):
+		return data
+	var crew_ids: Array = []
+	var hist = state.get("crew_history", [])
+	if typeof(hist) == TYPE_ARRAY:
+		crew_ids.append_array(hist)
+	var hired = _as_dict(data.get("crew", {})).get("hired", {})
+	if typeof(hired) == TYPE_DICTIONARY:
+		for c in hired.values():
+			if typeof(c) == TYPE_DICTIONARY:
+				crew_ids.append(c.get("id"))
+	var met: Array = []
+	for cid in crew_ids:
+		if typeof(cid) != TYPE_STRING or cid == "":
+			continue
+		var who := str(GameManager.character_for_crew(cid).get("id", ""))
+		if who != "" and not (who in met):
+			met.append(who)
+	var sent = _as_dict(state.get("siege", {})).get("lin_hua_sent", false)
+	var reminded = _as_dict(state.get("flags", {})).get("lin_hua_reminded", false)
+	var saw_lin: bool = (typeof(sent) == TYPE_BOOL and sent) or (typeof(reminded) == TYPE_BOOL and reminded)
+	if saw_lin and not ("lin_hua" in met):
+		met.append("lin_hua")
+	state["met_ids"] = met
 	data["state"] = state
 	return data
 
@@ -323,7 +360,7 @@ func _check_partitions(data: Dictionary) -> String:
 	# rumors / contract_ban 虽在赋值后判型，但强类型变量赋错型当场抛 SCRIPT ERROR，兜底来不及，须在此拦。
 	var state: Dictionary = _as_dict(data.get("state", {}))
 	why = _bad_fields(state, STATE_NUM_KEYS, ["era_routes", "port_bans", "siege", "rumors", "contract_ban"],
-			["ledger_notes", "visited_ports", "news_seen", "crew_history"])
+			["ledger_notes", "visited_ports", "news_seen", "crew_history", "met_ids"])
 	if why != "":
 		return "state." + why
 	why = _bad_entries(state)

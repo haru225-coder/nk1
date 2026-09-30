@@ -123,7 +123,7 @@ static func setup_hiring(main: Control, port_id: String) -> void:
 				for part in col.get_children():
 					if not (part is HBoxContainer):
 						(part as CanvasItem).modulate = Color(1, 1, 1, 0.55)
-		# 在酒馆里见过画像与五维的候选，人物志里记作已识（本会话，不入存档）
+		# 在酒馆里见过画像与五维的候选，人物志里记作已识（记进 GameState.met_ids，随存档）
 		main._CHAR_ART.note_met(str(cch.get("id", "")))
 		var foot: HBoxContainer = main._person_foot(card, "入伙 %d　月俸 %d" % [Crew.signing_fee(cid), int(c.get("wage", 0))])
 		var hire: Button = main._slip_chip(foot, "雇入", main._on_hire_candidate.bind(cid), true)

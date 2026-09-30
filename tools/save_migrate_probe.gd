@@ -4,6 +4,7 @@ extends SceneTree
 ## 只动存档位 95，不碰正式位 1..SLOTS；输出含 SCRIPT ERROR 即视为失败。
 ##   v1 老档（无 save_schema、缺后加的 state 字段）→ 读入成功、字段补齐、回写 v2、原件另存 .v1、副抄不动
 ##   未来档（save_schema / version 高于本版）→ 明确拒读、题签与脚注可读、不退副抄、文件不动
+##   v2 档（lane fx6，无 state.met_ids）→ 人物志「已识」按雇用记录 / 在船职事 / 守城见林华回填，推不出的留空；原件另存 .v2
 
 const SLOT := 95
 const OLD_LABEL := "景炎二年　泉州　800 钱"
@@ -51,7 +52,7 @@ func _run() -> void:
 	var st: Dictionary = after.get("state", {})
 	print("  [证据] 回写后正本 %s=%s state 键：%s" % [key, _int_str(after.get(key)), JSON.stringify(st.keys())])
 	_expect("回写后正本 %s" % key, _int_str(after.get(key)), str(cur))
-	for k in ["player_name", "identity", "hometown_tendency", "rumors", "contract_ban", "news_seen", "crew_history", "ended", "peak_money"]:
+	for k in ["player_name", "identity", "hometown_tendency", "rumors", "contract_ban", "news_seen", "crew_history", "ended", "peak_money", "met_ids"]:
 		_expect("回写后 state.%s 已补" % k, str(st.has(k)), "true")
 	_expect("回写后 state.flags 原样保留", JSON.stringify(st.get("flags")), JSON.stringify({"guild_quanzhou": true}))
 	_expect("回写后 label 原样保留", str(after.get("label")), OLD_LABEL)
@@ -118,6 +119,8 @@ func _run() -> void:
 	_expect("save_game 写出 %s" % key, _int_str(fresh.get(key)), str(cur))
 	_expect("本版档读回不生成 .v*", str(sl.call("load_game", SLOT)) + "/" + str(_any_versioned()), "true/false")
 
+	_met_backfill_cases()
+
 	_cleanup()
 	if fails == 0:
 		print("SAVE_MIGRATE_PROBE PASS")
@@ -125,6 +128,72 @@ func _run() -> void:
 	else:
 		print("SAVE_MIGRATE_PROBE FAIL fails=%d" % fails)
 		quit(1)
+
+
+## lane fx6：v2 → v3 人物志「已识」（state.met_ids）回填。v2 档没有这一键：
+## 曾雇（crew_history）、此刻在船（crew.hired 各条 id）的职事，守城页见过林华（siege.lin_hua_sent / 旗 lin_hua_reminded）补进去；
+## 推不出的（只在酒馆里看过、没雇）不补；已带 met_ids 的档不动。读档后 GameState.met_ids 即档里这一份（不串上一份）。
+func _met_backfill_cases() -> void:
+	var gs: Node = root.get_node("GameState")
+	var key := str(sl.get("SCHEMA_KEY"))
+	# 职事候选 wu_zhen / lin_awu 在 characters.json 里同名（sources.crew_id），回填出的就是人物 id
+	# 9a 雇过 wu_zhen（已辞）、lin_awu 在船、守城页已见林华 → 三人回填
+	_cleanup()
+	var d := _current(OLD_LABEL, 1276)
+	d[key] = 2
+	d["crew"] = {"hired": {"duogong": {"id": "lin_awu", "role": "duogong"}}, "unpaid_months": 0}
+	d["state"]["crew_history"] = ["wu_zhen", "lin_awu"]
+	d["state"]["siege"] = {"round": 3, "lin_hua_sent": true}
+	var v2_text := JSON.stringify(d, "\t")
+	_write_raw(_primary(), v2_text)
+	gs.call("from_dict", {"met_ids": ["chen_zan"]})
+	_expect("v2 无 met_ids load_game", str(sl.call("load_game", SLOT)), "true")
+	var got: Array = gs.get("met_ids")
+	print("  [证据] v2 回填后 GameState.met_ids=%s" % JSON.stringify(got))
+	_expect("v2 回填：雇过 / 在船 / 守城见过林华", JSON.stringify(got), JSON.stringify(["wu_zhen", "lin_awu", "lin_hua"]))
+	_expect("v2 读档后不串上一份的「见过」", str("chen_zan" in got), "false")
+	var after := _read_json(_primary())
+	_expect("v2 回写后 %s" % key, _int_str(after.get(key)), str(int(sl.get("SAVE_SCHEMA"))))
+	_expect("v2 回写后 state.met_ids 落盘", JSON.stringify(_as_dict(after.get("state")).get("met_ids")), JSON.stringify(["wu_zhen", "lin_awu", "lin_hua"]))
+	_expect("v2 原件另存 .v2 逐字节一致", str(_read_text(_primary() + ".v2") == v2_text), "true")
+	# 9b 只有旗 lin_hua_reminded（守城已了、siege 已清）→ 仍回填林华
+	_cleanup()
+	d = _current(OLD_LABEL, 1277)
+	d[key] = 2
+	d["state"]["flags"] = {"lin_hua_reminded": true}
+	_write_raw(_primary(), JSON.stringify(d, "\t"))
+	_expect("v2 旗 lin_hua_reminded load_game", str(sl.call("load_game", SLOT)), "true")
+	_expect("v2 旗 lin_hua_reminded → 回填林华", JSON.stringify(gs.get("met_ids")), JSON.stringify(["lin_hua"]))
+	# 9c 推不出（没雇过、siege 里林华未出、无旗）→ 留空，保持未识
+	_cleanup()
+	d = _current(OLD_LABEL, 1276)
+	d[key] = 2
+	d["state"]["siege"] = {"round": 1, "lin_hua_sent": false}
+	_write_raw(_primary(), JSON.stringify(d, "\t"))
+	gs.call("from_dict", {"met_ids": ["wu_zhen"]})
+	_expect("v2 推不出 load_game", str(sl.call("load_game", SLOT)), "true")
+	_expect("v2 推不出 → met_ids 为空", JSON.stringify(gs.get("met_ids")), "[]")
+	# 9d 本版档自带 met_ids（含酒馆里看过没雇的）→ 原样读回，不回填、不回写
+	_cleanup()
+	d = _current(OLD_LABEL, 1276)
+	d["state"]["met_ids"] = ["cai_qixing"]
+	d["state"]["crew_history"] = ["wu_zhen"]
+	var v3_text := JSON.stringify(d, "\t")
+	_write_raw(_primary(), v3_text)
+	_expect("本版档 met_ids load_game", str(sl.call("load_game", SLOT)), "true")
+	_expect("本版档 met_ids 原样读回（不因 crew_history 补人）", JSON.stringify(gs.get("met_ids")), JSON.stringify(["cai_qixing"]))
+	_expect("本版档读回正本不改写、不生成 .v*", "%s/%s" % [str(_read_text(_primary()) == v3_text), str(_any_versioned())], "true/false")
+	# 9e 存—读来回：本会话见过（note_met）→ save_game → 打乱 → load_game 仍在
+	_cleanup()
+	gs.call("from_dict", {})
+	gs.call("note_met", "cai_qixing")
+	gs.call("note_met", "cai_qixing")
+	_expect("note_met 去重", JSON.stringify(gs.get("met_ids")), JSON.stringify(["cai_qixing"]))
+	_expect("save_game（带 met_ids）", str(sl.call("save_game", SLOT, "quanzhou")), "true")
+	_expect("save_game 写出 state.met_ids", JSON.stringify(_as_dict(_read_json(_primary()).get("state")).get("met_ids")), JSON.stringify(["cai_qixing"]))
+	gs.call("from_dict", {"met_ids": ["wu_zhen"]})
+	_expect("存—读来回 load_game", str(sl.call("load_game", SLOT)), "true")
+	_expect("存—读来回 met_ids 复原", JSON.stringify(gs.get("met_ids")), JSON.stringify(["cai_qixing"]))
 
 
 func _future_case(name: String, patch: Dictionary, show_schema: bool) -> void:

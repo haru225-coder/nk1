@@ -589,6 +589,7 @@ L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
     "scripts/chars/CharRoster.gd": ({"api"}, "runtime", "人物名册"),
     "scripts/chars/CharsDemo.gd": ({"api"}, "runtime", "人物演示场"),
     "scripts/chars/CharsShoreOverlay.gd": ({"api"}, "runtime", "岸上人物叠层"),
+    "scripts/core/SaveLoad.gd": ({"api"}, "runtime", "存档迁移 v2→v3 回填人物志已识：职事候选 id → 人物 id（character_for_crew，只取 id；lane fx6）"),
     "tools/art/ShotTour.gd": ({"raw", "api"}, "dev", "美术巡检截图（开发工具，不进正式流程）"),
     "tools/art/ThemePreview.gd": ({"raw"}, "dev", "主题预览，编辑器下读 portrait_src 找原画（开发工具）"),
     "tools/art/portrait_svg/PortraitWall.gd": ({"raw"}, "dev", "立绘墙（开发工具）"),

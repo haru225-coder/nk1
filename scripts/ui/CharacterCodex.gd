@@ -1,7 +1,7 @@
 extends Control
 ## 人物志（characters 线）：全部人物的名册网格 + 单人详页。港口页底「人物志」、标题页「人物志」都能进。
 ## 一层盖在 Main 上的浮页：Esc / 返回键 / 鼠标后退键先退一页（详页 → 上一个详页 → 名册），名册页再按就合上。
-## 不入存档：筛选页签只记在本会话（static），「已识」由 CharacterArt.is_known() 从现有状态推得。
+## 不入存档：筛选页签只记在本会话（static），「已识」由 CharacterArt.is_known() 判（见过的人随存档，其余从现有状态推得）。
 ## 用法（Main）：var cx := CharacterCodex.new(); add_child(cx); cx.begin(focus_id)。focus_id 非空直接开此人详页。
 
 signal closed

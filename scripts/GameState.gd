@@ -1092,6 +1092,23 @@ func _fail_contract(reason: String) -> String:
 	return "【逾期】%s没能送到%s。牙行扣 %d 钱，名声 -1。" % [good_name, dest_name, fine]
 
 
+# ── 人物志「已识」 ────────────────────────────────────
+
+## 见过的人物 id（characters.json）：见面页见过、酒馆里看过画像的候选、守城页当面见过的林华。
+## 入存档（save_schema v3）；v2 及更早的档没有这一键，由 SaveLoad._migrate_v2_to_v3 按雇用记录与守城旗回填。
+## 人物志「已识」判定见 CharacterArt.is_known（此表之外仍按进度、雇用记录与传闻推）。
+var met_ids: Array = []
+
+
+func note_met(id: String) -> void:
+	if id != "" and not (id in met_ids):
+		met_ids.append(id)
+
+
+func has_met(id: String) -> bool:
+	return id in met_ids
+
+
 # ── 存档 ──────────────────────────────────────────────
 
 func to_dict() -> Dictionary:
@@ -1131,6 +1148,7 @@ func to_dict() -> Dictionary:
 		"era_routes": era_routes,
 		"era_profit": era_profit,
 		"crew_history": crew_history,
+		"met_ids": met_ids,
 		"port_bans": port_bans,
 		"siege": siege,
 		"ended": ended,
@@ -1186,6 +1204,7 @@ func from_dict(d: Dictionary) -> void:
 	era_routes = d.get("era_routes", {})
 	era_profit = int(d.get("era_profit", 0))
 	crew_history = d.get("crew_history", [])
+	met_ids = d.get("met_ids", [])
 	port_bans = d.get("port_bans", {})
 	siege = d.get("siege", {})
 	ended = str(d.get("ended", ""))
