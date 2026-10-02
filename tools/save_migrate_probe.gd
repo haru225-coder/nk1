@@ -5,6 +5,9 @@ extends SceneTree
 ##   v1 老档（无 save_schema、缺后加的 state 字段）→ 读入成功、字段补齐、回写本版（现 save_schema 3，经 v1→v2→v3 迁移链）、原件另存 .v1、副抄不动
 ##   未来档（save_schema / version 高于本版）→ 明确拒读、题签与脚注可读、不退副抄、文件不动
 ##   v2 档（lane fx6，无 state.met_ids）→ 人物志「已识」按雇用记录 / 在船职事 / 守城见林华回填，推不出的留空；原件另存 .v2
+## 关键字段过链不丢（lane w20-c9，存档迁移矩阵的断言档）：v1 / v2 老档沿迁移链读入后，船与水粮（fleet 原样过链，迁移不碰 fleet）、
+##   旗号（state.flags 原样保留，含玉湖事件标记 chen_zan_stake）、「已识」（v2 按档回填）逐档断言；v1 旗式样 chen_zan_stake + exam_sat_ch2 须真读进
+##   GameState.flags、v1 旗舰 cargo 逐字比对读回原样；v1 fleet 分区整个缺席为 v1 骨档真实边界——判好档、fleet 回缺省（高危档回归：别静默判坏，也别声称保住了船）。
 
 const SLOT := 95
 const OLD_LABEL := "景炎二年　泉州　800 钱"
@@ -58,13 +61,16 @@ func _run() -> void:
 	_expect("回写后 label 原样保留", str(after.get("label")), OLD_LABEL)
 	_expect("原件另存 %s.v1 存在" % _primary().get_file(), str(FileAccess.file_exists(_primary() + ".v1")), "true")
 	_expect("原件 .v1 与迁移前逐字节一致", str(_read_text(_primary() + ".v1") == v1_text), "true")
-	_expect("副抄 .bak 未动", str(_read_text(_bak()) == bak_text), "true")
 	_expect("无残留 .tmp", str(FileAccess.file_exists(_primary() + ".tmp")), "false")
 	# 再读一次：已是本版，不再迁，.v1 不被覆盖
 	var migrated_text := _read_text(_primary())
 	_expect("二次 load_game", str(sl.call("load_game", SLOT)), "true")
 	_expect("二次读后正本不再改写", str(_read_text(_primary()) == migrated_text), "true")
 	_expect("二次读后 .v1 仍是原件", str(_read_text(_primary() + ".v1") == v1_text), "true")
+	# 副抄在本例全程未动（位上正本可读时副抄只是冷备，不读不写）
+	_expect("副抄 .bak 全程未动", str(_read_text(_bak()) == bak_text), "true")
+	# 关键字段过链另起：K 系自管清理与铺档（含毁副抄位）
+	_keyfield_cases()
 
 	# ── 2 v1 老档连 state 分区都没有：迁移补出带缺省的 state ──
 	_cleanup()
@@ -225,6 +231,81 @@ func _future_case(name: String, patch: Dictionary, show_schema: bool) -> void:
 	_expect("未来档 %s 正本未动" % name, str(_read_text(_primary()) == prim_text), "true")
 	_expect("未来档 %s 副抄未动" % name, str(_read_text(_bak()) == bak_text), "true")
 	_expect("未来档 %s 未生成 .v*" % name, str(_any_versioned()), "false")
+
+
+## lane w20-c9（存档迁移矩阵）：老档过迁移链的关键字段留存。船 / 水粮（fleet 原样过链，两级迁移都只动 state）、
+## 旗号（state.flags 原样过链，迁移只补键不改值）、「已识」（v2 档按档回填，见 _met_backfill_cases）。
+## v1 档用玉湖事件标记 chen_zan_stake + 科举旗 exam_sat_ch2 当旗式样、带舱 flagship 当船式样；
+## fleet 分区整个缺席是 v1 骨档的真实边界：判好档、fleet 回缺省——断言「好档 + 落缺省」，防有人静默改判坏档、
+## 也防有人声称这种情况保住了船（高危档回归，见 docs/存档迁移矩阵.md）。
+func _keyfield_cases() -> void:
+	var gs: Node = root.get_node("GameState")
+	var fleet: Node = root.get_node("Fleet")
+	var key := str(sl.get("SCHEMA_KEY"))
+	# K1 v1 → 本版：旗号 + 发现录过链不丢，水粮读回
+	_cleanup()
+	var d1 := _v1(OLD_LABEL, 1256, 800)
+	d1["state"]["flags"] = {"chen_zan_stake": true, "exam_sat_ch2": true, "guild_quanzhou": true}
+	d1["state"]["discoveries_found"] = ["mulan_weir"]
+	d1["state"]["visited_ports"] = ["quanzhou", "xinghua"]
+	var d1_text := JSON.stringify(d1, "\t")
+	_write_raw(_primary(), d1_text)
+	gs.call("from_dict", {"flags": {"stale_flag": true}, "money": 1})
+	_expect("K1 v1 关键字段 load_game", str(sl.call("load_game", SLOT)), "true")
+	_expect("K1 玉湖事件标记过链（chen_zan_stake）", str(gs.call("has_flag", "chen_zan_stake")), "true")
+	_expect("K1 科考旗过链（exam_sat_ch2）", str(gs.call("has_flag", "exam_sat_ch2")), "true")
+	_expect("K1 行会旗过链（guild_quanzhou）", str(gs.call("has_flag", "guild_quanzhou")), "true")
+	_expect("K1 读档不串上一份残旗", str(gs.call("has_flag", "stale_flag")), "false")
+	_expect("K1 发现录过链（discoveries_found）", JSON.stringify(gs.get("discoveries_found")), JSON.stringify(["mulan_weir"]))
+	_expect("K1 到访港口过链（visited_ports）", JSON.stringify(gs.get("visited_ports")), JSON.stringify(["quanzhou", "xinghua"]))
+	_expect("K1 水过链", _int_str(fleet.get("water")), "30")
+	_expect("K1 粮过链", _int_str(fleet.get("food")), "30")
+	# K1 另存的 .v1 与写入档逐字节一致（例 1 同款保真比对，换带旗式样再验「存的是写入这份、不掺上一例的槽态」）
+	_expect("K1 另存 .v1 逐字节保真（带旗式样）", str(_read_text(_primary() + ".v1") == d1_text), "true")
+	# K2 同档再验船式样：旗舰带舱过链逐字原样、只留一艘
+	var ships: Array = fleet.get("ships")
+	_expect("K2 v1 船只数原样", str(ships.size()), "1")
+	_expect("K2 v1 旗舰型号过链", str(_as_dict(ships[0]).get("type")), "fuchuan")
+	_expect("K2 v1 旗舰舱位原样", JSON.stringify(_as_dict(ships[0]).get("cargo")), JSON.stringify({}))
+	# K3 fleet 分区缺席（v1 骨档真实边界）：好档，fleet 落缺省
+	_cleanup()
+	var d3 := _v1(OLD_LABEL, 1256, 800)
+	d3.erase("fleet")
+	_write_raw(_primary(), JSON.stringify(d3, "\t"))
+	fleet.call("from_dict", {"ships": [{"type": "shachuan", "cargo": {}, "crew": 1}], "water": 9, "food": 9})
+	gs.call("from_dict", {"money": 1})
+	_expect("K3 v1 无 fleet 分区 load_game（好档）", str(sl.call("load_game", SLOT)), "true")
+	_expect("K3 fleet 落缺省：无船", str((fleet.get("ships") as Array).size()), "0")
+	_expect("K3 fleet 落缺省：水", _int_str(fleet.get("water")), "0")
+	_expect("K3 state 照迁：回写后 %s" % key, _int_str(_read_json(_primary()).get(key)), str(int(sl.get("SAVE_SCHEMA"))))
+	# K4 v2 → 本版：回写落盘的 met_ids 之外，旗与水粮同样过链
+	_cleanup()
+	var d4 := _current(OLD_LABEL, 1276)
+	d4[key] = 2
+	d4["fleet"]["water"] = 17
+	d4["fleet"]["food"] = 23
+	d4["state"]["flags"] = {"chen_zan_stake": true}
+	d4["state"]["siege"] = {"round": 3, "lin_hua_sent": true}
+	_write_raw(_primary(), JSON.stringify(d4, "\t"))
+	gs.call("from_dict", {"flags": {"stale_flag": true}})
+	_expect("K4 v2 关键字段 load_game", str(sl.call("load_game", SLOT)), "true")
+	_expect("K4 玉湖事件标记过链（chen_zan_stake）", str(gs.call("has_flag", "chen_zan_stake")), "true")
+	_expect("K4 读档不串上一份残旗", str(gs.call("has_flag", "stale_flag")), "false")
+	_expect("K4 水过链", _int_str(fleet.get("water")), "17")
+	_expect("K4 粮过链", _int_str(fleet.get("food")), "23")
+	_expect("K4 「已识」回填（守城见林华）", JSON.stringify(gs.get("met_ids")), JSON.stringify(["lin_hua"]))
+	# K4 另存的 .v2 与写入档逐字节一致（同 K1 的保真比对，v2 式样）
+	_expect("K4 另存 .v2 逐字节保真（v2 带旗式样）", str(_read_text(_primary() + ".v2") == JSON.stringify(d4, "\t")), "true")
+	# K4b v2 档自带 met_ids：迁移早退不动这一键（守卫「state.has("met_ids")」在）；防有人把 v2→v3 回填改成无脑强灌
+	_cleanup()
+	var d4b := _current(OLD_LABEL, 1276)
+	d4b[key] = 2
+	d4b["state"]["met_ids"] = ["cai_qixing"]
+	d4b["state"]["crew_history"] = ["wu_zhen"]
+	_write_raw(_primary(), JSON.stringify(d4b, "\t"))
+	_expect("K4b v2 自带 met_ids load_game", str(sl.call("load_game", SLOT)), "true")
+	_expect("K4b v2 已有 met_ids 不被回填顶掉", JSON.stringify(gs.get("met_ids")), JSON.stringify(["cai_qixing"]))
+	_expect("K4b v2 回写后 met_ids 落盘仍是原样", JSON.stringify(_as_dict(_read_json(_primary()).get("state")).get("met_ids")), JSON.stringify(["cai_qixing"]))
 
 
 func _expect(name: String, got: String, want: String) -> void:
