@@ -41,7 +41,6 @@ const TITLES := {
 const ZONES: PackedStringArray = ["舷边", "舷腰", "桅下", "舵楼"]
 const ZONE_OWN := "攻方舷边"
 const ZONE_FLAG := 2
-const ZONE_HELM := 3
 const ZONE_TAKEN := 4
 
 ## 舷高（尺）与舷上护具，按 ships.json 的 type；表外按 DEFAULT_HULL。

@@ -80,6 +80,9 @@ func _icon(svg_name: String) -> Texture2D:
 
 
 ## 九宫 StyleBoxTexture。margin / content / expand 都是逻辑像素 [左, 上, 右, 下]。
+## expand / tile_h / tile_v / draw_center：w20-c5 扫描器把形参表误报为「四参全零调用」，实有调用方
+## 显式带非默认值（panel 九宫带 expand、focus_frame 带 draw_center=false、v 分隔条带 tile_v=true）；
+## w22-h4 保留函数签名全部七参，勿删，勿改默认。
 func _sbt(png: String, margin: Array, content: Array, expand: Array = [0, 0, 0, 0],
 		tile_h: bool = false, tile_v: bool = false, draw_center: bool = true) -> StyleBoxTexture:
 	var sb := StyleBoxTexture.new()

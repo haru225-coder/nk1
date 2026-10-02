@@ -17,11 +17,6 @@ const C_JIAOMO := Color(0.051, 0.043, 0.035)      # 焦墨 #0d0b09
 const C_MO := Color(0.102, 0.086, 0.071)          # 墨 #1a1612
 const C_XUAN := Color(0.914, 0.863, 0.753)        # 宣纸 #e9dcc0
 const C_JUAN := Color(0.804, 0.722, 0.561)        # 旧绢 #cdb88f
-const C_GOLD := Color(0.788, 0.631, 0.29)         # 泥金 #c9a14a
-const C_CINNABAR := Color(0.69, 0.188, 0.165)     # 朱砂 #b0302a
-const C_INDIGO := Color(0.122, 0.227, 0.302)      # 靛青 #1f3a4d
-const C_STONE := Color(0.231, 0.431, 0.478)       # 石青 #3b6e7a
-const C_OCHRE := Color(0.541, 0.353, 0.169)       # 赭石 #8a5a2b
 const C_MOON := Color(0.839, 0.894, 0.91)         # 月白 #d6e4e8
 
 ## 调色预设：lift / gain / gamma / sat / contrast / sepia（cs_shot 与 cs_living_backdrop 共用）
