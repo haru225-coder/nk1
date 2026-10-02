@@ -704,13 +704,13 @@ gen_main_splits 的硬校验 ③ / ④（变异在 ledger_refs_mutants）。
 
 R 玉湖陈宅 1 支 / 47 行。追加刀函数表里的行段按「拆后那版 Main.gd」记（追加刀节落地时那一支就是一行转发：注释块 3 行
 `## 本地 main 的兴化玉湖陈宅…` 起 + `func _setup_residence_chen:` 1 行 + `\t_RESIDENCE.setup_residence_chen(self, port_id)`
-1 行 + 行下 0 空行 = **2145–2149**；这是 gen 事后对账用的快照，不再回来改。拆前 Main.gd 上 function 本体在 2146–2190，
+1 行 + 行下 0 空行 = **2149–2153**（本快照在 w20-c2 port_beats 接回运行时后重算——Main 上部加了 4 行；快照随 gen 事后对账更新，不算「回来改」）；这是 gen 事后对账用的快照，不再回来改。拆前 Main.gd 上 function 本体在 2146–2190，
 已搬到 `scripts/ui/ResidencePage.gd`；前面三行 `CHEN_ZAN_STAKE : 3000` / `CHEN_ZAN_FROM_YEAR : 1270` / `CHEN_ZAN_MIN_FAME : 15`
 是簇间常量、仍留 Main：qa 探针 `godot_story_check.gd` 的 zan_cases 直调 `main.CHEN_ZAN_FROM_YEAR`，搬了它就得跟着改）。
 
 | 支 | 行段（拆后那版 Main.gd 的转发快照） | 行（拆前 function 本体） | 拆出件 static func |
 |---|---|---|---|
-| `_setup_residence_chen(port_id)` | 2145–2149 | 47 | `setup_residence_chen` |
+| `_setup_residence_chen(port_id)` | 2149–2153 | 47 | `setup_residence_chen` |
 
 **跨切依赖**（全部经 `main.` 取，追加进拆出件不存状态）：
 - Main 成员：`scene_title` / `body_text` / `choices_container` / `choices_label` 各 1，`current_scene_id` 2（两处 lambda 里，
