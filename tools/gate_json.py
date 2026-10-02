@@ -176,16 +176,16 @@ REGISTRY = [
      "red": "`✗ <编号> …：期望 rc=a，实得 rc=b` 附 `缺 ✗ …` / `多 ✗ …`；`变异没落上` = 源码改了、这支变异的替换处数不对 / 插行靶子找不到真身（同名多处、转发目标认不出文件）；`✗ K<n>` 靶子定位判据变了；空转对照 `应 0 → 1`；`结果：N 项问题`；无 git（不在仓库 / PATH 里没有）/ 建不了 worktree 退 2；"
             "`--landing`：`✗ check_symbols_mutants 落点预检 · <编号> …：变异没落上——…` 退 1"},
     # lane seq4：scenes.json 那套结构检查参数化成多文件（清单 tools/data_family.json），加跑不进必跑——口径仍 16 道；跑一次 <1s、只读不写盘
-    {"id": "check_data_family", "tier": "lane", "when": "动 data/ 下同族文件（scenes.json / ports.json）的条目 / 字段 / 引用，新增 data/*.json，或动 tools/data_family.json",
+    {"id": "check_data_family", "tier": "lane", "when": "动 data/ 下同族文件（scenes.json / ports.json / port_beats.json）的条目 / 字段 / 引用，新增 data/*.json，或动 tools/data_family.json",
      "kind": "py", "file": "tools/check_data_family.py",
      "judge": "（lane seq4 / seq6）普查 data/*.json：F1 带唯一字符串 id 的条目表 + F2 字段指回同表 id（过半）+ F3 scripts/ scenes/ 的代码读它（seq6：# 注释不算、cutscenes.json 不算 scenes.json）的候选，须登在清单 families（同族）或 not_family（写明图为何无入口）；"
-              "候补 watch（seq6，port_beats.json 按 entry 成图）按登记的 key 判 F1 / F2 须仍成立，F3 一成立即红；"
+              "候补 watch（seq6）按登记的 key 判 F1 / F2 须仍成立，F3 一成立即红（w20-c2：port_beats.json 已按 E-10 接回运行时、升入 families，watch 现空）；"
               "对每个同族文件跑四项：一、字段齐备 / 类型（按形查必填、类型、未登记字段，嵌套列表再查一层；scenes 的形也是 verify_story_data 的形状表，单一来源）；二、引用 id 存在（refs 每一路落在本表 / 别的数据文件 / GDScript 常量的并集）；"
               "二之一、无向图的单向登记须全在 one_way_ok 基线（seq6，只减不增）；三、普查出的自引用路径（过半与部分命中）都登了 refs 或 not_edges；四、从 roots 沿 edge 走不到的条目 = 孤儿（形上 orphan_ok 与 known_orphans 基线放过，基线登了却已可达 / 已删即红）；"
-              "每次先跑「零、变异自检」32 格（GATES §五.3；内存里改：同族删必填 / 删边字段 / 改类型 / 悬空 / 拼错字段 / 孤儿 / 新添指回本表的字段 / 基线失效 / 入口与常量改名 / 部分命中漏登 / 单向登记新添与补齐 / 漏登 / 只剩注释读它 / 候补接回运行时须红且只红在该文件，非族 goods / characters / crew 改了须与基线一致；"
-              "seq6 起锚按形状挑（兜底形、可达、边字段非空的第一条），常量 / 入口名读清单，id 改名自己跟上，挑不到即红「锚落不上」；`--mutants` 逐格打印）；"
+              "每次先跑「零、变异自检」（GATES §五.3；内存里改：同族删必填 / 删边字段 / 改类型 / 悬空 / 拼错字段 / 孤儿 / 新添指回本表的字段 / 基线失效 / 入口与常量改名 / 部分命中漏登 / 单向登记新添与补齐 / 漏登 / 只剩注释读它 / 候补接回运行时须红且只红在该文件，非族 goods / characters / crew 改了须与基线一致；w20-c2：格数随 families 与清单 mutant_skip 走，port_beats 按 entry 成账、可达针不带回指，形状格登记跳过）；"
+              "seq6 起锚按形状挑（兜底形、可达、边字段非空的第一条），常量 / 入口名读清单，id 改名自己跟上，挑不到即红「锚落不上」（清单 mutant_skip 登记跳过的格除外，须写明为什么这种形状在本表不存在）；`--mutants` 逐格打印）；"
               "scenes 的孤儿基线与 lane seq3 共用 verify_story_data.SCENE_ARCHIVE",
-     "green": "`✓ 32 格全对：…` + `✓ 候补 data/port_beats.json：…` + `== <文件>` 下逐项 `✓ 一、…` 至 `✓ 四、…`（四：`可达 a / n；不可达 k = 形放过 x + 已登记基线 y`）+ `结果：全部通过`",
+     "green": "`✓ N 格全对：…` + `== <文件>` 下逐项 `✓ 一、…` 至 `✓ 四、…`（四：`可达 a / n；不可达 k = 形放过 x + 已登记基线 y`）+ `结果：全部通过`",
      "red": "`✗ …` 行（`缺必填字段` / `类型应为` / `未登记字段` / `悬空` / `是孤儿` / `known_orphans 登了 X，它已从入口可达` / `满足 F1–F3…却没登记` / `X→Y 单向登记` / `基线里的 X→Y 已不是单向` / `（未过半…）…却没登 refs` / `已被运行时读…登进 families` / `✗ 变异自检 <编号> …`，其中 `锚落不上：…` = 数据里已没有那种形状的条目、照提示改挑选条件）；`结果：N 项问题`"},
     # lane gd25：「靠多停几帧碰运气变绿」的跨跑判据；不升 must：全集两档约 25 分钟（gd25 当时 26 支；现 31 支）、要 DISPLAY、写截图盘，触发条件按路径判得准（§五.2）
     {"id": "probe_pressure", "tier": "lane", "when": "改了探针集里的 .gd（tools/ 下代码行调 `ShotGate.frame_pressure` 的），或 tools/probe_clock.gd / shot_gate.gd / combat_probe_stage.gd",

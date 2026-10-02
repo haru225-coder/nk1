@@ -694,6 +694,11 @@ func _route_check() -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
 	# 旅店路由：city_inn 必须落到 {港}_inn，不能是 city_inn
+	# 先记账：泉州链五针账上全演过（w20-c2 拍板 E-10 后抵泉州的旧行为不再回来，
+	# 这两个旧断言钉的「开局港页」口径须从「新档」换成「泉州链已演完的同月档」）
+	GS.loaded_with_beats = true
+	for _m in ["monk", "merchant", "dock", "prepare", "return_quanzhou"]:
+		GS.beat_mark(_m)
 	GS.last_port = "quanzhou"
 	main.load_scene("quanzhou")
 	# 云端「今日只开三处」：不在当日岸开名单里的门会被挡；这里把旅店放进名单再点
@@ -737,6 +742,7 @@ func _route_check() -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
 	_g13_chart_zoom_check()
+	_w20c2_port_beats_check(main)
 	main.queue_free()
 
 
@@ -1088,6 +1094,11 @@ func _hooks_bg_check(main: Node) -> void:
 	# 1276-11-29 泉州对峙：注入表里没有对峙档和秋季档 → 原图；候到 11-30 没跨月 → 同一张纹理（不重载）；再候到 12-01 降元 → 换 fallen 档
 	GS.from_dict({})
 	Cal.from_dict({"year": 1276, "month": 11, "day": 29})
+	# 先记账：泉州链五针账上全演过（w20-c2 拍板 E-10 后抵泉州的旧行为不再回来，
+	# 这两个旧断言钉的「开局港页」口径须从「新档」换成「泉州链已演完的同月档」）
+	GS.loaded_with_beats = true
+	for _m in ["monk", "merchant", "dock", "prepare", "return_quanzhou"]:
+		GS.beat_mark(_m)
 	GS.last_port = "quanzhou"
 	main.load_scene("quanzhou")
 	_check(main._bg_file == main.PORT_BG["quanzhou"], "H2 泉州 1276-11 对峙、注入表无此档：港页压原图（实际 %s）" % main._bg_file)
@@ -3208,3 +3219,113 @@ func _g13_chart_zoom_check() -> void:
 	var esc := float((load("res://scripts/combat/EnemyCaptainAI.gd") as GDScript).get_script_constant_map().get("ESCAPE_DIST", INF))
 	_check(spawn_min * ms >= 10.0 and esc * ms <= rr - 8.0 and esc * ms >= rr * 0.6,
 		"海战雷达比例 %.3f：开战刷船处落在离心 %.1f px（本船脉动圈 9 px 之外），敌船遁走离场距离 %.0f 合 %.0f px（在盘半径六成 %.0f 与盘内 %.0f 之间，整局不挤在盘心）" % [ms, spawn_min * ms, esc, esc * ms, rr * 0.6, rr - 8.0])
+
+
+## lane w20-c2（拍板 E-10 / G1014）：港口节拍接回运行时。给定一条 beat 序列，跑一段模拟后
+## 节拍序号 / 状态按序推进（data/port_beats.json 五港链：泉州 5 拍、流求 / 博多各 1 拍开场、
+## 泉州收线 2 拍）。关断开关 nk1/port_beats_runtime 两边各跑一遍：开 = 节拍推进、关 = 旧行为
+## （节拍表空、load_scene 出入照旧、拍账不动）。
+func _w20c2_port_beats_check(main: Node) -> void:
+	var BM := load("res://scripts/core/PortBeats.gd")
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_check(GS.beats_seen == [], "开局节拍账空（from_dict 清拍）")
+	# ── 开关：默认开、关掉 = 留档不读 ──
+	_check(BM.enabled() and not GM.port_beats_data.is_empty(),
+		"开关默认开：port_beats.json 已读进 GameManager（%d 拍）" % (GM.port_beats_data.get("beats", []) as Array).size())
+	ProjectSettings.set_setting(BM.SETTING, false)
+	GM.load_data()
+	_check(not BM.enabled() and GM.port_beats_data.is_empty(),
+		"开关关掉：不再读 port_beats.json（回到留档）")
+	ProjectSettings.set_setting(BM.SETTING, true)
+	GM.load_data()
+	main._beats = null
+	_check(BM.enabled() and not GM.port_beats_data.is_empty(), "开关再开：数据回读")
+
+	# ── 新档 seed：开关开着、空档**头一回到港**（随便哪一港），序章沿途那针 start 先记账（不然开局演老戏）──
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	GS.last_port = "fuzhou"
+	main._beats = null
+	main.load_scene("fuzhou")
+	_check(GS.beats_seen == ["start"] and main.current_scene_id == "fuzhou",
+		"新档 seed 随首抵下账：序章已演的戏记账、不重播（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "monk" and GS.beats_seen == ["start", "monk"],
+		"seed 后的首抵泉州：节拍接 monk（原「第一章开卷卡」让位第一针，戏一幕；页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	# ── 一条 beat 序列按序推进（泉州链：monk → merchant → dock → prepare → 守港页）──
+	# 链中间几针用旗标喂（和 route 章节段一样：把「照戏点出上一幕」用旗标按针接口推进；
+	# 节拍条件 requires.seen 认同样一份账，试里照针的 requires 名直接 set_flag 到节拍账上）
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	# 直接从「新档 seed 已下（from_dict 回读会带回来）、第一针还没演」起：
+	# from_dict({}) 已把账与 loaded 记都清了、把首抵 quanzhou 变成实测的 seed 现场
+	GS.loaded_with_beats = true  # 试里跳过 seed（账面实操）
+	main._beats = null
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "monk" and GS.beats_seen == ["monk"],
+		"拍序 1（跳过 seed）：抵泉州演第一针 monk（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "merchant" and GS.beats_seen == ["monk", "merchant"],
+		"拍序 2：再抵泉州接第二针 merchant（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "dock" and GS.beats_seen == ["monk", "merchant", "dock"],
+		"拍序 3：merchant 记过名满足 dock 的「见过 merchant」——再抵接 dock（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "prepare" and GS.beats_seen == ["monk", "merchant", "dock", "prepare"],
+		"拍序 4：dock 记过名满足 prepare 的「见过 dock」——再抵接 prepare（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	# 条件守着一格：return_quanzhou 的『去过流求』没够，停港页
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "quanzhou" and GS.beats_seen.size() == 4,
+		"条件守着：return_quanzhou 要『去过流求』没够、停港页不动账（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	GS.visit_port("ryukyu")
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "return_quanzhou" and GS.beats_seen.size() == 5,
+		"拍序 5：账外凭据（去过流求）补到、抵港接 return_quanzhou（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	# ── 非泉州各港不开演（w20-c2 只接泉州链：跨港链接法待拍板）──
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 6, "day": 1})
+	main._beats = null
+	GS.last_port = "ryukyu"
+	GS.loaded_with_beats = true
+	main.load_scene("ryukyu")
+	_check(main.current_scene_id == "ryukyu" and GS.beats_seen == [] and ("ryukyu" in GS.visited_ports),
+		"非泉州港不演不动账：首抵流求进港页记港，节拍一步不动（页 %s，visited %s，账 %s）" % [main.current_scene_id, GS.visited_ports, GS.beats_seen])
+	# ── 关断开关：两边各跑一遍，关掉 = 节拍一步不动、读出走到哪一幕照旧 ──
+	ProjectSettings.set_setting(BM.SETTING, false)
+	GM.load_data()
+	main._beats = null
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	GS.loaded_with_beats = true
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "quanzhou" and GS.beats_seen == [],
+		"开关关掉：抵港照旧停港页、不演戏不动账（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	main.load_scene("monk")
+	_check(main.current_scene_id == "monk",
+		"开关关掉：monk 一幕愿点照点（节拍不拦走幕，页 %s）" % main.current_scene_id)
+	GS.last_port = "ryukyu"
+	main.load_scene("ryukyu_bay")
+	_check(main.current_scene_id == "ryukyu_bay" and not ("ryukyu" in GS.visited_ports),
+		"开关关掉=2026-09-14 审计后的旧行为：航路外点进 ryukyu_bay 一幕不记港（visited %s）" % [GS.visited_ports])
+	main.load_scene("hakata_ledger")
+	_check(not ("hakata" in GS.visited_ports) and GS.beats_seen == [],
+		"开关关掉：hakata_ledger 不记港、拍账仍空（visited %s，账 %s）" % [GS.visited_ports, GS.beats_seen])
+	ProjectSettings.set_setting(BM.SETTING, true)
+	GM.load_data()
+	main._beats = null
+	GS.loaded_with_beats = false
+	# ── 存档 round-trip 带拍账（开关开着）──
+	GS.from_dict({})
+	GS.beat_mark("monk")
+	GS.beat_mark("merchant")
+	var bd: Dictionary = GS.to_dict()
+	GS.from_dict({})
+	_check(GS.beats_seen == [], "from_dict({}) 清拍账")
+	GS.from_dict(bd)
+	_check(GS.beats_seen == ["monk", "merchant"], "存档 round-trip 保留节拍账（%s）" % [GS.beats_seen])
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})

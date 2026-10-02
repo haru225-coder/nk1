@@ -89,6 +89,8 @@ var broker_hand: PackedStringArray = PackedStringArray()
 ## 过场接线（cinematics 线）：开场 / 章节卡 / 结局过场 / 抵港横幅 / 活背景 / 标题演出。
 ## headless（门禁）下全部旁路：Cinematics.live() 为假，当帧照原逻辑走，不延迟。会话状态在 Cinematics 静态变量里，不进存档。
 const _CINE := preload("res://scripts/cutscene/Cinematics.gd")
+## 港口节拍（E-10 / G1014，lane w20-c2）：进港节拍演出账。开关 nk1/port_beats_runtime 关 = 留档不读
+const _BEATS := preload("res://scripts/core/PortBeats.gd")
 const _CS_PLAYER := preload("res://scripts/cutscene/CutscenePlayer.gd")
 const _CS_CARD := preload("res://scripts/cutscene/ChapterCard.gd")
 const _CS_BANNER := preload("res://scripts/cutscene/PortBanner.gd")
@@ -151,6 +153,8 @@ const _DEBUG := preload("res://scripts/ui/DebugHooks.gd")
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
 var _arrival_banner := false
+## 本局节拍演出账（入档在 GameState.beats_seen）。开关关掉时本表留空、行为照旧
+var _beats = null
 ## 本次进港排的岸带页型（port / siege / ended，_build_shore 当帧定）：守城 / 终局页不出太平时节的抵港挂签。UI 状态，不入存档
 var _shore_kind_now := ""
 ## 本次进港在排岸带之前就按城破结算了（_settle_siege_before_shore）：_on_enter_port 不再记港、不再出横幅。UI 状态，不入存档
@@ -3094,6 +3098,30 @@ func _on_enter_port(port_id: String) -> void:
 		return
 	var first_port := GameState.visited_ports.is_empty()
 	GameState.visit_port(port_id)
+	# 拍板 E-10：节拍演出账——抵达这一针条件够且未记名 = 就地演那一幕（关断开关关掉 = _beats 空账、一步不动）。
+	# 只接泉州链（章一开店泉州五针）：流求 / 博多链的头针与航路首抵（route 探针断言航路抵港进的是港页、
+	# 记 visited_ports）相冲突，章二博多针又压着 hakata_ledger 剧情幕（route 断言 ryukyu_bay / hakata_ledger
+	# 不记港）——拍板 G1014 的「跨港链怎么接到航路上」没定，非泉州各港的拍一律不演不动账
+	if _beats == null:
+		_beats = _BEATS.new()
+		_beats.init(GameManager.port_beats_data.get("beats", []))
+	# 新档 / 老档 seed：开关开着、拍账一笔未记过，把序章沿途已演的戏（DEFAULT_SEED）记上——
+	# 每个会话只下一回（loaded_with_beats 不入存档）：读老档（没 beats_seen）开关打开头一回到港也 seed 一回，
+	# seed 过的会话不再补（玩家后头清账是自己的玩法）
+	if _BEATS.enabled() and GameState.beats_seen.is_empty() and not GameState.loaded_with_beats and not GameState.siege_open():
+		for seed_entry in _BEATS.DEFAULT_SEED:
+			GameState.beat_mark(seed_entry)
+		GameState.loaded_with_beats = true
+	# 守城开着的会话不演拍不动账（城破了算、戏让位守城）
+	var ar: Dictionary = {} if port_id != "quanzhou" or GameState.siege_open() else _beats.arrive(port_id, GameState.beats_seen, GameState.beat_flag_names(), GameState.visited_ports, GameState.chapter)
+	if not ar.is_empty():
+		var mark := str(ar.get("mark", ""))
+		var entry := str(ar.get("beat", {}).get("entry", ""))
+		GameState.beat_mark(mark if mark != "" else entry)
+		if bool(ar.get("play", false)) and entry != "" and GameManager.get_scene_by_id(entry) != {}:
+			# 就地演出那一幕（港页已排好、戏叠上面；scene_unlocked 那道不再查——节拍 requires 就是它的开锁口）
+			_load_scene_inner(entry)
+			return
 	var res := GameState.try_advance_chapter()
 	if res.get("advanced", false) or res.get("resolved", false):
 		_show_chapter_dialog(res)

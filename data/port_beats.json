@@ -6,7 +6,9 @@
       "port": "xinghua",
       "order": 10,
       "requires": {},
-      "stop_before": ["monk"]
+      "stop_before": [
+        "monk"
+      ]
     },
     {
       "id": "quanzhou_monk",
@@ -14,62 +16,99 @@
       "port": "quanzhou",
       "order": 10,
       "requires": {},
-      "stop_before": ["merchant"]
+      "stop_before": [
+        "merchant"
+      ]
     },
     {
       "id": "quanzhou_merchant",
       "entry": "merchant",
       "port": "quanzhou",
       "order": 20,
-      "requires": {"seen": ["monk"]},
-      "stop_before": ["dock"]
+      "requires": {
+        "seen": [
+          "monk"
+        ]
+      },
+      "stop_before": [
+        "dock"
+      ]
     },
     {
       "id": "quanzhou_dock",
       "entry": "dock",
       "port": "quanzhou",
       "order": 30,
-      "requires": {"seen": ["merchant"]},
-      "stop_before": ["prepare"]
+      "requires": {
+        "seen": [
+          "merchant"
+        ]
+      },
+      "stop_before": [
+        "prepare"
+      ]
     },
     {
       "id": "quanzhou_prepare",
       "entry": "prepare",
       "port": "quanzhou",
       "order": 40,
-      "requires": {"seen": ["dock"]},
-      "stop_before": ["sail"]
+      "requires": {
+        "seen": [
+          "dock"
+        ]
+      },
+      "stop_before": [
+        "ryukyu_bay"
+      ]
     },
     {
       "id": "ryukyu_reef",
-      "entry": "ryukyu",
+      "entry": "ryukyu_bay",
       "port": "ryukyu",
       "order": 10,
       "requires": {},
-      "stop_before": ["hakata", "return_quanzhou"]
+      "stop_before": [
+        "hakata_ledger",
+        "return_quanzhou"
+      ]
     },
     {
       "id": "hakata_ledger",
-      "entry": "hakata",
+      "entry": "hakata_ledger",
       "port": "hakata",
       "order": 10,
-      "requires": {"has_flag": ["cargo_hakata"]},
-      "stop_before": ["return_quanzhou"]
+      "requires": {
+        "has_flag": [
+          "cargo_hakata"
+        ]
+      },
+      "stop_before": [
+        "return_quanzhou"
+      ]
     },
     {
       "id": "quanzhou_return",
       "entry": "return_quanzhou",
       "port": "quanzhou",
       "order": 50,
-      "requires": {"visited": ["ryukyu"]},
-      "stop_before": ["chapter2_letter"]
+      "requires": {
+        "visited": [
+          "ryukyu"
+        ]
+      },
+      "stop_before": [
+        "chapter2_letter"
+      ]
     },
     {
       "id": "quanzhou_letter",
       "entry": "chapter2_letter",
       "port": "quanzhou",
       "order": 100,
-      "requires": {"chapter_at_least": 2},
+      "requires": {
+        "chapter_at_least": 2
+      },
       "stop_before": []
     }
   ]

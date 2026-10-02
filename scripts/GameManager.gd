@@ -25,6 +25,9 @@ var news_data: Dictionary = {}
 var coastline_data: Dictionary = {}
 var sealanes_data: Dictionary = {}
 var chart_labels_data: Dictionary = {}
+## 港口节拍（data/port_beats.json，拍板 E-10 / G1014，lane w20-c2）：进港 / 停泊 / 离港的叙事节拍演出账口。
+## 接回运行时（game_data 有 entry 为键的表）；开关 nk1/port_beats_runtime 关掉即不再读它（回到留档）。
+var port_beats_data: Dictionary = {}
 ## 人物设定集（data/characters.json）：立绘、五维、特技、小传、关系。只作展示，不接任何玩法数值，不入存档。
 ## 文件缺失或解析失败时回落空表（只打 WARNING），游戏照常。
 const CHARACTERS_PATH := "res://data/characters.json"
@@ -53,6 +56,11 @@ func load_data() -> void:
 	coastline_data = _load_json("res://data/coastline.json")
 	sealanes_data = _load_json("res://data/sealanes.json")
 	chart_labels_data = _load_json("res://data/chart_labels.json")
+	# 节拍留档在开关关闭时维持不读（回旧行为即什么都不知道）；开着喂给 PortBeats
+	if PortBeats.enabled():
+		port_beats_data = _load_json("res://data/port_beats.json")
+	else:
+		port_beats_data = {}
 	_load_characters()
 
 	if scenes_data.has("scenes"):

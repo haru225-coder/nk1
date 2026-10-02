@@ -367,8 +367,11 @@ def run(ctx, verbose=True):
             ok(False, "", [f"{rel} 登在 families，文件不在"])
             continue
         sv = survey_file(ctx, rel, key=spec["id"], table=spec["table"])
-        ok(sv["f1"] == spec["table"] and bool(sv["self_refs"]), f"F1 / F2 成立（表 {spec['table']}，自引用 {'、'.join(sv['self_refs'])}）",
-           [f"{rel} 登为同族，但普查已不满足 F1 / F2（首张 id 表 {sv['f1']!r}，自引用 {sv['self_refs']}）——改清单或移出 families"])
+        f2_min = int(spec.get("f2_min_refs", 1))
+        ok(sv["f1"] == spec["table"] and len(sv["self_refs"]) >= f2_min, f"F1 / F2 成立（表 {spec['table']}，自引用 {'、'.join(sv['self_refs'])}）",
+           [f"{rel} 登为同族，但普查已不满足 F1 / F2（首张 id 表 {sv['f1']!r}，自引用 {sv['self_refs']}）——改清单或移出 families"]
+           + ([] if not (sv["f1"] == spec["table"] and len(sv["self_refs"]) >= 1) or len(sv["self_refs"]) >= f2_min else
+              [f"{rel} 自引用只剩 {len(sv['self_refs'])} 路，低于清单 f2_min_refs={f2_min}（本表钉了至少两路自引用；数据瘦身到这个形即登记失效，改数据 / 改清单须同步）"]))
         ok(bool(sv["readers"]), f"F3 运行时读它（{len(sv['readers'])} 个文件）", [f"{rel} 登为同族，但 scripts/ scenes/ 已不读它"])
 
         # 一、字段齐备 / 类型
@@ -639,9 +642,12 @@ def mutants(ctx):
             raise NoAnchor(f"{spec['file']} 兜底形 {kd['name']} 没有必填的 str 字段")
         return fs
 
+    # lane w20-c2：清单 mutant_skip 登掉的格（锚挑不到不是因为检查被放宽，而是这表的图就没有那种形状——
+    # port_beats 按 entry 记演出账、可达的针没一条带成边回指）。只许跳形状格，skips 与天生的形状格一起记数
     used_tags = set()
     for spec in fams:
         rel, key = spec["file"], spec["id"]
+        skips = set(spec.get("mutant_skip", []))
         tag = spec["table"][0].upper()
         tag = tag if tag not in used_tags else spec["table"]
         used_tags.add(tag)
@@ -693,11 +699,15 @@ def mutants(ctx):
                 ent(c, spec, b)["back_mut"] = a
             return (f"{rel} {a} / {b} 新添互指的 back_mut 没登记", fn, ("未登记字段 back_mut", rel))
 
-        for build in (g_del_req, g_del_edge, g_type, g_dangle, g_typo, g_orphan, g_selfref):
+        for nm, build in (("del_req", g_del_req), ("del_edge", g_del_edge), ("type", g_type), ("dangle", g_dangle),
+                          ("typo", g_typo), ("orphan", g_orphan), ("selfref", g_selfref)):
+            if nm in skips:
+                res.append((True, f"{tag}{next(n)} {rel} 跳过 {nm}（清单 mutant_skip 登记：{spec.get('mutant_skip_why', '没写原因')}）"))
+                continue
             cell(f"{tag}{next(n)}", build)
 
         # 基线里的条目被接回主线
-        if spec.get("known_orphans"):
+        if spec.get("known_orphans") and "known" not in skips:
             def g_known(spec=spec, rel=rel):
                 known = set()
                 for g in spec["known_orphans"]:
@@ -790,8 +800,10 @@ def mutants(ctx):
                 cell(f"{tag}{next(n)}", g_ow_fix)
 
     # 普查 / 登记
-    if fams:
-        last = fams[-1]["file"]
+    c_pref = man.get("mutant_register_order", [])
+    c_last = next((f["file"] for f in reversed(fams) if f["file"] in c_pref), fams[-1]["file"] if fams else None)
+    if c_last is not None:
+        last = c_last
 
         def m_unregister(c, r=last):
             c.manifest["families"] = [f for f in c.manifest["families"] if f["file"] != r]
@@ -799,8 +811,8 @@ def mutants(ctx):
     if man.get("not_family"):
         nf0 = man["not_family"][0]["file"]
         M.append(("C2", f"清单漏登非族 {nf0}", lambda c: c.manifest.__setitem__("not_family", []), (f"{nf0} 满足 F1–F3", f"{nf0} 满足")))
-    if fams:
-        bl = os.path.basename(last)
+    if c_last is not None:
+        bl = os.path.basename(c_last)
 
         def m_unread_all(c, bl=bl):
             for k in c.src:

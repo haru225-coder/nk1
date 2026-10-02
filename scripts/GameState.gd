@@ -1099,6 +1099,14 @@ func _fail_contract(reason: String) -> String:
 ## 人物志「已识」判定见 CharacterArt.is_known（此表之外仍按进度、雇用记录与传闻推）。
 var met_ids: Array = []
 
+## 港口节拍演出账（拍板 E-10 / G1014，PortBeats）：已记名的拍 / 开场分解幕 entry 序列。
+## 新档从 PortBeats.DEFAULT_SEED 起账（序章沿途已演的戏）：开关打开且本账一笔未记、
+## loaded_with_beats=false 时，首次 Main._on_enter_port 把它按下（开关关着 = 本账不动、老档老行为）。
+var beats_seen: Array = []
+## 这份档拍账 seed 已过（入存档）：seed 只下一回；读带拍账的档天然不再 seed（账非空），
+## 读老档（没有本键）开关打开头一回到港下一回、此后这份档就一直跳过
+var loaded_with_beats := false
+
 
 func note_met(id: String) -> void:
 	if id != "" and not (id in met_ids):
@@ -1107,6 +1115,22 @@ func note_met(id: String) -> void:
 
 func has_met(id: String) -> bool:
 	return id in met_ids
+
+
+## 港口节拍记名（PortBeats.arrive 的 mark）：拍 entry / 分解开场幕，各记一笔、不重复。
+func beat_mark(mark: String) -> void:
+	if mark != "" and not (mark in beats_seen):
+		beats_seen.append(mark)
+
+
+## seed 判定帮手：这份档 / 这一局拍账上记没记过一针（读档时账非空即不再 seed）
+func beats_touched() -> bool:
+	return not beats_seen.is_empty()
+
+
+## 港口节拍判定用的旗标名表（PortBeats 不回头读 GameState）
+func beat_flag_names() -> Array:
+	return flags.keys()
 
 
 # ── 存档 ──────────────────────────────────────────────
@@ -1155,6 +1179,8 @@ func to_dict() -> Dictionary:
 		"ended_at": ended_at,
 		"ended_text": ended_text,
 		"ended_head": ended_head,
+		"beats_seen": beats_seen,
+		"loaded_with_beats": loaded_with_beats,
 	}
 
 
@@ -1211,3 +1237,5 @@ func from_dict(d: Dictionary) -> void:
 	ended_at = str(d.get("ended_at", ""))
 	ended_text = str(d.get("ended_text", ""))
 	ended_head = str(d.get("ended_head", ""))
+	beats_seen = d.get("beats_seen", [])
+	loaded_with_beats = bool(d.get("loaded_with_beats", false))

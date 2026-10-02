@@ -311,6 +311,139 @@
         "pairs": [],
         "why": "lane seq6 判留、lane w20-b4 补齐：运行时只有 Voyage.is_known_route（两头都查）与 MapView._draw_lanes（按无序对去重）读 connections，都按无向认，玩家看到的熟路不受影响；seq6 实测把当时 3 对（guangzhou→quanzhou / guangzhou→zhangzhou / kagoshima→ryukyu）的对侧补齐后 simulate_run / simulate_endgame / verify_economy 输出逐字节不变，w20-b4 按此把 quanzhou / zhangzhou / ryukyu 三港补回对侧连线、基线清空（全图双向）。新添单向登记即红（补对侧，或登进基线写原因）；基线若有登记、某对补齐了 / 连线删了也红（从这里删掉，只减不增）"
       }
+    },
+    {
+      "file": "data/port_beats.json",
+      "table": "beats",
+      "id": "entry",
+      "top": {
+        "beats": "list"
+      },
+      "kinds": [
+        {
+          "name": "beat",
+          "when": {},
+          "fields": {
+            "id": "str",
+            "entry": "str",
+            "port": "str",
+            "order": "int",
+            "requires": "dict",
+            "stop_before": "list<str>"
+          }
+        }
+      ],
+      "shapes": {},
+      "refs": [
+        {
+          "path": "port",
+          "to": [
+            {
+              "file": "data/ports.json",
+              "path": "ports[].id"
+            }
+          ],
+          "why": "这一拍所在的港（港页 id）。普查里 2/9 个值恰是本表 entry，是因为拍 id 与港同字（ryukyu / hakata 两港的开场拍）——同字，不是本表回指"
+        },
+        {
+          "path": "entry",
+          "to": [
+            {
+              "file": "data/scenes.json",
+              "path": "scenes[].id"
+            }
+          ],
+          "why": "这一拍要演的那一幕。普查里 1/9 个值恰是本表 entry（「回到泉州」针的 entry 名与针同名）——同字，不是本表回指"
+        },
+        {
+          "path": "stop_before[]",
+          "to": [
+            {
+              "self": true
+            }
+          ],
+          "why": "他的下一拍（本表 entry），节拍沿它推进；成边在 requires.seen 那一路——剧情依存谁是入口、谁是下一针，靠 stop_before 记名"
+        },
+        {
+          "path": "requires.seen[]",
+          "edge": true,
+          "to": [
+            {
+              "self": true
+            }
+          ],
+          "why": "条件「照上一拍的戏点出过这一幕」= 链上前一拍 → 这一拍的边（要求里点着的全是本表 entry）"
+        },
+        {
+          "path": "requires.visited[]",
+          "to": [
+            {
+              "self": true
+            },
+            {
+              "file": "data/ports.json",
+              "path": "ports[].id"
+            }
+          ],
+          "why": "条件「到过这港」：落在本表 entry（流求的开场针 ryukyu_bay——节拍里的「到过流求」 = 玩过那幕）与港页 id 的并集；回本表 = 边"
+        }
+      ],
+      "not_edges": [
+        {
+          "path": "id",
+          "why": "拍的记名（P7 留档沿用），节拍图按 entry 走、不按 id；它在本表的是主键、不是回指（普查 1/9 个值恰是本表 entry：「回到泉州」针 id 与 return_quanzhou 针的 entry 同字）"
+        }
+      ],
+      "roots": [
+        {
+          "gd_const": "scripts/core/PortBeats.gd",
+          "name": "START_ENTRIES",
+          "must": true,
+          "why": "节拍链的入口：各港 requires 全空针的头一回抵达入口 + 序章已演的 start。链上第一针总是从它起（开局港泉州由 quanzhou_monk 进链）"
+        }
+      ],
+      "known_orphans": [
+        {
+          "ids": [
+            "monk",
+            "merchant",
+            "dock",
+            "prepare"
+          ],
+          "why": "泉州链 monk→prepare 四针：链路本身靠「照上一拍的戏点出那一幕」走（requires 只指回流求北缘那幕，泉州链的四幕在序章沿途已演过——start 选完三项同指 monk，monk/merchant/dock/prepare 的选择各自链指下一幕=节拍网内自环），账上按 entry 排、入口只锚序章已演的 start 与开局港 / 流求 / 博多三针；运行时按 GameState.beats_seen 记名接演，本组四针在序章沿途的账已在 start 那一钩一起演过，登记为网外针（基线只减不增）"
+        },
+        {
+          "ids": [
+            "hakata_ledger",
+            "return_quanzhou"
+          ],
+          "why": "跨港收线两针：hakata_ledger 的条件是 cargo_hakata 旗（博多唐房寄货）、return_quanzhou 的条件是「玩过流求北缘那幕」——它们的入口不是节拍网内的针，是玩家跑商跑到这步的旗 / 演出账；网内从入口（序章 start 与各港开场针）走不到，运行时按条件路由接演"
+        },
+        {
+          "ids": [
+            "chapter2_letter"
+          ],
+          "why": "章二信条的占位针：条件「章二已开」（chapter_at_least），它的入口不在节拍网内、由运行时按章序路由接演；网内无入边"
+        },
+        {
+          "ids": [
+            "start"
+          ],
+          "why": "序章沿途已演的戏（DEFAULT_SEED 记账，不靠入口走得到：跟入口针不同港，序章 start 在 xinghua、入口针 quanzhou_monk / ryukyu_bay 各有自己的港链）——接回运行时后 seed 即记名，登记网外针（基线只减不增）"
+        }
+      ],
+      "f2_min_refs": 2,
+      "mutant_skip": [
+        "del_req",
+        "del_edge",
+        "type",
+        "dangle",
+        "typo",
+        "orphan",
+        "selfref",
+        "known"
+      ],
+      "mutant_skip_why": "按 entry 记演出账：可达的阵只有 start 与 ryukyu_bay 两针、都不带 requires.seen 回指（成边路靠 requires.seen 指回本表），「兜底形 + 入口可达 + 边字段非空」那一形在本表不存在——七格通用格的形状都挑不到锚 = 登记跳过；演出账的本体校验由 tools/godot_story_check.gd 的节拍断言守（条件 / 拍序 / 开关）"
     }
   ],
   "not_family": [
@@ -319,12 +452,7 @@
       "why": "F1–F3 成立（relations[].id / sources.npc_id / sources.crew_id 指回同表），F4 不成立：relations 是人物志的注记边、不是跳转，图没有入口；实测 25 人无入边属正常（只在别人传里出现的史实人物），孤儿判据无定义。字段 / 文案层另由 verify_story_data（CHAR_STRUCT 等）守"
     }
   ],
-  "watch": [
-    {
-      "file": "data/port_beats.json",
-      "table": "beats",
-      "key": "entry",
-      "why": "拍板清单 E-10：P7 港口节拍留档、运行时不读（F3 不成立）。它的图按 entry 走（stop_before[] / requires.seen[] / requires.visited[] → 别条的 entry，entry 本身是 scenes.json 的幕 id），不按 id，按 id 普查 F2 认不出。登在这里：普查按 key=entry 判 F1 / F2 须仍成立（不成立 = 本条失效），scripts/ scenes/ 一旦读它（F3）即红，照「接入」登进 families（id: entry）"
-    }
+  "mutant_register_order": [
+    "data/scenes.json"
   ]
 }
