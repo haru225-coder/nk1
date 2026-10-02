@@ -47,6 +47,7 @@
 - [nk-1双线融合方案_2026-09-03.md](nk-1双线融合方案_2026-09-03.md)：双线融合分析（历史稿，指 09-03 两棵旧树）
 - [审计-2026-09-23-全量.md](审计-2026-09-23-全量.md)：2026-09-23 全量审计（基线 993edc1）
 - [审计-全量-2026-09-23.md](审计-全量-2026-09-23.md)：2026-09-23 全量审计另一份（基线 993edc1）
+- [审计-wave19-2026-10-02.md](审计-wave19-2026-10-02.md)：2026-10-02 wave19 独立复核（区间 `8c794e6..4bafe23` 20 笔；lane w20-b8）
 
 - [combat_realism_design.md](combat_realism_design.md) / [combat_phases_schema.md](combat_phases_schema.md)：海战写实设计与三份数据契约（阶段 / 兵器 / 海况；lane combat01）
 - [ship_seagoing_vfx.md](ship_seagoing_vfx.md)：出海福船观感与命中手感——船身着装 shader、航迹、炮口焰 / 甲板颤，截图探针 `tools/ship_vfx_probe.gd`（lane combat-ship-vfx）
