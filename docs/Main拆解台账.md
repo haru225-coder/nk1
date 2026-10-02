@@ -3,6 +3,12 @@
 `scripts/Main.gd` 按页面簇往 `scripts/ui/` 拆。每刀一节，只往后追加，不改前面各节（lane main12 起的例外：前面各节与现状不符的事实，在原句上就地改准并在「第十二刀 · 前十一刀对账」登记，不改那一刀的结论与数字口径；lane cs25 起另一例：第四、第五刀补了「### 函数表（lane cs25 补）」一小节，只加表、不改原句）。
 手法（lane ms / mz / ms2 起一直沿用）：隔离 worktree 里改，Main 保留同名同签名的一行转发，信号目标仍是 Main 的同名方法；
 新文件登记：本台账追加一节、节标题写成「## 第N刀（lane X，日期）：… → `scripts/ui/X.gd`」，跑 `python3 tools/gen_main_splits.py --write` 重生成 `tools/main_splits.txt`（lane cs13 起；check_symbols 和 godot_smoke 都只读它），另加 `godot_compile_check.gd` 的 SCRIPTS；
+**追加刀**（lane w20-a9 第十三刀二起的新口径，与 gen_main_splits.py 头注 / `tools/main_splits.txt` 头注同一处写，别只改代码）：
+往已有拆出件里追加搬入函数时，标题写「## 第N刀二（lane Y，日期）：… → `已有拆出件`」（N 是刀序数字，刀序仍是下一刀；
+「二」后不再写「三」「四」——要再追加就是再一刀 N+1）；lane 列仍记建刀那一刀的 lane（`tools/main_splits.txt` 一件一行，
+追加刀不再占新行），commit / 行范围列记建刀（按「新增这个文件的 commit」取）；追加刀自己的拆出 commit 与行段写进本节
+函数表，按「追加刀提交时 HEAD 的 Main.gd」记，不再回来改（只对账，不改台账）；同一拆出件被建刀节 + 追加刀节加起来
+列同一支、或写「二」指向的拆出件还没建过刀，都是格式硬校验 ③ / ④（变异固化在 ledger_refs_mutants）。
 新文件头注写「从 Main.gd 原样搬出」，转发独占函数体、行尾不带注释（漏一样 check_symbols「一之零」判红，口径见 `docs/GATES.md` §三.1，lane cs8）；
 拆分前后跑同一组固定种子探针，输出逐字节对比；最后用 `update-ref` 带旧值 CAS 快进 main。
 
@@ -681,3 +687,89 @@ D 两支连续一段，不含 lambda，不写 Main 成员，不碰引擎虚函�
 2. **O 浮页**（8 / 82）：两个 lambda 回写 Main 的浮页句柄；qa_wire_vision / qa_letterbox_copy 直读 Main.gd 查 `_open_vision_stage` 字样（转发留名，不会红）；中风险。
 3. **F 船况措辞 / N 内景题**（中低）：smoke 在 Main 实例上直调，转发留名即可；F 被船屋 / 船籍簿 / 市舶司三个拆出件经 `main.` 共用。
 4. **A / E / H / I / K / B / X** 风险高，仍先做「Main 家族源码」共用 helper 的门禁 lane（第五 / 七 / 九刀候选）。
+
+
+---
+
+## 第十三刀二（lane w20-a9，2026-10-02）：玉湖陈宅 → `scripts/ui/ResidencePage.gd`
+
+### 追加刀口径（本刀起；与 gen_main_splits 头注、tools/main_splits.txt 头注同一份）
+
+往前面某刀已登记的拆出件里追加搬入函数：标题写「## 第N刀二（lane Y，日期）：… → `已有拆出件`」；
+lane 记建刀那一刀（清单仍一件一行），commit / 行范围列记建刀；追加刀自增函数的逐支行段写进本节函数表，
+按「追加刀提交时 HEAD 的 Main.gd」记，之后不再回来改；跨节列重、写「二」的新件 / 未建刀件、刀序不对，都进
+gen_main_splits 的硬校验 ③ / ④（变异在 ledger_refs_mutants）。
+
+### 切面（追加刀建行段 = 拆后那版 Main.gd 的转发快照；第九刀建刀基 `ebd28e7^`）
+
+R 玉湖陈宅 1 支 / 47 行。追加刀函数表里的行段按「拆后那版 Main.gd」记（追加刀节落地时那一支就是一行转发：注释块 3 行
+`## 本地 main 的兴化玉湖陈宅…` 起 + `func _setup_residence_chen:` 1 行 + `\t_RESIDENCE.setup_residence_chen(self, port_id)`
+1 行 + 行下 0 空行 = **2145–2149**；这是 gen 事后对账用的快照，不再回来改。拆前 Main.gd 上 function 本体在 2146–2190，
+已搬到 `scripts/ui/ResidencePage.gd`；前面三行 `CHEN_ZAN_STAKE : 3000` / `CHEN_ZAN_FROM_YEAR : 1270` / `CHEN_ZAN_MIN_FAME : 15`
+是簇间常量、仍留 Main：qa 探针 `godot_story_check.gd` 的 zan_cases 直调 `main.CHEN_ZAN_FROM_YEAR`，搬了它就得跟着改）。
+
+| 支 | 行段（拆后那版 Main.gd 的转发快照） | 行（拆前 function 本体） | 拆出件 static func |
+|---|---|---|---|
+| `_setup_residence_chen(port_id)` | 2145–2149 | 47 | `setup_residence_chen` |
+
+**跨切依赖**（全部经 `main.` 取，追加进拆出件不存状态）：
+- Main 成员：`scene_title` / `body_text` / `choices_container` / `choices_label` 各 1，`current_scene_id` 2（两处 lambda 里，
+  原来捕获 Main 的它，搬来后改捕获 main——按下时才读，行为不变）。
+- Main 方法：`log_msg` 2（两处 lambda 里）、`load_scene` 2（同）、`_chen_zan_alive` / `_chen_zan_stake_open` / `_add_leave_button` 各 1。
+- 常量：`CHEN_ZAN_FROM_YEAR` / `CHEN_ZAN_MIN_FAME` / `CHEN_ZAN_STAKE` 经 `main.` 取（仍留 Main）。
+- autoload：GameManager 1、Calendar 1、GameState 13。
+- lambda 2 个（1268 跑腿 +3、1270 陈瓒 +5）：原捕获 Main 的 `log_msg` / `load_scene` / `current_scene_id`，搬进 static func 后
+  改捕获 main——按下时才调，与搬走前逐字逐行为一致。
+
+**断言 / 探针引用点**（拆前逐个核过，行号按基 `4bafe23`）：
+
+| 引用点 | 怎么读 | 拆后 |
+|---|---|---|
+| `tools/simulate_endgame.py:81`（乡土可达性「玉湖陈宅跑腿是 1268 前的乡土写入点」；旧行号 `:77`，auditfix6 cs19 等挪过几次） | 直读 Main.gd 全文正则 `hometown_tendency \+= (\d+)\n\t\t\tGameManager\.advance_days\((\d+)\)` | 只剩一行转发、切不到 → **改读 main_stitch.read_main_src() 拼回的 Main 家族源码**（lane auditfix6 起 Python 门禁统一 helper 的共用口径；拼回去 `main.` 前缀、lambda 里的 `main` 换回 self，三层缩进原文一字不差）。不回落切 Main——挪回 Main 该红，「不回落」与第九刀住处（verify_economy cut ResidencePage）同一写法。**原条件一字不改** |
+| `tools/check_symbols.py:2998-3007`「Main.X 已定义」（`_setup_guild` / `_setup_exam` / `_setup_residence` / `_collect_spreads` / `_on_exam_copy` / `_setup_temple` / `_on_temple_look` / `_on_temple_rub` / `_temple_rub_note`，lane cs19 `ba3b8c3` 起查 Main.gd 原文 `_main_gd_raw`） | `re.search(r"^(?:static\s+)?func X\b", _main_gd_raw)` | `_setup_residence_chen` 不在这一组里（建刀那 9 支照旧在 Main 留一行转发），本刀没加进去——这组是第九刀建刀的「Main 留转发」钉子，追加刀的同名钉子归 check_symbols 九之七新加那条（见下） |
+| `tools/godot_story_check.gd:658`（zan_cases）| 直调 `main.CHEN_ZAN_FROM_YEAR` | 常量留 Main，不走转发 → 不用改 |
+| `tools/godot_smoke.gd:584-600`（寺观细看 / 拓碑，在 ResidencePage 里切） | `FileAccess.get_file_as_string("res://scripts/ui/ResidencePage.gd")` 里 `find("static func on_temple_rub(")` 并切到「下一个 static func」；原末支 `on_temple_rub` 那处写了「是拆出件末支，切到文件尾」的退路 | 追加刀后 `setup_residence_chen` 成了末支，`on_temple_rub` 的切法自动找到新的下支，退路变死代码但行为不变 → 不用改（已在拆前核过：「`rub_j < 0` 时切到文件尾」只在「on_temple_rub 是末支」才走，现在 `rub_j` 恒 ≥ 0） |
+| verify_economy / smoke / verify_story_data / check_assets / simulate_run / patrol / 各 qa 探针 | 不读这 1 支（探针走真页面、拍板清单 `CHEN_ZAN_FROM_YEAR` 走实例常量、zan_cases 同上） | 无关 |
+| 拍板清单 END-2 行（`docs/待策划拍板清单_2026-09-28.md:38`） | 引用 `scripts/Main.gd:2159` / `:2178` / `:2175` / `:2141` | `_setup_residence_chen` 的 Main 行段由 2145–2149 收成一行转发 21xx，所指四处号跟号挪位 → 收尾跑 `python3 tools/check_decision_refs.py --fix`（`DRIFT` 会列出跟着挪的新号，与代码同一次落地、清单单独一笔显式 pathspec 提交） |
+
+### 落地
+
+- `scripts/ui/ResidencePage.gd`（125 行 → 178 行，`.uid` 不动、与建刀同一份）：追加 `static func setup_residence_chen`，
+  原样搬出；两处 lambda 改捕获 `main`（原捕获 Main 的 `log_msg` / `load_scene` / `current_scene_id`，按下时才读，行为一致）；
+  三处 `CHEN_ZAN_*` 常量改经 `main.` 取。头注更新（住处 / 寺观 / 玉湖陈宅；留在 Main 的清单里去掉 `_setup_residence_chen`、加上 CHEN_ZAN_*）。
+- Main.gd **4662 → 4621（−41）**（本支 47 行收成一行转发 + 落点上下共 −6 空行），func 数不变：本支留同名同签名一行转发
+  （`const _RESIDENCE := preload(...)`），`CHEN_ZAN_*` 三常量与 `## 玉湖陈宅` 横线仍在这里。
+- 门禁同步：本节标题登记后跑 `python3 tools/gen_main_splits.py --write`（`tools/main_splits.txt` ResidencePage 那行第 4 列
+  由「2389-2419,2426-2505」合成「2145-2149,2389-2419,2426-2505」、第 5 列末加 ` _setup_residence_chen→setup_residence_chen`，
+  commit / lane 仍记建刀 `ebd28e7` / main9）；`godot_compile_check.gd` 的 SCRIPTS 不变（ResidencePage 早就在列）；
+  simulate_endgame `:81` 改读 main_stitch（上表）。**断言条件一条没改、没放宽。**
+- 新加一条钉子（check_symbols 九之七，只收紧，口径同第十刀船屋）：`_setup_residence_chen` 在 Main 里须是一行转发到
+  `_RESIDENCE` 的同名 static func、拆出件真有那支、Main 真 preload 了它；名字 `_setup_residence_chen` 登记进
+  `NAMED_FUNCS` 的 `scripts/Main.gd` 组。之所以单独钉一件（不走十三之七号钉子的「一件一件列」）：gen_main_splits 一条
+  「追加刀件、段、函数都已登记」整条 red（`--write` 也不会翻绿），就是想摸回到 Main 也得连台账 / 清单一起改，cs18 已兜。
+- 拼回原文：`read_main_src()` 拼回 `_setup_residence_chen` 与基 `4bafe23` 的 Main.gd 逐行比：**只有两个 lambda 的
+  捕获读法不同**（原 `log_msg` / `load_scene` / `current_scene_id` ⇄ 拼回后 `self.log_msg` / `self.load_scene` /
+  `self.current_scene_id`，拼回规则把 `main.` 去前缀、裸 `main` 换回 self），其余逐字一致；`var mother: String` 由
+  `:=` 改显式类型（经 `main.` 取值推断不出类型，照第九刀起的惯例）。simulate_endgame `:81` 的三层缩进正则只认
+  `log_msg(` / `advance_days(` 的形状，不看 `self.`——拼回后该行是 `self.log_msg(…)` / `self.load_scene(self.current_scene_id)`，
+  与搬走前 Main 原文逐字同。
+
+### 追加刀 · 前三项对账（行段 / 拆出 commit / 引用点；一项一项回读）
+
+- **行段**：本节函数表 `_setup_residence_chen` 2145–2149 按追加刀拆前（`4bafe23` 的 Main.gd）记；第九刀函数表
+  `_setup_residence` … `_on_temple_rub` 的 6 支行段仍按建刀 `ebd28e7^` 的 Main.gd 记（2389–2505），`gen_main_splits`
+  两条路径分别按各刀自己的拆前 Main.gd 重算、逐支对账。清单第 4 列三段合并：`2145-2149,2389-2419,2426-2505`。✓
+- **拆出 commit**：清单第 3 列仍记建刀 `ebd28e7`（`--diff-filter=A`）；本节写好的一刀自己的拆前 = `4bafe23`。✓
+- **引用点**：上面那表 6 处逐条回读——simulate_endgame 1 处改读 main_stitch；story zan_cases 常量仍取 Main 实例
+  （不走转发），对；smoke 末支退路自动对；check_symbols 建刀组的 9 支不掺追加刀；拍板清单 DRIFT 收尾 `--fix` 跟号。✓
+- gen_main_splits 既有 12 件行段 / commit / lane 全部不动（`tools/main_splits.txt` 只 ResidencePage 一行的 4 / 5 列动），
+  已拿基 `4bafe23` 上的同一脚本对过 `--write`：除新加那行外逐字节相同。
+
+### 下一刀候选
+
+1. **O 浮页**（8 / 82，照第十二刀的基重算）：`qa_wire_vision` / `qa_letterbox_copy` 直读 Main.gd 查 `_open_vision_stage` 字样
+   （转发留名不会红），两个 lambda 回写 Main 的浮页句柄；中风险。
+2. **F 船况措辞 / N 内景题 / D 调试**（中低 / 低）。
+3. **A / E / H / I / K / B / X** 风险高，仍先做「Main 家族源码」共用 helper 的门禁 lane（第五 / 七 / 九刀候选）；
+   现 Python 门禁里 verify_economy / simulate_endgame 已用 main_stitch，`simulate_run` / `verify_story_data` /
+   `check_assets` 三处仍直读 Main.gd，片段里读到的函数搬走时要跟。

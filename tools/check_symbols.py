@@ -4037,6 +4037,29 @@ else:
         print(f"  ✗ {_m}")
     problems.append("调试钩子没钉在 DebugHooks")
 
+# 玉湖陈宅 1 支真身追加钉在 ResidencePage（lane w20-a9 第十三刀二，口径同上面船屋 / 标题页 / 调试钩子的钉子）：
+# Main 里只许是一行转发到 _RESIDENCE 的同名 static func，拆出件里须真有那支、Main 真 preload 了它。
+# 挪回 Main 再 `gen_main_splits --write` 由生成器判红（追加刀节的台账函数表列了它，cs18 / cs22 都会红）；这里再钉 preload 常量名与拆出件那支。
+_rs_src = open(os.path.join(SCRIPTS, "ui", "ResidencePage.gd"), encoding="utf-8").read()
+_rs_static = set(re.findall(r'^static\s+func\s+([A-Za-z_]\w*)\s*\(', _rs_src, re.M))
+_rs_raw_fn = func_bodies(open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read())
+_rs_bad = []
+for _rs_name in ("_setup_residence_chen",):
+    _rs_code = [ln for ln in _rs_raw_fn.get(_rs_name, "", forward_ok=True).split("\n") if ln.strip() and not ln.strip().startswith("#")]
+    _rs_fwd = _SPLIT_FWD.match(_rs_code[0]) if len(_rs_code) == 1 else None
+    if not (_rs_fwd and _rs_fwd.group(1) == "_RESIDENCE" and _rs_fwd.group(2) == _rs_name[1:]):
+        _rs_bad.append(f"Main.{_rs_name} 不是一行转发到 _RESIDENCE.{_rs_name[1:]}")
+    elif _rs_name[1:] not in _rs_static:
+        _rs_bad.append(f"ResidencePage.gd 缺 static func {_rs_name[1:]}")
+if re.search(r'^const _RESIDENCE := preload\("res://scripts/ui/ResidencePage\.gd"\)', open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read(), re.M) is None:
+    _rs_bad.append("Main 没有 const _RESIDENCE := preload(ResidencePage.gd)")
+if not _rs_bad:
+    print("  ✓ 玉湖陈宅 1 支真身在 ResidencePage，Main 只留一行转发（lane w20-a9）")
+else:
+    for _m in _rs_bad:
+        print(f"  ✗ {_m}")
+    problems.append("玉湖陈宅没钉在 ResidencePage")
+
 # Lane AC：发现录列表与呈报确认改纪实短句；存档键、呈报顺序与赏格公式不动
 _ac_slips = _disc_main_fn.get("_setup_reporting", "")
 _ac_onrep = _disc_main_fn.get("_on_report_discovery", "")
@@ -4532,7 +4555,7 @@ NAMED_FUNCS = {
         "_on_opening_finished", "_on_repair_hull", "_on_repay", "_on_report_discovery", "_on_rewatch_opening",
         "_on_start_game_pressed", "_on_temple_look", "_on_temple_rub", "_on_upgrade", "_play_opening", "_setup_guild",
         "_setup_news_wall",
-        "_setup_reporting", "_setup_shipyard", "_setup_title_and_invest", "_setup_title_mode", "_setup_yamen",
+        "_setup_reporting", "_setup_residence_chen", "_setup_shipyard", "_setup_title_and_invest", "_setup_title_mode", "_setup_yamen",
         "_skill_rank", "_yard_offer", "_yard_port_name", "_yard_success_transition", "load_scene", "play_transition",
         "show_choices", "update_status_panel",
     ),

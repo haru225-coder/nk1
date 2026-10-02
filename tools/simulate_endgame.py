@@ -32,7 +32,11 @@ def check(cond, msg):
 
 
 gs = src("scripts/GameState.gd")
-main = src("scripts/Main.gd")
+# 「玉湖陈宅跑腿」的源码断言走 Main 家族拼回（lane w20-a9 第十三刀二：_setup_residence_chen 追加进 ResidencePage，
+# 直读 Main.gd 只剩一行转发、切不到「hometown_tendency += 3\n\t\t\tGameManager.advance_days(6)」）。拼回去 main. 前缀、
+# lambda 里捕获的 main 换回 self，拼出来正是搬走前的三层缩进原文。Main 自己的常量（SIEGE_* / YASHAN_*）仍一字不动。
+import main_stitch
+main = main_stitch.read_main_src()
 ports = {p["id"]: p for p in load("ports.json")["ports"]}
 ships = {s["id"]: s for s in load("ships.json")["ships"]}
 news = load("news.json")["news"]
@@ -73,7 +77,7 @@ for sc, se, ho, lf, want in cases:
     got = resolve(sc, se, ho, lf)
     check(got == want, f"倾向(士{sc}/海{se}/乡{ho}, 先{'陆' if lf else '海'}) → {got}")
 
-# 乡土可达性：1268 前唯一写入点是玉湖陈宅跑腿 +3/次
+# 乡土可达性：1268 前唯一写入点是玉湖陈宅跑腿 +3/次（W20-a9：_setup_residence_chen 已追加进 ResidencePage；拼回 main_stitch.read_main_src() 后这段正字与搬走前一致）
 m = re.search(r"hometown_tendency \+= (\d+)\n\t\t\tGameManager\.advance_days\((\d+)\)", main)
 check(m is not None, "玉湖陈宅跑腿是 1268 前的乡土写入点")
 if m:
