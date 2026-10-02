@@ -123,6 +123,7 @@ func _ready() -> void:
 				child.add_theme_font_override("font", UiTheme.font())
 				child.add_theme_color_override("font_color", UiTheme.GOLD)
 	randomize()
+	_setup_coastline()
 	var pb: Dictionary = GameManager.pending_battle
 	if pb.get("battle", false):
 		_setup_combat(pb)
@@ -893,6 +894,105 @@ func _setup_sea(pb: Dictionary) -> void:
 	# 物理帧排在船后面：Ship / PirateShip 先走完本帧，_physics_process 再按模型改旗舰
 	process_physics_priority = 10
 	_feed_ship_wind()
+
+
+# ══ 战术场岸线（lane w20-b1：g13 遗留①）════════════════════════════════════════
+# 本场景原先只有海面、船与两个写死的示意港，镜头拉到 w19-g13 的 0.5 也看不到岸。
+# 这里把海图 MapView 同一份真岸线（data/coastline.json + ChartProjection）摊进本场景世界坐标：
+# 经纬 →（海图同口径圆锥投影）→ 海图画布 px → 按 _COAST_SCALE 缩放、再平移摆进场景。
+# _COAST_SCALE 按泉州—兴化两头算：真图距约 76 km，场景里两港相距 2236 px，得 28.43；搬过去后泉、兴两港
+# 正好落在岸沿上、示意港位不挪节点（遗留③港位是场景示意位，仍然记载在拍板清单）。
+var _coast_rings: Array = []          # [{ pts: PackedVector2Array, box: Rect2 }]，世界坐标
+var _coast_layer: Node2D = null      # 岸线层节点（探针可经 CoastlineLayer 关掉以断言变化）
+const _COAST_SCALE := 28.43          # 海图 px → 世界 px：泉州—兴化真图 76 km 对场景 2236 px
+const _COAST_NEAR := 8000.0          # 只铺场景中心 ±8000 内的环（镜头半幅 720；出圈整环不入画）
+const _COAST_MIN_Z := 0.30           # 相机 zoom 低于此值整层淡出：远景截图不必全线露墨、也不糊成一团
+const _COAST_LINE := Color(0.22, 0.18, 0.14, 0.55)   # 岸线墨线（淡；UiTheme.INK 同系）
+
+
+## 战斗 / 自由场景都铺：数据缺失时返回 []，整场就不画。
+func _setup_coastline() -> void:
+	_coast_rings = _build_coast_rings()
+	if _coast_rings.is_empty():
+		return
+	var layer := Node2D.new()
+	layer.name = "CoastlineLayer"
+	layer.z_index = -5                     # 海面（Ocean z −10）之上、船与港标之下：只作背景
+	layer.draw.connect(_draw_coastline.bind(layer))
+	layer.set_meta("coast_rings", _coast_rings.size())
+	add_child(layer)
+	_coast_layer = layer
+
+
+## 经纬 → 场景世界 px：ChartProjection.to_px 后按 _COAST_SCALE 缩，再平移到泉州真位置落场 PortQuanzhou (0,1000)。
+static func _build_coast_rings() -> Array:
+	var data: Dictionary = GameManager.coastline_data
+	if data.is_empty():
+		return []
+	var proj := ChartProjection.from_json()
+	if not proj.loaded:
+		return []
+	# 两个示意港的海图真位置做锚（港位本身不动；海岸随锚搬）：泉州真位置印在海图岸内，
+	# 若直接把泉州真位置压到 PortQuanzhou (0,1000)，泉州港会被岸块压住；所以锚点取 (180,1000)——
+	# 即把整片海岸往北挪开一点、唯独留泉州在湾内。沿用同一锚测不出兴化二者的示意示意差，
+	# 港位xíng方位仍符合真海图走向（遗留③拍板清单有载）。
+	var qz_src: Vector2 = proj.to_px(118.68, 24.87)
+	var world_offset: Vector2 = Vector2(180.0, 1000.0) - qz_src * _COAST_SCALE
+	var out: Array = []
+	for ring in data.get("land", []):
+		if ring.size() < 3:
+			continue
+		var poly := PackedVector2Array()
+		for pt in ring:
+			poly.append(proj.to_px(float(pt[0]), float(pt[1])) * _COAST_SCALE + world_offset)
+		var b: Rect2 = _poly_box(poly)
+		# 只铺场景中心 ±_COAST_NEAR 内的环（出圈的整块弃：远洋船看不见、画了也是虚耗）
+		if b.position.x > _COAST_NEAR or b.end.x < -_COAST_NEAR \
+				or b.position.y > _COAST_NEAR or b.end.y < -_COAST_NEAR:
+			continue
+		out.append({"pts": poly, "box": b})
+	return out
+
+
+## 岸线层自绘：世界坐标系下画、镜头一挪本条画自动跟着，不需要手动 queue_redraw；按 zoom 定视窗、整层透明度。
+func _draw_coastline(layer: CanvasItem) -> void:
+	if _coast_rings.is_empty():
+		return
+	var cam: Camera2D = (get_node_or_null("Ship/Camera2D") as Camera2D) if has_node("Ship/Camera2D") else null
+	var z: float = maxf(cam.zoom.x, 0.01) if cam != null else 0.5
+	var view: Rect2 = _coast_view_rect()
+	var col: Color = _COAST_LINE
+	if z < _COAST_MIN_Z:
+		# 远景：整层按比例淡——不糊成一片黑，也看得出有岸
+		col.a *= z / _COAST_MIN_Z
+	for r in _coast_rings:
+		if not (r["box"] as Rect2).intersects(view, false):
+			continue
+		layer.draw_polyline(r["pts"], col, maxf(1.2 / z, 0.8), true)
+
+
+## 当前镜头看到的世界范围（视野外扩三圈）；没拿到相机就按旗舰位置在后场大约铺一幅。
+func _coast_view_rect() -> Rect2:
+	var cam: Camera2D = (get_node_or_null("Ship/Camera2D") as Camera2D) if has_node("Ship/Camera2D") else null
+	var center: Vector2 = Vector2.ZERO
+	var z := 0.5
+	if cam != null and cam.is_inside_tree():
+		z = maxf(cam.zoom.x, 0.05)
+		center = cam.get_screen_center_position()
+	elif is_instance_valid(ship):
+		center = ship.position
+	var half: Vector2 = get_viewport_rect().size * 0.5 / z
+	# 发散一圈：屏幕一半再扩 4 成（镜头平移 / 摆动 / 截图向斜一点时岸沿也在画）
+	return Rect2(center - half * 1.4, half * 2.8)
+
+
+static func _poly_box(pts: PackedVector2Array) -> Rect2:
+	if pts.is_empty():
+		return Rect2()
+	var r := Rect2(pts[0], Vector2.ZERO)
+	for v in pts:
+		r = r.expand(v)
+	return r
 
 
 ## 海况的风喂给旗舰：Ship 拿它算侧倾（旧式推力已被模型换掉）。海战风力封顶在风暴伤线以下（SeaState.WIND_CAP）

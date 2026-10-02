@@ -126,6 +126,7 @@ const SCRIPTS := [
 const INVENTORY_ROOTS := ["scripts", "tools"]
 const INVENTORY_SKIP_DIRS := ["tools/legacy"]
 const INVENTORY_EXEMPT := {
+	"tools/tactical_coast_screens.gd": "lane w20-b1 人工验图 driver（before/after 截图，不入门禁；不接 ShotGate / 不在 SCRIPTS 体检）",
 	"tools/godot_compile_check.gd": "门禁本体：它自己编不过就根本跑不到这里，列入无增益",
 }
 

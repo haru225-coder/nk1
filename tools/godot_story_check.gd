@@ -742,6 +742,7 @@ func _route_check() -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
 	_g13_chart_zoom_check()
+	_b1_worldmap_coast_check()
 	_w20c2_port_beats_check(main)
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
@@ -3554,4 +3555,81 @@ func _a5_sea_here_check() -> void:
 	_check(mutB != sea_body and b_bad.size() >= 1,
 		"变异 B（未过半臂套上「remaining_li > total_li * 0.5」，未过半恒算起点）落空须红：%d 格退化——%s" % [b_bad.size(), "、".join(b_bad)])
 
+
+## w20-b1（g13 遗留①：WorldMap 没有岸线层，镜头拉远也看不到岸）：
+## 海战战术场自绘一层真岸线——海图 MapView 同一份数据（data/coastline.json + ChartProjection），
+## 按泉州—兴化示意位间距定比例铺进世界坐标。
+## _route_check 是同帧接力（不传 await）；布景 / 铺层全在 add_child 同一帧到位，不必等帧：
+## WorldMap._ready 是严典同步，_setup_coastline / 世界坐标缓存 / CoastlineLayer 都是就地建成的。
+## 一、铺层存在（CoastlineLayer 挂上，z 在海面之上 / 船标之下）；
+## 二、世界坐标缓存铺上了邻近一环，环节点均在 ±_COAST_NEAR 内（整环过滤生效）。
+## 三、视野 _coast_view_rect 随镜头（旗舰 camera zoom 0.5 默认→摆 0.8，视野一比收）。
+## 四、形状常量没破坏：_COAST_SCALE 落在泉州—兴化真距区间；_COAST_MIN_Z 介于 0.01—0.60。
+## 最后一档「必红」变异：把 _setup_coastline 里 _build_coast_rings 返回 [] 、或 _draw_coastline 成 pass
+##    （任何一道「不画」的改动）——本函数报红，截图闸也看不到岸线层。
+func _b1_worldmap_coast_check() -> void:
+	var gm: Node = root.get_node("GameManager")
+	gm.set("pending_battle", {
+		"battle": true,
+		"enemy": [{"type": "pirate_boat", "count": 1}],
+		"power": 60.0,
+		"player_power": 300.0,
+		"sea_name": "泉州外海",
+		"sea_seed": 7,
+	})
+	var wm = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
+	root.add_child(wm)
+	# 布景同一帧（WorldMap._ready 同步挂上 CoastlineLayer）；冻敌炮免得抹黑
+	var _cs := load("res://tools/combat_probe_stage.gd") as GDScript
+	var freeze_n: int = int(_cs.freeze_enemy_fire(wm))
+	_check(freeze_n >= 1, "布景敌船开炮已冻住（n=%d）" % freeze_n)
+	if not is_instance_valid(wm):
+		_check(false, "布景后 WorldMap 还活着（闪退）")
+		return
+	_check(wm.has_method("_setup_coastline"), "WorldMap 有岸线铺设入口 _setup_coastline")
+	_check(wm.has_method("_build_coast_rings"), "WorldMap 有世界坐标缓存 _build_coast_rings（经纬 → 场景）")
+	_check(wm.has_method("_draw_coastline"), "WorldMap 有岸线层自绘 _draw_coastline")
+	_check(wm.has_method("_coast_view_rect"), "WorldMap 有随镜头的视野方法 _coast_view_rect")
+	var layer: CanvasItem = wm.get_node_or_null("CoastlineLayer")
+	_check(layer != null and layer is Node2D, "CoastlineLayer 已挂入 WorldMap（战斗 / 自由场景都铺）")
+	if layer == null:
+		wm.queue_free()
+		return
+	_check(layer.z_index > -10 and layer.z_index < 2,
+		"岸线层 z=%d：海面（Ocean z -10）之上、船 / 港标（z 2）之下" % layer.z_index)
+	var rings: Array = wm.get("_coast_rings")
+	_check(rings is Array and rings.size() > 0,
+		"世界坐标缓存铺上了邻近一环：_coast_rings 中环 %d 个" % rings.size())
+	var rings_meta := int(layer.get_meta("coast_rings", -1))
+	_check(rings_meta == rings.size(), "岸线层 meta.coast_rings=%d 与 _coast_rings 实数 %d 一致" % [rings_meta, rings.size()])
+	# 二、整环过滤生效：环节点全部落在 ±_COAST_NEAR 内；超出中心的环整环被弃
+	var wm_c: Dictionary = (load("res://scripts/WorldMap.gd") as GDScript).get_script_constant_map()
+	var c_near := float(wm_c.get("_COAST_NEAR", 0.0))
+	var out_n := 0
+	for r in rings:
+		var b: Rect2 = r.get("box", Rect2())
+		if b.position.x > c_near or b.end.x < -c_near or b.position.y > c_near or b.end.y < -c_near:
+			out_n += 1
+	_check(out_n == 0, "世界坐标整环过滤生效：%d 环越出 ±%.0f（应 0；陆上 / 远岛整环不入画）" % [out_n, c_near])
+	# 三、视野随镜头：把旗舰 camera zoom 摆到 0.8，_coast_view_rect 应从本帧 viewport rect 按 1/zoom 收一倍半圈（0.5 → 0.8：面积比 = (1.4/0.8)²）
+	var cam: Camera2D = wm.get_node_or_null("Ship/Camera2D")
+	_check(cam != null, "WorldMap 有 Ship/Camera2D（镜头）")
+	if cam != null:
+		var vp: Vector2 = wm.get_viewport_rect().size
+		cam.zoom = Vector2(0.8, 0.8)
+		var vr: Rect2 = wm.call("_coast_view_rect")
+		var expect := vp * 0.5 / 0.8 * 1.4 * 2.0
+		# headless 下 viewport rect 是场景默认（不是 1280×720），按 vp 现算才不写死尺寸
+		_check(absf(vr.size.x - expect.x) < 5.0 and absf(vr.size.y - expect.y) < 5.0,
+			"视野随镜头：zoom 0.8 时视野 %.0f×%.0f（vp %.0f×%.0f ÷ 0.8 ×1.4 ×2，实得 %.0f×%.0f）" % [expect.x, expect.y, vp.x, vp.y, vr.size.x, vr.size.y])
+	# 四、形状常量没破坏
+	var c_scale := float(wm_c.get("_COAST_SCALE", 0.0))
+	var c_min_z := float(wm_c.get("_COAST_MIN_Z", 0.0))
+	_check(c_scale >= 20.0 and c_scale <= 50.0,
+		"摊图比例 _COAST_SCALE=%.2f：海图 0.9 km/px 落到刷场 25.6−64 km 一圈" % c_scale)
+	_check(c_min_z > 0.01 and c_min_z < 0.60,
+		"缩到最小时淡出 _COAST_MIN_Z=%.2f：介于 0.01−0.60，整层低于本值不再画" % c_min_z)
+	# 收：布景不 battle_exit，静走
+	wm.queue_free()
+	gm.set("pending_battle", {})
 
