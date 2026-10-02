@@ -55,6 +55,11 @@ func _run() -> void:
 		return
 	var packed := load(STAGE) as PackedScene
 	var stage: Control = packed.instantiate()
+	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：VisionStage 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	stage = ShotGate.start_tree_probe(STAGE, _fails, "WireVision VisionStage") as Control
+	if stage == null:
+		_report()
+		return
 	var ready_flag: Array = [false]
 	if stage.has_signal("stage_ready"):
 		stage.stage_ready.connect(func(): ready_flag[0] = true)
@@ -89,7 +94,17 @@ func _run() -> void:
 			"durability": 200, "max_durability": 200,
 		}])
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
+	# 被测树自检（wave24-b5）：WorldMap 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	wm = ShotGate.start_tree_probe("res://scenes/WorldMap.tscn", _fails, "WireVision WorldMap")
+	if wm == null:
+		_report()
+		return
 	root.add_child(wm)
+	for _i in 6:
+		await process_frame
+	if not ShotGate.check_fields(wm, {"combat_mode": "WorldMap.gd Parse Error / 海战布景断", "resolved": "WorldMap.gd Parse Error / 海战布景断"}, _fails, "WireVision WorldMap"):
+		_report()
+		return
 	# 布景不自己结算（lane gd10 helper）：只冻敌炮，理由见 combat_probe_stage.gd
 	_expect(CombatStage.freeze_enemy_fire(wm) == 2, "布景敌船开炮已冻住（2 艘）")
 	# 入战题签合拢期再截一帧：按演出信号截（lane gd11），不数帧。原 36+24 帧快机截在墨边合拢前、

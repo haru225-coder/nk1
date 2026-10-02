@@ -53,8 +53,16 @@ func _run() -> void:
 	var packed: PackedScene = load("res://scenes/Main.tscn")
 	_main = packed.instantiate()
 	ShotGate.frame_pressure(self)
+	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：Main 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	_main = ShotGate.start_tree_probe("res://scenes/Main.tscn", _fails, "SiegeEndgame Main")
+	if _main == null:
+		quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+		return
 	root.add_child(_main)
 	await _settle(10)
+	if not ShotGate.check_fields(_main, {"current_scene_id": "Main.gd Parse Error / load_scene 断"}, _fails, "SiegeEndgame Main"):
+		quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+		return
 
 	# —— 守城：先进泉州港页，再照 ShotTour._site_siege 立守城进兴化
 	gs.from_dict({})

@@ -38,6 +38,11 @@ func _run() -> void:
 		return
 	var packed := load(STAGE) as PackedScene
 	var stage: Control = packed.instantiate()
+	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：VisionStage 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	stage = ShotGate.start_tree_probe(STAGE, _fails, "VisionStage") as Control
+	if stage == null:
+		quit(ShotGate.finish_contract(TAG, _fails) if contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+		return
 	stage.set("auto_volley", false)
 	ShotGate.frame_pressure(self)
 	# GDScript 闭包对 bool 是拷贝赋值；用数组作可变旗标。

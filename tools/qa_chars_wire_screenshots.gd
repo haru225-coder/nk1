@@ -46,9 +46,17 @@ func _run() -> void:
 	root.add_child(bg)
 	# 经场景实例化，等 autoload（GameManager）就绪后再解析脚本
 	_ov = (load("res://scenes/chars/CharsShoreOverlay.tscn") as PackedScene).instantiate()
+	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：CharsShoreOverlay 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	_ov = ShotGate.start_tree_probe("res://scenes/chars/CharsShoreOverlay.tscn", _fails, "CharsShoreOverlay wire")
+	if _ov == null:
+		quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+		return
 	root.add_child(_ov)
 	_ov.call("begin", "chen_wenlong")
 	await _settle(14)
+	if not ShotGate.check_fields(_ov, {"current_id": "CharsShoreOverlay.gd Parse Error / roster 断"}, _fails, "CharsShoreOverlay wire"):
+		quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+		return
 	await _shot("wire_01_roster_panel")
 
 	_ov.call("focus_id", "chen_zan")

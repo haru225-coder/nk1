@@ -56,7 +56,17 @@ func _run() -> void:
 	gm.pending_battle = {"battle": true, "power": 300.0, "player_power": 300.0,
 		"enemy": enemy, "source": {"scene": "probe"}}
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
+	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：WorldMap 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	wm = ShotGate.start_tree_probe("res://scenes/WorldMap.tscn", _fails, "VisionLetterbox WorldMap")
+	if wm == null:
+		_end(null)
+		return
 	root.add_child(wm)
+	for _i in 6:
+		await process_frame
+	if not ShotGate.check_fields(wm, {"combat_mode": "WorldMap.gd Parse Error / 海战布景断", "resolved": "WorldMap.gd Parse Error / 海战布景断"}, _fails, "VisionLetterbox WorldMap"):
+		_end(wm)
+		return
 	# 下面的 lambda 只捕获弱引用：wm / lb / ex 都会在等待中被释放，直接捕获再调就报 Lambda capture freed（lane gd17）
 	var wm_ref: WeakRef = weakref(wm)
 	# 布景不自己结算（lane pg 立、gd10 改冻开炮）：WorldMap 是真海战，照常开炮结算。约 8–10 s 旗舰被击沉 →

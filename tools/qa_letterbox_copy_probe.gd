@@ -87,7 +87,17 @@ func _run() -> void:
 		"source": {"scene": "letterbox_probe"},
 	}
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
+	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：WorldMap 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	wm = ShotGate.start_tree_probe("res://scenes/WorldMap.tscn", _fails, "LetterboxCopy WorldMap")
+	if wm == null:
+		_end(null, gm)
+		return
 	root.add_child(wm)
+	for _i in 6:
+		await process_frame
+	if not ShotGate.check_fields(wm, {"combat_mode": "WorldMap.gd Parse Error / 海战布景断", "resolved": "WorldMap.gd Parse Error / 海战布景断"}, _fails, "LetterboxCopy WorldMap"):
+		_end(wm, gm)
+		return
 	# 布景不自己结算（lane gd6 立、gd10 改冻开炮）：WorldMap 是真海战，照常开炮结算。
 	# 探针不开船，约 3.5 s 首轮齐射、8–10 s 旗舰被击沉 → Ship._sink_ship → WorldMap._battle_exit("lose")
 	# → queue_free()；下面再调 wm.queue_free() 就报「previously freed instance」，_run 协程中断、

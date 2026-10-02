@@ -38,8 +38,16 @@ func _run() -> void:
 	ShotGate.frame_pressure(self)
 	_gs = root.get_node("GameState")
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
+	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：Main 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	_main = ShotGate.start_tree_probe("res://scenes/Main.tscn", _fails, "P7 Main")
+	if _main == null:
+		quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+		return
 	root.add_child(_main)
 	await _settle(8)
+	if not ShotGate.check_fields(_main, {"current_scene_id": "Main.gd Parse Error / load_scene 断"}, _fails, "P7 Main"):
+		quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+		return
 
 	# Enough cash + credit to show join as available (fee 2000, credit 8).
 	_gs.money = maxi(int(_gs.money), 5000)

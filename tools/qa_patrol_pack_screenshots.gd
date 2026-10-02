@@ -41,8 +41,16 @@ func _run() -> void:
 
 	_gs = root.get_node("GameState")
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
+	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：Main 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	_main = ShotGate.start_tree_probe("res://scenes/Main.tscn", _fails, "PatrolPack Main")
+	if _main == null:
+		_report()
+		return
 	root.add_child(_main)
 	await _frames(8)
+	if not ShotGate.check_fields(_main, {"current_scene_id": "Main.gd Parse Error / load_scene 断"}, _fails, "PatrolPack Main"):
+		_report()
+		return
 
 	# ── 入行 / 赴试 ──
 	_gs.money = maxi(int(_gs.money), 5000)
@@ -89,9 +97,17 @@ func _run() -> void:
 	_main.visible = false
 	await _frames(2)
 	var ov: Control = (load("res://scenes/chars/CharsShoreOverlay.tscn") as PackedScene).instantiate()
+	# 被测树自检（wave24-b5）：CharsShoreOverlay 挂不出 / 挂空壳秒级判红；字段在 begin+淡入之后点名
+	ov = ShotGate.start_tree_probe("res://scenes/chars/CharsShoreOverlay.tscn", _fails, "PatrolPack 名册浮页") as Control
+	if ov == null:
+		_report()
+		return
 	root.add_child(ov)
 	ov.call("begin", "chen_wenlong")
 	await _frames(14)
+	if not ShotGate.check_fields(ov, {"current_id": "CharsShoreOverlay.gd Parse Error / roster 断"}, _fails, "PatrolPack 名册浮页"):
+		_report()
+		return
 	# 名册浮页淡入 0.18 s（原先数 14 帧，快机上只合 60 ms）
 	_expect(ov.modulate.a >= 1.0, "名册浮页已淡入满（a=%.2f）" % ov.modulate.a)
 	await _shot("06_roster_panel")
@@ -121,8 +137,16 @@ func _run() -> void:
 	_gs.visited_ports = ["quanzhou", "xinghua", "fuzhou", "zhangzhou"]
 	var voyage: Node = root.get_node("Voyage")
 	var chart: Node = (load(CHART_SCENE) as PackedScene).instantiate()
+	# 被测树自检（wave24-b5）：SeaChart 挂不出 / 挂空壳秒级判红；字段 map / _hand 在过帧后点名
+	chart = ShotGate.start_tree_probe(CHART_SCENE, _fails, "PatrolPack 海图")
+	if chart == null:
+		_report()
+		return
 	root.add_child(chart)
 	await _frames(8)
+	if not ShotGate.check_fields(chart, {"map": "SeaChart.gd 或 MapView Parse Error / path 错", "_hand": "SeaChart.gd 里 _hand 填表断"}, _fails, "PatrolPack 海图"):
+		_report()
+		return
 	var map: Node = chart.get("map")
 	if map:
 		map.call("frame_ports", ["quanzhou", "xinghua", "xinghua_harbor", "fuzhou", "zhangzhou", "penghu"], 0.10, 0.0)

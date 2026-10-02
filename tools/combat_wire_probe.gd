@@ -56,7 +56,17 @@ func _run() -> void:
 		fleet.set("morale", 70)
 
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
+	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：WorldMap 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	wm = ShotGate.start_tree_probe("res://scenes/WorldMap.tscn", _fails, "CombatWire WorldMap")
+	if wm == null:
+		_report()
+		return
 	root.add_child(wm)
+	for _i in 6:
+		await process_frame
+	if not ShotGate.check_fields(wm, {"combat_mode": "WorldMap.gd Parse Error / 海战布景断", "resolved": "WorldMap.gd Parse Error / 海战布景断"}, _fails, "CombatWire WorldMap"):
+		_finish(wm)
+		return
 	# 下面等相位的 lambda 只捕获弱引用：布景万一自行结算释放后再调，直接捕获 wm 就报 Lambda capture freed（lane gd17）
 	var wm_ref: WeakRef = weakref(wm)
 	# 布景不自己结算（lane gd10）：只冻敌船开炮，接舷演出照常跑；理由见 combat_probe_stage.gd 头注释

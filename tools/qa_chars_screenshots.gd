@@ -41,8 +41,16 @@ func _run() -> void:
 	print("QA_CHARS_BEGIN")
 	_demo = (load("res://scenes/chars/CharsDemo.tscn") as PackedScene).instantiate()
 	ShotGate.frame_pressure(self)
+	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：CharsDemo 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	_demo = ShotGate.start_tree_probe("res://scenes/chars/CharsDemo.tscn", _fails, "CharsDemo")
+	if _demo == null:
+		quit(ShotGate.finish_contract(TAG, _shot_fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _shot_fails))
+		return
 	root.add_child(_demo)
 	await _settle(12)
+	if not ShotGate.check_fields(_demo, {"current_id": "CharsDemo.gd Parse Error / roster 断"}, _shot_fails, "CharsDemo"):
+		quit(ShotGate.finish_contract(TAG, _shot_fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _shot_fails))
+		return
 
 	await _pick("chen_wenlong")
 	await _shot("01_demo_protagonist")

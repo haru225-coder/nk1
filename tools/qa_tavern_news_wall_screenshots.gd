@@ -44,8 +44,16 @@ func _run() -> void:
 	_gs = root.get_node("GameState")
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
 	ShotGate.frame_pressure(self)
+	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：Main 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	_main = ShotGate.start_tree_probe("res://scenes/Main.tscn", _fails, "TavernNewsWall Main")
+	if _main == null:
+		_report()
+		return
 	root.add_child(_main)
 	await _settle(8)
+	if not ShotGate.check_fields(_main, {"current_scene_id": "Main.gd Parse Error / load_scene 断"}, _fails, "TavernNewsWall Main"):
+		_report()
+		return
 
 	_gs.last_port = "quanzhou"
 	_gs.money = maxi(int(_gs.money), 500)
