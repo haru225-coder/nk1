@@ -334,7 +334,8 @@ func _site_tavern(arg: String) -> void:
 	_mark_ready()
 
 
-## --hire=<候选 id,…>：直接把人写进 Crew.hired（与 Crew.hire 同一记法，含 crew_history），不扣钱——巡检摆场用
+## --hire=<候选 id,…>：直接把人写进 Crew.hired（与 Crew.hire 同一记法——只存候选 id 字符串，
+## v4 起不再落整条快照，含 crew_history），不扣钱——巡检摆场用
 func _apply_hires() -> void:
 	if not _args.has("hire"):
 		return
@@ -343,7 +344,7 @@ func _apply_hires() -> void:
 		if cand.is_empty():
 			push_warning("TOUR --hire 查无此人：%s" % raw)
 			continue
-		Crew.hired[str(cand.get("role", ""))] = cand
+		Crew.hired[str(cand.get("role", ""))] = str(cand.get("id", ""))
 		GameState.record_crew(str(cand.get("id", "")))
 	_main.call("update_status_panel")
 
