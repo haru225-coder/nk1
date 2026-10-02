@@ -49,11 +49,19 @@ func _run() -> void:
 		cine_src.set("auto_opening", false)
 		cine_src.set("opening_seen", true)
 
-	var packed: PackedScene = load("res://scenes/Main.tscn")
-	_main = packed.instantiate()
+	# fail-fast（lane w23-a9 共用自检，同 SeaChart 道）：scenes/Main.tscn 撞上 Parse Error 时 instantiate 照常返回非 null Node 壳、
+	# 脚本字段全 nil，裸 add_child → _main.get("current_scene_id") 落 nil 后 _main.load_scene 一路 SCRIPT ERROR 到 900 s；
+	# start_tree_probe 同步拦三查，check_fields 在 add_child+过帧后再点「current_scene_id」（Main._ready 才赋）。
+	_main = ShotGate.start_tree_probe("res://scenes/Main.tscn", _fails, "Main 挂树")
+	if _main == null:
+		_report()
+		return
 	ShotGate.frame_pressure(self)
 	root.add_child(_main)
 	await _settle(10)
+	if not ShotGate.check_fields(_main, {"current_scene_id": "Main.gd Parse Error / current_scene_id 字段丢 / load_scene 靠它"}, _fails, "Main 挂树"):
+		_report()
+		return
 
 	if str(_main.get("current_scene_id")) != "cg_title":
 		_main.load_scene("cg_title")
@@ -91,6 +99,10 @@ func _run() -> void:
 	await _settle(8)
 	await _shot("05_wine_shed")
 
+	_report()
+
+
+func _report() -> void:
 	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
 
 

@@ -18,6 +18,20 @@ extends RefCounted
 ## 墙钟上界兜底（lane gd24）：两个收尾函数先看 probe_clock 的账——本进程有等待撞了上界，而调用方没判红（没看返回、
 ##   靠多停几帧碰运气），补一条红；error 没给且有「压帧过重」的撞界时填 wall_clock，JSON 另带 timeouts（压帧过重次数）/
 ##   stalls（卡住次数）。口径见 probe_clock 头注释「三」。
+## 被测树自检 start_tree_probe(path, fails, label) + check_fields(inst, required, fails, label)（lane w23-a9，接 w22-h5 遗留 / c7 修法二）：
+##   截图探针实例化被测场景前的三种秒级判红症状共用面——1) load() 返回 null；2) instantiate() 返回 null；
+##   3) 实例在但脚本没挂上（SceneTree 上 tscn 根 GDScript Parse Error 时 instantiate 照常返回非 null 的 Node 壳，
+##   此时 get_script() 为 null、脚本字段全 nil；不拦，裸 add_child(壳) → 后续 _chart.get("map") == null → 一路 SCRIPT ERROR，
+##   最后被外层 900 s 超时 / probe_clock 墙钟兜底慢红）。这三查 start_tree_probe 同步做，返回 null == 已判红，
+##   调用方接着 _report() 收尾。点名「脚本贴上后必须非 null 的字段」由 check_fields 做、因 @onready / _ready
+##   入树过帧后才挂的字段必须放在 add_child+_frames 之后才能点，否则会误报；各道的 required 清单不同、不进共用面硬编码。
+##   例：
+##     _chart = ShotGate.start_tree_probe(CHART_SCENE, _fails, "SeaChart 01 港名密区")
+##     if _chart == null: _report(); return
+##     root.add_child(_chart); await _frames(8)
+##     if not ShotGate.check_fields(_chart, {"map": "MapView path 错"}, _fails, "SeaChart 01 港名密区"): _report(); return
+##   红是因为挂不出 / 字段 nil 时，fails 各追加一条带【label / 症状 / 排查法】的中文行——人读秒懂、机器也读 json error。
+##   与源码探查 src_probe 不合并同用：那只读文件层（源码字号 / 开关 / 旗号），这层「起场景、逐字段试」，层不同。
 
 const DEFAULT_SHOT_ROOT := "/workspace/nk1-qa-shots"
 const GateReport := preload("res://tools/gate_report.gd")
@@ -60,6 +74,40 @@ class _FramePressure extends Node:
 
 	func _process(_delta: float) -> void:
 		OS.delay_msec(ms)
+
+
+## 被测树自检（头注释）：load / instantiate / get_script 三查同步做，秒级判红后返回 null；
+## 调用方判 null == 判红、接着 _report() 收尾。点名字段由 check_fields 做、必须放在 add_child+过帧之后
+## （@onready / _ready 里才挂上的字段在未入树时当然为 null——一体做会误报）。
+static func start_tree_probe(path: String, fails: Array = [], label := "") -> Node:
+	var where := "【%s】" % label if label != "" else "【截图道】"
+	var packed: PackedScene = load(path) as PackedScene
+	if packed == null:
+		fails.append("%s load(%s) 返回 null（场景文件缺 / 根脚本 Parse Error / 依赖链断）：本道秒级判红不等；请在编辑器打开 %s 看第一处错" % [where, path, path])
+		return null
+	var inst: Node = packed.instantiate()
+	if inst == null:
+		fails.append("%s load(%s) 成功但 instantiate() 返回 null（根节点 null / 根脚本的 extends 链 Parse Error）：本道秒级判红不等；请在编辑器打开 %s 逐级查红" % [where, path, path])
+		return null
+	if inst.get_script() == null:
+		fails.append("%s %s 挂上了但 get_script() == null：根脚本有 Parse Error（SceneTree 下 tscn 遇见 Parse Error 的 GDScript 会照常 instantiate 出 Node 壳，字段全 nil——不拦会一路 SCRIPT ERROR、让截图门禁等 900 s）；请在编辑器打开 %s 根节点的脚本改语法错" % [where, path, path])
+		return null
+	return inst
+
+
+## 共用自检第二段（头注释）：入树过帧后检查调用方点名的字段。返回 true=全齐，false=有 nil（已 append 一条可读原因进 fails）。
+## 调用方「if not ShotGate.check_fields(...): _report(); return」——与 start_tree_probe 同体例。
+static func check_fields(inst: Node, required: Dictionary, fails: Array, label := "") -> bool:
+	var where := "【%s】" % label if label != "" else "【截图道】"
+	var path := str(inst.scene_file_path) if inst != null else "<null>"
+	for key: String in required.keys():
+		if inst == null or inst.get(key) == null:
+			var hint := str(required[key]).strip_edges()
+			if hint != "":
+				hint = "（%s）" % hint
+			fails.append("%s %s 挂上了但点名字段 %s == null%s：本道秒级判红不等；请开编辑器查 %s 里这个名字的 path / preload / autoload 依赖" % [where, path, key, hint, path.get_file().get_basename() + ".gd"])
+			return false
+	return true
 
 
 static func contract_mode() -> bool:

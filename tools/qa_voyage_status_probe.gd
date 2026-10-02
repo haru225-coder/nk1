@@ -56,9 +56,18 @@ func _run() -> void:
 	fleet.water = 40
 	fleet.food = 40
 
-	_chart = (load(CHART_SCENE) as PackedScene).instantiate()
+	# fail-fast（lane w23-a9 共用自检，同 SeaChart 道）：MapView / _hand path / SeaChart.gd 依赖链 Parse Error 时
+	# instantiate 仍返回非 null 壳、字段全 nil，裸 add_child → _select_heading / _refresh_status 一路 SCRIPT ERROR 到 900 s；
+	# start_tree_probe 同步拦三查，check_fields 在 add_child+过帧后再点字段（@onready 挂上的不宜早查）。
+	_chart = ShotGate.start_tree_probe(CHART_SCENE, _fails, "QA_VOYAGE SeaChart 挂树")
+	if _chart == null:
+		_report()
+		return
 	root.add_child(_chart)
 	await _frames(8)
+	if not ShotGate.check_fields(_chart, {"map": "SeaChart.gd 或 MapView Parse Error / MapView path 错", "_hand": "SeaChart.gd 里 _hand 填表 Parse Error / path 错"}, _fails, "QA_VOYAGE SeaChart 挂树"):
+		_report()
+		return
 
 	# 选一张手牌，开船况（无委办基线）
 	var hand: PackedStringArray = _chart.get("_hand")

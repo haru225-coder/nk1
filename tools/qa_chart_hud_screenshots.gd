@@ -64,34 +64,21 @@ func _run() -> void:
 	gs.money = maxi(int(gs.money), 800)
 
 	# ── 01 港名密区 ──
-	# fail-fast（lane w22-h5，接 w21-d8）：load() 或 instantiate() 返回 null（SeaChart.gd Parse Error /
-	# 场景外壳齐但根节点脚本没挂上）时立刻判红收尾，不再让它落到 add_child(null) 的 SCRIPT ERROR 上
-	# 把探针整个卡死在外部 900 s 超时（截图门禁稳定性 §qa_chart_hud_screenshots 遗留段）。
-	var chart_packed := load(CHART_SCENE) as PackedScene
-	if chart_packed == null:
-		_expect(false, "SeaChart 场景加载返回 null：load(%s) 失败（脚本 Parse Error / 资源缺失 / 别的 lane 树 churn），本道秒级判红不等" % CHART_SCENE)
-		_report()
-		return
-	_chart = chart_packed.instantiate()
+	# fail-fast（lane w22-h5，接 w21-d8；wave23-a9 抬共用面）：load() / instantiate() 返回 null，或挂上了但 get_script()==null
+	# 三种症状共用 shot_gate.gd start_tree_probe，秒级判红；@onready / _ready 挂的字段挪到 add_child+过帧后由 check_fields 点。
+	_chart = ShotGate.start_tree_probe(CHART_SCENE, _fails, "SeaChart 01 港名密区")
 	if _chart == null:
-		_expect(false, "SeaChart 实例化返回 null：%s 里根节点脚本没挂上（SeaChart.gd Parse Error / MapView 类名冲突 / 依赖链断），本道秒级判红不等" % CHART_SCENE)
-		_report()
+		_report()  # 原因已进 _fails（shot_gate 标语）
 		return
 	root.add_child(_chart)
 	await _frames(8)
-	var map: Node = _chart.get("map")
-	_expect(map != null, "MapView 已挂上")
-	if map == null:
-		# fail-fast（lane w22-h5，接 w21-d8）：load / instantiate 返回 null 只是**场景外壳**的兜底；
-		# Parse Error 场景 instantiate 返回非 null 但脚本字段全空（_chart.map == null）。
-		# 原状继续(_chart.get("_hand") / move_ship_lonlat / _select_heading 全落 nil)就撞 SCRIPT ERROR、
-		# 截图门禁就挂在外层 900 s 超时——这里判红收尾，秒级报清楚是哪一招（Parse Error / 依赖链断）。
-		_expect(false, "SeaChart 挂了但 map==null（SeaChart.gd 或 MapView 相关脚本 Parse Error / MapView 类名冲突 /_hand 路径断了）：本道秒级判红不等")
+	if not ShotGate.check_fields(_chart, {"map": "SeaChart.gd 或 MapView Parse Error / MapView path 错", "_hand": "SeaChart.gd 里 _hand 填表 Parse Error / path 错"}, _fails, "SeaChart 01 港名密区"):
 		_report()
 		return
-	else:
-		map.call("frame_ports", ["quanzhou", "xinghua", "xinghua_harbor", "fuzhou", "zhangzhou", "penghu"], 0.10, 0.0)
-		await _frames(6)
+	_print_ok("%s 挂上且字段齐：map/_hand（共用自检）" % CHART_SCENE)
+	var map: Node = _chart.get("map")
+	map.call("frame_ports", ["quanzhou", "xinghua", "xinghua_harbor", "fuzhou", "zhangzhou", "penghu"], 0.10, 0.0)
+	await _frames(6)
 	await _shot("01_port_dense")
 
 	# ── 02 航行中 HUD ──
@@ -298,6 +285,10 @@ func _shot(name: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	ShotGate.shot(root, "%s/%s.png" % [_out_dir, name], _saved, _fails)
+
+
+func _print_ok(msg: String) -> void:
+	print("OK ", msg)
 
 
 func _expect(cond: bool, msg: String) -> void:
