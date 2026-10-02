@@ -247,113 +247,163 @@ func _board_enemy(enemy: Node2D) -> void:
 	_AUDIO.combat_board(self)
 	enemy.set("grappled", true)  # 敌船停航停炮
 	_SeaAtmosphere.boarding_drama(self, ship, enemy)  # lane atmos：接舷镜头 / 钩缆 / 翻白
-
-	# 钩索题签 + 轻震；窗口下停 0.42 s 再分胜负（combat12：combat11 把这一拍并进了同帧，begin 相位一帧没画就被 resolve 顶掉，
-	# wire / vfx 截图门禁的接舷开场张截不到）。headless 不停：末船夺下仍当帧收战。
-	# 计时器挂在本节点下（lane gd17）：这 0.42 s 里 WorldMap 被释放，挂起的协程随信号源丢弃，不泄漏。
-	var stage: CanvasLayer = _BoardingStage.begin(self, ship, enemy, _CombatFx.board_begin_subtitle())
 	_CombatFx.punch_camera(ship, 5.0)
-	if not _Kit.is_headless():
-		var pause := Timer.new()
-		pause.one_shot = true
-		pause.process_mode = Node.PROCESS_MODE_ALWAYS
-		pause.wait_time = 0.42
-		add_child(pause)
-		pause.start()
-		await pause.timeout
-		pause.queue_free()
-	if resolved or not is_instance_valid(enemy) or not _boarding_target_valid():
-		boarding = false
-		boarding_target = null
+
+	# 敌已降幡：接舷即得，免白刃（hook_seq 第 1 例 / case_redA1）
+	var yield_sheet = _morale.sheet_of(enemy) if _morale != null else null
+	if yield_sheet != null and yield_sheet.yields_to_boarding():
+		await _cut_yield(enemy)
 		return
 
 	var detail := ""
-	var notice := ""
-	var do_capture := false
 
-	# 敌已降幡：接舷即得，免白刃
-	var yield_sheet = _morale.sheet_of(enemy) if _morale != null else null
-	if yield_sheet != null and yield_sheet.yields_to_boarding():
-		do_capture = true
-		notice = _CombatFx.board_win_note(_node_str(enemy, "ship_name", "敌船"))
-		detail = "敌船降幡，接舷收船"
+	# MeleeResolve：有士气簿则攻方 morale 换 melee_factor
+	var ctx_extra := {"hooked": true}
+	var ps = _morale.player_sheet() if _morale != null else null
+	var r: Dictionary
+	if ps != null:
+		var us: Dictionary = _MeleeResolve.side_from_fleet(Fleet)
+		us["morale"] = clampi(int(round(ps.melee_factor() * 100.0)), 0, 100)
+		var foe: Dictionary = _MeleeResolve.side_from_enemy(enemy)
+		var ctx: Dictionary = _MeleeResolve.approach_from_nodes(
+			ship, enemy, Vector2.ZERO, -1.0, str(us.get("type", "")), str(foe.get("type", ""))
+		)
+		for k in ctx_extra:
+			ctx[k] = ctx_extra[k]
+		r = _MeleeResolve.resolve(us, foe, ctx)
 	else:
-		# MeleeResolve：有士气簿则攻方 morale 换 melee_factor
-		var ctx_extra := {"hooked": true}
-		var ps = _morale.player_sheet() if _morale != null else null
-		var r: Dictionary
-		if ps != null:
-			var us: Dictionary = _MeleeResolve.side_from_fleet(Fleet)
-			us["morale"] = clampi(int(round(ps.melee_factor() * 100.0)), 0, 100)
-			var foe: Dictionary = _MeleeResolve.side_from_enemy(enemy)
-			var ctx: Dictionary = _MeleeResolve.approach_from_nodes(
-				ship, enemy, Vector2.ZERO, -1.0, str(us.get("type", "")), str(foe.get("type", ""))
-			)
-			for k in ctx_extra:
-				ctx[k] = ctx_extra[k]
-			r = _MeleeResolve.resolve(us, foe, ctx)
-		else:
-			r = _MeleeResolve.from_battle(Fleet, ship, enemy, ctx_extra)
+		r = _MeleeResolve.from_battle(Fleet, ship, enemy, ctx_extra)
 
-		var legacy := str(r.get("legacy", "lose"))
-		var att_dead := int(r.get("att_dead", 0))
-		var morale_delta := int(r.get("att_morale_delta", 0))
-		Fleet.lose_crew_random(att_dead)
-		Fleet.morale = clampi(Fleet.morale + morale_delta, 0, Fleet.MORALE_MAX)
-		detail = str(r.get("summary", "")).strip_edges()
-		if legacy == "win":
-			do_capture = true
-			GameState.martial = mini(100, GameState.martial + 1)
-		else:
-			# 落空 / 击退 / 脱钩：解开钩缆，不把敌船留在 grappled
-			if is_instance_valid(enemy):
-				enemy.set("grappled", false)
-			boarding = false
-			boarding_target = null
-			var msg2 := detail if detail != "" else _CombatFx.board_lose_note(att_dead)
-			var lose_stage: CanvasLayer = _BoardingStage.resolve(self, "lose", msg2)
-			if lose_stage != null:
-				stage = lose_stage
-			else:
-				_show_combat_notice(msg2)
-			await _await_boarding_fx(stage)
-			return
-
-	if do_capture:
-		var type_id := _node_str(enemy, "ship_type", "pirate_boat")
-		var ship_name := _node_str(enemy, "ship_name", "")
-		var ok := Fleet.add_ship(type_id, ship_name)
-		var taken: String = str(Fleet.ships[Fleet.ships.size() - 1].get("name", "敌船")) if ok else "敌船"
-		if ok:
-			_prizes.append(Fleet.ships[Fleet.ships.size() - 1])
-		if notice == "":
-			notice = _CombatFx.board_win_note(taken)
-		if detail == "":
-			detail = notice
-		var resolved_stage: CanvasLayer = _BoardingStage.resolve(self, "win", detail)
-		if resolved_stage != null:
-			stage = resolved_stage
-		else:
-			# 题签起不来（headless / 不在树）才出浮字兜底：有题签就不出浮字，同一件事不在屏上说两遍（白刃失利同）。
-			# crew 线 09-28 9e35254 定的，09-30 合并 a356c16 按本地线落地时丢了（fx8 只补回等题签），lane w19-g1 补回
-			_show_combat_notice(notice)
-		_CombatFx.hitstop(self, 0.09, 0.16)
-		# 下场先记（降了的收船记受降），再清血量：离树时按船体记沉会把夺来的船记成击沉
-		_note_fate(enemy, "struck" if yield_sheet != null and yield_sheet.yields_to_boarding() else "boarded")
-		# 清血量再释放：避免 queue_free 后仍被 _enemies_alive 数到
-		enemy.set("hull_hp", 0.0)
-		enemy.queue_free()
+	var legacy := str(r.get("legacy", "lose"))
+	var att_dead := int(r.get("att_dead", 0))
+	var morale_delta := int(r.get("att_morale_delta", 0))
+	Fleet.lose_crew_random(att_dead)
+	Fleet.morale = clampi(Fleet.morale + morale_delta, 0, Fleet.MORALE_MAX)
+	detail = str(r.get("summary", "")).strip_edges()
+	if legacy == "win":
+		GameState.martial = mini(100, GameState.martial + 1)
+		await _cut_win(enemy, r)
+	else:
+		# 落空 / 击退 / 脱钩：解开钩缆，不把敌船留在 grappled
+		if is_instance_valid(enemy):
+			enemy.set("grappled", false)
 		boarding = false
 		boarding_target = null
-		if _enemies_alive() == 0:
-			# 末一艘夺下：headless 当帧收战（不 await，探针 30 帧内要收到 boarded）；窗口下等「夺船」题签停满 T_HOLD、
-			# 淡出后再出战（crew 线 09-28 实机验收 9e35254：当帧出战题签只留 1 帧；09-30 合并按本地线落地时丢了，lane fx8 补回）
-			_finishing_boarded = true
-			if not _Kit.is_headless():
+		await _cut_lose(enemy, r)
+
+
+## lane N-boarding-hook-ext-cut：接舷编排 `🔀 终拍` 三支。`_board_enemy` 不再自开场 + 直接分胜：
+##   头钩「按 G 钩」、降幡「接舷即得」、白刃胜「夺船」都先挂「接舷」钩索题签、停 T_CUT_HOLD_S、再 resolve。
+##   headless 下 begin 返回 null、停拍跳过，保持当帧完毕原契约（case_redA1 / red E1 / red E2 直判题签/题签后 finished）。
+const T_CUT_HOLD_S := 0.42
+
+## 编排胜拍：begin「接舷」题签 + 停 T_CUT_HOLD_S + resolve「夺船」+ 入册（原 do_capture 那段）
+func _cut_win(enemy: Node2D, r) -> void:
+	_BoardingStage.begin(self, ship, enemy, _CombatFx.board_begin_subtitle())
+	await _hook_seq_pause()
+	if resolved or not is_instance_valid(enemy) or not _boarding_target_valid():
+		return
+	var type_id := _node_str(enemy, "ship_type", "pirate_boat")
+	var ship_name := _node_str(enemy, "ship_name", "")
+	var ok := Fleet.add_ship(type_id, ship_name)
+	var taken: String = str(Fleet.ships[Fleet.ships.size() - 1].get("name", "敌船")) if ok else "敌船"
+	if ok:
+		_prizes.append(Fleet.ships[Fleet.ships.size() - 1])
+	var notice := _CombatFx.board_win_note(taken)
+	var detail := ""
+	if r is Dictionary:
+		detail = str((r as Dictionary).get("summary", "")).strip_edges()
+	if detail == "":
+		detail = notice
+	var stage: CanvasLayer = _BoardingStage.resolve(self, "win", detail)
+	if stage == null:
+		# 题签起不来（headless / 不在树）才出浮字兜底
+		_show_combat_notice(notice)
+	_CombatFx.hitstop(self, 0.09, 0.16)
+	await _await_boarding_fx(stage)
+	_end_capture(enemy, null)
+
+
+## 编排降幡拍：begin「接舷」题签 + 停 T_CUT_HOLD_S + resolve「夺船」（hook_seq 第 1 例 / case_redA1）
+func _cut_yield(enemy: Node2D) -> void:
+	_BoardingStage.begin(self, ship, enemy, _CombatFx.board_begin_subtitle())
+	await _hook_seq_pause()
+	if resolved or not is_instance_valid(enemy) or not _boarding_target_valid():
+		return
+	var yield_sheet = _morale.sheet_of(enemy) if _morale != null else null
+	var type_id := _node_str(enemy, "ship_type", "pirate_boat")
+	var ship_name := _node_str(enemy, "ship_name", "")
+	var ok := Fleet.add_ship(type_id, ship_name)
+	var taken: String = str(Fleet.ships[Fleet.ships.size() - 1].get("name", "敌船")) if ok else "敌船"
+	if ok:
+		_prizes.append(Fleet.ships[Fleet.ships.size() - 1])
+	var notice := _CombatFx.board_win_note(taken)
+	var detail := "敌船降幡，接舷收船"
+	var stage: CanvasLayer = _BoardingStage.resolve(self, "win", detail)
+	if stage == null:
+		_show_combat_notice(notice)
+	_CombatFx.hitstop(self, 0.09, 0.16)
+	await _await_boarding_fx(stage)
+	_end_capture(enemy, yield_sheet)
+
+
+## 编排负拍：begin「接舷」题签 + 停 T_CUT_HOLD_S + resolve「脱钩」（case_redE1；原 legacy==lose 那条）
+func _cut_lose(enemy: Node2D, r) -> void:
+	_BoardingStage.begin(self, ship, enemy, _CombatFx.board_begin_subtitle())
+	await _hook_seq_pause()
+	var summary := ""
+	var att_dead := 0
+	if r is Dictionary:
+		summary = str((r as Dictionary).get("summary", "")).strip_edges()
+		att_dead = int((r as Dictionary).get("att_dead", 0))
+	var msg = summary if summary != "" else _CombatFx.board_lose_note(att_dead)
+	var stage: CanvasLayer = _BoardingStage.resolve(self, "lose", msg)
+	if stage == null:
+		_show_combat_notice(msg)
+	await _await_boarding_fx(stage)
+
+
+## 窗口下停 T_CUT_HOLD_S（hook_seq 开场那拍）；begin 题签由调用方先挂。headless 早退。
+func _hook_seq_pause() -> void:
+	if _Kit.is_headless():
+		return
+	var pause := Timer.new()
+	pause.one_shot = true
+	pause.process_mode = Node.PROCESS_MODE_ALWAYS
+	pause.wait_time = T_CUT_HOLD_S
+	add_child(pause)
+	pause.start()
+	await pause.timeout
+	pause.queue_free()
+
+
+## _cut_win / _cut_yield 收尾：下场记 → 释放敌船 → 满船续拍或末船收战（原 _board_enemy do_capture 尾部直搬）
+func _end_capture(enemy: Node2D, yield_sheet) -> void:
+	if not is_instance_valid(enemy):
+		return
+	# 下场先记（降了的收船记受降），再清血量：离树时按船体记沉会把夺来的船记成击沉
+	_note_fate(enemy, "struck" if yield_sheet != null and yield_sheet.yields_to_boarding() else "boarded")
+	# 清血量再释放：避免 queue_free 后仍被 _enemies_alive 数到
+	enemy.set("hull_hp", 0.0)
+	enemy.queue_free()
+	boarding = false
+	boarding_target = null
+	if _enemies_alive() == 0:
+		# 末一艘夺下：headless 当帧收战；窗口下等「夺船」题签停满、淡出后再出战
+		_finishing_boarded = true
+		if not _Kit.is_headless():
+			var stage := _stage_any()
+			if stage != null:
 				await _await_boarding_fx(stage)
-			_battle_exit("win", {"boarded": true})
-		else:
-			await _await_boarding_fx(stage)
+		_battle_exit("win", {"boarded": true})
+
+
+## 现行还在场的题签层（_end_capture 起等待取，与 BoardingStage 同组末一层）
+func _stage_any() -> CanvasLayer:
+	for n in get_tree().get_nodes_in_group(_BoardingStage.GROUP):
+		if not bool(n.get("_done")):
+			return n
+	return null
 
 
 ## 战斗通知浮字：在屏幕中央短暂显示（复用 FloatingText 场景），3 秒后淡出
