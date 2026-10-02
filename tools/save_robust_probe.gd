@@ -50,7 +50,9 @@ func _run() -> void:
 		"fleet.cargo 数组": ["fleet", {"ships": [], "cargo": [1], "water": 10, "food": 10, "morale": 70}],
 		"fleet.water 字符串": ["fleet", {"ships": [], "water": "满", "food": 10, "morale": 70}],
 		"crew.hired 数组": ["crew", {"hired": [], "unpaid_months": 0}],
-		"crew.hired 条目非对象": ["crew", {"hired": {"navigator": "老周"}, "unpaid_months": 0}],
+		# lane w26-k1：v4 起 hired 只存候选 id 字符串（wave23-a1），快照对象是 v3 旧形状，入档即坏；
+		# 「名册查无此人 / 键非职员表」按未雇对待（与 Crew.roster / audit_stale_refs 同口径），不属本探针坏例。
+		"crew.hired 条目非 id 字符串": ["crew", {"hired": {"duogong": {"id": "lin_hua"}}, "unpaid_months": 0}],
 		"crew.unpaid_months null": ["crew", {"hired": {}, "unpaid_months": null}],
 		"state.money 字符串": ["state", {"money": "千贯"}],
 		"state.last_port 数字": ["state", {"last_port": 3}],
@@ -232,7 +234,8 @@ func _good(label: String, year: int, month: int) -> Dictionary:
 		"calendar": {"year": year, "month": month, "day": 1},
 		"economy": {"rates": {}, "tariff": 0.1, "broker": 0.05, "investments": {}},
 		"fleet": {"ships": [{"type": "fuchuan", "cargo": {}, "crew": 20}], "water": 30, "food": 30, "morale": 70, "mutiny_cooldown": 0},
-		"crew": {"hired": {}, "unpaid_months": 0},
+		# lane w26-k1：v4 起 hired 只存候选 id（Crew.candidate_def 回查 crew.json）
+		"crew": {"hired": {"duogong": "lin_hua"}, "unpaid_months": 0},
 		"state": {"money": 500, "last_port": "quanzhou", "flags": {}, "player_name": "林探针"},
 		"scene": "quanzhou",
 		"label": label,

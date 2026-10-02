@@ -3,7 +3,8 @@
 
 锁住 Astra 审计 H1/H2 的修复（6207d31 + lane-h1h2 46a7c17）：
   H1 坏分区：calendar/economy/fleet/crew/state 非对象（字符串/数组/null/数字）、
-     日期缺失或越界、ships 非数组、hired 条目非对象、强类型字段错型、version 非数字，
+     日期缺失或越界、ships 非数组、hired 条目非 id 字符串（v4 起只存候选 id；lane w26-k1）、
+     强类型字段错型、version 非数字，
      一律在 _read 判坏档，_read_slot 自然退 .bak；任何输入都不得抛脚本错误。
   H2 只剩 .bak：has_save 认副抄，save_label / slot_source 走同一口径，
      题签可读，任何路径都不对空 FileAccess 调 get_as_text。
@@ -40,6 +41,8 @@ FROM_DICT_SRC = {
     "crew": "scripts/core/Crew.gd",
     "state": "scripts/GameState.gd",
 }
+# v4 起 crew.hired 只存候选 id（wave23-a1）；名册职员键与候选 id 从这份 JSON 读
+CANDIDATE_SRC = "data/crew.json"
 # _harden_state 读回前清洗的键：不论存档里是什么，喂给 GameState 时都已是合法类型
 HARDENED = {"flags", "discoveries_found", "discoveries_reported"}
 
@@ -59,6 +62,7 @@ def func_bodies(src):
                 body.append(ln)
     if cur: out[cur] = "\n".join(body)
     return out
+
 
 
 def _code_only(src):
@@ -178,6 +182,7 @@ def build_model(src):
         m["chain"].get(v) == f"_migrate_v{v}_to_v{v + 1}" and f"_migrate_v{v}_to_v{v + 1}" in fn
         for v in range(1, m["schema"]))
     m["save_writes_schema"] = bool(re.search(r'SCHEMA_KEY\s*:\s*SAVE_SCHEMA', fn.get("save_game", "")))
+
     # _check_partitions 须在 _read 里调用、坏因非空即判坏档，且排在版本校验之后、return data 之前
     m["read_checks_parts"] = bool(re.search(
         r'var\s+(\w+)\s*:?=\s*_check_partitions\(data\)\s*\n\s*if\s+\1\s*!=\s*""\s*:[\s\S]*?' + RET_BAD, rd)) \
@@ -186,7 +191,7 @@ def build_model(src):
     # —— _check_partitions 体检规则 ——
     cp = _live(fn.get("_check_partitions", ""))
     rules = {"part_types": [], "required_nums": {}, "ranges": {}, "nums": {}, "dicts": {}, "arrays": {},
-             "entries_dict": {}, "values_dict": {}, "typed": {}}
+             "entries_dict": {}, "values_dict": {}, "values_string": {}, "typed": {}, "roster_checked": False}
     lm = re.search(r'for\s+key\s+in\s+(\w+)\s*(?:\+\s*\[([^\]]*)\])?\s*:\s*\n\s*if\s+data\.has\(key\)\s+and\s+'
                    r'typeof\(data\[key\]\)\s*!=\s*TYPE_DICTIONARY\s*:\s*\n\s*return\s+"', cp)
     if lm:
@@ -219,6 +224,12 @@ def build_model(src):
             rules["values_dict"].setdefault(part, []).append(vm.group(2))
         for tm in re.finditer(rf'if\s+{v}\.has\("(\w+)"\)\s+and\s+typeof\({v}\["\1"\]\)\s*!=\s*TYPE_(\w+)\s*:\s*\n\s*return\s+"', cp):
             rules["typed"].setdefault(part, {})[tm.group(1)] = tm.group(2)
+        # v4：crew.hired 只存候选 id —— 步进各条的值、非 TYPE_STRING 即坏档；
+        # 键非职员表 / id 名册查无此人不判坏（按「未雇」对待，见 audit_stale_refs 头注与 Crew.roster 同口径）。
+        if part == "crew" and re.search(rf'for\s+\w+\s+in\s+_as_dict\({v}\.get\("hired"[^\n]*\)\.values\(\)\s*:', cp) \
+                and re.search(r'typeof\(\w+\)\s*!=\s*TYPE_STRING\s*:\s*\n\s*return\s+"', cp):
+            rules["values_string"].setdefault(part, []).append("hired")
+            rules["roster_checked"] = True
     bfb = _live(fn.get("_bad_fields", ""))
     if not (has_tok(bfb, "_is_num(part[k])") and "TYPE_DICTIONARY" in bfb and "TYPE_ARRAY" in bfb and m["is_num_ok"]):
         rules["nums"], rules["dicts"], rules["arrays"] = {}, {}, {k: [] for k in rules["arrays"]}
@@ -323,6 +334,9 @@ class ScriptError(Exception):
     """模拟 GDScript 运行时脚本错误（空引用 / 类型不符）"""
 
 
+
+
+
 def _is_num(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
@@ -387,6 +401,11 @@ def check_partitions(rules, data):
             sub = d.get(k, {})
             if isinstance(sub, dict) and any(not isinstance(x, dict) for x in sub.values()):
                 return f"{part}.{k} 含非对象条目"
+        for k in rules["values_string"].get(part, []):
+            sub = d.get(k, {})
+            if isinstance(sub, dict):
+                if any(not isinstance(x, str) for x in sub.values()):
+                    return f"{part}.{k} 含非字符串条目（v4 起只存候选 id）"
         for k, t in rules["typed"].get(part, {}).items():
             if k in d and not _TYPE_OK.get(t, lambda v: True)(d[k]):
                 return f"{part}.{k} 类型不符"
@@ -465,8 +484,14 @@ class Sim:
                 return bad  # 迁移链断档：_migrate 报错返回空表
             data = dict(data)
             data[m["schema_key"]] = m["schema"]
-        if m["rules"] is not None and check_partitions(m["rules"], data):
-            return bad
+            if schema < 4 <= m["schema"]:
+                data = dict(data)
+                data["_from_v3"] = True  # 模拟 _migrate_v3_to_v4 经 Crew.candidate_def 收掉查无此人的快照
+        if m["rules"] is not None:
+            why = check_partitions(m["rules"], data)
+            if why and not (data.pop("_from_v3", False) and why.startswith("crew.")):
+                return bad  # v3 迁移已收掉 hired 里名册查无的格（crew.* 一条不判坏）
+        data.pop("_from_v3", None)
         return {"status": "ok", "data": data, "schema": schema}
 
     def read(self, p):
@@ -576,10 +601,27 @@ LBL_P, LBL_B = "景炎二年　泉州　500 钱", "景炎元年　兴化　300 �
 YEAR_P, YEAR_B = 1256, 1255
 
 
-CUR_SCHEMA = 2  # fixture 里「本版档」的结构号；SAVE_SCHEMA 再升时这些档照样走迁移，仍须读得通
+CUR_SCHEMA = 4  # fixture 里「本版档」的结构号；SAVE_SCHEMA 再升时这些档照样走迁移，仍须读得通
 # 「刚好新一版」的结构号：按库里 SaveLoad.gd 的 SAVE_SCHEMA + 1 取（lane fx6 升 v3 后原写死的 3 成了本版档）；
 # --source 查旧版时它仍高于旧版的 SAVE_SCHEMA，照样是新版档。
 NEXT_SCHEMA = (_const_int(open(SAVELOAD, encoding="utf-8").read(), "SAVE_SCHEMA", CUR_SCHEMA) or CUR_SCHEMA) + 1
+
+
+FIXTURE_ROLE = "duogong"
+
+
+def _fixture_crew():
+    """好档 crew 分区的 v4 形状（hired 只存候选 id）：取 data/crew.json 名册首名候选；
+    名册缺席回退占位串——只用于「须照读」的好例，坏例另有写死的 v4 形状。"""
+    try:
+        d = json.load(open(os.path.join(ROOT, CANDIDATE_SRC), encoding="utf-8"))
+        c = d["candidates"][0]
+        return {"hired": {str(c.get("role", FIXTURE_ROLE)): str(c.get("id", ""))}, "unpaid_months": 0}
+    except (OSError, ValueError, IndexError, KeyError):
+        return {"hired": {FIXTURE_ROLE: "lin_hua"}, "unpaid_months": 0}
+
+
+FIXTURE_CREW = _fixture_crew()
 
 
 def good(label=LBL_P, year=YEAR_P):
@@ -589,7 +631,7 @@ def good(label=LBL_P, year=YEAR_P):
         "calendar": {"year": year, "month": 4, "day": 1},
         "economy": {"rates": {}, "tariff": 0.1, "broker": 0.05, "investments": {}},
         "fleet": {"ships": [{"id": "fuchuan", "cargo": {}}], "water": 20, "food": 20, "morale": 70},
-        "crew": {"hired": {"navigator": {"id": "navigator"}}, "unpaid_months": 0},
+        "crew": FIXTURE_CREW,
         "state": {"flags": {}, "money": 500, "last_port": "quanzhou", "visited_ports": ["quanzhou"]},
         "scene": "",
         "label": label,
@@ -619,7 +661,7 @@ def bad_cases():
         ("fleet.water 字符串", "fleet", {"ships": [], "water": "满", "food": 10, "morale": 70}),
         ("fleet.mutiny_cooldown null", "fleet", {"ships": [], "mutiny_cooldown": None}),
         ("crew.hired 数组", "crew", {"hired": [], "unpaid_months": 0}),
-        ("crew.hired 条目非对象", "crew", {"hired": {"navigator": "老周"}, "unpaid_months": 0}),
+        ("crew.hired 条目非 id 字符串", "crew", {"hired": {"duogong": {"id": "lin_hua"}}, "unpaid_months": 0}),
         ("crew.unpaid_months null", "crew", {"hired": {}, "unpaid_months": None}),
         ("state.money 字符串", "state", {"money": "千贯"}),
         ("state.last_port 数字", "state", {"last_port": 3}),
@@ -659,6 +701,13 @@ def ok_cases():
     yield "v1 老档（无 save_schema，迁移后照读）", v1(), LBL_P
     d = v1(); del d["state"]
     yield "v1 老档缺 state", d, LBL_P
+    yield "v4 hired 键不在职员表（收作未雇）", {**good(), "crew": {"hired": {"navigator": FIXTURE_CREW["hired"].get(FIXTURE_ROLE, "lin_hua")}, "unpaid_months": 0}}, LBL_P
+    yield "v4 hired id 查无此人（收作未雇）", {**good(), "crew": {"hired": {FIXTURE_ROLE: "no_such_cand"}, "unpaid_months": 0}}, LBL_P
+    # v3 档形状本就允许快照对象；迁移链收掉取不出 id / 名册查无的格，余下照读
+    d = v1(); d[SCHEMA_KEY] = 3; d["crew"] = {"hired": {"navigator": {"id": "x"}}, "unpaid_months": 0}
+    yield "v3 档 hired 快照取不出 id（迁移收格）", d, LBL_P
+    d = v1(); d[SCHEMA_KEY] = 3; d["crew"] = {"hired": {"duogong": {"id": "no_such"}}, "unpaid_months": 0}
+    yield "v3 档 hired id 查无此人（迁移收格）", d, LBL_P
 
 
 # 槽态 fixture：(名, 正本文本或 None, 副抄文本或 None, 期望 has_save, 期望 label, 期望 load, 期望 slot_source)
@@ -739,8 +788,9 @@ def run_checks(src, verbose=True):
        "calendar 年月日须为数字且月日不越界", "calendar 日期体检缺失")
     ok("ships" in r.get("arrays", {}).get("fleet", []) and "ships" in r.get("entries_dict", {}).get("fleet", []),
        "fleet.ships 须为数组且条目皆对象", "fleet.ships 体检缺失")
-    ok("hired" in r.get("dicts", {}).get("crew", []) and "hired" in r.get("values_dict", {}).get("crew", []),
-       "crew.hired 须为对象且条目皆对象", "crew.hired 体检缺失")
+    ok("hired" in r.get("dicts", {}).get("crew", []) and "hired" in r.get("values_string", {}).get("crew", []),
+       "crew.hired 须为对象且条目皆为候选 id 字符串（v4 起只存 id）",
+       "crew.hired 体检缺失（v4：对象 / id 字符串）")
     ok(m["slot_primary_first"] and m["slot_bak_fallback"],
        "_read_slot 正本优先，空了才退 .bak", "_read_slot 未按「正本→.bak」顺序回退")
     ok(m["as_dict_robust"], "_as_dict 非 Dictionary 一律回空表", "_as_dict 缺失或不回空表")
