@@ -575,6 +575,7 @@ python3 tools/check_docs_index.py --check
 ### 五.4 跟号：改了被引文件，就把清单跟上
 
 - **对象**：`docs/待策划拍板清单_2026-09-28.md` 反引号里的「文件:行」。check_decision_refs 只管这一份，读法见 §三.22。
+- **纯文档 lane 同样收尾两道**（lane w21-d4 落 b8 口径）：**when**——每片收尾，纯文档 lane（只改 docs / 简报、不碰代码）也算；其中 check_decision_refs 本就是必跑，此处点名的是最易漏的 **check_docs_index**（纯文档 lane 一动 docs/ 下 .md，docs/README.md 索引就得跟着补 / 删行，漏跑就是散红的口子，wave20 多片漏过）。**跑法**：`python3 tools/check_decision_refs.py`（`--fix` 只当修法用，跑法与「怎么跟」一节相同）+ `python3 tools/check_docs_index.py`。**责任**：本片 lane 自己；绿长相 = 两道都 rc=0，或红里只剩本 lane 路径外的既有缺口（`✗ … DEAD / MISSING …` 逐条点名归属，非本 lane 的照实写进 Verify、别当自己的锅）。
 - **谁跟：挪了被引行的那一片自己跟**。清单跟号算在任何 lane 的范围内，不另派 decide 片。auditfix1 起它是必跑，每片都会跑到；「改了被引文件」（拆 Main，改 check_symbols / verify_economy / godot_smoke 之类）这个条件现在决定的是**谁来修**，不再决定跑不跑。
 - **怎么跟**（dec4 的 `--fix` 四层跟号 + auditfix1 的改号自证 + main10 / main11 的两笔式）：
   1. **代码先提交**。`--fix` 要求所引文件与 HEAD 一致，没提交就拒绝（dec4 T1）。
