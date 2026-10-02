@@ -132,18 +132,6 @@ static func register_source(key: String, cb: Callable) -> void:
 	_sources[key] = cb
 
 
-static func unregister_source(key: String) -> void:
-	_sources.erase(key)
-
-
-static func clear_sources() -> void:
-	_sources.clear()
-
-
-static func source_keys() -> Array:
-	return _sources.keys()
-
-
 func _init() -> void:
 	add_to_group(GROUP_UI)
 	add_to_group(GROUP)
@@ -747,27 +735,6 @@ func refresh() -> void:
 		var v := ui["value"] as Label
 		v.text = String(c["text"])
 		v.add_theme_color_override("font_color", tone_color(String(c["tone"])))
-
-
-## 探针读：每格此刻的 [题, 字]
-func cell_texts() -> Dictionary:
-	var out := {}
-	for key in _cells.keys():
-		var ui: Dictionary = _cells[key]
-		out[key] = [(ui["title"] as Label).text, (ui["value"] as Label).text]
-	return out
-
-
-## 横笺在画布上的矩形（探针量是否越界、是否压住小地图）
-func strip_rect() -> Rect2:
-	if _strip == null:
-		return Rect2()
-	return _strip.get_global_rect()
-
-
-## 一行格子此刻要的宽（探针量最长写法放不放得下）
-func cells_min_width() -> float:
-	return _row.get_combined_minimum_size().x if _row != null else 0.0
 
 
 static func tone_color(tone: String) -> Color:

@@ -67,18 +67,6 @@ static func port_title(port_name: String) -> String:
 	return "抵港" if name == "" else "抵港・%s" % name
 
 
-## 章节 / 抵港的可复用入口。subtitle 应是调用方拿到的真实年号或日期（例如
-## 「景定五年・一二六四」），不在过渡层猜时间，避免纪实标题与存档历法漂移。
-static func chapter_arrive(parent: Node, chapter_no: int, chapter_name: String,
-		subtitle := "", on_black := Callable()) -> CanvasLayer:
-	return play(parent, chapter_title(chapter_no, chapter_name), subtitle, on_black, "章")
-
-
-static func port_arrive(parent: Node, port_name: String, subtitle := "",
-		on_black := Callable()) -> CanvasLayer:
-	return play(parent, port_title(port_name), subtitle, on_black, "泊")
-
-
 ## 序章题签：只写可核对的位置——卷首（标题→四方沙盘）与兴化海口（沙盘末→酒棚）。
 ## 年号/日期由调用方从 Calendar 传入；朱印用「序」。不动分支图。
 static func prologue_open_title() -> String:

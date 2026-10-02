@@ -163,20 +163,6 @@ static func register_handler(order_id: String, cb: Callable) -> void:
 	_handlers[order_id] = list
 
 
-static func unregister_handler(order_id: String, cb: Callable) -> void:
-	var list: Array = _handlers.get(order_id, [])
-	list.erase(cb)
-	if list.is_empty():
-		_handlers.erase(order_id)
-	else:
-		_handlers[order_id] = list
-
-
-static func clear_handlers() -> void:
-	_handlers.clear()
-	_parley_resolver = Callable()
-
-
 static func set_parley_resolver(cb: Callable) -> void:
 	_parley_resolver = cb
 
@@ -720,24 +706,6 @@ static func _pct(bits: PackedStringArray, label: String, v: float, up: String, d
 func _note(text: String) -> void:
 	if _note_lbl != null:
 		_note_lbl.text = text
-
-
-## 探针读：{order_id: [签字, 状态字, 可下, 已令]}，外加人手 / 效力 / 回话三行
-func panel_texts() -> Dictionary:
-	var out := {}
-	for id in ORDERS:
-		if _rows.has(id):
-			var row: Dictionary = _rows[id]
-			out[id] = [(row["chip"] as Button).text, (row["state"] as Label).text,
-				not (row["chip"] as Button).disabled, order_active(id)]
-	out["alloc"] = _alloc_lbl.text if _alloc_lbl != null else ""
-	out["effect"] = _effect_lbl.text if _effect_lbl != null else ""
-	out["note"] = _note_lbl.text if _note_lbl != null else ""
-	return out
-
-
-func card_rect() -> Rect2:
-	return _card.get_global_rect() if _card != null else Rect2()
 
 
 # ── 节点 ──────────────────────────────────────────────
