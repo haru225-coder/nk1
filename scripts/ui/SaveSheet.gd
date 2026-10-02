@@ -82,6 +82,17 @@ static func show_save_dialog(main: Control, read_only := false) -> void:
 			row_h = maxf(row_h, (child as Control).get_combined_minimum_size().y)
 	benches.custom_minimum_size = Vector2(972, row_h * 2.0 + 8.0)
 	main._end_benches()
+	# 最小留边（lane w25-j4）：册页左右离可见画边各至少 24 px。aspect=expand 下可见画布宽恒 ≥ 1280，
+	# 现行各档窗口一律仍走 1016 原样（逐像素不变）；可见宽不足 1016 + 48 时册页收到「可见宽 − 48」，
+	# 两张工席流成单列、字号不动。跟窗口改尺寸实时重算（host 撑满画布，resized 即视口变了）。
+	var fit := func() -> void:
+		var room: float = host.get_viewport_rect().size.x - 2.0 * 24.0 - 2.0  # 册页底板描边比 min 宽多 2 px
+		var w: float = minf(1016.0, maxf(room, 480.0 + 44.0))
+		var two: bool = w >= 1016.0
+		sheet.custom_minimum_size = Vector2(w, 0)
+		benches.custom_minimum_size = Vector2(w - 44.0, row_h * (2.0 if two else 3.0) + (8.0 if two else 16.0))
+	fit.call()
+	host.resized.connect(fit)
 
 	var close := Button.new()
 	close.text = "合上"
