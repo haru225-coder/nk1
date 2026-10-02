@@ -743,6 +743,10 @@ func _route_check() -> void:
 	_close_dialogs(main)
 	_g13_chart_zoom_check()
 	_w20c2_port_beats_check(main)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_close_dialogs(main)
+	await _w20a4_notice_fold_height_check(main)
 	main.queue_free()
 
 
@@ -3329,3 +3333,113 @@ func _w20c2_port_beats_check(main: Node) -> void:
 	_check(GS.beats_seen == ["monk", "merchant"], "存档 round-trip 保留节拍账（%s）" % [GS.beats_seen])
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+## w20-a4（lane g9 遗留①）：港页记事栏那口墨框只有三行高，跳年点开一串通告后要在框里滚（fx7 遗留①同源）。
+## 方案甲：点开那一折墨框按排版高度向上生长到版面（LogFold.fitness_log，上框正文 EXPAND 自行让位），
+## 再点某一月把该月摊开后回到 88 高、框带滚动条可滚到末则；收起插回场景写的 88（fx7 / g9 的文字断言一字不改仍绿）。
+## 这里拿真 Main 在 headless 下确认：浮层里成长「到位」（主概率不全）；一步步收口、各月行逐行像素可读；收起逐点位回来。
+func _w20a4_notice_fold_height_check(main: Node) -> void:
+	var ml: RichTextLabel = main.message_label
+	var body: RichTextLabel = main.status_label
+	var LP: GDScript = load("res://scripts/core/LogFold.gd")
+	_check(absf(ml.custom_minimum_size.y - float(LP.get("LOG_WELL_REST"))) < 0.5 and body.custom_minimum_size.y >= 359.0,
+		"记事栏收着：墨框 min 高 %.0f = 场景写的 88，上框正文仍顶 360（%.0f）" % [ml.custom_minimum_size.y, body.custom_minimum_size.y])
+	_fx7_wait_into(main, "quanzhou", 1276, 11, false)
+	main._on_log_meta("fold:0")
+	var want: Array = []
+	for t in _notices.slice(int(main.get_meta(&"fx7_n0", 0))):
+		want.push_front(UiTheme.plain_log(str(t)))
+	var h0: float = ml.custom_minimum_size.y
+	main.left_panel.visible = true
+	main._render_log()
+	main.left_panel.size = Vector2(480, 600)
+	main._render_log()
+	await self
+	var h1: float = ml.custom_minimum_size.y
+	main._render_log()
+	await self
+	var h2: float = ml.custom_minimum_size.y
+	# headless 零缩放：面板挂实质前墨框已是 0×88 的条，盖住滚至末列、纵居每条单字位，get_content_height 读到「卷成单字的逐行高」，
+	# 不脱生成数——只判稳定区间（长高过、不超版面、下一帧不动）与面板版面扣；「从 88 真长高」交下面跳两年那一格断言（那格面板 size 还是 0、排版读数有效）
+	_check(h1 > float(LP.get("LOG_WELL_REST")) and h1 <= main.left_panel.size.y - float(LP.get("LOG_WELL_REST")) + 0.5 and absf(h2 - h1) < 1.0,
+		"记事栏墨框点开在版面内一档到位：%.0f→%.0f（面板高 %.0f），下一帧稳 %.0f" % [h0, h1, main.left_panel.size.y, h2])
+	main.left_panel.size = Vector2.ZERO
+	main.left_panel.visible = false
+	main._render_log()
+	var texts: PackedStringArray = []
+	for i in want.size():
+		texts.append(str(want[i]))
+	var opened: String = ml.text
+	var missing := 0
+	for t in texts:
+		if opened.find("　" + t) < 0:
+			missing += 1
+	_check(missing == 0 and opened.find("收起") >= 0,
+		"单批点开：%d 则全在文字层铺开（缺 %d 则，与墨框高矮无关）" % [texts.size(), missing])
+	main._on_log_meta("fold:0")
+	_check(absf(ml.custom_minimum_size.y - float(LP.get("LOG_WELL_REST"))) < 0.5 and ml.text.find("点开") >= 0,
+		"单批收起：墨框回 88（%.0f），折起行照旧「点开」" % ml.custom_minimum_size.y)
+	# 跳两年 + 分组：点开折总览长高；点某一月摊开后回 88，滚动一路可到末则——滚动条共识、性能不占擕
+	GS.from_dict({})
+	GS.identity = "merchant"
+	GS.money = 5000
+	GS.last_port = "quanzhou"
+	Cal.from_dict({"year": 1275, "month": 1, "day": 1})
+	main.load_scene("quanzhou")
+	main._log_lines.clear()
+	main._log_folds.clear()
+	main._log_fold_open = ""
+	var by_month: Dictionary = {}
+	var order: Array = []
+	var dates: Dictionary = {}
+	var tap2 := func(t: String) -> void:
+		var ym := "%04d-%02d" % [int(Cal.year), int(Cal.month)]
+		if not by_month.has(ym):
+			by_month[ym] = []
+			order.push_front(ym)
+			dates[ym] = str(Cal.get_date_string())
+		(by_month[ym] as Array).push_front(UiTheme.plain_log(t))
+	GM.monthly_notice.connect(tap2)
+	var n2 := _notices.size()
+	GM.skip_years(2)
+	GM.monthly_notice.disconnect(tap2)
+	var total: int = _notices.size() - n2
+	main._on_log_meta("fold:0")
+	var g0: float = ml.custom_minimum_size.y
+	main.left_panel.visible = true
+	main.left_panel.size = Vector2(480, 600)
+	main._render_log()
+	await self
+	main._render_log()
+	await self
+	var g2: float = ml.custom_minimum_size.y
+	_check(g2 > g0 + 1.0 or g0 > float(LP.get("LOG_WELL_REST")),
+		"跳两年点开折总览：墨框从 88 长高（%.0f→%.0f，月行 %d 行）" % [g0, g2, order.size()])
+	var pick: String = order[order.size() / 2] if not order.is_empty() else ""
+	main._on_log_meta("fold:0:" + pick)
+	await self
+	var month_txt: String = ml.text
+	var month_lines: Array = by_month.get(pick, [])
+	var v: VScrollBar = ml.get_v_scroll_bar()
+	var scrollable: bool = v != null and v.max_value - v.min_value - v.page > 0.5
+	var last_in_text: bool = not month_lines.is_empty() and month_txt.find(str(month_lines[month_lines.size() - 1])) >= 0
+	_check(absf(ml.custom_minimum_size.y - float(LP.get("LOG_WELL_REST"))) < 0.5 and scrollable and last_in_text,
+		"跳两年点 %s 那月：墨框回 88（%.0f，不吃整版面），末则在文字层（月共 %d 则）且滚动可达末则（page %.0f / max %.0f）" % [
+			pick, ml.custom_minimum_size.y, month_lines.size(), v.page if v != null else -1.0, v.max_value if v != null else -1.0])
+	main._on_log_meta("fold:0")
+	_check(main._log_fold_open == "" and absf(ml.custom_minimum_size.y - float(LP.get("LOG_WELL_REST"))) < 0.5,
+		"跳两年终收：折起收、墨框回 88（%.0f）" % ml.custom_minimum_size.y)
+	main.left_panel.size = Vector2.ZERO
+	main.left_panel.visible = false
+	main.log_msg("复原一句。")
+	_check(absf(ml.custom_minimum_size.y - float(LP.get("LOG_WELL_REST"))) < 0.5 and ml.text.find("复原一句。") >= 0,
+		"浮层合上来一句新记事：墨框仍 88，新句照常最上（与近况一致）")
+	var w20_ledger_src := FileAccess.get_file_as_string("res://scripts/ui/LedgerPage.gd")
+	var w20_fold_src := FileAccess.get_file_as_string("res://scripts/core/LogFold.gd")
+	_check(w20_ledger_src.find("LogFold.fitness_log(main, main.message_label, main.left_panel, LogFold.LOG_WELL_REST)") >= 0
+		and w20_fold_src.find("static func fitness_log(host: Object") >= 0 and w20_fold_src.find("LOG_WELL_REST") >= 0
+		and w20_fold_src.find("static func _log_well_space(panel: Control)") >= 0,
+		"船籍簿记事栏墨框经 LogFold.fitness_log 随开合定高（render_log 末尾挂上）")
+	main._log_lines.clear()
+	main._log_folds.clear()
+	main._log_fold_open = ""
+	main._render_log()

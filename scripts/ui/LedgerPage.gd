@@ -196,12 +196,13 @@ static func refresh_strip(main: Control) -> void:
 
 ## 船籍簿记事栏：最近 8 条，新的在上（宣纸色），旧的淡一档；一条没有时写一行淡字，不留空墨框。
 ## 折起的月初通告那一行可点（lane fx7）：点开后原文逐则列在它下面，缩一格、淡一档；跨月的按月分组（lane w19-g9）。
-## 画法与海图船况札记同一份 LogFold.render
+## 画法与海图船况札记同一份 LogFold.render；墨框随开合定高走 LogFold.fitness_log（lane w20-a4）
 static func render_log(main: Control) -> void:
 	if main._log_lines.is_empty():
 		main.message_label.text = "[color=#%s]（尚无记事）[/color]" % UiTheme.hex(UiTheme.TEXT_DIM)
-		return
-	main.message_label.text = LogFold.render(main, "\n", true)
+	else:
+		main.message_label.text = LogFold.render(main, "\n", true)
+	LogFold.fitness_log(main, main.message_label, main.left_panel, LogFold.LOG_WELL_REST)
 
 
 static func update_panel(main: Control) -> void:

@@ -195,3 +195,45 @@ static func _fold_body(fold: Dictionary, i: int, dim: String) -> PackedStringArr
 			for sub in g["lines"]:
 				out.append("[color=#%s]　　%s[/color]" % [dim, sub])
 	return out
+
+## 港页记事栏墨框收着时的高（照 Main 场景写死的 Vector2(0, 88)，合一纸标题三行）。海图札记不用这份高（它没设墨框 min）
+const LOG_WELL_REST := 88.0
+## 量「点开时墨框可用版面高」打的扣：面板价钱边上下 + 顶题、铅线、合上钮与隔行（实机 720 窗面板 600 量得 ≈80）
+const _LOG_WELL_SINK := 82.0
+
+
+## 港页记事栏墨框随开合定高（lane w20-a4，g9 遗留①「墨框只有三行高，跳年点开后要在框里滚」）：
+## 收着时插回场景写死的 88（三行高，像素逐帧不动）；点开那一折（多个月的还没点哪一月时）按排版高度向上
+## 长到版面（浮层面板实到高扣 _LOG_WELL_SINK），过满即滚——当帧一次到位，不走两帧追版
+## （排版结果随上一帧供高变化，追版读不出「想要多高」）。浮层里上框正文是 EXPAND 自行让位
+## （正文长照样滚在它自己框里，合上又顶回 360 的高）。再点某一月把该月摊开、或整折收起后回到 88 高——
+## 一个月多则八九则，墨框一路占满整面浮层只会引走想读正文的人的眼，留在 88 高里走滚动条、滚轮与拖拽都可达末则。
+## 这里只读写宿主字段与传进来的控件；海图札记不挂它（海图版面与港页浮层不是一个账）。
+static func fitness_log(host: Object, well: RichTextLabel, panel: Control, rest: float) -> void:
+	var expand: bool = host._log_fold_open != "" and (host._log_folds as Dictionary).has(host._log_fold_open)
+	if expand:
+		var fold: Dictionary = host._log_folds[host._log_fold_open]
+		if str(fold.get("open", "")) != "":
+			expand = false
+	if not expand:
+		if well.custom_minimum_size.y != rest:
+			well.custom_minimum_size = Vector2(0, rest)
+		return
+	var want: float = maxf(well.get_content_height(), rest)
+	var cap: float = _log_well_space(panel)
+	if cap > 0.0:
+		want = minf(want, cap)
+	if absf(well.custom_minimum_size.y - want) > 0.5:
+		well.custom_minimum_size = Vector2(0, want)
+
+
+## 点开时版面高：面板实到高扣顶题、铅线、合上钮与价边（记 _LOG_WELL_SINK）；上框正文是 EXPAND 自行让位。
+## 合上看不见 / 还没排面板时返回 0（不干生长）。
+static func _log_well_space(panel: Control) -> float:
+	if panel == null or not panel.visible:
+		return 0.0
+	var panel_h: float = panel.size.y
+	if panel_h <= 0.0:
+		return 0.0
+	return maxf(0.0, panel_h - _LOG_WELL_SINK)
+
