@@ -73,6 +73,7 @@
 - [死代码普查.md](死代码普查.md)：`tools/` 与 `scripts/` 死代码普查（零引用函数 / 常量三档：已删 7 处、疑似待拍板 20 组、门禁与运行时入口勿动；lane w20-c4，疑似 20 组逐组取证与可删清单 §四 lane w21-d12）
 - [仓务清册_2026-10-03.md](仓务清册_2026-10-03.md)：未跟踪件逐件判归 + 分支 / worktree 清册 + wave23 各片新档索引指派 + 建议动作清单（只报不删，lane w23-a11）
 - [wave23重落审计_2026-10-03.md](wave23重落审计_2026-10-03.md)：wave23 十二笔落地对抗审计——blob 逐字节等价、干净树复跑、三对抗点变钉，主台 30 笔与 COORDINATION 台账对账（Ops 片只报不改，lane w23-a0ops + wave22 三笔重落在 h 面里收账；wave24-b4 补挂索引并扫本机路径）
+- [wave24审计_2026-10-03.md](wave24审计_2026-10-03.md)：wave23 十二片 + wave22 h1/h8 落地对抗审计——六片归属路径 blob 哈希等价 / 干净树 19 道门禁两红皆历史已知 / 三笔断言类实跑变异判红（lane w24-b7）
 
 - [combat_realism_design.md](combat_realism_design.md) / [combat_phases_schema.md](combat_phases_schema.md)：海战写实设计与三份数据契约（阶段 / 兵器 / 海况；lane combat01）
 - [ship_seagoing_vfx.md](ship_seagoing_vfx.md)：出海福船观感与命中手感——船身着装 shader、航迹、炮口焰 / 甲板颤，截图探针 `tools/ship_vfx_probe.gd`（lane combat-ship-vfx）
