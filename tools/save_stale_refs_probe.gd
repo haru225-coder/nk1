@@ -68,7 +68,7 @@ func _run() -> void:
 	bad_era["calendar"]["year"] = 999
 	_case("行年出界", bad_era, {"want_keys": ["era"], "cat_sample": {"era": "999"}, "mutation": mutation})
 
-	# 三、五类全犯一行（类目合并、「」只引首类首枚名目，枚数不上屏）
+	# 三、五类全犯一行（类目合并；「」只引玩家自起的船名，内部编号不上屏，枚数不上屏）
 	var all_bad := _clean()
 	all_bad["state"]["last_port"] = "palembang"
 	all_bad["state"]["visited_ports"] = ["palembang", "quanzhou"]
@@ -83,7 +83,7 @@ func _run() -> void:
 	_case("五类全犯", all_bad, {
 		"want_keys": ["port", "ship", "discovery", "character", "era"],
 		"note_keys": ["port", "ship", "discovery", "character", "era"],
-		"note_quote_first": "palembang",
+		"note_quote_first": "老船",
 		"mutation": mutation,
 		"after_load": "_after_all",
 	})
@@ -203,11 +203,16 @@ func _note_match(note: String, opts: Dictionary) -> bool:
 	if want != "" and not note.contains("「" + want + "」"):
 		return false
 	var want_word := {
-		"port": "有港名", "ship": "船式", "discovery": "勘见", "character": "名姓", "era": "年号",
+		"port": "港名", "ship": "船式", "discovery": "勘见", "character": "人名", "era": "年月",
 	}
 	for k in opts.get("note_keys", []):
 		if not note.contains(str(want_word.get(k, ""))):
 			return false
+	# 内部编号不上屏（w25 主控定稿）：拉丁字母 / 阿拉伯数字一概不许出现在提示里
+	var rx := RegEx.new()
+	rx.compile("[A-Za-z0-9_]")
+	if rx.search(note) != null:
+		return false
 	# 枚数不上屏：「一」「两」「三」都不在文
 	for w in ["一枚", "二枚", "三枚", "两枚", "一", "二", "三", "四", "五"]:
 		if note.contains(w):

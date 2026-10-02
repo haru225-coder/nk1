@@ -511,32 +511,29 @@ func last_stale() -> Dictionary:
 ## 玩家见到的全部措辞就在这一句。立目简次序与 audit_stale_refs 相同（
 ## 港 / 船式 / 勘见 / 人物 / 行年）——措辞只诉类目，枚数合并不进文字。
 static func last_stale_note(stale: Dictionary) -> String:
+	# 措辞（w25 主控定稿）：只说哪几类名目册上已无，不上屏任何内部编号；唯船名是玩家自己起的，引「」。
+	# 例：「所记港名、「老船」的船式、勘见、人名，今已不见于册；年月亦出本朝纪年之外；余账照旧。」
 	if stale.is_empty():
 		return ""
-	var pieces: Array = []
-	var quote := ""
-	const LEADS := {
-		"port": "有港名",
-		"ship": "船式",
-		"discovery": "勘见",
-		"character": "名姓",
-		"era": "年号",
-	}
-	for key in ["port", "ship", "discovery", "character", "era"]:
-		if not stale.has(key):
-			continue
-		pieces.append(LEADS[key])
-		if quote == "":
-			quote = str(stale[key].get("sample", ""))
-	if pieces.is_empty():
+	var names: Array = []
+	if stale.has("port"):
+		names.append("港名")
+	if stale.has("ship"):
+		var ship_name := str(stale["ship"].get("sample", ""))
+		names.append("「%s」的船式" % ship_name if ship_name != "" else "船式")
+	if stale.has("discovery"):
+		names.append("勘见")
+	if stale.has("character"):
+		names.append("人名")
+	var era := stale.has("era")
+	if names.is_empty() and not era:
 		return ""
-	# 多类以顿号相连，末类前添「以及」；首类首枚冠名引「」只引一枚。
-	var body: String = pieces[0]
-	var n: int = pieces.size()
-	for i in range(1, n):
-		body += ("、以及" if i == n - 1 else "、") + pieces[i]
-	var tail := "「" + quote + "」，" if quote != "" else "，"
-	return "旧卷所记，%s今已不载%s余账照旧。" % [body, tail]
+	if names.is_empty():
+		return "所记年月，出本朝纪年之外；余账照旧。"
+	var body := "所记%s，今已不见于册" % "、".join(PackedStringArray(names))
+	if era:
+		body += "；年月亦出本朝纪年之外"
+	return body + "；余账照旧。"
 
 
 ## 旧卷勾稽：港 / 船式 / 勘见 / 人物 / 行年五类里，哪些引用在本版名册图籍上查无了。
