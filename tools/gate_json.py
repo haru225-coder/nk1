@@ -122,6 +122,26 @@ REGISTRY = [
               "v2 档（无 `state.met_ids`）按雇用记录 / 在船职事 / 守城见林华回填人物志「已识」、推不出留空、回写本版、原件留 .v2；未来档明确拒读、不退副抄、文件不动；"
               "w20-c9 关键字段过链 K1–K4b：v1/v2 旗（含玉湖事件标记 chen_zan_stake）、发现录、水粮、船式样读回不丢，v1 无 fleet 分区判好档但落缺省（高危档回归），v2 已有 met_ids 不被回填顶掉——详见 docs/存档迁移矩阵.md",
      "green": "`SAVE_MIGRATE_PROBE PASS`", "red": "`✗` 行；`SAVE_MIGRATE_PROBE FAIL fails=k`；输出含 `SCRIPT ERROR` 即算失败"},
+    # lane w21-d18：c9 遗留④「动 VERSION 需同步动 SAVE_SCHEMA」原先只是 SaveLoad.gd 注释里的口头约定，没有任何门禁守
+    {"id": "check_save_version_contract", "tier": "lane", "when": "动 SaveLoad 的 VERSION / SAVE_SCHEMA / 存档头拒读口径", "kind": "py",
+     "file": "tools/check_save_version_contract.py",
+     "judge": "（lane w21-d18）`scripts/core/SaveLoad.gd` 的存档头 VERSION 与结构版 SAVE_SCHEMA 结对：三条配对判据全部机械判——"
+              "B1 `VERSION < 3`（降头等于再版废档，比旧读档器最后认的头还小）、B2 `SAVE_SCHEMA > VERSION`（结构版升了头没跟，"
+              "旧版游戏照样收下新结构档，即 K3 静默落缺省一型，见 docs/存档迁移矩阵.md）、B3 `VERSION > SAVE_SCHEMA`"
+              "（头升了结构版没跟，本版读不出自己写的档）；另守「拒读守卫在迁移前置位」句式（`if schema > … or ver > …` → future → 迁移）"
+              "与契约注释三字样在声明块里；每次先跑「零、判据自检」：内存变体单独改 VERSION 须红 B3、单独改 SAVE_SCHEMA 须红 B2、"
+              "两者同升须绿、降头须红 B1、拆守卫须红 G",
+     "green": "`结果：全部通过`（零、判据自检 8 条 ✓ + 一、结对 5 条 ✓）",
+     "red": "`✗` 行：配对三条各写明修法（B2 引 docs/存档迁移矩阵.md）；`结果：N 项问题`"},
+    # lane w22-h3（原题 w21-d2）：doc4 立了门禁没进注册表——索引缺 5 份散红到别的片才被发现（同 g12/b6 漏登记一型）
+    {"id": "check_docs_index", "tier": "lane", "when": "docs/ 下 .md 增删，或 docs/README.md 索引行变更（d4 规约：纯文档 lane 收尾必跑两道之一）", "kind": "py",
+     "file": "tools/check_docs_index.py", "usage": "[--check]",
+     "judge": "（lane doc4 立，w22-h3 入册）`docs/README.md` 是 docs/ 的唯一索引，核它与 docs/ 下的文件对得上："
+              "MISSING = git 已跟踪的 docs/**/*.md（README.md 本身除外）没在 README 里以 `[…](路径)` 链到；"
+              "DEAD = README 里的相对链接指向不存在的文件（`#锚点` 去掉再查，http / mailto 不查）；DUP = 同一路径链了不止一次；"
+              "只看 git 已跟踪的文档（别的 lane 没提交的新文档不染红共用树，与 tools_gd 同口径），未跟踪的只记 `⚠`；git 不可用时退回扫盘",
+     "green": "`✓ 索引里有链接… / ✓ 索引链接都指向存在的文件… / ✓ 索引里没有重复链接 / ✓ git 已跟踪的 docs/**/*.md 都在索引里…` + `结果：全部通过`",
+     "red": "`✗ …；DEAD：…` / `✗ …；MISSING：<文件>…（在 docs/README.md 补一行）` / `✗ …；DUP：…`；`结果：N 项问题`"},
     {"id": "gates_md", "tier": "lane", "when": "动门禁清单 / docs/GATES.md，或改 README「验证」段的道数句", "kind": "py", "file": "tools/gates_md.py",
      "judge": "（lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段；w20-b3 加一键跑把关与 README 道数对账）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 收尾截图的脚本全部入册、接 shot_gate 的脚本都挂压帧 `ShotGate.frame_pressure`（lane gd18）；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序；一键跑把关（w20-b3，判据自检见附属「三之一」）：两处一键跑命令段不许带关断开关 / `--help` / `--dry-run`、必跑档不许缺席、条数不许不符，README「下面 N 道」的道数与注册表一键跑条数对得上",
      "green": "`结果：全部通过`", "red": "`✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write`"},
