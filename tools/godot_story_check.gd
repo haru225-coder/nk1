@@ -754,6 +754,10 @@ func _route_check() -> void:
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_close_dialogs(main)
+	_h8_logfold_ledger_check(main)
 	_a5_sea_here_check()
 	main.queue_free()
 	_process_c6_main_hook(main)
@@ -3452,6 +3456,250 @@ func _w20a4_notice_fold_height_check(main: Node) -> void:
 	main._log_folds.clear()
 	main._log_fold_open = ""
 	main._render_log()
+## lane w22-h8（LogFold / LedgerPage 近改审计）：本片在 main 78565f5 上未见真缺陷（疑似四条全部取证排除，见本片
+## brief Verify），但现有 fx7 / g9 / w20-a4 三道折叠检查未钉这几条边，补一条一次性钉住：
+##  一、同日折行用月日名、跨月整条重写起讫（旧键不在）且最新那则仍是最上：驱动同批通告跨月重顶（真 Main），
+##     行字从「十月廿九，月初通告一连 N 则」改成「自…十月廿九至于…冬月初一，通告一连 N+1 则，凡 2 月」；
+##  二、push_line 后新批通告从 0 重数（_notice_run 断开，不回吸旧折、不把折里原文挤出去）；
+##  三、ledger 真钮 link（船籍簿 / 合上 / 遮暗击）与札记 meta 信号链（meta_clicked → _on_log_meta 整链接盘）；
+##  四、跳三年跨 25 个月仍折一行、「凡 25 月」、起讫两端对、各月组序新的在前且则数与跳年真发逐月对得上；
+##  五、告示存留口径：合上（不可点开的）浮层上来一句新记事，顶匾状态条那格照常换新、颜色随水粮档（LedgerPage.refresh_strip 无 ledger 开销）。
+## 布景归零 Cal / GS / Fleet 与 Main 札记字段，放回 1255-03-01 让下一道（a5 直读 ports.json 无日历依赖）照旧绿。
+func _h8_logfold_ledger_check(main: Node) -> void:
+	var ml: RichTextLabel = main.message_label
+	var Flt: Node = root.get_node("Fleet")
+	# ── 一 / 二（布景归零后再动手）
+	GS.from_dict({})
+	Cal.from_dict({"year": 1276, "month": 10, "day": 29})
+	GS.identity = "merchant"
+	GS.money = 5000
+	GS.debt = 0
+	main.load_scene("quanzhou")
+	main.left_panel.visible = false
+	main._log_lines.clear()
+	main._log_folds.clear()
+	main._log_fold_open = ""
+	main._notice_run = 0
+	main._notice_when = []
+	main._render_log()
+	# 十月二十一则（超过 FOLD_AT×2：中段就自折，后续都进同一折 → 真「同批接续」路径）
+	for i in 21:
+		main._on_monthly_notice("十月第 %d 则。" % i)
+	var sl: PackedStringArray = main._log_lines
+	_check(sl.size() == 1 and main._log_folds.size() == 1 and str(sl[0]).find("月初通告一连 21 则") >= 0,
+		"十月 21 则整批折成一行（%d 行 / %d 折；「%s」）" % [sl.size(), main._log_folds.size(), sl[0] if not sl.is_empty() else ""])
+	_check(str(sl[0]).begins_with("十月廿九，"),
+		"同日折行用月日名起头（「十月廿九，…」；实得「%s」）" % str(sl[0] if not sl.is_empty() else "").left(30))
+	var key_oct := str(sl[0])
+	# 跨月重顶（真推送路径 = 玩家候日跨月、长航程跨月的同一条代码路）
+	Cal.from_dict({"year": 1276, "month": 11, "day": 1})
+	main._on_monthly_notice("冬月初一那一则。")
+	sl = main._log_lines
+	_check(sl.size() == 1 and main._log_folds.size() == 1 and not main._log_folds.has(key_oct),
+		"跨月重顶后旧键已换（新键「%s」）" % str(sl[0] if not sl.is_empty() else "").left(60))
+	_check(str(sl[0]) == "自景炎元年　十月廿九至于景炎元年　冬月初一，通告一连 22 则，凡 2 月",
+		"跨月折行起讫与凡几月逐字对（「%s」）" % str(sl[0] if not sl.is_empty() else ""))
+	_check(main._latest_log() == "冬月初一那一则。", "重顶后最上那条仍是最新则（「%s」）" % main._latest_log())
+	var fold1: Dictionary = main._log_folds.get(str(sl[0]), {})
+	var fl1: Array = fold1.get("lines", [])
+	_check(fl1.size() == 22 and str(fl1[0]) == "冬月初一那一则。" and str(fl1[-1]) == "十月第 0 则。",
+		"折里原文 22 则、首最新尾最旧（首「%s」尾「%s」）" % [
+			fl1[0] if not fl1.is_empty() else "", fl1[-1] if not fl1.is_empty() else ""])
+	# 点开整折 → 两月各一行；再点十月 → 铺十月 21 则、组首是十月最后到的那则（第 20 则）、冬月不铺
+	main._on_log_meta("fold:0")
+	var two_month := ml.text
+	_check(two_month.find("[url=fold:0:1276-10]") >= 0 and two_month.find("[url=fold:0:1276-11]") >= 0,
+		"点开整折：十月 / 冬月各一行可点（1276-10 %s / 1276-11 %s）" % [
+			"有" if two_month.find("[url=fold:0:1276-10]") >= 0 else "缺",
+			"有" if two_month.find("[url=fold:0:1276-11]") >= 0 else "缺"])
+	main._on_log_meta("fold:0:1276-10")
+	var oct_txt := ml.text
+	_check(oct_txt.find("　　十月第 20 则。") >= 0 and oct_txt.find("　　十月第 0 则。") >= 0
+		and oct_txt.find("　　十月第 20 则。") < oct_txt.find("　　十月第 0 则。"),
+		"点十月：铺 21 则正序（先第 20 则后第 0 则）")
+	_check(oct_txt.find("　　冬月初一那一则。") < 0, "点十月时冬月原文不铺开")
+	# 坏 meta 格（钉整折不动的形状：折在 [0] 且开着）：词头不是 fold 的二段 meta 决不许当成 fold:0 接盘。
+	# M4 反向变异（toggle 去掉词头校验）下「别的:0」int 解析成 0，会把开着的整折当 fold:0 收掉——这一格就是给它准备的
+	var touched_b: Array = []
+	var guard_b := func(meta: Variant) -> void:
+		main._on_log_meta(meta)
+		touched_b.append(str(meta))
+	if ml.meta_clicked.is_connected(main._on_log_meta):
+		ml.meta_clicked.disconnect(main._on_log_meta)
+	ml.meta_clicked.connect(guard_b)
+	ml.emit_signal("meta_clicked", "fold+1")  # 非 fold 前缀：一段不接盘
+	ml.emit_signal("meta_clicked", "fold:99")  # 越界索引不接盘
+	ml.emit_signal("meta_clicked", "别的:0")  # 词头不是 fold：决不许当 fold:0 接盘
+	_check(touched_b == ["fold+1", "fold:99", "别的:0"]
+		and main._log_fold_open == str(main._log_lines[0])
+		and str((main._log_folds[str(main._log_lines[0])] as Dictionary).get("open", "")) == "1276-10",
+		"坏 meta 不动已开的那折（fold+1 / fold:99 / 别的:0 都不接盘；open 仍在 [0] 那折、月开仍 1276-10；实得 %s / 「%s」）" % [
+			touched_b, str(main._log_fold_open).left(30)])
+	ml.meta_clicked.disconnect(guard_b)
+	if not ml.meta_clicked.is_connected(main._on_log_meta):
+		ml.meta_clicked.connect(main._on_log_meta)
+	# —— 二、推开一行寻常记事，新批从 0 重数 ——
+	main.log_msg("推开一句。")
+	sl = main._log_lines
+	_check(sl.size() == 2 and str(sl[0]) == "推开一句。" and main._log_folds.has(str(sl[1])),
+		"记事顶到折行上面、折行仍是那折（%s）" % [sl])
+	Cal.from_dict({"year": 1276, "month": 11, "day": 2})
+	for i in 4:
+		main._on_monthly_notice("冬月初二第 %d 则。" % i)
+	sl = main._log_lines
+	_check(sl.size() == 6 and not main._log_folds.has(str(sl[0])) and main._notice_run == 4
+		and str(sl[0]) == "冬月初二第 3 则。" and str(sl[3]) == "冬月初二第 0 则。" and main._log_folds.size() == 1,
+		"新批 4 则不折（4 < FOLD_AT）、不重吸进旧折（notice_run=%d；顶行「%s」）" % [
+			main._notice_run, str(sl[0] if not sl.is_empty() else "").left(16)])
+	_check(str(sl[4]) == "推开一句。" and main._log_folds.has(str(sl[5])),
+		"旧折仍在底下、推开句夹在中间、折里原文一则没动（%d 折，底行「%s」）" % [
+			main._log_folds.size(), str(sl[5] if sl.size() > 5 else "").left(40)])
+	# —— 三、真钮 link 与 meta 信号链 ——
+	var book_btn: Button = null
+	for b in main._status_strip.find_children("", "Button", true, false):
+		if (b as Button).text == "船籍簿":
+			book_btn = b
+	_check(book_btn != null and book_btn.pressed.is_connected(main._toggle_ledger),
+		"顶匾「船籍簿」钮 pressed 链到 _toggle_ledger")
+	var close_btn: Button = null
+	for b in main.left_panel.find_children("", "Button", true, false):
+		if (b as Button).text == "合上":
+			close_btn = b
+	_check(close_btn != null and close_btn.pressed.is_connected(main._close_ledger),
+		"浮层「合上」钮 pressed 链到 _close_ledger")
+	var dim_rect := main._ledger_layer.get_child(0) as ColorRect
+	_check(dim_rect != null and dim_rect.gui_input.is_connected(main._on_ledger_dim_input),
+		"遮暗层 gui_input 链到 _on_ledger_dim_input（点空处合上）")
+	# 坏 meta 不动已开折的钉已在二节末（折在 [0] 的形状）打过；这里只验 guard 链路与开关回合
+	var touched: Array = []
+	var guard := func(meta: Variant) -> void:
+		main._on_log_meta(meta)
+		touched.append(str(meta))
+	if ml.meta_clicked.is_connected(main._on_log_meta):
+		ml.meta_clicked.disconnect(main._on_log_meta)
+	ml.meta_clicked.connect(guard)
+	ml.emit_signal("meta_clicked", "fold:5")
+	_check(touched == ["fold:5"] and main._log_fold_open == "",
+		"好 meta fold:5（同一折的行号）照收（open=「%s」）" % main._log_fold_open)
+	ml.emit_signal("meta_clicked", "fold:5")
+	_check(touched.size() == 2 and main._log_fold_open == str(main._log_lines[5]),
+		"再点 fold:5 重开（open=「%s」）" % str(main._log_fold_open).left(36))
+	ml.emit_signal("meta_clicked", "fold:5")
+	_check(touched.size() == 3 and main._log_fold_open == "", "三点 fold:5 收起（open=「%s」）" % main._log_fold_open)
+	ml.meta_clicked.disconnect(guard)
+	if not ml.meta_clicked.is_connected(main._on_log_meta):
+		ml.meta_clicked.connect(main._on_log_meta)
+	# 折起的行随 LOG_KEEP 滚出时折叠一并清掉、点开标记复位（prune 收口）：此时顶上是 4 条新批通告，
+	# 再来 4 条寻常记事恰把折行（第 8 行）挤出去
+	for i in 4:
+		main.log_msg("挤走第 %d 句。" % i)
+	_check((main._log_lines as PackedStringArray).size() == 8 and main._log_folds.is_empty()
+		and main._log_fold_open == "" and main._notice_run == 0,
+		"折行滚出 LOG_KEEP 后折叠清掉、点开标记复位（%d 行 / %d 折 / open=「%s」）" % [
+			(main._log_lines as PackedStringArray).size(), main._log_folds.size(), main._log_fold_open])
+	# —— 四、跳三年跨 25 月：真 monthly_notice 龙头逐月对账 ——
+	main._log_lines.clear()
+	main._log_folds.clear()
+	main._log_fold_open = ""
+	main._notice_run = 0
+	main._notice_when = []
+	Cal.from_dict({"year": 1275, "month": 1, "day": 1})
+	main.log_msg("复原一句。")
+	var tap3: Array = []
+	var order3: Array = []
+	var n3 := _notices.size()
+	var tp3 := func(t: String) -> void:
+		var ym := "%04d-%02d" % [int(Cal.year), int(Cal.month)]
+		if tap3.is_empty() or str((tap3[0] as Array)[0]) != ym:
+			tap3.push_front([ym, []])
+			order3.push_front(ym)
+		((tap3[0] as Array)[1] as Array).push_front(UiTheme.plain_log(t))
+	GM.monthly_notice.connect(tp3)
+	GM.skip_years(3)
+	GM.monthly_notice.disconnect(tp3)
+	var total3: int = _notices.size() - n3
+	sl = main._log_lines
+	var top3: Dictionary = main._log_folds.get(str(sl[0] if not sl.is_empty() else ""), {})
+	var groups3: Array = top3.get("groups", [])
+	_check(total3 >= LogFold.FOLD_AT and order3.size() == 15 and sl.size() == 2 and str(sl[1]) == "复原一句。" and not top3.is_empty(),
+		"跳三年：%d 则跨 %d 月仍折一行、底下那句还在（%s）" % [total3, order3.size(), sl])
+	var order_got3: Array = []
+	var month_bad3 := 0
+	var want_m: Dictionary = {}
+	for ent in tap3:
+		want_m[str((ent as Array)[0])] = (ent as Array)[1]
+	for g in groups3:
+		var ym_g := str(g.get("ym", ""))
+		order_got3.append(ym_g)
+		if (g.get("lines", []) as Array) != want_m.get(ym_g, []):
+			month_bad3 += 1
+	_check(order_got3 == order3 and month_bad3 == 0 and (top3.get("lines", []) as Array).size() == total3,
+		"跳三年逐月对账：%d 组新的在前、各月则序与真发同（对不上 %d 组；折 %d / 发 %d）" % [
+			groups3.size(), month_bad3, (top3.get("lines", []) as Array).size(), total3])
+	_check(not groups3.is_empty() and (top3.get("groups", []) as Array).size() == order3.size(),
+		"跳三年月组数 = 跨月数（%d）" % groups3.size())
+	_check(str(sl[0]).begins_with("自德祐元年　二月初一至于") and str(sl[0]).ends_with("，通告一连 42 则，凡 15 月"),
+		"跳三年折行「自…至于…，凡 15 月」实样「%s」" % [str(sl[0] if not sl.is_empty() else "").left(70)])
+	main._on_log_meta("fold:0")
+	var heads3 := ml.text
+	var top_ym3 := str(order3[0])
+	var want_head := "%s，通告 %d 则（点开）" % [str(((top3.get("groups", []) as Array)[0] as Dictionary).get("date", "")), (want_m.get(top_ym3, []) as Array).size()]
+	_check(heads3.find("[url=fold:0:%s]" % top_ym3) >= 0 and heads3.find(want_head) >= 0,
+		"点开最新月行 %s 写「%s」（实得有 %s / 字样 %s）" % [top_ym3, want_head.left(30),
+			"有" if heads3.find("[url=fold:0:%s]" % top_ym3) >= 0 else "缺",
+			"有" if heads3.find(want_head) >= 0 else "缺"])
+	_check(not groups3.is_empty() and str((groups3[groups3.size() - 1] as Dictionary).get("ym", "")) == "1275-02"
+		and ((groups3[groups3.size() - 1] as Dictionary).get("lines", []) as Array).size() == 13,
+		"最旧月组 1275-02 恰 13 则（读档漏发那月 12+1 补发口径）")
+	main._on_log_meta("fold:0")
+	_check(main._log_fold_open == "" and ml.text.find("fold:0:") < 0, "跳三年那折收起后各月行也收起")
+	# 再连跳三年（1278-01 → 1281-01）：1278-03 广州复沉、1278-12 厓山（merchant 线新闻）两则到期收进同一折，
+	# 折成 44 则凡 17 月、行字末端改「祥兴元年　腊月初一」；底句仍在。之后内容告罄。
+	GM.skip_years(3)
+	sl = main._log_lines
+	var top4: Dictionary = main._log_folds.get(str(sl[0] if not sl.is_empty() else ""), {})
+	var groups4: Array = top4.get("groups", [])
+	_check(not top4.is_empty() and (top4.get("lines", []) as Array).size() == 44 and groups4.size() == 17
+		and str(sl[0]) == "自德祐元年　二月初一至于祥兴元年　腊月初一，通告一连 44 则，凡 17 月",
+		"连跳三年：厓山两则收进同一折（折 %d 则 / 组 %d；底句 %s）" % [
+			(top4.get("lines", []) as Array).size(), groups4.size(),
+			"还在" if sl.size() == 2 and str(sl[1]) == "复原一句。" else "不见了"])
+	_check(not groups4.is_empty() and str((groups4[0] as Dictionary).get("ym", "")) == "1278-12"
+		and str((groups4[1] as Dictionary).get("ym", "")) == "1278-03",
+		"新月组照样新的在前（顶两组 %s / %s）" % [
+			str((groups4[0] as Dictionary).get("ym", "")) if groups4.size() > 0 else "?",
+			str((groups4[1] as Dictionary).get("ym", "")) if groups4.size() > 1 else "?"])
+	# —— 五、合上浮层来新记事：状态条照常刷新（无浮层排版路径被踩）——
+	Flt.ships = [{"type": "fu", "crew": 0, "cargo": {}, "durability": 100, "max_durability": 100}]
+	GS.debt = 0
+	main._ledger_layer.visible = false
+	var well_min_before: float = ml.custom_minimum_size.y
+	main.log_msg("匾验一句。")
+	_check(main._status_note != null and main._status_note.text.find("匾验一句。") >= 0,
+		"合上浮层来新记事：状态条那格照常写最上一条（「%s」）" % str(main._status_note.text if main._status_note != null else "").left(30))
+	_check(main._ledger_layer.visible == false and absf(ml.custom_minimum_size.y - well_min_before) < 0.5,
+		"浮层仍合着、墨框高没被踩（%.0f）" % ml.custom_minimum_size.y)
+	_check(main._status_line.text.find("水粮 999 日") >= 0,
+		"顶匾水粮档照算（staff 船 999 日；「%s」）" % main._status_line.text.left(60))
+	Flt.ships = [{"type": "fu", "crew": 5, "cargo": {}, "durability": 100, "max_durability": 100}]
+	Flt.water = 6
+	Flt.food = 9
+	main._refresh_strip()
+	_check(main._status_line.text.find("水粮 2 日") >= 0,
+		"水粮档换色边界：2 日写进顶匾（「%s」）" % main._status_line.text.left(60))
+	# —— 布景归零，下一道（a5 直读 ports.json 起锚 / 等远切片，日历不敏感）照旧 ——
+	Flt.ships = []
+	Flt.water = 0
+	Flt.food = 0
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._log_lines.clear()
+	main._log_folds.clear()
+	main._log_fold_open = ""
+	main._notice_run = 0
+	main._notice_when = []
+	main._render_log()
+
 ## lane w20-a5（修 w19-g9 遗留③）：海上「所在位置」不再按里程过半判，按船标当前坐标取最近的港——
 ## 港位真坐标 ports.json lat/lon（与真海图同源；scripts/WorldMap.gd 「(0,1000)／(2000,-1000)」是海战布景示意位、
 ## 全场景仅此两个，做不了坐标基准，见 Economy / Voyage.nearest_sea_port 注）；航线折线与沿途中间港都算候选。
