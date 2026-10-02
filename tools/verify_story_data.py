@@ -807,6 +807,7 @@ for s in scenes:
 # 序章史实校勘必修 5 处（docs/剧情打磨_序章与终局_2026-09-04.md §一）：小暑与三月开局矛盾、1255 年襄阳未战、
 # 丁大全 1258 才拜相、蒙哥南征非「大捷」、青瓷当私盐抄不通、陈文龙非绞刑、「新大陆」现代词——锁住不回退。
 # cg_world_north / cg_decision 已按后续稿重写（改后原句含「孤城 / 岳王庙」，与上面的剧透禁词冲突），只查不回退旧写法。
+# （lane w20-b5）**按幕 id 登记**：锁的是「校勘定的是哪一幕的那句」——挪到别幕即另一事件，改幕名须随本表。
 PROLOGUE_HISTORY_OLD = re.compile(r"小暑|襄阳|汉水|排斥异己|大捷|当私盐抄|绞索|新大陆")
 PROLOGUE_HISTORY_KEEP = {
     "cg_narrate_table": "三月，春雷，暴雨将至",
@@ -829,6 +830,7 @@ for sid, keep in PROLOGUE_HISTORY_KEEP.items():
 
 # 序章史实校勘建议 6–7（Q11）：阿那进场是赤脚踩水不是木屐（读者第一反应是日本）；南宋无「路试」，
 # 士人线入口是 1256 临安太学补试。只锁这两处正文；#8 家丁「明年丙辰大考」口吻允许不准确，不查。
+# （lane w20-b5）**按幕 id 登记**：同 PROLOGUE_HISTORY_KEEP ——锁的是那一幕的那一句，不是任何幕出现这句话。
 PROLOGUE_SUGGEST = {
     "cg_ana_enter": ("赤脚踩水的啪啪声", re.compile(r"木屐")),
     "scholar_path_start": ("临安太学补试是第一步", re.compile(r"福州路试")),
@@ -903,29 +905,105 @@ for tag, probe in (("body", {"body": "寺社网络"}), ("objective", {"objective
 
 # lane seq3：seq2 留下的镜像句两头一起改，此后两头必须逐字同在；旧写法在 scenes.json 之外的出处（人物原稿 / 文本层 /
 # 职事表 / 航程旁白）也不许回来。SCENE_MODERN 只扫 scenes.json，这里补上镜像与场外四处。
-SEQ3_MIRRORS = {  # 镜像句 → 它在 scenes.json 里的幕
-    "这趟先验半程的水路。货不能潮，信不能皱。": "merchant",
-    "依大宋律，同居共财，这笔债自然落到了你的名下。": "prologue_ledger",
+# （lane w20-b5，两张表判法与下方「──── 结构门禁登记表口径 ────」同段）：
+#   键（镜像句原文、包装禁词、文件行禁词） = 内容本身 —— **按内容登记**，文本改名则本条整行删 / 整行改；
+#   SEQ3_MIRRORS 的「characters 收句人」按台词反查（不登 id，不随改名）、「scenes 落幕」仍**按幕 id**——
+#   镜像合同写的是「这两处具体产品」要逐字同在，落幕是审计锚、不是形状锚（判法见下段口径②）。
+SEQ3_MIRRORS = {  # 镜像句 → (characters 收句人 —— 只做存在性自查, scenes 落幕 id —— 跟随改幕名)
+    "这趟先验半程的水路。货不能潮，信不能皱。": ("merchant_lin", "merchant"),
+    "依大宋律，同居共财，这笔债自然落到了你的名下。": ("guild_head", "prologue_ledger"),
 }
-_chars_lines = [ln for ch in load("characters.json").get("characters", []) for ln in ch.get("lines", []) or []]
-for line, sid in SEQ3_MIRRORS.items():
-    check(line in _chars_lines, f"characters.json lines 里找不到镜像句「{line}」（lane seq3 与 scenes.json {sid} 同步改的）")
-    check(any(line in v for _, v in _scene_onscreen(_scene_by_id.get(sid) or {})),
-          f"scenes.json {sid} 里找不到镜像句「{line}」——与 characters.json lines 断了镜像")
-SEQ3_ELSEWHERE = {  # 文件 → 旧写法；.gd 只查字符串字面量（SeaChart 注释里画罗盘的「罗盘」是控件名，不上屏）
-    "data/characters.json": re.compile(r"中继路|按照大宋律例|防波堤"),
-    "data/characters_codex.json": re.compile(r"中继|按照大宋律例|防波堤"),
-    "data/crew.json": re.compile(r"罗盘"),
-    "scripts/core/Voyage.gd": re.compile(r"罗盘"),
+_chars = load("characters.json").get("characters", [])
+
+def _mirror_owner(line, chars):
+    return [str(ch.get("id")) for ch in chars if line in (ch.get("lines") or [])]
+
+def _mirror_scenes(line, scs):
+    return [str(x.get("id")) for x in scs if any(line in v for _, v in _scene_onscreen(x))]
+
+for line, (cid_expect, sid_expect) in SEQ3_MIRRORS.items():
+    check(line in [ln for ch in _chars for ln in ch.get("lines", []) or []],
+          f"characters.json lines 里找不到镜像句「{line}」（lane seq3 与 scenes.json {sid_expect} 同步改的）")
+    own = _mirror_owner(line, _chars)
+    check(len(own) == 1 and own[0] == cid_expect,
+          f"镜像句「{line}」的 characters.json 收句人须恰为 `{cid_expect}` 一位（实为 {sorted(own)}；"
+          f"改名该人物不动本表，删句即删行）")
+    hits = _mirror_scenes(line, scenes)
+    check(hits == [sid_expect],
+          f"镜像句「{line}」在 scenes.json 的上屏出现须恰落 `{sid_expect}` 一幕（实为 {sorted(hits)}；"
+          "落幕 id 属 SEQ3 镜像登记的审计锚（**按幕 id 登记**、口径见 file head②），改幕名跟随此列；"
+          "若他幕也要上这一句，在本表另起一行）")
+
+_SEQ3_MIRROR_SELF = {  # 自证两项：误植收句人 / 误植第二落幕均须被上面 checks 抓出
+    "误植 characters 次收句人": lambda: len(_mirror_owner("这趟先验半程的水路。货不能潮，信不能皱。",
+        list(_chars) + [{"id": "_probe_ch", "lines": ["这趟先验半程的水路。货不能潮，信不能皱。"]}])) != 1,
+    "误植 scenes 第二落幕": lambda: _mirror_scenes("依大宋律，同居共财，这笔债自然落到了你的名下。",
+        list(scenes) + [{"id": "_probe_sc", "body": "依大宋律，同居共财，这笔债自然落到了你的名下。"}]) != ["prologue_ledger"],
 }
-for rel, pat in SEQ3_ELSEWHERE.items():
-    src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
-    for ln, row in enumerate(src.splitlines(), 1):
+for tag, probe in _SEQ3_MIRROR_SELF.items():
+    check(probe(), f"SEQ3_MIRRORS 自证失明：{tag}（误植后应判与登记不符）")
+# 去强度自证：把 SEQ3_MIRRORS 的任意一行删掉都应被上项 checks 红住（防静默放过删行）。
+# 本表只有 2 行时两行都要测；日后增行此处本格自动覆盖。
+# 去强度自证：这 2 行不是孤证 —— 至少 2 条镜句登记的锁定动作在下方已经体现（不算自证块内的判定）。
+# 删任何行本表都不红 —— 那要靠另一个独立证据等于把这行删了另一个证据顶不住。
+# 在本文件 SEQ3_MIRRORS 本体之外再把同样的 2 条的「characters 收句人 = X」影印一处：
+# 影印散掉（改名 / 挪人 / 删句）即红，SEQ3_MIRRORS 整行删掉它也红 —— 双表同理印证，删一处另一处仍守。
+_SEQ3_MIRROR_PIN = {  # 影印登记（不读 SEQ3_MIRRORS —— 若是硬同步复制，加行 / 改 owner 时两处一处改即可红）
+    "merchant_lin": "这趟先验半程的水路",
+    "guild_head": "依大宋律，同居共财",
+}
+for _cid, _frag in _SEQ3_MIRROR_PIN.items():
+    _ch = next((c for c in _chars if str(c.get("id")) == _cid), None)
+    check(_ch is not None, f"SEQ3_MIRRORS 影印：`{_cid}` 在 characters.json 里没有这条人物（删人物 / 改名 → 本处红）")
+    check(_ch and any(_frag in ln for ln in _ch.get("lines") or []),
+          f"SEQ3_MIRRORS 影印：`{_cid}` 的 lines 里没有「{_frag}」——若 SEQ3_MIRRORS 整行删去仍能在此红")
+
+SEQ3_ELSEWHERE = [  # (扫哪里, 禁写法) —— 无「按幕 id」落点：键 = 出处文件，值 = 包装禁词；.gd 只查字符串字面量
+    # （SeaChart 注释里画罗盘的「罗盘」是控件名，不上屏）；改幕名 / 挪幕不用跟
+    ("data/characters.json", re.compile(r"中继路|按照大宋律例|防波堤")),
+    ("data/characters_codex.json", re.compile(r"中继|按照大宋律例|防波堤")),
+    ("data/crew.json", re.compile(r"罗盘")),
+    ("scripts/core/Voyage.gd", re.compile(r"罗盘")),
+]
+for rel, pat in SEQ3_ELSEWHERE:
+    _f = os.path.join(ROOT, rel)
+    check(os.path.isfile(_f), f"SEQ3_ELSEWHERE 登的 {rel} 不存在（挪文件时同删本行）")
+    if not os.path.isfile(_f):
+        continue
+    src_inner = open(_f, encoding="utf-8").read()
+    for ln, row in enumerate(src_inner.splitlines(), 1):
         texts = re.findall(r'"(?:[^"\\\n]|\\.)*"', row) if rel.endswith(".gd") else [row]
         for t in texts:
             hit = pat.search(t)
             check(hit is None, f"{rel}:{ln} 回退到 lane seq2 / seq3 已判改的写法「{hit.group(0) if hit else ''}」")
+_SEQ3_ELSEWHERE_SELF = "我在防波堤上等你"
+check(any(p.search(v) for _, p in SEQ3_ELSEWHERE for v in (f'"{_SEQ3_ELSEWHERE_SELF}"', _SEQ3_ELSEWHERE_SELF)),
+      "SEQ3_ELSEWHERE 自证失明：往探串里塞禁词「防波堤」逐模式没抓到")
+# 去强度自证：在每条 SEQ3_ELSEWHERE 上造一个该条独有禁写法的红样本（防模式被改成永不中 / 行被删）
+_seq3_elsewhere_probe = {  # 文件 → 该条独有的禁词
+    "data/characters.json": "中继路",
+    "data/characters_codex.json": "中继",
+    "data/crew.json": "罗盘",
+    "scripts/core/Voyage.gd": "罗盘",
+}
+for rel, pat in SEQ3_ELSEWHERE:
+    _probe_word = _seq3_elsewhere_probe.get(rel)
+    check(_probe_word is not None and pat.search(_probe_word) is not None,
+          f"SEQ3_ELSEWHERE 自证失明：{rel} 的禁写法在样本上没命中（模式改了 / 该条被删 / 本表漏登记样本词）")
+_elsewhere_files = {rel for rel, _ in SEQ3_ELSEWHERE}
+check(_elsewhere_files == set(_seq3_elsewhere_probe),
+      f"SEQ3_ELSEWHERE 自证登记不齐（表里 {sorted(_elsewhere_files)}，样本词表 {sorted(_seq3_elsewhere_probe)}）")
 
+# ──── 结构门禁登记表口径（lane w20-b5，SEQ3_MIRRORS / SEQ3_ELSEWHERE / SCENE_ARCHIVE / 卷首题名表）────
+# 按「登记对象是内容本身还是数据上的具体幕」分两支——
+#   ① **按内容登记**：键 = 句子 / 包装禁词 / 卷首题字原文，改幕 id / 挪幕不用跟；删内容即删整行。
+#      SEQ3_ELSEWHERE、TITLE_QUAD_CG（卷首题名表）都属此类。往表里加一条等价于新禁令。
+#      SEQ3_MIRRORS 的镜像句原文也属此类 —— 改字即改整行（两处镜像须一同换字）。
+#   ② **按幕 id 登记**：登记的是「这些具体的幕 / 这些具体的修订」——不记那些幕名就是没登记这个事件。
+#      SCENE_ARCHIVE（归档名册）、PROLOGUE_HISTORY_KEEP / PROLOGUE_SUGGEST（史实校勘按幕守）、
+#      SEQ3_MIRRORS 的落幕列（该一句在哪一幕上屏的那处具体产品）都属此类；改幕名须随这些表同改，
+#      不然门禁以「id 悬空 / 与登记不符」红。
+# 标识：① 类的表头行尾带「**按内容登记**」；② 类的表头行尾带「**按幕 id 登记**」。
 # ── scenes.json 结构门禁（lane seq3）────────────────────────────────
 # seq1 / seq2 的「结构不变」只在 /tmp 里的一次性 prove.py 证过（改前 vs 改后逐键比），没进库，下一次改文案没人再证。
 # 这里不和旧版比，直接把结构本身锁住：
@@ -960,6 +1038,8 @@ SCENE_ARCHIVE = {
     "guest_hall", "reef_sound", "lead_line", "old_berth_note", "academy_gate", "paper_shop", "mulan_bei", "yangji_yuan",
     "customs_room", "yahang", "arab_mosque", "beacon_tower", "relay_post", "fuzhou_yamen",
 }
+# （lane w20-b5）**按幕 id 登记**：这是策划对 ff82b17 时点旧稿的清册，不许形状挑 / 形状锚化
+# （「所有走不到的非 deprecated 幕」是宽限、会放过未接入口的新幕；和「这 39 个曾是入口就撤了」的历史事实不同）。
 # 放行口子的到期判据（GATES §五.3）：名单只减不增。条目被接回入口即红、要删；幕删了即红、要删；新孤儿不许登记进来
 # （接上入口，或标 deprecated）。上界随删减往下调，不许往上调；P7 港口节拍（data/port_beats.json，拍板清单 E-10）若接回，逐条删。
 SCENE_ARCHIVE_MAX = 39
@@ -1035,6 +1115,26 @@ for _p in _shape_probs:
     check(False, _p)
 check({"title", "port", "investigation", "story"} <= {k[0] for k in SCENE_KINDS} and {"choices", "investigations", "facilities"} <= set(SCENE_SUB_SHAPES),
       f"{SCENE_FAMILY_MANIFEST} 的 scenes 形状解析不全（形 {[k[0] for k in SCENE_KINDS]}，子形 {sorted(SCENE_SUB_SHAPES)}）")
+
+# 卷首题名表（lane w20-b5 立）：「type=title 形 + cg_title 非空」四方字幕是序章旁白给玩家看到的世界四字题，
+# 文本即内容。**按内容登记**——表里不写幕 id、不写 scenes 顺序，只锁「这几段四方题字当前仍是这几个字」；
+# 改幕 id / 挪幕 / 改 cg_title 的其他键都不用跟，真改题字文本才在这一行改 / 删整行。
+TITLE_QUAD_CG = {  # cg_title 原文（现 5 条：东亚起、四方分）；新四方新立一行、改字即改整行，不许原位添字
+    "东亚海域立志传", "北方：漠北兵起　湖上犹歌", "东方：博多唐房　钱去硫来", "南方：占城稻熟　海峡之口", "西方：驼道尘起　白达将倾",
+}
+_title_cg_found = [s.get("cg_title") for s in scenes if s.get("type") == "title" and isinstance(s.get("cg_title"), str)]
+check(sorted(_title_cg_found) == sorted(TITLE_QUAD_CG),
+      f"scenes.json 卷首题名字幕与登记不符（现 {len(_title_cg_found)} 条，登 {len(TITLE_QUAD_CG)} 条；差 "
+        f"{sorted(set(TITLE_QUAD_CG) ^ set(_title_cg_found))}）——**按内容登记**：改字即改本行，新四方新立一行，无需联系幕 id")
+_TITLE_QUAD_SELF_add = sorted([*TITLE_QUAD_CG, "封控题字探一条"])
+_TITLE_QUAD_SELF_sub = sorted(list(TITLE_QUAD_CG)[:-1])
+check(_TITLE_QUAD_SELF_add != sorted(_title_cg_found) and _TITLE_QUAD_SELF_sub != sorted(_title_cg_found),
+      "卷首题名表自证失明（加 / 减一条后应与现数据不等，未判差）")
+# 去强度自证：删任意一条登记都应与现数据不等（防登记被裁剩若干仍判等）
+for _probe in TITLE_QUAD_CG:
+    _red_set = sorted(set(TITLE_QUAD_CG) - {_probe}) != sorted(_title_cg_found)
+    check(_red_set, f"TITLE_QUAD_CG 自证失明：删掉「{_probe[:12]}」后仍判与现数据相等，删登记可混过")
+del _title_cg_found, _TITLE_QUAD_SELF_add, _TITLE_QUAD_SELF_sub, _probe, _red_set
 SCENE_EFFECT_TYPES = {
     **{k: int for k in ("money", "fame", "days", "chapter", "network", "merchant_credit", "supplies", "ship",
                         "sea_tendency", "scholar_tendency")},
