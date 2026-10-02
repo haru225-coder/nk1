@@ -106,6 +106,7 @@ const SCRIPTS := [
 	"res://tools/qa_fine_text_probe.gd",
 	"res://tools/qa_money_notices_probe.gd",
 	"res://tools/qa_contract_stock_probe.gd",
+	"res://tools/qa_contract_destinations_probe.gd",  # 委办目的地 × 战况取证件（lane w23-a8）
 	"res://tools/qa_customs_duty_probe.gd",
 	"res://tools/qa_bribe_probe.gd",  # lane w23-a5 塞钱探针骨架（EA6-1 机械前置，断言先注掉只打印实测）
 	"res://tools/qa_yard_transition_probe.gd",
