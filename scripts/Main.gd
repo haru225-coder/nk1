@@ -3012,8 +3012,11 @@ func _on_enter_port(port_id: String) -> void:
 		for seed_entry in _BEATS.DEFAULT_SEED:
 			GameState.beat_mark(seed_entry)
 		GameState.loaded_with_beats = true
-	# 守城开着的会话不演拍不动账（城破了算、戏让位守城）
-	var ar: Dictionary = {} if port_id != "quanzhou" or GameState.siege_open() else _beats.arrive(port_id, GameState.beats_seen, GameState.beat_flag_names(), GameState.visited_ports, GameState.chapter)
+	# 守城开着的会话不演拍不动账（城破了算、戏让位守城）；终局落定后回港也不演不动账
+	# （wave22 待定项② 已准「终局后港口节拍一律不再演」：港页只剩回顾札记，「重读结局」、进出设施
+	#  都不走这条路——守卫顶在决策处、只拦节拍）。终局判定只读现量 GameState.is_ended()（b2 的
+	#  GameState.gd 不加字段）
+	var ar: Dictionary = {} if port_id != "quanzhou" or GameState.siege_open() or GameState.is_ended() else _beats.arrive(port_id, GameState.beats_seen, GameState.beat_flag_names(), GameState.visited_ports, GameState.chapter)
 	if not ar.is_empty():
 		var mark := str(ar.get("mark", ""))
 		var entry := str(ar.get("beat", {}).get("entry", ""))

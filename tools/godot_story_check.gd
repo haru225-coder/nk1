@@ -759,6 +759,7 @@ func _route_check() -> void:
 	_close_dialogs(main)
 	_h8_logfold_ledger_check(main)
 	_a5_sea_here_check()
+	_w25j2_endgame_port_beats_check(main)
 	main.queue_free()
 	_process_c6_main_hook(main)
 
@@ -4146,3 +4147,59 @@ func _w20b9_spawn_bbox_check() -> void:
 	var half_f := 720.0 / (2.0 * cam_f)
 	_check(smax <= half_r and smax <= half_f,
 		"开战刷船上限 %.0f：两档半高 %.0f / %.0f 同收，任何角度刷出都在画内" % [smax, half_r, half_f])
+
+
+## lane w25-j2（wave22 待定项② 已准「终局后港口节拍一律不再演」）：守卫顶在 Main._on_enter_port 的
+## 决策处——抵达结算前 is_ended() 为真即空账跳过拍、不动 beats_seen（_build_shore 仍照 is_ended
+## 排终局港口页，「重读结局」、进出设施都不是这条路，守卫只拦节拍）。反向变异：去掉 for 环里
+## 「or GameState.is_ended()」四字即终局仍被拍截走，断言 ②③ 红出点名。
+## 泉州链：monk 是开局针（data/port_beats.json requires 全空），未终局首抵必演；终局后回港不演。
+## 博多 / 流求本就不在接回的泉州链上（w20-c2 拍板 G1014 未接），不另测。
+func _w25j2_endgame_port_beats_check(main: Node) -> void:
+	var BM := load("res://scripts/core/PortBeats.gd")
+	var beats = BM.new()  # typ 由 Godot 推断
+	beats.init(GM.port_beats_data.get("beats", []))
+	_check((beats.due("quanzhou", ["start"], [], ["quanzhou"], 1) as Dictionary).get("entry", "") == "monk",
+		"账口仍可算：未终局 due(quanzhou) 反回 monk 针（拍账数据没动）")
+	# ── ① 未终局照旧会演（守卫别把正常路径拦掉）──
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	GS.loaded_with_beats = true
+	GS.last_port = "quanzhou"
+	main._beats = null
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "monk" and GS.beats_seen == ["monk"],
+		"未终局首抵泉州照旧演首针 monk（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	# ── ② 终局后回港不演不动账（当前会话，is_ended 为真；真 Main 走戏帐，账口 due() 也空）──
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	GS.loaded_with_beats = true
+	GS.last_port = "quanzhou"
+	GS.finish("忠肃", "正文")
+	_check(GS.is_ended() and GS.ended != "", "终局落定（ended=%s）" % GS.ended)
+	_check((beats.due("quanzhou", ["start"], [], ["quanzhou"], 1) as Dictionary).get("entry", "") == "monk",
+		"纯账口跟率：非运行时不参 is_ended，due(monk) 仍算得出（收守卫在主端）")
+	main._beats = null
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "quanzhou" and GS.beats_seen == [],
+		"终局后首抵泉州停港页、拍账一笔不进（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "quanzhou" and GS.beats_seen == [],
+		"再抵一次仍不演不动账（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	# ── ③ 终局后的档读回再进港仍不演（读档来自另一会话的落地现场）──
+	var ended_at: String = GS.ended_at
+	var sd: Dictionary = GS.to_dict()
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_check(not GS.is_ended(), "读档前复位为非终局")
+	GS.from_dict(sd)
+	_check(GS.is_ended() and str(GS.ended) == "忠肃" and str(GS.ended_at) == ended_at and GS.loaded_with_beats,
+		"终局档读回：ended / ended_at / loaded_with_beats 都复原（ended=%s）" % GS.ended)
+	main._beats = null
+	main.load_scene("quanzhou")
+	_check(main.current_scene_id == "quanzhou" and GS.beats_seen == [],
+		"终局后的档读回再抵泉州仍不演不动账（页 %s，账 %s）" % [main.current_scene_id, GS.beats_seen])
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+
