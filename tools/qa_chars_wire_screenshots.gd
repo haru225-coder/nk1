@@ -1,24 +1,41 @@
 extends SceneTree
-## chars 线薄接入巡检：打开 CharsShoreOverlay，截 wire_*.png 到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/chars/。
-## 用法：NK1_CHARS_SYNC=1 DISPLAY=:2 godot --path . -s res://tools/qa_chars_wire_screenshots.gd   # 截图门禁（须出 4 张）
-##       godot --headless --path . -s res://tools/qa_chars_wire_screenshots.gd -- --contract   # 只验非渲染断言，不截图
+## chars 线「数据接线」巡检重打（lane w26-k8；b6 遗留①：w20-a3 工单那支带钉探针随 36f91de 湮灭，36f91de 全卷已
+##   考古找回，见 /workspace/nk1-agent-briefs/lane-w26-k8-chars-wire-probe.md §Verify）。本片补湮灭单从没钉过的一环——
+##   「Characters 数据 → 屏上人物」逐行对上：湮灭前那支只截 4 张图、零数据断言，上图对不对全靠目睹，故湮灭后一条断言都复跑不了。
+## 用法：NK1_SHOT_DIR=<root> DISPLAY=:2 godot --path . -s res://tools/qa_chars_wire_screenshots.gd   # 截图门禁（须出 6 张 wire_*.png）
+##       godot --headless --path . -s res://tools/qa_chars_wire_screenshots.gd -- --contract             # 只验断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
-## lane fx1：每张截图前、再逐页签（主 / 职事 / 市井 / 史实）查一遍——浮页整页最小宽不越视口、WireSheet 与「合上」钮整框在视口内
-##   （名册行短注曾不截断，最长一行把浮页顶出 1280 右缘、「合上」钮切掉半截）；契约模式同样查。
-## lane w19-g6：三处名册宿主（人物志内嵌名册 CharacterCodex._build_wire_inline、岸上名册浮页、CharsDemo）逐个放进
-##   1280×720 / 1706×720（21:9）/ 1920×1080 三档视口：左栏都走 CharRoster.split_columns（名册 : 右栏 = COLUMN_RATIO : 1，
-##   不窄于 COLUMN_MIN_W）、实宽比对得上、各栏与页头按钮不出视口、整行最小宽放得下；CharsDemo 窄屏两栏另查「看站台」换看。契约模式同查。
-## 等待按演出推进（lane gd14）：帧数只作排版下限，补间演完才截，上界按墙钟，见 probe_clock.gd；
-##   压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_chars_wire_screenshots.gd
+## 判定项（全部按人物数据经 GameManager 取数口现读真值逐行对屏上控件文本——
+##   探针与上屏同一条取数口，dict 一改全链都跟着改）：
+##   W1 无角色的档：直接起岸上名册浮页。begin("chen_wenlong") 选中者落在「主」页签，右栏名行 / 左栏立绘名牌 / 品级签
+##      逐个 == display_name 与 TIER_NAME[tier] 真值。
+##   W2 focus_id("chen_zan")：名牌 == 陈瓒；右栏短注第一行前 24 字 == codex_short 真值；「身份」行在文本层口径下
+##      不得透出隐藏 origin 前缀（玉湖陈氏 / 兴化莆田玉湖——Ch2 前这些是隐藏段，上屏不许透）；trait 签逐枚 == traits_of。
+##   W3 focus_id("merchant_lin")：阵营签 == faction_def 的玉湖陈氏→泉州海商转场对上；名牌 / 品级签 == 要人真值。
+##   W4 有角色的档：临时整仓雇舵工 ChenLaodaoProbe（hire → hired={duogong:选型 id}；探针尾 dismiss(role)
+##      复原必走、全程不落存档）：「职事」页签在船 Row_ id 序列 == hired 账册 id（无档空、有档一枚 chen_laodao、
+##      首行名 == 数据 display_name——名册数据源切错登对即红）；
+##      陈老舵右栏：阵营签 == 海上人（浅底深字含对焦）、五维数字 == attrs 五值按 attr_def 序全对上、短注 == 真值。
+##      这是湮灭工单最有名的一处「漏洞」：旧探针只出一张「名册职事页」图、职事行有没有绑对账册 id 从不断言。
+##   W5 每档各一屏：无角色的档三屏（W1 主档全景 / W2 陈瓒 / W3 泉州海商）+ 职事页无档空档一屏；有角色的档两屏（替身全景 /
+##      陈老舵详情）；共 6 张 wire_*.png。
+##   ——名牌 / 品级 / 阵营 / 五维 / 短注 / 身份行隐藏段不透出，六项断言每一行在判什么都写在上头对应的 ## 行里。
+## 反向变异自证（探针不依赖被改件的措辞，换行对不上即 rc=1）：「focus_id 后 _panel 信然不改（选中者接线断）」→ W2 / W3 红；
+##   「陈瓒的 faction / bio_short 改错」→ W2 / W3 红；「hired 底账改绑别 id（数据源切错）」→ W4 红（验证留痕见 Verify）。
+## 接线口径：等待只走 probe_clock 的演出推进（帧数下限 + 补间演完 + 墙钟上界），不按魔法帧数 --quit-after；
+##   出图一律 ShotGate.shot（空视口 / 一色空图 / 张数不足都以真失败计）。NK1_CHARS_SYNC=1 防后台拉立绘线程把截图打花。
 
 const VIEW := Vector2(1280, 720)
 var OUT_DIR := ShotGate.out_dir("chars")
 const TAG := "QA_CHARS_WIRE"
-const EXPECTED_SHOTS := 4
+const EXPECTED_SHOTS := 6
+const HIRE_BOND := "chen_laodao"
 const ShotGate := preload("res://tools/shot_gate.gd")
 const Clock := preload("res://tools/probe_clock.gd")
-
 var _ov: Control
+var _crew: Node
+var _gm: Node
+var _Art: GDScript
 var _saved: Array = []
 var _fails: Array = []
 var _contract := false
@@ -44,41 +61,83 @@ func _run() -> void:
 	bg.color = Color(0.08, 0.07, 0.055, 1.0)
 	ShotGate.frame_pressure(self)
 	root.add_child(bg)
-	# 经场景实例化，等 autoload（GameManager）就绪后再解析脚本
-	_ov = (load("res://scenes/chars/CharsShoreOverlay.tscn") as PackedScene).instantiate()
-	# 被测树自检（lane w24-b5 接 wave23-a9 共用面）：CharsShoreOverlay 挂不出 / 挂空壳秒级判红；字段在过帧后点名
-	_ov = ShotGate.start_tree_probe("res://scenes/chars/CharsShoreOverlay.tscn", _fails, "CharsShoreOverlay wire")
+	# ── 无角色的档（W1–W3）：经场景实例化，等 autoload就绪后再解析脚本
+	_gm = root.get_node_or_null("/root/GameManager")
+	_Art = load("res://scripts/ui/CharacterArt.gd")  # 树起来后再解析：它静态段引用 GameManager/GameState autoload
+	_crew = root.get_node_or_null("/root/Crew")
+	_ov = ShotGate.start_tree_probe("res://scenes/chars/CharsShoreOverlay.tscn", _fails, TAG)
 	if _ov == null:
-		quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+		quit(_finish())
 		return
 	root.add_child(_ov)
 	_ov.call("begin", "chen_wenlong")
 	await _settle(14)
-	if not ShotGate.check_fields(_ov, {"current_id": "CharsShoreOverlay.gd Parse Error / roster 断"}, _fails, "CharsShoreOverlay wire"):
-		quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
-		return
 	await _shot("wire_01_roster_panel")
+	# W1：无角色的档——选中者 == 请求者；右栏名行 / 名牌 / 品级签 == 数据真值
+	_expect_selected("W1", "chen_wenlong")
+	_expect_panel_badge("W1", "chen_wenlong")
+	_expect_panel_pin("W1", "chen_wenlong")
 
 	_ov.call("focus_id", "chen_zan")
 	await _settle(8)
 	await _shot("wire_02_placeholder")
+	# W2：陈瓒短注 / 身份行（文本层隐藏段不得透出）/ trait 签 == 数据真值
+	_expect_panel_badge("W2", "chen_zan")
+	_expect_bio_short("W2", "chen_zan")
+	_expect_identity_masked("W2", "chen_zan", ["玉湖陈氏", "兴化莆田玉湖"])
+	_expect_traits("W2", "chen_zan")
 
 	_ov.call("focus_id", "merchant_lin")
 	await _settle(6)
 	await _shot("wire_03_merchant_lin")
+	# W3：林阿舶阵营签「泉州海商」（转换点错一位都对不上）；名牌 / 品级签 == 要人
+	_expect_faction("W3", "merchant_lin")
+	_expect_panel_badge("W3", "merchant_lin")
+	_expect_panel_pin("W3", "merchant_lin")
 
-	var roster = _ov.get("_roster")
-	if roster != null and roster.has_method("_on_tab"):
-		roster.call("_on_tab", "职事")
-		await _settle(6)
-		await _shot("wire_04_roster_crew")
-		for spec in (load("res://scripts/chars/CharRoster.gd") as GDScript).TIERS:
-			roster.call("_on_tab", str(spec[0]))
-			await _settle(4)
-			_expect_fits("页签「%s」" % str(spec[0]))
+	var roster: Node = _ov.get("_roster")
+	if roster == null or not roster.has_method("_on_tab"):
+		_fail("W1：浮页左栏缺 CharRoster / _on_tab")
+		quit(_finish())
+		return
+	roster.call("_on_tab", "职事")
+	await _settle(6)
+	await _shot("wire_04_roster_crew")
+	# W4a：职事页签在无角色的档下查无职事行（有行即「无档却陈列」）
+	_expect_crew_rows("W4a", roster, [])
 
-	await _expect_split_hosts()
-	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+	# ── 有角色的档（W4b–W4d）：现场雇一名舵工，探针尾 dismiss(role) 复原（不入存档）
+	# 名册行是新时聘就的——雇人前先把职事页重排一遭，之后 hired 变动才有研究资格
+	roster.call("_on_tab", "主")
+	await _settle(2)
+	roster.call("_on_tab", "职事")
+	await _settle(4)
+	var bond: Dictionary = _crew.call("hire", HIRE_BOND)
+	if not bool(bond.get("ok", false)):
+		_fail("W4b：hire(%s) 失败（%s），有角色的档无从演" % [HIRE_BOND, str(bond.get("msg", ""))])
+		_crew.call("dismiss", str(_crew.call("candidate_def", HIRE_BOND).get("role", "")))
+		quit(_finish())
+		return
+	await _settle(2)
+	await _shot("wire_05_hired_crew")
+	# W4b：职事页签行数 / 首行名 == hired 真值（陈老舵一名在职）
+	_expect_crew_rows("W4b", roster, [HIRE_BOND])
+	# W4c / W4d：有档下右栏——选中者 == 雇者；海上人浅底阵营签 / 五维数字 / 短注 == 数据真值
+	_ov.call("focus_id", HIRE_BOND)
+	await _settle(6)
+	await _shot("wire_06_hired_detail")
+	_expect_selected("W4c", HIRE_BOND)
+	_expect_panel_badge("W4c", HIRE_BOND)
+	_expect_faction("W4c", HIRE_BOND)
+	_expect_attrs("W4c", HIRE_BOND)
+	_expect_bio_short("W4d", HIRE_BOND)
+
+	_crew.call("dismiss", str(_crew.call("candidate_def", HIRE_BOND).get("role", "")))
+	quit(_finish())
+
+
+func _finish() -> int:
+	return ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails)
 
 
 ## 先过 n 帧（排版 / 延迟调用 / 逐帧演出按帧走），再等补间演完；墙钟上界见 probe_clock.gd
@@ -95,6 +154,224 @@ func _shot(stem: String) -> void:
 		return
 	await RenderingServer.frame_post_draw
 	ShotGate.shot(root, "%s/%s.png" % [OUT_DIR, stem], _saved, _fails)
+
+
+## ── 数据真值 ────────────────────────────────────────────
+
+func _char(where: String, id: String) -> Dictionary:
+	var ch: Dictionary = _gm.call("get_character", id)
+	if ch.is_empty():
+		_fail("%s：get_character(%s) 空（数据 / 载入断线，以上断言无从对）" % [where, id])
+	return ch
+
+
+func _panel_pin(where: String) -> bool:
+	var panel: Node = _ov.get("_panel")
+	if panel == null:
+		_fail("%s：右栏缺 CharPortraitPanel" % where)
+		return false
+	if str(panel.get("current_id")) == "":
+		_fail("%s：CharPortraitPanel.current_id 空，show_character 没走" % where)
+		return false
+	return true
+
+
+func _panel_label(where: String, path: String) -> Label:
+	var panel := _ov.get("_panel") as Control
+	if panel == null:
+		_fail("%s：右栏缺 CharPortraitPanel" % where)
+		return null
+	var l := panel.find_child(path, true, false) as Label
+	if l == null:
+		_fail("%s：CharPortraitPanel 下找不到 %s（接线点名失配）" % [where, path])
+	return l
+
+
+## W1/W4c：选中者 == 探针请求者；右栏名行 / 左栏立绘名牌 == 数据的 display_name（玩家名口径下同一条线）
+func _expect_selected(where: String, id: String) -> void:
+	var want := str(_ov.get("current_id"))
+	if want != id:
+		_fail("%s：浮页选中者 %s ≠ 探针请求 %s（名册接线改错档 / 改错行）" % [where, want, id])
+
+
+func _expect_panel_badge(where: String, id: String) -> void:
+	if not _panel_pin(where):
+		return
+	var ch := _char(where, id)
+	if ch.is_empty():
+		return
+	var nm: String = _Art.display_name(ch)
+	var head := _panel_label(where, "Name")
+	if head != null and str(head.text) != nm:
+		_fail("%s：名行上屏「%s」≠ 数据 %s.display_name「%s」" % [where, str(head.text), id, nm])
+	## 立绘名牌挂在 PortraitFrame（绢本）底下，跨过 ScrollContainer 结构，从整页搜
+	var plate := _ov.find_child("NamePlate", true, false)
+	if plate == null:
+		if DisplayServer.get_name() != "headless":
+			_fail("%s：绢本画框缺 NamePlate（名牌无从判）" % where)
+	elif (plate as Control).get_child_count() == 0 or str(((plate as Control).get_child(0) as Label).text) != nm:
+		_fail("%s：名牌「%s」≠ 数据 %s.display_name「%s」（绢本画框名牌断线）" % [where, str(((plate as Control).get_child(0) as Label).text) if (plate as Control).get_child_count() > 0 else "<empty>", id, nm])
+
+
+## W1/W3/W4c：立绘下方品级签 == TIER_NAME[tier]（层级口径改断即红）
+func _expect_panel_pin(where: String, id: String) -> void:
+	if not _panel_pin(where):
+		return
+	var ch := _char(where, id)
+	if ch.is_empty():
+		return
+	var want: String = str(_Art.TIER_NAME.get(str(ch.get("tier", "")), ""))
+	var panel := _ov.get("_panel") as Control
+	var chips := panel.find_child("Chips", true, false) as Container if panel != null else null
+	if chips == null:
+		_fail("%s：CharPortraitPanel 缺 Chips（品级签无处查）" % where)
+		return
+	var pin := chips.get_child(1) as Label if chips.get_child_count() >= 2 else null
+	if pin == null:
+		_fail("%s：Chips 第 2 枚不是 Label（faction_chip / 品级签序断）" % where)
+		return
+	if str(pin.text) != want:
+		_fail("%s：品级签「%s」≠ TIER_NAME[%s.tier=%s]「%s」" % [where, str(pin.text), id, str(ch.get("tier", "")), want])
+
+
+## W2/W4d：右栏短注第一行前 24 字 == codex_short 真值（隐藏段 / 换稿都对得上）
+func _expect_bio_short(where: String, id: String) -> void:
+	if not _panel_pin(where):
+		return
+	var ch := _char(where, id)
+	if ch.is_empty():
+		return
+	var want: String = _Art.codex_short(ch).left(24)
+	var l := _panel_label(where, "Short")
+	if l == null:
+		return
+	if not str(l.text).begins_with(want):
+		_fail("%s：%s 短注上屏「%s…」≠ 数据 codex_short 前 24 字「%s…」（换稿 / 隐藏段口径错）" % [where, id, str(l.text).left(24), want])
+
+
+## W2：「身份」行不得透出隐藏 origin 前缀（layer 口径断——未解锁的设定上了屏即红）
+func _expect_identity_masked(where: String, id: String, masked: Array) -> void:
+	if not _panel_pin(where):
+		return
+	if _char(where, id).is_empty():
+		return
+	var panel := _ov.get("_panel") as Control
+	var info := panel.find_child("Info", true, false) as Container if panel != null else null
+	if info == null:
+		_fail("%s：CharPortraitPanel 缺 Info（_kv 行无处查）" % where)
+		return
+	for row in info.get_children():
+		var h := row as Container
+		if h == null or h.get_child_count() < 2:
+			continue
+		var k := h.get_child(0) as Label
+		if k == null or str(k.text) != "身份":
+			continue
+		var v := str((h.get_child(1) as Label).text)
+		for m in masked:
+			if v.contains(str(m)):
+				_fail("%s：%s 身份行「%s」透出隐藏段「%s」（layer 口径断——未解锁的设定上了屏）" % [where, id, v, str(m)])
+		return
+	_fail("%s：Info 里找不到「身份」行（_kv 接线断）" % where)
+
+
+## W2：trait 签逐枚 == traits_of 的 trait_def 名（特技断错线即红）
+func _expect_traits(where: String, id: String) -> void:
+	if not _panel_pin(where):
+		return
+	var ch := _char(where, id)
+	if ch.is_empty():
+		return
+	var panel := _ov.get("_panel") as Control
+	var row := panel.find_child("TraitRow", true, false) as Container if panel != null else null
+	if row == null:
+		_fail("%s：CharPortraitPanel 缺 TraitRow（特技签无处查）" % where)
+		return
+	var want: Array = []
+	for t in _Art.traits_of(ch):
+		want.append(str(_Art.trait_def(str(t)).get("name", str(t))))
+	var got: Array = []
+	for badge in row.get_children():
+		var l := (badge as Control).get_child(0) as Label if (badge as Control).get_child_count() > 0 else null
+		got.append(str(l.text) if l != null else "<no label>")
+	if got != want:
+		_fail("%s：%s trait 签 %s ≠ 数据 traits→trait_def.name %s（traits 接线断）" % [where, id, str(got), str(want)])
+
+
+## W3/W4c：阵营签 == faction_def[faction].name（玉湖陈氏→泉州海商→海上人三档转场）
+func _expect_faction(where: String, id: String) -> void:
+	if not _panel_pin(where):
+		return
+	var ch := _char(where, id)
+	if ch.is_empty():
+		return
+	var want: String = str(_Art.faction_def(str(ch.get("faction", ""))).get("name", str(ch.get("faction", ""))))
+	var panel := _ov.get("_panel") as Control
+	## 阵营签是 Chips 第 1 枚（show_character 现搭时一个不落）；dev 流派 CharsDemo 另起名——这里以名字打头
+	var chips := panel.find_child("Chips", true, false) as Container
+	if chips == null or chips.get_child_count() == 0:
+		_fail("%s：CharPortraitPanel 缺 Chips（阵营签无处查）" % where)
+		return
+	var chip := chips.get_child(0) as PanelContainer
+	if chip == null or chip.get_child_count() == 0:
+		_fail("%s：Chips 第 1 枚不是 PanelContainer（faction_chip 换成别家了就查不到）" % where)
+		return
+	var l := chip.get_child(0) as Label
+	if l == null or str(l.text) != want:
+		_fail("%s：%s 阵营签「%s」≠ faction_def[%s].name「%s」（faction 接线断）" % [where, id, str(l.text) if l != null else "<null>", str(ch.get("faction", "")), want])
+
+
+## W4c：五维右列数字 == attrs 五值按 attr_def 序全对上（换源 / 改值即红）
+func _expect_attrs(where: String, id: String) -> void:
+	if not _panel_pin(where):
+		return
+	var ch := _char(where, id)
+	if ch.is_empty():
+		return
+	var panel := _ov.get("_panel") as Control
+	var block := panel.find_child("AttrBlock", true, false) as Container if panel != null else null
+	if block == null:
+		_fail("%s：CharPortraitPanel 缺 AttrBlock（五维无处查）" % where)
+		return
+	var defs: Array = _Art.attr_defs()
+	var attrs: Dictionary = _Art.attrs_of(ch)
+	var want: Array = []
+	for ad in defs:
+		want.append(str(clampi(int(attrs.get(str(ad.get("key", "")), 0)), 0, 100)))
+	var got: Array = []
+	for r in block.get_children():
+		var row := r as Container
+		if row != null and row.get_child_count() >= 3:
+			got.append(str((row.get_child(2) as Label).text))
+	if got != want:
+		_fail("%s：%s 五维上屏 %s ≠ 数据 attrs（attr_def 序）%s（attrs 接线断）" % [where, id, str(got), str(want)])
+
+
+## W4a/W4b：「职事」页签全体候选人常驻（18 人是名册合同）；在船者另体现在行上。
+##   这里钉两件事：① prevalence —— 每枚 Row_<id> 首行名 == 数据 display_name（名册数据源切错登对即红）；② boarding ——
+##   hired 账册里的 id 在 page 上 Row_<id> 必须存在（无档 hired 为空 —— 什么多出来的都不该多）。
+func _expect_crew_rows(where: String, roster: Object, hired_ids: Array) -> void:
+	var list := roster.find_child("RosterList", true, false) as VBoxContainer
+	if list == null:
+		_fail("%s：名册职事页缺 RosterList（行容器接线断）" % where)
+		return
+	var rows: Dictionary = {}
+	for row in list.get_children():
+		if str(row.name).begins_with("Row_"):
+			rows[str(row.name).substr(4)] = row
+	for id in rows.keys():
+		var row := rows[id] as Container
+		var labels := row.find_children("*", "Label", true, false)
+		var ch: Dictionary = _gm.call("get_character", str(id))
+		if ch.is_empty():
+			_fail("%s：Row_%s 的 id 账册查无此人（名册里混进了不在数据原稿的行）" % [where, str(id)])
+			continue
+		var want: String = _Art.display_name(ch)
+		if labels.size() < 1 or str((labels[0] as Label).text) != want:
+			_fail("%s：Row_%s 首行名「%s」≠ 数据 display_name「%s」（替身对位断——名册 id 挂错了名）" % [where, str(id), str((labels[0] as Label).text) if labels.size() > 0 else "<no label>", want])
+	for id in hired_ids:
+		if not rows.has(str(id)):
+			_fail("%s：在船者 %s 的 Row_ 没落进职事页签（其职事锚档 / 页签切片断）" % [where, str(id)])
 
 
 ## lane fx1：浮页在视口里放得下——WireSheet 最小宽 ≤ 视口宽减左右边距，整框与「合上」钮不出视口右缘 / 下缘
