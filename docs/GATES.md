@@ -45,8 +45,9 @@
 | 31 | cutscene_data_only | Python | 必跑 | ✓ | `python3 tools/art/import_cutscene_bgs.py --data-only` | `python3 tools/gate_json.py tools/art/import_cutscene_bgs.py --data-only` | （lane w20-a7 去 PIL，w25-j5 升必须跑）过场数据守门：`data/cutscenes.json` 逐镜时长合计落在 20–40 / 60–90 秒窗内（不含章末了结的 20–35 秒档）、cam 在 cover_view 上夹得动、字幕 t 离镜头结束 ≥1.5 秒；.import_manifest.json 的 sha1 / size / crop 与产物一致；来源目录一律不看（PIL 也不需要） | `import_cutscene_bgs --check：N 张背景合规［产物（按清单 sha1）］；data/cutscenes.json 契约校验通过` | `FAIL …` 行（如 `FAIL cutscenes.ending_root 共 5 镜 40.3 秒，要求 3–5 镜、20–40 秒`），rc=1 |
 | 32 | check_char_contract_doc | Python | 加跑：动 docs/人物原稿与上屏契约.md 的「每档角色 / 品级一览」生成块（CHARS-DOC 标记对内）、data/characters_{suffix}.json 的角色条目 / tier / 名 / 生卒、data/crew.json 的 roles 职名 / candidates 挂钩（sources.crew_id 那条链）、scripts/ui/CharacterArt.gd 的 TIER_ORDER，或动本脚本自身 | — | `python3 tools/check_char_contract_doc.py` | `python3 tools/check_char_contract_doc.py --json` | （lane w26-k3）契约文档「每档角色 / 品级一览」生成块（CHARS-DOC 标记对内）与 data/characters_{suffix}.json 现算逐字一致：档序照 CharacterArt.TIER_ORDER（唯一来源，源码里认不出它即红、不在此另抄档序），行 = id / 名 / 生卒（生–卒，缺一则「？」、皆无「—」）/ 职事（凡 sources.crew_id 挂了 data/crew.json 候选的按候选 role 取职名；「初习 / 谙熟 / 老练」是职事合同 level、不录这里——本作没有「人物品级」，写上会读成官阶）；漏档 / 多档 / 名 / 生卒 / 职名写错、行序或空格漂一格都按首处差异「文档 / 数据」两行对照报案。`--fix` 重贴生成块（会写盘，不进一键跑），`--gen` 只打印。零、判据自检每次在内存叠层里跑：R1–R7 反向格（改 tier / 数据加人 / 文档加行 / 生卒算错 / 两人换档 / 职名写错 / 行序反了各红且红因落行）、C1–C5 对照格（正常态照判绿、行数口径、名带竖线 / roles 表报废 / 新档未登记三格 gen 不瞎造表、红因写明哪一环断了——探不到那一红即格红）。三格机判不了的留人工：id 空格号、手写段措辞、「为什么归这一档」。 | `✓ docs/人物原稿与上屏契约.md 有恰一对 CHARS-DOC 生成标记` + `✓ 生成块与 data/characters_{suffix}.json 现算逐字一致（id / 名 / 生卒 / 职事）` + `✓ 生成块角色行数（N）= 原稿条数（N）…` + 零节 R1–R7 / C1–C5 全 `✓` + `结果：全部通过` | `✗ …首处差异在块内第 k 行\n      文档：…\n      数据：…\n      修法：python3 tools/check_char_contract_doc.py --fix …`（对照两行就是点名）；`✗…CHARS-DOC 生成标记应为恰一对…`；`✗…行数（a）= 原稿条数（b）`；`✗…认不出 TIER_ORDER…` / `…不在本档名表…`；`✗…职事栏取数口径断了…`；`✗ <格号>…——这一路红已不从这里出`（自检对不上）；`结果：N 项问题` |
 | 33 | qa_rest_days_probe | Godot | 加跑：动 scripts/ui/TavernPage.gd / scripts/ui/ResidencePage.gd 的歇候钮绑定或钮面措辞、scripts/Main.gd 的 _on_rest、歇价 / 月供 / 月息到账口径（Economy 歇费、欠债月结），或动 tools/qa_rest_days_probe.gd 自身 | — | `godot --headless --path . -s res://tools/qa_rest_days_probe.gd` | `python3 tools/gate_json.py --godot qa_rest_days_probe` | （探针 9827daa 立，w27-k3 入册——审计 wave2425「最该补的门禁」第 1 条：原先只手工召、CI/一键不会响；变异已证值得响，+1 日即 fails=7）真场景树 C1–C7 把旅店 / 住处「歇・候 N 日」钮面 ↔ 实扣钉成运行时真断言：钮面日数 = DAYS_PER_MONTH − day + 1（候钮落次月 1 日，含今天在店的整日数）、扣钱恰为钮面印数；跨年（12 月中按候钮）落次年 1 月、月息结在 1 月；欠债跨月旅途月供真实到账（月息通告 ≥1 则）；月初清晨只印「候 30 日」一枚；钱不够任何钮按不动、日子不推且有话术；住处 3 日一钮多钱不够第二路径同钉。本进程 SCRIPT ERROR 即红。末行 `REST_DAYS cases=24 fails=0`，fails>0 退 1 | 逐条 `  ✓ …` + 末行 `REST_DAYS cases=24 fails=0` | `  ✗ …` 行（如钮面缺枚 / 实扣与印数不符 / 落日漂移 / 跨月月息未到账 / 钱不够照扣）+ 末行 `REST_DAYS cases=24 fails=N`（N>0），退 1 |
+| 34 | check_probe_registry | Python | 必跑 | ✓ | `python3 tools/check_probe_registry.py` | `python3 tools/check_probe_registry.py --json` | （lane w27-k4，k11 审计「最该补的门禁」第 2 条）tools/ 下每支 git 已跟踪 `*_probe.gd` 要么被点名（REGISTRY file 列，或 SHOT_PROBES 截图册——截图脚本走 shot_gate 批量跑，算被跑），要么登进 `tools/check_probe_registry.py` 的 EXEMPT 豁免名单（每行三格：探针名 / lane·来源 / 理由一句，形状缺格即红）；漏注册且漏豁免一律行首红字点名。豁免名单指着不在仓的探针（删探针没删名单行）也红。零、判据自检每次先在内存跑：C0 现网名单须全绿；E1 拼错豁免名 / E2 删一格豁免 / E3 覆盖名单缺一支，三格反向变异各须点出那一支红。豁免名单全表与逐条理由见脚本头注；（qa_rest_days_probe 一支已由 wave27 k3 登进头段 REGISTRY lane 档，8170079——不在豁免名单。） | 零节 C0 + E1–E3 全 `✓` → 一节 5 条 `✓`（末条 `✓ 漏注册且漏豁免 0 支（全绿）`）→ 二节名单形状 `✓` → `结果：全部通过` | `✗ C0 现网名单普查全绿（漏网 N 支）`（豁免名单与注册表对不上现网——先修名单不修自检）/`✗ EXEMPT 第 k 行…`（名单形状 / 来源格缺 lane·commit）/`✗ 豁免名单每行都指着在仓探针——[…] 已不在仓 / 名写错` / `✗ 探针漏册：tools/<X>_probe.gd——不在 REGISTRY / SHOT_PROBES，也未登豁免`（逐支点名）/`✗ En 反向格：…`（自检对不上 = 闸判不出这一形）；`结果：N 项问题` |
 
-每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十一道 Python + smoke/compile/story/p7/patrol」十六道门禁；8、15、16、17、18、19、20、21、25、26、27、28、29、30、32、33 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十二道 Python + smoke/compile/story/p7/patrol」十七道门禁；8、15、16、17、18、19、20、21、25、26、27、28、29、30、32、33 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（12 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -167,7 +168,7 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 
 <!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-# 必跑十七条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+# 必跑十八条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
 rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
 python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
 python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
@@ -186,6 +187,7 @@ python3 tools/check_mac_paths.py --json > /tmp/gates/RefsMacPath.json
 python3 tools/check_host_paths.py --json > /tmp/gates/RefsHostPath.json
 python3 tools/check_decision_refs.py --json > /tmp/gates/check_decision_refs.json
 python3 tools/gate_json.py tools/art/import_cutscene_bgs.py --data-only > /tmp/gates/cutscene_data_only.json
+python3 tools/check_probe_registry.py --json > /tmp/gates/check_probe_registry.json
 python3 tools/gate_json.py --judge /tmp/gates/*.json   # 汇总：逐道一行 ✓/✗；任一道红或没有 JSON 行 → 退 1
 ```
 <!-- GATES-BATCH:END -->
@@ -232,6 +234,7 @@ python3 tools/check_mac_paths.py
 python3 tools/check_host_paths.py
 python3 tools/check_decision_refs.py
 python3 tools/art/import_cutscene_bgs.py --data-only
+python3 tools/check_probe_registry.py
 ```
 
 **共同的坑：工作树是多 lane 共用的。** 别的 lane 未提交的改动（例如正在改 `SaveLoad.gd`）会让你的门禁红。判「是不是我弄红的」：`git worktree add --detach /tmp/x HEAD`，只放进自己的改动再跑（Godot 门禁先 `cp -a .godot /tmp/x/` 省掉重新导入）。
@@ -521,6 +524,12 @@ python3 tools/art/import_cutscene_bgs.py --data-only
 - 口径：「候 N 日」语义 = `DAYS_PER_MONTH − day + 1`（含今天在店的整日数，落次月 1 日）——与 verify_economy 静态锁的「钮文日数 = bind 实参 = `_on_rest` 扣费日数」同一条；本探针是它的运行时真断言层（w23-a7 那次「钮面 12 日 / 直扣 13 日」差 1 日之争的收口：把约定钉成断言，用词之争就地作废）。
 - lane 加跑档（不进一键跑，不改一键道数）：`when` 见 §一（动 TavernPage / ResidencePage 歇候钮 / `_on_rest` / 歇价月结口径时手跑）；不升 must——触发条件按路径判得准、且非 1 秒量级（§五.2 三条件只取第一）。w27-k3 依《审计-wave2425-2026-10-03.md》「最该补的门禁」第 1 条入册（探针 9827daa 早立、原先只手工召、没人看得见；审计变异已证值得响：+1 日即 fails=7），本次只补挂号，探针本体一字未动。
 - 常见红因：`  ✗ 钮面缺枚 / 印数与实扣不符` = 钮绑定或 `DAYS_PER_MONTH − day + 1` 口径变了；`  ✗ 落日漂移` = `_on_rest` 的落点算法动了（跨月 / 跨年 / 月初结息道大概率一起红）；`  ✗ 月息通告 0 则` = Economy 月结链断了；`  ✗ 钱不够照扣 / 无话术` = 出价守卫或【钱不够】文案回归。本进程 SCRIPT ERROR 即红。
+### 34. check_probe_registry（`tools/check_probe_registry.py`，探针「注册或豁免」闸，lane w27-k4 立）
+- 读：`零、判据自检`（§五.3 规格：内存叠层不落盘——C0 现网名单普查须全绿；E1 拼错一格豁免名 / E2 删一格豁免 / E3 覆盖名单挪走一支已注册探针，三格反向各须点出那一支）→ `一、探针普查`（git 已跟踪 `tools/*_probe.gd` 逐支对覆盖名单：gate_json `REGISTRY` 的 file 列 ∪ `SHOT_PROBES` 截图册，不沾的须登脚本内 `EXEMPT` 豁免名单；豁免指着不在仓的探针也红）→ `二、豁免名单形状`（每行三格：探针名 / lane·来源 / 理由；缺格、重名、乱序都红）→ 末行 `结果：全部通过`。只读、实测 <1 s、只要 python3 + git。
+- 立闸的来由：k11 审计「最该补的门禁」第 2 条——「SCRIPTS 登记只管编译，不管被跑」；qa_rest_days_probe 入库 3 个月未被任何档位点名（k11 抽样 T5 b2，9827daa），同类漏网本片一普 23 支（k3 落地后 qa_rest_days 一支由 REGISTRY 接管，豁免名单定格 22 行）。收编思路照 `check_data_family` 的 families / not_family：要么点名、要么登记豁免，没有第三态。
+- **入册即 must**（§五.2 三条齐备）：① 新探针入库的人想不起来要注册（漏注册的方向就是「自己判不准」，qa_rest_days 的 3 个月是实证）；② 快（<1 s）；③ 只读（`git ls-files` + 读名单，不写盘）。放 `gate_json.py` 尾段 `CHECK` 节（与 wave27 k3 的头段 REGISTRY 追加同文件并行不冲突，书签 `# w27-k4 CHECK FOLLOWS`）。
+- 豁免名单口径：探针确实在仓、只是「何时跑」未挂上注册表才许豁免；探针删了先删名单行（act 格兜底）；`qa_rest_days_probe.gd` 一支已由 wave27 k3 登进头段 REGISTRY lane 档（8170079），不在豁免名单。全表 22 行与逐条理由在脚本 `EXEMPT`，本片落地时与现网一致（C0 格守）。
+- 常见红因：`✗ 探针漏册：tools/<X>_probe.gd` = 新探针入库没注册也没登豁免（修法：登 REGISTRY，或确属留档 / 取证件的登 EXEMPT 一行）；`✗ 豁免名单每行都指着在仓探针` = 删探针忘删名单行 / 名单里名写错；`✗ C0 现网名单普查全绿` = 名单与现网对不上（先修名单，别修自检）；`✗ E1/E2/E3 反向格` = 闸判不出这一形（普查路被改，别动 `run_census` 的判定方向）。
 
 ## 四、CI 建议步骤
 
@@ -528,7 +537,7 @@ python3 tools/art/import_cutscene_bgs.py --data-only
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑十七条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑十八条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
 godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
@@ -546,6 +555,7 @@ python3 tools/check_mac_paths.py
 python3 tools/check_host_paths.py
 python3 tools/check_decision_refs.py
 python3 tools/art/import_cutscene_bgs.py --data-only
+python3 tools/check_probe_registry.py
 # 1. 侧车成对 / 一致
 python3 tools/check_sidecars.py
 # 2. builtin_api 漂移

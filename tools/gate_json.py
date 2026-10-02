@@ -316,6 +316,28 @@ REGISTRY = [
      "red": "`  ✗ …` 行（如钮面缺枚 / 实扣与印数不符 / 落日漂移 / 跨月月息未到账 / 钱不够照扣）+ 末行 `REST_DAYS cases=24 fails=N`（N>0），退 1"},
 ]
 
+# w27-k4 CHECK FOLLOWS
+# lane w27-k4：探针「注册或豁免」闸——k11 审计「最该补的门禁」第 2 条（「每支不被一键跑引用的探针，
+# compile 门禁之外加一道『注册或豁免』闸」；qa_rest_days_probe 漏注册是 k11 原罪支（wave27 k3 已收编进 head REGISTRY lane 档），
+# 本道普查所有同类漏网）。放 CHECK 章节而非 REGISTRY 头段：与 wave27 k3 同文件并行不冲突（k3 在头段 REGISTRY 追加）。
+# 三条 §五.2 升格理由齐备——触发条件自己判不准（新探针入库的人想不起来要注册，qa_rest_days 漏 3 个月）、
+# 快（实测 <1 s）、只读（git ls-files + 读名单，不写盘）；故入册即 must，进一键跑末条。
+CHECK = [
+    {"id": "check_probe_registry", "tier": "must", "kind": "py", "file": "tools/check_probe_registry.py",
+     "judge": "（lane w27-k4，k11 审计「最该补的门禁」第 2 条）tools/ 下每支 git 已跟踪 `*_probe.gd` 要么被点名"
+              "（REGISTRY file 列，或 SHOT_PROBES 截图册——截图脚本走 shot_gate 批量跑，算被跑），要么登进"
+              " `tools/check_probe_registry.py` 的 EXEMPT 豁免名单（每行三格：探针名 / lane·来源 / 理由一句，"
+              "形状缺格即红）；漏注册且漏豁免一律行首红字点名。豁免名单指着不在仓的探针（删探针没删名单行）也红。"
+              "零、判据自检每次先在内存跑：C0 现网名单须全绿；E1 拼错豁免名 / E2 删一格豁免 / E3 覆盖名单缺一支，"
+              "三格反向变异各须点出那一支红。豁免名单全表与逐条理由见脚本头注；"
+              "（qa_rest_days_probe 一支已由 wave27 k3 登进头段 REGISTRY lane 档，8170079——不在豁免名单。）",
+     "green": "零节 C0 + E1–E3 全 `✓` → 一节 5 条 `✓`（末条 `✓ 漏注册且漏豁免 0 支（全绿）`）→ 二节名单形状 `✓` → `结果：全部通过`",
+     "red": "`✗ C0 现网名单普查全绿（漏网 N 支）`（豁免名单与注册表对不上现网——先修名单不修自检）/"
+            "`✗ EXEMPT 第 k 行…`（名单形状 / 来源格缺 lane·commit）/"
+            "`✗ 豁免名单每行都指着在仓探针——[…] 已不在仓 / 名写错` / `✗ 探针漏册：tools/<X>_probe.gd——不在 REGISTRY / SHOT_PROBES，也未登豁免`（逐支点名）/"
+            "`✗ En 反向格：…`（自检对不上 = 闸判不出这一形）；`结果：N 项问题`"},
+]
+
 # 接 shot_gate.gd 的截图脚本（lane m3 三支 + lane sg2 二十支 + 之后各 lane 新接的）。TAG / 张数 / 截图目录从脚本源码现读，不在此抄。
 SHOT_PROBES = [
     ("tools/vision_stage_probe.gd", "m3"),
@@ -627,7 +649,7 @@ def registry():
     """`--list` 输出的清单：门禁（带人读 / --json 命令、族、是否一键跑）+ 截图脚本明细 + 附属自检 + 一键跑命令 + CI 步骤。"""
     gates = []
     shots_native = _native_json("tools/shot_gate.gd")
-    for g in REGISTRY:
+    for g in REGISTRY + CHECK:  # CHECK（lane w27-k4）：普查类门禁追加节，同 REGISTRY 形状、同走一键 / 批量块
         g = dict(g)
         g.setdefault("gate", g["id"])
         disp = "DISPLAY=:2 " if g.get("display") else ""
