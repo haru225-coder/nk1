@@ -262,6 +262,16 @@ func _selftest() -> void:
 		["从不降幡", _MutMoraleNeverStrike, ["mor.strike"]],
 		["无压也降", _MutMoraleStrikeFree, ["mor.strike_pressure"]]])
 	_group("六 剧情锚点", func(m): _judge_anchors(m), anchor_good, anchor_muts)
+	_group("六 战果常量接线（w23-a10）", func(m): _judge_outcome_contract(m), [
+			["win", "lose", "flee"],
+			{"boarded": "win：假注一", "sunk": "lose：假注二", "flee_ok": "flee：假注三"}], [
+		["outcome 漏一员", [["win", "lose"], {"boarded": "win：假注一", "sunk": "lose：假注二", "flee_ok": "flee：假注三"}],
+			["story.outcome.constants"]],
+		["story 键漏一枚", [["win", "lose", "flee"], {"boarded": "win：假注一", "sunk": "lose：假注二"}],
+			["story.outcome.constants"]],
+		["story 键多出用不上的", [["win", "lose", "flee"], {"boarded": "win：a", "sunk": "lose：b", "flee_ok": "flee：c", "ghost": "win：鬼"}],
+			["story.outcome.constants"]],
+		["两表皆空（DETACHED，读不到 Director 表了）", [[], {}], ["story.outcome.detached"]]])
 	_group("六 已知缺陷登记", func(m): _judge_known_table(m), {"x.y": {"owner": "o", "why": "w", "fix": "f"}}, [
 		["缺修法", {"x.y": {"owner": "o", "why": "w"}}, ["known.shape"]]])
 	_end({"no": "零", "title": "判据自检"})
@@ -305,6 +315,7 @@ func _case(label: String, judge: Callable, mod, expect: Array, bad: Array) -> in
 
 func _sec_story() -> void:
 	_judge_anchors({})
+	_judge_outcome_contract([Director.OUTCOMES.duplicate(), (Director.STORY_KEYS as Dictionary).duplicate()])
 	_judge_known_table(KNOWN_DEFECTS)
 	await _story_live_capture()
 	await _story_live_outcomes()
@@ -337,6 +348,62 @@ func _anchor_mutant(good: Dictionary, a: Dictionary) -> Dictionary:
 	var body := Director.func_body(src, str(a["func"]))
 	out[a["file"]] = src.replace(body, body.replace(str(a["needles"][0]), "__nk1_mutant__"))
 	return out
+
+
+## 战果常量接线（w23-a10，零节 + 真树共用一本账）：Director.OUTCOMES / STORY_KEYS 不再只被文档传抄——
+## 判据 1 钉接线在不在（现树传真表；判红 = 常量被删回死码或 Director 读不到，先红这条醒目行），
+## 判据 2 钉契约内容（发过的 outcome 都在册、发 / 认的剧情键恰好凑齐、每枚键各归一边结局、写明了意思）。
+## pair = [outcomes, story_keys]（现树真表 / 零节合成样本），两侧同步进 bad、同一条判据判红——悬案到此为止。
+func _judge_outcome_contract(pair: Array) -> void:
+	var outcomes: Array = pair[0]
+	var keys: Dictionary = pair[1]
+	_t(not outcomes.is_empty() or not keys.is_empty(), "story.outcome.detached",
+		"战果常量在册：OUTCOMES %d 员、STORY_KEYS %d 枚（这条红了 = 读不到 Director 两表，常量被删回死码）"
+			% [outcomes.size(), keys.size()])
+	if outcomes.is_empty() and keys.is_empty():
+		return  # 两表皆空是 DETACHED 的形态，只红 detached 一条（零节变体按它点名）
+	var bad: Array = []
+	var missing: Array = []
+	for o in ["win", "lose", "flee"]:
+		if not (o in outcomes):
+			missing.append(o)
+	if not missing.is_empty():
+		bad.append("outcome 漏 %s（WorldMap / 探针发过的收法）" % [missing])
+	var extra: Array = []
+	for o in outcomes:
+		if not (o in ["win", "lose", "flee"]):
+			extra.append(o)
+	if not extra.is_empty():
+		bad.append("outcome 多出 %s（谁发的？）" % [extra])
+	var want_keys := {}
+	if "win" in outcomes:
+		want_keys["boarded"] = "win"
+	if "lose" in outcomes:
+		want_keys["sunk"] = "lose"
+	if "flee" in outcomes:
+		want_keys["flee_ok"] = "flee"
+	var lack: Array = []
+	for k in want_keys:
+		if not keys.has(k):
+			lack.append(k)
+	if not lack.is_empty():
+		bad.append("剧情键漏 %s（海图回写与探针认的）" % [lack])
+	var odd: Array = []
+	for k in keys:
+		if not want_keys.has(k):
+			odd.append(k)
+	if not odd.is_empty():
+		bad.append("剧情键多出 %s（没人发也没人认）" % [odd])
+	var vague: Array = []
+	for k in keys:
+		if not (k in odd):
+			var note := str(keys[k]).strip_edges()
+			if note == "" or not note.begins_with(str(want_keys[k]) + "："):
+				vague.append(k)
+	if not vague.is_empty():
+		bad.append("键注 %s 空了或没按「结局：」写" % [vague])
+	_t(bad.is_empty(), "story.outcome.constants", "战果契约在册：outcome %d 员齐、剧情键 %d 枚恰好（%s）" % [
+		outcomes.size(), keys.size(), ", ".join((keys as Dictionary).keys())], "; ".join(bad))
 
 
 ## 已知缺陷表的形状：每条都写了属主 / 缘由 / 修法（修好即删靠的是有人看得懂这条）

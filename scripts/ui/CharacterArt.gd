@@ -13,7 +13,26 @@ const INK_EDGE := Color(0.051, 0.043, 0.035, 0.9)
 const HEAD_REGION := Rect2i(104, 40, 304, 304)
 ## 终局（chapters 里的 5）：1275 年十二月起
 const ENDGAME_YM := 1275 * 12 + 12
+## tier 先后（名册分组含籍与组内排序共用的一张表，CharacterCodex 经 tier_rank / roster_less / 分组切片读它；
+## w23-a10 接线，此前悬置待伙伴系统）。伙伴系统拍板：companion 加进哪两位之间就在名户籍贯边上，分组与组内序自己跟上。
+## 「crew / minor / historical」三枚是分组的锚档——锚档改名等于改名册合同，CharacterCodex._groups 要跟着改。
 const TIER_ORDER := ["protagonist", "major", "crew", "minor", "historical"]
+
+## tier 的座次：在表取其位；表外的（数据新档、表没跟上）算表长——末组最末，不藏起来
+static func tier_rank(tier: String) -> int:
+	var i := TIER_ORDER.find(tier)
+	return i if i >= 0 else TIER_ORDER.size()
+
+
+## 名册组内排座：tier 座次（TIER_ORDER，含表外兜底）→ 同座按 id 稳住（重开不乱）
+static func roster_less(a: Dictionary, b: Dictionary) -> bool:
+	var ra := tier_rank(str(a.get("tier", "")))
+	var rb := tier_rank(str(b.get("tier", "")))
+	if ra != rb:
+		return ra < rb
+	return str(a.get("id", "")) < str(b.get("id", ""))
+
+
 const TIER_NAME := {
 	"protagonist": "主角", "major": "要人", "crew": "职事", "minor": "市井", "historical": "史实",
 }

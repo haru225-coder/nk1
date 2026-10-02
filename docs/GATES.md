@@ -327,6 +327,7 @@ python3 tools/check_decision_refs.py
 - 常见红因：GDScript 语法 / 类型错（同时打 `SCRIPT ERROR: Parse Error`）；新脚本入库了却没加进 `SCRIPTS` 清单（现由 inventory 判红：`FAIL inventory unlisted …`）；场景 `ext_resource` 指向坏脚本或不存在的资源。
 
 ### 12. story
+- Lane w22-h6（经 lane w23-a10 抄进本节；出处 = h6 brief 文末 2026-10-03）：c2 遗留③「`PortBeats not declared`」已不复现——`.godot` 删掉重来一遍 `godot --headless --import` 再跑 story_check 就 fails=0，零条 PortBeats 字样。根因已解：PortBeats 头注的「class_name 登记早于 autoload」与 Main 端 `preload` 直挂两路兜着，旧的 `--editor --headless --quit` 手刷 cache 不用再做。
 - 读：`STORY_CHECK OK|FAIL <断言>`，末行 `SUMMARY fails=k`。中途的 GDScript backtrace（`_set_background_file`）是「缺失背景图回落」用例故意触发的，不是失败。
 - 常见红因：`news.json` 月份 / 身份条件改动；1268 身份结算时序；存档字段 round-trip 丢字段。
 

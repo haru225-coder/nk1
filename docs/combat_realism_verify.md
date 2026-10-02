@@ -99,7 +99,7 @@ git checkout -- scripts/WorldMap.gd                                             
 两处数据契约，剧情读的就是这两样：
 
 - `GameManager.pending_battle`：`battle`、`power`、`player_power`、`enemy[]`（`{type, count, hull_hp[, sprite]}`）、`sea_name`，以及 `source`（`{scene: "SeaChart", event: "pirate" | "yuan_patrol"}`，剧情靠它分辨是哪一场遭遇）。combat02 另认三个可选键 `sea_seed`、`wind_bearing`、`wind_strength`，剧情定场时可以写，SeaChart 自己不写。
-- `battle_finished(outcome, data)`：outcome 取 `win` / `lose` / `flee`。`data.player_damage` 恒有；另外按结局带 `boarded`（win：末一艘是接舷夺下的）、`sunk`（lose：旗舰沉）、`flee_ok`（flee：甩脱了）。常量写在 `CombatDirector.OUTCOMES` / `STORY_KEYS`。
+- `battle_finished(outcome, data)`：outcome 取 `win` / `lose` / `flee`。`data.player_damage` 恒有；另外按结局带 `boarded`（win：末一艘是接舷夺下的）、`sunk`（lose：旗舰沉）、`flee_ok`（flee：甩脱了）。常量写在 `CombatDirector.OUTCOMES` / `STORY_KEYS`——**lane w23-a10 起这对常量有真消费者了，不再是只被文档传抄的死码**：本探针六节 `_judge_outcome_contract`（判据 `story.outcome.detached` / `story.outcome.constants`）与独立可跑的 `tools/combat_outcomes_probe.gd`（`末梢自检 / 接线在册 / 战果契约在册`）都直读这两份表判红绿；摘掉常量 → 编译即红（`godot_compile_check`）+ 两探针红。判据明细与反向自证见 `docs/工程遗留收束_2026-10-03.md` 第 2 件。
 
 六节真跑的三场（headless，SeaChart 起在泉州，`remaining_li` 设成还有路可走，但 `sailing` 为假，所以战后不抵港、不续航）：
 

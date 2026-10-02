@@ -3,6 +3,8 @@ extends Control
 ## 一层盖在 Main 上的浮页：Esc / 返回键 / 鼠标后退键先退一页（详页 → 上一个详页 → 名册），名册页再按就合上。
 ## 不入存档：筛选页签只记在本会话（static），「已识」由 CharacterArt.is_known() 判（见过的人随存档，其余从现有状态推得）。
 ## 用法（Main）：var cx := CharacterCodex.new(); add_child(cx); cx.begin(focus_id)。focus_id 非空直接开此人详页。
+## tier 先后只认 CharacterArt.TIER_ORDER 一张表（名册分组含籍、组内排序都按它）；数据里冒出表外 tier，
+## 归入离它最近的一档、组内排最末，不藏起来。
 
 signal closed
 
@@ -15,15 +17,25 @@ const CELL_PIC := Vector2i(104, 130)
 const COLS := 9
 const DETAIL_PIC := Vector2i(256, 320)
 const HEAD_PIC := Vector2i(34, 34)
-## 名册分组：[键, 页签名, 含哪些 tier]
-const GROUPS := [
-	["major", "主角・要人", ["protagonist", "major"]],
-	["crew", "职事", ["crew"]],
-	["minor", "市井", ["minor"]],
-	["historical", "史实", ["historical"]],
-]
 ## 每帧补缩略图的时间预算（微秒）：75 张分十来帧补完，打开时不卡一下
 const THUMB_BUDGET_US := 6000
+
+## 名册分组：[键, 页签名, 含哪些 tier]——含籍按 TIER_ORDER 相邻段切（Art.gd 注释里那笔「名户籍贯」于此兑现），
+## tier 加了新档只动 TIER_ORDER；表外 tier 落入末档（兜底见 _members / _build_grid）。
+## 不以 const 立（GDScript 常量不许含 .slice() 这类调用），静态函数现算——名义上每次现构，名册一页一次，无开销。
+static func _groups() -> Array:
+	return [
+		["major", "主角・要人", Art.TIER_ORDER.slice(0, Art.TIER_ORDER.find("crew"))],
+		["crew", "职事", Art.TIER_ORDER.slice(Art.TIER_ORDER.find("crew"), Art.TIER_ORDER.find("minor"))],
+		["minor", "市井", Art.TIER_ORDER.slice(Art.TIER_ORDER.find("minor"), Art.TIER_ORDER.find("historical"))],
+		["historical", "史实", Art.TIER_ORDER.slice(Art.TIER_ORDER.find("historical"))],
+	]
+
+
+## 兜底组的键：表外 tier 归入它（现行 = TIER_ORDER.size() 未超组数时的末组「史实」）
+static func _fallback_group_key() -> String:
+	var g := _groups()
+	return str(g[mini(Art.TIER_ORDER.size(), g.size()) - 1][0])
 
 ## 上次看的页签（本会话）
 static var last_filter := "all"
@@ -217,12 +229,14 @@ func _small_button(text: String, cb: Callable, min_w := 0.0) -> Button:
 
 func _members(filter: String) -> Array:
 	var out: Array = []
-	for g in GROUPS:
+	for g in _groups():
 		if filter != "all" and filter != str(g[0]):
 			continue
 		for ch in GameManager.all_characters():
-			if str(ch.get("tier", "")) in g[2]:
+			var tier := str(ch.get("tier", ""))
+			if tier in g[2] or (not (tier in Art.TIER_ORDER) and g[0] == _fallback_group_key()):
 				out.append(ch)
+	out.sort_custom(Art.roster_less)
 	return out
 
 
@@ -231,7 +245,7 @@ func show_grid() -> void:
 	_history.clear()
 	_clear_header_right()
 	var tabs: Array = [["all", "全部"]]
-	for g in GROUPS:
+	for g in _groups():
 		tabs.append([g[0], g[1]])
 	for t in tabs:
 		var key := str(t[0])
@@ -331,15 +345,17 @@ func _build_grid(filter: String) -> Control:
 	if GameManager.all_characters().is_empty():
 		list.add_child(Art.label("人物设定集未载入。", UiTheme.SIZE_BODY, UiTheme.TEXT_DIM))
 		return scroll
-	for g in GROUPS:
+	for g in _groups():
 		if filter != "all" and filter != str(g[0]):
 			continue
 		var members: Array = []
 		for ch in GameManager.all_characters():
-			if str(ch.get("tier", "")) in g[2]:
+			var tier := str(ch.get("tier", ""))
+			if tier in g[2] or (not (tier in Art.TIER_ORDER) and g[0] == _fallback_group_key()):
 				members.append(ch)
 		if members.is_empty():
 			continue
+		members.sort_custom(Art.roster_less)
 		var known := 0
 		for ch in members:
 			if Art.is_known(ch):

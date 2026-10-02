@@ -116,6 +116,7 @@ const SCRIPTS := [
 	"res://tools/japan_ship_probe.gd",  # 日本关船朝向探针（lane ship-japan）
 	"res://tools/shot_champa_ship.gd",  # 占城船朝向探针（lane ship-champa）
 	"res://tools/combat_realism_probe.gd", "res://scripts/combat/CombatDirector.gd",  # lane combat10 写实海战冒烟探针 + 装配台
+	"res://tools/combat_outcomes_probe.gd",  # lane w23-a10 战果契约（OUTCOMES / STORY_KEYS 读点）独立探针
 	"res://tools/vision_stage_probe.gd", "res://tools/vision_letterbox_probe.gd", "res://tools/letterbox_signal_probe.gd",
 	"res://tools/probe_clock.gd", "res://tools/shot_consistency.gd",
 	"res://tools/art/vision_fill_gen.gd", "res://tools/art/vision_fill_shots.gd",
