@@ -58,6 +58,7 @@
 - [警告与静默失败普查.md](警告与静默失败普查.md)：`scripts/**` + `tools/**` 已跟踪 `.gd`（83 个文件，不含 addons）的警告与静默失败普查，按风险分档记可改项（lane w20-c5）
 - [文档口径漂移.md](文档口径漂移.md)：`docs/*.md` 里出现的数字 / 口径（门禁条数、探针支数、表长、版本号、schema 版本、路径、常量）与代码 / 数据逐份对账（lane w20-c8）
 - [死代码普查.md](死代码普查.md)：`tools/` 与 `scripts/` 死代码普查（零引用函数 / 常量三档：已删 7 处、疑似待拍板 20 组、门禁与运行时入口勿动；lane w20-c4，疑似 20 组逐组取证与可删清单 §四 lane w21-d12）
+- [仓务清册_2026-10-03.md](仓务清册_2026-10-03.md)：未跟踪件逐件判归 + 分支 / worktree 清册 + wave23 各片新档索引指派 + 建议动作清单（只报不删，lane w23-a11）
 
 - [combat_realism_design.md](combat_realism_design.md) / [combat_phases_schema.md](combat_phases_schema.md)：海战写实设计与三份数据契约（阶段 / 兵器 / 海况；lane combat01）
 - [ship_seagoing_vfx.md](ship_seagoing_vfx.md)：出海福船观感与命中手感——船身着装 shader、航迹、炮口焰 / 甲板颤，截图探针 `tools/ship_vfx_probe.gd`（lane combat-ship-vfx）
