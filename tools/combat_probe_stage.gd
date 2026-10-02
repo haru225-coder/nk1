@@ -64,8 +64,6 @@ const NO_SIGNAL := "no_signal"
 ## 默认墙钟上界：等的最长一幕是墨边（带 on_black 的出战约 3.5 s）。delta 不封顶，压帧 / 慢机下游戏时间照墙钟走，
 ## 所以上界与帧率无关；留约 5 倍给满载机、hitstop 降速与截图存盘。
 const WAIT_MS := 20000
-## 帧数上界：本文件的等待已改墙钟（lane gd11），只留给 letterbox_signal_probe 在它自己的墙钟 deadline 之外当兜底
-const WAIT_FRAMES := 6000
 ## 同 BoardingStage.GROUP
 const BOARD_GROUP := "nk1_boarding_stage"
 
