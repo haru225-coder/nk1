@@ -302,6 +302,18 @@ REGISTRY = [
      "judge": "（lane w26-k3）契约文档「每档角色 / 品级一览」生成块（CHARS-DOC 标记对内）与 data/characters_{suffix}.json 现算逐字一致：档序照 CharacterArt.TIER_ORDER（唯一来源，源码里认不出它即红、不在此另抄档序），行 = id / 名 / 生卒（生–卒，缺一则「？」、皆无「—」）/ 职事（凡 sources.crew_id 挂了 data/crew.json 候选的按候选 role 取职名；「初习 / 谙熟 / 老练」是职事合同 level、不录这里——本作没有「人物品级」，写上会读成官阶）；漏档 / 多档 / 名 / 生卒 / 职名写错、行序或空格漂一格都按首处差异「文档 / 数据」两行对照报案。`--fix` 重贴生成块（会写盘，不进一键跑），`--gen` 只打印。零、判据自检每次在内存叠层里跑：R1–R7 反向格（改 tier / 数据加人 / 文档加行 / 生卒算错 / 两人换档 / 职名写错 / 行序反了各红且红因落行）、C1–C5 对照格（正常态照判绿、行数口径、名带竖线 / roles 表报废 / 新档未登记三格 gen 不瞎造表、红因写明哪一环断了——探不到那一红即格红）。三格机判不了的留人工：id 空格号、手写段措辞、「为什么归这一档」。",
      "green": "`✓ docs/人物原稿与上屏契约.md 有恰一对 CHARS-DOC 生成标记` + `✓ 生成块与 data/characters_{suffix}.json 现算逐字一致（id / 名 / 生卒 / 职事）` + `✓ 生成块角色行数（N）= 原稿条数（N）…` + 零节 R1–R7 / C1–C5 全 `✓` + `结果：全部通过`",
      "red": "`✗ …首处差异在块内第 k 行\\n      文档：…\\n      数据：…\\n      修法：python3 tools/check_char_contract_doc.py --fix …`（对照两行就是点名）；`✗…CHARS-DOC 生成标记应为恰一对…`；`✗…行数（a）= 原稿条数（b）`；`✗…认不出 TIER_ORDER…` / `…不在本档名表…`；`✗…职事栏取数口径断了…`；`✗ <格号>…——这一路红已不从这里出`（自检对不上）；`结果：N 项问题`"},
+
+    {"id": "qa_rest_days_probe", "tier": "lane",
+     "when": "动 scripts/ui/TavernPage.gd / scripts/ui/ResidencePage.gd 的歇候钮绑定或钮面措辞、scripts/Main.gd 的 _on_rest、"
+             "歇价 / 月供 / 月息到账口径（Economy 歇费、欠债月结），或动 tools/qa_rest_days_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_rest_days_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_rest_days_probe.gd"],
+     "judge": "（探针 9827daa 立，w27-k3 入册——审计 wave2425「最该补的门禁」第 1 条：原先只手工召、CI/一键不会响；变异已证值得响，+1 日即 fails=7）"
+              "真场景树 C1–C7 把旅店 / 住处「歇・候 N 日」钮面 ↔ 实扣钉成运行时真断言：钮面日数 = DAYS_PER_MONTH − day + 1（候钮落次月 1 日，含今天在店的整日数）、"
+              "扣钱恰为钮面印数；跨年（12 月中按候钮）落次年 1 月、月息结在 1 月；欠债跨月旅途月供真实到账（月息通告 ≥1 则）；月初清晨只印「候 30 日」一枚；"
+              "钱不够任何钮按不动、日子不推且有话术；住处 3 日一钮多钱不够第二路径同钉。本进程 SCRIPT ERROR 即红。末行 `REST_DAYS cases=24 fails=0`，fails>0 退 1",
+     "green": "逐条 `  ✓ …` + 末行 `REST_DAYS cases=24 fails=0`",
+     "red": "`  ✗ …` 行（如钮面缺枚 / 实扣与印数不符 / 落日漂移 / 跨月月息未到账 / 钱不够照扣）+ 末行 `REST_DAYS cases=24 fails=N`（N>0），退 1"},
 ]
 
 # 接 shot_gate.gd 的截图脚本（lane m3 三支 + lane sg2 二十支 + 之后各 lane 新接的）。TAG / 张数 / 截图目录从脚本源码现读，不在此抄。
