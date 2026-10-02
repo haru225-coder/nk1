@@ -392,16 +392,6 @@ func hide_ship() -> void:
 	ship_visible = false
 
 
-## 把船标推到航程比例 t（0..1），用 dur 秒平滑过去。返回 tween 供 await。
-func move_ship_to(t: float, dur: float) -> Tween:
-	t = clampf(t, 0.0, 1.0)
-	if _ship_tween and _ship_tween.is_valid():
-		_ship_tween.kill()
-	_ship_tween = create_tween()
-	_ship_tween.tween_method(_set_ship_progress, ship_progress, t, maxf(0.01, dur)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	return _ship_tween
-
-
 ## 船标推到经纬度处（云端 Voyage.point_along_track 按折线里程给点），frac 是已行比例，用来描深走过的线。
 ## 沿画出的航线折线按弧长走，不在像素空间对两点抄直线（一日跨过拐点时船会压到岸上）；
 ## 朝向取所在线段方向，顺带扣掉了圆锥投影的经线收敛角。没有航线（不该发生）才退回直线。
