@@ -67,6 +67,8 @@ const SCRIPTS := [
 	"res://scripts/ui/TitlePage.gd",
 	# Lane main12 Main.gd 第十二刀拆出的调试钩子（F11 跳港 / F12 预览了结）
 	"res://scripts/ui/DebugHooks.gd",
+	# Lane w21-d20 Main.gd 第十四刀拆出的浮页（人物志 / 名册 / 伙伴草案预览 / 市舶纪事）
+	"res://scripts/ui/FloatPages.gd",
 	# lane combat08 海战号令面板 / 状态条
 	"res://scripts/ui/CombatOrdersPanel.gd", "res://scripts/ui/CombatStatusHud.gd",
 	# lane combat07 敌将 AI（PirateShip 每帧喂局势取舵令）

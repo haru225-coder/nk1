@@ -150,6 +150,9 @@ const _TITLE := preload("res://scripts/ui/TitlePage.gd")
 ## 调试钩子（F11 跳港、F12 预览了结册页）的实现在 scripts/ui/DebugHooks.gd（Lane main12 第十二刀拆出）；这里的 _debug_jump_port /
 ## _debug_preview_ending 都是同名同签名一行转发，F11 / F12 键位判断仍在 _unhandled_input。
 const _DEBUG := preload("res://scripts/ui/DebugHooks.gd")
+## 浮页（人物志 / 名册 / 伙伴草案预览 / 市舶纪事）的实现在 scripts/ui/FloatPages.gd（Lane w21-d20 第十四刀拆出）；这里的
+## _open_codex … _close_vision_stage 八支都是同名同签名一行转发，四个浮页句柄仍在这里。
+const _FLOAT_PAGES := preload("res://scripts/ui/FloatPages.gd")
 ## 活背景幅度：比引擎默认再收一档（正文底下的画不能晃得人头晕）
 const BACKDROP_OPTS := {"breath": 0.018, "period": 52.0, "pan": 0.35, "vignette": 0.26, "grain": 0.028}
 ## 本次 load_scene 是海图回港的真正抵港：_on_enter_port 据此出横幅（读档、设施间来回为假）
@@ -672,100 +675,38 @@ func _on_rewatch_opening() -> void:
 
 ## 人物志：一层浮页盖在当前画面上（港口页底、标题页进）。focus_id 非空直接开此人详页。不入存档。
 func _open_codex(focus_id := "") -> void:
-	_close_companion_preview()
-	_close_ledger()
-	_dismiss_banner()
-	_close_chars_wire()
-	_close_vision_stage()
-	if is_instance_valid(_codex) and not bool(_codex.get("_closing")):
-		if focus_id != "":
-			_codex.call("show_detail", focus_id, false)
-		return
-	var cx: Control = _CODEX.new()
-	add_child(cx)
-	cx.call("begin", focus_id)
-	_codex = cx
+	_FLOAT_PAGES.open_codex(self, focus_id)
 
 
 ## chars 线：岸上名册浮页（CharRoster + CharPortraitPanel）。与人物志互斥；不入存档。
 func _open_chars_wire(focus_id := "") -> void:
-	_close_companion_preview()
-	_close_ledger()
-	_dismiss_banner()
-	_close_vision_stage()
-	if is_instance_valid(_codex) and not bool(_codex.get("_closing")):
-		_codex.call("close_codex")
-	if is_instance_valid(_chars_wire) and not bool(_chars_wire.get("_closing")):
-		if focus_id != "":
-			_chars_wire.call("focus_id", focus_id)
-		return
-	var ov: Control = _CHARS_WIRE.new()
-	add_child(ov)
-	ov.call("begin", focus_id)
-	_chars_wire = ov
+	_FLOAT_PAGES.open_chars_wire(self, focus_id)
 
 
 func _close_chars_wire() -> void:
-	if is_instance_valid(_chars_wire) and not bool(_chars_wire.get("_closing")):
-		_chars_wire.call("close_overlay")
+	_FLOAT_PAGES.close_chars_wire(self)
 
 
 ## Lane Z3：伙伴草案预览浮页（只读剪影六卡）。F7 开关；不入存档、不接招募。
 func _toggle_companion_preview() -> void:
-	if is_instance_valid(_companion_preview) and not bool(_companion_preview.get("_closing")):
-		_close_companion_preview()
-		return
-	_open_companion_preview()
+	_FLOAT_PAGES.toggle_companion_preview(self)
 
 
 func _open_companion_preview() -> void:
-	_close_ledger()
-	_dismiss_banner()
-	_close_chars_wire()
-	_close_vision_stage()
-	if is_instance_valid(_codex) and not bool(_codex.get("_closing")):
-		_codex.call("close_codex")
-	if is_instance_valid(_companion_preview) and not bool(_companion_preview.get("_closing")):
-		return
-	var ov: Control = _COMPANION_PREVIEW.new()
-	add_child(ov)
-	ov.call("begin")
-	_companion_preview = ov
-	ov.tree_exited.connect(func() -> void:
-		if _companion_preview == ov:
-			_companion_preview = null
-	)
+	_FLOAT_PAGES.open_companion_preview(self)
 
 
 func _close_companion_preview() -> void:
-	if is_instance_valid(_companion_preview) and not bool(_companion_preview.get("_closing")):
-		_companion_preview.call("close_overlay")
+	_FLOAT_PAGES.close_companion_preview(self)
 
 
 ## Lane L：叠一层 VisionStage（立像裱框 + 海战定格）。B/Esc 合上；不入存档、不过日子。
 func _open_vision_stage() -> void:
-	_close_companion_preview()
-	_close_ledger()
-	_dismiss_banner()
-	_close_chars_wire()
-	if is_instance_valid(_codex) and not bool(_codex.get("_closing")):
-		_codex.call("close_codex")
-	if is_instance_valid(_vision_stage):
-		return
-	var vs: Control = _VISION_STAGE.instantiate()
-	add_child(vs)
-	_vision_stage = vs
-	# 子节点离开时清引用（VisionStage._leave → queue_free）
-	vs.tree_exited.connect(func() -> void:
-		if _vision_stage == vs:
-			_vision_stage = null
-	)
+	_FLOAT_PAGES.open_vision_stage(self)
 
 
 func _close_vision_stage() -> void:
-	if is_instance_valid(_vision_stage):
-		_vision_stage.queue_free()
-		_vision_stage = null
+	_FLOAT_PAGES.close_vision_stage(self)
 
 
 func log_msg(text: String) -> void:
