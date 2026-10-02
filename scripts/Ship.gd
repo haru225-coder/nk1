@@ -373,20 +373,6 @@ func get_damage_model() -> _DamageModel:
 	return damage_model
 
 
-## 损伤快照（DamageModel.summary，键见该函数注释）
-func damage_summary() -> Dictionary:
-	return get_damage_model().summary()
-
-
-## 损管令：auto 均衡 / fire 救火 / flood 戽水 / fight 迎敌。不认识的令返回 false，原令不变。
-func set_damage_control(mode: String) -> bool:
-	return get_damage_model().set_mode(mode)
-
-
-func damage_control_mode() -> String:
-	return get_damage_model().mode
-
-
 ## 机动乘数：speed 乘在走力上、turn 乘在转向上；yaw_drift 是舵失灵时满速下每秒自偏的弧度；gear_cap 是帆装还挂得起几档
 func maneuver_factors() -> Dictionary:
 	var dm := get_damage_model()
@@ -397,13 +383,6 @@ func maneuver_factors() -> Dictionary:
 ## 海战里旗舰归 WorldMap 按机动模型走，它先取这一份，损伤只在那边乘一次；Ship 自己的旧式航行只在没建海况时用 maneuver_factors。
 func maneuver_mods() -> Dictionary:
 	return get_damage_model().maneuver_mods()
-
-
-## 火力乘数：reload 装填时长倍数（≥1）、volley 一轮放得出几成、spread 散布倍数（≥1）、port / starboard 左右舷此刻打不打得出去
-func fire_factors() -> Dictionary:
-	var dm := get_damage_model()
-	return {"reload": dm.reload_factor(), "volley": dm.volley_factor(), "spread": dm.spread_factor(),
-		"port": dm.side_ready(-1), "starboard": dm.side_ready(1)}
 
 
 ## 接舷能上的人（去掉正在救火、戽水、以橹代舵的）
