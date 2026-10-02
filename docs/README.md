@@ -10,6 +10,7 @@
 - [combat_realism_verify.md](combat_realism_verify.md)：写实海战冒烟探针 `tools/combat_realism_probe.gd` 怎么跑、怎么读：五块判据（风流 / 弹道装填 / 损伤浸水 / 接舷白刃 / 士气溃逃）、零节自检、剧情挂钩锚点「遇盗 → 开战 → 夺船 → 回写」、已知缺陷（lane combat10）
 - [性能基线.md](性能基线.md)：`tools/perf_baseline.gd` 帧时 / 峰值内存 / 启动到可玩基线与软档阈值（本仓首份性能口径，只 warn 不 fail；`tools/perf_baseline.py` 接 `REGISTRY` tier=no）
 - [存档迁移矩阵.md](存档迁移矩阵.md)：`save_schema 3` 的迁移路径矩阵（起始版本 × 路径 × 结果 / 丢哪些字段），v1→v2→v3 关键字段（船 / 水粮 / 旗 / 玉湖事件 / 已识）过链断言归 `save_migrate_probe`（lane w20-c9）
+- [文档口径漂移.md](文档口径漂移.md)：`docs/*.md` 里的数字 / 口径（门禁条数、键数、schema 版本、路径）与实际代码数据逐份核对（已改 4 处实质 + 时点注，代码侧漂移列「待拍板」只列不动；lane w20-c8）
 
 ## 玩法与系统设计
 - [待策划拍板清单_2026-09-28.md](待策划拍板清单_2026-09-28.md)：各 lane 散落的「待策划定」汇总成一张表（出处行号 / 选项 / 影响面 / 默认建议 / 不拍板的后果），只汇总不拍板（lane decide1）
