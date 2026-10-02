@@ -267,6 +267,7 @@ func _ready() -> void:
 	# 防御：异常路径可能残留未清理的海战上下文，回港时清空
 	GameManager.pending_battle = {}
 	GameManager.monthly_notice.connect(_on_monthly_notice)
+	SaveLoad.stale_notice.connect(_on_stale_notice)
 	# 「绢本墨笔」：面板不透底图，后加的按钮由 hook 自动带样式
 	left_panel.add_theme_stylebox_override("panel", UiTheme.panel())
 	investigation_mode.add_theme_stylebox_override("panel", UiTheme.panel())
@@ -642,6 +643,12 @@ func _on_monthly_notice(text: String) -> void:
 	_render_log()
 	_refresh_strip()
 	update_status_panel()
+
+
+## 读档勾稽的一声（lane w25-j3）：旧卷里没法再往本版名册图籍对上的口径（港 / 船式 / 勘见 / 名姓 / 行年）
+## 由 SaveLoad.stale_notice 一线递来；只用 log_msg，与「翻开日志……」同格。未落空不出（SaveLoad 已拦）。
+func _on_stale_notice(line: String, slot: int) -> void:
+	log_msg("第 %d 卷%s" % [slot, line])
 
 
 func start_game() -> void:
@@ -2978,11 +2985,6 @@ func _on_save_slot(slot: int) -> void:
 
 func _on_load_slot(slot: int) -> void:
 	_SAVE.on_load_slot(self, slot)
-	# 读档若成：旧卷里没法再往本版名册图籍对上的口径（港 / 船式 / 勘见 / 名姓 / 行年）
-	# 已归一类一行，取一句落定。on_load_slot 点开即 log_msg 是「翻开日志……」；此句跟着出在其后。
-	var stale: Dictionary = SaveLoad.last_stale()
-	if not stale.is_empty():
-		log_msg("第 %d 卷%s" % [slot, SaveLoad.last_stale_note(stale)])
 
 
 # ══════════════════════════════════════════════════════

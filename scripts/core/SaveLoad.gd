@@ -35,6 +35,10 @@ const CONTRACT_NUM_KEYS := [
 ]
 const RUMOR_NUM_KEYS := ["rate", "day"]
 
+## 读档成功后旧卷勾稽出有落空名目时出的一声（line 是已汇好拍的一句，slot 为读的这卷）。
+## 由 Main 接到 log_msg；未接时内核照常运转（探针走 last_stale 查明细，不靠信号）。
+signal stale_notice(line: String, slot: int)
+
 
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(SAVE_DIR)
@@ -473,6 +477,7 @@ func load_game(slot: int) -> bool:
 	var got := _resolve(slot)
 	var data: Dictionary = got["data"]
 	if data.is_empty():
+		_last_stale = {}
 		return false
 	if got["source"] == "bak":
 		push_warning("存档 slot %d 正式档不可用，已退回上一份备份" % slot)
@@ -488,6 +493,8 @@ func load_game(slot: int) -> bool:
 	var state: Dictionary = _as_dict(data.get("state", {}))
 	GameState.from_dict(_harden_state(state))
 	_last_stale = audit_stale_refs(data)
+	if not _last_stale.is_empty():
+		stale_notice.emit(last_stale_note(_last_stale), slot)
 	return true
 
 
@@ -584,15 +591,15 @@ func audit_stale_refs(data: Dictionary) -> Dictionary:
 		out["discovery"] = discovery
 
 	# 人物：名姓只纳曾雇列传与面识（id → 人物在 GameManager 的合表；查无即落空）。
-	var character := {"count": 0, "examples": [], "sample": ""}
+	var who_rec := {"count": 0, "examples": [], "sample": ""}
 	for cid in state.get("met_ids", []):
-		_flag_generic(character, str(cid), GameManager.get_character(str(cid)).is_empty())
+		_flag_generic(who_rec, str(cid), GameManager.get_character(str(cid)).is_empty())
 	for cid in state.get("crew_history", []):
-		_flag_generic(character, str(cid), GameManager.character_for_crew(str(cid)).is_empty())
-	if character["count"] > 0:
-		character["sample"] = _generic_sample_name(character, "crew")
-		character.erase("examples")
-		out["character"] = character
+		_flag_generic(who_rec, str(cid), GameManager.character_for_crew(str(cid)).is_empty())
+	if who_rec["count"] > 0:
+		who_rec["sample"] = _generic_sample_name(who_rec, "crew")
+		who_rec.erase("examples")
+		out["character"] = who_rec
 
 	# 行年：以年号表 1253..1279 为行内；表外归入「行年」不判坏档。
 	var cal: Dictionary = _as_dict(data.get("calendar", {}))
