@@ -1,7 +1,7 @@
 # DOC3-2 合成链 rehearsal 记录（2026-10-03，lane w23-a3）
 
 > 来源：`docs/待策划拍板清单_2026-09-28.md` §八之四 **P3 行**——「DOC3-2 合成链 rehearsal 记录」（机械前置，零代码、零 data 变更；DOC3-1 一拍板即可照此整条跑）。
-> 执行环境：worktree `/tmp/nk1-a3`（基 main `c0e27b6`），Godot 4.6.3 `/home/box/.local/bin/godot`，执行模型 kimi-k3 / effort max。
+> 执行环境：本机 worktree（基 main `c0e27b6`），Godot 4.6.3（平台 `godot` 二进制），执行模型 kimi-k3 / effort max。
 
 ## 一、这条链是什么
 
