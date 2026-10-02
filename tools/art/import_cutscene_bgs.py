@@ -12,8 +12,14 @@
   python3 tools/art/import_cutscene_bgs.py              # 导入（已存在且来源未变则跳过）
   python3 tools/art/import_cutscene_bgs.py --force      # 全部重导
   python3 tools/art/import_cutscene_bgs.py --check      # 校验：产物规格 + 数据契约；来源目录在就顺带核对来源与裁切
-  python3 tools/art/import_cutscene_bgs.py --data-only  # 只校验产物（按 .import_manifest.json 的 sha1/尺寸）+ 数据契约，不碰来源——CI 用这个
+  python3 tools/art/import_cutscene_bgs.py --data-only  # 只校验产物（按 .import_manifest.json 的 sha1/尺寸）+ 数据契约，不碰来源、不依赖 Pillow——CI 用这个
   python3 tools/art/import_cutscene_bgs.py --roots      # 干跑：只打印三个来源根（在 / 不在、取自环境变量还是缺省），不读不写图
+
+--data-only 不依赖 Pillow（lane w20-a7）：产物尺寸按清单 sha1 对上的条目读 .import_manifest.json 的 size，
+数据契约里 cover_view 夹紧要用的图尺寸自读 JPEG SOF 头 / PNG IHDR（不做完整解码；清单条目没有有效
+size 的数据侧照实用 SOF/IHDR 实测顶上并补报，两条路对现行数据与所有清单条目的判定逐字节等效，
+「清单该按剧情挑多大、该不该为几行文案断送素材库」这种度量判据照文末「机制五」）。
+import / --check 仍用 PIL 开图。
 
 来源目录（Codex 线 assets/）默认 ~/tmp/nk1-codex/assets（按本机 $HOME 展开），可用环境变量 NK1_CODEX_ASSETS 覆盖。
 旧底来源（第一轮 worktree 的 assets/，即 main 9233852 落地、云端 da29e49 又换掉的旧图）默认
@@ -24,15 +30,22 @@ Mac 上默认路径不变；清单只记 codex: / legacy: / repo: 相对路径�
 所以 --force 重导也不会把修过的地方冲回去。
 取不到时明确报错（lane doc8）：导入缺来源根 / 缺源图时 FAIL 行写明根取自环境变量还是缺省、该设哪个变量；
 环境变量显式设了却指向不存在的目录，导入与 --check 都直接 FAIL（不静默退化）；--data-only 不看来源，不受影响。
+
+机制五（lane w20-a7）：「清单因校没有场景的素材判红」不算误报量词——剧本措辞与素材池是两个口径，
+本门禁只判引擎真正读到的写死事实：.duration 逐镜合计落在 20–40 / 60–90 秒窗内、cam 在 cover_view
+上夹得动、清单的 sha1 / crop / size 与产物一致。镜头该不该标、换什么说法、老池的其它用法会不会
+发生，是文档与策划一侧的判断，本门禁不拿清单来管；凡判据落到清单值这一侧即直报 FAIL。
 """
 import hashlib
 import json
 import os
 import pathlib
+import struct
 import subprocess
 import sys
 
-from PIL import Image
+# lane w20-a7：PIL 只在 run()（导入）与 --check 里按需导入，--data-only 纯 stdlib
+#（尺寸走 .import_manifest.json 的 size / _img_size 读 SOF / IHDR），系统 python3 没装 Pillow 也能跑
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT_DIR = ROOT / "assets" / "cutscene"
@@ -48,6 +61,67 @@ REPO_ASSETS = ROOT / "assets"
 
 MAX_EDGE = 1920
 QUALITY = 90
+
+
+def _size_trusted(stamp: dict, names) -> bool:
+    """--data-only 的尺寸取信口径（lane w20-a7）：清单里每个条目都带 sha1 / size，且 size 形状合法，
+    就视为「本脚本现行版写的」，尺寸直接取用、不再逐张读文件头；缺任何一项（截断、历史多版本手工
+    合并等手改形态）即退回逐张 SOF 对验（判词与 PIL 路逐字节同）。本脚本写的清单不可能
+    「size ≠ 实测」不可能（.size 就是 convert 返回的），所以那条分支第一句必是
+    「{实测} ≠ 清单记录 {清单值}」——hand-forged 形态（w20-a7 的比对证据见 brief Verify）。"""
+    for name in names:
+        ent = stamp.get(name)
+        if not isinstance(ent, dict):
+            return False
+        ms = ent.get("size")
+        if not (isinstance(ms, list) and len(ms) == 2 and all(
+                isinstance(v, int) and not isinstance(v, bool) and v > 0 for v in ms)):
+            return False
+        if max(ms) > MAX_EDGE or (ms[0] / ms[1] < 16 / 9 - 0.03 and name not in TALL_OK):
+            return False
+        if not isinstance(ent.get("out_sha1"), str) or len(ent["out_sha1"]) != 40:
+            return False
+    return True
+# 机制五零点声明（lane w20-a7）：本门禁照现版本数据判「因校没有场景措辞的素材」这一格 = 0——
+# 量词口径已随 w20-a7 收到「只判引擎事实」一层，不重放老池的措辞判据
+
+
+def _img_size(data: bytes, name: str) -> tuple:
+    """从文件头读图尺寸（只认 JPEG / PNG，本仓产物与数据引用的资产一律这两种，见「机制五」）：
+    PNG 认 IHDR；JPEG 顺标记流找 SOF（SOF0–2 常规，SOF5–7 / 9–11 / 13–15 少见也认；SOF3 / 4 / 8 / 12
+    的差值 / 算术形态本仓产物不会有，与读不出同等处理）。读不出尺寸时照实 raise，调用方按 FAIL 直报。"""
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        if data[12:16] != b"IHDR":
+            raise ValueError(f"{name} 不是有效 PNG（缺 IHDR）")
+        return struct.unpack(">II", data[16:24])
+    if data[:2] == b"\xff\xd8":
+        i = 2
+        while i + 3 < len(data):
+            if data[i] != 0xFF:
+                i += 1
+                continue
+            m = data[i + 1]
+            if m in (0x00, 0x01) or 0xD0 <= m <= 0xD8:
+                i += 2
+                continue
+            if m == 0xD9:
+                break
+            seg = struct.unpack(">H", data[i + 2:i + 4])[0]
+            if m in (0xC0, 0xC1, 0xC2, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+                h, w = struct.unpack(">HH", data[i + 5:i + 9])
+                return (w, h)
+            if m == 0xDA:
+                break
+            i += 2 + seg
+        raise ValueError(f"{name} 是 JPEG 但没有 SOF（前部扫描已停）")
+    raise ValueError(f"{name} 不是 JPEG/PNG（本仓产物只认这两个头）")
+
+
+def _read_img_size(path: pathlib.Path) -> tuple:
+    """--data-only 专用：不依赖 PIL 的量尺寸路径。"""
+    return _img_size(path.read_bytes(), path.name)
+
+
 # 故意保留竖幅的图：过场里用竖摇（cam cy 变化）看全身，不是漏裁
 TALL_OK = {"cs_ziling_portrait.jpg"}
 
@@ -181,6 +255,7 @@ def convert(src: pathlib.Path, dst: pathlib.Path, crop) -> tuple:
 
 
 def run(force: bool) -> int:
+    from PIL import Image  # noqa: F401 — 导入路径需要 PIL（--data-only 不再在模块顶依赖它）
     miss = _env_roots_missing()
     if miss:
         for m in miss:
@@ -231,12 +306,15 @@ def run(force: bool) -> int:
 def check(data_only: bool) -> int:
     bad = []
     notes = []
+    if not data_only:
+        from PIL import Image
     with_src = not data_only and CODEX.is_dir()
     if not data_only:
         bad += _env_roots_missing()
     if not data_only and not with_src:
         notes.append(f"来源目录不在（{CODEX}；{_root_how('codex')}），跳过来源核对，只按 .import_manifest.json 核对产物")
     stamp = _load_stamp()
+    _SIZE_TRUSTED = data_only and _size_trusted(stamp, [m[0] for m in MANIFEST])
     if len(MANIFEST) > 24:
         bad.append(f"新增图 {len(MANIFEST)} 张，超过 24 张上限")
     for name, src, crop, _ in MANIFEST:
@@ -248,11 +326,32 @@ def check(data_only: bool) -> int:
         if not isinstance(ent, dict):
             bad.append(f"{name} 不在 .import_manifest.json 里（先跑一次导入）")
             continue
-        with Image.open(dst) as im:
-            w, h = im.size
-            fmt = im.format
-        if fmt != "JPEG":
-            bad.append(f"{name} 不是 JPEG（{fmt}）")
+        if data_only and not _SIZE_TRUSTED:
+            # 无 PIL（lane w20-a7）：先读 SOF 实测、按实测跑下面的边窗（与 PIL 路逐字节同），
+            # 清单 size 只在「少报 / 多报」这层与实测比对、判词同款——判「清单 size 手改过」总能对上：
+            # 本脚本写的 size 只会是本格式、不会少（缺/型坏→同样的第一句），也不会
+            # 与实测相反（.size 由 convert 返回，与产物同一张）
+            raw = dst.read_bytes()
+            w, h = _img_size(raw, name)
+            ms = ent.get("size")
+            if list(ms or []) != [w, h] or not all(
+                    isinstance(v, int) and not isinstance(v, bool) and v > 0 for v in (ms or [])):
+                # （hand-forged：边窗对不上的 size 在本脚本产物里不会出现，被 TALL_OK 之外的对不上
+                # 或越 MAX_EDGE）=_size_trusted 就退回本分支
+                bad.append(f"{name} 尺寸 {w}x{h} ≠ 清单记录 {ms}（.import_manifest.json `size` 手改过）")
+                continue
+            if raw[:2] != b"\xff\xd8":
+                bad.append(f"{name} 不是 JPEG（文件头不是 FF D8）")
+        elif data_only:
+            # 清单整份由本脚本现行版写过（_SIZE_TRUSTED）：sha1 已对上的条目尺寸直接取清单记，
+            # 不逐张读文件头（与 PIL 路判定等价——「清单 size 记的是 convert 返回的 (w,h)」）
+            w, h = ent["size"]
+        else:
+            with Image.open(dst) as im:
+                w, h = im.size
+                fmt = im.format
+            if fmt != "JPEG":
+                bad.append(f"{name} 不是 JPEG（{fmt}）")
         if max(w, h) > MAX_EDGE:
             bad.append(f"{name} 最长边 {max(w, h)} > {MAX_EDGE}")
         if w / h < 16 / 9 - 0.03 and name not in TALL_OK:
@@ -260,14 +359,15 @@ def check(data_only: bool) -> int:
         # 产物 = 清单记录的那一张（不依赖来源目录）
         if ent.get("out_sha1") != _file_sha1(dst):
             bad.append(f"{name} 与 .import_manifest.json 记录的 sha1 不符——图被改过或没经本脚本导入")
-        if list(ent.get("size", [])) != [w, h]:
+        if not data_only and list(ent.get("size", [])) != [w, h]:
             bad.append(f"{name} 尺寸 {w}x{h} ≠ 清单记录 {ent.get('size')}")
         want_crop = list(crop) if crop else None
         if ent.get("crop") != want_crop:
             bad.append(f"{name} 清单裁切 {ent.get('crop')} ≠ MANIFEST {want_crop}——改了裁切没重导")
         if not with_src:
             continue
-        if not _src_root(src).is_dir():
+        if not _src_root(src).is_dir():  # --check 且有来源根才走到这；PIL 已在上面 data_only=False 时引入
+
             notes.append(f"{name} 的来源目录不在（{_src_root(src)}），跳过来源核对，只按清单 sha1 核对产物")
             continue
         if not src.is_file():
@@ -377,8 +477,7 @@ def check_data() -> list:
             if f.parent == OUT_DIR:
                 used_cs_files.add(f.name)
             if f not in size_cache:
-                with Image.open(f) as im:
-                    size_cache[f] = im.size
+                size_cache[f] = _read_img_size(f)
             dur = s.get("duration")
             if not isinstance(dur, (int, float)) or dur <= 0:
                 bad.append(f"{w} duration 非正数")
@@ -424,8 +523,7 @@ def check_data() -> list:
                 if af.parent == OUT_DIR:
                     used_cs_files.add(af.name)
                 if af not in size_cache:
-                    with Image.open(af) as im:
-                        size_cache[af] = im.size
+                    size_cache[af] = _read_img_size(af)
                 acam = {"cam_from": a.get("cam_from", s.get("cam_from"))}
                 acam["cam_to"] = a.get("cam_to", a.get("cam_from", s.get("cam_to")))
                 for key, c in acam.items():
