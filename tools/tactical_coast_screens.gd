@@ -4,8 +4,10 @@ extends SceneTree
 ## 用法：DISPLAY=:2 godot --path . -s res://tools/tactical_coast_screens.gd -- --before   # 从 main 原画跑 before
 ##       DISPLAY=:2 godot --path . -s res://tools/tactical_coast_screens.gd -- --after    # 从改过树跑 after
 
-const ShotGateRoot := preload("res://tools/shot_gate.gd")
-const OUT := ShotGateRoot.out_dir("wave20-b1")
+const ShotGate := preload("res://tools/shot_gate.gd")
+## 截图根仍走 ShotGate.out_dir（遵守 NK1_SHOT_DIR 口径）；写 var 不写 const——
+## out_dir 为 static 但 Godot 常量表达式不收函数调用（lane w21-d9 实测：顶层 const 调它整个脚本 Parse Error）。
+var OUT := ShotGate.out_dir("wave20-b1")
 const CombatStage := preload("res://tools/combat_probe_stage.gd")
 var _side := "after"
 
@@ -23,6 +25,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	ShotGate.frame_pressure(self)  # lane w21-d9：gates_md 附属「接 shot_gate 的脚本都挂压帧」口径
 	DirAccess.make_dir_recursive_absolute(OUT)
 	var gm: Node = root.get_node("GameManager")
 	gm.set("pending_battle", {
