@@ -1,6 +1,6 @@
 extends SceneTree
 ## Lane w23-a8（P8 · V0928-1② 取证件）：「被围港被开成委办目的地」复现探针。
-##   现态：_contract_destinations（scripts/GameState.gd:889）只排「未解锁 / depth<=0 / 非消费方 / 不收此货」，
+##   现态：_contract_destinations（scripts/GameState.gd :891）只排「未解锁 / depth<=0 / 非消费方 / 不收此货」，
 ##   不看战况——本探针在 5 张真战况表（兴化 1276-11 besieged、福州 1276-10、广州 1276-11、
 ##   博多唐房 1274-10 closed、萨摩 1274-10 closed）下把所有开单港 × 全货的目的地候选集与月正式单全打出来，
 ##   再用「探针侧 A+ 豁免镜像」（besieged / closed 不当目的地，与清单 A+ 案同口径；fallen 不动）重算对照。
