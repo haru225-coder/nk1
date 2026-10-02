@@ -479,6 +479,7 @@ func _initialize() -> void:
 	GS.chapter = 1
 	var cdef: Dictionary = GS.chapter_def()
 	_check(int(cdef.get("advance_years", 0)) > 0, "第一章带 advance_years")
+	_process_c6_init_hook()
 	# 抵港路由一节要实例化 Main，@onready 节点须等树 ready——留到首帧 _process 再跑，那里再收尾
 
 
@@ -489,6 +490,7 @@ func _process(_delta: float) -> bool:
 	_route_pending = false
 	_route_check()
 	_script_error_check()
+	print("STORY_CHECK TOTAL asserts run=", GateReport._checks.size(), "；lane w20-c6 补白新增 c6_asserts=", _c6_added)
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	GateReport.finish("godot_story_check", 1 if _fails > 0 else 0, "STORY_CHECK SUMMARY fails=%d" % _fails)
 	quit(1 if _fails > 0 else 0)
@@ -753,6 +755,7 @@ func _route_check() -> void:
 	_close_dialogs(main)
 	_a5_sea_here_check()
 	main.queue_free()
+	_process_c6_main_hook(main)
 
 
 ## lane fx7（todo「小毛病」两条）：
@@ -3633,3 +3636,229 @@ func _b1_worldmap_coast_check() -> void:
 	wm.queue_free()
 	gm.set("pending_battle", {})
 
+# ══ 断言覆盖补白（lane w20-c6）══════════════════════════════
+## 盘点报告 docs/story断言覆盖.md。本节五组断言只钉现行数据下已稳定的行为（落库前逐条实证），
+## 不钉未拍板的设计。两组走 _initialize 尾部（数据 / 状态层，不依赖 Main 实例化）、三组走 _route_check
+## 尾部（Main tree ready 后）。子断言数随 chapters / scenes 现表长变化，故补白计数 _c6_added 进 SUMMARY 自证。
+var _c6_wired := false
+var _c6_added := 0
+
+
+func _c6_check(cond: bool, msg: String) -> void:
+	_c6_added += 1
+	_check(cond, msg)
+
+
+## 终章结局面（chapters.json[3].endings 为结算幕表）：ready / 各面按表内旗标就位 / 摘旗回退兜底，三层全断。
+## 数据驱动读现表（旗标 / 到账港数 / 本钱门槛现查现填，不抄数值），加新面 / 改旗标这里自动跟上、只断现定式。
+func _c6_endings_gate_check() -> void:
+	var ch4: Dictionary = {}
+	for c in GM.chapters_data.get("chapters", []):
+		if int(c.get("id", 0)) == 4:
+			ch4 = c
+	_c6_check(not ch4.is_empty() and (ch4.get("endings", []) as Array).size() >= 3,
+		"第四章结局表至少三条（现 %d）" % (ch4.get("endings", []) as Array).size())
+	var lst: Array = ch4.get("endings", [])
+	if lst.size() < 3:
+		return
+	var er: Dictionary = ch4.get("ending_requires", {})
+	var port_ids: Array = []
+	for p in GM.ports_data.get("ports", []):
+		port_ids.append(str(p.get("id", "")))
+	var fulfill := func(gs) -> void:
+		var want_n: int = maxi(int(er.get("visited_count", 0)), 1)
+		gs.visited_ports = port_ids.slice(0, want_n)
+		for pid in er.get("must_visit", []):
+			if not (str(pid) in gs.visited_ports):
+				gs.visited_ports.append(str(pid))
+		var pm := int(er.get("peak_money", 0))
+		gs.peak_money = maxi(pm, 1)
+		gs.money = pm
+	# A. 未就绪：chapter 4 + 零门槛 → ready=false，try_resolve 拒，ending_id 未写
+	GS.from_dict({})
+	GS.chapter = 4
+	GS.ending_id = ""
+	GS.visited_ports = []
+	GS.peak_money = 0
+	GS.money = 0
+	_c6_check(not bool(GS.chapter_progress().get("ready", false)), "第四章零本钱零到港：chapter_progress.ready=false")
+	_c6_check(not bool(GS.try_resolve_ending().get("resolved", false)), "未就绪 try_resolve 拒了结")
+	_c6_check(GS.ending_id == "", "未就绪 ending_id 未写")
+	# 定式：表尾兜底不带 require_flag / require_any，首条旗标线非空
+	var last_e: Dictionary = lst[-1]
+	var first_e: Dictionary = lst[0]
+	_c6_check(str(last_e.get("require_flag", "")) == "" and (last_e.get("require_any", []) as Array).is_empty(),
+		"兜底结局面「%s」无 require_flag / require_any" % str(last_e.get("id", "?")))
+	_c6_check(str(first_e.get("require_flag", "")) != "" or (first_e.get("require_any", []) as Array).size() > 0,
+		"首条结局面「%s」带旗标要求（次序不兜底遮线）" % str(first_e.get("id", "?")))
+	# B / C：每面按表内旗标试；落定后先摘旗再 pick_ending——须回兜底
+	for i in range(lst.size()):
+		var e: Dictionary = lst[i]
+		var eid := str(e.get("id", ""))
+		var is_fallback := (i == lst.size() - 1)
+		GS.from_dict({})
+		GS.chapter = 4
+		GS.ending_id = ""
+		fulfill.call(GS)
+		var any_arr: Array = e.get("require_any", [])
+		var rf := str(e.get("require_flag", ""))
+		if any_arr.size() > 0:
+			GS.set_flag(str(any_arr[0]))
+		elif rf != "":
+			GS.set_flag(rf)
+		var adv: Dictionary = GS.try_resolve_ending()
+		_c6_check(bool(adv.get("resolved", false)) and GS.ending_id == eid and str(adv.get("title", "")) == str(e.get("title", "")),
+			"结局面「%s」按表就位（%s线，title「%s」）" % [eid, "兜底" if is_fallback else "旗标", str(e.get("title", ""))])
+		_c6_check(not bool(GS.try_resolve_ending().get("resolved", false)), "落定「%s」后再试了结被拒（ending_id 已写）" % eid)
+		if not is_fallback:
+			GS.flags.clear()
+			_c6_check(not GS.pick_ending().is_empty() and str(GS.pick_ending().get("id", "")) == str(last_e.get("id", "")),
+				"摘「%s」线旗标后 pick_ending 回落兜底「%s」" % [eid, str(last_e.get("id", ""))])
+	# E. 落定态随存档 round-trip
+	GS.from_dict({})
+	GS.chapter = 4
+	GS.ending_id = ""
+	fulfill.call(GS)
+	if not first_e.is_empty():
+		var fa: Array = first_e.get("require_any", [])
+		if fa.size() > 0:
+			GS.set_flag(str(fa[0]))
+		elif str(first_e.get("require_flag", "")) != "":
+			GS.set_flag(str(first_e.get("require_flag")))
+	GS.try_resolve_ending()
+	var eid_saved: String = GS.ending_id
+	var snap: Dictionary = GS.to_dict()
+	GS.from_dict({})
+	GS.from_dict(snap)
+	_c6_check(GS.ending_id == eid_saved and bool(GS.chapter_progress().get("ended", false)),
+		"存档 round-trip 保留落定结局（%s，progress.ended=true）" % eid_saved)
+	GS.from_dict({})
+	GS.ending_id = ""
+	GS.chapter = 1
+	GS.visited_ports = []
+	GS.peak_money = 1000
+	GS.money = 1000
+
+
+## 存档 round-trip 六个此前没断言的字段：met_ids / era_routes / era_trips / merchant_credit / last_port /
+## hometown_tendency + ended_head。to_dict / from_dict 键与 d.get 退化默认都在 GameState.gd 对过。
+func _c6_roundtrip_fields_check() -> void:
+	GS.from_dict({})
+	Cal.from_dict({"year": 1271, "month": 6, "day": 1})
+	GS.met_ids = ["lin_hua", "cai_qixing"]
+	GS.era_routes = {"quanzhou→hakata": 2, "quanzhou→penghu": 1}
+	GS.era_trips = 3
+	GS.merchant_credit = 66
+	GS.last_port = "hakata"
+	GS.hometown_tendency = 5
+	GS.ended_head = "试笔"
+	var snap: Dictionary = GS.to_dict()
+	GS.from_dict({})
+	_c6_check(GS.met_ids.is_empty() and GS.era_routes.is_empty() and GS.era_trips == 0,
+		"from_dict({}) 清空 met_ids / era_routes / era_trips")
+	_c6_check(GS.merchant_credit == 0 and GS.last_port == "quanzhou" and GS.hometown_tendency == 0 and GS.ended_head == "",
+		"from_dict({}) 清空海商信用 / 回默认 last_port / 乡土倾向 / ended_head")
+	GS.from_dict(snap)
+	_c6_check(GS.met_ids == ["lin_hua", "cai_qixing"], "存档 round-trip 保留 met_ids")
+	_c6_check(GS.era_routes == {"quanzhou→hakata": 2, "quanzhou→penghu": 1} and GS.era_trips == 3,
+		"存档 round-trip 保留 era 段（主航线次数 + 记趟数）")
+	_c6_check(GS.merchant_credit == 66 and GS.last_port == "hakata",
+		"存档 round-trip 保留海商信用与最后到港")
+	_c6_check(GS.hometown_tendency == 5 and GS.ended_head == "试笔",
+		"存档 round-trip 保留乡土倾向与 ended_head")
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+
+
+## 结局面落定 ≠ is_ended()：try_resolve_ending 后 ended 仍空，Main.finish 才写 ended（is_ended 翻面）
+## ——两条路径分走、不钉谁调谁。
+func _c6_endings_semantics_check() -> void:
+	GS.from_dict({})
+	GS.chapter = 4
+	GS.ending_id = "south_sea"
+	_c6_check(not GS.is_ended() and GS.ended == "",
+		"落定结局面未 confirm：is_ended()=false（结局面与终局态分两条路径）")
+	GS.from_dict({})
+	GS.chapter = 4
+	GS.ending_id = ""
+	GS.finish("纲首", "正文若干")
+	_c6_check(GS.is_ended() and GS.ended == "纲首", "confirm 走完 finish：is_ended()=true、ended=「纲首」")
+	GS.from_dict({})
+	GS.chapter = 1
+	GS.ended = ""
+
+
+## 场景形状枚举断言（新幕上库不接入即红）：
+## 1. 调查幕五键齐（id / label / text / effects / next）；
+## 2. 结算幕 result 为 String 或 PackedStringArray，且不再同时挂 choices；
+## 3. discoveries.json 勘见面每座的 name / id 非空（调查幕线接续以 id == 发现名为底，
+##    本座名下必有一座 scenes 的 investigation 幕接续——若日后新一座勘见漏配，这条把当前 4 座的名单拉进来逐个对到位）。
+func _c6_investigation_result_enum_check() -> void:
+	var scenes: Array = GM.scenes_data.get("scenes", [])
+	var inv_n := 0
+	var res_n := 0
+	for s in scenes:
+		var t := str(s.get("type", ""))
+		if t == "investigation":
+			inv_n += 1
+			var invs: Array = s.get("investigations", [])
+			_c6_check(invs.size() > 0, "调查幕「%s」带考题（现 %d 道）" % [str(s.get("id", "")), invs.size()])
+			for it in invs:
+				var miss: Array = []
+				for k in ["id", "label", "text", "effects", "next"]:
+					if not it.has(k):
+						miss.append(k)
+				_c6_check(miss.is_empty(), "调查幕「%s」一道考题五键齐（id/label/text/effects/next；%s缺 %s）" % [str(s.get("id", "")), str(it.get("id", "?")), str(miss)])
+		elif s.has("result"):
+			res_n += 1
+			var r = s.get("result")
+			var shape_ok: bool = typeof(r) == TYPE_STRING
+			if typeof(r) == TYPE_ARRAY:
+				shape_ok = not (r as Array).is_empty()
+				for line in r:
+					if typeof(line) != TYPE_STRING:
+						shape_ok = false
+			_c6_check(shape_ok,
+				"结算幕「%s」result 为 String 或非空 String 数组（现 %s）" % [str(s.get("id", "")), type_string(typeof(r))])
+			_c6_check((s.get("choices", []) as Array).is_empty(), "结算幕「%s」不同时挂 choices" % str(s.get("id", "")))
+	_c6_check(inv_n == 4, "调查幕现 4 座（现 %d）：city_tavern / city_residence / city_shipyard / city_guild" % inv_n)
+	_c6_check(res_n > 0, "结算幕非零（现 %d 座）" % res_n)
+	var disc: Array = GM.discoveries_data.get("discoveries", [])
+	_c6_check(disc.size() > 0, "discoveries.json 非空（现 %d 座）" % disc.size())
+	for d in disc:
+		_c6_check(str(d.get("name", "")) != "" and str(d.get("id", "")) != "", "勘见面「%s」name 非空" % str(d.get("id", "?")))
+
+
+## 新闻表 only 枚举断言：news.json 26 条，全量断言此前只有「按月投放、1277-01 前应投 = 实投」三条总长直；
+## only 字段值 ∈ {scholar, merchant, hometown, ""}——出第四个值即有人找别处的禁线（现有断言不查）。
+func _c6_news_only_enum_check() -> void:
+	var seen_only := {}
+	for it in GM.news_data.get("news", []):
+		var on := str(it.get("only", ""))
+		seen_only[on] = int(seen_only.get(on, 0)) + 1
+		var ok_only: bool = on == "" or on == "scholar" or on == "merchant" or on == "hometown"
+		_c6_check(ok_only, "新闻 %s 的 only ∈ scholar / merchant / hometown / \"\"（现「%s」）" % [str(it.get("id", "")), on])
+	_c6_check(int(seen_only.get("", 0)) > 0, "公共新闻（only 缺省）条数 > 0（现 %d）" % int(seen_only.get("", 0)))
+	_c6_check(int(seen_only.get("scholar", 0)) + int(seen_only.get("merchant", 0)) > 0,
+		"士人 / 海商专线新闻均有条目（现 scholar %d、merchant %d）" % [int(seen_only.get("scholar", 0)), int(seen_only.get("merchant", 0))])
+
+
+## 接线（插在全部 _c6 检查函数之后——a1/a4/a6 若在文件别处加函数，本节不受影响）
+
+
+func _process_c6_main_hook(_main: Node) -> void:
+	# _route_check 尾部接入（queue_free 之后）——本组纯 GameState / GameManager 断言，Main 只占位
+	if _c6_wired:
+		return
+	_c6_wired = true
+	_c6_investigation_result_enum_check()
+	_c6_endings_gate_check()
+	_c6_endings_semantics_check()
+	print("STORY_CHECK C6 main-hook asserts added=", _c6_added)
+
+
+func _process_c6_init_hook() -> void:
+	# _initialize 尾部接入（advance_years 断言之后、Main 实例化之前）——本组只走 GameState / GameManager 数据
+	_c6_roundtrip_fields_check()
+	_c6_news_only_enum_check()
+	print("STORY_CHECK C6 init-hook asserts added=", _c6_added)
