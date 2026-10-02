@@ -31,11 +31,13 @@ if "--json" in sys.argv[1:]:
 TAG = "PERF_PY"
 # 软档阈值；只 warn。指标从 _MM 行按正则抓；与 docs/性能基线.md §3 表同步。
 # 保守：以 lane 落地时的实测 + 30% 起（real p95=215→290，synthe p95=122→160，startup real=1974→2600）；内存实测 109 MB→220。
+# 实测双跑（2026-10-02、主树 HEAD 140b46a、load ≈5）：real startup 1424–1451 / p95 49–52 / mem 109；
+# synthe startup 1443–1471 / p95 48–49 / mem 108。阈值按稍重那次起 + ~35%
 THRESHOLDS = {
-    "startup_ms": {"real": 2300, "synthe": 2300},
-    "p95_ms": {"real": 200, "synthe": 160},
+    "startup_ms": {"real": 2000, "synthe": 2000},
+    "p95_ms": {"real": 70, "synthe": 70},
     "peak_mem_mb": {"real": 220, "synthe": 220},
-    "frames_min": {"real": 60, "synthe": 60},
+    "frames_min": {"real": 100, "synthe": 100},
 }
 
 METRIC_RE = re.compile(
@@ -144,8 +146,8 @@ def selftest():
     chk(any("采样帧" in s for s in fails), "低帧数须 fail 一条")
 
     # CLEAN：中档样本须全绿（指标低于所有阈）
-    m_mid = {"startup_ms": 2000, "frames": 90, "avg_ms": 100.0, "p50_ms": 100.0, "p95_ms": 150.0, "max_ms": 180.0,
-             "over50_ms": 90, "peak_mem_mb": 120.0}
+    m_mid = {"startup_ms": 1500, "frames": 150, "avg_ms": 50.0, "p50_ms": 50.0, "p95_ms": 60.0, "max_ms": 80.0,
+             "over50_ms": 10, "peak_mem_mb": 120.0}
     w2 = predict("real", m_mid, thresholds_for("real"))
     chk(w2 == [], "中档样本须全绿（无 warn）")
     _, f2 = warn_for("real", m_mid, thresholds_for("real"))
