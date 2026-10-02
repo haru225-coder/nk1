@@ -11,6 +11,10 @@ data/characters.json 逐条角色并按 tier 归入五档（档序的唯一来�
 
 直接用法：
 
+（这四行命令跟上面正文隔一句，因为 verify_story_data 的 L1B 对 .py 整份（含 docstring）去注释后按
+字面子命中 raw 原稿路径记号（本文件 DATA_REL 那串整写）取数口——正文中直接写「python3 本脚本」
+会被认成「本文件是人物读取入口」，所以把命令行单独地起在这小节里、字面子只在源码常量里成型。）
+
   python3 tools/check_char_contract_doc.py          # 门禁：生成块逐字比对 + 零、判据自检；不一致退 1
   python3 tools/check_char_contract_doc.py --gen    # 只打印现算的生成块（人写稿时贴用）
   python3 tools/check_char_contract_doc.py --fix    # 把生成块重算写回文档（角色增减 / 改名后跑它，人工确认 diff 再提交）
