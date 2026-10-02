@@ -42,8 +42,9 @@
 | 28 | ledger_refs_mutants | Python | 加跑：① 动 tools/gen_main_splits.py（台账格式硬校验 / 函数表对账）或 tools/check_decision_refs.py（逐处行的排序 / since 配对）或 tools/ledger_refs_mutants.py；② 动了变异的靶子：台账 docs/Main拆解台账.md 已有的「已拆（前三刀…）」段、第四 / 第五 / 第十一刀节的结构（节标题形状、函数表增删行 / 行段写法；lane cs26 起变异按形状定位：日期 / 题文 / 形参名 / 说明字改了不必跑），拍板清单里 `scripts/Main.gd:N` 引用增删 / 改指；③ 一键跑 check_decision_refs「零之二、落点预检」红了——改完 M / GEN_CASES / DET_CASES 必跑一次全量 | — | `python3 tools/ledger_refs_mutants.py` | `python3 tools/ledger_refs_mutants.py --json` | （lane cs25，固化 lane cs23 的探针）当前工作树检出到临时 worktree，逐格施变异、比期望表。一、gen_main_splits 台账格式硬校验 ①–⑤：逐格改台账（节标题去反引号 / ### / 无空格 / 半角括号 / 去 lane / 箭头后多字、前三刀段半角括号 / 删一件 /「前N刀」写错 / 整段删掉、刀号重号 / 跳号 / 认不出、函数表行少空格 / ASCII 连字符 / 列两次、删光函数表），各跑对账 / `--write` / 写后对账：现行对账 rc=1 且 ✗ 行对得上、`--write` 不写盘、写后仍 rc=1；硬校验退回 cs23 前（删两处调用）同一变异 `--write` 后 rc=0（漏认、清单跟着少、gen 自己绿）；第四刀删表（M5t）现行红、`NO_TABLE_OK` 放行退回 rc=0，N1 / N2 第四、第五刀补的表漏列一支 / 行段写错各一行红；对照 C0–C2；C3 前三刀段改写成三节现行 rc=0、C3′ 刀序起点写死回第四刀 rc=1（lane cs26）。变异锚按形状定位（lane cs26）：只锚刀号与形状（「## 第N刀（」起头的标题行、那节函数表最后一支、前三刀段第一件、两支脚本里调用 / 排序的形状），期望 ✗ 字样由定位到的内容现算。二、check_decision_refs 输出确定序：PYTHONHASHSEED=0/1/2/3/42 各跑一次，D0 基线 / D1 清单前 8 处 Main.gd 号 +1 不提交 / D2 同一脏树 `--since HEAD`（lane cs26 起相对基，原钉死 ccb1d57）stdout 须逐字节同；X1 / X2 同 D1 / D2 但两处排序（Lines.flush、since 配对）都去掉，须出 ≥2 种 | `✓ C0 …` 起 40 格逐格 `✓ <编号> …：对账 rc=N，--write rc=N，写后对账 rc=N` + 二节 5 格 `✓ <编号> …：rc=N，⚠ / ✗ k 条，stdout 1 种`（X1 / X2 `5 种`） + 「三、空转对照」18 条 `✓ … 旧口径 … rc=0 → … 现行 …`（含 `✓ 刀序起点：C3′ … rc=1 → C3 … rc=0`）+ `结果：全部通过`。`--landing` 只跑落点预检（= check_decision_refs「零之二」，约 0.1 s）：`✓ ledger_refs_mutants 落点预检：Z1–Z5 5 格判对；40 + 5 格变异…都落得上（…）` + `结果：全部通过` | `✗ <编号> …：期望对账 rc=a / 写后 rc=b，实得 …` 附 `缺 ✗ …` / `多 ✗ …` / `--write 判红却写了盘`；`✗ D<k> …：期望 rc=a、逐字节同，实得 … stdout n 种`；`变异没落上` = 按形状也定位不到（第四 / 第五 / 第十一刀节标题不止或不到一处、那节没有函数表行、前三刀段认不出、两支脚本里调用 / 排序的形状改了）、这支变异该跟着改；空转对照 `应 0 → 1` / `应 否 → 是`；`结果：N 项问题`；无 git / 建不了 worktree 退 2；`--landing`：`✗ ledger_refs_mutants 落点预检 · <编号>：变异没落上——…` / `· Z<n> …预检空转` 退 1 |
 | 29 | qa_pirate_boat_probe | Godot | 加跑：动 SeaChart 敌船条目（PIRATE_ENEMY / PATROL_ENEMY）、WorldMap 的 _spawn_enemy / _board_enemy / _note_fate / _battle_exit、Fleet 的 add_ship / prize_name / display_name（夺船存名，V0928-10 拍板落地时必跑）、CombatFx.ship_sprite_path 船图契约、PirateShip / Ship 的 apply_sprite / apply_type_sprite、ShipHull3D 或 Ship.tscn / PirateShip.tscn 的 HullRig，或收 / 删 assets/ship_*.png | — | `godot --headless --path . -s res://tools/qa_pirate_boat_probe.gd` | `godot --quiet --headless --path . -s res://tools/qa_pirate_boat_probe.gd -- --json` | （lane pirate-boat-0928 立，lane w19-g3 跟现行代码、入册）真走 SeaChart 两条敌船条目 → WorldMap 开战：海寇 pirate_boat「快船」两艘、元军哨船 sea_falcon「海鹘」挂 sprite=yuan_patrol；海战船身是 ShipHull3D 的 3D 宋船视口（敌红帆我素帆），船图契约 ship_<id>.png 有就用、缺图回落（期望按图在不在现算）；停士气挂件后清零敌船水手、白刃夺下两艘：存名都是「快船」（V0928-10 待拍板，不按序号起名）、上屏 display_name 加「・甲」「・乙」、下场记 boarded、末艘以 win + boarded 收战；带海鹘与快船的船队存读档（位 93）船型原样；本进程 SCRIPT ERROR 即红。`-- --shots <目录>` 有窗口另截 5 张（不接 shot_gate） | 逐条 `  ✓ …` + `QA_PIRATE_BOAT_PROBE PASS（0 项不合；截图 0 张）` | `  ✗ …` 行（如 `夺来的船…存名沿用敌船名「快船」…得 pirate_boat / 快船・一`、`第一艘记下场 boarded…得 ["pirate_boat/struck"]`、`…船身接 3D 宋船视口…Sprite2D 没贴 3D 视口`、`本进程无 SCRIPT ERROR（1 行：…）`）；`QA_PIRATE_BOAT_PROBE FAIL（k 项不合；…）` |
 | 30 | perf_baseline | Python | 加跑：动 Main.tscn / SeaChart.tscn / SeaChart.gd 航行主环 / 渲染管线（UiTheme / MapView 改动），或动 tools/perf_baseline.gd 本身 / 提高 THRESHOLDS；做帧时重测 / 复测基线时手跑 | — | `python3 tools/perf_baseline.py [--scene 场面] [--secs N]` | `python3 tools/perf_baseline.py [--scene 场面] [--secs N] --json` | （lane w20-c10 立，软档）跑 `tools/perf_baseline.gd` 取指标行，按 `THRESHOLDS`（与 docs/性能基线.md §3 同步）软档判：仅「采样帧 < 下限 / 没拿到指标行 / 有 SCRIPT ERROR」算红，超阈全 `GateReport.warn`（ok=true、rc=0）；`--selftest` 零、判据自检（伪造高 / 中档指标行各判 warn / fail、`_MM` 正则抓数对、收紧一格后中档须见 ⚠——反向变异自证）；两次跑之间阈值波动可达 30%+（8 vCPU / 20 路 lane），红绿判据只盯「跑通了」这一底线、指标交人读——本仓首份性能口径，不判「帧时快慢」 | `PERF_BASELINE PASS（0 项不合；synthe / real 帧起了 N）`；`PERF_PY：<结果>`（全部通过 / N 项未通过） | `PERF_BASELINE FAIL（…）`；`PERF_PY：N 项未通过`；`✗ real: <理由>`（采样帧不足 / 拿不到指标行 / SCRIPT ERROR） |
+| 31 | cutscene_data_only | Python | 必跑 | ✓ | `python3 tools/art/import_cutscene_bgs.py --data-only` | `python3 tools/gate_json.py tools/art/import_cutscene_bgs.py --data-only` | （lane w20-a7 去 PIL，w25-j5 升必须跑）过场数据守门：`data/cutscenes.json` 逐镜时长合计落在 20–40 / 60–90 秒窗内（不含章末了结的 20–35 秒档）、cam 在 cover_view 上夹得动、字幕 t 离镜头结束 ≥1.5 秒；.import_manifest.json 的 sha1 / size / crop 与产物一致；来源目录一律不看（PIL 也不需要） | `import_cutscene_bgs --check：N 张背景合规［产物（按清单 sha1）］；data/cutscenes.json 契约校验通过` | `FAIL …` 行（如 `FAIL cutscenes.ending_root 共 5 镜 40.3 秒，要求 3–5 镜、20–40 秒`），rc=1 |
 
-每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十道 Python + smoke/compile/story/p7/patrol」十五道门禁；8、15、16、17、18、19、20、21、25、26、27、28、29、30 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十一道 Python + smoke/compile/story/p7/patrol」十六道门禁；8、15、16、17、18、19、20、21、25、26、27、28、29、30 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（12 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -164,7 +165,7 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 
 <!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-# 必跑十六条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+# 必跑十七条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
 rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
 python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
 python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
@@ -182,6 +183,7 @@ DISPLAY=:2 godot --quiet --path . -s res://tools/patrol_shell.gd -- --json > /tm
 python3 tools/check_mac_paths.py --json > /tmp/gates/RefsMacPath.json
 python3 tools/check_host_paths.py --json > /tmp/gates/RefsHostPath.json
 python3 tools/check_decision_refs.py --json > /tmp/gates/check_decision_refs.json
+python3 tools/gate_json.py tools/art/import_cutscene_bgs.py --data-only > /tmp/gates/cutscene_data_only.json
 python3 tools/gate_json.py --judge /tmp/gates/*.json   # 汇总：逐道一行 ✓/✗；任一道红或没有 JSON 行 → 退 1
 ```
 <!-- GATES-BATCH:END -->
@@ -227,6 +229,7 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 python3 tools/check_mac_paths.py
 python3 tools/check_host_paths.py
 python3 tools/check_decision_refs.py
+python3 tools/art/import_cutscene_bgs.py --data-only
 ```
 
 **共同的坑：工作树是多 lane 共用的。** 别的 lane 未提交的改动（例如正在改 `SaveLoad.gd`）会让你的门禁红。判「是不是我弄红的」：`git worktree add --detach /tmp/x HEAD`，只放进自己的改动再跑（Godot 门禁先 `cp -a .godot /tmp/x/` 省掉重新导入）。
@@ -458,7 +461,7 @@ python3 tools/check_decision_refs.py
 - 读：`一、台账格式硬校验`——`C0`–`C3′` 对照（C3 前三刀段改写成三节须绿、C3′ 刀序起点写死回第四刀须红）、`M1a`–`M5` 逐格变异（现行）与带 `′` 的同一变异退回 cs23 前、`M5t` / `M5t′`（第四刀删表：现行 / `NO_TABLE_OK` 放行退回）、`N1` / `N2`（第四 / 第五刀补的表漏列一支 / 行段写错），逐格 `✓ <编号> <说明>：对账 rc=a，--write rc=b（写了盘），写后对账 rc=c；红的是 ✗ …`；`二、输出确定序`——`D0` 基线、`D1` 清单前 8 处 `scripts/Main.gd:N` 号 +1 不提交、`D2` 同一脏树 `--since HEAD`、`X1` / `X2` 同 D1 / D2 但两处排序都去掉，逐格 `✓ <编号> …：rc=1，⚠ / ✗ k 条，stdout n 种（md5…）`；`三、空转对照` 18 条 `✓ … 旧口径 … rc=0 → … 现行 rc=1、不写盘` / `✓ 刀序起点：C3′ … rc=1 → C3 … rc=0` / `✓ 输出确定序：X1 … 不止一种 → D1 现行逐字节同`。每格都是把当前工作树的已跟踪文件（含未提交改动，`git stash create`）检出到临时 worktree、复位、施变异再跑；跑完删 worktree。约 40 秒（45 格，一节每格跑 gen 三遍，二节每格跑 check_decision_refs 五遍）。
 - 口径（lane cs25，固化 lane cs23 待议 ③ 的仓外探针 `/tmp/cs23/{mut_gen,det,mut_det}.py`）：一节比的是 cs23 的那个缺口——台账写坏时原先那一刀 / 那一行被正则漏掉，重算跟着少，`--write` 照写、gen 自己绿。所以每格跑三遍：对账、`--write`、写后对账，现行须三步都红且 `--write` 不写盘，旧口径（`_check_first_knifes` / `_check_ledger_shape` 两处调用删掉）须写后对账 rc=0；M1b / M1c / M4a 旧口径下游本来就红（节标题写成 `###` 后那节并进上一刀、cs18 / cs22 红），只列现行格。二节比 cs23 的另一处：`since()` 配对取 `ko.keys() & kn.keys()`（集合，遍历序随 PYTHONHASHSEED 变），有 2 处以上 ⚠ / MISMATCH 时同基连跑行序不同。种子固定为 0 / 1 / 2 / 3 / 42，本门禁的结论逐次相同；两处排序（`Lines.flush` 的 `sorted`、`pairs.sort`）只去一处时输出仍确定（cs23 实测另一处兜得住），变异两处一起去。⚠ / ✗ 行不到 2 条的格比不出行序，记「变异没落上」。
 - 变异锚按形状定位（lane cs26）：原先锚在台账 / 脚本的整行文字上，改一个字（节标题日期或题文、函数表形参名、前三刀件的说明、调用行加行尾注释、lambda 变量名）台账和脚本都还对，本门禁却「变异没落上」（cs26 实测 9 处，无一处「改了仍绿」）。现在只锚刀号（第四 / 第五 / 第十一刀——台账只追加、刀序 ③ 硬校验，刀号一改 C0 先红）与形状：「## 第N刀（」起头的标题行、那节函数表最后一支（带行段的取带行段的）、「已拆（前N刀…）」段第一件、`_check_first_knifes(` / `_check_ledger_shape(` 调用行、紧跟「没有函数表」的那个 `if`、`sorted(self.rows, key=lambda …)` 与 `pairs.sort(…)`；期望 ✗ 字样（函数名、行段、件数、下一刀的刀号）由定位到的内容现算（`Facts`）。定位不到、不止一处、替换前后相同，仍判「变异没落上」。刀序起点（lane cs26 ②）：gen 按「已拆（前N刀…）」段的 N 推，段不在从第一刀起，C3 / C3′ 与 M2c / M2d 守这一条。D2（lane cs26 ③）改相对基 `--since HEAD`，⚠ / ✗ 条数由变异自己造出，不随清单历史变、不会过期。
-- lane 加跑档（不进一键跑，口径仍 16 道）：动 `gen_main_splits.py` / `check_decision_refs.py` / `ledger_refs_mutants.py`，或改台账「已拆（前三刀…）」段、第四 / 第五 / 第十一刀节的结构（增删函数表行、改节标题形状、行段写法），或拍板清单的 `scripts/Main.gd:N` 引用增删 / 改指时跑；只改说明文字不必跑。靶子漂移一类另由 check_decision_refs「零之二、落点预检」每次一键跑判（lane w19-g8，见下「生命周期」）。
+- lane 加跑档（不进一键跑，不改一键道数）：动 `gen_main_splits.py` / `check_decision_refs.py` / `ledger_refs_mutants.py`，或改台账「已拆（前三刀…）」段、第四 / 第五 / 第十一刀节的结构（增删函数表行、改节标题形状、行段写法），或拍板清单的 `scripts/Main.gd:N` 引用增删 / 改指时跑；只改说明文字不必跑。靶子漂移一类另由 check_decision_refs「零之二、落点预检」每次一键跑判（lane w19-g8，见下「生命周期」）。
 - 常见红因：`变异没落上`——按形状也定位不到：第四 / 第五 / 第十一刀节标题不止或不到一处、那节没有函数表行、前三刀段认不出，或两支脚本里调用 / 排序的写法变了形（如 `pairs.sort` 改成 `pairs = sorted(…)`），照新形状改 `M` / `GEN_CASES` / `d_unsort` / `g_pre_*`；某格 `多 ✗ …`——台账多了一刀 / 一节，变异带出了新的连带红，核实是连带就补进 `Facts.want`；`⚠ / ✗ 行只有 k 条`——d_dirty 取到的清单号不到 8 处或改号自证不再逐对比；现行格 rc=0 或 `--write` 写了盘、D 格 stdout 不止一种——对应的硬校验 / 排序被放宽或删了。
 
 - 生命周期（lane w19-g8，照 §三.25 cs27 的做法；cs26r 遗留 ③）：按 §五 四件套逐件判档——
@@ -488,7 +491,7 @@ python3 tools/check_decision_refs.py
 ### 29. qa_pirate_boat_probe（`tools/qa_pirate_boat_probe.gd`，海寇快船 / 夺船入列 / 船图契约与 3D 船身）
 - 读：逐条 `  ✓ …` / `  ✗ …`，末行 `QA_PIRATE_BOAT_PROBE PASS（0 项不合；截图 0 张）` / `…FAIL（k 项不合；…）`。五段：一、SeaChart 两条敌船条目形状；二、海寇一战（旗舰 / 敌船船身接 `ShipHull3D` 视口、船图契约、两艘都夺下、末艘收战）；三、元军哨船一战（type 不动、sprite 传下去、船名「海鹘」）；四、船图契约拿未进树的 `Ship.tscn` / `PirateShip.tscn` 实例验有图就用、缺图回落（期望 `_want` 按 `assets/ship_<id>.png` 在不在现算，收图不变红）；五、存档位 93 存读带海鹘与快船的船队（跑完删）。末条 `本进程无 SCRIPT ERROR` 由探针自挂的 Logger 数。`-- --json` 原生机读（`tools/gate_report.gd`）；`DISPLAY=:2 … -- --shots <目录>` 另截海战 5 张给人看（不接 shot_gate、不入截图册），有窗口时改验「夺船」题签副题写白刃经过、有题签时浮字不再说夺船那句（lane w19-g1 `ae27f4b`），headless 验夺船句走浮字兜底。
 - 口径（lane w19-g3 跟现行代码）：夺船存名沿用敌船名「快船」——`Fleet.prize_name`（「快船・一」）在库但本地线 WorldMap 没调，V0928-10 待拍板；拍了、改了起名，这道门禁照拍板结果改期望。白刃必胜的手段是**先停士气挂件**（`wm._morale` 置 `PROCESS_MODE_DISABLED`，同 lane fx8 在 patrol 里的做法）再清零敌船水手：不停的话窗口下接舷停拍 0.42 s 里敌船降幡、走受降（下场 `struck`），headless 下挂件不跑物理帧才碰巧绿。海战里 Sprite2D 贴的是 3D 宋船的 SubViewport 视口，不是 `ship_<id>.png`，所以战中不再比贴图路径，改判「HullRig 挂 ShipHull3D、船模载上、帆色合敌我、Sprite2D 贴它的视口」。
-- lane 加跑档（不进一键跑，口径仍 16 道）：`when` 见 §一；headless 约 2 s。不升 must：写 user:// 存档位（跑完删），触发条件按路径 / 函数判得准（§五.2）。
+- lane 加跑档（不进一键跑，不改一键道数）：`when` 见 §一；headless 约 2 s。不升 must：写 user:// 存档位（跑完删），触发条件按路径 / 函数判得准（§五.2）。
 - 常见红因：`存名沿用敌船名「快船」…得 快船・一` = 夺船改接了 `prize_name`（V0928-10 落地）而没改期望；`第一艘记下场 boarded…得 [struck]` = 士气挂件没停住（挂件节点改名 / 不再是 `_morale`）或 `_note_fate` 口径变了；`Sprite2D 没贴 3D 视口（得 res://assets/ship_*.png）` / `船模没载上` / `帆色不对` = ShipHull3D 绑定、`assets/ships/song_quanzhou.glb`、场景里 HullRig 的 `sail_crimson` 变了；`海寇生成 k 艘` = SeaChart 条目 `count` 或 `_spawn_enemy` 变了；`本进程无 SCRIPT ERROR（…）` 看那一行的文件与行号。
 
 ### 30. perf_baseline（`tools/perf_baseline.py` + `tools/perf_baseline.gd`，帧时 / 峰值内存 / 启动到可玩基线软档）
@@ -498,13 +501,19 @@ python3 tools/check_decision_refs.py
 - **自带零、判据自检**（`--selftest`）与反向变异：缩一格 `THRESHOLDS` 打中档指标须见对应 `⚠`；`_MM` 正则抓数对得上。
 - 常见红因：`✗ real: 采样帧 < 下限` = 探针卡住 / 系统轰满载；`✗ real: 没拿到指标行` = 探针脚本崩溃 / `.tscn` load 失败（如 SeaChart 解析错——别的人 WIP 接得上 / 接不上签名时出）/ 进程被 timeout；`✗ real: 本进程无 SCRIPT ERROR` = 探针 / 同探针路径上的脚本运行错。
 
+### 31. cutscene_data_only（`tools/art/import_cutscene_bgs.py --data-only`，过场时长 / 产物清单契约，lane w25-j5 依拍板 E-16 升必跑）
+- 读：绿时一行 `import_cutscene_bgs --check：19 张背景合规［产物（按清单 sha1）］；data/cutscenes.json 契约校验通过`，rc=0；红时逐条 `FAIL …`（如 `FAIL cutscenes.ending_root 共 5 镜 40.3 秒，要求 3–5 镜、20–40 秒`），rc=1。只读、约 0.1 s、只要 python3：`--data-only` 路径不 import Pillow（lane w20-a7 摘净；产物尺寸读 `.import_manifest.json` 的 `size`、图尺寸读 JPEG SOF 头），也不看来源目录。
+- 升必跑的来由（§五.2 三条）：① 改 `data/cutscenes.json` 时长 / 镜数的人多半不知道有这道校验，触发条件自己判不准；② 快；③ 无外部依赖。lane g5 时 `ending_root` 合计 40.8 秒越窗，红挂了约 30 小时没人看见（`lane-g5-ending-root-duration.md:5-6`）。
+- 自证（§五.3）：临时把 `ending_root` 镜一 8.2→8.5 → rc=1、报上面那句 FAIL；`git checkout -- data/cutscenes.json` 复原 → rc=0（lane w25-j5 实跑，Pillow 屏蔽与不屏蔽两种环境同结果；g5 的 8.2→8.3 / 40.1 秒格同理）。
+- 常见红因：调时长 / 镜数让合计越窗（调回窗内；窗宽是策划口径，要改先改脚本常量并走拍板）；字幕 `t` 顶到镜头末尾；手换 `assets/cutscene/cs_*.jpg` 没走本脚本导入致清单 sha1 不符（走正式导入，`import` / `--check` 两个开关仍要 Pillow，不在一键跑）。
+
 ## 四、CI 建议步骤
 
-只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑十六道（含导入步骤），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
+只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑十七道（含导入步骤；w25-j5 起含过场时长 data-only），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑十六条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑十七条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
 godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
@@ -521,6 +530,7 @@ DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
 python3 tools/check_mac_paths.py
 python3 tools/check_host_paths.py
 python3 tools/check_decision_refs.py
+python3 tools/art/import_cutscene_bgs.py --data-only
 # 1. 侧车成对 / 一致
 python3 tools/check_sidecars.py
 # 2. builtin_api 漂移
@@ -556,7 +566,7 @@ python3 tools/check_docs_index.py --check
 
 | 档 | 含义 | 判据 | 现例（数目以 §一「档」列为准） |
 |---|---|---|---|
-| must | 每轮必跑，进一键跑 | 见 五.2 | 十道 Python + smoke / compile / story / p7 / patrol |
+| must | 每轮必跑，进一键跑 | 见 五.2 | 十一道 Python + smoke / compile / story / p7 / patrol |
 | step | 每轮必跑、最先跑，不判红绿 | 别的门禁依赖它的副作用 | import（lane gd2 由 editor 降级） |
 | lane | 按 lane 内容加跑 | `when` 要能**按「改了哪些路径 / 哪类东西」客观判定**；lane 自己判不准该不该跑的，不许放 lane 档，要么升 must，要么别入册 | verify_save_robustness、截图门禁、check_sidecars、gates_md、check_symbols_mutants 等 |
 | no | 不算门禁 | `why` 写原因；legacy 条目强制超时（lane gd9） | verify_narrative、p7_smoke、tour |

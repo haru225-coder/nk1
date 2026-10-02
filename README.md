@@ -26,10 +26,10 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-一次改动闭环 = 下面十六道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
+一次改动闭环 = 下面十七道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
 
 ```bash
-# 十道 Python（无 Godot 也能跑）
+# 十一道 Python（无 Godot 也能跑）
 python3 tools/check_symbols.py      # autoload 顺序与跨文件符号、海战精灵 PNG 取证、绢本文案规范、各功能契约
 python3 tools/verify_economy.py     # 数据完整性 / 套利 / 砸盘 / 季风 / 航法与委办 / 哗变 / 风涛分摊 / 结局旗标
 python3 tools/simulate_run.py       # 端到端跑一局，找死锁与账目溢出
@@ -37,9 +37,10 @@ python3 tools/verify_coastline.py   # 真实岸线 / 绕岸航线 / 海名标注
 python3 tools/check_assets.py       # 代码引用的 res://assets 都在
 python3 tools/verify_story_data.py  # 剧情效果键白名单、存档字段对称
 python3 tools/simulate_endgame.py   # 跳年 / 终局窗口 / 守城数值
-python3 tools/check_mac_paths.py    # 已跟踪文件里没有 Mac / Homebrew 专属绝对路径（lane gd21 升进必跑；一键跑里排倒数第三）
-python3 tools/check_host_paths.py   # 已跟踪文件里没有本机 Linux 绝对路径：家目录、/workspace 下的仓库根（lane cs21 升进必跑；一键跑里排倒数第二）
-python3 tools/check_decision_refs.py  # 拍板清单里的「文件:行」还指着原来那段（lane auditfix1 入册即必跑；一键跑末条；红了 --fix）
+python3 tools/check_mac_paths.py    # 已跟踪文件里没有 Mac / Homebrew 专属绝对路径（lane gd21 升进必跑；一键跑里排倒数第四）
+python3 tools/check_host_paths.py   # 已跟踪文件里没有本机 Linux 绝对路径：家目录、/workspace 下的仓库根（lane cs21 升进必跑；一键跑里排倒数第三）
+python3 tools/check_decision_refs.py  # 拍板清单里的「文件:行」还指着原来那段（lane auditfix1 入册即必跑；一键跑倒数第二；红了 --fix）
+python3 tools/art/import_cutscene_bgs.py --data-only  # 过场时长 / 镜数 / 字幕时点 / 产物清单契约（lane w25-j5 依拍板 E-16 升进必跑；一键跑末条；不需 Pillow）
 
 # 六道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
 godot --headless --import --path .                               # 导入步骤：刷新缓存、不判红绿（docs/GATES.md §三.9）
@@ -111,7 +112,7 @@ assets/     美术资源
 - ✅ 真实岸线（Natural Earth 386 环）+ 沿 sealanes 折线计里程、逐段罗经；海名岛名标注
 - ✅ 本地剧情脊柱：跳年（2+3+4 年）、按月新闻、1268 殿试身份、战况机与战时三遭遇、守城 / 泉州对峙 / 涵江 / 崖山 / 辞呈 / 纲首收官、终局态与结局图；终局特殊卡不受「今日只开三处」限制
 - 📎 云端两套 P7（b05c 纪事与终章、21ce 剧情闭环）：与主干 p6 结局系统同名平行实现，未收；设计稿、`data/endings.json` 留档待挑（`data/port_beats.json` 已按拍板 E-10 接回运行时：开关 `nk1/port_beats_runtime` 默认开，进港节拍照演、关掉即回旧行为）
-- ⏳ 真机手感待 Snow 点验：十三道门禁（2026-09-27 当时口径；现行十六道见上文「验证」）（含有窗口巡检）全过，未在有人操作的窗口里看过
+- ⏳ 真机手感待 Snow 点验：十三道门禁（2026-09-27 当时口径；现行十七道见上文「验证」）（含有窗口巡检）全过，未在有人操作的窗口里看过
 
 ## 已知坑（点验/改图前必读）
 
