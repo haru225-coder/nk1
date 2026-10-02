@@ -163,7 +163,18 @@ func _shot_minimap() -> void:
 		"enemy": [{"type": "sea_falcon", "count": 1}], "source": {"scene": "qa_chart_hud"},
 	})
 	var wm: Node = (load(WM_SCENE) as PackedScene).instantiate()
+	# 被测树自检（wave24-b5 共用面）：WorldMap 挂不出 / 挂空壳秒级判红，别等到 combat_mode==nil 干挂
+	wm = ShotGate.start_tree_probe(WM_SCENE, _fails, "SeaChart 05 小地图 WorldMap")
+	if wm == null:
+		gm.set("pending_battle", saved_battle)
+		return
 	root.add_child(wm)
+	await _frames(6)
+	if not ShotGate.check_fields(wm, {"combat_mode": "WorldMap.gd Parse Error / 海战布景断", "resolved": "WorldMap.gd Parse Error / 海战布景断"}, _fails, "SeaChart 05 小地图 WorldMap"):
+		CombatStage.teardown(self, wm, null)
+		await _frames(2)
+		gm.set("pending_battle", saved_battle)
+		return
 	var wm_ref: WeakRef = weakref(wm)  # 条件 lambda 只捕获弱引用（combat_probe_stage.gd 六）
 	_expect(CombatStage.freeze_enemy_fire(wm) >= 1, "05 布景敌船开炮已冻住")
 	_expect(not bool(wm.get("resolved")) and bool(wm.get("combat_mode")), "05 布景 WorldMap 进了海战（未走孤儿退出）")
