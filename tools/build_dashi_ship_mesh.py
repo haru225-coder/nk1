@@ -394,17 +394,6 @@ def seam_frame(ring, j):
         n = (-n[0], -n[1])
     return t, n
 
-
-def seam_vertex(ring, j, z, sign, bite, push):
-    """bite 米：沿板面跨过缝。push 米：凸出板外，绳是圆的，不是贴上去的方条。"""
-    j = int(clamp(j, 0, NSTRAKE))
-    tang, n = seam_frame(ring, j)
-    p = ring[j]
-    x = p[0] + tang[0] * bite
-    y = p[1] + tang[1] * bite
-    return (sign * x + sign * n[0] * push, y + n[1] * push, z)
-
-
 def add_cord(prim, a, b, r, col, n=5):
     if vlen(vsub(b, a)) < 1e-4:
         return
@@ -990,23 +979,6 @@ def build(kind: str):
     # 横梁收到舷内，不从船壳里戳出去。
     add_box(fit, (0, y_beam, z_of(t_a)), (beam_half(0.78) * 1.72, 0.08, 0.10), HONEY_DK)
     add_box(fit, (0, y_beam, z_of(t_b)), (beam_half(0.86) * 1.55, 0.08, 0.10), HONEY_DK)
-
-    def add_board(prim, center, along, across, thick, hl, hw, ht, face, edge):
-        def corner(su, sv, sw):
-            return vadd(center, vadd(vadd(vmul(along, su * hl), vmul(across, sv * hw)), vmul(thick, sw * ht)))
-
-        pts = {(su, sv, sw): corner(su, sv, sw) for su in (-1.0, 1.0) for sv in (-1.0, 1.0) for sw in (-1.0, 1.0)}
-
-        def q(a, b, c, d, col, outward):
-            prim.quad_out(pts[a], pts[b], pts[c], pts[d], col, outward)
-
-        q((-1, -1, 1), (1, -1, 1), (1, 1, 1), (-1, 1, 1), face, thick)
-        q((-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1), mix(face, OIL, 0.35), vmul(thick, -1))
-        q((-1, -1, 1), (-1, -1, -1), (1, -1, -1), (1, -1, 1), edge, vmul(across, -1))
-        q((-1, 1, -1), (-1, 1, 1), (1, 1, 1), (1, 1, -1), edge, across)
-        q((-1, -1, -1), (-1, -1, 1), (-1, 1, 1), (-1, 1, -1), edge, vmul(along, -1))
-        q((1, -1, 1), (1, -1, -1), (1, 1, -1), (1, 1, 1), edge, along)
-
     def add_oar_blade(center, axis, across, thick, face, edge):
         """外端一块扁木叶。比杆宽出一截，两头收，不是方铲，也不是棍子。"""
         stations = (

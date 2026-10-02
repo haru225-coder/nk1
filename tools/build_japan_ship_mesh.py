@@ -287,25 +287,6 @@ class Prim:
             key = (round(p[0], 4), round(p[1], 4), round(p[2], 4))
             self.nrm[i] = vnorm(acc[key])
 
-    def add_backfaces(self, push=0.004, shade=0.84):
-        """正面平滑之后再补背面，位置错开，避免正反法线焊成零。"""
-        base = len(self.pos)
-        if base == 0:
-            return
-        for i in range(base):
-            n = self.nrm[i]
-            self.pos.append(vadd(self.pos[i], vmul(n, -push)))
-            self.nrm.append(vmul(n, -1.0))
-            self.col.append(scale_c(self.col[i], shade))
-            self.uv.append(self.uv[i])
-        extra = []
-        count = len(self.idx)
-        for i in range(0, count, 3):
-            a, b, c = self.idx[i], self.idx[i + 1], self.idx[i + 2]
-            extra.extend((a + base, c + base, b + base))
-        self.idx.extend(extra)
-
-
 def add_box(prim: Prim, center, size, color, yaw=0.0):
     hx, hy, hz = size[0] * 0.5, size[1] * 0.5, size[2] * 0.5
     cy, sy = math.cos(yaw), math.sin(yaw)
@@ -390,12 +371,6 @@ def rope(prim, a, b, sag, rad, color, n=7):
         ))
     for i in range(n):
         add_cyl(prim, pts[i], pts[i + 1], rad, color, 5, caps=False)
-
-
-def rope_along(prim, pts, rad, color):
-    for i in range(len(pts) - 1):
-        add_cyl(prim, pts[i], pts[i + 1], rad, color, 5, caps=False)
-
 
 def loft(prim, stations, j0, j1, color_fn, outward_sign=1.0):
     for i in range(len(stations) - 1):

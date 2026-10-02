@@ -1198,55 +1198,6 @@ def deck_surface(t, u):
     y = ring[-3][1] + 0.012 + 0.072 * (1.0 - u * u)
     return (u * b, y, z_of(clamp(t, 0.0, 1.0)))
 
-
-def add_deck_scarfs(deck):
-    """少数斜口接：两截板错叠，斜缝里一条油灰。不在每条板上切齿。"""
-    caulk = (0.02, 0.012, 0.008, 1)
-    wood_a = (0.74, 0.54, 0.32, 1)
-    wood_b = (0.36, 0.22, 0.12, 1)
-    # 左舷露天甲板，斜俯近景看得到，不塞进帆和箭槽底下
-    spots = (
-        (0.34, -0.55),
-        (0.50, -0.28),
-        (0.63, -0.58),
-        (0.74, -0.22),
-    )
-    for ti, (t, u) in enumerate(spots):
-        x, y, z = deck_surface(t, u)
-        if hold_covers(z, x, pad=0.02):
-            continue
-        y += 0.045
-        w = 0.20
-        wood_l = wood_a if ti % 2 == 0 else wood_b
-        wood_r = wood_b if ti % 2 == 0 else wood_a
-
-        def diag_z(xx, z=z, x=x, w=w):
-            f = (xx - (x - w)) / (2.0 * w)
-            return z - 0.08 + f * 0.28
-
-        z_aft = z - 0.62
-        z_fore = z + 0.58
-        aft_a = (x - w, y, z_aft)
-        aft_b = (x + w, y, z_aft)
-        aft_c = (x + w, y, diag_z(x + w) - 0.016)
-        aft_d = (x - w, y, diag_z(x - w) - 0.016)
-        deck.quad_out(aft_a, aft_d, aft_c, aft_b, wood_l, (0, 1, 0))
-        lift = 0.014
-        fore_a = (x - w, y + lift, diag_z(x - w) + 0.016)
-        fore_b = (x + w, y + lift, diag_z(x + w) + 0.016)
-        fore_c = (x + w, y + lift, z_fore)
-        fore_d = (x - w, y + lift, z_fore)
-        deck.quad_out(fore_a, fore_d, fore_c, fore_b, wood_r, (0, 1, 0))
-        gap_a = (x - w, y - 0.008, diag_z(x - w) - 0.014)
-        gap_b = (x + w, y - 0.008, diag_z(x + w) - 0.014)
-        gap_c = (x + w, y - 0.008, diag_z(x + w) + 0.014)
-        gap_d = (x - w, y - 0.008, diag_z(x - w) + 0.014)
-        deck.quad_out(gap_a, gap_d, gap_c, gap_b, caulk, (0, 1, 0))
-        cheek = (0.05, 0.028, 0.016, 1)
-        deck.quad_out(aft_d, (aft_d[0], aft_d[1] - 0.016, aft_d[2]), (aft_c[0], aft_c[1] - 0.016, aft_c[2]), aft_c, cheek, (0, 0, 1))
-        deck.quad_out(fore_a, fore_b, (fore_b[0], fore_b[1] - 0.012, fore_b[2]), (fore_a[0], fore_a[1] - 0.012, fore_a[2]), cheek, (0, 0, -1))
-
-
 def add_stem_detail(fit):
     """艏柱贴着尖端。板头是壳上的薄片，跟着舷弧，不探出成方块。"""
     ring = section_pts(0.02)

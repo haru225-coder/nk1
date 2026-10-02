@@ -61,15 +61,6 @@ def ell(cx, cy, rx, ry, n=24, a0=0.0, a1=2 * math.pi, rot=0.0):
         out.append((cx + x * cr - y * sr, cy + x * sr + y * cr))
     return out
 
-
-def hand_of(r, *which):
-    for w in which:
-        h = r.hands.get(w)
-        if h:
-            return h
-    return None
-
-
 def mid_hands(r):
     a, b = r.hands.get("near"), r.hands.get("far")
     if a and b:

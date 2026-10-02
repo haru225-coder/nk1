@@ -190,31 +190,6 @@ def add_box(prim: Prim, center, size, color, yaw=0.0):
     for f in faces:
         prim.quad(corners[f[0]], corners[f[1]], corners[f[2]], corners[f[3]], color)
 
-
-def add_box_axes(prim: Prim, center, ax, ay, az, size, color):
-    """任意朝向的盒子。size 是沿 ax、ay、az 的全长。"""
-    hx, hy, hz = size[0] * 0.5, size[1] * 0.5, size[2] * 0.5
-    corners = []
-    for sx in (-1.0, 1.0):
-        for sy in (-1.0, 1.0):
-            for sz in (-1.0, 1.0):
-                corners.append(vadd(center, vadd(vadd(vmul(ax, sx * hx), vmul(ay, sy * hy)), vmul(az, sz * hz))))
-
-    def ix(xi, yi, zi):
-        return (xi * 2 + yi) * 2 + zi
-
-    faces = [
-        (ix(1, 0, 0), ix(1, 1, 0), ix(1, 1, 1), ix(1, 0, 1)),
-        (ix(0, 0, 1), ix(0, 1, 1), ix(0, 1, 0), ix(0, 0, 0)),
-        (ix(0, 1, 0), ix(0, 1, 1), ix(1, 1, 1), ix(1, 1, 0)),
-        (ix(0, 0, 1), ix(0, 0, 0), ix(1, 0, 0), ix(1, 0, 1)),
-        (ix(0, 0, 1), ix(1, 0, 1), ix(1, 1, 1), ix(0, 1, 1)),
-        (ix(1, 0, 0), ix(0, 0, 0), ix(0, 1, 0), ix(1, 1, 0)),
-    ]
-    for f in faces:
-        prim.quad(corners[f[0]], corners[f[1]], corners[f[2]], corners[f[3]], color)
-
-
 def add_cyl(prim: Prim, p0, p1, r, color, n=8, caps=True):
     axis = vsub(p1, p0)
     length = vlen(axis)
@@ -277,23 +252,6 @@ def add_lathe(prim: Prim, origin, profile, color, n=10):
         j = (i + 1) % n
         prim.tri(c0, rings[0][j], rings[0][i], color, color, color)
         prim.tri(c1, rings[-1][i], rings[-1][j], color, color, color)
-
-
-def add_disc(prim: Prim, center, normal, radius, color, n=12, both=True):
-    normal = vnorm(normal)
-    up = (0.0, 1.0, 0.0) if abs(normal[1]) < 0.85 else (0.0, 0.0, 1.0)
-    x = vnorm(vcross(normal, up))
-    y = vnorm(vcross(normal, x))
-    pts = []
-    for i in range(n):
-        a = i / n * math.tau
-        pts.append(vadd(center, vadd(vmul(x, math.cos(a) * radius), vmul(y, math.sin(a) * radius))))
-    for i in range(n):
-        j = (i + 1) % n
-        prim.tri(center, pts[i], pts[j], color, color, color)
-        if both:
-            prim.tri(center, pts[j], pts[i], color, color, color)
-
 
 def rope(prim, a, b, sag, r, color, n=5):
     pts = []
@@ -403,44 +361,6 @@ class Field:
         y = lerp(ring[i][1], ring[i + 1][1], a)
         x = max(0.0, x - inset)
         return (side * x, y, self.z(t))
-
-
-def wood_color(y, t, h, spec_tar):
-    if y < 0.0:
-        base = mix(TAR, TAR_WET, clamp((y + 0.25) / 0.25, 0.0, 1.0))
-    else:
-        base = mix(WOOD_DK, WOOD_LT, clamp(h, 0.0, 1.0) ** 0.85)
-        base = mix(base, WOOD, 0.35)
-    # 列板缝：细，不是一整道焦油把船身切成盒子
-    if y > 0.02:
-        bands = 7.0
-        st = h * bands
-        si = int(math.floor(st))
-        frac = st - si
-        seam_d = min(frac, 1.0 - frac)
-        seam = smoothstep(0.09, 0.0, seam_d)
-        base = mix(base, SEAM, 0.70 * seam)
-        if si % 2 == 0:
-            base = mix(base, WOOD_LT, 0.24)
-        else:
-            base = mix(base, WOOD_DK, 0.30)
-    if h > 0.93 and y > 0.05:
-        base = mix(base, BRICK, smoothstep(0.93, 1.0, h))
-    if 0.0 <= y <= 0.045:
-        base = mix(base, SALT, 0.25)
-    if spec_tar:
-        base = mix(base, TAR, spec_tar)
-    jitter = 0.93 + 0.09 * hsh(h * 17.0 + t * 40.0)
-    end = 1.0 - 0.08 * max(smoothstep(0.08, 0.0, t), smoothstep(0.90, 1.0, t))
-    return tuple(clamp(c * jitter * end, 0.0, 1.0) if i < 3 else c for i, c in enumerate(base))
-
-
-def seam_mix(col, edge):
-    if edge:
-        return mix(col, SEAM, 0.30)
-    return col
-
-
 SPECS = {
     "Merchant": dict(
         L=8.8, beam=1.26, freeboard=0.64, bow_rise=0.50, stern_rise=0.68,
