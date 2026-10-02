@@ -4150,17 +4150,18 @@ func _w20b9_spawn_bbox_check() -> void:
 		"开战刷船上限 %.0f：两档半高 %.0f / %.0f 同收，任何角度刷出都在画内" % [smax, half_r, half_f])
 
 
-## lane w25-j2（wave22 待定项② 已准「终局后港口节拍一律不再演」）：守卫顶在 Main._on_enter_port 的
-## 决策处——抵达结算前 is_ended() 为真即空账跳过拍、不动 beats_seen（_build_shore 仍照 is_ended
-## 排终局港口页，「重读结局」、进出设施都不是这条路，守卫只拦节拍）。反向变异：去掉 for 环里
-## 「or GameState.is_ended()」四字即终局仍被拍截走，断言 ②③ 红出点名。
+## lane w25-j2（wave22 待定项② 已准「终局后港口节拍一律不再演」）+ lane w26-k7（终局守卫下沉进
+## PortBeats.due/arrive 接口）：Main._on_enter_port 抵达时把 is_ended() 作末参传给 arrive——
+## 「终局后不演」成了账口 due() 自身早退性质、不再靠调用方先截；Main 进程级仍走真戏账不动
+## beats_seen。反向变异：PortBeats.due 早退条件去掉「is_ended or 」四字即终局仍返拍，断言 ②
+## 下半 + ③ 红出点名（即 w25-j2 旧变异点下沉的同名编码点）。
 ## 泉州链：monk 是开局针（data/port_beats.json requires 全空），未终局首抵必演；终局后回港不演。
 ## 博多 / 流求本就不在接回的泉州链上（w20-c2 拍板 G1014 未接），不另测。
 func _w25j2_endgame_port_beats_check(main: Node) -> void:
 	var BM := load("res://scripts/core/PortBeats.gd")
 	var beats = BM.new()  # typ 由 Godot 推断
 	beats.init(GM.port_beats_data.get("beats", []))
-	_check((beats.due("quanzhou", ["start"], [], ["quanzhou"], 1) as Dictionary).get("entry", "") == "monk",
+	_check((beats.due("quanzhou", ["start"], [], ["quanzhou"], 1, false) as Dictionary).get("entry", "") == "monk",
 		"账口仍可算：未终局 due(quanzhou) 反回 monk 针（拍账数据没动）")
 	# ── ① 未终局照旧会演（守卫别把正常路径拦掉）──
 	GS.from_dict({})
@@ -4178,8 +4179,10 @@ func _w25j2_endgame_port_beats_check(main: Node) -> void:
 	GS.last_port = "quanzhou"
 	GS.finish("忠肃", "正文")
 	_check(GS.is_ended() and GS.ended != "", "终局落定（ended=%s）" % GS.ended)
-	_check((beats.due("quanzhou", ["start"], [], ["quanzhou"], 1) as Dictionary).get("entry", "") == "monk",
-		"纯账口跟率：非运行时不参 is_ended，due(monk) 仍算得出（收守卫在主端）")
+	_check((beats.due("quanzhou", ["start"], [], ["quanzhou"], 1, false) as Dictionary).get("entry", "") == "monk",
+		"纯账口跟率：显式传未终局 due(monk) 仍算得出（守卫在接口、由实参载言）")
+	_check((beats.due("quanzhou", ["start"], [], ["quanzhou"], 1, true) as Dictionary).is_empty(),
+		"纯账口跟率：传终局 due 空账（守卫已下沉进接口、不再靠调用方截）")
 	main._beats = null
 	main.load_scene("quanzhou")
 	_check(main.current_scene_id == "quanzhou" and GS.beats_seen == [],

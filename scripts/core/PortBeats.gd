@@ -63,8 +63,11 @@ func chain(port_id: String) -> Array:
 ## 抵达时该演的拍：链上第一针没记名（entry / 分解位都不在 seen）且 requires 全够的；
 ## 第一针没记名但 requires 不够 = 链停在这针等条件（{}）；每一拍都记了名也 {}。seen / flags / visited
 ## 是字符串表，chapter 是当前章序。关断开关关掉恒 {}。
-func due(port_id: String, seen: Array, flags: Array, visited: Array, chapter: int) -> Dictionary:
-	if not enabled():
+## ended 终局守卫（wave22 待定项② 已准「终局后港口节拍一律不再演」，lane w26-k7）：为真恒 {}。
+## 守卫本在调用方（w25-j2 顶在 Main._on_enter_port），下沉进本口使「终局后不演」成函数自身性质；
+## is_ended 必传实参——调用方传当前会话 GameState.is_ended()，探针直面传真 / 假演四例。
+func due(port_id: String, seen: Array, flags: Array, visited: Array, chapter: int, is_ended: bool) -> Dictionary:
+	if is_ended or not enabled():
 		return {}
 	for b in chain(port_id):
 		if _done(b, seen):
@@ -77,8 +80,9 @@ func due(port_id: String, seen: Array, flags: Array, visited: Array, chapter: in
 
 ## 抵达结算：返回 {beat, play, mark}。play=true 由调用方就地演出那一幕，mark=拍 entry；
 ## play=false 是分解位已代演（seen 已有 decompose_to）——只补一记（mark=分解位），不重复演。
-func arrive(port_id: String, seen: Array, flags: Array, visited: Array, chapter: int) -> Dictionary:
-	var b := due(port_id, seen, flags, visited, chapter)
+## is_ended: 同 due 的终局守卫（本口薄转 due，改了 due 的守卫行为这里自动跟着收）。
+func arrive(port_id: String, seen: Array, flags: Array, visited: Array, chapter: int, is_ended: bool) -> Dictionary:
+	var b := due(port_id, seen, flags, visited, chapter, is_ended)
 	if b.is_empty():
 		return {}
 	var decomp := str(b.get("decompose_to", ""))
