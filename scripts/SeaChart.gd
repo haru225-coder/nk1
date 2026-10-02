@@ -1111,12 +1111,13 @@ func _on_log_meta(meta: Variant) -> void:
 		_render_log()
 
 
-## 海上「所在位置」那一港：已行不到一半算起锚港，过半算去向港（未定去向时即起锚港）。
+## 海上「所在位置」那一港：按船标当前坐标取最近的港——沿途中间港（航线折线傍过的他港）也算候选；
+## 未定去向 / 没航程时即起锚港（lane w20-a5，修 w19-g9 遗留的里程过半判法；实现与等远先后口径见 Economy.nearest_sea_port）。
 ## 月初战况里这一港那条排到本批最后发、落在札记最上（与港页「所在港那条排最上」同一条规矩，lane w19-g9）
 func _sea_here() -> String:
-	if selected_port == "" or total_li <= 0.0 or remaining_li > total_li * 0.5:
+	if selected_port == "" or total_li <= 0.0:
 		return origin_port
-	return selected_port
+	return Economy.nearest_sea_port(origin_port, selected_port, total_li - remaining_li)
 
 
 func _ink(c: Color, text: String) -> String:

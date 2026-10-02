@@ -747,6 +747,10 @@ func _route_check() -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
 	await _w20a4_notice_fold_height_check(main)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	_close_dialogs(main)
+	_a5_sea_here_check()
 	main.queue_free()
 
 
@@ -819,7 +823,7 @@ func _fx7_notice_check(main: Node) -> void:
 
 ## lane w19-g9：记事栏折叠抽成公共件 scripts/core/LogFold.gd，港页船籍簿与海图船况札记同一份——
 ## 一、海上跨进 1276-11（通告一连二十余则）：札记里收成一行，起锚 / 启程句仍在，折起的原文一则不少、点开就地看全；
-##     「所在位置」那港的战况排最上（行程过半近福州 → 福州那条；未过半近泉州 → 不挑，照 ports 原序广州那条在上）；
+##     「所在位置」那港的战况排最上（行程过半船标贴着福州 → 福州那条；未过半贴着泉州 → 不挑，照 ports 原序广州那条在上）；
 ## 二、港页跳两年（一次几十则、跨十来个月）：仍折成一行，点开先列各月一行（各月则数与原文逐月对得上），再点哪月铺哪月；
 ## 三、两边都走 LogFold，不各写一份。
 func _g9_log_fold_check(main: Node) -> void:
@@ -845,7 +849,7 @@ func _g9_log_fold_check(main: Node) -> void:
 		sc.call("_refresh_status")
 		var here_want := "fuzhou" if near_dest else "quanzhou"
 		_check(str(Eco.get("sea_here")) == here_want,
-			"海上「所在位置」：行程%s算 %s（实得 %s）" % ["过半" if near_dest else "未过半", here_want, Eco.get("sea_here")])
+			"海上「所在位置」按船标最近港取：行程%s船标贴着 %s（实得 %s）" % ["过半" if near_dest else "未过半", here_want, Eco.get("sea_here")])
 		sc.call("_log", "启程往 福州，航程 400 里。")
 		var n0 := _notices.size()
 		GM.advance_days(1)
@@ -3443,3 +3447,111 @@ func _w20a4_notice_fold_height_check(main: Node) -> void:
 	main._log_folds.clear()
 	main._log_fold_open = ""
 	main._render_log()
+## lane w20-a5（修 w19-g9 遗留③）：海上「所在位置」不再按里程过半判，按船标当前坐标取最近的港——
+## 港位真坐标 ports.json lat/lon（与真海图同源；scripts/WorldMap.gd 「(0,1000)／(2000,-1000)」是海战布景示意位、
+## 全场景仅此两个，做不了坐标基准，见 Economy / Voyage.nearest_sea_port 注）；航线折线与沿途中间港都算候选。
+## 正切片三格（贴起锚港 / 贴去向港 / 折线中段贴某中间港）+ 贴边两格 + 等远先后口径；反向变异自证：
+## 把源码里的判据改回「里程过半」（两格，内存副本不落盘）须都判出不合——全绿 = 门禁空转。
+## 变异跑法：函数体拼成临时 GDScript 沙箱（RefCounted、GameManager 重绑 autoload）、GDScript.reload 编译后 Eval——
+## 不重载 autoload（Voyage 换元会扰到别的门禁），与 sea_src 自证同道。
+func _a5_sea_here_check() -> void:
+	var Eco: Node = root.get_node("Economy")
+	var gml: Node = root.get_node("GameManager")
+	var voyage_scr: Node = root.get_node("Voyage")
+	var qz := -1.0
+	var xh := -1.0
+	for p in gml.get("ports_data").get("ports", []):
+		match str(p.get("id", "")):
+			"quanzhou": qz = float(p.get("lon", 0.0))
+			"xinghua_harbor": xh = float(p.get("lon", 0.0))
+	var cases := [
+		# [标题, 起锚港, 去向港, 已行里数, 应取, 提示]
+		["贴起锚港", "quanzhou", "fuzhou", 80.0, "quanzhou", "泉州→福州绕岸 431 里，行 80 里船在泉州湾"],
+		["贴去向港", "quanzhou", "fuzhou", 280.0, "fuzhou", "行 280 里船在兴化湾北侧，离福州最近"],
+		["折线中段贴某中间港", "champa", "zhangzhou", 1282.7, "guangzhou",
+			"占城→漳州 2579 里行约半程，船在珠江口外离广州约 776 里、行程过半判法只能报漳州"],
+	]
+	for c in cases:
+		_check(Eco.call("nearest_sea_port", c[1], c[2], c[3]) == c[4],
+			"「所在位置」%s：%s → %s 已行 %.1f 里取 %s（实得 %s；%s）" % [c[0], c[1], c[2], c[3], c[4], Eco.call("nearest_sea_port", c[1], c[2], c[3]), c[5]])
+	var full_qf: float = voyage_scr.call("distance_li", "quanzhou", "fuzhou")
+	_check(Eco.call("nearest_sea_port", "quanzhou", "fuzhou", full_qf) == "fuzhou",
+		"贴边：走满全程 %.0f 里仍取去向港（实得 %s）" % [full_qf, Eco.call("nearest_sea_port", "quanzhou", "fuzhou", full_qf)])
+	_check(Eco.call("nearest_sea_port", "quanzhou", "fuzhou", 0.0) == "quanzhou",
+		"贴边：刚起锚仍取起锚港（实得 %s）" % Eco.call("nearest_sea_port", "quanzhou", "fuzhou", 0.0))
+	_check(qz >= 0.0 and xh > qz,
+		"等远先报到的那港即 ports 数据序在先的那港（泉州 lon %.2f 在兴化海口 %.2f 之先，ports.json 泉州也排在它之前）" % [qz, xh])
+	# ── 反向变异自证：取 SeaChart._sea_here() 函数体拼成 RefCounted 沙箱（GameManager 重绑、全自含，无 autoload 函数）Eval——
+	# 变异走 string.replace 原位改字，green_now 是 control（改的字没生效则三格仍全对、须红）；
+	# 变异须真的把判据改回里程半程，与 Lane-brief「改回里程过半 → 必须红」对得上。
+	var sea_src2 := FileAccess.get_file_as_string("res://scripts/SeaChart.gd")
+	var sea_i := sea_src2.find("func _sea_here()")
+	var sea_j := sea_src2.find("\nfunc ", sea_i + 1)
+	var sea_body := sea_src2.substr(sea_i, sea_j - sea_i)
+	var sc_eval := func(body2: String, ori: String, dst: String, tot: float, rem: float) -> String:
+		# body2 = 「func _sea_here() -> String:\n\t…」整段；剥签名行须找「:」之后的真换行
+		#（找首个 "\n" 会先撞上 "" 空串字面量里那个裸字节，把签名行留进体、Parse Error「Unexpected Indent」）
+		var sig_end := body2.find("\n", body2.find(":"))
+		var inner := body2.substr(sig_end + 1)
+		var src2 := ("extends RefCounted\nvar _Eco\nfunc _apply(eco: Node) -> void:\n\t_Eco = eco\n"
+			+ "var origin_port := \"\"\nvar selected_port := \"\"\nvar total_li := 0.0\nvar remaining_li := 0.0\n"
+			+ "var Economy: Node\n"
+			+ "func _sea_here() -> String:\n"
+			+ inner)
+		var scr2 := GDScript.new()
+		scr2.source_code = src2
+		if scr2.reload() != OK:
+			return "<no>"
+		var inst2: RefCounted = scr2.new()
+		inst2.set("origin_port", ori)
+		inst2.set("selected_port", dst)
+		inst2.set("total_li", tot)
+		inst2.set("remaining_li", rem)
+		inst2.set("Economy", Eco)
+		return str(inst2.call("_sea_here"))
+	var sc_cases := [
+		# [标题, 起锚, 去向, 全程里, 余程, 应取]
+		["贴起锚港", "quanzhou", "fuzhou", 431.0, 351.0, "quanzhou"],
+		["贴去向港", "quanzhou", "fuzhou", 431.0, 151.0, "fuzhou"],
+		["折线中段贴某中间港", "champa", "zhangzhou", 2579.0, 1296.3, "guangzhou"],
+	]
+	# control：当前判据下沙箱三格都取应在的港（沙箱编译得出、门禁不空转）
+	var green_now := 0
+	var miss_now := []
+	for c in sc_cases:
+		var g: String = sc_eval.call(sea_body, c[1], c[2], c[3], c[4])
+		if g == c[5]:
+			green_now += 1
+		else:
+			miss_now.append("%s（得 %s）" % [c[0], g])
+	_check(green_now == sc_cases.size(),
+		"沙箱 control：现行 _sea_here 判据 %d/%d 格全对（%s）" % [green_now, sc_cases.size(), "、".join(miss_now)])
+	# 变异 A（改回「里程过半」判据）：取港行退化成「余程 > 半程算起点、否则去向港」——
+	# 与 w19-g9 之前的 _sea_here 判据同心（两格应断：贴去向港 / 折线中段贴中间港）
+	# 锚点 = 新判据取港行的两个特征 token（「Economy.nearest_sea_port」「total_li - remaining_li」）；换成旧判据的判定式
+	var m_anchor: int = sea_body.find("Economy.nearest_sea_port")
+	var m_anchor2: int = sea_body.find("total_li - remaining_li")
+	var mutA := sea_body.replace(
+		"return Economy.nearest_sea_port(origin_port, selected_port, total_li - remaining_li)",
+		"return origin_port if remaining_li > total_li * 0.5 else selected_port")
+	var a_bad := []
+	for c in sc_cases:
+		var ga: String = sc_eval.call(mutA, c[1], c[2], c[3], c[4])
+		if ga != "<no>" and ga != c[5]:
+			a_bad.append("%s 断成 %s、应在 %s" % [c[0], ga, c[5]])
+	_check(m_anchor >= 0 and m_anchor2 >= 0 and mutA != sea_body and a_bad.size() >= 1,
+		"变异 A（取港行退回「余程 > 半程算起点」）落空须红：%d 格退化——%s" % [a_bad.size(), "、".join(a_bad)])
+	# 变异 B（改回「里程过半」判据）：未过半分支提前 return origin_port——
+	# 锚点 = 「total_li <= 0.0」套上「or remaining_li > total_li * 0.5」，三格中贴去向港那格应退化成起点
+	var mutB := sea_body.replace(
+		"if selected_port == \"\" or total_li <= 0.0:",
+		"if selected_port == \"\" or total_li <= 0.0 or remaining_li > total_li * 0.5:")
+	var b_bad := []
+	for c in sc_cases:
+		var gb: String = sc_eval.call(mutB, c[1], c[2], c[3], c[4])
+		if gb != "<no>" and gb != c[5]:
+			b_bad.append("%s 断成 %s、应在 %s" % [c[0], gb, c[5]])
+	_check(mutB != sea_body and b_bad.size() >= 1,
+		"变异 B（未过半臂套上「remaining_li > total_li * 0.5」，未过半恒算起点）落空须红：%d 格退化——%s" % [b_bad.size(), "、".join(b_bad)])
+
+

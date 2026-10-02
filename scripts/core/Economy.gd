@@ -281,9 +281,16 @@ func inspection_factor(port_id: String) -> float:
 	return WAR_INSPECTION.get(war_status(port_id), 1.0)
 
 
-## 海上时玩家「所在位置」那一港（SeaChart._refresh_status 随船况写：行程未过半是起锚港、过半是去向港；海图退场清空）。
+## 海上时玩家「所在位置」那一港（SeaChart._refresh_status 随船况写：按船标当前坐标取最近的港；海图退场清空）。
 ## on_month_changed 在海上按它挑本批最后发的那条战况，与港页按 last_port 挑同一条规矩（lane w19-g9）；空串即不挑
 var sea_here := ""
+
+
+## 「所在位置」取港入口：按船标当前经纬度取离得最近的港（lane w20-a5，修 w19-g9 遗留的里程过半判法），
+## 沿途中间港（航线折线傍过的他港）也在候选里。实现放 Voyage（港位真坐标 ports.json lat/lon、大圆距离那一套在那边）。
+## 等远先报到的那港——GDScript Dictionary 循序即 ports.json 数据序，「约定熟路排在先」。
+func nearest_sea_port(origin_id: String, dest_id: String, traveled_li: float) -> String:
+	return Voyage.nearest_sea_port(origin_id, dest_id, traveled_li)
 
 
 ## 月初由 GameManager 调用：本月进入新战况的港口，给一次行情冲击，并返回通告文本。

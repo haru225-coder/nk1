@@ -191,6 +191,25 @@ func point_along_track(from_id: String, to_id: String, traveled_li: float) -> Di
 	return {"lon": float(pts[pts.size() - 1][0]), "lat": float(pts[pts.size() - 1][1])}
 
 
+# ── 所在位置取港 ──────────────────────────────────────
+
+## 海上「所在位置」那一港（lane w20-a5，修 w19-g9 遗留的里程过半判法）：船标取到 traveled_li 处的经纬度，
+## 全候选港里大圆距离最近的那港——沿途中间港（航线折线傍过的他港）也在候选里。
+## 港位用真海图坐标 ports.json 的 lat/lon（海图墨卡托投影的唯一来源；scripts/WorldMap.gd 里那两个
+## 「(0,1000)／(2000,-1000)」是海战布景画死的示意位、全场景仅此两个，做不了坐标基准——lane-g10 遗留③）。
+## 等远先报到的那港：GDScript Dictionary 循序即 ports.json 数据序，「约定熟路排在先」。
+func nearest_sea_port(origin_id: String, dest_id: String, traveled_li: float) -> String:
+	var at: Dictionary = point_along_track(origin_id, dest_id, traveled_li)
+	var best := ""
+	var best_d := INF
+	for p in GameManager.ports_data.get("ports", []):
+		var d := _haversine_li(float(at["lon"]), float(at["lat"]), float(p.get("lon", 0.0)), float(p.get("lat", 0.0)))
+		if d < best_d:
+			best_d = d
+			best = str(p.get("id", ""))
+	return best
+
+
 # ── 季风修正 ──────────────────────────────────────────
 
 ## 季风对给定航向的日速乘数。at_month < 1 时用当前月，否则用那一个月的风。
