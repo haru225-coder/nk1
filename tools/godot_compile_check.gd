@@ -88,7 +88,7 @@ const SCRIPTS := [
 	# lane ea4 清单漂移补列：此前各 lane 各自追加、漏掉的已跟踪脚本（由下方 INVENTORY 自检兜底）
 	"res://scripts/audio/AudioHooks.gd", "res://scripts/audio/SfxSynth.gd",
 	"res://scripts/chart/ChartProjection.gd", "res://scripts/chart/MapView.gd", "res://scripts/chart/ShipMarker.gd",
-	"res://scripts/core/BrokerSlip.gd", "res://scripts/core/DrydockBerth.gd", "res://scripts/core/HeadingDraft.gd", "res://scripts/core/LogFold.gd",
+	"res://scripts/core/BrokerSlip.gd", "res://scripts/core/DrydockBerth.gd", "res://scripts/core/HeadingDraft.gd", "res://scripts/core/LogFold.gd", "res://scripts/core/PortBeats.gd",
 	"res://scripts/core/ShoreDraft.gd", "res://scripts/core/UiTheme.gd",
 	# 门禁本体与共用件
 	"res://tools/godot_smoke.gd", "res://tools/godot_story_check.gd", "res://tools/p7_guild_exam_smoke.gd",
