@@ -53,6 +53,7 @@
 - [死代码普查.md](死代码普查.md)：`tools/` 与 `scripts/` 死代码普查（零引用函数 / 常量三档：已删 7 处、疑似待拍板、门禁与运行时入口勿动；lane w20-c4）
 - [文档口径漂移.md](文档口径漂移.md)：`docs/*.md` 数字 / 口径与代码数据的对账（每条「文档说法 → 实际值 → 谁对 → 处理」；lane w20-c8）
 - [警告与静默失败普查.md](警告与静默失败普查.md)：`scripts/**` + `tools/**` 的 GDScript warning 面静态普查 + 静默失败逐模式复核（174 → 修 3 → 171；含「为什么 `--headless` 收不到引擎 warning」的口径说明；lane w20-c5）
+- [截图门禁稳定性.md](截图门禁稳定性.md)：截图门禁 25 支连跑两遍普查（23 支稳定 · 2 支两轮不齐均归因主树并发 WIP；附复跑两轮 25/25 一致与零加固明细；lane w20-c7）
 
 - [combat_realism_design.md](combat_realism_design.md) / [combat_phases_schema.md](combat_phases_schema.md)：海战写实设计与三份数据契约（阶段 / 兵器 / 海况；lane combat01）
 - [ship_seagoing_vfx.md](ship_seagoing_vfx.md)：出海福船观感与命中手感——船身着装 shader、航迹、炮口焰 / 甲板颤，截图探针 `tools/ship_vfx_probe.gd`（lane combat-ship-vfx）
