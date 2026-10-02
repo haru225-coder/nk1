@@ -58,13 +58,16 @@ const ENEMY_HULL_BASE := 100.0
 ## 敌船血量缩放 clamp 下限/上限
 const ENEMY_SCALE_MIN := 0.8
 const ENEMY_SCALE_MAX := 3.0
-## 开战刷船距离（09-28 验收 P02 返修，09-30 合并并入本地线；w19-g13 随镜头拉远重定）：
+## 开战刷船距离（09-28 验收 P02 返修，09-30 合并并入本地线；w19-g13 随镜头拉远重定；w20-b9 按 3D 船身重核）：
 ## 镜头 zoom 1.5 时可见约 850×480、半高 240，只好收到 210—235，比船长（约 280 px）还短，两船一开场就叠在一起。
-## w19-g13 镜头拉到 0.5（Ship.CAM_ZOOM_REST，半高 720），刷船放到 560—600：不少于两倍船长，落在敌将打法距离
-## （EnemyCaptainAI RANGE 260—540 外沿、开炮 760 以内），上限仍不过镜头半高、任何角度刷出的船心都在画内
-## （story_check 按工程画布高与镜头 zoom 实算半高对账，另验下限 ≥ 两倍船长）。
-const COMBAT_SPAWN_DIST_MIN := 560.0
-const COMBAT_SPAWN_DIST_MAX := 600.0
+## w19-g13 镜头拉到 0.5（Ship.CAM_ZOOM_REST，半高 720），刷船放到 560—600（两倍船长判据）。
+## w20-b9 复量（tools/w20b9_spawn_gauge.gd）：ShipHull3D 视口 832 × VIS_SCALE 0.78 ≈ 649 世界 px 包围盒、
+## 旗舰 / 敌船同型；开局镜头就位 zoom=CAM_ZOOM_REST 0.5（spawn 时船速还没进满航 0.42），屏上敌我不可交须
+## dist × 0.5 ≥ (325 + 325)/2 = 325 屏 px → 刷船下限 ≥ 650；取 700 留 50 余量，zoom 0.5 屏上 350 ≥ 325，
+## REST / 满航同图皆不交（满帆 0.42 屏上 294 仍 ≥ 291）。上限收 720 = zoom 0.5 半高（zoom 0.42 857 同），
+## 任何角度刷出的船心仍在画内（story_check _w20b9_spawn_bbox_check 对账；反向变异 210 / 560 各红）。
+const COMBAT_SPAWN_DIST_MIN := 700.0
+const COMBAT_SPAWN_DIST_MAX := 720.0
 ## 镜头内等于已进 800 射程；不延迟会被 9 门齐射秒掉开局小艍
 const COMBAT_FIRE_DELAY := 3.5
 ## 两艘满编 9 门 × 25 伤 = 450，开局 120 耐久一波沉。封顶 2 门：

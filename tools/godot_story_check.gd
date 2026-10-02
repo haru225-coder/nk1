@@ -744,6 +744,7 @@ func _route_check() -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	_close_dialogs(main)
 	_g13_chart_zoom_check()
+	_w20b9_spawn_bbox_check()
 	_b1_worldmap_coast_check()
 	_w20c2_port_beats_check(main)
 	GS.from_dict({})
@@ -3862,3 +3863,38 @@ func _process_c6_init_hook() -> void:
 	_c6_roundtrip_fields_check()
 	_c6_news_only_enum_check()
 	print("STORY_CHECK C6 init-hook asserts added=", _c6_added)
+
+
+## lane w20-b9：开战刷船间距按 3D 船身包围盒重核——原判据 spawn_min ≥ 两倍船长 560 不扛 ShipHull3D
+## 视口 832 × VIS_SCALE 0.78 ≈ 649 世界 px 贴身的包围盒（旗舰 / 敌船同型，Sprite2D / HullWater / HullLight
+## 同贴 0.78）。开局镜头 zoom = CAM_ZOOM_REST 0.5（spawn 时船速还没进满航 0.42），屏上敌我不可交须
+## dist × 0.5 ≥ (325+325)/2 = 325 屏 px → dist ≥ 650；抬到 700 留 50 余量。上限 ≤ 半高（zoom 0.5 = 720
+## 与 zoom 0.42 = 857 取小即 720），任何角度刷出的船心仍在画内。反向变异：COMBAT_SPAWN_DIST_MIN=700
+## → 560 / MAX=720 → 600，三行各红一行（间距太挤 / 屏上仍交）。
+func _w20b9_spawn_bbox_check() -> void:
+	var wm_c: Dictionary = (load("res://scripts/WorldMap.gd") as GDScript).get_script_constant_map()
+	var smin := float(wm_c.get("COMBAT_SPAWN_DIST_MIN", 0.0))
+	var smax := float(wm_c.get("COMBAT_SPAWN_DIST_MAX", INF))
+	var hull_c: Dictionary = (load("res://scripts/combat/ShipHull3D.gd") as GDScript).get_script_constant_map()
+	var view := float(hull_c.get("VIEW", 0.0))
+	var vis := float(hull_c.get("VIS_SCALE", 0.0))
+	var hull_bbox := view * vis  # 3D 船身世界 px 尺寸（约 649）
+	_check(hull_bbox >= 640.0 and hull_bbox <= 660.0,
+		"3D 船身包围盒 %.0f 世界 px（VIEW %.0f × VIS_SCALE %.2f），应落在 640—660" % [hull_bbox, view, vis])
+	var ship_c: Dictionary = (load("res://scripts/Ship.gd") as GDScript).get_script_constant_map()
+	var cam_r := float(ship_c.get("CAM_ZOOM_REST", 0.0))
+	var cam_f := float(ship_c.get("CAM_ZOOM_FULL", 0.0))
+	# 屏上不可交临界：dist × zoom ≥ 两船各自半垫之和 = (hull_bbox/2 + hull_bbox/2) / 2 = hull_bbox/2 = 325
+	# 再 25 px 缓冲：两船真贴身没间隙、玩家看上去仍叠——按游戏观感沿那道缝再退半层
+	var px_thresh: float = hull_bbox / 2.0 + 25.0
+	_check(smin >= px_thresh / cam_r,
+		"开战刷船下限 %.0f：按 zoom %.2f（REST）屏上 %.0f px ≥ 临界 %.0f（3D 船身 %.0f 世界 px，两船同出）" % [
+			smin, cam_r, smin * cam_r, px_thresh, hull_bbox])
+	# 满帆档（zoom 0.42）spawn 是在开局 zoom=0.5 时刻发生、玩家操盘后不属于开局判据；仍留一条松底线守贴势
+	_check(smin * cam_f >= hull_bbox / 4.0 + 25.0,
+		"开战刷船下限 %.0f 满帆 zoom %.2f 屏上 %.0f px ≥ 四分之一包围盒 %.0f（满航仍可按一条狭缝认两船）" % [
+			smin, cam_f, smin * cam_f, hull_bbox / 4.0 + 25.0])
+	var half_r := 720.0 / (2.0 * cam_r)
+	var half_f := 720.0 / (2.0 * cam_f)
+	_check(smax <= half_r and smax <= half_f,
+		"开战刷船上限 %.0f：两档半高 %.0f / %.0f 同收，任何角度刷出都在画内" % [smax, half_r, half_f])
