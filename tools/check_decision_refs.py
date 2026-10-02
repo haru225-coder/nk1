@@ -9,6 +9,13 @@
   python3 tools/check_decision_refs.py --fix            # 自动跟号：跟得上的改成新号、头部锚改成 HEAD，跟不上的打「跟号待核」
   python3 tools/check_decision_refs.py --since REV      # 重锚自证：REV 版清单里的引用，改到新行号后指的还是不是同一段内容
 
+两种引用写法（lane w26-k5；b1 遗留③：只认行号的写法，改动落在引用行之前的插入 / 删除都会把它连带平移）：
+  · 行号锚 `文件:行`（老写法，行为一字不变）：内容比对随清单头部锚，行号由跟号 / --fix 跟上；
+  · 符号锚 `文件::符号`（`scripts/WorldMap.gd::COMBAT_FIRE_DELAY`）：按锚定提交里那个符号的定义行核——.gd 认 const / var /
+    enum / signal 声明与 func，.py 认 def / class，.md 认标题行；行号跟工作树现址走，定义行照补，符号挪几行 / 挪到别处都
+    照样对得上，锚文件里改别处不报 DRIFT；符号在工作树里找不到 → DRIFT「找不到」（不猜落点、--fix 打「待核」交人工）。
+    挂法与行号锚同：同一行里后面的裸 `::符号` 挂在最近的文件上；「原文作」括注里的符号锚同样跳过。
+
 锚：清单头部「行号：……按 HEAD `xxxxxxx`」那个提交。清单里写的行号，都是那个提交里的行号。
 判红：
   · NOFILE：引的文件在工作树里不存在，且跟号也找不到它的去处（裸文件名 `Main.gd:12` 按 git 已跟踪文件的文件名找，
@@ -55,12 +62,9 @@
   · 「原文作 `:N`」括注里的行号：清单有意保留的原稿旧行号，跳过（从「原文作」到下一个「）」「，」「；」为止）；
   · 仓外 brief（`lane-*.md` / `COORDINATION*.md`，在 $NK1_BRIEFS，默认 /workspace/nk1-agent-briefs）：只查行号不越界，不跟号；
     brief 目录不存在时只记 ⚠。
-解析口径：一个反引号 token 若是「路径[:行]」（或简称 `终局系统化 :30`，按文件名前缀唯一找）就记为当前文件；
-同一行里后面的裸 `:行` 挂在最近的文件上——反引号外的文字点了别的文件名、后面却跟裸 `:行` 的，本脚本会挂错，
+解析口径：一个反引号 token 若是「路径[:行]」「路径::符号」（或简称 `终局系统化 :30`，按文件名前缀唯一找）就记为当前文件；
+同一行里后面的裸 `:行` / `::符号` 挂在最近的文件上——反引号外的文字点了别的文件名、后面却跟裸 `:行` 的，本脚本会挂错，
 清单里这种地方写全路径（`--show` 回读时看得出来）。
-为什么不把清单改成「按符号名」锚（lane dec4 评估）：清单里六成引用是 md / json 行（没有函数名可锚），
-而且策划要的是点得开的 `文件:行`；函数名也会改（拆出件把 `_setup_yamen` 改成 `setup_yamen`）。所以清单照旧写行号，
-符号名只当跟号的线索（③），由脚本把行号跟上。
 输出确定序（lane cs23）：逐处的 ⚠ / ✗ 行（NOFILE / OOR / DRIFT 跟号 / 待核 / MISMATCH / 改指未验）先收齐、再按
 「清单行号 → 行内第几处引用 → 类别」排好印（--show 的原文行跟在所属引用的 DRIFT 前，待核标记排在全部引用之后）；
 --since / 改号自证的新旧配对也按新版引用的清单顺序逐对比。原先配对取 `ko.keys() & kn.keys()`（集合，遍历顺序随
@@ -84,18 +88,23 @@ DEFAULT_DOC = os.path.join(ROOT, "docs", "待策划拍板清单_2026-09-28.md")
 BRIEFS = os.environ.get("NK1_BRIEFS", "/workspace/nk1-agent-briefs")
 
 TOKEN = re.compile(r"`([^`]*?)`")
-# 带目录的仓内路径 / 仓外 brief / 裸文件名；后面可带 :行 或 :行-行
+# 带目录的仓内路径 / 仓外 brief / 裸文件名；后面可带 :行、:行-行 或 ::符号（行号 / 符号至多一个；全角「：：」不算）
 FILEREF = re.compile(
     r"^((?:docs|scripts|tools|data|assets|\.claude)/[^\s`:：（）()]+"
     r"|lane-[A-Za-z0-9\-]+\.md|COORDINATION(?:_INDEX)?\.md"
     r"|[^\s`:：（）()/]+\.(?:gd|py|json|md|sh|txt|tscn|cfg|godot))"
-    r"(?::(\d+)(?:-(\d+))?)?$")
+    r"(?::(\d+)(?:-(\d+))?|::([^\s:：]+))?$")
 BARE = re.compile(r"^:(\d+)(?:-(\d+))?$")
+BARESYM = re.compile(r"^::([^\s:：]+)$")
 # 简称写法 `终局系统化 :30`：简称按已跟踪文件的文件名前缀找（唯一才算）
 LABEL = re.compile(r"^([^\s`:：/]+) :(\d+)(?:-(\d+))?$")
 OLD_NOTE = re.compile(r"原文作[^）；，]*")
 MARK = re.compile(r"〔跟号待核：[^〕]*〕")
 ANCHOR = re.compile(r"(行号：[^\n]*?按 HEAD `)([0-9a-f]{7,40})(`)")
+# 符号锚的 defs() 按下面的模式找定义行（行号锚照旧走 diff / 原文 / 函数名 / 跨文件四条）
+SYM_GD = re.compile(r"^(?:@(?:export(?:_\w+)?|onready|rpc|static(?:_var)?|tool|warn_deprecated)\b[^\n]*\n)*"
+                    r"(?:static\s+)?(?:const|var|enum|signal)\s+(\w+)")
+SYM_PY = re.compile(r"^\s*(?:async\s+)?(?:def|class)\s+(\w+)")
 HUNK = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 FUNC_GD = re.compile(r"^(?:static\s+)?func\s+(\w+)\s*\(")
 DECL_GD = re.compile(r"^(?:static\s+)?(?:const|var|enum|signal)\s+(\w+)")
@@ -124,7 +133,8 @@ def span_str(a, b):
 def parse_doc(lines):
     """逐行解析引用。返回 (refs, skipped, toks)：
     refs = [(清单行号, 文件, 起, 止, token 下标)]；toks[清单行号] = 该行 token 列表
-    （dict：kind=file/label/bare、span=含反引号的区间、name=文件写法、a/b=行号或 None、old=在「原文作」里）。"""
+    （dict：kind=file/label/bare/sym、span=含反引号的区间、name=文件写法、a/b=行号或 None、sym=符号名或 None、
+    old=在「原文作」里）。行号锚照旧（a/b 起止）、符号锚 kind=sym、refs 的 (起, 止) 收工作树现址。"""
     refs, skipped, toks = [], 0, {}
     for ln, line in enumerate(lines, 1):
         old = [m.span() for m in OLD_NOTE.finditer(line)]
@@ -132,29 +142,37 @@ def parse_doc(lines):
         for m in TOKEN.finditer(line):
             s = m.group(1).strip()
             in_old = any(a <= m.start() < b for a, b in old)
-            fm, lm, bm = FILEREF.match(s), LABEL.match(s), BARE.match(s)
-            if fm:
+            fm, lm, bm, sm = FILEREF.match(s), LABEL.match(s), BARE.match(s), BARESYM.match(s)
+            if fm and not fm.group(4):
                 cur = fm.group(1)
                 t = dict(kind="file", name=cur, g=fm)
+            elif fm:
+                cur = fm.group(1)
+                t = dict(kind="sym", name=cur, sym=fm.group(4), g=fm)
             elif lm:
                 cur = "@" + lm.group(1)
                 t = dict(kind="label", name=cur, g=lm)
-            elif bm and cur:
-                t = dict(kind="bare", name=cur, g=bm)
+            elif (bm or sm) and cur:
+                t = dict(kind="bare" if bm else "sym", name=cur, g=bm or sm)
+                if sm:
+                    t["sym"] = sm.group(1)
             else:
                 continue
             g = t.pop("g")
-            num = 2 if t["kind"] != "bare" else 1
-            t.update(span=m.span(), old=in_old,
-                     a=int(g.group(num)) if g.group(num) else None,
-                     b=int(g.group(num + 1) or g.group(num)) if g.group(num) else None)
+            num = 2 if t["kind"] == "file" else 1
+            if t["kind"] == "sym":
+                t.update(span=m.span(), old=in_old, sym=t.get("sym"), a=None, b=None)
+            else:
+                t.update(span=m.span(), old=in_old, sym=t.get("sym"),
+                         a=int(g.group(num)) if g.group(num) else None,
+                         b=int(g.group(num + 1) or g.group(num)) if g.group(num) else None)
             row.append(t)
-            if t["a"] is None:
+            if t["a"] is None and t["kind"] != "sym":
                 continue
             if in_old:
                 skipped += 1
                 continue
-            refs.append((ln, cur, t["a"], t["b"], len(row) - 1))
+            refs.append((ln, cur, t["a"] if t["kind"] != "sym" else 1, t["b"] if t["kind"] != "sym" else 1, len(row) - 1))
         if row:
             toks[ln] = row
     return refs, skipped, toks
@@ -357,40 +375,93 @@ def body_end(lines, start, kind, ext):
     return len(lines)
 
 
+def defs(w, p, nm, kind, ext):
+    """定义行号列表（1 起）：w = 文件的行（None 当空），kind = decl / func / head（md 标题）。"""
+    w = w or []
+    if kind == "head":
+        return [i + 1 for i, t in enumerate(w) if t.strip() == nm]
+    pat = FUNC_GD if (ext == "gd" and kind == "func") else DECL_GD if ext == "gd" else None
+    hits = []
+    for i, t in enumerate(w):
+        if pat:
+            m = pat.match(t)
+            if m and m.group(1) == nm:
+                hits.append(i + 1)
+        else:
+            m = DEF_PY.match(t)
+            if m and m.group(2) == nm:
+                hits.append(i + 1)
+    return hits
+
+
 def locate(repo, path, sym, ext):
     """工作树里这个符号可能的落点 [(路径, 定义行号, 体末行号, 说明, 改名 (旧, 新) 或 None)]：同文件 → 拆出件改名表 → 全仓唯一同名。"""
     kind, name, _ = sym
     out = []
 
-    def defs(p, nm):
-        w = repo.work(p) or []
-        if kind == "head":
-            return [i + 1 for i, t in enumerate(w) if t.strip() == nm]
-        pat = FUNC_GD if (ext == "gd" and kind == "func") else DECL_GD if ext == "gd" else None
-        hits = []
-        for i, t in enumerate(w):
-            if pat:
-                m = pat.match(t)
-                if m and m.group(1) == nm:
-                    hits.append(i + 1)
-            else:
-                m = DEF_PY.match(t)
-                if m and m.group(2) == nm:
-                    hits.append(i + 1)
-        return hits
-
-    for d in defs(path, name):
+    for d in defs(repo.work(path), path, name, kind, ext):
         out.append((path, d, body_end(repo.work(path), d, kind, ext), f"同文件 {name}", None))
     if ext == "gd" and kind == "func" and path == "scripts/Main.gd" and name in repo.splits():
         sp, nn = repo.splits()[name]
-        for d in defs(sp, nn):
+        for d in defs(repo.work(sp), sp, nn, kind, ext):
             out.append((sp, d, body_end(repo.work(sp), d, kind, ext), f"拆出件 {name}→{nn}", (name, nn)))
     if not out and kind != "head":
-        glob = [(p, d) for p in repo.candidates(ext) if p != path for d in defs(p, name)]
+        glob = [(p, d) for p in repo.candidates(ext) if p != path for d in defs(repo.work(p), p, name, kind, ext)]
         if len(glob) == 1:
             p, d = glob[0]
             out.append((p, d, body_end(repo.work(p), d, kind, ext), f"全仓唯一 {name}", None))
     return out
+
+
+def sym_kind(line, ext):
+    """这一行算哪种符号定义：(kind, 名)；不算符号（不认识的后缀 / 普通语句）给 None。"""
+    if ext == "gd":
+        m = SYM_GD.match(line)
+        if m:
+            return ("decl", m.group(1))
+        m = FUNC_GD.match(line)
+        if m:
+            return ("func", m.group(1))
+    elif ext == "py":
+        m = SYM_PY.match(line)
+        if m:
+            return ("func", m.group(1))
+    elif ext == "md":
+        line = line.strip()
+        if HEAD_MD.match(line):
+            return ("head", line)
+    return None
+
+
+def sym_defs(lines, name, ext):
+    """工作树 / 锚里某份行表里符号 name 的定义行号（1 起），只认一份；找不到 / 不止一份都算找不到。"""
+    lines = lines or []
+    pat = SYM_GD if ext == "gd" else SYM_PY if ext == "py" else None
+    if pat:
+        hits = [i + 1 for i, t in enumerate(lines) if (m := pat.match(t)) and m.group(1) == name]
+        return hits if len(hits) == 1 else None
+    if ext == "md":
+        hits = [i + 1 for i, t in enumerate(lines) if t.strip() == name and HEAD_MD.match(t.strip())]
+        return hits if len(hits) == 1 else None
+    return None
+
+
+def sym_locate(repo, anchor, path, name, ext):
+    """符号锚 `path::name` 的现址：(路径, 定义行, 体末行, 说明) 或 (None, 为什么)。锚里有这个符号的定义、工作树同文件也
+    定位到唯一一份 → 现址（行号锚的四层跟号照旧管不到符号锚：符号不跟着挪行，只认存在唯一）。找不到 → (None, 线索)。"""
+    old = repo.at_rev(anchor, path)
+    if old is None:
+        return None, f"锚 {anchor} 里没有 {path}"
+    if sym_defs(old, name, ext) is None:
+        return None, f"锚 {anchor} 里 {path} 没有唯一的符号 {name} 定义"
+    w = repo.work(path)
+    got = sym_defs(w, name, ext)
+    if got:
+        nd = got[0]
+        line = w[nd - 1]
+        kind = "func" if (ext == "py" or FUNC_GD.match(line)) else "head" if ext == "md" else "decl"
+        return (path, nd, body_end(w, nd, kind, ext), f"符号 {name}")
+    return None, f"工作树里 {path} 没有唯一的符号 {name} 定义（改了名？）"
 
 
 def fwd_of_func(lines, d):
@@ -576,7 +647,9 @@ def check(o, doc_text, repo, anchor, quiet=False):
     warned_briefs = False
     out = Lines(say)
     for k, (ln, f, a, b, ti) in enumerate(refs):
-        tag = f"L{ln} `{f}:{span_str(a, b)}`"
+        t = toks[ln][ti]
+        is_sym = t["kind"] == "sym"
+        tag = f"L{ln} `{f}::{t['sym']}`" if is_sym else f"L{ln} `{f}:{span_str(a, b)}`"
         key = lambda cat, sub=0: (0, ln, ti, cat, sub)  # 类别：0 ⚠ brief 目录、1 NOFILE / OOR、2 --show 原文、3 DRIFT
         if offrepo(f):
             n["brief"] += 1
@@ -596,14 +669,27 @@ def check(o, doc_text, repo, anchor, quiet=False):
             out.add(key(1), f"  ✗ NOFILE {tag}：{path} 不存在")
             n["bad"] += 1
             continue
-        if w is not None and (a < 1 or b < a or b > len(w)) and (offrepo(f) or old is None):
+        if w is not None and (a < 1 or b < a or b > len(w)) and (offrepo(f) or old is None) and not is_sym:
             out.add(key(1), f"  ✗ OOR {tag}：{path} 只有 {len(w)} 行")
             n["bad"] += 1
             continue
-        if o.show and w is not None and b <= len(w):
-            for i in range(a, b + 1):
-                out.add(key(2, i), f"    {tag} → {path}:{i}: {w[i - 1].strip()[:140]}")
+        if o.show and w is not None and (b <= len(w) or is_sym):
+            if is_sym:
+                hits = sym_defs(w, t["sym"], ext_of(path)) or []
+                for d in hits:
+                    out.add(key(2, d), f"    {tag} → {path}:{d}: {w[d - 1].strip()[:140]}")
+            else:
+                for i in range(a, b + 1):
+                    out.add(key(2, i), f"    {tag} → {path}:{i}: {w[i - 1].strip()[:140]}")
         if offrepo(f):
+            continue
+        if is_sym:
+            got = sym_locate(repo, anchor, path, t["sym"], ext_of(path))
+            if got[0] is None:
+                fixes[k] = got
+                out.add(key(3), f"  ✗ DRIFT {tag}：{got[1]}（符号锚只认存在、不猜落点；人工回读后改符号名或改回行号锚）")
+                n["drift"] += 1
+                n["manual"] += 1
             continue
         if old is None:
             out.add(key(3), f"  ✗ DRIFT {tag}：锚 {anchor} 里没有 {path}（新文件？把头部的锚改到含它的提交）")
@@ -649,7 +735,8 @@ def check(o, doc_text, repo, anchor, quiet=False):
 
 def render(line, row, targets, repo):
     """按新目标重写一行里的引用 token。targets[token 下标] = (新路径, 新起, 新止) 或 ("MARK", 标记文字)。
-    改指了别的文件的写全路径；后面原本挂在旧文件上的裸 `:行`，挂不上了就补全路径（解析口径见 docstring）。"""
+    改指了别的文件的写全路径；后面原本挂在旧文件上的裸 `:行`，挂不上了就补全路径（解析口径见 docstring）。
+    符号锚（kind=sym）不重写 —— 符号只判存在、不跟号，--fix 只会在找不到时挂「待核」标记。"""
     out, pos, cur = [], 0, None
     for ti, t in enumerate(row):
         s, e = t["span"]
@@ -657,6 +744,13 @@ def render(line, row, targets, repo):
         pos = e
         orig = repo.resolve(t["name"])[0]
         tgt, mark = targets.get(ti), ""
+        if t["kind"] == "sym":
+            txt = line[s:e]
+            if tgt and tgt[0] == "MARK":
+                mark = tgt[1]
+            out.append(txt + mark)
+            cur = orig or t["name"]
+            continue
         if tgt and tgt[0] == "MARK":
             tgt, mark = None, tgt[1]
         p, num = (tgt[0], span_str(tgt[1], tgt[2])) if tgt else (orig, None)
@@ -695,6 +789,12 @@ def do_fix(o, text, repo, anchor):
     for k, t in fixes.items():
         ln, f, a, b, ti = refs[k]
         path = repo.resolve(f)[0]
+        tt = toks[ln][ti]
+        if tt["kind"] == "sym":
+            assert not t[0], "符号锚不会产生可跟号落点"
+            mark = f"〔跟号待核：工作树里找不到唯一符号 {tt['sym']}（在 {path}）〕"
+            by_line.setdefault(ln, {})[ti] = ("MARK", mark)
+            continue
         by_line.setdefault(ln, {})[ti] = t[:3] if t[0] else \
             ("MARK", f"〔跟号待核：锚 {anchor} 里是 {path}:{span_str(a, b)}〕")
     print(f"--fix：锚 {anchor} → {head}；改号 {n['auto']} 处，打「待核」{n['manual']} 处")
@@ -704,6 +804,9 @@ def do_fix(o, text, repo, anchor):
         lines[ln - 1] = new + lines[ln - 1][len(body):]
         for ti, tgt in sorted(by_line[ln].items()):
             t = toks[ln][ti]
+            if t["kind"] == "sym":
+                print(f"    L{ln} `{t['name']}::{t['sym']}` → " + (tgt[1] if tgt[0] == "MARK" else "（不重写）"))
+                continue
             print(f"    L{ln} `{t['name']}:{span_str(t['a'], t['b'])}` → " +
                   (f"`{tgt[0]}:{span_str(tgt[1], tgt[2])}`" if tgt[0] != "MARK" else tgt[1]))
     new_text = ANCHOR.sub(lambda m: m.group(1) + head + m.group(3), "".join(lines), count=1)
@@ -738,7 +841,7 @@ def skeleton(line):
     return MARK.sub("", TOKEN.sub("§", line))
 
 
-def since(o, repo, refs, lines, rev=None, new_rev=None, label=None):
+def since(o, repo, refs, lines, rev=None, new_rev=None, label=None, toks=None):
     """rev 版清单（缺省 o.since）的引用与本版逐对比内容，返回 MISMATCH 数（取不到 rev 版清单返回 None）。
     new_rev：本版引用按这个提交里的内容比（改号自证传本版头部的锚），缺省比工作树（--since）；
     传了 new_rev 的，内容不同而旧锚那段原文在新处文件里已经找不到（所指那段自己被改写了）只记 ⚠、不判红。"""
@@ -752,7 +855,7 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None):
         return None
     old_lines = old_text.splitlines()
     old_refs, _ = parse_refs(old_lines)
-    refs = [r[:4] for r in refs]
+    # 符号锚（kind=sym）在 toks 里取符号名；refs[j][2]/[3] 只是占位，不拿来比内容
     # 第一轮：按「同一清单行骨架（引用 token 抹掉）+ 行内序号」配对，两边都唯一才配——只改了号 / 改指别的文件的，靠这一步配上
     def keys(rs, ls):
         out = {}
@@ -784,7 +887,7 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None):
         w = new_lines(p) if not e else None
         return [norm(x, ext_of(p)) for x in w[refs[k][2] - 1:refs[k][3]]] if w is not None else None
     for i, j in pairs:
-        ol, f, oa, ob = old_refs[i]
+        ol, f, oa, ob = old_refs[i][:4]
         if offrepo(f):
             continue
         path, err = repo.resolve(f)
@@ -793,8 +896,33 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None):
         ov = repo.at_rev(old_anchor, path)
         if ov is None:
             continue
-        want = [norm(x, ext_of(path)) for x in ov[oa - 1:ob]]
         np_ = repo.resolve(refs[j][1])[0]
+        if len(refs[j]) == 5 and toks is not None and toks.get(refs[j][0]):
+            is_sym_j = toks[refs[j][0]][refs[j][4]]["kind"] == "sym"
+        else:
+            is_sym_j = False
+        if is_sym_j:
+            # 符号锚：不逐行比，按存在 + 内容等价判。符号名 在旧版清单 = 行号锚的，+1 判 MISMATCH。
+            sym_name = toks[refs[j][0]][refs[j][4]]["sym"]
+            got = sym_locate(repo, old_anchor, np_, sym_name, ext_of(np_))
+            if got[0] is None:
+                mismatch += 1
+                out.add((0, refs[j][0], j, 1, 0),
+                        f"  ✗ MISMATCH L{refs[j][0]} `{refs[j][1]}::{sym_name}`（旧版 L{ol} `{f}:{span_str(oa, ob)}` @ {old_anchor}）："
+                        f"符号锚按旧锚里那份内容对不上：{got[1]}——行号锚改了写法 / 符号改名了，须照新写法回读")
+            else:
+                # 旧锚旧行号的内容 vs 现符号定义行起、同样长的段：不一致才算「符号已换义」。
+                old_seg = [norm(x, ext_of(path)) for x in ov[oa - 1:ob]]
+                cur_body = [norm(x, ext_of(np_)) for x in (new_lines(np_) or [])[got[1] - 1:got[1] - 1 + ob - oa + 1]]
+                if cur_body == old_seg:
+                    same += 1
+                else:
+                    mismatch += 1
+                    out.add((0, refs[j][0], j, 1, 0),
+                            f"  ✗ MISMATCH L{refs[j][0]} `{refs[j][1]}::{sym_name}`（旧版 L{ol} `{f}:{span_str(oa, ob)}` @ {old_anchor}）："
+                            f"符号那几行内容与旧锚里指的不同（{np_}:{got[1]}）——符号锚指偏了或符号被改写")
+            continue
+        want = [norm(x, ext_of(path)) for x in ov[oa - 1:ob]]
         if path == "scripts/Main.gd" and np_ != path:  # 搬进拆出件的，函数头照改名表比
             want = [renamed(x, repo, np_) for x in want]
         tt = content(j) != want and thru_target(repo, old_anchor, path, oa, ob, new_lines)
@@ -1070,7 +1198,7 @@ def main():
     n, _fixes, refs, _toks = check(o, text, repo, anchor)
     mismatch = 0
     if o.since:
-        mismatch = since(o, repo, refs, text.splitlines())
+        mismatch = since(o, repo, refs, text.splitlines(), toks=_toks)
         if mismatch is None:
             return 1
     else:
@@ -1080,7 +1208,7 @@ def main():
         if rev is None:
             print(f"  ⚠ 改号自证跳过：{why}")
         else:
-            mismatch = since(o, repo, refs, text.splitlines(), rev=rev, new_rev=anchor, label=f"改号自证 [{why}]")
+            mismatch = since(o, repo, refs, text.splitlines(), rev=rev, new_rev=anchor, label=f"改号自证 [{why}]", toks=_toks)
             if mismatch is None:
                 return 1
 
