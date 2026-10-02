@@ -109,6 +109,7 @@ const SCRIPTS := [
 	"res://tools/qa_contract_destinations_probe.gd",  # 委办目的地 × 战况取证件（lane w23-a8）
 	"res://tools/qa_customs_duty_probe.gd",
 	"res://tools/qa_bribe_probe.gd",  # lane w23-a5 塞钱探针骨架（EA6-1 机械前置，断言先注掉只打印实测）
+	"res://tools/qa_iz_skip_notice_probe.gd", "res://tools/qa_shore_wait_notice_probe.gd",  # lane w23-a7 欠债跳年 / 候一日两探针（a8 代登记——未登记会卡 inventory 门禁）
 	"res://tools/qa_yard_transition_probe.gd",
 	"res://tools/qa_pirate_boat_probe.gd",  # 海寇快船 + 船图契约（lane pirate-boat-0928）
 	"res://tools/combat_vfx_probe.gd", "res://tools/ship_vfx_probe.gd", "res://tools/atmos_water_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
