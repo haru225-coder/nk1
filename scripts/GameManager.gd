@@ -245,12 +245,14 @@ func skip_years(n: int) -> Array:
 		lines.append(Crew.leave_note(c))
 	_skip_gone.clear()
 
-	# 水手流失
+	# 水手流失（hired 只存 id，名字回查名册；名册查无此人按未雇、不流失也不列名）
 	var left := []
 	for role_id in Crew.hired.keys().duplicate():
+		if Crew.candidate_def(str(Crew.hired[role_id])).is_empty():
+			continue
 		var leave_p := 1.0 - pow(1.0 - SKIP_CREW_LEAVE, float(n))
 		if randf() < leave_p:
-			left.append(str(Crew.hired[role_id].get("name", "一个人")))
+			left.append(str(Crew.candidate_def(str(Crew.hired[role_id])).get("name", "一个人")))
 			Crew.hired.erase(role_id)
 	if not left.is_empty():
 		lines.append("%s没有再上船。有的回了乡，有的上了别家的船。" % "、".join(left))

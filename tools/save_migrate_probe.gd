@@ -127,6 +127,9 @@ func _run() -> void:
 
 	_met_backfill_cases()
 
+	# ── lane w23-a1：v3 → v4 迁移断言（crew.hired 快照收成 id，见 docs/存档迁移矩阵.md v3→v4 行）──
+	_hired_id_only_cases()
+
 	# ── w22-h9 存读档边界 T1–T10（注释逐条对照 docs/存档迁移矩阵.md §六）──
 	_edge_cases()
 
@@ -150,6 +153,7 @@ func _met_backfill_cases() -> void:
 	_cleanup()
 	var d := _current(OLD_LABEL, 1276)
 	d[key] = 2
+	# v2 档的 hired 还是整条快照形状（v3→v4 才收成 id，此档只走到 v3），各条自带的 id 键供 v2→v3 回填
 	d["crew"] = {"hired": {"duogong": {"id": "lin_awu", "role": "duogong"}}, "unpaid_months": 0}
 	d["state"]["crew_history"] = ["wu_zhen", "lin_awu"]
 	d["state"]["siege"] = {"round": 3, "lin_hua_sent": true}
@@ -192,6 +196,8 @@ func _met_backfill_cases() -> void:
 	_expect("本版档 met_ids load_game", str(sl.call("load_game", SLOT)), "true")
 	_expect("本版档 met_ids 原样读回（不因 crew_history 补人）", JSON.stringify(gs.get("met_ids")), JSON.stringify(["cai_qixing"]))
 	_expect("本版档读回正本不改写、不生成 .v*", "%s/%s" % [str(_read_text(_primary()) == v3_text), str(_any_versioned())], "true/false")
+
+## （`v3_text` 这个局部名沿自本片立项前的探针原版——它装的是「本版档」文本；v4 之后名不符实，仅留注，不更动既有断言串）
 	# 9e 存—读来回：本会话见过（note_met）→ save_game → 打乱 → load_game 仍在
 	_cleanup()
 	gs.call("from_dict", {})
@@ -311,6 +317,82 @@ func _keyfield_cases() -> void:
 	_expect("K4b v2 回写后 met_ids 落盘仍是原样", JSON.stringify(_as_dict(_read_json(_primary()).get("state")).get("met_ids")), JSON.stringify(["cai_qixing"]))
 
 
+## lane w23-a1：v3 → v4——crew.hired 由「职事 → 整条快照」收成「职事 → 候选 id」（DESIGN1-8②）。
+## 读入即 id-only、字段回查名册与快照一致；快照变形（非对象 / 缺 id / 名册除名）按口径收掉，不判坏、不留双轨。
+func _hired_id_only_cases() -> void:
+	var gs: Node = root.get_node("GameState")
+	var crew: Node = root.get_node("Crew")
+	var key := str(sl.get("SCHEMA_KEY"))
+	# H1 v3 档：火长 wu_zhen、舵工 lin_awu 各带整条快照（盗来的工资 level 是编的，回查只认名册）
+	_cleanup()
+	var d := _current(OLD_LABEL, 1256)
+	d[key] = 3
+	d["crew"] = {"hired": {
+			"huozhang": {"id": "wu_zhen", "role": "huozhang", "name": "吴振", "level": 3, "wage": 999},
+			"duogong": {"id": "lin_awu", "role": "duogong", "name": "林阿五", "level": 3, "wage": 999},
+		}, "unpaid_months": 1}
+	var v3_text := JSON.stringify(d, "\t")
+	_write_raw(_primary(), v3_text)
+	gs.call("from_dict", {})
+	crew.call("from_dict", {})
+	_expect("H1 v3 hired 快照 load_game", str(sl.call("load_game", SLOT)), "true")
+	var hired: Dictionary = crew.get("hired")
+	print("  [证据] v3→v4 读入后 Crew.hired=%s" % JSON.stringify(hired))
+	_expect("H1 读入后 hired 收成 id-only", JSON.stringify(hired), JSON.stringify({"huozhang": "wu_zhen", "duogong": "lin_awu"}))
+	_expect("H1 unpaid_months 过链", str(crew.get("unpaid_months")), "1")
+	# 回查口径：快照里写 3 级 / 999 钱是盗的数，名册（crew.json）是什么就是什么
+	var roster_def := crew.call("candidate_def", "wu_zhen") as Dictionary
+	print("  [证据] 名册 wu_zhen level=%s wage=%s；快照写的是 level=3 wage=999" % [_int_str(roster_def.get("level")), _int_str(roster_def.get("wage"))])
+	_expect("H1 品级回查名册不认快照（wu_zhen）", _int_str(crew.call("level_of", "huozhang")), _int_str(roster_def.get("level")))
+	_expect("H1 月俸回查名册（两人合计）", _int_str(crew.call("monthly_wage")), _int_str(_roster_wage_sum(["wu_zhen", "lin_awu"])))
+	var roster_ids: Array = []
+	for c in crew.call("roster"):
+		roster_ids.append(str(c.get("id", "")))
+	roster_ids.sort()
+	_expect("H1 roster 回查 id 不丢（吴针、林阿五都在船）", JSON.stringify(roster_ids), JSON.stringify(["lin_awu", "wu_zhen"]))
+	# 回写 + 原件另存
+	var after := _read_json(_primary())
+	_expect("H1 回写后正本 %s" % key, _int_str(after.get(key)), str(int(sl.get("SAVE_SCHEMA"))))
+	_expect("H1 回写后 hired 落盘 id-only", JSON.stringify(_as_dict(after.get("crew")).get("hired")), JSON.stringify({"huozhang": "wu_zhen", "duogong": "lin_awu"}))
+	_expect("H1 原件另存 .v3 逐字节一致", str(_read_text(_primary() + ".v3") == v3_text), "true")
+	# 存档形状门禁：再存写出的就是 id-only
+	sl.call("save_game", SLOT, "quanzhou")
+	_expect("H1 save_game 写出 hired id-only", JSON.stringify(_as_dict(_read_json(_primary()).get("crew")).get("hired")), JSON.stringify({"huozhang": "wu_zhen", "duogong": "lin_awu"}))
+	# H2 v3 快照变形：非对象条目 / 缺 id / 名册除名 → 各按口径收掉，档不判坏
+	_cleanup()
+	d = _current(OLD_LABEL, 1256)
+	d[key] = 3
+	d["crew"] = {"hired": {
+			"huozhang": {"id": "wu_zhen", "role": "huozhang"},
+			"yuanshi": "老周",
+			"tongshi": {"role": "tongshi"},
+			"zashi": {"id": "gone_cand", "role": "zashi"},
+		}, "unpaid_months": 0}
+	_write_raw(_primary(), JSON.stringify(d, "\t"))
+	crew.call("from_dict", {"hired": {"yiren": "monk_puji"}})
+	_expect("H2 v3 快照变形 load_game（不判坏）", str(sl.call("load_game", SLOT)), "true")
+	_expect("H2 变形条目收掉只留真名册人", JSON.stringify(crew.get("hired")), JSON.stringify({"huozhang": "wu_zhen"}))
+	_expect("H2 读档不串上一份残员", str((crew.get("hired") as Dictionary).has("yiren")), "false")
+	_expect("H2 收掉的人不再领饷", str(crew.call("monthly_wage")), str(int(crew.call("candidate_def", "wu_zhen").get("wage", 0))))
+	# H3 v1 骨档沿 v1→v2→v3→v4 全链过：空 hired 不炸、schema 升到本版
+	_cleanup()
+	d = _v1(BAK_LABEL, 1255, 300)
+	_write_raw(_primary(), JSON.stringify(d, "\t"))
+	_expect("H3 v1 档全链 load_game", str(sl.call("load_game", SLOT)), "true")
+	_expect("H3 v1 空 hired 过链仍空", JSON.stringify(crew.get("hired")), "{}")
+	_expect("H3 回写后正本到本版", _int_str(_read_json(_primary()).get(key)), str(int(sl.get("SAVE_SCHEMA"))))
+	_expect("H3 原件另存 .v1", str(FileAccess.file_exists(_primary() + ".v1")), "true")
+
+
+## 月俸期望按名册现算：快照里（本例伪造的）工资不算数
+func _roster_wage_sum(ids: Array) -> int:
+	var crew: Node = root.get_node("Crew")
+	var total := 0
+	for cand_id in ids:
+		total += int(crew.call("candidate_def", str(cand_id)).get("wage", 0))
+	return total
+
+
 func _expect(name: String, got: String, want: String) -> void:
 	var ok := got == want
 	print("  %s  %s  %s" % ["✓" if ok else "✗", name, got])
@@ -384,7 +466,7 @@ func _any_versioned() -> bool:
 
 func _cleanup() -> void:
 	for base in [_primary(), _bak()]:
-		for suffix in ["", ".tmp", ".v1", ".v2", ".v3"]:
+		for suffix in ["", ".tmp", ".v1", ".v2", ".v3", ".v4"]:
 			var p: String = base + suffix
 			if FileAccess.file_exists(p):
 				DirAccess.remove_absolute(p)

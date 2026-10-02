@@ -7,6 +7,8 @@ var player_name: String = "陈子龙"
 
 ## 身份倾向。序章与剧情 effects 写入（sea_tendency / scholar_tendency）。
 ## hometown_tendency 由 Main 直接累加：玉湖陈宅跑腿 +3、涵江/木兰陂等乡土场景 +4~10（见 Main.gd 各 `hometown_tendency +=`）。
+## 此字段唯一的读点是 1268 年四月的身份结算（resolve_identity_1268 打完即锁）；1268 年以后各处对它的
+## 写入只随存档留着、不再有任何读取——后加剧情请知悉：改它已不影响任何结算。
 ## sea_tendency / scholar_tendency 声明在下方云端账本字段块。
 var hometown_tendency: int = 0
 

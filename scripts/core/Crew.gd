@@ -8,7 +8,10 @@ extends Node
 ##   通事 → Economy 在异国港口的价差
 ##   医人 → Fleet.on_day_passed() 的减员与士气
 
-## {role_id: candidate_dict}
+## {role_id: 候选 id}——只记名册 id；名字、月俸、品级一律按 id 回查 crew.json（candidate_def）。
+## 名册是唯一的数，存档不再另存一份快照（否则改名册后旧档同一人两套数，DESIGN1-8②）。
+## 查不到 id 的按未雇对待，不回读任何档内快照（v4 起档里也没有快照可回读）。
+## v3 及更早的档这一格还是整条快照，由 SaveLoad 迁移链收成 id（docs/存档迁移矩阵.md v3→v4）。
 var hired: Dictionary = {}
 
 ## 连续欠饷的月数。久之则求去。
@@ -71,7 +74,7 @@ func hire(cand_id: String) -> Dictionary:
 	var fee := signing_fee(cand_id)
 	if not GameState.spend_money(fee):
 		return {"ok": false, "msg": "入伙钱 %d，囊中不足。" % fee}
-	hired[role_id] = c
+	hired[role_id] = str(c.get("id", ""))
 	GameState.record_crew(cand_id)
 	return {"ok": true, "msg": "%s 入伙。付入伙钱 %d，月俸 %d。" % [
 		c.get("name", "此人"), fee, c.get("wage", 0),
@@ -81,14 +84,17 @@ func hire(cand_id: String) -> Dictionary:
 func dismiss(role_id: String) -> Dictionary:
 	if not hired.has(role_id):
 		return {"ok": false, "msg": ""}
-	var name: String = hired[role_id].get("name", "此人")
+	var name: String = str(candidate_def(str(hired[role_id])).get("name", "此人"))
 	hired.erase(role_id)
 	return {"ok": true, "msg": "%s 辞退，背铺盖上岸。" % name}
 
 
-## 未雇为 0
+## 未雇（或名册里查无此人）为 0
 func level_of(role_id: String) -> int:
-	return int(hired.get(role_id, {}).get("level", 0))
+	var cand_id := str(hired.get(role_id, ""))
+	if cand_id == "":
+		return 0
+	return int(candidate_def(cand_id).get("level", 0))
 
 
 ## 职事品级。数据里只有 1、2、3。酒馆账条和海图旁注共用这三字。
@@ -100,10 +106,13 @@ func rank_word(n: int) -> String:
 	return "初习"
 
 
+## 在船者的名册条目（回查 crew.json）；名册查不到的 id 不进册
 func roster() -> Array:
 	var out := []
 	for r in hired.keys():
-		out.append(hired[r])
+		var c := candidate_def(str(hired[r]))
+		if not c.is_empty():
+			out.append(c)
 	return out
 
 
@@ -151,7 +160,7 @@ func morale_bonus() -> int:
 func monthly_wage() -> int:
 	var total := 0
 	for r in hired.keys():
-		total += int(hired[r].get("wage", 0))
+		total += int(candidate_def(str(hired[r])).get("wage", 0))
 	return total
 
 
@@ -172,11 +181,11 @@ func pay_wages() -> String:
 		var quitter := ""
 		var top := -1
 		for r in hired.keys():
-			var w: int = int(hired[r].get("wage", 0))
+			var w: int = int(candidate_def(str(hired[r])).get("wage", 0))
 			if w > top:
 				top = w
 				quitter = r
-		var who: String = hired[quitter].get("name", "有人")
+		var who: String = str(candidate_def(str(hired[quitter])).get("name", "有人"))
 		hired.erase(quitter)
 		unpaid_months = 0
 		return "【欠饷】工食欠满三月，%s 不告而去。" % who
@@ -218,11 +227,12 @@ func hireable_by_history(c: Dictionary) -> bool:
 ## 月初由 GameManager.advance_days 调用，排在发饷之前，到月下船的人不再扣当月俸。
 ## 返回下船的候选（crew.json 条目）；通告由 GameManager._settle_history 排在新闻之后发，跳年时另进摘要。
 ## 按候选 id 回查 crew.json 判日子，不看存档里的快照，旧档里已雇的人也照样下船。
+## （hired 本就只存 id 后，这里只是把回查挪进 candidate_def，口径不变。）
 ## 下船的人记进 departed（船籍簿职事栏留一行淡字「舵工　林华已于景炎元年十月辞船」，辞船通告被别的行压住也看得到）。
 func history_leave() -> Array:
 	var out := []
 	for r in hired.keys().duplicate():
-		var c := candidate_def(str(hired[r].get("id", "")))
+		var c := candidate_def(str(hired[r]))
 		if left_by_history(c):
 			hired.erase(r)
 			out.append(c)

@@ -12,9 +12,9 @@ extends Node
 const SAVE_DIR := "user://saves/"
 const SLOTS := 3
 ## 旧读档器认的头：旧版只拒 version > 3。结构兼容的改动只升 SAVE_SCHEMA，旧版仍能照读新档；
-## 哪天结构真的不兼容，两者同升，让旧版也拒。
-const VERSION := 3
-const SAVE_SCHEMA := 3
+## 哪天结构真的不兼容，两者同升，让旧版也拒。（v3 → v4：crew.hired 快照收成 id 即此例）
+const VERSION := 4
+const SAVE_SCHEMA := 4
 const SCHEMA_KEY := "save_schema"
 ## Save-critical progression flags. Keep these names stable across UI/page remaps.
 const EXAM_FLAG := "exam_sat"
@@ -209,6 +209,8 @@ func _migrate(data: Dictionary, from_schema: int) -> Dictionary:
 				out = _migrate_v1_to_v2(out)
 			2:
 				out = _migrate_v2_to_v3(out)
+			3:
+				out = _migrate_v3_to_v4(out)
 			_:
 				push_error("存档迁移链缺 v%d → v%d" % [v, v + 1])
 				return {}
@@ -243,7 +245,7 @@ func _migrate_v1_to_v2(data: Dictionary) -> Dictionary:
 
 
 ## v2 → v3：人物志「已识」入档（state.met_ids，见 GameState.met_ids）。v2 档没有这一键，按档里推得出的回填：
-## 曾雇 / 此刻在船的职事（state.crew_history、crew.hired 各条的 id → characters.json 人物 id）、
+## 曾雇 / 此刻在船的职事（state.crew_history、crew.hired 各条的 id → characters.json 人物 id；v2 档的 hired 还是整条快照，各条里自带 id 键）、
 ## 守城页已当面见过林华（state.siege.lin_hua_sent 或旗 lin_hua_reminded）。
 ## 推不出的（酒馆里看过没雇、见面页见过）不补，照旧按进度与传闻判；已有 met_ids 的不动。
 func _migrate_v2_to_v3(data: Dictionary) -> Dictionary:
@@ -273,6 +275,46 @@ func _migrate_v2_to_v3(data: Dictionary) -> Dictionary:
 		met.append("lin_hua")
 	state["met_ids"] = met
 	data["state"] = state
+	return data
+
+
+## v3 → v4：crew.hired 由「职事 → 整条快照」收成「职事 → 候选 id」（DESIGN1-8②，存档迁移矩阵 §二）。
+## 名字、月俸、品级从此只认名册 crew.json 这一份数——快照落盘的那套删，不双轨。
+## 快照里取不出 id 或名册查无此人的条目直接收掉：那格按未雇对待（Crew.id 查不到即未雇；
+## crew_history 另有曾雇记录，下船与人物志不靠这一格）。快照 id 与键的职事对不上的，以名册为准。
+func _migrate_v3_to_v4(data: Dictionary) -> Dictionary:
+	var crew = data.get("crew", {})
+	if typeof(crew) != TYPE_DICTIONARY:
+		return data
+	var hired = crew.get("hired", {})
+	if typeof(hired) != TYPE_DICTIONARY:
+		return data
+	var out := {}
+	for role_id in hired:
+		var v = hired[role_id]
+		if typeof(v) == TYPE_STRING:
+			# v3 档的 hired 本不该是字符串；真出现了按「名册 id」校验，查无此人即收掉，
+			# 不把来路不明的字串直通过档（v4 起 hired 只认名册 id，与 Crew 读取口径一致）。
+			if Crew.candidate_def(str(v)).is_empty():
+				push_warning("存档迁移 v3→v4：hired.%s 的字符串「%s」不在名册，收掉该职事位" % [str(role_id), str(v)])
+				continue
+			out[role_id] = str(v)
+			continue
+		if typeof(v) != TYPE_DICTIONARY:
+			if typeof(v) != TYPE_NIL:
+				push_warning("存档迁移 v3→v4：hired.%s 这条不是快照对象也不是 id，收掉该职事位" % str(role_id))
+			continue
+		var cand_id := str(v.get("id", ""))
+		if cand_id == "":
+			push_warning("存档迁移 v3→v4：hired.%s 的快照取不出 id，收掉该职事位" % str(role_id))
+			continue
+		var cand: Dictionary = Crew.candidate_def(cand_id)
+		if cand.is_empty():
+			push_warning("存档迁移 v3→v4：hired.%s 的候选 id「%s」不在名册，收掉该职事位" % [str(role_id), cand_id])
+			continue
+		out[role_id] = cand_id
+	crew["hired"] = out
+	data["crew"] = crew
 	return data
 
 
@@ -353,8 +395,8 @@ func _check_partitions(data: Dictionary) -> String:
 	if why != "":
 		return "crew." + why
 	for r in _as_dict(crew.get("hired", {})).values():
-		if typeof(r) != TYPE_DICTIONARY:
-			return "crew.hired 含非对象条目"
+		if typeof(r) != TYPE_STRING:
+			return "crew.hired 含非字符串条目（v4 起只存候选 id）"
 
 	# GameState.from_dict 直赋强类型字段；flags / 发现录另由 _harden_state 清洗，contract 经无类型局部量判型（条目见 _bad_entries）。
 	# rumors / contract_ban 虽在赋值后判型，但强类型变量赋错型当场抛 SCRIPT ERROR，兜底来不及，须在此拦。
