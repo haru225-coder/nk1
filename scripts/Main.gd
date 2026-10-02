@@ -2978,6 +2978,11 @@ func _on_save_slot(slot: int) -> void:
 
 func _on_load_slot(slot: int) -> void:
 	_SAVE.on_load_slot(self, slot)
+	# 读档若成：旧卷里没法再往本版名册图籍对上的口径（港 / 船式 / 勘见 / 名姓 / 行年）
+	# 已归一类一行，取一句落定。on_load_slot 点开即 log_msg 是「翻开日志……」；此句跟着出在其后。
+	var stale: Dictionary = SaveLoad.last_stale()
+	if not stale.is_empty():
+		log_msg("第 %d 卷%s" % [slot, SaveLoad.last_stale_note(stale)])
 
 
 # ══════════════════════════════════════════════════════

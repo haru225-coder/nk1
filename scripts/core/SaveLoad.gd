@@ -487,7 +487,169 @@ func load_game(slot: int) -> bool:
 	Crew.from_dict(_as_dict(data.get("crew", {})))
 	var state: Dictionary = _as_dict(data.get("state", {}))
 	GameState.from_dict(_harden_state(state))
+	_last_stale = audit_stale_refs(data)
 	return true
+
+
+## 最近一次 load_game 的落空清单（见 audit_stale_refs；未读档或统统照载为空字典）。
+## 只读档内存，不碰磁盘、不改读进来的数据。UI 取走措辞即可，探针查明细。
+var _last_stale: Dictionary = {}
+
+
+func last_stale() -> Dictionary:
+	return _last_stale.duplicate(true)
+
+
+## 最近一次读档的落空一行字：无落空为空串；有则错类汇总带「」首类首枚名目，
+## 玩家见到的全部措辞就在这一句。立目简次序与 audit_stale_refs 相同（
+## 港 / 船式 / 勘见 / 人物 / 行年）——措辞只诉类目，枚数合并不进文字。
+static func last_stale_note(stale: Dictionary) -> String:
+	if stale.is_empty():
+		return ""
+	var pieces: Array = []
+	var quote := ""
+	const LEADS := {
+		"port": "有港名",
+		"ship": "船式",
+		"discovery": "勘见",
+		"character": "名姓",
+		"era": "年号",
+	}
+	for key in ["port", "ship", "discovery", "character", "era"]:
+		if not stale.has(key):
+			continue
+		pieces.append(LEADS[key])
+		if quote == "":
+			quote = str(stale[key].get("sample", ""))
+	if pieces.is_empty():
+		return ""
+	# 多类以顿号相连，末类前添「以及」；首类首枚冠名引「」只引一枚。
+	var body: String = pieces[0]
+	var n: int = pieces.size()
+	for i in range(1, n):
+		body += ("、以及" if i == n - 1 else "、") + pieces[i]
+	var tail := "「" + quote + "」，" if quote != "" else "，"
+	return "旧卷所记，%s今已不载%s余账照旧。" % [body, tail]
+
+
+## 旧卷勾稽：港 / 船式 / 勘见 / 人物 / 行年五类里，哪些引用在本版名册图籍上查无了。
+## 输入迁移后的读档字典（未走 from_dict 的原始快照）；只报不修——删式船照旧随档读
+## 入、在队留存，各处取 def 已全按空表兜底（实测见 tools/save_stale_refs_probe.gd）。
+## 返回 {port:{count,sample},ship:…,discovery:…,character:…,era:…}；落空类别才在字
+## 典里——count 是该类落空的条数（同 id 多现只计一次），sample 供措辞引「」最多一枚。
+## 判无的口径与各读取方同：港认 ports.json（剧情场景名各有去处、不入账），船认
+## ships.json，勘见认 discoveries.json，人物认 characters.json；refs 只纳曾雇列传与
+## 面识两处（在船雇佣按 v4 迁移已先行收去，见 _migrate_v3_to_v4）；行年以年号表
+## 1253..1279 为行内，表外归入「行年」不判坏档（月日越界已在 _check_partitions 拦）。
+func audit_stale_refs(data: Dictionary) -> Dictionary:
+	var out := {}
+	var state: Dictionary = _as_dict(data.get("state", {}))
+
+	# 港：现泊、走通的簿引、委办起讫；账上认得的港簿与新添条目相左即可疑一处记一。
+	var port := {"count": 0, "examples": [], "sample": ""}
+	for pid in state.get("visited_ports", []):
+		_flag_port(port, str(pid))
+	_flag_port(port, str(state.get("last_port", "")))
+	var contract: Dictionary = _as_dict(state.get("contract", {}))
+	_flag_port(port, str(contract.get("from", "")))
+	_flag_port(port, str(contract.get("dest", "")))
+	if port["count"] > 0:
+		port["sample"] = _port_sample(port)
+		port.erase("examples")
+		out["port"] = port
+
+	# 船式：舰队各船；名册无样的船在队留存，队形不乱。
+	var ship := {"count": 0, "examples": [], "sample": ""}
+	var fleet: Dictionary = _as_dict(data.get("fleet", {}))
+	for s in fleet.get("ships", []):
+		if typeof(s) != TYPE_DICTIONARY:
+			continue
+		var tid := str(s.get("type", ""))
+		if tid != "" and not tid in ship["examples"] and Fleet.ship_def(tid).is_empty():
+			ship["examples"].append(tid)
+			ship["count"] += 1
+	if ship["count"] > 0:
+		ship["sample"] = _ship_sample(fleet, ship)
+		ship.erase("examples")
+		out["ship"] = ship
+
+	# 勘见：未报与已领两录，去重后当众名一枚。
+	var discovery := {"count": 0, "examples": [], "sample": ""}
+	for key in DISCOVERY_LIST_KEYS:
+		for did in state.get(key, []):
+			_flag_generic(discovery, str(did), GameManager.get_discovery_by_id(str(did)).is_empty())
+	if discovery["count"] > 0:
+		discovery["sample"] = _generic_sample_name(discovery, "discovery")
+		discovery.erase("examples")
+		out["discovery"] = discovery
+
+	# 人物：名姓只纳曾雇列传与面识（id → 人物在 GameManager 的合表；查无即落空）。
+	var character := {"count": 0, "examples": [], "sample": ""}
+	for cid in state.get("met_ids", []):
+		_flag_generic(character, str(cid), GameManager.get_character(str(cid)).is_empty())
+	for cid in state.get("crew_history", []):
+		_flag_generic(character, str(cid), GameManager.character_for_crew(str(cid)).is_empty())
+	if character["count"] > 0:
+		character["sample"] = _generic_sample_name(character, "crew")
+		character.erase("examples")
+		out["character"] = character
+
+	# 行年：以年号表 1253..1279 为行内；表外归入「行年」不判坏档。
+	var cal: Dictionary = _as_dict(data.get("calendar", {}))
+	if not cal.is_empty() and _is_num(cal.get("year")):
+		var year := int(cal["year"])
+		if year < int(Calendar.ERAS[0][0]) or year > 1279:
+			out["era"] = {"count": 1, "sample": str(year)}
+
+	return out
+
+
+## 港键一行：id 非空；查无 ports.json；同类多枚只添计数与样例（取首枚）。
+func _flag_port(rec: Dictionary, pid: String) -> void:
+	if pid == "" or pid in rec["examples"]:
+		return
+	if GameManager.get_port_by_id(pid).is_empty():
+		rec["examples"].append(pid)
+		rec["count"] += 1
+
+
+func _flag_generic(rec: Dictionary, name_id: String, missing: bool) -> void:
+	if name_id == "" or name_id in rec["examples"] or not missing:
+		return
+	rec["examples"].append(name_id)
+	rec["count"] += 1
+
+
+## 港样例取 ports.json 的 name；查无再落回 id（旧卷本就没有译名）。
+func _port_sample(port_rec: Dictionary) -> String:
+	return str(port_rec["examples"][0])
+
+
+## 船式样例为该式在队首艘的船名（舟山题的的舟名、或旧型俗名）；全为无名时落型 id。
+func _ship_sample(fleet_raw: Dictionary, rec: Dictionary) -> String:
+	for s in fleet_raw.get("ships", []):
+		if typeof(s) != TYPE_DICTIONARY:
+			continue
+		if str(s.get("type", "")) in rec["examples"]:
+			var nm := str(s.get("name", "")).strip_edges()
+			if nm != "":
+				return nm
+	return str(rec["examples"][0])
+
+
+## 样例枚 → 名目：勘见取 discovery def 的 name；人物先 crew 名册、再人物合表；
+## 两边都查无就落回 id——这正应是常态：样例本就是「名册图籍上已删」的那一枚。
+func _generic_sample_name(rec: Dictionary, mode: String) -> String:
+	var first := str(rec["examples"][0])
+	match mode:
+		"discovery":
+			return str(GameManager.get_discovery_by_id(first).get("name", first))
+		"crew":
+			for cid in rec["examples"]:
+				var c := GameManager.character_for_crew(cid)
+				if not c.is_empty():
+					return str(c.get("name", cid))
+	return first
 
 
 func saved_scene(slot: int) -> String:

@@ -101,6 +101,7 @@ const SCRIPTS := [
 	"res://tools/gen_builtin_list.gd",
 	# 各 lane 专项探针 / 截图脚本
 	"res://tools/save_robust_probe.gd", "res://tools/save_migrate_probe.gd",
+	"res://tools/save_stale_refs_probe.gd",  # lane w25-j3 旧卷引用已删名目探针
 	"res://tools/qa_economy_spread_probe.gd", "res://tools/qa_save_slot_tip_probe.gd",
 	"res://tools/qa_discovery_probe.gd", "res://tools/qa_chapter_promote_probe.gd",
 	"res://tools/qa_chart_hud_screenshots.gd", "res://tools/qa_p7_screenshots.gd",
