@@ -249,6 +249,19 @@ REGISTRY = [
             "只判引擎退出码 / TOUR_READY / 报错计数 / 帧与小样在不在，不看像素——画面回归由截图门禁 25 支探针判。"
             "动 ShotTour / tour_sheet / 过场站点时手跑。输出契约：逐站 `✓` / `✗ …  ← 红因` 一行，末行 `TOUR PASS n/n` / `TOUR FAIL k/n`，"
             "退出码 0 全绿 / 1 有站红 / 2 用法错 · 运行副本不在 · 找不到引擎；`--json` 外包后 checks 逐站一条，强制超时 900 秒"},
+    # lane w20-c10：性能基线。只求「跑通了、留指标行」底线红，超阈全 ⚠ 不判红——本机 20 路 lane 共用（load 20+）下
+    # 帧时墙钟随 CPU 供给起伏，设 must 会天天误红；先立口径（帧时各分位 / 峰值内存 / 启动到可玩 + 软档阈值），
+    # 日后做真机 / 静音刻复测时收紧。基线表与意义见 docs/性能基线.md；本条目占 lane 档「帧时口径」位。
+    {"id": "perf_baseline", "tier": "lane",
+     "when": "动 Main.tscn / SeaChart.tscn / SeaChart.gd 航行主环 / 渲染管线（UiTheme / MapView 改动），或动 tools/perf_baseline.gd 本身 / 提高 THRESHOLDS；做帧时重测 / 复测基线时手跑",
+     "kind": "py", "file": "tools/perf_baseline.py",
+     "usage": "[--scene 场面] [--secs N]",
+     "marks": ["PERF_BASELINE", "PERF_BASELINE_MM", "PERF_PY"],
+     "judge": "（lane w20-c10 立，软档）跑 `tools/perf_baseline.gd` 取指标行，按 `THRESHOLDS`（与 docs/性能基线.md §3 同步）软档判：仅「采样帧 < 下限 / 没拿到指标行 / 有 SCRIPT ERROR」算红，超阈全 `GateReport.warn`（ok=true、rc=0）；"
+            "`--selftest` 零、判据自检（伪造高 / 中档指标行各判 warn / fail、`_MM` 正则抓数对、收紧一格后中档须见 ⚠——反向变异自证）；"
+            "两次跑之间阈值波动可达 30%+（8 vCPU / 20 路 lane），红绿判据只盯「跑通了」这一底线、指标交人读——本仓首份性能口径，不判「帧时快慢」",
+     "green": "`PERF_BASELINE PASS（0 项不合；synthe / real 帧起了 N）`；`PERF_PY：<结果>`（全部通过 / N 项未通过）",
+     "red": "`PERF_BASELINE FAIL（…）`；`PERF_PY：N 项未通过`；`✗ real: <理由>`（采样帧不足 / 拿不到指标行 / SCRIPT ERROR）"},
 ]
 
 # 接 shot_gate.gd 的截图脚本（lane m3 三支 + lane sg2 二十支 + 之后各 lane 新接的）。TAG / 张数 / 截图目录从脚本源码现读，不在此抄。
