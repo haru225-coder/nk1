@@ -117,6 +117,7 @@ const SCRIPTS := [
 	"res://tools/qa_iz_skip_notice_probe.gd", "res://tools/qa_shore_wait_notice_probe.gd",  # lane w23-a7 欠债跳年 / 候一日两探针（a8 代登记——未登记会卡 inventory 门禁）
 	"res://tools/qa_rest_days_probe.gd",  # lane w24-b2 旅店 / 住处歇息钮面 ←→ 实扣真断言契约（a7 遗留②一日差归因核验 + 钉边界）
 	"res://tools/qa_calendar_probe.gd",  # lane w26-k9 起步日「三月初一」真推进 / 改元岁名日历探针
+	"res://tools/qa_economy_panel_probe.gd",  # lane w27-k2 名声栏级别名 / 欠债跳年册页·札记折叠月息原文上屏断言（w26-k9 交主控 2/3 合一）
 	"res://tools/qa_yard_transition_probe.gd",
 	"res://tools/qa_pirate_boat_probe.gd",  # 海寇快船 + 船图契约（lane pirate-boat-0928）
 	"res://tools/combat_vfx_probe.gd", "res://tools/ship_vfx_probe.gd", "res://tools/atmos_water_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
