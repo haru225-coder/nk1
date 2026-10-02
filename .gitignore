@@ -21,3 +21,10 @@ __pycache__/
 # 并行 lane 禁止 `git add .` / 禁止盲加别人工作树里未跟踪的侧车噪声；
 # 只把「本 lane 新加的源文件」对应的那一份侧车放进同一次 commit。
 # 因此这里故意不 ignore *.uid / *.import。
+
+# 悬链 symlink（w24-b6，主控拍定入 ignore）：.agents/ 与 .claude/skills 都指向
+# 仓上一级 ../.mirasim/skills（本机 mirasim 平台目录，磁盘上不存在 = 悬链；
+# 实证 ls -l + readlink -f + test -e）。它们是宿主机环境残留、不是本仓资产，
+# 不入库。来源 a11 仓务清册遗留②③，d3/w21 同一判「勿入库＋待裁定 ignore」。
+.agents/
+.claude/skills
