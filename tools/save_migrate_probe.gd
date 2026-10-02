@@ -536,13 +536,27 @@ func _edge_cases() -> void:
 		_expect("T4 %s=…判坏退副抄 题签" % str(bad.keys()[0]), str(sl.call("save_label", SLOT)), BAK_LABEL)
 
 	# ── T5 缺必填键（calendar.year / day / month 缺一）── 日历三件套缺一即坏档退副抄
+	# lane w24-b3（a0ops 遗留①）：a0ops 对抗审计时（探针 185✓/0✗）点出此段落笔当时 :458-462
+	# 三条只钉「题签取副抄」、未钉 `slot_source=bak`；现位 :538-545（随 h9 之后各 lane 落码挪行）。
+	# 题签断言与 slot_source 是两条链：题签只核对「露出的是副抄字样」（数据链），不判 _resolve 的
+	# 来源分类（source 链）——若 _resolve 给出副抄数据却把 source 错标成 primary / corrupt，或坏正本其实
+	# 被判成了别类、靠背地拼来的题签蒙混，题签照样绿。故这五条真断言一处不缺：
+	# ① source=bak（根因；「备份当正本 / 正本当备份」这类错位全被它测到）；② 题签走副抄（措辞链）；
+	# ③ load true（真能读）；④ 读回值取副抄（预塞 money=999 + 正本 800 都被副抄 300 盖掉，错位即现）；
+	# ⑤ 坏正本未被动（只读副抄不趁机回写坏档——本版副抄本无回写一说，此处给「判坏不碰文」上锁）。
 	for missing in ["year", "month", "day"]:
 		_cleanup()
 		var d := _current(OLD_LABEL, 1256)
 		d["calendar"].erase(missing)
-		_write_raw(_primary(), JSON.stringify(d, "\t"))
+		var t5_pr_text := JSON.stringify(d, "\t")
+		_write_raw(_primary(), t5_pr_text)
 		_write_raw(_bak(), bak_text)
+		gs.call("from_dict", {"money": 999})
+		_expect("T5 calendar 缺 %s source=bak" % missing, str(sl.call("slot_source", SLOT)), "bak")
 		_expect("T5 calendar 缺 %s 判坏退副抄" % missing, str(sl.call("save_label", SLOT)), BAK_LABEL)
+		_expect("T5 calendar 缺 %s load_game 读副抄" % missing, str(sl.call("load_game", SLOT)), "true")
+		_expect("T5 calendar 缺 %s 读回 money（副抄 300，盖住正本/早前 800/999）" % missing, str(gs.get("money")), "300")
+		_expect("T5 calendar 缺 %s 坏正本未动（迁移不回写坏档）" % missing, str(_read_text(_primary()) == t5_pr_text), "true")
 
 	# ── T6 未来版本号（save_schema / version 超本版）── 例 4/5 已钉；这里再钉「题签未来+脚注带版本号」那套文本
 	# （既有 _future_case 所钉在案；此处只补一份「副抄自身也是未来档，但正本坏」→ 仍报 future 不报卷页损）
