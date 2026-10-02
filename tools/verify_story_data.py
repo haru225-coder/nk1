@@ -1335,9 +1335,21 @@ for msg in scene_structure_problems(_scene_doc, SCENE_CTX):
     check(False, msg)
 SCENE_STRUCT_STATS = scene_structure_problems.stats
 # 反向自证：每类问题各造一个副本，必须报出含指定字样的那一条（防日后改表 / 改遍历时某类静默失明）。
-# 锚按形状挑（lane w19-g7，照 seq6r check_data_family 零节的做法）：每格不写死幕 id，按清单形状与现数据挑 scenes.json 里
-# 头一条合条件的幕 / 选项 / 章（形名、必填键、子形都读 SCENE_KINDS / SCENE_SUB_SHAPES，即 tools/data_family.json），
-# 幕改名自己跟上；挑不到即红「锚落不上」并写明挑选条件，不静默绿、不崩。变异用的悬空名都现造、先验不撞现有 id。
+# 锚按形状挑（lane w19-g7 落地，lane w20-a10 口径补精）：每格不锚字面 id，按清单形状 + 本文件自有的判定特征
+# 挑 scenes.json 里顺序头一条合条件的幕 / 选项 / 章（形名、必填键、子形都读 SCENE_KINDS / SCENE_SUB_SHAPES，
+# 即 tools/data_family.json），幕改名自己跟上；挑不到即红「锚落不上」并写明挑选条件，不静默绿、不崩。
+# 变异用的悬空名都现造、先验不撞现有 id。
+#
+# ── 表头口径 · 判定分支（lane w20-a10）─────────────────────────────────────────────
+#   每格判定 = 两岔口，写完造格时先行定死、不再后查：
+#   (A) 按形状挑 —— 挑选条件只由【形状单一来源（清单 kinds / shapes / 字段表）+
+#       本文件判定特征（非 deprecated / 不在 SCENE_ARCHIVE / 从入口可达 / 列表非空 / 字段类型在册 / 旗标有人写）、
+#       不指名幕 id】组成。——24 类里的 22 类。
+#   (B) 必须按 id —— 变异动作本身须【抓住一个具体 id 不放】（造一个以它为蓝本的孪生 / 只许它重复），
+#       没有可脱开 id 的形状谓语。——24 类里的 2 类：「id 重复」「新孤儿」。
+#       这两格不置形状谓语，改在 _SV_MUTANTS 表尾的 _SV_ID_REQUIRED 表逐条写明理由；形状挑不出这两格的替身。
+# 改名演练（自证 ①，breif 文案「把某幕 id 改掉，门禁不许红」）走本片 brief 的 Verify 节达标：
+#   对全部 24 类把现挑到的锚 id 做一次大改名后再整门禁，须仍全绿；24 类任一格红即「此条锚确实按 id」。
 class _NoAnchor(Exception):
     pass
 
@@ -1454,13 +1466,17 @@ def _sv_ch(fn):
 
 
 # 每格：(类名, 造格) —— 造格现挑锚，返回 (改副本的 fn(d, b), 改过的 chapters 或 None, 须报出的字样)
+# 每支 docstring 头行写「判定分支A 挑选条件 = …」（22 类）；判定分支 B 的两支在函数体里写明必须有 id 的理由。
 def _m_del_body():
+    """判定分支A 挑选条件 = 主锚（兜底形 + 非 deprecated + 不在归档 + 入口可达 + location 是字符串 + choices[0].next 指到非 deprecated 幕）；
+    删的键 = 清单兜底形 str 型必填里字母序头一个。"""
     a = _sv_story()
     f = _sv_req_field(_SV_FALLBACK[2], f"兜底形 {_SV_FALLBACK[0]}")
     return lambda d, b: b[a].pop(f), None, f"scenes.json {a} 缺必填字段 `{f}`"
 
 
 def _m_del_next():
+    """判定分支A 挑选条件 = 主锚；前提 = 清单 choice 子形的 next 是必填（清单不一致时落「锚落不上」明示）。"""
     a = _sv_story()
     if "next" not in _sv_sub("choices")[0]:
         raise _NoAnchor(f"{SCENE_FAMILY_MANIFEST} choice 子形的 next 不是必填")
@@ -1468,12 +1484,14 @@ def _m_del_next():
 
 
 def _m_del_fac():
+    """判定分支A 挑选条件 = 头一条 facilities 是非空列表且首条是对象的幕（不指名哪张港页）；删的键 = facility 子形 str 型必填头一个。"""
     a = _sv_has_list("facilities")
     f = _sv_req_field(_sv_sub("facilities")[0], "facility 子形")
     return lambda d, b: b[a]["facilities"][0].pop(f), None, f"scenes.json {a}.facilities[0] 缺必填字段 `{f}`"
 
 
 def _m_del_result():
+    """判定分支A 挑选条件 = 清单里以 "has" 判形的那一张（详情场）；删的键 = 判形键本身（'has' 的值，不靠字面读）。"""
     if _SV_DETAIL is None:
         raise _NoAnchor(f"{SCENE_FAMILY_MANIFEST} scenes kinds 没有按 has 判的详情形")
     k = _SV_DETAIL[1]["has"]
@@ -1482,21 +1500,25 @@ def _m_del_result():
 
 
 def _m_next_dangle():
+    """判定分支A 挑选条件 = 主锚；变异值 = 现造、不撞任何在册名字的悬空 next。"""
     a, bad = _sv_story(), _sv_fresh("next")
     return lambda d, b: b[a]["choices"][0].update(next=bad), None, f"scenes.json {a}.choices[0].next `{bad}` 悬空"
 
 
 def _m_inv_next():
+    """判定分支A 挑选条件 = 头一条 investigations 非空、首条是对象的幕（不指名哪一页）；变异值现造。"""
     a, bad = _sv_has_list("investigations"), _sv_fresh("inv_next")
     return lambda d, b: b[a]["investigations"][0].update(next=bad), None, f"scenes.json {a}.investigations[0].next `{bad}` 悬空"
 
 
 def _m_inv_id():
+    """判定分支A 挑选条件 = 同上（investigations 非空）；变异动 id 字段——判「没有同名详情场」那条。"""
     a, bad = _sv_has_list("investigations"), _sv_fresh("inv_id")
     return lambda d, b: b[a]["investigations"][0].update(id=bad), None, f"scenes.json {a}.investigations[0].id `{bad}` 没有同名详情场"
 
 
 def _m_start():
+    """判定分支A 挑选条件 = 文档顶层的 start_scene 是字符串（顶层形状，不指名其值）；变异值现造。"""
     st = _scene_doc.get("start_scene") if isinstance(_scene_doc, dict) else None
     if not isinstance(st, str):
         raise _NoAnchor("scenes.json 没有字符串 start_scene")
@@ -1505,6 +1527,7 @@ def _m_start():
 
 
 def _m_chapters():
+    """判定分支A 挑选条件 = chapters.json 里 advance_scene 非空的头一章（章表形状，不指名第几章）；变异值现造。"""
     chs = SCENE_CTX["chapters"].get("chapters", [])
     i = next((j for j, c in enumerate(chs) if isinstance(c, dict) and c.get("advance_scene")), None)
     if i is None:
@@ -1514,35 +1537,41 @@ def _m_chapters():
 
 
 def _m_fac_id():
+    """判定分支A 挑选条件 = 头一条 facilities 非空的幕；变异值现造、不以设施后缀拼回现有港。"""
     a, bad = _sv_has_list("facilities"), _sv_fresh("city")
     return lambda d, b: b[a]["facilities"][0].update(id=bad), None, f"scenes.json {a}.facilities[0].id `{bad}` 不是 Main.REMAPPED_FACILITIES"
 
 
 def _m_flag():
+    """判定分支A 挑选条件 = 头一条 require_any 是列表的幕（数据形状，不指名哪个剧情旗标）；变异值现造、不入 code_flags。"""
     a = _sv_pick("幕上 require_any 是列表", lambda s: isinstance(s.get("require_any"), list))
     bad = _sv_fresh("flag")
     return lambda d, b: b[a]["require_any"].append(bad), None, f"scenes.json {a}.require_any 旗标 `{bad}` 没人写"
 
 
 def _m_cargo():
+    """判定分支A 挑选条件 = 头一个非 deprecated 幕的 choices[i].effects 有 cargo（没有则退头一个 effects 是对象的）。"""
     a, i, k = _sv_choice_eff("cargo")
     bad = _sv_fresh("cargo")
     return lambda d, b: b[a]["choices"][i]["effects"].update(cargo=[bad]), None, f"scenes.json {a}.choices[{i}].effects.cargo 有 goods.json 里没有的货"
 
 
 def _m_discovery():
+    """判定分支A 挑选条件 = 同 _m_cargo 调口径，key 改 discovery。"""
     a, i, k = _sv_choice_eff("discovery")
     bad = _sv_fresh("discovery")
     return lambda d, b: b[a]["choices"][i]["effects"].update(discovery=bad), None, f"scenes.json {a}.choices[{i}].effects.discovery `{bad}` 不是 discoveries.json"
 
 
 def _m_to_dep():
+    """判定分支A 挑选条件 = 主锚 × 头一条 deprecated: true 的幕（形状特征 'deprecated is True'，不指名哪个 id）。"""
     a = _sv_story()
     dep = _sv_pick("deprecated: true", lambda s: s.get("deprecated") is True)
     return lambda d, b: b[a]["choices"][0].update(next=dep), None, f"scenes.json {a}.choices[0].next `{dep}` 跳进了 deprecated 幕"
 
 
 def _m_int_str():
+    """判定分支A 挑选条件 = 头一条带 int 型清单字段且现值是 int 的幕；写的键 = 清单 int 型字段字典序头一个。"""
     ints = sorted(k for k, t in SCENE_FIELD_TYPES.items() if t is int)
     hit = [None]
 
@@ -1555,16 +1584,19 @@ def _m_int_str():
 
 
 def _m_bool_int():
+    """判定分支A 挑选条件 = 头一个非 deprecated 幕的 choices[i].effects 有 int 型键（本身不指名键名）。"""
     a, i, k = _sv_choice_eff(None, want_type=int)
     return lambda d, b: b[a]["choices"][i]["effects"].update({k: True}), None, f"scenes.json {a}.choices[{i}].effects.{k} 类型应为 int"
 
 
 def _m_list_str():
+    """判定分支A 挑选条件 = 主锚；变异把 choices 整个换成 str（'list→str' 这一形状错）。"""
     a = _sv_story()
     return lambda d, b: b[a].update(choices="x"), None, f"scenes.json {a}.choices 类型应为 list"
 
 
 def _m_typo():
+    """判定分支A 挑选条件 = 主锚；变异加 shape req∪opt 之外的名（现挑 'nxet'，清单已收则退现造串）。"""
     a = _sv_story()
     sreq, sopt = _sv_sub("choices")
     typo = "nxet" if "nxet" not in sreq | sopt else _sv_fresh("key")
@@ -1572,12 +1604,14 @@ def _m_typo():
 
 
 def _m_location():
+    """判定分支A 挑选条件 = 主锚（自带 location 是字符串）；变异值 = 以现 location 为底现造、在册外的名。"""
     a = _sv_story()
     bad = _sv_fresh(_SV_BY[a]["location"])
     return lambda d, b: b[a].update(location=bad), None, f"scenes.json {a}.location = {bad!r} 不在册"
 
 
 def _m_chapter():
+    """判定分支A 挑选条件 = 主锚；变异值 = chapter_ 加 chapters.json 最大章号 +5，必出册外。"""
     a = _sv_story()
     ids = [int(c.get("id", 0)) for c in SCENE_CTX["chapters"].get("chapters", [])]
     bad = f"chapter_{max(ids or [0]) + 5}"
@@ -1585,11 +1619,16 @@ def _m_chapter():
 
 
 def _m_dup():
+    """判定分支B 必须按 id。理由：变异 = 把这一份幕 dict 原样 push 进表尾（dict(b[a]) 保留 id），所以须报告的
+    「幕 id 重复：X」的 X 就是被复制的那个 id 本身——形状谓语拿不出「x 要出现两次」这种替身。"""
     a = _sv_story()
     return lambda d, b: d["scenes"].append(dict(b[a])), None, f"幕 id 重复：{a}"
 
 
 def _m_orphan():
+    """判定分支B 必须按 id。理由：变异 = 以主锚为蓝本深拷一份、id 现造推进表尾，须报告的是那个现造名是孤儿；
+    现造名虽是现造、却以「主锚对象」为形状载体（承载 location/chapter/type/旗标等所有被枚举判的字段），
+    无法用「任何一个合形谓语」替身。"""
     a, oid = _sv_story(), _sv_fresh("orphan")
 
     def fn(d, b):
@@ -1600,11 +1639,13 @@ def _m_orphan():
 
 
 def _m_archive_back():
+    """判定分支A 挑选条件 = 主锚 × 头一条「在 SCENE_ARCHIVE 且非 deprecated」的幕（归档名单由集合判定，不指名 id）。"""
     a, r = _sv_story(), _sv_archived()
     return lambda d, b: b[a]["choices"][0].update(next=r), None, f"scenes.json {r} 在 SCENE_ARCHIVE 里却已接回入口"
 
 
 def _m_archive_gone():
+    """判定分支A 挑选条件 = 头一条「在 SCENE_ARCHIVE 且非 deprecated」的幕（同 _m_archive_back，锚由集合挑不指名字面）。"""
     r = _sv_archived()
     return lambda d, b: d["scenes"].remove(b[r]), None, f"SCENE_ARCHIVE 里的 `{r}` 在 scenes.json 里不存在"
 
@@ -1617,6 +1658,12 @@ _SV_MUTANTS = [
     ("类型错 list→str", _m_list_str), ("键拼错", _m_typo), ("枚举外 location", _m_location), ("枚举外 chapter", _m_chapter),
     ("id 重复", _m_dup), ("新孤儿", _m_orphan), ("归档场接回", _m_archive_back), ("归档名单悬空", _m_archive_gone),
 ]
+# 「必须按 id」逐格注明表（lane w20-a10）：形状挑不出的只有这两格；改这两格前先把理由推翻，否则不许转成形状谓语。
+_SV_ID_REQUIRED = {
+    "id 重复": "变异 push 进表尾的是主锚的 dict 拷贝（含 id 原样），须报字样直指被复制的 id 本身——是「让这一 id 出现两次」，替身不存在。",
+    "新孤儿": "变异以主锚整份对象为蓝本做深拷换 id 推进表尾，须报「该现造名是孤儿」与蓝本对象的所有枚举字段绑定，替身不存在。",
+}
+check(set(_SV_ID_REQUIRED) <= {t for t, _ in _SV_MUTANTS}, "_SV_ID_REQUIRED 里登了 _SV_MUTANTS 表外的类名")
 SV_ANCHORS = {}
 for tag, build in _SV_MUTANTS:
     try:
@@ -1660,6 +1707,11 @@ if _FAMILY_MAN is not None:
             check(False, f"scenes 形状单一来源自证：「{tag}」套不上现清单（{e!r}）——{SCENE_FAMILY_MANIFEST} 的 scenes 形改了名，改 _SHAPE_MUTANTS")
             continue
         check(any(want in x for x in got), f"scenes 形状单一来源自证：「{tag}」后没报出「{want}」（实报 {got[:2]}）")
+
+# 「去强度」自身也是强度问题（lane w20-a10 自证 ②）：24 类的形状判定不许丢。删格 / 加格 /
+# 把格改成恒绿都先在这里红——判定分支已与格一一绑定，不许半截。
+check(len(_SV_MUTANTS) == 24 and len({t for t, _ in _SV_MUTANTS}) == 24,
+      f"_SV_MUTANTS 现 {len(_SV_MUTANTS)} 类（去重后 {len({t for t, _ in _SV_MUTANTS})}）≠ 24（去强度变异：删格 / 加格都是强度变化，要改先动 24 类形状判定表）")
 
 # ── 结局年号：过场 ↔ 结算册页 ↔ Calendar（Q8）───────────────
 # 「岸上的根」曾写景炎三年三月，而该卡只在 1277（景炎二年）出现。结局年号有三处镜像：cutscenes.json 过场的
