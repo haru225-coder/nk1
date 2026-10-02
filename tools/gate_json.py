@@ -100,8 +100,8 @@ REGISTRY = [
     {"id": "patrol", "gate": "patrol_shell", "tier": "must", "kind": "godot", "file": "tools/patrol_shell.gd",
      "args": ["--path", ".", "-s", "res://tools/patrol_shell.gd"], "display": True,
      "judge": "挂主场景走开局、三港、九设施、海图：1280×720 按钮不越界、焦点色、航向牌、终局港口页；截图旁证一色判据（lane pg，一色只记 ⚠）；"
-              "（lane w20-a2，g1 遗留② / g13 遗留④）白刃两条窗口支路：末艘「夺船」题签相位帧停满 (T_HOLD + T_FADE) 八成、出战墨边写「・夺船」；"
-              "白刃失利支「脱钩」题签同相位帧判据、不收战、不出墨边（全显帧按封顶 8/60 s 折算、不再用 0.44 s 墙钟边界）",
+              "（lane w20-a2，g1 遗留② / g13 遗留④）白刃两条窗口支路：末艘「夺船」题签按游戏时停满 T_HOLD 八成（相位判据）、出战墨边写「・夺船」；"
+              "白刃失利支「脱钩」题签同判据、不收战、不出墨边（不再用 0.44 s 墙钟边界）",
      "green": "`PATROL SHELL PASS`（前一行 `✓ 截图旁证 n/n 张非一色`）", "red": "`✗` 行；`PATROL SHELL FAIL` + 复述"},
     {"id": "截图门禁", "tier": "lane", "when": "动画面 / UI / 过场", "kind": "shots", "file": "tools/shot_gate.gd",
      "judge": "（lane m3 立、sg2 扩到全部截图脚本，新截图脚本一律接它）`tools/shot_gate.gd`：零截图 / 空视口 / 一色空图 / 张数不足一律红；契约模式须显式 `-- --contract`",

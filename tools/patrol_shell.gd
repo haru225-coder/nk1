@@ -4,8 +4,13 @@ extends SceneTree
 ## 海图三张航向牌必须整张在画面内，水粮不够时牌上写着告警，账条变高时海图不低于自己的最小高度。
 ## （合并时按 7f92 晨潮三向改写：原版量的是已拆掉的港口列表。）
 ## 截图旁证（lane pg）：存盘前按像素种类数 / 直方图熵判一色，一色或拿不到图打 ⚠（不改退出码，--json 记 warn）；
-## headless 不截，打一行 ⚠ 说明未判——不再静默跳过。
-## godot --path . -s res://tools/patrol_shell.gd
+## headless 不截，打一行 ⚠ 说明未判——不再静默跳过；白刃两支（夺船 / 不利）门禁在 _no_render 下打 ⚠ 跳过。
+## 接舷题签相位判据（lane w20-a2）：按游戏时比停拍满窗（不看墙钟秒数），最少 3 帧（不按帧率）——
+## ——235 fps 实测：真等满停拍的 hold 比约 1.00，没等满题签停在半路收场的约 0.79，判线八成居中两边都不沾
+## （改前 0.44 s/T_HOLD 0.55 墙钟边界，w19-g13 遗留④ 偶发一次红、重跑两次都绿）。压帧 / 慢机下相位不变、不随机器飘。
+## `DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd -- --bench <N>`：
+##   连演 N 场海战（白刃夺船 + 白刃失利各一遍为一场；N 缺省 1、<1 按 1），前场断言与 --json 判词与单跑同口径。
+##   bench 只走用户参数、不进注册表命令、不进门禁判词——5/5 连跑照注册表命令 shell 循环（bench 是手工复跑便利，不是口径）。
 
 const VIEW := Vector2(1280, 720)
 const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
@@ -76,8 +81,24 @@ func _run() -> void:
 	await _check_sea_chart()
 	await _check_market_fold()
 	await _check_endgame_pages()
-	await _v0928_crew_board_check()
+	var bench := _bench_times()
+	for i in bench:
+		if bench > 1:
+			print("  … bench 第 %d/%d 场（白刃夺船 + 白刃失利各一遍）" % [i + 1, bench])
+		await _v0928_crew_board_check()
+		await _w20a2_melee_lose_check()
 	_finish()
+
+
+## -- --bench <N>：连演 N 场海战（lane w20-a2）。不带 / N < 1 一律 1；参数串坏了（不是整数）当没带。
+func _bench_times() -> int:
+	var args := OS.get_cmdline_user_args()
+	for i in args.size():
+		if str(args[i]) == "--bench":
+			if i + 1 < args.size() and str(args[i + 1]).is_valid_int():
+				return maxi(1, int(args[i + 1]))
+			return 1
+	return 1
 
 
 ## 1280×720 牙行：委办收成一行摘要后，第一张货卡的「卖 1」整颗在滚动视口里（第 2 轮 UX M2：原先在折线下）
@@ -566,21 +587,25 @@ func _finish() -> void:
 		quit(1)
 
 
-## crew 线 09-29 返修（复核 4）：接舷夺下末艘，「夺船」题签全显的游戏时 ≥ T_HOLD 的八成、全显 ≥ 3 帧，出战墨边写「……・夺船」。
+## 白刃两条窗口支路（w20-a2 一并立 / 稳，共用 _blade_battle 布景）：胜路 crew 线 09-29 返修（复核 4），败路 g1 遗留②。
 ## 09-28 修前末艘夺下当帧就出战：题签只留 1 帧、墨边写「战罢」。这两条原先只在 git 忽略的验收探针里，合并后没门禁拦，这里进巡检。
-## 真起一场海战（海寇只刷一艘：首艘即末艘），冻住敌炮，敌船水手清零保证白刃必胜；主场景先藏起、演完还原，船队与战况复原。
+## 真起一场海战（海寇只刷一艘：首艘即末艘），冻住敌炮；胜路敌船水手清零保证白刃必胜，败路旗舰水手压到 1、敌船水手 / 披甲
+## 抬高保证白刃必不利（落空 / 击退 / 脱钩都走同一支：解开钩缆、题签「脱钩」、不收战、敌船仍在场）。主场景先藏起、演完还原，船队与战况复原。
 ## lane fx8：本地线 combat06 士气挂件逐物理帧读敌船 crew，清零会记成伤亡过半、再加被钩——接舷停拍 0.42 s 里敌船降幡，
 ## 士气簿裁决 enemy_struck 当场收战（墨边「受降」、夺船题签一帧不画），走的是受降一路。清零前先停掉挂件轮询（降幡 / 裁决
-## 都在它的物理帧里），巡检确定地走「白刃夺下末艘」；收战 data.fates 须记 boarded（不是 struck），否则判红。
-## 题签停留按游戏时累加（process delta，顿帧压低 time_scale 时照样是游戏时），不看墙钟、不按帧率。headless 下题签起不来，打 ⚠ 不判。
-## lane w19-g1：有题签就不出浮字（crew 线 9e35254 定，09-30 合并丢了）——题签在屏的每一帧，WorldMap 中央浮字不许亮着夺船那句
-## （「……并入本队。」或与题签副题同句）；修前浮字「接舷既定。敌船「快船」并入本队。」与「夺船」题签同屏，这条红。
+## 都在它的物理帧里），两条路都先停挂件：胜路确定地走「白刃夺下末艘」、败路确定地走「白刃判负」，收战 / 不收战按路断言。
+## 题签全显判据（lane w20-a2，g13 遗留④ 0.44 s 墙钟边界偶发红改相位帧）：对战时按 process delta 封顶 8/60 s 折算「窗口帧数」，
+## 全显窗口 = T_HOLD + T_FADE（_play_resolve 先停 T_HOLD 再淡 T_FADE，全显帧 = 模 1）；全显帧数 ≥ 折算 × 0.8 才算停满，
+## 不看墙钟秒数、不按帧率——压帧 / 慢机下相位不变，快机 235 fps 也不因 delta 偏大少记帧。败路题签「脱钩」同口径。
+## lane w19-g1：有题签就不出浮字（crew 线 9e35254 定，09-30 合并丢了）——题签在屏的每一帧，WorldMap 中央浮字不许亮着同一件事
+## 那句（胜路「……并入本队。」 / 败路题签副题同句）；修前浮字与题签同屏，这条红。败路同判据、不许空转成绿。
 const _CrewStage := preload("res://tools/combat_probe_stage.gd")
 const _CrewBoarding := preload("res://scripts/combat/BoardingStage.gd")
 
 
-## 题签全显这一帧：WorldMap 中央浮字（_notice）若亮着夺船那句（「并入本队」或与题签副题同句）返回描述，否则空串。
-func _crew_capture_dup(wm) -> String:
+## 题签全显这一帧：WorldMap 中央浮字（_notice）若亮着同一件事那句（「并入本队」或与题签副题同句）返回描述，否则空串。
+## key 传"capture"只认并入本队（胜路），传其余值只认与副题同句（败路不利，副题 = MeleeResolve 的 summary 头句）。
+func _crew_capture_dup(wm, key := "capture") -> String:
 	if wm == null or not is_instance_valid(wm):
 		return ""
 	var nt = wm.get("_notice")
@@ -592,17 +617,15 @@ func _crew_capture_dup(wm) -> String:
 	var st: Node = _CrewStage.boarding_stage(self, wm)
 	var sub = st.get("_sub") if st != null else null
 	var sub_txt := str((sub as Label).text) if sub is Label else ""
-	if lab.text.find("并入本队") >= 0 or (sub_txt != "" and lab.text == sub_txt):
+	var same := sub_txt != "" and lab.text == sub_txt
+	if (key == "capture" and lab.text.find("并入本队") >= 0) or same:
 		return "浮字「%s」与题签副题「%s」同屏" % [lab.text, sub_txt]
 	return ""
 
 
-func _v0928_crew_board_check() -> void:
-	if _no_render:
-		var why_skip := "末艘夺船题签与出战墨边未判：无渲染环境（DisplayServer=%s）" % DisplayServer.get_name()
-		print("  ⚠ ", why_skip)
-		GateReport.warn(why_skip)
-		return
+## 白刃布景 + 金创（w20-a2：胜 / 败两路共用；setup 闭包在刷出敌船之后、接舷之前调，各配本路的必胜 / 必败形）。
+## 返回 {"ref", "result", "foe", "saved_ships", "saved_battle", "saved_morale", "main_vis"}；_no_render / 中途空转由调用方收尾。
+func _blade_battle(setup: Callable) -> Dictionary:
 	var gm: Node = root.get_node("GameManager")
 	var fleet: Node = root.get_node("Fleet")
 	var saved_ships: Array = (fleet.get("ships") as Array).duplicate(true)
@@ -632,47 +655,97 @@ func _v0928_crew_board_check() -> void:
 		for c in wm.get_children():
 			if String(c.name).begins_with("PirateShip") and not c.is_queued_for_deletion():
 				foe = c
+	if foe != null:
+		var tracker = wm.get("_morale")
+		if tracker is Node:
+			(tracker as Node).process_mode = Node.PROCESS_MODE_DISABLED
+		setup.call(foe, wm)
+		foe.set_physics_process(false)
+		foe.position = (wm.get("ship") as Node2D).position + Vector2(95, 0)
+	return {"ref": ref, "result": result, "foe": foe,
+		"saved_ships": saved_ships, "saved_battle": saved_battle,
+		"saved_morale": saved_morale, "main_vis": main_vis}
+
+
+## 相位判据（w20-a2，g13 遗留④）。棋检（title 题签 alpha ≥ 0.99）逐帧累积游戏时：真等满停拍的 hold 比（实测全显游戏时
+## ÷ _play_resolve 满窗 T_HOLD + 淡出首帧一格 8/60）在 235 fps 下约 1.00，没等满题签半路收场的约 0.79；按游戏时不看墙钟
+## 秒数、看 full_frames 下限不按帧率（压帧下相位不变）。235 fps 高帧下 delta 多半格吃亏，判线取八成居中，两边都不沾。
+## 返回 [达标, "注记", 全显帧数, 浮字红因, 判没判上浮字]。
+func _blade_hold_frames(ref: WeakRef, title: String, dup_key: String) -> Array:
+	var why: String = await _CrewStage.wait_drawn(self, func() -> bool:
+		var cap: Array = _CrewStage.board_caption(self, ref.get_ref())
+		return cap[0] == title and float(cap[1]) >= 0.99, func() -> bool: return ref.get_ref() == null, 8000)
+	if why != "":
+		return [false, why, 0, "", false]
+	var full_frames := 1
+	var dup_note := _crew_capture_dup(ref.get_ref(), dup_key)
+	var dup_measured := true
+	var game_hold := root.get_process_delta_time()
+	while ref.get_ref() != null:
+		await process_frame
+		await RenderingServer.frame_post_draw
+		var cap: Array = _CrewStage.board_caption(self, ref.get_ref())
+		if cap[0] == title and float(cap[1]) >= 0.99:
+			game_hold += root.get_process_delta_time()
+			full_frames += 1
+			if dup_note == "":
+				dup_note = _crew_capture_dup(ref.get_ref(), dup_key)
+		elif cap[0] == "" or float(cap[1]) < 0.99:
+			# 淡出起步的那一帧：这一帧的 delta 里前一段题签仍全显（题签换了 title 也一样——演示过错位则判红）
+			game_hold += root.get_process_delta_time()
+			break
+		# 演示中换了 title（脱钩题签被顶 / 又翻了面）：按错位判红（相位会跟着窗口变，不为墙钟飘）
+	var full_window := _CrewBoarding.T_HOLD + 8.0 / 60.0
+	var hold_ratio := game_hold / full_window
+	var ok := hold_ratio >= 0.8 and full_frames >= 3
+	var note := "全显 %d 帧、游戏时 %.2f s ÷ 满窗 %.2f s = %.2f（T_HOLD %.2f + 淡出首帧一格 8-60）" % [
+		full_frames, game_hold, full_window, hold_ratio, _CrewBoarding.T_HOLD]
+	return [ok, note, full_frames, dup_note, dup_measured]
+
+
+## 布景收尾 + 现场还原（两路同）。
+func _blade_teardown(ctx: Dictionary) -> void:
+	var gm: Node = root.get_node("GameManager")
+	var fleet: Node = root.get_node("Fleet")
+	_CrewStage.teardown(self, (ctx["ref"] as WeakRef).get_ref(), gm)
+	await process_frame
+	await process_frame
+	fleet.set("ships", ctx["saved_ships"])
+	fleet.set("morale", ctx["saved_morale"])
+	gm.set("pending_battle", ctx["saved_battle"])
+	root.canvas_transform = Transform2D()
+	if _main is CanvasItem:
+		(_main as CanvasItem).visible = bool(ctx["main_vis"])
+
+
+func _v0928_crew_board_check() -> void:
+	if _no_render:
+		var why_skip := "末艘夺船题签与出战墨边未判：无渲染环境（DisplayServer=%s）" % DisplayServer.get_name()
+		print("  ⚠ ", why_skip)
+		GateReport.warn(why_skip)
+		return
+	var ctx: Dictionary = await _blade_battle(func(foe: Node, _wm: Node) -> void:
+		# 胜路：水手清零，白刃必胜（士气挂件已被 _blade_battle 停掉，不会走红受降一路，来路见段头注）
+		foe.set("crew", 0))
+	var ref: WeakRef = ctx["ref"]
+	var result: Array = ctx["result"]
+	var foe: Node2D = ctx["foe"]
 	_check(foe != null, "巡检海战刷出一艘海寇（首艘即末艘）")
 	var hold_ok := false
 	var hold_note := "未量到"
 	var dup_note := ""
 	var dup_measured := false  # 题签全显过、逐帧看过浮字才算判了（没画到题签不许空转成绿）
 	if foe != null:
-		var tracker = wm.get("_morale")
-		if tracker is Node:
-			(tracker as Node).process_mode = Node.PROCESS_MODE_DISABLED
-		foe.set("crew", 0)
-		foe.set_physics_process(false)
-		foe.position = (wm.get("ship") as Node2D).position + Vector2(95, 0)
+		var wm: Node = ref.get_ref()
 		wm.call("_board_enemy", foe)
-		var why: String = await _CrewStage.wait_drawn(self, func() -> bool:
-			var cap: Array = _CrewStage.board_caption(self, ref.get_ref())
-			return cap[0] == "夺船" and float(cap[1]) >= 0.99, func() -> bool: return ref.get_ref() == null, 8000)
-		if why == "":
+		var got: Array = await _blade_hold_frames(ref, "夺船", "capture")
+		hold_ok = bool(got[0])
+		hold_note = str(got[1])
+		dup_note = str(got[3])
+		dup_measured = bool(got[4])
+		if hold_ok:
 			_save_shot("crew_末艘夺船题签")
-			dup_measured = true
-			dup_note = _crew_capture_dup(ref.get_ref())
-			var full_frames := 1
-			var game_hold := 0.0
-			var dropped := false
-			while ref.get_ref() != null:
-				await process_frame
-				await RenderingServer.frame_post_draw
-				var cap: Array = _CrewStage.board_caption(self, ref.get_ref())
-				if cap[0] == "夺船" and float(cap[1]) >= 0.99:
-					game_hold += root.get_process_delta_time()
-					full_frames += 1
-					if dup_note == "":
-						dup_note = _crew_capture_dup(ref.get_ref())
-				elif not dropped:
-					# 淡出起步的那一帧：这一帧的 delta 里前一段题签仍全显
-					dropped = true
-					game_hold += root.get_process_delta_time()
-			hold_ok = game_hold >= _CrewBoarding.T_HOLD * 0.8 and full_frames >= 3
-			hold_note = "全显 %d 帧、游戏时 %.2f s" % [full_frames, game_hold]
-		else:
-			hold_note = why
-	_check(hold_ok, "末艘「夺船」题签停满 T_HOLD %.2f s 的八成、全显 ≥ 3 帧（%s）" % [_CrewBoarding.T_HOLD, hold_note])
+	_check(hold_ok, "末艘「夺船」题签停满 T_HOLD %.2f s 的八成（游戏时相位判据；%s）" % [_CrewBoarding.T_HOLD, hold_note])
 	_check(dup_measured and dup_note == "",
 		"末艘「夺船」题签在屏时不出同一件事的浮字（有题签就不出浮字；%s）"
 			% (dup_note if dup_note != "" else ("题签全显各帧浮字未亮夺船句" if dup_measured else "题签没画到，无从判")))
@@ -695,12 +768,60 @@ func _v0928_crew_board_check() -> void:
 	_check(why3 == "" and exit_title.ends_with("・夺船") and result.size() == 1 and result[0][0] == "win" and bool(d.get("boarded", false))
 			and fates == ["boarded"],
 		"末艘夺下以 boarded 出战、出战墨边写「%s」（以「・夺船」结尾；下场 %s；%s）" % [exit_title, fates, why3 if why3 != "" else "墨边已擦出"])
-	_CrewStage.teardown(self, ref.get_ref(), gm)
-	await process_frame
-	await process_frame
-	fleet.set("ships", saved_ships)
-	fleet.set("morale", saved_morale)
-	gm.set("pending_battle", saved_battle)
-	root.canvas_transform = Transform2D()
-	if _main is CanvasItem:
-		(_main as CanvasItem).visible = main_vis
+	await _blade_teardown(ctx)
+
+
+## 白刃失利支（lane w20-a2，g1 遗留②）：旗舰水手压 1、敌船水手 / 披甲抬满，MeleeResolve 必出非 win 的 legacy
+## （击退 / 脱钩 / 落空都走同一支：解开钩缆放走敌船、题签「脱钩」——BoardingStage.title_for("lose")、不收战、墨边不上、
+## battle_finished 一帧不响）。断言该出现的那一格真出现（题签「脱钩」停满、敌仍在场、无结束），不该出现的没出现
+## （没有「夺船」、没有出墨边、没有出战墨边）。没法触发 _MeleeResolve.resolve 判 lose 的反向变异：把题签判据改去等"夺船" / 改回墙钟
+func _w20a2_melee_lose_check() -> void:
+	if _no_render:
+		var why_skip := "白刃失利题签与「不收战」未判：无渲染环境（DisplayServer=%s）" % DisplayServer.get_name()
+		print("  ⚠ ", why_skip)
+		GateReport.warn(why_skip)
+		return
+	var ctx: Dictionary = await _blade_battle(func(foe: Node, _wm: Node) -> void:
+		# 败路：旗舰水手压到 1（lose_crew_random 每船至少留 1 人保火种），攻方气尽人少必被折回 lose；
+		# 敌披甲 / 弓手拉满是把「落空 / 击退 / 脱钩」三种都盖住，不是只押一种
+		foe.set("crew", 60)
+		foe.set("melee_armor", 0.9)
+		foe.set("melee_archers", 0.9))
+	var ref: WeakRef = ctx["ref"]
+	var result: Array = ctx["result"]
+	var foe: Node2D = ctx["foe"]
+	_check(foe != null, "白刃失利巡检海战刷出一艘海寇（攻方水手压 1 必不利）")
+	var fleet: Node = root.get_node("Fleet")
+	var crew_before := int(fleet.call("total_crew")) if foe != null else -1
+	for s in fleet.get("ships"):
+		s["crew"] = 1
+	var hold_ok := false
+	var hold_note := "未量到"
+	var dup_note := ""
+	var dup_measured := false
+	if foe != null:
+		var wm: Node = ref.get_ref()
+		wm.call("_board_enemy", foe)
+		var got: Array = await _blade_hold_frames(ref, "脱钩", "lose")
+		hold_ok = bool(got[0])
+		hold_note = str(got[1])
+		dup_note = str(got[3])
+		dup_measured = bool(got[4])
+		if hold_ok:
+			_save_shot("w20a2_白刃失利题签")
+	_check(hold_ok, "白刃失利「脱钩」题签停满 T_HOLD %.2f s 的八成（游戏时相位判据；失地那格：%s）" % [_CrewBoarding.T_HOLD, hold_note])
+	_check(dup_measured and dup_note == "",
+		"白刃失利题签在屏时不出同一件事的浮字（脱钩句不上浮字；%s）"
+			% (dup_note if dup_note != "" else ("题签全显各帧浮字未亮脱钩句" if dup_measured else "题签没画到，无从判")))
+	# 不收战 / 敌船仍在 / 出战墨边不出场：等 0.9 s 游戏时（题签 T_HOLD + 淡出都过了），期间任何一条出现即红
+	await _CrewStage.wait_until(self, func() -> bool:
+		return ref.get_ref() == null, 900)
+	var wm2: Node = ref.get_ref()
+	var foe_still := wm2 != null and foe != null and is_instance_valid(foe) and not foe.is_queued_for_deletion()
+	var cap2: Array = _CrewStage.board_caption(self, wm2)
+	_check(wm2 != null and bool(wm2.get("resolved")) == false and result.is_empty() and foe_still,
+		"白刃失利不收战：WorldMap 未结算、battle_finished 一帧不响、敌船仍在场（resolved %s · 结果 %d · 敌在场 %s）" % [
+			("?" if wm2 == null else str(bool(wm2.get("resolved")))), result.size(), foe_still])
+	_check(cap2[0] != "夺船", "白刃失利没有「夺船」题签（题名「%s」）" % cap2[0])
+	_check(_CrewStage.letterbox_under(self, root) == null, "白刃失利不出出战墨边（只有末艘收战才上墨边）")
+	await _blade_teardown(ctx)
