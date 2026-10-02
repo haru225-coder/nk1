@@ -142,6 +142,7 @@ func _check_endgame_pages() -> void:
 	_main.load_scene("xinghua")
 	for _i in 3:
 		await process_frame
+	await _wait_shore_transition("守城页", _main.current_scene_id)
 	_check_siege_band("守城页（先进过泉州）")
 	_check_screen("守城页", true)
 	_main._on_facility_pressed({"id": "siege_grain", "title": "市场"})
@@ -150,6 +151,7 @@ func _check_endgame_pages() -> void:
 	_main.load_scene("xinghua")
 	for _i in 3:
 		await process_frame
+	await _wait_shore_transition("守城页-回", _main.current_scene_id)
 	_check_siege_band("守城页（进出市场一次）")
 	_check_screen("守城页-回", false)
 
@@ -161,9 +163,14 @@ func _check_endgame_pages() -> void:
 		await process_frame
 	gs.set_flag("sided_pu")
 	gs.finish("泉州蒲氏的船", "巡检")
+	# 终局落定后回港，拍板 E-10 的节拍链（只接泉州五针、章一开店）不能把这页截走——道具这一步
+	# 一次性把链上五针记齐（终局戏的拍账归终局，量的是终局后港口页本身）
+	for entry in ["monk", "merchant", "dock", "prepare", "return_quanzhou"]:
+		gs.beat_mark(entry)
 	_main.load_scene("quanzhou")
 	for _i in 3:
 		await process_frame
+	await _wait_shore_transition("终局港名匾", _main.current_scene_id)
 	var want := "泉州・泉州蒲氏的船"
 	_check(str(_main.port_title.text) == want, "终局港名匾「%s」（现「%s」）" % [want, _main.port_title.text])
 	var band: Node = _main.port_mode.get_node_or_null("ShoreBand")
@@ -186,6 +193,25 @@ func _check_endgame_pages() -> void:
 		acts0, _count_buttons(band.get_node_or_null("ShoreActions"))])
 	gs.from_dict({})
 	cal.from_dict({"year": 1255, "month": 3, "day": 1})
+
+
+## 等岸带题签过场演完（守城 / 终局首次排岸带的墨幕题签）。场还是这一段题签的港 / 城就不动
+## （换了场景说明这一帧的断言探的是别页，不必等）；题签一离树再等一帧让底下的页落定。
+func _wait_shore_transition(tag: String, scene_id: String) -> void:
+	var waited := 0
+	while waited < 120 and str(_main.current_scene_id) == scene_id:
+		var live_transition := false
+		for n in get_nodes_in_group("nk1_ui_transition"):
+			if is_instance_valid(n) and not (n as Node).is_queued_for_deletion():
+				live_transition = true
+				break
+		if not live_transition:
+			break
+		await process_frame
+		waited += 1
+	if waited > 0:
+		print("  · %s 岸带题签演完（%d 帧）" % [tag, waited])
+	await process_frame
 
 
 func _check_siege_band(tag: String) -> void:
