@@ -133,6 +133,7 @@ const SCRIPTS := [
 	"res://tools/art/tour_sheet.gd",
 	"res://tools/perf_baseline.gd",  # lane w20-c10 帧时 / 峰值内存 / 启动到可玩基线探针
 	"res://tools/qa_port_beats_probe.gd",  # lane w26-k7 PortBeats.due 终局守卫下沉契约探针
+	"res://tools/qa_ledger_strip_probe.gd",  # lane w27-k1 HUD 顶匾「钱 N / 水粮 D 日」随账上屏断言探针
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
