@@ -116,6 +116,7 @@ const SCRIPTS := [
 	"res://tools/qa_bribe_probe.gd",  # lane w23-a5 塞钱探针骨架（EA6-1 机械前置，断言先注掉只打印实测）
 	"res://tools/qa_iz_skip_notice_probe.gd", "res://tools/qa_shore_wait_notice_probe.gd",  # lane w23-a7 欠债跳年 / 候一日两探针（a8 代登记——未登记会卡 inventory 门禁）
 	"res://tools/qa_rest_days_probe.gd",  # lane w24-b2 旅店 / 住处歇息钮面 ←→ 实扣真断言契约（a7 遗留②一日差归因核验 + 钉边界）
+	"res://tools/qa_rest_scenarios_probe.gd",  # lane w28-k1 旅店 / 住处「歇・候 N 日」钮面两贴文场景同亮 + 寺观该暗反驾断言（w26-k9 交主控 4）
 	"res://tools/qa_calendar_probe.gd",  # lane w26-k9 起步日「三月初一」真推进 / 改元岁名日历探针
 	"res://tools/qa_economy_panel_probe.gd",  # lane w27-k2 名声栏级别名 / 欠债跳年册页·札记折叠月息原文上屏断言（w26-k9 交主控 2/3 合一）
 	"res://tools/qa_yard_transition_probe.gd",
