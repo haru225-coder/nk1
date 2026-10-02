@@ -1,5 +1,5 @@
 extends SceneTree
-## Lane sv：headless 探针——存档结构版本 save_schema 的迁移与拒读。
+## Lane sv / w22-h9：headless 探针——存档结构版本 save_schema 的迁移与拒读，加尾段 T1–T10 存读档边界。
 ## 用法：godot --headless --path . -s res://tools/save_migrate_probe.gd
 ## 只动存档位 95，不碰正式位 1..SLOTS；输出含 SCRIPT ERROR 即视为失败。
 ##   v1 老档（无 save_schema、缺后加的 state 字段）→ 读入成功、字段补齐、回写本版（现 save_schema 3，经 v1→v2→v3 迁移链）、原件另存 .v1、副抄不动
@@ -126,6 +126,9 @@ func _run() -> void:
 	_expect("本版档读回不生成 .v*", str(sl.call("load_game", SLOT)) + "/" + str(_any_versioned()), "true/false")
 
 	_met_backfill_cases()
+
+	# ── w22-h9 存读档边界 T1–T10（注释逐条对照 docs/存档迁移矩阵.md §六）──
+	_edge_cases()
 
 	_cleanup()
 	if fails == 0:
@@ -385,3 +388,136 @@ func _cleanup() -> void:
 			var p: String = base + suffix
 			if FileAccess.file_exists(p):
 				DirAccess.remove_absolute(p)
+
+
+## ─── w22-h9 存读档边界 T1–T10 ────────────────────────────────────────────────
+## 每条注释对应 docs/存档迁移矩阵.md §六「现状 → 判据」。fail-stop 才修、软的不栽、
+## 只钉现行为、不改源；只用存档位 95（不碰正式位）。
+
+func _edge_cases() -> void:
+	print("  ── w22-h9 T1–T10：存读档边界 ──")
+	var gs: Node = root.get_node("GameState")
+	var cal: Node = root.get_node("Calendar")
+	var fleet: Node = root.get_node("Fleet")
+	var key := str(sl.get("SCHEMA_KEY"))
+
+	# ── T1 空文件（0 字节 / 只有空白）── 已经按不可读退副抄、提示「正本与副抄皆不可读」，判据：source=corrupt、题签「卷页损了」、不动文件
+	var bak_text := JSON.stringify(_current(BAK_LABEL, 1255), "\t")
+	for blank in ["", "   \n\t"]:
+		_cleanup()
+		_write_raw(_primary(), blank)
+		cal.set("year", -1)
+		var src := str(sl.call("slot_source", SLOT))
+		_expect("T1 空档 slot_source", src, "corrupt")
+		_expect("T1 空档 load_game 拒读", str(sl.call("load_game", SLOT)), "false")
+		_expect("T1 空档日志句", str(sl.call("load_fail_note", SLOT)), "正本与副抄皆不可读。")
+		_expect("T1 空档题签", str(sl.call("save_label", SLOT)), "卷页损了")
+		_expect("T1 空档 Calendar 未被改写", str(cal.get("year")), "-1")
+		_expect("T1 空文件本体未被动", _read_text(_primary()), blank)
+
+	# ── T2 半截 JSON（写到一半 / 截断字符串）── 同源坏档，走 T1 同一判据
+	for trunc in ["{\"version\":3,\"save_schema\":3,\"calendar\":{\"year\":1260,\"month\":4,\"day\":1,\"", "[1,2,{\"a\":", "\"partial\"", "{\"a\":null,\"b\""]:
+		_cleanup()
+		_write_raw(_primary(), trunc)
+		_write_raw(_bak(), bak_text)
+		_expect("T2 截断 slot_source", str(sl.call("slot_source", SLOT)), "bak")
+		_expect("T2 截断题签取副抄", str(sl.call("save_label", SLOT)), BAK_LABEL)
+		_expect("T2 截断 load_game 读副抄", str(sl.call("load_game", SLOT)), "true")
+		_expect("T2 截断读回 money（副抄）", str(gs.get("money")), "300")
+
+	# ── T3 顶层 JSON 合法但不是对象（数组/字串/数字）── 顶层型错即坏档，拒绝并退副抄
+	for shape in ["[1,2]", "\"plain\"", "42", "null", "true"]:
+		_cleanup()
+		_write_raw(_primary(), shape)
+		_write_raw(_bak(), bak_text)
+		_expect("T3 顶层非对象 %s" % shape.substr(0, 8), str(sl.call("slot_source", SLOT)), "bak")
+		_expect("T3 题签取副抄 %s" % shape.substr(0, 8), str(sl.call("save_label", SLOT)), BAK_LABEL)
+
+	# ── T4 字段类型给了却不是数（money / water / year / tariff 写成字串 / 对象 / 数组 / 布尔）
+	# 原有破检分支（外加验证：money=float 3.0 我可保纯、money=bool true 要判坏）
+	for bad in [{"money": "足八百"}, {"money": {"qty": 800}}, {"money": [800]}, {"money": true},
+			{"water": "三十"}, {"year": "丙戌"}, {"tariff": "十一税"}, {"chapter": "ch2"}]:
+		_cleanup()
+		var d := _current(OLD_LABEL, 1256)
+		for k in bad:
+			if k == "year":
+				d["calendar"]["year"] = bad[k]
+			elif k == "water":
+				d["fleet"]["water"] = bad[k]
+			elif k == "tariff":
+				d["economy"]["tariff"] = bad[k]
+			else:
+				# money / chapter / flags 都属 state 分区
+				d["state"][k] = bad[k]
+		_write_raw(_primary(), JSON.stringify(d, "\t"))
+		_write_raw(_bak(), bak_text)
+		_expect("T4 %s=…判坏退副抄 题签" % str(bad.keys()[0]), str(sl.call("save_label", SLOT)), BAK_LABEL)
+
+	# ── T5 缺必填键（calendar.year / day / month 缺一）── 日历三件套缺一即坏档退副抄
+	for missing in ["year", "month", "day"]:
+		_cleanup()
+		var d := _current(OLD_LABEL, 1256)
+		d["calendar"].erase(missing)
+		_write_raw(_primary(), JSON.stringify(d, "\t"))
+		_write_raw(_bak(), bak_text)
+		_expect("T5 calendar 缺 %s 判坏退副抄" % missing, str(sl.call("save_label", SLOT)), BAK_LABEL)
+
+	# ── T6 未来版本号（save_schema / version 超本版）── 例 4/5 已钉；这里再钉「题签未来+脚注带版本号」那套文本
+	# （既有 _future_case 所钉在案；此处只补一份「副抄自身也是未来档，但正本坏」→ 仍报 future 不报卷页损）
+	_cleanup()
+	var fut_bak2 := _current(BAK_LABEL, 1255)
+	fut_bak2[key] = int(sl.get("SAVE_SCHEMA")) + 5
+	_write_raw(_primary(), "{not-json")
+	_write_raw(_bak(), JSON.stringify(fut_bak2, "\t"))
+	_expect("T6 正本坏+副抄未来 slot_source", str(sl.call("slot_source", SLOT)), "future")
+	_expect("T6 正本坏+副抄未来 日志句", str(sl.call("load_fail_note", SLOT)), "为新版所记，本版读不了。")
+
+		# ── T7 存档里引用了数据表已删的 id（港 / 船型 / 发现物 / 委办目的港 / 人物 / 日历出本朝范围）
+	# 现行为（w22-h9 实测钉牢，不改源）：体检只判型，不判 id 是否仍在册——load_game true、各分区原样读入、
+	# 不报错不提示。要不要读档时给玩家提一句，属口径，交策划（docs/存档迁移矩阵.md §六 遗留）。
+	var t7_cases := [
+		["T7a 已删港 last_port", func(d): d["state"]["last_port"] = "tungking", func(): return str(gs.get("last_port")), "tungking"],
+		["T7b 已删船型", func(d): d["fleet"]["ships"] = [{"type": "jungle_junk", "cargo": {}, "crew": 6}], func(): return str((fleet.get("ships") as Array).size()), "1"],
+		["T7c 已删发现物", func(d): d["state"]["discoveries_found"] = ["gone_cape"], func(): return JSON.stringify(gs.get("discoveries_found")), JSON.stringify(["gone_cape"])],
+		["T7e 已删人物 met_ids", func(d): d["state"]["met_ids"] = ["gone_person"], func(): return JSON.stringify(gs.get("met_ids")), JSON.stringify(["gone_person"])],
+		["T7f 日历出本朝范围", func(d): d["calendar"]["year"] = 9990, func(): return str(cal.get("year")), "9990"],
+	]
+	for c in t7_cases:
+		_cleanup()
+		var d7 := _current(OLD_LABEL, 1256)
+		(c[1] as Callable).call(d7)
+		_write_raw(_primary(), JSON.stringify(d7, "\t"))
+		_expect("%s：load_game 照读" % c[0], str(sl.call("load_game", SLOT)), "true")
+		_expect("%s：原样读入" % c[0], str((c[2] as Callable).call()), c[3])
+
+	# ── T8 槽位文件被删：仅 .bak 在 → source=bak 能读；两份皆无 → none
+	_cleanup()
+	_write_raw(_bak(), bak_text)
+	_expect("T8 只剩副抄 slot_source", str(sl.call("slot_source", SLOT)), "bak")
+	_expect("T8 只剩副抄 load_game", str(sl.call("load_game", SLOT)), "true")
+	_expect("T8 只剩副抄读回 year", str(cal.get("year")), "1255")
+	_cleanup()
+	_expect("T8 两份皆无 slot_source", str(sl.call("slot_source", SLOT)), "none")
+	_expect("T8 两份皆无 has_save", str(sl.call("has_save", SLOT)), "false")
+	_expect("T8 两份皆无题签", str(sl.call("save_label", SLOT)), "未记")
+
+	# ── T9 连存两次：逐字节一致
+	_cleanup()
+	gs.call("from_dict", {})
+	sl.call("save_game", SLOT, "quanzhou")
+	var s1 := _read_text(_primary())
+	sl.call("save_game", SLOT, "quanzhou")
+	var s2 := _read_text(_primary())
+	_expect("T9 连存两次逐字节一致", str(s1 == s2), "true")
+	# ── T10 读档后立刻再存：读进不乱写（T-98）+ 连存稳定
+	_cleanup()
+	var d10 := _current(OLD_LABEL, 1256)
+	_write_raw(_primary(), JSON.stringify(d10, "\t"))
+	gs.call("from_dict", {})
+	_expect("T10 先存再读 load_game", str(sl.call("load_game", SLOT)), "true")
+	sl.call("save_game", SLOT, "quanzhou")
+	var once := _read_text(_primary())
+	sl.call("save_game", SLOT, "quanzhou")
+	_expect("T10 读后连续再存 逐字节稳定", str(_read_text(_primary()) == once), "true")
+
+	print("  ── w22-h9 T1–T10 完 ──")
