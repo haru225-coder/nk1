@@ -99,7 +99,9 @@ REGISTRY = [
      "green": "`P7_GUILD_EXAM_SMOKE_OK`", "red": "`FAIL …` 行；`P7_GUILD_EXAM_SMOKE_FAIL k`"},
     {"id": "patrol", "gate": "patrol_shell", "tier": "must", "kind": "godot", "file": "tools/patrol_shell.gd",
      "args": ["--path", ".", "-s", "res://tools/patrol_shell.gd"], "display": True,
-     "judge": "挂主场景走开局、三港、九设施、海图：1280×720 按钮不越界、焦点色、航向牌、终局港口页；截图旁证一色判据（lane pg，一色只记 ⚠）",
+     "judge": "挂主场景走开局、三港、九设施、海图：1280×720 按钮不越界、焦点色、航向牌、终局港口页；截图旁证一色判据（lane pg，一色只记 ⚠）；"
+              "（lane w20-a2，g1 遗留② / g13 遗留④）白刃两条窗口支路：末艘「夺船」题签相位帧停满 (T_HOLD + T_FADE) 八成、出战墨边写「・夺船」；"
+              "白刃失利支「脱钩」题签同相位帧判据、不收战、不出墨边（全显帧按封顶 8/60 s 折算、不再用 0.44 s 墙钟边界）",
      "green": "`PATROL SHELL PASS`（前一行 `✓ 截图旁证 n/n 张非一色`）", "red": "`✗` 行；`PATROL SHELL FAIL` + 复述"},
     {"id": "截图门禁", "tier": "lane", "when": "动画面 / UI / 过场", "kind": "shots", "file": "tools/shot_gate.gd",
      "judge": "（lane m3 立、sg2 扩到全部截图脚本，新截图脚本一律接它）`tools/shot_gate.gd`：零截图 / 空视口 / 一色空图 / 张数不足一律红；契约模式须显式 `-- --contract`",
@@ -119,8 +121,8 @@ REGISTRY = [
      "judge": "（lane sv / fx6）老档沿迁移链逐级升到本版（`SaveLoad.SAVE_SCHEMA`，现为 3：v1→v2→v3）：v1 老档读入补字段、回写本版、原件留 .v1；"
               "v2 档（无 `state.met_ids`）按雇用记录 / 在船职事 / 守城见林华回填人物志「已识」、推不出留空、回写本版、原件留 .v2；未来档明确拒读、不退副抄、文件不动",
      "green": "`SAVE_MIGRATE_PROBE PASS`", "red": "`✗` 行；`SAVE_MIGRATE_PROBE FAIL fails=k`；输出含 `SCRIPT ERROR` 即算失败"},
-    {"id": "gates_md", "tier": "lane", "when": "动门禁清单 / docs/GATES.md", "kind": "py", "file": "tools/gates_md.py",
-     "judge": "（lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 收尾截图的脚本全部入册、接 shot_gate 的脚本都挂压帧 `ShotGate.frame_pressure`（lane gd18）；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序",
+    {"id": "gates_md", "tier": "lane", "when": "动门禁清单 / docs/GATES.md，或改 README「验证」段的道数句", "kind": "py", "file": "tools/gates_md.py",
+     "judge": "（lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段；w20-b3 加一键跑把关与 README 道数对账）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 收尾截图的脚本全部入册、接 shot_gate 的脚本都挂压帧 `ShotGate.frame_pressure`（lane gd18）；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序；一键跑把关（w20-b3，判据自检见附属「三之一」）：两处一键跑命令段不许带关断开关 / `--help` / `--dry-run`、必跑档不许缺席、条数不许不符，README「下面 N 道」的道数与注册表一键跑条数对得上",
      "green": "`结果：全部通过`", "red": "`✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write`"},
     # lane gd21 升进必跑：「写没写外部路径」自己判不准（照抄命令 / 默认根最容易带进来），跑一次 <1s、只要 python3 + git、不写盘
     {"id": "RefsMacPath", "tier": "must", "kind": "py",
@@ -433,6 +435,20 @@ SUBCHECKS = [
              "`FAIL: SCENE_ARCHIVE 只许减不许增` = 有人把新孤儿塞进归档名单（接入口，别登记）；"
              "`FAIL: scenes.json 结构门禁自证：「X」后没报出…` = 某类检查失明；`…「X」锚落不上：…找不到「<挑选条件>」…` = 数据里已没有这种形状的条目（照新数据改 _SV_MUTANTS 这一格的挑选条件，不许删格）；"
              "`…锚挑到了、变异却套不上` = 挑选条件与变异手法不一致（lane w19-g7）。都计入 verify_story_data 失败、退 1"},
+    {"id": "一键跑把关判据自检（三之一）", "parent": "gates_md", "lane": "w20-b3", "oneclick": False,
+     "cmd": "python3 tools/gates_md.py",
+     "marks": ["off_limits()", "def oneclick_sweep", "def sweep_selfcheck", "LANDING_OFF", "三之一、一键跑把关判据自检",
+               "出现禁带字样", "缺席必跑档", "道数不符", "README 道数"],
+     "expect": "「三之一、一键跑把关判据自检」4 条 `✓`（两枚关断开关字样从两支变异脚本 import 现读得到；4 枚禁带字样逐个注入内存命令段都判红；"
+               "删一条 / 多一条必跑档分别红「缺席」「道数不符」）。起因 g8 W1：一键跑段 / todo 验证段被塞 `--no-ledger-landing` 后 check_symbols / "
+               "check_decision_refs 全 rc=0，只有逐条字符串比对红——准入判据 ① 一键跑两处命令段不许带 LANDING_OFF 关断开关 / `--help` / `--dry-run`"
+               "（开关样值从 check_symbols_mutants / ledger_refs_mutants 的 LANDING_OFF 常量现读，不在本表另抄）；② 必跑档条目不许在一键跑里缺席"
+               "（红因点名是谁）；③ 命令条数与必跑档条数必须相符；④ README「一次改动闭环 = 下面 N 道」的道数与注册表一键跑条数对账。与逐条比对互补、"
+               "随 gates_md 每次跑（lane 档，与逐条比对同寿命）",
+     "fail": "`✗ §三 一键跑 / .claude/todo.md 验证段出现禁带字样 --…：…只许 … 在变异 worktree 里带` = 一键跑被塞了关断开关，落点预检被关掉、"
+             "其余门禁照样 0（g8 W1 误绿点）；`✗ …缺席必跑档 N 条（…）` = 必跑档在一键跑里漏跑；`✗ …命令 N 条，必跑档 M 条——道数不符` = "
+             "多出来的行没人认 / 必跑漏跑；`✗ README 道数（…）与注册表一键跑条数（…）不符` = README「N 道」写漂移了；"
+             "`✗ 两枚关断开关字样…import 现读得到（LANDING_OFF 常量改名 / 挪走了）` = 开关常量改名，本判据靶子要跟"},
     {"id": "compile 清单自检（inventory）", "parent": "compile", "lane": "ea4", "oneclick": True,
      "cmd": "godot --headless --path . -s res://tools/godot_compile_check.gd",
      "marks": ["inventory SCRIPTS == tracked *.gd", "ls-files", "INVENTORY_EXEMPT", "unlisted", "exempt-stale"],

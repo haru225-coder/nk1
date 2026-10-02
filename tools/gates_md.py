@@ -36,6 +36,74 @@ CN = "零一二三四五六七八九十"
 fails = []
 
 
+# ── 一键跑把关（lane w20-b3；起因 g8 W1：§三 一键跑段与 todo 验证段被塞进 `--no-ledger-landing` 后，
+#    check_symbols / check_decision_refs 仍全 rc=0（红因各自的落点预检被关掉），只有本脚本两条字符串比对红——
+#    「一键跑真跑全了」不能只靠文本比对兜，而且比对的红因只印「不符」、不说清是漏跑 / 多条 / 关断）──
+# 禁带字样：两枚 LANDING_OFF 关断开关只许变异对照脚本（check_symbols_mutants._run_case / ledger_refs_mutants._det_case）
+# 在变异过的 worktree 里自带；样值从两支脚本的 LANDING_OFF 常量现读，不在此另抄（改名 / 挪走即「三之一」红）。
+OFF_LIMITS_NOTE = {"check_symbols_mutants": "check_symbols 十四节「落点预检」的关断开关，只许 check_symbols_mutants 在变异 worktree 里带",
+                   "ledger_refs_mutants": "check_decision_refs「零之二、落点预检」的关断开关，只许 ledger_refs_mutants 在变异 worktree 里带"}
+UNIVERSAL_OFF = {"--help": "带上一道门禁就不干活（打帮助退 0 / 2），一键跑里等于没跑",
+                 "--dry-run": "是不是真跑由脚本自定，一键跑里不许赌"}
+
+
+def off_limits():
+    """一键跑命令段禁带字样 → 理由。两枚 LANDING_OFF 从各自脚本 import 现读；读不到记空串占位（「三之一」判红）。"""
+    import importlib
+    out = {}
+    for mod, note in OFF_LIMITS_NOTE.items():
+        try:
+            out[importlib.import_module(mod).LANDING_OFF] = note
+        except (ImportError, AttributeError):
+            out[""] = note + "；本脚本 import 不到它的 LANDING_OFF 常量（改名 / 挪走了？）"
+    out.update(UNIVERSAL_OFF)
+    return out
+
+
+def oneclick_sweep(cmds, must_cmds, where, by_cmd):
+    """一段一键跑命令（已从命令段抠成列表）的三条机判，返回问题行列表（不直接记账，main / 自检共用）：
+    ① 禁带字样（关断开关 / --help / --dry-run）；② 必跑档条目缺席（逐条比对红时这里给出「谁漏了」的红因）；
+    ③ 条数与必跑档不符（多出来的行没进注册表没人认）。比对本身仍在 main 里照旧逐条跑，本判据与它互补。"""
+    probs, ol = [], off_limits()
+    if "" in ol:
+        probs.append(f"{where}禁带字样读不到 LANDING_OFF 常量：{ol['']}")
+    tokens = set().union(*(c.split() for c in cmds)) if cmds else set()
+    for flag in sorted(f for f in ol if f and f in tokens):
+        probs.append(f"{where}出现禁带字样 {flag}：{ol[flag]}——一键跑不许靠关断 / 空转参数蒙绿（g8 W1）")
+    missing = [m for m in must_cmds if m not in cmds]
+    if missing:
+        probs.append(f"{where}缺席必跑档 {len(missing)} 条（{'、'.join(by_cmd.get(m, m) for m in missing)}）"
+                     f"——必跑档在一键跑里漏跑，剩下的照跑照绿（g8 W1 同类）")
+    if len(cmds) != len(must_cmds):
+        probs.append(f"{where}命令 {len(cmds)} 条，必跑档 {len(must_cmds)} 条——道数不符："
+                     f"多出来的行没进注册表没人认，少了就是必跑漏跑（道数口径见 docs/GATES.md §一注册表）")
+    return probs
+
+
+def sweep_selfcheck(mutate=None):
+    """「三之一、一键跑把关判据自检」。mutate：内存里把禁带样值换掉（自检的反向变异——改的样值必须立即使自检红）。"""
+    print("三之一、一键跑把关判据自检（lane w20-b3：把关判据自己的靶子漂了当场红）")
+    ol = off_limits()
+    if mutate:
+        ol = mutate(ol)
+    check("" not in ol and len([f for f in ol if f]) == len(OFF_LIMITS_NOTE) + len(UNIVERSAL_OFF),
+          "两枚关断开关字样从 tools/check_symbols_mutants.py / tools/ledger_refs_mutants.py import 现读得到"
+          + (f"（LANDING_OFF 常量改名 / 挪走了：{ol.get('', '空串占位进了判据')}）" if "" in ol else ""))
+    base = ["python3 tools/check_decision_refs.py"]
+    by_cmd = {base[0]: "check_decision_refs"}
+    # ① 禁带字样：逐枚注入都须红、不注入须绿
+    injected = [p for f in sorted(f for f in ol if f)
+                for p in oneclick_sweep([base[0] + " " + f], base, "自检注入", by_cmd) if f in p]
+    check(len(injected) == len([f for f in ol if f]) and not oneclick_sweep(base, base, "自检对照", by_cmd),
+          f"禁带字样 {len([f for f in ol if f])} 枚逐枚注入命令段都判红（红因点名该字样）、不注入判绿")
+    # ② 缺席：删掉必跑条目须红，红因必须说「缺席」
+    miss = oneclick_sweep([], base, "自检缺一条", by_cmd)
+    check(bool(miss) and any("缺席" in p for p in miss), "删掉必跑条目判红，红因注明「缺席」")
+    # ③ 道数：多出一行须红，红因必须说「道数不符」
+    more = oneclick_sweep(base + ["python3 tools/x.py"], base, "自检多一条", by_cmd)
+    check(bool(more) and any("道数不符" in p for p in more), "多出一行判红，红因注明「道数不符」")
+
+
 def check(cond, msg):
     print(("  ✓ " if cond else "  ✗ ") + msg)
     if not cond:
@@ -45,6 +113,16 @@ def check(cond, msg):
 
 def cn(n):
     return CN[n] if n <= 10 else ("十" if n < 20 else CN[n // 10] + "十") + (CN[n % 10] if n % 10 else "")
+
+
+def cn_num(s):
+    """中文数 → 阿拉伯（与 cn() 同口径，只认 1–99；认不出返回 None）。README 道数句对账用。"""
+    if len(s) == 1 and s in CN[1:]:
+        return CN.index(s)
+    m = re.fullmatch(r"([一二三四五六七八九]?)十([一二三四五六七八九]?)", s)
+    if m:
+        return (CN.index(m.group(1)) * 10 if m.group(1) else 10) + (CN.index(m.group(2)) if m.group(2) else 0)
+    return None
 
 
 def load_registry():
@@ -371,8 +449,11 @@ def main(argv):
               f"§二 批量巡检块在「{BATCH_HEAD}」小节里")
     ocb = oneclick_block(tail)
     must = reg["oneclick"]
+    by_cmd = {g["cmd"]: g["id"] for g in gates}
     if check(ocb is not None, "§三 有「一键人读全跑」命令段"):
         check_oneclick(ocb, must, "§三 一键跑", "改 §三 手写段或注册表 tier")
+        for p in oneclick_sweep(ocb, must, "§三 一键跑", by_cmd):  # lane w20-b3：把关判据（与逐条比对互补）
+            check(False, p)
     try:
         with open(TODO, encoding="utf-8") as f:
             tcb = oneclick_block(f.read(), r"^## 验证[ \t]*\n+```[^\n]*\n")
@@ -380,6 +461,22 @@ def main(argv):
         tcb = None
     if check(tcb is not None, "`.claude/todo.md` 有「## 验证」命令段"):
         check_oneclick(tcb, must, "`.claude/todo.md` 验证段", "改 todo.md 验证段或注册表 tier")
+        for p in oneclick_sweep(tcb, must, ".claude/todo.md 验证段", by_cmd):
+            check(False, p)
+    # lane w20-b3：README「一次改动闭环 = 下面 N 道门禁全绿」的道数与注册表一键跑条数对账；
+    # README 的命令注释块（「十道 Python」「六道 Godot」）是讲解口径、不逐条比命令
+    try:
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as f:
+            rm = re.search(r"一次改动闭环\s*=\s*下面([一二三四五六七八九十]+)道门禁全绿", f.read())
+        rm_n = cn_num(rm.group(1)) if rm else None
+    except OSError:
+        rm_n = None
+    check(rm_n is not None, "README「验证」段找得到「一次改动闭环 = 下面 N 道」道数句")
+    if rm_n is not None:
+        check(rm_n == len(must), f"README 道数（{rm.group(1)} = {rm_n}）与注册表一键跑条数（{len(must)}）相符"
+              + ("" if rm_n == len(must) else "——「一键跑十六道」一阵子写成别的数，没人看得见（g8 W1 同类）"))
+    # 把关判据自检（不落盘）：靶子（两支变异脚本的 LANDING_OFF 常量）漂了、判法放宽了当场红
+    sweep_selfcheck()
     live = [g["id"] for g in gates if g["tier"] != "no"]
     heads = {int(m.group(1)): m.group(2) for m in re.finditer(r"^### (\d+)\. (.+)$", tail, re.M)}
     for i, gid in enumerate(live, 1):
