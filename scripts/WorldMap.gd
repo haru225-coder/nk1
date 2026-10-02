@@ -11,6 +11,7 @@ const _Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const _SeaState := preload("res://scripts/combat/SeaState.gd")
 const _Maneuver := preload("res://scripts/combat/ManeuverModel.gd")
 const _SeaAtmosphere := preload("res://scripts/combat/SeaAtmosphere.gd")
+const _CAM_PLAQUE_CTL := preload("res://scripts/worldmap_cam_plaque.gd")
 
 ## 战斗结束信号：outcome 为 "win"/"lose"/"flee"，data 携带战损等结算信息
 signal battle_finished(outcome: String, data: Dictionary)
@@ -73,6 +74,18 @@ const COMBAT_FIRE_DELAY := 3.5
 ## 两艘满编 9 门 × 25 伤 = 450，开局 120 耐久一波沉。封顶 2 门：
 ## 第一轮约 100，停着打第二轮才沉，B 来得及按。
 const COMBAT_CANNON_CAP := 2
+
+# ── V0928-9 海战镜头竖向让位顶匾（w25-j1）──
+## w22-h1 复量（tools/ 仓外 v0928_9_camera_gauge，zoom 0.5 / 刷船 700—720 / 30 秒）：哨船场接舷贴近时
+## 敌船绕到本船正上方，船心落进顶匾 TideBar（屏矩形 (16,8)—(1264,80)）11.66%—17.99%（h1 / 本片基线两测），
+## 海寇场 0—5.44%。只因镜头居中钉屏中：贴舷 140 屏 px + 敌船椭圆兜圈上冲 300+，(80−360)/0.5 = −560
+## 世界 px 必挨压。修法（镜头侧，不动射程 800 / 开炮 760 / 接舷 140 / 刷船 700—720；也不藏顶匾骗指标）：
+## 敌船贴身时给旗舰 Camera2D 一份「荣誉 offset」offset.y = −dy 屏 px，镜头中心自屏中向下让，
+## 顶匾下沿到屏底这段可用区的中心成为镜头中心；本船世界坐标一根毫毛不动，航行 / 接舷 / 弹道全照旧。
+## 量值在 scripts/Ship.gd `CAM_PLAQUE_DY`；让位口径对账见 scripts/worldmap_cam_plaque.gd，
+## story_check `_w25j1_cam_plaque_check` 五断言钉住（dy = 0 沿用居中、不谋求让位，按其口径仍绿）。
+## 战斗中恒开：打这一战就是在战术图上布警，多让 40 屏 px 上方的海不算损失；gate 触发会让
+## 敌船「冲到顶匾才给位」，镜头与上扫不同步照样挨、并擦出底沿假出画（w25-j1 全参扫描见 Verify）。
 
 ## P4-2 接舷距离：低于此距离可按 G 钩住敌船进入白刃。lane combat02 起是基准够距：
 ## 实际够距按风压差、上风位、相对航速在它上下浮（_board_check → ManeuverModel.boarding_approach）
@@ -140,6 +153,12 @@ func _process(delta: float) -> void:
 	_process_weather_and_time(delta)
 	if combat_mode:
 		rain_particles.global_position = ship.global_position
+
+	# V0928-9：敌船贴舷时镜头给顶匾让位（只写 honor offset，本船世界坐标不动）
+	if combat_mode and not resolved:
+		_cam_dy_apply()
+	elif is_instance_valid(ship):
+		ship.set("_cam_plaque_dy", 0.0)
 
 	# 战损统计：只按开战时在册的船算（夺来入列的船不进总耐久差，避免负数）
 	if combat_mode:
@@ -534,6 +553,9 @@ func _setup_combat(pb: Dictionary) -> void:
 	weather_status.text = "海战　%s" % _sea.current_desc()
 	weather_status.add_theme_color_override("font_color", UiTheme.HONEY)
 	_try_letterbox_enter(pb)
+	# V0928-9：开战先抚平可能残留的让位（上一战敌近时收战），再接新战
+	if is_instance_valid(ship):
+		ship.set("_cam_plaque_dy", 0.0)
 	# combat11：士气挂件 + 号令/状态 UI
 	_morale = _CombatMorale.attach(self)
 	if _morale != null:
@@ -897,6 +919,15 @@ func _setup_sea(pb: Dictionary) -> void:
 	# 物理帧排在船后面：Ship / PirateShip 先走完本帧，_physics_process 再按模型改旗舰
 	process_physics_priority = 10
 	_feed_ship_wind()
+
+
+## V0928-9：让位每渲染帧步进（挂在 _process；已用 combat_mode / resolved 把门）。战斗中恒把让位
+## 量值交给 Ship（Ship.CAM_PLAQUE_DY，屏 px 荣誉 offset）；收战 / 场景卸出由调用点写 0 抚平。
+## 只写 ship._cam_plaque_dy 一个量：本船世界坐标、敌船、弹道全不碰，镜头由 Ship 实测按
+## offset.y = −dy 与自震抵消后写入。
+func _cam_dy_apply() -> void:
+	if is_instance_valid(ship):
+		ship.set("_cam_plaque_dy", ship.get("CAM_PLAQUE_DY"))
 
 
 # ══ 战术场岸线（lane w20-b1：g13 遗留①）════════════════════════════════════════

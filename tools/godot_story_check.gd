@@ -745,6 +745,7 @@ func _route_check() -> void:
 	_close_dialogs(main)
 	_g13_chart_zoom_check()
 	_w20b9_spawn_bbox_check()
+	_w25j1_cam_plaque_check()
 	_b1_worldmap_coast_check()
 	_w20c2_port_beats_check(main)
 	GS.from_dict({})
@@ -4202,4 +4203,54 @@ func _w25j2_endgame_port_beats_check(main: Node) -> void:
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	main._beats = null
+
+
+## lane w25-j1 · V0928-9 海战镜头竖向让位顶匾（纯算，不起窗口；与 _w20b9 / _w25j2 同段、随其后排）。
+## 现象（w22-h1 复量、本片基线实测哨船 11.66% / 海寇 5.44%）与修法见 scripts/WorldMap.gd 常量块
+## 注释与 scripts/worldmap_cam_plaque.gd：战斗中镜头得到一份下让 dy 屏 px 的荣誉 offset
+## （Ship.CAM_PLAQUE_DY 经 `_cam_plaque_dy` 平滑后写 camera.offset.y = −dy，WorldMap `_cam_dy_apply`
+## 使能；判据账目由本断言按同一口径核）。dy = 0 时沿用修复前的居中镜头，本组判据按其口径仍判绿；
+## 真正钉红的是 dy > 0 时让位量翻界 / 账目倒挂。
+func _w25j1_cam_plaque_check() -> void:
+	var ship_c: Dictionary = (load("res://scripts/Ship.gd") as GDScript).get_script_constant_map()
+	var dy := float(ship_c.get("CAM_PLAQUE_DY", -1.0))     # 让位屏 px；常数在 Ship（offset 由 Ship 实测写入）
+	var cp_c: Dictionary = (load("res://scripts/worldmap_cam_plaque.gd") as GDScript).get_script_constant_map()
+	var pb := float(cp_c.get("PLAQUE_BOTTOM", -1.0))       # 顶匾屏下沿（80）
+	var vp: Vector2 = cp_c.get("VIEWPORT", Vector2.ZERO)   # 视口 1280×720
+	var minz := float(cp_c.get("MIN_ZOOM", 0.0))           # 兜底 zoom 0.42
+	var cam_r := float(ship_c.get("CAM_ZOOM_REST", 0.0))
+	var cam_f := float(ship_c.get("CAM_ZOOM_FULL", 0.0))
+	var wm := load("res://scripts/worldmap_cam_plaque.gd") as GDScript
+	var off: Vector2 = wm.call("view_off", dy, minz)       # 让位折世界 px（按最保守 zoom）
+	var hr_px: float = wm.call("headroom_px", dy)          # 虚偏后敌船上冲碰匾要的屏 px（dy=0 时为 280）
+	_check(pb > 0.0 and vp.x > 0.0 and vp.y > 0.0 and minz > 0.0 and minz <= cam_f and cam_f <= cam_r,
+		"V0928-9 口径：PLAQUE_BOTTOM %.0f / VIEWPORT %s / MIN_ZOOM %.2f 与 Ship 两档 zoom（REST %.2f / FULL %.2f）齐整" % [
+			pb, str(vp), minz, cam_f, cam_r])
+	# 让位量口径：非负、不超视口高（offset 翻到视口外就是骗指标）；dy = 0 回居中、> 0 即谋求让位
+	_check(dy >= 0.0 and dy <= vp.y,
+		"V0928-9 让位量 CAM_PLAQUE_DY %.0f 屏 px 在 [0, 视口高 %.0f]（负值 / 翻出视口即本行红）" % [dy, vp.y])
+	# 世界让位必须是纯竖向、正向不为负：x == 0；dy > 0 时 y > 0 世界 px（dy = 0 时 y == 0，居中沿用仍绿）
+	_check(absf(off.x) < 0.001 and off.y >= -0.001 and (dy <= 0.0 or off.y > 0.001),
+		"V0928-9 view_off(%.0f, %.2f) = %s：纯竖向正向（x≈0；dy=0 时 y=0 居中沿用，dy>0 时 y>0）" % [
+			dy, minz, str(off)])
+	# 虚偏后镜头中心自屏中下移：屏 3/4 点相对镜头中心的世界位移，dy > 0 时小于 dy = 0 的居中值
+	var qt: Vector2 = wm.call("view_quarter", dy, cam_r)
+	var qt_idle: Vector2 = wm.call("view_quarter", 0.0, cam_r)
+	_check(qt_idle.y > 0.0 and (dy <= 0.0 or qt.y < qt_idle.y),
+		"V0928-9 view_quarter(dy %.0f) y=%.1f（居中 %.1f）：dy=0 居中沿用；dy>0 时镜头中心已向下让" % [
+			dy, qt.y, qt_idle.y])
+	# 让位后贴身敌船的安全余量：相机 offset 以「世界 px ÷ zoom」写入（实测 dy=80 时画面下让 40 屏 px
+	# = dy×zoom；量具同口径 —— 屏位 = Δworld×zoom − offset，offset 的屏向效果 ×zoom），敌要屏上冲
+	# (dy×zoom + 360 − pb) 屏 px 才碰匾。dy = 0 时按本函数口径仍判绿：headroom_px(0) = 280、
+	# 世界 560 恰在贴舷判线，不算病态、只代表居中；dy > 0 时按「有效屏让位」须 >560 钉住。
+	var eff_px: float = dy * cam_r + (vp.y * 0.5 - pb)
+	var eff_w: float = eff_px / cam_r
+	var ok_room := true
+	if dy > 0.0:
+		ok_room = eff_w > 560.0
+	else:
+		ok_room = hr_px >= vp.y * 0.5 - pb - 0.001
+	_check(ok_room,
+		"V0928-9 安全余量：虚偏 dy %.0f（有效屏让位 %.0f 屏 px）后敌船须屏上冲 %.0f 屏 px（世界 %.0f，dy>0 须 >560；dy=0 居中仍绿）" % [
+			dy, dy * cam_r, eff_px, eff_w])
 

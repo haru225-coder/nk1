@@ -34,6 +34,16 @@ var max_hp: float = 100.0
 ## 拉到停船 0.5、满帆 0.42：一屏 2560×1440（满帆约 3050×1710），开战刷在 560—600 的敌船与本船同屏，看得出相对方位。
 const CAM_ZOOM_REST := 0.5
 const CAM_ZOOM_FULL := 0.42
+## V0928-9（w25-j1）：战斗中镜头给顶匾的荣誉让位量（屏 px，恒开；WorldMap.gd `_cam_dy_apply`
+## 写入，账目对账在 scripts/worldmap_cam_plaque.gd、story_check `_w25j1_cam_plaque_check`）。只写进
+## camera.offset.y，船身世界坐标一根毫毛不动；0 即沿用居中。
+const CAM_PLAQUE_DY := 80.0
+## 本帧谋求的让位（WorldMap 写；负值 / 翻出视口都按 0 抚平，防骗指标式 offset）
+var _cam_plaque_dy := 0.0
+## 实际生效的让位（5/s 平滑趋近目标：防 0↔1 抖动晃出敌于底沿的读数）
+var _cam_plaque_dy_t := 0.0
+## 自震分账（与让位分离——合成时只在写入 camera.offset 那一行加总，防止 lerp 闭环放大让位）
+var _cam_shake := Vector2.ZERO
 var target_zoom = Vector2(CAM_ZOOM_REST, CAM_ZOOM_REST)
 # lazy load：避免 compile 时 Cannonball.gd → class Ship → preload 场景 → 再要 Cannonball.gd 的环
 var cannonball_scene: PackedScene = null
@@ -266,9 +276,14 @@ func _update_visuals(delta: float) -> void:
 	
 	if current_speed > 250.0 or wind_strength > 150.0:
 		var shake_intensity = (current_speed / 400.0) * 2.0 * _CombatFx.world_text_k(self)
-		camera.offset = Vector2(randf_range(-shake_intensity, shake_intensity), randf_range(-shake_intensity, shake_intensity))
+		_cam_shake = Vector2(randf_range(-shake_intensity, shake_intensity), randf_range(-shake_intensity, shake_intensity))
 	else:
-		camera.offset = camera.offset.lerp(Vector2.ZERO, 5.0 * delta)
+		_cam_shake = _cam_shake.lerp(Vector2.ZERO, 5.0 * delta)
+	# V0928-9：荣誉让位按平滑趋近叠进 offset（5/s 与镜头自震同律，防 gate 0↔1 抖动晃出底沿出画）。
+	# 自震与让位分账再合成——直接在 camera.offset 上先 lerp 后叠加会成闭环，下帧 lerp 把已含的
+	# 让位再往回拉，稳态放大到 dy/ε ≈ dy×12（w25-j1 实测 dy=40 开时 offset.y=−480 即此病）。
+	_cam_plaque_dy_t = lerpf(_cam_plaque_dy_t, _cam_plaque_dy, 5.0 * delta)
+	camera.offset = Vector2(_cam_shake.x, minf(_cam_shake.y, 0.0) - _cam_plaque_dy_t)
 	_dress_t -= delta
 	if _dress_t <= 0.0:
 		_dress_t = 0.4
@@ -373,6 +388,20 @@ func get_damage_model() -> _DamageModel:
 	return damage_model
 
 
+## 损伤快照（DamageModel.summary，键见该函数注释）
+func damage_summary() -> Dictionary:
+	return get_damage_model().summary()
+
+
+## 损管令：auto 均衡 / fire 救火 / flood 戽水 / fight 迎敌。不认识的令返回 false，原令不变。
+func set_damage_control(mode: String) -> bool:
+	return get_damage_model().set_mode(mode)
+
+
+func damage_control_mode() -> String:
+	return get_damage_model().mode
+
+
 ## 机动乘数：speed 乘在走力上、turn 乘在转向上；yaw_drift 是舵失灵时满速下每秒自偏的弧度；gear_cap 是帆装还挂得起几档
 func maneuver_factors() -> Dictionary:
 	var dm := get_damage_model()
@@ -383,6 +412,13 @@ func maneuver_factors() -> Dictionary:
 ## 海战里旗舰归 WorldMap 按机动模型走，它先取这一份，损伤只在那边乘一次；Ship 自己的旧式航行只在没建海况时用 maneuver_factors。
 func maneuver_mods() -> Dictionary:
 	return get_damage_model().maneuver_mods()
+
+
+## 火力乘数：reload 装填时长倍数（≥1）、volley 一轮放得出几成、spread 散布倍数（≥1）、port / starboard 左右舷此刻打不打得出去
+func fire_factors() -> Dictionary:
+	var dm := get_damage_model()
+	return {"reload": dm.reload_factor(), "volley": dm.volley_factor(), "spread": dm.spread_factor(),
+		"port": dm.side_ready(-1), "starboard": dm.side_ready(1)}
 
 
 ## 接舷能上的人（去掉正在救火、戽水、以橹代舵的）

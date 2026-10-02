@@ -11,6 +11,8 @@ const SCRIPTS := [
 	"res://scripts/GameManager.gd", "res://scripts/GameState.gd", "res://scripts/Main.gd",
 	"res://scripts/Minimap.gd", "res://scripts/PirateShip.gd", "res://scripts/PortZone.gd",
 	"res://scripts/SeaChart.gd", "res://scripts/Ship.gd", "res://scripts/WorldMap.gd",
+	# lane w25-j1：V0928-9 镜头让位纯算口径（WorldMap 让位常数的对账函数，钉它的断言在 story_check）
+	"res://scripts/worldmap_cam_plaque.gd",
 	"res://scripts/core/Calendar.gd", "res://scripts/core/Crew.gd", "res://scripts/core/Economy.gd",
 	"res://scripts/core/Fleet.gd", "res://scripts/core/SaveLoad.gd", "res://scripts/core/Voyage.gd",
 	# 视觉集成线（art/cloud-visual）新增：过场引擎、主题/立绘工具、巡检截帧
