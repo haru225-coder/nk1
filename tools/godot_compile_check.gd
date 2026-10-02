@@ -30,7 +30,7 @@ const SCRIPTS := [
 	"res://scripts/chars/CharRoster.gd", "res://scripts/chars/CharsDemo.gd",
 	"res://scripts/chars/CharsShoreOverlay.gd", "res://tools/qa_chars_wire_screenshots.gd",
 	"res://tools/qa_chars_screenshots.gd",
-	# lane w24-b6：w20-a3 湮灭成品的唯一硬盘遗存（仓务清册 §八判甲入库）；落定回 scripts/chars/ 前不移除
+	# lane w26-k2：w20-a3 湮灭成品真身已回灌 scripts/chars/ 运行线；tools/ 双件收成 extends 薄包装（dev 入口），仍登记编译
 	"res://tools/CharStage3D.gd", "res://tools/CharsDemo.gd",
 	# 工席成功态过渡（淡入墨幕 + 题签）
 	"res://scripts/ui/UiTransition.gd", "res://tools/qa_title_probe.gd", "res://tools/qa_siege_endgame_probe.gd", "res://tools/qa_ending_reread_probe.gd",

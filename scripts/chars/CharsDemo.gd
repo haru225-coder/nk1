@@ -1,9 +1,10 @@
 extends Control
 ## 人物演示页（chars 线）：一页把「名册 → 人物面板 → 站台」串起来，供巡检截图与人工点看。
 ## 入口：`godot --path . scenes/chars/CharsDemo.tscn`（或直接 F6 跑本场景）。
-## 键位：↑ / ↓ 换人；Tab 切站台档（画屏 / 体量）；← / → 或拖拽转台；Esc 退出。
+## 键位：↑ / ↓ 换人；Tab 切站台档（画屏 / 体量）；← / → 或拖拽转台；S 看站台 / 看面板（w20-a3，与页头钮同义）；S 看站台　Esc 退出。
 ## 分栏（w19-g6）：名册 : 面板按 CharRoster.split_columns 同比分（与人物志内嵌名册、岸上名册浮页一支），站台定宽；
 ##   三栏最小宽加起来放不下（1280×720 即是）就改两栏，右栏面板与站台二选一，页头「看站台 / 看面板」换看，不再把站台挤出屏外。
+##   另（w20-a3）：宽屏三栏时站台也随分栏同比放宽、不再钉死 352，取景由 CharStage3D 按栏宽自调。
 ## 全页只读：不接玩法数值，不写存档；人物数据经 GameManager，文字经 CharacterArt 上屏层。
 
 const Art := preload("res://scripts/ui/CharacterArt.gd")
@@ -154,7 +155,8 @@ func _build() -> void:
 	_status = Art.label("", UiTheme.SIZE_FOOT, UiTheme.TEXT_DIM)
 	_status.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	foot.add_child(_status)
-	var keys := Art.label("↑↓ 换人　Tab 站台档　←→ 转台　Esc 退出", UiTheme.SIZE_FOOT, UiTheme.TEXT_DIM)
+	var keys := Art.label("↑↓ 换人　Tab 站台档　←→ 转台　S 看站台　Esc 退出", UiTheme.SIZE_FOOT, UiTheme.TEXT_DIM)
+	keys.name = "KeysLine"
 	keys.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	foot.add_child(keys)
@@ -172,7 +174,10 @@ func _fit_columns() -> void:
 	_narrow = need > room + 0.5
 	panel.visible = not _narrow or _view == "panel"
 	stage.visible = not _narrow or _view == "stage"
-	stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL if _narrow else Control.SIZE_FILL
+	# 宽屏三栏时站台随版面放宽（w20-a3：原先 SIZE_FILL 下站台阶后于名册与面板吃余宽，在宽屏下钉死
+	# 最小宽 352、实际被裁；改为与名册一样的 EXPAND 后按控宽差委托给面板，用 1 分给站台）
+	stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stage.size_flags_stretch_ratio = 1.0
 	var vb := _find_button("ViewButton")
 	if vb != null:
 		vb.visible = _narrow
@@ -305,6 +310,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				accept_event()
 			KEY_TAB:
 				_toggle_mode()
+				accept_event()
+			KEY_S:
+				_show_view("panel" if _view == "stage" else "stage")
 				accept_event()
 			KEY_ESCAPE:
 				get_tree().quit()
