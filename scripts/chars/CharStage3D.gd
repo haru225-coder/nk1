@@ -6,6 +6,9 @@ extends SubViewportContainer
 ## 工程备注（不上屏）：
 ## - 画屏是 stand-in。真模型落地后放 res://assets/chars3d/<人物 id>.glb（或 .tscn），本台自动改挂模型、
 ##   隐去画屏与体块；约定：原点在两脚之间、+Y 向上、面朝 +Z、身高按米（成人约 1.60–1.75）。
+## - 相机随本控件实尺寸取景（w20-a3）：镜头距离按「装下展台包围盒上下半高 1.235 米＋安全缘
+##   SAFE_MARGIN，再按视口宽高比装下 1.84 米宽」反推，竖向 fov 调到贴件；随栏杆宽（名册开合 /
+##   分栏）改动时重算，不再写死竖向 fov——1920 宽屏下两侧的旗箱被裁、1280 下贴边都由此起。
 ## - 画屏后面是阵营籍贯的港口油画，压暗作远景；取不到就只留墨色底。
 ## - headless（假渲染器）下照常建树，不出画，门禁只核节点。
 
@@ -22,6 +25,16 @@ const PLATFORM_TOP := 0.18
 const SCREEN_SIZE := Vector2(1.2, 1.5)
 const SWAY_DEG := 9.0
 const SWAY_PERIOD := 7.0
+
+## 取景（w20-a3）：相机横移动跟取景框，镜头距离按展台包围盒反推。
+## 半高取「台上画心／体块头顶 1.91 米」与「英尺标杆 1.872 米」之较高，约 1.235；半宽取标杆与抱鼓墩。
+const CAM_FOV := 36.0
+const CAM_EYE_Y := 1.35
+const CAM_TARGET := Vector3(0.0, 0.98, 0.0)
+const FIT_HALF_H := 1.235
+const FIT_HALF_W := 1.70
+const SAFE_MARGIN := 1.22
+const FIT_DIST_MIN := 4.3
 
 ## 阵营 → 远景油画（按籍贯大致归港）
 const FACTION_BG := {
@@ -57,6 +70,7 @@ var _t := 0.0
 var _dragging := false
 var _swap_tween: Tween
 var _live := true
+var _fit_size := Vector2(-1, -1)
 
 
 func _init() -> void:
@@ -108,10 +122,10 @@ func _build() -> void:
 
 	var cam := Camera3D.new()
 	cam.name = "Camera"
-	cam.fov = 36.0
-	cam.position = Vector3(0.0, 1.35, 4.3)
+	cam.fov = CAM_FOV
+	cam.position = Vector3(0.0, CAM_EYE_Y, FIT_DIST_MIN)
 	_world.add_child(cam)
-	cam.look_at_from_position(cam.position, Vector3(0.0, 0.98, 0.0), Vector3.UP)
+	cam.look_at_from_position(cam.position, CAM_TARGET, Vector3.UP)
 	cam.current = true
 
 	# 主光：左前上方暖烛光；轮廓光：右后月白；补光：低处暖墨
@@ -420,6 +434,31 @@ func set_mode(m: String) -> void:
 	volume_rig.visible = mode == "volume" and not model
 
 
+## 按本控件实尺寸重取景：SubViewport 与控件同大；镜头距离要装下包围盒上下（× SAFE_MARGIN），
+## 再按视口宽高比装下宽（标杆与抱鼓墩），过窄只退到 FIT_DIST_MIN。栏杆宽一变（名册开合／分栏）即重算。
+func _refit_camera() -> void:
+	if viewport == null:
+		return
+	var s := size
+	if s.x < 8.0 or s.y < 8.0:
+		s = Vector2(VIEW_PX)
+	_fit_size = s
+	var px := Vector2i(int(roundf(s.x)), int(roundf(s.y)))
+	if px.x > 0 and px.y > 0 and viewport.size != px:
+		viewport.size = px
+	var cam := viewport.get_node_or_null("StageWorld/Camera") as Camera3D
+	if cam == null:
+		return
+	var half_tan := tan(deg_to_rad(CAM_FOV * 0.5))
+	# 距离取竖向与横向两率之较（还要保最小装距），再把镜头竖向 fov 调到贴件、取景随栏宽走
+	var dist := maxf(FIT_HALF_H * SAFE_MARGIN / half_tan,
+		FIT_HALF_W * SAFE_MARGIN / (half_tan * s.x / s.y))
+	dist = maxf(dist, FIT_DIST_MIN)
+	cam.fov = rad_to_deg(2.0 * atan(FIT_HALF_H * SAFE_MARGIN / dist))
+	cam.position = Vector3(0.0, CAM_EYE_Y, dist)
+	cam.look_at_from_position(cam.position, CAM_TARGET, Vector3.UP)
+
+
 func yaw_deg() -> float:
 	return _yaw
 
@@ -434,7 +473,11 @@ func set_yaw(deg: float) -> void:
 # ── 转台 ─────────────────────────────────────────────
 
 func _process(delta: float) -> void:
-	if turntable == null or not _live:
+	if turntable == null:
+		return
+	if size != _fit_size:
+		_refit_camera()
+	if not _live:
 		return
 	if _swap_tween != null and _swap_tween.is_running():
 		return
