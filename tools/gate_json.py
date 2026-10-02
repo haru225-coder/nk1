@@ -322,6 +322,10 @@ REGISTRY = [
 # 本道普查所有同类漏网）。放 CHECK 章节而非 REGISTRY 头段：与 wave27 k3 同文件并行不冲突（k3 在头段 REGISTRY 追加）。
 # 三条 §五.2 升格理由齐备——触发条件自己判不准（新探针入库的人想不起来要注册，qa_rest_days 漏 3 个月）、
 # 快（实测 <1 s）、只读（git ls-files + 读名单，不写盘）；故入册即 must，进一键跑末条。
+# w28-k4 续扫实况（落地基线 0f217b9，2026-10-03）：「注册或豁免」闸本身全绿（探针 44 支 / 豁免 24 行），
+# w28 k1–k3 三支新探针（qa_rest_scenarios / qa_fold_notice / qa_seachart_advance）与 w27 残留 j4 的 qa_narrow_ui_probe
+# 落地时均未 CAS 上主树，无件可登；k8 的 qa_chars_wire_screenshots 已随 6a81f89 落 SHOT_PROBES 截图册（主树收 k8 时带走的）——
+# 零新增 / 零豁免，存此实况备查，下波有探针落地先过本道闸。
 CHECK = [
     {"id": "check_probe_registry", "tier": "must", "kind": "py", "file": "tools/check_probe_registry.py",
      "judge": "（lane w27-k4，k11 审计「最该补的门禁」第 2 条）tools/ 下每支 git 已跟踪 `*_probe.gd` 要么被点名"
