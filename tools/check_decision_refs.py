@@ -434,11 +434,18 @@ def sym_kind(line, ext):
 
 
 def sym_defs(lines, name, ext):
-    """工作树 / 锚里某份行表里符号 name 的定义行号（1 起），只认一份；找不到 / 不止一份都算找不到。"""
+    """工作树 / 锚里某份行表里符号 name 的定义行号（1 起），只认一份；找不到 / 不止一份都算找不到。
+    .gd 同认 decl 与 func（符号锚不区分 const / var / func），同一行先按 decl、再按 func，同名两条都算找不到。"""
     lines = lines or []
-    pat = SYM_GD if ext == "gd" else SYM_PY if ext == "py" else None
-    if pat:
-        hits = [i + 1 for i, t in enumerate(lines) if (m := pat.match(t)) and m.group(1) == name]
+    if ext == "gd":
+        hits = []
+        for i, t in enumerate(lines):
+            m = SYM_GD.match(t) or FUNC_GD.match(t)
+            if m and m.group(1) == name:
+                hits.append(i + 1)
+        return hits if len(hits) == 1 else None
+    if ext == "py":
+        hits = [i + 1 for i, t in enumerate(lines) if (m := SYM_PY.match(t)) and m.group(1) == name]
         return hits if len(hits) == 1 else None
     if ext == "md":
         hits = [i + 1 for i, t in enumerate(lines) if t.strip() == name and HEAD_MD.match(t.strip())]
@@ -917,10 +924,23 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None, toks=None):
                 if cur_body == old_seg:
                     same += 1
                 else:
+                    # 行号锚改写成符号锚的分歧是预期（lane w26-k5）。本行「原文作」已经记着旧行号里指的那段
+                    # （符号 def 行的旧编号，由 got[1] 现址反推锚里的同一行——同一 anchor，等于记录的是符号
+                    # 的原行号），算认账改指，不判红；没记着的才算「符号已换义」。
+                    noted = {m.group(1).strip()
+                             for a_, b_ in (x.span() for x in OLD_NOTE.finditer(lines[refs[j][0] - 1]))
+                             for m in TOKEN.finditer(lines[refs[j][0] - 1][a_:b_])}
+                    def_line_old = (sym_defs(ov, sym_name, ext_of(np_)) or [None])[0]
+                    refs_old_def = {f":{def_line_old}", f"{f}:{def_line_old}", f"{np_}:{def_line_old}"} \
+                        if def_line_old else set()
+                    if def_line_old and (noted & refs_old_def):
+                        acked += 1
+                        continue
                     mismatch += 1
                     out.add((0, refs[j][0], j, 1, 0),
                             f"  ✗ MISMATCH L{refs[j][0]} `{refs[j][1]}::{sym_name}`（旧版 L{ol} `{f}:{span_str(oa, ob)}` @ {old_anchor}）："
-                            f"符号那几行内容与旧锚里指的不同（{np_}:{got[1]}）——符号锚指偏了或符号被改写")
+                            f"符号那几行内容与旧锚里指的不同（{np_}:{got[1]}）——符号锚指偏了或符号被改写"
+                            + (f"；有意改指在本行「原文作 `:…`」里记着原行号 {def_line_old} 即可认账" if def_line_old else ""))
             continue
         want = [norm(x, ext_of(path)) for x in ov[oa - 1:ob]]
         if path == "scripts/Main.gd" and np_ != path:  # 搬进拆出件的，函数头照改名表比
@@ -1123,6 +1143,38 @@ _ST_CASES = [
     ("scripts/t/Host.gd:2", None, "S9 顶层 const 没动：不算 DRIFT"),
 ]
 
+# lane w26-k5 符号锚四格：用一对「常量被插了一行」的内存工作树（与 _ST_* 无关——那边的 Host.gd 同名不同形，
+# 符号锚要单起副本，才钉得住自己那条只判存在 / 不挪行的支路）。
+_ST_SYM_A = """extends Node
+
+const COMBAT_FIRE_DELAY := 3.5
+
+func idle():
+	pass
+"""
+_ST_SYM_W_INS = """extends Node
+
+# 在符号前面插了一行（check 须照旧认定，DRIFT 0）
+const COMBAT_FIRE_DELAY := 3.5
+
+func idle():
+	pass
+"""
+_ST_SYM_W_TYPO = """extends Node
+
+const COMBAT_FIRE_DELY := 3.5
+
+func idle():
+	pass
+"""
+# (清单里的引用, 工作树, 期望 DRIFT 数, 期望 rc / --fix 行为)；rc 只看这条引用带来的 DRIFT 计数
+_ST_SYM_CASES = [
+    ("scripts/t/Const.gd:3", _ST_SYM_A, 0, "A1 基线：行号锚照旧，对得上不报"),
+    ("scripts/t/Const.gd::COMBAT_FIRE_DELAY", _ST_SYM_A, 0, "A2 符号锚没动：认定"),
+    ("scripts/t/Const.gd::COMBAT_FIRE_DELAY", _ST_SYM_W_INS, 0, "A3 符号前插一行：行号锚会漂、符号锚不漂"),
+    ("scripts/t/Const.gd::COMBAT_FIRE_DELAY", _ST_SYM_W_TYPO, 1, "A4 符号名错一个字母：符号锚报 DRIFT"),
+]
+
 
 def self_check():
     """跑自检，返回判红的条数（0 = 过）。"""
@@ -1147,6 +1199,17 @@ def self_check():
     if not bad:
         print(f"  ✓ 转发穿透自检 {len(_ST_CASES) + 1}/{len(_ST_CASES) + 1}（函数成了一行转发：穿透到真体 / 穿透不下去报「跟到一行转发」；"
               "锚里本就是转发的、只挪了号的真函数不穿透；改号自证按穿透认号）")
+    # 符号锚四格（lane w26-k5）：行号锚对照、符号锚认定 / 抗插一行 / 误名报 DRIFT。每组单起 repo + 单行清单，
+    # 在 quiet=True 下走 check()，只看那一条带来的 DRIFT 计数（符号锚 fixes 不落点，所以不走 _ST_CASES 的 fixes 断言）。
+    for ref, work, want_drift, why in _ST_SYM_CASES:
+        single = MemRepo({"scripts/t/Const.gd": _ST_SYM_A}, {"scripts/t/Const.gd": work})
+        doc2 = "行号：按 HEAD `0000000`\n- `" + ref + "`\n"
+        n2, _f2, _r2, _t2 = check(argparse.Namespace(show=False), doc2, single, "0000000", quiet=True)
+        if n2["drift"] != want_drift:
+            bad += 1
+            print(f"  ✗ 符号锚自检 {why}：`{ref}` 期望 DRIFT {want_drift}，实得 {n2['drift']}")
+    if not bad:
+        print(f"  ✓ 符号锚自检 {len(_ST_SYM_CASES)}/{len(_ST_SYM_CASES)}（行号锚照旧；符号锚认定；插一行不漂；误名报 DRIFT）")
     return bad
 
 
