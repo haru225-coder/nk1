@@ -136,7 +136,8 @@
         "zhangzhou",
         "penghu",
         "ryukyu",
-        "wenzhou"
+        "wenzhou",
+        "guangzhou"
       ],
       "market": {
         "fujian_porcelain": "origin",
@@ -246,7 +247,8 @@
       ],
       "connections": [
         "quanzhou",
-        "penghu"
+        "penghu",
+        "guangzhou"
       ],
       "market": {
         "sea_salt": "origin",
@@ -368,7 +370,8 @@
         "quanzhou",
         "penghu",
         "hakata",
-        "jeju"
+        "jeju",
+        "kagoshima"
       ],
       "market": {
         "deer_hide": "origin",

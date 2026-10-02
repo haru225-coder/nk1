@@ -308,21 +308,8 @@
       ],
       "known_orphans": [],
       "one_way_ok": {
-        "pairs": [
-          [
-            "guangzhou",
-            "zhangzhou"
-          ],
-          [
-            "guangzhou",
-            "quanzhou"
-          ],
-          [
-            "kagoshima",
-            "ryukyu"
-          ]
-        ],
-        "why": "lane seq6 判留：运行时只有 Voyage.is_known_route（两头都查）与 MapView._draw_lanes（按无序对去重）读 connections，都按无向认，玩家看到的熟路不受影响；实测把 3 对的对侧补齐（追加到末尾、插到最前各一次），simulate_run / simulate_endgame / verify_economy 输出逐字节不变。补不补是 ports.json 的数据口径，归策划 / 数据片，本门禁片不改数据；这里把现有 3 对钉成基线：新添单向登记即红（补对侧，或登进来写原因），基线里的某对补齐了 / 连线删了也红（从这里删掉，只减不增）"
+        "pairs": [],
+        "why": "lane seq6 判留、lane w20-b4 补齐：运行时只有 Voyage.is_known_route（两头都查）与 MapView._draw_lanes（按无序对去重）读 connections，都按无向认，玩家看到的熟路不受影响；seq6 实测把当时 3 对（guangzhou→quanzhou / guangzhou→zhangzhou / kagoshima→ryukyu）的对侧补齐后 simulate_run / simulate_endgame / verify_economy 输出逐字节不变，w20-b4 按此把 quanzhou / zhangzhou / ryukyu 三港补回对侧连线、基线清空（全图双向）。新添单向登记即红（补对侧，或登进基线写原因）；基线若有登记、某对补齐了 / 连线删了也红（从这里删掉，只减不增）"
       }
     }
   ],
