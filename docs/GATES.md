@@ -342,6 +342,7 @@ python3 tools/check_decision_refs.py
 
 ### 15. 截图门禁（shot_gate.gd + 截图探针）
 - 读：`<TAG>_OK shots=n/n -> 目录`；红时先列 `✗ 真失败：…`，再 `<TAG>_FAIL k（shots=…）`。
+- 口径钉一次（lane w24-b4 跟号，把 a9 新加策略的待议点一次说清）：**截图册 25 支** = §一明细表由注册表 `SHOT_PROBES` 生成、按「代码行真调 `ShotGate.finish_shots(`」口径入册并编 `| 1 | … | 25 |`；a9 报告曾照「`grep finish_shots`」得 24，**漏数的是 `qa_bribe_probe.gd`**（只调 `finish_contract(` 的契约型探针——塞钱不出图、所以不出现在「截图目录默认根」里，但照样过 shot_gate、照样占压帧 / 共用面口径），加它即 25。patrol 永不在 25 里：patrol 的图是「一色旁证」不是契约截图，默认根 `/tmp/patrol-shots` 有意不放共享证据根（lane pg4 否证），统计上属 §13 道；`probe_pressure §三.27` 那 31 支口径 = 25 + 只借 `ShotGate.frame_pressure` 不入册的 6 支（letterbox_signal / qa_yard_transition / 船近景四支），与 qa_bribe 的「25 → 25」不是一本账。
 - headless 不加 `-- --contract` **必红**（`_FAIL headless …此为环境不具备，不是画面回归`）——这是设计，不是回归。只验契约：`godot --headless … -- --contract` → `<TAG>_CONTRACT_OK`。
 - 输出目录（lane gd2 / pg3）：默认 `/workspace/nk1-qa-shots/<子目录>`（§一明细表「截图目录（默认）」列）；设 `NK1_SHOT_DIR=<目录>` 则全部 25 支探针整体改落 `<目录>/<子目录>`（`vision/`、`title/`、`chars/`…照原样建），patrol 旁证落 `<目录>/patrol/`；截图门禁以外的两个出图工具也认它（lane pg4）：`CutscenePreview --snap` 缺省 `/tmp` → `<目录>/cutscene-preview/`（给了 `--snapdir` 仍按它），`tools/art/tour.sh` 缺省 `~/tmp/nk1-art-work/tour` → `<目录>/tour/`（给了 `-o` 仍按它）。相对路径一律按 `$PWD` 展开。**推荐用法：worktree / 自测一律设它**，否则会覆盖共享证据图；不设只用于刷新共享证据图：
 
