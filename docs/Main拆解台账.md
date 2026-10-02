@@ -704,13 +704,15 @@ gen_main_splits 的硬校验 ③ / ④（变异在 ledger_refs_mutants）。
 
 R 玉湖陈宅 1 支 / 47 行。追加刀函数表里的行段按「拆后那版 Main.gd」记（追加刀节落地时那一支就是一行转发：注释块 3 行
 `## 本地 main 的兴化玉湖陈宅…` 起 + `func _setup_residence_chen:` 1 行 + `\t_RESIDENCE.setup_residence_chen(self, port_id)`
-1 行 + 行下 0 空行 = **2149–2153**（本快照在 w20-c2 port_beats 接回运行时后重算——Main 上部加了 4 行；快照随 gen 事后对账更新，不算「回来改」）；这是 gen 事后对账用的快照，不再回来改。拆前 Main.gd 上 function 本体在 2146–2190，
+1 行 + 行下 0 空行 = **2090–2094**（a9 落地时记 2149–2153；w20-c2 port_beats 接回运行时后重算过一次；
+**w21-d20 第十四刀跑 gen 对账时随主干 b29b312 的 Main.gd 再挪到 2090–2094**（其间 w20-c10 等两笔使陈宅转发上移 59 行）——
+快照随 gen 事后对账更新，不算「回来改」）；这是 gen 事后对账用的快照，不再回来改。拆前 Main.gd 上 function 本体在 2146–2190，
 已搬到 `scripts/ui/ResidencePage.gd`；前面三行 `CHEN_ZAN_STAKE : 3000` / `CHEN_ZAN_FROM_YEAR : 1270` / `CHEN_ZAN_MIN_FAME : 15`
 是簇间常量、仍留 Main：qa 探针 `godot_story_check.gd` 的 zan_cases 直调 `main.CHEN_ZAN_FROM_YEAR`，搬了它就得跟着改）。
 
 | 支 | 行段（拆后那版 Main.gd 的转发快照） | 行（拆前 function 本体） | 拆出件 static func |
 |---|---|---|---|
-| `_setup_residence_chen(port_id)` | 2149–2153 | 47 | `setup_residence_chen` |
+| `_setup_residence_chen(port_id)` | 2090–2094 | 47 | `setup_residence_chen` |
 
 **跨切依赖**（全部经 `main.` 取，追加进拆出件不存状态）：
 - Main 成员：`scene_title` / `body_text` / `choices_container` / `choices_label` 各 1，`current_scene_id` 2（两处 lambda 里，
@@ -759,6 +761,9 @@ R 玉湖陈宅 1 支 / 47 行。追加刀函数表里的行段按「拆后那版
 - **行段**：本节函数表 `_setup_residence_chen` 2145–2149 按追加刀拆前（`4bafe23` 的 Main.gd）记；第九刀函数表
   `_setup_residence` … `_on_temple_rub` 的 6 支行段仍按建刀 `ebd28e7^` 的 Main.gd 记（2389–2505），`gen_main_splits`
   两条路径分别按各刀自己的拆前 Main.gd 重算、逐支对账。清单第 4 列三段合并：`2145-2149,2389-2419,2426-2505`。✓
+  （其后跟过两次号：w20-b1 619e335 那两笔使转发快照挪到 2149–2153；**w21-d20 第十四刀跑 gen 对账时快照与清单首段再挪到
+  2090–2094**（HEAD b29b312 的 Main.gd，其间 w20-c10 等两笔使陈宅转发上移 59 行），「# ══ 浮页 ══」仍在 base 的 2128、
+  陈宅转发现位那处上方——陈宅段才是本 lane 14 刀的「紧邻段下」口径。）
 - **拆出 commit**：清单第 3 列仍记建刀 `ebd28e7`（`--diff-filter=A`）；本节写好的一刀自己的拆前 = `4bafe23`。✓
 - **引用点**：上面那表 6 处逐条回读——simulate_endgame 1 处改读 main_stitch；story zan_cases 常量仍取 Main 实例
   （不走转发），对；smoke 末支退路自动对；check_symbols 建刀组的 9 支不掺追加刀；拍板清单 DRIFT 收尾 `--fix` 跟号。✓
@@ -773,3 +778,94 @@ R 玉湖陈宅 1 支 / 47 行。追加刀函数表里的行段按「拆后那版
 3. **A / E / H / I / K / B / X** 风险高，仍先做「Main 家族源码」共用 helper 的门禁 lane（第五 / 七 / 九刀候选）；
    现 Python 门禁里 verify_economy / simulate_endgame 已用 main_stitch，`simulate_run` / `verify_story_data` /
    `check_assets` 三处仍直读 Main.gd，片段里读到的函数搬走时要跟。
+
+
+---
+
+## 第十四刀（lane w21-d20，2026-10-02）：浮页（人物志 / 名册 / 草案预览 / 纪事）→ `scripts/ui/FloatPages.gd`
+
+### 切面（基 `b29b312`：Main.gd 4649 行，第十三刀二之后；开工与落地之间无主干提交，那笔特写之后 main 一直停在 b29b312）
+
+O 浮页 8 支 / 拆前 Main.gd 本体 94 行（删除窗口含紧邻空行共 99 行：base 的 **673–771**，首行 `## 人物志：…` 前的空行
+留 Main）。按第十三刀二「下一刀候选 1」（照第十二刀的基重算仍是「8 / 82」）挑：台账表里它已是依赖最少、与已落内容相邻的
+一条（簇内全 8 支、无出入；风险等级「中」，勾掉的 A / E / H / I / K / B / X 都是「风险高，先跑门禁 lane」）。本波 brief 口径 =
+按台账取下一刀。
+
+| 支 | 行段（拆前 function 本体，`b29b312` 的 Main.gd） | 行 | 拆出件 static func |
+|---|---|---|---|
+| `_open_codex(focus_id)` | 673–687 | 15 | `open_codex` |
+| `_open_chars_wire(focus_id)` | 690–705 | 16 | `open_chars_wire` |
+| `_close_chars_wire()` | 708–710 | 3 | `close_chars_wire` |
+| `_toggle_companion_preview()` | 713–718 | 6 | `toggle_companion_preview` |
+| `_open_companion_preview()` | 721–737 | 17 | `open_companion_preview` |
+| `_close_companion_preview()` | 740–742 | 3 | `close_companion_preview` |
+| `_open_vision_stage()` | 745–762 | 18 | `open_vision_stage` |
+| `_close_vision_stage()` | 765–768 | 4 | `close_vision_stage` |
+
+各支行段均含紧邻其上的注释块（`## 人物志：…` / `## chars 线：…` / `## Lane Z3：…` / `## Lane L：…` 四段）；四支无注释块的
+（close_chars_wire / open_companion_preview / close_companion_preview / close_vision_stage）就是本体那几行。段间各 2 个空格行里，
+删除窗口留 1 组给 Main、1 组跟段搬走：窗口 673–771 之后 Main 上续 `func log_msg`，删后仍续 1 个空行分隔。
+
+**跨切依赖**（全部经 `main.` 取，拆出件不存状态）：
+- Main 成员：`_codex` / `_chars_wire` / `_vision_stage` / `_companion_preview` 四个浮页句柄（与 NPC 页钮 `_codex_title_button` /
+  `_npc_codex_btn` / `_npc_codex_id` 一并留 Main；NpcPage 的 lambda 仍调 `main._open_codex`，两个句柄读法不变）。
+- Main 方法（留 Main，经 main. 调）：簇内互调拆出件里改名等价形（`close_companion_preview(main)` / `close_chars_wire(main)` /
+  `open_companion_preview(main)`，原 `_close_…` / `_open_…` 留 Main 仍是一行转发来这里）；`_close_ledger` / `_dismiss_banner`
+  各 ×4（LedgerPage 拆出件的调用口与主营横幅）。
+- 常量：`_CODEX` / `_CHARS_WIRE` / `_COMPANION_PREVIEW` / `_VISION_STAGE` 四个 preload 留 Main（LedgerPage 等不经这里调，
+  簇外无人用，但把 preload 挪走就是新口径，本刀按惯例留）。
+- lambda 2 个（草案 / 纪事子节点 `tree_exited` 回写句柄判等）：原捕获 `_companion_preview` / `_vision_stage` 裸名改捕获
+  `main`（按下时才读，行为不变）。
+- autoload：无（全簇只过 `is_instance_valid` / `call` / `add_child` / `queue_free` / `connect`）。
+
+**断言 / 探针引用点**（拆前逐个核过，行号按基 `b29b312`）：
+
+| 引用点 | 怎么读 | 拆后 |
+|---|---|---|
+| `tools/qa_wire_vision_screenshots.gd:123`、`:124` | 直读 Main.gd 全文查 `"KEY_F8" in main_src` / `SP.has_tok(main_src, "_open_vision_stage", true)` / `"市舶纪事" in main_src` / `"_VISION_STAGE" in main_src` | 市舶纪事（岸带 `:2668`）与 `_VISION_STAGE`（`const :177`）留 Main、F8 键位与 `_open_vision_stage` 转发留名 → 不动（转发留名正中等候，已在拆前预估） |
+| `tools/qa_letterbox_copy_probe.gd:172` | 同上（`"市舶纪事" in main_src and SP.has_tok(main_src, "_open_vision_stage", true)`） | 同上 → 不动 |
+| `tools/check_symbols.py:4314`「Main F8 / 市舶纪事 → VisionStage」、`:4484`「Main F7 → CompanionPreview 开关」 | `read_main_src()` 拼回后 `_has_func(_main_l, "_open_vision_stage")` / `_has_func(_main_z3, "_toggle_companion_preview")` + 字样 | 拼回签名仍 `func _open_vision_stage(` / `func _toggle_companion_preview(`，F7 / F8 键位与 `_COMPANION_PREVIEW` const 留 Main → 条件一条没改、不用改 |
+| `tools/qa_chars_wire_screenshots.gd:137` 与 `qa_companion_preview_screenshots.gd:55 / :75 / :86 / :89` | 直调真机 `main.call("_open_chars_wire")` / `main.call("_toggle_companion_preview")`（UDUN `StringName` → 查到 Main 实例方法）| 转发留名、同名同签名，真机照走 → 不用改 |
+| `scripts/ui/NpcPage.gd:101` | lambda `main._open_codex(main._npc_codex_id)`，按下时才读 id（台账 main5 那幕） | 转发同名 → 不用改 |
+| `scripts/ui/CharacterCodex.gd:245 / :249–255` | 浮页内嵌名册按钮：优先 `host.has_method("_open_chars_wire")` → `host.call_deferred("_open_chars_wire", focus)` | 转发同名 → 不用改 |
+| 拍板清单 / 待策划拍板清单 | 全仓 grep 无这 8 支的 `文件:行` 引用 | 无关 |
+| 各门（verify_story_data / simulate_run / verify_economy / simulate_endgame / check_assets / save 系列 / p7 / patrol / story / smoke / compile 之外的 qa）| 全仓 grep 无（除上面表列的 4 支 .gd 探针文件与 check_symbols 两条）| 无关 |
+
+### 落地
+
+- `scripts/ui/FloatPages.gd`（新增 104 行，`.uid` 同 commit）：8 支原样搬成 `static func`（open_codex / open_chars_wire /
+  close_chars_wire / toggle_companion_preview / open_companion_preview / close_companion_preview / open_vision_stage /
+  close_vision_stage），都带 `main: Control` 形参；Main 句柄与两个 Overlay 互调一律加 `main.` 前缀；两个 lambda 改捕获
+  `main`（树走回写句柄，按下时才读，行为一致）；簇内互调在 static 体内等价改写（`close_companion_preview(main)` 等，
+  原 `_close_…` 裸名 = Main 方法）；`var cx / ov / vs: Control = main._CODEX.new()` 等 3 处经 main. 取值推断不出类型、按
+  惯例显式写成迁移前相同的类型。头注写「从 Main.gd 原样搬出」、留在 Main 的清单（`_codex` / `_chars_wire` /
+  `_vision_stage` / `_companion_preview` 与 _close_ledger / _dismiss_banner）。
+- Main.gd **4649 → 4552（−97）**：删除窗口 99 行、新转发体 24 行、preload const 处 +3 行（1 行 const + 2 行说明，
+  插在 `const _DEBUG` 之后、BACKDROP_OPTS 之前）；func 数按 `^func ` 仍 255 不变：8 支只留同名同签名一行转发、行尾不带注释。
+- 门禁同步：本节标题登记后跑 `python3 tools/gen_main_splits.py --write`（`tools/main_splits.txt` 末新增一行，第 13 件）；
+  `godot_compile_check.gd` 的 SCRIPTS +1（0/165 → 0/166）；`tools/qa_wire_vision_screenshots.gd` / `qa_letterbox_copy_probe.gd`
+  两个探针的 Main.gd 直读字样全部留 Main（上表）→ 源码断言条件一条没改、没放宽。
+- 新加一条钉子（check_symbols 九之七，只收紧，口径同 a9 陈宅 / main10 船屋 / main11 标题页 / main12 调试钩子四条同款）：
+  8 支在 Main 里须是一行转发到 `_FLOAT_PAGES` 的同名 static func（前缀去掉即可）、拆出件里须真有那支、Main 真 preload 了它
+  （`const _FLOAT_PAGES := preload("res://scripts/ui/FloatPages.gd")`）；8 个名字登记进 `NAMED_FUNCS` 的 `scripts/Main.gd` 组。
+- 拼回原文：本 lane 的反变异在 Verify 里（把 Main 转发改回真身 → gen ✗「台账函数表列了 X，现 Main.gd 却没有一行转发到本件」
+  + check_symbols 钉子行 ✗；复原绿）。
+
+### 同刀门禁：台账与生成器
+
+- 台账本节标题按 cs23 硬校验（`## 第N刀（lane X，日期）：… → \`scripts/ui/X.gd\``、刀序 第四刀起逐刀 +1 → 第十三刀二之后接
+  「第十四刀」）；「已拆（前三刀…）」段不动（只列前三刀）。
+- 函数表 8 行须是竖线起头、行段写「a–b」，列两次 / 少空格 / 行段写错由 gen 硬校验 ④ 判红（变异固化在 ledger_refs_mutants）。
+- `gen_main_splits --write` 重算 `tools/main_splits.txt`：第 18 行（清单第 13 件 / 末行）= `scripts/ui/FloatPages.gd	w21-d20	166fa5b	673-768	… 8 支 …`（构建期合并 673–768 整段，与函数表逐支行段各按拆出 commit 父版对账，均绿）。
+
+### 下一刀候选
+
+1. **F 船况措辞 / N 内景题 / M 店中杂项**（中低）：smoke 在 Main 实例上直调，转发留名即可；F 被船屋 / 船籍簿 / 市舶司
+   三个拆出件经 `main.` 共用。其余依赖无新增。
+2. **A 牙行**（15 支 / 618 行，高风险）：qa_contract_stock / qa_money_notices 直读还没腾；写 4 个 Main 成员。
+   依赖「Main 家族源码」共用 helper 的门禁 lane（第五 / 七 / 九刀候选，至今未做）。
+3. **E 岸带 / H 守城 / I 调查页 / X 入港 / W 工席台 / B 壳 / K 场景分发 / P 开局**（高 / 不属页面）：进不了下一刀条件，
+   仍是门禁 lane 先行。
+4. **遗留拍板点**：暂无在本刀上的未拍板口径。`_close_ledger` / `_dismiss_banner` 一点就红不改（「Main 浮页句柄 / helper 到底归不归
+   FloatPages」不在本刀定），如果想在下一波做「第二个追加刀」（往 FloatPages 再补「人物线后续三件套」）请先看第十三刀二的
+   追加刀口径再挑。

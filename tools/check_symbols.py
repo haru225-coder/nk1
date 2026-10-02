@@ -4060,6 +4060,30 @@ else:
         print(f"  ✗ {_m}")
     problems.append("玉湖陈宅没钉在 ResidencePage")
 
+# 浮页 8 支真身钉在 FloatPages（lane w21-d20 第十四刀，口径同上面船屋 / 标题页 / 调试钩子 / 玉湖陈宅的钉子）：
+# Main 里每支只许是一行转发到 _FLOAT_PAGES 的同名 static func，拆出件里须真有那支、Main 真 preload 了它。
+# 挪回 Main 再 `gen_main_splits --write` 由生成器判红（cs18 / cs22）；这里再钉 preload 常量名与拆出件那支。
+_fp_src = open(os.path.join(SCRIPTS, "ui", "FloatPages.gd"), encoding="utf-8").read()
+_fp_static = set(re.findall(r'^static\s+func\s+([A-Za-z_]\w*)\s*\(', _fp_src, re.M))
+_fp_raw_fn = func_bodies(open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read())
+_fp_bad = []
+for _fp_name in ("_open_codex", "_open_chars_wire", "_close_chars_wire", "_toggle_companion_preview",  # NF: scripts/Main.gd:_open_chars_wire
+                 "_open_companion_preview", "_close_companion_preview", "_open_vision_stage", "_close_vision_stage"):
+    _fp_code = [ln for ln in _fp_raw_fn.get(_fp_name, "", forward_ok=True).split("\n") if ln.strip() and not ln.strip().startswith("#")]
+    _fp_fwd = _SPLIT_FWD.match(_fp_code[0]) if len(_fp_code) == 1 else None
+    if not (_fp_fwd and _fp_fwd.group(1) == "_FLOAT_PAGES" and _fp_fwd.group(2) == _fp_name[1:]):
+        _fp_bad.append(f"Main.{_fp_name} 不是一行转发到 _FLOAT_PAGES.{_fp_name[1:]}")
+    elif _fp_name[1:] not in _fp_static:
+        _fp_bad.append(f"FloatPages.gd 缺 static func {_fp_name[1:]}")
+if re.search(r'^const _FLOAT_PAGES := preload\("res://scripts/ui/FloatPages\.gd"\)', open(os.path.join(SCRIPTS, "Main.gd"), encoding="utf-8").read(), re.M) is None:
+    _fp_bad.append("Main 没有 const _FLOAT_PAGES := preload(FloatPages.gd)")
+if not _fp_bad:
+    print("  ✓ 浮页 8 支真身在 FloatPages，Main 只留一行转发（lane w21-d20）")
+else:
+    for _m in _fp_bad:
+        print(f"  ✗ {_m}")
+    problems.append("浮页没钉在 FloatPages")
+
 # Lane AC：发现录列表与呈报确认改纪实短句；存档键、呈报顺序与赏格公式不动
 _ac_slips = _disc_main_fn.get("_setup_reporting", "")
 _ac_onrep = _disc_main_fn.get("_on_report_discovery", "")
@@ -4547,14 +4571,16 @@ if not _body_missed:
 # 没标、标的接收者认不出文件、标的与登记不符、标了却那一行没点到这个名字，都判红。
 NAMED_FUNCS = {
     "scripts/Main.gd": (
-        "_add_guild_join_slip", "_add_leave_button", "_attention_desc", "_begin_benches", "_debug_jump_port",
+        "_add_guild_join_slip", "_add_leave_button", "_attention_desc", "_begin_benches", "_close_chars_wire",
+        "_close_companion_preview", "_close_vision_stage", "_debug_jump_port",
         "_debug_preview_ending", "_end_benches", "_fit_rank", "_guild_join_block", "_interior_lead", "_interior_title",
         "_lift_ledger", "_mount_status_strip",
         "_on_apply_permit", "_on_berth_switch", "_on_borrow", "_on_buy_ship", "_on_buy_supplies", "_on_dismiss_crew",
         "_on_exam_sit", "_on_guild_join", "_on_hire_candidate", "_on_hire_crew", "_on_hire_to_min", "_on_invest_port",
-        "_on_opening_finished", "_on_repair_hull", "_on_repay", "_on_report_discovery", "_on_rewatch_opening",
+        "_on_opening_finished", "_open_chars_wire", "_open_codex", "_open_companion_preview", "_open_vision_stage",
+        "_on_repair_hull", "_on_repay", "_on_report_discovery", "_on_rewatch_opening",
         "_on_start_game_pressed", "_on_temple_look", "_on_temple_rub", "_on_upgrade", "_play_opening", "_setup_guild",
-        "_setup_news_wall",
+        "_setup_news_wall", "_toggle_companion_preview",
         "_setup_reporting", "_setup_residence_chen", "_setup_shipyard", "_setup_title_and_invest", "_setup_title_mode", "_setup_yamen",
         "_skill_rank", "_yard_offer", "_yard_port_name", "_yard_success_transition", "load_scene", "play_transition",
         "show_choices", "update_status_panel",
