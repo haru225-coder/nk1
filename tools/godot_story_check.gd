@@ -4245,12 +4245,9 @@ func _w25j1_cam_plaque_check() -> void:
 	# 世界 560 恰在贴舷判线，不算病态、只代表居中；dy > 0 时按「有效屏让位」须 >560 钉住。
 	var eff_px: float = dy * cam_r + (vp.y * 0.5 - pb)
 	var eff_w: float = eff_px / cam_r
-	var ok_room := true
-	if dy > 0.0:
-		ok_room = eff_w > 560.0
-	else:
-		ok_room = hr_px >= vp.y * 0.5 - pb - 0.001
+	# 主控复核（w25）：让位是本修的全部内容，退回 dy=0（旧版居中）必须红，不再「居中沿用仍绿」。
+	var ok_room: bool = dy > 0.0 and eff_w > 560.0 and hr_px >= 0.0
 	_check(ok_room,
-		"V0928-9 安全余量：虚偏 dy %.0f（有效屏让位 %.0f 屏 px）后敌船须屏上冲 %.0f 屏 px（世界 %.0f，dy>0 须 >560；dy=0 居中仍绿）" % [
+		"V0928-9 安全余量：虚偏 dy %.0f（有效屏让位 %.0f 屏 px）后敌船须屏上冲 %.0f 屏 px（世界 %.0f，须 dy>0 且 >560；退回 dy=0 居中即红）" % [
 			dy, dy * cam_r, eff_px, eff_w])
 
