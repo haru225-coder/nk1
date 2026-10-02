@@ -474,10 +474,10 @@ func _as_dict(raw) -> Dictionary:
 
 
 func load_game(slot: int) -> bool:
+	_last_stale = {}
 	var got := _resolve(slot)
 	var data: Dictionary = got["data"]
 	if data.is_empty():
-		_last_stale = {}
 		return false
 	if got["source"] == "bak":
 		push_warning("存档 slot %d 正式档不可用，已退回上一份备份" % slot)
