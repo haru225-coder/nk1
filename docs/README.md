@@ -11,6 +11,7 @@
 - [性能基线.md](性能基线.md)：`tools/perf_baseline.gd` 帧时 / 峰值内存 / 启动到可玩基线与软档阈值（本仓首份性能口径，只 warn 不 fail；`tools/perf_baseline.py` 接 `REGISTRY` tier=no）
 - [存档迁移矩阵.md](存档迁移矩阵.md)：`save_schema 3` 的迁移路径矩阵（起始版本 × 路径 × 结果 / 丢哪些字段），v1→v2→v3 关键字段（船 / 水粮 / 旗 / 玉湖事件 / 已识）过链断言归 `save_migrate_probe`（lane w20-c9）
 - [story断言覆盖.md](story断言覆盖.md)：`tools/godot_story_check.gd` 断言覆盖普查账（结局面 × 断言 / news 26 条 / 过场 / scenes 104 幕 / round-trip 字段账）与 5 支 `_c6_*` 补白清单（lane w20-c6，wave22-h2 落地）
+- [工程遗留收束_2026-10-03.md](工程遗留收束_2026-10-03.md)：三件工程遗留逐件落地——`CharacterArt.TIER_ORDER` 名册接线成真消费者、`CombatDirector.OUTCOMES/STORY_KEYS` 战果常量接独立探针、GATES §12 抄入 PortBeats 注册时序结论（lane w23-a10）
 
 ## 玩法与系统设计
 - [待策划拍板清单_2026-09-28.md](待策划拍板清单_2026-09-28.md)：各 lane 散落的「待策划定」汇总成一张表（出处行号 / 选项 / 影响面 / 默认建议 / 不拍板的后果），只汇总不拍板（lane decide1）
