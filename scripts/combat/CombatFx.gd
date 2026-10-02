@@ -10,8 +10,6 @@
 extends RefCounted
 
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
-const IMPACT_PATH := "res://scenes/ImpactExplosion.tscn"
-const SPLASH_PATH := "res://scenes/WaterSplash.tscn"
 const GROUP := "nk1_combat_fx"
 
 ## 船图契约（钩子线、海寇线、美术包线共用）：海战精灵 = assets/ship_<id>.png，文件在才用，不在就回落默认贴图。
@@ -49,7 +47,6 @@ const C_WOOD_FRESH := Color(0.86, 0.74, 0.54)
 const C_DUST := Color(0.64, 0.58, 0.50, 0.72)
 const C_CHAR := Color(0.14, 0.12, 0.10, 0.72)
 const C_SOOT := Color(0.27, 0.24, 0.21, 0.75)
-const C_POWDER := Color(0.86, 0.84, 0.80, 0.74)
 const C_STEAM := Color(0.88, 0.90, 0.90, 0.55)
 const C_FOAM := Color(0.88, 0.94, 0.97, 0.80)
 ## 降幡的白幡（素绢，不是纯白：与宣纸字色同一路）
@@ -166,7 +163,6 @@ static func hit_severity(kind: String, amount := -1.0) -> float:
 ## 归 SeaAtmosphere（lane atmos）；这里不再画影子、不再画航迹。一颤仍走 hull_shudder 的 scale / rotation 补间（ShipLook 两层照抄变换）。
 const LOOK_NODE := "FxLook"
 const SHIP_SHADER := "res://assets/shaders/ship_seagoing.gdshader"
-const KICK_SHADER := "res://assets/shaders/screen_kick.gdshader"
 const _Ballistics := preload("res://scripts/combat/Ballistics.gd")
 ## 舷侧炮位间距上限（船长方向，px）
 const MUZZLE_SPACING := 22.0
@@ -1012,60 +1008,12 @@ class _Look extends Node2D:
 # 飘字与战况日志用：只写看得见的事，无叹号、不报血量。who 是船名，空就按 foe 写「敌船」/「本船」；
 # 敌船名前冠「敌船」，与 board_win_note 同一写法。level / stage 越界的按两端算。
 
-## 进水四级：0 渗漏 / 1 一舱进水（福船分舱，隔舱挡得住）/ 2 数舱进水 / 3 沉没
-const FLOOD_NOTES := [
-	"%s船板中石渗水，水手舀水塞漏。",
-	"%s一舱进水，隔舱尚固。",
-	"%s数舱进水，船身侧倾，行船迟重。",
-	"%s进水不止，渐没于波。",
-]
-## 失火四拍：0 起火 / 1 延烧 / 2 扑灭 / 3 焚毁
-const FIRE_NOTES := [
-	"%s帆篷中火箭，火起。",
-	"%s火延舱面，水手泼水、覆湿毡扑救。",
-	"%s火已扑灭，帆焦半幅。",
-	"%s烈焰焚舟，舟人纷纷落水。",
-]
-
-
 ## 船的称呼：敌船「海鹘」/「福船」；没有船名写「敌船」/「本船」
 static func ship_ref(who: String, foe := false) -> String:
 	var n := who.strip_edges()
 	if n == "":
 		return "敌船" if foe else "本船"
 	return ("敌船「%s」" if foe else "「%s」") % n
-
-
-static func flood_note(level: int, who := "", foe := false) -> String:
-	return FLOOD_NOTES[clampi(level, 0, FLOOD_NOTES.size() - 1)] % ship_ref(who, foe)
-
-
-static func fire_note(stage: int, who := "", foe := false) -> String:
-	return FIRE_NOTES[clampi(stage, 0, FIRE_NOTES.size() - 1)] % ship_ref(who, foe)
-
-
-## 敌船降幡请降（配 strike_colors）
-static func strike_note(who := "") -> String:
-	return "%s落帆降幡，舟人弃械请降。" % ship_ref(who, true)
-
-
-## 接舷分拍：挠钩落空 / 搭住登舟 / 敌众登舟被逐回
-static func grapple_miss_note() -> String:
-	return "挠钩落空，敌船擦舷而过。"
-
-
-static func board_leap_note() -> String:
-	return "挠钩搭住敌舷，水手缘索登舟。"
-
-
-static func board_repel_note(crew_lost: int) -> String:
-	return "敌众登舟，已被逐回。水手减员 %d。" % maxi(0, crew_lost)
-
-
-## 我方溃逃：水手无斗志、弃战奔逃（配出战墨边「溃逃」）
-static func rout_note(crew_lost := 0) -> String:
-	var base := "水手溃散，争下舢板，本船弃战奔逃。"
-	return base if crew_lost <= 0 else base + "水手减员 %d。" % crew_lost
 
 
 ## 论文纪实短注（飘字用）：无叹号、无营销词。
@@ -1169,7 +1117,3 @@ static func _cn_count(n: int) -> String:
 static func sea_parted_note() -> String:
 	return "天色晚了，两边各自收帆。"
 
-
-## 我方溃逃（出战「溃逃」）：弃货奔逃
-static func sea_rout_note(cargo_str: String, crew_lost: int) -> String:
-	return "水手溃散，弃货奔逃。%s水手减员 %d。" % [cargo_str.strip_edges(), maxi(0, crew_lost)]
