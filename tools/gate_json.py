@@ -289,6 +289,19 @@ REGISTRY = [
      "judge": "（lane w20-a7 去 PIL，w25-j5 升必须跑）过场数据守门：`data/cutscenes.json` 逐镜时长合计落在 20–40 / 60–90 秒窗内（不含章末了结的 20–35 秒档）、cam 在 cover_view 上夹得动、字幕 t 离镜头结束 ≥1.5 秒；.import_manifest.json 的 sha1 / size / crop 与产物一致；来源目录一律不看（PIL 也不需要）",
      "green": "`import_cutscene_bgs --check：N 张背景合规［产物（按清单 sha1）］；data/cutscenes.json 契约校验通过`",
      "red": "`FAIL …` 行（如 `FAIL cutscenes.ending_root 共 5 镜 40.3 秒，要求 3–5 镜、20–40 秒`），rc=1"},
+    # lane w26-k3：w24-c1 遗留②「契约文档每档角色 / 品级一览人工维护、与 characters.json 无自动核对」。
+    # 快（约 0.2 s）、只读，触发条件照 §五.2 按路径也判得准（动 characters.json / 契约文档），故 lane 档不升 must；
+    #「为什么归这一档」是写作口径、机器不答（文档里点明留人）。本条三处把原稿文件名写成
+    # data/characters_{suffix}.json：写全名 data/characters.json 会让 verify_story_data L1B 把本文件
+    # 认成「读原稿的入口」（它的 raw 子按字面子命中、不分串注，.py 同样扫），本文件不是入口。
+    {"id": "check_char_contract_doc", "tier": "lane",
+     "when": "动 docs/人物原稿与上屏契约.md 的「每档角色 / 品级一览」生成块（CHARS-DOC 标记对内）、"
+             "data/characters_{suffix}.json 的角色条目 / tier / 名 / 生卒、data/crew.json 的 roles 职名 / "
+             "candidates 挂钩（sources.crew_id 那条链）、scripts/ui/CharacterArt.gd 的 TIER_ORDER，或动本脚本自身",
+     "kind": "py", "file": "tools/check_char_contract_doc.py",
+     "judge": "（lane w26-k3）契约文档「每档角色 / 品级一览」生成块（CHARS-DOC 标记对内）与 data/characters_{suffix}.json 现算逐字一致：档序照 CharacterArt.TIER_ORDER（唯一来源，源码里认不出它即红、不在此另抄档序），行 = id / 名 / 生卒（生–卒，缺一则「？」、皆无「—」）/ 职事（凡 sources.crew_id 挂了 data/crew.json 候选的按候选 role 取职名；「初习 / 谙熟 / 老练」是职事合同 level、不录这里——本作没有「人物品级」，写上会读成官阶）；漏档 / 多档 / 名 / 生卒 / 职名写错、行序或空格漂一格都按首处差异「文档 / 数据」两行对照报案。`--fix` 重贴生成块（会写盘，不进一键跑），`--gen` 只打印。零、判据自检每次在内存叠层里跑：R1–R7 反向格（改 tier / 数据加人 / 文档加行 / 生卒算错 / 两人换档 / 职名写错 / 行序反了各红且红因落行）、C1–C5 对照格（正常态照判绿、行数口径、名带竖线 / roles 表报废 / 新档未登记三格 gen 不瞎造表、红因写明哪一环断了——探不到那一红即格红）。三格机判不了的留人工：id 空格号、手写段措辞、「为什么归这一档」。",
+     "green": "`✓ docs/人物原稿与上屏契约.md 有恰一对 CHARS-DOC 生成标记` + `✓ 生成块与 data/characters_{suffix}.json 现算逐字一致（id / 名 / 生卒 / 职事）` + `✓ 生成块角色行数（N）= 原稿条数（N）…` + 零节 R1–R7 / C1–C5 全 `✓` + `结果：全部通过`",
+     "red": "`✗ …首处差异在块内第 k 行\\n      文档：…\\n      数据：…\\n      修法：python3 tools/check_char_contract_doc.py --fix …`（对照两行就是点名）；`✗…CHARS-DOC 生成标记应为恰一对…`；`✗…行数（a）= 原稿条数（b）`；`✗…认不出 TIER_ORDER…` / `…不在本档名表…`；`✗…职事栏取数口径断了…`；`✗ <格号>…——这一路红已不从这里出`（自检对不上）；`结果：N 项问题`"},
 ]
 
 # 接 shot_gate.gd 的截图脚本（lane m3 三支 + lane sg2 二十支 + 之后各 lane 新接的）。TAG / 张数 / 截图目录从脚本源码现读，不在此抄。
