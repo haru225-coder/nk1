@@ -66,8 +66,17 @@ func _run() -> void:
 			"sail_level": 1, "armor_level": 1, "cargo": {}, "durability": 400, "max_durability": 400}])
 		fleet.set("morale", 70)
 
-	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
+	# 被测树自检（lane w26-k6 接 wave23-a9 共用面）：WorldMap 挂不出 / 挂空壳秒级判红；字段在过帧后点名
+	var wm: Node = ShotGate.start_tree_probe("res://scenes/WorldMap.tscn", _fails, "ShipVfx WorldMap")
+	if wm == null:
+		_report()
+		return
 	root.add_child(wm)
+	for _i in 6:
+		await process_frame
+	if not ShotGate.check_fields(wm, {"combat_mode": "WorldMap.gd Parse Error / 海战布景断", "resolved": "WorldMap.gd Parse Error / 海战布景断"}, _fails, "ShipVfx WorldMap"):
+		_finish(wm)
+		return
 	var wm_ref: WeakRef = weakref(wm)
 	_expect(CombatStage.freeze_enemy_fire(wm) == 2, "敌船开炮已冻")
 	_ship = wm.get("ship") as Node2D

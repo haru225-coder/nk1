@@ -42,9 +42,18 @@ func _run() -> void:
 		DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	var stage: Control = (load(STAGE) as PackedScene).instantiate()
 	ShotGate.frame_pressure(self)  # NK1_PROBE_SLOW_MS 压帧自检（lane gd18）；未设不挂
+	# 被测树自检（lane w26-k6 接 wave23-a9 共用面）：VisionStage 挂不出 / 挂空壳秒级判红；
+	# 子层 CombatFreeze/Muzzle/Splash 在 _ready 才建（check_fields 只能勾脚本字段，勾不了节点），勾 _embers 这类 _ready 建的对象
+	stage = ShotGate.start_tree_probe(STAGE, _fails, "vision_fill_shots") as Control
+	if stage == null:
+		_finish()
+		return
 	root.add_child(stage)
 	for _i in 3:
 		await process_frame
+	if not ShotGate.check_fields(stage, {"_embers": "VisionStage.gd Parse Error / _ready 建粒子前断线"}, _fails, "vision_fill_shots"):
+		_finish()
+		return
 	var host := stage.get_node_or_null("CombatFreeze")
 	_expect(host != null, "缺 CombatFreeze")
 	if host == null:
