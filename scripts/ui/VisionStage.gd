@@ -554,7 +554,7 @@ func _strip_frames(path: String, count: int, cell: Vector2) -> SpriteFrames:
 	return sf
 
 
-func _seq_sprite(frames: SpriteFrames, cell: Vector2, origin: Vector2, pos: Vector2, rot: float, sc: float) -> AnimatedSprite2D:
+func _seq_sprite(frames: SpriteFrames, _cell: Vector2, origin: Vector2, pos: Vector2, rot: float, sc: float) -> AnimatedSprite2D:
 	var a := AnimatedSprite2D.new()
 	a.sprite_frames = frames
 	a.animation = "seq"

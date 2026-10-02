@@ -159,7 +159,7 @@ func _bind_sprite() -> void:
 		if layer != null:
 			layer.texture = tex
 			layer.scale = _sprite.scale
-	var cam := _host.get_node_or_null("Camera2D") as Camera2D
+	var _cam := _host.get_node_or_null("Camera2D") as Camera2D
 	# 相机仍由旗舰用；这里不动
 
 

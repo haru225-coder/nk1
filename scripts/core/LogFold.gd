@@ -68,7 +68,7 @@ static func push_notice(host: Object, line: String, keep: int, fold_at := FOLD_A
 		for i in range(run - 1, -1, -1):
 			_fold_add(fold, logs[i], when[i] if i < when.size() else now)
 		_fold_add(fold, line, now)
-		for i in run:
+		for _i in run:
 			logs.remove_at(0)
 		var key := head(fold)
 		folds[key] = fold
