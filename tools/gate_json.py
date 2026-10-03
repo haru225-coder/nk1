@@ -377,6 +377,56 @@ REGISTRY = [
      "green": "逐条 `  ✓ …` + 末行 `REST_SCENARIOS cases=18 fails=0`",
      "red": "`  ✗ …` 行（如钮缺枚 / 同出一行不齐 / 见・暗・焦不符 / 候钮串住处 / 寺观该暗亮出）"
             "+ 末行 `REST_SCENARIOS cases=N fails=M`（M>0），退 1"},
+
+    {"id": "qa_debt_strip_probe", "tier": "lane",
+     "when": "动欠债上屏链（GameState.debt 增减、scripts/ui/LedgerPage.gd 顶匾上行「欠 %d」格、"
+             "scripts/Economy.gd 欠债月结），或动 tools/qa_debt_strip_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_debt_strip_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_debt_strip_probe.gd"],
+     "judge": "（探针 dc30a97 随 w30-k2 落地，w31-k3 入册——落地当轮漏注册只被「注册或豁免」闸点名待收，"
+              "wave31 立案根治，与 w29-k3 / w30-k1 同型 8170079 母本）"
+              "真场景树 D0–D3 把 HUD 顶匾上行欠债格钉成运行时真断言：debt=0 时上行不印「欠 」（反向格，"
+              "LedgerPage.gd:167 的 debt 变量在欠债清零为空串）；摆 debt=835 / 100 / 10000 三档，"
+              "上行各逐字印「欠 835」「欠 100」「欠 10000」（bbcode 源文里 [color=#…]欠 N[/color]，数字裸排）。"
+              "本进程 SCRIPT ERROR 即红。末行 `DEBT_STRIP cases=N fails=M`，M>0 退 1",
+     "green": "逐条 `  ✓ …` + 末行 `DEBT_STRIP cases=4 fails=0`",
+     "red": "`  ✗ …` 行（如无债仍印「欠 」/ 三档欠数逐字不符——红行带实读前 110 字节）"
+            "+ 末行 `DEBT_STRIP cases=N fails=M`（M>0），退 1"},
+
+    {"id": "qa_crew_fold_probe", "tier": "lane",
+     "when": "动欠饷链（scripts/core/Crew.gd 的雇佣 / 月俸合计 / 欠月数 / 不告而去口径、"
+             "scripts/core/Economy.gd 月结扣工食）、札记折叠渲染（scripts/core/LogFold.gd 的 render "
+             "fold:i 折头 /（点开）/（收起）/ 月行引子与淡色缩进），或动 tools/qa_crew_fold_probe.gd / "
+             "tools/qa_crew_fold_host.gd 自身",
+     "kind": "godot", "file": "tools/qa_crew_fold_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_crew_fold_probe.gd"],
+     "judge": "（探针 e6fd6f1 随 w30-k3 落地，w31-k3 入册——与 qa_debt_strip 同案漏网两支的第二支）"
+              "真场景树 C1：泉州名册现读窄样本两人（俸居首一名 + 最薄一名，合计现算），现银摆 0——"
+              "札记顶则「本月工食 <合计> 未发。船上人心浮动。」逐字钉两月；欠满三月「工食欠满三月，<名> 不告而去。」"
+              "现排名册逐字钉、俸居首者先走、走后册余合计 60 转句再连欠六月、册空后当批一则不添。"
+              "C2：仿作宿主 qa_crew_fold_host 直调 LogFold.render（不经屏控件）——"
+              "折起「[url=fold:0]【同一折句】（点开）[/url]」、点开后折头转（收起）、月行 "
+              "`[url=fold:0:<ym>]` 引子与（点开 / 收起）、原文缩一格淡一档「　」逐字钉。"
+              "本进程 SCRIPT ERROR 即红。末行 `CREW_FOLD cases=N fails=M`，M>0 退 1",
+     "green": "逐条 `  ✓ …` + 末行 `CREW_FOLD cases=17 fails=0`",
+     "red": "`  ✗ …` 行（如工食合计数不符 / 欠满三月不走 / 册空仍添墨 / 折头或月行字样漂移 / 淡色缩进变）"
+            "+ 末行 `CREW_FOLD cases=N fails=M`（M>0），退 1"},
+
+    {"id": "qa_cargo_strip_probe", "tier": "lane",
+     "when": "动船舱货载链（scripts/core/Fleet.gd 的 cargo / add_cargo / remove_cargo 与容量口径、"
+             "scripts/ui/LedgerPage.gd 船籍簿页「船舱」段 cargo_str 拼排、水粮占舱折算），"
+             "或动 tools/qa_cargo_strip_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_cargo_strip_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_cargo_strip_probe.gd"],
+     "judge": "（探针 0ef543a 随 w29-k2 落地，w31-k3 入册——其落地晚于 w29-k3 注册片，隔波留账一并收编）"
+              "真场景树 C1–C6 把船籍簿页「船舱」段上屏原文钉成运行时真断言：空舱印「[b]船舱[/b][/color]\\n空\\n」"
+              "与「舱位　30 / 200 料」（sampan 200 料 − 水粮 30 料）、「足 20 日」同屏；进茶叶 ×10 / 苏木 ×12 逐字上屏、"
+              "舱位 30→47 料随变；再加 ×5 改印「茶叶 ×15」旧值退；出货清空回「空」；账变不刷陈旧哨（读缓存副本即红）；"
+              "重排后整页须过空仓变化 + 仍含「[b]船舱[/b]」格 +「船舱」不得漏进顶匾上行。"
+              "本进程 SCRIPT ERROR 即红。末行 `CARGO_STRIP cases=N fails=M`，M>0 退 1",
+     "green": "逐条 `  ✓ …` + 末行 `CARGO_STRIP cases=27 fails=0`",
+     "red": "`  ✗ …` 行（如空舱形态变 / 品名数量逐字不符 / 舱位不随货变 / 旧值仍印 / 陈旧哨落网 / 船舱字漏上顶匾）"
+            "+ 末行 `CARGO_STRIP cases=N fails=M`（M>0），退 1"},
 ]
 
 # w27-k4 CHECK FOLLOWS
