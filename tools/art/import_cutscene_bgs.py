@@ -407,6 +407,12 @@ H_LIMIT = {("narration", "lower_left"): 22, ("line", "bottom"): 32, ("line", "ce
            ("title", "center"): 10, ("era", "lower_left"): 22}
 V_LIMIT = {"era": 13, "title": 5, "line": 15, "narration": 16}
 CN_DIGIT = {"〇": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+# 播放器认的键（CutscenePlayer._begin_shot / _shot_view / _build_captions / _caption_on，ChapterCard._read_data）。
+# 别的键播放器一律静默不认，写错一个字母也不报：字幕 if_flag / unless_flag 写错 → 换句失效，两句同出或一句不出；
+# hold 写错 → 该退的句子赖到换镜；镜头 captions 写错 → 整镜没字幕。所以未知键直接判红（lane w53-9）
+SHOT_KEYS = {"bg", "bg_alt", "duration", "cam_from", "cam_to", "grade", "fx", "transition_in", "shake", "captions"}
+CAPTION_KEYS = {"t", "text", "style", "pos", "hold", "if_flag", "unless_flag"}
+CHAPTER_KEYS = {"bg", "focus", "zoom", "epigraph", "epigraph_src", "year_text"}
 
 
 def _res_file(res: str) -> pathlib.Path:
@@ -442,10 +448,25 @@ def _cn_era_year(n: int) -> str:
     return digits[n // 10] + "十" + (digits[n % 10] if n % 10 else "")
 
 
-def check_data() -> list:
+def _known_flags() -> set:
+    """有人立的旗标：scripts 里字面 set_flag("…") / flags["…"] = …，data/*.json 里的 "flag": "…"（剧情效果、新闻、章目、战阶）。"""
+    import re
+    flags = set()
+    for f in (ROOT / "scripts").rglob("*.gd"):
+        src = f.read_text(encoding="utf-8")
+        flags |= set(re.findall(r'set_flag\("([A-Za-z0-9_]+)"\)', src))
+        flags |= set(re.findall(r'flags\["([A-Za-z0-9_]+)"\]\s*=', src))
+    for f in (ROOT / "data").glob("*.json"):
+        flags |= set(re.findall(r'"flag"\s*:\s*"([A-Za-z0-9_]+)"', f.read_text(encoding="utf-8")))
+    return flags
+
+
+def check_data(path=None) -> list:
+    """data/cutscenes.json 契约。path 只给变异自检用（tools/qa_w53_9_cutscene_contract_mutants.py），门禁不传。"""
     import re
     bad = []
-    path = ROOT / "data" / "cutscenes.json"
+    path = pathlib.Path(path) if path else ROOT / "data" / "cutscenes.json"
+    known_flags = None
     try:
         d = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as e:
@@ -466,6 +487,9 @@ def check_data() -> list:
         total = 0.0
         for i, s in enumerate(shots):
             w = f"{where}[{i + 1}]"
+            extra = set(s) - SHOT_KEYS
+            if extra:
+                bad.append(f"{w} 有不认的键 {sorted(extra)}（镜头只认 {' / '.join(sorted(SHOT_KEYS))}；写错的键播放器静默不认）")
             bg = s.get("bg", "")
             if not (isinstance(bg, str) and bg.startswith("res://assets/") and bg.endswith(".jpg")):
                 bad.append(f"{w} bg 须为 res://assets/…jpg：{bg}")
@@ -548,6 +572,20 @@ def check_data() -> list:
                 bad.append(f"{w} shake 须在 0..1")
             for j, c in enumerate(s.get("captions", [])):
                 wc = f"{w}.captions[{j + 1}]"
+                extra = set(c) - CAPTION_KEYS
+                if extra:
+                    bad.append(f"{wc} 有不认的键 {sorted(extra)}（字幕只认 {' / '.join(sorted(CAPTION_KEYS))}；"
+                               "写错的键播放器静默不认——换句旗写错两句同出或一句不出，hold 写错该退的句子赖到换镜）")
+                for k in ("if_flag", "unless_flag"):
+                    if k not in c:
+                        continue
+                    if not (isinstance(c[k], str) and c[k]):
+                        bad.append(f"{wc} {k} 须为非空字符串：{c[k]!r}")
+                        continue
+                    if known_flags is None:
+                        known_flags = _known_flags()
+                    if c[k] not in known_flags:
+                        bad.append(f"{wc} {k} 旗标 `{c[k]}` 没人立（scripts set_flag / data 里的 \"flag\" 都没有）——这句按旗换不了")
                 t = c.get("t")
                 if not isinstance(t, (int, float)) or not 0 <= t < dur:
                     bad.append(f"{wc} t={t} 不在 [0, duration={dur})")
@@ -563,6 +601,8 @@ def check_data() -> list:
                     bad.append(f"{wc} hold={hold} 越过镜头末尾（t+hold > {dur}）")
                 if t > dur - 1.5 and st != "seal":
                     bad.append(f"{wc} t={t} 离镜头结束不足 1.5 秒，读不完")
+                if isinstance(hold, (int, float)) and 0 < hold < 1.5 and st != "seal":
+                    bad.append(f"{wc} hold={hold} 不足 1.5 秒，读不完")
                 for para in txt.split("\n"):
                     n = len(para)
                     if pos in ("right_vertical", "left_vertical"):
@@ -615,6 +655,9 @@ def check_data() -> list:
     if sorted(chs.keys()) != ["1", "2", "3", "4"]:
         bad.append(f"chapters 须恰为 1–4：{sorted(chs.keys())}")
     for k, c in chs.items():
+        extra = set(c) - CHAPTER_KEYS
+        if extra:
+            bad.append(f"chapters.{k} 有不认的键 {sorted(extra)}（章节卡只认 {' / '.join(sorted(CHAPTER_KEYS))}；写错的键 ChapterCard 静默不认）")
         for fld in ("bg", "epigraph", "epigraph_src", "year_text"):
             if not isinstance(c.get(fld), str):
                 bad.append(f"chapters.{k}.{fld} 须为字符串")
