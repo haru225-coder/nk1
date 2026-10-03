@@ -196,6 +196,7 @@ func _run() -> void:
 	_write(_primary() + ".bak", both_bad)
 	_check("两份皆坏", false, "corrupt", "卷页损了", -1)
 
+	_write_path_cases()
 	_finish()
 
 
@@ -333,3 +334,68 @@ func _verdict(ok: bool, what: String) -> void:
 	print("  %s  %s" % ["✓" if ok else "✗", what])
 	if not ok:
 		fails += 1
+
+
+# ── lane w53-5 三轮：写入路径三保证（落位前读回核对 / 坏正本不冲好副抄 / 插入序落盘）─────────────
+## 注册表里「动 SaveLoad / 存档」要跑的是 verify_save_robustness 与本探针；这三条写入保证原先只在 EXEMPT 探针
+## （qa_w53_5_half_write / qa_w53_5_roundtrip）里，把 SaveLoad 的写入改回老样子，注册的两道照绿。各取最小一格：
+##   W1 .tmp 写了读不回（预建成属主只写 0200，冒充磁盘满时写不全照报成功）：记录报未成、正本与副抄逐字节不动、不留 .tmp
+##      ——本进程读得动只写文件（root）或平台不给改权限时注入不成立，打 ⚠ 未判、不计红绿；
+##   W2 正本已坏、副抄尚好：再记一卷，副抄逐字节仍是好的那份（坏正本不退成 .bak）；
+##   W3 船舱货不按字母序摆（rice 先于 pepper）：记了再读，键序照旧（JSON 缺省按键名重排，读回即换了上屏次序）。
+func _write_path_cases() -> void:
+	var gs: Node = root.get_node("GameState")
+	var fleet: Node = root.get_node("Fleet")
+	var bak := _primary() + ".bak"
+	var tmp := _primary() + ".tmp"
+	_cleanup()
+	gs.call("from_dict", {"money": 111, "last_port": "quanzhou", "player_name": "林探针"})
+	sl.call("save_game", SLOT, "quanzhou")
+	gs.set("money", 222)
+	sl.call("save_game", SLOT, "quanzhou")
+	var prim_text := _read_text(_primary())
+	var bak_text := _read_text(bak)
+	_write_raw(tmp, "")
+	if FileAccess.set_unix_permissions(tmp, FileAccess.UNIX_WRITE_OWNER) == OK and FileAccess.open(tmp, FileAccess.READ) == null:
+		gs.set("money", 333)
+		var w1 = sl.call("save_game", SLOT, "quanzhou")
+		_verdict(typeof(w1) == TYPE_BOOL and not w1 and _read_text(_primary()) == prim_text and _read_text(bak) == bak_text
+				and not FileAccess.file_exists(tmp),
+			"W1 .tmp 写了读不回：记录报未成、正本与副抄逐字节不动、不留 .tmp（save_game=%s）" % str(w1))
+	else:
+		print("  ⚠  W1 只写权限对本进程不生效（root 或平台不支持 unix 权限），半写注入未判")
+		DirAccess.remove_absolute(tmp)
+
+	_cleanup()
+	gs.set("money", 666)
+	sl.call("save_game", SLOT, "quanzhou")
+	gs.set("money", 777)
+	sl.call("save_game", SLOT, "quanzhou")
+	var good_bak := _read_text(bak)
+	_write_raw(_primary(), "{\"version\": 4, \"calendar\": ")
+	gs.set("money", 888)
+	var w2 = sl.call("save_game", SLOT, "quanzhou")
+	_verdict(typeof(w2) == TYPE_BOOL and w2 and _read_text(bak) == good_bak and _read_text(_primary()).contains("888 钱"),
+		"W2 正本已坏再记一卷：好副抄不被坏正本冲掉（副抄 %d 字）" % _read_text(bak).length())
+
+	_cleanup()
+	fleet.call("from_dict", {"ships": [{"type": "fu_ship_medium", "name": "试船", "durability": 300.0, "max_durability": 300.0,
+		"crew": 40, "sail_level": 1, "armor_level": 1,
+		"cargo": {"rice": {"qty": 3, "avg_cost": 10.0}, "pepper": {"qty": 2, "avg_cost": 80.0}}}], "water": 30, "food": 30, "morale": 70})
+	sl.call("save_game", SLOT, "quanzhou")
+	fleet.call("from_dict", {"ships": [], "water": 0, "food": 0, "morale": 70})
+	var w3 = sl.call("load_game", SLOT)
+	var ships: Array = fleet.get("ships")
+	var order: Array = Array((ships[0].get("cargo", {}) as Dictionary).keys()) if not ships.is_empty() else []
+	_verdict(typeof(w3) == TYPE_BOOL and w3 and order == ["rice", "pepper"],
+		"W3 船舱货插入序往返不变（读后 %s）" % JSON.stringify(order))
+
+
+## 读不出（不存在或不可读）给「<读不出>」，与任何真内容都不等
+func _read_text(path: String) -> String:
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return "<读不出>"
+	var t := f.get_as_text()
+	f.close()
+	return t
