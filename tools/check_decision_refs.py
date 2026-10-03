@@ -69,6 +69,11 @@
 「清单行号 → 行内第几处引用 → 类别」排好印（--show 的原文行跟在所属引用的 DRIFT 前，待核标记排在全部引用之后）；
 --since / 改号自证的新旧配对也按新版引用的清单顺序逐对比。原先配对取 `ko.keys() & kn.keys()`（集合，遍历顺序随
 PYTHONHASHSEED 变），有 2 处以上 ⚠ / MISMATCH 时同一基连跑每次行序不同、「逐字节同」比对会偶发假 DIFF（lane cs18 待议 4）。
+清零判竿格（lane w50-k4，无门禁 sweep 第二格 / w49-k4 同型）：正文行里实读的六处收收性计数格——`bad`（NOFILE/OOR）、
+`drift`（DRIFT 总计）、`manual`（要人工）、`marks`（待核标记）、MISMATCH、`rewritten`（⚠ 改指未验）——逐格断言 = 0
+（六格本都在判红路径里、竿断言在现存体系下静默绿；竿守的是「格位字面漂移 / 判红路径被退化」的元层——格位改了字、
+或哪一格被摘出判红路径，竿位自检（Z-R1/Z-R2/Z-R3）先红）。『原文作』认账改指 `acked` 是设计内挂账认账格，
+补竿即格位字面定定不许演化成判 0（判 0 是不允许的状态减法——自查判格 Z-R1 互证）。
 改了清单所引文件（拆 Main / 改 check_symbols 之类）的 lane，收尾跑本脚本：红了就 --fix，回读「待核」，提交清单。
 lane auditfix1 起进必跑门禁（一键跑末条，docs/GATES.md §三.22）：dec3 入库后没进注册表，自 cs14 `a8ff603` 起主干一直红
 （到 `abb3f05` 积了 DRIFT 47）没人看见。任何 lane 挪动所引文件的行都会让它红，这正是它要报的；--fix 只认已提交的文件，
@@ -851,10 +856,11 @@ def skeleton(line):
 def since(o, repo, refs, lines, rev=None, new_rev=None, label=None, toks=None):
     """rev 版清单（缺省 o.since）的引用与本版逐对比内容，返回 MISMATCH 数（取不到 rev 版清单返回 None）。
     new_rev：本版引用按这个提交里的内容比（改号自证传本版头部的锚），缺省比工作树（--since）；
-    传了 new_rev 的，内容不同而旧锚那段原文在新处文件里已经找不到（所指那段自己被改写了）只记 ⚠、不判红。"""
+    传了 new_rev 的，内容不同而旧锚那段原文在新处文件里已经找不到（所指那段自己被改写了）只记 ⚠、不判红。
+    （lane w50-k4 清零判竿需要 ⚠ 改指未验的格值，since() 把它存成属性 since.last_rewritten——返回值口径不变。）"""
     rev = rev or o.since
     label = label or f"--since {rev}"
-    rel = os.path.relpath(os.path.abspath(o.doc), ROOT)
+    rel = getattr(o, "since_rel", None) or os.path.relpath(os.path.abspath(o.doc), ROOT)
     old_text = git("show", f"{rev}:{rel}")
     old_anchor = old_text and anchor_of(old_text)
     if not old_anchor:
@@ -994,11 +1000,47 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None, toks=None):
         else:
             moved += 1
     out.flush()
+    since.last_rewritten = rewritten
     print(f"  {label}（旧锚 {old_anchor}{f' → 新锚 {new_rev}' if new_rev else ''}）：对上 {same + moved + mismatch + marked + rewritten + acked} 对（仓外 brief 不比），行号没变 {same}、"
           f"改了行号且内容一致 {moved}、MISMATCH {mismatch}、所在行带「待核」不比 {marked}"
           + (f"、所指那段被改写（⚠ 改指未验）{rewritten}、括注「原文作」认账改指 {acked}" if new_rev else "") + "；"
           f"新版多出 {len(unpaired)} 处引用（--show 回读）")
     return mismatch
+
+
+# 清零判竿格（lane w50-k4，无门禁 sweep 第二格）：竿位格键 — 判语 — 正文行实读出处。六格正文行照计照印，
+# 器只兜末行绿、格值 N>0 没人看得见（w48-k1/c700e7f 挂账认账改指 3 三波照绿即实证）——竿断言逐格 = 0。
+# 这些格原本都在判红路径里（final gate if 逐格非零即退 1），竿给它们立的是「格位字面不许退化成不挂判」的元断言；
+# 竿位自检在 self_check()（Z-R1 认账格 acked 不判 0 / Z-R2 清格 rc=0 / Z-R3 「原文作」区段新引用被另算 rc=1）。
+ROD_CHECKS = (
+    ("bad", "NOFILE/OOR 计数格（正文行「NOFILE/OOR N」）"),
+    ("drift", "DRIFT 计数格（正文行「DRIFT N」）"),
+    ("manual", "要人工计数格（正文行「要人工 N」，drift 子格收编）"),
+    ("marks", "待核标记计数格（正文行「待核标记 N」）"),
+)
+
+
+def rod_assert(n, mismatch, rewritten, run, quiet=False):
+    """逐格断言收收性计数格 = 0；N>0 即点名红（竿格名 + 格值 + 判语），返回判红条数（0 = 竿绿）。
+    n/mismatch/rewritten 来源同 final gate——『原文作』认账改指 acked 不在此判（挂账认账格不判 0）。
+    --since 改走比较内容支路时 ⚠ 改指未验格不进自证（那边不比内容），传 0——竿照常绿、格位不降格。
+    quiet=True 只计数不印（自检格 Z-R1/Z-R2 拿它当纯判定器用）。"""
+    say = (lambda *_: None) if quiet else print
+    bad = 0
+    for key, why in ROD_CHECKS:
+        if n[key]:
+            say(f"  ✗ 清零判竿红 {why}实读 = {n[key]}（竿断言 =0）")
+            bad += 1
+    if mismatch:
+        say(f"  ✗ 清零判竿红 MISMATCH 计数格（正文行「MISMATCH N」）实读 = {mismatch}（竿断言 =0）")
+        bad += 1
+    if rewritten:
+        say(f"  ✗ 清零判竿红 ⚠ 改指未验计数格（正文行「所指那段被改写（⚠ 改指未验）N」）实读 = {rewritten}（竿断言 =0）")
+        bad += 1
+    if not bad:
+        say(f"  ✓ 清零判竿六格全 0（NOFILE/OOR、DRIFT、要人工、待核、MISMATCH、⚠ 改指未验；竿判得住挂账 N>0 即点名红，"
+            f"竿自证格在 self_check()）——{run}")
+    return bad
 
 
 def prev_rev(doc):
@@ -1210,6 +1252,44 @@ def self_check():
             print(f"  ✗ 符号锚自检 {why}：`{ref}` 期望 DRIFT {want_drift}，实得 {n2['drift']}")
     if not bad:
         print(f"  ✓ 符号锚自检 {len(_ST_SYM_CASES)}/{len(_ST_SYM_CASES)}（行号锚照旧；符号锚认定；插一行不漂；误名报 DRIFT）")
+    # 清零判竿位自检三格（lane w50-k4）：竿断言在场判据体系下主业静默绿，这两格把竿自己的规约钉死——
+    # Z-R1：『原文作』认账改指 acked 是认账挂账格，不判 0（补竿即定死的格位字面，不许演化成状态减法）；
+    # Z-R2：六格全 0 时竿断言静默（竿不误伤清档）；
+    # Z-R3：区段规则——「原文作」括注里的新引用被另算 DRIFT（OLD_NOTE 收敛觉化 / 区段退化，竿域外判红路径先红）。
+    # Z-R1：认账挂账盘——『原文作』认账格 acked（挂账盘 N>0）出现在六格全 0 的清单里、竿照旧绿；
+    # 认账格不判 0 是竿的格位字面（判语判的就是 acked 不进竿域、不进判红）。
+    doc_r1 = ("行号：按 HEAD `0000000`\n"
+              "- 旧版那几行 `Z-R1-Fake.gd:1`（原文作 `:50` 认了账，挂账认账盘 N>0 不计进竿的六格——竿是清零判不是认账判）\n")
+    n_r1, _f, _r, _t = check(argparse.Namespace(show=False), doc_r1,
+                             MemRepo({"Z-R1-Fake.gd": "x\n"}, {"Z-R1-Fake.gd": "x\n"}), "0000000", quiet=True)
+    rod_r1 = rod_assert(n_r1, 0, 0, "竿位自检 Z-R1（清格盘 + 挂账认账盘 N>0 同票绿）", quiet=True)
+    noted_r1 = {m.group(1).strip() for a, b in (x.span() for x in OLD_NOTE.finditer(doc_r1.splitlines()[1]))
+                for m in TOKEN.finditer(doc_r1.splitlines()[1][a:b])}
+    if n_r1["refs"] != 1 or n_r1["skipped"] != 1 or rod_r1 != 0 or f":50" not in noted_r1 or \
+            any(n_r1[k] for k, _why in ROD_CHECKS):
+        bad += 1
+        print(f"  ✗ 清零判竿位自检 Z-R1：「原文作」认账盘被另计入竿六格（refs={n_r1['refs']} skipped={n_r1['skipped']} "
+              f"rod={rod_r1}）——挂账认账格判 0 是不允许的状态减法、盘票被增殖时竿须出红")
+    else:
+        print("  ✓ 清零判竿位自检 Z-R1：「原文作 `:50`」认账挂账盘 N>0 同票绿、认账格位不判 0（挂账 = 0 是不允许的状态减法——盘票被增殖进竿六格才出红）")
+    doc_r2 = "行号：按 HEAD `0000000`\n- `Z-R2-Fake.gd:1`\n"
+    n_r2, _f, _r, _t = check(argparse.Namespace(show=False), doc_r2,
+                             MemRepo({"Z-R2-Fake.gd": "x\n"}, {"Z-R2-Fake.gd": "x\n"}), "0000000", quiet=True)
+    if rod_assert(n_r2, 0, 0, "竿位自检 Z-R2", quiet=True) != 0:
+        bad += 1
+        print("  ✗ 清零判竿位自检 Z-R2：六格全 0 的清单竿断言误伤红——竿格被退化时不指望它绿，但完好竿不许冤判")
+    else:
+        print("  ✓ 清零判竿位自检 Z-R2：六格全 0 竿断言静默绿（竿位在场、无误伤；竿格摘除时本格当不了哨兵——靠 Z-R3 的反向判语锁定）")
+    doc_r3 = ("行号：按 HEAD `0000000`\n"
+              "- 旧版 `Z-R3-Fake.gd:1`（原文作 `:1`；`Z-R3-Fake.gd:5` 区段后的同文件新引用——区段遇 '；' 即截，不许把 5 吞进括注里）\n")
+    n_r3, _f, _r, _t = check(argparse.Namespace(show=False), doc_r3,
+                             MemRepo({"Z-R3-Fake.gd": "x\n"}, {"Z-R3-Fake.gd": "x\n"}), "0000000", quiet=True)
+    if len(_r) != 2 or n_r3["refs"] != 2 or rod_assert(n_r3, 0, 0, "竿位自检 Z-R3") == 0 or not n_r3["bad"]:
+        bad += 1
+        print(f"  ✗ 清零判竿位自检 Z-R3：「原文作」区段后的新引用没被另算、或竿格被摘除（refs={n_r3['refs']} bad={n_r3['bad']} rod 判语行数不对）——"
+              f"区段遇 '；' 收截的格位字面，或 ROD_CHECKS 六格被抽空（竿死 silent 绿 = Z-R3 先拦）")
+    else:
+        print("  ✓ 清零判竿位自检 Z-R3：「原文作」区段遇 '；' 即截——区段后的同文件新引用被另算 OOR、竿判定 rc=1 点名红（区段区间规则在场）")
     return bad
 
 
@@ -1247,8 +1327,9 @@ def main():
     if git("rev-parse", "--verify", "-q", anchor + "^{commit}") is None:
         print(f"  ✗ 锚 {anchor} 不是本仓的提交")
         return 1
+    since.last_rewritten = 0  # lane w50-k4：清零判竿的 ⚠ 改指未验格值，since() 每跑必覆写；没跑到（--fix 支路）保持 0
     if self_check():
-        print("结果：有问题（转发穿透自检没过：本脚本的跟号逻辑坏了，先修脚本，清单的结果不可信）")
+        print("结果：有问题（自检没过：本脚本的跟号 / 清零判竿逻辑坏了，先修脚本，清单的结果不可信）")
         return 1
     repo = Repo()
     if o.fix:
@@ -1274,6 +1355,7 @@ def main():
             mismatch = since(o, repo, refs, text.splitlines(), rev=rev, new_rev=anchor, label=f"改号自证 [{why}]", toks=_toks)
             if mismatch is None:
                 return 1
+    n2_rewritten = 0 if o.since else since.last_rewritten  # 清零判竿第六格（⚠ 改指未验）格值：--since 不分内容、格位不降格传 0
 
     if n["bad"] or n["drift"] or n["marks"] or mismatch or landing_bad:
         how = []
@@ -1285,6 +1367,11 @@ def main():
             how.append(f"落点预检 {landing_bad} 项：ledger_refs_mutants 的变异靶子漂了，照新形状改 tools/ledger_refs_mutants.py、跑一次全量")
         print(f"结果：有问题（{'；'.join(how) or '见上'}）")
         return 1
+    # 清零判竿格（lane w50-k4）：全部通过前逐格断言六处收收性计数格 = 0。这六格本都在上面的判红路径里
+    # （任一格非零即退 1），竿断言在现存判据体系下静默绿；竿守的是「格位字面漂移 / 判语被放宽」的元层——
+    # 格位改了字、或者哪一格被摘出判红路径，竿位自检（Z-R1/Z-R2/Z-R3）先红。
+    rod_assert(n, mismatch or 0, 0 if o.since else n2_rewritten,
+               "本档" if not o.since else "本档（--since 比内容、改指未验格不进）")
     print("结果：全部通过")
     return 0
 
