@@ -148,11 +148,14 @@ func overall_bearing(from_id: String, to_id: String) -> float:
 
 ## 已航行 traveled_li 里时所在那一段的恒向线方位
 func bearing_at(from_id: String, to_id: String, traveled_li: float) -> float:
+	return _leg_bearing(_legs(from_id, to_id), traveled_li)
+
+
+## 航迹逐段 [[段长（里）, 恒向线方位], …]；短于 0.05 里的段跳过。
+## 实航（SeaChart._sail_next_day 每日取 bearing_at）与推演（plan 逐日走 _walk_days）共用这一张段表
+func _legs(from_id: String, to_id: String) -> Array:
 	var pts := track_lonlat(from_id, to_id)
-	if pts.size() < 2:
-		return 0.0
-	var walked := 0.0
-	var last := 0.0
+	var out: Array = []
 	for i in range(pts.size() - 1):
 		var lon1 := float(pts[i][0])
 		var lat1 := float(pts[i][1])
@@ -161,10 +164,19 @@ func bearing_at(from_id: String, to_id: String, traveled_li: float) -> float:
 		var seg := _haversine_li(lon1, lat1, lon2, lat2)
 		if seg < 0.05:
 			continue
-		last = _rhumb_bearing(lon1, lat1, lon2, lat2)
-		if traveled_li <= walked + seg:
+		out.append([seg, _rhumb_bearing(lon1, lat1, lon2, lat2)])
+	return out
+
+
+## 段表上已航行 traveled_li 里时所在那一段的方位；走过末段仍取末段，没有段时为 0
+func _leg_bearing(legs: Array, traveled_li: float) -> float:
+	var walked := 0.0
+	var last := 0.0
+	for leg in legs:
+		last = float(leg[1])
+		if traveled_li <= walked + float(leg[0]):
 			return last
-		walked += seg
+		walked += float(leg[0])
 	return last
 
 
@@ -313,22 +325,24 @@ func _shift_date(year: int, month: int, day: int, n: int) -> Vector3i:
 
 
 ## 从明日启航起逐日扣里程。航行当天先过一日，所以第一日的风不是看海图这一天的风。
+## 当日罗经取已行里程所在那一段，与 SeaChart._sail_next_day 同一走法（lane w53-1）：原先拿出港第一段的方位套全程，
+## 泉州三条线出湾都是 102 度，六月往广州推成「侧风十日」，实航大半程顶头逆风、要走二十三日，水粮与委办期限都照十日算。
+## changed 只记途中季风变了（同一段在启航那月与当日的风不同）；航线转弯、各段风不同不算换风。
 ## drag_days > 0 时，把每日期望进度再减去 SAFE_Z 倍标准差 / sqrt(平均日数)，用来走「八成能到」的那条偏慢路径。
-func _walk_days(dist: float, course_bearing: float, order: int, known: bool, discoveries_open: bool, use_expectation: bool, drag_days: int = 0) -> Dictionary:
+func _walk_days(legs: Array, dist: float, order: int, known: bool, discoveries_open: bool, use_expectation: bool, drag_days: int = 0) -> Dictionary:
 	var cursor := _shift_date(Calendar.year, Calendar.month, Calendar.day, 1)
+	var first_month := cursor.y
 	var rem := dist
 	var n := 0
-	var first_wf := -1.0
 	var changed := false
 	var drag_scale := 0.0
 	if drag_days > 0:
 		drag_scale = SAFE_Z / sqrt(float(drag_days))
 	while rem > 0.0 and n < 900:
 		var month_now := cursor.y
+		var course_bearing := _leg_bearing(legs, maxf(0.0, dist - rem))
 		var wf := wind_factor(course_bearing, month_now)
-		if first_wf < 0.0:
-			first_wf = wf
-		elif absf(wf - first_wf) > 0.001:
+		if month_now != first_month and absf(wf - wind_factor(course_bearing, first_month)) > 0.001:
 			changed = true
 		var gain := Fleet.fleet_speed() * wf * order_speed_mult(order)
 		if use_expectation:
@@ -411,17 +425,40 @@ func dampest_aboard() -> Dictionary:
 	return {"good_id": best_id, "qty": best_qty, "rate": best_rate}
 
 
+## 一条航段在某月吃的风（lane w53-1）：factor 是按段长折算的有效日速倍率（Σ段长 ÷ Σ段长/倍率，静风日数由它定），
+## desc 取占里程最多的那种风。出湾那一小段不代表全程：泉州往广州出湾是侧风，六月大半程顶头逆风。
+func _route_wind(legs: Array, at_month: int) -> Dictionary:
+	var total := 0.0
+	var slow := 0.0
+	var by_desc := {}
+	var best := ""
+	for leg in legs:
+		var seg := float(leg[0])
+		var b := float(leg[1])
+		total += seg
+		slow += seg / wind_factor(b, at_month)
+		var d := wind_desc(b, at_month)
+		by_desc[d] = float(by_desc.get(d, 0.0)) + seg
+		if best == "" or float(by_desc[d]) > float(by_desc[best]):
+			best = d
+	if total <= 0.0 or slow <= 0.0:
+		return {"factor": wind_factor(0.0, at_month), "desc": wind_desc(0.0, at_month)}
+	return {"factor": total / slow, "desc": best}
+
+
 ## 返回航程。days 是逐日静风日数，委办期限仍用它。
 ## expected_days 是同一条日期上的平均遇事日数。safe_days 是八成能到的日数。
 ## hold_tenths 是保货：十次里至少有几次整舱没被海盗抢走。日数赶得上，不代表货还在。
 ## 平均数卡进期限，不代表十次里有八次赶得上。月末换季时，不把今天的风套到全程。
+## 日数逐段吃风（_walk_days）；wind_factor / wind_desc 是启航那月全程的风（_route_wind），bearing 仍是出港第一段。
 func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dictionary:
 	var dist := distance_li(from_id, to_id)
-	var brg := bearing(from_id, to_id)
+	var legs := _legs(from_id, to_id)
+	var brg := _leg_bearing(legs, 0.0)
 	var known := is_known_route(from_id, to_id)
 	var open := not _discovery_candidates(from_id, to_id).is_empty()
-	var calm: Dictionary = _walk_days(dist, brg, order, known, open, false)
-	var rough: Dictionary = _walk_days(dist, brg, order, known, open, true)
+	var calm: Dictionary = _walk_days(legs, dist, order, known, open, false)
+	var rough: Dictionary = _walk_days(legs, dist, order, known, open, true)
 	var days := int(calm.get("days", 999))
 	var expected := int(rough.get("days", 999))
 	if days < 900 and expected < days:
@@ -429,14 +466,15 @@ func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dict
 	var safe := expected
 	var safe_changed := false
 	if expected > 0 and expected < 900:
-		var cautious: Dictionary = _walk_days(dist, brg, order, known, open, true, expected)
+		var cautious: Dictionary = _walk_days(legs, dist, order, known, open, true, expected)
 		safe = int(cautious.get("days", expected))
 		safe_changed = bool(cautious.get("changed", false))
 		if safe < expected:
 			safe = expected
 	var hold := cargo_hold_chance(order, known, open, expected)
 	var start := _shift_date(Calendar.year, Calendar.month, Calendar.day, 1)
-	var wf := wind_factor(brg, start.y)
+	var wind := _route_wind(legs, start.y)
+	var wf := float(wind["factor"])
 	var spd := Fleet.fleet_speed() * wf * order_speed_mult(order)
 	var changed := bool(calm.get("changed", false)) or bool(rough.get("changed", false)) or safe_changed
 	return {
@@ -446,14 +484,14 @@ func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dict
 		"distance": dist,
 		"bearing": brg,
 		"wind_factor": wf,
-		"wind_desc": wind_desc(brg, start.y),
+		"wind_desc": str(wind["desc"]),
 		"speed": spd,
 		"days": days,
 		"expected_days": expected,
 		"safe_days": safe,
 		"hold_tenths": cargo_hold_tenths(hold),
 		"wind_changes": changed,
-		"departs_on_new_wind": absf(wind_factor(brg) - wf) > 0.001,
+		"departs_on_new_wind": absf(float(_route_wind(legs, Calendar.month)["factor"]) - wf) > 0.001,
 		"supply_days": Fleet.supply_days(),
 		"supply_ok": Fleet.supply_days() >= safe,
 	}

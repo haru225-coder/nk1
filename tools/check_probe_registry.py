@@ -72,6 +72,7 @@ EXEMPT = [
     ("qa_port_beats_probe.gd", "53c0499 lane-w26-k7", "PortBeats.due 终局守卫探针，接口下沉后 when 判据未定"),
     ("qa_save_slot_tip_probe.gd", "e92d2be lane-t", "航海日志坏档/.bak 纪实提示探针与契约锁，随 lane-t 落地验过留档"),
     ("qa_shore_wait_notice_probe.gd", "802e54d lane-w26-k5 族", "岸上等待通告专项探针，随该族落地验过留档"),
+    ("qa_w53_1_plan_sail_days_probe.gd", "lane-w53-1", "航段推演日数与实航逐日走法对账（Voyage.plan 逐段吃风 = SeaChart 逐日取所在段罗经），修出湾段方位套全程"),
     ("qa_w53_2_combat_probe.gd", "lane-w53-2", "海战接舷 / 号令 / 收战账目专项探针，随 lane-w53-2 落地验过留档"),
     ("qa_w53_3_buy_max_probe.gd", "lane-w53-3", "牙行买满结算耗时与逐件推演同数专项探针，动 Economy 逐件推演或牙行买钮回调时加跑"),
     ("qa_w53_3_economy_probe.gd", "lane-w53-3", "牙行抬价/赊贷/委办三本账守形探针，随本 lane 落地验过留档"),
