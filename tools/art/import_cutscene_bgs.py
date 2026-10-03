@@ -20,7 +20,7 @@
 size 的数据侧照实用 SOF/IHDR 实测顶上并补报，两条路对现行数据与所有清单条目的判定逐字节等效，
 「清单该按剧情挑多大、该不该为几行文案断送素材库」这种度量判据照文末「机制五」）。
 import / --check 仍用 PIL 开图。
-数据契约的键表 / 旗标有人立 / hold 读完线（lane w53-9）每次跑都带内存样本自检 _contract_selftest（GATES §五.3，
+数据契约的键表 / 旗标有人立（字幕与镜头 bg_alt）/ hold 读完线（lane w53-9）每次跑都带内存样本自检 _contract_selftest（GATES §五.3，
 lane w53-12）：哪条判据被退掉，对应的样本漏判即 FAIL；绿时不出声，末行不变。
 
 来源目录（Codex 线 assets/）默认 ~/tmp/nk1-codex/assets（按本机 $HOME 展开），可用环境变量 NK1_CODEX_ASSETS 覆盖。
@@ -717,7 +717,9 @@ def _contract_selftest() -> list:
     镜头 / 字幕 / 章节卡认的键表、字幕旗标须有人立、hold 读完线三条是 lane w53-9（dce2643）收紧的判据，原先只有
     tools/qa_w53_9_cutscene_contract_mutants.py 外置自检、哪道门禁都不跑它——三条整段退掉，本道照报通过。
     这里按形状在真数据里挑锚（第一句非印章字幕与它所在的镜头、第一张章节卡），内存里注入一种笔误交 check_data(data=…)，
-    须判红且红在那一处；不落盘。挑不到锚即判红。绿时不出声，末行照旧。"""
+    须判红且红在那一处；不落盘。挑不到锚即判红。绿时不出声，末行照旧。
+    S6 / S7 守镜头 bg_alt（底图按旗换）的旗名有人立（lane w53-9 2bf5e45）与认的键（lane fx5）：往锚镜头塞一条拿本镜 bg 当换图的
+    bg_alt，不靠真数据里恰好有 bg_alt——两条退掉，本道原先照报通过（lane w53-9 五轮实测）。"""
     import copy
     try:
         base = json.loads((ROOT / "data" / "cutscenes.json").read_text(encoding="utf-8"))
@@ -740,12 +742,15 @@ def _contract_selftest() -> list:
     def cap(d):
         return shot(d)["captions"][j]
 
+    abg = shot(base).get("bg", "")
     samples = [  # （笔误，取被改的那一格，键，值，判词里须有的定位片段）
         ("镜头键 captions 写成 caption", shot, "caption", [], f"{w} 有不认的键 ['caption']"),
         ("字幕键 unless_flag 写成 unles_flag", cap, "unles_flag", nf, f"{wc} 有不认的键 ['unles_flag']"),
         ("字幕旗标没人立", cap, "if_flag", nf, f"{wc} if_flag 旗标 `{nf}` 没人立"),
         ("字幕 hold 过短", cap, "hold", 0.9, f"{wc} hold=0.9 不足 1.5 秒"),
         ("章节卡键 focus 写成 fcous", lambda d: d["chapters"][chs[0]], "fcous", [0.5, 0.5], f"chapters.{chs[0]} 有不认的键 ['fcous']"),
+        ("镜头 bg_alt 旗标没人立", shot, "bg_alt", [{"bg": abg, "if_flag": nf}], f"{w}.bg_alt[1] if_flag 旗标 `{nf}` 没人立"),
+        ("镜头 bg_alt 键 if_flag 写成 if_flg", shot, "bg_alt", [{"bg": abg, "if_flg": nf}], f"{w}.bg_alt[1] 有不认的键 ['if_flg']"),
     ]
     bad = []
     for n, (name, cell, key, val, want) in enumerate(samples, 1):
