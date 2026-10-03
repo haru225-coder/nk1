@@ -112,7 +112,7 @@ REGISTRY = [
      "judge": "（lane h1h2 / rt）坏分区退 .bak、只剩 .bak 取标签、两份皆坏不抛错",
      "green": "`SAVE_ROBUST_PROBE PASS`（大量 `ERROR: 存档结构异常…` 是故意喂坏档，属预期）",
      "red": "`✗` 行 / 非零退出；输出含 `SCRIPT ERROR` 即算失败"},
-    {"id": "check_sidecars", "tier": "lane", "when": "提交新 .gd / .gdshader / 素材，或挪删它们（同车规则：新源文件的侧车同 commit 带上）", "kind": "py",
+    {"id": "check_sidecars", "tier": "must", "when": "提交新 .gd / .gdshader / 素材，或挪删它们（同车规则：新源文件的侧车同 commit 带上）", "kind": "py",
      "file": "tools/check_sidecars.py",
      "judge": "（lane ag / ag2）按 git 索引：已跟踪 .gd/.gdshader 须有已跟踪 `.uid`，可导入素材须有 `.import`；反向不许只提侧车 / 多余侧车；侧车内容与源文件、场景引用、VRAM 基线一致，uid 唯一；工作树里已跟踪侧车不许漂移。口径表见 docs/侧车口径.md",
      "green": "`结果：全部通过`", "red": "`FAIL: …` 行（缺侧车 / 孤儿·多余侧车 / 内容漂移 / 非基线形态 / 工作树漂移）；`结果：N 项失败`"},
@@ -759,13 +759,8 @@ SUBCHECKS = [
 ]
 
 # CI 建议步骤（lane gd4）：docs/GATES.md §四 由它生成，**只是建议，不进 repo 的 CI 配置**。
-# 先跑一键跑十九条（导入步骤 tier=step + 必跑十八道 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
+# 先跑一键跑二十条（导入步骤 tier=step + 必跑十九道 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
 CI_STEPS = [
-    {"id": "侧车成对 / 一致", "lane": "ag / ag2 / gd5", "needs": "python3 + git（紧跟第 0 步的导入步骤之后跑）",
-     "cmd": "python3 tools/check_sidecars.py",
-     "expect": "`结果：全部通过`（前一行报 uid 个数、VRAM 纹理张数与基线、`工作树侧车无漂移`）",
-     "fail": "`FAIL: …` 行、退 1 = 提交的 .gd / .gdshader / 素材缺侧车或多了孤儿侧车、侧车内容与源文件 / 场景引用 / VRAM 基线不一致；"
-             "或第 0 步导入把已跟踪 `.import` / `.uid` 改写了（工作树漂移：CI 机器的 Godot 版本 / 平台与入库基线不符）。口径见 docs/侧车口径.md"},
     {"id": "builtin_api 漂移", "lane": "cs3 / gd4", "needs": "godot（与清单头部同版本）",
      "cmd": "python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt",
      "expect": "`✓ --regen：…逐字节一致，未改动` + check_symbols `结果：全部通过`，`git diff` 无输出、退 0",

@@ -26,10 +26,10 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-一次改动闭环 = 下面十九道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
+一次改动闭环 = 下面二十道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
 
 ```bash
-# 十二道 Python（无 Godot 也能跑）
+# 十三道 Python（无 Godot 也能跑）
 python3 tools/check_symbols.py      # autoload 顺序与跨文件符号、海战精灵 PNG 取证、绢本文案规范、各功能契约
 python3 tools/verify_economy.py     # 数据完整性 / 套利 / 砸盘 / 季风 / 航法与委办 / 哗变 / 风涛分摊 / 结局旗标
 python3 tools/simulate_run.py       # 端到端跑一局，找死锁与账目溢出
@@ -37,6 +37,7 @@ python3 tools/verify_coastline.py   # 真实岸线 / 绕岸航线 / 海名标注
 python3 tools/check_assets.py       # 代码引用的 res://assets 都在
 python3 tools/verify_story_data.py  # 剧情效果键白名单、存档字段对称
 python3 tools/simulate_endgame.py   # 跳年 / 终局窗口 / 守城数值
+python3 tools/check_sidecars.py     # 侧车成对 / 一致：已跟踪 .gd/.gdshader 必有 .uid、可导入素材必有 .import（lane w42-k4 依拍板 E-13 后半句升进必跑；排巡逻之后；一键跑里排倒数第六）
 python3 tools/gates_md.py           # GATES.md 与门禁注册表逐字一致、附属自检开关还在（lane w40-k3 依拍板 E-14 升进必跑；排巡逻之后；一键跑里排倒数第五）
 python3 tools/check_mac_paths.py    # 已跟踪文件里没有 Mac / Homebrew 专属绝对路径（lane gd21 升进必跑；一键跑里排倒数第四）
 python3 tools/check_host_paths.py   # 已跟踪文件里没有本机 Linux 绝对路径：家目录、/workspace 下的仓库根（lane cs21 升进必跑；一键跑里排倒数第三）
