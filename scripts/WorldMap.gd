@@ -6,7 +6,6 @@ const _BoardingStage := preload("res://scripts/combat/BoardingStage.gd")
 const _MeleeResolve := preload("res://scripts/combat/MeleeResolve.gd")
 const _CombatMorale := preload("res://scripts/combat/CombatMorale.gd")
 const _CombatShoreHook := preload("res://scripts/combat/CombatShoreHook.gd")
-const _CombatOrders := preload("res://scripts/ui/CombatOrdersPanel.gd")
 const _LETTERBOX_PATH := "res://scripts/ui/CombatLetterbox.gd"
 const _Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const _SeaState := preload("res://scripts/combat/SeaState.gd")
@@ -124,6 +123,8 @@ var _battle_elapsed_s: float = 0.0
 var _battle_limit_s: float = 300.0
 const BATTLE_LIMIT_S := 300.0
 const _PHASES_PATH := "res://data/combat_phases.json"
+## 号令面板（下令那一刻的浮字取号令中文名：CombatOrdersPanel.notice_for）
+const _CombatOrders := preload("res://scripts/ui/CombatOrdersPanel.gd")
 
 func _ready() -> void:
 	var hud := $CanvasLayer/HUD
