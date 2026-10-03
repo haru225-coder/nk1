@@ -379,26 +379,52 @@ func apply_sell_impact(port_id: String, good_id: String, amount: int) -> void:
 	_shift_rate(port_id, good_id, -float(amount) / _depth(port_id))
 
 
-## 预估卖出总收入，逐单位结算以体现砸盘效应
+## 预估卖出总收入，逐单位结算以体现砸盘效应。行情砸到 RATE_MIN 之后单价不再变，余下件数一次乘完
+## （与逐件累加同数；大舱轻货一次卖上千件也不逐件推）。
 func estimate_sell_revenue(port_id: String, good_id: String, amount: int) -> int:
 	var total := 0
 	var depth := _depth(port_id)
 	var r := get_rate(port_id, good_id)
 	for i in range(amount):
+		if r == RATE_MIN:
+			return total + price_at_rate(port_id, good_id, r, false) * (amount - i)
 		total += price_at_rate(port_id, good_id, r, false)
 		r = clampf(r - 1.0 / depth, RATE_MIN, RATE_MAX)
 	return total
 
 
-## 预估买入总支出
+## 预估买入总支出（逐件加价；与 affordable_qty 走同一条序列 _walk_buy）
 func estimate_buy_cost(port_id: String, good_id: String, amount: int) -> int:
+	return int(_walk_buy(port_id, good_id, amount, -1)[1])
+
+
+## 现银 money 按逐件加价最多买得起几件（不超过 cap），与 estimate_buy_cost 同一条序列，一趟走完。
+## 牙行「买满」原先从舱位件数起逐件往下减、每减一件把总价从头推一遍，件数平方级：开局小艍买经卷
+## 卡 2 秒，客舟、大船买轻货卡几十秒到几分钟（lane w53-3）。
+func affordable_qty(port_id: String, good_id: String, money: int, cap: int) -> int:
+	return int(_walk_buy(port_id, good_id, cap, maxi(0, money))[0])
+
+
+## 逐件买入推演：从现行情起每件报价，报完行情加 1/depth（封顶 RATE_MAX）。买满 cap 件即停；budget ≥ 0 时
+## 付不起下一件也停。行情顶到 RATE_MAX 之后单价不再变，余下件数一次算完。返回 [件数, 总价]。
+func _walk_buy(port_id: String, good_id: String, cap: int, budget: int) -> Array:
+	var qty := 0
 	var total := 0
 	var depth := _depth(port_id)
 	var r := get_rate(port_id, good_id)
-	for i in range(amount):
-		total += price_at_rate(port_id, good_id, r, true)
+	while qty < cap:
+		var p := price_at_rate(port_id, good_id, r, true)
+		if r == RATE_MAX:
+			var n := cap - qty
+			if budget >= 0 and p > 0:
+				n = mini(n, (budget - total) / p)
+			return [qty + n, total + p * n]
+		if budget >= 0 and total + p > budget:
+			break
+		total += p
+		qty += 1
 		r = clampf(r + 1.0 / depth, RATE_MIN, RATE_MAX)
-	return total
+	return [qty, total]
 
 
 # ── 日推进 ────────────────────────────────────────────

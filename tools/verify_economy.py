@@ -2085,9 +2085,14 @@ check("凑得出" in main_src and "拿不满酬" in main_src,
 # lane iz：凑得出 N 件按逐件加价总价与逐船舱位算，不再是 现银÷首件价 × 全队空舱
 _purse_ui = main_src.split("var need_qty := int(offer.get(\"qty\", 0))", 1)[1].split("var purse_lbl", 1)[0]
 _afford_fn = _locate_func(main_src, "_affordable_qty")
+# lane w53-3：凑得出 / 买满 / 钱不够减件一趟走完（Economy.affordable_qty），与 estimate_buy_cost 同走 _walk_buy 一条逐件序列
+_eco_w53 = open(os.path.join(ROOT, "scripts/core/Economy.gd"), encoding="utf-8").read()
+_afford_eco = _locate_func(_eco_w53, "affordable_qty")
+_cost_eco = _locate_func(_eco_w53, "estimate_buy_cost")
 check(has_tok(_purse_ui, "_affordable_qty(port_id, gid") and has_tok(_purse_ui, "max_loadable(gid, si)")
-      and "GameState.money) / float(unit_cost)" not in _purse_ui and has_tok(_afford_fn, "estimate_buy_cost", call=True),
-      "委办凑得出件数按逐件加价总价、逐船舱位算，与牙行结算同口径")
+      and "GameState.money) / float(unit_cost)" not in _purse_ui and has_tok(_afford_fn, "Economy.affordable_qty", call=True)
+      and has_tok(_afford_eco, "_walk_buy", call=True) and has_tok(_cost_eco, "_walk_buy", call=True),
+      "委办凑得出件数按逐件加价总价、逐船舱位算，与牙行结算同口径（凑得出与总价同走 _walk_buy 一条逐件序列）")
 # lane iz2：只有今日柜上的货买得到（_on_buy 查 broker_hand），凑得出按柜上现货算；柜要先发，单子才读得到今日的柜
 _market_fn = _locate_func(main_src, "_setup_market")
 _contract_fn = _locate_func(main_src, "_add_contract_panel")
@@ -2102,6 +2107,13 @@ check(tok_count(_row_fn, "_market_buy_tip(") == 2 and tok_count(_row_fn, "_marke
       and has_tok(_btip_fn, "estimate_buy_cost", call=True) and has_tok(_btip_fn, "max_loadable(good_id, ship_index)")
       and has_tok(_stip_fn, "estimate_sell_revenue", call=True),
       "牙行买十/买满/卖十/全卖的悬停印逐件累计的实价，与结算同一函数")
+# lane w53-3：买满 / 钱不够时减件经 _affordable_qty 一趟走完；不许回到「逐件往下减、每减一件重推一遍总价」
+# （件数平方级：开局小艍买满经卷卡 2 秒，客舟、大船买轻货卡几十秒到几分钟；实测见 tools/qa_w53_3_buy_max_probe.gd）
+_buy_fn = _locate_func(main_src, "_on_buy")
+_buy_max_fn = _locate_func(main_src, "_on_buy_max")
+check(has_tok(_buy_fn, "_affordable_qty", call=True) and has_tok(_buy_max_fn, "_affordable_qty", call=True)
+      and not re.search(r"while\b[^\n]*estimate_buy_cost", _buy_fn + _buy_max_fn),
+      "牙行买满 / 钱不够减件一趟算出件数（_affordable_qty），不逐件往下减重推总价")
 _adv_fn = _locate_func(open(os.path.join(ROOT, "scripts/GameManager.gd"), encoding="utf-8").read(), "advance_days")
 # 月息通知须夹在 accrue_interest 与 pay_wages 之间；pay_wages 取不到时切片会一直延到函数尾，所以两头的锚都得先在（lane cs15）
 check("interest := GameState.accrue_interest()" in _adv_fn and "【月息】" in _adv_fn and has_tok(_adv_fn, "pay_wages", call=True) and "monthly_notice.emit" in tok_rx("pay_wages", call=True).split(tok_rx("accrue_interest", call=True).split(_adv_fn, 1)[1], 1)[0],

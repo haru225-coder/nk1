@@ -1798,17 +1798,10 @@ func _market_good_icon(good_id: String) -> TextureRect:
 	return icon
 
 
-## 现银按逐件加价最多买得起几件（不超过 cap）。总价随件数只增不减，二分与 _on_buy 逐件递减同解。
+## 现银按逐件加价最多买得起几件（不超过 cap）。与 estimate_buy_cost 同一条逐件序列，一趟走完（Economy.affordable_qty）；
+## 买满 / 买十钱不够时都经这里减件，不再逐件往下减、每减一件重推一遍总价（lane w53-3：大舱轻货一按卡几十秒）。
 func _affordable_qty(port_id: String, good_id: String, cap: int) -> int:
-	var lo := 0
-	var hi := maxi(0, cap)
-	while lo < hi:
-		var mid := (lo + hi + 1) / 2
-		if Economy.estimate_buy_cost(port_id, good_id, mid) <= GameState.money:
-			lo = mid
-		else:
-			hi = mid - 1
-	return lo
+	return Economy.affordable_qty(port_id, good_id, GameState.money, cap)
 
 
 ## 牙行买钮悬停：与 _on_buy / _on_buy_max 同一口径（舱位按本船，钱不够按逐件总价减件）。amount < 0 为买满。
@@ -1864,9 +1857,7 @@ func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> 
 	var cost := Economy.estimate_buy_cost(port_id, good_id, actual)
 	if GameState.money < cost:
 		# 按现有钱数尽量买
-		var affordable := actual
-		while affordable > 0 and Economy.estimate_buy_cost(port_id, good_id, affordable) > GameState.money:
-			affordable -= 1
+		var affordable := _affordable_qty(port_id, good_id, actual)
 		if affordable <= 0:
 			log_msg("【钱不够】牙人翻了翻眼皮，货单收回。")
 			return
@@ -1891,9 +1882,7 @@ func _on_buy_max(port_id: String, good_id: String, ship_index: int) -> void:
 	if by_hold <= 0:
 		log_msg("【舱满】这艘船塞不下了。换一艘船，或先卖掉些货。")
 		return
-	var n := by_hold
-	while n > 0 and Economy.estimate_buy_cost(port_id, good_id, n) > GameState.money:
-		n -= 1
+	var n := _affordable_qty(port_id, good_id, by_hold)
 	if n <= 0:
 		log_msg("【钱不够】连一件也买不起。")
 		return
