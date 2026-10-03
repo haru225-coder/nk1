@@ -7,18 +7,35 @@ extends SceneTree
 ## Lane ea2：加 `-- --dump-out <path>` 时先把生产报价逐格落盘，供 Python 镜像逐格对账：
 ##   python3 tools/verify_economy.py --prod-dump <path>
 
+## lane w53-3（四轮）：本进程 SCRIPT ERROR 即红——接共用件 tools/script_err_tally.gd（某段函数里出脚本错只中止那一个函数，
+## 断言整段跳过、fails 不涨、headless -s 退出码守 0）；_run_guarded 包一层兜「_run 自己的代码行出错即中止、
+## quit 不再执行、进程空转到超时」那一形（就地判红退 1）。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
 var eco: Node
 var crew: Node
 var gs: Node
 var gm: Node
 var fails := 0
+var _tally: ScriptErrTally
+var _reported := false
 
 ## ea2 dump 的行情取点：两端 + 1.0 + 几处非整数（让 int(round) 的 .5 边界有机会露面）
 const DUMP_RATES := [0.4, 0.515, 0.73, 0.815, 1.0, 1.045, 1.37, 1.625, 2.2]
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+## _run 被脚本错半路掐断时 _report() 不会被调到——回到这里就地判红收尾，不留空转给外层 timeout
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_fail("主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _run() -> void:
@@ -50,8 +67,7 @@ func _run() -> void:
 	gs.fame = saved_fame
 	eco.investments = saved_inv
 	eco.rates = saved_rates
-	print("EA_PROBE fails=%d" % fails)
-	quit(1 if fails > 0 else 0)
+	_report()
 
 
 ## Crew.hired 只存名册 id、品级回查 crew.json（lane w23-a1 起）。原先这里塞整条 {id, role, level} 快照，
@@ -91,6 +107,17 @@ func _ports() -> Array:
 		if pid != "" and not eco.goods_at(pid).is_empty():
 			out.append(pid)
 	return out
+
+
+func _report() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		if v[0]:
+			print("  ✓ " + str(v[1]))
+		else:
+			_fail(str(v[1]))
+	print("EA_PROBE fails=%d" % fails)
+	quit(1 if fails > 0 else 0)
 
 
 func _fail(msg: String) -> void:

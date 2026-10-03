@@ -6,6 +6,11 @@ extends SceneTree
 ## 用法：godot --headless --path . -s res://tools/qa_customs_duty_probe.gd
 ## 输出末行 EA3_PROBE cases=N fails=M；M>0 时 exit 1。
 
+## lane w53-3（四轮）：本进程 SCRIPT ERROR 即红——接共用件 tools/script_err_tally.gd（某段函数里出脚本错只中止那一个函数，
+## 断言整段跳过、fails 不涨、headless -s 退出码守 0）；_run_guarded 包一层兜「_run 自己的代码行出错即中止、
+## quit 不再执行、进程空转到超时」那一形（就地判红退 1）。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
 var eco: Node
 var crew: Node
 var gs: Node
@@ -14,13 +19,26 @@ var cal: Node
 var fleet: Node
 var cases := 0
 var fails := 0
+var _tally: ScriptErrTally
+var _reported := false
 
 ## 三档货值（与 docs/市舶验引与牙行抽解.md 对照表同）+ 一件违禁
 const LOAD := {"tea": 10, "qingbai_porcelain": 10, "ivory": 10, "song_coin": 5}
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+## _run 被脚本错半路掐断时 _report() 不会被调到——回到这里就地判红收尾，不留空转给外层 timeout
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		cases += 1
+		_fail("主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _run() -> void:
@@ -91,8 +109,7 @@ func _run() -> void:
 	cal.year = saved["y"]
 	cal.month = saved["m"]
 	cal.day = saved["d"]
-	print("EA3_PROBE cases=%d fails=%d" % [cases, fails])
-	quit(1 if fails > 0 else 0)
+	_report()
 
 
 ## 名册里该职该品级的第一位候选 id；没有这一级给个查不到的名，摆完判红
@@ -129,6 +146,18 @@ func _check(pid: String, st: String, pu: bool, z: int, via: String) -> void:
 		_fail("%s %s 站蒲家=%s 杂事=%d 职衔=%s（%s）：验引 %d，预期 %d" % [
 			pid, st, pu, z, gs.title_name(), via, got, want,
 		])
+
+
+func _report() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		cases += 1
+		if v[0]:
+			print("  ✓ " + str(v[1]))
+		else:
+			_fail(str(v[1]))
+	print("EA3_PROBE cases=%d fails=%d" % [cases, fails])
+	quit(1 if fails > 0 else 0)
 
 
 func _fail(msg: String) -> void:

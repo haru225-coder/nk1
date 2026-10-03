@@ -7,6 +7,11 @@ extends SceneTree
 ## 用法：godot --headless --path . -s res://tools/qa_money_notices_probe.gd
 ## 输出末行 IZ_PROBE fails=N；N>0 时 exit 1。
 
+## lane w53-3（四轮）：本进程 SCRIPT ERROR 即红——接共用件 tools/script_err_tally.gd（某段函数里出脚本错只中止那一个函数，
+## 断言整段跳过、fails 不涨、headless -s 退出码守 0）；_run_guarded 包一层兜「_run 自己的代码行出错即中止、
+## quit 不再执行、进程空转到超时」那一形（就地判红退 1）。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
 var _main: Node
 var gs: Node
 var gm: Node
@@ -18,10 +23,22 @@ var _notices: Array = []
 var _rates0: Dictionary = {}
 var _ships0: Array = []
 var fails := 0
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+## _run 被脚本错半路掐断时 _report() 不会被调到——回到这里就地判红收尾，不留空转给外层 timeout
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_expect(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _run() -> void:
@@ -40,9 +57,8 @@ func _run() -> void:
 	root.add_child(_main)
 	await _settle(10)
 	if not _main.has_method("load_scene"):
-		print("  ✗ Main.gd 未载入（先跑一遍 godot --headless --editor --quit 刷新类名缓存）")
-		print("IZ_PROBE fails=1")
-		quit(1)
+		_expect(false, "Main.gd 未载入（先跑一遍 godot --headless --editor --quit 刷新类名缓存）")
+		_report()
 		return
 	gm.monthly_notice.connect(func(t: String) -> void: _notices.append(t))
 	# 开局行情是 randf 抖的（Economy.initialize）：三节要找一笔「旧口径偏乐观」的委办，碰上不巧的一手行情
@@ -59,8 +75,7 @@ func _run() -> void:
 	await _contract_purse()
 	await _abandon_fine()
 
-	print("IZ_PROBE fails=%d" % fails)
-	quit(1 if fails > 0 else 0)
+	_report()
 
 
 func _reset(port_id: String, money: int) -> void:
@@ -342,6 +357,14 @@ func _find(n: Node, pred: Callable) -> Node:
 		if hit != null:
 			return hit
 	return null
+
+
+func _report() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_expect(v[0], v[1])
+	print("IZ_PROBE fails=%d" % fails)
+	quit(1 if fails > 0 else 0)
 
 
 func _expect(ok: bool, what: String) -> void:
