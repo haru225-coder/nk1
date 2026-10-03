@@ -71,7 +71,7 @@ static func on_report_discovery(main: Control, did: String) -> void:
 		var extra := ""
 		if res.get("promoted", false):
 			extra = "案册改题「%s」。" % str(res.get("title", {}).get("name", ""))
-		main.log_msg("【呈报】「%s」入案。赏钱 %d，名声添 %d。%s" % [
+		main.log_msg("【呈报】「%s」入案。赏钱 %d，名声加 %d。%s" % [
 			res["name"], res["gold"], res["fame"], extra,
 		])
 	main.load_scene(main.current_scene_id)

@@ -3117,7 +3117,7 @@ func _v0928_siege_check(main: Node) -> void:
 	var rope := _v0928_siege_btn(main, "你的缆绳系得好")
 	if rope != null:
 		rope.pressed.emit()
-	_check(not main._log_lines.is_empty() and str(main._log_lines[0]) == "他愣了一下，说大人还记得。城头的人见你叫得出自家旧舵工的名字，士气 +5。",
+	_check(not main._log_lines.is_empty() and str(main._log_lines[0]) == "他愣了一下，说大人还记得。城头的人见你叫得出自家旧舵工的名字，士气加 5。",
 		"缆绳钮后的日志用「自家旧舵工」一句（%s）" % [main._log_lines[0] if not main._log_lines.is_empty() else ""])
 	_v0928_siege_scholar(Crw, fall_abs - 20)
 	GS.met_ids.erase("lin_hua")

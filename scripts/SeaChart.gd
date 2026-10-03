@@ -1730,7 +1730,7 @@ func _on_requisition_surrender() -> void:
 	Fleet.ships.remove_at(idx)
 	GameState.fame += 6
 	Fleet.morale = maxi(0, Fleet.morale - 4)
-	_log("[color=yellow]「%s」连船带货编入官军。小官在册子上记了你的名字，写得很工整。名声 +6。[/color]" % s.get("name", "一船"))
+	_log("[color=yellow]「%s」连船带货编入官军。小官在册子上记了你的名字，写得很工整。名声加 6。[/color]" % s.get("name", "一船"))
 	_refresh_status()
 	_on_event_continue()
 
@@ -1757,7 +1757,7 @@ func _on_requisition_flee() -> void:
 	else:
 		var fine: int = maxi(80, int(GameState.money * 0.25))
 		fine = mini(fine, GameState.money)
-		_log("[color=red]被哨船追上。「抗征」二字记入册子，罚钱 %d，名声 −4。[/color]" % fine)
+		_log("[color=red]被哨船追上。「抗征」二字记入册子，罚钱 %d，名声减 4。[/color]" % fine)
 		GameState.add_money(-fine)
 		GameState.fame -= 4
 		Fleet.morale = maxi(0, Fleet.morale - 5)
@@ -1805,7 +1805,7 @@ func _on_refugee_take() -> void:
 	Fleet.food = maxi(0, Fleet.food - int(ceil(Fleet.food * 0.2)))
 	GameState.fame += 4
 	Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 3)
-	_log("[color=lime]把人接上船。甲板挤了，水粮吃得快了。有个老人一直握着你的手不放。名声 +4。[/color]")
+	_log("[color=lime]把人接上船。甲板挤了，水粮吃得快了。有个老人一直握着你的手不放。名声加 4。[/color]")
 	_refresh_status()
 	_on_event_continue()
 
@@ -1823,7 +1823,7 @@ func _on_refugee_share() -> void:
 func _on_refugee_pass() -> void:
 	event_panel.visible = false
 	Fleet.morale = maxi(0, Fleet.morale - 3)
-	_log("[color=red]没有停。水手们都没说话，只有舵工朝海里啐了一口。士气 −3。[/color]")
+	_log("[color=red]没有停。水手们都没说话，只有舵工朝海里啐了一口。士气减 3。[/color]")
 	_refresh_status()
 	_on_event_continue()
 

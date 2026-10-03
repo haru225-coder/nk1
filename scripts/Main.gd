@@ -1405,7 +1405,7 @@ func _add_contract_panel(port_id: String) -> void:
 		var drop := Button.new()
 		# 钮上写明按下去扣多少（与「请领　N」「投钱　N」同一写法）；数出自 GameState.contract_fine，与实扣同一处
 		drop.text = "毁约　扣 %d" % GameState.contract_fine()
-		drop.tooltip_text = "毁约即扣 %d 钱、名声 −1；误期作废同罚。" % GameState.contract_fine()
+		drop.tooltip_text = "毁约即扣 %d 钱、名声减 1；误期作废同罚。" % GameState.contract_fine()
 		drop.pressed.connect(_on_abandon_contract)
 		row.add_child(drop)
 		box.add_child(row)
@@ -4389,7 +4389,7 @@ func _siege_lin_hua() -> void:
 			GameState.siege_set("lin_hua_sent", true)
 			GameState.siege_add("morale", 5)
 			GameState.set_flag("lin_hua_reminded")
-			log_msg("他愣了一下，说大人还记得。城头的人见你叫得出自家旧舵工的名字，士气 +5。")
+			log_msg("他愣了一下，说大人还记得。城头的人见你叫得出自家旧舵工的名字，士气加 5。")
 			load_scene(current_scene_id)
 		)
 		choices_container.add_child(remind)

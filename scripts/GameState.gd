@@ -1101,7 +1101,7 @@ func deliver_contract(port_id: String) -> Dictionary:
 		contract = {}
 		return {
 			"ok": true, "done": true, "pay": pay, "qty": n,
-			"msg": "委办交清，牙行付了 %d 钱。名声 +1。" % pay,
+			"msg": "委办交清，牙行付了 %d 钱。名声加 1。" % pay,
 		}
 	return {
 		"ok": true, "done": false, "pay": pay, "qty": n,
@@ -1149,8 +1149,8 @@ func _fail_contract(reason: String) -> String:
 	if issued != "":
 		contract_ban[issued] = offer_month
 	if reason == "毁约":
-		return "【毁约】%s的委办作废。牙行扣 %d 钱，名声 −1。" % [good_name, fine]
-	return "【逾期】%s没能送到%s。牙行扣 %d 钱，名声 −1。" % [good_name, dest_name, fine]
+		return "【毁约】%s的委办作废。牙行扣 %d 钱，名声减 1。" % [good_name, fine]
+	return "【逾期】%s没能送到%s。牙行扣 %d 钱，名声减 1。" % [good_name, dest_name, fine]
 
 
 # ── 人物志「已识」 ────────────────────────────────────

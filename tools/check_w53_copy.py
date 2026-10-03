@@ -55,6 +55,10 @@
      杂事曾写「买卖价差改善」——实是抽解与佣金打折（trade_cost_factor），价差是通事的效力（interpreter_edge）。
      设计表（复刻设计 §职事）：火长日速 +6%/级、杂事抽解与佣金 −12%/级。提示按「，、；」切句，每句须在 ROLE_HINT_FN
      登记接着它的 Crew 加成函数，该函数须读本职事的品级（level_of("<职事 id>")）、且在 Crew.gd 以外有调用。
+  N. 记事句里的增减写汉字（七轮）：同一记事栏里曾三样并存——「委办交清…名声 +1。」「…修埠…名声加 5。」「…入案。
+     赏钱 70，名声添 7。」。全作文案口径是纪实短句（修埠一句早有 smoke 钉「名声加 %d」、禁「名声 +%d」）：记事、
+     札记、悬停说明里写「名声加 N / 名声减 N」（士气、海商信用、乡土……同）；只有钮文括注里的预告（「交出一条船
+     （名声 +6）」「（费 6 日・30 钱，乡土 +3）」）照写 +N / −N（钉 G 核它们 = 实扣）。「名声添」统一作「名声加」。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -175,6 +179,11 @@ ROLE_HINT_FN = {
     "断粮时减员更少": "crew_loss_factor",
     "士气回复更快": "morale_bonus",
 }
+# ═══ 钉 N：括注外的「名声 +N / 士气 −N」= 记事句写了钮文记号；「名声添」= 动词没统一。
+DELTA_NOTE_RE = re.compile(r"(%s)\s*[+−]\s*(?:\d|%%d)" % "|".join(DELTA_WORDS))
+DELTA_TIAN_RE = re.compile(r"(%s)添" % "|".join(DELTA_WORDS))
+# 防沉默绿：这颗钮文括注里的增减必须被认出来（正则抓空时判红，不当绿）。
+DELTA_PAREN_MUST = (("scripts/SeaChart.gd", "交出一条船"),)
 CREW_JSON = "data/crew.json"
 CREW_GD = "scripts/core/Crew.gd"
 
@@ -400,6 +409,7 @@ def _scan_gd_strings(cmap):
                 _check_debug(lit, tag, "gd")
                 _check_terms(lit, tag)
                 _check_dangling_sign(lit, tag)
+                _check_delta_note(lit, tag, DELTA_PAREN_SEEN)
                 _check_glyphs(lit, tag, cmap)
                 if rel.replace(os.sep, "/").startswith(COMBAT_GD_PREFIXES):
                     _check_exclaim(lit, tag)
@@ -442,6 +452,7 @@ def _scan_json_text():
             _check_debug(text, tag, "data")
             _check_terms(text, tag)
             _check_dangling_sign(text, tag)
+            _check_delta_note(text, tag)
 
 
 def _scan_data_glyphs(cmap):
@@ -704,6 +715,19 @@ def _check_cn_helpers():
             FAILS.append(f"{rel}: {name} 不认 liang（带 true 也写不出「两」）")
 
 
+def _check_delta_note(text, tag, seen=None):
+    """括注（全角圆括号）外的带符号增减判红、「X添」判红；括注里的记作已认（供防沉默绿）。"""
+    for m in DELTA_NOTE_RE.finditer(text):
+        depth = text.count("（", 0, m.start()) - text.count("）", 0, m.start())
+        if depth > 0:
+            if seen is not None:
+                seen.append(text)
+            continue
+        FAILS.append(f"{tag}: 记事句里写成钮文记号「{m.group(0)}」——写「{m.group(1)}加 N / {m.group(1)}减 N」：{text[:48]}")
+    for m in DELTA_TIAN_RE.finditer(text):
+        FAILS.append(f"{tag}: 「{m.group(0)}」——增减统一写「{m.group(1)}加」：{text[:48]}")
+
+
 def _check_role_hints(roles, crew_src, game_src, tag):
     """每个职事 effect_hint 的每一句：登记过、登记的函数读本职事品级、Crew.gd 以外有调用。返回核过的句数。"""
     funcs = dict(_gd_funcs(crew_src))
@@ -804,6 +828,32 @@ def _self_test_liang():
     return bad
 
 
+def _self_test_delta_note():
+    """钉 N 自检：记事句的 +N / −N、「名声添」判红；括注预告与「名声加 / 减」判绿。"""
+    cases = (
+        ("委办交清，牙行付了 %d 钱。名声 +1。", True),
+        ("[color=red]被哨船追上。罚钱 %d，名声 −4。[/color]", True),
+        ("毁约即扣 %d 钱、名声 −1；误期作废同罚。", True),
+        ("【呈报】「%s」入案。赏钱 %d，名声添 %d。", True),
+        ("交出一条船（名声 +6）", False),
+        ("替族里跑一趟事（费 6 日・30 钱，乡土 +3）", False),
+        ("委办交清，牙行付了 %d 钱。名声加 1。", False),
+        ("没有停。士气减 3。", False),
+    )
+    bad = []
+    saved = FAILS[:]
+    try:
+        for text, want_red in cases:
+            FAILS.clear()
+            _check_delta_note(text, "self")
+            if bool(FAILS) != want_red:
+                bad.append(f"钉 N 自检：「{text[:24]}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
+    return bad
+
+
 def _self_test_role_hints():
     """钉 M 自检：未登记的句、登记到别的职事的函数、没接进游戏的函数都须判红；照实的提示判绿。"""
     crew_src = ('func level_of(r):\n\treturn 0\n\nfunc speed_factor() -> float:\n\treturn 1.0 + 0.06 * level_of("huozhang")\n\n'
@@ -894,6 +944,16 @@ def _scan_liang():
     _check_cn_helpers()
 
 
+DELTA_PAREN_SEEN = []
+
+
+def _scan_delta_paren_must():
+    for rel, label in DELTA_PAREN_MUST:
+        src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+        if not any(label in t and t in src for t in DELTA_PAREN_SEEN):
+            FAILS.append(f"{rel}: 钉 N 没认出「{label}」钮文括注里的增减——正则抓空或钮文改了格式")
+
+
 def _scan_role_hints():
     roles = json.load(open(os.path.join(ROOT, CREW_JSON), encoding="utf-8")).get("roles", [])
     crew_src = open(os.path.join(ROOT, CREW_GD), encoding="utf-8").read()
@@ -947,7 +1007,7 @@ def main():
     glyph_fails = _self_test_glyphs(cmap)
     if glyph_fails:
         cmap = None
-    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + glyph_fails
+    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + _self_test_delta_note() + glyph_fails
     _scan_gd_strings(cmap)
     _scan_json_text()
     _scan_data_glyphs(cmap)
@@ -959,6 +1019,7 @@ def main():
     _scan_cargo_frac()
     _scan_liang()
     _scan_role_hints()
+    _scan_delta_paren_must()
     all_fails = self_fails + FAILS
     if all_fails:
         print("结果：%d 项问题" % len(all_fails))

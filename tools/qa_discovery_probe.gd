@@ -102,7 +102,7 @@ func _run() -> void:
 	_expect(not ("beacon_ruin" in _gs.discoveries_found), "beacon_ruin 出 discoveries_found")
 	_expect(int(_gs.money) == money0 + 70, "呈报赏钱 70（得 %d）" % (int(_gs.money) - money0))
 	_expect(_report_chips().size() == 1, "呈报后剩一枚 chip")
-	_expect(_log_has("「废烽堠」入案。赏钱 70，名声添 7。"), "呈报日志纪实短句")
+	_expect(_log_has("「废烽堠」入案。赏钱 70，名声加 7。"), "呈报日志纪实短句")
 	await _shot("04_quanzhou_yamen_reported")
 
 	_main.load_scene("fuzhou_temple")
