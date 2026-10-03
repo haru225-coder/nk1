@@ -10,6 +10,9 @@ extends SceneTree
 ##     修前卡上却一字不提；现在离辞船不到一年时品级行写明「只跟到九月」（跨年「只跟到明年九月」），并核写的月份是实话。
 ##   N 墙上年月：酒馆墙上札记的年月旁注修前直接印 news.json 的「1276-05」，顶匾、船籍簿、辞船淡字都写年号月名
 ##     （跳年摘要更明说「不写阿拉伯公元年」）；现写「景炎元年五月」，与顶匾同一套，改元当年（1276 德祐→景炎）也分得开。
+##   I 见面册打听：复刻设计 §8.7「见面册打听写成『某人压低声音说。』行情写成『某港　眼下缺某货，一件能多得　多少钱。』」。
+##     修前见面页把酒馆那句整句搬来：「林阿舶压低声音说。⏎⏎邻座的牙人压低声音：「耽罗　眼下缺…」」——一段里两个人压低声音，
+##     市舶司小吏那页也冒出「邻座的牙人」；现由见面的人自己说行情那句，酒馆长凳上的「打听」照旧是邻座牙人。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 
@@ -54,6 +57,7 @@ func _boot() -> void:
 	await _t_presence()
 	await _h_leave_hint()
 	await _n_wall_dates()
+	await _i_npc_intel()
 	_report()
 
 
@@ -234,6 +238,37 @@ func _wall_dates() -> Array:
 		if head != null and head.get_child_count() >= 2:
 			out.append(str((head.get_child(1) as Label).text))
 	return out
+
+
+# ── I 见面册打听：见面的人自己说行情那句 ──
+
+func _i_npc_intel() -> void:
+	print("── I 见面册「打听」由见面的人自己说行情（复刻设计 §8.7），不再一段里两个人压低声音")
+	for spec in [["quanzhou_tavern", "林阿舶"], ["quanzhou_yamen", "市舶司小吏"]]:
+		_stage(1260, 4, 2)
+		await _goto(str(spec[0]))
+		var meet := _button("见")
+		if meet == null:
+			_expect(false, "%s 没有「见」钮，见面页无从摆" % spec[0])
+			continue
+		meet.pressed.emit()
+		for i in 4:
+			await process_frame
+		var ask := _button("打听")
+		if ask == null:
+			_expect(false, "%s 见面页没有「打听」钮" % spec[1])
+			continue
+		ask.pressed.emit()
+		for i in 2:
+			await process_frame
+		var said := str(_main.get("npc_dialog_lbl").text)
+		var lead := "%s压低声音说。" % spec[1]
+		_expect(said.begins_with(lead) and said.count("压低声音") == 1 and not said.contains("邻座") and said.contains("眼下缺"),
+			"%s 见面页打听：「%s」领起、行情一句由他说，不再夹「邻座的牙人压低声音」（实读：%s）" % [spec[1], lead, said.replace("\n", "⏎")])
+		_main.call("_on_npc_leave")
+	# 酒馆长凳上的「打听」不动：那里本来就是邻座牙人卖的行情（角色设定集「酒馆邻座压低声音卖你一条行情」）
+	var bench := str(_main.call("_gather_price_intel", "quanzhou"))
+	_expect(bench.contains("邻座的牙人压低声音：") and bench.contains("眼下缺"), "酒馆长凳打听照旧是邻座牙人那句（实读：%s）" % bench)
 
 
 func _goto(scene_id: String) -> void:

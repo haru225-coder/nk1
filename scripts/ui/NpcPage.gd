@@ -242,7 +242,7 @@ static func set_npc_speech(main: Control, text: String) -> void:
 
 
 static func on_npc_intel(main: Control, n_name: String) -> void:
-	var heard := UiTheme.plain_log(main._gather_price_intel(GameState.last_port))
+	var heard := UiTheme.plain_log(main._gather_price_intel(GameState.last_port)).trim_prefix(BENCH_LEAD)
 	main._set_npc_speech("%s压低声音说。\n\n%s" % [n_name, heard])
 
 
@@ -265,3 +265,9 @@ const NPC_GREETING := {
 	"merchant_lin": "林阿舶用指甲敲了敲账簿。「舱位、脚钱、货损，一样一样算。你叔父那笔，我还记着。」",
 	"pilot_ana": "阿那望了一眼外海的水色。「潮声不对就别嘴硬。要问航路，就问。」",
 }
+
+
+## 见面册打听由见面的人自己说（复刻设计 §8.7：「某人压低声音说。」下面是行情那一句）。_gather_price_intel 回的是酒馆长凳那句，
+## 带着「邻座的牙人压低声音：」领起——原样搬来就成了「林阿舶压低声音说。」下面又一个牙人压低声音，市舶司里也冒出邻座。
+## on_npc_intel 去掉这截领起；酒馆长凳上的「打听」照旧是邻座牙人那句。
+const BENCH_LEAD := "邻座的牙人压低声音："
