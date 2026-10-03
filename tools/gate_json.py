@@ -379,9 +379,15 @@ REGISTRY = [
      "red": "`  ✗ …` 行（如钮缺枚 / 同出一行不齐 / 见・暗・焦不符 / 候钮串住处 / 寺观该暗亮出）"
             "+ 末行 `REST_SCENARIOS cases=N fails=M`（M>0），退 1"},
 
-    {"id": "qa_debt_strip_probe", "tier": "lane",
-     "when": "动欠债上屏链（GameState.debt 增减、scripts/ui/LedgerPage.gd 顶匾上行「欠 %d」格、"
-             "scripts/Economy.gd 欠债月结），或动 tools/qa_debt_strip_probe.gd 自身",
+    {"id": "qa_debt_strip_probe", "tier": "must",
+     "why": "lane w43-k3 升格落地（w42-k6 判词表「可升级升格片」五判全齐唯一授权锚）：欠债格钩在 HUD 顶匾上行"
+            "（GameState.debt 增减 / LedgerPage 顶匾格 / Economy 月结三路写口），改动 lane 多半想不起加跑，"
+            "按 §五.2 判该升必跑。升格判据勘定：§五.2 速档字面「1 秒量级」依其自书 GDScript 引擎实测牒"
+            "（RefsMac 0.23s / RefsHost 0.70–1.02s / decision 0.5–0.6s）原不咎一键跑本辑五支 Godot must"
+            "（一键跑本自含 smoke 8.0s / compile 3.3s / story 104s / patrol 24s 远档，§五.2 自书基线总约 60s），本支三跑"
+            "2.07–2.47s 居本辑快翼；判据 3 只读成立——源码零 FileAccess / DirAccess / user:// / save( / "
+            "ResourceSaver，摆场只 in-memory 置 gs.debt 后 update_status_panel 重排，不经月结、不写盘。"
+            "w42-k6 C1–C5 原判全齐照引。",
      "kind": "godot", "file": "tools/qa_debt_strip_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_debt_strip_probe.gd"],
      "judge": "（探针 dc30a97 随 w30-k2 落地，w31-k3 入册——落地当轮漏注册只被「注册或豁免」闸点名待收，"
