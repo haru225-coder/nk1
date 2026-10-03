@@ -1403,7 +1403,9 @@ func _add_contract_panel(port_id: String) -> void:
 			deliver.pressed.connect(_on_deliver_contract.bind(port_id))
 			row.add_child(deliver)
 		var drop := Button.new()
-		drop.text = "毁约"
+		# 钮上写明按下去扣多少（与「请领　N」「投钱　N」同一写法）；数出自 GameState.contract_fine，与实扣同一处
+		drop.text = "毁约　扣 %d" % GameState.contract_fine()
+		drop.tooltip_text = "毁约即扣 %d 钱、名声 −1；误期作废同罚。" % GameState.contract_fine()
 		drop.pressed.connect(_on_abandon_contract)
 		row.add_child(drop)
 		box.add_child(row)

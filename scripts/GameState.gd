@@ -1116,6 +1116,15 @@ func abandon_contract() -> String:
 	return _fail_contract("毁约")
 
 
+## 此刻毁约（或逾期作废）牙行要扣的钱：酬金一成五、至少 CONTRACT_FINE_MIN，以现银为限。
+## _fail_contract 照此扣，牙行「毁约」钮照此写——钮上写的就是按下去扣的（lane w53-3：原先钮上不写数）。
+func contract_fine() -> int:
+	if contract.is_empty():
+		return 0
+	var purse := int(contract.get("purse", 0))
+	return mini(maxi(CONTRACT_FINE_MIN, int(round(float(purse) * CONTRACT_FINE_RATE))), money)
+
+
 ## 日期越过 due_day 的那个早晨作废。due_day 当天仍可交货。
 func tick_contract() -> String:
 	if contract.is_empty():
@@ -1128,9 +1137,7 @@ func tick_contract() -> String:
 func _fail_contract(reason: String) -> String:
 	if contract.is_empty():
 		return ""
-	var purse := int(contract.get("purse", 0))
-	var fine := maxi(CONTRACT_FINE_MIN, int(round(float(purse) * CONTRACT_FINE_RATE)))
-	fine = mini(fine, money)
+	var fine := contract_fine()
 	if fine > 0:
 		spend_money(fine)
 	fame = maxi(0, fame - 1)

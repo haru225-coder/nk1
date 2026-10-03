@@ -3,6 +3,7 @@ extends SceneTree
 ##   一、月初结息通告：欠债跨月必出一条【月息】，息钱 = 船屋赊贷工席预告的「每月生息」= debt 实涨；无债不出。
 ##   二、牙行买十 / 买满 / 卖十 / 全卖 的悬停总价 = 按下后实扣 / 实得（首件价 × 件数 对照印出）。
 ##   三、委办「凑得出 N 件」= 逐船照单去买真能买到的件数，再多一件就买不起或装不下。
+##   四、在身委办「毁约」钮写的扣钱 = 按下去实扣（现银不够罚额时照现银写、照现银扣），名声 −1（lane w53-3）。
 ## 用法：godot --headless --path . -s res://tools/qa_money_notices_probe.gd
 ## 输出末行 IZ_PROBE fails=N；N>0 时 exit 1。
 
@@ -50,6 +51,7 @@ func _run() -> void:
 	await _interest()
 	await _market_tips()
 	await _contract_purse()
+	await _abandon_fine()
 
 	print("IZ_PROBE fails=%d" % fails)
 	quit(1 if fails > 0 else 0)
@@ -262,6 +264,42 @@ func _contract_purse() -> void:
 	_expect(shown.size() >= 2 and bought == shown[1], "照买件数 %d = 单上凑得出 %d" % [bought, shown[1] if shown.size() >= 2 else -1])
 	_expect(one_more > int(gs.money) or room_left <= 0, "再多一件就买不起或装不下")
 	_expect(int(picked["old"]) > bought, "旧口径 %d 件高于实买 %d 件，确属偏乐观" % [int(picked["old"]), bought])
+
+
+# ── 四、毁约钮写明扣钱 ──────────────────────────────────
+
+## 原先钮上只「毁约」两字，按下去才知道扣了酬金一成五（至少 40，以现银为限）、名声 −1。
+## 罚额在探针里按酬金独立算，不借 GameState.contract_fine。
+func _abandon_fine() -> void:
+	print("── 四、在身委办「毁约」钮写明扣钱 = 实扣")
+	for money in [5000, 30]:
+		_reset("quanzhou", money)
+		gs.fame = 5
+		var offer: Dictionary = gs.contract_offer("quanzhou")
+		if offer.is_empty() or not gs.accept_contract(offer):
+			_expect(false, "泉州接得下一笔委办（现银 %d）" % money)
+			continue
+		_main.load_scene("quanzhou_market")
+		await _settle(3)
+		var b := _find(_main, func(n: Node) -> bool:
+			return n is Button and str((n as Button).text).begins_with("毁约")) as Button
+		# 按下去牙行页重排、这枚钮随之释放：钮文、悬停、找没找到都在按之前记下
+		var found := b != null
+		var b_text: String = b.text if found else "（找不到钮）"
+		var shown := _ints(b_text) if found else []
+		var tip := _ints(b.tooltip_text) if found else []
+		var purse := int(offer.get("purse", 0))
+		var want: int = mini(maxi(int(gs.CONTRACT_FINE_MIN), int(round(float(purse) * float(gs.CONTRACT_FINE_RATE)))), money)
+		var m0: int = gs.money
+		if found:
+			b.pressed.emit()
+			await _settle(2)
+		var paid: int = m0 - int(gs.money)
+		print("   现银 %d、酬 %d：钮「%s」，按下实扣 %d（酬金一成五至少 40、以现银为限 = %d），名声 5 → %d" % [
+			money, purse, b_text, paid, want, gs.fame])
+		_expect(found and shown.size() == 1 and shown[0] == paid and paid == want
+			and tip.size() >= 1 and tip[0] == paid and gs.contract.is_empty() and gs.fame == 4,
+			"现银 %d：毁约钮写的 %s = 悬停 %s = 实扣 %d，委办作废、名声 −1" % [money, str(shown), str(tip), paid])
 
 
 # ── 小件 ──────────────────────────────────────────────
