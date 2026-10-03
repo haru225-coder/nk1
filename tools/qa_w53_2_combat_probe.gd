@@ -9,6 +9,8 @@ extends SceneTree
 ##       ① 6 人对 200 人：敌攻我守、敌胜 → 以 lose{overrun} 收战（失船面），本队不得船、守方阵亡从本队扣；
 ##       ② 200 人对 20 人：敌攻我守、我守住 → 不收战、敌船放钩仍在场、本队不得船，敌船扣攻方阵亡，敌将记「跳帮受挫」；
 ##       ③ 士气挂件：敌船先钩时敌簿记攻方、本队簿记守方；守住后本队簿提士气（旧口径反过来按我攻败记、压士气）。
+##   三、号令浮字写中文名：按 1–5 下令，海战场中央浮字修复前是「号令：windward」「号令：load」——内部 id 直接上屏。
+##       真起号令面板逐令 issue，浮字须是「号令：抢风 / 撤令：抢风 / 号令：专力装填 / 火攻 / 均装 / 救火 / 备接舷」、不含拉丁字母。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -44,6 +46,8 @@ func _run() -> void:
 	await _sec_enemy_overrun(fleet)
 	await _sec_enemy_repelled(fleet)
 	await _sec_enemy_first_morale(fleet)
+	print("== 三、号令浮字写中文名")
+	await _sec_order_notice(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -256,6 +260,38 @@ func _sec_enemy_first_morale(fleet: Node) -> void:
 		await physics_frame
 	var v_held := float(ps.get("value"))
 	_check(v_held > v_hooked, "③ 守住白刃本队簿提士气（%.1f → %.1f）" % [v_hooked, v_held])
+	await _close(wm)
+
+
+# ══ 三、号令浮字写中文名 ══════════════════════════════════════════
+
+## 真起海战场的号令面板（CombatShoreHook.mount_combat_ui 挂、order_issued 接到 WorldMap._on_combat_order），逐令 issue 读中央浮字
+func _sec_order_notice(fleet: Node) -> void:
+	var wm := await _battle(fleet, "fu_ship_medium", 40, {"type": "pirate_boat", "count": 1})
+	var panel: Node = null
+	for n in wm.get_children():
+		if n.is_in_group("nk1_combat_orders"):
+			panel = n
+	if panel == null:
+		_check(false, "海战场挂上号令面板")
+		await _close(wm)
+		return
+	var latin := RegEx.create_from_string("[A-Za-z]")
+	var bad: Array = []
+	var seen: Array = []
+	for step in [["windward", "号令：抢风"], ["windward", "撤令：抢风"], ["load", "号令：专力装填"], ["load", "号令：火攻"],
+			["load", "号令：均装"], ["damage", "号令：救火"], ["board", "号令：备接舷"]]:
+		var payload: Dictionary = panel.call("issue", step[0])
+		var note: Label = wm.get("_notice")
+		var txt := note.text if note != null else ""
+		seen.append(txt)
+		if payload.is_empty() or txt != str(step[1]) or latin.search(txt) != null:
+			bad.append("下「%s」浮字应是「%s」，得「%s」" % [step[0], step[1], txt])
+	_check(bad.is_empty(), "号令浮字逐令写中文名、不带内部 id（%s）%s" % ["／".join(seen), "" if bad.is_empty() else "——" + "；".join(bad)])
+	var op: GDScript = load("res://scripts/ui/CombatOrdersPanel.gd")
+	var has_fn := op.has_method("notice_for")  # 资源上 has_method 认 static func；缺了不硬调，免得一行 SCRIPT ERROR 截断探针
+	_check(has_fn and str(op.call("notice_for", "parley", {"result": "refuse"})) == "号令：降幡劝降"
+		and str(op.call("notice_for", "nope", {})) == "", "劝降令浮字「号令：降幡劝降」、认不得的令不上屏（notice_for 在 = %s）" % has_fn)
 	await _close(wm)
 
 

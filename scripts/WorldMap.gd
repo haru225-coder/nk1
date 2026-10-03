@@ -6,6 +6,7 @@ const _BoardingStage := preload("res://scripts/combat/BoardingStage.gd")
 const _MeleeResolve := preload("res://scripts/combat/MeleeResolve.gd")
 const _CombatMorale := preload("res://scripts/combat/CombatMorale.gd")
 const _CombatShoreHook := preload("res://scripts/combat/CombatShoreHook.gd")
+const _CombatOrders := preload("res://scripts/ui/CombatOrdersPanel.gd")
 const _LETTERBOX_PATH := "res://scripts/ui/CombatLetterbox.gd"
 const _Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const _SeaState := preload("res://scripts/combat/SeaState.gd")
@@ -879,11 +880,12 @@ func _on_morale_noted(_who: Node, _kind: String, text: String) -> void:
 		_show_combat_notice(t)
 
 
-## 号令面板 order_issued → 可选钩子（CombatShoreHook.mount_combat_ui 若发现本方法会自动连）
-func _on_combat_order(order_id: String, _payload: Dictionary = {}) -> void:
-	var oid := order_id.strip_edges()
-	if oid != "":
-		_show_combat_notice("号令：%s" % oid)
+## 号令面板 order_issued → 可选钩子（CombatShoreHook.mount_combat_ui 若发现本方法会自动连）。
+## 浮字写号令的中文名（CombatOrdersPanel.notice_for：「号令：抢风」「撤令：抢风」「号令：专力装填」），不把内部 id 当字上屏
+func _on_combat_order(order_id: String, payload: Dictionary = {}) -> void:
+	var msg := _CombatOrders.notice_for(order_id.strip_edges(), payload)
+	if msg != "":
+		_show_combat_notice(msg)
 
 
 ## Lane C：进出战墨边（若 CombatLetterbox 已入库则调用；否则静默跳过）。

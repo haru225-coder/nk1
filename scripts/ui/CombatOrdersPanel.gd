@@ -167,6 +167,22 @@ static func set_parley_resolver(cb: Callable) -> void:
 	_parley_resolver = cb
 
 
+## 下令那一刻海战场中央的浮字（WorldMap._on_combat_order 用，payload 即 order_issued 的那份）：写号令的中文名，不写内部 id——
+## 「号令：抢风」；开关令再按一下撤了写「撤令：抢风」；装填侧重写轮到的那一档（「号令：专力装填」，轮回均装写「号令：均装」）。
+## 认不得的令返回 ""（不上屏）
+static func notice_for(order_id: String, payload := {}) -> String:
+	var nm := str(ORDER_NAMES.get(order_id, ""))
+	if nm == "":
+		return ""
+	if order_id == ORDER_LOAD:
+		var ld = LOAD_TABLE.get(str(payload.get("load", "")))
+		if ld is Dictionary:
+			nm = str(ld.get("name", nm))
+	elif payload.get("on") == false:
+		return "撤令：%s" % nm
+	return "号令：%s" % nm
+
+
 ## host 所在场景树里第一块号令面板；没有返回 null
 static func panel_of(host: Node) -> Node:
 	if host == null or not is_instance_valid(host) or not host.is_inside_tree():
