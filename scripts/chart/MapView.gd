@@ -1216,30 +1216,65 @@ func _ensure_layout() -> void:
 
 ## 目的地被顶匾 / 牌区挤到图带外时，在图带边上画朱砂箭头指向它并写名字（远程港对装不下时的指引）
 func _draw_dest_edge_hint(ci: CanvasItem) -> void:
-	if dest_id == "" or not port_px.has(dest_id):
+	var h := dest_hint_layout()
+	if h.is_empty():
 		return
+	var tri: PackedVector2Array = h["tri"]
+	ci.draw_colored_polygon(tri, COL_CINNABAR)
+	ci.draw_polyline(PackedVector2Array([tri[0], tri[1], tri[2], tri[0]]), Color(COL_SHELL, 0.9), _px(1.0), true)
+	_text(ci, h["text_pos"], str(h["text"]), 14, COL_CINNABAR, HORIZONTAL_ALIGNMENT_CENTER)
+
+
+## 出带箭头摆在哪（_ensure_layout 之后调）：图带边上朝目的地的那一点。朱箭或名字压到港框 / 港名 / 船标时沿图带边
+## 左右挪（每步 14 屏幕 px，至多 8 步），朱箭仍指着目的地；全挪不开取压得最少的。原先只让开船标，放大看海岸时
+## 常压在近岸港名上（泉州往占城，「占城」两字叠在漳州港标头上，像是那港的名字）。lane w53-1。返回 {} = 不画
+func dest_hint_layout() -> Dictionary:
+	if dest_id == "" or not port_px.has(dest_id):
+		return {}
 	var band := _band_world_rect().grow(-_px(20.0))
 	if band.size.x <= 0.0 or band.size.y <= 0.0:
-		return
+		return {}
 	var d: Vector2 = port_px[dest_id]
 	# 图带下沿之下还有一条航法钮的缝（约 50 px）能露出港标，落在缝里的不算出带
 	if band.grow_individual(0.0, 0.0, 0.0, _px(52.0)).has_point(d):
-		return
+		return {}
 	var c := band.get_center()
 	var dir := (d - c).normalized()
 	if dir.length() < 0.5:
-		return
+		return {}
 	var half := band.size * 0.5
 	var tx := INF if absf(dir.x) < 1e-6 else half.x / absf(dir.x)
 	var ty := INF if absf(dir.y) < 1e-6 else half.y / absf(dir.y)
-	var e := c + dir * minf(tx, ty)
+	var e0 := c + dir * minf(tx, ty)
+	# 落在上下沿就横着挪，落在左右沿就竖着挪
+	var along := Vector2(1.0, 0.0) if ty <= tx else Vector2(0.0, 1.0)
+	var chart: Dictionary = _port_def(dest_id).get("chart", {})
+	var text := str(chart.get("label", dest_id))
+	var best := {}
+	var best_cost := INF
+	for k: int in [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8]:
+		var e := e0 + along * _px(14.0) * k
+		e = Vector2(clampf(e.x, band.position.x, band.end.x), clampf(e.y, band.position.y, band.end.y))
+		var h := _dest_hint_at(e, d, text)
+		var cost := 0.0
+		for o: Rect2 in _port_obstacles:
+			for r: Rect2 in [h["tri_rect"], h["label_rect"]]:
+				if o.intersects(r):
+					cost += o.intersection(r).get_area()
+		if cost < best_cost:
+			best_cost = cost
+			best = h
+		if cost <= 0.0:
+			break
+	return best
+
+
+## 朱箭尖在 e、指向 d 时的三角与名字（名字往带内侧偏，再让开船标）
+func _dest_hint_at(e: Vector2, d: Vector2, text: String) -> Dictionary:
+	var dir := (d - e).normalized()
 	var s := _px(9.0)
 	var perp := Vector2(-dir.y, dir.x)
 	var tri := PackedVector2Array([e, e - dir * s * 1.7 + perp * s * 0.8, e - dir * s * 1.7 - perp * s * 0.8])
-	ci.draw_colored_polygon(tri, COL_CINNABAR)
-	ci.draw_polyline(PackedVector2Array([tri[0], tri[1], tri[2], tri[0]]), Color(COL_SHELL, 0.9), _px(1.0), true)
-	var chart: Dictionary = _port_def(dest_id).get("chart", {})
-	var text := str(chart.get("label", dest_id))
 	var tp := e - dir * s * 3.2
 	# 名字往带内侧偏，别贴着箭头
 	tp += Vector2(0, _px(5.0)) if dir.y < 0.0 else Vector2(0, -_px(4.0))
@@ -1249,7 +1284,13 @@ func _draw_dest_edge_hint(ci: CanvasItem) -> void:
 		var delta := tp - ship.position
 		if delta.length() < clear and delta.length() > 0.01:
 			tp = ship.position + delta.normalized() * clear
-	_text(ci, tp, text, 14, COL_CINNABAR, HORIZONTAL_ALIGNMENT_CENTER)
+	var tw := _text_width_world(text, 14)
+	var th := _px(14.0 * 1.15)
+	return {
+		"tip": e, "tri": tri, "text": text, "text_pos": tp,
+		"tri_rect": Rect2(tri[0], Vector2.ZERO).expand(tri[1]).expand(tri[2]),
+		"label_rect": Rect2(tp + Vector2(-tw * 0.5, -th * 0.8), Vector2(tw, th)),
+	}
 
 
 func _port_def(pid: String) -> Dictionary:
