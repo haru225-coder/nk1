@@ -91,6 +91,7 @@ EXEMPT = [
     ("qa_w53_6_port_exits_probe.gd", "lane-w53-6", "港内设施页各有「离开」回归探针（玉湖陈宅补回），随 lane-w53-6 落地验过留档"),
     ("qa_w53_7_tavern_crew_probe.gd", "lane-w53-7", "酒馆与人物专项探针（欠饷随名册清空归零等），随 lane-w53-7 落地验过留档"),
     ("qa_w53_8_codex_cols_probe.gd", "lane-w53-8", "人物志名册格列数随页宽探针（超宽画布钉死九列回退即红），带窗口或 headless 皆可跑，随 lane-w53-8 落地验过留档"),
+    ("qa_w53_8_letterbox_fit_probe.gd", "lane-w53-8", "海战墨边题签长副题不冲出画布右缘探针（只缩题名、副题冲出 116 px 回退即红），headless 直接实例化墨边可跑"),
     ("qa_w53_8_panel_seam_probe.gd", "lane-w53-8", "页面面板九宫纵向接缝探针（800×600 / 4:3 / 竖屏面板中腰泥金碎钩回退即红），headless 纯算、带窗口另实画"),
     ("qa_w53_8_vision_layout_probe.gd", "lane-w53-8", "市舶纪事 VisionStage 画布适配探针（钉死 1280 实锤回退即红），when 判据未定"),
     ("qa_w53_9_chapter_year_probe.gd", "lane-w53-9", "章节卡年号与历法逐月同口径专项探针（改元当年认月份），headless 可跑，随 lane-w53-9 落地验过留档"),

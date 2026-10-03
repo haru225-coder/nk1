@@ -546,15 +546,30 @@ func _layout() -> void:
 	_top_line.position = Vector2(0.0, h - 1.0)
 	_bottom_line.position = Vector2(0.0, cv.y - h)
 
+	_head.add_theme_font_size_override("font_size", TITLE_SIZE)
+	_sub.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+	_sub.clip_text = false
+	_sub.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	_sub.custom_minimum_size = Vector2.ZERO
 	var sz := _caption.get_combined_minimum_size()
-	# 过长的题名缩字，不许冲出画布右缘
+	# 过长的题签不许冲出画布右缘：先缩题名（不小于 22）；还宽就缩副题（不小于脚注字阶），再不够才在副题末尾收「…」。
+	# 出战副题 = 日期 + 敌船下场 + 我方折损，原先只缩题名：南岛海道北口外海受降三艘、折水手失船颠落货三段齐写时
+	# 题签宽 1324，右沿冲出 1280 画布 116 px，「舱面货十七件」整截看不见
 	var room := cv.x - CAPTION_X * 2.0
 	if sz.x > room and _head.text.length() > 0:
 		_head.add_theme_font_size_override("font_size", maxi(22, int(TITLE_SIZE * room / sz.x)))
 		sz = _caption.get_combined_minimum_size()
-	else:
-		_head.add_theme_font_size_override("font_size", TITLE_SIZE)
+	if sz.x > room and _sub.visible and _sub.text != "":
+		var sub_w := _sub.get_combined_minimum_size().x
+		var keep := sz.x - sub_w
+		_sub.add_theme_font_size_override("font_size",
+			maxi(UiTheme.SIZE_FOOT, int(floor(UiTheme.SIZE_BODY * (room - keep) / maxf(sub_w, 1.0)))))
 		sz = _caption.get_combined_minimum_size()
+		if sz.x > room:
+			_sub.clip_text = true
+			_sub.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			_sub.custom_minimum_size = Vector2(maxf(0.0, room - keep), 0.0)
+			sz = _caption.get_combined_minimum_size()
 	_caption.size = sz
 	_caption.position = Vector2.ZERO
 	# 题签行在下边里垂直居中；阴影与朱印倾斜会被裁，框上下各多留 8
