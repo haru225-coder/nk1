@@ -7,6 +7,7 @@ extends SceneTree
 ##     任何时候都写，本钱还差两万也照写，离了牙行什么都不发生。
 ##   H 晨潮钉了结之地（待拍板 4）：章目只差「泊在占城」一条时，晨潮三向第一席恒是占城。修前占城只按顺风短程轮转，
 ##     从广州出发八手里多半不见占城（lane w53-12 实测平均候约十三日）。
+##   K 章节总述落船籍簿（待拍板 3）：chapters.json 的 hint 在章目没走完时写在船籍簿章名下；走完了不写。修前 hint 从不上屏。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_13_decide_probe.gd
 ## 末行 W53_13_DECIDE cases=N fails=M；fails>0 退 1。
 ## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
@@ -64,6 +65,7 @@ func _boot() -> void:
 	await _y_skip_cap()
 	await _l_ledger_settle()
 	await _h_heading_pin()
+	await _k_ledger_hint()
 	_report()
 
 
@@ -174,14 +176,14 @@ func _l_ledger_settle() -> void:
 	# 本钱、港数、亲至都够，人在广州：差的只是泊到占城
 	_ready_ch4("guangzhou", need + 1000)
 	var page := _page()
-	_expect(page.contains("・　泊在占城") and not page.contains("了结一纲"),
+	_expect(page.contains("・　泊在占城") and not page.contains("至占城了结一纲"),
 		"泊在广州：末条章目写「・　泊在占城」（实读：%s）" % _snip(page, "占城"))
 	_expect(not page.contains("终章・可了结"),
 		"泊在广州、尚差一条：不写「终章・可了结」（实读：%s）" % _snip(page, "第四章"))
 	# 泊在占城，本钱还差：那一条打勾写「已　泊在占城」，不写成「已　至占城了结一纲」，也不写可了结
 	_ready_ch4("champa", need - 20000)
 	page = _page()
-	_expect(page.contains("泊在占城") and not page.contains("了结一纲"),
+	_expect(page.contains("泊在占城") and not page.contains("至占城了结一纲"),
 		"泊在占城、本钱未够：那一条写「泊在占城」打勾（实读：%s）" % _snip(page, "占城"))
 	_expect(not page.contains("终章・可了结"),
 		"泊在占城、本钱还差两万：不写「终章・可了结」（实读：%s）" % _snip(page, "第四章"))
@@ -211,6 +213,30 @@ func _h_heading_pin() -> void:
 		firsts.append(str(hd.call("deal", "guangzhou", salt)[0]))
 	_expect(firsts.count("champa") < 8,
 		"反向基：本钱未够时不钉占城，第一席照轮转（实得 %s）" % str(firsts))
+
+
+# ── K 章节总述落船籍簿 ───────────────────────────────
+
+func _k_ledger_hint() -> void:
+	print("── K 船籍簿章名下写本章总述（chapters.json hint）")
+	var h2 := str(_gs.chapter_def(2).get("next_requires", {}).get("hint", ""))
+	var h4 := str(_gs.chapter_def(4).get("ending_requires", {}).get("hint", ""))
+	_gs.from_dict({})
+	_cal.from_dict({"year": 1262, "month": 6, "day": 1})
+	_gs.chapter = 2
+	_gs.peak_money = 8200
+	_gs.visited_ports = ["quanzhou", "fuzhou"]
+	_gs.last_port = "quanzhou"
+	var page := _page()
+	_expect(h2 != "" and page.contains(h2), "第二章章目未走完：船籍簿写本章总述「%s」（实读：%s）" % [h2, _snip(page, "第二章")])
+	var need := int(_gs.chapter_def(4).get("ending_requires", {}).get("peak_money", 0))
+	_ready_ch4("guangzhou", need - 20000)
+	page = _page()
+	_expect(h4 != "" and page.contains(h4), "第四章章目未走完：船籍簿写终章总述（实读：%s）" % _snip(page, "第四章"))
+	# 反向基：章目全达（下回入港即了结）——不再写总述，免得催办已办完的事
+	_ready_ch4("champa", need + 1000)
+	page = _page()
+	_expect(not page.contains(h4), "反向基：章目全达时不写总述（实读：%s）" % _snip(page, "第四章"))
 
 
 func _snip(t: String, anchor: String, span := 60) -> String:

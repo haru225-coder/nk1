@@ -341,6 +341,11 @@ static func update_panel(main: Control) -> void:
 		for it in prog.get("items", []):
 			t = main._append_progress_line(t, it)
 	else:
+		# 本章要办哪几件的总述（chapters.json 的 hint）：章目没走完时写在章名下（待拍板第 3 条）。走完了就不写——
+		# 顶匾那边同理不回 hint（Main._chapter_hint），免得催玩家去办已办完的事
+		var hint := str(prog.get("hint", ""))
+		if hint != "" and not prog.get("ready", false):
+			t += "[color=#%s]%s[/color]\n" % [UiTheme.hex(UiTheme.TEXT_DIM), hint]
 		for it in prog.get("items", []):
 			t = main._append_progress_line(t, it)
 
