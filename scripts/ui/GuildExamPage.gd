@@ -31,7 +31,7 @@ static func setup_guild(main: Control, port_id: String) -> void:
 	if rows.is_empty():
 		var empty: VBoxContainer = main._slip_body()
 		main._slip_title(empty, "出港行情", "眼下抄不出能赚的路")
-		main._slip_note(empty, "过几日行情回一回再来。")
+		main._slip_note(empty, "过几日行情回一回再来。" if Economy.is_market_open(port_id) else main._market_shut_line(port_id, false))
 	else:
 		for row in rows:
 			var slip: VBoxContainer = main._slip_body()

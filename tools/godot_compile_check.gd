@@ -138,6 +138,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_4_chapter_hint_probe.gd",  # lane w53-4 章节 hint 上屏专项探针
 	"res://tools/qa_w53_6_beat_replay_probe.gd",  # lane w53-6 港口节拍不重演（新局卷首到首抵泉州 / 老档补账）回归探针
 	"res://tools/qa_w53_6_port_exits_probe.gd",  # lane w53-6 港内设施页各有「离开」（玉湖陈宅补回）回归探针
+	"res://tools/qa_w53_6_guild_spreads_probe.gd",  # lane w53-6 行会抄本 / 打听不荐牙行闭门（围城 / 封港）的港回归探针
 	"res://tools/qa_w53_9_cutscene_input_probe.gd",  # lane w53-9 过场层输入时序探针（以场景启动，见 SCENES）
 	"res://tools/combat_vfx_probe.gd", "res://tools/ship_vfx_probe.gd", "res://tools/atmos_water_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
 	"res://scripts/combat/ShipHull3D.gd", "res://tools/ship_exquisite_probe.gd",

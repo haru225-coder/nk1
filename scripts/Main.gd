@@ -2325,12 +2325,12 @@ func _on_rest(days: int, port_id: String, rate: int = INN_RATE, place: String = 
 	load_scene(current_scene_id)
 
 
-## 已解锁港口中、从此港买出能正赚的价差，按利润降序。
+## 已解锁港口中、从此港买出能正赚的价差，按利润降序。两头有一头牙行上了门闸（围城 / 封港）的不抄：这头买不着、那头卖不掉（lane w53-6）
 func _collect_spreads(port_id: String, limit: int = 3) -> Array:
 	var rows: Array = []
 	for p in GameManager.unlocked_ports():
 		var pid: String = p.get("id", "")
-		if pid == port_id or pid.ends_with("_harbor"):
+		if pid == port_id or pid.ends_with("_harbor") or not Economy.is_market_open(pid) or not Economy.is_market_open(port_id):
 			continue
 		for gid in Economy.goods_at(port_id):
 			if not Economy.is_traded(pid, gid):
