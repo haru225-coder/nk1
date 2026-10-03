@@ -176,6 +176,48 @@ def script_err_section(gates):
                   + (f"；缺：{'、'.join(lost)}" if lost else ""))
 
 
+# ── `_run` 断气不空转（lane w53-11 四轮）：注册表 must / lane 档 Godot 门禁的脚本若直接把 `_run` 排进首帧
+#    （call_deferred("_run") / _run.call_deferred()），`_run` 自己的代码行一出脚本错，GDScript 只中止 `_run`、后面的 quit
+#    永不执行，进程空转到外层超时（rc=124 按规矩当假红重跑，真回归被当成机器噪声）。须改排 _run_guarded 包装
+#    （await _run() 回来未收尾即判红退出），或 preload 了 shot_gate（其每帧看门兜底 `_run` 断气）。与判词称不称
+#    「SCRIPT ERROR 即红」无关——不判脚本错的门禁照样会挂死。注释行里的字样不算。──
+RUN_BARE_ENTRY = re.compile(r'call_deferred\(\s*"_run"\s*\)|\b_run\.call_deferred\(')
+RUN_WATCHED = 'preload("res://tools/shot_gate.gd")'
+
+
+def run_abort_hang(src):
+    """src（已去注释）直接排 `_run` 起跑、又没接 shot_gate 看门时返回 True（`_run` 断气会空转到超时）。"""
+    return bool(RUN_BARE_ENTRY.search(src)) and RUN_WATCHED not in src
+
+
+def run_abort_section(gates):
+    print("一之三、`_run` 断气不空转（lane w53-11：直接排 `_run` 起跑的 Godot 门禁须有 _run_guarded 包装或 shot_gate 看门）")
+    samples = [
+        ("R1 直接排 _run、无兜底", 'func _init() -> void:\n\tcall_deferred("_run")', True),
+        ("R2 _run.call_deferred() 写法", "func _init() -> void:\n\t_run.call_deferred()", True),
+        ("R3 兜底只写在注释里", code_lines('call_deferred("_run")\n# const S := preload("res://tools/shot_gate.gd")'), True),
+        ("C1 排 _run_guarded 包装", 'call_deferred("_run_guarded")\nfunc _run_guarded() -> void:\n\tawait _run()', False),
+        ("C2 直接排 _run、接了 shot_gate 看门", 'const S := preload("res://tools/shot_gate.gd")\ncall_deferred("_run")', False),
+        ("C3 不经 _run（_initialize 同步跑完）", "func _initialize() -> void:\n\tquit(0)", False),
+    ]
+    for name, src, want in samples:
+        got = run_abort_hang(src)
+        check(got == want, f"判据自检 {name}：{'该红' if want else '该绿'}（实得 {'红' if got else '绿'}）")
+    seen, hang = 0, []
+    for g in gates:
+        if g["kind"] != "godot" or not g.get("file") or g["tier"] not in ("must", "lane"):
+            continue
+        try:
+            src = code_lines(open(os.path.join(ROOT, g["file"]), encoding="utf-8", errors="replace").read())
+        except OSError:
+            continue
+        seen += 1
+        if run_abort_hang(src):
+            hang.append(f"{g['id']}（{g['file']}）")
+    check(not hang, f"必跑 / 加跑档 Godot 门禁 {seen} 支：直接排 `_run` 起跑的都有兜底（_run_guarded 包装 / shot_gate 看门）"
+          + (f"；`_run` 断气会空转到超时：{'、'.join(hang)}" if hang else ""))
+
+
 def check(cond, msg):
     print(("  ✓ " if cond else "  ✗ ") + msg)
     if not cond:
@@ -502,6 +544,7 @@ def main(argv):
           + (f"；漏挂：{', '.join(bare)}" if bare else ""))
 
     script_err_section(gates)
+    run_abort_section(gates)
     print("二、docs/GATES.md")
     gen = render(reg)
     bad_cells = [l for l in (gen + "\n" + render_ci(reg)).splitlines() if l.startswith("|") and "\\|" in l]

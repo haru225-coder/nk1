@@ -5,6 +5,8 @@ extends SceneTree
 ##      godot --headless --quiet --path . -s res://tools/qa_pirate_boat_probe.gd -- --json   # 机读（tools/gate_report.gd）
 ##      DISPLAY=:2 godot --path . -s res://tools/qa_pirate_boat_probe.gd -- --shots <目录>   # 有窗口另截海战 5 张（不接 shot_gate、不入截图册）
 ## 只动存档位 93（不碰正式位 1..SLOTS），跑完删掉；Fleet / pending_battle 跑完还原。本进程出 SCRIPT ERROR 即判红（自挂 Logger 数）。
+## `_run` 自己的代码行出脚本错时 GDScript 只中止 `_run`、末尾 quit 永不执行，原先空转到外层超时；现由 _run_guarded 包装
+## 就地判红收尾、退 1（lane w53-11 四轮；gates_md「一之三」判注册门禁不许裸排 `_run` 起跑）。
 ## lane w19-g3 跟现行代码改的四处（原期望写在 origin 那条 / 09-28 crew 线上，09-30 合并按本地线落地后过时）：
 ##   · 夺船存名：本地线 WorldMap 以敌船名入列（Fleet.add_ship(type, ship_name)），存名仍「快船」，不按序号起名——
 ##     Fleet.prize_name 在库但没人调，V0928-10 待拍板，拍了再改这里；同名两艘上屏靠 Fleet.display_name 加「・甲」「・乙」（lane fx2）。
@@ -30,10 +32,21 @@ const ABSENT := "__nk1_absent__"
 var _fails: Array = []
 var _shots: Array = []
 var _errlog: _ScriptErrLog = null
+var _reported := false
 
 
 func _init() -> void:
-	call_deferred("_run")
+	call_deferred("_run_guarded")
+
+
+## `_run` 断气回来时还没走到 _finish（头注释）：点名首条脚本错，就地判红收尾。
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		var note := ("_run 半路中止，首条脚本错：" + str(_errlog.lines[0])) if _errlog != null and not _errlog.lines.is_empty() \
+			else "_run 提前 return、没走收尾"
+		_expect(false, "主流程跑到收尾（%s）" % note)
+		_finish()
 
 
 func _expect(ok: bool, what: String) -> void:
@@ -90,6 +103,12 @@ func _run() -> void:
 	fleet.set("ships", saved_ships)
 	gm.set("pending_battle", saved_battle)
 	await process_frame
+	_finish()
+
+
+## 收尾（`_run` 走完与 _run_guarded 兜底共用）：判本进程脚本错、打末行、退出。
+func _finish() -> void:
+	_reported = true
 	OS.remove_logger(_errlog)
 	_expect(_errlog.lines.is_empty(), "本进程无 SCRIPT ERROR（%d 行%s）" % [_errlog.lines.size(),
 		"：" + str(_errlog.lines[0]) if not _errlog.lines.is_empty() else ""])
