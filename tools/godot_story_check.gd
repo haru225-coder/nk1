@@ -3379,10 +3379,10 @@ func _w20a4_notice_fold_height_check(main: Node) -> void:
 	main._render_log()
 	main.left_panel.size = Vector2(480, 600)
 	main._render_log()
-	await self
+	await process_frame
 	var h1: float = ml.custom_minimum_size.y
 	main._render_log()
-	await self
+	await process_frame
 	var h2: float = ml.custom_minimum_size.y
 	# headless 零缩放：面板挂实质前墨框已是 0×88 的条，盖住滚至末列、纵居每条单字位，get_content_height 读到「卷成单字的逐行高」，
 	# 不脱生成数——只判稳定区间（长高过、不超版面、下一帧不动）与面板版面扣；「从 88 真长高」交下面跳两年那一格断言（那格面板 size 还是 0、排版读数有效）
@@ -3434,15 +3434,15 @@ func _w20a4_notice_fold_height_check(main: Node) -> void:
 	main.left_panel.visible = true
 	main.left_panel.size = Vector2(480, 600)
 	main._render_log()
-	await self
+	await process_frame
 	main._render_log()
-	await self
+	await process_frame
 	var g2: float = ml.custom_minimum_size.y
 	_check(g2 > g0 + 1.0 or g0 > float(LP.get("LOG_WELL_REST")),
 		"跳两年点开折总览：墨框从 88 长高（%.0f→%.0f，月行 %d 行）" % [g0, g2, order.size()])
 	var pick: String = order[order.size() / 2] if not order.is_empty() else ""
 	main._on_log_meta("fold:0:" + pick)
-	await self
+	await process_frame
 	var month_txt: String = ml.text
 	var month_lines: Array = by_month.get(pick, [])
 	var v: VScrollBar = ml.get_v_scroll_bar()
