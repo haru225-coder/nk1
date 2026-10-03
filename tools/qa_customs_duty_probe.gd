@@ -65,7 +65,10 @@ func _run() -> void:
 		for pu in [false, true]:
 			gs.flags = {"sided_pu": true} if pu else {}
 			for z in range(4):
-				crew.hired = {} if z == 0 else {"zashi": {"id": "probe_zashi", "role": "zashi", "level": z, "wage": 0}}
+				# Crew.hired 只存名册 id（lane w23-a1 起）：塞整条快照读出来是 0 级，杂事三档整片假红（lane w53-3）
+				crew.hired = {} if z == 0 else {"zashi": _cand("zashi", z)}
+				if crew.level_of("zashi") != z:
+					_fail("杂事没摆上：要 %d 级，Crew.level_of 读出 %d" % [z, crew.level_of("zashi")])
 				for fame in [0, top_fame]:
 					gs.fame = fame
 					gs.last_port = s[0]
@@ -90,6 +93,14 @@ func _run() -> void:
 	cal.day = saved["d"]
 	print("EA3_PROBE cases=%d fails=%d" % [cases, fails])
 	quit(1 if fails > 0 else 0)
+
+
+## 名册里该职该品级的第一位候选 id；没有这一级给个查不到的名，摆完判红
+func _cand(role: String, level: int) -> String:
+	for c in gm.crew_data.get("candidates", []):
+		if str(c.get("role", "")) == role and int(c.get("level", 0)) == level:
+			return str(c.get("id", ""))
+	return "no_%s_%d" % [role, level]
 
 
 func _expected(pid: String, st: String, pu: bool, z: int) -> int:

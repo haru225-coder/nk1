@@ -54,13 +54,27 @@ func _run() -> void:
 	quit(1 if fails > 0 else 0)
 
 
+## Crew.hired 只存名册 id、品级回查 crew.json（lane w23-a1 起）。原先这里塞整条 {id, role, level} 快照，
+## w23-a1 之后 Crew.level_of 一律读成 0：杂事 / 通事各档实际全按光杆扫，地板、满编买卖、单调几条静默绿（lane w53-3）。
+## 现按职与品级取名册里的真候选，摆完核一遍 level_of，摆不上即判红。
 func _set_crew(z: int, t: int) -> void:
 	var h := {}
 	if z > 0:
-		h["zashi"] = {"id": "probe_zashi", "role": "zashi", "level": z, "wage": 0}
+		h["zashi"] = _cand("zashi", z)
 	if t > 0:
-		h["tongshi"] = {"id": "probe_tongshi", "role": "tongshi", "level": t, "wage": 0}
+		h["tongshi"] = _cand("tongshi", t)
 	crew.hired = h
+	if crew.level_of("zashi") != z or crew.level_of("tongshi") != t:
+		_fail("职事没摆上：要杂事 %d 通事 %d，Crew.level_of 读出 %d / %d（hired 写法与 Crew 对不上）" % [
+			z, t, crew.level_of("zashi"), crew.level_of("tongshi")])
+
+
+## 名册里该职该品级的第一位候选 id；没有这一级给个查不到的名，交 _set_crew 判红
+func _cand(role: String, level: int) -> String:
+	for c in gm.crew_data.get("candidates", []):
+		if str(c.get("role", "")) == role and int(c.get("level", 0)) == level:
+			return str(c.get("id", ""))
+	return "no_%s_%d" % [role, level]
 
 
 func _max_fame() -> int:

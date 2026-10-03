@@ -77,11 +77,19 @@ func _max_fame() -> int:
 	return top
 
 
+## 满编：Crew.hired 只存名册 id（lane w23-a1 起），按职与品级取名册里的真候选。原先塞整条快照，
+## Crew.level_of 读成 0，「满编」各格其实按光杆跑（lane w53-3）；摆完核 level_of，摆不上即判红。
 func _full_crew() -> void:
-	crew.hired = {
-		"zashi": {"id": "probe_zashi", "role": "zashi", "level": 3, "wage": 0},
-		"tongshi": {"id": "probe_tongshi", "role": "tongshi", "level": 3, "wage": 0},
-	}
+	crew.hired = {"zashi": _cand("zashi", 3), "tongshi": _cand("tongshi", 3)}
+	_expect(crew.level_of("zashi") == 3 and crew.level_of("tongshi") == 3,
+		"满编摆上：杂事 %d 级、通事 %d 级（Crew.level_of 回查名册）" % [crew.level_of("zashi"), crew.level_of("tongshi")])
+
+
+func _cand(role: String, level: int) -> String:
+	for c in gm.crew_data.get("candidates", []):
+		if str(c.get("role", "")) == role and int(c.get("level", 0)) == level:
+			return str(c.get("id", ""))
+	return "no_%s_%d" % [role, level]
 
 
 ## 与 Main._on_buy 同一段结算（买 actual 件 → 扣钱 → 入账 → 砸盘），抽出复用两条摆场
