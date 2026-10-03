@@ -112,16 +112,6 @@ REGISTRY = [
      "judge": "（lane h1h2 / rt）坏分区退 .bak、只剩 .bak 取标签、两份皆坏不抛错",
      "green": "`SAVE_ROBUST_PROBE PASS`（大量 `ERROR: 存档结构异常…` 是故意喂坏档，属预期）",
      "red": "`✗` 行 / 非零退出；输出含 `SCRIPT ERROR` 即算失败"},
-    {"id": "qa_w53_5_roundtrip_probe", "tier": "lane", "when": "动 SaveLoad.save_game / load_game 存档往返，或 GameState/Economy/Fleet/Crew/Calendar 任一 to_dict↔from_dict 字段",
-     "kind": "godot", "file": "tools/qa_w53_5_roundtrip_probe.gd",
-     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_w53_5_roundtrip_probe.gd"],
-     "judge": "（lane w53-5）存档「全字段往返」：摆一份覆盖四分区（calendar/economy/fleet/crew/state）全量非缺省键的场，"
-              "save_game 落盘 → 脏场 → load_game 读回 → 逐键语义等比（int/float 同级、字典/数组深比只差类型）。"
-              "Economy.initialize 会给「没进 rates 的 market 港」randf_range 补值，economy 只比摆进存档的港/货；"
-              "其余分区全键等比。任何「to_dict 落了、from_dict 没读」或「from_dict 读了、to_dict 没落」的非缺省字段在此出 ✗。"
-              "末两行 `QA_W53_5_ROUNDTRIP cases=N fails=M` + `QA_W53_5_ROUNDTRIP_END`，M>0 退 1",
-     "green": "末两行 `QA_W53_5_ROUNDTRIP cases=15 fails=0` + `QA_W53_5_ROUNDTRIP_END`，退 0",
-     "red": "`  ✗ …` 行（如 economy.investments 位差 / fleet.ships 货舱对不上 / state 差键）+ 末行 fails=K（K>0），退 1"},
     {"id": "check_sidecars", "tier": "must", "when": "提交新 .gd / .gdshader / 素材，或挪删它们（同车规则：新源文件的侧车同 commit 带上）", "kind": "py",
      "file": "tools/check_sidecars.py",
      "judge": "（lane ag / ag2）按 git 索引：已跟踪 .gd/.gdshader 须有已跟踪 `.uid`，可导入素材须有 `.import`；反向不许只提侧车 / 多余侧车；侧车内容与源文件、场景引用、VRAM 基线一致，uid 唯一；工作树里已跟踪侧车不许漂移。口径表见 docs/侧车口径.md",
