@@ -2316,7 +2316,7 @@ func _contract_rest_mark(days: int) -> String:
 func _on_rest(days: int, port_id: String, rate: int = INN_RATE, place: String = "店中") -> void:
 	var cost := days * rate
 	if not GameState.spend_money(cost):
-		log_msg("【钱不够】掌柜把算盘一推：「客官，先结了前帐罢。」")
+		log_msg("【钱不够】掌柜把算盘一推：「客官，先结了前账罢。」")
 		return
 	GameManager.advance_days(days)
 	Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + days * 2)

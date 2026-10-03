@@ -1090,8 +1090,8 @@ func _fail_contract(reason: String) -> String:
 	if issued != "":
 		contract_ban[issued] = offer_month
 	if reason == "毁约":
-		return "【毁约】%s的委办作废。牙行扣 %d 钱，名声 -1。" % [good_name, fine]
-	return "【逾期】%s没能送到%s。牙行扣 %d 钱，名声 -1。" % [good_name, dest_name, fine]
+		return "【毁约】%s的委办作废。牙行扣 %d 钱，名声 −1。" % [good_name, fine]
+	return "【逾期】%s没能送到%s。牙行扣 %d 钱，名声 −1。" % [good_name, dest_name, fine]
 
 
 # ── 人物志「已识」 ────────────────────────────────────
