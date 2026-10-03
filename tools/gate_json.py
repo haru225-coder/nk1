@@ -505,6 +505,23 @@ REGISTRY = [
      "green": "末三行 `SIEGE_DEST hits=N ok=M fails=0` + `结果：全部通过` + `QA_SIEGE_DEST_END`，退 0",
      "red": "`  ✗ …` 行（现网态 A 复现行：被围港掺队 / 报价目的落被围——设计内红，归于 §三 lane 档附注）"
             "+ 末行 `SIEGE_DEST … fails=K`（K>0），退 1；`QA_SIEGE_DEST_END` 缺 = 中断，不计红绿"},
+
+
+    {"id": "qa_save_stale_count1_probe", "tier": "lane",
+     "when": "动 scripts/core/SaveLoad.gd 的 audit_stale_refs 港类核验（_flag_port / out[\"port\"] 落键口径），"
+             "或动 tools/qa_save_stale_count1_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_save_stale_count1_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_save_stale_count1_probe.gd"],
+     "judge": "（lane w38-k1 · 无门禁 sweep 补位——j3mut 退化纹钉件，w36-k3 交主控 #2 A 类原句立）"
+              "「恰 1 枚已删港名目」存档直调 load_game → last_stale（母本 save_stale_refs_probe.gd 同型写信道位 97）："
+              "现网 audit_stale_refs 对恰 1 枚须落 out[\"port\"][\"count\"]==1、sample==该 id、examples erase。"
+              "K1 现网临界（visited_ports 恰 1 枚）；K2 三个触发位各仅 1 处指向 stale 港（visited_ports / last_port / "
+              "contract.from）各落 count==1；K3 对照 0 枚（port 键不在）/ 双旧港 count==2 / 同 id 双现去重仍 count==1。"
+              "`> 0` 被退化成 `> 1`（j3mut 实证在卷）则 K1/K2 整段漏报 → 本探针 fails≥1 诱曝，现样全绿。"
+              "末两行 `STALE_COUNT1 cases=N fails=M` + `QA_STALE_COUNT1_END`，M>0 退 1。",
+     "green": "逐条 `  ✓ …` + 末两行 `STALE_COUNT1 cases=7 fails=0` + `QA_STALE_COUNT1_END`，退 0",
+     "red": "`  ✗ …count 期望 1 实得 0…`（`> 0→> 1` 漏报恰 1 枚——j3mut 退化纹）/ `… sample 期望 …` / "
+            "`… examples 未 erase …` 各指名行 + 末两行 `STALE_COUNT1 cases=N fails=M`（M>0），退 1"},
 ]
 
 # w27-k4 CHECK FOLLOWS
