@@ -2213,6 +2213,42 @@ func _v0928_visual_check(_main: Node) -> void:
 	Cal.from_dict({"year": 1276, "month": 8, "day": 5})
 	_check(Art.portrait_is_card(lin) and Art.thumb(lin, Vector2i(34, 34), true) != null,
 		"林华 1276-08 立绘面板记作剪影卡，缩略图取得到")
+	# lane w53-14（g12 主角仕履一批，照《宋史·瀛国公纪·二王附》景炎元年八月「兴化石手军乱」、九月「复以陈文龙知兴化军」；
+	# 「议者以其不足用罢之，石手军亦叛」见《宋史·陈文龙传》）：原段键一律 1276-07，早了一到两个月。1276-08 起露石手军叛，
+	# 九月起主角称谓才带「知兴化军」，小传、木兰陂收编段、关系签「收编之官」同月露
+	var shi: Dictionary = GM.get_character("shishou_chief")
+	GS.from_dict({})
+	GS.identity = "scholar"
+	GS.set_flag("renamed_wenlong")
+	Cal.from_dict({"year": 1276, "month": 7, "day": 5})
+	var shi_07: String = Art.codex_short(shi) + Art.codex_bio(shi)
+	Cal.from_dict({"year": 1276, "month": 8, "day": 5})
+	var shi_08: String = Art.codex_short(shi) + Art.codex_bio(shi)
+	var pc_title_08: String = Art.codex_title(pc)
+	var pc_bio_08: String = Art.codex_bio(pc)
+	var keep_08: bool = Art.rel_visible("收编之官")
+	Cal.from_dict({"year": 1276, "month": 9, "day": 5})
+	var shi_09: String = Art.codex_bio(shi)
+	var pc_title_09: String = Art.codex_title(pc)
+	var pc_bio_09: String = Art.codex_bio(pc)
+	_check(shi_07.find("反") < 0 and shi_08.find("八月") >= 0 and shi_08.find("反了") >= 0 and shi_08.find("木兰陂") < 0
+			and shi_09.find("木兰陂") >= 0,
+		"石手军头目：1276-07 不露叛，1276-08 起露「八月…反了」，木兰陂收编段到 1276-09 主角知兴化军才露")
+	_check(pc_title_08 == "参知政事" and pc_bio_08.find("知兴化军") < 0 and not keep_08
+			and pc_title_09 == "参知政事、知兴化军" and pc_bio_09.find("九月命他知兴化军") >= 0 and Art.rel_visible("收编之官"),
+		"主角士人线：1276-08 称谓「%s」、小传不写知兴化军，1276-09 起称谓「%s」、小传写九月知兴化军、关系签「收编之官」同月露" % [pc_title_08, pc_title_09])
+	# 德祐元年七月乙未「同签书枢密院事兼权参知政事」（《宋史·瀛国公纪》，《续通鉴》同月）：原链侍御史一直挂到十月。
+	# 是冬拜参知政事、十二月辞官照《宋史·陈文龙传》「是冬，累迁文龙至参知政事。未几议降，文龙乃上章乞归养」不动
+	Cal.from_dict({"year": 1275, "month": 6, "day": 5})
+	var pc_t_7506: String = Art.codex_title(pc)
+	Cal.from_dict({"year": 1275, "month": 7, "day": 5})
+	var pc_t_7507: String = Art.codex_title(pc)
+	var pc_b_7507: String = Art.codex_bio(pc)
+	Cal.from_dict({"year": 1275, "month": 11, "day": 5})
+	var pc_t_7511: String = Art.codex_title(pc)
+	_check(pc_t_7506 == "侍御史" and pc_t_7507 == "同签书枢密院事" and pc_b_7507.find("七月入枢府") >= 0
+			and pc_b_7507.find("参知政事") < 0 and pc_t_7511 == "参知政事",
+		"主角士人线德祐元年：1275-06「%s」、1275-07 入枢府「%s」（小传同月写）、1275-11「%s」" % [pc_t_7506, pc_t_7507, pc_t_7511])
 	# 主角世界线：[身份, 改名, 年, 月, 结局]
 	var lines_of := func() -> String: return "".join(Art.codex_lines(pc))
 	# 纲首（海商）了结：字号无君贲，其言无节义文章，又称不重名、有陈纲首，史载有引子，称谓是纲首
@@ -2464,13 +2500,14 @@ func _v0928_visual_recheck(Art, pc: Dictionary, zan: Dictionary, lu: Dictionary,
 	scholar_at.call(1276, 5)
 	var t_7605: String = Art.codex_title(pc)
 	var b_7605: String = Art.codex_bio(pc)
-	scholar_at.call(1276, 8)
+	# 知兴化军取史载景炎元年九月（lane w53-14，原 1276-07；八月石手军乱）：身份行抽 1276-09
+	scholar_at.call(1276, 9)
 	var t_7608: String = Art.codex_title(pc)
 	var id_7608: String = Art.identity_line(pc)
 	_check(t_7506 == "侍御史" and b_7506.find("侍御史") >= 0 and b_7506.find("参知政事") < 0 and t_7512.begins_with("前")
 			and t_7605 == "参知政事" and b_7605.find("复以他为参知政事") >= 0 and b_7605.find("知兴化军") < 0
 			and t_7608.find("知兴化军") >= 0 and id_7608.count("・") == 1,
-		"士人线 1275-06「%s」、1275-12「%s」、1276-05「%s」、1276-08 身份行「%s」（称谓与籍贯之间只一个分隔点）" % [t_7506, t_7512, t_7605, id_7608])
+		"士人线 1275-06「%s」、1275-12「%s」、1276-05「%s」、1276-09 身份行「%s」（称谓与籍贯之间只一个分隔点）" % [t_7506, t_7512, t_7605, id_7608])
 	# 立绘面板身份行：籍贯逐字垫了字连接符，窄栏折行只折在「・」之后，不从「兴化军莆田／县玉湖」中间折；去掉连接符与原串一字不差
 	var wj := String.chr(0x2060)
 	var pp: Node = load("res://scripts/chars/CharPortraitPanel.gd").new()
