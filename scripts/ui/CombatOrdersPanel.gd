@@ -7,7 +7,7 @@
 ##       所以接线后玩家不下令即与现行手感零差异
 ##   四、落令（auto_apply，默认开）：旗舰身上有同波次的分系统就按号令改它的令（鸭子型，只调它们公开的改令口）——
 ##       ship.battery（ReloadAmmo）：抢风 → set_emphasis("sail")，专力装填 → "guns"，两令同下 / 都不下 → "balanced"；火攻 → set_fire_mode(true)
-##       ship.damage_model（DamageModel）：救火 → set_mode 按险情取 "fire"（有火或无险）/ "flood"（只进水）；
+##       ship.damage_model（DamageModel）：救火 → set_mode 按险情取 "fire"（有火或无险）/ "flood"（只进水），令在期间随险情改（tick）；
 ##         没令救火而备接舷 → "fight"（迎敌，损管只留一成半人）；都没有 → "auto"
 ##       玩家一道令都没下过就不落，分系统保持它们自己的默认。
 ## 挂法：CombatOrdersPanel.mount(world)，或经 CombatShoreHook.mount_combat_ui；CanvasLayer 自加 nk1_combat_ui / nk1_combat_orders 两组供探针找。
@@ -428,6 +428,10 @@ func tick(delta: float) -> void:
 	for e in StatusHud.live_enemies(_world()):
 		var id := (e as Object).get_instance_id()
 		_hull_seen[id] = maxf(float(_hull_seen.get(id, 0.0)), StatusHud.prop_f(e, "hull_hp", 0.0))
+	# 救火令按险情取损管令（只进水 → 戽水，有火或无险 → 救火），险情是会变的（lane w53-2）：只在下令那一刻取一次的话，
+	# 只进水时下的令后来起了火仍按戽水派人，救火手封在两成——比不下令（均衡四成五）还少。令在就照现时险情重落（令同不改、不重派）
+	if damage_control and not _battle_over():
+		apply_to_ship()
 
 
 ## 落令：把号令落到旗舰身上现成的分系统（见头注「四」）。返回这次真改了哪些令（探针看）

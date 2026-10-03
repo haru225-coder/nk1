@@ -20,6 +20,9 @@ extends SceneTree
 ##   六、喊话劝降得手的船接舷即收：降幡劝降走 PirateShip.strike_colours，只有敌将降了（节点 struck），士气簿不知道；
 ##       修复前 _board_enemy 只认簿上的 yields_to_boarding，竖着降幡的船一接舷照打满员白刃（实打 300 人：本队被击退）。
 ##       真起号令面板喊话（roll 定 0 必降）→ 接舷：须免白刃（_last_melee 空）、船入列、下场记受降 struck。
+##   七、救火令随险情改损管令：面板只在下令那一刻按险情挑「戽水（只进水）/ 救火（有火或无险）」，之后一成不变——
+##       只进水时下的救火令，后来起火仍按戽水派人（救火手封两成，比不下令的均衡四成五还少）。旗舰舱里先灌水、下救火令（戽水），
+##       再点一处火：两帧内损管令须改成救火；把火扑灭、水还在：须改回戽水。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -64,6 +67,8 @@ func _run() -> void:
 	await _sec_knock_own_hold(fleet, {"tea": {"qty": 5, "avg_cost": 20.0}}, "②")
 	print("== 六、喊话劝降得手的船接舷即收")
 	await _sec_parley_struck_boarding(fleet)
+	print("== 七、救火令随险情改损管令")
+	await _sec_damage_order_follows_hazard(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -419,6 +424,43 @@ func _sec_parley_struck_boarding(fleet: Node) -> void:
 	_check(r.is_empty() and (fleet.get("ships") as Array).size() == ships_before + 1 and fate == "struck" and rec.is_empty(),
 		"六 接舷竖降幡的船：免白刃收船入列、下场记受降、还剩一艘不收战（白刃 %s · 船队 %d → %d · 下场 %s）" % [
 			str(r.get("outcome", "未打")), ships_before, (fleet.get("ships") as Array).size(), fate])
+	await _close(wm)
+
+
+# ══ 七、救火令随险情改损管令 ══════════════════════════════════════
+
+## 旗舰（福船 60 人）一舱灌六成水、没火 → 下救火令：损管令戽水；艏部点火 → 两帧内改救火；火扑灭、水还在 → 改回戽水
+func _sec_damage_order_follows_hazard(fleet: Node) -> void:
+	var wm := await _battle(fleet, "fu_ship_medium", 60, {"type": "pirate_boat", "count": 1})
+	var panel: Node = null
+	for n in wm.get_children():
+		if n.is_in_group("nk1_combat_orders"):
+			panel = n
+	var own: Node = wm.get("ship")
+	var dm = own.call("get_damage_model") if own != null else null
+	if panel == null or dm == null:
+		_check(false, "七 挂上号令面板、旗舰有损伤簿")
+		await _close(wm)
+		return
+	var ff = dm.get("ff")
+	var water: PackedFloat64Array = ff.get("water")
+	water[0] = 0.6
+	ff.set("water", water)
+	panel.call("issue", "damage")
+	var mode_flood := str(dm.get("mode"))
+	ff.call("ignite", "bow", 0.6)
+	for _i in 2:
+		await process_frame
+	var mode_fire := str(dm.get("mode"))
+	var fires: Dictionary = ff.get("fire")
+	for z in fires:
+		fires[z] = 0.0
+	ff.set("fire", fires)
+	for _i in 2:
+		await process_frame
+	var mode_back := str(dm.get("mode"))
+	_check(mode_flood == "flood" and mode_fire == "fire" and mode_back == "flood",
+		"七 只进水时下救火令 → 戽水；起火 → 改救火；火灭水在 → 改回戽水（得 %s → %s → %s）" % [mode_flood, mode_fire, mode_back])
 	await _close(wm)
 
 
