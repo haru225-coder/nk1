@@ -1,5 +1,5 @@
 extends SceneTree
-## 无界面驱动 P7 行会入行 / 贡院赴试：扣费与门槛、赴试两支、每章一次、1268 打平读 exam_sat、三月下旬跨月赴试 / 誊录。
+## 无界面驱动 P7 行会入行 / 贡院赴试：扣费与门槛、赴试两支、每章一次、1268 打平读 exam_sat、三月下旬跨月赴试 / 誊录、科场港正文不写「只能替人誊录」（lane w53-6）。
 ## 跑法：godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 ## -s 入口在编译期看不到自动加载名，单例一律在 _initialize 之后从根节点取。
 
@@ -292,6 +292,12 @@ func _run(main) -> void:
 	_gs.scholar_tendency = 5
 	_gs.sea_tendency = 5
 	main.load_scene("quanzhou_exam")
+	# 科场港正文不写「今科未开 / 只能替人誊录」：底下就是「入场赴试」（lane w53-6；明州对照见 5c）
+	var sit_body := str(main.body_text.text)
+	if sit_body.contains("今科未开") or sit_body.contains("只能替人誊录"):
+		_fail("泉州贡院有「%s」，正文却写「%s」" % [SIT_TEXT, sit_body])
+	else:
+		_ok("泉州贡院正文不说只能誊录：%s" % sit_body)
 	var sit := _button_with_text(main, SIT_TEXT)
 	if sit == null:
 		_fail("泉州贡院没有「%s」" % SIT_TEXT)
@@ -373,8 +379,10 @@ func _run(main) -> void:
 		_fail("明州贡院出现了「%s」" % SIT_TEXT)
 	elif not _has_stamp(main, "本港无贡院科场"):
 		_fail("明州贡院卡底没有 disabled「本港无贡院科场」")
+	elif not str(main.body_text.text).contains("只能替人誊录"):
+		_fail("明州贡院只誊录，正文却没写只能誊录：%s" % str(main.body_text.text))
 	else:
-		_ok("明州贡院：本港无贡院科场，无赴试按钮")
+		_ok("明州贡院：本港无贡院科场，无赴试按钮，正文写只能替人誊录")
 
 	# ── 6. 1268 打平：exam_sat 定士人；无旗标则海商 ──
 	_gs.chapter = 1

@@ -111,7 +111,8 @@ static func on_guild_join(main: Control, port_id: String) -> void:
 ## 贡院：誊录耗日换工钱与学者倾向，不给名声；赴试每章一次，费 15 日，按倾向记名声。
 static func setup_exam(main: Control, port_id: String) -> void:
 	main.scene_title.text = "%s・贡院" % GameManager.get_port_name(port_id)
-	main.body_text.text = "今科未开。只能替人誊录，笔墨钱现结。"
+	# 兴化、泉州设科场，誊录旁边就是「入场赴试」：正文原先一律「今科未开。只能替人誊录」，与底下的钮相左（lane w53-6）
+	main.body_text.text = "科场每章开一回。平日替人誊录，笔墨钱现结。" if main.EXAM_SIT_PORTS.has(port_id) else "今科未开。只能替人誊录，笔墨钱现结。"
 	main._begin_benches()
 	main._center_benches()
 
