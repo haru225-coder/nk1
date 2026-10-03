@@ -11,7 +11,7 @@ extends SceneTree
 ## 寺观工席确有贴文但没落进歇息这条路（跑完 erase 还原）→ 歇息 / 候钮一枚都不该混出来；两路串了线
 ## （歇候钮漏到别的工席）这里即红。
 ## lane w48-k5（w28-k1 Verify 剩余未守面 ①②③ 补钉，追加 S4–S6 于既有 18 案后，既有 S1–S3 零改）：
-##   S4 在身委办剩 N 日时三枚旅店钮的「·误期」印尾逐字钉（歇 1 不带 / 歇 10・候 12 各带）+ 清净对照——
+##   S4 在身委办剩 N 日时三枚旅店钮的「・误期」印尾逐字钉（歇 1 不带 / 歇 10・候 12 各带）+ 清净对照——
 ##      原仅 verify_economy 静态锁、运行时无断言（①）；
 ##   S5 「候 N 日」N 随日走：12-15 印「候 16 日　240」→ 历日 +1 重挂变「候 15 日　225」、旧印不残留（②）；
 ##   S6 旅店/住处 rate 错挂交叉直钉：真按「歇 10 日　150」（INN_RATE 150「店中」）与「歇 3 日　15」
@@ -247,9 +247,9 @@ func _s3_cross_scenarios() -> void:
 		tp.size(), " / ".join(tp.map(func(c: Dictionary) -> String: return _state_text(c["state"])))])
 
 
-## ── S4 「·误期」印尾（w28-k1 剩余未守面 ①）：在身委办 days_left < 钮面日数时，三枚旅店钮尾字逐字钉 ──
+## ── S4 「・误期」印尾（w28-k1 剩余未守面 ①）：在身委办 days_left < 钮面日数时，三枚旅店钮尾字逐字钉 ──
 func _s4_overdue_mark() -> void:
-	print("== S4 ·误期印尾（1277-10-19 委办剩 5 日：歇 1 不带尾 / 歇 10・候 12 各带「·误期」；清净对照全不带）")
+	print("== S4 ・误期印尾（1277-10-19 委办剩 5 日：歇 1 不带尾 / 歇 10・候 12 各带「・误期」；清净对照全不带）")
 	_reset_day("xinghua", 1277, 10, 19)
 	_plant_contract(5)	# 剩 5 日（须在 _reset_day 后摆——reset 清档；due_day 现算见摆场证行）
 	var due_now: int = cal.absolute_day() + 5	# 现算（摆场日不同自动跟，免抄死数）
@@ -259,7 +259,7 @@ func _s4_overdue_mark() -> void:
 	await _settle(6)
 	var texts: Array = _collect_rest_chips().map(func(c: Dictionary) -> String: return str(c["state"][0]))
 	_check(texts.size() == 3, "误期景旅店歇・候钮仍恰 3 枚（实 %d 枚：%s）" % [texts.size(), " / ".join(texts)])
-	var want := ["歇 1 日　15", "歇 10 日　150·误期", "候 12 日　180·误期"]
+	var want := ["歇 1 日　15", "歇 10 日　150・误期", "候 12 日　180・误期"]
 	for w in want:
 		_check(w in texts, "委办剩 5 日景钮面恰含「%s」（5<1 否、5<10 与 5<12 是——实读：%s）" % [w, " / ".join(texts)])
 	_reset_day("xinghua", 1277, 10, 19)	# 委办清净
@@ -267,7 +267,7 @@ func _s4_overdue_mark() -> void:
 	await _settle(6)
 	var clean: Array = _collect_rest_chips().map(func(c: Dictionary) -> String: return str(c["state"][0]))
 	var clean_want := ["歇 1 日　15", "歇 10 日　150", "候 12 日　180"]
-	_check(clean == clean_want, "清净景三钮逐字同且无「·误期」尾（实读：%s——钮面原印数不受委办影）" % " / ".join(clean))
+	_check(clean == clean_want, "清净景三钮逐字同且无「・误期」尾（实读：%s——钮面原印数不受委办影）" % " / ".join(clean))
 
 
 ## 摆一笔在场委办：absolute_day+due_in_days 作 due_day 直走 from_dict 保档路（不撬 contract_offer 随机口）。

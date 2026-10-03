@@ -82,7 +82,7 @@ const WEAPONS := {
 		"kind": "bomb", "amount": 20.0, "fx": "bomb",
 	},
 	"pao_ballast": {
-		"name": "砲·压舱石", "note": "石弹抛完，拆压舱石硬抛：石小形杂，准头差、装得慢；拆多了船不稳，只拆得出几块。",
+		"name": "砲・压舱石", "note": "石弹抛完，拆压舱石硬抛：石小形杂，准头差、装得慢；拆多了船不稳，只拆得出几块。",
 		"path": PATH_LOB, "ammo": "yacang", "ammo_per": 1,
 		"speed": 290.0, "min_range": 160.0, "eff_range": 380.0, "max_range": 540.0, "far_mult": 0.9,
 		"spread": 0.070, "range_err": 0.14, "arc_full": 75.0, "arc_max": 110.0,

@@ -569,7 +569,7 @@ static func format_cells(snap: Dictionary) -> Dictionary:
 		var can_board := snap_b(snap, "can_board") if snap.has("can_board") \
 			else snap_f(snap, "target_dist", INF) <= snap_f(snap, "board_distance", BOARD_DISTANCE_FALLBACK)
 		if can_board:
-			txt2 += "·可接"
+			txt2 += "・可接"
 		var arc := snap_b(snap, "in_arc") if snap.has("in_arc") else in_broadside_arc(deg)
 		out["bearing"] = {"title": "敌舷角", "text": txt2, "tone": "ok" if arc else "norm"}
 		match int(snap_f(snap, "upwind", 0.0)):

@@ -2308,7 +2308,7 @@ func _contract_rest_mark(days: int) -> String:
 	if cst.is_empty():
 		return ""
 	if days > int(cst.get("days_left", 0)):
-		return "·误期"
+		return "・误期"
 	return ""
 
 

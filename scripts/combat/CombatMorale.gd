@@ -771,7 +771,7 @@ func hud_text() -> String:
 	var bits := PackedStringArray()
 	for c in pressure_causes():
 		bits.append(cause_label(c))
-	return s if bits.is_empty() else s + "　" + "·".join(bits)
+	return s if bits.is_empty() else s + "　" + "・".join(bits)
 
 
 func snapshot() -> Dictionary:

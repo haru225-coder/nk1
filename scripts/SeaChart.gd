@@ -1034,7 +1034,7 @@ func _make_heading_card(pid: String) -> Control:
 
 	var wind_mark := str(plan["wind_desc"])
 	if plan.get("wind_changes", false):
-		wind_mark += "·换风"
+		wind_mark += "・换风"
 	var wind_lbl := _card_line("%s　约 %d 日" % [wind_mark, int(plan["days"])], UiTheme.TEXT)
 	var hz := Crew.level_of("huozhang")
 	if hz > 0:

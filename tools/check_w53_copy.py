@@ -59,6 +59,11 @@
      赏钱 70，名声添 7。」。全作文案口径是纪实短句（修埠一句早有 smoke 钉「名声加 %d」、禁「名声 +%d」）：记事、
      札记、悬停说明里写「名声加 N / 名声减 N」（士气、海商信用、乡土……同）；只有钮文括注里的预告（「交出一条船
      （名声 +6）」「（费 6 日・30 钱，乡土 +3）」）照写 +N / −N（钉 G 核它们 = 实扣）。「名声添」统一作「名声加」。
+  O. 间隔号写全角「・」（七轮）：全作间隔号 gd 玩家串里 83 处是全角「・」（「第%s章・%s」「粮 120・够打三阵」），
+     另有 8 处半角「·」（U+00B7）——旅店钮「歇 10 日　150·误期」、海图去处牌「斜逆风·换风」、科举通告题「咸淳四年 ·
+     唱第」等，半角点在全角空格与汉字之间挤成一粒。gd 玩家串里不许再写「·」。数据里的书证出处（《论语·公冶长》）与
+     海图旧式题签（「興化軍·莆田」）照原样，不扫。拼接用的分隔符（"·".join(…)，不带汉字）另扫一遍，
+     把半角点归一成全角的 .replace("·", "・") 写法放过。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -179,6 +184,9 @@ ROLE_HINT_FN = {
     "断粮时减员更少": "crew_loss_factor",
     "士气回复更快": "morale_bonus",
 }
+# ═══ 钉 O：gd 玩家串的间隔号只用全角「・」（U+30FB），不用半角「·」（U+00B7）。
+HALF_INTERPUNCT = "\u00b7"
+
 # ═══ 钉 N：括注外的「名声 +N / 士气 −N」= 记事句写了钮文记号；「名声添」= 动词没统一。
 DELTA_NOTE_RE = re.compile(r"(%s)\s*[+−]\s*(?:\d|%%d)" % "|".join(DELTA_WORDS))
 DELTA_TIAN_RE = re.compile(r"(%s)添" % "|".join(DELTA_WORDS))
@@ -410,6 +418,7 @@ def _scan_gd_strings(cmap):
                 _check_terms(lit, tag)
                 _check_dangling_sign(lit, tag)
                 _check_delta_note(lit, tag, DELTA_PAREN_SEEN)
+                _check_interpunct(lit, tag)
                 _check_glyphs(lit, tag, cmap)
                 if rel.replace(os.sep, "/").startswith(COMBAT_GD_PREFIXES):
                     _check_exclaim(lit, tag)
@@ -728,6 +737,32 @@ def _check_delta_note(text, tag, seen=None):
         FAILS.append(f"{tag}: 「{m.group(0)}」——增减统一写「{m.group(1)}加」：{text[:48]}")
 
 
+def _check_interpunct(text, tag):
+    if HALF_INTERPUNCT in text:
+        FAILS.append(f"{tag}: 间隔号写成半角「·」——全作写全角「・」：{text[:48]}")
+
+
+INTERPUNCT_NORMALIZE_RE = re.compile(r"\.(?:replace|trim_suffix|trim_prefix)\(\s*$")
+
+
+def _check_interpunct_bare(src, rel):
+    """不带汉字的串（拼接用的分隔符，如 "·".join(bits)）另扫一遍；把半角点改成全角的归一化写法（.replace("·", …)）放过。"""
+    for lit, pos in _gd_strings_only(src):
+        if HALF_INTERPUNCT not in lit or _has_cjk(lit):
+            continue
+        if INTERPUNCT_NORMALIZE_RE.search(src[max(0, pos - 40):pos - 1]):
+            continue
+        FAILS.append(f"{rel}:{_line_of(src, pos)}: 拼接用的间隔号写成半角「·」——写全角「・」：{src[pos - 1:pos + 12].strip()}")
+
+
+def _scan_interpunct_bare():
+    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
+        for f in sorted(files):
+            if f.endswith(".gd"):
+                p = os.path.join(dirpath, f)
+                _check_interpunct_bare(open(p, encoding="utf-8").read(), p[len(ROOT) + 1:])
+
+
 def _check_role_hints(roles, crew_src, game_src, tag):
     """每个职事 effect_hint 的每一句：登记过、登记的函数读本职事品级、Crew.gd 以外有调用。返回核过的句数。"""
     funcs = dict(_gd_funcs(crew_src))
@@ -848,6 +883,27 @@ def _self_test_delta_note():
             _check_delta_note(text, "self")
             if bool(FAILS) != want_red:
                 bad.append(f"钉 N 自检：「{text[:24]}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
+    return bad
+
+
+def _self_test_interpunct():
+    """钉 O 自检：半角「·」判红、全角「・」判绿。"""
+    bad = []
+    saved = FAILS[:]
+    try:
+        for text, want_red in (("歇 10 日　150\u00b7误期", True), ("歇 10 日　150・误期", False)):
+            FAILS.clear()
+            _check_interpunct(text, "self")
+            if bool(FAILS) != want_red:
+                bad.append(f"钉 O 自检：「{text}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+        for src, want_red in (('\treturn s + "\u00b7".join(bits)\n', True), ('\treturn t.replace("\u00b7", "・")\n', False)):
+            FAILS.clear()
+            _check_interpunct_bare(src, "self")
+            if bool(FAILS) != want_red:
+                bad.append(f"钉 O 自检：{src.strip()} 判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
     finally:
         FAILS.clear()
         FAILS.extend(saved)
@@ -1007,7 +1063,7 @@ def main():
     glyph_fails = _self_test_glyphs(cmap)
     if glyph_fails:
         cmap = None
-    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + _self_test_delta_note() + glyph_fails
+    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + _self_test_delta_note() + _self_test_interpunct() + glyph_fails
     _scan_gd_strings(cmap)
     _scan_json_text()
     _scan_data_glyphs(cmap)
@@ -1020,6 +1076,7 @@ def main():
     _scan_liang()
     _scan_role_hints()
     _scan_delta_paren_must()
+    _scan_interpunct_bare()
     all_fails = self_fails + FAILS
     if all_fails:
         print("结果：%d 项问题" % len(all_fails))

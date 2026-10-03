@@ -415,7 +415,7 @@ func resolve_identity_1268() -> Dictionary:
 		set_flag("name_unchanged")
 		return {
 			"resolved": true,
-			"title": "咸淳四年 · 无人登第",
+			"title": "咸淳四年・无人登第",
 			"text": "族里来信只有一行：今年殿试，兴化无人登第。\n你这些年跑的是族里的事，不是自己的前程。老夫人把策论草稿收进了箧底，没有说什么。",
 		}
 
@@ -428,14 +428,14 @@ func resolve_identity_1268() -> Dictionary:
 		set_flag("renamed_wenlong")
 		return {
 			"resolved": true,
-			"title": "咸淳四年 · 唱第",
+			"title": "咸淳四年・唱第",
 			"text": "临安来信：唱第日，御笔易名。你叫陈文龙了，赐字君贲。",
 		}
 	identity = "merchant"
 	set_flag("name_unchanged")
 	return {
 		"resolved": true,
-		"title": "咸淳四年 · 无人登第",
+		"title": "咸淳四年・无人登第",
 		"text": "族里来信只有一行：今年殿试，兴化无人登第。老夫人把策论草稿收进了箧底。",
 	}
 
@@ -906,7 +906,7 @@ func rumor_label(port_id: String, good_id: String) -> String:
 	var age := Calendar.absolute_day() - int(rec.get("day", 0))
 	if age <= 0:
 		return "传闻约卖 %d" % sell
-	return "传闻约卖 %d · %d 日前" % [sell, age]
+	return "传闻约卖 %d・%d 日前" % [sell, age]
 
 
 # ── 牙行委办 ──────────────────────────────────────────
