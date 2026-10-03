@@ -132,6 +132,16 @@ static func on_save_slot(main: Control, slot: int) -> void:
 static func on_load_slot(main: Control, slot: int) -> void:
 	var scene_id := SaveLoad.saved_scene(slot)
 	var from_bak := SaveLoad.slot_source(slot) == "bak"
+	if SaveLoad.can_load(slot):
+		# 读档即回到那一卷的日子：船籍簿记事栏里这一局后来的事（歇了几日、买卖、逾期……）在那一卷里都没发生过，
+		# 留着就冒充前情——「如今是三月十三」压在刚翻开的三月初九那一卷下面。记事从空起，与海图回港 Main 重建、
+		# 记事栏从空起同口径；五格即 LogFold 头注所列宿主字段。在 load_game 之前清：读档时的旧卷勾稽一声
+		# （stale_notice）照记；读不开的卷不清，失败句记进原记事。
+		main._log_lines = PackedStringArray()
+		main._log_folds = {}
+		main._log_fold_open = ""
+		main._notice_run = 0
+		main._notice_when = []
 	if not SaveLoad.load_game(slot):
 		main.log_msg("第 %d 卷%s" % [slot, SaveLoad.load_fail_note(slot)])
 		return
