@@ -1,8 +1,9 @@
 extends Node
-## lane w53-9：过场层输入时序探针。三路，钉两处修复（回退哪一处修复，对应那几路即红）：
+## lane w53-9：过场层输入时序探针。四路，钉三处修复（回退哪一处修复，对应那几路即红）：
 ##   ending_fade_key   结局过场收尾连按空格：本层黑幕退去那一截（CutscenePlayer 的 FADE）按键照吞，底下刚建好的「了结」册页不许被合上
 ##   ending_fade_click 同一窗口换成鼠标：点册页上的「记下这一纲」也不许点着——册页还没露脸（与上一路同一处修复）
 ##   outro_esc_curtain 自然收尾压黑途中按 Esc：黑幕从当前黑度接着压，不许先退回透明、画面亮回来再重新压黑（CutscenePlayer.skip）
+##   touch_one_step    触屏点一下只推一步：补全正在写的那句，不连带把下一句提上来（引擎另把触点模拟成一次左键）
 ## 必须带窗口、且不能用 -s 跑（-s 下 Cinematics.live() 恒假，Main 不放结局过场）：
 ##   DISPLAY=:2 godot --path . res://tools/qa_w53_9_cutscene_input_probe.tscn
 ## 逐路一行 W53_9_CASE <路> OK|FAIL <细节>；末行 QA_W53_9_CUTSCENE_INPUT OK | FAIL <n>，rc 0 / 1。
@@ -12,7 +13,7 @@ extends Node
 const ShotGate := preload("res://tools/shot_gate.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const TAG := "QA_W53_9_CUTSCENE_INPUT"
-## 探针自己发的鼠标事件打这个 device 号（与共用 X 上的真指针分开）
+## 探针自己发的鼠标 / 触屏事件打这个 device 号（与共用 X 上的真指针分开）
 const PROBE_DEVICE := 1953
 ## 单路墙钟上界：最长一段是结局末镜连按到底再等黑幕退净（约 4 s 游戏时间），压帧下留足余量
 const CASE_MS := 60000
@@ -44,7 +45,8 @@ func _run() -> void:
 	_cine.set("enabled", true)
 	_cine.set("auto_opening", false)
 	_cine.set("opening_seen", true)
-	print("%s_BEGIN live=%s" % [TAG, _cine.call("live")])
+	print("%s_BEGIN live=%s emulate_mouse_from_touch=%s" % [TAG, _cine.call("live"), Input.is_emulating_mouse_from_touch()])
+	await _case_touch_one_step()
 	await _case_outro_esc_curtain()
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
 	get_tree().root.add_child(_main)
@@ -81,6 +83,16 @@ func _click(pos: Vector2) -> void:
 		e.global_position = pos
 		e.device = PROBE_DEVICE
 		Input.parse_input_event(e)
+
+
+func _tap(pos: Vector2) -> void:
+	for pressed in [true, false]:
+		var t := InputEventScreenTouch.new()
+		t.index = 0
+		t.pressed = pressed
+		t.position = pos
+		t.device = PROBE_DEVICE
+		Input.parse_input_event(t)
 
 
 func _frames(n: int) -> void:
@@ -293,3 +305,70 @@ func _case_outro_esc_curtain() -> void:
 	_verdict("outro_esc_curtain", ok, "Esc 前黑度 %.2f，此后最低 %.2f（%s）快收=%s 压满=%s" % [before, low, " ".join(seq), fast, reached]
 		+ ("" if ok else "（Esc 后黑幕不许退回、画面不许亮回来）"))
 	await _drain(p)
+
+
+# ── 三、触屏点一下只推一步 ─────────────────────────────
+func _layer_done(p: CutscenePlayer) -> bool:
+	var layers: Array = p.get("_layers")
+	var front := int(p.get("_front"))
+	return front >= 0 and bool((layers[front] as Dictionary)["done"])
+
+
+## 正在逐字写的那句（已出场、没写完）；没有返回 {}
+func _revealing(p: CutscenePlayer) -> Dictionary:
+	for e in (p.get("_cap_live") as Array):
+		if bool(e["started"]) and not e["node"].is_revealed():
+			return e
+	return {}
+
+
+func _started(p: CutscenePlayer) -> int:
+	var n := 0
+	for e in (p.get("_cap_live") as Array):
+		if bool(e["started"]):
+			n += 1
+	return n
+
+
+## 等到「转场已走完、有一句正在写」；返回那一句，撞墙钟返回 {}
+func _wait_mid_reveal(p: CutscenePlayer) -> Dictionary:
+	var t0 := Time.get_ticks_msec()
+	while is_instance_valid(p) and Time.get_ticks_msec() - t0 < CASE_MS:
+		await get_tree().process_frame
+		if _phase(p) == PH_PLAY and _layer_done(p):
+			var e := _revealing(p)
+			if not e.is_empty():
+				return e
+	return {}
+
+
+## 「海上宋鬼」第 2 镜闪白入（0.8 秒），叙述 t=0.8 起逐字写约 1.3 秒：转场走完、字还在写，点一下应只补全这一句。
+## 引擎默认 emulate_mouse_from_touch：一次触点 = 一次 ScreenTouch + 一次模拟左键，两样都进 _input。
+## 先拿真鼠标左键做对照（只推一步），再换触屏点。
+func _case_touch_one_step() -> void:
+	Engine.time_scale = 0.5
+	var rows := PackedStringArray()
+	var ok := true
+	for how in ["mouse", "touch"]:
+		var p := await _start_cs("ending_sea_ghost", 1)
+		var target := await _wait_mid_reveal(p)
+		if target.is_empty():
+			ok = false
+			rows.append("%s: 墙钟上界先到，没等到「转场走完、有一句正在写」" % how)
+			await _drain(p)
+			continue
+		var before := _started(p)
+		var idx := int(p.get("_idx"))
+		if how == "mouse":
+			_click(Vector2(640, 360))
+		else:
+			_tap(Vector2(640, 360))
+		await _frames(3)
+		var revealed: bool = target["node"].is_revealed()
+		var after := _started(p)
+		var one := revealed and after == before and int(p.get("_idx")) == idx
+		ok = ok and one
+		rows.append("%s: 补全=%s 已出句 %d→%d 镜 %d→%d" % [how, revealed, before, after, idx, int(p.get("_idx"))])
+		await _drain(p)
+	Engine.time_scale = 1.0
+	_verdict("touch_one_step", ok, "；".join(rows) + ("" if ok else "（应只补全正在写的一句，不连带提下一句）"))

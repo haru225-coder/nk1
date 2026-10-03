@@ -473,7 +473,9 @@ func _input(event: InputEvent) -> void:
 				_advance_input()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventScreenTouch:
-		if (event as InputEventScreenTouch).pressed:
+		# 引擎默认把触点另模拟成一次鼠标左键（emulate_mouse_from_touch），那一下已走过上面的左键分支；
+		# 这里再推一步，点一下就成了「补全 + 提下一句」两步，刚补全的那句来不及读（lane w53-9 实测）
+		if (event as InputEventScreenTouch).pressed and not Input.is_emulating_mouse_from_touch():
 			_advance_input()
 		get_viewport().set_input_as_handled()
 
