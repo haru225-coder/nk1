@@ -126,17 +126,24 @@ FAILS = []
 #     剧情正文归 lane 4，这里只修/禁错字与占位符，不动逻辑）
 DATA_TEXT_KEYS = {
     "scenes.json": {"body", "objective", "title", "label", "postlude", "result"},
-    "chapters.json": {"advance_text", "title", "name", "sub"},
+    # summary 章目 / hint 晋升条件 / story_hooks 的 label 与 text（酒馆旧事）
+    "chapters.json": {"advance_text", "title", "name", "sub", "summary", "hint", "label", "text"},
     "endings.json": {"text", "title"},
-    "cutscenes.json": {"text", "title", "sub"},
+    # name 港口横幅港名 / epigraph 章节卡题辞与出处 / year_text 章节卡年款
+    "cutscenes.json": {"text", "title", "sub", "name", "epigraph", "epigraph_src", "year_text"},
     "news.json": {"text", "text_S", "text_M", "speaker"},
-    "discoveries.json": {"name", "location"},
+    # historical_hook：市舶司呈报钮与寺观细看钮的 tooltip
+    "discoveries.json": {"name", "location", "historical_hook"},
     "titles.json": {"name"},
     "npcs.json": {"name", "title"},
-    "crew.json": {"name", "role", "leave_note"},
+    # bio / desc / effect_hint：酒馆募人卡
+    "crew.json": {"name", "role", "leave_note", "bio", "desc", "effect_hint"},
     "goods.json": {"name", "category"},
-    "ports.json": {"name", "region"},
+    # label / sub：海图港签（海图用繁体是有意的，不查繁简，只查配对 / 标点 / 异称）
+    "ports.json": {"name", "region", "label", "sub"},
     "weapons.json": {"name"},
+    # historical_note：船屋坞外待售船的旁注
+    "ships.json": {"name", "historical_note"},
 }
 # characters.json / characters_codex.json 不入扫：L1B 读取入口锁（verify_story_data.py:566）
 # 把 characters.json 原稿 bio 与 codex 文本层设访问许可清单，本脚本纯文字面比对不进表。
