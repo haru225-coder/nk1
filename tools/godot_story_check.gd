@@ -4399,8 +4399,9 @@ func _w53_4_advance_return_check(main: Node) -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	main._beats = null
 	_close_dialogs(main)
-	# 同是开章入口：终局落定之后不再开章、不再了结
+	# 同是开章入口：终局落定之后不再开章、不再了结；守城开着不开章
 	_w53_4_after_end_check(main)
+	_w53_4_siege_hold_check(main)
 
 
 ## ── lane w53-4：终局落定之后不再开章、不再了结（GameState.try_advance_chapter / try_resolve_ending 见 is_ended 即拒）──
@@ -4449,6 +4450,55 @@ func _w53_4_after_end_check(main: Node) -> void:
 			"终局「%s」册页合上回%s：不开章、不了结、不跳年（第 %d 章，了结「%s」，%s，又弹册页 %s）" % [
 				ended_as, GM.get_port_name(at), GS.chapter, GS.ending_id, Cal.get_date_string(), host != null and is_instance_valid(host)])
 	_check(cases >= 2, "终局后开章入验至少两章（现 %d）" % cases)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_close_dialogs(main)
+
+
+## ── lane w53-4：守城开着不开章（GameState.try_advance_chapter / try_resolve_ending 见 siege_open 即拒）──
+## 修前：已改名的士人景炎元年冬月头一回进兴化城（守城页开了），这一港正好凑齐章目，_on_enter_port 照开章、跳年——
+## 「南海路」册页【三年后・祥兴二年　冬月初三】，城防整段跳过；纲首幕演完回城即按城破结「忠肃」（援绝），人没上过城头。
+## 数据驱动：凡有 next_requires、亲至港不是兴化的章，兴化城留作凑齐章目的那一港（亲至港先记在已到港里）。
+func _w53_4_siege_hold_check(main: Node) -> void:
+	var siege_port := "xinghua"
+	var cases := 0
+	for c in GM.chapters_data.get("chapters", []):
+		var req = c.get("next_requires", null)
+		if typeof(req) != TYPE_DICTIONARY or siege_port in req.get("must_visit", []):
+			continue
+		var cid := int(c.get("id", 0))
+		GS.from_dict({})
+		Cal.from_dict({"year": 1276, "month": 11, "day": 3})
+		GS.loaded_with_beats = true
+		main._beats = null
+		_close_dialogs(main)
+		GS.identity = "scholar"
+		GS.set_flag("renamed_wenlong")
+		GS.chapter = cid
+		GS.peak_money = int(req.get("peak_money", 0)) + 1000
+		GS.money = GS.peak_money
+		var vis: Array = []
+		for pid in req.get("must_visit", []):
+			vis.append(str(pid))
+		for p in GM.ports_data.get("ports", []):
+			var pid := str(p.get("id", ""))
+			if vis.size() < int(req.get("visited_count", 0)) - 1 and pid != siege_port and not (pid in vis) and int(str(p.get("unlock", "ch1")).substr(2)) <= cid:
+				vis.append(pid)
+		GS.visited_ports = vis
+		GS.last_port = siege_port
+		main.load_scene(siege_port)
+		var host = main.get("_chapter_host")
+		var sheet_up: bool = host != null and is_instance_valid(host)
+		_check(GS.siege_open(), "第%d章 1276 年冬月进兴化城：守城开了（页型 %s）" % [cid, main._shore_mode])
+		if GS.siege_open():
+			cases += 1
+			_check(GS.chapter == cid and Cal.year == 1276 and Cal.month == 11 and not sheet_up,
+				"第%d章 1276 年冬月头一回进兴化城、凑齐章目：守城开着不开章、不跳年（第 %d 章，%s，弹册页 %s）" % [
+					cid, GS.chapter, Cal.get_date_string(), sheet_up])
+		if sheet_up:
+			main._confirm_chapter_sheet()
+	_check(cases >= 2, "守城开章入验至少两章（现 %d）" % cases)
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	main._beats = null
