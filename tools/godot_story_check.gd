@@ -488,13 +488,13 @@ func _process(_delta: float) -> bool:
 	if not _route_pending:
 		return false
 	_route_pending = false
-	_route_check()
-	_script_error_check()
-	print("STORY_CHECK TOTAL asserts run=", GateReport._checks.size(), "；lane w20-c6 补白新增 c6_asserts=", _c6_added)
-	print("STORY_CHECK SUMMARY fails=", _fails)
-	GateReport.finish("godot_story_check", 1 if _fails > 0 else 0, "STORY_CHECK SUMMARY fails=%d" % _fails)
-	quit(1 if _fails > 0 else 0)
-	return true
+	## lane w53-11：_route_check 是协程（中途 await），原先这里不 await 就接着印 SUMMARY、quit——它一旦真让帧，
+	## 其后断言要么不跑、要么在 quit 之后才跑（失败进不了退出码）。收尾挪进文件尾 _finish_after_route，
+	## 等 _route_check 整段跑完再判；现网 _route_check 没有真让帧点（_w20a4 那几处 `await self` 是空等），
+	## 同帧跑完、同帧 quit，行为与原先一致。quit() 由协程收尾调，这里不另行结束主循环；本段行数照旧（拍板清单
+	## 引着下文行号）。
+	_finish_after_route()
+	return false
 
 
 var _route_pending := true
@@ -4425,3 +4425,15 @@ func _w53_4_texts(node: Node, out: Array) -> void:
 		out.append((node as RichTextLabel).get_parsed_text())
 	for c in node.get_children():
 		_w53_4_texts(c, out)
+
+
+## lane w53-11：story 收尾（原在 _process 里、不 await _route_check 就印 SUMMARY / quit）——等抵港路由一节整段跑完
+## （含其中真让帧的 await）再判 SCRIPT ERROR、印 SUMMARY、退出；_route_check 半路被脚本错掐断时 await 照样回来，
+## 由 _script_error_check 判红。
+func _finish_after_route() -> void:
+	await _route_check()
+	_script_error_check()
+	print("STORY_CHECK TOTAL asserts run=", GateReport._checks.size(), "；lane w20-c6 补白新增 c6_asserts=", _c6_added)
+	print("STORY_CHECK SUMMARY fails=", _fails)
+	GateReport.finish("godot_story_check", 1 if _fails > 0 else 0, "STORY_CHECK SUMMARY fails=%d" % _fails)
+	quit(1 if _fails > 0 else 0)
