@@ -449,12 +449,12 @@ func _chapter_hint() -> String:
 		if int(it.get("need", 1)) > 1:
 			return "%s　%d / %d" % [it.get("label", ""), it.get("current", 0), it.get("need", 1)]
 		return str(it.get("label", ""))
-	# 章目全部走完（如玩家在 ready 页外点过港、或承此一路回页后半途另开），数据里带 hint 段就把
-	# 它交给玩家——chapters.json 的 next_requires/ending_requires.hint 帮玩家回忆「这一章要去哪」。
-	# 此前这一节数据挂了 6 年 API 出口零消费，玩家永远看不到。
-	var hint := str(prog.get("hint", ""))
-	if hint != "":
-		return hint
+	# 章目全部走完 = 下一回入港即开章 / 了结：终章报「终章・可了结」，非终章留空。
+	# 不在这里回 chapters.json 的 hint——那句是本章「要办哪几件」的总述，全办完了再上顶匾
+	# 就成了催玩家去办已办完的事（泉州节拍抢在开章之前演时顶匾正是这一支），终章还会被它
+	# 盖掉「终章・可了结」（lane w53-12 审计 b68de41）。hint 要给玩家看，得放在章目还没走完时
+	# 看得到的地方（船籍簿章节段 / 顶匾悬停）——落点待拍板；tools/qa_w53_4_chapter_hint_probe.gd
+	# 钉着这一支不回 hint。
 	if prog.get("final", false):
 		return "终章・可了结"
 	return ""
