@@ -762,6 +762,7 @@ func _route_check() -> void:
 	_a5_sea_here_check()
 	_w25j2_endgame_port_beats_check(main)
 	_w53_4_settle_flow_check(main)
+	_w53_4_advance_return_check(main)
 	_w53_4_ledger_note_check(main)
 	main.queue_free()
 	_process_c6_main_hook(main)
@@ -4343,6 +4344,93 @@ func _w53_4_settle_flow_check(main: Node) -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	main._beats = null
 	_close_dialogs(main)
+
+
+## ── lane w53-4：晋升过场的「回港上」回开章那一港（chapters.json 各章 advance_scene）──
+## 修前：章在哪一港够条件就在哪一港开，册页之后接演的纲首幕（写泉州）、南海幕（写广州）只有一钮「回港上」，选项 next
+## 照写泉州 / 广州——在博多开第三章、在明州开第四章的，一钮就到了泉州 / 广州，日子一天不走、海图不过
+## （simulate_run 那局 24 趟：第三章在南岛海道北口开、第四章在明州开）。现在幕照演、选项效果照记，回的是开章那一港；
+## 本就在幕里那一港开章的，照旧回那一港。数据驱动：哪章有 advance_scene 就验哪章，开章港取幕外的港。
+func _w53_4_advance_return_check(main: Node) -> void:
+	var cases := 0
+	for c in GM.chapters_data.get("chapters", []):
+		var adv := str(c.get("advance_scene", ""))
+		var req = c.get("next_requires", null)
+		if adv == "" or typeof(req) != TYPE_DICTIONARY:
+			continue
+		var cid := int(c.get("id", 0))
+		var loc := str(GM.get_scene_by_id(adv).get("location", ""))
+		var away := _w53_4_away_port(cid, req, loc)
+		_check(away != "", "第%d章晋升过场「%s」（戏在%s）：本章有幕外的港可开章" % [cid, adv, loc])
+		if away == "":
+			continue
+		cases += 1
+		for at in [away, loc]:
+			if GM.get_port_by_id(at).is_empty():
+				continue
+			_w53_4_turn_chapter_at(main, cid, req, at)
+			_check(GS.chapter == cid + 1 and str(main.get("_chapter_next_scene")) == adv,
+				"第%d章条件全达抵%s：开章（现第 %d 章）、册页之后接「%s」（现「%s」）" % [
+					cid, GM.get_port_name(at), GS.chapter, adv, str(main.get("_chapter_next_scene"))])
+			main._confirm_chapter_sheet()
+			_check(main.current_scene_id == adv, "第%d章册页「承此一路」后演晋升过场「%s」（现页 %s）" % [cid, adv, main.current_scene_id])
+			var eff: Dictionary = {}
+			for ch in GM.get_scene_by_id(adv).get("choices", []):
+				eff = ch.get("effects", {})
+				break
+			main._activate_first_choice()
+			_check(main.current_scene_id == at and GS.last_port == at,
+				"在%s开第%d章：过场「%s」的「回港上」回%s、不挪港（页 %s，last_port %s）" % [
+					GM.get_port_name(at), cid + 1, adv, GM.get_port_name(at), main.current_scene_id, GS.last_port])
+			if str(eff.get("flag", "")) != "":
+				_check(GS.has_flag(str(eff.get("flag", ""))), "过场「%s」的选项效果照记（旗标 %s）" % [adv, eff.get("flag", "")])
+	_check(cases >= 2, "带晋升过场的章至少两章入验（现 %d）" % cases)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_close_dialogs(main)
+
+
+## 开章用的幕外港：本章亲至港不在幕里那一港就用它（第二章博多），否则取本章开着、不是泉州（泉州有节拍链）的最晚开港（第三章萨摩）
+func _w53_4_away_port(cid: int, req: Dictionary, loc: String) -> String:
+	for pid in req.get("must_visit", []):
+		if str(pid) != loc and str(pid) != "quanzhou":
+			return str(pid)
+	var ports: Array = GM.ports_data.get("ports", [])
+	for i in range(ports.size() - 1, -1, -1):
+		var pid := str(ports[i].get("id", ""))
+		if pid != loc and pid != "quanzhou" and int(str(ports[i].get("unlock", "ch1")).substr(2)) <= cid:
+			return pid
+	return ""
+
+
+## 摆一局第 cid 章：本钱、港数、亲至全达（开章港 at 本身算最后一处），泊到 at 进港。
+## 到第二、三章的局泉州节拍链早已演完：各针记名，进泉州不先演节拍幕
+func _w53_4_turn_chapter_at(main: Node, cid: int, req: Dictionary, at: String) -> void:
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255 + cid * 2, "month": 6, "day": 1})
+	GS.loaded_with_beats = true
+	main._beats = null
+	_close_dialogs(main)
+	for e in main._beats_book().entries():
+		GS.beat_mark(e)
+	GS.chapter = cid
+	GS.peak_money = int(req.get("peak_money", 0)) + 1000
+	GS.money = GS.peak_money
+	var need := int(req.get("visited_count", 0))
+	var vis: Array = []
+	for pid in req.get("must_visit", []):
+		if str(pid) != at:
+			vis.append(str(pid))
+	for p in GM.ports_data.get("ports", []):
+		var pid := str(p.get("id", ""))
+		if vis.size() >= need - 1:
+			break
+		if pid != at and not (pid in vis) and int(str(p.get("unlock", "ch1")).substr(2)) <= cid:
+			vis.append(pid)
+	GS.visited_ports = vis
+	GS.last_port = at
+	main.load_scene(at)
 
 
 ## ── lane w53-4：住处「边记」与终局「航海札记」不印英文令牌 ──

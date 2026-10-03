@@ -334,6 +334,17 @@ func try_advance_chapter() -> Dictionary:
 	}
 
 
+## 晋升过场（chapters.json 各章 advance_scene，册页「承此一路」之后接演的那一幕：纲首幕、南海幕）。
+## 章在哪一港够条件就在哪一港开，幕里写的港只是戏的所在——Main._on_choice_pressed 据此让幕的「回港上」回脚下这一港。
+func is_advance_scene(scene_id: String) -> bool:
+	if scene_id == "":
+		return false
+	for c in GameManager.chapters_data.get("chapters", []):
+		if typeof(c) == TYPE_DICTIONARY and str(c.get("advance_scene", "")) == scene_id:
+			return true
+	return false
+
+
 func ending_list() -> Array:
 	return chapter_def().get("endings", [])
 

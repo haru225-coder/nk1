@@ -3311,6 +3311,10 @@ func _is_page_turn(label: String) -> bool:
 func _on_choice_pressed(choice_data: Dictionary) -> void:
 	apply_effects(choice_data.get("effects", {}))
 	var next_scene = choice_data.get("next", "")
+	# 晋升过场的「回港上」回脚下这一港：章在哪一港够条件就在哪一港开（博多、流求、明州都开得出），纲首幕写泉州、
+	# 南海幕写广州只是戏的所在——照写的港 load，一钮就把人从博多送到泉州、从明州送到广州，不过海图、不走日子
+	if next_scene != "" and GameState.is_advance_scene(current_scene_id) and not GameManager.get_port_by_id(str(next_scene)).is_empty():
+		next_scene = GameState.last_port
 	if next_scene != "":
 		load_scene(next_scene)
 
