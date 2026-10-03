@@ -720,7 +720,8 @@ func _blade_hold_frames(ref: WeakRef, title: String, dup_key: String) -> Array:
 		var cap: Array = _CrewStage.board_caption(self, ref.get_ref())
 		return cap[0] == title and float(cap[1]) >= 0.99, func() -> bool: return ref.get_ref() == null, 8000)
 	if why != "":
-		return [false, why, 0, "", false]
+		return [false, why, 0, "", false, ""]
+	var card_sub := _blade_card_sub(ref.get_ref())
 	var full_frames := 1
 	var dup_note := _crew_capture_dup(ref.get_ref(), dup_key)
 	var dup_measured := true
@@ -744,7 +745,16 @@ func _blade_hold_frames(ref: WeakRef, title: String, dup_key: String) -> Array:
 	var ok := hold_ratio >= 0.8 and full_frames >= 3
 	var note := "全显 %d 帧、游戏时 %.2f s ÷ 满窗 %.2f s = %.2f（T_HOLD %.2f + 淡出首帧一格 8-60）" % [
 		full_frames, game_hold, full_window, hold_ratio, _CrewBoarding.T_HOLD]
-	return [ok, note, full_frames, dup_note, dup_measured]
+	return [ok, note, full_frames, dup_note, dup_measured, card_sub]
+
+
+## 题签全显那一帧的副题原文（lane w53-14：夺船题签副题末行写夺来的船名）；读不到写空串
+func _blade_card_sub(wm) -> String:
+	if wm == null or not is_instance_valid(wm):
+		return ""
+	var st: Node = _CrewStage.boarding_stage(self, wm)
+	var sub = st.get("_sub") if st != null else null
+	return str((sub as Label).text) if sub is Label else ""
 
 
 ## 布景收尾 + 现场还原（两路同）。
@@ -779,20 +789,27 @@ func _v0928_crew_board_check() -> void:
 	var hold_note := "未量到"
 	var dup_note := ""
 	var dup_measured := false  # 题签全显过、逐帧看过浮字才算判了（没画到题签不许空转成绿）
+	var card_sub := ""
+	var want_tail := ""
 	if foe != null:
 		var wm: Node = ref.get_ref()
+		want_tail = "「%s」并入本队。" % str(foe.get("ship_name"))  # 夺下即释放，先记船名
 		wm.call("_board_enemy", foe)
 		var got: Array = await _blade_hold_frames(ref, "夺船", "capture")
 		hold_ok = bool(got[0])
 		hold_note = str(got[1])
 		dup_note = str(got[3])
 		dup_measured = bool(got[4])
+		card_sub = str(got[5])
 		if hold_ok:
 			_save_shot("crew_末艘夺船题签")
 	_check(hold_ok, "末艘「夺船」题签停满 T_HOLD %.2f s 的八成（游戏时相位判据；%s）" % [_CrewBoarding.T_HOLD, hold_note])
 	_check(dup_measured and dup_note == "",
 		"末艘「夺船」题签在屏时不出同一件事的浮字（有题签就不出浮字；%s）"
 			% (dup_note if dup_note != "" else ("题签全显各帧浮字未亮夺船句" if dup_measured else "题签没画到，无从判")))
+	# lane w53-14（拍板「抓捕副题船名」）：浮字不出了，题签副题白刃经过之下另起一行交代夺来的船并入本队
+	_check(want_tail != "" and card_sub.ends_with("\n" + want_tail) and card_sub.length() > want_tail.length() + 1,
+		"末艘「夺船」题签副题末行写夺来的船名（要「…⏎%s」，得「%s」）" % [want_tail, card_sub.replace("\n", "⏎")])
 	# 出战墨边挂在布景的父节点（root）下：等题签整行擦出再读题
 	var lbref: Array = [null]
 	var why3: String = await _CrewStage.wait_drawn(self, func() -> bool:

@@ -1489,6 +1489,12 @@ func _v0928_crew_check(main: Node) -> void:
 	var notice: Label = wm.get("_notice")
 	var last_name: String = want_names[-1] if not want_names.is_empty() else "快船"
 	_check(notice != null and notice.text.find(last_name) >= 0, "headless 题签起不来：浮字兜底写夺来的船名「%s」（%s）" % [last_name, notice.text if notice != null else "无浮字"])
+	# lane w53-14（拍板「抓捕副题船名」）：窗口下「夺船」题签副题白刃经过之下另起一行写夺来的船并入本队（真题签由 patrol 窗口巡检判）
+	_check(str(FX.board_win_subtitle("敌船上无人拒守，登船即得。", "快船")) == "敌船上无人拒守，登船即得。\n「快船」并入本队。"
+		and str(FX.board_win_subtitle("敌船降幡，接舷收船", "海鹘")) == "敌船降幡，接舷收船\n「海鹘」并入本队。"
+		and str(FX.board_win_subtitle("接舷既定。敌船「快船」并入本队。", "快船")) == "接舷既定。敌船「快船」并入本队。"
+		and str(FX.board_win_subtitle("", " ")) == "「敌船」并入本队。",
+		"「夺船」题签副题：白刃经过下另起一行写夺来的船并入本队、兜底句不重复补、无名写敌船")
 	GM.pending_battle = {}
 	# 战果注记三式＋前缀＋顶匾截断（09-30 补回，按本地线行为成句断言）：本地线三式分开——
 	# 沉一夺二按 win_kind=""/全赏走「敌船已退。」（lane w53-2 起不写「海盗」：元军哨船胜局同句）（SeaChart.gd:1491 起，fled 句仅「一艘没沉没没夺、只见遁走」时才用）；

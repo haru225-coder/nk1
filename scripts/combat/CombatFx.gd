@@ -1024,6 +1024,18 @@ static func board_win_note(ship_name: String) -> String:
 	return "接舷既定。敌船「%s」并入本队。" % n
 
 
+## 「夺船」题签副题（lane w53-14 定「抓捕副题船名」一题）：白刃经过（或「敌船降幡，接舷收船」）之下另起一行写夺来的船并入本队。
+## 有题签就不出浮字（lane w19-g1）之后，战中只有这块题签交代这件事，夺来的是哪艘、叫什么，原先要等战后注记才看得到。
+## detail 已带「并入本队」（浮字兜底句）就不再补；船名空写「敌船」。
+static func board_win_subtitle(detail: String, ship_name: String) -> String:
+	var head := detail.strip_edges()
+	if head.contains("并入本队"):
+		return head
+	var n := ship_name.strip_edges()
+	var tail := "「%s」并入本队。" % (n if n != "" else "敌船")
+	return tail if head == "" else "%s\n%s" % [head, tail]
+
+
 static func board_lose_note(crew_lost: int) -> String:
 	return "白刃不利。水手减员 %d。敌船脱钩。" % maxi(0, crew_lost)
 

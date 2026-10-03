@@ -15,8 +15,9 @@ extends SceneTree
 ##     清零记成伤亡过半 + 被钩，窗口下接舷停拍 0.42 s 里敌船降幡、走受降一路（下场 struck），不是白刃夺船。
 ##   · 海战船身：Ship / PirateShip 下挂 ShipHull3D（HullRig），Sprite2D 贴的是 3D 宋船的 SubViewport 视口，不是 ship_<id>.png；
 ##     战中改验「船身接到 3D 视口、敌红帆我素帆」，船图契约（ship_<id>.png 有就用、缺图回落）照旧在三节拿未进树的实例验。
-##   · 有窗口时夺船句：「夺船」题签副题写白刃经过（MeleeResolve.summary，如「敌船上无人拒守，登船即得。」），不是「敌船「快船・一」
-##     并入本队」；有题签就不出浮字（crew 线 9e35254，09-30 合并丢了、lane w19-g1 ae27f4b 补回）。headless 题签起不来，夺船句走浮字兜底。
+##   · 有窗口时夺船句：「夺船」题签副题写白刃经过（MeleeResolve.summary，如「敌船上无人拒守，登船即得。」），lane w53-14 起另起一行
+##     写「「快船」并入本队。」（拍板「抓捕副题船名」）；有题签就不出浮字（crew 线 9e35254，09-30 合并丢了、lane w19-g1 ae27f4b 补回）。
+##     headless 题签起不来，夺船句走浮字兜底。
 
 const CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const CombatStage := preload("res://tools/combat_probe_stage.gd")
@@ -335,7 +336,8 @@ func _pirate_battle(gm: Node, fleet: Node, pirate: Dictionary) -> void:
 		var sub: Label = st.get("_sub") if st != null else null
 		var cap: Array = CombatStage.board_caption(self, wm)
 		var sub_txt := sub.text if sub != null else ""
-		_expect(cap[0] == "夺船" and sub_txt != "" and sub_txt.find("海鹘") < 0, "有窗口：「夺船」题签副题写白刃经过（题名「%s」，副题「%s」）" % [cap[0], sub_txt])
+		_expect(cap[0] == "夺船" and sub_txt.get_slice("\n", 0) != "" and sub_txt.ends_with("\n「快船」并入本队。") and sub_txt.find("海鹘") < 0,
+			"有窗口：「夺船」题签副题写白刃经过，另起一行写「快船」并入本队（lane w53-14；题名「%s」，副题「%s」）" % [cap[0], sub_txt.replace("\n", "⏎")])
 		# 浮字别的话（敌将改打法等战况注记）照出；判的是夺船这件事不在浮字上再说一遍（同 patrol 末艘夺船一节，lane w19-g1）
 		var nt_txt := notice.text if notice != null and notice.visible else ""
 		_expect(nt_txt.find("并入本队") < 0 and (nt_txt == "" or nt_txt != sub_txt),

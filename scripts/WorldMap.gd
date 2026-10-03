@@ -375,7 +375,7 @@ func _board_enemy(enemy: Node2D) -> void:
 			notice = _CombatFx.board_win_note(taken)
 		if detail == "":
 			detail = notice
-		var resolved_stage: CanvasLayer = _BoardingStage.resolve(self, "win", detail)
+		var resolved_stage: CanvasLayer = _BoardingStage.resolve(self, "win", _CombatFx.board_win_subtitle(detail, taken))
 		if resolved_stage != null:
 			stage = resolved_stage
 		else:
