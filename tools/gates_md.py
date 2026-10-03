@@ -108,6 +108,74 @@ def sweep_selfcheck(mutate=None):
     check(bool(more) and any("道数不符" in p for p in more), "多出一行判红，红因注明「道数不符」")
 
 
+# ── 判词 ↔ SCRIPT ERROR 接线（lane w53-11）：注册表 Godot 门禁的判词称「SCRIPT ERROR 即红」，脚本代码行里就得真挂
+#    计数器、收尾真判（判词 judge 与红长相 red 两栏都认：「…SCRIPT ERROR…即红 / 即判红 / 即算失败」；只查 must / lane 档）。起因：wave53 前四支必跑 qa_* 与九支 lane 档的判词都照抄 story 那句，探针却零 Logger——
+#    运行期脚本错把断言整段跳过照退 0，判词背书空转了几十波没人发现；文案比对管不到「说了没做」。
+#    接法三种都认：共用件 tools/script_err_tally.gd 的 verdicts()、story 自带的 _script_error_check()、
+#    自挂 Logger 后判 `.lines.is_empty()`（qa_pirate_boat_probe 式）；接共用件的另须走 _run_guarded 包装
+#    （_run 自身出错时 quit 不执行、进程空转到超时，包装层回来即判红）。注释行里的字样不算。──
+SCRIPT_ERR_CLAIM = re.compile(r"SCRIPT ERROR`?[^；;。]{0,40}?即(?:判)?(?:红|算失败)")
+SCRIPT_ERR_ARM = "OS.add_logger("
+SCRIPT_ERR_JUDGE = ("verdicts()", "_script_error_check()", ".lines.is_empty()")
+SCRIPT_ERR_SHARED = "script_err_tally.gd"
+SCRIPT_ERR_GUARD = ("_run_guarded", "await _run(")
+
+
+def code_lines(text):
+    """去掉整行注释（GDScript / Python 都以 # 起头）后的源码。"""
+    return "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("#"))
+
+
+def script_err_wiring(judge, src):
+    """判词称 SCRIPT ERROR 即红时返回 src（已去注释）缺的接线列表（空 = 接全）；判词不称返回 None（不适用）。"""
+    if not SCRIPT_ERR_CLAIM.search(judge or ""):
+        return None
+    lost = []
+    if SCRIPT_ERR_ARM not in src:
+        lost.append("挂计数器 OS.add_logger(…)")
+    if not any(k in src for k in SCRIPT_ERR_JUDGE):
+        lost.append("收尾判（" + " / ".join(SCRIPT_ERR_JUDGE) + " 之一）")
+    if SCRIPT_ERR_SHARED in src and not all(k in src for k in SCRIPT_ERR_GUARD):
+        lost.append("接共用件须走 _run_guarded 包装（await _run(…) 回来未收尾即判红）")
+    return lost
+
+
+def script_err_section(gates):
+    print("一之二、判词 ↔ SCRIPT ERROR 接线（lane w53-11：判词称「SCRIPT ERROR 即红」的 Godot 门禁须真接线）")
+    # 零、判据自检（§五.3）：内存样本走同一条判路——该红的探不出即红，该绿的误红也红
+    claim = "本进程 SCRIPT ERROR 即红。"
+    full = ('const T := preload("res://tools/script_err_tally.gd")\nOS.add_logger(_tally)\n'
+            'func _run_guarded() -> void:\n\tawait _run()\nfor v in _tally.verdicts():')
+    samples = [
+        ("S1 判词称即红、零 Logger", claim, "func _run() -> void:\n\tquit(0)", True),
+        ("S2 挂了 Logger、收尾不判", claim, "OS.add_logger(_tally)\nquit(0)", True),
+        ("S3 接共用件、没包 _run_guarded", claim,
+         'preload("res://tools/script_err_tally.gd")\nOS.add_logger(_tally)\nfor v in _tally.verdicts():', True),
+        ("S4 接线只写在注释里", claim, code_lines("# OS.add_logger(_tally)\n\t## for v in _tally.verdicts():"), True),
+        ("C1 共用件接全", claim, full, False),
+        ("C2 story 式自带判", "运行中出 SCRIPT ERROR（含 Parse Error / Compile Error）即判红",
+         "OS.add_logger(_script_errs)\n_script_error_check()", False),
+        ("S5 红长相称「即算失败」、零 Logger", "输出含 `SCRIPT ERROR` 即算失败", "quit(0)", True),
+        ("C3 判词不称", "autoload 起得来", "quit(0)", None),
+    ]
+    for name, judge, src, want in samples:
+        lost = script_err_wiring(judge, src)
+        got = None if lost is None else bool(lost)
+        want_s = "不适用" if want is None else ("该红" if want else "该绿")
+        check(got == want, f"判据自检 {name}：{want_s}（实得 {lost}）")
+    for g in gates:
+        if g["kind"] != "godot" or not g.get("file") or g["tier"] not in ("must", "lane"):
+            continue
+        try:
+            src = code_lines(open(os.path.join(ROOT, g["file"]), encoding="utf-8", errors="replace").read())
+        except OSError:
+            src = ""
+        lost = script_err_wiring((g.get("judge") or "") + "\n" + (g.get("red") or ""), src)
+        if lost is not None:
+            check(not lost, f"{g['id']} 判词 / 红长相称「SCRIPT ERROR 即红」，{g['file']} 代码行里真接了线"
+                  + (f"；缺：{'、'.join(lost)}" if lost else ""))
+
+
 def check(cond, msg):
     print(("  ✓ " if cond else "  ✗ ") + msg)
     if not cond:
@@ -433,6 +501,7 @@ def main(argv):
     check(not bare, f"接 shot_gate 的脚本都挂了压帧 ShotGate.frame_pressure（{len(code_of)} 支，NK1_PROBE_SLOW_MS 一个口径）"
           + (f"；漏挂：{', '.join(bare)}" if bare else ""))
 
+    script_err_section(gates)
     print("二、docs/GATES.md")
     gen = render(reg)
     bad_cells = [l for l in (gen + "\n" + render_ci(reg)).splitlines() if l.startswith("|") and "\\|" in l]
