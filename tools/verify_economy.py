@@ -384,7 +384,7 @@ best_lv = {}
 for c in cands:
     r = c["role"]
     best_lv[r] = max(best_lv.get(r, 0), c["level"])
-print(f"\n  各职事可得的最高等级：{ {roles[r]['name']: v for r, v in best_lv.items()} }")
+print(f"\n  各职事可得的最高等级：{ {roles.get(r, {'name': r})['name']: v for r, v in best_lv.items()} }")
 
 # 满编后的核心商路利润膨胀幅度
 def price_muls(is_foreign, zashi, tongshi):
@@ -1284,6 +1284,25 @@ for c in crew_doc["candidates"]:
     if ch_num(c.get("unlock", "ch1")) <= 1 and not c.get("require_flag") and not c.get("require_any"):
         ch1_roles.add(c["role"])
 check(len(ch1_roles) >= 6, f"第一章无旗标门槛的职事仍覆盖 {len(ch1_roles)}/6 种")
+
+# 候选名册的引用与取值（lane-w53-7）：此前只有 role 拼错会在「一之三」取名时崩一下，别的写错全仓门禁照绿——
+# port 拼错（"quanzhuo"）：Crew.candidates_at 按港 id 逐字比，此人从此哪个酒馆都不出现；
+# unlock 写成 "c2"：GameState.is_chapter_reached 见不是 "ch" 开头一律放行，第二章的人第一章就能雇；
+# 品级超 MAXLV：「一之三」各加成边界按 MAXLV 核，超了就不作数；月俸 0 / 负、id 重复（Crew.candidate_def 只认头一个）同理。
+_cands = crew_doc["candidates"]
+_cand_ids = [str(c.get("id", "")) for c in _cands]
+_dup_ids = sorted({i for i in _cand_ids if _cand_ids.count(i) > 1})
+check(all(_cand_ids) and not _dup_ids, f"职事候选 id 都有、不重复（{len(_cand_ids)} 人；重复：{_dup_ids or '无'}）")
+_bad_port = [f"{c.get('id')}:{c.get('port')}" for c in _cands if c.get("port") not in ports]
+check(not _bad_port, f"职事候选的 port 都是 ports.json 的港 id（认不得的：{_bad_port or '无'}）")
+_bad_role = [f"{c.get('id')}:{c.get('role')}" for c in _cands if c.get("role") not in roles]
+check(not _bad_role, f"职事候选的 role 都在 crew.json roles 里（认不得的：{_bad_role or '无'}）")
+_bad_unlock = [f"{c.get('id')}:{c.get('unlock')}" for c in _cands if not re.fullmatch(r"ch[1-4]", str(c.get("unlock", "ch1")))]
+check(not _bad_unlock, f"职事候选的 unlock 都写成 ch1–ch4（写错的照第一章放行：{_bad_unlock or '无'}）")
+_bad_lv = [f"{c.get('id')}:{c.get('level')}" for c in _cands if type(c.get("level")) is not int or not 1 <= c["level"] <= MAXLV]
+check(not _bad_lv, f"职事候选品级都在 1–{MAXLV}（「一之三」加成边界按 MAXLV 核：{_bad_lv or '无'}）")
+_bad_wage = [f"{c.get('id')}:{c.get('wage')}" for c in _cands if type(c.get("wage")) is not int or c["wage"] <= 0]
+check(not _bad_wage, f"职事候选月俸都是正整数（{_bad_wage or '无'}）")
 
 print()
 print("=" * 68)
