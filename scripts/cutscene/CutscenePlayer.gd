@@ -7,7 +7,7 @@
 ## · headless（DisplayServer 为 headless）：call_deferred 立即 finished，不建任何节点。
 ## · 找不到 id / 没有镜头：push_warning 后同样立即 finished，绝不卡住游戏。
 ## · 操作：点击 / 空格 / 回车 = 当前字幕立即显示全 → 再按提前出下一条字幕 → 再按跳下一镜；Esc = 跳过整段。
-## · 过场期间吞掉全部键盘与鼠标点击（_input + set_input_as_handled），游戏 UI 收不到。
+## · 过场期间吞掉全部键盘与鼠标点击（_input + set_input_as_handled），游戏 UI 收不到——收尾黑幕退去那一截也吞，到本层释放为止。
 class_name CutscenePlayer
 extends CanvasLayer
 
@@ -438,7 +438,13 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if _root == null or _phase == Phase.FADE or _phase == Phase.DONE:
+	if _root == null or _phase == Phase.DONE:
+		return
+	if _phase == Phase.FADE:
+		# 黑幕还在退：底下这时已换好页（结局过场全黑时 Main 已弹出了结册页），按键与点击照吞、不作用。
+		# 放过去的话，收尾连按的空格 / 回车落到 Main 的 ui_accept 上，了结册页还没露脸就被合上（lane w53-9 实测）
+		if event is InputEventKey or event is InputEventMouseButton or event is InputEventScreenTouch:
+			get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey:
 		var k := event as InputEventKey
