@@ -2511,7 +2511,7 @@ func _refresh_shore() -> void:
 			(col as Node).remove_child(child)
 			child.queue_free()
 		(col as Control).visible = false
-	# 「今日只开三处」只在寻常设施里发牌；本地 main 的终局特殊卡（special_* / siege_*）是历史节点，来了就一定在岸上
+	# 「今日只开三处」只在寻常设施里发牌；本地 main 的终局特殊卡（special_* / siege_*）是历史节点，来了就一定在岸上——行首注另报几事，不再「三处」配四扇门（lane w53-6）
 	var regular: Array = []
 	var specials: PackedStringArray = PackedStringArray()
 	for raw_fac in _shore_facilities:
@@ -2540,7 +2540,7 @@ func _refresh_shore() -> void:
 		band.add_child(_epilogue_slip())
 	else:
 		var hint := Label.new()
-		hint.text = "今日只开三处。"
+		hint.text = "今日只开三处。" if specials.is_empty() else "今日只开三处，另有%s事。" % _cn_num(specials.size(), true)
 		UiTheme.style_footnote(hint)
 		hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		# 行首注：左齐第一扇岸门（门排铺满整行，第一扇门就从行首起）。原先是 14px 悬在画面正中的一行，
