@@ -175,4 +175,6 @@ static func setup_residence_chen(main: Control, port_id: String) -> void:
 		main.choices_container.add_child(b)
 
 	main.choices_label.visible = true
+	# 搬进本件时漏了搬前的这一行（lane w53-6 补回）：没有它陈宅页回不了港——身份已定又不到 1270 年连一枚钮都没有
+	main._add_leave_button(port_id)
 
