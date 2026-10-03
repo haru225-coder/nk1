@@ -17,6 +17,9 @@ extends SceneTree
 ##   五、中弹只颠挨打那条船的舱面货：货分船装，海战里挨打的只有旗舰；修复前 Ship.take_hit 按全队合并的货随手挑一件、
 ##       remove_cargo 跨船依次扣——旗舰舱空、护航船装着生丝，旗舰每挨一发重击就颠掉护航船一件生丝。真走 take_hit 打旗舰四发：
 ##       ① 旗舰空舱、护航生丝 10 → 生丝一件不少；② 旗舰茶 5、护航生丝 10 → 每发船体伤 ≥ 5 颠旗舰一件茶，生丝仍 10。
+##   六、喊话劝降得手的船接舷即收：降幡劝降走 PirateShip.strike_colours，只有敌将降了（节点 struck），士气簿不知道；
+##       修复前 _board_enemy 只认簿上的 yields_to_boarding，竖着降幡的船一接舷照打满员白刃（实打 300 人：本队被击退）。
+##       真起号令面板喊话（roll 定 0 必降）→ 接舷：须免白刃（_last_melee 空）、船入列、下场记受降 struck。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -59,6 +62,8 @@ func _run() -> void:
 	print("== 五、中弹只颠挨打那条船的舱面货")
 	await _sec_knock_own_hold(fleet, {}, "①")
 	await _sec_knock_own_hold(fleet, {"tea": {"qty": 5, "avg_cost": 20.0}}, "②")
+	print("== 六、喊话劝降得手的船接舷即收")
+	await _sec_parley_struck_boarding(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -369,6 +374,51 @@ func _sec_knock_own_hold(fleet: Node, flag_hold: Dictionary, tag: String) -> voi
 	_check(heavy > 0 and silk == 10 and int(flag_units.call()) == want_flag,
 		"五%s 旗舰挨 %d 发重击：护航船生丝仍 10（得 %d）、旗舰舱 %d → %d 件（得 %d）" % [
 			tag, heavy, silk, start_units, want_flag, int(flag_units.call())])
+	await _close(wm)
+
+
+# ══ 六、喊话劝降得手的船接舷即收 ══════════════════════════════════
+
+## 两艘快船，一艘挪到喊话距离内停住；真起号令面板下「降幡劝降」（roll 0 必降）→ 敌将降幡、节点 struck，士气簿仍不降；
+## 把它的水手抬到 300（真打白刃本队必败）再接舷：须免白刃收船、船入列、下场记 struck、海战不收（还剩一艘）
+func _sec_parley_struck_boarding(fleet: Node) -> void:
+	var wm := await _battle(fleet, "fu_ship_medium", 60, {"type": "pirate_boat", "count": 2})
+	var foes := _foes(wm)
+	var panel: Node = null
+	for n in wm.get_children():
+		if n.is_in_group("nk1_combat_orders"):
+			panel = n
+	if foes.size() < 2 or panel == null:
+		_check(false, "六 海战刷出两艘快船、挂上号令面板")
+		await _close(wm)
+		return
+	var own: Node2D = wm.get("ship")
+	var foe: Node2D = foes[0]
+	(foes[1] as Node2D).position = own.position + Vector2(-900, 0)  # 另一艘挪远：喊话只喊得到这一艘
+	for _i in 3:
+		await physics_frame  # PirateShip._wire_parley 首个物理帧接上面板的 parley_resolved
+	foe.set_physics_process(false)
+	foe.position = own.position + Vector2(200, 0)
+	var res: Dictionary = panel.call("issue", "parley", 0.0)
+	foe.set_physics_process(true)
+	for _i in 3:
+		await physics_frame  # 敌将降幡后下一物理帧 PirateShip._note_state 立 struck
+	var sheet = (wm.get("_morale") as Object).call("sheet_of", foe) if wm.get("_morale") != null else null
+	_check(str(res.get("result", "")) == "surrender" and foe.get("struck") == true,
+		"六 喊话劝降得手：敌将降幡、船节点 struck（喊话 %s；簿上降了 = %s）" % [
+			str(res.get("result", "无")), str(sheet.call("has_struck")) if sheet != null else "无簿"])
+	foe.set("crew", 300)
+	var ships_before := (fleet.get("ships") as Array).size()
+	var id := foe.get_instance_id()
+	var rec: Array = []
+	wm.battle_finished.connect(func(o: String, d: Dictionary) -> void: rec.append([o, d.duplicate()]))
+	wm.call("_board_enemy", foe)
+	var r: Dictionary = wm.get("_last_melee")
+	var fates: Dictionary = wm.get("_enemy_fates")
+	var fate := str((fates.get(id, {}) as Dictionary).get("fate", "无"))
+	_check(r.is_empty() and (fleet.get("ships") as Array).size() == ships_before + 1 and fate == "struck" and rec.is_empty(),
+		"六 接舷竖降幡的船：免白刃收船入列、下场记受降、还剩一艘不收战（白刃 %s · 船队 %d → %d · 下场 %s）" % [
+			str(r.get("outcome", "未打")), ships_before, (fleet.get("ships") as Array).size(), fate])
 	await _close(wm)
 
 

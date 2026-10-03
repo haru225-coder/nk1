@@ -309,9 +309,12 @@ func _board_enemy(enemy: Node2D) -> void:
 	var notice := ""
 	var do_capture := false
 
-	# 敌已降幡：接舷即得，免白刃（降了的船不会自己抛钩，这一支只在本队先钩时走）
+	# 敌已降幡：接舷即得，免白刃（降了的船不会自己抛钩，这一支只在本队先钩时走）。降幡两条来路都认（lane w53-2）：
+	# 士气簿降了（yields_to_boarding），或敌将自己降了、船节点 struck 已立（喊话劝降得手走 PirateShip.strike_colours，士气簿不知道）——
+	# 只看簿的话，竖着降幡、落帆停射的船一接舷照打一场满员白刃，还能把本队击退
 	var yield_sheet = _morale.sheet_of(enemy) if _morale != null else null
-	if not enemy_first and yield_sheet != null and yield_sheet.yields_to_boarding():
+	var yielded: bool = enemy.get("struck") == true or (yield_sheet != null and yield_sheet.yields_to_boarding())
+	if not enemy_first and yielded:
 		do_capture = true
 		notice = _CombatFx.board_win_note(_node_str(enemy, "ship_name", "敌船"))
 		detail = "敌船降幡，接舷收船"
@@ -381,7 +384,7 @@ func _board_enemy(enemy: Node2D) -> void:
 			_show_combat_notice(notice)
 		_CombatFx.hitstop(self, 0.09, 0.16)
 		# 下场先记（降了的收船记受降），再清血量：离树时按船体记沉会把夺来的船记成击沉
-		_note_fate(enemy, "struck" if yield_sheet != null and yield_sheet.yields_to_boarding() else "boarded")
+		_note_fate(enemy, "struck" if yielded else "boarded")
 		# 清血量再释放：避免 queue_free 后仍被 _enemies_alive 数到
 		enemy.set("hull_hp", 0.0)
 		enemy.queue_free()
