@@ -1323,7 +1323,7 @@ func _show_event(event: Dictionary) -> void:
 	# 战时遭遇三类：处理函数一直在，云端合并时这里的路由丢了，2026-09-25 海图重制顺手接回
 	elif kind == Voyage.EventKind.REQUISITION:
 		if Fleet.ships.size() > 1:
-			_add_event_action("交出一条船（名声 +）", _on_requisition_surrender)
+			_add_event_action("交出一条船（名声 +6）", _on_requisition_surrender)
 		_add_event_action("塞钱免征", _on_requisition_bribe)
 		_add_event_action("趁夜溜走", _on_requisition_flee)
 	elif kind == Voyage.EventKind.YUAN_PATROL:

@@ -22,6 +22,9 @@
      海商信用——船籍簿「海商信用　%d」、行会正文同；同页入行工席曾写「商誉」。
      硫黄——新闻「硫黄禁出海」、崖山「把粮与硫黄交上去」、萨摩横幅「硫黄所出」；牙行货名曾写「硫磺」。
      签——「籖」是「籤」的异体，简体正文只写「签」（新闻「太学签榜」曾夹此字）。
+  G. 增减号后面要有数（三轮）：「名声 +」「士气 −」这类只有正负号没有数目的串即红；
+     海图事件钮文写「（名声 +N）」的，按下去的处理函数须真是 GameState.fame += N。
+     （征船「交出一条船（名声 +）」曾缺数，实加 6。）
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -105,6 +108,14 @@ TERM_VARIANTS = (
     ("籖", "签"),
 )
 TERM_IDIOM_OK = ("声名鹊起", "声名狼藉", "声名远播", "声名大噪")
+
+# ═══ 钉 G：属性名 + 正负号 + 不是数目（也不是 %d 占位）= 漏了数。
+DELTA_WORDS = ("名声", "士气", "海商信用", "人脉", "乡土", "学者", "海路", "水粮")
+DANGLING_SIGN_RE = re.compile(r"(%s)\s*[+−](?!\s*[0-9%%])" % "|".join(DELTA_WORDS))
+# 海图事件钮：_add_event_action("…（…名声 +N…）", 回调)；回调体里须有 GameState.fame += N。
+EVENT_FAME_RE = re.compile(r'_add_event_action\("([^"]*（[^"]*名声 \+(\d+)[^"]*）)",\s*(_\w+)\)')
+# 防沉默绿：这几颗钮文必须被上面的正则抓到（钮文改了格式、正则抓空时判红，不当绿）。
+EVENT_FAME_MUST = ("交出一条船",)
 
 FAILS = []
 
@@ -190,6 +201,33 @@ def _check_terms(text, tag):
             FAILS.append(f"{tag}: 异称「{bad}」，全作通行叫法是「{good}」：{text[:120]}")
 
 
+def _check_dangling_sign(text, tag):
+    m = DANGLING_SIGN_RE.search(text)
+    if m:
+        FAILS.append(f"{tag}: 「{m.group(0).strip()}」后面缺数目：{text[:120]}")
+
+
+def _func_body_gd(src, name):
+    i = src.find("\nfunc %s(" % name)
+    if i < 0:
+        return ""
+    j = src.find("\nfunc ", i + 1)
+    return src[i:] if j < 0 else src[i:j]
+
+
+def _check_event_fame(src, rel):
+    """钮文的「名声 +N」与回调实加数对齐；返回抓到的钮文列表（供防沉默绿）。"""
+    seen = []
+    for m in EVENT_FAME_RE.finditer(src):
+        label, n, cb = m.group(1), int(m.group(2)), m.group(3)
+        seen.append(label)
+        body = _func_body_gd(src, cb)
+        got = [int(x) for x in re.findall(r"GameState\.fame \+= (\d+)", body)]
+        if got != [n]:
+            FAILS.append(f"{rel}: 钮文「{label}」写名声 +{n}，回调 {cb} 实加 {got or '无'}")
+    return seen
+
+
 def _scan_gd_strings():
     for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
         for f in sorted(files):
@@ -209,6 +247,7 @@ def _scan_gd_strings():
                 _check_half(lit, tag)
                 _check_debug(lit, tag, "gd")
                 _check_terms(lit, tag)
+                _check_dangling_sign(lit, tag)
                 # gd 里 %[sdf] 是合法格式化模板（"%s の %d" % [...]），不钉 3/E。
 
 
@@ -247,6 +286,7 @@ def _scan_json_text():
             _check_fmt(text, tag, "data")
             _check_debug(text, tag, "data")
             _check_terms(text, tag)
+            _check_dangling_sign(text, tag)
 
 
 _NEG_CASES = [
@@ -264,6 +304,8 @@ _NEG_CASES = [
     ("term", "会费 2000　商誉须 8。", "海商信用"),
     ("term", "过秤买入 硫磺 ×3", "硫黄"),
     ("term", "临安发了太学籖榜。", "签"),
+    ("sign", "交出一条船（名声 +）", "缺数目"),
+    ("sign", "士气 −。", "缺数目"),
 ]
 
 
@@ -286,6 +328,8 @@ def _neg_probe(kind, text):
             _check_debug(text, "self", "data")
         elif kind == "term":
             _check_terms(text, "self")
+        elif kind == "sign":
+            _check_dangling_sign(text, "self")
         return FAILS[:]
     finally:
         FAILS.clear()
@@ -307,10 +351,37 @@ def _self_test():
     return bad
 
 
+def _self_test_event_fame():
+    """钉 G 自检：钮文 +6、回调 += 4 须判红；+6 / += 6 须判绿。"""
+    bad = []
+    tpl = '\t_add_event_action("交出一条船（名声 +6）", _on_x)\n\nfunc _on_x() -> void:\n\tGameState.fame += %d\n'
+    saved = FAILS[:]
+    try:
+        for n, want_red in ((4, True), (6, False)):
+            FAILS.clear()
+            seen = _check_event_fame(tpl % n, "self")
+            if not seen or bool(FAILS) != want_red:
+                bad.append(f"钉 G 自检：回调 += {n} 判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
+    return bad
+
+
+def _scan_event_fame():
+    rel = "scripts/SeaChart.gd"
+    src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+    seen = _check_event_fame(src, rel)
+    for must in EVENT_FAME_MUST:
+        if not any(must in lab for lab in seen):
+            FAILS.append(f"{rel}: 钉 G 没抓到「{must}」钮文的「（名声 +N）」——钮文缺数或改了格式")
+
+
 def main():
-    self_fails = _self_test()
+    self_fails = _self_test() + _self_test_event_fame()
     _scan_gd_strings()
     _scan_json_text()
+    _scan_event_fame()
     all_fails = self_fails + FAILS
     if all_fails:
         print("结果：%d 项问题" % len(all_fails))
