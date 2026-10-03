@@ -33,13 +33,28 @@ var _fails: Array = []
 var _no_render := false
 var _shots := 0
 var _shot_warns: Array = []
+## lane w53-11：本进程 SCRIPT ERROR / Parse Error 即红（同 story :3135 判闸，共用件 tools/script_err_tally.gd）。
+## 此前运行期脚本错只中止出错的那个函数：子函数 / 游戏代码里出错，断言整段跳过、fails 不涨、退出码守 0；
+## _run 自己的代码行出错则 quit 不再执行、进程空转到外层 timeout。_run_guarded 包一层两形都就地判红。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")  # 本进程 SCRIPT ERROR 即红（lane w53-11）
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
 	# 巡检只看界面，不听声音：关掉程序音。本机跑巡检时音频服务器不混音，停下的播放对象收不回，
 	# 收尾恰好有声在响就会在退出时报 AudioStreamWAV / AudioStreamPlaybackWAV 泄漏
 	_AUDIO.enabled = false
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_check(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_finish()
 
 
 func _run() -> void:
@@ -600,6 +615,9 @@ func _report_shots() -> void:
 
 
 func _finish() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_check(v[0], v[1])
 	_report_shots()
 	if _fails.is_empty():
 		print("PATROL SHELL PASS")

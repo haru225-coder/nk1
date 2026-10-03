@@ -8,7 +8,7 @@ const SP := preload("res://tools/src_probe.gd")  # 按名认函数的源码探�
 
 
 func _init() -> void:
-	call_deferred("_run")
+	call_deferred("_run_guarded")
 
 
 ## Main.gd 拆出去的件：读 tools/main_splits.txt 第一列（lane cs13；与 tools/check_symbols.py 同读这一份，
@@ -946,7 +946,33 @@ func _is_seal_text(c: Color) -> bool:
 	return c.is_equal_approx(UiTheme.SEAL_TEXT) and c.get_luminance() > 0.7 and _contrast(c, UiTheme.SEAL) >= 4.5
 
 
+## lane w53-11：本进程 SCRIPT ERROR / Parse Error 即红（同 story :3135 判闸，共用件 tools/script_err_tally.gd）。
+## 此前运行期脚本错只中止出错的那个函数：子函数 / 游戏代码里出错，断言整段跳过、fails 不涨、退出码守 0；
+## _run 自己的代码行出错则 quit 不再执行、进程空转到外层 timeout。_run_guarded 包一层两形都就地判红。
+## （这一节放在文件尾、计数器由成员初始化挂上：拍板清单引着本文件 _run 段的行号，往前插行就得跟号。）
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")  # 本进程 SCRIPT ERROR 即红（lane w53-11）
+var _tally: ScriptErrTally = _arm_tally()  # 成员初始化先于 _init：计数器挂得与 _init 里一样早
+var _reported := false
+
+
+func _arm_tally() -> ScriptErrTally:
+	var t: ScriptErrTally = ScriptErrTally.new()
+	OS.add_logger(t)
+	return t
+
+
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		var fails: Array = []
+		_check(false, "主流程跑到收尾（%s）" % _tally.abort_note(), fails)
+		_finish(fails)
+
+
 func _finish(fails: Array) -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_check(v[0], v[1], fails)
 	if fails.is_empty():
 		print("GODOT SMOKE PASS")
 		GateReport.finish("godot_smoke", 0, "GODOT SMOKE PASS")

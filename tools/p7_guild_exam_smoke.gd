@@ -7,11 +7,22 @@ const JOIN_TEXT := "交会费入行"
 const SIT_TEXT := "入场赴试"
 const COPY_TEXT := "替人抄三日"
 const GateReport := preload("res://tools/gate_report.gd")  # -- --json 时只打一行 JSON（lane g2）
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")  # 本进程 SCRIPT ERROR 即红（lane w53-11）
 
 var _fails: Array = []
 var _gs
 var _gm
 var _cal
+## lane w53-11：本进程 SCRIPT ERROR / Parse Error 即红（同 story :3135 判闸，共用件 tools/script_err_tally.gd）。
+## 此前运行期脚本错只中止出错的那个函数：子函数 / 游戏代码里出错，断言整段跳过、fails 不涨、退出码守 0；
+## _run 自己的代码行出错则 quit 不再执行、进程空转到外层 timeout。_run_guarded 包一层两形都就地判红。
+var _tally: ScriptErrTally
+var _reported := false
+
+
+func _init() -> void:
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
 
 
 func _initialize() -> void:
@@ -20,7 +31,14 @@ func _initialize() -> void:
 	_cal = root.get_node("Calendar")
 	var main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
 	root.add_child(main)
-	_run(main)
+	_run_guarded(main)
+
+
+func _run_guarded(main) -> void:
+	await _run(main)
+	if not _reported:
+		_fail("主流程跑到收尾（%s）" % _tally.abort_note())
+		_finish()
 
 
 func _fail(msg: String) -> void:
@@ -455,6 +473,16 @@ func _run(main) -> void:
 		else:
 			_ok("1268 三月下旬誊录跨四月：学者 +1 先于身份结算 → 士人陈文龙")
 
+	_finish()
+
+
+func _finish() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		if v[0]:
+			_ok(v[1])
+		else:
+			_fail(v[1])
 	if _fails.is_empty():
 		print("P7_GUILD_EXAM_SMOKE_OK")
 		GateReport.finish("p7_guild_exam_smoke", 0, "P7_GUILD_EXAM_SMOKE_OK")
