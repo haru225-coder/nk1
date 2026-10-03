@@ -16,27 +16,32 @@ random.seed(20260727)
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 
-# ── 抽解 / 佣金 / 价差地板：从 Economy.gd 源码现读（lane w53-3）──
-# 生产的 tariff_rate / broker_fee 是 `var NAME: float = 0.10` 形（存档会写回的可调参数），PRICE_SPREAD_MIN 是 const。
-# 原先这里硬编 `TARIFF, BROKER = 0.10, 0.05`，名字与生产对不上，生产改值时模拟不跟、镜像悄悄散，门禁照绿。
-# 读不出（写法换了）直接退出，不落回旧值。镜像闸 C 在临时副本里改这三处初值，验本脚本与 verify_economy 都跟着变。
-import re as _re
-_eco_src = open(os.path.join(ROOT, "scripts", "core", "Economy.gd"), encoding="utf-8").read()
-_GD_NUM_INIT = r'^((?:const|var)\s+%s\s*(?::\s*\w+\s*)?:?=\s*)(-?[0-9]+(?:\.[0-9]+)?)'
-def _const(src, name, default=None):
-    """GDScript 类成员的数值初值：`const NAME := 1.08` 与 `var NAME: float = 0.10`（含 `var NAME := 0.10`）两形都认。
-    default 为 None 时认不出即退出。"""
-    m = _re.search(_GD_NUM_INIT % _re.escape(name), src, _re.M)
-    if m:
-        return float(m.group(2))
-    if default is None:
-        raise SystemExit(f"simulate_run：源码里认不出 {name} 的数值初值（const {name} := 数 / var {name}: float = 数）")
-    return default
-TARIFF = _const(_eco_src, "tariff_rate")
-BROKER = _const(_eco_src, "broker_fee")
-PRICE_SPREAD_MIN = _const(_eco_src, "PRICE_SPREAD_MIN")
-if "--eco-params" in sys.argv[1:]:  # 镜像闸 C 的读数口：报完三项即退，不跑整局
-    print(f"ECO_PARAMS tariff={TARIFF!r} broker={BROKER!r} spread={PRICE_SPREAD_MIN!r}")
+# ── 镜像常量：从生产 .gd 源码现读（lane w53-3；读法在 tools/eco_src.py，与 verify_economy 同一份）──
+# 第一轮：抽解 tariff_rate / 佣金 broker_fee（生产是 `var NAME: float = 0.10` 形，存档会写回）与价差地板 PRICE_SPREAD_MIN；
+# 第三轮：产地消费地系数 ROLE_MOD、行情上下限与回归 RATE_MIN / RATE_MAX / RECOVERY、水粮占舱与人日、赊贷上限与月息。
+# 原先各硬编一份、名字与生产也对不上，生产改值时模拟不跟、镜像悄悄散，门禁照绿。读不出（写法换了）直接退出，不落回旧值。
+# 镜像闸 C 在临时副本里改这些初值验两支镜像都跟着变，另扫两支镜像源码：下文一律用这些名字，字面量写回来即红。
+# 赊贷两项原写在 borrow 之前，挪到这里与其余几项一起读、一起报（ECO_READOUT 即 --eco-params 的读数）。
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import eco_src
+_E = eco_src.EcoSrc(ROOT, "simulate_run")
+_ECO_GD, _FLEET_GD, _GS_GD, _GM_GD = "scripts/core/Economy.gd", "scripts/core/Fleet.gd", "scripts/GameState.gd", "scripts/GameManager.gd"
+TARIFF = _E.num(_ECO_GD, "tariff_rate")
+BROKER = _E.num(_ECO_GD, "broker_fee")
+PRICE_SPREAD_MIN = _E.num(_ECO_GD, "PRICE_SPREAD_MIN")
+ROLE_MOD = _E.literal(_ECO_GD, "ROLE_MOD")
+RATE_MIN, RATE_MAX = _E.num(_ECO_GD, "RATE_MIN"), _E.num(_ECO_GD, "RATE_MAX")
+RECOVERY = _E.num(_ECO_GD, "RECOVERY")
+SUPPLY_BULK = _E.num(_FLEET_GD, "SUPPLY_BULK")
+CREW_DAYS_PER_SUPPLY = _E.num(_FLEET_GD, "CREW_DAYS_PER_SUPPLY")
+DEBT_CEILING, DEBT_RATE = int(_E.num(_GS_GD, "DEBT_CEILING")), _E.num(_GS_GD, "DEBT_MONTHLY_RATE")
+ECO_READOUT = {
+    "tariff": TARIFF, "broker": BROKER, "spread": PRICE_SPREAD_MIN, "role_mod": ROLE_MOD,
+    "rate_min": RATE_MIN, "rate_max": RATE_MAX, "recovery": RECOVERY,
+    "supply_bulk": SUPPLY_BULK, "crew_days": CREW_DAYS_PER_SUPPLY, "debt_ceiling": DEBT_CEILING, "debt_rate": DEBT_RATE,
+}
+if "--eco-params" in sys.argv[1:]:  # 镜像闸 C 的读数口：报完即退，不跑整局
+    print("ECO_PARAMS " + json.dumps(ECO_READOUT, sort_keys=True))
     sys.exit(0)
 
 def load(n):
@@ -48,10 +53,6 @@ ports = {p["id"]: p for p in load("ports.json")["ports"]}
 ships = {s["id"]: s for s in load("ships.json")["ships"]}
 chapters = {int(c["id"]): c for c in load("chapters.json")["chapters"]}
 
-ROLE_MOD = {"origin": 0.65, "normal": 1.0, "consumer": 1.75}
-RECOVERY = 0.045
-SUPPLY_BULK = 0.25
-CREW_DAYS_PER_SUPPLY = 2.0
 KM_PER_LI, EARTH_R = 0.576, 6371.0
 NE, SW = 225.0, 45.0
 lanes = load("sealanes.json").get("lanes", {})
@@ -67,10 +68,10 @@ import verify_economy as _ve
 # ── 跳年常量：从 .gd 源码读，改公式时这里自动跟上（抽解 / 佣金 / 价差地板见文件头 _const）──
 # Main 的源码断言读拼回的「未拆时」Main（tools/main_stitch.py，E-4 接刀：行会/赴试常量与下刀 Main 拆件让路）。
 import main_stitch
-_gm_src = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
-SKIP_HULL_DECAY = _const(_gm_src, "SKIP_HULL_DECAY", 0.08)
-SKIP_HULL_FLOOR = _const(_gm_src, "SKIP_HULL_FLOOR", 0.20)
-SKIP_MORALE_AFTER = int(_const(_gm_src, "SKIP_MORALE_AFTER", 65))
+_gm_src = _E.src(_GM_GD)  # 跳年常量同走 eco_src 的读法（认不出照旧落默认值）
+SKIP_HULL_DECAY = _E.num(_GM_GD, "SKIP_HULL_DECAY", 0.08)
+SKIP_HULL_FLOOR = _E.num(_GM_GD, "SKIP_HULL_FLOOR", 0.20)
+SKIP_MORALE_AFTER = int(_E.num(_GM_GD, "SKIP_MORALE_AFTER", 65))
 
 rates = {pid: {gid: 1.0 for gid in p.get("market", {})} for pid, p in ports.items()}
 
@@ -225,7 +226,6 @@ def speed(course):
               for s in G.ships)
     return spd * morale_f() * wind_factor(course)
 
-DEBT_CEILING, DEBT_RATE = 3000, 0.03
 
 def borrow(amount):
     room = max(0, DEBT_CEILING - G.debt)
@@ -569,7 +569,7 @@ def do_buy(gid, want, floor_price=None, budget=None):
         # 留 25% 安全边际，覆盖卖出侧的砸盘损耗
         if floor_price is not None and p >= floor_price * 0.75: break
         spent += p; got += 1
-        rates[G.port][gid] = min(2.2, rates[G.port][gid] + 1.0/depth)
+        rates[G.port][gid] = min(RATE_MAX, rates[G.port][gid] + 1.0/depth)
         c = G.ships[idx]["cargo"]
         if gid in c:
             c[gid][0] += 1
@@ -589,7 +589,7 @@ def do_sell(gid, qty):
         if not cands: break
         idx = max(cands, key=lambda i: G.ships[i]["cargo"][gid][0])
         rev += sell_p(G.port, gid)
-        rates[G.port][gid] = max(0.4, rates[G.port][gid] - 1.0/depth)
+        rates[G.port][gid] = max(RATE_MIN, rates[G.port][gid] - 1.0/depth)
         c = G.ships[idx]["cargo"]
         c[gid][0] -= 1
         if c[gid][0] == 0: del c[gid]
@@ -666,40 +666,102 @@ _zt = [
 check(all(a == b for a, b in _zt),
       f"镜像闸 B·6 格 gd_round≠round 散度（0.5/0.5/0.5/0.6/0.8/0.5）price_at_rate = price_at（{_zt}）——任一 gd_round→round 调换即差 1 文红")
 
-# ── 镜像闸 C（lane w53-3）：抽解 / 佣金 / 价差地板跟着生产源码走 ──
-# 两支镜像（本脚本与 verify_economy）原先各硬编一份 0.10 / 0.05（verify_economy 连 1.08 也硬编），生产改值时都不跟、门禁照绿。
-# 在临时目录摆一份只有 Economy.gd 与两支镜像的副本，把三处初值改成别的数，两支各以 --eco-params 起子进程报读数，
-# 须恰是改后的数：任一支回退成硬编即红。仓里的 Economy.gd 不动。
-ECO_EDIT = (("tariff_rate", 0.125), ("broker_fee", 0.0625), ("PRICE_SPREAD_MIN", 1.0625))
+# ── 镜像闸 C（lane w53-3）：镜像常量跟着生产源码走 ──
+# 两支镜像（本脚本与 verify_economy）原先把抽解 / 佣金 / 价差地板（第一轮）与产地消费地系数、行情上下限与回归、
+# 通事生效港、杂事 / 通事每级系数、水粮占舱与人日、赊贷上限与月息（第三轮）各硬编一份，生产改值时都不跟、门禁照绿。
+# 一、在临时目录摆一份只有这四支 .gd 与两支镜像（连读法 eco_src）的副本，把下面这些初值改成别的数，两支各以 --eco-params
+#    起子进程报读数，须恰是改后的数（Crew 六种职事每级系数与舵工下限底数也在内）。仓里的 .gd 不动。
+# 二、扫两支镜像的源码，这些常量的字面量（含行情钳 0.4 / 2.2、每级系数 × lv）不许写回来——写回来的那一份不随生产走，
+#    一 管不着（读数口在文件头），由二 判红。
+ECO_EDIT = {
+    "scripts/core/Economy.gd": (("num", "tariff_rate", 0.125), ("num", "broker_fee", 0.0625), ("num", "PRICE_SPREAD_MIN", 1.0625),
+                                ("lit", "ROLE_MOD", {"origin": 0.6, "normal": 1.0, "consumer": 1.8}),
+                                ("num", "RATE_MIN", 0.35), ("num", "RATE_MAX", 2.4), ("num", "RECOVERY", 0.05)),
+    "scripts/core/Crew.gd": (("lit", "FOREIGN_PORTS", ["hakata", "kagoshima", "jeju", "champa", "ryukyu"]),
+                             ("coeff", "trade_cost_factor:zashi", 0.1), ("coeff", "interpreter_edge:tongshi", 0.025),
+                             ("coeff", "speed_factor:huozhang", 0.05), ("coeff", "wind_floor:duogong", 0.04),
+                             ("offset", "wind_floor:duogong", 0.38), ("coeff", "cargo_loss_factor:zongguan", 0.15),
+                             ("coeff", "crew_loss_factor:yiren", 0.2)),
+    "scripts/core/Fleet.gd": (("num", "SUPPLY_BULK", 0.3), ("num", "CREW_DAYS_PER_SUPPLY", 2.5)),
+    "scripts/GameState.gd": (("num", "DEBT_CEILING", 3500), ("num", "DEBT_MONTHLY_RATE", 0.025)),
+}
+ECO_WANT = {
+    "simulate_run.py": {"tariff": 0.125, "broker": 0.0625, "spread": 1.0625, "role_mod": {"origin": 0.6, "normal": 1.0, "consumer": 1.8},
+                        "rate_min": 0.35, "rate_max": 2.4, "recovery": 0.05, "supply_bulk": 0.3, "crew_days": 2.5,
+                        "debt_ceiling": 3500, "debt_rate": 0.025},
+    "verify_economy.py": {"tariff": 0.125, "broker": 0.0625, "spread": 1.0625, "role_mod": {"origin": 0.6, "normal": 1.0, "consumer": 1.8},
+                          "rate_min": 0.35, "rate_max": 2.4, "foreign_ports": ["hakata", "kagoshima", "jeju", "champa", "ryukyu"],
+                          "zashi_step": 0.1, "tongshi_step": 0.025, "supply_bulk": 0.3, "huozhang_step": 0.05,
+                          "duogong_base": 0.38, "duogong_step": 0.04, "zongguan_step": 0.15, "yiren_step": 0.2},
+}
 
 def eco_params_after_edit(edits):
-    """返回 (改中几处, {镜像脚本: (抽解, 佣金, 价差地板) 或失败说明})。"""
+    """返回 (改中几处, 共几处, {镜像脚本: 读数 dict 或失败说明})。"""
     import shutil, subprocess, tempfile
-    src, hit = _eco_src, 0
-    for name, val in edits:
-        src, n = _re.subn(_GD_NUM_INIT % _re.escape(name), lambda m, v=val: m.group(1) + repr(v), src, count=1, flags=_re.M)
-        hit += n
+    hit = total = 0
     out = {}
     with tempfile.TemporaryDirectory(prefix="nk1-eco-follow-") as tmp:
-        os.makedirs(os.path.join(tmp, "scripts", "core"))
+        for rel, items in edits.items():
+            src = _E.src(rel)
+            for kind, name, val in items:
+                total += 1
+                if kind == "num":
+                    src, n = eco_src.edit_num(src, name, val)
+                elif kind == "lit":
+                    src, n = eco_src.edit_literal(src, name, val)
+                else:
+                    func, role = name.split(":")
+                    edit = eco_src.edit_coeff if kind == "coeff" else eco_src.edit_offset
+                    src, n = edit(src, func, role, val)
+                hit += n
+            os.makedirs(os.path.dirname(os.path.join(tmp, rel)), exist_ok=True)
+            with open(os.path.join(tmp, rel), "w", encoding="utf-8") as f:
+                f.write(src)
         os.makedirs(os.path.join(tmp, "tools"))
-        with open(os.path.join(tmp, "scripts", "core", "Economy.gd"), "w", encoding="utf-8") as f:
-            f.write(src)
-        for tool in ("simulate_run.py", "verify_economy.py"):
+        for tool in ("simulate_run.py", "verify_economy.py", "eco_src.py"):
             shutil.copy2(os.path.join(ROOT, "tools", tool), os.path.join(tmp, "tools", tool))
+        for tool in ("simulate_run.py", "verify_economy.py"):
             r = subprocess.run([sys.executable, os.path.join(tmp, "tools", tool), "--eco-params"],
                                capture_output=True, text=True, timeout=60)
-            m = _re.search(r"^ECO_PARAMS tariff=(\S+) broker=(\S+) spread=(\S+)$", r.stdout, _re.M)
-            out[tool] = tuple(float(x) for x in m.groups()) if m else f"rc={r.returncode} {(r.stdout + r.stderr).strip()[-120:]}"
-    return hit, out
+            m = re.search(r"^ECO_PARAMS (\{.*\})$", r.stdout, re.M)
+            out[tool] = json.loads(m.group(1)) if m else f"rc={r.returncode} {(r.stdout + r.stderr).strip()[-160:]}"
+    return hit, total, out
 
-_hit, _follow = eco_params_after_edit(ECO_EDIT)
-_want = tuple(v for _, v in ECO_EDIT)
-check(_hit == len(ECO_EDIT) and all(v == _want for v in _follow.values()),
-      f"镜像闸 C·Economy.gd 三处初值（改中 {_hit}/{len(ECO_EDIT)}）改成 {_want} 后两支镜像读数跟着变（{_follow}）——回退成硬编即红")
-check((TARIFF, BROKER, PRICE_SPREAD_MIN) == (_ve.TARIFF, _ve.BROKER, _ve.SPREAD_MIN),
-      f"镜像闸 C·两支镜像现读同数：抽解 {TARIFF} / 佣金 {BROKER} / 价差地板 {PRICE_SPREAD_MIN}"
-      f"（verify_economy {(_ve.TARIFF, _ve.BROKER, _ve.SPREAD_MIN)}）")
+## 字面量写回来的样子：(正则, 说明)。行情钳 max(0.40, min(1.60, …)) 是 Voyage 的风力系数钳，不在此列。
+ECO_LITERAL_BACK = (
+    (r"^\s*(?:TARIFF|BROKER)\b[^\n=]*=\s*-?\d", "抽解 / 佣金"),
+    (r"^\s*(?:PRICE_)?SPREAD_MIN\s*=\s*-?\d", "价差地板"),
+    (r"^\s*ROLE_MOD\s*=\s*\{", "产地消费地系数"),
+    (r"^\s*FOREIGN_PORTS\s*=\s*[\(\[]", "通事生效港"),
+    (r"^\s*(?:RECOVERY|SUPPLY_BULK(?:_M)?|CREW_DAYS_PER_SUPPLY|RATE_MIN|RATE_MAX)\b[^\n=]*=\s*-?\d", "回归 / 水粮 / 行情钳"),
+    (r"^\s*DEBT_CEILING\b[^\n=]*=\s*-?\d", "赊贷上限与月息"),
+    (r"\d\.\d+\s*\*\s*lv\b", "杂事 / 通事每级系数"),
+    (r"\bmin\(\s*2\.20?\s*,", "行情上限"),
+    (r"\bmax\(\s*0\.40?\s*,(?!\s*min\(\s*1\.60?\s*,)", "行情下限"),
+)
+
+def eco_literals_back():
+    """两支镜像源码里写回来的镜像常量字面量：[(文件:行, 说明, 原行)]。"""
+    found = []
+    for tool in ("simulate_run.py", "verify_economy.py"):
+        with open(os.path.join(ROOT, "tools", tool), encoding="utf-8") as f:
+            lines = f.read().split("\n")
+        for i, ln in enumerate(lines, 1):
+            for rx, what in ECO_LITERAL_BACK:
+                if re.search(rx, ln):
+                    found.append((f"{tool}:{i}", what, ln.strip()[:60]))
+    return found
+
+_hit, _total, _follow = eco_params_after_edit(ECO_EDIT)
+check(_hit == _total and all(_follow.get(t) == w for t, w in ECO_WANT.items()),
+      f"镜像闸 C·四支 .gd 里 {_total} 处初值（改中 {_hit}）改成别的数后两支镜像读数跟着变"
+      f"（{'全对' if all(_follow.get(t) == w for t, w in ECO_WANT.items()) else _follow}）——回退成硬编即红")
+check((TARIFF, BROKER, PRICE_SPREAD_MIN, ROLE_MOD, RATE_MIN, RATE_MAX) == (_ve.TARIFF, _ve.BROKER, _ve.SPREAD_MIN, _ve.ROLE_MOD, _ve.RATE_MIN, _ve.RATE_MAX)
+      and SUPPLY_BULK == _ve.FLEET_SUPPLY_BULK,
+      f"镜像闸 C·两支镜像现读同数：抽解 {TARIFF} / 佣金 {BROKER} / 价差地板 {PRICE_SPREAD_MIN} / 产地消费地 {ROLE_MOD} / "
+      f"行情 {RATE_MIN}–{RATE_MAX} / 水粮占舱 {SUPPLY_BULK}")
+_back = eco_literals_back()
+check(not _back, f"镜像闸 C·两支镜像源码里没有写回来的镜像常量字面量（{_back or '无'}）")
 
 print("="*70)
 print("端到端模拟：开局 1000 钱 / 小艍船 / 泉州")
@@ -1303,8 +1365,8 @@ for n in market_news:
     before = dict(probe)
     for pid in targets:
         if pid in probe:
-            probe[pid] = max(0.40, min(2.20, probe[pid] * mul))
-    expected = max(0.40, min(2.20, mul))
+            probe[pid] = max(RATE_MIN, min(RATE_MAX, probe[pid] * mul))
+    expected = max(RATE_MIN, min(RATE_MAX, mul))
     check(all(abs(probe[pid] - expected) < 1e-9 for pid in targets if pid in probe),
           f"{n['id']} 一次 market mul {mul:g}：目标港率 → {expected:.3f}")
     check(all(probe[pid] == before[pid] for pid in probe if pid not in targets),
@@ -1447,7 +1509,7 @@ if cgid:
     depth = ports[cdst]["depth"]
     for _ in range(got):
         sale += round(goods[cgid]["base_value"] * ROLE_MOD["consumer"] * r * (1 - BROKER))
-        r = max(0.4, min(2.2, r - 1.0 / depth))
+        r = max(RATE_MIN, min(RATE_MAX, r - 1.0 / depth))
     premium = round(got * goods[cgid]["base_value"] * PREMIUM)
     purse = sale + premium
     # 交货：卸货、给酬，行情不动

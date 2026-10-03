@@ -12,21 +12,24 @@ if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关�
 
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
-# ── 抽解 / 佣金 / 价差地板：从 Economy.gd 源码现读（lane w53-3）──
-# 生产的 tariff_rate / broker_fee 是 `var NAME: float = 0.10` 形、PRICE_SPREAD_MIN 是 const；原先这里硬编 0.10 / 0.05 / 1.08，
-# 生产改值时镜像悄悄散、门禁照绿。读不出（写法换了）直接退出。simulate_run 镜像闸 C 在临时副本里改这三处初值，验这里跟着变。
-_ECO_SRC = open(os.path.join(ROOT, "scripts", "core", "Economy.gd"), encoding="utf-8").read()
-def eco_param(name):
-    m = re.search(r'^(?:const|var)\s+%s\s*(?::\s*\w+\s*)?:?=\s*(-?[0-9]+(?:\.[0-9]+)?)' % re.escape(name), _ECO_SRC, re.M)
-    if not m:
-        raise SystemExit(f"verify_economy：Economy.gd 里认不出 {name} 的数值初值（const {name} := 数 / var {name}: float = 数）")
-    return float(m.group(1))
-TARIFF = eco_param("tariff_rate")
-BROKER = eco_param("broker_fee")
+# ── 镜像常量：从生产 .gd 源码现读（lane w53-3；读法在 tools/eco_src.py，与 simulate_run 同一份）──
+# 抽解 / 佣金 / 价差地板（第一轮），产地消费地系数、行情上下限、通事生效的异国港、杂事 / 通事每级系数、水粮占舱（第三轮）：
+# 原先各硬编一份，生产改值时镜像悄悄散、门禁照绿（EA2-1 方案 C 就要改通事每级系数）。读不出直接退出，不落回旧值。
+# simulate_run 镜像闸 C 在临时副本里改这些初值验这里读到的跟着变，另扫本文件，字面量写回来即红。
+import eco_src
+_E = eco_src.EcoSrc(ROOT, "verify_economy")
+_ECO_GD, _CREW_GD = "scripts/core/Economy.gd", "scripts/core/Crew.gd"
+TARIFF, BROKER = _E.num(_ECO_GD, "tariff_rate"), _E.num(_ECO_GD, "broker_fee")
 ## Economy.PRICE_SPREAD_MIN 的镜像：任何职事组合下同港买价恒 ≥ 卖价 × 此值。
-SPREAD_MIN = eco_param("PRICE_SPREAD_MIN")
-if __name__ == "__main__" and "--eco-params" in sys.argv[1:]:  # simulate_run 镜像闸 C 的读数口：报完三项即退
-    print(f"ECO_PARAMS tariff={TARIFF!r} broker={BROKER!r} spread={SPREAD_MIN!r}")
+SPREAD_MIN = _E.num(_ECO_GD, "PRICE_SPREAD_MIN")
+ROLE_MOD = _E.literal(_ECO_GD, "ROLE_MOD")
+RATE_MIN, RATE_MAX = _E.num(_ECO_GD, "RATE_MIN"), _E.num(_ECO_GD, "RATE_MAX")
+## Crew.FOREIGN_PORTS——只有这几处通事的议价才生效；杂事 / 通事每级系数出自 Crew.trade_cost_factor / interpreter_edge
+FOREIGN_PORTS = tuple(_E.literal(_CREW_GD, "FOREIGN_PORTS"))
+ZASHI_STEP, TONGSHI_STEP = _E.coeff(_CREW_GD, "trade_cost_factor", "zashi"), _E.coeff(_CREW_GD, "interpreter_edge", "tongshi")
+FLEET_SUPPLY_BULK = _E.num("scripts/core/Fleet.gd", "SUPPLY_BULK")
+if __name__ == "__main__" and "--eco-params" in sys.argv[1:]:  # simulate_run 镜像闸 C 的读数口：报完即退
+    print("ECO_PARAMS " + json.dumps({"tariff": TARIFF, "broker": BROKER, "spread": SPREAD_MIN, "role_mod": ROLE_MOD, "rate_min": RATE_MIN, "rate_max": RATE_MAX, "foreign_ports": list(FOREIGN_PORTS), "zashi_step": ZASHI_STEP, "tongshi_step": TONGSHI_STEP, "supply_bulk": FLEET_SUPPLY_BULK, "huozhang_step": _E.coeff(_CREW_GD, "speed_factor", "huozhang"), "duogong_base": _E.offset(_CREW_GD, "wind_floor", "duogong"), "duogong_step": _E.coeff(_CREW_GD, "wind_floor", "duogong"), "zongguan_step": _E.coeff(_CREW_GD, "cargo_loss_factor", "zongguan"), "yiren_step": _E.coeff(_CREW_GD, "crew_loss_factor", "yiren")}, sort_keys=True))
     sys.exit(0)
 # 按函数名取函数体一律经 tools/func_body.py（与 check_symbols 同一份 helper，lane cs14）：取不到给 "" 并记账，
 # 末节「十一、按函数名取函数体」逐条判红——原先取不到静默给 ""，反向断言（"X" not in body）在函数改名 / 搬走时空转变绿。
@@ -53,9 +56,6 @@ ships = {s["id"]: s for s in load("ships.json")["ships"]}
 ## 船屋上架的船型（DrydockBerth.sale_ids 滤掉 for_sale=false 的海寇快船）。「全船队」的船价总和只算这些。
 sale_ships = {sid: s for sid, s in ships.items() if s.get("for_sale", True)}
 
-ROLE_MOD = {"origin": 0.65, "normal": 1.0, "consumer": 1.75}
-## Crew.FOREIGN_PORTS——只有这几处通事的议价才生效
-FOREIGN_PORTS = ("hakata", "kagoshima", "jeju", "champa")
 KM_PER_LI = 0.576
 EARTH_R = 6371.0
 
@@ -66,8 +66,8 @@ def unit_value(pid, gid, rate=1.0):
     return goods[gid]["base_value"] * ROLE_MOD[role(pid, gid)] * rate
 
 # 复现 Crew.gd 的交易加成（一之三节另验其余职事）
-def trade_cost(lv):        return max(0.0, 1.0 - 0.12 * lv)
-def interp_edge(lv):       return 0.07 * lv
+def trade_cost(lv):        return max(0.0, 1.0 - ZASHI_STEP * lv)
+def interp_edge(lv):       return TONGSHI_STEP * lv
 ## titles.json invest.edge_per_level：修埠压产地价、抬消费地价
 INVEST_EDGE_PER = load("titles.json")["invest"]["edge_per_level"]
 
@@ -363,11 +363,11 @@ crew = load("crew.json")
 roles = {r["id"]: r for r in crew["roles"]}
 cands = crew["candidates"]
 
-# 复现 Crew.gd 的加成公式（trade_cost / interp_edge 在文件头，与定价镜像同处）
-def speed_factor(lv):      return 1.0 + 0.06 * lv
-def wind_floor(lv):        return 0.40 + 0.05 * lv
-def cargo_loss(lv):        return max(0.0, 1.0 - 0.17 * lv)
-def crew_loss(lv):         return max(0.0, 1.0 - 0.23 * lv)
+# 复现 Crew.gd 的加成公式，每级系数与舵工下限底数从 Crew.gd 现读（trade_cost / interp_edge 在文件头，与定价镜像同处）
+def speed_factor(lv):      return 1.0 + _E.coeff(_CREW_GD, "speed_factor", "huozhang") * lv
+def wind_floor(lv):        return _E.offset(_CREW_GD, "wind_floor", "duogong") + _E.coeff(_CREW_GD, "wind_floor", "duogong") * lv
+def cargo_loss(lv):        return max(0.0, 1.0 - _E.coeff(_CREW_GD, "cargo_loss_factor", "zongguan") * lv)
+def crew_loss(lv):         return max(0.0, 1.0 - _E.coeff(_CREW_GD, "crew_loss_factor", "yiren") * lv)
 
 MAXLV = 3
 check(wind_floor(MAXLV) < 1.0,
@@ -618,7 +618,7 @@ def sell_revenue(pid, gid, amount, rate=1.0):
     total, r = 0, rate
     for _ in range(amount):
         total += sell_price(pid, gid, r)
-        r = max(0.4, min(2.2, r - 1.0/depth))
+        r = max(RATE_MIN, min(RATE_MAX, r - 1.0/depth))
     return total
 
 def buy_cost(pid, gid, amount, rate=1.0):
@@ -627,7 +627,7 @@ def buy_cost(pid, gid, amount, rate=1.0):
     total, r = 0, rate
     for _ in range(amount):
         total += buy_price(pid, gid, r)
-        r = max(0.4, min(2.2, r + 1.0/depth))
+        r = max(RATE_MIN, min(RATE_MAX, r + 1.0/depth))
     return total
 
 def affordable_qty(pid, gid, money, cap=9999):
@@ -714,7 +714,7 @@ for src, dst in routes:
     print(f"    {ports[src]['name']:<5}→{ports[dst]['name']:<7} {dist:>6.0f}里　顺季 {d_best:>3} 日　逆季 {d_worst:>3} 日")
 
 # 福船中型满载补给能撑多久（水粮各占 SUPPLY_BULK 料/份）
-SUPPLY_BULK = 0.25
+SUPPLY_BULK = FLEET_SUPPLY_BULK
 sh = ships["fu_ship_medium"]
 crew = 25
 cap = sh["capacity"]
@@ -783,7 +783,7 @@ print("=" * 68)
 print("  Fleet 已改为货分船：每船独立 cargo，水/粮全队共用。")
 print("  单船空舱按载重比例分摊水粮份额，须保证 Σ ship_free == free 恒成立。")
 
-SUPPLY_BULK_M = 0.25  # 与 Fleet.SUPPLY_BULK 一致
+SUPPLY_BULK_M = FLEET_SUPPLY_BULK  # Fleet.SUPPLY_BULK（文件头现读）
 
 def supply_shares(caps, rooms, wf):
     """复现 Fleet._supply_shares：全队水粮 wf 先按载重比例摊到各船，摊到的超过该船余舱 rooms[k]，
