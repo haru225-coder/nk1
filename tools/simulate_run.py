@@ -35,6 +35,12 @@ NE, SW = 225.0, 45.0
 lanes = load("sealanes.json").get("lanes", {})
 INN_RATE = 15
 
+# ── 经济镜像收敛（lane ea2 / w51-k1）──
+# 舍入与五维定价一律走 verify_economy 唯一镜像：Python round() 是银行家舍入，
+# 与 GDScript round()（.5 远离零）在 .5 格差 1 文（verify_economy.gd_round docstring 实测）。
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from verify_economy import gd_round, price_at
+
 # ── 生产定价与跳年常量：从 .gd 源码读，改公式时这里自动跟上 ──
 import re as _re
 _eco_src = open(os.path.join(ROOT, "scripts", "core", "Economy.gd"), encoding="utf-8").read()
@@ -519,9 +525,9 @@ def price_at_rate(pid, gid, rate, is_buy, tariff_factor=1.0, broker_factor=1.0, 
     sell_v = min(v * (1 - BROKER * broker_factor) * (1 + edge), cap)
     sell_v = max(sell_v, min(bare_sell, cap))
     if not is_buy:
-        return round(sell_v)
+        return gd_round(sell_v)
     buy_v = max(v * (1 + TARIFF * tariff_factor) * (1 - edge), sell_v * PRICE_SPREAD_MIN)
-    return round(min(buy_v, max(bare_buy, sell_v * PRICE_SPREAD_MIN)))
+    return gd_round(min(buy_v, max(bare_buy, sell_v * PRICE_SPREAD_MIN)))
 
 def buy_p(pid,gid):  return price_at_rate(pid, gid, rates[pid][gid], True)
 def sell_p(pid,gid): return price_at_rate(pid, gid, rates[pid][gid], False)
@@ -1093,16 +1099,10 @@ def role_of(pid, gid):
     return ports[pid].get("market", {}).get(gid)
 
 def price_inv(pid, gid, is_buy, inv=0, title_duty=1.0, rate=1.0):
-    r = role_of(pid, gid)
-    v = goods[gid]["base_value"] * ROLE_MOD[r] * rate
-    ie = inv * edge_per
-    if r == "origin":
-        v *= (1.0 - ie)
-    elif r == "consumer":
-        v *= (1.0 + ie)
-    if is_buy:
-        return round(v * (1 + TARIFF * title_duty))
-    return round(v * (1 - BROKER * title_duty))
+    """修埠压产地价/抬消费地价后的买卖价——五维（zashi=tongshi=光杆、title_duty、inv、rate）
+    全在 verify_economy.price_at 出参内（edge_per == INVEST_EDGE_PER 同出 titles.json），
+    全委托唯一镜像，不再留自家公式（lane ea2 镜像收敛）。"""
+    return price_at(pid, gid, is_buy, title_duty=title_duty, inv=inv, rate=rate)
 
 class InvBook:
     money = 20000
