@@ -314,6 +314,36 @@ REGISTRY = [
               "钱不够任何钮按不动、日子不推且有话术；住处 3 日一钮多钱不够第二路径同钉。本进程 SCRIPT ERROR 即红。末行 `REST_DAYS cases=24 fails=0`，fails>0 退 1",
      "green": "逐条 `  ✓ …` + 末行 `REST_DAYS cases=24 fails=0`",
      "red": "`  ✗ …` 行（如钮面缺枚 / 实扣与印数不符 / 落日漂移 / 跨月月息未到账 / 钱不够照扣）+ 末行 `REST_DAYS cases=24 fails=N`（N>0），退 1"},
+
+    {"id": "qa_ledger_strip_probe", "tier": "lane",
+     "when": "动 HUD 顶匾（scripts/ui/LedgerPage.gd 的 refresh_strip / _status_line 上行文案格）、scripts/Main.gd 的 "
+             "update_status_panel、钱账口（GameState.money / spend_money）、水粮天数口径（Fleet.supply_days / 日耗 / at_sea），"
+             "或动 tools/qa_ledger_strip_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_ledger_strip_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_ledger_strip_probe.gd"],
+     "judge": "（探针 104c0a7 立，w29-k3 入册——审计-wave27「最该补的门禁」第 3 条：落地时被「注册或豁免」闸收编为 EXEMPT 只是缓兵）"
+              "真场景树 C1–C4 把 HUD 顶匾上行「钱 N　水粮 D 日」钉成运行时真断言：账变屏真变（spend_money / 出海 advance 扣水粮后改印新值、整行与旧行不同、旧值不再印）；"
+              "泊港 advance 水粮天数不动是设计（反向钉「不是 bug」）；正月三十 +1 落二月初一跨月当天顶匾仍印新值（防月结静默清空）；"
+              "直拨水粮池 water=food=10→3 日 + 整行须同时含「钱 」「水粮 」「 日」三个骨架格（LCD 尾哨）。本进程 SCRIPT ERROR 即红。"
+              "末行 `LEDGER_STRIP_PROBE cases=N fails=0`，fails>0 退 1",
+     "green": "逐条 `  ✓ …` + 末行 `LEDGER_STRIP_PROBE cases=25 fails=0`",
+     "red": "`  ✗ …` 行（如顶匾缺格 / 账变屏不变（LCD）/ 泊港水粮被扣 / 跨月静默清空 / 旧值仍印）+ 末行 `LEDGER_STRIP_PROBE cases=N fails=N`（N>0），退 1"},
+
+    {"id": "qa_economy_panel_probe", "tier": "lane",
+     "when": "动名声栏级别名（GameState.add_fame / 名声跳级阈值与级别名表 / update_status_panel 名声行）、跳年册页代价截文案 "
+             "（try_advance_chapter / scripts/ui/ChapterSheet.gd）、札记折叠头与折叠内【月息】原文（skip_years / advance_days 月结"
+             " / 「蕃商结息 N 钱，现欠 M。」），或动 tools/qa_economy_panel_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_economy_panel_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_economy_panel_probe.gd"],
+     "judge": "（探针 1b7608f 立，w29-k3 入册——审计-wave27「最该补的门禁」第 3 条：与 qa_ledger_strip 同案缓兵两条的第二支）"
+              "真场景树 C1–C2：名望 9→11 过跳级阈值后名声栏真印新级别名「名声　11　在册舶牙」（白走一年不晋升则旧名照印，时间不得造真）；"
+              "欠债 1000 跳 2 年：册页代价截题头「【两年后・祥兴二年　十月三十】」与「——自…至于…。」起讫句、札记折叠头起讫年月名"
+              "「自景炎二年　冬月初一至于祥兴二年　十月初一」与则数凡月数、折叠内【月息】恰 24 则、末则原文「蕃商结息 N 钱，现欠 M。」与探针自对照账"
+              "（3% 月复利 24 期，不引 GameState 常量防共同变量同错）字字相符；无债跳年册页与札记全本俱不见「蕃商结息」「现欠」（反向格）。"
+              "本进程 SCRIPT ERROR 即红。末行 `ECON_PANEL_PROBE cases=N fails=0`，fails>0 退 1",
+     "green": "逐条 `  ✓ …` + 末行 `ECON_PANEL_PROBE cases=17 fails=0`",
+     "red": "`  ✗ …` 行（如级别名不跳 / 白走一年造真 / 册页题头或起讫句变 / 折叠头则数凡月数漂移 / 【月息】原文与对照账不符 / 无债跳年见息字）"
+            "+ 末行 `ECON_PANEL_PROBE cases=N fails=N`（N>0），退 1"},
 ]
 
 # w27-k4 CHECK FOLLOWS
