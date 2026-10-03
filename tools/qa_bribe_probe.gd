@@ -68,6 +68,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	await process_frame
+	ShotGate.frame_pressure(self)
 	eco = root.get_node_or_null("Economy")
 	crew = root.get_node_or_null("Crew")
 	gs = root.get_node_or_null("GameState")
