@@ -82,6 +82,7 @@ EXEMPT = [
     ("qa_w53_3_buy_max_probe.gd", "lane-w53-3", "牙行买满结算耗时与逐件推演同数专项探针，动 Economy 逐件推演或牙行买钮回调时加跑"),
     ("qa_w53_3_economy_probe.gd", "lane-w53-3", "牙行抬价/赊贷/委办三本账守形探针，随本 lane 落地验过留档"),
     ("qa_w53_3_hold_split_probe.gd", "lane-w53-3", "分船货舱水粮摊派不越全队载重专项探针，动 Fleet 舱位账或牙行/船屋装货回调时加跑"),
+    ("qa_w53_3_market_rerender_probe.gd", "lane-w53-3", "牙行页整页重排带字进树计数与按买耗时专项探针，动牙行页建页或 Main._attach_quiet 时加跑"),
     ("qa_w53_4_chapter_hint_probe.gd", "lane-w53-4", "章节 hint 走数据上屏专项探针，随 lane-w53-4 落地验过留档"),
     ("qa_w53_4_story_probe.gd", "lane-w53-4", "剧情 advance_text 宣港对账专项探针，随 lane-w53-4 落地验过留档"),
     ("qa_w53_5_half_write_probe.gd", "lane-w53-5", "半写档探针（只写 .tmp 注入：记录与迁移回写须核对后才落位），动存档写入路径时加跑"),

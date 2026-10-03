@@ -1262,7 +1262,7 @@ func _setup_market(port_id: String) -> void:
 			chip.pressed.connect(_select_market_ship.bind(idx))
 			sel.add_child(chip)
 			UiTheme.style_chip(chip, idx == _market_ship)
-		choices_container.add_child(sel)
+		_attach_quiet(choices_container, sel)
 
 	var slips := HBoxContainer.new()
 	slips.name = "BrokerSlips"
@@ -1271,7 +1271,7 @@ func _setup_market(port_id: String) -> void:
 	slips.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	choices_container.add_child(slips)
 	for slip_id in broker_hand:
-		slips.add_child(_make_market_row(port_id, slip_id))
+		_attach_quiet(slips, _make_market_row(port_id, slip_id))
 
 	# 「明日再看 / 离开」钉在页脚（与 _add_leave_button 同一处），不跟柜上三样一起滚出画面：
 	# 1280×720 下这一行原先挂在滚动区里，静止时只露出上半截（第 1 轮评审 M2 / M8）
@@ -1282,7 +1282,7 @@ func _setup_market(port_id: String) -> void:
 	tomorrow.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	tomorrow.pressed.connect(_on_broker_wait)
 	UiTheme.style_button(tomorrow, false)
-	actions.add_child(tomorrow)
+	_attach_quiet(actions, tomorrow)
 	var leave := Button.new()
 	leave.text = "离开"
 	leave.custom_minimum_size = Vector2(120, 42)
@@ -1290,18 +1290,17 @@ func _setup_market(port_id: String) -> void:
 	leave.pressed.connect(func(): load_scene(port_id))
 	UiTheme.style_leave_button(leave)
 	leave.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	actions.add_child(leave)
+	_attach_quiet(actions, leave)
 	if actions != _page_footer:
 		actions.add_theme_constant_override("separation", 12)
 		actions.alignment = BoxContainer.ALIGNMENT_CENTER
-		choices_container.add_child(actions)
+		_attach_quiet(choices_container, actions)
 
 	var shut := HFlowContainer.new()
 	shut.name = "BrokerShut"
 	shut.add_theme_constant_override("h_separation", 8)
 	shut.add_theme_constant_override("v_separation", 6)
 	shut.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	choices_container.add_child(shut)
 	for raw_shut in goods_ids:
 		var shut_id := str(raw_shut)
 		if shut_id in broker_hand:
@@ -1320,6 +1319,7 @@ func _setup_market(port_id: String) -> void:
 		shut_btn.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
 		shut_btn.add_theme_color_override("font_hover_color", UiTheme.TEXT_DIM)
 		shut.add_child(shut_btn)
+	_attach_quiet(choices_container, shut)
 
 	choices_label.visible = true
 	choices_label.text = "舱位 %d / %d 料" % [int(Fleet.used_capacity()), int(Fleet.total_capacity())]
@@ -1600,7 +1600,7 @@ func _add_contract_panel(port_id: String) -> void:
 				if c is Label:
 					tip.append((c as Label).text)
 			summary.tooltip_text = "\n".join(tip)
-	choices_container.add_child(box)
+	_attach_quiet(choices_container, box)
 
 
 func _on_accept_contract(offer: Dictionary) -> void:
@@ -4640,4 +4640,21 @@ func _yashan_turn_back() -> void:
 	GameState.add_ledger_note("崖山外海掉头")
 
 
+## 把建好的一块挂进树：块里 Label / Button 的字先摘下，挂上之后再填回（lane w53-3）。
+## 带汉字的 Label / Button 带着字进树，Godot 4.6 下一枚要多耗 5～15 毫秒；空着进树、挂上再填字只要几十微秒，
+## 挂好之后的字、尺寸、悬停句都与带字进树时一样（实测）。牙行页一按买卖就整页重排——柜上三张卡、委办栏、
+## 闭柜货钮、页脚两钮约六十枚——原先一按卡 0.8 秒。tools/qa_w53_3_market_rerender_probe.gd 守。
+func _attach_quiet(parent: Node, block: Node) -> void:
+	var stash: Array = []
+	_lift_texts(block, stash)
+	parent.add_child(block)
+	for pair in stash:
+		(pair[0] as Node).set("text", pair[1])
 
+
+func _lift_texts(n: Node, stash: Array) -> void:
+	if (n is Label or n is Button) and str(n.get("text")) != "":
+		stash.append([n, n.get("text")])
+		n.set("text", "")
+	for c in n.get_children():
+		_lift_texts(c, stash)

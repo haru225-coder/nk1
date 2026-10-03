@@ -129,6 +129,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_3_economy_probe.gd",  # lane w53-3 牙行逐件抬价/赊贷/委办三本账守形探针
 	"res://tools/qa_w53_3_hold_split_probe.gd",  # lane w53-3 分船货舱水粮摊派不越全队载重（满一艘再补水粮再装另一艘）
 	"res://tools/qa_w53_3_buy_max_probe.gd",  # lane w53-3 牙行买满一趟算件数（改前逐件往下减，件数平方级卡顿）
+	"res://tools/qa_w53_3_market_rerender_probe.gd",  # lane w53-3 牙行页整页重排不卡（字控件空着进树再填字，改前一按 0.8 秒）
 	"res://tools/qa_w53_7_tavern_crew_probe.gd",  # lane w53-7 酒馆与人物专项（欠饷随名册清空归零 …）
 	"res://tools/qa_fold_notice_probe.gd",  # lane w28-k2 札记折叠内非月息通告（【欠饷】按月 / 欠满三月 + 改元月历一瞥）原文断言（w27-k2 交主控①补新见）
 	"res://tools/qa_yard_transition_probe.gd",
