@@ -28,6 +28,11 @@ const STATE_NUM_KEYS := [
 	"network", "merchant_credit", "sea_tendency", "scholar_tendency", "hometown_tendency",
 	"draft_salt", "shore_salt", "broker_salt", "berth_index", "era_trips", "era_profit",
 ]
+## state 单格字符串位：from_dict 直赋强类型 String 字段，档里给成 bool 之外（bool 经 str() 成
+## "true"/"false"，历来可行不判坏）的类型须在此拦，否则 from_dict 半途抛、其后字段全留缺省却报读档成功。
+const STATE_STR_KEYS := ["player_name", "ending_id", "identity", "ended", "ended_at", "ended_text", "ended_head"]
+## state 单格布尔位（STATE_NUM_KEYS 不管布尔）：给了却不是 bool 即坏。
+const STATE_BOOL_KEYS := ["has_customs_permit", "loaded_with_beats"]
 ## state 容器内条目的数字位：GameState 读档与运行时直接 int()/float()，给成数组/对象/null 当场 SCRIPT ERROR；
 ## contract 的还在 from_dict 半途抛，其后 player_name/identity/ended 等全留缺省却照报读档成功。
 const CONTRACT_NUM_KEYS := [
@@ -382,6 +387,14 @@ func _check_partitions(data: Dictionary) -> String:
 	var why := _bad_fields(eco, ["tariff", "broker"], ["rates", "investments"])
 	if why != "":
 		return "economy." + why
+	# 条目位：rates 值须为 {货: 数字} 的账本、investments 值须为数字。
+	# from_dict 直赋后 get_rate/buy_price/investment_level 全靠 int()/float() 转，坏条目放行即 SCRIPT ERROR。
+	why = _num_map_entries(eco, "rates", true)
+	if why != "":
+		return "economy." + why
+	why = _num_map_entries(eco, "investments", false)
+	if why != "":
+		return "economy." + why
 
 	var fleet: Dictionary = _as_dict(data.get("fleet", {}))
 	why = _bad_fields(fleet, ["water", "food", "morale", "mutiny_cooldown"], ["cargo"])
@@ -393,11 +406,28 @@ func _check_partitions(data: Dictionary) -> String:
 		for s in fleet["ships"]:
 			if typeof(s) != TYPE_DICTIONARY:
 				return "fleet.ships 含非对象条目"
+			var ship: Dictionary = s
+			why = _bad_fields(ship, ["durability", "max_durability", "crew", "sail_level", "armor_level"],
+					["cargo"], [])
+			if why != "":
+				return "fleet.ships 条目." + why
+			for gid in _as_dict(ship.get("cargo", {})):
+				var e = (ship["cargo"] as Dictionary)[gid]
+				if typeof(e) != TYPE_DICTIONARY:
+					return "fleet.ships.cargo.%s 不是对象" % gid
+				why = _bad_fields(e, ["qty", "avg_cost"], [])
+				if why != "":
+					return "fleet.ships.cargo.%s 条目." % gid + why
 
 	var crew: Dictionary = _as_dict(data.get("crew", {}))
-	why = _bad_fields(crew, ["unpaid_months"], ["hired"])
+	why = _bad_fields(crew, ["unpaid_months"], ["hired", "departed"])
 	if why != "":
 		return "crew." + why
+	for cid in _as_dict(crew.get("departed", {})):
+		# departed 条目 {role, name, when} 字典型；from_dict 直赋后 departed_lines() 不验型，
+		# 坏条目会让船籍簿出怪行
+		if typeof((crew["departed"] as Dictionary)[cid]) != TYPE_DICTIONARY:
+			return "crew.departed.%s 不是对象" % cid
 	for r in _as_dict(crew.get("hired", {})).values():
 		if typeof(r) != TYPE_STRING:
 			return "crew.hired 含非字符串条目（v4 起只存候选 id）"
@@ -409,6 +439,17 @@ func _check_partitions(data: Dictionary) -> String:
 			["ledger_notes", "visited_ports", "news_seen", "crew_history", "met_ids"])
 	if why != "":
 		return "state." + why
+	# 单格字符串 / 布尔位（from_dict 直赋强类型字段，给了却非该型即坏）
+	for k in STATE_STR_KEYS:
+		if state.has(k) and not (typeof(state[k]) in [TYPE_STRING, TYPE_BOOL]):
+			return "state.%s 不是字符串" % k
+	for k in STATE_BOOL_KEYS:
+		if state.has(k) and typeof(state[k]) != TYPE_BOOL:
+			return "state.%s 不是布尔" % k
+	# 委办容器：给了须为对象（from_dict typeof 判型放行，但给它成别的类型时 GameState.contract 会被静默清空、
+	# 而 contract 条目坏值又不进 GameState——单列在此，免得「档里有委办」与「读到空委办」差异潜伏成坏档误判）
+	if state.has("contract") and typeof(state["contract"]) != TYPE_DICTIONARY:
+		return "state.contract 不是对象"
 	why = _bad_entries(state)
 	if why != "":
 		return "state." + why
@@ -427,6 +468,22 @@ func _bad_entries(state: Dictionary) -> String:
 	for port in ban:
 		if not _is_num(ban[port]):
 			return "contract_ban.%s 不是数字" % port
+	# 围城账本 {troops/grain/wall/morale/…}：siege_get/siege_add/siege_power 全靠 int()/float() 转，
+	# 坏值放行即守城页 SCRIPT ERROR（GameState.from_dict 直赋、不验条目）
+	var sg: Dictionary = _as_dict(state.get("siege", {}))
+	for key in sg:
+		if not _is_num(sg[key]) and not (typeof(sg[key]) in [TYPE_STRING, TYPE_BOOL]):
+			return "siege.%s 不是数字" % key
+	# 行年路线 {线: 次数}：health_tally 逐值 int()，坏值即 SCRIPT ERROR
+	var routes: Dictionary = _as_dict(state.get("era_routes", {}))
+	for key in routes:
+		if not _is_num(routes[key]):
+			return "era_routes.%s 不是数字" % key
+	# 封港簿 {港: 年月序号}：is_port_banned 经 str() 兜底，值却给了对象/数组时 str() 抛出不可串形
+	var pb: Dictionary = _as_dict(state.get("port_bans", {}))
+	for key in pb:
+		if typeof(pb[key]) in [TYPE_ARRAY, TYPE_DICTIONARY]:
+			return "port_bans.%s 是容器" % key
 	var rumors: Dictionary = _as_dict(state.get("rumors", {}))
 	for port in rumors:
 		var book: Dictionary = _as_dict(rumors[port])
@@ -434,9 +491,14 @@ func _bad_entries(state: Dictionary) -> String:
 			var why := _bad_fields(_as_dict(book[good]), RUMOR_NUM_KEYS, [])
 			if why != "":
 				return "rumors.%s.%s.%s" % [port, good, why]
-	var why := _bad_fields(_as_dict(state.get("contract", {})), CONTRACT_NUM_KEYS, [])
+	var ctr: Dictionary = _as_dict(state.get("contract", {}))
+	var why := _bad_fields(ctr, CONTRACT_NUM_KEYS, [])
 	if why != "":
 		return "contract." + why
+	# 委办字符串位：accept_/deliver_contract 与 audit_stale_refs 都把它喂 str() / ports.json 比对
+	for k in ["good_id", "dest", "from"]:
+		if ctr.has(k) and typeof(ctr[k]) != TYPE_STRING:
+			return "contract.%s 不是字符串" % k
 	return ""
 
 
@@ -471,6 +533,23 @@ func _read_slot(slot: int) -> Dictionary:
 
 func _as_dict(raw) -> Dictionary:
 	return raw if typeof(raw) == TYPE_DICTIONARY else {}
+
+
+## 双层账本 {outer: {inner: 数字}}（deep=true 时）或单层 {key: 数字}（deep=false）的条目体检。
+## economy.rates 是 {港: {货: 指数}}、investments 是 {港: 等级}：from_dict 直赋后
+## get_rate/buy_price/investment_level 全靠 int()/float() 转，坏值放行即 SCRIPT ERROR。
+func _num_map_entries(map: Dictionary, key: String, deep: bool) -> String:
+	var outer: Dictionary = _as_dict(map.get(key, {}))
+	for k in outer:
+		if deep:
+			var inner: Dictionary = _as_dict(outer[k])
+			for kk in inner:
+				if not _is_num(inner[kk]):
+					return "%s.%s.%s 不是数字" % [key, k, kk]
+		else:
+			if not _is_num(outer[k]):
+				return "%s.%s 不是数字" % [key, k]
+	return ""
 
 
 func load_game(slot: int) -> bool:
