@@ -2436,7 +2436,8 @@ if (
     "class_name DrydockBerth" in dry_src
     and _calls(yard_fn, "DrydockBerth.berth_index")
     and _calls(yard_fn, "DrydockBerth.sale_ids")
-    and "坞上只搁一艘。帆和甲对着这一艘。水粮与赊贷仍在码头。" in yard_fn
+    and "坞上只搁一艘。帆和甲对着这一艘。修船、水粮与赊贷仍在码头，照全队算。" in yard_fn
+    and "坞上坞外各船一并修好" in yard_fn  # lane w53-6：修船照全队（设计 15.2），钮的悬停注写明，不让人当成只修坞上这艘
     and "换上　" in yard_fn
     and "把「%s」拖上坞位。帆和甲对着这一艘。" in switch_fn
     and "_begin_slip_scroll" not in yard_fn

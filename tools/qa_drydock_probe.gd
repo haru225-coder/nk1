@@ -106,6 +106,16 @@ func _run() -> void:
 		gs.berth_index = 1
 		_main.load_scene("quanzhou_shipyard")
 		await _settle(8)
+		# lane w53-6：坞上换成完好的新船、带伤的那艘在坞外——修船照全队（设计 15.2），钮面是全队账，
+		# 正文与修船钮的悬停注都得写明，不然页上「耐久满」旁边一枚「修船」看不出修的是谁
+		var repair_chip := _find_chip(_main, "修船")
+		var fleet_rc := int(fleet.call("repair_cost"))
+		_expect(repair_chip != null and repair_chip.text == "修船　%d" % fleet_rc,
+			"坞外伤船：修船钮照全队账（钮「%s」，全队 %d）" % [repair_chip.text if repair_chip != null else "无", fleet_rc])
+		_expect(repair_chip != null and repair_chip.tooltip_text.contains("坞上坞外各船一并修好"),
+			"修船钮悬停注写明各船一并修（「%s」）" % [repair_chip.tooltip_text if repair_chip != null else ""])
+		_expect(str(_main.body_text.text).contains("修船、水粮与赊贷仍在码头，照全队算"),
+			"船屋正文点明修船照全队（「%s」）" % _main.body_text.text)
 		await _shot("06_berth_switched")
 		node = _UT.drydock_open(_main, "泉州", "换坞", str(cal.call("get_date_string")), Callable())
 		await _hold_shot(node, "07_transition_swap")
@@ -121,6 +131,17 @@ func _run() -> void:
 	await _shot("09_shipyard_back")
 
 	quit(ShotGate.finish_contract(TAG, _fails) if _contract else ShotGate.finish_shots(TAG, _saved, EXPECTED_SHOTS, OUT_DIR, _fails))
+
+
+## 页上看得见、按钮字以 prefix 起头的工席钮（修船钮在「补给」那张工席里）
+func _find_chip(n: Node, prefix: String) -> Button:
+	if n is Button and (n as Button).text.begins_with(prefix) and (n as Button).is_visible_in_tree():
+		return n
+	for c in n.get_children():
+		var b := _find_chip(c, prefix)
+		if b != null:
+			return b
+	return null
 
 
 func _expect(ok: bool, what: String) -> void:

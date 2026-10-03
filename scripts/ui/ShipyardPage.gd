@@ -32,7 +32,9 @@ static func yard_success_transition(main: Control, act: String) -> void:
 
 static func setup_shipyard(main: Control, port_id: String) -> void:
 	main.scene_title.text = "%s・船屋" % GameManager.get_port_name(port_id)
-	main.body_text.text = "坞上只搁一艘。帆和甲对着这一艘。水粮与赊贷仍在码头。"
+	# 修船与水粮一样照全队（设计 15.2「水粮、修船、补齐到最低人手、蕃商赊贷留在码头」）：正文原先只点了水粮与赊贷，
+	# 坞上那艘完好、坞外一艘带伤时，页上见「耐久 240 / 240」旁边一枚「修船　144」，看不出修的是谁（lane w53-6）
+	main.body_text.text = "坞上只搁一艘。帆和甲对着这一艘。修船、水粮与赊贷仍在码头，照全队算。"
 	var on := DrydockBerth.berth_index(Fleet.ships.size(), GameState.berth_index)
 	if GameState.berth_index != on:
 		GameState.berth_index = on
@@ -114,7 +116,8 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 		)
 	var rc := Fleet.repair_cost()
 	if rc > 0:
-		main._slip_chip(supply_row, "修船　%d" % rc, main._on_repair_hull.bind(rc))
+		var repair_chip: Button = main._slip_chip(supply_row, "修船　%d" % rc, main._on_repair_hull.bind(rc))
+		repair_chip.tooltip_text = "坞上坞外各船一并修好，共差 %d 点耐久。" % int(ceil(Fleet.total_max_durability() - Fleet.total_durability()))
 	var below_min: int = Fleet.crew_to_min_needed()
 	if below_min > 0:
 		var top_cost := below_min * 20
@@ -202,7 +205,7 @@ static func on_repair_hull(main: Control, cost: int) -> void:
 	if GameState.spend_money(cost):
 		main._upgrade_busy = true
 		Fleet.repair_all()
-		main.log_msg("船匠敲了一日。船体按簿修好。")
+		main.log_msg("船匠敲了一日。各船船体按簿修好。")
 		await main._yard_success_transition("修船")
 		main._upgrade_busy = false
 	else:
