@@ -4633,7 +4633,7 @@ NAMED_FUNCS = {
         "upgrade_armor", "upgrade_sail",
     ),
     "scripts/core/SaveLoad.gd": (
-        "_bak_path", "_harden_state", "_normalise_flags", "_normalise_ids", "_valid_flag_name", "has_save",
+        "_bak_path", "_harden_state", "_normalise_flags", "_normalise_ids", "_valid_flag_name", "has_save", "load_game",
     ),
     "scripts/core/UiTheme.gd": (
         "paper_card", "plain_log", "shore_door", "style_button", "style_chip", "style_choice_button",
@@ -4935,6 +4935,16 @@ else:
         problems.extend(f"check_symbols_mutants {b}" for b in _lp_bad)
     else:
         print(f"  ✓ check_symbols_mutants 落点预检：{_lp_sum}；期望 ✗ 字样 / rc / 空转对照归全量（lane 档，docs/GATES.md §三.23）")
+
+# lane w53-5 三轮：读档先清船籍簿记事（读回的那一卷之后的事不留在记事栏冒充前情；读得开才清、清在 load_game 之前，
+# 读档时的旧卷勾稽一声照记）。放在文件尾而不并进九之八那格：拍板清单引着本脚本上部行号，往前插行就得跟号。
+_clear_at = _load_slot_code.find("_log_lines = PackedStringArray()")
+_load_at = _load_slot_code.find("SaveLoad.load_game(slot)")
+if 0 <= _clear_at < _load_at and "_log_folds = {}" in _load_slot_code and "SaveLoad.can_load(slot)" in _load_slot_code:
+    print("  ✓ 读档先清船籍簿记事（读得开才清、清在 load_game 之前）")
+else:
+    print("  ✗ 读档不清船籍簿记事，或清在 load_game 之后（读档时的勾稽一声会被抹）")
+    problems.append("读档未先清记事")
 
 print()
 print()
