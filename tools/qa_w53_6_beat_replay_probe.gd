@@ -61,6 +61,7 @@ func _run() -> void:
 		"crew": crew.to_dict().duplicate(true),
 	}
 	var fails_boot: Array = []
+	ShotGate.frame_pressure(self)  # gates_md「接 shot_gate 的脚本都挂压帧」口径（controller 补）
 	_main = ShotGate.start_tree_probe("res://scenes/Main.tscn", fails_boot, "W53-6 Beats Main")
 	if _main == null:
 		_check(false, "Main.tscn 挂不出：%s" % str(fails_boot))

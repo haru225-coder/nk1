@@ -41,6 +41,7 @@ func _run() -> void:
 	gm = root.get_node_or_null("GameManager")
 	cal = root.get_node_or_null("Calendar")
 	var boot_fails: Array = []
+	ShotGate.frame_pressure(self)  # gates_md「接 shot_gate 的脚本都挂压帧」口径（controller 补）
 	_main = ShotGate.start_tree_probe("res://scenes/Main.tscn", boot_fails, "W53-6 Exits Main")
 	if _main == null:
 		_check(false, "Main.tscn 挂不出：%s" % str(boot_fails))
