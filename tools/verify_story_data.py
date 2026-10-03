@@ -654,6 +654,7 @@ L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
     "scripts/chars/CharsShoreOverlay.gd": ({"api"}, "runtime", "岸上人物叠层"),
     "scripts/core/SaveLoad.gd": ({"api"}, "runtime", "存档迁移 v2→v3 回填人物志已识：职事候选 id → 人物 id（character_for_crew，只取 id；lane fx6）"),
     "tools/CharsDemo.gd": ({"api"}, "dev", "w26-k2 薄包装：extends scripts/chars/CharsDemo.gd 继承运行线真身，以 dev 身份走同一人物数据（GameManager 取数口）做接线自证，不进 scripts/ 不被 scenes/ project.godot 引用（开发工具，不进正式流程）"),
+    "tools/qa_w53_8_codex_cols_probe.gd": ({"api", "codex"}, "dev", "（lane w53-8）人物志名册列数随页宽探针：摆真人物志页量格宽 / 列数，只读不上屏（主控补登记）"),
     "tools/qa_chars_wire_screenshots.gd": ({"api"}, "dev", "w26-k8 湮灭重打的接线截图探针：GameManager.get_character 取数口对屏上文本逐项断言（接线自证 + 反向变异），不进 scripts/ 不被 scenes/ project.godot 引用（开发工具，不进正式流程）"),
     "tools/art/ShotTour.gd": ({"raw", "api"}, "dev", "美术巡检截图（开发工具，不进正式流程）"),
     "tools/art/ThemePreview.gd": ({"raw"}, "dev", "主题预览，编辑器下读 portrait_src 找原画（开发工具）"),
