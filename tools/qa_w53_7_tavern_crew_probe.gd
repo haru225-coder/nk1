@@ -13,6 +13,9 @@ extends SceneTree
 ##   I 见面册打听：复刻设计 §8.7「见面册打听写成『某人压低声音说。』行情写成『某港　眼下缺某货，一件能多得　多少钱。』」。
 ##     修前见面页把酒馆那句整句搬来：「林阿舶压低声音说。⏎⏎邻座的牙人压低声音：「耽罗　眼下缺…」」——一段里两个人压低声音，
 ##     市舶司小吏那页也冒出「邻座的牙人」；现由见面的人自己说行情那句，酒馆长凳上的「打听」照旧是邻座牙人。
+##   J 围城港见小吏打听：牙行闭门、打听不出行情时 _gather_price_intel 回的是酒馆旁白「【闲谈】几个老水手翻来覆去只讲当年的风暴，
+##     没打听出新行情。」——修前照样套「市舶司小吏压低声音说。」领起，成了小吏压低声音讲「几个老水手……没打听出新行情」。
+##     现由他自己说一句没有新行情；福州 1276-10、广州 1276-11 两处围城实摆。
 ##   C 人物志未识的职事：页上写「雇过此人，册上才有其详」，可规矩（CharacterArt.is_known）是见过即识——酒馆里看过他的候选卡
 ##     （TavernPage 记 note_met）就算，不必花入伙钱。现写「见过此人」，并实跑：没雇、只进了他候雇的酒馆，人物志就认得他。
 ##   R 人物志关系签：已识之人页上「关系」里指向未识之人的签（「未识 / 旧水手」），悬停提示修前读设定集原稿 title——
@@ -81,6 +84,7 @@ func _boot() -> void:
 	await _h_leave_hint()
 	await _n_wall_dates()
 	await _i_npc_intel()
+	await _j_npc_no_intel()
 	await _c_codex_unknown_crew()
 	await _r_rel_chip_tips()
 	await _p_hire_port_hint()
@@ -295,6 +299,37 @@ func _i_npc_intel() -> void:
 	# 酒馆长凳上的「打听」不动：那里本来就是邻座牙人卖的行情（角色设定集「酒馆邻座压低声音卖你一条行情」）
 	var bench := str(_main.call("_gather_price_intel", "quanzhou"))
 	_expect(bench.contains("邻座的牙人压低声音：") and bench.contains("眼下缺"), "酒馆长凳打听照旧是邻座牙人那句（实读：%s）" % bench)
+
+
+# ── J 围城港见小吏打听：没有行情，他自己说没有，不把旁白塞进他嘴里 ──
+
+func _j_npc_no_intel() -> void:
+	print("── J 围城港（牙行闭门，打听不出行情）见小吏打听：他自己说没有新行情，不把酒馆旁白「几个老水手……」塞进他嘴里")
+	for spec in [["fuzhou", 1276, 10], ["guangzhou", 1276, 11]]:
+		_stage(int(spec[1]), int(spec[2]), 4)
+		_gs.last_port = str(spec[0])
+		await _goto(str(spec[0]) + "_yamen")
+		var meet := _button("见")
+		if meet == null:
+			_expect(false, "%s 市舶司没有「见」钮，见面页无从摆" % spec[0])
+			continue
+		meet.pressed.emit()
+		for i in 4:
+			await process_frame
+		var ask := _button("打听")
+		if ask == null:
+			_expect(false, "%s 见面页没有「打听」钮" % spec[0])
+			continue
+		ask.pressed.emit()
+		for i in 2:
+			await process_frame
+		var said := str(_main.get("npc_dialog_lbl").text)
+		var bench := str(_main.call("_gather_price_intel", str(spec[0])))
+		_expect(bench.begins_with("【闲谈】") and said.begins_with("市舶司小吏") and said.contains("没什么新行情")
+				and not said.contains("老水手") and not said.contains("压低声音"),
+			"%s %d-%02d 围城：长凳打听是旁白闲谈（%s），见面页小吏自己说没有新行情（实读：%s）" % [
+				spec[0], spec[1], spec[2], bench, said.replace("\n", "⏎")])
+		_main.call("_on_npc_leave")
 
 
 # ── C 人物志未识的职事：见过即识，页上就写见过 ──

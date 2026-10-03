@@ -242,8 +242,8 @@ static func set_npc_speech(main: Control, text: String) -> void:
 
 
 static func on_npc_intel(main: Control, n_name: String) -> void:
-	var heard := UiTheme.plain_log(main._gather_price_intel(GameState.last_port)).trim_prefix(BENCH_LEAD)
-	main._set_npc_speech("%s压低声音说。\n\n%s" % [n_name, heard])
+	var heard := UiTheme.plain_log(main._gather_price_intel(GameState.last_port))
+	main._set_npc_speech("%s压低声音说。\n\n%s" % [n_name, heard.trim_prefix(BENCH_LEAD)] if heard.begins_with(BENCH_LEAD) else NO_INTEL % n_name)
 
 
 static func on_npc_bribe(main: Control, n_name: String) -> void:
@@ -271,3 +271,8 @@ const NPC_GREETING := {
 ## 带着「邻座的牙人压低声音：」领起——原样搬来就成了「林阿舶压低声音说。」下面又一个牙人压低声音，市舶司里也冒出邻座。
 ## on_npc_intel 去掉这截领起；酒馆长凳上的「打听」照旧是邻座牙人那句。
 const BENCH_LEAD := "邻座的牙人压低声音："
+
+## 打听不出行情（围城港牙行闭门、各港都没有价差）时 _gather_price_intel 回的是酒馆旁白「【闲谈】几个老水手翻来覆去只讲当年的风暴，
+## 没打听出新行情。」——那是长凳上听来的，不是见面这人的话。修前照样套「某人压低声音说。」，福州 1276-10 围城时
+## 市舶司小吏就压低声音讲「几个老水手……」；现由他自己说一句没有。
+const NO_INTEL := "%s摇了摇头：「眼下没什么新行情。」"
