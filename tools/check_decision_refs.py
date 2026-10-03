@@ -1284,7 +1284,7 @@ def self_check():
               "- 旧版 `Z-R3-Fake.gd:1`（原文作 `:1`；`Z-R3-Fake.gd:5` 区段后的同文件新引用——区段遇 '；' 即截，不许把 5 吞进括注里）\n")
     n_r3, _f, _r, _t = check(argparse.Namespace(show=False), doc_r3,
                              MemRepo({"Z-R3-Fake.gd": "x\n"}, {"Z-R3-Fake.gd": "x\n"}), "0000000", quiet=True)
-    if len(_r) != 2 or n_r3["refs"] != 2 or rod_assert(n_r3, 0, 0, "竿位自检 Z-R3") == 0 or not n_r3["bad"]:
+    if len(_r) != 2 or n_r3["refs"] != 2 or rod_assert(n_r3, 0, 0, "竿位自检 Z-R3", quiet=True) == 0 or not n_r3["bad"]:
         bad += 1
         print(f"  ✗ 清零判竿位自检 Z-R3：「原文作」区段后的新引用没被另算、或竿格被摘除（refs={n_r3['refs']} bad={n_r3['bad']} rod 判语行数不对）——"
               f"区段遇 '；' 收截的格位字面，或 ROD_CHECKS 六格被抽空（竿死 silent 绿 = Z-R3 先拦）")
