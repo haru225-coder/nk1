@@ -10,8 +10,12 @@ extends Node
 ## 逐路一行 W53_9_CASE <路> OK|FAIL <细节>；末行 QA_W53_9_CUTSCENE_INPUT OK | FAIL <n>，rc 0 / 1。
 ## 等待一律按状态推进、上界按墙钟（CASE_MS）；撞上界判红并写明「墙钟上界先到」，不碰运气。
 ## 压帧自检：NK1_PROBE_SLOW_MS=150 DISPLAY=:2 godot --path . res://tools/qa_w53_9_cutscene_input_probe.tscn
+## 本进程 SCRIPT ERROR 即红（共用件 tools/script_err_tally.gd）；五路每路都得出一行判词——某一路半路被脚本错掐断，
+## GDScript 只中止那一个函数、await 照样返回，其余几路照跑照绿，末行原先照报 OK（静默绿），现在缺哪路判词即点名判红。
+## _run 自身半路出错由 _run_guarded 就地判红收尾，不留空转给外层 timeout。
 
 const ShotGate := preload("res://tools/shot_gate.gd")
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const TAG := "QA_W53_9_CUTSCENE_INPUT"
 ## 探针自己发的鼠标 / 触屏事件打这个 device 号（与共用 X 上的真指针分开）
@@ -24,22 +28,35 @@ const PH_OUTRO := 2
 const PH_FADE := 3
 ## FADE 里只在前半截按：按下的事件下一帧才分发，留出一帧（delta 封顶 0.133 s）的余量，免得落到本层释放之后
 const FADE_PRESS_UNTIL := 0.2
+## 每路都得出判词（_verdict 的路名）：缺一路 = 那一路半路被掐断，没测到
+const CASES := ["touch_one_step", "outro_esc_curtain", "ut_click_scope", "ending_fade_key", "ending_fade_click"]
 
 var _fails := 0
 var _main: Node
 var _cine: GDScript
+var _tally: ScriptErrTally
+var _reported := false
+var _seen := {}
 
 
 func _ready() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_verdict("run", false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _run() -> void:
 	get_window().size = Vector2i(1280, 720)
 	if Kit.is_headless():
-		print("W53_9_CASE all FAIL headless 下过场不建节点：须 DISPLAY=:2 带窗口、以场景启动")
-		print("%s FAIL 1" % TAG)
-		get_tree().quit(1)
+		_verdict("all", false, "headless 下过场不建节点：须 DISPLAY=:2 带窗口、以场景启动")
+		_report()
 		return
 	ShotGate.frame_pressure(get_tree())
 	_cine = load("res://scripts/cutscene/Cinematics.gd")
@@ -56,14 +73,29 @@ func _run() -> void:
 	await _case_ut_click_scope()
 	await _case_ending_fade_key()
 	await _case_ending_fade_click()
-	print("%s %s" % [TAG, "OK" if _fails == 0 else "FAIL %d" % _fails])
-	get_tree().quit(1 if _fails > 0 else 0)
+	_report()
 
 
 func _verdict(case_name: String, ok: bool, detail: String) -> void:
+	_seen[case_name] = true
 	if not ok:
 		_fails += 1
 	print("W53_9_CASE %s %s %s" % [case_name, "OK" if ok else "FAIL", detail])
+
+
+## 收尾：五路判词点名对账，再判本进程 SCRIPT ERROR（共用件两判），印末行、退出
+func _report() -> void:
+	_reported = true
+	var missing := PackedStringArray()
+	for c in CASES:
+		if not _seen.has(c):
+			missing.append(c)
+	if not missing.is_empty():
+		_verdict("cases", false, "这几路没出判词（半路被脚本错掐断、或提前 return，等于没测）：" + "、".join(missing))
+	for v in _tally.verdicts():
+		_verdict("script_errors", v[0], v[1])
+	print("%s %s" % [TAG, "OK" if _fails == 0 else "FAIL %d" % _fails])
+	get_tree().quit(1 if _fails > 0 else 0)
 
 
 # ── 输入 ───────────────────────────────────────────────
