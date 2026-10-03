@@ -1477,8 +1477,11 @@ func _fleet_power() -> float:
 
 
 ## Lane L：海战题签用港外海域名（「泉州外海」）；无起运港则退回「外海」。
+## 港取船这一日的所在（_sea_here：船标所在里程处离得最近的港），不取起锚港——原先恒写起锚港，泉州往博多走到九成、
+## 船离泉州两千三百里、就在博多唐房外，题签仍写「泉州外海・遇敌」，海战的流也按闽海定（SeaState 按题签里的港名认海域），
+## 不是那一带的黑潮（lane w53-1）
 func _battle_sea_name() -> String:
-	var pid := str(origin_port)
+	var pid := _sea_here()
 	if pid == "":
 		pid = str(GameState.last_port)
 	var pname := str(GameManager.get_port_name(pid))

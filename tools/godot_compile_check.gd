@@ -165,6 +165,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_1_chart_follow_ship_probe.gd",  # lane w53-1 远程航行镜头跟船探针
 	"res://tools/qa_w53_1_dest_hint_probe.gd",  # lane w53-1 目的地出带箭头避让港标探针
 	"res://tools/qa_w53_11_run_watch_probe.gd",  # lane w53-11 截图门禁共用件 shot_gate「_run 断气」看门自证探针
+	"res://tools/qa_w53_1_battle_sea_name_probe.gd",  # lane w53-1 海上遇敌海域名按船当日所在取港探针
 	"res://tools/qa_crew_fold_host.gd",  # lane w30-k3 qa_crew_fold_probe 仿作宿主（LogFold.render 直收字段件）
 	"res://tools/qa_crew_fold_probe.gd",  # lane w30-k3 多雇员【欠饷】字面一览（工食合计 / 俸最高者先走）+ LogFold.render fold:i 展开字样断言探针
 	"res://tools/qa_cargo_strip_probe.gd",  # lane w29-k2 船籍簿船舱段 cargo_str（品名 × 数量 / 容量 / 空舱）上屏断言探针
