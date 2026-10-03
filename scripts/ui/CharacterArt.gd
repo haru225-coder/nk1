@@ -491,6 +491,21 @@ static func hire_port_name(ch: Dictionary) -> String:
 	return GameManager.get_port_name(pid) if pid != "" and Crew.on_offer(cand) else ""
 
 
+## 未识之人的一句提示：人物志「未识」页、名册立绘面板同读（lane w53-7 从 CharacterCodex._fill_unknown 挪来，两处一个字不差）。
+## 职事候选写「见过此人，册上才有其详。」，此刻在哪港候雇再补一句；其余写「其人其事，尚未传到你耳中。」
+static func unknown_hint(ch: Dictionary) -> String:
+	if crew_id_of(ch) == "":
+		return "其人其事，尚未传到你耳中。"
+	var port := hire_port_name(ch)
+	return "见过此人，册上才有其详。" + ("据牙人说，在%s一带候雇。" % port if port != "" else "")
+
+
+## 未识之人身份一行：只写人物志称谓（与名册格、未识页同一句），取不到写「来历未详」；籍贯、字号都不露。
+static func unknown_title(ch: Dictionary) -> String:
+	var t := codex_title(ch)
+	return t if t != "" else "来历未详"
+
+
 # ── 画 ─────────────────────────────────────────────
 
 ## 此刻该挂哪张立绘。characters.json 可选 portrait_before {"YYYY-MM": 路径}：日历早于那个月时挂那一张，

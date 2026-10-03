@@ -25,6 +25,9 @@ extends SceneTree
 ##   P 人物志未识职事页「据牙人说，在某港候雇」：修前只查名册里的 port，不看章节、旗标、史实辞船前夕——第一章就把第二章才到明州的
 ##     蔡七星指去明州（明州酒馆里没有他），没走过寺社引荐也指人去博多找记名沙弥。现与酒馆同读 Crew.on_offer：此刻真在那港候雇才写；
 ##     并按四个时点把每位职事候选过一遍：未识页指港 ⇔ 那港酒馆此刻列他。
+##   M 名册只露认得的人：岸上「名册」（人物志「立绘册」同一件）修前把七十五人的名字、画像、生卒、登场、小传、五维全摆出来——
+##     宝祐年间翻「史实」就是伯颜、宋恭帝，翻「主」就是第二章才登场的林华。现与人物志同一条「已识」规矩：未识之人行上写「未识」、
+##     短注只写人物志称谓，立绘面板只出墨影、「未识之人」、称谓与一句提示。按两个时点四个页签逐行与人物志名册格对照。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 ## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
@@ -88,6 +91,7 @@ func _boot() -> void:
 	await _c_codex_unknown_crew()
 	await _r_rel_chip_tips()
 	await _p_hire_port_hint()
+	await _m_roster_gate()
 	_report()
 
 
@@ -414,6 +418,94 @@ func _p_hire_port_hint() -> void:
 		_expect(checked >= 15 and bad.is_empty(),
 			"%d-%02d 第%d段%s：%d 位职事候选，未识页指港与那港酒馆列名一致（不一致：%s）" % [
 				st[0], st[1], st[2], "（有寺社引荐）" if st[3] else "", checked, "无" if bad.is_empty() else "；".join(bad)])
+
+
+# ── M 名册只露人物志认得的人 ──
+
+func _m_roster_gate() -> void:
+	print("── M 岸上「名册」只露人物志认得的人：未识之人行上写「未识」、只写人物志称谓，立绘面板不出名字、生卒、小传、五维")
+	for st in [[1258, 3, 1], [1270, 5, 3]]:
+		_stage(int(st[0]), int(st[1]), int(st[2]))
+		_gs.visited_ports = ["quanzhou"]
+		var grid: Dictionary = await _codex_grid()
+		_main.call("_open_chars_wire", "")
+		for i in 4:
+			await process_frame
+		var ov: Node = _main.get("_chars_wire")
+		var roster: Node = ov.get("_roster") if ov != null else null
+		if roster == null:
+			_expect(false, "岸上名册浮页起不来（_chars_wire / _roster 为空）")
+			return
+		var checked := 0
+		var unknown := 0
+		var bad: Array = []
+		for tab in ["主", "职事", "市井", "史实"]:
+			roster.call("_on_tab", tab)
+			await process_frame
+			for row in roster.find_children("Row_*", "PanelContainer", true, false):
+				var id := str(row.name).trim_prefix("Row_")
+				if not grid.has(id):
+					bad.append("%s 不在人物志名册里" % id)
+					continue
+				var g: Array = grid[id]
+				var shown := str((row.find_child("Name", true, false) as Label).text)
+				var note := str((row.find_child("Note", true, false) as Label).text)
+				checked += 1
+				if str(g[0]) == "未识":
+					unknown += 1
+					var want_note := "来历未详" if str(g[1]) == "未详" else str(g[1])
+					var face_q := false
+					for l in row.find_children("*", "Label", true, false):
+						face_q = face_q or str((l as Label).text) == "？"
+					if shown != "未识" or note != want_note or not face_q:
+						bad.append("%s 名格「%s」短注「%s」（人物志：未识 / %s）头面「？」%s" % [id, shown, note, want_note, face_q])
+				elif shown != str(g[0]):
+					bad.append("%s 名格「%s」≠ 人物志「%s」" % [id, shown, g[0]])
+		_expect(checked >= 70 and unknown >= 20 and bad.is_empty(),
+			"%d-%02d 第%d段：名册四页 %d 行（未识 %d）逐行与人物志名册格一致（不一致：%s）" % [
+				st[0], st[1], st[2], checked, unknown, "无" if bad.is_empty() else "；".join(bad.slice(0, 6))])
+		if int(st[0]) == 1258:
+			# 林华第二章才登场：立绘面板只出「未识」名牌、「未识之人」、称谓与提示；林阿舶认得，照出五维
+			ov.call("focus_id", "lin_hua")
+			await process_frame
+			var lin := _panel_texts(ov)
+			_expect(lin.has("未识") and lin.has("未识之人") and lin.has("泉州码头水手") and lin.has("其人其事，尚未传到你耳中。")
+					and not lin.has("林华") and not lin.has("航术") and not lin.has("生卒") and not lin.has("登场") and not lin.has("画像"),
+				"1258 名册点林华（未识）：面板只有「未识」名牌、「未识之人」、称谓与一句提示，名字 / 五维 / 生卒 / 登场 / 画像都不出（实读：%s）" % " | ".join(lin))
+			ov.call("focus_id", "merchant_lin")
+			await process_frame
+			var abo := _panel_texts(ov)
+			_expect(abo.has("林阿舶") and abo.has("航术") and not abo.has("未识之人"),
+				"1258 名册点林阿舶（已识）：面板照出名字与五维（实读：%s）" % " | ".join(abo.slice(0, 8)))
+		_main.call("_close_chars_wire")
+		for i in 3:
+			await process_frame
+
+
+## 人物志名册格：{id: [名格（未识写「未识」）, 称谓格]}——名册页对照的底账（只读界面，不碰人物取数口）
+func _codex_grid() -> Dictionary:
+	var cx: Control = (load("res://scripts/ui/CharacterCodex.gd") as GDScript).new()
+	root.add_child(cx)
+	cx.call("begin", "")
+	cx.call("_on_tab", "all")
+	await process_frame
+	var out := {}
+	for cell in cx.find_children("Cell_*", "Button", true, false):
+		var col: Node = cell.get_child(0)
+		out[str(cell.name).trim_prefix("Cell_")] = [str((col.get_node("Name") as Label).text), str((col.get_child(2) as Label).text)]
+	cx.queue_free()
+	await process_frame
+	return out
+
+
+## 名册浮页右栏立绘面板上看得见的字（含名牌）
+func _panel_texts(ov: Node) -> Array:
+	var out: Array = []
+	var panel: Node = ov.get("_panel")
+	for l in panel.find_children("*", "Label", true, false):
+		if not (l as Label).is_queued_for_deletion():
+			out.append(str((l as Label).text))
+	return out
 
 
 # ── R 人物志关系签：指向未识之人的悬停提示写人物志上屏称谓 ──

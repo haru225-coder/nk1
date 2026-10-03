@@ -20,6 +20,9 @@ extends SceneTree
 ##   W5 每档各一屏：无角色的档三屏（W1 主档全景 / W2 陈瓒 / W3 泉州海商）+ 职事页无档空档一屏；有角色的档两屏（替身全景 /
 ##      陈老舵详情）；共 6 张 wire_*.png。
 ##   ——名牌 / 品级 / 阵营 / 五维 / 短注 / 身份行隐藏段不透出，六项断言每一行在判什么都写在上头对应的 ## 行里。
+##   名册只露人物志认得的人（lane w53-7）：无角色的档是宝祐三年开局，陈瓒第四章才登场、职事一个也没见过——
+##   W2 前先记「见过陈瓒」再看他的短注与身份行；W4a 职事页未识之人那一行名格写「未识」、行里不出他的名字；
+##   W4b 雇下陈老舵后重排职事页，他那一行才写名。
 ## 反向变异自证（探针不依赖被改件的措辞，换行对不上即 rc=1）：「focus_id 后 _panel 信然不改（选中者接线断）」→ W2 / W3 红；
 ##   「陈瓒的 faction / bio_short 改错」→ W2 / W3 红；「hired 底账改绑别 id（数据源切错）」→ W4 红（验证留痕见 Verify）。
 ## 接线口径：等待只走 probe_clock 的演出推进（帧数下限 + 补间演完 + 墙钟上界），不按魔法帧数 --quit-after；
@@ -78,6 +81,8 @@ func _run() -> void:
 	_expect_panel_badge("W1", "chen_wenlong")
 	_expect_panel_pin("W1", "chen_wenlong")
 
+	# 名册只露认得的人：陈瓒第四章才登场，开局的档里先记作见过（不落存档），他的面板才有短注 / 身份行可看
+	(root.get_node("/root/GameState") as Node).call("note_met", "chen_zan")
 	_ov.call("focus_id", "chen_zan")
 	await _settle(8)
 	await _shot("wire_02_placeholder")
@@ -119,6 +124,11 @@ func _run() -> void:
 		quit(_finish())
 		return
 	await _settle(2)
+	# 雇下即识：重排职事页，陈老舵那一行才写他的名（行是排页时现做的）
+	roster.call("_on_tab", "主")
+	await _settle(2)
+	roster.call("_on_tab", "职事")
+	await _settle(4)
 	await _shot("wire_05_hired_crew")
 	# W4b：职事页签行数 / 首行名 == hired 真值（陈老舵一名在职）
 	_expect_crew_rows("W4b", roster, [HIRE_BOND])
@@ -366,9 +376,17 @@ func _expect_crew_rows(where: String, roster: Object, hired_ids: Array) -> void:
 		if ch.is_empty():
 			_fail("%s：Row_%s 的 id 账册查无此人（名册里混进了不在数据原稿的行）" % [where, str(id)])
 			continue
-		var want: String = _Art.display_name(ch)
-		if labels.size() < 1 or str((labels[0] as Label).text) != want:
-			_fail("%s：Row_%s 首行名「%s」≠ 数据 display_name「%s」（替身对位断——名册 id 挂错了名）" % [where, str(id), str((labels[0] as Label).text) if labels.size() > 0 else "<no label>", want])
+		# 名格（Name）：认得的写 display_name，未识的写「未识」、整行不出他的名字（lane w53-7 名册只露认得的人）
+		var known: bool = _Art.is_known(ch)
+		var want: String = _Art.display_name(ch) if known else "未识"
+		var name_lbl := row.find_child("Name", true, false) as Label
+		var got := str(name_lbl.text) if name_lbl != null else "<no Name>"
+		if got != want:
+			_fail("%s：Row_%s 名格「%s」≠「%s」（%s——名册 id 挂错了名，或未识之人露了名）" % [where, str(id), got, want, "已识" if known else "未识"])
+		if not known:
+			for l in labels:
+				if str((l as Label).text).contains(_Art.display_name(ch)):
+					_fail("%s：Row_%s 未识之人那一行露出了名字「%s」（%s）" % [where, str(id), _Art.display_name(ch), str((l as Label).text)])
 	for id in hired_ids:
 		if not rows.has(str(id)):
 			_fail("%s：在船者 %s 的 Row_ 没落进职事页签（其职事锚档 / 页签切片断）" % [where, str(id)])

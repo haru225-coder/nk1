@@ -9,6 +9,9 @@ const PIC := Vector2i(256, 320)
 const INFO_W := 276.0
 
 var current_id := ""
+## 只露人物志认得的人（lane w53-7，同 CharRoster.gate_known）：未识之人画像糊成墨影、名牌写「未识」，
+## 右栏只有「未识之人」、人物志称谓与一句提示（CharacterArt.unknown_hint），生卒、登场、短注、五维、特技都不出。演示页自己关掉。
+var gate_known := true
 var _frame: PanelContainer
 var _pic: TextureRect
 var _chips: HBoxContainer
@@ -75,19 +78,31 @@ func show_character(ch: Dictionary) -> void:
 	if _info == null:
 		_build()
 	current_id = str(ch.get("id", ""))
+	var known := not gate_known or Art.is_known(ch)
 	_pic.texture = Art.thumb(ch, PIC)
+	_pic.modulate = Color.WHITE
+	if not known:
+		# 与人物志未识页同一手：画像先糊掉再压成一成半的墨影，只压暗时脸和铠甲还认得出
+		var soft := Art.blurred(_pic.texture, 12.0)
+		if soft != null:
+			_pic.texture = soft
+		_pic.modulate = Color(0.13, 0.115, 0.10)
 	var plate := _frame.get_node_or_null("NamePlate/Name") as Label
-	var nm := Art.display_name(ch)
+	var nm := Art.display_name(ch) if known else "未识"
 	if plate != null:
 		plate.text = nm
 		plate.add_theme_font_override("font", Art.title_font_for(nm))
 	for c in _chips.get_children():
 		c.queue_free()
-	_chips.add_child(Art.faction_chip(ch))
+	if known:
+		_chips.add_child(Art.faction_chip(ch))
 	var tier := Art.label(str(Art.TIER_NAME.get(str(ch.get("tier", "")), "")), UiTheme.SIZE_FOOT, UiTheme.TEXT_DIM)
 	tier.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_chips.add_child(tier)
-	_fill_info(ch, nm)
+	if known:
+		_fill_info(ch, nm)
+	else:
+		_fill_unknown(ch)
 	if DisplayServer.get_name() != "headless" and is_inside_tree():
 		_pic.modulate.a = 0.0
 		create_tween().tween_property(_pic, "modulate:a", 1.0, 0.22).set_trans(Tween.TRANS_SINE)
@@ -120,6 +135,19 @@ func _fill_info(ch: Dictionary, nm: String) -> void:
 	if traits.get_child_count() > 0:
 		_info.add_child(traits)
 	_kv("画像", _paint_state(ch))
+
+
+## 未识之人：「未识之人」、人物志称谓、一句提示（与人物志未识页同一句）。
+func _fill_unknown(ch: Dictionary) -> void:
+	for c in _info.get_children():
+		_info.remove_child(c)
+		c.queue_free()
+	var head := Art.label("未识之人", 36, UiTheme.TEXT_DIM, true)
+	head.name = "Name"
+	_info.add_child(head)
+	_info.add_child(Art.rule())
+	_kv("身份", Art.unknown_title(ch))
+	_info.add_child(_para(Art.unknown_hint(ch), 16, UiTheme.TEXT_DIM))
 
 
 ## appear_line 自带「登场」「见于」动词，这里只留章次；史实人物照写「见于」。

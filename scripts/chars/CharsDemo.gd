@@ -136,10 +136,13 @@ func _build() -> void:
 		lm.add_theme_constant_override("margin_%s" % side, 12)
 	left.add_child(lm)
 	roster = Roster.new()
+	# 演示页给巡检看全体画像：不按人物志「已识」遮（游戏里的岸上名册、人物志立绘册照遮）
+	roster.gate_known = false
 	lm.add_child(roster)
 	roster.picked.connect(_pick)
 
 	panel = PortraitPanel.new()
+	panel.gate_known = false
 	# name 保留 CharPortraitPanel（_init 已设），供巡检定位
 	row.add_child(panel)
 	# 名册 : 面板按比例分栏（原先名册钉死 404，大分辨率下左窄、面板空出一大片）

@@ -23,6 +23,11 @@ const COLUMN_MIN_W := 404.0
 const COLUMN_RATIO := 0.75
 
 var tab := "主"
+## 只露人物志认得的人（lane w53-7）：未识之人行上写「未识」、头面换一方墨底「？」、短注只写人物志称谓，
+## 名字、立绘、字号、籍贯、阵营都不露——与人物志名册格、未识页同一条规矩（CharacterArt.is_known）。
+## 修前岸上「名册」与人物志「立绘册」把七十五人的名字、画像、生卒、小传、五维全摆出来，宝祐年间就翻得到伯颜、林华。
+## 演示页 CharsDemo 是给巡检看全体画像的，自己关掉。
+var gate_known := true
 var _list: VBoxContainer
 var _tabs_row: HBoxContainer
 var _rows: Dictionary = {}
@@ -179,15 +184,23 @@ func _build_row(ch: Dictionary) -> Control:
 	face.add_theme_stylebox_override("panel", UiTheme.icon_frame())
 	face.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var pic := Art.picture(Art.thumb(ch, HEAD, true), Vector2(HEAD))
-	pic.name = "Head"
-	face.add_child(pic)
+	var known := not gate_known or Art.is_known(ch)
+	if known:
+		var pic := Art.picture(Art.thumb(ch, HEAD, true), Vector2(HEAD))
+		pic.name = "Head"
+		face.add_child(pic)
+	else:
+		# 未识：一方墨底「？」（与人物志关系签同一件），不取他的画像
+		var blank := Art.unknown_face(Vector2(HEAD), 18)
+		blank.name = "Head"
+		face.add_child(blank)
 	h.add_child(face)
-	var nm := Art.label(Art.display_name(ch), 20, UiTheme.TEXT, true)
+	var nm := Art.label(Art.display_name(ch) if known else "未识", 20, UiTheme.TEXT if known else UiTheme.TEXT_DIM, true)
+	nm.name = "Name"
 	nm.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	nm.custom_minimum_size.x = 96
 	h.add_child(nm)
-	var sub := Art.label(_subtitle(ch), UiTheme.SIZE_FOOT, UiTheme.TEXT_DIM)
+	var sub := Art.label(_subtitle(ch) if known else Art.unknown_title(ch), UiTheme.SIZE_FOOT, UiTheme.TEXT_DIM)
 	sub.name = "Note"
 	sub.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	sub.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -197,9 +210,10 @@ func _build_row(ch: Dictionary) -> Control:
 	sub.tooltip_text = sub.text
 	sub.mouse_filter = Control.MOUSE_FILTER_PASS
 	h.add_child(sub)
-	var chip := Art.faction_chip(ch, false, 15)
-	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	h.add_child(chip)
+	if known:
+		var chip := Art.faction_chip(ch, false, 15)
+		chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(chip)
 	return row
 
 
