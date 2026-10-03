@@ -4633,7 +4633,7 @@ NAMED_FUNCS = {
         "upgrade_armor", "upgrade_sail",
     ),
     "scripts/core/SaveLoad.gd": (
-        "_bak_path", "_harden_state", "_normalise_flags", "_normalise_ids", "_valid_flag_name", "has_save", "load_game",
+        "_bak_path", "_harden_state", "_normalise_flags", "_normalise_ids", "_valid_flag_name", "has_save", "load_game", "save_game",
     ),
     "scripts/core/UiTheme.gd": (
         "paper_card", "plain_log", "shore_door", "style_button", "style_chip", "style_choice_button",
@@ -4945,6 +4945,25 @@ if 0 <= _clear_at < _load_at and "_log_folds = {}" in _load_slot_code and "SaveL
 else:
     print("  ✗ 读档不清船籍簿记事，或清在 load_game 之后（读档时的勾稽一声会被抹）")
     problems.append("读档未先清记事")
+
+# lane w53-5 四轮：航海日志册页「记录」的两道把关。此前没有一道 Godot 门禁打开过这张册页，上一格只认字样：删掉
+# `write.disabled = read_only` 或让「记录」不看 save_game 回值照报已记入，一键全绿（四轮变异实测）。
+# 标题页「续卷」进来只许翻阅（续卷钮接 _show_save_dialog.bind(true)、记录钮 disabled = read_only）——放开了，标题页一点「记录」
+# 就把还没开局的空白局面写进那一卷，真进度退成副抄、册页上再翻不到；「翻阅」按 can_load 定可按；记录写不进先 return
+# （不合册页、不报已记入）。运行时断言见 tools/qa_w53_5_save_sheet_probe.gd。
+_sv_fail = _save_slot_code.find("if not SaveLoad.save_game(slot")
+_sv_ret = _save_slot_code.find("return", _sv_fail) if _sv_fail >= 0 else -1
+_sv_ok = _save_slot_code.find("已记入")
+if (
+    "_resume_button.pressed.connect(_show_save_dialog.bind(true))" in main_src
+    and "write.disabled = read_only" in _save_dialog_code
+    and "read.disabled = not SaveLoad.can_load(n)" in _save_dialog_code
+    and 0 <= _sv_fail < _sv_ret < _sv_ok
+):
+    print("  ✓ 航海日志册页：标题页续卷「记录」不给按、「翻阅」按 can_load、记录写不进不报已记入")
+else:
+    print("  ✗ 航海日志册页：标题页续卷「记录」放开、「翻阅」不按 can_load，或记录写不进照报已记入（标题页一点即把空白局写进那一卷）")
+    problems.append("航海日志册页记录把关缺失")
 
 print()
 print()

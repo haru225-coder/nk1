@@ -39,6 +39,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_5_half_write_probe.gd",  # lane w53-5 半写档探针——只写 .tmp 注入，记录 / 迁移回写须读回核对后才落位
 	"res://tools/qa_w53_5_load_log_probe.gd",  # lane w53-5 读档后船籍簿记事栏探针——读早一卷不留后事、勾稽一声照记、坏卷不清
 	"res://tools/qa_w53_5_roundtrip_probe.gd",  # lane w53-5 存档「全字段往返」探针——to_dict→save→脏场→load→逐键对账
+	"res://tools/qa_w53_5_save_sheet_probe.gd",  # lane w53-5 航海日志册页探针——标题页续卷「记录」不给按、「翻阅」按 can_load、记录写不进不报已记入
 	"res://tools/qa_drydock_probe.gd",
 	"res://tools/qa_voyage_status_probe.gd",
 	"res://tools/qa_market_panel_probe.gd",

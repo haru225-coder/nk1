@@ -84,6 +84,7 @@ EXEMPT = [
     ("qa_w53_5_half_write_probe.gd", "lane-w53-5", "半写档探针（只写 .tmp 注入：记录与迁移回写须核对后才落位），动存档写入路径时加跑"),
     ("qa_w53_5_load_log_probe.gd", "lane-w53-5", "读档后船籍簿记事栏探针（读早一卷不留后事、勾稽一声照记、坏卷不清），动读档流程时加跑"),
     ("qa_w53_5_roundtrip_probe.gd", "lane-w53-5", "存档全字段往返探针（to_dict↔from_dict 逐键等比），动存档结构时加跑"),
+    ("qa_w53_5_save_sheet_probe.gd", "lane-w53-5", "航海日志册页钮态与记录回执探针（标题页续卷「记录」不给按、「翻阅」按 can_load、记录写不进不报已记入），动 SaveSheet / 续卷接线时加跑"),
     ("qa_w53_6_beat_replay_probe.gd", "lane-w53-6", "港口节拍不重演回归探针（新局卷首走到首抵泉州、老档补账），随 lane-w53-6 落地验过留档"),
     ("qa_w53_6_guild_spreads_probe.gd", "lane-w53-6", "行会抄本 / 打听不荐牙行闭门港回归探针（博多封港、福州围城），随 lane-w53-6 落地验过留档"),
     ("qa_w53_6_port_exits_probe.gd", "lane-w53-6", "港内设施页各有「离开」回归探针（玉湖陈宅补回），随 lane-w53-6 落地验过留档"),
