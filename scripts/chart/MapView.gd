@@ -14,6 +14,8 @@ const ZOOM_MAX := 3.2    # 岸线数据 0.008 度、底图 0.9 km/px，再放大
 ## 窗口一高还会顶到 3.2：一屏只剩港湾一角、比例尺缩到一百里嫌长，底图 0.9 km/px 放大近两倍已发糊。
 ## 收到 1.5：图带（1280×336 屏幕 px）约合 770×200 公里，港口两侧各露出一段岸线与陆地轮廓，底图每像素放大不过 1.5 倍。
 const FRAME_ZOOM_MAX := 1.5
+## 航行中镜头跟船：船标离图带边至少留这么多屏幕像素（_follow_ship）
+const FOLLOW_MARGIN := 64.0
 const DRAG_FRICTION := 6.5
 const KM_PER_LI := 0.576
 
@@ -83,6 +85,9 @@ var _dragging := false
 var _drag_last := Vector2.ZERO
 var _velocity := Vector2.ZERO
 var _cam_tween: Tween
+var _follow_tween: Tween                # 跟船平移（_keep_in_band）：与取景补间分开，下一日接着跟时顶掉它重起
+var _follow := false                    # 镜头在跟船；玩家拖动 / 缩放即关（_take_camera），下一日船标还在图带里再开
+var _ship_goal := Vector2.ZERO          # 船标这一日的落点：跟船按它平移，图带变了也按它保船标
 var _ship_tween: Tween
 var _mode_tween: Tween
 var _hover_port: String = ""
@@ -409,6 +414,7 @@ func move_ship_lonlat(lon: float, lat: float, heading_deg: float, frac: float, d
 	if route_points.size() >= 2 and route_total > 0.0:
 		var s0 := _arc_of_point(from_pos)
 		var s1 := _arc_of_point(target)
+		_follow_ship(from_pos, _pose_at_arc(s1)[0], dur)
 		_ship_tween.tween_method(func(t: float):
 			var pose := _pose_at_arc(lerpf(s0, s1, t))
 			ship.position = pose[0]
@@ -418,6 +424,7 @@ func move_ship_lonlat(lon: float, lat: float, heading_deg: float, frac: float, d
 			layer_route.queue_redraw()
 		, 0.0, 1.0, maxf(0.01, dur)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	else:
+		_follow_ship(from_pos, target, dur)
 		_ship_tween.tween_method(func(t: float):
 			ship.position = from_pos.lerp(target, t)
 			ship.rotation = lerp_angle(from_rot, rot, t)
@@ -452,6 +459,50 @@ func _arc_of_point(p: Vector2) -> float:
 ## 弧长 s 处的位置与朝向（弧度，图上正北为 0）
 func _pose_at_arc(s: float) -> Array:
 	return route_pose(0.0 if route_total <= 0.0 else clampf(s / route_total, 0.0, 1.0))
+
+
+## 船标这一日要走出图带就平移镜头跟上（lane w53-1）：远程（明州—占城、占城—萨摩）缩到最小也装不下起讫两港，
+## 发舶取景保起点，船走到半程就钻到航向牌底下，后十几日一路看不见。与补间同时、同长平移，只挪到船标离图带边留
+## FOLLOW_MARGIN 屏幕像素，不改缩放。玩家拖开去看别处、船标已不在图带里，不拽回；拖动与甩动惯性中不跟。
+## 一日接一日是在上一日船标补间 finished 里同步起的，那一刻同长的跟船补间还差最后一帧——要顶掉它重起，不能当「镜头忙」让掉。
+## 取景过渡（发舶框起讫两港 0.9 s）在走时这一日让它，但跟船照开：按住空格一日只 0.05 s，过渡里船就走了十几日，过渡一完接着跟
+func _follow_ship(from_pos: Vector2, to_pos: Vector2, dur: float) -> void:
+	_ship_goal = to_pos
+	if _dragging or _velocity.length() > 2.0:
+		return
+	if not _follow:
+		if not _band_world_rect().has_point(from_pos):
+			return
+		_follow = true
+	if _cam_tween and _cam_tween.is_valid() and _cam_tween.is_running():
+		return
+	_keep_in_band(to_pos, dur)
+
+
+## 平移镜头让 p 落进图带、离边留 FOLLOW_MARGIN 屏幕像素，不改缩放；还在跑的上一段跟船平移顶掉
+func _keep_in_band(p: Vector2, dur: float) -> void:
+	var z := camera.zoom.x
+	var inner := _band_world_rect().grow(-FOLLOW_MARGIN / z)
+	if inner.size.x <= 0.0 or inner.size.y <= 0.0 or inner.has_point(p):
+		return
+	var shift := Vector2.ZERO
+	if p.x < inner.position.x:
+		shift.x = p.x - inner.position.x
+	elif p.x > inner.end.x:
+		shift.x = p.x - inner.end.x
+	if p.y < inner.position.y:
+		shift.y = p.y - inner.position.y
+	elif p.y > inner.end.y:
+		shift.y = p.y - inner.end.y
+	var goal := _clamped_position(camera.position + shift, z)
+	if goal.is_equal_approx(camera.position):
+		return
+	if _follow_tween and _follow_tween.is_valid():
+		_follow_tween.kill()
+	_velocity = Vector2.ZERO
+	_follow_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_follow_tween.tween_property(camera, "position", goal, maxf(0.01, dur))
+	_follow_tween.tween_method(func(_v: float): _on_camera_moved(), 0.0, 1.0, maxf(0.01, dur))
 
 
 ## 这一手风放出的向（云端「风发三向」）：不在其中的港标画淡
@@ -528,7 +579,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_drag_moved = 0.0
 				_drag_last_move_ms = Time.get_ticks_msec()
 				_velocity = Vector2.ZERO
-				_kill_cam_tween()
+				_take_camera()
 			else:
 				_dragging = false
 				# 拖住停一会再松手不该再甩出去：最后一次移动距今超过 80 ms 就把速度清零
@@ -557,12 +608,12 @@ func _unhandled_input(event: InputEvent) -> void:
 				_hover_port = pid
 				layer_ports.queue_redraw()
 	elif event is InputEventMagnifyGesture:
-		_kill_cam_tween()
+		_take_camera()
 		_velocity = Vector2.ZERO
 		zoom_at(get_global_mouse_position(), (event as InputEventMagnifyGesture).factor)
 	elif event is InputEventPanGesture:
 		# 取景过渡中双指平移也要立刻接管，否则被 tween 盖掉等于无效
-		_kill_cam_tween()
+		_take_camera()
 		_velocity = Vector2.ZERO
 		camera.position += (event as InputEventPanGesture).delta * 3.0 / camera.zoom.x
 		_clamp_camera()
@@ -570,7 +621,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func zoom_at(world_anchor: Vector2, factor: float) -> void:
-	_kill_cam_tween()
+	_take_camera()
 	var old_z := camera.zoom.x
 	var z := clampf(old_z * factor, ZOOM_MIN, ZOOM_MAX)
 	# 让锚点在屏幕上不动：锚点相对镜头中心的屏幕偏移 = 世界偏移 × zoom，保持不变
@@ -611,6 +662,14 @@ func _on_camera_moved() -> void:
 func _kill_cam_tween() -> void:
 	if _cam_tween and _cam_tween.is_valid():
 		_cam_tween.kill()
+	if _follow_tween and _follow_tween.is_valid():
+		_follow_tween.kill()
+
+
+## 玩家亲手动镜头（拖动 / 缩放 / 双指平移）：停掉取景与跟船，不再跟船；下一日船标还在图带里再跟（_follow_ship）
+func _take_camera() -> void:
+	_kill_cam_tween()
+	_follow = false
 
 
 ## HUD 压住的屏幕高度（顶匾 / 底部牌区，屏幕像素）。取景只用中间露出来的那一段，
@@ -627,6 +686,10 @@ func set_view_inset(top: float, bottom: float) -> void:
 		return
 	# 图带变了（收牌 / 展牌 / 拉窗口）：起点港或目的港若被挤出图带，平移镜头把它拉回来，不改缩放
 	if _cam_tween and _cam_tween.is_valid() and _cam_tween.is_running():
+		return
+	# 航行中镜头在跟船：保船标这一日的落点，不拉起讫港——远程起点港早出了图带，拉它回来会把船标挤到牌底下（lane w53-1）
+	if _follow and ship_visible:
+		_keep_in_band(_ship_goal, 0.35)
 		return
 	var band := _band_world_rect().grow(-56.0 / camera.zoom.x)
 	if band.size.x <= 0.0 or band.size.y <= 0.0:
@@ -719,7 +782,8 @@ func frame_rect(r: Rect2, pad: float = 0.28, dur: float = 0.8, anchor: Vector2 =
 	target = _clamped_position(target, z)
 	_kill_cam_tween()
 	_velocity = Vector2.ZERO
-	if dur <= 0.0:
+	# 已在这一取景上（选向时框过、发舶再框一遍）不起空转补间：它占着镜头 0.9 s，跟船得让，按住空格时船在里头走出十几日（lane w53-1）
+	if dur <= 0.0 or (target.is_equal_approx(camera.position) and is_equal_approx(z, camera.zoom.x)):
 		camera.zoom = Vector2(z, z)
 		camera.position = target
 		_on_camera_moved()
