@@ -20,6 +20,8 @@
 size 的数据侧照实用 SOF/IHDR 实测顶上并补报，两条路对现行数据与所有清单条目的判定逐字节等效，
 「清单该按剧情挑多大、该不该为几行文案断送素材库」这种度量判据照文末「机制五」）。
 import / --check 仍用 PIL 开图。
+数据契约的键表 / 旗标有人立 / hold 读完线（lane w53-9）每次跑都带内存样本自检 _contract_selftest（GATES §五.3，
+lane w53-12）：哪条判据被退掉，对应的样本漏判即 FAIL；绿时不出声，末行不变。
 
 来源目录（Codex 线 assets/）默认 ~/tmp/nk1-codex/assets（按本机 $HOME 展开），可用环境变量 NK1_CODEX_ASSETS 覆盖。
 旧底来源（第一轮 worktree 的 assets/，即 main 9233852 落地、云端 da29e49 又换掉的旧图）默认
@@ -384,6 +386,7 @@ def check(data_only: bool) -> int:
         if f.name not in {m[0] for m in MANIFEST}:
             bad.append(f"{f.name} 不在导入清单里（来源不明）")
     bad += check_data()
+    bad += _contract_selftest()
     for n in notes:
         print("NOTE", n)
     if bad:
@@ -461,8 +464,9 @@ def _known_flags() -> set:
     return flags
 
 
-def check_data(path=None) -> list:
-    """data/cutscenes.json 契约。path 只给变异自检用（tools/qa_w53_9_cutscene_contract_mutants.py），门禁不传。"""
+def check_data(path=None, data=None) -> list:
+    """data/cutscenes.json 契约。path 只给变异自检用（tools/qa_w53_9_cutscene_contract_mutants.py），门禁不传；
+    data 给内存里的整份数据（本道自带的样本自检 _contract_selftest 用，不落盘）。"""
     import re
     bad = []
     path = pathlib.Path(path) if path else ROOT / "data" / "cutscenes.json"
@@ -486,7 +490,7 @@ def check_data(path=None) -> list:
         return out
 
     try:
-        d = json.loads(path.read_text(encoding="utf-8"))
+        d = data if data is not None else json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as e:
         return [f"data/cutscenes.json 读不了：{e}"]
     if d.get("version") != 1:
@@ -705,6 +709,51 @@ def check_data(path=None) -> list:
     for name, *_ in MANIFEST:
         if name not in used_cs_files:
             bad.append(f"assets/cutscene/{name} 导入了但数据里没用到")
+    return bad
+
+
+def _contract_selftest() -> list:
+    """契约规则表的样本自检，每次 --data-only / --check 都跑（GATES §五.3：规则表型门禁自带样本自检、不另开开关；lane w53-12）。
+    镜头 / 字幕 / 章节卡认的键表、字幕旗标须有人立、hold 读完线三条是 lane w53-9（dce2643）收紧的判据，原先只有
+    tools/qa_w53_9_cutscene_contract_mutants.py 外置自检、哪道门禁都不跑它——三条整段退掉，本道照报通过。
+    这里按形状在真数据里挑锚（第一句非印章字幕与它所在的镜头、第一张章节卡），内存里注入一种笔误交 check_data(data=…)，
+    须判红且红在那一处；不落盘。挑不到锚即判红。绿时不出声，末行照旧。"""
+    import copy
+    try:
+        base = json.loads((ROOT / "data" / "cutscenes.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []  # 读不了由 check_data 报
+    anchor = next(((cid, i, j) for cid, cs in (base.get("cutscenes") or {}).items()
+                   for i, s in enumerate(cs.get("shots") or [])
+                   for j, c in enumerate(s.get("captions") or []) if c.get("style") != "seal"), None)
+    chs = sorted(base.get("chapters") or {})
+    if anchor is None or not chs:
+        return ["契约样本自检锚落不上：真数据里没有非印章字幕或章节卡了——改 _contract_selftest 的挑锚条件"]
+    cid, i, j = anchor
+    w = f"cutscenes.{cid}[{i + 1}]"
+    wc = f"{w}.captions[{j + 1}]"
+    nf = "w53_12_selftest_no_such_flag"
+
+    def shot(d):
+        return d["cutscenes"][cid]["shots"][i]
+
+    def cap(d):
+        return shot(d)["captions"][j]
+
+    samples = [  # （笔误，取被改的那一格，键，值，判词里须有的定位片段）
+        ("镜头键 captions 写成 caption", shot, "caption", [], f"{w} 有不认的键 ['caption']"),
+        ("字幕键 unless_flag 写成 unles_flag", cap, "unles_flag", nf, f"{wc} 有不认的键 ['unles_flag']"),
+        ("字幕旗标没人立", cap, "if_flag", nf, f"{wc} if_flag 旗标 `{nf}` 没人立"),
+        ("字幕 hold 过短", cap, "hold", 0.9, f"{wc} hold=0.9 不足 1.5 秒"),
+        ("章节卡键 focus 写成 fcous", lambda d: d["chapters"][chs[0]], "fcous", [0.5, 0.5], f"chapters.{chs[0]} 有不认的键 ['fcous']"),
+    ]
+    bad = []
+    for n, (name, cell, key, val, want) in enumerate(samples, 1):
+        d = copy.deepcopy(base)
+        cell(d)[key] = val
+        got = check_data(data=d)
+        if not any(want in b for b in got):
+            bad.append(f"契约样本自检 S{n} {name}：漏判——注入后契约红 {len(got)} 条，里头没有「{want}」（这条判据被退掉或改了口径）")
     return bad
 
 
