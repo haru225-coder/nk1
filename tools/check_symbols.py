@@ -4213,13 +4213,15 @@ if (
     and "SaveLoad.save_tip(n)" in _save_dialog_code
     and _has_tok(_save_dialog_code, "_slip_note(slip, tip")
     and "SaveLoad.slot_source(slot)" in _load_slot_code
+    # lane w53-5：「翻阅」按 can_load 放开——坏卷 / 新版卷不给按（标题页按下去的失败句无处上屏）
+    and "SaveLoad.can_load(n)" in _save_dialog_code
     and "副抄" in _load_slot_code
     and "翻不开" not in _load_slot_code
     and "没能记下" not in _save_slot_code
 ):
-    print("  ✓ 航海日志册页挂坏档脚注，翻阅/记录失败写纪实短句")
+    print("  ✓ 航海日志册页挂坏档脚注，翻阅/记录失败写纪实短句，翻不开的卷「翻阅」不给按")
 else:
-    print("  ✗ 航海日志册页未挂坏档脚注，或翻阅/记录失败仍是旧句")
+    print("  ✗ 航海日志册页未挂坏档脚注、翻阅/记录失败仍是旧句，或「翻阅」未按 can_load 放开")
     problems.append("航海日志坏档脚注未接入")
 # Lane T：四种槽态运行时探针须在库内，供回归复跑。
 _tip_probe = os.path.join(ROOT, "tools", "qa_save_slot_tip_probe.gd")

@@ -74,7 +74,8 @@ static func show_save_dialog(main: Control, read_only := false) -> void:
 		var write: Button = main._slip_chip(row, "记录", main._on_save_slot.bind(n), true)
 		write.disabled = read_only
 		var read: Button = main._slip_chip(row, "翻阅", main._on_load_slot.bind(n))
-		read.disabled = not SaveLoad.has_save(n)
+		# 翻不开的卷（坏档 / 新版所记）不给按：按下去的失败句只进记事栏，标题页那里看不见（脚注已写明缘由）
+		read.disabled = not SaveLoad.can_load(n)
 	var benches := col.get_node("Benches") as HFlowContainer
 	var row_h := 0.0
 	for child in benches.get_children():

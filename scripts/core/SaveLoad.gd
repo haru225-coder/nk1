@@ -768,6 +768,13 @@ func slot_source(slot: int) -> String:
 	return str(_resolve(slot)["source"])
 
 
+## 这一卷翻得开：正本或副抄有一份可读（与 load_game 读得进同口径）。无档、两份皆坏、新版所记都翻不开——
+## 航海日志册页据此定「翻阅」钮可不可按：翻不开的卷按下去只往记事栏记一句失败，标题页「续卷」进来时
+## 记事栏根本不在屏上，册页纹丝不动，像钮坏了（缘由已由册页脚注写明）。
+func can_load(slot: int) -> bool:
+	return slot_source(slot) in ["primary", "bak"]
+
+
 ## 册页脚注：正本无恙时为空串；长提示不塞进 save_label。
 func save_tip(slot: int) -> String:
 	var got := _resolve(slot)
