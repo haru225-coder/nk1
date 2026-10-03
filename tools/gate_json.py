@@ -344,6 +344,39 @@ REGISTRY = [
      "green": "逐条 `  ✓ …` + 末行 `ECON_PANEL_PROBE cases=17 fails=0`",
      "red": "`  ✗ …` 行（如级别名不跳 / 白走一年造真 / 册页题头或起讫句变 / 折叠头则数凡月数漂移 / 【月息】原文与对照账不符 / 无债跳年见息字）"
             "+ 末行 `ECON_PANEL_PROBE cases=N fails=N`（N>0），退 1"},
+
+    {"id": "qa_fold_notice_probe", "tier": "lane",
+     "when": "动欠饷链（scripts/Crew.gd 的雇佣 / 月俸 / 欠月数 / 不告而去口径、scripts/Economy.gd 月结扣工食）、"
+             "札记通告上墨口（scripts/Main.gd 的 _log_lines / _notice_run 一则一墨）、改元历名口径（Calendar 年号 / "
+             "update_status_panel 页首印年），或动 tools/qa_fold_notice_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_fold_notice_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_fold_notice_probe.gd"],
+     "judge": "（探针 896fd67 随 w28-k2 落地，w30-k1 入册——落地当轮漏注册只被「注册或豁免」闸点名待收，w30 立案根治）"
+              "真场景树 C1–C2：现银摆 0、雇火长吴针（月俸 60）——欠饷当月札记顶则原文「本月工食 60 未发。船上人心浮动。」，"
+              "连欠两月两则同句；欠满三月顶则原文「工食欠满三月，吴针 不告而去。」、人去册空欠月数归零；"
+              "反向：人走后当月札记不添新墨，顶批仍是上月三则。C2【改元】：1278 四月历走一页抵五月，"
+              "页首「景炎三年」换印「祥兴元年」、旧号「景炎」不再上屏；改元无札记通告，全本札记不着「改元」「祥兴」字样（反向格）。"
+              "本进程 SCRIPT ERROR 即红。末行 `FOLD_NOTICE cases=N fails=0`，fails>0 退 1",
+     "green": "逐条 `  ✓ …` + 末行 `FOLD_NOTICE cases=13 fails=0`",
+     "red": "`  ✗ …` 行（如欠饷原文变 / 欠满三月不走 / 人去仍添墨 / 元历不换印 / 旧年号残留 / 札记见息义字样）"
+            "+ 末行 `FOLD_NOTICE cases=N fails=N`（N>0），退 1"},
+
+    {"id": "qa_rest_scenarios_probe", "tier": "lane",
+     "when": "动歇等候钮与价（scripts/ui/TavernPage.gd 的 setup_inn / scripts/ui/ResidencePage.gd 的 _setup_residence、"
+             "scripts/Main.gd 的 _slip_chip / _contract_rest_mark / INN_RATE / _on_rest）、住店客价与贴文工席"
+             "（hide_if_flag / 寺观工席贴文路），或动 tools/qa_rest_scenarios_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_rest_scenarios_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_rest_scenarios_probe.gd"],
+     "judge": "（探针 09bb75a 随 w28-k1 落地，w30-k1 入册——与 qa_fold_notice 同案漏网两支的第二支；"
+              "qa_rest_days 钉了旅店一景的印数与实扣，本探针钉同一批钮在两条贴文路径下各自亮起）"
+              "真场景树（兴化旅店 / 泉州住处 1277-10-19 钱足）：旅店一景「歇 1 日　15 / 歇 10 日　150 / 候 12 日　180」"
+              "三钮恰 3 枚同出一枚钮行、枚枚文字逐字对且 visible / 可按 / 焦态逐字同；住处一景「歇 1 日　5 / 歇 3 日　15」"
+              "恰 2 枚同出一行、无候风钮——旅店那枚随日候钮不把印数带去住处（两路并列同一见证串各亮各的）；"
+              "反驾：寺观工席走同一管贴文路（钩旗放进 hook_xinghua_asked 后确有贴文但不进歇息这条），歇息 / 候钮 0 枚混出。"
+              "本进程 SCRIPT ERROR 即红。末行 `REST_SCENARIOS cases=N fails=M`，M>0 退 1",
+     "green": "逐条 `  ✓ …` + 末行 `REST_SCENARIOS cases=18 fails=0`",
+     "red": "`  ✗ …` 行（如钮缺枚 / 同出一行不齐 / 见・暗・焦不符 / 候钮串住处 / 寺观该暗亮出）"
+            "+ 末行 `REST_SCENARIOS cases=N fails=M`（M>0），退 1"},
 ]
 
 # w27-k4 CHECK FOLLOWS
