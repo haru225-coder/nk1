@@ -1,5 +1,5 @@
 extends RefCounted
-## 行会 / 贡院页（GuildExamPage）：行会「出港行情」抄本（商誉够多抄两条）+ 会籍 / 入行工席、入行门槛与交会费回调；
+## 行会 / 贡院页（GuildExamPage）：行会「出港行情」抄本（海商信用够多抄两条）+ 会籍 / 入行工席、入行门槛与交会费回调；
 ## 贡院「誊录」「赴试」两张工席（别港只誊录、本章已赴只读）与两个回调。Lane main7 从 Main.gd 原样搬出（第七刀，_guild_port_id … _on_exam_sit，
 ## 夹在中间的公共件 play_transition 不搬）。
 ## Main 留同名同签名的一行转发（_guild_port_id / _setup_guild / _add_guild_join_slip / _guild_join_block / _on_guild_join /
@@ -54,7 +54,7 @@ static func setup_guild(main: Control, port_id: String) -> void:
 static func add_guild_join_slip(main: Control, port_id: String) -> void:
 	port_id = main._guild_port_id(port_id)
 	var join: VBoxContainer = main._slip_body()
-	var standing := "商誉 %d　人脉 %d" % [GameState.merchant_credit, GameState.network]
+	var standing := "海商信用 %d　人脉 %d" % [GameState.merchant_credit, GameState.network]
 	if not main.GUILD_JOIN_PORTS.has(port_id):
 		main._slip_title(join, "会籍", standing)
 		main._slip_note(join, "入行只在泉州、博多、广州三座行会。")
@@ -67,8 +67,8 @@ static func add_guild_join_slip(main: Control, port_id: String) -> void:
 		return
 	main._slip_title(join, "入行", standing)
 	# 门槛一行、收益一行：原先并成一句，折行后贴着朱钮
-	main._slip_note(join, "会费 %d　商誉须 %d。" % [main.GUILD_JOIN_FEE, main.GUILD_JOIN_CREDIT])
-	main._slip_note(join, "入行商誉加 %d，人脉加 %d；行情、抽解、佣金照旧。" % [
+	main._slip_note(join, "会费 %d　海商信用须 %d。" % [main.GUILD_JOIN_FEE, main.GUILD_JOIN_CREDIT])
+	main._slip_note(join, "入行海商信用加 %d，人脉加 %d；行情、抽解、佣金照旧。" % [
 		main.GUILD_JOIN_CREDIT_GAIN, main.GUILD_JOIN_NETWORK_GAIN,
 	])
 	var chip: Button = main._slip_chip(main._slip_row(join, true), "交会费入行", main._on_guild_join.bind(port_id), true)
@@ -83,7 +83,7 @@ static func guild_join_block(main: Control, port_id: String) -> String:
 	if GameState.has_flag("guild_%s" % port_id):
 		return "本港已入行"
 	if GameState.merchant_credit < main.GUILD_JOIN_CREDIT:
-		return "信用不足（商誉 %d，须 %d）" % [GameState.merchant_credit, main.GUILD_JOIN_CREDIT]
+		return "海商信用不足（%d，须 %d）" % [GameState.merchant_credit, main.GUILD_JOIN_CREDIT]
 	if GameState.money < main.GUILD_JOIN_FEE:
 		return "现钱不足（%d，会费 %d）" % [GameState.money, main.GUILD_JOIN_FEE]
 	return ""
@@ -101,7 +101,7 @@ static func on_guild_join(main: Control, port_id: String) -> void:
 	GameState.merchant_credit += main.GUILD_JOIN_CREDIT_GAIN
 	GameState.network += main.GUILD_JOIN_NETWORK_GAIN
 	GameState.set_flag("guild_%s" % port_id)
-	main.log_msg("【入行】在%s行会交了会费 %d，簿上添了名字。商誉 %d，人脉 %d。" % [
+	main.log_msg("【入行】在%s行会交了会费 %d，簿上添了名字。海商信用 %d，人脉 %d。" % [
 		port_name, main.GUILD_JOIN_FEE, GameState.merchant_credit, GameState.network,
 	])
 	await main.play_transition("行会・入行", "%s行会　%s" % [port_name, Calendar.get_date_string()],

@@ -154,6 +154,13 @@ func _run(main) -> void:
 	_gs.merchant_credit = 8
 	_gs.network = 1
 	main.load_scene("quanzhou_guild")
+	# lane w53-10：正文写「海商信用 N」，同页入行工席也叫海商信用，不再并出「商誉 N」
+	if not _has_label(main, "海商信用 8　人脉 1"):
+		_fail("泉州入行工席副题不是「海商信用 8　人脉 1」（与行会正文、船籍簿同名）")
+	elif not _has_label(main, "会费 2000　海商信用须 8。"):
+		_fail("泉州入行门槛行不是「会费 2000　海商信用须 8。」")
+	else:
+		_ok("泉州入行工席与正文同叫海商信用")
 	var join := _button_with_text(main, JOIN_TEXT)
 	if join == null:
 		_fail("泉州行会没有「%s」" % JOIN_TEXT)
@@ -204,6 +211,9 @@ func _run(main) -> void:
 		var b2 := _snap()
 		chip.pressed.emit()
 		var a2 := _snap()
+		var why_text := str(main._guild_join_block(port))
+		if port == "hakata" and why_text != "海商信用不足（7，须 8）":
+			_fail("博多信用不足的缘由不是「海商信用不足（7，须 8）」：%s" % why_text)
 		if a2["money"] != b2["money"] or a2["credit"] != b2["credit"] or a2["network"] != b2["network"]:
 			_fail("%s %s 被拦时仍改账 %s→%s" % [port, case["why"], b2, a2])
 		elif _gs.has_flag("guild_%s" % port):
