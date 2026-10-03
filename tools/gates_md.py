@@ -3,6 +3,7 @@
 按 tools/gate_json.py 的注册表生成，本脚本校验二者一致；§三「一键人读全跑」与 .claude/todo.md 验证段是手写，只比对。
 附属自检（一键跑把关判据自检「三之一」，lane w20-b3）与 §一 附属表同册：禁带字样 / 漏跑 / 道数不符 / README 道数见 §三.19。
 「二、docs/GATES.md」另有 SHOT 张数逐条对账格（lane w29-k5）：SHOT_PROBES 每条的注册表张数 ↔ §一 同行张数字段，漂移逐支点名、不回读源码。
+「三、docs/GATES.md」另有 SHOT 张数格同型 clone（lane w33-k2，源 w30-k6 交主控 #2 / 审计-wave29 §85）：§四 / §二 生成块整块红一句「首处差异在第 k 行 / 逐字一致✗」不能逐支点名，row_sources(reg) 把两块的注册表出处行映成 (行 → 出处) 表，凡 in known 的行判与注册表块逐字同、漂移逐支点名 id + 出处 + 行文书；known 外零源行（表头 / ``` / 第 0 步命令段等）照旧由整块格逐字一致兜。行格与整块格互补、不回读源码。
 
   python3 tools/gates_md.py            # 自检：文档与注册表不一致、注册的脚本缺失、接 shot_gate 的截图脚本没入册、
                                        #       附属自检的开关在源码里找不到、§三 一键跑命令 / .claude/todo.md 验证段与必跑清单不符 → 退 1
@@ -194,6 +195,45 @@ def yes(b):
     return "✓" if b else "—"
 
 
+def row_gates(reg, where, lines, want_lines):
+    """§四 / §二 生成块逐行对账格（lane w33-k2，同型 clone w29-k5「SHOT 张数格」——张数字段只在 §一
+    SHOT 表，§四 / §二 没有张数行可点名，clone 过来的是行格体本身）：旧整块格整段红一句
+    「首处差异在第 k 行 / 逐字一致✗」不逐支点名，本格把块内每行与注册表供数逐字对，漂移逐支点名 id。
+    判定规则：在册行（完整行文本 = 注册表行的某个渲染体位）与注册表逐字同，漂移即 ✗ 点名；
+    零源行（``` 首尾 / 表头）只对字面；形状行（# 注释 / 命令 / 步骤表）若不在册，✗ 指其行位指认
+    「从注册表可知行中照抄错 / 多贴」；意外注册表外多余行（应被整块格先行拦下）归入缺省段位。"""
+    out = []
+    if where == "§四":
+        steps = reg["ci_steps"]
+        titled = {f"# {i}. {c['id']}": (i, c) for i, c in enumerate(steps, 1)}
+        body = {c["cmd"]: (i, c) for i, c in enumerate(steps, 1)}
+        rowl = {f"| {i} | {c['id']} | {c['lane']} | {c['needs']} | {code(c['cmd'])} | {c['expect']} | {c['fail']} |": (i, c)
+                for i, c in enumerate(steps, 1)}
+        for l in lines:
+            if l in titled or l in body or l in rowl or l in ("```sh", "```", "", "| # | 步骤 | 接入 | 需要 | 命令 | 期望输出 | 失败含义 |",
+                                                              "|---|---|---|---|---|---|---|") or l.startswith("# 0."):
+                continue  # 在册行与零源行：整块格与其在册渲染同源，逐字已由逐字一致守
+            m = re.match(r"# (\d+)\. (.+)$", l)
+            if m:
+                out.append(f"§四「# {m.group(1)}. …」步骤注释行 {l[:100]!r} 不在 CI_STEPS 第 {m.group(1)} 项渲染里——手改 / 多贴（红因：行格点名 id {m.group(2)}）")
+            elif l.startswith("|"):
+                out.append(f"§四 步骤表行 {l[:100]!r} 不在 CI_STEPS 渲染里——手改 / 多贴（红因：行格点名首格）")
+            elif l and l in want_lines:
+                continue  # 第 0 步 oneclick[] 命令行：在注册表一键跑命令段里，出处整段、不逐行点名
+            elif l:
+                out.append(f"§四 块内多余行 {l[:100]!r}——不在 CI_STEPS 渲染也不在一键跑命令段（行格点名：无出处整行）")
+        return out
+    # §二
+    rows = reg["oneclick_json"]
+    rendered = {f"{r['json']} > {BATCH_DIR}/steps/{r['id']}.json" if r["tier"] == "step" else f"{r['json']} > {BATCH_DIR}/{r['id']}.json": r
+                for r in rows}
+    for l in lines:
+        if l in rendered or l in ("```sh", "```", "") or l.startswith("# 必跑") or l.startswith("rm -rf ") or l == BATCH_SUM:
+            continue
+        out.append(f"§二 命令行 {l[:100]!r} 不在 oneclick_json 渲染里——手改 / 多贴（行格点名整行）")
+    return out
+
+
 def render_ci(reg):
     steps = reg["ci_steps"]
     out = ["```sh", f"# 0. 必跑{cn(len(reg['oneclick']))}条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）"]
@@ -329,6 +369,10 @@ def main(argv):
         refs = re.findall(r"tools/[\w./-]+", c["cmd"])
         lost = [r for r in refs if not os.path.exists(os.path.join(ROOT, r))]
         check(not lost, f"CI 步骤「{c['id']}」引用的文件都在" + (f"；缺：{lost}" if lost else ""))
+    # lane w33-k2：§四 步骤命令行的裸文本若被贴进第 0 步命令段（= oneclick[]），
+    # 该行形与 CI_STEPS 命令行同字面、行格判会吃「无点名」假绿；敲定撞名即点名那条 CI 步骤。
+    clash = [c["cmd"] for c in reg["ci_steps"] if c["cmd"] in set(reg["oneclick"])]
+    check(not clash, "§四 步骤命令不与一键跑命令段撞名（撞名行格无法点名）" + (f"；撞：{clash}" if clash else ""))
     # lane pg3：截图落盘根一律可由 NK1_SHOT_DIR 改，免得 worktree / 自测覆盖共享证据图
     env = reg.get("shot_env") or {}
     bad = [s["file"] for s in shots if not s.get("sub")]
@@ -459,6 +503,19 @@ def main(argv):
         check(re.search(r"^" + re.escape(BATCH_HEAD) + r"\n", batch_parts[0], re.M) is not None
               and CI_HEAD not in batch_parts[0] and re.search(r"^## 三、", batch_parts[0], re.M) is None,
               f"§二 批量巡检块在「{BATCH_HEAD}」小节里")
+    # lane w33-k2：§四 / §二 生成块逐支行格——w30-k6 交主控 #2（审计-wave29 C1 系旁注 §85）载的
+    # 「SHOT 张数格同型 clone」真缺即这两块整块红一句「首处差异在第 k 行 / 逐字一致✗」不能逐支点名。
+    # 张数字段只出现在 §一 SHOT 表，§四 / §二 没有张数行可点名，clone 过来的是行格体本身：
+    # 块内每行判定「∈ 注册表渲染 / ∈ oneclick 第 0 步命令段 / ∈ 零源行」之一；形状行（步骤注释 / 表行 /
+    # 命令行）不与注册表渲染逐字同即行格逐支点名；在册行与零源行照旧由上面的整块格逐字一致兜。
+    if ci_body is not None:
+        off = row_gates(reg, "§四", ci_body.splitlines(), set(ci_want.split("\n")))
+        check(not off, f"§四 CI 行格 × {len(ci_body.splitlines())}：块内每行 ∈（CI_STEPS 渲染 ∪ 一键跑命令段 ∪ 零源行）——红因修注册表或 --write" + "".join(
+            f"\n  ✗ {x}" for x in off))
+    if batch_parts is not None and batch_parts[1] is not None:
+        off = row_gates(reg, "§二", batch_parts[1].splitlines(), set(batch_want.split("\n")))
+        check(not off, f"§二 BATCH 行格 × {len(batch_parts[1].splitlines())}：块内每行 ∈（oneclick_json 渲染 ∪ 成型行 ∪ 零源行）" + "".join(
+            f"\n  ✗ {x}" for x in off))
     ocb = oneclick_block(tail)
     must = reg["oneclick"]
     by_cmd = {g["cmd"]: g["id"] for g in gates}
