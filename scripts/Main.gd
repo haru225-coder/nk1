@@ -3807,7 +3807,7 @@ func _on_yashan() -> void:
 	pass_by.pressed.connect(func():
 		GameState.fame -= 6
 		Fleet.morale = maxi(0, Fleet.morale - 10)
-		GameState.add_ledger_note("崖山外海掉头")
+		_yashan_turn_back()
 		GameManager.advance_days(3)
 		log_msg("你在十里外看着那片火。水手们没有说话。掉头往南的时候，风是顺的。")
 		load_scene(current_scene_id)
@@ -4607,9 +4607,9 @@ func _special_cards() -> Array:
 	if GameState.has_flag("vice_councillor") and not _resign_decided():
 		out.append({"id": CARD_RESIGN, "title": "临安・辞呈批语", "subtitle": "依奏。车已备在门外"})
 
-	# 海商线：崖山（1279 正月至三月，须在广州）
+	# 海商线：崖山（1279 正月至三月，须在广州）；「不上前」掉过头的不再挂（_yashan_turn_back）
 	if current_scene_id == "guangzhou" and GameState.identity == "merchant" \
-			and Calendar.year == 1279 and Calendar.month <= 3:
+			and Calendar.year == 1279 and Calendar.month <= 3 and not GameState.has_flag("yashan_turned_back"):
 		out.append({"id": CARD_YASHAN, "title": "崖山", "subtitle": "宋军的船连成一片"})
 
 	# 海商线收官：1285 年后，一局跑到底（乡土线同样收在这里）
@@ -4631,6 +4631,13 @@ func _hanjiang_card_subtitle() -> String:
 	if Calendar.day >= HANJIANG_URGENT_DAY and ("%04d-%02d" % [ny, nm]) in _xinghua_fall_yms():
 		return "城撑不过这个月了"
 	return "带族人走旧避风澳"
+
+
+## 崖山「不上前。远远看着，掉头往南」：记边记、立旗。人已在十里外看过那片火，广州港页不再挂崖山卡——
+## 不然回港页转身还能再点进去「把粮与硫黄交上去」落「海上宋鬼」，航海札记里与「崖山外海掉头」同列。「离开」不算掉头，卡照挂。
+func _yashan_turn_back() -> void:
+	GameState.set_flag("yashan_turned_back")
+	GameState.add_ledger_note("崖山外海掉头")
 
 
 

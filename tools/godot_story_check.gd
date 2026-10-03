@@ -4756,6 +4756,51 @@ func _w53_4_ledger_note_check(main: Node) -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	main._beats = null
 	_close_dialogs(main)
+	# 同是终局卡记下的边记：崖山掉过头，卡不再挂
+	_w53_4_yashan_turn_back_check(main)
+
+
+## ── lane w53-4：崖山「不上前」掉过头，广州港页不再挂崖山卡 ──
+## 修前：海商祥兴二年二月在广州点崖山卡，「不上前。远远看着，掉头往南」记下「崖山外海掉头」、回广州港页，崖山卡照挂；
+## 转身再点进去「把粮与硫黄交上去」，落「海上宋鬼」，航海札记「终局：海上宋鬼」底下「札记：崖山外海掉头」同列
+## （也能一遍遍掉头，名声每回 −6、士气每回 −10）。「离开」不算掉头，卡照挂；掉过头的下月（仍在窗里）也不再挂。
+func _w53_4_yashan_turn_back_check(main: Node) -> void:
+	GS.from_dict({})
+	Cal.from_dict({"year": 1279, "month": 2, "day": 1})
+	GS.loaded_with_beats = true
+	main._beats = null
+	_close_dialogs(main)
+	GS.identity = "merchant"
+	GS.last_port = "guangzhou"
+	main.load_scene("guangzhou")
+	_check("special_yashan" in main.shore_hand, "祥兴二年二月海商在广州：岸上有崖山卡（名单 %s）" % [main.shore_hand])
+	main._on_yashan()
+	main.load_scene("guangzhou")
+	_check("special_yashan" in main.shore_hand and not GS.is_ended(),
+		"崖山页按「离开」回广州：不算掉头，崖山卡照挂（名单 %s）" % [main.shore_hand])
+	main._on_yashan()
+	var fame0: int = GS.fame
+	var turned := false
+	for c in main.choices_container.get_children():
+		if c is Button and str((c as Button).text).begins_with("不上前"):
+			(c as Button).pressed.emit()
+			turned = true
+			break
+	_check(turned, "崖山页有「不上前。远远看着，掉头往南」一钮")
+	_check(main.current_scene_id == "guangzhou" and main.port_mode.visible and not GS.is_ended() and GS.fame == fame0 - 6
+		and "崖山外海掉头" in GS.ledger_notes,
+		"掉头往南：回广州港页、不落终局、名声 −6、边记「崖山外海掉头」（页 %s，终局「%s」，名声 %d→%d，边记 %s）" % [
+			main.current_scene_id, GS.ended, fame0, GS.fame, GS.ledger_notes])
+	_check(not ("special_yashan" in main.shore_hand),
+		"掉过头回到广州港页：崖山卡不再挂，转身点不回「把粮与硫黄交上去」（%s，名单 %s）" % [Cal.get_date_string(), main.shore_hand])
+	Cal.from_dict({"year": 1279, "month": 3, "day": 1})
+	main.load_scene("guangzhou")
+	_check(not ("special_yashan" in main.shore_hand),
+		"掉过头的祥兴二年三月（仍在崖山窗里）再进广州：崖山卡不再挂（名单 %s）" % [main.shore_hand])
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_close_dialogs(main)
 
 
 ## 第四章结局幕（endings[].scene）共同所在的港；有一幕不在港上、或各幕不同港，回空串
