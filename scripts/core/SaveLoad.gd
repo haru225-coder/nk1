@@ -91,8 +91,12 @@ func save_game(slot: int, current_scene: String = "") -> bool:
 
 	var final := _path(slot)
 	if FileAccess.file_exists(final):
+		if FileAccess.file_exists(_bak_path(slot)) and str(_inspect(final).get("status")) == "corrupt":
+			# 正本本已读不出（崩溃、断电留下的坏卷）而副抄还在：坏正本直接删掉、不退成 .bak——
+			# 退了就把这一卷唯一读得出的好副抄冲掉，新正本日后再坏便一卷全无
+			DirAccess.remove_absolute(final)
 		# 旧档退为 .bak；改名失败不阻断，最坏只是少一份备份
-		if DirAccess.rename_absolute(final, _bak_path(slot)) != OK:
+		elif DirAccess.rename_absolute(final, _bak_path(slot)) != OK:
 			push_warning("存档 slot %d 旧档无法转为 .bak" % slot)
 	if DirAccess.rename_absolute(tmp, final) != OK:
 		push_error("存档 slot %d 无法从 .tmp 落位" % slot)

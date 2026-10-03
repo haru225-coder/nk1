@@ -6,6 +6,9 @@ extends SceneTree
 ## 注入法：.tmp 预先建成「只写不可读」（属主只写 0200）——写入照报成功、读回读不出，与磁盘满 / 配额 / I/O 错时
 ## store_string 只落半截还报成功同属「写了却核不上」。本进程读得动只写文件（root）或平台不给改权限时注入不成立，
 ## 打 ⚠ 判未测、不出 ✓/✗。只动存档位 93，不碰正式位 1..SLOTS。
+## 5 节（lane w53-5 二轮）：正本已坏、副抄尚好时再记一卷——坏正本不得退成 .bak 冲掉那份好副抄
+## （崩溃 / 断电留下坏正本后，玩家自然的下一步就是从副抄翻出、接着玩、再记；修前这一记把唯一的好退路换成了坏卷，
+## 新正本日后再坏就一卷全无）。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_5_half_write_probe.gd
 ## 判绿须 rc=0 且末行 `QA_W53_5_HALF_WRITE_END`（headless 下 SCRIPT ERROR 不自非零退出，缺末行 = 中途空转）。
 
@@ -89,6 +92,27 @@ func _run() -> void:
 	_report("迁移回写半写：不留 .tmp", not FileAccess.file_exists(_primary() + ".tmp"), "")
 	_report("迁移回写半写：这一卷仍读得出", str(sl.slot_source(SLOT)) == "primary",
 		"slot_source=%s" % str(sl.slot_source(SLOT)))
+
+	# ── 5 正本已坏、副抄尚好：再记一卷，好副抄留着，坏正本不退成 .bak ──
+	_cleanup()
+	gs.money = 666
+	sl.save_game(SLOT, "quanzhou")
+	gs.money = 777
+	sl.save_game(SLOT, "quanzhou")
+	var good_bak := _read(_bak())
+	_write(_primary(), "{\"version\": 4, \"calendar\": ")  # 崩溃留下的半截正本
+	_report("坏正本时从副抄翻出 666", str(sl.slot_source(SLOT)) == "bak" and bool(sl.load_game(SLOT)) and int(gs.money) == 666,
+		"slot_source=%s money=%d" % [str(sl.slot_source(SLOT)), int(gs.money)])
+	gs.money = 888
+	_report("坏正本时照常记录", bool(sl.save_game(SLOT, "quanzhou")), "")
+	_report("新正本 888", _read(_primary()).contains("888 钱"), _peek(_primary()))
+	_report("好副抄仍在（未被坏正本冲掉）", _read(_bak()) == good_bak, _peek(_bak()))
+	# 新正本日后再坏：仍能从那份好副抄翻出
+	_write(_primary(), "[")
+	gs.money = 1
+	var again: bool = sl.load_game(SLOT)
+	_report("新正本再坏仍从副抄翻出 666", again and str(sl.slot_source(SLOT)) == "bak" and int(gs.money) == 666,
+		"load=%s slot_source=%s money=%d" % [str(again), str(sl.slot_source(SLOT)), int(gs.money)])
 
 	_cleanup()
 	print("QA_W53_5_HALF_WRITE cases=%d fails=%d" % [cases, fails])
