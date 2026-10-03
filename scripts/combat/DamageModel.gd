@@ -44,14 +44,14 @@ const PROFILES := {
 		"fire_resist": 0.1, "oars": 0.1},
 	"sea_falcon": {"compartments": 6, "reserve": 0.45, "stability": 1.5, "timber": 0.9, "frame": 1.0, "bulkhead": 0.85,
 		"fire_resist": 0.05, "oars": 0.3},
+	# 快船（V0928-7 定 A，lane w53-14）：狭长轻造（weapons.json build=light、五舱），多桨——帆毁了桨手还划得动六成（同 EnemyCaptainAI.OARS）
+	"pirate_boat": {"compartments": 5, "reserve": 0.4, "stability": 0.85, "timber": 1.0, "frame": 1.15, "bulkhead": 0.7,
+		"fire_resist": 0.0, "oars": 0.62},
 	"fu_ship_large": {"compartments": 13, "reserve": 0.55, "stability": 1.2, "timber": 0.85, "frame": 0.95, "bulkhead": 0.95,
 		"fire_resist": 0.05, "oars": 0.06},
 	"divine_ship": {"compartments": 14, "reserve": 0.58, "stability": 1.35, "timber": 0.8, "frame": 0.9, "bulkhead": 0.95,
 		"fire_resist": 0.1, "oars": 0.05},
 }
-## 快船照抄海鹘（09-28 拍板「平衡零变化」，verify_economy 查 ships.json 数值逐项相同）：损伤口径也跟海鹘走同一份。
-## 日后要单调快船，先改 verify_economy 那条断言，再在 PROFILES 里给 pirate_boat 单列一行、删掉这里的别名。
-const PROFILE_ALIAS := {"pirate_boat": "sea_falcon"}
 const DEFAULT_PROFILE := {"compartments": 8, "reserve": 0.5, "stability": 1.1, "timber": 0.9, "frame": 1.0, "bulkhead": 0.9,
 	"fire_resist": 0.05, "oars": 0.1}
 
@@ -209,7 +209,7 @@ func setup(p_type: String, def: Dictionary, p_crew: int, p_hull: float, p_hull_m
 
 ## 船型损伤口径：PROFILES[p_type]（表外用 DEFAULT_PROFILE）；def（ships.json 条目）里写了同名键就以数据为准
 static func profile_for(p_type: String, def: Dictionary = {}) -> Dictionary:
-	var base: Dictionary = PROFILES.get(str(PROFILE_ALIAS.get(p_type, p_type)), DEFAULT_PROFILE)
+	var base: Dictionary = PROFILES.get(p_type, DEFAULT_PROFILE)
 	var out := base.duplicate()
 	for k in DEFAULT_PROFILE:
 		if def.has(k):

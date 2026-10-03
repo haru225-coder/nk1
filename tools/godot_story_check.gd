@@ -1890,11 +1890,20 @@ func _w53_14_struck_prize_check(Flt: Node, FX, pirate: Dictionary) -> void:
 		var taken := ""
 		if foes.size() >= 2:
 			foes[0].set("crew", 0)
+			# V0928-7 定 A（lane w53-14）：夺前敌船船体只剩四成——入列耐久按此折、随船水手取 crew_min 一半
+			foes[0].set("hull_hp", float(foes[0].get("hull_max")) * 0.4)
 			taken = str((foes[0] as Object).get("ship_name"))
 			wm.call("_board_enemy", foes[0])
 		var still := got.is_empty()
 		var ships0: Array = Flt.get("ships")
 		var prize_ref: Variant = ships0[-1] if ships0.size() == 3 else null
+		if mode == "struck":
+			var pd: Dictionary = Flt.call("ship_def", "pirate_boat")
+			var pz: Dictionary = prize_ref if prize_ref is Dictionary else {}
+			_check(pd.get("durability") == 260 and pd.get("cannon_slots") == 4 and float(pz.get("max_durability", -1)) == 260.0
+				and float(pz.get("durability", -1)) == roundf(260.0 * 0.4) and int(pz.get("crew", -1)) == 15,
+				"夺来的快船按 V0928-7 定案入列：耐久上限 260、炮位 4，耐久按敌船战中剩四成折作 104，随船水手 15（得 %s / %s，水手 %s）"
+					% [pz.get("durability", "无"), pz.get("max_durability", "无"), pz.get("crew", "无")])
 		if mode == "struck":
 			# 士气簿裁决收战：CombatMorale.battle_outcome 我方降幡给的就是这一对，走 WorldMap._on_morale_verdict 同一出口
 			wm.call("_on_morale_verdict", "lose", {"struck": true, "morale_verdict": "player_struck"})

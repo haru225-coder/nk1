@@ -1146,7 +1146,7 @@ G.morale = 70
 power = fleet_power_py()
 print(f"  标准舰队战力 {power:.1f}（士气 70）")
 
-# 构造 pending_battle：敌船区间 randf_range(180,520)，enemy 两条海寇快船（pirate_boat，数值同海鹘）
+# 构造 pending_battle：敌船区间 randf_range(180,520)，enemy 两条海寇快船（pirate_boat；敌船血按战力比，不读 ships.json 耐久）
 enemy_power = 350.0  # 敌力中位（设计上标准舰队可胜）
 hull = 100.0 * max(0.8, min(3.0, enemy_power / power))
 print(f"  敌力 {enemy_power}，单船血 {hull:.0f}（战力比缩放）")

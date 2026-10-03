@@ -128,6 +128,20 @@ func prize_name(base: String) -> String:
 	return "%s・%s" % [b, GameManager.cn_num(top + 1)]
 
 
+## 夺来的船入列后按战中所剩折算（V0928-7 定 A，lane w53-14）：耐久按敌船战中剩余船体比例（至少 1），
+## 随船水手取该型 crew_min 的一半——余下的人或死或逃，要回港募足。add_ship 之后对末一艘调。
+const PRIZE_CREW_RATIO := 0.5
+
+
+func settle_prize(i: int, hull_frac: float) -> void:
+	if i < 0 or i >= ships.size():
+		return
+	var d := ship_def(str(ships[i].get("type", "")))
+	var mx := float(ships[i].get("max_durability", d.get("durability", 100)))
+	ships[i]["durability"] = clampf(roundf(mx * clampf(hull_frac, 0.0, 1.0)), 1.0, mx)
+	ships[i]["crew"] = maxi(1, int(int(d.get("crew_min", 2)) * PRIZE_CREW_RATIO))
+
+
 ## 船屋购入的船起舟名（lane fx2）：两条福船（中）都叫「福船（中）」，船屋两枚「换上」钮分不清（todo「小毛病」）。
 ## 舟名取法《宣和奉使高丽图经》神舟「鼎新利涉怀远康济」「循流安逸通济」「凌虚致远安济」与湄洲神女「顺济」庙额，
 ## 按表序取船队里还没用的一个；表用尽时写「第某舟」。只管购入——夺船存名见 prize_name（V0928-10 待拍板，不在此定）。

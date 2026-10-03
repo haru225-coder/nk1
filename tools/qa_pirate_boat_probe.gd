@@ -312,8 +312,10 @@ func _pirate_battle(gm: Node, fleet: Node, pirate: Dictionary) -> void:
 	var foe_why: String = await _hull_ready(foe, true)
 	_expect(foe_why == "", "海寇敌船海战船身接 3D 宋船视口、红帆（%s）" % (foe_why if foe_why != "" else "HullRig 视口已贴上"))
 
-	# 夺第一艘（非末艘：不收战）
+	# 夺第一艘（非末艘：不收战）；先打掉一半船体——入列耐久按战中剩余比例折（V0928-7 定 A，lane w53-14）
 	var n0: int = (fleet.get("ships") as Array).size()
+	var foe_hull_max: float = float(foe.get("hull_max"))
+	foe.set("hull_hp", foe_hull_max * 0.5)
 	var took: bool = await _board(wm, fleet, foe)
 	var ships: Array = fleet.get("ships")
 	var got: Dictionary = ships[ships.size() - 1] if took else {}
@@ -321,8 +323,11 @@ func _pirate_battle(gm: Node, fleet: Node, pirate: Dictionary) -> void:
 	_expect(str(got.get("type", "")) == "pirate_boat" and str(got.get("name", "")) == "快船",
 		"夺来的船按 pirate_boat 入列、存名沿用敌船名「快船」（V0928-10 待拍板，不按序号起名；得 %s / %s）" % [got.get("type", "无"), got.get("name", "无")])
 	var d: Dictionary = fleet.call("ship_def", "pirate_boat")
-	_expect(float(got.get("max_durability", -1.0)) == float(d.get("durability", -2)) and int(got.get("crew", -1)) == int(d.get("crew_min", -2)),
-		"入列快船耐久、水手照 ships.json 的快船（%s / %s）" % [got.get("max_durability", "无"), got.get("crew", "无")])
+	_expect(foe_hull_max > 0.0 and float(got.get("max_durability", -1.0)) == float(d.get("durability", -2))
+			and float(got.get("durability", -1.0)) == roundf(float(d.get("durability", 0)) * 0.5)
+			and int(got.get("crew", -1)) == int(int(d.get("crew_min", 0)) / 2),
+		"入列快船：耐久上限照 ships.json（%s），耐久按敌船战中剩一半折（%s），随船水手取 crew_min 一半（%s）"
+			% [got.get("max_durability", "无"), got.get("durability", "无"), got.get("crew", "无")])
 	_expect(_fates_noted(wm) == ["pirate_boat/boarded"], "第一艘记下场 boarded，走的是白刃夺船、不是受降（得 %s）" % [_fates_noted(wm)])
 	_expect(result.is_empty() and is_instance_valid(wm) and not bool(wm.get("resolved")), "还剩一艘，不收战")
 	# headless 题签起不来，夺船句（CombatFx.board_win_note）走浮字兜底；有窗口时「夺船」题签副题写白刃经过（MeleeResolve.summary），

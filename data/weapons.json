@@ -102,7 +102,7 @@
      "arms": {"freeboard": 0, "cover": 0.8},
      "hull": {"compartments": 5, "build": "light", "rudder": {"kind": "sweep", "spare": true}},
      "handling": {"rig": "mat_single", "masts": 1, "oars": {"kind": "jiang", "count": 24}},
-     "note": "狭长多桨，头低尾高，一面席帆；静风里靠桨照样追得上帆船。ships.json 数值照抄海鹘（09-28 拍板），武备与船体按快船另配——DamageModel 现把快船别名到海鹘，见设计文档待议"},
+     "note": "狭长多桨，头低尾高，一面席帆；静风里靠桨照样追得上帆船。ships.json 数值与 DamageModel 损伤口径按快船单列（V0928-7 定 A，lane w53-14），不再照抄海鹘"},
     {"id": "fu_ship_large", "name": "福船（大）", "loadout_own": "merchant_large", "loadout_enemy": "merchant_large",
      "arms": {"freeboard": 3, "cover": 0.5},
      "hull": {"compartments": 13, "build": "fir", "rudder": {"kind": "axial", "spare": true}},

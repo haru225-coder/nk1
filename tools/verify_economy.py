@@ -332,12 +332,12 @@ check(declared <= set(range(1, max_ch + 1)),
 ship_ch = {ch_num(s.get("unlock", "ch1")) for s in ships.values()}
 check(ship_ch <= set(range(1, max_ch + 1)),
       f"ships.json 引用的章节号 {sorted(ship_ch)} 均在定义范围内")
-# 海寇快船（备忘 #7）：夺船所得从海鹘改名快船，平衡零变化——海战、白刃、载重、航速、改装费用到的数值逐项照抄海鹘；
-# 船屋不上架。日后要单调快船，先改这条断言，再跑一遍 simulate_run 看夺船后的账。
-_PIRATE_SAME = ("capacity", "crew_min", "crew_max", "durability", "cannon_slots", "base_speed", "price")
-_pb, _sf = ships.get("pirate_boat", {}), ships.get("sea_falcon", {})
-_pb_diff = [k for k in _PIRATE_SAME if _pb.get(k) != _sf.get(k)]
-check(bool(_pb) and not _pb_diff, f"快船 pirate_boat 数值照抄海鹘（不一致：{_pb_diff or '无'}）")
+# 海寇快船（备忘 #7；V0928-7 定 A，lane w53-14）：不再照抄海鹘——狭长多桨轻船，比福船（中）薄、比海鹘快、炮位少；船屋不上架，只经夺船得来
+# （入列按战中剩余船体比例、随船水手取 crew_min 一半，见 Fleet.settle_prize）。敌方海寇水手按 crew_min—crew_max 随机，改这两格即改白刃难度。
+_PIRATE_WANT, _pb, _sf, _fm = ({"capacity": 300, "crew_min": 30, "crew_max": 70, "durability": 260, "cannon_slots": 4, "base_speed": 190, "price": 6000},
+                               ships.get("pirate_boat", {}), ships.get("sea_falcon", {}), ships.get("fu_ship_medium", {}))
+check(bool(_pb) and not {k for k, v in _PIRATE_WANT.items() if _pb.get(k) != v}, f"快船 pirate_boat 数值照 V0928-7 定案（现值：{ {k: _pb.get(k) for k in _PIRATE_WANT} }）")
+check(_pb.get("durability", 0) < _fm.get("durability", 0) and _pb.get("base_speed", 0) > _sf.get("base_speed", 0) and _pb.get("cannon_slots", 99) < _sf.get("cannon_slots", 0), "快船比福船（中）薄、比海鹘快、炮位比海鹘少（不再是白得的海鹘）")
 check(bool(_pb) and _pb.get("for_sale") is False and "pirate_boat" not in sale_ships,
       "快船 for_sale=false，不进船屋上架表")
 

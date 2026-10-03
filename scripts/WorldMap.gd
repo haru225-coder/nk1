@@ -366,7 +366,11 @@ func _board_enemy(enemy: Node2D) -> void:
 	if do_capture:
 		var type_id := _node_str(enemy, "ship_type", "pirate_boat")
 		var ship_name := _node_str(enemy, "ship_name", "")
+		var hull_max := float(enemy.get("hull_max")) if enemy.get("hull_max") != null else 0.0
+		var hull_frac := float(enemy.get("hull_hp")) / hull_max if hull_max > 0.0 else 1.0
 		var ok := Fleet.add_ship(type_id, ship_name)
+		if ok:
+			Fleet.settle_prize(Fleet.ships.size() - 1, hull_frac)
 		var taken: String = str(Fleet.ships[Fleet.ships.size() - 1].get("name", "敌船")) if ok else "敌船"
 		if ok:
 			_prizes.append(Fleet.ships[Fleet.ships.size() - 1])
