@@ -12,6 +12,11 @@ extends SceneTree
 ##   05_volley      齐射打到敌船：敌船船身一闪一颤、焦痕，出手烟团鼓开（敌船挨打后约 0.08 s 截）
 ##   06_founder     另一条敌船中砲石沉没：船身残影歪倒、压暗、没入海面，白沫漂木（沉后约 0.6 s 截）
 ## 布景同 combat_probe_stage：冻敌炮（探针自己放那一发砲石）、敌船关物理、逐帧钉在旗舰旁，构图每次一样。
+## 04 那一发砲石（lane w53-11 五轮）：原先抛出即放慢到 0.05 倍等它落，慢放下每帧只走 0.0067 s 游戏时间（delta 封顶 0.133 × 0.05），
+##   飞约 0.9 s 要 140 帧——压帧 300 档每帧约 415 ms，实测 50.3 s 才落、贴着 _pinned_until 的 60 s 墙钟上界，机器一忙就撞界，
+##   报成「敌船砲石落在本船上 / 焦痕」被测件的错（probe_pressure 档 300 偶发红；压帧 600 必红，墙钟到时只走了 0.56 s）。
+##   现按常速飞到落点前 LAND_LEAD 秒再放慢，慢放段只剩约 55 帧；撞墙钟上界时游戏时间还没走够这段演出要的时长 = 压帧过重、
+##   判不了，记一笔（probe_clock 头注释「三」，收尾 error=wall_clock）、判词写明，不再报成被测件的错。
 
 const VIEW := Vector2i(1280, 720)
 var OUT_DIR := ShotGate.out_dir("ship-vfx")
@@ -19,6 +24,7 @@ const CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const Ballistics := preload("res://scripts/combat/Ballistics.gd")
 const ShotGate := preload("res://tools/shot_gate.gd")
 const CombatStage := preload("res://tools/combat_probe_stage.gd")
+const Clock := preload("res://tools/probe_clock.gd")
 const TAG := "SHIP_VFX_PROBE"
 const EXPECTED_SHOTS := 6
 ## 敌船摆位（旗舰局部坐标，船首 -y）与相对航向
@@ -31,6 +37,15 @@ var _saved: Array = []
 var _ship: Node2D = null
 ## 截命中 / 出手那几拍时放慢游戏钟（软渲染一帧近 100 ms，0.09 s 的星芒一帧都画不上）；_shot_drawn 每帧重设（顿帧收尾会把它复成 1）
 var _slowmo := 1.0
+## _pinned_until 的墙钟上界；撞上界而游戏时间没走够时的说明（空 = 没撞，或是真没等到）
+const PIN_WALL_MS := 60000
+var _pin_why := ""
+## 04 砲石按常速飞到落点前这么多秒（游戏时间）再放慢：常速一帧至多走 0.133 s，留够余量不让它在常速段落下
+const LAND_LEAD := 0.35
+## 慢放段要走的游戏时间：落点前 LAND_LEAD 秒 + 落弹结算（实测落在 flight_time 之后约 0.1 s）
+const LAND_NEED := LAND_LEAD + 0.4
+## 每帧墙钟慢过这个（7.5 fps，引擎每帧 delta 封顶 8/60 s）算压帧过重（probe_clock 头注释「三」）
+const SLOW_FRAME_MS := 133.0
 var _foes: Array = []
 
 
@@ -158,13 +173,15 @@ func _run() -> void:
 		var ft := Ballistics.flight_time("pao", foe.global_position.distance_to(aim))
 		aim += (_ship as CharacterBody2D).velocity * ft
 		_lob_at(wm, foe, aim, "pao")
+		# 常速飞到落点前 LAND_LEAD 秒（头注释「04 那一发砲石」）
+		await _pinned(maxf(0.0, ft - LAND_LEAD))
 	# 落弹前就放慢（顿帧收尾会把钟复成 1，_pinned_until 每帧重设）
 	_slowmo = 0.05
-	var hit_own := await _pinned_until(func() -> bool: return float(_ship.get("hull_hp")) < hp, 6.0)
-	_expect(hit_own, "敌船砲石落在本船上")
+	var hit_own := await _pinned_until(func() -> bool: return float(_ship.get("hull_hp")) < hp, 6.0, LAND_NEED)
+	_expect(hit_own, "敌船砲石落在本船上" + _pin_why)
 	await _shot_drawn("04_hit_impact", func() -> bool: return true)
 	var look = _ship.get_node_or_null(CombatFx.LOOK_NODE)
-	_expect(look != null and int((look.get("scars") as PackedVector4Array).size()) >= 1, "本船中砲石留下焦痕")
+	_expect(look != null and int((look.get("scars") as PackedVector4Array).size()) >= 1, "本船中砲石留下焦痕" + _pin_why)
 
 	_slowmo = 1.0
 	Engine.time_scale = 1.0
@@ -225,25 +242,40 @@ func _pinned(sec: float) -> void:
 		_place_foes()
 
 
-func _pinned_until(cond: Callable, max_game_s: float) -> bool:
+## 按游戏时间等到 cond（上界 max_game_s 游戏秒、PIN_WALL_MS 墙钟）。慢放 ×0.05 时连不压帧也常是墙钟先到，「墙钟先到」本身判不了谁的错，
+## 看游戏时间：连 need_game_s（这段演出本来要走的游戏时间）都没走够就撞墙钟 = 压帧过重、判不了——记一笔（probe_clock「三」，
+## 收尾 error=wall_clock），_pin_why 写明、调用方判词带上；走够了仍不成立才是被测件的错。need_game_s 缺省 0 = 一律算被测件的错（原口径）。
+func _pinned_until(cond: Callable, max_game_s: float, need_game_s := 0.0) -> bool:
 	var t := 0.0
 	var t0 := Time.get_ticks_msec()
-	while t < max_game_s and Time.get_ticks_msec() - t0 < 60000:
+	var f0 := Engine.get_process_frames()
+	_pin_why = ""
+	while t < max_game_s and Time.get_ticks_msec() - t0 < PIN_WALL_MS:
 		if cond.call():
 			return true
 		Engine.time_scale = _slowmo
 		await process_frame
 		t += root.get_process_delta_time()
 		_place_foes()
-	return cond.call()
+	if cond.call():
+		return true
+	if t < need_game_s:
+		Clock.mark(true, t0, f0, t, PIN_WALL_MS)
+		_pin_why = "（墙钟上界 %d ms 先到：%d 帧只走了 %.2f s 游戏时间，这段演出要 %.2f s，慢放 ×%.2f——压帧过重、判不了，不是被测件的错）" % [
+			PIN_WALL_MS, Engine.get_process_frames() - f0, t, need_game_s, _slowmo]
+	return false
 
 
-## 等到画出来的那一帧 want 成立就截（最多 3 s 墙钟）；截到返回 true
+## 等到画出来的那一帧 want 成立就截（最多 3 s 墙钟）；截到返回 true。等不到时看每帧墙钟：慢过 7.5 fps（delta 封顶）时出手星芒这类
+## 按真实时间走的一闪（约 0.09 s）落在两帧之间、一帧也画不上——压帧过重、判不了，记一笔（probe_clock「三」）；帧率正常仍没画到才是被测件的错。
 func _shot_drawn(name: String, want: Callable) -> bool:
 	var t0 := Time.get_ticks_msec()
+	var f0 := Engine.get_process_frames()
+	var game_s := 0.0
 	while Time.get_ticks_msec() - t0 < 3000:
 		Engine.time_scale = _slowmo
 		await process_frame
+		game_s += root.get_process_delta_time()
 		_place_foes()
 		await RenderingServer.frame_post_draw
 		if want.call():
@@ -251,7 +283,14 @@ func _shot_drawn(name: String, want: Callable) -> bool:
 			await process_frame
 			await process_frame
 			return true
-	_fails.append("%s 没截到该相位" % name)
+	var frames := maxi(1, Engine.get_process_frames() - f0)
+	var frame_ms := float(Time.get_ticks_msec() - t0) / frames
+	if frame_ms >= SLOW_FRAME_MS:
+		Clock.mark(true, t0, f0, game_s, 3000)
+		_fails.append("%s 没截到该相位（墙钟上界 3000 ms 先到：%d 帧、每帧约 %.0f ms，慢过 7.5 fps——按真实时间走的一闪落在两帧之间，压帧过重、判不了，不是被测件的错）" % [
+			name, frames, frame_ms])
+	else:
+		_fails.append("%s 没截到该相位" % name)
 	return false
 
 
