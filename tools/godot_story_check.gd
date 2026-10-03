@@ -2837,6 +2837,15 @@ func _v0928_siege_check(main: Node) -> void:
 	# 5. 粮尽：当场打破，题头写到冬、落款照当日
 	_v0928_siege_scholar(Crw, fall_abs - 20)
 	main.load_scene("xinghua")
+	# 守过两阵、粮够两阵：数量词前的二写「两」（GameManager.cn_num 的 liang），不写「已守二阵」「够打二阵」（lane w53-10）
+	GS.siege_set("round", 2)
+	GS.siege_set("grain", GS.SIEGE_GRAIN_PER_ROUND * 2)
+	main.load_scene("xinghua")
+	var two_head := _find_label_text(main._shore_band(), "三阵・")
+	var two_line := _find_label_text(main._shore_band(), "粮 ")
+	_check(two_head.ends_with("已守两阵") and two_line.find("够打两阵") >= 0 and _find_label_text(main._shore_band(), "二阵") == "",
+		"守过两阵、粮够两阵：城防账写「已守两阵」「够打两阵」，不写「二阵」（「%s」「%s」）" % [two_head, two_line])
+	GS.siege_set("round", 0)
 	GS.siege_set("grain", 0)
 	main.load_scene("xinghua")
 	_check(_find_label_text(main._shore_band(), "一阵也不够") != "" and _find_label_text(main._shore_band(), "零阵") == "",

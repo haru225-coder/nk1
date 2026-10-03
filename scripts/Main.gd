@@ -3977,10 +3977,10 @@ func _siege_stat_slip() -> Control:
 	var rounds_left: int = grain / GameState.SIEGE_GRAIN_PER_ROUND
 	var fought: int = GameState.siege_get("round")
 	_band_head(col, "城头白布八字　生为宋臣　死为宋鬼", "城",
-		"三阵・尚未接战" if fought <= 0 else "三阵・已守%s阵" % _cn_num(fought))
+		"三阵・尚未接战" if fought <= 0 else "三阵・已守%s阵" % _cn_num(fought, true))
 	_band_line(col, "兵 %d（上限 %d）　粮 %d・%s　城墙 %d / %d　士气 %d%s" % [
 		GameState.siege_get("troops"), GameState.siege_troop_cap(),
-		grain, "一阵也不够" if rounds_left <= 0 else "够打%s阵" % _cn_num(rounds_left),
+		grain, "一阵也不够" if rounds_left <= 0 else "够打%s阵" % _cn_num(rounds_left, true),
 		GameState.siege_get("wall"), GameState.SIEGE_WALL_MAX,
 		GameState.siege_get("morale"),
 		"　石手军在城" if str(GameState.siege.get("shishou", "")) == "kept" else "",
