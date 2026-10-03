@@ -136,6 +136,7 @@ const SCRIPTS := [
 	"res://tools/perf_baseline.gd",  # lane w20-c10 帧时 / 峰值内存 / 启动到可玩基线探针
 	"res://tools/qa_port_beats_probe.gd",  # lane w26-k7 PortBeats.due 终局守卫下沉契约探针
 	"res://tools/qa_ledger_strip_probe.gd",  # lane w27-k1 HUD 顶匾「钱 N / 水粮 D 日」随账上屏断言探针
+	"res://tools/qa_debt_strip_probe.gd",  # lane w30-k2 HUD 顶匾上行「欠 %d」逐字断言探针（gs.debt = 835/100/10000 三档 + debt=0 反向）
 	"res://tools/qa_seachart_advance_probe.gd",  # lane w28-k3 SeaChart 海图「航段」名号跨月推进时序断言探针
 ]
 
