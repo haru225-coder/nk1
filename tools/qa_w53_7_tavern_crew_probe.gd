@@ -19,6 +19,9 @@ extends SceneTree
 ##     林阿舶页悬停即见「旧水手　水手·后为部将」（运行时截「后为……」只在 codex_title 里做，这里绕过去了），
 ##     度宗页「儿子」签 1270 年就写「大宋皇帝（景炎）」，海商线陈母页写「陈文龙幼子」。现写人物志上屏称谓，与名册格、未识页同一句；
 ##     三处钉实例，另按四个年份把名册上每位已识之人的详页翻一遍：指向未识之人的签，提示称谓都须与名册格上那人的称谓一字不差。
+##   P 人物志未识职事页「据牙人说，在某港候雇」：修前只查名册里的 port，不看章节、旗标、史实辞船前夕——第一章就把第二章才到明州的
+##     蔡七星指去明州（明州酒馆里没有他），没走过寺社引荐也指人去博多找记名沙弥。现与酒馆同读 Crew.on_offer：此刻真在那港候雇才写；
+##     并按四个时点把每位职事候选过一遍：未识页指港 ⇔ 那港酒馆此刻列他。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 ## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
@@ -80,6 +83,7 @@ func _boot() -> void:
 	await _i_npc_intel()
 	await _c_codex_unknown_crew()
 	await _r_rel_chip_tips()
+	await _p_hire_port_hint()
 	_report()
 
 
@@ -323,6 +327,58 @@ func _codex_unknown_hint(id: String) -> String:
 	cx.queue_free()
 	await process_frame
 	return got
+
+
+# ── P 人物志未识职事页的候雇提示：此刻真在那港候雇才指港 ──
+
+func _p_hire_port_hint() -> void:
+	print("── P 人物志未识职事页「据牙人说，在某港候雇」：此刻真在那港酒馆候雇才写（章节、寺社引荐都算上）")
+	# 第一章：蔡七星第二章才到明州——明州酒馆里没有他，未识页也不该指去明州（先看人物志，再进酒馆：进了酒馆见过即识）
+	_stage(1258, 3, 1)
+	var hint := await _codex_unknown_hint("cai_qixing")
+	_gs.last_port = "mingzhou"
+	await _goto("mingzhou_tavern")
+	var there := _label("蔡七星") != null
+	_expect(not there and hint == "见过此人，册上才有其详。",
+		"第一章：明州酒馆里没有蔡七星（列名 %s），未识页不指明州（实读：%s）" % [there, hint])
+	_stage(1262, 5, 2)
+	hint = await _codex_unknown_hint("cai_qixing")
+	_gs.last_port = "mingzhou"
+	await _goto("mingzhou_tavern")
+	there = _label("蔡七星") != null
+	_expect(there and hint.contains("据牙人说，在明州一带候雇"),
+		"第二章：明州酒馆列蔡七星（%s），未识页指明州（实读：%s）" % [there, hint])
+	# 记名沙弥：没走过寺社引荐，博多酒馆遇不见他，提示也不指博多；立了 japan_temple_network 才指
+	_stage(1262, 5, 2)
+	var no_flag := await _codex_unknown_hint("jinghai_shami")
+	_gs.set_flag("japan_temple_network")
+	var with_flag := await _codex_unknown_hint("jinghai_shami")
+	_expect(not no_flag.contains("博多") and with_flag.contains("在博多唐房一带候雇"),
+		"记名沙弥：无寺社引荐不指博多（%s）；有了才指（%s）" % [no_flag, with_flag])
+	# 整册：每位挂职事的人物，四个时点里「未识页指港」与「那港酒馆此刻列他」两边一致
+	var gm := root.get_node("GameManager")
+	for st in [[1258, 3, 1, false], [1262, 5, 2, false], [1262, 5, 2, true], [1266, 5, 3, false]]:
+		_stage(int(st[0]), int(st[1]), int(st[2]))
+		if st[3]:
+			_gs.set_flag("japan_temple_network")
+		var checked := 0
+		var bad: Array = []
+		for c in gm.crew_data.get("candidates", []):
+			var cid := str(c.get("id", ""))
+			var h := await _codex_unknown_hint(cid)
+			if h == "":
+				continue  # 人物志里不挂职事 id 的（林华走要人一路），没有这一句
+			var port_name := str(gm.call("get_port_name", str(c.get("port", ""))))
+			var points := h.contains("在%s一带候雇" % port_name)
+			var listed := false
+			for x in _crew.call("candidates_at", str(c.get("port", ""))):
+				listed = listed or str(x.get("id", "")) == cid
+			checked += 1
+			if points != listed:
+				bad.append("%s 指%s=%s 酒馆列名=%s" % [cid, port_name, points, listed])
+		_expect(checked >= 15 and bad.is_empty(),
+			"%d-%02d 第%d段%s：%d 位职事候选，未识页指港与那港酒馆列名一致（不一致：%s）" % [
+				st[0], st[1], st[2], "（有寺社引荐）" if st[3] else "", checked, "无" if bad.is_empty() else "；".join(bad)])
 
 
 # ── R 人物志关系签：指向未识之人的悬停提示写人物志上屏称谓 ──

@@ -480,14 +480,15 @@ static func heard_of(ch: Dictionary) -> bool:
 	return false
 
 
-## 职事候选在哪个港候雇（人物志「未识」页的一句提示用）。
+## 职事候选在哪个港候雇（人物志「未识」页的一句提示用）。此刻不在候雇（章节未到、旗标未立、史实辞船前夕）返回空串：
+## 提示只说眼下的实话，与酒馆列名同读 Crew.on_offer。
 static func hire_port_name(ch: Dictionary) -> String:
 	var crew_id := crew_id_of(ch)
 	if crew_id == "":
 		return ""
 	var cand: Dictionary = Crew.candidate_def(crew_id)
 	var pid := str(cand.get("port", ""))
-	return GameManager.get_port_name(pid) if pid != "" else ""
+	return GameManager.get_port_name(pid) if pid != "" and Crew.on_offer(cand) else ""
 
 
 # ── 画 ─────────────────────────────────────────────

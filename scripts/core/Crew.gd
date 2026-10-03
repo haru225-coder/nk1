@@ -49,9 +49,9 @@ func candidates_at(port_id: String) -> Array:
 	for c in GameManager.crew_data.get("candidates", []):
 		if c.get("port", "") != port_id:
 			continue
-		if not GameState.is_chapter_reached(c.get("unlock", "ch1")):
-			continue
-		if not GameState.flag_requirement_met(c) or not hireable_by_history(c):
+		# 章节已到、旗标已立、不在史实辞船前夕：三道门槛归 on_offer 一处判，
+		# 人物志未识页「据牙人说，在某港候雇」同读它，两处不各写一份
+		if not on_offer(c):
 			continue
 		if hired.has(c.get("role", "")):
 			continue
@@ -294,3 +294,10 @@ func from_dict(d: Dictionary) -> void:
 	unpaid_months = d.get("unpaid_months", 0)
 	var dp = d.get("departed", {})
 	departed = dp if typeof(dp) == TYPE_DICTIONARY else {}
+
+
+## 此人此刻在本港候雇（不看那一职船上有没有人）：章节已到、旗标已立（记名沙弥要走过寺社引荐）、不在史实辞船前夕。
+## candidates_at 与人物志未识页的候雇提示（CharacterArt.hire_port_name）同读这一处——提示修前只查名册里的 port，
+## 第一章就把第二章才到明州的蔡七星指去明州，没走过寺社引荐也指人去博多找记名沙弥，去了酒馆里都没有人。
+func on_offer(c: Dictionary) -> bool:
+	return GameState.is_chapter_reached(c.get("unlock", "ch1")) and GameState.flag_requirement_met(c) and hireable_by_history(c)
