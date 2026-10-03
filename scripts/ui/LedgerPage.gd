@@ -336,7 +336,7 @@ static func update_panel(main: Control) -> void:
 		t += "[color=#%s]了结　%s[/color]\n" % [
 			UiTheme.hex(UiTheme.GOLD), prog.get("ending_title", GameState.ending_title()),
 		]
-	elif prog.get("final", false):
+	elif prog.get("final", false) and prog.get("ready", false):
 		t += "[color=#%s]终章・可了结[/color]\n" % UiTheme.hex(UiTheme.TEXT_DIM)
 		for it in prog.get("items", []):
 			t = main._append_progress_line(t, it)

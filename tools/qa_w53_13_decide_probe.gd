@@ -2,6 +2,9 @@ extends SceneTree
 ## lane-w53-13（把 w53 待拍板逐条定下来并做掉）。一支探针分段，每段钉一条拍板后的修复（退掉那处修复，那一段就红）：
 ##   Y 跳年封顶（待拍板 6）：晋升跳年落点不越过 1275（德祐元年）。修前 1274 年三月开第四章原样跳四年，落到景炎三年三月，
 ##     士人线回港当场判「未归」、1276 兴化守城一阵没打；海商线同理跳过 1277 涵江、1279 崖山。
+##   L 船籍簿终章段（待拍板 4b）：了结之地那条章目写「泊在占城」，「终章・可了结」只在章目全达时写（与顶匾同一口径）。
+##     修前章目叫「至占城了结一纲」，泊在占城时打勾成「已　至占城了结一纲」，读着像已经了结；「终章・可了结」第四章
+##     任何时候都写，本钱还差两万也照写，离了牙行什么都不发生。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_13_decide_probe.gd
 ## 末行 W53_13_DECIDE cases=N fails=M；fails>0 退 1。
 ## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
@@ -57,6 +60,7 @@ func _boot() -> void:
 	for i in 10:
 		await process_frame
 	await _y_skip_cap()
+	await _l_ledger_settle()
 	_report()
 
 
@@ -130,6 +134,64 @@ func _y_skip_cap() -> void:
 	res = _gs.try_advance_chapter()
 	_expect(bool(res.get("advanced", false)) and int(res.get("years", -1)) == int(_gs.chapter_def(1).get("advance_years", 0)),
 		"反向基：1258-05 开第二章照数据跳 %d 年（实得 years=%s）" % [int(_gs.chapter_def(1).get("advance_years", 0)), str(res.get("years", "?"))])
+
+
+# ── L 船籍簿终章段 ─────────────────────────────────────
+
+func _page() -> String:
+	_main.call("update_status_panel")
+	var s := _main.get("status_label") as RichTextLabel
+	return s.text if s != null else ""
+
+
+func _ready_ch4(port: String, peak: int) -> void:
+	_gs.from_dict({})
+	_cal.from_dict({"year": 1268, "month": 6, "day": 1})
+	_gs.chapter = 4
+	var er: Dictionary = _gs.chapter_def(4).get("ending_requires", {})
+	_gs.money = peak
+	_gs.peak_money = peak
+	var ids: Array = []
+	for raw in er.get("must_visit", []):
+		ids.append(str(raw))
+	for p in _gm.ports_data.get("ports", []):
+		var pid := str(p.get("id", ""))
+		if ids.size() >= int(er.get("visited_count", 0)):
+			break
+		if not (pid in ids):
+			ids.append(pid)
+	_gs.visited_ports = ids
+	_gs.last_port = port
+
+
+func _l_ledger_settle() -> void:
+	print("── L 船籍簿终章段：「泊在占城」与「终章・可了结」")
+	var er: Dictionary = _gs.chapter_def(4).get("ending_requires", {})
+	var need := int(er.get("peak_money", 0))
+	# 本钱、港数、亲至都够，人在广州：差的只是泊到占城
+	_ready_ch4("guangzhou", need + 1000)
+	var page := _page()
+	_expect(page.contains("・　泊在占城") and not page.contains("了结一纲"),
+		"泊在广州：末条章目写「・　泊在占城」（实读：%s）" % _snip(page, "占城"))
+	_expect(not page.contains("终章・可了结"),
+		"泊在广州、尚差一条：不写「终章・可了结」（实读：%s）" % _snip(page, "第四章"))
+	# 泊在占城，本钱还差：那一条打勾写「已　泊在占城」，不写成「已　至占城了结一纲」，也不写可了结
+	_ready_ch4("champa", need - 20000)
+	page = _page()
+	_expect(page.contains("泊在占城") and not page.contains("了结一纲"),
+		"泊在占城、本钱未够：那一条写「泊在占城」打勾（实读：%s）" % _snip(page, "占城"))
+	_expect(not page.contains("终章・可了结"),
+		"泊在占城、本钱还差两万：不写「终章・可了结」（实读：%s）" % _snip(page, "第四章"))
+	# 反向基：章目全达（不进港、不触发了结，只重画船籍簿）——照写「终章・可了结」
+	_ready_ch4("champa", need + 1000)
+	page = _page()
+	_expect(page.contains("终章・可了结"),
+		"反向基：章目全达时船籍簿照写「终章・可了结」（实读：%s）" % _snip(page, "第四章"))
+
+
+func _snip(t: String, anchor: String, span := 60) -> String:
+	var i := t.find(anchor)
+	return (t.substr(0, span) if i < 0 else t.substr(maxi(0, i - 20), span)).replace("\n", "⏎")
 
 
 func _report() -> void:

@@ -4124,7 +4124,7 @@ func _c6_endings_gate_check() -> void:
 	_c6_check(not bool(GS.chapter_progress().get("ready", false)), "第四章零本钱零到港：chapter_progress.ready=false")
 	_c6_check(not bool(GS.try_resolve_ending().get("resolved", false)), "未就绪 try_resolve 拒了结")
 	_c6_check(GS.ending_id == "", "未就绪 ending_id 未写")
-	# A2（lane w53-4）：本钱、港数、亲至都够了，人却泊在别港 → 不了结；章目末条「至占城了结一纲」未达。
+	# A2（lane w53-4）：本钱、港数、亲至都够了，人却泊在别港 → 不了结；章目末条「泊在占城」未达。
 	# 修前 try_resolve_ending 在哪港够条件就在哪落笔，结局幕「回占城港上」一步把人送到占城
 	_c6_check(settle != "" and str(er.get("settle_at", "")) == settle,
 		"第四章 ending_requires.settle_at 写的是结局幕所在港（settle_at「%s」，结局幕在「%s」）" % [str(er.get("settle_at", "")), settle])
@@ -4469,7 +4469,7 @@ func _w25j1_cam_plaque_check() -> void:
 ## ── lane w53-4：终章在占城了结（chapters.json 第四章 ending_requires.settle_at）──
 ## 修前：第四章本钱 / 港数 / 亲至占城都够了，玩家在哪一港进港就在哪一港弹「了结」册页——册页与结局幕写的是
 ## 「占城的灯比泉州疏」一类占城夜景，幕里只有一钮「回占城港上」，按下 last_port 当即改成占城，一日不过
-## （simulate_run 那局第 28 趟在泉州够了八万即了结）。现在泊在别港不了结、顶匾章目报「至占城了结一纲」，
+## （simulate_run 那局第 28 趟在泉州够了八万即了结）。现在泊在别港不了结、顶匾章目报「泊在占城」，
 ## 抵占城才落笔，结局幕回的就是脚下这一港。
 func _w53_4_settle_flow_check(main: Node) -> void:
 	var er: Dictionary = GS.chapter_def(4).get("ending_requires", {})
@@ -4501,8 +4501,8 @@ func _w53_4_settle_flow_check(main: Node) -> void:
 		"条件全达抵%s（不是了结之地）：不弹了结册页、ending_id 仍空（页 %s，结局「%s」）" % [
 			GM.get_port_name(away), main.current_scene_id, GS.ending_id])
 	var hint := str(main._chapter_hint())
-	_check(hint.contains(GM.get_port_name(settle)) and hint.contains("了结"),
-		"泊在%s时顶匾章目指去了结之地：「%s」" % [GM.get_port_name(away), hint])
+	_check(hint.contains(GM.get_port_name(settle)) and hint.contains("泊在"),
+		"泊在%s时顶匾章目指去了结之地（「泊在%s」，lane w53-13 起不再写「至…了结一纲」）：「%s」" % [GM.get_port_name(away), GM.get_port_name(settle), hint])
 	GS.last_port = settle
 	main.load_scene(settle)
 	host = main.get("_chapter_host")

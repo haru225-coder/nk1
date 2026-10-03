@@ -263,9 +263,9 @@ func _requirement_items(req: Dictionary) -> Array:
 	var settle := str(req.get("settle_at", ""))
 	if settle != "":
 		items.append({
-			"label": "至%s了结一纲" % GameManager.get_port_name(settle),
+			"label": "泊在%s" % GameManager.get_port_name(settle),
 			"current": 1 if last_port == settle else 0, "need": 1,
-			"done": last_port == settle,
+			"done": last_port == settle, "settle": settle,
 		})
 	return items
 
