@@ -77,18 +77,24 @@ for s in scenes:
               f"visited_ports 不记录；剧情幕请改独立 id（如 {s['id']}_survey）")
 
 # ── chapters.json：must_visit 港必须存在且本章就能到 ──
+# （lane w53-4：ending_requires 走同一套格——第四章的终章门槛 first 要对得上可达性）
 chapters = load("chapters.json")["chapters"]
 for ch in chapters:
     cid = int(ch["id"])
-    req = ch.get("next_requires") or {}
-    for pid in req.get("must_visit", []):
-        check(pid in port_ids, f"chapters {cid} must_visit `{pid}` 不在 ports.json")
-        if pid in port_ids:
-            check(port_unlock[pid] <= cid,
-                  f"chapters {cid} must_visit `{pid}` 要到第 {port_unlock[pid]} 章才解锁，本章永远晋升不了")
-    need = int(req.get("visited_count", 0))
-    reachable = sum(1 for p in port_ids if port_unlock[p] <= cid)
-    check(need <= reachable, f"chapters {cid} visited_count={need} 超过本章可达港口数 {reachable}")
+    reqs = []
+    if isinstance(ch.get("next_requires"), dict):
+        reqs.append(("next_requires", ch["next_requires"]))
+    if isinstance(ch.get("ending_requires"), dict):
+        reqs.append(("ending_requires", ch["ending_requires"]))
+    for slot, req in reqs:
+        for pid in req.get("must_visit", []):
+            check(pid in port_ids, f"chapters {cid}.{slot} must_visit `{pid}` 不在 ports.json")
+            if pid in port_ids:
+                check(port_unlock[pid] <= cid,
+                      f"chapters {cid}.{slot} must_visit `{pid}` 要到第 {port_unlock[pid]} 章才解锁，本章永远晋升/了结不了")
+        need = int(req.get("visited_count", 0))
+        reachable = sum(1 for p in port_ids if port_unlock[p] <= cid)
+        check(need <= reachable, f"chapters {cid}.{slot} visited_count={need} 超过本章可达港口数 {reachable}")
 
 # ── news.json ─────────────────────────────────────────
 news = load("news.json")["news"]
