@@ -114,6 +114,11 @@ var _enemy_fates: Dictionary = {}
 ## 开战时的水粮账。弃战 / 两散收战时并进 data.prizes / data.stores_moved，供 SeaChart 交代夺船下落。
 var _prizes: Array = []
 var _stores_at_start: Vector2i = Vector2i.ZERO
+## lane w53-2：本队折损账（收战并进 data.losses，出战墨边副题写「折水手 N 人，颠落舱面货 N 件」）——
+## 开战时全队水手、夺船随船并入的水手（不算折损的负数）、开战时各货件数（中弹颠落舱面货只在战中发生，收战差额即颠落的）
+var _crew_at_start: int = 0
+var _prize_crew: int = 0
+var _cargo_at_start: Dictionary = {}
 ## combat12：开战经过秒数；到 battle_limit_s（combat_phases.json thresholds，缺省 BATTLE_LIMIT_S）两散 parted
 var _battle_elapsed_s: float = 0.0
 var _battle_limit_s: float = 300.0
@@ -361,6 +366,7 @@ func _board_enemy(enemy: Node2D) -> void:
 		var taken: String = str(Fleet.ships[Fleet.ships.size() - 1].get("name", "敌船")) if ok else "敌船"
 		if ok:
 			_prizes.append(Fleet.ships[Fleet.ships.size() - 1])
+			_prize_crew += int(Fleet.ships[Fleet.ships.size() - 1].get("crew", 0))
 		if notice == "":
 			notice = _CombatFx.board_win_note(taken)
 		if detail == "":
@@ -568,6 +574,9 @@ func _setup_combat(pb: Dictionary) -> void:
 	_enemy_fates = {}
 	_prizes = []
 	_stores_at_start = Vector2i(Fleet.water, Fleet.food)
+	_crew_at_start = Fleet.total_crew()
+	_prize_crew = 0
+	_cargo_at_start = _cargo_counts()
 	_battle_elapsed_s = 0.0
 	_battle_limit_s = _phases_battle_limit_s()
 	combat_mode = true
@@ -705,12 +714,42 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 	# lane w19-g2：旗舰沉没（lose + sunk）同带夺船账——夺来的船不上战阵、仍在册，SeaChart 沉船句要交代它
 	if (outcome == "flee" or (outcome == "lose" and bool(data.get("sunk", false)))) and not _prizes.is_empty():
 		_prize_ledger(data)
+	# lane w53-2：本场折损（矢石、白刃死的水手，中弹颠落的舱面货）交给出战墨边副题——CombatLetterbox.loss_note 早留了这一格，没人填
+	if combat_mode and not data.has("losses"):
+		var losses := _battle_losses()
+		if not losses.is_empty():
+			data["losses"] = losses
 	_AUDIO.combat_result(self, outcome)
 	_CombatShoreHook.unmount_combat_ui(self)
 	_try_letterbox_exit(outcome, data)
 	_SeaState.clear_active(_sea)
 	battle_finished.emit(outcome, data)
 	queue_free()
+
+
+## 本场折损 {crew: 折了几名水手, cargo: 颠落几件舱面货}，没有的键不写、全没有返回 {}。
+## 水手按「开战时 + 夺船并入 − 此刻」算（夺来的船带的人不抵折损，也不让折损变负）；货按开战时各货件数逐货取少了的
+func _battle_losses() -> Dictionary:
+	var out := {}
+	var crew_lost := _crew_at_start + _prize_crew - Fleet.total_crew()
+	if crew_lost > 0:
+		out["crew"] = crew_lost
+	var now := _cargo_counts()
+	var cargo_lost := 0
+	for gid in _cargo_at_start:
+		cargo_lost += maxi(0, int(_cargo_at_start[gid]) - int(now.get(gid, 0)))
+	if cargo_lost > 0:
+		out["cargo"] = cargo_lost
+	return out
+
+
+## 全队各货件数 {gid: 件}（Fleet.cargo 是各船合并的只读视图）
+static func _cargo_counts() -> Dictionary:
+	var out := {}
+	var agg: Dictionary = Fleet.cargo
+	for gid in agg:
+		out[gid] = int((agg[gid] as Dictionary).get("qty", 0))
+	return out
 
 
 ## lane fx3：夺船后弃战 / 两散的夺船账（w19-g2 起旗舰沉没也走这里）——只记收战这一拍仍在册的那几格（按引用认），水粮记本场实际增量

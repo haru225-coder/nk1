@@ -267,7 +267,8 @@ static func fate_note(fates: Array) -> String:
 	return "，".join(parts)
 
 
-## 我方折损：「折水手十二人，失船一艘」。losses 认 crew（折损水手人数）/ ships（沉没或被夺的艘数）；都没有返回 ""。
+## 我方折损：「折水手十二人，失船一艘，颠落舱面货九件」。losses 认 crew（折损水手人数）/ ships（沉没或被夺的艘数）/
+## cargo（中弹颠落的舱面货件数，WorldMap 收战按开战时货账差出）；都没有返回 ""。
 static func loss_note(losses: Dictionary) -> String:
 	var parts: PackedStringArray = []
 	var crew := int(losses.get("crew", 0))
@@ -276,6 +277,9 @@ static func loss_note(losses: Dictionary) -> String:
 	var ships := int(losses.get("ships", 0))
 	if ships > 0:
 		parts.append("失船%s艘" % _cn_count(ships))
+	var cargo := int(losses.get("cargo", 0))
+	if cargo > 0:
+		parts.append("颠落舱面货%s件" % _cn_count(cargo))
 	return "，".join(parts)
 
 

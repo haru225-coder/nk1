@@ -11,6 +11,9 @@ extends SceneTree
 ##       ③ 士气挂件：敌船先钩时敌簿记攻方、本队簿记守方；守住后本队簿提士气（旧口径反过来按我攻败记、压士气）。
 ##   三、号令浮字写中文名：按 1–5 下令，海战场中央浮字修复前是「号令：windward」「号令：load」——内部 id 直接上屏。
 ##       真起号令面板逐令 issue，浮字须是「号令：抢风 / 撤令：抢风 / 号令：专力装填 / 火攻 / 均装 / 救火 / 备接舷」、不含拉丁字母。
+##   四、收战带本场折损：矢石 / 白刃折的水手、中弹颠落的舱面货，修复前收战 data 里一字不记（CombatLetterbox.loss_note 留着
+##       「折水手 N 人」那一格没人填，SeaChart 札记也不提），出战墨边只写日期与敌船下场。折 7 人、颠落 4 件、中途夺船并入 40 人，
+##       收战 data.losses 须恰为 {crew: 7, cargo: 4}（夺来的人不抵折损），墨边副题写「折水手七人，颠落舱面货四件」。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -48,6 +51,8 @@ func _run() -> void:
 	await _sec_enemy_first_morale(fleet)
 	print("== 三、号令浮字写中文名")
 	await _sec_order_notice(fleet)
+	print("== 四、收战带本场折损")
+	await _sec_battle_losses(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -69,11 +74,11 @@ func _run() -> void:
 
 
 ## 开一场海战：一艘本队船（type / crew 由调用方定）对 enemy 条目；敌炮冻住（布景不自己结算）。返回 WorldMap
-func _battle(fleet: Node, ship_type: String, crew: int, enemy: Dictionary) -> Node:
+func _battle(fleet: Node, ship_type: String, crew: int, enemy: Dictionary, cargo := {}) -> Node:
 	var d: Dictionary = fleet.call("ship_def", ship_type)
 	var dur := float(d.get("durability", 300))
 	fleet.set("ships", [{"type": ship_type, "name": "试船", "crew": crew, "sail_level": 1, "armor_level": 1,
-		"cargo": {}, "durability": dur, "max_durability": dur}])
+		"cargo": cargo.duplicate(true), "durability": dur, "max_durability": dur}])
 	fleet.set("morale", 70)
 	root.get_node("GameManager").set("pending_battle", {"battle": true, "power": 300.0, "player_power": 300.0,
 		"enemy": [enemy], "sea_name": "泉州外海", "source": {"scene": "qa_w53_2"}})
@@ -292,6 +297,41 @@ func _sec_order_notice(fleet: Node) -> void:
 	var has_fn := op.has_method("notice_for")  # 资源上 has_method 认 static func；缺了不硬调，免得一行 SCRIPT ERROR 截断探针
 	_check(has_fn and str(op.call("notice_for", "parley", {"result": "refuse"})) == "号令：降幡劝降"
 		and str(op.call("notice_for", "nope", {})) == "", "劝降令浮字「号令：降幡劝降」、认不得的令不上屏（notice_for 在 = %s）" % has_fn)
+	await _close(wm)
+
+
+# ══ 四、收战带本场折损 ══════════════════════════════════════════
+
+## 福船 60 人、舱里生丝 20 茶 5 对两艘快船：战中折 7 人（同矢石伤亡走 Fleet.lose_crew_random）、颠落生丝 3 茶 1（同 Ship.take_hit
+## 颠货走 Fleet.remove_cargo），夺下一艘无人快船（并入 crew_min 人），再弃战收战——data.losses 恰 {crew: 7, cargo: 4}
+func _sec_battle_losses(fleet: Node) -> void:
+	var wm := await _battle(fleet, "fu_ship_medium", 60, {"type": "pirate_boat", "count": 2},
+		{"raw_silk": {"qty": 20, "avg_cost": 50.0}, "tea": {"qty": 5, "avg_cost": 20.0}})
+	var foes := _foes(wm)
+	if foes.size() < 2:
+		_check(false, "四 海战刷出两艘快船（得 %d 艘）" % foes.size())
+		await _close(wm)
+		return
+	var rec: Array = []
+	wm.battle_finished.connect(func(o: String, d: Dictionary) -> void: rec.append([o, d.duplicate(true)]))
+	fleet.call("lose_crew_random", 7)
+	fleet.call("remove_cargo", "raw_silk", 3)
+	fleet.call("remove_cargo", "tea", 1)
+	var foe: Node2D = foes[0]
+	foe.set("crew", 0)  # 无人拒守：登船即得、本队不折人
+	var ships_before := (fleet.get("ships") as Array).size()
+	wm.call("_board_enemy", foe)
+	var got_prize := (fleet.get("ships") as Array).size() == ships_before + 1
+	var prize_crew := int((fleet.get("ships") as Array)[-1].get("crew", 0)) if got_prize else 0
+	_check(got_prize and prize_crew > 0 and rec.is_empty(), "四 中途夺下一艘（并入 %d 人）、还剩一艘不收战" % prize_crew)
+	wm.call("_battle_exit", "flee", {"flee_ok": true})
+	var data: Dictionary = rec[0][1] if rec.size() == 1 else {}
+	var losses = data.get("losses", {})
+	_check(losses is Dictionary and int(losses.get("crew", -1)) == 7 and int(losses.get("cargo", -1)) == 4 and (losses as Dictionary).size() == 2,
+		"四 收战 data.losses 恰 {crew: 7, cargo: 4}：夺来的 %d 人不抵折损（得 %s）" % [prize_crew, str(data.get("losses", "无此键"))])
+	var lb: GDScript = load("res://scripts/ui/CombatLetterbox.gd")
+	var sub := str(lb.call("exit_subtitle", "", [], losses if losses is Dictionary else {}))
+	_check(sub == "折水手七人，颠落舱面货四件", "四 出战墨边副题写本场折损（得「%s」）" % sub)
 	await _close(wm)
 
 
