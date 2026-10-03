@@ -32,12 +32,34 @@ extends RefCounted
 ##     if not ShotGate.check_fields(_chart, {"map": "MapView path 错"}, _fails, "SeaChart 01 港名密区"): _report(); return
 ##   红是因为挂不出 / 字段 nil 时，fails 各追加一条带【label / 症状 / 排查法】的中文行——人读秒懂、机器也读 json error。
 ##   与源码探查 src_probe 不合并同用：那只读文件层（源码字号 / 开关 / 旗号），这层「起场景、逐字段试」，层不同。
+## 本进程 SCRIPT ERROR 即红（lane w53-11）：本件一被 preload（探针脚本编译时、早于其 _init）就在 _static_init 挂共用件
+##   tools/script_err_tally.gd 的计数器（只数 ERROR_TYPE_SCRIPT；push_error / 引擎 ERROR 不算）；finish_shots /
+##   finish_contract 收尾时判 verdicts() 两判（计数器自证 + 本进程 0 条，判词同 story :3156），判不过的进 fails →
+##   `<TAG>_FAIL`。此前截图探针中途出脚本错照样拍够张数打 `<TAG>_OK`、退 0（gate_report 原生 --json 也只数 script_errors
+##   不改判定）；二十五支截图册探针接线前现网全跑 0 条 SCRIPT ERROR。
 
 const DEFAULT_SHOT_ROOT := "/workspace/nk1-qa-shots"
 const GateReport := preload("res://tools/gate_report.gd")
 const Clock := preload("res://tools/probe_clock.gd")
 const ENV_SLOW := "NK1_PROBE_SLOW_MS"
 const PRESSURE_NODE := "ProbeFramePressure"
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
+static var _script_errs: ScriptErrTally = null
+
+
+static func _static_init() -> void:
+	_script_errs = ScriptErrTally.new()
+	OS.add_logger(_script_errs)
+
+
+## 收尾前判本进程 SCRIPT ERROR（头注释「本进程 SCRIPT ERROR 即红」）：两判里判不过的进 fails，判得过的不另打印。
+static func _script_err_fails(fails: Array) -> void:
+	if _script_errs == null:
+		return
+	for v in _script_errs.verdicts():
+		if not v[0]:
+			fails.append(str(v[1]))
 
 
 ## 截图输出目录：NK1_SHOT_DIR 为空取默认根；相对路径按启动时的 $PWD 展开。
@@ -195,6 +217,7 @@ static func _wall_clock(fails: Array, error: String, extra: Dictionary) -> Strin
 
 ## 截图模式收尾：实得张数 < 声明张数也判失败。返回退出码。
 static func finish_shots(tag: String, saved: Array, expected: int, out_dir: String, fails: Array, error := "") -> int:
+	_script_err_fails(fails)
 	if saved.size() < expected:
 		fails.append("真失败：声明 %d 张截图，实得 %d 张" % [expected, saved.size()])
 	var extra := {"tag": tag, "shots": saved.size(), "expected_shots": expected, "out_dir": out_dir}
@@ -230,6 +253,7 @@ static func fail_no_render(tag: String, reason: String, expected: int) -> int:
 
 ## 契约模式收尾：只报契约断言，不报张数。返回退出码。
 static func finish_contract(tag: String, fails: Array, error := "") -> int:
+	_script_err_fails(fails)
 	var extra := {"tag": tag, "contract": true}
 	error = _wall_clock(fails, error, extra)
 	for f in fails:
