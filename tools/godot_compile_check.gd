@@ -137,6 +137,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_3_contract_keep_probe.gd",  # lane w53-3 在身委办的货不上秤（改前交货地按全卖连委办货一起卖掉、交货钮发灰）
 	"res://tools/qa_w53_7_tavern_crew_probe.gd",  # lane w53-7 酒馆与人物专项（欠饷随名册清空归零 …）
 	"res://tools/qa_fold_notice_probe.gd",  # lane w28-k2 札记折叠内非月息通告（【欠饷】按月 / 欠满三月 + 改元月历一瞥）原文断言（w27-k2 交主控①补新见）
+	"res://tools/qa_w53_9_cutscene_probe.gd",  # lane w53-9 过场连点与拍节奏合一拍
 	"res://tools/qa_yard_transition_probe.gd",
 	"res://tools/qa_w53_8_codex_cols_probe.gd",  # lane w53-8 人物志名册格列数随页宽探针（超宽画布钉死九列）
 	"res://tools/qa_w53_8_font_floor_probe.gd",  # lane w53-8 字阶下限探针（各页上屏字 ≥ SIZE_FOOT，「── X ──」分节小题泥金 16）
