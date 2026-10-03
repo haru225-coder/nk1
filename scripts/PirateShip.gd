@@ -453,7 +453,7 @@ func _wire_parley(delta: float) -> void:
 			_parley_wired = true
 
 
-## 脱离远遁：拉开到脱离距离，离开战场（WorldMap 按存活数结算，敌船都走光即「海盗已退」）
+## 脱离远遁：拉开到脱离距离，离开战场（WorldMap 按存活数结算，敌船都走光即胜局「敌船已退」）
 func _leave_battle() -> void:
 	if _left:
 		return

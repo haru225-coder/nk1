@@ -1491,12 +1491,12 @@ func _v0928_crew_check(main: Node) -> void:
 	_check(notice != null and notice.text.find(last_name) >= 0, "headless 题签起不来：浮字兜底写夺来的船名「%s」（%s）" % [last_name, notice.text if notice != null else "无浮字"])
 	GM.pending_battle = {}
 	# 战果注记三式＋前缀＋顶匾截断（09-30 补回，按本地线行为成句断言）：本地线三式分开——
-	# 沉一夺二按 win_kind=""/全赏走「海盗已退。」（SeaChart.gd:1491 起，fled 句仅「一艘没沉没没夺、只见遁走」时才用）；
+	# 沉一夺二按 win_kind=""/全赏走「敌船已退。」（lane w53-2 起不写「海盗」：元军哨船胜局同句）（SeaChart.gd:1491 起，fled 句仅「一艘没沉没没夺、只见遁走」时才用）；
 	# 交代在句首、账目在句尾（「获财货 N 钱。船体受损 N。」），promo 接在句末。
 	# 「接舷既定。」前缀是 SeaChart._on_battle_result:1497 对 boarded 胜局加盖的，实测走一遍真结算再对；
 	# 海图顶匾第二行 28 字截断在 SeaChart._refresh_strip:730（_log 把注记存进 _latest_note，_refresh_strip 画匾）。
 	# origin 那条的合并句式（夺来 N 船、添水手…、水粮 N 日）与 28 字截断断言属另一套文案，未随合并采用——这里补的是本地线自己的口径。
-	for trio in [["沉一夺二／全炮击", FX.sea_win_note(300, 40, ""), "海盗已退。获财货 300 钱。船体受损 40。"],
+	for trio in [["沉一夺二／全炮击", FX.sea_win_note(300, 40, ""), "敌船已退。获财货 300 钱。船体受损 40。"],
 		["受降", FX.sea_surrender_note(200, 30, ""), "敌船降幡，货与人一并收押。获财货 200 钱。船体受损 30。"],
 		["全遁", FX.sea_fled_note(200, 30, ""), "敌船转篷遁走，只拾得些漂散的货。获财货 200 钱。船体受损 30。"]]:
 		var tag: String = trio[0]
@@ -1520,7 +1520,7 @@ func _v0928_crew_check(main: Node) -> void:
 	sc.call("_on_battle_result", "win", {"boarded": true, "player_damage": 40.0})
 	var spoil_now: int = GS.money - spoil0
 	var log0: String = sc.get("log_label").get_parsed_text()
-	var wd := "海盗已退。获财货 %d 钱。船体受损 40。" % spoil_now
+	var wd := "敌船已退。获财货 %d 钱。船体受损 40。" % spoil_now
 	_check(spoil_now >= 150 and spoil_now <= 600 and log0.find("接舷既定。" + wd) >= 0,
 		"接舷夺船战果注记（boarded）：日志首行「接舷既定。」＋全赏注记（spoil %d，得首行「%s」）" % [spoil_now, log0.get_slice("\n", 0)])
 	var strip0: RichTextLabel = sc.get("_strip_line")
@@ -1576,12 +1576,12 @@ func _v0928_crew_check(main: Node) -> void:
 		got2_names.append(str(ships2[i2].get("name", "")))
 	_check(bool(d2.get("boarded", false)) and got2_names.size() >= foes2.size() - 1,
 		"元军哨船沉一夺二：战果记 boarded、夺来的船进名册（名册新船 %s / 刷 %d 艘）" % [got2_names, foes2.size()])
-	_check(FX.sea_win_note(100, 10, "").begins_with("海盗已退。") and FX.sea_surrender_note(100, 10, "").begins_with("敌船降幡，")
+	_check(FX.sea_win_note(100, 10, "").begins_with("敌船已退。") and FX.sea_surrender_note(100, 10, "").begins_with("敌船降幡，")
 		and FX.sea_fled_note(100, 10, "").begins_with("敌船转篷遁走，"),
 		"退走／受降／遁走三式注记各写各句")
 	_check(ships2.size() >= 2 and str(ships2[1].get("type", "")) == "sea_falcon",
 		"夺来的元军哨船 type 仍是 sea_falcon（得 %s / 名 %s）" % [ships2[1].get("type", "") if ships2.size() >= 2 else "无", ships2[1].get("name", "") if ships2.size() >= 2 else "无"])
-	# 沉一夺二的分账口径（09-30 补回，对 win_kind 静态函数）：下场明细有 boarded、sunk → 全赏走「海盗已退。」式；
+	# 沉一夺二的分账口径（09-30 补回，对 win_kind 静态函数）：下场明细有 boarded、sunk → 全赏走「敌船已退。」式；
 	# 敌降（struck）→ 受降句；一艘没沉没夺只见遁走 → 赏半（spoil 区 [75,300]）走敌遁句；不明不白（无 fates）→ ""。
 	_check(sc_scr.win_kind({"boarded": true, "player_damage": 0.0}) == ""
 		and sc_scr.win_kind({"fates": [{"fate": "sunk"}, {"fate": "boarded"}]}) == ""

@@ -152,7 +152,8 @@ func _check_wiring() -> void:
 	var fx := FileAccess.get_file_as_string("res://scripts/combat/CombatFx.gd")
 	_expect(SP.has_func(fx, "sea_flee_ok_note"), "CombatFx 应有海图脱战注记")
 	_expect(CombatFx.board_win_note("海鹘").find("并入本队") >= 0, "夺船注记")
-	_expect(CombatFx.sea_win_note(100, 10, "").find("海盗已退") >= 0, "战果胜注记")
+	_expect(CombatFx.sea_win_note(100, 10, "").find("敌船已退") >= 0 and CombatFx.sea_win_note(100, 10, "").find("海盗") < 0,
+		"战果胜注记（写「敌船已退」不指名海盗：打赢元军哨船也走这一句）")
 	_expect(CombatFx.board_win_note("海鹘").find("！") < 0, "无叹号")
 	for bad in ["惊艳", "沉浸", "打造", "视觉盛宴", "史诗", "premium", "pipeline"]:
 		_expect(fx.find(bad) < 0, "CombatFx 无营销词：" + bad)

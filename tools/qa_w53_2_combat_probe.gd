@@ -24,6 +24,9 @@ extends SceneTree
 ##   七、救火令随险情改损管令：面板只在下令那一刻按险情挑「戽水（只进水）/ 救火（有火或无险）」，之后一成不变——
 ##       只进水时下的救火令，后来起火仍按戽水派人（救火手封两成，比不下令的均衡四成五还少）。旗舰舱里先灌水、下救火令（戽水），
 ##       再点一处火：两帧内损管令须改成救火；把火扑灭、水还在：须改回戽水。
+##   八、胜局札记不把元军哨船叫成海盗：SeaChart 打赢哪路敌船都用 CombatFx.sea_win_note，修复前那句写死「海盗已退」——
+##       打赢元军哨船（_on_fight_patrol，source.event=yuan_patrol）札记也写「海盗已退。获财货…」。真起海图按哨船战果结算，
+##       札记首行须以「敌船已退。」起头、不含「海盗」。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -51,7 +54,8 @@ func _run() -> void:
 	var gm: Node = root.get_node("GameManager")
 	var gs: Node = root.get_node("GameState")
 	var saved := {"ships": (fleet.get("ships") as Array).duplicate(true), "morale": fleet.get("morale"),
-		"pb": (gm.get("pending_battle") as Dictionary).duplicate(true), "martial": gs.get("martial"), "money": gs.get("money")}
+		"pb": (gm.get("pending_battle") as Dictionary).duplicate(true), "martial": gs.get("martial"), "money": gs.get("money"),
+		"fame": gs.get("fame")}
 
 	print("== 一、白刃两边伤亡入账（本队先钩、白刃失利）")
 	await _sec_melee_casualties(fleet)
@@ -70,12 +74,15 @@ func _run() -> void:
 	await _sec_parley_struck_boarding(fleet)
 	print("== 七、救火令随险情改损管令")
 	await _sec_damage_order_follows_hazard(fleet)
+	print("== 八、胜局札记不把元军哨船叫成海盗")
+	await _sec_patrol_win_note()
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
 	gm.set("pending_battle", saved["pb"])
 	gs.set("martial", saved["martial"])
 	gs.set("money", saved["money"])
+	gs.set("fame", saved["fame"])
 	await process_frame
 	OS.remove_logger(_errlog)
 	_check(_errlog.lines.is_empty(), "本进程无 SCRIPT ERROR（%d 行%s）" % [_errlog.lines.size(),
@@ -466,6 +473,33 @@ func _sec_damage_order_follows_hazard(fleet: Node) -> void:
 	_check(mode_flood == "flood" and mode_fire == "fire" and mode_back == "flood",
 		"七 只进水时下救火令 → 戽水；起火 → 改救火；火灭水在 → 改回戽水（得 %s → %s → %s）" % [mode_flood, mode_fire, mode_back])
 	await _close(wm)
+
+
+# ══ 八、胜局札记不把元军哨船叫成海盗 ══════════════════════════════════
+
+## 海图起在 root 下（同 combat_realism_probe 的 _spawn_chart：remaining_li 留路、sailing 仍假，战后不抵港不续航），
+## pending_battle 摆成元军哨船那一战，喂 _on_battle_result("win")：札记首行须「敌船已退。」起头、不含「海盗」
+func _sec_patrol_win_note() -> void:
+	var gm: Node = root.get_node("GameManager")
+	var chart: Node = (load("res://scenes/SeaChart.tscn") as PackedScene).instantiate()
+	root.add_child(chart)
+	for _i in 4:
+		await process_frame
+	var log_label = chart.get("log_label")
+	if log_label == null:
+		_check(false, "八 SeaChart 在 headless 下起得来（航海札记栏在）")
+		chart.free()
+		return
+	chart.set("remaining_li", 50.0)
+	(log_label as RichTextLabel).text = ""
+	gm.set("pending_battle", {"battle": true, "power": 500.0, "player_power": 600.0,
+		"enemy": [{"type": "sea_falcon", "sprite": "yuan_patrol", "count": 3}], "sea_name": "泉州外海",
+		"source": {"scene": "SeaChart", "event": "yuan_patrol"}})
+	chart.call("_on_battle_result", "win", {"player_damage": 12.0, "fates": [{"type": "sea_falcon", "fate": "sunk", "count": 3}]})
+	var first := (log_label as RichTextLabel).get_parsed_text().get_slice("\n", 0)
+	_check(first.begins_with("敌船已退。") and first.find("海盗") < 0,
+		"八 打赢元军哨船，札记首行不写「海盗」（得「%s」）" % first)
+	chart.free()
 
 
 class _ScriptErrLog extends Logger:

@@ -1041,8 +1041,10 @@ static func board_begin_subtitle() -> String:
 
 
 ## 海图战果注记（SeaChart._on_battle_result 用）：克制纪实，无叹号。
+## 胜局全赏一式写「敌船已退」不写「海盗」（lane w53-2）：SeaChart 打赢元军哨船（_on_fight_patrol）也走这一句，
+## 写「海盗已退」张冠李戴；同受降「敌船降幡」、遁走「敌船转篷遁走」两式与 combat_phases.json 结局 log 的「敌船」口径一致
 static func sea_win_note(spoil: int, damage: int, promo := "") -> String:
-	var base := "海盗已退。获财货 %d 钱。船体受损 %d。" % [maxi(0, spoil), maxi(0, damage)]
+	var base := "敌船已退。获财货 %d 钱。船体受损 %d。" % [maxi(0, spoil), maxi(0, damage)]
 	var p := promo.strip_edges()
 	return base if p == "" else base + p
 
