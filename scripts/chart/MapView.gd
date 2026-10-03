@@ -397,9 +397,11 @@ func hide_ship() -> void:
 	ship_visible = false
 
 
-## 船标推到经纬度处（云端 Voyage.point_along_track 按折线里程给点），frac 是已行比例，用来描深走过的线。
+## 船标推到经纬度处（云端 Voyage.point_along_track 按折线里程给点），frac 是已行比例，没有航线的退路里用来描深走过的线。
 ## 沿画出的航线折线按弧长走，不在像素空间对两点抄直线（一日跨过拐点时船会压到岸上）；
 ## 朝向取所在线段方向，顺带扣掉了圆锥投影的经线收敛角。没有航线（不该发生）才退回直线。
+## 描深（ship_progress）与船标同取折线弧长，不按里程比例 frac：里程按大圆量、折线按投影画布 px 量，南北跨得远的航线
+## 两者对不上——占城→博多走到五成五，描深末端落在船标后 33 画布 px，放大看船尾后一截航线像没走过（lane w53-1）
 func move_ship_lonlat(lon: float, lat: float, heading_deg: float, frac: float, dur: float) -> Tween:
 	var target := proj.to_px(lon, lat)
 	var rot := deg_to_rad(heading_deg)
@@ -416,10 +418,11 @@ func move_ship_lonlat(lon: float, lat: float, heading_deg: float, frac: float, d
 		var s1 := _arc_of_point(target)
 		_follow_ship(from_pos, _pose_at_arc(s1)[0], dur)
 		_ship_tween.tween_method(func(t: float):
-			var pose := _pose_at_arc(lerpf(s0, s1, t))
+			var s := lerpf(s0, s1, t)
+			var pose := _pose_at_arc(s)
 			ship.position = pose[0]
 			ship.rotation = lerp_angle(ship.rotation, pose[1], 0.35)
-			ship_progress = lerpf(from_frac, frac, t)
+			ship_progress = 0.0 if route_total <= 0.0 else clampf(s / route_total, 0.0, 1.0)
 			_update_ship_scale()
 			layer_route.queue_redraw()
 		, 0.0, 1.0, maxf(0.01, dur)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
