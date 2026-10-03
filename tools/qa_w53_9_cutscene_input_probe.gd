@@ -1,7 +1,8 @@
 extends Node
-## lane w53-9：过场层输入时序探针。两路，钉一处修复（回退该处修复，两路即红）：
+## lane w53-9：过场层输入时序探针。三路，钉两处修复（回退哪一处修复，对应那几路即红）：
 ##   ending_fade_key   结局过场收尾连按空格：本层黑幕退去那一截（CutscenePlayer 的 FADE）按键照吞，底下刚建好的「了结」册页不许被合上
 ##   ending_fade_click 同一窗口换成鼠标：点册页上的「记下这一纲」也不许点着——册页还没露脸（与上一路同一处修复）
+##   outro_esc_curtain 自然收尾压黑途中按 Esc：黑幕从当前黑度接着压，不许先退回透明、画面亮回来再重新压黑（CutscenePlayer.skip）
 ## 必须带窗口、且不能用 -s 跑（-s 下 Cinematics.live() 恒假，Main 不放结局过场）：
 ##   DISPLAY=:2 godot --path . res://tools/qa_w53_9_cutscene_input_probe.tscn
 ## 逐路一行 W53_9_CASE <路> OK|FAIL <细节>；末行 QA_W53_9_CUTSCENE_INPUT OK | FAIL <n>，rc 0 / 1。
@@ -17,6 +18,7 @@ const PROBE_DEVICE := 1953
 const CASE_MS := 60000
 ## CutscenePlayer.Phase：PRE / PLAY / OUTRO / FADE / DONE
 const PH_PLAY := 1
+const PH_OUTRO := 2
 const PH_FADE := 3
 ## FADE 里只在前半截按：按下的事件下一帧才分发，留出一帧（delta 封顶 0.133 s）的余量，免得落到本层释放之后
 const FADE_PRESS_UNTIL := 0.2
@@ -43,6 +45,7 @@ func _run() -> void:
 	_cine.set("auto_opening", false)
 	_cine.set("opening_seen", true)
 	print("%s_BEGIN live=%s" % [TAG, _cine.call("live")])
+	await _case_outro_esc_curtain()
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
 	get_tree().root.add_child(_main)
 	for _i in 8:
@@ -97,12 +100,29 @@ func _phase(p: CutscenePlayer) -> int:
 	return int(p.get("_phase")) if is_instance_valid(p) else -1
 
 
+## 自己起一段过场（不经 Main），从第 shot 镜开始
+func _start_cs(id: String, shot: int) -> CutscenePlayer:
+	CutscenePlayer.debug_start_shot = shot
+	var p := CutscenePlayer.play(self, id)
+	await _until_playing(p)
+	return p
+
+
 ## 起播镜号在压黑段走完、进第一镜那一刻才读（debug_start_shot 是静态量）：等到进镜再复位，免得串到下一段
 func _until_playing(p: CutscenePlayer) -> void:
 	var t0 := Time.get_ticks_msec()
 	while is_instance_valid(p) and _phase(p) < PH_PLAY and Time.get_ticks_msec() - t0 < CASE_MS:
 		await get_tree().process_frame
 	CutscenePlayer.debug_start_shot = 0
+
+
+func _drain(p: CutscenePlayer) -> void:
+	if not is_instance_valid(p):
+		return
+	p.skip()
+	var t0 := Time.get_ticks_msec()
+	while is_instance_valid(p) and Time.get_ticks_msec() - t0 < CASE_MS:
+		await get_tree().process_frame
 
 
 # ── 一、结局过场收尾的黑幕淡出窗口 ─────────────────────
@@ -225,3 +245,51 @@ func _case_ending_fade_click() -> void:
 	if alive:
 		note += "；" + await _control_confirm("ending_fade_click")
 	_verdict("ending_fade_click", ok, note)
+
+
+# ── 二、自然收尾压黑途中按 Esc：黑幕不退回 ──────────────
+## 「海口信路」末镜：连按空格按到自然收尾（OUTRO、非快进），黑幕压到约一半时按 Esc。
+## 记 Esc 生效（_fast 翻真）前一帧的黑度，此后直到黑幕压满，每帧黑度都不许低于它。
+func _case_outro_esc_curtain() -> void:
+	var p := await _start_cs("ending_sea_letter", 3)
+	var t0 := Time.get_ticks_msec()
+	var n := 0
+	while is_instance_valid(p) and _phase(p) < PH_OUTRO and Time.get_ticks_msec() - t0 < CASE_MS:
+		if n % 2 == 0:
+			_key(KEY_SPACE)
+		n += 1
+		await get_tree().process_frame
+	if _phase(p) != PH_OUTRO or bool(p.get("_fast")):
+		_verdict("outro_esc_curtain", false, "没按到自然收尾（phase=%d fast=%s）" % [_phase(p), p.get("_fast") if is_instance_valid(p) else null])
+		await _drain(p)
+		return
+	var dim := p.get("_dimmer") as ColorRect
+	while is_instance_valid(p) and _phase(p) == PH_OUTRO and dim.modulate.a < 0.45 and Time.get_ticks_msec() - t0 < CASE_MS:
+		await get_tree().process_frame
+	if _phase(p) != PH_OUTRO:
+		_verdict("outro_esc_curtain", false, "压黑走完了还没来得及按 Esc（压帧过重？phase=%d）" % _phase(p))
+		await _drain(p)
+		return
+	_key(KEY_ESCAPE)
+	# 按下的键下一帧开头才分发、随后本层 _process 才按新相位算黑度：协程在 process_frame 上醒来时还在本帧
+	# _process 之前——头一回见到 _fast 为真的那一醒，读到的黑度正是 Esc 生效前最后一帧的
+	var before := -1.0
+	var low := 2.0
+	var seq := PackedStringArray()
+	while is_instance_valid(p) and _phase(p) == PH_OUTRO and Time.get_ticks_msec() - t0 < CASE_MS:
+		await get_tree().process_frame
+		if not is_instance_valid(p):
+			break
+		var a := dim.modulate.a
+		if before < 0.0:
+			if not bool(p.get("_fast")):
+				continue
+			before = a
+		low = minf(low, a)
+		seq.append("%.2f" % a)
+	var fast := is_instance_valid(p) and bool(p.get("_fast"))
+	var reached := _phase(p) == PH_FADE or not is_instance_valid(p)
+	var ok := before >= 0.0 and fast and reached and low >= before - 0.02
+	_verdict("outro_esc_curtain", ok, "Esc 前黑度 %.2f，此后最低 %.2f（%s）快收=%s 压满=%s" % [before, low, " ".join(seq), fast, reached]
+		+ ("" if ok else "（Esc 后黑幕不许退回、画面不许亮回来）"))
+	await _drain(p)

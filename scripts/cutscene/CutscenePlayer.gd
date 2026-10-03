@@ -229,6 +229,12 @@ func is_playing() -> bool:
 func skip() -> void:
 	if _phase == Phase.FADE or _phase == Phase.DONE or (_phase == Phase.OUTRO and _fast):
 		return
+	if _phase == Phase.OUTRO:
+		# 自然收尾已在压黑：换跳过的快节奏，从当前黑度接着压。再走 _begin_outro 会把 _phase_t 归零，
+		# 黑幕当帧退回透明、画面亮回来再重压一遍（lane w53-9 实测黑度 0.72 → 0.00）
+		_phase_t = SKIP_BLACK * clampf(_phase_t / OUTRO_BLACK, 0.0, 1.0)
+		_fast = true
+		return
 	_begin_outro(true)
 
 
