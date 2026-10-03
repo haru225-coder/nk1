@@ -5,7 +5,7 @@
 ##   Cinematics.want_opening()               新开一局要不要先演开场（本会话只自动演一次）
 ##   Cinematics.note_departure(port, day)    过关出港时记一笔
 ##   Cinematics.take_arrival(port, day)      海图回港时问：这是不是真正抵港（走了日子或换了港）
-##   Cinematics.year_text(year, eras)        「景定五年・一二六四」，章节卡按当前年现算
+##   Cinematics.year_text(year, eras)        「景定五年・一二六四」，章节卡按当前年现算（改元当年认月份）
 extends RefCounted
 
 const DATA := "res://data/cutscenes.json"
@@ -61,19 +61,38 @@ static func take_arrival(port_id: String, day: int) -> bool:
 
 
 ## 年号 + 公元数字：1264 →「景定五年・一二六四」。eras 取 Calendar.ERAS（[起年, 止年, 年号]）；
-## 不在年号表里（1279 以后）返回 ""，章节卡退回数据里的静态年号。
-static func year_text(year: int, eras: Array) -> String:
+## 不在年号表里返回 ""，章节卡退回数据里的静态年号。
+## 改元当年按月分段，取法同 Calendar._era_row（起用年月见 Calendar.ERA_START）：month 缺省（0）读当前历法的月——
+## 调用方传的是「当前年 + 跳年」，跳年只整年地跳、月份不变（GameManager.skip_years），卡出来那一刻就是这个月。
+## 原先按年取表里第一条：1276 年五月起历法是景炎元年、卡写德祐二年，1278 年五月起是祥兴元年、卡写景炎三年（lane w53-9）。
+static func year_text(year: int, eras: Array, month := 0) -> String:
+	var m := month if month > 0 else _calendar_month()
+	var row: Array = []
 	for e in eras:
 		if typeof(e) != TYPE_ARRAY or (e as Array).size() < 3:
 			continue
-		if year >= int(e[0]) and year <= int(e[1]):
-			var n := year - int(e[0]) + 1
-			var ny := "元" if n == 1 else _cn_small(n)
-			var digits := ""
-			for ch in str(year):
-				digits += _CN_DIGITS[int(ch)]
-			return "%s%s年・%s" % [str(e[2]), ny, digits]
-	return ""
+		var start: Array = _CALENDAR.ERA_START.get(str(e[2]), [int(e[0]), 1])
+		if (year > int(start[0]) or (year == int(start[0]) and m >= int(start[1]))) and year <= int(e[1]):
+			row = e
+	if row.is_empty():
+		return ""
+	var n := year - int(row[0]) + 1
+	var ny := "元" if n == 1 else _cn_small(n)
+	var digits := ""
+	for ch in str(year):
+		digits += _CN_DIGITS[int(ch)]
+	return "%s%s年・%s" % [str(row[2]), ny, digits]
+
+
+## 当前历法的月（Calendar autoload 不在时按正月）
+static func _calendar_month() -> int:
+	var tree := Engine.get_main_loop() as SceneTree
+	var cal: Node = tree.root.get_node_or_null("Calendar") if tree != null else null
+	return int(cal.get("month")) if cal != null else 1
+
+
+## 改元起用年月表（ERA_START）从历法脚本直读，与 Calendar._era_row 同一份
+const _CALENDAR := preload("res://scripts/core/Calendar.gd")
 
 
 static func _cn_small(n: int) -> String:
