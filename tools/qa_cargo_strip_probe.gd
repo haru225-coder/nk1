@@ -34,12 +34,22 @@ var fleet: Node
 var _fails := 0
 var cases := 0
 var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
 	_tally = ScriptErrTally.new()
 	OS.add_logger(_tally)
-	call_deferred("_run")
+	call_deferred("_run_guarded")
+
+
+## w53-11 二轮：_run 被脚本错半路掐断时收尾不会被调到（quit 不再执行、进程空转到外层 timeout）——
+## 回到这里就地判红收尾
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_expect(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _run() -> void:
@@ -246,16 +256,8 @@ func _c6_shape_invariants() -> void:
 
 
 func _report() -> void:
-	var probe := ScriptErrTally.new()
-	probe._log_error("f", "res://x.gd", 1, "", "自证 SCRIPT", false, Logger.ERROR_TYPE_SCRIPT, [])
-	probe._log_error("f", "res://x.gd", 2, "", "自证 ERROR", false, Logger.ERROR_TYPE_ERROR, [])
-	probe._log_error("f", "res://x.gd", 3, "", "自证 WARNING", false, Logger.ERROR_TYPE_WARNING, [])
-	_expect(probe.lines.size() == 1,
-		"SCRIPT ERROR 计数器自证：只数脚本类（喂 SCRIPT / ERROR / WARNING 各一，数到 %d）" % probe.lines.size())
-	OS.remove_logger(_tally)
-	var errs: Array = _tally.lines
-	_expect(errs.is_empty(),
-		"运行中无 SCRIPT ERROR / Parse Error（%d 条%s）" % [errs.size(),
-		"" if errs.is_empty() else "，首条：" + str(errs[0])])
+	_reported = true
+	for v in _tally.verdicts():
+		_expect(v[0], v[1])
 	print("CARGO_STRIP cases=%d fails=%d" % [cases, _fails])
 	quit(1 if _fails > 0 else 0)

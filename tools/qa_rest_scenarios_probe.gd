@@ -35,12 +35,22 @@ var fails := 0
 ## w53-11：注册表判词「本进程 SCRIPT ERROR 即红」空转收编（同 qa_debt_strip_probe）。
 const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
 	_tally = ScriptErrTally.new()
 	OS.add_logger(_tally)
-	call_deferred("_run")
+	call_deferred("_run_guarded")
+
+
+## w53-11 二轮：_run 被脚本错半路掐断时收尾不会被调到（quit 不再执行、进程空转到外层 timeout）——
+## 回到这里就地判红收尾
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_check(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _run() -> void:
@@ -78,17 +88,15 @@ func _run() -> void:
 	await _s5_wait_n_rolls()
 	await _s6_rate_bind_press()
 
-	var probe := ScriptErrTally.new()
-	probe._log_error("f", "res://x.gd", 1, "", "自证 SCRIPT", false, Logger.ERROR_TYPE_SCRIPT, [])
-	probe._log_error("f", "res://x.gd", 2, "", "自证 ERROR", false, Logger.ERROR_TYPE_ERROR, [])
-	probe._log_error("f", "res://x.gd", 3, "", "自证 WARNING", false, Logger.ERROR_TYPE_WARNING, [])
-	_check(probe.lines.size() == 1,
-		"SCRIPT ERROR 计数器自证：只数脚本类（喂 SCRIPT / ERROR / WARNING 各一，数到 %d）" % probe.lines.size())
-	OS.remove_logger(_tally)
-	var errs: Array = _tally.lines
-	_check(errs.is_empty(),
-		"运行中无 SCRIPT ERROR / Parse Error（%d 条%s）" % [errs.size(),
-		"" if errs.is_empty() else "，首条：" + str(errs[0])])
+	_report()
+
+
+## 收尾（w53-11 二轮从 _run 尾挪出；_run_guarded 判中止时也走这里）：SCRIPT ERROR 两判走共用件 verdicts()
+## （story :3156 同款判词），再印末行。
+func _report() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_check(v[0], v[1])
 	print("REST_SCENARIOS cases=%d fails=%d" % [cases, fails])
 	quit(1 if fails > 0 else 0)
 
