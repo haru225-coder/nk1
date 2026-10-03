@@ -4801,6 +4801,68 @@ func _w53_4_yashan_turn_back_check(main: Node) -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	main._beats = null
 	_close_dialogs(main)
+	# 同是终局卡后的册页：不落结局的去向不印结局口吻
+	_w53_4_notice_kicker_check(main)
+
+
+## ── lane w53-4：不落结局的通告册页不印「了结 / 记下这一纲」──
+## 修前：士人线辞呈三条路（再上一疏 / 走海路回兴化 / 去泉州找林阿舶）的去向走 Main._show_notice_dialog、不带结局，
+## 册页却照结局册页的缺省：眉题「了结」、钮「记下这一纲」——人什么也没了结，日子照过、城还要守（战报册页早已另传眉题钮字）。
+## 现在不落结局的眉题写时地、大题写事由、钮「合上册页」；落结局的（对照：纲首）照旧「了结 / 记下这一纲」。
+func _w53_4_notice_kicker_check(main: Node) -> void:
+	var cases := 0
+	for pick in ["回头。", "不回头。", "车转向南"]:
+		GS.from_dict({})
+		Cal.from_dict({"year": 1275, "month": 12, "day": 2})
+		GS.loaded_with_beats = true
+		main._beats = null
+		_close_dialogs(main)
+		GS.identity = "scholar"
+		GS.set_flag("renamed_wenlong")
+		GS.set_flag("vice_councillor")
+		GS.money = 3000
+		GS.last_port = "fuzhou"
+		main.load_scene("fuzhou")
+		main._on_resign_1275()
+		var btn: Button = null
+		for c in main.choices_container.get_children():
+			if c is Button and str((c as Button).text).begins_with(pick) and not (c as Button).disabled:
+				btn = c
+				break
+		_check(btn != null, "辞呈页有「%s…」一钮可点" % pick)
+		if btn == null:
+			continue
+		var label: String = btn.text
+		btn.pressed.emit()
+		var host = main.get("_chapter_host")
+		if host == null or not is_instance_valid(host):
+			_check(false, "辞呈「%s」：弹去向册页" % label)
+			continue
+		cases += 1
+		_check(not GS.is_ended() and _find_label_text(host, "了结") == "" and _v0928_siege_btn(host, "记下这一纲") == null
+				and _v0928_siege_btn(host, "合上册页") != null,
+			"辞呈「%s」去向册页不落结局、不用结局口吻：无眉题「了结」、钮是「合上册页」不是「记下这一纲」（终局「%s」，眉题 了结=%s）" % [
+				label, GS.ended, _find_label_text(host, "了结") != ""])
+		main._confirm_chapter_sheet()
+		_check(main.current_scene_id == "fuzhou" and not ("special_resign_1275" in main.shore_hand),
+			"辞呈「%s」册页合上回福州港页、辞呈卡不再挂（页 %s）" % [label, main.current_scene_id])
+	_check(cases == 3, "辞呈三条路的去向册页都入验（现 %d）" % cases)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1285, "month": 2, "day": 2})
+	GS.loaded_with_beats = true
+	main._beats = null
+	_close_dialogs(main)
+	GS.identity = "merchant"
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou")
+	main._on_gangshou_end()
+	var end_host = main.get("_chapter_host")
+	_check(GS.ended == "纲首" and _find_label_text(end_host, "了结") == "了结" and _v0928_siege_btn(end_host, "记下这一纲") != null,
+		"对照：落结局的通告（纲首）照旧眉题「了结」、钮「记下这一纲」（终局「%s」）" % GS.ended)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_close_dialogs(main)
 
 
 ## 第四章结局幕（endings[].scene）共同所在的港；有一幕不在港上、或各幕不同港，回空串

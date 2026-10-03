@@ -4085,11 +4085,11 @@ func _cn_num(n: int, liang := false) -> String:
 func _show_notice_dialog(title: String, head: String, text: String, ending: String = "") -> void:
 	if ending != "":
 		GameState.finish(ending, text)
-	# 云端 7f92 起主场景不再弹系统对话框；本地 main 的终局通知改走同一张居中册页（ChapterSheet），
-	# 「记下这一纲」后回到当前场景（终局后港口页由 _setup_ended_port 接管）。
-	# ending 随 res 交给册页：有结局过场先演过场，册页弹出时再换结算底图（ENDING_BG）。
+	# 云端 7f92 起主场景不再弹系统对话框；本地 main 的终局通知改走同一张居中册页（ChapterSheet），「记下这一纲」后回到当前场景（终局后港口页由 _setup_ended_port 接管）。
+	# ending 随 res 交给册页：有结局过场先演过场，册页弹出时再换结算底图（ENDING_BG）。不落结局的（辞呈三条路的去向）不是了结：
+	# 眉题写时地、大题写事由、钮「合上册页」，不印「了结 / 记下这一纲」（同战报册页另传眉题钮字）
 	var shown_head := head if title == "" else "%s　%s" % [title, head]
-	_show_chapter_dialog({"title": shown_head, "text": text, "resolved": true, "scene": "", "ending": ending})
+	_show_chapter_dialog({"title": shown_head, "text": text, "resolved": true, "scene": "", "ending": ending} if ending != "" else {"title": title, "text": text, "resolved": true, "scene": "", "kicker": head, "ok_text": "合上册页"})
 
 
 ## 上报发现：航中勘见的东西要回衙门报了才换得赏格与名声
