@@ -939,7 +939,7 @@ func _contract_seed(port_id: String) -> int:
 	return _stable_hash(port_id) + Calendar.year * 12 + Calendar.month
 
 
-## 当前章节能靠岸、且把这货当紧缺货收的港口。按 id 排序，月份种子才稳定。
+## 当前章节能靠岸、且把这货当紧缺货收的港口。按 id 排序，月份种子才稳定。牙行上了门闸（围城 / 封港）的港不开成新单的交货地——新单注定闭门；先前接下的单到了那港走侧门交货（V0928-1 定 A+，lane w53-14）
 func _contract_destinations(port_id: String, good_id: String) -> Array:
 	var dests: Array = []
 	for p in GameManager.unlocked_ports():
@@ -948,7 +948,7 @@ func _contract_destinations(port_id: String, good_id: String) -> Array:
 			continue
 		if Economy.get_role(pid, good_id) != "consumer":
 			continue
-		if not Economy.is_traded(pid, good_id):
+		if not Economy.is_traded(pid, good_id) or not Economy.is_market_open(pid):
 			continue
 		dests.append(pid)
 	dests.sort()

@@ -1835,6 +1835,18 @@ def known_route(a, b):
         return False
     return b in ports[a].get("connections", []) or a in ports[b].get("connections", [])
 
+def war_status_at(port_id, year, month):
+    """复刻 Economy.war_status：取不晚于该月的最近一条战况，没有战况表的记 loyal。"""
+    now, best_k, best = "%04d-%02d" % (year, month), "", "loyal"
+    for k, v in ports[port_id].get("war", {}).items():
+        if best_k < k <= now:
+            best_k, best = k, v
+    return best
+
+def market_open_at(port_id, year, month):
+    """复刻 Economy.is_market_open：围城 besieged、封港 closed 时牙行上了门闸。"""
+    return war_status_at(port_id, year, month) not in ("besieged", "closed")
+
 def contract_offer(port_id, year=1255, month=3, chapter=1):
     """开局三月、转换期、小艍、士气 70、行情 1.0。复刻 GameState.contract_offer 的选型。"""
     def destinations(gid):
@@ -1845,6 +1857,8 @@ def contract_offer(port_id, year=1255, month=3, chapter=1):
             if ch_of(p.get("unlock", "ch1")) > chapter:
                 continue
             if p.get("market", {}).get(gid) != "consumer":
+                continue
+            if not market_open_at(pid, year, month):  # V0928-1 定 A+：牙行闭门的港不开成新单交货地
                 continue
             out.append(pid)
         out.sort()
@@ -1911,6 +1925,25 @@ if offer:
         ships["sampan"]["base_speed"] * (0.6 + 0.4 * 0.7) * 0.85 * OFF_SPD))
     check(off_days <= offer["voyage_days"], f"外洋 {off_days} 日 ≤ 针路 {offer['voyage_days']} 日")
     print(f"  同一单：外洋 {off_days} 日 / 针路 {offer['voyage_days']} 日 / 傍岸 {coast_days} 日 / 期限 {offer['deadline_days']} 日")
+
+# V0928-1 定 A+（lane w53-14）：围城 / 封港的月份，委办不把新单派往牙行上了门闸的港——那港新单注定闭门；
+# 先前接下的单撞上闭门月走侧门交货（Main.MARKET_SIDE_DOOR）。全图全开（第六章）逐个战况月、逐个签发港复刻选型。
+_shut_months = sorted({tuple(int(x) for x in k.split("-")) for p in ports.values()
+                       for k, v in p.get("war", {}).items() if v in ("besieged", "closed")})
+_shut_dest = []
+for (_y, _m) in _shut_months:
+    for _pid, _p in ports.items():
+        if _p.get("depth", 0) <= 0 or not market_open_at(_pid, _y, _m):
+            continue
+        _o = contract_offer(_pid, _y, _m, chapter=6)
+        if _o and not market_open_at(_o["dest"], _y, _m):
+            _shut_dest.append(f"{_y}-{_m:02d} {_pid}→{_o['dest']}")
+check(bool(_shut_months) and not _shut_dest,
+      f"围城、封港月（{len(_shut_months)} 个）委办不派往牙行闭门的港（违者：{'、'.join(_shut_dest) or '无'}）")
+with open(os.path.join(ROOT, "scripts/GameState.gd"), encoding="utf-8") as _f:
+    _dest_body = _locate_func(_f.read(), "_contract_destinations")
+check(has_tok(_dest_body, "is_market_open", call=True),
+      "GameState._contract_destinations 排掉牙行闭门的港（Economy.is_market_open，与上面的复刻同口径）")
 
 # 傍岸不是永远安全，也不是永远赶不上
 miss = fit = False

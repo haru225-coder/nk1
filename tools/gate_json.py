@@ -503,23 +503,24 @@ REGISTRY = [
 
     {"id": "qa_siege_destinations_probe", "tier": "lane",
      "when": "动委办目的地链（scripts/GameState.gd 的 _contract_destinations / contract_offer / _contract_seed——"
-             "出队排除口径、报价优选针路已知池、月份种子），或动 Economy.war_status / 数据行 ports.json war 表，"
+             "出队排除口径、报价优选针路已知池、月份种子），或动 Economy.war_status / is_market_open / 数据行 ports.json war 表，"
              "或动 tools/qa_siege_destinations_probe.gd 自身",
      "kind": "godot", "file": "tools/qa_siege_destinations_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_siege_destinations_probe.gd"],
-     "judge": "（lane w36-k2 · 拍板清单 2026-09-28 §八之四 P8 复现探针、V0928-1 机械前置②——"
-              "『被围港被开成委办目的地』复现档，审判输入材料、零行为变更）"
-              "态 A 真场景摆场四案（兴化 1276-11 / 1277-09、福州 1276-10、广州 1276-11——数据行 war 表现表）"
-              "直调 _contract_destinations / contract_offer 真输出：被围港不掺任何一份出队目的地、报价目的不落被围港。"
-              "态 B 未被围月 1275-03 反向基：广州发香药兴化上队、泉州委办报价非空。态 C 香药切面自净。"
-              "另附 192 月窗逐月扫描，被围港进队行逐行印 `QA_SIEGE_DEST_HIT`（供拍板摘录）。"
-              "现网 _contract_destinations 不排被围港——态 A 红是设计内红（复现到 §八之四 P8 指的缺陷，"
-              "不是探针没做实；w35-k1 『判定即红』同款机制），收编照旧入册。M1 附加参 `--mutate-siege-always` "
-              "把被围判值倒成恒真（只动探针读口）→ 态 A 兴化 / 福州两案月多红。"
+     "judge": "（lane w36-k2 立作 V0928-1 复现档；lane w53-14 定 A+ 并修：_contract_destinations 排牙行闭门港，"
+              "本探针转回归档，红即回退）"
+              "态 A 真场景摆场六案（兴化 1276-11 / 1277-09、福州 1276-10、广州 1276-11 围城，博多唐房、萨摩 1274-11 封港——"
+              "数据行 war 表现表）直调 _contract_destinations / contract_offer 真输出：闭门港不掺任何一份出队目的地、"
+              "报价目的不落当月闭门港；另 192 月窗（1274-01 起）逐月逐港逐代表货扫描，出队里有当月闭门港即印 "
+              "`QA_SIEGE_DEST_HIT` 并计红。态 B 未闭门月 1275-06 反向基：广州发香药兴化上队、泉州报价非空、泉州发茶博多上队。"
+              "态 C 不误伤：闭门月里没闭门的港（已陷的福州、未围的兴化、封港月的澎湖广州）照旧在出队里。"
+              "M1 附加参 `--mutate-siege-always` 把闭门判值倒成恒真（只动探针读口）→ 态 A 扫描与态 B 红。"
               "本进程 SCRIPT ERROR 另立 S 档即红（w53-11：`QA_SIEGE_DEST_S fails=K` 计入总 fails，态 A / B / C 判据不动）；"
-              "_run 半路被脚本错掐断由收尾包装判红退 1、不印末行——判绿仍须 rc=0 且末行 `QA_SIEGE_DEST_END` 在。",
-     "green": "末三行 `SIEGE_DEST hits=N ok=M fails=0` + `结果：全部通过` + `QA_SIEGE_DEST_END`，退 0",
-     "red": "`  ✗ …` 行（现网态 A 复现行：被围港掺队 / 报价目的落被围——设计内红，归于 §三 lane 档附注）"
+              "_run 半路被脚本错掐断由收尾包装判红退 1、不印末行——判绿仍须 rc=0 且末行 `QA_SIEGE_DEST_END` 在。"
+              "必跑面另有 verify_economy 的复刻选型与 `is_market_open` 取体钉（同一缺陷两头都红）。",
+     "green": "`QA_SIEGE_DEST_HIT （无）` + 末三行 `SIEGE_DEST hits=0 ok=M fails=0` + `结果：全部通过` + `QA_SIEGE_DEST_END`，退 0",
+     "red": "`  ✗ …` 行（闭门港掺队 / 报价目的落闭门港 / 192 月窗扫出 `QA_SIEGE_DEST_HIT` = 排除链回退；"
+            "`✗ … 出队仍含 …` = 排得太宽、误伤开着的港）"
             "+ 末行 `SIEGE_DEST … fails=K`（K>0），退 1；本进程脚本错 `✗ 运行中无 SCRIPT ERROR …` + `QA_SIEGE_DEST_S fails=K`（K>0）；"
             "`QA_SIEGE_DEST_END` 缺且 rc=124 = 超时中断，不计红绿"},
 
