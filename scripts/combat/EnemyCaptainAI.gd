@@ -517,7 +517,9 @@ func _tactical_rout(d: Dictionary) -> Array:
 		return ["rout", "僚船尽失，孤船难支"]
 	if float(d["lost_frac"]) >= 0.5 and float(d["ratio"]) < 0.8 and m <= 40.0:
 		return ["rout", "僚船折损过半，无心恋战"]
-	if float(d["ammo"]) <= 0.0 and float(d["ratio"]) < 0.85:
+	# 矢石打光、白刃比又够不上本档案拼接舷的线（desperate，同 _tactical「矢石将尽，改谋接舷」）：不贴就只能走（lane w53-2）。
+	# 原先写死 0.85（海寇那一档）：哨船 1.3、别的 1.0，比落在 [0.85, desperate) 的弹尽船既不贴也不走，兜着空舷拖到限时两散
+	if float(d["ammo"]) <= 0.0 and float(d["ratio"]) < float(profile["desperate"]):
 		return ["rout", "矢石告罄，无以为战"]
 	return ["", ""]
 
@@ -981,6 +983,17 @@ static func self_check() -> Array:
 	var close_in := (o["heading"] as Vector2).dot(Vector2(0, 1))
 	_want(bad, ai.state == BROADSIDE and close_in > 0.15 and absf(hold) < 0.05,
 		"矢石将尽守进惜弹射距 %d：相距 400 往敌船靠（得 %s，船首向敌分量 %.2f；满弹 %.2f）" % [int(SAVE_RANGE), ai.state, close_in, hold])
+	# 矢石打光：白刃比够得上本档案拼接舷的线（desperate）就贴、够不上就走，不在中间兜空舷——哨船线 1.3、比 1.0 该走；海寇线 0.85、比 1.0 该贴
+	ai = _fresh("yuan_patrol")
+	ai.volleys = 0
+	ai.tick(_sit({"pos": Vector2(0, -400)}), 0.1)
+	var dry_patrol := "%s %s" % [ai.state, ai.reason]
+	var patrol_left: bool = ai.state == DISENGAGE and ai.reason.find("矢石告罄") >= 0
+	ai = _fresh("pirate_boat")
+	ai.volleys = 0
+	ai.tick(_sit({"pos": Vector2(0, -400)}), 0.1)
+	_want(bad, patrol_left and ai.state == BOARD,
+		"矢石打光：够不上拼接舷就走、够得上就贴（哨船比 1.0 得 %s；海寇比 1.0 得 %s %s）" % [dry_patrol, ai.state, ai.reason])
 	# 受风角与桨
 	var w := Vector2(0, 1)
 	var run := builtin_sail_factor(w, w, 80.0)
