@@ -276,7 +276,7 @@ def build_model(src):
     m["wb_keeps_original"] = bool(re.search(r'var\s+keep\s*:?=\s*"%s\.v%d"\s*%\s*\[path,\s*from_schema\]', wb)) \
         and bool(re.search(r'if\s+not\s+FileAccess\.file_exists\(keep\)\s+and\s+DirAccess\.copy_absolute\(path,\s*keep\)\s*!=\s*OK\s*:'
                            r'\s*\n[^\n]*\n\s*return\s+false', wb)) \
-        and _before(wb, r'copy_absolute\(path,\s*keep\)', r'FileAccess\.open\(tmp')
+        and _before(wb, r'copy_absolute\(path,\s*keep\)', r'FileAccess\.open\(tmp|_write_verified\(tmp')  # lane w53-5：tmp 经写后读回核对落盘
     m["wb_tmp_rename"] = bool(re.search(r'rename_absolute\(tmp,\s*path\)', wb))
     m["load_empty_guard"] = bool(re.search(r'if\s+data\.is_empty\(\)\s*:\s*\n\s*return\s+false', lg)) \
         and _before(lg, r'data\.is_empty\(\)', r'\w+\.from_dict\(')

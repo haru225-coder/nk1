@@ -3,6 +3,7 @@ extends Node
 ##
 ## 写入走「先写 .tmp → 旧档改 .bak → .tmp 改正式名」：
 ## 中途崩溃（断电、被杀）最多丢这一次，不会把上一份好档写成半截 JSON。
+## .tmp 写完先读回核对（_write_verified）：磁盘满等写不全时不落位、报记录未成，正本与副抄都不动。
 ## 读档时正式档解析失败自动退回 .bak。
 ##
 ## 结构版本（save_schema）：缺省视为 v1。低于本版走 _migrate_vN_to_vN+1 链，
@@ -83,12 +84,10 @@ func save_game(slot: int, current_scene: String = "") -> bool:
 		],
 	}
 	var tmp := _tmp_path(slot)
-	var f := FileAccess.open(tmp, FileAccess.WRITE)
-	if f == null:
-		push_error("无法写入存档 slot %d（%s）" % [slot, tmp])
+	# 先写 .tmp 并读回核对，核对不过就此收手：正本与副抄一个字不动（见 _write_verified）
+	if not _write_verified(tmp, JSON.stringify(data, "\t")):
+		push_error("无法写入存档 slot %d（%s）：写不进、写不全或读回与所写不符，正本与副抄未动" % [slot, tmp])
 		return false
-	f.store_string(JSON.stringify(data, "\t"))
-	f.close()
 
 	var final := _path(slot)
 	if FileAccess.file_exists(final):
@@ -99,6 +98,25 @@ func save_game(slot: int, current_scene: String = "") -> bool:
 		push_error("存档 slot %d 无法从 .tmp 落位" % slot)
 		return false
 	return true
+
+
+## 整卷写进 tmp 再读回逐字核对。store_string 报错、写不全（磁盘满、配额、I/O 错时可能只落半截而照报成功）、
+## 读不回原样，一律删掉 tmp 返回 false。调用方只拿核对过的 tmp 去顶正本——否则正本先退成 .bak、
+## 半截 tmp 顶上正本还报「已记入」，再记一次连那份好 .bak 也被半截档冲掉，一卷全毁。
+func _write_verified(tmp: String, text: String) -> bool:
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
+	if f == null:
+		return false
+	var stored := f.store_string(text)
+	f.close()
+	var back := FileAccess.open(tmp, FileAccess.READ)
+	var same := back != null and back.get_as_text() == text
+	if back != null:
+		back.close()
+	if stored and same:
+		return true
+	DirAccess.remove_absolute(tmp)
+	return false
 
 
 ## 保存/读档的剧情关键字段要经过同一层清洗。
@@ -335,12 +353,10 @@ func _write_back_migrated(path: String, data: Dictionary, from_schema: int) -> b
 		push_warning("存档 %s 原件无法另存为 %s，本次不回写" % [path, keep])
 		return false
 	var tmp := path + ".tmp"
-	var f := FileAccess.open(tmp, FileAccess.WRITE)
-	if f == null:
-		push_warning("存档 %s 迁移结果无法写入 %s" % [path, tmp])
+	# 半截的迁移结果顶上正本，原件只剩 .v<N>（_resolve 不看）——读回核对不过就不回写
+	if not _write_verified(tmp, JSON.stringify(data, "\t")):
+		push_warning("存档 %s 迁移结果无法写入 %s 或读回不符，本次不回写" % [path, tmp])
 		return false
-	f.store_string(JSON.stringify(data, "\t"))
-	f.close()
 	if DirAccess.rename_absolute(tmp, path) != OK:
 		push_warning("存档 %s 迁移结果无法从 .tmp 落位" % path)
 		DirAccess.remove_absolute(tmp)
