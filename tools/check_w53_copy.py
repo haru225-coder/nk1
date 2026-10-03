@@ -28,13 +28,20 @@
   H. 一个人不说「有的…有的…」（三轮）：跳年摘要「没有再上船」须经 GameManager.crew_left_line
      （单人「不知是回了乡，还是上了别家的船」/ 多人「有的回了乡，有的上了别家的船」），
      skip_years 里不得再内联多人句；两种说法的字面由 godot_story_check 判。
+  I. 上屏的每个字都要在正文字库里（四轮）：标题字（马善政）、海图名（朱雀仿宋）缺字都回落到文楷子集
+     assets/fonts/LXGWWenKai-Medium.ttf，文楷子集再缺就由引擎落到系统字体——同一句里单单一个字换了
+     字形（没有 CJK 字体的机器上是豆腐块）。子集由 tools/art/subset_fonts.py 按仓库全文生成，此后新添的字
+     不重跑就缺：海图「不明船影」的「瞭望手」（cdbdb66 依通用规范汉字表改「瞭」）与弹道表的「砲」「毬」曾如此。
+     纯标准库读字库 cmap，逐字核上屏串：gd 字符串字面量、data/*.json 文本值（跳过 /meta 与出处 / 引文 / 注记类键；
+     人物原稿不读，人物志文本层 characters_codex.json 整份核）、场景 text 属性。缺字就重跑
+     subset_fonts.py（--download 取上游原版）。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
 二者层不同——本脚本钉源码层禁写样，dump 探针验证 UI 渲染零错样；本脚本进 gates-locked
 一键，dump 探针跑完后已撤（_probe.gd 命名不入 commit）。
 """
-import json, os, re, sys
+import json, os, re, struct, sys, unicodedata
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -120,6 +127,16 @@ EVENT_FAME_RE = re.compile(r'_add_event_action\("([^"]*（[^"]*名声 \+(\d+)[^"
 # 防沉默绿：这几颗钮文必须被上面的正则抓到（钮文改了格式、正则抓空时判红，不当绿）。
 EVENT_FAME_MUST = ("交出一条船",)
 
+# ═══ 钉 I：上屏串逐字对正文字库的 cmap。字库是 subset_fonts.py 出的文楷子集，标题字 / 海图字缺字都回落到它。
+BODY_FONT = "assets/fonts/LXGWWenKai-Medium.ttf"
+# 人物志文本层整份上屏（verify_story_data 的 CODEX_ONSCREEN 管着每个键），只取来核字形；人物原稿不读
+CODEX_JSON = "data/characters_codex.json"
+# data/*.json 里不上屏的键：出处、引文、今名对照、可信度、旧值、设计说明（/meta 整段也跳过）
+GLYPH_SKIP_KEYS = {"note", "notes", "source", "sources", "quote", "today", "confidence", "legacy", "why", "copy_style"}
+# 场景里写死的上屏属性（Label / Button 的 text、提示、窗口题）
+TSCN_TEXT_RE = re.compile(r'^(?:text|tooltip_text|placeholder_text|title) = "((?:[^"\\]|\\.)*)"', re.M)
+GLYPH_MISS = {}  # 缺的字 → [(出处, 原串)]
+
 FAILS = []
 
 # ─── 数据集玩家可见字段（lane w53-10 brief 钦定 data 域条款：chapters/endings/scenes/news
@@ -145,8 +162,8 @@ DATA_TEXT_KEYS = {
     # historical_note：船屋坞外待售船的旁注
     "ships.json": {"name", "historical_note"},
 }
-# characters.json / characters_codex.json 不入扫：L1B 读取入口锁（verify_story_data.py:566）
-# 把 characters.json 原稿 bio 与 codex 文本层设访问许可清单，本脚本纯文字面比对不进表。
+# characters.json 不入扫：L1B 读取入口锁（verify_story_data.py 的 L1B_READERS）管着谁能读人物原稿，
+# 原稿 bio 不上屏。人物志文本层 characters_codex.json 只给钉 I 核字形（已登记 codex 类读取），其余钉不扫它——
 # 人物志上屏的 {主角} 由 scripts/ui/CharacterArt.gd fill_names 换名，业经 verify_story_data
 # 全链钉住，无需重复查。
 
@@ -217,6 +234,69 @@ def _check_dangling_sign(text, tag):
         FAILS.append(f"{tag}: 「{m.group(0).strip()}」后面缺数目：{text[:120]}")
 
 
+def _ttf_cmap(path):
+    """读 TrueType 的 cmap（format 4 / 12 子表取并集），返回有字形的码位集；读不出返回空集。只用标准库。"""
+    try:
+        data = open(path, "rb").read()
+        tables = {}
+        for i in range(struct.unpack_from(">H", data, 4)[0]):
+            tag, _sum, off, _len = struct.unpack_from(">4sIII", data, 12 + 16 * i)
+            tables[tag] = off
+        base = tables[b"cmap"]
+        out, seen = set(), set()
+        for i in range(struct.unpack_from(">H", data, base + 2)[0]):
+            sub = base + struct.unpack_from(">I", data, base + 8 + 8 * i)[0]
+            if sub in seen:
+                continue
+            seen.add(sub)
+            fmt = struct.unpack_from(">H", data, sub)[0]
+            if fmt == 4:
+                seg = struct.unpack_from(">H", data, sub + 6)[0] // 2
+                ends = struct.unpack_from(">%dH" % seg, data, sub + 14)
+                starts = struct.unpack_from(">%dH" % seg, data, sub + 16 + 2 * seg)
+                deltas = struct.unpack_from(">%dh" % seg, data, sub + 16 + 4 * seg)
+                ro_at = sub + 16 + 6 * seg
+                ros = struct.unpack_from(">%dH" % seg, data, ro_at)
+                for k in range(seg):
+                    for c in range(starts[k], ends[k] + 1):
+                        if c == 0xFFFF:
+                            continue
+                        if ros[k] == 0:
+                            g = (c + deltas[k]) & 0xFFFF
+                        else:
+                            g = struct.unpack_from(">H", data, ro_at + 2 * k + ros[k] + 2 * (c - starts[k]))[0]
+                            g = (g + deltas[k]) & 0xFFFF if g else 0
+                        if g:
+                            out.add(c)
+            elif fmt == 12:
+                for j in range(struct.unpack_from(">I", data, sub + 12)[0]):
+                    s, e, g0 = struct.unpack_from(">III", data, sub + 16 + 12 * j)
+                    out.update(c for c in range(s, e + 1) if g0 + c - s)
+        return out
+    except (OSError, KeyError, struct.error):
+        return set()
+
+
+def _check_glyphs(text, tag, cmap):
+    """串里每个字（ASCII、空白、控制 / 格式符、异体选择符除外）都须在 cmap 里；缺的记进 GLYPH_MISS 按字汇总。
+    cmap 为 None（自检已判字库读不出）时不核，免得满屏缺字。"""
+    if cmap is None:
+        return
+    for ch in dict.fromkeys(text):
+        o = ord(ch)
+        if o < 0x80 or o in cmap or 0xFE00 <= o <= 0xFE0F or unicodedata.category(ch) in ("Cc", "Cf", "Zs", "Zl", "Zp"):
+            continue
+        GLYPH_MISS.setdefault(ch, []).append((tag, text))
+
+
+def _report_glyphs():
+    for ch, hits in sorted(GLYPH_MISS.items()):
+        tag, text = hits[0]
+        more = f"（共 {len(hits)} 处）" if len(hits) > 1 else ""
+        FAILS.append(f"{tag}: 正文字库缺「{ch}」U+{ord(ch):04X}{more}——屏上这个字会落到系统字体；"
+                     f"重跑 python3 tools/art/subset_fonts.py 补字：{text[:80]}")
+
+
 def _func_body_gd(src, name):
     i = src.find("\nfunc %s(" % name)
     if i < 0:
@@ -238,7 +318,7 @@ def _check_event_fame(src, rel):
     return seen
 
 
-def _scan_gd_strings():
+def _scan_gd_strings(cmap):
     for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
         for f in sorted(files):
             if not f.endswith(".gd"):
@@ -258,6 +338,7 @@ def _scan_gd_strings():
                 _check_debug(lit, tag, "gd")
                 _check_terms(lit, tag)
                 _check_dangling_sign(lit, tag)
+                _check_glyphs(lit, tag, cmap)
                 # gd 里 %[sdf] 是合法格式化模板（"%s の %d" % [...]），不钉 3/E。
 
 
@@ -297,6 +378,41 @@ def _scan_json_text():
             _check_debug(text, tag, "data")
             _check_terms(text, tag)
             _check_dangling_sign(text, tag)
+
+
+def _scan_data_glyphs(cmap):
+    """钉 I：data/*.json 的文本值逐字核字形——上表之外的上屏键（场景副题 / 说话人、海图地名、海战提示、
+    海况名……）也核。人物原稿不读（L1B 锁），人物志文本层整份核；/meta 与 GLYPH_SKIP_KEYS 不上屏，跳过。"""
+    data_dir = os.path.join(ROOT, "data")
+    codex = os.path.basename(CODEX_JSON)
+    seen_codex = False
+    for f in sorted(os.listdir(data_dir)):
+        if not f.endswith(".json") or (f.startswith("characters") and f != codex):
+            continue
+        try:
+            d = json.load(open(os.path.join(data_dir, f), encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        seen_codex = seen_codex or f == codex
+        for path, key, text in _walk_json_strings(d):
+            if _has_cjk(text) and key not in GLYPH_SKIP_KEYS and not path.startswith("/meta"):
+                _check_glyphs(text, f"data/{f}:{path}", cmap)
+    if not seen_codex:
+        FAILS.append(f"{CODEX_JSON}: 钉 I 读不到人物志文本层")
+
+
+def _scan_tscn_glyphs(cmap):
+    """钉 I：场景里写死的 text / tooltip_text / placeholder_text / title。"""
+    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scenes")):
+        for f in sorted(files):
+            if not f.endswith(".tscn"):
+                continue
+            p = os.path.join(dirpath, f)
+            rel = p[len(ROOT) + 1:]
+            src = open(p, encoding="utf-8").read()
+            for m in TSCN_TEXT_RE.finditer(src):
+                if _has_cjk(m.group(1)):
+                    _check_glyphs(m.group(1), f"{rel}:{_line_of(src, m.start(1))}", cmap)
 
 
 _NEG_CASES = [
@@ -378,6 +494,31 @@ def _self_test_event_fame():
     return bad
 
 
+def _self_test_glyphs(cmap):
+    """钉 I 自检：字库读出来要像个文楷子集（常用字在、基本汉字区不全在）；常用字句判绿，
+    字库外的字判红。cmap 读坏（空 / 全收）时这里先红，不让后面整扫沉默放行。"""
+    if len(cmap) < 7000 or any(ord(c) not in cmap for c in "一桅斗上的人「」・，。"):
+        return [f"钉 I 自检：{BODY_FONT} 读出 {len(cmap)} 个码位、常用字不全——字库不在或读法失真"]
+    absent = next((chr(c) for c in range(0x4E00, 0x9FA6) if c not in cmap), "")
+    if not absent:
+        return [f"钉 I 自检：{BODY_FONT} 读出基本汉字区全收——子集不该如此，读法失真（真改发全量字库就改这条自检）"]
+    bad = []
+    saved = dict(GLYPH_MISS)
+    try:
+        GLYPH_MISS.clear()
+        _check_glyphs("桅斗上的人喊了一声。", "self", cmap)
+        if GLYPH_MISS:
+            bad.append(f"钉 I 自检：常用字句被判缺字 {sorted(GLYPH_MISS)}")
+        GLYPH_MISS.clear()
+        _check_glyphs("桅斗上的%s望手。" % absent, "self", cmap)
+        if list(GLYPH_MISS) != [absent]:
+            bad.append(f"钉 I 自检：字库外的「{absent}」没被单独抓到（抓到 {sorted(GLYPH_MISS)}）")
+    finally:
+        GLYPH_MISS.clear()
+        GLYPH_MISS.update(saved)
+    return bad
+
+
 def _scan_event_fame():
     rel = "scripts/SeaChart.gd"
     src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
@@ -402,9 +543,16 @@ def _scan_crew_left_wiring():
 
 
 def main():
-    self_fails = _self_test() + _self_test_event_fame()
-    _scan_gd_strings()
+    cmap = _ttf_cmap(os.path.join(ROOT, BODY_FONT))
+    glyph_fails = _self_test_glyphs(cmap)
+    if glyph_fails:
+        cmap = None
+    self_fails = _self_test() + _self_test_event_fame() + glyph_fails
+    _scan_gd_strings(cmap)
     _scan_json_text()
+    _scan_data_glyphs(cmap)
+    _scan_tscn_glyphs(cmap)
+    _report_glyphs()
     _scan_event_fame()
     _scan_crew_left_wiring()
     all_fails = self_fails + FAILS

@@ -159,7 +159,7 @@ static func _font_file(path: String) -> Font:
 
 
 ## 正文字体。绢本：霞鹜文楷子集；夜潮：系统字体。
-## 绢本不挂 SystemFont 回落：文楷子集汉字零缺字（subset_fonts.py --verify），FontFile 默认 allow_system_fallback，
+## 绢本不挂 SystemFont 回落：文楷子集汉字零缺字（subset_fonts.py 出子集；上屏串逐字由 check_w53_copy 钉 I 守），FontFile 默认 allow_system_fallback，
 ## 真缺字（个别符号）时由 TextServer 按字懒加载系统字。原先正文与粗体各挂一个 SystemFont，一量行高就各读一整本宋体，
 ## 静态内存多出约 128MB（第 2 轮工程 M1，探针实测）。
 static func font() -> Font:

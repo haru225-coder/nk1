@@ -665,6 +665,7 @@ L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
     "tools/check_assets.py": ({"raw"}, "gate", "立绘资源存在性"),
     "tools/check_data_family.py": ({"raw"}, "gate", "data/ 同族结构门禁：普查 data/*.json 的 id 表 / 自引用（characters.json 是候选、登 not_family），变异自证改它验不误红；不上屏"),
     "tools/check_char_contract_doc.py": ({"raw"}, "gate", "（lane w26-k3）契约文档「每档角色 / 品级一览」自核：对原稿与这份文档做逐字比对，只生成文档表、不上屏；不向 UI 供字"),
+    "tools/check_w53_copy.py": ({"codex"}, "gate", "（lane w53-10）钉 I 正文字库逐字核：人物志文本层每个字须在文楷子集 cmap 里，缺字会落到系统字体；只读不上屏"),
     "tools/godot_smoke.gd": ({"raw", "api"}, "gate", "冒烟：阵营表、见面页立绘"),
     "tools/godot_story_check.gd": ({"api"}, "gate", "剧情门禁：生卒一行（主角卒年只在「忠肃」写、卒年到次年才写），实建人物志 / 立绘面板 / 见面页看上屏字"),
 }
