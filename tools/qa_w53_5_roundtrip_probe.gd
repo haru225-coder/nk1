@@ -3,6 +3,8 @@ extends SceneTree
 ## save_game 落盘 → 把单例脏成另一副样子 → load_game 读回 → 逐键与摆的场对账。
 ## 目标：任何「to_dict 落了、from_dict 没读」或「from_dict 读了、to_dict 没落」的非缺省字段
 ## 都会在本探针里出 ✗。只动存档位 94，不碰正式位 1..SLOTS。
+##   lane w53-12：这两种漏只比「摆场后 to_dict」抓不到（摆场也走 from_dict），5b 节改拿摆场原件逐键比，
+##   并验原件盖住 to_dict 全键。
 ##   headless 下 SCRIPT ERROR 不自非零退出：判绿须 rc=0 且末行 `QA_W53_5_ROUNDTRIP_END` 在——
 ##   缺末行 = 中途错误空转，按中断重跑。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_5_roundtrip_probe.gd
@@ -38,13 +40,18 @@ func _run() -> void:
 	_cleanup()
 
 	# ── 1 摆场：四分区各带一批非缺省值 ──
+	# 摆场原件留底（*_in），喂单例的是深拷贝：读回后除了与「摆场后 to_dict」比，还要与原件比——
+	# 摆场本身也走 from_dict，某键 from_dict 没读则摆场就没摆上、to_dict 前后同为缺省，只比 to_dict 抓不到
+	# （lane w53-12 实测：删 GameState.from_dict 的 era_profit 一行，旧版本探针照绿 cases=15 fails=0）。
 	# calendar
-	cal.from_dict({"year": 1256, "month": 7, "day": 18})
+	var cal_in := {"year": 1256, "month": 7, "day": 18}
+	cal.from_dict(cal_in.duplicate(true))
 	# economy
-	eco.from_dict({"rates": {"quanzhou": {"rice": 1.35}, "hakata": {"silk": 0.62}},
-		"tariff": 0.10, "broker": 0.05, "investments": {"quanzhou": 2, "mingzhou": 1}})
+	var eco_in := {"rates": {"quanzhou": {"rice": 1.35}, "hakata": {"silk": 0.62}},
+		"tariff": 0.10, "broker": 0.05, "investments": {"quanzhou": 2, "mingzhou": 1}}
+	eco.from_dict(eco_in.duplicate(true))
 	# fleet（两艘船：耐久不满 + 货舱各有账）
-	fleet.from_dict({
+	var fleet_in := {
 		"ships": [
 			{"type": "fuchuan", "name": "安济", "durability": 62.0, "max_durability": 100.0,
 				"crew": 18, "sail_level": 2, "armor_level": 1,
@@ -54,10 +61,12 @@ func _run() -> void:
 				"cargo": {"silk": {"qty": 5, "avg_cost": 150.0}}},
 		],
 		"water": 47, "food": 33, "morale": 61, "mutiny_cooldown": 2,
-	})
+	}
+	fleet.from_dict(fleet_in.duplicate(true))
 	# crew（在职 1 + 辞船 1 + 欠薪；candidate_def 名册键为实测可雇）
-	crew_n.from_dict({"hired": {"duogong": "lin_hua"}, "unpaid_months": 1,
-		"departed": {"xu_shi": {"role": "通事", "name": "许氏", "when": "景炎元年十月"}}})
+	var crew_in := {"hired": {"duogong": "lin_hua"}, "unpaid_months": 1,
+		"departed": {"xu_shi": {"role": "通事", "name": "许氏", "when": "景炎元年十月"}}}
+	crew_n.from_dict(crew_in.duplicate(true))
 	# state（非缺省主线 + 剧情字段 + discover/传闻/委办/封港/围城 + beats 账）
 	var scene_state := {
 		"money": 4321, "debt": 700, "fame": 12, "martial": 58, "chapter": 2,
@@ -85,7 +94,7 @@ func _run() -> void:
 			"shishou": "kept", "envoy_wang": true, "envoy_kin": false, "lin_hua_sent": true},
 		"beats_seen": ["start", "monk"], "loaded_with_beats": true,
 	}
-	gs.from_dict(scene_state)
+	gs.from_dict(scene_state.duplicate(true))
 
 	# 快照摆的场（存档前逐分区的 to_dict；label/scene 不入校验——那是存档头不是状态）
 	var want_cal: Dictionary = cal.to_dict()
@@ -171,6 +180,21 @@ func _run() -> void:
 	_report("state 逐键（%d 键）" % want_state.size(), state_fail.is_empty(),
 		"差键：%s" % "; ".join(state_fail.slice(0, 4)))
 
+	# ── 5b 读回 vs 摆场原件（lane w53-12）──
+	# 上面比的 want_* 是摆场后的 to_dict，摆场本身经 from_dict：from_dict 漏读某键 → 摆场没摆上、want 与读回同为缺省；
+	# to_dict 漏写某键 → want 与读回都没这个键。两种漏只比 want 都静默绿，这里拿原件逐键比（got 多出的键不计）。
+	# 另验原件盖住摆场时 to_dict 的全部键：单例新加存档字段而本探针没跟着摆，即红（「全字段」才名副其实）。
+	# 原件里摆成缺省值的键（ending_id / ended* 为空串）只验 to_dict 落没落，验不出 from_dict 漏读。
+	for part in [["calendar", cal_in, got_cal, want_cal], ["economy", eco_in, got_eco, want_eco],
+			["fleet", fleet_in, got_fleet, want_fleet], ["crew", crew_in, got_crew, want_crew],
+			["state", scene_state, got_state, want_state]]:
+		var diff: Array = _subset_diff(part[1], part[2])
+		for k in (part[3] as Dictionary):
+			if not (part[1] as Dictionary).has(k):
+				diff.append("%s 未摆（to_dict 有此键，原件没有）" % k)
+		_report("%s 读回 == 摆场原件（%d 键）" % [part[0], (part[1] as Dictionary).size()], diff.is_empty(),
+			"差键：%s" % "; ".join(diff.slice(0, 4)))
+
 	# ── 6 剧情运行时复核（读完后真调一次，证明不是账面绿） ──
 	_report("siege_open", bool(gs.call("siege_open")), "围城账读回应开")
 	_report("siege_power 数", float(gs.call("siege_power")) > 0.0, "siege_power=%s" % str(gs.call("siege_power")))
@@ -247,6 +271,24 @@ func _val_semieq(a, b) -> bool:
 	if typeof(a) == TYPE_FLOAT:
 		return is_equal_approx(float(a), float(b))
 	return a == b
+
+
+## 原件子集比：want 的每个键都得在 got 里语义等值，字典逐层同法；got 多出的键不计
+## （economy 读档会给没摆的港补随机行情）。返回差键描述，空 = 全数读回。
+func _subset_diff(want: Dictionary, got: Dictionary, path := "") -> Array:
+	var out := []
+	for k in want:
+		var p := "%s%s" % [path, k]
+		if not got.has(k):
+			out.append("%s 缺键" % p)
+			continue
+		var w = want[k]
+		var g = got[k]
+		if typeof(w) == TYPE_DICTIONARY and typeof(g) == TYPE_DICTIONARY:
+			out.append_array(_subset_diff(w, g, p + "."))
+		elif not _val_semieq(w, g):
+			out.append("%s(want=%s got=%s)" % [p, JSON.stringify(w), JSON.stringify(g)])
+	return out
 
 
 func _dict_semieq(a: Dictionary, b: Dictionary) -> bool:
