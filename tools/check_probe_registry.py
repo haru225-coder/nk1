@@ -11,6 +11,10 @@
 
 既不在册也不在 EXEMPT 的探针，每支行首红字点名，退 1（漏网 = 探针立坟，k11 原话）。
 
+既在册又列豁免的「双列」同格判红、点名该行（w29-k3 收尾留口 / 审计-wave29 C3.2b 实证：升格进注册表后
+旧 EXEMPT 行忘删，现闸本判不出；与「漏册」行格成对偶），REGISTRY ∪ SHOT_PROBES ∩ EXEMPT 须为空集，
+点名行形如「✗ 双列：tools/<探针> 同列 REGISTRY + EXEMPT——<行号>」（<行号> = EXEMPT 行序）。
+
 EXEMPT 每行三格（形状卡死，缺格判红）：探针名 / lane 或来源 / 理由一句。
 登记豁免的原则（与 rules-table 型门禁同规矩，五.3）：探针确实已在仓库里、只是「被谁跑、何时跑」还没挂上
 注册表时才登记豁免；探针已删，先删名单行——名单指着不存在的探针（act 格）、名单漏格（形状格）都判红。
@@ -21,7 +25,8 @@ EXEMPT 每行三格（形状卡死，缺格判红）：探针名 / lane 或来�
   python3 tools/check_probe_registry.py --json   # 机读（gate_json 转接，docs/GATES.md §二）
 
 零节（GATES §五.3）每次先在内存里跑：E1 拼错一个豁免名（对不上任何探针）须红、E2 删一格豁免放一支漏网须红、
-E3 移动覆盖名单把 qa_pirate_boat 挪出 REGISTRY 须红、C1 现网名单须全绿、形状格（缺 lane / 缺理由）须红。
+E3 移动覆盖名单把 qa_pirate_boat 挪出 REGISTRY 须红、E4 造双列（已在册探针再买一格豁免）须被双列行格点出、
+C1 现网名单须全绿、形状格（缺 lane / 缺理由）须红。
 """
 import os, re, subprocess, sys
 if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关不进此支，原行为不变
@@ -94,6 +99,12 @@ def run_census(probes, cov, exempt):
     return missing
 
 
+def run_dual(cov, exempt):
+    """双列判路（与「漏册」行格成对偶；w29-k3 留口 / 审计-wave29 C3.2b 实证为真缺）：同列 REGISTRY
+    ∪ SHOT_PROBES 与 EXEMPT 的探针基名集合——登进注册表的先删豁免行，别把一行豁免挂成双列。"""
+    return sorted(set(cov) & set(exempt))
+
+
 def head_exempt():
     print("一、探针普查（git 已跟踪 tools/*_probe.gd；注册 = gate_json REGISTRY file 列 ∪ SHOT_PROBES 截图册；"
           "都不沾的须登 EXEMPT 豁免名单）")
@@ -121,6 +132,11 @@ def head_exempt():
           + ("（全绿）" if not missing else "（行首逐支点名如上）"))
     ok_shots = sorted({os.path.basename(p) for p, _ in reg.SHOT_PROBES} & set(probes))
     check(len(ok_shots) >= 1, f"SHOT_PROBES 截图册认到 {len(ok_shots)} 支在册探针（0 支 = SHOT_PROBES 口径漂了）")
+    dual = run_dual(cov, exempt)
+    for p in dual:
+        check(False, f"双列：tools/{p} 同列 REGISTRY + EXEMPT——"
+              + f"{[e[0] for e in EXEMPT].index(p) + 1}")
+    check(not dual, f"双列 {len(dual)} 支（REGISTRY ∪ SHOT_PROBES ∩ EXEMPT 为空集）")
 
 
 def head_shape():
@@ -152,6 +168,8 @@ def overlay_mutate(kind):
         exempt.discard("qa_calendar_probe.gd")
     elif kind == "E3":  # 覆盖名单缺一支（k11 原罪形：REGISTRY 里没有它）——须整闸红
         cov.discard("qa_pirate_boat_probe.gd")
+    elif kind == "E4":  # 造双列：已在册探针（SHOT_PROBES 截图册）再买一格豁免——须被双列行格点出
+        cov.add("qa_calendar_probe.gd")
     return sorted(probes), cov, exempt
 
 
@@ -161,13 +179,19 @@ def head_selftest():
     probes, cov, exempt = overlay_mutate("C0")
     miss0 = run_census(probes, cov, exempt)
     check(not miss0, f"C0 现网名单普查全绿（漏网 {len(miss0)} 支）")
-    # 反向格：E1 / E2 / E3 各须红且点的是那一支
+    dual0 = run_dual(cov, exempt)
+    check(not dual0, f"C0 现网名单双列为空（双列 {len(dual0)} 支）")
+    # 反向格：E1 / E2 / E3 各须红且点的是那一支；E4 须点出双列那一支（0 支 = 双列判路瞎了）
     expects = {"E1": "qa_fine_text_probe.gd", "E2": "qa_calendar_probe.gd", "E3": "qa_pirate_boat_probe.gd"}
     for kind, want in expects.items():
         probes, cov, exempt = overlay_mutate(kind)
         miss = run_census(probes, cov, exempt)
         check(want in miss, f"{kind} 反向格：{want} 漏网被点出（实点 {len(miss)} 支" +
               ("" if len(miss) > 3 else f"：{miss}") + "）——探不到 = 此闸已判不出这一形")
+    _probes, cov, exempt = overlay_mutate("E4")
+    dual = run_dual(cov, exempt)
+    check("qa_calendar_probe.gd" in dual, f"E4 反向格：双列 qa_calendar_probe.gd 被点出（实点 {len(dual)} 支"
+          + ("" if len(dual) > 3 else f"：{dual}") + "）——探不到 = 双列判路已判不出这一形")
 
 
 def main():
