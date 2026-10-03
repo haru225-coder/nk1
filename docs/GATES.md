@@ -57,9 +57,10 @@
 | 43 | qa_calendar_probe | Godot | 加跑：动 scripts/core/Calendar.gd（日推进 / 改元表 / ERA_START / _era_row / 中文数字月日名）或船籍簿页首行上屏链（LedgerPage.update_panel 的日历行 / Main.status_label / update_status_panel），或动 tools/qa_calendar_probe.gd 自身 | — | `godot --headless --path . -s res://tools/qa_calendar_probe.gd` | `python3 tools/gate_json.py --godot qa_calendar_probe` | （探针 f3f092e lane-w26-k9 立、EXEMPT 挂账实过 26 波，w35-k1 收编——同 w31-k3 8170079 收编先例）真场景树 C1–C3 把「宝祐三年　三月初一」是会被玩家推进的真日历钉成运行时断言 36 案：C1 开局挂树页首印「宝祐三年　三月初一」，advance_days(29) 印「三月三十」、再 +1 跨月印「四月初一」；C2 页首月名 = 探针自拼参考月名（不引 Calendar.CN_NUM，防共同变量同错）12 月逐月各核 + 与前月页文不同（LCD）；C3 改元与纪年——景定元年正月一改元、页首年号 = 日历 _era_row() 同一基准不抄表；1276-04 印「德祐二年」、1276-05 印「景炎元年」逐月切换（w32-k2 自荐料：景炎 1276-05 起用，ERA_START 1276,5）、1276-06 印「景炎元年　六月初五」、1278-05 印「祥兴元年」、祥兴元年正月三十 +1 日 = 「二月初一」年号不变。本进程 SCRIPT ERROR 即红。末行 `CALENDAR_PROBE cases=N fails=M`，M>0 退 1 | 逐条 `  ✓ …` + 末行 `CALENDAR_PROBE cases=36 fails=0` | `  ✗ …` 行（如开局日不对 / 推进页首不随动 / 月名对不上或同值漏检 / 改元切换错位 / 正月三十跨月不进）+ 末行 `CALENDAR_PROBE cases=N fails=M`（M>0），退 1 |
 | 44 | qa_siege_destinations_probe | Godot | 加跑：动委办目的地链（scripts/GameState.gd 的 _contract_destinations / contract_offer / _contract_seed——出队排除口径、报价优选针路已知池、月份种子），或动 Economy.war_status / 数据行 ports.json war 表，或动 tools/qa_siege_destinations_probe.gd 自身 | — | `godot --headless --path . -s res://tools/qa_siege_destinations_probe.gd` | `python3 tools/gate_json.py --godot qa_siege_destinations_probe` | （lane w36-k2 · 拍板清单 2026-09-28 §八之四 P8 复现探针、V0928-1 机械前置②——『被围港被开成委办目的地』复现档，审判输入材料、零行为变更）态 A 真场景摆场四案（兴化 1276-11 / 1277-09、福州 1276-10、广州 1276-11——数据行 war 表现表）直调 _contract_destinations / contract_offer 真输出：被围港不掺任何一份出队目的地、报价目的不落被围港。态 B 未被围月 1275-03 反向基：广州发香药兴化上队、泉州委办报价非空。态 C 香药切面自净。另附 192 月窗逐月扫描，被围港进队行逐行印 `QA_SIEGE_DEST_HIT`（供拍板摘录）。现网 _contract_destinations 不排被围港——态 A 红是设计内红（复现到 §八之四 P8 指的缺陷，不是探针没做实；w35-k1 『判定即红』同款机制），收编照旧入册。M1 附加参 `--mutate-siege-always` 把被围判值倒成恒真（只动探针读口）→ 态 A 兴化 / 福州两案月多红。headless -s 下 SCRIPT ERROR 不自非零退出：判绿须 rc=0 且末行 `QA_SIEGE_DEST_END` 在——缺末行 = 中途错误空转（既非红亦非绿，按中断重跑）。 | 末三行 `SIEGE_DEST hits=N ok=M fails=0` + `结果：全部通过` + `QA_SIEGE_DEST_END`，退 0 | `  ✗ …` 行（现网态 A 复现行：被围港掺队 / 报价目的落被围——设计内红，归于 §三 lane 档附注）+ 末行 `SIEGE_DEST … fails=K`（K>0），退 1；`QA_SIEGE_DEST_END` 缺 = 中断，不计红绿 |
 | 45 | qa_save_stale_count1_probe | Godot | 加跑：动 scripts/core/SaveLoad.gd 的 audit_stale_refs 港类核验（_flag_port / out["port"] 落键口径），或动 tools/qa_save_stale_count1_probe.gd 自身 | — | `godot --headless --path . -s res://tools/qa_save_stale_count1_probe.gd` | `python3 tools/gate_json.py --godot qa_save_stale_count1_probe` | （lane w38-k1 · 无门禁 sweep 补位——j3mut 退化纹钉件，w36-k3 交主控 #2 A 类原句立）「恰 1 枚已删港名目」存档直调 load_game → last_stale（母本 save_stale_refs_probe.gd 同型写信道位 97）：现网 audit_stale_refs 对恰 1 枚须落 out["port"]["count"]==1、sample==该 id、examples erase。K1 现网临界（visited_ports 恰 1 枚）；K2 三个触发位各仅 1 处指向 stale 港（visited_ports / last_port / contract.from）各落 count==1；K3 对照 0 枚（port 键不在）/ 双旧港 count==2 / 同 id 双现去重仍 count==1。`> 0` 被退化成 `> 1`（j3mut 实证在卷）则 K1/K2 整段漏报 → 本探针 fails≥1 诱曝，现样全绿。末两行 `STALE_COUNT1 cases=N fails=M` + `QA_STALE_COUNT1_END`，M>0 退 1。 | 逐条 `  ✓ …` + 末两行 `STALE_COUNT1 cases=7 fails=0` + `QA_STALE_COUNT1_END`，退 0 | `  ✗ …count 期望 1 实得 0…`（`> 0→> 1` 漏报恰 1 枚——j3mut 退化纹）/ `… sample 期望 …` / `… examples 未 erase …` 各指名行 + 末两行 `STALE_COUNT1 cases=N fails=M`（M>0），退 1 |
-| 46 | check_probe_registry | Python | 必跑 | ✓ | `python3 tools/check_probe_registry.py` | `python3 tools/check_probe_registry.py --json` | （lane w27-k4，k11 审计「最该补的门禁」第 2 条）tools/ 下每支 git 已跟踪 `*_probe.gd` 要么被点名（REGISTRY file 列，或 SHOT_PROBES 截图册——截图脚本走 shot_gate 批量跑，算被跑），要么登进 `tools/check_probe_registry.py` 的 EXEMPT 豁免名单（每行三格：探针名 / lane·来源 / 理由一句，形状缺格即红）；漏注册且漏豁免一律行首红字点名。豁免名单指着不在仓的探针（删探针没删名单行）也红。零、判据自检每次先在内存跑：C0 现网名单须全绿；E1 拼错豁免名 / E2 删一格豁免 / E3 覆盖名单缺一支，三格反向变异各须点出那一支红。豁免名单全表与逐条理由见脚本头注；（qa_rest_days_probe 一支已由 wave27 k3 登进头段 REGISTRY lane 档，8170079——不在豁免名单。） | 零节 C0 + E1–E3 全 `✓` → 一节 5 条 `✓`（末条 `✓ 漏注册且漏豁免 0 支（全绿）`）→ 二节名单形状 `✓` → `结果：全部通过` | `✗ C0 现网名单普查全绿（漏网 N 支）`（豁免名单与注册表对不上现网——先修名单不修自检）/`✗ EXEMPT 第 k 行…`（名单形状 / 来源格缺 lane·commit）/`✗ 豁免名单每行都指着在仓探针——[…] 已不在仓 / 名写错` / `✗ 探针漏册：tools/<X>_probe.gd——不在 REGISTRY / SHOT_PROBES，也未登豁免`（逐支点名）/`✗ En 反向格：…`（自检对不上 = 闸判不出这一形）；`结果：N 项问题` |
+| 46 | check_w53_copy | Python | 必跑 | ✓ | `python3 tools/check_w53_copy.py` | `python3 tools/gate_json.py tools/check_w53_copy.py` | （lane w53-10 立，w56-k3 升 must 入册）玩家可见 CJK 串两类回潮钉静态扫（scripts/*.gd + data/*.json）：一、规则一禁「前帐」字样（FORBID_SUBSTRINGS——「先结了前帐罢」是唯一账务「帐」误「账」，其余「帐」全是军帐 / 营帐正用，check_symbols / qa_letterbox_copy 域不扫「帐」整字符）；二、规则二禁「名声 -」「士气 -」「金钱 -」「水粮 -」「耐性 -」「悦 -」半角连字符紧接着数字（HALF_MINUS_RE = 「名声」「士气」「金钱」「水粮」「耐性」「悦」一字样 + 空白 + - + 数字——玩家面统一全宽 −（U+2212），STAT_WORDS 钉死枚举不扩「蒲家留意 -2」类）；扫域是含 CJK 的字符串字面量 / JSON 文本值；负样本自检每次先跑（「前帐」样与「名声 -1」样各须被自家检出、不检出即自红） | 末行 `结果：全部通过`（含前置 `_self_test` 负样自检两格全判红、扫真源码 0 hit） | `结果：N 项问题` + ✗ 行点名（`scripts/Main.gd:<行号>: 账务「账」误作「帐」——含「前帐」字样：<原文 120 字>` / `scripts/<X>.gd:<行号>: 状态增减半角连字符（应为全宽 −）——<原文 120 字>` / data/<f>.json 同类两行） |
+| 47 | check_probe_registry | Python | 必跑 | ✓ | `python3 tools/check_probe_registry.py` | `python3 tools/check_probe_registry.py --json` | （lane w27-k4，k11 审计「最该补的门禁」第 2 条）tools/ 下每支 git 已跟踪 `*_probe.gd` 要么被点名（REGISTRY file 列，或 SHOT_PROBES 截图册——截图脚本走 shot_gate 批量跑，算被跑），要么登进 `tools/check_probe_registry.py` 的 EXEMPT 豁免名单（每行三格：探针名 / lane·来源 / 理由一句，形状缺格即红）；漏注册且漏豁免一律行首红字点名。豁免名单指着不在仓的探针（删探针没删名单行）也红。零、判据自检每次先在内存跑：C0 现网名单须全绿；E1 拼错豁免名 / E2 删一格豁免 / E3 覆盖名单缺一支，三格反向变异各须点出那一支红。豁免名单全表与逐条理由见脚本头注；（qa_rest_days_probe 一支已由 wave27 k3 登进头段 REGISTRY lane 档，8170079——不在豁免名单。） | 零节 C0 + E1–E3 全 `✓` → 一节 5 条 `✓`（末条 `✓ 漏注册且漏豁免 0 支（全绿）`）→ 二节名单形状 `✓` → `结果：全部通过` | `✗ C0 现网名单普查全绿（漏网 N 支）`（豁免名单与注册表对不上现网——先修名单不修自检）/`✗ EXEMPT 第 k 行…`（名单形状 / 来源格缺 lane·commit）/`✗ 豁免名单每行都指着在仓探针——[…] 已不在仓 / 名写错` / `✗ 探针漏册：tools/<X>_probe.gd——不在 REGISTRY / SHOT_PROBES，也未登豁免`（逐支点名）/`✗ En 反向格：…`（自检对不上 = 闸判不出这一形）；`结果：N 项问题` |
 
-每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十四道 Python + smoke/compile/story/p7/patrol/qa_rest_days_probe/qa_rest_scenarios_probe/qa_debt_strip_probe/qa_cargo_strip_probe」二十三道门禁；8、15、16、18、19、20、25、26、27、28、29、30、32、34、35、36、39、41、42、43、44、45 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十五道 Python + smoke/compile/story/p7/patrol/qa_rest_days_probe/qa_rest_scenarios_probe/qa_debt_strip_probe/qa_cargo_strip_probe」二十四道门禁；8、15、16、18、19、20、25、26、27、28、29、30、32、34、35、36、39、41、42、43、44、45 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（12 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -180,7 +181,7 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 
 <!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-# 必跑二十四条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+# 必跑二十五条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
 rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
 python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
 python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
@@ -205,6 +206,7 @@ python3 tools/gate_json.py --godot qa_rest_days_probe > /tmp/gates/qa_rest_days_
 python3 tools/gate_json.py --godot qa_rest_scenarios_probe > /tmp/gates/qa_rest_scenarios_probe.json
 python3 tools/gate_json.py --godot qa_debt_strip_probe > /tmp/gates/qa_debt_strip_probe.json
 python3 tools/gate_json.py --godot qa_cargo_strip_probe > /tmp/gates/qa_cargo_strip_probe.json
+python3 tools/gate_json.py tools/check_w53_copy.py > /tmp/gates/check_w53_copy.json
 python3 tools/check_probe_registry.py --json > /tmp/gates/check_probe_registry.json
 python3 tools/gate_json.py --judge /tmp/gates/*.json   # 汇总：逐道一行 ✓/✗；任一道红或没有 JSON 行 → 退 1
 ```
@@ -258,6 +260,7 @@ godot --headless --path . -s res://tools/qa_rest_days_probe.gd
 godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
+python3 tools/check_w53_copy.py
 python3 tools/check_probe_registry.py
 ```
 
@@ -624,7 +627,7 @@ python3 tools/check_probe_registry.py
 - lane 加跑档（不进一键跑，不改一键道数）：`when` 见 §一（动 SaveLoad audit_stale_refs 港类核验或本探针自身时手跑）；不升 must——非 1 秒量级、触发条件按路径判得准，§五.2 三条件只取第二、三之间的中间档，照 §三 42 qa_seachart_advance_probe / 44 qa_siege_destinations_probe 同判例。
 - 常见红因：`  ✗ …port 键不在 out（count 期望 1 实得 0）` = `audit_stale_refs` 港类 `if port["count"] > 0:` 被退化成 `> 1`（j3mut 实证 /tmp/w26/k11-j3mut SaveLoad.gd:560）——恰 1 枚陈旧港名目整段漏报、母本探针照旧全绿，本探针就是钉这道缝的；`  ✗ …count 期望 2 实得 1` = K3-2 双旧港没去重出 2 / 探针 _fixture 把旧港 id 写重了同一键；`  ✗ …sample 期望 old_haven 实得 ""` = `_port_sample` 取空 / examples 未被 erase 前先读出空样；`  ✗ …examples 未 erase` = 落 `out["port"]` 前忘了 `port.erase("examples")`（内部数组漏出 from_dict 面）。`QA_STALE_COUNT1_END` 缺 = 中断，不计红绿、重跑并先排错（与 §三 44 末条同判据）。
 
-### 46. check_probe_registry（`tools/check_probe_registry.py`，探针「注册或豁免」闸，lane w27-k4 立）
+### 47. check_probe_registry（`tools/check_probe_registry.py`，探针「注册或豁免」闸，lane w27-k4 立）
 - 读：`零、判据自检`（§五.3 规格：内存叠层不落盘——C0 现网名单普查须全绿；E1 拼错一格豁免名 / E2 删一格豁免 / E3 覆盖名单挪走一支已注册探针，三格反向各须点出那一支）→ `一、探针普查`（git 已跟踪 `tools/*_probe.gd` 逐支对覆盖名单：gate_json `REGISTRY` 的 file 列 ∪ `SHOT_PROBES` 截图册，不沾的须登脚本内 `EXEMPT` 豁免名单；豁免指着不在仓的探针也红）→ `二、豁免名单形状`（每行三格：探针名 / lane·来源 / 理由；缺格、重名、乱序都红）→ 末行 `结果：全部通过`。只读、实测 <1 s、只要 python3 + git。
 - 立闸的来由：k11 审计「最该补的门禁」第 2 条——「SCRIPTS 登记只管编译，不管被跑」；qa_rest_days_probe 入库 3 个月未被任何档位点名（k11 抽样 T5 b2，9827daa），同类漏网本片一普 23 支（k3 落地后 qa_rest_days 一支由 REGISTRY 接管，豁免名单定格 22 行）。收编思路照 `check_data_family` 的 families / not_family：要么点名、要么登记豁免，没有第三态。
 - **入册即 must**（§五.2 三条齐备）：① 新探针入库的人想不起来要注册（漏注册的方向就是「自己判不准」，qa_rest_days 的 3 个月是实证）；② 快（<1 s）；③ 只读（`git ls-files` + 读名单，不写盘）。放 `gate_json.py` 尾段 `CHECK` 节（与 wave27 k3 的头段 REGISTRY 追加同文件并行不冲突，书签 `# w27-k4 CHECK FOLLOWS`）。
@@ -632,13 +635,20 @@ python3 tools/check_probe_registry.py
 - 【w35 内收编后现状】（w35-k1 记——§三段号以 §一 表实号为准：以下 E1–E5 各格均于 w35 窗口内两次拨账、本节原四条一文字面未动）：原四条所引「E1 拼错一格豁免名 / E2 删一格豁免 / E3 覆盖名单挪走一支已注册探针」系持变体基形话、刻名靶已换届——E2 靶现 qa_contract_destinations（w35-k1；qa_calendar 收编退役）、E4 靶现 qa_pirate_boat（w35-k1）、E3 靶现 qa_seachart_advance（w35-k2；qa_fold_dim 收编退役——w35-k1 波内曾换绑 fold_dim、波内再被 k2 拨走）；E5 挂账账族基线 w35 两次拨 2→1→0（real 20 行 / 字样外 21 行不动），EXEMPT 名单本波 23→22→21 行收净。
 - 【EXEMPT 挂账尾字样收尾闸】（lane w34-k1 新增，w31-k6 挂账欠账复派一票：w31-k6 原语「两候判净：EXEMPT 的 reason 栏字样原义——闸判不出『超 N 波』形；两格都未守。何取何舍：分化 ① 首选（EXEMPT 收尾闸）」；w32-k1 SETTLED (d) 同族欠账收编）：EXEMPT reason 栏含「归后续 lane」字样的行 = 挂账缓兵，注册挂哪档归后续 lane 收编；挂账超挂账基线窗 N=7 波未收编即逐行判红——先判后收，收编动作与归口归后续 lane 条款照旧。读：在「二、豁免名单形状」后追加「三、EXEMPT 挂账尾字样收尾闸」段；常见红因新出一类：`✗ EXEMPT 收尾闸：EXEMPT[<行号>]——<探针名> 挂账基线窗 N=7 波已过未收编（实过 N 波）`。判路只走现网字样首现笔（-G 查最旧一笔）；写入参数 / TOLL_N 阀拨调与「在途 lane 字样行刚达标」绿样都自备名指向。零节原规格一式新增 E5：断路径（刻名 lane-w26-k9 / lane-w28-k3 两支账族）探不出即红——§五.3 第 4 条同规格；w35 两支行先后由 k1 / k2 收编、E5 样实点 0 支格绿样仍判路在（拨基线 -1/-2 两次照 §五.3 拨参数=拨颁）。
 
+### 46. check_w53_copy（`tools/check_w53_copy.py`，玩家可见 CJK 串两类回潮钉静态扫，lane w56-k3 依 w53-10 SETTLED :954 钦命升 must）
+- 读：末行 `结果：全部通过` / `结果：N 项问题` + ✗ 行点名（`scripts/Main.gd:<行号>: 账务「账」误作「帐」——含「前帐」字样：<原文 120 字>` / `scripts/<X>.gd:<行号>: 状态增减半角连字符（应为全宽 −）——<原文 120 字>` / data/<f>.json 同类两行）；前置 `_self_test` 负样自检两格全判红（「前帐」样与「名声 -1」样各须被自家检出、不检出即自红）。
+- when（档列）：每轮必跑——升 must 理由见 §五.2 三判据逐项签 + 第四格（`tools/gate_json.py` REGISTRY id=check_w53_copy 的 why 段形内全）；升格始末见本段末【w56-k3 升格注】。
+- 立案链：w53-10 SETTLED :954 落 `tools/check_w53_copy.py`（@79ab7e0 + 22d0240 修复文案源头两笔）——verify compile/story/patrol/own/check_symbols/probe_registry rc=0 钦，但其守釘闸只入库未注册（w55-k3 判档段帧注 gate_json grep 0 命中照实注①）；w53-12 同窗 @0893e47 落「check_w53_copy 寄挂 check_symbols 十五节——钉住 w53-10 文案钉零人跑死档」（lug weave）——寄挂单未入主实锤（起派实跑 `git merge-base --is-ancestor 0893e47 main` rc=1）+ 注册挂账仍零动 = 双轨并现、本片对口判掂（§五.2 三判据原文逐项签 + 第四格「不许扩大误红面」）。
+- 【w56-k3 升格注】§五.2 三判据逐项现跑谓词（w56-k3 起派实跑，main HEAD=296b194 帧）：① **trigger 判不准成立**——两枚错样都是文案修笔顺手进（半角「前帐」误「前账」于 scripts/Main.gd:2319「先结了前帐罢」+ 「名声 -1」「士气 -1」半角于 GameState.gd:1093/:1094 委办毁约/逾期两条），lane 自己写文案顺手即带回（同 gd21 Mac 白字 / cs21 Host 白字同型），when 写不到判不准那类（哪个 .gd 改动会带 CJK 串错字、lane 自己判不来）；② **快 1 秒量级成立**——time python3 tools/check_w53_copy.py 三跑 real 0.075 s / 0.086 s / 0.080 s（8 vCPU / load 20+ 帧），≪ 既有 python must 闸；③ **只读零写盘成立**——源 grep -nE 'write|FileAccess|DirAccess|user://|store_|--regen|--write' 0 命中（rc=1 预期），唯 open() 读 scripts/*.gd + data/*.json 静态扫；＋**第四格不许扩大误红面成立**——CI_STEPS 现帧只有「builtin_api 漂移」「docs 索引与文件一致」2 条、不含 check_w53_copy → 五处同步第 ④ 处零动照实注；主树未跟踪 `git ls-files --others --exclude-standard` 0 行照桩；w53-{1,10,12} 同窗现场（pid 活）lane 域零动；**升 must 前提** main 尖上绿：起派帧 check_w53_copy / check_symbols 双双 rc=0「结果：全部通过」实贴。
+- 常见红因：自家文案笔顺手写「前帐」/「名声 -」类半角（修法：改回「前账」/「名声 −」全宽 − U+2212）；借了别人的文案不入扫的格式变体忘加本闸 STAT_WORDS / FORBID 钉（修法：片段自己明牌）。
+
 ## 四、CI 建议步骤
 
-只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑二十四道（含导入步骤；w25-j5 起含过场时长 data-only、w40-k3 起含 gates_md 自身同步道、w42-k4 起含 check_sidecars 侧车成对道），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
+只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑二十五道（含导入步骤；w25-j5 起含过场时长 data-only、w40-k3 起含 gates_md 自身同步道、w42-k4 起含 check_sidecars 侧车成对道、w56-k3 起含 check_w53_copy 玩家可见 CJK 串两类回潮钉静态扫道），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑二十四条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑二十五条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
 godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
@@ -662,6 +672,7 @@ godot --headless --path . -s res://tools/qa_rest_days_probe.gd
 godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
+python3 tools/check_w53_copy.py
 python3 tools/check_probe_registry.py
 # 1. builtin_api 漂移
 python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt

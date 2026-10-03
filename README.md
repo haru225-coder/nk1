@@ -26,10 +26,10 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-一次改动闭环 = 下面二十四道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
+一次改动闭环 = 下面二十五道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
 
 ```bash
-# 十三道 Python（无 Godot 也能跑）
+# 十四道 Python（无 Godot 也能跑）
 python3 tools/check_symbols.py      # autoload 顺序与跨文件符号、海战精灵 PNG 取证、绢本文案规范、各功能契约
 python3 tools/verify_economy.py     # 数据完整性 / 套利 / 砸盘 / 季风 / 航法与委办 / 哗变 / 风涛分摊 / 结局旗标
 python3 tools/simulate_run.py       # 端到端跑一局，找死锁与账目溢出
@@ -43,15 +43,20 @@ python3 tools/check_mac_paths.py    # 已跟踪文件里没有 Mac / Homebrew �
 python3 tools/check_host_paths.py   # 已跟踪文件里没有本机 Linux 绝对路径：家目录、/workspace 下的仓库根（lane cs21 升进必跑；一键跑里排倒数第三）
 python3 tools/check_decision_refs.py  # 拍板清单里的「文件:行」还指着原来那段（lane auditfix1 入册即必跑；一键跑倒数第二；红了 --fix）
 python3 tools/art/import_cutscene_bgs.py --data-only  # 过场时长 / 镜数 / 字幕时点 / 产物清单契约（lane w25-j5 依拍板 E-16 升进必跑；不需 Pillow）
+python3 tools/check_w53_copy.py     # 玩家可见 CJK 串两类回潮钉（「前帐」误「前账」+ 状态号半角 -N 误全宽 −N；lane w53-10 文案钉静态扫、w56-k3 依 w53-10 SETTLED :954 钦命 §五.2 三判据逐项签升 must）
 python3 tools/check_probe_registry.py  # tools/ 下每支 *_probe.gd 要么注册进门禁注册表、要么登豁免名单（lane w27-k4 立闸即必跑；一键跑末条；k11 审计「最该补的门禁」第 2 条）
 
-# 六道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
+# 十道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
 godot --headless --import --path .                               # 导入步骤：刷新缓存、不判红绿（docs/GATES.md §三.9）
 godot --headless --path . -s res://tools/godot_smoke.gd          # 云端冒烟（逐项 ✓，末行 GODOT SMOKE PASS）
 godot --headless --path . -s res://tools/godot_compile_check.gd  # 全部脚本可编译
 godot --headless --path . -s res://tools/godot_story_check.gd    # 剧情脊柱与存档 round-trip（用完会清第 9 槽）
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd  # 行会入行 / 贡院赴试 / 誊录：扣费门槛、每章一次、跨月结算时序
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd         # 有窗口：三港九页 + 海图三向牌都在 1280×720 内
+godot --headless --path . -s res://tools/qa_rest_days_probe.gd   # 旅店 / 住处「歇・候 N 日」钮面 ↔ 实扣运行时断言 24 案（lane w48-k1 依 w42-k6 牒备件绶升必跑）
+godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd  # 旅店 / 住处「歇・候 N 日」钮面两贴文路径同亮运行时断言 33 案
+godot --headless --path . -s res://tools/qa_debt_strip_probe.gd  # HUD 顶匾上行「欠 %d」欠债格运行时断言 4 案
+godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd  # 船籍簿页「船舱」段货载上屏运行时断言 27 案
 ```
 
 `tools/patrol.py` 是云端留下的一键巡检（静态三套 + 冒烟 + 巡检）；`tools/legacy/verify_narrative.py` 与 `tools/legacy/p7_smoke.gd` 绑定云端 21ce 的 P7 平行实现，本分支未收该实现，两个脚本仅留档、不算门禁（别与上面的 `p7_guild_exam_smoke.gd` 混淆）。

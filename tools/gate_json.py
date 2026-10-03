@@ -538,6 +538,34 @@ REGISTRY = [
      "green": "逐条 `  ✓ …` + 末两行 `STALE_COUNT1 cases=7 fails=0` + `QA_STALE_COUNT1_END`，退 0",
      "red": "`  ✗ …count 期望 1 实得 0…`（`> 0→> 1` 漏报恰 1 枚——j3mut 退化纹）/ `… sample 期望 …` / "
             "`… examples 未 erase …` 各指名行 + 末两行 `STALE_COUNT1 cases=N fails=M`（M>0），退 1"},
+    # lane w56-k3 升格：w53-10 SETTLED :954 落 tools/check_w53_copy.py（@79ab7e0）注册挂账未拍——w55-k3 判档段
+    # 帧注 gate_json grep 0 命中照实注①、w53-12 同窗 @0893e47 寄挂 check_symbols 十五节（未入主实锤）双轨并现；
+    # 本片照 §五.2 三判据原文逐项签 + 第四格「不许扩大误红面」判掂 = 升 must 档，判语原文签成 why 段：
+    {"id": "check_w53_copy", "tier": "must", "kind": "py", "file": "tools/check_w53_copy.py",
+     "why": "升格（lane w56-k3 依 w53-10 SETTLED :954 钦命 + w55-k3 判档段帧注 gate_json 0 命中 + w53-12 @0893e47 寄挂双轨并现——"
+            "寄挂单未入主实锤）：照 §五.2 三判据逐项判语原文签——"
+            "① trigger 判不准成立：两枚回潮错样都是文案修笔顺手带进——半角「前帐」误「前账」（scripts/Main.gd 玩家可见 CJK 日志）"
+            "与状态增减半角 -N 误全宽 −N（GameState.gd 委办毁约 / 逾期两条），lane 自己写文案 / 按教程照抄顺手带回的一类，"
+            "与 gd21 Mac 白字 / cs21 Host 白字同型——when 写不到判不准那类；"
+            "② 快 1 秒量级成立：起派实跑 time python3 tools/check_w53_copy.py 三跑 real 0.075 s / 0.086 s / 0.080 s"
+            "（8 vCPU / load 20+ 帧），≪ 一键跑既有 python must 闸任一支；"
+            "③ 只读零写盘成立：源 grep -nE 'write|FileAccess|DirAccess|user://|store_|--regen|--write' 0 命中（rc=1 预期），"
+            "脚本唯 open() 读 scripts/*.gd 与 data/*.json 静态扫，零写盘开关；"
+            "＋第四格不许扩大误红面成立：CI_STEPS 现帧不含 check_w53_copy → §五.2 五处同步第 ④ 处零动照实注；"
+            "主树未跟踪文件 git ls-files --others --exclude-standard 0 行照桩；w53-{1,10,12} 同窗现场（pid 活）"
+            "其 lane 域（scripts/GameState.gd / docs/待策划拍板清单_* / tools/qa_w53_* / tools/_tmp_wave53_1_*）零动——"
+            "本闸扫主树玩家可见 CJK 串、扫自己属于其 lane 域照扫不互相染红；"
+            "＋「升 must 的前提是 main 尖上它是绿的」成立：起派帧 main HEAD = 296b194、本闸起派实跑 rc=0「结果：全部通过」。",
+     "judge": "（lane w53-10 立，w56-k3 升 must 入册）玩家可见 CJK 串两类回潮钉静态扫（scripts/*.gd + data/*.json）："
+              "一、规则一禁「前帐」字样（FORBID_SUBSTRINGS——「先结了前帐罢」是唯一账务「帐」误「账」，"
+              "其余「帐」全是军帐 / 营帐正用，check_symbols / qa_letterbox_copy 域不扫「帐」整字符）；"
+              "二、规则二禁「名声 -」「士气 -」「金钱 -」「水粮 -」「耐性 -」「悦 -」半角连字符紧接着数字"
+              "（HALF_MINUS_RE = 「名声」「士气」「金钱」「水粮」「耐性」「悦」一字样 + 空白 + - + 数字——玩家面统一全宽 −（U+2212），"
+              "STAT_WORDS 钉死枚举不扩「蒲家留意 -2」类）；扫域是含 CJK 的字符串字面量 / JSON 文本值；"
+              "负样本自检每次先跑（「前帐」样与「名声 -1」样各须被自家检出、不检出即自红）",
+     "green": "末行 `结果：全部通过`（含前置 `_self_test` 负样自检两格全判红、扫真源码 0 hit）",
+     "red": "`结果：N 项问题` + ✗ 行点名（`scripts/Main.gd:<行号>: 账务「账」误作「帐」——含「前帐」字样：<原文 120 字>`"
+            " / `scripts/<X>.gd:<行号>: 状态增减半角连字符（应为全宽 −）——<原文 120 字>` / data/<f>.json 同类两行）"},
 ]
 
 # w27-k4 CHECK FOLLOWS
