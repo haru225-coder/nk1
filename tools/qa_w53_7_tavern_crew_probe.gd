@@ -13,6 +13,8 @@ extends SceneTree
 ##   I 见面册打听：复刻设计 §8.7「见面册打听写成『某人压低声音说。』行情写成『某港　眼下缺某货，一件能多得　多少钱。』」。
 ##     修前见面页把酒馆那句整句搬来：「林阿舶压低声音说。⏎⏎邻座的牙人压低声音：「耽罗　眼下缺…」」——一段里两个人压低声音，
 ##     市舶司小吏那页也冒出「邻座的牙人」；现由见面的人自己说行情那句，酒馆长凳上的「打听」照旧是邻座牙人。
+##   C 人物志未识的职事：页上写「雇过此人，册上才有其详」，可规矩（CharacterArt.is_known）是见过即识——酒馆里看过他的候选卡
+##     （TavernPage 记 note_met）就算，不必花入伙钱。现写「见过此人」，并实跑：没雇、只进了他候雇的酒馆，人物志就认得他。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 ## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
@@ -72,6 +74,7 @@ func _boot() -> void:
 	await _h_leave_hint()
 	await _n_wall_dates()
 	await _i_npc_intel()
+	await _c_codex_unknown_crew()
 	_report()
 
 
@@ -283,6 +286,38 @@ func _i_npc_intel() -> void:
 	# 酒馆长凳上的「打听」不动：那里本来就是邻座牙人卖的行情（角色设定集「酒馆邻座压低声音卖你一条行情」）
 	var bench := str(_main.call("_gather_price_intel", "quanzhou"))
 	_expect(bench.contains("邻座的牙人压低声音：") and bench.contains("眼下缺"), "酒馆长凳打听照旧是邻座牙人那句（实读：%s）" % bench)
+
+
+# ── C 人物志未识的职事：见过即识，页上就写见过 ──
+
+func _c_codex_unknown_crew() -> void:
+	print("── C 人物志未识职事页的提示与「已识」规矩一致：酒馆里见过即识，不必雇")
+	_stage(1258, 3, 1)
+	var hint := await _codex_unknown_hint("chen_laodao")
+	_expect(hint.contains("见过此人，册上才有其详") and not hint.contains("雇过此人") and hint.contains("福州"),
+		"没见过陈老舵：人物志未识页写「见过此人，册上才有其详」、指福州候雇，不写「雇过此人」（实读：%s）" % hint)
+	# 实跑规矩：不雇，只进福州酒馆看一眼候选卡，人物志就认得他
+	_gs.last_port = "fuzhou"
+	await _goto("fuzhou_tavern")
+	_main.call("_on_npc_leave")
+	var seen_card := _label("陈老舵") != null
+	var after := await _codex_unknown_hint("chen_laodao")
+	_expect(seen_card and (_crew.hired as Dictionary).is_empty() and after == "",
+		"进福州酒馆见过陈老舵的候选卡、一文未付：人物志认得他（卡在 %s / 在船 %d 人 / 未识页提示「%s」）" % [
+			seen_card, (_crew.hired as Dictionary).size(), after])
+
+
+## 人物志直开此人详页：未识页那一句提示（「……册上才有其详……」）；已识（页上没有这句）返回空串
+func _codex_unknown_hint(id: String) -> String:
+	var cx: Control = (load("res://scripts/ui/CharacterCodex.gd") as GDScript).new()
+	root.add_child(cx)
+	cx.call("begin", id)
+	await process_frame
+	var lbl := _find(cx, func(n: Node) -> bool: return n is Label and str((n as Label).text).contains("册上才有其详")) as Label
+	var got := str(lbl.text) if lbl != null else ""
+	cx.queue_free()
+	await process_frame
+	return got
 
 
 func _goto(scene_id: String) -> void:

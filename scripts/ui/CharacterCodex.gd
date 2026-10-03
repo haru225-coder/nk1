@@ -787,7 +787,7 @@ func _fill_unknown(body: VBoxContainer, ch: Dictionary) -> void:
 	var hint := "其人其事，尚未传到你耳中。"
 	var port := Art.hire_port_name(ch)
 	if Art.crew_id_of(ch) != "":
-		hint = "雇过此人，册上才有其详。" + ("据牙人说，在%s一带候雇。" % port if port != "" else "")
+		hint = "见过此人，册上才有其详。" + ("据牙人说，在%s一带候雇。" % port if port != "" else "")
 	body.add_child(_para(hint, UiTheme.SIZE_BODY - 1, UiTheme.TEXT_DIM))
 	# 已识之人的关系表里提到过此人：名字不露，点过去看那位已识的人。
 	# 签上写「此人之于那位」：优先取此人自己关系表里指向那位的一条（陈瓒表里「族侄」→ 陈子龙　族侄，
