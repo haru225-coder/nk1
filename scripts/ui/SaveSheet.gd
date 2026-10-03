@@ -120,6 +120,12 @@ static func show_save_dialog(main: Control, read_only := false) -> void:
 			ring.append(b)
 	for i in ring.size():
 		var b: Button = ring[i]
+		# Enter / 空格按的是焦点所在这颗钮：钮自己不吞按下那一下，原先 Main._unhandled_input 先把册页合上（松键时钮已随册页
+		# 拆掉）——Tab 到「记录」按 Enter，册页一合、什么也没记。按下即按钮，并把这一下收住，不再落到 Main 去合册页。
+		b.gui_input.connect(func(ev: InputEvent) -> void:
+			if ev.is_action_pressed("ui_accept") and not ev.is_echo():
+				b.accept_event()
+				b.pressed.emit())
 		var nxt: NodePath = b.get_path_to(ring[(i + 1) % ring.size()])
 		var prv: NodePath = b.get_path_to(ring[(i + ring.size() - 1) % ring.size()])
 		b.focus_next = nxt

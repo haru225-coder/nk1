@@ -18,6 +18,8 @@ extends SceneTree
 ##   K2 Tab / Shift+Tab / 方向键连按：焦点始终在册页里，且确在册页的钮之间走动；
 ##   K3 Esc 合上册页：不开别的浮页、不换页、不过日子；
 ##   K4 再点开、按 Enter：册页合上，不是拆了重开。
+##   K5 Tab 到「记录」再按 Enter / 空格：按的是这颗钮（原先 Main._unhandled_input 先把册页合上、什么也没记）。为不写正式位，
+##      先把这颗钮的 pressed 接线换成计数，按两下数到 2、册页仍开、那一卷题签不变。
 ## 五轮已定：港页册页「翻阅」两下才翻（「翻阅」与「记录」并排同大，误点一下就回到那一卷的日子，眼下没记下的进度一笔勾销）：
 ##   C1 港页册页按一下「翻阅」：不读档（日子不变）、册页不合、记下待确认的是这一卷；
 ##   C2 再按一下：读档（日子回到那一卷）、册页合上、记事顶上「翻开日志第 N 卷……」；
@@ -214,6 +216,33 @@ func _run() -> void:
 		await _settle(3)
 		_expect(opened and not is_instance_valid(_main.get("_save_host")) and _no_float_page(), "K4 点开后按 Enter：册页合上，不是拆了重开",
 			"点开=%s Enter 后册页开着=%s 焦点=%s" % [str(opened), str(is_instance_valid(_main.get("_save_host"))), _name(_focus())])
+
+	# ── Tab 到「记录」按 Enter / 空格：按的是这颗钮（pressed 换成计数，不写正式位）──
+	if log_btn != null:
+		if is_instance_valid(_main.get("_save_host")):
+			_main._close_save_sheet()
+			await _settle(2)
+		await _click(log_btn)
+		await _key(KEY_TAB)
+		var chip := _focus()
+		var hits := [0]
+		var label1 := str(sl.call("save_label", 1))
+		var on_rec: bool = chip is Button and (chip as Button).text == "记录"
+		var chip_name := _name(chip)
+		if on_rec:
+			for c in (chip as Button).pressed.get_connections():
+				(chip as Button).pressed.disconnect(c["callable"])
+			(chip as Button).pressed.connect(func() -> void: hits[0] += 1)
+			await _key(KEY_ENTER)
+			await _key(KEY_SPACE)
+		# 修前按下那一下册页即合、钮随之拆掉：此后只认 is_instance_valid，不碰拆掉的钮
+		_expect(on_rec and hits[0] == 2 and is_instance_valid(_main.get("_save_host")) and str(sl.call("save_label", 1)) == label1,
+			"K5 Tab 到「记录」按 Enter / 空格：按的是这颗钮，不是合上册页",
+			"焦点=%s 按到 %d 下（应 2）册页开着=%s 钮还在=%s" % [chip_name, hits[0], str(is_instance_valid(_main.get("_save_host"))),
+				str(is_instance_valid(chip))])
+		if is_instance_valid(_main.get("_save_host")):
+			_main._close_save_sheet()
+			await _settle(2)
 
 	# ── 港页「翻阅」两下才翻；标题页一下即翻 ──
 	_cleanup()

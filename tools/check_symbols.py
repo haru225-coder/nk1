@@ -4971,14 +4971,17 @@ else:
 # lane w53-5 五轮：航海日志册页收键盘焦点。原先鼠标点「航海日志」开册页，焦点留在暗幕底下那颗钮上：Enter 把册页拆了重开，
 # Tab / 方向键走到底下的「名册」「看风」「再候一日」再 Enter，就在册页底下开浮页、出海、候日。须：开册页即 host.grab_focus()、
 # 册页里按得动的钮 focus_next / focus_neighbor 互指成环、「合上」挂 ui_cancel 快捷键。运行时断言见 qa_w53_5_save_sheet_probe K1–K4。
+# 同轮补：Enter / 空格按焦点所在的钮——钮不吞按下那一下，不收住就由 Main._unhandled_input 合上册页（Tab 到「记录」按 Enter 什么也没记）。
+_ga = _save_dialog_code[_save_dialog_code.find("b.gui_input.connect("):] if "b.gui_input.connect(" in _save_dialog_code else ""
 if (
     "host.grab_focus()" in _save_dialog_code
     and "focus_next = " in _save_dialog_code and "focus_neighbor_bottom = " in _save_dialog_code
     and '"ui_cancel"' in _save_dialog_code and "close.shortcut = " in _save_dialog_code
+    and '"ui_accept"' in _ga and 0 <= _ga.find("b.accept_event()") < _ga.find("b.pressed.emit()")
 ):
-    print("  ✓ 航海日志册页收键盘焦点（开即聚焦底座、Tab / 方向键只在册页里轮转、Esc 合上）")
+    print("  ✓ 航海日志册页收键盘焦点（开即聚焦底座、Tab / 方向键只在册页里轮转、Enter / 空格按焦点所在的钮、Esc 合上）")
 else:
-    print("  ✗ 航海日志册页不收键盘焦点：焦点留在暗幕底下，Enter 拆了重开、Tab / 方向键走到底下的钮（看风 / 再候一日）")
+    print("  ✗ 航海日志册页不收键盘焦点：焦点留在暗幕底下，Enter 拆了重开、Tab / 方向键走到底下的钮（看风 / 再候一日），或 Enter 按不到焦点所在的钮")
     problems.append("航海日志册页键盘焦点漏到暗幕底下")
 
 # lane w53-5 五轮已定：港页册页「翻阅」两下才翻（「翻阅」与「记录」并排同大，误点一下就回到那一卷，眼下没记下的进度一笔勾销）；
