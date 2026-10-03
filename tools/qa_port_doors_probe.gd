@@ -72,6 +72,10 @@ func _run() -> void:
 	gs.from_dict({})
 	cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	gs.money = 5000
+	# 走过序章的档（lane w53-6）：序章一路点下来，节拍幕早都演过、记了名；空档首抵泉州会演节拍 monk，岸门就不在屏上
+	gs.loaded_with_beats = true
+	for b in root.get_node("/root/GameManager").port_beats_data.get("beats", []):
+		gs.beat_mark(str((b as Dictionary).get("entry", "")))
 
 	var ports := [
 		["quanzhou", "01_quanzhou_doors"],
@@ -112,6 +116,10 @@ func _run() -> void:
 
 
 func _expect_doors(port_id: String) -> void:
+	# 港页得真在屏上（lane w53-6）：被剧情幕截走时（空档首抵泉州演节拍 monk）港页的岸带还藏在 port_mode 里，
+	# 下面几格照查得过，截图却是开元寺偏院——这一格不过就别信下面的门数
+	_expect(_main.port_mode.visible and str(_main.current_scene_id) == port_id,
+		"%s 港页在屏上（停在 %s，港页%s）" % [port_id, _main.current_scene_id, "开" if _main.port_mode.visible else "未开"])
 	var band := _find_named(_main, "ShoreBand")
 	_expect(band != null, "%s ShoreBand" % port_id)
 	var doors := _find_named(_main, "ShoreDoors")
