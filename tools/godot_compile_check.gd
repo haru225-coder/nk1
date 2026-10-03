@@ -140,6 +140,7 @@ const SCRIPTS := [
 	"res://tools/qa_seachart_advance_probe.gd",  # lane w28-k3 SeaChart 海图「航段」名号跨月推进时序断言探针
 	"res://tools/qa_crew_fold_host.gd",  # lane w30-k3 qa_crew_fold_probe 仿作宿主（LogFold.render 直收字段件）
 	"res://tools/qa_crew_fold_probe.gd",  # lane w30-k3 多雇员【欠饷】字面一览（工食合计 / 俸最高者先走）+ LogFold.render fold:i 展开字样断言探针
+	"res://tools/qa_cargo_strip_probe.gd",  # lane w29-k2 船籍簿船舱段 cargo_str（品名 × 数量 / 容量 / 空舱）上屏断言探针
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
