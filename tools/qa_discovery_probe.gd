@@ -1,6 +1,6 @@
 extends SceneTree
 ## 发现录巡检：寺观近侧旧迹（未勘 / 已入册 / 已呈案）与市舶司呈报工席，截到 ${NK1_SHOT_DIR:-/workspace/nk1-qa-shots}/discovery/。
-## 断言：呈报签副题「赏钱 N　声名 N」、chip「呈报」挂 tooltip；呈报后挪入 discoveries_reported、日志「入案」。
+## 断言：呈报签副题「赏钱 N　名声 N」、chip「呈报」挂 tooltip；呈报后挪入 discoveries_reported、日志「入案」。
 ## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_discovery_probe.gd   # 截图门禁（须出 5 张）
 ##       godot --headless --path . -s res://tools/qa_discovery_probe.gd -- --contract   # 只验非渲染断言，不截图
 ## 空视口 / 一色空图 / 张数不足 / headless 未开 --contract 一律非零退出（shot_gate.gd）。
@@ -82,14 +82,18 @@ func _run() -> void:
 
 	_main.load_scene("quanzhou_yamen")
 	await _settle(10)
-	_expect(_has_label("赏钱 70　声名 7"), "市舶司 废烽堠 副题")
-	_expect(_has_label("赏钱 110　声名 11"), "市舶司 湄洲神女祠 副题")
+	_expect(_has_label("赏钱 70　名声 7"), "市舶司 废烽堠 副题")
+	_expect(_has_label("赏钱 110　名声 11"), "市舶司 湄洲神女祠 副题")
 	var chips := _report_chips()
 	_expect(chips.size() == 2, "市舶司 两枚呈报 chip（得 %d）" % chips.size())
 	for c in chips:
 		var tip := str((c as Control).tooltip_text)
 		_expect(tip.contains("呈报入案"), "呈报 tooltip 含「呈报入案」")
+		_expect(tip.contains("赏钱名声同领"), "呈报 tooltip 赏钱名声同领（与船籍簿同叫名声）")
 		_expect(not tip.contains("点击"), "呈报 tooltip 无 UI 腔")
+	# lane w53-10：职衔工席「再记 N 名声可题」与船籍簿「名声　N」同一叫法，市舶司页不再出「声名」
+	_expect(_text_has(_main, "名声可题「"), "职衔 再记 N 名声可题")
+	_expect(not _text_has(_main, "声名"), "市舶司页无「声名」异称")
 	await _shot("03_quanzhou_yamen_pending")
 
 	_main.call("_on_report_discovery", "beacon_ruin")
@@ -98,7 +102,7 @@ func _run() -> void:
 	_expect(not ("beacon_ruin" in _gs.discoveries_found), "beacon_ruin 出 discoveries_found")
 	_expect(int(_gs.money) == money0 + 70, "呈报赏钱 70（得 %d）" % (int(_gs.money) - money0))
 	_expect(_report_chips().size() == 1, "呈报后剩一枚 chip")
-	_expect(_log_has("「废烽堠」入案。赏钱 70，声名添 7。"), "呈报日志纪实短句")
+	_expect(_log_has("「废烽堠」入案。赏钱 70，名声添 7。"), "呈报日志纪实短句")
 	await _shot("04_quanzhou_yamen_reported")
 
 	_main.load_scene("fuzhou_temple")

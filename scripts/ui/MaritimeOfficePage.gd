@@ -56,13 +56,13 @@ static func setup_reporting(main: Control) -> void:
 			continue
 		var value: int = int(d.get("value", 50))
 		var slip: VBoxContainer = main._slip_body()
-		main._slip_title(slip, str(d.get("name", did)), "赏钱 %d　声名 %d" % [value, maxi(1, value / 10)])
+		main._slip_title(slip, str(d.get("name", did)), "赏钱 %d　名声 %d" % [value, maxi(1, value / 10)])
 		var chip: Button = main._slip_chip(main._slip_row(slip), "呈报", main._on_report_discovery.bind(str(did)), true)
 		var tip := str(d.get("location", ""))
 		var hook := str(d.get("historical_hook", "")).strip_edges()
 		if hook != "":
 			tip += "\n" + hook
-		chip.tooltip_text = tip + "\n呈报入案，赏钱声名同领。"
+		chip.tooltip_text = tip + "\n呈报入案，赏钱名声同领。"
 
 
 static func on_report_discovery(main: Control, did: String) -> void:
@@ -71,7 +71,7 @@ static func on_report_discovery(main: Control, did: String) -> void:
 		var extra := ""
 		if res.get("promoted", false):
 			extra = "案册改题「%s」。" % str(res.get("title", {}).get("name", ""))
-		main.log_msg("【呈报】「%s」入案。赏钱 %d，声名添 %d。%s" % [
+		main.log_msg("【呈报】「%s」入案。赏钱 %d，名声添 %d。%s" % [
 			res["name"], res["gold"], res["fame"], extra,
 		])
 	main.load_scene(main.current_scene_id)
@@ -90,7 +90,7 @@ static func setup_title_and_invest(main: Control, port_id: String) -> void:
 		main._slip_note(rank_slip, duty_line + "。")
 	else:
 		var need: int = maxi(0, int(nxt.get("min_fame", 0)) - GameState.fame)
-		main._slip_note(rank_slip, "再记 %d 声名可题「%s」。%s。" % [
+		main._slip_note(rank_slip, "再记 %d 名声可题「%s」。%s。" % [
 			need, str(nxt.get("name", "")), duty_line,
 		])
 

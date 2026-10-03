@@ -2413,7 +2413,7 @@ if (
     and "市舶抽解另计" not in main_src  # lane ea5：旧句与脚注「含抽解・扣佣」互斥
     and "遇事约赶得上，八成日数逾限，未稳。" in _aa_contract
     and "保货不到八成。不含买路。" in _aa_contract
-    and "可接；交不齐则拿不满酬，不加声名。" in _aa_contract
+    and "可接；交不齐则拿不满酬，不加名声。" in _aa_contract
     and "启航后风向或变，日数按逐日累加。" in _aa_contract
     and "埠头加深" in _aa_inv and "市面更宽" in _aa_inv
     and 'rate_hint = "价略平"' in _aa_econ
@@ -4092,10 +4092,10 @@ _ac_temple = _disc_main_fn.get("_setup_temple", "")
 _ac_look = _disc_main_fn.get("_on_temple_look", "")
 _ac_invest = func_bodies(open(os.path.join(SCRIPTS, "SeaChart.gd"), encoding="utf-8").read()).get("_on_investigate_discovery", "")
 _ac_ok = (
-    '"赏钱 %d　声名 %d" % [value, maxi(1, value / 10)]' in _ac_slips
+    '"赏钱 %d　名声 %d" % [value, maxi(1, value / 10)]' in _ac_slips
     and 'd.get("historical_hook", "")' in _ac_slips
-    and "呈报入案，赏钱声名同领。" in _ac_slips
-    and "【呈报】「%s」入案。赏钱 %d，声名添 %d。%s" in _ac_onrep
+    and "呈报入案，赏钱名声同领。" in _ac_slips
+    and "【呈报】「%s」入案。赏钱 %d，名声添 %d。%s" in _ac_onrep
     and '"案册改题「%s」。"' in _ac_onrep
     and _has_tok(_ac_temple, '_slip_title(slip, name, "未勘")')
     and _has_tok(_ac_temple, '_slip_title(slip, name, "已入册")')

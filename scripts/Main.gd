@@ -1539,11 +1539,11 @@ func _add_contract_panel(port_id: String) -> void:
 				var purse_lbl := Label.new()
 				purse_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 				if on_counter:
-					purse_lbl.text = "此地首件 %d 钱，逐件加价。现银与舱货凑得出 %d 件，单须 %d 件。可接；交不齐则拿不满酬，不加声名。" % [
+					purse_lbl.text = "此地首件 %d 钱，逐件加价。现银与舱货凑得出 %d 件，单须 %d 件。可接；交不齐则拿不满酬，不加名声。" % [
 						unit_cost, can_carry, need_qty,
 					]
 				else:
-					purse_lbl.text = "此货今日不在柜上，现银买不到一件。舱货凑得出 %d 件，单须 %d 件。明日再看，柜上或换上此货。可接；交不齐则拿不满酬，不加声名。" % [
+					purse_lbl.text = "此货今日不在柜上，现银买不到一件。舱货凑得出 %d 件，单须 %d 件。明日再看，柜上或换上此货。可接；交不齐则拿不满酬，不加名声。" % [
 						can_carry, need_qty,
 					]
 				purse_lbl.add_theme_font_size_override("font_size", 16)

@@ -17,6 +17,8 @@
   C. CJK 字符串里夹半角逗号/句号/问号/叹号（,,..?!），以及串尾半角标点。
   D. 中文 context 里的半角括号 (…)——gd 玩家面全用全角（…），此处只判两 CJK 间半角。
   E. 玩家面 UI 串里的纯 ASCII 调试字样（TODO / FIXME / XXX / DEBUG / placeholder）。
+  F. 同一事物一个叫法（三轮）：玩家面串里出现 TERM_VARIANTS 左列即回潮，右列是全作通行的叫法。
+     名声——船籍簿「名声　%d」、贡院 / 行会 / 委办毁约同；市舶司页与委办细则曾写「声名」。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -91,6 +93,12 @@ HALF_PAREN_RE = re.compile(r"[一-鿿]\(|\)[一-鿿]")
 # ═══ 钉 E：玩家面禁写调试字样。gd 里 print / push_error 的 CJK message 不属于玩家面，
 #     但 data/*.json 文本值出这些词必为漏调试。
 DEBUG_WORDS_RE = re.compile(r"\b(TODO|FIXME|XXX|DEBUG|placeholder)\b")
+
+# ═══ 钉 F：(异称, 通行叫法)。成语里的「声名」不是属性名，放白名单。
+TERM_VARIANTS = (
+    ("声名", "名声"),
+)
+TERM_IDIOM_OK = ("声名鹊起", "声名狼藉", "声名远播", "声名大噪")
 
 FAILS = []
 
@@ -167,6 +175,15 @@ def _check_debug(text, tag, file_hint):
         FAILS.append(f"{tag}: {file_hint} 调试字样 {m.group(0)}：{text[:120]}")
 
 
+def _check_terms(text, tag):
+    bare = text
+    for idiom in TERM_IDIOM_OK:
+        bare = bare.replace(idiom, "")
+    for bad, good in TERM_VARIANTS:
+        if bad in bare:
+            FAILS.append(f"{tag}: 异称「{bad}」，全作通行叫法是「{good}」：{text[:120]}")
+
+
 def _scan_gd_strings():
     for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
         for f in sorted(files):
@@ -185,6 +202,7 @@ def _scan_gd_strings():
                 _check_placeholder(lit, tag, "gd")
                 _check_half(lit, tag)
                 _check_debug(lit, tag, "gd")
+                _check_terms(lit, tag)
                 # gd 里 %[sdf] 是合法格式化模板（"%s の %d" % [...]），不钉 3/E。
 
 
@@ -222,6 +240,7 @@ def _scan_json_text():
             _check_half(text, tag)
             _check_fmt(text, tag, "data")
             _check_debug(text, tag, "data")
+            _check_terms(text, tag)
 
 
 _NEG_CASES = [
@@ -235,6 +254,7 @@ _NEG_CASES = [
     ("half", "客官,先结。", "半角"),
     ("half", "他（小声)说。", "半角括号"),
     ("debug", "TODO 占位文案。", "调试字样"),
+    ("term", "赏钱 70　声名 7", "名声"),
 ]
 
 
@@ -255,6 +275,8 @@ def _neg_probe(kind, text):
             _check_half(text, "self")
         elif kind == "debug":
             _check_debug(text, "self", "data")
+        elif kind == "term":
+            _check_terms(text, "self")
         return FAILS[:]
     finally:
         FAILS.clear()
