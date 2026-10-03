@@ -12,9 +12,12 @@ const Art := preload("res://scripts/ui/CharacterArt.gd")
 const _CharRosterScr := preload("res://scripts/chars/CharRoster.gd")
 const _CharPortraitScr := preload("res://scripts/chars/CharPortraitPanel.gd")
 
-## 名册一格：画 104×130（立绘 4:5），九列；1280 宽里扣掉浮页边距与滚动条正好排下
+## 名册一格：画 104×130（立绘 4:5），格宽 116、列距 12。列数随名册页宽现算（_fit_grid_cols）：
+## 1280 宽里扣掉浮页边距与滚动条正好九列（与原先一致）；21:9 / 32:9 超宽画布多排几列，
+## 不再钉死九列只占左半页、右边空出大半（32:9 下原先最宽一排右边空 1306 px）
 const CELL_PIC := Vector2i(104, 130)
-const COLS := 9
+const COLS := 9            # 1280 宽下的列数，也是页宽还没量出来时的初值
+const CELL_GAP := 12
 const DETAIL_PIC := Vector2i(256, 320)
 const HEAD_PIC := Vector2i(34, 34)
 ## 每帧补缩略图的时间预算（微秒）：75 张分十来帧补完，打开时不卡一下
@@ -375,8 +378,8 @@ func _build_grid(filter: String) -> Control:
 		list.add_child(sec)
 		var grid := GridContainer.new()
 		grid.columns = COLS
-		grid.add_theme_constant_override("h_separation", 12)
-		grid.add_theme_constant_override("v_separation", 12)
+		grid.add_theme_constant_override("h_separation", CELL_GAP)
+		grid.add_theme_constant_override("v_separation", CELL_GAP)
 		grid.size_flags_horizontal = Control.SIZE_FILL
 		list.add_child(grid)
 		for ch in members:
@@ -385,8 +388,23 @@ func _build_grid(filter: String) -> Control:
 	var tail := Control.new()
 	tail.custom_minimum_size = Vector2(0, 8)
 	list.add_child(tail)
+	# 页宽量出来（进树排版）与窗改尺寸时都按页宽重排列数
+	scroll.resized.connect(_fit_grid_cols.bind(scroll))
 	# 末排立绘原先被视口底边一刀截断：底边 28px 渐隐（第 2 轮美术 M3）
 	return UiTheme.fade_scroll(scroll, 28)
+
+
+## 名册页宽 → 列数：一格 116 + 列距 12。竖滚动条的宽恒让出（不随它显隐改列数，免得列数一变行数变、
+## 滚动条一隐一现来回跳）。量不出宽（还没排版）就先不动，保留初值九列。
+func _fit_grid_cols(scroll: ScrollContainer) -> void:
+	if not is_instance_valid(scroll) or scroll.size.x <= 1.0:
+		return
+	var bar_w := scroll.get_v_scroll_bar().get_combined_minimum_size().x
+	var room := scroll.size.x - bar_w
+	var cols := maxi(1, int(floor((room + CELL_GAP) / float(CELL_PIC.x + 12 + CELL_GAP))))
+	for g in scroll.find_children("*", "GridContainer", true, false):
+		if (g as GridContainer).columns != cols:
+			(g as GridContainer).columns = cols
 
 
 func _make_cell(ch: Dictionary) -> Button:
