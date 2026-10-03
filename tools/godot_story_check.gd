@@ -1565,6 +1565,7 @@ func _v0928_crew_check(main: Node) -> void:
 	GM.pending_battle = {}
 	_v0928_prize_flee_check(Flt, FX, pirate)
 	_v0928_prize_sunk_check(Flt, FX, pirate)
+	_w53_14_struck_prize_check(Flt, FX, pirate)
 	var sc_scr = load("res://scripts/SeaChart.gd")
 	# 三、元军哨船：先击沉一艘，再夺两艘 → 接舷既定、不说退去、交代击沉一船；夺来的叫「元哨船・一」，type 仍是海鹘
 	Flt.set("ships", [])
@@ -1859,6 +1860,78 @@ func _v0928_prize_sunk_check(Flt: Node, FX, pirate: Dictionary) -> void:
 	_check(str(FX.sea_sunk_note("", 5, true, want_prize)) == "旗舰沉没，货舱随船。船体受损 5。"
 		and str(FX.sea_sunk_note("", 5, false, "")) == "旗舰沉没，该船货物随船。余船尚在。船体受损 5。",
 		"沉船句式：全队俱没不写夺船句（得「%s」），无夺船同旧句" % FX.sea_sunk_note("", 5, true, want_prize))
+
+
+## 二之四（lane w53-14，拍板「逃跑 / 投降时的战利品提示」）：夺船后我方降幡、失守——修前只有弃战（fx3）与旗舰沉没
+## （w19-g2）带夺船账；降幡（士气簿 player_struck → lose{struck}）与失守（lose{overrun}）收战 data 不带 prizes，战后注记
+## 只字不提夺来的船（船其实照旧在名册），降幡还写成失守的「白刃不利，货舱被夺」。现在两式都走 _prize_ledger，
+## 降幡写 combat_phases.json player_struck 的「竖了降幡，由着对方搬货。」，夺船句夹在被夺货物与「船体受损」之间；
+## 顶匾按匾宽收，夺船句整句在匾上。名册先放同名「快船」对账（凭名认会多记一艘）。
+func _w53_14_struck_prize_check(Flt: Node, FX, pirate: Dictionary) -> void:
+	for mode in ["struck", "overrun"]:
+		var tag := "我方降幡" if mode == "struck" else "失守"
+		GS.from_dict({})
+		Flt.set("ships", [])
+		Flt.call("add_ship", "fu_ship_medium", "")
+		Flt.call("add_ship", "pirate_boat", "快船")
+		for s0 in Flt.get("ships"):
+			s0["crew"] = 20
+		Flt.water = 300
+		Flt.food = 300
+		var got: Array = []
+		var wm := _crew_battle(pirate, "pirate", got)
+		var foes := _crew_foes(wm)
+		var taken := ""
+		if foes.size() >= 2:
+			foes[0].set("crew", 0)
+			taken = str((foes[0] as Object).get("ship_name"))
+			wm.call("_board_enemy", foes[0])
+		var still := got.is_empty()
+		var ships0: Array = Flt.get("ships")
+		var prize_ref: Variant = ships0[-1] if ships0.size() == 3 else null
+		if mode == "struck":
+			# 士气簿裁决收战：CombatMorale.battle_outcome 我方降幡给的就是这一对，走 WorldMap._on_morale_verdict 同一出口
+			wm.call("_on_morale_verdict", "lose", {"struck": true, "morale_verdict": "player_struck"})
+		else:
+			wm.call("_battle_exit", "lose", {"overrun": true})
+		var d: Dictionary = got[0][1] if got.size() == 1 else {}
+		var prizes: Array = d.get("prizes", [])
+		_check(still and got.size() == 1 and got[0][0] == "lose" and foes.size() >= 2
+			and prizes.size() == 1 and str(prizes[0].get("name", "")) == taken
+			and prize_ref != null and is_same((Flt.get("ships") as Array)[2], prize_ref),
+			"夺一艘后%s：按 lose 收战，data.prizes 只记本场夺来的一艘、与名册末格同一格（收战 %d 次 / prizes %s）" % [tag, got.size(), prizes])
+		Flt.call("add_cargo", "pepper", 10, 10.0, 0)
+		var sc = (load("res://scenes/SeaChart.tscn") as PackedScene).instantiate()
+		root.add_child(sc)
+		sc.set("sailing", false)
+		sc.set("remaining_li", 50.0)
+		sc.get("log_label").text = ""
+		sc.call("_on_battle_result", "lose", d)
+		var line: String = sc.get("log_label").get_parsed_text().get_slice("\n", 0)
+		var want_prize := "所夺「%s」一艘已入船籍，船上水粮未及搬过。" % taken
+		var head := "竖了降幡，由着对方搬货。" if mode == "struck" else "白刃不利，货舱被夺。"
+		var at_cargo := line.find("胡椒")
+		var at_prize := line.find(want_prize)
+		_check(line.begins_with(head) and at_cargo > 0 and at_prize > at_cargo
+			and line.find("船体受损 ") == at_prize + want_prize.length() and line.ends_with("。")
+			and (mode != "struck" or line.find("白刃不利") < 0),
+			"夺船后%s战后注记：「%s」起头，被夺货物之后交代「%s」再记船体受损（得「%s」）" % [tag, head, want_prize, line])
+		var strip: String = sc.get("_strip_line").get_parsed_text().get_slice("\n", 1).strip_edges()
+		_check(strip.find(want_prize) > 0, "夺船后%s：夺船句整句在顶匾上（匾上得「%s」）" % [tag, strip])
+		var in_reg := false
+		for s1 in Flt.get("ships"):
+			if is_same(s1, prize_ref):
+				in_reg = true
+		_check(in_reg and (Flt.get("ships") as Array).size() == 3 and Flt.water == 300 and Flt.food == 300,
+			"注记说入船籍：%s结算后夺来的「%s」仍在名册（%d 格），水粮不因夺船变（水 %d 粮 %d）" % [
+				tag, taken, (Flt.get("ships") as Array).size(), Flt.water, Flt.food])
+		root.remove_child(sc)
+		sc.free()
+		GM.pending_battle = {}
+	# 句式：没夺船时两式只差起头一句；失守句与旧句一字不差
+	_check(str(FX.sea_struck_note("胡椒 3　", 7)) == "竖了降幡，由着对方搬货。胡椒 3　船体受损 7。"
+		and str(FX.sea_board_lose_note("胡椒 3　", 7)) == "白刃不利，货舱被夺。胡椒 3　船体受损 7。",
+		"降幡 / 失守句式：没夺船时只差起头一句（得「%s」/「%s」）" % [FX.sea_struck_note("胡椒 3　", 7), FX.sea_board_lose_note("胡椒 3　", 7)])
 
 
 ## 起一场 WorldMap 海战（pending_battle 照 SeaChart._on_fight_* 的格式），battle_finished 记进 got

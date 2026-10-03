@@ -1609,7 +1609,13 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			var lost_str := ""
 			for gid in lost.keys():
 				lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_board_lose_note(lost_str, int(dmg))))
+			# lane w53-14：我方降幡写降幡句（不写失守的「白刃不利」）；两式都交代本场夺来、收战时仍在册的船
+			var mv_l: Dictionary = data.get("stores_moved", {})
+			var prize_l := _CombatFx.sea_prize_note(data.get("prizes", []), int(mv_l.get("water", 0)), int(mv_l.get("food", 0)))
+			if str(data.get("morale_verdict", "")) == "player_struck" or bool(data.get("struck", false)):
+				_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_struck_note(lost_str, int(dmg), prize_l)))
+			else:
+				_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_board_lose_note(lost_str, int(dmg), prize_l)))
 	else:  # flee / disengaged
 		# lane fx3：夺过船再脱身，夺船句接在脱战句之后（同一行注记；无夺船时为空串，原句不变）
 		var mv: Dictionary = data.get("stores_moved", {})

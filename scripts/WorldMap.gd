@@ -720,8 +720,9 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 		var fates := _battle_fates()
 		if not fates.is_empty():
 			data["fates"] = fates
-	# lane w19-g2：旗舰沉没（lose + sunk）同带夺船账——夺来的船不上战阵、仍在册，SeaChart 沉船句要交代它
-	if (outcome == "flee" or (outcome == "lose" and bool(data.get("sunk", false)))) and not _prizes.is_empty():
+	# lane w19-g2：旗舰沉没（lose + sunk）同带夺船账——夺来的船不上战阵、仍在册，SeaChart 沉船句要交代它；
+	# lane w53-14：我方降幡（lose + struck）、失守（lose + overrun）也带——交出的是舱货，夺来的船照旧在册
+	if outcome != "win" and not _prizes.is_empty():
 		_prize_ledger(data)
 	# lane w53-2：本场折损（矢石、白刃死的水手，中弹颠落的舱面货）交给出战墨边副题——CombatLetterbox.loss_note 早留了这一格，没人填
 	if combat_mode and not data.has("losses"):

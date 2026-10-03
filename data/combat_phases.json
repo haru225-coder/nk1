@@ -2645,7 +2645,7 @@
       "cue": "colors_struck",
       "morale_hint": -6,
       "spoil_rule": "none",
-      "note": "combat11 已接：CombatMorale 我方降幡 → lose{struck}，题签现码出 yield「请降」，非本表 strike；SeaChart 走败局非沉船分支：货损二成五，log 出 sea_board_lose_note（见§九）"
+      "note": "combat11 已接：CombatMorale 我方降幡 → lose{struck}，题签现码出 yield「请降」，非本表 strike；SeaChart 走败局非沉船分支：货损二成五，log 出 sea_struck_note（本条 log 原句起头；lane w53-14 前误用失守的 sea_board_lose_note「白刃不利」），本场夺来、仍在册的船接夺船句交代（见§九）"
     },
     {
       "id": "player_overrun",
@@ -2663,7 +2663,7 @@
       "cue": null,
       "morale_hint": -10,
       "spoil_rule": "none",
-      "note": "lane w53-2 已接：敌船先抛钩（PirateShip.boarding_initiator）时 WorldMap._board_enemy 敌攻我守，白刃敌胜即此（转移 t_deck_lost）→ lose{overrun}，接舷题签「失守」、出战题签 lose「败退」；SeaChart 走败局非沉船分支：货损二成五，log 出 sea_board_lose_note（文案同）"
+      "note": "lane w53-2 已接：敌船先抛钩（PirateShip.boarding_initiator）时 WorldMap._board_enemy 敌攻我守，白刃敌胜即此（转移 t_deck_lost）→ lose{overrun}，接舷题签「失守」、出战题签 lose「败退」；SeaChart 走败局非沉船分支：货损二成五，log 出 sea_board_lose_note（文案同；本场夺来、仍在册的船接夺船句交代，lane w53-14）"
     },
     {
       "id": "player_sunk",

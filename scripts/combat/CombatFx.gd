@@ -1058,8 +1058,16 @@ static func sea_sunk_note(cargo_str: String, damage: int, fleet_gone: bool, priz
 	return "旗舰沉没，该船货物随船。%s余船尚在。%s船体受损 %d。" % [cargo, prize.strip_edges(), maxi(0, damage)]
 
 
-static func sea_board_lose_note(cargo_str: String, damage: int) -> String:
-	return "白刃不利，货舱被夺。%s船体受损 %d。" % [cargo_str.strip_edges(), maxi(0, damage)]
+## 失守（敌船先钩、占了本船甲板，lose{overrun}）。prize = sea_prize_note 的夺船句（lane w53-14），夹在被夺货物与「船体受损」之间：
+## 交出的是舱货，本场夺来的船仍在本队，同沉船句交代在前、账目在后
+static func sea_board_lose_note(cargo_str: String, damage: int, prize := "") -> String:
+	return "白刃不利，货舱被夺。%s%s船体受损 %d。" % [cargo_str.strip_edges(), prize.strip_edges(), maxi(0, damage)]
+
+
+## 我方降幡（士气簿 player_struck，lose{struck}）：句取 combat_phases.json player_struck 的 log「竖了降幡，由着对方搬货。」——
+## 原先与失守共用「白刃不利」，降幡不是接舷打输（lane w53-14）。夺船句位置同 sea_board_lose_note
+static func sea_struck_note(cargo_str: String, damage: int, prize := "") -> String:
+	return "竖了降幡，由着对方搬货。%s%s船体受损 %d。" % [cargo_str.strip_edges(), prize.strip_edges(), maxi(0, damage)]
 
 
 static func sea_flee_ok_note() -> String:
