@@ -76,6 +76,7 @@ EXEMPT = [
     ("qa_w53_4_chapter_hint_probe.gd", "lane-w53-4", "章节 hint 走数据上屏专项探针，随 lane-w53-4 落地验过留档"),
     ("qa_w53_4_story_probe.gd", "lane-w53-4", "剧情 advance_text 宣港对账专项探针，随 lane-w53-4 落地验过留档"),
     ("qa_w53_5_roundtrip_probe.gd", "lane-w53-5", "存档全字段往返探针（to_dict↔from_dict 逐键等比），动存档结构时加跑"),
+    ("qa_w53_6_beat_replay_probe.gd", "lane-w53-6", "港口节拍不重演回归探针（新局卷首走到首抵泉州、老档补账），随 lane-w53-6 落地验过留档"),
     ("qa_w53_9_cutscene_input_probe.gd", "lane-w53-9", "过场 / 墨幕层输入时序专项探针（逐路钉一处修复、回退即红），带窗口以场景启动，随 lane-w53-9 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),

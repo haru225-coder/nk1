@@ -926,6 +926,8 @@ func _load_scene_inner(scene_id: String) -> void:
 		_setup_port_mode(scene_data)
 		_on_enter_port(scene_id)
 	else:
+		# 节拍幕不论从哪条路演到（抵港节拍 / 上一幕的选项 / 序章一路点下来）都记名，演过的不再重演（lane w53-6）
+		_note_beat_scene(scene_id)
 		_setup_investigation_mode(scene_data)
 
 
@@ -3015,9 +3017,7 @@ func _on_enter_port(port_id: String) -> void:
 	# 只接泉州链（章一开店泉州五针）：流求 / 博多链的头针与航路首抵（route 探针断言航路抵港进的是港页、
 	# 记 visited_ports）相冲突，章二博多针又压着 hakata_ledger 剧情幕（route 断言 ryukyu_bay / hakata_ledger
 	# 不记港）——拍板 G1014 的「跨港链怎么接到航路上」没定，非泉州各港的拍一律不演不动账
-	if _beats == null:
-		_beats = _BEATS.new()
-		_beats.init(GameManager.port_beats_data.get("beats", []))
+	_beats_book()
 	# 新档 / 老档 seed：开关开着、拍账一笔未记过，把序章沿途已演的戏（DEFAULT_SEED）记上——
 	# 每个会话只下一回（loaded_with_beats 不入存档）：读老档（没 beats_seen）开关打开头一回到港也 seed 一回，
 	# seed 过的会话不再补（玩家后头清账是自己的玩法）
@@ -3025,6 +3025,12 @@ func _on_enter_port(port_id: String) -> void:
 		for seed_entry in _BEATS.DEFAULT_SEED:
 			GameState.beat_mark(seed_entry)
 		GameState.loaded_with_beats = true
+	# 老档补账（lane w53-6）：拍账接回运行时之前的档（或那以后读老档、seed 只记了 start 的档）没记演幕，
+	# 序章各幕其实早已演过——节拍幕的选项各带一枚旗，档里有其一 = 那一幕点过，照记名，不再从 monk 起重演
+	if _BEATS.enabled() and port_id == "quanzhou" and not GameState.siege_open() and not GameState.is_ended():
+		for entry in _beats.entries():
+			if _beat_scene_chosen(entry):
+				GameState.beat_mark(entry)
 	# 守城开着的会话不演拍不动账（城破了算、戏让位守城）；终局落定后回港也不演不动账
 	# （wave22 待定项② 已准「终局后港口节拍一律不再演」：港页只剩回顾札记，「重读结局」、进出设施
 	#  都不走这条路——守卫只拦节拍）。终局判定只读现量 GameState.is_ended()（b2 的
@@ -3052,6 +3058,34 @@ func _on_enter_port(port_id: String) -> void:
 		# 这次进港排的是守城 / 终局岸带（要演「兴化军・围城」一类题签）：太平时节的挂签不出，不压在题签底下白演一遍
 		_CS_BANNER.show_banner(self, port_id, _CINE.DATA, 0.285, false)
 	update_status_panel()
+
+
+## 本局节拍账口（头一回用到才按 port_beats_data 建；开关关掉时数据是空表、账口空转）
+func _beats_book():
+	if _beats == null:
+		_beats = _BEATS.new()
+		_beats.init(GameManager.port_beats_data.get("beats", []))
+	return _beats
+
+
+## 演到节拍幕即记名（拍板 E-10 的拍账记「这幕演过没有」，lane w53-6）。开关关掉不记（老行为）
+func _note_beat_scene(scene_id: String) -> void:
+	if _BEATS.enabled() and _beats_book().is_beat_scene(scene_id):
+		GameState.beat_mark(scene_id)
+
+
+## 这一幕的选项点过没有：data/scenes.json 该幕各选项 effects.flag 档里有其一即是（老档补账用）
+func _beat_scene_chosen(scene_id: String) -> bool:
+	for raw in GameManager.get_scene_by_id(scene_id).get("choices", []):
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var eff = (raw as Dictionary).get("effects", {})
+		if typeof(eff) != TYPE_DICTIONARY:
+			continue
+		var f := str((eff as Dictionary).get("flag", ""))
+		if f != "" and GameState.has_flag(f):
+			return true
+	return false
 
 
 func _era_summary_lines(years: int) -> Array:

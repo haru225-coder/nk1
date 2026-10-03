@@ -2,7 +2,8 @@ class_name PortBeats
 extends RefCounted
 ## 港口节拍（拍板清单 E-10 / G1014，lane w20-c2）：data/port_beats.json 接回运行时。
 ## 是一笔演出账：一港各拍按 order 排成链，链上第一针没记名且 requires 全够的拍 = 抵达时该演（due）；
-## Main._on_enter_port 抵达时演那一幕、记名（GameState.beats_seen 入存档），一次抵达只演一拍，
+## Main._on_enter_port 抵达时演那一幕、记名（GameState.beats_seen 入存档），一次抵达只演一拍；
+## 节拍幕从别的路演到（上一幕的选项、序章一路点下来）也记名（is_beat_scene，lane w53-6），演过的不再重演；
 ## stop_before 是链上的下一拍，留给玩家照戏往下点（requires.seen 就是照着上一拍的戏点出那一幕）。
 ## decompose_to：开场拍没有条件、它的戏在别一幕里演过了的，记名按那一幕认、不重复演出。
 ## 现数据里的三处：流求 ryukyu_bay（琉球巡礼在那一幕里）与博多 hakata_ledger（博多旧账）。
@@ -91,6 +92,28 @@ func arrive(port_id: String, seen: Array, flags: Array, visited: Array, chapter:
 	return {"beat": b, "play": true, "mark": str(b.get("entry", ""))}
 
 
+
+
+## 这一幕是不是某一拍的戏（entry 或分解位）。拍账记的是「这幕演过没有」，不只是抵港演的那一拍：
+## Main._load_scene_inner 演到节拍幕就记名（lane w53-6）——序章一路点下来，start 三项同指 monk，各幕选项
+## 一路链到章二信再回泉州港；只记抵港那一拍时，首抵泉州又从 monk 起把整段第一章重演一遍。
+func is_beat_scene(scene_id: String) -> bool:
+	if scene_id == "":
+		return false
+	for b in _beats:
+		if str(b.get("entry", "")) == scene_id or str(b.get("decompose_to", "")) == scene_id:
+			return true
+	return false
+
+
+## 各拍 entry（登记序、去重）：Main 给没有拍账的老档补账时逐针问「那一幕点过没有」
+func entries() -> PackedStringArray:
+	var out := PackedStringArray()
+	for b in _beats:
+		var e := str(b.get("entry", ""))
+		if e != "" and not out.has(e):
+			out.append(e)
+	return out
 
 
 ## 这拍记过名（entry 或分解位在 seen 里）
