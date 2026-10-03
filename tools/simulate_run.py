@@ -919,11 +919,15 @@ for _n in range(1, 5):
 check(berth_index(1, 5) == 0 and berth_index(3, 5) == 2 and other_hulls(3, 0) == [1, 2],
       "坞位夹在船队里，坞上这一艘不进换船")
 print(f"  ── 跑商 24 趟（起始第 {G.chapter} 章，可达 {len(open_ports())} 港）──")
+# 逐趟记下行情最低最高各到哪（晋升跳年会把行情重置回 1.0，只看跑完那一刻会漏）
+_rate_lo, _rate_hi = 1.0, 1.0
 for trip in range(1, 25):
     if G.ending_id:
         break
     if not one_trip(trip):
         break
+    _all_r = [r for pr in rates.values() for r in pr.values()]
+    _rate_lo, _rate_hi = min(_rate_lo, min(_all_r)), max(_rate_hi, max(_all_r))
     if not verify_invariants():
         check(False, f"第{trip}趟后分船账目不变量被破坏")
 
@@ -942,7 +946,11 @@ print("  ── 行情是否被跑崩（反复走同一条线的自我限制）�
 ry = rates.get("ryukyu", {})
 low = [(gid, r) for gid, r in ry.items() if r < 0.75]
 print(f"    流求被压低的货：{[(goods[g]['name'], round(r,2)) for g,r in low] or '无'}")
-check(True, "行情随交易变动（低于 0.75 表示已被砸盘，需换港或候其回升）")
+# 原先这里是 check(True, …)，恒绿：模拟里买不抬价、卖不砸盘，这一行照样打勾（lane w53-3）。
+# 行情只有买进往上推、卖出往下压，回归只往 1.0 收不越过，故两头分开判：只看离 1.0 最远多少，丢了一头照样够数
+check(_rate_hi >= 1.05 and _rate_lo <= 0.95 and RATE_MIN <= _rate_lo and _rate_hi <= RATE_MAX,
+      f"行情随交易变动：跑商途中买进把行情抬到最高 {_rate_hi:.2f}、卖出压到最低 {_rate_lo:.2f}（两头各须离 1.0 至少 0.05），"
+      f"不出 [{RATE_MIN}, {RATE_MAX}]（低于 0.75 表示已被砸盘，需换港或候其回升）")
 
 print()
 check(G.chapter >= 2, f"24 趟内晋升至第 {G.chapter} 章（起始第 1 章）")
