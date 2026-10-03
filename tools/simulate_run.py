@@ -61,7 +61,7 @@ INN_RATE = 15
 # 舍入与五维定价一律走 verify_economy 唯一镜像：Python round() 是银行家舍入，
 # 与 GDScript round()（.5 远离零）在 .5 格差 1 文（verify_economy.gd_round docstring 实测）。
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from verify_economy import gd_round, price_at
+from verify_economy import gd_round, price_at, supply_shares
 import verify_economy as _ve
 
 # ── 跳年常量：从 .gd 源码读，改公式时这里自动跟上（抽解 / 佣金 / 价差地板见文件头 _const）──
@@ -98,11 +98,10 @@ def bulk(gid):    return goods[gid]["bulk"]
 def ship_cap(i):  return ships[G.ships[i]["type"]]["capacity"]
 def ship_bulk(i): return sum(q*bulk(g) for g,(q,_) in G.ships[i]["cargo"].items())
 def ship_free(i):
-    """单船空舱（含水粮按载重比例分摊）——与 Fleet.ship_free_capacity 一致"""
-    tc = cap_total()
-    wf = (G.water + G.food) * SUPPLY_BULK
-    share = wf * (ship_cap(i)/tc) if tc > 0 else wf / max(1, len(G.ships))
-    return max(0.0, ship_cap(i) - ship_bulk(i) - share)
+    """单船空舱（含水粮按载重比例分摊，摊不下的挪给别船）——与 Fleet.ship_free_capacity 一致"""
+    caps = [ship_cap(k) for k in range(len(G.ships))]
+    rooms = [max(0.0, caps[k] - ship_bulk(k)) for k in range(len(G.ships))]
+    return max(0.0, rooms[i] - supply_shares(caps, rooms, (G.water + G.food) * SUPPLY_BULK)[i])
 def used():         return (G.water+G.food)*SUPPLY_BULK + sum(ship_bulk(i) for i in range(len(G.ships)))
 def free():         return max(0.0, cap_total() - used())
 def total_crew():   return sum(s["crew"] for s in G.ships)

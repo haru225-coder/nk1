@@ -267,17 +267,50 @@ func free_capacity() -> float:
 ## 单船空舱（料）。水粮是全队池，按该船载重占全队比例分摊，
 ## 保证 Σ_i ship_free_capacity(i) == free_capacity() 恒成立——否则每船塞满货
 ## 会让 used_capacity() 越过 total_capacity()，账目溢出。
+## 某船货已装得满、摊到的那份放不下时，放不下的部分按载重比例挪给还有空舱的船（_supply_shares）。
+## 只按比例摊、放不下的钳成 0，那份水粮就从账上消失：先装满一艘、再补水粮、再装另一艘，
+## 两船 800 料能装到 937 料（lane w53-3）。
 func ship_free_capacity(i: int) -> float:
 	if i < 0 or i >= ships.size():
 		return 0.0
-	var tc := total_capacity()
-	var wf := float(water + food) * SUPPLY_BULK
-	var share := 0.0
-	if tc > 0.0:
-		share = wf * (ship_capacity(i) / tc)
-	else:
-		share = wf / float(ships.size())
-	return maxf(0.0, ship_capacity(i) - ship_cargo_bulk(i) - share)
+	var room: Array = []
+	for k in range(ships.size()):
+		room.append(maxf(0.0, ship_capacity(k) - ship_cargo_bulk(k)))
+	var share: Array = _supply_shares(room)
+	return maxf(0.0, float(room[i]) - float(share[i]))
+
+
+## 全队水粮在各船的摊派（料），room 为各船装货后的余舱。先按载重比例摊；摊到的超过余舱，
+## 超出的部分再按载重比例摊给余舱还够的船，直到摊完或船船都满。没有船满时与只按比例摊逐位相同。
+func _supply_shares(room: Array) -> Array:
+	var share: Array = []
+	var open: Array = []
+	for k in range(ships.size()):
+		share.append(0.0)
+		open.append(k)
+	var left := float(water + food) * SUPPLY_BULK
+	while left > 0.0 and not open.is_empty():
+		var tc := 0.0
+		for k in open:
+			tc += ship_capacity(k)
+		var spill := 0.0
+		var still: Array = []
+		for k in open:
+			var want := 0.0
+			if tc > 0.0:
+				want = left * (ship_capacity(k) / tc)
+			else:
+				want = left / float(open.size())
+			var can: float = float(room[k]) - float(share[k])
+			if want > can:
+				share[k] = room[k]
+				spill += want - can
+			else:
+				share[k] = float(share[k]) + want
+				still.append(k)
+		left = spill
+		open = still
+	return share
 
 
 func _bulk(good_id: String) -> float:

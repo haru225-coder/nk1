@@ -785,6 +785,29 @@ print("  单船空舱按载重比例分摊水粮份额，须保证 Σ ship_free 
 
 SUPPLY_BULK_M = 0.25  # 与 Fleet.SUPPLY_BULK 一致
 
+def supply_shares(caps, rooms, wf):
+    """复现 Fleet._supply_shares：全队水粮 wf 先按载重比例摊到各船，摊到的超过该船余舱 rooms[k]，
+    超出的部分再按载重比例摊给余舱还够的船，直到摊完或船船都满（lane w53-3；simulate_run 同用此式）。"""
+    share = [0.0] * len(caps)
+    open_ = list(range(len(caps)))
+    left = wf
+    while left > 0.0 and open_:
+        tc = 0.0
+        for k in open_:
+            tc += caps[k]
+        spill, still = 0.0, []
+        for k in open_:
+            want = left * (caps[k] / tc) if tc > 0.0 else left / len(open_)
+            can = rooms[k] - share[k]
+            if want > can:
+                share[k] = rooms[k]
+                spill += want - can
+            else:
+                share[k] += want
+                still.append(k)
+        left, open_ = spill, still
+    return share
+
 def fleet_account(ship_ids, water, food, per_ship_cargo):
     """复现 Fleet 的聚合账目，返回 (cap_total, used, free, [ship_free...])"""
     caps = [ships[sid]["capacity"] for sid in ship_ids]
@@ -793,10 +816,9 @@ def fleet_account(ship_ids, water, food, per_ship_cargo):
     used = (water + food) * SUPPLY_BULK_M + sum(cargo_bulk)
     free_total = max(0.0, cap_total - used)
     wf = (water + food) * SUPPLY_BULK_M
-    ship_free = []
-    for i in range(len(caps)):
-        share = wf * (caps[i] / cap_total) if cap_total > 0 else wf / max(1, len(caps))
-        ship_free.append(max(0.0, caps[i] - cargo_bulk[i] - share))
+    rooms = [max(0.0, caps[i] - cargo_bulk[i]) for i in range(len(caps))]
+    share = supply_shares(caps, rooms, wf)
+    ship_free = [max(0.0, rooms[i] - share[i]) for i in range(len(caps))]
     return cap_total, used, free_total, ship_free
 
 # 场景一：开局小艍船，水粮 60/60
@@ -823,6 +845,14 @@ check(used_t <= cap_t + 1e-6, f"三船满载边界账目未溢出（{used_t:.2f}
 check(all(x >= 0 for x in sfree), "各船空舱不为负（单船不超载）")
 check(abs(sum(sfree) - free_t) < 1e-3,
       f"三船时 Σ ship_free({sum(sfree):.2f}) == free({free_t:.2f})")
+
+# 场景三之二（lane w53-3）：先装满一艘、再补水粮、再装另一艘。小艍装米 192 料（水粮 60/60 时的满舱），
+# 再补水粮到 1160/1160：小艍摊到的那份放不下，须挪给客舟。旧式只按比例摊、放不下的钳成 0，
+# 客舟显出 165 料空舱、全队只剩 28 料，照装下去两船 800 料装到 937 料。
+cap_t, used_t, free_t, sfree = fleet_account(
+    ["sampan", "keel_boat"], 1160, 1160, [{"grain": 192}, {}])
+check(abs(sum(sfree) - free_t) < 1e-3 and sfree[0] == 0.0 and used_t + sfree[1] <= cap_t + 1e-6,
+      f"一艘装满后补水粮：各船空舱 {[round(x, 1) for x in sfree]}，Σ == 全队空舱 {free_t:.1f}，再装另一艘不越 {cap_t} 料")
 
 # 场景四：刻意塞爆一艘——验证 add_cargo 的守卫确实必要（原始未钳制账目会溢出）
 def raw_ship_bulk(sc):
