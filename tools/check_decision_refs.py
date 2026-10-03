@@ -860,7 +860,7 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None, toks=None):
     （lane w50-k4 清零判竿需要 ⚠ 改指未验的格值，since() 把它存成属性 since.last_rewritten——返回值口径不变。）"""
     rev = rev or o.since
     label = label or f"--since {rev}"
-    rel = getattr(o, "since_rel", None) or os.path.relpath(os.path.abspath(o.doc), ROOT)
+    rel = os.path.relpath(os.path.abspath(o.doc), ROOT)
     old_text = git("show", f"{rev}:{rel}")
     old_anchor = old_text and anchor_of(old_text)
     if not old_anchor:
