@@ -1155,6 +1155,51 @@ func _fail_contract(reason: String) -> String:
 	return "【逾期】%s没能送到%s。%s%s。" % [good_name, dest_name, ("牙行扣 %d 钱" % fine) if fine > 0 else "钱匣是空的，牙行没扣着钱", fame_cut]
 
 
+# ── 行情传闻：别港的（牙行柜上用，lane w53-3）────────────────
+
+## 本港牙行柜上 good_id 那张卡行上写的传闻：别港的，「传闻博多唐房约卖 N · d 日前」。多港都有取约卖最高的一港
+## （同价取较新的）；过了 RUMOR_STALE_DAYS 的不算（rumor_of 已滤）；本港自己的不在此列。
+## 原先卡上只写本港自己的传闻（rumor_label），可人到了本港、实价就在卡上，海上「记下这条行情」等于用不上；
+## 写在别港同一货的卡上，买进之前就看得到哪里卖得起价。
+func rumor_elsewhere(here_port: String, good_id: String) -> String:
+	var best_port := ""
+	var best_sell := 0
+	var best_day := 0
+	for raw_pid in rumors.keys():
+		var pid := str(raw_pid)
+		if pid == here_port:
+			continue
+		var rec := rumor_of(pid, good_id)
+		if rec.is_empty():
+			continue
+		var sell := Economy.price_at_rate(pid, good_id, float(rec.get("rate", 1.0)), false)
+		var day := int(rec.get("day", 0))
+		if best_port == "" or sell > best_sell or (sell == best_sell and day > best_day):
+			best_port = pid
+			best_sell = sell
+			best_day = day
+	if best_port == "":
+		return ""
+	var where := GameManager.get_port_name(best_port)
+	var age := Calendar.absolute_day() - best_day
+	if age <= 0:
+		return "传闻%s约卖 %d" % [where, best_sell]
+	return "传闻%s约卖 %d · %d 日前" % [where, best_sell, age]
+
+
+## 那一行的悬停：原提示、别港传闻、本港自己那条传闻（与卡上实价对照），有几条写几条；两种传闻都没有给 ""。
+func rumor_tip(here_port: String, good_id: String, hint: String) -> String:
+	var away := rumor_elsewhere(here_port, good_id)
+	var own := rumor_label(here_port, good_id)
+	if away == "" and own == "":
+		return ""
+	var lines := PackedStringArray()
+	for line in [hint, away, ("本港" + own) if own != "" else ""]:
+		if str(line) != "":
+			lines.append(str(line))
+	return "\n".join(lines)
+
+
 # ── 人物志「已识」 ────────────────────────────────────
 
 ## 见过的人物 id（characters.json）：见面页见过、酒馆里看过画像的候选、守城页当面见过的林华。

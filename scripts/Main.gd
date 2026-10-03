@@ -1685,14 +1685,14 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 
 	var hint_lbl := Label.new()
 	var hint := Economy.price_hint(port_id, good_id)
-	# 行情传闻（云端 bed9）：有传闻时行上写传闻，原提示进 tooltip
-	var rumor := GameState.rumor_label(port_id, good_id)
-	hint_lbl.text = hint if hint != "" else "寻常"
-	if rumor != "":
-		hint_lbl.text = rumor
-		hint_lbl.tooltip_text = (hint + "\n" + rumor) if hint != "" else rumor
+	# 行情传闻（云端 bed9；lane w53-3）：行上写别港的传闻，买进之前就看得到哪港卖得起价；原提示与本港那条（实价已在卡上）进悬停
+	var rumor := GameState.rumor_elsewhere(port_id, good_id)
+	hint_lbl.text = rumor if rumor != "" else (hint if hint != "" else "寻常")
+	hint_lbl.tooltip_text = GameState.rumor_tip(port_id, good_id, hint)
+	# 港名长（南岛海道北口）又挂了货图时这一行挤不下：截成「…」、全文在悬停里，不把卡撑宽；有悬停这一行才收鼠标（原先一律 IGNORE，悬停从来弹不出）
+	hint_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	UiTheme.style_footnote(hint_lbl)
-	hint_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint_lbl.mouse_filter = Control.MOUSE_FILTER_PASS if hint_lbl.tooltip_text != "" else Control.MOUSE_FILTER_IGNORE
 	if role == "origin":
 		hint_lbl.add_theme_color_override("font_color", UiTheme.MOSS)
 	elif role == "consumer":
