@@ -18,6 +18,11 @@ extends SceneTree
 ##   K2 Tab / Shift+Tab / 方向键连按：焦点始终在册页里，且确在册页的钮之间走动；
 ##   K3 Esc 合上册页：不开别的浮页、不换页、不过日子；
 ##   K4 再点开、按 Enter：册页合上，不是拆了重开。
+## 五轮已定：港页册页「翻阅」两下才翻（「翻阅」与「记录」并排同大，误点一下就回到那一卷的日子，眼下没记下的进度一笔勾销）：
+##   C1 港页册页按一下「翻阅」：不读档（日子不变）、册页不合、记下待确认的是这一卷；
+##   C2 再按一下：读档（日子回到那一卷）、册页合上、记事顶上「翻开日志第 N 卷……」；
+##   C3 标题页「续卷」册页（还没开局、无进度可丢）按一下即翻。
+## C 节同走 _on_load_slot 回调记 / 读存档位 93（册页的钮只连正式位 1..SLOTS，探针不写正式位）。
 ## 册页只列正式位 1..SLOTS：S1–S3 只读钮态、不写卷；S4 / S5 直调同一个回调 _on_save_slot 记存档位 93，不碰正式位。
 ## 另带 script_err_tally 两判（本进程 SCRIPT ERROR 即红），cases 比场面断言多 2。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_5_save_sheet_probe.gd
@@ -209,6 +214,40 @@ func _run() -> void:
 		await _settle(3)
 		_expect(opened and not is_instance_valid(_main.get("_save_host")) and _no_float_page(), "K4 点开后按 Enter：册页合上，不是拆了重开",
 			"点开=%s Enter 后册页开着=%s 焦点=%s" % [str(opened), str(is_instance_valid(_main.get("_save_host"))), _name(_focus())])
+
+	# ── 港页「翻阅」两下才翻；标题页一下即翻 ──
+	_cleanup()
+	cal.from_dict({"year": 1256, "month": 4, "day": 1})
+	var saved_date := str(cal.call("get_date_string"))
+	var c_saved: bool = sl.save_game(SLOT, PORT)
+	cal.from_dict({"year": 1256, "month": 5, "day": 20})
+	var later := str(cal.call("get_date_string"))
+	_main._show_save_dialog()
+	await _settle(2)
+	_main._on_load_slot(SLOT)
+	await _settle(2)
+	var host_c = _main.get("_save_host")
+	_expect(c_saved and str(cal.call("get_date_string")) == later and is_instance_valid(host_c)
+		and int((host_c as Node).get_meta(&"armed", 0)) == SLOT,
+		"C1 港页册页按一下「翻阅」：不读档、册页不合、待确认的是这一卷",
+		"日子=%s（应仍 %s）册页开着=%s 待确认=%s" % [str(cal.call("get_date_string")), later, str(is_instance_valid(host_c)),
+			str((host_c as Node).get_meta(&"armed", 0)) if is_instance_valid(host_c) else "-"])
+	_main._on_load_slot(SLOT)
+	await _settle(3)
+	lines = Array(_main._log_lines)
+	_expect(str(cal.call("get_date_string")) == saved_date and not is_instance_valid(_main.get("_save_host"))
+		and not lines.is_empty() and str(lines[0]).begins_with("翻开日志第 %d 卷" % SLOT),
+		"C2 再按一下：读档回到那一卷的日子、册页合上、记事报翻开日志",
+		"日子=%s（应 %s）册页开着=%s 记事顶=%s" % [str(cal.call("get_date_string")), saved_date,
+			str(is_instance_valid(_main.get("_save_host"))), str(lines[0]) if not lines.is_empty() else "<空>"])
+	cal.from_dict({"year": 1256, "month": 5, "day": 20})
+	_main._show_save_dialog(true)
+	await _settle(2)
+	_main._on_load_slot(SLOT)
+	await _settle(3)
+	_expect(str(cal.call("get_date_string")) == saved_date and not is_instance_valid(_main.get("_save_host")),
+		"C3 标题页「续卷」册页按一下「翻阅」即翻（还没开局、无进度可丢）",
+		"日子=%s（应 %s）册页开着=%s" % [str(cal.call("get_date_string")), saved_date, str(is_instance_valid(_main.get("_save_host")))])
 
 	_cleanup()
 	_report()

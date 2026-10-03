@@ -23,6 +23,8 @@ static func show_save_dialog(main: Control, read_only := false) -> void:
 	host.mouse_filter = Control.MOUSE_FILTER_STOP
 	main.add_child(host)
 	main._save_host = host
+	# 港页「翻阅」两下才翻要分得出册页从哪进来（见 on_load_slot）
+	host.set_meta(&"read_only", read_only)
 
 	var dim := ColorRect.new()
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -75,6 +77,7 @@ static func show_save_dialog(main: Control, read_only := false) -> void:
 		# 新版所记的卷也不给记（脚注许了「卷页未动」，一记就把新版进度退成副抄，见 SaveLoad.can_save）
 		write.disabled = read_only or not SaveLoad.can_save(n)
 		var read: Button = main._slip_chip(row, "翻阅", main._on_load_slot.bind(n))
+		read.name = "Read%d" % n
 		# 翻不开的卷（坏档 / 新版所记）不给按：按下去的失败句只进记事栏，标题页那里看不见（脚注已写明缘由）
 		read.disabled = not SaveLoad.can_load(n)
 	var benches := col.get_node("Benches") as HFlowContainer
@@ -104,8 +107,8 @@ static func show_save_dialog(main: Control, read_only := false) -> void:
 	UiTheme.style_button(close, true)
 	close.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	# 键盘焦点收进册页（lane w53-5 五轮）。鼠标点「航海日志」/「续卷」开册页，焦点原留在暗幕底下那颗钮上：Enter 把它
-	# 再按一遍（册页拆了重开，Main._unhandled_input 的「Enter 合上」到不了）；Tab / 方向键走到暗幕底下的「名册」「看风」
+	# 键盘焦点收进册页（lane w53-5 五轮）。鼠标点「航海日志」/「续卷」开册页，焦点原留在暗幕底下那颗钮上：按下 Enter 时
+	# Main._unhandled_input 合上册页（钮不吞按下那一下），松键时那颗钮又被按下，册页拆了重开；Tab / 方向键走到暗幕底下的「名册」「看风」
 	# 「再候一日」、工席门，Enter 就在册页底下开浮页、出海、候日。现在：焦点先交给册页底座（Control 不画焦点框，鼠标玩家
 	# 看不出变化），Enter 落到 Main 合上；Tab / Shift+Tab / 方向键只在册页里按得动的钮之间轮转（不给按的钮不收焦点，
 	# 照 SlipKit 只读钮的口径）；Esc 是「合上」的快捷键，焦点在哪都合上。拆出件不另立函数（只装从 Main 搬出的），就地写。
@@ -167,6 +170,17 @@ static func on_save_slot(main: Control, slot: int) -> void:
 
 
 static func on_load_slot(main: Control, slot: int) -> void:
+	# 港页「翻阅」先确认一下（lane w53-5 五轮已定）：「翻阅」与「记录」并排同大，误点一下就回到那一卷的日子，眼下没记下的
+	# 进度一笔勾销、无从找回。港页册页上头一下只把这颗钮改写「确认翻阅」，再按一下才翻；按别卷的「翻阅」改认那一卷。
+	# 标题页「续卷」进来还没开局、没有进度可丢，一下就翻；不经册页的直调照旧一下就翻。
+	var host = main._save_host
+	if is_instance_valid(host) and not bool(host.get_meta(&"read_only", true)) and int(host.get_meta(&"armed", 0)) != slot and SaveLoad.can_load(slot):
+		host.set_meta(&"armed", slot)
+		for b in (host as Node).find_children("Read*", "Button", true, false):
+			var armed: bool = String(b.name) == "Read%d" % slot
+			(b as Button).text = "确认翻阅" if armed else "翻阅"
+			(b as Button).tooltip_text = "翻回这一卷，眼下没记下的进度不留。再按一下才翻。" if armed else ""
+		return
 	var scene_id := SaveLoad.saved_scene(slot)
 	var from_bak := SaveLoad.slot_source(slot) == "bak"
 	if SaveLoad.can_load(slot):

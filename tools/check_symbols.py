@@ -4981,6 +4981,22 @@ else:
     print("  ✗ 航海日志册页不收键盘焦点：焦点留在暗幕底下，Enter 拆了重开、Tab / 方向键走到底下的钮（看风 / 再候一日）")
     problems.append("航海日志册页键盘焦点漏到暗幕底下")
 
+# lane w53-5 五轮已定：港页册页「翻阅」两下才翻（「翻阅」与「记录」并排同大，误点一下就回到那一卷，眼下没记下的进度一笔勾销）；
+# 标题页「续卷」册页（read_only，还没开局）一下即翻。须：册页底座记下 read_only、on_load_slot 头一下记下待确认的卷并改写钮字
+# 「确认翻阅」后 return，在读档之前。运行时断言见 qa_w53_5_save_sheet_probe C1–C3。
+_arm_at = _load_slot_code.find('host.set_meta(&"armed", slot)')
+_arm_ret = _load_slot_code.find("return", _arm_at) if _arm_at >= 0 else -1
+_ld_at = _load_slot_code.find("SaveLoad.load_game(slot)")
+if (
+    'host.set_meta(&"read_only", read_only)' in _save_dialog_code
+    and 'get_meta(&"read_only"' in _load_slot_code and "确认翻阅" in _load_slot_code
+    and 0 <= _arm_at < _arm_ret < _ld_at
+):
+    print("  ✓ 航海日志册页：港页「翻阅」两下才翻、标题页续卷一下即翻")
+else:
+    print("  ✗ 航海日志册页：港页「翻阅」一下就翻（误点即回到那一卷、眼下进度一笔勾销），或标题页续卷也要两下")
+    problems.append("航海日志册页翻阅未经确认")
+
 print()
 print()
 print("=" * 68)
