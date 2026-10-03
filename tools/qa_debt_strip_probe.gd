@@ -13,14 +13,25 @@ extends SceneTree
 ##      的 debt 变量在 debt<=0 时为空串，顶匾不该再有欠字样格）。
 ## 用法：godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
 ## 输出末行 DEBT_STRIP cases=N fails=N；fails≥1 → quit(1)。
+## w53-11：`cases` 计数里含 `SCRIPT ERROR 自证 / 真路判 0` 两帐（story :3156 同款）——
+## `cases` 比场面断言多 2，与前历位一一对应（DEBT_STRIP 现网 = 旧 4 + 2 = 6）。
+## 判闸挂收编件 tools/script_err_tally.gd（收编 story :3131 _ScriptErrTally 的唯一入账规则）。
+
+## w53-11：注册表判词「本进程 SCRIPT ERROR 即红」此前空转（探针没装 Logger，headless -s
+## 运行期脚本错跳成零部断言 fails=0、退出码守 0）——收编 story :3131 同款判闸
+## （tools/script_err_tally.gd，ERROR_TYPE_SCRIPT 唯一入账）。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 
 var _main: Node
 var gs: Node
 var _fails := 0
 var cases := 0
+var _tally: ScriptErrTally
 
 
 func _init() -> void:
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
 	call_deferred("_run")
 
 
@@ -140,5 +151,19 @@ func _d3_debt_10000() -> void:
 
 
 func _report() -> void:
+	## w53-11：先自证计数器只认 SCRIPT 类（story :3156 同款），再判真路 0 条并入末行 fails
+	## （无论此前场面断言全过还是想带红走，本判的路都过一遍——先前调用点的提前 _report()
+	## 也会漏到 SCRIPT ERROR，一并兜住）。
+	var probe := ScriptErrTally.new()
+	probe._log_error("f", "res://x.gd", 1, "", "自证 SCRIPT", false, Logger.ERROR_TYPE_SCRIPT, [])
+	probe._log_error("f", "res://x.gd", 2, "", "自证 ERROR", false, Logger.ERROR_TYPE_ERROR, [])
+	probe._log_error("f", "res://x.gd", 3, "", "自证 WARNING", false, Logger.ERROR_TYPE_WARNING, [])
+	_expect(probe.lines.size() == 1,
+		"SCRIPT ERROR 计数器自证：只数脚本类（喂 SCRIPT / ERROR / WARNING 各一，数到 %d）" % probe.lines.size())
+	OS.remove_logger(_tally)
+	var errs: Array = _tally.lines
+	_expect(errs.is_empty(),
+		"运行中无 SCRIPT ERROR / Parse Error（%d 条%s）" % [errs.size(),
+		"" if errs.is_empty() else "，首条：" + str(errs[0])])
 	print("DEBT_STRIP cases=%d fails=%d" % [cases, _fails])
 	quit(1 if _fails > 0 else 0)

@@ -23,6 +23,9 @@ extends SceneTree
 ## 用法：godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
 ## 输出末行 CARGO_STRIP cases=N fails=N；fails≥1 → quit(1)。
 
+## w53-11：注册表判词「本进程 SCRIPT ERROR 即红」空转收编（同 qa_debt_strip_probe）。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
 var _main: Node
 var gs: Node
 var gm: Node
@@ -30,9 +33,12 @@ var cal: Node
 var fleet: Node
 var _fails := 0
 var cases := 0
+var _tally: ScriptErrTally
 
 
 func _init() -> void:
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
 	call_deferred("_run")
 
 
@@ -240,5 +246,16 @@ func _c6_shape_invariants() -> void:
 
 
 func _report() -> void:
+	var probe := ScriptErrTally.new()
+	probe._log_error("f", "res://x.gd", 1, "", "自证 SCRIPT", false, Logger.ERROR_TYPE_SCRIPT, [])
+	probe._log_error("f", "res://x.gd", 2, "", "自证 ERROR", false, Logger.ERROR_TYPE_ERROR, [])
+	probe._log_error("f", "res://x.gd", 3, "", "自证 WARNING", false, Logger.ERROR_TYPE_WARNING, [])
+	_expect(probe.lines.size() == 1,
+		"SCRIPT ERROR 计数器自证：只数脚本类（喂 SCRIPT / ERROR / WARNING 各一，数到 %d）" % probe.lines.size())
+	OS.remove_logger(_tally)
+	var errs: Array = _tally.lines
+	_expect(errs.is_empty(),
+		"运行中无 SCRIPT ERROR / Parse Error（%d 条%s）" % [errs.size(),
+		"" if errs.is_empty() else "，首条：" + str(errs[0])])
 	print("CARGO_STRIP cases=%d fails=%d" % [cases, _fails])
 	quit(1 if _fails > 0 else 0)

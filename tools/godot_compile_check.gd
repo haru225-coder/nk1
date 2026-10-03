@@ -102,6 +102,7 @@ const SCRIPTS := [
 	"res://tools/godot_smoke.gd", "res://tools/godot_story_check.gd", "res://tools/p7_guild_exam_smoke.gd",
 	"res://tools/patrol_shell.gd", "res://tools/shot_gate.gd", "res://tools/gate_report.gd",
 	"res://tools/src_probe.gd",  # 按名认函数的源码探查（lane cs15）
+	"res://tools/script_err_tally.gd",  # 必跑 gate 的 SCRIPT ERROR 判红 Logger（lane w53-11）
 	"res://tools/gen_builtin_list.gd",
 	# 各 lane 专项探针 / 截图脚本
 	"res://tools/save_robust_probe.gd", "res://tools/save_migrate_probe.gd",

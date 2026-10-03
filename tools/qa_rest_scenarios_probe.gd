@@ -32,9 +32,14 @@ var eco: Node
 var fleet: Node
 var cases := 0
 var fails := 0
+## w53-11：注册表判词「本进程 SCRIPT ERROR 即红」空转收编（同 qa_debt_strip_probe）。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+var _tally: ScriptErrTally
 
 
 func _init() -> void:
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
 	call_deferred("_run")
 
 
@@ -73,6 +78,17 @@ func _run() -> void:
 	await _s5_wait_n_rolls()
 	await _s6_rate_bind_press()
 
+	var probe := ScriptErrTally.new()
+	probe._log_error("f", "res://x.gd", 1, "", "自证 SCRIPT", false, Logger.ERROR_TYPE_SCRIPT, [])
+	probe._log_error("f", "res://x.gd", 2, "", "自证 ERROR", false, Logger.ERROR_TYPE_ERROR, [])
+	probe._log_error("f", "res://x.gd", 3, "", "自证 WARNING", false, Logger.ERROR_TYPE_WARNING, [])
+	_check(probe.lines.size() == 1,
+		"SCRIPT ERROR 计数器自证：只数脚本类（喂 SCRIPT / ERROR / WARNING 各一，数到 %d）" % probe.lines.size())
+	OS.remove_logger(_tally)
+	var errs: Array = _tally.lines
+	_check(errs.is_empty(),
+		"运行中无 SCRIPT ERROR / Parse Error（%d 条%s）" % [errs.size(),
+		"" if errs.is_empty() else "，首条：" + str(errs[0])])
 	print("REST_SCENARIOS cases=%d fails=%d" % [cases, fails])
 	quit(1 if fails > 0 else 0)
 
