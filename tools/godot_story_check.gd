@@ -433,7 +433,7 @@ func _initialize() -> void:
 	_check(SL.save_game(9, "xinghua"), "终局可存档")
 	_check(SL.save_label(9).find("终：忠肃") >= 0, "终局档标签带结局名（%s）" % SL.save_label(9))
 	_check(SL.load_game(9) and GS.is_ended() and GS.ended == "忠肃", "读回终局档仍是终局态")
-	# 用完清掉第 9 槽：云端 godot_smoke 断言第 9 槽是空卷（两道门禁共用同一 user:// 目录）
+	# 用完清掉第 9 槽：user:// 全机各 worktree 共用（godot_smoke 的空卷判读本进程独有槽，不再读第 9 槽，lane w53-11）
 	for p in ["user://saves/save_9.json", "user://saves/save_9.json.bak"]:
 		if FileAccess.file_exists(p):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(p))

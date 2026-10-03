@@ -414,7 +414,7 @@ func _run() -> void:
 		and saveload_src.find("（无标签）") < 0
 		and main_src.find("存档 / 读档") < 0 and saveload_src.find("%d 钱") >= 0,
 		"航海日志空卷写成未记", fails)
-	_check(str(root.get_node("SaveLoad").call("save_label", 9)) == "未记", "空卷读出来是未记", fails)
+	_check(str(root.get_node("SaveLoad").call("save_label", 90000 + OS.get_process_id() % 10000)) == "未记", "空卷读出来是未记（读本进程独有空槽——第 9 槽 story 会写档再删，user:// 全机共用，别的 lane 半路中止就留残档）", fails)
 	# 航海日志册页在 SaveSheet（Lane main6 拆出），Main 里只剩一行转发：函数体去拆出件里切，去掉 main. 前缀即搬走前的原文
 	var save_src := FileAccess.get_file_as_string("res://scripts/ui/SaveSheet.gd")
 	var save_at := save_src.find("static func show_save_dialog(")
