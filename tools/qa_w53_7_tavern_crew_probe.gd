@@ -32,6 +32,8 @@ extends SceneTree
 ##     人物卡、画像、小传，见一面还记作见过。现别港是本地无名小吏：照样见、打听、疏通，不挂人物卡与人物志钮、不记见过；泉州照旧。
 ##   K 见面页的字对上页上的动作：行情签旁注修前写「邻座牙人」——说话的是林阿舶、小吏本人；现写「不费时日」，与酒馆长凳「费一日」
 ##     并排看得出代价（打听本身不过日子，实跑核日历不动）。阿那招呼修前说「要问航路，就问」，他页上却只有行情、没有问航路的签。
+##   L 墙上只贴市井听得到的：士人身份收到的临安短札（只发给士人、没有说话人：「短札：……贬你知抚州」）修前题「酒馆传闻」
+##     贴在酒馆墙上，最近三条里能占两条。现不贴；小瘸子当面说兴化募兵（有说话人）、海商的崖山传闻照贴。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 ## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
@@ -98,6 +100,7 @@ func _boot() -> void:
 	await _m_roster_gate()
 	await _q_clerk_home()
 	await _k_meet_page_words()
+	await _l_wall_letters()
 	_report()
 
 
@@ -582,6 +585,61 @@ func _k_meet_page_words() -> void:
 	_stage(1262, 5, 2)
 	await _goto("quanzhou_tavern")
 	_expect(_label("费一日") != null, "泉州酒馆长凳行情签照旧写「费一日」")
+
+
+# ── L 墙上只贴市井听得到的 ──
+
+func _l_wall_letters() -> void:
+	print("── L 墙上只贴市井听得到的：士人收到的临安短札（无说话人）不题「酒馆传闻」上墙；小瘸子当面的话、海商的崖山传闻照贴")
+	# 底账：只发给士人、又没有说话人的新闻，全是寄给你一人的短札（墙上的规矩据此判）
+	var letters := 0
+	var not_letter: Array = []
+	for n in root.get_node("GameManager").get("news_data").get("news", []):
+		if str(n.get("only", "")) == "scholar" and str(n.get("speaker", "")).strip_edges() == "":
+			letters += 1
+			if not str(n.get("text", "")).contains("短札"):
+				not_letter.append(str(n.get("id", "")))
+	_expect(letters >= 4 and not_letter.is_empty(), "news.json 只发给士人、无说话人的 %d 条都是短札（不是的：%s）" % [letters, not_letter])
+	for spec in [
+		[1273, 6, "scholar", ["n_1264_11_lizong_dies", "n_1268_10_sulfur_ban", "n_1272_03_no_draft", "n_1273_02_dismissed", "n_1273_03_fanfang_panic"],
+			["蕃坊人心浮动", "硫黄禁出海", "理宗崩"], "1273-06 士人：最近五条里两条短札，墙上三张是另三条市井传闻"],
+		[1276, 10, "scholar", ["n_1275_04_requisition", "n_1275_11_vice", "n_1276_10_xinghua_muster"],
+			["兴化城里在募人守城", "征调商船"], "1276-10 士人：小瘸子当面说兴化募兵照贴，「累迁参知政事」短札不贴"],
+		[1278, 12, "merchant", ["n_1277_07_xinghua_again", "n_1278_12_yashan"],
+			["崖山", "张世杰的船要回头"], "1278-12 海商：只发给海商的崖山传闻照贴"],
+	]:
+		_stage(int(spec[0]), int(spec[1]), 4)
+		_gs.identity = str(spec[2])
+		_gs.news_seen = (spec[3] as Array).duplicate()
+		await _goto("quanzhou_tavern")
+		var cards := _wall_cards()
+		var want: Array = spec[4]
+		var ok := cards.size() == want.size()
+		var shown: Array = []
+		for c in cards:
+			shown.append("%s｜%s" % [c[0], str(c[2]).left(16)])
+			ok = ok and not str(c[2]).contains("短札")
+		for i in mini(cards.size(), want.size()):
+			ok = ok and str(cards[i][2]).contains(str(want[i]))
+		_expect(ok, "%s（墙上：%s）" % [spec[5], " / ".join(shown)])
+
+
+## 「墙上」分区题之后连着的札记卡：[说话人题签, 年月旁注, 正文]，新的在前
+func _wall_cards() -> Array:
+	var out := []
+	var sep := _label("墙上")
+	if sep == null:
+		return out
+	var host := sep.get_parent()
+	for i in range(sep.get_index() + 1, host.get_child_count()):
+		var card := host.get_child(i)
+		if not (card is PanelContainer) or card.is_queued_for_deletion():
+			break
+		var col := card.get_child(0).get_child(0)
+		var head := col.get_child(0) as HBoxContainer
+		out.append([str((head.get_child(0) as Label).text), str((head.get_child(1) as Label).text) if head.get_child_count() > 1 else "",
+			str((col.get_child(1) as Label).text)])
+	return out
 
 
 # ── R 人物志关系签：指向未识之人的悬停提示写人物志上屏称谓 ──

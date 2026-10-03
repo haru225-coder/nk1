@@ -3,11 +3,16 @@ extends RefCounted
 ## 酒馆墙上的市井札薄。把 GameState.recent_news 渲成宣纸札记条；
 ## Main._setup_news_wall 只调 mount，不承担样式。无新闻则不上墙。
 
-## 把最近 k 条已投放新闻挂到 into（通常是 choices_container）。返回实际上墙条数。
+## 把最近 k 条墙上贴得出的已投放新闻（posted）挂到 into（通常是 choices_container）。返回实际上墙条数。
 static func mount(into: Node, k: int = 3) -> int:
 	if into == null:
 		return 0
-	var wall: Array = GameState.recent_news(k)
+	var wall: Array = []
+	for n in GameState.recent_news(GameState.news_seen.size()):
+		if posted(n):
+			wall.append(n)
+		if wall.size() >= k:
+			break
 	if wall.is_empty():
 		return 0
 	var sep := Label.new()
@@ -88,3 +93,11 @@ static func era_month(ym: String) -> String:
 	var out := Calendar.get_era_year_string() + Calendar.get_month_name()
 	Calendar.from_dict(keep)
 	return out
+
+
+## 墙上只贴市井听得到的。只发给士人身份、又没有说话人的那几条是临安寄给你一人的短札
+## （「短札：你弹劾范文虎、赵溍、黄万石……贬你知抚州」「累迁参知政事」），不是酒馆传闻——修前照样题「酒馆传闻」
+## 贴在任一港的酒馆墙上，最近三条里能占两条。有说话人的（小瘸子当面说兴化募兵）是酒桌上的话，照贴；
+## 只发给海商的「传闻：……崖山」也是市井传闻，照贴。月初札记里的通告不归这里管。
+static func posted(n: Dictionary) -> bool:
+	return not (str(n.get("only", "")) == "scholar" and str(n.get("speaker", "")).strip_edges() == "")
