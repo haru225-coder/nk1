@@ -218,6 +218,54 @@ def run_abort_section(gates):
           + (f"；`_run` 断气会空转到超时：{'、'.join(hang)}" if hang else ""))
 
 
+# ── 挂压帧的脚本 probe_pressure 都判得了（lane w53-11 五轮）：probe_pressure（加跑档，动 shot_gate / probe_clock 必跑）按
+#    「原生 --json 行 / TEXT_PROBES 登记人读判词 / NOT_JUDGED 明列不判」三类取结论，三不沾的判「跑不成」（fail closed）。
+#    可它少有人跑：九支定向探针挂了压帧、判词齐全却没登记，全集恒判跑不成、那道门禁在 main 上恒红，改 shot_gate 的人分不出
+#    哪条红是自己改坏的。这里在必跑档就判：挂压帧的脚本须归三类之一；登记了人读判词的，末行打头字样须还在代码行里（探针改了
+#    末行即红，不等跑起来才「跑不成」）；登记表不许指着已删 / 不挂压帧的脚本。──
+def pressure_class(name, src, text_probes, not_judged, mark_of, native_of):
+    """src 已去注释。返回判不了的缘由，空串 = 判得了。"""
+    if native_of(src) or name in not_judged:
+        return ""
+    if name in text_probes:
+        mark = mark_of(name)
+        return "" if mark and mark in src else f"TEXT_PROBES 登记的末行字样 {mark or '（取不到）'} 已不在代码行里"
+    return "既不出 --json、也没在 TEXT_PROBES 登记人读判词、也不在 NOT_JUDGED"
+
+
+def pressure_class_section(code_of):
+    sys.path.insert(0, TOOLS)
+    import probe_pressure as pp
+    # 判据自检（§五.3）：内存样本走同一条判路
+    tp, nj = {"qa_t": (r"^x", r"^QA_T cases=\d+")}, {"drv": "人工验图"}
+    mark = lambda n: "QA_T" if n == "qa_t" else ""
+    samples = [
+        ("P1 原生（preload gate_report）", "x", 'const G := preload("res://tools/gate_report.gd")', False),
+        ("P2 走 ShotGate 收尾", "x", "quit(ShotGate.finish_shots(TAG, s, 1, d, f))", False),
+        ("P3 登记了、末行字样在", "qa_t", 'print("QA_T cases=%d" % n)', False),
+        ("P4 登记了、末行改了名", "qa_t", 'print("QA_X cases=%d" % n)', True),
+        ("P5 明列不判", "drv", "quit(0)", False),
+        ("P6 三不沾", "qa_new", 'print("QA_NEW OK")', True),
+    ]
+    for label, name, src, want in samples:
+        got = bool(pressure_class(name, src, tp, nj, mark, pp.is_native))
+        check(got == want, f"判据自检 {label}：{'该红' if want else '该绿'}（实得 {'红' if got else '绿'}）")
+    hung = {os.path.splitext(os.path.basename(f))[0]: (f, src) for f, src in code_of.items() if "ShotGate.frame_pressure(" in src}
+    lost = []
+    for name, (f, src) in sorted(hung.items()):
+        why = pressure_class(name, src, pp.TEXT_PROBES, pp.NOT_JUDGED, pp.tail_mark, pp.is_native)
+        if why:
+            lost.append(f"{f}（{why}）")
+    n_native = sum(1 for _, src in hung.values() if pp.is_native(src))
+    n_tp = sum(1 for n in hung if n in pp.TEXT_PROBES)
+    n_nj = sum(1 for n in hung if n in pp.NOT_JUDGED)
+    check(not lost, f"挂压帧的 {len(hung)} 支 probe_pressure 都判得了（原生 --json {n_native} / TEXT_PROBES {n_tp} / NOT_JUDGED {n_nj}）"
+          + (f"；判不了：{'、'.join(lost)}" if lost else ""))
+    stale = sorted(n for n in set(pp.TEXT_PROBES) | set(pp.NOT_JUDGED) if n not in hung)
+    check(not stale, "probe_pressure 的 TEXT_PROBES / NOT_JUDGED 不指着已删或不挂压帧的脚本"
+          + (f"；死条目：{', '.join(stale)}" if stale else ""))
+
+
 def check(cond, msg):
     print(("  ✓ " if cond else "  ✗ ") + msg)
     if not cond:
@@ -542,6 +590,7 @@ def main(argv):
     bare = sorted(f for f, src in code_of.items() if "ShotGate.frame_pressure(" not in src)
     check(not bare, f"接 shot_gate 的脚本都挂了压帧 ShotGate.frame_pressure（{len(code_of)} 支，NK1_PROBE_SLOW_MS 一个口径）"
           + (f"；漏挂：{', '.join(bare)}" if bare else ""))
+    pressure_class_section(code_of)
 
     script_err_section(gates)
     run_abort_section(gates)

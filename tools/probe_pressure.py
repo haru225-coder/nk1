@@ -13,7 +13,8 @@ gd24 在 ShotGate 收尾补了进程内兜底（本进程有等待撞了墙钟�
 一档绿一档红，单跑哪一档都「有理」。本门禁不看探针内部怎么等，只比两档跑出来的结论。
 
 探针集：tools/ 下 git 已跟踪的 .gd 里代码行调了 `ShotGate.frame_pressure(` 的（与 gates_md「接 shot_gate 的都挂压帧」同一口径，
-即截图册全部探针 + 只借 shot_gate 挂压帧的定向探针（如 letterbox_signal / qa_yard_transition），现共 31 支），新探针挂上压帧即自动入集。
+即截图册全部探针 + 只借 shot_gate 挂压帧的定向探针（如 letterbox_signal / qa_yard_transition）），新探针挂上压帧即自动入集；
+人工验图 driver 这类无判词、恒退 0 的脚本明列 NOT_JUDGED（写明理由）不判，跑时逐条 `⚠ 不判：…`。
 
 档：默认 0（不压）与 300。两档必须一档不封顶、一档封顶：引擎每帧 delta 最多记 8 个物理步（8/60 ≈ 0.133 s），
 慢过 7.5 fps（每帧 ≥ 134 ms）后每帧游戏时间恒定，150 与 300 两档相位落在同一帧（lane gd20「四」），只差墙钟——
@@ -22,7 +23,9 @@ gd24 在 ShotGate 收尾补了进程内兜底（本进程有等待撞了墙钟�
 
 结论：探针 `-- --json` 的那一行（tools/gate_report.gd）取 exit_code、error、SCRIPT ERROR 有无、逐条 checks（ok / warn / 名字）。
 没接 --json 的（qa_yard_transition：不 preload gate_report、不走 ShotGate 收尾）在 TEXT_PROBES 登记人读判词正则（逐路行 + 末行），
-不加 --quiet 跑、按判词造同形结论；没登记的判「跑不成」。入口：`extends SceneTree / MainLoop` 的用 `-s`，否则跑同名 .tscn。
+不加 --quiet 跑、按判词造同形结论（逐路行认「路 + OK/FAIL」与「✓ / ✗ + 判词」两种形；SCRIPT ERROR 引擎打在 stderr，两路都数）；
+没登记的判「跑不成」——gates_md 在必跑档判挂压帧的脚本都归了「原生 --json / TEXT_PROBES / NOT_JUDGED」之一（lane w53-11 五轮：
+此前九支有判词却没登记，全集恒判跑不成、本门禁在 main 上恒红）。入口：`extends SceneTree / MainLoop` 的用 `-s`，否则跑同名 .tscn。
 名字里的读数（`ms=2921`、`15000 ms`、`3.5 s`、`16 帧`、`frames=`）掩成 `#`：墙钟本来就随档变，不算结论；计数（`caption=1`）不掩。
 判：两档结论全同且都绿 = ✓；不同 = ✗「两档结论不同」（报支名 + 各档结论 + 只在某档出现的条目）；两档同红 = ✗「两档同红」
 （探针自身红，红因归截图门禁 / 该探针，这里只不放它绿）；某档没 JSON 行 / 超时 = ✗「跑不成」。
@@ -134,38 +137,88 @@ def compare(cs):
 
 
 # 没接 --json 的探针（既不 preload gate_report.gd、也不走 ShotGate 收尾）登记人读判词：(逐路行正则, 末行正则)，
-# 逐路行取「路 + 判词」两组、判词为 OK 才算过；末行整句（读数掩掉）进结论。没登记的判「跑不成」（fail closed：新探针要么接 --json、要么来这里登记）
+# 逐路行两组，两种形：「路 + 判词」（判词为 OK 才算过）；或 CHECK_LINES 的「✓ / ✗ + 判词」（✓ 算过）。末行整句（读数掩掉）进结论，
+# 末行正则带捕获组时只取第一组（行尾跟着随档变的输出目录时用）。没登记的判「跑不成」（fail closed：新探针要么接 --json、要么来这里登记、
+# 要么进 NOT_JUDGED 写明为什么不判；gates_md 在必跑档判挂压帧的脚本都归了这三类之一，lane w53-11 五轮）
+CHECK_LINES = r"^\s*([✓✗]) (.+)"  # qa_* 定向探针 _expect 的通行打法：两格缩进 + ✓ / ✗ + 判词
+SHOT_FAIL = r"^(SHOT) (FAIL)\b"  # 船近景截图 driver 没有逐路判词，只有截到空图的 `SHOT FAIL …` 行（路径随档变，只取前两词）
 TEXT_PROBES = {
     "qa_yard_transition_probe": (r"^FO_CASE (\S+) (\S+)", r"^YARD_TRANSITION_PROBE (?:OK|FAIL \d+).*"),
+    # lane w53-11 五轮补登：以下九支挂了压帧、判词齐全，却既不出 --json 也没登记，全集逐跑判「跑不成」、本门禁在 main 上恒红
+    "qa_fold_dim_probe": (CHECK_LINES, r"^FOLD_DIM cases=\d+ fails=\d+$"),
+    "qa_w53_6_beat_replay_probe": (CHECK_LINES, r"^QA_W53_6_BEATS cases=\d+ fails=\d+$"),
+    "qa_w53_6_guild_spreads_probe": (CHECK_LINES, r"^QA_W53_6_SPREADS cases=\d+ fails=\d+$"),
+    "qa_w53_6_port_exits_probe": (CHECK_LINES, r"^QA_W53_6_EXITS cases=\d+ fails=\d+$"),
+    "qa_w53_9_cutscene_input_probe": (r"^W53_9_CASE (\S+) (OK|FAIL)\b", r"^QA_W53_9_CUTSCENE_INPUT (?:OK|FAIL \d+)$"),
+    "japan_ship_probe": (SHOT_FAIL, r"^(JAPAN_SHIP_(?:OK|FAIL))\b"),
+    "ship_dashi_probe": (SHOT_FAIL, r"^(DASHI_SHIP_(?:OK|FAIL))\b"),
+    "ship_exquisite_probe": (SHOT_FAIL, r"^(SHIP_EXQUISITE_(?:OK|FAIL))\b"),
+    "shot_champa_ship": (SHOT_FAIL, r"^(CHAMPA_SHOT_(?:OK|FAIL))\b"),
 }
+# 明列不判：不是门禁、没有判词，挂压帧只因 gates_md「接 shot_gate 的都挂压帧」口径——跑了只得 rc=0，判不出两档一致与否。
+# 每行写明为什么；探针集里既不出 --json、又没登记、也不在这里的，照判「跑不成」
+NOT_JUDGED = {
+    "tactical_coast_screens": "lane w20-b1 人工验图 driver：before / after 截图给人看，无判词、恒退 0（compile 清单 INVENTORY_EXEMPT 同注不入门禁）",
+}
+
+
+def is_native(code):
+    """去注释源码出原生 --json 行（preload gate_report / 走 ShotGate 收尾）。gates_md 归类同用这一判。"""
+    return 'preload("res://tools/gate_report.gd")' in code or "ShotGate.finish_" in code
+
+
+def tail_mark(probe):
+    """TEXT_PROBES 登记的末行正则打头的字面字样（如 QA_W53_6_EXITS / JAPAN_SHIP_）：gates_md 判它还在探针代码行里，探针改了末行即红。"""
+    m = re.match(r"\^\(?([A-Z][A-Z0-9_]*)", TEXT_PROBES[probe][1])
+    return m.group(1) if m else ""
 
 
 def entry(root, f):
     """(命令行入口, 走 JSON 与否)。`extends SceneTree / MainLoop` 的用 `-s`；否则跑同名 .tscn（-s 起非 MainLoop 脚本，Godot 弹 xmessage 挂住）。"""
     src = open(os.path.join(root, f), encoding="utf-8", errors="replace").read()
     code = "\n".join(ln for ln in src.splitlines() if not ln.lstrip().startswith("#"))
-    native = 'preload("res://tools/gate_report.gd")' in code or "ShotGate.finish_" in code
+    native = is_native(code)
     if re.search(r"^extends\s+(SceneTree|MainLoop)\b", src, re.M):
         return ["-s", "res://" + f], native
     scn = os.path.splitext(f)[0] + ".tscn"
     return (["res://" + scn] if os.path.exists(os.path.join(root, scn)) else ["-s", "res://" + f]), native
 
 
-def text_doc(probe, stdout, rc):
-    """人读输出 → 与 JSON 行同形的文档（TEXT_PROBES 登记的探针）。"""
+PAREN = re.compile(r"（[^（）]*）")
+ENGINE_SCRIPT_ERR = re.compile(r"^SCRIPT ERROR\b", re.M)  # 引擎打的错行（gate_json ENGINE_ERR 同口径）；判词里写的「无 SCRIPT ERROR」不算
+ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
+
+def stable(text):
+    """✓ / ✗ 判词去掉读数再进结论：全角括号里的实读 / 明细整段删（可嵌套），余下不贴字母的数字掩成 #（G1 / E2 这类编号留着）。
+    人读判词把行情、条数、实读串写进句子（qa_w53_6_guild_spreads「价差 50 条」「多 294」每跑都不同），不删两档必判不同。"""
+    s = text
+    while PAREN.search(s):
+        s = PAREN.sub("", s)
+    return re.sub(r"(?<![A-Za-z_])\d+(?:\.\d+)?", "#", s).strip()
+
+
+def text_doc(probe, stdout, rc, stderr=""):
+    """人读输出 → 与 JSON 行同形的文档（TEXT_PROBES 登记的探针）。SCRIPT ERROR 只认引擎打的行首错行，stdout / stderr 两路都数
+    （引擎打在 stderr；原先只数 stdout 恒 0，且判词里写着「无 SCRIPT ERROR」的探针会被数成有）。"""
     case_re, tail_re = (re.compile(x) for x in TEXT_PROBES[probe])
     checks = []
     tail = None
     for ln in stdout.splitlines():
         m = case_re.match(ln)
-        if m:
+        if m and m.group(1) in ("✓", "✗"):
+            checks.append({"name": stable(m.group(2)), "ok": m.group(1) == "✓"})
+        elif m:
             checks.append({"name": f"{m.group(1)} {m.group(2)}", "ok": m.group(2) == "OK"})
-        elif tail_re.match(ln):
-            tail = ln
+        else:
+            t = tail_re.match(ln)
+            if t:
+                tail = t.group(1) if t.re.groups else ln
     if tail is None:
         return {"run_error": "no_json", "exit_code": rc}
     checks.append({"name": tail, "ok": rc == 0})
-    return {"exit_code": rc, "checks": checks, "counts": {"script_errors": stdout.count("SCRIPT ERROR")}}
+    n_se = len(ENGINE_SCRIPT_ERR.findall(ANSI.sub("", stdout + "\n" + stderr)))
+    return {"exit_code": rc, "checks": checks, "counts": {"script_errors": n_se}}
 
 
 def _json_line(stdout):
@@ -205,7 +258,7 @@ def run_one(godot, root, f, level, out):
         if native:
             doc = _json_line(stdout) or {"run_error": "no_json", "exit_code": rc}
         elif name_of(f) in TEXT_PROBES:
-            doc = text_doc(name_of(f), stdout, rc)
+            doc = text_doc(name_of(f), stdout, rc, stderr)
         else:
             doc = {"run_error": "no_json", "exit_code": rc}
             stderr += "\n[probe_pressure] 探针没接 --json、也没在 TEXT_PROBES 登记人读判词，结论取不到"
@@ -291,6 +344,31 @@ def selftest():
         bad.append(f"人读判词解析不对：{d}")
     if text_doc("qa_yard_transition_probe", out.rsplit("YARD", 1)[0], 0).get("run_error") != "no_json":
         bad.append("人读判词型缺末行没判成取不到结论")
+    # ✓ / ✗ 逐条形（lane w53-11 五轮）：✓ 算过、✗ 不算，判词原文进结论；末行照收
+    out2 = "QA_W53_6_EXITS_BEGIN\n  ✓ E1 甲（缺 0 页）\n  ✗ E2 乙\nQA_W53_6_EXITS cases=2 fails=1\n"
+    d2 = text_doc("qa_w53_6_port_exits_probe", out2, 1)
+    if [(c["name"], c["ok"]) for c in d2.get("checks", [])] != [("E1 甲", True), ("E2 乙", False),
+                                                               ("QA_W53_6_EXITS cases=2 fails=1", False)]:
+        bad.append(f"✓ / ✗ 逐条形解析不对：{d2}")
+    # 末行带捕获组只取组：行尾随档变的输出目录不进结论，两档同绿
+    a3 = text_doc("shot_champa_ship", "CAM_ELEV_DEG 18.0\nCHAMPA_SHOT_OK /x/L0/ship-champa15\n", 0)
+    b3 = text_doc("shot_champa_ship", "CAM_ELEV_DEG 18.0\nCHAMPA_SHOT_OK /x/L300/ship-champa15\n", 0)
+    if compare([(0, conclusion(a3)), (300, conclusion(b3))])[0] != "same_green":
+        bad.append(f"末行取组不对（输出目录随档变却判了不同）：{a3} / {b3}")
+    # 判词里嵌的读数（括号里的实读、句中的条数 / 钱数）每跑不同：去掉再比，两档同绿
+    g = "  ✓ G1 1274-11 泉州可抄价差 %d 条，没有一条运往闭门港（运往闭门港 0 条：[]）\n  ✓ G3 泉州打听不荐闭门港（【行情】…能多得　%d 钱。）\n"
+    a5 = text_doc("qa_w53_6_guild_spreads_probe", g % (50, 294) + "QA_W53_6_SPREADS cases=2 fails=0\n", 0)
+    b5 = text_doc("qa_w53_6_guild_spreads_probe", g % (49, 255) + "QA_W53_6_SPREADS cases=2 fails=0\n", 0)
+    if compare([(0, conclusion(a5)), (300, conclusion(b5))])[0] != "same_green":
+        bad.append(f"判词里的读数没去掉（两档读数不同判成了不同）：{a5['checks']} / {b5['checks']}")
+    # 判词自己写着「无 SCRIPT ERROR」不算脚本错（只认引擎打的行首错行）
+    d6 = text_doc("qa_fold_dim_probe", "  ✓ 运行中无 SCRIPT ERROR / Parse Error（0 条）\nFOLD_DIM cases=1 fails=0\n", 0, "WARNING: x\n")
+    if conclusion(d6)["script_errors"]:
+        bad.append(f"判词里写的「无 SCRIPT ERROR」被数成了脚本错：{d6}")
+    # SCRIPT ERROR 打在 stderr：人读判词型也得数到（原先只数 stdout，恒 0）
+    d4 = text_doc("qa_fold_dim_probe", "  ✓ a\nFOLD_DIM cases=1 fails=0\n", 0, "SCRIPT ERROR: boom\n   at: f (res://x.gd:1)\n")
+    if not conclusion(d4)["script_errors"]:
+        bad.append(f"人读判词型没数到 stderr 里的 SCRIPT ERROR：{d4}")
     if mask("ms=2921 15000 ms 3.5 s 16 帧 frames=40 caption=1 shots=5/5 01_title.png") != "ms=# # ms # s # 帧 frames=# caption=1 shots=5/5 01_title.png":
         bad.append("读数掩码不对：" + mask("ms=2921 15000 ms 3.5 s 16 帧 frames=40 caption=1 shots=5/5 01_title.png"))
     return bad
@@ -432,7 +510,11 @@ def main():
             print("结果：1 项问题")
             return 2
         files = [f for f in files if name_of(f) in want]
+    skipped = [f for f in files if name_of(f) in NOT_JUDGED]
+    files = [f for f in files if name_of(f) not in NOT_JUDGED]
     print(f"一、逐支双档（{len(files)} 支 × 档 {' / '.join(map(str, levels))} ms，{ENV_SLOW}；jobs={jobs}；落 {out}/L<档>/）")
+    for f in skipped:
+        print(f"  ⚠ 不判：{name_of(f)}——{NOT_JUDGED[name_of(f)]}")
     t0 = time.time()
     rows = sweep(godot, ROOT, files, levels, out, jobs)
     for row in rows:
