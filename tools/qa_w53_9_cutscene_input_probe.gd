@@ -1,10 +1,11 @@
 extends Node
-## lane w53-9：过场层输入时序探针。四路，钉三处修复（回退哪一处修复，对应那几路即红）：
+## lane w53-9：过场层输入时序探针。五路，钉四处修复（回退哪一处修复，对应那几路即红）：
 ##   ending_fade_key   结局过场收尾连按空格：本层黑幕退去那一截（CutscenePlayer 的 FADE）按键照吞，底下刚建好的「了结」册页不许被合上
 ##   ending_fade_click 同一窗口换成鼠标：点册页上的「记下这一纲」也不许点着——册页还没露脸（与上一路同一处修复）
 ##   outro_esc_curtain 自然收尾压黑途中按 Esc：黑幕从当前黑度接着压，不许先退回透明、画面亮回来再重新压黑（CutscenePlayer.skip）
 ##   touch_one_step    触屏点一下只推一步：补全正在写的那句，不连带把下一句提上来（引擎另把触点模拟成一次左键）
-## 必须带窗口、且不能用 -s 跑（-s 下 Cinematics.live() 恒假，Main 不放结局过场）：
+##   ut_click_scope    墨幕题签停拍时点一下只收本幕：底下刚换好的四方沙盘页，标题演出不被同一下点击补全（UiTransition._input）
+## 必须带窗口、且不能用 -s 跑（-s 下 Cinematics.live() 恒假，Main 不放结局过场、不起墨幕）：
 ##   DISPLAY=:2 godot --path . res://tools/qa_w53_9_cutscene_input_probe.tscn
 ## 逐路一行 W53_9_CASE <路> OK|FAIL <细节>；末行 QA_W53_9_CUTSCENE_INPUT OK | FAIL <n>，rc 0 / 1。
 ## 等待一律按状态推进、上界按墙钟（CASE_MS）；撞上界判红并写明「墙钟上界先到」，不碰运气。
@@ -52,6 +53,7 @@ func _run() -> void:
 	get_tree().root.add_child(_main)
 	for _i in 8:
 		await get_tree().process_frame
+	await _case_ut_click_scope()
 	await _case_ending_fade_key()
 	await _case_ending_fade_click()
 	print("%s %s" % [TAG, "OK" if _fails == 0 else "FAIL %d" % _fails])
@@ -372,3 +374,42 @@ func _case_touch_one_step() -> void:
 		await _drain(p)
 	Engine.time_scale = 1.0
 	_verdict("touch_one_step", ok, "；".join(rows) + ("" if ok else "（应只补全正在写的一句，不连带提下一句）"))
+
+
+# ── 四、墨幕题签停拍点一下只收本幕 ─────────────────────
+## 标题页「开卷」→ 墨幕全黑时换上四方沙盘北页（TitleStage 从头演）→ 停拍时点一下：
+## 墨幕收到（_go_early），底下北页的标题演出照常往下演（is_revealing 仍真），不被同一下补全。
+func _case_ut_click_scope() -> void:
+	var stage: Node = _main.find_child("TitleStage", true, false)
+	if stage != null and bool(stage.call("is_revealing")):
+		stage.call("_complete")
+	await _frames(2)
+	var start_btn := _main.get("start_button") as Button
+	if stage == null or start_btn == null or not start_btn.is_visible_in_tree():
+		_verdict("ut_click_scope", false, "标题页没就位（stage=%s 开卷钮=%s）" % [stage, start_btn])
+		return
+	start_btn.pressed.emit()
+	var ut: Node = null
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < CASE_MS:
+		await get_tree().process_frame
+		var g := get_tree().get_nodes_in_group("nk1_ui_transition")
+		if not g.is_empty() and bool(g[0].get("_holding")):
+			ut = g[0]
+			break
+	if ut == null:
+		_verdict("ut_click_scope", false, "墙钟上界先到，没等到墨幕停拍")
+		return
+	var page := str(_main.get("current_scene_id"))
+	var was_revealing := bool(stage.call("is_revealing"))
+	_click(Vector2(640, 360))
+	await _frames(2)
+	var go_early := is_instance_valid(ut) and bool(ut.get("_go_early"))
+	var still := bool(stage.call("is_revealing"))
+	var ok := was_revealing and go_early and still
+	_verdict("ut_click_scope", ok, "停拍时页=%s 北页演出中=%s → 点一下：墨幕收场=%s 北页演出仍在演=%s" % [page, was_revealing, go_early, still]
+		+ ("" if ok else "（点一下只该收墨幕，不该连带把底下新页的标题演出补全）"))
+	while is_instance_valid(ut) and Time.get_ticks_msec() - t0 < CASE_MS:
+		await get_tree().process_frame
+	stage.call("_complete")
+	await _frames(2)

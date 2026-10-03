@@ -358,14 +358,16 @@ func _cancel_waits() -> void:
 	_woken.emit()
 
 
-## 墨幕在场时吞掉键盘（Esc 等热键不穿到底下的页面）；停顿中按键或点一下直接收场。鼠标由 _root 挡住。
+## 墨幕在场时吞掉键盘（Esc 等热键不穿到底下的页面）与鼠标按键；停顿中按键或点一下直接收场。
+## 鼠标按键也在这里吞：_root 只挡得住 GUI，挡不住底下别的 _input——停拍里点一下收墨幕，同一下还会落到黑幕底下
+## 刚换好的新页上（四方沙盘页 TitleStage 的标题演出当场补全；lane w53-9 实测）。
 func _input(event: InputEvent) -> void:
 	if _done:
 		return
 	var press: bool = (event is InputEventMouseButton and event.pressed) or (event is InputEventKey and event.pressed)
 	if press and _holding:
 		_go_early = true
-	if event is InputEventKey:
+	if event is InputEventKey or event is InputEventMouseButton:
 		get_viewport().set_input_as_handled()
 
 
