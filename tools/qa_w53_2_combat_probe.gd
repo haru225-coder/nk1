@@ -14,6 +14,9 @@ extends SceneTree
 ##   四、收战带本场折损：矢石 / 白刃折的水手、中弹颠落的舱面货，修复前收战 data 里一字不记（CombatLetterbox.loss_note 留着
 ##       「折水手 N 人」那一格没人填，SeaChart 札记也不提），出战墨边只写日期与敌船下场。折 7 人、颠落 4 件、中途夺船并入 40 人，
 ##       收战 data.losses 须恰为 {crew: 7, cargo: 4}（夺来的人不抵折损），墨边副题写「折水手七人，颠落舱面货四件」。
+##   五、中弹只颠挨打那条船的舱面货：货分船装，海战里挨打的只有旗舰；修复前 Ship.take_hit 按全队合并的货随手挑一件、
+##       remove_cargo 跨船依次扣——旗舰舱空、护航船装着生丝，旗舰每挨一发重击就颠掉护航船一件生丝。真走 take_hit 打旗舰四发：
+##       ① 旗舰空舱、护航生丝 10 → 生丝一件不少；② 旗舰茶 5、护航生丝 10 → 每发船体伤 ≥ 5 颠旗舰一件茶，生丝仍 10。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -53,6 +56,9 @@ func _run() -> void:
 	await _sec_order_notice(fleet)
 	print("== 四、收战带本场折损")
 	await _sec_battle_losses(fleet)
+	print("== 五、中弹只颠挨打那条船的舱面货")
+	await _sec_knock_own_hold(fleet, {}, "①")
+	await _sec_knock_own_hold(fleet, {"tea": {"qty": 5, "avg_cost": 20.0}}, "②")
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -332,6 +338,37 @@ func _sec_battle_losses(fleet: Node) -> void:
 	var lb: GDScript = load("res://scripts/ui/CombatLetterbox.gd")
 	var sub := str(lb.call("exit_subtitle", "", [], losses if losses is Dictionary else {}))
 	_check(sub == "折水手七人，颠落舱面货四件", "四 出战墨边副题写本场折损（得「%s」）" % sub)
+	await _close(wm)
+
+
+# ══ 五、中弹只颠挨打那条船的舱面货 ══════════════════════════════════
+
+## 旗舰福船（舱里 flag_hold）＋护航客舟（生丝 10）：真走 Ship.take_hit 打旗舰四发砲石（每发量旗舰耐久掉了多少，
+## 船体伤 ≥ 5 才颠货），护航船生丝须一件不少；旗舰舱里的货按重击发数少
+func _sec_knock_own_hold(fleet: Node, flag_hold: Dictionary, tag: String) -> void:
+	var wm := await _battle(fleet, "fu_ship_medium", 60, {"type": "pirate_boat", "count": 1}, flag_hold)
+	fleet.call("add_ship", "keel_boat", "护航")
+	var escort: Dictionary = (fleet.get("ships") as Array)[1]
+	escort["cargo"] = {"raw_silk": {"qty": 10, "avg_cost": 50.0}}
+	var own: Node = wm.get("ship")
+	var flag: Dictionary = (fleet.get("ships") as Array)[0]
+	var flag_units := func() -> int:
+		var n := 0
+		for g in (flag.get("cargo", {}) as Dictionary):
+			n += int(((flag["cargo"] as Dictionary)[g] as Dictionary).get("qty", 0))
+		return n
+	var start_units: int = flag_units.call()
+	var heavy := 0
+	for i in 4:
+		var dur0 := float(flag.get("durability", 0.0))
+		own.call("take_hit", {"amount": 40.0, "kind": "stone", "high": true, "zone": "mid"})
+		if dur0 - float(flag.get("durability", 0.0)) >= 5.0:
+			heavy += 1
+	var silk := int((escort.get("cargo", {}) as Dictionary).get("raw_silk", {}).get("qty", 0))
+	var want_flag := maxi(0, start_units - heavy)
+	_check(heavy > 0 and silk == 10 and int(flag_units.call()) == want_flag,
+		"五%s 旗舰挨 %d 发重击：护航船生丝仍 10（得 %d）、旗舰舱 %d → %d 件（得 %d）" % [
+			tag, heavy, silk, start_units, want_flag, int(flag_units.call())])
 	await _close(wm)
 
 

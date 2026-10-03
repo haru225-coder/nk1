@@ -345,11 +345,13 @@ func take_hit(hit: Dictionary) -> void:
 	var fx: Dictionary = get_damage_model().apply_hit(h)
 	var hull_dmg := float(fx.get("hull", 0.0))
 	_lose_crew(int(fx.get("crew", 0)))
-	# 中弹会颠掉舱面货（箭矢、火箭这类不伤船体的不颠）
-	if hull_dmg >= 5.0 and not Fleet.cargo.is_empty():
-		var keys = Fleet.cargo.keys()
-		var key = keys[randi() % keys.size()]
-		Fleet.remove_cargo(key, 1)
+	# 中弹会颠掉舱面货（箭矢、火箭这类不伤船体的不颠）。货分船装（Fleet 头注），挨打的是旗舰 Fleet.ships[0] 这一条，
+	# 只颠它自己舱里的（lane w53-2）：护航船不上战阵，旧写法按全队合并的货随手扣、remove_cargo 跨船依次扣，旗舰舱空也照颠护航船的货
+	if hull_dmg >= 5.0:
+		var hold: Dictionary = Fleet.flagship().get("cargo", {})
+		var keys := hold.keys().filter(func(g) -> bool: return int((hold[g] as Dictionary).get("qty", 0)) > 0)
+		if not keys.is_empty():
+			Fleet.remove_cargo(str(keys[randi() % keys.size()]), 1, 0)
 	_hull_loss(hull_dmg)
 	_emit_damage_events(fx.get("events", []))
 
