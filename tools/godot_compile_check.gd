@@ -124,6 +124,7 @@ const SCRIPTS := [
 	"res://tools/qa_fold_notice_probe.gd",  # lane w28-k2 札记折叠内非月息通告（【欠饷】按月 / 欠满三月 + 改元月历一瞥）原文断言（w27-k2 交主控①补新见）
 	"res://tools/qa_yard_transition_probe.gd",
 	"res://tools/qa_pirate_boat_probe.gd",  # 海寇快船 + 船图契约（lane pirate-boat-0928）
+	"res://tools/qa_w53_4_story_probe.gd",  # lane w53-4 剧情 advance_text 宣港对账专项探针
 	"res://tools/combat_vfx_probe.gd", "res://tools/ship_vfx_probe.gd", "res://tools/atmos_water_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
 	"res://scripts/combat/ShipHull3D.gd", "res://tools/ship_exquisite_probe.gd",
 	"res://tools/ship_dashi_probe.gd",  # 大食缝合船朝向探针（lane ship-dashi）
