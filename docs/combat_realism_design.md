@@ -135,7 +135,7 @@
 | `player_caught` | 未能甩脱 | 现码 CombatFx.sea_flee_fail_note 同句 |
 | `player_routed` | 溃逃 | combat09+11 已接：CombatMorale 我方溃逃满 player_grace_s → flee{rout, morale_verdict=player_rout} → 题签 rout「溃逃」；SeaChart 仍走通用 flee 分支，flee_ok 由士气件掷骰（见§九） |
 | `player_struck` | 降幡 | combat11 已接：CombatMorale 我方降幡 → lose{struck}，题签现码出 yield「请降」，非本表 strike；SeaChart 走败局非沉船分支：货损二成五，log 出 sea_board_lose_note（见§九） |
-| `player_overrun` | 失船面 | 文案同 CombatFx.sea_board_lose_note；现码白刃失利只解钩缆、不收场，此结局暂无来路（见§九） |
+| `player_overrun` | 失船面 | lane w53-2 已接：敌船先抛钩（PirateShip.boarding_initiator）时 WorldMap._board_enemy 敌攻我守，白刃敌胜即此（转移 t_deck_lost）→ lose{overrun}，接舷题签「失守」、出战题签 lose「败退」；SeaChart 走败局非沉船分支：货损二成五，log 出 sea_board_lose_note（文案同） |
 | `player_sunk` | 旗舰沉没 | 现码 CombatFx.sea_sunk_note 同向 |
 | `disengaged` | 两散 | combat12 已接（限时一路）：WorldMap 开战满 thresholds.battle_limit_s（300 秒，开战时读本文件；接舷白刃中不计时）→ flee{flee_ok, parted} → 题签 parted「两散」，SeaChart sea_parted_note 与本条 log 同句，不给赏、不绕路；t_gale 一路无来路（见§九） |
 
@@ -147,9 +147,8 @@
 
 ## 九、对齐与待接线
 
-已接、不再列：combat11 清空 combat10 `KNOWN_DEFECTS`（夺末船 `boarded=true`、`player_damage` 负值、回写）；敌降「受降」、我方溃逃「溃逃」由 combat09+11 接；敌遁半赏（按各船下场分账，先沉后遁不算敌遁）、限时两散由 combat12 接。下列是仍未对上的：
+已接、不再列：combat11 清空 combat10 `KNOWN_DEFECTS`（夺末船 `boarded=true`、`player_damage` 负值、回写）；敌降「受降」、我方溃逃「溃逃」由 combat09+11 接；敌遁半赏（按各船下场分账，先沉后遁不算敌遁）、限时两散由 combat12 接；失船面（敌船先抛钩、白刃敌胜 → `lose{overrun}`）由 lane w53-2 接。下列是仍未对上的：
 
-- **失船面无来路**（`player_overrun`）：白刃失利现码只解钩缆、战斗照打，不发 `lose{overrun}`。
 - **两散只有限时一路**：阶段图 `t_gale`（风七级以上不能战 → `disengaged`）不收场——`SeaState` 把海战风力封顶在 `WIND_CAP` 130，到不了 `combat_ok: false` 那几级，此路暂无来路。
 - **题签键与本表不符**：`player_struck` 本表 `strike`「降幡」，现码出 `yield`「请降」（`strike` 不在 `OUTCOME_ACT`）；`enemy_fled` 本表 `win`「战罢」，现码出 `repel`「击退」。二者择一回写。
 - **SeaChart 我方失利不分结局**：我方降幡走败局非沉船分支，log 出 `sea_board_lose_note`「白刃不利」而非本条降幡句；溃逃走通用 flee 分支，不出本条句。士气也不按 `morale_hint`：降幡照败局扣 12（本表 −6），溃逃 flee 分支不扣（本表 −8）。

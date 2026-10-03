@@ -3,6 +3,12 @@ extends SceneTree
 ## 对账「题签上写的」与「船队 / 敌船身上真记的」。逐节：
 ##   一、白刃两边伤亡入账（本队先钩、白刃失利）：MeleeResolve 给的守方阵亡 def_dead 要从敌船水手里扣掉——
 ##       修复前只扣本队 att_dead，敌船人数一个不少，跳帮再败几回对面照样满员（回退即红：敌船水手 ≠ 开打前 − def_dead）。
+##   二、敌船先抛钩 = 敌攻我守（PirateShip.boarding_initiator；combat_phases.json 转移 t_deck_lost / t_deck_held）：
+##       修复前 WorldMap 一律按本队跳帮结算——敌船钩上来，记事却写「我 N 人跃过舷墙」「我退回本船」「敌斧手砍断钩缆」，
+##       本队人少守不住也收不了战（敌船永远赢不了接舷），人多反倒把钩上来的敌船夺了。三格：
+##       ① 6 人对 200 人：敌攻我守、敌胜 → 以 lose{overrun} 收战（失船面），本队不得船、守方阵亡从本队扣；
+##       ② 200 人对 20 人：敌攻我守、我守住 → 不收战、敌船放钩仍在场、本队不得船，敌船扣攻方阵亡，敌将记「跳帮受挫」；
+##       ③ 士气挂件：敌船先钩时敌簿记攻方、本队簿记守方；守住后本队簿提士气（旧口径反过来按我攻败记、压士气）。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -34,6 +40,10 @@ func _run() -> void:
 
 	print("== 一、白刃两边伤亡入账（本队先钩、白刃失利）")
 	await _sec_melee_casualties(fleet)
+	print("== 二、敌船先抛钩：敌攻我守")
+	await _sec_enemy_overrun(fleet)
+	await _sec_enemy_repelled(fleet)
+	await _sec_enemy_first_morale(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -125,6 +135,127 @@ func _sec_melee_casualties(fleet: Node) -> void:
 	_check(lost_rounds > 0 and bad.is_empty(), "白刃失利 %d 回：敌船水手逐回扣守方阵亡、本队逐回扣攻方阵亡%s" % [
 		lost_rounds, "" if bad.is_empty() else "——" + "；".join(bad)])
 	_check(bled > 0, "其中 %d 回守方确有阵亡（def_dead > 0），上一格才判得出「没扣」" % bled)
+	await _close(wm)
+
+
+# ══ 二、敌船先抛钩：敌攻我守 ══════════════════════════════════════
+
+## 敌船自己抛钩接上来（_try_grapple 设 boarding_initiator 再请 _board_enemy），这里直设标记再直调，同一条路
+func _enemy_boards(wm: Node, foe: Node) -> void:
+	foe.set("boarding_initiator", true)
+	wm.call("_board_enemy", foe)
+
+
+## ① 小艍 6 人对快船 200 人：敌攻我守、敌夺下本船甲板 → lose{overrun} 收战一次；本队不得船，守方阵亡从本队扣
+func _sec_enemy_overrun(fleet: Node) -> void:
+	var wm := await _battle(fleet, "sampan", 6, {"type": "pirate_boat", "count": 1})
+	var foes := _foes(wm)
+	if foes.is_empty():
+		_check(false, "① 海战刷出一艘快船")
+		await _close(wm)
+		return
+	var foe: Node2D = foes[0]
+	foe.set("crew", 200)
+	var rec: Array = []
+	wm.battle_finished.connect(func(o: String, d: Dictionary) -> void: rec.append([o, d.duplicate()]))
+	var ships_before := (fleet.get("ships") as Array).size()
+	var ours_before := int(fleet.call("total_crew"))
+	await _enemy_boards(wm, foe)
+	var r: Dictionary = wm.get("_last_melee")
+	_check(not r.is_empty() and r.get("att_is_player") == false and r.get("def_is_player") == true,
+		"① 敌船先钩：白刃按敌攻我守结算（攻方是我 = %s，守方是我 = %s）" % [r.get("att_is_player"), r.get("def_is_player")])
+	_check(rec.size() == 1 and rec[0][0] == "lose" and bool((rec[0][1] as Dictionary).get("overrun", false)),
+		"① 敌攻我守、敌胜（%s）→ 以 lose{overrun} 收战一次（得 %s）" % [str(r.get("outcome", "")), str(rec)])
+	_check((fleet.get("ships") as Array).size() == ships_before,
+		"① 本船失守不得船：船队仍 %d 条（得 %d）" % [ships_before, (fleet.get("ships") as Array).size()])
+	var dd := int(r.get("def_dead", 0))
+	var want := ours_before - mini(dd, ours_before - 1)  # lose_crew_random 每船至少留 1 人
+	_check(int(fleet.call("total_crew")) == want,
+		"① 守方阵亡从本队扣：%d − def_dead %d → %d（得 %d）" % [ours_before, dd, want, int(fleet.call("total_crew"))])
+	var lb: GDScript = load("res://scripts/ui/CombatLetterbox.gd")
+	var bs: GDScript = load("res://scripts/combat/BoardingStage.gd")
+	_check(str(lb.call("outcome_key", "lose", {"overrun": true})) == "lose" and str(bs.call("title_for", "overrun")) == "失守",
+		"① 接舷题签「失守」、出战题签 lose「败退」（得 %s / %s）" % [
+			bs.call("title_for", "overrun"), lb.call("outcome_key", "lose", {"overrun": true})])
+	await _close(wm)
+
+
+## ② 广船 200 人对快船 20 人：敌攻我守、我守住 → 不收战、敌船放钩仍在场、本队不得船；敌船扣攻方阵亡、本队扣守方阵亡；
+## 敌将记「跳帮受挫」（旧口径按我攻敌守：200 人跳过去把钩上来的敌船夺了，末船夺下即收战）
+func _sec_enemy_repelled(fleet: Node) -> void:
+	var wm := await _battle(fleet, "canton_ship", 200, {"type": "pirate_boat", "count": 1})
+	var foes := _foes(wm)
+	if foes.is_empty():
+		_check(false, "② 海战刷出一艘快船")
+		await _close(wm)
+		return
+	var foe: Node2D = foes[0]
+	foe.set("crew", 20)
+	var rec: Array = []
+	wm.battle_finished.connect(func(o: String, d: Dictionary) -> void: rec.append([o, d.duplicate()]))
+	var ships_before := (fleet.get("ships") as Array).size()
+	var ours_before := int(fleet.call("total_crew"))
+	await _enemy_boards(wm, foe)
+	var r: Dictionary = wm.get("_last_melee")
+	var alive := is_instance_valid(foe) and not foe.is_queued_for_deletion()
+	_check(not r.is_empty() and r.get("att_is_player") == false and str(r.get("legacy", "")) == "lose",
+		"② 敌船先钩：敌攻我守、攻方没拿下（了局 %s，攻方是我 = %s）" % [str(r.get("outcome", "")), r.get("att_is_player")])
+	_check(rec.is_empty() and not bool(wm.get("resolved")) and alive and (fleet.get("ships") as Array).size() == ships_before,
+		"② 守住了不收战、敌船仍在场、本队不得船（收战 %s · 敌在场 %s · 船队 %d 条）" % [
+			str(rec), alive, (fleet.get("ships") as Array).size()])
+	if not alive or r.is_empty():
+		await _close(wm)
+		return
+	_check(foe.get("grappled") == false and foe.get("boarding_initiator") == false and not bool(wm.get("boarding")),
+		"② 敌船放钩退开：grappled / boarding_initiator 都清、本队不在白刃中")
+	var ad := int(r.get("att_dead", 0))
+	var dd := int(r.get("def_dead", 0))
+	_check(int(foe.get("crew")) == 20 - ad and int(fleet.call("total_crew")) == ours_before - dd,
+		"② 两边伤亡各归各：敌船 20 − att_dead %d = %d（得 %d）、本队 %d − def_dead %d = %d（得 %d）" % [
+			ad, 20 - ad, int(foe.get("crew")), ours_before, dd, ours_before - dd, int(fleet.call("total_crew"))])
+	var cap = foe.get("captain")
+	var why := str(cap.get("_cd_reason")) if cap != null else ""
+	_check(cap != null and why == "跳帮受挫，退回炮战" and float(cap.get("_reboard_cd")) > 0.0,
+		"② 敌将记跳帮受挫、歇一阵再贴（得「%s」）" % why)
+	var note: Label = wm.get("_notice")
+	var head := str(r.get("summary_head", ""))
+	var txt := note.text if note != null else ""
+	_check(head != "" and txt.begins_with(head) and txt.find("我退回本船") < 0 and txt.find("敌斧手") < 0,
+		"② 记事按守方写（headless 浮字兜底：「%s」）" % txt)
+	await _close(wm)
+
+
+## ③ 士气挂件：敌船先钩那一刻敌簿记攻方、本队簿记守方；放钩（守住）后本队簿提士气。直设 grappled 让挂件逐帧看到钩上、放开
+func _sec_enemy_first_morale(fleet: Node) -> void:
+	var wm := await _battle(fleet, "canton_ship", 100, {"type": "pirate_boat", "count": 1})
+	var foes := _foes(wm)
+	var tracker = wm.get("_morale")
+	if foes.is_empty() or tracker == null:
+		_check(false, "③ 海战刷出快船、挂上士气挂件")
+		await _close(wm)
+		return
+	var foe: Node2D = foes[0]
+	for _i in 3:
+		await physics_frame
+	var es = tracker.call("sheet_of", foe)
+	var ps = tracker.call("player_sheet")
+	if es == null or ps == null:
+		_check(false, "③ 士气挂件登记了敌船与本队两页")
+		await _close(wm)
+		return
+	foe.set("boarding_initiator", true)
+	foe.set("grappled", true)
+	for _i in 2:
+		await physics_frame
+	_check(es.get("grappled_as_attacker") == true and ps.get("grappled") == true and ps.get("grappled_as_attacker") == false,
+		"③ 敌船先钩：敌簿记攻方、本队簿记被钩的守方（敌攻 = %s，我攻 = %s）" % [
+			es.get("grappled_as_attacker"), ps.get("grappled_as_attacker")])
+	var v_hooked := float(ps.get("value"))
+	foe.set("grappled", false)
+	for _i in 2:
+		await physics_frame
+	var v_held := float(ps.get("value"))
+	_check(v_held > v_hooked, "③ 守住白刃本队簿提士气（%.1f → %.1f）" % [v_hooked, v_held])
 	await _close(wm)
 
 

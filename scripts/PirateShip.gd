@@ -33,15 +33,20 @@ var cannon_count: int = 3
 
 ## P4-2 接舷：被玩家钩住后停止航行/开炮，进入白刃判定。
 ## lane combat07：钩着时被放开、船还在 = 白刃本船守住（WorldMap 判对方败才放钩）→ 敌将士气大振、退开整队。
+## lane w53-2：本船先抛钩跳过去、被放开船还在 = 本船这攻方没拿下（被击退 / 被砍缆）→ 敌将记跳帮受挫、退回炮战。
 ## 走 setter 而不是逐帧看：headless 下白刃当场结算，钩上、放开在同一次调用里，逐帧看会漏掉。
 var grappled: bool = false:
 	set(v):
 		var released := grappled and not v
+		var boarded_first := boarding_initiator
 		grappled = v
 		if released:
 			boarding_initiator = false
 		if released and hull_hp > 0.0 and captain != null:
-			captain.on_melee_held()
+			if boarded_first:
+				captain.on_boarding_repelled()
+			else:
+				captain.on_melee_held()
 			enemy_morale = captain.reported_morale()
 ## 敌船型号（_spawn_enemy 传入；白刃夺船时 Fleet.add_ship 用）。缺省是海寇快船
 var ship_type: String = "pirate_boat"

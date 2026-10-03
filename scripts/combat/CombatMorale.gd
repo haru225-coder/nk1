@@ -18,7 +18,7 @@
 ##   的 win / lose / flee；data 带 morale_verdict（enemy_struck 敌降 / enemy_fled 敌遁 / enemy_broken 降遁皆有 /
 ##   player_rout 我方溃逃 / player_struck 我方降幡）与 enemy_struck / enemy_fled / struck_types / rout / struck。
 ##   is_surrounded(位置, 敌位置, 友位置)：半径内两敌分处两舷（方位夹角够大）或三敌以上即算被围，有友船在侧则不算。
-## 三、观战挂件 Tracker（内部类，Node）：attach(WorldMap) 挂上后每个物理帧只读轮询——旗舰 / 敌船 hull_hp、crew、grappled，
+## 三、观战挂件 Tracker（内部类，Node）：attach(WorldMap) 挂上后每个物理帧只读轮询——旗舰 / 敌船 hull_hp、crew、grappled（钩上那一刻看 boarding_initiator 定谁攻谁守），
 ##   Fleet.total_crew()，敌我位置——差值即事件，喂进各页士气簿；敌船降、沉、被夺、溃逃互相传染。
 ##   写出：各船节点 meta「nk1_combat_morale」= snapshot()；敌船 enemy_morale 改写成战中士气（PirateShip.combat_strength
 ##   白刃判定读它，write_enemy_morale 关得掉）；信号 state_changed / noted / verdict。不改 WorldMap / Ship / PirateShip 的行为。
@@ -1110,14 +1110,19 @@ class Tracker extends Node:
 			e["crew"] = cn
 			var g: bool = n.get("grappled") == true
 			if g and not bool(e["grappled"]):
-				sheet.grapple(false)
+				# 谁先抛钩谁作攻方（lane w53-2，同 WorldMap._board_enemy）：敌船先钩（boarding_initiator）敌攻我守，本队按 G 钩上我攻敌守
+				var enemy_first: bool = n.get("boarding_initiator") == true
+				e["enemy_first"] = enemy_first
+				sheet.grapple(enemy_first)
 				if _player != null:
-					_player.grapple(true)
+					_player.grapple(not enemy_first)
 			elif not g and bool(e["grappled"]):
-				# 钩着的船还在、钩却松了：我方白刃不利、敌船脱钩（WorldMap._board_enemy 败的那一支）
-				sheet.boarding_result(true, false)
+				# 钩着的船还在、钩却松了：攻方白刃不利、两船分开（WorldMap._board_enemy 攻方败的那一支）——
+				# 本队先钩是我败敌守住，敌船先钩是敌败我守住
+				var ef := bool(e.get("enemy_first", false))
+				sheet.boarding_result(not ef, ef)
 				if _player != null:
-					_player.boarding_result(false, true)
+					_player.boarding_result(ef, not ef)
 			e["grappled"] = g
 			var d := n.global_position.distance_to(ship.global_position) if ship != null else INF
 			var ctx := {"nearest_foe": d, "surrounded": false}

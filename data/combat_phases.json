@@ -2663,7 +2663,7 @@
       "cue": null,
       "morale_hint": -10,
       "spoil_rule": "none",
-      "note": "文案同 CombatFx.sea_board_lose_note；现码白刃失利只解钩缆、不收场，此结局暂无来路（见§九）"
+      "note": "lane w53-2 已接：敌船先抛钩（PirateShip.boarding_initiator）时 WorldMap._board_enemy 敌攻我守，白刃敌胜即此（转移 t_deck_lost）→ lose{overrun}，接舷题签「失守」、出战题签 lose「败退」；SeaChart 走败局非沉船分支：货损二成五，log 出 sea_board_lose_note（文案同）"
     },
     {
       "id": "player_sunk",

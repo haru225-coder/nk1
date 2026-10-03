@@ -598,6 +598,18 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 	return _conclude(out, OUTCOME_CUT_LOOSE, rng, cas_a, cas_d, left_d, 0)
 
 
+## 守方是玩家时的纪实句（敌船先抛钩接上来那一路，WorldMap._board_enemy 用）：了局句照旧（字随 is_player 已是「敌 / 我」），
+## 伤亡先写本方（守方）再写攻方——summary 的伤亡注只写攻方；本方失了甲板也不写「俘 / 跳海」，那是本方的人，敌搬货走人不另立账。
+static func defender_summary(result: Dictionary) -> String:
+	var out := str(result.get("summary_head", result.get("summary", "")))
+	for side in [["d_word", "def_cas", "def_dead"], ["a_word", "att_cas", "att_dead"]]:
+		var cas := int(result.get(side[1], 0))
+		if cas > 0:
+			var dead := int(result.get(side[2], 0))
+			out += "%s阵亡 %d、轻伤 %d。" % [str(result.get(side[0], "")), dead, cas - dead]
+	return out
+
+
 ## 折回旧两拍契约（BoardingStage.resolve / WorldMap 现口径）：夺船、俘获 = "win"，其余 = "lose"。按攻方算。
 static func legacy_outcome(result: Dictionary) -> String:
 	var o := str(result.get("outcome", ""))

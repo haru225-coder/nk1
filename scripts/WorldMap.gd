@@ -98,7 +98,7 @@ var boarding_target: Node2D = null
 var _morale = null
 ## 开战时在册船数：战损只按这几条算，夺来入列的船不进 player_damage
 var _battle_roster_n: int = 0
-## 末船接舷夺下后等题签播完再收战：挡住 _process 的 win{} 抢先（await 即便 headless 也会让出一帧）
+## 末船接舷夺下 / 本船失守后等题签播完再收战：挡住 _process 的 win{} 抢先（await 即便 headless 也会让出一帧）
 var _finishing_boarded: bool = false
 ## 最近一场白刃的 MeleeResolve 结果（_board_enemy 写；探针对伤亡账用，空 = 本场还没打过白刃 / 敌降免白刃）
 var _last_melee: Dictionary = {}
@@ -262,11 +262,16 @@ func _boarding_target_valid() -> bool:
 
 ## P4-2 / combat11：接舷白刃走 MeleeResolve；士气簿 yields 则免白刃直接夺。
 ## 钩缆在 G 键 / 调用方已确认够距后挂上，故 resolve 带 hooked=true（跳过抛钩掷骰，探针远距直调也能夺）。
+## 谁先抛钩谁作攻方（lane w53-2，combat_phases.json 转移 t_deck_taken / t_deck_lost / t_deck_held）：敌船自己抛钩接上来
+## （PirateShip.boarding_initiator）时敌攻我守——守住了（击退 / 砍缆）敌船退开、战斗照打；守不住（敌夺舵 / 我降幡）即失船面
+## player_overrun：敌搬货走人，以 lose{overrun} 收战（SeaChart 走败局非沉船一支：货损二成五、札记白刃不利）。
 ## 末船夺下：headless 当帧 _battle_exit(boarded=true)（story / realism 探针同帧取 boarded，只等 30 帧）；
-## 窗口下等「夺船」题签停满 T_HOLD、淡出再收战，其间 _finishing_boarded 挡住 _process 的 win{} / 限时两散、B 键弃战与士气簿裁决。
+## 窗口下等「夺船」/「失守」题签停满 T_HOLD、淡出再收战，其间 _finishing_boarded 挡住 _process 的 win{} / 限时两散、B 键弃战与士气簿裁决。
 func _board_enemy(enemy: Node2D) -> void:
 	if not is_instance_valid(enemy):
 		return
+	# 敌船先抛的钩：敌作攻方（放钩时 PirateShip 自己清掉这一标记，开头先记下）
+	var enemy_first: bool = enemy.get("boarding_initiator") == true
 	boarding = true
 	boarding_target = enemy
 	_last_melee = {}
@@ -297,35 +302,50 @@ func _board_enemy(enemy: Node2D) -> void:
 	var notice := ""
 	var do_capture := false
 
-	# 敌已降幡：接舷即得，免白刃
+	# 敌已降幡：接舷即得，免白刃（降了的船不会自己抛钩，这一支只在本队先钩时走）
 	var yield_sheet = _morale.sheet_of(enemy) if _morale != null else null
-	if yield_sheet != null and yield_sheet.yields_to_boarding():
+	if not enemy_first and yield_sheet != null and yield_sheet.yields_to_boarding():
 		do_capture = true
 		notice = _CombatFx.board_win_note(_node_str(enemy, "ship_name", "敌船"))
 		detail = "敌船降幡，接舷收船"
 	else:
-		var r := _melee_resolve(enemy)
+		var r := _melee_resolve(enemy, enemy_first)
 		_last_melee = r
+		# legacy 按攻方算：win = 攻方占了对面甲板（夺船 / 对面降幡）
 		var legacy := str(r.get("legacy", "lose"))
-		var att_dead := int(r.get("att_dead", 0))
+		# 攻方折 att_dead、守方折 def_dead：本队先钩本队是攻方，敌船先钩本队是守方
+		var our_dead := int(r.get("def_dead" if enemy_first else "att_dead", 0))
+		Fleet.lose_crew_random(our_dead)
+		# 士气增减也按攻方给；本队守的那一路反过来记——攻方挫多少、守方振多少
 		var morale_delta := int(r.get("att_morale_delta", 0))
-		Fleet.lose_crew_random(att_dead)
-		Fleet.morale = clampi(Fleet.morale + morale_delta, 0, Fleet.MORALE_MAX)
-		# 守方阵亡记在敌船上（lane w53-2）：白刃失利、敌船留在场上时，题签里「敌伤 N」那些人真的少了，
+		Fleet.morale = clampi(Fleet.morale + (-morale_delta if enemy_first else morale_delta), 0, Fleet.MORALE_MAX)
+		# 敌船那一方的阵亡记在敌船上（lane w53-2）：白刃没拿下、敌船留在场上时，题签里「敌伤 N」那些人真的少了，
 		# 下一回接舷、敌将与士气簿按剩下的人算；不记的话跳帮再败几回，敌船人数一个不少
-		_enemy_lose_crew(enemy, int(r.get("def_dead", 0)))
-		detail = str(r.get("summary", "")).strip_edges()
+		_enemy_lose_crew(enemy, int(r.get("att_dead" if enemy_first else "def_dead", 0)))
+		detail = (_MeleeResolve.defender_summary(r) if enemy_first else str(r.get("summary", ""))).strip_edges()
+		if legacy == "win" and enemy_first:
+			# 失船面：敌占了本船甲板、搬货走人。题签「失守」停满再收战（headless 起不来题签，浮字兜底、当帧收战）
+			_finishing_boarded = true
+			var lost_stage: CanvasLayer = _BoardingStage.resolve(self, "overrun", detail)
+			if lost_stage != null:
+				await _await_boarding_fx(lost_stage)
+			else:
+				_show_combat_notice(detail)
+			_battle_exit("lose", {"overrun": true})
+			return
 		if legacy == "win":
 			do_capture = true
 			GameState.martial = mini(100, GameState.martial + 1)
 		else:
-			# 落空 / 击退 / 脱钩：解开钩缆，不把敌船留在 grappled
+			# 落空 / 击退 / 脱钩：解开钩缆，不把敌船留在 grappled（敌船先钩被我击退的，PirateShip 放钩时记「跳帮受挫」）
 			if is_instance_valid(enemy):
 				enemy.set("grappled", false)
 			boarding = false
 			boarding_target = null
-			var msg2 := detail if detail != "" else _CombatFx.board_lose_note(att_dead)
-			var lose_stage: CanvasLayer = _BoardingStage.resolve(self, "lose", msg2)
+			var msg2 := detail if detail != "" else _CombatFx.board_lose_note(our_dead)
+			# 题签：本队先钩照旧「脱钩」；敌船先钩写守方眼里的了局（击退 / 脱钩）
+			var lose_stage: CanvasLayer = _BoardingStage.resolve(
+				self, str(r.get("outcome", "lose")) if enemy_first else "lose", msg2)
 			if lose_stage != null:
 				stage = lose_stage
 			else:
@@ -370,19 +390,23 @@ func _board_enemy(enemy: Node2D) -> void:
 			await _await_boarding_fx(stage)
 
 
-## 白刃一场（MeleeResolve.resolve，钩缆已挂牢 hooked）：本队按 Fleet、敌按船节点、态势按两船节点；
-## 有士气簿则本队士气换 melee_factor（没挂士气簿时同 MeleeResolve.from_battle）
-func _melee_resolve(enemy: Node2D) -> Dictionary:
+## 白刃一场（MeleeResolve.resolve，钩缆已挂牢 hooked）：本队按 Fleet、敌按船节点、态势按两船节点（攻方看守方）；
+## 有士气簿则本队士气换 melee_factor（没挂士气簿时本队先钩那一路同 MeleeResolve.from_battle）。
+## enemy_first：敌船先抛的钩，敌作攻方、本队作守方——结果里 att_* 是敌船的、def_* 是本队的，记事里「敌 / 我」随 is_player 换位
+func _melee_resolve(enemy: Node2D, enemy_first := false) -> Dictionary:
 	var us: Dictionary = _MeleeResolve.side_from_fleet(Fleet)
 	var ps = _morale.player_sheet() if _morale != null else null
 	if ps != null:
 		us["morale"] = clampi(int(round(ps.melee_factor() * 100.0)), 0, 100)
 	var foe: Dictionary = _MeleeResolve.side_from_enemy(enemy)
+	var att: Dictionary = foe if enemy_first else us
+	var def: Dictionary = us if enemy_first else foe
 	var ctx: Dictionary = _MeleeResolve.approach_from_nodes(
-		ship, enemy, Vector2.ZERO, -1.0, str(us.get("type", "")), str(foe.get("type", ""))
+		enemy if enemy_first else ship, ship if enemy_first else enemy, Vector2.ZERO, -1.0,
+		str(att.get("type", "")), str(def.get("type", ""))
 	)
 	ctx["hooked"] = true
-	return _MeleeResolve.resolve(us, foe, ctx)
+	return _MeleeResolve.resolve(att, def, ctx)
 
 
 ## 敌船白刃折损 n 人（只记阵亡 / 重伤不起的；轻伤战后归队，同本队只扣 att_dead 的口径），水手不减到负数

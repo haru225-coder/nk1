@@ -98,13 +98,16 @@ static func play(parent: Node, from: Node2D, to: Node2D, result: Dictionary, spe
 	return st
 
 
-## 题签名：两拍的 win / board → 夺船、lose → 脱钩；MeleeResolve 了局键照 MeleeResolve.TITLES；其余「白刃」。
+## 题签名：两拍的 win / board → 夺船、lose → 脱钩、overrun → 失守（敌船先钩、占了本船甲板，WorldMap 随即败局收战）；
+## MeleeResolve 了局键照 MeleeResolve.TITLES；其余「白刃」。
 static func title_for(outcome: String) -> String:
 	match outcome:
 		"win", "board":
 			return "夺船"
 		"lose":
 			return "脱钩"
+		"overrun":
+			return "失守"
 	return MeleeResolve.outcome_title(outcome)
 
 

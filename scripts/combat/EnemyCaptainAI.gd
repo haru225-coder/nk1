@@ -56,13 +56,15 @@ const WEATHER_MIN_DIST := 250.0
 const WEATHER_REENTER := 80.0
 const WEATHER_TIMEOUT := 8.0
 ## 抛钩：距离在 GRAPPLE_RANGE 内（WorldMap.BOARD_DISTANCE 是 140）、相对速度不过 GRAPPLE_REL_SPEED，每 GRAPPLE_EVERY 秒试一次；
-## 连失 GRAPPLE_FAILS 次退回炮战歇 GRAPPLE_REST 秒；白刃得手后 REBOARD_COOLDOWN 秒内不再贴上来
+## 连失 GRAPPLE_FAILS 次退回炮战歇 GRAPPLE_REST 秒；白刃得手 / 跳帮受挫后 REBOARD_COOLDOWN 秒内不再贴上来
 const GRAPPLE_RANGE := 120.0
 const GRAPPLE_REL_SPEED := 170.0
 const GRAPPLE_EVERY := 1.4
 const GRAPPLE_FAILS := 3
 const GRAPPLE_REST := 8.0
 const REBOARD_COOLDOWN := 14.0
+## 本船先抛钩跳帮、白刃没拿下（被击退 / 被砍缆）掉的士气：与守住白刃时大振的 12 对称
+const BOARD_REPELLED_SHOCK := 12.0
 ## 脱离拉开到此即离场（WorldMap 镜头 1.5 倍约看 850×480，1500 早出了视野）
 const ESCAPE_DIST := 1500.0
 ## 降后久无人接收（STRIKE_SLIP_TIME 秒、对方还在 STRIKE_SLIP_DIST 外）就乘隙遁去
@@ -354,6 +356,13 @@ func on_melee_held() -> void:
 	morale = minf(100.0, morale + 12.0)
 	_reboard_cd = REBOARD_COOLDOWN
 	_cd_reason = "白刃得手，退开整队"
+
+
+## 本船先抛钩跳帮、白刃没拿下、船还在自己手里（WorldMap 判本船这攻方败、放钩）：海寇失利即散——士气受挫，退回炮战歇一阵
+func on_boarding_repelled() -> void:
+	_shake(BOARD_REPELLED_SHOCK)
+	_reboard_cd = REBOARD_COOLDOWN
+	_cd_reason = "跳帮受挫，退回炮战"
 
 
 ## 掉士气：档案 disc × 敌将系数（悍将稳得住）× 成群的底气（同场还有 n 艘僚船在打，每艘把震动压掉一截；僚船一折，底气跟着没）
