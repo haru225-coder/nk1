@@ -4951,18 +4951,21 @@ else:
 # 标题页「续卷」进来只许翻阅（续卷钮接 _show_save_dialog.bind(true)、记录钮 disabled = read_only）——放开了，标题页一点「记录」
 # 就把还没开局的空白局面写进那一卷，真进度退成副抄、册页上再翻不到；「翻阅」按 can_load 定可按；记录写不进先 return
 # （不合册页、不报已记入）。运行时断言见 tools/qa_w53_5_save_sheet_probe.gd。
-_sv_fail = _save_slot_code.find("if not SaveLoad.save_game(slot")
+# 五轮：新版所记的卷也不给记（SaveLoad.can_save：脚注许了「卷页未动」，本版一记就把新版进度退成副抄、再记一回连副抄冲掉）。
+_sv_fail = _save_slot_code.find("not SaveLoad.save_game(slot")
 _sv_ret = _save_slot_code.find("return", _sv_fail) if _sv_fail >= 0 else -1
 _sv_ok = _save_slot_code.find("已记入")
 if (
     "_resume_button.pressed.connect(_show_save_dialog.bind(true))" in main_src
-    and "write.disabled = read_only" in _save_dialog_code
+    and "write.disabled = read_only or not SaveLoad.can_save(n)" in _save_dialog_code
     and "read.disabled = not SaveLoad.can_load(n)" in _save_dialog_code
+    and "if not SaveLoad.can_save(slot) or not SaveLoad.save_game(slot" in _save_slot_code
+    and '!= "future"' in _code_only(_saveload_fn.get("can_save", ""))
     and 0 <= _sv_fail < _sv_ret < _sv_ok
 ):
-    print("  ✓ 航海日志册页：标题页续卷「记录」不给按、「翻阅」按 can_load、记录写不进不报已记入")
+    print("  ✓ 航海日志册页：标题页续卷「记录」不给按、新版所记卷不给记、「翻阅」按 can_load、记录写不进不报已记入")
 else:
-    print("  ✗ 航海日志册页：标题页续卷「记录」放开、「翻阅」不按 can_load，或记录写不进照报已记入（标题页一点即把空白局写进那一卷）")
+    print("  ✗ 航海日志册页：标题页续卷「记录」放开、新版所记卷记得进、「翻阅」不按 can_load，或记录写不进照报已记入（标题页一点即把空白局写进那一卷）")
     problems.append("航海日志册页记录把关缺失")
 
 # lane w53-5 五轮：航海日志册页收键盘焦点。原先鼠标点「航海日志」开册页，焦点留在暗幕底下那颗钮上：Enter 把册页拆了重开，

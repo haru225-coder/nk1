@@ -72,7 +72,8 @@ static func show_save_dialog(main: Control, read_only := false) -> void:
 			main._slip_note(slip, tip, tip_color)
 		var row: HFlowContainer = main._slip_row(slip)
 		var write: Button = main._slip_chip(row, "记录", main._on_save_slot.bind(n), true)
-		write.disabled = read_only
+		# 新版所记的卷也不给记（脚注许了「卷页未动」，一记就把新版进度退成副抄，见 SaveLoad.can_save）
+		write.disabled = read_only or not SaveLoad.can_save(n)
 		var read: Button = main._slip_chip(row, "翻阅", main._on_load_slot.bind(n))
 		# 翻不开的卷（坏档 / 新版所记）不给按：按下去的失败句只进记事栏，标题页那里看不见（脚注已写明缘由）
 		read.disabled = not SaveLoad.can_load(n)
@@ -158,7 +159,7 @@ static func close_save_sheet(main: Control) -> void:
 
 
 static func on_save_slot(main: Control, slot: int) -> void:
-	if not SaveLoad.save_game(slot, main.current_scene_id):
+	if not SaveLoad.can_save(slot) or not SaveLoad.save_game(slot, main.current_scene_id):
 		main.log_msg("第 %d 卷誊写未成，笔墨未落定。" % slot)
 		return
 	main._close_save_sheet()

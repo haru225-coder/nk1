@@ -780,6 +780,12 @@ func can_load(slot: int) -> bool:
 	return slot_source(slot) in ["primary", "bak"]
 
 
+## 这一卷记得进（lane w53-5 五轮）：新版所记的卷不覆写——脚注许了「卷页未动」，本版一记就把新版进度退成副抄、
+## 再记一回连副抄也冲掉，换回新版也翻不到了。无档、正本好、副抄顶着、两份皆坏都记得进。航海日志册页据此定「记录」钮。
+func can_save(slot: int) -> bool:
+	return slot_source(slot) != "future"
+
+
 ## 册页脚注：正本无恙时为空串；长提示不塞进 save_label。
 func save_tip(slot: int) -> String:
 	var got := _resolve(slot)

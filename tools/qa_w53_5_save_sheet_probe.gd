@@ -7,9 +7,11 @@ extends SceneTree
 ## 断言（册页经真钮打开：标题页「续卷」钮、港页岸带「航海日志」钮，接线一并验）：
 ##   S1 标题页「续卷」进来的册页：三卷「记录」一律不给按；
 ##   S2 同一册页「翻阅」按 can_load 放开（读得开的卷才给按）；
-##   S3 港页「航海日志」进来的册页：三卷「记录」都给按；
+##   S3 港页「航海日志」进来的册页：「记录」按 can_save 放开（新版所记的卷不给记，其余都给按）；
 ##   S4 「记录」写不进（.tmp 位被占成目录）：册页不合上、记事顶上是「誊写未成」、不出「已记入」、那一卷题签不变；
 ##   S5 写得进：册页合上、记事顶上「已记入航海日志第 N 卷。」、题签换成当下的日子。
+##   F1 新版所记的卷（五轮已定）：can_save 为假；「记录」回调不覆写——正本逐字不动、不生副抄、册页不合上、不报已记入
+##      （脚注许了「卷页未动」；原先一记就把新版进度退成副抄，再记一回连副抄冲掉）。无档 / 正本好 / 两份皆坏 can_save 为真。
 ## 五轮补键盘（真鼠标点开、真按键，经 root.push_input）：原先点「航海日志」开册页后焦点留在暗幕底下那颗钮上，
 ## Enter 把册页拆了重开，Tab / 方向键走到底下的「名册」「看风」「再候一日」、工席门，Enter 就在册页底下开浮页、出海、候日。
 ##   K1 鼠标点「航海日志」开册页：焦点在册页里（底座或册页里的钮），不在底下那颗钮上；
@@ -23,6 +25,8 @@ extends SceneTree
 
 const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 const SLOT := 93
+## 只查「无档」can_save 用、从不写：别的探针都不碰的位（94 是往返探针的）
+const EMPTY_SLOT := 993
 const PORT := "fuzhou"
 
 var _main: Node
@@ -108,9 +112,15 @@ func _run() -> void:
 		_main._show_save_dialog()
 	await _settle(3)
 	var port_writes := _chips("记录")
-	var shut := port_writes.filter(func(b: Button) -> bool: return b.disabled)
-	_expect(port_writes.size() == slots and shut.is_empty(), "S3 港页「航海日志」册页的「记录」三卷都给按",
-		"记录 %d 张、不给按 %d" % [port_writes.size(), shut.size()])
+	var write_ok := port_writes.size() == slots
+	var write_note := PackedStringArray()
+	for i in port_writes.size():
+		var n := i + 1
+		var want_shut := not bool(sl.call("can_save", n))
+		write_note.append("%d:%s%s" % [n, str(sl.call("slot_source", n)), "·关" if (port_writes[i] as Button).disabled else "·开"])
+		if (port_writes[i] as Button).disabled != want_shut:
+			write_ok = false
+	_expect(write_ok, "S3 港页「航海日志」册页的「记录」按 can_save 放开（新版所记不给记，其余都给按）", " ".join(write_note))
 
 	# ── 「记录」写不进：.tmp 位占成目录（FileAccess.open 写不开）──
 	var first: bool = sl.save_game(SLOT, PORT)
@@ -137,6 +147,34 @@ func _run() -> void:
 	_expect(not is_instance_valid(_main.get("_save_host")) and top == "已记入航海日志第 %d 卷。" % SLOT
 		and label_after.contains(str(cal.call("get_date_string"))),
 		"S5 记录写得进：册页合上、记事报已记入、题签是当下日子", "top=%s 题签=%s" % [top, label_after])
+
+	# ── 新版所记的卷：不给记，回调也不覆写 ──
+	var ok_none: bool = not bool(sl.call("has_save", EMPTY_SLOT)) and bool(sl.can_save(EMPTY_SLOT))
+	var ok_good: bool = sl.can_save(SLOT)
+	var good_text := _read_text(_path(SLOT))
+	var future: Dictionary = JSON.parse_string(good_text)
+	future[str(sl.get("SCHEMA_KEY"))] = int(sl.get("SAVE_SCHEMA")) + 1
+	var future_text := JSON.stringify(future, "\t")
+	_write_text(_path(SLOT), future_text)
+	DirAccess.remove_absolute(_path(SLOT) + ".bak")
+	_main._show_save_dialog()
+	await _settle(2)
+	_main.log_msg("记新版卷之前的一句。")
+	var ok_future: bool = sl.can_save(SLOT)
+	_main._on_save_slot(SLOT)
+	await _settle(2)
+	lines = Array(_main._log_lines)
+	var mark := lines.find("记新版卷之前的一句。")
+	var since: Array = lines.slice(0, mark) if mark >= 0 else lines
+	_expect(ok_none and ok_good and not ok_future and _read_text(_path(SLOT)) == future_text
+		and not FileAccess.file_exists(_path(SLOT) + ".bak") and is_instance_valid(_main.get("_save_host")) and mark >= 0 and not _has(since, "已记入"),
+		"F1 新版所记的卷不给记：can_save 假、回调不覆写（正本逐字不动、不生副抄、册页不合、不报已记入）",
+		"can_save 无档/好档/新版=%s/%s/%s 正本动了=%s 副抄=%s 记事顶=%s" % [str(ok_none), str(ok_good), str(ok_future),
+			str(_read_text(_path(SLOT)) != future_text), str(FileAccess.file_exists(_path(SLOT) + ".bak")), str(lines[0]) if not lines.is_empty() else "<空>"])
+	_write_text(_path(SLOT), "{\"version\": 4, \"calendar\": ")
+	_expect(bool(sl.can_save(SLOT)), "F1b 两份皆坏的卷照样记得进（can_save 真）", "src=%s" % str(sl.call("slot_source", SLOT)))
+	_main._close_save_sheet()
+	await _settle(2)
 
 	# ── 键盘：鼠标真点「航海日志」开册页（钮会拿到焦点），再真按键 ──
 	if log_btn != null:
@@ -261,6 +299,16 @@ func _no_float_page() -> bool:
 			return false
 	var ledger = _main.get("_ledger_layer")
 	return not (is_instance_valid(ledger) and (ledger as CanvasItem).visible)
+
+
+func _read_text(path: String) -> String:
+	return FileAccess.get_file_as_string(path) if FileAccess.file_exists(path) else ""
+
+
+func _write_text(path: String, text: String) -> void:
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_string(text)
+	f.close()
 
 
 func _has(lines: Array, needle: String) -> bool:
