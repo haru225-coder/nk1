@@ -448,6 +448,24 @@ REGISTRY = [
      "green": "逐条 `  ✓ …` + 末行 `FOLD_DIM cases=8 fails=0`",
      "red": "`  ✗ …` 行（如次则不褪色 / 头则误染色 / 折行排头双层变 / 换档不转色）"
             "+ 末行 `FOLD_DIM cases=N fails=M`（M>0），退 1"},
+
+    {"id": "qa_seachart_advance_probe", "tier": "lane",
+     "when": "动 SeaChart 海图「航段」名号链（scripts/ui/SeaChart.gd 的 _course_detail_text / 面板刷新——"
+             "泊港选定航向印「航段　<目的地>」名号、advance_days 跨月当日面板改印静风日数与月份名串、"
+             "出航后名号自面板隐去），或动 GameManager.advance_days 跨月路径，"
+             "或动 tools/qa_seachart_advance_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_seachart_advance_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_seachart_advance_probe.gd"],
+     "judge": "（lane w28-k3 立、w35-k2 收编——EXEMPT 挂账 21 波已收，同 w31-k3 / w35-k1 收编先例）"
+              "真场景树 C1–C4 把 SeaChart 海图「航段」名号跨月推进时序钉成运行时真断言："
+              "C1 泊港选定航向印「航段　澎湖」名号 + 静风日数；"
+              "C2 advance_days 跨月当日面板立即改印，不隔帧才变、不留旧月值；"
+              "C3 出航正隐——sailing 时「航段」名号自面板隐去、抵港后随原名号复现；"
+              "C4 跨越多月长程：泉州→博多跨 ≥1 月，「航段　博多唐房」名号随当值月风逐月仍在。"
+              "本进程 SCRIPT ERROR 即红。末行 `SEACHART_ADV cases=N fails=M`，M>0 退 1",
+     "green": "逐条 `  ✓ …` + 末行 `SEACHART_ADV cases=15 fails=0`",
+     "red": "`  ✗ …` 行（如名号缺字 / 静风日数不合 / 跨月不改印 / 留旧月值 / 出航不隐 / 抵港不复现 / 长程跨月名号消失）"
+            "+ 末行 `SEACHART_ADV cases=N fails=M`（M>0），退 1"},
 ]
 
 # w27-k4 CHECK FOLLOWS
