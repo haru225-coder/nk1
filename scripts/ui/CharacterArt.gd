@@ -506,6 +506,17 @@ static func unknown_title(ch: Dictionary) -> String:
 	return t if t != "" else "来历未详"
 
 
+## 见面人物只在自己那港是这条人物（见面页 NpcPage 据此挂不挂人物卡、画像、人物栏与人物志钮，记不记见过）。
+## 市舶司小吏这条人物是泉州验引棚那一位（人物志称谓「泉州市舶司小吏」，小传写泉州验引棚、景炎元年把征船名册钉上牙行门口）；
+## 各港市舶司都有个小吏管验引、收塞的钱，修前博多、占城的市舶司里也挂着他的画像与小传，见一面还记作见过。
+## 别港照样「见」「打听」「疏通」，那位只是本地无名小吏。林阿舶、阿那的「在侧」卡本来只在泉州、南岛海道北口的酒馆摆，不用登记。
+const NPC_HOME := {"customs_official": "quanzhou"}
+
+
+static func present_here(npc_id: String) -> bool:
+	return str(NPC_HOME.get(npc_id, GameState.last_port)) == GameState.last_port
+
+
 # ── 画 ─────────────────────────────────────────────
 
 ## 此刻该挂哪张立绘。characters.json 可选 portrait_before {"YYYY-MM": 路径}：日历早于那个月时挂那一张，

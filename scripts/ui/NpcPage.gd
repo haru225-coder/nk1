@@ -156,7 +156,7 @@ static func fill_npc_profile(main: Control, ch: Dictionary) -> void:
 
 static func add_npc_button(main: Control, npc_id: String, fallback_name: String) -> void:
 	# characters 线：设定集里有此人就排成人物卡（小立绘 + 五维迷你条，底行写身份），文案「在侧」「见」照旧
-	var ch: Dictionary = GameManager.character_for_npc(npc_id)
+	var ch: Dictionary = GameManager.character_for_npc(npc_id) if main._CHAR_ART.present_here(npc_id) else {}
 	# 人不在世就不在侧：林阿舶 1274 病故，此后泉州酒馆不再摆他（修前照摆，见面页抬头却写「卒于 1274」）
 	if main._CHAR_ART.deceased(ch):
 		return
@@ -190,7 +190,7 @@ static func show_npc_mode(main: Control, npc_id: String, fallback_name: String) 
 	if spoken == "":
 		spoken = str(npc_data.get("function", "这人看了你一眼，没先开口。"))
 	# 立绘以 characters.json 的 portrait 为准（缩到框里的尺寸、带 mipmap）；查无此人或缺图时回落旧的 sprite_ 图
-	var ch: Dictionary = GameManager.character_for_npc(npc_id)
+	var ch: Dictionary = GameManager.character_for_npc(npc_id) if main._CHAR_ART.present_here(npc_id) else {}
 	var tex: Texture2D = main._CHAR_ART.thumb(ch, Vector2i(256, 320)) if not ch.is_empty() else null
 	if tex == null:
 		var tex_path := "res://assets/sprite_" + npc_id.replace("pilot_", "").replace("merchant_", "") + ".png"

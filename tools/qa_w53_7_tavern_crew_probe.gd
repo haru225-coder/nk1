@@ -28,6 +28,8 @@ extends SceneTree
 ##   M 名册只露认得的人：岸上「名册」（人物志「立绘册」同一件）修前把七十五人的名字、画像、生卒、登场、小传、五维全摆出来——
 ##     宝祐年间翻「史实」就是伯颜、宋恭帝，翻「主」就是第二章才登场的林华。现与人物志同一条「已识」规矩：未识之人行上写「未识」、
 ##     短注只写人物志称谓，立绘面板只出墨影、「未识之人」、称谓与一句提示。按两个时点四个页签逐行与人物志名册格对照。
+##   Q 小吏只在泉州是那位：人物志里的市舶司小吏是泉州验引棚那一位（称谓「泉州市舶司小吏」），修前博多、占城的市舶司也挂他的
+##     人物卡、画像、小传，见一面还记作见过。现别港是本地无名小吏：照样见、打听、疏通，不挂人物卡与人物志钮、不记见过；泉州照旧。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 ## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
@@ -92,6 +94,7 @@ func _boot() -> void:
 	await _r_rel_chip_tips()
 	await _p_hire_port_hint()
 	await _m_roster_gate()
+	await _q_clerk_home()
 	_report()
 
 
@@ -506,6 +509,39 @@ func _panel_texts(ov: Node) -> Array:
 		if not (l as Label).is_queued_for_deletion():
 			out.append(str((l as Label).text))
 	return out
+
+
+# ── Q 市舶司小吏这条人物只在泉州 ──
+
+func _q_clerk_home() -> void:
+	print("── Q 人物志里的市舶司小吏是泉州那一位：别港市舶司是本地无名小吏（照样见、打听、疏通），不挂他的人物卡、不记见过")
+	for spec in [["hakata", false], ["champa", false], ["quanzhou", true]]:
+		_stage(1262, 5, 2)
+		_gs.visited_ports = ["quanzhou", "xinghua", str(spec[0])]
+		_gs.last_port = str(spec[0])
+		await _goto(str(spec[0]) + "_yamen")
+		var card := _label("泉州市舶司小吏") != null
+		var meet := _button("见")
+		if meet == null:
+			_expect(false, "%s 市舶司没有「见」钮" % spec[0])
+			continue
+		meet.pressed.emit()
+		for i in 4:
+			await process_frame
+		var profile := bool((_main.get("_npc_profile") as Control).visible)
+		var codex_btn := bool((_main.get("_npc_codex_btn") as Control).visible)
+		var title_shown := _label("泉州市舶司小吏") != null
+		var met := (_gs.get("met_ids") as Array).has("customs_official")
+		var acts := _button("打听") != null and _button("塞　50") != null
+		var name_ok := str(_main.get("npc_name_lbl").text) == "市舶司小吏"
+		_main.call("_on_npc_leave")
+		if bool(spec[1]):
+			_expect(card and profile and codex_btn and title_shown and met and acts and name_ok,
+				"泉州市舶司：照旧是那位小吏——人物卡 %s、人物栏 %s、人物志钮 %s、称谓 %s、记见过 %s、打听 / 疏通 %s" % [card, profile, codex_btn, title_shown, met, acts])
+		else:
+			_expect(not card and not profile and not codex_btn and not title_shown and not met and acts and name_ok,
+				"%s 市舶司：本地无名小吏——不挂人物卡（%s）、人物栏（%s）、人物志钮（%s）、「泉州市舶司小吏」（%s），不记见过（%s）；打听 / 疏通照在（%s）" % [
+					spec[0], card, profile, codex_btn, title_shown, met, acts])
 
 
 # ── R 人物志关系签：指向未识之人的悬停提示写人物志上屏称谓 ──
