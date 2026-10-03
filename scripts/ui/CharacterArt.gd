@@ -164,6 +164,19 @@ static func died_known(ch: Dictionary) -> bool:
 	return Calendar.year > int(died)
 
 
+## 此人此刻已不在世：见面的地方（酒馆、市舶司的「在侧」卡）据此不再摆他。有 died_ym 从那一月起，
+## 没有的从卒年正月起——与人物志文本层露出死讯同一年（林阿舶 1274 病故，小传 1274 起写「咸淳十年前后病故」，
+## 1275 辞官那段写「林老爹去年走了」）。生卒一行仍按 died_known 晚到次年正月才写卒年，两者不是一回事。
+static func deceased(ch: Dictionary) -> bool:
+	var died = ch.get("died")
+	if died == null:
+		return false
+	var ym := ym_index(str(ch.get("died_ym", "")))
+	if ym > 0:
+		return Calendar.year * 12 + Calendar.month >= ym
+	return Calendar.year >= int(died)
+
+
 ## 五维的一字简称（迷你条用）：航 / 商 / 武 / 学 / 望。
 const ATTR_SHORT := {"hang": "航", "shang": "商", "wu": "武", "xue": "学", "wang": "望"}
 const PHASE_NAME := ["序章", "第一章", "第二章", "第三章", "第四章", "终局"]

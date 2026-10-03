@@ -157,6 +157,9 @@ static func fill_npc_profile(main: Control, ch: Dictionary) -> void:
 static func add_npc_button(main: Control, npc_id: String, fallback_name: String) -> void:
 	# characters 线：设定集里有此人就排成人物卡（小立绘 + 五维迷你条，底行写身份），文案「在侧」「见」照旧
 	var ch: Dictionary = GameManager.character_for_npc(npc_id)
+	# 人不在世就不在侧：林阿舶 1274 病故，此后泉州酒馆不再摆他（修前照摆，见面页抬头却写「卒于 1274」）
+	if main._CHAR_ART.deceased(ch):
+		return
 	if not ch.is_empty():
 		var info: VBoxContainer = main._person_slip(ch, fallback_name, "在侧")
 		var foot: HBoxContainer = main._person_foot(info, main._CHAR_ART.codex_title(ch))

@@ -3,6 +3,9 @@ extends SceneTree
 ##   W 欠饷：连欠的月数随名册清空归零。修前 Crew.unpaid_months 只在发出饷、或欠满三月有人走时归零；
 ##     职事欠两月时辞光（或史实辞船走光），名册空了计数照留，重雇的新人一上船船籍簿就写「已欠 2 月」，
 ##     头一回欠饷就「工食欠满三月，X 不告而去」——他只欠了一个月。
+##   T 在侧：人不在世就不在侧。林阿舶 characters.json died=1274，人物志小传自 1274 起写「咸淳十年前后病故」、
+##     1275 辞官那段写「林老爹去年走了」，修前泉州酒馆照样年年摆他的「在侧」卡，点「见」他还说「你叔父那笔，我还记着」，
+##     见面页抬头却写「泉州海商　卒于 1274」。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 
@@ -44,6 +47,7 @@ func _boot() -> void:
 	for i in 10:
 		await process_frame
 	_w_wages()
+	await _t_presence()
 	_report()
 
 
@@ -124,6 +128,59 @@ func _w_wages() -> void:
 	_expect(int(_crew.unpaid_months) == 2 and (_crew.hired as Dictionary).size() == 2,
 		"船上有人欠两月时添雇一人：欠月数仍 2（unpaid=%d / 在船 %d 人）" % [int(_crew.unpaid_months), (_crew.hired as Dictionary).size()])
 	_crew.from_dict({})
+
+
+# ── T 在侧：人不在世就不在侧 ──
+
+func _t_presence() -> void:
+	print("── T 在侧：林阿舶病故（人物志小传露出死讯）那年起，泉州酒馆不再有他的「在侧」卡")
+	var art: GDScript = load("res://scripts/ui/CharacterArt.gd") as GDScript
+	# 人物志小传只认 id 取文本层（不经设定集取数口，免得本探针成了 L1B 原稿读取入口）
+	var lin := {"id": "merchant_lin"}
+	for ym in [[1273, 12, true], [1274, 1, false], [1275, 6, false]]:
+		_stage(int(ym[0]), int(ym[1]), 3)
+		var told_dead := str(art.call("codex_bio", lin)).contains("病故")
+		await _goto("quanzhou_tavern")
+		var card := _label("林阿舶") != null
+		var meet := _button("见") != null
+		var alive: bool = ym[2]
+		_expect(card == alive and meet == alive and told_dead == not alive,
+			"%d-%02d 泉州酒馆：林阿舶「在侧」卡 %s、「见」钮 %s；人物志小传%s写病故" % [
+				int(ym[0]), int(ym[1]), "在" if card else "无", "在" if meet else "无", "已" if told_dead else "未"])
+	# 别的见面人照旧：阿那（无卒年）仍在南岛海道的酒馆，市舶司小吏仍在市舶司
+	_stage(1275, 6, 3)
+	_gs.last_port = "ryukyu"
+	await _goto("ryukyu_tavern")
+	_expect(_label("阿那") != null and _button("见") != null, "1275-06 南岛海道北口酒馆：阿那「在侧」照旧")
+	_gs.last_port = "quanzhou"
+	await _goto("quanzhou_yamen")
+	_expect(_label("市舶司小吏") != null and _button("见") != null, "1275-06 泉州市舶司：市舶司小吏「在侧」照旧")
+
+
+func _goto(scene_id: String) -> void:
+	_main.call("load_scene", scene_id)
+	for i in 6:
+		await process_frame
+
+
+func _label(t: String) -> Label:
+	return _find(_main, func(n: Node) -> bool: return n is Label and (n as Label).is_visible_in_tree() and str((n as Label).text) == t) as Label
+
+
+func _button(t: String) -> Button:
+	return _find(_main, func(n: Node) -> bool: return n is Button and (n as Button).is_visible_in_tree() and str((n as Button).text) == t) as Button
+
+
+func _find(n: Node, pred: Callable) -> Node:
+	if n == null or n.is_queued_for_deletion():
+		return null
+	if pred.call(n):
+		return n
+	for c in n.get_children():
+		var hit := _find(c, pred)
+		if hit != null:
+			return hit
+	return null
 
 
 func _ledger_line(t: String) -> String:
