@@ -2,6 +2,7 @@
 """docs/GATES.md §一（门禁总表 / 门禁开关与附属自检 / 截图门禁明细 / 不算门禁）、§二（批量巡检）与 §四（CI 建议步骤）
 按 tools/gate_json.py 的注册表生成，本脚本校验二者一致；§三「一键人读全跑」与 .claude/todo.md 验证段是手写，只比对。
 附属自检（一键跑把关判据自检「三之一」，lane w20-b3）与 §一 附属表同册：禁带字样 / 漏跑 / 道数不符 / README 道数见 §三.19。
+「二、docs/GATES.md」另有 SHOT 张数逐条对账格（lane w29-k5）：SHOT_PROBES 每条的注册表张数 ↔ §一 同行张数字段，漂移逐支点名、不回读源码。
 
   python3 tools/gates_md.py            # 自检：文档与注册表不一致、注册的脚本缺失、接 shot_gate 的截图脚本没入册、
                                        #       附属自检的开关在源码里找不到、§三 一键跑命令 / .claude/todo.md 验证段与必跑清单不符 → 退 1
@@ -434,6 +435,16 @@ def main(argv):
             detail = (f"；首处差异在块内第 {k} 行\n      文档：{(have[k:k + 1] or ['<无>'])[0][:160]}"
                       f"\n      注册表：{(gl[k:k + 1] or ['<无>'])[0][:160]}\n      修法：python3 tools/gates_md.py --write")
         check(same, "§一 标记块与注册表逐字一致" + detail)
+    # lane w29-k5：SHOT 张数字段级对账——w26-k8 6a81f89 改注册表张数没 --write 时整块红只说「首处差异」，
+    # 本格逐支点名那支探针的注册表张数 / 文档张数；与源码读数无关（源码↔注册表张数本就有①段格兜，此格不回读源码）
+    shot_rows = {}
+    for l in (body or "").splitlines():
+        m = re.match(r"\| \d+ \| (\S+) \| \S+ \| `[^`]*` \| (\d+) \|", l)
+        if m:
+            shot_rows[m.group(1)] = m.group(2)
+    drift = [s for s in shots if shot_rows.get(s["id"]) != str(s["shots"])]
+    check(not drift, f"SHOT 张数 × {len(shots)}：注册表与 §一 SHOT 表逐条相符" + "".join(
+        f"\n  ✗ SHOT 张数漂移：{s['id']} 注册表={s['shots']} 文档={shot_rows.get(s['id'], '无此行')}" for s in drift))
     ci_body = ci_parts[1] if ci_parts else None
     if not check(ci_parts is not None, "GATES.md 的 §四 CI 生成标记有且只有一对"):
         pass
