@@ -45,6 +45,12 @@ func _run() -> void:
 		quit(1)
 		return
 	gm.monthly_notice.connect(func(t: String) -> void: _notices.append(t))
+	# 开局行情是 randf 抖的（Economy.initialize）：三节要找一笔「旧口径偏乐观」的委办，碰上不巧的一手行情
+	# 就找不到、整支假红（lane w53-3 连跑 5 回红 1 回）。固定种子重摇一手，回回同数。
+	seed(5303)
+	eco.rates = {}
+	eco.set("_initialized", false)
+	eco.initialize()
 	_rates0 = eco.rates.duplicate(true)
 	_ships0 = fleet.ships.duplicate(true)
 
