@@ -15,6 +15,10 @@ extends SceneTree
 ##     市舶司小吏那页也冒出「邻座的牙人」；现由见面的人自己说行情那句，酒馆长凳上的「打听」照旧是邻座牙人。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
+## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
+## 本进程有 SCRIPT ERROR 即红；_run_guarded 包一层，_boot 半路被掐断（没走到 _report）也就地判红收尾。
+
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 
 var fails := 0
 var cases := 0
@@ -22,6 +26,8 @@ var _main: Node
 var _gs: Node
 var _cal: Node
 var _crew: Node
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _expect(ok: bool, msg: String) -> void:
@@ -34,7 +40,16 @@ func _expect(ok: bool, msg: String) -> void:
 
 
 func _init() -> void:
-	call_deferred("_boot")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+func _run_guarded() -> void:
+	await _boot()
+	if not _reported:
+		_expect(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _boot() -> void:
@@ -42,8 +57,7 @@ func _boot() -> void:
 	_cal = root.get_node_or_null("Calendar")
 	_crew = root.get_node_or_null("Crew")
 	if _gs == null or _cal == null or _crew == null:
-		push_error("autoload missing")
-		quit(1)
+		_expect(false, "autoload GameState / Calendar / Crew 都在")
 		return
 	var cine: GDScript = load("res://scripts/cutscene/Cinematics.gd") as GDScript
 	if cine != null:
@@ -305,5 +319,8 @@ func _ledger_line(t: String) -> String:
 
 
 func _report() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_expect(v[0], v[1])
 	print("W53_7_TAVERN_CREW cases=%d fails=%d" % [cases, fails])
 	quit(1 if fails > 0 else 0)
