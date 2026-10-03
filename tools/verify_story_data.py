@@ -119,6 +119,71 @@ for ch in chapters:
         check(settle in port_ids and port_unlock.get(settle, 99) <= cid,
               f"chapters {cid}.ending_requires.settle_at=`{settle}` 不是本章开着的港，了结不了")
 
+# ── chapters.json：终章每条带旗标的结局，须有一条真实剧情路走得到（lane w53-4）──
+# 从 start_scene 起照选项（含 require_flag / require_any / hide_if_flag / require_chapter）一路点到落港为止，
+# 收下路上写的 flag，按 endings 次序取第一条 flag 成立者。原次序「海口信路 → 账上的距离 → 史册未落笔」下，
+# 第一章问兴化的人（history_pressure_seen）到第二章那封信总会再写下 letter_to_xinghua / merchant_caution /
+# temple_route 之一，史册未落笔一条路都走不到（全部 139968 条路只出海口信路与账上的距离）。
+# 末条无旗标的兜底（南海一纲）只接住没有剧情旗标的局面，不要求可达。
+start_id = load("scenes.json").get("start_scene", "")
+
+
+def _flags_ok(req, flags, chapter=1):
+    if req.get("require_flag") and req["require_flag"] not in flags:
+        return False
+    if req.get("require_any") and not any(f in flags for f in req["require_any"]):
+        return False
+    if req.get("hide_if_flag") and req["hide_if_flag"] in flags:
+        return False
+    return int(req.get("require_chapter", 0) or 0) <= chapter
+
+
+def _story_landings():
+    """序章起每条选项路落港时手上的 flag 组（剪成「影响判定」的旗标，按 (幕, 旗标组) 记忆化）。"""
+    relevant = set()
+    for c in chapters:
+        for e in c.get("endings") or []:
+            relevant |= set(e.get("require_any") or []) | {e.get("require_flag"), e.get("hide_if_flag")}
+    for s in scenes:
+        for node in [s] + list(s.get("choices", [])):
+            relevant |= set(node.get("require_any") or []) | {node.get("require_flag"), node.get("hide_if_flag")}
+    relevant.discard(None)
+    out, seen = set(), set()
+    stack = [(start_id, frozenset())]
+    while stack:
+        sid, flags = stack.pop()
+        if (sid, flags) in seen:
+            continue
+        seen.add((sid, flags))
+        s = scene_by_id.get(sid)
+        if sid in port_ids and (s is None or s.get("type") == "port"):
+            out.add(flags)
+            continue
+        if s is None or not _flags_ok(s, flags):
+            continue
+        for c in s.get("choices", []):
+            if _flags_ok(c, flags) and c.get("next"):
+                f = c.get("effects", {}).get("flag")
+                stack.append((c["next"], flags | {f} if f in relevant else flags))
+    return out
+
+
+landings = _story_landings()
+check(bool(landings), f"从 start_scene `{start_id}` 照选项点不到任何港——剧情链断了")
+for ch in chapters:
+    ends = ch.get("endings") or []
+    hit = set()
+    for flags in landings:
+        for e in ends:
+            if _flags_ok(e, flags, chapter=int(ch["id"])):
+                hit.add(e.get("id"))
+                break
+    for e in ends:
+        if e.get("require_any") or e.get("require_flag"):
+            check(e.get("id") in hit,
+                  f"chapters {ch['id']} 结局「{e.get('title')}」（{e.get('id')}）一条剧情路都走不到："
+                  f"它的旗标总被 endings 里排在前面的结局先截走（各路落港实得 {sorted(hit)}）")
+
 # ── 边记令牌须有上屏字（lane w53-4）──
 # scenes.json effects 的 ledger_note 是令牌（tangfang_parcel_and_sulfur_ledger_received 一类），住处「边记」与终局
 # 「航海札记」照 GameState.ledger_notes 原样上屏；GameState.add_ledger_note 记账时照 LEDGER_NOTE_TEXT 换成短句。
