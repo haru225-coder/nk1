@@ -880,8 +880,9 @@ func _text_vertical(ci: CanvasItem, world_pos: Vector2, text: String, size_px: i
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
-func _text_width_world(text: String, size_px: int) -> float:
-	return font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x / camera.zoom.x
+func _text_width_world(text: String, size_px: int, f: Font = null) -> float:
+	var fnt: Font = f if f != null else font
+	return fnt.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x / camera.zoom.x
 
 
 # ══════════════════════════════════════════════════════
@@ -1331,13 +1332,23 @@ func _port_sub(chart: Dictionary) -> String:
 	return sub
 
 
-## 海名 / 国名 / 岛名 / 山川 / 险地：按 kind 与层级（tier）显隐。
-## 小地名（岛、岬、河、山、族群）与险地名要避开港框、港名、船标（同一帧的港口布局），撞了就不画。
-func _draw_labels(ci: CanvasItem) -> void:
+## 这一帧要画哪些地名、各落在哪（_ensure_layout 之后调；_draw_labels 照它画，探针照它验）：
+## 小字地名（岛 / 岬 / 水门 / 山 / 河 / 注）避开港框、港名、船标与先摆下的地名，撞了就不画；
+## 地区名（日本 / 筑前 / 交趾……）避开港框、港名与先摆下的地名，原处撞了往下、往上各挪一行，都撞就不画——
+## 原先地区名不避让：选向框福州—博多（缩放 0.28）时「日本」两字压在「博多」港名上，读成「博多本」；
+## 放大到 2.6 看博多，「筑前」压港名。地区名不避船标：船从旁驶过时字不跳。海名照旧不避（画在开阔海面）。lane w53-1
+## 返回 [{lb, kind, text, pos}]：pos 是画字的锚点（与原先的经纬落点相同，地区名挪过一行的除外）
+func label_layout() -> Array:
 	_ensure_layout()
 	var z := camera.zoom.x
 	var view := world_visible_rect().grow(200.0)
 	var placed_small: Array[Rect2] = []
+	var marks: Array[Rect2] = []
+	for pid: String in _port_layout.keys():
+		var L: Dictionary = _port_layout[pid]
+		marks.append((L["box"] as Rect2).grow(_px(3.0)))
+		marks.append(L["rect"])
+	var out: Array = []
 	for lb in labels:
 		var tier := str(lb.get("tier", "mid"))
 		if lb.has("zoom_min") or lb.has("zoom_max"):
@@ -1357,6 +1368,7 @@ func _draw_labels(ci: CanvasItem) -> void:
 			if _near_drawn_port(v, _px(30.0 if kind != "mountain" else 20.0)):
 				continue
 		var small := kind in ["island", "cape", "strait", "mountain", "river", "note"] or not (kind in ["sea", "region"])
+		var pos := v
 		if small:
 			var sz_s := int(lb.get("size", 12))
 			var w_s := _text_width_world(text, sz_s)
@@ -1366,6 +1378,40 @@ func _draw_labels(ci: CanvasItem) -> void:
 			if _rect_hits(rect, _port_obstacles) or _rect_hits(rect, placed_small):
 				continue
 			placed_small.append(rect)
+		elif kind == "region":
+			var rect_r := _region_label_rect(v, text, int(lb.get("size", 16)))
+			var placed := false
+			for dy: float in [0.0, rect_r.size.y * 1.1, -rect_r.size.y * 1.1]:
+				var r := Rect2(rect_r.position + Vector2(0.0, dy), rect_r.size)
+				if not _rect_hits(r, marks) and not _rect_hits(r, placed_small):
+					pos = v + Vector2(0.0, dy)
+					placed_small.append(r)
+					placed = true
+					break
+			if not placed:
+				continue
+		out.append({"lb": lb, "kind": kind, "text": text, "pos": pos})
+	return out
+
+
+## 地区名（仿宋，字号比数据大 1）以 v 为基线中点画出时的外框
+func _region_label_rect(v: Vector2, text: String, data_size: int) -> Rect2:
+	var sz := data_size + 1
+	var w := _text_width_world(text, sz, font_title)
+	var th := _px(sz * 1.15)
+	return Rect2(v + Vector2(-w * 0.5, -th * 0.8), Vector2(w, th))
+
+
+## 海名 / 国名 / 岛名 / 山川 / 险地：按 kind 与层级（tier）显隐，画哪些、落在哪照 label_layout。
+## 小地名（岛、岬、河、山、族群）与险地名要避开港框、港名、船标（同一帧的港口布局），撞了就不画。
+func _draw_labels(ci: CanvasItem) -> void:
+	var z := camera.zoom.x
+	var view := world_visible_rect().grow(200.0)
+	for item: Dictionary in label_layout():
+		var lb: Dictionary = item["lb"]
+		var kind: String = item["kind"]
+		var text: String = item["text"]
+		var v: Vector2 = item["pos"]
 		match kind:
 			"sea":
 				# 仿宋笔画细，比文楷多给 2 px、多给一点墨
