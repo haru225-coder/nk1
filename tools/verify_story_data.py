@@ -2009,11 +2009,30 @@ for ch in chapters:
     check(not extra and not miss,
           f"chapters {cid} advance_text 宣「已可抵达」与 ports.json 第 {cid + 1} 章解锁港不符（多宣 {extra} / 漏宣 {miss}）")
 
+# ── 同一册页「【…已可购置】」宣船 == ships.json 下一章上架的船（lane w53-4：宣港对了账，宣船一直没人对）。
+#    上架口径照船屋 DrydockBerth.sale_ids：unlock 缺省第一章，for_sale 为 false 的（海寇快船，只能夺得）哪章都不上架、不宣。
+#    船的 unlock 一改册页照旧宣，玩家进船屋找不到；新船上架册页不提，玩家不知道 ──
+ships_all = load("ships.json")["ships"]
+ship_claims = 0
+for ch in chapters:
+    cid = int(ch["id"])
+    text = str(ch.get("advance_text") or "")
+    if not text:
+        continue
+    claim = [n.strip() for body in re.findall(r"【([^】]+)已可购置】", text)
+             for n in re.split(r"[、,，]", body) if n.strip()]
+    ship_claims += len(claim)
+    want = [str(s.get("name", s["id"])) for s in ships_all
+            if str(s.get("unlock", "ch1")) == f"ch{cid + 1}" and s.get("for_sale", True) is not False]
+    extra, miss = sorted(set(claim) - set(want)), sorted(set(want) - set(claim))
+    check(not extra and not miss,
+          f"chapters {cid} advance_text 宣「已可购置」与 ships.json 第 {cid + 1} 章上架船不符（多宣 {extra} / 漏宣 {miss}）")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:
         print("FAIL:", f)
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
-print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · 底图按旗换 {bg_alts} · scenes {len(scenes)}（结构：{SCENE_STRUCT_STATS} · 自证 {len(_SV_MUTANTS)} 类 + 形状单一来源 {len(_SHAPE_MUTANTS)} 类，形状读 {SCENE_FAMILY_MANIFEST}）· 晋升宣港 {advance_claims} · news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
+print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · 底图按旗换 {bg_alts} · scenes {len(scenes)}（结构：{SCENE_STRUCT_STATS} · 自证 {len(_SV_MUTANTS)} 类 + 形状单一来源 {len(_SHAPE_MUTANTS)} 类，形状读 {SCENE_FAMILY_MANIFEST}）· 晋升宣港 {advance_claims} · 宣船 {ship_claims} · news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
 print("结果：全部通过")
