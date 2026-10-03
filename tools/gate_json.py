@@ -304,9 +304,11 @@ REGISTRY = [
      "green": "`✓ docs/人物原稿与上屏契约.md 有恰一对 CHARS-DOC 生成标记` + `✓ 生成块与 data/characters_{suffix}.json 现算逐字一致（id / 名 / 生卒 / 职事）` + `✓ 生成块角色行数（N）= 原稿条数（N）…` + 零节 R1–R7 / C1–C5 全 `✓` + `结果：全部通过`",
      "red": "`✗ …首处差异在块内第 k 行\\n      文档：…\\n      数据：…\\n      修法：python3 tools/check_char_contract_doc.py --fix …`（对照两行就是点名）；`✗…CHARS-DOC 生成标记应为恰一对…`；`✗…行数（a）= 原稿条数（b）`；`✗…认不出 TIER_ORDER…` / `…不在本档名表…`；`✗…职事栏取数口径断了…`；`✗ <格号>…——这一路红已不从这里出`（自检对不上）；`结果：N 项问题`"},
 
-    {"id": "qa_rest_days_probe", "tier": "lane",
-     "when": "动 scripts/ui/TavernPage.gd / scripts/ui/ResidencePage.gd 的歇候钮绑定或钮面措辞、scripts/Main.gd 的 _on_rest、"
-             "歇价 / 月供 / 月息到账口径（Economy 歇费、欠债月结），或动 tools/qa_rest_days_probe.gd 自身",
+    {"id": "qa_rest_days_probe", "tier": "must",
+     "why": "升格：lane w48-k1 依 w42-k6 判词表「可升级升格片（五判全齐）」授权锚第四件、照 w47-k1 牒备件五节 (i)–(v) 套牒升进必跑（注册表 REGISTRY 序原位 :33）。"
+            "判不准成立——歇宿钮面 ↔ 实扣钩跨五路写口（TavernPage/ResidencePage 歇候钮绑定与钮面措辞、Main._on_rest、歇价/月供/月息月结链、探针自身），改动 lane 多半想不起加跑这条 lane 当次只加跑的探针；"
+            "速档按 §五.2 自书 GDScript 引擎实测牒不咎一键跑既有 Godot must 本辑（一键跑自含 smoke 8.0s / compile 3.3s / story 104s / patrol 24s，§五.2 自书基线总约 60s），本支三跑 3.65–3.95s 仍 < smoke 8.0s、≪ story/patrol、居快翼；"
+            "只读零写盘成立——源码零 FileAccess/DirAccess/user:///save(/ResourceSaver，摆场只 in-memory 置开局态 + 真场景树读钮按下，经 advance_days 月结推日不落 user:// 存档位；误红面不扩（无 ⚠ 放行面）。",
      "kind": "godot", "file": "tools/qa_rest_days_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_rest_days_probe.gd"],
      "judge": "（探针 9827daa 立，w27-k3 入册——审计 wave2425「最该补的门禁」第 1 条：原先只手工召、CI/一键不会响；变异已证值得响，+1 日即 fails=7）"
