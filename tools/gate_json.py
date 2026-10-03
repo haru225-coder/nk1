@@ -566,6 +566,26 @@ REGISTRY = [
      "green": "末行 `结果：全部通过`（含前置 `_self_test` 负样自检两格全判红、扫真源码 0 hit）",
      "red": "`结果：N 项问题` + ✗ 行点名（`scripts/Main.gd:<行号>: 账务「账」误作「帐」——含「前帐」字样：<原文 120 字>`"
             " / `scripts/<X>.gd:<行号>: 状态增减半角连字符（应为全宽 −）——<原文 120 字>` / data/<f>.json 同类两行）"},
+    # lane w57-k2 立：w53-4 SETTLED 行署「CAS fbc7580→e3a7d10 真 ff」而其 branch wave54→wave57
+    # 三波曾未入主 = 断链型 lane（史上首次 SETTLED 与 branch 未入主并存超波）——先 lane 档挂账：
+    # trigger 判不准（lane 自身 CAS 撞窗主控零碰 / lane-self 权域那类判不到），判掂应用 = 判不准即挂账。
+    {"id": "check_lane_orphans", "tier": "lane", "kind": "py", "file": "tools/check_lane_orphans.py",
+     "why": "lane 档挂账（lane w57-k2 依 wave57-COMMON 钦 + COORDINATION w53-4 SETTLED 行断链实锤立案）："
+            "判掂应用 = 判不准即挂账——trigger 判不准类：lane 自身 CAS 撞窗主控零碰、判不到 lane-self 权域那类；"
+            "§五.2 三判据不成立（trigger 判不准——lane CAS 久不归宿属撞窗案、闸判不出该形才算净）；"
+            "w48-k4 牒备件先例「升格须先牒备件」——升 must 归 wave58+ 牒备件 v1 复核 §五.2。",
+     "judge": "断链预防闸：扫仓外 nk1-agent-briefs/COORDINATION.md 行首 SETTLED 行抽 lane id 集、"
+              "对每条 lane 四格全中才红——① 行首 ^w 数字-[字母]数字 SETTLED 在（时间戳前缀 / SETTLED-ADD 修订 / "
+              "文内提及不算，同 lane 多行取最新一行）；② 行 SHA 链自洽探：逐枚 ISSHA 探 merge-base——全在史照桩，"
+              "ancestor=F 且行署 未CAS/承接/收编/重链/未入主/撞窗/悬空/归轨道/零动/殓/遗留 类判语 = lane 自报置笔未入主照采信，"
+              "只有 ancestor=F 且零判语（署名失实）入红集；③ refs/heads/lane/<lane>-* 在册且尖 ancestor=F；"
+              "④ main..branch 尖 count>0（lane-committed 未入主、尚无人承接）且 ② 有未释 SHA。"
+              "唯 NK1_COORD/NK1_MAIN_REF 两环境变量供量具变异；生产零 env。",
+     "when": "动 lane CAS / COORDINATION SETTLED 尾 / refs/heads/lane/* 殓域",
+     "green": "末行 `结果：全部通过`（各 lane branch 或已入主 / 或 SHA 在史 / 或 lane 自报置笔未入主照采信 / "
+              "或 SETTLED 行缺失照桩）",
+     "red": "✗ `lane <id> SETTLED（COORDINATION:<行号>）但行 SHA <sha> 未入主（ancestor=F）且行零未CAS/承接/收编/重链判语"
+            "（署名实锤失实）+ branch <ref> sha <sha> main..count=N（承接窗断链）` 逐条点名 + 首行 `结果：N 项问题`，退 1"},
 ]
 
 # w27-k4 CHECK FOLLOWS
