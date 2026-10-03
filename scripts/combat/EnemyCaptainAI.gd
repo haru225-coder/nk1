@@ -74,6 +74,10 @@ const STRIKE_SLIP_DIST := 520.0
 const TACK := 1.1
 ## 矢石余量到此算「将尽」：改谋接舷，放炮也等近了再放
 const AMMO_LOW := 0.25
+## 将尽时「近了」的尺度：SAVE_RANGE 内才放（fire_side 惜弹）；舷炮守的射距带远边跟着收到 SAVE_RANGE − SAVE_MARGIN（lane w53-2）。
+## 不收的话照旧守 RANGE_MIN–RANGE_MAX，多半兜在 360–540 之间够不上自己惜弹的射距：实测哨船余弹一两分钟一发不放，拖到限时两散
+const SAVE_RANGE := 360.0
+const SAVE_MARGIN := 40.0
 ## 一舷装填（满员时）秒数；人少了慢，见 reload_time。取旧版齐射冷却 3 s（ReloadAmmo 落地前不替弹道那一路改射速）
 const SIDE_RELOAD := 3.0
 ## 桨力：多桨快船 0.62、海鹘带橹 0.3、商船只有几支橹 0.15（以满帆顺风为 1）；划满 STAMINA_DRAIN 秒力竭，歇 STAMINA_REST 秒回满
@@ -266,7 +270,7 @@ func fire_side(angle_diff: float, dist: float) -> int:
 	var wind: Vector2 = _g.get("wind", Vector2.ZERO)
 	var rng := FIRE_RANGE * (1.0 + 0.12 * shot_dir.dot(wind))  # 顺风射远、逆风射近
 	if ammo_frac() <= AMMO_LOW:
-		rng = minf(rng, 360.0)  # 惜弹：近了再放
+		rng = minf(rng, SAVE_RANGE)  # 惜弹：近了再放
 	if state == DISENGAGE:
 		rng = minf(rng, 420.0)  # 且走且射，只打贴上来的
 	return side if dist <= rng else 0
@@ -639,12 +643,13 @@ static func beam_heading(dir_to_target: Vector2, side: int, open: float) -> Vect
 	return dir_to_target.rotated(-float(side) * (PI * 0.5 + open))
 
 
-## 射距带外时偏多少：太近背离、太远靠拢，最多 0.5 rad
+## 射距带外时偏多少：太近背离、太远靠拢，最多 0.5 rad。矢石将尽时带的远边收到 SAVE_RANGE − SAVE_MARGIN：惜弹只在 SAVE_RANGE 内放，得靠上去
 func _range_open(dist: float) -> float:
+	var far := RANGE_MAX if ammo_frac() > AMMO_LOW else SAVE_RANGE - SAVE_MARGIN
 	if dist < RANGE_MIN:
 		return clampf((RANGE_MIN - dist) / 200.0, 0.0, 0.5)
-	if dist > RANGE_MAX:
-		return -clampf((dist - RANGE_MAX) / 300.0, 0.0, 0.5)
+	if dist > far:
+		return -clampf((dist - far) / 300.0, 0.0, 0.5)
 	return 0.0
 
 
@@ -966,6 +971,16 @@ static func self_check() -> Array:
 	_want(bad, ai.state == BROADSIDE, "未满 MIN_DWELL 不换状态")
 	ai.tick(_sit({"pos": Vector2(0, -400), "own_strength": 200.0, "target_strength": 50.0}), 1.0)
 	_want(bad, ai.state == BOARD, "满 MIN_DWELL 后该接舷了（得 %s）" % ai.state)
+	# 矢石将尽、白刃比又不够拼接舷：守的射距带收进惜弹射距——相距 400 要往敌船靠（满弹在带内横着守、不靠）
+	ai = _fresh()
+	o = ai.tick(_sit({"pos": Vector2(0, -400), "own_strength": 40.0}), 0.1)
+	var hold := (o["heading"] as Vector2).dot(Vector2(0, 1))
+	ai = _fresh()
+	ai.volleys = 1
+	o = ai.tick(_sit({"pos": Vector2(0, -400), "own_strength": 40.0}), 0.1)
+	var close_in := (o["heading"] as Vector2).dot(Vector2(0, 1))
+	_want(bad, ai.state == BROADSIDE and close_in > 0.15 and absf(hold) < 0.05,
+		"矢石将尽守进惜弹射距 %d：相距 400 往敌船靠（得 %s，船首向敌分量 %.2f；满弹 %.2f）" % [int(SAVE_RANGE), ai.state, close_in, hold])
 	# 受风角与桨
 	var w := Vector2(0, 1)
 	var run := builtin_sail_factor(w, w, 80.0)

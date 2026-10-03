@@ -30,6 +30,9 @@ extends SceneTree
 ##   九、接踵的浮字不被上一条的淡出补间吃掉：海战场中央浮字（_show_combat_notice）每条停满 1.5 秒再淡，修复前上一条的补间不收——
 ##       它照旧在上一条出字后 1.5 s 起淡、2.5 s 藏字，隔 1.5–2.5 秒来的下一条（敌将改打法、士气纪实、抛钩、号令常这样接踵）只见一闪或看不到。
 ##       关掉别的浮字源，先出「甲」、隔 2 秒出「乙」：乙出字后 0.8 / 1.3 秒须仍满墨在屏（甲 1.3 秒时满墨，判据判得出）。
+##   十、敌将状态机自检：EnemyCaptainAI.self_check（假局势逐条过接近 / 抢风 / 舷炮 / 接舷 / 脱离 / 降幡）原先没有一支探针调它，本节接上、一条不合即红。
+##       其中一条：矢石将尽（≤ 两成五）又不够拼接舷时，舷炮守的射距带收进惜弹射距（SAVE_RANGE 内才放），相距 400 要往敌船靠——
+##       修复前照旧守 260–540，多半兜在惜弹射距外：实打哨船一战，余弹那一两分钟在 360 内的只有几秒，到限时两散还剩一到六轮没放。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -81,6 +84,8 @@ func _run() -> void:
 	await _sec_patrol_win_note()
 	print("== 九、接踵的浮字不被上一条的淡出补间吃掉")
 	await _sec_notice_overlap(fleet)
+	print("== 十、敌将状态机自检")
+	_sec_captain_self_check()
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -537,6 +542,16 @@ func _sec_notice_overlap(fleet: Node) -> void:
 	_check(bool(s1[0]) and bool(s2[0]),
 		"九 甲出字 2 秒后来乙：乙出字后 0.8 / 1.3 秒仍满墨在屏，不被甲的淡出补间藏掉（得 %s / %s）" % [s1[1], s2[1]])
 	await _close(wm)
+
+
+# ══ 十、敌将状态机自检 ══════════════════════════════════════════
+
+## EnemyCaptainAI.self_check 返回不合的条目（空即全对）；资源上 has_method 认 static func，缺了不硬调
+func _sec_captain_self_check() -> void:
+	var ai: GDScript = load("res://scripts/combat/EnemyCaptainAI.gd")
+	var has_fn := ai != null and ai.has_method("self_check")
+	var bad: Array = ai.call("self_check") if has_fn else ["EnemyCaptainAI.self_check 不在"]
+	_check(bad.is_empty(), "十 敌将状态机自检全过（%s）" % ("0 条不合" if bad.is_empty() else "；".join(bad)))
 
 
 class _ScriptErrLog extends Logger:
