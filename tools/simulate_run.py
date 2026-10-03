@@ -627,6 +627,29 @@ def check(c, m):
     print(("  ✓ " if c else "  ✗ ") + m)
     if not c: fails.append(m)
 
+# ── 镜像闸（lane w53-12 · R4，对 w51-k1 9368aca「回退即红」补钉）──
+# 判 A：price_at_rate 与 verify_economy.price_at 在常用光杆格双边同数——
+#   9368aca 镜像收敛「price_inv 全委托 price_at」宣称在 price_at_rate 域名成立；删镜像/改公式即红。
+# 判 B：6 格 gd_round≠round 散度实扫——9368aca message 自陈「M1 在 simulate_run 面静默绿」留下的无结对钉；
+#   本判钉死「price_at_rate 用 gd_round 而非 round」——两路任一格回退 round 即差 1 文红。
+_zmap = [
+    (price_at_rate('kagoshima', 'japanese_sword',   1.0, True),  price_at('kagoshima', 'japanese_sword', True,  rate=1.0)),
+    (price_at_rate('kagoshima', 'japanese_sword',   1.0, False), price_at('kagoshima', 'japanese_sword', False, rate=1.0)),
+    (price_at_rate('quanzhou',  'qingbai_porcelain', 1.0, True),  price_at('quanzhou',  'qingbai_porcelain', True,  rate=1.0)),
+    (price_at_rate('quanzhou',  'qingbai_porcelain', 1.0, False), price_at('quanzhou',  'qingbai_porcelain', False, rate=1.0)),
+]
+check(all(a == b for a, b in _zmap), f"镜像闸 A·常用 4 光杆格 price_at_rate = price_at（{_zmap}）——删镜像/改公式即红")
+_zt = [
+    (price_at_rate('kagoshima', 'japanese_sword', 0.5, True),  price_at('kagoshima', 'japanese_sword', True,  rate=0.5)),
+    (price_at_rate('quanzhou',  'sappanwood',       0.5, True),  price_at('quanzhou',  'sappanwood',       True,  rate=0.5)),
+    (price_at_rate('quanzhou',  'deer_hide',        0.5, True),  price_at('quanzhou',  'deer_hide',        True,  rate=0.5)),
+    (price_at_rate('quanzhou',  'placer_gold',      0.6, True),  price_at('quanzhou',  'placer_gold',      True,  rate=0.6)),
+    (price_at_rate('quanzhou',  'sulfur',           0.8, False), price_at('quanzhou',  'sulfur',           False, rate=0.8)),
+    (price_at_rate('xinghua',   'fujian_porcelain', 0.5, False), price_at('xinghua',   'fujian_porcelain', False, rate=0.5)),
+]
+check(all(a == b for a, b in _zt),
+      f"镜像闸 B·6 格 gd_round≠round 散度（0.5/0.5/0.5/0.6/0.8/0.5）price_at_rate = price_at（{_zt}）——任一 gd_round→round 调换即差 1 文红")
+
 print("="*70)
 print("端到端模拟：开局 1000 钱 / 小艍船 / 泉州")
 print("="*70)
