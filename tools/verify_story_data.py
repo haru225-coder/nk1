@@ -284,6 +284,18 @@ for p in ports:
         check(ym in war, f"ports {pid} war_notice[{ym}] 不是本港 war 表里的节点（{sorted(war)}），月初不会翻牌")
         check(isinstance(txt, str) and txt.strip() != "" and not txt.startswith("【"),
               f"ports {pid} war_notice[{ym}] 须为非空文案、不带【战况】头")
+# 异国港（Crew.FOREIGN_PORTS）的 loyal 节点是解封复常，不是收复：通用句「复归宋土」只对宋土港对，这类节点须覆写、
+# 且不写宋土——博多 / 萨摩文永之役封港、次年五月解封，月初通告原先照通用句报「博多唐房复归宋土」（lane w53-6）
+_fp = re.search(r'const FOREIGN_PORTS := \[(.*?)\]', open(os.path.join(ROOT, "scripts", "core", "Crew.gd"), encoding="utf-8").read(), re.S)
+foreign_ports = set(re.findall(r'"([a-z_]+)"', _fp.group(1))) if _fp else set()
+check({"hakata", "kagoshima"} <= foreign_ports, f"Crew.FOREIGN_PORTS 解析失败（{sorted(foreign_ports)}）")
+for p in ports:
+    if p["id"] not in foreign_ports:
+        continue
+    for ym, st in (p.get("war") or {}).items():
+        txt = str((p.get("war_notice") or {}).get(ym, ""))
+        check(st != "loyal" or (txt != "" and "宋土" not in txt),
+              f"ports {p['id']} war[{ym}]=loyal 是异国港解封：须在 war_notice 覆写、不写「宋土」（现「{txt}」，空 = 落通用句「复归宋土」）")
 # 兴化 1277 秋是破城巷战、不是开门降：再陷那一节点城与海口都须覆写，且都不写「降元」（通用句对开城降的港口才对）。
 # 城写城破；海口只写海口自己换旗，不重抄城里的首句——两条同一天连发，重抄读着像一件事记了两遍（09-29 复核）
 _xh_fall2 = sorted(k for k, v in (xh or {}).items() if v == "fallen")[-1:] if xh else []

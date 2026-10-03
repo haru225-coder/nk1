@@ -529,9 +529,9 @@
         "sappanwood": "consumer",
         "ivory": "consumer"
       },
-      "war": {
-        "1274-10": "closed",
-        "1275-05": "loyal"
+      "war": {"1274-10": "closed", "1275-05": "loyal"},
+      "war_notice": {
+        "1275-05": "博多唐房解了港禁，去博多的船又走得了。牙行开秤。"
       }
     },
     {
@@ -619,9 +619,9 @@
         "song_coin": "consumer",
         "grain": "consumer"
       },
-      "war": {
-        "1274-10": "closed",
-        "1275-05": "loyal"
+      "war": {"1274-10": "closed", "1275-05": "loyal"},
+      "war_notice": {
+        "1275-05": "萨摩解了港禁，去萨摩的船又走得了。牙行开秤。"
       }
     },
     {
