@@ -147,6 +147,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_6_port_exits_probe.gd",  # lane w53-6 港内设施页各有「离开」（玉湖陈宅补回）回归探针
 	"res://tools/qa_w53_6_guild_spreads_probe.gd",  # lane w53-6 行会抄本 / 打听不荐牙行闭门（围城 / 封港）的港回归探针
 	"res://tools/qa_w53_6_shore_hint_probe.gd",  # lane w53-6 岸带行首注与门数对得上（终局特殊卡追加时不再「三处」配四扇门）回归探针
+	"res://tools/qa_w53_6_yard_chips_probe.gd",  # lane w53-6 船屋 / 寺观工席小钮按下去账真动（钮面 ↔ 实账对账）探针
 	"res://tools/qa_w53_9_cutscene_input_probe.gd",  # lane w53-9 过场层输入时序探针（以场景启动，见 SCENES）
 	"res://tools/qa_w53_9_chapter_year_probe.gd",  # lane w53-9 章节卡年号与历法逐月同口径探针
 	"res://tools/qa_w53_13_decide_probe.gd",  # lane w53-13 待拍板逐条定下后的修复回归探针（跳年封顶等）

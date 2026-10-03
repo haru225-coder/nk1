@@ -93,6 +93,7 @@ EXEMPT = [
     ("qa_w53_6_guild_spreads_probe.gd", "lane-w53-6", "行会抄本 / 打听不荐牙行闭门港回归探针（博多封港、福州围城），随 lane-w53-6 落地验过留档"),
     ("qa_w53_6_port_exits_probe.gd", "lane-w53-6", "港内设施页各有「离开」回归探针（玉湖陈宅补回），随 lane-w53-6 落地验过留档"),
     ("qa_w53_6_shore_hint_probe.gd", "lane-w53-6", "岸带行首注与门数对得上回归探针（崖山 / 辞呈 / 纲首特殊卡追加时），随 lane-w53-6 落地验过留档"),
+    ("qa_w53_6_yard_chips_probe.gd", "lane-w53-6", "船屋 / 寺观工席小钮钮面与实账对账探针（修船 / 购入 / 换坞 / 添人 / 水粮 / 赊还 / 细看 / 拓碑），随 lane-w53-6 落地验过留档"),
     ("qa_w53_7_tavern_crew_probe.gd", "lane-w53-7", "酒馆与人物专项探针（欠饷随名册清空归零等），随 lane-w53-7 落地验过留档"),
     ("qa_w53_8_codex_cols_probe.gd", "lane-w53-8", "人物志名册格列数随页宽探针（超宽画布钉死九列回退即红），带窗口或 headless 皆可跑，随 lane-w53-8 落地验过留档"),
     ("qa_w53_8_font_floor_probe.gd", "lane-w53-8", "字阶下限探针（泉州对峙「征船名册」分节小题钉 13 回退即红），headless 与带窗口皆可跑"),
