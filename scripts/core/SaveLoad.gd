@@ -85,7 +85,7 @@ func save_game(slot: int, current_scene: String = "") -> bool:
 	}
 	var tmp := _tmp_path(slot)
 	# 先写 .tmp 并读回核对，核对不过就此收手：正本与副抄一个字不动（见 _write_verified）
-	if not _write_verified(tmp, JSON.stringify(data, "\t")):
+	if not _write_verified(tmp, _to_json(data)):
 		push_error("无法写入存档 slot %d（%s）：写不进、写不全或读回与所写不符，正本与副抄未动" % [slot, tmp])
 		return false
 
@@ -98,6 +98,13 @@ func save_game(slot: int, current_scene: String = "") -> bool:
 		push_error("存档 slot %d 无法从 .tmp 落位" % slot)
 		return false
 	return true
+
+
+## 落盘文本：键照插入序写（sort_keys=false）。缺省按键名重排，读回的字典全成字母序——
+## 船舱货、职事（Crew.roster）、辞船淡字（按辞船先后）上屏换了次序，行年主线 era_main_route 并列时换一条，
+## 同一份进度读没读过档上屏不一样。插入序落盘，读回即存时次序；同一场连存两次仍逐字节一致。
+func _to_json(data: Dictionary) -> String:
+	return JSON.stringify(data, "\t", false)
 
 
 ## 整卷写进 tmp 再读回逐字核对。store_string 报错、写不全（磁盘满、配额、I/O 错时可能只落半截而照报成功）、
@@ -354,7 +361,7 @@ func _write_back_migrated(path: String, data: Dictionary, from_schema: int) -> b
 		return false
 	var tmp := path + ".tmp"
 	# 半截的迁移结果顶上正本，原件只剩 .v<N>（_resolve 不看）——读回核对不过就不回写
-	if not _write_verified(tmp, JSON.stringify(data, "\t")):
+	if not _write_verified(tmp, _to_json(data)):
 		push_warning("存档 %s 迁移结果无法写入 %s 或读回不符，本次不回写" % [path, tmp])
 		return false
 	if DirAccess.rename_absolute(tmp, path) != OK:

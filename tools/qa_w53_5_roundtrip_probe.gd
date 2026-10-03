@@ -5,6 +5,7 @@ extends SceneTree
 ## 都会在本探针里出 ✗。只动存档位 94，不碰正式位 1..SLOTS。
 ##   lane w53-12：这两种漏只比「摆场后 to_dict」抓不到（摆场也走 from_dict），5b 节改拿摆场原件逐键比，
 ##   并验原件盖住 to_dict 全键。
+##   lane w53-5 二轮：7 节验键序——船舱货、职事、辞船、行年路线读回仍按存前的插入序（摆场故意不按字母序摆）。
 ##   headless 下 SCRIPT ERROR 不自非零退出：判绿须 rc=0 且末行 `QA_W53_5_ROUNDTRIP_END` 在——
 ##   缺末行 = 中途错误空转，按中断重跑。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_5_roundtrip_probe.gd
@@ -63,9 +64,11 @@ func _run() -> void:
 		"water": 47, "food": 33, "morale": 61, "mutiny_cooldown": 2,
 	}
 	fleet.from_dict(fleet_in.duplicate(true))
-	# crew（在职 1 + 辞船 1 + 欠薪；candidate_def 名册键为实测可雇）
-	var crew_in := {"hired": {"duogong": "lin_hua"}, "unpaid_months": 1,
-		"departed": {"xu_shi": {"role": "通事", "name": "许氏", "when": "景炎元年十月"}}}
+	# crew（在职 2 + 辞船 2 + 欠薪；candidate_def 名册键为实测可雇）
+	# 键都故意不按字母序摆（huozhang 先于 duogong、xu_shi 先辞于 bai_lao），7 节验读回不改次序
+	var crew_in := {"hired": {"huozhang": "wu_zhen", "duogong": "lin_hua"}, "unpaid_months": 1,
+		"departed": {"xu_shi": {"role": "通事", "name": "许氏", "when": "景炎元年十月"},
+			"bai_lao": {"role": "zashi", "name": "白老", "when": "景炎二年三月"}}}
 	crew_n.from_dict(crew_in.duplicate(true))
 	# state（非缺省主线 + 剧情字段 + discover/传闻/委办/封港/围城 + beats 账）
 	var scene_state := {
@@ -75,7 +78,9 @@ func _run() -> void:
 		"hometown_tendency": 1,
 		"draft_salt": 7, "shore_salt": 11, "broker_salt": 13, "berth_index": 1,
 		"era_trips": 4, "era_profit": 999,
-		"era_routes": {"泉州→博多": 3, "泉州→兴化": 2},
+		# 并列路线（博多先到、南岛海道北口后到，同为 3 趟）：era_main_route 取先到的博多；
+		# 按键名（码位）重排读回，「南」U+5357 排在「博」U+535A 前，主线会换成南岛海道北口
+		"era_routes": {"泉州→博多": 3, "泉州→兴化": 2, "泉州→南岛海道北口": 3},
 		"last_port": "quanzhou", "has_customs_permit": true,
 		"identity": "merchant", "player_name": "林往返",
 		"news_seen": ["v1255_04", "v1255_07"],
@@ -102,6 +107,9 @@ func _run() -> void:
 	var want_fleet: Dictionary = fleet.to_dict()
 	var want_crew: Dictionary = crew_n.to_dict()
 	var want_state: Dictionary = gs.to_dict()
+
+	# 键序快照（7 节用）：keys() 是拷贝，脏场不会改到它
+	var want_order := _order_snapshot()
 
 	# ── 2 落盘 ──
 	var saved: bool = sl.call("save_game", SLOT, "quanzhou")
@@ -212,6 +220,16 @@ func _run() -> void:
 		and int((((got_fleet["ships"] as Array)[0] as Dictionary).get("cargo", {}) as Dictionary).get("rice", {}).get("qty", -1)) == 14,
 		"ships=%s" % JSON.stringify(got_fleet.get("ships", [])))
 
+	# ── 7 键序：读档不改动运行时字典的插入次序（lane w53-5 二轮）──
+	# JSON.stringify 缺省 sort_keys=true，存档按键名重排落盘、读回即成字母序：船籍簿「船舱」与各船货行、
+	# 职事行 / 酒馆在船人物卡 / 升章册页「还在船上的」（Crew.roster 按 hired 键序）换了次序；辞船淡字原按辞船先后，
+	# 读档后改按候选 id 排；行年主线 era_main_route 并列取先到的那条，读档后会换成另一条——
+	# 升章册页「走得最多的是 X」随读没读过档而变。
+	var got_order := _order_snapshot()
+	for k in want_order:
+		_report("键序往返不变：%s" % k, got_order[k] == want_order[k],
+			"存前 %s ／ 读后 %s" % [JSON.stringify(want_order[k]), JSON.stringify(got_order[k])])
+
 	_cleanup()
 	if fails == 0:
 		print("QA_W53_5_ROUNDTRIP cases=%d fails=0" % cases)
@@ -220,6 +238,17 @@ func _run() -> void:
 	else:
 		print("QA_W53_5_ROUNDTRIP cases=%d fails=%d" % [cases, fails])
 		quit(1)
+
+
+## 上屏次序跟着字典插入序走的几处（船舱货、职事、辞船淡字、行年主线）
+func _order_snapshot() -> Dictionary:
+	var ships: Array = fleet.get("ships")
+	return {
+		"船舱货（旗舰）": Array((ships[0].get("cargo", {}) as Dictionary).keys()) if not ships.is_empty() else [],
+		"职事（hired）": Array((crew_n.get("hired") as Dictionary).keys()),
+		"辞船淡字": Array(crew_n.call("departed_lines")),
+		"行年主线": str(gs.call("era_main_route")),
+	}
 
 
 func _report(name: String, ok: bool, detail: String) -> void:
