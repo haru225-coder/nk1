@@ -419,10 +419,16 @@ REGISTRY = [
      "red": "`  ✗ …` 行（如工食合计数不符 / 欠满三月不走 / 册空仍添墨 / 折头或月行字样漂移 / 淡色缩进变）"
             "+ 末行 `CREW_FOLD cases=N fails=M`（M>0），退 1"},
 
-    {"id": "qa_cargo_strip_probe", "tier": "lane",
-     "when": "动船舱货载链（scripts/core/Fleet.gd 的 cargo / add_cargo / remove_cargo 与容量口径、"
-             "scripts/ui/LedgerPage.gd 船籍簿页「船舱」段 cargo_str 拼排、水粮占舱折算），"
-             "或动 tools/qa_cargo_strip_probe.gd 自身",
+    {"id": "qa_cargo_strip_probe", "tier": "must",
+     "why": "lane w44-k1 牒备件定稿、w46-k1 依其套牒升格（w42-k6 判词表「可升级升格片」五判全齐授权锚第三件）："
+            "船舱段货载钩在船籍簿页正文（scripts/core/Fleet.gd 的 cargo / add_cargo / remove_cargo 与容量口径、"
+            "scripts/ui/LedgerPage.gd 船舱段 cargo_str 拼排、水粮占舱折算三路写口），改动 lane 多半想不起加跑，"
+            "按 §五.2 判该升必跑。升格判据勘定：§五.2 速档字面「1 秒量级」依其自书 GDScript 引擎实测牒"
+            "（RefsMac 0.23s / RefsHost 0.70–1.02s / decision 0.5–0.6s）原不咎一键跑本辑五支 Godot must"
+            "（一键跑本自含 smoke 8.0s / compile 3.3s / story 104s / patrol 24s 远档，§五.2 自书基线总约 60s），本支三跑"
+            "2.07–2.19s 居本辑快翼、与 w43-k3 qa_debt_strip 2.07–2.47s 同带；判据 3 只读成立——源码零 FileAccess / "
+            "DirAccess / user:// / save( / ResourceSaver，摆场只 in-memory 置 gs/cal 开局态后 update_status_panel 重排，"
+            "不经月结、不写盘。w42-k6 C1–C5 原判全齐照引。",
      "kind": "godot", "file": "tools/qa_cargo_strip_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_cargo_strip_probe.gd"],
      "judge": "（探针 0ef543a 随 w29-k2 落地，w31-k3 入册——其落地晚于 w29-k3 注册片，隔波留账一并收编）"
