@@ -910,7 +910,7 @@ func _on_enemy_left_battle(how: String, enemy: Node = null) -> void:
 
 func _on_enemy_grapple_thrown(ok: bool, enemy: Node = null) -> void:
 	if ok:
-		_show_combat_notice("敌船抛钩咬舷！")
+		_show_combat_notice("敌船抛钩咬舷")
 	else:
 		_show_combat_notice("敌船抛钩落空")
 	if enemy != null:

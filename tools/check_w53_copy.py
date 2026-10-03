@@ -35,6 +35,10 @@
      纯标准库读字库 cmap，逐字核上屏串：gd 字符串字面量、data/*.json 文本值（跳过 /meta 与出处 / 引文 / 注记类键；
      人物原稿不读，人物志文本层 characters_codex.json 整份核）、场景 text 属性。缺字就重跑
      subset_fonts.py（--download 取上游原版）。
+  J. 海战上屏文案不用叹号（四轮）：data/combat_phases.json 的 meta.copy_style 立的规矩「纪实短句，不用叹号」，
+     管海战场景与船（WorldMap / Ship / PirateShip / Cannonball）、scripts/combat/、scripts/ui/Combat* 的 CJK 串
+     与 data/combat_*.json 的文本值。「敌船抛钩咬舷！」曾是全仓 gd 玩家串里唯一的叹号（同处「敌船抛钩落空」
+     就没有）。copy_style 不再写「不用叹号」时本钉先红——规矩撤了就改本钉，不守一条已撤的规矩。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -137,6 +141,12 @@ GLYPH_SKIP_KEYS = {"note", "notes", "source", "sources", "quote", "today", "conf
 TSCN_TEXT_RE = re.compile(r'^(?:text|tooltip_text|placeholder_text|title) = "((?:[^"\\]|\\.)*)"', re.M)
 GLYPH_MISS = {}  # 缺的字 → [(出处, 原串)]
 
+# ═══ 钉 J：海战上屏文案（copy_style 所管）不用叹号。gd 按路径前缀认，data 按文件认。
+COMBAT_STYLE_JSON = "data/combat_phases.json"
+COMBAT_GD_PREFIXES = ("scripts/WorldMap.gd", "scripts/Ship.gd", "scripts/PirateShip.gd", "scripts/Cannonball.gd",
+                      "scripts/combat/", "scripts/ui/Combat")
+COMBAT_DATA = ("combat_phases.json", "combat_morale.json", "combat_sea_state.json")
+
 FAILS = []
 
 # ─── 数据集玩家可见字段（lane w53-10 brief 钦定 data 域条款：chapters/endings/scenes/news
@@ -232,6 +242,11 @@ def _check_dangling_sign(text, tag):
     m = DANGLING_SIGN_RE.search(text)
     if m:
         FAILS.append(f"{tag}: 「{m.group(0).strip()}」后面缺数目：{text[:120]}")
+
+
+def _check_exclaim(text, tag):
+    if "！" in text or "!" in text:
+        FAILS.append(f"{tag}: 海战上屏文案用了叹号（combat_phases.json copy_style：纪实短句，不用叹号）：{text[:120]}")
 
 
 def _ttf_cmap(path):
@@ -339,6 +354,8 @@ def _scan_gd_strings(cmap):
                 _check_terms(lit, tag)
                 _check_dangling_sign(lit, tag)
                 _check_glyphs(lit, tag, cmap)
+                if rel.replace(os.sep, "/").startswith(COMBAT_GD_PREFIXES):
+                    _check_exclaim(lit, tag)
                 # gd 里 %[sdf] 是合法格式化模板（"%s の %d" % [...]），不钉 3/E。
 
 
@@ -401,6 +418,24 @@ def _scan_data_glyphs(cmap):
         FAILS.append(f"{CODEX_JSON}: 钉 I 读不到人物志文本层")
 
 
+def _scan_combat_data():
+    """钉 J：data/combat_*.json 的上屏文本值（/meta 与注记键除外）不用叹号；copy_style 须仍写着这条规矩。"""
+    try:
+        style = str(json.load(open(os.path.join(ROOT, COMBAT_STYLE_JSON), encoding="utf-8"))["meta"]["copy_style"])
+    except (OSError, ValueError, KeyError, TypeError):
+        style = ""
+    if "不用叹号" not in style:
+        FAILS.append(f"{COMBAT_STYLE_JSON}: meta.copy_style 不再写「不用叹号」——钉 J 的依据变了，先改钉 J")
+    for f in COMBAT_DATA:
+        try:
+            d = json.load(open(os.path.join(ROOT, "data", f), encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for path, key, text in _walk_json_strings(d):
+            if _has_cjk(text) and key not in GLYPH_SKIP_KEYS and not path.startswith("/meta"):
+                _check_exclaim(text, f"data/{f}:{path}")
+
+
 def _scan_tscn_glyphs(cmap):
     """钉 I：场景里写死的 text / tooltip_text / placeholder_text / title。"""
     for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scenes")):
@@ -432,6 +467,7 @@ _NEG_CASES = [
     ("term", "临安发了太学籖榜。", "签"),
     ("sign", "交出一条船（名声 +）", "缺数目"),
     ("sign", "士气 −。", "缺数目"),
+    ("exclaim", "敌船抛钩咬舷！", "叹号"),
 ]
 
 
@@ -456,6 +492,8 @@ def _neg_probe(kind, text):
             _check_terms(text, "self")
         elif kind == "sign":
             _check_dangling_sign(text, "self")
+        elif kind == "exclaim":
+            _check_exclaim(text, "self")
         return FAILS[:]
     finally:
         FAILS.clear()
@@ -553,6 +591,7 @@ def main():
     _scan_data_glyphs(cmap)
     _scan_tscn_glyphs(cmap)
     _report_glyphs()
+    _scan_combat_data()
     _scan_event_fame()
     _scan_crew_left_wiring()
     all_fails = self_fails + FAILS
