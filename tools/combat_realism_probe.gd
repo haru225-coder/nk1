@@ -1003,8 +1003,13 @@ func _judge_melee(m: Script) -> void:
 	_t(win_w <= 4, "melee.repel", "人少气衰（15 人对 140 人、已钩牢）20 场得船 ≤ 4：得 %d" % win_w)
 	_t(longest >= 2, "melee.rounds", "均势（80 对 70）甲板白刃打多合：20 场最长 %d 合" % longest)
 	_t(bad.is_empty(), "melee.result", "了局在册（%s）、伤亡不为负且不超出人数" % " / ".join(MELEE_OUTCOMES), "; ".join(bad.slice(0, 3)))
-	_t(str(m.call("resolve", us, foe, _with(calm, "seed", 7))) == str(m.call("resolve", us, foe, _with(calm, "seed", 7))),
-		"melee.seed", "同种子两场逐字相同（可复现）")
+	# 六个种子各打两场（lane w53-2）：只打一个种子时，「不认种子」的变异两场随机白刃约 1.85% 碰巧逐字相同（了局、合数、伤亡就那么几种），
+	# 变异漏判、本探针随机报红；六个种子全碰巧相同约 4e-11
+	var seed_same := true
+	for sd in [7, 8, 9, 10, 11, 12]:
+		if str(m.call("resolve", us, foe, _with(calm, "seed", sd))) != str(m.call("resolve", us, foe, _with(calm, "seed", sd))):
+			seed_same = false
+	_t(seed_same, "melee.seed", "同种子两场逐字相同（可复现；六个种子各打两场）")
 	var far: Dictionary = m.call("resolve", us, foe, _with(calm, "distance", 1000.0))
 	_t(str(far.get("outcome", "")) == "hook_miss" and int(far.get("att_cas", -1)) == 0 and int(far.get("rounds_fought", -1)) == 0,
 		"melee.hook_miss", "钩索够不着：了局落空、不开打、无伤亡", "得 %s" % far.get("outcome", ""))
