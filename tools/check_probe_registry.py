@@ -79,6 +79,7 @@ EXEMPT = [
     ("qa_w53_5_roundtrip_probe.gd", "lane-w53-5", "存档全字段往返探针（to_dict↔from_dict 逐键等比），动存档结构时加跑"),
     ("qa_w53_6_beat_replay_probe.gd", "lane-w53-6", "港口节拍不重演回归探针（新局卷首走到首抵泉州、老档补账），随 lane-w53-6 落地验过留档"),
     ("qa_w53_6_port_exits_probe.gd", "lane-w53-6", "港内设施页各有「离开」回归探针（玉湖陈宅补回），随 lane-w53-6 落地验过留档"),
+    ("qa_w53_7_tavern_crew_probe.gd", "lane-w53-7", "酒馆与人物专项探针（欠饷随名册清空归零等），随 lane-w53-7 落地验过留档"),
     ("qa_w53_8_vision_layout_probe.gd", "lane-w53-8", "市舶纪事 VisionStage 画布适配探针（钉死 1280 实锤回退即红），when 判据未定"),
     ("qa_w53_9_cutscene_input_probe.gd", "lane-w53-9", "过场 / 墨幕层输入时序专项探针（逐路钉一处修复、回退即红），带窗口以场景启动，随 lane-w53-9 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),

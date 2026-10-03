@@ -124,6 +124,7 @@ const SCRIPTS := [
 	"res://tools/qa_calendar_probe.gd",  # lane w26-k9 起步日「三月初一」真推进 / 改元岁名日历探针
 	"res://tools/qa_economy_panel_probe.gd",  # lane w27-k2 名声栏级别名 / 欠债跳年册页·札记折叠月息原文上屏断言（w26-k9 交主控 2/3 合一）
 	"res://tools/qa_w53_3_economy_probe.gd",  # lane w53-3 牙行逐件抬价/赊贷/委办三本账守形探针
+	"res://tools/qa_w53_7_tavern_crew_probe.gd",  # lane w53-7 酒馆与人物专项（欠饷随名册清空归零 …）
 	"res://tools/qa_fold_notice_probe.gd",  # lane w28-k2 札记折叠内非月息通告（【欠饷】按月 / 欠满三月 + 改元月历一瞥）原文断言（w27-k2 交主控①补新见）
 	"res://tools/qa_yard_transition_probe.gd",
 	"res://tools/qa_w53_8_vision_layout_probe.gd",  # lane w53-8 市舶纪事 VisionStage 画布钉死 1280 实锤探针（↑INVENTORY_EXEMPT——未登记会卡 inventory 门禁）

@@ -14,7 +14,7 @@ extends Node
 ## v3 及更早的档这一格还是整条快照，由 SaveLoad 迁移链收成 id（docs/存档迁移矩阵.md v3→v4）。
 var hired: Dictionary = {}
 
-## 连续欠饷的月数。久之则求去。
+## 连续欠饷的月数。久之则求去。名册空了归零（hire / pay_wages），不留给下一拨人。
 var unpaid_months: int = 0
 
 ## 史实辞船下船的人：{候选 id: {role, name, when「景炎元年十月」}}。入存档；旧档没有这一格按空读。
@@ -74,6 +74,9 @@ func hire(cand_id: String) -> Dictionary:
 	var fee := signing_fee(cand_id)
 	if not GameState.spend_money(fee):
 		return {"ok": false, "msg": "入伙钱 %d，囊中不足。" % fee}
+	# 船上原先一个职事也没有：新来的人不背前一拨人的欠饷月数（欠两月辞光、当月重雇，头一回欠饷他就「欠满三月」走人）
+	if hired.is_empty():
+		unpaid_months = 0
 	hired[role_id] = str(c.get("id", ""))
 	GameState.record_crew(cand_id)
 	return {"ok": true, "msg": "%s 入伙。付入伙钱 %d，月俸 %d。" % [
@@ -165,9 +168,11 @@ func monthly_wage() -> int:
 
 
 ## 每月结算。付不出则士气下降，连欠三月有人求去。返回描述文本（无事返回空串）
+## 连欠的月数记的是船上这拨人的：名册空了（辞光、史实辞船走光、跳年散尽）就无从欠起，月结时归零。
 func pay_wages() -> String:
 	var due := monthly_wage()
 	if due <= 0:
+		unpaid_months = 0
 		return ""
 	if GameState.spend_money(due):
 		unpaid_months = 0
