@@ -30,6 +30,8 @@ extends SceneTree
 ##     短注只写人物志称谓，立绘面板只出墨影、「未识之人」、称谓与一句提示。按两个时点四个页签逐行与人物志名册格对照。
 ##   Q 小吏只在泉州是那位：人物志里的市舶司小吏是泉州验引棚那一位（称谓「泉州市舶司小吏」），修前博多、占城的市舶司也挂他的
 ##     人物卡、画像、小传，见一面还记作见过。现别港是本地无名小吏：照样见、打听、疏通，不挂人物卡与人物志钮、不记见过；泉州照旧。
+##   K 见面页的字对上页上的动作：行情签旁注修前写「邻座牙人」——说话的是林阿舶、小吏本人；现写「不费时日」，与酒馆长凳「费一日」
+##     并排看得出代价（打听本身不过日子，实跑核日历不动）。阿那招呼修前说「要问航路，就问」，他页上却只有行情、没有问航路的签。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 ## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
@@ -95,6 +97,7 @@ func _boot() -> void:
 	await _p_hire_port_hint()
 	await _m_roster_gate()
 	await _q_clerk_home()
+	await _k_meet_page_words()
 	_report()
 
 
@@ -542,6 +545,43 @@ func _q_clerk_home() -> void:
 			_expect(not card and not profile and not codex_btn and not title_shown and not met and acts and name_ok,
 				"%s 市舶司：本地无名小吏——不挂人物卡（%s）、人物栏（%s）、人物志钮（%s）、「泉州市舶司小吏」（%s），不记见过（%s）；打听 / 疏通照在（%s）" % [
 					spec[0], card, profile, codex_btn, title_shown, met, acts])
+
+
+# ── K 见面页的字对上页上的动作 ──
+
+func _k_meet_page_words() -> void:
+	print("── K 见面页行情签旁注写「不费时日」（不再写「邻座牙人」）、打听不过日子；阿那的招呼不许诺页上没有的「问航路」")
+	for spec in [["quanzhou_tavern", "quanzhou"], ["ryukyu_tavern", "ryukyu"], ["quanzhou_yamen", "quanzhou"]]:
+		_stage(1262, 5, 2)
+		_gs.visited_ports = ["quanzhou", "xinghua", "ryukyu"]
+		_gs.last_port = str(spec[1])
+		await _goto(str(spec[0]))
+		var meet := _button("见")
+		if meet == null:
+			_expect(false, "%s 没有「见」钮" % spec[0])
+			continue
+		meet.pressed.emit()
+		for i in 4:
+			await process_frame
+		var who := str(_main.get("npc_name_lbl").text)
+		var greet := str(_main.get("npc_dialog_lbl").text)
+		var aside_ok := _label("不费时日") != null and _label("邻座牙人") == null
+		var day0 := str(_cal.call("get_date_string"))
+		var ask := _button("打听")
+		if ask != null:
+			ask.pressed.emit()
+			for i in 2:
+				await process_frame
+		var same_day := str(_cal.call("get_date_string")) == day0
+		var route_promise := greet.contains("航路") and _button("问航路") == null
+		_main.call("_on_npc_leave")
+		_expect(aside_ok and ask != null and same_day and not route_promise,
+			"%s 见%s：行情签旁注「不费时日」、无「邻座牙人」（%s）；打听后日历不动（%s）；招呼不许诺页上没有的问航路（招呼：%s）" % [
+				spec[0], who, aside_ok, same_day, greet])
+	# 酒馆长凳那张行情签照旧写「费一日」
+	_stage(1262, 5, 2)
+	await _goto("quanzhou_tavern")
+	_expect(_label("费一日") != null, "泉州酒馆长凳行情签照旧写「费一日」")
 
 
 # ── R 人物志关系签：指向未识之人的悬停提示写人物志上屏称谓 ──

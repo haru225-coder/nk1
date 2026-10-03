@@ -214,7 +214,7 @@ static func show_npc_mode(main: Control, npc_id: String, fallback_name: String) 
 	if main._slip_host is HFlowContainer:
 		(main._slip_host as HFlowContainer).alignment = FlowContainer.ALIGNMENT_BEGIN
 	var intel: VBoxContainer = main._slip_body()
-	main._slip_title(intel, "行情", "邻座牙人")
+	main._slip_title(intel, "行情", INTEL_ASIDE)
 	main._slip_whole(main._slip_chip(main._slip_row(intel), "打听", main._on_npc_intel.bind(n_name)))
 	if npc_id == "customs_official":
 		var bribe: VBoxContainer = main._slip_body()
@@ -263,7 +263,7 @@ static func on_npc_leave(main: Control) -> void:
 const NPC_GREETING := {
 	"customs_official": "小吏把册子掀开一条缝，眼皮都没抬。「验引、呈报、修埠，都在这案上。有话就说。」",
 	"merchant_lin": "林阿舶用指甲敲了敲账簿。「舱位、脚钱、货损，一样一样算。你叔父那笔，我还记着。」",
-	"pilot_ana": "阿那望了一眼外海的水色。「潮声不对就别嘴硬。要问航路，就问。」",
+	"pilot_ana": "阿那望了一眼外海的水色。「潮声不对就别嘴硬。要问什么，就问。」",
 }
 
 
@@ -276,3 +276,8 @@ const BENCH_LEAD := "邻座的牙人压低声音："
 ## 没打听出新行情。」——那是长凳上听来的，不是见面这人的话。修前照样套「某人压低声音说。」，福州 1276-10 围城时
 ## 市舶司小吏就压低声音讲「几个老水手……」；现由他自己说一句没有。
 const NO_INTEL := "%s摇了摇头：「眼下没什么新行情。」"
+
+## 见面页行情签旁注：行情由见面的人当面说（复刻设计 §8.7），不费时日——酒馆长凳那张签写「费一日」（advance_days），两处的代价并排看得清。
+## 修前这里写「邻座牙人」，人却是林阿舶、市舶司小吏本人在说。阿那的招呼原写「要问航路，就问」，可他页上只有行情、没有问航路的签，
+## 一并改成「要问什么，就问」。
+const INTEL_ASIDE := "不费时日"
