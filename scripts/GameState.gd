@@ -329,8 +329,8 @@ func try_advance_chapter() -> Dictionary:
 		"title": cur.get("advance_title", "新的一章"),
 		"text": cur.get("advance_text", ""),
 		"scene": str(cur.get("advance_scene", "")),
-		# 本地 main P1 时间脊柱：晋升跳年（chapters.json advance_years），Main._show_chapter_dialog 据此 skip_years
-		"years": int(cur.get("advance_years", 0)),
+		# 本地 main P1 时间脊柱：晋升跳年（chapters.json advance_years，落点封顶 SKIP_YEAR_CAP），Main._show_chapter_dialog 据此 skip_years
+		"years": advance_skip_years(int(cur.get("advance_years", 0))),
 	}
 
 
@@ -1305,3 +1305,14 @@ func from_dict(d: Dictionary) -> void:
 	ended_head = str(d.get("ended_head", ""))
 	beats_seen = d.get("beats_seen", [])
 	loaded_with_beats = bool(d.get("loaded_with_beats", false))
+
+
+## 晋升跳年最远跳到这一年（德祐元年）为止。1275 年冬起是时间脊柱的终局段：士人线 1276 兴化守城、海商与乡土线
+## 1277 涵江海口、1279 崖山，都要人在场——整段跳过等于把结局跳过（1274 年三月在福州开第四章，原样跳四年落到
+## 景炎三年三月，回港当场判「未归」，守城一阵没打）。已在这一年或之后开章，不再跳年。
+const SKIP_YEAR_CAP := 1275
+
+
+## 本次晋升实跳几年：chapters.json 的 advance_years，落点不越过 SKIP_YEAR_CAP 那一年
+func advance_skip_years(n: int) -> int:
+	return clampi(n, 0, maxi(0, SKIP_YEAR_CAP - Calendar.year))

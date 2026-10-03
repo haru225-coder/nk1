@@ -121,7 +121,7 @@ func _c_fame_title() -> void:
 func _c_debt_year_sheet() -> void:
 	print("── C2 欠债跳 2 年：册页代价截 + 札记折叠原文")
 	gs.from_dict({})
-	cal.from_dict({"year": 1277, "month": 10, "day": 30})
+	cal.from_dict({"year": 1263, "month": 10, "day": 30})
 	gs.last_port = "quanzhou"
 	gs.money = 6500
 	gs.peak_money = 6500
@@ -139,9 +139,10 @@ func _c_debt_year_sheet() -> void:
 	(_main.get("_notice_when") as Array).clear()
 
 	# 探针自起对照账：3% 月复利，24 期（不引 GameState.DEBT_MONTHLY_RATE，防共同变量同错）
-	# 跳年沿途通告的「月息之外」一则探针自己从前文点：摆场已清雇佣亦无在职，沿途只该闻祥兴改元一声 +
-	# 工食未发按月一次。此数若涨（杂息变 / 雇佣还原），折叠头则数跟着改——不看它一眼的全包含法镇不住
-	var notice_extra := 5
+	# 跳年沿途通告的「月息之外」一则探针自己从前文点：摆场已清雇佣亦无在职，沿途只该闻 1264-11 理宗崩一声
+	# （酒馆传闻）。此数若涨（杂息变 / 雇佣还原），折叠头则数跟着改——不看它一眼的全包含法镇不住。
+	# 摆场原在 1277-10 跳到 1279-10（lane w53-13 起晋升跳年落点不越过 1275，那一年开章不再跳年），挪到 1263-10 跳到 1265-10
+	var notice_extra := 1
 	var debt0 := int(gs.debt)
 	var expect_last_interest := 0
 	var sim := debt0
@@ -160,9 +161,9 @@ func _c_debt_year_sheet() -> void:
 	var sheet_label := _find_label(_main, func(t: String) -> bool: return t.contains("代价"))
 	if sheet_label != null:
 		sheet_text = str(sheet_label.text)
-	_expect(sheet_text.contains("【两年后・祥兴二年　十月三十】"),
-		"册页题头「【两年后・祥兴二年　十月三十】」（实读头部：%s）" % sheet_text.substr(0, 30))
-	_expect(sheet_text.contains("——自景炎二年　十月三十至于祥兴二年　十月三十。"),
+	_expect(sheet_text.contains("【两年后・咸淳元年　十月三十】"),
+		"册页题头「【两年后・咸淳元年　十月三十】」（实读头部：%s）" % sheet_text.substr(0, 30))
+	_expect(sheet_text.contains("——自景定四年　十月三十至于咸淳元年　十月三十。"),
 		"册页末句年月起讫「——自…至于…。」（实读尾段：%s）" % sheet_text.substr(maxi(0, sheet_text.length() - 60), 60))
 
 	# 船籍簿札记：折叠行 + 展开后月息原文
@@ -175,14 +176,14 @@ func _c_debt_year_sheet() -> void:
 	_expect(fold_idx == 0,
 		"札记顶行是跳年通告折叠（logs[0]=%s）" % str(logs[0] if not logs.is_empty() else "<empty>"))
 	var fold_head := str(logs[0])
-	_expect(fold_head.contains("自景炎二年　冬月初一至于祥兴二年　十月初一"),
-		"折叠头记起讫年月名「自景炎二年　冬月初一至于祥兴二年　十月初一」（实读：%s）" % fold_head)
+	_expect(fold_head.contains("自景定四年　冬月初一至于咸淳元年　十月初一"),
+		"折叠头记起讫年月名「自景定四年　冬月初一至于咸淳元年　十月初一」（实读：%s）" % fold_head)
 	_expect(fold_head.contains("通告一连 %d 则，凡 24 月" % (24 + notice_extra)),
 		"折叠头记则数（24 则【月息】+ 探针自数余墨 %d 则）与凡月数 24（实读：%s）" % [notice_extra, fold_head])
 	_expect(fold_head.contains(str(expect_last_interest)) == false,
 		"反向：折叠头不带末月息文 %d（防把札记原文凑进同一行）" % expect_last_interest)
 
-	# 折叠原件：凡 24 月即 24 则【月息】 + 一则另有余墨（景炎三年四月的【改元】祥兴）。
+	# 折叠原件：凡 24 月即 24 则【月息】 + 一则另有余墨（景定五年冬月的【酒馆传闻】理宗崩）。
 	var folds: Dictionary = _main.get("_log_folds")
 	var fold: Dictionary = folds.get(fold_head, {})
 	var fold_lines := (fold.get("lines") as Array) if not fold.is_empty() else []
@@ -204,7 +205,7 @@ func _c_debt_year_sheet() -> void:
 
 	# 反向：无欠债的跳年，册页与札记俱不见「蕃商结息」与「现欠」字样
 	gs.from_dict({})
-	cal.from_dict({"year": 1277, "month": 10, "day": 30})
+	cal.from_dict({"year": 1263, "month": 10, "day": 30})
 	gs.last_port = "quanzhou"
 	gs.money = 6500
 	gs.peak_money = 6500
@@ -222,7 +223,7 @@ func _c_debt_year_sheet() -> void:
 	sheet_label = _find_label(_main, func(t: String) -> bool: return t.contains("代价"))
 	if sheet_label != null:
 		sheet_text = str(sheet_label.text)
-	_expect(sheet_text.contains("【两年后・祥兴二年　十月三十】"),
+	_expect(sheet_text.contains("【两年后・咸淳元年　十月三十】"),
 		"无债跳年：册页题头同款「【两年后・…】」（实读头部：%s）" % sheet_text.substr(0, 30))
 	_expect(sheet_text.contains("蕃商结息") == false and sheet_text.contains("现欠") == false,
 		"反向：无债跳年册页不见「蕃商结息」「现欠」（实读：%s）" % _snippet(sheet_text, "代价"))

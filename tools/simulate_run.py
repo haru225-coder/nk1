@@ -298,7 +298,7 @@ def try_advance():
     cur = chapters[G.chapter]
     title = cur.get("advance_title","")
     G.chapter += 1
-    for line in skip_years(int(cur.get("advance_years", 0))):
+    for line in skip_years(min(int(cur.get("advance_years", 0)), max(0, SKIP_YEAR_CAP - G.year))):
         print(f"    ★ {line}")
     return title
 
@@ -918,6 +918,8 @@ for _n in range(1, 5):
           f"第{_n}章船屋不卖快船，海鹘{'在' if _n >= _falcon_ch else '未到'}（{len(_sale_n)} 艘待售）")
 check(berth_index(1, 5) == 0 and berth_index(3, 5) == 2 and other_hulls(3, 0) == [1, 2],
       "坞位夹在船队里，坞上这一艘不进换船")
+# 晋升跳年落点封顶（lane w53-13）：GameState.advance_skip_years 不越过 SKIP_YEAR_CAP 那一年
+SKIP_YEAR_CAP = int(_const(open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read(), "SKIP_YEAR_CAP"))
 print(f"  ── 跑商 24 趟（起始第 {G.chapter} 章，可达 {len(open_ports())} 港）──")
 # 逐趟记下行情最低最高各到哪（晋升跳年会把行情重置回 1.0，只看跑完那一刻会漏）
 _rate_lo, _rate_hi = 1.0, 1.0

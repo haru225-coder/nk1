@@ -145,6 +145,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_6_guild_spreads_probe.gd",  # lane w53-6 行会抄本 / 打听不荐牙行闭门（围城 / 封港）的港回归探针
 	"res://tools/qa_w53_9_cutscene_input_probe.gd",  # lane w53-9 过场层输入时序探针（以场景启动，见 SCENES）
 	"res://tools/qa_w53_9_chapter_year_probe.gd",  # lane w53-9 章节卡年号与历法逐月同口径探针
+	"res://tools/qa_w53_13_decide_probe.gd",  # lane w53-13 待拍板逐条定下后的修复回归探针（跳年封顶等）
 	"res://tools/qa_w53_9_chapter_card_probe.gd",  # lane w53-9 章节卡题记留读与一句一列探针（须带窗口）
 	"res://tools/combat_vfx_probe.gd", "res://tools/ship_vfx_probe.gd", "res://tools/atmos_water_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
 	"res://scripts/combat/ShipHull3D.gd", "res://tools/ship_exquisite_probe.gd",

@@ -73,6 +73,7 @@ EXEMPT = [
     ("qa_save_slot_tip_probe.gd", "e92d2be lane-t", "航海日志坏档/.bak 纪实提示探针与契约锁，随 lane-t 落地验过留档"),
     ("qa_shore_wait_notice_probe.gd", "802e54d lane-w26-k5 族", "岸上等待通告专项探针，随该族落地验过留档"),
     ("qa_w53_11_run_watch_probe.gd", "lane-w53-11", "截图门禁共用件 shot_gate「_run 断气」看门自证（喂入口 _run 出错须宽限两帧判红、子函数错不响），headless 秒级，动 shot_gate.gd / script_err_tally.gd 时加跑"),
+    ("qa_w53_13_decide_probe.gd", "lane-w53-13", "w53 待拍板逐条定下后的修复回归探针（跳年封顶等，一段钉一条、回退即红），headless 可跑，随 lane-w53-13 落地验过留档"),
     ("qa_w53_1_battle_sea_name_probe.gd", "lane-w53-1", "海上遇敌的海域名按船当日所在取港探针（全港对 × 航程 5%…95% 对离船最近港；实点「迎战」海盗 / 元军哨船，验题签与海战海况海域），修恒取起锚港"),
     ("qa_w53_1_chart_follow_ship_probe.gd", "lane-w53-1", "远程航行镜头跟船探针（真游戏逐日链式推进：每日船标在图带里、拖开不拽回、航行中收展牌、按住空格快进），随本 lane 落地验过留档"),
     ("qa_w53_1_dest_hint_probe.gd", "lane-w53-1", "目的地出带箭头不压港框 / 港名 / 船标探针（选向 / 放大 / 航行三种镜头 × 全港对），随本 lane 落地验过留档"),
