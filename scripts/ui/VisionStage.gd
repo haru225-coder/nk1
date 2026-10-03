@@ -36,6 +36,12 @@ const VOLLEY_FIRST := 0.6
 const GUN_STAGGER := 0.12
 const SPLASH_DELAY := 0.42
 const CORNER_PX := 58.0
+## 定格 host（CombatFreeze）内的落点。战事字与「中板」飘字都挂在 host 下、用 host 内坐标，
+## 画布加宽 / 加高时随 host 一起挪——飘字始终贴着它那条红帆快船，不按画布比例另折。
+const FALCON_AT := Vector2(280, -30)
+const HIT_FLOAT_FROM_FALCON := Vector2(20, -30)  # 「中板」静置时左上角：船心右 20、上 30
+const HIT_RISE := 55.0                            # 开场飘字自船心高度上浮的行程
+const COMBAT_TAG_AT := Vector2(140, 160)          # 「右舷齐射」压在海图右下
 
 const SLIP_TITLE := "市舶纪事"
 const SLIP_SEAL := "舷"
@@ -67,8 +73,8 @@ func _ready() -> void:
 	if not _ready_emitted:
 		_ready_emitted = true
 		stage_ready.emit()
-	# 窗改尺寸（expand 画布恒 ≥1280×720，只做加宽不变窄）时把钉画缘的件挪到新画布：
-	# 墨边宽度、题签/副题/hint 的横向位置、定格 host 与战事字/中板、立像裱框等按新 cv 重布。
+	# 窗改尺寸（expand 画布恒 ≥1280×720：宽屏加宽、4:3 等窄比例加高）时把钉画缘的件挪到新画布：
+	# 墨边宽度、题签/副题/hint 的位置、定格 host（战事字与「中板」挂在 host 下随之走）按新 cv 重布。
 	# 不重 build：避免 queue_free 整页把播到一半的 _run_intro 协程 / 炮焰队列打回起点（lane gd15 同型守卫照走）。
 	if not get_viewport().size_changed.is_connected(_on_viewport_resized):
 		get_viewport().size_changed.connect(_on_viewport_resized)
@@ -76,10 +82,9 @@ func _ready() -> void:
 	_run_intro()
 
 
-## 视口改尺寸：画布恒 ≥1280×720，且只做加宽（玩家起窗后再收到 <1280 那一档由引擎钳回 1280），
-## 因此只须把钉死 cv 的件 — 墨边（LetterTop/LetterBot + 其描线）、题签（SlipClip）、副题（SlipSub）、
-## 右下 hint、定格 host、右下战事字（CombatTag / HitFloat）、正中偏右的立像裱框 — 改到新画布坐标。
-## 内容与字号不动。
+## 视口改尺寸：画布恒 ≥1280×720（宽屏加宽、窄比例加高），只须把钉死 cv 的件 — 墨边（LetterTop/LetterBot
+## + 其描线）、题签（SlipClip）、副题（SlipSub）、右下 hint、定格 host — 改到新画布坐标。
+## 战事字 / 「中板」是 host 的子节点，跟 host 走；立像裱框钉左上 (48, 84) 不随画布挪。内容与字号不动。
 func _on_viewport_resized() -> void:
 	var cv := Kit.canvas_size(self)
 	if (cv - _last_cv).length() < 1.0:
@@ -123,14 +128,8 @@ func _layout_for(cv: Vector2) -> void:
 		pane.position.x = 48
 	var host := get_node_or_null("CombatFreeze") as Node2D
 	if host != null:
+		# 战事字 / 「中板」都是 host 的子节点，host 一挪它们就跟着船走（不另按画布比例折）
 		host.position = Vector2(cv.x * 0.5625, cv.y * 0.5)
-	var tag := get_node_or_null("CombatTag") as Control
-	if tag != null:
-		tag.position = Vector2(cv.x * 0.672, cv.y * 0.722)
-	var float_l := get_node_or_null("HitFloat") as Control
-	if float_l != null:
-		# HitFloat.y 由 _run_intro 动画驱动，这里只挪 x 不抢 y
-		float_l.position.x = cv.x * 0.8
 
 
 func _process(delta: float) -> void:
@@ -461,11 +460,12 @@ func _build_combat_pane(cv: Vector2) -> void:
 
 	var fu_pos := Vector2(40, 20)
 	var fu_rot := -0.35
-	var falcon_pos := Vector2(280, -30)
+	var falcon_pos := FALCON_AT
 	host.add_child(_ship_shadow(fu_pos, Vector2(0.9, 2.3), fu_rot))
 	host.add_child(_ship_shadow(falcon_pos, Vector2(0.7, 1.8), 0.55))
 	host.add_child(_ship_sprite(SHIP_FU, fu_pos, 0.42, fu_rot))
 	var falcon := _ship_sprite(SHIP_FALCON, falcon_pos, 0.32, 0.55)
+	falcon.name = "Falcon"
 	falcon.modulate = Color(0.85, 0.75, 0.7, 1.0)
 	host.add_child(falcon)
 
@@ -502,10 +502,10 @@ func _build_combat_pane(cv: Vector2) -> void:
 	tag.add_theme_color_override("font_color", UiTheme.GOLD_HI)
 	tag.add_theme_color_override("font_outline_color", UiTheme.INK_SOLID)
 	tag.add_theme_constant_override("outline_size", 4)
-	# 战事字（右下方「右舷齐射」）：1280 下落在 (860, 520)，按 cv 比例折；宽画布下向右挪、仍压在全景内
-	tag.position = Vector2(cv.x * 0.672, cv.y * 0.722)
+	# 战事字（海图右下「右舷齐射」）：挂 host 下用 host 内坐标（1280×720 下即画布 (860, 520)）
+	tag.position = COMBAT_TAG_AT
 	tag.name = "CombatTag"
-	add_child(tag)
+	host.add_child(tag)
 
 	var float_l := Label.new()
 	float_l.text = "中板"
@@ -514,9 +514,11 @@ func _build_combat_pane(cv: Vector2) -> void:
 	float_l.add_theme_color_override("font_color", UiTheme.CINNABAR)
 	float_l.add_theme_color_override("font_outline_color", UiTheme.INK_SOLID)
 	float_l.add_theme_constant_override("outline_size", 5)
-	float_l.position = Vector2(cv.x * 0.8, cv.y * 0.417)
+	# 「中板」贴着红帆快船：挂 host 下、按船心定位（1280×720 下即画布 (1020, 300)）。
+	# 不能按画布比例折——宽画布下 host 只挪 0.5625 cv.x，飘字按 0.8 cv.x 走就脱离船飘到海图右缘外
+	float_l.position = FALCON_AT + HIT_FLOAT_FROM_FALCON
 	float_l.name = "HitFloat"
-	add_child(float_l)
+	host.add_child(float_l)
 
 
 func _ship_sprite(path: String, pos: Vector2, scale: float, rot: float) -> Sprite2D:
@@ -657,8 +659,8 @@ func _run_intro() -> void:
 	# 轻量帧动画：题签自左擦出 + 飘字上浮（process_frame，不用 create_timer）
 	if get_tree() == null:
 		return
-	# 协程挂起点跨帧：resize 会 queue_free 整页再重建，旧挂起点手里的 clip/hit 已是 previously freed；
-	# 醒来看见 _run_id 变了即自退（lane gd15 同型守卫）
+	# 协程挂起点跨帧：页被合上（queue_free）时旧挂起点手里的 clip/hit 已是 previously freed；
+	# 醒来看见 _run_id 变了或节点已失效即自退（lane gd15 同型守卫）
 	_run_id += 1
 	var my_id := _run_id
 	var clip := get_node_or_null("SlipClip") as Control
@@ -669,14 +671,13 @@ func _run_intro() -> void:
 			await get_tree().process_frame
 			if _run_id != my_id or not is_instance_valid(clip):
 				return
-	var hit := get_node_or_null("HitFloat") as CanvasItem
+	var hit := get_node_or_null("CombatFreeze/HitFloat") as Control
 	if hit:
 		hit.modulate.a = 1.0
-		# HitFloat 的初始 pos.y 在 _build_combat_pane 已写作 cv.y * 0.417（1280 下 300）；
-		# 这里把它瞬时下移一格再动画浮回原位；y0 用同一个 cv 比率（1280 下 330 → 0.458）
-		var y0 := _last_cv.y * 0.458 if _last_cv.y > 1.0 else 330.0
+		# host 内坐标：自船心高度上浮 HIT_RISE（1280×720 下画布 y 330 → 275）；画布改尺寸时 host 带着走
+		var y0 := FALCON_AT.y
 		for i in 18:
-			hit.position.y = y0 - 55.0 * float(i + 1) / 18.0
+			hit.position.y = y0 - HIT_RISE * float(i + 1) / 18.0
 			await get_tree().process_frame
 			if _run_id != my_id or not is_instance_valid(hit):
 				return
