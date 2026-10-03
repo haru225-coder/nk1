@@ -2,6 +2,7 @@
 """docs/GATES.md §一（门禁总表 / 门禁开关与附属自检 / 截图门禁明细 / 不算门禁）、§二（批量巡检）与 §四（CI 建议步骤）
 按 tools/gate_json.py 的注册表生成，本脚本校验二者一致；§三「一键人读全跑」与 .claude/todo.md 验证段是手写，只比对。
 附属自检（一键跑把关判据自检「三之一」，lane w20-b3）与 §一 附属表同册：禁带字样 / 漏跑 / 道数不符 / README 道数见 §三.19。
+§一 尾句断言（lane w49-k4）与 §一 附属表同册（「二、docs/GATES.md」生成块计数域内）：(a) 道数 = 注册表一键跑条数；(b) lane 枚举行集合 = 注册表 lane 集——w48-k1 升格实证零断言格升格链滞一格零红照补。
 「二、docs/GATES.md」另有 SHOT 张数逐条对账格（lane w29-k5）：SHOT_PROBES 每条的注册表张数 ↔ §一 同行张数字段，漂移逐支点名、不回读源码。
 「三、docs/GATES.md」另有 SHOT 张数格同型 clone（lane w33-k2，源 w30-k6 交主控 #2 / 审计-wave29 §85）：§四 / §二 生成块整块红一句「首处差异在第 k 行 / 逐字一致✗」不能逐支点名，row_sources(reg) 把两块的注册表出处行映成 (行 → 出处) 表，凡 in known 的行判与注册表块逐字同、漂移逐支点名 id + 出处 + 行文书；known 外零源行（表头 / ``` / 第 0 步命令段等）照旧由整块格逐字一致兜。行格与整块格互补、不回读源码。
 
@@ -555,6 +556,37 @@ def main(argv):
     if rm_n is not None:
         check(rm_n == len(must), f"README 道数（{rm.group(1)} = {rm_n}）与注册表一键跑条数（{len(must)}）相符"
               + ("" if rm_n == len(must) else "——「一键跑十六道」一阵子写成别的数，没人看得见（g8 W1 同类）"))
+    # lane w49-k4：§一 尾句（每轮必跑本诺句，生成块块内、--write 会按注册表重排，但此前对它零断言——
+    # 块外散文 §四 :635 系手拨格只有 prose 对账眼，同义高价值 §一尾句升格链漏一格零红）两断言：
+    # (a) 「『N 道 Python + …』M 道门禁」形·M = oneclick 条数（= must 计数 + step 数，与 README 道数格同型同口径）；
+    # (b) lane 枚举行集合 = 注册表 lane 档位置集（doc 行号与注册表 live 序位、set-wise）——
+    # 手工枚举 19…n 道中升格 n 次即 n 处手拨断电（w46-k1 / w48-k1 升格都滞一格零竿，w48-k1 起枚举个数错亦零竿）。
+    ws = [l for l in (body or "").splitlines() if l.startswith("每轮必跑（")]
+    check(len(ws) == 1, f"§一 块内找到唯一「每轮必跑…」尾句行（实得 {len(ws)} 条）")
+    if ws:
+        line = ws[0]
+        live_rows = [g for g in gates if g["tier"] != "no"]
+        lane_set = {str(i) for i, g in enumerate(live_rows, 1) if g["tier"] == "lane"}
+        steps = [(i, g["id"]) for i, g in enumerate(live_rows, 1) if g["tier"] == "step"]
+        ocount = len(reg["oneclick"])
+        mc = re.match(r"^每轮必跑（`.claude/todo.md` 验证段）："
+                      + "".join(f"先跑步骤 {i} {re.escape(g)}（不判红绿），再跑" for i, g in steps)
+                      + "「([一二三四五六七八九十]+)道 Python \\+ ([^」]+)」([一二三四五六七八九十]+)道门禁；"
+                      + "([0-9、]*) 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。$", line)
+        check(bool(mc), "§一 尾句形状全对（「每轮必跑…『N 道 Python + 名单』M 道门禁；枚举 按 lane…」）"
+              + ("" if mc else f"；实读行前 120 字节：{line[:120]!r}——形状变了（手改 / 段式漂移）"))
+        if mc:
+            no = cn_num(mc.group(3))
+            check_part = "「" + mc.group(1) + "道 Python + " + mc.group(2) + "」形"
+            check(no == ocount, f"§一尾句道数 {check_part} M 道门禁 M={mc.group(3)} vs 注册表一键跑条数={ocount}"
+                  + ("" if no == ocount else "——升格链把本诺句滞一格零红（w48-k1 升格判据 1 M1 真实咬过，w49-k4 补竿）"))
+            doc_set = set(filter(None, mc.group(4).split("、"))) if mc.group(4) else set()
+            miss = sorted((lane_set - doc_set), key=int)
+            extra_x = sorted((doc_set - lane_set), key=int)
+            check(not miss and not extra_x,
+                  f"§一尾句 lane 枚举 {len(doc_set)} 枚 = 注册表 lane 集 {len(lane_set)} 位"
+                  + ("" if not miss and not extra_x else f"；缺格 {miss or '零'} 多格 {extra_x or '零'}"
+                     f"——lane 枚举行手拨差（注册表 lane 集 {[int(x) for x in sorted(lane_set, key=int)]}），缺格道未随升格链手拨" ))
     # 把关判据自检（不落盘）：靶子（两支变异脚本的 LANDING_OFF 常量）漂了、判法放宽了当场红
     sweep_selfcheck()
     live = [g["id"] for g in gates if g["tier"] != "no"]
