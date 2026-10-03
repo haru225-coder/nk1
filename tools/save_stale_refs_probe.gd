@@ -6,7 +6,7 @@ extends SceneTree
 ## 反向变异基座：MUTATION 环境变量指到 port / ship / discovery / character / era 之一
 ## 时探针换掉该类的核验（模拟源码该类核验被遮），必判 FAIL 指名该类；未设 = rc=0。
 ## 用法：godot --headless --path . -s res://tools/save_stale_refs_probe.gd
-## 只动存档位 97，不碰正式位 1..SLOTS；输出含 SCRIPT ERROR 即视为失败。
+## 只动存档位 97，不碰正式位 1..SLOTS；本进程出 SCRIPT ERROR 即判红（共用件 tools/script_err_tally.gd，见文件尾）。
 
 const SLOT := 97
 const GOOD_LABEL := "景炎二年　泉州　500 钱"
@@ -18,8 +18,8 @@ var fails := 0
 
 
 func _init() -> void:
-	# 由 glock 起的常规用法；_import 阶段先别上 frame
-	call_deferred("_run")
+	# 由 glock 起的常规用法；_import 阶段先别上 frame。经 _run_guarded 起跑：_run 半路被脚本错掐断也就地判红收尾
+	call_deferred("_run_guarded")
 
 
 func _run() -> void:
@@ -27,7 +27,7 @@ func _run() -> void:
 	sl = root.get_node_or_null("SaveLoad")
 	if sl == null:
 		push_error("SaveLoad autoload missing")
-		quit(1)
+		_reported = true; quit(1)
 		return
 	gs = root.get_node("GameState")
 	fleet = root.get_node("Fleet")
@@ -35,7 +35,7 @@ func _run() -> void:
 	var mutation := OS.get_environment("MUTATION")
 	if mutation != "" and not mutation in ["port", "ship", "discovery", "character", "era"]:
 		push_error("MUTATION 不识之外：%s" % mutation)
-		quit(1)
+		_reported = true; quit(1)
 		return
 
 	# 一、干净档 → 零类零行
@@ -88,13 +88,7 @@ func _run() -> void:
 		"after_load": "_after_all",
 	})
 
-	_cleanup()
-	if fails == 0:
-		print("SAVE_STALE_REFS_PROBE PASS")
-		quit(0)
-	else:
-		print("SAVE_STALE_REFS_PROBE FAIL fails=%d" % fails)
-		quit(1)
+	_finish()
 
 
 # ── 造档 ─────────────────────────────────────────────
@@ -276,3 +270,48 @@ func _cleanup() -> void:
 		var p: String = _primary() + suffix
 		if FileAccess.file_exists(p):
 			DirAccess.remove_absolute(p)
+
+
+# ── lane w53-12：本进程 SCRIPT ERROR 即红 ─────────────────────────────────────
+## 头注原写「输出含 SCRIPT ERROR 即视为失败」，可本探针没装 Logger：读档后的核对钩子（_after_ship / _after_all，
+## 「走完不抛 SCRIPT ERROR = 不崩」）或读档路径里一出脚本错，那段核对整段跳过、fails 不涨，末行照报 PASS、退 0。
+## SaveLoad.audit_stale_refs 头注引本探针作「删式船随档读入、各处取 def 按空表兜底」的实测，凭的正是这一条。
+## 写法照 save_robust_probe（lane w53-11 f267035）：计数器由成员初始化挂上（先于 _init），_run_guarded 兜 _run 自身中止。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+var _tally: ScriptErrTally = _arm_tally()
+var _reported := false
+
+
+func _arm_tally() -> ScriptErrTally:
+	var t: ScriptErrTally = ScriptErrTally.new()
+	OS.add_logger(t)
+	return t
+
+
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_verdict(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_finish()
+
+
+## 收尾（_run 走完与 _run_guarded 判中止共用）：清存档位，SCRIPT ERROR 两判（共用件 verdicts()）记进同一张 fails 账，再印末行。
+func _finish() -> void:
+	_reported = true
+	if sl != null:
+		_cleanup()
+	for v in _tally.verdicts():
+		_verdict(v[0], v[1])
+	if fails == 0:
+		print("SAVE_STALE_REFS_PROBE PASS")
+		quit(0)
+	else:
+		print("SAVE_STALE_REFS_PROBE FAIL fails=%d" % fails)
+		quit(1)
+
+
+## 用例之外的两判 / 主流程中止：与各用例同一张 fails 账、同一 ✓ / ✗ 行形。
+func _verdict(ok: bool, what: String) -> void:
+	print("  %s  %s" % ["✓" if ok else "✗", what])
+	if not ok:
+		fails += 1
