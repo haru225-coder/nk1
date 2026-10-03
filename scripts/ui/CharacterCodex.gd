@@ -873,7 +873,10 @@ func _relation_chip(other: Dictionary, rel: String) -> Control:
 	var empty := StyleBoxEmpty.new()
 	for s in ["normal", "hover", "pressed", "focus", "hover_pressed"]:
 		hit.add_theme_stylebox_override(s, empty)
-	hit.tooltip_text = "%s　%s" % [rel, Art.display_name(other) if known else str(other.get("title", ""))]
+	# 未识之人：提示里的称谓与未识页、名册格同一句（人物志上屏称谓，按年份露、截「后为……」）。
+	# 原稿 title 是设定集终稿——林阿舶页「旧水手」签原先悬停即见「水手·后为部将」，度宗页「儿子」签 1270 年就写「大宋皇帝（景炎）」
+	var unknown_title := "" if known else Art.codex_title(other)
+	hit.tooltip_text = "%s　%s" % [rel, Art.display_name(other) if known else (unknown_title if unknown_title != "" else "来历未详")]
 	hit.pressed.connect(show_detail.bind(oid, true))
 	var lit := func(on: bool) -> void:
 		chip.add_theme_stylebox_override("panel", _chip_box(on))

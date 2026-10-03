@@ -15,6 +15,10 @@ extends SceneTree
 ##     市舶司小吏那页也冒出「邻座的牙人」；现由见面的人自己说行情那句，酒馆长凳上的「打听」照旧是邻座牙人。
 ##   C 人物志未识的职事：页上写「雇过此人，册上才有其详」，可规矩（CharacterArt.is_known）是见过即识——酒馆里看过他的候选卡
 ##     （TavernPage 记 note_met）就算，不必花入伙钱。现写「见过此人」，并实跑：没雇、只进了他候雇的酒馆，人物志就认得他。
+##   R 人物志关系签：已识之人页上「关系」里指向未识之人的签（「未识 / 旧水手」），悬停提示修前读设定集原稿 title——
+##     林阿舶页悬停即见「旧水手　水手·后为部将」（运行时截「后为……」只在 codex_title 里做，这里绕过去了），
+##     度宗页「儿子」签 1270 年就写「大宋皇帝（景炎）」，海商线陈母页写「陈文龙幼子」。现写人物志上屏称谓，与名册格、未识页同一句；
+##     三处钉实例，另按四个年份把名册上每位已识之人的详页翻一遍：指向未识之人的签，提示称谓都须与名册格上那人的称谓一字不差。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 ## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
@@ -75,6 +79,7 @@ func _boot() -> void:
 	await _n_wall_dates()
 	await _i_npc_intel()
 	await _c_codex_unknown_crew()
+	await _r_rel_chip_tips()
 	_report()
 
 
@@ -318,6 +323,110 @@ func _codex_unknown_hint(id: String) -> String:
 	cx.queue_free()
 	await process_frame
 	return got
+
+
+# ── R 人物志关系签：指向未识之人的悬停提示写人物志上屏称谓 ──
+
+func _r_rel_chip_tips() -> void:
+	print("── R 人物志关系签指向未识之人：悬停提示写人物志上屏称谓（按年份露、截「后为……」），不读设定集原稿")
+	_stage_codex(1258, 3, 1, "undecided")
+	var tip := await _rel_tip("merchant_lin", "lin_hua")
+	_expect(tip == "旧水手　泉州码头水手",
+		"第一章林阿舶页「旧水手」签（林华未识）：提示「旧水手　泉州码头水手」，不露「后为部将」（实读：%s）" % tip)
+	_stage_codex(1262, 5, 2, "merchant")
+	tip = await _rel_tip("chen_mother", "chen_jing")
+	_expect(tip == "孙儿　陈子龙幼子",
+		"海商线陈母页「孙儿」签（陈靖未识）：主角没改名，提示写「陈子龙幼子」不写「陈文龙幼子」（实读：%s）" % tip)
+	_stage_codex(1270, 5, 3, "scholar")
+	tip = await _rel_tip("song_duzong", "song_duanzong")
+	_expect(tip == "儿子　度宗长子",
+		"1270 度宗页「儿子」签（端宗未识）：提示「儿子　度宗长子」，不提前写「大宋皇帝（景炎）」（实读：%s）" % tip)
+	# 整册翻：四个年份，名册上每位已识之人的详页，指向未识之人的签——提示 =「关系　名册格上那人的称谓」
+	for st in [[1258, 3, 1, "undecided"], [1262, 5, 2, "merchant"], [1270, 5, 3, "scholar"], [1273, 5, 4, "scholar"]]:
+		_stage_codex(int(st[0]), int(st[1]), int(st[2]), str(st[3]))
+		var got: Array = await _rel_tip_sweep()
+		_expect(int(got[0]) >= 8 and (got[1] as Array).is_empty(),
+			"%d-%02d 第%d段（%s）：已识之人页上 %d 个指向未识之人的签，提示称谓与名册格一致（不一致：%s）" % [
+				st[0], st[1], st[2], st[3], got[0], "无" if (got[1] as Array).is_empty() else "；".join(got[1])])
+
+
+## 人物志摆场：年月 + 第几段 + 身份（士人线连带殿试改名）；进过泉州（序章已走完）
+func _stage_codex(year: int, month: int, chapter: int, identity: String) -> void:
+	_stage(year, month, chapter)
+	_gs.visited_ports = ["quanzhou"]
+	_gs.identity = identity
+	if identity == "scholar":
+		_gs.set_flag("renamed_wenlong")
+		_gs.player_name = "陈文龙"
+
+
+## 人物志直开 page_id 详页，取「关系」里指向 other_id 那一签的悬停提示（签名 Rel_<id>）；没有这一签返回「<无签>」
+func _rel_tip(page_id: String, other_id: String) -> String:
+	var cx: Control = (load("res://scripts/ui/CharacterCodex.gd") as GDScript).new()
+	root.add_child(cx)
+	cx.call("begin", page_id)
+	await process_frame
+	var got := "<无签>"
+	var chip := cx.find_child("Rel_" + other_id, true, false)
+	if chip != null:
+		got = _chip_tip(chip)
+	cx.queue_free()
+	await process_frame
+	return got
+
+
+## 整册翻一遍：名册格（Cell_<id>，名字一格写「未识」即未识，称谓一格是人物志上屏称谓）记下未识之人的称谓，
+## 再逐个翻已识之人的详页，核每个指向未识之人的签。返回 [核过的签数, 不一致的条目]
+func _rel_tip_sweep() -> Array:
+	var cx: Control = (load("res://scripts/ui/CharacterCodex.gd") as GDScript).new()
+	root.add_child(cx)
+	cx.call("begin", "")
+	cx.call("_on_tab", "all")
+	await process_frame
+	var unknown_title := {}
+	var known_ids: Array = []
+	for cell in cx.find_children("Cell_*", "Button", true, false):
+		var id := str(cell.name).trim_prefix("Cell_")
+		var col: Node = cell.get_child(0)
+		var shown := str((col.get_node("Name") as Label).text)
+		var title := str((col.get_child(2) as Label).text)
+		if shown == "未识":
+			unknown_title[id] = "来历未详" if title == "未详" else title
+		else:
+			known_ids.append(id)
+	var checked := 0
+	var bad: Array = []
+	for id in known_ids:
+		cx.call("show_detail", id, false)
+		for chip in cx.find_children("Rel_*", "PanelContainer", true, false):
+			var oid := str(chip.name).trim_prefix("Rel_")
+			if not unknown_title.has(oid):
+				continue
+			var lines := _chip_lines(chip)
+			var want := "%s　%s" % [lines[1], unknown_title[oid]]
+			var tip := _chip_tip(chip)
+			checked += 1
+			if lines[0] != "未识" or tip != want:
+				bad.append("%s→%s 提示「%s」应为「%s」" % [id, oid, tip, want])
+	cx.queue_free()
+	await process_frame
+	return [checked, bad]
+
+
+## 关系签上的两行字：[名（未识写「未识」）, 关系]——签面末两枚 Label（未识签的头像框里另有一枚「？」排在前头）
+func _chip_lines(chip: Node) -> Array:
+	var out: Array = []
+	for l in chip.find_children("*", "Label", true, false):
+		out.append(str((l as Label).text))
+	return out.slice(out.size() - 2) if out.size() >= 2 else ["", ""]
+
+
+## 关系签整签的点按钮（盖满签面的那只 flat Button）上的悬停提示
+func _chip_tip(chip: Node) -> String:
+	for c in chip.get_children():
+		if c is Button:
+			return str((c as Button).tooltip_text)
+	return "<无钮>"
 
 
 func _goto(scene_id: String) -> void:
