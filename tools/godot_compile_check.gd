@@ -126,6 +126,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_3_economy_probe.gd",  # lane w53-3 牙行逐件抬价/赊贷/委办三本账守形探针
 	"res://tools/qa_fold_notice_probe.gd",  # lane w28-k2 札记折叠内非月息通告（【欠饷】按月 / 欠满三月 + 改元月历一瞥）原文断言（w27-k2 交主控①补新见）
 	"res://tools/qa_yard_transition_probe.gd",
+	"res://tools/qa_w53_8_vision_layout_probe.gd",  # lane w53-8 市舶纪事 VisionStage 画布钉死 1280 实锤探针（↑INVENTORY_EXEMPT——未登记会卡 inventory 门禁）
 	"res://tools/qa_pirate_boat_probe.gd",  # 海寇快船 + 船图契约（lane pirate-boat-0928）
 	"res://tools/qa_w53_4_story_probe.gd",  # lane w53-4 剧情 advance_text 宣港对账专项探针
 	"res://tools/qa_w53_4_chapter_hint_probe.gd",  # lane w53-4 章节 hint 上屏专项探针

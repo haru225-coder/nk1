@@ -6,6 +6,7 @@
 extends Control
 
 const Art := preload("res://scripts/ui/CharacterArt.gd")
+const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 
 signal stage_ready
 
@@ -51,6 +52,8 @@ var _embers: CPUParticles2D
 var _spray: CPUParticles2D
 var _cues: Array = []      # [剩余秒, Callable]；不用 create_timer（-s 下未必推进）
 var _volley_clock := VOLLEY_PERIOD - VOLLEY_FIRST
+var _last_cv := Vector2.ZERO  # 上次量到的画布宽；resize 时整页重排
+var _run_id := 0              # 每次 _run_intro 起跑 +1；resize 重建后旧协程看 id 不符自退
 var volley_count := 0
 ## false 时不按节拍自动齐射，只响应 volley()（截屏探针定时刻用）
 var auto_volley := true
@@ -64,7 +67,70 @@ func _ready() -> void:
 	if not _ready_emitted:
 		_ready_emitted = true
 		stage_ready.emit()
+	# 窗改尺寸（expand 画布恒 ≥1280×720，只做加宽不变窄）时把钉画缘的件挪到新画布：
+	# 墨边宽度、题签/副题/hint 的横向位置、定格 host 与战事字/中板、立像裱框等按新 cv 重布。
+	# 不重 build：避免 queue_free 整页把播到一半的 _run_intro 协程 / 炮焰队列打回起点（lane gd15 同型守卫照走）。
+	if not get_viewport().size_changed.is_connected(_on_viewport_resized):
+		get_viewport().size_changed.connect(_on_viewport_resized)
+	_last_cv = Kit.canvas_size(self)
 	_run_intro()
+
+
+## 视口改尺寸：画布恒 ≥1280×720，且只做加宽（玩家起窗后再收到 <1280 那一档由引擎钳回 1280），
+## 因此只须把钉死 cv 的件 — 墨边（LetterTop/LetterBot + 其描线）、题签（SlipClip）、副题（SlipSub）、
+## 右下 hint、定格 host、右下战事字（CombatTag / HitFloat）、正中偏右的立像裱框 — 改到新画布坐标。
+## 内容与字号不动。
+func _on_viewport_resized() -> void:
+	var cv := Kit.canvas_size(self)
+	if (cv - _last_cv).length() < 1.0:
+		return
+	_last_cv = cv
+	_layout_for(cv)
+
+
+## 把钉画缘的件重排到 cv（初次 _build 与 resize 共走这一套，只调坐标/宽度，不动子树与字号）。
+func _layout_for(cv: Vector2) -> void:
+	var bar_h := 64.0
+	var top := get_node_or_null("LetterTop") as Control
+	if top != null:
+		top.size = Vector2(cv.x, bar_h)
+		top.position = Vector2(0, 0)
+		var tl := top.get_child(0) as Control if top.get_child_count() > 0 else null
+		if tl != null:
+			tl.size = Vector2(cv.x, 2)
+	var bot := get_node_or_null("LetterBot") as Control
+	if bot != null:
+		bot.size = Vector2(cv.x, bar_h)
+		bot.position = Vector2(0, cv.y - bar_h)
+		var bl := bot.get_child(0) as Control if bot.get_child_count() > 0 else null
+		if bl != null:
+			bl.size = Vector2(cv.x, 2)
+	var slip_clip := get_node_or_null("SlipClip") as Control
+	if slip_clip != null:
+		slip_clip.position = Vector2(cv.x * 0.5 - 210, 78)
+	var sub := get_node_or_null("SlipSub") as Control
+	if sub != null:
+		sub.size = Vector2(cv.x, 28)
+		sub.position = Vector2(0, 168)
+	var hint := get_node_or_null("Hint") as Control
+	if hint != null:
+		hint.position = Vector2(cv.x - 280, cv.y - 42)
+	var pane := get_node_or_null("PortraitPane") as Control
+	if pane != null:
+		# PortraitPane 仍钉左缘（只在 x 富余时随 cv.x 居中；低于 1280+pane 宽保持 84 起）
+		pane.position = Vector2(minf(48.0, maxf(20.0, (cv.x - 300.0) / 2.0 - 300.0)), 84)
+		# 保守简化：仍左 48（与原口径一致，宽画布 Pane 与 右 hint 不相冲），改严见 _build_portrait_pane
+		pane.position.x = 48
+	var host := get_node_or_null("CombatFreeze") as Node2D
+	if host != null:
+		host.position = Vector2(cv.x * 0.5625, cv.y * 0.5)
+	var tag := get_node_or_null("CombatTag") as Control
+	if tag != null:
+		tag.position = Vector2(cv.x * 0.672, cv.y * 0.722)
+	var float_l := get_node_or_null("HitFloat") as Control
+	if float_l != null:
+		# HitFloat.y 由 _run_intro 动画驱动，这里只挪 x 不抢 y
+		float_l.position.x = cv.x * 0.8
 
 
 func _process(delta: float) -> void:
@@ -125,7 +191,8 @@ func _build() -> void:
 	if _built:
 		return
 	_built = true
-	var cv := Vector2(1280, 720)
+	var cv := Kit.canvas_size(self)
+	_last_cv = cv
 
 	var sea := ColorRect.new()
 	sea.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -155,6 +222,8 @@ func _build() -> void:
 	_build_letterbox(cv)
 	_build_slip(cv)
 	_build_hint(cv)
+	# 钉画缘件的坐标/宽度集中一套口径（_on_viewport_resized 也走这，挪点位不重建子树）
+	_layout_for(cv)
 
 
 func _build_letterbox(cv: Vector2) -> void:
@@ -362,10 +431,11 @@ func _add_gilt_corners(pane: PanelContainer, st: StyleBox) -> void:
 		layer.add_child(tr)
 
 
-func _build_combat_pane(_cv: Vector2) -> void:
+func _build_combat_pane(cv: Vector2) -> void:
 	var host := Node2D.new()
 	host.name = "CombatFreeze"
-	host.position = Vector2(720, 360)
+	# 定格 host 的位置由本帧末尾 _layout_for(cv) 落定；宽画布下也只是一处口径
+	host.position = Vector2(cv.x * 0.5625, cv.y * 0.5)
 	add_child(host)
 
 	var chart_tex := _fill_tex(FILL_CHART)
@@ -432,7 +502,8 @@ func _build_combat_pane(_cv: Vector2) -> void:
 	tag.add_theme_color_override("font_color", UiTheme.GOLD_HI)
 	tag.add_theme_color_override("font_outline_color", UiTheme.INK_SOLID)
 	tag.add_theme_constant_override("outline_size", 4)
-	tag.position = Vector2(860, 520)
+	# 战事字（右下方「右舷齐射」）：1280 下落在 (860, 520)，按 cv 比例折；宽画布下向右挪、仍压在全景内
+	tag.position = Vector2(cv.x * 0.672, cv.y * 0.722)
 	tag.name = "CombatTag"
 	add_child(tag)
 
@@ -443,7 +514,7 @@ func _build_combat_pane(_cv: Vector2) -> void:
 	float_l.add_theme_color_override("font_color", UiTheme.CINNABAR)
 	float_l.add_theme_color_override("font_outline_color", UiTheme.INK_SOLID)
 	float_l.add_theme_constant_override("outline_size", 5)
-	float_l.position = Vector2(1020, 300)
+	float_l.position = Vector2(cv.x * 0.8, cv.y * 0.417)
 	float_l.name = "HitFloat"
 	add_child(float_l)
 
@@ -586,22 +657,34 @@ func _run_intro() -> void:
 	# 轻量帧动画：题签自左擦出 + 飘字上浮（process_frame，不用 create_timer）
 	if get_tree() == null:
 		return
+	# 协程挂起点跨帧：resize 会 queue_free 整页再重建，旧挂起点手里的 clip/hit 已是 previously freed；
+	# 醒来看见 _run_id 变了即自退（lane gd15 同型守卫）
+	_run_id += 1
+	var my_id := _run_id
 	var clip := get_node_or_null("SlipClip") as Control
 	if clip:
 		clip.size.x = 0.0
 		for i in 20:
 			clip.size.x = 420.0 * float(i + 1) / 20.0
 			await get_tree().process_frame
+			if _run_id != my_id or not is_instance_valid(clip):
+				return
 	var hit := get_node_or_null("HitFloat") as CanvasItem
 	if hit:
 		hit.modulate.a = 1.0
-		var y0 := 330.0
+		# HitFloat 的初始 pos.y 在 _build_combat_pane 已写作 cv.y * 0.417（1280 下 300）；
+		# 这里把它瞬时下移一格再动画浮回原位；y0 用同一个 cv 比率（1280 下 330 → 0.458）
+		var y0 := _last_cv.y * 0.458 if _last_cv.y > 1.0 else 330.0
 		for i in 18:
 			hit.position.y = y0 - 55.0 * float(i + 1) / 18.0
 			await get_tree().process_frame
+			if _run_id != my_id or not is_instance_valid(hit):
+				return
 		for i in 12:
 			hit.modulate.a = 1.0 - float(i + 1) / 12.0
 			await get_tree().process_frame
+			if _run_id != my_id or not is_instance_valid(hit):
+				return
 
 
 func _resolve_character(id: String) -> Dictionary:
