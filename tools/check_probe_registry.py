@@ -72,6 +72,7 @@ EXEMPT = [
     ("qa_port_beats_probe.gd", "53c0499 lane-w26-k7", "PortBeats.due 终局守卫探针，接口下沉后 when 判据未定"),
     ("qa_save_slot_tip_probe.gd", "e92d2be lane-t", "航海日志坏档/.bak 纪实提示探针与契约锁，随 lane-t 落地验过留档"),
     ("qa_shore_wait_notice_probe.gd", "802e54d lane-w26-k5 族", "岸上等待通告专项探针，随该族落地验过留档"),
+    ("qa_w53_2_combat_overkill_probe.gd", "lane-w53-2", "击沉过量伤亡专项探针，随 lane-w53-2 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),
