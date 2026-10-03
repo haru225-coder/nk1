@@ -312,9 +312,9 @@ func chapter_progress() -> Dictionary:
 	return {"ready": false, "items": [], "hint": "", "final": true, "ended": false}
 
 
-## 条件达成则进下一章或了结。返回 {advanced, resolved, title, text, scene}
+## 条件达成则进下一章或了结。终局落定（is_ended：未归、忠肃…）之后不开章、不了结——进港即判未归的那一港当时没记，册页合上回港重进才记，凑齐章目就在终局之后开章跳年。返回 {advanced, resolved, title, text, scene}
 func try_advance_chapter() -> Dictionary:
-	if ending_id != "":
+	if ending_id != "" or is_ended():
 		return {"advanced": false, "resolved": false}
 	var prog := chapter_progress()
 	if not prog.get("ready", false):
@@ -375,9 +375,9 @@ func pick_ending() -> Dictionary:
 	return {}
 
 
-## 终章条件达成则按旗标了结。返回 {advanced, resolved, title, text, scene}
+## 终章条件达成则按旗标了结；终局落定之后不了结（同 try_advance_chapter）。返回 {advanced, resolved, title, text, scene}
 func try_resolve_ending() -> Dictionary:
-	if ending_id != "" or not chapter_progress().get("ready", false):
+	if ending_id != "" or is_ended() or not chapter_progress().get("ready", false):
 		return {"advanced": false, "resolved": false}
 	var picked := pick_ending()
 	if picked.is_empty():

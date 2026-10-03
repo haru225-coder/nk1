@@ -4399,6 +4399,60 @@ func _w53_4_advance_return_check(main: Node) -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	main._beats = null
 	_close_dialogs(main)
+	# 同是开章入口：终局落定之后不再开章、不再了结
+	_w53_4_after_end_check(main)
+
+
+## ── lane w53-4：终局落定之后不再开章、不再了结（GameState.try_advance_chapter / try_resolve_ending 见 is_ended 即拒）──
+## 修前：已改名的士人景炎元年腊月以后头一回进港（没守城）即判「未归」，_on_enter_port 在 visit_port 之前就返回、那一港没记；
+## 终局册页合上回港重进 _on_enter_port，这才记下那一港——正好凑齐章目，try_advance_chapter 不看终局，照开章、跳年
+## （实跑：景炎二年三月头一回到博多，「未归」之后弹「南海路」，日历跳到至元十七年、再演纲首幕）；第四章到占城凑齐了结条件的，
+## 「未归」之后又落「南海一纲」。数据驱动：凡章目带亲至港的章（终章取 ending_requires），亲至港留作「未归」那一港。
+func _w53_4_after_end_check(main: Node) -> void:
+	var cases := 0
+	for c in GM.chapters_data.get("chapters", []):
+		var cid := int(c.get("id", 0))
+		var req = c.get("next_requires", null)
+		if typeof(req) != TYPE_DICTIONARY:
+			req = c.get("ending_requires", null)
+		if typeof(req) != TYPE_DICTIONARY or (req.get("must_visit", []) as Array).is_empty():
+			continue
+		var at := str(req.get("must_visit", [])[0])
+		GS.from_dict({})
+		Cal.from_dict({"year": 1277, "month": 3, "day": 1})
+		GS.loaded_with_beats = true
+		main._beats = null
+		_close_dialogs(main)
+		GS.identity = "scholar"
+		GS.set_flag("renamed_wenlong")
+		GS.chapter = cid
+		GS.peak_money = int(req.get("peak_money", 0)) + 1000
+		GS.money = GS.peak_money
+		var vis: Array = []
+		for p in GM.ports_data.get("ports", []):
+			var pid := str(p.get("id", ""))
+			if vis.size() < int(req.get("visited_count", 0)) - 1 and pid != at and int(str(p.get("unlock", "ch1")).substr(2)) <= cid:
+				vis.append(pid)
+		GS.visited_ports = vis
+		GS.last_port = at
+		main.load_scene(at)
+		var host = main.get("_chapter_host")
+		_check(GS.is_ended() and host != null and is_instance_valid(host),
+			"第%d章 1277 年头一回到%s（改名未守城）：进港即判终局「%s」、弹终局册页" % [cid, GM.get_port_name(at), GS.ended])
+		if not GS.is_ended():
+			continue
+		cases += 1
+		var ended_as: String = GS.ended
+		main._confirm_chapter_sheet()
+		host = main.get("_chapter_host")
+		_check(GS.chapter == cid and GS.ending_id == "" and Cal.year == 1277 and (host == null or not is_instance_valid(host)),
+			"终局「%s」册页合上回%s：不开章、不了结、不跳年（第 %d 章，了结「%s」，%s，又弹册页 %s）" % [
+				ended_as, GM.get_port_name(at), GS.chapter, GS.ending_id, Cal.get_date_string(), host != null and is_instance_valid(host)])
+	_check(cases >= 2, "终局后开章入验至少两章（现 %d）" % cases)
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_close_dialogs(main)
 
 
 ## 开章用的幕外港：本章亲至港不在幕里那一港就用它（第二章博多），否则取本章开着、不是泉州（泉州有节拍链）的最晚开港（第三章萨摩）
