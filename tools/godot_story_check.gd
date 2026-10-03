@@ -2983,6 +2983,33 @@ func _v0928_siege_check(main: Node) -> void:
 	var two_line := _find_label_text(main._shore_band(), "粮 ")
 	_check(two_head.ends_with("已守两阵") and two_line.find("够打两阵") >= 0 and _find_label_text(main._shore_band(), "二阵") == "",
 		"守过两阵、粮够两阵：城防账写「已守两阵」「够打两阵」，不写「二阵」（「%s」「%s」）" % [two_head, two_line])
+	# 兵过募兵上限（石手军入城 +200 不受上限、名声够时募满千）：城防账括注写「已募满」，不写「（上限 1000）」压在
+	# 「兵 1200」后头；衙门募满那句的「城中兵不满千」只在真不满千时写（lane w53-10 七轮）
+	var keep_troops: int = GS.siege_get("troops")
+	var keep_fame: int = GS.fame
+	var keep_shishou := str(GS.siege.get("shishou", ""))
+	GS.fame = 60
+	GS.siege_set("troops", GS.siege_troop_cap() + 200)
+	GS.siege_set("shishou", "kept")
+	main.load_scene("xinghua")
+	var over_line := _find_label_text(main._shore_band(), "兵 ")
+	main._siege_muster()
+	var over_full := _find_label_text(main.choices_container, "能招的都招了")
+	GS.fame = 0
+	GS.siege_set("troops", GS.siege_troop_cap() + 200)
+	main._siege_muster()
+	var low_full := _find_label_text(main.choices_container, "能招的都招了")
+	GS.fame = 20
+	GS.siege_set("troops", 300)
+	main.load_scene("xinghua")
+	var under_line := _find_label_text(main._shore_band(), "兵 ")
+	_check(over_line.begins_with("兵 1200（已募满）") and under_line.begins_with("兵 300（上限 %d）" % GS.siege_troop_cap())
+		and over_full != "" and over_full.find("不满千") < 0 and low_full.find("城中兵不满千") >= 0,
+		"兵过募兵上限：城防账「%s」、未满「%s」；衙门募满「%s」/ 兵五百「%s」" % [
+			over_line.get_slice("　", 0), under_line.get_slice("　", 0), over_full, low_full])
+	GS.fame = keep_fame
+	GS.siege_set("troops", keep_troops)
+	GS.siege_set("shishou", keep_shishou)
 	GS.siege_set("round", 0)
 	GS.siege_set("grain", 0)
 	main.load_scene("xinghua")
