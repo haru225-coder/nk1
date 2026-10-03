@@ -490,7 +490,8 @@ func parley_context() -> Dictionary:
 		"ratio": _own_board_power() / enemy_power,
 		"muster": muster,
 		"grappled": enemy.get("grappled") == true,
-		"enemy_state": String(StatusHud.morale_meta(enemy).get("state", "")),
+		# 敌将自己降了（喊话劝降得手、船节点 struck）而士气簿没降：照簿上降幡算，签面写「敌已降」，不再写「可喊 约 N 成」（lane w53-2）
+		"enemy_state": "struck" if enemy.get("struck") == true else String(StatusHud.morale_meta(enemy).get("state", "")),
 	}
 
 

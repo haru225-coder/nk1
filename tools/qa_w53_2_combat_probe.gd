@@ -20,6 +20,7 @@ extends SceneTree
 ##   六、喊话劝降得手的船接舷即收：降幡劝降走 PirateShip.strike_colours，只有敌将降了（节点 struck），士气簿不知道；
 ##       修复前 _board_enemy 只认簿上的 yields_to_boarding，竖着降幡的船一接舷照打满员白刃（实打 300 人：本队被击退）。
 ##       真起号令面板喊话（roll 定 0 必降）→ 接舷：须免白刃（_last_melee 空）、船入列、下场记受降 struck。
+##       另验号令签面：喊降得手、冷却过后「降幡劝降」那格写「可喊 敌已降」（修复前照士气簿写「可喊 约 N 成 / 难成」，劝人降一艘已降的船）。
 ##   七、救火令随险情改损管令：面板只在下令那一刻按险情挑「戽水（只进水）/ 救火（有火或无险）」，之后一成不变——
 ##       只进水时下的救火令，后来起火仍按戽水派人（救火手封两成，比不下令的均衡四成五还少）。旗舰舱里先灌水、下救火令（戽水），
 ##       再点一处火：两帧内损管令须改成救火；把火扑灭、水还在：须改回戽水。
@@ -412,6 +413,9 @@ func _sec_parley_struck_boarding(fleet: Node) -> void:
 	_check(str(res.get("result", "")) == "surrender" and foe.get("struck") == true,
 		"六 喊话劝降得手：敌将降幡、船节点 struck（喊话 %s；簿上降了 = %s）" % [
 			str(res.get("result", "无")), str(sheet.call("has_struck")) if sheet != null else "无簿"])
+	panel.set("parley_cd", 0.0)  # 喊过即进 20 秒冷却：清掉冷却看签面怎么写这艘已降的船
+	var hint := str(panel.call("state_text", "parley"))
+	_check(hint == "可喊 敌已降", "六 喊降得手后号令签面写「可喊 敌已降」（得「%s」）" % hint)
 	foe.set("crew", 300)
 	var ships_before := (fleet.get("ships") as Array).size()
 	var id := foe.get_instance_id()
