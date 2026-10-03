@@ -8,6 +8,8 @@ extends SceneTree
 ##     见面页抬头却写「泉州海商　卒于 1274」。
 ##   H 只跟到几月：林华候雇到 1276-08、1276-10 史实辞船——窗末月雇来只跟九月一个整月，入伙钱照付。这是设计（不是错位），
 ##     修前卡上却一字不提；现在离辞船不到一年时品级行写明「只跟到九月」（跨年「只跟到明年九月」），并核写的月份是实话。
+##   N 墙上年月：酒馆墙上札记的年月旁注修前直接印 news.json 的「1276-05」，顶匾、船籍簿、辞船淡字都写年号月名
+##     （跳年摘要更明说「不写阿拉伯公元年」）；现写「景炎元年五月」，与顶匾同一套，改元当年（1276 德祐→景炎）也分得开。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 
@@ -51,6 +53,7 @@ func _boot() -> void:
 	_w_wages()
 	await _t_presence()
 	await _h_leave_hint()
+	await _n_wall_dates()
 	_report()
 
 
@@ -198,6 +201,39 @@ func _aside_of(person: String) -> String:
 	var head := nm.get_parent().get_parent()
 	var aside := head.get_node_or_null("Aside") as Label if head != null else null
 	return str(aside.text) if aside != null else "<无品级行>"
+
+
+# ── N 墙上年月：札记旁注写年号月名，与顶匾同一套 ──
+
+func _n_wall_dates() -> void:
+	print("── N 墙上札记的年月旁注写年号月名（与顶匾、船籍簿同一套），不印「1276-05」这类公元年月")
+	_stage(1276, 6, 4)
+	_gs.identity = "merchant"
+	for n in _gs.pending_news():
+		_gs.mark_news_seen(str(n.get("id", "")))
+	var before: Dictionary = _cal.call("to_dict")
+	await _goto("quanzhou_tavern")
+	var dates := _wall_dates()
+	_expect(dates == ["景炎元年五月", "德祐二年正月", "德祐元年四月"],
+		"1276-06 泉州酒馆墙上三条（1276-05 / 1276-01 / 1275-04）年月旁注写年号月名、改元前后分得开（实读：%s）" % [dates])
+	_expect(_cal.call("to_dict") == before, "札记上墙后历法仍停在 %s（取年号月名临时拨月，取完拨回）" % [_cal.call("to_dict")])
+
+
+## 「墙上」分区题之后连着的札记卡，每张抬头一行的第二格是年月旁注
+func _wall_dates() -> Array:
+	var out := []
+	var sep := _label("墙上")
+	if sep == null:
+		return out
+	var host := sep.get_parent()
+	for i in range(sep.get_index() + 1, host.get_child_count()):
+		var card := host.get_child(i)
+		if not (card is PanelContainer) or card.is_queued_for_deletion():
+			break
+		var head := card.get_child(0).get_child(0).get_child(0) as HBoxContainer
+		if head != null and head.get_child_count() >= 2:
+			out.append(str((head.get_child(1) as Label).text))
+	return out
 
 
 func _goto(scene_id: String) -> void:

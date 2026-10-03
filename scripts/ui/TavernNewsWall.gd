@@ -58,7 +58,7 @@ static func _make_slip(n: Dictionary) -> PanelContainer:
 	var date := str(n.get("date", "")).strip_edges()
 	if date != "":
 		var date_lbl := Label.new()
-		date_lbl.text = date
+		date_lbl.text = era_month(date)
 		UiTheme.style_footnote(date_lbl)
 		date_lbl.add_theme_color_override("font_color", UiTheme.on_paper(UiTheme.TEXT_DIM))
 		date_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -74,3 +74,17 @@ static func _make_slip(n: Dictionary) -> PanelContainer:
 	col.add_child(body)
 
 	return card
+
+
+## 年月旁注：news.json 的「1276-05」写成「景炎元年五月」，与顶匾、船籍簿、辞船淡字同一套（跳年摘要也明说不写阿拉伯公元年）。
+## 年号月名借 Calendar 自己的写法（临时拨到那一月、算完拨回，同 Main._siege_fall_point）；改元当年按月分（1276 正月德祐二年、五月景炎元年）。
+## 写得不对的原样返回。
+static func era_month(ym: String) -> String:
+	var p := ym.split("-")
+	if p.size() != 2 or not p[0].is_valid_int() or not p[1].is_valid_int() or int(p[1]) < 1 or int(p[1]) > 12:
+		return ym
+	var keep: Dictionary = Calendar.to_dict()
+	Calendar.from_dict({"year": int(p[0]), "month": int(p[1]), "day": 1})
+	var out := Calendar.get_era_year_string() + Calendar.get_month_name()
+	Calendar.from_dict(keep)
+	return out
