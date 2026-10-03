@@ -45,6 +45,11 @@
      同一函数实扣 Fleet.lose_cargo_ratio(0.3)——每样货三成（向上取整），札记后面列的件数就是三成，与「半个」对不上。
      函数里调了 lose_cargo_ratio(字面数) 的，玩家串写「半个货舱 / 半舱 / 一半的货」（0.5）或「N成货」（N/10）就须等于
      实参；不调的不比（剧情里「一小份货」这类不写数的也不比）。
+  L. 数量词前的「二」写「两」（七轮）：海战读数「帆　二成」「浸水二成」「可喊　约二成」、损伤札记「帆损二成」、
+     船屋「此帆比光船快二成四」——成数照《现代汉语词典》「增产两成」与全作手写文案写「两成」（五轮守城「已守二阵」同类）。
+     cn_num 系帮手（GameManager.cn_num / Main._cn_num / CombatStatusHud.cn_num / FloodFire.cn_num）都认 liang；
+     格式串里「%s」紧跟量词（成、阵、年、条、趟、石……）、不是「第%s」序数的，对应实参若是 cn_num(…) 就须带 true；
+     手拼的 digits[…] + "成" 所在函数里须有「两」。序数（第二阵、二等、二舱）与记账体「海鹘二艘」（_cn_count）不在此列。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -144,6 +149,16 @@ CARGO_RATIO_RE = re.compile(r"lose_cargo_ratio\(\s*([0-9.]+)\s*\)")
 CN_DIGIT = {"一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
 # 防沉默绿：这几处札记的成数必须被抓到（札记改了写法、正则抓空时判红，不当绿）。
 CARGO_FRAC_MUST = (("scripts/SeaChart.gd", "_on_pay_pirates"),)
+
+# ═══ 钉 L：量词前的 cn_num 须带 liang；手拼「成」须会写「两」；cn_num 系帮手须认 liang。
+CN_CLASSIFIERS = "成阵年条趟石人艘日次件个位名家处座门匹担斤"
+CN_CALL_RE = re.compile(r"(?<![\w])(?:\w+\.)*_?cn_num\(")
+FMT_PH_RE = re.compile(r"%(?:%|[-+ 0#]*\d*(?:\.\d+)?[sdifxXoceEgGv])")
+CHENG_CONCAT_RE = re.compile(r"\]\s*\)?\s*\+\s*\"成")
+CN_HELPERS = (("scripts/GameManager.gd", "cn_num"), ("scripts/Main.gd", "_cn_num"),
+              ("scripts/ui/CombatStatusHud.gd", "cn_num"), ("scripts/combat/FloodFire.gd", "cn_num"))
+# 防沉默绿：这几处「量词前带 liang 的 cn_num」必须被认出来（格式串 / 实参解析坏了时判红，不当绿）。
+CN_LIANG_MUST = (("scripts/ui/ChapterSheet.gd", "趟"), ("scripts/Main.gd", "阵"), ("scripts/ui/CombatStatusHud.gd", "成"))
 
 # ═══ 钉 I：上屏串逐字对正文字库的 cmap。字库是 subset_fonts.py 出的文楷子集，标题字 / 海图字缺字都回落到它。
 BODY_FONT = "assets/fonts/LXGWWenKai-Medium.ttf"
@@ -540,6 +555,137 @@ def _check_cargo_frac(src, rel):
     return seen
 
 
+def _skip_str(src, i):
+    """src[i] 是引号：返回字符串字面量之后的位置。"""
+    q = src[i] * 3 if src.startswith(src[i] * 3, i) else src[i]
+    i += len(q)
+    while i < len(src):
+        if src[i] == "\\":
+            i += 2
+            continue
+        if src.startswith(q, i):
+            return i + len(q)
+        i += 1
+    return i
+
+
+def _split_top(text):
+    """按顶层逗号切实参（括号、方括号、花括号与字符串里的逗号不切）。"""
+    parts, depth, cur, i = [], 0, 0, 0
+    while i < len(text):
+        c = text[i]
+        if c in "\"'":
+            i = _skip_str(text, i)
+            continue
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        elif c == "," and depth == 0:
+            parts.append(text[cur:i])
+            cur = i + 1
+        i += 1
+    parts.append(text[cur:])
+    return [x for x in parts if x.strip()]
+
+
+def _balanced(src, i):
+    """src[i] 是开括号：返回 (括号里的内容, 闭括号之后的位置)。"""
+    pairs = {"(": ")", "[": "]", "{": "}"}
+    stack, j = [pairs[src[i]]], i + 1
+    while j < len(src) and stack:
+        c = src[j]
+        if c in "\"'":
+            j = _skip_str(src, j)
+            continue
+        if c in pairs:
+            stack.append(pairs[c])
+        elif c == stack[-1]:
+            stack.pop()
+        j += 1
+    return src[i + 1:j - 1], j
+
+
+def _fmt_args(src, end):
+    """字面量结尾之后若是「% 实参」：返回实参表（单个实参也装成表）；不是格式化就返回 None。"""
+    i = end
+    while i < len(src) and src[i] in " \t":
+        i += 1
+    if i >= len(src) or src[i] != "%" or src.startswith("%=", i):
+        return None
+    i += 1
+    while i < len(src) and src[i] in " \t":
+        i += 1
+    if i < len(src) and src[i] == "[":
+        return _split_top(_balanced(src, i)[0])
+    j, depth = i, 0
+    while j < len(src):
+        c = src[j]
+        if c in "\"'":
+            j = _skip_str(src, j)
+            continue
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            if depth == 0:
+                break
+            depth -= 1
+        elif depth == 0 and (c in ",\n#" ):
+            break
+        j += 1
+    return [src[i:j]]
+
+
+def _cn_call_liang(arg):
+    """实参里的 cn_num(…) 调用带不带 liang（末个实参是 true）；没有 cn_num 调用返回 None。"""
+    m = CN_CALL_RE.search(arg)
+    if m is None:
+        return None
+    inner = _balanced(arg, m.end() - 1)[0]
+    parts = _split_top(inner)
+    return len(parts) >= 2 and parts[-1].strip() == "true"
+
+
+def _check_liang(src, rel):
+    """量词前的 cn_num 带 liang、手拼「成」会写「两」；返回认出的 [(rel, 量词)]（供防沉默绿）。"""
+    seen = []
+    for lit, pos in _gd_strings_only(src):
+        if "%s" not in lit:
+            continue
+        q = 3 if src[pos - 3:pos] in ('"""', "'''") else 1
+        args = _fmt_args(src, pos + len(lit) + q)
+        if not args:
+            continue
+        idx = 0
+        for m in FMT_PH_RE.finditer(lit):
+            if m.group(0) == "%%":
+                continue
+            k, idx = idx, idx + 1
+            nxt, prev = lit[m.end():m.end() + 1], lit[max(0, m.start() - 1):m.start()]
+            if m.group(0) != "%s" or not nxt or nxt not in CN_CLASSIFIERS or (prev and prev in "第初"):
+                continue
+            ok = _cn_call_liang(args[k]) if k < len(args) else None
+            if ok is None:
+                continue
+            seen.append((rel, nxt))
+            if not ok:
+                FAILS.append(f"{rel}:{_line_of(src, pos)}: 量词「{nxt}」前的 {args[k].strip()[:40]} 没带 liang，"
+                             f"数到 2 上屏写「二{nxt}」：{lit[:40]}")
+    for name, body in _gd_funcs(src):
+        if CHENG_CONCAT_RE.search(body) and '"两"' not in body:
+            FAILS.append(f"{rel}: {name} 手拼「…成」，数到 2 写不出「两成」")
+    return seen
+
+
+def _check_cn_helpers():
+    for rel, name in CN_HELPERS:
+        src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+        body = dict(_gd_funcs(src)).get(name, "")
+        head = body.split("\n", 1)[0]
+        if "liang" not in head or not ('"两"' in body or re.search(r"cn_num\(\s*\w+\s*,\s*liang\s*\)", body)):
+            FAILS.append(f"{rel}: {name} 不认 liang（带 true 也写不出「两」）")
+
+
 def _self_test():
     """每条钉至少一负样须抓到；抓不到 = 钉路已瞎，自检红。"""
     bad = []
@@ -586,6 +732,31 @@ def _self_test_cargo_frac():
         FAILS.clear()
         if _check_cargo_frac('func _on_y() -> void:\n\t_log("他们搬走了半个货舱。")\n', "self") or FAILS:
             bad.append("钉 K 自检：不调 lose_cargo_ratio 的函数也被比了")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
+    return bad
+
+
+def _self_test_liang():
+    """钉 L 自检：量词前 cn_num 不带 liang、手拼「成」不会写「两」须判红；带了 / 序数 / 会写「两」须判绿。"""
+    bad = []
+    cases = (
+        ('func f() -> String:\n\treturn "%s成" % cn_num(2)\n', True),
+        ('func f() -> String:\n\treturn "%s成" % cn_num(2, true)\n', False),
+        ('func f() -> String:\n\treturn "第%s阵" % _cn_num(2)\n', False),
+        ('func f() -> String:\n\treturn "%s%s成" % [NAMES[k], StatusHud.cn_num(x)]\n', True),
+        ('func f() -> String:\n\treturn "%s%s成" % [\n\t\tNAMES[k], StatusHud.cn_num(x, true),\n\t]\n', False),
+        ('func f() -> String:\n\tvar d := ["一", "二"]\n\treturn d[n] + "成"\n', True),
+        ('func f() -> String:\n\tvar d := ["一", "二"]\n\treturn ("两" if n == 2 else d[n]) + "成"\n', False),
+    )
+    saved = FAILS[:]
+    try:
+        for src, want_red in cases:
+            FAILS.clear()
+            _check_liang(src, "self")
+            if bool(FAILS) != want_red:
+                bad.append(f"钉 L 自检：{src.splitlines()[1].strip()[:44]} 判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
     finally:
         FAILS.clear()
         FAILS.extend(saved)
@@ -642,6 +813,21 @@ def _scan_cargo_frac():
             FAILS.append(f"{rel}: 钉 K 没抓到 {name} 札记里的货损成数——札记改了写法或正则抓空")
 
 
+def _scan_liang():
+    seen = set()
+    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
+        for f in sorted(files):
+            if not f.endswith(".gd"):
+                continue
+            p = os.path.join(dirpath, f)
+            rel = p[len(ROOT) + 1:].replace(os.sep, "/")
+            seen.update(_check_liang(open(p, encoding="utf-8").read(), rel))
+    for rel, cls in CN_LIANG_MUST:
+        if (rel, cls) not in seen:
+            FAILS.append(f"{rel}: 钉 L 没认出「%s{cls}」前带 liang 的 cn_num——格式串或实参解析坏了")
+    _check_cn_helpers()
+
+
 def _scan_crew_left_wiring():
     rel = "scripts/GameManager.gd"
     src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
@@ -661,7 +847,7 @@ def main():
     glyph_fails = _self_test_glyphs(cmap)
     if glyph_fails:
         cmap = None
-    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + glyph_fails
+    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + glyph_fails
     _scan_gd_strings(cmap)
     _scan_json_text()
     _scan_data_glyphs(cmap)
@@ -671,6 +857,7 @@ def main():
     _scan_event_fame()
     _scan_crew_left_wiring()
     _scan_cargo_frac()
+    _scan_liang()
     all_fails = self_fails + FAILS
     if all_fails:
         print("结果：%d 项问题" % len(all_fails))

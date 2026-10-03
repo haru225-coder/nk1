@@ -3057,7 +3057,7 @@ func _v0928_siege_check(main: Node) -> void:
 	# 同一局三处对得上：日志不说林华「再没有回来」（过场写「回来时，身后是元兵」、城破句写他领元兵回到城下），
 	# 也不写还没到的「当夜」；城防账少的粮，日志照数交代
 	_check(cl.find("再没有回来") < 0 and cl.find("当夜") < 0
-			and (grain_lost == 0 or cl.find("丢了%s石米" % main._cn_num(grain_lost)) >= 0),
+			and (grain_lost == 0 or cl.find("丢了%s石米" % main._cn_num(grain_lost, true)) >= 0),
 		"关城门日志不和过场、城破句打架，少的 %d 石粮有交代（「%s」）" % [grain_lost, cl])
 	main._on_facility_pressed({"id": "siege_nangshan"})
 	main._confirm_chapter_sheet()

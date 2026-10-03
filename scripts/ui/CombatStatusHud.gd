@@ -482,11 +482,11 @@ static func weather_gauge(wind_dir: Vector2, to_enemy: Vector2) -> int:
 	return 0
 
 
-static func cn_num(n: int) -> String:
+static func cn_num(n: int, liang := false) -> String:
 	if n < 0:
 		return str(n)
 	if n < 10:
-		return CN_DIGITS[n]
+		return "两" if n == 2 and liang else CN_DIGITS[n]
 	if n < 20:
 		return "十" + (CN_DIGITS[n - 10] if n > 10 else "")
 	if n < 100:
@@ -500,7 +500,7 @@ static func tenths_text(f: float) -> String:
 		return "完好"
 	if f <= 0.05:
 		return "毁"
-	return "%s成" % cn_num(clampi(roundi(f * 10.0), 1, 9))
+	return "%s成" % cn_num(clampi(roundi(f * 10.0), 1, 9), true)
 
 
 static func morale_word(m: float) -> String:
@@ -631,7 +631,7 @@ static func format_cells(snap: Dictionary) -> Dictionary:
 			if flood < 0.02:
 				bits2.append("无")
 			else:
-				bits2.append("%s成" % cn_num(clampi(roundi(flood * 10.0), 1, 10)))
+				bits2.append("%s成" % cn_num(clampi(roundi(flood * 10.0), 1, 10), true))
 				tone2 = "bad" if flood >= 0.5 else "warn"
 		if fire > 0.0:
 			if fire < 0.1:
@@ -639,7 +639,7 @@ static func format_cells(snap: Dictionary) -> Dictionary:
 			elif fire >= 1.0:
 				bits2.append("大火")
 			else:
-				bits2.append("火%s成" % cn_num(clampi(roundi(fire * 10.0), 1, 9)))
+				bits2.append("火%s成" % cn_num(clampi(roundi(fire * 10.0), 1, 9), true))
 			tone2 = "bad"
 		elif fire == 0.0 and flood < 0.0:
 			bits2.append("无火")

@@ -539,7 +539,7 @@ static func cheng(x: float) -> String:
 		return "不足一成"
 	if x >= 0.95:
 		return "殆尽"
-	return "%s成" % FloodFire.cn_num(clampi(int(round(x * 10.0)), 1, 9))
+	return "%s成" % FloodFire.cn_num(clampi(int(round(x * 10.0)), 1, 9), true)
 
 
 ## 事件短注（纪实，不用叹号）

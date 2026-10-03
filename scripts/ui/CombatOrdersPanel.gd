@@ -373,7 +373,7 @@ static func _cn_tenths(p: float) -> String:
 		return "敌已降"
 	if p < 0.05:
 		return "难成"
-	return "约%s成" % StatusHud.cn_num(clampi(roundi(p * 10.0), 1, 9))
+	return "约%s成" % StatusHud.cn_num(clampi(roundi(p * 10.0), 1, 9), true)
 
 
 # ── 号令 ──────────────────────────────────────────────
@@ -673,7 +673,7 @@ func alloc_text() -> String:
 			bits.append("%s%d" % [STATION_NAMES[k], int(split[k])])
 	else:
 		for k in STATIONS:
-			bits.append("%s%s成" % [STATION_NAMES[k], StatusHud.cn_num(clampi(roundi(float(a[k]) * 10.0), 0, 10))])
+			bits.append("%s%s成" % [STATION_NAMES[k], StatusHud.cn_num(clampi(roundi(float(a[k]) * 10.0), 0, 10), true)])
 	return "人手 " + " ".join(bits)
 
 

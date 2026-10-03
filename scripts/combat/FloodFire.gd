@@ -154,12 +154,12 @@ func comp_name(i: int) -> String:
 	return "%s舱" % cn_num(i + 1)
 
 
-static func cn_num(v: int) -> String:
+static func cn_num(v: int, liang := false) -> String:
 	var digits := ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
 	if v < 0:
 		return str(v)
 	if v < 10:
-		return digits[v]
+		return "两" if v == 2 and liang else digits[v]
 	if v < 20:
 		return "十" + ("" if v == 10 else digits[v - 10])
 	if v < 100:

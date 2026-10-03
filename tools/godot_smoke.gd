@@ -521,7 +521,7 @@ func _run() -> void:
 		"海图遭遇日志去掉括号，风涛货损去掉冒号", fails)
 	var yard_node := (load("res://scripts/Main.gd") as GDScript).new() as Node
 	_check(str(yard_node.call("_sail_fit_phrase", 1)) == "此帆比光船快一成二"
-		and str(yard_node.call("_sail_fit_phrase", 2)) == "此帆比光船快二成四"
+		and str(yard_node.call("_sail_fit_phrase", 2)) == "此帆比光船快两成四"
 		and str(yard_node.call("_armor_fit_phrase", 1)) == "船体伤剩九成"
 		and str(yard_node.call("_armor_fit_phrase", 2)) == "船体伤剩八成"
 		and main_src.find("月息每百 %d") >= 0 and main_src.find("月息 %d%%") < 0
