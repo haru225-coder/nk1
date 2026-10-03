@@ -144,6 +144,33 @@ func _run() -> void:
 	if not entry_good:
 		fails += 1
 
+	# 4d lane w53-5：分区「条目型」坏值——计数字段给了容器/字符串。改前实测（w53-5 demo3.gd 实锤）：
+	# 读档=true 且运行时 buy_price / free_capacity / siege_power / investment_level / health_tally 出 SCRIPT ERROR。
+	# 这些档「读得动」是因为 from_dict 直赋后靠 int()/float() 在运行时转条目，坏值潜伏到下一操作才炸。
+	# 判坏走 .bak——旧份额与分区级坏档一条口径。
+	var entries_bad := {
+		# economy.rates 值须为 {货: 数字}（buy_price 读 rates[port][gid] -> float）
+		"economy.rates 条目值含容器": ["economy", {"rates": {"quanzhou": {"rice": [1.2]}}, "investments": {}, "tariff": 0.1, "broker": 0.05}],
+		# economy.investments 值须为数字（investment_level 直 int）
+		"economy.investments 条目值数组": ["economy", {"rates": {}, "investments": {"quanzhou": [2]}, "tariff": 0.1, "broker": 0.05}],
+		# fleet.ships 货舱条 qty 给了数组（ship_cargo_bulk/used_capacity 直 float -> free_capacity 炸）
+		"fleet.ships 货舱条 qty 数组": ["fleet", {"ships": [{"type": "fuchuan", "cargo": {"rice": {"qty": [10], "avg_cost": 12.0}}, "crew": 20}], "water": 30, "food": 30, "morale": 70, "mutiny_cooldown": 0}],
+		# fleet.ships 条目 crew 字符串（金算舰队人数出 SCRIPT ERROR）
+		"fleet.ships 条目 crew 字符串": ["fleet", {"ships": [{"type": "fuchuan", "cargo": {}, "crew": "二十"}], "water": 30, "food": 30, "morale": 70, "mutiny_cooldown": 0}],
+		# fleet.ships 条目 durability 字符串（damage/repair 直接 float）
+		"fleet.ships 条目 durability 字符串": ["fleet", {"ships": [{"type": "fuchuan", "cargo": {}, "durability": "半"}], "water": 30, "food": 30, "morale": 70, "mutiny_cooldown": 0}],
+		# state.siege 值给了容器（siege_get / siege_power 直 int/float）
+		"state.siege 值数组": ["state", {"money": 500, "siege": {"troops": 300, "wall": [60], "morale": 55}}],
+		# state.met_ids 给了对象（GameState.note_met / has_met 接 Array；_harden_state 清洗不判容器级）
+		"state.met_ids 对象": ["state", {"money": 500, "met_ids": {"lin_hua": true}}],
+		# state.era_routes 值给了容器（health_tally 直 int）
+		"state.era_routes 值数组": ["state", {"money": 500, "era_routes": {"泉州→博多": [3]}}],
+	}
+	for name2 in entries_bad:
+		var d2 := _good(GOOD_LABEL, 1256, 4)
+		d2[entries_bad[name2][0]] = entries_bad[name2][1]
+		_case(name2, d2)
+
 	# 5 正式档不存在、只剩 .bak：标签取 .bak
 	_cleanup()
 	_write(_primary() + ".bak", _good(BAK_LABEL, 1255, 3))
