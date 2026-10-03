@@ -7,8 +7,8 @@ extends SceneTree
 ##   一、Economy.affordable_qty / estimate_buy_cost / estimate_sell_revenue 与探针自带的逐件推演（不借 Economy
 ##      的推法，depth 按 ports.json 自算）逐格同数：三港 × 行情（地板 / 1.0 / 将顶 / 顶）× 件数 × 现银，含顶格之后。
 ##   二、实机按「买满」（Main._on_buy_max 真回调）：开局小艍 1000 钱、客舟 2000 钱各买满经卷，结算须 0.5 秒内
-##      （按下的总耗时扣掉随后重排牙行页的耗时——重排另量一遍同一页），买到的件数 / 付的钱 = 逐件推演；
-##      另「买 10」现银只够 4 件时照旧只买 4 件。
+##      （按下的总耗时扣掉随后重排牙行页的耗时——重排另量一遍同一页；两数各量三回取最快再相减），
+##      买到的件数 / 付的钱 = 逐件推演；另「买 10」现银只够 4 件时照旧只买 4 件。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_3_buy_max_probe.gd
 ## 输出末行 W53_3_BUYMAX_PROBE cases=N fails=M；M>0 时 exit 1。
 
@@ -19,6 +19,9 @@ const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 
 ## 结算（不含按完之后重排牙行页）的耗时上限。改前开局小艍一按约 2 秒、客舟约 25 秒；改后不到 10 毫秒
 const PRESS_LIMIT_MS := 500
+## 按下、重排两数各量几回、各取最快的一回再相减。两数各约 0.8 秒，单回相减会被机器负载起落带偏：同一份代码在
+## 间歇负载下单回量出 −792 ~ 725 毫秒，越过 500 即假红。负载只会让一回变慢、不会变快，最快的一回最贴近真耗时
+const PRESS_TRIES := 3
 
 var _main: Node
 var gs: Node
@@ -208,37 +211,53 @@ func _reset(port_id: String, money: int, ship_type: String) -> void:
 	fleet.food = 60
 
 
-## 舱里先放一件经卷：柜上第一席是舱货，经卷必上柜（_on_buy 只认今日柜上的货）
+## 舱里先放一件经卷：柜上第一席是舱货，经卷必上柜（_on_buy 只认今日柜上的货）。
+## 每种船从同一摆场起按 PRESS_TRIES 回，回回都核柜上有货、件数 / 付钱；按下与重排两数各取最快的一回再相减
 func _press_buy_max() -> void:
-	print("── 二、实机按「买满」（Main._on_buy_max）：结算 %d 毫秒内，件数 / 付钱 = 逐件推演" % PRESS_LIMIT_MS)
+	print("── 二、实机按「买满」（Main._on_buy_max）：结算 %d 毫秒内（按下 / 重排各 %d 回取最快），件数 / 付钱 = 逐件推演" % [
+		PRESS_LIMIT_MS, PRESS_TRIES])
 	var port := "quanzhou"
 	var gid := "sutra_scrolls"
 	for setup in [["sampan", 1000], ["keel_boat", 2000]]:
-		_reset(port, int(setup[1]), str(setup[0]))
-		fleet.add_cargo(gid, 1, 1.0, 0)
-		_main.set("_market_ship", 0)
-		_main.load_scene(port + "_market")
-		await _settle(2)
-		var hand: PackedStringArray = _main.get("broker_hand")
-		var room: int = fleet.max_loadable(gid, 0)
-		var want: Array = _brute_buy(port, gid, room, gs.money)
-		var m0: int = gs.money
-		var q0: int = fleet.cargo_qty(gid, 0)
-		var t0 := Time.get_ticks_msec()
-		_main._on_buy_max(port, gid, 0)
-		var press_ms := Time.get_ticks_msec() - t0
-		await _settle(2)
-		var got_n: int = fleet.cargo_qty(gid, 0) - q0
-		var paid: int = m0 - int(gs.money)
-		# 按下去之后牙行页照例重排一遍（买卖每按一次都重排）；重排本身的耗时另量一遍同一页扣掉，只计结算
-		t0 = Time.get_ticks_msec()
-		_main.load_scene(port + "_market")
-		var render_ms := Time.get_ticks_msec() - t0
-		await _settle(2)
+		var on_hand := true
+		var books_ok := true
+		var press_ms := -1
+		var render_ms := -1
+		var room := 0
+		var m0 := 0
+		var got_n := 0
+		var paid := 0
+		var want: Array = []
+		for _t in PRESS_TRIES:
+			_reset(port, int(setup[1]), str(setup[0]))
+			fleet.add_cargo(gid, 1, 1.0, 0)
+			_main.set("_market_ship", 0)
+			_main.load_scene(port + "_market")
+			await _settle(2)
+			var hand: PackedStringArray = _main.get("broker_hand")
+			on_hand = on_hand and gid in hand
+			room = fleet.max_loadable(gid, 0)
+			want = _brute_buy(port, gid, room, gs.money)
+			m0 = gs.money
+			var q0: int = fleet.cargo_qty(gid, 0)
+			var t0 := Time.get_ticks_msec()
+			_main._on_buy_max(port, gid, 0)
+			var one_press := Time.get_ticks_msec() - t0
+			await _settle(2)
+			got_n = fleet.cargo_qty(gid, 0) - q0
+			paid = m0 - int(gs.money)
+			books_ok = books_ok and got_n == int(want[0]) and paid == int(want[1])
+			# 按下去之后牙行页照例重排一遍（买卖每按一次都重排）；重排本身的耗时另量一遍同一页扣掉，只计结算
+			t0 = Time.get_ticks_msec()
+			_main.load_scene(port + "_market")
+			var one_render := Time.get_ticks_msec() - t0
+			await _settle(2)
+			press_ms = one_press if press_ms < 0 else mini(press_ms, one_press)
+			render_ms = one_render if render_ms < 0 else mini(render_ms, one_render)
 		var calc_ms := press_ms - render_ms
-		_expect(gid in hand and calc_ms <= PRESS_LIMIT_MS and got_n == int(want[0]) and paid == int(want[1]),
-			"%s（舱容 %d 件）%d 钱买满经卷：结算 %d 毫秒（按下共 %d、其中重排牙行页约 %d），买到 %d 件付 %d 钱（逐件推演 %d 件 %d 钱）" % [
-				setup[0], room, m0, calc_ms, press_ms, render_ms, got_n, paid, want[0], want[1]])
+		_expect(on_hand and books_ok and calc_ms <= PRESS_LIMIT_MS,
+			"%s（舱容 %d 件）%d 钱买满经卷：结算 %d 毫秒（%d 回各取最快：按下 %d、重排牙行页 %d），买到 %d 件付 %d 钱（逐件推演 %d 件 %d 钱）" % [
+				setup[0], room, m0, calc_ms, PRESS_TRIES, press_ms, render_ms, got_n, paid, want[0], want[1]])
 
 	# 买 10 而现银只够 4 件：_on_buy 照旧按逐件总价减到 4 件
 	_reset(port, 0, "sampan")
