@@ -465,7 +465,7 @@
         }
       ],
       "priority": 3,
-      "note": "B / Esc：Voyage.flee_success_chance() 掷骰，海图逃走同一条（现码即此）"
+      "note": "B / Esc：Voyage.flee_success_chance() 掷骰，海图逃走同一条（现码即此）；追打的敌船已尽在 escape_bu 外则不掷骰、即脱（lane w53-2）"
     },
     {
       "id": "t_flee_caught",
@@ -883,6 +883,26 @@
       "note": "两边都够不着满 range_hysteresis_s 秒"
     },
     {
+      "id": "t_outsailed",
+      "from": [
+        "encounter",
+        "maneuver",
+        "broadside"
+      ],
+      "except": [],
+      "to": "end",
+      "outcome": "player_fled",
+      "when": [
+        {
+          "q": "pursuers_far_s",
+          "op": ">=",
+          "v": "$shake_off_s"
+        }
+      ],
+      "priority": 24,
+      "note": "甩脱：还在追打的敌船（没降、没在脱离）全在 escape_bu 外满 shake_off_s 秒，本船即算甩开追船（lane w53-2 接：WorldMap 收 flee{flee_ok, shook_off}）"
+    },
+    {
       "id": "t_time_up",
       "from": [
         "encounter",
@@ -990,6 +1010,12 @@
       "unit": "bu",
       "legacy": null,
       "note": "溃逃一方拉开到这个距离即算逃出（约一屏半）"
+    },
+    "shake_off_s": {
+      "v": 6.0,
+      "unit": "s",
+      "legacy": null,
+      "note": "追打的敌船尽在 escape_bu 外满这么久，本船即算甩脱（t_outsailed，lane w53-2）"
     },
     "capture_timeout_s": {
       "v": 8.0,
@@ -1194,6 +1220,15 @@
       "owner": "maneuver_model",
       "source": "溃逃一方与另一方最近船的距离",
       "fallback": "WorldMap._nearest_enemy() 距离 ÷ px_per_bu"
+    },
+    {
+      "id": "pursuers_far_s",
+      "name": "追船尽在逃出距离外的秒数",
+      "type": "float",
+      "unit": "s",
+      "owner": "director",
+      "source": "还在追打的敌船（活着、没降、没在脱离）全在 escape_bu 外的连续秒数",
+      "fallback": "WorldMap._pursuit()（lane w53-2）"
     },
     {
       "id": "weapons_bear",
@@ -2590,7 +2625,7 @@
       "cue": null,
       "morale_hint": 0,
       "spoil_rule": "none",
-      "note": "现码 CombatFx.sea_flee_ok_note 同句"
+      "note": "现码 CombatFx.sea_flee_ok_note 同句；甩脱一路（t_outsailed：追打的敌船尽在 escape_bu 外满 shake_off_s 秒）lane w53-2 起同此收场，legacy_data 另带 shook_off"
     },
     {
       "id": "player_caught",

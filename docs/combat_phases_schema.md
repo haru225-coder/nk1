@@ -19,9 +19,9 @@
 |---|---|
 | `scale` | dict · 4 条 |
 | `phases` | list · 7 条 |
-| `transitions` | list · 26 条 |
-| `thresholds` | dict · 17 条 |
-| `queries` | list · 24 条 |
+| `transitions` | list · 27 条 |
+| `thresholds` | dict · 18 条 |
+| `queries` | list · 25 条 |
 | `resolve` | dict · 3 条 |
 | `systems` | list · 13 条 |
 | `subsystems` | list · 7 条 |

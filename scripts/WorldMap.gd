@@ -125,6 +125,15 @@ const BATTLE_LIMIT_S := 300.0
 const _PHASES_PATH := "res://data/combat_phases.json"
 ## 号令面板（下令那一刻的浮字取号令中文名：CombatOrdersPanel.notice_for）
 const _CombatOrders := preload("res://scripts/ui/CombatOrdersPanel.gd")
+## lane w53-2：甩脱（阶段图 t_outsailed → player_fled，legacy flee{flee_ok, shook_off}）——还在追打的敌船（活着、没降、没在脱离）
+## 全在 thresholds.escape_bu（160 步 = 1280 px，同溃逃一方逃出的距离）以外、连续满 thresholds.shake_off_s 秒，本船即算甩开了追船，
+## 按脱战收场（SeaChart 走弃战成功一支：绕些路、札记「转舵抢上风头，把追船甩在后面」）；按 B 弃战时追船已尽在外也不再掷骰。
+## 原先拉开了也只能空等 300 秒限时两散（敌船出 2500 px 即休眠不动，顶匾一直「存活 N」）。开战时读阶段表，读不到用这两个常量
+const ESCAPE_PX := 1280.0
+const SHAKE_OFF_S := 6.0
+var _escape_px: float = ESCAPE_PX
+var _shake_off_s: float = SHAKE_OFF_S
+var _outsailed_s: float = 0.0
 
 func _ready() -> void:
 	var hud := $CanvasLayer/HUD
@@ -184,6 +193,16 @@ func _process(delta: float) -> void:
 	if combat_mode and not resolved:
 		if not boarding and not _finishing_boarded and _enemies_alive() == 0:
 			_battle_exit("win", {})
+
+	# lane w53-2：甩脱（阶段图 t_outsailed）——追打的敌船全在 escape_bu 外满 shake_off_s 秒即按脱战收场；钩住白刃、末船夺下等题签时不计
+	if combat_mode and not resolved and not boarding and not _finishing_boarded:
+		var pu := _pursuit()
+		if int(pu["n"]) > 0 and int(pu["near"]) == 0:
+			_outsailed_s += delta
+			if _outsailed_s >= _shake_off_s:
+				_battle_exit("flee", {"flee_ok": true, "shook_off": true})
+		else:
+			_outsailed_s = 0.0
 
 	# combat12：限时两散（阶段图 t_time_up → disengaged，legacy flee{flee_ok, parted}）；钩住白刃时不计时
 	if combat_mode and not resolved and not boarding and not _finishing_boarded:
@@ -592,6 +611,10 @@ func _setup_combat(pb: Dictionary) -> void:
 	_cargo_at_start = _cargo_counts()
 	_battle_elapsed_s = 0.0
 	_battle_limit_s = _phases_battle_limit_s()
+	_outsailed_s = 0.0
+	var esc := _phases_escape()
+	_escape_px = esc.x
+	_shake_off_s = esc.y
 	combat_mode = true
 	_AUDIO.combat_start(self)
 	# 战斗专用：禁掉 PortZone 停靠出口（否则 Enter 会切回 Main 丢战斗）
@@ -691,8 +714,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			if boarding or _finishing_boarded:
 				return # 白刃已钩住不能逃；末艘已夺下、「夺船」题签在演，等它带 boarded 出战（crew 线 1fe334d）
 			get_viewport().set_input_as_handled()
-			var chance := Voyage.flee_success_chance()
-			var ok := randf() < chance
+			# lane w53-2：追打的敌船已尽在 escape_bu 外（降了的、溃走的不追）就不掷骰——够不着也追不上，弃战即脱，同甩脱一路；
+			# 原先照掷航速骰，敌船在一屏开外休眠不动也会「未能甩脱，被追上跳帮，货舱被夺」
+			var ok: bool = int(_pursuit()["near"]) == 0 or randf() < Voyage.flee_success_chance()
 			_battle_exit("flee", {"flee_ok": ok, "player_damage": player_damage})
 
 
@@ -884,6 +908,45 @@ static func _phases_battle_limit_s() -> float:
 			if (v is float or v is int) and float(v) > 0.0:
 				return float(v)
 	return BATTLE_LIMIT_S
+
+
+## 甩脱两数（lane w53-2）：x = thresholds.escape_bu.v × scale.px_per_bu（像素），y = thresholds.shake_off_s.v（秒）；读不到用 ESCAPE_PX / SHAKE_OFF_S
+static func _phases_escape() -> Vector2:
+	var out := Vector2(ESCAPE_PX, SHAKE_OFF_S)
+	var f := FileAccess.open(_PHASES_PATH, FileAccess.READ)
+	if f == null:
+		return out
+	var d = JSON.parse_string(f.get_as_text())
+	if not (d is Dictionary):
+		return out
+	var t = d.get("thresholds", {})
+	var sc = d.get("scale", {})
+	if t is Dictionary and sc is Dictionary:
+		var eb = t.get("escape_bu", {}).get("v") if t.get("escape_bu") is Dictionary else null
+		var px = sc.get("px_per_bu")
+		if (eb is float or eb is int) and (px is float or px is int) and float(eb) * float(px) > 0.0:
+			out.x = float(eb) * float(px)
+		var so = t.get("shake_off_s", {}).get("v") if t.get("shake_off_s") is Dictionary else null
+		if (so is float or so is int) and float(so) > 0.0:
+			out.y = float(so)
+	return out
+
+
+## 追打的敌船（活着、没降、没在脱离）有几艘、其中几艘在 _escape_px 以内：{"n", "near"}。降了的、溃走的不追，甩脱与否不看它们——
+## 那几艘归士气簿收场（受降 / 敌遁）
+func _pursuit() -> Dictionary:
+	var n := 0
+	var near := 0
+	for child in get_children():
+		if not _is_live_pirate(child) or child.get("struck") == true:
+			continue
+		var cap = child.get("captain")
+		if cap != null and str(cap.get("state")) == "disengage":
+			continue
+		n += 1
+		if is_instance_valid(ship) and (child as Node2D).position.distance_to(ship.position) < _escape_px:
+			near += 1
+	return {"n": n, "near": near}
 
 
 func _on_captain_state_changed(state: StringName, label: String, reason: String, enemy: Node = null) -> void:

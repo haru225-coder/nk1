@@ -49,6 +49,7 @@
 | `t_encounter_move` | `['encounter'] → maneuver` | {'q': 'phase_elapsed_s', 'op': '>=', 'v': '$encounter_s'} |
 | `t_open_fire` | `['maneuver'] → broadside` | {'q': 'weapons_bear', 'op': '==', 'v': True} |
 | `t_cease_fire` | `['broadside'] → maneuver` | {'q': 'out_of_range_s', 'op': '>=', 'v': '$range_hysteresis_s'} |
+| `t_outsailed` | `['encounter', 'maneuver', 'broadside'] → end` | {'q': 'pursuers_far_s', 'op': '>=', 'v': '$shake_off_s'} |
 | `t_time_up` | `['encounter', 'maneuver', 'broadside', 'rout'] → end` | {'q': 'battle_elapsed_s', 'op': '>=', 'v': '$battle_limit_s'} |
 | `t_gale` | `['encounter', 'maneuver', 'broadside'] → end` | {'q': 'wind_combat_ok', 'op': '==', 'v': False} |
 
@@ -131,7 +132,7 @@
 | `enemy_struck` | 敌降 | combat09+11+12 已接：士气收场 morale_verdict=enemy_struck → 题签 surrender「受降」，SeaChart 全赏走 sea_surrender_note；喊话劝降得手（PirateShip.strike_colours）lane w53-2 起士气簿同记降幡、同此收场；legacy_data.boarded 与实发不符（见§九） |
 | `enemy_sunk` | 击沉 | SeaChart 胜：赏 150–600 钱、名声 +3、士气 +5（现码） |
 | `enemy_fled` | 敌遁 | combat12 已接：WorldMap 收战把各船下场（沉 / 夺 / 受降 / 遁）记进 win data.fates，SeaChart.win_kind 只在一艘没沉没夺没降、只是遁走时半赏 75–300 走 sea_fled_note，先沉后遁照击沉全赏；题签现码出 repel「击退」，非本表 win（见§九） |
-| `player_fled` | 脱战 | 现码 CombatFx.sea_flee_ok_note 同句 |
+| `player_fled` | 脱战 | 现码 CombatFx.sea_flee_ok_note 同句；甩脱一路（t_outsailed：追打的敌船尽在 escape_bu 外满 shake_off_s 秒）lane w53-2 起同此收场，legacy_data 另带 shook_off |
 | `player_caught` | 未能甩脱 | 现码 CombatFx.sea_flee_fail_note 同句 |
 | `player_routed` | 溃逃 | combat09+11 已接：CombatMorale 我方溃逃满 player_grace_s → flee{rout, morale_verdict=player_rout} → 题签 rout「溃逃」；SeaChart 仍走通用 flee 分支，flee_ok 由士气件掷骰（见§九） |
 | `player_struck` | 降幡 | combat11 已接：CombatMorale 我方降幡 → lose{struck}，题签现码出 yield「请降」，非本表 strike；SeaChart 走败局非沉船分支：货损二成五，log 出 sea_board_lose_note（见§九） |
@@ -147,13 +148,13 @@
 
 ## 九、对齐与待接线
 
-已接、不再列：combat11 清空 combat10 `KNOWN_DEFECTS`（夺末船 `boarded=true`、`player_damage` 负值、回写）；敌降「受降」、我方溃逃「溃逃」由 combat09+11 接；敌遁半赏（按各船下场分账，先沉后遁不算敌遁）、限时两散由 combat12 接；失船面（敌船先抛钩、白刃敌胜 → `lose{overrun}`）由 lane w53-2 接。下列是仍未对上的：
+已接、不再列：combat11 清空 combat10 `KNOWN_DEFECTS`（夺末船 `boarded=true`、`player_damage` 负值、回写）；敌降「受降」、我方溃逃「溃逃」由 combat09+11 接；敌遁半赏（按各船下场分账，先沉后遁不算敌遁）、限时两散由 combat12 接；失船面（敌船先抛钩、白刃敌胜 → `lose{overrun}`）、甩脱（追打的敌船尽在 `escape_bu` 外满 `shake_off_s` 秒 → `flee{flee_ok, shook_off}`，阶段图 `t_outsailed`）由 lane w53-2 接。下列是仍未对上的：
 
 - **两散只有限时一路**：阶段图 `t_gale`（风七级以上不能战 → `disengaged`）不收场——`SeaState` 把海战风力封顶在 `WIND_CAP` 130，到不了 `combat_ok: false` 那几级，此路暂无来路。
 - **题签键与本表不符**：`player_struck` 本表 `strike`「降幡」，现码出 `yield`「请降」（`strike` 不在 `OUTCOME_ACT`）；`enemy_fled` 本表 `win`「战罢」，现码出 `repel`「击退」。二者择一回写。
 - **SeaChart 我方失利不分结局**：我方降幡走败局非沉船分支，log 出 `sea_board_lose_note`「白刃不利」而非本条降幡句；溃逃走通用 flee 分支，不出本条句。士气也不按 `morale_hint`：降幡照败局扣 12（本表 −6），溃逃 flee 分支不扣（本表 −8）。
 - **`legacy_data` 与实发 data 不符**：`enemy_struck` 本表带 `boarded: true`，实发 `enemy_struck` / `struck_types` / `morale_verdict`，不带 `boarded`；`player_routed` 本表 `flee_ok: true`，实发由士气件掷骰。
-- **本表几乎无玩法代码读**：`morale_hint`、`spoil_rule`、`log`、`precedence` 与 `thresholds`（除 `battle_limit_s`：WorldMap 开战时读，读不到退回 `BATTLE_LIMIT_S` 300）目前只是契约；SeaChart 赏罚与士气写死（敌遁半赏也是 SeaChart 里的 75–300，不读 `spoil_rule`），`CombatDirector` 只查本文件在不在。
+- **本表几乎无玩法代码读**：`morale_hint`、`spoil_rule`、`log`、`precedence` 与 `thresholds`（除 `battle_limit_s`、`escape_bu`、`shake_off_s`：WorldMap 开战时读，读不到退回 `BATTLE_LIMIT_S` 300、`ESCAPE_PX` 1280、`SHAKE_OFF_S` 6）目前只是契约；SeaChart 赏罚与士气写死（敌遁半赏也是 SeaChart 里的 75–300，不读 `spoil_rule`），`CombatDirector` 只查本文件在不在。
 
 数值与实现常量若有出入，以落地模块为准，回写本表时开对齐行。
 

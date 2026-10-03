@@ -38,6 +38,13 @@ extends SceneTree
 ##   十一、喊话劝降得手的末艘敌船按受降收战：修复前士气簿不知道敌将降了，在场敌船个个竖着降幡也不收战——
 ##       降船漂满 35 秒乘隙遁去，记成半赏的「敌船遁走」。一艘快船，喊话（roll 0 必降）：数帧内须以 win 收战一次、
 ##       morale_verdict = enemy_struck、下场记受降，海图 win_kind 判受降（全赏）；士气簿那页同记降幡。
+##   十二、甩脱：修复前本船拉开了也收不了战——敌船出 2500 px 即休眠不动，只能空等 300 秒限时两散；按 B 弃战照掷航速骰，
+##       敌船一屏开外休眠也会「未能甩脱，被追上跳帮」。现阶段图 t_outsailed：还在追打的敌船（没降、没在脱离）全在 escape_bu 外
+##       满 shake_off_s 秒即按脱战 flee{flee_ok, shook_off} 收战；B 弃战时追船已尽在外不掷骰。四格：
+##       ① 开战读阶段表：_escape_px = escape_bu × px_per_bu、_shake_off_s = shake_off_s；
+##       ② 两艘快船停住，一艘在 1000 px 时等过时限不收战，挪到 1450 px 再等过时限须收战一次 flee{flee_ok, shook_off}；
+##       ③ 唯一一艘在 1500 px 但在脱离（溃走）：等过时限不收战（归士气簿收场，不记成本船脱战）；
+##       ④ B 弃战挑首掷 > 0.95 的种子（照掷必败）：追船尽在 1400 px 外须 flee_ok、不掷骰；追船在 600 px 同种子照掷（flee_ok 假）。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -93,6 +100,9 @@ func _run() -> void:
 	_sec_captain_self_check()
 	print("== 十一、喊话劝降得手的末艘敌船按受降收战")
 	await _sec_parley_last_ends_battle(fleet)
+	print("== 十二、甩脱：追打的敌船尽在逃出距离外，本船即算甩开")
+	await _sec_outsailed(fleet)
+	await _sec_flee_key_far(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -605,6 +615,98 @@ func _sec_parley_last_ends_battle(fleet: Node) -> void:
 		"十一 末艘喊降：十帧内按受降收战（得 %s · morale_verdict %s · fates %s · win_kind %s）" % [
 			out, str(data.get("morale_verdict", "无")), fates, kind if kind != "" else "无"])
 	await _close(wm)
+
+
+# ══ 十二、甩脱：追打的敌船尽在逃出距离外，本船即算甩开 ══════════════════════════
+
+## 两艘快船关物理帧停在指定处（敌炮已冻）；时限读过阶段表后压到 1 秒省时（① 先验读进来的数）
+func _sec_outsailed(fleet: Node) -> void:
+	var wm := await _battle(fleet, "fu_ship_medium", 60, {"type": "pirate_boat", "count": 2})
+	var foes := _foes(wm)
+	if foes.size() != 2:
+		_check(false, "十二 海战刷出两艘快船（得 %d 艘）" % foes.size())
+		await _close(wm)
+		return
+	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/combat_phases.json"))
+	var want_px := float(d["thresholds"]["escape_bu"]["v"]) * float(d["scale"]["px_per_bu"])
+	var want_s := float(d["thresholds"].get("shake_off_s", {}).get("v", -1.0))
+	var got_px = wm.get("_escape_px")
+	var got_s = wm.get("_shake_off_s")
+	_check(got_px is float and is_equal_approx(float(got_px), want_px) and got_s is float and is_equal_approx(float(got_s), want_s),
+		"十二① 开战读阶段表：逃出距离 %s px（表 %.0f）、甩脱时限 %s 秒（表 %s）" % [str(got_px), want_px, str(got_s), str(want_s)])
+	wm.set("_shake_off_s", 1.0)
+	var rec: Array = []
+	wm.battle_finished.connect(func(o: String, dd: Dictionary) -> void: rec.append([o, dd.duplicate(true)]))
+	var own: Node2D = wm.get("ship")
+	var a: Node2D = foes[0]
+	var b: Node2D = foes[1]
+	for f in foes:
+		(f as Node).set_physics_process(false)
+	a.position = own.position + Vector2(1000, 0)
+	b.position = own.position + Vector2(-1500, 200)
+	await create_timer(1.6).timeout
+	var held := rec.is_empty()
+	var held_rec := str(rec)
+	a.position = own.position + Vector2(1450, 0)
+	await create_timer(1.6).timeout
+	var data: Dictionary = rec[0][1] if rec.size() == 1 else {}
+	_check(held, "十二② 一艘还在逃出距离内（1000 px）：等过时限不收战（得 %s）" % held_rec)
+	_check(rec.size() == 1 and str(rec[0][0]) == "flee" and bool(data.get("flee_ok", false)) and bool(data.get("shook_off", false))
+		and not bool(data.get("parted", false)),
+		"十二② 两艘都在 1450 px 外满时限：按脱战收战 flee{flee_ok, shook_off}（得 %s）" % str(rec))
+	await _close(wm)
+	# ③ 唯一一艘在脱离（溃走）：不算追船，不记成本船脱战
+	wm = await _battle(fleet, "fu_ship_medium", 60, {"type": "pirate_boat", "count": 1})
+	foes = _foes(wm)
+	if foes.size() != 1:
+		_check(false, "十二③ 海战刷出一艘快船")
+		await _close(wm)
+		return
+	wm.set("_shake_off_s", 1.0)
+	var rec3: Array = []
+	wm.battle_finished.connect(func(o: String, dd: Dictionary) -> void: rec3.append(o))
+	var c: Node2D = foes[0]
+	c.set_physics_process(false)
+	c.position = (wm.get("ship") as Node2D).position + Vector2(1500, 0)
+	var cap = c.get("captain")
+	if cap != null:
+		cap.set("state", &"disengage")
+	await create_timer(1.6).timeout
+	_check(cap != null and rec3.is_empty(), "十二③ 唯一一艘在脱离（1500 px）：不算追船，等过时限不收战（得 %s）" % str(rec3))
+	await _close(wm)
+
+
+## B 弃战：挑首掷 randf() > 0.95 的种子（Voyage.flee_success_chance 封顶 0.9，照掷必败）。追船尽在 1400 px 外：flee_ok 须真（不掷骰）；
+## 同种子追船在 600 px：照掷，flee_ok 假
+func _sec_flee_key_far(fleet: Node) -> void:
+	var sd := 1
+	while sd < 5000:
+		seed(sd)
+		if randf() > 0.95:
+			break
+		sd += 1
+	var got: Array = []
+	for dist in [1400.0, 600.0]:
+		var wm := await _battle(fleet, "fu_ship_medium", 60, {"type": "pirate_boat", "count": 1})
+		var foes := _foes(wm)
+		if foes.size() != 1:
+			got.append("刷船 %d 艘" % foes.size())
+			await _close(wm)
+			continue
+		var rec: Array = []
+		wm.battle_finished.connect(func(o: String, dd: Dictionary) -> void: rec.append([o, bool(dd.get("flee_ok", false))]))
+		(foes[0] as Node).set_physics_process(false)
+		(foes[0] as Node2D).position = (wm.get("ship") as Node2D).position + Vector2(dist, 0)
+		var ev := InputEventKey.new()
+		ev.keycode = KEY_B
+		ev.pressed = true
+		seed(sd)
+		wm.call("_unhandled_input", ev)
+		got.append(str(rec[0][1]) if rec.size() == 1 else "未收战")
+		await _close(wm)
+	_check(got.size() == 2 and got[0] == "true" and got[1] == "false",
+		"十二④ B 弃战（种子 %d 首掷 > 0.95）：追船在 1400 px 外不掷骰即脱 flee_ok=%s；在 600 px 照掷 flee_ok=%s" % [
+			sd, got[0] if got.size() > 0 else "无", got[1] if got.size() > 1 else "无"])
 
 
 class _ScriptErrLog extends Logger:
