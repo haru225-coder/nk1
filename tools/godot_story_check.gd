@@ -5009,12 +5009,49 @@ func _w53_10_sea_purse_check() -> void:
 	GS.money = keep_money
 
 
+## lane w53-10（七轮）：泉州征船名册「船借张世杰」只此一船那颗——船不给、水粮各减半，水手一个不少；钮文原写
+## 「只此一条，出人出粮」、札记写「船没给，人和粮给了一半」。按真钮：水手没少，钮文与札记就都不许说交了人。
+func _w53_10_zhang_one_ship_check() -> void:
+	var Flt: Node = root.get_node("Fleet")
+	var keep_fleet: Dictionary = Flt.call("to_dict")
+	var keep_gs: Dictionary = GS.to_dict()
+	var keep_cal: Dictionary = Cal.to_dict()
+	GS.from_dict({})
+	Cal.from_dict({"year": 1276, "month": 6, "day": 1})
+	Flt.set("ships", [])
+	Flt.call("add_ship", "fu_ship_medium", "")
+	(Flt.get("ships") as Array)[0]["crew"] = 40
+	Flt.set("water", 100)
+	Flt.set("food", 100)
+	var main: Node = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
+	root.add_child(main)
+	GS.last_port = "quanzhou"
+	main.load_scene("quanzhou_yamen")
+	var btn: Button = _find_button(main.choices_container, "船借张世杰", false)
+	var btn_text := btn.text if btn != null else ""
+	if btn != null:
+		btn.emit_signal("pressed")
+	var lines: PackedStringArray = main._log_lines
+	var line: String = lines[lines.size() - 1] if not lines.is_empty() else ""
+	var crew_now: int = int(Flt.call("total_crew"))
+	var says_crew := RegEx.create_from_string("出人|人和粮|人与粮|人手.{0,4}给")
+	_check(btn != null and GS.has_flag("sided_zhang") and int(Flt.get("water")) == 50 and line.find("船没给") >= 0
+		and (crew_now != 40 or (says_crew.search(btn_text) == null and says_crew.search(line) == null)),
+		"船借张世杰只此一船：水粮 100→%d、水手 40→%d，钮文「%s」札记「%s」不说交了人" % [int(Flt.get("water")), crew_now, btn_text, line])
+	root.remove_child(main)
+	main.queue_free()
+	Flt.call("from_dict", keep_fleet)
+	GS.from_dict(keep_gs)
+	Cal.from_dict(keep_cal)
+
+
 ## lane w53-11：story 收尾（原在 _process 里、不 await _route_check 就印 SUMMARY / quit）——等抵港路由一节整段跑完
 ## （含其中真让帧的 await）再判 SCRIPT ERROR、印 SUMMARY、退出；_route_check 半路被脚本错掐断时 await 照样回来，
 ## 由 _script_error_check 判红。
 func _finish_after_route() -> void:
 	await _route_check()
 	_w53_10_sea_purse_check()
+	_w53_10_zhang_one_ship_check()
 	_script_error_check()
 	print("STORY_CHECK TOTAL asserts run=", GateReport._checks.size(), "；lane w20-c6 补白新增 c6_asserts=", _c6_added)
 	print("STORY_CHECK SUMMARY fails=", _fails)

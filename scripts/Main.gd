@@ -3904,7 +3904,7 @@ func _setup_quanzhou_standoff(port_id: String) -> void:
 	if Fleet.ships.size() > 1:
 		zhang.text = "船借张世杰——编出最小一条船（名声 +8，海商信用 −15）"
 	else:
-		zhang.text = "船借张世杰——只此一条，出人出粮（名声 +8，海商信用 −15，水粮减半）"
+		zhang.text = "船借张世杰——只此一条，以粮代船（名声 +8，海商信用 −15，水粮减半）"
 	zhang.pressed.connect(func():
 		if Fleet.ships.size() > 1:
 			var idx := 0
@@ -3917,7 +3917,7 @@ func _setup_quanzhou_standoff(port_id: String) -> void:
 		else:
 			Fleet.water = Fleet.water / 2
 			Fleet.food = Fleet.food / 2
-			log_msg("船没给，人和粮给了一半。蒲家的人在码头上看着，没说话。")
+			log_msg("船没给，水粮分了一半过去。蒲家的人在码头上看着，没说话。")
 		GameState.fame += 8
 		GameState.merchant_credit -= 15
 		GameState.pu_attention = 0
