@@ -364,10 +364,11 @@ REGISTRY = [
      "red": "`  ✗ …` 行（如欠饷原文变 / 欠满三月不走 / 人去仍添墨 / 元历不换印 / 旧年号残留 / 札记见息义字样）"
             "+ 末行 `FOLD_NOTICE cases=N fails=N`（N>0），退 1"},
 
-    {"id": "qa_rest_scenarios_probe", "tier": "lane",
-     "when": "动歇等候钮与价（scripts/ui/TavernPage.gd 的 setup_inn / scripts/ui/ResidencePage.gd 的 _setup_residence、"
-             "scripts/Main.gd 的 _slip_chip / _contract_rest_mark / INN_RATE / _on_rest）、住店客价与贴文工席"
-             "（hide_if_flag / 寺观工席贴文路），或动 tools/qa_rest_scenarios_probe.gd 自身",
+    {"id": "qa_rest_scenarios_probe", "tier": "must",
+     "why": "升格：lane w49-k1 依 w42-k6 判词表「可升级升格片（五判全齐）」授权锚第五件、照 w48-k4 牒备件五节 (i)–(v) 套牒升进必跑（注册表 REGISTRY 序原位 :37）。"
+            "判不准成立——歇宿钮面 ↔ 两贴文路径同亮钩跨六路写口（TavernPage.setup_inn 与 ResidencePage._setup_residence 歇候钮绑定、Main._slip_chip / _contract_rest_mark / INN_RATE·HOME_RATE 歇价契文、寺观 hook_xinghua_asked 贴文反驾路、探针自身），改动 lane 多半想不起加跑这条 lane 当次只加跑的探针；"
+            "速档按 §五.2 自书 GDScript 引擎实测牒不咎一键跑既有 Godot must 本辑（一键跑自含 smoke 8.0s / compile 3.3s / story 104s / patrol 24s，§五.2 自书基线总约 60s），本支三跑 2.45–2.64s 与 cargo_strip 同带居快翼（现 33 案形与 18 案形耗时同带，k5 并网判已落定）；"
+            "只读零写盘成立——源码零 FileAccess/DirAccess/user:///save(/write/store_ 出口，摆场只 in-memory 置开局态 + 真场景树读钮面枚举态，advance_days 摆日不落盘；误红面不扩（无 ⚠ 放行面）。",
      "kind": "godot", "file": "tools/qa_rest_scenarios_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_rest_scenarios_probe.gd"],
      "judge": "（探针 09bb75a 随 w28-k1 落地，w30-k1 入册——与 qa_fold_notice 同案漏网两支的第二支；"
