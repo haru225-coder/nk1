@@ -4965,6 +4965,19 @@ else:
     print("  ✗ 航海日志册页：标题页续卷「记录」放开、「翻阅」不按 can_load，或记录写不进照报已记入（标题页一点即把空白局写进那一卷）")
     problems.append("航海日志册页记录把关缺失")
 
+# lane w53-5 五轮：航海日志册页收键盘焦点。原先鼠标点「航海日志」开册页，焦点留在暗幕底下那颗钮上：Enter 把册页拆了重开，
+# Tab / 方向键走到底下的「名册」「看风」「再候一日」再 Enter，就在册页底下开浮页、出海、候日。须：开册页即 host.grab_focus()、
+# 册页里按得动的钮 focus_next / focus_neighbor 互指成环、「合上」挂 ui_cancel 快捷键。运行时断言见 qa_w53_5_save_sheet_probe K1–K4。
+if (
+    "host.grab_focus()" in _save_dialog_code
+    and "focus_next = " in _save_dialog_code and "focus_neighbor_bottom = " in _save_dialog_code
+    and '"ui_cancel"' in _save_dialog_code and "close.shortcut = " in _save_dialog_code
+):
+    print("  ✓ 航海日志册页收键盘焦点（开即聚焦底座、Tab / 方向键只在册页里轮转、Esc 合上）")
+else:
+    print("  ✗ 航海日志册页不收键盘焦点：焦点留在暗幕底下，Enter 拆了重开、Tab / 方向键走到底下的钮（看风 / 再候一日）")
+    problems.append("航海日志册页键盘焦点漏到暗幕底下")
+
 print()
 print()
 print("=" * 68)

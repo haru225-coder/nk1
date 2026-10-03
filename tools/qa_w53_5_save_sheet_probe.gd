@@ -10,6 +10,12 @@ extends SceneTree
 ##   S3 港页「航海日志」进来的册页：三卷「记录」都给按；
 ##   S4 「记录」写不进（.tmp 位被占成目录）：册页不合上、记事顶上是「誊写未成」、不出「已记入」、那一卷题签不变；
 ##   S5 写得进：册页合上、记事顶上「已记入航海日志第 N 卷。」、题签换成当下的日子。
+## 五轮补键盘（真鼠标点开、真按键，经 root.push_input）：原先点「航海日志」开册页后焦点留在暗幕底下那颗钮上，
+## Enter 把册页拆了重开，Tab / 方向键走到底下的「名册」「看风」「再候一日」、工席门，Enter 就在册页底下开浮页、出海、候日。
+##   K1 鼠标点「航海日志」开册页：焦点在册页里（底座或册页里的钮），不在底下那颗钮上；
+##   K2 Tab / Shift+Tab / 方向键连按：焦点始终在册页里，且确在册页的钮之间走动；
+##   K3 Esc 合上册页：不开别的浮页、不换页、不过日子；
+##   K4 再点开、按 Enter：册页合上，不是拆了重开。
 ## 册页只列正式位 1..SLOTS：S1–S3 只读钮态、不写卷；S4 / S5 直调同一个回调 _on_save_slot 记存档位 93，不碰正式位。
 ## 另带 script_err_tally 两判（本进程 SCRIPT ERROR 即红），cases 比场面断言多 2。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_5_save_sheet_probe.gd
@@ -44,6 +50,7 @@ func _run_guarded() -> void:
 
 
 func _run() -> void:
+	root.size = Vector2i(1280, 720)
 	var cine_src: GDScript = load("res://scripts/cutscene/Cinematics.gd") as GDScript
 	if cine_src != null:
 		cine_src.set("auto_opening", false)
@@ -131,6 +138,40 @@ func _run() -> void:
 		and label_after.contains(str(cal.call("get_date_string"))),
 		"S5 记录写得进：册页合上、记事报已记入、题签是当下日子", "top=%s 题签=%s" % [top, label_after])
 
+	# ── 键盘：鼠标真点「航海日志」开册页（钮会拿到焦点），再真按键 ──
+	if log_btn != null:
+		var date0 := str(cal.call("get_date_string"))
+		await _click(log_btn)
+		var f0 := _focus()
+		_expect(is_instance_valid(_main.get("_save_host")) and _in_sheet(f0), "K1 鼠标点开册页：焦点在册页里，不在底下的「航海日志」钮上",
+			"焦点=%s" % _name(f0))
+		var walk := PackedStringArray()
+		var inside := true
+		var seen := {}
+		for k in [KEY_TAB, KEY_TAB, KEY_TAB, KEY_TAB, KEY_TAB, KEY_TAB, KEY_TAB, KEY_TAB, -KEY_TAB, -KEY_TAB, KEY_RIGHT, KEY_DOWN, KEY_DOWN, KEY_LEFT, KEY_UP]:
+			await _key(absi(k), k < 0)
+			var f := _focus()
+			walk.append(_name(f))
+			inside = inside and _in_sheet(f)
+			if f is Button:
+				seen[f] = true
+		_expect(inside and seen.size() >= 3, "K2 Tab / Shift+Tab / 方向键：焦点始终在册页里、在册页的钮之间走",
+			"走过 %d 颗钮：%s" % [seen.size(), " → ".join(walk)])
+		await _key(KEY_ESCAPE)
+		await _settle(2)
+		_expect(not is_instance_valid(_main.get("_save_host")) and _no_float_page() and str(_main.current_scene_id) == PORT
+			and str(cal.call("get_date_string")) == date0, "K3 Esc 合上册页，不开别的浮页、不换页、不过日子",
+			"册页开着=%s 场景=%s 日子=%s" % [str(is_instance_valid(_main.get("_save_host"))), str(_main.current_scene_id), str(cal.call("get_date_string"))])
+		if is_instance_valid(_main.get("_save_host")):
+			_main._close_save_sheet()  # K3 没合上时先收掉，K4 单验 Enter
+			await _settle(2)
+		await _click(log_btn)
+		var opened := is_instance_valid(_main.get("_save_host"))
+		await _key(KEY_ENTER)
+		await _settle(3)
+		_expect(opened and not is_instance_valid(_main.get("_save_host")) and _no_float_page(), "K4 点开后按 Enter：册页合上，不是拆了重开",
+			"点开=%s Enter 后册页开着=%s 焦点=%s" % [str(opened), str(is_instance_valid(_main.get("_save_host"))), _name(_focus())])
+
 	_cleanup()
 	_report()
 
@@ -170,6 +211,56 @@ func _band_button(text: String) -> Button:
 		if (b as Button).text.strip_edges() == text:
 			return b as Button
 	return null
+
+
+## 真鼠标点一颗钮（按下 + 抬起，经 root.push_input；钮会像真点那样拿到焦点）
+func _click(c: Control) -> void:
+	var p: Vector2 = c.get_global_rect().get_center()
+	for pressed in [true, false]:
+		var e := InputEventMouseButton.new()
+		e.button_index = MOUSE_BUTTON_LEFT
+		e.pressed = pressed
+		e.position = p
+		e.global_position = p
+		root.push_input(e)
+		await _settle(2)
+
+
+## 真按一下键（按下 + 抬起）；shift 为真时带 Shift（Shift+Tab）
+func _key(code: int, shift := false) -> void:
+	for pressed in [true, false]:
+		var e := InputEventKey.new()
+		e.keycode = code as Key
+		e.physical_keycode = code as Key
+		e.shift_pressed = shift
+		e.pressed = pressed
+		root.push_input(e)
+		await _settle(2)
+
+
+func _focus() -> Control:
+	return root.gui_get_focus_owner()
+
+
+func _in_sheet(f: Control) -> bool:
+	var host = _main.get("_save_host")
+	return f != null and is_instance_valid(host) and (f == host or (host as Node).is_ancestor_of(f))
+
+
+func _name(f: Control) -> String:
+	if f == null:
+		return "<无>"
+	return "「%s」%s" % [str(f.get("text")) if f is Button else f.get_class(), "" if _in_sheet(f) else "（册页外）"]
+
+
+## 别的浮页（人物志 / 名册 / 市舶纪事 / 船籍簿）都没开着
+func _no_float_page() -> bool:
+	for k in ["_codex", "_chars_wire", "_vision_stage"]:
+		var n = _main.get(k)
+		if is_instance_valid(n) and not bool((n as Node).get("_closing")):
+			return false
+	var ledger = _main.get("_ledger_layer")
+	return not (is_instance_valid(ledger) and (ledger as CanvasItem).visible)
 
 
 func _has(lines: Array, needle: String) -> bool:

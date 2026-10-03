@@ -103,6 +103,42 @@ static func show_save_dialog(main: Control, read_only := false) -> void:
 	UiTheme.style_button(close, true)
 	close.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# 键盘焦点收进册页（lane w53-5 五轮）。鼠标点「航海日志」/「续卷」开册页，焦点原留在暗幕底下那颗钮上：Enter 把它
+	# 再按一遍（册页拆了重开，Main._unhandled_input 的「Enter 合上」到不了）；Tab / 方向键走到暗幕底下的「名册」「看风」
+	# 「再候一日」、工席门，Enter 就在册页底下开浮页、出海、候日。现在：焦点先交给册页底座（Control 不画焦点框，鼠标玩家
+	# 看不出变化），Enter 落到 Main 合上；Tab / Shift+Tab / 方向键只在册页里按得动的钮之间轮转（不给按的钮不收焦点，
+	# 照 SlipKit 只读钮的口径）；Esc 是「合上」的快捷键，焦点在哪都合上。拆出件不另立函数（只装从 Main 搬出的），就地写。
+	var ring: Array = []
+	for b in host.find_children("*", "Button", true, false):
+		if (b as Button).disabled:
+			(b as Button).focus_mode = Control.FOCUS_NONE
+		elif (b as Button).focus_mode != Control.FOCUS_NONE:
+			ring.append(b)
+	for i in ring.size():
+		var b: Button = ring[i]
+		var nxt: NodePath = b.get_path_to(ring[(i + 1) % ring.size()])
+		var prv: NodePath = b.get_path_to(ring[(i + ring.size() - 1) % ring.size()])
+		b.focus_next = nxt
+		b.focus_neighbor_right = nxt
+		b.focus_neighbor_bottom = nxt
+		b.focus_previous = prv
+		b.focus_neighbor_left = prv
+		b.focus_neighbor_top = prv
+	host.focus_mode = Control.FOCUS_ALL
+	if not ring.is_empty():
+		host.focus_next = host.get_path_to(ring[0])
+		host.focus_neighbor_right = host.focus_next
+		host.focus_neighbor_bottom = host.focus_next
+		host.focus_previous = host.get_path_to(ring[ring.size() - 1])
+		host.focus_neighbor_left = host.focus_previous
+		host.focus_neighbor_top = host.focus_previous
+	var esc := InputEventAction.new()
+	esc.action = &"ui_cancel"
+	var cut := Shortcut.new()
+	cut.events = [esc]
+	close.shortcut = cut
+	close.shortcut_in_tooltip = false
+	host.grab_focus()
 	UiTheme.pop_in(sheet)
 
 
