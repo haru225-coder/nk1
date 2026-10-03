@@ -4,7 +4,7 @@
 
 ## 门禁与工程口径
 - [GATES.md](GATES.md)：门禁总表，写每道判什么、红了什么样、`--json` 怎么机读（§一由 `tools/gates_md.py --write` 生成）；§五 写门禁生命周期（入册 / 必跑 / 自证 / 跟号，附两例事故）
-- [侧车口径.md](侧车口径.md)：哪些 `.uid` / `.import` 必须入库、哪些不许带（`check_sidecars`）
+- [侧车口径.md](侧车口径.md)：哪些 `.uid` / `.import` 必须入库、哪些不许带（`check_sidecars`）；含 w42 末段升格：wt5 (a)/(b) 恒等式 44/10/3 入册
 - [人物原稿与上屏契约.md](人物原稿与上屏契约.md)：人物原稿与上屏字段的契约（`verify_story_data` Astra L1 段）
 - [Main拆解台账.md](Main拆解台账.md)：`scripts/Main.gd` 往 `scripts/ui/` 拆的逐刀台账，含各簇行数、调用面、直读 Main.gd 的门禁、风险，以及下一刀候选
 - [combat_realism_verify.md](combat_realism_verify.md)：写实海战冒烟探针 `tools/combat_realism_probe.gd` 怎么跑、怎么读：五块判据（风流 / 弹道装填 / 损伤浸水 / 接舷白刃 / 士气溃逃）、零节自检、剧情挂钩锚点「遇盗 → 开战 → 夺船 → 回写」、已知缺陷（lane combat10）
