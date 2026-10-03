@@ -427,6 +427,27 @@ REGISTRY = [
      "green": "逐条 `  ✓ …` + 末行 `CARGO_STRIP cases=27 fails=0`",
      "red": "`  ✗ …` 行（如空舱形态变 / 品名数量逐字不符 / 舱位不随货变 / 旧值仍印 / 陈旧哨落网 / 船舱字漏上顶匾）"
             "+ 末行 `CARGO_STRIP cases=N fails=M`（M>0），退 1"},
+
+    {"id": "qa_fold_dim_probe", "tier": "lane",
+     "when": "动札记折叠低色链（scripts/core/LogFold.gd 的 render dim_rest=true 分支——"
+             "港页记事栏头则宣纸色、其余淡一档的折行 / 月行上屏形态），"
+             "或动 tools/qa_fold_dim_probe.gd / tools/qa_crew_fold_host.gd 自身",
+     "kind": "godot", "file": "tools/qa_fold_dim_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_fold_dim_probe.gd"],
+     "judge": "（探针随 w32-k2 落地即入册——w30-k3 交主控末条「按月分组的 fold:i:ym 展开后单列那一月」"
+              "未守面实查：qa_crew_fold_probe C2 三次直调全是 render(host, \"\\n\", false) 海图札记档，"
+              "dim_rest=true 分支日常由港页记事栏跑、此前全仓无一探针点过；与 w29-k3 / w30-k1 / w31-k3 "
+              "同型 8170079 母本登 lane 档，不 EXEMPT）"
+              "仿作宿主 qa_crew_fold_host（w30-k3 同件）直调 LogFold.render（不经屏控件）8 案："
+              "D1 单条染字——次则折起行裹一层暗色、折头（点开）引子 [url=fold:1] 原样在内；"
+              "头则平常句照原墨不裹色、次则平常句整句裹色。"
+              "D2 折行排头——点开之折当次则：折头（收起）与其下头一行月行各裹各的一层暗色、"
+              "引子 [url=fold:1:<ym>] 与「通告 1 则（点开）」逐字在内。"
+              "D3 相变——同一摆场 dim=false 全串无 [color=，转 true 次则折头裹色（褪色随档转、不是常染）。"
+              "本进程 SCRIPT ERROR 即红。末行 `FOLD_DIM cases=N fails=M`，M>0 退 1",
+     "green": "逐条 `  ✓ …` + 末行 `FOLD_DIM cases=8 fails=0`",
+     "red": "`  ✗ …` 行（如次则不褪色 / 头则误染色 / 折行排头双层变 / 换档不转色）"
+            "+ 末行 `FOLD_DIM cases=N fails=M`（M>0），退 1"},
 ]
 
 # w27-k4 CHECK FOLLOWS
