@@ -1494,8 +1494,9 @@ func _v0928_crew_check(main: Node) -> void:
 	# 沉一夺二按 win_kind=""/全赏走「敌船已退。」（lane w53-2 起不写「海盗」：元军哨船胜局同句）（SeaChart.gd:1491 起，fled 句仅「一艘没沉没没夺、只见遁走」时才用）；
 	# 交代在句首、账目在句尾（「获财货 N 钱。船体受损 N。」），promo 接在句末。
 	# 「接舷既定。」前缀是 SeaChart._on_battle_result:1497 对 boarded 胜局加盖的，实测走一遍真结算再对；
-	# 海图顶匾第二行 28 字截断在 SeaChart._refresh_strip:730（_log 把注记存进 _latest_note，_refresh_strip 画匾）。
-	# origin 那条的合并句式（夺来 N 船、添水手…、水粮 N 日）与 28 字截断断言属另一套文案，未随合并采用——这里补的是本地线自己的口径。
+	# 海图顶匾第二行在 SeaChart._refresh_strip 收字（_log 把注记存进 _latest_note，_refresh_strip 画匾）：原先一律截 28 字，
+	# lane w53-14 起按匾宽、按句收（SeaChart._strip_note_fit / fit_strip_note），放得下整句上匾。
+	# origin 那条的合并句式（夺来 N 船、添水手…、水粮 N 日）属另一套文案，未随合并采用——这里补的是本地线自己的口径。
 	for trio in [["沉一夺二／全炮击", FX.sea_win_note(300, 40, ""), "敌船已退。获财货 300 钱。船体受损 40。"],
 		["受降", FX.sea_surrender_note(200, 30, ""), "敌船降幡，货与人一并收押。获财货 200 钱。船体受损 30。"],
 		["全遁", FX.sea_fled_note(200, 30, ""), "敌船转篷遁走，只拾得些漂散的货。获财货 200 钱。船体受损 30。"]]:
@@ -1525,24 +1526,35 @@ func _v0928_crew_check(main: Node) -> void:
 		"接舷夺船战果注记（boarded）：日志首行「接舷既定。」＋全赏注记（spoil %d，得首行「%s」）" % [spoil_now, log0.get_slice("\n", 0)])
 	var strip0: RichTextLabel = sc.get("_strip_line")
 	var strip_note: String = strip0.get_parsed_text().get_slice("\n", 1).strip_edges() if strip0 != null else ""
-	# 钱数是 randf_range(150,600)，位数不定——超不过 28 字时不截、超过时截 27 字＋…，两路都按 _refresh_strip:730 的式子现算
+	# 钱数是 randf_range(150,600)，位数不定；这句三十字上下，1280 宽的匾放得下——整句上匾（原 28 字一截，钱数三位时截掉句尾）
 	var raw_note: String = "接舷既定。" + wd
-	var expect_note := raw_note
-	var cut := raw_note.length() > 28
-	if cut:
-		expect_note = raw_note.substr(0, 27) + "…"
-	_check(strip_note == expect_note and (not cut or expect_note.ends_with("…")),
-		"海图顶匾第二行照 _refresh_strip 28 字收：注记实长 %d 字，%s匾上得「%s」" % [
-			raw_note.length(), "截 27 字＋…，" if cut else "未超不截，", strip_note])
-	# 截断定式（不随钱数位走）：写一条定长 40 字注记，匾上恒收成 27 字＋…；再写一条 20 字短注记，匾上恒原样过
-	sc.set("_latest_note", "定长四十字注记甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥一二三四五六七八九零零零零零")
-	sc.call("_refresh_strip")
-	var strip_long: String = sc.get("_strip_line").get_parsed_text().get_slice("\n", 1).strip_edges()
-	sc.set("_latest_note", "短注记不过二十字上下可以直接过")
-	sc.call("_refresh_strip")
-	var strip_short: String = sc.get("_strip_line").get_parsed_text().get_slice("\n", 1).strip_edges()
-	_check(strip_long.length() == 28 and strip_long.ends_with("…") and strip_short == "短注记不过二十字上下可以直接过",
-		"顶匾第二行截断定式：长注记收成 27 字＋…（得 %d 字「%s」），短注记原样过（「%s」）" % [strip_long.length(), strip_long, strip_short])
+	_check(strip_note == raw_note,
+		"海图顶匾第二行按匾宽收：注记 %d 字放得下，整句上匾（得「%s」）" % [raw_note.length(), strip_note])
+	# 收字定式（lane w53-14，不随钱数位走）：四十三字的定长注记 1280 宽放得下、原样过（原先截成 27 字＋…）；
+	# 两句长注记退到头一句句末收「…」；一句到底放不下的按宽硬截，硬截不留落单的「；短注记原样过
+	var long43 := "定长四十字注记甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥一二三四五六七八九零零零零零"
+	var two_sent := "头一句二十字上下甲乙丙丁戊己庚辛壬癸子丑。第二句更长甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥收尾。"
+	var no_stop := "一句到底没有句号甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥所夺「一二三四五六七八九十甲乙丙丁戊」"
+	var short_note := "短注记不过二十字上下可以直接过"
+	var got_fit := {}
+	for k in [long43, two_sent, no_stop, short_note]:
+		sc.set("_latest_note", k)
+		sc.call("_refresh_strip")
+		got_fit[k] = sc.get("_strip_line").get_parsed_text().get_slice("\n", 1).strip_edges()
+	var cut_ns: String = got_fit[no_stop]
+	_check(got_fit[long43] == long43 and got_fit[two_sent] == two_sent.substr(0, two_sent.find("。") + 1) + "…"
+		and cut_ns.ends_with("…") and no_stop.begins_with(cut_ns.trim_suffix("…")) and cut_ns.length() > 28
+		and cut_ns.count("「") == cut_ns.count("」") and got_fit[short_note] == short_note,
+		"顶匾第二行收字定式：%d 字定长注记放得下原样过（得 %d 字）、两句长注记退到头句句末（得「%s」）、无句号长句按宽硬截不留落单「（得「%s」）、短注记原样过" % [
+			long43.length(), String(got_fit[long43]).length(), got_fit[two_sent], cut_ns])
+	# 纯函数（假尺：一字一格）：放不下退到句末，句末都放不下按宽硬截；硬截退到落单「之前、句读不留在「…」前
+	var unit := func(t: String) -> float: return float(t.length())
+	var fit_scr = load("res://scripts/SeaChart.gd")
+	_check(fit_scr.fit_strip_note("一二三。四五六七八。九十", 8.0, unit) == "一二三。…"
+		and fit_scr.fit_strip_note("一二三。四五六七八。九十", 12.0, unit) == "一二三。四五六七八。九十"
+		and fit_scr.fit_strip_note("甲乙丙丁「戊己庚辛壬」癸", 8.0, unit) == "甲乙丙丁…"
+		and fit_scr.fit_strip_note("甲乙丙，丁戊己庚", 5.0, unit) == "甲乙丙…",
+		"顶匾收字纯函数（一字一格的假尺）：句末收、整句过、硬截退到落单「之前、句读不留在「…」前")
 	sc.get("log_label").text = ""
 	sc.call("_on_battle_result", "win", {"boarded": true, "player_damage": 40.0, "fates": [{"fate": "struck", "type": "sea_falcon"}]})
 	var log1: String = sc.get("log_label").get_parsed_text()
@@ -1669,7 +1681,7 @@ func _v0928_crew_check(main: Node) -> void:
 ## 二之二（lane fx3）：夺船后弃战脱身——修前 flee 收战 data 不带夺船账，SeaChart 注记只写「转舵抢上风头…」，
 ## 夺来的船其实已在名册、水粮也没转，注记只字不提。现在：WorldMap 按引用记本场入册的那几格，flee 收战并进
 ## data.prizes / data.stores_moved；SeaChart 在脱战句后接 CombatFx.sea_prize_note（交代在前、账目在后，同战果注记三式，
-## 不加「接舷既定。」——弃战不是接舷定局）；顶匾第二行照 _refresh_strip 28 字截断定式收。
+## 不加「接舷既定。」——弃战不是接舷定局）；顶匾第二行照 _refresh_strip 收字定式收（lane w53-14 起按匾宽、按句）。
 ## 名册里先放一艘同名「快船」：凭船名认夺船会多记一艘，按引用认才对得上。
 func _v0928_prize_flee_check(Flt: Node, FX, pirate: Dictionary) -> void:
 	var ok_note := str(FX.sea_flee_ok_note())
@@ -1730,9 +1742,9 @@ func _v0928_prize_flee_check(Flt: Node, FX, pirate: Dictionary) -> void:
 	_check(in_reg and (Flt.get("ships") as Array).size() == 3,
 		"注记说入船籍：结算后夺来的「%s」仍在名册（%d 格）" % [r1[1], (Flt.get("ships") as Array).size()])
 	var strip_f: String = scf.get("_strip_line").get_parsed_text().get_slice("\n", 1).strip_edges()
-	var expect_f := raw_f if raw_f.length() <= 28 else raw_f.substr(0, 27) + "…"
-	_check(strip_f == expect_f,
-		"夺船后甩脱：顶匾第二行照 _refresh_strip 28 字收（实长 %d 字，匾上得「%s」）" % [raw_f.length(), strip_f])
+	# lane w53-14：匾按宽收，脱战句连夺船句四十来字放得下——整句上匾（原先截 28 字只剩「所夺「快船」一…」）
+	_check(strip_f == raw_f,
+		"夺船后甩脱：顶匾第二行按匾宽收，脱战句连夺船句整句上匾（%d 字，匾上得「%s」）" % [raw_f.length(), strip_f])
 	# 没夺船的弃战：原句一字不动
 	scf.get("log_label").text = ""
 	scf.call("_on_battle_result", "flee", {"flee_ok": true})
@@ -1771,7 +1783,7 @@ func _v0928_prize_flee_check(Flt: Node, FX, pirate: Dictionary) -> void:
 ## 二之三（lane w19-g2）：夺船后旗舰沉没——修前 WorldMap 只在 flee 收战时并夺船账，lose{sunk} 不带 prizes，
 ## SeaChart 沉船句只写「旗舰沉没，该船货物随船。…余船尚在。船体受损 N。」，夺来的船已在名册、「余船」里就有它，注记不交代。
 ## 现在：旗舰沉没也走 _prize_ledger（按名册格认），夺船句夹在「余船尚在。」与「船体受损」之间（交代在前、账目在后），
-## 顶匾第二行照 _refresh_strip 28 字截断定式收；全队俱没不写夺船句（随后 _sink 清船，写「已入船籍」反成虚账）。
+## 顶匾第二行照 _refresh_strip 收字定式收（lane w53-14 起按匾宽、按句）；全队俱没不写夺船句（随后 _sink 清船，写「已入船籍」反成虚账）。
 ## 夺船带不带走水粮水手属 V0928-7，不改：本地线夺船不转水粮，恒写「未及搬过」。名册先放一艘同名「快船」对账。
 func _v0928_prize_sunk_check(Flt: Node, FX, pirate: Dictionary) -> void:
 	GS.from_dict({})
@@ -1830,9 +1842,10 @@ func _v0928_prize_sunk_check(Flt: Node, FX, pirate: Dictionary) -> void:
 	_check(in_reg and (Flt.get("ships") as Array).size() == 3 and Flt.water == 300 and Flt.food == 300,
 		"注记说入船籍：结算后夺来的「%s」仍在名册（%d 格），水粮不因夺船变（水 %d 粮 %d）" % [taken, (Flt.get("ships") as Array).size(), Flt.water, Flt.food])
 	var strip: String = sc.get("_strip_line").get_parsed_text().get_slice("\n", 1).strip_edges()
-	var expect := line if line.length() <= 28 else line.substr(0, 27) + "…"
-	_check(strip == expect,
-		"夺船后旗舰沉没：顶匾第二行照 _refresh_strip 28 字收（实长 %d 字，匾上得「%s」）" % [line.length(), strip])
+	# lane w53-14：整句五十来字放不下，退到夺船句句末收「…」——「所夺「快船」…已入船籍」整句在匾上（原先截 28 字只剩「所夺「快…」）
+	var expect := line.substr(0, at_dmg) + "…"
+	_check(at_dmg > 0 and strip == expect,
+		"夺船后旗舰沉没：顶匾第二行退到夺船句句末收（%d 字，匾上得「%s」）" % [line.length(), strip])
 	# 没夺船的旗舰沉没：原句一字不动
 	sc.get("log_label").text = ""
 	sc.call("_on_battle_result", "lose", {"sunk": true, "player_damage": 0.0})

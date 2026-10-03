@@ -195,6 +195,7 @@ func _build_ui() -> void:
 	_strip_line.custom_minimum_size = Vector2(0, 56)
 	UiTheme.style_body(_strip_line)
 	strip_row.add_child(_strip_line)
+	_strip_line.resized.connect(_refresh_strip)  # 匾宽定了（首帧排版、超宽屏、拉窗口）按新宽重收第二行
 	mode_button = Button.new()
 	mode_button.text = "舆图"
 	mode_button.tooltip_text = "海图 / 舆图（地形）切换　T"
@@ -736,11 +737,52 @@ func _refresh_strip() -> void:
 			pct = int(clampf((total_li - remaining_li) / total_li, 0.0, 1.0) * 100.0)
 		# 验收 sail:SAIL-3：末日进度会冲过头，余程钳到 0，不显示负数
 		note = "航行　第 %d 日　行成 %d　余 %d 里" % [days_elapsed, pct, maxi(0, int(remaining_li))]
-	# Lane U：顶匾第二行截短，告警朱字与航讯不折行（strip 已 AUTOWRAP_OFF）
-	if note.length() > 28:
-		note = note.substr(0, 27) + "…"
+	# Lane U：顶匾第二行截短，告警朱字与航讯不折行（strip 已 AUTOWRAP_OFF）；按匾宽、按句收，见 _strip_note_fit（lane w53-14）
+	note = _strip_note_fit(note)
 	var dim := UiTheme.hex(UiTheme.TEXT_DIM)
 	_strip_line.text = line1 + "\n[color=#%s]%s[/color]" % [dim, note]
+
+
+## 顶匾第二行收字（lane w53-14 定「28 字匾额截断」一题）：按匾上实宽收，不按死字数。1280 宽下这一格约 844 像素、放得下
+## 四十来字，原先一律截 28 字——夺船、沉船这类交代句只剩「所夺「快…」，「「」也落了单，匾右边空着三百多像素。
+## 放得下整句照上；放不下退到放得下的最后一个句末（。！？）收「…」；头一句都放不下才按宽硬截。札记里全句照旧。
+## 匾还没排版（size 0：首帧前、不在树）按 1280 宽的匾宽算；排好后 resized 再按实宽重收一次。
+const STRIP_NOTE_FALLBACK_PX := 844.0
+const STRIP_NOTE_PAD_PX := 8.0
+
+
+func _strip_note_fit(note: String) -> String:
+	if _strip_line == null:
+		return note
+	var f: Font = _strip_line.get_theme_font("normal_font")
+	var fs: int = _strip_line.get_theme_font_size("normal_font_size")
+	var avail := (_strip_line.size.x if _strip_line.size.x > 0.0 else STRIP_NOTE_FALLBACK_PX) - STRIP_NOTE_PAD_PX
+	return fit_strip_note(note, avail, func(s: String) -> float: return f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+
+
+## 纯函数（探针可用假尺量）：measure(s) 给出 s 的宽。量得放得下原样返回；否则退到放得下的最后一个句末加「…」；
+## 一句都放不下按宽硬截加「…」——硬截处有没合上的「就退到那个「之前，句读、空白不留在「…」前。
+static func fit_strip_note(note: String, avail: float, measure: Callable) -> String:
+	if float(measure.call(note)) <= avail:
+		return note
+	var room := avail - float(measure.call("…"))
+	var best := 0
+	for i in note.length():
+		if not "。！？".contains(note[i]):
+			continue
+		if float(measure.call(note.substr(0, i + 1))) > room:
+			break
+		best = i + 1
+	if best > 0:
+		return note.substr(0, best) + "…"
+	var n := 0
+	while n < note.length() and float(measure.call(note.substr(0, n + 1))) <= room:
+		n += 1
+	var cut := note.substr(0, n)
+	var open := cut.rfind("「")
+	if open > 0 and cut.rfind("」") < open:
+		cut = cut.substr(0, open)
+	return cut.rstrip("，、；：　 ") + "…"
 
 
 func _panel_style() -> StyleBox:
