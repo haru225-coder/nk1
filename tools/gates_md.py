@@ -2,7 +2,7 @@
 """docs/GATES.md §一（门禁总表 / 门禁开关与附属自检 / 截图门禁明细 / 不算门禁）、§二（批量巡检）与 §四（CI 建议步骤）
 按 tools/gate_json.py 的注册表生成，本脚本校验二者一致；§三「一键人读全跑」与 .claude/todo.md 验证段是手写，只比对。
 附属自检（一键跑把关判据自检「三之一」，lane w20-b3）与 §一 附属表同册：禁带字样 / 漏跑 / 道数不符 / README 道数见 §三.19。
-§一 尾句断言（lane w49-k4）与 §一 附属表同册（「二、docs/GATES.md」生成块计数域内）：(a) 道数 = 注册表一键跑条数；(b) lane 枚举行集合 = 注册表 lane 集——w48-k1 升格实证零断言格升格链滞一格零红照补。
+§一 尾句断言（lane w49-k4）与 §一 附属表同册（「二、docs/GATES.md」生成块计数域内）：(a) 道数 = 注册表必跑档条数（纯 must-tier，与生成器§一尾句 M 格同口径；lane w50-k1 拨正——旧判 M=一键跑条数含 step 与生成块实产物 1 位差错位竿红）；(b) lane 枚举行集合 = 注册表 lane 集——w48-k1 升格实证零断言格升格链滞一格零红照补。
 「二、docs/GATES.md」另有 SHOT 张数逐条对账格（lane w29-k5）：SHOT_PROBES 每条的注册表张数 ↔ §一 同行张数字段，漂移逐支点名、不回读源码。
 「三、docs/GATES.md」另有 SHOT 张数格同型 clone（lane w33-k2，源 w30-k6 交主控 #2 / 审计-wave29 §85）：§四 / §二 生成块整块红一句「首处差异在第 k 行 / 逐字一致✗」不能逐支点名，row_sources(reg) 把两块的注册表出处行映成 (行 → 出处) 表，凡 in known 的行判与注册表块逐字同、漂移逐支点名 id + 出处 + 行文书；known 外零源行（表头 / ``` / 第 0 步命令段等）照旧由整块格逐字一致兜。行格与整块格互补、不回读源码。
 
@@ -558,7 +558,8 @@ def main(argv):
               + ("" if rm_n == len(must) else "——「一键跑十六道」一阵子写成别的数，没人看得见（g8 W1 同类）"))
     # lane w49-k4：§一 尾句（每轮必跑本诺句，生成块块内、--write 会按注册表重排，但此前对它零断言——
     # 块外散文 §四 :635 系手拨格只有 prose 对账眼，同义高价值 §一尾句升格链漏一格零红）两断言：
-    # (a) 「『N 道 Python + …』M 道门禁」形·M = oneclick 条数（= must 计数 + step 数，与 README 道数格同型同口径）；
+    # (a) 「『N 道 Python + …』M 道门禁」形·M = 纯 must-tier 计数（lane w50-k1 拨正：旧竿 M = oneclick 条数含 step，
+    # 与生成器 render() §一尾句 M 格 cn(len(must)) 照）必跑档（纯 must、不含 step 导入步骤格）同口径——
     # (b) lane 枚举行集合 = 注册表 lane 档位置集（doc 行号与注册表 live 序位、set-wise）——
     # 手工枚举 19…n 道中升格 n 次即 n 处手拨断电（w46-k1 / w48-k1 升格都滞一格零竿，w48-k1 起枚举个数错亦零竿）。
     ws = [l for l in (body or "").splitlines() if l.startswith("每轮必跑（")]
@@ -568,7 +569,7 @@ def main(argv):
         live_rows = [g for g in gates if g["tier"] != "no"]
         lane_set = {str(i) for i, g in enumerate(live_rows, 1) if g["tier"] == "lane"}
         steps = [(i, g["id"]) for i, g in enumerate(live_rows, 1) if g["tier"] == "step"]
-        ocount = len(reg["oneclick"])
+        ocount = sum(1 for g in reg["gates"] if g["tier"] == "must")  # 必跑档条数 = 纯 must（不含 step 导入步骤），与生成器 §一尾句 M 格同口径
         mc = re.match(r"^每轮必跑（`.claude/todo.md` 验证段）："
                       + "".join(f"先跑步骤 {i} {re.escape(g)}（不判红绿），再跑" for i, g in steps)
                       + "「([一二三四五六七八九十]+)道 Python \\+ ([^」]+)」([一二三四五六七八九十]+)道门禁；"
@@ -578,7 +579,7 @@ def main(argv):
         if mc:
             no = cn_num(mc.group(3))
             check_part = "「" + mc.group(1) + "道 Python + " + mc.group(2) + "」形"
-            check(no == ocount, f"§一尾句道数 {check_part} M 道门禁 M={mc.group(3)} vs 注册表一键跑条数={ocount}"
+            check(no == ocount, f"§一尾句道数 {check_part} M 道门禁 M={mc.group(3)} vs 注册表必跑档条数={ocount}"
                   + ("" if no == ocount else "——升格链把本诺句滞一格零红（w48-k1 升格判据 1 M1 真实咬过，w49-k4 补竿）"))
             doc_set = set(filter(None, mc.group(4).split("、"))) if mc.group(4) else set()
             miss = sorted((lane_set - doc_set), key=int)
