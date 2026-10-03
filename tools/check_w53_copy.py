@@ -50,6 +50,11 @@
      cn_num 系帮手（GameManager.cn_num / Main._cn_num / CombatStatusHud.cn_num / FloodFire.cn_num）都认 liang；
      格式串里「%s」紧跟量词（成、阵、年、条、趟、石……）、不是「第%s」序数的，对应实参若是 cn_num(…) 就须带 true；
      手拼的 digits[…] + "成" 所在函数里须有「两」。序数（第二阵、二等、二舱）与记账体「海鹘二艘」（_cn_count）不在此列。
+  M. 职事效力提示每一句都要有代码接着（七轮）：酒馆募人卡品级下那行 effect_hint（雇入钮悬停也印）是玩家掂量雇谁的
+     依据。火长曾写「日行更远，不易失道」——迷航几率只看生路与航法（Voyage.LOST_*），不看火长，「不易失道」无此效力；
+     杂事曾写「买卖价差改善」——实是抽解与佣金打折（trade_cost_factor），价差是通事的效力（interpreter_edge）。
+     设计表（复刻设计 §职事）：火长日速 +6%/级、杂事抽解与佣金 −12%/级。提示按「，、；」切句，每句须在 ROLE_HINT_FN
+     登记接着它的 Crew 加成函数，该函数须读本职事的品级（level_of("<职事 id>")）、且在 Crew.gd 以外有调用。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -159,6 +164,19 @@ CN_HELPERS = (("scripts/GameManager.gd", "cn_num"), ("scripts/Main.gd", "_cn_num
               ("scripts/ui/CombatStatusHud.gd", "cn_num"), ("scripts/combat/FloodFire.gd", "cn_num"))
 # 防沉默绿：这几处「量词前带 liang 的 cn_num」必须被认出来（格式串 / 实参解析坏了时判红，不当绿）。
 CN_LIANG_MUST = (("scripts/ui/ChapterSheet.gd", "趟"), ("scripts/Main.gd", "阵"), ("scripts/ui/CombatStatusHud.gd", "成"))
+
+# ═══ 钉 M：职事效力提示的每一句 → 接着它的 Crew 加成函数（读本职事品级、Crew.gd 以外有调用）。
+ROLE_HINT_FN = {
+    "日行更远": "speed_factor",
+    "顶头逆风的折损减轻": "wind_floor",
+    "货物腐损与风涛货损减少": "cargo_loss_factor",
+    "抽解与佣金减少": "trade_cost_factor",
+    "在异国港口买卖更划算": "interpreter_edge",
+    "断粮时减员更少": "crew_loss_factor",
+    "士气回复更快": "morale_bonus",
+}
+CREW_JSON = "data/crew.json"
+CREW_GD = "scripts/core/Crew.gd"
 
 # ═══ 钉 I：上屏串逐字对正文字库的 cmap。字库是 subset_fonts.py 出的文楷子集，标题字 / 海图字缺字都回落到它。
 BODY_FONT = "assets/fonts/LXGWWenKai-Medium.ttf"
@@ -686,6 +704,29 @@ def _check_cn_helpers():
             FAILS.append(f"{rel}: {name} 不认 liang（带 true 也写不出「两」）")
 
 
+def _check_role_hints(roles, crew_src, game_src, tag):
+    """每个职事 effect_hint 的每一句：登记过、登记的函数读本职事品级、Crew.gd 以外有调用。返回核过的句数。"""
+    funcs = dict(_gd_funcs(crew_src))
+    n = 0
+    for r in roles:
+        rid, rname = str(r.get("id", "")), str(r.get("name", ""))
+        for clause in re.split(r"[，、；]", str(r.get("effect_hint", ""))):
+            clause = clause.strip("。 ")
+            if not clause:
+                continue
+            fn = ROLE_HINT_FN.get(clause)
+            if fn is None:
+                FAILS.append(f"{tag}: 职事「{rname}」提示「{clause}」没有登记接着它的 Crew 加成函数（ROLE_HINT_FN）"
+                             "——代码里没有这条效力就别写")
+                continue
+            n += 1
+            if f'level_of("{rid}")' not in funcs.get(fn, ""):
+                FAILS.append(f"{tag}: 职事「{rname}」提示「{clause}」登记的 Crew.{fn} 不读「{rid}」的品级——效力不归这个职事")
+            elif not re.search(r"(?<![\w.])Crew\.%s\(" % fn, game_src):
+                FAILS.append(f"{tag}: 职事「{rname}」提示「{clause}」登记的 Crew.{fn} 在 {CREW_GD} 以外没有调用——效力没接进游戏")
+    return n
+
+
 def _self_test():
     """每条钉至少一负样须抓到；抓不到 = 钉路已瞎，自检红。"""
     bad = []
@@ -763,6 +804,31 @@ def _self_test_liang():
     return bad
 
 
+def _self_test_role_hints():
+    """钉 M 自检：未登记的句、登记到别的职事的函数、没接进游戏的函数都须判红；照实的提示判绿。"""
+    crew_src = ('func level_of(r):\n\treturn 0\n\nfunc speed_factor() -> float:\n\treturn 1.0 + 0.06 * level_of("huozhang")\n\n'
+                'func interpreter_edge(p) -> float:\n\treturn 0.07 * level_of("tongshi")\n')
+    game = "var v := Crew.speed_factor()\nvar e := Crew.interpreter_edge(pid)\n"
+    cases = (
+        ([{"id": "huozhang", "name": "火长", "effect_hint": "日行更远"}], game, False),
+        ([{"id": "huozhang", "name": "火长", "effect_hint": "日行更远，不易失道"}], game, True),
+        ([{"id": "zashi", "name": "杂事", "effect_hint": "在异国港口买卖更划算"}], game, True),
+        ([{"id": "huozhang", "name": "火长", "effect_hint": "日行更远"}], "var e := Crew.interpreter_edge(pid)\n", True),
+    )
+    bad = []
+    saved = FAILS[:]
+    try:
+        for roles, g, want_red in cases:
+            FAILS.clear()
+            _check_role_hints(roles, crew_src, g, "self")
+            if bool(FAILS) != want_red:
+                bad.append(f"钉 M 自检：{roles[0]['name']}「{roles[0]['effect_hint']}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
+    return bad
+
+
 def _self_test_glyphs(cmap):
     """钉 I 自检：字库读出来要像个文楷子集（常用字在、基本汉字区不全在）；常用字句判绿，
     字库外的字判红。cmap 读坏（空 / 全收）时这里先红，不让后面整扫沉默放行。"""
@@ -828,6 +894,40 @@ def _scan_liang():
     _check_cn_helpers()
 
 
+def _scan_role_hints():
+    roles = json.load(open(os.path.join(ROOT, CREW_JSON), encoding="utf-8")).get("roles", [])
+    crew_src = open(os.path.join(ROOT, CREW_GD), encoding="utf-8").read()
+    game = []
+    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
+        for f in sorted(files):
+            p = os.path.join(dirpath, f)
+            if f.endswith(".gd") and p[len(ROOT) + 1:].replace(os.sep, "/") != CREW_GD:
+                game.append(_code_only_gd(open(p, encoding="utf-8").read()))
+    n = _check_role_hints(roles, crew_src, "\n".join(game), CREW_JSON)
+    if n < len(ROLE_HINT_FN):
+        FAILS.append(f"{CREW_JSON}: 钉 M 只核到 {n} 句职事提示，ROLE_HINT_FN 登记了 {len(ROLE_HINT_FN)} 句"
+                     "——提示读不到，或改了提示没同步登记表")
+
+
+def _code_only_gd(src):
+    """去掉 # 注释（字符串里的 # 不算），只留代码供「有没有调用」判断。"""
+    out, i, n = [], 0, len(src)
+    while i < n:
+        c = src[i]
+        if c in "\"'":
+            j = _skip_str(src, i)
+            out.append(src[i:j])
+            i = j
+            continue
+        if c == "#":
+            while i < n and src[i] != "\n":
+                i += 1
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
 def _scan_crew_left_wiring():
     rel = "scripts/GameManager.gd"
     src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
@@ -847,7 +947,7 @@ def main():
     glyph_fails = _self_test_glyphs(cmap)
     if glyph_fails:
         cmap = None
-    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + glyph_fails
+    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + glyph_fails
     _scan_gd_strings(cmap)
     _scan_json_text()
     _scan_data_glyphs(cmap)
@@ -858,6 +958,7 @@ def main():
     _scan_crew_left_wiring()
     _scan_cargo_frac()
     _scan_liang()
+    _scan_role_hints()
     all_fails = self_fails + FAILS
     if all_fails:
         print("结果：%d 项问题" % len(all_fails))
