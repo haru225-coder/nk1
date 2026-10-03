@@ -1,0 +1,23 @@
+{
+	"version": 1,
+	"cutscenes": {
+		"qap_w53_9_path": {
+			"letterbox": false,
+			"shots": [
+				{
+					"duration": 5.0,
+					"bg": "res://assets/bg_sea_route.jpg",
+					"transition_in": "cut",
+					"grade": "neutral",
+					"captions": [
+						{"t": 0.0, "style": "line", "text": "第一条"},
+						{"t": 4.5, "style": "line", "text": "第二条"}
+					]
+				}
+			]
+		}
+	},
+	"chapters": {},
+	"endings": {},
+	"port_banners": {}
+}

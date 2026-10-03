@@ -493,18 +493,19 @@ func _advance_input() -> void:
 	if _complete_transition():
 		return
 	var revealing := false
-	for e in _cap_live:
-		if e["started"] and not e["node"].is_revealed():
-			e["node"].finish_reveal()
-			revealing = true
-	if revealing:
-		return
-	var next_t := INF
+	var next_t_rel := INF
 	for e in _cap_live:
 		if not e["started"]:
-			next_t = minf(next_t, float(e["t"]))
-	if next_t < INF:
-		var shift := maxf(next_t - _shot_t, 0.0)
+			# 下一句没出的与提前一拍合一，连点不再多吃一拍（lane-w53-9：ink 转场 2.6 s 里两键才走一步）
+			next_t_rel = minf(next_t_rel, float(e["t"]) - _shot_t)
+			continue
+		if not e["node"].is_revealed():
+			e["node"].finish_reveal()
+			revealing = true
+	if revealing and next_t_rel >= INF:
+		return
+	if next_t_rel < INF:
+		var shift := maxf(next_t_rel, 0.0)
 		for e in _cap_live:
 			if not e["started"]:
 				e["t"] = float(e["t"]) - shift
