@@ -238,6 +238,44 @@ static func hex(c: Color) -> String:
 ## 挂到场景根上。缺的项继续落到引擎默认主题，这里只锁字体、钮和分隔线。
 static func apply(node: Control) -> void:
 	node.theme = theme()
+	hook_tooltips()
+
+
+## 悬停提示（tooltip）一行最宽这么多（提示字 16 时约三十字）；更长的折行，不再一条拉过整幅画面。
+const TIP_MAX_W := 480.0
+static var _tips_hooked := false
+
+
+## 引擎默认的悬停提示是一枚不折行的 Label（TooltipLabel），提示多长、小笺就多宽：顶匾记事的全文提示（泉州开城那条
+## 传闻 83 字、带「委办 N 日」前缀更长）一行 1300 多 px，宽过 1280 画布，两头被裁掉，偏偏这条提示就是给人看全文的。
+## Viewport 先把提示小笺挂进树、再量它的最小尺寸定位，这里在挂进树那一刻把超宽的提示改成定宽折行，各页的提示都一样。
+static func hook_tooltips() -> void:
+	if _tips_hooked:
+		return
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return
+	tree.node_added.connect(_fit_tooltip)
+	_tips_hooked = true
+
+
+static func _fit_tooltip(node: Node) -> void:
+	if not node is Label or (node as Label).theme_type_variation != &"TooltipLabel":
+		return
+	var tip := node as Label
+	var f := tip.get_theme_font("font")
+	var fs := tip.get_theme_font_size("font_size")
+	if f == null:
+		return
+	var widest := 0.0
+	for line in tip.text.split("\n"):
+		widest = maxf(widest, f.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+	if widest <= TIP_MAX_W:
+		return
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tip.custom_minimum_size = Vector2(TIP_MAX_W, 0)
+	# 折行按自身宽排：先给定宽，量最小高时就按这一宽折，小笺一出来就是折好的高
+	tip.size = Vector2(TIP_MAX_W, tip.size.y)
 
 
 static func theme() -> Theme:
