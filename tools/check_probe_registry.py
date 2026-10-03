@@ -62,7 +62,6 @@ EXEMPT = [
     ("japan_ship_probe.gd", "f7a6dc5 feat(ships)", "船近景四支之一，已接 shot_gate 压帧（gates_md 入册判据认它），截图档待挂"),
     ("letterbox_signal_probe.gd", "7a47d15 lane-gd12", "墨边收尾信号契约探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("qa_bribe_probe.gd", "2552fa8 lane-w23-a5", "塞钱 48 格实测表：断言全注掉的纯取证探针（现态留档，不判红绿）"),
-    ("qa_calendar_probe.gd", "f3f092e lane-w26-k9", "日历推进 / 改元显示断言探针：k11 因果链第三支漏网，本闸普查首红支，注册归后续 lane"),
     ("qa_contract_destinations_probe.gd", "5f41ab4 lane-w23-a8", "V0928 委办目的园取证探针（零断言纯取证，现态×A+ 豁免镜像留档）"),
     ("qa_contract_stock_probe.gd", "160c99e lane-iz2", "委办「凑得出」现货口径专项探针，断言随 lane-iz2 落地即验过"),
     ("qa_customs_duty_probe.gd", "2bbd7b7 lane-ea3", "市舶验引税率专项探针，税率公式归 verify_economy 必跑档复判"),
@@ -250,12 +249,17 @@ def overlay_mutate(kind):
     exempt = set(exempt_names())
     if kind == "E1":  # 拼错一个豁免名——对不上任何探针，须整闸红
         exempt = {n.replace(".gd", "X.gd") if n == "qa_fine_text_probe.gd" else n for n in exempt}
-    elif kind == "E2":  # 删一格豁免——现网留档探针 qa_calendar_probe 漏网，须整闸红
-        exempt.discard("qa_calendar_probe.gd")
-    elif kind == "E3":  # 覆盖名单缺一支（k11 原罪形：REGISTRY 里没有它）——须整闸红
-        cov.discard("qa_pirate_boat_probe.gd")
+    elif kind == "E2":  # 删一格豁免——现网留档探针漏网，须整闸红（w35-k1 换靶 qa_contract_destinations：
+        # 原靶 qa_calendar 收编入册，删它一格不再漏网；新靶真实在 EXEMPT、零断言纯取证留档，豁免删一格即真漏网）
+        exempt.discard("qa_contract_destinations_probe.gd")
+    elif kind == "E3":  # 覆盖名单缺一支（k11 原罪形：REGISTRY 里没有它）——须整闸红（w35-k1 换靶 qa_fold_dim：
+        # 原靶 pirate_boat 改任 E4 双列注入靶，此格换绑在册探针 fold_dim——覆盖缺一支必在漏网行点数）
+        cov.discard("qa_fold_dim_probe.gd")
     elif kind == "E4":  # 造双列：已在册探针（SHOT_PROBES 截图册）再买一格豁免——须被双列行格点出
-        cov.add("qa_calendar_probe.gd")
+        # （w35-k1 换靶 qa_pirate_boat：原靶 qa_calendar 收编后豁免行收删；换靶后格守纯机制——
+        # 覆盖 + 豁免两侧同注入，与旧版在册真实语义同构）
+        cov.add("qa_pirate_boat_probe.gd")
+        exempt.add("qa_pirate_boat_probe.gd")
     return sorted(probes), cov, exempt
 
 
@@ -268,7 +272,8 @@ def head_selftest():
     dual0 = run_dual(cov, exempt)
     check(not dual0, f"C0 现网名单双列为空（双列 {len(dual0)} 支）")
     # 反向格：E1 / E2 / E3 各须红且点的是那一支；E4 须点出双列那一支（0 支 = 双列判路瞎了）
-    expects = {"E1": "qa_fine_text_probe.gd", "E2": "qa_calendar_probe.gd", "E3": "qa_pirate_boat_probe.gd"}
+    expects = {"E1": "qa_fine_text_probe.gd", "E2": "qa_contract_destinations_probe.gd",
+               "E3": "qa_fold_dim_probe.gd"}
     for kind, want in expects.items():
         probes, cov, exempt = overlay_mutate(kind)
         miss = run_census(probes, cov, exempt)
@@ -276,16 +281,17 @@ def head_selftest():
               ("" if len(miss) > 3 else f"：{miss}") + "）——探不到 = 此闸已判不出这一形")
     _probes, cov, exempt = overlay_mutate("E4")
     dual = run_dual(cov, exempt)
-    check("qa_calendar_probe.gd" in dual, f"E4 反向格：双列 qa_calendar_probe.gd 被点出（实点 {len(dual)} 支"
+    check("qa_pirate_boat_probe.gd" in dual, f"E4 反向格：双列 qa_pirate_boat_probe.gd 被点出（实点 {len(dual)} 支"
           + ("" if len(dual) > 3 else f"：{dual}") + "）——探不到 = 双列判路已判不出这一形")
-    # E5（收尾闸零节先红格，w34-k1 新增）：照 §五.3 第 3/4 条断路径规格——本闸挂账识别由 TOLL_RE（§五.3
-    # 第 3 条块形状卡死）守；本格不问挂账超期的红帐——只问「挂账字样行被 TOLL_RE 认出」= 断路径关的识别；
-    # 变体上拆 = TOLL_RE 识别路径被断 or 字样行被改，本格即先红（认不出就红——§五.3 断路径零节先红）。
-    # 对照（蓝）：字样以外 21 行零不误伤。
+    # E5（收尾闸零节先红格，w34-k1 新增；w35 两支挂账先后由 k1 / k2 收编，基线拨至 0 支 / 21 行 EXEMPT）：
+    # 照 §五.3 第 3/4 条断路径规格——本闸挂账识别由 TOLL_RE（§五.3 第 3 条块形状卡死）守；本格不问挂账超期
+    # 的红帐——只问「挂账字样行被 TOLL_RE 认出」= 断路径关的识别；变体上拆 = TOLL_RE 识别路径被断 or 字样
+    # 行被改，本格即先红（认不出就红——§五.3 断路径零节先红）。real 现盘点 0 支 = 挂账收净；格仍守「字样行
+    # 再现必先被认出」之路。对照（蓝）：字样以外 21 行零不误伤。
     c5_names = sorted(e[0] for e in EXEMPT if TOLL_RE.search(e[2]))
-    want_c5 = ["qa_calendar_probe.gd", "qa_seachart_advance_probe.gd"]
+    want_c5 = []
     check(c5_names == want_c5,
-          f"E5 收尾闸断路径帐认格：TOLL_RE 认现网 23 行 EXEMPT 中「归后续 lane」字样行实点 {len(c5_names)} 支（{c5_names}）——打断 TOLL_RE 识别路径（字样变体）即先红")
+          f"E5 收尾闸断路径帐认格：TOLL_RE 认现网 21 行 EXEMPT 中「归后续 lane」字样行实点 {len(c5_names)} 支（{c5_names}）——打断 TOLL_RE 识别路径（字样变体）即先红")
     e5_clean = [(e[0], e[1], e[2]) for e in EXEMPT if not TOLL_RE.search(e[2])]
     check(all(not TOLL_RE.search(e[2]) for e in e5_clean),
           f"E5 蓝对照：字样外行 21 行零不误伤（实点 0 队样）")

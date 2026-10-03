@@ -8,7 +8,8 @@ extends SceneTree
 ##      日历逻辑推 29 日跨到四月初一，页首须同步显示「四月初一」。
 ##   C2 状态不变量：页首月名 = 探针自拼参考月名（不引 Calendar.CN_NUM，防共同变量同错），
 ##      且与前月页文不同（防「月份不动时仍显示旧值」漏检）；与锚点月名一起核。
-##   C3 改元与纪年：景定元年正月一改元；年名须与日历 _era_row() 同一基准；推到 1276-06 景炎元年
+##   C3 改元与纪年：景定元年正月一改元；年名须与日历 _era_row() 同一基准；1276-04 德祐二年
+##      逐月切 1276-05 景炎元年（w35-k1 补，w32-k2 自荐料）；推到 1276-06 景炎元年
 ##      （表外锚：景炎 1276-05 起用，ERA_START 1276,5）、1278-05 祥兴元年。
 ## 用法：godot --headless --path . -s res://tools/qa_calendar_probe.gd
 ## 输出末行 CALENDAR_PROBE fails=N；N>0 时 exit 1。
@@ -178,6 +179,18 @@ func _c3_era_and_names() -> void:
 	var era_ey: String = str(peep_row[2]) + ("元年" if ey == 1 else _cn(ey) + "年")
 	_expect(page.contains(era_ey),
 		"景定元年：页首纪年「%s」（实读前 60：%s）" % [era_ey, page.substr(0, 60)])
+
+	# 德祐二年四月 → 景炎元年五月：逐月切换格（w35-k1 补，w32-k2 自荐料；景炎 1276-05 起用，ERA_START 1276,5）
+	cal.from_dict({"year": 1276, "month": 4, "day": 1})
+	_repaint()
+	page = str(_book_text())
+	_expect(page.contains("德祐二年"),
+		"1276-04 页首显示「德祐二年」（实读前 60：%s）" % page.substr(0, 60))
+	cal.from_dict({"year": 1276, "month": 5, "day": 1})
+	_repaint()
+	page = str(_book_text())
+	_expect(page.contains("景炎元年"),
+		"1276-05 页首显示「景炎元年」（实读前 60：%s）" % page.substr(0, 60))
 
 	# 景炎元年六月（表外锚：景炎 1276-05 起用，ERA_START 1276,5）
 	cal.from_dict({"year": 1276, "month": 6, "day": 5})

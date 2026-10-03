@@ -466,6 +466,23 @@ REGISTRY = [
      "green": "逐条 `  ✓ …` + 末行 `SEACHART_ADV cases=15 fails=0`",
      "red": "`  ✗ …` 行（如名号缺字 / 静风日数不合 / 跨月不改印 / 留旧月值 / 出航不隐 / 抵港不复现 / 长程跨月名号消失）"
             "+ 末行 `SEACHART_ADV cases=N fails=M`（M>0），退 1"},
+    {"id": "qa_calendar_probe", "tier": "lane",
+     "when": "动 scripts/core/Calendar.gd（日推进 / 改元表 / ERA_START / _era_row / 中文数字月日名）"
+             "或船籍簿页首行上屏链（LedgerPage.update_panel 的日历行 / Main.status_label / update_status_panel），"
+             "或动 tools/qa_calendar_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_calendar_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_calendar_probe.gd"],
+     "judge": "（探针 f3f092e lane-w26-k9 立、EXEMPT 挂账实过 26 波，w35-k1 收编——同 w31-k3 8170079 收编先例）"
+              "真场景树 C1–C3 把「宝祐三年　三月初一」是会被玩家推进的真日历钉成运行时断言 36 案："
+              "C1 开局挂树页首印「宝祐三年　三月初一」，advance_days(29) 印「三月三十」、再 +1 跨月印「四月初一」；"
+              "C2 页首月名 = 探针自拼参考月名（不引 Calendar.CN_NUM，防共同变量同错）12 月逐月各核 + 与前月页文不同（LCD）；"
+              "C3 改元与纪年——景定元年正月一改元、页首年号 = 日历 _era_row() 同一基准不抄表；"
+              "1276-04 印「德祐二年」、1276-05 印「景炎元年」逐月切换（w32-k2 自荐料：景炎 1276-05 起用，ERA_START 1276,5）、"
+              "1276-06 印「景炎元年　六月初五」、1278-05 印「祥兴元年」、祥兴元年正月三十 +1 日 = 「二月初一」年号不变。"
+              "本进程 SCRIPT ERROR 即红。末行 `CALENDAR_PROBE cases=N fails=M`，M>0 退 1",
+     "green": "逐条 `  ✓ …` + 末行 `CALENDAR_PROBE cases=36 fails=0`",
+     "red": "`  ✗ …` 行（如开局日不对 / 推进页首不随动 / 月名对不上或同值漏检 / 改元切换错位 / 正月三十跨月不进）"
+            "+ 末行 `CALENDAR_PROBE cases=N fails=M`（M>0），退 1"},
 ]
 
 # w27-k4 CHECK FOLLOWS
