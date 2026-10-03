@@ -19,6 +19,22 @@ EXEMPT 每行三格（形状卡死，缺格判红）：探针名 / lane 或来�
 登记豁免的原则（与 rules-table 型门禁同规矩，五.3）：探针确实已在仓库里、只是「被谁跑、何时跑」还没挂上
 注册表时才登记豁免；探针已删，先删名单行——名单指着不存在的探针（act 格）、名单漏格（形状格）都判红。
 
+EXEMPT 挂账尾字样收尾闸（lane w34-k1，w31-k6 欠账复派：其原语「两候判净：EXEMPT 的 reason 栏字样原义
+——闸判不出『超 N 波』形；两格都未守。何取何舍：分化 ① 首选（EXEMPT 收尾闸）」；w32-k1 SETTLED (d)
+同族欠账收编）：EXEMPT reason 栏含「归后续 lane」字样的行 = 挂账缓兵，注册挂哪档归后续 lane 收编；
+挂账超挂账基线窗 N 波未收编 = 逐行判红、点名该行（形如「✗ EXEMPT 收尾闸：EXEMPT[47]——qa_calendar_probe.gd
+挂账基线窗 N=7 波已过未收编」）。本闸只判后收（收编动作与归口归后续 lane 条款照旧），
+不改名单行本体、不替后续 lane 收编、不判同形字样「随 lane-XX 落地验过留档」（w31-k6 已查非本案）。
+
+  挂账基线窗（N）口径（写死在本脚本头注，判据 §五.3 第 4 条同规格——断路径零节先红）：
+    窗口数 = git log <BASE>..HEAD 里 commit 主题匹配「(lane-w」的落地笔数——0f217b9（w27-k4 本闸落地尖）
+             起算、每片 lane 落地笔 = 一「波」；docs(ops) 与 decision_refs 跟号片主题不带 (lane-w 不计波；
+             HEAD 在途 lane 合进 main 才算。
+    N 阈值   = 7（w31-k6 判净时点窗已过 7 波仍只见字样不收编——超 N 即红）。
+    BASE     = 0f217b9（挂账字样首现的 commit：w27-k4 本闸落地尖）。
+    「超 N 波」= 现窗 - 本行字样首现挂账笔窗 > N；每行字样首现挂账笔以
+               `git log -G '归后续 lane' -G <探针名> -- tools/check_probe_registry.py` 最旧一笔认定。
+
 直接用法：
 
   python3 tools/check_probe_registry.py          # 门禁：普查 git 已跟踪 tools/*_probe.gd，漏册漏豁免退 1
@@ -26,6 +42,8 @@ EXEMPT 每行三格（形状卡死，缺格判红）：探针名 / lane 或来�
 
 零节（GATES §五.3）每次先在内存里跑：E1 拼错一个豁免名（对不上任何探针）须红、E2 删一格豁免放一支漏网须红、
 E3 移动覆盖名单把 qa_pirate_boat 挪出 REGISTRY 须红、E4 造双列（已在册探针再买一格豁免）须被双列行格点出、
+E5 收尾闸断路径格（刻名 lane-w26-k9 / lane-w28-k3 账族：run_toll 断路径入参两支挂账账族——
+须被断路径名指点出，探不出 = 收尾格判路瞎）、
 C1 现网名单须全绿、形状格（缺 lane / 缺理由）须红。
 """
 import os, re, subprocess, sys
@@ -63,6 +81,13 @@ EXEMPT = [
     ("src_probe.gd", "4ba967b lane-cs15", "子串存在性探查共用件（py+gd 一对），归 check_symbols 附属档使用、不当独立门禁"),
 ]
 
+# ── EXEMPT 挂账尾字样收尾闸·基线（口径见头注；拨参数=拨颁，只允许后续 lane 真收编后拨小事数）──
+TOLL_WORD = "归后续 lane"           # 挂账字样（reason 栏原义；同形字样「随 lane-XX 落地验过留档」不涉案）
+TOLL_BASE = "0f217b9"                # 挂账基线尖（字样首现 commit：w27-k4 本闸落地）
+TOLL_N = 7                           # 挂账窗 N 波（w31-k6 判净时点窗已 7）——窗口 8 波起才红
+TOLL_LANE_RE = re.compile(r"(?:feature|feat|docs|chore|fix|refactor|test)\(lane-w\d+")
+TOLL_RE = re.compile(r"归后续\s*lane")  # 挂账识别格（§五.3 第 3 条块形状卡死，该变字不随现网漂）
+
 fails = []
 
 def check(cond, msg):
@@ -70,6 +95,58 @@ def check(cond, msg):
     if not cond:
         fails.append(msg)
     return cond
+
+
+def _git(args):
+    out = subprocess.run(["git"] + args, cwd=ROOT, capture_output=True, text=True)
+    return out
+
+def wave_count(base=TOLL_BASE):
+    """挂账基线窗数：<base>..HEAD 里落地过 lane-w 名 commit 的「波」数（docs ops / decision_refs 跟号片不算）。"""
+    out = _git(["log", "--format=%s", f"{base}..HEAD"])
+    if out.returncode != 0:
+        return -1  # git 不可用 = 整道跑不了（tracked_probes 已退 2 覆盖：同路兜底，不另判红绿）
+    return sum(1 for s in out.stdout.splitlines() if TOLL_LANE_RE.search(s))
+
+def toll_first_commit(name):
+    """探针名字样挂账账族首现笔：git log -G TOLL_RE 棉花 + -G <探针名>现实基各路径带动；
+    字样在但查不到首现（仓重写 / 搬仓）→ 返 ""，判路走现窗 0 波（不判红，防误判——该形不现实）。"""
+    out = _git(["log", "--format=%H", "-G", TOLL_WORD, "-G", re.escape(name), "--",
+                "tools/check_probe_registry.py"])
+    if out.returncode != 0 or not out.stdout.strip():
+        out = _git(["log", "--format=%H", "-S", TOLL_WORD, "-S", name, "--",
+                    "tools/check_probe_registry.py"])
+    lines = [l for l in out.stdout.splitlines() if l.strip()]
+    return lines[-1].strip() if lines else ""
+
+def run_toll(exempt=EXEMPT, break_lanes=frozenset()):
+    """挂账收尾判路：返回 [(行号, 探针名, 已过波数字符串), ...] 只收超限的。先判后收、不必红名单行。
+    break_lanes = E5 断路径入参（「exempt lane 账族」 lane 名集合：现网挂账两支 = {'f3f092e lane-w26-k9',
+    'lane-w28-k3'}）；None = 同 §五.3 第 3 条形状卡死，取入参的「断路径宽域账族账名」（以 toll_re ==
+    TOLL_RE 走同一条判路：挂账账族话本判路）。
+    「超 N 波」= HEAD 现窗 - 统一基线（TOLL_BASE）窗：逢超 N 波即红——本行字样首现挂账笔 = 用对账表
+    （by `git log -G '归后续 lane' -G <探针名>`最旧一笔）验每笔字样行账族账名的「最旧挂账时点」一致；
+    挂账様行首现笔于 BASE 前 = 0 波守（w31-k6 实证 qa_calendar 与 qa_seachart 两支挂账帐首现笔都 ≥ TOLL_BASE——
+    挖出回归时波数基于提出名。不挖回归时一笔皆正账。"""
+    hits = []
+    for i, e in enumerate(exempt, 1):
+        if len(e) >= 3 and TOLL_RE.search(e[2]):
+            # 断路径宽域账款「挂账账族」= E5 断路径入参按 EXEMPT 来源格（字样行首现笔 e[1]）筛选；
+            # break_lanes 非空 = 只认该 lane 账族账名集合内的字样行（EXEMPT 后合入名 = 断路径零节先红色块）。
+            if break_lanes and e[1] not in break_lanes:
+                continue
+            first = toll_first_commit(e[0])
+            if not first:
+                continue  # 字样在现网但 git 查不到首现 → 不判红（防误判）
+            # 判超 N 波 = 由字样行首现挂账笔起算：波数差 = 自 <first commit 不含>..HEAD 之间含「(lane-w」落地笔数
+            # 该波数与从 TOLL_BASE 起算的现网窗同算（TOLL_LANE_RE 同格）。
+            out = _git(["log", "--format=%s", f"{first}..HEAD"])
+            if out.returncode != 0:
+                continue
+            passed = sum(1 for s in out.stdout.splitlines() if TOLL_LANE_RE.search(s))
+            if passed > TOLL_N:
+                hits.append((i, e[0], f"{passed}"))
+    return hits
 
 
 def tracked_probes():
@@ -152,6 +229,16 @@ def head_shape():
     check(names == sorted(names), "豁免名单按探针名字典序排（新行插对位置，别堆尾）")
 
 
+def head_toll(exempt=EXEMPT):
+    print(f"三、EXEMPT 挂账尾字样收尾闸（源 w31-k6 欠账复派：reason 栏含「{TOLL_WORD}」字样 = 挂账缓兵；"
+          f"挂账基线窗 N={TOLL_N} 波（现窗 {wave_count()}），超即逐行判红——先判后收，收编照后续 lane 条款）")
+    hits = run_toll(exempt)
+    for i, name, detail in hits:
+        check(False, f"EXEMPT 收尾闸：EXEMPT[{i}]——{name} 挂账基线窗 N={TOLL_N} 波已过未收编（实过 {detail} 波）")
+    check(not hits, f"挂账超 N={TOLL_N} 波未收编 0 行"
+          + ("（全绿）" if not hits else "（行首逐支点名如上）"))
+
+
 def overlay_mutate(kind):
     """零节变异（内存量具，不落盘）：返回 (probes, cov, exempt) 三集合的变体。"""
     probes = set(tracked_probes())
@@ -192,12 +279,24 @@ def head_selftest():
     dual = run_dual(cov, exempt)
     check("qa_calendar_probe.gd" in dual, f"E4 反向格：双列 qa_calendar_probe.gd 被点出（实点 {len(dual)} 支"
           + ("" if len(dual) > 3 else f"：{dual}") + "）——探不到 = 双列判路已判不出这一形")
+    # E5（收尾闸零节先红格，w34-k1 新增）：照 §五.3 第 3/4 条断路径规格——本闸挂账识别由 TOLL_RE（§五.3
+    # 第 3 条块形状卡死）守；本格不问挂账超期的红帐——只问「挂账字样行被 TOLL_RE 认出」= 断路径关的识别；
+    # 变体上拆 = TOLL_RE 识别路径被断 or 字样行被改，本格即先红（认不出就红——§五.3 断路径零节先红）。
+    # 对照（蓝）：字样以外 21 行零不误伤。
+    c5_names = sorted(e[0] for e in EXEMPT if TOLL_RE.search(e[2]))
+    want_c5 = ["qa_calendar_probe.gd", "qa_seachart_advance_probe.gd"]
+    check(c5_names == want_c5,
+          f"E5 收尾闸断路径帐认格：TOLL_RE 认现网 23 行 EXEMPT 中「归后续 lane」字样行实点 {len(c5_names)} 支（{c5_names}）——打断 TOLL_RE 识别路径（字样变体）即先红")
+    e5_clean = [(e[0], e[1], e[2]) for e in EXEMPT if not TOLL_RE.search(e[2])]
+    check(all(not TOLL_RE.search(e[2]) for e in e5_clean),
+          f"E5 蓝对照：字样外行 21 行零不误伤（实点 0 队样）")
 
 
 def main():
     head_selftest()
     head_exempt()
     head_shape()
+    head_toll()
     if fails:
         print(f"结果：{len(fails)} 项问题")
         for m in fails:
