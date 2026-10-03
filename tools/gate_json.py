@@ -329,7 +329,7 @@ REGISTRY = [
               "泊港 advance 水粮天数不动是设计（反向钉「不是 bug」）；正月三十 +1 落二月初一跨月当天顶匾仍印新值（防月结静默清空）；"
               "直拨水粮池 water=food=10→3 日 + 整行须同时含「钱 」「水粮 」「 日」三个骨架格（LCD 尾哨）。本进程 SCRIPT ERROR 即红。"
               "末行 `LEDGER_STRIP_PROBE cases=N fails=0`，fails>0 退 1",
-     "green": "逐条 `  ✓ …` + 末行 `LEDGER_STRIP_PROBE cases=25 fails=0`",
+     "green": "逐条 `  ✓ …` + 末行 `LEDGER_STRIP_PROBE cases=27 fails=0`",
      "red": "`  ✗ …` 行（如顶匾缺格 / 账变屏不变（LCD）/ 泊港水粮被扣 / 跨月静默清空 / 旧值仍印）+ 末行 `LEDGER_STRIP_PROBE cases=N fails=N`（N>0），退 1"},
 
     {"id": "qa_economy_panel_probe", "tier": "lane",
@@ -344,7 +344,7 @@ REGISTRY = [
               "「自景炎二年　冬月初一至于祥兴二年　十月初一」与则数凡月数、折叠内【月息】恰 24 则、末则原文「蕃商结息 N 钱，现欠 M。」与探针自对照账"
               "（3% 月复利 24 期，不引 GameState 常量防共同变量同错）字字相符；无债跳年册页与札记全本俱不见「蕃商结息」「现欠」（反向格）。"
               "本进程 SCRIPT ERROR 即红。末行 `ECON_PANEL_PROBE cases=N fails=0`，fails>0 退 1",
-     "green": "逐条 `  ✓ …` + 末行 `ECON_PANEL_PROBE cases=17 fails=0`",
+     "green": "逐条 `  ✓ …` + 末行 `ECON_PANEL_PROBE cases=19 fails=0`",
      "red": "`  ✗ …` 行（如级别名不跳 / 白走一年造真 / 册页题头或起讫句变 / 折叠头则数凡月数漂移 / 【月息】原文与对照账不符 / 无债跳年见息字）"
             "+ 末行 `ECON_PANEL_PROBE cases=N fails=N`（N>0），退 1"},
 
@@ -360,7 +360,7 @@ REGISTRY = [
               "反向：人走后当月札记不添新墨，顶批仍是上月三则。C2【改元】：1278 四月历走一页抵五月，"
               "页首「景炎三年」换印「祥兴元年」、旧号「景炎」不再上屏；改元无札记通告，全本札记不着「改元」「祥兴」字样（反向格）。"
               "本进程 SCRIPT ERROR 即红。末行 `FOLD_NOTICE cases=N fails=0`，fails>0 退 1",
-     "green": "逐条 `  ✓ …` + 末行 `FOLD_NOTICE cases=13 fails=0`",
+     "green": "逐条 `  ✓ …` + 末行 `FOLD_NOTICE cases=15 fails=0`",
      "red": "`  ✗ …` 行（如欠饷原文变 / 欠满三月不走 / 人去仍添墨 / 元历不换印 / 旧年号残留 / 札记见息义字样）"
             "+ 末行 `FOLD_NOTICE cases=N fails=N`（N>0），退 1"},
 
@@ -418,7 +418,7 @@ REGISTRY = [
               "折起「[url=fold:0]【同一折句】（点开）[/url]」、点开后折头转（收起）、月行 "
               "`[url=fold:0:<ym>]` 引子与（点开 / 收起）、原文缩一格淡一档「　」逐字钉。"
               "本进程 SCRIPT ERROR 即红。末行 `CREW_FOLD cases=N fails=M`，M>0 退 1",
-     "green": "逐条 `  ✓ …` + 末行 `CREW_FOLD cases=17 fails=0`",
+     "green": "逐条 `  ✓ …` + 末行 `CREW_FOLD cases=19 fails=0`",
      "red": "`  ✗ …` 行（如工食合计数不符 / 欠满三月不走 / 册空仍添墨 / 折头或月行字样漂移 / 淡色缩进变）"
             "+ 末行 `CREW_FOLD cases=N fails=M`（M>0），退 1"},
 
@@ -461,7 +461,7 @@ REGISTRY = [
               "引子 [url=fold:1:<ym>] 与「通告 1 则（点开）」逐字在内。"
               "D3 相变——同一摆场 dim=false 全串无 [color=，转 true 次则折头裹色（褪色随档转、不是常染）。"
               "本进程 SCRIPT ERROR 即红。末行 `FOLD_DIM cases=N fails=M`，M>0 退 1",
-     "green": "逐条 `  ✓ …` + 末行 `FOLD_DIM cases=8 fails=0`",
+     "green": "逐条 `  ✓ …` + 末行 `FOLD_DIM cases=10 fails=0`",
      "red": "`  ✗ …` 行（如次则不褪色 / 头则误染色 / 折行排头双层变 / 换档不转色）"
             "+ 末行 `FOLD_DIM cases=N fails=M`（M>0），退 1"},
 
@@ -479,7 +479,7 @@ REGISTRY = [
               "C3 出航正隐——sailing 时「航段」名号自面板隐去、抵港后随原名号复现；"
               "C4 跨越多月长程：泉州→博多跨 ≥1 月，「航段　博多唐房」名号随当值月风逐月仍在。"
               "本进程 SCRIPT ERROR 即红。末行 `SEACHART_ADV cases=N fails=M`，M>0 退 1",
-     "green": "逐条 `  ✓ …` + 末行 `SEACHART_ADV cases=15 fails=0`",
+     "green": "逐条 `  ✓ …` + 末行 `SEACHART_ADV cases=17 fails=0`",
      "red": "`  ✗ …` 行（如名号缺字 / 静风日数不合 / 跨月不改印 / 留旧月值 / 出航不隐 / 抵港不复现 / 长程跨月名号消失）"
             "+ 末行 `SEACHART_ADV cases=N fails=M`（M>0），退 1"},
     {"id": "qa_calendar_probe", "tier": "lane",
@@ -496,7 +496,7 @@ REGISTRY = [
               "1276-04 印「德祐二年」、1276-05 印「景炎元年」逐月切换（w32-k2 自荐料：景炎 1276-05 起用，ERA_START 1276,5）、"
               "1276-06 印「景炎元年　六月初五」、1278-05 印「祥兴元年」、祥兴元年正月三十 +1 日 = 「二月初一」年号不变。"
               "本进程 SCRIPT ERROR 即红。末行 `CALENDAR_PROBE cases=N fails=M`，M>0 退 1",
-     "green": "逐条 `  ✓ …` + 末行 `CALENDAR_PROBE cases=36 fails=0`",
+     "green": "逐条 `  ✓ …` + 末行 `CALENDAR_PROBE cases=38 fails=0`",
      "red": "`  ✗ …` 行（如开局日不对 / 推进页首不随动 / 月名对不上或同值漏检 / 改元切换错位 / 正月三十跨月不进）"
             "+ 末行 `CALENDAR_PROBE cases=N fails=M`（M>0），退 1"},
 
@@ -516,11 +516,12 @@ REGISTRY = [
               "现网 _contract_destinations 不排被围港——态 A 红是设计内红（复现到 §八之四 P8 指的缺陷，"
               "不是探针没做实；w35-k1 『判定即红』同款机制），收编照旧入册。M1 附加参 `--mutate-siege-always` "
               "把被围判值倒成恒真（只动探针读口）→ 态 A 兴化 / 福州两案月多红。"
-              "headless -s 下 SCRIPT ERROR 不自非零退出：判绿须 rc=0 且末行 `QA_SIEGE_DEST_END` 在——"
-              "缺末行 = 中途错误空转（既非红亦非绿，按中断重跑）。",
+              "本进程 SCRIPT ERROR 另立 S 档即红（w53-11：`QA_SIEGE_DEST_S fails=K` 计入总 fails，态 A / B / C 判据不动）；"
+              "_run 半路被脚本错掐断由收尾包装判红退 1、不印末行——判绿仍须 rc=0 且末行 `QA_SIEGE_DEST_END` 在。",
      "green": "末三行 `SIEGE_DEST hits=N ok=M fails=0` + `结果：全部通过` + `QA_SIEGE_DEST_END`，退 0",
      "red": "`  ✗ …` 行（现网态 A 复现行：被围港掺队 / 报价目的落被围——设计内红，归于 §三 lane 档附注）"
-            "+ 末行 `SIEGE_DEST … fails=K`（K>0），退 1；`QA_SIEGE_DEST_END` 缺 = 中断，不计红绿"},
+            "+ 末行 `SIEGE_DEST … fails=K`（K>0），退 1；本进程脚本错 `✗ 运行中无 SCRIPT ERROR …` + `QA_SIEGE_DEST_S fails=K`（K>0）；"
+            "`QA_SIEGE_DEST_END` 缺且 rc=124 = 超时中断，不计红绿"},
 
 
     {"id": "qa_save_stale_count1_probe", "tier": "lane",
@@ -534,8 +535,9 @@ REGISTRY = [
               "K1 现网临界（visited_ports 恰 1 枚）；K2 三个触发位各仅 1 处指向 stale 港（visited_ports / last_port / "
               "contract.from）各落 count==1；K3 对照 0 枚（port 键不在）/ 双旧港 count==2 / 同 id 双现去重仍 count==1。"
               "`> 0` 被退化成 `> 1`（j3mut 实证在卷）则 K1/K2 整段漏报 → 本探针 fails≥1 诱曝，现样全绿。"
+              "本进程 SCRIPT ERROR 即红（w53-11：K1–K3 七案外另计两判——计数器自证 + 运行中 0 条；_run 半路被脚本错掐断由收尾包装判红退 1、不印末行）。"
               "末两行 `STALE_COUNT1 cases=N fails=M` + `QA_STALE_COUNT1_END`，M>0 退 1。",
-     "green": "逐条 `  ✓ …` + 末两行 `STALE_COUNT1 cases=7 fails=0` + `QA_STALE_COUNT1_END`，退 0",
+     "green": "逐条 `  ✓ …` + 末两行 `STALE_COUNT1 cases=9 fails=0` + `QA_STALE_COUNT1_END`，退 0",
      "red": "`  ✗ …count 期望 1 实得 0…`（`> 0→> 1` 漏报恰 1 枚——j3mut 退化纹）/ `… sample 期望 …` / "
             "`… examples 未 erase …` 各指名行 + 末两行 `STALE_COUNT1 cases=N fails=M`（M>0），退 1"},
     # lane w56-k3 升格：w53-10 SETTLED :954 落 tools/check_w53_copy.py（@79ab7e0）注册挂账未拍——w55-k3 判档段

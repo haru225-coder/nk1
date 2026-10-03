@@ -13,6 +13,12 @@ extends SceneTree
 ##   态 A 诸案与态 B 必红——判据防断言提前为真 / 读口作废。
 ## 用法：godot --headless --path . -s res://tools/qa_siege_destinations_probe.gd [-- --mutate-siege-always]
 
+## w53-11（二轮）：此前本支对 SCRIPT ERROR 只有「末行 QA_SIEGE_DEST_END 缺 = 中断」一道人眼兜——子函数里出的错
+## 照样跑到底、印末行（态 A 设计内红一盖，红因换了也看不出）；_run 自己出错则 quit 不执行、空转到超时。
+## 现接共用件 tools/script_err_tally.gd：本进程脚本错另立 S 档计红（态 A / B / C 判据不动），_run_guarded 包一层
+## 兜中止形（就地判红退 1）。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
 ## 代表货六种，产地 / 收货港分布拉开（茶走南洋东洋、香药回福建路，生丝销日本广州路）
 const REPORT_GOODS := ["fujian_porcelain", "raw_silk", "tea", "sea_salt", "aromatic_medicine", "silk_fabric"]
 ## 被围档面（与数据行 war 表逐一对：兴化两围、福州 1276-10、广州 1276-11）
@@ -29,10 +35,25 @@ var _fails_c: Array = []
 var _a_lines := 0
 var _ok := 0
 var _mutate_siege_always := false
+## 本进程 SCRIPT ERROR 另立 S 档（w53-11）：与态 A / B / C 分账——A 档设计内红判据不动
+var _fails_s: Array = []
+var _hits := 0
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+## _run 被脚本错半路掐断时 _report() 不会被调到——回到这里就地判红收尾，不留空转给外层 timeout
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_expect(false, "主流程跑到收尾（%s）" % _tally.abort_note(), _fails_s)
+		_report(false)
 
 
 func _run() -> void:
@@ -129,13 +150,23 @@ func _run() -> void:
 	_stage(gs, cal)
 	print("QA_SIEGE_DEST_C fails=%d" % _fails_c.size())
 
-	var fails := _fails_a.size() + _fails_b.size() + _fails_c.size()
-	print("SIEGE_DEST hits=%d ok=%d fails=%d" % [lines_shown, _ok, fails])
+	_hits = lines_shown
+	_report(true)
+
+
+## 收尾（w53-11 二轮从 _run 尾挪出；_run_guarded 包装层判中止时也走这里）：本进程 SCRIPT ERROR 两判记 S 档、
+## 计入总 fails。QA_SIEGE_DEST_END 仍只在 _run 跑到底时印——它是「跑到底」的唯一凭证；主流程被脚本错
+## 掐断的（headless -s 下 quit 不再执行、进程本会空转）由包装层判红退 1、不印末行。
+func _report(ran_to_end: bool) -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_expect(v[0], v[1], _fails_s)
+	print("QA_SIEGE_DEST_S fails=%d" % _fails_s.size())
+	var fails := _fails_a.size() + _fails_b.size() + _fails_c.size() + _fails_s.size()
+	print("SIEGE_DEST hits=%d ok=%d fails=%d" % [_hits, _ok, fails])
 	print("结果：%s" % ("全部通过" if fails == 0 else "%d 项未通过" % fails))
-	# 防 SCRIPT ERROR 中断：headless -s 下 GDScript 运行时错误不会让 Godot 非零退出（实测
-	# 中途 error 后 quit 不再执行、进程反而空转）；末行标语是唯一的「跑到底」凭证，
-	# 跑法的判绿须同时认 rc 与本行（见 GATES.md §三 lane 档「读」条）。
-	print("QA_SIEGE_DEST_END")
+	if ran_to_end:
+		print("QA_SIEGE_DEST_END")
 	quit(0 if fails == 0 else 1)
 
 

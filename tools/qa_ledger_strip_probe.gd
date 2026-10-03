@@ -24,6 +24,11 @@ extends SceneTree
 ## 同账面在 1255 三月初二 / 正月三十两个日历下 supply_days 同为 20——用来咬死「C2 变照
 ## 是『泊港不动是设计』、而非 advance 坏了」。
 
+## w53-11（二轮）：注册表判词「本进程 SCRIPT ERROR 即红」此前空转（没装 Logger：脚本错把断言整段跳过、
+## fails 不涨、headless -s 退出码守 0）——接共用件 tools/script_err_tally.gd 判红；_run_guarded 包一层兜
+## 「_run 自己的代码行出错即中止、quit 不再执行、进程空转到超时」那一形（就地判红退 1）。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
 var _main: Node
 var gs: Node
 var gm: Node
@@ -31,10 +36,22 @@ var cal: Node
 var fleet: Node
 var _fails := 0
 var cases := 0
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+## _run 被脚本错半路掐断时 _report() 不会被调到——回到这里就地判红收尾，不留空转给外层 timeout
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_expect(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _run() -> void:
@@ -219,5 +236,8 @@ func _c4_shape_and_lcd() -> void:
 
 
 func _report() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_expect(v[0], v[1])
 	print("LEDGER_STRIP_PROBE cases=%d fails=%d" % [cases, _fails])
 	quit(1 if _fails > 0 else 0)

@@ -11,16 +11,33 @@ extends SceneTree
 ## 用法：godot --headless --path . -s res://tools/qa_save_stale_count1_probe.gd
 ## 输出含 SCRIPT ERROR 即视为失败；末两行 `STALE_COUNT1 cases=N fails=M` + `QA_STALE_COUNT1_END`。
 
+## w53-11（二轮）：上行「输出含 SCRIPT ERROR 即视为失败」此前只是口头约定（没装 Logger：脚本错把 _case
+## 整案跳过、fails 不涨、headless -s 退出码守 0）——接共用件 tools/script_err_tally.gd 判红；_run_guarded 包一层兜
+## 「_run 自己的代码行出错即中止、quit 不再执行、进程空转到超时」那一形（就地判红退 1）。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
 const SLOT := 97
 const STALE_PORT := "old_haven"
 
 var sl: Node
 var fails := 0
 var cases := 0
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+## _run 被脚本错半路掐断时 _report() 不会被调到——回到这里就地判红收尾，不留空转给外层 timeout
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_expect(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report(false)
 
 
 func _run() -> void:
@@ -60,10 +77,29 @@ func _run() -> void:
 			"contract": {"from": "quanzhou", "dest": STALE_PORT}}},
 		{"port": {"count": 1, "sample": STALE_PORT}})
 
-	_cleanup()
+	_report(true)
+
+
+## 收尾（w53-11 二轮从 _run 尾挪出；_run_guarded 包装层判中止时也走这里，照样清存档位 97）：
+## SCRIPT ERROR 两判与 _case 同一张账；QA_STALE_COUNT1_END 只在 _run 跑到底时印。
+func _report(ran_to_end: bool) -> void:
+	_reported = true
+	if sl != null:
+		_cleanup()
+	for v in _tally.verdicts():
+		_expect(v[0], v[1])
 	print("STALE_COUNT1 cases=%d fails=%d" % [cases, fails])
-	print("QA_STALE_COUNT1_END")
+	if ran_to_end:
+		print("QA_STALE_COUNT1_END")
 	quit(1 if fails > 0 else 0)
+
+
+## _case 之外的判格（SCRIPT ERROR 两判 / 主流程中止）：与 _case 同一张账（cases / fails）、同一行形。
+func _expect(ok: bool, what: String) -> void:
+	cases += 1
+	print("  %s %s" % ["✓" if ok else "✗", what])
+	if not ok:
+		fails += 1
 
 
 # ── 造档：母本 _clean() 同型 ─────────────────────────────
