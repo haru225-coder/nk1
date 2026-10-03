@@ -22,7 +22,7 @@
      海商信用——船籍簿「海商信用　%d」、行会正文同；同页入行工席曾写「商誉」。
      硫黄——新闻「硫黄禁出海」、崖山「把粮与硫黄交上去」、萨摩横幅「硫黄所出」；牙行货名曾写「硫磺」。
      签——「籖」是「籤」的异体，简体正文只写「签」（新闻「太学签榜」曾夹此字）。
-     蒲家留意（四轮）——船籍簿「蒲家留意　%d」、市舶司页「蒲家留意 %d　尚无人留意」；市舶司小吏的疏通笺
+     蒲家留意（五轮）——船籍簿「蒲家留意　%d」、市舶司页「蒲家留意 %d　尚无人留意」；市舶司小吏的疏通笺
      曾写「关注　减 15」（「关注」是开发文档里的叫法，玩家面没有这个数）。
   G. 增减号后面要有数（三轮）：「名声 +」「士气 −」这类只有正负号没有数目的串即红；
      海图事件钮文写「（名声 +N）」的，按下去的处理函数须真是 GameState.fame += N。
@@ -41,6 +41,10 @@
      管海战场景与船（WorldMap / Ship / PirateShip / Cannonball）、scripts/combat/、scripts/ui/Combat* 的 CJK 串
      与 data/combat_*.json 的文本值。「敌船抛钩咬舷！」曾是全仓 gd 玩家串里唯一的叹号（同处「敌船抛钩落空」
      就没有）。copy_style 不再写「不用叹号」时本钉先红——规矩撤了就改本钉，不守一条已撤的规矩。
+  K. 札记写明的货损成数 = 实扣（六轮）：海图「献上买路财」拿不出钱时札记写「他们自己动手搬空了半个货舱」，
+     同一函数实扣 Fleet.lose_cargo_ratio(0.3)——每样货三成（向上取整），札记后面列的件数就是三成，与「半个」对不上。
+     函数里调了 lose_cargo_ratio(字面数) 的，玩家串写「半个货舱 / 半舱 / 一半的货」（0.5）或「N成货」（N/10）就须等于
+     实参；不调的不比（剧情里「一小份货」这类不写数的也不比）。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -133,6 +137,13 @@ DANGLING_SIGN_RE = re.compile(r"(%s)\s*[+−](?!\s*[0-9%%])" % "|".join(DELTA_WO
 EVENT_FAME_RE = re.compile(r'_add_event_action\("([^"]*（[^"]*名声 \+(\d+)[^"]*）)",\s*(_\w+)\)')
 # 防沉默绿：这几颗钮文必须被上面的正则抓到（钮文改了格式、正则抓空时判红，不当绿）。
 EVENT_FAME_MUST = ("交出一条船",)
+
+# ═══ 钉 K：札记写的货损成数 = 同一函数里 Fleet.lose_cargo_ratio 的字面实参。
+CARGO_FRAC_RE = re.compile(r"半个?货舱|半舱|一半的?货|([一二两三四五六七八九十])成的?货")
+CARGO_RATIO_RE = re.compile(r"lose_cargo_ratio\(\s*([0-9.]+)\s*\)")
+CN_DIGIT = {"一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
+# 防沉默绿：这几处札记的成数必须被抓到（札记改了写法、正则抓空时判红，不当绿）。
+CARGO_FRAC_MUST = (("scripts/SeaChart.gd", "_on_pay_pirates"),)
 
 # ═══ 钉 I：上屏串逐字对正文字库的 cmap。字库是 subset_fonts.py 出的文楷子集，标题字 / 海图字缺字都回落到它。
 BODY_FONT = "assets/fonts/LXGWWenKai-Medium.ttf"
@@ -504,6 +515,31 @@ def _neg_probe(kind, text):
         FAILS.extend(saved)
 
 
+def _gd_funcs(src):
+    """按行首 func 切函数：yield (函数名, 函数体)。"""
+    heads = list(re.finditer(r"^(?:static )?func (\w+)\(", src, re.M))
+    for k, m in enumerate(heads):
+        end = heads[k + 1].start() if k + 1 < len(heads) else len(src)
+        yield m.group(1), src[m.start():end]
+
+
+def _check_cargo_frac(src, rel):
+    """札记写的货损成数与同函数 lose_cargo_ratio 实参对齐；返回 [(函数名, 成数)]（供防沉默绿）。"""
+    seen = []
+    for name, body in _gd_funcs(src):
+        ratios = [float(x) for x in CARGO_RATIO_RE.findall(body)]
+        if not ratios:
+            continue
+        for lit, _pos in _gd_strings_only(body):
+            for m in CARGO_FRAC_RE.finditer(lit):
+                said = 0.5 if m.group(1) is None else CN_DIGIT[m.group(1)] / 10.0
+                seen.append((name, said))
+                if not any(abs(said - r) < 1e-6 for r in ratios):
+                    FAILS.append(f"{rel}: {name} 札记写「{m.group(0)}」（{said:g}），实扣 lose_cargo_ratio "
+                                 f"{' / '.join(f'{r:g}' for r in ratios)}：{lit[:40]}")
+    return seen
+
+
 def _self_test():
     """每条钉至少一负样须抓到；抓不到 = 钉路已瞎，自检红。"""
     bad = []
@@ -530,6 +566,26 @@ def _self_test_event_fame():
             seen = _check_event_fame(tpl % n, "self")
             if not seen or bool(FAILS) != want_red:
                 bad.append(f"钉 G 自检：回调 += {n} 判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
+    return bad
+
+
+def _self_test_cargo_frac():
+    """钉 K 自检：实扣 0.3、札记写「半个货舱」「两成货」须判红，写「三成货」须判绿；不调 lose_cargo_ratio 的函数不比。"""
+    bad = []
+    tpl = 'func _on_x() -> void:\n\tvar lost := Fleet.lose_cargo_ratio(0.3)\n\t_log("拿不出买路钱，他们自己动手%s。")\n'
+    saved = FAILS[:]
+    try:
+        for said, want_red in (("搬空了半个货舱", True), ("搬走了两成货", True), ("搬走了三成货", False)):
+            FAILS.clear()
+            seen = _check_cargo_frac(tpl % said, "self")
+            if not seen or bool(FAILS) != want_red:
+                bad.append(f"钉 K 自检：札记「{said}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+        FAILS.clear()
+        if _check_cargo_frac('func _on_y() -> void:\n\t_log("他们搬走了半个货舱。")\n', "self") or FAILS:
+            bad.append("钉 K 自检：不调 lose_cargo_ratio 的函数也被比了")
     finally:
         FAILS.clear()
         FAILS.extend(saved)
@@ -570,6 +626,22 @@ def _scan_event_fame():
             FAILS.append(f"{rel}: 钉 G 没抓到「{must}」钮文的「（名声 +N）」——钮文缺数或改了格式")
 
 
+def _scan_cargo_frac():
+    seen = set()
+    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
+        for f in sorted(files):
+            if not f.endswith(".gd"):
+                continue
+            p = os.path.join(dirpath, f)
+            rel = p[len(ROOT) + 1:].replace(os.sep, "/")
+            src = open(p, encoding="utf-8").read()
+            if "lose_cargo_ratio(" in src:
+                seen.update((rel, name) for name, _said in _check_cargo_frac(src, rel))
+    for rel, name in CARGO_FRAC_MUST:
+        if (rel, name) not in seen:
+            FAILS.append(f"{rel}: 钉 K 没抓到 {name} 札记里的货损成数——札记改了写法或正则抓空")
+
+
 def _scan_crew_left_wiring():
     rel = "scripts/GameManager.gd"
     src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
@@ -589,7 +661,7 @@ def main():
     glyph_fails = _self_test_glyphs(cmap)
     if glyph_fails:
         cmap = None
-    self_fails = _self_test() + _self_test_event_fame() + glyph_fails
+    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + glyph_fails
     _scan_gd_strings(cmap)
     _scan_json_text()
     _scan_data_glyphs(cmap)
@@ -598,6 +670,7 @@ def main():
     _scan_combat_data()
     _scan_event_fame()
     _scan_crew_left_wiring()
+    _scan_cargo_frac()
     all_fails = self_fails + FAILS
     if all_fails:
         print("结果：%d 项问题" % len(all_fails))
