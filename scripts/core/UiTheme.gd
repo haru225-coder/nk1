@@ -466,6 +466,12 @@ static func _ink_panel(content: Vector4, dense := false) -> StyleBox:
 		var solid := _dense_ink()
 		if solid != null:
 			(st as StyleBoxTexture).texture = solid
+		# 包角泥金钩占贴图 15–38 px：上下边距只切 20 时钩的下半截落进左右框沿与中心区，页面面板一高过约 860
+		# （800×600 / 4:3 / 5:4 / 竖屏），纵向 TILE_FIT 铺成两片，接缝处冒出面板正中的「田」字泥金块与框沿中段的碎钩。
+		# 上下切到 40 把钩整个收进上下两条，纵向再怎么铺都是干净的框线与墨底；左右仍 20，16:9 上沿腰花照旧。
+		# 只动 dense（页面面板，最矮也有百来 px）；plaque 顶匾只 76 px 高，上下各 40 会叠角，不动。
+		(st as StyleBoxTexture).texture_margin_top = 40
+		(st as StyleBoxTexture).texture_margin_bottom = 40
 	return st
 
 

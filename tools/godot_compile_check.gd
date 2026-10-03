@@ -133,6 +133,7 @@ const SCRIPTS := [
 	"res://tools/qa_fold_notice_probe.gd",  # lane w28-k2 札记折叠内非月息通告（【欠饷】按月 / 欠满三月 + 改元月历一瞥）原文断言（w27-k2 交主控①补新见）
 	"res://tools/qa_yard_transition_probe.gd",
 	"res://tools/qa_w53_8_codex_cols_probe.gd",  # lane w53-8 人物志名册格列数随页宽探针（超宽画布钉死九列）
+	"res://tools/qa_w53_8_panel_seam_probe.gd",  # lane w53-8 页面面板九宫纵向接缝探针（4:3 / 竖屏面板中腰冒泥金碎钩）
 	"res://tools/qa_w53_8_vision_layout_probe.gd",  # lane w53-8 市舶纪事 VisionStage 画布钉死 1280 实锤探针（↑INVENTORY_EXEMPT——未登记会卡 inventory 门禁）
 	"res://tools/qa_pirate_boat_probe.gd",  # 海寇快船 + 船图契约（lane pirate-boat-0928）
 	"res://tools/qa_w53_2_combat_probe.gd",  # lane w53-2 海战接舷 / 号令 / 收战账目专项探针
