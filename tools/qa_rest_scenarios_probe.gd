@@ -10,6 +10,12 @@ extends SceneTree
 ## 探针给旗标簿放进 hook_xinghua_asked，让仓内泉州真钩「追问兴化来人的下落」按 hide_if_flag 清出、
 ## 寺观工席确有贴文但没落进歇息这条路（跑完 erase 还原）→ 歇息 / 候钮一枚都不该混出来；两路串了线
 ## （歇候钮漏到别的工席）这里即红。
+## lane w48-k5（w28-k1 Verify 剩余未守面 ①②③ 补钉，追加 S4–S6 于既有 18 案后，既有 S1–S3 零改）：
+##   S4 在身委办剩 N 日时三枚旅店钮的「·误期」印尾逐字钉（歇 1 不带 / 歇 10・候 12 各带）+ 清净对照——
+##      原仅 verify_economy 静态锁、运行时无断言（①）；
+##   S5 「候 N 日」N 随日走：12-15 印「候 16 日　240」→ 历日 +1 重挂变「候 15 日　225」、旧印不残留（②）；
+##   S6 旅店/住处 rate 错挂交叉直钉：真按「歇 10 日　150」（INN_RATE 150「店中」）与「歇 3 日　15」
+##      （HOME_RATE 15「下处」）的扣钱 / 落日 / 记事原文逐字，互挂对方价即红（③，面值断言间接着住之外的第一根直钉）。
 ## 读的都是 scene 树现挂的可枚举面；不撬 Main 内部钩子、不改 qa_rest_days_probe.gd 一字。
 ## 用法：godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 ## 输出末行 REST_SCENARIOS cases=N fails=M；M>0 时 exit 1。
@@ -63,6 +69,9 @@ func _run() -> void:
 	await _s1_inn_face()
 	await _s2_home_face()
 	await _s3_cross_scenarios()
+	await _s4_overdue_mark()
+	await _s5_wait_n_rolls()
+	await _s6_rate_bind_press()
 
 	print("REST_SCENARIOS cases=%d fails=%d" % [cases, fails])
 	quit(1 if fails > 0 else 0)
@@ -212,3 +221,121 @@ func _s3_cross_scenarios() -> void:
 	gs.flags.erase("hook_xinghua_asked")
 	_check(tp.is_empty(), "寺观工席（该暗）歇息 / 候钮 0 枚（实 %d 枚：%s）" % [
 		tp.size(), " / ".join(tp.map(func(c: Dictionary) -> String: return _state_text(c["state"])))])
+
+
+## ── S4 「·误期」印尾（w28-k1 剩余未守面 ①）：在身委办 days_left < 钮面日数时，三枚旅店钮尾字逐字钉 ──
+func _s4_overdue_mark() -> void:
+	print("== S4 ·误期印尾（1277-10-19 委办剩 5 日：歇 1 不带尾 / 歇 10・候 12 各带「·误期」；清净对照全不带）")
+	_reset_day("xinghua", 1277, 10, 19)
+	_plant_contract(5)	# 剩 5 日（须在 _reset_day 后摆——reset 清档；due_day 现算见摆场证行）
+	var due_now: int = cal.absolute_day() + 5	# 现算（摆场日不同自动跟，免抄死数）
+	_check(int(gs.contract.get("due_day", -1)) == due_now and int(gs.contract_status().get("days_left", -1)) == 5,
+		"摆场证：委办在档（due_day=%d、剩 5 日——from_dict 原样保回即此钉，摆不进全部断言失真）" % due_now)
+	_main.load_scene(INN_SCENE)
+	await _settle(6)
+	var texts: Array = _collect_rest_chips().map(func(c: Dictionary) -> String: return str(c["state"][0]))
+	_check(texts.size() == 3, "误期景旅店歇・候钮仍恰 3 枚（实 %d 枚：%s）" % [texts.size(), " / ".join(texts)])
+	var want := ["歇 1 日　15", "歇 10 日　150·误期", "候 12 日　180·误期"]
+	for w in want:
+		_check(w in texts, "委办剩 5 日景钮面恰含「%s」（5<1 否、5<10 与 5<12 是——实读：%s）" % [w, " / ".join(texts)])
+	_reset_day("xinghua", 1277, 10, 19)	# 委办清净
+	_main.load_scene(INN_SCENE)
+	await _settle(6)
+	var clean: Array = _collect_rest_chips().map(func(c: Dictionary) -> String: return str(c["state"][0]))
+	var clean_want := ["歇 1 日　15", "歇 10 日　150", "候 12 日　180"]
+	_check(clean == clean_want, "清净景三钮逐字同且无「·误期」尾（实读：%s——钮面原印数不受委办影）" % " / ".join(clean))
+
+
+## 摆一笔在场委办：absolute_day+due_in_days 作 due_day 直走 from_dict 保档路（不撬 contract_offer 随机口）。
+func _plant_contract(due_in_days: int) -> void:
+	var due: int = cal.absolute_day() + due_in_days
+	gs.from_dict({"contract": {
+		"good_id": "grain", "qty": 1, "remaining": 1, "dest": "hakata", "from": "xinghua",
+		"purse": 100, "unit_purse": 100.0, "paid": 0, "due_day": due, "deadline_days": due_in_days,
+	}})
+
+
+## ── S5 「候 N 日」N 随日走（同 ②）：跨日后 load_scene 重挂，钮面印数须变天 ──────────
+func _s5_wait_n_rolls() -> void:
+	print("== S5 候 N 随日走（1277-12-15 印「候 16 日」→ 历日 +1 重挂印「候 15 日」，价同跟走）")
+	_reset_day("xinghua", 1277, 12, 15)
+	_main.load_scene(INN_SCENE)
+	await _settle(6)
+	var t0: Array = _collect_rest_chips().map(func(c: Dictionary) -> String: return str(c["state"][0]))
+	_check("候 16 日　240" in t0, "12-15 旅店候钮印「候 16 日　240」（实读：%s）" % " / ".join(t0))
+	_main.message_label.text = ""	# 只换历日不推日推链（advance_days 会带月结/委办 tick 一串效应）；跨日重挂前清屏，免旧屏条影 S6 读数
+	cal.advance_days(1)
+	_main.load_scene(INN_SCENE)
+	await _settle(6)
+	var t1: Array = _collect_rest_chips().map(func(c: Dictionary) -> String: return str(c["state"][0]))
+	_check("候 15 日　225" in t1, "跨日重挂候钮印变「候 15 日　225」（N 16→15、价 240→225 同跟——实读：%s）" % " / ".join(t1))
+	_check(not ("候 16 日　240" in t1), "旧印「候 16 日　240」不残留（实读：%s——钉死不变者此判红）" % " / ".join(t1))
+
+
+## ── S6 rate 错挂交叉直钉（同 ③）：旅店 (INN_RATE,店中) / 住处 (HOME_RATE,下处) 元组逐字互不通 ──
+func _s6_rate_bind_press() -> void:
+	print("== S6 rate 错挂交叉（泉州旅店歇 10 日按落 03-12 付 150「店中」；泉州住处歇 3 日按落 03-05 付 15「下处」）")
+	_reset_day("quanzhou", 1277, 3, 2)
+	_current_scene_setup("inn")
+	await _settle(6)
+	var b := _find_rest_button("歇 10 日　150")
+	if b == null:
+		_check(false, "旅店找不到「歇 10 日　150」钮（摆场败坏——实读：%s）" % " / ".join(
+			_collect_rest_chips().map(func(c: Dictionary) -> String: return str(c["state"][0]))))
+	else:
+		var m0: int = gs.money
+		b.pressed.emit()
+		await _settle(6)
+		var line := _last_rest_log()
+		_check(m0 - int(gs.money) == 10 * _main.INN_RATE,
+			"旅店按「歇 10 日　150」扣 %d = 10×INN_RATE(%d) = 150——旅店错挂 HOME_RATE 扣 50 即红" % [m0 - int(gs.money), _main.INN_RATE])
+		_check("%04d-%02d-%02d" % [int(cal.year), int(cal.month), int(cal.day)] == "1277-03-12",
+			"旅店歇 10 日落 1277-03-12（实落 %s）" % "%04d-%02d-%02d" % [int(cal.year), int(cal.month), int(cal.day)])
+		_check(line.contains("在店中歇了 10 日，付房钱 150。"),
+			"旅店记事屏条逐字含「在店中歇了 10 日，付房钱 150。」（place 错挂即红——实条：%s）" % line)
+	_reset_day("quanzhou", 1277, 3, 2)
+	_current_scene_setup("residence")
+	await _settle(6)
+	var h := _find_rest_button("歇 3 日　15")
+	if h == null:
+		_check(false, "住处找不到「歇 3 日　15」钮（摆场败坏——实读：%s）" % " / ".join(
+			_collect_rest_chips().map(func(c: Dictionary) -> String: return str(c["state"][0]))))
+	else:
+		var m1: int = gs.money
+		h.pressed.emit()
+		await _settle(6)
+		var hline := _last_rest_log()
+		_check(m1 - int(gs.money) == 3 * _main.HOME_RATE,
+			"住处按「歇 3 日　15」扣 %d = 3×HOME_RATE(%d) = 15——住处错挂 INN_RATE 扣 45 即红" % [m1 - int(gs.money), _main.HOME_RATE])
+		_check("%04d-%02d-%02d" % [int(cal.year), int(cal.month), int(cal.day)] == "1277-03-05",
+			"住处歇 3 日落 1277-03-05（实落 %s）" % "%04d-%02d-%02d" % [int(cal.year), int(cal.month), int(cal.day)])
+		_check(hline.contains("在下处歇了 3 日，付房钱 15。"),
+			"住处记事屏条逐字含「在下处歇了 3 日，付房钱 15。」（place 错挂即红——实条：%s）" % hline)
+
+
+## 现景直挂本港某设施贴文路径（scenes.json 只有 quanzhou_inn / 没有 quanzhou_residence——fallback 会换港；
+## 走与 _load_scene_inner 同一线的 _setup_dynamic_scene 寻址，current_scene_id 记全形与 Main 一致）。
+func _current_scene_setup(scene_id: String) -> void:
+	_main.set("current_scene_id", scene_id)
+	_main.call("_setup_dynamic_scene", scene_id, "_" + scene_id)
+
+
+## 按字面在现景里读出该钮（整树、不限于某行）。
+func _find_rest_button(face: String) -> Button:
+	var rows: Array = _find_all(_main, func(n: Node) -> bool: return n is HFlowContainer)
+	for r in rows:
+		for b in (r as Node).get_children():
+			if b is Button and str((b as Button).text) == face:
+				return b
+	return null
+
+
+## 取宿主 _log_lines 里末一条「在…歇了 …付房钱 …。」原文——每行即 log_msg 入档原文（新的在前），
+## 不经折叠渲染那层解析。_on_rest 记事的运行时证。
+func _last_rest_log() -> String:
+	var lines: PackedStringArray = _main.get("_log_lines")
+	for i in range(lines.size()):
+		var s := str(lines[i]).strip_edges()
+		if s.contains("歇了") and s.contains("付房钱"):
+			return s
+	return ""
