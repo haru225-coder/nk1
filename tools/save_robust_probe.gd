@@ -165,6 +165,10 @@ func _run() -> void:
 		"state.met_ids 对象": ["state", {"money": 500, "met_ids": {"lin_hua": true}}],
 		# state.era_routes 值给了容器（health_tally 直 int）
 		"state.era_routes 值数组": ["state", {"money": 500, "era_routes": {"泉州→博多": [3]}}],
+		# lane w53-5 二轮：state.beats_seen 给了非数组（GameState.from_dict 直赋强类型 Array 当场 SCRIPT ERROR、半途中断，
+		# 拍账与 loaded_with_beats 留着上一份档的值照报读档成功——verify_save_robustness 「未体检的强类型字段」所报那一格）
+		"state.beats_seen 字符串": ["state", {"money": 500, "beats_seen": "start"}],
+		"state.beats_seen 对象": ["state", {"money": 500, "beats_seen": {"start": true}}],
 	}
 	for name2 in entries_bad:
 		var d2 := _good(GOOD_LABEL, 1256, 4)
