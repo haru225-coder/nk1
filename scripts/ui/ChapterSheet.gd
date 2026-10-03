@@ -125,8 +125,10 @@ static func show_dialog(main: Control, res: Dictionary) -> void:
 	# 本地 main P1 时间脊柱：晋升跳年。这些年不是空白，摘要（跑了几趟 / 主航线 / 信用）与代价（船旧人走）写在正文前。
 	var years: int = int(res.get("years", 0))
 	if years > 0:
-		var era: Array = main._era_summary_lines(years)
+		# 先跳年再写摘要：「还在船上的」是这几年过完还在船上的人。跳年途中史实辞船、流失的写进「代价」，摘要先写就把他们
+		# 也列成「还在船上的」，同一页上下两句打架（1273 年开第四章雇着林华：「还在船上的：林华」+「林华…辞了船」）
 		var costs: Array = GameManager.skip_years(years)
+		var era: Array = main._era_summary_lines(years)
 		var block := "【%s年后・%s】\n" % [main._cn_num(years, true), Calendar.get_date_string()]
 		# 摘要与代价分两截：纪实短标，不混成一段现代 UI 状态词。
 		if not era.is_empty():

@@ -763,6 +763,7 @@ func _route_check() -> void:
 	_w25j2_endgame_port_beats_check(main)
 	_w53_4_settle_flow_check(main)
 	_w53_4_advance_return_check(main)
+	_w53_4_era_crew_check(main)
 	_w53_4_ledger_note_check(main)
 	main.queue_free()
 	_process_c6_main_hook(main)
@@ -4431,6 +4432,76 @@ func _w53_4_turn_chapter_at(main: Node, cid: int, req: Dictionary, at: String) -
 	GS.visited_ports = vis
 	GS.last_port = at
 	main.load_scene(at)
+
+
+## ── lane w53-4：晋升册页「这一路・还在船上的」与「代价」里的辞船对得上 ──
+## 修前：ChapterSheet 先写「这一路」摘要再跳年，「还在船上的」列的是跳年前的人；跳年途中史实辞船（林华 1276-10 投军）、
+## 流失的写进「代价」，同一页上写「还在船上的：林华。」下面又写「林华把缆绳盘好，辞了船」。现在先跳年后写摘要。
+## 名单逐个对：「还在船上的」所列须恰是册页弹完之后 Crew 名册里的人（流失按 randf，两头都对得上才算）。
+func _w53_4_era_crew_check(main: Node) -> void:
+	var Crw: Node = root.get_node("Crew")
+	var leaver: Dictionary = {}
+	for c in GM.crew_data.get("candidates", []):
+		if str(c.get("leave_from", "")).length() == 7:
+			leaver = c
+			break
+	_check(not leaver.is_empty(), "crew.json 有带 leave_from 的史实辞船者")
+	if leaver.is_empty():
+		return
+	var cid := 3
+	var years := int(GS.chapter_def(cid).get("advance_years", 0))
+	var ym := str(leaver.get("leave_from", "")).split("-")
+	GS.from_dict({})
+	Crw.from_dict({})
+	Cal.from_dict({"year": int(ym[0]) - maxi(years, 1) + 1, "month": int(ym[1]), "day": 1})
+	GS.loaded_with_beats = true
+	main._beats = null
+	_close_dialogs(main)
+	GS.chapter = cid
+	GS.money = 100000
+	var hired_ok: bool = Crw.hire(str(leaver.get("id", ""))).get("ok", false)
+	# 另雇三职没有史实辞船的人：跳年流失按 randf（四年每人约四成），三人全走的局不到一成，多半有人留下、「还在船上的」那行有字可对
+	for c in GM.crew_data.get("candidates", []):
+		if Crw.hired.size() >= 4:
+			break
+		if str(c.get("leave_from", "")) == "" and not Crw.hired.has(str(c.get("role", ""))):
+			Crw.hire(str(c.get("id", "")))
+	GS.last_port = "quanzhou"
+	GS.era_trips = 3
+	var cur: Dictionary = GS.chapter_def(cid)
+	GS.chapter = cid + 1
+	main._show_chapter_dialog({
+		"advanced": true, "resolved": false,
+		"title": cur.get("advance_title", ""), "text": cur.get("advance_text", ""),
+		"scene": "", "years": years, "_cinema": true,
+	})
+	var body := ""
+	var host = main.get("_chapter_host")
+	if host != null and is_instance_valid(host):
+		var scroll: Node = (host as Node).find_child("SheetScroll", true, false)
+		if scroll != null:
+			for ch in scroll.get_children():
+				if ch is Label:
+					body = (ch as Label).text
+	var listed: Array = []
+	for line in body.split("\n"):
+		if line.begins_with("还在船上的："):
+			for n in line.trim_prefix("还在船上的：").trim_suffix("。").split("、"):
+				listed.append(n)
+	var aboard: Array = []
+	for c in Crw.roster():
+		aboard.append(str(c.get("name", "")))
+	listed.sort()
+	aboard.sort()
+	_check(hired_ok and body.contains(str(leaver.get("leave_note", ""))) and listed == aboard,
+		"跳%s年跨过%s辞船月：「代价」有辞船句（%s），「还在船上的」恰是册页弹完后还在船上的人（列 %s／在船 %s）" % [
+			GM.cn_num(years, true), str(leaver.get("name", "")), body.contains(str(leaver.get("leave_note", ""))), listed, aboard])
+	main._confirm_chapter_sheet()
+	GS.from_dict({})
+	Crw.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_close_dialogs(main)
 
 
 ## ── lane w53-4：住处「边记」与终局「航海札记」不印英文令牌 ──
