@@ -15,7 +15,7 @@ var fails := 0
 
 
 func _init() -> void:
-	call_deferred("_run")
+	call_deferred("_run_guarded")
 
 
 func _run() -> void:
@@ -192,13 +192,7 @@ func _run() -> void:
 	_write(_primary() + ".bak", both_bad)
 	_check("两份皆坏", false, "corrupt", "卷页损了", -1)
 
-	_cleanup()
-	if fails == 0:
-		print("SAVE_ROBUST_PROBE PASS")
-		quit(0)
-	else:
-		print("SAVE_ROBUST_PROBE FAIL fails=%d" % fails)
-		quit(1)
+	_finish()
 
 
 ## 坏正式档 + 好 .bak：必须读回 .bak
@@ -289,3 +283,49 @@ func _cleanup() -> void:
 		var p: String = _primary() + suffix
 		if FileAccess.file_exists(p):
 			DirAccess.remove_absolute(p)
+
+
+# ── lane w53-11：本进程 SCRIPT ERROR 即红 ─────────────────────────────────────
+## 头注「输出含 SCRIPT ERROR 即视为失败」此前只是口头约定——没装 Logger，坏档值在 from_dict / 读后运行时路径
+## 抛的脚本错只打 stderr、退出码守 0（本探针守的恰是这一类回归）；现接共用件 tools/script_err_tally.gd 判红，
+## _run_guarded 兜 _run 自身中止（原先 quit 不执行、空转到外层 timeout）。这一节放在文件尾、计数器由成员初始化
+## 挂上（先于 _init，挂得与 _init 里一样早）：别的文档引着本文件上部的行号，往前插行就得跟号。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+var _tally: ScriptErrTally = _arm_tally()
+var _reported := false
+
+
+func _arm_tally() -> ScriptErrTally:
+	var t: ScriptErrTally = ScriptErrTally.new()
+	OS.add_logger(t)
+	return t
+
+
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_verdict(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_finish()
+
+
+## 收尾（从 _run 尾挪出；_run_guarded 判中止时也走这里，照样清存档位）：SCRIPT ERROR 两判（共用件 verdicts()，
+## story :3156 同款判词）记进同一张 fails 账，再印末行。
+func _finish() -> void:
+	_reported = true
+	if sl != null:
+		_cleanup()
+	for v in _tally.verdicts():
+		_verdict(v[0], v[1])
+	if fails == 0:
+		print("SAVE_ROBUST_PROBE PASS")
+		quit(0)
+	else:
+		print("SAVE_ROBUST_PROBE FAIL fails=%d" % fails)
+		quit(1)
+
+
+## 用例之外的两判 / 主流程中止：与各用例同一张 fails 账、同一 ✓ / ✗ 行形。
+func _verdict(ok: bool, what: String) -> void:
+	print("  %s  %s" % ["✓" if ok else "✗", what])
+	if not ok:
+		fails += 1
