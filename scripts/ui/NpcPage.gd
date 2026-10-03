@@ -218,7 +218,7 @@ static func show_npc_mode(main: Control, npc_id: String, fallback_name: String) 
 	main._slip_whole(main._slip_chip(main._slip_row(intel), "打听", main._on_npc_intel.bind(n_name)))
 	if npc_id == "customs_official":
 		var bribe: VBoxContainer = main._slip_body()
-		main._slip_title(bribe, "疏通", "关注　减 15")
+		main._slip_title(bribe, "疏通", "蒲家留意　减 15")
 		# 花钱的动作不做整卡可点，免得点卡误塞了钱
 		main._slip_chip(main._slip_row(bribe), "塞　50", main._on_npc_bribe.bind(n_name), true)
 	main._end_benches()

@@ -2250,7 +2250,7 @@ if '买%d' not in main_src and '卖%d' not in main_src and "只购得 %d。" in 
 else:
     print("  ✗ 牙行小钮或买卖日志仍挤在一起")
     problems.append("牙行小钮或买卖日志仍挤在一起")
-if "塞　50" in main_src and "关注　减 15" in main_src and "塞 50" not in main_src and "关注减 15" not in main_src and re.search(r"(?<![\w.])UiTheme\.plain_log\(_gather_price_intel\s*\(", main_src):
+if "塞　50" in main_src and "蒲家留意　减 15" in main_src and "塞 50" not in main_src and "蒲家留意减 15" not in main_src and re.search(r"(?<![\w.])UiTheme\.plain_log\(_gather_price_intel\s*\(", main_src):
     print("  ✓ 见面册疏通留出字距，行情去掉方括号")
 else:
     print("  ✗ 见面册疏通或行情仍是挤字")

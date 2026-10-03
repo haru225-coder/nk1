@@ -1056,8 +1056,8 @@ check(ry_smug and ry_legal and ry_smug[0][0] > ry_legal[0][0],
       f"流求线走私每料收益（{ry_smug[0][0]:.1f}）高于最佳合法货（{ry_legal[0][0]:.1f}）")
 
 # lane ea9：塞钱疏通的口径——一次疏通花 BRIBE_COST 钱、减 BRIBE_ATTENTION 点蒲家关注（GameState.pu_attention）。
-# 现值出处：scripts/ui/NpcPage.gd:247 `spend_money(50)`、:248 `pu_attention - 15`（on_npc_bribe，main5 从 Main 拆出，
-# Main._on_npc_bribe 一行转发）；钮文在同文件 :218「关注　减 15」、:220「塞　50」。
+# 现值出处：scripts/ui/NpcPage.gd:250 `spend_money(50)`、:251 `pu_attention - 15`（on_npc_bribe，main5 从 Main 拆出，
+# Main._on_npc_bribe 一行转发）；钮文在同文件 :221「蒲家留意　减 15」、:223「塞　50」（lane w53-10：原写「关注」，与市舶司页 / 船籍簿的「蒲家留意」统一）。
 # 为什么这样钉：钮文、实扣、口径三处各自从源码抠数，两两相等才绿。只改扣数（−15→−16）→ 钮文仍写 15，「钮文 == 实扣」红；
 # 钮文连扣数一起改 → 口径红。改平衡要先经策划拍板（待策划拍板清单 MAIN5-1），再同步改这里的常量和
 # docs/无引贿赂定额对照表.md 的「疏通稳态」——ea6 三个方案都按这个稳态算，所以稳态式也在这里对一遍。
@@ -1081,12 +1081,12 @@ check(len(_pay) == 1 and len(_cut) == 1 and _writes == 1
       and tok_find(_bribe_fn, "spend_money(") < _bribe_fn.find("pu_attention =") < _else_at,
       f"疏通只在付得起时扣一次关注（{'Main._on_npc_bribe' if _bribe_fn == _fwd else 'NpcPage.on_npc_bribe'}：付 {'/'.join(_pay) or '缺'}、减 {'/'.join(_cut) or '缺'}、写关注 {_writes} 处）")
 _meet_fn = _gd_body(_npc_src, "show_npc_mode")
-_title = re.search(r'_slip_title\((\w+), "疏通", "关注　减 (\d+)"\)', _meet_fn)
+_title = re.search(r'_slip_title\((\w+), "疏通", "蒲家留意　减 (\d+)"\)', _meet_fn)
 _chip = _title and re.search(rf'_slip_chip\(_slip_row\({_title.group(1)}\), "塞　(\d+)", _on_npc_bribe\.bind\(', _meet_fn)
 say_cut, say_pay = (int(_title.group(2)) if _title else None), (int(_chip.group(1)) if _chip else None)
 got_cut, got_pay = (int(_cut[0]) if len(_cut) == 1 else None), (int(_pay[0]) if len(_pay) == 1 else None)
 check(say_cut is not None and say_cut == got_cut,
-      f"疏通钮文「关注　减 {say_cut}」= 实扣 pu_attention − {got_cut}")
+      f"疏通钮文「蒲家留意　减 {say_cut}」= 实扣 pu_attention − {got_cut}")
 check(say_pay is not None and say_pay == got_pay,
       f"疏通钮文「塞　{say_pay}」= 实付 spend_money({got_pay})")
 check((got_pay, got_cut) == (BRIBE_COST, BRIBE_ATTENTION),

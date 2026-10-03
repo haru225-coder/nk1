@@ -430,8 +430,8 @@ func _run() -> void:
 	_check(main_src.find("买%d") < 0 and main_src.find("卖%d") < 0
 		and main_src.find("只购得 %d。") >= 0 and main_src.find("钱（") < 0,
 		"牙行小钮与买卖日志留出字距", fails)
-	_check(main_src.find("塞　50") >= 0 and main_src.find("关注　减 15") >= 0
-		and main_src.find("塞 50") < 0 and main_src.find("关注减 15") < 0
+	_check(main_src.find("塞　50") >= 0 and main_src.find("蒲家留意　减 15") >= 0
+		and main_src.find("塞 50") < 0 and main_src.find("蒲家留意减 15") < 0
 		and SP.has_tok(main_src.replace("main.", ""), "UiTheme.plain_log(_gather_price_intel"),
 		"见面册疏通留出字距，行情去掉方括号", fails)
 	_check(main_src.find("尚无人留意") >= 0 and main_src.find("偶有闲话传出") >= 0
