@@ -307,16 +307,16 @@ def pick_ending(fl):
             return e["id"]
     return None
 
-def ending_ready(peak, visited):
+def ending_ready(peak, visited, port):
     req = chapters[4].get("ending_requires") or {}
-    if peak < req.get("peak_money", 0):
+    if peak < req.get("peak_money", 0) or len(visited) < req.get("visited_count", 0):
         return False
-    if len(visited) < req.get("visited_count", 0):
-        return False
-    for m in req.get("must_visit", []):
-        if m not in visited:
-            return False
-    return True
+    # settle_at（了结之地，lane w53-4 86de522）：GameState._requirement_items 要此刻泊在那一港，别港够数不了结；settle_due = 只差这一条
+    return all(m in visited for m in req.get("must_visit", [])) and port == req.get("settle_at", port)
+
+def settle_due(src):
+    s = (chapters[4].get("ending_requires") or {}).get("settle_at", "")
+    return s if s and s != src and G.chapter >= 4 and not G.ending_id and ending_ready(G.peak_money, G.visited, s) else ""
 
 def requirement():
     """当前未完成的晋升或了结条件。"""
@@ -332,7 +332,7 @@ def resolve_progress():
         return None
     if G.chapter < 4:
         return try_advance()
-    if ending_ready(G.peak_money, G.visited):
+    if ending_ready(G.peak_money, G.visited, G.port):
         G.ending_id = pick_ending([])
         for e in chapters[4].get("endings", []):
             if e["id"] == G.ending_id:
@@ -394,7 +394,7 @@ def trade_destinations(src):
     """未亲至的必须港、未走通的港优先，避免一直在熟港套利而卡晋升。"""
     req = requirement()
     opened = [p for p in open_ports() if p != src]
-    must = [m for m in req.get("must_visit", []) if m not in G.visited and m in opened]
+    must = [m for m in req.get("must_visit", []) if m not in G.visited and m in opened] or [s for s in [settle_due(src)] if s in opened]
     if must:
         return must
     need_n = int(req.get("visited_count", 0) or 0)
@@ -462,7 +462,7 @@ def one_trip(trip):
     empty = False
     if qty == 0:
         must = [m for m in requirement().get("must_visit", [])
-                if m not in G.visited and m in open_ports() and m != G.port]
+                if m not in G.visited and m in open_ports() and m != G.port] or [s for s in [settle_due(G.port)] if s in open_ports()]
         if not must:
             print(f"    第{trip:>2}趟  确实无利可图（钱 {G.money}，空舱 {free():.0f}）")
             return False
@@ -980,6 +980,7 @@ playthrough = {
     "peak": G.peak_money,
     "trips": trip - 1 if G.ending_id else trip,
     "money": G.money,
+    "ending_port": G.port if G.ending_id else "",
 }
 print(f"  通关停在第 {playthrough['trips']} 趟　第 {playthrough['chapter']} 章　"
       f"峰值 {playthrough['peak']}　存银 {playthrough['money']}　"
@@ -991,6 +992,10 @@ check(playthrough["peak"] >= 80000, f"本钱峰值 {playthrough['peak']} ≥ 800
 check(len(playthrough["visited"]) >= 13, f"走通 {len(playthrough['visited'])} 港 ≥ 13")
 check(playthrough["ending"] == "south_sea",
       f"无剧情旗标了结「{playthrough['ending'] or '未触发'}」（南海一纲兜底）")
+_settle = (chapters[4].get("ending_requires") or {}).get("settle_at", "")
+check(playthrough["ending_port"] == (_settle or playthrough["ending_port"]),
+      f"了结落在了结之地「{ports.get(_settle, {}).get('name', _settle)}」（实落 "
+      f"{ports.get(playthrough['ending_port'], {}).get('name', playthrough['ending_port'] or '—')}；别港够数还得开过去）")
 check(trip <= 220, f"在 {playthrough['trips']} 趟内闭合，未撞 220 趟上限")
 
 print()
@@ -1095,10 +1100,11 @@ check(not chapters[2].get("ending_requires"), "第二章没有 ending_requires�
 
 no_champa = [pid for pid in ports if pid != "champa"]
 check(len(no_champa) >= 13, f"去掉占城仍有 {len(no_champa)} 港")
-check(not ending_ready(80000, no_champa[:13]), "走通十三港但未至占城 → 不能了结")
+check(not ending_ready(80000, no_champa[:13], no_champa[0]), "走通十三港但未至占城 → 不能了结")
 with_champa = no_champa[:12] + ["champa"]
-check(ending_ready(80000, with_champa), "八万 + 十三港含占城 → 可了结")
-check(not ending_ready(79999, with_champa), "本钱 79999 不能了结")
+check(ending_ready(80000, with_champa, "champa"), "八万 + 十三港含占城、泊占城 → 可了结")
+check(not ending_ready(80000, with_champa, "quanzhou"), "八万 + 十三港含占城、人在泉州 → 不能了结（settle_at 只认占城）")
+check(not ending_ready(79999, with_champa, "champa"), "本钱 79999 不能了结")
 check(playthrough["ending"] == "south_sea", "通关主循环已了结，旗标单测不改写 ending_id")
 
 print()
