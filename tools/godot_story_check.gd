@@ -4699,11 +4699,50 @@ func _w53_4_texts(node: Node, out: Array) -> void:
 		_w53_4_texts(c, out)
 
 
+## lane w53-10（六轮）：哗变「散钱」钱不够时札记不说「钱匣是空的」。Fleet.resolve_mutiny("bribe") 在现银 < 散钱数时
+## 就走 bribe_fail（spend_money 不扣钱、原数留着）：现银 150、散钱 200 也走这一支，札记写「钱匣是空的」，
+## 海图顶匾同一格却写着「钱 150」。走真 SeaChart._on_mutiny_bribe，核钱原数留着、走了人、首行札记不说钱匣空。
+## （排在 _route_check 之后另起，不往前文插行：拍板清单引着本文件前段的行号。）
+func _w53_10_sea_purse_check() -> void:
+	var Flt: Node = root.get_node("Fleet")
+	var keep_ships: Array = (Flt.get("ships") as Array).duplicate(true)
+	var keep_morale: int = int(Flt.get("morale"))
+	var keep_cd: int = int(Flt.get("mutiny_cooldown"))
+	var keep_money: int = GS.money
+	Flt.set("ships", [])
+	Flt.call("add_ship", "fu_ship_medium", "")
+	(Flt.get("ships") as Array)[0]["crew"] = 50
+	var cost: int = int(Flt.call("mutiny_bribe_cost"))
+	GS.money = cost - 50
+	var sc = (load("res://scenes/SeaChart.tscn") as PackedScene).instantiate()
+	root.add_child(sc)
+	sc.set("sailing", false)
+	sc.set("remaining_li", 50.0)  # 挡 _on_event_continue 的 _arrive()
+	sc.get("log_label").text = ""
+	sc.call("_on_mutiny_bribe")
+	var line: String = sc.get("log_label").get_parsed_text().get_slice("\n", 0)
+	var says_empty := ""
+	for w in ["是空的", "空了", "分文", "一文不剩", "囊空"]:
+		if line.find(w) >= 0:
+			says_empty = w
+	var crew_now: int = int(Flt.call("total_crew"))
+	_check(GS.money == cost - 50 and crew_now < 50 and line != "" and says_empty == "",
+		"哗变散钱钱不够（现银 %d、散钱 %d）：钱原数留着（得 %d）、走了人（剩 %d），札记不说钱匣空（得「%s」）" % [
+			cost - 50, cost, GS.money, crew_now, line])
+	root.remove_child(sc)
+	sc.free()
+	Flt.set("ships", keep_ships)
+	Flt.set("morale", keep_morale)
+	Flt.set("mutiny_cooldown", keep_cd)
+	GS.money = keep_money
+
+
 ## lane w53-11：story 收尾（原在 _process 里、不 await _route_check 就印 SUMMARY / quit）——等抵港路由一节整段跑完
 ## （含其中真让帧的 await）再判 SCRIPT ERROR、印 SUMMARY、退出；_route_check 半路被脚本错掐断时 await 照样回来，
 ## 由 _script_error_check 判红。
 func _finish_after_route() -> void:
 	await _route_check()
+	_w53_10_sea_purse_check()
 	_script_error_check()
 	print("STORY_CHECK TOTAL asserts run=", GateReport._checks.size(), "；lane w20-c6 补白新增 c6_asserts=", _c6_added)
 	print("STORY_CHECK SUMMARY fails=", _fails)

@@ -1379,7 +1379,7 @@ func _finish_mutiny(result: Dictionary) -> void:
 		"bribe":
 			line = "[color=yellow]你把 %d 钱散到各舱。桨收回去了，人还在。[/color]" % int(result.get("paid", 0))
 		"bribe_fail":
-			line = "[color=red]钱匣是空的。有人自己下了舢板，走了 %d 人。[/color]" % int(result.get("crew_lost", 0))
+			line = "[color=red]钱匣里凑不齐这个数。有人自己下了舢板，走了 %d 人。[/color]" % int(result.get("crew_lost", 0))
 		"dismiss":
 			line = "[color=yellow]你点了 %d 个人下舢板。剩下的人重新升帆。[/color]" % int(result.get("crew_lost", 0))
 		"suppress_ok":
