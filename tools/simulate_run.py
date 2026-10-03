@@ -16,6 +16,29 @@ random.seed(20260727)
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 
+# ── 抽解 / 佣金 / 价差地板：从 Economy.gd 源码现读（lane w53-3）──
+# 生产的 tariff_rate / broker_fee 是 `var NAME: float = 0.10` 形（存档会写回的可调参数），PRICE_SPREAD_MIN 是 const。
+# 原先这里硬编 `TARIFF, BROKER = 0.10, 0.05`，名字与生产对不上，生产改值时模拟不跟、镜像悄悄散，门禁照绿。
+# 读不出（写法换了）直接退出，不落回旧值。镜像闸 C 在临时副本里改这三处初值，验本脚本与 verify_economy 都跟着变。
+import re as _re
+_eco_src = open(os.path.join(ROOT, "scripts", "core", "Economy.gd"), encoding="utf-8").read()
+_GD_NUM_INIT = r'^((?:const|var)\s+%s\s*(?::\s*\w+\s*)?:?=\s*)(-?[0-9]+(?:\.[0-9]+)?)'
+def _const(src, name, default=None):
+    """GDScript 类成员的数值初值：`const NAME := 1.08` 与 `var NAME: float = 0.10`（含 `var NAME := 0.10`）两形都认。
+    default 为 None 时认不出即退出。"""
+    m = _re.search(_GD_NUM_INIT % _re.escape(name), src, _re.M)
+    if m:
+        return float(m.group(2))
+    if default is None:
+        raise SystemExit(f"simulate_run：源码里认不出 {name} 的数值初值（const {name} := 数 / var {name}: float = 数）")
+    return default
+TARIFF = _const(_eco_src, "tariff_rate")
+BROKER = _const(_eco_src, "broker_fee")
+PRICE_SPREAD_MIN = _const(_eco_src, "PRICE_SPREAD_MIN")
+if "--eco-params" in sys.argv[1:]:  # 镜像闸 C 的读数口：报完三项即退，不跑整局
+    print(f"ECO_PARAMS tariff={TARIFF!r} broker={BROKER!r} spread={PRICE_SPREAD_MIN!r}")
+    sys.exit(0)
+
 def load(n):
     with open(os.path.join(ROOT, "data", n), encoding="utf-8") as f:
         return json.load(f)
@@ -26,7 +49,6 @@ ships = {s["id"]: s for s in load("ships.json")["ships"]}
 chapters = {int(c["id"]): c for c in load("chapters.json")["chapters"]}
 
 ROLE_MOD = {"origin": 0.65, "normal": 1.0, "consumer": 1.75}
-TARIFF, BROKER = 0.10, 0.05
 RECOVERY = 0.045
 SUPPLY_BULK = 0.25
 CREW_DAYS_PER_SUPPLY = 2.0
@@ -40,17 +62,12 @@ INN_RATE = 15
 # 与 GDScript round()（.5 远离零）在 .5 格差 1 文（verify_economy.gd_round docstring 实测）。
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from verify_economy import gd_round, price_at
+import verify_economy as _ve
 
-# ── 生产定价与跳年常量：从 .gd 源码读，改公式时这里自动跟上 ──
+# ── 跳年常量：从 .gd 源码读，改公式时这里自动跟上（抽解 / 佣金 / 价差地板见文件头 _const）──
 # Main 的源码断言读拼回的「未拆时」Main（tools/main_stitch.py，E-4 接刀：行会/赴试常量与下刀 Main 拆件让路）。
 import main_stitch
-import re as _re
-_eco_src = open(os.path.join(ROOT, "scripts", "core", "Economy.gd"), encoding="utf-8").read()
 _gm_src = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
-def _const(src, name, default):
-    m = _re.search(r'const %s := ([0-9.]+)' % name, src)
-    return float(m.group(1)) if m else default
-PRICE_SPREAD_MIN = _const(_eco_src, "PRICE_SPREAD_MIN", 1.08)
 SKIP_HULL_DECAY = _const(_gm_src, "SKIP_HULL_DECAY", 0.08)
 SKIP_HULL_FLOOR = _const(_gm_src, "SKIP_HULL_FLOOR", 0.20)
 SKIP_MORALE_AFTER = int(_const(_gm_src, "SKIP_MORALE_AFTER", 65))
@@ -649,6 +666,41 @@ _zt = [
 ]
 check(all(a == b for a, b in _zt),
       f"镜像闸 B·6 格 gd_round≠round 散度（0.5/0.5/0.5/0.6/0.8/0.5）price_at_rate = price_at（{_zt}）——任一 gd_round→round 调换即差 1 文红")
+
+# ── 镜像闸 C（lane w53-3）：抽解 / 佣金 / 价差地板跟着生产源码走 ──
+# 两支镜像（本脚本与 verify_economy）原先各硬编一份 0.10 / 0.05（verify_economy 连 1.08 也硬编），生产改值时都不跟、门禁照绿。
+# 在临时目录摆一份只有 Economy.gd 与两支镜像的副本，把三处初值改成别的数，两支各以 --eco-params 起子进程报读数，
+# 须恰是改后的数：任一支回退成硬编即红。仓里的 Economy.gd 不动。
+ECO_EDIT = (("tariff_rate", 0.125), ("broker_fee", 0.0625), ("PRICE_SPREAD_MIN", 1.0625))
+
+def eco_params_after_edit(edits):
+    """返回 (改中几处, {镜像脚本: (抽解, 佣金, 价差地板) 或失败说明})。"""
+    import shutil, subprocess, tempfile
+    src, hit = _eco_src, 0
+    for name, val in edits:
+        src, n = _re.subn(_GD_NUM_INIT % _re.escape(name), lambda m, v=val: m.group(1) + repr(v), src, count=1, flags=_re.M)
+        hit += n
+    out = {}
+    with tempfile.TemporaryDirectory(prefix="nk1-eco-follow-") as tmp:
+        os.makedirs(os.path.join(tmp, "scripts", "core"))
+        os.makedirs(os.path.join(tmp, "tools"))
+        with open(os.path.join(tmp, "scripts", "core", "Economy.gd"), "w", encoding="utf-8") as f:
+            f.write(src)
+        for tool in ("simulate_run.py", "verify_economy.py"):
+            shutil.copy2(os.path.join(ROOT, "tools", tool), os.path.join(tmp, "tools", tool))
+            r = subprocess.run([sys.executable, os.path.join(tmp, "tools", tool), "--eco-params"],
+                               capture_output=True, text=True, timeout=60)
+            m = _re.search(r"^ECO_PARAMS tariff=(\S+) broker=(\S+) spread=(\S+)$", r.stdout, _re.M)
+            out[tool] = tuple(float(x) for x in m.groups()) if m else f"rc={r.returncode} {(r.stdout + r.stderr).strip()[-120:]}"
+    return hit, out
+
+_hit, _follow = eco_params_after_edit(ECO_EDIT)
+_want = tuple(v for _, v in ECO_EDIT)
+check(_hit == len(ECO_EDIT) and all(v == _want for v in _follow.values()),
+      f"镜像闸 C·Economy.gd 三处初值（改中 {_hit}/{len(ECO_EDIT)}）改成 {_want} 后两支镜像读数跟着变（{_follow}）——回退成硬编即红")
+check((TARIFF, BROKER, PRICE_SPREAD_MIN) == (_ve.TARIFF, _ve.BROKER, _ve.SPREAD_MIN),
+      f"镜像闸 C·两支镜像现读同数：抽解 {TARIFF} / 佣金 {BROKER} / 价差地板 {PRICE_SPREAD_MIN}"
+      f"（verify_economy {(_ve.TARIFF, _ve.BROKER, _ve.SPREAD_MIN)}）")
 
 print("="*70)
 print("端到端模拟：开局 1000 钱 / 小艍船 / 泉州")

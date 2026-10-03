@@ -12,6 +12,22 @@ if "--json" in sys.argv[1:]:  # 机读输出，见 docs/GATES.md；不带开关�
 
 import pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
+# ── 抽解 / 佣金 / 价差地板：从 Economy.gd 源码现读（lane w53-3）──
+# 生产的 tariff_rate / broker_fee 是 `var NAME: float = 0.10` 形、PRICE_SPREAD_MIN 是 const；原先这里硬编 0.10 / 0.05 / 1.08，
+# 生产改值时镜像悄悄散、门禁照绿。读不出（写法换了）直接退出。simulate_run 镜像闸 C 在临时副本里改这三处初值，验这里跟着变。
+_ECO_SRC = open(os.path.join(ROOT, "scripts", "core", "Economy.gd"), encoding="utf-8").read()
+def eco_param(name):
+    m = re.search(r'^(?:const|var)\s+%s\s*(?::\s*\w+\s*)?:?=\s*(-?[0-9]+(?:\.[0-9]+)?)' % re.escape(name), _ECO_SRC, re.M)
+    if not m:
+        raise SystemExit(f"verify_economy：Economy.gd 里认不出 {name} 的数值初值（const {name} := 数 / var {name}: float = 数）")
+    return float(m.group(1))
+TARIFF = eco_param("tariff_rate")
+BROKER = eco_param("broker_fee")
+## Economy.PRICE_SPREAD_MIN 的镜像：任何职事组合下同港买价恒 ≥ 卖价 × 此值。
+SPREAD_MIN = eco_param("PRICE_SPREAD_MIN")
+if __name__ == "__main__" and "--eco-params" in sys.argv[1:]:  # simulate_run 镜像闸 C 的读数口：报完三项即退
+    print(f"ECO_PARAMS tariff={TARIFF!r} broker={BROKER!r} spread={SPREAD_MIN!r}")
+    sys.exit(0)
 # 按函数名取函数体一律经 tools/func_body.py（与 check_symbols 同一份 helper，lane cs14）：取不到给 "" 并记账，
 # 末节「十一、按函数名取函数体」逐条判红——原先取不到静默给 ""，反向断言（"X" not in body）在函数改名 / 搬走时空转变绿。
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -38,10 +54,6 @@ ships = {s["id"]: s for s in load("ships.json")["ships"]}
 sale_ships = {sid: s for sid, s in ships.items() if s.get("for_sale", True)}
 
 ROLE_MOD = {"origin": 0.65, "normal": 1.0, "consumer": 1.75}
-TARIFF = 0.10
-BROKER = 0.05
-## Economy.PRICE_SPREAD_MIN 的镜像：任何职事组合下同港买价恒 ≥ 卖价 × 此值。
-SPREAD_MIN = 1.08
 ## Crew.FOREIGN_PORTS——只有这几处通事的议价才生效
 FOREIGN_PORTS = ("hakata", "kagoshima", "jeju", "champa")
 KM_PER_LI = 0.576
