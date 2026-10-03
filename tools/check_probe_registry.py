@@ -95,6 +95,7 @@ EXEMPT = [
     ("qa_w53_8_letterbox_fit_probe.gd", "lane-w53-8", "海战墨边题签长副题不冲出画布右缘探针（只缩题名、副题冲出 116 px 回退即红），headless 直接实例化墨边可跑"),
     ("qa_w53_8_panel_seam_probe.gd", "lane-w53-8", "页面面板九宫纵向接缝探针（800×600 / 4:3 / 竖屏面板中腰泥金碎钩回退即红），headless 纯算、带窗口另实画"),
     ("qa_w53_8_vision_layout_probe.gd", "lane-w53-8", "市舶纪事 VisionStage 画布适配探针（钉死 1280 实锤回退即红），when 判据未定"),
+    ("qa_w53_9_chapter_card_probe.gd", "lane-w53-9", "章节卡题记留读时长、「点击继续」时机与题记一句一列专项探针（四章 × 两种窗口比例、回退即红），须带窗口（-s），随 lane-w53-9 落地验过留档"),
     ("qa_w53_9_chapter_year_probe.gd", "lane-w53-9", "章节卡年号与历法逐月同口径专项探针（改元当年认月份），headless 可跑，随 lane-w53-9 落地验过留档"),
     ("qa_w53_9_cutscene_input_probe.gd", "lane-w53-9", "过场 / 墨幕层输入时序专项探针（逐路钉一处修复、回退即红），带窗口以场景启动，随 lane-w53-9 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),

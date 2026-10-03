@@ -1,6 +1,7 @@
 ## 章节卡（cutscene_engine 线）：黑场 → 宣纸按噪声阈值洇进来 → 墨晕铺开露出章节油画 → 「第X章」逐字 → 章名 → 年号 → 题记竖排带出处
 ## → 朱印盖下（回弹 + 印泥洇开；UI 线的「立志」成品印在就用它）→ 停留 → 字印淡去、墨晕回缩、纸面按同一阈值退去露出游戏。
-## 总长约 7.7 秒；点击 / 空格 / 回车先补全、再跳到退场；Esc 直接退场。
+## 字印全显后按题记与出处的字数留读（见 READ_CPS），总长约 10.5–11.7 秒；点击 / 空格 / 回车先补全、再跳到退场；Esc 直接退场。
+## 题记一句一列（见 _clause_cols）。
 ##
 ##   var card := ChapterCard.play(self, GameState.chapter)
 ##   await card.finished            # 退场淡完、底下游戏画面已完全露出时发出，随后自 queue_free
@@ -11,7 +12,7 @@ class_name ChapterCard
 extends CanvasLayer
 
 signal finished
-## 纸面开始退去（T_WIPE）的那一刻发出：调用方趁卡还盖在上面，把卡后要出的画面（压暗层 + 册页）先在底下建好，
+## 纸面开始退去（_t_wipe）的那一刻发出：调用方趁卡还盖在上面，把卡后要出的画面（压暗层 + 册页）先在底下建好，
 ## 纸退去时揭开的就是最终画面，不再先露出没压暗的港页、再硬切出册页。headless 下与 finished 同帧发出。
 signal exiting
 
@@ -31,10 +32,19 @@ const T_NAME := 1.95
 const T_YEAR := 2.85
 const T_EPI := 3.25
 const T_SEAL := 4.6
+## 退场三拍的最早时刻；实际按 _plan_timeline 留读后挪（_t_out / _t_wipe / _t_end），三拍间隔不变
 const T_OUT := 6.3
 ## 退场：字与印 0.5 秒淡去、墨晕 0.6 秒回缩，纸面从 T_WIPE 起按噪声阈值从墨晕窗口往外退去 1.0 秒（露出底下的游戏，不是整层交叉淡化）
 const T_WIPE := 6.7
 const T_END := 7.7
+## 字印全显后留读：题记 + 出处按每秒 5 字算，夹在 2.5–5 秒。原先退场钉死在 T_OUT：题记全显 1.8–2.1 秒、
+## 出处全显 1.0–1.5 秒就开始淡去，「天容海色本澄清」还没读完，出处刚写完就没了（lane w53-9 实测四章）
+const READ_CPS := 5.0
+const READ_MIN := 2.5
+const READ_MAX := 5.0
+## 题记按句分列的句读（「，」也算：「天接云涛连晓雾，星河欲转千帆舞。」上下句各一列）；句读后紧跟的收引号随上一列
+const CLAUSE_END := "，。？！；"
+const CLOSERS := "」』）》"
 const TEXT_OUT := 0.5
 const BLOOM_OUT := 0.6
 const PAPER_TEX := "res://assets/ui/nk1/tex_paper_xuan.png"
@@ -72,6 +82,11 @@ var _focus := Vector2(0.5, 0.5)
 var _zoom := 1.0
 ## 从全黑起（首次进港：卡跟在港页 load_scene 之后，原先先露出 0.1–0.2 秒港页再压黑起卡）
 var _from_black := false
+## 本张卡的时间线（_plan_timeline 按字数定）：字印全显 / 字印淡去 / 纸面退去 / 收场
+var _t_ready := T_SEAL + 0.5
+var _t_out := T_OUT
+var _t_wipe := T_WIPE
+var _t_end := T_END
 
 
 ## year_override：非空时替换数据里的 year_text。数据里写的是「最早可能开场年」，玩家晚晋升时由调用方
@@ -92,8 +107,8 @@ static func play(parent: Node, chapter_no: int, data_path := "res://data/cutscen
 
 
 func skip() -> void:
-	if _t < T_OUT:
-		_step(T_OUT - _t)
+	if _t < _t_out:
+		_step(_t_out - _t)
 
 
 func _ready() -> void:
@@ -228,7 +243,7 @@ func _build() -> void:
 			"vertical": true, "effect": 0, "interval": 0.06, "fade": 0.5}, T_YEAR)
 	var ep: Control = null
 	if _epi != "":
-		ep = _text(_epi, {"font_kind": "body", "size": 23, "spacing": 0.12, "gap": 0.95, "color": INK_TEXT,
+		ep = _text(_clause_cols(_epi), {"font_kind": "body", "size": 23, "spacing": 0.12, "gap": 0.95, "color": INK_TEXT,
 			"vertical": true, "max_extent": _canvas.y * 0.5, "effect": 0, "interval": 0.05, "fade": 0.5}, T_EPI)
 	var sr: Control = null
 	if _src != "":
@@ -252,7 +267,8 @@ func _build() -> void:
 		_overlay.material = om
 		_overlay.color = Color.WHITE
 	_overlay.modulate.a = 0.0
-	# 章名写出之后，纸脚淡淡出一行「点击继续」（7.4 秒的卡全程没有提示，第 1 轮评审 minor）
+	# 字印全显之后，纸脚淡淡出一行「点击继续」（卡全程没有提示，第 1 轮评审 minor）。原先章名一写出就亮，
+	# 那时点一下只是补全题记（_input），提示写的「继续」要到全显后才名副其实（lane w53-9）
 	_hint = Label.new()
 	_hint.text = "点击继续"
 	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -262,6 +278,36 @@ func _build() -> void:
 	_hint.modulate.a = 0.0
 	_root.add_child(_hint)
 	_layout(head, nm, yr, ep, sr)
+	_plan_timeline()
+
+
+## 题记一句一列：句读后换列（竖排自右向左，上句在右）。原先只靠 max_extent 折列——720 高下 16 字的二、三章对句
+## 折成两列、12 字的四章与 10 字的一章一列到底，4:3 下四章全成一列，同一种对句三种版式（lane w53-9）。
+## 单句超出 max_extent 时 InkText 照旧在句内折列。
+static func _clause_cols(s: String) -> String:
+	var out := ""
+	var pending := false
+	for i in range(s.length()):
+		var ch := s[i]
+		if pending and not CLOSERS.contains(ch):
+			out += "\n"
+			pending = false
+		out += ch
+		if CLAUSE_END.contains(ch):
+			pending = true
+	return out
+
+
+## 字印全显（各行字写完、印落定，不早于 T_SEAL + 0.5）之后按题记 + 出处字数留读，退场三拍整体后挪
+func _plan_timeline() -> void:
+	var shown := T_SEAL + 0.5
+	for it in _items:
+		shown = maxf(shown, float(it["start"]) + float((it["node"] as Object).call("reveal_duration")))
+	var hold := clampf(float((_epi + _src).length()) / READ_CPS, READ_MIN, READ_MAX)
+	_t_ready = shown
+	_t_out = maxf(T_OUT, shown + hold)
+	_t_wipe = _t_out + (T_WIPE - T_OUT)
+	_t_end = _t_out + (T_END - T_OUT)
 
 
 ## 竖排自右向左：「第X章」→ 章名 → 年号 → 题记 → 出处；印在「第X章」下方。油画墨晕占左侧余下的纸面。
@@ -309,7 +355,7 @@ func _update_bloom_view() -> void:
 	if _bloom_mat == null or _bloom_tex_size == Vector2.ZERO:
 		return
 	# 墨晕区内按 cover 取景，并随整张卡极慢推近
-	var z := _zoom * (1.02 + 0.06 * Kit.ease_in_out_sine(_t / T_END))
+	var z := _zoom * (1.02 + 0.06 * Kit.ease_in_out_sine(_t / _t_end))
 	var crop := Kit.cover_view(_bloom_tex_size, _bloom_region.size, _focus, z)
 	var rs := _bloom_region.size
 	var vx := crop.position.x - _bloom_region.position.x / rs.x * crop.size.x
@@ -332,7 +378,7 @@ func _step(dt: float) -> void:
 		_canvas = cv
 	# 黑场 → 宣纸按噪声阈值洇进来（ease_in_out 1.0 秒，没有「半透明纸压黑底」的灰褐过渡）；退场同一阈值从墨晕窗口往外退
 	_black.modulate.a = 1.0 if _from_black else Kit.ease_in_out(_t / T_BLACK)
-	var wipe_q := (_t - T_WIPE) / (T_END - T_WIPE)
+	var wipe_q := (_t - _t_wipe) / (_t_end - _t_wipe)
 	# 进场：线性与 ease_in_out 各半——纯 ease_in_out 时覆盖率仍有四成挤在中段 0.2 秒里（实测逐帧均亮度 35→101→153）
 	var in_q := clampf((_t - T_PAPER_IN) / T_PAPER_DUR, 0.0, 1.0)
 	var paper_r := minf(in_q * 0.5 + Kit.ease_in_out(in_q) * 0.5,
@@ -340,7 +386,7 @@ func _step(dt: float) -> void:
 	if _paper_mat != null:
 		_paper_mat.set_shader_parameter("reveal", paper_r)
 		# 退场时阈值场以墨晕窗中心为原点反过来：纸从窗口往外退（进场仍从画面中偏右处洇开）
-		var leaving := _t >= T_WIPE
+		var leaving := _t >= _t_wipe
 		_paper_mat.set_shader_parameter("reveal_outward", leaving)
 		# 外退场的阈值场分布（约 0.37–0.90）比进场（约 0.03–0.56）整体偏高，扫描区间跟着换
 		_paper_mat.set_shader_parameter("thr_lo", 0.15 if leaving else -0.12)
@@ -364,8 +410,8 @@ func _step(dt: float) -> void:
 	# 墨晕：铺开；退场时回缩并淡去
 	var prog := Kit.ease_out_cubic((_t - T_BLOOM) / T_BLOOM_DUR)
 	var fade_all := 1.0
-	if _t >= T_OUT:
-		var q := (_t - T_OUT) / BLOOM_OUT
+	if _t >= _t_out:
+		var q := (_t - _t_out) / BLOOM_OUT
 		prog *= 1.0 - 0.45 * Kit.ease_in_out(q)
 		fade_all = 1.0 - Kit.ease_in_out(q)
 	if _bloom_mat != null:
@@ -383,7 +429,7 @@ func _step(dt: float) -> void:
 			node.advance(local)
 		else:
 			node.advance(dt)
-		if _t >= T_OUT:
+		if _t >= _t_out:
 			node.fade_out(TEXT_OUT)
 	# 盖印那一下，整张纸轻轻一震
 	_jolt = maxf(0.0, _jolt - dt * 6.0)
@@ -392,10 +438,10 @@ func _step(dt: float) -> void:
 		var hs := _hint.get_minimum_size()
 		_hint.position = Vector2(roundf(_canvas.x - hs.x - maxf(_canvas.x * 0.07, 64.0)), roundf(_canvas.y * 0.9 - hs.y))
 		# α0.62 时 16px 赭石字实测只有 2.3:1（第 2 轮 UX minor 5），提到 0.92
-		_hint.modulate.a = 0.92 * Kit.ease_in_out((_t - T_NAME) / 0.6) * (1.0 - Kit.ease_in_out((_t - T_OUT) / 0.4))
-	if _t >= T_WIPE - 0.05:
+		_hint.modulate.a = 0.92 * Kit.ease_in_out((_t - _t_ready) / 0.6) * (1.0 - Kit.ease_in_out((_t - _t_out) / 0.4))
+	if _t >= _t_wipe - 0.05:
 		_emit_exiting()
-	if _t >= T_END:
+	if _t >= _t_end:
 		_finish()
 
 
@@ -429,9 +475,9 @@ func _input(event: InputEvent) -> void:
 	if esc:
 		skip()
 	elif go:
-		if _t < T_SEAL + 0.5:
-			_step(T_SEAL + 0.5 - _t)
+		if _t < _t_ready:
+			_step(_t_ready - _t)
 			for it in _items:
 				it["node"].finish_reveal()
-		elif _t < T_OUT:
+		elif _t < _t_out:
 			skip()
