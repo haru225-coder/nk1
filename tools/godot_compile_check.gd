@@ -34,6 +34,7 @@ const SCRIPTS := [
 	"res://tools/CharStage3D.gd", "res://tools/CharsDemo.gd",
 	# 工席成功态过渡（淡入墨幕 + 题签）
 	"res://scripts/ui/UiTransition.gd", "res://tools/qa_title_probe.gd", "res://tools/qa_siege_endgame_probe.gd", "res://tools/qa_ending_reread_probe.gd",
+	"res://tools/qa_siege_destinations_probe.gd",  # lane w36-k2 V0928-1 被围委办复现探针
 	"res://tools/qa_drydock_probe.gd",
 	"res://tools/qa_voyage_status_probe.gd",
 	"res://tools/qa_market_panel_probe.gd",

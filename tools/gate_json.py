@@ -483,6 +483,28 @@ REGISTRY = [
      "green": "逐条 `  ✓ …` + 末行 `CALENDAR_PROBE cases=36 fails=0`",
      "red": "`  ✗ …` 行（如开局日不对 / 推进页首不随动 / 月名对不上或同值漏检 / 改元切换错位 / 正月三十跨月不进）"
             "+ 末行 `CALENDAR_PROBE cases=N fails=M`（M>0），退 1"},
+
+
+    {"id": "qa_siege_destinations_probe", "tier": "lane",
+     "when": "动委办目的地链（scripts/GameState.gd 的 _contract_destinations / contract_offer / _contract_seed——"
+             "出队排除口径、报价优选针路已知池、月份种子），或动 Economy.war_status / 数据行 ports.json war 表，"
+             "或动 tools/qa_siege_destinations_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_siege_destinations_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_siege_destinations_probe.gd"],
+     "judge": "（lane w36-k2 · 拍板清单 2026-09-28 §八之四 P8 复现探针、V0928-1 机械前置②——"
+              "『被围港被开成委办目的地』复现档，审判输入材料、零行为变更）"
+              "态 A 真场景摆场四案（兴化 1276-11 / 1277-09、福州 1276-10、广州 1276-11——数据行 war 表现表）"
+              "直调 _contract_destinations / contract_offer 真输出：被围港不掺任何一份出队目的地、报价目的不落被围港。"
+              "态 B 未被围月 1275-03 反向基：广州发香药兴化上队、泉州委办报价非空。态 C 香药切面自净。"
+              "另附 192 月窗逐月扫描，被围港进队行逐行印 `QA_SIEGE_DEST_HIT`（供拍板摘录）。"
+              "现网 _contract_destinations 不排被围港——态 A 红是设计内红（复现到 §八之四 P8 指的缺陷，"
+              "不是探针没做实；w35-k1 『判定即红』同款机制），收编照旧入册。M1 附加参 `--mutate-siege-always` "
+              "把被围判值倒成恒真（只动探针读口）→ 态 A 兴化 / 福州两案月多红。"
+              "headless -s 下 SCRIPT ERROR 不自非零退出：判绿须 rc=0 且末行 `QA_SIEGE_DEST_END` 在——"
+              "缺末行 = 中途错误空转（既非红亦非绿，按中断重跑）。",
+     "green": "末三行 `SIEGE_DEST hits=N ok=M fails=0` + `结果：全部通过` + `QA_SIEGE_DEST_END`，退 0",
+     "red": "`  ✗ …` 行（现网态 A 复现行：被围港掺队 / 报价目的落被围——设计内红，归于 §三 lane 档附注）"
+            "+ 末行 `SIEGE_DEST … fails=K`（K>0），退 1；`QA_SIEGE_DEST_END` 缺 = 中断，不计红绿"},
 ]
 
 # w27-k4 CHECK FOLLOWS
