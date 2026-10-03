@@ -11,17 +11,32 @@ extends SceneTree
 ##   H2 朱箭三角与名字的外框不压港框 / 港名 / 船标（_port_obstacles；目的港自己的也算——落在图带边那圈里时
 ##      出带箭头的名字与它自己的港名同字，叠在一起更乱）；
 ##   H3 箭尖仍在图带边上（挪动只沿图带边、出不了图带），离原位不过 8 步 × 14 屏幕 px；三角尖朝目的地。
+## 运行期脚本错（被测代码某条路径出错）只中止出错的那一个函数——断言整段跳过、fails 不涨、退出码守 0：
+## 接共用件 tools/script_err_tally.gd，本进程 SCRIPT ERROR 即红；_run_guarded 包一层兜 _run 自己半路中止（lane w53-1）。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_1_dest_hint_probe.gd
 ## 末行 DEST_HINT cases=N fails=M；M>0 时 exit 1。
 ## -s 下勿写 autoload 标识符与 MapView 类型（编译期尚无 autoload），一律 root.get_node 取。
 
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
 var _map: Node
 var cases := 0
 var fails := 0
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_expect(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _run() -> void:
@@ -204,5 +219,8 @@ func _tip_check(h: Dictionary, dest: String) -> String:
 
 
 func _report() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_expect(v[0], v[1])
 	print("DEST_HINT cases=%d fails=%d" % [cases, fails])
 	quit(0 if fails == 0 else 1)

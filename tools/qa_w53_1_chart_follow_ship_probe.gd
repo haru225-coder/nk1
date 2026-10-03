@@ -16,11 +16,14 @@ extends SceneTree
 ##   F6 按住空格快进（一日 0.05 s，发舶取景若是 0.9 s 空转补间，船在里头就走十几日）北上占城往萨摩：每日船标都在图带里，
 ##      抵港萨摩在图带里；选向后玩家滚轮放大看了看再发舶（取景真要缩回去、过渡 0.9 s）：过渡一完船标回到图带里，往后到港每日都在；
 ##   F7 航行中点全图（SeaChart._frame_home；常速第二十日、按住空格第六日），全图里没有船标：全图取景走完后镜头不被跟船拽回。
+## 运行期脚本错（被测代码某条路径出错）只中止出错的那一个函数——断言整段跳过、fails 不涨、退出码守 0：
+## 接共用件 tools/script_err_tally.gd，本进程 SCRIPT ERROR 即红；_run_guarded 包一层兜 _run 自己半路中止（lane w53-1）。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_1_chart_follow_ship_probe.gd
 ## 末行 CHART_FOLLOW cases=N fails=M；M>0 时 exit 1。
 ## -s 下勿写 autoload 标识符与 MapView 类型（编译期尚无 autoload），一律 root.get_node 取。
 
 const Clock := preload("res://tools/probe_clock.gd")
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 ## F5 容差：量的是船标补间放完那一刻，同长的跟船补间还差一帧（缓出段，压帧到每帧 0.133 s 时约 5 px）
 const MARGIN_TOL := 10.0
 
@@ -33,11 +36,22 @@ var _chart: Node
 var _map: Node
 var cases := 0
 var fails := 0
+var _tally: ScriptErrTally
+var _reported := false
 var _margin := 64.0
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_expect(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _run() -> void:
@@ -405,5 +419,8 @@ func _voyage_fast(a: String, b: String, month: int, zoomed: bool = false) -> voi
 
 
 func _report() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_expect(v[0], v[1])
 	print("CHART_FOLLOW cases=%d fails=%d" % [cases, fails])
 	quit(0 if fails == 0 else 1)

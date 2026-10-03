@@ -12,9 +12,13 @@ extends SceneTree
 ##   C4 水粮只够 15 日：去向牌标「水粮不够」，船况航段写「半途必尽」（原先八成 11 日，不报）。
 ##   C5 图上航线按全程风着色：泉州→广州六月为逆风淡墨（原先按出湾段算成顺风朱砂）。
 ##   C6 途中换风只记季风变了：泉州→广州六月初一整段在六月不标；泉州→博多八月廿日西南风入转换期要标。
+## 运行期脚本错（被测代码某条路径出错）只中止出错的那一个函数——断言整段跳过、fails 不涨、退出码守 0：
+## 接共用件 tools/script_err_tally.gd，本进程 SCRIPT ERROR 即红；_run_guarded 包一层兜 _run 自己半路中止（lane w53-1）。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_1_plan_sail_days_probe.gd
 ## 末行 PLAN_SAIL_DAYS cases=N fails=M；M>0 时 exit 1。
 ## -s 下勿写 autoload 标识符与 MapView 类型（编译期尚无 autoload），一律 root.get_node 取。
+
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 
 var gs: Node
 var gm: Node
@@ -24,10 +28,21 @@ var fleet: Node
 var _chart: Node
 var cases := 0
 var fails := 0
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_expect(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _run() -> void:
@@ -266,5 +281,8 @@ func _c6_wind_changes() -> void:
 
 
 func _report() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_expect(v[0], v[1])
 	print("PLAN_SAIL_DAYS cases=%d fails=%d" % [cases, fails])
 	quit(0 if fails == 0 else 1)
