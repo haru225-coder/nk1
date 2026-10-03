@@ -9,7 +9,7 @@ extends SceneTree
 ## 就地判红收尾、退 1（lane w53-11 四轮；gates_md「一之三」判注册门禁不许裸排 `_run` 起跑）。
 ## lane w19-g3 跟现行代码改的四处（原期望写在 origin 那条 / 09-28 crew 线上，09-30 合并按本地线落地后过时）：
 ##   · 夺船存名：本地线 WorldMap 以敌船名入列（Fleet.add_ship(type, ship_name)），存名仍「快船」，不按序号起名——
-##     Fleet.prize_name 在库但没人调，V0928-10 待拍板，拍了再改这里；同名两艘上屏靠 Fleet.display_name 加「・甲」「・乙」（lane fx2）。
+##     V0928-10 定 B（lane w53-14）：Fleet.prize_name 不接；同名两艘上屏靠 Fleet.display_name 加「・甲」「・乙」（lane fx2）。
 ##     元军哨船条目不挂 prize_name，夺来名是 ships.json 的「海鹘」。
 ##   · 白刃必胜：清零敌船水手前先停士气挂件（同 lane fx8 在 patrol_shell 的做法）——本地线 combat06 士气挂件逐物理帧读 crew，
 ##     清零记成伤亡过半 + 被钩，窗口下接舷停拍 0.42 s 里敌船降幡、走受降一路（下场 struck），不是白刃夺船。
@@ -321,7 +321,7 @@ func _pirate_battle(gm: Node, fleet: Node, pirate: Dictionary) -> void:
 	var got: Dictionary = ships[ships.size() - 1] if took else {}
 	_expect(took and ships.size() == n0 + 1, "接舷得胜，船队多一艘（%d → %d）" % [n0, ships.size()])
 	_expect(str(got.get("type", "")) == "pirate_boat" and str(got.get("name", "")) == "快船",
-		"夺来的船按 pirate_boat 入列、存名沿用敌船名「快船」（V0928-10 待拍板，不按序号起名；得 %s / %s）" % [got.get("type", "无"), got.get("name", "无")])
+		"夺来的船按 pirate_boat 入列、存名沿用敌船名「快船」（V0928-10 定 B，不按序号起名；得 %s / %s）" % [got.get("type", "无"), got.get("name", "无")])
 	var d: Dictionary = fleet.call("ship_def", "pirate_boat")
 	_expect(foe_hull_max > 0.0 and float(got.get("max_durability", -1.0)) == float(d.get("durability", -2))
 			and float(got.get("durability", -1.0)) == roundf(float(d.get("durability", 0)) * 0.5)

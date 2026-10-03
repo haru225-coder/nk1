@@ -770,7 +770,7 @@ func _check_pirate_boat(fails: Array) -> void:
 
 ## lane fx2：同型船同名，船屋「换上」钮分不清（todo「小毛病」）。旧档 / 直调 add_ship 不给名的两条福船（中）存名照旧同名，
 ## 上屏 display_name / ship_label 两两不同且存名不改；购入起名 hull_name 两次不同、不撞船队里已有的名；存档 round-trip 后仍去重。
-## 夺来的两条「快船」只在显示层去重，存名仍是「快船」（V0928-10 夺船命名待拍板，不在此定）。
+## 夺来的船（V0928-10 定 B，lane w53-14）：存名是敌船名；只一艘时上屏不编号，同名两艘以上才按次序「・甲」「・乙」。
 func _fleet_dup_names(fleet: Node, fails: Array) -> void:
 	fleet.set("ships", [])
 	fleet.call("add_ship", "sampan", "无名小艍")
@@ -801,14 +801,19 @@ func _fleet_dup_names(fleet: Node, fails: Array) -> void:
 	_check(str(fleet.call("ship_label", 3)) == "%s　福船（中）" % n1 and str(fleet.call("display_name", 3)) == n1,
 		"舟名的船屋题头 / 换上钮后缀船型（%s）" % fleet.call("ship_label", 3), fails)
 	fleet.set("ships", [])
+	fleet.call("add_ship", "fu_ship_medium", "安济")
+	fleet.call("add_ship", "pirate_boat", "快船")
+	_check(str(fleet.call("display_name", 1)) == "快船" and str(fleet.call("ship_label", 1)) == "快船",
+		"只夺一艘：上屏就叫「快船」，不编号（V0928-10 定 B；得「%s」/「%s」）" % [fleet.call("display_name", 1), fleet.call("ship_label", 1)], fails)
+	fleet.set("ships", [])
 	fleet.call("add_ship", "fu_ship_medium", "快船")
 	fleet.call("add_ship", "pirate_boat", "快船")
 	fleet.call("add_ship", "pirate_boat", "快船")
 	ships = fleet.get("ships")
+	var dn := [str(fleet.call("display_name", 0)), str(fleet.call("display_name", 1)), str(fleet.call("display_name", 2))]
 	_check(str(ships[1].get("name", "")) == "快船" and str(ships[2].get("name", "")) == "快船"
-		and str(fleet.call("display_name", 1)) != str(fleet.call("display_name", 2))
-		and str(fleet.call("display_name", 0)) != str(fleet.call("display_name", 1)),
-		"夺来两条快船存名不改、上屏去重（%s / %s / %s）" % [fleet.call("display_name", 0), fleet.call("display_name", 1), fleet.call("display_name", 2)], fails)
+		and dn == ["快船・甲", "快船・乙", "快船・丙"],
+		"夺来两条快船存名不改、同名三条上屏按次序「・甲」「・乙」「・丙」（V0928-10 定 B；得 %s）" % [dn], fails)
 	ships[1]["crew"] = 0
 	ships[2]["crew"] = 0
 	var short: Array = fleet.call("crew_shortfall")
