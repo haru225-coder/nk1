@@ -1359,6 +1359,13 @@ func _lin_hua_check(main: Node) -> void:
 	_check(hired_ok and not _has_id(Crw.roster(), "lin_hua") and note != "" and note in skip_lines,
 		"1273-06 跳四年跨过 1276-10：林华下船，跳年摘要有「%s」一行（摘要 %s）" % [note, skip_lines])
 	_check(not skip_lines.is_empty() and str(skip_lines[-1]).begins_with("——自"), "跳年摘要末行仍是「——自…至于…」")
+	# lane w53-10：跳年摘要「没有再上船」——只走一人不写「有的…有的…」（那是一群人的说法），走几人照旧
+	var one_left: String = GM.crew_left_line(["吴针"])
+	_check(one_left.begins_with("吴针没有再上船") and not one_left.contains("有的"),
+		"跳年摘要只走一人不写「有的回了乡，有的…」（%s）" % one_left)
+	var two_left: String = GM.crew_left_line(["吴针", "林华"])
+	_check(two_left.begins_with("吴针、林华没有再上船") and two_left.contains("有的回了乡，有的上了别家的船"),
+		"跳年摘要走了几人仍写「有的回了乡，有的上了别家的船」（%s）" % two_left)
 	GS.from_dict({})
 	Crw.from_dict({})
 

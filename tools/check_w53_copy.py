@@ -25,6 +25,9 @@
   G. 增减号后面要有数（三轮）：「名声 +」「士气 −」这类只有正负号没有数目的串即红；
      海图事件钮文写「（名声 +N）」的，按下去的处理函数须真是 GameState.fame += N。
      （征船「交出一条船（名声 +）」曾缺数，实加 6。）
+  H. 一个人不说「有的…有的…」（三轮）：跳年摘要「没有再上船」须经 GameManager.crew_left_line
+     （单人「不知是回了乡，还是上了别家的船」/ 多人「有的回了乡，有的上了别家的船」），
+     skip_years 里不得再内联多人句；两种说法的字面由 godot_story_check 判。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -377,11 +380,26 @@ def _scan_event_fame():
             FAILS.append(f"{rel}: 钉 G 没抓到「{must}」钮文的「（名声 +N）」——钮文缺数或改了格式")
 
 
+def _scan_crew_left_wiring():
+    rel = "scripts/GameManager.gd"
+    src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+    body = _func_body_gd(src, "skip_years")
+    if not body:
+        FAILS.append(f"{rel}: 钉 H 找不到 func skip_years")
+        return
+    if "crew_left_line(" not in body:
+        FAILS.append(f"{rel}: skip_years 的「没有再上船」一句没走 crew_left_line（单人会写成「有的…有的…」）")
+    for lit, _pos in _gd_strings_only(body):
+        if "有的回了乡" in lit:
+            FAILS.append(f"{rel}: skip_years 内联了多人句「{lit[:40]}」，只走一人时说不通")
+
+
 def main():
     self_fails = _self_test() + _self_test_event_fame()
     _scan_gd_strings()
     _scan_json_text()
     _scan_event_fame()
+    _scan_crew_left_wiring()
     all_fails = self_fails + FAILS
     if all_fails:
         print("结果：%d 项问题" % len(all_fails))

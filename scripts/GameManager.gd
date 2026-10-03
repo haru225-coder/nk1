@@ -255,7 +255,7 @@ func skip_years(n: int) -> Array:
 			left.append(str(Crew.candidate_def(str(Crew.hired[role_id])).get("name", "一个人")))
 			Crew.hired.erase(role_id)
 	if not left.is_empty():
-		lines.append("%s没有再上船。有的回了乡，有的上了别家的船。" % "、".join(left))
+		lines.append(crew_left_line(left))
 
 	# 士气与行情
 	Fleet.morale = mini(Fleet.morale, SKIP_MORALE_AFTER)
@@ -300,6 +300,13 @@ func _settle_history(gone: Array = []) -> void:
 	# 这里只发通告，排在新闻之后，同一个月里先闻募兵、后见人走
 	for c in gone:
 		monthly_notice.emit("【辞船】" + Crew.leave_note(c))
+
+
+## 跳年摘要里没再上船的人。「有的回了乡，有的上了别家的船」说的是一群人；只走了一个时换成单人的说法。
+func crew_left_line(names: Array) -> String:
+	if names.size() == 1:
+		return "%s没有再上船，不知是回了乡，还是上了别家的船。" % str(names[0])
+	return "%s没有再上船。有的回了乡，有的上了别家的船。" % "、".join(names)
 
 
 ## 按文件头而非扩展名加载图片。
