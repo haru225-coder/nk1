@@ -429,6 +429,9 @@ func _enemy_lose_crew(enemy: Node, n: int) -> void:
 
 ## 战斗通知浮字：在屏幕中央短暂显示（复用 FloatingText 场景），3 秒后淡出
 var _notice: Label = null
+## 浮字的淡出补间：每出一条先收掉上一条的（lane w53-2）。不收的话上一条照旧在它出字后 1.5 s 起淡、2.5 s 藏字，
+## 后来的这条跟着被淡掉藏掉——上一条出字后 1.5–2.5 s 内来的浮字（敌将改打法、士气纪实、抛钩、号令常这样接踵），玩家只见一闪或根本看不到
+var _notice_tween: Tween = null
 func _show_combat_notice(text: String) -> void:
 	if not is_instance_valid(_notice):
 		_notice = Label.new()
@@ -442,10 +445,12 @@ func _show_combat_notice(text: String) -> void:
 	_notice.text = text
 	_notice.visible = true
 	_notice.modulate.a = 1.0
-	var tween := create_tween()
-	tween.tween_interval(1.5)
-	tween.tween_property(_notice, "modulate:a", 0.0, 1.0)
-	tween.tween_callback(func(): _notice.visible = false)
+	if _notice_tween != null and _notice_tween.is_valid():
+		_notice_tween.kill()
+	_notice_tween = create_tween()
+	_notice_tween.tween_interval(1.5)
+	_notice_tween.tween_property(_notice, "modulate:a", 0.0, 1.0)
+	_notice_tween.tween_callback(func(): _notice.visible = false)
 
 
 func _update_hud() -> void:

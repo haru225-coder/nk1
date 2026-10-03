@@ -27,6 +27,9 @@ extends SceneTree
 ##   八、胜局札记不把元军哨船叫成海盗：SeaChart 打赢哪路敌船都用 CombatFx.sea_win_note，修复前那句写死「海盗已退」——
 ##       打赢元军哨船（_on_fight_patrol，source.event=yuan_patrol）札记也写「海盗已退。获财货…」。真起海图按哨船战果结算，
 ##       札记首行须以「敌船已退。」起头、不含「海盗」。
+##   九、接踵的浮字不被上一条的淡出补间吃掉：海战场中央浮字（_show_combat_notice）每条停满 1.5 秒再淡，修复前上一条的补间不收——
+##       它照旧在上一条出字后 1.5 s 起淡、2.5 s 藏字，隔 1.5–2.5 秒来的下一条（敌将改打法、士气纪实、抛钩、号令常这样接踵）只见一闪或看不到。
+##       关掉别的浮字源，先出「甲」、隔 2 秒出「乙」：乙出字后 0.8 / 1.3 秒须仍满墨在屏（甲 1.3 秒时满墨，判据判得出）。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -76,6 +79,8 @@ func _run() -> void:
 	await _sec_damage_order_follows_hazard(fleet)
 	print("== 八、胜局札记不把元军哨船叫成海盗")
 	await _sec_patrol_win_note()
+	print("== 九、接踵的浮字不被上一条的淡出补间吃掉")
+	await _sec_notice_overlap(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -500,6 +505,38 @@ func _sec_patrol_win_note() -> void:
 	_check(first.begins_with("敌船已退。") and first.find("海盗") < 0,
 		"八 打赢元军哨船，札记首行不写「海盗」（得「%s」）" % first)
 	chart.free()
+
+
+# ══ 九、接踵的浮字不被上一条的淡出补间吃掉 ══════════════════════════════
+
+## 敌船停物理帧（敌将不换打法、不抛钩）、士气簿停（不出纪实），中央浮字只剩本节直调的两条；计时走 SceneTree 计时器（同补间吃处理帧时长）。
+## 甲出字 1.3 秒时满墨（单条停满 1.5 秒，判据判得出）；隔 2 秒出乙，乙出字后 0.8 / 1.3 秒须仍满墨——修复前此时甲的补间已把乙藏掉
+func _sec_notice_overlap(fleet: Node) -> void:
+	var wm := await _battle(fleet, "fu_ship_medium", 40, {"type": "pirate_boat", "count": 1})
+	for f in _foes(wm):
+		(f as Node).set_physics_process(false)
+	var tracker = wm.get("_morale")
+	if tracker is Node:
+		(tracker as Node).process_mode = Node.PROCESS_MODE_DISABLED
+	var look := func(want: String) -> Array:
+		var n: Label = wm.get("_notice")
+		if n == null:
+			return [false, "无浮字"]
+		return [n.visible and n.text == want and n.modulate.a >= 0.99,
+			"「%s」%s a=%.2f" % [n.text, "在屏" if n.visible else "已藏", n.modulate.a]]
+	wm.call("_show_combat_notice", "甲")
+	await create_timer(1.3).timeout
+	var s0: Array = look.call("甲")
+	await create_timer(0.7).timeout
+	wm.call("_show_combat_notice", "乙")
+	await create_timer(0.8).timeout
+	var s1: Array = look.call("乙")
+	await create_timer(0.5).timeout
+	var s2: Array = look.call("乙")
+	_check(bool(s0[0]), "九 单出一条浮字 1.3 秒时满墨在屏（得 %s）" % s0[1])
+	_check(bool(s1[0]) and bool(s2[0]),
+		"九 甲出字 2 秒后来乙：乙出字后 0.8 / 1.3 秒仍满墨在屏，不被甲的淡出补间藏掉（得 %s / %s）" % [s1[1], s2[1]])
+	await _close(wm)
 
 
 class _ScriptErrLog extends Logger:
