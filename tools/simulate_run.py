@@ -330,9 +330,9 @@ def ending_ready(peak, visited, port):
     # settle_at（了结之地，lane w53-4 86de522）：GameState._requirement_items 要此刻泊在那一港，别港够数不了结；settle_due = 只差这一条
     return all(m in visited for m in req.get("must_visit", [])) and port == req.get("settle_at", port)
 
-def settle_due(src):
-    s = (chapters[4].get("ending_requires") or {}).get("settle_at", "")
-    return s if s and s != src and G.chapter >= 4 and not G.ending_id and ending_ready(G.peak_money, G.visited, s) else ""
+def settle_due(src):  # 本章章目只差「泊在 settle_at」一条时返回那一港（晋升、了结同一口径，lane w53-13）；否则空串
+    req = requirement(); s = req.get("settle_at", "") if isinstance(req, dict) else ""
+    return s if s and s != src and G.peak_money >= req.get("peak_money", 0) and len(G.visited) >= req.get("visited_count", 0) and all(m in G.visited for m in req.get("must_visit", [])) else ""
 
 def requirement():
     """当前未完成的晋升或了结条件。"""
@@ -372,7 +372,7 @@ def pinned_port(origin):
     for m in req.get("must_visit", []):
         if m not in G.visited and m in opened:
             return m
-    return ""
+    return next((s for s in [settle_due(origin)] if s in opened), "")  # 只差泊港一条时那一港占第一席（HeadingDraft._pinned，待拍板 4）
 
 def deal(origin, salt):
     ids = pool_ids(origin)

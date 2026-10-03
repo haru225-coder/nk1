@@ -1,7 +1,7 @@
 class_name HeadingDraft
 extends RefCounted
 ## 晨潮三向。风每一手最多发三个已解锁海港。
-## 本章尚未亲至的必须港占第一席，其余按顺风、短里程轮转。
+## 本章尚未亲至的必须港占第一席（章目只差泊在了结之地时，那一港占第一席），其余按顺风、短里程轮转。
 ## 不在解析期写 autoload 名：class_name 登记早于 autoload，直接写会编译失败。
 
 
@@ -81,4 +81,12 @@ static func _pinned(ids: PackedStringArray) -> String:
 		var pid := str(raw)
 		if pid in ids and not (pid in gs.visited_ports):
 			return pid
-	return ""
+	# 章目只差「泊在某港」（settle_at）一条时，那一港占第一席——否则够了本钱港数，还得候风等它碰巧进三向（平均十来日）
+	var settle := ""
+	for it in gs._requirement_items(req):
+		if it.get("done", false):
+			continue
+		if settle != "" or str(it.get("settle", "")) == "":
+			return ""
+		settle = str(it.get("settle", ""))
+	return settle if settle in ids else ""

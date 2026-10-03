@@ -5,6 +5,8 @@ extends SceneTree
 ##   L 船籍簿终章段（待拍板 4b）：了结之地那条章目写「泊在占城」，「终章・可了结」只在章目全达时写（与顶匾同一口径）。
 ##     修前章目叫「至占城了结一纲」，泊在占城时打勾成「已　至占城了结一纲」，读着像已经了结；「终章・可了结」第四章
 ##     任何时候都写，本钱还差两万也照写，离了牙行什么都不发生。
+##   H 晨潮钉了结之地（待拍板 4）：章目只差「泊在占城」一条时，晨潮三向第一席恒是占城。修前占城只按顺风短程轮转，
+##     从广州出发八手里多半不见占城（lane w53-12 实测平均候约十三日）。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_13_decide_probe.gd
 ## 末行 W53_13_DECIDE cases=N fails=M；fails>0 退 1。
 ## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
@@ -61,6 +63,7 @@ func _boot() -> void:
 		await process_frame
 	await _y_skip_cap()
 	await _l_ledger_settle()
+	await _h_heading_pin()
 	_report()
 
 
@@ -187,6 +190,27 @@ func _l_ledger_settle() -> void:
 	page = _page()
 	_expect(page.contains("终章・可了结"),
 		"反向基：章目全达时船籍簿照写「终章・可了结」（实读：%s）" % _snip(page, "第四章"))
+
+
+# ── H 晨潮钉了结之地 ─────────────────────────────────
+
+func _h_heading_pin() -> void:
+	print("── H 晨潮三向：只差泊在占城时占城占第一席")
+	var hd: GDScript = load("res://scripts/core/HeadingDraft.gd") as GDScript
+	var need := int(_gs.chapter_def(4).get("ending_requires", {}).get("peak_money", 0))
+	_ready_ch4("guangzhou", need + 1000)
+	var firsts: Array = []
+	for salt in 8:
+		firsts.append(str(hd.call("deal", "guangzhou", salt)[0]))
+	_expect(firsts.count("champa") == 8,
+		"章目只差泊在占城、人在广州：八手晨潮第一席都是占城（实得 %s）" % str(firsts))
+	# 反向基：本钱还差（不止差泊港一条）——不钉占城，照顺风短程轮转
+	_ready_ch4("guangzhou", need - 20000)
+	firsts.clear()
+	for salt in 8:
+		firsts.append(str(hd.call("deal", "guangzhou", salt)[0]))
+	_expect(firsts.count("champa") < 8,
+		"反向基：本钱未够时不钉占城，第一席照轮转（实得 %s）" % str(firsts))
 
 
 func _snip(t: String, anchor: String, span := 60) -> String:
