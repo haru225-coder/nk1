@@ -42,6 +42,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from verify_economy import gd_round, price_at
 
 # ── 生产定价与跳年常量：从 .gd 源码读，改公式时这里自动跟上 ──
+# Main 的源码断言读拼回的「未拆时」Main（tools/main_stitch.py，E-4 接刀：行会/赴试常量与下刀 Main 拆件让路）。
+import main_stitch
 import re as _re
 _eco_src = open(os.path.join(ROOT, "scripts", "core", "Economy.gd"), encoding="utf-8").read()
 _gm_src = open(os.path.join(ROOT, "scripts", "GameManager.gd"), encoding="utf-8").read()
@@ -1151,7 +1153,7 @@ check(title_of(InvBook.fame)["loan_bonus"] == 2500, "都保赊贷 +2500")
 print()
 print("行会 / 贡院账目与新闻倍率隔离（一次性账本、一次性 market mul）")
 print("="*70)
-main_src = open(os.path.join(ROOT, "scripts", "Main.gd"), encoding="utf-8").read()
+main_src = main_stitch.read_main_src()  # E-4 接刀：读拼回的「未拆时」Main（tools/main_stitch.py）
 def main_const(name):
     m = re.search(rf"const {name} := ([0-9]+)", main_src)
     if not m:

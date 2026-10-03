@@ -50,7 +50,10 @@ for p, src in sources.items():
         check(exists(name), f"{p.relative_to(ROOT)} 引用 res://assets/{name}，文件不存在")
 
 # ── 2. Main.gd 背景表 ───────────────────────────────────
-main_src = (ROOT / "scripts" / "Main.gd").read_text(encoding="utf-8")
+# 读拼回的「未拆时」Main（tools/main_stitch.py read_main_src，E-4 接刀）：背景表常量随拆刀搬进拆出件也找得到。
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import main_stitch
+main_src = main_stitch.read_main_src()
 port_bg_keys = set()
 for tbl in ("PORT_BG", "FACILITY_BG", "ENDING_BG", "PROLOGUE_PAGE_BG"):
     m = re.search(r'const %s := \{(.*?)\n\}' % tbl, main_src, re.S)
