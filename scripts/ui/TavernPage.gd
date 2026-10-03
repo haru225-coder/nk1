@@ -101,9 +101,12 @@ static func setup_hiring(main: Control, port_id: String) -> void:
 		var cid: String = str(c.get("id", ""))
 		var role: Dictionary = Crew.role_def(c.get("role", ""))
 		var cch: Dictionary = GameManager.character_for_crew(cid)
-		var card: VBoxContainer = main._person_slip(cch, str(c.get("name", "")), "%s　%s" % [
-			role.get("name", ""), main._skill_rank(int(c.get("level", 1))),
-		], int(c.get("level", 1)))
+		var aside := "%s　%s" % [role.get("name", ""), main._skill_rank(int(c.get("level", 1)))]
+		# 史实辞船的人离走不到一年：品级后写明只跟到几月（「舵工　谙熟　只跟到九月」），入伙钱付不付由玩家掂量
+		var stay := Crew.leave_hint(c)
+		if stay != "":
+			aside += "　" + stay
+		var card: VBoxContainer = main._person_slip(cch, str(c.get("name", "")), aside, int(c.get("level", 1)))
 		# 职事真正管用的是这一句（航程、价差、减员……），写在品级下面；五维只作展示，压淡（第 1 轮评审 UX M5）
 		var eff := str(role.get("effect_hint", ""))
 		if eff != "":

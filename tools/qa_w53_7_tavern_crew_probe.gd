@@ -6,6 +6,8 @@ extends SceneTree
 ##   T 在侧：人不在世就不在侧。林阿舶 characters.json died=1274，人物志小传自 1274 起写「咸淳十年前后病故」、
 ##     1275 辞官那段写「林老爹去年走了」，修前泉州酒馆照样年年摆他的「在侧」卡，点「见」他还说「你叔父那笔，我还记着」，
 ##     见面页抬头却写「泉州海商　卒于 1274」。
+##   H 只跟到几月：林华候雇到 1276-08、1276-10 史实辞船——窗末月雇来只跟九月一个整月，入伙钱照付。这是设计（不是错位），
+##     修前卡上却一字不提；现在离辞船不到一年时品级行写明「只跟到九月」（跨年「只跟到明年九月」），并核写的月份是实话。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 
@@ -48,6 +50,7 @@ func _boot() -> void:
 		await process_frame
 	_w_wages()
 	await _t_presence()
+	await _h_leave_hint()
 	_report()
 
 
@@ -155,6 +158,46 @@ func _t_presence() -> void:
 	_gs.last_port = "quanzhou"
 	await _goto("quanzhou_yamen")
 	_expect(_label("市舶司小吏") != null and _button("见") != null, "1275-06 泉州市舶司：市舶司小吏「在侧」照旧")
+
+
+# ── H 只跟到几月：史实辞船的候选离走不到一年，酒馆卡品级后写明他在船的末一月 ──
+
+func _h_leave_hint() -> void:
+	print("── H 只跟到几月：林华候雇窗里离辞船不到一年，酒馆卡写明只跟到九月；写的月份就是他在船的末一月")
+	for spec in [[1275, 9, "舵工　谙熟"], [1275, 10, "舵工　谙熟　只跟到明年九月"], [1276, 8, "舵工　谙熟　只跟到九月"]]:
+		_stage(int(spec[0]), int(spec[1]), 3)
+		await _goto("quanzhou_tavern")
+		var got := _aside_of("林华")
+		_expect(got == str(spec[2]), "%d-%02d 泉州酒馆林华卡品级行「%s」（实读：「%s」）" % [int(spec[0]), int(spec[1]), str(spec[2]), got])
+	# 同一页别的候选不带这一截（无 leave_from）
+	var wu := _aside_of("吴针")
+	_expect(wu == "火长　初习", "1276-08 同页吴针卡品级行只写「火长　初习」（实读：「%s」）" % wu)
+	# 卡上写的月份说的是实话：八月底雇来，九月末日仍在船，十月初一下船
+	var said := _aside_of("林华")
+	var month := said.substr(said.find("只跟到") + 3) if said.find("只跟到") >= 0 else ""
+	_gs.money = 5000
+	_cal.from_dict({"year": 1276, "month": 8, "day": 30})
+	var hired_ok := bool((_crew.call("hire", "lin_hua") as Dictionary).get("ok", false))
+	var gm: Node = root.get_node("GameManager")
+	gm.call("advance_days", 30)
+	var last_day := str(_cal.call("get_month_name"))
+	var still := (_crew.hired as Dictionary).has("duogong")
+	gm.call("advance_days", 1)
+	var gone := not (_crew.hired as Dictionary).has("duogong")
+	_expect(month != "" and hired_ok and still and gone and last_day == month,
+		"卡上「只跟到%s」：八月三十雇入，%s末日仍在船、次日下船（实读：末日月名 %s / 在船 %s / 次日已下 %s）" % [
+			month, month, last_day, still, gone])
+	_crew.from_dict({})
+
+
+## 候选卡（人物卡）品级行：名字那行的上一级 Head 下的 Aside
+func _aside_of(person: String) -> String:
+	var nm := _label(person)
+	if nm == null:
+		return "<无此卡>"
+	var head := nm.get_parent().get_parent()
+	var aside := head.get_node_or_null("Aside") as Label if head != null else null
+	return str(aside.text) if aside != null else "<无品级行>"
 
 
 func _goto(scene_id: String) -> void:

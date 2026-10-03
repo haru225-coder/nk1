@@ -229,6 +229,22 @@ func hireable_by_history(c: Dictionary) -> bool:
 	return at < 0 or Calendar.year * 12 + Calendar.month - 1 <= at - HISTORY_HIRE_LEAD
 
 
+## 酒馆候选卡品级后那一截「只跟到九月」：带 leave_from 的人离辞船月不到一年、又还在候雇窗里时，写明他在船的末一月——
+## 林华候雇到 1276-08，八月底雇来只跟九月一个整月，十月初一就下船；卡上不写，玩家照常付了入伙钱才发现人要走。
+## 月名借 Calendar 自己的写法（临时拨到那一月、算完拨回，同 Main._siege_fall_point），跨年写「明年」；不该写时返回空串。
+func leave_hint(c: Dictionary) -> String:
+	var at := _month_seq(str(c.get("leave_from", "")))
+	var now := Calendar.year * 12 + Calendar.month - 1
+	if at < 0 or at - now > 12 or not hireable_by_history(c):
+		return ""
+	var last := at - 1
+	var keep: Dictionary = Calendar.to_dict()
+	Calendar.from_dict({"year": floori(last / 12.0), "month": last % 12 + 1, "day": 1})
+	var month_name := Calendar.get_month_name()
+	Calendar.from_dict(keep)
+	return "只跟到%s%s" % ["明年" if floori(last / 12.0) > Calendar.year else "", month_name]
+
+
 ## 月初由 GameManager.advance_days 调用，排在发饷之前，到月下船的人不再扣当月俸。
 ## 返回下船的候选（crew.json 条目）；通告由 GameManager._settle_history 排在新闻之后发，跳年时另进摘要。
 ## 按候选 id 回查 crew.json 判日子，不看存档里的快照，旧档里已雇的人也照样下船。

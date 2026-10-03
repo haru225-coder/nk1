@@ -2579,6 +2579,17 @@ if (
 else:
     print("  ✗ 酒馆募人/水手雇请纪实未接上（Lane AB）")
     problems.append("酒馆募人 Lane AB 契约未接")
+# lane-w53-7：史实辞船的候选（林华候雇到 1276-08、1276-10 下船）离走不到一年，酒馆卡品级行写明「只跟到几月」——
+# 窗末月雇来只跟一个整月、入伙钱照付是设计，卡上一字不提玩家就白掏入伙钱。文案与接线锁在这里，行为见 qa_w53_7_tavern_crew_probe H 段
+if (
+    _has_func(crew_src, "leave_hint")
+    and '"只跟到%s%s"' in crew_src
+    and _calls(_ab_hire, "Crew.leave_hint")
+):
+    print("  ✓ 酒馆候选卡写明史实辞船的人只跟到几月（Crew.leave_hint → 品级行；lane-w53-7）")
+else:
+    print("  ✗ 酒馆候选卡没写史实辞船的人只跟到几月（Crew.leave_hint / 「只跟到」文案 / _setup_hiring 接线；lane-w53-7）")
+    problems.append("酒馆候选卡辞船提示契约未接（lane-w53-7）")
 port_body = _locate_func(main_src, "_setup_port_mode")
 if (
     _has_func(main_src, "_mount_status_strip")
