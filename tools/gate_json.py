@@ -287,9 +287,9 @@ REGISTRY = [
     # lane w25-j5：拍板清单 E-16 升格——40.8 秒挂了约 30 小时没人看见（lane g5）才升的档，升格判据见 docs/GATES.md §五.2
     {"id": "cutscene_data_only", "tier": "must", "kind": "py",
      "file": "tools/art/import_cutscene_bgs.py", "usage": "--data-only",
-     "judge": "（lane w20-a7 去 PIL，w25-j5 升必须跑）过场数据守门：`data/cutscenes.json` 逐镜时长合计落在 20–40 / 60–90 秒窗内（不含章末了结的 20–35 秒档）、cam 在 cover_view 上夹得动、字幕 t 离镜头结束 ≥1.5 秒；.import_manifest.json 的 sha1 / size / crop 与产物一致；来源目录一律不看（PIL 也不需要）",
+     "judge": "（lane w20-a7 去 PIL，w25-j5 升必须跑）过场数据守门：`data/cutscenes.json` 逐镜时长合计落在 20–40 / 60–90 秒窗内（不含章末了结的 20–35 秒档）、cam 在 cover_view 上夹得动、字幕 t 离镜头结束 ≥1.5 秒；镜头 / 字幕 / 章节卡 / bg_alt 只认播放器认的键、字幕与 bg_alt 的 if_flag / unless_flag 须是有人立的旗、字幕 hold ≥1.5 秒（lane w53-9）；每次跑带七格内存样本自检，哪条判据被退掉即红（lane w53-12 S1–S5、w53-9 S6–S7，§五.3）；.import_manifest.json 的 sha1 / size / crop 与产物一致；来源目录一律不看（PIL 也不需要）",
      "green": "`import_cutscene_bgs --check：N 张背景合规［产物（按清单 sha1）］；data/cutscenes.json 契约校验通过`",
-     "red": "`FAIL …` 行（如 `FAIL cutscenes.ending_root 共 5 镜 40.3 秒，要求 3–5 镜、20–40 秒`），rc=1"},
+     "red": "`FAIL …` 行（如 `FAIL cutscenes.ending_root 共 5 镜 40.3 秒，要求 3–5 镜、20–40 秒`；判据被退掉时 `FAIL 契约样本自检 S<n> …：漏判——…`），rc=1"},
     # lane w26-k3：w24-c1 遗留②「契约文档每档角色 / 品级一览人工维护、与 characters.json 无自动核对」。
     # 快（约 0.2 s）、只读，触发条件照 §五.2 按路径也判得准（动 characters.json / 契约文档），故 lane 档不升 must；
     #「为什么归这一档」是写作口径、机器不答（文档里点明留人）。本条三处把原稿文件名写成
