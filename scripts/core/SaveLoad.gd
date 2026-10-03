@@ -410,14 +410,14 @@ func _check_partitions(data: Dictionary) -> String:
 			why = _bad_fields(ship, ["durability", "max_durability", "crew", "sail_level", "armor_level"],
 					["cargo"], [])
 			if why != "":
-				return "fleet.ships 条目." + why
+				return "fleet.ships 条目：" + why
 			for gid in _as_dict(ship.get("cargo", {})):
 				var e = (ship["cargo"] as Dictionary)[gid]
 				if typeof(e) != TYPE_DICTIONARY:
 					return "fleet.ships.cargo.%s 不是对象" % gid
 				why = _bad_fields(e, ["qty", "avg_cost"], [])
 				if why != "":
-					return "fleet.ships.cargo.%s 条目." % gid + why
+					return "fleet.ships.cargo.%s 条目：" % gid + why
 
 	var crew: Dictionary = _as_dict(data.get("crew", {}))
 	why = _bad_fields(crew, ["unpaid_months"], ["hired", "departed"])
