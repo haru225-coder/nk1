@@ -142,7 +142,8 @@ REGISTRY = [
               "只看 git 已跟踪的文档（别的 lane 没提交的新文档不染红共用树，与 tools_gd 同口径），未跟踪的只记 `⚠`；git 不可用时退回扫盘",
      "green": "`✓ 索引里有链接… / ✓ 索引链接都指向存在的文件… / ✓ 索引里没有重复链接 / ✓ git 已跟踪的 docs/**/*.md 都在索引里…` + `结果：全部通过`",
      "red": "`✗ …；DEAD：…` / `✗ …；MISSING：<文件>…（在 docs/README.md 补一行）` / `✗ …；DUP：…`；`结果：N 项问题`"},
-    {"id": "gates_md", "tier": "lane", "when": "动门禁清单 / docs/GATES.md，或改 README「验证」段的道数句", "kind": "py", "file": "tools/gates_md.py",
+    # lane w40-k3 升进必跑（拍板 E-14，照 §五.2 三条件：「登记与文档同步没同步」别的 lane 自己判不准——gd4 patrol 缺 DISPLAY=:2 即此类；实测 0.14 s；只读纯 stdlib 不写盘）：升前进一键跑就自相咬尾——本道逐条比 §三 / todo.md 两处一键跑段（含自己那条 cmd），放进一键跑才合法；原为 lane 加跑档 + CI §四 步骤 3（照 gd21 / cs21 先例步骤随之删掉）
+    {"id": "gates_md", "tier": "must", "kind": "py", "file": "tools/gates_md.py",
      "judge": "（lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段；w20-b3 加一键跑把关与 README 道数对账）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 收尾截图的脚本全部入册、接 shot_gate 的脚本都挂压帧 `ShotGate.frame_pressure`（lane gd18）；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序；一键跑把关（w20-b3，判据自检见附属「三之一」）：两处一键跑命令段不许带关断开关 / `--help` / `--dry-run`、必跑档不许缺席、条数不许不符，README「下面 N 道」的道数与注册表一键跑条数对得上",
      "green": "`结果：全部通过`", "red": "`✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write`"},
     # lane gd21 升进必跑：「写没写外部路径」自己判不准（照抄命令 / 默认根最容易带进来），跑一次 <1s、只要 python3 + git、不写盘
@@ -758,7 +759,7 @@ SUBCHECKS = [
 ]
 
 # CI 建议步骤（lane gd4）：docs/GATES.md §四 由它生成，**只是建议，不进 repo 的 CI 配置**。
-# 先跑一键跑十六条（导入步骤 tier=step + 必跑十五道 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
+# 先跑一键跑十九条（导入步骤 tier=step + 必跑十八道 tier=must 的 cmd），再跑下面这些 CI 专属步骤；每步退出码非 0 即红。
 CI_STEPS = [
     {"id": "侧车成对 / 一致", "lane": "ag / ag2 / gd5", "needs": "python3 + git（紧跟第 0 步的导入步骤之后跑）",
      "cmd": "python3 tools/check_sidecars.py",
@@ -770,10 +771,6 @@ CI_STEPS = [
      "expect": "`✓ --regen：…逐字节一致，未改动` + check_symbols `结果：全部通过`，`git diff` 无输出、退 0",
      "fail": "`git diff` 打出 `tools/builtin_api.txt` 的差异、退 1 = 提交的清单与本机 Godot 的 ClassDB 导出不一致"
              "（升级了 Godot / 改了 `gen_builtin_list.gd` 的 CLASSES 却没连同提交重导结果）；`--regen` 本身失败则 check_symbols 先退 1"},
-    {"id": "GATES.md 与注册表一致", "lane": "gd3", "needs": "python3 + git",
-     "cmd": "python3 tools/gates_md.py",
-     "expect": "`结果：全部通过`",
-     "fail": "有人手改了 §一 / §二批量巡检 / §四 生成块、改了注册表没 `--write`、§三 或 `.claude/todo.md` 验证段的一键跑命令与必跑清单不符，或注册的脚本挪走了"},
     {"id": "docs 索引与文件一致", "lane": "doc3 / doc4", "needs": "python3 + git",
      "cmd": "python3 tools/check_docs_index.py --check",
      "expect": "`结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`）",

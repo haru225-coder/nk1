@@ -32,7 +32,7 @@
 | 18 | save_migrate_probe | Godot | 加跑：动存档结构 / save_schema | — | `godot --headless --path . -s res://tools/save_migrate_probe.gd` | `python3 tools/gate_json.py --godot save_migrate_probe` | （lane sv / fx6；w20-c9 加迁移矩阵关键字段档）老档沿迁移链逐级升到本版（`SaveLoad.SAVE_SCHEMA`，现为 3：v1→v2→v3）：v1 老档读入补字段、回写本版、原件留 .v1；v2 档（无 `state.met_ids`）按雇用记录 / 在船职事 / 守城见林华回填人物志「已识」、推不出留空、回写本版、原件留 .v2；未来档明确拒读、不退副抄、文件不动；w20-c9 关键字段过链 K1–K4b：v1/v2 旗（含玉湖事件标记 chen_zan_stake）、发现录、水粮、船式样读回不丢，v1 无 fleet 分区判好档但落缺省（高危档回归），v2 已有 met_ids 不被回填顶掉——详见 docs/存档迁移矩阵.md | `SAVE_MIGRATE_PROBE PASS` | `✗` 行；`SAVE_MIGRATE_PROBE FAIL fails=k`；输出含 `SCRIPT ERROR` 即算失败 |
 | 19 | check_save_version_contract | Python | 加跑：动 SaveLoad 的 VERSION / SAVE_SCHEMA / 存档头拒读口径 | — | `python3 tools/check_save_version_contract.py` | `python3 tools/check_save_version_contract.py --json` | （lane w21-d18）`scripts/core/SaveLoad.gd` 的存档头 VERSION 与结构版 SAVE_SCHEMA 结对：三条配对判据全部机械判——B1 `VERSION < 3`（降头等于再版废档，比旧读档器最后认的头还小）、B2 `SAVE_SCHEMA > VERSION`（结构版升了头没跟，旧版游戏照样收下新结构档，即 K3 静默落缺省一型，见 docs/存档迁移矩阵.md）、B3 `VERSION > SAVE_SCHEMA`（头升了结构版没跟，本版读不出自己写的档）；另守「拒读守卫在迁移前置位」句式（`if schema > … or ver > …` → future → 迁移）与契约注释三字样在声明块里；每次先跑「零、判据自检」：内存变体单独改 VERSION 须红 B3、单独改 SAVE_SCHEMA 须红 B2、两者同升须绿、降头须红 B1、拆守卫须红 G | `结果：全部通过`（零、判据自检 8 条 ✓ + 一、结对 5 条 ✓） | `✗` 行：配对三条各写明修法（B2 引 docs/存档迁移矩阵.md）；`结果：N 项问题` |
 | 20 | check_docs_index | Python | 加跑：docs/ 下 .md 增删，或 docs/README.md 索引行变更（d4 规约：纯文档 lane 收尾必跑两道之一） | — | `python3 tools/check_docs_index.py [--check]` | `python3 tools/check_docs_index.py [--check] --json` | （lane doc4 立，w22-h3 入册）`docs/README.md` 是 docs/ 的唯一索引，核它与 docs/ 下的文件对得上：MISSING = git 已跟踪的 docs/**/*.md（README.md 本身除外）没在 README 里以 `[…](路径)` 链到；DEAD = README 里的相对链接指向不存在的文件（`#锚点` 去掉再查，http / mailto 不查）；DUP = 同一路径链了不止一次；只看 git 已跟踪的文档（别的 lane 没提交的新文档不染红共用树，与 tools_gd 同口径），未跟踪的只记 `⚠`；git 不可用时退回扫盘 | `✓ 索引里有链接… / ✓ 索引链接都指向存在的文件… / ✓ 索引里没有重复链接 / ✓ git 已跟踪的 docs/**/*.md 都在索引里…` + `结果：全部通过` | `✗ …；DEAD：…` / `✗ …；MISSING：<文件>…（在 docs/README.md 补一行）` / `✗ …；DUP：…`；`结果：N 项问题` |
-| 21 | gates_md | Python | 加跑：动门禁清单 / docs/GATES.md，或改 README「验证」段的道数句 | — | `python3 tools/gates_md.py` | `python3 tools/gates_md.py --json` | （lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段；w20-b3 加一键跑把关与 README 道数对账）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 收尾截图的脚本全部入册、接 shot_gate 的脚本都挂压帧 `ShotGate.frame_pressure`（lane gd18）；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序；一键跑把关（w20-b3，判据自检见附属「三之一」）：两处一键跑命令段不许带关断开关 / `--help` / `--dry-run`、必跑档不许缺席、条数不许不符，README「下面 N 道」的道数与注册表一键跑条数对得上 | `结果：全部通过` | `✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write` |
+| 21 | gates_md | Python | 必跑 | ✓ | `python3 tools/gates_md.py` | `python3 tools/gates_md.py --json` | （lane gd3 / gd4 / gd5；gd5 加 §二 批量巡检块、`.claude/todo.md` 验证段；w20-b3 加一键跑把关与 README 道数对账）本注册表 vs docs/GATES.md §一、§二批量巡检、§四三个生成块逐字一致；注册的脚本都在；接 shot_gate 收尾截图的脚本全部入册、接 shot_gate 的脚本都挂压帧 `ShotGate.frame_pressure`（lane gd18）；附属自检的开关还在源码里；§三 小节编号对得上；§三 与 todo.md 验证段的一键跑命令与必跑档逐条同序；一键跑把关（w20-b3，判据自检见附属「三之一」）：两处一键跑命令段不许带关断开关 / `--help` / `--dry-run`、必跑档不许缺席、条数不许不符，README「下面 N 道」的道数与注册表一键跑条数对得上 | `结果：全部通过` | `✗` 行（附首处差异）；`结果：N 项问题`；修法 `python3 tools/gates_md.py --write` |
 | 22 | RefsMacPath | Python | 必跑 | ✓ | `python3 tools/check_mac_paths.py` | `python3 tools/check_mac_paths.py --json` | （lane doc9）git 已跟踪的文本文件里不许写 Mac / Homebrew 专属绝对路径（Mac 家目录、Homebrew 前缀、Godot 应用包、用户资料库目录等 10 条，模式与理由见脚本 `PATTERNS`；lane cs20 起每行另把字面量 / 家目录之间的拼接折成一段再对，与 RefsHostPath 共用 `tools/path_scan.py`；lane gd21 起脚本自身也扫，只按行排除 `PATTERNS` / `SAMPLES` 块的条目行，块里夹了别的行即判红）；每次先跑「零、模式自检」（lane auditfix2）：`SAMPLES` 正向样本（含独立审计原反例两行）须全认出、`CLEAN` 反向样本须全不命中；已定级的留档进白名单 `ALLOW`：按文件登记命中行数、头部横幅 / 回指注字样与理由，行数不符、字样丢了、条目失效都判红；未跟踪文件只记 `⚠` | `白名单外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 PATTERNS / SAMPLES 块除外）` + `结果：全部通过` | `✗` 行（白名单外命中逐行列 `文件:行 … ← 命中串`；白名单文件行数不符；横幅 / 回指注丢了；失效条目；本脚本 PATTERNS / SAMPLES 块形状不对；零节样本漏认 / 误报）；`结果：N 项问题` |
 | 23 | RefsHostPath | Python | 必跑 | ✓ | `python3 tools/check_host_paths.py` | `python3 tools/check_host_paths.py --json` | （lane gd22）git 已跟踪的文本文件里不许写本机 Linux 绝对路径：`/home/<用户>` 与 `/workspace/<目录>`（仓库根本身一律红，命令写 `--path .`）；仓外根登记在脚本 `ROOTS`（截图根 `NK1_SHOT_DIR`、简报目录 `NK1_BRIEFS` 两条）：文档 / 注释（lane cs20 起按注释起点切行，行尾注释也算）里随便写，代码段只许 owner 写一次默认值（字面量拼接折成一段再判，与 RefsMacPath 共用 `tools/path_scan.py`），owner 丢了默认值或环境变量名判失效；每次先跑「零、样本自检」（lane cs21）：`SAMPLES` 正向样本（含 gd22 清掉的原文三行、cs20 的拼接写法）在 .gd 代码段 / 注释行 / .md 三处须全判红、`CLEAN` 反向样本三处须全不判红、`ROOTS` 每条按 owner 代码行 / 非 owner 代码行 / 拼接 / 行尾注释 / .py 文档串 / .md 各判一次；本脚本自身也扫（只放过 `ROOTS` 登记行，按行排除 `SAMPLES` 块，块形状不对即判红），未跟踪文件只记 `⚠` | `登记外 0 处命中（扫 N 个已跟踪文本文件，含本脚本、其 SAMPLES 块除外）` + `结果：全部通过` | `✗` 行（逐行列 `文件:行 … ← 命中串`；非 owner 代码行写死仓外根另注；ROOTS 条目失效；本脚本 SAMPLES 块形状不对；零节样本漏判 / 误报、owner 口径不对）；`结果：N 项问题` |
 | 24 | check_decision_refs | Python | 必跑 | ✓ | `python3 tools/check_decision_refs.py` | `python3 tools/check_decision_refs.py --json` | （lane dec3 / dec4）`docs/待策划拍板清单_2026-09-28.md` 反引号里的每处「文件:行」：文件在、行号不越界、指的还是清单头部锚（「行号：……按 HEAD `x`」）那个提交里的同一段内容；挪了位的按 diff / 同文件原文 / 函数名（照 main_splits 改名表进拆出件）/ 跨文件原文四层算出新号；清单里不许留 `--fix` 打的「〔跟号待核：…〕」；改号自证：和上一版清单逐对比「旧锚旧号那段 == 本版锚本版号那段」，旧那段原文还在别处即号写歪了（lane auditfix1）；仓外 brief 引用只查越界（`$NK1_BRIEFS` 不在只记 `⚠`）；落点所在函数只剩一行转发（func_body.forward_of）的穿透到真体再跟号，穿透不下去报「跟到一行转发」，每次先跑内存里的「转发穿透自检」10 形（lane auditfix6）；输出确定序（lane cs23）：逐处的 ⚠ / ✗ 行先收齐、按「清单行号 → 行内第几处引用 → 类别」排好再印，`--since` / 改号自证的新旧配对也按新版引用的清单顺序逐对比——原先配对取 `ko.keys() & kn.keys()`（集合，遍历顺序随 PYTHONHASHSEED 变），有 2 处以上 ⚠ / MISMATCH 时同基连跑每次行序不同、「逐字节同」比对偶发假 DIFF（lane cs18 待议 4） | `✓ 转发穿透自检 10/10（…）` + `✓ ledger_refs_mutants 落点预检：Z1–Z5 5 格判对；40 + 5 格变异…都落得上（…）；…`（lane w19-g8，SUBCHECKS）+ `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）。同一基连跑 5 次 stdout 逐字节同（lane cs23 实测：六个历史基 × 默认 / `--show`、5 个 `--since` 旧版与号写歪的脏树各 5 次同 md5）；lane cs25 起由 ledger_refs_mutants 二节固化（5 个固定种子、去掉排序须判不确定） | `✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；`…可跟号 → 文件:新号（穿透一行转发 …）` / `…跟不上，要人工：跟到一行转发：…` / `✗ 转发穿透自检 S… 期望 … 实得 …`（脚本自身坏了）；`✗ ledger_refs_mutants 落点预检 · <编号>：变异没落上——…`（变异靶子漂了，lane w19-g8，见 SUBCHECKS）；`结果：有问题（DRIFT 先跑 --fix 自动跟号…）`；修法 `python3 tools/check_decision_refs.py --fix`（所引文件先提交） |
@@ -59,7 +59,7 @@
 | 45 | qa_save_stale_count1_probe | Godot | 加跑：动 scripts/core/SaveLoad.gd 的 audit_stale_refs 港类核验（_flag_port / out["port"] 落键口径），或动 tools/qa_save_stale_count1_probe.gd 自身 | — | `godot --headless --path . -s res://tools/qa_save_stale_count1_probe.gd` | `python3 tools/gate_json.py --godot qa_save_stale_count1_probe` | （lane w38-k1 · 无门禁 sweep 补位——j3mut 退化纹钉件，w36-k3 交主控 #2 A 类原句立）「恰 1 枚已删港名目」存档直调 load_game → last_stale（母本 save_stale_refs_probe.gd 同型写信道位 97）：现网 audit_stale_refs 对恰 1 枚须落 out["port"]["count"]==1、sample==该 id、examples erase。K1 现网临界（visited_ports 恰 1 枚）；K2 三个触发位各仅 1 处指向 stale 港（visited_ports / last_port / contract.from）各落 count==1；K3 对照 0 枚（port 键不在）/ 双旧港 count==2 / 同 id 双现去重仍 count==1。`> 0` 被退化成 `> 1`（j3mut 实证在卷）则 K1/K2 整段漏报 → 本探针 fails≥1 诱曝，现样全绿。末两行 `STALE_COUNT1 cases=N fails=M` + `QA_STALE_COUNT1_END`，M>0 退 1。 | 逐条 `  ✓ …` + 末两行 `STALE_COUNT1 cases=7 fails=0` + `QA_STALE_COUNT1_END`，退 0 | `  ✗ …count 期望 1 实得 0…`（`> 0→> 1` 漏报恰 1 枚——j3mut 退化纹）/ `… sample 期望 …` / `… examples 未 erase …` 各指名行 + 末两行 `STALE_COUNT1 cases=N fails=M`（M>0），退 1 |
 | 46 | check_probe_registry | Python | 必跑 | ✓ | `python3 tools/check_probe_registry.py` | `python3 tools/check_probe_registry.py --json` | （lane w27-k4，k11 审计「最该补的门禁」第 2 条）tools/ 下每支 git 已跟踪 `*_probe.gd` 要么被点名（REGISTRY file 列，或 SHOT_PROBES 截图册——截图脚本走 shot_gate 批量跑，算被跑），要么登进 `tools/check_probe_registry.py` 的 EXEMPT 豁免名单（每行三格：探针名 / lane·来源 / 理由一句，形状缺格即红）；漏注册且漏豁免一律行首红字点名。豁免名单指着不在仓的探针（删探针没删名单行）也红。零、判据自检每次先在内存跑：C0 现网名单须全绿；E1 拼错豁免名 / E2 删一格豁免 / E3 覆盖名单缺一支，三格反向变异各须点出那一支红。豁免名单全表与逐条理由见脚本头注；（qa_rest_days_probe 一支已由 wave27 k3 登进头段 REGISTRY lane 档，8170079——不在豁免名单。） | 零节 C0 + E1–E3 全 `✓` → 一节 5 条 `✓`（末条 `✓ 漏注册且漏豁免 0 支（全绿）`）→ 二节名单形状 `✓` → `结果：全部通过` | `✗ C0 现网名单普查全绿（漏网 N 支）`（豁免名单与注册表对不上现网——先修名单不修自检）/`✗ EXEMPT 第 k 行…`（名单形状 / 来源格缺 lane·commit）/`✗ 豁免名单每行都指着在仓探针——[…] 已不在仓 / 名写错` / `✗ 探针漏册：tools/<X>_probe.gd——不在 REGISTRY / SHOT_PROBES，也未登豁免`（逐支点名）/`✗ En 反向格：…`（自检对不上 = 闸判不出这一形）；`结果：N 项问题` |
 
-每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十二道 Python + smoke/compile/story/p7/patrol」十七道门禁；8、15、16、17、18、19、20、21、25、26、27、28、29、30、32、33、34、35、36、37、38、39、40、41、42、43、44、45 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十三道 Python + smoke/compile/story/p7/patrol」十八道门禁；8、15、16、17、18、19、20、25、26、27、28、29、30、32、33、34、35、36、37、38、39、40、41、42、43、44、45 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（12 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -180,7 +180,7 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 
 <!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-# 必跑十八条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+# 必跑十九条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
 rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
 python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
 python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
@@ -195,6 +195,7 @@ godot --quiet --headless --path . -s res://tools/godot_compile_check.gd -- --jso
 godot --quiet --headless --path . -s res://tools/godot_story_check.gd -- --json > /tmp/gates/story.json
 godot --quiet --headless --path . -s res://tools/p7_guild_exam_smoke.gd -- --json > /tmp/gates/p7.json
 DISPLAY=:2 godot --quiet --path . -s res://tools/patrol_shell.gd -- --json > /tmp/gates/patrol.json
+python3 tools/gates_md.py --json > /tmp/gates/gates_md.json
 python3 tools/check_mac_paths.py --json > /tmp/gates/RefsMacPath.json
 python3 tools/check_host_paths.py --json > /tmp/gates/RefsHostPath.json
 python3 tools/check_decision_refs.py --json > /tmp/gates/check_decision_refs.json
@@ -242,6 +243,7 @@ godot --headless --path . -s res://tools/godot_compile_check.gd
 godot --headless --path . -s res://tools/godot_story_check.gd
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
+python3 tools/gates_md.py
 python3 tools/check_mac_paths.py
 python3 tools/check_host_paths.py
 python3 tools/check_decision_refs.py
@@ -409,6 +411,7 @@ python3 tools/check_probe_registry.py
 - 读：`一、注册表`（`tools/gate_json.py --list` 能出、注册的脚本都在、用 `ShotGate.finish_shots` 收尾的截图脚本全入册且 TAG / 张数 / 目录读得到、目录都走 `ShotGate.out_dir`，接 `shot_gate` 的脚本（现 31 支：截图册 25 支，加只借它挂压帧、不走 `finish_shots` 收尾的 letterbox_signal / qa_yard_transition 与船近景四支 japan_ship_probe / ship_dashi_probe / ship_exquisite_probe / shot_champa_ship）代码行里都调了 `ShotGate.frame_pressure`（lane gd18，`NK1_PROBE_SLOW_MS` 压帧一个口径），`tools/` 代码里不写死默认截图根、patrol 读 `NK1_SHOT_DIR`（lane pg3）；附属自检的所属门禁在册、开关 / 判词字样还在其源码里；CI 步骤引用的 `tools/…` 都在）→ `二、docs/GATES.md`（生成表格列数整齐；§一、§四 两个标记块逐字一致，红时打首处差异的「文档 / 注册表」两行；§二「批量巡检」标记块逐字一致且在 §二 里；§三 `### N.` 编号对得上；§三「一键人读全跑」与 `.claude/todo.md`「## 验证」代码块拆出的命令（续行拼回、按 `&&` 切、去行尾 `# 注释`）都与必跑档 `cmd` 逐条同序）。
 - 改法：**只改 `tools/gate_json.py` 的 `REGISTRY` / `SHOT_PROBES` / `SUBCHECKS` / `CI_STEPS`**，再 `python3 tools/gates_md.py --write`；块外（§二、§三、§四的标题）是手写，编号小节随注册表增删要补，一键跑命令段与 `.claude/todo.md` 验证段随必跑档改（这两处 `--write` 不代写）。新门禁入册、升降档的全套步骤（含 gates_md 管不到的 CI_STEPS / README / 在途口径）见 §五.1 / §五.2。
 - 常见红因：手改了标记块；改了必跑档只改 §三 没改 `.claude/todo.md` 验证段（gd4 查出的 patrol 缺 `DISPLAY=:2` 即此类）；新截图脚本接了 `shot_gate` 却没进 `SHOT_PROBES`；某道门禁挪走 / 改名（如 `verify_narrative` 挪 `tools/legacy/`）没改注册表；加了门禁没补 §三 小节；改了 `--suggest` / `--regen` 等开关名或判词没改 `SUBCHECKS[].marks`；升降必跑档没同步 §三 一键跑命令段。
+- 口径：lane w40-k3 依拍板 E-14 升进必跑档、排一键跑第 14 条（巡逻之后、RefsMacPath 之前；原为 lane 加跑档 + CI §四 步骤 3，照 gd21 / cs21 升格先例步骤随之删掉）。升格判据见 §五.2；本道：「登记与文档同步没同步、附属开关 / 判词字样还在不在」别的 lane 自己判不准——只有逐条字符串比对认得（gd4 patrol 缺 `DISPLAY=:2` 即此类）；测墙钟 0.14 s（lane 档基线实测起派时点）；只读纯 stdlib、只要 python3 + git、不写盘。升前进一键跑就自相咬尾：本道逐条比 §三 / todo.md 两处一键跑段与必跑档 cmd 清单（含自己那条），放进一键跑才合法。升格五处同步照 §五.2 实跑（CI_STEPS 步骤 3 删除、README 十八 → 十九、§四「必跑十七道」滞后口径顺手拨正为十九、21 小节追加本行）。
 - 【口径注】（lane w33-k2，源 w30-k6 交主控 #2 / 审计-wave29 §85）w29-k5 的「SHOT 张数格」只把 «注册表张数 ↔ §一 同行张数字段» 兜到 §一；§四 CI_STEPS / §二 BATCH 两块红面仍是整块一句「首处差异在第 k 行 / 逐字一致✗」，不能逐支点名——本闸把同型行格 clone 到 §四 / §二：`row_sources(reg)` 映出两块的注册表出处行（§四步骤注释 / 步骤命令 / 步骤表行 → `CI_STEPS`；§二命令行 → `oneclick_json`），凡 in known 的行判与注册表块逐字同、漂移逐支点名 id + 出处 + 行文书；known 外零源行（表头 / ``` / 第 0 步命令段等）照旧由「整块逐字一致」旧格兜。两格成对：整块格一把定红，行格把在册出处行点出来。**张数格本身仍只判 §一** ——张数字段只在 §一 SHOT 表出现，§四 / §二 没有张数行可对，clone 过来的是行格体本身。
 
 ### 22. RefsMacPath（`tools/check_mac_paths.py`，Mac 专属绝对路径防回归）
@@ -621,11 +624,11 @@ python3 tools/check_probe_registry.py
 
 ## 四、CI 建议步骤
 
-只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑十七道（含导入步骤；w25-j5 起含过场时长 data-only），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
+只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑十九道（含导入步骤；w25-j5 起含过场时长 data-only、w40-k3 起含 gates_md 自身同步道），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑十八条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑十九条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
 godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
@@ -639,6 +642,7 @@ godot --headless --path . -s res://tools/godot_compile_check.gd
 godot --headless --path . -s res://tools/godot_story_check.gd
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
+python3 tools/gates_md.py
 python3 tools/check_mac_paths.py
 python3 tools/check_host_paths.py
 python3 tools/check_decision_refs.py
@@ -648,9 +652,7 @@ python3 tools/check_probe_registry.py
 python3 tools/check_sidecars.py
 # 2. builtin_api 漂移
 python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt
-# 3. GATES.md 与注册表一致
-python3 tools/gates_md.py
-# 4. docs 索引与文件一致
+# 3. docs 索引与文件一致
 python3 tools/check_docs_index.py --check
 ```
 
@@ -658,8 +660,7 @@ python3 tools/check_docs_index.py --check
 |---|---|---|---|---|---|---|
 | 1 | 侧车成对 / 一致 | ag / ag2 / gd5 | python3 + git（紧跟第 0 步的导入步骤之后跑） | `python3 tools/check_sidecars.py` | `结果：全部通过`（前一行报 uid 个数、VRAM 纹理张数与基线、`工作树侧车无漂移`） | `FAIL: …` 行、退 1 = 提交的 .gd / .gdshader / 素材缺侧车或多了孤儿侧车、侧车内容与源文件 / 场景引用 / VRAM 基线不一致；或第 0 步导入把已跟踪 `.import` / `.uid` 改写了（工作树漂移：CI 机器的 Godot 版本 / 平台与入库基线不符）。口径见 docs/侧车口径.md |
 | 2 | builtin_api 漂移 | cs3 / gd4 | godot（与清单头部同版本） | `python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt` | `✓ --regen：…逐字节一致，未改动` + check_symbols `结果：全部通过`，`git diff` 无输出、退 0 | `git diff` 打出 `tools/builtin_api.txt` 的差异、退 1 = 提交的清单与本机 Godot 的 ClassDB 导出不一致（升级了 Godot / 改了 `gen_builtin_list.gd` 的 CLASSES 却没连同提交重导结果）；`--regen` 本身失败则 check_symbols 先退 1 |
-| 3 | GATES.md 与注册表一致 | gd3 | python3 + git | `python3 tools/gates_md.py` | `结果：全部通过` | 有人手改了 §一 / §二批量巡检 / §四 生成块、改了注册表没 `--write`、§三 或 `.claude/todo.md` 验证段的一键跑命令与必跑清单不符，或注册的脚本挪走了 |
-| 4 | docs 索引与文件一致 | doc3 / doc4 | python3 + git | `python3 tools/check_docs_index.py --check` | `结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`） | `✗` 行、退 1：`MISSING` = 提交了 docs 下的 .md 没在 docs/README.md 补一行；`DEAD` = 索引链的文件挪走 / 改名 / 删了；`DUP` = 同一份文档链了两次。修法：改 docs/README.md |
+| 3 | docs 索引与文件一致 | doc3 / doc4 | python3 + git | `python3 tools/check_docs_index.py --check` | `结果：全部通过`（前面报索引链接条数、`git 已跟踪的 docs/**/*.md 都在索引里（N 份…）`；未跟踪的新文档只记 `⚠`） | `✗` 行、退 1：`MISSING` = 提交了 docs 下的 .md 没在 docs/README.md 补一行；`DEAD` = 索引链的文件挪走 / 改名 / 删了；`DUP` = 同一份文档链了两次。修法：改 docs/README.md |
 <!-- GATES-CI:END -->
 
 ## 五、门禁生命周期：入册 / 必跑 / 自证 / 跟号（lane doc10）
