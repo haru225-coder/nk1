@@ -20,6 +20,7 @@ func _initialize() -> void:
 	if _fails.is_empty():
 		print("%s PASS（3 条全绿：末梢自检 + 接线在 + 契约齐）" % TAG)
 		quit(0)
+		return  # quit() 只在本帧末退出、不中断本函数：不 return 会接着打「FAIL 0」再 quit(1)，全绿也退 1（lane w53-2）
 	print("%s FAIL %d" % [TAG, _fails.size()])
 	for f in _fails:
 		print("   ✗ " + f)
