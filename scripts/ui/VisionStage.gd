@@ -120,12 +120,9 @@ func _layout_for(cv: Vector2) -> void:
 	var hint := get_node_or_null("Hint") as Control
 	if hint != null:
 		hint.position = Vector2(cv.x - 280, cv.y - 42)
-	var pane := get_node_or_null("PortraitPane") as Control
-	if pane != null:
-		# PortraitPane 仍钉左缘（只在 x 富余时随 cv.x 居中；低于 1280+pane 宽保持 84 起）
-		pane.position = Vector2(minf(48.0, maxf(20.0, (cv.x - 300.0) / 2.0 - 300.0)), 84)
-		# 保守简化：仍左 48（与原口径一致，宽画布 Pane 与 右 hint 不相冲），改严见 _build_portrait_pane
-		pane.position.x = 48
+	# 立像裱框（PortraitPane）不在此挪：它钉左上 (48, 84)、高度随内容最小高（实量 567–569）。
+	# _build 当帧自动换行字还没拿到宽、裱框最小高瞬时撑到 867–884，这时再写 position 会把它钉在那个高度——
+	# 底边与下两角泥金落到下墨边底下看不见
 	var host := get_node_or_null("CombatFreeze") as Node2D
 	if host != null:
 		# 战事字 / 「中板」都是 host 的子节点，host 一挪它们就跟着船走（不另按画布比例折）

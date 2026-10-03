@@ -9,8 +9,11 @@ extends SceneTree
 ##      1920 宽、收到 1300 宽、改 4:3 窗（画布加高到 1280×960）三处都量。
 ## 旧病（回退即红）：VisionStage.gd 的 _build 用 cv := Vector2(1280, 720)，LetterTop.size.x 恒 1280，
 ## 1920 画布下断言 1 报错「顶墨边只盖住 1280/1920」；改尺寸后断言 3 报错「resize 后未重建」。
+##   5. 立像裱框（PortraitPane）整幅落在上下墨边之间（底沿 ≤ 下墨边上沿），下两角泥金看得见。
 ## 二轮旧病（回退即红）：飘字 / 战事字按画布比例折（x = 0.8 cv.x、y = 0.722 cv.y），host 只挪 0.5625 cv.x——
 ## 1920 宽下「中板」离船心 204 px、飘到海图右缘外；4:3 窗下战事字掉出海图下缘。
+## 二轮旧病（回退即红）：_layout_for 在 _build 当帧给 PortraitPane 写 position，裱框被钉在瞬时最小高
+## （实量 867–884，正常 567–569）——底沿 951 起压到下墨边底下，下两角泥金看不见。
 
 const TAG := "QA_VS_LAYOUT"
 const VIEW_WIDE := Vector2i(1920, 720)
@@ -43,6 +46,18 @@ func _falcon() -> Sprite2D:
 		if s.texture != null and s.texture.resource_path.ends_with("ship_falcon.png"):
 			return s
 	return null
+
+
+func _check_pane(where: String) -> void:
+	var pane := _vs.get_node_or_null("PortraitPane") as Control
+	var bot := _vs.get_node_or_null("LetterBot") as Control
+	_check(pane != null and bot != null, "%s：立像裱框 / 下墨边在树" % where)
+	if pane == null or bot == null:
+		return
+	var r := pane.get_global_rect()
+	_check(r.end.y <= bot.get_global_rect().position.y + 0.5,
+		"%s：立像裱框底沿落在下墨边之上（裱框 %s 底 %.0f vs 下墨边上沿 %.0f）"
+		% [where, str(r.size), r.end.y, bot.get_global_rect().position.y])
 
 
 func _check_combat_labels(where: String) -> void:
@@ -103,6 +118,7 @@ func _run() -> void:
 			"SlipSub 均布画布（w %s vs %s）" % [str(sub.size.x), str(canvas.x)])
 
 	_check_combat_labels("1920×720")
+	_check_pane("1920×720")
 
 	# ── 断言 4：换小窗（视口收缩）→ 整页重排，新 LetterTop 宽 == 新画布宽 ──
 	# SceneTree 脚本里 root.size 只读写根 Window 的 size 属性，不一定踢到 size_changed；
@@ -127,6 +143,7 @@ func _run() -> void:
 		_check(right2 >= canvas2.x - 40.0 and right2 <= canvas2.x + 1.0,
 			"resize 后 Hint 右沿贴近新画布右缘（右沿 %s vs 画布 %s）" % [str(right2), str(canvas2.x)])
 	_check_combat_labels("收到 1300×720")
+	_check_pane("收到 1300×720")
 
 	# ── 断言 5：改 4:3 窗 → 画布加高到 1280×960，飘字 / 战事字仍跟着定格 host 走 ──
 	DisplayServer.window_set_size(VIEW_TALL)
@@ -136,6 +153,7 @@ func _run() -> void:
 	var canvas3 := _vs.get_viewport_rect().size
 	_check(canvas3.y > 900.0, "4:3 窗画布已加高（视口＝%s）" % str(canvas3))
 	_check_combat_labels("4:3 窗 %s" % str(canvas3))
+	_check_pane("4:3 窗 %s" % str(canvas3))
 
 	print("DONE fails=%d" % _fails.size())
 	for f in _fails:
