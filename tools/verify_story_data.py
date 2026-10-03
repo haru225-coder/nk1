@@ -96,6 +96,40 @@ for ch in chapters:
         reachable = sum(1 for p in port_ids if port_unlock[p] <= cid)
         check(need <= reachable, f"chapters {cid}.{slot} visited_count={need} 超过本章可达港口数 {reachable}")
 
+# ── 边记令牌须有上屏字（lane w53-4）──
+# scenes.json effects 的 ledger_note 是令牌（tangfang_parcel_and_sulfur_ledger_received 一类），住处「边记」与终局
+# 「航海札记」照 GameState.ledger_notes 原样上屏；GameState.add_ledger_note 记账时照 LEDGER_NOTE_TEXT 换成短句。
+# 表里缺一枚，那一句就以 snake_case 英文印上屏。代码里直接记的 ASCII 令牌（parcel_stained）与 _apply_cargo_loss
+# 不认、只照原样记下的货损令牌一并对账。
+gs_src = open(os.path.join(ROOT, "scripts", "GameState.gd"), encoding="utf-8").read()
+_lt = re.search(r"const LEDGER_NOTE_TEXT := \{(.*?)\n\}", gs_src, re.S)
+check(_lt is not None, "GameState.gd 缺 LEDGER_NOTE_TEXT（边记令牌 → 上屏短句）")
+LEDGER_TEXT = dict(re.findall(r'^\t"([^"]+)": "([^"]*)",?$', _lt.group(1), re.M)) if _lt else {}
+
+
+def _effect_values(node, key):
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k == key and isinstance(v, str):
+                yield v
+            else:
+                yield from _effect_values(v, key)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _effect_values(v, key)
+
+
+_acl = re.search(r"func _apply_cargo_loss\(.*?\n(?=\n\S|\Z)", main_src, re.S)
+check(_acl is not None, "Main.gd 缺 _apply_cargo_loss")
+cargo_handled = set(re.findall(r'token == "([^"]+)"', _acl.group(0))) if _acl else set()
+note_tokens = set(_effect_values(scenes, "ledger_note"))
+note_tokens |= set(_effect_values(scenes, "cargo_loss")) - cargo_handled
+note_tokens |= set(re.findall(r'add_ledger_note\("([A-Za-z0-9_]+)"\)', main_src))
+for tok in sorted(note_tokens):
+    shown = LEDGER_TEXT.get(tok, tok)
+    check(re.search(r"[A-Za-z_]", shown) is None,
+          f"边记令牌 `{tok}` 没在 GameState.LEDGER_NOTE_TEXT 登记上屏短句——住处「边记」与「航海札记」会把它原样印成英文")
+
 # ── news.json ─────────────────────────────────────────
 news = load("news.json")["news"]
 nids = [n.get("id", "") for n in news]

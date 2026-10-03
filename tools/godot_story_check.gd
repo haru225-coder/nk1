@@ -761,6 +761,7 @@ func _route_check() -> void:
 	_h8_logfold_ledger_check(main)
 	_a5_sea_here_check()
 	_w25j2_endgame_port_beats_check(main)
+	_w53_4_ledger_note_check(main)
 	main.queue_free()
 	_process_c6_main_hook(main)
 
@@ -4254,3 +4255,74 @@ func _w25j1_cam_plaque_check() -> void:
 		"V0928-9 安全余量：虚偏 dy %.0f（有效屏让位 %.0f 屏 px）后敌船须屏上冲 %.0f 屏 px（世界 %.0f，须 dy>0 且 >560；退回 dy=0 居中即红）" % [
 			dy, dy * cam_r, eff_px, eff_w])
 
+
+
+## ── lane w53-4：住处「边记」与终局「航海札记」不印英文令牌 ──
+## 修前：scenes.json 剧情选项的 ledger_note 是令牌（tangfang_parcel_and_sulfur_ledger_received 一类），apply_effects
+## 原样记进 ledger_notes；住处「边记」一行一枚、终局「航海札记」的「札记：」一行串起来，全是 snake_case 英文。
+## 现在 GameState.add_ledger_note 照 LEDGER_NOTE_TEXT 换成短句再记，旧档读回同样换过；代码里本就写字的照原样。
+func _w53_4_ledger_note_check(main: Node) -> void:
+	var ascii := RegEx.new()
+	ascii.compile("[A-Za-z_]")
+	var tokens: Array = []
+	_w53_4_collect(GM.scenes_data.get("scenes", []), "ledger_note", tokens)
+	_check(tokens.size() >= 10, "scenes.json 剧情选项带边记令牌 %d 枚" % tokens.size())
+	GS.from_dict({})
+	Cal.from_dict({"year": 1257, "month": 6, "day": 1})
+	GS.loaded_with_beats = true
+	main._beats = null
+	_close_dialogs(main)
+	for tok in tokens:
+		main.apply_effects({"ledger_note": tok})
+	var raw: Array = []
+	for n in GS.ledger_notes:
+		if ascii.search(str(n)) != null:
+			raw.append(n)
+	_check(raw.is_empty() and GS.ledger_notes.size() == tokens.size(),
+		"剧情令牌经 apply_effects 记成短句（%d 条；英文残留 %s）" % [GS.ledger_notes.size(), raw])
+	GS.last_port = "fuzhou"
+	main.load_scene("fuzhou_residence")
+	var shown: Array = []
+	_w53_4_texts(main, shown)
+	var leaked: Array = []
+	for t in shown:
+		for tok in tokens:
+			if str(t).contains(str(tok)) and not (tok in leaked):
+				leaked.append(tok)
+	var phrase: String = GS.ledger_note_text("storm_jettison_recorded") if GS.has_method("ledger_note_text") else "storm_jettison_recorded"
+	_check(leaked.is_empty() and phrase in shown,
+		"福州住处「边记」上屏是短句（见「%s」：%s；令牌原样上屏 %s）" % [phrase, phrase in shown, leaked])
+	GS.finish("纲首", "正文")
+	var epi: Array = GS.epilogue_lines()
+	var notes_line: String = str(epi.back()) if not epi.is_empty() else ""
+	_check(notes_line.begins_with("札记：") and ascii.search(notes_line) == null,
+		"航海札记「札记」一行不印英文（%s…）" % notes_line.substr(0, 48))
+	GS.from_dict({"ledger_notes": ["storm_jettison_recorded", "北礁可泊", "storm_jettison_recorded", "斩王刚中使"]})
+	_check(GS.ledger_notes == [phrase, "北礁可泊", "斩王刚中使"],
+		"旧档边记令牌读回即换字、去重，代码写字的照留（%s）" % [GS.ledger_notes])
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_close_dialogs(main)
+
+
+func _w53_4_collect(node, key: String, out: Array) -> void:
+	if node is Dictionary:
+		for k in node.keys():
+			if str(k) == key and node[k] is String:
+				if not (node[k] in out):
+					out.append(node[k])
+			else:
+				_w53_4_collect(node[k], key, out)
+	elif node is Array:
+		for v in node:
+			_w53_4_collect(v, key, out)
+
+
+func _w53_4_texts(node: Node, out: Array) -> void:
+	if node is Label and (node as Label).is_visible_in_tree():
+		out.append((node as Label).text)
+	elif node is RichTextLabel and (node as RichTextLabel).is_visible_in_tree():
+		out.append((node as RichTextLabel).get_parsed_text())
+	for c in node.get_children():
+		_w53_4_texts(c, out)

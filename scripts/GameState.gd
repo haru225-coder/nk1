@@ -578,9 +578,40 @@ func epilogue_lines() -> Array:
 	return out
 
 
+## 剧情选项写进边记的是令牌（data/scenes.json 各 effects 的 ledger_note、Main._apply_cargo_loss 记下的货损），
+## 住处「边记」与终局「航海札记」照 ledger_notes 原样上屏——记账时按此表换成短句，旧档读回时同样换过。
+## 表外的（代码里直接写的「北礁可泊」「斩王刚中使」、寺观拓碑）本来就是字，原样留。
+## 剧情新加 ledger_note 须在此登记一句，verify_story_data 逐个对账。
+const LEDGER_NOTE_TEXT := {
+	"lin_cargo_defaulted": "背了林阿舶的货约",
+	"tangfang_parcel_and_sulfur_ledger_received": "接下唐房寄物与硫黄旧账",
+	"ordinary_porcelain_manifest_signed": "普通瓷货按明账押字",
+	"lin_guarantee_for_departure": "林阿舶作保出港",
+	"storm_jettison_recorded": "风暴弃货照实入账",
+	"cargo_preserved_through_storm": "硬顶风浪护住瓷箱",
+	"crew_saved_cargo_wet": "减帆救人货损另记",
+	"parcel_stained": "唐房寄物受潮",
+	"route_note_shared_with_temple_network": "航路边记换寺社引荐",
+	"bay_entrance_kept_off_ledger": "泊澳入口不入明账",
+	"lin_account_settled_with_storm_loss": "与林阿舶结清风损",
+	"merchant_distance_kept": "只按账面收货款",
+	"xinghua_question_noted_off_ledger": "兴化来人记在账外",
+	"xinghua_letter_carried_off_manifest": "兴化信不入舱单",
+	"refused_unmanifested_letter": "推辞无押之信",
+	"letter_delayed_for_account_inquiry": "兴化信压下先问人",
+	"temple_cover_for_letter": "寺中短札遮护来信",
+	"merchant_risk_priced_as_wet_cargo": "账上只写湿货空箱",
+}
+
+
+func ledger_note_text(note: String) -> String:
+	return str(LEDGER_NOTE_TEXT.get(note, note))
+
+
 func add_ledger_note(note: String) -> void:
-	if note != "" and not (note in ledger_notes):
-		ledger_notes.append(note)
+	var text := ledger_note_text(note)
+	if text != "" and not (text in ledger_notes):
+		ledger_notes.append(text)
 
 
 func record_crew(cand_id: String) -> void:
@@ -1200,7 +1231,12 @@ func from_dict(d: Dictionary) -> void:
 	merchant_credit = int(d.get("merchant_credit", 0))
 	sea_tendency = int(d.get("sea_tendency", 0))
 	scholar_tendency = int(d.get("scholar_tendency", 0))
-	ledger_notes = d.get("ledger_notes", [])
+	# 旧档里剧情记下的是令牌，读回时照 LEDGER_NOTE_TEXT 换成字（add_ledger_note 同一道，顺带去重）
+	ledger_notes = []
+	var saved_notes = d.get("ledger_notes", [])
+	if typeof(saved_notes) == TYPE_ARRAY:
+		for note in saved_notes:
+			add_ledger_note(str(note))
 	ending_id = str(d.get("ending_id", ""))
 	discoveries_found = d.get("discoveries_found", [])
 	discoveries_reported = d.get("discoveries_reported", [])
