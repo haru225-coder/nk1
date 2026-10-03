@@ -11,6 +11,11 @@ extends SceneTree
 ## 用法：godot --headless --path . -s res://tools/qa_w53_3_economy_probe.gd
 ## 输出末行 W53_3_PROBE cases=N fails=M；M>0 时 exit 1。
 
+## lane w53-3（三轮）：本进程 SCRIPT ERROR 即红——接共用件 tools/script_err_tally.gd（子函数里出脚本错只中止那一个函数，
+## 断言整段跳过、fails 不涨、headless -s 退出码守 0）；_run_guarded 包一层兜「_run 自己的代码行出错即中止、
+## quit 不再执行、进程空转到超时」那一形（就地判红退 1）。
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
 var eco: Node
 var crew: Node
 var gs: Node
@@ -18,10 +23,22 @@ var gm: Node
 var fleet: Node
 var cases := 0
 var fails := 0
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+## _run 被脚本错半路掐断时 _report() 不会被调到——回到这里就地判红收尾，不留空转给外层 timeout
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_expect(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
 
 
 func _run() -> void:
@@ -57,8 +74,7 @@ func _run() -> void:
 	fleet.food = saved["food"]
 	gs.money = saved["money"]
 	gs.debt = saved["debt"]
-	print("W53_3_PROBE cases=%d fails=%d" % [cases, fails])
-	quit(1 if fails > 0 else 0)
+	_report()
 
 
 func _expect(ok: bool, what: String) -> void:
@@ -68,6 +84,14 @@ func _expect(ok: bool, what: String) -> void:
 	else:
 		fails += 1
 		print("  ✗ " + what)
+
+
+func _report() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_expect(v[0], v[1])
+	print("W53_3_PROBE cases=%d fails=%d" % [cases, fails])
+	quit(1 if fails > 0 else 0)
 
 
 func _max_fame() -> int:
