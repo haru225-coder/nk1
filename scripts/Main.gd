@@ -449,6 +449,12 @@ func _chapter_hint() -> String:
 		if int(it.get("need", 1)) > 1:
 			return "%s　%d / %d" % [it.get("label", ""), it.get("current", 0), it.get("need", 1)]
 		return str(it.get("label", ""))
+	# 章目全部走完（如玩家在 ready 页外点过港、或承此一路回页后半途另开），数据里带 hint 段就把
+	# 它交给玩家——chapters.json 的 next_requires/ending_requires.hint 帮玩家回忆「这一章要去哪」。
+	# 此前这一节数据挂了 6 年 API 出口零消费，玩家永远看不到。
+	var hint := str(prog.get("hint", ""))
+	if hint != "":
+		return hint
 	if prog.get("final", false):
 		return "终章・可了结"
 	return ""

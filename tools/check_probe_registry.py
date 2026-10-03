@@ -73,6 +73,7 @@ EXEMPT = [
     ("qa_save_slot_tip_probe.gd", "e92d2be lane-t", "航海日志坏档/.bak 纪实提示探针与契约锁，随 lane-t 落地验过留档"),
     ("qa_shore_wait_notice_probe.gd", "802e54d lane-w26-k5 族", "岸上等待通告专项探针，随该族落地验过留档"),
     ("qa_w53_3_economy_probe.gd", "lane-w53-3", "牙行抬价/赊贷/委办三本账守形探针，随本 lane 落地验过留档"),
+    ("qa_w53_4_chapter_hint_probe.gd", "lane-w53-4", "章节 hint 走数据上屏专项探针，随 lane-w53-4 落地验过留档"),
     ("qa_w53_4_story_probe.gd", "lane-w53-4", "剧情 advance_text 宣港对账专项探针，随 lane-w53-4 落地验过留档"),
     ("qa_w53_5_roundtrip_probe.gd", "lane-w53-5", "存档全字段往返探针（to_dict↔from_dict 逐键等比），动存档结构时加跑"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
