@@ -72,6 +72,7 @@ EXEMPT = [
     ("qa_port_beats_probe.gd", "53c0499 lane-w26-k7", "PortBeats.due 终局守卫探针，接口下沉后 when 判据未定"),
     ("qa_save_slot_tip_probe.gd", "e92d2be lane-t", "航海日志坏档/.bak 纪实提示探针与契约锁，随 lane-t 落地验过留档"),
     ("qa_shore_wait_notice_probe.gd", "802e54d lane-w26-k5 族", "岸上等待通告专项探针，随该族落地验过留档"),
+    ("qa_w53_2_combat_probe.gd", "lane-w53-2", "海战接舷 / 号令 / 收战账目专项探针，随 lane-w53-2 落地验过留档"),
     ("qa_w53_3_economy_probe.gd", "lane-w53-3", "牙行抬价/赊贷/委办三本账守形探针，随本 lane 落地验过留档"),
     ("qa_w53_4_chapter_hint_probe.gd", "lane-w53-4", "章节 hint 走数据上屏专项探针，随 lane-w53-4 落地验过留档"),
     ("qa_w53_4_story_probe.gd", "lane-w53-4", "剧情 advance_text 宣港对账专项探针，随 lane-w53-4 落地验过留档"),

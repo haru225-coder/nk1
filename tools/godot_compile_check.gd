@@ -128,6 +128,7 @@ const SCRIPTS := [
 	"res://tools/qa_yard_transition_probe.gd",
 	"res://tools/qa_w53_8_vision_layout_probe.gd",  # lane w53-8 市舶纪事 VisionStage 画布钉死 1280 实锤探针（↑INVENTORY_EXEMPT——未登记会卡 inventory 门禁）
 	"res://tools/qa_pirate_boat_probe.gd",  # 海寇快船 + 船图契约（lane pirate-boat-0928）
+	"res://tools/qa_w53_2_combat_probe.gd",  # lane w53-2 海战接舷 / 号令 / 收战账目专项探针
 	"res://tools/qa_w53_4_story_probe.gd",  # lane w53-4 剧情 advance_text 宣港对账专项探针
 	"res://tools/qa_w53_4_chapter_hint_probe.gd",  # lane w53-4 章节 hint 上屏专项探针
 	"res://tools/qa_w53_6_beat_replay_probe.gd",  # lane w53-6 港口节拍不重演（新局卷首到首抵泉州 / 老档补账）回归探针

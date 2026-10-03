@@ -100,6 +100,8 @@ var _morale = null
 var _battle_roster_n: int = 0
 ## 末船接舷夺下后等题签播完再收战：挡住 _process 的 win{} 抢先（await 即便 headless 也会让出一帧）
 var _finishing_boarded: bool = false
+## 最近一场白刃的 MeleeResolve 结果（_board_enemy 写；探针对伤亡账用，空 = 本场还没打过白刃 / 敌降免白刃）
+var _last_melee: Dictionary = {}
 ## combat12：敌船 left_battle(escaped) 计数（HUD / 探针读）；收战下场明细另记 _enemy_fates
 var _enemies_escaped: int = 0
 ## combat12：敌船下场账 instance_id → {type, fate}（fate 取 CombatLetterbox.FATE_VERB 的键：struck / boarded / sunk / fled）。
@@ -267,6 +269,7 @@ func _board_enemy(enemy: Node2D) -> void:
 		return
 	boarding = true
 	boarding_target = enemy
+	_last_melee = {}
 	_AUDIO.combat_board(self)
 	enemy.set("grappled", true)  # 敌船停航停炮
 	_SeaAtmosphere.boarding_drama(self, ship, enemy)  # lane atmos：接舷镜头 / 钩缆 / 翻白
@@ -301,28 +304,16 @@ func _board_enemy(enemy: Node2D) -> void:
 		notice = _CombatFx.board_win_note(_node_str(enemy, "ship_name", "敌船"))
 		detail = "敌船降幡，接舷收船"
 	else:
-		# MeleeResolve：有士气簿则攻方 morale 换 melee_factor
-		var ctx_extra := {"hooked": true}
-		var ps = _morale.player_sheet() if _morale != null else null
-		var r: Dictionary
-		if ps != null:
-			var us: Dictionary = _MeleeResolve.side_from_fleet(Fleet)
-			us["morale"] = clampi(int(round(ps.melee_factor() * 100.0)), 0, 100)
-			var foe: Dictionary = _MeleeResolve.side_from_enemy(enemy)
-			var ctx: Dictionary = _MeleeResolve.approach_from_nodes(
-				ship, enemy, Vector2.ZERO, -1.0, str(us.get("type", "")), str(foe.get("type", ""))
-			)
-			for k in ctx_extra:
-				ctx[k] = ctx_extra[k]
-			r = _MeleeResolve.resolve(us, foe, ctx)
-		else:
-			r = _MeleeResolve.from_battle(Fleet, ship, enemy, ctx_extra)
-
+		var r := _melee_resolve(enemy)
+		_last_melee = r
 		var legacy := str(r.get("legacy", "lose"))
 		var att_dead := int(r.get("att_dead", 0))
 		var morale_delta := int(r.get("att_morale_delta", 0))
 		Fleet.lose_crew_random(att_dead)
 		Fleet.morale = clampi(Fleet.morale + morale_delta, 0, Fleet.MORALE_MAX)
+		# 守方阵亡记在敌船上（lane w53-2）：白刃失利、敌船留在场上时，题签里「敌伤 N」那些人真的少了，
+		# 下一回接舷、敌将与士气簿按剩下的人算；不记的话跳帮再败几回，敌船人数一个不少
+		_enemy_lose_crew(enemy, int(r.get("def_dead", 0)))
 		detail = str(r.get("summary", "")).strip_edges()
 		if legacy == "win":
 			do_capture = true
@@ -377,6 +368,28 @@ func _board_enemy(enemy: Node2D) -> void:
 			_battle_exit("win", {"boarded": true})
 		else:
 			await _await_boarding_fx(stage)
+
+
+## 白刃一场（MeleeResolve.resolve，钩缆已挂牢 hooked）：本队按 Fleet、敌按船节点、态势按两船节点；
+## 有士气簿则本队士气换 melee_factor（没挂士气簿时同 MeleeResolve.from_battle）
+func _melee_resolve(enemy: Node2D) -> Dictionary:
+	var us: Dictionary = _MeleeResolve.side_from_fleet(Fleet)
+	var ps = _morale.player_sheet() if _morale != null else null
+	if ps != null:
+		us["morale"] = clampi(int(round(ps.melee_factor() * 100.0)), 0, 100)
+	var foe: Dictionary = _MeleeResolve.side_from_enemy(enemy)
+	var ctx: Dictionary = _MeleeResolve.approach_from_nodes(
+		ship, enemy, Vector2.ZERO, -1.0, str(us.get("type", "")), str(foe.get("type", ""))
+	)
+	ctx["hooked"] = true
+	return _MeleeResolve.resolve(us, foe, ctx)
+
+
+## 敌船白刃折损 n 人（只记阵亡 / 重伤不起的；轻伤战后归队，同本队只扣 att_dead 的口径），水手不减到负数
+func _enemy_lose_crew(enemy: Node, n: int) -> void:
+	if n <= 0 or enemy == null or not is_instance_valid(enemy):
+		return
+	enemy.set("crew", maxi(0, int(_node_float(enemy, "crew")) - n))
 
 
 ## 战斗通知浮字：在屏幕中央短暂显示（复用 FloatingText 场景），3 秒后淡出
