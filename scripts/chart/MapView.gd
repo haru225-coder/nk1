@@ -86,7 +86,7 @@ var _drag_last := Vector2.ZERO
 var _velocity := Vector2.ZERO
 var _cam_tween: Tween
 var _follow_tween: Tween                # 跟船平移（_keep_in_band）：与取景补间分开，下一日接着跟时顶掉它重起
-var _follow := false                    # 镜头在跟船；玩家拖动 / 缩放即关（_take_camera），下一日船标还在图带里再开
+var _follow := false                    # 镜头在跟船（set_follow）；玩家拖动 / 缩放即关（_take_camera），船标回到图带里下一日再开
 var _ship_goal := Vector2.ZERO          # 船标这一日的落点：跟船按它平移，图带变了也按它保船标
 var _ship_tween: Tween
 var _mode_tween: Tween
@@ -465,18 +465,27 @@ func _pose_at_arc(s: float) -> Array:
 ## 发舶取景保起点，船走到半程就钻到航向牌底下，后十几日一路看不见。与补间同时、同长平移，只挪到船标离图带边留
 ## FOLLOW_MARGIN 屏幕像素，不改缩放。玩家拖开去看别处、船标已不在图带里，不拽回；拖动与甩动惯性中不跟。
 ## 一日接一日是在上一日船标补间 finished 里同步起的，那一刻同长的跟船补间还差最后一帧——要顶掉它重起，不能当「镜头忙」让掉。
-## 取景过渡（发舶框起讫两港 0.9 s）在走时这一日让它，但跟船照开：按住空格一日只 0.05 s，过渡里船就走了十几日，过渡一完接着跟
+## 取景过渡（发舶框起讫两港、点全图）在走时这一日让它；跟船开着的过渡一完接着跟，关着的过渡中图带在挪、船标在不在带里不作数
 func _follow_ship(from_pos: Vector2, to_pos: Vector2, dur: float) -> void:
 	_ship_goal = to_pos
 	if _dragging or _velocity.length() > 2.0:
 		return
+	var framing: bool = _cam_tween != null and _cam_tween.is_valid() and _cam_tween.is_running()
 	if not _follow:
-		if not _band_world_rect().has_point(from_pos):
+		if framing or not _band_world_rect().has_point(from_pos):
 			return
 		_follow = true
-	if _cam_tween and _cam_tween.is_valid() and _cam_tween.is_running():
+	if framing:
 		return
 	_keep_in_band(to_pos, dur)
+
+
+## 航行中镜头跟不跟船（lane w53-1）：SeaChart 发舶时开——按住空格一日 0.05 s，发舶取景若要过渡 0.9 s，船在里头走十几日，
+## 过渡一完要接着跟；点全图时关——玩家要看全图，全图里没有船标就别拽回去，船标落回图带里下一日自会再开
+func set_follow(on: bool) -> void:
+	_follow = on
+	if not on and _follow_tween and _follow_tween.is_valid():
+		_follow_tween.kill()
 
 
 ## 平移镜头让 p 落进图带、离边留 FOLLOW_MARGIN 屏幕像素，不改缩放；还在跑的上一段跟船平移顶掉

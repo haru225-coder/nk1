@@ -359,6 +359,8 @@ func _frame_home(dur: float) -> void:
 	for p in GameManager.unlocked_ports():
 		ids.append(str(p.get("id", "")))
 	map.frame_ports(ids, 0.16, dur, origin_port)
+	# 航行中点全图：看全图，镜头不再跟船（全图里有船标的话下一日接着跟，见 MapView.set_follow）
+	map.set_follow(false)
 
 
 ## 把顶匾与底部牌区盖住的屏幕高度告诉图：取景只用中间露出的图带，起讫港不再躲在航向牌底下
@@ -1186,11 +1188,17 @@ func _on_sail_pressed() -> void:
 	_lock_hand()
 	# 图：船标启程，镜头框住起讫两港
 	_sync_map()
-	if map:
-		map.frame_ports([origin_port, selected_port], 0.30, 0.9)
+	_frame_departure()
 
 	_log(_ink(UiTheme.GOLD, "启程往 %s，航程 %d 里。" % [GameManager.get_port_name(selected_port), int(total_li)]))
 	_sail_next_day()
+
+
+## 发舶取景：框住起讫两港（缩到最小也装不下就保起点），镜头从此跟船（lane w53-1，见 MapView.set_follow）
+func _frame_departure() -> void:
+	if map:
+		map.frame_ports([origin_port, selected_port], 0.30, 0.9)
+		map.set_follow(true)
 
 
 func _day_progress(event: Dictionary) -> float:
