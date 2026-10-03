@@ -114,7 +114,7 @@
     },
     {
       "id": "sulfur",
-      "name": "硫磺",
+      "name": "硫黄",
       "category": "货物",
       "tradable": true,
       "base_value": 50,
@@ -123,7 +123,7 @@
       "fragile": 0.0,
       "contraband": false,
       "origin": "日本 / 南岛火山",
-      "historical_note": "火药原料，南宋军需紧要。日本硫磺经博多大量输宋，是最具战略意义的进口货。"
+      "historical_note": "火药原料，南宋军需紧要。日本硫黄经博多大量输宋，是最具战略意义的进口货。"
     },
     {
       "id": "raw_silk",
