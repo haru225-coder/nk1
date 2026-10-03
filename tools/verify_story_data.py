@@ -1933,11 +1933,28 @@ check(bool(_harbor_bg) and bool(_wg_alt) and _wg_alt[0].get("bg") == "res://asse
       f"「未归」（{_wg_id}）第 1 镜：海口结算（weigui_at_harbor）底图须换兴化海口港页图 res://assets/{_harbor_bg}，"
       f"与字幕换句同旗，别处照旧本镜 bg（现 bg={_wg.get('bg')} bg_alt={_wg.get('bg_alt')}）")
 
+# ── chapters.json：晋升册页「【…已可抵达】」宣港 == ports.json 下一章解锁港（lane w53-12 移自 qa_w53_4_story_probe 第三格——
+#    那支探针只登 EXEMPT、一键不跑）。漏宣一港玩家不知道能去；多宣一港（再下一章才开）玩家看了开不过去 ──
+_port_name = {p["id"]: str(p.get("name", p["id"])) for p in ports_all}
+advance_claims = 0
+for ch in chapters:
+    cid = int(ch["id"])
+    text = str(ch.get("advance_text") or "")
+    if not text:
+        continue
+    claim = [n.strip() for body in re.findall(r"【([^】]+)已可抵达】", text)
+             for n in re.split(r"[、,，]", body) if n.strip()]
+    advance_claims += len(claim)
+    want = [_port_name[p] for p in sorted(port_ids) if port_unlock[p] == cid + 1]
+    extra, miss = sorted(set(claim) - set(want)), sorted(set(want) - set(claim))
+    check(not extra and not miss,
+          f"chapters {cid} advance_text 宣「已可抵达」与 ports.json 第 {cid + 1} 章解锁港不符（多宣 {extra} / 漏宣 {miss}）")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:
         print("FAIL:", f)
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
-print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · 底图按旗换 {bg_alts} · scenes {len(scenes)}（结构：{SCENE_STRUCT_STATS} · 自证 {len(_SV_MUTANTS)} 类 + 形状单一来源 {len(_SHAPE_MUTANTS)} 类，形状读 {SCENE_FAMILY_MANIFEST}）· news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
+print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · 底图按旗换 {bg_alts} · scenes {len(scenes)}（结构：{SCENE_STRUCT_STATS} · 自证 {len(_SV_MUTANTS)} 类 + 形状单一来源 {len(_SHAPE_MUTANTS)} 类，形状读 {SCENE_FAMILY_MANIFEST}）· 晋升宣港 {advance_claims} · news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
 print("结果：全部通过")
