@@ -885,18 +885,21 @@ def registry():
             g["cmd"] = disp + "godot " + " ".join(g["args"])
             # 接了 gate_report.gd 的写原生（--quiet 去引擎横幅，stdout 恰一行 JSON）；没接的（editor 等）由本脚本外包
             if g.get("file") and _native_json(g["file"]):
-                g["json"] = disp + "godot --quiet " + " ".join(g["args"]) + " -- --json"
+                # lane w42-k2（拍板 E-15 走 A）：cmd 单源化——json 格不再手写裸原生命令，
+                # 写 `--native <id>` 由本脚本按注册表 args 反查重造（--quiet 与 -- --json 自动补，
+                # 与 godot <args> -- --json 等价；display 条目自动补 --display）
+                g["json"] = "python3 tools/gate_json.py --native " + g["id"] + (" --display" if g.get("display") else "")
             else:
                 g["json"] = ("" if _legacy(g) else disp) + "python3 tools/gate_json.py --godot " + g["id"]
         else:
             g["cmd"] = SHOT_ENV_PREFIX + "DISPLAY=:2 godot --path . -s res://tools/<探针>.gd"
-            g["json"] = SHOT_ENV_PREFIX + ("DISPLAY=:2 godot --quiet --path . -s res://tools/<探针>.gd -- --json" if shots_native
+            g["json"] = SHOT_ENV_PREFIX + ("DISPLAY=:2 python3 tools/gate_json.py --native <探针> --display" if shots_native
                                            else "DISPLAY=:2 python3 tools/gate_json.py --godot <探针>")
         gates.append(g)
     shots = [_shot_probe(p, lane) for p, lane in SHOT_PROBES]
     for s in shots:
         s["cmd"] = "DISPLAY=:2 godot " + " ".join(s["args"])
-        s["json"] = ("DISPLAY=:2 godot --quiet " + " ".join(s["args"]) + " -- --json" if shots_native
+        s["json"] = ("DISPLAY=:2 python3 tools/gate_json.py --native " + s["id"] + " --display" if shots_native  # lane w42-k2：同 cmd 单源化
                      else "DISPLAY=:2 python3 tools/gate_json.py --godot " + s["id"])
     for g in gates:
         g["family"] = FAMILY[g["kind"]]

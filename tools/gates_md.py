@@ -373,6 +373,17 @@ def main(argv):
     # 该行形与 CI_STEPS 命令行同字面、行格判会吃「无点名」假绿；敲定撞名即点名那条 CI 步骤。
     clash = [c["cmd"] for c in reg["ci_steps"] if c["cmd"] in set(reg["oneclick"])]
     check(not clash, "§四 步骤命令不与一键跑命令段撞名（撞名行格无法点名）" + (f"；撞：{clash}" if clash else ""))
+    # lane w42-k2（拍板 E-15，走 A）：§一 json 栅单源化断言——升格为 `--native <id>` 形后禁回裸命令字；
+    # `<id>` 反查注册表 id 一致（认不出名即写歪）。
+    rows = list(gates) + list(shots)
+    bare = [g["id"] for g in rows if "godot --quiet" in g["json"]]
+    check(not bare, f"`--json` 栅零裸原生命令（lane gd7 / w42-k2：单源化走 `gate_json.py --native <id>`；{len(rows)} 格）"
+                    + (f"；裸命令字：{bare}" if bare else ""))
+    jid = {g["id"] for g in rows} | {"<探针>"}
+    stray = [f"{g['id']}→{g['json']}" for g in rows
+             for m in [re.search(r"--native (\S+)", g["json"])] if m and m.group(1) not in jid]
+    check(not stray, f"`--native` 格的 <id> 都在注册表里（含 <探针> 占位；{len(rows)} 格）"
+                     + (f"；认不出：{stray}" if stray else ""))
     # lane pg3：截图落盘根一律可由 NK1_SHOT_DIR 改，免得 worktree / 自测覆盖共享证据图
     env = reg.get("shot_env") or {}
     bad = [s["file"] for s in shots if not s.get("sub")]
