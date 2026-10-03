@@ -1254,10 +1254,10 @@ static func hook_buttons(container: Node, choice := false) -> void:
 	)
 
 
-## 分隔标题：潮光小字。绢本：泥金小字。
-static func style_section_label(lbl: Label) -> void:
+## 分隔标题：潮光小字。绢本：泥金小字。size：页内「── X ──」分节小题给 16（与册页眉题同阶），默认 SIZE_FOOT。
+static func style_section_label(lbl: Label, size := SIZE_FOOT) -> void:
 	_paint_font(lbl)
-	lbl.add_theme_font_size_override("font_size", SIZE_FOOT)
+	lbl.add_theme_font_size_override("font_size", size)
 	lbl.add_theme_color_override("font_color", Color(GOLD, 0.92))
 
 

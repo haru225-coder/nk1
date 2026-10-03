@@ -3890,7 +3890,7 @@ func _setup_quanzhou_standoff(port_id: String) -> void:
 
 	var sep := Label.new()
 	sep.text = "── 征船名册 ──"
-	sep.add_theme_font_size_override("font_size", 13)
+	UiTheme.style_section_label(sep, 16)  # 同围城页「石手军」：泥金分节小题、16（原钉 13 默认宣纸色，低过字阶下限几乎看不见）
 	choices_container.add_child(sep)
 
 	var info := Label.new()

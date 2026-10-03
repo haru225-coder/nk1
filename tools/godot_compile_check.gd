@@ -134,6 +134,7 @@ const SCRIPTS := [
 	"res://tools/qa_fold_notice_probe.gd",  # lane w28-k2 札记折叠内非月息通告（【欠饷】按月 / 欠满三月 + 改元月历一瞥）原文断言（w27-k2 交主控①补新见）
 	"res://tools/qa_yard_transition_probe.gd",
 	"res://tools/qa_w53_8_codex_cols_probe.gd",  # lane w53-8 人物志名册格列数随页宽探针（超宽画布钉死九列）
+	"res://tools/qa_w53_8_font_floor_probe.gd",  # lane w53-8 字阶下限探针（各页上屏字 ≥ SIZE_FOOT，「── X ──」分节小题泥金 16）
 	"res://tools/qa_w53_8_letterbox_fit_probe.gd",  # lane w53-8 海战墨边题签长副题不冲出画布右缘探针
 	"res://tools/qa_w53_8_panel_seam_probe.gd",  # lane w53-8 页面面板九宫纵向接缝探针（4:3 / 竖屏面板中腰冒泥金碎钩）
 	"res://tools/qa_w53_8_tooltip_wrap_probe.gd",  # lane w53-8 悬停提示超宽折行探针（顶匾记事全文提示不再宽过画布被裁）
