@@ -41,11 +41,16 @@ var _band_h := 100.0
 var _with_name := true
 ## 只写副题的挂签式绢带（居中、下坠淡入）
 var _hang := false
+## 设计高（项目视口高）：挂签式的 y_frac 按它取
+var _design_h := float(ProjectSettings.get_setting("display/window/size/viewport_height", 720))
 
 
 ## y_frac：绢带上缘在画布高度的比例（默认 0.17）。游戏港页顶上有港名墨刷匾，Main 传更低的值让开它。
 ## with_name=false：画面上已有港名（港页顶上的墨刷匾）时，绢带只写副题 +「泊」印，居中挂在匾下，
 ## 同屏不再出现两个港名（第 1 轮评审 M6）；副题缺了才退回写港名。
+## 挂签式的 y_frac 按设计高（项目视口高 720）取，不乘实际画布高：港名匾在港页顶上按像素定位，画布变高（16:10、4:3、
+## 竖屏——expand 模式下窗口比 16:9 高时画布宽留 1280、高随比例伸长）它不动。原先乘画布高，4:3 下挂签离匾 51px、
+## 竖屏 425px，浮在画面中腰（lane w53-9）。
 static func show_banner(parent: Node, port: String, data_path := "res://data/cutscenes.json", y_frac := 0.17,
 		with_name := true) -> PortBanner:
 	if parent == null or Kit.is_headless():
@@ -266,7 +271,8 @@ func _process(delta: float) -> void:
 func _apply() -> void:
 	var slide := Kit.ease_out_cubic(_t / SLIDE)
 	var out := Kit.ease_in_out((_t - T_OUT) / (T_END - T_OUT))
-	var y := roundf(_canvas.y * _y_frac)
+	# 挂签式挂在港名匾下：匾按像素定位、不随画布高度伸缩，y 按设计高取（见 show_banner）
+	var y := roundf((_design_h if _hang else _canvas.y) * _y_frac)
 	if _hang:
 		# 挂签：居中，从上方 14px 轻轻坠下来，退场原地淡去
 		_band.position = Vector2(roundf((_canvas.x - _band_w) * 0.5), roundf(y - 14.0 * (1.0 - slide)))

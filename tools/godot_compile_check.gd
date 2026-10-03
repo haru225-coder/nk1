@@ -152,6 +152,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_9_chapter_year_probe.gd",  # lane w53-9 章节卡年号与历法逐月同口径探针
 	"res://tools/qa_w53_13_decide_probe.gd",  # lane w53-13 待拍板逐条定下后的修复回归探针（跳年封顶等）
 	"res://tools/qa_w53_9_chapter_card_probe.gd",  # lane w53-9 章节卡题记留读与一句一列探针（须带窗口）
+	"res://tools/qa_w53_9_port_banner_probe.gd",  # lane w53-9 抵港横幅各窗口比例都挂在港名匾下探针（以场景启动，见 SCENES）
 	"res://tools/combat_vfx_probe.gd", "res://tools/ship_vfx_probe.gd", "res://tools/atmos_water_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
 	"res://scripts/combat/ShipHull3D.gd", "res://tools/ship_exquisite_probe.gd",
 	"res://tools/ship_dashi_probe.gd",  # 大食缝合船朝向探针（lane ship-dashi）
@@ -215,6 +216,7 @@ const SCENES := [
 	# 探针场景（-s 放不出过场的探针以场景启动）
 	"res://tools/qa_yard_transition_probe.tscn",
 	"res://tools/qa_w53_9_cutscene_input_probe.tscn",
+	"res://tools/qa_w53_9_port_banner_probe.tscn",
 ]
 
 ## lane-z4 把 Ship/PirateShip 的炮弹场景改成 lazy load() 后，这几个弹道场景已确认无解析错误；
