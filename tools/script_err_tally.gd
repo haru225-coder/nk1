@@ -21,18 +21,36 @@ extends Logger
 ## `quit()` 再也不执行，`-s` 主循环空转到外层 timeout（rc=124，被当「假红」重跑）；被包一层后
 ## 中止的协程照样发 completed、`await _run()` 立刻返回（同步段出错 / await 之后出错两种实测都回得来），
 ## 包装层据此判红退 1。
+## 没有包装层的（截图册探针 `_init` 直接 call_deferred("_run")）由 shot_gate 每帧看 run_abort_note() 兜底（lane w53-11 四轮）。
 var lines: Array = []
+## 与 lines 同序：[出错函数名, 文件]——Logger 回调的 function / file 就是出错那一帧（4.6.3 实测：`_run` 本体错报 `_run`，
+## 子函数报自己的名字，lambda 报 `<anonymous lambda>`，Parse Error 报 `GDScript::reload`）
+var sites: Array = []
 var _mutex := Mutex.new()
 var _detached := false
 
 
-func _log_error(_function: String, file: String, line: int, code: String, rationale: String,
+func _log_error(function: String, file: String, line: int, code: String, rationale: String,
 		_editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
 	if error_type != ERROR_TYPE_SCRIPT:
 		return
 	_mutex.lock()
 	lines.append("%s（%s:%d）" % [rationale if rationale != "" else code, file, line])
+	sites.append([function, file])
 	_mutex.unlock()
+
+
+## 入口脚本 entry 自己的 `_run` 出过脚本错 = 驱动协程已断气（GDScript 只中止出错的那一个函数，后面的 quit 永不执行）：
+## 返回那条错的原文；没有返回 ""。子函数 / lambda / 别的脚本里的错不算——调用方照走，收尾照常判红。
+func run_abort_note(entry: String) -> String:
+	var note := ""
+	_mutex.lock()
+	for i in sites.size():
+		if sites[i][0] == "_run" and sites[i][1] == entry:
+			note = str(lines[i])
+			break
+	_mutex.unlock()
+	return note
 
 
 func _log_message(_message: String, _error: bool) -> void:

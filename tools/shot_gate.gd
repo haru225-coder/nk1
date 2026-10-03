@@ -37,6 +37,15 @@ extends RefCounted
 ##   finish_contract 收尾时判 verdicts() 两判（计数器自证 + 本进程 0 条，判词同 story :3156），判不过的进 fails →
 ##   `<TAG>_FAIL`。此前截图探针中途出脚本错照样拍够张数打 `<TAG>_OK`、退 0（gate_report 原生 --json 也只数 script_errors
 ##   不改判定）；二十五支截图册探针接线前现网全跑 0 条 SCRIPT ERROR。
+## `_run` 断气兜底（lane w53-11 四轮）：截图探针一律 `_init` → call_deferred("_run")、流程写在 `_run` 本体里，游戏侧改个
+##   节点名 / 字段名，错就出在 `_run` 自己的代码行——GDScript 只中止这一个函数，quit() 永不执行，进程空转到外层超时
+##   （一键 / probe_pressure 900 s，rc=124 按规矩当假红重跑：真回归被当成机器噪声，一行判词都没有）。本件 _static_init
+##   起挂每帧看门 _run_watch：计数器里出现「入口脚本自己的 `_run` 出错」（script_err_tally.run_abort_note）即记下，再过
+##   RUN_ABORT_GRACE_FRAMES 帧还没走到收尾函数就地判红退 1：`✗ 主流程跑到收尾（_run 半路中止：…）` + SCRIPT ERROR 判词
+##   + `<TAG>_FAIL k（_run 半路中止，没走到收尾）`（契约模式 `<TAG>_CONTRACT_FAIL k`），--json 时 error=run_aborted。
+##   子函数 / lambda 里的错调用方照走、归收尾判红，看门不管；自带 `_run_guarded` 包装的探针断气当帧就自行收尾退出，
+##   宽限两帧即为让路。
+##   测试口 run_watch_hook：设了就改调它（参数为判词）、不打印不退出——只给自证探针 tools/qa_w53_11_run_watch_probe.gd 用。
 
 const DEFAULT_SHOT_ROOT := "/workspace/nk1-qa-shots"
 const GateReport := preload("res://tools/gate_report.gd")
@@ -44,13 +53,57 @@ const Clock := preload("res://tools/probe_clock.gd")
 const ENV_SLOW := "NK1_PROBE_SLOW_MS"
 const PRESSURE_NODE := "ProbeFramePressure"
 const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+const RUN_ABORT_GRACE_FRAMES := 2
 
 static var _script_errs: ScriptErrTally = null
+static var run_watch_hook := Callable()
+static var _finished := false
+static var _run_dead_frame := -1
+static var _run_dead_note := ""
 
 
 static func _static_init() -> void:
 	_script_errs = ScriptErrTally.new()
 	OS.add_logger(_script_errs)
+	# 探针脚本加载时主循环还没建（-s 的脚本本身就是主循环），看门延到首帧前的消息队列再挂（同 gate_report._arm_exit_hook）
+	_arm_run_watch.call_deferred()
+
+
+static func _arm_run_watch() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree != null and not tree.process_frame.is_connected(_run_watch):
+		tree.process_frame.connect(_run_watch)
+
+
+## 每帧看门（头注释「`_run` 断气兜底」）：先认出入口 `_run` 断气、记帧；宽限满了还没收尾才判红退出。
+static func _run_watch() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if _finished or _script_errs == null or tree == null:
+		return
+	if _run_dead_frame < 0:
+		var entry: Script = tree.get_script()
+		_run_dead_note = _script_errs.run_abort_note(entry.resource_path if entry != null else "")
+		if _run_dead_note != "":
+			_run_dead_frame = Engine.get_process_frames()
+		return
+	if Engine.get_process_frames() - _run_dead_frame < RUN_ABORT_GRACE_FRAMES:
+		return
+	_finished = true
+	var why := "主流程跑到收尾（_run 半路中止：%s——GDScript 只中止出错的那个函数，quit 永不执行；shot_gate 就地判红，不等外层超时）" % _run_dead_note
+	if run_watch_hook.is_valid():
+		run_watch_hook.call(why)
+		return
+	var fails: Array = [why]
+	_script_err_fails(fails)
+	var tag = tree.get("TAG")
+	var name := str(tag) if tag is String and tag != "" else GateReport.main_script_name()
+	for f in fails:
+		print("  ✗ ", f)
+		GateReport.check(false, str(f))
+	var line := "%s_%sFAIL %d（_run 半路中止，没走到收尾）" % [name, "CONTRACT_" if contract_mode() else "", fails.size()]
+	print(line)
+	GateReport.finish(GateReport.main_script_name(), 1, line, {"tag": name, "error": "run_aborted"})
+	tree.quit(1)
 
 
 ## 收尾前判本进程 SCRIPT ERROR（头注释「本进程 SCRIPT ERROR 即红」）：两判里判不过的进 fails，判得过的不另打印。
@@ -217,6 +270,7 @@ static func _wall_clock(fails: Array, error: String, extra: Dictionary) -> Strin
 
 ## 截图模式收尾：实得张数 < 声明张数也判失败。返回退出码。
 static func finish_shots(tag: String, saved: Array, expected: int, out_dir: String, fails: Array, error := "") -> int:
+	_finished = true
 	_script_err_fails(fails)
 	if saved.size() < expected:
 		fails.append("真失败：声明 %d 张截图，实得 %d 张" % [expected, saved.size()])
@@ -243,6 +297,7 @@ static func finish_shots(tag: String, saved: Array, expected: int, out_dir: Stri
 
 ## 无渲染又未开契约模式：直接判红。返回退出码 1。
 static func fail_no_render(tag: String, reason: String, expected: int) -> int:
+	_finished = true
 	print("  ✗ ", reason)
 	var line := "%s_FAIL headless（声明 %d 张截图，实得 0；此为环境不具备，不是画面回归）" % [tag, expected]
 	print(line)
@@ -253,6 +308,7 @@ static func fail_no_render(tag: String, reason: String, expected: int) -> int:
 
 ## 契约模式收尾：只报契约断言，不报张数。返回退出码。
 static func finish_contract(tag: String, fails: Array, error := "") -> int:
+	_finished = true
 	_script_err_fails(fails)
 	var extra := {"tag": tag, "contract": true}
 	error = _wall_clock(fails, error, extra)
