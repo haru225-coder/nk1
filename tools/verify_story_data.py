@@ -96,6 +96,29 @@ for ch in chapters:
         reachable = sum(1 for p in port_ids if port_unlock[p] <= cid)
         check(need <= reachable, f"chapters {cid}.{slot} visited_count={need} 超过本章可达港口数 {reachable}")
 
+# ── chapters.json：终章了结之地（lane w53-4）──
+# 结局幕（endings[].scene）都写在同一港（占城），选项也回那一港。GameState.try_resolve_ending 原先在哪个港够了条件
+# 就在哪里了结——simulate_run 那局第 28 趟在泉州够了八万即弹「占城的灯比泉州疏」，按「回占城港上」不过一日就到占城。
+# 现在 ending_requires.settle_at 钉住了结之地：结局幕所在的港、回去的港都须等于它，它也得是本章开着的港。
+scene_by_id = {s["id"]: s for s in scenes}
+for ch in chapters:
+    cid = int(ch["id"])
+    end_ports = set()
+    for e in ch.get("endings") or []:
+        es = scene_by_id.get(str(e.get("scene", "")), {})
+        if es.get("location") in port_ids:
+            end_ports.add(es["location"])
+        end_ports |= {c.get("next") for c in es.get("choices", []) if c.get("next") in port_ids}
+    if not end_ports:
+        continue
+    settle = (ch.get("ending_requires") or {}).get("settle_at", "")
+    check(settle != "", f"chapters {cid} 结局幕都落在 {sorted(end_ports)}，ending_requires 却没写 settle_at——"
+          f"在别港够了条件就弹结局册页，选项「回…港上」把玩家一步送过去")
+    if settle:
+        check(end_ports == {settle}, f"chapters {cid}.ending_requires.settle_at=`{settle}` 与结局幕所在 / 所回的港 {sorted(end_ports)} 不一致")
+        check(settle in port_ids and port_unlock.get(settle, 99) <= cid,
+              f"chapters {cid}.ending_requires.settle_at=`{settle}` 不是本章开着的港，了结不了")
+
 # ── 边记令牌须有上屏字（lane w53-4）──
 # scenes.json effects 的 ledger_note 是令牌（tangfang_parcel_and_sulfur_ledger_received 一类），住处「边记」与终局
 # 「航海札记」照 GameState.ledger_notes 原样上屏；GameState.add_ledger_note 记账时照 LEDGER_NOTE_TEXT 换成短句。

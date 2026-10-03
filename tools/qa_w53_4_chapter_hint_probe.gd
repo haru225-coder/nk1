@@ -85,6 +85,7 @@ func _c_ch4_ready_hint() -> void:
 		"xinghua", "xinghua_harbor", "quanzhou", "fuzhou", "zhangzhou", "wenzhou",
 		"penghu", "ryukyu", "mingzhou", "jeju", "hakata", "guangzhou", "champa",
 	]
+	_gs.last_port = "champa"  # 章目末条是「至占城了结一纲」（ending_requires.settle_at）：泊在占城才全达
 	var got: String = str(_main.call("_chapter_hint"))
 	_expect(got == "终章・可了结",
 		"章四 ready、未了结：_chapter_hint 回「终章・可了结」（实读：「%s」）" % got.substr(0, 60))

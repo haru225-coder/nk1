@@ -257,6 +257,16 @@ func _requirement_items(req: Dictionary) -> Array:
 			"current": 1 if pid in visited_ports else 0, "need": 1,
 			"done": pid in visited_ports,
 		})
+
+	# 了结之地（终章 ending_requires.settle_at）：结局册页与结局幕都写在这一港（占城），选项也回这一港。
+	# 不在那里就不了结——否则在广州、泉州够了本钱即弹「占城的灯比泉州疏」，按「回占城港上」不过一日就到了占城。
+	var settle := str(req.get("settle_at", ""))
+	if settle != "":
+		items.append({
+			"label": "至%s了结一纲" % GameManager.get_port_name(settle),
+			"current": 1 if last_port == settle else 0, "need": 1,
+			"done": last_port == settle,
+		})
 	return items
 
 

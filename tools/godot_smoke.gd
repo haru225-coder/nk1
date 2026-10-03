@@ -65,6 +65,7 @@ func _run() -> void:
 		"penghu", "ryukyu", "mingzhou", "hakata", "jeju",
 		"kagoshima", "guangzhou", "champa",
 	]
+	gs.last_port = "champa"  # 终章只在了结之地（ending_requires.settle_at）落笔
 	var prog: Dictionary = gs.chapter_progress()
 	_check(prog.get("final", false) and prog.get("ready", false), "终章条件可达成", fails)
 	_check(gs.pick_ending().get("id", "") == "sea_letter", "旗标选中海口信路", fails)

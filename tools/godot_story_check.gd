@@ -761,6 +761,7 @@ func _route_check() -> void:
 	_h8_logfold_ledger_check(main)
 	_a5_sea_here_check()
 	_w25j2_endgame_port_beats_check(main)
+	_w53_4_settle_flow_check(main)
 	_w53_4_ledger_note_check(main)
 	main.queue_free()
 	_process_c6_main_hook(main)
@@ -3917,6 +3918,8 @@ func _c6_endings_gate_check() -> void:
 	var port_ids: Array = []
 	for p in GM.ports_data.get("ports", []):
 		port_ids.append(str(p.get("id", "")))
+	# 了结之地按结局幕所在的港认（lane w53-4，现为占城）：结局只在泊那一港时落笔
+	var settle := _w53_4_ending_port(lst)
 	var fulfill := func(gs) -> void:
 		var want_n: int = maxi(int(er.get("visited_count", 0)), 1)
 		gs.visited_ports = port_ids.slice(0, want_n)
@@ -3926,6 +3929,8 @@ func _c6_endings_gate_check() -> void:
 		var pm := int(er.get("peak_money", 0))
 		gs.peak_money = maxi(pm, 1)
 		gs.money = pm
+		if settle != "":
+			gs.last_port = settle
 	# A. 未就绪：chapter 4 + 零门槛 → ready=false，try_resolve 拒，ending_id 未写
 	GS.from_dict({})
 	GS.chapter = 4
@@ -3936,6 +3941,27 @@ func _c6_endings_gate_check() -> void:
 	_c6_check(not bool(GS.chapter_progress().get("ready", false)), "第四章零本钱零到港：chapter_progress.ready=false")
 	_c6_check(not bool(GS.try_resolve_ending().get("resolved", false)), "未就绪 try_resolve 拒了结")
 	_c6_check(GS.ending_id == "", "未就绪 ending_id 未写")
+	# A2（lane w53-4）：本钱、港数、亲至都够了，人却泊在别港 → 不了结；章目末条「至占城了结一纲」未达。
+	# 修前 try_resolve_ending 在哪港够条件就在哪落笔，结局幕「回占城港上」一步把人送到占城
+	_c6_check(settle != "" and str(er.get("settle_at", "")) == settle,
+		"第四章 ending_requires.settle_at 写的是结局幕所在港（settle_at「%s」，结局幕在「%s」）" % [str(er.get("settle_at", "")), settle])
+	if settle != "":
+		GS.from_dict({})
+		GS.chapter = 4
+		GS.ending_id = ""
+		fulfill.call(GS)
+		var elsewhere := "guangzhou" if settle != "guangzhou" else "quanzhou"
+		GS.last_port = elsewhere
+		GS.set_flag("chen_line_open")
+		var prog_away: Dictionary = GS.chapter_progress()
+		var last_item: Dictionary = (prog_away.get("items", []) as Array).back() if not (prog_away.get("items", []) as Array).is_empty() else {}
+		_c6_check(not bool(prog_away.get("ready", false)) and str(last_item.get("label", "")).contains(GM.get_port_name(settle)) and not bool(last_item.get("done", true)),
+			"条件全达泊在%s：ready=false、末条章目「%s」未达" % [GM.get_port_name(elsewhere), str(last_item.get("label", ""))])
+		_c6_check(not bool(GS.try_resolve_ending().get("resolved", false)) and GS.ending_id == "",
+			"条件全达泊在%s：try_resolve 拒了结（ending_id 仍空）" % GM.get_port_name(elsewhere))
+		GS.last_port = settle
+		_c6_check(bool(GS.try_resolve_ending().get("resolved", false)) and GS.ending_id != "",
+			"泊到%s：同一份条件即了结（ending_id=%s）" % [GM.get_port_name(settle), GS.ending_id])
 	# 定式：表尾兜底不带 require_flag / require_any，首条旗标线非空
 	var last_e: Dictionary = lst[-1]
 	var first_e: Dictionary = lst[0]
@@ -4257,6 +4283,61 @@ func _w25j1_cam_plaque_check() -> void:
 
 
 
+## ── lane w53-4：终章在占城了结（chapters.json 第四章 ending_requires.settle_at）──
+## 修前：第四章本钱 / 港数 / 亲至占城都够了，玩家在哪一港进港就在哪一港弹「了结」册页——册页与结局幕写的是
+## 「占城的灯比泉州疏」一类占城夜景，幕里只有一钮「回占城港上」，按下 last_port 当即改成占城，一日不过
+## （simulate_run 那局第 28 趟在泉州够了八万即了结）。现在泊在别港不了结、顶匾章目报「至占城了结一纲」，
+## 抵占城才落笔，结局幕回的就是脚下这一港。
+func _w53_4_settle_flow_check(main: Node) -> void:
+	var er: Dictionary = GS.chapter_def(4).get("ending_requires", {})
+	var settle := _w53_4_ending_port(GS.chapter_def(4).get("endings", []))
+	_check(settle != "" and str(er.get("settle_at", "")) == settle,
+		"第四章结局幕同在一港「%s」，ending_requires.settle_at 写的就是它（现「%s」）" % [settle, str(er.get("settle_at", ""))])
+	if settle == "":
+		return
+	GS.from_dict({})
+	Cal.from_dict({"year": 1266, "month": 2, "day": 1})
+	GS.loaded_with_beats = true
+	main._beats = null
+	_close_dialogs(main)
+	GS.chapter = 4
+	GS.peak_money = int(er.get("peak_money", 0)) + 2000
+	GS.money = GS.peak_money
+	var others: Array = []
+	for p in GM.ports_data.get("ports", []):
+		if str(p.get("id", "")) != settle:
+			others.append(str(p.get("id", "")))
+	GS.visited_ports = others.slice(0, maxi(int(er.get("visited_count", 0)) - 1, 0))
+	GS.visited_ports.append(settle)  # 亲至占城早已办过
+	GS.set_flag("chen_line_open")
+	var away := "guangzhou" if settle != "guangzhou" else "quanzhou"
+	GS.last_port = away
+	main.load_scene(away)
+	var host = main.get("_chapter_host")
+	_check(GS.ending_id == "" and (host == null or not is_instance_valid(host)) and main.current_scene_id == away,
+		"条件全达抵%s（不是了结之地）：不弹了结册页、ending_id 仍空（页 %s，结局「%s」）" % [
+			GM.get_port_name(away), main.current_scene_id, GS.ending_id])
+	var hint := str(main._chapter_hint())
+	_check(hint.contains(GM.get_port_name(settle)) and hint.contains("了结"),
+		"泊在%s时顶匾章目指去了结之地：「%s」" % [GM.get_port_name(away), hint])
+	GS.last_port = settle
+	main.load_scene(settle)
+	host = main.get("_chapter_host")
+	_check(GS.ending_id == "sea_letter" and host != null and is_instance_valid(host),
+		"抵%s即了结：弹册页、ending_id=%s" % [GM.get_port_name(settle), GS.ending_id])
+	main._confirm_chapter_sheet()
+	var sc: Dictionary = GM.get_scene_by_id(main.current_scene_id)
+	_check(str(sc.get("location", "")) == settle,
+		"结局幕「%s」落在了结之地（location %s）" % [main.current_scene_id, str(sc.get("location", ""))])
+	main._activate_first_choice()
+	_check(main.current_scene_id == settle and GS.last_port == settle,
+		"结局幕的选项回脚下这一港、不挪港（页 %s，last_port %s）" % [main.current_scene_id, GS.last_port])
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_close_dialogs(main)
+
+
 ## ── lane w53-4：住处「边记」与终局「航海札记」不印英文令牌 ──
 ## 修前：scenes.json 剧情选项的 ledger_note 是令牌（tangfang_parcel_and_sulfur_ledger_received 一类），apply_effects
 ## 原样记进 ledger_notes；住处「边记」一行一枚、终局「航海札记」的「札记：」一行串起来，全是 snake_case 英文。
@@ -4304,6 +4385,17 @@ func _w53_4_ledger_note_check(main: Node) -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	main._beats = null
 	_close_dialogs(main)
+
+
+## 第四章结局幕（endings[].scene）共同所在的港；有一幕不在港上、或各幕不同港，回空串
+func _w53_4_ending_port(endings: Array) -> String:
+	var port := ""
+	for e in endings:
+		var loc := str(GM.get_scene_by_id(str(e.get("scene", ""))).get("location", ""))
+		if GM.get_port_by_id(loc).is_empty() or (port != "" and loc != port):
+			return ""
+		port = loc
+	return port
 
 
 func _w53_4_collect(node, key: String, out: Array) -> void:

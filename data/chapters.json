@@ -65,6 +65,7 @@
         "peak_money": 80000,
         "visited_count": 13,
         "must_visit": ["champa"],
+        "settle_at": "champa",
         "hint": "本钱积至八万，走通十三处港口，并亲至占城。海路至此，可了结一纲。"
       },
       "endings": [
