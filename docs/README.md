@@ -7,6 +7,7 @@
 - [侧车口径.md](侧车口径.md)：哪些 `.uid` / `.import` 必须入库、哪些不许带（`check_sidecars`）；含 w42 末段升格：wt5 (a)/(b) 恒等式 44/10/3 入册
 - [人物原稿与上屏契约.md](人物原稿与上屏契约.md)：人物原稿与上屏字段的契约（`verify_story_data` Astra L1 段）
 - [Main拆解台账.md](Main拆解台账.md)：`scripts/Main.gd` 往 `scripts/ui/` 拆的逐刀台账，含各簇行数、调用面、直读 Main.gd 的门禁、风险，以及下一刀候选
+- [Main直读集探判语.md](Main直读集探判语.md)：Main 家族 14 枚直读 Main.gd 探判语稿——钉子 14 / 接扫 0 / 未定 0、枚枚行号 + raw vs stitched 判因子 + 判选 + 钉石激理由（w52-k3 出品、wave54-k3 入仓落档）
 - [combat_realism_verify.md](combat_realism_verify.md)：写实海战冒烟探针 `tools/combat_realism_probe.gd` 怎么跑、怎么读：五块判据（风流 / 弹道装填 / 损伤浸水 / 接舷白刃 / 士气溃逃）、零节自检、剧情挂钩锚点「遇盗 → 开战 → 夺船 → 回写」、已知缺陷（lane combat10）
 - [性能基线.md](性能基线.md)：`tools/perf_baseline.gd` 帧时 / 峰值内存 / 启动到可玩基线与软档阈值（本仓首份性能口径，只 warn 不 fail；`tools/perf_baseline.py` 接 `REGISTRY` tier=no）
 - [存档迁移矩阵.md](存档迁移矩阵.md)：`save_schema 3` 的迁移路径矩阵（起始版本 × 路径 × 结果 / 丢哪些字段），v1→v2→v3 关键字段（船 / 水粮 / 旗 / 玉湖事件 / 已识）过链断言归 `save_migrate_probe`（lane w20-c9）
