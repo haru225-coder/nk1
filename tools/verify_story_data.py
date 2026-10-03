@@ -119,6 +119,22 @@ for ch in chapters:
         check(settle in port_ids and port_unlock.get(settle, 99) <= cid,
               f"chapters {cid}.ending_requires.settle_at=`{settle}` 不是本章开着的港，了结不了")
 
+# ── chapters.json：终章结局文字不点主角名（lane w53-13，待拍板第 2 条）──
+# 这几条结局只看旗标，海商线（终身叫陈子龙）与士人线（1268 唱第改名陈文龙）都走得到。原先「海口信路」写「陈子龙三个字仍写在
+# 货引上」、「史册未落笔」写「陈文龙三个字仍在将来」——士人线了结时一条叫错、一条说改名还在将来。现在册页、结局幕、结局过场
+# 三处都不点名，两条线读着都对。
+_end_cs = (load("cutscenes.json") or {}).get("cutscenes", {})
+for ch in chapters:
+    for e in ch.get("endings") or []:
+        sid = str(e.get("scene", ""))
+        texts = [("册页", str(e.get("text", ""))), ("结局幕", str(scene_by_id.get(sid, {}).get("body", "")))]
+        for shot in (_end_cs.get(sid) or {}).get("shots", []):
+            texts += [("结局过场", str(c.get("text", ""))) for c in shot.get("captions", [])]
+        for where, t in texts:
+            for nm in ("陈子龙", "陈文龙"):
+                check(nm not in t, f"chapters {ch['id']} 结局「{e.get('title', '')}」{where}点了「{nm}」——海商、士人两线都走得到这条结局，"
+                      f"点哪个名都有一条线叫错：「{t[:40]}」")
+
 # ── chapters.json：终章每条带旗标的结局，须有一条真实剧情路走得到（lane w53-4）──
 # 从 start_scene 起照选项（含 require_flag / require_any / hide_if_flag / require_chapter）一路点到落港为止，
 # 收下路上写的 flag，按 endings 次序取第一条 flag 成立者。原次序「海口信路 → 账上的距离 → 史册未落笔」下，

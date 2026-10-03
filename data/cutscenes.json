@@ -625,8 +625,8 @@
      "transition_in": "fade",
      "shake": 0.0,
      "captions": [
-      {"t": 0.8, "text": "货引上写的，仍是陈子龙三个字。", "style": "narration", "pos": "lower_left"},
-      {"t": 3.4, "text": "史册要等的那个名字，还没有落笔。", "style": "narration", "pos": "lower_left"},
+      {"t": 0.8, "text": "货引上写的，是你的名字。", "style": "narration", "pos": "lower_left"},
+      {"t": 3.4, "text": "史册怎么写你，还没有落笔。", "style": "narration", "pos": "lower_left"},
       {"t": 5.8, "text": "——海路却先替你记了一笔。", "style": "line", "pos": "bottom"}
      ]
     },
@@ -763,7 +763,7 @@
      "transition_in": "fade",
      "shake": 0.0,
      "captions": [
-      {"t": 0.8, "text": "陈文龙三个字，仍在将来。", "style": "narration", "pos": "lower_left"},
+      {"t": 0.8, "text": "史册上那一页，仍在将来。", "style": "narration", "pos": "lower_left"},
       {"t": 3.0, "text": "你把海图卷好，旧泊地没有标进官册。", "style": "narration", "pos": "lower_left"}
      ]
     },
