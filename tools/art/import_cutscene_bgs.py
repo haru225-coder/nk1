@@ -467,6 +467,24 @@ def check_data(path=None) -> list:
     bad = []
     path = pathlib.Path(path) if path else ROOT / "data" / "cutscenes.json"
     known_flags = None
+
+    def flag_faults(where: str, item: dict, what: str) -> list:
+        # 字幕与镜头 bg_alt 项是同一套旗标写法（播放器同走 CutscenePlayer._caption_on），判法也只此一份：
+        # 原先只核字幕，bg_alt 旗名写错照报通过——「未归」海口结算第 1 镜换不成港页图，字幕却写「从城里传出来」（lane w53-9）
+        nonlocal known_flags
+        out = []
+        for k in ("if_flag", "unless_flag"):
+            if k not in item:
+                continue
+            if not (isinstance(item[k], str) and item[k]):
+                out.append(f"{where} {k} 须为非空字符串：{item[k]!r}")
+                continue
+            if known_flags is None:
+                known_flags = _known_flags()
+            if item[k] not in known_flags:
+                out.append(f"{where} {k} 旗标 `{item[k]}` 没人立（scripts set_flag / data 里的 \"flag\" 都没有）——{what}")
+        return out
+
     try:
         d = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as e:
@@ -536,6 +554,7 @@ def check_data(path=None) -> list:
                     bad.append(f"{wa} 有不认的键 {sorted(extra)}（只认 bg / if_flag / unless_flag / cam_from / cam_to）")
                 if not any(isinstance(a.get(k), str) and a.get(k) for k in ("if_flag", "unless_flag")):
                     bad.append(f"{wa} 须写 if_flag 或 unless_flag（没有旗标条件的项播放器不认）")
+                bad += flag_faults(wa, a, "这镜底图按旗换不了")
                 abg = a.get("bg", "")
                 if not (isinstance(abg, str) and abg.startswith("res://assets/") and abg.endswith(".jpg")):
                     bad.append(f"{wa} bg 须为 res://assets/…jpg：{abg}")
@@ -576,16 +595,7 @@ def check_data(path=None) -> list:
                 if extra:
                     bad.append(f"{wc} 有不认的键 {sorted(extra)}（字幕只认 {' / '.join(sorted(CAPTION_KEYS))}；"
                                "写错的键播放器静默不认——换句旗写错两句同出或一句不出，hold 写错该退的句子赖到换镜）")
-                for k in ("if_flag", "unless_flag"):
-                    if k not in c:
-                        continue
-                    if not (isinstance(c[k], str) and c[k]):
-                        bad.append(f"{wc} {k} 须为非空字符串：{c[k]!r}")
-                        continue
-                    if known_flags is None:
-                        known_flags = _known_flags()
-                    if c[k] not in known_flags:
-                        bad.append(f"{wc} {k} 旗标 `{c[k]}` 没人立（scripts set_flag / data 里的 \"flag\" 都没有）——这句按旗换不了")
+                bad += flag_faults(wc, c, "这句按旗换不了")
                 t = c.get("t")
                 if not isinstance(t, (int, float)) or not 0 <= t < dur:
                     bad.append(f"{wc} t={t} 不在 [0, duration={dur})")

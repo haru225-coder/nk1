@@ -5,11 +5,14 @@
   · 字幕换句旗写错一个字母（unless_flag → unles_flag）：忠肃第 2 镜「出城侦敌」「缒城出降」两句同出；
     旗名写错（cao_opened → cao_openned）：关城门那一支的句子永远出不来；
   · hold 写错：该退的句子赖到换镜，压着后面的字；hold 过短：一闪就退，读不完；
-  · 镜头 captions 写错：整镜没字幕；章节卡 focus 写错：取景按缺省走，画里的人被墨晕窗截一半。
+  · 镜头 captions 写错：整镜没字幕；章节卡 focus 写错：取景按缺省走，画里的人被墨晕窗截一半；
+  · 镜头 bg_alt（底图按旗换，与字幕同一套旗标写法）旗名写错：「未归」海口结算第 1 镜换不成兴化海口港页图，
+    画面仍是海上船舷、字幕却是「消息是从城里传出来的」（四轮补：三轮的旗名判据只核字幕）；旗键名写错同样换不成。
 门禁照报「契约校验通过」。
 
 本脚本拿真数据做底，逐个注入一种上面的笔误，写进临时文件交给 check_data(path) 判：每一种都要判红、
-且红在该红的那一句（判词里带定位）；真数据本身零红。回退契约里未知键 / 旗标有人立 / hold 读完线三条判据，本脚本即红。
+且红在该红的那一句（判词里带定位）；真数据本身零红。回退契约里未知键 / 旗标有人立（字幕与 bg_alt 两处）/ hold 读完线
+几条判据，本脚本即红。
 
 用法：python3 tools/qa_w53_9_cutscene_contract_mutants.py      # rc 0 全部判中且真数据零红；rc 1 有漏判或误红
 """
@@ -31,6 +34,13 @@ def _caption(d, cid, shot, pred):
         if pred(c):
             return c
     raise LookupError(f"{cid}[{shot + 1}] 找不到要改的那句字幕——真数据变了，改本脚本的定位")
+
+
+def _alt(d, cid, shot, pred):
+    for a in d["cutscenes"][cid]["shots"][shot].get("bg_alt", []):
+        if pred(a):
+            return a
+    raise LookupError(f"{cid}[{shot + 1}] 找不到要改的那条 bg_alt——真数据变了，改本脚本的定位")
 
 
 def _rename(dct, old, new):
@@ -61,6 +71,14 @@ def m_chapter_key(d):
     _rename(d["chapters"]["2"], "focus", "fcous")
 
 
+def m_alt_flag_name(d):
+    _alt(d, "ending_weigui", 0, lambda a: a.get("if_flag") == "weigui_at_harbor")["if_flag"] = "weigui_at_harbour"
+
+
+def m_alt_flag_key(d):
+    _rename(_alt(d, "ending_weigui", 0, lambda a: a.get("if_flag") == "weigui_at_harbor"), "if_flag", "if_flg")
+
+
 # （笔误，注入函数，判词里必须出现的定位片段）
 MUTANTS = [
     ("字幕换句旗键名写错 unless_flag→unles_flag", m_flag_key, "cutscenes.ending_zhongsu[2].captions[1] 有不认的键 ['unles_flag']"),
@@ -69,6 +87,9 @@ MUTANTS = [
     ("字幕 hold 过短 2.8→0.9", m_hold_short, "cutscenes.opening[9].captions[3] hold=0.9 不足 1.5 秒"),
     ("镜头 captions 键名写错 captions→caption", m_captions_key, "cutscenes.ending_ledger[4] 有不认的键 ['caption']"),
     ("章节卡 focus 键名写错 focus→fcous", m_chapter_key, "chapters.2 有不认的键 ['fcous']"),
+    ("镜头 bg_alt 旗名写错 weigui_at_harbor→weigui_at_harbour", m_alt_flag_name,
+     "cutscenes.ending_weigui[1].bg_alt[1] if_flag 旗标 `weigui_at_harbour` 没人立"),
+    ("镜头 bg_alt 旗键名写错 if_flag→if_flg", m_alt_flag_key, "cutscenes.ending_weigui[1].bg_alt[1] 有不认的键 ['if_flg']"),
 ]
 
 
