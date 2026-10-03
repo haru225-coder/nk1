@@ -481,6 +481,14 @@ func boarding_result(won: bool, as_attacker: bool) -> void:
 			_set_state(STRUCK)
 
 
+## 外头定了这船降（喊话劝降得手：敌将径直降幡，PirateShip.strike_colours 立 struck）：簿上同记降幡（lane w53-2）——
+## 收战（battle_outcome 在场敌船个个降了即受降）、传染僚船、我方提气，都与士气降幡一式。kind 无纪实句：敌将改打法、降幡两条浮字那头已出
+func strike_colours(kind := "parley") -> void:
+	if not _live or state == STRUCK:
+		return
+	_set_state(STRUCK, kind)
+
+
 ## 主将倒下（实有主将模型的接线方直接调；没有的由伤亡 / 失甲板代理）。我方默认不倒（sides.player.captain_can_fall）。
 func fall_captain() -> void:
 	if not _live or captain_down or not _side_bool("captain_can_fall") or state == STRUCK:
@@ -1124,6 +1132,10 @@ class Tracker extends Node:
 				if _player != null:
 					_player.boarding_result(ef, not ef)
 			e["grappled"] = g
+			# 敌将自己降了、簿上还没降（喊话劝降得手走 PirateShip.strike_colours，船节点 struck）：簿上同记（lane w53-2）。
+			# 不记的话敌尽喊降也不按士气收战，降了的船竖着降幡漂 35 秒后乘隙遁去，记成半赏的「敌船遁走」
+			if n.get("struck") == true and not sheet.has_struck():
+				sheet.strike_colours("parley")
 			var d := n.global_position.distance_to(ship.global_position) if ship != null else INF
 			var ctx := {"nearest_foe": d, "surrounded": false}
 			_merge_inputs(n, ctx)

@@ -17,7 +17,7 @@ extends SceneTree
 ##   五、中弹只颠挨打那条船的舱面货：货分船装，海战里挨打的只有旗舰；修复前 Ship.take_hit 按全队合并的货随手挑一件、
 ##       remove_cargo 跨船依次扣——旗舰舱空、护航船装着生丝，旗舰每挨一发重击就颠掉护航船一件生丝。真走 take_hit 打旗舰四发：
 ##       ① 旗舰空舱、护航生丝 10 → 生丝一件不少；② 旗舰茶 5、护航生丝 10 → 每发船体伤 ≥ 5 颠旗舰一件茶，生丝仍 10。
-##   六、喊话劝降得手的船接舷即收：降幡劝降走 PirateShip.strike_colours，只有敌将降了（节点 struck），士气簿不知道；
+##   六、喊话劝降得手的船接舷即收：降幡劝降走 PirateShip.strike_colours，敌将降了（节点 struck），士气簿原先不知道（第十一节起簿上同记）；
 ##       修复前 _board_enemy 只认簿上的 yields_to_boarding，竖着降幡的船一接舷照打满员白刃（实打 300 人：本队被击退）。
 ##       真起号令面板喊话（roll 定 0 必降）→ 接舷：须免白刃（_last_melee 空）、船入列、下场记受降 struck。
 ##       另验号令签面：喊降得手、冷却过后「降幡劝降」那格写「可喊 敌已降」（修复前照士气簿写「可喊 约 N 成 / 难成」，劝人降一艘已降的船）。
@@ -35,6 +35,9 @@ extends SceneTree
 ##       修复前照旧守 260–540，多半兜在惜弹射距外：实打哨船一战，余弹那一两分钟在 360 内的只有几秒，到限时两散还剩一到六轮没放。
 ##       又一条：矢石打光时白刃比够得上本档案拼接舷的线（desperate）就贴、够不上就走——修复前走线写死 0.85（海寇那档），
 ##       哨船（线 1.3）比在 [0.85, 1.3) 的弹尽船既不贴也不走，兜着空舷直到限时两散（实打两场各兜 35 / 74 秒）。
+##   十一、喊话劝降得手的末艘敌船按受降收战：修复前士气簿不知道敌将降了，在场敌船个个竖着降幡也不收战——
+##       降船漂满 35 秒乘隙遁去，记成半赏的「敌船遁走」。一艘快船，喊话（roll 0 必降）：数帧内须以 win 收战一次、
+##       morale_verdict = enemy_struck、下场记受降，海图 win_kind 判受降（全赏）；士气簿那页同记降幡。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -88,6 +91,8 @@ func _run() -> void:
 	await _sec_notice_overlap(fleet)
 	print("== 十、敌将状态机自检")
 	_sec_captain_self_check()
+	print("== 十一、喊话劝降得手的末艘敌船按受降收战")
+	await _sec_parley_last_ends_battle(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -131,7 +136,8 @@ func _foes(wm: Node) -> Array:
 	return wm.get_children().filter(func(c): return String(c.name).begins_with("PirateShip") and not c.is_queued_for_deletion())
 
 
-func _close(wm: Node) -> void:
+## 形参不写类型：收了战的海战场（_battle_exit 自己 queue_free）等过几帧已释放，带类型的形参收到已释放实例当场报错
+func _close(wm) -> void:
 	if is_instance_valid(wm):
 		wm.set("resolved", true)  # 拆布景不收战（不发 battle_finished）
 		wm.queue_free()
@@ -554,6 +560,51 @@ func _sec_captain_self_check() -> void:
 	var has_fn := ai != null and ai.has_method("self_check")
 	var bad: Array = ai.call("self_check") if has_fn else ["EnemyCaptainAI.self_check 不在"]
 	_check(bad.is_empty(), "十 敌将状态机自检全过（%s）" % ("0 条不合" if bad.is_empty() else "；".join(bad)))
+
+
+# ══ 十一、喊话劝降得手的末艘敌船按受降收战 ══════════════════════════════
+
+## 一艘快船挪到喊话距离内停住，真起号令面板下「降幡劝降」（roll 0 必降）；之后放它照常走物理帧（敌炮仍冻），等十个物理帧：
+## 须收战一次 win、morale_verdict = enemy_struck、fates 记受降，SeaChart.win_kind 判 surrender；士气簿那页 has_struck
+func _sec_parley_last_ends_battle(fleet: Node) -> void:
+	var wm := await _battle(fleet, "fu_ship_medium", 60, {"type": "pirate_boat", "count": 1})
+	var foes := _foes(wm)
+	var panel: Node = null
+	for n in wm.get_children():
+		if n.is_in_group("nk1_combat_orders"):
+			panel = n
+	if foes.size() != 1 or panel == null:
+		_check(false, "十一 海战刷出一艘快船、挂上号令面板")
+		await _close(wm)
+		return
+	var own: Node2D = wm.get("ship")
+	var foe: Node2D = foes[0]
+	var rec: Array = []
+	wm.battle_finished.connect(func(o: String, d: Dictionary) -> void: rec.append([o, d.duplicate(true)]))
+	for _i in 3:
+		await physics_frame  # PirateShip._wire_parley 首个物理帧接上面板的 parley_resolved
+	foe.set_physics_process(false)
+	foe.position = own.position + Vector2(200, 0)
+	var res: Dictionary = panel.call("issue", "parley", 0.0)
+	var sheet = (wm.get("_morale") as Object).call("sheet_of", foe) if wm.get("_morale") != null else null
+	foe.set_physics_process(true)
+	for _i in 10:
+		if not rec.is_empty():
+			break
+		await physics_frame
+	var struck_sheet: bool = sheet != null and bool(sheet.call("has_struck"))
+	var out := str(rec[0][0]) if rec.size() == 1 else "未收战"
+	var data: Dictionary = rec[0][1] if rec.size() == 1 else {}
+	var fates := str(data.get("fates", []))
+	var sc: GDScript = load("res://scripts/SeaChart.gd")
+	var kind := str(sc.call("win_kind", data)) if rec.size() == 1 else ""
+	_check(str(res.get("result", "")) == "surrender" and struck_sheet,
+		"十一 喊话劝降得手：敌将降幡、士气簿那页同记降幡（喊话 %s；簿上降了 = %s）" % [str(res.get("result", "无")), struck_sheet])
+	_check(rec.size() == 1 and out == "win" and str(data.get("morale_verdict", "")) == "enemy_struck"
+		and fates.find("struck") >= 0 and kind == "surrender",
+		"十一 末艘喊降：十帧内按受降收战（得 %s · morale_verdict %s · fates %s · win_kind %s）" % [
+			out, str(data.get("morale_verdict", "无")), fates, kind if kind != "" else "无"])
+	await _close(wm)
 
 
 class _ScriptErrLog extends Logger:

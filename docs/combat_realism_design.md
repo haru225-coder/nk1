@@ -128,7 +128,7 @@
 | id | 名 | 说明 |
 |---|---|---|
 | `enemy_captured` | 夺船 | 现码 CombatFx.board_win_note 同句；末船夺下当帧 _battle_exit(win, boarded=true)，combat11 已清 KNOWN_DEFECTS |
-| `enemy_struck` | 敌降 | combat09+11+12 已接：士气收场 morale_verdict=enemy_struck → 题签 surrender「受降」，SeaChart 全赏走 sea_surrender_note；legacy_data.boarded 与实发不符（见§九） |
+| `enemy_struck` | 敌降 | combat09+11+12 已接：士气收场 morale_verdict=enemy_struck → 题签 surrender「受降」，SeaChart 全赏走 sea_surrender_note；喊话劝降得手（PirateShip.strike_colours）lane w53-2 起士气簿同记降幡、同此收场；legacy_data.boarded 与实发不符（见§九） |
 | `enemy_sunk` | 击沉 | SeaChart 胜：赏 150–600 钱、名声 +3、士气 +5（现码） |
 | `enemy_fled` | 敌遁 | combat12 已接：WorldMap 收战把各船下场（沉 / 夺 / 受降 / 遁）记进 win data.fates，SeaChart.win_kind 只在一艘没沉没夺没降、只是遁走时半赏 75–300 走 sea_fled_note，先沉后遁照击沉全赏；题签现码出 repel「击退」，非本表 win（见§九） |
 | `player_fled` | 脱战 | 现码 CombatFx.sea_flee_ok_note 同句 |
