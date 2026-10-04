@@ -97,7 +97,6 @@ const SCRIPTS := [
 	"res://scripts/combat/DamageModel.gd", "res://scripts/combat/FloodFire.gd",  # lane combat04 分系统损伤、浸水失火（Ship.gd 挂用）
 	# lane combat03 舷战弹道 / 分位装填与弹药
 	"res://scripts/combat/Ballistics.gd", "res://scripts/combat/ReloadAmmo.gd",
-	"res://scripts/combat/CombatSwitches.gd",  # w53-ctl 战斗系统方案第一、二期新玩法总开关（各 lane 经它回退，只在内存）
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
 	"res://tools/art/portrait_svg/PortraitWall.gd", "res://tools/art/ShotTour.gd",
 	# lane ea4 清单漂移补列：此前各 lane 各自追加、漏掉的已跟踪脚本（由下方 INVENTORY 自检兜底）
