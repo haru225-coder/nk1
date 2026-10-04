@@ -1528,8 +1528,9 @@ func _v0928_crew_check(main: Node) -> void:
 	var spoil_now: int = GS.money - spoil0
 	var log0: String = sc.get("log_label").get_parsed_text()
 	var wd := "敌船已退。获财货 %d 钱。船体受损 40。" % spoil_now
-	_check(spoil_now >= 150 and spoil_now <= 600 and log0.find("接舷既定。" + wd) >= 0,
-		"接舷夺船战果注记（boarded）：日志首行「接舷既定。」＋全赏注记（spoil %d，得首行「%s」）" % [spoil_now, log0.get_slice("\n", 0)])
+	# w53-16 一期起：夺船给船不给钱（spoil 0）——全赏 = 那条船本身；札记仍是「接舷既定。」＋账目句（获财货 0 钱）
+	_check(log0.find("接舷既定。" + wd) >= 0,
+		"接舷夺船战果注记（boarded）：日志首行「接舷既定。」＋夺船不给钱注记（spoil %d，得首行「%s」）" % [spoil_now, log0.get_slice("\n", 0)])
 	var strip0: RichTextLabel = sc.get("_strip_line")
 	var strip_note: String = strip0.get_parsed_text().get_slice("\n", 1).strip_edges() if strip0 != null else ""
 	# 钱数是 randf_range(150,600)，位数不定；这句三十字上下，1280 宽的匾放得下——整句上匾（原 28 字一截，钱数三位时截掉句尾）
@@ -1564,8 +1565,9 @@ func _v0928_crew_check(main: Node) -> void:
 	sc.get("log_label").text = ""
 	sc.call("_on_battle_result", "win", {"boarded": true, "player_damage": 40.0, "fates": [{"fate": "struck", "type": "sea_falcon"}]})
 	var log1: String = sc.get("log_label").get_parsed_text()
-	_check(log1.find("接舷既定。敌船降幡，") == 0,
-		"接舷且敌降战果注记：前缀盖在受降句上（得首行「%s」）" % log1.get_slice("\n", 0))
+	# w53-16 一期起札记首行可垫战后单子（「敌船一艘，受降一艘。」），账目原句「接舷既定。敌船降幡，…」紧接在后
+	_check(log1.find("接舷既定。敌船降幡，") >= 0,
+		"接舷且敌降战果注记：前缀盖在受降句上（单子垫头后仍是「接舷既定。敌船降幡」起）（得首行「%s」）" % log1.get_slice("\n", 0))
 	root.remove_child(sc)
 	sc.free()
 	GM.pending_battle = {}
@@ -1820,7 +1822,7 @@ func _v0928_prize_sunk_check(Flt: Node, FX, pirate: Dictionary) -> void:
 	_check(still and got.size() == 1 and got[0][0] == "lose" and bool(d.get("sunk", false)) and foes.size() >= 2,
 		"夺一艘后旗舰沉没：夺船当时不收战，按 lose{sunk} 收战（得 %s）" % [got])
 	_check(prizes.size() == 1 and str(prizes[0].get("name", "")) == taken and str(prizes[0].get("type", "")) == "pirate_boat"
-		and prize_ref != null and is_same((Flt.get("ships") as Array)[2], prize_ref),
+		and prize_ref != null and ships0.size() == 3 and is_same(ships0[2], prize_ref),
 		"夺船后旗舰沉没：data.prizes 只记本场夺来的一艘（名册先有同名「快船」不算），与名册末格同一格（prizes %s）" % [prizes])
 	var mv: Dictionary = d.get("stores_moved", {})
 	_check(int(mv.get("water", -1)) == 0 and int(mv.get("food", -1)) == 0,
@@ -1846,8 +1848,10 @@ func _v0928_prize_sunk_check(Flt: Node, FX, pirate: Dictionary) -> void:
 	for s1 in Flt.get("ships"):
 		if is_same(s1, prize_ref):
 			in_reg = true
-	_check(in_reg and (Flt.get("ships") as Array).size() == 3 and Flt.water == 300 and Flt.food == 300,
-		"注记说入船籍：结算后夺来的「%s」仍在名册（%d 格），水粮不因夺船变（水 %d 粮 %d）" % [taken, (Flt.get("ships") as Array).size(), Flt.water, Flt.food])
+	# w53-16 一期 13c 起：lose{sunk} 结算时沉船移出船队、护航接任旗舰——结「3 格 → 2 格」是本意，只核夺来那艘仍在册
+	_check(in_reg and (Flt.get("ships") as Array).size() == 2 and Flt.water == 300 and Flt.food == 300,
+		"注记说入船籍：结算后夺来的「%s」仍在名册（13c：沉船移出船队，名册由 3 格归 %d 格），水粮不因夺船变（水 %d 粮 %d）" % [
+			taken, (Flt.get("ships") as Array).size(), Flt.water, Flt.food])
 	var strip: String = sc.get("_strip_line").get_parsed_text().get_slice("\n", 1).strip_edges()
 	# lane w53-14：整句五十来字放不下，退到夺船句句末收「…」——「所夺「快船」…已入船籍」整句在匾上（原先截 28 字只剩「所夺「快…」）
 	var expect := line.substr(0, at_dmg) + "…"
