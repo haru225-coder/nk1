@@ -12,6 +12,8 @@ const SAIL := "res://assets/shaders/champa_sail.gdshader"
 const FIBER := "res://assets/fx/noise_fiber.png"
 const FACINGS := 16
 const VIEW := Vector2i(1280, 720)
+
+var _fails: Array = []
 ## 仰角 18°。几乎正对右舷，只向船尾偏 14°，好看见舷侧、舷弧和直立的帆面。
 ## 再偏到船尾、再拉远，帆会被看成平铺在甲板上的一块横板。
 const CAM_ELEV_DEG := 18.0
@@ -116,9 +118,7 @@ func _run() -> void:
 		uniq[h] = true
 	print("YAW_DISTINCT ", uniq.size(), "/", FACINGS)
 	if uniq.size() != FACINGS:
-		print("CHAMPA_SHOT_FAIL yaw hashes not distinct")
-		quit(1)
-		return
+		_fails.append("真失败：YAW_DISTINCT %d/16 不足（十六向有重影）" % uniq.size())
 
 	# 宽景：航向差开，帆面都朝着镜头，而且都在甲板上方。不把战舟旋到帆掉到船底下。
 	war.vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -131,8 +131,15 @@ func _run() -> void:
 	await _settle(6)
 	_save_root(out + "/wide.png")
 
-	print("CHAMPA_SHOT_OK ", out)
-	quit(0)
+	# lane w53-11 八轮：收尾按 ship_exquisite 同款——空视口 / 挂不进船都记账进 _fails，不再静默绿
+	if _fails.is_empty():
+		print("CHAMPA_SHOT_OK ", out)
+		quit(0)
+	else:
+		for f in _fails:
+			print("  ✗ ", f)
+		print("CHAMPA_SHOT_FAIL %d" % _fails.size())
+		quit(1)
 
 
 func _show_only(on: Rig, off: Rig) -> void:
@@ -204,6 +211,8 @@ func _rig(which: String, dist: float, look: Vector3, fov_deg: float) -> Rig:
 
 	var packed := load(MESH) as PackedScene
 	if packed == null:
+		# lane w53-11 八轮：挂不进船时不能只 push_error 就走——记账入 _fails，由收尾 FAIL k 判
+		_fails.append("真失败：load %s 打包不出（缺占城船模）" % MESH)
 		push_error("缺占城船模")
 		return rig
 	var hull := packed.instantiate()
@@ -266,9 +275,9 @@ func _settle(n: int) -> void:
 
 
 func _save_root(path: String) -> void:
-	var img := root.get_texture().get_image()
-	if img == null or img.is_empty():
-		print("SHOT FAIL ", path)
+	# lane w53-11 八轮：走 ShotGate.grab 口径——空视口 / 空图记账进 _fails，不再静默绿（跟 ship_exquisite 同型）
+	var img := ShotGate.grab(root, path.get_file(), _fails)
+	if img == null:
 		return
 	img.save_png(path)
 	print("SHOT ", path, " ", img.get_width(), "x", img.get_height())

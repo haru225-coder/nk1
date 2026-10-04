@@ -5,6 +5,8 @@ extends SceneTree
 ## DISPLAY=:2 godot --path . -s res://tools/japan_ship_probe.gd
 
 const ShotGate := preload("res://tools/shot_gate.gd")
+
+var _fails: Array = []
 const OUT := "/tmp/nk1-combat-wave3/ship-japan16"
 const MERCHANT := "res://assets/ships/japan_quasi.glb"
 const WAR := "res://assets/ships/japan_quasi_war.glb"
@@ -97,9 +99,7 @@ func _run() -> void:
 	print("YAW_DISTINCT merchant ", merchant_n, "/16")
 	print("YAW_DISTINCT war ", war_n, "/16")
 	if merchant_n < 16 or war_n < 16:
-		print("JAPAN_SHIP_FAIL yaw hashes collided")
-		quit(1)
-		return
+		_fails.append("真失败：YAW_DISTINCT merchant %d/16 / war %d/16 不足（yaw 重影）" % [merchant_n, war_n])
 
 	_merchant.visible = true
 	_war.visible = true
@@ -114,8 +114,16 @@ func _run() -> void:
 
 	for note in _crop_notes:
 		print("CROP_NOTE ", note)
-	print("JAPAN_SHIP_OK")
-	quit(0)
+
+	# lane w53-11 八轮：收尾按 ship_exquisite 同款——空视口 / 空图 / 挂不进船都记账进 _fails，不再静默绿
+	if _fails.is_empty():
+		print("JAPAN_SHIP_OK")
+		quit(0)
+	else:
+		for f in _fails:
+			print("  ✗ ", f)
+		print("JAPAN_SHIP_FAIL %d" % _fails.size())
+		quit(1)
 
 
 func _yaw_set(which: String, dir: String) -> int:
@@ -204,16 +212,25 @@ func _build_view(host: Node) -> void:
 	_yaw.name = "Yaw"
 	world.add_child(_yaw)
 
-	_merchant = (load(MERCHANT) as PackedScene).instantiate()
-	_merchant.name = "Merchant"
-	_yaw.add_child(_merchant)
-	_paint(_merchant)
+	var mp := load(MERCHANT) as PackedScene
+	if mp == null:
+		# lane w53-11 八轮：打包不出时不能只打印就走——记账入 _fails，由收尾 FAIL k 判
+		_fails.append("真失败：load %s 打包不出" % MERCHANT)
+	else:
+		_merchant = mp.instantiate()
+		_merchant.name = "Merchant"
+		_yaw.add_child(_merchant)
+		_paint(_merchant)
 
-	_war = (load(WAR) as PackedScene).instantiate()
-	_war.name = "War"
-	_yaw.add_child(_war)
-	_paint(_war)
-	_war.visible = false
+	var wp := load(WAR) as PackedScene
+	if wp == null:
+		_fails.append("真失败：load %s 打包不出" % WAR)
+	else:
+		_war = wp.instantiate()
+		_war.name = "War"
+		_yaw.add_child(_war)
+		_paint(_war)
+		_war.visible = false
 
 	_cam = Camera3D.new()
 	world.add_child(_cam)
@@ -345,9 +362,9 @@ func _note_crop(tag: String) -> void:
 
 
 func _shot(path: String) -> void:
-	var img := root.get_texture().get_image()
+	# lane w53-11 八轮：走 ShotGate.grab 口径——空视口 / 空图记账进 _fails，不再静默绿（跟 ship_exquisite 同型）
+	var img := ShotGate.grab(root, path.get_file(), _fails)
 	if img == null:
-		print("SHOT FAIL empty ", path)
 		return
 	img.save_png(path)
 	print("SHOT ", path, " ", img.get_width(), "x", img.get_height())

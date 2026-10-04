@@ -17,6 +17,8 @@ var _hull: Node3D
 var _sprite: Sprite2D
 var _cam2: Camera2D
 
+var _fails: Array = []
+
 
 func _init() -> void:
 	call_deferred("_run")
@@ -165,11 +167,17 @@ func _run() -> void:
 
 	print("YAW_DISTINCT ", seen.size(), "/16")
 	if seen.size() != FACINGS:
-		print("DASHI_SHIP_FAIL yaw hashes not distinct")
+		_fails.append("真失败：YAW_DISTINCT %d/16 不足（十六向有重影）" % seen.size())
+
+	# lane w53-11 八轮：收尾按 ship_exquisite 同款——空视口 / 空图 / spawn 挂不上都记账进 _fails，不再静默绿
+	if _fails.is_empty():
+		print("DASHI_SHIP_OK")
+		quit(0)
+	else:
+		for f in _fails:
+			print("  ✗ ", f)
+		print("DASHI_SHIP_FAIL %d" % _fails.size())
 		quit(1)
-		return
-	print("DASHI_SHIP_OK")
-	quit(0)
 
 
 func _clear_ships() -> void:
@@ -181,7 +189,8 @@ func _clear_ships() -> void:
 func _spawn(path: String, pos: Vector3, yaw: float) -> void:
 	var packed := load(path) as PackedScene
 	if packed == null:
-		print("DASHI_SHIP_FAIL missing ", path)
+		# lane w53-11 八轮：挂不进船时不能只打印一行就过——记账入 _fails，由收尾 FAIL k 判
+		_fails.append("真失败：_spawn 打包不出 %s" % path)
 		return
 	var hull := packed.instantiate()
 	hull.name = "Hull"
@@ -302,9 +311,9 @@ func _shot(path: String) -> void:
 					if y > maxy:
 						maxy = y
 		print("MESH_BOUNDS ", path.get_file(), " ", minx, ",", miny, " ", maxx, ",", maxy, " / ", w, "x", h)
-	var img := root.get_texture().get_image()
+	# lane w53-11 八轮：走 ShotGate.grab 口径——空视口 / 空图记账进 _fails，不再静默绿（跟 ship_exquisite 同型）
+	var img := ShotGate.grab(root, path.get_file(), _fails)
 	if img == null:
-		print("SHOT FAIL empty ", path)
 		return
 	img.save_png(path)
 	print("SHOT ", path, " ", img.get_width(), "x", img.get_height())
