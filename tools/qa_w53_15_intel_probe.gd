@@ -122,8 +122,14 @@ func _sec_intel_on(fleet: Node) -> void:
 		if rows != null and rows.get_child_count() > 0:
 			var lbl := (rows.get_child(0).get_child(1) as Label).text
 			_check(lbl.contains("海鹘"), "行内写有船种「海鹘」：%s" % lbl)
+			# 敌情列的布色珠就是该船 CombatMorale 簿的 state——钉簿 = steady 才判「稳（灰青）」，
+			# 不拿 WorldMap 开战随机掷的 enemy_morale 当判据（50–75 随机、随机到 <55 簿就是动摇，
+			# 探针照掷到自己身上就成了静默绿 / 静默红）。
+			var foe: Node2D = _foes(wm)[0]
+			foe.set_meta(&"nk1_combat_morale", {"state": "steady", "value": 70})
+			hud.call("refresh")
 			var dot := rows.get_child(0).get_child(0) as ColorRect
-			_check(dot != null and dot.self_modulate == UiTheme.PAPER_MOSS, "开战满血的敌船布色珠 = 稳（灰青）")
+			_check(dot != null and dot.self_modulate == UiTheme.PAPER_MOSS, "簿稳的敌船布色珠 = 稳（灰青）")
 	await _close(wm)
 	Switches.reset()
 
