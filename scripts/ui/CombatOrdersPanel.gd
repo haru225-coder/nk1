@@ -52,13 +52,17 @@ const ORDER_LOAD := "load"
 const ORDER_DAMAGE := "damage"
 const ORDER_BOARD := "board"
 const ORDER_PARLEY := "parley"
-const ORDERS := ["windward", "load", "damage", "board", "parley"]
+## 二期号令（战斗方案 new 接两令）：砍钩 = 敌船把我们钩住时留斧手斫缆脱开；张湿毡 = 舷边张过水的厚毡压火伤
+const ORDER_CUT := "cut"
+const ORDER_WET := "wet"
+const ORDERS := ["windward", "load", "damage", "board", "parley", "cut", "wet"]
 const ORDER_NAMES := {
 	"windward": "抢风", "load": "装填侧重", "damage": "救火", "board": "备接舷", "parley": "降幡劝降",
+	"cut": "砍钩", "wet": "张湿毡",
 }
 const ORDER_KEYS := {
 	"windward": [KEY_1, KEY_KP_1], "load": [KEY_2, KEY_KP_2], "damage": [KEY_3, KEY_KP_3],
-	"board": [KEY_4, KEY_KP_4], "parley": [KEY_5, KEY_KP_5],
+	"board": [KEY_4, KEY_KP_4], "parley": [KEY_5, KEY_KP_5], "cut": [KEY_6, KEY_KP_6], "wet": [KEY_7, KEY_KP_7],
 }
 const ORDER_TIPS := {
 	"windward": "缭手加倍上缭，篾篷逐片收紧，船可再贴风几度；弩炮手被抽去，装填慢。再按撤令。",
@@ -66,6 +70,8 @@ const ORDER_TIPS := {
 	"damage": "分人戽水扑火，扑火排水快数倍；帆与弩炮的人手跟着少。再按撤令。",
 	"board": "甲士执钩拒聚到舷边，六秒聚齐：钩距远、白刃有力，聚在舷边挨矢石伤亡也多。再按撤令。",
 	"parley": "近敌喊话，令其竖降幡。敌士气低、船伤重、我众敌寡、已钩住、敌阵脚已乱时易成；不成二十秒内不能再喊。",
+	"cut": "敌船先抛的钩挂上时斧手斫缆脱开：每合砍断钩索的机会多一半；本船去钩的不济，签了也无用。",
+	"wet": "舷边张过水的厚毡压火伤、防火箭：火着一半、受矢石轻三成；舷边人手脚局促，齐射慢两成、白刃减力一成。",
 }
 
 const STATIONS := ["sail", "guns", "damage", "board"]
@@ -99,6 +105,8 @@ const HAIL_RANGE := 360.0
 const PARLEY_COOLDOWN := 20.0
 const PARLEY_MIN := 0.02
 const PARLEY_MAX := 0.85
+## 砍钩（combat_phases.json orders.cut_hooks.cut_chance_mul）：守方吃紧抢砍钩缆的每合基率乘数
+const CUT_CHANCE_MUL := 1.5
 ## 战斗方案一期：劝降钮挂到敌船身上、三样凑齐才亮（parley_on_ship 开时）；敌船「帆索残」按船体伤过这成折算
 ## （敌船不挂损伤簿，帆跟壳一处受创），凑齐的说法与签字面在 parley_road
 const PARLEY_SAIL_BROKEN_FRAC := 0.55
@@ -117,6 +125,9 @@ var windward := false
 var load_mode := "mixed"
 var damage_control := false
 var board_ready := false
+## 砍钩（只读态：敌对来钩时才有用、钩着时挥斧断索的加权）与张湿毡（火伤半、矢石轻、齐射慢、白刃减）
+var cut_hooks := false
+var wet_felt := false
 ## 聚队进度 0–1（备接舷令下后涨，撤令后落）
 var muster := 0.0
 var parley_cd := 0.0
@@ -269,6 +280,9 @@ static func allocation(st: Dictionary) -> Dictionary:
 ##   sail_drive 帆力 · turn_rate 转向 · pinch_delta 贴风（度，负 = 更贴，给机动模型加到 pinch 上）
 ##   reload_time 装填时长 · range 射程 · hit_hull / hit_sail / hit_crew 伤害去向份额 · ignite 引火 · fire_fight 扑火 · pump 排水
 ##   board_bonus 白刃 · board_range 钩距 · exposure 甲板人手挨矢石的伤亡
+##   fire_taken 受火攻真头（张湿毡 0.5）· casualty_taken 受矢石伤亡（张湿毡 0.7）
+##   cut_mul 守方吃紧抢砍钩缆的每合基率乘数（砍钩 1.5，combat_phases.json orders.cut_hooks.cut_chance_mul）
+## STATION_KEYS：本面板管的四岗；outer 外键（属别 lane / 自家分系统管）不在这里斧头
 static func modifiers(st: Dictionary) -> Dictionary:
 	var a := allocation(st)
 	var sail_r := float(a["sail"]) / float(BASE_ALLOC["sail"])
@@ -281,21 +295,23 @@ static func modifiers(st: Dictionary) -> Dictionary:
 	var m := clampf(float(st.get("muster", 0.0)), 0.0, 1.0)
 	var ld: Dictionary = LOAD_TABLE.get(ld_id, LOAD_TABLE["mixed"])
 	var trim := clampf((sail_r - 1.0) / 0.45, 0.0, 1.0)
+	var wet := bool(st.get("wet", false))
 	return {
 		"sail_drive": clampf(0.8 + 0.2 * sail_r, 0.7, 1.15),
 		"turn_rate": clampf(0.85 + 0.15 * sail_r, 0.8, 1.1),
 		"pinch_delta": -PINCH_TRIM * trim,
-		"reload_time": float(ld["reload"]) / maxf(0.2, guns_r),
+		"reload_time": float(ld["reload"]) / maxf(0.2, guns_r) * (1.15 if wet else 1.0),
 		"range": float(ld["range"]),
 		"hit_hull": float(ld["hull"]),
 		"hit_sail": float(ld["sail"]),
 		"hit_crew": float(ld["crew"]),
-		"ignite": float(ld["ignite"]),
+		"ignite": float(ld["ignite"]) * (0.5 if wet else 1.0),
 		"fire_fight": clampf(dmg_r, 0.5, 4.0),
 		"pump": clampf(dmg_r, 0.5, 4.0),
-		"board_bonus": 1.0 + 0.35 * (board_r - 1.0) + 0.10 * m,
+		"board_bonus": (1.0 + 0.35 * (board_r - 1.0) + 0.10 * m) * (0.9 if wet else 1.0),
 		"board_range": 1.0 + 0.25 * m,
-		"exposure": 1.0 + 0.5 * maxf(0.0, board_r - 1.0) * m + 0.1 * maxf(0.0, sail_r - 1.0),
+		"exposure": (1.0 + 0.5 * maxf(0.0, board_r - 1.0) * m + 0.1 * maxf(0.0, sail_r - 1.0)) * (0.7 if wet else 1.0),
+		"cut_mul": CUT_CHANCE_MUL if bool(st.get("cut", false)) else 1.0,
 	}
 
 
@@ -388,7 +404,11 @@ static func _cn_tenths(p: float) -> String:
 # ── 号令 ──────────────────────────────────────────────
 
 func state() -> Dictionary:
-	return {"windward": windward, "load": load_mode, "damage": damage_control, "board": board_ready, "muster": muster}
+	# 二期两令开关关掉时旧玩法影像一道；读状态比问下没下要险：state() 里把不活的档位捏回 false，
+	# modifiers / battery_orders / dispatch 都走这招，下不出也、下了也、半道开关倒都保关那条道
+	return {"windward": windward, "load": load_mode, "damage": damage_control, "board": board_ready, "muster": muster,
+		"cut": cut_hooks and Switches.on("order_cut_grapple"),
+		"wet": wet_felt and Switches.on("order_wet_felt")}
 
 
 func current_modifiers() -> Dictionary:
@@ -542,8 +562,22 @@ func _own_board_power() -> float:
 	return maxf(1.0, crew * mf * cp)
 
 
+## 二期两令的总开关：关掉时旧玩法没有这两道，签面写「未接」也不收。
+## 期2接国用的是 combat_phases.json 的 cut_hooks / wet_screens；data 没这两行的版本也收
+static func order_switch_for(order_id: String) -> String:
+	match order_id:
+		"cut":
+			return "order_cut_grapple"
+		"wet":
+			return "order_wet_felt"
+	return ""
+
+
 func order_enabled(order_id: String) -> bool:
 	if _battle_over():
+		return false
+	var sw := order_switch_for(order_id)
+	if sw != "" and not Switches.on(sw):
 		return false
 	if order_id == ORDER_PARLEY:
 		return parley_cd <= 0.0 and bool(parley_context().get("ok", false))
@@ -560,12 +594,19 @@ func order_active(order_id: String) -> bool:
 			return damage_control
 		ORDER_BOARD:
 			return board_ready
+		ORDER_CUT:
+			return cut_hooks
+		ORDER_WET:
+			return wet_felt
 	return false
 
 
 ## 下令入口（键盘 / 点签 / 接线方都走这里）。返回 payload；不可下的令返回 {}
 func issue(order_id: String, roll := -1.0) -> Dictionary:
 	if not order_id in ORDERS or _battle_over():
+		return {}
+	var sw := order_switch_for(order_id)
+	if sw != "" and not Switches.on(sw):
 		return {}
 	var payload := {}
 	match order_id:
@@ -591,6 +632,14 @@ func issue(order_id: String, roll := -1.0) -> Dictionary:
 			board_ready = not board_ready
 			payload = {"on": board_ready, "muster": muster}
 			_note("已令备接舷：甲士执钩拒聚舷边。" if board_ready else "撤备接舷：甲士散回。")
+		ORDER_CUT:
+			cut_hooks = not cut_hooks
+			payload = {"on": cut_hooks}
+			_note("已令砍钩：斧手握定，见钩索即斫。" if cut_hooks else "撤砍钩：斧手回舷。")
+		ORDER_WET:
+			wet_felt = not wet_felt
+			payload = {"on": wet_felt}
+			_note("已令张湿毡：舷边张起过水的厚毡。" if wet_felt else "撤湿毡：舷边收起。")
 		ORDER_PARLEY:
 			payload = _parley(roll)
 			if payload.is_empty():
@@ -691,6 +740,10 @@ func state_text(order_id: String) -> String:
 			if road is Dictionary and bool((road as Dictionary).get("lit", false)):
 				return "可喊 %s（钩住・帆残・敌乱）" % _cn_tenths(parley_chance(ctx))
 			return "可喊 " + _cn_tenths(parley_chance(ctx))
+		ORDER_CUT:
+			return "未接" if not Switches.on("order_cut_grapple") else ("已令" if cut_hooks else "未令")
+		ORDER_WET:
+			return "未接" if not Switches.on("order_wet_felt") else ("已令" if wet_felt else "未令")
 	return ""
 
 
@@ -833,7 +886,7 @@ func _build() -> void:
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(title)
 	var keys := Label.new()
-	keys.text = "按 1–5 下令"
+	keys.text = "按 1–7 下令"
 	keys.add_theme_font_override("font", UiTheme.font())
 	keys.add_theme_font_size_override("font_size", 16)
 	keys.add_theme_color_override("font_color", UiTheme.PAPER_DIM)

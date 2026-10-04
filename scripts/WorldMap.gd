@@ -448,6 +448,10 @@ func _melee_sides(enemy: Node2D, enemy_first := false) -> Array:
 		str(att.get("type", "")), str(def.get("type", ""))
 	)
 	ctx["hooked"] = true
+	# 借改 w53-17 的 WorldMap，一行只读：守方 = 本队时把号令面板的「砍钩」效力给到 MeleeResolve 的守方砍缆率
+	# （开关 order_cut_grapple 关掉时面板 cut_mul 恒 1.0，本行照旧与 wave53 开工前一致）
+	if enemy_first:
+		ctx["def_cut_mul"] = float(order_mods().get("cut_mul", 1.0))
 	return [att, def, ctx]
 
 

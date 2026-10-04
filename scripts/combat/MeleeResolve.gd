@@ -112,6 +112,8 @@ const FALLBACK_AT := 0.45
 const FRONT_LUCK := 0.06
 ## 守方砍缆：每合基率（还乘守方剩余人手比、除以咬住的钩数 / 2）；只在守方仍据舷边（front = 0）且吃紧时
 const CUT_BASE := 0.15
+## 号令「砍钩」（combat_phases.json orders.cut_hooks：cut_chance_mul × 1.5）：攻方 / 守方下这道令都按这条折
+const CUT_CHANCE_MUL := 1.5
 const RETREAT_LOSS := 0.15
 ## 伤亡里阵亡 / 重伤不起的份额（其余轻伤，战后归队）
 const DEAD_SHARE_MIN := 0.45
@@ -274,6 +276,13 @@ static func maneuver_approach(a: Dictionary, b: Dictionary, wind_to := Vector2(0
 	return _norm_approach(got) if got is Dictionary else {}
 
 
+## 守方吃紧抢砍钩缆的每合基率（开关 order_cut_grapple 开时守方下令 ×CUT_CHANCE_MUL；关掉照旧）。
+## 探针直接喂 def_cut_mul。crew_frac = 守方剩余人手比、bit = 咬住的钩数（同 resolve 里那条）；
+## resolve 内部在 share ≥ 0.45 且 front == 0 时才掷这一枚（一处可查，不下令照旧也掷）
+static func cut_chance(bit: int, crew_frac: float, def_cut_mul := 1.0) -> float:
+	return clampf(CUT_BASE * clampf(crew_frac, 0.0, 1.0) * 2.0 / maxf(float(bit), 2.0) * maxf(0.0, def_cut_mul), 0.0, 1.0)
+
+
 ## 一步到位：玩家船队（fleet）接敌船（enemy）。player_ship / enemy 是战场节点，取态势用；ctx_extra 覆盖同名键。
 static func from_battle(fleet: Object, player_ship: Node2D, enemy: Node2D, ctx_extra := {}) -> Dictionary:
 	var us := side_from_fleet(fleet)
@@ -395,6 +404,11 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 	var d: String = out["d_word"]
 	var ww := clampi(int(ctx.get("windward", 0)), -1, 1)
 	var sea := clampi(int(ctx.get("sea", 1)), 0, SEA_HOOK.size() - 1)
+	## 号令「砍钩」（战斗方案二期，开关 order_cut_grapple）：守方（玩家那方在敌攻我守时即本簿的 def）
+	## 下这道令，守方在舷边吃紧抢砍钩缆的每合基率 ×CUT_CHANCE_MUL。ctx 键（探针可代传）：
+	##   def_cut_order：守方自己下「砍钩」令的 bool（CombatOrdersPanel.order_cut_grapple）；
+	##   def_cut_mul：已折好的守方砍缆倍数（直接给乘数用，省一步 signal）
+	var def_cut_mul := maxf(0.0, float(ctx.get("def_cut_mul", CUT_CHANCE_MUL if bool(ctx.get("def_cut_order", false)) else 1.0)))
 	var fb_a := float(att["freeboard"])
 	var fb_d := float(def["freeboard"])
 	var up := maxf(0.0, fb_d - fb_a)
@@ -553,7 +567,7 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 					ev = "flag_rout"
 			elif front == 0 and share >= 0.45:
 				# 守方仍据舷边、又吃紧：抢砍钩缆脱身。咬住的钩越多越难砍尽，人手越少越砍不动
-				var cut_p := CUT_BASE * clampf(float(fd) / fd0, 0.0, 1.0) * 2.0 / maxf(float(g["bit"]), 2.0)
+				var cut_p := cut_chance(int(g["bit"]), float(fd) / float(fd0), def_cut_mul)
 				if rng.randf() < cut_p:
 					outcome = OUTCOME_CUT_LOOSE
 					ev = "cut"
