@@ -2105,11 +2105,85 @@ for ch in chapters:
     check(not extra and not miss,
           f"chapters {cid} advance_text 宣「已可购置」与 ships.json 第 {cid + 1} 章上架船不符（多宣 {extra} / 漏宣 {miss}）")
 
+# ── discoveries.json 与士人短札的「永远不触发」（lane w53-4）──
+#    发现物不在数据族门禁里：id / 名重复、near_ports 写错港名都不报。写错的那一港，航段遭遇（Voyage._discovery_candidates）
+#    抽不到它、寺观「细看一日」（GameManager.discoveries_near）也不列它——静默永远不触发；剧情 effects 的 discovery 按名或 id
+#    回查（GameManager.get_discovery_id_by_name 取第一条），名重复、名与别条 id 相撞就认错物。near_ports 空表是有意的「通用」
+#    （任一航段可遇，寺观不列），不算错。news only=scholar 的短札：士人线最迟在兴化首守城破那月落定终局（守城「忠肃」或进港
+#    「未归」），此后 GameManager._settle_history 不再投放——日期晚于那一月的士人短札永远发不出去。上界取 ports.json 兴化战况表
+#    首段 besieged 的尽头，同 Main._first_siege_fall_ym。两条判据各配内存样本自证，退掉判据不会照报通过。
+def _discovery_problems(discs, port_ids):
+    out = []
+    ids = [str(d.get("id", "")) for d in discs]
+    names = [str(d.get("name", "")) for d in discs]
+    for i in sorted({i for i in ids if not i or ids.count(i) > 1}):
+        out.append(f"discoveries.json id「{i}」缺或重复（has_found / 呈报按 id 记，重复的两条会互相顶掉）")
+    for n in sorted({n for n in names if not n or names.count(n) > 1}):
+        out.append(f"discoveries.json 名「{n}」缺或重复（剧情 effects 按名回查只认第一条）")
+    for d in discs:
+        did, nm = str(d.get("id", "")), str(d.get("name", ""))
+        if nm in set(ids) - {did}:
+            out.append(f"discoveries {did} 的名「{nm}」与别条 id 相撞（按名或 id 回查会认错物）")
+        near = d.get("near_ports")
+        if not isinstance(near, list) or any(p not in port_ids for p in near):
+            out.append(f"discoveries {did}.near_ports={near} 须是 ports.json 里的港（写错的那一港航段与寺观都抽不到它）")
+        val = d.get("value")
+        if isinstance(val, bool) or not isinstance(val, int) or val <= 0:
+            out.append(f"discoveries {did}.value={val!r} 须为正整数（呈报赏钱与名声按它算）")
+        for f in ("type", "location", "historical_hook"):
+            if not isinstance(d.get(f), str) or not d[f].strip():
+                out.append(f"discoveries {did}.{f} 须为非空字串（市舶司呈报钮、寺观细看钮的悬停句）")
+    return out
+
+
+def _first_fall_ym(war):
+    in_siege = False
+    for ym in sorted(war):
+        if war[ym] == "besieged":
+            in_siege = True
+        elif in_siege:
+            return ym
+    return ""
+
+
+def _scholar_news_problems(news_list, fall_ym):
+    if not fall_ym:
+        return ["ports.json 兴化战况表没有首段 besieged 的尽头，士人短札上界无从推"]
+    return [f"news {n.get('id', '?')} only=scholar 日期 {n.get('date')} 晚于兴化首守城破月 {fall_ym}：士人线那时已落定终局，永远发不出去"
+            for n in news_list if n.get("only") == "scholar" and str(n.get("date", "")) > fall_ym]
+
+
+_discs = load("discoveries.json").get("discoveries", [])
+_fall_ym = _first_fall_ym(NEWS_PORTS.get("xinghua", {}).get("war", {}))
+for _msg in _discovery_problems(_discs, set(NEWS_PORTS)) + _scholar_news_problems(news, _fall_ym):
+    check(False, _msg)
+check(len(_discs) >= 10 and _fall_ym == "1276-12", f"发现物 {len(_discs)} 条入验、士人短札上界 {_fall_ym!r}（应为兴化首守城破 1276-12）")
+# 自证：每种写坏的样本都要被抓到，合法的（near_ports 空表 = 通用；士人短札落在城破那月）不许误报
+_d0 = {"id": "x_a", "name": "甲迹", "type": "遗迹", "location": "某处", "value": 50, "near_ports": ["quanzhou"], "historical_hook": "旧事。"}
+_DISC_MUTANTS = [
+    ("id 重复", [_d0, dict(_d0, name="乙迹")], True),
+    ("名重复", [_d0, dict(_d0, id="x_b")], True),
+    ("名撞别条 id", [_d0, dict(_d0, id="x_b", name="x_a")], True),
+    ("near_ports 港名写错", [dict(_d0, near_ports=["quanzhuo"])], True),
+    ("value 非正", [dict(_d0, value=0)], True),
+    ("悬停句空", [dict(_d0, historical_hook=" ")], True),
+    ("合法：near_ports 空表（通用）", [dict(_d0, near_ports=[])], False),
+]
+for _tag, _sample, _bad in _DISC_MUTANTS:
+    check(bool(_discovery_problems(_sample, set(NEWS_PORTS))) == _bad, f"发现物判据自证「{_tag}」应{'判红' if _bad else '不报'}")
+_NEWS_MUTANTS = [
+    ("士人短札晚于城破月", [{"id": "n_x", "date": "1277-01", "only": "scholar"}], True),
+    ("合法：士人短札落在城破那月", [{"id": "n_x", "date": "1276-12", "only": "scholar"}], False),
+    ("合法：海商短札晚于城破月", [{"id": "n_x", "date": "1278-12", "only": "merchant"}], False),
+]
+for _tag, _sample, _bad in _NEWS_MUTANTS:
+    check(bool(_scholar_news_problems(_sample, "1276-12")) == _bad, f"士人短札判据自证「{_tag}」应{'判红' if _bad else '不报'}")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:
         print("FAIL:", f)
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
-print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · 底图按旗换 {bg_alts} · scenes {len(scenes)}（结构：{SCENE_STRUCT_STATS} · 自证 {len(_SV_MUTANTS)} 类 + 形状单一来源 {len(_SHAPE_MUTANTS)} 类，形状读 {SCENE_FAMILY_MANIFEST}）· 晋升宣港 {advance_claims} · 宣船 {ship_claims} · news {len(news)} · npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
+print(f"结局年号对照 {mirrored} · 年号字幕 {era_caps} · 底图按旗换 {bg_alts} · scenes {len(scenes)}（结构：{SCENE_STRUCT_STATS} · 自证 {len(_SV_MUTANTS)} 类 + 形状单一来源 {len(_SHAPE_MUTANTS)} 类，形状读 {SCENE_FAMILY_MANIFEST}）· 晋升宣港 {advance_claims} · 宣船 {ship_claims} · news {len(news)} · 发现 {len(_discs)}（自证 {len(_DISC_MUTANTS) + len(_NEWS_MUTANTS)} 样）· npcs {len(npcs)} · war 港 {war_ports} · apply_effects 接住 {sorted(handled)}")
 print("结果：全部通过")
