@@ -29,9 +29,11 @@ extends SceneTree
 ##     宝祐年间翻「史实」就是伯颜、宋恭帝，翻「主」就是第二章才登场的林华。现与人物志同一条「已识」规矩：未识之人行上写「未识」、
 ##     短注只写人物志称谓，立绘面板只出墨影、「未识之人」、称谓与一句提示。按两个时点四个页签逐行与人物志名册格对照。
 ##   Q 小吏只在泉州是那位：人物志里的市舶司小吏是泉州验引棚那一位（称谓「泉州市舶司小吏」），修前博多、占城的市舶司也挂他的
-##     人物卡、画像、小传，见一面还记作见过。现别港是本地无名小吏：照样见、打听、疏通，不挂人物卡与人物志钮、不记见过；泉州照旧。
-##   K 见面页的字对上页上的动作：行情签旁注修前写「邻座牙人」——说话的是林阿舶、小吏本人；现写「不费时日」，与酒馆长凳「费一日」
-##     并排看得出代价（打听本身不过日子，实跑核日历不动）。阿那招呼修前说「要问航路，就问」，他页上却只有行情、没有问航路的签。
+##     人物卡、画像、小传，见一面还记作见过。别港的市舶司要么没有小吏（w53-13 定 #24：见面钮只摆在泉州），要么是本地无名小吏
+##     （照样见、打听、疏通，不挂人物卡与人物志钮、不记见过）——两种都不许露出泉州那一位；泉州照旧。
+##   K 见面页的字对上页上的动作：行情签旁注修前写「邻座牙人」——说话的是林阿舶、小吏本人。见面页打听与酒馆长凳一样费一日
+##     （w53-13 定 #25「统一为都费一日」）：旁注「费一日」、实跑核日历走一日、顶匾跟着换日子，花时间的钮同长凳不做整卡可点；
+##     阿那招呼修前说「要问航路，就问」，他页上却没有问航路的签。离开见面页回到设施页按此刻重排：塞过钱，市舶司页的「蒲家留意」是塞后的数。
 ##   L 墙上只贴市井听得到的：士人身份收到的临安短札（只发给士人、没有说话人：「短札：……贬你知抚州」）修前题「酒馆传闻」
 ##     贴在酒馆墙上，最近三条里能占两条。现不贴；小瘸子当面说兴化募兵（有说话人）、海商的崖山传闻照贴。
 ##   S 人物志「性情」不透底：修前直读原稿 personality，不按年份——吕文焕 1269 年小传还写「他坚守孤城」「此后之事，尚在将来」，
@@ -265,8 +267,8 @@ func _n_wall_dates() -> void:
 	var before: Dictionary = _cal.call("to_dict")
 	await _goto("quanzhou_tavern")
 	var dates := _wall_dates()
-	_expect(dates == ["景炎元年五月", "德祐二年正月", "德祐元年四月"],
-		"1276-06 泉州酒馆墙上三条（1276-05 / 1276-01 / 1275-04）年月旁注写年号月名、改元前后分得开（实读：%s）" % [dates])
+	_expect(dates == ["景炎元年五月", "德祐二年正月", "德祐元年十月"],
+		"1276-06 泉州酒馆墙上三条（1276-05 / 1276-01 / 1275-10「贾似道死了」 w53-13 加）年月旁注写年号月名、改元前后分得开（实读：%s）" % [dates])
 	_expect(_cal.call("to_dict") == before, "札记上墙后历法仍停在 %s（取年号月名临时拨月，取完拨回）" % [_cal.call("to_dict")])
 
 
@@ -320,33 +322,58 @@ func _i_npc_intel() -> void:
 
 # ── J 围城港见小吏打听：没有行情，他自己说没有，不把旁白塞进他嘴里 ──
 
+func _j_npc_no_INTEL_ALT() -> void:
+	return  # 站位正式案以此间那句林影对实——— alive 记载.双STATEMENT
 func _j_npc_no_intel() -> void:
-	print("── J 围城港（牙行闭门，打听不出行情）见小吏打听：他自己说没有新行情，不把酒馆旁白「几个老水手……」塞进他嘴里")
-	for spec in [["fuzhou", 1276, 10], ["guangzhou", 1276, 11]]:
-		_stage(int(spec[1]), int(spec[2]), 4)
-		_gs.last_port = str(spec[0])
-		await _goto(str(spec[0]) + "_yamen")
-		var meet := _button("见")
-		if meet == null:
-			_expect(false, "%s 市舶司没有「见」钮，见面页无从摆" % spec[0])
-			continue
+	print("── J 围城港：市舶司页本无小吏；见面页打听不出行情就由他自己说没有，不把旁白塞进他嘴里")
+
+	# a) ead0cb5 后：兴化 1276-11 围城的市舶司页本无「见」钮。
+	_stage(1276, 11, 4)
+	_gs.visited_ports = ["quanzhou", "xinghua"]
+	_gs.last_port = "xinghua"
+	await _goto("xinghua_yamen")
+	_expect(_button("见") == null, "兴化 1276-11 围城：市舶司页本无小吏的「见」钮（修前本摆）")
+	# b) 泉州：把 ports.json 里每港的 market 暂改成空表（全港无货可交易）：_collect_spreads rows=0，长凳打听只能回「【闲谈】」，
+	#    见面页 NO_INTEL 由他自己说；打完照原样放回。
+	_stage(1262, 5, 2)
+	_gs.visited_ports = ["quanzhou"]
+	_gs.last_port = "quanzhou"
+	var gm: Node = root.get_node("GameManager")
+	var kept: Array = []
+	var pistes: Array = gm.ports_data.get("ports", [])
+	for x in pistes:
+		kept.append(x.get("market", {}).duplicate())
+	for i in pistes.size():
+		pistes[i]["market"] = {}
+	await _goto("quanzhou_yamen")
+	var meet := _button("见")
+	_expect(meet != null, "泉州市舶司：小吏的「见」钮好端端摆着（本人在港）")
+	if meet != null:
 		meet.pressed.emit()
 		for i in 4:
 			await process_frame
 		var ask := _button("打听")
 		if ask == null:
-			_expect(false, "%s 见面页没有「打听」钮" % spec[0])
-			continue
-		ask.pressed.emit()
-		for i in 2:
-			await process_frame
-		var said := str(_main.get("npc_dialog_lbl").text)
-		var bench := str(_main.call("_gather_price_intel", str(spec[0])))
-		_expect(bench.begins_with("【闲谈】") and said.begins_with("市舶司小吏") and said.contains("没什么新行情")
-				and not said.contains("老水手") and not said.contains("压低声音"),
-			"%s %d-%02d 围城：长凳打听是旁白闲谈（%s），见面页小吏自己说没有新行情（实读：%s）" % [
-				spec[0], spec[1], spec[2], bench, said.replace("\n", "⏎")])
-		_main.call("_on_npc_leave")
+			_expect(false, "泉州市舶司见面页无「打听」钮")
+		else:
+			var bench := str(_main.call("_gather_price_intel", "quanzhou"))
+			ask.pressed.emit()
+			for i in 2:
+				await process_frame
+			var said := str(_main.get("npc_dialog_lbl").text)
+			_expect(bench.begins_with("【闲谈】") and said.begins_with("市舶司小吏") and said.contains("没什么新行情")
+					and not said.contains("老水手") and not said.contains("压低声音"),
+				"泉州 1262-05、全港无货：长凳打听是旁白闲谈（%s），见面页小吏自己说没有新行情（实读：%s）" % [
+					bench.replace("\n", "⏎"), said.replace("\n", "⏎")])
+			_main.call("_on_npc_leave")
+	# 恢放每港的 market
+	for i in pistes.size():
+		pistes[i]["market"] = kept[i]
+	var after_dirty := false
+	for x in pistes:
+		if typeof(x.get("market", null)) != TYPE_DICTIONARY or (x.get("market", {}) as Dictionary).size() < 2:
+			after_dirty = true
+	_expect(not after_dirty, "每港 market 已复原（%d 港，还能照常交易）" % pistes.size())
 
 
 # ── C 人物志未识的职事：见过即识，页上就写见过 ──
@@ -524,7 +551,7 @@ func _panel_texts(ov: Node) -> Array:
 # ── Q 市舶司小吏这条人物只在泉州 ──
 
 func _q_clerk_home() -> void:
-	print("── Q 人物志里的市舶司小吏是泉州那一位：别港市舶司是本地无名小吏（照样见、打听、疏通），不挂他的人物卡、不记见过")
+	print("── Q 人物志里的市舶司小吏是泉州那一位：别港市舶司没有小吏、或是本地无名小吏，都不挂他的人物卡、不记见过；泉州照旧")
 	for spec in [["hakata", false], ["champa", false], ["quanzhou", true]]:
 		_stage(1262, 5, 2)
 		_gs.visited_ports = ["quanzhou", "xinghua", str(spec[0])]
@@ -533,7 +560,9 @@ func _q_clerk_home() -> void:
 		var card := _label("泉州市舶司小吏") != null
 		var meet := _button("见")
 		if meet == null:
-			_expect(false, "%s 市舶司没有「见」钮" % spec[0])
+			# w53-13 #24 的做法：别港市舶司页不摆小吏的见面钮——泉州那一位自然不露；泉州则必须有
+			_expect(not bool(spec[1]) and not card and not (_gs.get("met_ids") as Array).has("customs_official"),
+				"%s 市舶司没有「见」钮：%s（人物卡 %s）" % [spec[0], "泉州必须有小吏可见" if bool(spec[1]) else "别港不摆小吏，泉州那一位不露", card])
 			continue
 		meet.pressed.emit()
 		for i in 4:
@@ -549,15 +578,15 @@ func _q_clerk_home() -> void:
 			_expect(card and profile and codex_btn and title_shown and met and acts and name_ok,
 				"泉州市舶司：照旧是那位小吏——人物卡 %s、人物栏 %s、人物志钮 %s、称谓 %s、记见过 %s、打听 / 疏通 %s" % [card, profile, codex_btn, title_shown, met, acts])
 		else:
-			_expect(not card and not profile and not codex_btn and not title_shown and not met and acts and name_ok,
-				"%s 市舶司：本地无名小吏——不挂人物卡（%s）、人物栏（%s）、人物志钮（%s）、「泉州市舶司小吏」（%s），不记见过（%s）；打听 / 疏通照在（%s）" % [
-					spec[0], card, profile, codex_btn, title_shown, met, acts])
+			_expect(not card and not profile and not codex_btn and not title_shown and not met and name_ok,
+				"%s 市舶司：本地无名小吏——不挂人物卡（%s）、人物栏（%s）、人物志钮（%s）、「泉州市舶司小吏」（%s），不记见过（%s）" % [
+					spec[0], card, profile, codex_btn, title_shown, met])
 
 
 # ── K 见面页的字对上页上的动作 ──
 
 func _k_meet_page_words() -> void:
-	print("── K 见面页行情签旁注写「不费时日」（不再写「邻座牙人」）、打听不过日子；阿那的招呼不许诺页上没有的「问航路」")
+	print("── K 见面页打听同酒馆长凳费一日（w53-13 定 #25）：旁注「费一日」、日历与顶匾走一日、钮不整卡可点；不许诺没有的问航路；离开后设施页按此刻重排")
 	for spec in [["quanzhou_tavern", "quanzhou"], ["ryukyu_tavern", "ryukyu"], ["quanzhou_yamen", "quanzhou"]]:
 		_stage(1262, 5, 2)
 		_gs.visited_ports = ["quanzhou", "xinghua", "ryukyu"]
@@ -572,23 +601,57 @@ func _k_meet_page_words() -> void:
 			await process_frame
 		var who := str(_main.get("npc_name_lbl").text)
 		var greet := str(_main.get("npc_dialog_lbl").text)
-		var aside_ok := _label("不费时日") != null and _label("邻座牙人") == null
-		var day0 := str(_cal.call("get_date_string"))
+		var aside_ok := _label("费一日") != null and _label("邻座牙人") == null and _label("不费时日") == null
+		var day0 := int(_cal.call("absolute_day"))
 		var ask := _button("打听")
+		var whole := false
 		if ask != null:
+			var card: Node = ask
+			while card != null and not (card is PanelContainer):
+				card = card.get_parent()
+			whole = card != null and card.get_node_or_null("WholeHit") != null
 			ask.pressed.emit()
 			for i in 2:
 				await process_frame
-		var same_day := str(_cal.call("get_date_string")) == day0
+		var day1 := int(_cal.call("absolute_day"))
+		var top_ok := str(_main.get("_status_line").text).contains(str(_cal.call("get_date_string")))
 		var route_promise := greet.contains("航路") and _button("问航路") == null
 		_main.call("_on_npc_leave")
-		_expect(aside_ok and ask != null and same_day and not route_promise,
-			"%s 见%s：行情签旁注「不费时日」、无「邻座牙人」（%s）；打听后日历不动（%s）；招呼不许诺页上没有的问航路（招呼：%s）" % [
-				spec[0], who, aside_ok, same_day, greet])
+		_expect(aside_ok and ask != null and not whole and day1 == day0 + 1 and top_ok and not route_promise,
+			"%s 见%s：旁注「费一日」、无「邻座牙人」（%s）；打听不整卡可点（整卡 %s）、日历走 %d 日、顶匾换成新日子（%s）；招呼不许诺问航路（%s）" % [
+				spec[0], who, aside_ok, whole, day1 - day0, top_ok, greet])
 	# 酒馆长凳那张行情签照旧写「费一日」
 	_stage(1262, 5, 2)
 	await _goto("quanzhou_tavern")
 	_expect(_label("费一日") != null, "泉州酒馆长凳行情签照旧写「费一日」")
+	# 离开见面页回到设施页按此刻重排：泉州市舶司塞过钱，页上「蒲家留意」写塞后的数（修前留着见面之前那一页的旧数）
+	_stage(1262, 5, 2)
+	_gs.visited_ports = ["quanzhou", "xinghua"]
+	_gs.money = 500
+	_gs.pu_attention = 40
+	await _goto("quanzhou_yamen")
+	var before_text := "蒲家留意 40　%s" % str(_main.call("_attention_desc"))
+	var before_note := _label(before_text) != null
+	var meet2 := _button("见")
+	if meet2 == null:
+		_expect(false, "泉州市舶司没有「见」钮")
+		return
+	meet2.pressed.emit()
+	for i in 4:
+		await process_frame
+	var bribe := _button("塞　50")
+	if bribe != null:
+		bribe.pressed.emit()
+		for i in 2:
+			await process_frame
+	_main.call("_on_npc_leave")
+	for i in 4:
+		await process_frame
+	var after_text := "蒲家留意 %d　%s" % [int(_gs.pu_attention), str(_main.call("_attention_desc"))]
+	var after_note := _label(after_text) != null
+	var stale := _label(before_text) != null
+	_expect(before_note and bribe != null and int(_gs.pu_attention) == 25 and after_note and not stale,
+		"泉州市舶司塞过钱再离开：页上写塞后的「%s」（%s），不留塞前的「%s」（%s）" % [after_text, after_note, before_text, stale])
 
 
 # ── L 墙上只贴市井听得到的 ──

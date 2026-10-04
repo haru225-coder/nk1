@@ -215,7 +215,7 @@ static func show_npc_mode(main: Control, npc_id: String, fallback_name: String) 
 		(main._slip_host as HFlowContainer).alignment = FlowContainer.ALIGNMENT_BEGIN
 	var intel: VBoxContainer = main._slip_body()
 	main._slip_title(intel, "行情", INTEL_ASIDE)
-	main._slip_whole(main._slip_chip(main._slip_row(intel), "打听", main._on_npc_intel.bind(n_name)))
+	main._slip_chip(main._slip_row(intel), "打听", main._on_npc_intel.bind(n_name))
 	if npc_id == "customs_official":
 		var bribe: VBoxContainer = main._slip_body()
 		main._slip_title(bribe, "疏通", "蒲家留意　减 15")
@@ -243,6 +243,7 @@ static func set_npc_speech(main: Control, text: String) -> void:
 
 static func on_npc_intel(main: Control, n_name: String) -> void:
 	GameManager.advance_days(1)
+	main.update_status_panel()
 	var heard := UiTheme.plain_log(main._gather_price_intel(GameState.last_port))
 	main._set_npc_speech("%s压低声音说。\n\n%s" % [n_name, heard.trim_prefix(BENCH_LEAD)] if heard.begins_with(BENCH_LEAD) else NO_INTEL % n_name)
 
@@ -259,6 +260,8 @@ static func on_npc_bribe(main: Control, n_name: String) -> void:
 static func on_npc_leave(main: Control) -> void:
 	main.npc_mode.visible = false
 	main.investigation_mode.visible = true
+	# 见面时打听过了日子、塞过钱改了蒲家留意：回到设施页按此刻重排，不留见面之前那一页（月初的告示、留意数都是旧的）
+	main.load_scene(main.current_scene_id)
 
 
 const NPC_GREETING := {
@@ -278,7 +281,7 @@ const BENCH_LEAD := "邻座的牙人压低声音："
 ## 市舶司小吏就压低声音讲「几个老水手……」；现由他自己说一句没有。
 const NO_INTEL := "%s摇了摇头：「眼下没什么新行情。」"
 
-## 见面页行情签旁注：行情由见面的人当面说（复刻设计 §8.7），费一日（w53 待拍板 25：与酒馆长凳同——on_npc_intel 也 advance_days(1)），两处的代价并排看得清。
-## 修前这里写「邻座牙人」，人却是林阿舶、市舶司小吏本人在说。阿那的招呼原写「要问航路，就问」，可他页上只有行情、没有问航路的签，
-## 一并改成「要问什么，就问」。
+## 见面页行情签旁注：行情由见面的人当面说（复刻设计 §8.7），与酒馆长凳一样费一日（w53-13 定待拍板 #25「统一为都费一日」：
+## 同一件事一处花时间一处不花，玩家专挑不花的那处，酒馆那一日就白设了）。on_npc_intel 推一日、刷顶匾；花时间的钮同长凳
+## 不做整卡可点。修前这里写「邻座牙人」，人却是林阿舶、市舶司小吏本人在说；阿那的招呼原写「要问航路，就问」，页上却没有问航路的签。
 const INTEL_ASIDE := "费一日"
