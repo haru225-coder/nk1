@@ -5017,6 +5017,14 @@ if _fame_raw:
 else:
     print("  ✓ 名声一律经 GameState.add_fame 加减（GameState 之外无直接写 fame）")
 
+# lane w53-13（待拍板第 61 条；w53-10 cee5e9c 满额写「已募满」，未满写「募兵上限 M」）：守城城防账「兵 N（上限 M）」的 M 是募兵上限（GameState.siege_troop_cap，随名声），收编石手军
+# 直接 +200 可越过它——原写「上限」读着像兵数到顶，城里却站着比上限还多的人。题签写「募兵上限」。
+if '"募兵上限 %d" % GameState.siege_troop_cap()' in main_src and '"上限 %d" % GameState.siege_troop_cap()' not in main_src and '"兵 %d（上限 %d）' not in main_src:
+    print("  ✓ 守城城防账写「募兵上限」（收编可越过，不是兵数的顶）")
+else:
+    print("  ✗ 守城城防账仍写「兵 N（上限 M）」——收编石手军后兵数越过上限，读着自相矛盾")
+    problems.append("守城兵数上限题签")
+
 print()
 print()
 print("=" * 68)
