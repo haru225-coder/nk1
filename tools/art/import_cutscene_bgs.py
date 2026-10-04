@@ -20,7 +20,7 @@
 size 的数据侧照实用 SOF/IHDR 实测顶上并补报，两条路对现行数据与所有清单条目的判定逐字节等效，
 「清单该按剧情挑多大、该不该为几行文案断送素材库」这种度量判据照文末「机制五」）。
 import / --check 仍用 PIL 开图。
-数据契约的键表 / 旗标有人立（字幕与镜头 bg_alt）/ hold 读完线 / 写全读完线（lane w53-9）每次跑都带内存样本自检 _contract_selftest（GATES §五.3，
+数据契约的键表 / 旗标有人立（字幕与镜头 bg_alt）/ hold 读完线 / 写全读完线 / 单行上限（lane w53-9）每次跑都带内存样本自检 _contract_selftest（GATES §五.3，
 lane w53-12）：哪条判据被退掉，对应的样本漏判即 FAIL；绿时不出声，末行不变。
 
 来源目录（Codex 线 assets/）默认 ~/tmp/nk1-codex/assets（按本机 $HOME 展开），可用环境变量 NK1_CODEX_ASSETS 覆盖。
@@ -405,10 +405,9 @@ TRANS = {"ink", "fade", "cut", "flash"}
 STYLES = {"title", "era", "line", "narration", "seal"}
 POSES = {"center", "bottom", "lower_left", "right_vertical", "left_vertical"}
 CANVAS = (1280, 720)
-# 与 CutscenePlayer.STYLES / _make_caption 的排版上限对应：超了会折行，这里要求一律单行（竖排为单列）
-H_LIMIT = {("narration", "lower_left"): 22, ("line", "bottom"): 32, ("line", "center"): 32,
-           ("title", "center"): 10, ("era", "lower_left"): 22}
-V_LIMIT = {"era": 13, "title": 5, "line": 15, "narration": 16}
+# 字幕一律单行（竖排为单列）：超了引擎会折行。单行上限按播放器的字号、字距与排版宽现算（_player_layout / _line_cap），
+# 不再手抄：原先手抄的表 era/lower_left 写 22 字，引擎实排一行只放得下 18；表里没列的样式 / 位置（narration/bottom、
+# line/lower_left 等）一律当 99 字不查；竖排 era 写 13，引擎放得下 14（lane w53-9 七轮，InkText 实排逐一量过）
 CN_DIGIT = {"〇": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
 # 播放器认的键（CutscenePlayer._begin_shot / _shot_view / _build_captions / _caption_on，ChapterCard._read_data）。
 # 别的键播放器一律静默不认，写错一个字母也不报：字幕 if_flag / unless_flag 写错 → 换句失效，两句同出或一句不出；
@@ -418,7 +417,7 @@ CAPTION_KEYS = {"t", "text", "style", "pos", "hold", "if_flag", "unless_flag"}
 CHAPTER_KEYS = {"bg", "focus", "zoom", "epigraph", "epigraph_src", "year_text"}
 # 字幕写全之后至少还要在屏上停这么久（秒），才许退（hold 到期）或换镜。读完线原先只量起笔（t 离镜头结束 ≥1.5 秒），
 # 写字慢的样式量不出来：大字题名一字 0.24 秒、末字再洇 1.1 秒，八个字要写 2.8 秒——忠肃第 1 镜「生为宋臣／死为宋鬼」
-# 起笔离镜终 3 秒照报通过，写全只停 0.21 秒就硬切到城破（lane w53-9）。写字快慢从播放器直读（_player_timing）
+# 起笔离镜终 3 秒照报通过，写全只停 0.21 秒就硬切到城破（lane w53-9）。写字快慢从播放器直读（_player_layout）
 READ_AFTER_FULL = 1.0
 # 播放器字幕起笔的底线（CutscenePlayer._caption_floor）：新画面露出来之前不起字，取本镜转场时长的这一比例
 # （fade 有上一镜 0.62、首镜 0.4；ink 0.5；flash / cut 当帧）
@@ -458,16 +457,46 @@ def _cn_era_year(n: int) -> str:
     return digits[n // 10] + "十" + (digits[n % 10] if n % 10 else "")
 
 
-def _player_timing():
-    """播放器的写字快慢与转场时长，从 scripts/cutscene/CutscenePlayer.gd 直读：STYLES 各样式的 interval（一字隔几秒起笔）/
-    fade（一字洇开几秒），TRANS 各转场的时长。两边各写一份会走岔，照 ENDING_BG / Calendar.ERAS 的读法现读。"""
+def _player_layout() -> dict:
+    """播放器的字幕排版与写字快慢，从 scripts/cutscene/CutscenePlayer.gd 直读，两边各写一份会走岔（照 ENDING_BG /
+    Calendar.ERAS 的读法现读）：
+      styles  STYLES 各样式的 size / spacing（排版）与 interval（一字隔几秒起笔）/ fade（一字洇开几秒）
+      trans   TRANS 各转场的时长
+      lb      LETTERBOX_FRAC（画幅黑边占画布高的比例）
+      ll / wide / v_pad / v_min  _make_caption 的排版上限：横排 lower_left 占画布宽的比例、其余横排的比例，
+              竖排扣掉上下黑边后再减的余量与下限
+    读不到的项缺着，调用方据此报红。"""
     import re
     src = (ROOT / "scripts" / "cutscene" / "CutscenePlayer.gd").read_text(encoding="utf-8")
-    styles = {m.group(1): (float(m.group(2)), float(m.group(3)))
-              for m in re.finditer(r'^\t"(\w+)": \{[^{}\n]*"interval": ([\d.]+), "fade": ([\d.]+)\}', src, re.M)}
+    styles = {}
+    for m in re.finditer(r'^\t"(\w+)": \{([^{}\n]*)\}', src, re.M):
+        fields = dict(re.findall(r'"(size|spacing|interval|fade)": ([\d.]+)', m.group(2)))
+        if len(fields) == 4:
+            styles[m.group(1)] = {k: float(v) for k, v in fields.items()}
+    out = {"styles": styles}
     tm = re.search(r'^const TRANS := \{([^}\n]*)\}', src, re.M)
-    trans = {k: float(v) for k, v in re.findall(r'"(\w+)": ([\d.]+)', tm.group(1))} if tm else {}
-    return styles, trans
+    out["trans"] = {k: float(v) for k, v in re.findall(r'"(\w+)": ([\d.]+)', tm.group(1))} if tm else {}
+    for key, pat in (("lb", r'^const LETTERBOX_FRAC := ([\d.]+)'),
+                     ("ll", r'pos == "lower_left":\n\t+opts\["max_extent"\] = _canvas\.x \* ([\d.]+)'),
+                     ("wide", r'\telse:\n\t+opts\["max_extent"\] = _canvas\.x \* ([\d.]+)'),
+                     ("v_pad", r'opts\["max_extent"\] = maxf\(_canvas\.y - bar \* 2\.0 - ([\d.]+), [\d.]+\)'),
+                     ("v_min", r'opts\["max_extent"\] = maxf\(_canvas\.y - bar \* 2\.0 - [\d.]+, ([\d.]+)\)')):
+        mm = re.search(pat, src, re.M)
+        if mm:
+            out[key] = float(mm.group(1))
+    return out
+
+
+def _line_cap(sty: dict, pos: str, lay: dict, letterbox: bool) -> int:
+    """1280×720 画布（expand 模式下画布宽不小于 1280、高不小于 720，这是最紧的一档）一行 / 一列放得下几个全宽字，
+    照 cs_ink_text._wrap：每字步长 = 字号 ×（1 + spacing），放得下 = 步长累计 ≤ 排版上限 + 字号 × spacing。"""
+    fs, sp = sty["size"], sty["spacing"]
+    if pos in ("right_vertical", "left_vertical"):
+        bar = round(CANVAS[1] * lay["lb"]) if letterbox else 0
+        ext = max(CANVAS[1] - bar * 2 - lay["v_pad"], lay["v_min"])
+    else:
+        ext = CANVAS[0] * (lay["ll"] if pos == "lower_left" else lay["wide"])
+    return int((ext + fs * sp) / (fs * (1 + sp)) + 1e-6)
 
 
 def _known_flags() -> set:
@@ -515,9 +544,12 @@ def check_data(path=None, data=None) -> list:
     if d.get("version") != 1:
         bad.append("version 必须为 1")
     cs_all = d.get("cutscenes", {})
-    styles, trans_dur = _player_timing()
-    if not styles or not trans_dur:
-        bad.append("scripts/cutscene/CutscenePlayer.gd 里读不到 STYLES 的 interval / fade 或 TRANS——写全读完线无从算")
+    lay = _player_layout()
+    styles, trans_dur = lay["styles"], lay["trans"]
+    missing = [k for k in ("lb", "ll", "wide", "v_pad", "v_min") if k not in lay]
+    if not styles or not trans_dur or missing:
+        bad.append(f"scripts/cutscene/CutscenePlayer.gd 里读不到 STYLES（size / spacing / interval / fade）、TRANS 或字幕排版上限 {missing}"
+                   "——单行上限与写全读完线无从算")
     used_cs_files = set()
     size_cache = {}
     for cid, cs in cs_all.items():
@@ -648,7 +680,7 @@ def check_data(path=None, data=None) -> list:
                     bad.append(f"{wc} hold={hold} 不足 1.5 秒，读不完")
                 if st != "seal" and st in styles:
                     # 写全读完线：起笔（不早于底线）+ 逐字写完 → 到退场（hold 到期或镜终，以先到者）至少 READ_AFTER_FULL 秒
-                    iv, fd = styles[st]
+                    iv, fd = styles[st]["interval"], styles[st]["fade"]
                     t0 = max(float(t), floor_t)
                     shown = t0 + max(0, len(txt.replace("\n", "")) - 1) * iv + fd
                     held = isinstance(hold, (int, float)) and hold > 0 and t0 + hold < dur
@@ -657,13 +689,12 @@ def check_data(path=None, data=None) -> list:
                         bad.append(f"{wc} 写全后只停 {gone - shown:.2f} 秒就{'退' if held else '换镜'}"
                                    f"（{st} 样式「{txt.replace(chr(10), '／')}」从起笔到写全 {shown - t0:.2f} 秒；"
                                    f"要求写全后 ≥ {READ_AFTER_FULL} 秒）——读完线按写全算，不按起笔算")
+                lim = None
+                if st != "seal" and st in styles and pos in POSES and not missing:
+                    lim = _line_cap(styles[st], pos, lay, cs.get("letterbox") is not False)
                 for para in txt.split("\n"):
                     n = len(para)
-                    if pos in ("right_vertical", "left_vertical"):
-                        lim = V_LIMIT.get(st, 99)
-                    else:
-                        lim = H_LIMIT.get((st, pos), 99)
-                    if st != "seal" and n > lim:
+                    if lim is not None and n > lim:
                         bad.append(f"{wc}「{para}」{n} 字，超出 {st}/{pos} 单行上限 {lim}")
                 if st == "seal" and len(txt) > 4:
                     bad.append(f"{wc} 印文过长：{txt}")
@@ -761,7 +792,9 @@ def _contract_selftest() -> list:
     S6 / S7 守镜头 bg_alt（底图按旗换）的旗名有人立（lane w53-9 2bf5e45）与认的键（lane fx5）：往锚镜头塞一条拿本镜 bg 当换图的
     bg_alt，不靠真数据里恰好有 bg_alt——两条退掉，本道原先照报通过（lane w53-9 五轮实测）。
     S8 守写全读完线（READ_AFTER_FULL，lane w53-9 七轮）：锚字幕换成七个字、hold 1.5 秒——旧的起笔读完线（hold ≥1.5）照过，
-    任何样式七个字写全都要 0.6 秒以上，写全后停不满 1 秒，须判红。"""
+    任何样式七个字写全都要 0.6 秒以上，写全后停不满 1 秒，须判红。
+    S9 守单行上限按播放器现算（_line_cap，lane w53-9 七轮）：锚字幕改成 era / lower_left、写到现算上限多一个字——
+    原先手抄的表这一格写 22，19 字照报通过、引擎折成两行。"""
     import copy
     try:
         base = json.loads((ROOT / "data" / "cutscenes.json").read_text(encoding="utf-8"))
@@ -789,6 +822,17 @@ def _contract_selftest() -> list:
         c["text"] = "八个字写全以前"
         return c
 
+    def cap_era_ll(d):
+        c = cap(d)
+        c["style"], c["pos"] = "era", "lower_left"
+        return c
+
+    try:
+        lay = _player_layout()
+        era_cap = _line_cap(lay["styles"]["era"], "lower_left", lay, True)
+    except (KeyError, TypeError, ZeroDivisionError):
+        era_cap = 18  # 读不到排版由 check_data 报；本格照注入，判不出即漏判
+
     abg = shot(base).get("bg", "")
     samples = [  # （笔误，取被改的那一格，键，值，判词里须有的定位片段）
         ("镜头键 captions 写成 caption", shot, "caption", [], f"{w} 有不认的键 ['caption']"),
@@ -799,6 +843,8 @@ def _contract_selftest() -> list:
         ("镜头 bg_alt 旗标没人立", shot, "bg_alt", [{"bg": abg, "if_flag": nf}], f"{w}.bg_alt[1] if_flag 旗标 `{nf}` 没人立"),
         ("镜头 bg_alt 键 if_flag 写成 if_flg", shot, "bg_alt", [{"bg": abg, "if_flg": nf}], f"{w}.bg_alt[1] 有不认的键 ['if_flg']"),
         ("字幕写全后停不满 1 秒", cap_seven, "hold", 1.5, f"{wc} 写全后只停"),
+        ("era / lower_left 写过单行上限一字", cap_era_ll, "text", "一" * (era_cap + 1),
+         f"{wc}「{'一' * (era_cap + 1)}」{era_cap + 1} 字，超出 era/lower_left 单行上限 {era_cap}"),
     ]
     bad = []
     for n, (name, cell, key, val, want) in enumerate(samples, 1):
