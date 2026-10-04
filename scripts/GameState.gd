@@ -1157,10 +1157,10 @@ func _fail_contract(reason: String) -> String:
 
 # ── 行情传闻：别港的（牙行柜上用，lane w53-3）────────────────
 
-## 本港牙行柜上 good_id 那张卡行上写的传闻：别港的，「传闻博多唐房约卖 N · d 日前」。多港都有取约卖最高的一港
+## 本港牙行柜上 good_id 那张卡行上写的传闻：别港的，「传闻博多唐房约卖 N・d 日前」。多港都有取约卖最高的一港
 ## （同价取较新的）；过了 RUMOR_STALE_DAYS 的不算（rumor_of 已滤）；本港自己的不在此列。
 ## 原先卡上只写本港自己的传闻（rumor_label），可人到了本港、实价就在卡上，海上「记下这条行情」等于用不上；
-## 写在别港同一货的卡上，买进之前就看得到哪里卖得起价。
+## 写在别港同一货的卡上，买进之前就看得到哪里卖得起价。字样与本港那条（rumor_label）同一写法，只在「传闻」后多个港名。
 func rumor_elsewhere(here_port: String, good_id: String) -> String:
 	var best_port := ""
 	var best_sell := 0
@@ -1184,7 +1184,7 @@ func rumor_elsewhere(here_port: String, good_id: String) -> String:
 	var age := Calendar.absolute_day() - best_day
 	if age <= 0:
 		return "传闻%s约卖 %d" % [where, best_sell]
-	return "传闻%s约卖 %d · %d 日前" % [where, best_sell, age]
+	return "传闻%s约卖 %d・%d 日前" % [where, best_sell, age]
 
 
 ## 那一行的悬停：原提示、别港传闻、本港自己那条传闻（与卡上实价对照），有几条写几条；两种传闻都没有给 ""。
