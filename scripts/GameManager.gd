@@ -219,7 +219,7 @@ func skip_years(n: int) -> Array:
 
 	# 先把这几年的日子真的走完——新闻、月结、行情回归都照常发生
 	_skipping = true
-	_skip_gone.clear()
+	_skip_begin()
 	for i in range(n):
 		advance_days(Calendar.DAYS_PER_MONTH * Calendar.MONTHS_PER_YEAR)
 	_skipping = false
@@ -243,7 +243,7 @@ func skip_years(n: int) -> Array:
 	# 史实辞船：跳年途中到了 leave_from 的人，月初的【辞船】只进了日志，摘要里补他那一句（草案 §1.4、§4.7 第 3 条）
 	for c in _skip_gone:
 		lines.append(Crew.leave_note(c))
-	_skip_gone.clear()
+	lines.append_array(_skip_cost_lines(n))
 
 	# 水手流失（hired 只存 id，名字回查名册；名册查无此人按未雇、不流失也不列名）
 	var left := []
@@ -407,3 +407,34 @@ func get_news_by_id(news_id: String) -> Dictionary:
 	return {}
 
 
+## 跳年起跑时记下的欠债与在船的人（_skip_begin 记、_skip_cost_lines 对完清）。这几年走完再对一遍：欠饷走了谁、债滚了多少——
+## 两样都真发生了（Crew.pay_wages 欠满三月俸最高者先走、GameState.accrue_interest 月月结息），月初的【欠饷】【月息】却只进了
+## 札记、跳两年就折成「通告一连三十几则」一行；册页「代价」不提，船上人凭空没了、债翻了一倍也看不出（实跑：欠 3000、手头
+## 150 雇着吴针与陈老舵开第二章，跳两年债滚到 6115、两人先后不告而去，代价段只写船板与市价）。
+var _skip_debt0 := 0
+var _skip_crew0: Array = []
+
+
+func _skip_begin() -> void:
+	_skip_gone.clear()
+	_skip_debt0 = GameState.debt
+	_skip_crew0 = Crew.hired.values().duplicate()
+
+
+## 摘要补的两句：欠饷离船的人（起跑时在船、这会儿不在、又不是史实辞船的）与欠债滚息；史实辞船的那几句已在上面写过，这里一并清账
+func _skip_cost_lines(n: int) -> Array:
+	var lines := []
+	var history_ids := []
+	for c in _skip_gone:
+		history_ids.append(str(c.get("id", "")))
+	var unpaid := []
+	for cid in _skip_crew0:
+		if not (cid in Crew.hired.values()) and not (str(cid) in history_ids):
+			unpaid.append(str(Crew.candidate_def(str(cid)).get("name", "一个人")))
+	if not unpaid.is_empty():
+		lines.append("%s工食欠满三月，%s不告而去。" % ["、".join(unpaid), "" if unpaid.size() == 1 else "先后"])
+	if GameState.debt > _skip_debt0:
+		lines.append("欠蕃商的债月月结息，%s年里由 %d 滚到 %d。" % [cn_num(n, true), _skip_debt0, GameState.debt])
+	_skip_gone.clear()
+	_skip_crew0 = []
+	return lines

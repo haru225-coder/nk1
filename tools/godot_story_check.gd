@@ -5007,6 +5007,61 @@ func _w53_4_epilogue_fit_check(main: Node) -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	main._beats = null
 	_close_dialogs(main)
+	# 同是晋升册页上的「代价」：跳年里欠饷走掉的人、滚起来的债要写上
+	_w53_4_skip_cost_check(main)
+
+
+## ── lane w53-4：跳年册页「代价」写上欠饷离船的人与欠债滚息 ──
+## 修前：GameManager.skip_years 把这几年的日子真走完，月结照发饷、照结息——手头发不出工食，欠满三月俸最高者先走
+## （Crew.pay_wages）；欠着蕃商的债月月 3% 复利（GameState.accrue_interest）。两样的通告只进札记，跳两年折成「通告一连
+## 三十几则」一行；册页「代价」只写船板、史实辞船、随机流失与市价——实跑：欠 3000、手头 150 雇着吴针、陈老舵开第二章，
+## 跳两年债滚到 6115、两人先后不告而去，代价段一字不提，船上人凭空没了。对照：不欠债、手头宽裕的跳年不写这两句。
+func _w53_4_skip_cost_check(main: Node) -> void:
+	var Crw: Node = root.get_node("Crew")
+	var req: Dictionary = GM.chapters_data.get("chapters", [])[0].get("next_requires", {})
+	for broke in [true, false]:
+		GS.from_dict({})
+		Cal.from_dict({"year": 1258, "month": 3, "day": 2})
+		GS.loaded_with_beats = true
+		main._beats = null
+		_close_dialogs(main)
+		GS.chapter = 1
+		GS.peak_money = int(req.get("peak_money", 0)) + 200
+		GS.money = 150 if broke else 50000
+		GS.debt = 3000 if broke else 0
+		var vis: Array = []
+		for pid in req.get("must_visit", []):
+			vis.append(str(pid))
+		for p in GM.ports_data.get("ports", []):
+			var pid := str(p.get("id", ""))
+			if vis.size() < int(req.get("visited_count", 0)) and pid != "fuzhou" and not (pid in vis) and str(p.get("unlock", "ch1")) == "ch1":
+				vis.append(pid)
+		GS.visited_ports = vis
+		Crw.hired = {"huozhang": "wu_zhen", "duogong": "chen_laodao"}
+		Crw.unpaid_months = 0
+		var names: Array = [str(Crw.candidate_def("wu_zhen").get("name", "")), str(Crw.candidate_def("chen_laodao").get("name", ""))]
+		GS.last_port = "fuzhou"
+		main.load_scene("fuzhou")
+		var host = main.get("_chapter_host")
+		var cost := _find_label_text(host, "代价")
+		var tail_ok: bool = cost.find("——自") > cost.find("代价") and cost.find("市价早不是当年的市价了。") < cost.find("——自")
+		if broke:
+			_check(GS.chapter == 2 and cost != "" and Crw.hired.is_empty()
+					and cost.contains("%s、%s工食欠满三月，先后不告而去。" % names)
+					and cost.contains("欠蕃商的债月月结息，两年里由 3000 滚到 %d。" % GS.debt) and GS.debt > 3000 and tail_ok,
+				"欠债、手头 150 雇着%s开第二章跳两年：册页「代价」写两人欠饷离船、债由 3000 滚到 %d，末句照旧是起讫（代价段：%s）" % [
+					"、".join(names), GS.debt, cost.replace("\n", "／").substr(0, 160)])
+		else:
+			_check(GS.chapter == 2 and cost != "" and not cost.contains("不告而去") and not cost.contains("滚到") and tail_ok,
+				"对照：不欠债、手头宽裕的跳年，代价段不写欠饷离船与欠债滚息（代价段：%s）" % cost.replace("\n", "／").substr(0, 120))
+		if host != null and is_instance_valid(host):
+			main._confirm_chapter_sheet()
+	Crw.hired = {}
+	Crw.unpaid_months = 0
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_close_dialogs(main)
 
 
 ## 第四章结局幕（endings[].scene）共同所在的港；有一幕不在港上、或各幕不同港，回空串
