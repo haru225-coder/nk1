@@ -344,7 +344,7 @@ REGISTRY = [
             "就此勾销（w49-k1 同型拨正先例）；判据 2「快」成立——Godot 真场景树探针 glock 实测三跑 real 3.007 / 3.196 / 4.061 s（w62-k4 起派帧实贴），"
             "与本辑既有 Godot must 探针族（qa_rest_days 24 / qa_rest_scenarios 33 / qa_debt_strip 4 / qa_cargo_strip 27 · Godot 真场景树冷启 2-4 s）"
             "同族冷启档位同格（w61-k4 双轨判掂先例：族内类推成）；判据 3「只读」成立——源码 grep FileAccess / DirAccess / user:// / save / store_"
-            "全零命中、零写盘、摆场全是内存 GameState 字典 seed；判据 4 main 尖幂等绿——glock 三跑连绿 rc=0、末行 ECON_PANEL_PROBE cases=19 fails=0（17 断言行"
+            "全零命中、零写盘、摆场全是内存 GameState 字典 seed；判据 4 main 尖幂等绿——glock 三跑连绿 rc=0、末行 ECON_PANEL_PROBE cases=N fails=0（N=19 = 17 断言行"
             " + script_err_tally 接线 2 格）。",
      "kind": "godot", "file": "tools/qa_economy_panel_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_economy_panel_probe.gd"],
