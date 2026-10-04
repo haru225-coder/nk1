@@ -465,10 +465,24 @@ REGISTRY = [
      "red": "`  ✗ …` 行（如空舱形态变 / 品名数量逐字不符 / 舱位不随货变 / 旧值仍印 / 陈旧哨落网 / 船舱字漏上顶匾）"
             "+ 末行 `CARGO_STRIP cases=N fails=M`（M>0），退 1"},
 
-    {"id": "qa_fold_dim_probe", "tier": "lane",
-     "when": "动札记折叠低色链（scripts/core/LogFold.gd 的 render dim_rest=true 分支——"
-             "港页记事栏头则宣纸色、其余淡一档的折行 / 月行上屏形态），"
-             "或动 tools/qa_fold_dim_probe.gd / tools/qa_crew_fold_host.gd 自身",
+    {"id": "qa_fold_dim_probe", "tier": "must",
+     "why": "升格判掂毕（lane w77-k4 执行窗，w76-k4 复核牒 v1，照 §五.2 原条文逐条对）："
+             "判据 1「自己判不准」成立——触发条件具跨文件隐藏面：褪色渲染链"
+             "（LogFold.render :160 本体 / :168 faded 判定 / :170 平常行裹色 / :174 折头裹色 / "
+             ":181+193 _fold_body 月行暗色包法）、色值本体（UiTheme.TEXT_DIM 双主题 :21/:50 + "
+             "const :79 + hex :234）、消费面唯一上屏口（LedgerPage.render_log :204 港页记事栏 "
+             "dim_rest=true 唯一真调用）、仿作宿主五件字段、探针自身六域写口分处五文件"
+             "（scripts/core/LogFold.gd / scripts/core/UiTheme.gd / scripts/ui/LedgerPage.gd / "
+             "tools/qa_crew_fold_host.gd / 探针自身），改 faded 判定或暗色包法的 lane 多半只记同文件 "
+             "dim=false 壳的 qa_crew_fold 不记本支（w32-k2 入册判词亲证 dim_rest=true 分支此前全仓无一探针点过）、"
+             "拨 TEXT_DIM 色值时纯 UI 域无一探针点过——§三.41 旧口径「按路径判得准、三条件只取第一」"
+             "与 §五.2「三条同时成立」相悖就此勾销（w49-k1 / w61-k4 / w73-k5 同型拨正先例）；"
+             "判据 2「快」成立——glock 实测三跑 real 0.618 / 0.502 / 0.502 s（w77-k4 动手帧实贴），"
+             "§五.2「1 秒量级」字面直成（Godot must 探针族首例字面直成：仿作宿主直调 render 不建真场景树"
+             "无 autoload 冷启，升格对一键跑洪带增量 < 0.8 s）；判据 3「只读」成立——源码 grep "
+             "FileAccess / DirAccess / user:// / save / store_ 探针与宿主全零命中、零写盘、"
+             "摆场全是内存字段直填；判据 4 main 尖幂等绿——w77-k4 执行窗复跑三跑连绿 rc=0、"
+             "末行 FOLD_DIM cases=N fails=0（N=10：8 断言行 + script_err_tally 接线 2 格）。",
      "kind": "godot", "file": "tools/qa_fold_dim_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_fold_dim_probe.gd"],
      "judge": "（探针随 w32-k2 落地即入册——w30-k3 交主控末条「按月分组的 fold:i:ym 展开后单列那一月」"

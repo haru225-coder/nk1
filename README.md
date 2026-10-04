@@ -63,6 +63,7 @@ godot --headless --path . -s res://tools/qa_crew_fold_probe.gd  # 多雇员【�
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd  # 船籍簿页「船舱」段货载上屏运行时断言 27 案
 godot --headless --path . -s res://tools/qa_seachart_advance_probe.gd  # SeaChart 海图「航段」名号跨月推进时序运行时断言 15 案（lane w79-k3 依 w77-k6 复核牒升格必跑）
 godot --headless --path . -s res://tools/qa_calendar_probe.gd  # 日历推进 / 改元显示运行时断言 38 案（lane w80-k5 依 w79-k4 复核牒升格必跑）
+godot --headless --path . -s res://tools/qa_fold_dim_probe.gd  # 港页记事栏 dim_rest=true 褪色字样运行时断言 8 案（lane w77-k4 依 w76-k4 复核牒升格必跑，lane w80-k3 承接落地）
 ```
 lane 加跑档（不进上面一键跑、不改道数；触发条件见 `docs/GATES.md` §一 档列）：本帧登记含 `python3 tools/check_ledger_garbage.py`（仓务清册「殓殓」词级污染静态扫，lane w62-k3 立——动 `docs/仓务清册_2026-10-03.md` 判档段时手跑，§三.48）。
 
