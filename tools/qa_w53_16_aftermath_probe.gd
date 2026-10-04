@@ -3,7 +3,9 @@ extends SceneTree
 ##   一、旗舰沉了由护航接任（已定 13c，一期）：旗舰沉了、护航还在时，沉船先要移出船队——
 ##       修前它以耐久 0 留在名册 0 号格，下一仗 Fleet.flagship() 还是它，4.7 秒就被跳帮。
 ##       格：① 名册剩 1 艘、无耐久 ≤ 0 的船；② 幸存护航顶成旗舰（舱货水手跟着它）；③ 坞位归 0；
-##       ④ 札记写一句护航接任；⑤ 关 flagship_handoff 照旧（沉船以耐久 0 留名册、无接任句）。
+##       ④ 札记写一句护航接任；⑤ 关 flagship_handoff 照旧（沉船以耐久 0 留名册、无接任句）；
+##       ⑥ 接任后存档往返 ships 件数 / 字段不变（接班的是运行时内存变动，不改存档格式），to_dict ⇄ from_dict
+##       两端同一艘。
 ##   二、赏钱按打法分（一期）：赏钱读 combat_phases.json「spoil」分赃规则——击沉 1/3（50–200）、
 ##       敌逃一半（75–300）、逼降全赏（150–600）、夺船给船不加钱；读不到数据退回旧区间 150–600 / 75–300。
 ##       修前不管什么打法一律 150–600，把敌船全打沉反而最划算。关 bounty_by_outcome 照旧区间。
@@ -169,6 +171,38 @@ func _sec_flagship_handoff(fleet: Node, gs: Node) -> void:
 	_expect(not log2.contains("接任旗舰"), "关时札记无接任句")
 	chart2.free()
 	CS.reset()
+	await process_frame
+	# 主控钦补：接任后存档往返船队件数一致、不改存档格式。
+	# to_dict ⇄ from_dict 逐键等比——接任是运行时内存变动，接手前 1 艘 → 接任后 1 艘，存档两端尺寸 / 字段都不变。
+	var fleet3: Node = fleet
+	fleet3.set("ships", [
+		_mk_ship("sampan", "试旗舰", 0.0, 0),
+		_mk_ship("fu_ship_medium", "护航甲", 260.0, 40, {"tea": {"qty": 5, "avg_cost": 20.0}}),
+	])
+	var chart3 := _mk_chart()
+	for _i in 4:
+		await process_frame
+	chart3.set("remaining_li", 50.0)
+	chart3.call("_on_battle_result", "lose", {"player_damage": 260.0, "sunk": true})
+	var snap_after: Array = (fleet3.get("ships") as Array).duplicate(true)
+	# 存档往返
+	var d_out: Dictionary = fleet3.call("to_dict")
+	var keys_before: int = d_out.size()
+	fleet3.call("from_dict", (d_out as Dictionary).duplicate(true))
+	var snap_restored: Array = (fleet3.get("ships") as Array).duplicate(true)
+	_expect((d_out.get("ships") as Array).size() == snap_after.size() and snap_after.size() == 1,
+		"接任后存档词典 ships 件数与名册一致（存档 %d 件 ↔ 名册 %d 件、to_dict 出键 %d 个）" % [
+			(d_out.get("ships") as Array).size(), snap_after.size(), keys_before])
+	var same_fields := snap_restored.size() == 1 \
+		and str((snap_restored[0] as Dictionary).get("name", "")) == "护航甲" \
+		and int((snap_restored[0] as Dictionary).get("crew", 0)) == 40 \
+		and ((snap_restored[0] as Dictionary).get("cargo") as Dictionary).has("tea")
+	_expect(same_fields,
+		"存档往返后接任的护航船字段不动（「%s」 crew %s cargo %s）" % [
+			(snap_restored[0] as Dictionary).get("name", "∅"),
+			(snap_restored[0] as Dictionary).get("crew", "∅"),
+			((snap_restored[0] as Dictionary).get("cargo") as Dictionary).keys()])
+	chart3.free()
 	await process_frame
 
 
