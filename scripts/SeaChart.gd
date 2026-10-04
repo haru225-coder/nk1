@@ -7,6 +7,7 @@ signal _marker_woken
 
 const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const _Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
+const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
 
 var origin_port: String = ""
 var selected_port: String = ""
@@ -1580,11 +1581,14 @@ func _enter_battle() -> void:
 func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	var dmg := float(data.get("player_damage", 0.0))
 	if outcome == "win":
-		# combat12：按敌船下场分账（win_kind）——敌降全赏走受降句；只是遁走的赏半（spoil_rule half）走敌遁句
+		# combat12：按敌船下场分账（win_kind）——敌降全赏走受降句；只是遁走的赏半（spoil_rule half）走敌遁句。
+		# w53-16 一期：开关 bounty_by_outcome 开时，赏钱改读 combat_phases.json「spoil」分赃规则——
+		# 击沉 1/3、逼降全赏、夺船给船（不另加钱）、敌逃一半；读不到数据退回旧区间。
 		var kind := win_kind(data)
 		var surrendered := kind == "surrender"
 		var fled_only := kind == "fled"
-		var spoil := int(randf_range(75, 300)) if fled_only else int(randf_range(150, 600))
+		var spoil := _spoil_by_outcome(data, fled_only) if _Switches.on("bounty_by_outcome") \
+			else (int(randf_range(75, 300)) if fled_only else int(randf_range(150, 600)))
 		GameState.add_money(spoil)
 		var fame_res: Dictionary = GameState.add_fame(3)
 		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 5)
@@ -1599,6 +1603,11 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			win_msg = _CombatFx.sea_fled_note(spoil, int(dmg), promo)
 		if bool(data.get("boarded", false)):
 			win_msg = "接舷既定。" + win_msg
+		# w53-16 一期战后单子：先两三行写这一仗的下场（谁降了、沉几艘、救起几人），再写账目原句（一个 Enter 结束）
+		if _Switches.on("after_action"):
+			var sheet := _Letterbox.aftermath_note(_Letterbox.fates_of(data), int(data.get("rescued", 0)))
+			if sheet != "":
+				win_msg = sheet + win_msg
 		_log(_ink(UiTheme.MOSS, win_msg))
 	elif outcome == "lose":
 		Fleet.morale = maxi(0, Fleet.morale - 12)
@@ -1613,7 +1622,10 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			var fleet_gone := Fleet.total_durability() <= 0.0
 			var mv_s: Dictionary = data.get("stores_moved", {})
 			var prize_s := "" if fleet_gone else _CombatFx.sea_prize_note(data.get("prizes", []), int(mv_s.get("water", 0)), int(mv_s.get("food", 0)))
-			_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_sunk_note(lost_str, int(dmg), fleet_gone, prize_s)))
+			var sunk_msg := _CombatFx.sea_sunk_note(lost_str, int(dmg), fleet_gone, prize_s)
+			# w53-16 一期 13c：旗舰沉了、护航还在时，把沉船移出船队、旗舰交给护航船；开关 flagship_handoff 关掉照旧
+			var handoff_s := _flagship_handoff() if _Switches.on("flagship_handoff") else ""
+			_log(_ink(UiTheme.CINNABAR, _lose_aftermath(data) + sunk_msg + handoff_s))
 		else:
 			var lost := Fleet.lose_cargo_ratio(0.25)
 			var lost_str := ""
@@ -1623,15 +1635,20 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			var mv_l: Dictionary = data.get("stores_moved", {})
 			var prize_l := _CombatFx.sea_prize_note(data.get("prizes", []), int(mv_l.get("water", 0)), int(mv_l.get("food", 0)))
 			if str(data.get("morale_verdict", "")) == "player_struck" or bool(data.get("struck", false)):
-				_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_struck_note(lost_str, int(dmg), prize_l)))
+				_log(_ink(UiTheme.CINNABAR, _lose_aftermath(data) + _CombatFx.sea_struck_note(lost_str, int(dmg), prize_l)))
 			else:
-				_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_board_lose_note(lost_str, int(dmg), prize_l)))
+				_log(_ink(UiTheme.CINNABAR, _lose_aftermath(data) + _CombatFx.sea_board_lose_note(lost_str, int(dmg), prize_l)))
 	else:  # flee / disengaged
 		# lane fx3：夺过船再脱身，夺船句接在脱战句之后（同一行注记；无夺船时为空串，原句不变）
 		var mv: Dictionary = data.get("stores_moved", {})
 		var prize := _CombatFx.sea_prize_note(data.get("prizes", []), int(mv.get("water", 0)), int(mv.get("food", 0)))
 		if bool(data.get("parted", false)) or outcome == "disengaged":
-			_log(_ink(UiTheme.INK, _CombatFx.sea_parted_note() + prize))
+			# w53-16 一期：大风两散与天黑两散分开写——风到七级以上不能战（combat_phases.json t_gale，
+			# 机制归 w53-17 的 gale 键对接：outcome=disengaged 且 data.gale 时写风，flee{parted} 照旧写天晚）
+			if bool(data.get("gale", false)):
+				_log(_ink(UiTheme.INK, "海风转厉，两边各自收帆。" + prize))
+			else:
+				_log(_ink(UiTheme.INK, _CombatFx.sea_parted_note() + prize))
 		elif data.get("flee_ok", false):
 			remaining_li += Fleet.fleet_speed() * 0.5  # 绕路
 			if prize == "":
@@ -1673,6 +1690,79 @@ static func win_kind(data: Dictionary) -> String:
 	if bool(data.get("boarded", false)) or int(n["boarded"]) > 0 or int(n["sunk"]) > 0 or int(n["burned"]) > 0:
 		return ""
 	return "fled" if int(n["fled"]) > 0 else ""
+
+
+## 赏钱按打法分（w53-16 一期，方案一页结论 3）：整场赏钱一笔，读 combat_phases.json「spoil」分赃规则——
+## 有降幡全赏（base 150–600）；只是一群全遁一半（base × 0.5 = 75–300）；其余（击沉 / 焚毁收场，或什么都没捞着）
+## 按 1/3（50–200）；夺船不加钱（船本身就是赏）。方案：击沉 1/3、逼降全赏、夺船给船、敌逃一半。
+## 读不到数据（json 打不开、spoil 缺节、base 不足两档）退回旧区间原样（fled_only 半赏 75–300 / 全赏 150–600）。
+## 二职业事「杂事缴获」：杂事每级按 spoil.zashi_spoil_mul_per_level（0.1）加赏；开关 crew_role_effects 关掉时不加。
+static func _spoil_zashi_mul(cfg: Dictionary) -> float:
+	return float(cfg.get("zashi_spoil_mul_per_level", 0.1))
+
+
+static func _spoil_by_outcome(data: Dictionary, fled_only: bool) -> int:
+	var d := _phases_data()
+	var spoil_cfg: Dictionary = d.get("spoil", {}) if d is Dictionary else {}
+	var base: Array = spoil_cfg.get("base", []) if spoil_cfg is Dictionary else []
+	if base.size() != 2:
+		return int(randf_range(75, 300)) if fled_only else int(randf_range(150, 600))
+	var lo := float(base[0])
+	var hi := float(base[1])
+	var by_fate: Dictionary = spoil_cfg.get("by_fate", {})
+	var mul := func(fate: String, fallback: float) -> float:
+		return float((by_fate.get(fate, {}) as Dictionary).get("mul", fallback))
+	var n: Dictionary = _Letterbox.fate_counts(data)
+	var verdict := str(data.get("morale_verdict", ""))
+	var has_struck := int(n.get("struck", 0)) > 0 or verdict == "enemy_struck" or verdict == "enemy_broken"
+	var has_boarded := bool(data.get("boarded", false)) or int(n.get("boarded", 0)) > 0
+	var total := 0.0
+	if has_struck:
+		total = randf_range(lo, hi)  # 逼降全赏
+	elif fled_only:
+		total = randf_range(lo, hi) * mul.call("fled", 0.5)  # 敌逃一半
+	elif has_boarded:
+		total = 0.0  # 夺船给船：钱不给，船就是赏
+	else:
+		total = randf_range(lo, hi) * mul.call("sunk", 0.333)  # 击沉 / 焚毁 / 什么都没捞着：三分之一
+	# 二职业事「杂事缴获」：杂事会点，每级多一成
+	if _Switches.on("crew_role_effects"):
+		total *= 1.0 + _spoil_zashi_mul(spoil_cfg) * float(Crew.level_of("zashi"))
+	return maxi(0, int(round(total)))
+
+
+## 败局的战后单子头（w53-16）：把敌船下场明细成句垫在败局原句前面（同样一个 Enter 结束）；开关 off 时返 ""
+static func _lose_aftermath(data: Dictionary) -> String:
+	if not _Switches.on("after_action"):
+		return ""
+	return _Letterbox.aftermath_note(_Letterbox.fates_of(data), int(data.get("rescued", 0)))
+
+
+## 13c：旗舰沉了、护航还在时，把沉船移出船队、旗舰交给护航船（新旗舰即首艘耐久 > 0 的船）。
+## 坞位指着的船跟着沉船移出一道拨：坞位 0 → 归 0；坞位原在旗舰后面 → −1。返回接任句（没有护航返 ""，沉船不移）。
+static func _flagship_handoff() -> String:
+	if Fleet.ships.is_empty() or float((Fleet.ships[0] as Dictionary).get("durability", 0.0)) > 0.0:
+		return ""
+	var next := -1
+	for i in range(1, Fleet.ships.size()):
+		if float((Fleet.ships[i] as Dictionary).get("durability", 0.0)) > 0.0:
+			next = i
+			break
+	if next < 0:
+		return ""
+	var lost_name := str((Fleet.ships[0] as Dictionary).get("name", "旗舰"))
+	Fleet.ships.remove_at(0)
+	GameState.berth_index = maxi(0, int(GameState.berth_index) - 1)
+	return "「%s」沉入海底，「%s」接任旗舰。" % [lost_name, str((Fleet.ships[0] as Dictionary).get("name", "护航船"))]
+
+
+## combat_phases.json 整表（_spoil_by_outcome 自取 spoil 节；读不到返回 {}）
+static func _phases_data() -> Dictionary:
+	var f := FileAccess.open("res://data/combat_phases.json", FileAccess.READ)
+	if f == null:
+		return {}
+	var d = JSON.parse_string(f.get_as_text())
+	return d if d is Dictionary else {}
 
 
 func _log_shook_pursuers() -> void:
