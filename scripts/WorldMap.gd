@@ -843,6 +843,14 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 		var fates := _battle_fates()
 		if not fates.is_empty():
 			data["fates"] = fates
+	# lane w53-17（一期战后士气带回航程）：morale_carry 开着、士气簿活着——按末值折算写回 Fleet.morale，
+	# 并带 data.morale_carry 供战后单子（w53-16）。SeaChart 旧账（赢 +5 / 输 −12）照旧在这条之后走。
+	if _Switches.on("morale_carry") and _morale != null and is_instance_valid(_morale):
+		var mc_sheet = _morale.player_sheet()
+		if mc_sheet != null:
+			var carried: int = mc_sheet.carry_to_voyage(_morale_before)
+			Fleet.morale = carried
+			data["morale_carry"] = carried
 	# lane w19-g2：旗舰沉没（lose + sunk）同带夺船账——夺来的船不上战阵、仍在册，SeaChart 沉船句要交代它；
 	# lane w53-14：我方降幡（lose + struck）、失守（lose + overrun）也带——交出的是舱货，夺来的船照旧在册
 	if outcome != "win" and not _prizes.is_empty():
