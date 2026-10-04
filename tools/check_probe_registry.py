@@ -86,6 +86,7 @@ EXEMPT = [
     ("qa_w53_3_hold_split_probe.gd", "lane-w53-3", "分船货舱水粮摊派不越全队载重专项探针，动 Fleet 舱位账或牙行/船屋装货回调时加跑"),
     ("qa_w53_3_market_rerender_probe.gd", "lane-w53-3", "牙行页整页重排带字进树计数与按买耗时专项探针，动牙行页建页或 Main._attach_quiet 时加跑"),
     ("qa_w53_4_chapter_hint_probe.gd", "lane-w53-4", "章节 hint 走数据上屏专项探针，随 lane-w53-4 落地验过留档"),
+    ("qa_w53_4_epilogue_fit_probe.gd", "lane-w53-4", "终局航海札记边记攒多不把动作行挤出画外（帧后量岸带与动作行），动终局港页札记笺时加跑"),
     ("qa_w53_4_story_probe.gd", "lane-w53-4", "剧情 advance_text 宣港对账专项探针，随 lane-w53-4 落地验过留档"),
     ("qa_w53_5_half_write_probe.gd", "lane-w53-5", "半写档探针（只写 .tmp 注入：记录与迁移回写须核对后才落位），动存档写入路径时加跑"),
     ("qa_w53_5_load_log_probe.gd", "lane-w53-5", "读档后船籍簿记事栏探针（读早一卷不留后事、勾稽一声照记、坏卷不清），动读档流程时加跑"),

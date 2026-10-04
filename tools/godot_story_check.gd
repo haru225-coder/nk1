@@ -4936,6 +4936,72 @@ func _w53_4_notice_kicker_check(main: Node) -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	main._beats = null
 	_close_dialogs(main)
+	# 同是终局港页：航海札记攒多了不把动作行挤出画外
+	_w53_4_epilogue_fit_check(main)
+
+
+## ── lane w53-4：终局航海札记——边记攒多了收进滚动框，「札记」一行寺观拓本只记题名 ──
+## 修前：Main._epilogue_slip 按条数定滚不滚（≤6 条不滚），「札记：」一条却把全部边记用顿号串成一行，寺观拓本还带整段拓文
+## （「拓「落漈」　彭湖以东……可缩短数日。」），折成五六行到十几行都只算一条；札记笺越撑越高，岸带底下的动作行（重读结局、
+## 航海日志、人物志）被挤出画外——实跑 1280×720：十九条边记动作行底到 730，再拓两处整排出画，十四处拓本札记笺底到 966。
+## 拓文整段串进顿号列，也读成「…可缩短数日。、拓「屿寨石垣」…」。行布局实测（帧后量动作行）见 qa_w53_4_epilogue_fit_probe。
+func _w53_4_epilogue_fit_check(main: Node) -> void:
+	var toks: Array = []
+	_w53_4_collect(GM.scenes_data.get("scenes", []), "ledger_note", toks)
+	# 三档边记：一条（札记一行）、剧情令牌四枚（札记折两行，全笺七行——修前修后都不滚）、全部令牌加十四处拓本
+	for tier in ["light", "mid", "heavy"]:
+		GS.from_dict({})
+		Cal.from_dict({"year": 1285, "month": 2, "day": 2})
+		GS.loaded_with_beats = true
+		main._beats = null
+		_close_dialogs(main)
+		GS.identity = "merchant"
+		var heavy: bool = tier == "heavy"
+		var rubbed: Array = []
+		if heavy:
+			for tok in toks:
+				GS.add_ledger_note(str(tok))
+			for d in GM.discoveries_data.get("discoveries", []):
+				GS.record_discovery(str(d.get("id", "")))
+				GS.add_ledger_note(main._temple_rub_note(str(d.get("name", "")), str(d.get("historical_hook", ""))))
+				rubbed.append("拓「%s」" % str(d.get("name", "")))
+		elif tier == "mid":
+			for tok in toks.slice(0, 4):
+				GS.add_ledger_note(str(tok))
+		else:
+			GS.add_ledger_note("崖山外海掉头")
+		GS.last_port = "fuzhou"
+		main.load_scene("fuzhou")
+		main._on_gangshou_end()
+		main._confirm_chapter_sheet()
+		var epi: Array = GS.epilogue_lines()
+		var rows := 0
+		for line in epi:
+			var para := TextParagraph.new()
+			para.add_string(str(line), UiTheme.font(), 16)
+			para.break_flags = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+			para.width = 724.0
+			rows += maxi(1, para.get_line_count())
+		var slip: Node = main._shore_band().find_child("EpilogueSlip", true, false)
+		var scrolled: bool = slip != null and slip.find_child("EpilogueScroll", true, false) != null
+		if not heavy:
+			_check(main._shore_kind_now == "ended" and slip != null and rows <= 7 and not scrolled,
+				"对照：边记%s的终局港页札记笺照旧不滚（折后 %d 行 ≤7，滚动框 %s）" % ["一条" if tier == "light" else "四枚剧情令牌", rows, scrolled])
+			continue
+		var notes_line: String = str(epi.back()) if not epi.is_empty() else ""
+		var missing: Array = []
+		for r in rubbed:
+			if not (notes_line.contains(str(r) + "、") or notes_line.ends_with(str(r))):
+				missing.append(r)
+		_check(notes_line.begins_with("札记：") and missing.is_empty() and not notes_line.contains("。、") and not notes_line.contains("　"),
+			"航海札记「札记」一行：寺观拓本只记题名、不串整段拓文（拓本 %d 处，缺题名 %s，含「。、」%s，长 %d 字）" % [
+				rubbed.size(), missing, notes_line.contains("。、"), notes_line.length()])
+		_check(main._shore_kind_now == "ended" and slip != null and rows > 7 and scrolled,
+			"边记攒多的终局港页：札记折后 %d 行（>7），收进 170 高滚动框，不把动作行挤出画外（滚动框 %s）" % [rows, scrolled])
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_close_dialogs(main)
 
 
 ## 第四章结局幕（endings[].scene）共同所在的港；有一幕不在港上、或各幕不同港，回空串

@@ -3848,7 +3848,7 @@ func _ended_port_base() -> String:
 
 
 ## 终局后港口页的航海札记：墨底小笺，标题马善政泥金印「终」、旁注终局时地（淡字 16px），逐行 16px；
-## 行多时在 170 高里滚动、底边渐隐；笺脚一行淡字注文指向动作行「重读结局」。
+## 折后多于七行（按 _epilogue_rows 折算，不按条数）在 170 高里滚动、底边渐隐；笺脚一行淡字注文指向动作行「重读结局」。
 func _epilogue_slip() -> Control:
 	var parts := _band_slip("EpilogueSlip")
 	var slip: PanelContainer = parts[0]
@@ -3864,8 +3864,8 @@ func _epilogue_slip() -> Control:
 		var l := _band_line(lines_box, str(line), UiTheme.TEXT, 16)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size = Vector2(724, 0)
-		n += 1
-	if n <= 6:
+		n += _epilogue_rows(str(line))
+	if n <= 7:
 		col.add_child(lines_box)
 	else:
 		var scroll := ScrollContainer.new()
@@ -4658,3 +4658,15 @@ func _lift_texts(n: Node, stash: Array) -> void:
 		n.set("text", "")
 	for c in n.get_children():
 		_lift_texts(c, stash)
+
+
+## 航海札记一行在笺内（724 宽、16px 正文字）折成几行，与 Label 的 AUTOWRAP_WORD_SMART 同一套断行。
+## _epilogue_slip 按折后的行数定滚不滚：岸带定高 360，札记笺除去抬头、笺脚只剩约 184 高，放得下七行（单行 20、折行再加 24、
+## 条间 6）。原先按条数数，「札记：」一条把全部边记串成一行、折成五六行也只算一行，笺越撑越高，岸带底下的动作行
+## （重读结局、航海日志、人物志）被挤出画外。
+func _epilogue_rows(text: String, width := 724.0) -> int:
+	var para := TextParagraph.new()
+	para.add_string(text, UiTheme.font(), 16)
+	para.break_flags = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+	para.width = width
+	return maxi(1, para.get_line_count())

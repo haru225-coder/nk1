@@ -580,7 +580,7 @@ func finish(ending_name: String, text: String = "") -> bool:
 	return true
 
 
-## 终局札记：把这一局做过的事收成几行，给结局屏与港口页复用
+## 终局札记：把这一局做过的事收成几行，给结局屏与港口页复用（「札记」一行的寺观拓本只记题名，见 epilogue_note）
 func epilogue_lines() -> Array:
 	var out := []
 	out.append("姓名：%s" % player_name)
@@ -595,7 +595,7 @@ func epilogue_lines() -> Array:
 	out.append("本钱峰值 %d 钱・名声 %d・海商信用 %d" % [peak_money, fame, merchant_credit])
 	out.append("走通港口 %d 处・勘见 %d 处" % [visited_ports.size(), discoveries_found.size() + discoveries_reported.size()])
 	if not ledger_notes.is_empty():
-		out.append("札记：" + "、".join(ledger_notes))
+		out.append("札记：" + "、".join(ledger_notes.map(epilogue_note)))
 	return out
 
 
@@ -1318,3 +1318,12 @@ const SKIP_YEAR_CAP := 1275
 ## 本次晋升实跳几年：chapters.json 的 advance_years，落点不越过 SKIP_YEAR_CAP 那一年
 func advance_skip_years(n: int) -> int:
 	return clampi(n, 0, maxi(0, SKIP_YEAR_CAP - Calendar.year))
+
+
+## 航海札记「札记」一行里的一条边记：寺观拓本只记题名（拓「落漈」）。拓文整段（带句号，见 ResidencePage.temple_rub_note）
+## 留在住处边记里翻——整段串进顿号列，读着是「…往流求的航期可缩短数日。、拓「屿寨石垣」…」，十几处拓本还把札记撑成十几行。
+func epilogue_note(note: String) -> String:
+	var close := note.find("」")
+	if note.begins_with("拓") and note.find("「") == 1 and close > 0:
+		return note.substr(0, close + 1)
+	return note
