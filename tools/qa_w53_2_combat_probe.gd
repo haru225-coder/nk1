@@ -545,9 +545,15 @@ func _sec_patrol_win_note() -> void:
 		"enemy": [{"type": "sea_falcon", "sprite": "yuan_patrol", "count": 3}], "sea_name": "泉州外海",
 		"source": {"scene": "SeaChart", "event": "yuan_patrol"}})
 	chart.call("_on_battle_result", "win", {"player_damage": 12.0, "fates": [{"type": "sea_falcon", "fate": "sunk", "count": 3}]})
-	var first := (log_label as RichTextLabel).get_parsed_text().get_slice("\n", 0)
-	_check(first.begins_with("敌船已退。") and first.find("海盗") < 0,
-		"八 打赢元军哨船，札记首行不写「海盗」（得「%s」）" % first)
+	var whole := (log_label as RichTextLabel).get_parsed_text()
+	# w53-16 一期起札记首行先垫战后单子（「敌船三艘，击沉三艘。」），账目原句在后——
+	# 判「账目句开头不是海盗」：拿到账目那一句（去掉单子垫头）再断言开头与里头都不带「海盗」。
+	var body := whole
+	var mut := whole.find("。敌船已退。")
+	if mut >= 0:
+		body = whole.substr(mut + 1)
+	_check(body.begins_with("敌船已退。") and body.find("海盗") < 0,
+		"八 打赢元军哨船，札记账目句不写「海盗」（得「%s」）" % body.get_slice("\n", 0))
 	chart.free()
 
 
