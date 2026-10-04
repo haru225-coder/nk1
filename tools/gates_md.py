@@ -752,13 +752,58 @@ def main(argv):
     # 把关判据自检（不落盘）：靶子（两支变异脚本的 LANDING_OFF 常量）漂了、判法放宽了当场红
     sweep_selfcheck()
     live = [g["id"] for g in gates if g["tier"] != "no"]
-    heads = {int(m.group(1)): m.group(2) for m in re.finditer(r"^### (\d+)\. (.+)$", tail, re.M)}
+    sec3, outside = sec3_heads(tail)
+    heads = {}
+    for n, h in sec3:
+        heads.setdefault(n, h)
     for i, gid in enumerate(live, 1):
         h = heads.get(i)
         check(h is not None and h.startswith(gid), f"§三 小节 `### {i}. {gid}` 对得上（文档：{h or '缺'}）")
     extra = sorted(set(heads) - set(range(1, len(live) + 1)))
     check(not extra, "§三 没有注册表之外的编号小节" + (f"：{extra}" if extra else ""))
+    for p in sec3_layout(sec3, outside):
+        check(False, p)
+    sec3_selfcheck()
     return report()
+
+
+SEC3_HEAD = re.compile(r"^### (\d+)\. (.+)$", re.M)
+
+
+def sec3_heads(tail):
+    """(§三 里的 [(N, 标题)…] 按文档顺序, §三 之外的 [(N, 所在 `## ` 节名)…])。§三 = `## 三、` 起、下一个 `## ` 止。
+    lane opus-1 起因：0969519 把 `### 47.` 插进了 §五 开头、§三 排成 45→48→46，旧判法拿整段 tail 建 dict（不分节、不看顺序、重号后者覆盖前者）照判绿。"""
+    secs = [(m.start(), m.group(1)) for m in re.finditer(r"^## (.+)$", tail, re.M)]
+    sec3, outside = [], []
+    for m in SEC3_HEAD.finditer(tail):
+        sec = next((name for pos, name in reversed(secs) if pos < m.start()), "（无节）")
+        (sec3 if sec.startswith("三、") else outside).append((int(m.group(1)), m.group(2) if sec.startswith("三、") else sec))
+    return sec3, outside
+
+
+def sec3_layout(sec3, outside):
+    """§三 编号小节的版面判据：都在 §三 里、无重号、按编号升序。返回问题句（空 = 过）。"""
+    probs = [f"编号小节 `### {n}.` 落在 §三 之外（在「{sec[:12]}…」节，挪回 §三 对应位置）" for n, sec in outside]
+    nums = [n for n, _ in sec3]
+    dup = sorted({n for n in nums if nums.count(n) > 1})
+    if dup:
+        probs.append(f"§三 编号小节重号：{dup}")
+    if nums != sorted(nums):
+        k = next(i for i in range(1, len(nums)) if nums[i] < nums[i - 1])
+        probs.append(f"§三 编号小节没按编号排：`### {nums[k - 1]}.` 后面接 `### {nums[k]}.`（按注册表顺序挪）")
+    return probs
+
+
+def sec3_selfcheck():
+    """§三 版面判据自检（不落盘）：三形反例各须点出、正例须过。"""
+    ok = "## 三、x\n### 1. a\n### 2. b\n## 四、y\n"
+    bad = {"出节": "## 三、x\n### 1. a\n## 五、z\n### 2. b\n",
+           "乱序": "## 三、x\n### 2. b\n### 1. a\n## 四、y\n",
+           "重号": "## 三、x\n### 1. a\n### 1. b\n### 2. c\n## 四、y\n"}
+    hit = {k: bool(sec3_layout(*sec3_heads(v))) for k, v in bad.items()}
+    check(all(hit.values()) and not sec3_layout(*sec3_heads(ok)),
+          "§三 版面判据自检：出节 / 乱序 / 重号三形反例都判红、正例判绿"
+          + ("" if all(hit.values()) else f"；漏判：{[k for k, v in hit.items() if not v]}"))
 
 
 def report():
