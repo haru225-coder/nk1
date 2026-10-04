@@ -148,7 +148,7 @@
 
 ## 九、对齐与待接线
 
-已接、不再列：combat11 清空 combat10 `KNOWN_DEFECTS`（夺末船 `boarded=true`、`player_damage` 负值、回写）；敌降「受降」、我方溃逃「溃逃」由 combat09+11 接；敌遁半赏（按各船下场分账，先沉后遁不算敌遁）、限时两散由 combat12 接；失船面（敌船先抛钩、白刃敌胜 → `lose{overrun}`）、甩脱（追打的敌船尽在 `escape_bu` 外满 `shake_off_s` 秒 → `flee{flee_ok, shook_off}`，阶段图 `t_outsailed`）由 lane w53-2 接。下列是仍未对上的：
+已接、不再列：combat11 清空 combat10 `KNOWN_DEFECTS`（夺末船 `boarded=true`、`player_damage` 负值、回写）；敌降「受降」、我方溃逃「溃逃」由 combat09+11 接；敌遁半赏（按各船下场分账，先沉后遁不算敌遁）、限时两散由 combat12 接；失船面（敌船先抛钩、白刃敌胜 → `lose{overrun}`）、甩脱（追打的敌船尽在 `escape_bu` 外满 `shake_off_s` 秒 → `flee{flee_ok, shook_off}`，阶段图 `t_outsailed`；按 B 弃战的甩脱机会随最近追船远近抬，400 px 内照船速、`escape_bu` 外必脱）由 lane w53-2 接。下列是仍未对上的：
 
 - **两散只有限时一路**：阶段图 `t_gale`（风七级以上不能战 → `disengaged`）不收场——`SeaState` 把海战风力封顶在 `WIND_CAP` 130，到不了 `combat_ok: false` 那几级，此路暂无来路。
 - **题签键与本表不符**：`player_struck` 本表 `strike`「降幡」，现码出 `yield`「请降」（`strike` 不在 `OUTCOME_ACT`）；`enemy_fled` 本表 `win`「战罢」，现码出 `repel`「击退」。二者择一回写。
