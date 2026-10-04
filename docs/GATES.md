@@ -59,10 +59,10 @@
 | 45 | qa_save_stale_count1_probe | Godot | 加跑：动 scripts/core/SaveLoad.gd 的 audit_stale_refs 港类核验（_flag_port / out["port"] 落键口径），或动 tools/qa_save_stale_count1_probe.gd 自身 | — | `godot --headless --path . -s res://tools/qa_save_stale_count1_probe.gd` | `python3 tools/gate_json.py --godot qa_save_stale_count1_probe` | （lane w38-k1 · 无门禁 sweep 补位——j3mut 退化纹钉件，w36-k3 交主控 #2 A 类原句立）「恰 1 枚已删港名目」存档直调 load_game → last_stale（母本 save_stale_refs_probe.gd 同型写信道位 97）：现网 audit_stale_refs 对恰 1 枚须落 out["port"]["count"]==1、sample==该 id、examples erase。K1 现网临界（visited_ports 恰 1 枚）；K2 三个触发位各仅 1 处指向 stale 港（visited_ports / last_port / contract.from）各落 count==1；K3 对照 0 枚（port 键不在）/ 双旧港 count==2 / 同 id 双现去重仍 count==1。`> 0` 被退化成 `> 1`（j3mut 实证在卷）则 K1/K2 整段漏报 → 本探针 fails≥1 诱曝，现样全绿。本进程 SCRIPT ERROR 即红（w53-11：K1–K3 七案外另计两判——计数器自证 + 运行中 0 条；_run 半路被脚本错掐断由收尾包装判红退 1、不印末行）。末两行 `STALE_COUNT1 cases=N fails=M` + `QA_STALE_COUNT1_END`，M>0 退 1。 | 逐条 `  ✓ …` + 末两行 `STALE_COUNT1 cases=N fails=0` + `QA_STALE_COUNT1_END`，退 0 | `  ✗ …count 期望 1 实得 0…`（`> 0→> 1` 漏报恰 1 枚——j3mut 退化纹）/ `… sample 期望 …` / `… examples 未 erase …` 各指名行 + 末两行 `STALE_COUNT1 cases=N fails=M`（M>0），退 1 |
 | 46 | check_w53_copy | Python | 必跑 | ✓ | `python3 tools/check_w53_copy.py` | `python3 tools/gate_json.py tools/check_w53_copy.py` | （lane w53-10 立，w56-k3 升 must 入册）玩家可见 CJK 串两类回潮钉静态扫（scripts/*.gd + data/*.json）：一、规则一禁「前帐」字样（FORBID_SUBSTRINGS——「先结了前帐罢」是唯一账务「帐」误「账」，其余「帐」全是军帐 / 营帐正用，check_symbols / qa_letterbox_copy 域不扫「帐」整字符）；二、规则二禁「名声 -」「士气 -」「金钱 -」「水粮 -」「耐性 -」「悦 -」半角连字符紧接着数字（HALF_MINUS_RE = 「名声」「士气」「金钱」「水粮」「耐性」「悦」一字样 + 空白 + - + 数字——玩家面统一全宽 −（U+2212），STAT_WORDS 钉死枚举不扩「蒲家留意 -2」类）；扫域是含 CJK 的字符串字面量 / JSON 文本值；负样本自检每次先跑（「前帐」样与「名声 -1」样各须被自家检出、不检出即自红） | 末行 `结果：全部通过`（含前置 `_self_test` 负样自检两格全判红、扫真源码 0 hit） | `结果：N 项问题` + ✗ 行点名（`scripts/Main.gd:<行号>: 账务「账」误作「帐」——含「前帐」字样：<原文 120 字>` / `scripts/<X>.gd:<行号>: 状态增减半角连字符（应为全宽 −）——<原文 120 字>` / data/<f>.json 同类两行） |
 | 47 | check_lane_orphans | Python | 必跑 | ✓ | `python3 tools/check_lane_orphans.py` | `python3 tools/gate_json.py tools/check_lane_orphans.py` | 断链预防闸：扫仓外 nk1-agent-briefs/COORDINATION.md 行首 SETTLED 行抽 lane id 集、对每条 lane 四格全中才红——① 行首 ^w 数字-[字母]数字 SETTLED 在（时间戳前缀 / SETTLED-ADD 修订 / 文内提及不算，同 lane 多行取最新一行）；② 行 SHA 链自洽探：一轮 git rev-list main 建主史集，全形查集 / 短形按主史 7 位前缀拼（对象在主史零命中 anc=F——cat-file 补缺防 w30-k5 d09d20a 短形叛绿实锤），全在史照桩，ancestor=F 且行署 未CAS/承接/收编/重链/未入主/撞窗/悬空/归轨道/零动/殓/遗留 类判语 = lane 自报置笔未入主照采信，只有 ancestor=F 且零判语（署名失实）入红集；③ refs/heads/lane/<lane>-* 在册且尖 ancestor=F；④ main..branch 尖 count>0（lane-committed 未入主、尚无人承接）且 ② 有未释 SHA。唯 NK1_COORD/NK1_MAIN_REF 两环境变量供量具变异；生产零 env。 | 末行 `结果：全部通过`（各 lane branch 或已入主 / 或 SHA 在史 / 或 lane 自报置笔未入主照采信 / 或 SETTLED 行缺失照桩） | ✗ `lane <id> SETTLED（COORDINATION:<行号>）但行 SHA <sha> 未入主（ancestor=F）且行零未CAS/承接/收编/重链判语（署名实锤失实）+ branch <ref> sha <sha> main..count=N（承接窗断链）` 逐条点名 + 首行 `结果：N 项问题`，退 1 |
-| 48 | check_ledger_garbage | Python | 加跑：动 docs/仓务清册_2026-10-03.md（判档段 append / 殓档净化） | — | `python3 tools/check_ledger_garbage.py` | `python3 tools/gate_json.py tools/check_ledger_garbage.py` | 扫 docs/仓务清册_2026-10-03.md「殓殓」词级污染指纹（非叠对 str.count 口径）：R1 白名单 KNOWN 表（13 行）外某行「殓殓」≥ 2 枚逐行 ✗ 点名行号与枚数；R2 全文档含「殓殓」行数 > ALLOW_LINES（13）点名新增行号；KNOWN 表行照挂零报（§四 wave58-k2 双域 / wave59-k1 段 2 枚复合词 / w61-{1,2,3} 引用行三域）；零、样本自检每次先跑（S1 新行 3 枚 / S2 单行 5 枚 / S3 行数 +1 三格须判红，C1 基线形 / C2 「殓」正用 / C3 零点档 / C4 白名单外 1 枚照挂四格须判绿，同一条 scan_text 判路）；清册读不到 rc≠0（无文件形判红防静默绿）。唯 NK1_LEDGER 一环境变量供量具变异，生产零 env。 | 末行 `结果：全部通过`（零节 7 格 ✓ + 真文档 `新增 0 格……` ✓） | ✗ `<档>:<行号>: 新增「殓殓」×N（词级污染指纹，白名单外行）` / ✗ `含「殓殓」行数 N 超基线 13` 逐条点名 + 自检 ✗ / 读不到清册 ✗——首行后 `结果：N 项问题`，退 1 |
+| 48 | check_ledger_garbage | Python | 必跑 | ✓ | `python3 tools/check_ledger_garbage.py` | `python3 tools/gate_json.py tools/check_ledger_garbage.py` | 扫 docs/仓务清册_2026-10-03.md「殓殓」词级污染指纹（非叠对 str.count 口径）：R1 白名单 KNOWN 表（现帧 15 行 11 键）外某行「殓殓」≥ 1 枚逐行 ✗ 点名行号与枚数（v5 单枚细判窗——合法自然引用走行首 CJK 免挂载 :639/:644 先例 + KEY 钉行全收、ASCII/数字/反引号起字行不享防 hash 壳蒙绿）；R2 全文档含「殓殓」行数 ≠ TOKEN_LINES_LINEBASE（现帧 15）恒等式判红——超线/欠线两头皆红（删行藏污形也落红）；KNOWN 表行照挂零报；零、样本自检每次先跑（S1 新行 3 枚 / S2 单行 5 枚 / S3 行数超线 / S5 单枚 ASCII 壳 / S6 欠线五格须判红，C1 基线形 / C2 「殓」正用 / C5 尾 append 推位 须判绿、C3/C4 零点档恒等式勾稽在衙，同一条 scan_text 判路）；清册读不到 rc≠0（无文件形判红防静默绿）。唯 NK1_LEDGER 一环境变量供量具变异，生产零 env。 | 末行 `结果：全部通过`（零节 12 格 ✓ + 真文档 `新增 0 格（含「殓殓」行 15/15 键行照挂）` ✓） | ✗ `<档>:<行号>: 新增「殓殓」×N（词级污染指纹，白名单外行）` / ✗ `含「殓殓」行数 N ≠ 恒等基线 15` 逐条点名 + 自检 ✗ / 读不到清册 ✗——首行后 `结果：N 项问题`，退 1 |
 | 49 | check_probe_registry | Python | 必跑 | ✓ | `python3 tools/check_probe_registry.py` | `python3 tools/check_probe_registry.py --json` | （lane w27-k4，k11 审计「最该补的门禁」第 2 条）tools/ 下每支 git 已跟踪 `*_probe.gd` 要么被点名（REGISTRY file 列，或 SHOT_PROBES 截图册——截图脚本走 shot_gate 批量跑，算被跑），要么登进 `tools/check_probe_registry.py` 的 EXEMPT 豁免名单（每行三格：探针名 / lane·来源 / 理由一句，形状缺格即红）；漏注册且漏豁免一律行首红字点名。豁免名单指着不在仓的探针（删探针没删名单行）也红。零、判据自检每次先在内存跑：C0 现网名单须全绿；E1 拼错豁免名 / E2 删一格豁免 / E3 覆盖名单缺一支，三格反向变异各须点出那一支红。豁免名单全表与逐条理由见脚本头注；（qa_rest_days_probe 一支已由 wave27 k3 登进头段 REGISTRY lane 档，8170079——不在豁免名单。） | 零节 C0 + E1–E3 全 `✓` → 一节 5 条 `✓`（末条 `✓ 漏注册且漏豁免 0 支（全绿）`）→ 二节名单形状 `✓` → `结果：全部通过` | `✗ C0 现网名单普查全绿（漏网 N 支）`（豁免名单与注册表对不上现网——先修名单不修自检）/`✗ EXEMPT 第 k 行…`（名单形状 / 来源格缺 lane·commit）/`✗ 豁免名单每行都指着在仓探针——[…] 已不在仓 / 名写错` / `✗ 探针漏册：tools/<X>_probe.gd——不在 REGISTRY / SHOT_PROBES，也未登豁免`（逐支点名）/`✗ En 反向格：…`（自检对不上 = 闸判不出这一形）；`结果：N 项问题` |
 
-每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十六道 Python + smoke/compile/story/p7/patrol/qa_rest_days_probe/qa_economy_panel_probe/qa_rest_scenarios_probe/qa_debt_strip_probe/qa_cargo_strip_probe」二十六道门禁；8、15、16、18、19、20、25、26、27、28、29、30、32、34、36、39、41、42、43、44、45、48 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十七道 Python + smoke/compile/story/p7/patrol/qa_rest_days_probe/qa_economy_panel_probe/qa_rest_scenarios_probe/qa_debt_strip_probe/qa_cargo_strip_probe」二十七道门禁；8、15、16、18、19、20、25、26、27、28、29、30、32、34、36、39、41、42、43、44、45 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（12 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -183,7 +183,7 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 
 <!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-# 必跑二十七条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+# 必跑二十八条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
 rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
 python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
 python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
@@ -211,6 +211,7 @@ python3 tools/gate_json.py --godot qa_debt_strip_probe > /tmp/gates/qa_debt_stri
 python3 tools/gate_json.py --godot qa_cargo_strip_probe > /tmp/gates/qa_cargo_strip_probe.json
 python3 tools/gate_json.py tools/check_w53_copy.py > /tmp/gates/check_w53_copy.json
 python3 tools/gate_json.py tools/check_lane_orphans.py > /tmp/gates/check_lane_orphans.json
+python3 tools/gate_json.py tools/check_ledger_garbage.py > /tmp/gates/check_ledger_garbage.json
 python3 tools/check_probe_registry.py --json > /tmp/gates/check_probe_registry.json
 python3 tools/gate_json.py --judge /tmp/gates/*.json   # 汇总：逐道一行 ✓/✗；任一道红或没有 JSON 行 → 退 1
 ```
@@ -267,6 +268,7 @@ godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
 python3 tools/check_w53_copy.py
 python3 tools/check_lane_orphans.py
+python3 tools/check_ledger_garbage.py
 python3 tools/check_probe_registry.py
 ```
 
@@ -647,11 +649,12 @@ python3 tools/check_probe_registry.py
 - 常见红因：`✗ lane … 署名实锤失实` = SETTLED 行 SHA 链 anc=F 且行零判语（补判语或承接入主）；`✗ lane … 承接窗断链` = SETTLED 毕但 lane branch 未 CAS 入主且 main..count>0（承接毕殓殻、或行补注unfinished）；`✗ … N 项问题` = 断链型回潮——先判 lane 自报置笔是否照采信、不照采信即承接入主。
 - 常见红因：`✗ lane … 署名实锤失实` = SETTLED 行 SHA 链 anc=F 且行零判语（补判语或承接入主）；`✗ lane … 承接窗断链` = SETTLED 毕但 lane branch 未 CAS 入主且 main..count>0（承接毕殓殻、或行补注unfinished）；`✗ … N 项问题` = 断链型回潮——先判 lane 自报置笔是否照采信、不照采信即承接入主。
 
-### 48. check_ledger_garbage（`tools/check_ledger_garbage.py`，仓务清册「殓殓」词级污染静态扫，lane w62-k3 立 · lane 档 · 判词池承接件 v1）
-- 读：`零、样本自检`（§五.3 规则表型必跑道内置样本，每次先跑、与真文档同一条 `scan_text` 判路——S1 新行 3 枚 / S2 单行 5 枚连用 / S3 行数 +1 超基线三格负样各须判红点名；C1 基线 13 行顶枚 50 形 / C2 单枚「殓」正用段 / C3 零点行档 / C4 白名单外行 1 枚照挂形四格干净样各须判绿；拨参数降级散形各格照散照钉不砌闸）→ `一、真文档扫描`（✓ `新增 0 格（含「殓殓」行 13/13 全 = KNOWN 白名单照挂、单行顶 50 旧账大枚段在表不判）`）→ 末行 `结果：全部通过`，退 0。纯 python3、只读、<1 s、python 档免 .uid 侧车（house rule 唯 .gd 要侧车照实注）。
-- 口径（**防新增不回扫旧账**——设计钦命照 brief §避开）：指纹词 =「殓殓」二字连用、非叠对 str.count 口径（grep -o 枚数 183 是嵌对口径、本闸不用）；现帧残存基线 = KNOWN 表 13 行（wave61-k2 净化毕帧起派实贴）分布 :631/:633/:634/:635/:649/:651/:652/:653（§四 wave58-k2 判档段双域整段 token 替换域、w61-k2 已判 A 殓不刀照挂、净化归 wave63+）＋ :639/:644（§四 wave59-k1 段句内合法复合词照挂）＋ :692/:693/:694（w61-{1,2,3} 判档段原文逐字引用行合法引用照挂）——三域全白名单照挂零报不判 red 非 warn。判红双格：R1 KNOWN 表外某行「殓殓」≥ 2 枚逐行 ✗ 点名行号与枚数（1 枚隔离行不判——现行档 :639/:644 合法复合词先例 + 判档自然引用一句不可读词不成立，该形归 wave63+ 细判）；R2 全文档含「殓殓」行数 > 13（ALLOW_LINES 基线）点名新增行号（R1 的兜底格、防 1 枚碎片多发回潮）。环境变量：NK1_LEDGER（自检 / 量具变异 / 无文件形另指本，生产零动——同 NK1_COORD / NK1_MAIN_REF 钩例）。清册读不到 rc≠0 红（无文件形防静默绿）。
-- 立案链：w61-k2 SETTLED 遗留②原句钦（清册 w61-k2 判档段末）——「M1' 结论 = 四闸对文档词级污染该形零判力、净化判力靠人读 + 钉集 diff 双轨（呈下波 ops——若欲闸罩 gating 净化毕文档全文殓殓计数、归判词池）」；w61-k2 M1' 实跑四闸（gates_md / check_w53_copy / host_paths / docs_index）对重造「殓殓殓殓×10」×4 全文档词级指纹各 rc=0 静默绿实锤 = 该形判力窗在卷；本片接判词池立本闸罩它。判掂应用 = 判不准即挂账（trigger 写不出哪一笔判档段笔带回词级污染——w48-k4 先例先 lane 档）；升格 must 归 wave63+ 牒备件复核 §五.2。
-- 常见红因：✗ `<行号>: 新增「殓殓」×N…白名单外行` = 新判档段笔带回殓殓指纹（修法：自源重写殓段、殓维数据三字禁动照 w61-k2 轨）；✗ `含「殓殓」行数 N 超基线 13` = 碎片多发回潮（修法同上；若净化旧账毕拨 ALLOW_LINES/KNOWN 基线归 wave63+、照 §五.3「拨参数=拨颁」同例）；✗ `读不到 …清册…无文件形判红` = 清册被删/挪（修法：还原或修 NK1_LEDGER——别删档蒙绿）。
+### 48. check_ledger_garbage（`tools/check_ledger_garbage.py`，仓务清册「殓殓」词级污染静态扫，lane w62-k3 立 · **w68-k1 升 must 承接执行** · 判词池承接件 v1 · 闸体 v5）
+- 读：`零、样本自检`（§五.3 规则表型必跑道内置样本，每次先跑、与真文档同一条 `scan_text` 判路——S1 新行 3 枚 / S2 单行 5 枚连用 / S3 行数超基线（R2 恒等式超线端）/ S4 截半 fail closed / S5 单枚新行 ASCII 壳（R1 细判窗）/ S6 欠线端（R2 恒等式欠线端、删行藏污形也落红）六格负样各须判红点名；C1 基线 15 行顶枚 50 形 / C2 单枚「殓」正用段 / C5 尾 append 推位形各须判绿；C3/C4 零点档在恒等式下判欠线 = 拨钉 0 档之反向勾稽在衙）→ `一、真文档扫描`（✓ `新增 0 格（含「殓殓」行 15/15 键行/自然引用照挂、单行顶 50 旧账大枚段在表不判）`）→ 末行 `结果：全部通过`，退 0。纯 python3、只读、<1 s、python 档免 .uid 侧车（house rule 唯 .gd 要侧车照实注）。
+- 口径（**防新增不回扫旧账**——设计钦命照 brief §避开）：指纹词 =「殓殓」二字连用、非叠对 str.count 口径（grep -o 枚数是嵌对口径、本闸不用）；现帧残存基线 = KNOWN 表 **15 行 11 键**（wave61-k2 净化毕 13 行 9 键 ＋ w68-k1 拨颁销账 :742/:816 自然引用 2 键——§五.3「拨参数 = 拨颁」同例）分布 :631/:633/:634/:635/:649/:651/:652/:653（§四 wave58-k2 判档段双域整段 token 替换域、w61-k2 已判 A 殓不刀照挂、净化归 wave63+）＋ :639/:644（§四 wave59-k1 段句内合法复合词照挂）＋ :692/:693/:694（w61-{1,2,3} 判档段原文逐字引用行合法引用照挂）＋ :742/:816（w66-k1/w66-k3 判档段自然引用「殓殓白」「殓殓注入行」、语义同 :639/:644 先例同族——键钉行照挂）——全白名单照挂零报不判 red 非 warn。判红双格（v5）：R1 KNOWN 表外某行「殓殓」≥ 1 枚逐行 ✗ 点名行号与枚数（**v5 单枚细判窗**——v4「1 枚隔离行不判」铺轨即收：合法自然引用走行首 CJK 免挂载（:639/:644 先例）+ KEY 钉行全收、ASCII/数字/反引号起字行不享防 hash 壳蒙绿——单枚照样咬）；R2 全文档含「殓殓」行数 ≠ 15（TOKEN_LINES_LINEBASE 恒等基线）fail closed 判红——**恒等式闸**：超线/欠线两头皆红、行数钉 = 固定常数指纹不随台账总行数漂（删行藏污形也落红；拨钉 = 拨旧账 §五.3）。环境变量：NK1_LEDGER（自检 / 量具变异 / 无文件形另指本，生产零动——同 NK1_COORD / NK1_MAIN_REF 钩例）。清册读不到 rc≠0 红（无文件形防静默绿）。
+- 立案链：w61-k2 SETTLED 遗留②原句钦（清册 w61-k2 判档段末）——「M1' 结论 = 四闸对文档词级污染该形零判力、净化判力靠人读 + 钉集 diff 双轨（呈下波 ops——若欲闸罩 gating 净化毕文档全文殓殓计数、归判词池）」；w61-k2 M1' 实跑四闸（gates_md / check_w53_copy / host_paths / docs_index）对重造「殓殓殓殓×10」×4 全文档词级指纹各 rc=0 静默绿实锤 = 该形判力窗在卷；w62-k3 接判词池立本闸罩它。判掂应用 = 判不准即挂账（trigger 写不出哪一笔判档段笔带回词级污染——w48-k4 先例先 lane 档）；闸体 v5 = w65-k2 收遗留三件（R1 单枚细判窗铺轨 + R2 恒等式定基 + 13 行旧账逐行语义判定在卷）承接自 `lane/w65-k2-ledger-garbage`@5f2331e 逐字节。
+- **必跑档**（进一键跑，一键跑道数 27→28 同衔）：**每轮必跑**——升格判掂毕（lane w68-k1 执行窗，w65-k2 牒备件 v1 五处同步牒 §三 (i)–(v) 全案）：§五.2 判掂毕——判掂 1「自己判不准」成立（殓殓是内容级词级污染非路径级 trigger：新一轮判档段 append / 主控 CAS 承接 / 照抄参考句盲拷贝 / 判词池承接 / 快照承接 5 路写口，w61-k2 M1' 四闸静默绿实锤在卷）+ 判掂 2「快」成立（纯文扫 <0.1 s、与 w56-k3 check_w53_copy 0.075 s 同档）+ 判掂 3「只读」成立（零写盘开关、读清册一档）+ 判掂 4「幂等绿」成立（v5 承接毕 rc=0 连绿 + 基线 rc=1 :742/:816 顺手拨颁销账 13→15）+ 判掂 5「五处同步」毕（§三一键跑段 / todo 验证段 / README 道数 27→28 / COORDINATION_INDEX 口径注全衔）——旧口径句「不升 must——触发条件按路径判得准」与 §五.2「三条同时成立」原条文相悖就此勾销（gd21 / cs21 / auditfix1 / w40-k3 / w42-k4 / w56-k3 / w60-k3 / w62-k4 同型拨正先例）；末行名堂恒为 `结果：全部通过`（零节 12 格 ✓ + 真文档「新增 0 格」✓）。
+- 常见红因：✗ `<行号>: 新增「殓殓」×N…白名单外行` = 新判档段笔带回殓殓指纹（修法：自源重写殓段、殓维数据三字禁动照 w61-k2 轨）；✗ `含「殓殓」行数 N ≠ 恒等基线 15` = 碎片多发回潮（超线）或旧账行被删改回营（欠线——删行藏污形也落红；修法同上；若净化旧账毕拨 TOKEN_LINES_LINEBASE/KNOWN 基线走 §五.3「拨参数=拨颁」同例）；✗ `读不到 …清册…无文件形判红` = 清册被删/挪（修法：还原或修 NK1_LEDGER——别删档蒙绿）。
 
 ### 49. check_probe_registry（`tools/check_probe_registry.py`，探针「注册或豁免」闸，lane w27-k4 立）
 - 读：`零、判据自检`（§五.3 规格：内存叠层不落盘——C0 现网名单普查须全绿；E1 拼错一格豁免名 / E2 删一格豁免 / E3 覆盖名单挪走一支已注册探针，三格反向各须点出那一支）→ `一、探针普查`（git 已跟踪 `tools/*_probe.gd` 逐支对覆盖名单：gate_json `REGISTRY` 的 file 列 ∪ `SHOT_PROBES` 截图册，不沾的须登脚本内 `EXEMPT` 豁免名单；豁免指着不在仓的探针也红）→ `二、豁免名单形状`（每行三格：探针名 / lane·来源 / 理由；缺格、重名、乱序都红）→ 末行 `结果：全部通过`。只读、实测 <1 s、只要 python3 + git。
@@ -663,11 +666,11 @@ python3 tools/check_probe_registry.py
 
 ## 四、CI 建议步骤
 
-只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑二十七道（含导入步骤；w25-j5 起含过场时长 data-only、w40-k3 起含 gates_md 自身同步道、w42-k4 起含 check_sidecars 侧车成对道、w56-k3 起含 check_w53_copy 玩家可见 CJK 串两类回潮钉静态扫道、w60-k3 起含 check_lane_orphans 断链预防闸承形 B 升格、w62-k4 起含 qa_economy_panel_probe 名声栏 / 册页 / 札记月息运行时断言升格、第 0 步外另有 w62-k3 起 lane 档 check_ledger_garbage 清册「殓殓」词级污染静态扫——动清册判档段时手跑 §三.48），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
+只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑二十八道（含导入步骤；w25-j5 起含过场时长 data-only、w40-k3 起含 gates_md 自身同步道、w42-k4 起含 check_sidecars 侧车成对道、w56-k3 起含 check_w53_copy 玩家可见 CJK 串两类回潮钉静态扫道、w60-k3 起含 check_lane_orphans 断链预防闸承形 B 升格、w62-k4 起含 qa_economy_panel_probe 名声栏 / 册页 / 札记月息运行时断言升格、w68-k1 起含 check_ledger_garbage 清册「殓殓」词级污染静态扫升格），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑二十七条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑二十八条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
 godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
@@ -694,6 +697,7 @@ godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
 python3 tools/check_w53_copy.py
 python3 tools/check_lane_orphans.py
+python3 tools/check_ledger_garbage.py
 python3 tools/check_probe_registry.py
 # 1. builtin_api 漂移
 python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt

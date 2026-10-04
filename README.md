@@ -26,10 +26,10 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-一次改动闭环 = 下面二十七道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
+一次改动闭环 = 下面二十八道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
 
 ```bash
-# 十四道 Python（无 Godot 也能跑）
+# 十五道 Python（无 Godot 也能跑）
 python3 tools/check_symbols.py      # autoload 顺序与跨文件符号、海战精灵 PNG 取证、绢本文案规范、各功能契约
 python3 tools/verify_economy.py     # 数据完整性 / 套利 / 砸盘 / 季风 / 航法与委办 / 哗变 / 风涛分摊 / 结局旗标
 python3 tools/simulate_run.py       # 端到端跑一局，找死锁与账目溢出
@@ -44,6 +44,7 @@ python3 tools/check_host_paths.py   # 已跟踪文件里没有本机 Linux 绝�
 python3 tools/check_decision_refs.py  # 拍板清单里的「文件:行」还指着原来那段（lane auditfix1 入册即必跑；一键跑倒数第二；红了 --fix）
 python3 tools/art/import_cutscene_bgs.py --data-only  # 过场时长 / 镜数 / 字幕时点 / 产物清单契约（lane w25-j5 依拍板 E-16 升进必跑；不需 Pillow）
 python3 tools/check_w53_copy.py     # 玩家可见 CJK 串两类回潮钉（「前帐」误「前账」+ 状态号半角 -N 误全宽 −N；lane w53-10 文案钉静态扫、w56-k3 依 w53-10 SETTLED :954 钦命 §五.2 三判据逐项签升 must）
+python3 tools/check_ledger_garbage.py # docs/仓务清册「殓殓」词级污染指纹静态扫（lane w62-k3 立、w68-k1 依 w65-k2 牒备件 §五.2 判掂毕升 must：R1 单枚细判窗 + R2 ≠ 恒等基线双端红 + 白名单 15 行 11 键钉集）
 python3 tools/check_probe_registry.py  # tools/ 下每支 *_probe.gd 要么注册进门禁注册表、要么登豁免名单（lane w27-k4 立闸即必跑；一键跑末条；k11 审计「最该补的门禁」第 2 条）
 
 # 十道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
