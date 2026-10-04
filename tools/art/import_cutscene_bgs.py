@@ -20,7 +20,7 @@
 size 的数据侧照实用 SOF/IHDR 实测顶上并补报，两条路对现行数据与所有清单条目的判定逐字节等效，
 「清单该按剧情挑多大、该不该为几行文案断送素材库」这种度量判据照文末「机制五」）。
 import / --check 仍用 PIL 开图。
-数据契约的键表 / 旗标有人立（字幕与镜头 bg_alt）/ hold 读完线（lane w53-9）每次跑都带内存样本自检 _contract_selftest（GATES §五.3，
+数据契约的键表 / 旗标有人立（字幕与镜头 bg_alt）/ hold 读完线 / 写全读完线（lane w53-9）每次跑都带内存样本自检 _contract_selftest（GATES §五.3，
 lane w53-12）：哪条判据被退掉，对应的样本漏判即 FAIL；绿时不出声，末行不变。
 
 来源目录（Codex 线 assets/）默认 ~/tmp/nk1-codex/assets（按本机 $HOME 展开），可用环境变量 NK1_CODEX_ASSETS 覆盖。
@@ -416,6 +416,13 @@ CN_DIGIT = {"〇": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6
 SHOT_KEYS = {"bg", "bg_alt", "duration", "cam_from", "cam_to", "grade", "fx", "transition_in", "shake", "captions"}
 CAPTION_KEYS = {"t", "text", "style", "pos", "hold", "if_flag", "unless_flag"}
 CHAPTER_KEYS = {"bg", "focus", "zoom", "epigraph", "epigraph_src", "year_text"}
+# 字幕写全之后至少还要在屏上停这么久（秒），才许退（hold 到期）或换镜。读完线原先只量起笔（t 离镜头结束 ≥1.5 秒），
+# 写字慢的样式量不出来：大字题名一字 0.24 秒、末字再洇 1.1 秒，八个字要写 2.8 秒——忠肃第 1 镜「生为宋臣／死为宋鬼」
+# 起笔离镜终 3 秒照报通过，写全只停 0.21 秒就硬切到城破（lane w53-9）。写字快慢从播放器直读（_player_timing）
+READ_AFTER_FULL = 1.0
+# 播放器字幕起笔的底线（CutscenePlayer._caption_floor）：新画面露出来之前不起字，取本镜转场时长的这一比例
+# （fade 有上一镜 0.62、首镜 0.4；ink 0.5；flash / cut 当帧）
+CAPTION_FLOOR = {"fade": 0.4, "fade_back": 0.62, "ink": 0.5}
 
 
 def _res_file(res: str) -> pathlib.Path:
@@ -449,6 +456,18 @@ def _cn_era_year(n: int) -> str:
     if n < 20:
         return "十" + (digits[n - 10] if n > 10 else "")
     return digits[n // 10] + "十" + (digits[n % 10] if n % 10 else "")
+
+
+def _player_timing():
+    """播放器的写字快慢与转场时长，从 scripts/cutscene/CutscenePlayer.gd 直读：STYLES 各样式的 interval（一字隔几秒起笔）/
+    fade（一字洇开几秒），TRANS 各转场的时长。两边各写一份会走岔，照 ENDING_BG / Calendar.ERAS 的读法现读。"""
+    import re
+    src = (ROOT / "scripts" / "cutscene" / "CutscenePlayer.gd").read_text(encoding="utf-8")
+    styles = {m.group(1): (float(m.group(2)), float(m.group(3)))
+              for m in re.finditer(r'^\t"(\w+)": \{[^{}\n]*"interval": ([\d.]+), "fade": ([\d.]+)\}', src, re.M)}
+    tm = re.search(r'^const TRANS := \{([^}\n]*)\}', src, re.M)
+    trans = {k: float(v) for k, v in re.findall(r'"(\w+)": ([\d.]+)', tm.group(1))} if tm else {}
+    return styles, trans
 
 
 def _known_flags() -> set:
@@ -496,6 +515,9 @@ def check_data(path=None, data=None) -> list:
     if d.get("version") != 1:
         bad.append("version 必须为 1")
     cs_all = d.get("cutscenes", {})
+    styles, trans_dur = _player_timing()
+    if not styles or not trans_dur:
+        bad.append("scripts/cutscene/CutscenePlayer.gd 里读不到 STYLES 的 interval / fade 或 TRANS——写全读完线无从算")
     used_cs_files = set()
     size_cache = {}
     for cid, cs in cs_all.items():
@@ -590,6 +612,13 @@ def check_data(path=None, data=None) -> list:
                 bad.append(f"{w} fx 非法：{fx}")
             if s.get("transition_in") not in TRANS:
                 bad.append(f"{w} transition_in 非法：{s.get('transition_in')}")
+            # 本镜字幕起笔的底线（同 CutscenePlayer._caption_floor；转场缺省同 _begin_shot：首镜 fade、其余 ink）
+            kind = s.get("transition_in", "fade" if i == 0 else "ink")
+            td = min(trans_dur.get(kind, 0.0), dur * 0.8)
+            if kind == "fade":
+                floor_t = td * (CAPTION_FLOOR["fade_back"] if i > 0 else CAPTION_FLOOR["fade"])
+            else:
+                floor_t = td * CAPTION_FLOOR["ink"] if kind == "ink" else 0.0
             sh = s.get("shake")
             if not isinstance(sh, (int, float)) or not 0 <= sh <= 1:
                 bad.append(f"{w} shake 须在 0..1")
@@ -617,6 +646,17 @@ def check_data(path=None, data=None) -> list:
                     bad.append(f"{wc} t={t} 离镜头结束不足 1.5 秒，读不完")
                 if isinstance(hold, (int, float)) and 0 < hold < 1.5 and st != "seal":
                     bad.append(f"{wc} hold={hold} 不足 1.5 秒，读不完")
+                if st != "seal" and st in styles:
+                    # 写全读完线：起笔（不早于底线）+ 逐字写完 → 到退场（hold 到期或镜终，以先到者）至少 READ_AFTER_FULL 秒
+                    iv, fd = styles[st]
+                    t0 = max(float(t), floor_t)
+                    shown = t0 + max(0, len(txt.replace("\n", "")) - 1) * iv + fd
+                    held = isinstance(hold, (int, float)) and hold > 0 and t0 + hold < dur
+                    gone = t0 + hold if held else dur
+                    if gone - shown < READ_AFTER_FULL - 1e-6:
+                        bad.append(f"{wc} 写全后只停 {gone - shown:.2f} 秒就{'退' if held else '换镜'}"
+                                   f"（{st} 样式「{txt.replace(chr(10), '／')}」从起笔到写全 {shown - t0:.2f} 秒；"
+                                   f"要求写全后 ≥ {READ_AFTER_FULL} 秒）——读完线按写全算，不按起笔算")
                 for para in txt.split("\n"):
                     n = len(para)
                     if pos in ("right_vertical", "left_vertical"):
@@ -719,7 +759,9 @@ def _contract_selftest() -> list:
     这里按形状在真数据里挑锚（第一句非印章字幕与它所在的镜头、第一张章节卡），内存里注入一种笔误交 check_data(data=…)，
     须判红且红在那一处；不落盘。挑不到锚即判红。绿时不出声，末行照旧。
     S6 / S7 守镜头 bg_alt（底图按旗换）的旗名有人立（lane w53-9 2bf5e45）与认的键（lane fx5）：往锚镜头塞一条拿本镜 bg 当换图的
-    bg_alt，不靠真数据里恰好有 bg_alt——两条退掉，本道原先照报通过（lane w53-9 五轮实测）。"""
+    bg_alt，不靠真数据里恰好有 bg_alt——两条退掉，本道原先照报通过（lane w53-9 五轮实测）。
+    S8 守写全读完线（READ_AFTER_FULL，lane w53-9 七轮）：锚字幕换成七个字、hold 1.5 秒——旧的起笔读完线（hold ≥1.5）照过，
+    任何样式七个字写全都要 0.6 秒以上，写全后停不满 1 秒，须判红。"""
     import copy
     try:
         base = json.loads((ROOT / "data" / "cutscenes.json").read_text(encoding="utf-8"))
@@ -742,6 +784,11 @@ def _contract_selftest() -> list:
     def cap(d):
         return shot(d)["captions"][j]
 
+    def cap_seven(d):
+        c = cap(d)
+        c["text"] = "八个字写全以前"
+        return c
+
     abg = shot(base).get("bg", "")
     samples = [  # （笔误，取被改的那一格，键，值，判词里须有的定位片段）
         ("镜头键 captions 写成 caption", shot, "caption", [], f"{w} 有不认的键 ['caption']"),
@@ -751,6 +798,7 @@ def _contract_selftest() -> list:
         ("章节卡键 focus 写成 fcous", lambda d: d["chapters"][chs[0]], "fcous", [0.5, 0.5], f"chapters.{chs[0]} 有不认的键 ['fcous']"),
         ("镜头 bg_alt 旗标没人立", shot, "bg_alt", [{"bg": abg, "if_flag": nf}], f"{w}.bg_alt[1] if_flag 旗标 `{nf}` 没人立"),
         ("镜头 bg_alt 键 if_flag 写成 if_flg", shot, "bg_alt", [{"bg": abg, "if_flg": nf}], f"{w}.bg_alt[1] 有不认的键 ['if_flg']"),
+        ("字幕写全后停不满 1 秒", cap_seven, "hold", 1.5, f"{wc} 写全后只停"),
     ]
     bad = []
     for n, (name, cell, key, val, want) in enumerate(samples, 1):

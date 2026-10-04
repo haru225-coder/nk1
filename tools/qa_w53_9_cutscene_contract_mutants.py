@@ -7,12 +7,14 @@
   · hold 写错：该退的句子赖到换镜，压着后面的字；hold 过短：一闪就退，读不完；
   · 镜头 captions 写错：整镜没字幕；章节卡 focus 写错：取景按缺省走，画里的人被墨晕窗截一半；
   · 镜头 bg_alt（底图按旗换，与字幕同一套旗标写法）旗名写错：「未归」海口结算第 1 镜换不成兴化海口港页图，
-    画面仍是海上船舷、字幕却是「消息是从城里传出来的」（四轮补：三轮的旗名判据只核字幕）；旗键名写错同样换不成。
+    画面仍是海上船舷、字幕却是「消息是从城里传出来的」（四轮补：三轮的旗名判据只核字幕）；旗键名写错同样换不成；
+  · 写字慢的大字挪晚：读完线原先只量起笔（t 离镜头结束 ≥1.5 秒），忠肃第 1 镜「生为宋臣／死为宋鬼」八个大字要写 2.8 秒，
+    起笔 5.0 秒、镜终 8.0 秒照报通过，写全只停 0.21 秒就硬切（七轮补写全读完线；真数据已把这一镜让出时间）。
 门禁照报「契约校验通过」。
 
 本脚本拿真数据做底，逐个注入一种上面的笔误，写进临时文件交给 check_data(path) 判：每一种都要判红、
-且红在该红的那一句（判词里带定位）；真数据本身零红。回退契约里未知键 / 旗标有人立（字幕与 bg_alt 两处）/ hold 读完线
-几条判据，本脚本即红。
+且红在该红的那一句（判词里带定位）；真数据本身零红。回退契约里未知键 / 旗标有人立（字幕与 bg_alt 两处）/ hold 读完线 /
+写全读完线几条判据，本脚本即红。
 
 用法：python3 tools/qa_w53_9_cutscene_contract_mutants.py      # rc 0 全部判中且真数据零红；rc 1 有漏判或误红
 """
@@ -75,6 +77,10 @@ def m_alt_flag_name(d):
     _alt(d, "ending_weigui", 0, lambda a: a.get("if_flag") == "weigui_at_harbor")["if_flag"] = "weigui_at_harbour"
 
 
+def m_motto_late(d):
+    _caption(d, "ending_zhongsu", 0, lambda c: c.get("text", "").startswith("生为宋臣"))["t"] = 5.0
+
+
 def m_alt_flag_key(d):
     _rename(_alt(d, "ending_weigui", 0, lambda a: a.get("if_flag") == "weigui_at_harbor"), "if_flag", "if_flg")
 
@@ -90,6 +96,7 @@ MUTANTS = [
     ("镜头 bg_alt 旗名写错 weigui_at_harbor→weigui_at_harbour", m_alt_flag_name,
      "cutscenes.ending_weigui[1].bg_alt[1] if_flag 旗标 `weigui_at_harbour` 没人立"),
     ("镜头 bg_alt 旗键名写错 if_flag→if_flg", m_alt_flag_key, "cutscenes.ending_weigui[1].bg_alt[1] 有不认的键 ['if_flg']"),
+    ("忠肃第 1 镜「生为宋臣／死为宋鬼」挪回起笔 5.0 秒", m_motto_late, "cutscenes.ending_zhongsu[1].captions[4] 写全后只停"),
 ]
 
 

@@ -155,7 +155,7 @@
    "shots": [
     {
      "bg": "res://assets/cutscene/cs_xinghua_seawall.jpg",
-     "duration": 8.0,
+     "duration": 8.6,
      "cam_from": [0.5, 0.5, 1.0],
      "cam_to": [0.36, 0.42, 1.3],
      "grade": "cold",
@@ -165,8 +165,8 @@
      "captions": [
       {"t": 0.6, "text": "兴化・景炎元年冬", "style": "era", "pos": "right_vertical"},
       {"t": 1.2, "text": "福州降了，泉州降了。城中兵不满千。", "style": "narration", "pos": "lower_left"},
-      {"t": 3.4, "text": "城楼上挂起一匹白布，写了八个字。", "style": "narration", "pos": "lower_left"},
-      {"t": 5.0, "text": "生为宋臣\n死为宋鬼", "style": "title", "pos": "right_vertical"}
+      {"t": 2.8, "text": "城楼上挂起一匹白布，写了八个字。", "style": "narration", "pos": "lower_left"},
+      {"t": 4.3, "text": "生为宋臣\n死为宋鬼", "style": "title", "pos": "right_vertical"}
      ]
     },
     {
@@ -202,7 +202,7 @@
     },
     {
      "bg": "res://assets/bg_end_temple.jpg",
-     "duration": 9.0,
+     "duration": 8.4,
      "cam_from": [0.5, 0.5, 1.05],
      "cam_to": [0.45, 0.56, 1.3],
      "grade": "cold",
