@@ -12,6 +12,7 @@ const _SeaState := preload("res://scripts/combat/SeaState.gd")
 const _Maneuver := preload("res://scripts/combat/ManeuverModel.gd")
 const _SeaAtmosphere := preload("res://scripts/combat/SeaAtmosphere.gd")
 const _CAM_PLAQUE_CTL := preload("res://scripts/worldmap_cam_plaque.gd")
+const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
 
 ## 战斗结束信号：outcome 为 "win"/"lose"/"flee"，data 携带战损等结算信息
 signal battle_finished(outcome: String, data: Dictionary)
@@ -134,6 +135,15 @@ const SHAKE_OFF_S := 6.0
 var _escape_px: float = ESCAPE_PX
 var _shake_off_s: float = SHAKE_OFF_S
 var _outsailed_s: float = 0.0
+## lane w53-17（一期「大风两散」）：本场的雷暴大风判定与开战时的【战前航行士气】快照。
+## _gale 由 _setup_sea 按 SeaState.gale 记，combat_phases.json t_gale 一路的落实：七级水上风场不开战，
+## 开战即收 flee{flee_ok, parted, gale}（题签 parted「两散」、SeaChart 海图上两散句照旧）。
+## _morale_before 是开战那一刻的 Fleet.morale——收战时 morale_carry 开关开着由它 + CombatMorale.carry_to_voyage
+## 折算写回；没开（旧玩法）一份不写。_gale_warn_pushed 记火长预报这格出过一次。
+var _gale := false
+var _morale_before := 0
+## 火长预报（二期 crew_role_effects）：本场的预报浮字只出一次（先报「大风要起」，收战的那行照旧）
+var _gale_warn_pushed := false
 
 func _ready() -> void:
 	var hud := $CanvasLayer/HUD
@@ -161,6 +171,11 @@ func _ready() -> void:
 	var pb: Dictionary = GameManager.pending_battle
 	if pb.get("battle", false):
 		_setup_combat(pb)
+		# lane w53-17（一期「大风两散」）：雷暴大风场不开战——combat_phases.json t_gale，
+		# 「风到七级以上不能战」。_setup_combat 全落到位再收（士气挂件 / 墨边 / 海况都要先接上，
+		# 收战路径与限时两散同一支：flee{flee_ok, parted} 另带 gale=true 供 w53-16 出文字）。
+		if _gale:
+			_battle_exit("flee", {"flee_ok": true, "parted": true, "gale": true})
 	else:
 		# 防御：孤儿场景被直接打开时立即退出，不残留
 		_battle_exit("flee", {})
@@ -220,8 +235,28 @@ func _physics_process(delta: float) -> void:
 		return
 	_sea.step(delta)
 	_feed_ship_wind()
+	_check_gale_warn()
 	if ship.hull_hp > 0.0:
 		_steer_flagship(delta)
+
+
+## lane w53-17（二期「火长提前报风」）：crew_role_effects 开着、火长在册、本场还没报过——
+## 按当前风场推演「若照这个势头走，火长提前（GALE_WARN_S × 等级）秒那一拍的骤风顶头已迸线」，
+## 即出一次浮字。只预报、不改风；预报出过后不再重报（收战的「两散」一行照旧）。预期内的行数增减不写存档。
+func _check_gale_warn() -> void:
+	if _gale_warn_pushed or not _Switches.on("crew_role_effects") or not _Switches.on("gale_parting"):
+		return
+	var warn_s: float = _SeaState.GALE_WARN_S * float(Crew.level_of("huozhang"))
+	if warn_s <= 0.0:
+		return
+	# 火长眼里的「长势」推演：mean 照半节 / 秒往前推 warn_s 秒（探针「刮大风」同档），那一拍的骤风顶头
+	# 迸过七级作战上限（130）即提前报一次。现下已迸的（风暴已在头上）也报——声是出给玩家的，
+	# 「两散」的收场照旧他走。只预报、不改风；报过不再重报。
+	var mean_now: float = _sea.wind_mean
+	var mean_then: float = mean_now + warn_s * 0.5
+	if _sea.storm_peak() >= _SeaState.WIND_CAP or mean_then * (1.0 + _SeaState.GUST_AMP) * _SeaState.GALE_HEADROOM >= _SeaState.WIND_CAP:
+		_gale_warn_pushed = true
+		_show_combat_notice("火长望见天色不对：风要转了")
 
 
 ## 战斗模式下存活敌船数（PirateShip 爆炸后 hull_hp 归零仍存活一帧，按血量判定）
@@ -692,6 +727,9 @@ func _setup_combat(pb: Dictionary) -> void:
 	_battle_elapsed_s = 0.0
 	_battle_limit_s = _phases_battle_limit_s()
 	_outsailed_s = 0.0
+	# lane w53-17（一期战后士气带回航程）：记战前航行士气，收战时照士气簿末值折算写回（开关关着一字不写）
+	_morale_before = Fleet.morale
+	_gale_warn_pushed = false
 	var esc := _phases_escape()
 	_escape_px = esc.x
 	_shake_off_s = esc.y
@@ -829,6 +867,14 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 		var fates := _battle_fates()
 		if not fates.is_empty():
 			data["fates"] = fates
+	# lane w53-17（一期战后士气带回航程）：morale_carry 开着、士气簿活着——按末值折算写回 Fleet.morale，
+	# 并带 data.morale_carry 供战后单子（w53-16）。SeaChart 旧账（赢 +5 / 输 −12）照旧在这条之后走。
+	if _Switches.on("morale_carry") and _morale != null and is_instance_valid(_morale):
+		var mc_sheet = _morale.player_sheet()
+		if mc_sheet != null:
+			var carried: int = mc_sheet.carry_to_voyage(_morale_before)
+			Fleet.morale = carried
+			data["morale_carry"] = carried
 	# lane w19-g2：旗舰沉没（lose + sunk）同带夺船账——夺来的船不上战阵、仍在册，SeaChart 沉船句要交代它；
 	# lane w53-14：我方降幡（lose + struck）、失守（lose + overrun）也带——交出的是舱货，夺来的船照旧在册
 	if outcome != "win" and not _prizes.is_empty():
@@ -1159,6 +1205,9 @@ func _setup_sea(pb: Dictionary) -> void:
 		var to_b: float = float(pb.get("wind_bearing", _SeaState.bearing_of(_sea.wind_to)))
 		_sea.force_wind(to_b, float(pb.get("wind_strength", _sea.wind_mean)))
 	_SeaState.bind_active(_sea)
+	# lane w53-17（一期「大风两散」）：gale_parting 开关开着、SeaState 记了这场是雷暴大风——
+	# combat_phases.json t_gale 落实：开战即收（收在 _ready 尾；须先过士气挂件等接线，逐项下来不退途）。
+	_gale = _Switches.on("gale_parting") and _sea.gale
 	var fs := Fleet.flagship()
 	_flagship_type = str(fs.get("type", ""))
 	# 旗舰节点上记一笔船型：别的模块拿船节点问 ManeuverModel（hull_state_of）时认得出是什么船
