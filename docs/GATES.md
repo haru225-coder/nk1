@@ -50,7 +50,7 @@
 | 36 | qa_fold_notice_probe | Godot | 必跑 | ✓ | `godot --headless --path . -s res://tools/qa_fold_notice_probe.gd` | `python3 tools/gate_json.py --godot qa_fold_notice_probe` | （探针 896fd67 随 w28-k2 落地，w30-k1 入册——落地当轮漏注册只被「注册或豁免」闸点名待收，w30 立案根治）真场景树 C1–C2：现银摆 0、雇火长吴针（月俸 60）——欠饷当月札记顶则原文「本月工食 60 未发。船上人心浮动。」，连欠两月两则同句；欠满三月顶则原文「工食欠满三月，吴针 不告而去。」、人去册空欠月数归零；反向：人走后当月札记不添新墨，顶批仍是上月三则。C2【改元】：1278 四月历走一页抵五月，页首「景炎三年」换印「祥兴元年」、旧号「景炎」不再上屏；改元无札记通告，全本札记不着「改元」「祥兴」字样（反向格）。本进程 SCRIPT ERROR 即红。末行 `FOLD_NOTICE cases=N fails=0`，fails>0 退 1 | 逐条 `  ✓ …` + 末行 `FOLD_NOTICE cases=N fails=0` | `  ✗ …` 行（如欠饷原文变 / 欠满三月不走 / 人去仍添墨 / 元历不换印 / 旧年号残留 / 札记见息义字样）+ 末行 `FOLD_NOTICE cases=N fails=N`（N>0），退 1 |
 | 37 | qa_rest_scenarios_probe | Godot | 必跑 | ✓ | `godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd` | `python3 tools/gate_json.py --godot qa_rest_scenarios_probe` | （探针 09bb75a 随 w28-k1 落地，w30-k1 入册——与 qa_fold_notice 同案漏网两支的第二支；qa_rest_days 钉了旅店一景的印数与实扣，本探针钉同一批钮在两条贴文路径下各自亮起）真场景树（兴化旅店 / 泉州住处 1277-10-19 钱足）：旅店一景「歇 1 日　15 / 歇 10 日　150 / 候 12 日　180」三钮恰 3 枚同出一枚钮行、枚枚文字逐字对且 visible / 可按 / 焦态逐字同；住处一景「歇 1 日　5 / 歇 3 日　15」恰 2 枚同出一行、无候风钮——旅店那枚随日候钮不把印数带去住处（两路并列同一见证串各亮各的）；反驾：寺观工席走同一管贴文路（钩旗放进 hook_xinghua_asked 后确有贴文但不进歇息这条），歇息 / 候钮 0 枚混出。本进程 SCRIPT ERROR 即红。末行 `REST_SCENARIOS cases=N fails=M`，M>0 退 1 | 逐条 `  ✓ …` + 末行 `REST_SCENARIOS cases=N fails=0` | `  ✗ …` 行（如钮缺枚 / 同出一行不齐 / 见・暗・焦不符 / 候钮串住处 / 寺观该暗亮出）+ 末行 `REST_SCENARIOS cases=N fails=M`（M>0），退 1 |
 | 38 | qa_debt_strip_probe | Godot | 必跑 | ✓ | `godot --headless --path . -s res://tools/qa_debt_strip_probe.gd` | `python3 tools/gate_json.py --godot qa_debt_strip_probe` | （探针 dc30a97 随 w30-k2 落地，w31-k3 入册——落地当轮漏注册只被「注册或豁免」闸点名待收，wave31 立案根治，与 w29-k3 / w30-k1 同型 8170079 母本）真场景树 D0–D3 把 HUD 顶匾上行欠债格钉成运行时真断言：debt=0 时上行不印「欠 」（反向格，LedgerPage.gd:167 的 debt 变量在欠债清零为空串）；摆 debt=835 / 100 / 10000 三档，上行各逐字印「欠 835」「欠 100」「欠 10000」（bbcode 源文里 [color=#…]欠 N[/color]，数字裸排）。本进程 SCRIPT ERROR 即红。末行 `DEBT_STRIP cases=N fails=M`，M>0 退 1 | 逐条 `  ✓ …` + 末行 `DEBT_STRIP cases=N fails=0` | `  ✗ …` 行（如无债仍印「欠 」/ 三档欠数逐字不符——红行带实读前 110 字节）+ 末行 `DEBT_STRIP cases=N fails=M`（M>0），退 1 |
-| 39 | qa_crew_fold_probe | Godot | 加跑：动欠饷链（scripts/core/Crew.gd 的雇佣 / 月俸合计 / 欠月数 / 不告而去口径、scripts/core/Economy.gd 月结扣工食）、札记折叠渲染（scripts/core/LogFold.gd 的 render fold:i 折头 /（点开）/（收起）/ 月行引子与淡色缩进），或动 tools/qa_crew_fold_probe.gd / tools/qa_crew_fold_host.gd 自身 | — | `godot --headless --path . -s res://tools/qa_crew_fold_probe.gd` | `python3 tools/gate_json.py --godot qa_crew_fold_probe` | （探针 e6fd6f1 随 w30-k3 落地，w31-k3 入册——与 qa_debt_strip 同案漏网两支的第二支）真场景树 C1：泉州名册现读窄样本两人（俸居首一名 + 最薄一名，合计现算），现银摆 0——札记顶则「本月工食 <合计> 未发。船上人心浮动。」逐字钉两月；欠满三月「工食欠满三月，<名> 不告而去。」现排名册逐字钉、俸居首者先走、走后册余合计 60 转句再连欠六月、册空后当批一则不添。C2：仿作宿主 qa_crew_fold_host 直调 LogFold.render（不经屏控件）——折起「[url=fold:0]【同一折句】（点开）[/url]」、点开后折头转（收起）、月行 `[url=fold:0:<ym>]` 引子与（点开 / 收起）、原文缩一格淡一档「　」逐字钉。本进程 SCRIPT ERROR 即红。末行 `CREW_FOLD cases=N fails=M`，M>0 退 1 | 逐条 `  ✓ …` + 末行 `CREW_FOLD cases=N fails=0` | `  ✗ …` 行（如工食合计数不符 / 欠满三月不走 / 册空仍添墨 / 折头或月行字样漂移 / 淡色缩进变）+ 末行 `CREW_FOLD cases=N fails=M`（M>0），退 1 |
+| 39 | qa_crew_fold_probe | Godot | 必跑 | ✓ | `godot --headless --path . -s res://tools/qa_crew_fold_probe.gd` | `python3 tools/gate_json.py --godot qa_crew_fold_probe` | （探针 e6fd6f1 随 w30-k3 落地，w31-k3 入册——与 qa_debt_strip 同案漏网两支的第二支）真场景树 C1：泉州名册现读窄样本两人（俸居首一名 + 最薄一名，合计现算），现银摆 0——札记顶则「本月工食 <合计> 未发。船上人心浮动。」逐字钉两月；欠满三月「工食欠满三月，<名> 不告而去。」现排名册逐字钉、俸居首者先走、走后册余合计 60 转句再连欠六月、册空后当批一则不添。C2：仿作宿主 qa_crew_fold_host 直调 LogFold.render（不经屏控件）——折起「[url=fold:0]【同一折句】（点开）[/url]」、点开后折头转（收起）、月行 `[url=fold:0:<ym>]` 引子与（点开 / 收起）、原文缩一格淡一档「　」逐字钉。本进程 SCRIPT ERROR 即红。末行 `CREW_FOLD cases=N fails=M`，M>0 退 1 | 逐条 `  ✓ …` + 末行 `CREW_FOLD cases=N fails=0` | `  ✗ …` 行（如工食合计数不符 / 欠满三月不走 / 册空仍添墨 / 折头或月行字样漂移 / 淡色缩进变）+ 末行 `CREW_FOLD cases=N fails=M`（M>0），退 1 |
 | 40 | qa_cargo_strip_probe | Godot | 必跑 | ✓ | `godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd` | `python3 tools/gate_json.py --godot qa_cargo_strip_probe` | （探针 0ef543a 随 w29-k2 落地，w31-k3 入册——其落地晚于 w29-k3 注册片，隔波留账一并收编）真场景树 C1–C6 把船籍簿页「船舱」段上屏原文钉成运行时真断言：空舱印「[b]船舱[/b][/color]\n空\n」与「舱位　30 / 200 料」（sampan 200 料 − 水粮 30 料）、「足 20 日」同屏；进茶叶 ×10 / 苏木 ×12 逐字上屏、舱位 30→47 料随变；再加 ×5 改印「茶叶 ×15」旧值退；出货清空回「空」；账变不刷陈旧哨（读缓存副本即红）；重排后整页须过空仓变化 + 仍含「[b]船舱[/b]」格 +「船舱」不得漏进顶匾上行。本进程 SCRIPT ERROR 即红。末行 `CARGO_STRIP cases=N fails=M`，M>0 退 1 | 逐条 `  ✓ …` + 末行 `CARGO_STRIP cases=N fails=0` | `  ✗ …` 行（如空舱形态变 / 品名数量逐字不符 / 舱位不随货变 / 旧值仍印 / 陈旧哨落网 / 船舱字漏上顶匾）+ 末行 `CARGO_STRIP cases=N fails=M`（M>0），退 1 |
 | 41 | qa_fold_dim_probe | Godot | 加跑：动札记折叠低色链（scripts/core/LogFold.gd 的 render dim_rest=true 分支——港页记事栏头则宣纸色、其余淡一档的折行 / 月行上屏形态），或动 tools/qa_fold_dim_probe.gd / tools/qa_crew_fold_host.gd 自身 | — | `godot --headless --path . -s res://tools/qa_fold_dim_probe.gd` | `python3 tools/gate_json.py --godot qa_fold_dim_probe` | （探针随 w32-k2 落地即入册——w30-k3 交主控末条「按月分组的 fold:i:ym 展开后单列那一月」未守面实查：qa_crew_fold_probe C2 三次直调全是 render(host, "\n", false) 海图札记档，dim_rest=true 分支日常由港页记事栏跑、此前全仓无一探针点过；与 w29-k3 / w30-k1 / w31-k3 同型 8170079 母本登 lane 档，不 EXEMPT）仿作宿主 qa_crew_fold_host（w30-k3 同件）直调 LogFold.render（不经屏控件）8 案：D1 单条染字——次则折起行裹一层暗色、折头（点开）引子 [url=fold:1] 原样在内；头则平常句照原墨不裹色、次则平常句整句裹色。D2 折行排头——点开之折当次则：折头（收起）与其下头一行月行各裹各的一层暗色、引子 [url=fold:1:<ym>] 与「通告 1 则（点开）」逐字在内。D3 相变——同一摆场 dim=false 全串无 [color=，转 true 次则折头裹色（褪色随档转、不是常染）。本进程 SCRIPT ERROR 即红。末行 `FOLD_DIM cases=N fails=M`，M>0 退 1 | 逐条 `  ✓ …` + 末行 `FOLD_DIM cases=N fails=0` | `  ✗ …` 行（如次则不褪色 / 头则误染色 / 折行排头双层变 / 换档不转色）+ 末行 `FOLD_DIM cases=N fails=M`（M>0），退 1 |
 | 42 | qa_seachart_advance_probe | Godot | 加跑：动 SeaChart 海图「航段」名号链（scripts/ui/SeaChart.gd 的 _course_detail_text / 面板刷新——泊港选定航向印「航段　<目的地>」名号、advance_days 跨月当日面板改印静风日数与月份名串、出航后名号自面板隐去），或动 GameManager.advance_days 跨月路径，或动 tools/qa_seachart_advance_probe.gd 自身 | — | `godot --headless --path . -s res://tools/qa_seachart_advance_probe.gd` | `python3 tools/gate_json.py --godot qa_seachart_advance_probe` | （lane w28-k3 立、w35-k2 收编——EXEMPT 挂账 21 波已收，同 w31-k3 / w35-k1 收编先例）真场景树 C1–C4 把 SeaChart 海图「航段」名号跨月推进时序钉成运行时真断言：C1 泊港选定航向印「航段　澎湖」名号 + 静风日数；C2 advance_days 跨月当日面板立即改印，不隔帧才变、不留旧月值；C3 出航正隐——sailing 时「航段」名号自面板隐去、抵港后随原名号复现；C4 跨越多月长程：泉州→博多跨 ≥1 月，「航段　博多唐房」名号随当值月风逐月仍在。本进程 SCRIPT ERROR 即红。末行 `SEACHART_ADV cases=N fails=M`，M>0 退 1 | 逐条 `  ✓ …` + 末行 `SEACHART_ADV cases=N fails=0` | `  ✗ …` 行（如名号缺字 / 静风日数不合 / 跨月不改印 / 留旧月值 / 出航不隐 / 抵港不复现 / 长程跨月名号消失）+ 末行 `SEACHART_ADV cases=N fails=M`（M>0），退 1 |
@@ -64,7 +64,7 @@
 | 50 | qa_companion_preview_probe | Godot | 加跑：动 scripts/companions/CompanionPreview.gd（浮页上屏文案 / 钮面 / 字段 / PREVIEW_IDS 名单）、data/characters*.json 的六预览人物 display_name，或动 tools/qa_companion_preview_probe.gd 自身 | — | `godot --headless --path . -s res://tools/qa_companion_preview_probe.gd` | `python3 tools/gate_json.py --godot qa_companion_preview_probe` | （探针 w64-k1 立，w71-k3 收编入册摘 EXEMPT——其挂账行原语「本波落地后随稽登记注册档」；承 w27-k1 顶匾同工：CompanionPreview 浮页此前只有截图探针判图不判字，上屏物运行时断言零）真场景树 13 案钉「上屏可见物」运行时断言（不读内部变量）：C1 F7 打开浮页真实挂上；C2「草案预览」戳上屏；C3 合上钮在、字恰「合上」；C4 题签「同舟草签」；C5 卡格恰 6 张对齐 PREVIEW_IDS；C6 六卡名签逐字=PREVIEW_IDS 对应 display_name；C7 每卡有 Identity 或 Note 一格；C8 每卡有「剪影」标记；C9 脚注「只读示意　不入存档　非招募系统」逐字；C10 再按 F7 合上；C11 港页再开戳与卡数仍对；C12 关浮页重进不串档；C13 本进程 SCRIPT ERROR 即红（script_err_tally）。 | 逐条 `  ✓ …` + 末行 `COMPANION_PREVIEW cases=N fails=0` | `  ✗ …` 行（戳 / 钮面 / 卡数 / 名签 / 脚注缺或漂 / SCRIPT ERROR）+ 末行 `COMPANION_PREVIEW cases=N fails=M`（M≥1）退 1 |
 | 51 | check_probe_registry | Python | 必跑 | ✓ | `python3 tools/check_probe_registry.py` | `python3 tools/check_probe_registry.py --json` | （lane w27-k4，k11 审计「最该补的门禁」第 2 条）tools/ 下每支 git 已跟踪 `*_probe.gd` 要么被点名（REGISTRY file 列，或 SHOT_PROBES 截图册——截图脚本走 shot_gate 批量跑，算被跑），要么登进 `tools/check_probe_registry.py` 的 EXEMPT 豁免名单（每行三格：探针名 / lane·来源 / 理由一句，形状缺格即红）；漏注册且漏豁免一律行首红字点名。豁免名单指着不在仓的探针（删探针没删名单行）也红。零、判据自检每次先在内存跑：C0 现网名单须全绿；E1 拼错豁免名 / E2 删一格豁免 / E3 覆盖名单缺一支，三格反向变异各须点出那一支红。豁免名单全表与逐条理由见脚本头注；（qa_rest_days_probe 一支已由 wave27 k3 登进头段 REGISTRY lane 档，8170079——不在豁免名单。） | 零节 C0 + E1–E3 全 `✓` → 一节 5 条 `✓`（末条 `✓ 漏注册且漏豁免 0 支（全绿）`）→ 二节名单形状 `✓` → `结果：全部通过` | `✗ C0 现网名单普查全绿（漏网 N 支）`（豁免名单与注册表对不上现网——先修名单不修自检）/`✗ EXEMPT 第 k 行…`（名单形状 / 来源格缺 lane·commit）/`✗ 豁免名单每行都指着在仓探针——[…] 已不在仓 / 名写错` / `✗ 探针漏册：tools/<X>_probe.gd——不在 REGISTRY / SHOT_PROBES，也未登豁免`（逐支点名）/`✗ En 反向格：…`（自检对不上 = 闸判不出这一形）；`结果：N 项问题` |
 
-每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十七道 Python + smoke/compile/story/p7/patrol/qa_rest_days_probe/qa_economy_panel_probe/qa_fold_notice_probe/qa_rest_scenarios_probe/qa_debt_strip_probe/qa_cargo_strip_probe」二十八道门禁；8、15、16、18、19、20、25、26、27、28、29、30、32、34、39、41、42、43、44、45、49、50 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十七道 Python + smoke/compile/story/p7/patrol/qa_rest_days_probe/qa_economy_panel_probe/qa_fold_notice_probe/qa_rest_scenarios_probe/qa_debt_strip_probe/qa_crew_fold_probe/qa_cargo_strip_probe」二十九道门禁；8、15、16、18、19、20、25、26、27、28、29、30、32、34、41、42、43、44、45、49、50 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（12 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -185,7 +185,7 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 
 <!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-# 必跑二十九条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+# 必跑三十条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
 rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
 python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
 python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
@@ -211,6 +211,7 @@ python3 tools/gate_json.py --godot qa_economy_panel_probe > /tmp/gates/qa_econom
 python3 tools/gate_json.py --godot qa_fold_notice_probe > /tmp/gates/qa_fold_notice_probe.json
 python3 tools/gate_json.py --godot qa_rest_scenarios_probe > /tmp/gates/qa_rest_scenarios_probe.json
 python3 tools/gate_json.py --godot qa_debt_strip_probe > /tmp/gates/qa_debt_strip_probe.json
+python3 tools/gate_json.py --godot qa_crew_fold_probe > /tmp/gates/qa_crew_fold_probe.json
 python3 tools/gate_json.py --godot qa_cargo_strip_probe > /tmp/gates/qa_cargo_strip_probe.json
 python3 tools/gate_json.py tools/check_w53_copy.py > /tmp/gates/check_w53_copy.json
 python3 tools/gate_json.py tools/check_lane_orphans.py > /tmp/gates/check_lane_orphans.json
@@ -269,6 +270,7 @@ godot --headless --path . -s res://tools/qa_economy_panel_probe.gd
 godot --headless --path . -s res://tools/qa_fold_notice_probe.gd
 godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
+godot --headless --path . -s res://tools/qa_crew_fold_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
 python3 tools/check_w53_copy.py
 python3 tools/check_lane_orphans.py
@@ -599,7 +601,7 @@ python3 tools/check_probe_registry.py
 ### 39. qa_crew_fold_probe（`tools/qa_crew_fold_probe.gd`，多雇员【欠饷】字面 + 札记折叠渲染字样运行时断言 17 案）
 - 读：逐条 `  ✓ …` / `  ✗ …`，末行 `CREW_FOLD cases=17 fails=0`（fails>0 退 1）。C1：泉州 ch1 册现读窄样本两人（俸居首一名 + 最薄一名，合计现算不写死姓名），现银摆 0——札记顶则「本月工食 <合计> 未发。船上人心浮动。」合计现算逐字钉两月；欠满三月「工食欠满三月，<名> 不告而去。」现排名册逐字钉、俸居首者先走、走后册余合计 60 转句再连欠六月；册空之后当批一则不添。摆场只填 hired 名册（不经雇市），样本窄为了自历开 1275-05 起 7 个月落在剧情静默窗（前一则战况 1275-04、下一则 1276-01 明州降元）。C2：仿作宿主 qa_crew_fold_host（另备近况五件）直调 `LogFold.render`（不经屏控件）——折起 `[url=fold:0]【同一折句】（点开）[/url]` 逐字钉；点开后折头转（收起）；月行 `[url=fold:0:<ym>]` 引子与（点开 / 收起）、原文缩一格淡一档逐字钉。无 `--json` 机读口，人用。
 - 口径：C1 与 qa_fold_notice_probe 互补——那支钉单雇员（火长吴针月俸 60）欠饷原文，本支钉多雇员「工食 <合计>」俸总句与「俸最高者先走」去哪句上屏；C2 把 LogFold.render 的 BBCode 壳（折头 / 月行引子 /（点开）/（收起）/ 淡色缩进）钉到 render 直收串上，不经显示控件、落点比上一级挂树更稳。
-- lane 加跑档（不进一键跑，不改一键道数）：`when` 见 §一（动欠饷链 / 札记折叠渲染时手跑）；不升 must——触发条件按路径判得准、且非 1 秒量级（§五.2 三条件只取第一）。探针 e6fd6f1 随 w30-k3 落地，与 qa_debt_strip 同案漏网两支；w31-k3 立案根治，本次只补挂号，探针本体一字未动。
+- 必跑档（进一键跑，一键跑道数 29→30 同衔）：每轮必跑——升格判掂毕（lane w77-k3 执行窗，w75-k3 复核牒 v1）：§五.2 判掂毕——判据 1「自己判不准」成立（欠饷名册文案链 / 月结调用链 / 札记折叠渲染壳 / 仿作宿主 / 探针自身五域写口分处六文件，文案格式笔 lane 自己判不出该加跑哪条）+ 判据 2 速档成立（真场景树三跑 2.279 / 2.185 / 2.073 s，与既有 Godot must 探针族 2-4 s 冷启同族同格居快翼）+ 判据 3 只读成立（零写盘）+ 判据 4 幂等绿（w76-k3 修复摆场窗咬钉子月复绿后本执行窗基线三跑连绿）——旧口径句「触发条件按路径判得准、且非 1 秒量级（§五.2 三条件只取第一）」与 §五.2「三条同时成立」原文相悖就此勾销（w49-k1 同型拨正先例）；末行名堂恒为 `CREW_FOLD cases=N fails=0`（N=19：17 断言行 + script_err_tally 接线 2 格）。原档史照旧行保留：探针 e6fd6f1 随 w30-k3 落地、w31-k3 立案根治入册，本次升格只拨档级，探针本体一字未动。
 - 常见红因：`  ✗ …工食 <合计> 未发` = 月俸合计或欠饷文案变了；`  ✗ …欠满三月 …不告而去` = 欠月数或俸最高者口径变了；`  ✗ …册空后当批不添` = 走后仍添墨（欠款守卫回归）；`  ✗ …（点开）/（收起）/ fold:0 折头月行` = LogFold.render 字样或 meta 口径变了（w30-k3 变异实证：`[url=fold:0]` 误作 `fold:1`、（点开）误作（展开）各格同红）。本进程 SCRIPT ERROR 即红。
 
 ### 40. qa_cargo_strip_probe（`tools/qa_cargo_strip_probe.gd`，船籍簿页「船舱」段货载上屏运行时断言 27 案）
@@ -686,7 +688,7 @@ python3 tools/check_probe_registry.py
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑二十九条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑三十条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
 godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
@@ -711,6 +713,7 @@ godot --headless --path . -s res://tools/qa_economy_panel_probe.gd
 godot --headless --path . -s res://tools/qa_fold_notice_probe.gd
 godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
+godot --headless --path . -s res://tools/qa_crew_fold_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
 python3 tools/check_w53_copy.py
 python3 tools/check_lane_orphans.py

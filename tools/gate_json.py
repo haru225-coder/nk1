@@ -411,11 +411,24 @@ REGISTRY = [
      "red": "`  ✗ …` 行（如无债仍印「欠 」/ 三档欠数逐字不符——红行带实读前 110 字节）"
             "+ 末行 `DEBT_STRIP cases=N fails=M`（M>0），退 1"},
 
-    {"id": "qa_crew_fold_probe", "tier": "lane",
-     "when": "动欠饷链（scripts/core/Crew.gd 的雇佣 / 月俸合计 / 欠月数 / 不告而去口径、"
-             "scripts/core/Economy.gd 月结扣工食）、札记折叠渲染（scripts/core/LogFold.gd 的 render "
-             "fold:i 折头 /（点开）/（收起）/ 月行引子与淡色缩进），或动 tools/qa_crew_fold_probe.gd / "
-             "tools/qa_crew_fold_host.gd 自身",
+    {"id": "qa_crew_fold_probe", "tier": "must",
+     "why": "升格判掂毕（lane w77-k3 执行窗，w75-k3 复核牒 v1，照 §五.2 原条文逐条对）："
+            "判据 1「自己判不准」成立——触发条件具跨文件隐藏面：欠饷名册文案链"
+            "（Crew.pay_wages / monthly_wage / hire 三函数）、月结调用链"
+            "（GameManager.advance_days 月结内调 Crew.pay_wages + 跳年补记欠饷句）、札记折叠渲染壳"
+            "（LogFold.render fold:i 折头 / 月行引子 / 淡色缩进三行签名）、仿作宿主五件字段、"
+            "探针自身五域写口分处六文件（scripts/core/Crew.gd / scripts/GameManager.gd / "
+            "scripts/core/LogFold.gd / tools/qa_crew_fold_host.gd / 探针自身），"
+            "文案格式笔 lane 自己判不出该加跑哪条——§三.39 旧口径「按路径判得准、三条件只取第一」"
+            "与 §五.2「三条同时成立」相悖就此勾销（w49-k1 / w61-k4 / w73-k5 同型拨正先例）；"
+            "判据 2「快」成立——Godot 真场景树探针 glock 实测三跑 real 2.279 / 2.185 / 2.073 s"
+            "（w75-k3 动手帧实贴），与本辑既有 Godot must 探针族（rest_days / rest_scenarios / "
+            "debt_strip / cargo_strip / economy_panel / fold_notice 2-4 s 冷启）同族同格且居快翼"
+            "（w61-k4 双轨判掂先例）；"
+            "判据 3「只读」成立——源码 grep FileAccess / DirAccess / user:// / save / store_ "
+            "探针与宿主全零命中、零写盘、摆场全是内存字典 seed；"
+            "判据 4 main 尖幂等绿——w76-k3 修复摆场窗咬钉子月复绿后，w77-k3 执行窗基线三跑连绿 rc=0、"
+            "末行 CREW_FOLD cases=N fails=0（N=19：17 断言行 + script_err_tally 接线 2 格）。",
      "kind": "godot", "file": "tools/qa_crew_fold_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_crew_fold_probe.gd"],
      "judge": "（探针 e6fd6f1 随 w30-k3 落地，w31-k3 入册——与 qa_debt_strip 同案漏网两支的第二支）"

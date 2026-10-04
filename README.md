@@ -26,7 +26,7 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-一次改动闭环 = 下面二十九道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
+一次改动闭环 = 下面三十道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
 
 ```bash
 # 十五道 Python（无 Godot 也能跑）
@@ -59,6 +59,7 @@ godot --headless --path . -s res://tools/qa_economy_panel_probe.gd  # 名声栏�
 godot --headless --path . -s res://tools/qa_fold_notice_probe.gd  # 札记欠饷原文 + 改元月历一瞥运行时断言 13 案（lane w74-k3 依 w73-k5 复核牒升格必跑）
 godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd  # 旅店 / 住处「歇・候 N 日」钮面两贴文路径同亮运行时断言 33 案
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd  # HUD 顶匾上行「欠 %d」欠债格运行时断言 4 案
+godot --headless --path . -s res://tools/qa_crew_fold_probe.gd  # 多雇员【欠饷】字面 + 札记折叠渲染字样运行时断言 17 案（lane w77-k3 依 w75-k3 复核牒升格必跑）
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd  # 船籍簿页「船舱」段货载上屏运行时断言 27 案
 ```
 lane 加跑档（不进上面一键跑、不改道数；触发条件见 `docs/GATES.md` §一 档列）：本帧登记含 `python3 tools/check_ledger_garbage.py`（仓务清册「殓殓」词级污染静态扫，lane w62-k3 立——动 `docs/仓务清册_2026-10-03.md` 判档段时手跑，§三.48）。
