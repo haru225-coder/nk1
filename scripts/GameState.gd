@@ -1121,7 +1121,7 @@ func abandon_contract() -> String:
 func contract_fine() -> int:
 	if contract.is_empty():
 		return 0
-	var purse := int(contract.get("purse", 0))
+	var purse := maxi(0, int(contract.get("purse", 0)) - int(contract.get("paid", 0)))  # 只按未交那截的酬金算（待拍板 17）
 	return mini(maxi(CONTRACT_FINE_MIN, int(round(float(purse) * CONTRACT_FINE_RATE))), money)
 
 
