@@ -384,7 +384,7 @@ func _initialize() -> void:
 	_check(past_fall, "1277-02 已过 1276-12 陷落点——判据须按日期而非当前战况")
 
 	# ── 存档 round-trip：整局状态（不只 GameState） ──
-	var SL: Node = root.get_node("SaveLoad")
+	var SL: Node = _save_load_pre_ready()
 	var Flt: Node = root.get_node("Fleet")
 	GS.from_dict({})
 	Cal.from_dict({"year": 1276, "month": 11, "day": 3})
@@ -5169,3 +5169,15 @@ func _finish_after_route() -> void:
 	print("STORY_CHECK SUMMARY fails=", _fails)
 	GateReport.finish("godot_story_check", 1 if _fails > 0 else 0, "STORY_CHECK SUMMARY fails=%d" % _fails)
 	quit(1 if _fails > 0 else 0)
+
+## lane w53-11 六轮：存档往返一节（_initialize 段）跑在 SaveLoad._ready 之前——-s 下 SceneTree._initialize 先于 autoload 入树
+## （同 _initialize 头上手动 GM.load_data 的缘由），SaveLoad._ready 那手 make_dir(user://saves/) 还没做：空 user://（新机、照 GATES §四
+## 搭的 CI、XDG_DATA_HOME 隔离跑）上 save_game 写 .tmp 即失败，守城存读档往返 16 条全红；一键共用 user:// 早有 saves/ 才一直绿。
+## 这里照 SaveLoad._ready 补建存档目录（SaveLoad 已入树则它自己建过，不再补），并把「补过或已入树」钉成一格：这手被删了任何机器上当场红。
+func _save_load_pre_ready() -> Node:
+	var sl: Node = root.get_node("SaveLoad")
+	var mirrored := false
+	if not sl.is_node_ready():
+		mirrored = DirAccess.make_dir_recursive_absolute(str(sl.get("SAVE_DIR"))) == OK
+	_check(sl.is_node_ready() or mirrored, "存档往返跑在 SaveLoad._ready 之前：已照它补建 %s（不靠机器上残留的存档目录）" % str(sl.get("SAVE_DIR")))
+	return sl
