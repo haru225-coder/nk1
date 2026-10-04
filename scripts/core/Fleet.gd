@@ -426,6 +426,23 @@ func remove_cargo(good_id: String, qty: int, ship_index: int = -1) -> bool:
 	return true
 
 
+## 跨船依次扣（remove_cargo(-1) 同一次序）卸下 qty 件时，这几件按各船均价合起来的成本；总量不足按现有件数算。
+## 牙行跨船卖出（lane w53-3：卖出不分船）的「赚 / 亏」照此算——各船进价不同时按全队均价算会偏，卸的是先到的那几艘。
+func cargo_cost_of(good_id: String, qty: int) -> float:
+	var left := qty
+	var total := 0.0
+	for i in range(ships.size()):
+		if left <= 0:
+			break
+		var e: Dictionary = _ship_cargo(i).get(good_id, {})
+		var take: int = mini(left, int(e.get("qty", 0)))
+		if take <= 0:
+			continue
+		total += float(e.get("avg_cost", 0.0)) * float(take)
+		left -= take
+	return total
+
+
 ## 指定船（ship_index >= 0）或全队（== -1）此货数量
 func cargo_qty(good_id: String, ship_index: int = -1) -> int:
 	if ship_index >= 0:

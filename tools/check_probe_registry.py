@@ -86,6 +86,7 @@ EXEMPT = [
     ("qa_w53_2_combat_probe.gd", "lane-w53-2", "海战接舷 / 号令 / 收战账目专项探针，随 lane-w53-2 落地验过留档"),
     ("qa_w53_3_buy_max_probe.gd", "lane-w53-3", "牙行买满结算耗时与逐件推演同数专项探针，动 Economy 逐件推演或牙行买钮回调时加跑"),
     ("qa_w53_3_economy_probe.gd", "lane-w53-3", "牙行抬价/赊贷/委办三本账守形探针，随本 lane 落地验过留档"),
+    ("qa_w53_3_fleet_sell_probe.gd", "lane-w53-3", "多船牙行卖出不分船（柜上第一席 / 卡上舱数 / 卖钮跨船 / 赚亏按卸下成本）专项探针，动牙行卖钮或 Fleet 跨船扣货时加跑"),
     ("qa_w53_3_hold_split_probe.gd", "lane-w53-3", "分船货舱水粮摊派不越全队载重专项探针，动 Fleet 舱位账或牙行/船屋装货回调时加跑"),
     ("qa_w53_3_market_rerender_probe.gd", "lane-w53-3", "牙行页整页重排带字进树计数与按买耗时专项探针，动牙行页建页或 Main._attach_quiet 时加跑"),
     ("qa_w53_3_rumor_probe.gd", "lane-w53-3", "海上记下的行情传闻写在别港同一货牙行卡上专项探针，动 GameState 传闻簿或牙行卡第二行时加跑"),

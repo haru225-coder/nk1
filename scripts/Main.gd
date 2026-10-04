@@ -1350,7 +1350,7 @@ func _broker_held_id(port_id: String) -> String:
 	var best_qty := 0
 	for raw_gid in Economy.goods_at(port_id):
 		var gid := str(raw_gid)
-		var qty := Fleet.cargo_qty(gid, _market_ship)
+		var qty := Fleet.cargo_qty(gid)  # 全队舱里的件数：货装在哪艘船都占第一席（lane w53-3；原先只看「装至」选的那艘，进页默认旗舰）
 		if qty > best_qty or (qty == best_qty and qty > 0 and (best_id == "" or gid < best_id)):
 			best_qty = qty
 			best_id = gid
@@ -1669,7 +1669,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	var g := GameManager.get_good_by_id(good_id)
 	var buy_p := Economy.buy_price(port_id, good_id)
 	var sell_p := Economy.sell_price(port_id, good_id)
-	var held := Fleet.cargo_qty(good_id, _market_ship)
+	var held := Fleet.cargo_qty(good_id)  # 全队件数：卖出不分船，「装至」只管买进装哪艘（lane w53-3）
 	var role := Economy.get_role(port_id, good_id)
 
 	var name_lbl := Label.new()
@@ -1752,7 +1752,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 		s.disabled = held < n2
 		s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		s.custom_minimum_size = Vector2(0, 28)
-		s.pressed.connect(_on_sell.bind(port_id, good_id, n2, _market_ship))
+		s.pressed.connect(_on_sell.bind(port_id, good_id, n2, -1))
 		s.tooltip_text = _market_sell_tip(port_id, good_id, n2, held)
 		sell_row.add_child(s)
 		UiTheme.style_chip(s)
@@ -1761,7 +1761,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	sall.disabled = held <= 0
 	sall.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sall.custom_minimum_size = Vector2(0, 28)
-	sall.pressed.connect(_on_sell.bind(port_id, good_id, held, _market_ship))
+	sall.pressed.connect(_on_sell.bind(port_id, good_id, held, -1))
 	sall.tooltip_text = _market_sell_tip(port_id, good_id, held, held)
 	sell_row.add_child(sall)
 	UiTheme.style_chip(sall)
@@ -1900,7 +1900,7 @@ func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) ->
 	if actual <= 0:
 		return
 	var revenue := Economy.estimate_sell_revenue(port_id, good_id, actual)
-	var cost_basis := Fleet.cargo_cost(good_id, ship_index) * actual
+	var cost_basis := Fleet.cargo_cost_of(good_id, actual) if ship_index < 0 else Fleet.cargo_cost(good_id, ship_index) * actual
 
 	if not Fleet.remove_cargo(good_id, actual, ship_index):
 		return
