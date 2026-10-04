@@ -11,6 +11,7 @@ extends SceneTree
 ##     （博多局第二章全打勾「已」却永不开章）。现在与第四章了结同一口径：只写「了结　<结局名>」。
 ##   Z 违约罚文零值不写（待拍板 62）：钱匣空了不写「牙行扣 0 钱」；名声已是 0 不写「名声减 1」（w53-10 079efc9 已做，此处合钉）。
 ##   P 毁约按未交部分罚（待拍板 17）：交了大半再放弃，罚额按未交那截酬金的一成五（至少 40），不再按全额。
+##   C 市舶司小吏只在泉州（待拍板 24）：他的人物条写「泉州市舶司小吏」，修前博多、占城的市舶司页也坐着他。
 ##   K 章节总述落船籍簿（待拍板 3）：chapters.json 的 hint 在章目没走完时写在船籍簿章名下；走完了不写。修前 hint 从不上屏。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_13_decide_probe.gd
 ## 末行 W53_13_DECIDE cases=N fails=M；fails>0 退 1。
@@ -73,6 +74,7 @@ func _boot() -> void:
 	await _e_ended_ledger()
 	_z_contract_zero()
 	_p_partial_fine()
+	await _c_clerk_only_quanzhou()
 	_report()
 
 
@@ -304,6 +306,32 @@ func _p_partial_fine() -> void:
 	_expect(f == 240, "酬 2000、已付 400：罚未交 1600 的一成五 → 240（实得 %d）" % f)
 	f = _p_fine(2000, 0)
 	_expect(f == 300, "反向基：一件未交照全额一成五 → 300（实得 %d）" % f)
+
+
+# ── C 市舶司小吏只在泉州 ───────────────────────────────
+
+func _has_text(n: Node, t: String) -> bool:
+	if (n is Label and (n as Label).text == t) or (n is Button and (n as Button).text == t):
+		return true
+	for c in n.get_children():
+		if _has_text(c, t):
+			return true
+	return false
+
+
+func _c_clerk_only_quanzhou() -> void:
+	print("── C 市舶司小吏只在泉州市舶司")
+	var seen := {}
+	for pid in ["quanzhou", "fuzhou", "hakata"]:
+		_gs.from_dict({})
+		_cal.from_dict({"year": 1262, "month": 6, "day": 1})
+		_gs.chapter = 3
+		_gs.last_port = pid
+		_main.load_scene("%s_yamen" % pid)
+		await process_frame
+		seen[pid] = _has_text(_main, "市舶司小吏")
+	_expect(not seen["fuzhou"] and not seen["hakata"], "福州、博多的市舶司页不见「市舶司小吏」（实得 %s）" % str(seen))
+	_expect(seen["quanzhou"], "反向基：泉州市舶司页照见「市舶司小吏」（实得 %s）" % str(seen))
 
 
 func _snip(t: String, anchor: String, span := 60) -> String:

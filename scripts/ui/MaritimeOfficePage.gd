@@ -13,7 +13,7 @@ static func setup_yamen(main: Control, port_id: String) -> void:
 	main.body_text.text = "案上压着未批的货单。验引、呈报、修埠都在这里。"
 	main._begin_benches()
 
-	main._add_npc_button("customs_official", "市舶司小吏")
+	if port_id == "quanzhou": main._add_npc_button("customs_official", "市舶司小吏")  # 他是泉州市舶司的人（title 泉州市舶司小吏）：别港不见（待拍板 24）
 
 	var permit: VBoxContainer = main._slip_body()
 	var duty := GameState.customs_duty()
