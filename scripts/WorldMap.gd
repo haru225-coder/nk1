@@ -238,22 +238,25 @@ func _physics_process(delta: float) -> void:
 
 
 ## lane w53-17（二期「火长提前报风」）：crew_role_effects 开着、火长在册、本场还没报过——
-## 按当前风场推演「若照这个势头走，火长提前（GALE_WARN_S × 等级）秒那一拍的骤风顶头已迸线」，
-## 即出一次浮字。只预报、不改风；预报出过后不再重报（收战的「两散」那行照旧）。
+## 读 SeaState 预滚的风向前景（wind_bearing_to_in），将来（GALE_WARN_S × 等级）秒内吹向方位要转过
+## VEER_DEG 以上才报一次；报后风向到点真转（缓冲 = step 将来真走的值）。只预报、不改风；
+## 开关关掉或火长 0 级：一字不报，风场与改前逐字一致（预滚与逐帧 OU 同一条分布，同种子逐帧一致）。
 func _check_gale_warn() -> void:
-	if _gale_warn_pushed or not _Switches.on("crew_role_effects") or not _Switches.on("gale_parting"):
+	if _gale_warn_pushed or not _Switches.on("crew_role_effects"):
 		return
 	var warn_s: float = _SeaState.GALE_WARN_S * float(Crew.level_of("huozhang"))
 	if warn_s <= 0.0:
 		return
-	# 火长眼里的「长势」推演：mean 照半节 / 秒往前推 warn_s 秒（探针「刮大风」同此一手），那一拍的骤风顶头
-	# 迸过七级作战上限（WIND_CAP）即提前报一次。现下已迸的（风暴已在头上）也报——声是出给玩家的，
-	# 「两散」的收场照旧他走。只预报、不改风；报过不再重报。
-	var mean_now: float = _sea.wind_mean
-	var mean_then: float = mean_now + warn_s * 0.5
-	if _sea.storm_peak() >= _SeaState.WIND_CAP or mean_then * (1.0 + _SeaState.GUST_AMP) * _SeaState.GALE_HEADROOM >= _SeaState.WIND_CAP:
+	var now_b := _SeaState.bearing_of(_sea.wind_to)
+	var then_b: float = _sea.wind_bearing_to_in(warn_s)
+	var from8 := _SeaState.dir8(fposmod(now_b + 180.0, 360.0))
+	var to8 := _SeaState.dir8(fposmod(then_b + 180.0, 360.0))
+	if _sea.wind_turn_deg_in(warn_s) >= _SeaState.VEER_DEG:
 		_gale_warn_pushed = true
-		_show_combat_notice("火长望见天色不对：风要转了")
+		if from8 == to8:
+			_show_combat_notice("火长望见天色不对：风要转了")
+		else:
+			_show_combat_notice("火长望着云脚：风要转%s了" % to8)
 
 
 ## 战斗模式下存活敌船数（PirateShip 爆炸后 hull_hp 归零仍存活一帧，按血量判定）

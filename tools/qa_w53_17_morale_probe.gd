@@ -23,11 +23,13 @@ extends SceneTree
 ##      rally 目标把簿扳回去（silent green 雷）。
 ##      注意与 SeaChart 那笔 +5（赢）/ −12（输）旧账各司各段：本件写 before 账，SeaChart 照旧在
 ##      after 上加减——那是本来就在的账，不是本 lane 的修法。
-##   三、火长提前报风（二期，crew_role_effects）：寻常战逐物理帧把 wind_mean 抬 0.5/秒
-##      （与 WorldMap._check_gale_warn 的「长势」推演同数）：
-##      ① 火长 3 级：预报浮字「风要转了」须在 mean 涨过 WIND_CAP（「风大得不能打」那一刻）前
-##         ≥ 15 秒（GALE_WARN_S × 3）出，实得约 93.5 秒（长势下 mean_then 先迸线）；
-##      ② 火长 0 级不出；③ crew_role_effects 开关关掉不出（逐字回旧玩法）。
+##   三、火长提前报风（二期，crew_role_effects）：报的是「风向要转」（数据的 wind_shift_warn_s）。
+##      SeaState 把风向缓转的 OU 噪声按半秒一步预滚成 30 秒缓冲，wind_bearing_to_in(s) 是真前景，
+##      将来（GALE_WARN_S × 级）秒内吹向转过 VEER_DEG 才报、报后真转。判据四盘：
+##      ① 盛季寻常风、前景转不过 VEER_DEG 的种子：火长在册也不报；
+##      ② 前景转得过的种子：提前约（GALE_WARN_S × 3）秒报一次，报后再走约 warn_s 秒风向真转 ≥ VEER_DEG；
+##      ③ 火长 0 级 / crew_role_effects 关掉：同一转场种子一字不报；
+##      另钉一格纯件对账：读前景不改风，同种子 200 步 wind_to / wind_speed 逐帧一致（开预报与不开逐字一致）。
 ##   四、通事劝降效力（二期，crew_role_effects）：劝降胜算原归面板自算（55 − 敌士气那一套），
 ##      通事一级 +0.05 没人接。本 lane 给 EnemyCaptainAI 一条只读纯函（parley_bonus_tongshi，
 ##      品级 → +0.05/级；开关那头在战端判）。验三盘：3 级 = +0.15 / 3 级开关关 = 0 / 0 级 = 0。
@@ -225,62 +227,123 @@ func _sec_morale_carry(fleet: Node, cfg: Dictionary) -> void:
 
 # ══ 三、火长提前报风 ══════════════════════════════════════
 
-## 起一场寻常海战（风在场中照每物理帧 0.5 节抬——与 WorldMap._check_gale_warn 的「长势」推演同档），
-## 火长 3 级预报须在 wind_mean 涨过作战上限（风真的大到不能打）之前 ≥ 15 秒出；0 级不出；开关关了不出。
+## 火长提前报风（数据 officer_effects.huozhang.wind_shift_warn_s 5，报的是「风向要转」）：
+## SeaState 把风向缓转的 OU 噪声按半秒一步预滚成 30 秒缓冲（setup / force_wind 那一下滚完），
+## step 逐 half-second 从缓冲取——所以 wind_bearing_to_in(s) 是真前景，报的「要转」到点真转。
+## 判据（主控定）：①盛季寻常风、前景 15 秒转不过 VEER_DEG 的一场，火长在册也不报——
+##      ②前景转得过的一场，提前约（GALE_WARN_S × 3）秒报一次，报后风向真的转了 ≥ VEER_DEG；
+##      ③关掉 crew_role_effects 或火长 0 级：一字不报；同一风场种子下风的轨迹与不启这条逐字一致
+##      （预滚与逐帧 OU 同一条分布，同种子逐帧一致）。
 ## Crew.hired 直接写册：huozhang 的品级取数据里 3 级那位老火长（cai_qixing）；tongshi 那头用 kondo_saburo（3 级）。
 ## 判据只问「hired → level_of 折几级」，不问雇没雇。
 const HUOZHANG_3 := "cai_qixing"
 ## 数据里 3 级通事（博多唐房）——level_of 折 3 → 劝降加成 +0.15
 const TONGSHI_3 := "kondo_saburo"
 
+## 前景扫描：取盛季（六月、泉州外海）setup 后 wind_bearing_to_in(15) 距现值转过 VEER_DEG 的种子
+##（turn=true）与转不过的种子（turn=false）。不启预报路径一等功是「找得到这两盘」——找不到 = 预滚没了。
+func _shift_seeds() -> Dictionary:
+	var cal: Node = root.get_node("Calendar")
+	var bearing: float = float(cal.call("wind_bearing_of", 6))
+	var strength: float = float(cal.call("monsoon_strength_of", 6))
+	var pick_turn := -1
+	var pick_calm := -1
+	var warn_s := 15.0
+	for seed in range(600):
+		var s = _SeaState.new()
+		s.setup(bearing, strength, BASE_WIND, "泉州外海", seed)
+		var deg: float = s.wind_turn_deg_in(warn_s)
+		if deg >= _SeaState.VEER_DEG + 4.0 and pick_turn < 0:
+			pick_turn = seed
+		if deg < 1.0 and pick_calm < 0:
+			pick_calm = seed
+		if pick_turn >= 0 and pick_calm >= 0:
+			break
+	return {"turn": pick_turn, "calm": pick_calm}
+
+
 func _sec_huozhang_warn(fleet: Node) -> void:
-	var d := _derive_seeds()
-	_check(not (d["gale"] as Array).is_empty(), "（火长节）盘上推演出了风暴海盘——这格不过 = 头节也没过，量预报没凭据")
-	for cfg in [{"lv": 3, "switch": true, "want": true}, {"lv": 0, "switch": true, "want": false},
-			{"lv": 3, "switch": false, "want": false}]:
-		var crew_skill: Node = root.get_node("Crew")
-		var old_hired: Dictionary = {}
-		if crew_skill != null:
-			old_hired = (crew_skill.get("hired") as Dictionary).duplicate(true)
-			var h := (crew_skill.get("hired") as Dictionary).duplicate(true)
-			if int(cfg["lv"]) > 0:
-				h["huozhang"] = HUOZHANG_3
-			else:
-				h.erase("huozhang")
-			crew_skill.set("hired", h)
-		_Switches.reset()
-		_Switches.set_on("crew_role_effects", bool(cfg["switch"]))
+	var seeds := _shift_seeds()
+	_check(int(seeds["turn"]) >= 0, "前景缓冲区找得到「15 秒后要转过 VEER_DEG」的一场（找不到 = 预滚前景没了）")
+	_check(int(seeds["calm"]) >= 0, "前景缓冲区找得到「15 秒后还稳」的一场（找不到 = 预报无从不误报）")
+	# 判据③先量：同一 storm 种子，不开预报那条路径下风的轨迹（ SeaState 纯件步进、与场景无关——
+	# 「关掉 / 没火长 = 风场逐字一致」归 SeaState 预滚设计一票保证：缓冲只在 setup 滚、读取不改值）
+	if int(seeds["turn"]) >= 0:
 		var cal: Node = root.get_node("Calendar")
-		cal.set("month", 6)
-		var wm := await _battle(fleet, {"type": "pirate_boat", "count": 1}, {})
-		var warned_at := -1
-		var hit_at := -1
-		var frames := 0
-		while frames < 60 * 120 and not bool(wm.get("resolved")):
+		var bearing: float = float(cal.call("wind_bearing_of", 6))
+		var strength: float = float(cal.call("monsoon_strength_of", 6))
+		var a = _SeaState.new()
+		a.setup(bearing, strength, BASE_WIND, "泉州外海", int(seeds["turn"]))
+		var b = _SeaState.new()
+		b.setup(bearing, strength, BASE_WIND, "泉州外海", int(seeds["turn"]))
+		var same := true
+		for _i in 200:
+			a.step(0.1)
+			var _probe_b: float = b.wind_bearing_to_in(0.1)   # b 只读前景、不推时——读完时间仍须照走
+			b.step(0.1)
+			if a.wind_to.distance_to(b.wind_to) > 0.0001 or absf(a.wind_speed - b.wind_speed) > 0.001:
+				same = false
+				break
+		_check(same, "风场逐字一致：读前景（wind_bearing_to_in）不改风，同种子 200 步逐帧一致")
+	for cfg in [{"seed": int(seeds["calm"]), "lv": 3, "switch": true, "want": false, "label": "①风不转不报"},
+			{"seed": int(seeds["turn"]), "lv": 3, "switch": true, "want": true, "label": "②风要转提前报"},
+			{"seed": int(seeds["turn"]), "lv": 0, "switch": true, "want": false, "label": "③0 级不报"},
+			{"seed": int(seeds["turn"]), "lv": 3, "switch": false, "want": false, "label": "③开关关不报"}]:
+		await _warn_round(fleet, cfg)
+
+
+## 一盘火长预报：seed 定风场、lv 定级、switch 定 crew_role_effects。want=true 那格还须「报后真转」。
+func _warn_round(fleet: Node, cfg: Dictionary) -> void:
+	var crew_skill: Node = root.get_node("Crew")
+	var old_hired: Dictionary = {}
+	if crew_skill != null:
+		old_hired = (crew_skill.get("hired") as Dictionary).duplicate(true)
+		var h := (crew_skill.get("hired") as Dictionary).duplicate(true)
+		if int(cfg["lv"]) > 0:
+			h["huozhang"] = HUOZHANG_3
+		else:
+			h.erase("huozhang")
+		crew_skill.set("hired", h)
+	_Switches.reset()
+	_Switches.set_on("crew_role_effects", bool(cfg["switch"]))
+	var cal: Node = root.get_node("Calendar")
+	cal.set("month", 6)
+	var wm := await _battle(fleet, {"type": "pirate_boat", "count": 1}, {"sea_seed": int(cfg["seed"])})
+	var warned_at := -1
+	var b_at_warn := -1.0
+	var frames := 0
+	var warn_s := float(GALE_WARN) * float(maxi(0, int(cfg["lv"])))
+	# 只盯 40 秒（预滚窗 30 秒 + 余量）：预报若在，必在这窗里出；报出即退主循环去量「报后真转」
+	while frames < 60 * 40 and warned_at < 0 and not bool(wm.get("resolved")):
+		await physics_frame
+		frames += 1
+		var n: Label = wm.get("_notice")
+		if n != null and is_instance_valid(n) and n.visible and "风要转" in n.text:
+			warned_at = frames
+			b_at_warn = _SeaState.bearing_of((wm.get("_sea") as Object).get("wind_to"))
+	var ahead_s := -1.0
+	var turned := 0.0
+	if warned_at > 0:
+		# 报后再走恰 warn_s 秒（预报须早在预滚窗内，30 秒窗足够——回环上限 120 秒只是兜底，不许跑到）
+		var wait := int(round(warn_s * 60.0))
+		while frames < warned_at + wait and not bool(wm.get("resolved")):
 			await physics_frame
 			frames += 1
-			var sea = wm.get("_sea")
-			if sea != null and sea.wind_mean < 130.0 and hit_at < 0:
-				#「刮大风」与 WorldMap._check_gale_warn 的推演常数同档（0.5 / 秒）；
-				# mean 涨到 130（WIND_CAP）那一刻记 hit_at = 「风真的大到不能打」，即判预报提前量的基线
-				sea.wind_mean = sea.wind_mean + 0.5 / 60.0
-			elif hit_at < 0:
-				hit_at = frames
-			var n: Label = wm.get("_notice")
-			if n != null and is_instance_valid(n) and n.visible and warned_at < 0 and "风要转" in n.text:
-				warned_at = frames
-		if bool(cfg["want"]):
-			_check(warned_at > 0, "火长 3 级出预报（浮字「风要转了」）")
-			_check(hit_at > 0, "风涨过作战上限那一刻记下了（不然量不出提前量）")
-			if warned_at > 0 and hit_at > 0:
-				var ahead_s := float(hit_at - warned_at) / 60.0
-				_check(ahead_s >= 3.0 * GALE_WARN, "预报在风大得不能打之前至少 %.0f 秒出（得 %.1f）" % [3.0 * GALE_WARN, ahead_s])
-		else:
-			_check(warned_at < 0, "（等级 %d / 开关 %s）不出预报浮字" % [int(cfg["lv"]), "开" if bool(cfg["switch"]) else "关"])
-		if crew_skill != null:
-			crew_skill.set("hired", old_hired)
-		if is_instance_valid(wm):
-			await _close(wm)
+		ahead_s = float(frames - warned_at) / 60.0
+		var now_b: float = _SeaState.bearing_of((wm.get("_sea") as Object).get("wind_to"))
+		turned = rad_to_deg(absf(angle_difference(deg_to_rad(b_at_warn), deg_to_rad(now_b))))
+	if bool(cfg["want"]):
+		_check(warned_at > 0, "%s：火长 3 级出预报（浮字「风要转了」）" % str(cfg["label"]))
+		if warned_at > 0:
+			_check(ahead_s >= warn_s - 0.05 and ahead_s <= warn_s + 0.5, "%s：报后再走约 warn_s 秒（得 %.1f 秒；预报出得太晚，出了 30 秒预滚窗风就不走了）" % [str(cfg["label"]), ahead_s])
+			_check(turned >= _SeaState.VEER_DEG, "%s：报后再走约 %.1f 秒风向真转了 %.1f°（须 ≥ %.0f°）" % [str(cfg["label"]), ahead_s, turned, _SeaState.VEER_DEG])
+	else:
+		_check(warned_at < 0, "%s：不出预报浮字" % str(cfg["label"]))
+	if crew_skill != null:
+		crew_skill.set("hired", old_hired)
+	_Switches.reset()
+	if is_instance_valid(wm):
+		await _close(wm)
 
 
 # ══ 四、通事劝降效力 ══════════════════════════════════════

@@ -10,7 +10,13 @@ extends RefCounted
 ##
 ## 雷暴大风（lane w53-17 第一期「大风两散」）：setup 时若本场风均值过了种子线（GALE_SEED 那个常量，约七成风），
 ## 本场记雷暴大风，WorldMap 开战即收「两散」。作战的风上限不按数据曲线的七级线（140）——那场风按骤风攥到 130 仍挂着
-## 六级风可战名，七级水上却照打；改按「骤风顶头」迸线才迸得出来。二期火长提前报风另见下（GALE_WARN 那个常量）。
+## 六级风可战名，七级水上却照打；改按「骤风顶头」迸线才迸得出来。
+##
+## 火长提前报风（lane w53-17 二期，数据 officer_effects.huozhang.wind_shift_warn_s 5，报的是「风向要转」）：
+## 风向缓转的 OU 噪声按 FORECAST_DT 秒一步预滚成一段缓冲（FORECAST_S 秒），step 不再现掷噪声，改逐半秒从缓冲
+## 里取——所以 SeaState 事先真知道将来 FORECAST_S 秒里风向怎么走（wind_bearing_to_in(s)），预报说的「要转」
+## 到点真转。预滚在 setup / force_wind 那一下算完；读数（wind_to / wind_speed / snapshot）的轨迹与改前
+## 同一条分布（同种子逐帧一致——缓冲只是把将来才掷的噪声挪到开局一口气掷）。
 ##
 ## 读数（别的模块只读，不改）：wind_to 吹向单位向量 · wind_speed 风力（同 Ship.wind_strength 量纲）· wind_velocity()
 ##   · current_at(pos) 流速向量 px/s · wind_name()「东北风」· current_desc()「落潮　流向东南」· snapshot() 全部读数。
@@ -39,8 +45,11 @@ const GALE_SEED_WIND := 98.0
 const GALE_BASE_WIND := 100.0
 ## 骤风顶头式里给风向的余量系数（火长预报同这条式）
 const GALE_HEADROOM := 1.10
-## 火长「提前报风」：WorldMap 按（GALE_WARN_S × Crew.level_of("huozhang")）秒往回推看风爆是否即临
+## 火长「提前报风」：WorldMap 按（GALE_WARN_S × Crew.level_of("huozhang")）秒看风向前景（wind_bearing_to_in）
 const GALE_WARN_S := 5.0
+## 风向预滚：缓冲总长 / 步长。30 秒够三级火长（15 秒）翻一倍；半秒一步对 VEER_TAU 24 秒的缓转足够细
+const FORECAST_S := 30.0
+const FORECAST_DT := 0.5
 ## 潮时相位绝对值小于它算平潮（潮流几近停）
 const SLACK := 0.3
 
@@ -91,6 +100,10 @@ var _veer_amp := VEER_DEG
 var _veer := 0.0
 var _gust := 0.0
 var _rng := RandomNumberGenerator.new()
+## 预滚缓冲：将来 FORECAST_S 秒里 _veer / _gust 每 FORECAST_DT 秒一步的值；_forecast_i 是走到的步数（小数插值）
+var _veer_path := PackedFloat32Array()
+var _gust_path := PackedFloat32Array()
+var _forecast_i := 0.0
 
 
 ## 按月令季风与海域定本场海况。monsoon_bearing：Calendar.wind_bearing_of(月)（吹向方位，转换期 −1）；
@@ -120,6 +133,7 @@ func setup(monsoon_bearing: float, monsoon_strength: float, base_strength: float
 	# 本探针逼出的「举年择月」才召得出来。force_wind 是剧情 / 探针定场，不动 gale（探针另走 derive 推演的盘档）。
 	gale = wind_mean >= GALE_SEED_WIND and float(monsoon_strength) >= 0.9 and base_strength >= 100.0
 	_setup_current(sea_name)
+	_preroll_forecast()
 	_apply_wind()
 
 
@@ -132,18 +146,13 @@ func force_wind(bearing_to: float, strength: float) -> void:
 	_veer = 0.0
 	_gust = 0.0
 	gale = gale or wind_mean >= GALE_SEED_WIND
+	_preroll_forecast()
 	_apply_wind()
 
 
-## lane w53-17：本场骤风顶头（当前风 × 阵风上限 × 余量系数）——雷暴大风判定与火长预报同用这一条线
+## lane w53-17：本场骤风顶头（当前风 × 阵风上限 × 余量系数）——雷暴大风判定用这一条线
 func gale_peak() -> float:
 	return wind_mean * (1.0 + GUST_AMP) * GALE_HEADROOM
-
-
-## lane w53-17（二期火长提前报风）：当下风场能起来的最凶骤风（GUST_AMP × 3σ 上限再 × GALE_HEADROOM）——
-## WorldMap 按它预报「大风要起」：玩家照战前 N 秒出浮字
-func storm_peak() -> float:
-	return wind_mean * (1.0 + GUST_AMP * 3.0) * GALE_HEADROOM
 
 
 ## 定流：flow 为流速向量（px/s，封顶 CURRENT_CAP），kind 为叫法
@@ -152,13 +161,36 @@ func force_current(flow: Vector2, kind := "季风流") -> void:
 	current_kind = kind
 
 
-## 推进 dt 秒：风向缓转、阵风起落（Ornstein–Uhlenbeck，向本场主风回拉）；流一场之内不变
+## 推进 dt 秒：风向缓转、阵风起落（Ornstein–Uhlenbeck，向本场主风回拉）；流一场之内不变。
+## 噪声不再现掷：setup / force_wind 那一下已按 FORECAST_DT 秒一步预滚成缓冲，这里逐 dt 从缓冲里取
+## （非整步线性插值）。预滚耗尽的尾档（开战超过 FORECAST_S 秒）回落成开局掷定的末档常量——
+## 风不再继续转；火长报的「转」都发生在预滚窗内。
 func step(dt: float) -> void:
 	if dt <= 0.0:
 		return
-	_veer = clampf(_ou(_veer, _veer_amp, VEER_TAU, dt), -1.6 * _veer_amp, 1.6 * _veer_amp)
-	_gust = clampf(_ou(_gust, 1.0, GUST_TAU, dt), -1.5, 1.5)
+	_forecast_i = minf(_forecast_i + dt / FORECAST_DT, float(maxi(0, _veer_path.size() - 1)))
+	_veer = _path_at(_veer_path, _forecast_i)
+	_gust = _path_at(_gust_path, _forecast_i)
 	_apply_wind()
+
+
+## s 秒后的吹向方位（度）。两个端点用同一时刻的 _veer（step 每物理帧写下、_apply_wind 用过的那个），
+## 只是 s 秒那一头按 _forecast_i + s / FORECAST_DT 的插值取——与将来 step 真走的逐帧同一轨迹。
+## 超出预滚窗给窗尾——再远就是「不知道」，火长只报窗内的转（warn_s ≤ FORECAST_S 恒成立，见 GALE_WARN_S）。
+func wind_bearing_to_in(s: float) -> float:
+	var idx := clampf(_forecast_i + s / FORECAST_DT, 0.0, float(maxi(0, _veer_path.size() - 1)))
+	return fposmod(_base_bearing + _path_at(_veer_path, idx), 360.0)
+
+
+## 从当下起 s 秒内吹向要转的度数（0–180，走圆最短弧）。当下这头取 step 写下的 _veer
+##（_apply_wind 用过、探针量取也认的这一拍），s 秒那头按缓冲插值取——
+## 触发（WorldMap._check_gale_warn）与量取（探针「报后真转」）同走这一条式、同一基准，
+## 就不会差出档位边（各按各的基准，物理帧的小数步会差出半档）。
+func wind_turn_deg_in(s: float) -> float:
+	var b0 := bearing_of(wind_to)
+	var b1 := fposmod(_base_bearing + _path_at(_veer_path,
+		clampf(_forecast_i + s / FORECAST_DT, 0.0, float(maxi(0, _veer_path.size() - 1)))), 360.0)
+	return rad_to_deg(absf(angle_difference(deg_to_rad(b0), deg_to_rad(b1))))
 
 
 ## 风速向量（吹向 × 风力）
@@ -254,6 +286,34 @@ static func dir8(bearing_deg: float) -> String:
 
 
 # ── 内部 ──────────────────────────────────────────────────
+
+## 预滚：从当下的 _veer / _gust 起，按 FORECAST_DT 秒一步把 OU 噪声滚满 FORECAST_S 秒。
+## 与改前的逐帧 step 同一条 OU（同 sigma、同 tau、同 clamp），只是把「将来才掷的噪声」挪到开局一口气掷——
+## 所以预报读的缓冲 = step 将来真走的值，火长报的「要转」到点真转。
+func _preroll_forecast() -> void:
+	var n := int(round(FORECAST_S / FORECAST_DT))
+	_veer_path = PackedFloat32Array()
+	_gust_path = PackedFloat32Array()
+	_veer_path.append(_veer)
+	_gust_path.append(_gust)
+	var v := _veer
+	var g := _gust
+	for _i in n:
+		v = clampf(_ou(v, _veer_amp, VEER_TAU, FORECAST_DT), -1.6 * _veer_amp, 1.6 * _veer_amp)
+		g = clampf(_ou(g, 1.0, GUST_TAU, FORECAST_DT), -1.5, 1.5)
+		_veer_path.append(v)
+		_gust_path.append(g)
+	_forecast_i = 0.0
+
+
+## 缓冲 idx（可为小数）处的线性插值；空缓冲回 0
+static func _path_at(path: PackedFloat32Array, idx: float) -> float:
+	if path.is_empty():
+		return 0.0
+	var i := int(clampf(idx, 0.0, float(path.size() - 1)))
+	var j := mini(i + 1, path.size() - 1)
+	return lerpf(path[i], path[j], clampf(idx - float(i), 0.0, 1.0))
+
 
 func _apply_wind() -> void:
 	wind_to = bearing_vector(_base_bearing + _veer)
