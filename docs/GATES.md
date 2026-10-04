@@ -829,3 +829,26 @@ python3 tools/check_docs_index.py --check
 | `COORDINATION_INDEX.md` 头部「拍板清单跟号（lane dec4 口径）」 | 同上两句 | 同上裁决；那份索引由 cr 片重生成、各 lane 不改写，所以只补〔口径注 · lane doc10〕，下一个 cr 片重生成时带上 |
 | `COORDINATION_INDEX.md` §七 ④（lane cr3） | 「按 ✗ 行的提示改号，并把锚改成自己的 commit；清单不在范围的，SETTLED 行写 DRIFT N 交下一个 decide 片」 | 前半句早已被 dec4 的 `--fix` 取代（dec4 口径里写了「§七 ④ 的做法不变，只是改号不必再手算」），后半句同上**作废**；补〔口径注〕 |
 | `COORDINATION.md` 头部「门禁 = Python 7 + editor / smoke / compile / story / p7 / patrol」 | 09-27 的口径 | 已过时。道数以 §一 注册表为准（现在一键跑 16 条：导入步骤 + 十五道）；补〔口径注〕，不改写 |
+
+### 五.7 收尾样板：SETTLED 双写口径与完工归位闸（lane w67-k2 落判词 A/B，源 w66-k2 报告档 :61/:63）
+
+收尾四步的 SETTLED 落笔与 worktree remove 两格按本节照抄执行。原文提案与事故三证见 w66-k2 审计报告档；本仓防回潮闸 = §三.47 check_lane_orphans（必跑档）。
+
+- **判词 A（SETTLED 双写口径）**：SETTLED 行 `at branch=<sha>` 与 `at main=<sha>` 二选一写死——`at branch=` = lane 收工但收编待毕；`at main=` = 已入主。同一 lane 的 SETTLED 行口径必须一致，写 `at main=` 而 ancestor 未双证即为断链前兆。**写 `at main=` 行之前必跑**：
+
+  ```sh
+  git merge-base --is-ancestor <lane尖> main   # rc=0 才可写 at main=
+  ```
+
+  落笔前实跑、把 rc 实贴进判档段（十秒一桩）。w53-1 型事故 = SETTLED 落笔早于承接毕窗、refs 殓而链实活、挂账句照抄两波无人复跑——§三.47 管事后发现，本条管落笔前。
+
+- **判词 B（完工归位闸）**：lane 收工（Verify 毕 / SETTLED 落笔）前必跑双格：
+
+  ```sh
+  git status --porcelain      # 须 0 行
+  git diff HEAD --stat        # 对 HEAD 无差
+  ```
+
+  工位非空即三选一处置：① 收进 commit；② `git checkout -- <路径>` 归位＋杀侧车备份；③ 判档段明写「WIP 未收、殓权归下波」。三选一都没做而 SETTLED 先落 = 同型事故前兆（w65-k3 五件摆动与主树 ±1＋bak_preMA1 两案皆死于缺此一格）。执行位 = 收尾四步的 worktree remove 之前；**烧在主树的反向变异烧毕必殓**（备份 → cmp 复原 → status 0 行＋侧车 rm 双核），忘殓 = 主树杂散事故同型。
+
+- **判词 A/B 是文档样板、不是新闸**：本节零工具改动。文档散文闸（gates_md 及同层）不咬语义，防回潮在册闸照旧是 check_lane_orphans；本条文的「跑没跑」靠各 lane Verify 实贴 rc 自证。
