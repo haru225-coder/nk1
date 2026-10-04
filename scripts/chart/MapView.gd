@@ -688,6 +688,22 @@ func _take_camera() -> void:
 ## 免得起讫港被航向牌盖住。由 SeaChart 在布局后写入。
 var inset_top := 0.0
 var inset_bottom := 0.0
+## 盖在图带上的 HUD 块（屏幕坐标：罗盘、题记框、比例尺，SeaChart 推来）。港名、地名、出带箭头摆的时候当障碍让开
+var hud_rects: Array[Rect2] = []
+
+
+func set_hud_rects(rects: Array) -> void:
+	hud_rects.clear()
+	for r in rects:
+		hud_rects.append(r)
+	_layout_key = ""
+	_redraw_all()
+
+
+## 屏幕矩形 → 当前镜头下的世界矩形
+func _screen_to_world_rect(r: Rect2) -> Rect2:
+	var z := camera.zoom.x
+	return Rect2(camera.position + (r.position - get_viewport_rect().size * 0.5) / z, r.size / z)
 
 
 func set_view_inset(top: float, bottom: float) -> void:
@@ -1139,6 +1155,8 @@ func _draw_ports(ci: CanvasItem) -> void:
 		if is_dest:
 			tcol = COL_OCHRE
 		tcol.a *= alpha
+		if bool(L.get("name_hidden", false)):
+			continue
 		var size_px: int = L["size_px"]
 		var pos: Vector2 = L["pos"]
 		_text(ci, pos, str(L["text"]), size_px, tcol)
@@ -1179,6 +1197,11 @@ func _ensure_layout() -> void:
 		# Lane U：船标避让放大，港名/航段边标不压船
 		var sr := _px(26.0)
 		_port_obstacles.append(Rect2(ship.position - Vector2(sr, sr), Vector2(sr * 2.0, sr * 2.0)))
+	# 罗盘、题记框、比例尺盖住的那几块：港名、小字地名、出带箭头都让开（lane w53-1）
+	var hud_w: Array[Rect2] = []
+	for hr: Rect2 in hud_rects:
+		hud_w.append(_screen_to_world_rect(hr))
+	_port_obstacles.append_array(hud_w)
 	var drawn := []
 	for p in order:
 		var pid := str(p.get("id", ""))
@@ -1203,6 +1226,12 @@ func _ensure_layout() -> void:
 		var chart: Dictionary = p.get("chart", {})
 		var text := str(chart.get("label", p.get("name", pid)))
 		var sub := _port_sub(chart)
+		# 港位本身落在 HUD 块底下：名字摆哪一侧都有半截钻进去（罗盘下露出「海道北口」），不写名字，港框照画
+		if _rect_hits_point(hud_w, v):
+			_port_label_texts[text] = true
+			_port_layout[pid] = {"p": p, "v": v, "r": r, "box": d["box"], "text": text, "sub": sub, "sub_w": 0.0,
+				"size_px": size_px, "sub_px": 11, "pos": v, "rect": Rect2(v, Vector2.ZERO), "name_hidden": true}
+			continue
 		var tw := _text_width_world(text, size_px)
 		var th := _px(size_px * 1.15)
 		var sub_px := 11
@@ -1265,6 +1294,10 @@ func dest_hint_layout() -> Dictionary:
 	# 图带下沿之下还有一条航法钮的缝（约 50 px）能露出港标，落在缝里的不算出带
 	if band.grow_individual(0.0, 0.0, 0.0, _px(52.0)).has_point(d):
 		return {}
+	# 目的港的港框（连金圈）与港名整个露在图带里（贴着顶匾也算）就不出箭头：再写一个朱字港名是重名，还会与港名本身相撞——
+	# 原先离图带边 20 px 内就出，306 个出箭头的镜头里 6 处目的港框与港名其实全在带里（lane w53-1）
+	if _dest_in_view():
+		return {}
 	var c := band.get_center()
 	var dir := (d - c).normalized()
 	if dir.length() < 0.5:
@@ -1294,6 +1327,16 @@ func dest_hint_layout() -> Dictionary:
 		if cost <= 0.0:
 			break
 	return best
+
+## 目的港这一帧画出来了，港框连金圈（半径 + 7 屏幕 px）与港名都整个在图带里（不含航法钮那条缝）
+func _dest_in_view() -> bool:
+	_ensure_layout()
+	if not _port_layout.has(dest_id):
+		return false
+	var L: Dictionary = _port_layout[dest_id]
+	var seen := _band_world_rect()
+	var ring := Rect2(L["v"], Vector2.ZERO).grow(float(L["r"]) + _px(7.0))
+	return seen.encloses(ring) and seen.encloses(L["rect"])
 
 
 ## 朱箭尖在 e、指向 d 时的三角与名字（名字往带内侧偏，再让开船标）
@@ -1356,8 +1399,8 @@ func _port_sub(chart: Dictionary) -> String:
 
 
 ## 这一帧要画哪些地名、各落在哪（_ensure_layout 之后调；_draw_labels 照它画，探针照它验）：
-## 小字地名（岛 / 岬 / 水门 / 山 / 河 / 注）避开港框、港名、船标与先摆下的地名，撞了就不画；
-## 地区名（日本 / 筑前 / 交趾……）避开港框、港名与先摆下的地名，原处撞了往下、往上各挪一行，都撞就不画——
+## 小字地名（岛 / 岬 / 水门 / 山 / 河 / 注）避开港框、港名、船标、HUD 块（罗盘 / 题记框 / 比例尺）与先摆下的地名，撞了就不画；
+## 地区名（日本 / 筑前 / 交趾……）避开港框、港名、HUD 块与先摆下的地名，原处撞了往下、往上各挪一行，都撞就不画——
 ## 原先地区名不避让：选向框福州—博多（缩放 0.28）时「日本」两字压在「博多」港名上，读成「博多本」；
 ## 放大到 2.6 看博多，「筑前」压港名。地区名不避船标：船从旁驶过时字不跳。海名照旧不避（画在开阔海面）。lane w53-1
 ## 返回 [{lb, kind, text, pos}]：pos 是画字的锚点（与原先的经纬落点相同，地区名挪过一行的除外）
@@ -1371,6 +1414,8 @@ func label_layout() -> Array:
 		var L: Dictionary = _port_layout[pid]
 		marks.append((L["box"] as Rect2).grow(_px(3.0)))
 		marks.append(L["rect"])
+	for hr: Rect2 in hud_rects:
+		marks.append(_screen_to_world_rect(hr))
 	var out: Array = []
 	for lb in labels:
 		var tier := str(lb.get("tier", "mid"))
@@ -1476,6 +1521,13 @@ func _draw_labels(ci: CanvasItem) -> void:
 			var o := v + Vector2((k - 1) * s * 2.2, 0)
 			ci.draw_polyline(PackedVector2Array([o + Vector2(-s, s * 0.5), o + Vector2(0, -s * 0.6), o + Vector2(s, s * 0.5)]), hc, _px(1.3), true)
 		_text(ci, v + Vector2(0, _px(16)), htext, 13, hc, HORIZONTAL_ALIGNMENT_CENTER)
+
+
+static func _rect_hits_point(rects: Array[Rect2], p: Vector2) -> bool:
+	for o in rects:
+		if o.has_point(p):
+			return true
+	return false
 
 
 static func _rect_hits(r: Rect2, rects: Array) -> bool:

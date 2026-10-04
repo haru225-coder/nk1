@@ -30,6 +30,7 @@ var scale_bar: Control
 var mode_button: Button
 ## 中间露出图的那段占位（顶匾之下、牌区之上）；取景只用这段，见 _push_view_inset
 var _map_clear: Control
+var _cartouche: Control
 var _actions_wrap: Control
 var _deck_hint: Label
 var terrain_mode: bool = false
@@ -250,6 +251,7 @@ func _build_ui() -> void:
 	cartouche.offset_bottom = 8 + 190
 	cartouche.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cartouche.draw.connect(func(): _draw_cartouche(cartouche))
+	_cartouche = cartouche
 	# 验收 code:CR-8：缩放换方格时题记旁注跟着重写
 	map.camera_changed.connect(cartouche.queue_redraw)
 	center.add_child(cartouche)
@@ -372,6 +374,26 @@ func _push_view_inset() -> void:
 	var top := _map_clear.global_position.y - global_position.y
 	var bottom := size.y - (top + _map_clear.size.y)
 	map.set_view_inset(top, bottom)
+	map.set_hud_rects(_hud_rects())
+
+
+## 盖在图带上的几块 HUD（罗盘连盘下针名、题记框、比例尺），海图页坐标（= 海图屏幕坐标）。图上摆港名、地名、出带箭头时让开，
+## 港位本身落在里头的不写港名（MapView.set_hud_rects）：原先不让，南岛海道北口的港名常落在罗盘盘面底下，盘下针名「丑针」
+## 压进「南島海道北口」里；广州、漳州的港名压在比例尺「一百里」上（lane w53-1）
+func _hud_rects() -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	for c: Control in [compass, _cartouche, scale_bar]:
+		if c == null or not c.is_visible_in_tree():
+			continue
+		var r := Rect2(c.global_position - global_position, c.size)
+		if c == compass:
+			# 盘下针名写在罗盘框下沿外几 px（_draw_compass：盘心下 r + 16 处基线、12 px 字）
+			r = r.grow_individual(0.0, 0.0, 0.0, 8.0)
+		elif c == scale_bar:
+			# 比例尺只有一道墨线连上方的里数（_draw_scale：线长至多 190 px），框里其余是透明的
+			r = Rect2(r.position + Vector2(4.0, 3.0), Vector2(196.0, 28.0))
+		out.append(r)
+	return out
 
 
 ## 验收 code:CR-3：海图子视口按物理像素渲染。容器铺成物理像素大小再缩回 logical/phys，

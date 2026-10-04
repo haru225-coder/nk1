@@ -10,7 +10,9 @@ extends SceneTree
 ##   H1 出箭头的镜头够多（不然测不到）；
 ##   H2 朱箭三角与名字的外框不压港框 / 港名 / 船标（_port_obstacles；目的港自己的也算——落在图带边那圈里时
 ##      出带箭头的名字与它自己的港名同字，叠在一起更乱）；
-##   H3 箭尖仍在图带边上（挪动只沿图带边、出不了图带），离原位不过 8 步 × 14 屏幕 px；三角尖朝目的地。
+##   H3 箭尖仍在图带边上（挪动只沿图带边、出不了图带），离原位不过 8 步 × 14 屏幕 px；三角尖朝目的地；
+##   H4 出箭头时目的港确实没整个露出来：港框连金圈与港名都在图带里（不含航法钮那条缝）就不该再出箭头：
+##      再写一个朱字港名是重名，还会与港名本身相撞。
 ## 运行期脚本错（被测代码某条路径出错）只中止出错的那一个函数——断言整段跳过、fails 不涨、退出码守 0：
 ## 接共用件 tools/script_err_tally.gd，本进程 SCRIPT ERROR 即红；_run_guarded 包一层兜 _run 自己半路中止（lane w53-1）。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_1_dest_hint_probe.gd
@@ -75,6 +77,7 @@ func _run() -> void:
 	var shown := {"选向": 0, "放大": 0, "航行": 0}
 	var hits: Array = []
 	var bad_tip: Array = []
+	var self_dup: Array = []
 	for a in ids:
 		for b in ids:
 			if a == b:
@@ -112,10 +115,13 @@ func _run() -> void:
 					var why := _tip_check(h, b)
 					if why != "":
 						bad_tip.append("%s %s" % [tag, why])
+					if _dest_shown(b):
+						self_dup.append(tag)
 	var total := int(shown["选向"]) + int(shown["放大"]) + int(shown["航行"])
 	_expect(total >= 150, "H1 出箭头的镜头 %d 个（选向 %d / 放大 %d / 航行 %d）" % [total, shown["选向"], shown["放大"], shown["航行"]])
 	_expect(hits.is_empty(), "H2 朱箭与名字不压港框 / 港名 / 船标（压 %d 处：%s）" % [hits.size(), "; ".join(hits.slice(0, 8))])
 	_expect(bad_tip.is_empty(), "H3 箭尖在图带边上、挪不过 8 步、朝目的地（不合 %d 处：%s）" % [bad_tip.size(), "; ".join(bad_tip.slice(0, 6))])
+	_expect(self_dup.is_empty(), "H4 目的港框与港名整个露在图带里时不出箭头（重名 %d 处：%s）" % [self_dup.size(), "; ".join(self_dup.slice(0, 6))])
 	_report()
 
 
@@ -171,6 +177,16 @@ func _hint() -> Dictionary:
 	return {"tip": e, "tri": tri, "text": text, "text_pos": tp,
 		"tri_rect": Rect2(tri[0], Vector2.ZERO).expand(tri[1]).expand(tri[2]),
 		"label_rect": Rect2(tp + Vector2(-tw * 0.5, -th * 0.8), Vector2(tw, th))}
+
+
+## 目的港这一镜头画出来了，港框连金圈（半径 + 7 屏幕 px）与港名都整个落在图带里（不含航法钮那条缝）——本探针自算
+func _dest_shown(dest: String) -> bool:
+	var lay: Dictionary = _map.get("_port_layout")
+	if not lay.has(dest):
+		return false
+	var seen: Rect2 = _map.call("_band_world_rect")
+	var ring := Rect2(lay[dest]["v"], Vector2.ZERO).grow(float(lay[dest]["r"]) + _px(7.0))
+	return seen.encloses(ring) and seen.encloses(lay[dest]["rect"])
 
 
 ## 朱箭三角 / 名字外框压到的港框、港名、船标，按名报
