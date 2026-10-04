@@ -150,6 +150,14 @@ func _check_spread_rows(main) -> void:
 				_fail("泉州行会商誉 %d 的行情不是利润前 %d 条：%s ≠ %s" % [case["credit"], want.size(), got, want])
 			else:
 				_ok("泉州行会商誉 %d：抄利润前 %d 条行情（可抄 %d 条）" % [case["credit"], want.size(), all_rows.size()])
+			# lane w53-10 八轮：正文照门槛说够不够数（门槛写字面 8，同上不读常量）。原先「海商信用 %d，足的人会里肯多抄
+			# 几条远路」把数夹进「海商信用足的人」中间，读成「海商信用 -20，足的人……」，也不说到几才算足
+			var body := str(main.body_text.text)
+			var say: String = "你的海商信用够了，会里肯多抄两条远路。" if int(case["credit"]) >= 8 else "海商信用到 8，会里肯多抄两条远路。"
+			if not body.ends_with(say):
+				_fail("泉州行会海商信用 %d 的正文没以「%s」收尾：%s" % [case["credit"], say, body])
+			else:
+				_ok("泉州行会海商信用 %d：正文「%s」" % [case["credit"], say])
 	eco.rates = saved
 
 

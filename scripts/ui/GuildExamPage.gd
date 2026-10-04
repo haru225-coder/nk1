@@ -22,7 +22,11 @@ static func guild_port_id(page_id: String) -> String:
 static func setup_guild(main: Control, port_id: String) -> void:
 	port_id = main._guild_port_id(port_id)
 	main.scene_title.text = "%s・行会" % GameManager.get_port_name(port_id)
-	main.body_text.text = "墙上钉着远港价目，墨迹有的还潮着。海商信用 %d，足的人会里肯多抄几条远路。" % GameState.merchant_credit
+	# 多抄两条 = 下面 limit 的 5 对 3；够不够数照 GUILD_CREDIT_WIDE 说，现有的数在同页会籍工席副题上（lane w53-10 八轮）
+	if GameState.merchant_credit >= main.GUILD_CREDIT_WIDE:
+		main.body_text.text = "墙上钉着远港价目，墨迹有的还潮着。你的海商信用够了，会里肯多抄两条远路。"
+	else:
+		main.body_text.text = "墙上钉着远港价目，墨迹有的还潮着。海商信用到 %d，会里肯多抄两条远路。" % main.GUILD_CREDIT_WIDE
 	main._begin_benches()
 	main._center_benches()
 
