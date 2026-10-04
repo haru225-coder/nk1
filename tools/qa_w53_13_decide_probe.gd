@@ -7,6 +7,8 @@ extends SceneTree
 ##     任何时候都写，本钱还差两万也照写，离了牙行什么都不发生。
 ##   H 晨潮钉了结之地（待拍板 4）：章目只差「泊在占城」一条时，晨潮三向第一席恒是占城。修前占城只按顺风短程轮转，
 ##     从广州出发八手里多半不见占城（lane w53-12 实测平均候约十三日）。
+##   E 剧情终局后船籍簿只写结局名（待拍板 67）：纲首、忠肃一类走 GameState.finish 的终局，船籍簿与顶匾原照列本章章目
+##     （博多局第二章全打勾「已」却永不开章）。现在与第四章了结同一口径：只写「了结　<结局名>」。
 ##   K 章节总述落船籍簿（待拍板 3）：chapters.json 的 hint 在章目没走完时写在船籍簿章名下；走完了不写。修前 hint 从不上屏。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_13_decide_probe.gd
 ## 末行 W53_13_DECIDE cases=N fails=M；fails>0 退 1。
@@ -66,6 +68,7 @@ func _boot() -> void:
 	await _l_ledger_settle()
 	await _h_heading_pin()
 	await _k_ledger_hint()
+	await _e_ended_ledger()
 	_report()
 
 
@@ -237,6 +240,24 @@ func _k_ledger_hint() -> void:
 	_ready_ch4("champa", need + 1000)
 	page = _page()
 	_expect(not page.contains(h4), "反向基：章目全达时不写总述（实读：%s）" % _snip(page, "第四章"))
+
+
+# ── E 剧情终局后船籍簿只写结局名 ─────────────────────────
+
+func _e_ended_ledger() -> void:
+	print("── E 剧情终局后：船籍簿 / 顶匾不再列章目，只写结局名")
+	_gs.from_dict({})
+	_cal.from_dict({"year": 1276, "month": 3, "day": 1})
+	_gs.chapter = 2
+	_gs.peak_money = 30000
+	_gs.visited_ports = ["quanzhou", "fuzhou", "zhangzhou", "wenzhou", "penghu", "ryukyu", "mingzhou", "jeju", "hakata"]
+	_gs.last_port = "hakata"
+	_gs.finish("纲首", "（探针）")
+	var page := _page()
+	var hint := str(_main.call("_chapter_hint"))
+	_expect(page.contains("了结　纲首") and not page.contains("亲至　博多唐房") and not page.contains("走通港口"),
+		"纲首终局后（第二章、章目全达）：船籍簿只写「了结　纲首」、不列章目（实读：%s）" % _snip(page, "第二章"))
+	_expect(hint == "了结　纲首", "纲首终局后顶匾写「了结　纲首」（实读「%s」）" % hint)
 
 
 func _snip(t: String, anchor: String, span := 60) -> String:
