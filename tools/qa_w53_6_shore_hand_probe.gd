@@ -11,9 +11,11 @@ extends SceneTree
 ##   H4 再候一日连按八回：九处每处都开过门（港页这一头的「盐位转一圈，九处都会开门」）；
 ##   H5 缺人（二号水手不到最低）：盐位 0–7 每一位船屋都在开着的三扇里，门卡带「船还开不出去」；
 ##   H6 缺粮（水粮撑不过两日）：同 H5；
-##   H7 对照：船齐粮足时盐位 0–7 里船屋至少有一位不开（钉船屋只在开不出去时）。
+##   H7 对照：船齐粮足时盐位 0–7 里船屋至少有一位不开（钉船屋只在开不出去时）；
+##   H8 缺人钉着船屋，进船屋「补齐」再「离开」回港：还是原来那三扇、船屋仍开，门卡不再写「船还开不出去」；
+##      再候一日是新的一手、船况已齐，船屋照轮转（不再钉）。原先回港即按眼下船况重发，船屋当日「今日此门未开」（lane w53-6）。
 ## 回退即红：_on_shore_wait 去掉 GameState.shore_salt += 1 → H3 / H4；_shore_pin_shipyard 恒 false → H5 / H6；
-## _refresh_shore 发牌不传盐位（传 0）→ H3 / H4。
+## _refresh_shore 发牌不传盐位（传 0）→ H3 / H4；发牌改回 _shore_pin_shipyard()（不按这一手记）→ H8。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_6_shore_hand_probe.gd
 ## 输出末行 QA_W53_6_SHORE_HAND cases=N fails=M；M>0 时 exit 1。
 
@@ -146,6 +148,36 @@ func _run() -> void:
 			shut_salts.append(salt)
 	_check(not shut_salts.is_empty() and _find_label(_main.port_mode, "船还开不出去") == "",
 		"H7 对照 船齐粮足：船屋在盐位 %s 不开门、门卡不写「船还开不出去」（钉船屋只在开不出去时）" % [shut_salts])
+
+	# ── H8 钉着船屋进去补齐人手、回港：同一手不换，船屋仍开 ──
+	_stage(0, "crew")
+	await _open_port()
+	var pinned := _open_doors()
+	_main.load_scene("quanzhou_shipyard")
+	await _settle(4)
+	var top := _find_prefix(_main.investigation_mode, "补齐 ")
+	var fixed := false
+	if top != null:
+		top.pressed.emit()
+		await _settle(4)
+		fixed = bool(fleet.can_sail())
+	var back := _find_button(_main.investigation_mode, "离开")
+	if back != null:
+		back.pressed.emit()
+		await _settle(4)
+	var after := _open_doors()
+	var still_label := _find_label(_main.port_mode, "船还开不出去")
+	_check("船屋" in pinned and fixed and after == pinned and still_label == "",
+		"H8 缺人钉船屋 %s → 船屋里补齐（船况齐 %s）→ 回港 %s（应同一手、船屋仍开），门卡「船还开不出去」%s" % [
+			pinned, "是" if fixed else "否", after, "已去" if still_label == "" else "还在"])
+	var wait8 := _find_button(_main.port_mode, "再候一日")
+	var next_hand: Array = []
+	if wait8 != null:
+		wait8.pressed.emit()
+		await _settle(4)
+		next_hand = _open_doors()
+	_check(next_hand.size() == 3 and not ("船屋" in next_hand),
+		"H8 再候一日是新的一手、船况已齐：船屋照轮转不再钉（盐位 1 开 %s）" % [next_hand])
 	_finish()
 
 
@@ -238,6 +270,18 @@ func _find_button(n: Node, text: String) -> Button:
 		return n
 	for c in n.get_children():
 		var hit := _find_button(c, text)
+		if hit != null:
+			return hit
+	return null
+
+
+func _find_prefix(n: Node, prefix: String) -> Button:
+	if n.is_queued_for_deletion():
+		return null
+	if n is Button and (n as Button).is_visible_in_tree() and not (n as Button).disabled and (n as Button).text.begins_with(prefix):
+		return n
+	for c in n.get_children():
+		var hit := _find_prefix(c, prefix)
 		if hit != null:
 			return hit
 	return null

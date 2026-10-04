@@ -2523,7 +2523,7 @@ func _refresh_shore() -> void:
 				specials.append(fid_raw)
 		else:
 			regular.append(raw_fac)
-	shore_hand = ShoreDraft.deal(regular, GameState.shore_salt, _shore_pin_shipyard(), Economy.is_market_open(current_scene_id))
+	shore_hand = ShoreDraft.deal(regular, GameState.shore_salt, _shore_pin_today(), Economy.is_market_open(current_scene_id))
 	for fid_sp in specials:
 		if fid_sp not in shore_hand:
 			shore_hand.append(fid_sp)
@@ -4670,3 +4670,19 @@ func _epilogue_rows(text: String, width := 724.0) -> int:
 	para.break_flags = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
 	para.width = width
 	return maxi(1, para.get_line_count())
+
+
+## 钉船屋按「这一手」记（lane w53-6）：发牌那刻船开不出去、船屋钉上了，同港同日同盐位再排岸带（进出设施回港）时照钉。
+## 原先每回排岸带都按眼下船况重算：缺人进船屋补齐、回港船屋随即不钉，门重排，船屋当日就「今日此门未开」——
+## 刚进去过的门回来就关了（设计 §11.3「从一处回到港上，盐位不变，这一手还是原来的三扇门」）。
+## 候一日、换港、换日都是新的一手，钉不钉照当时船况重算；门卡「船还开不出去」一行仍按眼下船况（_refresh_shore 的 pin_yard）。
+## 会话内记、不入存档：海图回港 Main 重挂，读档回港按读回的船况重发。
+var _shore_pin_hand := ""
+
+
+func _shore_pin_today() -> bool:
+	var hand := "%s|%d|%d" % [current_scene_id, Calendar.absolute_day(), GameState.shore_salt]
+	if _shore_pin_shipyard():
+		_shore_pin_hand = hand
+		return true
+	return _shore_pin_hand == hand
