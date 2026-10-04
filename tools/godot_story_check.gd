@@ -441,7 +441,7 @@ func _initialize() -> void:
 	# ── 跳年（P1 时间脊柱） ──
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
-	Flt.from_dict({})
+	_fleet_reset_with_starter(Flt)
 	Eco.initialize()
 	# 行为累计
 	GS.record_trip("quanzhou", "hakata")
@@ -458,7 +458,7 @@ func _initialize() -> void:
 	_check(Cal.year == 1258, "跳 3 年后历法到 1258（实际 %d）" % Cal.year)
 	_check(not lines.is_empty(), "跳年返回摘要行")
 	_check(abs(float(Eco.get_rate("quanzhou", "grain")) - 1.0) < 0.001, "跳年后行情重置为 1.0")
-	if not Flt.ships.is_empty():
+	if _checked(not Flt.ships.is_empty(), "跳年这一节船队有船——船况折旧两格才测得到、不被整段跳过（%d 艘）" % Flt.ships.size()):
 		var hull1: float = float(Flt.ships[0].get("durability", 0))
 		_check(hull1 < hull0, "跳年后船况折旧（%.0f → %.0f）" % [hull0, hull1])
 		_check(hull1 >= float(Flt.ships[0].get("max_durability", 120)) * GM.SKIP_HULL_FLOOR - 0.5, "折旧不低于下限")
@@ -5170,6 +5170,7 @@ func _finish_after_route() -> void:
 	GateReport.finish("godot_story_check", 1 if _fails > 0 else 0, "STORY_CHECK SUMMARY fails=%d" % _fails)
 	quit(1 if _fails > 0 else 0)
 
+
 ## lane w53-11 六轮：存档往返一节（_initialize 段）跑在 SaveLoad._ready 之前——-s 下 SceneTree._initialize 先于 autoload 入树
 ## （同 _initialize 头上手动 GM.load_data 的缘由），SaveLoad._ready 那手 make_dir(user://saves/) 还没做：空 user://（新机、照 GATES §四
 ## 搭的 CI、XDG_DATA_HOME 隔离跑）上 save_game 写 .tmp 即失败，守城存读档往返 16 条全红；一键共用 user:// 早有 saves/ 才一直绿。
@@ -5181,3 +5182,18 @@ func _save_load_pre_ready() -> Node:
 		mirrored = DirAccess.make_dir_recursive_absolute(str(sl.get("SAVE_DIR"))) == OK
 	_check(sl.is_node_ready() or mirrored, "存档往返跑在 SaveLoad._ready 之前：已照它补建 %s（不靠机器上残留的存档目录）" % str(sl.get("SAVE_DIR")))
 	return sl
+
+
+## lane w53-11 六轮：跳年一节的船队。Flt.from_dict({}) 把船清空，Fleet._ready 的「空船队补起始小艍」要等 _initialize 之后 autoload
+## 入树才跑——原先这里船队恒空，「跳年后船况折旧」「折旧不低于下限」两格被 `if not Flt.ships.is_empty()` 整段跳过、一键里从没打印过
+## （GameManager.skip_years 的船况年折在 Godot 侧没人测）。清空后照 Fleet._ready 补一艘起始船，两格才真跑；跳年后那道 if 改走 _checked，
+## 船队又空了先红一格，不再静默跳过。
+func _fleet_reset_with_starter(flt: Node) -> void:
+	flt.from_dict({})
+	flt.call("_grant_starter_ship")
+
+
+## 判一格并把条件原样交回（给 `if` 守着的一段用：守门条件不成立先记红，不让后面几格悄悄跳过）
+func _checked(cond: bool, msg: String) -> bool:
+	_check(cond, msg)
+	return cond
