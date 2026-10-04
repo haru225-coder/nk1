@@ -43,6 +43,7 @@
 | `outcomes` | list · 11 条 |
 | `cues` | list · 38 条 |
 | `hud_fields` | list · 16 条 |
+| `spoil` | dict · 5 条（lane w53-16 起由 SeaChart 实况读） |
 
 ### 1.2 `phases[]`
 
@@ -86,6 +87,18 @@
 ### 1.6 `thresholds` / `queries` / `resolve`
 
 门限数值（如 `BOARD_DISTANCE` 对齐 WorldMap 140 px）；`queries` 是转移谓词的命名口；`resolve` 描述各结局如何收束到 `battle_finished`。
+
+### 1.7 `spoil`（分赃规则 · lane w53-16 起由 SeaChart 实况读）
+
+| 键 | 说明 |
+|---|---|
+| `base` | `[150, 600]` 整场赏钱的基区（钱）。方案一页结论 3：赏钱跟打法挂钩 |
+| `by_fate` | 各下场（`struck` / `sunk` / `burned` / `fled` / `boarded`）的乘率：击沉 / 焚毁 1/3、遁走 1/2、逼降全赏 1.0、夺船 0（船本身就是赏，不给钱）；混编按下场加权（方案落地：`SeaChart._spoil_by_outcome`） |
+| `zashi_spoil_mul_per_level` | 职事「杂事缴获」每级的加赏倍率（0.1）；`officer_effects.zashi.spoil_mul` 0.05 乘二——槽面写一成更顺嘴（方案 §六：「下了锚得好货，杂事会点，多卖一成」） |
+| `captured_money` | 夺船给船不另加钱（0） |
+| `note` | 口径注记 |
+
+读不到本节（json 打不开、spoil 缺节、base 不足两档）SeaChart 退回旧区间：全灭 150–600 / 敌逃 75–300（legacy）。
 
 ## 2. `data/weapons.json`
 

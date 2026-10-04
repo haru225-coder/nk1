@@ -1312,6 +1312,20 @@
       "fallback": 0
     }
   ],
+  "spoil": {
+    "note": "分赃规则（战斗系统方案一页结论 3：赏钱跟打法挂钩）——SeaChart 收战时按敌船下场逐路取区间掷整；读不到本节退回旧区间（全灭 150–600 / 敌逃 75–300）。单位：钱。mul 乘 base 得每股区间；captured 不给钱（夺来的船本身就是赏）；parted 两散不给钱。zashi_spoil_mul_per_level 是二期职事「杂事缴获」每级的加赏倍率（officer_effects.zashi.spoil_mul 0.05 乘二，槽面上写一成更顺嘴——方案§六：下了锚得好货，杂事会点，多卖一成）",
+    "base": [150, 600],
+    "by_fate": {
+      "struck": {"mul": 1.0, "note": "逼降全赏：货与人一并收押"},
+      "boarded": {"mul": 0.0, "note": "夺船不另加钱：那条船就是赏钱（captured_money 条同义）"},
+      "burned": {"mul": 0.333, "note": "焚毁同击沉"},
+      "sunk": {"mul": 0.333, "note": "打沉只拿三分之一：沉船捞不着什么"},
+      "fled": {"mul": 0.5, "note": "敌逃一半：只拾得些漂散的货（enemy_fled.spoil_rule half 同义）"}
+    },
+    "captured_money": 0,
+    "zashi_spoil_mul_per_level": 0.1,
+    "worthless": 0.0
+  },
   "resolve": {
     "by": "outcomes 里带 precedence 的几项，按 precedence 从小到大，头一个 tally 大于 0 的即结局",
     "fallback": "enemy_sunk",
