@@ -54,6 +54,8 @@ const SEA_BUY_MARKUP := 1.12
 const SEA_SELL_CAP := 0.92
 const SEA_SELL_JITTER_MIN := 0.82
 const SEA_SELL_JITTER_MAX := 1.02
+## 方位角 → 八方字（顺流事件写海流去向；与 SeaState.DIR8 同序，0° 为北、顺时针）
+const DIR8 := ["北", "东北", "东", "东南", "南", "西南", "西", "西北"]
 
 enum CourseOrder { RUMB, OFFSHORE, COAST }
 ## MUTINY 来自云端 7d9f（不进随机表）；SHOAL / LOST 来自云端 bed9 航法线；
@@ -578,7 +580,7 @@ func event_weights(order: int, monsoon_strength: float, known: bool, discoveries
 
 ## 推演一日，返回事件字典 {kind, title, text, ...}
 ## from_id / to_id 用于发现物与生路判定；order 为当日航法。
-func roll_day_event(_course_bearing: float, from_id: String = "", to_id: String = "", order: int = CourseOrder.RUMB) -> Dictionary:
+func roll_day_event(course_bearing: float, from_id: String = "", to_id: String = "", order: int = CourseOrder.RUMB) -> Dictionary:
 	# 本地 main 战况机：战时航段先抽征船 / 元军哨船 / 难民船，抽不到再走航法权重表
 	if from_id != "" and to_id != "":
 		var war_ev := _war_event(from_id, to_id)
@@ -602,7 +604,7 @@ func roll_day_event(_course_bearing: float, from_id: String = "", to_id: String 
 		return _calm_event()
 	t += float(w["current"])
 	if r < t:
-		return _current_event()
+		return _current_event(course_bearing)
 	t += float(w["merchant"])
 	if r < t:
 		return _merchant_event(from_id)
@@ -720,11 +722,13 @@ func _calm_event() -> Dictionary:
 	}
 
 
-func _current_event() -> Dictionary:
+## 顺流 = 海流顺着当日船向走（SeaChart._day_progress 记一日半的路）。去向照船向写八方字：原先写死「南下的暖流」，
+## 北去明州、博多的航段也说一股南下的流把船推快了（lane w53-10 八轮）
+func _current_event(course_bearing: float) -> Dictionary:
 	return {
 		"kind": EventKind.CURRENT,
 		"title": "顺流",
-		"text": "撞上一股南下的暖流，船身轻快了许多，舵手说这一日能多走几十里。",
+		"text": "撞上一股往%s去的海流，船身轻快了许多，舵手说这一日能多走几十里。" % DIR8[int(round(fposmod(course_bearing, 360.0) / 45.0)) % 8],
 		"bonus": 1,
 	}
 

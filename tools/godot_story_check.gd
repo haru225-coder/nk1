@@ -5156,6 +5156,39 @@ func _w53_10_contract_fame_floor_check() -> void:
 	Cal.from_dict(keep_cal)
 
 
+## lane w53-10（八轮）：海图「顺流」事件写的海流去向 = 当日船向（八方字）。原先写死「撞上一股南下的暖流，船身轻快了许多」，
+## 北去明州、博多的航段也说一股南下的流把船推快了。先走真路径 roll_day_event（定种子抽到顺流为止，验海图传进来的船向
+## 接到了文案），再直调五个方位验八方字。
+func _w53_10_current_heading_check() -> void:
+	var Voy: Node = root.get_node("Voyage")
+	var Flt: Node = root.get_node("Fleet")
+	var keep_gs: Dictionary = GS.to_dict()
+	var keep_cal: Dictionary = Cal.to_dict()
+	var keep_fleet: Dictionary = Flt.call("to_dict")
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 6, "day": 1})
+	Flt.set("ships", [])
+	Flt.call("add_ship", "fu_ship_medium", "")
+	seed(53010)
+	var rolled := ""
+	for i in range(3000):
+		var ev: Dictionary = Voy.roll_day_event(35.0, "quanzhou", "mingzhou")
+		if int(ev.get("kind", 0)) == Voy.EventKind.CURRENT:
+			rolled = str(ev.get("text", ""))
+			break
+	_check(rolled.begins_with("撞上一股往东北去的海流"), "顺流事件海流去向 = 船向：泉州→明州船向 35° 抽到「%s」" % rolled)
+	var direct := {}
+	for deg in [0.0, 100.0, 170.0, 220.0, 320.0]:
+		direct[deg] = str(Voy.call("_current_event", deg).get("text", ""))
+	_check(direct[0.0].begins_with("撞上一股往北去的海流") and direct[100.0].begins_with("撞上一股往东去的海流")
+		and direct[170.0].begins_with("撞上一股往南去的海流") and direct[220.0].begins_with("撞上一股往西南去的海流")
+		and direct[320.0].begins_with("撞上一股往西北去的海流"),
+		"顺流事件八方去向：%s" % str(direct))
+	Flt.call("from_dict", keep_fleet)
+	GS.from_dict(keep_gs)
+	Cal.from_dict(keep_cal)
+
+
 ## lane w53-11：story 收尾（原在 _process 里、不 await _route_check 就印 SUMMARY / quit）——等抵港路由一节整段跑完
 ## （含其中真让帧的 await）再判 SCRIPT ERROR、印 SUMMARY、退出；_route_check 半路被脚本错掐断时 await 照样回来，
 ## 由 _script_error_check 判红。
@@ -5164,6 +5197,7 @@ func _finish_after_route() -> void:
 	_w53_10_sea_purse_check()
 	_w53_10_zhang_one_ship_check()
 	_w53_10_contract_fame_floor_check()
+	_w53_10_current_heading_check()
 	_script_error_check()
 	print("STORY_CHECK TOTAL asserts run=", GateReport._checks.size(), "；lane w20-c6 补白新增 c6_asserts=", _c6_added)
 	print("STORY_CHECK SUMMARY fails=", _fails)
