@@ -366,26 +366,34 @@ func _g_enter_skips_errand() -> void:
 
 # ── T 征船交出在坞位之前：坞位序号跟着顺 ─────────────────
 
-func _t_berth(idx_berth: int) -> int:
+# Fleet.ship_capacity(i) 按 type 从 ships.json 读，不读船 dict 里的 capacity 字段：落地三艘
+# fu_ship_medium(800) / sampan(200) / keel_boat(600)，最小的 sampan 第 1 艘。
+func _t_berth(idx_berth: int) -> Array:
 	_gs.from_dict({})
 	_gs.berth_index = idx_berth
 	var fleet := root.get_node("Fleet")
-	fleet.ships = [{"name": "大", "type": "junk", "capacity": 400, "crew": 10}, {"name": "中", "type": "junk", "capacity": 200, "crew": 8}, {"name": "小", "type": "sampan", "capacity": 30, "crew": 4}]
-	var idx := 0
-	for i in range(fleet.ships.size()):
-		if fleet.ship_capacity(i) < fleet.ship_capacity(idx): idx = i
-	_expect(idx == 2, "摆场：最小那条是第 2 艘（实得 %d）" % idx)
+	fleet.ships = [{"name": "大", "type": "fu_ship_medium"}, {"name": "小", "type": "sampan"}, {"name": "中", "type": "keel_boat"}]
+	var m0: float = fleet.ship_capacity(0); var m1: float = fleet.ship_capacity(1); var m2: float = fleet.ship_capacity(2)
+	var idx_small := 0 if m0 <= m1 and m0 <= m2 else (1 if m1 <= m2 else 2)
+	_expect(int(m0) == 800 and int(m1) == 200 and int(m2) == 600 and idx_small == 1, "摆场：最小的 sampan 第 1 艘、三仓 %.0f/%.0f/%.0f、取 %d" % [m0, m1, m2, idx_small])
+	var idx := idx_small
 	if idx == _gs.berth_index: _gs.berth_index = 0
 	elif idx < _gs.berth_index: _gs.berth_index -= 1
 	fleet.ships.remove_at(idx)
-	return _gs.berth_index
+	return [_gs.berth_index, str(fleet.ships[_gs.berth_index].get("name", ""))]
 
 
 func _t_berth_after_surrender() -> void:
 	print("── T 征船交出最小一条船：坞位序号跟顺")
-	_expect(_t_berth(1) == 1, "坞位第 1 艘（中）、交出第 2 艘（小）：坞位仍 1")
-	_expect(_t_berth(0) == 0, "坞位第 0 艘（大）、交出第 2 艘（小）：坞位仍 0")
-	_expect(_t_berth(2) == 0, "坞位就是交出去那艘：坞位归 0")
+	# 坞 2（中 keel_boat）、交 1（sampan）→ 坞位序号顺成 1、仍指「中」
+	var r := _t_berth(2)
+	_expect(r[0] == 1 and r[1] == "中", "坞位第 2 艘（中）、交出第 1 艘（小）：坞位序号顺成 1、仍指「中」（实得 %s/%s）" % [r[0], r[1]])
+	# 坞 0（大）、交 1（小）→ 坞位仍 0 指「大」，不动
+	r = _t_berth(0)
+	_expect(r[0] == 0 and r[1] == "大", "坞位第 0 艘（大）、交出第 1 艘（小）：坞位仍 0、仍指「大」（实得 %s/%s）" % [r[0], r[1]])
+	# 坞 1（小）、交 1（小）→ 交出的是坞位那艘，坞位归 0
+	r = _t_berth(1)
+	_expect(r[0] == 0, "坞位就是交出去那艘：坞位归 0（实得 %d）" % r[0])
 
 # ── R 每到新的一天进港重发三扇门 ─────────────────────────
 
