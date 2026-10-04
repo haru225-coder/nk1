@@ -11,7 +11,9 @@
   · 写字慢的大字挪晚：读完线原先只量起笔（t 离镜头结束 ≥1.5 秒），忠肃第 1 镜「生为宋臣／死为宋鬼」八个大字要写 2.8 秒，
     起笔 5.0 秒、镜终 8.0 秒照报通过，写全只停 0.21 秒就硬切（七轮补写全读完线；真数据已把这一镜让出时间）；
   · 年号竖排挪到左下横排写长：单行上限原先手抄一张表，era/lower_left 写 22 字，引擎一行只放得下 18，19 字折成两行照报通过
-    （七轮改为按播放器字号 / 字距 / 排版宽现算）。
+    （七轮改为按播放器字号 / 字距 / 排版宽现算）；
+  · style / pos 拼错一个字母（narration→narartion、lower_left→lower_lef）：判据本在 check_data，但没配样本自检与变异照，
+    被删照绿——八轮补 S10/S11 + M11/M12 双路。
 门禁照报「契约校验通过」。
 
 本脚本拿真数据做底，逐个注入一种上面的笔误，写进临时文件交给 check_data(path) 判：每一种都要判红、
@@ -93,6 +95,14 @@ def m_alt_flag_key(d):
     _rename(_alt(d, "ending_weigui", 0, lambda a: a.get("if_flag") == "weigui_at_harbor"), "if_flag", "if_flg")
 
 
+def m_style_typo(d):
+    _caption(d, "ending_zhongsu", 0, lambda c: c.get("style") == "era")["style"] = "narartion"
+
+
+def m_pos_typo(d):
+    _caption(d, "ending_zhongsu", 0, lambda c: c.get("pos") == "lower_left")["pos"] = "lower_lef"
+
+
 # （笔误，注入函数，判词里必须出现的定位片段）
 MUTANTS = [
     ("字幕换句旗键名写错 unless_flag→unles_flag", m_flag_key, "cutscenes.ending_zhongsu[2].captions[1] 有不认的键 ['unles_flag']"),
@@ -107,6 +117,10 @@ MUTANTS = [
     ("忠肃第 1 镜「生为宋臣／死为宋鬼」挪回起笔 5.0 秒", m_motto_late, "cutscenes.ending_zhongsu[1].captions[4] 写全后只停"),
     ("未归第 1 镜年号挪到左下写 19 字", m_era_lower_left_long,
      "cutscenes.ending_weigui[1].captions[1]「景炎元年十二月・消息是在别处听到的城破」19 字，超出 era/lower_left 单行上限 18"),
+    ("忠肃第 1 镜 era style 拼成 narartion（style 错别字）", m_style_typo,
+     "cutscenes.ending_zhongsu[1].captions[1] style/pos 非法：narartion"),
+    ("忠肃第 1 镜 lower_left 拼成 lower_lef（pos 错别字）", m_pos_typo,
+     "style/pos 非法：narration/lower_lef"),
 ]
 
 

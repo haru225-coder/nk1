@@ -794,7 +794,9 @@ def _contract_selftest() -> list:
     S8 守写全读完线（READ_AFTER_FULL，lane w53-9 七轮）：锚字幕换成七个字、hold 1.5 秒——旧的起笔读完线（hold ≥1.5）照过，
     任何样式七个字写全都要 0.6 秒以上，写全后停不满 1 秒，须判红。
     S9 守单行上限按播放器现算（_line_cap，lane w53-9 七轮）：锚字幕改成 era / lower_left、写到现算上限多一个字——
-    原先手抄的表这一格写 22，19 字照报通过、引擎折成两行。"""
+    原先手抄的表这一格写 22，19 字照报通过、引擎折成两行。
+    S10 / S11 守 style / pos 拼写（lane w53-9 八轮）：判据就在 check_data 里（672 行起）但原先没配本题样本——把它注释掉照报通过，
+    实测删后 rc=0；style 写错一个字母播放器只 push_warning 退到 line，pos 静默回默认，都属「表上 ENUM 不判」同型。"""
     import copy
     try:
         base = json.loads((ROOT / "data" / "cutscenes.json").read_text(encoding="utf-8"))
@@ -845,6 +847,8 @@ def _contract_selftest() -> list:
         ("字幕写全后停不满 1 秒", cap_seven, "hold", 1.5, f"{wc} 写全后只停"),
         ("era / lower_left 写过单行上限一字", cap_era_ll, "text", "一" * (era_cap + 1),
          f"{wc}「{'一' * (era_cap + 1)}」{era_cap + 1} 字，超出 era/lower_left 单行上限 {era_cap}"),
+        ("字幕 style 写错 narration→narartion", cap, "style", "narartion", f"{wc} style/pos 非法：narartion"),
+        ("字幕 pos 写错 lower_left→lower_lef", cap, "pos", "lower_lef", f"{wc} style/pos 非法："),
     ]
     bad = []
     for n, (name, cell, key, val, want) in enumerate(samples, 1):
