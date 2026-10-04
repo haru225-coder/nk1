@@ -1,0 +1,4628 @@
+{
+ "meta": {
+  "title": "东亚海域立志传伙伴名册（数据层骨架）",
+  "version": 1,
+  "status": "数据层骨架·未拍板——定级口径见 docs/伙伴系统拍板包_2026-10-04.md；未定字段一律写 \"_todo\"，拍板后逐格回填，fill 仍是本闸形状（type 不应为 str）",
+  "_todo": "未定字段记号：设计稿与决策包未拍板（或未对题）的字段；门禁对它只判「恰为这三个字」，判绿不判红",
+  "verify_def": {
+   "已核": "考据字段史实评审已过（名册 verify=确认，21 人）",
+   "待核": "考据字段需修正，kaoju 正文未搬入本表（名册 verify=需修正，19 人；过评审后回填并改已核）"
+  },
+  "name_note": "name 是设计期占位——罗汉字 / 方言名罗马字由视觉线白描一步定稿（对题表 §六）；拍板包 §〇.2 挂它标 _todo，本闸不卡名形",
+  "note": "守卫 tools/check_companions.py（lane w64-k1 立）。已定字段取自 docs/伙伴系统_草案与决策包对题表_2026-09-28.md 拟定行（照数搬入，不代拍板）：身份骨架（id/name/region/category/identity）、langs、登场窗口与方式 appear、入伙方式 join（type/fee/cost/bond_need/bond_start/bond_path/requires）、职事与战位 duty（roles/level_at_join/level_1279/wage_role_at_join/wage_slot/wage_discount/battle/range/home_port）、niche 钩名（kind 枚举，效果常量不抄）、立场 stance、特技与喜好货 traits/gifts、三线高潮 climax、复用与分期记号 reuse_character/p1/p1_stub、考据待核 verify。云屯搭档的「exclusive」一共两份、分别压在两人 duty.battle_note 里（join.type=local 时必填），不进顶层字段。未定留 _todo：attrs/growth（对题表 Q2 五维接不接玩法）、fate（Q3/Q4 余泽与剧本死亡）、relations/relation_flips/bond_tiers/one_time（对题表 D4 关系怎么记）。考据正文 kaoju 未搬入：等 verify 待核 22 人过史实评审再入，不留半成品数据。",
+  "sources": [
+   "docs/伙伴系统_草案与决策包对题表_2026-09-28.md",
+   "docs/伙伴系统设计_草案_roster_draft_2026-09-26.json"
+  ],
+  "region_def": {
+   "song": "宋地民间与基层（闽浙粤沿海）",
+   "north": "北方与蒙元治下的小人物",
+   "japan_korea": "日本（镰仓）与高丽",
+   "vietnam_champa": "大越与占城",
+   "siam_malay": "罗斛、单马令与马来半岛",
+   "island_sea": "海岛东南亚（菲律宾、婆罗洲、爪哇、苏门答腊）",
+   "fanfang": "泉州蕃坊与远方来客"
+  },
+  "category_def": {
+   "史实": "有可靠史料记载其人其事；本作时段内未载的经历另标「本作推演」",
+   "半史实": "其人或存在，但事迹多属传说、晚出史料，或只有名字",
+   "据史设人": "人名与个人经历为虚构；身份、行业、族群、港口、货物、服饰有史料依据"
+  },
+  "meet_mode_def": {
+   "tavern": "现有港口酒馆 / 街市邂逅",
+   "visit": "外国来客在现有港口来访（来访理由按史料可证的来华途径）",
+   "sea": "海上邂逅：route 所列航段抵港时结算一次（不进 Voyage.event_weights）",
+   "event": "剧情卡：events[] 中定义",
+   "yundun": "云屯泊地页：广州—占城启航时选「绕道云屯」才开（不设市场，不计港数）"
+  },
+  "join_type_def": {
+   "hire": "付入伙钱即入：入伙钱 = 首任职事月俸（无职事取 wage_slot）× 2；例外写 fee_override 与理由",
+   "bond": "结交：按 bond_path 攒意气到 bond_need；入伙时意气 = max(bond_need, 30)",
+   "guest": "客程：只占随行格，不带职事、不付月俸、不上战位；计入在船上限",
+   "local": "云屯在场伙伴：只在云屯页出现，不登船、不占在船名额、不付月俸；意气靠到访与委托"
+  },
+  "battle_slot_def": {
+   "yazhen": "押阵：接舷白刃的领头人，取其武勇顶替主角武力（封顶不超过现有上限）",
+   "shenu": "射手：接舷前一轮弓弩标枪，压低敌方白刃战力",
+   "chihou": "斥候 / 水下：夜泅割缆、轻舟探敌，提高弃战脱身率（封顶不超过现有上限）",
+   "chuanzhang": "分船船长：任命到护航船，该船水手的白刃权重与风涛伤小幅改善",
+   "none": "不参战"
+  },
+  "stance_def": {
+   "song": "宋方",
+   "neutral": "只认船与钱",
+   "yuan": "北人 / 元方出身",
+   "foreign": "异国人，按本国利害行事"
+  },
+  "role_def_ref": "职事沿用 data/crew.json 六职：huozhang 火长 / duogong 舵工 / zongguan 总管 / zashi 杂事 / tongshi 通事 / yiren 医人；roles 中的数字是可任该职时的品级 1–3，公式与 Crew.gd 相同，一职一人、不叠加。",
+  "niche_kind_def": {
+   "lang": "语言：任通事时语言对上的港视作高一级",
+   "goods": "乡货门路：指定港、指定货买价或卖价 ±5%，与通事边际取大、过价差地板",
+   "leg": "指定航段：该职事有效品级 +1（封顶三级；该职空缺时按一级计）",
+   "combat": "战位效果（见 battle_effect_def）",
+   "tariff": "已降元港口抽解战况倍率 ×0.9（过价差地板，不与蒲家八折叠过 0.8）",
+   "teach": "传授（离队后保留）",
+   "local": "云屯页效果",
+   "wage_discount": "折俸一档",
+   "share": "船股，ROI 封顶",
+   "tendency": "1268 年前身份倾向",
+   "intel": "风闻 / 信息，不改数值",
+   "foretell": "提前一月的预警",
+   "event_flag": "写剧情旗标",
+   "growth": "成长型",
+   "climax": "高潮挂钩"
+  }
+ },
+ "companions": {
+  "lin_hua": {
+   "id": "lin_hua",
+   "name": "林华",
+   "region": "song",
+   "category": "史实",
+   "identity": "泉州码头上替林阿舶系缆的水手（出身为本作设定）；景炎元年为兴化军部将",
+   "langs": [
+    "minnan"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1255-03",
+      "to": "1276-08",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "泉州酒馆：林阿舶船上系缆的后生，旧东家的船越跑越近，想跟一条肯出远海的新船",
+    "rumor": "码头上说，林阿舶船上那个系缆的后生想换条走远海的船。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {
+     "flags": [],
+     "note": "序章走完即可；第一章教学伙伴，不设门槛"
+    },
+    "note": "",
+    "fee": 240
+   },
+   "duty": {
+    "roles": {
+     "duogong": 2
+    },
+    "wage_slot": 60,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "接舷领头；缆绳系得从不松",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "duogong": 2
+    },
+    "level_1279": {
+     "duogong": 2
+    },
+    "wage_role_at_join": {
+     "duogong": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "leg",
+     "role": "duogong",
+     "legs": [
+      [
+       "quanzhou",
+       "any"
+      ],
+      [
+       "any",
+       "quanzhou"
+      ]
+     ],
+     "note": "泉州港汊熟：进出泉州的航段舵工视作高一级（封顶三级）"
+    },
+    {
+     "kind": "tendency",
+     "axis": "hometown",
+     "note": "1268 年前在船每月乡土倾向 +1，计入每轴合计上限 8"
+    },
+    {
+     "kind": "foretell",
+     "event": "xinghua_falls_1276",
+     "note": "意气 ≥60 离队时留口信，见 fate 余泽"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "caozhou",
+    "gongnu"
+   ],
+   "gifts": [
+    "song_coin"
+   ],
+   "climax": {
+    "scholar": "1276 年兴化守城（_siege_lin_hua）",
+    "merchant": "1276 年十二月城破新闻（按余泽档）",
+    "hometown": "1277 年二三月涵江海口卡里一句：陈瓒复城、林华被杀"
+   },
+   "reuse_character": true,
+   "p1": true,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "zhu_qing": {
+   "id": "zhu_qing",
+   "name": "朱清",
+   "region": "song",
+   "category": "史实",
+   "identity": "淮南东路通州崇明（姚刘沙）的海上亡命之徒、私船头目；宋季与张瑄「乘舟鈔掠海上」",
+   "langs": [
+    "wu",
+    "han_north"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1262-01",
+      "to": "1274-06",
+      "ports": [
+       "mingzhou"
+      ],
+      "mode": "sea",
+      "route": [
+       [
+        "any",
+        "mingzhou"
+       ]
+      ],
+      "note": "驶入明州的航段抵港结算：昌国外海三条无旗快船"
+     },
+     {
+      "from": "1262-01",
+      "to": "1274-06",
+      "ports": [
+       "mingzhou"
+      ],
+      "mode": "tavern",
+      "note": "邂逅之后可在明州酒馆再见（requires events_done zhu_qing_sea）"
+     }
+    ],
+    "scene": "明州航段昌国外海：三条无旗快船围住你，为首的汉子不劫货，只要借你的市舶公凭用一趟",
+    "rumor": "明州港里说，昌国外海有几条不挂旗的快船，专找有公凭的商船。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 55,
+    "bond_start": 55,
+    "bond_path": [
+     {
+      "src": "event:zhu_qing_sea",
+      "value": 25,
+      "note": "借公凭；接舷胜后放人只 +15"
+     },
+     {
+      "src": "event:zhu_qing_wine",
+      "value": 10,
+      "note": "明州酒馆再见，请一顿酒"
+     },
+     {
+      "src": "event:zhu_qing_errand",
+      "value": 20,
+      "note": "委托：带他去温州见一个人（耗 8 日）"
+     }
+    ],
+    "requires": {
+     "fame_min": 10,
+     "note": "名声不低于「在册舶牙」"
+    },
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "huozhang": 3
+    },
+    "wage_slot": 120,
+    "battle": [
+     "yazhen",
+     "chuanzhang"
+    ],
+    "battle_note": "北路火长；P3 起可任护航船船长",
+    "home_port": "mingzhou",
+    "level_at_join": {
+     "huozhang": 3
+    },
+    "level_1279": {
+     "huozhang": 3
+    },
+    "wage_role_at_join": {
+     "huozhang": 200
+    }
+   },
+   "niche": [
+    {
+     "kind": "leg",
+     "role": "huozhang",
+     "legs": [
+      [
+       "mingzhou",
+       "jeju"
+      ],
+      [
+       "jeju",
+       "mingzhou"
+      ],
+      [
+       "mingzhou",
+       "hakata"
+      ],
+      [
+       "hakata",
+       "mingzhou"
+      ]
+     ],
+     "note": "北路（沙门）：明州—耽罗、明州—博多航段火长视作高一级（封顶三级）"
+    },
+    {
+     "kind": "tendency",
+     "axis": "sea"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "shamen",
+    "caozhou"
+   ],
+   "gifts": [
+    "song_coin",
+    "ironware"
+   ],
+   "climax": {
+    "scholar": "此线没有（余泽的「报朱张名号」三线通用）",
+    "merchant": "厓山卡里元方船上一句台词",
+    "hometown": "此线没有（余泽三线通用）"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "zhang_xuan": {
+   "id": "zhang_xuan",
+   "name": "张瑄",
+   "region": "song",
+   "category": "史实",
+   "identity": "平江府嘉定人，与朱清同为宋季海上「最為雄長」者；膂力过人（《新元史》）",
+   "langs": [
+    "wu"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1265-01",
+      "to": "1274-06",
+      "ports": [
+       "mingzhou"
+      ],
+      "mode": "event"
+     }
+    ],
+    "scene": "朱清入伙后的第一个冬天，夜泊吴淞江口外，一个巨汉扛着两包私货跳上船：「朱大哥说你的公凭好用。」",
+    "rumor": "朱清说他有个结义兄弟，力气比他大，脾气比他坏。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 40,
+    "bond_start": 40,
+    "bond_path": [
+     {
+      "src": "event:zhang_xuan_wusong",
+      "value": 25,
+      "note": "夜泊吴淞江口，让他上船"
+     },
+     {
+      "src": "gift:japanese_sword×1",
+      "value": 12,
+      "note": ""
+     },
+     {
+      "src": "aboard:3",
+      "value": 6,
+      "note": "同船三月"
+     }
+    ],
+    "requires": {
+     "aboard_any_of": [
+      "zhu_qing"
+     ],
+     "bond_min": {
+      "zhu_qing": 60
+     }
+    },
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 120,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "纯战位：接舷突击头领",
+    "home_port": "mingzhou",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "yazhen",
+     "note": "先驱：押阵余量 8 → 12"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "xianqu"
+   ],
+   "gifts": [
+    "japanese_sword"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "厓山卡里元方头目一句",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "xie_ao": {
+   "id": "xie_ao",
+   "name": "谢翱",
+   "region": "song",
+   "category": "史实",
+   "identity": "福州长溪（后徙浦城）的富家书生，咸淳中应进士试不第；1276 年散家赀募乡兵投文天祥",
+   "langs": [
+    "minnan",
+    "han_north"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1265-01",
+      "to": "1274-12",
+      "ports": [
+       "fuzhou"
+      ],
+      "mode": "tavern",
+      "route": [
+       [
+        "fuzhou",
+        "mingzhou"
+       ]
+      ],
+      "note": "第一段客程：福州→明州"
+     },
+     {
+      "from": "1276-08",
+      "to": "1276-10",
+      "ports": [
+       "fuzhou"
+      ],
+      "mode": "event",
+      "route": [
+       [
+        "fuzhou",
+        "xinghua_harbor"
+       ]
+      ],
+      "note": "第二段：替乡兵运一船粮到兴化海口（同盟事件）"
+     },
+     {
+      "from": "1277-02",
+      "to": "1277-03",
+      "ports": [
+       "xinghua_harbor"
+      ],
+      "mode": "event",
+      "route": [
+       [
+        "xinghua_harbor",
+        "wenzhou"
+       ],
+       [
+        "xinghua_harbor",
+        "mingzhou"
+       ]
+      ],
+      "note": "第三段：漳州离军后绕到兴化海口找船北上（陈瓒复城的两个月）"
+     }
+    ],
+    "scene": "福州港：长溪来的年轻书生要搭船北上明州，再走浙东运河去临安赴省试（本作设定：此时仍居长溪、已过本州解试）",
+    "rumor": "福州码头有个长溪书生在问去明州的船，说要赶省试。"
+   },
+   "join": {
+    "type": "guest",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {},
+    "note": "客程只占随行格，不带职事、不付月俸",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 0,
+    "battle": [],
+    "battle_note": "不参战",
+    "home_port": "fuzhou",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "tendency",
+     "axis": "scholar",
+     "note": "第一段客程在 1268 年前，每月士人倾向 +1，计入每轴合计上限 8"
+    },
+    {
+     "kind": "event_flag",
+     "note": "第二段运粮完成：名声 +5，写 ledger_note「替乡兵运粮」"
+    }
+   ],
+   "stance": "song",
+   "traits": [
+    "shiwen"
+   ],
+   "gifts": [
+    "korean_paper",
+    "sutra_scrolls"
+   ],
+   "climax": {
+    "scholar": "第一段客程（1268 年前的士人倾向）",
+    "merchant": "第二、三段客程",
+    "hometown": "第三段客程（兴化海口，与涵江海口卡同两个月）"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "zeng_gan": {
+   "id": "zeng_gan",
+   "name": "曾干",
+   "region": "song",
+   "category": "据史设人",
+   "identity": "虚构：替寓泉宗室经营海舶的幹人（管事），识香药成色，至少到过三佛齐",
+   "langs": [
+    "minnan",
+    "malay"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1277-07",
+      "to": "1277-10",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "event"
+     }
+    ],
+    "scene": "1265–1276 年是泉州码头上的生意对手（只作 NPC 露面）；景炎二年七至十月，后渚港外泊着一条不挂旗的大船，他划小船来找你：「舱里的香，东家是收不着了。」",
+    "rumor": "后渚港外那条不挂旗的船，好几天没人敢靠近。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 30,
+    "bond_start": 30,
+    "bond_path": [
+     {
+      "src": "event:zeng_gan_houzhu",
+      "value": 30,
+      "note": "三选一中选「卸城外」或「卸城内」"
+     }
+    ],
+    "requires": {},
+    "note": "选「凿沉」则不入伙",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 3,
+     "zashi": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "不参战",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 3,
+     "zashi": 2
+    },
+    "level_1279": {
+     "zongguan": 3,
+     "zashi": 2
+    },
+    "wage_role_at_join": {
+     "zongguan": 200,
+     "zashi": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "goods",
+     "port": "quanzhou",
+     "goods": [
+      "aromatic_medicine"
+     ],
+     "side": "buy",
+     "edge": 0.05,
+     "note": "识香：泉州买香药价 −5%，与通事取大不相加，过价差地板"
+    }
+   ],
+   "stance": "song",
+   "traits": [
+    "fencang",
+    "suanchou",
+    "shixiang"
+   ],
+   "gifts": [
+    "aromatic_medicine"
+   ],
+   "climax": {
+    "scholar": "此线没有（士人线 1276 年已收局；改走海商后同海商线）",
+    "merchant": "1277 年后渚事件",
+    "hometown": "1277 年后渚事件"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "zhou_axi": {
+   "id": "zhou_axi",
+   "name": "周阿细",
+   "region": "song",
+   "category": "据史设人",
+   "identity": "虚构：晋江口船居「泉郎」（游艇子）人家的女儿，凫水、摇橹、撬蚝、解锚",
+   "langs": [
+    "minnan"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1269-01",
+      "to": "1279-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "sea",
+      "route": [
+       [
+        "any",
+        "quanzhou"
+       ],
+       [
+        "quanzhou",
+        "any"
+       ]
+      ]
+     }
+    ],
+    "scene": "出入泉州港时锚链缠在晋江口外的礁上，一条两头翘起的小船划来：「给我三十文，我把锚解开。」浮上来时她不要钱，只问你的船去没去过占城",
+    "rumor": "晋江口的泉郎人家有个女儿，解锚比男人快。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {
+     "events_done": [
+      "zhou_axi_anchor"
+     ]
+    },
+    "note": "",
+    "fee": 60
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 30,
+    "battle": [
+     "chihou"
+    ],
+    "battle_note": "水下：查漏、夜泅割缆",
+    "home_port": "quanzhou",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "chihou",
+     "note": "潜水：白刃失利时割缆脱钩快，折损水手 ×0.75"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "qianshui",
+    "caozhou"
+   ],
+   "gifts": [
+    "silk_fabric"
+   ],
+   "climax": {
+    "scholar": "征船事件（三线通用）",
+    "merchant": "征船事件",
+    "hometown": "征船事件"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "he_sanhao": {
+   "id": "he_sanhao",
+   "name": "何三蚝",
+   "region": "song",
+   "category": "据史设人",
+   "identity": "虚构：广州新会厓门水道的蚝蜑（没海取蚝的船户），熟厓门潮沟与暗沙",
+   "langs": [
+    "yue"
+   ],
+   "appear": {
+    "chapter_min": 3,
+    "windows": [
+     {
+      "from": "1268-01",
+      "to": "1279-03",
+      "ports": [
+       "guangzhou"
+      ],
+      "mode": "sea",
+      "route": [
+       [
+        "any",
+        "guangzhou"
+       ]
+      ]
+     }
+    ],
+    "scene": "第一次进广州航段，潮水比海图写的急，一个疍家后生从船底冒出来攀住船舷：「左边三丈是沙，右边是礁，走中间，给我十文。」",
+    "rumor": "广州港外有个疍家后生，专在潮急的时候替外来船引水。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {
+     "events_done": [
+      "he_sanhao_pilot"
+     ]
+    },
+    "note": "",
+    "fee": 120
+   },
+   "duty": {
+    "roles": {
+     "duogong": 1
+    },
+    "wage_slot": 30,
+    "battle": [
+     "chihou"
+    ],
+    "battle_note": "潜水凿船、夜泅传信",
+    "home_port": "guangzhou",
+    "level_at_join": {
+     "duogong": 1
+    },
+    "level_1279": {
+     "duogong": 1
+    },
+    "wage_role_at_join": {
+     "duogong": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "leg",
+     "role": "duogong",
+     "legs": [
+      [
+       "any",
+       "guangzhou"
+      ],
+      [
+       "guangzhou",
+       "any"
+      ]
+     ],
+     "note": "广州港汊：舵工视作高一级"
+    },
+    {
+     "kind": "combat",
+     "slot": "chihou",
+     "note": "潜水：白刃失利折损 ×0.75"
+    },
+    {
+     "kind": "climax",
+     "note": "厓山潮沟：见 fate"
+    }
+   ],
+   "stance": "song",
+   "traits": [
+    "qianshui",
+    "yinshui"
+   ],
+   "gifts": [
+    "grain"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "厓山潮沟",
+    "hometown": "樵汲委托（1278 年，广州）"
+   },
+   "reuse_character": false,
+   "p1": true,
+   "p1_stub": "P1 先作广州酒馆版（1268 年起），海上邂逅在 P2c 恢复",
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "yu_yuanqing": {
+   "id": "yu_yuanqing",
+   "name": "余元庆",
+   "region": "north",
+   "category": "史实",
+   "identity": "真州人，文天祥帐前将官（低阶武官）；1276 年二月京口脱身时觅得北管船、涉水寻船",
+   "langs": [
+    "han_north",
+    "wu"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1276-09",
+      "to": "1276-10",
+      "ports": [
+       "fuzhou"
+      ],
+      "mode": "event",
+      "note": "行朝在福州（1276-05~11）"
+     },
+     {
+      "from": "1277-04",
+      "to": "1278-02",
+      "ports": [
+       "guangzhou"
+      ],
+      "mode": "event",
+      "note": "广州复宋期"
+     }
+    ],
+    "scene": "1276 年秋福州，或 1277 年广州：一个江淮口音的军校在打听真州来的船（本作推演：真州约 1276 年八月失陷后他从江口搭船南下，追到行朝所在）",
+    "rumor": "有个真州口音的军校，挨个船问有没有真州来的人。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 40,
+    "bond_start": 40,
+    "bond_path": [
+     {
+      "src": "event:yu_yuanqing_meet",
+      "value": 10,
+      "note": "请他上船喝碗热汤"
+     },
+     {
+      "src": "event:yu_yuanqing_search",
+      "value": 20,
+      "note": "委托：福州、泉州、广州三港任两港打听真州乡亲"
+     },
+     {
+      "src": "aboard:5",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 60,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "接舷护卫，兼寻接应船",
+    "home_port": "guangzhou",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "yazhen",
+     "note": "押阵：武勇 68"
+    },
+    {
+     "kind": "intel",
+     "note": "寻人：邵小乙、阎仲安的风闻由他带出"
+    }
+   ],
+   "stance": "song",
+   "traits": [
+    "gongnu"
+   ],
+   "gifts": [
+    "grain"
+   ],
+   "climax": {
+    "scholar": "若 1276 年九十月在福州遇上且随船回兴化：守城可召集（计入 +30）",
+    "merchant": "厓山表态（宋方，要留）",
+    "hometown": "涵江海口卡一句"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "shao_xiaoyi": {
+   "id": "shao_xiaoyi",
+   "name": "邵小乙",
+   "region": "north",
+   "category": "据史设人",
+   "identity": "虚构名：原型为《指南录·得船难》中替北军管船、冒死载文天祥出京口的「北管船」（史无其名）",
+   "langs": [
+    "wu",
+    "han_north"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1276-09",
+      "to": "1276-10",
+      "ports": [
+       "fuzhou"
+      ],
+      "mode": "event"
+     },
+     {
+      "from": "1277-04",
+      "to": "1278-02",
+      "ports": [
+       "guangzhou"
+      ],
+      "mode": "event"
+     }
+    ],
+    "scene": "与余元庆前后脚南下；怀里一个油纸包，里面是文天祥给的批帖",
+    "rumor": "有个京口船户逢人就打听：行朝如今泊在哪里。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 40,
+    "bond_start": 40,
+    "bond_path": [
+     {
+      "src": "event:shao_xiaoyi_meet",
+      "value": 10,
+      "note": ""
+     },
+     {
+      "src": "event:shao_xiaoyi_ask",
+      "value": 20,
+      "note": "委托：打听行朝所在（浅湾 / 碙洲 / 厓山）"
+     },
+     {
+      "src": "aboard:5",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "duogong": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "不上战位",
+    "home_port": "guangzhou",
+    "level_at_join": {
+     "duogong": 2
+    },
+    "level_1279": {
+     "duogong": 2
+    },
+    "wage_role_at_join": {
+     "duogong": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "intel",
+     "note": "识北：元军哨船事件面板上显示对方船数与战力区间（只给信息，不改数值）"
+    },
+    {
+     "kind": "leg",
+     "role": "duogong",
+     "legs": [
+      [
+       "any",
+       "mingzhou"
+      ],
+      [
+       "mingzhou",
+       "any"
+      ],
+      [
+       "any",
+       "wenzhou"
+      ],
+      [
+       "wenzhou",
+       "any"
+      ]
+     ],
+     "note": "江浙近海：进出明州、温州的航段舵工视作高一级"
+    }
+   ],
+   "stance": "song",
+   "traits": [
+    "caozhou",
+    "shibei"
+   ],
+   "gifts": [
+    "song_coin"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "厓山卡：上张世杰的船",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "yan_zhongan": {
+   "id": "yan_zhongan",
+   "name": "阎仲安",
+   "region": "north",
+   "category": "据史设人",
+   "identity": "虚构：1260 年随郝经使宋的散从，被拘真州十六年",
+   "langs": [
+    "mongol",
+    "han_north"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1277-01",
+      "to": "1279-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "至元十四年泉州设市舶司，蒙古、色目官吏进驻；酒馆角落一个北方口音的人替海商和官吏两头传话",
+    "rumor": "泉州酒馆里有个北方人，元官和海商都托他传话。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {},
+    "note": "",
+    "fee": 240
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 2,
+     "zashi": 1
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "不参战",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "tongshi": 2,
+     "zashi": 1
+    },
+    "level_1279": {
+     "tongshi": 2,
+     "zashi": 1
+    },
+    "wage_role_at_join": {
+     "tongshi": 120,
+     "zashi": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "tariff",
+     "ports_state": "fallen",
+     "factor": 0.9,
+     "note": "吏牍：在已降元港口，抽解的战况倍率 ×0.9（2.0 → 1.8）；只作 _effective_tariff 的输入，过价差地板，不与蒲家八折叠过 0.8"
+    }
+   ],
+   "stance": "yuan",
+   "traits": [
+    "fanyu",
+    "lidu"
+   ],
+   "gifts": [
+    "tea"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "泉州元治时期的通事",
+    "hometown": "同海商线"
+   },
+   "reuse_character": false,
+   "p1": true,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "niu_lver": {
+   "id": "niu_lver",
+   "name": "牛驴儿",
+   "region": "north",
+   "category": "据史设人",
+   "identity": "虚构：邓州汉军军户（与刘整同乡），1270 年签入刘整操练的水军，1278 年冬随张弘范南下",
+   "langs": [
+    "han_north"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1278-10",
+      "to": "1279-08",
+      "ports": [
+       "zhangzhou",
+       "penghu"
+      ],
+      "mode": "sea",
+      "route": [
+       [
+        "zhangzhou",
+        "penghu"
+       ],
+       [
+        "penghu",
+        "zhangzhou"
+       ]
+      ]
+     }
+    ],
+    "scene": "漳州—澎湖航段：救起一个抱着船板的北方汉子，醒来先摸腰间的弩机",
+    "rumor": "澎湖渔户说，海上漂来过穿北军袄子的人。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 30,
+    "bond_start": 30,
+    "bond_path": [
+     {
+      "src": "event:niu_lver_rescue",
+      "value": 30,
+      "note": "救起即入伙"
+     }
+    ],
+    "requires": {},
+    "note": "此后第一次元军哨船落帆受检：藏进舱底 +20，交出去则离队",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 60,
+    "battle": [
+     "shenu"
+    ],
+    "battle_note": "弩手",
+    "home_port": "penghu",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "shenu",
+     "note": "弓弩：武勇 62，敌方白刃 ×0.95"
+    },
+    {
+     "kind": "intel",
+     "note": "识北：元军哨船面板显示对方船数与战力区间"
+    }
+   ],
+   "stance": "yuan",
+   "traits": [
+    "gongnu",
+    "shibei"
+   ],
+   "gifts": [
+    "grain"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "厓山表态（怕见宋军，想躲）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "takezaki_suenaga": {
+   "id": "takezaki_suenaga",
+   "name": "竹崎季长",
+   "region": "japan_korea",
+   "category": "史实",
+   "identity": "肥后竹崎乡的没落御家人：族内争讼败诉、所领尽失的「无足之身」",
+   "langs": [
+    "wa"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1270-01",
+      "to": "1274-09",
+      "ports": [
+       "hakata",
+       "kagoshima"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "博多酒肆：一个穿旧直垂的肥后武士为押船钱和宋商纲首争得面红耳赤",
+    "rumor": "博多酒肆里有个肥后武士，想找宋船押船挣钱。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {
+     "note": "押船钱一次付清，不议价（旧稿「出价公道」无法计量，已删）"
+    },
+    "note": "",
+    "fee": 400
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 200,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "客将：接舷斩将、先驱",
+    "home_port": "hakata",
+    "range": [
+     "hakata",
+     "kagoshima",
+     "ryukyu"
+    ],
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "yazhen",
+     "note": "先驱：押阵余量 8 → 12"
+    },
+    {
+     "kind": "foretell",
+     "event": "bunei_1274",
+     "note": "1274 年九月月初：「对马那边说，海上的船多了」——博多封港提前一月预警"
+    },
+    {
+     "kind": "event_flag",
+     "flag": "takezaki_witness",
+     "note": "证人事件"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "xianqu",
+    "gongnu"
+   ],
+   "gifts": [
+    "song_coin",
+    "japanese_sword"
+   ],
+   "climax": {
+    "scholar": "1274 年十月证人事件（三线通用）",
+    "merchant": "同左",
+    "hometown": "同左"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "tsushima_tajiro_yajiro": {
+   "id": "tsushima_tajiro_yajiro",
+   "name": "塔二郎·弥二郎",
+   "region": "japan_korea",
+   "category": "史实",
+   "identity": "对马岛人二人（身份史无明文）；1269 年三月被蒙古使黑的掳去，见过燕京宫阙，九月由高丽使送还太宰府",
+   "langs": [
+    "wa",
+    "koryo"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1269-10",
+      "to": "1274-09",
+      "ports": [
+       "hakata"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "唐房里有人议论「进过蒙古皇帝宫殿的对马人」；须有懂倭语的人在船才找得到",
+    "rumor": "唐房里说，有两个对马人被蒙古使掳去过燕京，又被送了回来。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {
+     "lang_any_of": [
+      "wa"
+     ],
+     "note": "船上有会倭语的人：近藤三郎、净海记名沙弥，或会倭语的伙伴"
+    },
+    "note": "二人只占一格",
+    "fee": 240
+   },
+   "duty": {
+    "roles": {
+     "huozhang": 2,
+     "tongshi": 1
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "二人一格，任火长（弥二郎领航）或通事（塔二郎）二选一",
+    "home_port": "hakata",
+    "level_at_join": {
+     "huozhang": 2,
+     "tongshi": 1
+    },
+    "level_1279": {
+     "huozhang": 2,
+     "tongshi": 1
+    },
+    "wage_role_at_join": {
+     "huozhang": 120,
+     "tongshi": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "leg",
+     "role": "huozhang",
+     "legs": [
+      [
+       "hakata",
+       "jeju"
+      ],
+      [
+       "jeju",
+       "hakata"
+      ]
+     ],
+     "note": "对马海峡：博多—耽罗航段火长视作高一级"
+    },
+    {
+     "kind": "intel",
+     "note": "元使与高丽使团的船期：1269–1274 年相关新闻提前一月"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "zhenlu",
+    "fanyu"
+   ],
+   "gifts": [
+    "silk_fabric"
+   ],
+   "climax": {
+    "scholar": "1274 年十月回岛（三线通用）",
+    "merchant": "同左",
+    "hometown": "同左"
+   },
+   "reuse_character": false,
+   "p1": true,
+   "p1_stub": "P1 语言条件用 aboard_any_of=[kondo_saburo, jinghai_shami] 代替",
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "tsushima_kotaro": {
+   "id": "tsushima_kotaro",
+   "name": "对马小太郎",
+   "region": "japan_korea",
+   "category": "半史实",
+   "identity": "对马守护代宗资国的郎等（有武装的从者，会驾船）；1274 年十月与兵卫次郎驾小船奔博多告急",
+   "langs": [
+    "wa"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1275-05",
+      "to": "1279-12",
+      "ports": [
+       "hakata"
+      ],
+      "mode": "tavern",
+      "note": "博多 1274-10 至 1275-04 封港"
+     }
+    ],
+    "scene": "博多复开以后，唐房后巷：一个对马年轻人在打听回对马的船——人说去年十月驾小船冲上滩头报信的就是他",
+    "rumor": "唐房后巷有个对马年轻人，去年十月驾小船冲滩报过信。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {},
+    "note": "",
+    "fee": 240
+   },
+   "duty": {
+    "roles": {
+     "duogong": 2
+    },
+    "wage_slot": 60,
+    "battle": [
+     "chihou"
+    ],
+    "battle_note": "快船斥候、传令、夜航",
+    "home_port": "hakata",
+    "level_at_join": {
+     "duogong": 2
+    },
+    "level_1279": {
+     "duogong": 2
+    },
+    "wage_role_at_join": {
+     "duogong": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "chihou",
+     "note": "斥候：弃战掷骰 +0.05（封顶 0.9）"
+    },
+    {
+     "kind": "leg",
+     "role": "duogong",
+     "legs": [
+      [
+       "hakata",
+       "jeju"
+      ],
+      [
+       "jeju",
+       "hakata"
+      ]
+     ],
+     "note": "对马海峡：舵工视作高一级"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "caozhou",
+    "chihou"
+   ],
+   "gifts": [
+    "grain"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": true,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "nampo_shomyo": {
+   "id": "nampo_shomyo",
+   "name": "南浦绍明",
+   "region": "japan_korea",
+   "category": "史实",
+   "identity": "骏河出身的建长寺年轻学僧；1259 年入宋参虚堂智愚，1267 年归国；1270 年后住兴德寺、崇福寺",
+   "langs": [
+    "wa",
+    "han_classical"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1259-01",
+      "to": "1261-12",
+      "ports": [
+       "hakata"
+      ],
+      "mode": "tavern",
+      "route": [
+       [
+        "hakata",
+        "mingzhou"
+       ]
+      ],
+      "note": "去程客程"
+     },
+     {
+      "from": "1267-01",
+      "to": "1267-12",
+      "ports": [
+       "mingzhou"
+      ],
+      "mode": "tavern",
+      "route": [
+       [
+        "mingzhou",
+        "hakata"
+       ]
+      ],
+      "note": "回程客程"
+     }
+    ],
+    "scene": "博多港边，一个二十五岁的僧人拿着荐书找去明州的船；八年后明州码头上又见：「来时搭你的船，回去也搭你的船。」",
+    "rumor": "博多有个年轻僧人拿着荐书，找去明州的船。"
+   },
+   "join": {
+    "type": "guest",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {},
+    "note": "客程只占随行格",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 0,
+    "battle": [],
+    "battle_note": "不参战",
+    "home_port": "hakata",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "tendency",
+     "axis": "scholar",
+     "note": "去程在船每月士人倾向 +1"
+    },
+    {
+     "kind": "event_flag",
+     "flag": "japan_temple_network",
+     "note": "回程送到后意气 ≥40：他写一纸短札，博多寺社肯引荐"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "bitan",
+    "shiwen"
+   ],
+   "gifts": [
+    "sutra_scrolls",
+    "tea"
+   ],
+   "climax": {
+    "scholar": "去程士人倾向",
+    "merchant": "回程短札",
+    "hometown": "回程短札"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "han_deukryong": {
+   "id": "han_deukryong",
+   "name": "韩得龙",
+   "region": "japan_korea",
+   "category": "据史设人",
+   "identity": "虚构：1254 年幼年被蒙古军掳往北方、少年逃回编入神义军的三别抄兵，1273 年四月耽罗陷落时驾小船出逃",
+   "langs": [
+    "koryo"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1273-04",
+      "to": "1273-09",
+      "ports": [
+       "mingzhou",
+       "ryukyu",
+       "quanzhou"
+      ],
+      "mode": "sea",
+      "route": [
+       [
+        "jeju",
+        "mingzhou"
+       ],
+       [
+        "jeju",
+        "ryukyu"
+       ],
+       [
+        "jeju",
+        "quanzhou"
+       ],
+       [
+        "mingzhou",
+        "jeju"
+       ],
+       [
+        "ryukyu",
+        "jeju"
+       ]
+      ],
+      "note": "耽罗以南航段，抵港结算"
+     },
+     {
+      "from": "1273-10",
+      "to": "1275-12",
+      "ports": [
+       "ryukyu"
+      ],
+      "mode": "tavern",
+      "note": "流落者版：寻南逃同伴，只找到自己"
+     }
+    ],
+    "scene": "1273 年四至九月，耽罗以南海面，一条没桨的小船上三个人只剩他活着：「这是谁的船？宋人的，还是蒙古人的？」",
+    "rumor": "南岛海道北口来了个高丽逃卒，说在找南逃的同伴。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 30,
+    "bond_start": 30,
+    "bond_path": [
+     {
+      "src": "event:han_deukryong_rescue",
+      "value": 30,
+      "note": "救起即入伙；流落者版为请酒"
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 60,
+    "battle": [
+     "shenu"
+    ],
+    "battle_note": "角弓射手",
+    "home_port": "ryukyu",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "shenu",
+     "note": "弓弩：武勇 74，敌方白刃 ×0.95"
+    },
+    {
+     "kind": "teach",
+     "teach": "martial",
+     "per_quarter": 1,
+     "max_total": 5,
+     "note": "角弓教习：同船每季主角武力 +1，至多 +5，封顶 100"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "gongnu"
+   ],
+   "gifts": [
+    "japanese_sword"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "厓山表态（想打）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "jeong_yusun": {
+   "id": "jeong_yusun",
+   "name": "郑有淳",
+   "region": "japan_korea",
+   "category": "据史设人",
+   "identity": "虚构：幼时在江华大藏都监做杂役、学得乡药方的高丽医人；1273 年后在耽罗驻军营地行医",
+   "langs": [
+    "koryo",
+    "han_classical"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1273-06",
+      "to": "1279-12",
+      "ports": [
+       "jeju"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "耽罗营地外，一个高丽医人用一把野草止住了你船上水手的腹泻，然后问：「泉州的药市，是不是真有三条街？」",
+    "rumor": "耽罗营地外有个高丽医人，拿野草治好过宋船水手。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {},
+    "note": "",
+    "fee": 120
+   },
+   "duty": {
+    "roles": {
+     "yiren": 2
+    },
+    "wage_slot": 30,
+    "battle": [],
+    "battle_note": "以乡药代唐药：二级医人按一级取俸",
+    "home_port": "jeju",
+    "wage_discount": 1,
+    "level_at_join": {
+     "yiren": 2
+    },
+    "level_1279": {
+     "yiren": 2
+    },
+    "wage_role_at_join": {
+     "yiren": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "wage_discount",
+     "note": "二级医人月俸按一级（60）"
+    },
+    {
+     "kind": "goods",
+     "port": "jeju",
+     "goods": [
+      "korean_ginseng"
+     ],
+     "side": "buy",
+     "edge": 0.05,
+     "note": "乡药门路：耽罗买人参 −5%"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "bianyao"
+   ],
+   "gifts": [
+    "aromatic_medicine"
+   ],
+   "climax": {
+    "scholar": "1274 年征调（三线通用）",
+    "merchant": "同左",
+    "hometown": "同左"
+   },
+   "reuse_character": false,
+   "p1": true,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "pham_ngu_lao": {
+   "id": "pham_ngu_lao",
+   "name": "范五老",
+   "region": "vietnam_champa",
+   "category": "史实",
+   "identity": "大越海阳唐豪县扶拥乡的少年（「家贫」为本作设定）；约 1275–1280 年「年踰弱冠」时为兴道王所识拔",
+   "langs": [
+    "viet"
+   ],
+   "appear": {
+    "chapter_min": 4,
+    "windows": [
+     {
+      "from": "1270-01",
+      "to": "1276-12",
+      "ports": [
+       "yundun"
+      ],
+      "mode": "yundun"
+     }
+    ],
+    "scene": "云屯码头：一个随乡人撑竹器船下海东的少年，把竹箕竹笼卖给北客打包",
+    "rumor": "云屯码头有个卖竹器的越地少年，读书比卖货认真。"
+   },
+   "join": {
+    "type": "local",
+    "cost": 0,
+    "bond_need": 40,
+    "bond_start": 0,
+    "bond_path": [
+     {
+      "src": "event:pham_first",
+      "value": 10,
+      "note": "买他一批竹器"
+     },
+     {
+      "src": "event:pham_book",
+      "value": 20,
+      "note": "委托：替他带一卷书（sutra_scrolls）来"
+     },
+     {
+      "src": "visit:2",
+      "value": 10,
+      "note": "再到云屯两次"
+     }
+    ],
+    "requires": {},
+    "note": "云屯在场伙伴：不登船、不占在船名额、不付月俸",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 0,
+    "battle": [],
+    "battle_note": "不登船",
+    "home_port": "yundun",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "local",
+     "note": "押货：意气 ≥40 时，绕道云屯多费的 4 日减为 3 日"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "xianqu"
+   ],
+   "gifts": [
+    "sutra_scrolls"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "云屯（1270–1276）",
+    "hometown": "云屯（1270–1276）"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "le_tac": {
+   "id": "le_tac",
+   "name": "黎崱",
+   "region": "vietnam_champa",
+   "category": "史实",
+   "identity": "爱州仕宦之家的少年（曾祖李朝东上阁门使、祖陈初员外郎、父令书舍），九岁应童科，过继外祖舅黎奉改姓黎；1270 年代后期入彰宪侯陈键幕",
+   "langs": [
+    "viet",
+    "han_classical"
+   ],
+   "appear": {
+    "chapter_min": 4,
+    "windows": [
+     {
+      "from": "1273-01",
+      "to": "1278-06",
+      "ports": [
+       "yundun"
+      ],
+      "mode": "yundun"
+     }
+    ],
+    "scene": "云屯：一个世家少年向北客买纸笔书籍（交趾「不能造紙筆，求之省地」）",
+    "rumor": "云屯有个世家少年，见了北客就问有没有书。"
+   },
+   "join": {
+    "type": "local",
+    "cost": 0,
+    "bond_need": 35,
+    "bond_start": 0,
+    "bond_path": [
+     {
+      "src": "event:le_tac_first",
+      "value": 10,
+      "note": "卖他纸笔"
+     },
+     {
+      "src": "gift:korean_paper×2",
+      "value": 12,
+      "note": ""
+     },
+     {
+      "src": "event:le_tac_book",
+      "value": 20,
+      "note": "委托：带一部书来"
+     }
+    ],
+    "requires": {},
+    "note": "云屯在场伙伴",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 0,
+    "battle": [],
+    "battle_note": "不登船",
+    "home_port": "yundun",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "local",
+     "note": "笔谈：云屯补给价 ×0.9；云屯页多一条风闻（郑十一娘的兄长、大越近事）"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "bitan",
+    "dili"
+   ],
+   "gifts": [
+    "korean_paper",
+    "sutra_scrolls"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "云屯",
+    "hometown": "云屯"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "zhao_zhong": {
+   "id": "zhao_zhong",
+   "name": "赵忠",
+   "region": "vietnam_champa",
+   "category": "史实",
+   "identity": "宋人；《大越史记全书》只记他是昭文王陈日燏的家将（「宋亡，其人歸我」），本作设为弓手，宋时身份、籍贯、年龄无载",
+   "langs": [
+    "minnan",
+    "han_north"
+   ],
+   "appear": {
+    "chapter_min": 3,
+    "windows": [
+     {
+      "from": "1277-01",
+      "to": "1279-06",
+      "ports": [
+       "guangzhou"
+      ],
+      "mode": "sea",
+      "route": [
+       [
+        "any",
+        "guangzhou"
+       ],
+       [
+        "guangzhou",
+        "any"
+       ]
+      ],
+      "note": "挂现有「难民船」事件，只在「载人同行」一支；窗口内第一次抵广州若仍未遇，脚本化给一次难民船"
+     }
+    ],
+    "scene": "闽广沿海的「难民船」事件：超载的船上有个仍穿宋衣、背着弓的年轻人",
+    "rumor": "闽广沿海的难民船里，有人还穿着宋军的红袄。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 30,
+    "bond_start": 30,
+    "bond_path": [
+     {
+      "src": "event:zhao_zhong_refugee",
+      "value": 30,
+      "note": "难民船选「载人同行」"
+     }
+    ],
+    "requires": {},
+    "note": "「分些水粮，不载人」一支不入伙",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 120,
+    "battle": [
+     "shenu"
+    ],
+    "battle_note": "射手、射术教习",
+    "home_port": "guangzhou",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "shenu",
+     "note": "弓弩：武勇 76，敌方白刃 ×0.95"
+    },
+    {
+     "kind": "teach",
+     "teach": "martial",
+     "per_quarter": 1,
+     "max_total": 5,
+     "note": "射术教习"
+    }
+   ],
+   "stance": "song",
+   "traits": [
+    "gongnu"
+   ],
+   "gifts": [
+    "silk_fabric"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "厓山表态 + 送他到云屯",
+    "hometown": "送他到云屯"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "zheng_shiyi_niang": {
+   "id": "zheng_shiyi_niang",
+   "name": "郑十一娘",
+   "region": "vietnam_champa",
+   "category": "据史设人",
+   "identity": "虚构：1274 年冬「以海船三十艘」浮海投大越的宋人中的女医（药婆），安置昇龙街𡟱坊「回鸡」宋人坊",
+   "langs": [
+    "minnan",
+    "viet"
+   ],
+   "appear": {
+    "chapter_min": 4,
+    "windows": [
+     {
+      "from": "1275-01",
+      "to": "1279-12",
+      "ports": [
+       "yundun"
+      ],
+      "mode": "yundun"
+     }
+    ],
+    "scene": "云屯：一个宋人打扮、入乡随俗的女医在向北客采购北方药材",
+    "rumor": "云屯有个宋人女医，在打听一个从泉州出海的男人。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 45,
+    "bond_start": 45,
+    "bond_path": [
+     {
+      "src": "event:zheng11_first",
+      "value": 10,
+      "note": ""
+     },
+     {
+      "src": "event:zheng11_herbs",
+      "value": 20,
+      "note": "委托：带 aromatic_medicine ×10 到云屯"
+     },
+     {
+      "src": "gift:aromatic_medicine×3",
+      "value": 21,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "可登船（她是宋人，不受越方限泊之例）",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "yiren": 2
+    },
+    "wage_slot": 30,
+    "battle": [],
+    "battle_note": "金疮、瘴疟、疫病",
+    "home_port": "yundun",
+    "level_at_join": {
+     "yiren": 2
+    },
+    "level_1279": {
+     "yiren": 2
+    },
+    "wage_role_at_join": {
+     "yiren": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "leg",
+     "role": "yiren",
+     "legs": [
+      [
+       "any",
+       "champa"
+      ],
+      [
+       "champa",
+       "any"
+      ],
+      [
+       "guangzhou",
+       "any"
+      ]
+     ],
+     "note": "瘴疟方：南方航段医人视作高一级"
+    }
+   ],
+   "stance": "song",
+   "traits": [
+    "bianyao"
+   ],
+   "gifts": [
+    "aromatic_medicine"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "寻兄",
+    "hometown": "寻兄"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "zeng_yan": {
+   "id": "zeng_yan",
+   "name": "曾延",
+   "region": "vietnam_champa",
+   "category": "史实",
+   "identity": "居占城唐人（《元史》记其 1283 年领一批唐人逃出报信）；本作设定为 1250 年代随泉州船到占城、娶占人妇、替唐船代办抽分的闽南人",
+   "langs": [
+    "minnan",
+    "cham"
+   ],
+   "appear": {
+    "chapter_min": 4,
+    "windows": [
+     {
+      "from": "1270-01",
+      "to": "1279-12",
+      "ports": [
+       "champa"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "占城新州：替唐船跟收税官「摺黑皮為策」点货的唐人中间人",
+    "rumor": "占城新州有个闽南人，唐船点货都找他。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {},
+    "note": "坐地关系落地后是占城坐地代理的具名人选",
+    "fee": 240
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 2,
+     "zashi": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "不参战",
+    "home_port": "champa",
+    "level_at_join": {
+     "tongshi": 2,
+     "zashi": 2
+    },
+    "level_1279": {
+     "tongshi": 2,
+     "zashi": 2
+    },
+    "wage_role_at_join": {
+     "tongshi": 120,
+     "zashi": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "lang",
+     "langs": [
+      "cham"
+     ],
+     "note": "占语：任通事在占城视作高一级（封顶三级）"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：巴鲁、甘娘、阿旺几时会随番舶到占城"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "fanyu",
+    "suanchou"
+   ],
+   "gifts": [
+    "tea",
+    "fujian_porcelain"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "占城坐地",
+    "hometown": "占城坐地"
+   },
+   "reuse_character": false,
+   "p1": true,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "kata_panduranga_pilot": {
+   "id": "kata_panduranga_pilot",
+   "name": "迦多",
+   "region": "vietnam_champa",
+   "category": "据史设人",
+   "identity": "虚构：宾瞳龙（占城南部属地）轻舟人家出身的火长，熟南海南段",
+   "langs": [
+    "cham",
+    "malay"
+   ],
+   "appear": {
+    "chapter_min": 4,
+    "windows": [
+     {
+      "from": "1270-01",
+      "to": "1279-12",
+      "ports": [
+       "champa"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "占城港：一个撮发垂髾、耳垂大孔的占人火长，要价不高，只问你的船多快",
+    "rumor": "占城港有个宾瞳龙来的火长，想跟唐船跑远路。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {},
+    "note": "",
+    "fee": 240
+   },
+   "duty": {
+    "roles": {
+     "huozhang": 2
+    },
+    "wage_slot": 60,
+    "battle": [
+     "chihou"
+    ],
+    "battle_note": "小艇夜袭、引水",
+    "home_port": "champa",
+    "level_at_join": {
+     "huozhang": 2
+    },
+    "level_1279": {
+     "huozhang": 2
+    },
+    "wage_role_at_join": {
+     "huozhang": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "leg",
+     "role": "huozhang",
+     "legs": [
+      [
+       "any",
+       "champa"
+      ],
+      [
+       "champa",
+       "any"
+      ]
+     ],
+     "note": "南海南段：进出占城航段火长视作高一级"
+    },
+    {
+     "kind": "combat",
+     "slot": "chihou",
+     "note": "斥候：弃战掷骰 +0.05"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "guanyun",
+    "chihou"
+   ],
+   "gifts": [
+    "ironware"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": true,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "cai_shijiu": {
+   "id": "cai_shijiu",
+   "name": "蔡十九",
+   "region": "siam_malay",
+   "category": "据史设人",
+   "identity": "虚构：泉州晋江人，海船管碇的水手出身，后升副舵工；1258 年后「住蕃」单马令，替番商唐船说合、充通事",
+   "langs": [
+    "minnan",
+    "malay"
+   ],
+   "appear": {
+    "chapter_min": 3,
+    "windows": [
+     {
+      "from": "1262-01",
+      "to": "1279-12",
+      "ports": [
+       "guangzhou",
+       "champa"
+      ],
+      "mode": "visit"
+     }
+    ],
+    "scene": "广州蕃坊：一个裹宋式头巾、下身缠缦的黑瘦汉子，被放债人堵在码头，用地道泉州腔求情",
+    "rumor": "广州蕃坊有个泉州人被放债的堵着，说在单马令住了好些年。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 600,
+    "bond_need": 40,
+    "bond_start": 40,
+    "bond_path": [
+     {
+      "src": "ransom",
+      "value": 30,
+      "note": "替他还清舶债 600（或月俸分十个月抵扣，此步只 +15）"
+     },
+     {
+      "src": "aboard:5",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 2,
+     "duogong": 1
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "熟半岛海岸浅滩",
+    "home_port": "guangzhou",
+    "level_at_join": {
+     "tongshi": 2,
+     "duogong": 1
+    },
+    "level_1279": {
+     "tongshi": 2,
+     "duogong": 1
+    },
+    "wage_role_at_join": {
+     "tongshi": 120,
+     "duogong": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "lang",
+     "langs": [
+      "malay"
+     ],
+     "note": "南海通语：任通事在占城视作高一级"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "fanyu",
+    "caozhou"
+   ],
+   "gifts": [
+    "tea"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1277 年后回晋江",
+    "hometown": "1277 年后回晋江"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "kham_luohu_broker": {
+   "id": "kham_luohu_broker",
+   "name": "甘娘",
+   "region": "siam_malay",
+   "category": "据史设人",
+   "identity": "虚构：罗斛（湄南河下游）河港的女牙人，父为泰人商贩、母为孟人",
+   "langs": [
+    "tai",
+    "mon",
+    "khmer",
+    "malay"
+   ],
+   "appear": {
+    "chapter_min": 4,
+    "windows": [
+     {
+      "from": "1267-01",
+      "to": "1279-12",
+      "ports": [
+       "champa"
+      ],
+      "mode": "visit"
+     }
+    ],
+    "scene": "占城港：随罗斛货船来卖罗斛香、苏木的女牙人（来占城一事为本作设定）；你的买办照「唐人惯例」要给她下聘，被她一句「我卖香，不卖人」顶回去",
+    "rumor": "占城港来过一个罗斛女牙人，买办想给她下聘，被顶了回来。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 60,
+    "bond_start": 60,
+    "bond_path": [
+     {
+      "src": "event:kham_first",
+      "value": 10,
+      "note": "初见"
+     },
+     {
+      "src": "event:kham_fairtrade",
+      "value": 30,
+      "note": "三次「按牌价留货」对话卡，每次 +10"
+     },
+     {
+      "src": "gift:qingbai_porcelain×3",
+      "value": 27,
+      "note": ""
+     }
+    ],
+    "requires": {
+     "counters": {
+      "fair_trades": 3
+     }
+    },
+    "note": "在占城卖出瓷器（fujian_porcelain / qingbai_porcelain）单笔 ≥30 件时，若已见过她，弹一张卡：她问能否按牌价留三成给她。选「按牌价留货」计一次（她按当时牌价买，钱数不变）。见面页「请买办说媒」−30，本章不再谈",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 3,
+     "tongshi": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "不上接舷位",
+    "home_port": "champa",
+    "level_at_join": {
+     "zongguan": 3,
+     "tongshi": 1
+    },
+    "level_1279": {
+     "zongguan": 3,
+     "tongshi": 1
+    },
+    "wage_role_at_join": {
+     "zongguan": 200,
+     "tongshi": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "goods",
+     "port": "champa",
+     "goods": [
+      "sappanwood",
+      "aromatic_medicine"
+     ],
+     "side": "buy",
+     "edge": 0.05,
+     "note": "罗斛香、苏木门路：占城买价 −5%"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "suanchou",
+    "fanyu"
+   ],
+   "gifts": [
+    "qingbai_porcelain",
+    "silk_fabric"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "婚约 + 泉州货栈",
+    "hometown": "婚约 + 泉州货栈"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "si_parut_javaka": {
+   "id": "si_parut_javaka",
+   "name": "巴鲁",
+   "region": "siam_malay",
+   "category": "据史设人",
+   "identity": "虚构：单马令王旃达罗跋努麾下的「阇婆迦」老兵，两度随军攻锡兰，战败流落锡兰北部，约 1264 年回乡",
+   "langs": [
+    "malay"
+   ],
+   "appear": {
+    "chapter_min": 4,
+    "windows": [
+     {
+      "from": "1264-01",
+      "to": "1279-12",
+      "ports": [
+       "champa"
+      ],
+      "mode": "visit"
+     }
+    ],
+    "scene": "占城港：单马令番舶的护船人，夜里一张吹筒两支毒镖逼退摸上甲板的贼船，只讨一顿酒钱",
+    "rumor": "单马令番舶上有个刀疤老兵，一张吹筒逼退过贼船。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 200,
+    "bond_need": 50,
+    "bond_start": 50,
+    "bond_path": [
+     {
+      "src": "event:barru_first",
+      "value": 10,
+      "note": "请他喝酒"
+     },
+     {
+      "src": "event:barru_fingerbone",
+      "value": 30,
+      "note": "出资 200 托番舶带他往佛罗安供养指骨"
+     },
+     {
+      "src": "event:barru_return",
+      "value": 10,
+      "note": "一季后回占城"
+     }
+    ],
+    "requires": {
+     "lang_any_of": [
+      "malay"
+     ],
+     "note": "船上有会南海通语的人：蔡十九、甘娘、迦多、阿旺等"
+    },
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 120,
+    "battle": [
+     "yazhen",
+     "shenu"
+    ],
+    "battle_note": "押阵先登，或站射手放吹筒",
+    "home_port": "champa",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "shenu",
+     "note": "吹筒：武勇 ≥50 即敌方白刃 ×0.95（毒镖不靠膂力）"
+    },
+    {
+     "kind": "teach",
+     "teach": "apprentice",
+     "to": "awang_foluoan",
+     "attr": "wu",
+     "per_year": 1,
+     "note": "教阿旺射箭"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "chuitong",
+    "gongnu"
+   ],
+   "gifts": [
+    "grain"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "gandha_tengliumei": {
+   "id": "gandha_tengliumei",
+   "name": "乾陀",
+   "region": "siam_malay",
+   "category": "据史设人",
+   "identity": "虚构：登流眉（地望未定，本作放在单马令航线北段）无弄山下采香人家的次子，港口验香分等人",
+   "langs": [
+    "khmer",
+    "malay"
+   ],
+   "appear": {
+    "chapter_min": 3,
+    "windows": [
+     {
+      "from": "1265-01",
+      "to": "1279-12",
+      "ports": [
+       "guangzhou",
+       "champa"
+      ],
+      "mode": "visit"
+     }
+    ],
+    "scene": "广州蕃坊香市：你刚被人拿「熟脱冒生结」骗过一回，一个鼻子特别灵的年轻人递来三块香：「船主若挑得出哪块是真沉，我这一年的香都卖你。」",
+    "rumor": "广州香市有个登流眉来的年轻人，说能闻出真沉假沉。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 45,
+    "bond_start": 45,
+    "bond_path": [
+     {
+      "src": "event:gandha_incense",
+      "value": 25,
+      "note": "闻香三选一挑对（挑错可隔月再来）"
+     },
+     {
+      "src": "gift:aromatic_medicine×3",
+      "value": 21,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zashi": 2,
+     "yiren": 1
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "非战斗员",
+    "home_port": "guangzhou",
+    "level_at_join": {
+     "zashi": 2,
+     "yiren": 1
+    },
+    "level_1279": {
+     "zashi": 2,
+     "yiren": 1
+    },
+    "wage_role_at_join": {
+     "zashi": 120,
+     "yiren": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "goods",
+     "port": "guangzhou",
+     "goods": [
+      "aromatic_medicine"
+     ],
+     "side": "buy",
+     "edge": 0.05,
+     "note": "识破熟脱冒生结：广州买香药 −5%"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "shixiang",
+    "bianyao"
+   ],
+   "gifts": [
+    "aromatic_medicine"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "贡香之争",
+    "hometown": "贡香之争"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "awang_foluoan": {
+   "id": "awang_foluoan",
+   "name": "阿旺",
+   "region": "siam_malay",
+   "category": "据史设人",
+   "identity": "虚构：佛罗安（通说在今登嘉楼一带，比定未定）河口渔家少年，往年佛诞替番舶引水，今年头一回跟番舶出远门",
+   "langs": [
+    "malay"
+   ],
+   "appear": {
+    "chapter_min": 4,
+    "windows": [
+     {
+      "from": "1273-07",
+      "to": "1279-09",
+      "ports": [
+       "champa"
+      ],
+      "mode": "visit",
+      "months": [
+       7,
+       8,
+       9
+      ],
+      "note": "六月十五佛诞过后随番舶北上，借西南季风到占城"
+     }
+    ],
+    "scene": "占城港，七至九月：随佛罗安番舶来的少年，夜里溜上你的船趴在罗盘前不动（来占城一事为本作设定）",
+    "rumor": "每年秋初，佛罗安番舶上总有个少年偷溜上唐船看罗盘。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {
+     "events_done": [
+      "awang_stowaway"
+     ]
+    },
+    "note": "",
+    "fee_override": {
+     "value": 0,
+     "reason": "偷上船被抓住的少年，答应让他跟一趟，不收入伙钱"
+    },
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "huozhang": 3
+    },
+    "wage_slot": 30,
+    "battle": [],
+    "battle_note": "成长型火长",
+    "home_port": "champa",
+    "level_at_join": {
+     "huozhang": 1
+    },
+    "level_1279": {
+     "huozhang": 2
+    },
+    "wage_role_at_join": {
+     "huozhang": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "growth",
+     "note": "航术每年 +6：约 1277 年升火长二级、1281 年升三级；月俸随品级重算"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "gouni",
+    "yinshui"
+   ],
+   "gifts": [
+    "ironware"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": true,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "ai_thong_siam": {
+   "id": "ai_thong_siam",
+   "name": "爱通",
+   "region": "siam_malay",
+   "category": "据史设人",
+   "identity": "虚构：罗斛西南、海湾西岸的暹人渔村少年（元代汉籍称暹；地望为本作设定）；头人的货船在半岛外海被海寇劫了，人被掳去发卖，辗转卖到占城市集",
+   "langs": [
+    "tai"
+   ],
+   "appear": {
+    "chapter_min": 4,
+    "windows": [
+     {
+      "from": "1276-01",
+      "to": "1279-12",
+      "ports": [
+       "champa"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "占城市集：被绑着待卖的少年用暹语骂看守，又用学来的几句闽南话朝你喊「买我，我会划船、会打仗」",
+    "rumor": "占城市集上有个被绑着的少年，骂人的话谁也听不懂。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 300,
+    "bond_need": 30,
+    "bond_start": 30,
+    "bond_path": [
+     {
+      "src": "ransom",
+      "value": 30,
+      "note": "付赎身钱 300"
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 1
+    },
+    "wage_slot": 30,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "使矛冲锋、泅水割缆",
+    "home_port": "champa",
+    "level_at_join": {
+     "tongshi": 1
+    },
+    "level_1279": {
+     "tongshi": 1
+    },
+    "wage_role_at_join": {
+     "tongshi": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "yazhen",
+     "note": "先驱：押阵余量 8 → 12；武勇每年 +4"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "qianshui",
+    "xianqu"
+   ],
+   "gifts": [
+    "grain"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "pu_yingjia": {
+   "id": "pu_yingjia",
+   "name": "蒲应甲",
+   "region": "island_sea",
+   "category": "半史实",
+   "identity": "名见「有宋泉州判院蒲公之墓　景定甲子　男應甲立」碑（一读蒲应、蒲甲兄弟）；本作设定为泉州判院之子、跑番商人",
+   "langs": [
+    "minnan",
+    "malay"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1264-01",
+      "to": "1268-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "泉州：一个穿素服的年轻人抱着刚刻好的墓碑拓本，要找去渤泥的船，讨回亡父在那边的货账",
+    "rumor": "泉州有个穿素服的年轻人，在找去渤泥的船。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {},
+    "note": "",
+    "fee": 240
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 2,
+     "zongguan": 1
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "负责议价，不擅海战",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "tongshi": 2,
+     "zongguan": 1
+    },
+    "level_1279": {
+     "tongshi": 2,
+     "zongguan": 1
+    },
+    "wage_role_at_join": {
+     "tongshi": 120,
+     "zongguan": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "lang",
+     "langs": [
+      "malay"
+     ],
+     "note": "南海通语：任通事在占城视作高一级"
+    },
+    {
+     "kind": "event_flag",
+     "note": "托番舶往渤泥一季（away）：回来时带回麻漾，并提前她的登场"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "fanyu",
+    "suanchou"
+   ],
+   "gifts": [
+    "sutra_scrolls"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": true,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "mayi_batu": {
+   "id": "mayi_batu",
+   "name": "巴都",
+   "region": "island_sea",
+   "category": "据史设人",
+   "identity": "虚构：麻逸「蛮贾」——领宋商货物转入他岛贸易、八九月回来按价偿付的本地商人",
+   "langs": [
+    "mayi",
+    "malay"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1256-01",
+      "to": "1279-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "visit"
+     }
+    ],
+    "scene": "泉州码头：一个麻逸人找上门来还账——他过期才回，宋船已先开走，他搭下一条番舶追到泉州来准偿（本作设定）",
+    "rumor": "泉州码头来了个麻逸人，说是追着宋船来还账的。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 40,
+    "bond_start": 40,
+    "bond_path": [
+     {
+      "src": "event:batu_debt",
+      "value": 25,
+      "note": "还账对话卡：选「不必加息」"
+     },
+     {
+      "src": "aboard:5",
+      "value": 10,
+      "note": ""
+     },
+     {
+      "src": "gift:fujian_porcelain×1",
+      "value": 6,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "选「照收利息」：钱 +50，意气 −10，本月不再谈",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zashi": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "理货分销；短刀藤盾只自保",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zashi": 2
+    },
+    "level_1279": {
+     "zashi": 2
+    },
+    "wage_role_at_join": {
+     "zashi": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "goods",
+     "port": "ryukyu",
+     "goods": [
+      "fujian_porcelain",
+      "ironware"
+     ],
+     "side": "sell",
+     "edge": 0.05,
+     "note": "岛夷互市的规矩：南岛海道北口卖瓷器、铁器 +5%"
+    },
+    {
+     "kind": "tendency",
+     "axis": "sea"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "fanyu",
+    "suanchou"
+   ],
+   "gifts": [
+    "fujian_porcelain",
+    "ironware"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "sanyu_alon": {
+   "id": "sanyu_alon",
+   "name": "阿隆",
+   "region": "island_sea",
+   "category": "据史设人",
+   "identity": "虚构：三屿（一说在今巴拉望、卡拉棉一带）贾豪之子",
+   "langs": [
+    "mayi"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1268-01",
+      "to": "1279-12",
+      "ports": [
+       "quanzhou",
+       "penghu"
+      ],
+      "mode": "visit"
+     }
+    ],
+    "scene": "泉州：一个拳发少年附番舶来「经纪」，想做成一笔像样的买卖回去——元代《岛夷志略》三岛条习俗前推（本作设定）",
+    "rumor": "有个三屿少年附番舶来泉州，说要做成一笔买卖才回去。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {},
+    "note": "",
+    "fee": 60
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 30,
+    "battle": [
+     "chihou"
+    ],
+    "battle_note": "攀桅、凫水、夜泅割缆",
+    "home_port": "quanzhou",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "chihou",
+     "note": "潜水：白刃失利折损 ×0.75"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "qianshui"
+   ],
+   "gifts": [
+    "coral",
+    "fujian_porcelain"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "pisheye_tiezai": {
+   "id": "pisheye_tiezai",
+   "name": "铁仔",
+   "region": "island_sea",
+   "category": "据史设人",
+   "identity": "虚构：毗舍耶少年（地望台湾西南岸一说、源出菲律宾一说），夜里摸上澎湖被泉州籍渔户擒住",
+   "langs": [
+    "bisaya"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1262-01",
+      "to": "1270-12",
+      "ports": [
+       "penghu"
+      ],
+      "mode": "event"
+     }
+    ],
+    "scene": "澎湖渔寨：头人把一个被捆着的毗舍耶少年推到你面前，要赎金，不然卖作奴（夜袭事件为本作设计）",
+    "rumor": "澎湖渔寨捉了个毗舍耶少年，头人要拿他换钱。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 200,
+    "bond_need": 30,
+    "bond_start": 30,
+    "bond_path": [
+     {
+      "src": "ransom",
+      "value": 30,
+      "note": "付赎金 200 并当众说不卖他"
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 30,
+    "battle": [
+     "shenu"
+    ],
+    "battle_note": "掷绳标枪（可收回）",
+    "home_port": "penghu",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "shenu",
+     "note": "标枪：敌方白刃 ×0.97，另接舷距离 +25%（不改胜率，只让钩船容易）"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "biaoqiang",
+    "zhufa"
+   ],
+   "gifts": [
+    "ironware"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "boni_mayang": {
+   "id": "boni_mayang",
+   "name": "麻漾",
+   "region": "island_sea",
+   "category": "据史设人",
+   "identity": "虚构：渤泥采脑人家的女儿，会用药树膏治刀伤，能辨梅花脑、金脚脑、米脑、苍脑",
+   "langs": [
+    "boni",
+    "malay"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1266-01",
+      "to": "1279-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "event",
+      "note": "随蒲应甲回泉州；未收蒲应甲则 1268 年起随渤泥番舶来"
+     }
+    ],
+    "scene": "随蒲应甲从渤泥回到泉州；若未收蒲应甲，则 1268 年起随渤泥番舶来泉州（渤泥使曾从泉州乘海舶归国为旁证）",
+    "rumor": "渤泥番舶上来了个女子，会辨龙脑成色，还会治刀伤。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 45,
+    "bond_start": 45,
+    "bond_path": [
+     {
+      "src": "event:mayang_market",
+      "value": 20,
+      "note": "泊泉州时带她逛一次药市（对话卡）"
+     },
+     {
+      "src": "gift:silk_fabric×2",
+      "value": 18,
+      "note": ""
+     },
+     {
+      "src": "aboard:4",
+      "value": 8,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "yiren": 2,
+     "zashi": 1
+    },
+    "wage_slot": 30,
+    "battle": [],
+    "battle_note": "战后刀伤救治",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "yiren": 2,
+     "zashi": 1
+    },
+    "level_1279": {
+     "yiren": 2,
+     "zashi": 1
+    },
+    "wage_role_at_join": {
+     "yiren": 120,
+     "zashi": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "goods",
+     "port": "quanzhou",
+     "goods": [
+      "aromatic_medicine"
+     ],
+     "side": "sell",
+     "edge": 0.05,
+     "note": "药市熟人：泉州卖香药 +5%"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "bianyao",
+    "shixiang"
+   ],
+   "gifts": [
+    "silk_fabric"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "龙脑之争（1277 后）",
+    "hometown": "龙脑之争"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "zhiligan": {
+   "id": "zhiligan",
+   "name": "智力干",
+   "region": "fanfang",
+   "category": "史实",
+   "identity": "南毗（印度马拉巴尔）人，《诸蕃志》记「時羅巴、智力干父子……今居泉之城南」（1224–1227）；1255 年后在世为本作推定",
+   "langs": [
+    "malayalam",
+    "arabic"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1255-03",
+      "to": "1262-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "市舶司小吏说：「南毗的事，城南智家老头子最清楚，就怕他不肯说。」叩门三次都被闭门拒之",
+    "rumor": "城南住着一户南毗人家，老头子闭门不见客。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 45,
+    "bond_start": 45,
+    "bond_path": [
+     {
+      "src": "event:zhiligan_knock",
+      "value": 15,
+      "note": "城南叩门三次（隔旬，每次 +5）"
+     },
+     {
+      "src": "event:zhiligan_pepper",
+      "value": 20,
+      "note": "第四次带去胡椒 ×5"
+     },
+     {
+      "src": "gift:pepper×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "年老不上战位",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "tongshi": 2
+    },
+    "level_1279": {
+     "tongshi": 2
+    },
+    "wage_role_at_join": {
+     "tongshi": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "goods",
+     "port": "quanzhou",
+     "goods": [
+      "pepper"
+     ],
+     "side": "buy",
+     "edge": 0.05,
+     "note": "胡椒门路：泉州买胡椒 −5%"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：南毗、故临、蓝里消息；白达哈散 1261 年到泉州的风声由他先带出"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "fanyu",
+    "gongnu"
+   ],
+   "gifts": [
+    "pepper"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "folian": {
+   "id": "folian",
+   "name": "佛莲",
+   "region": "fanfang",
+   "category": "史实",
+   "identity": "南蕃回回青年商人（生年不可考）；日后为「蒲氏之婿」、发海舶八十艘的巨贾（1293 年事）",
+   "langs": [
+    "arabic",
+    "malay",
+    "minnan"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1265-01",
+      "to": "1275-06",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "泉州码头：一个南蕃口音的年轻商人被牙人压价，差点把一舱香药贱卖，你替他估了真价",
+    "rumor": "码头上有个南蕃来的年轻商人，差点被牙人压价贱卖了一舱香药。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 1000,
+    "bond_need": 50,
+    "bond_start": 50,
+    "bond_path": [
+     {
+      "src": "event:folian_price",
+      "value": 15,
+      "note": "码头估价"
+     },
+     {
+      "src": "event:folian_north",
+      "value": 10,
+      "note": "已走通明州或博多"
+     },
+     {
+      "src": "event:folian_share",
+      "value": 25,
+      "note": "合股一船：出资 1000"
+     }
+    ],
+    "requires": {
+     "visited_any_of": [
+      "mingzhou",
+      "hakata"
+     ]
+    },
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zashi": 3,
+     "zongguan": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "副纲首：商务议价",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zashi": 3,
+     "zongguan": 2
+    },
+    "level_1279": {
+     "zashi": 3,
+     "zongguan": 2
+    },
+    "wage_role_at_join": {
+     "zashi": 200,
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "share",
+     "invest": 1000,
+     "dividend_per_year": 150,
+     "cap_total": 1500,
+     "note": "船股：1275 年转盟友后每年分红 150，累计封顶 1500（ROI 50%，进 verify_economy §十同类断言）"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "suanchou",
+    "fanyu"
+   ],
+   "gifts": [
+    "korean_ginseng",
+    "coral"
+   ],
+   "climax": {
+    "scholar": "1275-12 清算卡（意气 80）",
+    "merchant": "1276-12 泉州对峙",
+    "hometown": "1276-12 泉州对峙"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "zheng_zhen": {
+   "id": "zheng_zhen",
+   "name": "郑震",
+   "region": "fanfang",
+   "category": "史实",
+   "identity": "泉州舟人（船工）；《元史》记 1281 年他在锡兰附近劝元使改道马八儿。此前经历全为本作推演",
+   "langs": [
+    "minnan",
+    "tamil"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1265-01",
+      "to": "1280-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "后渚酒棚：几个汉人纲首笑一个黑瘦舟人「跟番人跑过船，就当自己是火长了？」他不争，用酒在桌上画一条线：泉州、蓝里、僧伽耶山、故临",
+    "rumor": "后渚酒棚有个舟人，说自己跑过蓝里、故临，没人信。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {
+     "flagship_min": "fu_ship_medium",
+     "note": "旗舰须福船（中）或更大，他不上小艍"
+    },
+    "note": "「第一趟远航全船听他的」改为入伙事件文本，不锁航法",
+    "fee": 400
+   },
+   "duty": {
+    "roles": {
+     "huozhang": 3,
+     "duogong": 2
+    },
+    "wage_slot": 120,
+    "battle": [
+     "chuanzhang"
+    ],
+    "battle_note": "P3 起可任护航船船长",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "huozhang": 3,
+     "duogong": 2
+    },
+    "level_1279": {
+     "huozhang": 3,
+     "duogong": 2
+    },
+    "wage_role_at_join": {
+     "huozhang": 200,
+     "duogong": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "tendency",
+     "axis": "sea"
+    },
+    {
+     "kind": "teach",
+     "teach": "leg",
+     "role": "huozhang",
+     "legs": [
+      [
+       "quanzhou",
+       "champa"
+      ],
+      [
+       "champa",
+       "quanzhou"
+      ]
+     ],
+     "note": "意气 80 传授：离队后泉州—占城航段火长视作高一级"
+    },
+    {
+     "kind": "intel",
+     "note": "替智力干挑番舶；蓝里针路"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "zhenlu",
+    "gouni",
+    "lanli"
+   ],
+   "gifts": [
+    "tea"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1280 年底随元使出海",
+    "hometown": "同海商线"
+   },
+   "reuse_character": false,
+   "p1": true,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "hasan_baghdadi": {
+   "id": "hasan_baghdadi",
+   "name": "白达哈散",
+   "region": "fanfang",
+   "category": "据史设人",
+   "identity": "虚构：白达（巴格达）医家子，1258 年旭烈兀破城后流亡，在记施船上当随船医学徒，到故临换搭泉州舶，1261 年到泉州",
+   "langs": [
+    "arabic",
+    "persian"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1261-01",
+      "to": "1279-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern"
+     }
+    ],
+    "scene": "泉州蕃坊：一个白布缠头的年轻医者在给码头苦力裹伤，不收钱，只收一顿饭",
+    "rumor": "蕃坊来了个年轻医者，给苦力裹伤只收一顿饭。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {},
+    "note": "",
+    "fee": 240
+   },
+   "duty": {
+    "roles": {
+     "yiren": 3
+    },
+    "wage_slot": 30,
+    "battle": [],
+    "battle_note": "成长型医人",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "yiren": 2
+    },
+    "level_1279": {
+     "yiren": 3
+    },
+    "wage_role_at_join": {
+     "yiren": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "growth",
+     "note": "学识每年 +1：1268 年到 75 升医人三级，月俸 120 → 200"
+    },
+    {
+     "kind": "event_flag",
+     "note": "会大食语：卡富尔放良时可代清净寺作证，省 200 打点"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "bianyao",
+    "fanyu"
+   ],
+   "gifts": [
+    "aromatic_medicine"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1278 年征召",
+    "hometown": "1278 年征召"
+   },
+   "reuse_character": false,
+   "p1": true,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "muttu": {
+   "id": "muttu",
+   "name": "穆图",
+   "region": "fanfang",
+   "category": "据史设人",
+   "identity": "虚构：马八儿（南印度东岸采珠海岸，宋籍泛称注辇一带）采珠人家的少年，随珠商来泉州；珠商死于 1277 年围城期间（死因为本作设计）",
+   "langs": [
+    "tamil"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1277-10",
+      "to": "1279-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "event"
+     }
+    ],
+    "scene": "张世杰退兵之后的后渚码头：一个泰米尔少年守着主人的空货箱，谁问都说自己能潜到十二寻",
+    "rumor": "后渚码头有个南天竺少年守着空货箱，说能潜到十二寻。"
+   },
+   "join": {
+    "type": "hire",
+    "cost": 0,
+    "bond_need": 0,
+    "bond_start": 30,
+    "bond_path": [],
+    "requires": {},
+    "note": "",
+    "fee": 60
+   },
+   "duty": {
+    "roles": {},
+    "wage_slot": 30,
+    "battle": [
+     "chihou"
+    ],
+    "battle_note": "水下补漏、夜泅凿船",
+    "home_port": "quanzhou",
+    "level_at_join": {},
+    "level_1279": {},
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "chihou",
+     "note": "潜水：白刃失利折损 ×0.75（不看航术）"
+    },
+    {
+     "kind": "goods",
+     "port": "quanzhou",
+     "goods": [
+      "mother_of_pearl"
+     ],
+     "side": "sell",
+     "edge": 0.05,
+     "note": "珠贝门路：泉州卖珠母 +5%"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "qianshui"
+   ],
+   "gifts": [
+    "mother_of_pearl"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1279 年六月马八儿使船",
+    "hometown": "同海商线"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "已核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "kafur": {
+   "id": "kafur",
+   "name": "卡富尔",
+   "region": "fanfang",
+   "category": "据史设人",
+   "identity": "虚构：昆仑层期以西海岛出身，幼年被掳，经层拔一带港口转卖大食商人，替主人管钥掌库；主人 1266 年死于泉州",
+   "langs": [
+    "arabic",
+    "swahili"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1266-01",
+      "to": "1279-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "event"
+     }
+    ],
+    "scene": "蕃坊：大食商人死了，他守着一串钥匙站在库门口；主人临终口许放良，要有人出钱打点、清净寺作证",
+    "rumor": "蕃坊有个大食商人死了，管钥的昆仑人在等人作证放良。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 300,
+    "bond_need": 30,
+    "bond_start": 30,
+    "bond_path": [
+     {
+      "src": "ransom",
+      "value": 30,
+      "note": "打点 300，并请清净寺作证放良（船上有会大食语的人，否则另加 200）"
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 2
+    },
+    "wage_slot": 60,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "接舷战兵",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 2
+    },
+    "level_1279": {
+     "zongguan": 2
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "goods",
+     "port": "quanzhou",
+     "goods": [
+      "ivory"
+     ],
+     "side": "sell",
+     "edge": 0.05,
+     "note": "象牙门路：泉州卖象牙 +5%"
+    },
+    {
+     "kind": "combat",
+     "slot": "yazhen",
+     "note": "押阵：武勇 60"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "fencang"
+   ],
+   "gifts": [
+    "ivory"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  }
+ },
+ "events": {
+  "zhu_qing_sea": {
+   "id": "zhu_qing_sea",
+   "who": [
+    "zhu_qing"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zhu_qing_wine": {
+   "id": "zhu_qing_wine",
+   "who": [
+    "zhu_qing"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zhu_qing_errand": {
+   "id": "zhu_qing_errand",
+   "who": [
+    "zhu_qing"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zhang_xuan_wusong": {
+   "id": "zhang_xuan_wusong",
+   "who": [
+    "zhang_xuan"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zeng_gan_houzhu": {
+   "id": "zeng_gan_houzhu",
+   "who": [
+    "zeng_gan"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zhou_axi_anchor": {
+   "id": "zhou_axi_anchor",
+   "who": [
+    "zhou_axi"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "jinjiang_dive": {
+   "id": "jinjiang_dive",
+   "who": [
+    "zhou_axi",
+    "he_sanhao"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "he_sanhao_pilot": {
+   "id": "he_sanhao_pilot",
+   "who": [
+    "he_sanhao"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "he_sanhao_firewood": {
+   "id": "he_sanhao_firewood",
+   "who": [
+    "he_sanhao"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "yu_yuanqing_meet": {
+   "id": "yu_yuanqing_meet",
+   "who": [
+    "yu_yuanqing"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "yu_yuanqing_search": {
+   "id": "yu_yuanqing_search",
+   "who": [
+    "yu_yuanqing"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "yu_yuanqing_wupoling": {
+   "id": "yu_yuanqing_wupoling",
+   "who": [
+    "yu_yuanqing"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "shao_xiaoyi_meet": {
+   "id": "shao_xiaoyi_meet",
+   "who": [
+    "shao_xiaoyi"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "shao_xiaoyi_ask": {
+   "id": "shao_xiaoyi_ask",
+   "who": [
+    "shao_xiaoyi"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "shao_xiaoyi_xingchao": {
+   "id": "shao_xiaoyi_xingchao",
+   "who": [
+    "shao_xiaoyi"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "niu_lver_rescue": {
+   "id": "niu_lver_rescue",
+   "who": [
+    "niu_lver"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "niu_lver_patrol": {
+   "id": "niu_lver_patrol",
+   "who": [
+    "niu_lver"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "patrol_win_flip": {
+   "id": "patrol_win_flip",
+   "who": [
+    "niu_lver",
+    "han_deukryong",
+    "zhao_zhong",
+    "yu_yuanqing"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "takezaki_witness": {
+   "id": "takezaki_witness",
+   "who": [
+    "takezaki_suenaga"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "takezaki_horse": {
+   "id": "takezaki_horse",
+   "who": [
+    "takezaki_suenaga"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "tsushima_strait_night": {
+   "id": "tsushima_strait_night",
+   "who": [
+    "takezaki_suenaga",
+    "tsushima_tajiro_yajiro"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "han_deukryong_rescue": {
+   "id": "han_deukryong_rescue",
+   "who": [
+    "han_deukryong"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "jeong_levy": {
+   "id": "jeong_levy",
+   "who": [
+    "jeong_yusun"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "yundun_detour": {
+   "id": "yundun_detour",
+   "who": [
+    "player"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "pham_first": {
+   "id": "pham_first",
+   "who": [
+    "pham_ngu_lao"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "pham_book": {
+   "id": "pham_book",
+   "who": [
+    "pham_ngu_lao"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "le_tac_first": {
+   "id": "le_tac_first",
+   "who": [
+    "le_tac"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "le_tac_book": {
+   "id": "le_tac_book",
+   "who": [
+    "le_tac"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zheng11_first": {
+   "id": "zheng11_first",
+   "who": [
+    "zheng_shiyi_niang"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zheng11_herbs": {
+   "id": "zheng11_herbs",
+   "who": [
+    "zheng_shiyi_niang"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zheng11_brother": {
+   "id": "zheng11_brother",
+   "who": [
+    "zheng_shiyi_niang"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zhao_zhong_refugee": {
+   "id": "zhao_zhong_refugee",
+   "who": [
+    "zhao_zhong"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "kham_first": {
+   "id": "kham_first",
+   "who": [
+    "kham_luohu_broker"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "kham_fairtrade": {
+   "id": "kham_fairtrade",
+   "who": [
+    "kham_luohu_broker"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "kham_betrothal": {
+   "id": "kham_betrothal",
+   "who": [
+    "kham_luohu_broker"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "barru_first": {
+   "id": "barru_first",
+   "who": [
+    "si_parut_javaka"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "barru_fingerbone": {
+   "id": "barru_fingerbone",
+   "who": [
+    "si_parut_javaka"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "barru_return": {
+   "id": "barru_return",
+   "who": [
+    "si_parut_javaka"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "boarding_win_both": {
+   "id": "boarding_win_both",
+   "who": [
+    "si_parut_javaka",
+    "ai_thong_siam"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "gandha_incense": {
+   "id": "gandha_incense",
+   "who": [
+    "gandha_tengliumei"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "gandha_tribute": {
+   "id": "gandha_tribute",
+   "who": [
+    "gandha_tengliumei"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "awang_stowaway": {
+   "id": "awang_stowaway",
+   "who": [
+    "awang_foluoan"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "aithong_revenge": {
+   "id": "aithong_revenge",
+   "who": [
+    "ai_thong_siam"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "aithong_home": {
+   "id": "aithong_home",
+   "who": [
+    "ai_thong_siam"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "batu_debt": {
+   "id": "batu_debt",
+   "who": [
+    "mayi_batu"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "mayang_market": {
+   "id": "mayang_market",
+   "who": [
+    "boni_mayang"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "mayang_camphor": {
+   "id": "mayang_camphor",
+   "who": [
+    "boni_mayang"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zhiligan_knock": {
+   "id": "zhiligan_knock",
+   "who": [
+    "zhiligan"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zhiligan_pepper": {
+   "id": "zhiligan_pepper",
+   "who": [
+    "zhiligan"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "zhiligan_old": {
+   "id": "zhiligan_old",
+   "who": [
+    "zhiligan"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "folian_price": {
+   "id": "folian_price",
+   "who": [
+    "folian"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "folian_north": {
+   "id": "folian_north",
+   "who": [
+    "folian"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "folian_share": {
+   "id": "folian_share",
+   "who": [
+    "folian"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "hasan_summon": {
+   "id": "hasan_summon",
+   "who": [
+    "hasan_baghdadi"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "kafur_manumit": {
+   "id": "kafur_manumit",
+   "who": [
+    "kafur"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "tiezai_ransom": {
+   "id": "tiezai_ransom",
+   "who": [
+    "pisheye_tiezai"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "aithong_ransom": {
+   "id": "aithong_ransom",
+   "who": [
+    "ai_thong_siam"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "cai19_debt": {
+   "id": "cai19_debt",
+   "who": [
+    "cai_shijiu"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "pu_yingjia_boni": {
+   "id": "pu_yingjia_boni",
+   "who": [
+    "pu_yingjia"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  },
+  "companion_farewell": {
+   "id": "companion_farewell",
+   "who": [
+    "*"
+   ],
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+  }
+ }
+}

@@ -47,6 +47,7 @@ const SCRIPTS := [
 	"res://tools/qa_crew_hire_probe.gd",
 	# Lane Z3 伙伴草案预览浮页
 	"res://scripts/companions/CompanionPreview.gd", "res://tools/qa_companion_preview_screenshots.gd",
+	"res://tools/qa_companion_preview_probe.gd",  # lane w64-k1 浮页上屏文案 / 钮面 / 字段运行时探针（headless）
 	# Lane A 观感展示台（独立场景）
 	"res://scripts/ui/VisionStage.gd", "res://tools/qa_wire_vision_screenshots.gd",
 	"res://scripts/ui/CombatLetterbox.gd", "res://tools/qa_letterbox_copy_probe.gd",
