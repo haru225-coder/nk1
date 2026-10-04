@@ -60,6 +60,9 @@ extends SceneTree
 ##       出这几条不报引擎错（get_meta 缺键这类 ERROR_TYPE_ERROR，「本进程无 SCRIPT ERROR」那格看不见）；
 ##       ④ 浮字条在画布内，不碰本船（船心屏上位置 ±130 × ±90）、号令面板、小地图、状态条、顶匾，底边在出战墨边下边之上。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
+##   十七、旗舰接上装填与弹道（player_gunnery，w53-2 二期矢石一条线）：关时是原来的两秒一串直线铁球；开时战斗按 ReloadAmmo 装、
+##       放出的发数记在弹药与 shots_fired 上。四格：① 开时旗舰 battery 在、各舷有床子弩；② 开时放一舷 shots_fired > 0、弹药少了几发；
+##       ③ 关后 battery 为 null、回旧路；④ Ship.combat_status() 挂到状态条（弹药按舱、两舷装填）。
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
 const TAG := "QA_W53_2_COMBAT_PROBE"
@@ -125,6 +128,8 @@ func _run() -> void:
 	await _sec_board_order_effects(fleet)
 	print("== 十五、海战浮字不压本船、接踵的几条都看得到")
 	await _sec_notice_stack(fleet)
+	print("== 十七、旗舰接上装填与弹道（player_gunnery）")
+	await _sec_player_gunnery(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -983,6 +988,69 @@ func _sec_notice_stack(fleet: Node) -> void:
 			str(rect), others.size(), "" if bad.is_empty() else "——" + "；".join(bad)])
 	await _close(wm)
 	root.size = size0
+
+
+# ══ 十七、旗舰接上装填与弹道（player_gunnery） ══════════════════════════════
+
+func _sec_player_gunnery(fleet: Node) -> void:
+	var sw: GDScript = load("res://scripts/combat/CombatSwitches.gd")
+	sw.call("set_on", "player_gunnery", true)
+	var wm := await _battle(fleet, "fu_ship_medium", 40, {"type": "pirate_boat", "count": 1})
+	var own: Node2D = wm.get("ship")
+	var bat = own.get("battery")
+	_check(bat != null, "十七① 开时旗舰装填簿在（battery %s）" % str(bat))
+	var has_side := false
+	var n_m := 0
+	if bat != null:
+		n_m = ((bat as Object).get("mounts") as Array).size()
+		for m in (bat as Object).get("mounts"):
+			var mm: Dictionary = m
+			if str(mm.get("weapon", "")) == "chuangnu" and int(mm.get("side", 0)) != 0:
+				has_side = true
+	_check(has_side, "十七① 开时各舷有床子弩（mounts %d）" % n_m)
+	var am0: Dictionary = ((bat as Object).get("ammo") as Dictionary).duplicate() if bat != null else {}
+	for _i in 30:
+		await physics_frame
+	var snap0: Dictionary = (load("res://scripts/ui/CombatStatusHud.gd") as GDScript).call("snapshot_of", wm, own)
+	var reload0: Dictionary = snap0.get("reload", {}) if snap0 is Dictionary else {}
+	var ammo0: Dictionary = snap0.get("ammo", {}) if snap0 is Dictionary else {}
+	var stow0 := int(ammo0.get("bolt", 0)) + int(ammo0.get("arrow", 0)) + int(ammo0.get("stone", 0)) + int(ammo0.get("gunpowder", 0))
+	own.set("fire_cooldown", 0.0)
+	own.call("_fire_broadside", 1)
+	var am1: Dictionary = ((bat as Object).get("ammo") as Dictionary) if bat != null else {}
+	var used := false
+	var shots := -1
+	if bat != null:
+		shots = int((bat as Object).get("shots_fired"))
+		for k in am1:
+			if int(am1[k]) < int(am0.get(k, 0)):
+				used = true
+	_check(shots > 0 and used, "十七② 开时放一舷：shots_fired %d、弹药用掉一些（%s → %s，冷却 %.2f）" % [
+		shots, str(am0), str(am1), float(own.get("fire_cooldown"))])
+	var after_hud: Dictionary = (load("res://scripts/ui/CombatStatusHud.gd") as GDScript).call("snapshot_of", wm, own)
+	var ammo_after: Dictionary = after_hud.get("ammo", {}) if after_hud is Dictionary else {}
+	var reload_after: Dictionary = after_hud.get("reload", {}) if after_hud is Dictionary else {}
+	var ammo_after_n := int(ammo_after.get("bolt", 0)) + int(ammo_after.get("arrow", 0)) + int(ammo_after.get("stone", 0)) + int(ammo_after.get("gunpowder", 0))
+	var reload_after_n := float(reload_after.get("port", -1.0)) + float(reload_after.get("starboard", -1.0))
+	_check(stow0 > 0 and ammo_after_n < stow0 and reload_after_n >= 0.0,
+		"十七④ 快照 / 状态条接：弹药上屏 %d → %d、两舷装填读数在（%s → %s）" % [
+			stow0, ammo_after_n, str(reload0), str(reload_after)])
+	await _close(wm)
+	sw.call("set_on", "player_gunnery", false)
+	var wm2 := await _battle(fleet, "fu_ship_medium", 40, {"type": "pirate_boat", "count": 1})
+	var own2: Node2D = wm2.get("ship")
+	_check(own2.get("battery") == null, "十七③ 关后旗舰没有装填簿（battery %s）" % str(own2.get("battery")))
+	# 状态条快照真拼一次：并到 _duck(ship) 的弹药与两舷装填数据得在格子里出得来
+	var hud: GDScript = load("res://scripts/ui/CombatStatusHud.gd")
+	var snap2: Dictionary = (hud.call("snapshot_of", wm2, own2) as Dictionary) if hud.has_method("snapshot_of") else {}
+	var scr: GDScript = load("res://scripts/Ship.gd")
+	var has_fn := false
+	for m in scr.get_script_method_list():
+		if str(m.get("name", "")) == "combat_status":
+			has_fn = true
+	_check(has_fn, "十七④ Ship.combat_status() 在（状态条快照接弹药 / 两舷装填；has_fn %s）" % str(has_fn))
+	await _close(wm2)
+	sw.call("reset")
 
 
 class _ScriptErrLog extends Logger:

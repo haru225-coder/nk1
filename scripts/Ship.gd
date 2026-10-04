@@ -54,6 +54,9 @@ var fire_cooldown: float = 0.0
 
 ## 旗舰的分系统损伤（船体 / 帆 / 舵 / 水手 + 浸水失火，lane combat04）。_ready 按旗舰船型建；没进树时第一次取用再建。
 var damage_model: _DamageModel = null
+## 装填与弹药簿（combat03，lane w53-2 二期接到旗舰）：CombatSwitches.player_gunnery 在时用 ReloadAmmo.for_ship 起，
+## 每物理帧喂人手 / 士气 / 损伤装填倍数；关时不建簿，齐射走原来的直线铁球路（逐字回旧）
+var battery = null
 ## 船上方那行损伤短注（火、进水、倾侧、舵、帆、伤亡）。状态条接上以后可以关掉。
 @export var show_damage_tag := true
 ## 找命中那颗弹：离船心这么近、不是自己打出去的 Area2D 才算（碰撞圆半径 24，弹速 800 一帧约走 13）
@@ -93,6 +96,15 @@ var _note_scene: PackedScene = null
 func _ready() -> void:
 	# 战术场景反映旗舰状态；舰队数据以 Fleet 为准
 	var fs: Dictionary = Fleet.flagship()
+	## lane w53-2 二期：旗舰接上装填与弹药簿（combat03）。
+	## 开关 CombatSwitches.player_gunnery（回退键）：关不建簿，齐射照旧打直线铁球。
+	var sw=preload("res://scripts/combat/CombatSwitches.gd")
+	if sw.on("player_gunnery"):
+		battery = preload("res://scripts/combat/ReloadAmmo.gd").for_ship(Fleet.ship_def(Fleet.flagship().get("type","")), Fleet.ship_crew(0),
+			{"heavy_per_side": Fleet.ship_def(Fleet.flagship().get("type","")).get("cannon_slots", 0) / 2,
+			 "tier": "merchant", "ammo_mult": 1.0})
+	# 战术场景反映旗舰状态；舰队数据以 Fleet 为准
+	fs = Fleet.flagship()
 	apply_type_sprite(str(fs.get("type", "")))
 	max_hp = float(fs.get("max_durability", 100.0))
 	hull_hp = float(fs.get("durability", max_hp))
@@ -167,6 +179,15 @@ func _can_fire() -> bool:
 	return true
 
 func _fire_broadside(side: int) -> void:
+	var sw=preload("res://scripts/combat/CombatSwitches.gd")
+	if battery != null and sw.on("player_gunnery"):
+		_fire_broadside_ballistics(side)
+		return
+	_fire_broadside_legacy(side)
+
+
+## 旧口径（CombatSwitches.player_gunnery 关或装填簿没建）：两秒一串直线铁球，弹数只看炮位
+func _fire_broadside_legacy(side: int) -> void:
 	var dm := get_damage_model()
 	# lane combat04：船往这一舷倾得厉害，低舷入水、站不住人，这一舷打不出去。不进冷却，可以换另一舷，或者先戽水扶正。
 	if not dm.side_ready(side):
@@ -176,7 +197,7 @@ func _fire_broadside(side: int) -> void:
 	fire_cooldown = 2.0 * dm.reload_factor() * _order_mod("reload_time", 1.0)
 	var ship_dir = Vector2.UP.rotated(rotation)
 	var side_dir = Vector2.RIGHT.rotated(rotation) if side == 1 else Vector2.LEFT.rotated(rotation)
-	
+
 	# P4-3：齐射弹数挂钩旗舰炮位（保底 1 发），排布居中不随炮位前移
 	# lane combat04：伤亡多了人手不够、船上有火烟，只放得出几成（DamageModel.volley_factor），仍保底 1 发
 	var flagship := Fleet.flagship()
@@ -192,7 +213,7 @@ func _fire_broadside(side: int) -> void:
 		cb.direction = side_dir.rotated(spread)
 		cb.shooter = self
 		get_parent().add_child(cb)
-		
+
 	_AUDIO.combat_fire(get_parent())
 	_CombatFx.muzzle_flash(self, side, shots)
 	_CombatFx.hull_shudder(self, 0.7, side)
@@ -200,10 +221,50 @@ func _fire_broadside(side: int) -> void:
 	# 后坐：镜头往反舷推一下（旧 30 px 硬甩改顺势 11 px + 微收镜头，重量交给船身一颤与出手烟）
 	_CombatFx.punch_camera(self, 11.0, -side_dir, 0.012)
 
+
+## 装填簿口径（lane w53-2 二期）：这一舷已装毕、舷角与射程够得着的位逐位出一发（combat03 ReloadAmmo / Ballistics）
+func _fire_broadside_ballistics(side: int) -> void:
+	var dm := get_damage_model()
+	if not dm.side_ready(side):
+		_note("%s舷低没，站不住人" % ("右" if side == 1 else "左"), 1)
+		return
+	if not _can_fire():
+		return
+	var fired := preload("res://scripts/combat/Ballistics.gd").fire_volley(self, battery, side, _nearest_enemy_node())
+	if fired <= 0:
+		var why := str(battery.get("last_refusal"))
+		if why != "":
+			_note("不行：" + why, 1)
+		return
+	# 装填冷却照旧：一排放得出去才进（舷炮那 2 秒 + 损伤与号令效力，同旧路）
+	fire_cooldown = 2.0 * dm.reload_factor() * _order_mod("reload_time", 1.0)
+	var ship_dir = Vector2.UP.rotated(rotation)
+	var side_dir = Vector2.RIGHT.rotated(rotation) if side == 1 else Vector2.LEFT.rotated(rotation)
+	var shots := fired
+	_AUDIO.combat_fire(get_parent())
+	_CombatFx.muzzle_flash(self, side, shots)
+	_CombatFx.hull_shudder(self, 0.7, side)
+	_CombatFx.punch_camera(self, 11.0, -side_dir, 0.012)
+
+
+## 最近的活敌（PirateShip 在上，hull_hp > 0）；以前用做接舷提前量，现在拿来做弹道提前量；没碰到盲射正横
+func _nearest_enemy_node() -> Node2D:
+	var best: Node2D = null
+	var best_d := INF
+	for c in get_parent().get_children():
+		if String(c.name).begins_with("PirateShip") and float(c.get("hull_hp")) > 0.0:
+			var d: float = (c as Node2D).position.distance_to(position)
+			if d < best_d:
+				best_d = d
+				best = c
+	return best
+
 func _physics_process(delta: float) -> void:
 	if hull_hp <= 0: return
 	if fire_cooldown > 0: fire_cooldown -= delta
-	
+	# lane w53-2 二期：装填簿跟着人手 / 士气 / 损伤推装；没有簿、或装填簿关是旧路
+	if battery != null:
+		battery.tick(delta, Fleet.ship_crew(0), clampf(float(Fleet.get("morale")) / 100.0, 0.0, 1.0), get_damage_model().reload_factor())
 	_step_damage(delta)
 	if hull_hp <= 0: return
 	_apply_sailing_physics(delta)
@@ -416,6 +477,13 @@ func get_damage_model() -> _DamageModel:
 ## 损伤快照（DamageModel.summary，键见该函数注释）
 func damage_summary() -> Dictionary:
 	return get_damage_model().summary()
+
+
+## 状态条快照（CombatStatusHud._duck('combat_status')）：装了装填簿（player_gunnery 开）给弹药 / 两舷装填；关时不出来（快照里不写）
+func combat_status() -> Dictionary:
+	if battery != null:
+		return battery.combat_status()
+	return {}
 
 
 ## 损管令：auto 均衡 / fire 救火 / flood 戽水 / fight 迎敌。不认识的令返回 false，原令不变。
