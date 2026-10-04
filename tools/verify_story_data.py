@@ -2257,6 +2257,35 @@ _NEWS_MUTANTS = [
 for _tag, _sample, _bad in _NEWS_MUTANTS:
     check(bool(_scholar_news_problems(_sample, "1276-12")) == _bad, f"士人短札判据自证「{_tag}」应{'判红' if _bad else '不报'}")
 
+# ── 序章海路不倒走回兴化（w53 待拍板 65，lane w53-14）──
+#    海路在兴化海口定了走海，下一幕已是泉州码头子时三刻；唯一选项原先接回「兴化书斋，雨从午后落到黄昏」（start）
+#    再去泉州开元寺——地点倒走、时辰倒流。从 sea_path_start 照选项走到两路汇合的 monk（开元寺）为止，沿途的幕不得在兴化；
+#    举业路（scholar_path_start，兴化祠堂）照旧经 start 书斋。两路给的旗标一样（start 与海路账房一幕三个选项同 flag）。
+_scene_by = {s["id"]: s for s in scenes}
+
+
+def _prologue_walk(src, stop="monk"):
+    seen, todo, out = set(), [src], []
+    while todo:
+        k = todo.pop()
+        if k in seen or k == stop or k not in _scene_by:
+            continue
+        seen.add(k)
+        out.append(k)
+        todo += [str(c.get("next", "")) for c in _scene_by[k].get("choices", [])]
+    return out
+
+
+_sea_walk, _land_walk = _prologue_walk("sea_path_start"), _prologue_walk("scholar_path_start")
+_sea_back = [k for k in _sea_walk if _scene_by[k].get("location") in ("xinghua", "xinghua_harbor")]
+check(len(_sea_walk) >= 2 and not _sea_back,
+      f"序章海路 sea_path_start → monk 沿途不回兴化（沿途 {_sea_walk}，落在兴化的 {_sea_back}）")
+check("start" in _land_walk and "start" not in _sea_walk,
+      f"序章举业路经兴化书斋 start、海路不经（举业 {_land_walk} / 海路 {_sea_walk}）")
+_flags_of = lambda k: sorted(str(c.get("effects", {}).get("flag", "")) for c in _scene_by.get(k, {}).get("choices", []))
+_sea_flag_scene = [k for k in _sea_walk if _flags_of(k) == _flags_of("start")]
+check(bool(_sea_flag_scene), f"序章海路有一幕给的旗标与书斋 start 三选项相同（{_flags_of('start')}），两路后文读得到同一组旗")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:

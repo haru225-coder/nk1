@@ -1165,7 +1165,7 @@
       "choices": [
         {
           "label": "去林阿舶账房打点出港",
-          "next": "start",
+          "next": "sea_path_ledger",
           "effects": {
             "sea_tendency": 3,
             "flag": "lin_sea_route_open"
@@ -1840,6 +1840,41 @@
         }
       ],
       "require_chapter": 4
+    },
+    {
+      "id": "sea_path_ledger",
+      "chapter": "chapter_1",
+      "title": "泉州，林阿舶账房",
+      "location": "quanzhou",
+      "objective": "海商一路：在林阿舶的账房里，听见第一段旧泊地线索。",
+      "body": "夜潮涨了又落，船没有走成。林阿舶说货主的押字还缺一处，改候明晚的潮。账房里点着一盏油灯，账先生对着两箱龙泉青瓷的舱单一笔笔核。你名子龙，字德刚，今科没有去考；叔父生前借贷蕃商船资，货损未结清，债留你一人承担——这页舱单上，押的也是你的名字。\n天快亮时，一名从兴化追来的牙人把湿油布包放在案边：里面有开元寺净海所问的残碑拓影、一页蕃商旧货单的押字，还有一张只点半粒朱砂的旧海图。南岛海道北口，似有未入官图的旧避风澳。科举的路留在兴化的书案上，海路却先把账簿、寺院书信和潮声压到了你面前。",
+      "choices": [
+        {
+          "label": "收起旧纸，天亮去开元寺问净海",
+          "next": "monk",
+          "effects": {
+            "fame": 5,
+            "flag": "tavern_chart_rumor"
+          }
+        },
+        {
+          "label": "付给牙人茶钱，问清这包旧纸从谁手里来",
+          "next": "monk",
+          "effects": {
+            "money": -10,
+            "network": 5,
+            "flag": "sailor_rumor_bought"
+          }
+        },
+        {
+          "label": "不急表态，只把朱砂点、潮期和北风二字同记一页",
+          "next": "monk",
+          "effects": {
+            "fame": 2,
+            "flag": "kept_rumor_quiet"
+          }
+        }
+      ]
     }
   ]
 }
