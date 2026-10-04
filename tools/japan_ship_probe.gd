@@ -101,12 +101,16 @@ func _run() -> void:
 	if merchant_n < 16 or war_n < 16:
 		_fails.append("真失败：YAW_DISTINCT merchant %d/16 / war %d/16 不足（yaw 重影）" % [merchant_n, war_n])
 
-	_merchant.visible = true
-	_war.visible = true
-	_merchant.position = Vector3(-5.4, 0.0, 0.35)
-	_merchant.rotation.y = 0.22
-	_war.position = Vector3(5.1, 0.0, -0.45)
-	_war.rotation.y = -0.08
+	if _merchant != null:
+		_merchant.visible = true
+	if _war != null:
+		_war.visible = true
+	if _merchant != null:
+		_merchant.position = Vector3(-5.4, 0.0, 0.35)
+		_merchant.rotation.y = 0.22
+	if _war != null:
+		_war.position = Vector3(5.1, 0.0, -0.45)
+		_war.rotation.y = -0.08
 	_yaw.rotation.y = 0.18
 	await _ensure_fit("wide")
 	_shot(OUT + "/wide.png")
@@ -157,10 +161,12 @@ func _eye() -> Vector3:
 
 
 func _isolate() -> void:
-	_merchant.position = Vector3.ZERO
-	_war.position = Vector3.ZERO
-	_merchant.rotation = Vector3.ZERO
-	_war.rotation = Vector3.ZERO
+	if _merchant != null:
+		_merchant.position = Vector3.ZERO
+		_merchant.rotation = Vector3.ZERO
+	if _war != null:
+		_war.position = Vector3.ZERO
+		_war.rotation = Vector3.ZERO
 
 
 func _build_view(host: Node) -> void:
@@ -260,6 +266,8 @@ func _paint(node: Node) -> void:
 
 
 func _hide_shadow(node: Node) -> void:
+	if node == null:
+		return
 	if str(node.name) == "Shadow":
 		node.visible = false
 	for c in node.get_children():
@@ -268,14 +276,18 @@ func _hide_shadow(node: Node) -> void:
 
 func _show_merchant() -> void:
 	_isolate()
-	_merchant.visible = true
-	_war.visible = false
+	if _merchant != null:
+		_merchant.visible = true
+	if _war != null:
+		_war.visible = false
 
 
 func _show_war() -> void:
 	_isolate()
-	_merchant.visible = false
-	_war.visible = true
+	if _merchant != null:
+		_merchant.visible = false
+	if _war != null:
+		_war.visible = true
 
 
 func _visible_points() -> PackedVector3Array:
