@@ -9,6 +9,7 @@ extends SceneTree
 ##     从广州出发八手里多半不见占城（lane w53-12 实测平均候约十三日）。
 ##   E 剧情终局后船籍簿只写结局名（待拍板 67）：纲首、忠肃一类走 GameState.finish 的终局，船籍簿与顶匾原照列本章章目
 ##     （博多局第二章全打勾「已」却永不开章）。现在与第四章了结同一口径：只写「了结　<结局名>」。
+##   Z 违约罚文零值不写（待拍板 62）：钱匣空了不写「牙行扣 0 钱」；名声已是 0 不写「名声减 1」（w53-10 079efc9 已做，此处合钉）。
 ##   K 章节总述落船籍簿（待拍板 3）：chapters.json 的 hint 在章目没走完时写在船籍簿章名下；走完了不写。修前 hint 从不上屏。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_13_decide_probe.gd
 ## 末行 W53_13_DECIDE cases=N fails=M；fails>0 退 1。
@@ -69,6 +70,7 @@ func _boot() -> void:
 	await _h_heading_pin()
 	await _k_ledger_hint()
 	await _e_ended_ledger()
+	_z_contract_zero()
 	_report()
 
 
@@ -258,6 +260,29 @@ func _e_ended_ledger() -> void:
 	_expect(page.contains("了结　纲首") and not page.contains("亲至　博多唐房") and not page.contains("走通港口"),
 		"纲首终局后（第二章、章目全达）：船籍簿只写「了结　纲首」、不列章目（实读：%s）" % _snip(page, "第二章"))
 	_expect(hint == "了结　纲首", "纲首终局后顶匾写「了结　纲首」（实读「%s」）" % hint)
+
+
+# ── Z 违约罚文零值不写 ─────────────────────────────────
+
+func _z_fail(money: int, fame: int, reason: String) -> String:
+	_gs.from_dict({})
+	_gs.money = money
+	_gs.fame = fame
+	_gs.contract = {"good_id": "silk", "dest": "hakata", "purse": 400, "from": "quanzhou", "remaining": 5, "due_day": 1}
+	return str(_gs.call("_fail_contract", reason))
+
+
+func _z_contract_zero() -> void:
+	print("── Z 违约罚文：零值不写")
+	var t := _z_fail(0, 0, "毁约")
+	_expect(not t.contains("扣 0 钱") and not t.contains("名声减 1") and t.contains("钱匣是空的"),
+		"钱 0、名声 0 毁约：不写「扣 0 钱」「名声减 1」，写钱匣是空的（实读「%s」）" % t)
+	t = _z_fail(0, 3, "逾期")
+	_expect(not t.contains("扣 0 钱") and t.contains("名声减 1") and _gs.fame == 2,
+		"钱 0、名声 3 逾期：不写「扣 0 钱」，照写名声减 1（实读「%s」，名声 %d）" % [t, _gs.fame])
+	t = _z_fail(500, 3, "毁约")
+	_expect(t.contains("牙行扣 60 钱") and t.contains("名声减 1"),
+		"反向基：钱、名声都够时照写「牙行扣 60 钱，名声减 1」（实读「%s」）" % t)
 
 
 func _snip(t: String, anchor: String, span := 60) -> String:
