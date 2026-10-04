@@ -1,19 +1,25 @@
 extends SceneTree
 ## 战后单子 / 分赃 截图（lane w53-16）：真起 SeaChart 布景、把 _on_battle_result 的札记贴进札记栏，
-## 存两张 1280×720 上屏图（before/after 对照对应 _Switches 关 / 开）。存 /workspace/nk1-qa-shots/wave53-16/。
-## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_w53_16_aftermath_shots.gd -- --shot-dir /workspace/nk1-qa-shots/wave53-16
+## 存两张 1280×720 上屏图（before/after 对照对应 _Switches 关 / 开）。存 ${NK1_SHOT_DIR}/wave53-16/
+## （脚本里不写死路径；shot_gate 环境 NK1_SHOT_DIR 或 --shot-dir 指路）。
+## 用法：DISPLAY=:2 NK1_SHOT_DIR=<qa-shots 根> godot --path . -s res://tools/qa_w53_16_aftermath_shots.gd -- --shot-dir "<qa-shots 根>/wave53-16"
 ## 修前札记一行「敌船已退。获财货 N 钱…」；修后第一行已写明「敌船二艘，击沉一艘、受降一艘。救起水手八人。」。
 
 const CS := preload("res://scripts/combat/CombatSwitches.gd")
 
-var _dir := "/workspace/nk1-qa-shots/wave53-16"
+var _dir := ""
 
 
 func _init() -> void:
+	_dir = OS.get_environment("NK1_SHOT_DIR")
 	var args := OS.get_cmdline_user_args()
 	for i in args.size():
 		if args[i] == "--shot-dir" and i + 1 < args.size():
 			_dir = args[i + 1]
+	if _dir == "":
+		push_error("NK1_SHOT_DIR / --shot-dir 都缺；不给路径不跑")
+		quit(1)
+		return
 	call_deferred("_run")
 
 
