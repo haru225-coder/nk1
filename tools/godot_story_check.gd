@@ -5240,6 +5240,30 @@ func _w53_10_current_heading_check() -> void:
 		and direct[320.0].begins_with("撞上一股往西北去的海流"),
 		"顺流事件八方去向：%s" % str(direct))
 	Flt.call("from_dict", keep_fleet)
+## w53 待拍板 23（lane w53-14）：只发给士人、没有说话人的四封临安短札是寄给你一人的私信——酒馆墙不贴（w53-7 b22216f），
+## 月初札记里也不再题「【酒馆传闻】」，改题「【临安来书】」；其余无说话人的新闻照旧「【酒馆传闻】」。
+func _w53_14_scholar_letter_check() -> void:
+	var keep_gs: Dictionary = GS.to_dict()
+	var keep_cal: Dictionary = Cal.to_dict()
+	GS.from_dict({})
+	GS.identity = "scholar"
+	Cal.from_dict({"year": 1275, "month": 11, "day": 1})
+	var n0 := _notices.size()
+	GM._settle_history()
+	var got: Array = _notices.slice(n0)
+	var letters: Array = []
+	var tavern := 0
+	for t in got:
+		var s := str(t)
+		if s.find("短札") >= 0:
+			letters.append(s)
+		elif s.begins_with("【酒馆传闻】"):
+			tavern += 1
+	var ok := letters.size() == 4 and tavern >= 1
+	for s in letters:
+		ok = ok and str(s).begins_with("【临安来书】") and str(s).find("酒馆传闻") < 0
+	_check(ok, "士人线临安短札进札记题「【临安来书】」、不题「酒馆传闻」，别的新闻照旧题「酒馆传闻」（短札 %d 封：%s；酒馆传闻 %d 则）"
+		% [letters.size(), [] if letters.is_empty() else [str(letters[0]).left(16)], tavern])
 	GS.from_dict(keep_gs)
 	Cal.from_dict(keep_cal)
 
@@ -5253,6 +5277,7 @@ func _finish_after_route() -> void:
 	_w53_10_zhang_one_ship_check()
 	_w53_10_contract_fame_floor_check()
 	_w53_10_current_heading_check()
+	_w53_14_scholar_letter_check()
 	_script_error_check()
 	print("STORY_CHECK TOTAL asserts run=", GateReport._checks.size(), "；lane w20-c6 补白新增 c6_asserts=", _c6_added)
 	print("STORY_CHECK SUMMARY fails=", _fails)

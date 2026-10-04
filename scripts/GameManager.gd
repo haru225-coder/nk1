@@ -294,7 +294,7 @@ func _settle_history(gone: Array = []) -> void:
 		if typeof(mk) == TYPE_DICTIONARY and not mk.is_empty() and str(n.get("date", "")) == "%04d-%02d" % [Calendar.year, Calendar.month]:
 			Economy.apply_news_market(mk)
 		var speaker: String = str(n.get("speaker", ""))
-		var prefix := "【酒馆传闻】" if speaker == "" else "【%s】" % speaker
+		var prefix := ("【临安来书】" if str(n.get("only", "")) == "scholar" else "【酒馆传闻】") if speaker == "" else "【%s】" % speaker
 		monthly_notice.emit(prefix + GameState.news_text(n))
 	# 史实辞船（crew.json 的 leave_from）：林华景炎元年十月去兴化投军。人在 advance_days 里已先于发饷下船，
 	# 这里只发通告，排在新闻之后，同一个月里先闻募兵、后见人走
