@@ -95,6 +95,7 @@ EXEMPT = [
     ("qa_w53_1_trail_marker_probe.gd", "lane-w53-1", "海图走过那段航线的描深末端落在船标上探针（三条远程 + 一条近程逐日真推船标、每帧量描深末端离船标），修描深按里程比例、船标按折线弧长两套口径错开"),
     ("qa_w53_2_combat_overkill_probe.gd", "lane-w53-2", "击沉过量伤亡专项探针，随 lane-w53-2 落地验过留档"),
     ("qa_w53_2_combat_probe.gd", "lane-w53-2", "海战接舷 / 号令 / 收战账目专项探针，随 lane-w53-2 落地验过留档"),
+    ("qa_w53_17_morale_probe.gd", "lane-w53-17", "士气与风专项探针（大风两散 / 战后士气带回航程 / 火长提前报风 / 通事劝降效力，一节钉一条、回退即红），headless 可跑，随 lane-w53-17 落地验过留档"),
     ("qa_w53_3_buy_max_probe.gd", "lane-w53-3", "牙行买满结算耗时与逐件推演同数专项探针，动 Economy 逐件推演或牙行买钮回调时加跑"),
     ("qa_w53_3_contract_keep_probe.gd", "lane-w53-3", "在身委办的货不上秤（卡上括注委办件数 / 卖钮只卖其余 / 全灰时要卖先毁约）专项探针，动牙行卖钮或 GameState 委办簿时加跑"),
     ("qa_w53_3_economy_probe.gd", "lane-w53-3", "牙行抬价/赊贷/委办三本账守形探针，随本 lane 落地验过留档"),
