@@ -598,7 +598,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				if Time.get_ticks_msec() - _drag_last_move_ms > 80:
 					_velocity = Vector2.ZERO
 				# 点击判定看按下到松手的累计位移，不看瞬时速度（手抖 1 px 也算点）
-				var pid := _port_at(get_global_mouse_position())
+				var pid := _port_at(_event_world(mb))
 				if pid != "" and _drag_moved < 6.0:
 					_velocity = Vector2.ZERO
 					port_clicked.emit(pid)
@@ -615,7 +615,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_clamp_camera()
 			_on_camera_moved()
 		else:
-			var pid := _port_at(get_global_mouse_position())
+			var pid := _port_at(_event_world(mm))
 			if pid != _hover_port:
 				_hover_port = pid
 				layer_ports.queue_redraw()
@@ -817,9 +817,32 @@ func world_visible_rect() -> Rect2:
 	return Rect2(camera.position - half, half * 2.0)
 
 
+## 鼠标事件落在图上的世界坐标：按事件自己的位置换算（推进来的就是那一点），不另去读这一刻的系统鼠标
+func _event_world(ev: InputEventMouse) -> Vector2:
+	return (make_input_local(ev) as InputEventMouse).position
+
+
+## 点 / 悬停落在哪个港：先看落没落在这一帧画出来的港框（外扩 3 屏幕 px，叠着取最近）上，再看落没落在港名上，
+## 都不是才取离港位 14 屏幕 px 内的最近港（港框小，手抖也点得中）。原先只认港位 14 px：港名摆在港框右侧或上下左、
+## 离港位十几到五六十 px，玩家照字点「泉州」没有反应，要点字旁那个小方框才算；缩远时「兴化海口」的字又落在福州港位
+## 14 px 内，点字点成福州。港名在先、14 px 在后，点哪个字就是哪个港（lane w53-1）
 func _port_at(world: Vector2) -> String:
+	_ensure_layout()
 	var best := ""
-	var best_d := 14.0 / camera.zoom.x
+	var best_d := INF
+	for pid: String in _port_layout.keys():
+		var L: Dictionary = _port_layout[pid]
+		if (L["box"] as Rect2).grow(_px(3.0)).has_point(world):
+			var d0 := (L["v"] as Vector2).distance_to(world)
+			if d0 < best_d:
+				best_d = d0
+				best = pid
+	if best != "":
+		return best
+	for pid: String in _port_layout.keys():
+		if (_port_layout[pid]["rect"] as Rect2).has_point(world):
+			return pid
+	best_d = 14.0 / camera.zoom.x
 	for id in port_px.keys():
 		var d: float = port_px[id].distance_to(world)
 		if d < best_d:

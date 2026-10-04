@@ -183,6 +183,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_1_trail_marker_probe.gd",  # lane w53-1 航线描深末端对船标探针
 	"res://tools/qa_w53_1_region_label_probe.gd",  # lane w53-1 地区名避让港名探针
 	"res://tools/qa_w53_1_compass_needle_probe.gd",  # lane w53-1 罗盘针名对去向牌探针
+	"res://tools/qa_w53_1_port_name_click_probe.gd",  # lane w53-1 点港名选港探针
 	"res://tools/qa_crew_fold_host.gd",  # lane w30-k3 qa_crew_fold_probe 仿作宿主（LogFold.render 直收字段件）
 	"res://tools/qa_crew_fold_probe.gd",  # lane w30-k3 多雇员【欠饷】字面一览（工食合计 / 俸最高者先走）+ LogFold.render fold:i 展开字样断言探针
 	"res://tools/qa_cargo_strip_probe.gd",  # lane w29-k2 船籍簿船舱段 cargo_str（品名 × 数量 / 容量 / 空舱）上屏断言探针
