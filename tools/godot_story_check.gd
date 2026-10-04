@@ -3003,7 +3003,7 @@ func _v0928_siege_check(main: Node) -> void:
 	GS.siege_set("troops", 300)
 	main.load_scene("xinghua")
 	var under_line := _find_label_text(main._shore_band(), "兵 ")
-	_check(over_line.begins_with("兵 1200（已募满）") and under_line.begins_with("兵 300（上限 %d）" % GS.siege_troop_cap())
+	_check(over_line.begins_with("兵 1200（已募满）") and under_line.begins_with("兵 300（募兵上限 %d）" % GS.siege_troop_cap())
 		and over_full != "" and over_full.find("不满千") < 0 and low_full.find("城中兵不满千") >= 0,
 		"兵过募兵上限：城防账「%s」、未满「%s」；衙门募满「%s」/ 兵五百「%s」" % [
 			over_line.get_slice("　", 0), under_line.get_slice("　", 0), over_full, low_full])
