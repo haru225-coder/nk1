@@ -34,6 +34,7 @@ signal order_issued(order_id: String, payload: Dictionary)
 signal parley_resolved(result: Dictionary)
 
 const StatusHud := preload("res://scripts/ui/CombatStatusHud.gd")
+const Switches := preload("res://scripts/combat/CombatSwitches.gd")
 const SELF_PATH := "res://scripts/ui/CombatOrdersPanel.gd"
 
 const GROUP_UI := "nk1_combat_ui"
@@ -98,6 +99,9 @@ const HAIL_RANGE := 360.0
 const PARLEY_COOLDOWN := 20.0
 const PARLEY_MIN := 0.02
 const PARLEY_MAX := 0.85
+## 战斗方案一期：劝降钮挂到敌船身上、三样凑齐才亮（parley_on_ship 开时）；敌船「帆索残」按船体伤过这成折算
+## （敌船不挂损伤簿，帆跟壳一处受创），凑齐的说法与签字面在 parley_road
+const PARLEY_SAIL_BROKEN_FRAC := 0.55
 ## 「不成」里靠后的这一截算敌愈坚
 const PARLEY_DEFY_TAIL := 0.25
 const PARLEY_RESULTS := {"surrender": "敌竖降幡", "refuse": "敌不应", "defy": "敌愈坚"}
@@ -485,19 +489,46 @@ func parley_context() -> Dictionary:
 		return {"ok": false, "why": "相距过远", "target": enemy, "dist": dist}
 	var hull := StatusHud.prop_f(enemy, "hull_hp", 0.0)
 	var seen := maxf(float(_hull_seen.get(enemy.get_instance_id(), hull)), hull)
-	var enemy_power := 1.0
-	if enemy.has_method("combat_strength"):
-		enemy_power = maxf(1.0, float(enemy.call("combat_strength")))
-	return {
+	var enemy_state := "struck" if enemy.get("struck") == true else String(StatusHud.morale_meta(enemy).get("state", ""))
+	var ctx := {
 		"ok": true, "target": enemy, "dist": dist,
 		"enemy_morale": StatusHud.prop_f(enemy, "enemy_morale", 60.0),
 		"hull_frac": hull / seen if seen > 0.0 else 1.0,
-		"ratio": _own_board_power() / enemy_power,
+		"ratio": _own_board_power() / maxf(1.0, float(enemy.call("combat_strength"))) if enemy.has_method("combat_strength") else _own_board_power(),
 		"muster": muster,
 		"grappled": enemy.get("grappled") == true,
 		# 敌将自己降了（喊话劝降得手、船节点 struck）而士气簿没降：照簿上降幡算，签面写「敌已降」，不再写「可喊 约 N 成」（lane w53-2）
-		"enemy_state": "struck" if enemy.get("struck") == true else String(StatusHud.morale_meta(enemy).get("state", "")),
+		"enemy_state": enemy_state,
 	}
+	# 战斗方案一期：劝降挂到敌船身上、三样凑齐才亮（开关 parley_on_ship 开时）；关掉照旧的距离一尺
+	if Switches.on("parley_on_ship") and enemy_state != "struck":
+		var road := parley_road(ctx)
+		if not bool(road["lit"]):
+			ctx["ok"] = false
+			ctx["why"] = String(road["road"])
+			ctx["road"] = road
+			return ctx
+		ctx["road"] = road
+	return ctx
+
+
+## 劝降三样（开关 parley_on_ship）：①被钩住（敌船先钩上我们不算）；②帆索残——敌船不挂损伤簿，帆跟壳一处受创，
+## 船体伤过 PARLEY_SAIL_BROKEN_FRAC 折成帆被打坏；③已动摇（士气簿的 shaken / wavering / routing）。
+## 返回 {"lit", "road", "have"（三样的真值表）}；敌已 struck 由 parley_context 提前走「敌已降」。
+static func parley_road(ctx: Dictionary) -> Dictionary:
+	var have := {
+		"grappled": bool(ctx.get("grappled", false)),
+		"sail_broken": float(ctx.get("hull_frac", 1.0)) <= PARLEY_SAIL_BROKEN_FRAC,
+		"shaken": String(ctx.get("enemy_state", "")) in ["shaken", "wavering", "routing"],
+	}
+	var need := PackedStringArray()
+	if not have["grappled"]:
+		need.append("未钩住")
+	if not have["sail_broken"]:
+		need.append("帆尚在")
+	if not have["shaken"]:
+		need.append("阵脚未乱")
+	return {"lit": need.is_empty(), "road": "可喊话" if need.is_empty() else "、".join(need), "have": have}
 
 
 ## 我方白刃战力：同 WorldMap._board_enemy 的口径（水手 × 士气系数 × 将领系数），读 Fleet
@@ -656,6 +687,9 @@ func state_text(order_id: String) -> String:
 			var ctx := parley_context()
 			if not bool(ctx.get("ok", false)):
 				return String(ctx.get("why", "无敌可喊"))
+			var road = ctx.get("road", null)
+			if road is Dictionary and bool((road as Dictionary).get("lit", false)):
+				return "可喊 %s（钩住・帆残・敌乱）" % _cn_tenths(parley_chance(ctx))
 			return "可喊 " + _cn_tenths(parley_chance(ctx))
 	return ""
 
