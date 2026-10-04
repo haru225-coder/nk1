@@ -58,10 +58,10 @@
 | 44 | qa_siege_destinations_probe | Godot | 加跑：动委办目的地链（scripts/GameState.gd 的 _contract_destinations / contract_offer / _contract_seed——出队排除口径、报价优选针路已知池、月份种子），或动 Economy.war_status / is_market_open / 数据行 ports.json war 表，或动 tools/qa_siege_destinations_probe.gd 自身 | — | `godot --headless --path . -s res://tools/qa_siege_destinations_probe.gd` | `python3 tools/gate_json.py --godot qa_siege_destinations_probe` | （lane w36-k2 立作 V0928-1 复现档；lane w53-14 定 A+ 并修：_contract_destinations 排牙行闭门港，本探针转回归档，红即回退）态 A 真场景摆场六案（兴化 1276-11 / 1277-09、福州 1276-10、广州 1276-11 围城，博多唐房、萨摩 1274-11 封港——数据行 war 表现表）直调 _contract_destinations / contract_offer 真输出：闭门港不掺任何一份出队目的地、报价目的不落当月闭门港；另 192 月窗（1274-01 起）逐月逐港逐代表货扫描，出队里有当月闭门港即印 `QA_SIEGE_DEST_HIT` 并计红。态 B 未闭门月 1275-06 反向基：广州发香药兴化上队、泉州报价非空、泉州发茶博多上队。态 C 不误伤：闭门月里没闭门的港（已陷的福州、未围的兴化、封港月的澎湖广州）照旧在出队里。M1 附加参 `--mutate-siege-always` 把闭门判值倒成恒真（只动探针读口）→ 态 A 扫描与态 B 红。本进程 SCRIPT ERROR 另立 S 档即红（w53-11：`QA_SIEGE_DEST_S fails=K` 计入总 fails，态 A / B / C 判据不动）；_run 半路被脚本错掐断由收尾包装判红退 1、不印末行——判绿仍须 rc=0 且末行 `QA_SIEGE_DEST_END` 在。必跑面另有 verify_economy 的复刻选型与 `is_market_open` 取体钉（同一缺陷两头都红）。 | `QA_SIEGE_DEST_HIT （无）` + 末三行 `SIEGE_DEST hits=0 ok=M fails=0` + `结果：全部通过` + `QA_SIEGE_DEST_END`，退 0 | `  ✗ …` 行（闭门港掺队 / 报价目的落闭门港 / 192 月窗扫出 `QA_SIEGE_DEST_HIT` = 排除链回退；`✗ … 出队仍含 …` = 排得太宽、误伤开着的港）+ 末行 `SIEGE_DEST … fails=K`（K>0），退 1；本进程脚本错 `✗ 运行中无 SCRIPT ERROR …` + `QA_SIEGE_DEST_S fails=K`（K>0）；`QA_SIEGE_DEST_END` 缺且 rc=124 = 超时中断，不计红绿 |
 | 45 | qa_save_stale_count1_probe | Godot | 加跑：动 scripts/core/SaveLoad.gd 的 audit_stale_refs 港类核验（_flag_port / out["port"] 落键口径），或动 tools/qa_save_stale_count1_probe.gd 自身 | — | `godot --headless --path . -s res://tools/qa_save_stale_count1_probe.gd` | `python3 tools/gate_json.py --godot qa_save_stale_count1_probe` | （lane w38-k1 · 无门禁 sweep 补位——j3mut 退化纹钉件，w36-k3 交主控 #2 A 类原句立）「恰 1 枚已删港名目」存档直调 load_game → last_stale（母本 save_stale_refs_probe.gd 同型写信道位 97）：现网 audit_stale_refs 对恰 1 枚须落 out["port"]["count"]==1、sample==该 id、examples erase。K1 现网临界（visited_ports 恰 1 枚）；K2 三个触发位各仅 1 处指向 stale 港（visited_ports / last_port / contract.from）各落 count==1；K3 对照 0 枚（port 键不在）/ 双旧港 count==2 / 同 id 双现去重仍 count==1。`> 0` 被退化成 `> 1`（j3mut 实证在卷）则 K1/K2 整段漏报 → 本探针 fails≥1 诱曝，现样全绿。本进程 SCRIPT ERROR 即红（w53-11：K1–K3 七案外另计两判——计数器自证 + 运行中 0 条；_run 半路被脚本错掐断由收尾包装判红退 1、不印末行）。末两行 `STALE_COUNT1 cases=N fails=M` + `QA_STALE_COUNT1_END`，M>0 退 1。 | 逐条 `  ✓ …` + 末两行 `STALE_COUNT1 cases=N fails=0` + `QA_STALE_COUNT1_END`，退 0 | `  ✗ …count 期望 1 实得 0…`（`> 0→> 1` 漏报恰 1 枚——j3mut 退化纹）/ `… sample 期望 …` / `… examples 未 erase …` 各指名行 + 末两行 `STALE_COUNT1 cases=N fails=M`（M>0），退 1 |
 | 46 | check_w53_copy | Python | 必跑 | ✓ | `python3 tools/check_w53_copy.py` | `python3 tools/gate_json.py tools/check_w53_copy.py` | （lane w53-10 立，w56-k3 升 must 入册）玩家可见 CJK 串两类回潮钉静态扫（scripts/*.gd + data/*.json）：一、规则一禁「前帐」字样（FORBID_SUBSTRINGS——「先结了前帐罢」是唯一账务「帐」误「账」，其余「帐」全是军帐 / 营帐正用，check_symbols / qa_letterbox_copy 域不扫「帐」整字符）；二、规则二禁「名声 -」「士气 -」「金钱 -」「水粮 -」「耐性 -」「悦 -」半角连字符紧接着数字（HALF_MINUS_RE = 「名声」「士气」「金钱」「水粮」「耐性」「悦」一字样 + 空白 + - + 数字——玩家面统一全宽 −（U+2212），STAT_WORDS 钉死枚举不扩「蒲家留意 -2」类）；扫域是含 CJK 的字符串字面量 / JSON 文本值；负样本自检每次先跑（「前帐」样与「名声 -1」样各须被自家检出、不检出即自红） | 末行 `结果：全部通过`（含前置 `_self_test` 负样自检两格全判红、扫真源码 0 hit） | `结果：N 项问题` + ✗ 行点名（`scripts/Main.gd:<行号>: 账务「账」误作「帐」——含「前帐」字样：<原文 120 字>` / `scripts/<X>.gd:<行号>: 状态增减半角连字符（应为全宽 −）——<原文 120 字>` / data/<f>.json 同类两行） |
-| 47 | check_lane_orphans | Python | 加跑：动 lane CAS / COORDINATION SETTLED 尾 / refs/heads/lane/* 殓域 | — | `python3 tools/check_lane_orphans.py` | `python3 tools/gate_json.py tools/check_lane_orphans.py` | 断链预防闸：扫仓外 nk1-agent-briefs/COORDINATION.md 行首 SETTLED 行抽 lane id 集、对每条 lane 四格全中才红——① 行首 ^w 数字-[字母]数字 SETTLED 在（时间戳前缀 / SETTLED-ADD 修订 / 文内提及不算，同 lane 多行取最新一行）；② 行 SHA 链自洽探：逐枚 ISSHA 探 merge-base——全在史照桩，ancestor=F 且行署 未CAS/承接/收编/重链/未入主/撞窗/悬空/归轨道/零动/殓/遗留 类判语 = lane 自报置笔未入主照采信，只有 ancestor=F 且零判语（署名失实）入红集；③ refs/heads/lane/<lane>-* 在册且尖 ancestor=F；④ main..branch 尖 count>0（lane-committed 未入主、尚无人承接）且 ② 有未释 SHA。唯 NK1_COORD/NK1_MAIN_REF 两环境变量供量具变异；生产零 env。 | 末行 `结果：全部通过`（各 lane branch 或已入主 / 或 SHA 在史 / 或 lane 自报置笔未入主照采信 / 或 SETTLED 行缺失照桩） | ✗ `lane <id> SETTLED（COORDINATION:<行号>）但行 SHA <sha> 未入主（ancestor=F）且行零未CAS/承接/收编/重链判语（署名实锤失实）+ branch <ref> sha <sha> main..count=N（承接窗断链）` 逐条点名 + 首行 `结果：N 项问题`，退 1 |
+| 47 | check_lane_orphans | Python | 必跑 | ✓ | `python3 tools/check_lane_orphans.py` | `python3 tools/gate_json.py tools/check_lane_orphans.py` | 断链预防闸：扫仓外 nk1-agent-briefs/COORDINATION.md 行首 SETTLED 行抽 lane id 集、对每条 lane 四格全中才红——① 行首 ^w 数字-[字母]数字 SETTLED 在（时间戳前缀 / SETTLED-ADD 修订 / 文内提及不算，同 lane 多行取最新一行）；② 行 SHA 链自洽探：一轮 git rev-list main 建主史集，全形查集 / 短形按主史 7 位前缀拼（对象在主史零命中 anc=F——cat-file 补缺防 w30-k5 d09d20a 短形叛绿实锤），全在史照桩，ancestor=F 且行署 未CAS/承接/收编/重链/未入主/撞窗/悬空/归轨道/零动/殓/遗留 类判语 = lane 自报置笔未入主照采信，只有 ancestor=F 且零判语（署名失实）入红集；③ refs/heads/lane/<lane>-* 在册且尖 ancestor=F；④ main..branch 尖 count>0（lane-committed 未入主、尚无人承接）且 ② 有未释 SHA。唯 NK1_COORD/NK1_MAIN_REF 两环境变量供量具变异；生产零 env。 | 末行 `结果：全部通过`（各 lane branch 或已入主 / 或 SHA 在史 / 或 lane 自报置笔未入主照采信 / 或 SETTLED 行缺失照桩） | ✗ `lane <id> SETTLED（COORDINATION:<行号>）但行 SHA <sha> 未入主（ancestor=F）且行零未CAS/承接/收编/重链判语（署名实锤失实）+ branch <ref> sha <sha> main..count=N（承接窗断链）` 逐条点名 + 首行 `结果：N 项问题`，退 1 |
 | 48 | check_probe_registry | Python | 必跑 | ✓ | `python3 tools/check_probe_registry.py` | `python3 tools/check_probe_registry.py --json` | （lane w27-k4，k11 审计「最该补的门禁」第 2 条）tools/ 下每支 git 已跟踪 `*_probe.gd` 要么被点名（REGISTRY file 列，或 SHOT_PROBES 截图册——截图脚本走 shot_gate 批量跑，算被跑），要么登进 `tools/check_probe_registry.py` 的 EXEMPT 豁免名单（每行三格：探针名 / lane·来源 / 理由一句，形状缺格即红）；漏注册且漏豁免一律行首红字点名。豁免名单指着不在仓的探针（删探针没删名单行）也红。零、判据自检每次先在内存跑：C0 现网名单须全绿；E1 拼错豁免名 / E2 删一格豁免 / E3 覆盖名单缺一支，三格反向变异各须点出那一支红。豁免名单全表与逐条理由见脚本头注；（qa_rest_days_probe 一支已由 wave27 k3 登进头段 REGISTRY lane 档，8170079——不在豁免名单。） | 零节 C0 + E1–E3 全 `✓` → 一节 5 条 `✓`（末条 `✓ 漏注册且漏豁免 0 支（全绿）`）→ 二节名单形状 `✓` → `结果：全部通过` | `✗ C0 现网名单普查全绿（漏网 N 支）`（豁免名单与注册表对不上现网——先修名单不修自检）/`✗ EXEMPT 第 k 行…`（名单形状 / 来源格缺 lane·commit）/`✗ 豁免名单每行都指着在仓探针——[…] 已不在仓 / 名写错` / `✗ 探针漏册：tools/<X>_probe.gd——不在 REGISTRY / SHOT_PROBES，也未登豁免`（逐支点名）/`✗ En 反向格：…`（自检对不上 = 闸判不出这一形）；`结果：N 项问题` |
 
-每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十五道 Python + smoke/compile/story/p7/patrol/qa_rest_days_probe/qa_rest_scenarios_probe/qa_debt_strip_probe/qa_cargo_strip_probe」二十四道门禁；8、15、16、18、19、20、25、26、27、28、29、30、32、34、35、36、39、41、42、43、44、45、47 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
+每轮必跑（`.claude/todo.md` 验证段）：先跑步骤 9 import（不判红绿），再跑「十六道 Python + smoke/compile/story/p7/patrol/qa_rest_days_probe/qa_rest_scenarios_probe/qa_debt_strip_probe/qa_cargo_strip_probe」二十五道门禁；8、15、16、18、19、20、25、26、27、28、29、30、32、34、35、36、39、41、42、43、44、45 按 lane 内容加跑（档列写了何时）。「一键跑」列 = §三「一键人读全跑」那段命令。
 
 **门禁开关与附属自检**（12 项；不另立一道门禁，随所属门禁默认跑到的算进一键跑，要开关的手动开；CI 专属步骤见 §四）：
 
@@ -182,7 +182,7 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 
 <!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-# 必跑二十五条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+# 必跑二十六条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
 rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
 python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
 python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
@@ -208,6 +208,7 @@ python3 tools/gate_json.py --godot qa_rest_scenarios_probe > /tmp/gates/qa_rest_
 python3 tools/gate_json.py --godot qa_debt_strip_probe > /tmp/gates/qa_debt_strip_probe.json
 python3 tools/gate_json.py --godot qa_cargo_strip_probe > /tmp/gates/qa_cargo_strip_probe.json
 python3 tools/gate_json.py tools/check_w53_copy.py > /tmp/gates/check_w53_copy.json
+python3 tools/gate_json.py tools/check_lane_orphans.py > /tmp/gates/check_lane_orphans.json
 python3 tools/check_probe_registry.py --json > /tmp/gates/check_probe_registry.json
 python3 tools/gate_json.py --judge /tmp/gates/*.json   # 汇总：逐道一行 ✓/✗；任一道红或没有 JSON 行 → 退 1
 ```
@@ -262,6 +263,7 @@ godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
 python3 tools/check_w53_copy.py
+python3 tools/check_lane_orphans.py
 python3 tools/check_probe_registry.py
 ```
 
@@ -636,10 +638,10 @@ python3 tools/check_probe_registry.py
 - 【w56-k3 升格注】§五.2 三判据逐项现跑谓词（w56-k3 起派实跑，main HEAD=296b194 帧）：① **trigger 判不准成立**——两枚错样都是文案修笔顺手进（半角「前帐」误「前账」于 scripts/Main.gd:2319「先结了前帐罢」+ 「名声 -1」「士气 -1」半角于 GameState.gd:1093/:1094 委办毁约/逾期两条），lane 自己写文案顺手即带回（同 gd21 Mac 白字 / cs21 Host 白字同型），when 写不到判不准那类（哪个 .gd 改动会带 CJK 串错字、lane 自己判不来）；② **快 1 秒量级成立**——time python3 tools/check_w53_copy.py 三跑 real 0.075 s / 0.086 s / 0.080 s（8 vCPU / load 20+ 帧），≪ 既有 python must 闸；③ **只读零写盘成立**——源 grep -nE 'write|FileAccess|DirAccess|user://|store_|--regen|--write' 0 命中（rc=1 预期），唯 open() 读 scripts/*.gd + data/*.json 静态扫；＋**第四格不许扩大误红面成立**——CI_STEPS 现帧只有「builtin_api 漂移」「docs 索引与文件一致」2 条、不含 check_w53_copy → 五处同步第 ④ 处零动照实注；主树未跟踪 `git ls-files --others --exclude-standard` 0 行照桩；w53-{1,10,12} 同窗现场（pid 活）lane 域零动；**升 must 前提** main 尖上绿：起派帧 check_w53_copy / check_symbols 双双 rc=0「结果：全部通过」实贴。
 - 常见红因：自家文案笔顺手写「前帐」/「名声 -」类半角（修法：改回「前账」/「名声 −」全宽 − U+2212）；借了别人的文案不入扫的格式变体忘加本闸 STAT_WORDS / FORBID 钉（修法：片段自己明牌）。
 
-### 47. check_lane_orphans（`tools/check_lane_orphans.py`，SETTLED ↔ lane branch 断链预防闸，lane w57-k2 立、lane 档挂账）
+### 47. check_lane_orphans（`tools/check_lane_orphans.py`，SETTLED ↔ lane branch 断链预防闸，lane w57-k2 立、lane w60-k3 升 must 承接执行）
 - 读：末行 `结果：全部通过`（各 lane branch 或已入主 / 或 SHA 在史 / 或 lane 自报置笔未入主照采信 / 或 SETTLED 行缺失照桩）；红即 ✗ `lane <id> SETTLED（COORDINATION:<行号>）但行 SHA <sha> 未入主（ancestor=F）且行零未CAS/承接/收编/重链判语（署名实锤失实）+ branch <ref> sha <sha> main..count=N（承接窗断链）` 逐条点名 + 首行 `结果：N 项问题`，退 1。
-- 口径：四格全中才红——① 仓外 nk1-agent-briefs/COORDINATION.md 行首 `^w\d+-[k字母]?\d+ SETTLED` 抽 lane id 集（时间戳前缀 / SETTLED-ADD 修订 / 文内提及不算；同 lane 多行取最新一行）；② 行 SHA 链自洽探：逐枚 ISSHA 探 merge-base——全在史照桩，ancestor=F 且行署 未CAS/承接/收编/重链/未入主/撞窗/悬空/归轨道/零动/殓/遗留 类判语 = lane 自报置笔未入主照采信，唯 ancestor=F 且零判语（署名失实）入红集；③ refs/heads/lane/<lane>-* 在册且尖 ancestor=F；④ main..branch 尖 count>0。判掂应用 = 判不准即挂账（trigger 判不准——lane CAS 久不归宿属撞窗案、闸判不出该形才算净，照 w48-k4 先例先 lane 档）；升 must 归 wave58+ 牒备件复核 §五.2。
-- lane 加跑档（不进一键跑，不改一键道数）：`when` 见 §一（动 lane CAS / COORDINATION SETTLED 尾 / refs/heads/lane/* 殓域）；`python3 tools/check_lane_orphans.py` 手跑（< 6 s；唯 NK1_COORD/NK1_MAIN_REF 两环境变量供量具变异、生产零 env）。w57-k2 依 wave57-COMMON 钦 + COORDINATION w53-4 SETTLED 行断链实锤（其行署「CAS fbc7580→e3a7d10 真 ff」而 lane branch wave54→wave57 三波未入主仍指旧合并基底 c512ee2 = 史上首次断链型）立案，M1/M2/M3 反向变异红绿双行见 a4f545e 承接笔。
+- 口径：四格全中才红——① 仓外 nk1-agent-briefs/COORDINATION.md 行首 `^w\d+-[k字母]?\d+ SETTLED` 抽 lane id 集（时间戳前缀 / SETTLED-ADD 修订 / 文内提及不算；同 lane 多行取最新一行）；② 行 SHA 链自洽探：一轮 git rev-list main 建主史集 + 短形主史 7 位前缀拼（对象在主史零命中 = anc=F——cat-file 补缺防 w30-k5 d09d20a 短形叛绿实锤；w60-k3 升 must 承办 · 形 B 批量化，3 跑墙钟 <1 s、判语与生产形 0 字节 identical），全在史照桩，ancestor=F 且行署 未CAS/承接/收编/重链/未入主/撞窗/悬空/归轨道/零动/殓/遗留 类判语 = lane 自报置笔未入主照采信，唯 ancestor=F 且零判语（署名失实）入红集；③ refs/heads/lane/<lane>-* 在册且尖 ancestor=F；④ main..branch 尖 count>0。必跑档（进一键跑，一键跑道数 25→26 同衔；升格按 §五.2 牒备件先例 wave60-k3 落格；判掂应用判不准类、§五.2 三判据①③④ 成立、② 生产形 6.1-6.9 s 不升 → 形 B 承办实跑 <1 s 达档）。
+- 常见红因：`✗ lane … 署名实锤失实` = SETTLED 行 SHA 链 anc=F 且行零判语（补判语或承接入主）；`✗ lane … 承接窗断链` = SETTLED 毕但 lane branch 未 CAS 入主且 main..count>0（承接毕殓殻、或行补注unfinished）；`✗ … N 项问题` = 断链型回潮——先判 lane 自报置笔是否照采信、不照采信即承接入主。
 - 常见红因：`✗ lane … 署名实锤失实` = SETTLED 行 SHA 链 anc=F 且行零判语（补判语或承接入主）；`✗ lane … 承接窗断链` = SETTLED 毕但 lane branch 未 CAS 入主且 main..count>0（承接毕殓殻、或行补注unfinished）；`✗ … N 项问题` = 断链型回潮——先判 lane 自报置笔是否照采信、不照采信即承接入主。
 
 ### 48. check_probe_registry（`tools/check_probe_registry.py`，探针「注册或豁免」闸，lane w27-k4 立）
@@ -652,11 +654,11 @@ python3 tools/check_probe_registry.py
 
 ## 四、CI 建议步骤
 
-只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑二十五道（含导入步骤；w25-j5 起含过场时长 data-only、w40-k3 起含 gates_md 自身同步道、w42-k4 起含 check_sidecars 侧车成对道、w56-k3 起含 check_w53_copy 玩家可见 CJK 串两类回潮钉静态扫道），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
+只是建议，**不进 repo 的 CI 配置**（仓库目前没有 CI 文件）。每步退出码非 0 即红；第 0 步就是必跑二十六道（含导入步骤；w25-j5 起含过场时长 data-only、w40-k3 起含 gates_md 自身同步道、w42-k4 起含 check_sidecars 侧车成对道、w56-k3 起含 check_w53_copy 玩家可见 CJK 串两类回潮钉静态扫道、w60-k3 起含 check_lane_orphans 断链预防闸承形 B 升格），其后是只适合在 CI 里跑的步骤（会写文件 / 要干净工作树）。
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑二十五条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑二十六条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
 godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
@@ -681,6 +683,7 @@ godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
 python3 tools/check_w53_copy.py
+python3 tools/check_lane_orphans.py
 python3 tools/check_probe_registry.py
 # 1. builtin_api 漂移
 python3 tools/check_symbols.py --regen && git diff --exit-code tools/builtin_api.txt

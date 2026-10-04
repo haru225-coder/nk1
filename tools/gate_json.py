@@ -575,19 +575,24 @@ REGISTRY = [
     # lane w57-k2 立：w53-4 SETTLED 行署「CAS fbc7580→e3a7d10 真 ff」而其 branch wave54→wave57
     # 三波曾未入主 = 断链型 lane（史上首次 SETTLED 与 branch 未入主并存超波）——先 lane 档挂账：
     # trigger 判不准（lane 自身 CAS 撞窗主控零碰 / lane-self 权域那类判不到），判掂应用 = 判不准即挂账。
-    {"id": "check_lane_orphans", "tier": "lane", "kind": "py", "file": "tools/check_lane_orphans.py",
-     "why": "lane 档挂账（lane w57-k2 依 wave57-COMMON 钦 + COORDINATION w53-4 SETTLED 行断链实锤立案）："
-            "判掂应用 = 判不准即挂账——trigger 判不准类：lane 自身 CAS 撞窗主控零碰、判不到 lane-self 权域那类；"
-            "§五.2 三判据不成立（trigger 判不准——lane CAS 久不归宿属撞窗案、闸判不出该形才算净）；"
-            "w48-k4 牒备件先例「升格须先牒备件」——升 must 归 wave58+ 牒备件 v1 复核 §五.2。",
+    {"id": "check_lane_orphans", "tier": "must", "kind": "py", "file": "tools/check_lane_orphans.py",
+     "why": "升格（lane w60-k3 wd20 依 w57-k2 SETTLED 钦 + w59-k3 牒备件 §五.2 三判据逐项签毕；主控 wave60 ops 采形 = 形 B）："
+            "① trigger 判不准成立——trigger 域 = 仓外 COORDINATION 行首格式 × refs/lane SHA 链 × main 史祖先关系，"
+            "非仓内路径可锚（§五.1 lane 档判据文「按改了哪些路径客观判定」写不出）；w53-4 断链三波实案在案；"
+            "② 快——形 B 批量化：w59-k3 牒量具实测 light 层 0.047-0.157s / 批量化 0.368-0.558s 达 1 秒档"
+            "（生产形 6.1-6.9s 不升；w60-k3 承办实跑落笔 = 一轮 rev-list 建主史集 + 短形主史 7 位前缀拼，"
+            "3 跑墙钟 ≤1 s、判语 0 字节 identical）；"
+            "③ 只读零写盘——三 grep 零命中 + NK1_COORD/NK1_MAIN_REF 量具钩非写口 + errors='replace' 读档（w60-k3 承办补："
+            "代替崩 UnicodeDecodeError；受损区字面 SHA 不再匹配即「未在册」等效，判红管道照常）。",
      "judge": "断链预防闸：扫仓外 nk1-agent-briefs/COORDINATION.md 行首 SETTLED 行抽 lane id 集、"
               "对每条 lane 四格全中才红——① 行首 ^w 数字-[字母]数字 SETTLED 在（时间戳前缀 / SETTLED-ADD 修订 / "
-              "文内提及不算，同 lane 多行取最新一行）；② 行 SHA 链自洽探：逐枚 ISSHA 探 merge-base——全在史照桩，"
-              "ancestor=F 且行署 未CAS/承接/收编/重链/未入主/撞窗/悬空/归轨道/零动/殓/遗留 类判语 = lane 自报置笔未入主照采信，"
+              "文内提及不算，同 lane 多行取最新一行）；② 行 SHA 链自洽探：一轮 git rev-list main 建主史集，"
+              "全形查集 / 短形按主史 7 位前缀拼（对象在主史零命中 anc=F——cat-file 补缺防 w30-k5 d09d20a 短形叛绿实锤），"
+              "全在史照桩，ancestor=F 且行署 未CAS/承接/收编/重链/未入主/撞窗/悬空/归轨道/零动/殓/遗留 类判语 = lane 自报置笔未入主照采信，"
               "只有 ancestor=F 且零判语（署名失实）入红集；③ refs/heads/lane/<lane>-* 在册且尖 ancestor=F；"
               "④ main..branch 尖 count>0（lane-committed 未入主、尚无人承接）且 ② 有未释 SHA。"
               "唯 NK1_COORD/NK1_MAIN_REF 两环境变量供量具变异；生产零 env。",
-     "when": "动 lane CAS / COORDINATION SETTLED 尾 / refs/heads/lane/* 殓域",
+     "when": "每轮必跑（现牒 = 升 must 完毕：§三一键跑 / todo 验证段 / README 二十六皆同步）",
      "green": "末行 `结果：全部通过`（各 lane branch 或已入主 / 或 SHA 在史 / 或 lane 自报置笔未入主照采信 / "
               "或 SETTLED 行缺失照桩）",
      "red": "✗ `lane <id> SETTLED（COORDINATION:<行号>）但行 SHA <sha> 未入主（ancestor=F）且行零未CAS/承接/收编/重链判语"
