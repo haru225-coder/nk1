@@ -1534,7 +1534,8 @@ func _v0928_crew_check(main: Node) -> void:
 	var strip0: RichTextLabel = sc.get("_strip_line")
 	var strip_note: String = strip0.get_parsed_text().get_slice("\n", 1).strip_edges() if strip0 != null else ""
 	# 钱数是 randf_range(150,600)，位数不定；这句三十字上下，1280 宽的匾放得下——整句上匾（原 28 字一截，钱数三位时截掉句尾）
-	var raw_note: String = "接舷既定。" + wd
+	# lane w53-10 八轮：得胜注记账目末尾写「名声加 3。」（add_fame(3)，原先不改题就不提）
+	var raw_note: String = "接舷既定。" + wd + "名声加 3。"
 	_check(strip_note == raw_note,
 		"海图顶匾第二行按匾宽收：注记 %d 字放得下，整句上匾（得「%s」）" % [raw_note.length(), strip_note])
 	# 收字定式（lane w53-14，不随钱数位走）：四十三字的定长注记 1280 宽放得下、原样过（原先截成 27 字＋…）；

@@ -67,6 +67,11 @@
   P. 海图事件钮写出水粮代价（八轮）：难民船一面三颗钮，「载人同行（水粮 −2 成）」写了代价，「分些水粮，不载人」实扣
      水、粮各一成（向上取整）却一字不提，同一面板上看着像白给。回调按成数扣水粮（Fleet.water - int(ceil(Fleet.water * 0.N))）
      的海图事件钮，钮文括注须写「水粮 −N 成」，N = 实扣成数、水粮同数；钮文写了的，回调须真按这个成数扣。
+    Q. 海图里改了名声，札记照实写出来（八轮）：同是难民船一面三颗钮，「载人同行」札记照写「名声加 4」，「分些水粮」
+     实加 1 却不写这一句；海战得胜 add_fame(3) 的注记只写获财货与船体受损，名声只在改题那回才露一句。
+     w53-13 定例 60：札记与记事成句一律写汉字「名声加 N / 名声减 N」（钮文括注的「（名声 +6）」不在此例）——
+     修埠、赴试、呈报、委办都照此一写，海图不再例外。SeaChart.gd 里改名声（GameState.fame += / -= N、add_fame(N)）的
+     函数须在同一函数的玩家串里写「名声加 N / 名声减 N」= 实数；add_fame 按回执写的「名声加 %d」（或「减」）也算。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -166,6 +171,11 @@ SUPPLY_CUT_RE = re.compile(r"Fleet\.(water|food) - int\(ceil\(Fleet\.\1 \* ([0-9
 SUPPLY_LABEL_RE = re.compile(r"（[^（）]*水粮 −(\d+) 成[^（）]*）")
 # 防沉默绿：这两颗钮的水粮成数必须被比到（回调改了扣法、正则抓空时判红，不当绿）。
 SUPPLY_CUT_MUST = ("载人同行", "分些水粮")
+
+# ═══ 钉 Q：海图里改了名声的函数，同一函数的札记写「名声加 N / 名声减 N」= 实数（八轮）。
+SEA_FAME_RE = re.compile(r"GameState\.(?:fame ([+-])= (\d+)|add_fame\((-?\d+)\))")
+# 防沉默绿：这几处改名声的函数必须被比到（写法改了、正则抓空时判红，不当绿）。
+SEA_FAME_MUST = ("_on_refugee_share", "_on_battle_result", "_on_requisition_flee")
 
 # ═══ 钉 K：札记写的货损成数 = 同一函数里 Fleet.lose_cargo_ratio 的字面实参。
 CARGO_FRAC_RE = re.compile(r"半个?货舱|半舱|一半的?货|([一二两三四五六七八九十])成的?货")
@@ -433,6 +443,28 @@ def _check_event_supply(src, rel):
             FAILS.append(f"{rel}: 钮「{label}」回调 {cb} 实扣水粮各 {n:g} 成，钮文没写「（水粮 −{n:g} 成）」——同面板别的钮写了代价，这颗看着像白给")
         elif float(said.group(1)) != n:
             FAILS.append(f"{rel}: 钮「{label}」写水粮 −{said.group(1)} 成，回调 {cb} 实扣 {n:g} 成")
+    return seen
+
+
+def _check_sea_fame_log(src, rel):
+    """钉 Q：改名声（fame += / -= N、add_fame(N)）的函数，同一函数的玩家串须写「名声加 N / 名声减 N」；
+    add_fame 按回执写数的「名声加 %d」（加）/「名声减 %d」（减）也算。返回比过的函数名（供防沉默绿）。"""
+    seen = []
+    for name, body in _gd_funcs(src):
+        for sign, n, n_add in SEA_FAME_RE.findall(body):
+            is_add = n_add != ""
+            if is_add:
+                plus = not n_add.startswith("-")
+                n = n_add.lstrip("-")
+                want = [f"名声{'加' if plus else '减'} {n}", f"名声{'加' if plus else '减'} %d"]
+                seen.append(name)
+            else:
+                plus = sign == "+"
+                want = [f"名声{'加' if plus else '减'} {n}"]
+                seen.append(name)
+            lits = [lit for lit, _ in _gd_strings_only(body)]
+            if not any(w in lit for w in want for lit in lits):
+                FAILS.append(f"{rel}: {name} 改了名声（{'+' if plus else '−'}{n}），札记没写「{want[0]}」——名声变了，记事里看不出为何")
     return seen
 
 
@@ -877,6 +909,28 @@ def _self_test_event_supply():
     return bad
 
 
+def _self_test_sea_fame_log():
+    """钉 Q 自检：+= 1 不写 / 写反「名声加」对 -= 4 须判红；照实写、add_fame 写「名声加 %d」须判绿。"""
+    bad = []
+    cases = (('\tGameState.fame += 1\n\t_log("船慢慢漂远了。")\n', True),
+             ('\tGameState.fame -= 4\n\t_log("罚钱 80，名声加 4。")\n', True),
+             ('\tGameState.fame += 1\n\t_log("船慢慢漂远了。名声加 1。")\n', False),
+             ('\tGameState.add_fame(-4)\n\t_log("被哨船追上。罚钱 80。")\n', True),
+             ('\tGameState.add_fame(6)\n\t_log("小官记了你的名字。名声加 6。")\n', False),
+             ('\tvar r: Dictionary = GameState.add_fame(3)\n\tvar promo := "名声加 %d。" % int(r.get("gained", 0))\n', False))
+    saved = FAILS[:]
+    try:
+        for body, want_red in cases:
+            FAILS.clear()
+            seen = _check_sea_fame_log("func _on_x() -> void:\n" + body, "self")
+            if not seen or bool(FAILS) != want_red:
+                bad.append(f"钉 Q 自检：「{body.strip()[:40]}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
+    return bad
+
+
 def _self_test_cargo_frac():
     """钉 K 自检：实扣 0.3、札记写「半个货舱」「两成货」须判红，写「三成货」须判绿；不调 lose_cargo_ratio 的函数不比。"""
     bad = []
@@ -1037,6 +1091,15 @@ def _scan_event_supply():
             FAILS.append(f"{rel}: 钉 P 没比到「{must}」钮的水粮成数——回调改了扣法或钮文改了写法")
 
 
+def _scan_sea_fame_log():
+    rel = "scripts/SeaChart.gd"
+    src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+    seen = _check_sea_fame_log(src, rel)
+    for must in SEA_FAME_MUST:
+        if must not in seen:
+            FAILS.append(f"{rel}: 钉 Q 没比到 {must} 的名声增减——改名声的写法变了")
+
+
 def _scan_cargo_frac():
     seen = set()
     for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
@@ -1131,7 +1194,7 @@ def main():
     glyph_fails = _self_test_glyphs(cmap)
     if glyph_fails:
         cmap = None
-    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + _self_test_delta_note() + _self_test_interpunct() + _self_test_event_supply() + glyph_fails
+    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + _self_test_delta_note() + _self_test_interpunct() + _self_test_event_supply() + _self_test_sea_fame_log() + glyph_fails
     _scan_gd_strings(cmap)
     _scan_json_text()
     _scan_data_glyphs(cmap)
@@ -1140,6 +1203,7 @@ def main():
     _scan_combat_data()
     _scan_event_fame()
     _scan_event_supply()
+    _scan_sea_fame_log()
     _scan_crew_left_wiring()
     _scan_cargo_frac()
     _scan_liang()

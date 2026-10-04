@@ -1592,9 +1592,10 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 		GameState.add_money(spoil)
 		var fame_res: Dictionary = GameState.add_fame(3)
 		Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 5)
-		var promo := ""
+		# 名声照修埠 / 赴试 / 呈报的口径写进注记，改题跟在名声后（原先只在改题时提一句，平常加 3 不吭声；lane w53-10 八轮）
+		var promo := "名声加 %d。" % int(fame_res.get("gained", 0))
 		if fame_res.get("promoted", false):
-			promo = "案册改题「%s」。" % str(fame_res.get("title", {}).get("name", ""))
+			promo += "案册改题「%s」。" % str(fame_res.get("title", {}).get("name", ""))
 		# Lane N：战果注记走 CombatFx 论文纪实句；接舷夺船时附一句并入注记
 		var win_msg := _CombatFx.sea_win_note(spoil, int(dmg), promo)
 		if surrendered:
@@ -1915,7 +1916,7 @@ func _on_refugee_share() -> void:
 	Fleet.water = maxi(0, Fleet.water - int(ceil(Fleet.water * 0.1)))
 	Fleet.food = maxi(0, Fleet.food - int(ceil(Fleet.food * 0.1)))
 	GameState.add_fame(1)
-	_log("[color=yellow]递过去几桶水和一袋米。他们没有道谢的力气，船慢慢漂远了。[/color]")
+	_log("[color=yellow]递过去几桶水和一袋米。他们没有道谢的力气，船慢慢漂远了。名声加 1。[/color]")
 	_refresh_status()
 	_on_event_continue()
 
