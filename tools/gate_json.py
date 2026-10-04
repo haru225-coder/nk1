@@ -486,11 +486,16 @@ REGISTRY = [
      "red": "`  ✗ …` 行（如次则不褪色 / 头则误染色 / 折行排头双层变 / 换档不转色）"
             "+ 末行 `FOLD_DIM cases=N fails=M`（M>0），退 1"},
 
-    {"id": "qa_seachart_advance_probe", "tier": "lane",
-     "when": "动 SeaChart 海图「航段」名号链（scripts/ui/SeaChart.gd 的 _course_detail_text / 面板刷新——"
-             "泊港选定航向印「航段　<目的地>」名号、advance_days 跨月当日面板改印静风日数与月份名串、"
-             "出航后名号自面板隐去），或动 GameManager.advance_days 跨月路径，"
-             "或动 tools/qa_seachart_advance_probe.gd 自身",
+    {"id": "qa_seachart_advance_probe", "tier": "must",
+     "why": "（lane w79-k3 依 w77-k6 复核牒判可升执行窗——升格判掂毕，§五.2 四格）"
+            "判掂 1「自己判不准」成立：海图「航段」名号拼法本体 / 面板刷新链 / GameManager.advance_days 跨月路径 / "
+            "get_port_name 港名取字口（ports.json 港名表）/ 探针自身五域写口分处五文件，advance_days 调用面更散 9 文件 20 点——"
+            "任何一处耗日动作跨月，海图面板名号下的静风日数与月份名串都该同步翻，改月结链的 lane 自己判不出该加跑本条；"
+            "判掂 2 速档成立：真场景树三跑 3.474–3.977 s（w77-k6 牒实跑），照 w61-k4 双轨类推与本辑 Godot must 探针族 2-4 s 同族同格"
+            "（双轨类推第四例），一键跑洪带增量 < 4 s 不扩容出既有洪带；"
+            "判掂 3 只读成立：零写盘（grep 零命中）、摆场全内存置态（advance_days 摆日不落 user:// 存档位）；"
+            "判掂 4 幂等绿成立：main 尖三跑连绿 rc=0、末行 `SEACHART_ADV cases=17 fails=0` ×3。"
+            "（when 原句实址拨正：scripts/ui/SeaChart.gd 系旧帧路径、现帧实址 scripts/SeaChart.gd）",
      "kind": "godot", "file": "tools/qa_seachart_advance_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_seachart_advance_probe.gd"],
      "judge": "（lane w28-k3 立、w35-k2 收编——EXEMPT 挂账 21 波已收，同 w31-k3 / w35-k1 收编先例）"

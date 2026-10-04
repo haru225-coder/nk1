@@ -75,6 +75,7 @@ godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
 godot --headless --path . -s res://tools/qa_crew_fold_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
+godot --headless --path . -s res://tools/qa_seachart_advance_probe.gd
 python3 tools/check_w53_copy.py
 python3 tools/check_lane_orphans.py
 python3 tools/check_ledger_garbage.py
