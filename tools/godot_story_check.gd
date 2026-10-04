@@ -4852,7 +4852,7 @@ func _w53_4_yashan_turn_back_check(main: Node) -> void:
 	_check("special_yashan" in main.shore_hand and not GS.is_ended(),
 		"崖山页按「离开」回广州：不算掉头，崖山卡照挂（名单 %s）" % [main.shore_hand])
 	main._on_yashan()
-	var fame0: int = GS.fame
+	GS.fame = 20; var fame0: int = GS.fame  # 名声从 20 起：从 0 起扣 6 原先落成 −6，lane w53-13 起走 add_fame 夹在 0
 	var turned := false
 	for c in main.choices_container.get_children():
 		if c is Button and str((c as Button).text).begins_with("不上前"):

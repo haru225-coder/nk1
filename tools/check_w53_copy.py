@@ -25,7 +25,7 @@
      蒲家留意（五轮）——船籍簿「蒲家留意　%d」、市舶司页「蒲家留意 %d　尚无人留意」；市舶司小吏的疏通笺
      曾写「关注　减 15」（「关注」是开发文档里的叫法，玩家面没有这个数）。
   G. 增减号后面要有数（三轮）：「名声 +」「士气 −」这类只有正负号没有数目的串即红；
-     海图事件钮文写「（名声 +N）」的，按下去的处理函数须真是 GameState.fame += N。
+     海图事件钮文写「（名声 +N）」的，按下去的处理函数须真是 GameState.add_fame(N)（旧写法 GameState.fame += N 也认）。
      （征船「交出一条船（名声 +）」曾缺数，实加 6。）
   H. 一个人不说「有的…有的…」（三轮）：跳年摘要「没有再上船」须经 GameManager.crew_left_line
      （单人「不知是回了乡，还是上了别家的船」/ 多人「有的回了乡，有的上了别家的船」），
@@ -152,7 +152,7 @@ TERM_IDIOM_OK = ("声名鹊起", "声名狼藉", "声名远播", "声名大噪")
 # ═══ 钉 G：属性名 + 正负号 + 不是数目（也不是 %d 占位）= 漏了数。
 DELTA_WORDS = ("名声", "士气", "海商信用", "人脉", "乡土", "学者", "海路", "水粮")
 DANGLING_SIGN_RE = re.compile(r"(%s)\s*[+−](?!\s*[0-9%%])" % "|".join(DELTA_WORDS))
-# 海图事件钮：_add_event_action("…（…名声 +N…）", 回调)；回调体里须有 GameState.fame += N。
+# 海图事件钮：_add_event_action("…（…名声 +N…）", 回调)；回调体里须有 GameState.add_fame(N)（或旧写法 fame += N）。
 EVENT_FAME_RE = re.compile(r'_add_event_action\("([^"]*（[^"]*名声 \+(\d+)[^"]*）)",\s*(_\w+)\)')
 # 防沉默绿：这几颗钮文必须被上面的正则抓到（钮文改了格式、正则抓空时判红，不当绿）。
 EVENT_FAME_MUST = ("交出一条船",)
@@ -391,7 +391,7 @@ def _check_event_fame(src, rel):
         label, n, cb = m.group(1), int(m.group(2)), m.group(3)
         seen.append(label)
         body = _func_body_gd(src, cb)
-        got = [int(x) for x in re.findall(r"GameState\.fame \+= (\d+)", body)]
+        got = [int(a or b) for a, b in re.findall(r"GameState\.(?:fame \+= (\d+)|add_fame\((\d+)\))", body)]
         if got != [n]:
             FAILS.append(f"{rel}: 钮文「{label}」写名声 +{n}，回调 {cb} 实加 {got or '无'}")
     return seen
@@ -802,16 +802,16 @@ def _self_test():
 
 
 def _self_test_event_fame():
-    """钉 G 自检：钮文 +6、回调 += 4 须判红；+6 / += 6 须判绿。"""
+    """钉 G 自检：钮文 +6、回调 add_fame(4) 须判红；+6 / add_fame(6) 须判绿。"""
     bad = []
-    tpl = '\t_add_event_action("交出一条船（名声 +6）", _on_x)\n\nfunc _on_x() -> void:\n\tGameState.fame += %d\n'
+    tpl = '\t_add_event_action("交出一条船（名声 +6）", _on_x)\n\nfunc _on_x() -> void:\n\tGameState.add_fame(%d)\n'
     saved = FAILS[:]
     try:
         for n, want_red in ((4, True), (6, False)):
             FAILS.clear()
             seen = _check_event_fame(tpl % n, "self")
             if not seen or bool(FAILS) != want_red:
-                bad.append(f"钉 G 自检：回调 += {n} 判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+                bad.append(f"钉 G 自检：回调 add_fame({n}) 判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
     finally:
         FAILS.clear()
         FAILS.extend(saved)

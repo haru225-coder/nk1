@@ -5000,6 +5000,23 @@ else:
     print("  ✗ 航海日志册页：港页「翻阅」一下就翻（误点即回到那一卷、眼下进度一笔勾销），或标题页续卷也要两下")
     problems.append("航海日志册页翻阅未经确认")
 
+# lane w53-13（待拍板第 29 条）：名声一律经 GameState.add_fame 加减（夹在 0 以上、跳级判在一处）。原先 Main / SeaChart 有
+# 十四处直接写 GameState.fame += / -= N——减的那几处名声已是 0 时会扣成负数（拒招安、崖山不上前、跟蒲家、抗征被追上）。
+import glob as _glob_fame
+_fame_raw = []
+for _rel in sorted(_glob_fame.glob(os.path.join(ROOT, "scripts", "**", "*.gd"), recursive=True)):
+    if os.path.basename(_rel) == "GameState.gd":
+        continue
+    with open(_rel, encoding="utf-8") as _f:
+        for _no, _ln in enumerate(_f, 1):
+            if re.search(r"\bGameState\.fame\s*([-+*/]?=)(?!=)", _ln.split("#", 1)[0]):
+                _fame_raw.append(f"{os.path.relpath(_rel, ROOT)}:{_no}")
+if _fame_raw:
+    print(f"  ✗ 名声绕过 add_fame 直接写 GameState.fame（{len(_fame_raw)} 处：{'、'.join(_fame_raw[:6])}）——减到 0 以下、跳级不判")
+    problems.append("名声绕过 add_fame")
+else:
+    print("  ✓ 名声一律经 GameState.add_fame 加减（GameState 之外无直接写 fame）")
+
 print()
 print()
 print("=" * 68)

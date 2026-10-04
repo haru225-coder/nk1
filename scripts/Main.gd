@@ -3642,7 +3642,7 @@ func _on_hanjiang_escape() -> void:
 	# 路上月初翻牌的通告（冬月初一兴化城破等）照常记进船籍簿；状态条最上面留出海这一句——城破时人已在海上
 	log_msg("四条船出了涵江海口，没有回头。")
 	GameState.set_flag("ending_root_sea")
-	GameState.fame += 10
+	GameState.add_fame(10)
 	GameState.hometown_tendency += 10
 	GameState.add_ledger_note("北礁可泊")
 	var stake_line := "陈瓒没有上船。他说他姓陈，在这里出生，就死在这里。" if GameState.has_flag("chen_zan_stake") else "陈瓒没有上船。"
@@ -3708,7 +3708,7 @@ func _on_resign_1275() -> void:
 		if not GameState.spend_money(500):
 			return
 		GameState.set_flag("late_defection")
-		GameState.fame -= 10
+		GameState.add_fame(-10)
 		GameState.sea_tendency += 6
 		GameState.identity = "merchant"
 		GameState.merchant_credit += 10
@@ -3775,7 +3775,7 @@ func _on_yashan() -> void:
 	var join := Button.new()
 	join.text = "把粮与硫黄交上去，船留在外围"
 	join.pressed.connect(func():
-		GameState.fame += 12
+		GameState.add_fame(12)
 		GameState.merchant_credit -= 30
 		GameManager.advance_days(5)
 		# 泉州借过船的，崖山有人替你留了外围的位置——砍缆的门槛低一截
@@ -3805,7 +3805,7 @@ func _on_yashan() -> void:
 	var pass_by := Button.new()
 	pass_by.text = "不上前。远远看着，掉头往南"
 	pass_by.pressed.connect(func():
-		GameState.fame -= 6
+		GameState.add_fame(-6)
 		Fleet.morale = maxi(0, Fleet.morale - 10)
 		_yashan_turn_back()
 		GameManager.advance_days(3)
@@ -3918,7 +3918,7 @@ func _setup_quanzhou_standoff(port_id: String) -> void:
 			Fleet.water = Fleet.water / 2
 			Fleet.food = Fleet.food / 2
 			log_msg("船没给，水粮分了一半过去。蒲家的人在码头上看着，没说话。")
-		GameState.fame += 8
+		GameState.add_fame(8)
 		GameState.merchant_credit -= 15
 		GameState.pu_attention = 0
 		GameState.set_flag("sided_zhang")
@@ -3931,7 +3931,7 @@ func _setup_quanzhou_standoff(port_id: String) -> void:
 	pu.text = "跟蒲家——泉州抽解永久八折（海商信用 +10，名声 −8）"
 	pu.pressed.connect(func():
 		GameState.merchant_credit += 10
-		GameState.fame -= 8
+		GameState.add_fame(-8)
 		GameState.set_flag("sided_pu")
 		GameState.add_ledger_note("蒲家账房的茶")
 		log_msg("蒲家的账房请你喝了茶。茶很好。他说泉州不会有事，「提举心里有数」。你问有数是什么数。他笑，没答。")
@@ -4246,7 +4246,7 @@ func _siege_envoy() -> void:
 		kill.pressed.connect(func():
 			GameState.siege_set("envoy_wang", true)
 			GameState.siege_add("morale", 10)
-			GameState.fame += 5
+			GameState.add_fame(5)
 			GameState.add_ledger_note("斩王刚中使")
 			log_msg("信只有一句：「世强、刚中负国，文龙不负。」副使走的时候没敢回头。")
 			load_scene(current_scene_id)
@@ -4271,7 +4271,7 @@ func _siege_envoy() -> void:
 		burn.pressed.connect(func():
 			GameState.siege_set("envoy_kin", true)
 			GameState.siege_add("morale", 12)
-			GameState.fame += 8
+			GameState.add_fame(8)
 			GameState.hometown_tendency -= 5
 			GameState.add_ledger_note("焚姻家书")
 			log_msg("火盆里那封信烧得很快。城头上没有人说话。")
@@ -4283,7 +4283,7 @@ func _siege_envoy() -> void:
 		spare.pressed.connect(func():
 			GameState.siege_set("envoy_kin", true)
 			GameState.siege_add("morale", 6)
-			GameState.fame += 4
+			GameState.add_fame(4)
 			GameState.add_ledger_note("焚姻家书")
 			log_msg("信烧了，人放了。他走出三十步又回头看了一眼，你没有再看他。")
 			load_scene(current_scene_id)
@@ -4518,7 +4518,7 @@ func _siege_nangshan() -> void:
 	var txt := ""
 	if won:
 		GameState.siege_add("morale", 8)
-		GameState.fame += 4
+		GameState.add_fame(4)
 		var killed: int = int(GameState.siege_get("troops") * 0.08)
 		GameState.siege_add("troops", -killed)
 		txt = "山道两边全是石头。%s元兵退了。
