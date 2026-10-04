@@ -59,6 +59,8 @@ godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd  # 旅店 / 
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd  # HUD 顶匾上行「欠 %d」欠债格运行时断言 4 案
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd  # 船籍簿页「船舱」段货载上屏运行时断言 27 案
 ```
+lane 加跑档（不进上面一键跑、不改道数；触发条件见 `docs/GATES.md` §一 档列）：本帧登记含 `python3 tools/check_ledger_garbage.py`（仓务清册「殓殓」词级污染静态扫，lane w62-k3 立——动 `docs/仓务清册_2026-10-03.md` 判档段时手跑，§三.48）。
+
 
 `tools/patrol.py` 是云端留下的一键巡检（静态三套 + 冒烟 + 巡检）；`tools/legacy/verify_narrative.py` 与 `tools/legacy/p7_smoke.gd` 绑定云端 21ce 的 P7 平行实现，本分支未收该实现，两个脚本仅留档、不算门禁（别与上面的 `p7_guild_exam_smoke.gd` 混淆）。
 
