@@ -5062,6 +5062,40 @@ func _w53_4_skip_cost_check(main: Node) -> void:
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	main._beats = null
 	_close_dialogs(main)
+	# 同是完结后的题面：先得一个、再落另一个，顶匾与船籍簿写后落的那个
+	_w53_4_ended_title_check(main)
+
+
+## ── lane w53-4：了结之后又落剧情终局，顶匾与船籍簿写后落的结局名 ──
+## 修前：GameState.chapter_progress 见 ending_id != "" 或 is_ended() 即算了结，两 held 同在时 ending_title 仍报旧了结
+## （ending_id 那一支的名字）。占城了过结（南海一纲）又跑到至元年间点纲首收官卡落剧情终局：顶匾与船籍簿仍写
+## 「了结　南海一纲」，底下航海札记却是「终局：纲首」——同一港页两个名字（待拍板 67 的 bc567e2 把 has_ended 一档归了结，
+## 两档同在的写名没跟着换）。艇章目「了结　X」要照后落的那一个写。
+func _w53_4_ended_title_check(main: Node) -> void:
+	GS.from_dict({})
+	Cal.from_dict({"year": 1285, "month": 2, "day": 2})
+	GS.loaded_with_beats = true
+	main._beats = null
+	_close_dialogs(main)
+	GS.identity = "merchant"
+	GS.chapter = 4
+	GS.ending_id = "south_sea"
+	GS.visited_ports = ["quanzhou", "guangzhou", "champa", "fuzhou"]
+	GS.last_port = "fuzhou"
+	main.load_scene("fuzhou")
+	_check(GS.chapter_progress().get("ending_title") == "南海一纲" and main._chapter_hint() == "了结　南海一纲",
+		"只了结、未落剧情终局：顶匾照旧写「了结　南海一纲」（现「%s」）" % [main._chapter_hint()])
+	main._on_gangshou_end()
+	_check(GS.ended == "纲首" and GS.ending_id == "south_sea"
+			and GS.chapter_progress().get("ending_title") == "纲首" and main._chapter_hint() == "了结　纲首",
+		"了结南海一纲之后再落剧情终局：顶匾与 chapter_progress 改写「了结　纲首」，不写旧了结名（现「%s」）" % [main._chapter_hint()])
+	main._confirm_chapter_sheet()
+	_check(main._shore_kind_now == "ended" and GS.epilogue_lines()[2].begins_with("终局：纲首") and GS.chapter_progress().get("ending_title") == "纲首" and main._chapter_hint() == "了结　纲首",
+		"合上结局册页后终局港页：航海札记写「终局：纲首」、顶匾与船籍簿章节段同写「了结　纲首」，不写旧了结名（页型 %s）" % [main._shore_kind_now])
+	GS.from_dict({})
+	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+	main._beats = null
+	_close_dialogs(main)
 
 
 ## 第四章结局幕（endings[].scene）共同所在的港；有一幕不在港上、或各幕不同港，回空串

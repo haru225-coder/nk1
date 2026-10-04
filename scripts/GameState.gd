@@ -282,11 +282,11 @@ func _requirements_ready(req) -> bool:
 ## 当前章节晋升或结局进度。
 ## 返回 {ready, items, hint, final, ended}
 func chapter_progress() -> Dictionary:
-	if ending_id != "" or is_ended():  # 剧情终局（finish 落的纲首、忠肃一类）同样了结：终局后不再列章目（待拍板 67）
+	if ending_id != "" or is_ended():  # 剧情终局（finish 落的纲首、忠肃一类）同样了结：终局后不再列章目（待拍板 67）；两得同在取后落的那一个——了结之后又落了剧情终局（占城了过结又跑到至元年间点纲首收官卡），顶匾与船籍簿照旧写那一纲旧了结名
 		var edef := ending_def()
 		return {
 			"ready": false, "items": [], "hint": "", "final": true,
-			"ended": true, "ending_title": edef.get("title", ending_id) if ending_id != "" else ended,
+			"ended": true, "ending_title": ended if ended != "" else edef.get("title", ending_id),
 		}
 
 	var nxt = chapter_def().get("next_requires", null)
