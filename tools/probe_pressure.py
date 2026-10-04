@@ -156,6 +156,7 @@ TEXT_PROBES = {
     "qa_w53_6_port_exits_probe": (CHECK_LINES, r"^QA_W53_6_EXITS cases=\d+ fails=\d+$"),
     "qa_w53_6_shore_hand_probe": (CHECK_LINES, r"^QA_W53_6_SHORE_HAND cases=\d+ fails=\d+$"),
     "qa_w53_9_cutscene_input_probe": (r"^W53_9_CASE (\S+) (OK|FAIL)\b", r"^QA_W53_9_CUTSCENE_INPUT (?:OK|FAIL \d+)$"),
+    "qa_w53_9_cutscene_probe": (CHECK_LINES, r"^QA_W53_9_CUTSCENE_(PASS|FAIL \d+)$"),  # 逐路 _check 打「  ✓/✗ 判词」= CHECK_LINES；末行 print(TAG+"_"+PASS|FAIL <n>) 合成、TAG 字面在码（tail_mark 住）（w87-k2 承接窗口补登；原 lane-w53-9 落探针时漏登挂压帧判词格，gates_md 三不沾判跑不成；ops-brief 优先队列「待收编分支——每轮至少收编 1 条」收编口径 SETTLED-ADD 照 w54-k2 先例）
     # 船近景四支由 grab + _fails + FAIL k 收尾：判词取「真失败：…」字面（CHECK_LINES_W_CN）+ 末行 _OK/_FAIL k
     "japan_ship_probe": (CHECK_LINES_W_CN, r"^(JAPAN_SHIP_(?:OK|FAIL))\b"),
     "ship_dashi_probe": (CHECK_LINES_W_CN, r"^(DASHI_SHIP_(?:OK|FAIL))\b"),

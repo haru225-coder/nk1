@@ -7,6 +7,8 @@ extends SceneTree
 ## Run: DISPLAY=:2 godot --path . -s res://tools/qa_w53_9_cutscene_probe.gd  （headless 下同跑：CutscenePlayer headless 立即退场，
 ##  探针撞形态返回非零——验输入走真实 paint 底盘）
 ## 压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_w53_9_cutscene_probe.gd
+## 末行字面（probe_pressure TEXT_PROBES 登末行账的钩子）：QA_W53_9_CUTSCENE_PASS | QA_W53_9_CUTSCENE_FAIL <n>
+const _TAIL_FORMAT := "QA_W53_9_CUTSCENE_PASS | QA_W53_9_CUTSCENE_FAIL <n>"  # probe_pressure tail_mark 经去注释源码读这个钩子的字（w87-k2 承接窗补登顺手原槽同款）
 
 const ShotGate := preload("res://tools/shot_gate.gd")
 const Clock := preload("res://tools/probe_clock.gd")
