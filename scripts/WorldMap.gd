@@ -458,30 +458,98 @@ func _enemy_lose_crew(enemy: Node, n: int) -> void:
 	enemy.set("crew", maxi(0, int(_node_float(enemy, "crew")) - n))
 
 
-## 战斗通知浮字：在屏幕中央短暂显示（复用 FloatingText 场景），3 秒后淡出
+## 战斗通知浮字（lane w53-2 改）：一条一行叠在本船下方、出战墨边与状态条之上，居中，最多 NOTICE_MAX 行——新的在最下，旧的往上让，
+## 每行各自停 NOTICE_HOLD 秒再淡 NOTICE_FADE 秒（各管各的补间，后来的不被前一条的淡出带走）。
+## 原先只有一枚 Label：锚在屏心、字从屏心往右写，正压在本船帆上；同一两帧里接踵的几条（号令、敌将改打法、降幡、士气纪实）只剩最后一条。
+## _notice 指最新一行（探针读它的字）
+const NOTICE_MAX := 3
+const NOTICE_HOLD := 1.5
+const NOTICE_FADE := 1.0
+const NOTICE_GAP := 12.0
+## 出战 / 入战墨边下边占画布高的比例（同 CombatLetterbox.BAR_FRAC）：浮字条底边在它之上，开战墨边还没揭开时出的字不被压住
+const NOTICE_BAR_FRAC := 0.125
 var _notice: Label = null
-## 浮字的淡出补间：每出一条先收掉上一条的（lane w53-2）。不收的话上一条照旧在它出字后 1.5 s 起淡、2.5 s 藏字，
-## 后来的这条跟着被淡掉藏掉——上一条出字后 1.5–2.5 s 内来的浮字（敌将改打法、士气纪实、抛钩、号令常这样接踵），玩家只见一闪或根本看不到
-var _notice_tween: Tween = null
+var _notice_box: VBoxContainer = null
 func _show_combat_notice(text: String) -> void:
-	if not is_instance_valid(_notice):
-		_notice = Label.new()
-		_notice.set_anchors_preset(Control.PRESET_CENTER)
-		_notice.add_theme_font_override("font", UiTheme.font())
-		_notice.add_theme_font_size_override("font_size", UiTheme.SIZE_HEAD)
-		_notice.add_theme_color_override("font_color", UiTheme.GOLD)
-		_notice.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-		_notice.add_theme_constant_override("outline_size", 4)
-		$CanvasLayer.add_child(_notice)
-	_notice.text = text
-	_notice.visible = true
-	_notice.modulate.a = 1.0
-	if _notice_tween != null and _notice_tween.is_valid():
-		_notice_tween.kill()
-	_notice_tween = create_tween()
-	_notice_tween.tween_interval(1.5)
-	_notice_tween.tween_property(_notice, "modulate:a", 0.0, 1.0)
-	_notice_tween.tween_callback(func(): _notice.visible = false)
+	if not is_instance_valid(_notice_box):
+		_notice_box = VBoxContainer.new()
+		_notice_box.name = "NoticeStack"
+		_notice_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_notice_box.alignment = BoxContainer.ALIGNMENT_END
+		_notice_box.add_theme_constant_override("separation", 0)
+		$CanvasLayer.add_child(_notice_box)
+		if not get_viewport().size_changed.is_connected(_layout_notices):
+			get_viewport().size_changed.connect(_layout_notices)
+	# 同一句接着来（敌船远遁，PirateShip 与本场各报一遍）不另起一行，只把那一行重新停满
+	if is_instance_valid(_notice) and _notice.visible and _notice.text == text:
+		_hold_notice(_notice)
+		return
+	for c in _notice_box.get_children():
+		if not (c as CanvasItem).visible:
+			_notice_box.remove_child(c)
+			c.queue_free()
+	var lbl := Label.new()
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_override("font", UiTheme.font())
+	lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_HEAD)
+	lbl.add_theme_color_override("font_color", UiTheme.GOLD)
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	lbl.add_theme_constant_override("outline_size", 4)
+	lbl.text = text
+	_notice_box.add_child(lbl)
+	while _notice_box.get_child_count() > NOTICE_MAX:
+		var old := _notice_box.get_child(0)
+		_notice_box.remove_child(old)
+		old.queue_free()
+	_notice = lbl
+	_layout_notices()
+	_hold_notice(lbl)
+
+
+## 一行停满 NOTICE_HOLD 秒再淡出、藏起（补间挂在这一行上，行被挤掉释放时随之作废）；重来一遍先收掉旧的
+func _hold_notice(lbl: Label) -> void:
+	if lbl.has_meta(&"nk1_fade"):
+		var old = lbl.get_meta(&"nk1_fade")
+		if old is Tween and (old as Tween).is_valid():
+			(old as Tween).kill()
+	lbl.visible = true
+	lbl.modulate.a = 1.0
+	var tw := lbl.create_tween()
+	tw.tween_interval(NOTICE_HOLD)
+	tw.tween_property(lbl, "modulate:a", 0.0, NOTICE_FADE)
+	tw.tween_callback(lbl.hide)
+	lbl.set_meta(&"nk1_fade", tw)
+
+
+## 浮字条摆位：画布居中，左让号令面板、右让小地图；底边在出战墨边下边与状态条之上（量得到它们就按实的让，量不到按墨边比例）
+func _layout_notices() -> void:
+	if not is_instance_valid(_notice_box):
+		return
+	var cv := get_viewport().get_visible_rect().size
+	var bottom := cv.y * (1.0 - NOTICE_BAR_FRAC) - NOTICE_GAP
+	var left := 0.0
+	var right := cv.x
+	for n in get_children():
+		if n.is_in_group("nk1_combat_status"):
+			var strip = n.get("_strip")
+			if strip is Control and (strip as Control).is_visible_in_tree() and (strip as Control).size.y > 0.0:
+				var sr := (strip as Control).get_global_rect()
+				if sr.position.y > cv.y * 0.5:
+					bottom = minf(bottom, sr.position.y - NOTICE_GAP)
+		elif n.is_in_group("nk1_combat_orders"):
+			var card = n.get("_card")
+			if card is Control and (card as Control).is_visible_in_tree() and (card as Control).size.x > 0.0:
+				left = maxf(left, (card as Control).get_global_rect().end.x + NOTICE_GAP)
+	var mini := get_node_or_null("CanvasLayer/HUD/MinimapPanel") as Control
+	if mini != null and mini.is_visible_in_tree() and mini.size.x > 0.0:
+		right = minf(right, mini.get_global_rect().position.x - NOTICE_GAP)
+	var cx := cv.x * 0.5
+	var ms := _notice_box.get_combined_minimum_size()
+	var w := maxf(ms.x, 2.0 * maxf(0.0, minf(cx - left, right - cx)))
+	_notice_box.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_notice_box.size = Vector2(w, ms.y)
+	_notice_box.position = Vector2(cx - w * 0.5, bottom - ms.y)
 
 
 func _update_hud() -> void:

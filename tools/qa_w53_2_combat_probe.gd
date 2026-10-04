@@ -52,6 +52,11 @@ extends SceneTree
 ##   十四、号令「备接舷」的效力接上（钩距、白刃、伤亡）：修复前聚齐了甲士，钩距、白刃、伤亡一样不变。下令、聚队进度直设满：
 ##       ① 本船去钩的够距底数 = 140 × 钩距效力（约 175），敌船钩本船仍 140；② 白刃两方里本队的将领系数 = 不下令时 × 白刃效力
 ##       （本队先钩作攻方、敌船先钩作守方都算）；③ 伤亡效力约 1.33：旗舰挨三发各折 3 人记成 4 + 4 + 4（带余数），撤令后照记原数。
+##   十五、海战浮字不压本船、接踵的几条都看得到：修复前只有一枚居中的 Label——字从屏心往右写，正压在本船帆上；同一两帧里来的几条
+##       （喊降那一下：「号令：降幡劝降」「敌将改打法：降幡（…）」「敌船「快船」落帆乞降」）只剩最后一条。等号令面板、状态条摆好位后：
+##       ① 同一帧来三条：浮字条里三行依次在屏、_notice 是最后一行；② 再来第四条：最旧的那行让掉，仍三行；③ 同一句接着来不另起一行，
+##       出这几条不报引擎错（get_meta 缺键这类 ERROR_TYPE_ERROR，「本进程无 SCRIPT ERROR」那格看不见）；
+##       ④ 浮字条在画布内，不碰本船（船心屏上位置 ±130 × ±90）、号令面板、小地图、状态条、顶匾，底边在出战墨边下边之上。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -115,6 +120,8 @@ func _run() -> void:
 	await _sec_orders_reach_flagship(fleet)
 	print("== 十四、号令「备接舷」的效力接上（钩距、白刃、伤亡）")
 	await _sec_board_order_effects(fleet)
+	print("== 十五、海战浮字不压本船、接踵的几条都看得到")
+	await _sec_notice_stack(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -847,16 +854,101 @@ func _sec_board_order_effects(fleet: Node) -> void:
 	await _close(wm)
 
 
+
+# ══ 十五、海战浮字不压本船、接踵的几条都看得到 ══════════════════════════════
+
+## 浮字条里此刻在屏的各行字（没有浮字条时退回读 _notice 一枚）
+func _notice_lines(wm: Node) -> PackedStringArray:
+	var out := PackedStringArray()
+	var box = wm.get("_notice_box")
+	if box is Node and is_instance_valid(box):
+		for c in (box as Node).get_children():
+			if c is Label and (c as Label).visible:
+				out.append((c as Label).text)
+	return out
+
+
+func _sec_notice_stack(fleet: Node) -> void:
+	var size0: Vector2i = root.size
+	root.size = Vector2i(1280, 720)  # 照实机 16:9 量摆位（headless 缺省视窗不是 1280×720）；节末还原
+	var wm := await _battle(fleet, "fu_ship_medium", 40, {"type": "pirate_boat", "count": 1})
+	for f in _foes(wm):
+		(f as Node).set_physics_process(false)
+	var tracker = wm.get("_morale")
+	if tracker is Node:
+		(tracker as Node).process_mode = Node.PROCESS_MODE_DISABLED
+	for _i in 4:
+		await process_frame  # 号令面板、状态条的摆位是 call_deferred
+	var e0: int = _errlog.engine_lines.size()
+	var three := ["号令：降幡劝降", "敌将改打法：降幡（喊话劝降，落帆乞降）", "敌船「快船」落帆乞降"]
+	for t in three:
+		wm.call("_show_combat_notice", t)
+	var got1 := _notice_lines(wm)
+	var newest: Label = wm.get("_notice")
+	_check(got1 == PackedStringArray(three) and newest != null and newest.text == three[2],
+		"十五① 同一帧来三条：三行依次在屏（得 %s；_notice「%s」）" % [" / ".join(got1) if not got1.is_empty() else "无浮字条",
+			newest.text if newest != null else "无"])
+	wm.call("_show_combat_notice", "敌船上喊声乱了。")
+	var got2 := _notice_lines(wm)
+	_check(got2 == PackedStringArray([three[1], three[2], "敌船上喊声乱了。"]),
+		"十五② 第四条来：最旧一行让掉，仍三行（得 %s）" % " / ".join(got2))
+	wm.call("_show_combat_notice", "敌船上喊声乱了。")
+	var got3 := _notice_lines(wm)
+	_check(got3 == got2 and not got3.is_empty(), "十五③ 同一句接着来不另起一行（得 %d 行）" % got3.size())
+	var errs: Array = _errlog.engine_lines.slice(e0)
+	_check(errs.is_empty(), "十五③ 出浮字不报引擎错（得 %d 条%s）" % [errs.size(), "：" + str(errs[0]) if not errs.is_empty() else ""])
+	# ④ 摆位
+	var cv: Vector2 = root.get_visible_rect().size
+	print("    （画布 %s，root.size %s）" % [str(cv), str(root.size)])
+	var box = wm.get("_notice_box")
+	var rect := Rect2()
+	if box is Control:
+		rect = (box as Control).get_global_rect()
+	elif wm.get("_notice") is Control:
+		rect = (wm.get("_notice") as Control).get_global_rect()
+	var own: Node2D = wm.get("ship")
+	var sp: Vector2 = own.get_global_transform_with_canvas().origin
+	var ship_rect := Rect2(sp - Vector2(130, 90), Vector2(260, 180))
+	var bad := PackedStringArray()
+	if not Rect2(Vector2.ZERO, cv).encloses(rect):
+		bad.append("出了画布")
+	if rect.intersects(ship_rect):
+		bad.append("压在本船上（船心 %s）" % str(sp.round()))
+	if rect.end.y > cv.y * 0.875 + 0.5:
+		bad.append("底边 %.0f 进了出战墨边下边（%.0f）" % [rect.end.y, cv.y * 0.875])
+	var others := {}
+	for n in wm.get_children():
+		if n.is_in_group("nk1_combat_orders") and n.get("_card") is Control:
+			others["号令面板"] = (n.get("_card") as Control).get_global_rect()
+		elif n.is_in_group("nk1_combat_status") and n.get("_strip") is Control:
+			others["状态条"] = (n.get("_strip") as Control).get_global_rect()
+	for path in [["小地图", "CanvasLayer/HUD/MinimapPanel"], ["顶匾", "CanvasLayer/HUD/TideBar"]]:
+		var c := wm.get_node_or_null(path[1]) as Control
+		if c != null:
+			others[path[0]] = c.get_global_rect()
+	for k in others:
+		if rect.intersects(others[k]):
+			bad.append("碰到%s %s" % [k, str(others[k])])
+	_check(rect.size.x > 0.0 and bad.is_empty() and others.size() == 4,
+		"十五④ 浮字条 %s 在画布内、不碰本船与号令面板 / 状态条 / 小地图 / 顶匾（量到 %d 件）%s" % [
+			str(rect), others.size(), "" if bad.is_empty() else "——" + "；".join(bad)])
+	await _close(wm)
+	root.size = size0
+
+
 class _ScriptErrLog extends Logger:
 	var lines: Array = []
+	## 引擎错（ERROR_TYPE_ERROR，如 get_meta 缺键）另记一本：不入「本进程无 SCRIPT ERROR」那格，由各节自己前后对数
+	var engine_lines: Array = []
 	var _mutex := Mutex.new()
 
 	func _log_error(_function: String, file: String, line: int, code: String, rationale: String,
 			_editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
-		if error_type != ERROR_TYPE_SCRIPT:
-			return
 		_mutex.lock()
-		lines.append("%s:%d %s" % [file, line, rationale if rationale != "" else code])
+		if error_type == ERROR_TYPE_SCRIPT:
+			lines.append("%s:%d %s" % [file, line, rationale if rationale != "" else code])
+		elif error_type == ERROR_TYPE_ERROR:
+			engine_lines.append("%s:%d %s" % [file, line, rationale if rationale != "" else code])
 		_mutex.unlock()
 
 	func _log_message(_message: String, _error: bool) -> void:
