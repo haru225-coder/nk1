@@ -1071,6 +1071,14 @@ func contract_status() -> Dictionary:
 	}
 
 
+## 在身委办要的货，舱里留着交货、牙行卖钮不卖的件数：全队舱里件数与委办还欠件数取小；别的货、没有委办都是 0。
+## 原先委办货与别的货同卖，交货地的牙行按「全卖」连委办货一起卖掉，交货钮随即发灰、到期误期挨罚（lane w53-3：委办货不上秤，要卖先毁约）。
+func contract_kept(good_id: String) -> int:
+	if contract.is_empty() or str(contract.get("good_id", "")) != good_id:
+		return 0
+	return clampi(int(contract.get("remaining", 0)), 0, Fleet.cargo_qty(good_id))
+
+
 ## 在目的港交货。不走牙行砸盘——这是委办相对直接卖掉的好处。允许分批。
 func deliver_contract(port_id: String) -> Dictionary:
 	if contract.is_empty():

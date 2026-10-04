@@ -133,6 +133,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_3_market_rerender_probe.gd",  # lane w53-3 牙行页整页重排不卡（字控件空着进树再填字，改前一按 0.8 秒）
 	"res://tools/qa_w53_3_rumor_probe.gd",  # lane w53-3 海上记下的传闻写在别港同一货的牙行卡上（改前只写在被传那港自己的卡上）
 	"res://tools/qa_w53_3_fleet_sell_probe.gd",  # lane w53-3 多船牙行卖出不分船（改前货在二号船、旗舰选着时柜上不见、卖钮全灰）
+	"res://tools/qa_w53_3_contract_keep_probe.gd",  # lane w53-3 在身委办的货不上秤（改前交货地按全卖连委办货一起卖掉、交货钮发灰）
 	"res://tools/qa_w53_7_tavern_crew_probe.gd",  # lane w53-7 酒馆与人物专项（欠饷随名册清空归零 …）
 	"res://tools/qa_fold_notice_probe.gd",  # lane w28-k2 札记折叠内非月息通告（【欠饷】按月 / 欠满三月 + 改元月历一瞥）原文断言（w27-k2 交主控①补新见）
 	"res://tools/qa_yard_transition_probe.gd",

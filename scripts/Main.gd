@@ -1715,7 +1715,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	info.add_child(fee_lbl)
 
 	var held_lbl := Label.new()
-	held_lbl.text = "舱 %d" % held
+	held_lbl.text = _market_held_text(good_id, held)
 	UiTheme.style_footnote(held_lbl)
 	held_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info.add_child(held_lbl)
@@ -1749,7 +1749,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	for n2 in [1, 10]:
 		var s := Button.new()
 		s.text = "卖 %d" % n2
-		s.disabled = held < n2
+		s.disabled = held - GameState.contract_kept(good_id) < n2  # 在身委办要的那几件不上秤（lane w53-3）
 		s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		s.custom_minimum_size = Vector2(0, 28)
 		s.pressed.connect(_on_sell.bind(port_id, good_id, n2, -1))
@@ -1758,11 +1758,11 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 		UiTheme.style_chip(s)
 	var sall := Button.new()
 	sall.text = "全卖"
-	sall.disabled = held <= 0
+	sall.disabled = held - GameState.contract_kept(good_id) <= 0
 	sall.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sall.custom_minimum_size = Vector2(0, 28)
 	sall.pressed.connect(_on_sell.bind(port_id, good_id, held, -1))
-	sall.tooltip_text = _market_sell_tip(port_id, good_id, held, held)
+	sall.tooltip_text = _market_sell_tip(port_id, good_id, -1, held)
 	sell_row.add_child(sall)
 	UiTheme.style_chip(sall)
 
@@ -1832,17 +1832,17 @@ func _market_buy_tip(port_id: String, good_id: String, amount: int, ship_index: 
 	]
 
 
-## 牙行卖钮悬停：与 _on_sell 同一口径（逐件压价的实得）。
+## 牙行卖钮悬停：与 _on_sell 同一口径（逐件压价的实得；在身委办要的那几件不卖，见 GameState.contract_kept）。amount < 0 为全卖。
 func _market_sell_tip(port_id: String, good_id: String, amount: int, held: int) -> String:
-	var n := mini(amount, held)
-	if n <= 0:
-		return "舱里没有这件。" if held <= 0 else "舱里不足 %d 件。" % amount
+	var n := held - GameState.contract_kept(good_id) if amount < 0 else mini(amount, held - GameState.contract_kept(good_id))
+	if n <= 0 or (amount > 0 and n < amount):
+		return _market_sell_short(good_id, amount, held, n)  # 按不下的钮写为什么（原先不足 10 件的「卖 10」也写「5 件共得…」）
 	var revenue := Economy.estimate_sell_revenue(port_id, good_id, n)
 	if n == 1:
-		return "得 %d 钱。" % revenue
+		return "得 %d 钱。" % revenue + _market_kept_note(good_id, "\n")
 	return "%d 件共得 %d 钱，均价 %d。逐件压价，首件 %d。" % [
 		n, revenue, int(round(float(revenue) / float(n))), Economy.sell_price(port_id, good_id),
-	]
+	] + _market_kept_note(good_id, "\n")
 
 
 func _on_buy(port_id: String, good_id: String, amount: int, ship_index: int) -> void:
@@ -1896,7 +1896,7 @@ func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) ->
 		log_msg("这件今日不在柜上。")
 		return
 	var held := Fleet.cargo_qty(good_id, ship_index)
-	var actual := mini(amount, held)
+	var actual := mini(amount, mini(held, Fleet.cargo_qty(good_id) - GameState.contract_kept(good_id)))  # 在身委办要的那几件不上秤（lane w53-3）
 	if actual <= 0:
 		return
 	var revenue := Economy.estimate_sell_revenue(port_id, good_id, actual)
@@ -1909,7 +1909,7 @@ func _on_sell(port_id: String, good_id: String, amount: int, ship_index: int) ->
 
 	var profit := revenue - int(round(cost_basis))
 	var profit_str := "赚 %d" % profit if profit >= 0 else "亏 %d" % (-profit)
-	log_msg("过秤卖出 %s ×%d，得 %d 钱，佣已扣，%s。" % [GameManager.get_good_name(good_id), actual, revenue, profit_str])
+	log_msg("过秤卖出 %s ×%d，得 %d 钱，佣已扣，%s。%s" % [GameManager.get_good_name(good_id), actual, revenue, profit_str, _market_kept_note(good_id, "") if actual < amount else ""])
 	_market_hold = true
 	load_scene(current_scene_id)
 
@@ -4686,3 +4686,30 @@ func _shore_pin_today() -> bool:
 		_shore_pin_hand = hand
 		return true
 	return _shore_pin_hand == hand
+
+
+## 牙行货卡「舱 N」：在身委办要的就是这货时，括注委办还欠几件——「舱 40（委办 16）」（lane w53-3）。
+## 卖钮只卖这几件以外的（GameState.contract_kept）：原先卡上只写「舱 40」，交货地按「全卖」连委办货一起卖掉，交货钮随即发灰。
+func _market_held_text(good_id: String, held: int) -> String:
+	var cst := GameState.contract_status()
+	if cst.is_empty() or str(cst.get("good_id", "")) != good_id:
+		return "舱 %d" % held
+	return "舱 %d（委办 %d）" % [held, int(cst.get("remaining", 0))]
+
+
+## 卖钮按不下时的悬停：舱里没有 / 不足 / 委办要的那几件不上秤。amount < 0 为全卖，n 是可卖件数（_market_sell_tip 算好传来）。
+func _market_sell_short(good_id: String, amount: int, held: int, n: int) -> String:
+	var kept := GameState.contract_kept(good_id)
+	if held <= 0:
+		return "舱里没有这件。"
+	if kept <= 0:
+		return "舱里不足 %d 件。" % amount
+	if n <= 0:
+		return "舱里这 %d 件都要交委办，不上秤。要卖先毁约。" % held
+	return "可卖的只有 %d 件，委办要的 %d 件不上秤。" % [n, kept]
+
+
+## 委办要的几件留在舱里没卖：卖钮悬停（head 为换行）与全卖后的记事（head 为空）补这一句；没有就是空串。
+func _market_kept_note(good_id: String, head: String) -> String:
+	var kept := GameState.contract_kept(good_id)
+	return "" if kept <= 0 else head + "委办要的 %d 件留在舱里，不上秤。" % kept
