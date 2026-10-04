@@ -20,17 +20,28 @@
 extends CanvasLayer
 
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
+const Switches := preload("res://scripts/combat/CombatSwitches.gd")
 const SELF_PATH := "res://scripts/ui/CombatStatusHud.gd"
 
 const GROUP_UI := "nk1_combat_ui"
 const GROUP := "nk1_combat_status"
 const LAYER_INDEX := 20
+## 敌情列与我方士气险档提示条的开关（战斗系统方案第一期「看得见」；CombatSwitches），关掉两项都不出
+const INTEL_SWITCH := "enemy_intel"
 ## 读数刷新间隔（秒）：十分之一秒一次足够，逐帧拼字白费
 const REFRESH_SEC := 0.1
 ## 左下留边；右侧让出 WorldMap 的小地图（找不到小地图节点时按 MINIMAP_FALLBACK_W 让）
 const MARGIN := 16.0
 const MINIMAP_FALLBACK_W := 170.0
 const GAP := 12.0
+## 敌情列（右上）：列宽、顶边（找不到 WorldMap 顶匾时的回落）
+const INTEL_W := 250.0
+const INTEL_TOP_FALLBACK := 84.0
+## 我方士气险档：跌到这两线各提示一次（回升出回线再下去再提），只一行小条、不弹窗
+const MORALE_WARN_AT := 20.0
+const MORALE_BAD_AT := 10.0
+const MORALE_REARM := 30.0
+const TYPE_NAMES := {"pirate_boat": "快船", "sea_falcon": "海鹘"}
 
 ## 同波次模块（lane combat02 风流 / 机动）的脚本路径：只按路径探、在才 load，不 preload（它们不在也照常编译）
 const SEA_STATE_PATH := "res://scripts/combat/SeaState.gd"
@@ -109,6 +120,18 @@ var _cells: Dictionary = {}
 var _last: Dictionary = {}
 var _acc := 0.0
 var _built := false
+## 敌情列（开关 enemy_intel 开时建）：每艘敌船一行布色 + 估计伤情 + 船种
+var _intel: PanelContainer = null
+var _intel_rows: VBoxContainer = null
+var _intel_ship: PanelContainer = null
+var _morale_bar: Label = null
+## 敌船 instance_id → 见过的最大船体（估伤情按见过的高值折算）
+var _hull_seen: Dictionary = {}
+## 士气险档的提示状态（回线撤出后重新计）与选中敌船
+var _morale_flag := 0
+var _selected_id := 0
+## 分离开关态的探针覆盖：-1 照 CombatSwitches，0 关，1 开
+var switch_override := -1
 
 
 # ── 挂载与注册 ───────────────────────────────────────────
@@ -376,6 +399,8 @@ static func snapshot_of(world: Node, ship: Node2D = null) -> Dictionary:
 			snap["upwind"] = weather_gauge(snap["wind_dir"], t.global_position - ship.global_position)
 	_merge(snap, _duck(world, "combat_status"))
 	_merge(snap, _duck(ship, "combat_status"))
+	if world != null and is_instance_valid(world):
+		snap["enemies"] = live_enemies(world)
 	for key in _sources.keys():
 		var cb: Callable = _sources[key]
 		if cb.is_valid():
@@ -511,6 +536,111 @@ static func morale_word(m: float) -> String:
 	if m >= 30.0:
 		return "动摇"
 	return "将溃"
+
+
+# ── 敌情列（第一期「看得见」；纯函数，探针可不建节点直接验）──────
+
+## 敌船布色 → 行首墨珠色（白帆 = 降幡时 PirateShip.sprite 落的那层灰；调进纸本调，不然纸上刺眼）
+static func cloth_color(cloth: String) -> Color:
+	match cloth:
+		"白帆":
+			return Color(0.82, 0.81, 0.78)
+		"动摇":
+			return UiTheme.PAPER_HONEY
+		"想退", "溃走":
+			return UiTheme.PAPER_CINNABAR
+	return UiTheme.PAPER_MOSS
+
+
+## 敌船节点上的阵脚（士气簿 state / struck 节点值）→ 舷上布色：稳 / 动摇 / 想退 / 溃走 / 白帆。
+## 士气簿（CombatMorale 挂件）的 state 优先，读不到按 enemy_morale 折算（同 morale_word 的档）
+static func cloth_state(enemy: Node) -> String:
+	if enemy == null or not is_instance_valid(enemy):
+		return ""
+	var st := ""
+	if enemy.get("struck") == true:
+		st = "struck"
+	else:
+		var mm := morale_meta(enemy)
+		st = String(mm.get("state", ""))
+		if st == "":
+			var m := prop_f(enemy, "enemy_morale", -1.0)
+			st = morale_word(m) if m >= 0.0 else "steady"
+	match st:
+		"struck":
+			return "白帆"
+		"routing", "将溃":
+			return "想退"
+		"wavering":
+			return "想退"
+		"shaken", "动摇":
+			return "动摇"
+	return "稳"
+
+
+## 船种行内写法：ship_type 的汉字名（ ships.json 就几种，走表；表外的查 Fleet.ship_def 的 name，查不到原样）
+static func ship_type_word(enemy: Node) -> String:
+	if enemy == null or not is_instance_valid(enemy):
+		return ""
+	var t := String(enemy.get("ship_type") if enemy.get("ship_type") != null else "")
+	if t == "":
+		return ""
+	if TYPE_NAMES.has(t):
+		return String(TYPE_NAMES[t])
+	var fleet := autoload_node("Fleet")
+	if fleet != null and fleet.has_method("ship_def"):
+		var d = fleet.call("ship_def", t)
+		if d is Dictionary and String((d as Dictionary).get("name", "")) != "":
+			return String((d as Dictionary)["name"])
+	return t
+
+
+## 估计伤情：船体按见过的高值折算（料放嘴里买不到内情，只写估计）；桅折、舵残、离水这些遮掩不了的另缀
+static func intel_damage_text(enemy: Node, seen: float) -> String:
+	if enemy == null or not is_instance_valid(enemy) or enemy.get("struck") == true:
+		return ""
+	var hp := prop_f(enemy, "hull_hp", 0.0)
+	var peak := maxf(seen, hp)
+	var bits := PackedStringArray()
+	if peak > 0.0:
+		var frac := hp / peak
+		if frac <= 0.25:
+			bits.append("伤沉在即")
+		elif frac <= 0.45:
+			bits.append("伤重")
+		elif frac <= 0.7:
+			bits.append("带伤")
+		elif frac <= 0.9:
+			bits.append("轻伤")
+	var mast := enemy.find_child("Sail*", false, false)
+	if mast != null and not (mast as CanvasItem).visible:
+		for key in ["mast", "topmast", "jib"]:
+			if key in mast.name.to_lower():
+				bits.append("桅损")
+				break
+	return "，".join(bits)
+
+
+## 敌情列一行的三格：布色、估计伤情（可空）、船种（可空）；沉了 / 降了的行（cloth 空）不写
+static func intel_line_of(enemy: Node, seen: float) -> Dictionary:
+	var cloth := cloth_state(enemy)
+	var dmg := intel_damage_text(enemy, seen)
+	var kind := ship_type_word(enemy)
+	return {"cloth": cloth, "damage": dmg, "kind": kind}
+
+
+## 我方士气险档提示（只提示条、不弹窗）：跌到 MORALE_WARN_AT 写「队里乱了」，跌到 MORALE_BAD_AT 写「白旗要挂出来了」；
+## flag 是当前已提过的档（0 无 / 1 险 / 2 危）：回升出 MORALE_REARM 回线再下去才再提。返回 {"flag", "text"}
+static func morale_urgency(morale: float, flag: int) -> Dictionary:
+	if morale < 0.0:
+		return {"flag": 0, "text": ""}
+	if morale <= MORALE_BAD_AT:
+		return {"flag": 2, "text": "白旗要挂出来了"}
+	if morale <= MORALE_WARN_AT:
+		return {"flag": 1, "text": "队里乱了"}
+	if flag > 0 and morale >= MORALE_REARM:
+		return {"flag": 0, "text": ""}
+	return {"flag": flag, "text": "队里乱了" if flag == 1 else ("白旗要挂出来了" if flag == 2 else "")}
 
 
 static func sail_word(gear: int) -> String:
@@ -735,6 +865,13 @@ func refresh() -> void:
 		var v := ui["value"] as Label
 		v.text = String(c["text"])
 		v.add_theme_color_override("font_color", tone_color(String(c["tone"])))
+	if _intel != null:
+		var snap := snapshot()
+		for e in snap.get("enemies", []):
+			var id := (e as Object).get_instance_id()
+			_hull_seen[id] = maxf(float(_hull_seen.get(id, 0.0)), prop_f(e, "hull_hp", 0.0))
+		_refresh_intel(snap)
+		_refresh_morale_bar(snap)
 
 
 static func tone_color(tone: String) -> Color:
@@ -759,6 +896,9 @@ func _build() -> void:
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
+
+	if _switch_on():
+		_build_intel()
 
 	_strip = PanelContainer.new()
 	_strip.name = "StatusStrip"
@@ -835,6 +975,7 @@ func _layout() -> void:
 	_strip.offset_right = MARGIN + w
 	_strip.offset_bottom = -MARGIN
 	_strip.offset_top = -MARGIN - _strip.get_combined_minimum_size().y
+	_layout_intel()
 
 
 ## WorldMap 小地图面板（只读，量它的左缘；没有返回 null）
@@ -846,3 +987,114 @@ func _minimap() -> Control:
 	if mini == null or not mini.is_visible_in_tree():
 		return null
 	return mini
+
+
+# ── 敌情列与士气提示条（开关开的才建）─────────────────
+
+## 开 / 关：探针可用 switch_override 逐档定（-1 照 CombatSwitches 总表）
+func _switch_on() -> bool:
+	if switch_override >= 0:
+		return switch_override == 1
+	return Switches.on(INTEL_SWITCH)
+
+
+## 敌情列：右上「敌情」一匾下凡艘敌船几行（每艘一行：布色墨珠 + 估计伤情 + 船种），无一艘降幡挂着白帆
+func _build_intel() -> void:
+	_intel = PanelContainer.new()
+	_intel.name = "IntelCard"
+	UiTheme.paper_card(_intel)
+	_intel.self_modulate = UiTheme.DOOR_PAPER_TINT
+	_intel.custom_minimum_size = Vector2(INTEL_W, 0)
+	_root.add_child(_intel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_top", 7)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	_intel.add_child(margin)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 4)
+	margin.add_child(body)
+	var title := Label.new()
+	title.text = "敌情"
+	title.add_theme_font_override("font", UiTheme.title_font())
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", UiTheme.PAPER_GOLD)
+	body.add_child(title)
+	_intel_rows = VBoxContainer.new()
+	_intel_rows.add_theme_constant_override("separation", 2)
+	body.add_child(_intel_rows)
+	_morale_bar = Label.new()
+	_morale_bar.text = ""
+	_morale_bar.add_theme_font_override("font", UiTheme.font())
+	_morale_bar.add_theme_font_size_override("font_size", 15)
+	_morale_bar.add_theme_color_override("font_color", UiTheme.PAPER_CINNABAR)
+	_morale_bar.visible = false
+	body.add_child(_morale_bar)
+	_layout_intel.call_deferred()
+
+
+## 顶匾下、画布右缘收 MARGIN；找不到顶匾按 INTEL_TOP_FALLBACK，矮画布靠上、高画布照样贴右
+func _layout_intel() -> void:
+	if _intel == null or not is_inside_tree():
+		return
+	var cv := Kit.canvas_size(self)
+	var top := INTEL_TOP_FALLBACK
+	var w := _world()
+	if w != null:
+		var tide := w.get_node_or_null("CanvasLayer/HUD/TideBar") as Control
+		if tide != null and tide.is_visible_in_tree() and tide.size.y > 0.0:
+			top = tide.get_global_rect().end.y + 10.0
+	_intel.position = Vector2(cv.x - INTEL_W - MARGIN, top)
+	_intel.reset_size()
+
+
+func _refresh_intel(snap: Dictionary) -> void:
+	if _intel == null:
+		return
+	var foes: Array = snap.get("enemies", [])
+	_intel.visible = not foes.is_empty()
+	# 逐船一行：布色墨珠 + 估伤与船种；行数跟着敌船数走，沉一艘少一行（降幡的行也留，布色改白帆）
+	var want := foes.size()
+	while _intel_rows.get_child_count() < want:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 7)
+		var dot := ColorRect.new()
+		dot.custom_minimum_size = Vector2(10, 10)
+		dot.self_modulate = UiTheme.PAPER_MOSS
+		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(dot)
+		var lbl := Label.new()
+		lbl.add_theme_font_override("font", UiTheme.font())
+		lbl.add_theme_font_size_override("font_size", 15)
+		lbl.add_theme_color_override("font_color", UiTheme.PAPER_TEXT)
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lbl.clip_text = true
+		row.add_child(lbl)
+		_intel_rows.add_child(row)
+	while _intel_rows.get_child_count() > want:
+		var extra := _intel_rows.get_child(_intel_rows.get_child_count() - 1)
+		_intel_rows.remove_child(extra)
+		extra.queue_free()
+	for i in range(want):
+		var info: Dictionary = intel_line_of(foes[i], float(_hull_seen.get((foes[i] as Object).get_instance_id(), 0.0)))
+		var row := _intel_rows.get_child(i) as HBoxContainer
+		var dot := row.get_child(0) as ColorRect
+		dot.self_modulate = cloth_color(String(info["cloth"]))
+		var parts := PackedStringArray()
+		if String(info["kind"]) != "":
+			parts.append(String(info["kind"]))
+		if String(info["damage"]) != "":
+			parts.append(String(info["damage"]))
+		parts.append(String(info["cloth"]))
+		var lbl := row.get_child(1) as Label
+		lbl.text = "　".join(parts)
+
+
+func _refresh_morale_bar(snap: Dictionary) -> void:
+	if _morale_bar == null:
+		return
+	var u := morale_urgency(snap_f(snap, "morale", -1.0), _morale_flag)
+	_morale_flag = int(u["flag"])
+	_morale_bar.text = String(u["text"])
+	_morale_bar.visible = _morale_bar.text != ""
