@@ -168,6 +168,11 @@ func _ready() -> void:
 	var pb: Dictionary = GameManager.pending_battle
 	if pb.get("battle", false):
 		_setup_combat(pb)
+		# lane w53-17（一期「大风两散」）：雷暴大风场不开战——combat_phases.json t_gale，
+		# 「风到七级以上不能战」。_setup_combat 全落到位再收（士气挂件 / 墨边 / 海况都要先接上，
+		# 收战路径与限时两散同一支：flee{flee_ok, parted} 另带 gale=true 供 w53-16 出文字）。
+		if _gale:
+			_battle_exit("flee", {"flee_ok": true, "parted": true, "gale": true})
 	else:
 		# 防御：孤儿场景被直接打开时立即退出，不残留
 		_battle_exit("flee", {})
@@ -1168,6 +1173,9 @@ func _setup_sea(pb: Dictionary) -> void:
 		var to_b: float = float(pb.get("wind_bearing", _SeaState.bearing_of(_sea.wind_to)))
 		_sea.force_wind(to_b, float(pb.get("wind_strength", _sea.wind_mean)))
 	_SeaState.bind_active(_sea)
+	# lane w53-17（一期「大风两散」）：gale_parting 开关开着、SeaState 记了这场是雷暴大风——
+	# combat_phases.json t_gale 落实：开战即收（收在 _ready 尾；须先过士气挂件等接线，逐项下来不退途）。
+	_gale = _Switches.on("gale_parting") and _sea.gale
 	var fs := Fleet.flagship()
 	_flagship_type = str(fs.get("type", ""))
 	# 旗舰节点上记一笔船型：别的模块拿船节点问 ManeuverModel（hull_state_of）时认得出是什么船
