@@ -38,6 +38,11 @@ import json, os, re, signal, subprocess, sys, tempfile
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
 REC_ENV = "NK1_GATE_JSON_REC"
+
+# szöveg 漏洞扎（lane w87-k4 客件①）：check_ledger_garbage 行 judge/green/red 散文钉（现帧 N）改生成格——
+# 数字自 SoR 闸体常量现读不手抄（w86-k4 台账牒 §三.2：五处同步域漏 judge 腔残影「现帧 15」六波未拨、闸照绿；
+# 生成格后拨颁 TOKEN_LINES_LINEBASE/KNOWN_SHA1 时三字段随动、GATES.md 表行同镜像随动）。
+from check_ledger_garbage import KNOWN_SHA1 as _CLG_KNOWN, TOKEN_LINES_LINEBASE as _CLG_BASE
 # legacy 条目（tier=no 或 tools/legacy/ 下）跑子进程的强制超时，秒（lane gd9）。p7_smoke 1.7 s 内就走到 SCRIPT ERROR 挂死，
 # verify_narrative 0 s 退；60 秒留足余量。到点按 timeout(1) 记 124、error="timeout" 判红
 LEGACY_TIMEOUT = 60
@@ -656,16 +661,16 @@ REGISTRY = [
             "判掂 5「五处同步」毕——§三一键跑段 / todo 验证段 / README 道数 27→28 全衔 + COORDINATION_INDEX 口径注补。"
             "v5 闸体承接自 lane/w65-k2@5f2331e 逐字节（R1 单枚细判窗 + R2 ≠ 恒等基线双端红 + W5/W6 自检格）。",
      "judge": "扫 docs/仓务清册_2026-10-03.md「殓殓」词级污染指纹（非叠对 str.count 口径）："
-              "R1 白名单 KNOWN 表（现帧 15 行 11 键）外某行「殓殓」≥ 1 枚逐行 ✗ 点名行号与枚数（v5 单枚细判窗——"
+              f"R1 白名单 KNOWN 表（现帧 {_CLG_BASE} 行 {len(_CLG_KNOWN)} 键）外某行「殓殓」≥ 1 枚逐行 ✗ 点名行号与枚数（v5 单枚细判窗——"
               "合法自然引用走行首 CJK 免挂载 :639/:644 先例 + KEY 钉行全收、ASCII/数字/反引号起字行不享防 hash 壳蒙绿）；"
-              "R2 全文档含「殓殓」行数 ≠ TOKEN_LINES_LINEBASE（现帧 15）恒等式判红——超线/欠线两头皆红"
+              f"R2 全文档含「殓殓」行数 ≠ TOKEN_LINES_LINEBASE（现帧 {_CLG_BASE}）恒等式判红——超线/欠线两头皆红"
               "（删行藏污形也落红）；KNOWN 表行照挂零报；零、样本自检每次先跑（S1 新行 3 枚 / S2 单行 5 枚 / "
               "S3 行数超线 / S5 单枚 ASCII 壳 / S6 欠线五格须判红，C1 基线形 / C2 「殓」正用 / C5 尾 append 推位 "
               "须判绿、C3/C4 零点档恒等式勾稽在衙，同一条 scan_text 判路）；清册读不到 rc≠0（无文件形判红防静默绿）。"
               "唯 NK1_LEDGER 一环境变量供量具变异，生产零 env。",
      "when": "每轮必跑（升 must 完毕：§三一键跑 / todo 验证段 / README 二十八 皆同步；拨钉走 §五.3）",
-     "green": "末行 `结果：全部通过`（零节 12 格 ✓ + 真文档 `新增 0 格（含「殓殓」行 15/15 键行照挂）` ✓）",
-     "red": "✗ `<档>:<行号>: 新增「殓殓」×N（词级污染指纹，白名单外行）` / ✗ `含「殓殓」行数 N ≠ 恒等基线 15` "
+     "green": f"末行 `结果：全部通过`（零节 12 格 ✓ + 真文档 `新增 0 格（含「殓殓」行 {_CLG_BASE}/{_CLG_BASE} 键行照挂）` ✓）",
+     "red": f"✗ `<档>:<行号>: 新增「殓殓」×N（词级污染指纹，白名单外行）` / ✗ `含「殓殓」行数 N ≠ 恒等基线 {_CLG_BASE}` "
             "逐条点名 + 自检 ✗ / 读不到清册 ✗——首行后 `结果：N 项问题`，退 1"},
     # lane w64-k1 伙伴系统三件落地（承接笔 789a226）带两件入仓、本波 w71-k3 收编注册档——
     # ① check_companions（companions.json 骨架校验闸、w64-k1 三件之一）；② qa_companion_preview_probe
