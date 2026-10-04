@@ -42,7 +42,7 @@ const BALLAST_PER_MOUNT := {"war": 6, "raider": 4, "merchant": 6}
 ## 代用弹：不按告急慎发，也不算进「远射弹药余量」
 const SUBSTITUTE_AMMO := ["yacang"]
 ## 弹尽哑火时报哪位（原配武器）
-const MOUNT_NAMES := {"gongnu": "弓弩", "chuangnu": "床子弩", "pao": "砲"}
+const MOUNT_NAMES := {"gongnu": "弓弩", "chuangnu": "床子弩", "pao": "炮"}
 ## 一位也没放出去时，拒放原因按这个次序报
 const REFUSAL_ORDER := ["舷角外", "射程不及", "太近", "弹尽", "未装毕", "换舷", "缺人手"]
 ## CombatStatusHud 快照的弹种键（combat08 的 AMMO_NAMES：arrow 矢 / bolt 弩 / stone 石 / gunpowder 药）

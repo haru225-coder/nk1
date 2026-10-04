@@ -64,7 +64,7 @@ const WEAPONS := {
 		"kind": "arrow", "amount": 22.0, "fx": "bolt",
 	},
 	"pao": {
-		"name": "砲", "note": "旋风砲立柱可转，拽索抛石，越顶而落。抛不近。",
+		"name": "炮", "note": "旋风炮立柱可转，拽索抛石，越顶而落。抛不近。",
 		"path": PATH_LOB, "ammo": "shi", "ammo_per": 1,
 		"speed": 300.0, "min_range": 160.0, "eff_range": 440.0, "max_range": 620.0, "far_mult": 0.9,
 		"spread": 0.050, "range_err": 0.10, "arc_full": 75.0, "arc_max": 110.0,
@@ -73,7 +73,7 @@ const WEAPONS := {
 		"kind": "stone", "amount": 30.0, "fx": "stone",
 	},
 	"huopao": {
-		"name": "火砲", "note": "砲抛火药弹（火毬、铁壳火砲），引信燃着飞去，落处起火。火攻令下、火药够才抛。",
+		"name": "火炮", "note": "炮抛火药弹（火球、铁壳火炮），引信燃着飞去，落处起火。火攻令下、火药够才抛。",
 		"path": PATH_LOB, "ammo": "huoyao", "ammo_per": 24,
 		"speed": 280.0, "min_range": 160.0, "eff_range": 400.0, "max_range": 560.0, "far_mult": 0.9,
 		"spread": 0.060, "range_err": 0.12, "arc_full": 75.0, "arc_max": 110.0,
@@ -82,7 +82,7 @@ const WEAPONS := {
 		"kind": "bomb", "amount": 20.0, "fx": "bomb",
 	},
 	"pao_ballast": {
-		"name": "砲・压舱石", "note": "石弹抛完，拆压舱石硬抛：石小形杂，准头差、装得慢；拆多了船不稳，只拆得出几块。",
+		"name": "炮・压舱石", "note": "石弹抛完，拆压舱石硬抛：石小形杂，准头差、装得慢；拆多了船不稳，只拆得出几块。",
 		"path": PATH_LOB, "ammo": "yacang", "ammo_per": 1,
 		"speed": 290.0, "min_range": 160.0, "eff_range": 380.0, "max_range": 540.0, "far_mult": 0.9,
 		"spread": 0.070, "range_err": 0.14, "arc_full": 75.0, "arc_max": 110.0,

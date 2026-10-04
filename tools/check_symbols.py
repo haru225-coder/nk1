@@ -5019,11 +5019,29 @@ else:
 
 # lane w53-13（待拍板第 61 条；w53-10 cee5e9c 满额写「已募满」，未满写「募兵上限 M」）：守城城防账「兵 N（上限 M）」的 M 是募兵上限（GameState.siege_troop_cap，随名声），收编石手军
 # 直接 +200 可越过它——原写「上限」读着像兵数到顶，城里却站着比上限还多的人。题签写「募兵上限」。
-if '"募兵上限 %d" % GameState.siege_troop_cap()' in main_src and '"上限 %d" % GameState.siege_troop_cap()' not in main_src and '"兵 %d（上限 %d）' not in main_src:
+if '"募兵上限 %d"' in main_src and '"上限 %d"' not in main_src and '"兵 %d（上限 %d）' not in main_src:
     print("  ✓ 守城城防账写「募兵上限」（收编可越过，不是兵数的顶）")
 else:
     print("  ✗ 守城城防账仍写「兵 N（上限 M）」——收编石手军后兵数越过上限，读着自相矛盾")
     problems.append("守城兵数上限题签")
+
+# lane w53-13（待拍板第 63 条）：上屏的字用规范字「炮」「球」——弹尽提示（ReloadAmmo「砲弹尽」）、弹道名与说明（Ballistics）、
+# 兵器名（weapons.json 火毬 / 蒺藜火毬）原写「砲」「毬」，与文案规定的「炮」不一。注释与 note 里引《武经总要》的史料原字不管。
+_pao_bad = []
+for _rel in sorted(_glob_fame.glob(os.path.join(ROOT, "scripts", "**", "*.gd"), recursive=True)):
+    with open(_rel, encoding="utf-8") as _f:
+        for _no, _ln in enumerate(_f, 1):
+            if _ln.lstrip().startswith("#"):
+                continue
+            if any(c in _lit for _lit in re.findall(r'"(?:[^"\\]|\\.)*"', _ln) for c in "砲毬"):
+                _pao_bad.append(f"{os.path.relpath(_rel, ROOT)}:{_no}")
+with open(os.path.join(ROOT, "data", "weapons.json"), encoding="utf-8") as _f:
+    _pao_bad += [f"weapons.json「{_n}」" for _n in re.findall(r'"name": "([^"]*)"', _f.read()) if any(c in _n for c in "砲毬")]
+if _pao_bad:
+    print(f"  ✗ 上屏字串仍用「砲」「毬」（{len(_pao_bad)} 处：{'、'.join(_pao_bad[:6])}）——文案规定写「炮」「球」")
+    problems.append("上屏字串用砲毬")
+else:
+    print("  ✓ 上屏字串（代码字面量、兵器名）用规范字「炮」「球」")
 
 print()
 print()
