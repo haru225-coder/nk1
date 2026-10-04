@@ -335,10 +335,17 @@ REGISTRY = [
      "green": "逐条 `  ✓ …` + 末行 `LEDGER_STRIP_PROBE cases=N fails=0`",
      "red": "`  ✗ …` 行（如顶匾缺格 / 账变屏不变（LCD）/ 泊港水粮被扣 / 跨月静默清空 / 旧值仍印）+ 末行 `LEDGER_STRIP_PROBE cases=N fails=N`（N>0），退 1"},
 
-    {"id": "qa_economy_panel_probe", "tier": "lane",
-     "when": "动名声栏级别名（GameState.add_fame / 名声跳级阈值与级别名表 / update_status_panel 名声行）、跳年册页代价截文案 "
-             "（try_advance_chapter / scripts/ui/ChapterSheet.gd）、札记折叠头与折叠内【月息】原文（skip_years / advance_days 月结"
-             " / 「蕃商结息 N 钱，现欠 M。」），或动 tools/qa_economy_panel_probe.gd 自身",
+    {"id": "qa_economy_panel_probe", "tier": "must",
+     "why": "升格判掂毕（lane w62-k4 执行窗，w61-k4 牒备件 v1，照 §五.2 三判据对原文）：判据 1「自己判不准」成立——触发条件具跨文件隐藏面："
+            "名声栏级别名（GameState.add_fame / 名声跳级阈值与级别名表 / update_status_panel 名声行）、跳年册页代价截文案"
+            "（try_advance_chapter / scripts/ui/ChapterSheet.gd）、札记折叠头与折叠内【月息】原文（skip_years / advance_days 月结"
+            " / 「蕃商结息 N 钱，现欠 M。」）五路写口分处四文件（scripts/GameState.gd / scripts/ui/Main.gd / scripts/ui/ChapterSheet.gd"
+            " / 探针自身），文案格式笔 lane 自己判不出该加跑哪条——§一 / §三.35 旧口径「按路径判得准、三条件只取第一」与 §五.2「三条同时成立」相悖"
+            "就此勾销（w49-k1 同型拨正先例）；判据 2「快」成立——Godot 真场景树探针 glock 实测三跑 real 3.007 / 3.196 / 4.061 s（w62-k4 起派帧实贴），"
+            "与本辑既有 Godot must 探针族（qa_rest_days 24 / qa_rest_scenarios 33 / qa_debt_strip 4 / qa_cargo_strip 27 · Godot 真场景树冷启 2-4 s）"
+            "同族冷启档位同格（w61-k4 双轨判掂先例：族内类推成）；判据 3「只读」成立——源码 grep FileAccess / DirAccess / user:// / save / store_"
+            "全零命中、零写盘、摆场全是内存 GameState 字典 seed；判据 4 main 尖幂等绿——glock 三跑连绿 rc=0、末行 ECON_PANEL_PROBE cases=19 fails=0（17 断言行"
+            " + script_err_tally 接线 2 格）。",
      "kind": "godot", "file": "tools/qa_economy_panel_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_economy_panel_probe.gd"],
      "judge": "（探针 1b7608f 立，w29-k3 入册——审计-wave27「最该补的门禁」第 3 条：与 qa_ledger_strip 同案缓兵两条的第二支）"
