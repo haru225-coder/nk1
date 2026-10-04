@@ -485,6 +485,13 @@ func apply_to_ship() -> Dictionary:
 		var want := damage_mode_for(damage_control, board_ready, fire, flood)
 		if dm.get("mode") != want and dm.call("set_mode", want) == true:
 			done["damage_mode"] = want
+	# 张湿毡落到损伤簿：开关 order_wet_felt 开时按令写DamageModel.set_wet_felt（state() 已把开关 nibble 合关），
+	# 关掉开关照 default false——不动DamageModel. 增伤与火线逐项导致减不 advance net
+	if Switches.on("order_wet_felt") and dm != null and dm.has_method("set_wet_felt"):
+		var want_wet := bool(state()["wet"])
+		if dm.get("wet_felt") != want_wet:
+			dm.call("set_wet_felt", want_wet)
+			done["wet_felt"] = want_wet
 	return done
 
 
@@ -787,6 +794,10 @@ func effect_text() -> String:
 	_pct(bits, "伤亡", float(m["exposure"]), "增", "减")
 	if load_mode == "fire":
 		bits.append("火攻须居上风")
+	if bool(state().get("wet", false)):
+		bits.append("毡罩火")
+	if bool(state().get("cut", false)):
+		bits.append("斧候钩")
 	if bits.is_empty():
 		bits.append("平时")
 	bits.insert(0, "效力")

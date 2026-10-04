@@ -146,6 +146,9 @@ var hull := 100.0
 var hull_max := 100.0
 var sail := 1.0
 var rudder := 1.0
+## 号令「张湿毡」（战斗方案二期，order_wet_felt）：舷边张过水的厚毡，中弹引火机会与火攻伤亡都折半 +
+## 减两成；Under 关时之象世工变：默认 false、一切照旧。号令面板 apply_to_ship 走鸭子型写入
+var wet_felt := false
 ## 舵失灵后船往哪边偏（-1 左 … 1 右）
 var rudder_jam := 0.0
 var jury_rudder := false
@@ -267,11 +270,13 @@ func apply_hit(hit: Dictionary) -> Dictionary:
 		_hurt_sail(float(k["sail"]) * scale, events)
 	if zone == "stern" and rng.randf() < float(k["rudder"]):
 		_hurt_rudder(float(k["rudder_dmg"]) * scale, side, events)
-	if high and rng.randf() < float(k["fire"]):
+	# 张湿毡：舷边张过水的厚毡——中弹引火机会折半（wet_screens.fire_ignite_mul 0.5）
+	if high and rng.randf() < float(k["fire"]) * fire_effects_mul():
 		var fz := "rig" if rig else zone
 		if ff.ignite(fz, float(k["ignite"])):
 			_push(events, "fire", {"zone": fz})
-	var expect := float(k["crew"]) * scale * sqrt(clampf(float(crew) / CREW_REF, 0.05, 4.0))
+	# 张湿毡：船上受矢石伤也减（wet_screens.flat_casualty_mul 0.7）
+	var expect := float(k["crew"]) * scale * sqrt(clampf(float(crew) / CREW_REF, 0.05, 4.0)) * casualty_mul()
 	var dead := int(floor(expect))
 	if rng.randf() < expect - float(dead):
 		dead += 1
@@ -304,10 +309,12 @@ func step(delta: float, env: Dictionary = {}) -> Dictionary:
 	for e in r["events"]:
 		var ev: Dictionary = e
 		_push(events, str(ev["kind"]), ev)
+	# 张湿毡：烧到船身 / 烧人 / 烧帆都按 fire_effects_mul 对折（与 apply_hit 里中弹引火呼应；off 时与 wave53 开工前一致）
+	var burn_mul := fire_effects_mul()
 	if float(r["sail_burn"]) > 0.0:
-		_hurt_sail(float(r["sail_burn"]), events)
+		_hurt_sail(float(r["sail_burn"]) * burn_mul, events)
 	var blast := bool(r["blast"])
-	var dead := int(r["crew_burn"]) + (int(ceil(float(crew) * BLAST_CREW)) if blast else 0)
+	var dead := int(ceil(float(r["crew_burn"]) * burn_mul)) + (int(ceil(float(crew) * BLAST_CREW)) if blast else 0)
 	dead = mini(dead, maxi(0, crew - 1))
 	if dead > 0:
 		crew -= dead
@@ -319,11 +326,28 @@ func step(delta: float, env: Dictionary = {}) -> Dictionary:
 	if founder != "":
 		sunk = founder
 		_push(events, "capsize" if founder == "capsize" else "founder", {})
-	out["hull"] = hull_max * float(r["hull_burn"])
+	out["hull"] = hull_max * float(r["hull_burn"]) * burn_mul
 	out["crew"] = dead
 	out["founder"] = founder
 	_reallocate()
 	return out
+
+
+## 张湿毡开 / 撤（开关 order_wet_felt 在号令面板那一侧把值写来；本簿只管折算）。
+## 战斗方案 wet_screens：fire_ignite_mul 0.5 / flat_casualty_mul 0.7 / own_flat_missile_mul 0.8
+func set_wet_felt(on: bool) -> void:
+	wet_felt = on
+
+
+## 扳回 Offset 前先两枚折扣的纯函数（apply_hit / step 与探针都走这里，回退即红直接判这两行）：
+## 张湿毡：中弹引火机会与火势各烧项（船身 / 帆 / 人手）对折；受矢石伤亡 ×0.7（combat_phases.json wet_screens）。
+## off 时恒 1.0——与 wave53 开工前同一本账
+func fire_effects_mul() -> float:
+	return 0.5 if wet_felt else 1.0
+
+
+func casualty_mul() -> float:
+	return 0.7 if wet_felt else 1.0
 
 
 ## 损管令：auto 均衡 / fire 救火 / flood 戽水 / fight 迎敌。不认识的令返回 false，原令不变。
