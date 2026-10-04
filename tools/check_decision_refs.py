@@ -23,7 +23,11 @@
   · OOR：行号超出文件行数（工作树里，或锚定提交里）；
   · DRIFT：锚定提交里那几行，和工作树里同一行号的内容不一样了——多半是别的 lane 拆 / 改了文件，行号挪了位。
     每处都会跟号（见下），印成「可跟号 → 新号（凭什么）」或「跟不上」加线索；
-  · 待核：清单里还留着 --fix 打的「〔跟号待核：…〕」标记（人工回读、改号后删掉标记才算过）。
+  · 待核：清单里还留着 --fix 打的「〔跟号待核：…〕」标记（人工回读、改号后删掉标记才算过）；
+  · 锚悬空（lane w53-12）：头部锚在本仓查得到、却不在 HEAD 的历史上。lane 跑 --fix 打的锚是 lane 自己的提交，主控 rebase
+    落地后那个 SHA 悬空：本机各 worktree 共用对象库照样查得到、原先本脚本照绿，新克隆 / origin 上却「不是本仓的提交」退 1
+    （main 上 107 版清单有 28 版的锚不在自己的历史上；b241992 / f3f092e / 1665423 三回带着它推上 origin，10-03 07:15–16:11 新克隆一直红）。
+    修法 --fix（没有 DRIFT 也把锚改到 HEAD）；--anchor 指定的锚不查这条。
 跟号（lane dec4）：锚里那段在工作树里的新位置，按下面顺序找，头一个找到的算：
   ① diff：`git diff 锚 -- 文件` 里这几行没动过，照 diff 的增删把行号推过去（重名行也不会认错）；
   ② 同文件原文：那段原文在锚里和工作树里都只出现一次；
@@ -47,7 +51,7 @@
     关断开关 --no-ledger-landing 只给 ledger_refs_mutants 在变异过的 worktree 里用，一键跑命令里不许带（gates_md 逐条比）。
 --fix：先要求所引文件在工作树里和 HEAD 一致（没提交的改动先提交，不然新锚对不上）。跟得上的全改成新号
   （搬到别的文件的改写成全路径，后面挂在它身上的裸 `:行` 也按需补全路径），跟不上的在引用后面插「〔跟号待核：锚 X 里是 文件:行〕」，
-  头部锚改成 HEAD，再按新锚复查一遍。有「待核」就退 1。
+  头部锚改成 HEAD，再按新锚复查一遍。有「待核」就退 1。锚悬空的（见上），没有 DRIFT 也照样改锚到 HEAD（lane w53-12）。
 --since REV（改行号那一片自证用）：取 REV 里的清单和它头部的锚，把新旧两版的引用配对（先按「同一清单行骨架 +
   行内序号」配，只改了号 / 搬了文件的靠这一步配上；改了文字的行再按文件名序列对齐），对上的每一对都要
   「旧锚里旧行号那段 == 工作树里新行号那段」（.gd 按上面的归一化比，搬进拆出件的函数头照改名表比；旧那段所在函数已成一行转发的，
@@ -58,6 +62,8 @@
     锚 = HEAD 时，号写歪了锚里那行和工作树同号那行照样一致，DRIFT 看不出来，靠这一步。旧那段原文已找不到（所指那段自己被改写，
     --fix 给「跟不上」的多是这种）只记 ⚠ 改指未验，不判红——人工回读、改号是 --fix 流程本来就要做的。
     有意把引用换指别处（旧那段还在）的，同一行括注「原文作 `:旧号`」认账（原文作括注本就不查，见下）。
+    上一版清单的锚在本仓取不到（悬空锚改掉之后的新克隆里就是这样）印一行「⚠ 改号自证 […]：没比成」、不判红——原先逐对取不到旧锚的
+    内容就跳过，静默印「对上 0 对」照绿（lane w53-12）；--since 指定的旧版锚取不到则判红（比不了）。
 不判红：
   · 「原文作 `:N`」括注里的行号：清单有意保留的原稿旧行号，跳过（从「原文作」到下一个「）」「，」「；」为止）；
   · 仓外 brief（`lane-*.md` / `COORDINATION*.md`，在 $NK1_BRIEFS，默认 /workspace/nk1-agent-briefs）：只查行号不越界，不跟号；
@@ -192,6 +198,14 @@ def parse_refs(lines):
 def anchor_of(text):
     m = ANCHOR.search(text)
     return m.group(2) if m else None
+
+
+def anchor_state(anchor, run=git):
+    """锚的三态（lane w53-12）：None = 在 HEAD 的历史上；"missing" = 本仓查不到；"off" = 查得到、却不在 HEAD 的历史上（悬空）。
+    只查 rev-parse 的话，lane rebase 前的 SHA 在本机共用的对象库里照样查得到，悬空锚本机照绿、新克隆才红。run 自检时传假的。"""
+    if run("rev-parse", "--verify", "-q", anchor + "^{commit}") is None:
+        return "missing"
+    return "off" if run("merge-base", "--is-ancestor", anchor, "HEAD") is None else None
 
 
 def ext_of(path):
@@ -783,11 +797,13 @@ def render(line, row, targets, repo):
     return "".join(out)
 
 
-def do_fix(o, text, repo, anchor):
+def do_fix(o, text, repo, anchor, dangling=False):
     n, fixes, refs, toks = check(o, text, repo, anchor)
     if not n["drift"]:
-        print("--fix：没有 DRIFT，不用改")
-        return 0 if not (n["bad"] or n["marks"]) else 1
+        if not dangling:
+            print("--fix：没有 DRIFT，不用改")
+            return 0 if not (n["bad"] or n["marks"]) else 1
+        print(f"--fix：没有 DRIFT，但锚 {anchor} 不在 HEAD 的历史上（悬空），只把锚改到 HEAD")
     head = (git("rev-parse", "--short=7", "HEAD") or "").strip()
     paths = sorted({repo.resolve(f)[0] for _, f, *_ in refs if not offrepo(f) and repo.resolve(f)[0]}
                    | {t[0] for t in fixes.values() if t[0]})
@@ -865,6 +881,15 @@ def since(o, repo, refs, lines, rev=None, new_rev=None, label=None, toks=None):
     old_anchor = old_text and anchor_of(old_text)
     if not old_anchor:
         print(f"  ✗ {label}：取不到 {rel} 或它头部的锚")
+        return None
+    if anchor_state(old_anchor) == "missing":
+        # lane w53-12：旧锚取不到，下面逐对 at_rev 全是 None 被跳过、原先静默印「对上 0 对」照绿。改号自证时不判红——
+        # 悬空锚改掉之后，新克隆里上一版清单的锚永远取不到，判红就红到下回改清单为止
+        if new_rev:
+            print(f"  ⚠ {label}：没比成——上一版清单（{rev}）的锚 {old_anchor} 在本仓取不到（lane rebase 前的提交、"
+                  f"没推上来？），本版的号只经上面的 DRIFT 核过")
+            return 0
+        print(f"  ✗ {label}：{rev} 版清单的锚 {old_anchor} 在本仓取不到，比不了")
         return None
     old_lines = old_text.splitlines()
     old_refs, _ = parse_refs(old_lines)
@@ -1290,6 +1315,17 @@ def self_check():
               f"区段遇 '；' 收截的格位字面，或 ROD_CHECKS 六格被抽空（竿死 silent 绿 = Z-R3 先拦）")
     else:
         print("  ✓ 清零判竿位自检 Z-R3：「原文作」区段遇 '；' 即截——区段后的同文件新引用被另算 OOR、竿判定 rc=1 点名红（区段区间规则在场）")
+    # 锚悬空三态（lane w53-12）：假 git 只认「rev-parse 查得到 aaaaaaa / bbbbbbb」与「aaaaaaa 是 HEAD 的祖先」这两种问法——
+    # 只查 rev-parse（原先的口径）则 bbbbbbb 判「在」，--is-ancestor 两个参数写反则 aaaaaaa 判「悬空」，都在这里红
+    def fake_git(*a):
+        return "" if a in {("rev-parse", "--verify", "-q", c + "^{commit}") for c in ("aaaaaaa", "bbbbbbb")} | \
+            {("merge-base", "--is-ancestor", "aaaaaaa", "HEAD")} else None
+    got_as = {c: anchor_state(c, fake_git) for c in ("aaaaaaa", "bbbbbbb", "ccccccc")}
+    if got_as != {"aaaaaaa": None, "bbbbbbb": "off", "ccccccc": "missing"}:
+        bad += 1
+        print(f"  ✗ 锚悬空自检：期望 在 HEAD 历史上 → None、查得到却不在 → off、查不到 → missing，实得 {got_as}")
+    else:
+        print("  ✓ 锚悬空自检 3/3（在 HEAD 历史上 / 本仓查得到却不在 HEAD 历史上 = 悬空、判红 / 查不到）")
     return bad
 
 
@@ -1324,9 +1360,12 @@ def main():
     if not anchor:
         print("  ✗ 清单头部没有「行号：……按 HEAD `提交`」，用 --anchor 指定")
         return 1
-    if git("rev-parse", "--verify", "-q", anchor + "^{commit}") is None:
-        print(f"  ✗ 锚 {anchor} 不是本仓的提交")
+    state = anchor_state(anchor)
+    if state == "missing":
+        print(f"  ✗ 锚 {anchor} 不是本仓的提交" +
+              ("" if o.anchor else "（lane rebase 前的提交、没推上来？到还查得到它的机器上跑 --fix 改到 HEAD）"))
         return 1
+    dangling = state == "off" and not o.anchor  # lane w53-12：--anchor 指定的不查
     since.last_rewritten = 0  # lane w50-k4：清零判竿的 ⚠ 改指未验格值，since() 每跑必覆写；没跑到（--fix 支路）保持 0
     if self_check():
         print("结果：有问题（自检没过：本脚本的跟号 / 清零判竿逻辑坏了，先修脚本，清单的结果不可信）")
@@ -1336,8 +1375,11 @@ def main():
         if o.anchor or o.since:
             print("  ✗ --fix 只按清单头部的锚改，别和 --anchor / --since 一起用")
             return 1
-        return do_fix(o, text, repo, anchor)
+        return do_fix(o, text, repo, anchor, dangling)
     landing_bad = ledger_landing(o.no_landing)
+    if dangling:
+        print(f"  ✗ 锚悬空 {anchor}：本机对象库里查得到，却不在 HEAD 的历史上（lane rebase 前的提交？主控落地后即悬空）——"
+              "新克隆 / origin 上本脚本直接退 1「不是本仓的提交」；--fix 改到 HEAD（没有 DRIFT 也改锚）")
 
     n, _fixes, refs, _toks = check(o, text, repo, anchor)
     mismatch = 0
@@ -1357,12 +1399,14 @@ def main():
                 return 1
     n2_rewritten = 0 if o.since else since.last_rewritten  # 清零判竿第六格（⚠ 改指未验）格值：--since 不分内容、格位不降格传 0
 
-    if n["bad"] or n["drift"] or n["marks"] or mismatch or landing_bad:
+    if n["bad"] or n["drift"] or n["marks"] or mismatch or landing_bad or dangling:
         how = []
         if n["bad"] or n["drift"] or n["marks"]:
             how.append("DRIFT 先跑 --fix 自动跟号；「要人工」「待核」的回读后改号、删标记，再提交清单")
         if mismatch and not o.since:
             how.append("MISMATCH 是本版清单的号和上一版指的不是同一段：改回提示的号；确是有意换了所指，在那处引用后括注「原文作 `:旧号`」")
+        if dangling:
+            how.append("锚悬空：跑 --fix 把头部锚改到 HEAD（没有 DRIFT 也改锚），提交清单")
         if landing_bad:
             how.append(f"落点预检 {landing_bad} 项：ledger_refs_mutants 的变异靶子漂了，照新形状改 tools/ledger_refs_mutants.py、跑一次全量")
         print(f"结果：有问题（{'；'.join(how) or '见上'}）")

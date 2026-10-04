@@ -172,11 +172,14 @@ REGISTRY = [
               "清单里不许留 `--fix` 打的「〔跟号待核：…〕」；改号自证：和上一版清单逐对比「旧锚旧号那段 == 本版锚本版号那段」，旧那段原文还在别处即号写歪了（lane auditfix1）；"
               "仓外 brief 引用只查越界（`$NK1_BRIEFS` 不在只记 `⚠`）；落点所在函数只剩一行转发（func_body.forward_of）的穿透到真体再跟号，穿透不下去报「跟到一行转发」，"
               "每次先跑内存里的「转发穿透自检」10 形（lane auditfix6）；输出确定序（lane cs23）：逐处的 ⚠ / ✗ 行先收齐、按「清单行号 → 行内第几处引用 → 类别」排好再印，"
-              "`--since` / 改号自证的新旧配对也按新版引用的清单顺序逐对比——原先配对取 `ko.keys() & kn.keys()`（集合，遍历顺序随 PYTHONHASHSEED 变），有 2 处以上 ⚠ / MISMATCH 时同基连跑每次行序不同、「逐字节同」比对偶发假 DIFF（lane cs18 待议 4）",
+              "`--since` / 改号自证的新旧配对也按新版引用的清单顺序逐对比——原先配对取 `ko.keys() & kn.keys()`（集合，遍历顺序随 PYTHONHASHSEED 变），有 2 处以上 ⚠ / MISMATCH 时同基连跑每次行序不同、「逐字节同」比对偶发假 DIFF（lane cs18 待议 4）；"
+              "头部锚须在 HEAD 的历史上（lane w53-12：lane --fix 打的锚主控 rebase 落地后悬空，本机共用对象库照绿、新克隆退 1——main 上 107 版清单 28 版如此，b241992 / f3f092e / 1665423 三回推上了 origin），"
+              "上一版清单的锚取不到时改号自证明印「没比成」（原先静默「对上 0 对」）",
      "green": "`✓ 转发穿透自检 10/10（…）` + `✓ ledger_refs_mutants 落点预检：Z1–Z5 5 格判对；40 + 5 格变异…都落得上（…）；…`（lane w19-g8，SUBCHECKS）+ `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）。同一基连跑 5 次 stdout 逐字节同（lane cs23 实测：六个历史基 × 默认 / `--show`、5 个 `--since` 旧版与号写歪的脏树各 5 次同 md5）；lane cs25 起由 ledger_refs_mutants 二节固化（5 个固定种子、去掉排序须判不确定）",
      "red": "`✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；"
             "`…可跟号 → 文件:新号（穿透一行转发 …）` / `…跟不上，要人工：跟到一行转发：…` / `✗ 转发穿透自检 S… 期望 … 实得 …`（脚本自身坏了）；"
             "`✗ ledger_refs_mutants 落点预检 · <编号>：变异没落上——…`（变异靶子漂了，lane w19-g8，见 SUBCHECKS）；"
+            "`✗ 锚悬空 X：本机对象库里查得到，却不在 HEAD 的历史上…`（lane w53-12；`--fix` 没有 DRIFT 也改锚到 HEAD）/ `✗ 锚 X 不是本仓的提交（lane rebase 前的提交、没推上来？…）`；"
             "`结果：有问题（DRIFT 先跑 --fix 自动跟号…）`；修法 `python3 tools/check_decision_refs.py --fix`（所引文件先提交）"},
     # lane auditfix3：审计 audit1 判 cs12 / cs11「半实」（护栏现状下无能单独触发的实例），这里固化实例；跑一次约一分钟（负载下 94 s）、要 git worktree。
     # lane cs27（auditfix7 W8）：升不了 must（§五.2 快 / 不写盘两条不成立），靶子漂移一类由 check_symbols 十四节「落点预检」每次一键跑判（SUBCHECKS）；
