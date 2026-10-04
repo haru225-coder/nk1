@@ -81,6 +81,7 @@ EXEMPT = [
     ("qa_w53_15_intel_probe.gd", "lane-w53-15", "战斗方案一期「敌情与号令」：敌情列（enemy_intel 开 / 关对照）、布色船种、我方士气 20/10 险档提示条，headless 秒级，本 lane 收尾并闸"),
     ("qa_w53_15_parley_probe.gd", "lane-w53-15", "战斗方案一期「劝降钮挂敌船、三样凑齐才亮」（parley_on_ship 开 / 关对照），headless 秒级，本 lane 收尾并闸"),
     ("qa_w53_15_role_probe.gd", "lane-w53-15", "战斗方案二期职事「总管管损」「夷人减伤」（crew_role_effects，DamageModel 一侧）：乘法 / step / 伤亡 / 接线四节，回退即红，headless 秒级，本 lane 收尾并闸"),
+    ("qa_w53_15_shipcard_probe.gd", "lane-w53-15", "战斗方案一期「点敌船或 Tab 选中出小卡」（enemy_intel）：Tab / 点行选中、喊话钮亮灭跟 parley_road、细看钮展开，回退即红，headless 秒级，本 lane 收尾并闸"),
     ("qa_w53_15_wet_probe.gd", "lane-w53-15", "战斗方案二期新号令「张湿毡」（order_wet_felt）：DamageModel 点火折半/火账减半/伤亡×0.7、面板 7 号接线，回退即红，headless 秒级，本 lane 收尾并闸"),
     ("qa_w53_16_aftermath_probe.gd", "lane-w53-16", "战斗方案一、二期战后单子与赏钱专项探针（13c 护航接任旗、分赃、单子、大风两散、gale 键、杂事缴获；一段钉一条、回退即红），headless 可跑，随 lane-w53-16 落地验过留档"),
     ("qa_w53_1_battle_sea_name_probe.gd", "lane-w53-1", "海上遇敌的海域名按船当日所在取港探针（全港对 × 航程 5%…95% 对离船最近港；实点「迎战」海盗 / 元军哨船，验题签与海战海况海域），修恒取起锚港"),

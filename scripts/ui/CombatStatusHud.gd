@@ -21,6 +21,8 @@ extends CanvasLayer
 
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const Switches := preload("res://scripts/combat/CombatSwitches.gd")
+## 号令面板（小卡喊话用）。与 CombatOrdersPanel preload 彼格彼会环，走路径 lazy load
+const ORDERS_PATH := "res://scripts/ui/CombatOrdersPanel.gd"
 const SELF_PATH := "res://scripts/ui/CombatStatusHud.gd"
 
 const GROUP_UI := "nk1_combat_ui"
@@ -123,13 +125,18 @@ var _built := false
 ## 敌情列（开关 enemy_intel 开时建）：每艘敌船一行布色 + 估计伤情 + 船种
 var _intel: PanelContainer = null
 var _intel_rows: VBoxContainer = null
+## 小卡：选中敌船后在敌情列下方出的那一行（喊话 + 细看；开关 enemy_intel 开时才有）
 var _intel_ship: PanelContainer = null
+var _ship_card_lbl: Label = null
+var _ship_hail_btn: Button = null
+var _ship_detail_lbl: Label = null
 var _morale_bar: Label = null
 ## 敌船 instance_id → 见过的最大船体（估伤情按见过的高值折算）
 var _hull_seen: Dictionary = {}
-## 士气险档的提示状态（回线撤出后重新计）与选中敌船
+## 士气险档的提示状态（回线撤出后重新计）与选中敌船（点敌船或 Tab 循环）
 var _morale_flag := 0
 var _selected_id := 0
+var _detail_open := false
 ## 分离开关态的探针覆盖：-1 照 CombatSwitches，0 关，1 开
 var switch_override := -1
 
@@ -180,6 +187,23 @@ func _process(delta: float) -> void:
 		return
 	_acc = 0.0
 	refresh()
+
+
+## 敌情列小卡的选中轮替：Tab（触屏直接点敌船那一行）。开关关掉时列不存在，键也不收
+func _unhandled_input(event: InputEvent) -> void:
+	if _intel == null or not _intel.visible:
+		return
+	if _battle_over():
+		return
+	var key := event as InputEventKey
+	if key != null and key.pressed and not key.echo and key.keycode == KEY_TAB:
+		select_next_enemy()
+		get_viewport().set_input_as_handled()
+
+
+func _battle_over() -> bool:
+	var w := _world()
+	return w != null and w.get("resolved") == true
 
 
 # ── 取数 ──────────────────────────────────────────────
@@ -1024,6 +1048,45 @@ func _build_intel() -> void:
 	_intel_rows = VBoxContainer.new()
 	_intel_rows.add_theme_constant_override("separation", 2)
 	body.add_child(_intel_rows)
+	_intel_ship = PanelContainer.new()
+	_intel_ship.name = "IntelShipCard"
+	_intel_ship.visible = false
+	_intel_ship.custom_minimum_size = Vector2(INTEL_W - 24, 0)
+	body.add_child(_intel_ship)
+	var card_row := HBoxContainer.new()
+	card_row.add_theme_constant_override("separation", 6)
+	_intel_ship.add_child(card_row)
+	_ship_card_lbl = Label.new()
+	_ship_card_lbl.text = "？"
+	_ship_card_lbl.add_theme_font_override("font", UiTheme.font())
+	_ship_card_lbl.add_theme_font_size_override("font_size", 14)
+	_ship_card_lbl.add_theme_color_override("font_color", UiTheme.PAPER_TEXT)
+	_ship_card_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card_row.add_child(_ship_card_lbl)
+	_ship_hail_btn = Button.new()
+	_ship_hail_btn.text = "喊话"
+	_ship_hail_btn.custom_minimum_size = Vector2(60, 24)
+	_ship_hail_btn.focus_mode = Control.FOCUS_NONE
+	_ship_hail_btn.add_theme_font_size_override("font_size", 14)
+	_ship_hail_btn.tooltip_text = "敌船深处在喊；被钩住・帆残・阵脚乱三样凑齐才响"
+	_ship_hail_btn.pressed.connect(_hail_selected)
+	card_row.add_child(_ship_hail_btn)
+	var look_btn := Button.new()
+	look_btn.text = "细看"
+	look_btn.custom_minimum_size = Vector2(60, 24)
+	look_btn.focus_mode = Control.FOCUS_NONE
+	look_btn.add_theme_font_size_override("font_size", 14)
+	look_btn.tooltip_text = "展开这船形势明细（桅索・士气・伤）"
+	look_btn.pressed.connect(_toggle_detail)
+	card_row.add_child(look_btn)
+	_ship_detail_lbl = Label.new()
+	_ship_detail_lbl.text = ""
+	_ship_detail_lbl.add_theme_font_override("font", UiTheme.font())
+	_ship_detail_lbl.add_theme_font_size_override("font_size", 13)
+	_ship_detail_lbl.add_theme_color_override("font_color", UiTheme.PAPER_DIM)
+	_ship_detail_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_ship_detail_lbl.visible = false
+	body.add_child(_ship_detail_lbl)
 	_morale_bar = Label.new()
 	_morale_bar.text = ""
 	_morale_bar.add_theme_font_override("font", UiTheme.font())
@@ -1058,6 +1121,10 @@ func _refresh_intel(snap: Dictionary) -> void:
 	var want := foes.size()
 	while _intel_rows.get_child_count() < want:
 		var row := HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_STOP
+		row.name = "IntelRow%d" % _intel_rows.get_child_count()
+		var row_idx := _intel_rows.get_child_count()
+		row.gui_input.connect(_on_intel_row_gui_input.bind(row_idx))
 		row.add_theme_constant_override("separation", 7)
 		var dot := ColorRect.new()
 		dot.custom_minimum_size = Vector2(10, 10)
@@ -1089,6 +1156,10 @@ func _refresh_intel(snap: Dictionary) -> void:
 		parts.append(String(info["cloth"]))
 		var lbl := row.get_child(1) as Label
 		lbl.text = "　".join(parts)
+		# 选中行字涂金，没选中照常 — 点哪艘那艘就是这艘的「小卡」门
+		lbl.add_theme_color_override("font_color",
+			UiTheme.PAPER_GOLD if (foes[i] as Object).get_instance_id() == _selected_id else UiTheme.PAPER_TEXT)
+	_refresh_ship_card()
 
 
 func _refresh_morale_bar(snap: Dictionary) -> void:
@@ -1098,3 +1169,122 @@ func _refresh_morale_bar(snap: Dictionary) -> void:
 	_morale_flag = int(u["flag"])
 	_morale_bar.text = String(u["text"])
 	_morale_bar.visible = _morale_bar.text != ""
+
+
+# ── 敌情小卡（方案一期：点敌船或 Tab 选中出小卡）─────────────
+
+## 选中的敌船节点；不在 / 不在场 / 挂了返回 null（探针直读）
+func selected_enemy() -> Node:
+	if _selected_id <= 0:
+		return null
+	for e in live_enemies(_world()):
+		if (e as Object).get_instance_id() == _selected_id:
+			return e
+	return null
+
+
+## 点敌情列某一行：记下选中，展开小卡；再点同一行收起
+func _on_intel_row_gui_input(ev: InputEvent, row_idx: int) -> void:
+	var btn := ev as InputEventMouseButton
+	if btn == null or not btn.pressed or btn.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var enemies := live_enemies(_world())
+	if row_idx < 0 or row_idx >= enemies.size():
+		return
+	get_viewport().set_input_as_handled()
+	_select_enemy((enemies[row_idx] as Object).get_instance_id())
+
+
+## Tab 在海战场上甩选中到下一艘（触屏直接点敌船，不用 Tab——鼠标点那一行就是 _on_intel_row_gui_input）
+func select_next_enemy() -> void:
+	var enemies := live_enemies(_world())
+	if enemies.is_empty():
+		_select_enemy(0)
+		return
+	var idx := -1
+	for i in range(enemies.size()):
+		if (enemies[i] as Object).get_instance_id() == _selected_id:
+			idx = i
+			break
+	var next_enemy = enemies[(idx + 1) % enemies.size()]
+	_select_enemy((next_enemy as Object).get_instance_id())
+
+
+func _select_enemy(iid: int) -> void:
+	if _selected_id == iid:
+		_selected_id = 0  # 再点同一行收起
+	else:
+		_selected_id = iid
+	_refresh_ship_card()
+	refresh()
+
+
+## 号令面板所在脚本（lazy load：与 CombatOrdersPanel.const StatusHud 彼格彼会上环，只能到调用时才拿）
+static func _orders_script():
+	if not ResourceLoader.exists(ORDERS_PATH):
+		return null
+	return load(ORDERS_PATH)
+
+
+## 喊话选中的敌船：讲得出才下（条件照旧由 CombatOrdersPanel.parley_road 判）
+func _hail_selected() -> void:
+	var e := selected_enemy()
+	if e == null:
+		return
+	var scr = _orders_script()
+	if scr == null:
+		return
+	var panel = scr.call("panel_of", self)
+	if panel != null:
+		panel.call("issue", "parley", -1.0)
+
+
+func _toggle_detail() -> void:
+	_detail_open = not _detail_open
+	_refresh_ship_card()
+
+
+## 选中后刷新小卡：行名 + 细看明细（未选中整卡收）
+func _refresh_ship_card() -> void:
+	if _intel_ship == null:
+		return
+	var e := selected_enemy()
+	if e == null:
+		_intel_ship.visible = false
+		_ship_detail_lbl.visible = false
+		return
+	_intel_ship.visible = true
+	var info: Dictionary = intel_line_of(e, float(_hull_seen.get(_selected_id, 0.0)))
+	_ship_card_lbl.text = "%s %s" % [String(info["kind"]) if String(info["kind"]) != "" else "来船", String(info["cloth"])]
+	_ship_detail_lbl.visible = _detail_open
+	# 喊话钮的亮灭就是 parley_road 三样的亮灭——三样凑齐才亮
+	var scr = _orders_script()
+	var hail_lit := false
+	var road_text := ""
+	if scr != null:
+		var hull_current := prop_f(e, "hull_hp", 0.0)
+		var hull_seen := float(_hull_seen.get(_selected_id, hull_current))
+		var road: Dictionary = scr.call("parley_road", {
+			"grappled": e.get("grappled") == true,
+			"hull_frac": hull_current / maxf(hull_seen, 0.001),
+			"enemy_state": String(morale_meta(e).get("state", "")),
+		})
+		hail_lit = bool(road.get("lit", false))
+		road_text = String(road.get("road", ""))
+	_ship_hail_btn.disabled = not hail_lit
+	if _detail_open:
+		var bits := PackedStringArray()
+		var hp := prop_f(e, "hull_hp", 0.0)
+		var seen := float(_hull_seen.get(_selected_id, hp))
+		bits.append("船体约 %s" % (cheng(hp / seen) if seen > 0.0 else "未计"))
+		var mm := morale_meta(e)
+		if mm.get("state") is String and String(mm["state"]) != "":
+			bits.append("簿上 %s" % String(mm["state"]))
+		bits.append("士气 %d" % roundi(prop_f(e, "enemy_morale", -1.0)))
+		if road_text != "" and road_text != "可喊话":
+			bits.append("缺：%s" % road_text)
+		_ship_detail_lbl.text = "　".join(bits)
+
+
+static func cheng(x: float) -> String:
+	return "殆尽" if x >= 0.95 else ("不足一成" if x < 0.05 else "%s成" % cn_num(clampi(int(round(x * 10.0)), 1, 9), true))
