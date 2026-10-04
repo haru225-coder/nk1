@@ -5045,6 +5045,46 @@ func _w53_10_zhang_one_ship_check() -> void:
 	Cal.from_dict(keep_cal)
 
 
+## lane w53-10（七轮）：委办罚条照实写——名声已到 0 封底时毁约 / 逾期扣不下名声，罚条与毁约钮悬停就不写「名声减 1」；
+## 名声 5 时照写、照扣（修前一律写「名声 −1」）。走牙行页真「毁约」钮（悬停）与 GameState.abandon_contract（罚条）。
+func _w53_10_contract_fame_floor_check() -> void:
+	var Flt: Node = root.get_node("Fleet")
+	var keep_gs: Dictionary = GS.to_dict()
+	var keep_cal: Dictionary = Cal.to_dict()
+	var keep_fleet: Dictionary = Flt.call("to_dict")
+	var main: Node = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
+	root.add_child(main)
+	var got := {}
+	for fame0 in [0, 5]:
+		GS.from_dict({})
+		Cal.from_dict({"year": 1255, "month": 3, "day": 1})
+		GS.last_port = "quanzhou"
+		GS.money = 5000
+		# 前面各节会把船队清空（无船则 Voyage.plan 走不出航期、牙行不出委办）：摆一条福船（中）
+		Flt.set("ships", [])
+		Flt.call("add_ship", "fu_ship_medium", "")
+		(Flt.get("ships") as Array)[0]["crew"] = 30
+		var offer: Dictionary = GS.contract_offer("quanzhou")
+		var took: bool = (not offer.is_empty()) and GS.accept_contract(offer)
+		GS.fame = fame0
+		main.load_scene("quanzhou_market")
+		var tip := ""
+		for b in main.find_children("*", "Button", true, false):
+			if (b as Button).text.begins_with("毁约"):
+				tip = (b as Button).tooltip_text
+		var msg: String = GS.abandon_contract() if took else ""
+		got[fame0] = [took, tip, msg, GS.fame]
+	_check(got[0][0] and got[0][1] != "" and got[0][1].find("名声减") < 0 and got[0][2].find("名声减") < 0 and got[0][3] == 0
+		and got[5][0] and got[5][1].find("名声减 1") >= 0 and got[5][2].find("名声减 1") >= 0 and got[5][3] == 4,
+		"委办罚条名声见底：名声 0 时悬停「%s」罚条「%s」不写名声减；名声 5 时悬停「%s」罚条「%s」照写（名声 → %d；接下委办 %s / %s）" % [
+			got[0][1], got[0][2], got[5][1], got[5][2], got[5][3], got[0][0], got[5][0]])
+	root.remove_child(main)
+	main.queue_free()
+	Flt.call("from_dict", keep_fleet)
+	GS.from_dict(keep_gs)
+	Cal.from_dict(keep_cal)
+
+
 ## lane w53-11：story 收尾（原在 _process 里、不 await _route_check 就印 SUMMARY / quit）——等抵港路由一节整段跑完
 ## （含其中真让帧的 await）再判 SCRIPT ERROR、印 SUMMARY、退出；_route_check 半路被脚本错掐断时 await 照样回来，
 ## 由 _script_error_check 判红。
@@ -5052,6 +5092,7 @@ func _finish_after_route() -> void:
 	await _route_check()
 	_w53_10_sea_purse_check()
 	_w53_10_zhang_one_ship_check()
+	_w53_10_contract_fame_floor_check()
 	_script_error_check()
 	print("STORY_CHECK TOTAL asserts run=", GateReport._checks.size(), "；lane w20-c6 补白新增 c6_asserts=", _c6_added)
 	print("STORY_CHECK SUMMARY fails=", _fails)

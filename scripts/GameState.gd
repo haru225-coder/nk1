@@ -1140,6 +1140,8 @@ func _fail_contract(reason: String) -> String:
 	var fine := contract_fine()
 	if fine > 0:
 		spend_money(fine)
+	# 名声已到 0 封底时扣不下去，罚条就不写「名声减 1」（lane w53-10 七轮）
+	var fame_cut := "，名声减 1" if fame > 0 else ""
 	fame = maxi(0, fame - 1)
 	var good_name := GameManager.get_good_name(str(contract.get("good_id", "")))
 	var dest_name := GameManager.get_port_name(str(contract.get("dest", "")))
@@ -1149,8 +1151,8 @@ func _fail_contract(reason: String) -> String:
 	if issued != "":
 		contract_ban[issued] = offer_month
 	if reason == "毁约":
-		return "【毁约】%s的委办作废。牙行扣 %d 钱，名声减 1。" % [good_name, fine]
-	return "【逾期】%s没能送到%s。牙行扣 %d 钱，名声减 1。" % [good_name, dest_name, fine]
+		return "【毁约】%s的委办作废。牙行扣 %d 钱%s。" % [good_name, fine, fame_cut]
+	return "【逾期】%s没能送到%s。牙行扣 %d 钱%s。" % [good_name, dest_name, fine, fame_cut]
 
 
 # ── 人物志「已识」 ────────────────────────────────────
