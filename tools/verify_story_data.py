@@ -150,6 +150,17 @@ for ch in chapters:
         dup = _sentences(body) & _sentences(e.get("text", ""))
         check(not dup, f"chapters {ch['id']} 结局「{e.get('title', '')}」的结局幕又抄了册页的句子 {sorted(dup)[:2]}——了结时同一段话连读三遍")
 
+# ── scenes.json：幕题与选项不报章号（lane w53-13，待拍板第 64 / 9b / 20f 条定 A）──
+# 序章一路点到底会演「第一章结束：海图上的旧泊地」→ 选项「翻开杯底短信，进入第二章」→「第二章：兴化来的信」→「第二章结束：…」，
+# 都在第一次到泉州之前；随后首港才开「第一章・海口」卡，章号倒着走。章号只由开章卡（ChapterCard）与晋升过场
+# （chapters.json 的 advance_scene）报，其余幕题、选项一律不写「第N章」。
+_adv_scenes = {str(c.get("advance_scene", "")) for c in chapters if c.get("advance_scene")}
+for sc in scenes:
+    if sc.get("id") in _adv_scenes:
+        continue
+    for where, t in [("幕题", sc.get("title", ""))] + [("选项", c.get("label", "")) for c in sc.get("choices", []) if isinstance(c, dict)]:
+        check(not re.search(r"第[一二三四五六]章", str(t)), f"scenes {sc.get('id')} {where}「{t}」报了章号——序章幕在首港开第一章之前演，章号倒着走")
+
 # ── chapters.json：终章结局文字不点主角名（lane w53-13，待拍板第 2 条）──
 # 这几条结局只看旗标，海商线（终身叫陈子龙）与士人线（1268 唱第改名陈文龙）都走得到。原先「海口信路」写「陈子龙三个字仍写在
 # 货引上」、「史册未落笔」写「陈文龙三个字仍在将来」——士人线了结时一条叫错、一条说改名还在将来。现在册页、结局幕、结局过场
