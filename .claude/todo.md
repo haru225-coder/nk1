@@ -62,6 +62,7 @@ godot --headless --path . -s res://tools/godot_compile_check.gd
 godot --headless --path . -s res://tools/godot_story_check.gd
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd
+godot --headless --path . -s res://tools/save_robust_probe.gd  # 坏分区退 .bak / 只剩 .bak 取标签 / 两份皆坏不抛错（lane w86-k3 依复核牒升格必跑）
 python3 tools/check_sidecars.py
 python3 tools/gates_md.py
 python3 tools/check_mac_paths.py

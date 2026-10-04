@@ -26,7 +26,7 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-一次改动闭环 = 下面三十四道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
+一次改动闭环 = 下面三十五道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
 
 ```bash
 # 十七道 Python（无 Godot 也能跑）
@@ -48,13 +48,14 @@ python3 tools/check_ledger_garbage.py # docs/仓务清册「殓殓」词级污�
 python3 tools/check_ledger_skeleton.py # docs/仓务清册判档段段级完整性静态扫（甲行数下限 / 甲′段数恒等钉 / 乙§键首轮非严格递增 / 丙段名唯一 / 丁纯尾 append 五格；lane w77-k5 依 w76-k6 复核牒 §五.2 判掂毕升 must——与 check_ledger_garbage 词级污染轨互补：彼罩词级指纹、本罩段级结构；一键跑倒数第二）
 python3 tools/check_probe_registry.py  # tools/ 下每支 *_probe.gd 要么注册进门禁注册表、要么登豁免名单（lane w27-k4 立闸即必跑；一键跑末条；k11 审计「最该补的门禁」第 2 条）
 
-# 十一道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
+# 十二道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
 godot --headless --import --path .                               # 导入步骤：刷新缓存、不判红绿（docs/GATES.md §三.9）
 godot --headless --path . -s res://tools/godot_smoke.gd          # 云端冒烟（逐项 ✓，末行 GODOT SMOKE PASS）
 godot --headless --path . -s res://tools/godot_compile_check.gd  # 全部脚本可编译
 godot --headless --path . -s res://tools/godot_story_check.gd    # 剧情脊柱与存档 round-trip（用完会清第 9 槽）
 godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd  # 行会入行 / 贡院赴试 / 誊录：扣费门槛、每章一次、跨月结算时序
 DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd         # 有窗口：三港九页 + 海图三向牌都在 1280×720 内
+godot --headless --path . -s res://tools/save_robust_probe.gd   # 坏分区退 .bak / 只剩 .bak 取标签 / 两份皆坏不抛错（lane w86-k3 依复核牒升格必跑）
 godot --headless --path . -s res://tools/qa_rest_days_probe.gd   # 旅店 / 住处「歇・候 N 日」钮面 ↔ 实扣运行时断言 24 案（lane w48-k1 依 w42-k6 牒备件绶升必跑）
 godot --headless --path . -s res://tools/qa_economy_panel_probe.gd  # 名声栏级别名 + 欠债跳年册页 / 札记月息原文运行时断言 19 案（lane w62-k4 依 w61-k4 牒备件升格必跑）
 godot --headless --path . -s res://tools/qa_fold_notice_probe.gd  # 札记欠饷原文 + 改元月历一瞥运行时断言 13 案（lane w74-k3 依 w73-k5 复核牒升格必跑）
