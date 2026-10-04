@@ -44,7 +44,9 @@ extends SceneTree
 ##       ① 开战读阶段表：_escape_px = escape_bu × px_per_bu、_shake_off_s = shake_off_s；
 ##       ② 两艘快船停住，一艘在 1000 px 时等过时限不收战，挪到 1450 px 再等过时限须收战一次 flee{flee_ok, shook_off}；
 ##       ③ 唯一一艘在 1500 px 但在脱离（溃走）：等过时限不收战（归士气簿收场，不记成本船脱战）；
-##       ④ B 弃战挑首掷 > 0.95 的种子（照掷必败）：追船尽在 1400 px 外须 flee_ok、不掷骰；追船在 600 px 同种子照掷（flee_ok 假）。
+##       ④ B 弃战挑首掷 > 0.95 的种子（照掷必败）：追船尽在 1400 px 外须 flee_ok、不掷骰；追船在 600 px 同种子照掷（flee_ok 假）；
+##       ⑤ 弃战越远越易脱（待拍板 13b）：挑首掷落在「船速底数」与「底数 + 五成余量」之间的种子——追船在 900 px 须脱（随距离抬过了这一掷），
+##          在 300 px（近身只看船速）照判没脱。修复前只看船速，900 px 也没脱。
 ##   十三、号令效力接上旗舰（抢风 / 装填侧重）：号令面板「效力」一行（帆力、贴风、装填……）修复前没有一处消费，下令只改签面。四格：
 ##       ① ManeuverModel 认号令两键：mods.trim 1.09 的船横风满帆两秒后对水航速比不带的快、mods.pinch_delta −6 时船首离来风 45°
 ##          不再「顶风」（福船顶风区 48°）；② 海战场下抢风令：旗舰这一帧的机动乘数带 trim / pinch_delta，读数里顶风区少 6°；
@@ -726,6 +728,40 @@ func _sec_flee_key_far(fleet: Node) -> void:
 	_check(got.size() == 2 and got[0] == "true" and got[1] == "false",
 		"十二④ B 弃战（种子 %d 首掷 > 0.95）：追船在 1400 px 外不掷骰即脱 flee_ok=%s；在 600 px 照掷 flee_ok=%s" % [
 			sd, got[0] if got.size() > 0 else "无", got[1] if got.size() > 1 else "无"])
+	# ⑤ 越远越易脱：底数按本节的福船现算（Voyage.flee_success_chance），首掷落在底数之上、底数 + 五成余量之下
+	var base := float(root.get_node("Voyage").call("flee_success_chance"))
+	var lo := base + 0.05 * (1.0 - base)
+	var hi := base + 0.5 * (1.0 - base)
+	var sd2 := 1
+	var r2 := -1.0
+	while sd2 < 20000:
+		seed(sd2)
+		r2 = randf()
+		if r2 > lo and r2 < hi:
+			break
+		sd2 += 1
+	var got2: Array = []
+	for dist in [900.0, 300.0]:
+		var wm2 := await _battle(fleet, "fu_ship_medium", 60, {"type": "pirate_boat", "count": 1})
+		var foes2 := _foes(wm2)
+		if foes2.size() != 1:
+			got2.append("刷船 %d 艘" % foes2.size())
+			await _close(wm2)
+			continue
+		var rec2: Array = []
+		wm2.battle_finished.connect(func(o: String, dd: Dictionary) -> void: rec2.append(bool(dd.get("flee_ok", false))))
+		(foes2[0] as Node).set_physics_process(false)
+		(foes2[0] as Node2D).position = (wm2.get("ship") as Node2D).position + Vector2(dist, 0)
+		var ev2 := InputEventKey.new()
+		ev2.keycode = KEY_B
+		ev2.pressed = true
+		seed(sd2)
+		wm2.call("_unhandled_input", ev2)
+		got2.append(str(rec2[0]) if rec2.size() == 1 else "未收战")
+		await _close(wm2)
+	_check(got2.size() == 2 and got2[0] == "true" and got2[1] == "false",
+		"十二⑤ 越远越易脱（船速底数 %.2f，种子 %d 首掷 %.3f）：追船在 900 px 脱 flee_ok=%s、在 300 px 照船速 flee_ok=%s" % [
+			base, sd2, r2, got2[0] if got2.size() > 0 else "无", got2[1] if got2.size() > 1 else "无"])
 
 
 

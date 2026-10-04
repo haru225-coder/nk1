@@ -465,7 +465,7 @@
         }
       ],
       "priority": 3,
-      "note": "B / Esc：Voyage.flee_success_chance() 掷骰，海图逃走同一条（现码即此）；追打的敌船已尽在 escape_bu 外则不掷骰、即脱（lane w53-2）"
+      "note": "B / Esc：WorldMap._flee_chance() 掷骰——底数 Voyage.flee_success_chance()（船速，海图逃走同一条），按最近一艘追船的远近抬：400 px 内照底数，到 escape_bu 外为 1、不掷骰即脱，其间线性（lane w53-2）"
     },
     {
       "id": "t_flee_caught",
@@ -1103,7 +1103,7 @@
       ],
       "unit": null,
       "owner": "director",
-      "source": "randf() < Voyage.flee_success_chance()",
+      "source": "randf() < WorldMap._flee_chance()（Voyage.flee_success_chance 按追船远近抬，lane w53-2）",
       "fallback": "现码 WorldMap._unhandled_input 同式"
     },
     {
@@ -2104,7 +2104,7 @@
       "legacy": true,
       "alloc": null,
       "effects": {
-        "flee_roll": "Voyage.flee_success_chance"
+        "flee_roll": "WorldMap._flee_chance"
       },
       "cooldown_s": 0,
       "requires": [],

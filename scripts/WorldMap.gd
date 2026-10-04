@@ -790,9 +790,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			if boarding or _finishing_boarded:
 				return # 白刃已钩住不能逃；末艘已夺下、「夺船」题签在演，等它带 boarded 出战（crew 线 1fe334d）
 			get_viewport().set_input_as_handled()
-			# lane w53-2：追打的敌船已尽在 escape_bu 外（降了的、溃走的不追）就不掷骰——够不着也追不上，弃战即脱，同甩脱一路；
+			# lane w53-2：甩脱机会随追船远近抬（_flee_chance）——近身只看船速，追打的敌船尽在 escape_bu 外（降了的、溃走的不追）必脱、不掷骰；
 			# 原先照掷航速骰，敌船在一屏开外休眠不动也会「未能甩脱，被追上跳帮，货舱被夺」
-			var ok: bool = int(_pursuit()["near"]) == 0 or randf() < Voyage.flee_success_chance()
+			var chance := _flee_chance()
+			var ok: bool = chance >= 1.0 or randf() < chance
 			_battle_exit("flee", {"flee_ok": ok, "player_damage": player_damage})
 
 
@@ -1008,11 +1009,12 @@ static func _phases_escape() -> Vector2:
 	return out
 
 
-## 追打的敌船（活着、没降、没在脱离）有几艘、其中几艘在 _escape_px 以内：{"n", "near"}。降了的、溃走的不追，甩脱与否不看它们——
-## 那几艘归士气簿收场（受降 / 敌遁）
+## 追打的敌船（活着、没降、没在脱离）有几艘、其中几艘在 _escape_px 以内、最近一艘多远：{"n", "near", "nearest"}（没有追船 nearest 为 INF）。
+## 降了的、溃走的不追，甩脱与否不看它们——那几艘归士气簿收场（受降 / 敌遁）
 func _pursuit() -> Dictionary:
 	var n := 0
 	var near := 0
+	var nearest := INF
 	for child in get_children():
 		if not _is_live_pirate(child) or child.get("struck") == true:
 			continue
@@ -1020,9 +1022,24 @@ func _pursuit() -> Dictionary:
 		if cap != null and str(cap.get("state")) == "disengage":
 			continue
 		n += 1
-		if is_instance_valid(ship) and (child as Node2D).position.distance_to(ship.position) < _escape_px:
-			near += 1
-	return {"n": n, "near": near}
+		if is_instance_valid(ship):
+			var d := (child as Node2D).position.distance_to(ship.position)
+			nearest = minf(nearest, d)
+			if d < _escape_px:
+				near += 1
+	return {"n": n, "near": near, "nearest": nearest}
+
+
+## B 弃战的甩脱机会（lane w53-2，待拍板 13b「弃战越远越易脱」）：最近一艘追船在 FLEE_NEAR 以内只看船速（Voyage.flee_success_chance，
+## 海图上遇盗逃走同一条），拉到 _escape_px（escape_bu）以外必脱，其间按距离线性抬到 1。
+## 原先只看船速：一屏开外休眠的敌船照样「追上跳帮」；上一笔补了「尽在 escape_bu 外不掷骰」，1279 px 照掷、1281 px 必脱，中间没有过渡
+const FLEE_NEAR := 400.0
+func _flee_chance() -> float:
+	var base := Voyage.flee_success_chance()
+	var d := float(_pursuit()["nearest"])
+	if d >= _escape_px:
+		return 1.0
+	return lerpf(base, 1.0, clampf((d - FLEE_NEAR) / maxf(1.0, _escape_px - FLEE_NEAR), 0.0, 1.0))
 
 
 func _on_captain_state_changed(state: StringName, label: String, reason: String, enemy: Node = null) -> void:
