@@ -151,6 +151,7 @@ TEXT_PROBES = {
     "qa_w53_6_shore_hint_probe": (CHECK_LINES, r"^QA_W53_6_SHORE_HINT cases=\d+ fails=\d+$"),  # 主控补登（w53-6 新探针挂压帧）
     "qa_w53_6_guild_spreads_probe": (CHECK_LINES, r"^QA_W53_6_SPREADS cases=\d+ fails=\d+$"),
     "qa_w53_6_port_exits_probe": (CHECK_LINES, r"^QA_W53_6_EXITS cases=\d+ fails=\d+$"),
+    "qa_w53_6_shore_hand_probe": (CHECK_LINES, r"^QA_W53_6_SHORE_HAND cases=\d+ fails=\d+$"),
     "qa_w53_9_cutscene_input_probe": (r"^W53_9_CASE (\S+) (OK|FAIL)\b", r"^QA_W53_9_CUTSCENE_INPUT (?:OK|FAIL \d+)$"),
     "japan_ship_probe": (SHOT_FAIL, r"^(JAPAN_SHIP_(?:OK|FAIL))\b"),
     "ship_dashi_probe": (SHOT_FAIL, r"^(DASHI_SHIP_(?:OK|FAIL))\b"),
