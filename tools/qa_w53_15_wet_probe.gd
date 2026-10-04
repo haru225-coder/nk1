@@ -67,6 +67,9 @@ func _sec_apply_hit() -> void:
 	_check(is_equal_approx(float(dm_on.call("fire_effects_mul")), 0.5), "on：fire_effects_mul = 0.5")
 	_check(is_equal_approx(float(dm_on.call("casualty_mul")), 0.7), "on：casualty_mul = 0.7")
 	_check(is_equal_approx(float(dm_off.call("casualty_mul")), 1.0), "off：casualty_mul = 1.0")
+	_check(is_equal_approx(float(dm_on.call("own_missile_mul")), 0.8),
+		"on：own_missile_mul = 0.8（wet_screens.own_flat_missile_mul，舷边的人施展不开）")
+	_check(is_equal_approx(float(dm_off.call("own_missile_mul")), 1.0), "off：own_missile_mul = 1.0（与 wave53 开工前一致）")
 	# 首火对比：50 簿每簿首 40 发 fire kind，着火次数跨簿统计
 	var off_a := _first_fire_stats(false, def)
 	var on_a := _first_fire_stats(true, def)

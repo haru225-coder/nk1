@@ -365,6 +365,13 @@ func steward_mul() -> float:
 	return 1.0 + 0.1 * clampi(steward_level, 0, 3)
 
 
+## 张湿毡的代价（combat_phases.json wet_screens.own_flat_missile_mul 0.8）：舷边被湿毡挡住施展不开，
+## 我方打出去的平射矢石照八折——w53-2 的 Ship / Ballistics 那边经这行的乘数来摊，本簿只拿当前值。
+## off 恒 1.0，与 wave53 开工前逐字一致。
+func own_missile_mul() -> float:
+	return 0.8 if wet_felt else 1.0
+
+
 ## 总管补效之后、真正喂给 FloodFire.step 那两路人手 [flood_crew, fire_crew]（reallocate 之后有效；
 ## split 里分派的人头照原账，总管补出来的是「这摊人派出去能顶几个」的协作份；lv0 时与 wave53 开工前逐字一致）
 func damage_crews() -> Array:
