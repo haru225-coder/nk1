@@ -158,6 +158,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_9_chapter_year_probe.gd",  # lane w53-9 章节卡年号与历法逐月同口径探针
 	"res://tools/qa_w53_13_decide_probe.gd",  # lane w53-13 待拍板逐条定下后的修复回归探针（跳年封顶等）
 	"res://tools/qa_w53_16_aftermath_probe.gd",  # lane w53-16 战斗方案一、二期战后单子与赏钱专项探针
+	"res://tools/qa_w53_16_aftermath_shots.gd",  # lane w53-16 战后单子 on / off 对比截图（存 /workspace/nk1-qa-shots/wave53-16/）
 	"res://tools/qa_w53_9_chapter_card_probe.gd",  # lane w53-9 章节卡题记留读与一句一列探针（须带窗口）
 	"res://tools/qa_w53_9_port_banner_probe.gd",  # lane w53-9 抵港横幅各窗口比例都挂在港名匾下探针（以场景启动，见 SCENES）
 	"res://tools/combat_vfx_probe.gd", "res://tools/ship_vfx_probe.gd", "res://tools/atmos_water_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",

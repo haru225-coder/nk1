@@ -473,8 +473,11 @@ func _story_live_capture() -> void:
 	_t(data.has("player_damage") and float(data.get("player_damage", -1.0)) >= 0.0, "story.capture.damage",
 		"data.player_damage 在、且不为负（旗舰这仗没挨炮）", "得 %s" % [data.get("player_damage")])
 	var log_text := str((chart.get("log_label") as RichTextLabel).text) if chart.get("log_label") != null else ""
-	_t((gm.get("pending_battle") as Dictionary).is_empty() and int(gs.get("money")) > money0,
-		"story.writeback.settle", "海图结算：pending_battle 清空、战利钱入账", "钱 %d → %d" % [money0, int(gs.get("money"))])
+	# w53-16 一期赏钱按打法分起：夺船给船不给钱（赏 = 那条船本身），scene.capture 入账改为 0 也算过；
+	# 击沉 / 受降（sunk / struck）仍要带钱入账。这里只放「钱不涨红」一格，不再钉正数
+	_t((gm.get("pending_battle") as Dictionary).is_empty() and int(gs.get("money")) >= money0,
+		"story.writeback.settle", "海图结算：pending_battle 清空、战利账对（夺船一场可以一分钱不进——赏 = 船）",
+		"钱 %d → %d" % [money0, int(gs.get("money"))])
 	_t(log_text.find("接舷既定") >= 0, "story.capture.writeback", "海图航海札记记「接舷既定」", "札记首行：%s" % log_text.get_slice("\n", 0))
 	chart.free()
 	_restore_state(st)
