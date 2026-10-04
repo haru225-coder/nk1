@@ -517,6 +517,18 @@ static func present_here(npc_id: String) -> bool:
 	return str(NPC_HOME.get(npc_id, GameState.last_port)) == GameState.last_port
 
 
+## 人物志「性情」：文本层给了就取——字串是一直可见的覆写；[[可见条件, 文字], …] 取最后一段可见的（同称谓）；没给用原稿。
+## 原稿性情里有人写着后来的事：吕文焕「援绝之后，降得也彻底」（襄阳围城新闻一出就认得他，降在五年后）、丁大全「终为更大的权臣
+## 所除」（开局即识）、仲子「父亲绝笔的收信人」（只在忠肃那条线）。修前人物志直读原稿；文本层给这些人分段，到了那一月 /
+## 那条世界线才换回原稿那句（lane w53-7）。
+static func codex_personality(ch: Dictionary) -> String:
+	var o = layer(ch).get("personality")
+	if typeof(o) == TYPE_ARRAY:
+		var vis := visible_segments(o)
+		return vis[vis.size() - 1] if not vis.is_empty() else ""
+	return fill_names(str(o if o != null else ch.get("personality", "")))
+
+
 # ── 画 ─────────────────────────────────────────────
 
 ## 此刻该挂哪张立绘。characters.json 可选 portrait_before {"YYYY-MM": 路径}：日历早于那个月时挂那一张，

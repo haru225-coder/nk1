@@ -34,6 +34,9 @@ extends SceneTree
 ##     并排看得出代价（打听本身不过日子，实跑核日历不动）。阿那招呼修前说「要问航路，就问」，他页上却只有行情、没有问航路的签。
 ##   L 墙上只贴市井听得到的：士人身份收到的临安短札（只发给士人、没有说话人：「短札：……贬你知抚州」）修前题「酒馆传闻」
 ##     贴在酒馆墙上，最近三条里能占两条。现不贴；小瘸子当面说兴化募兵（有说话人）、海商的崖山传闻照贴。
+##   S 人物志「性情」不透底：修前直读原稿 personality，不按年份——吕文焕 1269 年小传还写「他坚守孤城」「此后之事，尚在将来」，
+##     性情却已是「援绝之后，降得也彻底」；丁大全开局就「终为更大的权臣所除」；仲子在没有忠肃的那几条线也是「父亲绝笔的收信人」。
+##     现走文本层分段（取最后一段可见的），按年份 / 世界线 / 了结换句；称谓同理：姻家使者开局不叫「持书招降的姻亲」、王世强不叫「宋降将」。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_7_tavern_crew_probe.gd
 ## 末行 W53_7_TAVERN_CREW cases=N fails=M；fails>0 退 1。
 ## 运行期脚本错只中止出错的那一段（其后断言整段跳过、fails 不涨、退出码守 0）——接共用件 tools/script_err_tally.gd：
@@ -101,6 +104,7 @@ func _boot() -> void:
 	await _q_clerk_home()
 	await _k_meet_page_words()
 	await _l_wall_letters()
+	await _s_codex_traits()
 	_report()
 
 
@@ -640,6 +644,65 @@ func _wall_cards() -> Array:
 		out.append([str((head.get_child(0) as Label).text), str((head.get_child(1) as Label).text) if head.get_child_count() > 1 else "",
 			str((col.get_child(1) as Label).text)])
 	return out
+
+
+# ── S 人物志「性情」与称谓不透底 ──
+
+func _s_codex_traits() -> void:
+	print("── S 人物志「性情」按年份 / 世界线 / 了结换句（不再开局就写降、写死、写绝笔）；称谓同理")
+	# [id, 年, 月, 第几段, 身份, 改名, 了结, 性情里不许有 / 须有的字, 须有?]
+	for c in [
+		["ding_daquan", 1258, 3, 1, "undecided", false, "", "所除", false, "丁大全 1258（开局即识）"],
+		["ding_daquan", 1263, 6, 3, "undecided", false, "", "终为更大的权臣所除", true, "丁大全 1263 落水死后"],
+		["lv_wenhuan", 1269, 5, 4, "undecided", false, "", "降", false, "吕文焕 1269 守襄阳"],
+		["lv_wenhuan", 1273, 3, 4, "undecided", false, "", "援绝之后，降得也彻底", true, "吕文焕 1273-03 襄阳降后"],
+		["song_duzong", 1270, 5, 3, "merchant", false, "", "御批", false, "宋度宗 1270 海商（没有改名这回事）"],
+		["song_duzong", 1270, 5, 3, "scholar", true, "", "却落下一笔好御批", true, "宋度宗 1270 士人改名后"],
+		["chen_zhongzi", 1276, 3, 4, "merchant", false, "", "绝笔", false, "仲子 1276-03 海商"],
+		["chen_zhongzi", 1277, 12, 4, "scholar", true, "忠肃", "父亲绝笔的收信人", true, "仲子 忠肃了结后"],
+		["dong_wenbing", 1285, 5, 4, "merchant", false, "纲首", "不跪", false, "董文炳 纲首了结后"],
+	]:
+		_stage(int(c[1]), int(c[2]), int(c[3]))
+		_gs.visited_ports = ["quanzhou"]
+		_gs.identity = str(c[4])
+		if c[5]:
+			_gs.set_flag("renamed_wenlong")
+			_gs.player_name = "陈文龙"
+		if str(c[6]) != "":
+			_gs.call("finish", str(c[6]), "正文")
+		var trait_text := await _codex_trait(str(c[0]))
+		var has := trait_text.contains(str(c[7]))
+		_expect(trait_text != "" and has == bool(c[8]),
+			"%s：性情%s「%s」（实读：%s）" % [c[9], "写" if c[8] else "不写", c[7], trait_text])
+	# 称谓（名册格那一行，未识也露）：开局不写后来的事
+	_stage(1258, 3, 1)
+	_gs.visited_ports = ["quanzhou"]
+	var g58: Dictionary = await _codex_grid()
+	_stage(1276, 12, 4)
+	_gs.visited_ports = ["quanzhou"]
+	_gs.identity = "scholar"
+	_gs.set_flag("renamed_wenlong")
+	_gs.player_name = "陈文龙"
+	var g76: Dictionary = await _codex_grid()
+	_expect(str(g58["kin_envoy"][1]) == "陈家姻亲" and str(g58["wang_shiqiang"][1]) == "宋将"
+			and str(g76["kin_envoy"][1]) == "持书招降的姻亲" and str(g76["wang_shiqiang"][1]) == "宋降将",
+		"称谓：1258 名册格姻家使者「%s」、王世强「%s」；1276-12 士人改名后「%s」「%s」" % [
+			g58["kin_envoy"][1], g58["wang_shiqiang"][1], g76["kin_envoy"][1], g76["wang_shiqiang"][1]])
+
+
+## 人物志直开此人详页，读「性情」一节那一段；页上没有这一节（未识、或无性情）返回空串
+func _codex_trait(id: String) -> String:
+	var cx: Control = (load("res://scripts/ui/CharacterCodex.gd") as GDScript).new()
+	root.add_child(cx)
+	cx.call("begin", id)
+	await process_frame
+	var got := ""
+	var sec := _find(cx, func(n: Node) -> bool: return n is Label and str((n as Label).text) == "性情") as Label
+	if sec != null and sec.get_index() + 1 < sec.get_parent().get_child_count():
+		got = str((sec.get_parent().get_child(sec.get_index() + 1) as Label).text)
+	cx.queue_free()
+	await process_frame
+	return got
 
 
 # ── R 人物志关系签：指向未识之人的悬停提示写人物志上屏称谓 ──

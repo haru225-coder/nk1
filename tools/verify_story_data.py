@@ -539,7 +539,9 @@ for c in chars_all:
         fields["lines"] = [[0, str(x)] for x in c.get("lines", [])]
     for k in ("look", "personality"):
         v = e.get(k, c.get(k, ""))
-        if v:
+        if isinstance(v, list):
+            fields[k] = v  # 性情可分段（lane w53-7）：同其余文本层字段逐段核可见条件、策划腔、年份不早于可见条件
+        elif v:
             fields[k] = [[0, str(v)]]
     for k, segs in fields.items():
         check(isinstance(segs, list), f"{cid}.{k} 应为 [[可见条件, 文字], …]")

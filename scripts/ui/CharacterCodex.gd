@@ -694,7 +694,7 @@ func _fill_known(body: VBoxContainer, ch: Dictionary) -> void:
 		trow.add_child(badge)
 		trow.add_child(_para(str(Art.trait_def(str(t)).get("desc", "")), UiTheme.SIZE_FOOT + 1, UiTheme.TEXT))
 		right.add_child(trow)
-	var per := str(ch.get("personality", ""))
+	var per := Art.codex_personality(ch)
 	if per != "":
 		right.add_child(Control.new())
 		_section(right, "性情")
