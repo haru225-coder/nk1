@@ -35,6 +35,9 @@ EXEMPT 挂账尾字样收尾闸（lane w34-k1，w31-k6 欠账复派：其原语�
     「超 N 波」= 现窗 - 本行字样首现挂账笔窗 > N；每行字样首现挂账笔以
                `git log -G '归后续 lane' -G <探针名> -- tools/check_probe_registry.py` 最旧一笔认定。
 
+案例数不写死（w53 待拍板 35，lane w53-14）：gate_json.REGISTRY 各条的文字只写「cases=N fails=0」，写出 cases=<数字> 即红
+（判绿本就只看退出码与 fails=0，写死的数每加一格就过期）。第四节，带一对内存样本自检。
+
 直接用法：
 
   python3 tools/check_probe_registry.py          # 门禁：普查 git 已跟踪 tools/*_probe.gd，漏册漏豁免退 1
@@ -333,11 +336,35 @@ def head_selftest():
           f"E5 蓝对照：字样外行 21 行零不误伤（实点 0 队样）")
 
 
+# ── 案例数不写死（w53 待拍板 35，lane w53-13 定、lane w53-14 落）：注册表的 judge / green / red / expect 只写
+#    「cases=N fails=0」——探针每加一格案数就变，写死的数一加格就过期（落定时 4 支必跑探针 24/18/4/27 实跑已是 26/39/6/29），
+#    判绿本来只看退出码与 fails=0。行内写出 `cases=<数字>` 即红，点名条目与字段。
+CASES_LITERAL_RE = re.compile(r"cases=\d")
+
+
+def case_count_hits(registry):
+    return [f"{g.get('id', '?')}.{k}" for g in registry for k, v in g.items()
+            if isinstance(v, str) and CASES_LITERAL_RE.search(v)]
+
+
+def head_case_counts():
+    print("四、注册表文字不写死案例数")
+    sys.path.insert(0, TOOLS)
+    import gate_json
+    # 零节样本（§五.3）：写死的数须被认出、cases=N 不误伤
+    check(case_count_hits([{"id": "x", "green": "末行 `REST_DAYS cases=24 fails=0`"}]) == ["x.green"]
+          and not case_count_hits([{"id": "y", "green": "末行 `REST_DAYS cases=N fails=0`", "red": "fails=M（M>0）"}]),
+          "案例数格自检：「cases=24」被认出、「cases=N」不误伤")
+    hits = case_count_hits(gate_json.REGISTRY)
+    check(not hits, f"REGISTRY 文字里写死 cases=<数字> 0 处（{hits or '无'}）——改写 cases=N")
+
+
 def main():
     head_selftest()
     head_exempt()
     head_shape()
     head_toll()
+    head_case_counts()
     if fails:
         print(f"结果：{len(fails)} 项问题")
         for m in fails:
