@@ -86,7 +86,7 @@ func _reset(port_id: String, money: int, salt: int) -> void:
 	gs.broker_salt = salt
 
 
-## 找一处委办：want_on=false 找货不在柜上，true 找在柜上且现银买不满。舱里都不带这货。
+## 找一处委办：want_on=false 找货不在柜上，true 找在柜上；两种都要 1000 现银买不满、舱里都不带这货。
 func _find_case(want_on: bool) -> Dictionary:
 	for p in gm.unlocked_ports():
 		var pid := str(p.get("id", ""))
@@ -104,7 +104,9 @@ func _find_case(want_on: bool) -> Dictionary:
 			var on_counter := gid in hand
 			if on_counter != want_on:
 				continue
-			if want_on and _afford(pid, gid, 1000, _room(gid)) >= int(offer.get("qty", 0)):
+			# 两种都要现银买不满：不在柜上那一处，三节等它上柜后要读单上「凑得出 N 件」，买得满时那句不出（读成 -1）。
+			# 原先只给在柜上那一处设这道，开局行情随机抽到便宜货时三节就红（lane w53-3：四回红两回）
+			if _afford(pid, gid, 1000, _room(gid)) >= int(offer.get("qty", 0)):
 				continue
 			return {"port": pid, "salt": salt, "gid": gid, "need": int(offer.get("qty", 0)), "hand": hand}
 	return {}
