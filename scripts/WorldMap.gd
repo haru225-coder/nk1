@@ -246,7 +246,7 @@ func _check_gale_warn() -> void:
 	var warn_s: float = _SeaState.GALE_WARN_S * float(Crew.level_of("huozhang"))
 	if warn_s <= 0.0:
 		return
-	# 火长眼里的「长势」推演：mean 照半节 / 秒往前推 warn_s 秒（探针「刮大风」同档），那一拍的骤风顶头
+	# 火长眼里的「长势」推演：mean 照半节 / 秒往前推 warn_s 秒（探针「刮大风」同此一手），那一拍的骤风顶头
 	# 迸过七级作战上限（WIND_CAP）即提前报一次。现下已迸的（风暴已在头上）也报——声是出给玩家的，
 	# 「两散」的收场照旧他走。只预报、不改风；报过不再重报。
 	var mean_now: float = _sea.wind_mean
