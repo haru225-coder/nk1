@@ -147,6 +147,8 @@ TEXT_PROBES = {
     # lane w53-11 五轮补登：以下九支挂了压帧、判词齐全，却既不出 --json 也没登记，全集逐跑判「跑不成」、本门禁在 main 上恒红
     "qa_fold_dim_probe": (CHECK_LINES, r"^FOLD_DIM cases=\d+ fails=\d+$"),
     "qa_w53_6_beat_replay_probe": (CHECK_LINES, r"^QA_W53_6_BEATS cases=\d+ fails=\d+$"),
+    "qa_w53_6_yard_chips_probe": (CHECK_LINES, r"^QA_W53_6_YARD_CHIPS cases=\d+ fails=\d+$"),  # 主控补登（w53-6 改挂压帧）
+    "qa_w53_6_shore_hint_probe": (CHECK_LINES, r"^QA_W53_6_SHORE_HINT cases=\d+ fails=\d+$"),  # 主控补登（w53-6 新探针挂压帧）
     "qa_w53_6_guild_spreads_probe": (CHECK_LINES, r"^QA_W53_6_SPREADS cases=\d+ fails=\d+$"),
     "qa_w53_6_port_exits_probe": (CHECK_LINES, r"^QA_W53_6_EXITS cases=\d+ fails=\d+$"),
     "qa_w53_9_cutscene_input_probe": (r"^W53_9_CASE (\S+) (OK|FAIL)\b", r"^QA_W53_9_CUTSCENE_INPUT (?:OK|FAIL \d+)$"),
