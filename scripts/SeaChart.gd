@@ -477,7 +477,7 @@ func _draw_compass() -> void:
 		c.draw_line(b, b - d * 6.0 + perp * 3.5, Color(MAP_AZURITE, 0.8), 2.0, true)
 		c.draw_line(b, b - d * 6.0 - perp * 3.5, Color(MAP_AZURITE, 0.8), 2.0, true)
 	if selected_port != "":
-		var bearing := course_bearing if sailing else Voyage.bearing(origin_port, selected_port)
+		var bearing := _compass_bearing()
 		var d2 := Vector2(sin(deg_to_rad(bearing)), -cos(deg_to_rad(bearing)))
 		var perp2 := Vector2(-d2.y, d2.x)
 		var tip := center + d2 * r * 0.70
@@ -488,6 +488,16 @@ func _draw_compass() -> void:
 		c.draw_string_outline(font, center + Vector2(-w2 * 0.5, r + 16), needle, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 3, Color(MAP_PAPER, 0.9))
 		c.draw_string(font, center + Vector2(-w2 * 0.5, r + 16), needle, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, MAP_CINNABAR)
 	c.draw_circle(center, 2.5, MAP_INK)
+
+
+## 罗盘朱针与盘下针名指的方位：航行中是当日所在那一段的罗经（course_bearing，逐日跟段）；未发舶时与去向牌同取起讫两港
+## 直连的方位（Voyage.overall_bearing）。原先未发舶也取出港第一段：广州三向头一段都是出珠江口的「乙针」，牌上往占城写
+## 「南　丁未针」、往漳州泉州写「东　寅甲针」，罗盘一律指「乙针」；明州往福州牌上写「西南　未针」，罗盘指「丑针」，
+## 差 179 度——全港对 182 对里 113 对两处针名对不上（lane w53-1）
+func _compass_bearing() -> float:
+	if sailing:
+		return course_bearing
+	return Voyage.overall_bearing(origin_port, selected_port)
 
 
 ## 针位读法：正对一向为「X针」，落在两向之间为「XY针」（分辨率 7.5 度，《真腊风土记》「行丁未针」）
