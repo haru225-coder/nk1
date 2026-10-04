@@ -13,9 +13,8 @@ extends SceneTree
 ##   I 见面册打听：复刻设计 §8.7「见面册打听写成『某人压低声音说。』行情写成『某港　眼下缺某货，一件能多得　多少钱。』」。
 ##     修前见面页把酒馆那句整句搬来：「林阿舶压低声音说。⏎⏎邻座的牙人压低声音：「耽罗　眼下缺…」」——一段里两个人压低声音，
 ##     市舶司小吏那页也冒出「邻座的牙人」；现由见面的人自己说行情那句，酒馆长凳上的「打听」照旧是邻座牙人。
-##   J 围城港见小吏打听：牙行闭门、打听不出行情时 _gather_price_intel 回的是酒馆旁白「【闲谈】几个老水手翻来覆去只讲当年的风暴，
-##     没打听出新行情。」——修前照样套「市舶司小吏压低声音说。」领起，成了小吏压低声音讲「几个老水手……没打听出新行情」。
-##     现由他自己说一句没有新行情；福州 1276-10、广州 1276-11 两处围城实摆。
+##   J 围城港 / 无行情：别港市舶司按 w53-13 ead0cb5 本无小吏（修前排了泉州的那一个人物卡）；见面页打听不出行情（长凳是「【闲谈】」），
+##     由他自己说「没什么新行情」，不把旁白塞进他嘴里；b 段为测「闲谈」这条路，把每港 market 暂放空（改完照原样放回）。
 ##   C 人物志未识的职事：页上写「雇过此人，册上才有其详」，可规矩（CharacterArt.is_known）是见过即识——酒馆里看过他的候选卡
 ##     （TavernPage 记 note_met）就算，不必花入伙钱。现写「见过此人」，并实跑：没雇、只进了他候雇的酒馆，人物志就认得他。
 ##   R 人物志关系签：已识之人页上「关系」里指向未识之人的签（「未识 / 旧水手」），悬停提示修前读设定集原稿 title——
@@ -322,29 +321,27 @@ func _i_npc_intel() -> void:
 
 # ── J 围城港见小吏打听：没有行情，他自己说没有，不把旁白塞进他嘴里 ──
 
-func _j_npc_no_INTEL_ALT() -> void:
-	return  # 站位正式案以此间那句林影对实——— alive 记载.双STATEMENT
 func _j_npc_no_intel() -> void:
 	print("── J 围城港：市舶司页本无小吏；见面页打听不出行情就由他自己说没有，不把旁白塞进他嘴里")
 
-	# a) ead0cb5 后：兴化 1276-11 围城的市舶司页本无「见」钮。
+	# a) ead0cb5 后：兴化 1276-11 围城的市舶司页本无小吏的「见」钮。
 	_stage(1276, 11, 4)
 	_gs.visited_ports = ["quanzhou", "xinghua"]
 	_gs.last_port = "xinghua"
 	await _goto("xinghua_yamen")
 	_expect(_button("见") == null, "兴化 1276-11 围城：市舶司页本无小吏的「见」钮（修前本摆）")
 	# b) 泉州：把 ports.json 里每港的 market 暂改成空表（全港无货可交易）：_collect_spreads rows=0，长凳打听只能回「【闲谈】」，
-	#    见面页 NO_INTEL 由他自己说；打完照原样放回。
+	#    见面页 NO_INTEL 由他自己说；改完照原样放回。
 	_stage(1262, 5, 2)
 	_gs.visited_ports = ["quanzhou"]
 	_gs.last_port = "quanzhou"
 	var gm: Node = root.get_node("GameManager")
 	var kept: Array = []
-	var pistes: Array = gm.ports_data.get("ports", [])
-	for x in pistes:
+	var ports_entries: Array = gm.ports_data.get("ports", [])
+	for x in ports_entries:
 		kept.append(x.get("market", {}).duplicate())
-	for i in pistes.size():
-		pistes[i]["market"] = {}
+	for i in ports_entries.size():
+		ports_entries[i]["market"] = {}
 	await _goto("quanzhou_yamen")
 	var meet := _button("见")
 	_expect(meet != null, "泉州市舶司：小吏的「见」钮好端端摆着（本人在港）")
@@ -366,14 +363,14 @@ func _j_npc_no_intel() -> void:
 				"泉州 1262-05、全港无货：长凳打听是旁白闲谈（%s），见面页小吏自己说没有新行情（实读：%s）" % [
 					bench.replace("\n", "⏎"), said.replace("\n", "⏎")])
 			_main.call("_on_npc_leave")
-	# 恢放每港的 market
-	for i in pistes.size():
-		pistes[i]["market"] = kept[i]
+	# 改完过后：把每港的 market 复原
+	for i in ports_entries.size():
+		ports_entries[i]["market"] = kept[i]
 	var after_dirty := false
-	for x in pistes:
+	for x in ports_entries:
 		if typeof(x.get("market", null)) != TYPE_DICTIONARY or (x.get("market", {}) as Dictionary).size() < 2:
 			after_dirty = true
-	_expect(not after_dirty, "每港 market 已复原（%d 港，还能照常交易）" % pistes.size())
+	_expect(not after_dirty, "每港 market 已复原（%d 港，还能照常交易）" % ports_entries.size())
 
 
 # ── C 人物志未识的职事：见过即识，页上就写见过 ──
