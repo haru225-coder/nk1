@@ -90,6 +90,7 @@ const SCRIPTS := [
 	"res://scripts/combat/BoardingStage.gd", "res://scripts/combat/CombatShoreHook.gd",
 	"res://scripts/combat/MeleeResolve.gd",  # lane combat05 接舷白刃结算（BoardingStage.play 演它）
 	"res://scripts/combat/CombatMorale.gd",  # lane combat06 海战士气（崩坏 / 溃逃 / 降幡 / 拒接舷）
+	"res://scripts/combat/CombatSwitches.gd",  # w53 主控 海战新玩法总开关（战斗方案一、二期）
 	"res://scripts/combat/SeaState.gd", "res://scripts/combat/ManeuverModel.gd",  # lane combat02 风流舷向与机动（海况 / 机动模型，WorldMap 接线）
 	"res://scripts/combat/SeaAtmosphere.gd", "res://scripts/combat/SeaWake.gd", "res://scripts/combat/SeaPennant.gd",  # lane atmos 海面/航迹/旗旒
 	"res://scripts/combat/DamageModel.gd", "res://scripts/combat/FloodFire.gd",  # lane combat04 分系统损伤、浸水失火（Ship.gd 挂用）
