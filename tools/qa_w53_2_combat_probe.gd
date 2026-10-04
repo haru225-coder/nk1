@@ -63,6 +63,7 @@ extends SceneTree
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
 const TAG := "QA_W53_2_COMBAT_PROBE"
+const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
 
 var _fails: Array = []
 var _errlog: _ScriptErrLog = null
@@ -461,7 +462,11 @@ func _sec_parley_struck_boarding(fleet: Node) -> void:
 		await physics_frame  # PirateShip._wire_parley 首个物理帧接上面板的 parley_resolved
 	foe.set_physics_process(false)
 	foe.position = own.position + Vector2(200, 0)
+	# 战斗方案一期「劝降钮挂敌船」上线后 parley_on_ship 默认开：本探六个 parley 段钉的是 wave53 开工前的
+	# 喊话动作自身（roll 定 0 必降、簿上/节点两处记降幡）——走开关对照的旧玩法 lane 看，联络薄与 struck 账跟着
+	_Switches.set_on("parley_on_ship", false)
 	var res: Dictionary = panel.call("issue", "parley", 0.0)
+	_Switches.reset()
 	foe.set_physics_process(true)
 	for _i in 3:
 		await physics_frame  # 敌将降幡后下一物理帧 PirateShip._note_state 立 struck
@@ -622,7 +627,9 @@ func _sec_parley_last_ends_battle(fleet: Node) -> void:
 		await physics_frame  # PirateShip._wire_parley 首个物理帧接上面板的 parley_resolved
 	foe.set_physics_process(false)
 	foe.position = own.position + Vector2(200, 0)
+	_Switches.set_on("parley_on_ship", false)
 	var res: Dictionary = panel.call("issue", "parley", 0.0)
+	_Switches.reset()
 	var sheet = (wm.get("_morale") as Object).call("sheet_of", foe) if wm.get("_morale") != null else null
 	foe.set_physics_process(true)
 	for _i in 10:
