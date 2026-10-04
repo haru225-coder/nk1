@@ -267,6 +267,41 @@ static func fate_note(fates: Array) -> String:
 	return "，".join(parts)
 
 
+## 战后单子第一行（lane w53-16，方案§二 7）：「敌船二艘，击沉一艘、受降一艘。」——先写这一仗的下场，
+## 再写账目原句。fates 取 fates_of 的明细（同一下场里按船种并数，写完船种再写「共 N 艘」）；rescued > 0 时续
+## 「救起水手 N 人。」（world 侧的落水救援由 w53-17 的 morale_carry 项代管，读不到数就不写）；都没有返回 ""。
+static func aftermath_note(fates: Array, rescued := 0) -> String:
+	var parts: PackedStringArray = []
+	var total := 0
+	var tally := {}
+	for entry in fates:
+		if not entry is Dictionary:
+			continue
+		var fate := str(entry.get("fate", ""))
+		if not FATE_VERB.has(fate):
+			continue
+		var n: int = maxi(1, int(entry.get("count", 1)))
+		if not tally.has(fate):
+			tally[fate] = 0
+		tally[fate] += n
+		total += n
+	var verbs: PackedStringArray = []
+	for fate in FATE_VERB:
+		var n := int(tally.get(fate, 0))
+		if n > 0:
+			verbs.append("%s%s艘" % [str(FATE_VERB[fate]), _cn_count(n)])
+	var head := ""
+	if total > 0:
+		head = "敌船%s艘，%s。" % [_cn_count(total), "、".join(verbs)]
+	elif not verbs.is_empty():
+		head = "%s。" % "、".join(verbs)
+	if head != "":
+		parts.append(head)
+	if rescued > 0:
+		parts.append("救起水手%s人。" % _cn_count(rescued))
+	return "".join(parts)
+
+
 ## 我方折损：「折水手十二人，失船一艘，颠落舱面货九件」。losses 认 crew（折损水手人数）/ ships（沉没或被夺的艘数）/
 ## cargo（中弹颠落的舱面货件数，WorldMap 收战按开战时货账差出）；都没有返回 ""。
 static func loss_note(losses: Dictionary) -> String:
