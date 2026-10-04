@@ -494,7 +494,7 @@ REGISTRY = [
             "判掂 2 速档成立：真场景树三跑 3.474–3.977 s（w77-k6 牒实跑），照 w61-k4 双轨类推与本辑 Godot must 探针族 2-4 s 同族同格"
             "（双轨类推第四例），一键跑洪带增量 < 4 s 不扩容出既有洪带；"
             "判掂 3 只读成立：零写盘（grep 零命中）、摆场全内存置态（advance_days 摆日不落 user:// 存档位）；"
-            "判掂 4 幂等绿成立：main 尖三跑连绿 rc=0、末行 `SEACHART_ADV cases=17 fails=0` ×3。"
+            "判掂 4 幂等绿成立：main 尖三跑连绿 rc=0、末行 `SEACHART_ADV cases=N fails=0` ×3（实跑帧 cases 17 例）。"
             "（when 原句实址拨正：scripts/ui/SeaChart.gd 系旧帧路径、现帧实址 scripts/SeaChart.gd）",
      "kind": "godot", "file": "tools/qa_seachart_advance_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_seachart_advance_probe.gd"],
