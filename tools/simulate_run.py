@@ -35,10 +35,13 @@ RECOVERY = _E.num(_ECO_GD, "RECOVERY")
 SUPPLY_BULK = _E.num(_FLEET_GD, "SUPPLY_BULK")
 CREW_DAYS_PER_SUPPLY = _E.num(_FLEET_GD, "CREW_DAYS_PER_SUPPLY")
 DEBT_CEILING, DEBT_RATE = int(_E.num(_GS_GD, "DEBT_CEILING")), _E.num(_GS_GD, "DEBT_MONTHLY_RATE")
+SKIP_HULL_DECAY, SKIP_HULL_FLOOR = _E.num(_GM_GD, "SKIP_HULL_DECAY"), _E.num(_GM_GD, "SKIP_HULL_FLOOR")  # 跳年折旧与底（GameManager.skip_years）
+SKIP_MORALE_AFTER, SKIP_YEAR_CAP = int(_E.num(_GM_GD, "SKIP_MORALE_AFTER")), int(_E.num(_GS_GD, "SKIP_YEAR_CAP"))  # 跳年后士气上限、晋升跳年封顶年
 ECO_READOUT = {
     "tariff": TARIFF, "broker": BROKER, "spread": PRICE_SPREAD_MIN, "role_mod": ROLE_MOD,
     "rate_min": RATE_MIN, "rate_max": RATE_MAX, "recovery": RECOVERY,
     "supply_bulk": SUPPLY_BULK, "crew_days": CREW_DAYS_PER_SUPPLY, "debt_ceiling": DEBT_CEILING, "debt_rate": DEBT_RATE,
+    "skip_hull_decay": SKIP_HULL_DECAY, "skip_hull_floor": SKIP_HULL_FLOOR, "skip_morale_after": SKIP_MORALE_AFTER, "skip_year_cap": SKIP_YEAR_CAP,
 }
 if "--eco-params" in sys.argv[1:]:  # 镜像闸 C 的读数口：报完即退，不跑整局
     print("ECO_PARAMS " + json.dumps(ECO_READOUT, sort_keys=True))
@@ -68,10 +71,7 @@ import verify_economy as _ve
 # ── 跳年常量：从 .gd 源码读，改公式时这里自动跟上（抽解 / 佣金 / 价差地板见文件头 _const）──
 # Main 的源码断言读拼回的「未拆时」Main（tools/main_stitch.py，E-4 接刀：行会/赴试常量与下刀 Main 拆件让路）。
 import main_stitch
-_gm_src = _E.src(_GM_GD)  # 跳年常量同走 eco_src 的读法（认不出照旧落默认值）
-SKIP_HULL_DECAY = _E.num(_GM_GD, "SKIP_HULL_DECAY", 0.08)
-SKIP_HULL_FLOOR = _E.num(_GM_GD, "SKIP_HULL_FLOOR", 0.20)
-SKIP_MORALE_AFTER = int(_E.num(_GM_GD, "SKIP_MORALE_AFTER", 65))
+# 跳年四常量（SKIP_HULL_* / SKIP_MORALE_AFTER / SKIP_YEAR_CAP）挪到文件头一起读：原带默认值、读不出照落旧值，生产一改名镜像就静默散；现读不出即退出、随镜像闸 C 验（lane w53-12）
 
 rates = {pid: {gid: 1.0 for gid in p.get("market", {})} for pid, p in ports.items()}
 
@@ -669,7 +669,7 @@ check(all(a == b for a, b in _zt),
 # ── 镜像闸 C（lane w53-3）：镜像常量跟着生产源码走 ──
 # 两支镜像（本脚本与 verify_economy）原先把抽解 / 佣金 / 价差地板（第一轮）与产地消费地系数、行情上下限与回归、
 # 通事生效港、杂事 / 通事每级系数、水粮占舱与人日、赊贷上限与月息（第三轮）各硬编一份，生产改值时都不跟、门禁照绿。
-# 一、在临时目录摆一份只有这四支 .gd 与两支镜像（连读法 eco_src）的副本，把下面这些初值改成别的数，两支各以 --eco-params
+# 一、在临时目录摆一份只有这五支 .gd 与两支镜像（连读法 eco_src）的副本，把下面这些初值改成别的数，两支各以 --eco-params
 #    起子进程报读数，须恰是改后的数（Crew 六种职事每级系数与舵工下限底数也在内）。仓里的 .gd 不动。
 # 二、扫两支镜像的源码，这些常量的字面量（含行情钳 0.4 / 2.2、每级系数 × lv）不许写回来——写回来的那一份不随生产走，
 #    一 管不着（读数口在文件头），由二 判红。
@@ -683,12 +683,14 @@ ECO_EDIT = {
                              ("offset", "wind_floor:duogong", 0.38), ("coeff", "cargo_loss_factor:zongguan", 0.15),
                              ("coeff", "crew_loss_factor:yiren", 0.2)),
     "scripts/core/Fleet.gd": (("num", "SUPPLY_BULK", 0.3), ("num", "CREW_DAYS_PER_SUPPLY", 2.5)),
-    "scripts/GameState.gd": (("num", "DEBT_CEILING", 3500), ("num", "DEBT_MONTHLY_RATE", 0.025)),
+    "scripts/GameState.gd": (("num", "DEBT_CEILING", 3500), ("num", "DEBT_MONTHLY_RATE", 0.025), ("num", "SKIP_YEAR_CAP", 1276)),
+    "scripts/GameManager.gd": (("num", "SKIP_HULL_DECAY", 0.07), ("num", "SKIP_HULL_FLOOR", 0.25), ("num", "SKIP_MORALE_AFTER", 60)),
 }
 ECO_WANT = {
     "simulate_run.py": {"tariff": 0.125, "broker": 0.0625, "spread": 1.0625, "role_mod": {"origin": 0.6, "normal": 1.0, "consumer": 1.8},
                         "rate_min": 0.35, "rate_max": 2.4, "recovery": 0.05, "supply_bulk": 0.3, "crew_days": 2.5,
-                        "debt_ceiling": 3500, "debt_rate": 0.025},
+                        "debt_ceiling": 3500, "debt_rate": 0.025,
+                        "skip_hull_decay": 0.07, "skip_hull_floor": 0.25, "skip_morale_after": 60, "skip_year_cap": 1276},
     "verify_economy.py": {"tariff": 0.125, "broker": 0.0625, "spread": 1.0625, "role_mod": {"origin": 0.6, "normal": 1.0, "consumer": 1.8},
                           "rate_min": 0.35, "rate_max": 2.4, "foreign_ports": ["hakata", "kagoshima", "jeju", "champa", "ryukyu"],
                           "zashi_step": 0.1, "tongshi_step": 0.025, "supply_bulk": 0.3, "huozhang_step": 0.05,
@@ -735,6 +737,7 @@ ECO_LITERAL_BACK = (
     (r"^\s*FOREIGN_PORTS\s*=\s*[\(\[]", "通事生效港"),
     (r"^\s*(?:RECOVERY|SUPPLY_BULK(?:_M)?|CREW_DAYS_PER_SUPPLY|RATE_MIN|RATE_MAX)\b[^\n=]*=\s*-?\d", "回归 / 水粮 / 行情钳"),
     (r"^\s*DEBT_CEILING\b[^\n=]*=\s*-?\d", "赊贷上限与月息"),
+    (r"^\s*SKIP_(?:HULL_DECAY|HULL_FLOOR|MORALE_AFTER|YEAR_CAP)\b[^\n=]*=\s*(?:int\()?-?\d", "跳年四常量"),
     (r"\d\.\d+\s*\*\s*lv\b", "杂事 / 通事每级系数"),
     (r"\bmin\(\s*2\.20?\s*,", "行情上限"),
     (r"\bmax\(\s*0\.40?\s*,(?!\s*min\(\s*1\.60?\s*,)", "行情下限"),
@@ -754,7 +757,7 @@ def eco_literals_back():
 
 _hit, _total, _follow = eco_params_after_edit(ECO_EDIT)
 check(_hit == _total and all(_follow.get(t) == w for t, w in ECO_WANT.items()),
-      f"镜像闸 C·四支 .gd 里 {_total} 处初值（改中 {_hit}）改成别的数后两支镜像读数跟着变"
+      f"镜像闸 C·{len(ECO_EDIT)} 支 .gd 里 {_total} 处初值（改中 {_hit}）改成别的数后两支镜像读数跟着变"
       f"（{'全对' if all(_follow.get(t) == w for t, w in ECO_WANT.items()) else _follow}）——回退成硬编即红")
 check((TARIFF, BROKER, PRICE_SPREAD_MIN, ROLE_MOD, RATE_MIN, RATE_MAX) == (_ve.TARIFF, _ve.BROKER, _ve.SPREAD_MIN, _ve.ROLE_MOD, _ve.RATE_MIN, _ve.RATE_MAX)
       and SUPPLY_BULK == _ve.FLEET_SUPPLY_BULK,
@@ -919,7 +922,7 @@ for _n in range(1, 5):
 check(berth_index(1, 5) == 0 and berth_index(3, 5) == 2 and other_hulls(3, 0) == [1, 2],
       "坞位夹在船队里，坞上这一艘不进换船")
 # 晋升跳年落点封顶（lane w53-13）：GameState.advance_skip_years 不越过 SKIP_YEAR_CAP 那一年
-SKIP_YEAR_CAP = int(_E.num(_GS_GD, "SKIP_YEAR_CAP", 1275))  # 走 eco_src 读法（w53-3 a90ce9c 起已无 _const）
+# SKIP_YEAR_CAP 在文件头读（不带默认值，镜像闸 C 改值验跟随，lane w53-12）
 print(f"  ── 跑商 24 趟（起始第 {G.chapter} 章，可达 {len(open_ports())} 港）──")
 # 逐趟记下行情最低最高各到哪（晋升跳年会把行情重置回 1.0，只看跑完那一刻会漏）
 _rate_lo, _rate_hi = 1.0, 1.0
