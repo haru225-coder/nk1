@@ -654,7 +654,7 @@ func _on_monthly_notice(text: String) -> void:
 ## 读档勾稽的一声（lane w25-j3）：旧卷里没法再往本版名册图籍对上的口径（港 / 船式 / 勘见 / 名姓 / 行年）
 ## 由 SaveLoad.stale_notice 一线递来；只用 log_msg，与「翻开日志……」同格。未落空不出（SaveLoad 已拦）。
 func _on_stale_notice(line: String, slot: int) -> void:
-	log_msg("第 %d 卷%s" % [slot, line])
+	log_msg("第%s卷%s" % [_cn_num(slot), line])
 
 
 func start_game() -> void:

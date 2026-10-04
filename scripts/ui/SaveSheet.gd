@@ -169,10 +169,10 @@ static func close_save_sheet(main: Control) -> void:
 
 static func on_save_slot(main: Control, slot: int) -> void:
 	if not SaveLoad.can_save(slot) or not SaveLoad.save_game(slot, main.current_scene_id):
-		main.log_msg("第 %d 卷誊写未成，笔墨未落定。" % slot)
+		main.log_msg("第%s卷誊写未成，笔墨未落定。" % main._cn_num(slot))
 		return
 	main._close_save_sheet()
-	main.log_msg("已记入航海日志第 %d 卷。" % slot)
+	main.log_msg("已记入航海日志第%s卷。" % main._cn_num(slot))
 
 
 static func on_load_slot(main: Control, slot: int) -> void:
@@ -200,11 +200,11 @@ static func on_load_slot(main: Control, slot: int) -> void:
 		main._notice_run = 0
 		main._notice_when = []
 	if not SaveLoad.load_game(slot):
-		main.log_msg("第 %d 卷%s" % [slot, SaveLoad.load_fail_note(slot)])
+		main.log_msg("第%s卷%s" % [main._cn_num(slot), SaveLoad.load_fail_note(slot)])
 		return
 	main._close_save_sheet()
 	main.update_status_panel()
 	main.load_scene(scene_id if scene_id != "" else GameState.last_port)
-	main.log_msg("翻开日志第 %d 卷，回到 %s。" % [slot, Calendar.get_date_string()])
+	main.log_msg("翻开日志第%s卷，回到 %s。" % [main._cn_num(slot), Calendar.get_date_string()])
 	if from_bak:
-		main.log_msg("第 %d 卷正本卷页损了，已从副抄翻出。" % slot)
+		main.log_msg("第%s卷正本卷页损了，已从副抄翻出。" % main._cn_num(slot))

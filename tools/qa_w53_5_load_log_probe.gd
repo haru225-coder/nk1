@@ -1,12 +1,12 @@
 extends SceneTree
 ## Lane w53-5 三轮：读档后船籍簿记事栏——读回的那一卷之后才发生的事不得留在记事里冒充前情。
-## 修前：SaveSheet.on_load_slot 读档不动 Main 的记事。港页改读早一卷后，记事栏顶上是「翻开日志第 1 卷，回到 宝祐三年　三月初九。」，
+## 修前：SaveSheet.on_load_slot 读档不动 Main 的记事。港页改读早一卷后，记事栏顶上是「翻开日志第 1 卷（lane w53-13 起写第一卷），回到 宝祐三年　三月初九。」，
 ## 紧跟着就是被弃那一局的「在店中歇了 1 日……如今是 宝祐三年　三月十三」——与船籍簿抬头的日子自相矛盾
 ## （实跑截图 wave53-5 before-ledger-log-after-load-slot1-1280x720.png）。海图回港 Main 重建时记事从空起，读档却原样留着。
 ## 修后：读得开的卷先清记事（LogFold 头注所列宿主五格）再读；读档时的旧卷勾稽一声照记，读不开的卷不清。
 ## 断言：
 ##   L1 读早一卷后，记事里没有读档后才发生的那句（客栈「歇了 2 日」）；
-##   L2 记事顶上是「翻开日志第 92 卷，回到 <那一卷的日子>。」；
+##   L2 记事顶上是「翻开日志第九十二卷，回到 <那一卷的日子>。」；
 ##   L3 带落空港名的旧卷：读档时的勾稽一声（「今已不见于册」）留在记事里（清在 load_game 之前，不是之后）；
 ##   L4 读不开的卷（两份皆坏）：原有记事不清，失败句照记在最上；
 ##   L5 折叠态一并清：读档前记事顶上有一折月初通告（_log_folds 非空），读后 _log_folds 空。
@@ -96,7 +96,7 @@ func _run() -> void:
 	var after: Array = Array(_main._log_lines)
 	print("  [证据] 读档后 %s 记事=%s" % [cal.get_date_string(), JSON.stringify(after)])
 	_expect(not _has(after, "歇了 2 日"), "L1 读回早一卷后记事不留读档后才发生的客栈那句", JSON.stringify(after))
-	var want_top := "翻开日志第 %d 卷，回到 %s。" % [SLOT, saved_date]
+	var want_top := "翻开日志第%s卷，回到 %s。" % [root.get_node("GameManager").cn_num(SLOT), saved_date]
 	_expect(not after.is_empty() and str(after[0]) == want_top, "L2 记事顶上是读档那一句", "top=%s" % (str(after[0]) if not after.is_empty() else "<空>"))
 	_expect(_has(after, "今已不见于册"), "L3 读档时的旧卷勾稽一声留在记事里", JSON.stringify(after))
 	_expect((_main._log_folds as Dictionary).is_empty(), "L5 读档前的通告折叠一并清掉", "折叠=%d" % (_main._log_folds as Dictionary).size())
@@ -110,7 +110,7 @@ func _run() -> void:
 	_main._on_load_slot(BAD_SLOT)
 	await _settle(2)
 	var bad: Array = Array(_main._log_lines)
-	_expect(not bad.is_empty() and str(bad[0]).begins_with("第 %d 卷" % BAD_SLOT) and _has(bad, "读坏卷之前的一句") and _has(bad, want_top),
+	_expect(not bad.is_empty() and str(bad[0]).begins_with("第%s卷" % root.get_node("GameManager").cn_num(BAD_SLOT)) and _has(bad, "读坏卷之前的一句") and _has(bad, want_top),
 		"L4 读不开的卷不清记事、失败句在最上", JSON.stringify(bad.slice(0, 3)))
 
 	_cleanup()

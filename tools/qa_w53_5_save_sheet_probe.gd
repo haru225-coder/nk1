@@ -9,7 +9,7 @@ extends SceneTree
 ##   S2 同一册页「翻阅」按 can_load 放开（读得开的卷才给按）；
 ##   S3 港页「航海日志」进来的册页：「记录」按 can_save 放开（新版所记的卷不给记，其余都给按）；
 ##   S4 「记录」写不进（.tmp 位被占成目录）：册页不合上、记事顶上是「誊写未成」、不出「已记入」、那一卷题签不变；
-##   S5 写得进：册页合上、记事顶上「已记入航海日志第 N 卷。」、题签换成当下的日子。
+##   S5 写得进：册页合上、记事顶上「已记入航海日志第N卷。」（卷号写中文，lane w53-13）、题签换成当下的日子。
 ##   F1 新版所记的卷（五轮已定）：can_save 为假；「记录」回调不覆写——正本逐字不动、不生副抄、册页不合上、不报已记入
 ##      （脚注许了「卷页未动」；原先一记就把新版进度退成副抄，再记一回连副抄冲掉）。无档 / 正本好 / 两份皆坏 can_save 为真。
 ## 五轮补键盘（真鼠标点开、真按键，经 root.push_input）：原先点「航海日志」开册页后焦点留在暗幕底下那颗钮上，
@@ -151,7 +151,7 @@ func _run() -> void:
 	lines = Array(_main._log_lines)
 	top = str(lines[0]) if not lines.is_empty() else "<空>"
 	var label_after := str(sl.call("save_label", SLOT))
-	_expect(not is_instance_valid(_main.get("_save_host")) and top == "已记入航海日志第 %d 卷。" % SLOT
+	_expect(not is_instance_valid(_main.get("_save_host")) and top == "已记入航海日志第%s卷。" % root.get_node("GameManager").cn_num(SLOT)
 		and label_after.contains(str(cal.call("get_date_string"))),
 		"S5 记录写得进：册页合上、记事报已记入、题签是当下日子", "top=%s 题签=%s" % [top, label_after])
 
@@ -265,7 +265,7 @@ func _run() -> void:
 	await _settle(3)
 	lines = Array(_main._log_lines)
 	_expect(str(cal.call("get_date_string")) == saved_date and not is_instance_valid(_main.get("_save_host"))
-		and not lines.is_empty() and str(lines[0]).begins_with("翻开日志第 %d 卷" % SLOT),
+		and not lines.is_empty() and str(lines[0]).begins_with("翻开日志第%s卷" % root.get_node("GameManager").cn_num(SLOT)),
 		"C2 再按一下：读档回到那一卷的日子、册页合上、记事报翻开日志",
 		"日子=%s（应 %s）册页开着=%s 记事顶=%s" % [str(cal.call("get_date_string")), saved_date,
 			str(is_instance_valid(_main.get("_save_host"))), str(lines[0]) if not lines.is_empty() else "<空>"])
