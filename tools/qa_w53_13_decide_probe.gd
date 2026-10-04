@@ -14,6 +14,8 @@ extends SceneTree
 ##   C 市舶司小吏只在泉州（待拍板 24）：他的人物条写「泉州市舶司小吏」，修前博多、占城的市舶司页也坐着他。
 ##   G 玉湖陈宅回车不替人花钱（待拍板 20g）：港页回车按第一枚可按的钮，陈宅第一枚是「替族里跑一趟事（费 6 日・30 钱）」，
 ##     一按就走六日、花三十钱。现在这类钮挂 no_enter，回车跳过，落到离开钮。
+##   R 每到新的一天进港重发三扇门（待拍板 20e）：盐位原只在「再候一日」才加，出海回来、歇过几日再进港，
+##     永远是牙行 / 贡院 / 行会那一手。现在盐位带上日子：同日回港同一手，换了日子就换门。
 ##   K 章节总述落船籍簿（待拍板 3）：chapters.json 的 hint 在章目没走完时写在船籍簿章名下；走完了不写。修前 hint 从不上屏。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_13_decide_probe.gd
 ## 末行 W53_13_DECIDE cases=N fails=M；fails>0 退 1。
@@ -78,6 +80,7 @@ func _boot() -> void:
 	_p_partial_fine()
 	await _c_clerk_only_quanzhou()
 	await _g_enter_skips_errand()
+	await _r_doors_by_day()
 	_report()
 
 
@@ -357,6 +360,36 @@ func _g_enter_skips_errand() -> void:
 	_expect(has_errand and _gs.money == 500 and _cal.absolute_day() == day0 and _gs.hometown_tendency == 0,
 		"陈宅按回车：不替人跑族里的事（有那枚钮 %s；钱 %d、日子走了 %d 日、乡土 %d）" % [
 			str(has_errand), _gs.money, _cal.absolute_day() - day0, _gs.hometown_tendency])
+
+
+# ── R 每到新的一天进港重发三扇门 ─────────────────────────
+
+func _r_hand(port: String) -> String:
+	_gs.last_port = port
+	_main.load_scene(port)
+	await process_frame
+	return ",".join(_main.get("shore_hand") as PackedStringArray)
+
+
+func _r_doors_by_day() -> void:
+	print("── R 换了日子进港，三扇门重发")
+	_gs.from_dict({})
+	_gs.loaded_with_beats = true
+	for b in _gm.port_beats_data.get("beats", []):
+		_gs.beat_mark(str((b as Dictionary).get("entry", "")))
+	_cal.from_dict({"year": 1262, "month": 6, "day": 1})
+	_gs.chapter = 2
+	_gs.shore_salt = 0
+	var hands: Array = []
+	for d in 6:
+		_cal.from_dict({"year": 1262, "month": 6, "day": 1 + d})
+		hands.append(await _r_hand("fuzhou"))
+	var again := await _r_hand("fuzhou")
+	var distinct := {}
+	for h in hands:
+		distinct[h] = true
+	_expect(distinct.size() >= 3, "福州连着六日各进一回港（不按候日）：至少换出三种门（实得 %d 种：%s）" % [distinct.size(), str(hands)])
+	_expect(again == hands[5], "反向基：同一日再回港还是那一手（%s / %s）" % [again, hands[5]])
 
 
 func _snip(t: String, anchor: String, span := 60) -> String:

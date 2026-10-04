@@ -2524,6 +2524,8 @@ func _refresh_shore() -> void:
 		else:
 			regular.append(raw_fac)
 	shore_hand = ShoreDraft.deal(regular, GameState.shore_salt, _shore_pin_today(), Economy.is_market_open(current_scene_id))
+	shore_hand = ShoreDraft.deal(regular, GameState.shore_salt + Calendar.absolute_day(), _shore_pin_shipyard(), Economy.is_market_open(current_scene_id))  # 盐位带上日子：每到新的一天门就重发（待拍板 20e）
+	shore_hand = ShoreDraft.deal(regular, GameState.shore_salt, _shore_pin_today(), Economy.is_market_open(current_scene_id))
 	for fid_sp in specials:
 		if fid_sp not in shore_hand:
 			shore_hand.append(fid_sp)
