@@ -164,6 +164,9 @@ const SCRIPTS := [
 	"res://tools/qa_w53_16_aftermath_shots.gd",  # lane w53-16 战后单子 on / off 对比截图（NK1_SHOT_DIR 指路）
 	"res://tools/qa_w53_9_chapter_card_probe.gd",  # lane w53-9 章节卡题记留读与一句一列探针（须带窗口）
 	"res://tools/qa_w53_9_port_banner_probe.gd",  # lane w53-9 抵港横幅各窗口比例都挂在港名匾下探针（以场景启动，见 SCENES）
+	# lane w53-15 战斗方案一、二期探针（敌情列 / 劝降挂敌船 / 砍钩 / 张湿毡 / 总管夷人）
+	"res://tools/qa_w53_15_intel_probe.gd", "res://tools/qa_w53_15_parley_probe.gd", "res://tools/qa_w53_15_cut_probe.gd",
+	"res://tools/qa_w53_15_wet_probe.gd", "res://tools/qa_w53_15_role_probe.gd",
 	"res://tools/combat_vfx_probe.gd", "res://tools/ship_vfx_probe.gd", "res://tools/atmos_water_probe.gd", "res://tools/combat_wire_probe.gd", "res://tools/combat_probe_stage.gd",
 	"res://scripts/combat/ShipHull3D.gd", "res://tools/ship_exquisite_probe.gd",
 	"res://tools/ship_dashi_probe.gd",  # 大食缝合船朝向探针（lane ship-dashi）
