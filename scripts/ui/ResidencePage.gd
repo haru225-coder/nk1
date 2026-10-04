@@ -32,14 +32,14 @@ static func setup_residence(main: Control, port_id: String) -> void:
 
 	var home: VBoxContainer = main._slip_body()
 	main._slip_title(home, "歇息", "候风仍去旅店")
+	# 在身委办：期限一句与钮尾「・误期」同旅店歇息工席（原先只旅店有，委办剩两日时在下处按「歇 3 日」一声不响误了期，lane w53-6）
+	var rest_cst := GameState.contract_status()
+	if not rest_cst.is_empty():
+		var rest_left := int(rest_cst.get("days_left", 0))
+		main._slip_note(home, "在身委办已经逾期，歇着也会被牙行扣钱。" if rest_left < 0 else "在身委办还剩 %d 日。歇过这个数，牙行要扣钱、掉名声。" % rest_left, UiTheme.CINNABAR)
 	var home_row: HFlowContainer = main._slip_row(home)
-	for n in [1, 3]:
-		var nights := int(n)
-		main._slip_chip(
-			home_row,
-			"歇 %d 日　%d" % [nights, nights * main.HOME_RATE],
-			main._on_rest.bind(nights, port_id, main.HOME_RATE, "下处")
-		)
+	for nights in [1, 3]:
+		main._slip_chip(home_row, "歇 %d 日　%d%s" % [nights, nights * main.HOME_RATE, main._contract_rest_mark(nights)], main._on_rest.bind(nights, port_id, main.HOME_RATE, "下处"))
 
 	main._end_benches()
 	main._add_leave_button(port_id)

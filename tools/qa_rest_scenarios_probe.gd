@@ -16,6 +16,10 @@ extends SceneTree
 ##   S5 「候 N 日」N 随日走：12-15 印「候 16 日　240」→ 历日 +1 重挂变「候 15 日　225」、旧印不残留（②）；
 ##   S6 旅店/住处 rate 错挂交叉直钉：真按「歇 10 日　150」（INN_RATE 150「店中」）与「歇 3 日　15」
 ##      （HOME_RATE 15「下处」）的扣钱 / 落日 / 记事原文逐字，互挂对方价即红（③，面值断言间接着住之外的第一根直钉）。
+## lane w53-6（追加 S7 于 S6 后，既有 S1–S6 零改）：
+##   S7 住处两钮同旅店印「・误期」尾、歇息工席带委办期限一句——原先只旅店有，委办剩两日时在下处按「歇 3 日」
+##      不印尾、不提醒，误了期扣钱掉名声（剩 2 日：歇 1 不带 / 歇 3 带，句「还剩 2 日」；当日到期：两钮都带，句「还剩 0 日」；
+##      清净景无此句。已逾期的委办 load_scene 先 tick_contract 结掉，页上见不到，不摆）。
 ## 读的都是 scene 树现挂的可枚举面；不撬 Main 内部钩子、不改 qa_rest_days_probe.gd 一字。
 ## 用法：godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 ## 输出末行 REST_SCENARIOS cases=N fails=M；M>0 时 exit 1。
@@ -87,6 +91,7 @@ func _run() -> void:
 	await _s4_overdue_mark()
 	await _s5_wait_n_rolls()
 	await _s6_rate_bind_press()
+	await _s7_home_overdue()
 
 	_report()
 
@@ -335,6 +340,37 @@ func _s6_rate_bind_press() -> void:
 			"住处歇 3 日落 1277-03-05（实落 %s）" % "%04d-%02d-%02d" % [int(cal.year), int(cal.month), int(cal.day)])
 		_check(hline.contains("在下处歇了 3 日，付房钱 15。"),
 			"住处记事屏条逐字含「在下处歇了 3 日，付房钱 15。」（place 错挂即红——实条：%s）" % hline)
+
+
+## ── S7 住处・误期（lane w53-6）：住处两钮同旅店印「・误期」尾，歇息工席带委办期限一句 ──
+func _s7_home_overdue() -> void:
+	print("== S7 住处・误期（1277-10-19 泉州住处：委办剩 2 日 歇 1 不带尾 / 歇 3 带「・误期」、句「还剩 2 日」；当日到期两钮都带、句「还剩 0 日」；清净景无句）")
+	_reset_day("quanzhou", 1277, 10, 19)
+	_plant_contract(2)
+	_main.load_scene(HOME_SCENE)
+	await _settle(6)
+	var texts: Array = _collect_rest_chips().map(func(c: Dictionary) -> String: return str(c["state"][0]))
+	_check(texts == ["歇 1 日　5", "歇 3 日　15・误期"],
+		"委办剩 2 日住处两钮「歇 1 日　5 / 歇 3 日　15・误期」（2<1 否、2<3 是——实读：%s）" % " / ".join(texts))
+	_check(_note_with("在身委办还剩 2 日") != "", "委办剩 2 日住处歇息工席有「在身委办还剩 2 日」一句（同旅店——实读：%s）" % _note_with("在身委办"))
+	_reset_day("quanzhou", 1277, 10, 19)
+	_plant_contract(0)
+	_main.load_scene(HOME_SCENE)
+	await _settle(6)
+	texts = _collect_rest_chips().map(func(c: Dictionary) -> String: return str(c["state"][0]))
+	_check(texts == ["歇 1 日　5・误期", "歇 3 日　15・误期"] and _note_with("在身委办还剩 0 日") != "",
+		"委办当日到期住处两钮都带「・误期」、句「还剩 0 日」（实读：%s｜%s）" % [" / ".join(texts), _note_with("在身委办")])
+	_reset_day("quanzhou", 1277, 10, 19)
+	_main.load_scene(HOME_SCENE)
+	await _settle(6)
+	_check(_note_with("在身委办") == "", "清净景住处无委办那句（实读：「%s」）" % _note_with("在身委办"))
+
+
+## 现景里第一条含 needle 的可见 Label 原文（找不到给空串）
+func _note_with(needle: String) -> String:
+	var hits: Array = _find_all(_main, func(n: Node) -> bool:
+		return n is Label and not n.is_queued_for_deletion() and (n as Label).is_visible_in_tree() and (n as Label).text.contains(needle))
+	return str((hits[0] as Label).text) if not hits.is_empty() else ""
 
 
 ## 现景直挂本港某设施贴文路径（scenes.json 只有 quanzhou_inn / 没有 quanzhou_residence——fallback 会换港；
