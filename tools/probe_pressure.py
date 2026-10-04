@@ -141,7 +141,10 @@ def compare(cs):
 # 末行正则带捕获组时只取第一组（行尾跟着随档变的输出目录时用）。没登记的判「跑不成」（fail closed：新探针要么接 --json、要么来这里登记、
 # 要么进 NOT_JUDGED 写明为什么不判；gates_md 在必跑档判挂压帧的脚本都归了这三类之一，lane w53-11 五轮）
 CHECK_LINES = r"^\s*([✓✗]) (.+)"  # qa_* 定向探针 _expect 的通行打法：两格缩进 + ✓ / ✗ + 判词
-SHOT_FAIL = r"^(SHOT) (FAIL)\b"  # 船近景截图 driver 没有逐路判词，只有截到空图的 `SHOT FAIL …` 行（路径随档变，只取前两词）
+# 船近景截图 driver 没有逐路判词：w53-11 八轮起 _shot 走 ShotGate.grab、失败不再打 `SHOT FAIL …` 行而进 _fails、
+# 收尾按真失败 ✗ + `<TAG>_FAIL k` 退码——所以判词吃「真失败：…」与失败尾部。原 SHOT_FAIL 仅对旧 stock 探针生效。
+# M7/M8/M9 探针造出来的红：✗ 真失败（…），末行 _FAIL k / _OK，退出码 1 / 0，本门禁照样子看。
+CHECK_LINES_W_CN = r"^\s*✗?\s*(真失败)：(.+)"  # 船近景司机判据：✗ 真失败：… 字面（grab / spawn / foe），✗ 可省
 TEXT_PROBES = {
     "qa_yard_transition_probe": (r"^FO_CASE (\S+) (\S+)", r"^YARD_TRANSITION_PROBE (?:OK|FAIL \d+).*"),
     # lane w53-11 五轮补登：以下九支挂了压帧、判词齐全，却既不出 --json 也没登记，全集逐跑判「跑不成」、本门禁在 main 上恒红
@@ -153,10 +156,11 @@ TEXT_PROBES = {
     "qa_w53_6_port_exits_probe": (CHECK_LINES, r"^QA_W53_6_EXITS cases=\d+ fails=\d+$"),
     "qa_w53_6_shore_hand_probe": (CHECK_LINES, r"^QA_W53_6_SHORE_HAND cases=\d+ fails=\d+$"),
     "qa_w53_9_cutscene_input_probe": (r"^W53_9_CASE (\S+) (OK|FAIL)\b", r"^QA_W53_9_CUTSCENE_INPUT (?:OK|FAIL \d+)$"),
-    "japan_ship_probe": (SHOT_FAIL, r"^(JAPAN_SHIP_(?:OK|FAIL))\b"),
-    "ship_dashi_probe": (SHOT_FAIL, r"^(DASHI_SHIP_(?:OK|FAIL))\b"),
-    "ship_exquisite_probe": (SHOT_FAIL, r"^(SHIP_EXQUISITE_(?:OK|FAIL))\b"),
-    "shot_champa_ship": (SHOT_FAIL, r"^(CHAMPA_SHOT_(?:OK|FAIL))\b"),
+    # 船近景四支由 grab + _fails + FAIL k 收尾：判词取「真失败：…」字面（CHECK_LINES_W_CN）+ 末行 _OK/_FAIL k
+    "japan_ship_probe": (CHECK_LINES_W_CN, r"^(JAPAN_SHIP_(?:OK|FAIL))\b"),
+    "ship_dashi_probe": (CHECK_LINES_W_CN, r"^(DASHI_SHIP_(?:OK|FAIL))\b"),
+    "ship_exquisite_probe": (CHECK_LINES_W_CN, r"^(SHIP_EXQUISITE_(?:OK|FAIL))\b"),
+    "shot_champa_ship": (CHECK_LINES_W_CN, r"^(CHAMPA_SHOT_(?:OK|FAIL))\b"),
 }
 # 明列不判：不是门禁、没有判词，挂压帧只因 gates_md「接 shot_gate 的都挂压帧」口径——跑了只得 rc=0，判不出两档一致与否。
 # 每行写明为什么；探针集里既不出 --json、又没登记、也不在这里的，照判「跑不成」
@@ -209,7 +213,10 @@ def text_doc(probe, stdout, rc, stderr=""):
     tail = None
     for ln in stdout.splitlines():
         m = case_re.match(ln)
-        if m and m.group(1) in ("✓", "✗"):
+        if m and m.group(1) == "真失败":
+            # 船近景四支送瓜判词（w53-11 八轮起）：遇「真失败：…」字面直接 fail 入账，不走 ✓/✗ 字面路
+            checks.append({"name": stable(m.group(2)), "ok": False})
+        elif m and m.group(1) in ("✓", "✗"):
             checks.append({"name": stable(m.group(2)), "ok": m.group(1) == "✓"})
         elif m:
             checks.append({"name": f"{m.group(1)} {m.group(2)}", "ok": m.group(2) == "OK"})

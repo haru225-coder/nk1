@@ -203,12 +203,16 @@ static func no_render_reason() -> String:
 
 ## 取当前视口图；空视口/空图返回 null 并把真失败原因写进 fails。
 static func grab(root: Window, name: String, fails: Array) -> Image:
+	# lane w53-11 八轮起：SHOT FAIL <name> 这行 probe_pressure TEXT_PROBES 的 SHOT_FAIL 判词
+	# 在别船近景探针上留的——走 grab 的探针接警时同步打这行，跨档一致图骨架不失对象
 	var tex := root.get_texture()
 	if tex == null:
+		print("SHOT FAIL ", name)
 		fails.append("真失败：%s 视口纹理为空（有窗口却无纹理）" % name)
 		return null
 	var img := tex.get_image()
 	if img == null or img.is_empty() or img.get_width() == 0 or img.get_height() == 0:
+		print("SHOT FAIL ", name)
 		fails.append("真失败：%s 视口图像为空（有窗口却取不到画面）" % name)
 		return null
 	return img
