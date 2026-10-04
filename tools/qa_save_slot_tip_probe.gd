@@ -2,14 +2,30 @@ extends SceneTree
 ## Lane T：headless 探针——槽态 label/tip（lane sv 加第五态 future）。不改正式存档位 1..SLOTS。
 ## lane w53-5：每态再验 can_load（册页「翻阅」钮按它定可按与否）——只有正本 / 副抄可读的卷翻得开，
 ## 无档、两份皆坏、新版所记都翻不开（修前册页按 has_save 放开，坏卷与新版卷的「翻阅」在标题页按下去毫无动静）。
+## lane w53-5 六轮：接 script_err_tally（本进程 SCRIPT ERROR 即红）——_expect 半路出脚本错时返回缺省 0、这一态的 ✗ 不入账照报 PASS；
+## _run 半路被掐断由收尾包装判 FAIL 退 1。
 ## 用法：godot --headless --path . -s res://tools/qa_save_slot_tip_probe.gd
 ## --script 无 autoload 全局名，须走 /root/SaveLoad。
 
 const SLOT := 97
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+## _run 被脚本错半路掐断时收尾不会被调到——回到这里就地判红收尾
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		print("  ✗  主流程跑到收尾（%s）" % _tally.abort_note())
+		_finish(1)
 
 
 func _run() -> void:
@@ -32,6 +48,16 @@ func _run() -> void:
 	fails += _expect(sl, "future", "新版所记",
 			"此卷为新版所记，存档格式 v%d，本版只识到 v%d；请换新版再翻，卷页未动。" % [cur + 1, cur], false)
 	_cleanup(sl)
+	_finish(fails)
+
+
+## 收尾：SCRIPT ERROR 两判各计一项，再印末行
+func _finish(fails: int) -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		print("  %s  %s" % ["✓" if v[0] else "✗", v[1]])
+		if not v[0]:
+			fails += 1
 	if fails == 0:
 		print("SAVE_SLOT_TIP_PROBE PASS")
 		quit(0)

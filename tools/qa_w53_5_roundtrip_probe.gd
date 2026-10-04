@@ -6,11 +6,14 @@ extends SceneTree
 ##   lane w53-12：这两种漏只比「摆场后 to_dict」抓不到（摆场也走 from_dict），5b 节改拿摆场原件逐键比，
 ##   并验原件盖住 to_dict 全键。
 ##   lane w53-5 二轮：7 节验键序——船舱货、职事、辞船、行年路线读回仍按存前的插入序（摆场故意不按字母序摆）。
-##   headless 下 SCRIPT ERROR 不自非零退出：判绿须 rc=0 且末行 `QA_W53_5_ROUNDTRIP_END` 在——
-##   缺末行 = 中途错误空转，按中断重跑。
+##   lane w53-5 六轮：接 script_err_tally（本进程 SCRIPT ERROR 即红，cases 比场面断言多 2）。原先只认「rc=0 且末行 END 在」：
+##   _order_snapshot 里一出脚本错（departed_lines / era_main_route 半路抛），那一格取成类型缺省值——存前读后两边都空、
+##   7 节「空对空」照判 ✓，末行 END 照印（六轮变异实测）。现另判键序快照四项都摆上了（空对空不算比过），_run 半路被掐断
+##   由收尾包装判红退 1、不印末行。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_5_roundtrip_probe.gd
 
 const SLOT := 94
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 
 var sl: Node
 var gs: Node
@@ -20,10 +23,22 @@ var fleet: Node
 var crew_n: Node
 var fails := 0
 var cases := 0
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+## _run 被脚本错半路掐断时收尾不会被调到——回到这里就地判红收尾
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_report("主流程跑到收尾（%s）" % _tally.abort_note(), false, "")
+		_finish()
 
 
 func _run() -> void:
@@ -110,6 +125,14 @@ func _run() -> void:
 
 	# 键序快照（7 节用）：keys() 是拷贝，脏场不会改到它
 	var want_order := _order_snapshot()
+	# 四项都得真摆上：取数半路出错拿到的是类型缺省值（空数组 / 空串），读后同样空，7 节就成了空对空照判 ✓
+	var empty_keys: Array = []
+	for k in want_order:
+		var w = want_order[k]
+		if (w is Array and (w as Array).is_empty()) or (w is String and w == ""):
+			empty_keys.append(k)
+	_report("键序快照四项都摆上了（空对空不算比过）", want_order.size() == 4 and empty_keys.is_empty(),
+		"项数 %d 空项 %s" % [want_order.size(), JSON.stringify(empty_keys)])
 
 	# ── 2 落盘 ──
 	var saved: bool = sl.call("save_game", SLOT, "quanzhou")
@@ -231,6 +254,13 @@ func _run() -> void:
 			"存前 %s ／ 读后 %s" % [JSON.stringify(want_order[k]), JSON.stringify(got_order[k])])
 
 	_cleanup()
+	_finish()
+
+
+func _finish() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_report(v[1], v[0], "")
 	if fails == 0:
 		print("QA_W53_5_ROUNDTRIP cases=%d fails=0" % cases)
 		print("QA_W53_5_ROUNDTRIP_END")

@@ -10,19 +10,34 @@ extends SceneTree
 ## （崩溃 / 断电留下坏正本后，玩家自然的下一步就是从副抄翻出、接着玩、再记；修前这一记把唯一的好退路换成了坏卷，
 ## 新正本日后再坏就一卷全无）。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_5_half_write_probe.gd
-## 判绿须 rc=0 且末行 `QA_W53_5_HALF_WRITE_END`（headless 下 SCRIPT ERROR 不自非零退出，缺末行 = 中途空转）。
+## 判绿须 rc=0 且末行 `QA_W53_5_HALF_WRITE_END`。lane w53-5 六轮：接 script_err_tally（本进程 SCRIPT ERROR 即红，cases 比场面
+## 断言多 2）——原先 _injection_works 里一出脚本错就取缺省 false，整支走「注入不成立、未判」那条路照印 END、rc=0（六轮变异实测）；
+## 「未判」那条路现在也过收尾两判，_run 半路被掐断由收尾包装判红退 1、不印末行。
 
 const SLOT := 93
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 const WRITE_ONLY := FileAccess.UNIX_WRITE_OWNER  # 只写：属主可写不可读
 
 var sl: Node
 var gs: Node
 var cases := 0
 var fails := 0
+var _tally: ScriptErrTally
+var _reported := false
 
 
 func _init() -> void:
-	call_deferred("_run")
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+## _run 被脚本错半路掐断时收尾不会被调到——回到这里就地判红收尾
+func _run_guarded() -> void:
+	await _run()
+	if not _reported:
+		_report("主流程跑到收尾（%s）" % _tally.abort_note(), false, "")
+		_finish("")
 
 
 func _run() -> void:
@@ -37,9 +52,7 @@ func _run() -> void:
 	if not _injection_works():
 		print("  ⚠ 只写权限对本进程不生效（root 或平台不支持 unix 权限），半写注入未判")
 		_cleanup()
-		print("QA_W53_5_HALF_WRITE cases=0 fails=0 skipped=1")
-		print("QA_W53_5_HALF_WRITE_END")
-		quit(0)
+		_finish(" skipped=1")
 		return
 
 	# ── 1 两卷好档：正本 222、副抄 111 ──
@@ -115,7 +128,15 @@ func _run() -> void:
 		"load=%s slot_source=%s money=%d" % [str(again), str(sl.slot_source(SLOT)), int(gs.money)])
 
 	_cleanup()
-	print("QA_W53_5_HALF_WRITE cases=%d fails=%d" % [cases, fails])
+	_finish("")
+
+
+## 收尾：先过 SCRIPT ERROR 两判，再印末行。tail 是「未判」那条路的 skipped 记号
+func _finish(tail: String) -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_report(v[1], v[0], "")
+	print("QA_W53_5_HALF_WRITE cases=%d fails=%d%s" % [cases, fails, tail])
 	if fails == 0:
 		print("QA_W53_5_HALF_WRITE_END")
 		quit(0)
