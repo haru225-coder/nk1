@@ -45,8 +45,8 @@ ROOT = _repo_root()
 LEDGER = os.environ.get("NK1_LEDGER") or os.path.join(ROOT, "docs", "仓务清册_2026-10-03.md")
 
 SEG_MIN = 6            # 甲：判档段行数下限（w76-k6 现帧统计 min=6 定基）
-SEG_COUNT_BASE = 80    # 甲′：判档段数恒等钉（w80-k4 承接落地动手帧重钉 = 80 段——
-                       # 闸体自口径 80（全 H2 89 − 非判档 H2 9 现算吻合；承接窗同窗 k5/k1/k3 各尾 append 一段累进）；
+SEG_COUNT_BASE = 81    # 甲′：判档段数恒等钉（w80-k4 承接落地动手帧重钉 = 81 段——
+                       # 闸体自口径 81（全 H2 90 − 非判档 H2 9 现算吻合；承接窗同窗 k5/k1/k3 各尾 append 一段累进）；
                        # 灭段 / 并段 / 换段即红；恒等式轨同 check_ledger_garbage R2，
                        # 尾 append 新增判档段须同笔拨钉 §五.3「拨参数 = 拨颁」同例）
 KEY_RE = re.compile(r"^-\s*\*\*§([1-9])")
