@@ -1,5 +1,5 @@
 extends SceneTree
-## lane w53-9：章节卡的题记读得完、题记一句一列（四章 × 1280×720 / 1024×768 两种窗口）。
+## lane w53-9：章节卡的题记读得完、题记一句一列、油画窗不压字（四章 × 1280×720 / 1024×768 / 720×1280 三种窗口）。
 ## 原先退场钉死在 6.3 秒：题记全显 1.8–2.1 秒、出处全显 1.0–1.5 秒就开始淡去；「点击继续」章名一写出（约 2.05 秒）就亮，
 ## 那时点一下只是补全题记；题记只靠 max_extent 折列——720 高下二、三章对句两列、一、四章一列到底，4:3 下四章全成一列。
 ## 断言（每章每种窗口）：
@@ -7,6 +7,10 @@ extends SceneTree
 ##   二、题记与出处全部全显之后、开始淡去之前，至少留「（题记 + 出处字数）÷ 5」秒，夹在 2.5–5 秒（留 0.1 秒帧差）。
 ##   三、「点击继续」不早于全部全显才亮，且淡去前亮过。
 ##   四、卡在 14 秒内收场（不挂住）。
+##   五、墨晕油画窗不压字：窗右缘（cs_ink_bloom 的 center / radius 换成像素，横向半宽 = radius × 画布高 ÷ 0.86）在文字块左缘
+##       （各段竖排字与「立志」印的最左）左边至少 8px。原先窗半径下限是画布高的 0.25，竖屏（画布 1280×2275）窗横向半宽撑到
+##       661px，油画盖过题记与出处；16:9、4:3 本就不压。
+##   六、墨晕油画窗挨着文字块：窗的上下跨度（窗心 ± radius × 画布高）与文字块的上下跨度有交叠——竖屏不沉到画面中腰。
 ## 另验点击（第二章、1280×720）：写到题记中途点一下 = 补全且不退场、再停 0.6 秒仍不退场，第二下才退场；
 ## 印已落定（6 秒档旧口径 T_SEAL + 0.5）而出处还没写完时点一下 = 补全出处，不是直接退场（出处没露全就淡去）。
 ## 驱动：卡建好后停掉它自己的 _process，按 1/60 秒逐帧调 _step（与 _process 每帧的调用同一入口），时间线确定、不吃机器忙闲。
@@ -18,8 +22,8 @@ const TAG := "QA_W53_9_CHAPTER_CARD"
 const DATA := "res://data/cutscenes.json"
 const INK_TEXT := "res://scripts/cutscene/cs_ink_text.gd"
 const DT := 1.0 / 60.0
-const SIZES := [Vector2i(1280, 720), Vector2i(1024, 768)]
-const CANVAS := {Vector2i(1280, 720): Vector2(1280, 720), Vector2i(1024, 768): Vector2(1280, 960)}
+const SIZES := [Vector2i(1280, 720), Vector2i(1024, 768), Vector2i(720, 1280)]
+const CANVAS := {Vector2i(1280, 720): Vector2(1280, 720), Vector2i(1024, 768): Vector2(1280, 960), Vector2i(720, 1280): Vector2(1280, 2275)}
 const CLAUSE := "，。？！；"
 ## 旧口径「印落定」时刻（T_SEAL 4.6 + 0.5）：点击分界的回退判据用
 const OLD_READY := 5.1
@@ -127,6 +131,33 @@ func _clauses(s: String) -> int:
 	return n + (1 if seg.strip_edges() != "" else 0)
 
 
+## 五、油画窗不压字：窗右缘（像素）在文字块左缘左边至少 8px
+func _window_clear(c: Node, cv: Vector2, where: String) -> void:
+	var bloom: ColorRect = c.get("_bloom")
+	var mat := bloom.material as ShaderMaterial if bloom != null else null
+	if mat == null or not bloom.visible:
+		_expect(false, "%s 墨晕油画窗没建起来（材质 %s）" % [where, mat])
+		return
+	var ctr: Vector2 = mat.get_shader_parameter("center")
+	var rad := float(mat.get_shader_parameter("radius"))
+	var right := ctr.x * cv.x + rad * cv.y / 0.86
+	var text_left := INF
+	for it in c.get("_items"):
+		text_left = minf(text_left, (it["node"] as Control).position.x)
+	_expect(right <= text_left - 8.0,
+		"%s 油画窗右缘 %.0fpx 在文字块左缘 %.0fpx 左边 ≥ 8px（窗心 %.0fpx、横向半宽 %.0fpx）" % [where, right, text_left, ctr.x * cv.x, rad * cv.y / 0.86])
+	var top := INF
+	var bottom := -INF
+	for it in c.get("_items"):
+		var r := Rect2((it["node"] as Control).position, (it["node"] as Control).size)
+		top = minf(top, r.position.y)
+		bottom = maxf(bottom, r.end.y)
+	var w_top := ctr.y * cv.y - rad * cv.y
+	var w_bottom := ctr.y * cv.y + rad * cv.y
+	_expect(w_top < bottom and w_bottom > top,
+		"%s 油画窗挨着文字块：窗上下 %.0f–%.0fpx 与文字块 %.0f–%.0fpx 有交叠" % [where, w_top, w_bottom, top, bottom])
+
+
 func _all_revealed(texts: Array) -> bool:
 	for x in texts:
 		if not (x as Node).call("is_revealed"):
@@ -141,7 +172,7 @@ func _natural(n: int, wh: Vector2i) -> void:
 	var c: Node = await _spawn(n)
 	var where := "第%d章 %dx%d" % [n, wh.x, wh.y]
 	var cv: Vector2 = c.get("_canvas")
-	_expect(cv == CANVAS[wh], "%s 画布 %s（应 %s，不然 4:3 这一档没量到）" % [where, cv, CANVAS[wh]])
+	_expect(cv.is_equal_approx(CANVAS[wh]) or (cv - CANVAS[wh]).length() < 1.0, "%s 画布 %s（应 %s，不然这一档窗口比例没量到）" % [where, cv, CANVAS[wh]])
 	var p := _parts(c)
 	var ep: Node = p["ep"]
 	var sr: Node = p["sr"]
@@ -151,6 +182,7 @@ func _natural(n: int, wh: Vector2i) -> void:
 		return
 	_expect(_cols(ep) == _clauses(epi) and _cols(sr) == 1,
 		"%s 题记一句一列：「%s」%d 句 → %d 列；出处 %d 列" % [where, epi, _clauses(epi), _cols(ep), _cols(sr)])
+	_window_clear(c, cv, where)
 	var t_all := -1.0
 	var t_fade := -1.0
 	var t_hint := -1.0

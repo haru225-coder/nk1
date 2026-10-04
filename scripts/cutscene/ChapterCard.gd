@@ -45,6 +45,9 @@ const READ_MAX := 5.0
 ## 题记按句分列的句读（「，」也算：「天接云涛连晓雾，星河欲转千帆舞。」上下句各一列）；句读后紧跟的收引号随上一列
 const CLAUSE_END := "，。？！；"
 const CLOSERS := "」』）》"
+## 墨晕窗：墨晕区最高按这个画布高算（4:3 窗口的画布高）；窗半径下限 180px（720 画布的 0.25）
+const BLOOM_TALL_H := 960.0
+const BLOOM_RAD_MIN_PX := 180.0
 const TEXT_OUT := 0.5
 const BLOOM_OUT := 0.6
 const PAPER_TEX := "res://assets/ui/nk1/tex_paper_xuan.png"
@@ -334,14 +337,20 @@ func _layout(head: Control, nm: Control, yr: Control, ep: Control, sr: Control) 
 			sy = ep.position.y + ep.size.y - sr.size.y
 		sr.position = Vector2(roundf(left - 14.0 - sr.size.x), roundf(sy))
 		left = sr.position.x
-	# 墨晕区：纸面左侧到文字块左缘
+	# 墨晕区：纸面左侧到文字块左缘；高不超过 4:3 画布（BLOOM_TALL_H）时的 0.88——竖屏画布高到 2275，
+	# 墨晕区照比例拉高，油画按 cover 取景只剩一条竖缝的局部。窗心：画布不比 4:3 高时在正中（原样）；再高（竖屏）
+	# 就跟着文字块走、落在题记旁边，与 4:3 时同一相对位置，不沉到画面中腰
 	var rl := W * 0.035
 	var rr := maxf(left - 44.0, W * 0.45)
-	_bloom_region = Rect2(rl, H * 0.06, rr - rl, H * 0.88)
+	var rh := minf(H, BLOOM_TALL_H) * 0.88
+	var cy := minf(H * 0.5, top + BLOOM_TALL_H * 0.35)
+	_bloom_region = Rect2(rl, cy - rh * 0.5, rr - rl, rh)
 	if _bloom_mat != null:
 		var cx := (_bloom_region.position.x + _bloom_region.size.x * 0.5) / W
-		var rad := clampf(_bloom_region.size.x * 0.5 * 0.86 / H * 0.9, 0.25, 0.5)
-		_bloom_mat.set_shader_parameter("center", Vector2(cx, 0.5))
+		# 半径以画布高为 1（cs_ink_bloom）：窗横向半宽 = 墨晕区半宽 × 0.9。下限按像素（BLOOM_RAD_MIN_PX）取：原先下限是画布高的
+		# 0.25，竖屏画布 2275 高时窗横向半宽撑到 661px，油画盖过题记与出处（lane w53-9）；720 画布下仍是 0.25
+		var rad := clampf(_bloom_region.size.x * 0.5 * 0.86 / H * 0.9, BLOOM_RAD_MIN_PX / H, 0.5)
+		_bloom_mat.set_shader_parameter("center", Vector2(cx, cy / H))
 		_bloom_mat.set_shader_parameter("radius", rad)
 		_bloom_mat.set_shader_parameter("canvas_size", _canvas)
 	if _paper_mat != null:
