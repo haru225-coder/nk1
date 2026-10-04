@@ -139,6 +139,17 @@ for ch in chapters:
         check(settle in port_ids and port_unlock.get(settle, 99) <= cid,
               f"chapters {cid}.next_requires.settle_at=`{settle}` 不是本章开着的港，开不了章")
 
+# ── chapters.json：了结一段话只读一遍（lane w53-13，待拍板第 8 条）──
+# 了结时依次是结局过场（字幕）→ 了结册页（endings[].text）→ 结局幕（endings[].scene 的 body）。原先结局幕正文与册页一字不差，
+# 过场字幕又是同一段拆句，玩家同一段话连读三遍。现在结局幕只写合上册页之后的一两句，不许再抄册页里的句子。
+def _sentences(t):
+    return {x.strip() for x in re.split(r"[。！？\n]", str(t)) if len(x.strip()) >= 6}
+for ch in chapters:
+    for e in ch.get("endings") or []:
+        body = scene_by_id.get(str(e.get("scene", "")), {}).get("body", "")
+        dup = _sentences(body) & _sentences(e.get("text", ""))
+        check(not dup, f"chapters {ch['id']} 结局「{e.get('title', '')}」的结局幕又抄了册页的句子 {sorted(dup)[:2]}——了结时同一段话连读三遍")
+
 # ── chapters.json：终章结局文字不点主角名（lane w53-13，待拍板第 2 条）──
 # 这几条结局只看旗标，海商线（终身叫陈子龙）与士人线（1268 唱第改名陈文龙）都走得到。原先「海口信路」写「陈子龙三个字仍写在
 # 货引上」、「史册未落笔」写「陈文龙三个字仍在将来」——士人线了结时一条叫错、一条说改名还在将来。现在册页、结局幕、结局过场
