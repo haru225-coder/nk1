@@ -230,6 +230,17 @@ func _fire_broadside_ballistics(side: int) -> void:
 		return
 	if not _can_fire():
 		return
+	# w53-2 二期 弓弩手按人头折算威力（archer_scaling）：每五人撑一个炮位，按 0.2–2.0 倍折算。
+	# quality 不涨散布（散布另算）：Cannonball._strike 里 quality 只乘在杀伤力基数上（hull / crew / sail / fire），
+	# 散布与 reach / 装填质量都不动
+	if battery != null:
+		var def := Fleet.flagship()
+		var mounts_n: int = ((battery as Object).get("mounts") as Array).size()
+		var crew_n := float(Fleet.ship_crew(0))
+		var sw=preload("res://scripts/combat/CombatSwitches.gd")
+		if mounts_n > 0 and sw.on("archer_scaling"):
+			var per_gun := clampf(crew_n / (5.0 * float(mounts_n)), 0.2, 2.0)
+			battery.set("volley_quality", per_gun)
 	var fired := preload("res://scripts/combat/Ballistics.gd").fire_volley(self, battery, side, _nearest_enemy_node())
 	if fired <= 0:
 		var why := str(battery.get("last_refusal"))

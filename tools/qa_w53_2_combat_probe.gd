@@ -993,6 +993,7 @@ func _sec_notice_stack(fleet: Node) -> void:
 # ══ 十七、旗舰接上装填与弹道（player_gunnery） ══════════════════════════════
 
 func _sec_player_gunnery(fleet: Node) -> void:
+	var quality_row := 0
 	var sw: GDScript = load("res://scripts/combat/CombatSwitches.gd")
 	sw.call("set_on", "player_gunnery", true)
 	var wm := await _battle(fleet, "fu_ship_medium", 40, {"type": "pirate_boat", "count": 1})
@@ -1018,6 +1019,8 @@ func _sec_player_gunnery(fleet: Node) -> void:
 	own.set("fire_cooldown", 0.0)
 	own.call("_fire_broadside", 1)
 	var am1: Dictionary = ((bat as Object).get("ammo") as Dictionary) if bat != null else {}
+	if bat != null:
+		quality_row = int(roundf(float((bat as Object).get("volley_quality")) * 100.0))
 	var used := false
 	var shots := -1
 	if bat != null:
@@ -1025,6 +1028,7 @@ func _sec_player_gunnery(fleet: Node) -> void:
 		for k in am1:
 			if int(am1[k]) < int(am0.get(k, 0)):
 				used = true
+	_check(quality_row > 0, "十七②a archer_scaling 按人头折算：volley_quality 跟上水手数（40 人 / 5·7 位，得 %d%%）" % quality_row)
 	_check(shots > 0 and used, "十七② 开时放一舷：shots_fired %d、弹药用掉一些（%s → %s，冷却 %.2f）" % [
 		shots, str(am0), str(am1), float(own.get("fire_cooldown"))])
 	var after_hud: Dictionary = (load("res://scripts/ui/CombatStatusHud.gd") as GDScript).call("snapshot_of", wm, own)

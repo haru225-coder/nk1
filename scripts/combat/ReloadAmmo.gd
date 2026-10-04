@@ -72,6 +72,8 @@ var warship := false
 var last_refusal := ""
 var shots_fired := 0
 var volleys := 0
+## w53-2 二期：玩家船的弓弩手按人头折算威力（archer_scaling 由 Ship 写入；1.0 等价原状）。Cannonball._strike 把 quality 乘在杀伤上。
+var volley_quality := 1.0
 var _gap := {-1: 0.0, 1: 0.0}
 static var _ship_defs := {}
 
@@ -301,7 +303,7 @@ func _select(side: int, off_beam: float, dist: float, max_n: int, commit: bool) 
 			m["t"] = float(Ballistics.weapon(wid).get("reload", 5.0)) * shortage_mult(wid)
 			if ms == 0:
 				m["at"] = sd
-		out.append({"weapon": wid, "slot": float(m["slot"]), "mount": i, "side": sd, "quality": 1.0})
+		out.append({"weapon": wid, "slot": float(m["slot"]), "mount": i, "side": sd, "quality": clampf(volley_quality, 0.2, 2.0)})
 		if max_n > 0 and out.size() >= max_n:
 			break
 	if commit:
