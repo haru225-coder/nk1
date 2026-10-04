@@ -70,6 +70,7 @@ python3 tools/check_decision_refs.py
 python3 tools/art/import_cutscene_bgs.py --data-only
 godot --headless --path . -s res://tools/qa_rest_days_probe.gd
 godot --headless --path . -s res://tools/qa_economy_panel_probe.gd
+godot --headless --path . -s res://tools/qa_fold_notice_probe.gd
 godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd

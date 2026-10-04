@@ -358,10 +358,8 @@ REGISTRY = [
      "red": "`  ✗ …` 行（如级别名不跳 / 白走一年造真 / 册页题头或起讫句变 / 折叠头则数凡月数漂移 / 【月息】原文与对照账不符 / 无债跳年见息字）"
             "+ 末行 `ECON_PANEL_PROBE cases=N fails=N`（N>0），退 1"},
 
-    {"id": "qa_fold_notice_probe", "tier": "lane",
-     "when": "动欠饷链（scripts/Crew.gd 的雇佣 / 月俸 / 欠月数 / 不告而去口径、scripts/Economy.gd 月结扣工食）、"
-             "札记通告上墨口（scripts/Main.gd 的 _log_lines / _notice_run 一则一墨）、改元历名口径（Calendar 年号 / "
-             "update_status_panel 页首印年），或动 tools/qa_fold_notice_probe.gd 自身",
+    {"id": "qa_fold_notice_probe", "tier": "must",
+     "why": "升格判掂毕（lane w74-k3 执行窗，w73-k5 复核牒 v1，照 §五.2 原条文逐条对）：判据 1「自己判不准」成立——触发条件具跨文件隐藏面：欠饷文案与欠月数口径（Crew.pay_wages / monthly_wage）、月结调用链（GameManager.advance_days :173 monthly_notice.emit）、札记通告上墨口（LogFold.push_notice / Main._log_lines·_notice_run 一则一墨 / _on_monthly_notice）、改元历名页首印年（Calendar._era_row / LedgerPage.update_panel / update_status_panel）五域写口分处六文件（scripts/core/Crew.gd / scripts/GameManager.gd / scripts/core/LogFold.gd / scripts/Main.gd / scripts/core/Calendar.gd / scripts/ui/LedgerPage.gd / 探针自身），文案格式笔 lane 自己判不出该加跑哪条——§三.36 旧口径「按路径判得准、三条件只取第一」与 §五.2「三条同时成立」相悖就此勾销（w49-k1 同型拨正先例）；判据 2「快」成立——Godot 真场景树探针 glock 实测三跑 real 2.015 / 1.982 / 1.985 s（w73-k5 动手帧实贴），与本辑既有 Godot must 探针族（rest_days / rest_scenarios / debt_strip / cargo_strip / economy_panel 2-4 s 冷启）同族同格且居快翼（w61-k4 双轨判掂先例）；判据 3「只读」成立——源码 grep FileAccess / DirAccess / user:// / save / store_ 全零命中、零写盘、摆场全是内存字典 seed；判据 4 main 尖幂等绿——glock 三跑连绿 rc=0、末行 FOLD_NOTICE cases=15 fails=0（13 断言行 + script_err_tally 接线 2 格）。",
      "kind": "godot", "file": "tools/qa_fold_notice_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_fold_notice_probe.gd"],
      "judge": "（探针 896fd67 随 w28-k2 落地，w30-k1 入册——落地当轮漏注册只被「注册或豁免」闸点名待收，w30 立案根治）"
