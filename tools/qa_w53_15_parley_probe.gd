@@ -4,7 +4,7 @@ extends SceneTree
 ## 逐条钉一项、回退即红：
 ##   一、parley_road 纯函数的判词（凑词列表）：缺一样愁一字，凑齐三样「可喊话」且 have 三格皆真。
 ##   二、真起战备 WorldMap + 号令面板：parley_on_ship 开时，orphan 敌船（钩未挂、船体满、士气簿稳）喊话「不成」
-##       （parley_context.ok = false、why 含「未钩住」/「帆尚在」/「阵脚未乱」）；改成被钩住 + 船体伤半 + 士气簿「动摇」，
+##       （parley_context.ok = false、why 含「未钩住」/「帆索未残」/「阵脚未乱」）；改成被钩住 + 船体伤半 + 士气簿「动摇」，
 ##       ok 返真、why 写在路，发 parley 实打（roll 定 0）得「敌竖降幡」。关总开关 off：同一场喊话不判三样、
 ##       近敌就能喊（照旧玩法）。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_15_parley_probe.gd
@@ -61,12 +61,12 @@ func _sec_road() -> void:
 		var r := Orders.parley_road({"grappled": true, "hull_frac": 0.4, "enemy_state": s})
 		_check(bool(r["lit"]), "士气簿 %s 也亮" % s)
 	for t in [["未钩住", {"grappled": false, "hull_frac": 0.4, "enemy_state": "shaken"}],
-			["帆尚在", {"grappled": true, "hull_frac": 0.95, "enemy_state": "shaken"}],
+			["帆索未残", {"grappled": true, "hull_frac": 0.95, "enemy_state": "shaken"}],
 			["阵脚未乱", {"grappled": true, "hull_frac": 0.4, "enemy_state": "steady"}]]:
 		var r := Orders.parley_road(t[1])
 		_check(not bool(r["lit"]) and str(r["road"]).contains(t[0]), "只缺 %s → 不亮、why 拿这字（实得 %s）" % [t[0], str(r["road"])])
 	var two := Orders.parley_road({"grappled": false, "hull_frac": 0.95, "enemy_state": "steady"})
-	_check(str(two["road"]) == "未钩住、帆尚在、阵脚未乱", "三样都缺 → why 三缺逐字列：%s" % str(two["road"]))
+	_check(str(two["road"]) == "未钩住、帆索未残、阵脚未乱", "三样都缺 → why 三缺逐字列：%s" % str(two["road"]))
 
 
 func _foes(wm: Node) -> Array:
@@ -132,10 +132,12 @@ func _sec_on_ship() -> void:
 	var foe: Node2D = _foes(wm)[0]
 	if ship != null:
 		foe.global_position = ship.global_position + Vector2(140, 0)
+	# 士气簿稳着才看得全「缺哪三样」：CombatMorale 挂件可能已把第一档写上来，先钉簿 = steady
+	foe.set_meta(&"nk1_combat_morale", {"state": "steady", "value": 70})
 	var ctx0: Dictionary = panel.call("parley_context")
 	_check(not bool(ctx0.get("ok", false)), "未钩住・帆好・簿稳 → 喊话不亮：%s" % str(ctx0.get("why", "")))
 	var why0 := str(ctx0.get("why", ""))
-	_check(why0.contains("未钩住") and why0.contains("帆尚在") and why0.contains("阵脚未乱"), "why 白从三样凑字：%s" % why0)
+	_check(why0.contains("未钩住") and why0.contains("帆索未残") and why0.contains("阵脚未乱"), "why 白从三样凑字：%s" % why0)
 	# 凑齐三样：钩住（grappled）・伤过半（hull 打到三成）・士气簿动摇（CombatMorale meta 写得抢）
 	foe.set("grappled", true)
 	var hull0: float = Hud.prop_f(foe, "hull_hp", 0.0)

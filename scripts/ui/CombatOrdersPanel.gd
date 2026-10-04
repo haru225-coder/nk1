@@ -71,7 +71,7 @@ const ORDER_TIPS := {
 	"board": "甲士执钩拒聚到舷边，六秒聚齐：钩距远、白刃有力，聚在舷边挨矢石伤亡也多。再按撤令。",
 	"parley": "近敌喊话，令其竖降幡。敌士气低、船伤重、我众敌寡、已钩住、敌阵脚已乱时易成；不成二十秒内不能再喊。",
 	"cut": "敌船先抛的钩挂上时斧手斫缆脱开：每合砍断钩索的机会多一半；本船去钩的不济，签了也无用。",
-	"wet": "舷边张过水的厚毡压火伤、防火箭：火着一半、受矢石轻三成；舷边人手脚局促，齐射慢两成、白刃减力一成。",
+	"wet": "舷边张过水的厚毡压火伤、防火箭：火着一半、受矢石轻三成；代价：舷边人施展不开，我方平射矢石打八折。",
 }
 
 const STATIONS := ["sail", "guns", "damage", "board"]
@@ -578,8 +578,9 @@ func parley_context() -> Dictionary:
 	return ctx
 
 
-## 劝降三样（开关 parley_on_ship）：①被钩住（敌船先钩上我们不算）；②帆索残——敌船不挂损伤簿，帆跟壳一处受创，
-## 船体伤过 PARLEY_SAIL_BROKEN_FRAC 折成帆被打坏；③已动摇（士气簿的 shaken / wavering / routing）。
+## 劝降三样（开关 parley_on_ship）：①被钩住（敌船先钩上我们不算）；②帆索残——敌船不挂损伤簿，
+## 帆跟壳一处受创，这里只按船体伤过 PARLEY_SAIL_BROKEN_FRAC 代用「帆被打坏」（待 w53-17 接真帆损簿再改回真帆）；
+## ③已动摇（士气簿的 shaken / wavering / routing）。
 ## 返回 {"lit", "road", "have"（三样的真值表）}；敌已 struck 由 parley_context 提前走「敌已降」。
 static func parley_road(ctx: Dictionary) -> Dictionary:
 	var have := {
@@ -591,7 +592,7 @@ static func parley_road(ctx: Dictionary) -> Dictionary:
 	if not have["grappled"]:
 		need.append("未钩住")
 	if not have["sail_broken"]:
-		need.append("帆尚在")
+		need.append("帆索未残")
 	if not have["shaken"]:
 		need.append("阵脚未乱")
 	return {"lit": need.is_empty(), "road": "可喊话" if need.is_empty() else "、".join(need), "have": have}
@@ -834,7 +835,7 @@ func effect_text() -> String:
 	if load_mode == "fire":
 		bits.append("火攻须居上风")
 	if bool(state().get("wet", false)):
-		bits.append("毡罩火")
+		bits.append("毡罩火・我射八折")
 	if bool(state().get("cut", false)):
 		bits.append("斧候钩")
 	if bits.is_empty():
