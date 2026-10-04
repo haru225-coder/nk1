@@ -149,6 +149,12 @@ var rudder := 1.0
 ## 号令「张湿毡」（战斗方案二期，order_wet_felt）：舷边张过水的厚毡，中弹引火机会与火攻伤亡都折半 +
 ## 减两成；Under 关时之象世工变：默认 false、一切照旧。号令面板 apply_to_ship 走鸭子型写入
 var wet_felt := false
+## 职事（战斗方案二期，crew_role_effects）：总管分舱理货 / 医人备药石——簿上虽只一场，火与伤还是沾管用。
+##   总管 per_level damage_control_mul 0.1：戽水堵漏与扑火手效力更强（DousePerMan 等价的分账，加到 split fan 出的人头上，
+##   喂给 ff.step 的 flood_crew / fire_crew）；医人 per_level wounded_die_mul −0.2：被矢石、火攻撂倒的人里真死的少。
+##   0 级照旧（basis笔效果），等级不靠簿本读，自号令面板 apply_to_ship 走鸭子型写进来。
+var steward_level := 0
+var medic_level := 0
 ## 舵失灵后船往哪边偏（-1 左 … 1 右）
 var rudder_jam := 0.0
 var jury_rudder := false
@@ -275,8 +281,8 @@ func apply_hit(hit: Dictionary) -> Dictionary:
 		var fz := "rig" if rig else zone
 		if ff.ignite(fz, float(k["ignite"])):
 			_push(events, "fire", {"zone": fz})
-	# 张湿毡：船上受矢石伤也减（wet_screens.flat_casualty_mul 0.7）
-	var expect := float(k["crew"]) * scale * sqrt(clampf(float(crew) / CREW_REF, 0.05, 4.0)) * casualty_mul()
+		# 张湿毡 （0.7）与医人（每级 −0.2）都减战内伤亡
+	var expect := float(k["crew"]) * scale * sqrt(clampf(float(crew) / CREW_REF, 0.05, 4.0)) * casualty_mul() * medic_mul()
 	var dead := int(floor(expect))
 	if rng.randf() < expect - float(dead):
 		dead += 1
@@ -305,16 +311,20 @@ func step(delta: float, env: Dictionary = {}) -> Dictionary:
 		return out
 	_wind_heel = float(env.get("heel", 0.0))
 	_reallocate()
-	var r: Dictionary = ff.step(delta, int(_split["flood"]), int(_split["fire"]), env, rng, _wind_heel)
+	# 总管：救火戽水人手补效（combat_phases.json zongguan.damage_control_mul 0.1/级）——split 里派的人照原账，
+	# 喂给 ff.step 那两路「实际顶上的人」每级 ×(1+0.1)（damage_crews 与探针共用这一关）
+	var crews := damage_crews()
+	var r: Dictionary = ff.step(delta, int(crews[0]), int(crews[1]), env, rng, _wind_heel)
 	for e in r["events"]:
 		var ev: Dictionary = e
 		_push(events, str(ev["kind"]), ev)
-	# 张湿毡：烧到船身 / 烧人 / 烧帆都按 fire_effects_mul 对折（与 apply_hit 里中弹引火呼应；off 时与 wave53 开工前一致）
+	# 张湿毡与医人：烧到船身 / 烧人 / 烧帆都按 fire_effects_mul 对折；
+	# 医人所保的是被撂倒的人里不真死的那些（wounded_die_mul −0.2/级）
 	var burn_mul := fire_effects_mul()
 	if float(r["sail_burn"]) > 0.0:
 		_hurt_sail(float(r["sail_burn"]) * burn_mul, events)
 	var blast := bool(r["blast"])
-	var dead := int(ceil(float(r["crew_burn"]) * burn_mul)) + (int(ceil(float(crew) * BLAST_CREW)) if blast else 0)
+	var dead := int(ceil(float(r["crew_burn"]) * burn_mul * medic_mul())) + (int(ceil(float(crew) * BLAST_CREW)) if blast else 0)
 	dead = mini(dead, maxi(0, crew - 1))
 	if dead > 0:
 		crew -= dead
@@ -348,6 +358,34 @@ func fire_effects_mul() -> float:
 
 func casualty_mul() -> float:
 	return 0.7 if wet_felt else 1.0
+
+
+## 总管（zongguan）：戽水堵漏 / 扑火的人手补效 ×(1 + 0.1/级)；0 级照旧 1.0
+func steward_mul() -> float:
+	return 1.0 + 0.1 * clampi(steward_level, 0, 3)
+
+
+## 总管补效之后、真正喂给 FloodFire.step 那两路人手 [flood_crew, fire_crew]（reallocate 之后有效；
+## split 里派的人仍照原账，bos手的是「分数 / 协作的杖声」；lv0 时与 wave53 开工前逐字一致）
+func damage_crews() -> Array:
+	_reallocate()
+	var boost := steward_mul()
+	return [int(round(float(_split["flood"]) * boost)), int(round(float(_split["fire"]) * boost))]
+
+
+## 医人（yiren）：战内被矢石火攻撂倒里真死的 ×(1 − 0.2/级)；0 级照旧 1.0，至多留两成
+func medic_mul() -> float:
+	return maxf(0.2, 1.0 - 0.2 * clampi(medic_level, 0, 3))
+
+
+## 令面板行 apply_to_ship 写进来：steward = Crew.level_of("zongguan")，medic = Crew.level_of("yiren")；
+## 簿本不读 autoload，0 级照旧——也就是说总开关 crew_role_effects 关掉时那侧写 0 级，与 wave53 开工前逐字一致
+func set_steward(level: int) -> void:
+	steward_level = clampi(level, 0, 3)
+
+
+func set_medic(level: int) -> void:
+	medic_level = clampi(level, 0, 3)
 
 
 ## 损管令：auto 均衡 / fire 救火 / flood 戽水 / fight 迎敌。不认识的令返回 false，原令不变。

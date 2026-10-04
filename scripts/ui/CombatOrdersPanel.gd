@@ -235,6 +235,8 @@ func _ready() -> void:
 	layer = LAYER_INDEX
 	_build()
 	refresh()
+	# 职事（总管 / 医人）不靠号令：挂上战场就写 DamageModel（开关 crew_role_effects）
+	prime_role_effects.call_deferred()
 	if not get_viewport().size_changed.is_connected(_layout):
 		get_viewport().size_changed.connect(_layout)
 	_layout.call_deferred()
@@ -492,6 +494,44 @@ func apply_to_ship() -> Dictionary:
 		if dm.get("wet_felt") != want_wet:
 			dm.call("set_wet_felt", want_wet)
 			done["wet_felt"] = want_wet
+	# 职事（开关 crew_role_effects）：总管 / 医人照 Crew.level_of 写到簿上；开关关掉时依旧写 0 级，照 wave53 开工前
+	if dm != null and dm.has_method("set_steward") and dm.has_method("set_medic"):
+		var want_s := _role_levels()
+		if dm.get("steward_level") != int(want_s["steward"]):
+			dm.call("set_steward", int(want_s["steward"]))
+			done["steward"] = want_s["steward"]
+		if dm.get("medic_level") != int(want_s["medic"]):
+			dm.call("set_medic", int(want_s["medic"]))
+			done["medic"] = want_s["medic"]
+	return done
+
+
+## 总管 / 医人 此刻的品级（开关 crew_role_effects；关掉一律 0 级）——mount 完 / apply_to_ship 共用
+func _role_levels() -> Dictionary:
+	var steward := 0
+	var medic := 0
+	if Switches.on("crew_role_effects"):
+		var crew_node := StatusHud.autoload_node("Crew")
+		if crew_node != null and crew_node.has_method("level_of"):
+			steward = int(crew_node.call("level_of", "zongguan"))
+			medic = int(crew_node.call("level_of", "yiren"))
+	return {"steward": steward, "medic": medic}
+
+
+## 挂上战场第一步就把职事写进 DamageModel（与 _touched 无关：开关开时 ring死带到）、
+## 开没下令也立即生效，同 w53-16/_13 用 Mount 时一次亦就行
+func prime_role_effects() -> Dictionary:
+	var done := {}
+	var dm := StatusHud.damage_of(_ship())
+	if dm == null:
+		return done
+	var want := _role_levels()
+	if dm.has_method("set_steward") and dm.get("steward_level") != int(want["steward"]):
+		dm.call("set_steward", int(want["steward"]))
+		done["steward"] = want["steward"]
+	if dm.has_method("set_medic") and dm.get("medic_level") != int(want["medic"]):
+		dm.call("set_medic", int(want["medic"]))
+		done["medic"] = want["medic"]
 	return done
 
 
