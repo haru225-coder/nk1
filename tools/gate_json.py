@@ -315,8 +315,8 @@ REGISTRY = [
      "judge": "（lane w20-a7 去 PIL，w25-j5 升必须跑）过场数据守门：`data/cutscenes.json` 逐镜时长合计落在 20–40 / 60–90 秒窗内（不含章末了结的 20–35 秒档）、cam 在 cover_view 上夹得动、字幕 t 离镜头结束 ≥1.5 秒；镜头 / 字幕 / 章节卡 / bg_alt 只认播放器认的键、字幕与 bg_alt 的 if_flag / unless_flag 须是有人立的旗、字幕 hold ≥1.5 秒（lane w53-9）；每次跑带七格内存样本自检，哪条判据被退掉即红（lane w53-12 S1–S5、w53-9 S6–S7，§五.3）；.import_manifest.json 的 sha1 / size / crop 与产物一致；来源目录一律不看（PIL 也不需要）",
      "green": "`import_cutscene_bgs --check：N 张背景合规［产物（按清单 sha1）］；data/cutscenes.json 契约校验通过`",
      "red": "`FAIL …` 行（如 `FAIL cutscenes.ending_root 共 5 镜 40.3 秒，要求 3–5 镜、20–40 秒`；判据被退掉时 `FAIL 契约样本自检 S<n> …：漏判——…`），rc=1"},
-    # lane w26-k3：w24-c1 遗留②「契约文档每档角色 / 品级一览人工维护、与 characters.json 无自动核对」。
-    # 快（约 0.2 s）、只读，触发条件照 §五.2 按路径也判得准（动 characters.json / 契约文档），故 lane 档不升 must；
+    # lane w26-k3：w24-c1 遗留②「契约文档每档角色 / 品级一览人工维护、与 data/characters_{suffix}.json 无自动核对」。
+    # 快（约 0.2 s）、只读，触发条件照 §五.2 按路径也判得准（动 data/characters_{suffix}.json / 契约文档），故 lane 档不升 must；
     #「为什么归这一档」是写作口径、机器不答（文档里点明留人）。本条三处把原稿文件名写成
     # data/characters_{suffix}.json：写全名 data/characters.json 会让 verify_story_data L1B 把本文件
     # 认成「读原稿的入口」（它的 raw 子按字面子命中、不分串注，.py 同样扫），本文件不是入口。
@@ -698,7 +698,7 @@ REGISTRY = [
      "judge": "（lane w64-k1 立，w71-k3 收编注册档入册——承接笔 789a226 入主后挂账收编）data/companions.json 骨架校验："
               "字段两档（已定字段照草案名册 v2 照数搬入逐条校验；未定字段一律恰写 \"_todo\"、留空判绿不判红）；"
               "域全从本仓现算不手抄（region/category/窗口方式/入伙方式/战位/立场读 companions.json meta 各 def，职事 id 读 crew.json roles，"
-              "faction id 读 characters.json meta.faction_def，港 id 读 ports.json，货 id 读 goods.json，特技 id 读 characters trait_def ∪ 名册 new_traits）；"
+              "faction id 读 data/characters_{suffix}.json meta.faction_def，港 id 读 ports.json，货 id 读 goods.json，特技 id 读 characters trait_def ∪ 名册 new_traits）；"
               "九节判词——零、判据自检（内存变异：删已定字段 / id 重号 / 名字重号 / 未定填词表外值 / 窗口写年份整数 / 撞 crew 候名 / "
               "格数钉群化自 `_cases` 注册 SoR 现读——判红格数 + 拟字样 + SoR 显形长三哨在衙，lane w93-k3 第 4 案；拨颁必同笔随同色）"
               "云屯两人 duty 空壳不齐 / 挂不存在的港各须红、好样本删红须绿，判不出即闸自身坏先红）；一、顶层与条目数（companions 恰 roster.companions 条、events 恰 roster.events 张各 id 唯一，lane w92-k3 名册 SoR 现读）；"
