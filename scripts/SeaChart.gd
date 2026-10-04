@@ -1828,6 +1828,10 @@ func _on_requisition_surrender() -> void:
 		if Fleet.ship_capacity(i) < Fleet.ship_capacity(idx):
 			idx = i
 	var s: Dictionary = Fleet.ships[idx]
+	if idx == GameState.berth_index:
+		GameState.berth_index = 0
+	elif idx < GameState.berth_index:
+		GameState.berth_index -= 1  # 交出的是坞位之前的船：坞位序号跟顺（待拍板 20h）
 	Fleet.ships.remove_at(idx)
 	GameState.add_fame(6)
 	Fleet.morale = maxi(0, Fleet.morale - 4)

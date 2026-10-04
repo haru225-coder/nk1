@@ -3912,6 +3912,10 @@ func _setup_quanzhou_standoff(port_id: String) -> void:
 				if Fleet.ship_capacity(i) < Fleet.ship_capacity(idx):
 					idx = i
 			var sname: String = Fleet.ships[idx].get("name", "一船")
+			if idx == GameState.berth_index:
+				GameState.berth_index = 0
+			elif idx < GameState.berth_index:
+				GameState.berth_index -= 1  # 交出的是坞位之前的船：坞位序号跟顺（待拍板 20h）
 			Fleet.ships.remove_at(idx)
 			log_msg("「%s」挂了宋旗，编进张少保的船队。蒲家的人在码头上看着，没说话。" % sname)
 		else:

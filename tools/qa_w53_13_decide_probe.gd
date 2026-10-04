@@ -81,6 +81,7 @@ func _boot() -> void:
 	await _c_clerk_only_quanzhou()
 	await _g_enter_skips_errand()
 	await _r_doors_by_day()
+	_t_berth_after_surrender()
 	_report()
 
 
@@ -361,6 +362,30 @@ func _g_enter_skips_errand() -> void:
 		"陈宅按回车：不替人跑族里的事（有那枚钮 %s；钱 %d、日子走了 %d 日、乡土 %d）" % [
 			str(has_errand), _gs.money, _cal.absolute_day() - day0, _gs.hometown_tendency])
 
+
+
+# ── T 征船交出在坞位之前：坞位序号跟着顺 ─────────────────
+
+func _t_berth(idx_berth: int) -> int:
+	_gs.from_dict({})
+	_gs.berth_index = idx_berth
+	var fleet := root.get_node("Fleet")
+	fleet.ships = [{"name": "大", "type": "junk", "capacity": 400, "crew": 10}, {"name": "中", "type": "junk", "capacity": 200, "crew": 8}, {"name": "小", "type": "sampan", "capacity": 30, "crew": 4}]
+	var idx := 0
+	for i in range(fleet.ships.size()):
+		if fleet.ship_capacity(i) < fleet.ship_capacity(idx): idx = i
+	_expect(idx == 2, "摆场：最小那条是第 2 艘（实得 %d）" % idx)
+	if idx == _gs.berth_index: _gs.berth_index = 0
+	elif idx < _gs.berth_index: _gs.berth_index -= 1
+	fleet.ships.remove_at(idx)
+	return _gs.berth_index
+
+
+func _t_berth_after_surrender() -> void:
+	print("── T 征船交出最小一条船：坞位序号跟顺")
+	_expect(_t_berth(1) == 1, "坞位第 1 艘（中）、交出第 2 艘（小）：坞位仍 1")
+	_expect(_t_berth(0) == 0, "坞位第 0 艘（大）、交出第 2 艘（小）：坞位仍 0")
+	_expect(_t_berth(2) == 0, "坞位就是交出去那艘：坞位归 0")
 
 # ── R 每到新的一天进港重发三扇门 ─────────────────────────
 
