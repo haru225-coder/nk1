@@ -552,9 +552,9 @@ func _route_check() -> void:
 		GS.last_port = pid
 		main.load_scene(pid)
 	_check(GS.chapter == 2, "九港未含博多，章二不晋升")
-	GS.last_port = "hakata"
-	main.load_scene("hakata")
-	_check(GS.chapter == 3, "抵博多 → 章二晋升第三章（实际第 %d 章）" % GS.chapter)
+	GS.last_port = "hakata"; main.load_scene("hakata"); _check(GS.chapter == 2, "抵博多：章目只差泊回泉州，不在博多开第三章（开章之地钉在纲首幕所在的泉州，lane w53-13；实际第 %d 章）" % GS.chapter)
+	Array(main._beats_book().entries()).map(func(e): GS.beat_mark(e)); GS.last_port = "quanzhou"; main.load_scene("quanzhou")  # 泉州节拍链真局里第二章途中早演过：记满拍账，回泉州即开章
+	_check(GS.chapter == 3, "抵博多再回泉州 → 章二晋升第三章（实际第 %d 章）" % GS.chapter)
 	_close_dialogs(main)
 	# ── 终局特殊卡必须进岸开名单：云端「今日只开三处」只在寻常设施里发牌，special_* 一律追加 ──
 	GS.from_dict({})
@@ -4524,8 +4524,10 @@ func _w53_4_settle_flow_check(main: Node) -> void:
 ## ── lane w53-4：晋升过场的「回港上」回开章那一港（chapters.json 各章 advance_scene）──
 ## 修前：章在哪一港够条件就在哪一港开，册页之后接演的纲首幕（写泉州）、南海幕（写广州）只有一钮「回港上」，选项 next
 ## 照写泉州 / 广州——在博多开第三章、在明州开第四章的，一钮就到了泉州 / 广州，日子一天不走、海图不过
-## （simulate_run 那局 24 趟：第三章在南岛海道北口开、第四章在明州开）。现在幕照演、选项效果照记，回的是开章那一港；
-## 本就在幕里那一港开章的，照旧回那一港。数据驱动：哪章有 advance_scene 就验哪章，开章港取幕外的港。
+## （simulate_run 那局 24 趟：第三章在南岛海道北口开、第四章在明州开）。w53-4 改成幕照演、回开章那一港。
+## lane w53-13（待拍板第 5 条）再进一步：开章钉在过场所在的港（next_requires.settle_at，与终章了结之地同一口径）——
+## 幕外的港够了条件不开章、顶匾章目报「泊在泉州」一类；泊到幕里那一港才开，过场演完「回港上」回的就是脚下这一港。
+## 数据驱动：哪章有 advance_scene 就验哪章，幕外的港取本章开着的别港。
 func _w53_4_advance_return_check(main: Node) -> void:
 	var cases := 0
 	for c in GM.chapters_data.get("chapters", []):
@@ -4536,29 +4538,32 @@ func _w53_4_advance_return_check(main: Node) -> void:
 		var cid := int(c.get("id", 0))
 		var loc := str(GM.get_scene_by_id(adv).get("location", ""))
 		var away := _w53_4_away_port(cid, req, loc)
-		_check(away != "", "第%d章晋升过场「%s」（戏在%s）：本章有幕外的港可开章" % [cid, adv, loc])
-		if away == "":
+		_check(away != "", "第%d章晋升过场「%s」（戏在%s）：本章有幕外的港可验" % [cid, adv, loc])
+		if away == "" or GM.get_port_by_id(loc).is_empty():
 			continue
 		cases += 1
-		for at in [away, loc]:
-			if GM.get_port_by_id(at).is_empty():
-				continue
-			_w53_4_turn_chapter_at(main, cid, req, at)
-			_check(GS.chapter == cid + 1 and str(main.get("_chapter_next_scene")) == adv,
-				"第%d章条件全达抵%s：开章（现第 %d 章）、册页之后接「%s」（现「%s」）" % [
-					cid, GM.get_port_name(at), GS.chapter, adv, str(main.get("_chapter_next_scene"))])
-			main._confirm_chapter_sheet()
-			_check(main.current_scene_id == adv, "第%d章册页「承此一路」后演晋升过场「%s」（现页 %s）" % [cid, adv, main.current_scene_id])
-			var eff: Dictionary = {}
-			for ch in GM.get_scene_by_id(adv).get("choices", []):
-				eff = ch.get("effects", {})
-				break
-			main._activate_first_choice()
-			_check(main.current_scene_id == at and GS.last_port == at,
-				"在%s开第%d章：过场「%s」的「回港上」回%s、不挪港（页 %s，last_port %s）" % [
-					GM.get_port_name(at), cid + 1, adv, GM.get_port_name(at), main.current_scene_id, GS.last_port])
-			if str(eff.get("flag", "")) != "":
-				_check(GS.has_flag(str(eff.get("flag", ""))), "过场「%s」的选项效果照记（旗标 %s）" % [adv, eff.get("flag", "")])
+		_w53_4_turn_chapter_at(main, cid, req, away)
+		var host = main.get("_chapter_host")
+		var hint := str(main._chapter_hint())
+		_check(GS.chapter == cid and (host == null or not is_instance_valid(host)) and hint.contains("泊在") and hint.contains(GM.get_port_name(loc)),
+			"第%d章条件全达抵%s（幕外）：不开章（现第 %d 章）、顶匾章目报「泊在%s」（实读「%s」）" % [
+				cid, GM.get_port_name(away), GS.chapter, GM.get_port_name(loc), hint])
+		_w53_4_turn_chapter_at(main, cid, req, loc)
+		_check(GS.chapter == cid + 1 and str(main.get("_chapter_next_scene")) == adv,
+			"第%d章条件全达抵%s：开章（现第 %d 章）、册页之后接「%s」（现「%s」）" % [
+				cid, GM.get_port_name(loc), GS.chapter, adv, str(main.get("_chapter_next_scene"))])
+		main._confirm_chapter_sheet()
+		_check(main.current_scene_id == adv, "第%d章册页「承此一路」后演晋升过场「%s」（现页 %s）" % [cid, adv, main.current_scene_id])
+		var eff: Dictionary = {}
+		for ch in GM.get_scene_by_id(adv).get("choices", []):
+			eff = ch.get("effects", {})
+			break
+		main._activate_first_choice()
+		_check(main.current_scene_id == loc and GS.last_port == loc,
+			"在%s开第%d章：过场「%s」的「回港上」回%s、不挪港（页 %s，last_port %s）" % [
+				GM.get_port_name(loc), cid + 1, adv, GM.get_port_name(loc), main.current_scene_id, GS.last_port])
+		if str(eff.get("flag", "")) != "":
+			_check(GS.has_flag(str(eff.get("flag", ""))), "过场「%s」的选项效果照记（旗标 %s）" % [adv, eff.get("flag", "")])
 	_check(cases >= 2, "带晋升过场的章至少两章入验（现 %d）" % cases)
 	GS.from_dict({})
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})

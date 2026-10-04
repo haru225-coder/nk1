@@ -91,7 +91,7 @@ class G:
     chapter = 1
     visited = ['quanzhou']
     peak_money = 1000
-    ending_id = ""
+    ending_id = ""; ending_port = ""  # ending_port：了结那一刻泊在哪港（之后的远洋段会把船挪走）
     draft_salt = 0
 
 def cap_total():  return sum(ships[s["type"]]["capacity"] for s in G.ships)
@@ -292,7 +292,7 @@ def try_advance():
     req = chapters.get(G.chapter, {}).get("next_requires")
     if not req: return None
     if G.peak_money < req.get("peak_money", 0): return None
-    if len(G.visited) < req.get("visited_count", 0): return None
+    if len(G.visited) < req.get("visited_count", 0) or G.port != req.get("settle_at", G.port): return None  # settle_at = 开章之地（待拍板 5）
     for m in req.get("must_visit", []):
         if m not in G.visited: return None
     cur = chapters[G.chapter]
@@ -349,7 +349,7 @@ def resolve_progress():
     if G.chapter < 4:
         return try_advance()
     if ending_ready(G.peak_money, G.visited, G.port):
-        G.ending_id = pick_ending([])
+        G.ending_id = pick_ending([]); G.ending_port = G.port
         for e in chapters[4].get("endings", []):
             if e["id"] == G.ending_id:
                 return e.get("title", G.ending_id)
@@ -992,6 +992,7 @@ check(verify_invariants(), "购船后分船账目不变量成立")
 crs = bearing("quanzhou","hakata")
 print(f"\n  现在是 {G.month} 月（{monsoon()}），泉州→博多 风向系数 {wind_factor(crs):.2f}")
 waited = 0
+money_before_wait = G.money
 while monsoon() != "SW" and waited < 400:
     to_next = 30 - G.day + 1
     cost = to_next * INN_RATE
@@ -1001,7 +1002,10 @@ while monsoon() != "SW" and waited < 400:
 print(f"  在旅店候风 {waited} 日 → now {G.month} 月（{monsoon()}），"
       f"风向系数 {wind_factor(crs):.2f}，房钱共 {waited*INN_RATE}")
 check(monsoon() == "SW", "通过旅店候风成功等到西南季风")
-check(waited*INN_RATE < 3000, f"候风成本 {waited*INN_RATE} 钱，未压垮玩家")
+# 「未压垮」按候风前手头的钱算一成五（原写死 3000 = 购船后余银下限 FAR_SEA_CAPITAL 两万的一成五）：最长一段逆风是九月候到
+# 次年五月（八个月 3600 钱），候不候得久看跑商这一段停在几月——lane w53-13 起第三章泊在广州才开第四章、近占城，24 趟里就了结、停在十月
+check(waited <= 8 * 30 and waited*INN_RATE < 0.15 * money_before_wait,
+      f"候风成本 {waited*INN_RATE} 钱（{waited} 日），未压垮玩家（候前手头 {money_before_wait} 的一成五以内）")
 
 d = dist("quanzhou","hakata")
 est = math.ceil(d/speed(crs))
@@ -1103,7 +1107,7 @@ playthrough = {
     "peak": G.peak_money,
     "trips": trip - 1 if G.ending_id else trip,
     "money": G.money,
-    "ending_port": G.port if G.ending_id else "",
+    "ending_port": G.ending_port if G.ending_id else "",
 }
 print(f"  通关停在第 {playthrough['trips']} 趟　第 {playthrough['chapter']} 章　"
       f"峰值 {playthrough['peak']}　存银 {playthrough['money']}　"

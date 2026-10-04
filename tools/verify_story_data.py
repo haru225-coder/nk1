@@ -119,6 +119,26 @@ for ch in chapters:
         check(settle in port_ids and port_unlock.get(settle, 99) <= cid,
               f"chapters {cid}.ending_requires.settle_at=`{settle}` 不是本章开着的港，了结不了")
 
+# ── chapters.json：开章之地（lane w53-13，待拍板第 5 条）──
+# 晋升过场（advance_scene）写的是一处港里的戏：纲首幕在泉州市舶司、林阿舶在廊下；南海幕是广州蕃坊的酒宴。章原先在哪港够了
+# 条件就在哪港开，博多开第三章也照演泉州市舶司那一幕（第二章亲至博多常是最后一条，这样开章是常态）。现在 next_requires.settle_at
+# 钉住开章之地：有晋升过场的章，settle_at 须等于过场所在的港，且是本章开着的港。
+for ch in chapters:
+    cid = int(ch["id"])
+    adv = str(ch.get("advance_scene", ""))
+    req = ch.get("next_requires") or {}
+    if not adv or not isinstance(req, dict):
+        continue
+    loc = scene_by_id.get(adv, {}).get("location", "")
+    if loc not in port_ids:
+        continue
+    settle = req.get("settle_at", "")
+    check(settle == loc, f"chapters {cid} 晋升过场「{adv}」写的是{loc}的戏，next_requires.settle_at=`{settle}` 不是它——"
+          f"在别港够了条件就开章，册页之后演一出别处的戏")
+    if settle:
+        check(settle in port_ids and port_unlock.get(settle, 99) <= cid,
+              f"chapters {cid}.next_requires.settle_at=`{settle}` 不是本章开着的港，开不了章")
+
 # ── chapters.json：终章结局文字不点主角名（lane w53-13，待拍板第 2 条）──
 # 这几条结局只看旗标，海商线（终身叫陈子龙）与士人线（1268 唱第改名陈文龙）都走得到。原先「海口信路」写「陈子龙三个字仍写在
 # 货引上」、「史册未落笔」写「陈文龙三个字仍在将来」——士人线了结时一条叫错、一条说改名还在将来。现在册页、结局幕、结局过场
