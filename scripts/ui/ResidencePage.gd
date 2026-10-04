@@ -140,7 +140,7 @@ static func setup_residence_chen(main: Control, port_id: String) -> void:
 	if GameState.identity == "undecided":
 		var errand := Button.new()
 		errand.text = "替族里跑一趟事（费 6 日・30 钱，乡土 +3）"
-		errand.disabled = GameState.money < 30
+		errand.disabled = GameState.money < 30; errand.set_meta("no_enter", true)  # 花日子花钱的钮回车不按（待拍板 20g）
 		errand.pressed.connect(func():
 			if not GameState.spend_money(30):
 				return

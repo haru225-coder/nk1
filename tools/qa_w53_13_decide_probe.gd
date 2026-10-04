@@ -12,6 +12,8 @@ extends SceneTree
 ##   Z 违约罚文零值不写（待拍板 62）：钱匣空了不写「牙行扣 0 钱」；名声已是 0 不写「名声减 1」（w53-10 079efc9 已做，此处合钉）。
 ##   P 毁约按未交部分罚（待拍板 17）：交了大半再放弃，罚额按未交那截酬金的一成五（至少 40），不再按全额。
 ##   C 市舶司小吏只在泉州（待拍板 24）：他的人物条写「泉州市舶司小吏」，修前博多、占城的市舶司页也坐着他。
+##   G 玉湖陈宅回车不替人花钱（待拍板 20g）：港页回车按第一枚可按的钮，陈宅第一枚是「替族里跑一趟事（费 6 日・30 钱）」，
+##     一按就走六日、花三十钱。现在这类钮挂 no_enter，回车跳过，落到离开钮。
 ##   K 章节总述落船籍簿（待拍板 3）：chapters.json 的 hint 在章目没走完时写在船籍簿章名下；走完了不写。修前 hint 从不上屏。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_13_decide_probe.gd
 ## 末行 W53_13_DECIDE cases=N fails=M；fails>0 退 1。
@@ -75,6 +77,7 @@ func _boot() -> void:
 	_z_contract_zero()
 	_p_partial_fine()
 	await _c_clerk_only_quanzhou()
+	await _g_enter_skips_errand()
 	_report()
 
 
@@ -332,6 +335,28 @@ func _c_clerk_only_quanzhou() -> void:
 		seen[pid] = _has_text(_main, "市舶司小吏")
 	_expect(not seen["fuzhou"] and not seen["hakata"], "福州、博多的市舶司页不见「市舶司小吏」（实得 %s）" % str(seen))
 	_expect(seen["quanzhou"], "反向基：泉州市舶司页照见「市舶司小吏」（实得 %s）" % str(seen))
+
+
+# ── G 玉湖陈宅回车不替人花钱 ─────────────────────────────
+
+func _g_enter_skips_errand() -> void:
+	print("── G 玉湖陈宅：回车不按「替族里跑一趟事」")
+	_gs.from_dict({})
+	_cal.from_dict({"year": 1260, "month": 4, "day": 1})
+	_gs.money = 500
+	_gs.last_port = "xinghua"
+	_main.load_scene("xinghua_residence")
+	await process_frame
+	var has_errand := false
+	for c in _main.choices_container.get_children():
+		if c is Button and str((c as Button).text).begins_with("替族里跑一趟事"):
+			has_errand = true
+	var day0: int = _cal.absolute_day()
+	_main._activate_first_choice()
+	await process_frame
+	_expect(has_errand and _gs.money == 500 and _cal.absolute_day() == day0 and _gs.hometown_tendency == 0,
+		"陈宅按回车：不替人跑族里的事（有那枚钮 %s；钱 %d、日子走了 %d 日、乡土 %d）" % [
+			str(has_errand), _gs.money, _cal.absolute_day() - day0, _gs.hometown_tendency])
 
 
 func _snip(t: String, anchor: String, span := 60) -> String:
