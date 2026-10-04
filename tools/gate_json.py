@@ -627,6 +627,39 @@ REGISTRY = [
      "green": "末行 `结果：全部通过`（零节 12 格 ✓ + 真文档 `新增 0 格（含「殓殓」行 15/15 键行照挂）` ✓）",
      "red": "✗ `<档>:<行号>: 新增「殓殓」×N（词级污染指纹，白名单外行）` / ✗ `含「殓殓」行数 N ≠ 恒等基线 15` "
             "逐条点名 + 自检 ✗ / 读不到清册 ✗——首行后 `结果：N 项问题`，退 1"},
+    # lane w64-k1 伙伴系统三件落地（承接笔 789a226）带两件入仓、本波 w71-k3 收编注册档——
+    # ① check_companions（companions.json 骨架校验闸、w64-k1 三件之一）；② qa_companion_preview_probe
+    # （预览浮页运行时探针、w64-k1 三件之二、其 EXEMPT 挂账行「本波落地后随稽登记注册档」本波收编摘行）。
+    # 判掂照 §五.2 原条文：trigger 自己判不准（改 companions.json / CompanionPreview.gd 的 lane 想不起加跑这两件）、
+    # 快（check_companions 纯 stdlib <1 s；探针 headless 秒级）、只读零写盘（皆零写盘开关）——lane 档非 must 不动必跑集合。
+    {"id": "check_companions", "tier": "lane", "when": "动 data/companions.json 或 tools/check_companions.py",
+     "kind": "py", "file": "tools/check_companions.py",
+     "judge": "（lane w64-k1 立，w71-k3 收编注册档入册——承接笔 789a226 入主后挂账收编）data/companions.json 骨架校验："
+              "字段两档（已定字段照草案名册 v2 照数搬入逐条校验；未定字段一律恰写 \"_todo\"、留空判绿不判红）；"
+              "域全从本仓现算不手抄（region/category/窗口方式/入伙方式/战位/立场读 companions.json meta 各 def，职事 id 读 crew.json roles，"
+              "faction id 读 characters.json meta.faction_def，港 id 读 ports.json，货 id 读 goods.json，特技 id 读 characters trait_def ∪ 名册 new_traits）；"
+              "九节判词——零、判据自检（内存变异：删已定字段 / id 重号 / 名字重号 / 未定填词表外值 / 窗口写年份整数 / 撞 crew 候名 / "
+              "云屯两人 duty 空壳不齐 / 挂不存在的港各须红、好样本删红须绿，判不出即闸自身坏先红）；一、顶层与条目数（companions 恰 40、events 恰 60 各 id 唯一）；"
+              "二、身份骨架（name 唯一、region/category/verify/reuse_character/p1/p1_stub 形态与枚举）；三、langs list<str> 非空；"
+              "四、appear（chapter_min∈[1,5]、windows≥1 段、YYYY-MM 定长 1255–1285 窗内 from≤to、mode∈meet_mode_def、ports∈ports.json、route 1–2 段端名∈本表港∪ports∪{any}、rumor 非空）；"
+              "五、join（type∈join_type_def、hire 者 fee≥0、bond 者 bond_need∈[0,100] 且 bond_path 合计≥bond_need、guest 者 fee==0、requires 只含登记键）；"
+              "六、duty（键皆职事 id、品级∈[1,3]、月俸∈WAGE 档、battle⊆battle_slot_def 去 none、local 型 duty 空壳、其余 home_port∈ports.json）；"
+              "七、niche kind∈niche_kind_def；八、stance/traits/gifts/climax 枚举与子集；九、未定字段恰 \"_todo\"、events 的 who⊆companions id∪{player}、verify∈{待核,已核}）。纯 stdlib 只读 <1 s",
+     "green": "零节 `✓ 自检 16 格…全判对` + 一—九节各 `✓ …全对` + `✓ 伙伴 id 与 crew.json 候选不撞` + 末行 `结果：全部通过`",
+     "red": "✗ 行点名（`✗ 第 k 条 <id>：…` 字段缺值 / 类型错 / 枚举越域 / id 重号撞名 / `_todo` 误填词表外值）+ 自检 ✗——首行后 `结果：N 项问题`，退 1"},
+    {"id": "qa_companion_preview_probe", "tier": "lane",
+     "when": "动 scripts/companions/CompanionPreview.gd（浮页上屏文案 / 钮面 / 字段 / PREVIEW_IDS 名单）、"
+             "data/characters*.json 的六预览人物 display_name，或动 tools/qa_companion_preview_probe.gd 自身",
+     "kind": "godot", "file": "tools/qa_companion_preview_probe.gd",
+     "args": ["--headless", "--path", ".", "-s", "res://tools/qa_companion_preview_probe.gd"],
+     "judge": "（探针 w64-k1 立，w71-k3 收编入册摘 EXEMPT——其挂账行原语「本波落地后随稽登记注册档」；"
+              "承 w27-k1 顶匾同工：CompanionPreview 浮页此前只有截图探针判图不判字，上屏物运行时断言零）"
+              "真场景树 13 案钉「上屏可见物」运行时断言（不读内部变量）：C1 F7 打开浮页真实挂上；C2「草案预览」戳上屏；"
+              "C3 合上钮在、字恰「合上」；C4 题签「同舟草签」；C5 卡格恰 6 张对齐 PREVIEW_IDS；C6 六卡名签逐字=PREVIEW_IDS 对应 display_name；"
+              "C7 每卡有 Identity 或 Note 一格；C8 每卡有「剪影」标记；C9 脚注「只读示意　不入存档　非招募系统」逐字；"
+              "C10 再按 F7 合上；C11 港页再开戳与卡数仍对；C12 关浮页重进不串档；C13 本进程 SCRIPT ERROR 即红（script_err_tally）。",
+     "green": "逐条 `  ✓ …` + 末行 `COMPANION_PREVIEW cases=N fails=0`",
+     "red": "`  ✗ …` 行（戳 / 钮面 / 卡数 / 名签 / 脚注缺或漂 / SCRIPT ERROR）+ 末行 `COMPANION_PREVIEW cases=N fails=M`（M≥1）退 1"},
 ]
 
 # w27-k4 CHECK FOLLOWS

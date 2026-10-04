@@ -65,7 +65,6 @@ EXEMPT = [
     ("japan_ship_probe.gd", "f7a6dc5 feat(ships)", "船近景四支之一，已接 shot_gate 压帧（gates_md 入册判据认它），截图档待挂"),
     ("letterbox_signal_probe.gd", "7a47d15 lane-gd12", "墨边收尾信号契约探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("qa_bribe_probe.gd", "2552fa8 lane-w23-a5", "塞钱 48 格实测表：断言全注掉的纯取证探针（现态留档，不判红绿）"),
-    ("qa_companion_preview_probe.gd", "lane-w64-k1", "伙伴草案预览浮页上屏文案 / 钮面 / 字段运行时探针（戳 / 合上钮 / 六卡名签逐字对照），挂靠 w64 伙伴片本体，本波落地后随稽登记注册档"),
     ("qa_contract_destinations_probe.gd", "5f41ab4 lane-w23-a8", "V0928 委办目的园取证探针（零断言纯取证，现态×A+ 豁免镜像留档）"),
     ("qa_contract_stock_probe.gd", "160c99e lane-iz2", "委办「凑得出」现货口径专项探针，断言随 lane-iz2 落地即验过"),
     ("qa_customs_duty_probe.gd", "2bbd7b7 lane-ea3", "市舶验引税率专项探针，税率公式归 verify_economy 必跑档复判"),
