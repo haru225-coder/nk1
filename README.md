@@ -26,7 +26,7 @@ godot --path .        # 或直接用 Godot 编辑器打开 project.godot
 
 ## 验证
 
-一次改动闭环 = 下面三十一道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
+一次改动闭环 = 下面三十二道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
 
 ```bash
 # 十五道 Python（无 Godot 也能跑）
@@ -47,7 +47,7 @@ python3 tools/check_w53_copy.py     # 玩家可见 CJK 串两类回潮钉（「�
 python3 tools/check_ledger_garbage.py # docs/仓务清册「殓殓」词级污染指纹静态扫（lane w62-k3 立、w68-k1 依 w65-k2 牒备件 §五.2 判掂毕升 must：R1 单枚细判窗 + R2 ≠ 恒等基线双端红 + 白名单 15 行 11 键钉集）
 python3 tools/check_probe_registry.py  # tools/ 下每支 *_probe.gd 要么注册进门禁注册表、要么登豁免名单（lane w27-k4 立闸即必跑；一键跑末条；k11 审计「最该补的门禁」第 2 条）
 
-# 十道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
+# 十一道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
 godot --headless --import --path .                               # 导入步骤：刷新缓存、不判红绿（docs/GATES.md §三.9）
 godot --headless --path . -s res://tools/godot_smoke.gd          # 云端冒烟（逐项 ✓，末行 GODOT SMOKE PASS）
 godot --headless --path . -s res://tools/godot_compile_check.gd  # 全部脚本可编译
@@ -62,6 +62,7 @@ godot --headless --path . -s res://tools/qa_debt_strip_probe.gd  # HUD 顶匾上
 godot --headless --path . -s res://tools/qa_crew_fold_probe.gd  # 多雇员【欠饷】字面 + 札记折叠渲染字样运行时断言 17 案（lane w77-k3 依 w75-k3 复核牒升格必跑）
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd  # 船籍簿页「船舱」段货载上屏运行时断言 27 案
 godot --headless --path . -s res://tools/qa_seachart_advance_probe.gd  # SeaChart 海图「航段」名号跨月推进时序运行时断言 15 案（lane w79-k3 依 w77-k6 复核牒升格必跑）
+godot --headless --path . -s res://tools/qa_calendar_probe.gd  # 日历推进 / 改元显示运行时断言 38 案（lane w80-k5 依 w79-k4 复核牒升格必跑）
 ```
 lane 加跑档（不进上面一键跑、不改道数；触发条件见 `docs/GATES.md` §一 档列）：本帧登记含 `python3 tools/check_ledger_garbage.py`（仓务清册「殓殓」词级污染静态扫，lane w62-k3 立——动 `docs/仓务清册_2026-10-03.md` 判档段时手跑，§三.48）。
 

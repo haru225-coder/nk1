@@ -508,10 +508,19 @@ REGISTRY = [
      "green": "逐条 `  ✓ …` + 末行 `SEACHART_ADV cases=N fails=0`",
      "red": "`  ✗ …` 行（如名号缺字 / 静风日数不合 / 跨月不改印 / 留旧月值 / 出航不隐 / 抵港不复现 / 长程跨月名号消失）"
             "+ 末行 `SEACHART_ADV cases=N fails=M`（M>0），退 1"},
-    {"id": "qa_calendar_probe", "tier": "lane",
-     "when": "动 scripts/core/Calendar.gd（日推进 / 改元表 / ERA_START / _era_row / 中文数字月日名）"
-             "或船籍簿页首行上屏链（LedgerPage.update_panel 的日历行 / Main.status_label / update_status_panel），"
-             "或动 tools/qa_calendar_probe.gd 自身",
+    {"id": "qa_calendar_probe", "tier": "must",
+     "why": "（lane w80-k5 依 w79-k4 复核牒 v1（C1–C4 四格全签、判可升在卷）执行升格，w79-k3 seachart 升格先例同轨）"
+            "日历推进 / 改元表写口（Calendar.gd）＋ 船籍簿页首日历行上屏链（LedgerPage.update_panel / Main.status_label）"
+            "跨两域写口、改 lane 多半想不起加跑这条 lane 当次只加跑的探针；"
+            "升格判掂毕——判掂 1「自己判不准」成立（写口面实址：Calendar.gd advance_days / _era_row / ERA_START / "
+            "中文数字月日名收尾、LedgerPage.update_panel 日历行 / Main.status_label / update_status_panel 兜里调、"
+            "探针自身三截，与海图名号（seachart_advance）/札记折叠（crew_fold）/dim 染褪（fold_dim）/欠饷月历一瞥（fold_notice）"
+            "四已升内域互斥）；判掂 2 速档成立（w79-k4 牒三跑 2–3 s、本片改前基线三跑 real 2.38/2.41/2.39 s，"
+            "与本辑 Godot must 探针族 2–4 s 同族同格、"
+            "一键跑洪带增量 < 4 s 不扩容出既有洪带）；判掂 3 只读成立（探测体 grep FileAccess/DirAccess/user:// 零命中、"
+            "宿主域两处 res:// file_exists 只读贴图存在探测非写）；判掂 4 幂等绿成立（main 尖三跑连绿 rc=0、"
+            "末行 `CALENDAR_PROBE cases=N fails=0` ×3（实跑帧 38 例））。"
+            "EXEMPT 挂账实过 26 波、w35-k1 收编同 w31-k3 8170079 母本先例。",
      "kind": "godot", "file": "tools/qa_calendar_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_calendar_probe.gd"],
      "judge": "（探针 f3f092e lane-w26-k9 立、EXEMPT 挂账实过 26 波，w35-k1 收编——同 w31-k3 8170079 收编先例）"
