@@ -308,6 +308,24 @@ for n in news:
     y = int(str(n.get("date", "0000"))[:4] or 0)
     check(1255 <= y <= 1279, f"news {nid} 年份 {y} 超出 1255–1279")
 
+# 新闻不许早于它报的那件事（lane w53-13，待拍板第 7 条）：游戏历是农历，消息传到海口晚一两个月合情理，早了就是先知。
+# 原先「建号大元」排在至元八年六月（史载十一月）；鲁港一条排德祐元年三月却已写「路上给人杀了」（贾似道九月才在木棉庵被杀）。
+NEWS_NOT_BEFORE = {  # id → 史载那件事的农历年月（取《宋史》《元史》本纪）
+    "n_1259_08_diaoyucheng": "1259-07",   # 开庆元年七月，蒙哥死于钓鱼城下
+    "n_1264_11_lizong_dies": "1264-10",   # 景定五年十月，理宗崩、度宗即位
+    "n_1271_06_yuan": "1271-11",          # 至元八年十一月，建国号大元
+    "n_1275_03_lugang": "1275-02",        # 德祐元年二月，鲁港溃败
+    "n_1275_10_jia_killed": "1275-09",    # 德祐元年九月，郑虎臣杀贾似道于漳州木棉庵
+}
+_news_by_id = {n.get("id", ""): n for n in news}
+for nid, hist in NEWS_NOT_BEFORE.items():
+    nd = str(_news_by_id.get(nid, {}).get("date", ""))
+    check(nd != "" and nd >= hist, f"news {nid} 排在 {nd or '（缺）'}，早于史载 {hist}——消息不能先于事情传到")
+for n in news:
+    t = str(n.get("text", "")) + str(n.get("text_S", "")) + str(n.get("text_M", ""))
+    if "贾似道" in t and "杀" in t:
+        check(str(n.get("date", "")) >= "1275-09", f"news {n.get('id')} 排在 {n.get('date')} 已写贾似道被杀（史载德祐元年九月）")
+
 # 1268 结算月之前不得出现任何依赖 identity 锁定的措辞（S/M 双版允许，按倾向选）
 # 这里只保证 1268-04 那个月本身没有新闻抢在结算前投放
 check(not any(n.get("date") == "1268-04" for n in news), "news.json 不得在 1268-04 投放（与殿试结算同月）")

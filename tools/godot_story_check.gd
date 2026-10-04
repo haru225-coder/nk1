@@ -3808,7 +3808,7 @@ func _h8_logfold_ledger_check(main: Node) -> void:
 	sl = main._log_lines
 	var top3: Dictionary = main._log_folds.get(str(sl[0] if not sl.is_empty() else ""), {})
 	var groups3: Array = top3.get("groups", [])
-	_check(total3 >= LogFold.FOLD_AT and order3.size() == 15 and sl.size() == 2 and str(sl[1]) == "复原一句。" and not top3.is_empty(),
+	_check(total3 >= LogFold.FOLD_AT and order3.size() == 16 and sl.size() == 2 and str(sl[1]) == "复原一句。" and not top3.is_empty(),
 		"跳三年：%d 则跨 %d 月仍折一行、底下那句还在（%s）" % [total3, order3.size(), sl])
 	var order_got3: Array = []
 	var month_bad3 := 0
@@ -3825,8 +3825,8 @@ func _h8_logfold_ledger_check(main: Node) -> void:
 			groups3.size(), month_bad3, (top3.get("lines", []) as Array).size(), total3])
 	_check(not groups3.is_empty() and (top3.get("groups", []) as Array).size() == order3.size(),
 		"跳三年月组数 = 跨月数（%d）" % groups3.size())
-	_check(str(sl[0]).begins_with("自德祐元年　二月初一至于") and str(sl[0]).ends_with("，通告一连 42 则，凡 15 月"),
-		"跳三年折行「自…至于…，凡 15 月」实样「%s」" % [str(sl[0] if not sl.is_empty() else "").left(70)])
+	_check(str(sl[0]).begins_with("自德祐元年　二月初一至于") and str(sl[0]).ends_with("，通告一连 43 则，凡 16 月"),
+		"跳三年折行「自…至于…，凡 16 月」（1275-10 贾似道被杀一则，lane w53-13）实样「%s」" % [str(sl[0] if not sl.is_empty() else "").left(70)])
 	main._on_log_meta("fold:0")
 	var heads3 := ml.text
 	var top_ym3 := str(order3[0])
@@ -3841,13 +3841,13 @@ func _h8_logfold_ledger_check(main: Node) -> void:
 	main._on_log_meta("fold:0")
 	_check(main._log_fold_open == "" and ml.text.find("fold:0:") < 0, "跳三年那折收起后各月行也收起")
 	# 再连跳三年（1278-01 → 1281-01）：1278-03 广州复沉、1278-12 厓山（merchant 线新闻）两则到期收进同一折，
-	# 折成 44 则凡 17 月、行字末端改「祥兴元年　腊月初一」；底句仍在。之后内容告罄。
+	# 折成 45 则凡 18 月、行字末端改「祥兴元年　腊月初一」；底句仍在。之后内容告罄。
 	GM.skip_years(3)
 	sl = main._log_lines
 	var top4: Dictionary = main._log_folds.get(str(sl[0] if not sl.is_empty() else ""), {})
 	var groups4: Array = top4.get("groups", [])
-	_check(not top4.is_empty() and (top4.get("lines", []) as Array).size() == 44 and groups4.size() == 17
-		and str(sl[0]) == "自德祐元年　二月初一至于祥兴元年　腊月初一，通告一连 44 则，凡 17 月",
+	_check(not top4.is_empty() and (top4.get("lines", []) as Array).size() == 45 and groups4.size() == 18
+		and str(sl[0]) == "自德祐元年　二月初一至于祥兴元年　腊月初一，通告一连 45 则，凡 18 月",
 		"连跳三年：厓山两则收进同一折（折 %d 则 / 组 %d；底句 %s）" % [
 			(top4.get("lines", []) as Array).size(), groups4.size(),
 			"还在" if sl.size() == 2 and str(sl[1]) == "复原一句。" else "不见了"])
