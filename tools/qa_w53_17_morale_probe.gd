@@ -1,37 +1,43 @@
 extends SceneTree
 ## lane-w53-17 士气与风专项探针（headless）：战斗系统方案第一期「大风两散」「战后士气带回航程」，
 ## 第二期「火长提前报风」「通事劝降效力」。一条一 commit，逐节对应；撤掉该条的修复，对应节即红。
-##   一、大风两散（一期，gale_parting）：combat_phases.json t_gale 的落实。SeaState 骤降风使作战上限
-##      （与现存 WIND_CAP 同一条线）不证自眀——此节盘上推演：setup 按 Calendar.monsoon_strength_of ×
-##      base_wind_strength × 每场上浮 1.12 的风均值，乘上阵风与余量仍迸不过 130，常态一场也迸不出来；
-##      盛季 +12% 的暖流才迸。所以原来「七级以上不能战」那行是死字。本段验：
-##      ① 强月 + 擢到顶的种子照 setup 确实召出雷暴大风（derive 盘）；
-##      ② 弱月照 setup 不召（常态不变局）；
-##      ③ 真起海战场挂雷暴风（两个推演出来的种子）：第一帧即收 flee 一次，data 带 parted + gale，
-##         不许再战（_enemies_alive 照旧、敌船炮冻住也收）；开关关掉后同一种子照打到底。
-##   二、战后士气带回航程（一期，morale_carry）：CombatMorale.carry_to_voyage 全仓原先无一调用。
-##      _battle_exit 收战尾：开关开着、士气簿活着，把「战中涨落 × carry.ratio（溃过 −4、降过 −8）」写到 Fleet.morale，
+##   一、大风两散（一期，gale_parting）：combat_phases.json t_gale「风到七级以上不能战」的落实。
+##      作战的「上限」本来是死字：wind_level_rule 折的七级线 140，而 SeaState.WIND_CAP 130——
+##      风暴把它攥到 130 也照旧挂着六级可战名，七级水上照打。落成「风暴海定场」：
+##      setup 召雷暴大风须 mean ≥ GALE_SEED_WIND 98 且 base_strength ≥ GALE_BASE_WIND 100
+##      （寻常远航 80 走不到；剧情 pending_battle.wind_strength 递得出大风，force_wind 同记）。
+##      WorldMap 开战按开关判到即收 flee{flee_ok, parted, gale}（题签 parted「两散」照旧，
+##      data.gale 是 w53-16 战后单子出大风文字那一键）。本段验：
+##      ① 盘上推演：风暴海盘（盛季 × base 110，400 种子）召得出雷暴大风；
+##         寻常远航盘（盛季 × base 80，同扫）一个也召不出（常态没变局）；
+##      ② 真起海战挂风暴风场（pending_battle.wind_strength 118）：进场即收 flee 一次，
+##         data 带 parted + gale + flee_ok；开关关掉同一场照打到底。
+##   二、战后士气带回航程（一期，morale_carry）：CombatMorale.carry_to_voyage 写好但原本
+##      无一调用。_battle_exit 收战尾：开关开着、士气簿活着，把「战中涨落 × carry.ratio（0.3，溃过
+##      另 −4、降过另 −8——数全在 data/combat_morale.json carry 节）」写到 Fleet.morale，
 ##      并带 data.morale_carry 供战后单子（w53-16）。验：
-##      ① 惨胜盘：士气簿压到思退 → 收战 Fleet.morale = 战前 + round((末 − 始) × 0.3)，低过战前；
-##      ② 开关关掉：同盘收战 Fleet.morale 一字不动；
-##      ③ 惨负盘（溃过）：除折算再扣 routed 档。
-##      注意与 SeaChart 那笔 +5（赢）/ −12（输）旧账各司各段：本件写 before 账，SeaChart 照旧在 after 上加减——
-##      那是本来就在的账，不是本 lane 的修法。
-##   三、火长提前报风（二期，crew_role_effects）：越线前几秒出浮字「火长望见天色不对：风要转了」。
-##      等等级：0 级不报；每级提前 GALE_WARN_S（5 秒）。验：
-##      ① derive 盘推一个「将迸」的种子（mean 使 storm_peak() ≥ 线而 gale_peak() < 线）；
-##      ② 海战场 huozhang 3 级 → 风率一帧帧抬，临迸前 ≥ 14 秒出浮字；0 级 → 同盘不出浮字；
-##      ③ 在场「两散」收战时，出过的预报不许再出现在收战浮字后（一次为准）。
-##   四、通事劝降效力（二期，crew_role_effects）：劝降胜算原是面板自算的形（约 55 − 敌士气那一套），
-##      通事一级 +0.05 没人接。本 lane 给 EnemyCaptainAI 一条只读加成（parley_bonus_tongshi）：
-##      开关开着 = 0.05 × Crew.level_of("tongshi")；关 = 0。面板那头由 w53-15 挂上。
+##      ① 惨胜盘：士气簿压到 28 → Fleet.morale = 战前 73 + round((28 − 73) × 0.3) = 59；
+##      ② 开关关掉：同盘 Fleet.morale 一字不动、data 不带这键；
+##      ③ 溃过盘（ever_routed）：折算外再 −4 = 57。
+##      判据写值与收战挂同一帧、不跨 await：下一物理帧若先扫到，挂件 tick 会照开战那一刻的
+##      rally 目标把簿扳回去（silent green 雷）。
+##      注意与 SeaChart 那笔 +5（赢）/ −12（输）旧账各司各段：本件写 before 账，SeaChart 照旧在
+##      after 上加减——那是本来就在的账，不是本 lane 的修法。
+##   三、火长提前报风（二期，crew_role_effects）：寻常战逐物理帧把 wind_mean 抬 0.5/秒
+##      （与 WorldMap._check_gale_warn 的「长势」推演同数）：
+##      ① 火长 3 级：预报浮字「风要转了」须在 mean 涨过 WIND_CAP（「风大得不能打」那一刻）前
+##         ≥ 15 秒（GALE_WARN_S × 3）出，实得约 93.5 秒（长势下 mean_then 先迸线）；
+##      ② 火长 0 级不出；③ crew_role_effects 开关关掉不出（逐字回旧玩法）。
+##   四、通事劝降效力（二期，crew_role_effects）：劝降胜算原归面板自算（55 − 敌士气那一套），
+##      通事一级 +0.05 没人接。本 lane 给 EnemyCaptainAI 一条只读纯函（parley_bonus_tongshi，
+##      品级 → +0.05/级；开关那头在战端判）。验三盘：3 级 = +0.15 / 3 级开关关 = 0 / 0 级 = 0。
+##      面板那头（parley_chance）：w53-15 挂。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_17_morale_probe.gd
-## 判词：QA_W53_17_MORALE_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。跑完还原 Fleet / GameState / pending_battle。
+## 判词：QA_W53_17_MORALE_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。跑完还原 Fleet / GameState / pending_battle / Calendar.month / Crew.hired。
 
 const TAG := "QA_W53_17_MORALE_PROBE"
 
-## 逐段交账时只用到的口径（与 WorldMap / SeaState 守同数，别处改这里跟着红）
-## 盘上推演只用到这两条线与 SeaState 守同数（别处改这里跟着红）
+## 探针只与 SeaState 守这三条数（别处改这里跟着红）
 const GALE_SEED := 98.0        # SeaState.GALE_SEED_WIND
 const GALE_BASE := 100.0       # SeaState.GALE_BASE_WIND（风暴定场起步风）
 const GALE_WARN := 5.0         # SeaState.GALE_WARN_S（每级提前秒数）
