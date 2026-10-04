@@ -879,6 +879,9 @@ func refresh() -> void:
 		return
 	for id in ORDERS:
 		var row: Dictionary = _rows[id]
+		# 二期两令的开关关掉时：签行直接不出，与 wave53 开工前的五道签逐字一致（issue / order_enabled 同一闸也照过）
+		var sw := order_switch_for(id)
+		(row["row"] as Control).visible = (sw == "" or Switches.on(sw))
 		var chip := row["chip"] as Button
 		var active := order_active(id)
 		if _chip_accent.get(id, null) != active:
@@ -972,7 +975,7 @@ func _build() -> void:
 		st.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(st)
 		body.add_child(row)
-		_rows[id] = {"chip": chip, "state": st}
+		_rows[id] = {"row": row, "chip": chip, "state": st}
 
 	body.add_child(_rule())
 	_alloc_lbl = _foot(UiTheme.PAPER_TEXT)
