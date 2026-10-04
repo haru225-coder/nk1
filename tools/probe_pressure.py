@@ -2,7 +2,7 @@
 """截图 / 信号探针「压帧双档结论一致」门禁（lane gd25）：同一支探针在两档 NK1_PROBE_SLOW_MS 下各跑一遍，结论必须一样。
 
   python3 tools/probe_pressure.py                         # 全部有窗口探针 × 档 0 / 300；有不一致或跑不成退 1
-  python3 tools/probe_pressure.py --only qa_title_probe,letterbox_signal_probe [--levels 0,60,300] [--jobs 2]
+  python3 tools/probe_pressure.py --only qa_title_probe,letterbox_signal_probe [--levels 0,60,300]   # jobs=x 非法：一次只跑一份 Godot
   python3 tools/probe_pressure.py --mutants               # 反向变异自证：固定帧数碰运气的两支变异须判不一致（约 5 分钟）
   python3 tools/probe_pressure.py --selftest              # 只跑「零、判据自检」（不起 Godot）
   python3 tools/probe_pressure.py --json                  # 机读（同 docs/GATES.md §二）
@@ -463,6 +463,12 @@ def _arg(name, default):
 
 def main():
     problems = []
+    # 一条机器上一次只跑一份 Godot（wave53 公共约束；glock 另把大门，本门禁自己不能并行）：jobs 钉 1，
+    # selftest 分支也要先拒——否则 selftest 早退，校验被绕过。
+    jobs = int(_arg("jobs", "1"))
+    if jobs != 1:
+        print(f"  ✗ --jobs 只能 1（本 lane 规矩：一次只跑一份 Godot，不并行；主控会杀并行 Godot；要快自己多起几条 lane）")
+        return 2
     print("零、判据自检（造出来的结论对，不起 Godot）")
     bad = selftest()
     for b in bad:
@@ -489,7 +495,6 @@ def main():
         return 2
     if not any(lv * 1.0 < 1000 / 7.5 for lv in levels) or not any(lv >= 1000 / 7.5 for lv in levels):
         print(f"  ⚠ 档 {levels} 没有同时含不封顶（< 134 ms）与封顶（≥ 134 ms）两类：数固定帧数碰运气的探针在这组档下可能照样一致")
-    jobs = int(_arg("jobs", "2"))
     out = os.path.abspath(_arg("out", DEFAULT_OUT))
     os.makedirs(out, exist_ok=True)
 
