@@ -5017,6 +5017,15 @@ if _fame_raw:
 else:
     print("  ✓ 名声一律经 GameState.add_fame 加减（GameState 之外无直接写 fame）")
 
+# lane w53-13（待拍板第 20e 条）：岸上三扇门每到新的一天进港就重发（ShoreDraft.deal 的盐位带上日子，
+# 不必非按「再候一日」），同一日从一处回港还是那一手。
+_shore_deal = _locate_func(main_src, "_refresh_shore")
+if "shore_salt + Calendar.absolute_day()" in _shore_deal and ("GameState.shore_salt" not in _shore_deal.replace("GameState.shore_salt + Calendar.absolute_day()", "")):
+    print("  ✓ 岸上三扇门每到新的一天重发（盐位带日子）")
+else:
+    print("  ✗ 岸上三扇门没拿日子当盐位的一部分——不候日进港门永远不换")
+    problems.append("三扇门盐位不带日子")
+
 # lane w53-13（待拍板第 61 条；w53-10 cee5e9c 满额写「已募满」，未满写「募兵上限 M」）：守城城防账「兵 N（上限 M）」的 M 是募兵上限（GameState.siege_troop_cap，随名声），收编石手军
 # 直接 +200 可越过它——原写「上限」读着像兵数到顶，城里却站着比上限还多的人。题签写「募兵上限」。
 if '"募兵上限 %d"' in main_src and '"上限 %d"' not in main_src and '"兵 %d（上限 %d）' not in main_src:
