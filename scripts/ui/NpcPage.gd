@@ -242,6 +242,7 @@ static func set_npc_speech(main: Control, text: String) -> void:
 
 
 static func on_npc_intel(main: Control, n_name: String) -> void:
+	GameManager.advance_days(1)
 	var heard := UiTheme.plain_log(main._gather_price_intel(GameState.last_port))
 	main._set_npc_speech("%s压低声音说。\n\n%s" % [n_name, heard.trim_prefix(BENCH_LEAD)] if heard.begins_with(BENCH_LEAD) else NO_INTEL % n_name)
 
@@ -277,7 +278,7 @@ const BENCH_LEAD := "邻座的牙人压低声音："
 ## 市舶司小吏就压低声音讲「几个老水手……」；现由他自己说一句没有。
 const NO_INTEL := "%s摇了摇头：「眼下没什么新行情。」"
 
-## 见面页行情签旁注：行情由见面的人当面说（复刻设计 §8.7），不费时日——酒馆长凳那张签写「费一日」（advance_days），两处的代价并排看得清。
+## 见面页行情签旁注：行情由见面的人当面说（复刻设计 §8.7），费一日（w53 待拍板 25：与酒馆长凳同——on_npc_intel 也 advance_days(1)），两处的代价并排看得清。
 ## 修前这里写「邻座牙人」，人却是林阿舶、市舶司小吏本人在说。阿那的招呼原写「要问航路，就问」，可他页上只有行情、没有问航路的签，
 ## 一并改成「要问什么，就问」。
-const INTEL_ASIDE := "不费时日"
+const INTEL_ASIDE := "费一日"

@@ -5268,6 +5268,36 @@ func _w53_14_scholar_letter_check() -> void:
 	Cal.from_dict(keep_cal)
 
 
+## w53 待拍板 22（lane w53-14 补必跑覆盖；实施在 w53-7 2edd32a）：岸上名册没见过的人行上写「未识」、头面一方墨底「？」
+## 不取画像、不出阵营签；见过（met_ids）或人物志认得了才露名字与画像。原先只有 EXEMPT 探针 qa_w53_7_tavern_crew_probe 守着。
+func _w53_14_roster_unknown_check() -> void:
+	var keep_gs: Dictionary = GS.to_dict()
+	var keep_cal: Dictionary = Cal.to_dict()
+	GS.from_dict({})
+	Cal.from_dict({"year": 1258, "month": 3, "day": 1})
+	var CArt = load("res://scripts/ui/CharacterArt.gd")
+	var roster: Node = load("res://scripts/chars/CharRoster.gd").new()
+	var hua: Dictionary = GM.get_character("lin_hua")
+	var abo: Dictionary = GM.get_character("merchant_lin")
+	var row_of := func(ch: Dictionary) -> Array:
+		var r: Control = roster.call("_build_row", ch)
+		var nm: Label = r.find_child("Name", true, false)
+		var head: Node = r.find_child("Head", true, false)
+		var out := [nm.text if nm != null else "", head is TextureRect and (head as TextureRect).texture != null]
+		r.free()
+		return out
+	var h0: Array = row_of.call(hua)
+	var a0: Array = row_of.call(abo)
+	GS.met_ids.append("lin_hua")
+	var h1: Array = row_of.call(hua)
+	_check(h0[0] == "未识" and not h0[1] and a0[0] == CArt.display_name(abo) and a0[0] != "未识"
+			and h1[0] == CArt.display_name(hua) and h1[0] != "未识",
+		"名册未识之人：1258 林华行写「%s」、头面不取画像（%s）；林阿舶照写「%s」；记下见过林华后写「%s」" % [h0[0], not h0[1], a0[0], h1[0]])
+	roster.free()
+	GS.from_dict(keep_gs)
+	Cal.from_dict(keep_cal)
+
+
 ## lane w53-11：story 收尾（原在 _process 里、不 await _route_check 就印 SUMMARY / quit）——等抵港路由一节整段跑完
 ## （含其中真让帧的 await）再判 SCRIPT ERROR、印 SUMMARY、退出；_route_check 半路被脚本错掐断时 await 照样回来，
 ## 由 _script_error_check 判红。
@@ -5278,6 +5308,7 @@ func _finish_after_route() -> void:
 	_w53_10_contract_fame_floor_check()
 	_w53_10_current_heading_check()
 	_w53_14_scholar_letter_check()
+	_w53_14_roster_unknown_check()
 	_script_error_check()
 	print("STORY_CHECK TOTAL asserts run=", GateReport._checks.size(), "；lane w20-c6 补白新增 c6_asserts=", _c6_added)
 	print("STORY_CHECK SUMMARY fails=", _fails)
