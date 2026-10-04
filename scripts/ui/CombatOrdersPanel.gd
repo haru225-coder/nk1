@@ -52,7 +52,7 @@ const ORDER_LOAD := "load"
 const ORDER_DAMAGE := "damage"
 const ORDER_BOARD := "board"
 const ORDER_PARLEY := "parley"
-## 二期号令（战斗方案 new 接两令）：砍钩 = 敌船把我们钩住时留斧手斫缆脱开；张湿毡 = 舷边张过水的厚毡压火伤
+## 二期号令（战斗方案新接两令）：砍钩 = 敌船把我们钩住时留斧手斫缆脱开；张湿毡 = 舷边张过水的厚毡压火伤
 const ORDER_CUT := "cut"
 const ORDER_WET := "wet"
 const ORDERS := ["windward", "load", "damage", "board", "parley", "cut", "wet"]
@@ -282,9 +282,8 @@ static func allocation(st: Dictionary) -> Dictionary:
 ##   sail_drive 帆力 · turn_rate 转向 · pinch_delta 贴风（度，负 = 更贴，给机动模型加到 pinch 上）
 ##   reload_time 装填时长 · range 射程 · hit_hull / hit_sail / hit_crew 伤害去向份额 · ignite 引火 · fire_fight 扑火 · pump 排水
 ##   board_bonus 白刃 · board_range 钩距 · exposure 甲板人手挨矢石的伤亡
-##   fire_taken 受火攻真头（张湿毡 0.5）· casualty_taken 受矢石伤亡（张湿毡 0.7）
+##   fire_taken 自己着火死账那一路的乘数（张湿毡 0.5）· casualty_taken 受矢石伤亡（张湿毡 0.7）
 ##   cut_mul 守方吃紧抢砍钩缆的每合基率乘数（砍钩 1.5，combat_phases.json orders.cut_hooks.cut_chance_mul）
-## STATION_KEYS：本面板管的四岗；outer 外键（属别 lane / 自家分系统管）不在这里斧头
 static func modifiers(st: Dictionary) -> Dictionary:
 	var a := allocation(st)
 	var sail_r := float(a["sail"]) / float(BASE_ALLOC["sail"])
@@ -406,8 +405,8 @@ static func _cn_tenths(p: float) -> String:
 # ── 号令 ──────────────────────────────────────────────
 
 func state() -> Dictionary:
-	# 二期两令开关关掉时旧玩法影像一道；读状态比问下没下要险：state() 里把不活的档位捏回 false，
-	# modifiers / battery_orders / dispatch 都走这招，下不出也、下了也、半道开关倒都保关那条道
+	# 二期两令的开关关掉时，行为照 wave53 开工前的账：不管下没下令，state() 都把档位一律当 false 回，
+	# modifiers / battery_orders / dispatch / 签面都同吃这一处
 	return {"windward": windward, "load": load_mode, "damage": damage_control, "board": board_ready, "muster": muster,
 		"cut": cut_hooks and Switches.on("order_cut_grapple"),
 		"wet": wet_felt and Switches.on("order_wet_felt")}
@@ -487,8 +486,8 @@ func apply_to_ship() -> Dictionary:
 		var want := damage_mode_for(damage_control, board_ready, fire, flood)
 		if dm.get("mode") != want and dm.call("set_mode", want) == true:
 			done["damage_mode"] = want
-	# 张湿毡落到损伤簿：开关 order_wet_felt 开时按令写DamageModel.set_wet_felt（state() 已把开关 nibble 合关），
-	# 关掉开关照 default false——不动DamageModel. 增伤与火线逐项导致减不 advance net
+	# 张湿毡落到损伤簿：开关 order_wet_felt 开时按令写 DamageModel.set_wet_felt；关开关那一侧 —
+	# state() 已把关掉的位照 false 出，这里只写开着的值，wet_felt 照旧 default false、账跟 wave53 开工前同
 	if Switches.on("order_wet_felt") and dm != null and dm.has_method("set_wet_felt"):
 		var want_wet := bool(state()["wet"])
 		if dm.get("wet_felt") != want_wet:
@@ -518,8 +517,8 @@ func _role_levels() -> Dictionary:
 	return {"steward": steward, "medic": medic}
 
 
-## 挂上战场第一步就把职事写进 DamageModel（与 _touched 无关：开关开时 ring死带到）、
-## 开没下令也立即生效，同 w53-16/_13 用 Mount 时一次亦就行
+## 挂上战场第一步就把职事写进 DamageModel（与 _touched 无关：开关 crew_role_effects 开时一挂上照 Crew.level_of 写），
+## 玩家还没下令就先生效；之后每次 apply_to_ship 也按现值补写
 func prime_role_effects() -> Dictionary:
 	var done := {}
 	var dm := StatusHud.damage_of(_ship())
@@ -609,8 +608,8 @@ func _own_board_power() -> float:
 	return maxf(1.0, crew * mf * cp)
 
 
-## 二期两令的总开关：关掉时旧玩法没有这两道，签面写「未接」也不收。
-## 期2接国用的是 combat_phases.json 的 cut_hooks / wet_screens；data 没这两行的版本也收
+## 二期两令的总开关：关掉时 wave53 开工前的玩法没这两道，签面也不出。
+## 关两键与 combat_phases.json 的 cut_hooks / wet_screens 两条同一义；data 里查不到这两条也不报警
 static func order_switch_for(order_id: String) -> String:
 	match order_id:
 		"cut":

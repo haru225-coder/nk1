@@ -79,7 +79,7 @@ func _sec_apply_hit() -> void:
 		"on 伤亡 ≤ off ×0.9（得 off=%d on=%d，期望比 ≈ 0.7）" % [dead_off, dead_on])
 
 
-## 50 簿：每簿第一枚 fire kind 的中火（zone 未起时 ignite() 必有事件，檄明单发 的 roll 到底有没有着）跨簿数；
+## 50 簿：每簿第一枚 fire kind 的中火（zone 未起时 ignite() 必有事件，单发 roll 到底有没有着一眼见得）跨簿数；
 ## 旧口径（逐发 events 数）zone 上 cap 后不再报事件，判不出点火机会的差异，改用首枚
 func _first_fire_stats(wet: bool, def: Dictionary) -> int:
 	var cnt := 0

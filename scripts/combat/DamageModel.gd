@@ -147,12 +147,12 @@ var hull_max := 100.0
 var sail := 1.0
 var rudder := 1.0
 ## 号令「张湿毡」（战斗方案二期，order_wet_felt）：舷边张过水的厚毡，中弹引火机会与火攻伤亡都折半 +
-## 减两成；Under 关时之象世工变：默认 false、一切照旧。号令面板 apply_to_ship 走鸭子型写入
+## 减两成；开关 order_wet_felt 关掉时本簿照旧走 wave53 开工前的账（默认 false）。号令面板 apply_to_ship 走鸭子型写入
 var wet_felt := false
 ## 职事（战斗方案二期，crew_role_effects）：总管分舱理货 / 医人备药石——簿上虽只一场，火与伤还是沾管用。
 ##   总管 per_level damage_control_mul 0.1：戽水堵漏与扑火手效力更强（DousePerMan 等价的分账，加到 split fan 出的人头上，
 ##   喂给 ff.step 的 flood_crew / fire_crew）；医人 per_level wounded_die_mul −0.2：被矢石、火攻撂倒的人里真死的少。
-##   0 级照旧（basis笔效果），等级不靠簿本读，自号令面板 apply_to_ship 走鸭子型写进来。
+##   0 级照 wave53 开工前的账（没有加成）；本簿不读 Crew autoload，等号令面板 apply_to_ship 走鸭子型写进来。
 var steward_level := 0
 var medic_level := 0
 ## 舵失灵后船往哪边偏（-1 左 … 1 右）
@@ -349,7 +349,7 @@ func set_wet_felt(on: bool) -> void:
 	wet_felt = on
 
 
-## 扳回 Offset 前先两枚折扣的纯函数（apply_hit / step 与探针都走这里，回退即红直接判这两行）：
+## 张湿毡的两枚折扣各自归成一个纯函数：apply_hit / step 与探针都走这两个，撤掉任意一处即红，照着这两行判即可：
 ## 张湿毡：中弹引火机会与火势各烧项（船身 / 帆 / 人手）对折；受矢石伤亡 ×0.7（combat_phases.json wet_screens）。
 ## off 时恒 1.0——与 wave53 开工前同一本账
 func fire_effects_mul() -> float:
@@ -366,7 +366,7 @@ func steward_mul() -> float:
 
 
 ## 总管补效之后、真正喂给 FloodFire.step 那两路人手 [flood_crew, fire_crew]（reallocate 之后有效；
-## split 里派的人仍照原账，bos手的是「分数 / 协作的杖声」；lv0 时与 wave53 开工前逐字一致）
+## split 里分派的人头照原账，总管补出来的是「这摊人派出去能顶几个」的协作份；lv0 时与 wave53 开工前逐字一致）
 func damage_crews() -> Array:
 	_reallocate()
 	var boost := steward_mul()

@@ -94,8 +94,8 @@ func _sec_resolve_cut_rate() -> void:
 
 
 func _sec_panel() -> void:
-	# 面板实例化一个（不战备也能立项要买 dockball:Panel.new() 需 _ready → node 未重 tree矿乎英举不满 true 错）
-	# 用 WorldMap 战备中的真面板（比 new+add 能动 switch_override 影响）
+	# WorldMap 战备中的真面板：面板的 build / mount 由 WorldMap 挂起，本探从准备好的海战场里照例取
+	# 不 new 一个停泊不动的（bind / world_ref 空、签面与 ship dock 都判不到位）
 	var fleet: Node = root.get_node("Fleet")
 	var gm: Node = root.get_node("GameManager")
 	var saved := {"ships": (fleet.get("ships") as Array).duplicate(true), "morale": fleet.get("morale"), "pb": (gm.get("pending_battle") as Dictionary).duplicate(true)}

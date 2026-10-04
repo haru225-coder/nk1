@@ -2,10 +2,10 @@ extends SceneTree
 ## lane-w53-15 战斗方案二期职事「总管管损」「夷人减伤」（crew_role_effects，DamageModel 一侧）探针（headless）：
 ##   一、数学面：steward_mul()=1+0.1*lv、medic_mul()=maxf 0.2(1−0.2*lv)；0 级照旧 1.0 项。
 ##   二、步火账：同 seed 下 steward lv3 step 火比 lv0 烧得少（戽水扑火手上人、每级 +0.1）。
-##   三、伤亡账：medic lv3 apply_hit 受矢石 less 死（同 seed 分簿对比，期望比 ≤ 0.6）。
-##   四、接线：准战 WorldMap 起簿，拨 Crew.hired（zongguan / yiren 各一名）让 prime 生效；
-##       panel.prime_role_effects() 后 DamageModel.steward_level / medic_level 名下 lc 相信；
-##       关掉 crew_role_effects：prime 写 0 级、steward / medic 气等于 wave53 开工前。
+##   三、伤亡账：medic lv3 下 apply_hit 的矢石伤亡显著少于 lv0（同 seed 分簿对比，期望比 ≤ 0.6）。
+##   四、接线：起 WorldMap 布景，拨 Crew.hired（zongguan / yiren 各一名）让 prime 生效；
+##       panel.prime_role_effects() 后 DamageModel.steward_level / medic_level 跟着级别写进簿；
+##       关掉 crew_role_effects：prime 一律写 0 级，steward / medic 都跟 wave53 开工前一致。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_15_role_probe.gd
 ## 判词：QA_W53_15_ROLE_PROBE PASS / FAIL k；本进程 SCRIPT ERROR 也判红。
 
