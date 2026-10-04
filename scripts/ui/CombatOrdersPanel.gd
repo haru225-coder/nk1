@@ -5,7 +5,8 @@
 ##       set_parley_resolver(cb) 可把劝降判定整个交给士气模块（cb.call(ctx) -> {"result": "surrender" / "refuse" / "defy", …}）
 ##   三、查询：modifiers_for(host) —— host 所在场景树里第一块面板的当前乘数；没挂面板回 neutral_modifiers()（全 1.0），
 ##       所以接线后玩家不下令即与现行手感零差异。lane w53-2 起海战场经 WorldMap.order_mods 接上：旗舰机动（帆力 sail_drive /
-##       转向 turn_rate / 贴风 pinch_delta → ManeuverModel 的 trim / helm / pinch_delta）、装填（reload_time → Ship 齐射冷却）。
+##       转向 turn_rate / 贴风 pinch_delta → ManeuverModel 的 trim / helm / pinch_delta）、装填（reload_time → Ship 齐射冷却）、
+##       白刃（board_bonus → 本队白刃将领系数，攻守都算）、钩距（board_range → 本船去钩的够距）、伤亡（exposure → 旗舰挨矢石的伤亡）。
 ##       火攻（LOAD_TABLE.fire）暂不入轮换：旗舰没挂弹药簿（ReloadAmmo），敌船也没有帆损、火势，射程、引火、伤害去向无处落，
 ##       下了只剩装填慢——签面与效力一行不写落不了地的数（lane w53-2 定）
 ##   四、落令（auto_apply，默认开）：旗舰身上有同波次的分系统就按号令改它的令（鸭子型，只调它们公开的改令口）——

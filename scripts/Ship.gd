@@ -145,6 +145,19 @@ func _order_mod(key: String, fallback: float) -> float:
 	return fallback
 
 
+## 号令面板「伤亡」效力（exposure ≥ 1：备接舷甲士聚在舷边、抢风缭手上甲板，挨矢石伤亡加重；lane w53-2）。
+## 小数带到下一发（四舍五入留余数），不按整数吞掉——一发折 1 人、加重三成三的也要记上
+var _exposure_carry := 0.0
+func _exposed(n: int) -> int:
+	var e := _order_mod("exposure", 1.0)
+	if n <= 0 or is_equal_approx(e, 1.0):
+		return n
+	var x := float(n) * e + _exposure_carry
+	var out := maxi(0, roundi(x))
+	_exposure_carry = x - float(out)
+	return out
+
+
 ## P4-2 接舷：白刃阶段禁炮击（敌船已钩住，甲板上是白刃不是炮战）
 func _can_fire() -> bool:
 	var parent := get_parent()
@@ -354,7 +367,7 @@ func take_hit(hit: Dictionary) -> void:
 			h["local"] = at
 	var fx: Dictionary = get_damage_model().apply_hit(h)
 	var hull_dmg := float(fx.get("hull", 0.0))
-	_lose_crew(int(fx.get("crew", 0)))
+	_lose_crew(_exposed(int(fx.get("crew", 0))))
 	# 中弹会颠掉舱面货（箭矢、火箭这类不伤船体的不颠）。货分船装（Fleet 头注），挨打的是旗舰 Fleet.ships[0] 这一条，
 	# 只颠它自己舱里的（lane w53-2）：护航船不上战阵，旧写法按全队合并的货随手扣、remove_cargo 跨船依次扣，旗舰舱空也照颠护航船的货
 	if hull_dmg >= 5.0:

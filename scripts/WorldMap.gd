@@ -428,10 +428,18 @@ func _board_enemy(enemy: Node2D) -> void:
 ## 有士气簿则本队士气换 melee_factor（没挂士气簿时本队先钩那一路同 MeleeResolve.from_battle）。
 ## enemy_first：敌船先抛的钩，敌作攻方、本队作守方——结果里 att_* 是敌船的、def_* 是本队的，记事里「敌 / 我」随 is_player 换位
 func _melee_resolve(enemy: Node2D, enemy_first := false) -> Dictionary:
+	var sides := _melee_sides(enemy, enemy_first)
+	return _MeleeResolve.resolve(sides[0], sides[1], sides[2])
+
+
+## 白刃两方与态势 [攻方, 守方, ctx]（_melee_resolve 用，探针验号令加力）。本队那一方的将领系数再乘号令面板的「白刃」效力：
+## 备接舷聚齐了执钩拒的甲士加力，抢风 / 专力装填把甲士抽去就减；攻守都算——敌船先抛钩上来，舷边拒着的也是这些人（lane w53-2）
+func _melee_sides(enemy: Node2D, enemy_first := false) -> Array:
 	var us: Dictionary = _MeleeResolve.side_from_fleet(Fleet)
 	var ps = _morale.player_sheet() if _morale != null else null
 	if ps != null:
 		us["morale"] = clampi(int(round(ps.melee_factor() * 100.0)), 0, 100)
+	us["captain"] = float(us.get("captain", 1.0)) * float(order_mods().get("board_bonus", 1.0))
 	var foe: Dictionary = _MeleeResolve.side_from_enemy(enemy)
 	var att: Dictionary = foe if enemy_first else us
 	var def: Dictionary = us if enemy_first else foe
@@ -440,7 +448,7 @@ func _melee_resolve(enemy: Node2D, enemy_first := false) -> Dictionary:
 		str(att.get("type", "")), str(def.get("type", ""))
 	)
 	ctx["hooked"] = true
-	return _MeleeResolve.resolve(att, def, ctx)
+	return [att, def, ctx]
 
 
 ## 敌船白刃折损 n 人（只记阵亡 / 重伤不起的；轻伤战后归队，同本队只扣 att_dead 的口径），水手不减到负数
@@ -1349,7 +1357,9 @@ func fire_arc_of(shooter, target, arc_half_deg := 30.0) -> Dictionary:
 func boarding_approach_of(a, b) -> Dictionary:
 	if not (_valid_hull(a) and _valid_hull(b)):
 		return {}
-	return _Maneuver.boarding_approach(_hull_state(a), _hull_state(b), _wind_to(), _wind_speed(), BOARD_DISTANCE)
+	# 本船去钩：号令面板备接舷聚齐了钩拒手，够距底数按「钩距」效力放远（lane w53-2；G 键、顶匾「舷边可接」、状态条「可接」同走这里）；敌船钩本船照旧
+	var reach := BOARD_DISTANCE * (float(order_mods().get("board_range", 1.0)) if a == ship else 1.0)
+	return _Maneuver.boarding_approach(_hull_state(a), _hull_state(b), _wind_to(), _wind_speed(), reach)
 
 
 func _valid_hull(n) -> bool:

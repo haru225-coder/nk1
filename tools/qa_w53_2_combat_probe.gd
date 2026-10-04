@@ -49,6 +49,9 @@ extends SceneTree
 ##       ① ManeuverModel 认号令两键：mods.trim 1.09 的船横风满帆两秒后对水航速比不带的快、mods.pinch_delta −6 时船首离来风 45°
 ##          不再「顶风」（福船顶风区 48°）；② 海战场下抢风令：旗舰这一帧的机动乘数带 trim / pinch_delta，读数里顶风区少 6°；
 ##       ③ 专力装填：旗舰一放齐射，装填冷却 = 2 秒 × 损伤装填倍数 × 0.7；④ 装填侧重只在均装 ⇄ 专力装填间轮换，不再轮到落不了地的火攻。
+##   十四、号令「备接舷」的效力接上（钩距、白刃、伤亡）：修复前聚齐了甲士，钩距、白刃、伤亡一样不变。下令、聚队进度直设满：
+##       ① 本船去钩的够距底数 = 140 × 钩距效力（约 175），敌船钩本船仍 140；② 白刃两方里本队的将领系数 = 不下令时 × 白刃效力
+##       （本队先钩作攻方、敌船先钩作守方都算）；③ 伤亡效力约 1.33：旗舰挨三发各折 3 人记成 4 + 4 + 4（带余数），撤令后照记原数。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -110,6 +113,8 @@ func _run() -> void:
 	print("== 十三、号令效力接上旗舰（抢风 / 装填侧重）")
 	_sec_maneuver_order_keys()
 	await _sec_orders_reach_flagship(fleet)
+	print("== 十四、号令「备接舷」的效力接上（钩距、白刃、伤亡）")
+	await _sec_board_order_effects(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -783,6 +788,62 @@ func _sec_orders_reach_flagship(fleet: Node) -> void:
 		seen.append(str(panel.call("state_text", "load")))
 	_check(seen.find("火攻") < 0 and seen[1] == "均装" and seen[2] == "专力装填",
 		"十三④ 装填侧重只在均装、专力装填间轮换（%s）" % " → ".join(seen))
+	await _close(wm)
+
+
+
+# ══ 十四、号令「备接舷」的效力接上（钩距、白刃、伤亡） ══════════════════════════
+
+func _sec_board_order_effects(fleet: Node) -> void:
+	var wm := await _battle(fleet, "fu_ship_medium", 60, {"type": "pirate_boat", "count": 1})
+	var foes := _foes(wm)
+	var panel: Node = null
+	for n in wm.get_children():
+		if n.is_in_group("nk1_combat_orders"):
+			panel = n
+	var own: Node2D = wm.get("ship")
+	if panel == null or foes.size() != 1 or own == null:
+		_check(false, "十四 挂上号令面板、刷出一艘快船")
+		await _close(wm)
+		return
+	var foe: Node2D = foes[0]
+	foe.set_physics_process(false)
+	var base_cap := clampf(float(fleet.call("captain_power")), 0.5, 2.0)
+	panel.call("issue", "board")
+	panel.set("muster", 1.0)
+	var m: Dictionary = panel.call("current_modifiers")
+	# ① 钩距
+	var mine: Dictionary = wm.call("boarding_approach_of", own, foe)
+	var theirs: Dictionary = wm.call("boarding_approach_of", foe, own)
+	var want_reach := 140.0 * float(m["board_range"])
+	_check(absf(float(mine.get("base_reach", -1.0)) - want_reach) < 0.01 and absf(float(theirs.get("base_reach", -1.0)) - 140.0) < 0.01,
+		"十四① 聚齐了钩拒手：本船去钩够距底数 %s（须 140 × %.2f = %.0f），敌船钩本船 %s（须 140）" % [
+			str(mine.get("base_reach", "无")), float(m["board_range"]), want_reach, str(theirs.get("base_reach", "无"))])
+	# ② 白刃
+	var has_sides := wm.has_method("_melee_sides")
+	var want_cap := clampf(base_cap * float(m["board_bonus"]), 0.5, 2.0)
+	var att_cap := -1.0
+	var def_cap := -1.0
+	if has_sides:
+		var s1: Array = wm.call("_melee_sides", foe, false)
+		var s2: Array = wm.call("_melee_sides", foe, true)
+		att_cap = clampf(float((s1[0] as Dictionary).get("captain", -1.0)), 0.5, 2.0)
+		def_cap = clampf(float((s2[1] as Dictionary).get("captain", -1.0)), 0.5, 2.0)
+	_check(has_sides and absf(att_cap - want_cap) < 0.001 and absf(def_cap - want_cap) < 0.001,
+		"十四② 本队白刃将领系数 = %.3f × 白刃 %.2f = %.3f：本队先钩作攻方 %.3f、敌船先钩作守方 %.3f" % [
+			base_cap, float(m["board_bonus"]), want_cap, att_cap, def_cap])
+	# ③ 伤亡
+	var has_exp := own.has_method("_exposed")
+	var got := PackedStringArray()
+	if has_exp:
+		for _i in 3:
+			got.append(str(own.call("_exposed", 3)))
+	panel.call("issue", "board")  # 撤令
+	panel.set("muster", 0.0)
+	var plain := int(own.call("_exposed", 3)) if has_exp else -1
+	_check(has_exp and "+".join(got) == "4+4+4" and plain == 3,
+		"十四③ 伤亡效力 %.2f：三发各折 3 人记成 %s（须 4+4+4），撤令后记 %d（须 3）" % [
+			float(m["exposure"]), "+".join(got) if not got.is_empty() else "无", plain])
 	await _close(wm)
 
 
