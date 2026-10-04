@@ -1,3 +1,4 @@
+class_name EnemyCaptainAI
 extends RefCounted
 ## Lane combat07：敌将（敌船船长）战术状态机。PirateShip 每个物理帧喂一份局势（tick），取回舵令：航向 / 帆桨 / 抛钩 / 离场；
 ## 开不开炮、打哪一舷另问 fire_side。本件只做判断，不碰场景树、不读 autoload——局势全由调用方填（PirateShip._situation），
@@ -353,6 +354,16 @@ func force_strike(why: String) -> void:
 	if state == STRIKE or _slipping:
 		return
 	_set_state(STRIKE, why)
+
+
+## ── lane w53-17（二期「通事劝降」）──────────────────────────────
+## 只读接口：通事每级劝降胜算 +0.05（combat_phases.json orders call_surrender.tongshi_per_level、
+## officer_effects.tongshi.call_surrender 两个源同数）。crew_role_effects 开关那头在战端判
+## （WorldMap / 劝降面板），本件只委办「按品级折算」这一笔纯函——tongshi_level ≤ 0 即 0。
+## 接线那头归 w53-15 的劝降面板（parley_chance 吃掉它）。
+const TONGSHI_PER_LEVEL := 0.05
+static func parley_bonus_tongshi(tongshi_level: int) -> float:
+	return TONGSHI_PER_LEVEL * float(maxi(0, tongshi_level))
 
 
 ## 白刃打完、船还在自己手里（WorldMap 判对方败、脱钩）：士气大振，退开整队再说
