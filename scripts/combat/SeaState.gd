@@ -1,3 +1,4 @@
+class_name SeaState
 extends RefCounted
 ## 海战海况（lane combat02）：风（来向 / 风力 / 阵风 / 风向缓转）+ 流（季风海流、定向洋流、潮流）。
 ## WorldMap 开战时按月令季风与海域建一份（setup），逐物理帧 step(dt)；ManeuverModel 拿它的读数算帆向、风压差与流压差。
@@ -6,6 +7,10 @@ extends RefCounted
 ## 方位与 Calendar 同一口径：方位角 0 = 正北、90 = 正东（顺时针）；风按「吹向」存（Calendar.NE_MONSOON_BEARING = 225
 ## 即东北风吹向西南）。海战场面 −y 为北、+x 为东，吹向单位向量 = (sin b, −cos b)，与 Ship.wind_vector 同义
 ## （Vector2(0, 1) = 吹向正南 = 北风）。叫法照舟师：风按来向叫（东北风），流按去向叫（流向西南）。
+##
+## 雷暴大风（lane w53-17 第一期「大风两散」）：setup 时若本场风均值过了种子线（GALE_SEED 那个常量，约七成风），
+## 本场记雷暴大风，WorldMap 开战即收「两散」。作战的风上限不按数据曲线的七级线（140）——那场风按骤风攥到 130 仍挂着
+## 六级风可战名，七级水上却照打；改按「骤风顶头」迸线才迸得出来。二期火长提前报风另见下（GALE_WARN 那个常量）。
 ##
 ## 读数（别的模块只读，不改）：wind_to 吹向单位向量 · wind_speed 风力（同 Ship.wind_strength 量纲）· wind_velocity()
 ##   · current_at(pos) 流速向量 px/s · wind_name()「东北风」· current_desc()「落潮　流向东南」· snapshot() 全部读数。
@@ -25,6 +30,17 @@ const VEER_TAU := 24.0
 const GUST_TAU := 5.0
 ## 海流合速上限（px/s）：旗舰满帆对水约 230–290，流取一成到一成半，显得出又不喧宾夺主
 const CURRENT_CAP := 42.0
+## 「雷暴大风」判定的线（开战那一刻的本场风均值）。寻常远航的季风场（盛季 80 × 1.0 × 上浮 1.12 ≤ 90）
+## 照这个线记不出来；剧情递的风暴定场（pending_battle.wind_strength 或逼出的举年择月）才召得出来。
+## 作战上限不按 wind_level_rule 折的七级线（140）：风上限 WIND_CAP 130，连骤风顶头都到不了七级线，
+## 数据里「七级以上不能战」那条永远迸不出来——落成「开场本该收『两散』的风」这同一档。
+const GALE_SEED_WIND := 98.0
+## 「风暴海」起步风：base_strength ≥ 它才算风暴定场；寻常远航（WorldMap.base_wind_strength 80）走不到
+const GALE_BASE_WIND := 100.0
+## 骤风顶头式里给风向的余量系数（火长预报同这条式）
+const GALE_HEADROOM := 1.10
+## 火长「提前报风」：WorldMap 按（GALE_WARN_S × Crew.level_of("huozhang")）秒往回推看风爆是否即临
+const GALE_WARN_S := 5.0
 ## 潮时相位绝对值小于它算平潮（潮流几近停）
 const SLACK := 0.3
 
@@ -66,6 +82,9 @@ var current := Vector2.ZERO
 var current_kind := "平潮"
 ## 本场潮时：1 涨潮最急 … 0 平潮 … −1 落潮最急（一场海战只几分钟，潮流视作不变）
 var tide_phase := 0.0
+## lane w53-17：本场算过雷暴大风（开局风很足，骤风顶头迸过作战上限，WorldMap 照收「两散」）。
+## 即便后来风转小也不再变回——种子量出的「这场风是这个势」。
+var gale := false
 ## 本场主风向（吹向方位，度）、缓转幅度、当前缓转（度）与阵风（标准差为 1 的无量纲量）
 var _base_bearing := 180.0
 var _veer_amp := VEER_DEG
@@ -96,17 +115,35 @@ func setup(monsoon_bearing: float, monsoon_strength: float, base_strength: float
 	wind_mean = clampf(base_strength * (0.55 + 0.45 * strength) * _rng.randf_range(0.88, 1.12), WIND_FLOOR, WIND_CAP)
 	_veer = _rng.randf_range(-0.5, 0.5) * _veer_amp
 	_gust = 0.0
+	# lane w53-17：雷暴大风判定（combat_phases.json t_gale）——开场风本均值太高才记。寻常远航的季风
+	#（盛季 80 × 1.0 × 上浮 1.12 ≤ 90）照这个线记不出来；剧情 pending_battle 递的「gale_wind 定场」、
+	# 本探针逼出的「举年择月」才召得出来。force_wind 是剧情 / 探针定场，不动 gale（探针另走 derive 推演的盘档）。
+	gale = wind_mean >= GALE_SEED_WIND and float(monsoon_strength) >= 0.9 and base_strength >= 100.0
 	_setup_current(sea_name)
 	_apply_wind()
 
 
-## 剧情 / 探针定风：bearing_to 为吹向方位（度），strength 为风力（封顶 WIND_CAP）；缓转与阵风照常叠在上面
+## 剧情 / 探针定风：bearing_to 为吹向方位（度），strength 为风力（封顶 WIND_CAP）；缓转与阵风照常叠在上面。
+## 递到雷暴线的（pending_battle.wind_strength 的风暴定场）一并记 gale——setup 的盘面线越不过的场合
+## （盛季远航 80 走不到 98），剧情照样递得出大风。
 func force_wind(bearing_to: float, strength: float) -> void:
 	_base_bearing = fposmod(bearing_to, 360.0)
 	wind_mean = clampf(strength, WIND_FLOOR, WIND_CAP)
 	_veer = 0.0
 	_gust = 0.0
+	gale = gale or wind_mean >= GALE_SEED_WIND
 	_apply_wind()
+
+
+## lane w53-17：本场骤风顶头（当前风 × 阵风上限 × 余量系数）——雷暴大风判定与火长预报同用这一条线
+func gale_peak() -> float:
+	return wind_mean * (1.0 + GUST_AMP) * GALE_HEADROOM
+
+
+## lane w53-17（二期火长提前报风）：当下风场能起来的最凶骤风（GUST_AMP × 3σ 上限再 × GALE_HEADROOM）——
+## WorldMap 按它预报「大风要起」：玩家照战前 N 秒出浮字
+func storm_peak() -> float:
+	return wind_mean * (1.0 + GUST_AMP * 3.0) * GALE_HEADROOM
 
 
 ## 定流：flow 为流速向量（px/s，封顶 CURRENT_CAP），kind 为叫法
