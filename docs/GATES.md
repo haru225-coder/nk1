@@ -185,7 +185,7 @@ stdout 只有一段 JSON（门禁原本的 stdout/stderr 被捕获解析，不�
 
 <!-- GATES-BATCH:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 oneclick_json 生成，勿手改 -->
 ```sh
-# 必跑三十二条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
+# 必跑三十三条的机读版（与 §四 第 0 步同序，每条换 §一 `--json` 列）；导入步骤不判红绿，落 /tmp/gates/steps/、不进汇总
 rm -rf /tmp/gates && mkdir -p /tmp/gates/steps
 python3 tools/gate_json.py --godot import > /tmp/gates/steps/import.json
 python3 tools/check_symbols.py --json > /tmp/gates/check_symbols.json
@@ -213,9 +213,9 @@ python3 tools/gate_json.py --godot qa_rest_scenarios_probe > /tmp/gates/qa_rest_
 python3 tools/gate_json.py --godot qa_debt_strip_probe > /tmp/gates/qa_debt_strip_probe.json
 python3 tools/gate_json.py --godot qa_crew_fold_probe > /tmp/gates/qa_crew_fold_probe.json
 python3 tools/gate_json.py --godot qa_cargo_strip_probe > /tmp/gates/qa_cargo_strip_probe.json
+python3 tools/gate_json.py --godot qa_fold_dim_probe > /tmp/gates/qa_fold_dim_probe.json
 python3 tools/gate_json.py --godot qa_seachart_advance_probe > /tmp/gates/qa_seachart_advance_probe.json
 python3 tools/gate_json.py --godot qa_calendar_probe > /tmp/gates/qa_calendar_probe.json
-python3 tools/gate_json.py --godot qa_fold_dim_probe > /tmp/gates/qa_fold_dim_probe.json
 python3 tools/gate_json.py tools/check_w53_copy.py > /tmp/gates/check_w53_copy.json
 python3 tools/gate_json.py tools/check_lane_orphans.py > /tmp/gates/check_lane_orphans.json
 python3 tools/gate_json.py tools/check_ledger_garbage.py > /tmp/gates/check_ledger_garbage.json
@@ -275,9 +275,9 @@ godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
 godot --headless --path . -s res://tools/qa_crew_fold_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
+godot --headless --path . -s res://tools/qa_fold_dim_probe.gd
 godot --headless --path . -s res://tools/qa_seachart_advance_probe.gd
 godot --headless --path . -s res://tools/qa_calendar_probe.gd
-godot --headless --path . -s res://tools/qa_fold_dim_probe.gd
 python3 tools/check_w53_copy.py
 python3 tools/check_lane_orphans.py
 python3 tools/check_ledger_garbage.py
@@ -694,7 +694,7 @@ python3 tools/check_probe_registry.py
 
 <!-- GATES-CI:BEGIN 本块由 `python3 tools/gates_md.py --write` 按 tools/gate_json.py 的 CI_STEPS 生成，勿手改 -->
 ```sh
-# 0. 必跑三十二条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
+# 0. 必跑三十三条（含导入步骤；= §一「一键跑」✓ / §三「一键人读全跑」；无窗口的 CI 机器 patrol 要配 Xvfb 给 DISPLAY）
 godot --headless --import --path .
 python3 tools/check_symbols.py
 python3 tools/verify_economy.py
@@ -721,9 +721,9 @@ godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd
 godot --headless --path . -s res://tools/qa_debt_strip_probe.gd
 godot --headless --path . -s res://tools/qa_crew_fold_probe.gd
 godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd
+godot --headless --path . -s res://tools/qa_fold_dim_probe.gd
 godot --headless --path . -s res://tools/qa_seachart_advance_probe.gd
 godot --headless --path . -s res://tools/qa_calendar_probe.gd
-godot --headless --path . -s res://tools/qa_fold_dim_probe.gd
 python3 tools/check_w53_copy.py
 python3 tools/check_lane_orphans.py
 python3 tools/check_ledger_garbage.py

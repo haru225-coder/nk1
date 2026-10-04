@@ -477,11 +477,11 @@ REGISTRY = [
              "dim=false 壳的 qa_crew_fold 不记本支（w32-k2 入册判词亲证 dim_rest=true 分支此前全仓无一探针点过）、"
              "拨 TEXT_DIM 色值时纯 UI 域无一探针点过——§三.41 旧口径「按路径判得准、三条件只取第一」"
              "与 §五.2「三条同时成立」相悖就此勾销（w49-k1 / w61-k4 / w73-k5 同型拨正先例）；"
-             "判据 2「快」成立——glock 实测三跑 real 0.618 / 0.502 / 0.502 s（w77-k4 动手帧实贴），"
+             "判据 2「快」成立——glock 实测三跑 real real 0.632 / 0.490 / 0.483 s（w77-k4 升格后动手帧实贴——w80-k3 承接帧重跑复核同步拨），"
              "§五.2「1 秒量级」字面直成（Godot must 探针族首例字面直成：仿作宿主直调 render 不建真场景树"
              "无 autoload 冷启，升格对一键跑洪带增量 < 0.8 s）；判据 3「只读」成立——源码 grep "
              "FileAccess / DirAccess / user:// / save / store_ 探针与宿主全零命中、零写盘、"
-             "摆场全是内存字段直填；判据 4 main 尖幂等绿——w77-k4 执行窗复跑三跑连绿 rc=0、"
+             "摆场全是内存字段直填；判据 4 main 尖幂等绿——w77-k4 执行窗复跑三跑连绿 rc=0×3、w80-k3 承接帧重跑复核同步拨值、"
              "末行 FOLD_DIM cases=N fails=0（N=10：8 断言行 + script_err_tally 接线 2 格）。",
      "kind": "godot", "file": "tools/qa_fold_dim_probe.gd",
      "args": ["--headless", "--path", ".", "-s", "res://tools/qa_fold_dim_probe.gd"],
