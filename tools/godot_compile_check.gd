@@ -161,6 +161,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_13_decide_probe.gd",  # lane w53-13 待拍板逐条定下后的修复回归探针（跳年封顶等）
 	"res://tools/qa_w53_16_aftermath_probe.gd",  # lane w53-16 战斗方案一、二期战后单子与赏钱专项探针
 	"res://tools/qa_w53_16_aftermath_shots.gd",  # lane w53-16 战后单子 on / off 对比截图（NK1_SHOT_DIR 指路）
+	"res://tools/qa_w53_17_morale_probe.gd",  # lane w53-17 士气与风专项探针（大风两散 / 士气带回 / 火长报风 / 通事劝降）
 	"res://tools/qa_w53_9_chapter_card_probe.gd",  # lane w53-9 章节卡题记留读与一句一列探针（须带窗口）
 	"res://tools/qa_w53_9_port_banner_probe.gd",  # lane w53-9 抵港横幅各窗口比例都挂在港名匾下探针（以场景启动，见 SCENES）
 	# lane w53-15 战斗方案一、二期探针（敌情列 / 劝降挂敌船 / 砍钩 / 张湿毡 / 总管夷人）
