@@ -522,6 +522,15 @@ func take_damage(amount: float) -> void:
 		enemy_morale = captain.reported_morale()
 
 	if hull_hp <= 0:
+		# 击沉这一发的过量按与命中同口径的伤亡率记进甲板。原先 hull_hp 留负数、超出的份随船沉凭空蒸发——
+		# 残船重赏（hull 5 挨 25）与恰好击沉（hull 25 挨 25）登船收尸时活人一般多，挨过重的一发跟挠痒一样。
+		# 夹回 0 同原先的数值口径（负数不是状态，向下游 _enemies_alive / _is_live_pirate 等看齐）。
+		var overkill := maxf(0.0, -hull_hp)
+		if overkill > 0.0:
+			var extra := int(roundf(overkill / 25.0 * _rng.randf_range(0.3, 1.6)))
+			if extra > 0:
+				crew = maxi(0, crew - extra)
+		hull_hp = 0.0
 		_explode()
 
 

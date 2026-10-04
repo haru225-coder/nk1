@@ -87,6 +87,7 @@ EXEMPT = [
     ("qa_w53_1_port_name_click_probe.gd", "lane-w53-1", "海图点港名即选那港探针（真输入从根视口推入：点港框 / 点港名 / 悬停港名 / 点海面，全图 + 四港选向 + 每港三档放大），修只认港位 14 px"),
     ("qa_w53_1_region_label_probe.gd", "lane-w53-1", "海图地区名（日本 / 筑前……）不压港框、港名与小字地名探针（全图 / 全港对选向 / 每港六档放大），修地区名不做避让"),
     ("qa_w53_1_trail_marker_probe.gd", "lane-w53-1", "海图走过那段航线的描深末端落在船标上探针（三条远程 + 一条近程逐日真推船标、每帧量描深末端离船标），修描深按里程比例、船标按折线弧长两套口径错开"),
+    ("qa_w53_2_combat_overkill_probe.gd", "lane-w53-2", "击沉过量伤亡专项探针，随 lane-w53-2 落地验过留档"),
     ("qa_w53_2_combat_probe.gd", "lane-w53-2", "海战接舷 / 号令 / 收战账目专项探针，随 lane-w53-2 落地验过留档"),
     ("qa_w53_3_buy_max_probe.gd", "lane-w53-3", "牙行买满结算耗时与逐件推演同数专项探针，动 Economy 逐件推演或牙行买钮回调时加跑"),
     ("qa_w53_3_contract_keep_probe.gd", "lane-w53-3", "在身委办的货不上秤（卡上括注委办件数 / 卖钮只卖其余 / 全灰时要卖先毁约）专项探针，动牙行卖钮或 GameState 委办簿时加跑"),
@@ -338,10 +339,10 @@ def head_selftest():
     c5_names = sorted(e[0] for e in EXEMPT if TOLL_RE.search(e[2]))
     want_c5 = []
     check(c5_names == want_c5,
-          f"E5 收尾闸断路径帐认格：TOLL_RE 认现网 21 行 EXEMPT 中「归后续 lane」字样行实点 {len(c5_names)} 支（{c5_names}）——打断 TOLL_RE 识别路径（字样变体）即先红")
+          f"E5 收尾闸断路径帐认格：TOLL_RE 认现网 22 行 EXEMPT 中「归后续 lane」字样行实点 {len(c5_names)} 支（{c5_names}）——打断 TOLL_RE 识别路径（字样变体）即先红")
     e5_clean = [(e[0], e[1], e[2]) for e in EXEMPT if not TOLL_RE.search(e[2])]
     check(all(not TOLL_RE.search(e[2]) for e in e5_clean),
-          f"E5 蓝对照：字样外行 21 行零不误伤（实点 0 队样）")
+          f"E5 蓝对照：字样外行 22 行零不误伤（实点 0 队样）")
 
 
 # ── 案例数不写死（w53 待拍板 35，lane w53-13 定、lane w53-14 落）：注册表的 judge / green / red / expect 只写
