@@ -1,9 +1,10 @@
 extends SceneTree
-## lane w53-9：章节卡的题记读得完、题记一句一列、油画窗不压字（四章 × 1280×720 / 1024×768 / 720×1280 三种窗口）。
+## lane w53-9：章节卡的题记读得完、按宽度折列、油画窗不压字、点一下不刚写全就退（四章 × 1280×720 / 1024×768 / 720×1280 三种窗口）。
 ## 原先退场钉死在 6.3 秒：题记全显 1.8–2.1 秒、出处全显 1.0–1.5 秒就开始淡去；「点击继续」章名一写出（约 2.05 秒）就亮，
-## 那时点一下只是补全题记；题记只靠 max_extent 折列——720 高下二、三章对句两列、一、四章一列到底，4:3 下四章全成一列。
+## 那时点一下只是补全题记。
 ## 断言（每章每种窗口）：
-##   一、题记列数 = 句数（按「，。？！；」切，上句在右）；出处一列。
+##   一、题记按宽度折列（w53-待拍板 9d 定「维持按宽度排」）：一列放得下（字数 × 列步 ≤ 列高，同 cs_ink_text._wrap）就一列；
+##       放不下才折，且只折在句读后、不把一句拆成两截；出处一列。（七轮撤回五轮的「一句一列」：短题记也被拆开。）
 ##   二、题记与出处全部全显之后、开始淡去之前，至少留「（题记 + 出处字数）÷ 5」秒，夹在 2.5–5 秒（留 0.1 秒帧差）。
 ##   三、「点击继续」不早于全部全显才亮，且淡去前亮过。
 ##   四、卡在 14 秒内收场（不挂住）。
@@ -11,7 +12,8 @@ extends SceneTree
 ##       （各段竖排字与「立志」印的最左）左边至少 8px。原先窗半径下限是画布高的 0.25，竖屏（画布 1280×2275）窗横向半宽撑到
 ##       661px，油画盖过题记与出处；16:9、4:3 本就不压。
 ##   六、墨晕油画窗挨着文字块：窗的上下跨度（窗心 ± radius × 画布高）与文字块的上下跨度有交叠——竖屏不沉到画面中腰。
-## 另验点击（第二章、1280×720）：写到题记中途点一下 = 补全且不退场、再停 0.6 秒仍不退场，第二下才退场；
+## 另验点击（第二章、1280×720）：写到题记中途点一下 = 补全且不退场；卡停 0.4 秒再点不认（9c 定：卡停满 0.8 秒才认），
+## 停 0.9 秒再点才退场；
 ## 印已落定（6 秒档旧口径 T_SEAL + 0.5）而出处还没写完时点一下 = 补全出处，不是直接退场（出处没露全就淡去）。
 ## 驱动：卡建好后停掉它自己的 _process，按 1/60 秒逐帧调 _step（与 _process 每帧的调用同一入口），时间线确定、不吃机器忙闲。
 ## 用法：DISPLAY=:2 godot --path . -s res://tools/qa_w53_9_chapter_card_probe.gd   # 须带窗口：headless 下章节卡当帧收场
@@ -25,6 +27,11 @@ const DT := 1.0 / 60.0
 const SIZES := [Vector2i(1280, 720), Vector2i(1024, 768), Vector2i(720, 1280)]
 const CANVAS := {Vector2i(1280, 720): Vector2(1280, 720), Vector2i(1024, 768): Vector2(1280, 960), Vector2i(720, 1280): Vector2(1280, 2275)}
 const CLAUSE := "，。？！；"
+## 竖排时句读换成竖排字形（cs_ink_text.V_FORMS）
+const CLAUSE_V := "︐︒︖︕︔"
+## 题记样式（ChapterCard._build 的 ep）：字号 23、字距 0.12；列高 = 画布高 × 0.5
+const EPI_FS := 23.0
+const EPI_SP := 0.12
 ## 旧口径「印落定」时刻（T_SEAL 4.6 + 0.5）：点击分界的回退判据用
 const OLD_READY := 5.1
 
@@ -120,15 +127,21 @@ func _cols(node: Node) -> int:
 	return xs.size()
 
 
-func _clauses(s: String) -> int:
-	var n := 0
-	var seg := ""
-	for i in range(s.length()):
-		seg += s[i]
-		if CLAUSE.contains(s[i]):
-			n += 1
-			seg = ""
-	return n + (1 if seg.strip_edges() != "" else 0)
+## 各列（自右向左）最末一字
+func _col_ends(node: Node) -> Array:
+	var cols := {}
+	var gl: Array = node.get("_glyphs")
+	for g in gl:
+		var x := int(roundf(float(g["x"]) + float(g["w"]) * 0.5))
+		if not cols.has(x) or float(g["y"]) > float(cols[x]["y"]):
+			cols[x] = g
+	var xs: Array = cols.keys()
+	xs.sort()
+	xs.reverse()
+	var out: Array = []
+	for x in xs:
+		out.append(str(cols[x]["ch"]))
+	return out
 
 
 ## 五、油画窗不压字：窗右缘（像素）在文字块左缘左边至少 8px
@@ -180,8 +193,14 @@ func _natural(n: int, wh: Vector2i) -> void:
 		_expect(false, "%s 找不到题记 / 出处两段字（题记「%s」）" % [where, epi])
 		c.queue_free()
 		return
-	_expect(_cols(ep) == _clauses(epi) and _cols(sr) == 1,
-		"%s 题记一句一列：「%s」%d 句 → %d 列；出处 %d 列" % [where, epi, _clauses(epi), _cols(ep), _cols(sr)])
+	var fits := float(epi.length()) * EPI_FS * (1.0 + EPI_SP) <= cv.y * 0.5 + EPI_FS * EPI_SP + 0.01
+	var ends := _col_ends(ep)
+	var clean := true
+	for k in range(ends.size() - 1):
+		clean = clean and (CLAUSE + CLAUSE_V).contains(str(ends[k]))
+	_expect((_cols(ep) == 1 if fits else (_cols(ep) >= 2 and clean)) and _cols(sr) == 1,
+		"%s 题记按宽度折列：「%s」%s → %d 列（各列收尾「%s」）；出处 %d 列" % [where, epi,
+		"一列放得下" if fits else "一列放不下、须折在句读后", _cols(ep), "".join(ends), _cols(sr)])
 	_window_clear(c, cv, where)
 	var t_all := -1.0
 	var t_fade := -1.0
@@ -224,7 +243,7 @@ func _step_to(c: Node, t: float) -> void:
 
 
 func _clicks() -> void:
-	# 一、题记写到中途点一下：补全、不退场；停 0.6 秒仍不退场；第二下才退场
+	# 一、题记写到中途点一下：补全、不退场；卡停 0.4 秒再点不认；停 0.9 秒再点才退场
 	var c: Node = await _spawn(2)
 	var p := _parts(c)
 	var ep: Node = p["ep"]
@@ -235,14 +254,18 @@ func _clicks() -> void:
 	_step_to(c, 3.6)
 	var mid := not bool(ep.call("is_revealed"))
 	_click(c)
+	var t_rest := float(c.get("_t"))
 	var done1 := _all_revealed(p["texts"]) and not bool(ep.call("is_fading"))
-	_step_to(c, float(c.get("_t")) + 0.6)
-	var hold := not bool(ep.call("is_fading"))
+	_step_to(c, t_rest + 0.4)
+	_click(c)
+	c.call("_step", DT)
+	var guarded := not bool(ep.call("is_fading"))
+	_step_to(c, t_rest + 0.9)
 	_click(c)
 	c.call("_step", DT)
 	var gone := bool(ep.call("is_fading"))
-	_expect(mid and done1 and hold and gone,
-		"点击：题记写到中途（%s）点一下补全且不退场（%s）、再停 0.6 秒仍不退场（%s）、第二下退场（%s）" % [mid, done1, hold, gone])
+	_expect(mid and done1 and guarded and gone,
+		"点击：题记写到中途（%s）点一下补全且不退场（%s）；卡停 0.4 秒再点不认（%s，9c 定停满 0.8 秒才认）；停 0.9 秒再点退场（%s）" % [mid, done1, guarded, gone])
 	c.queue_free()
 	await process_frame
 	# 二、印已落定、出处还没写完时点一下：补全出处，不直接退场

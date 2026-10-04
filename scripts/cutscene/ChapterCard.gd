@@ -1,7 +1,7 @@
 ## 章节卡（cutscene_engine 线）：黑场 → 宣纸按噪声阈值洇进来 → 墨晕铺开露出章节油画 → 「第X章」逐字 → 章名 → 年号 → 题记竖排带出处
 ## → 朱印盖下（回弹 + 印泥洇开；UI 线的「立志」成品印在就用它）→ 停留 → 字印淡去、墨晕回缩、纸面按同一阈值退去露出游戏。
-## 字印全显后按题记与出处的字数留读（见 READ_CPS），总长约 10.5–11.7 秒；点击 / 空格 / 回车先补全、再跳到退场；Esc 直接退场。
-## 题记一句一列（见 _clause_cols）。
+## 字印全显后按题记与出处的字数留读（见 READ_CPS），总长约 10.5–11.7 秒；点击 / 空格 / 回车先补全，卡停满 CLICK_REST 秒后
+## 再点才退场（见 _input）；Esc / 右键直接退场。题记按宽度折列：一列放得下就一列，放不下在句读处折成两列。
 ##
 ##   var card := ChapterCard.play(self, GameState.chapter)
 ##   await card.finished            # 退场淡完、底下游戏画面已完全露出时发出，随后自 queue_free
@@ -42,9 +42,9 @@ const T_END := 7.7
 const READ_CPS := 5.0
 const READ_MIN := 2.5
 const READ_MAX := 5.0
-## 题记按句分列的句读（「，」也算：「天接云涛连晓雾，星河欲转千帆舞。」上下句各一列）；句读后紧跟的收引号随上一列
-const CLAUSE_END := "，。？！；"
-const CLOSERS := "」』）》"
+## 字印全显（卡停住）之后，点一下要等卡停满这么久才认作退场：点一下补全、紧跟着又一下，原先刚写全就退，题记一眼都没看
+## （w53-待拍板 9c 定：点一下须在卡已停 0.8 秒后才认；lane w53-9 七轮实施）。Esc / 右键是明说要跳过，不等
+const CLICK_REST := 0.8
 ## 墨晕窗：墨晕区最高按这个画布高算（4:3 窗口的画布高）；窗半径下限 180px（720 画布的 0.25）
 const BLOOM_TALL_H := 960.0
 const BLOOM_RAD_MIN_PX := 180.0
@@ -246,7 +246,7 @@ func _build() -> void:
 			"vertical": true, "effect": 0, "interval": 0.06, "fade": 0.5}, T_YEAR)
 	var ep: Control = null
 	if _epi != "":
-		ep = _text(_clause_cols(_epi), {"font_kind": "body", "size": 23, "spacing": 0.12, "gap": 0.95, "color": INK_TEXT,
+		ep = _text(_epi, {"font_kind": "body", "size": 23, "spacing": 0.12, "gap": 0.95, "color": INK_TEXT,
 			"vertical": true, "max_extent": _canvas.y * 0.5, "effect": 0, "interval": 0.05, "fade": 0.5}, T_EPI)
 	var sr: Control = null
 	if _src != "":
@@ -270,8 +270,8 @@ func _build() -> void:
 		_overlay.material = om
 		_overlay.color = Color.WHITE
 	_overlay.modulate.a = 0.0
-	# 字印全显之后，纸脚淡淡出一行「点击继续」（卡全程没有提示，第 1 轮评审 minor）。原先章名一写出就亮，
-	# 那时点一下只是补全题记（_input），提示写的「继续」要到全显后才名副其实（lane w53-9）
+	# 字印全显、卡停满 CLICK_REST 时，纸脚淡淡出一行「点击继续」（卡全程没有提示，第 1 轮评审 minor）。原先章名一写出就亮，
+	# 那时点一下只是补全题记（_input），提示写的「继续」要到点一下真能退场时才名副其实（lane w53-9）
 	_hint = Label.new()
 	_hint.text = "点击继续"
 	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -282,23 +282,6 @@ func _build() -> void:
 	_root.add_child(_hint)
 	_layout(head, nm, yr, ep, sr)
 	_plan_timeline()
-
-
-## 题记一句一列：句读后换列（竖排自右向左，上句在右）。原先只靠 max_extent 折列——720 高下 16 字的二、三章对句
-## 折成两列、12 字的四章与 10 字的一章一列到底，4:3 下四章全成一列，同一种对句三种版式（lane w53-9）。
-## 单句超出 max_extent 时 InkText 照旧在句内折列。
-static func _clause_cols(s: String) -> String:
-	var out := ""
-	var pending := false
-	for i in range(s.length()):
-		var ch := s[i]
-		if pending and not CLOSERS.contains(ch):
-			out += "\n"
-			pending = false
-		out += ch
-		if CLAUSE_END.contains(ch):
-			pending = true
-	return out
 
 
 ## 字印全显（各行字写完、印落定，不早于 T_SEAL + 0.5）之后按题记 + 出处字数留读，退场三拍整体后挪
@@ -447,7 +430,8 @@ func _step(dt: float) -> void:
 		var hs := _hint.get_minimum_size()
 		_hint.position = Vector2(roundf(_canvas.x - hs.x - maxf(_canvas.x * 0.07, 64.0)), roundf(_canvas.y * 0.9 - hs.y))
 		# α0.62 时 16px 赭石字实测只有 2.3:1（第 2 轮 UX minor 5），提到 0.92
-		_hint.modulate.a = 0.92 * Kit.ease_in_out((_t - _t_ready) / 0.6) * (1.0 - Kit.ease_in_out((_t - _t_out) / 0.4))
+		# 提示 0.6 秒淡入，恰在卡停满 CLICK_REST、点一下开始认作退场时显全
+		_hint.modulate.a = 0.92 * Kit.ease_in_out((_t - (_t_ready + CLICK_REST - 0.6)) / 0.6) * (1.0 - Kit.ease_in_out((_t - _t_out) / 0.4))
 	if _t >= _t_wipe - 0.05:
 		_emit_exiting()
 	if _t >= _t_end:
@@ -488,5 +472,5 @@ func _input(event: InputEvent) -> void:
 			_step(_t_ready - _t)
 			for it in _items:
 				it["node"].finish_reveal()
-		elif _t < _t_out:
+		elif _t < _t_out and _t >= _t_ready + CLICK_REST:
 			skip()
