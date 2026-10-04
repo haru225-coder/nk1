@@ -1107,7 +1107,7 @@ _zhang_fn = _stand.split("zhang.pressed.connect", 1)[1].split("choices_container
 _pu_txt = re.search(r'pu\.text = "跟蒲家——泉州抽解永久八折（海商信用 ([+−])(\d+)，名声 ([+−])(\d+)）"', _stand)
 _pu_fn = _stand.split("pu.pressed.connect", 1)[1].split("choices_container.add_child(pu)", 1)[0] if "pu.pressed.connect" in _stand else ""
 def _delta(body, var):
-    ds = re.findall(rf"GameState\.{var} ([+-])= (\d+)\n", body)
+    ds = re.findall(rf"GameState\.{var} ([+-])= (\d+)\n", body) + [("-" if s else "+", n) for s, n in re.findall(r"GameState\.add_fame\((-?)(\d+)\)\n", body) if var == "fame"]  # 名声走 add_fame（lane w53-13）
     return (-1 if ds[0][0] == "-" else 1) * int(ds[0][1]) if len(ds) == 1 else None
 def _said(sign, n):
     return (-1 if sign == "−" else 1) * int(n)
