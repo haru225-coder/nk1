@@ -2286,6 +2286,24 @@ _flags_of = lambda k: sorted(str(c.get("effects", {}).get("flag", "")) for c in 
 _sea_flag_scene = [k for k in _sea_walk if _flags_of(k) == _flags_of("start")]
 check(bool(_sea_flag_scene), f"序章海路有一幕给的旗标与书斋 start 三选项相同（{_flags_of('start')}），两路后文读得到同一组旗")
 
+# ── 序章不点日子（w53 待拍板 66，lane w53-14）──
+#    序章是一口气演完的前情：开局日历宝祐三年三月初一，演到首次落港都不走日子。幕里写「第三日夜里」「梅雨又压住城墙」，
+#    船籍簿上却还是三月初一。定：改文案、不补日子（补日子要把开局推到五月，牵连季风、新闻、跳年落点）。
+#    从 start_scene 照选项走到落港（type=port 的幕或港 id）为止，沿途正文、题名、选项不写序数日与三月以后的节令。
+_PROLOGUE_DAY_RE = re.compile(r"第[一二三四五六七八九十]+[日天]|梅雨|入夏|盛夏|入秋|秋风|深秋|入冬|寒冬|腊月")
+_pro_seen, _pro_todo, _pro_hits = set(), [load("scenes.json").get("start_scene", "")], []
+while _pro_todo:
+    _k = _pro_todo.pop()
+    if _k in _pro_seen or _k not in _scene_by or _scene_by[_k].get("type") == "port":
+        continue
+    _pro_seen.add(_k)
+    _sc = _scene_by[_k]
+    _txt = "｜".join([str(_sc.get("title", "")), str(_sc.get("body", ""))] + [str(c.get("label", "")) for c in _sc.get("choices", [])])
+    _pro_hits += [f"{_k}「{m.group(0)}」" for m in _PROLOGUE_DAY_RE.finditer(_txt)]
+    _pro_todo += [str(c.get("next", "")) for c in _sc.get("choices", [])]
+check(len(_pro_seen) >= 20 and not _pro_hits,
+      f"序章 {len(_pro_seen)} 幕不点日子（日历停在三月初一）：{_pro_hits or '无'}")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:
