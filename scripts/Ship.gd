@@ -135,6 +135,16 @@ func _key_pressed(event: InputEvent, code: Key) -> bool:
 	return event is InputEventKey and event.pressed and not event.echo and event.keycode == code
 
 
+## 号令面板的某项效力（经海战场 WorldMap.order_mods；不在海战场、没挂面板时回 fallback）（lane w53-2）
+func _order_mod(key: String, fallback: float) -> float:
+	var p := get_parent()
+	if p != null and p.has_method("order_mods"):
+		var m = p.call("order_mods")
+		if m is Dictionary and (m.get(key) is float or m.get(key) is int):
+			return float(m[key])
+	return fallback
+
+
 ## P4-2 接舷：白刃阶段禁炮击（敌船已钩住，甲板上是白刃不是炮战）
 func _can_fire() -> bool:
 	var parent := get_parent()
@@ -149,8 +159,8 @@ func _fire_broadside(side: int) -> void:
 	if not dm.side_ready(side):
 		_note("%s舷低没，站不住人" % ("右" if side == 1 else "左"), 1)
 		return
-	# 装填时长按损伤放长：炮位缺人、船上有火烟、船身倾侧
-	fire_cooldown = 2.0 * dm.reload_factor()
+	# 装填时长按损伤放长：炮位缺人、船上有火烟、船身倾侧；再乘号令面板的装填效力（专力装填快、抢风抽走弩手慢；lane w53-2）
+	fire_cooldown = 2.0 * dm.reload_factor() * _order_mod("reload_time", 1.0)
 	var ship_dir = Vector2.UP.rotated(rotation)
 	var side_dir = Vector2.RIGHT.rotated(rotation) if side == 1 else Vector2.LEFT.rotated(rotation)
 	

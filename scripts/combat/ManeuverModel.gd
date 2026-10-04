@@ -19,6 +19,8 @@ extends RefCounted
 ## mods（可选；缺键时 sail / rudder / hull / oar 按 1、row / yaw_drift 按 0）：sail 帆完好度 · rudder 舵完好度 ·
 ##   hull 船体（进水 / 破损拖慢）· oar 橹桨人手 · row 摇橹划桨出力（多桨船抢上风、无风时用），以上都是 0–1 的乘数；
 ##   yaw_drift 舵失灵时满速下每秒自偏的弧度（正为往右偏，随对水航速按比例）· gear_cap 帆装还挂得起几成（0–2，压住 gear）。
+##   号令面板（CombatOrdersPanel 效力，WorldMap 对旗舰并进来；lane w53-2）：trim 帆力乘数（抢风加派缭手、专力装填抽走帆手，
+##   0.5–1.5，不像 sail 那样夹在 1 以下）· helm 转向乘数（同 0.5–1.5）· pinch_delta 贴风（度，负 = 顶风区收窄、能更贴风走）。
 ##   给损伤模型、敌船 AI 接；WorldMap 对旗舰取船节点的 maneuver_mods()，没有就取 maneuver_factors()（lane combat04 的
 ##   speed / turn / yaw_drift / gear_cap 口径，换成 hull / rudder / yaw_drift / gear_cap）。
 
@@ -114,6 +116,8 @@ var yaw_rate := 0.0
 ## 上一步的读数：船首与风来向夹角（度）、帆向字、船首向、对地速度（含流）、当时的流
 var theta := 180.0
 var sail_state := "顺风"
+## 上一步实用的顶风区半角（度）：pinch_deg() 加上 mods.pinch_delta（号令抢风更贴风）；读数与状态条按它写帆向
+var pinch_eff := -1.0
 var facing := Vector2.UP
 var ground := Vector2.ZERO
 var drift := Vector2.ZERO
@@ -159,11 +163,14 @@ func step(heading: Vector2, helm_input: float, gear: int, wind_to: Vector2, wind
 	var w := maxf(wind_speed, 0.0)
 	var wt := wind_to.normalized() if wind_to.length_squared() > 0.0 else Vector2.ZERO
 	theta = angle_off_wind(h, wt)
-	var pinch := pinch_deg()
+	var pinch := maxf(minf(PINCH_MIN, pinch_deg()), pinch_deg() + float(mods.get("pinch_delta", 0.0)))
+	pinch_eff = pinch
 	sail_state = sail_word(theta, pinch)
+	var trim_mod := clampf(float(mods.get("trim", 1.0)), 0.5, 1.5)
+	var helm_mod := clampf(float(mods.get("helm", 1.0)), 0.5, 1.5)
 	# 帆推：帆向曲线 × 帆档 × 风力（开方：风大一倍船速多四成）；摇橹划桨与帆推取大的
 	var drive := V_REF * float(profile["hull"]) * (1.0 + SAIL_LV_SPEED * (sail_level - 1)) * polar(theta, pinch) \
-			* float(GEAR_SAIL[g]) * sail_mod * wind_mul(w)
+			* float(GEAR_SAIL[g]) * sail_mod * trim_mod * wind_mul(w)
 	var fwd_target := maxf(drive, float(profile["oar"]) * row)
 	# 船身受风：顺风往前推，顶风往回顶（帆不吃风时船会倒退）
 	fwd_target += float(profile["windage"]) * w * wt.dot(h)
@@ -181,7 +188,7 @@ func step(heading: Vector2, helm_input: float, gear: int, wind_to: Vector2, wind
 	var yaw_cap := turn_rate_cap(v_fwd, g, oar_mod)
 	if theta < pinch and g > 0:
 		yaw_cap = maxf(yaw_cap, TACK_YAW * float(GEAR_SAIL[g]) * sail_mod * wind_mul(w) * float(profile["yaw_max"]))
-	var yaw_target := clampf(helm_input, -1.0, 1.0) * yaw_cap * rudder_mod
+	var yaw_target := clampf(helm_input, -1.0, 1.0) * yaw_cap * rudder_mod * helm_mod
 	# 舵失灵自偏：随对水航速按比例（满速 V_REF 时即 yaw_drift）
 	yaw_target += float(mods.get("yaw_drift", 0.0)) * clampf(v_fwd / V_REF, -1.0, 1.0)
 	yaw_rate += (yaw_target - yaw_rate) * (1.0 - exp(-YAW_RESPONSE * dt))
@@ -215,7 +222,7 @@ func snapshot() -> Dictionary:
 		"type": hull_type,
 		"theta": theta,
 		"sail_state": sail_state,
-		"pinch": pinch_deg(),
+		"pinch": pinch_eff if pinch_eff > 0.0 else pinch_deg(),
 		"v_fwd": v_fwd,
 		"v_lat": v_lat,
 		"speed_water": through,

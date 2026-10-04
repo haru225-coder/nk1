@@ -1199,7 +1199,7 @@ func _steer_flagship(delta: float) -> void:
 		want = _helm.hold(heading, delta)
 	else:
 		want = _helm.step(heading, _helm_input(), int(ship.sail_gear), _sea.wind_to, _sea.wind_speed,
-			_sea.current_at(ship.position), delta, _maneuver_mods(ship))
+			_sea.current_at(ship.position), delta, _flagship_mods())
 		_helm_rot = wrapf(_helm_rot + _helm.yaw_rate * delta, -PI, PI)
 	ship.rotation = _helm_rot
 	var fix: Vector2 = (want - ship.velocity) * delta
@@ -1216,6 +1216,17 @@ func _helm_input() -> float:
 	if Input.is_physical_key_pressed(KEY_D):
 		t += 1.0
 	return clampf(t, -1.0, 1.0)
+
+
+## 旗舰这一帧的机动乘数：船体损伤（_maneuver_mods）并上号令面板的效力（lane w53-2）——抢风加派缭手帆力增、能更贴风，
+## 专力装填抽走帆手帆力减；不下令全 1.0、贴风 0，与不接线时一样
+func _flagship_mods() -> Dictionary:
+	var mods := _maneuver_mods(ship).duplicate()
+	var om := order_mods()
+	mods["trim"] = float(om.get("sail_drive", 1.0))
+	mods["helm"] = float(om.get("turn_rate", 1.0))
+	mods["pinch_delta"] = float(om.get("pinch_delta", 0.0))
+	return mods
 
 
 ## 船体损伤对机动的折减（可选接口）：船节点有 maneuver_mods() 就原样用（键见 ManeuverModel 头注释）；
@@ -1305,6 +1316,12 @@ func _sync_ocean_look() -> void:
 	mat.set_shader_parameter("foam_amount", lerpf(0.28, 0.62, spd))
 	mat.set_shader_parameter("glint_amount", lerpf(0.12, 0.32, spd))
 
+
+
+## 号令面板此刻的效力（CombatOrdersPanel.modifiers_for；没挂面板 / 不下令为中性表，乘数全 1.0）。
+## 旗舰机动（_flagship_mods）、装填（Ship._fire_broadside）都从这里取（lane w53-2：面板「效力」一行原先没有一处消费）
+func order_mods() -> Dictionary:
+	return _CombatOrders.modifiers_for(self)
 
 
 ## 旗舰机动读数（帆向、对水 / 对地航速、风压差角、转向半径……，ManeuverModel.snapshot）并上海况读数（SeaState.snapshot）

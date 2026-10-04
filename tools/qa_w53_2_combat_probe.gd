@@ -10,7 +10,7 @@ extends SceneTree
 ##       ② 200 人对 20 人：敌攻我守、我守住 → 不收战、敌船放钩仍在场、本队不得船，敌船扣攻方阵亡，敌将记「跳帮受挫」；
 ##       ③ 士气挂件：敌船先钩时敌簿记攻方、本队簿记守方；守住后本队簿提士气（旧口径反过来按我攻败记、压士气）。
 ##   三、号令浮字写中文名：按 1–5 下令，海战场中央浮字修复前是「号令：windward」「号令：load」——内部 id 直接上屏。
-##       真起号令面板逐令 issue，浮字须是「号令：抢风 / 撤令：抢风 / 号令：专力装填 / 火攻 / 均装 / 救火 / 备接舷」、不含拉丁字母。
+##       真起号令面板逐令 issue，浮字须是「号令：抢风 / 撤令：抢风 / 号令：专力装填 / 均装 / 救火 / 备接舷」、不含拉丁字母（火攻第十三节起撤出轮换）。
 ##   四、收战带本场折损：矢石 / 白刃折的水手、中弹颠落的舱面货，修复前收战 data 里一字不记（CombatLetterbox.loss_note 留着
 ##       「折水手 N 人」那一格没人填，SeaChart 札记也不提），出战墨边只写日期与敌船下场。折 7 人、颠落 4 件、中途夺船并入 40 人，
 ##       收战 data.losses 须恰为 {crew: 7, cargo: 4}（夺来的人不抵折损），墨边副题写「折水手七人，颠落舱面货四件」。
@@ -45,6 +45,10 @@ extends SceneTree
 ##       ② 两艘快船停住，一艘在 1000 px 时等过时限不收战，挪到 1450 px 再等过时限须收战一次 flee{flee_ok, shook_off}；
 ##       ③ 唯一一艘在 1500 px 但在脱离（溃走）：等过时限不收战（归士气簿收场，不记成本船脱战）；
 ##       ④ B 弃战挑首掷 > 0.95 的种子（照掷必败）：追船尽在 1400 px 外须 flee_ok、不掷骰；追船在 600 px 同种子照掷（flee_ok 假）。
+##   十三、号令效力接上旗舰（抢风 / 装填侧重）：号令面板「效力」一行（帆力、贴风、装填……）修复前没有一处消费，下令只改签面。四格：
+##       ① ManeuverModel 认号令两键：mods.trim 1.09 的船横风满帆两秒后对水航速比不带的快、mods.pinch_delta −6 时船首离来风 45°
+##          不再「顶风」（福船顶风区 48°）；② 海战场下抢风令：旗舰这一帧的机动乘数带 trim / pinch_delta，读数里顶风区少 6°；
+##       ③ 专力装填：旗舰一放齐射，装填冷却 = 2 秒 × 损伤装填倍数 × 0.7；④ 装填侧重只在均装 ⇄ 专力装填间轮换，不再轮到落不了地的火攻。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_probe.gd
 ## 判词：QA_W53_2_COMBAT_PROBE PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
@@ -103,6 +107,9 @@ func _run() -> void:
 	print("== 十二、甩脱：追打的敌船尽在逃出距离外，本船即算甩开")
 	await _sec_outsailed(fleet)
 	await _sec_flee_key_far(fleet)
+	print("== 十三、号令效力接上旗舰（抢风 / 装填侧重）")
+	_sec_maneuver_order_keys()
+	await _sec_orders_reach_flagship(fleet)
 
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
@@ -336,7 +343,7 @@ func _sec_order_notice(fleet: Node) -> void:
 	var latin := RegEx.create_from_string("[A-Za-z]")
 	var bad: Array = []
 	var seen: Array = []
-	for step in [["windward", "号令：抢风"], ["windward", "撤令：抢风"], ["load", "号令：专力装填"], ["load", "号令：火攻"],
+	for step in [["windward", "号令：抢风"], ["windward", "撤令：抢风"], ["load", "号令：专力装填"],
 			["load", "号令：均装"], ["damage", "号令：救火"], ["board", "号令：备接舷"]]:
 		var payload: Dictionary = panel.call("issue", step[0])
 		var note: Label = wm.get("_notice")
@@ -707,6 +714,76 @@ func _sec_flee_key_far(fleet: Node) -> void:
 	_check(got.size() == 2 and got[0] == "true" and got[1] == "false",
 		"十二④ B 弃战（种子 %d 首掷 > 0.95）：追船在 1400 px 外不掷骰即脱 flee_ok=%s；在 600 px 照掷 flee_ok=%s" % [
 			sd, got[0] if got.size() > 0 else "无", got[1] if got.size() > 1 else "无"])
+
+
+
+# ══ 十三、号令效力接上旗舰（抢风 / 装填侧重） ══════════════════════════════
+
+## ① 纯函数：两份福船机动模型同输入（北风 80、满帆）各走两秒，只差 mods；横风比航速，离来风 45° 比帆向
+func _sec_maneuver_order_keys() -> void:
+	var mm: GDScript = load("res://scripts/combat/ManeuverModel.gd")
+	var wt := Vector2(0, 1)
+	var dt := 1.0 / 60.0
+	var plain = mm.new("fu_ship_medium", 1, 0)
+	var trimmed = mm.new("fu_ship_medium", 1, 0)
+	for _i in 120:
+		plain.step(Vector2.RIGHT, 0.0, 2, wt, 80.0, Vector2.ZERO, dt)
+		trimmed.step(Vector2.RIGHT, 0.0, 2, wt, 80.0, Vector2.ZERO, dt, {"trim": 1.09})
+	var v0 := float(plain.get("v_fwd"))
+	var v1 := float(trimmed.get("v_fwd"))
+	var close_hauled := Vector2(sin(deg_to_rad(45.0)), -cos(deg_to_rad(45.0)))
+	var base = mm.new("fu_ship_medium", 1, 0)
+	var pointed = mm.new("fu_ship_medium", 1, 0)
+	base.step(close_hauled, 0.0, 2, wt, 80.0, Vector2.ZERO, dt)
+	pointed.step(close_hauled, 0.0, 2, wt, 80.0, Vector2.ZERO, dt, {"pinch_delta": -6.0})
+	var s0 := str(base.get("sail_state"))
+	var s1 := str(pointed.get("sail_state"))
+	var p1 = (pointed.call("snapshot") as Dictionary).get("pinch", -1.0)
+	_check(v1 > v0 * 1.05, "十三① mods.trim 1.09：横风满帆两秒对水航速 %.1f → %.1f px/s（须快 5%% 以上）" % [v0, v1])
+	_check(s0 == "顶风" and s1 != "顶风" and is_equal_approx(float(p1), float(base.call("pinch_deg")) - 6.0),
+		"十三① mods.pinch_delta −6：离来风 45° 不带 %s、带 %s，读数顶风区 %s°（本船 %.0f°）" % [s0, s1, str(p1), float(base.call("pinch_deg"))])
+
+
+## ②–④ 真起海战场与号令面板：抢风令进旗舰机动，专力装填进齐射冷却，装填侧重的轮换
+func _sec_orders_reach_flagship(fleet: Node) -> void:
+	var wm := await _battle(fleet, "fu_ship_medium", 60, {"type": "pirate_boat", "count": 1})
+	var panel: Node = null
+	for n in wm.get_children():
+		if n.is_in_group("nk1_combat_orders"):
+			panel = n
+	var own: Node = wm.get("ship")
+	if panel == null or own == null:
+		_check(false, "十三 挂上号令面板、旗舰在场")
+		await _close(wm)
+		return
+	panel.call("issue", "windward")
+	var has_mods := wm.has_method("_flagship_mods")
+	var mods: Dictionary = wm.call("_flagship_mods") if has_mods else {}
+	for _i in 3:
+		await physics_frame
+	var helm = wm.get("_helm")
+	var want_pinch := maxf(40.0, float(helm.call("pinch_deg")) - 6.0) if helm != null else -1.0
+	var snap_pinch := float(wm.call("maneuver_snapshot").get("pinch", -1.0))
+	_check(has_mods and float(mods.get("trim", 1.0)) > 1.05 and is_equal_approx(float(mods.get("pinch_delta", 0.0)), -6.0)
+		and is_equal_approx(snap_pinch, want_pinch),
+		"十三② 抢风令进旗舰机动：帆力 %s、贴风 %s°；读数顶风区 %.0f°（须 %.0f°）" % [
+			str(mods.get("trim", "无")), str(mods.get("pinch_delta", "无")), snap_pinch, want_pinch])
+	panel.call("issue", "windward")  # 撤抢风
+	panel.call("issue", "load")  # 专力装填
+	var dm = own.call("get_damage_model")
+	own.set("fire_cooldown", 0.0)
+	own.call("_fire_broadside", 1)
+	var want_cd := 2.0 * float(dm.call("reload_factor")) * 0.7
+	var cd := float(own.get("fire_cooldown"))
+	_check(str(panel.call("state_text", "load")) == "专力装填" and absf(cd - want_cd) < 0.001,
+		"十三③ 专力装填：齐射后装填冷却 %.3f 秒（须 2 × 损伤倍数 × 0.7 = %.3f）" % [cd, want_cd])
+	var seen := PackedStringArray([str(panel.call("state_text", "load"))])
+	for _i in 3:
+		panel.call("issue", "load")
+		seen.append(str(panel.call("state_text", "load")))
+	_check(seen.find("火攻") < 0 and seen[1] == "均装" and seen[2] == "专力装填",
+		"十三④ 装填侧重只在均装、专力装填间轮换（%s）" % " → ".join(seen))
+	await _close(wm)
 
 
 class _ScriptErrLog extends Logger:

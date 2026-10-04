@@ -4,7 +4,10 @@
 ##   二、静态注册：register_handler(order_id, cb)（"*" 收全部），下令时逐个 cb.call(order_id, payload)；
 ##       set_parley_resolver(cb) 可把劝降判定整个交给士气模块（cb.call(ctx) -> {"result": "surrender" / "refuse" / "defy", …}）
 ##   三、查询：modifiers_for(host) —— host 所在场景树里第一块面板的当前乘数；没挂面板回 neutral_modifiers()（全 1.0），
-##       所以接线后玩家不下令即与现行手感零差异
+##       所以接线后玩家不下令即与现行手感零差异。lane w53-2 起海战场经 WorldMap.order_mods 接上：旗舰机动（帆力 sail_drive /
+##       转向 turn_rate / 贴风 pinch_delta → ManeuverModel 的 trim / helm / pinch_delta）、装填（reload_time → Ship 齐射冷却）。
+##       火攻（LOAD_TABLE.fire）暂不入轮换：旗舰没挂弹药簿（ReloadAmmo），敌船也没有帆损、火势，射程、引火、伤害去向无处落，
+##       下了只剩装填慢——签面与效力一行不写落不了地的数（lane w53-2 定）
 ##   四、落令（auto_apply，默认开）：旗舰身上有同波次的分系统就按号令改它的令（鸭子型，只调它们公开的改令口）——
 ##       ship.battery（ReloadAmmo）：抢风 → set_emphasis("sail")，专力装填 → "guns"，两令同下 / 都不下 → "balanced"；火攻 → set_fire_mode(true)
 ##       ship.damage_model（DamageModel）：救火 → set_mode 按险情取 "fire"（有火或无险）/ "flood"（只进水），令在期间随险情改（tick）；
@@ -17,8 +20,8 @@
 ## 人手分派（宋元近海一船人手：帆索缭手、弩手与拽炮人、戽水扑火、执钩拒的甲士）——
 ##   平时 帆 3 成 · 弩炮 4 成 · 水火 1 成 · 甲士 2 成。下令改的是各岗权重，归一后得分派；效力按「现分派 ÷ 该令要的分派」折算：
 ##   抢风：帆岗 ×1.8。缭手加倍上缭，篾篷硬帆逐片收紧，船可再贴风 PINCH_TRIM 度（pinch_delta，给机动模型减 pinch）；弩炮手被抽去，装填慢。
-##   装填侧重：轮换 均装 → 专力装填 → 火攻（LOAD_TABLE）。专力装填把闲手都派去递矢、拽炮（弩炮岗 ×1.6），装填快，帆索与甲士人手少；
-##     火攻换装火箭、火球，焚帆为主、装填稍慢，火攻须居上风（fire_attack_factor）。
+##   装填侧重：轮换 均装 ⇄ 专力装填（LOADS；火攻暂撤，见上）。专力装填把闲手都派去递矢、拽炮（弩炮岗 ×1.6），装填快，帆索与甲士人手少；
+##     火攻（LOAD_TABLE 仍留这一档）换装火箭、火球，焚帆为主、装填稍慢，火攻须居上风（fire_attack_factor）。
 ##   救火：水火岗 ×3.5。分人戽水扑火，扑火、排水成倍快；帆与弩炮的人手跟着少。
 ##   备接舷：甲士岗 ×(1 + 聚队进度)，聚齐要 MUSTER_SEC 秒（撤令 DISPERSE_SEC 秒散回）。钩距、白刃加力；聚在舷边挨矢石，伤亡加重。
 ##   降幡劝降：近敌（≤ HAIL_RANGE）喊话令其竖降幡。胜算 parley_chance：敌士气低、船伤重、我众敌寡、甲士聚舷、已钩住、
@@ -57,7 +60,7 @@ const ORDER_KEYS := {
 }
 const ORDER_TIPS := {
 	"windward": "缭手加倍上缭，篾篷逐片收紧，船可再贴风几度；弩炮手被抽去，装填慢。再按撤令。",
-	"load": "轮换：均装、专力装填、火攻。专力装填闲手都去递矢拽炮，装填快、帆索人少；火攻换装火箭火球，焚帆为主，须居上风。",
+	"load": "轮换：均装、专力装填。专力装填闲手都去递矢拽炮，装填快、帆索人少。",
 	"damage": "分人戽水扑火，扑火排水快数倍；帆与弩炮的人手跟着少。再按撤令。",
 	"board": "甲士执钩拒聚到舷边，六秒聚齐：钩距远、白刃有力，聚在舷边挨矢石伤亡也多。再按撤令。",
 	"parley": "近敌喊话，令其竖降幡。敌士气低、船伤重、我众敌寡、已钩住、敌阵脚已乱时易成；不成二十秒内不能再喊。",
@@ -76,10 +79,11 @@ const DISPERSE_SEC := 2.0
 ## 帆岗满配（抢风）时能再贴风的度数（机动模型 pinch 减去它）
 const PINCH_TRIM := 6.0
 
+## 号令轮换的几档：火攻暂撤（见头注「三」：旗舰没挂弹药簿、敌船没有帆损火势，引火无处落）；LOAD_TABLE 仍留 fire 这一档
+const LOADS := ["mixed", "rapid"]
 ## 装填侧重：name 签上写法；hull / sail / crew = 命中后伤害落在船壳 / 帆索 / 人手的份额（和为 1）；
 ## reload = 该令人手给足时的装填时长乘数；range = 射程乘数；ignite = 引火乘数；guns_w = 弩炮岗权重；
 ## emphasis / fire_mode = 落到 ReloadAmmo 的令
-const LOADS := ["mixed", "rapid", "fire"]
 const LOAD_TABLE := {
 	"mixed": {"name": "均装", "hull": 0.40, "sail": 0.30, "crew": 0.30, "reload": 1.00, "range": 1.00, "ignite": 1.0, "guns_w": 1.0},
 	"rapid": {"name": "专力装填", "hull": 0.40, "sail": 0.30, "crew": 0.30, "reload": 0.70, "range": 1.00, "ignite": 1.0, "guns_w": 1.6},
