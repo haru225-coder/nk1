@@ -1382,7 +1382,7 @@ func _show_event(event: Dictionary) -> void:
 		_add_event_action("扬帆逃走", _on_flee_pirates)
 	elif kind == Voyage.EventKind.REFUGEE:
 		_add_event_action("载人同行（水粮 −2 成）", _on_refugee_take)
-		_add_event_action("分些水粮，不载人", _on_refugee_share)
+		_add_event_action("分些水粮，不载人（水粮 −1 成）", _on_refugee_share)
 		_add_event_action("不停船", _on_refugee_pass)
 	else:
 		_add_event_action("继续航行", _on_event_continue)

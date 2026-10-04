@@ -64,6 +64,9 @@
      唱第」等，半角点在全角空格与汉字之间挤成一粒。gd 玩家串里不许再写「·」。数据里的书证出处（《论语·公冶长》）与
      海图旧式题签（「興化軍·莆田」）照原样，不扫。拼接用的分隔符（"·".join(…)，不带汉字）另扫一遍，
      把半角点归一成全角的 .replace("·", "・") 写法放过。
+  P. 海图事件钮写出水粮代价（八轮）：难民船一面三颗钮，「载人同行（水粮 −2 成）」写了代价，「分些水粮，不载人」实扣
+     水、粮各一成（向上取整）却一字不提，同一面板上看着像白给。回调按成数扣水粮（Fleet.water - int(ceil(Fleet.water * 0.N))）
+     的海图事件钮，钮文括注须写「水粮 −N 成」，N = 实扣成数、水粮同数；钮文写了的，回调须真按这个成数扣。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -156,6 +159,13 @@ DANGLING_SIGN_RE = re.compile(r"(%s)\s*[+−](?!\s*[0-9%%])" % "|".join(DELTA_WO
 EVENT_FAME_RE = re.compile(r'_add_event_action\("([^"]*（[^"]*名声 \+(\d+)[^"]*）)",\s*(_\w+)\)')
 # 防沉默绿：这几颗钮文必须被上面的正则抓到（钮文改了格式、正则抓空时判红，不当绿）。
 EVENT_FAME_MUST = ("交出一条船",)
+
+# ═══ 钉 P：海图事件钮括注的「水粮 −N 成」= 回调按成数实扣的水粮（八轮）。
+EVENT_ACTION_RE = re.compile(r'_add_event_action\("((?:[^"\\]|\\.)*)",\s*(_\w+)\)')
+SUPPLY_CUT_RE = re.compile(r"Fleet\.(water|food) - int\(ceil\(Fleet\.\1 \* ([0-9.]+)\)\)")
+SUPPLY_LABEL_RE = re.compile(r"（[^（）]*水粮 −(\d+) 成[^（）]*）")
+# 防沉默绿：这两颗钮的水粮成数必须被比到（回调改了扣法、正则抓空时判红，不当绿）。
+SUPPLY_CUT_MUST = ("载人同行", "分些水粮")
 
 # ═══ 钉 K：札记写的货损成数 = 同一函数里 Fleet.lose_cargo_ratio 的字面实参。
 CARGO_FRAC_RE = re.compile(r"半个?货舱|半舱|一半的?货|([一二两三四五六七八九十])成的?货")
@@ -394,6 +404,35 @@ def _check_event_fame(src, rel):
         got = [int(a or b) for a, b in re.findall(r"GameState\.(?:fame \+= (\d+)|add_fame\((\d+)\))", body)]
         if got != [n]:
             FAILS.append(f"{rel}: 钮文「{label}」写名声 +{n}，回调 {cb} 实加 {got or '无'}")
+    return seen
+
+
+def _check_event_supply(src, rel):
+    """钉 P：回调按成数扣水粮的海图事件钮，钮文括注须写「水粮 −N 成」且 N = 实扣成数（水、粮同数）；
+    钮文写了的，回调须真按这个成数扣。返回比过的钮文（供防沉默绿）。"""
+    seen = []
+    for m in EVENT_ACTION_RE.finditer(src):
+        label, cb = m.group(1), m.group(2)
+        cuts = {}
+        for k, v in SUPPLY_CUT_RE.findall(_func_body_gd(src, cb)):
+            cuts.setdefault(k, set()).add(round(float(v) * 10, 6))
+        said = SUPPLY_LABEL_RE.search(label)
+        if not cuts and not said:
+            continue
+        seen.append(label)
+        if not cuts:
+            FAILS.append(f"{rel}: 钮「{label}」写水粮 −{said.group(1)} 成，回调 {cb} 没按成数扣水粮")
+            continue
+        tenths = cuts.get("water", set()) | cuts.get("food", set())
+        if set(cuts) != {"water", "food"} or cuts["water"] != cuts["food"] or len(tenths) != 1:
+            got = {k: sorted(v) for k, v in cuts.items()}
+            FAILS.append(f"{rel}: 钮「{label}」回调 {cb} 水、粮按成数扣得不一（{got}）——钮文只写得出一个「水粮 −N 成」")
+            continue
+        n = next(iter(tenths))
+        if not said:
+            FAILS.append(f"{rel}: 钮「{label}」回调 {cb} 实扣水粮各 {n:g} 成，钮文没写「（水粮 −{n:g} 成）」——同面板别的钮写了代价，这颗看着像白给")
+        elif float(said.group(1)) != n:
+            FAILS.append(f"{rel}: 钮「{label}」写水粮 −{said.group(1)} 成，回调 {cb} 实扣 {n:g} 成")
     return seen
 
 
@@ -818,6 +857,26 @@ def _self_test_event_fame():
     return bad
 
 
+def _self_test_event_supply():
+    """钉 P 自检：回调扣一成，钮文没写 / 写成两成须判红，写「（水粮 −1 成）」须判绿。"""
+    bad = []
+    tpl = ('\t_add_event_action("%s", _on_x)\n\nfunc _on_x() -> void:\n'
+           '\tFleet.water = maxi(0, Fleet.water - int(ceil(Fleet.water * 0.1)))\n'
+           '\tFleet.food = maxi(0, Fleet.food - int(ceil(Fleet.food * 0.1)))\n')
+    saved = FAILS[:]
+    try:
+        for label, want_red in (("分些水粮，不载人", True), ("分些水粮，不载人（水粮 −2 成）", True),
+                                ("分些水粮，不载人（水粮 −1 成）", False)):
+            FAILS.clear()
+            seen = _check_event_supply(tpl % label, "self")
+            if not seen or bool(FAILS) != want_red:
+                bad.append(f"钉 P 自检：钮文「{label}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
+    return bad
+
+
 def _self_test_cargo_frac():
     """钉 K 自检：实扣 0.3、札记写「半个货舱」「两成货」须判红，写「三成货」须判绿；不调 lose_cargo_ratio 的函数不比。"""
     bad = []
@@ -969,6 +1028,15 @@ def _scan_event_fame():
             FAILS.append(f"{rel}: 钉 G 没抓到「{must}」钮文的「（名声 +N）」——钮文缺数或改了格式")
 
 
+def _scan_event_supply():
+    rel = "scripts/SeaChart.gd"
+    src = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+    seen = _check_event_supply(src, rel)
+    for must in SUPPLY_CUT_MUST:
+        if not any(must in lab for lab in seen):
+            FAILS.append(f"{rel}: 钉 P 没比到「{must}」钮的水粮成数——回调改了扣法或钮文改了写法")
+
+
 def _scan_cargo_frac():
     seen = set()
     for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
@@ -1063,7 +1131,7 @@ def main():
     glyph_fails = _self_test_glyphs(cmap)
     if glyph_fails:
         cmap = None
-    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + _self_test_delta_note() + _self_test_interpunct() + glyph_fails
+    self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + _self_test_delta_note() + _self_test_interpunct() + _self_test_event_supply() + glyph_fails
     _scan_gd_strings(cmap)
     _scan_json_text()
     _scan_data_glyphs(cmap)
@@ -1071,6 +1139,7 @@ def main():
     _report_glyphs()
     _scan_combat_data()
     _scan_event_fame()
+    _scan_event_supply()
     _scan_crew_left_wiring()
     _scan_cargo_frac()
     _scan_liang()
