@@ -13,7 +13,12 @@
   丙·段名唯一（归一化 w<N>-k<M> 名 + 段头整行双轨；历史三对重段 w58-k2×2 / w66-k3×2 /
       w71-k1×2 已核设计内放行——w74-k1 §8② 已裁在卷）；
   丁·纯尾 append 单调（文档层——首个判档段头之后不许再出非判档 H2；主控红清拨正
-      不触发：不动段结构、唯改字 / 挪段在判档段域内——w76-k6 牒格丁口径照实注）。
+      不触发：不动段结构、唯改字 / 挪段在判档段域内——w76-k6 牒格丁口径照实注）；
+  戊·段序非降幂（w113-k6 E-3 落地片承接——w90-k6 牒 C1 格 / 待策划拍板清单 :34
+      钦钉采纳顺首）：判档段波号序列不许降幂（w[i] < w[i-1] 即乱序 append 真红——
+      w90-k6 牒 §三 三枚原位逆序反例 wave59→wave58-k2 :637/:647、wave70→wave69-k4
+      :891/:906、wave80-k5→wave77-k4 :1133 封罩外静默绿；w112-k6 牒 MutB 精烧实证
+      「灭段掩护＋段数恒定」下乱序零咬）。
 
 立案链：判力空白三波亲证在卷——w74-k1 M-B1 删段烧照绿首烧 + w75-k1 M-A1 复证 +
 w76-k6 第三证（量具树删 w75-k1 判档段头 → ledger rc=0 + decision_refs rc=0 双照绿）；
@@ -51,6 +56,14 @@ SEG_COUNT_BASE = 91    # 甲′：判档段数恒等钉（w81-k2 殓权池判段
                        # 尾 append 新增判档段须同笔拨钉 §五.3「拨参数 = 拨颁」同例）
 KEY_RE = re.compile(r"^-\s*\*\*§([1-9])")
 NAME_RE = re.compile(r"^## (?:殓权池判档段 · )?(?:w(?:ave)?(\d+)-k(\d+))")
+WAVE_FULL_RE = re.compile(r"^## (?:lane\/)?(?:殓权池判档段 · )?(w(?:ave)?(\d+)-k\d+)")
+# 戊 HIST 放行钉集：w90-k6 牒 §三 三枚原位逆序反例四键钉（+波，-波，+名，-名）——
+# 前名后名归一化 wN-kM（wave/lane/ 前缀剥除）。w113-k6 E-3 落地把历史留档从「罩外静默绿」
+# 改定性「设计内已裁在册」；四键全吻才放行——挪一动一或新对借名（甚或同波借名对换名）
+# 即新红（防「历史对掩护新增乱序」照 w112-k6 牒 MutB 组合形敞口收）。
+HIST_NONMONO_OK = {(59, 58, "w59-k1", "w58-k2"),
+                   (70, 69, "w70-k3", "w69-k4"),
+                   (80, 77, "w80-k1", "w77-k4")}
 
 FAILS = []
 
@@ -119,6 +132,25 @@ def scan_text(text):
     if tail_h2:
         probs.append(f"丁 纯尾 append 单调（判档段域起于 :{first_seg + 1}）："
                      f"其后混入非判档 H2 行 {[i + 1 for i in tail_h2][:5]}")
+
+    # 戊：段序非降幂（w113-k6 E-3 落地）——判档段波号序列不许降幂（w[i] < w[i-1] 即
+    # 乱序 append 真红、行号对点名）；无名段头（殓权池特别件/壳段）不参比与前邻零判
+    # （误红面照挂）；历史三对原位逆序 HIST_NONMONO_OK 四键钉放行——挪一动一即新红。
+    waves, names = [], []
+    for i, n, l in segs:
+        m = WAVE_FULL_RE.match(l)
+        waves.append(int(m.group(2)) if m else None)
+        names.append(m.group(1).replace("wave", "w", 1) if m else None)
+    hot = []
+    for k in range(len(waves) - 1):
+        if waves[k] is None or waves[k + 1] is None or waves[k + 1] >= waves[k]:
+            continue
+        if (waves[k], waves[k + 1], names[k], names[k + 1]) in HIST_NONMONO_OK:
+            continue
+        hot.append((segs[k][0] + 1, segs[k + 1][0] + 1))
+    if hot:
+        probs.append(f"戊 段序非降幂：违例行对（前段头行，后段头行）{hot[:5]}（乱序 append 形——"
+                     "挪历史三对任一动一即新红（HIST_NONMONO_OK 钉集内）")
     return probs
 
 
@@ -147,7 +179,8 @@ def _self_test():
     S 格（负样——判红是期望，检出即 ✓；检不出 = 闸判不出该形、闸自身坏先红）：
       S1 整段灭段（甲′咬）；S2 §键乱序（乙咬）；S3 新增重复段名（丙咬）；
       S4 中段插入非判档 H2（丁咬）；S5 短段截段（甲咬）；S6 段数钉不拨回拨 -1（甲′咬——
-        拨颁必要性反向格，w76-k6 遗留②钦）。
+        拨颁必要性反向格，w76-k6 遗留②钦）；S7 乱序跨波段互换（戊咬——E-3 掛点，
+        w113-k6 落地：前波号大后波号小段位互换、甲 / 甲′ / 乙 / 丙 / 丁 全正唯戊咬）。
     C 格（干净样——须全绿；误红面闸——w76-k6 牒格乙 / 格丁口径拨正实钉，勿回退）：
       C1 多小节重复段键照挂判绿（w70-k3×2 / w70-k2×3 同型：键序列 [1,2,3,4,5,1,2] 首轮
         非严格递增照守）；C2 主控红清拨正不触发判绿（段体改字 + 判档段域内段序挪换——
@@ -161,7 +194,7 @@ def _self_test():
 
     # C5 正形底盘（先立——S 格都在它底盘上烧）
     base = _base_doc(SEG_COUNT_BASE)
-    ok &= check(scan_text(base) == [], "C5 正形底盘五格照守判绿（误红面兜底）")
+    ok &= check(scan_text(base) == [], "C5 正形底盘六格照守判绿（误红面兜底）")
 
     # S1 整段灭段：底盘删一完整段（段头 + 段体 8 行 = w74-k1 遗留①灭段同型）→ 唯甲′咬
     lines = base.splitlines()
@@ -212,6 +245,24 @@ def _self_test():
     ok &= check(p and all(p.startswith("甲′") for p in p),
                 "S6 钉不拨则新增段照红（唯甲′咬——拨颁必要性反向格）")
 
+    # S7 乱序跨波段互换：底盘前段改名 w79-k1 / w79-k2（跨波低号），末段保持 w80-k90——
+    # 首段（79）与末段（80）整段互换后成 …k90(w79 域)‖k1(w80)… = 波号 79>…‖80 后段波号大于
+    # 前段、真乱序 = 把高波段插回低波域：末段 w80-k90 与 w79-k1 互换 → 波号序列首段 80、其后 79
+    # 降幂违例、段数恒 = 钉、段名 / §键 / 丁格全正 → 唯戊咬（E-3 掛点，w113-k6 落地）
+    lines12 = base.splitlines()
+    for i, l in enumerate(lines12):
+        if l.startswith("## w80-k1 "):
+            lines12[i] = l.replace("## w80-k1 ", "## w79-k1 ", 1)
+        elif l.startswith("## w80-k2 "):
+            lines12[i] = l.replace("## w80-k2 ", "## w79-k2 ", 1)
+    heads_idx = [i for i, l in enumerate(lines12) if l.startswith("## w") and WAVE_FULL_RE.match(l)]
+    a, b = heads_idx[0], heads_idx[-1]
+    seg_a, seg_b = lines12[a:a + 8], lines12[b:b + 8]
+    lines12 = lines12[:a] + seg_b + lines12[a + 8:b] + seg_a + lines12[b + 8:]
+    p = scan_text("\n".join(lines12))
+    ok &= check(p and all(p.startswith("戊 ") for p in p),
+                "S7 乱序跨波段互换唯戊咬（段数钉不咬、段名 §键 丁格全正——E-3 掛点）")
+
     # C1 多小节重复段键照挂（w70-k3×2 / w70-k2×3 同型——格乙口径拨正实钉、勿回退）
     lines8 = base.splitlines()
     last_head = max(i for i, l in enumerate(lines8) if l.startswith("## w80-k"))
@@ -229,13 +280,38 @@ def _self_test():
     p = scan_text("\n".join(lines9))
     ok &= check(p == [], "C2 主控红清拨正（改字 + 域内挪段）五格全不咬判绿")
 
-    # C3 历史三对重段放行（w58-k2×2 / w66-k3×2 / w71-k1×2 恰 2 次钉集形——丙不咬）
-    lines10 = _base_doc(SEG_COUNT_BASE - 6).splitlines()
-    for nm in ["w58-k2", "w66-k3", "w71-k1"]:
-        lines10 += _seg(f"## {nm} 判档段 历史重段放行样", [1, 2, 3, 4, 5], pad=2)
-        lines10 += _seg(f"## {nm} 判档段 历史重段放行样（复述）", [1, 2, 3, 4, 5], pad=2)
-    p = scan_text("\n".join(lines10))
-    ok &= check(p == [], "C3 历史三对重段放行判绿（丙不咬——已裁钉集实钉）")
+    # C3 历史三对重段放行（戊 HIST 钉集三对原位钉——四键（+波,-波,+名,-名）成对钉
+    # 字面锚定权）三态证：
+    #  C3  三对钉各自在 w42 域干净底盘尾域成对投影放行判绿——钉形 =「w42*88 域非降幂 ‖
+    #      钉名对降幂（59>58 / 70>69 / 80>77）」= 全域唯钉一对违例、四键吻钉集放行；
+    #      底盘用 w42 域名（42<58 全域非降幂底盘面零动）避底盘与钉面撞波域。
+    #  C3′ 钉集外新增同名三对（非 HIST 名壳、同波族相邻戊零咬波序照守）丙咬新增重复。
+    #  C3″ 借壳逆序钉（波号字面 HIST、名壳非钉集名——波号名壳错位戊咬）。
+    hist_c3 = [("w59-k1", "w58-k2"), ("w70-k3", "w69-k4"), ("w80-k1", "w77-k4")]
+    for ha, hb in hist_c3:
+        lines10 = _base_doc(SEG_COUNT_BASE - 2).splitlines()
+        # 底盘改名 w42 域（42<58 全域非降幂、避与钉名对波域撞）
+        lines10 = [l.replace("## w80-k", "## w42-k", 1) if l.startswith("## w80-k") else l
+                   for l in lines10]
+        lines10 += _seg(f"## {ha} 判档段 钉投影上位（钉集名壳上）", [1, 2, 3, 4, 5], pad=2)
+        lines10 += _seg(f"## {hb} 判档段 钉投影下位（钉集名壳下）", [1, 2, 3, 4, 5], pad=2)
+        p = scan_text("\n".join(lines10))
+        ok &= check(p == [], f"C3-{ha} HIST 钉投影放行判绿（{ha}‖{hb} 四键吻钉——戊不咬）")
+    # C3′ 反向钉：钉集外新增同名三对（非 HIST 名壳）同波族相邻置——戊零咬、丙咬
+    lines10b = _base_doc(SEG_COUNT_BASE - 6).splitlines()
+    for nm in ["w80-k97", "w80-k98", "w80-k99"]:
+        lines10b += _seg(f"## {nm} 判档段 历史重段放行样", [1, 2, 3, 4, 5], pad=2)
+        lines10b += _seg(f"## {nm} 判档段 历史重段放行样（复述）", [1, 2, 3, 4, 5], pad=2)
+    p = scan_text("\n".join(lines10b))
+    ok &= check(p and all(p.startswith("丙 ") for p in p),
+                "C3′ 钉集外新增同名三对丙咬（与 C3 互证——钉集外名壳必咬、戊零咬波序照守）")
+    # C3″ 借壳逆序钉（波号字面 HIST、名壳非钉集名——波号名壳错位戊咬）
+    lines10c = _base_doc(SEG_COUNT_BASE - 6).splitlines()
+    for nm in ["w115-k9", "w114-k9", "w117-k9", "w116-k9", "w120-k9", "w118-k9"]:
+        lines10c += _seg(f"## {nm} 判档段 借壳逆序钉样", [1, 2, 3, 4, 5], pad=2)
+    p = scan_text("\n".join(lines10c))
+    ok &= check(p and all(p.startswith("戊 ") for p in p),
+                "C3″ 借壳逆序钉（名壳非钉集名）：戊咬三处（名钉四键字面锚定权实钉）")
 
     # C4 段头整行双轨兜底（无 wN-kM 名的判档段头按段头整行前 30 字取名、唯一即绿）
     lines11 = _base_doc(SEG_COUNT_BASE - 1).splitlines()
@@ -259,7 +335,7 @@ def main():
         check(False, p)
     if not FAILS:
         n_seg = len(segs_of(text.splitlines())[0])
-        print(f"   ✓ 真文档五格照守（{n_seg} 段 = 恒等钉 {SEG_COUNT_BASE}、甲/乙/丙/丁 零违例）")
+        print(f"   ✓ 真文档六格照守（{n_seg} 段 = 恒等钉 {SEG_COUNT_BASE}、甲乙丙丁戊零违例）")
     print("结果：全部通过" if ok and not FAILS else f"结果：{len(FAILS)} 项问题")
     return 0 if ok and not FAILS else 1
 
