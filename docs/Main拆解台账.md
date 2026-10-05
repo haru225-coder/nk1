@@ -712,7 +712,7 @@ R 玉湖陈宅 1 支 / 47 行。追加刀函数表里的行段按「拆后那版
 
 | 支 | 行段（拆后那版 Main.gd 的转发快照） | 行（拆前 function 本体） | 拆出件 static func |
 |---|---|---|---|
-| `_setup_residence_chen(port_id)` | 2096–2100 | 47 | `setup_residence_chen` |
+| `_setup_residence_chen(port_id)` | 2098–2102 | 47 | `setup_residence_chen` |
 
 **跨切依赖**（全部经 `main.` 取，追加进拆出件不存状态）：
 - Main 成员：`scene_title` / `body_text` / `choices_container` / `choices_label` 各 1，`current_scene_id` 2（两处 lambda 里，
