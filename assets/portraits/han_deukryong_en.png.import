@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b54of2k7oit5k"
-path="res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"
+uid="uid://lu5he4rslhfm"
+path="res://.godot/imported/han_deukryong_en.png-648bd745293deafe546afb4cace40bab.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bg_lacquer_workshop.jpg"
-dest_files=["res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"]
+source_file="res://assets/portraits/han_deukryong_en.png"
+dest_files=["res://.godot/imported/han_deukryong_en.png-648bd745293deafe546afb4cace40bab.ctex"]
 
 [params]
 

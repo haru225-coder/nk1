@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b54of2k7oit5k"
-path="res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"
+uid="uid://bo6f8lny1x11r"
+path="res://.godot/imported/pham_ngu_lao_en.png-3899b94f408c626b095466f9b68f8068.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bg_lacquer_workshop.jpg"
-dest_files=["res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"]
+source_file="res://assets/portraits/pham_ngu_lao_en.png"
+dest_files=["res://.godot/imported/pham_ngu_lao_en.png-3899b94f408c626b095466f9b68f8068.ctex"]
 
 [params]
 

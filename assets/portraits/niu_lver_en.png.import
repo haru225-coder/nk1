@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b54of2k7oit5k"
-path="res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"
+uid="uid://cy5tx5xuiunu7"
+path="res://.godot/imported/niu_lver_en.png-b6b62e7b8f699cd184a1c3a20bddb237.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bg_lacquer_workshop.jpg"
-dest_files=["res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"]
+source_file="res://assets/portraits/niu_lver_en.png"
+dest_files=["res://.godot/imported/niu_lver_en.png-b6b62e7b8f699cd184a1c3a20bddb237.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b54of2k7oit5k"
-path="res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"
+uid="uid://catp0ffq268us"
+path="res://.godot/imported/nampo_shomyo_en.png-cb43fa29947015e2630f31168f205ed0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bg_lacquer_workshop.jpg"
-dest_files=["res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"]
+source_file="res://assets/portraits/nampo_shomyo_en.png"
+dest_files=["res://.godot/imported/nampo_shomyo_en.png-cb43fa29947015e2630f31168f205ed0.ctex"]
 
 [params]
 
