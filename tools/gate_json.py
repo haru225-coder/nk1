@@ -750,6 +750,7 @@ REGISTRY = [
      "red": "✗ `甲 判档段行数下限…` / ✗ `甲′ 判档段数 N ≠ 恒等钉 M` / ✗ `乙 §1..§5 行首段键首轮非严格递增…` / "
             "✗ `丙 段名唯一…新增重复…` / ✗ `丁 纯尾 append 单调…混入非判档 H2 行…` 逐条点名 + 自检 ✗ / "
             "读不到清册 ✗——首行后 `结果：N 项问题`，退 1"},
+    
 ]
 
 # w27-k4 CHECK FOLLOWS
@@ -775,7 +776,29 @@ CHECK = [
      "red": "`✗ C0 现网名单普查全绿（漏网 N 支）`（豁免名单与注册表对不上现网——先修名单不修自检）/"
             "`✗ EXEMPT 第 k 行…`（名单形状 / 来源格缺 lane·commit）/"
             "`✗ 豁免名单每行都指着在仓探针——[…] 已不在仓 / 名写错` / `✗ 探针漏册：tools/<X>_probe.gd——不在 REGISTRY / SHOT_PROBES，也未登豁免`（逐支点名）/"
-            "`✗ En 反向格：…`（自检对不上 = 闸判不出这一形）；`结果：N 项问题`"},
+            "`✗ En 反向格：…`（自检对不上 = 闸判不出这一形）；`结果：N 项问题`"},{"id": "check_gates_sh_census", "tier": "lane",
+     "when": "动 <auto>/gates.sh（串面增删 run / for 行）/ 动本闸（tools/check_gates_sh_census.py）/ "
+             "动注册表 must·step 集（升 must 片顺手跑）"
+             "——或免 when：`<auto>/auto.sh gates-main` 串面毕收尾帧单独跑（w96-k1 登记注：本闸不入串面同一 run——"
+             "串面内自跑会读自身运行态〔自指烧形〕故走 out-of-band 收尾轨）",
+     "kind": "py", "file": "tools/check_gates_sh_census.py",
+     "judge": "扫仓外 `<auto>/gates.sh` 步串面 ↔ 注册清单（tools/gate_json.py REGISTRY）双方向差集"
+              "（w93-k2 SETTLED 敞口收编：量具树焐断 for 行在位七闸照绿、步集缺席无闸问津实锤——本闸即收编）；"
+              "壹·must 缺员向（tier==must + tier==step 注册集的 id / file stem / 别名〔RefsMacPath↔check_mac_paths、"
+              "RefsHostPath↔check_host_paths、00_import↔step import〕任一同义呼未现于串面呼集 → 逐条 ✗ 点名）；"
+              "贰·注册缺员向（串面呼对上名册 file stem/id 却不在册 → ✗）；"
+              "叁·名册空壳格（REGISTRY must+step 集为零 → ✗ 防静默绿）。"
+              "档位置决链：env NK1_GATES_SH > 仓根父系上扫四层各找 <nk1-auto>/gates.sh > 同级缺省式（不写死仓外根）"
+              "（生产走默认）；输出头印 [src=…] 供胎侧。零、判据自检每次先跑（§五.3 规则表型轨）："
+              "S1 全含串面须判绿 / S2 烧掉一条必跑呼须判红点名 / S3 名册空壳须判红——走与真档同一条 scan_text 判路；"
+              "串面读不到 rc=2（无文件形防静默绿）。升格链：lane w96-k1 承接重派 w94-k2（runner 2026-10-05 10:53 灭零产物，"
+              "本次同型一体落：新档 + GATES.md 登记行 + §一镜像 --write + skeleton SEG_COUNT 88→89 + 清册纯尾 append 判档段）。",
+     "green": "末行 `结果：全部通过`（零节 S1/S2/S3 三格 ✓ + 真档 `含 must 全 M=34 条注册必跑（零缺员）` ✓ + "
+              "auto.sh 收尾帧 gates_sh_census.log rc=0）",
+     "red": "✗ `must 缺员：注册必跑 `<id>` 未出现于 gates.sh 串面呼集`（焐断 for 行 / 漏串面即此格红）/ "
+            "✗ `注册缺员：gates.sh 串面呼 `<c>` 对得上名册却不在注册清单` / "
+            "✗ `名册空壳：REGISTRY must+step 集为零`——首行后 `结果：N 项问题`，退 1；自检不过先退 1、「结果：自检红」"},
+
 ]
 
 # 接 shot_gate.gd 的截图脚本（lane m3 三支 + lane sg2 二十支 + 之后各 lane 新接的）。TAG / 张数 / 截图目录从脚本源码现读，不在此抄。
