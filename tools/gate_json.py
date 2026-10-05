@@ -43,6 +43,13 @@ REC_ENV = "NK1_GATE_JSON_REC"
 # 数字自 SoR 闸体常量现读不手抄（w86-k4 台账牒 §三.2：五处同步域漏 judge 腔残影「现帧 15」六波未拨、闸照绿；
 # 生成格后拨颁 TOKEN_LINES_LINEBASE/KNOWN_SHA1 时三字段随动、GATES.md 表行同镜像随动）。
 from check_ledger_garbage import KNOWN_SHA1 as _CLG_KNOWN, TOKEN_LINES_LINEBASE as _CLG_BASE
+# szöveg 漏洞扎（lane w89-k4 客件④，衔 w87-k4 客件①同型同法）：check_symbols_mutants 行 green 与
+# 「落点预检（十四）」expect 的公文钉（11 格判对 / 31 格变异……）改生成格——
+# 数字自 SoR 闸体常量现读不手抄（出现钉后拨颁 CASES/DRILL 时三字段随动、GATES.md 表行同镜像随动，
+# 拨 SoR 必同笔跑 gates_md.py --write §五.1）。
+from check_symbols_mutants import CASES as _CSM_CASES, DRILL as _CSM_DRILL
+_CSM_D = len(_CSM_DRILL)      # DRILL 格数（K1..K10 10 格；判对格数 +1 连 K0）
+_CSM_C = len(_CSM_CASES)      # CASES 格数（B0 起 31 格）
 # legacy 条目（tier=no 或 tools/legacy/ 下）跑子进程的强制超时，秒（lane gd9）。p7_smoke 1.7 s 内就走到 SCRIPT ERROR 挂死，
 # verify_narrative 0 s 退；60 秒留足余量。到点按 timeout(1) 记 124、error="timeout" 判红
 LEGACY_TIMEOUT = 60
@@ -202,8 +209,8 @@ REGISTRY = [
               "lane auditfix5 加：F2c / F3c（F2 之后按红字把 advance_days 改登到 Calendar.gd 下：现行 NF 标注不符一行红 / 不查标注 rc=0）；"
               "S0–S9 分支形七形（条件折多行 / else 支 / ✗ 不在紧下一行 / match / match 守卫 / 折行 any / 探查函数与正则当条件）逐形漏登判红、"
               "退回 auditfix3 口径（单行条件 + 下一行 ✗）rc=0；T1–T6 NF 标注（同名多处没标 / 日后出现同名 / 接收者认不出 / 标错行）",
-     "green": "「零、靶子定位自检」K0–K10 11 格 `✓`（lane cs24：插行变异顺一行转发找真身）+ `✓ B0 …` 起 31 格逐格 `✓ <编号> … rc=N` + 「二、空转对照」7 条 `✓ … 旧口径 rc=0 → … 现行 rc=1` + 「三、靶子落点」+ `结果：全部通过`。"
-              "`--landing` 只跑落点预检（= check_symbols 十四节，约 0.5 s）：`✓ check_symbols_mutants 落点预检：K0–K10 11 格判对；31 格变异在当前源码上都落得上（…）` + `结果：全部通过`",
+     "green": f"「零、靶子定位自检」K0–K{_CSM_D} {_CSM_D + 1} 格 `✓`（lane cs24：插行变异顺一行转发找真身）+ `✓ B0 …` 起 {_CSM_C} 格逐格 `✓ <编号> … rc=N` + 「二、空转对照」7 条 `✓ … 旧口径 rc=0 → … 现行 rc=1` + 「三、靶子落点」+ `结果：全部通过`。"
+              f"`--landing` 只跑落点预检（= check_symbols 十四节，约 0.5 s）：`✓ check_symbols_mutants 落点预检：K0–K{_CSM_D} {_CSM_D + 1} 格判对；{_CSM_C} 格变异在当前源码上都落得上（…）` + `结果：全部通过`",
      "red": "`✗ <编号> …：期望 rc=a，实得 rc=b` 附 `缺 ✗ …` / `多 ✗ …`；`变异没落上` = 源码改了、这支变异的替换处数不对 / 插行靶子找不到真身（同名多处、转发目标认不出文件）；`✗ K<n>` 靶子定位判据变了；空转对照 `应 0 → 1`；`结果：N 项问题`；无 git（不在仓库 / PATH 里没有）/ 建不了 worktree 退 2；"
             "`--landing`：`✗ check_symbols_mutants 落点预检 · <编号> …：变异没落上——…` 退 1"},
     # lane seq4：scenes.json 那套结构检查参数化成多文件（清单 tools/data_family.json），加跑不进必跑——口径仍 16 道；跑一次 <1s、只读不写盘
@@ -886,7 +893,7 @@ SUBCHECKS = [
      "cmd": "python3 tools/check_symbols.py", "also": ["tools/check_symbols_mutants.py"],  # 判词由 check_symbols_mutants.landing() 印
      "marks": ["十四、check_symbols_mutants 落点预检", "import check_symbols_mutants as _csm", "_csm.landing(ROOT)",
                "def landing(root=ROOT):", "class Mem:", 'LANDING_OFF = "--no-mutants-landing"', "SYM), LANDING_OFF]", "变异在当前源码上都落得上"],
-     "expect": "「十四、」`✓ check_symbols_mutants 落点预检：K0–K10 11 格判对；31 格变异在当前源码上都落得上（插行靶子 scripts/Main.gd _setup_shipyard → …）；"
+     "expect": f"「十四、」`✓ check_symbols_mutants 落点预检：K0–K{_CSM_D} {_CSM_D + 1} 格判对；{_CSM_C} 格变异在当前源码上都落得上（插行靶子 scripts/Main.gd _setup_shipyard → …）；"
                "期望 ✗ 字样 / rc / 空转对照归全量（lane 档，docs/GATES.md §三.23）`。check_symbols_mutants（lane 档，全量要 git worktree、约一分钟）的 CASES 逐格"
                "在当前工作树上内存里施一遍（`Mem` 叠层：读主树工作树、写不落盘，不建 worktree、不跑 check_symbols，约 0.5 s），只判变异 / 旧口径补丁落不落得上"
                "（替换处数、插行靶子顺一行转发找真身）+「零、」K0–K10。起因 auditfix7 W8：aec1ea6 入库 11 分钟后 main10 拆走 `_setup_shipyard`，全量红满 60 分钟、"
