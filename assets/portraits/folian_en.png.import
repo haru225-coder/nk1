@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b54of2k7oit5k"
-path="res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"
+uid="uid://bokutotkedpqo"
+path="res://.godot/imported/folian_en.png-f0ab4a7ac902071520c1118cdae72205.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bg_lacquer_workshop.jpg"
-dest_files=["res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"]
+source_file="res://assets/portraits/folian_en.png"
+dest_files=["res://.godot/imported/folian_en.png-f0ab4a7ac902071520c1118cdae72205.ctex"]
 
 [params]
 

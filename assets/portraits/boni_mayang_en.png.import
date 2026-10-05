@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b54of2k7oit5k"
-path="res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"
+uid="uid://ce3py1rst2xst"
+path="res://.godot/imported/boni_mayang_en.png-9a6dbfd2086bd458a34655b0271880e6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bg_lacquer_workshop.jpg"
-dest_files=["res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"]
+source_file="res://assets/portraits/boni_mayang_en.png"
+dest_files=["res://.godot/imported/boni_mayang_en.png-9a6dbfd2086bd458a34655b0271880e6.ctex"]
 
 [params]
 

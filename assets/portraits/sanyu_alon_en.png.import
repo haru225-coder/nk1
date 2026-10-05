@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b54of2k7oit5k"
-path="res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"
+uid="uid://vc35bbbgovc6"
+path="res://.godot/imported/sanyu_alon_en.png-dfa0b6ebacbb36d8ed4682ef8efd43a4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bg_lacquer_workshop.jpg"
-dest_files=["res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"]
+source_file="res://assets/portraits/sanyu_alon_en.png"
+dest_files=["res://.godot/imported/sanyu_alon_en.png-dfa0b6ebacbb36d8ed4682ef8efd43a4.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b54of2k7oit5k"
-path="res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"
+uid="uid://dg4qjuktn82fq"
+path="res://.godot/imported/takezaki_suenaga_en.png-4b677fd7fa3fb33b234861b077ce901c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bg_lacquer_workshop.jpg"
-dest_files=["res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"]
+source_file="res://assets/portraits/takezaki_suenaga_en.png"
+dest_files=["res://.godot/imported/takezaki_suenaga_en.png-4b677fd7fa3fb33b234861b077ce901c.ctex"]
 
 [params]
 

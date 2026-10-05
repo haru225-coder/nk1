@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c6d8p2xoflm88"
-path="res://.godot/imported/bg_zhangzhou_kiln.jpg-495462703733b88908452375973e9c11.ctex"
+uid="uid://cciqx3f4fiu6k"
+path="res://.godot/imported/bg_porcelain_kiln.jpg-6ca5c0c5374479f1b7cb2765cd1669f3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bg_zhangzhou_kiln.jpg"
-dest_files=["res://.godot/imported/bg_zhangzhou_kiln.jpg-495462703733b88908452375973e9c11.ctex"]
+source_file="res://assets/bg_porcelain_kiln.jpg"
+dest_files=["res://.godot/imported/bg_porcelain_kiln.jpg-6ca5c0c5374479f1b7cb2765cd1669f3.ctex"]
 
 [params]
 

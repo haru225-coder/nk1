@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b54of2k7oit5k"
-path="res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"
+uid="uid://0rqmukkh70fr"
+path="res://.godot/imported/zheng_shiyi_niang_en.png-1e81ed5d434f73fcfb28944abb4f7b9f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bg_lacquer_workshop.jpg"
-dest_files=["res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"]
+source_file="res://assets/portraits/zheng_shiyi_niang_en.png"
+dest_files=["res://.godot/imported/zheng_shiyi_niang_en.png-1e81ed5d434f73fcfb28944abb4f7b9f.ctex"]
 
 [params]
 

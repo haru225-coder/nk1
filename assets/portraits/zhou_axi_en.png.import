@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b54of2k7oit5k"
-path="res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"
+uid="uid://c3u42ysw2abgq"
+path="res://.godot/imported/zhou_axi_en.png-240c506b09eb0fb0468a25ce2f800b3f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/bg_lacquer_workshop.jpg"
-dest_files=["res://.godot/imported/bg_lacquer_workshop.jpg-e288ccdc06a9e6e0f6345553d681a908.ctex"]
+source_file="res://assets/portraits/zhou_axi_en.png"
+dest_files=["res://.godot/imported/zhou_axi_en.png-240c506b09eb0fb0468a25ce2f800b3f.ctex"]
 
 [params]
 
