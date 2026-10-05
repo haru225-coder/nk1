@@ -942,12 +942,14 @@ const PORT_BG := {
 	"mingzhou": "bg_mingzhou.jpg",
 	"jeju": "bg_jeju.jpg",
 	"hakata": "bg_hakata.jpg",
-	"ryukyu": "bg_reef_bay.jpg",
-	"penghu": "bg_reef_bay.jpg",
-	"kagoshima": "bg_beacon_tower.jpg",
+	"ryukyu": "bg_ryukyu.jpg",
+	"penghu": "bg_penghu.jpg",
+	"kagoshima": "bg_kagoshima.jpg",
 	"champa": "bg_temple_gate.jpg",
-	"guangzhou": "bg_arab_mosque.jpg",
+	"guangzhou": "bg_guangzhou.jpg",
 }
+
+## 2026-10-05：琉球 / 澎湖 / 萨摩 / 广州 四港收专属图（原先借 bg_reef_bay / bg_beacon_tower / bg_arab_mosque）
 
 ## H2 港页变体：同港同机位的战况 / 年份 / 季节档，文件名 bg_<港 id>_<后缀>.jpg（港 id 即 ports.json 的 id，不是 PORT_BG 原图名）。
 ## 找图顺序见 _port_bg：战况（非 loyal）→ 年份 → 季节 → PORT_BG 原图，每档都要文件在才用——图没进库时画面与原图一样，收一张生效一张。
