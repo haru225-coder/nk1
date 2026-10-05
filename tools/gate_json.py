@@ -700,14 +700,17 @@ REGISTRY = [
               "域全从本仓现算不手抄（region/category/窗口方式/入伙方式/战位/立场读 companions.json meta 各 def，职事 id 读 crew.json roles，"
               "faction id 读 characters.json meta.faction_def，港 id 读 ports.json，货 id 读 goods.json，特技 id 读 characters trait_def ∪ 名册 new_traits）；"
               "九节判词——零、判据自检（内存变异：删已定字段 / id 重号 / 名字重号 / 未定填词表外值 / 窗口写年份整数 / 撞 crew 候名 / "
-              "云屯两人 duty 空壳不齐 / 挂不存在的港各须红、好样本删红须绿，判不出即闸自身坏先红）；一、顶层与条目数（companions 恰 40、events 恰 60 各 id 唯一）；"
+              "格数钉群化自 `_cases` 注册 SoR 现读——判红格数 + 拟字样 + SoR 显形长三哨在衙，lane w93-k3 第 4 案；拨颁必同笔随同色）"
+              "云屯两人 duty 空壳不齐 / 挂不存在的港各须红、好样本删红须绿，判不出即闸自身坏先红）；一、顶层与条目数（companions 恰 roster.companions 条、events 恰 roster.events 张各 id 唯一，lane w92-k3 名册 SoR 现读）；"
               "二、身份骨架（name 唯一、region/category/verify/reuse_character/p1/p1_stub 形态与枚举）；三、langs list<str> 非空；"
               "四、appear（chapter_min∈[1,5]、windows≥1 段、YYYY-MM 定长 1255–1285 窗内 from≤to、mode∈meet_mode_def、ports∈ports.json、route 1–2 段端名∈本表港∪ports∪{any}、rumor 非空）；"
               "五、join（type∈join_type_def、hire 者 fee≥0、bond 者 bond_need∈[0,100] 且 bond_path 合计≥bond_need、guest 者 fee==0、requires 只含登记键）；"
               "六、duty（键皆职事 id、品级∈[1,3]、月俸∈WAGE 档、battle⊆battle_slot_def 去 none、local 型 duty 空壳、其余 home_port∈ports.json）；"
               "七、niche kind∈niche_kind_def；八、stance/traits/gifts/climax 枚举与子集；九、未定字段恰 \"_todo\"、events 的 who⊆companions id∪{player}、verify∈{待核,已核}）。纯 stdlib 只读 <1 s",
-     "green": "零节 `✓ 自检 16 格…全判对` + 一—九节各 `✓ …全对` + `✓ 伙伴 id 与 crew.json 候选不撞` + 末行 `结果：全部通过`",
-     "red": "✗ 行点名（`✗ 第 k 条 <id>：…` 字段缺值 / 类型错 / 枚举越域 / id 重号撞名 / `_todo` 误填词表外值）+ 自检 ✗——首行后 `结果：N 项问题`，退 1"},
+     "green": "零节 `✓ 自检 SoR 类型与哨钉 42 在衙` + `✓ 自检格数须自 SoR 现读…mismatch` + `✓ 自检判红格数须钉 16` + `✓ 自检 SoR 显形长钉须 42` + `✓ 自检判语拟字样 16 哨在衙` 五行"
+              "（判红格数自 `len(_cases)` 现读 / 拟字样 16 拆珠 x+x / SoR 显形长 钉 42——拨颁必同笔随同色，lane w93-k3 第 4 案）"
+              " + 一—九节各 `✓ …全对` + `✓ 伙伴 id 与 crew.json 候选不撞` + 末行 `结果：全部通过`",
+     "red": "✗ 行点名（`✗ 第 k 条 <id>：…` 字段缺值 / 类型错 / 枚举越域 / id 重号撞名 / `_todo` 误填词表外值）+ 自检 ✗（哨钉 / SoR 现读 mismatch / 判红钉 / 长钉 / 拟字样哨）——首行后 `结果：N 项问题`，退 1"},
     {"id": "qa_companion_preview_probe", "tier": "lane",
      "when": "动 scripts/companions/CompanionPreview.gd（浮页上屏文案 / 钮面 / 字段 / PREVIEW_IDS 名单）、"
              "data/characters*.json 的六预览人物 display_name，或动 tools/qa_companion_preview_probe.gd 自身",

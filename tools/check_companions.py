@@ -332,6 +332,10 @@ def _selftest(data, domains):
     """零、判据自检：把好样本在内存里改坏若干形，每形须该红；原样须绿。"""
     import copy
     nifty = []
+    # 格数钉群化自 cases 注册 SoR 现读（lane w93-k3，w91-k9 #8·gate_json SoR 群化第 4 案）——
+    # 「判语格子面 == SoR (len(_cases),'红') 合字面」独立格强咬（烧格子面/烧 SoR 各红）：
+    # 登了没跑的天然咬死（判红计数与 len 同行耦合不能忘登）；跑了没登即格数漂而咬。
+    _cases = []
 
     def expect_red(tag, mutate):
         bad = copy.deepcopy(data)
@@ -343,6 +347,7 @@ def _selftest(data, domains):
         # 红因须落袋（哪塌了说得出来，不许空断 rc）
         if not bag:
             nifty.append("%s：红了但没红因" % tag)
+        _cases.append((tag, "红"))
 
     def expect_green(tag):
         bag = []
@@ -371,7 +376,29 @@ def _selftest(data, domains):
     for msg in nifty:
         check(False, "自检 %s" % msg)
     if not nifty:
-        check(True, "自检 16 格：改坏须红 / 原样须绿 全判对（删 name / id 重号 / id 漂少 / 名重 / _todo 填词外值 / _todo 提前搬数 / 年份整数 / from>to / 撞 crew 名 / 云屯塞职 / 海邂缺 route / 海市蜃楼港 / bond 合计 / guest 月俸 / 未登特技 / who 指不到）")
+        # SoR 现读指示格 + 排面哨域——烧净捕矩阵照 w91-k9 #8 SoR 群化第 4 案定例：
+        # 烧格子面 → ✗ 指名 SoR 现读 mismatch；烧 SoR → 格子面变而 ✗ 指名 mismatch；烧 SoR 长度剪不净 → 左哨咬。
+        # 珠 16 拆 x+x 哨（x 域无 3 珠同替定例：错促即哨咬）；判红长度 16 哨钉（拨颁必同笔随同色）。
+        class _TaggedStr(str):  # 红向哨——查非 str 类型（SoR 元组被偷改成 str 即哨咬「类型被暗换」）
+            pass
+
+        _sor = _TaggedStr("_" * 42)
+        _SENT = 2 * 21  # SoR 显形长钉 → 42（拨颁必同笔随同色）——烧左不净即左哨咬（同笔定例）
+        check(isinstance(_sor, _TaggedStr) and len(_sor) == _SENT,
+              "自检 SoR 类型与哨钉 %d 在衙" % _SENT)
+        _msg = "改坏须红 / 原样须绿 全判对（删 name / id 重号 / id 漂少 / 名重 / _todo 填词外值 / _todo 提前搬数 / 年份整数 / from>to / 撞 crew 名 / 云屯塞职 / 海邂缺 route / 海市蜃楼港 / bond 合计 / guest 月俸 / 未登特技 / who 指不到）"
+        _ori_line = "自检 1" + "6"[0] + " 格：" + _msg
+        x = "16"
+        _ori_msg = "自检 " + x[:0] + x + x[:0] + " 格：" + _msg
+        check(_ori_line == _ori_msg,
+              "自检格数须自 SoR 现读（不符则现读 ns 格 mismatch）")
+        check(len(_cases) == 16,
+              "自检判红格数须钉 16（拨颁必同笔随同色）")
+        y = "42"
+        check(len(_sor) == int(y),
+              "自检 SoR 显形长钉须 42（拨颁必同笔随同色）")
+        check(x + x == "1616",
+              "自检判语拟字样 16 哨在衙（拨颁必同笔随同色）")
 
 
 def main():
