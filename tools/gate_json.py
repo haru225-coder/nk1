@@ -50,6 +50,15 @@ from check_ledger_garbage import KNOWN_SHA1 as _CLG_KNOWN, TOKEN_LINES_LINEBASE 
 from check_symbols_mutants import CASES as _CSM_CASES, DRILL as _CSM_DRILL
 _CSM_D = len(_CSM_DRILL)      # DRILL 格数（K1..K10 10 格；判对格数 +1 连 K0）
 _CSM_C = len(_CSM_CASES)      # CASES 格数（B0 起 31 格）
+# szöveg 漏洞扎连片（lane w92-k3，w91-k9 散文钉普查首推三案 ②③，照 w89-k4 同型同法）：
+# check_decision_refs 行 green / 「落点预检（零之二）」expect 的公文钉（Z1–Z5 5 格 / 40 + 5 格变异）与
+# ledger_refs_mutants 行 green 的「✓ C0 … 起 N 格」（一节 = GEN_CASES 全表、二节 = DET_CASES）改生成格——
+# 数字自 SoR 闸体常量现读不手抄（拨颁 DRILL/GEN_CASES/DET_CASES 时三字段随动、GATES.md 表行同镜像随动，
+# 拨 SoR 必同笔跑 gates_md.py --write §五.1）。w91-k9 牒 :257 钉 SoR 别名以 w92-k3 动手帧实勘拨正结案。
+from ledger_refs_mutants import DRILL as _LRM_DRILL, GEN_CASES as _LRM_GEN, DET_CASES as _LRM_DET
+_LRM_Z = len(_LRM_DRILL)      # DRILL 格数（Z1–Z5 5 格）
+_LRM_G = len(_LRM_GEN)        # GEN_CASES 格数（C0 起全表现帧 40 格 = 一节逐格总格）
+_LRM_T = len(_LRM_DET)        # DET_CASES 格数（D0/D1/D2/X1/X2 5 格 = 二节逐格总格）
 # legacy 条目（tier=no 或 tools/legacy/ 下）跑子进程的强制超时，秒（lane gd9）。p7_smoke 1.7 s 内就走到 SCRIPT ERROR 挂死，
 # verify_narrative 0 s 退；60 秒留足余量。到点按 timeout(1) 记 124、error="timeout" 判红
 LEGACY_TIMEOUT = 60
@@ -188,7 +197,7 @@ REGISTRY = [
               "`--since` / 改号自证的新旧配对也按新版引用的清单顺序逐对比——原先配对取 `ko.keys() & kn.keys()`（集合，遍历顺序随 PYTHONHASHSEED 变），有 2 处以上 ⚠ / MISMATCH 时同基连跑每次行序不同、「逐字节同」比对偶发假 DIFF（lane cs18 待议 4）；"
               "头部锚须在 HEAD 的历史上（lane w53-12：lane --fix 打的锚主控 rebase 落地后悬空，本机共用对象库照绿、新克隆退 1——main 上 107 版清单 28 版如此，b241992 / f3f092e / 1665423 三回推上了 origin），"
               "上一版清单的锚取不到时改号自证明印「没比成」（原先静默「对上 0 对」）",
-     "green": "`✓ 转发穿透自检 10/10（…）` + `✓ ledger_refs_mutants 落点预检：Z1–Z5 5 格判对；40 + 5 格变异…都落得上（…）；…`（lane w19-g8，SUBCHECKS）+ `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）。同一基连跑 5 次 stdout 逐字节同（lane cs23 实测：六个历史基 × 默认 / `--show`、5 个 `--since` 旧版与号写歪的脏树各 5 次同 md5）；lane cs25 起由 ledger_refs_mutants 二节固化（5 个固定种子、去掉排序须判不确定）",
+     "green": f"`✓ 转发穿透自检 10/10（…）` + `✓ ledger_refs_mutants 落点预检：Z1–Z{_LRM_Z} {_LRM_Z} 格判对；{_LRM_G} + {_LRM_T} 格变异…都落得上（…）；…`（lane w19-g8，SUBCHECKS）+ `锚 X：引用 N 处（…）…；NOFILE/OOR 0，DRIFT 0（…），待核标记 0` + `改号自证 […]…MISMATCH 0…` + `结果：全部通过`（`⚠ 改指未验` 不判红）。同一基连跑 5 次 stdout 逐字节同（lane cs23 实测：六个历史基 × 默认 / `--show`、5 个 `--since` 旧版与号写歪的脏树各 5 次同 md5）；lane cs25 起由 ledger_refs_mutants 二节固化（5 个固定种子、去掉排序须判不确定）",
      "red": "`✗ NOFILE` / `✗ OOR` / `✗ DRIFT L行 文件:行：…可跟号 → :新号（凭什么）` 或 `…跟不上，要人工：…` / `✗ 待核 L行` / `✗ MISMATCH L行 …旧锚那段原文在 X 里还在 文件:行——行号改歪了？`；"
             "`…可跟号 → 文件:新号（穿透一行转发 …）` / `…跟不上，要人工：跟到一行转发：…` / `✗ 转发穿透自检 S… 期望 … 实得 …`（脚本自身坏了）；"
             "`✗ ledger_refs_mutants 落点预检 · <编号>：变异没落上——…`（变异靶子漂了，lane w19-g8，见 SUBCHECKS）；"
@@ -254,9 +263,9 @@ REGISTRY = [
               "变异锚按形状定位（lane cs26）：只锚刀号与形状（「## 第N刀（」起头的标题行、那节函数表最后一支、前三刀段第一件、两支脚本里调用 / 排序的形状），期望 ✗ 字样由定位到的内容现算。"
               "二、check_decision_refs 输出确定序：PYTHONHASHSEED=0/1/2/3/42 各跑一次，D0 基线 / D1 清单前 8 处 Main.gd 号 +1 不提交 / "
               "D2 同一脏树 `--since HEAD`（lane cs26 起相对基，原钉死 ccb1d57）stdout 须逐字节同；X1 / X2 同 D1 / D2 但两处排序（Lines.flush、since 配对）都去掉，须出 ≥2 种",
-     "green": "`✓ C0 …` 起 40 格逐格 `✓ <编号> …：对账 rc=N，--write rc=N，写后对账 rc=N` + 二节 5 格 `✓ <编号> …：rc=N，⚠ / ✗ k 条，stdout 1 种`（X1 / X2 `5 种`）"
+     "green": f"`✓ C0 …` 起 {_LRM_G} 格逐格 `✓ <编号> …：对账 rc=N，--write rc=N，写后对账 rc=N` + 二节 {_LRM_T} 格 `✓ <编号> …：rc=N，⚠ / ✗ k 条，stdout 1 种`（X1 / X2 `5 种`）"
               " + 「三、空转对照」18 条 `✓ … 旧口径 … rc=0 → … 现行 …`（含 `✓ 刀序起点：C3′ … rc=1 → C3 … rc=0`）+ `结果：全部通过`。"
-              "`--landing` 只跑落点预检（= check_decision_refs「零之二」，约 0.1 s）：`✓ ledger_refs_mutants 落点预检：Z1–Z5 5 格判对；40 + 5 格变异…都落得上（…）` + `结果：全部通过`",
+              f"`--landing` 只跑落点预检（= check_decision_refs「零之二」，约 0.1 s）：`✓ ledger_refs_mutants 落点预检：Z1–Z{_LRM_Z} {_LRM_Z} 格判对；{_LRM_G} + {_LRM_T} 格变异…都落得上（…）` + `结果：全部通过`",
      "red": "`✗ <编号> …：期望对账 rc=a / 写后 rc=b，实得 …` 附 `缺 ✗ …` / `多 ✗ …` / `--write 判红却写了盘`；"
             "`✗ D<k> …：期望 rc=a、逐字节同，实得 … stdout n 种`；`变异没落上` = 按形状也定位不到（第四 / 第五 / 第十一刀节标题不止或不到一处、那节没有函数表行、前三刀段认不出、两支脚本里调用 / 排序的形状改了）、这支变异该跟着改；"
             "空转对照 `应 0 → 1` / `应 否 → 是`；`结果：N 项问题`；无 git / 建不了 worktree 退 2；"
@@ -907,7 +916,7 @@ SUBCHECKS = [
      "marks": ["零之二、ledger_refs_mutants 落点预检", "import ledger_refs_mutants as lrm", "lrm.landing(ROOT)",
                'LANDING_OFF = "--no-ledger-landing"', "landing_bad = ledger_landing(o.no_landing)",
                "def landing(root=ROOT):", "class Mem:", "args + [LANDING_OFF]", "DRILL = [", "变异在当前台账 / 两支脚本 / 清单上都落得上"],
-     "expect": "转发穿透自检之后一行 `✓ ledger_refs_mutants 落点预检：Z1–Z5 5 格判对；40 + 5 格变异在当前台账 / 两支脚本 / 清单上都落得上（前三刀段；第十一刀 → scripts/ui/TitlePage.gd 最后一支 …；"
+     "expect": f"转发穿透自检之后一行 `✓ ledger_refs_mutants 落点预检：Z1–Z{_LRM_Z} {_LRM_Z} 格判对；{_LRM_G} + {_LRM_T} 格变异在当前台账 / 两支脚本 / 清单上都落得上（前三刀段；第十一刀 → scripts/ui/TitlePage.gd 最后一支 …；"
                "第四刀 → …；第五刀 → …；清单 Main.gd 引用 N 处）；rc / 期望 ✗ 字样 / 写盘 / 确定性 / 空转对照归全量（lane 档，docs/GATES.md §三.26）`。"
                "ledger_refs_mutants（lane 档，全量要 git worktree、约 40 s）的 GEN_CASES / DET_CASES 逐格在当前工作树上内存里施一遍（`Mem` 叠层：读主树工作树、写不落盘，"
                "不建 worktree、不跑 gen / check_decision_refs，约 0.1 s），Facts 现算一遍，只判变异 / 旧口径补丁落不落得上；另跑「零、」Z1–Z5：把真树上的靶子按合法 / 等价写法挪一下"

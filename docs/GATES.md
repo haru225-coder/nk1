@@ -774,7 +774,7 @@ python3 tools/check_docs_index.py --check
 | no | 不算门禁 | `why` 写原因；legacy 条目强制超时（lane gd9） | verify_narrative、p7_smoke、tour |
 | `CI_STEPS`（不是档） | 只适合放 CI 跑：会写盘（`--regen`），或要干净工作树 / 导入后的状态 | 本仓没有 CI 文件，§四 只是建议，所以**只挂在 `CI_STEPS` 上的步骤等于没人跑**：CI 步骤必须另有 `REGISTRY` 条目（给出 lane 档和 `when`），或者挂在某道门禁的 `SUBCHECKS` 下，写明什么时候手跑 | check_sidecars / gates_md（lane 档 + CI）；builtin_api 漂移（check_symbols 的 `--regen` 附属自检） |
 
-- **生成格口诀（szöveg 扎口，lane w87-k4 客件①立案 / lane w89-k4 客件④连片）**：拨生成格 SoR 颁笔**必同笔跑 `gates_md.py --write` 一记**——拨 TOKEN_LINES_LINEBASE / KNOWN_SHA1 同（w87-k4 客件①），拨 CASES / DRILL 同（w89-k4 客件④）；机理一句：生成格化后 §一 镜像逐字自封（镜像含现值 N），拨颁不联 `--write` 则 §一 逐字格必红——口诀闸内化即拨颁笔自带镜像同步、szöveg 漏洞格此域永扎。
+- **生成格口诀（szöveg 扎口，lane w87-k4 客件①立案 / lane w89-k4 客件④连片 / lane w92-k3 三格同扩）**：拨生成格 SoR 颁笔**必同笔跑 `gates_md.py --write` 一记**——拨 TOKEN_LINES_LINEBASE / KNOWN_SHA1 同（w87-k4 客件①），拨 CASES / DRILL 同（w89-k4 客件④），拨 ledger_refs_mutants 的 DRILL / GEN_CASES / DET_CASES 同（w92-k3 首推三案 ②③ 二格）＋ companions / events 条目数钉群化自名册 SoR 现读（w92-k3 首推案① 一格）：**生成格数 +3（w92-k3）**；机理一句：生成格化后 §一 镜像逐字自封（镜像含现值 N），拨颁不联 `--write` 则 §一 逐字格必红——口诀闸内化即拨颁笔自带镜像同步、szöveg 漏洞格此域永扎。
 
 ### 五.2 必跑：什么时候升 must
 

@@ -18,7 +18,7 @@ characters 的 trait_def，落地白描一步才有人物志释义——新政�
   零、判据自检（GATES §五.3，内存变异不落盘）：删已定字段 / id 重号 / 名字重号 / 未定字段填成词表外值 /
     窗口写成年份整数 / 撞 crew 候名 / 云屯两人 duty 空壳不齐 / 挂不存在的港 / 各退一格判据样本全须红，
     把好样本删红后须绿——哪格判不出即本闸自身坏，先红。
-  一、顶层与条目数：companions 恰 40 条 id 唯一；events 恰 60 张 id 唯一。
+  一、顶层与条目数：companions 恰 roster.companions 条 id 唯一；events 恰 roster.events 张 id 唯一（双字照名册现读）。
   二、身份骨架：name 唯一；region / category / verify / reuse_character / p1 / p1_stub 形态与枚举。
   三、langs：list<str> 非空（母语量没有枚举表，只判形）。
   四、appear：chapter_min ∈ [1,5]；windows ≥1 段；YYYY-MM 定长、1255–1285 窗内、from ≤ to；
@@ -109,11 +109,14 @@ def validate(data, domains, emit=check):  # noqa: C901 —— 判词分节排开
         ok_all &= cond
         bag.clear()
 
-    # 一节、顶层与条目数
-    _r(isinstance(comps, dict) and len(comps) == 40,
-                   "companions 恰 40 条（实得 %d）" % (len(comps) if isinstance(comps, dict) else -1))
-    _r(isinstance(events, dict) and len(events) == 60,
-                   "events 恰 60 张（实得 %d）" % (len(events) if isinstance(events, dict) else -1))
+    # 一节、顶层与条目数（条数钉群化自名册 SoR 现读——lane w92-k3，w91-k9 散文钉普查首推案①）
+    refs = dict(domains.get("roster_counts", {}))
+    _r(isinstance(comps, dict) and len(comps) == refs.get("companions", -1),
+                   "companions 恰 %d 条（实得 %d）" % (refs.get("companions", -1),
+                                                        len(comps) if isinstance(comps, dict) else -1))
+    _r(isinstance(events, dict) and len(events) == refs.get("events", -1),
+                   "events 恰 %d 张（实得 %d）" % (refs.get("events", -1),
+                                                  len(events) if isinstance(events, dict) else -1))
     ids = list(comps.keys())
     _r(len(set(ids)) == len(ids), "companion id 唯一")
     _r(all(isinstance(e.get("id"), str) and e["id"] == k for k, e in comps.items()),
@@ -382,10 +385,15 @@ def main():
     crew = jload(os.path.join(ROOT, "data", "crew.json"))
     ports = jload(os.path.join(ROOT, "data", "ports.json"))
     goods = jload(os.path.join(ROOT, "data", "goods.json"))
-    roster_meta = jload(ROSTER)["meta"]
+    roster = jload(ROSTER)
+    roster_meta = roster["meta"]
 
     meta = data.get("meta", {})
     domains = {
+        # 条目数钉群化自名册 SoR 现读（lane w92-k3，w91-k9 散文钉普查首推案①）——
+        # 拨颁 data 条目时须同步拨名册（移 bench 或增条目），判语面随 SoR 现读。
+        "roster_counts": {"companions": len(roster.get("companions", [])),
+                          "events": len(roster.get("events", []))},
         "region": set(meta.get("region_def", {})),
         "category": set(meta.get("category_def", {})),
         "meet_mode": set(meta.get("meet_mode_def", {})),
