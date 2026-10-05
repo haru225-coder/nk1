@@ -208,6 +208,138 @@ def anchor_state(anchor, run=git):
     return "off" if run("merge-base", "--is-ancestor", anchor, "HEAD") is None else None
 
 
+# --list（lane w90-k3）：docs/GATES.md 生成块标记锚（字面 + 正则可编译性照 GATES.md 现帧三对必在）。
+# is_generated 每次现读 GATES.md、按含标记锚的行定界——只取各锚首次命中（三对不嵌套；禁写死行号区间，咨牒 §五.4）。
+GEN_MARKS = ("GATES:BEGIN", "GATES-BATCH:BEGIN", "GATES-CI:BEGIN")
+
+
+def gen_mark_block(lines):
+    """GATES.md 现帧含生成块锚的首个 enclosing 块，返回 (块名, 起行, 止行)；锚全删（焚净断言即按 GEN_MARKS 钉）→ None。
+    块名 = BEGIN 锚字面（如 GATES-BATCH:BEGIN）；配对 = 同在 GEN_MARKS 的同族 BEGIN/END（按字面缝对）。"""
+    marks = [(i, m) for i, x in enumerate(lines, 1) for m in GEN_MARKS if m in x]
+    if not marks:
+        return None
+    i0, name = min(marks)
+    stem = name.split(":")[0]
+    ends = [j for j, x in enumerate(lines, 1) if j >= i0 and f"{stem}:END" in x]
+    return (name, i0, ends[0] if ends else len(lines))
+
+
+def is_generated(repo, path, a):
+    """path 第 a 行是否落在 docs/GATES.md 的生成块里（现帧读标记锚定界，区间含注释标记行）。
+    非 GATES.md / 锚被删（焚净断言按 GEN_MARKS 硬钉）→ False。红线：禁写死区间行号（w89-k6 咨牒 §五.4）。"""
+    if path != "docs/GATES.md":
+        return False
+    w = repo.work("docs/GATES.md")
+    if w is None:
+        return False
+    blk = gen_mark_block(w)
+    return blk is not None and blk[1] <= a <= blk[2]
+
+
+def list_lines(o, repo, refs, toks, fixes, say=print):
+    """--list（lane w90-k3，w89-k6 咨牒案 (a) 主控裁准）：逐 DRIFT 一行 LIST 附列，gen 标记点名生成块内引用
+    （这类跟号须走国道 --write 重建生成块、而非 --fix 手跟）。纯附加打印、零新增读盘（is_generated 现读的
+    一份 GATES.md 走 repo.work 缓存）、零写盘；永不自称「通过」、不进判红路径（§五.2 防静默绿轨）。
+    输出顺序与汇总前的逐处 DRIFT 行同序（清单行号升序）；零 DRIFT 印「LIST 无 DRIFT 可列」一行。"""
+    for k in sorted(fixes):
+        ln, f, a, b, ti = refs[k]
+        src = repo.resolve(f)[0] or f
+        t = fixes[k]
+        tx = toks.get(ln) or []
+        kind = tx[ti].get("kind", "line") if ti < len(tx) else "line"
+        kind = "sym" if kind == "sym" else "line"
+        if t[0]:
+            tgt, auto, how, na = f"{t[0]}:{span_str(t[1], t[2])}", 1, t[3], t[1]
+        else:
+            tgt, auto, how, na = "—", 0, t[1], 0
+        gen = 1 if src == "docs/GATES.md" and is_generated(repo, src, na or a) else 0
+        note = f"(?{gen_mark_block(repo.work('docs/GATES.md') or [''])[0]})" if gen else ""
+        say(f"  LIST L{ln} {kind} {src}:{span_str(a, b)} → {tgt}  auto={auto} gen={gen}{note}  how={how}")
+    if not fixes:
+        say("  LIST 无 DRIFT 可列")
+
+
+# --list 自检内存样本（lane w90-k3；忆轨 w53-9 契约判据配样本自检 / GATES §五.3 轨）：
+# 首条引用挪后仍落生成块内（gen 须 1、带 (?块名)）；次条挪到块外纯内容区（gen 须 0）；
+# 块外次条落点在 END 锚下一行、判据 5 锚挪位面用 —— block 内有 drum-wave 纯内容行与锚行共同定界（禁写死区间）；
+# 锚挪位与锚焚净两格硬钉：焚净不单删锚判断 —— 现帧 read list_lines 不再 gen=1、is_generated=False。
+_ST_LIST_W = ("# aaaa bbbb\n"
+              "# bbbb cccc\n"
+              "# cccc dddd\n"
+              "# dddd eeee\n"
+              "# eeee ffff\n"
+              "# ffff gggg\n"
+              "# gggg hhhh\n"
+              "# hhhh iiii\n"
+              "# iiii jjjj\n")
+_ST_LIST_W_RAW = ("# aaaa bbbb\n"
+                  "<!-- GATES:BEGIN 生成块锚 -->\n"
+                  "# bbbb cccc x\n"
+                  "# cccc dddd x\n"
+                  "<!-- GATES:END 配对锚 -->\n"
+                  "# dddd eeee\n"
+                  "# eeee ffff\n"
+                  "# ffff gggg\n"
+                  "# iiii jjjj x\n")
+_ST_LIST_DOC = ("行号：按 HEAD `0000000`\n"
+                "- 块内引用 `docs/GATES.md:3`（挪后仍指向生成块内同一行——gen 须 1、带 (?GATES:BEGIN)）\n"
+                "- 块外引用 `docs/GATES.md:9`（挪到块外——gen 须 0）\n")
+
+
+def listself(repo):
+    """按 _ST_LIST_DOC 走真 check+list_lines，捕获 LIST 行。判据 7 烧闸面：反相注入点 = is_generated 的
+    `blk[1] <= a <= blk[2]` 判式被摘/反相（list_lines 与 list_self_check 同一份现读，烧反相此格先红）。"""
+    got = []
+    n, fixes, refs, toks = check(argparse.Namespace(show=False), _ST_LIST_DOC, repo, "0000000", quiet=True)
+    list_lines(argparse.Namespace(), repo, refs, toks, fixes, say=got.append)
+    gens = [int(m.group(1)) for x in got for m in [re.search(r"gen=(\d)", x)] if m]
+    return n, gens, got
+
+
+def list_self_check():
+    """--list 自检（w90-k3）：三格全用同一份 _ST_LIST_* 内存样本，不走 open()、不在判红路径。
+    三格：① LIST 行 gen 判对＋锚定界现读；② 锚挪位（BEGIN/END 行内挪带鼓波行）仍判对——禁写死区间自证（咨牒 §五.4）；
+    ③ 焚净：GEN_MARKS 锚删净 → gen_mark_block=None / is_generated=False。"""
+    bad = 0
+    repo = MemRepo({"docs/GATES.md": _ST_LIST_W}, {"docs/GATES.md": _ST_LIST_W_RAW})
+    n, gens, got = listself(repo)
+    blk = gen_mark_block(repo.work("docs/GATES.md") or [])
+    if n["drift"] != 2 or gens != [1, 0] or blk != ("GATES:BEGIN", 2, 5) or "(?GATES:BEGIN)" not in got[0]:
+        bad += 1
+        print(f"  ✗ --list 自检：期望 DRIFT 2、LIST gen=[1, 0]（首条带 (?GATES:BEGIN)）、块定界 (:2-:5)，实得 "
+              f"drift={n['drift']} gens={gens} blk={blk}；行={got}——--list 输出 / 生成块锚判退化（判据 7 烧反相此格先红（烧注入点：把 is_generated 判式 `blk[1] &lt;= a &lt;= blk[2]` 反相或 gen=1 恒 0））")
+    else:
+        print("  ✓ --list 自检 2/2（首条 gen=1(?GATES:BEGIN) 块内点名 / 次条 gen=0 块外；锚定界现读非写死）")
+    # ② 锚挪位：BEGIN 挪到 :4、END 挪到 :6（中间夹纯内容行）——is_generated 现读锚重判，:4-:6 含锚行在内都是块内
+    mv = ("# aaaa bbbb\n"
+          "# bbbb cccc\n"
+          "# cccc dddd\n"
+          "<!-- GATES:BEGIN 锚挪位 -->\n"
+          "# eeee ffff\n"
+          "<!-- GATES:END 配对锚 -->\n"
+          "# gggg hhhh\n"
+          "# hhhh iiii\n"
+          "# iiii jjjj\n")
+    mr = MemRepo({"docs/GATES.md": _ST_LIST_W}, {"docs/GATES.md": mv})
+    if not is_generated(mr, "docs/GATES.md", 4) or not is_generated(mr, "docs/GATES.md", 6) or \
+            is_generated(mr, "docs/GATES.md", 3) or gen_mark_block(mv.splitlines()) != ("GATES:BEGIN", 4, 6):
+        bad += 1
+        print(f"  ✗ --list 自检锚挪位格：挪后块定界须 (:4-:6)、:3 块外——实得 blk={gen_mark_block(mv.splitlines())} "
+              f"g4={is_generated(mr, 'docs/GATES.md', 4)} g3={is_generated(mr, 'docs/GATES.md', 3)}（写死区间 = 此格先红）")
+    else:
+        print("  ✓ --list 自检锚挪位格：BEGIN/END 挪位后块定界 (:4-:6) 现帧重判、:3 判块外（禁写死区间自证）")
+    # ③ 焚净：锚删净
+    burnt = MemRepo({"docs/GATES.md": _ST_LIST_W}, {"docs/GATES.md": "\n".join(
+        x for x in _ST_LIST_W_RAW.splitlines() if not any(m in x for m in GEN_MARKS)) + "\n"})
+    if gen_mark_block(burnt.work("docs/GATES.md") or []) is not None or is_generated(burnt, "docs/GATES.md", 3):
+        bad += 1
+        print("  ✗ --list 自检焚净格：GEN_MARKS 锚删净后 gen_mark_block 仍配对 / is_generated 仍真——焚净面须 None/False")
+    else:
+        print("  ✓ --list 自检焚净格：锚删净 → gen_mark_block=None、is_generated=False（锚字面按 GEN_MARKS 硬钉）")
+    return bad
+
+
 def ext_of(path):
     return path.rsplit(".", 1)[-1] if "." in os.path.basename(path) else ""
 
@@ -799,6 +931,8 @@ def render(line, row, targets, repo):
 
 def do_fix(o, text, repo, anchor, dangling=False):
     n, fixes, refs, toks = check(o, text, repo, anchor)
+    if o.list:
+        list_lines(o, repo, refs, toks, fixes)
     if not n["drift"]:
         if not dangling:
             print("--fix：没有 DRIFT，不用改")
@@ -1326,6 +1460,7 @@ def self_check():
         print(f"  ✗ 锚悬空自检：期望 在 HEAD 历史上 → None、查得到却不在 → off、查不到 → missing，实得 {got_as}")
     else:
         print("  ✓ 锚悬空自检 3/3（在 HEAD 历史上 / 本仓查得到却不在 HEAD 历史上 = 悬空、判红 / 查不到）")
+    bad += list_self_check()  # --list 三格（lane w90-k3）
     return bad
 
 
@@ -1350,6 +1485,8 @@ def main():
     ap.add_argument("--anchor", help="比对用的提交（缺省取清单头部「按 HEAD `…`」）")
     ap.add_argument("--since", help="重锚自证：和 REV 版清单逐对比内容")
     ap.add_argument("--show", action="store_true", help="逐处印出所引行原文")
+    ap.add_argument("--list", action="store_true",
+                    help="在汇总结论前附列逐 DRIFT 一行 LIST（gen 标记点名生成块内引用——那类跟号须走 --write 而非 --fix）；纯附加打印，rc / 判据 / 落点预检照旧")
     ap.add_argument("--fix", action="store_true", help="自动跟号并把头部锚改成 HEAD（所引文件须已提交）")
     ap.add_argument(LANDING_OFF, dest="no_landing", action="store_true",
                     help="不跑 ledger_refs_mutants 落点预检（只给 ledger_refs_mutants 在变异过的 worktree 里用，一键跑不许带）")
@@ -1409,6 +1546,8 @@ def main():
             how.append("锚悬空：跑 --fix 把头部锚改到 HEAD（没有 DRIFT 也改锚），提交清单")
         if landing_bad:
             how.append(f"落点预检 {landing_bad} 项：ledger_refs_mutants 的变异靶子漂了，照新形状改 tools/ledger_refs_mutants.py、跑一次全量")
+        if o.list:
+            list_lines(o, repo, refs, _toks, _fixes)  # 附加附列贴在汇总结论前，不进判红路径
         print(f"结果：有问题（{'；'.join(how) or '见上'}）")
         return 1
     # 清零判竿格（lane w50-k4）：全部通过前逐格断言六处收收性计数格 = 0。这六格本都在上面的判红路径里
@@ -1416,6 +1555,8 @@ def main():
     # 格位改了字、或者哪一格被摘出判红路径，竿位自检（Z-R1/Z-R2/Z-R3）先红。
     rod_assert(n, mismatch or 0, 0 if o.since else n2_rewritten,
                "本档" if not o.since else "本档（--since 比内容、改指未验格不进）")
+    if o.list:
+        list_lines(o, repo, refs, _toks, _fixes)
     print("结果：全部通过")
     return 0
 
