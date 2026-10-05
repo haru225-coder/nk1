@@ -42,7 +42,7 @@ const FACTION_BG := {
 	"song_court": "res://assets/bg_linan.jpg",
 	"quanxing": "res://assets/bg_linan.jpg",
 	"mongol_yuan": "res://assets/bg_end_siege.jpg",
-	"fanfang": "res://assets/bg_arab_mosque.jpg",
+	"fanfang": "res://assets/bg_fanfang.jpg",
 	"quanzhou_merchants": "res://assets/bg_quanzhou_harbor.jpg",
 	"seafarers": "res://assets/bg_sea_route.jpg",
 	"temple": "res://assets/bg_temple_gate.jpg",
