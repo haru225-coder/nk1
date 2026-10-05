@@ -798,6 +798,28 @@ CHECK = [
      "red": "✗ `must 缺员：注册必跑 `<id>` 未出现于 gates.sh 串面呼集`（焐断 for 行 / 漏串面即此格红）/ "
             "✗ `注册缺员：gates.sh 串面呼 `<c>` 对得上名册却不在注册清单` / "
             "✗ `名册空壳：REGISTRY must+step 集为零`——首行后 `结果：N 项问题`，退 1；自检不过先退 1、「结果：自检红」"},
+    # lane w100-k3：w99-k2 案丙敞口承接执行——焐域 GATES.md 回退纯 blob gates_md rc=0【烧而不红】实锤在卷
+    # （<auto>/logs/w99-k2-audit-w93-k1k6-exec.md :39/:44）：§五.1 手写信念段无判面守卫闸，本闸即收编。
+    # 判掂照 §五.2 原条文：trigger 自己判不准（改 §五.1 / docstring 信念文字的 lane 想不起加跑它）、
+    # 快（纯 stdlib 文本扫 <1 s）、只读零写盘——lane 档非 must 不动必跑集合；拨颁尺照 §五.3。
+    {"id": "check_gates_belief_section", "tier": "lane",
+     "when": "动 docs/GATES.md §五域手写段（§五.1..§五.7 任一）/ 动 tools/gate_json.py 开局 docstring 段 / "
+             "动本闸（tools/check_gates_belief_section.py）",
+     "kind": "py", "file": "tools/check_gates_belief_section.py",
+     "judge": "（lane w100-k3 立，w99-k2 案丙敞口【烧而不红】承接执行）两区手抄信念段形状钉："
+              "区一 = docs/GATES.md `### 五.1 ` 节（至下一 `### ` 头止）非空行数 / 顶层 bullet 数 / 编号步骤数三钉"
+              "＋关键词哨七词（什么算门禁 / 入册一次做齐 / REGISTRY×4 / SUBCHECKS×2 / CI_STEPS×3 / 四档与 CI 名单 / 生成格口诀）各钉在衙行数；"
+              "区二 = tools/gate_json.py 开局 docstring 段（首个三引号开串行至闭串行）段行数 / 非空行数钉"
+              "＋关键词哨五词（机读输出 / 门禁清单 / REGISTRY / SUBCHECKS / CI_STEPS）各钉在衙行数。"
+              "读钉落空（节头不齐 / docstring 找不到）照计红——信念段被灭不静默绿。"
+              "零、判据自检每次先跑（§五.3 规则表型轨，内存样本同一 scan_text 判路）："
+              "C1 完好区一样本须绿 / S1 区一删一非空行须行数格红点名 / S2 区一关键词换字须红点名该词 / "
+              "S3 钉表哨集空壳须红（防静默绿）/ C2 完好区二样本须绿；自检不过先红「结果：自检红」。"
+              "拨颁：挪段 / 改段 / 添登句须同笔随同色 BELIEF_PINS（§五.3）",
+     "green": "零节 C1/S1/S2/S3/C2 五格 ✓ + 真档 `✓ 两区真档照钉：…全格绿` + 末行 `结果：全部通过`",
+     "red": "✗ `区一 §五.1 非空行数 N ≠ 钉 M` / ✗ `区一顶层 bullet 行数…` / ✗ `区一编号步骤行数…` / "
+            "✗ `区一关键词哨 `<词>` 在衙行数 N ≠ 钉 M` / 区二同格面 ✗ ——首行后 `结果：N 项问题`，退 1；"
+            "自检不过先退 1「结果：自检红」；读不到 gate_json rc=2"},
 
 ]
 
