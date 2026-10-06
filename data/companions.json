@@ -10274,42 +10274,48 @@
    "who": [
     "zhu_qing"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "海上借凭。昌国外海，三条无旗快船一字摆开横在你船前。为首的汉子立在船头，皂巾扎额，拍打舷板喊话——不要货，不要钱，只要借你的市舶公凭用一趟：「公凭借我看三天，货是我自己的，船是你没见过的。」他说得理直气壮，船上弓手却已悄悄搭上了箭。海风把两船之间的话刮得一段一段的，你听得清每一个字，却猜不透他这趟真正要押的是什么货。（拉开旗号硬闯过去（接舷）；答应借凭，要他立字据；回话：公凭没有，酒有一坛）。"
   },
   "zhu_qing_wine": {
    "id": "zhu_qing_wine",
    "who": [
     "zhu_qing"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "明州酒馆。明州城里的小酒馆，朱清认出了你，抬手把邻桌也一并叫了账。他喝得慢，问得细：哪条水路现在查得紧，哪家的公凭好借，市舶司新来了什么人。三巡之后他把一块碎银按在桌上——「你这人走海走得正，我朱清记下了。往后明州地面上的事，报我名字。」说完他起身，把剩下半坛酒推到你面前，走了。（回请他一顿；探他私盐的路子）。"
   },
   "zhu_qing_errand": {
    "id": "zhu_qing_errand",
    "who": [
     "zhu_qing"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "温州见人。朱清托你捎一封没封口的信去温州，见一个「在盐场挂号的人」。路上你才知道——盐场外的滩涂上，白天都是晒盐的人，夜里才是送信人的路；那人不肯在市面露面，只肯在夜里的滩涂上收信。朱清在码头上等你回来，听你说完经过，点头：「走得干净。」他从怀里摸出一块碎银，你不收，他就扔到你船上。（接下这趟（耗 8 日）；推说风期不顺）。"
   },
   "zhang_xuan_wusong": {
    "id": "zhang_xuan_wusong",
    "who": [
     "zhang_xuan"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "吴淞夜客。朱清上船后的第一个冬天，夜泊吴淞江口。一个巨汉踩着江边碎冰跳上甲板，肩上两包私货一声不响撂在舱口——「朱大哥说你的公凭好用。」他说话瓮声瓮气，手背上全是旧伤。你若留他，他便在船尾坐下，从怀里摸出半块干饼就吃；你若不留，他点点头扛起货，又踩回碎冰上去，没有第二句话，也没有回头。（留他吃饭；婉拒）。"
   },
   "zeng_gan_houzhu": {
    "id": "zeng_gan_houzhu",
    "who": [
     "zeng_gan"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "后渚香船。景炎二年七至十月，后渚港外泊着一条不挂旗的大船。曾干划着一条小艇靠上来，压低声——舱里一船香药，东家是收不着了；城里有人点了名要这条船。他给你三个去处：卸在城外湖里他找牙人悄悄出手；卸进城内香行任他去报；或者当场凿沉，谁都落不着。他只等一句话。（卸在城外；卸进城内；凿沉）。"
   },
   "zhou_axi_anchor": {
    "id": "zhou_axi_anchor",
    "who": [
     "zhou_axi"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "缠锚。入泉州港，锚链收不动——缆缠在晋江口外的礁缝里。正发愁，一条两头翘起的小船贴着浪划过来，船头的姑娘把辫子一挽：「给我三十文，我把锚解开。」她一个猛子下去，半晌浮上来，锚链挽在她臂弯里，脸上挂着水珠笑。你不要钱，她也不恼，扒着舷只问：「你的船，去没去过占城？」（给她三十文；答她：去过占城）。"
   },
   "jinjiang_dive": {
    "id": "jinjiang_dive",
@@ -10317,77 +10323,88 @@
     "zhou_axi",
     "he_sanhao"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "晋江下水。周阿细在船时，一场小风过后，她盯着海图里泉州湾的旧水道，说你船上有人不敢夜里下水。海潮涨平，她第一个跳下去，摸回一枚掉在礁缝里的船钉。何三蚝若也在船，两个人隔着几丈水面对望一眼——谁也不肯先上岸，最后都呛了水。她上来之后头发还在滴水，只说一句：「他倒不算慢。」（记下这夜）。"
   },
   "he_sanhao_pilot": {
    "id": "he_sanhao_pilot",
    "who": [
     "he_sanhao"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "厓门引潮。第一次进广州航段，潮水比海图写的急。一个疍家后生从船底冒出水，攀住舷边：「左边三丈是沙，右边是礁，走中间，给我十文。」他光着身子在艏边指点航路，潮沟、暗沙、退潮哪边能抢滩，说得比海图还差得细。收了钱他也不走，扒着舷问：你的船跑不跑厓山那一带？（给十文；连他一起请上船引这段）。"
   },
   "he_sanhao_firewood": {
    "id": "he_sanhao_firewood",
    "who": [
     "he_sanhao"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "厓门樵汲。他带你的小艇钻进厓门水道的汊子里。退潮，滩上的蚝壳堆得老高，他随手撬了两只熟蚝递给你；远处厓山的影子压着海，一线一线的云。何三蚝蹲在滩上歇气时说：这片水底下的沙，他闭眼都走得；他有一个哥哥，几年前在一支北来的船队里走没了，下海买路钱就是哥哥拿命换的。（听他讲下去）。"
   },
   "yu_yuanqing_meet": {
    "id": "yu_yuanqing_meet",
    "who": [
     "yu_yuanqing"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "福州寻船。福州港边，一个江淮口音的军校拦住你——打听真州来的船。见他衣甲破旧、腰间皮牌被火燎过一角，你先请他上船喝碗热汤。余元庆喝着汤，把从京口出来的水道说了一遍：北营的哨船、江心的浅滩、如何在水底下摸到一条北管船。他说行朝若是还在，他就还在路上；碗里的热气散在晚风里。（请他喝热汤；先盘问他的来历）。"
   },
   "yu_yuanqing_search": {
    "id": "yu_yuanqing_search",
    "who": [
     "yu_yuanqing"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "三港打听。余元庆托你在装货的时候替他带个口信：见真州来的船，就说余元庆还活着，人在南边船上。这口信你跑了三个港——福州、泉州、广州。每到一港，都有从前营里散出来的人拉住你，问他的下落；也有人不说话，只把陈年军牌拿出来看一看又收回去。最后你回到船上，他站在船头迎你，远远看见你的船，先抬手敬了个军礼——不是敬你，是敬这一路没有丢掉的口信。（福州打听；泉州打听；广州打听）。"
   },
   "yu_yuanqing_wupoling": {
    "id": "yu_yuanqing_wupoling",
    "who": [
     "yu_yuanqing"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "五坡岭消息。潮阳五坡岭的消息传到时，余元庆正在舱里磨枪。他听完把枪放下，半天没说话。夜里他来找你：文相公被执了，行朝散了，他想去潮阳找旧同伴——就算找不着，也想去那岭下磕个头。走不走，他说，你点一句头他就走；去了，未必回得来。你看着他收拾那一杆枪，磨了一冬的锋刃在灯下发白。（放他去；劝他留下）。"
   },
   "shao_xiaoyi_meet": {
    "id": "shao_xiaoyi_meet",
    "who": [
     "shao_xiaoyi"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "批帖纸包。与余元庆前后脚南下的汉子。他把怀里油纸包给你看：里头是文天祥亲笔批帖，纸边磨得起毛，字还清清楚楚。「京口那晚，我这条船载文相公出来的。」他说得很平淡，只说北营巡哨在水上喊的时候，他把船横在浅滩里当浮桥。你若问他还剩什么，他拍拍船板：「剩这条船。」（请他坐下细说；先验那批帖）。"
   },
   "shao_xiaoyi_ask": {
    "id": "shao_xiaoyi_ask",
    "who": [
     "shao_xiaoyi"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "行朝所在。邵小乙托你打听行朝的行踪。这事不难，难在一路上说法一天三变——今天说在浅湾，明天说在碙洲，后天又听见去了厓山。他听完你带回来的每一句话，在船头木板上拿炭画小记号。记号越画越往东，他的手也越来越稳。他说他自己心里有个数：不管行朝在哪，他的船是有去处的；他送你到岸，再回他自己的去处。（把浅湾、碙洲、厓山三路传闻都说给他）。"
   },
   "shao_xiaoyi_xingchao": {
    "id": "shao_xiaoyi_xingchao",
    "who": [
     "shao_xiaoyi"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "兑批帖。邵小乙说，张世杰的兵马如今就泊在前面那片水，他这条老船、这张批帖，该去兑了。他收拾好那个油纸包，把船绳交回你手里——「这段路上你待我不薄，批帖兑了我就回来找你。」他说。泅水过去那一路你没有跟。之后，确实再没有在乱军里见过他。后来岭南道上有人传一张北管船的旧图，画得扎扎实实；也有人说，那船在厓山沉了。哪一张是真的，没有人说得准。[待核]（让他去；留他）。"
   },
   "niu_lver_rescue": {
    "id": "niu_lver_rescue",
    "who": [
     "niu_lver"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "澎湖救起。漳州—澎湖航段，你捞起一个抱着半块船板的北方汉子。他冻得说不了整话，醒来的第一件事是摸腰间的弩机——发现不在了，才松手瘫在甲板上。牛驴儿说他是邓州军户，随水军南下，遇上风浪体下水的；他睁眼看见你挂的是宋旗，沉默了一会儿说：「要交官就趁早，这条命本来就是捡的。」（救起并收留；交与官船）。"
   },
   "niu_lver_patrol": {
    "id": "niu_lver_patrol",
    "who": [
     "niu_lver"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "元军哨船。落帆受检，元方哨船喝令停船。牛驴儿在舱里一下子绷紧了。他说宋营的宋旗可以换银，他这条命如今在谁手里都会牵连到船——「把我交出去，你没麻烦。」他盯着舱板说这话，不敢看你。船上的韩得龙若在，悄悄按住了弩机；牛驴儿不知道。舱外哨兵的靴子声近了又远，远了又近，最后哨船的桨声揉开去，他才把抱在膝上的手松开。（把他交给哨船；藏他进舱底）。"
   },
   "patrol_win_flip": {
    "id": "patrol_win_flip",
@@ -10397,21 +10414,24 @@
     "zhao_zhong",
     "yu_yuanqing"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "弃檝。哨船退去之后。牛驴儿从舱底爬出来，在甲板上坐了半晌，忽然走到韩得龙跟前深深作了个揖。韩得龙哼了一声没应他；邵小乙站在一边没说话；余元庆把牛驴儿的手拉住——规矩话也省了。那一晚，四个人谁都没提旧事，只在船尾就着月色喝了一顿闷酒。酒是粗劣的绍兴酒，但没有一个人说苦。（看他们在船头喝完那顿酒）。"
   },
   "takezaki_witness": {
    "id": "takezaki_witness",
    "who": [
     "takezaki_suenaga"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "证人。文永年间有事那年，竹崎季长来请你做一件只有你能做的事——到地头代家去，把他那晚在谁家的工场赶得几更火、他家里人被叫去场灾救场，一五一十说一遍。他说得极重：「我不是要你想他好；我是要你知道，我那一晚在做什么。」说完他把刀从腰间解下，平放在你面前。（应下做证人（做证）；推辞）。"
   },
   "takezaki_horse": {
    "id": "takezaki_horse",
    "who": [
     "takezaki_suenaga"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "肥后卖马。肥后沿岸遇到竹崎季长，他穿一身旧直垂，牵着一匹瘦马在债头场边卖。见了他先笑：「无足的人，连马也要卖么？」他回笑得极坦然。这匹马原是随他上战场的，如今卖来囤财食；你若出价，他开出一个高得离谱的价——然后在你转身时喊住，把一半酒料粮食添进去，说：「这个价，才是做买卖。」（替他作中；看看别处）。"
   },
   "tsushima_strait_night": {
    "id": "tsushima_strait_night",
@@ -10419,126 +10439,144 @@
     "takezaki_suenaga",
     "tsushima_tajiro_yajiro"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "对玛海峡夜。夜过对马海峡。塔二郎·弥二郎早早就坐在舷边了。他们指着北面黑沉沉的一线岛影说的是：去年十月，南边过来的船队就是在那个方向；本岛该亮的火油那晚灭了；元兵上了岸。说到斩不断的杀伐，二人沿着舷板坐下，很多年过去也没能睡着。你递过去两碗热汤，他们接是接了，汤凉在手里也没喝。（让他们把话说完）。"
   },
   "han_deukryong_rescue": {
    "id": "han_deukryong_rescue",
    "who": [
     "han_deukryong"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "耽罗以南救起。耽罗以南海面，一条没桨的小船上，三个人只剩他一个活着。你用吊钩把他拉上船时，他抱着臂弯问的第一句是：「这是谁的船？宋人的，还是蒙古人的？」头发枯结，颧骨如刀。三别抄已在四月亡了，他随最后的船从耽罗出来，在海上漂到粮尽，两个同伴先后没了。他说不欠谁的，只欠水——说完就把你递的那碗水，仔细、慢慢喝完了。（救起即入伙；给干粮放他自去）。"
   },
   "jeong_levy": {
    "id": "jeong_levy",
    "who": [
     "jeong_yusun"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "签调。耽罗里到，签帖到了：东征的事要人，医人也在签里。郑有淳捏着那纸签子，在耽罗营地外的榆树下站了半个下午。去大河做军工，还是回这海岛上给伤兵们换草药，她说这不是「选」——医人不能挑站位。她说这话时手里正拎着一束新采的药草，不动声色，指甲却在叶脉上掐出几道印。（藏他；让他去）。"
   },
   "yundun_detour": {
    "id": "yundun_detour",
    "who": [
     "player"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "绕道云屯。广州—占城一线的水路上，可以绕云屯。顺风的话，多走几日就拐进去：那边不算正式的港，是泊地，南洋来的船在此排队候水。范五老在码头卖竹器接客；黎崱在找北方带来的纸笔；郑十一娘排晒着药包。多走四天，能在这一岸问到许多别处风闻不出来的人事。绕还是直走，船家自己拿主意。（绕道云屯（多费 4 日）；直航）。"
   },
   "pham_first": {
    "id": "pham_first",
    "who": [
     "pham_ngu_lao"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "云屯竹器。云屯码头，一个随乡人撑竹器船下海东的少年在摊前卖竹箕竹笼。北方来的客要打包货物，他一声不出就递上一捆编法得体的竹架。范五老站在摊前看人使力气的手法——看得出祖上还是练家子。你买他的货，他不向你道谢；你付钱付得公道，他就多看你的船一眼，说：「大船，走哪条水？」（买他一批竹器；同他谈一阵竹艺）。"
   },
   "pham_book": {
    "id": "pham_book",
    "who": [
     "pham_ngu_lao"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "范五老的书。范五老托你带一卷书来。这书在北方不是销品——是从大越到华道的船上行过的经卷，大越学官说过若江场处就深话。他接过那卷，拿指甲点着页边价还——没看几行初一全懂，但眉目裴整。然他不管你听得明不明，坐下跟你优雅地说了一通打仗的道理，但是点到为止，没一句太张。（替他带一卷来）。"
   },
   "le_tac_first": {
    "id": "le_tac_first",
    "who": [
     "le_tac"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "云屯少年。云屯码头，一个休闲贵家子在大樟下的摊头数纸。黎崱是世家子——但浮海而来的世家，在身上总有一种新的霜。他见你递宋纸，马上立起来辑一辑衣。有话说：交趾那地方不能造纸，求之省地。他早年九岁应童科，过继外祖舅改姓黎；这件事他说得极淡，像说早膳吃了什么。（卖他纸笔）。"
   },
   "le_tac_book": {
    "id": "le_tac_book",
    "who": [
     "le_tac"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "黎崱的书。黎崱托你带一部书来，不是箕斗猎场杂贩——他点名的是唐书里的哪一类。北方来客替他翻书担时一下找到时，你用一根种式的芭蕉棱着递得他。他初不看礼页，先抄了卷末表记纸上印——「这个声明章的印法，我在书上见过。」他教育不好，他落籍是从多少繁华的井转移的外正面。（船上一部书给他）。"
   },
   "zheng11_first": {
    "id": "zheng11_first",
    "who": [
     "zheng_shiyi_niang"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "昇龙药婆。初到云屯，你在昇龙街𢄂坊跟前那一带听说：有个宋人打扮、说话带大越口音的女医排一座小小的药摊，回鸡坊一带管她叫药婆。她看见你船，先问货——北方药材有没有带足。她身上闽味淡，大越语却比她宋语说得好；她说自己是随海船投大越的一批人里走出来的，兄长原也在那支船上。（同她说起北边的药材行市）。"
   },
   "zheng11_herbs": {
    "id": "zheng11_herbs",
    "who": [
     "zheng_shiyi_niang"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "药线行虾。郑十一娘托你带香药十味到云屯——不是卖，是配给投越宋人里的病人。她说最近昇龙这边的同乡腹病多，青蒿散不凑手在用。你到扬州、泉州各收了一批，在江海道当心别让关卡把皂布包打开看了；她收货时先伸手捻了捻药粉的湿度，点头：「还行，还比上次的那批好些。」（带香药十味到云屯）。"
   },
   "zheng11_brother": {
    "id": "zheng11_brother",
    "who": [
     "zheng_shiyi_niang"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "兄长。广州复宋的那些日子里，郑十一娘在云屯听她一支北越宋元移的船到——兄长极可能在船上。她抱着她那包袱到码头等了一个上午。有人下船，也有人斗之没下；她僧人只看到船尾的那一盏灯 熄了。回来以后她一晚上没说话，天亮就起来晒药。你不好说什麽；凡这样的女人，这些事都是靠做活人持续消耗掉的。（陪她守那一上午；等船的时刻不该打扰她）。"
   },
   "zhao_zhong_refugee": {
    "id": "zhao_zhong_refugee",
    "who": [
     "zhao_zhong"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "难民船。闽广沿海遇到一条超载的难民船。满船是战乱里出来的人；一个仍穿宋衣、背负长弓的年轻人——他身上那种衣色在这片海上不多见。船上人不许他上船；你拦住。他上得船来，立在舷边看着那些伪改旗号的船，突然回头跟你说一句：「我姓赵，名忠。」声音不高，每个字都落。（载人同行；不停船）。"
   },
   "kham_first": {
    "id": "kham_first",
    "who": [
     "kham_luohu_broker"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "罗斛香。甘娘随罗斛货船来占城市集。你的买办照唐人惯例要给她下聘，她一句「我卖香，不卖人」顶了回去——之后见面倒不窘。她父是泰人商贩，母是孟人；河港的牙人哪边都认她。你递你的礼，她不在意，眼睛只看货的好坏、秤的准星；她说比她强的女孩子，都是能替主家躲过一回官司的。（初见，按牌价留货一次）。"
   },
   "kham_fairtrade": {
    "id": "kham_fairtrade",
    "who": [
     "kham_luohu_broker"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "按牌留货。第三回按牌价留货的时候，甘娘自己也把这件事记得细了一点——抽价签的牌，是最干净的做法。她素来公道，你买她的香也是公道价；三次下来，她跟你说话的口气里少了些生分，多了些牙人之间谈事情的实诚。她说占城这地方的罗斛香，价钱她是算得最清楚的一个；这叫她有本钱跟你多谈几句。（第二回按牌价留货；第三回按牌价留货）。"
   },
   "kham_betrothal": {
    "id": "kham_betrothal",
    "who": [
     "kham_luohu_broker"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "婚约。甘娘 是出来，告诉你：她家里给她定了一门婚，对象是河港另一家的儿子。大越的规矩秋婚要的是聘 礼、母家的管理，他无力回聘，她也不高兴去；要用膏钱赎外——或由她自己做决定。她问你说怎麽办。这不是手乱替人支乱决定的时刻；你说要她自己做主。她点头，在这一天觉得你一把泡在一样的单纯。（替她出了那笔钱；让她自己拿主意；劝她回家）。"
   },
   "barru_first": {
    "id": "barru_first",
    "who": [
     "si_parut_javaka"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "阇婆迦。巴鲁是跟单马令番舶过来占城的护船人。夜里一张吹筒两支毒镖逼退摸上甲板的贼船——他做过两次跨海的兵，上战场过火，见过飞翔的疆场的人；在流亡过锡兰北部时候，他学会了谋生之道。他向你讨的是一顿酒钱，开口的时候不害羞的两腿盘坐，正常情面做到客自然绽出几分耿直。（请他喝酒）。"
   },
   "barru_fingerbone": {
    "id": "barru_fingerbone",
    "who": [
     "si_parut_javaka"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "佛罗安供养。巴鲁托你一件事：出二百钱，托一条往北走的番舶带他去佛罗安，供养一枚「圣的舍利底子」一年。他说来风的原因不简简单单，只说这心电是自己应得去的，心债还一下不会死的一个心。他把那小盒双手举着，像对世界起誓那样的样子：「活的活停啊。」接不接受，他说只看对方诚。（出两百托番舶带他去；拒绝）。"
   },
   "barru_return": {
    "id": "barru_return",
    "who": [
     "si_parut_javaka"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "回占城。巴鲁一季后回占城，人没瘦，眼光格外老。他说他传了法，跟信众们合吃了一条牛，背靠着海潮讲了几个月 数百沃野的会或那一个国家的场面。他没带着甚多礼——只两只手指上多了一枚他人送他的戒指。他见到你第一句歪着头问「喂，你在什麽地方呢」像大泛浪海上的这一趟任务继留。（听他讲这一季）。"
   },
   "boarding_win_both": {
    "id": "boarding_win_both",
@@ -10546,154 +10584,176 @@
     "si_parut_javaka",
     "ai_thong_siam"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "并肩接舷。接舷那一战，巴鲁先上，爱通随后。他们本来互相看不顺眼——巴鲁是爱通那种掳过人的「护船人」，爱通看巴鲁就像截他船的那些汉子。这一场并肩打下来之后，你见爱通撕了一块干净的麻布去给巴鲁包扎伤口；巴鲁睁开眼睛见是他在包，哼了一声，却没推开——这就是全部了。（战后见他们一回）。"
   },
   "gandha_incense": {
    "id": "gandha_incense",
    "who": [
     "gandha_tengliumei"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "香市挑香。广州蕃坊香市——你刚被人拿「熟脱冒生结」骗过一回。乾陀递来三块香：「船主若挑得出哪块是真沉，我这一年的香都卖你。」三块外表相近，他让你拿削刀煎一片、再嚼一片，说可以假熟当真结的是他做得最熟的买卖。你挑对了，他不恼，反而咧开嘴笑，拱手：「货真价实的眼睛。」（挑那块表面乌亮的；挑那块外表普通、沉水能沉的；让他自己说）。"
   },
   "gandha_tribute": {
    "id": "gandha_tribute",
    "who": [
     "gandha_tengliumei"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "贡香。乾陀家是无弄山下采香人家的次子，每年贡香的配额都不轻。他说有年真腊收香官来，说上供的成色不够——是真不够，还是价钱不够？他做了一回中间人：一边跟官周旋，一边连着另一个外邦的牙线。回来以后手上多了一串真腊式样的木镯；他说这次事以后，泉州若给他一个铺面，他可以干。（替他周旋；劝他在泉州开香铺）。"
   },
   "awang_stowaway": {
    "id": "awang_stowaway",
    "who": [
     "awang_foluoan"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "偷上船的少年。占城港，七至九月。阿旺随佛罗安番舶来，头一回离佛罗安那么远，夜里溜上你的船，趴在罗盘前不动。第二天你发现他，他也不辩解，只说他认字，没见过这么大的船；师付说船太高他跟不上来；你船上硝皮鸡扣肉，他就笑呵呵的。你若不收，他第二晚还来，船舱底下猫两天。（让他上船；派人把他送下船）。"
   },
   "aithong_revenge": {
    "id": "aithong_revenge",
    "who": [
     "ai_thong_siam"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "遇寇。占城外海遇上当年卖爱通的那伙海寇船。爱通那场立在船头一声不出，手指捏得白；等靠上了对方船，「是中间人」一句你可见他爆发。打完之后他站在那艘船丢下他的甲板上，一句话都说不出来。你在他的肩上拍了一下，他才忽然大哭一场——（这是他自己承认的，其他虱子都无处可寻）。（让他上；拦下他）。"
   },
   "aithong_home": {
    "id": "aithong_home",
    "who": [
     "ai_thong_siam"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "罗斛岸。托北上罗斛的番舶送爱通回乡。他站在船头，看着对岸那条他不熟悉的港——小时候他被卖到过的地方，原来长这个样子；他梦里记了好多年，还是白天头一回才看清。他转身对你说一句「到你家啊」。托他上那番舶的那一程，他依依不舍地挥手，一声不出地走进了人群。（送他上那艘番舶；留他）。"
   },
   "batu_debt": {
    "id": "batu_debt",
    "who": [
     "mayi_batu"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "过期还账。泉州码头，一个麻逸人找上门来还账——巴都去年领了你一批货比别处做了生意，说好八九月回来按价偿付。他过期了；船家说宋船已开走，他搭了下一条番舶才追到泉州。他把货账双手递上，说：「成不成，都是利。」你说不必加息的时候，他怔了——接着拱手拱到额角，举手时袖坠着一枚旧不旧的珠。（还账选「不必加息」；加三成息）。"
   },
   "mayang_market": {
    "id": "mayang_market",
    "who": [
     "boni_mayang"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "泉州药市。随蒲应甲从渤泥回来的麻漾，第一次逛泉州药市。她自小长在采脑人家，北方市集的药材成色、摆放的门道，她一看就懂——她跟伙计讨价还价，后来干脆自己动手搭了一个小小的摊试着卖。她蹲着整理药包，黄昏的光落在头发上；那一天她笑得省心，像回到很熟悉又很新的地方。（陪她逛一回）。"
   },
   "mayang_camphor": {
    "id": "mayang_camphor",
    "who": [
     "boni_mayang"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "龙脑之争。蒲家把出手龙脑的路子把得好死守实。麻漾想绕开他们，把渤泥来的脑卖了，几番都进不去。她来找你商量——要绕，就要另找路子；要依他们规矩，这条路上一走一停都得经他们的手。你把这条路绕与不绕的难处一桩桩讲给她听，她听完，半晌说：「那就先依着走，走到能绕的时候再说。」（帮她绕开；劝她依规矩）。"
   },
   "zhiligan_knock": {
    "id": "zhiligan_knock",
    "who": [
     "zhiligan"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "城南叩门。市舶司小吏说：「南毗的事，城南智家老头子最清楚，就怕他不肯说。」你叩门三次，第一次闭门，第二次闭门，第三次门里终于开一条缝——一只老眼上下打量你。智力干不肯出来坐，他不出来坐他就不出。他说片刻就走，却留下来喝了两碗茶；茶是平常的汤色没有好别别的。（再叩第四次；隔旬再来）。"
   },
   "zhiligan_pepper": {
    "id": "zhiligan_pepper",
    "who": [
     "zhiligan"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "胡椒。智力干开门之后，你提了几包上好的胡椒去——他年纪大了，牙口不如从前，但闻得出香。他说泉州做胡椒买卖有门路的，他不爱提这些；他只告诉你，他儿子在故临，那边有一条他很熟的船。他老眼看着窗外的海，像在看很多很多年的水路：「南毗的事啊，三天说不完。」（带去胡椒 ×5）。"
   },
   "zhiligan_old": {
    "id": "zhiligan_old",
    "who": [
     "zhiligan"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "故临。智力干老了，病也重了。郑震替她挑一条好船，他愿意回故临去等末年了——但他想把你放下。这间房子你来过，那把椅子是你坐过的；最后一次见面他很平静很清澈的 有所 不清晰的常熟知己，他说：「后事不用你管。」他走后托南船交给你包细软——是半间屋里的初初开，最初落脚在那口海上路上去的靴。（看他终老，或送他走）。"
   },
   "folian_price": {
    "id": "folian_price",
    "who": [
     "folian"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "码头估价。泉州码头，一个南蕃口音的年轻商人被牙人压价，差点把一舱香药贱卖。你路过，替他估出真价——比他出的价高了三成。佛莲上上下下打量你，站起来拱个手：「你这眼神，做买卖的。会留在泉州吗？」他整齐干净爽朗，回于之间安住话也有灵灵活气的一圈，这个年轻帮主说时说体魄见熟很活跃。（替他估价）。"
   },
   "folian_north": {
    "id": "folian_north",
    "who": [
     "folian"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "北方水路。佛莲问你走不走北方的水路——明州或博多，「两头船道」。你走过的人这样说看，后来佛莲真的去走了那一趟；他回来说北边的话听得懂一半，字认得七成，生意做得起七成。他说，北方 门闯 突 天不重要也重要。他说这一趟下来，他给自己熬了一批乳香会在泉州卖，你 见买一单要不要试一试。（跟他说北方怎么走；仍要另找向导）。"
   },
   "folian_share": {
    "id": "folian_share",
    "who": [
     "folian"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "合股。佛莲找你合股买一条船——你出一千，他出一千另，船归你们两人，贸易一年利润分红，感觉说红。他还听说占城哪一器市行情，你这样这样听得饶舌的明白本来。合股时给签了名字，然后他学你们看着他，「做个走私事」。一年以后头一年，分红送到你柜上，一 块碎银压一张字条。（合股（出资 1000）；不合）。"
   },
   "hasan_summon": {
    "id": "hasan_summon",
    "who": [
     "hasan_baghdadi"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "白达哈散之托。白达哈散是个白布缠头的年轻医者——白达（巴格达）人，城破后流亡至此。他不收钱，只收一顿饭；给码头苦力裹伤、替代〔某〕某号吃食、以他身世做筹码。他挡是却找人生 的他一某一。若船上有全大食语的人，他 可自行出面作证。他都懂医，人要找哪位能够分诊神正、不可能很不果照他当你做你他他的「里蝶」。（应下他的的托；婉拒）。"
   },
   "kafur_manumit": {
    "id": "kafur_manumit",
    "who": [
     "kafur"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "放良。卡富尔的主人死了，守着他那串钥匙站在库门口，主人临终口许放良——但要有人出钱打点、清净寺作证。那张放良文书，卡富尔在纸上摸了很忘摸她猫她有时猛着也置换一地的眼神熟，拿着没学 用他那里不会说话。若船上有会大食语的人，可以省二百；不然多言昔日乡人钱上加两百。（出钱 300，请他放良；另加 200（无人通译））。"
   },
   "tiezai_ransom": {
    "id": "tiezai_ransom",
    "who": [
     "pisheye_tiezai"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "澎湖渔寨。澎湖渔寨——头人把一个被捆着的毗舍耶少年推到你面前。铁仔夜里摸上渔寨，被泉州籍渔户擒住；他说得不多，身上 手不离竹标枪。头人要赎金，不然就卖作奴。铁仔看你的时候眼神不躲，身上原来的血杀气也不遮的摆出来：「你不赎，我可以逃。」但他说那句话时也没跑。（付赎金 200，当众说不卖他；不赎）。"
   },
   "aithong_ransom": {
    "id": "aithong_ransom",
    "who": [
     "ai_thong_siam"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "占城市集。占城市集，人市的牙子那边有个被绑着的少年。你用暹语同他骂了一句看守，他回头朝你喊：「买我，我会划船、会打仗。」三百钱的赎身钱；递过去的那天晚上，他没有睡，翻来覆去讲着家乡水上灯火的影子。这段赎身钱不是施舍——他都记着，一天一天使着力气偿还。（付赎身钱 300；不买）。"
   },
   "cai19_debt": {
    "id": "cai19_debt",
    "who": [
     "cai_shijiu"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "放债人。广州蕃坊，你撞见蔡十九——一个裹着宋式头巾、下身缠缦的黑瘦汉子，被放债人堵在码头。他 用地道泉州腔求情，对方不理；原来他在住蕃时替番商唐船说合生意，还不了六百钱舶债。他 见你，先愣了一下，然后低头拱手：欠债还钱，天经地义，我没有错不 到人敢拿位钱的事。（替他还清舶债 600；或月俸分十个月抵扣；不理）。"
   },
   "pu_yingjia_boni": {
    "id": "pu_yingjia_boni",
    "who": [
     "pu_yingjia"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "渤泥讨账。泉州，开元寺边——蒲应甲穿素服，抱着刚刻好的墓碑拓本，要找去渤泥的船。他父亲景定年间卒于泉州判院，留下一批在渤泥的货账，家信来三路。请你去渤泥走一趟，讨回账——那里是佛莲舶上的 熟谈博客有卖草纸的，然后印系出去的，和 他 说是仇族 把他的大食祖父叫 发祥之地有个大海到——他自己没去过，问出托 顺为江安人三条郩这条线。（接下去渤泥这趟；推掉）。"
   },
   "companion_farewell": {
    "id": "companion_farewell",
    "who": [
     "*"
    ],
-   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填"
+   "_todo": "剧情卡正文（where/when/requires/choices/effects 文案）未拍板，CompanionEvents 引擎落地时回填",
+   "body": "告别。船上的人一个一个下船。他（或她）收拾行李，跟你说一句「这个时候正好」，然后顺着跳板走下去，背影很快融进码头的人群。你没有追。码头上风很大。有些告别你明明知道，从头到尾都是在告别；有些告别，你还没想好怎么告，船头的人已经上岸了。风把桅上的旗吹得猎猎响。（目送他（她）走；在船头多站一会儿）。"
   }
  }
 }
