@@ -6630,6 +6630,1177 @@
    "relation_flips": "_todo",
    "bond_tiers": "_todo",
    "one_time": "_todo"
+  },
+  "zhao_rushi": {
+   "id": "zhao_rushi",
+   "name": "趙汝適",
+   "region": "song",
+   "category": "史实",
+   "identity": "南宋宗室，福建路市舶提举（管海关抽解）；1225 年著《諸蕃志》，记『泉有海岛曰彭湖，隶晋江县』及琉求、三嶼、毗舍耶诸番",
+   "langs": [
+    "chinese",
+    "arabic"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1255-01",
+      "to": "1285-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "event",
+      "note": "市舶司旧档：蕃商带来一册《諸蕃志》抄本，纸已黄脆"
+     }
+    ],
+    "scene": "泉州市舶司后衙：一册《諸蕃志》摊在案上，『泉有海岛曰彭湖』那行字被前人朱笔圈了",
+    "rumor": "市舶司里有本赵提举编的番志，哪条水路赚哪条水路赔，翻开就知道。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 35,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:zhrushi_book",
+      "value": 15,
+      "note": "从蕃商手里赎回《諸蕃志》抄本"
+     },
+     {
+      "src": "event:zhrushi_route",
+      "value": 12,
+      "note": "按书里记的水路走成一遭，验明不假"
+     },
+     {
+      "src": "gift:sutra_scrolls×1",
+      "value": 8,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 1
+    },
+    "wage_slot": 0,
+    "battle": [],
+    "battle_note": "故纸堆里的前辈，不上战位；帮到的是案头",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 1
+    },
+    "level_1279": {
+     "zongguan": 1
+    },
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "intel",
+     "note": "《諸蕃志》在手：澎湖、琉求、三嶼、毗舍耶一路的物产风土，出航前先翻两页"
+    },
+    {
+     "kind": "lang",
+     "langs": [
+      "arabic"
+     ],
+     "note": "书里记的回回话名目，蕃坊对得上号"
+    }
+   ],
+   "stance": "song",
+   "traits": [
+    "shiwen",
+    "suanchou"
+   ],
+   "gifts": [
+    "sutra_scrolls",
+    "korean_paper"
+   ],
+   "climax": {
+    "scholar": "《諸蕃志》一条笔记验一遭真——澎湖、琉求之名自此落地",
+    "merchant": "按书里的物产单跑通一条新货路",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/zhao_rushi.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "wang_dayou": {
+   "id": "wang_dayou",
+   "name": "汪大猷",
+   "region": "song",
+   "category": "史实",
+   "identity": "南宋名臣；知泉州时（乾道年间）于澎湖『造屋二百间，遣将分屯』，逐退毗舍邪，为澎湖有驻军之始",
+   "langs": [
+    "chinese"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1255-01",
+      "to": "1285-12",
+      "ports": [
+       "penghu"
+      ],
+      "mode": "visit",
+      "note": "澎湖旧寨：屋基二百间的残址还在，守卒说是汪知州那年起的"
+     }
+    ],
+    "scene": "澎湖旧寨：燕窝似的屋基一间接一间，老卒指着海屿说『毗舍邪那年就是叫汪相公打回去的』",
+    "rumor": "澎湖那二百间屋基还是宋时汪知州起的，守到今日没人敢拆。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 30,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:wdy_fort",
+      "value": 12,
+      "note": "捐资修旧寨一遭，守卒口里的旧事记了一册"
+     },
+     {
+      "src": "event:wdy_history",
+      "value": 10,
+      "note": "从老卒嘴里问全当年造屋分屯的旧制"
+     },
+     {
+      "src": "gift:grain×2",
+      "value": 8,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 1
+    },
+    "wage_slot": 0,
+    "battle": [],
+    "battle_note": "前任知州的旧政，不上战位",
+    "home_port": "penghu",
+    "level_at_join": {
+     "zongguan": 1
+    },
+    "level_1279": {
+     "zongguan": 1
+    },
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "foretell",
+     "note": "澎湖旧寨人脉：海上风动、毗舍耶方向的警讯，老卒比官方塘报早一步"
+    },
+    {
+     "kind": "local",
+     "note": "澎湖泊地补给便宜一成——寨里还念着汪相公的名声"
+    }
+   ],
+   "stance": "song",
+   "traits": [
+    "zhenlu",
+    "shuizhan"
+   ],
+   "gifts": [
+    "grain",
+    "sea_salt"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "澎湖旧寨补给路就此打通",
+    "hometown": "二百间屋基还在——一个人的政绩能比他多站八十年"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/wang_dayou.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "yang_xiang": {
+   "id": "yang_xiang",
+   "name": "楊祥",
+   "region": "north",
+   "category": "史实",
+   "identity": "元朝海船副万户升宣抚使；至元二十八年（1291）奉命自澎湖发船招谕琉球，见识过『海洋中山外暗澹』的那条险道",
+   "langs": [
+    "chinese"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1285-01",
+      "to": "1285-12",
+      "ports": [
+       "penghu",
+       "ryukyu"
+      ],
+      "mode": "event",
+      "note": "海上邂逅：元军船队自澎湖开向琉球，桅上元字旗认得出",
+      "route": [
+       [
+        "penghu",
+        "ryukyu"
+       ]
+      ]
+     },
+     {
+      "from": "1268-01",
+      "to": "1284-12",
+      "ports": [
+       "quanzhou",
+       "fuzhou"
+      ],
+      "mode": "tavern",
+      "note": "泉、福两港酒肆：北边来的水军万户，盘算着东出那条海道"
+     }
+    ],
+    "scene": "澎湖外洋：一队元军哨船压着浪走，为首的万户船头望海——那边是他要去的琉球",
+    "rumor": "朝廷要遣使招谕东海的琉求国，船从澎湖发，头一位点的是海船副万户杨祥。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 40,
+    "bond_start": 8,
+    "bond_path": [
+     {
+      "src": "event:yangxiang_scout",
+      "value": 15,
+      "note": "替他探澎湖以东水道暗礁一遭"
+     },
+     {
+      "src": "event:yangxiang_ryukyu",
+      "value": 17,
+      "note": "随使团同船至琉球外洋，记下山形水色"
+     },
+     {
+      "src": "gift:japanese_sword×1",
+      "value": 8,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 2,
+     "duogong": 1
+    },
+    "wage_slot": 120,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "水师宿将，压阵督战能起身",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 2
+    },
+    "level_1279": {
+     "zongguan": 2
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "leg",
+     "note": "熟澎湖—琉球海道：此段航程少走冤枉路"
+    },
+    {
+     "kind": "intel",
+     "note": "元朝对琉求国招谕、征伐的军令消息，他比塘报早半步"
+    }
+   ],
+   "stance": "yuan",
+   "traits": [
+    "shuizhan",
+    "zhenlu"
+   ],
+   "gifts": [
+    "ironware",
+    "sulfur"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "元军军需单里有你一份——跟着官府的船队走货",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/yang_xiang.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "wu_zhidou": {
+   "id": "wu_zhidou",
+   "name": "吳志斗",
+   "region": "north",
+   "category": "史实",
+   "identity": "福建书生，自陈『生长福建，熟知海道利病』得授礼部员外郎、充招谕副使；至元二十八年出使，舟至澎湖竟失踪，史无下文",
+   "langs": [
+    "chinese"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1285-01",
+      "to": "1285-12",
+      "ports": [
+       "penghu"
+      ],
+      "mode": "event",
+      "note": "澎湖近洋：他乘的那条船，后来没人见着回来",
+      "route": [
+       [
+        "penghu",
+        "ryukyu"
+       ]
+      ]
+     },
+     {
+      "from": "1268-01",
+      "to": "1284-12",
+      "ports": [
+       "quanzhou",
+       "zhangzhou"
+      ],
+      "mode": "tavern",
+      "note": "泉、漳书肆茶棚：满口海道利病的书生，朝廷真要给他官做"
+     }
+    ],
+    "scene": "澎湖澳口：吴员外郎抱一箱书登船，水手都劝他等风，他说海道我熟",
+    "rumor": "礼部吴员外郎的船过澎湖就没了影，有人说翻了，有人说番人扣了。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 30,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:wuzhidou_sea",
+      "value": 12,
+      "note": "同船考校海道水程，他说的暗沙一一应验"
+     },
+     {
+      "src": "event:wuzhidou_petition",
+      "value": 10,
+      "note": "替他草拟番国情形条陈"
+     },
+     {
+      "src": "gift:korean_paper×2",
+      "value": 8,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 1
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "书生出身，案上理得清，阵前帮不上",
+    "home_port": "fuzhou",
+    "level_at_join": {
+     "tongshi": 1
+    },
+    "level_1279": {
+     "tongshi": 1
+    },
+    "wage_role_at_join": {
+     "tongshi": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "leg",
+     "note": "通福建沿海与澎湖水道：狭窄澳口他门儿清"
+    },
+    {
+     "kind": "teach",
+     "note": "海道针经：能教船上认澳认礁"
+    }
+   ],
+   "stance": "yuan",
+   "traits": [
+    "shiwen",
+    "suanchou"
+   ],
+   "gifts": [
+    "korean_paper",
+    "tea"
+   ],
+   "climax": {
+    "scholar": "代拟的条陈上达朝廷——书生功名就此起步",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/wu_zhidou.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "ruan_jian": {
+   "id": "ruan_jian",
+   "name": "阮鑒",
+   "region": "north",
+   "category": "史实",
+   "identity": "元朝兵部员外郎；至元二十九年（1292）随使团充副使招谕琉球，与统军刘閏同船，亲历登岸冲突、三兵被杀之役",
+   "langs": [
+    "chinese"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1285-01",
+      "to": "1285-12",
+      "ports": [
+       "ryukyu",
+       "penghu"
+      ],
+      "mode": "event",
+      "note": "琉球外洋：使团船队泊岸，他是船上那个不穿甲的官",
+      "route": [
+       [
+        "penghu",
+        "ryukyu"
+       ]
+      ]
+     },
+     {
+      "from": "1270-01",
+      "to": "1284-12",
+      "ports": [
+       "quanzhou",
+       "fuzhou"
+      ],
+      "mode": "event",
+      "note": "泉、福营中：兵部来的员外郎督点招谕军船"
+     }
+    ],
+    "scene": "琉球外洋使团船上：阮兵部捧着国书立在船头，身后的兵都在握刀——他心里比谁都发毛",
+    "rumor": "朝廷再遣使琉求，队伍里有个兵部来的官，专管名分文书。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 30,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:ruanjian_doc",
+      "value": 12,
+      "note": "替他保全湿损的国书副本、重誊一份"
+     },
+     {
+      "src": "event:ruanjian_landing",
+      "value": 10,
+      "note": "琉球登岸那日随他左右，冲突起来替官船传话"
+     },
+     {
+      "src": "gift:sable_fur×1",
+      "value": 8,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 1
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "文官从行，战时守船不操刀",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "tongshi": 1
+    },
+    "level_1279": {
+     "tongshi": 1
+    },
+    "wage_role_at_join": {
+     "tongshi": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "intel",
+     "note": "使团名分与朝廷文书的门路：什么场合该备什么礼，他教得明明白白"
+    },
+    {
+     "kind": "event_flag",
+     "note": "在队即记一笔『曾随元使团至琉球外洋』"
+    }
+   ],
+   "stance": "yuan",
+   "traits": [
+    "zhenlu",
+    "shiwen"
+   ],
+   "gifts": [
+    "sable_fur",
+    "korean_paper"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "全须全尾回到泉州——比起功劳簿，先保住命"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/ruan_jian.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "chen_hui": {
+   "id": "chen_hui",
+   "name": "陳輝",
+   "region": "north",
+   "category": "史实",
+   "identity": "三嶼（今菲律宾北部巴丹一带，或说先岛群岛，比定有争议）出身，至元二十九年充元军随员通事，随刘閏部登琉球岸——语言未通，同行三兵被杀",
+   "langs": [
+    "chinese",
+    "tagalog",
+    "malay"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1279-01",
+      "to": "1285-12",
+      "ports": [
+       "ryukyu",
+       "penghu",
+       "quanzhou"
+      ],
+      "mode": "event",
+      "note": "随军通事：琉球、澎湖、泉州之间的元军船上，见得到这个南岛口音的汉子",
+      "route": [
+       [
+        "penghu",
+        "ryukyu"
+       ]
+      ]
+     }
+    ],
+    "scene": "琉球岸滩：陈辉张着手臂挡在两造中间喊——一边元兵握刀，一边岛民弯弓，他喊的哪边都听不大懂",
+    "rumor": "元军营里雇了个三屿人当通事，琉球话半通不通，上去就折了三个兵。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 28,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:chenhui_interpret",
+      "value": 12,
+      "note": "陪他闯一回语言关——你帮他补了两句闽南话"
+     },
+     {
+      "src": "event:chenhui_home",
+      "value": 8,
+      "note": "问清他三嶼的来路，记下那片海的物产"
+     },
+     {
+      "src": "gift:fujian_porcelain×2",
+      "value": 8,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "通事非战员，登岸冲突里他自保都难",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "tongshi": 2
+    },
+    "level_1279": {
+     "tongshi": 2
+    },
+    "wage_role_at_join": {
+     "tongshi": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "lang",
+     "langs": [
+      "tagalog",
+      "malay"
+     ],
+     "note": "南岛场合通译：三嶼、毗舍耶、琉球半通，比猜强"
+    },
+    {
+     "kind": "intel",
+     "note": "南岛水道与聚落情形，是从他嘴里问出来的"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "fanyu"
+   ],
+   "gifts": [
+    "fujian_porcelain",
+    "pepper"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "南岛一条隐秘货路就叫他一句话点破",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/chen_hui.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "liu_run": {
+   "id": "liu_run",
+   "name": "劉閏",
+   "region": "north",
+   "category": "史实",
+   "identity": "至元二十九年（1292）元军统兵官；率二百余人、小艇十一艘登陆琉球，因语言不通与岛民冲突，折兵三人后返",
+   "langs": [
+    "chinese"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1285-01",
+      "to": "1285-12",
+      "ports": [
+       "ryukyu",
+       "penghu"
+      ],
+      "mode": "event",
+      "note": "琉球外洋：十一艘小艇压滩，为首的是他",
+      "route": [
+       [
+        "penghu",
+        "ryukyu"
+       ]
+      ]
+     }
+    ],
+    "scene": "琉球岸滩：刘闰按刀立在艇首，二百余人蹚水登陆——岛民已在林子里张弓",
+    "rumor": "元军上了琉求的岸，带兵的刘闰折了三个人才退回来。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 35,
+    "bond_start": 8,
+    "bond_path": [
+     {
+      "src": "event:liurun_landing",
+      "value": 15,
+      "note": "登陆被围时替他断后，抢出披弓的通路"
+     },
+     {
+      "src": "event:liurun_naval",
+      "value": 12,
+      "note": "同操小艇一遭——十一艘的队形他演练给你看"
+     },
+     {
+      "src": "gift:japanese_sword×1",
+      "value": 8,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "duogong": 2
+    },
+    "wage_slot": 120,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "行伍出身，压阵断后是一把好手",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "duogong": 2
+    },
+    "level_1279": {
+     "duogong": 2
+    },
+    "wage_role_at_join": {
+     "duogong": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "note": "率众登陆的战法：滩头冲突他排阵最快"
+    },
+    {
+     "kind": "leg",
+     "note": "熟澎湖—琉球航段：这条水道他蹚过"
+    }
+   ],
+   "stance": "yuan",
+   "traits": [
+    "shuizhan",
+    "gongnu"
+   ],
+   "gifts": [
+    "ironware",
+    "japanese_sword"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/liu_run.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "zhang_hao": {
+   "id": "zhang_hao",
+   "name": "張浩",
+   "region": "north",
+   "category": "史实",
+   "identity": "元朝福建省都镇抚；大德元年（1297）率水军东击琉球，擒生口百三十余而归",
+   "langs": [
+    "chinese"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1285-01",
+      "to": "1285-12",
+      "ports": [
+       "ryukyu",
+       "quanzhou"
+      ],
+      "mode": "event",
+      "note": "福建水师东向：都镇抚督师的船队，哨船先行",
+      "route": [
+       [
+        "quanzhou",
+        "ryukyu"
+       ]
+      ]
+     }
+    ],
+    "scene": "泉州外海：都镇抚张浩的督师船挂起令旗，哨船满载而东——琉球方向要有血",
+    "rumor": "福建省里都镇抚张浩要点水军往琉求去，这回不是招谕是征伐。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 38,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:zhanghao_supply",
+      "value": 15,
+      "note": "替他转运一遭水师粮秣，不磕不碰"
+     },
+     {
+      "src": "event:zhanghao_scout",
+      "value": 15,
+      "note": "充哨船先导探琉球外洋一遭，回话直报没有虚饰"
+     },
+     {
+      "src": "gift:sulfur×2",
+      "value": 8,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 2,
+     "duogong": 1
+    },
+    "wage_slot": 200,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "正牌水军统帅，战位上督师坐镇",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 2
+    },
+    "level_1279": {
+     "zongguan": 2
+    },
+    "wage_role_at_join": {
+     "zongguan": 200
+    }
+   },
+   "niche": [
+    {
+     "kind": "intel",
+     "note": "水师军令与哨探塘报，他处能先闻一句"
+    },
+    {
+     "kind": "combat",
+     "note": "水军督师的调度：海上列阵，有他压一分稳"
+    }
+   ],
+   "stance": "yuan",
+   "traits": [
+    "shuizhan",
+    "zhenlu"
+   ],
+   "gifts": [
+    "sulfur",
+    "ironware"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "水师军需门路就此打通——跟他做生意，规矩大但钱稳",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/zhang_hao.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "zhang_jin": {
+   "id": "zhang_jin",
+   "name": "張進",
+   "region": "north",
+   "category": "史实",
+   "identity": "元朝福州新军万户；大德元年（1297）与都镇抚张浩同率水军击琉球，是福州一翼的掌兵主将",
+   "langs": [
+    "chinese"
+   ],
+   "appear": {
+    "chapter_min": 2,
+    "windows": [
+     {
+      "from": "1285-01",
+      "to": "1285-12",
+      "ports": [
+       "fuzhou",
+       "ryukyu"
+      ],
+      "mode": "event",
+      "note": "福州新军出海：万户张进的座船在闽江口列队",
+      "route": [
+       [
+        "fuzhou",
+        "ryukyu"
+       ]
+      ]
+     },
+     {
+      "from": "1270-01",
+      "to": "1284-12",
+      "ports": [
+       "fuzhou"
+      ],
+      "mode": "tavern",
+      "note": "闽江码头酒肆：新军万户初到福州，兵船还少，正招本地水手"
+     }
+    ],
+    "scene": "闽江口：张进按剑立在万户船上，新军船队半数是旧宋水师改编——他得一只手压住两边的心",
+    "rumor": "福州新军的张万户要带新编的兵跟张都镇抚平琉求去，他自己的船还凑不齐。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 35,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:zhangjin_boats",
+      "value": 15,
+      "note": "替他张罗到一拨熟手水手，解了新军船荒"
+     },
+     {
+      "src": "event:zhangjin_formation",
+      "value": 12,
+      "note": "随他操练新军队形一遭——旧宋兵、新附卒他分得出"
+     },
+     {
+      "src": "gift:ironware×2",
+      "value": 8,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "duogong": 2
+    },
+    "wage_slot": 120,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "三万户之一，战位上掌一翼",
+    "home_port": "fuzhou",
+    "level_at_join": {
+     "duogong": 2
+    },
+    "level_1279": {
+     "duogong": 2
+    },
+    "wage_role_at_join": {
+     "duogong": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "note": "新操练：福建新附水军他能整合派出"
+    },
+    {
+     "kind": "intel",
+     "note": "闽江军务与温州、福州两路动静，从他营里传出"
+    }
+   ],
+   "stance": "yuan",
+   "traits": [
+    "shuizhan",
+    "caozhou"
+   ],
+   "gifts": [
+    "ironware",
+    "sea_salt"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "新军军船要人要料——福州一翼的军需在你手里",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/zhang_jin.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "eiso": {
+   "id": "eiso",
+   "name": "英祖",
+   "region": "japan_korea",
+   "category": "半史实",
+   "identity": "琉球英祖王朝开国（r.1260–1299）；1264 年设泊村公馆收诸岛贡物，拒元廷招谕。世系出 17–18 世纪官修史，13 世纪琉球无同时代一手文字，当半架空看",
+   "langs": [
+    "ryukyuan",
+    "chinese"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1285-12",
+      "ports": [
+       "ryukyu"
+      ],
+      "mode": "visit",
+      "note": "泊村公馆：英祖朝设此收诸岛贡物，求见者鱼贯"
+     }
+    ],
+    "scene": "泊村公馆外：久米、庆良间来的小船一列泊岸，英祖的吏员在码头收贡——王本人不轻易见外人",
+    "rumor": "琉求的英祖王设公馆收诸岛之贡，北朝来使到了泊港也叫他挡回去。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 50,
+    "bond_start": 5,
+    "bond_path": [
+     {
+      "src": "event:eiso_audience",
+      "value": 20,
+      "note": "三谒公馆，获准以商礼入见"
+     },
+     {
+      "src": "event:eiso_tribute",
+      "value": 20,
+      "note": "替他走一趟庆良间、久米方向收贡的船"
+     },
+     {
+      "src": "gift:fujian_porcelain×2",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 1
+    },
+    "wage_slot": 0,
+    "battle": [],
+    "battle_note": "王者之尊随驾不任战位；交情到位可随船游海西",
+    "home_port": "ryukyu",
+    "level_at_join": {
+     "zongguan": 1
+    },
+    "level_1279": {
+     "zongguan": 1
+    },
+    "wage_role_at_join": {}
+   },
+   "niche": [
+    {
+     "kind": "intel",
+     "note": "琉球诸岛风闻：北朝来使的动静、诸岛贡期的消息，他先透一句"
+    },
+    {
+     "kind": "local",
+     "note": "泊港补给方便——公馆的面子，给的是商礼"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "zhenlu"
+   ],
+   "gifts": [
+    "fujian_porcelain",
+    "sappanwood"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "以商礼入见——泊村公馆自此收你的礼单",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/eiso.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
   }
  },
  "events": {
