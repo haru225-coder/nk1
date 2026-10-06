@@ -283,6 +283,42 @@ if chars_file.is_file():
                 check((ASSETS / (vrel + ".import")).is_file(), f"人物 {cid} 的按日期换画 {vp} 缺 .import")
                 portrait_checked += 1
 
+# ── 6. 英文批次立绘与三张孤儿背景（lane portrait-wiring，2026-10-05）─────────────
+# SoR = docs/英文批次立绘与三张背景接线_2026-10-05.md：29 张 <id>_en.png 实名名单 + 三张背景的接入档。
+# 判红：SoR 名册核对（id 数 / 既有名册 / 非法名）；对应中文版在库；运行时擅自装机（数据侧 portrait_en）
+# 且未在本 lane 装机登记。运行时接线属 Snow 拍板项（SoR §五），门禁守护「未拍板不得半装、装了须有据」。
+_EN_BATCH_DOC = ROOT / "docs" / "英文批次立绘与三张背景接线_2026-10-05.md"
+check(_EN_BATCH_DOC.is_file(), "缺 docs/英文批次立绘与三张背景接线_2026-10-05.md（英文批次 SoR，拌倒守护）")
+_en_batch_n = 0
+if _EN_BATCH_DOC.is_file():
+    _doc = _EN_BATCH_DOC.read_text(encoding="utf-8")
+    _tick = chr(96) * 3  # 码点防呆：栅码字面写着会嵌进检查本格
+    # §三窗 = 「## 三、」起、「## 四、」止，窗内第一个 ```…``` 即名单块（标题与栏间有正文行，正则跨不过）
+    _h3, _h4 = _doc.find("## 三、"), _doc.find("## 四、")
+    _en_ids = []
+    if _h3 >= 0 and _h4 > _h3:
+        _win = _doc[_h3:_h4]
+        _m = re.search(re.escape(_tick) + r"\s*(.*?)" + re.escape(_tick), _win, re.S)
+        if _m:
+            _en_ids = re.findall(r"[a-z][a-z0-9_]+", _m.group(1))
+    check(bool(_en_ids), "SoR 文档缺 §三名单块（%s 夹段的 29 id）" % _tick)
+    check(len(_en_ids) == 29, f"SoR §三名册 id 数须恰 29（实得 {len(_en_ids)}）")
+    check(len(set(_en_ids)) == len(_en_ids), "SoR §三名册有重复 id")
+    _comp = json.loads((ROOT / "data" / "companions.json").read_text(encoding="utf-8")).get("companions", {})
+    for _cid in _en_ids:
+        check(_cid in _comp, f"英文批次 <{_cid}> 不是 companions.json 在册伙伴 id")
+        check(exists(f"portraits/{_cid}.png"), f"英文批次对应中文版 assets/portraits/{_cid}.png 不在库")
+        check(exists(f"portraits/{_cid}_en.png"), f"英文版 assets/portraits/{_cid}_en.png 不在库")
+        check((ASSETS / f"portraits/{_cid}_en.png.import").is_file(), f"assets/portraits/{_cid}_en.png 缺 .import")
+        _en_batch_n += 1
+    # 三张孤儿背景：SoR §四表登记名都须在库
+    for _bg in ("bg_sea_cabin.jpg", "bg_porcelain_kiln.jpg", "bg_lacquer_workshop.jpg"):
+        check(_bg in _doc, f"SoR §四表未登记 {_bg}")
+        check(exists(_bg), f"SoR 登记的背景 assets/{_bg} 不在库")
+    # 运行时装机登记：数据侧若已给伙伴加 portrait_en（SoR §五 A-1 拍板落地），本 lane 须已装机才不算半装
+    _en_wired = any(str(e.get("portrait_en", "")) for e in _comp.values() if isinstance(e, dict))
+    check(not _en_wired or "portrait_en" in _doc, "数据侧已有 portrait_en 但 SoR 未记载装机方案（半装）")
+
 print("=" * 68)
 if FAIL:
     for f in FAIL:
@@ -290,5 +326,6 @@ if FAIL:
     print(f"结果：{len(FAIL)} 项失败")
     sys.exit(1)
 print(f"资产引用 {len(seen)} 个完整路径 + PORT_BG/FACILITY_BG/ENDING_BG/PROLOGUE_PAGE_BG 表 + _set_background_file 直写 {sbf_n} 处"
-      f" + 港页变体 {variant_n} 张 + 前缀拼接展开 + 货图 {good_icon_n} 张 + 人物立绘 {portrait_checked} 张，全部存在")
+      f" + 港页变体 {variant_n} 张 + 前缀拼接展开 + 货图 {good_icon_n} 张 + 人物立绘 {portrait_checked} 张"
+      f" + 英文批次 {_en_batch_n} 张 SoR 守护，全部存在")
 print("结果：全部通过")
