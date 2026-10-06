@@ -1,6 +1,6 @@
 {
  "meta": {
-  "title": "伙伴系统立绘槽位清单（70 人）",
+  "title": "伙伴系统立绘槽位清单（90 人）",
   "date": "2026-10-07",
   "author": "莉莉（伙伴系统专线）·真名史实批",
   "spec": {
@@ -15,7 +15,7 @@
   "style_anchor_zh": "南宋—元初东亚海域历史题材 · 写实厚涂 · 半身像 · 居中偏 3/4 面向观者 · 低饱和暗调土色系（墨黑 / 铁灰 / 赭石 / 暗蓝）· 暖侧光（油灯、火把、夕照、舷窗光）· 湿木与粗麻质感 · 景深虚化背景 · 电影级明暗 · 做旧，无轮廓线",
   "style_anchor_en": "Song-Yuan era East Asian maritime historical, realistic thick-paint CG, half-body portrait, centered, three-quarter view toward viewer, low-saturation dark earthy palette (ink black, iron grey, ochre, muted indigo), warm side light, wet wood and coarse hemp texture, shallow depth of field, cinematic chiaroscuro, weathered period texture, no line art",
   "negative": "watercolor, ink wash, gongbi, anime cel shading, cartoon, line art, modern clothing, plastic skin, neon, oversaturated pastel, extra fingers, deformed hands, text, watermark, signature, logo, lowres",
-  "note": "16 人（P1 + 邻近）已给中英生图提示词；其余 24 人先占位。2026-10-07 真名史实批 +20 槽位（蒲氏三代、马八儿/忽鲁谟斯/基尔瓦来客、占城君臣、单马令/素可泰、巴赛/爪哇、高丽/日本）。2026-10-07 批 2 琉球·澎湖 +10 槽位（趙汝適/汪大猷以书与遗址在场、楊祥/吳志斗/阮鑒/陳輝/劉閏/張浩/張進元官七人、英祖半史实）：file/size/priority/look/personality 齐；提示词清单在仓外 companion-design 目录另存 P6 琉球 10 人（仓内不写仓外绝对路径）——本批新增·真名史实·待用户出图。"
+  "note": "16 人（P1 + 邻近）已给中英生图提示词；其余 24 人先占位。2026-10-07 真名史实批 +20 槽位（蒲氏三代、马八儿/忽鲁谟斯/基尔瓦来客、占城君臣、单马令/素可泰、巴赛/爪哇、高丽/日本）。2026-10-07 批 2 琉球·澎湖 +10 槽位（趙汝適/汪大猷以书与遗址在场、楊祥/吳志斗/阮鑒/陳輝/劉閏/張浩/張進元官七人、英祖半史实）：file/size/priority/look/personality 齐；提示词清单在仓外 companion-design 目录另存 P6 琉球 10 人（仓内不写仓外绝对路径）——本批新增·真名史实·待用户出图。 2026-10-07 批 3 真名史实 +20 槽位（马八儿君臣、波斯湾主、基尔瓦苏丹、爪哇新国、高丽/日本诸将、占城使臣）：file/size/priority/look/personality 齐，生图清单仓外 companion-design 目录另存 P7 二十人。"
  },
  "portraits": {
   "lin_hua": {
@@ -883,6 +883,226 @@
    "status": "placeholder",
    "personality_short": "面上像佛，心里像秤。",
    "look": "六旬上下的王者，面容黧黑而清矍，束发以青布；肩披宽幅织云纹的芭蕉布衣，腰无金玉、只挂一枚白玉钩——是岛国之主，不是中原天子的气派。"
+  },
+  "takiuddin_abdur_rahman": {
+   "name": "塔基乌丁",
+   "title": "马八儿国王朝首相兼顾问",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/takiuddin_abdur_rahman.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "三座港口的抽分他闭眼算得出",
+   "look": "褐色短须的波斯裔相公，头缠白丝帛、须修得齐整；葱绿长袍外罩一领素褐披风，指上一枚缠丝玛瑙大印戒；立在蕃坊楼头，眼里只有账与舶。"
+  },
+  "ravivarman_kulashekhara": {
+   "name": "俱蓝王",
+   "title": "故临（俱蓝）国王",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/ravivarman_kulashekhara.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "遇事先问一句外洋风浪、再问一句你舱上的货",
+   "look": "肤色偏浅的南印王者，顶戴棕榈叶冠低覆，项挂一串金贝与青绿石；短须修齐，直身立在舶楼头看远处泊来的舶——像在看一仓新收的胡椒。"
+  },
+  "maravarman_kulasekara_pandyan_i": {
+   "name": "马八儿老王",
+   "title": "潘地亚国王",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/maravarman_kulasekara_pandyan_i.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "王已须发半白",
+   "look": "须髯半白的南印老王，头缠高额布、白布底上扣一块金贝顶饰；肩披淡青细葛长衣，佩一串大珍珠项饰，立在珠池外背手看船。"
+  },
+  "jatavarman_vira_pandyan_i": {
+   "name": "潘地亚王弟",
+   "title": "潘地亚共治王",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/jatavarman_vira_pandyan_i.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "王弟低人一头，武锋却压人一头",
+   "look": "褐色面皮、肩胯比常人横半头的王弟；头缠一条青布、短袍扎在腰里，颈间挂一面金牌与一丸护身神螺，立在楼船头巡军。"
+  },
+  "jamal_al_din_ibrahim_tibi": {
+   "name": "扎马鲁丁·提比",
+   "title": "伊利汗国怯失长官",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/jamal_al_din_ibrahim_tibi.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "算盘比刀快：一只眼落在你舱上、一只眼落在你的秤上",
+   "look": "面颊圆丰的波斯长者，额缠两条大白丝长帕、眼下一圈齐整短须；着墨青暗花织金罗长袍，佩一枚绿松石大印戒，坐案后抹过关册。"
+  },
+  "fakhr_al_din_ahmad_tibi": {
+   "name": "法赫鲁丁·提比",
+   "title": "怯失王子兼元使",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/fakhr_al_din_ahmad_tibi.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "出身名门的青年贵官，眉里三分父亲的算盘、七分自己的志气",
+   "look": "眉目清正的波斯贵胄青年，侧须修得极细；头缠一组折叠整齐的灰青头布，织金包袱领、腰垂一副新铸怯失叉金牌，双手拢袖立于馆门候译官。"
+  },
+  "al_hasan_ibn_sulaiman": {
+   "name": "哈桑·本·苏莱曼",
+   "title": "基尔瓦苏丹",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/al_hasan_ibn_sulaiman.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "南来的苏丹说话不快，做的账却是五份均平：先捐一分给教门、再四份入库，谁都不许改。",
+   "look": "肤色如赭过光的东非王者，头缠深帕、面方鼻直；外罩青黑宽长袍、滚一圈金丝边，佩一条金链挂药香小盒、手指上套一只象牙板戒。"
+  },
+  "raden_wijaya": {
+   "name": "土罕必阇耶",
+   "title": "满者伯夷开国君主",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/raden_wijaya.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "下手极快、收手更快——一夜之间借刀变还刀，没看清的人已经失港。",
+   "look": "精悍的爪哇开国主，眉浓黑、肤色偏深；滚发高束、顶扣一小块金头饰，着白细麻短衫、外披一件深褐披风，腰里斜挂一柄短剑，站处自带三分防。"
+  },
+  "arya_wiraraja": {
+   "name": "阿利亚·维拉拉查",
+   "title": "马都拉太守",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/arya_wiraraja.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "渡口的风向他知道，渡口的人心他也知道——做太守的不是官、是路。",
+   "look": "中年的爪哇太守，圆脸留一小撮短须、顶巾低覆，披一件暗褐粗葛披风；手按腰间的宽刃短刀，站在渡口眺舢板。"
+  },
+  "bae_jungsong": {
+   "name": "裴仲孙",
+   "title": "高丽三别抄首领",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/bae_jungsong.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "守岛如守图",
+   "look": "面皮被海风磨得发黑的高丽将领，胡子上染一点风沙；短袍扎紧、铜盔布檐低覆，腰间横一口高丽短刃，立在舢板头望入口的蒙舶。"
+  },
+  "kim_banggyeong": {
+   "name": "金方庆",
+   "title": "高丽东征军元帅",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/kim_banggyeong.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "七旬开外、胡子花白，眼睛还尖",
+   "look": "高龄武将，须眉尽白、鬓边犹染铁尘；身罩织青色软甲、外备一件熟皮擩风，腰悬高丽短刀与一把未张弦之弓，立在旗舰舱头。"
+  },
+  "ban_bu": {
+   "name": "潘阜",
+   "title": "高丽使节·监造战舰",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/ban_bu.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "文官骨子里却是匠气：国书他夹得极平，督造的图谱他勾得极密。",
+   "look": "高丽文官、束发戴乌折上巾，面相清瘦、双目有神；青袍宽袖，抱一卷手牒，径站在舰造场验新木。"
+  },
+  "shoni_yukiyasu": {
+   "name": "少弐経資",
+   "title": "镰仓幕府镇西西方奉行",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/shoni_yukiyasu.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "比景資更沉一分的长者",
+   "look": "老而健的镰仓武士长者，头戴乌囊巾、黑发间掺灰；着旧代小袖直垂、下袴跣足而系短袖，手拄佩刀立在防垒上。"
+  },
+  "so_sukekuni": {
+   "name": "宗助国",
+   "title": "对马国地头代兼守护代",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/so_sukekuni.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "岛上的代官话极少、气极直——敌船一近，他的刀先已出鞘。",
+   "look": "老而硬的对马代官，方脸宽肩、双手厚茧；戴乌折上巾、着皂色直垂、腰横长刀，立在对马礁岸上短须灰白、死死望海。"
+  },
+  "hojo_tokimune": {
+   "name": "北条時宗",
+   "title": "镰仓幕府第八代执权",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/hojo_tokimune.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "年少居高位，眉间不带一分怯——他对元使只说一个「斩」，对海防却肯耗十年。",
+   "look": "年少的镰仓执权，眉清目和、姿容俊整；发束左額、直垂素袖，白小袖与淡紫袴；项挂玉念珠、腰间置一把短剑，立在博多湾半山道上望海。"
+  },
+  "savakanmaindan": {
+   "name": "萨瓦坎",
+   "title": "贾夫纳藩王",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/savakanmaindan.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "藩王的位子是捡来的，他比谁都知道——脸上既有王者的礼，也有流浪儿的谨。",
+   "look": "肤色偏深的泰米尔藩王青年，面上浓髯尚未丰、眉结间带三分流离；穿褪色细葛长衫、项挂一串白沙石，站在占城馆廊下候马八儿的回牒。"
+  },
+  "sri_dharmasokaraja_v": {
+   "name": "五世王",
+   "title": "单马令国王",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/sri_dharmasokaraja_v.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "王朝将尽的年月他都看在眼里——一面佛旗一面税册，他先收的是人心。",
+   "look": "欲敛威仪的末代王，肤色微深、面容清瘦；顶戴旧金冠、着旧朱褐长衣，项挂一轴佛牙香囊、手执塔经，立在舶楼看风向。"
+  },
+  "bao_tuo_tu_hua": {
+   "name": "寶脫禿花",
+   "title": "占城叛将·元军向导",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/bao_tuo_tu_hua.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "兄弟之仇他不说，却一步一步替元军开路——箭到已是他的反手。",
+   "look": "褐色面皮、目冷如刀的占城武将，顶缠残旧布额；革甲束紧、腰间横一口占城短刃，立在元军前营的舶头望被他亲手领过去的滩。"
+  },
+  "wenlao_qiongdaban_nan": {
+   "name": "文勞卭大巴南",
+   "title": "占城入元使节",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/wenlao_qiongdaban_nan.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "做使臣的没有自己表情",
+   "look": "中年使臣，面色黧黑、眉细长；着旧织绢长袍、腰束带，双手把一轴文书护得紧紧的，站在驿门口候元使者名。"
+  },
+  "jimu_lilezhe": {
+   "name": "濟目理勒蟄",
+   "title": "占城王之孙·使节",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/jimu_lilezhe.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "王子之孙年纪还轻，外交场上的言辞却一点也不软。",
+   "look": "少年的占城王孙，面容尚带三分童气；着素白细葛长衫、腰束一条暗褐带，双手捧表卷起又展开，站在驿廊下不敢正看元馆。"
   }
  }
 }
