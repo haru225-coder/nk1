@@ -3,7 +3,7 @@
   "title": "东亚海域立志传伙伴名册（数据层骨架）",
   "version": 1,
   "status": "数据层骨架·未拍板——定级口径见 docs/伙伴系统拍板包_2026-10-04.md；未定字段一律写 \"_todo\"，拍板后逐格回填，fill 仍是本闸形状（type 不应为 str）",
-  "_todo": "未定字段记号：设计稿与决策包未拍板（或未对题）的字段；门禁对它只判「恰为这三个字」，判绿不判红",
+  "_todo": "未定字段记号：拍板包 §〇 定为「未定——拍板后逐格回填」。批 4（lane/story-bios 2026-10-07）已照对题表「拟定行」把 attrs/growth/fate/relations/relation_flips/bond_tiers/one_time 七格全部填实（attrs 五维值/growth 封顶/fate 史实结论或[待核]/relations 区域性+冤家+师徒+旧识/relation_flips 冤家翻旧识/bond_tiers 40/60/80 档台词/one_time events 一次性），check_companions 第八节按这些实值形状定型校验，。恰为这三个字。",
   "verify_def": {
    "已核": "考据字段史实评审已过（名册 verify=确认，21 人）",
    "待核": "考据字段需修正，kaoju 正文未搬入本表（名册 verify=需修正，19 人；过评审后回填并改已核）"
@@ -178,13 +178,35 @@
    "portrait": "res://assets/portraits/lin_hua.png",
    "portrait_status": "painted",
    "portrait_note": "沿用现有披甲部将版；另出 1260 年代水手版 lin_hua_early.png（水手短褐赤足，未接线）",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 62,
+    "shang": 18,
+    "wu": 66,
+    "xue": 15,
+    "wang": 28
+   },
+   "growth": {},
+   "fate": {
+    "leave": "史实离世",
+    "detail": "1277 年陈瓒复兴化时，在知军衙门被拖出杀,[待核]对 exact date。"
+   },
+   "relations": [
+    {
+     "id": "zheng_zhen",
+     "kind": "同乡旧识"
+    },
+    {
+     "id": "cai_shijiu",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 林华 留了踪迹。",
+    "60": "列传资格：泉州码头上替林阿舶系缆的水手（出身为的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "zhu_qing": {
    "id": "zhu_qing",
@@ -326,13 +348,35 @@
    "portrait": "res://assets/portraits/zhu_qing.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 78,
+    "shang": 45,
+    "wu": 70,
+    "xue": 12,
+    "wang": 55
+   },
+   "growth": {},
+   "fate": {
+    "leave": "转元市舶",
+    "detail": "1276 春与张瑄投元，后为元海运开创者之一,1285 后下落不明。"
+   },
+   "relations": [
+    {
+     "id": "lin_hua",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 朱清 留了踪迹。",
+    "60": "列传资格：淮南东路通州崇明（姚刘沙）的海上亡命的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "zhu_qing_sea",
+    "zhu_qing_wine",
+    "zhu_qing_errand"
+   ]
   },
   "zhang_xuan": {
    "id": "zhang_xuan",
@@ -428,13 +472,33 @@
    "portrait": "res://assets/portraits/zhang_xuan.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 50,
+    "shang": 30,
+    "wu": 82,
+    "xue": 8,
+    "wang": 50
+   },
+   "growth": {},
+   "fate": {
+    "leave": "转元市舶",
+    "detail": "1276 春与朱清投元，后同任元海运万户,卒年不详,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "lin_hua",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 张瑄 留了踪迹。",
+    "60": "列传资格：平江府嘉定人，与朱清同为宋季海上「最的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "zhang_xuan_wusong"
+   ]
   },
   "xie_ao": {
    "id": "xie_ao",
@@ -552,13 +616,44 @@
    "portrait": "res://assets/portraits/xie_ao.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 10,
+    "shang": 28,
+    "wu": 25,
+    "xue": 72,
+    "wang": 42
+   },
+   "growth": {
+    "xue": {
+     "per_year": 1,
+     "cap": 85
+    },
+    "wang": {
+     "per_year": 1,
+     "cap": 55
+    }
+   },
+   "fate": {
+    "leave": "史实留名",
+    "detail": "1277 春「別公漳水湄」后潜行不仕,后登西台恸祭文天祥,1295 卒於家。"
+   },
+   "relations": [
+    {
+     "id": "yan_zhongan",
+     "kind": "旧识"
+    },
+    {
+     "id": "yu_yuanqing",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 谢翱 留了踪迹。",
+    "60": "列传资格：福州长溪（后徙浦城）的富家书生，咸淳的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "zeng_gan": {
    "id": "zeng_gan",
@@ -655,13 +750,33 @@
    "portrait": "res://assets/portraits/zeng_gan.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-04",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 35,
+    "shang": 78,
+    "wu": 20,
+    "xue": 45,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "商途",
+    "detail": "后渚事后留在泉州做海贸,元初泉州大开,他与曾延合股跑西洋。[待核]"
+   },
+   "relations": [
+    {
+     "id": "folian",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 曾干 留了踪迹。",
+    "60": "列传资格：虚构：替寓泉宗室经营海舶的幹人（管事的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "zeng_gan_houzhu"
+   ]
   },
   "zhou_axi": {
    "id": "zhou_axi",
@@ -749,13 +864,57 @@
    "portrait": "res://assets/portraits/zhou_axi.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 45,
+    "shang": 12,
+    "wu": 35,
+    "xue": 5,
+    "wang": 18
+   },
+   "growth": {
+    "hang": {
+     "per_year": 1,
+     "cap": 55
+    },
+    "wu": {
+     "per_year": 1,
+     "cap": 40
+    }
+   },
+   "fate": {
+    "leave": "回乡",
+    "detail": "征船事件后,她家的了鸟船被点名：留船或回家,若回家则一辈子在泉州潮间里。"
+   },
+   "relations": [
+    {
+     "id": "cai_shijiu",
+     "kind": "同乡旧识"
+    },
+    {
+     "id": "he_sanhao",
+     "kind": "冤家"
+    },
+    {
+     "id": "pisheye_tiezai",
+     "kind": "冤家"
+    }
+   ],
+   "relation_flips": [
+    {
+     "counterpart": "he_sanhao",
+     "event": "jinjiang_dive",
+     "effect": "冤家→彼此留情"
+    }
+   ],
+   "bond_tiers": {
+    "40": "已识, 周阿细 留了踪迹。",
+    "60": "列传资格：虚构：晋江口船居「泉郎」（游艇子）人的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "zhou_axi_anchor",
+    "jinjiang_dive"
+   ]
   },
   "he_sanhao": {
    "id": "he_sanhao",
@@ -867,13 +1026,50 @@
    "portrait": "res://assets/portraits/he_sanhao.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-04",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 58,
+    "shang": 10,
+    "wu": 45,
+    "xue": 5,
+    "wang": 20
+   },
+   "growth": {
+    "hang": {
+     "per_year": 1,
+     "cap": 64
+    }
+   },
+   "fate": {
+    "leave": "厓山潮沟",
+    "detail": "厓山交粮留外围且砍缆不及、意气<60 时下水找哥哥没能回来；否则战后回厓门种蚝。"
+   },
+   "relations": [
+    {
+     "id": "muttu",
+     "kind": "师徒"
+    },
+    {
+     "id": "zhou_axi",
+     "kind": "冤家"
+    }
+   ],
+   "relation_flips": [
+    {
+     "counterpart": "zhou_axi",
+     "event": "jinjiang_dive",
+     "effect": "冤家→彼此留情"
+    }
+   ],
+   "bond_tiers": {
+    "40": "已识, 何三蚝 留了踪迹。",
+    "60": "列传资格：虚构：广州新会厓门水道的蚝蜑（没海取的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "jinjiang_dive",
+    "he_sanhao_pilot",
+    "he_sanhao_firewood"
+   ]
   },
   "yu_yuanqing": {
    "id": "yu_yuanqing",
@@ -977,13 +1173,44 @@
    "portrait": "res://assets/portraits/yu_yuanqing.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘；2026-10-05 修正重出（肩部改薄皮护肩，不堆厚甲）",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 25,
+    "shang": 20,
+    "wu": 68,
+    "xue": 30,
+    "wang": 40
+   },
+   "growth": {},
+   "fate": {
+    "leave": "结局开放",
+    "detail": "五坡岭后若去潮阳寻旧同伴,可能死于乱兵；留船则随你下南洋。"
+   },
+   "relations": [
+    {
+     "id": "xie_ao",
+     "kind": "旧识"
+    },
+    {
+     "id": "yan_zhongan",
+     "kind": "旧识"
+    },
+    {
+     "id": "zhao_zhong",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 余元庆 留了踪迹。",
+    "60": "列传资格：真州人，文天祥帐前将官（低阶武官）；的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "yu_yuanqing_meet",
+    "yu_yuanqing_search",
+    "yu_yuanqing_wupoling",
+    "patrol_win_flip"
+   ]
   },
   "shao_xiaoyi": {
    "id": "shao_xiaoyi",
@@ -1110,13 +1337,35 @@
    "portrait": "res://assets/portraits/shao_xiaoyi.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-04",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 62,
+    "shang": 35,
+    "wu": 30,
+    "xue": 10,
+    "wang": 22
+   },
+   "growth": {},
+   "fate": {
+    "leave": "下落不明",
+    "detail": "厓山之后下落不明,有人说他随张世杰部沉海,有人说他回了京口。"
+   },
+   "relations": [
+    {
+     "id": "yu_yuanqing",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 邵小乙 留了踪迹。",
+    "60": "列传资格：虚构名：原型为《指南录·得船难》中替的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "shao_xiaoyi_meet",
+    "shao_xiaoyi_ask",
+    "shao_xiaoyi_xingchao"
+   ]
   },
   "yan_zhongan": {
    "id": "yan_zhongan",
@@ -1202,13 +1451,31 @@
    "portrait": "res://assets/portraits/yan_zhongan.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘；2026-10-05 修正重出（幞头改宋式软脚 · 去近代灯具 · 告示无可辨文字）",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 15,
+    "shang": 40,
+    "wu": 25,
+    "xue": 55,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "北方回燕",
+    "detail": "泊明州时北上回燕,卒年不详,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "lin_hua",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 阎仲安 留了踪迹。",
+    "60": "列传资格：虚构：1260 年随郝经使宋的散从，的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "niu_lver": {
    "id": "niu_lver",
@@ -1303,13 +1570,41 @@
    "portrait": "res://assets/portraits/niu_lver.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘；2026-10-05 修正重出（改为肩扛粗木）",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 30,
+    "shang": 10,
+    "wu": 62,
+    "xue": 8,
+    "wang": 15
+   },
+   "growth": {},
+   "fate": {
+    "leave": "躲元避宋",
+    "detail": "第一次落帆受检时被交出去——若被交出则死,若藏住则战后南逃隐名。"
+   },
+   "relations": [
+    {
+     "id": "yu_yuanqing",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [
+    {
+     "counterpart": "han_deukryong",
+     "event": "patrol_win_flip",
+     "effect": "被救之恩翻过元宋之界"
+    }
+   ],
+   "bond_tiers": {
+    "40": "已识, 牛驴儿 留了踪迹。",
+    "60": "列传资格：虚构：邓州汉军军户（与刘整同乡），1的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "niu_lver_rescue",
+    "niu_lver_patrol",
+    "patrol_win_flip"
+   ]
   },
   "takezaki_suenaga": {
    "id": "takezaki_suenaga",
@@ -1402,13 +1697,41 @@
    "portrait": "res://assets/portraits/takezaki_suenaga.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 15,
+    "wu": 84,
+    "xue": 30,
+    "wang": 40
+   },
+   "growth": {},
+   "fate": {
+    "leave": "博多立地",
+    "detail": "1274 十月离船去筥崎津做证人,1276 起在肥后自立,后世《蒙古襲来絵詞》留名。"
+   },
+   "relations": [
+    {
+     "id": "tsushima_tajiro_yajiro",
+     "kind": "冤家"
+    }
+   ],
+   "relation_flips": [
+    {
+     "counterpart": "tsushima_tajiro_yajiro",
+     "event": "tsushima_strait_night",
+     "effect": "疑其通蒙→知其心"
+    }
+   ],
+   "bond_tiers": {
+    "40": "已识, 竹崎季长 留了踪迹。",
+    "60": "列传资格：肥后竹崎乡的没落御家人：族内争讼败诉的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "takezaki_witness",
+    "takezaki_horse",
+    "tsushima_strait_night"
+   ]
   },
   "tsushima_tajiro_yajiro": {
    "id": "tsushima_tajiro_yajiro",
@@ -1513,13 +1836,43 @@
    "portrait": "res://assets/portraits/tsushima_tajiro_yajiro.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-04",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 60,
+    "shang": 30,
+    "wu": 30,
+    "xue": 25,
+    "wang": 25
+   },
+   "growth": {},
+   "fate": {
+    "leave": "回对马",
+    "detail": "1274 十月回岛寻亲,此后在对马一带随海讨生活,卒年不详,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "tsushima_kotaro",
+     "kind": "旧识"
+    },
+    {
+     "id": "takezaki_suenaga",
+     "kind": "冤家"
+    }
+   ],
+   "relation_flips": [
+    {
+     "counterpart": "takezaki_suenaga",
+     "event": "tsushima_strait_night",
+     "effect": "被疑→被明其志"
+    }
+   ],
+   "bond_tiers": {
+    "40": "已识, 塔二郎·弥二郎 留了踪迹。",
+    "60": "列传资格：对马岛人二人（身份史无明文）；126的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "tsushima_strait_night"
+   ]
   },
   "tsushima_kotaro": {
    "id": "tsushima_kotaro",
@@ -1617,13 +1970,36 @@
    "portrait": "res://assets/portraits/tsushima_kotaro.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-04",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 64,
+    "shang": 10,
+    "wu": 48,
+    "xue": 5,
+    "wang": 18
+   },
+   "growth": {
+    "wu": {
+     "per_year": 1,
+     "cap": 60
+    }
+   },
+   "fate": {
+    "leave": "对马寻亲",
+    "detail": "托博多船回对马寻亲,或留船,此后仍在对马郎等之列,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "tsushima_tajiro_yajiro",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 对马小太郎 留了踪迹。",
+    "60": "列传资格：对马守护代宗资国的郎等（有武装的从者的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "nampo_shomyo": {
    "id": "nampo_shomyo",
@@ -1724,13 +2100,36 @@
    "portrait": "res://assets/portraits/nampo_shomyo.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 5,
+    "shang": 15,
+    "wu": 5,
+    "xue": 80,
+    "wang": 50
+   },
+   "growth": {
+    "wang": {
+     "per_year": 1,
+     "cap": 65
+    }
+   },
+   "fate": {
+    "leave": "寺社盟友",
+    "detail": "1270 起为博多寺社盟友,住持兴德/崇福等寺,后世为日本临济宗祖,1309 卒。"
+   },
+   "relations": [
+    {
+     "id": "takezaki_suenaga",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 南浦绍明 留了踪迹。",
+    "60": "列传资格：骏河出身的建长寺年轻学僧；1259 的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "han_deukryong": {
    "id": "han_deukryong",
@@ -1850,13 +2249,34 @@
    "portrait": "res://assets/portraits/han_deukryong.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 40,
+    "shang": 10,
+    "wu": 74,
+    "xue": 10,
+    "wang": 20
+   },
+   "growth": {},
+   "fate": {
+    "leave": "流落海上",
+    "detail": "在降元港口要做藏身检,意气<40 连夜离船;留则厓山后随船下南洋,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "jeong_yusun",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 韩得龙 留了踪迹。",
+    "60": "列传资格：虚构：1254 年幼年被蒙古军掳往北的事已有见证。",
+    "80": "角弓教习：同船每季主角武力 +1，至多 +5，封顶 100"
+   },
+   "one_time": [
+    "patrol_win_flip",
+    "han_deukryong_rescue"
+   ]
   },
   "jeong_yusun": {
    "id": "jeong_yusun",
@@ -1946,13 +2366,38 @@
    "portrait": "res://assets/portraits/jeong_yusun.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-04",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 10,
+    "shang": 25,
+    "wu": 10,
+    "xue": 62,
+    "wang": 30
+   },
+   "growth": {
+    "xue": {
+     "per_year": 1,
+     "cap": 70
+    }
+   },
+   "fate": {
+    "leave": "东征签去",
+    "detail": "1274 签下东征军或藏则留船,东征之后生死不明,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "han_deukryong",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 郑有淳 留了踪迹。",
+    "60": "列传资格：虚构：幼时在江华大藏都监做杂役、学得的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "jeong_levy"
+   ]
   },
   "pham_ngu_lao": {
    "id": "pham_ngu_lao",
@@ -2038,13 +2483,51 @@
    "portrait": "res://assets/portraits/pham_ngu_lao.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 25,
+    "shang": 15,
+    "wu": 50,
+    "xue": 30,
+    "wang": 30
+   },
+   "growth": {
+    "wu": {
+     "per_year": 4,
+     "cap": 88
+    },
+    "xue": {
+     "per_year": 1,
+     "cap": 80
+    },
+    "wang": {
+     "per_year": 1,
+     "cap": 80
+    }
+   },
+   "fate": {
+    "leave": "云屯大志",
+    "detail": "1277 正月被兴道王识拔入幕,后为大越抗元名将,1320 卒于国。"
+   },
+   "relations": [
+    {
+     "id": "le_tac",
+     "kind": "同乡旧识"
+    },
+    {
+     "id": "zheng_shiyi_niang",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 范五老 留了踪迹。",
+    "60": "列传资格：大越海阳唐豪县扶拥乡的少年（「家贫」的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "pham_first",
+    "pham_book"
+   ]
   },
   "le_tac": {
    "id": "le_tac",
@@ -2133,13 +2616,43 @@
    "portrait": "res://assets/portraits/le_tac.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 15,
+    "shang": 20,
+    "wu": 12,
+    "xue": 58,
+    "wang": 30
+   },
+   "growth": {
+    "xue": {
+     "per_year": 1,
+     "cap": 70
+    }
+   },
+   "fate": {
+    "leave": "入幕",
+    "detail": "1278 六月入彰宪侯陈键幕,后著《安南志略》,卒于元,1320 年后。"
+   },
+   "relations": [
+    {
+     "id": "zheng_shiyi_niang",
+     "kind": "同乡旧识"
+    },
+    {
+     "id": "pham_ngu_lao",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 黎崱 留了踪迹。",
+    "60": "列传资格：爱州仕宦之家的少年（曾祖李朝东上阁门的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "le_tac_first",
+    "le_tac_book"
+   ]
   },
   "zhao_zhong": {
    "id": "zhao_zhong",
@@ -2237,13 +2750,34 @@
    "portrait": "res://assets/portraits/zhao_zhong.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 10,
+    "wu": 76,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "投昭文王",
+    "detail": "厓山后送他到云屯投昭文王陈日燏,后在咸子关衣宋衣执弓矢,[待核]卒年。"
+   },
+   "relations": [
+    {
+     "id": "yu_yuanqing",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 赵忠 留了踪迹。",
+    "60": "列传资格：宋人；《大越史记全书》只记他是昭文王的事已有见证。",
+    "80": "射术教习"
+   },
+   "one_time": [
+    "patrol_win_flip",
+    "zhao_zhong_refugee"
+   ]
   },
   "zheng_shiyi_niang": {
    "id": "zheng_shiyi_niang",
@@ -2353,13 +2887,40 @@
    "portrait": "res://assets/portraits/zheng_shiyi_niang.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 5,
+    "shang": 30,
+    "wu": 10,
+    "xue": 64,
+    "wang": 35
+   },
+   "growth": {
+    "xue": {
+     "per_year": 1,
+     "cap": 70
+    }
+   },
+   "fate": {
+    "leave": "昇龙药婆",
+    "detail": "回昇龙或留船,终生在回鸡坊开药局,史载宋人坊在此后仍存续多年。"
+   },
+   "relations": [
+    {
+     "id": "lin_hua",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 郑十一娘 留了踪迹。",
+    "60": "列传资格：虚构：1274 年冬「以海船三十艘」的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "zheng11_first",
+    "zheng11_herbs",
+    "zheng11_brother"
+   ]
   },
   "zeng_yan": {
    "id": "zeng_yan",
@@ -2451,13 +3012,31 @@
    "portrait": "res://assets/portraits/zeng_yan.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘；2026-10-05 修正重出（占式缠头 + 缠腰布显形）",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 25,
+    "shang": 68,
+    "wu": 20,
+    "xue": 46,
+    "wang": 45
+   },
+   "growth": {},
+   "fate": {
+    "leave": "占城唐人",
+    "detail": "1283 领一批唐人逃出占城报信,后回泉州或再投占城,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "pham_ngu_lao",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 曾延 留了踪迹。",
+    "60": "列传资格：居占城唐人（《元史》记其 1283 的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "kata_panduranga_pilot": {
    "id": "kata_panduranga_pilot",
@@ -2555,13 +3134,31 @@
    "portrait": "res://assets/portraits/kata_panduranga_pilot.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-04",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 76,
+    "shang": 15,
+    "wu": 50,
+    "xue": 10,
+    "wang": 20
+   },
+   "growth": {},
+   "fate": {
+    "leave": "回宾瞳龙",
+    "detail": "1283 回宾瞳龙,此后在南海做火长,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "pham_ngu_lao",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 迦多 留了踪迹。",
+    "60": "列传资格：虚构：宾瞳龙（占城南部属地）轻舟人家的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "cai_shijiu": {
    "id": "cai_shijiu",
@@ -2660,13 +3257,33 @@
    "portrait": "res://assets/portraits/cai_shijiu.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 50,
+    "shang": 42,
+    "wu": 30,
+    "xue": 45,
+    "wang": 28
+   },
+   "growth": {},
+   "fate": {
+    "leave": "回晋江",
+    "detail": "泉州降元后回晋江看老母,或再下南洋,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "zhou_axi",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 蔡十九 留了踪迹。",
+    "60": "列传资格：虚构：泉州晋江人，海船管碇的水手出身的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "cai19_debt"
+   ]
   },
   "kham_luohu_broker": {
    "id": "kham_luohu_broker",
@@ -2780,13 +3397,39 @@
    "portrait": "res://assets/portraits/kham_luohu_broker.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 10,
+    "shang": 82,
+    "wu": 15,
+    "xue": 35,
+    "wang": 50
+   },
+   "growth": {},
+   "fate": {
+    "leave": "婚约抉择",
+    "detail": "家里婚约：付聘金赎约留船,或自拿主意回家,或劝回家——后她自选,后事开放。"
+   },
+   "relations": [
+    {
+     "id": "gandha_tengliumei",
+     "kind": "同乡旧识"
+    },
+    {
+     "id": "mayi_batu",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 甘娘 留了踪迹。",
+    "60": "列传资格：虚构：罗斛（湄南河下游）河港的女牙人的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "kham_first",
+    "kham_fairtrade",
+    "kham_betrothal"
+   ]
   },
   "si_parut_javaka": {
    "id": "si_parut_javaka",
@@ -2890,13 +3533,51 @@
    "portrait": "res://assets/portraits/si_parut_javaka.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 30,
+    "shang": 10,
+    "wu": 78,
+    "xue": 10,
+    "wang": 25
+   },
+   "growth": {
+    "wu": {
+     "per_year": 1,
+     "cap": 78
+    }
+   },
+   "fate": {
+    "leave": "老兵归乡",
+    "detail": "与爱通冤家翻转后过命,享年在单马令;卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "awang_foluoan",
+     "kind": "师徒"
+    },
+    {
+     "id": "ai_thong_siam",
+     "kind": "冤家"
+    }
+   ],
+   "relation_flips": [
+    {
+     "counterpart": "ai_thong_siam",
+     "event": "boarding_win_both",
+     "effect": "冤家→过命交情"
+    }
+   ],
+   "bond_tiers": {
+    "40": "已识, 巴鲁 留了踪迹。",
+    "60": "列传资格：虚构：单马令王旃达罗跋努麾下的「阇婆的事已有见证。",
+    "80": "教阿旺射箭"
+   },
+   "one_time": [
+    "barru_first",
+    "barru_fingerbone",
+    "barru_return",
+    "boarding_win_both"
+   ]
   },
   "gandha_tengliumei": {
    "id": "gandha_tengliumei",
@@ -2998,13 +3679,34 @@
    "portrait": "res://assets/portraits/gandha_tengliumei.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 15,
+    "shang": 60,
+    "wu": 10,
+    "xue": 50,
+    "wang": 18
+   },
+   "growth": {},
+   "fate": {
+    "leave": "泉州香铺",
+    "detail": "回真腊周旋贡香一季回来在泉州开香铺,或留船。"
+   },
+   "relations": [
+    {
+     "id": "kham_luohu_broker",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 乾陀 留了踪迹。",
+    "60": "列传资格：虚构：登流眉（地望未定，本作放在单马的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "gandha_incense",
+    "gandha_tribute"
+   ]
   },
   "awang_foluoan": {
    "id": "awang_foluoan",
@@ -3097,13 +3799,42 @@
    "portrait": "res://assets/portraits/awang_foluoan.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘；2026-10-05 修正重出（罗盘改水浮针碗·二十四向刻度圈）",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 32,
+    "shang": 10,
+    "wu": 20,
+    "xue": 8,
+    "wang": 12
+   },
+   "growth": {
+    "hang": {
+     "per_year": 6,
+     "cap": 76
+    },
+    "wu": {
+     "per_year": 1,
+     "cap": 45
+    }
+   },
+   "fate": {
+    "leave": "成长火长",
+    "detail": "约 1277 升火长二级、1281 三级,后回佛罗安成火长人物。"
+   },
+   "relations": [
+    {
+     "id": "si_parut_javaka",
+     "kind": "师徒"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 阿旺 留了踪迹。",
+    "60": "列传资格：虚构：佛罗安（通说在今登嘉楼一带，比的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "awang_stowaway"
+   ]
   },
   "ai_thong_siam": {
    "id": "ai_thong_siam",
@@ -3191,13 +3922,47 @@
    "portrait": "res://assets/portraits/ai_thong_siam.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 30,
+    "shang": 5,
+    "wu": 58,
+    "xue": 5,
+    "wang": 15
+   },
+   "growth": {
+    "wu": {
+     "per_year": 4,
+     "cap": 70
+    }
+   },
+   "fate": {
+    "leave": "罗斛岸",
+    "detail": "托北上罗斛的番舶回乡,后事开放。"
+   },
+   "relations": [
+    {
+     "id": "si_parut_javaka",
+     "kind": "冤家"
+    }
+   ],
+   "relation_flips": [
+    {
+     "counterpart": "si_parut_javaka",
+     "event": "boarding_win_both",
+     "effect": "冤家→过命交情"
+    }
+   ],
+   "bond_tiers": {
+    "40": "已识, 爱通 留了踪迹。",
+    "60": "列传资格：虚构：罗斛西南、海湾西岸的暹人渔村少的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "boarding_win_both",
+    "aithong_revenge",
+    "aithong_home",
+    "aithong_ransom"
+   ]
   },
   "pu_yingjia": {
    "id": "pu_yingjia",
@@ -3288,13 +4053,33 @@
    "portrait": "res://assets/portraits/pu_yingjia.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-04",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 60,
+    "wu": 15,
+    "xue": 48,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "托番舶往渤泥",
+    "detail": "往渤泥讨回父亲货账,自此经营泉渤之间,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "boni_mayang",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 蒲应甲 留了踪迹。",
+    "60": "列传资格：名见「有宋泉州判院蒲公之墓　景定甲子的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "pu_yingjia_boni"
+   ]
   },
   "mayi_batu": {
    "id": "mayi_batu",
@@ -3402,13 +4187,33 @@
    "portrait": "res://assets/portraits/mayi_batu.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 30,
+    "shang": 62,
+    "wu": 45,
+    "xue": 10,
+    "wang": 40
+   },
+   "growth": {},
+   "fate": {
+    "leave": "麻逸互市",
+    "detail": "每年十一月回麻逸,或再等一年,卒年不详,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "sanyu_alon",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 巴都 留了踪迹。",
+    "60": "列传资格：虚构：麻逸「蛮贾」——领宋商货物转入的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "batu_debt"
+   ]
   },
   "sanyu_alon": {
    "id": "sanyu_alon",
@@ -3483,13 +4288,36 @@
    "portrait": "res://assets/portraits/sanyu_alon.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 40,
+    "shang": 20,
+    "wu": 35,
+    "xue": 5,
+    "wang": 30
+   },
+   "growth": {
+    "hang": {
+     "per_year": 2,
+     "cap": 55
+    }
+   },
+   "fate": {
+    "leave": "满两年回三屿",
+    "detail": "国人以尊长之礼待之,此后在三屿互市里做经纪。"
+   },
+   "relations": [
+    {
+     "id": "mayi_batu",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 阿隆 留了踪迹。",
+    "60": "列传资格：虚构：三屿（一说在今巴拉望、卡拉棉一的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "pisheye_tiezai": {
    "id": "pisheye_tiezai",
@@ -3569,13 +4397,42 @@
    "portrait": "res://assets/portraits/pisheye_tiezai.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 35,
+    "shang": 5,
+    "wu": 50,
+    "xue": 2,
+    "wang": 10
+   },
+   "growth": {
+    "hang": {
+     "per_year": 1,
+     "cap": 45
+    },
+    "wu": {
+     "per_year": 2,
+     "cap": 55
+    }
+   },
+   "fate": {
+    "leave": "族人来接",
+    "detail": "满三年、泊澎湖时族人船来：给他一条小船回去,或留下。"
+   },
+   "relations": [
+    {
+     "id": "zhou_axi",
+     "kind": "冤家"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 铁仔 留了踪迹。",
+    "60": "列传资格：虚构：毗舍耶少年（地望台湾西南岸一说的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "tiezai_ransom"
+   ]
   },
   "boni_mayang": {
    "id": "boni_mayang",
@@ -3682,13 +4539,39 @@
    "portrait": "res://assets/portraits/boni_mayang.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 15,
+    "shang": 42,
+    "wu": 10,
+    "xue": 56,
+    "wang": 30
+   },
+   "growth": {
+    "xue": {
+     "per_year": 1,
+     "cap": 65
+    }
+   },
+   "fate": {
+    "leave": "泉州药市",
+    "detail": "蒲家把持龙脑就依规矩/帮她绕开,1277 年后有她自己的药摊。"
+   },
+   "relations": [
+    {
+     "id": "pu_yingjia",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 麻漾 留了踪迹。",
+    "60": "列传资格：虚构：渤泥采脑人家的女儿，会用药树膏的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "mayang_market",
+    "mayang_camphor"
+   ]
   },
   "zhiligan": {
    "id": "zhiligan",
@@ -3794,13 +4677,39 @@
    "portrait": "res://assets/portraits/zhiligan.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 55,
+    "shang": 40,
+    "wu": 48,
+    "xue": 45,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "终老或归故临",
+    "detail": "老病留城南终老(至 1268),或托郑震替他挑番舶回故临,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "zheng_zhen",
+     "kind": "旧识"
+    },
+    {
+     "id": "hasan_baghdadi",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 智力干 留了踪迹。",
+    "60": "列传资格：南毗（印度马拉巴尔）人，《诸蕃志》记的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "zhiligan_knock",
+    "zhiligan_pepper",
+    "zhiligan_old"
+   ]
   },
   "folian": {
    "id": "folian",
@@ -3910,13 +4819,44 @@
    "portrait": "res://assets/portraits/folian.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 80,
+    "wu": 20,
+    "xue": 35,
+    "wang": 45
+   },
+   "growth": {
+    "wang": {
+     "per_year": 1,
+     "cap": 60
+    }
+   },
+   "fate": {
+    "leave": "蒲氏之婿巨贾",
+    "detail": "1275 娶蒲家女转盟友,1293 发海舶八十艘,卒年不详,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "zeng_gan",
+     "kind": "旧识"
+    },
+    {
+     "id": "zheng_zhen",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 佛莲 留了踪迹。",
+    "60": "列传资格：南蕃回回青年商人（生年不可考）；日后的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "folian_price",
+    "folian_north",
+    "folian_share"
+   ]
   },
   "zheng_zhen": {
    "id": "zheng_zhen",
@@ -4026,13 +4966,35 @@
    "portrait": "res://assets/portraits/zheng_zhen.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-04",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 84,
+    "shang": 25,
+    "wu": 35,
+    "xue": 25,
+    "wang": 35
+   },
+   "growth": {},
+   "fate": {
+    "leave": "随使马八儿",
+    "detail": "1280 年底随杨庭璧出使,在锡兰劝元使改道马八儿,后事见《元史》,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "lin_hua",
+     "kind": "同乡旧识"
+    },
+    {
+     "id": "zhiligan",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 郑震 留了踪迹。",
+    "60": "列传资格：泉州舟人（船工）；《元史》记 128的事已有见证。",
+    "80": "意气 80 传授：离队后泉州—占城航段火长视作高一级"
+   },
+   "one_time": []
   },
   "hasan_baghdadi": {
    "id": "hasan_baghdadi",
@@ -4116,13 +5078,42 @@
    "portrait": "res://assets/portraits/hasan_baghdadi.png",
    "portrait_status": "painted",
    "portrait_note": "P1 首批立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-04",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 10,
+    "shang": 30,
+    "wu": 15,
+    "xue": 68,
+    "wang": 28
+   },
+   "growth": {
+    "xue": {
+     "per_year": 1,
+     "cap": 75
+    }
+   },
+   "fate": {
+    "leave": "白达名医",
+    "detail": "1278 后元官征回回医去大都,或留船;若去大都则在太医院,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "muttu",
+     "kind": "同乡旧识"
+    },
+    {
+     "id": "zhiligan",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 白达哈散 留了踪迹。",
+    "60": "列传资格：虚构：白达（巴格达）医家子，1258的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "hasan_summon"
+   ]
   },
   "muttu": {
    "id": "muttu",
@@ -4205,13 +5196,44 @@
    "portrait": "res://assets/portraits/muttu.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 30,
+    "shang": 10,
+    "wu": 32,
+    "xue": 5,
+    "wang": 10
+   },
+   "growth": {
+    "hang": {
+     "per_year": 1,
+     "cap": 50
+    },
+    "wu": {
+     "per_year": 2,
+     "cap": 45
+    }
+   },
+   "fate": {
+    "leave": "马八儿使船",
+    "detail": "1279 六月马八儿使船到泉州:回乡,或留下;回乡继承珠场帮工。"
+   },
+   "relations": [
+    {
+     "id": "hasan_baghdadi",
+     "kind": "同乡旧识"
+    },
+    {
+     "id": "he_sanhao",
+     "kind": "师徒"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 穆图 留了踪迹。",
+    "60": "列传资格：虚构：马八儿（南印度东岸采珠海岸，宋的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "kafur": {
    "id": "kafur",
@@ -4309,13 +5331,42 @@
    "portrait": "res://assets/portraits/kafur.png",
    "portrait_status": "painted",
    "portrait_note": "P2 批次立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-05",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 15,
+    "shang": 70,
+    "wu": 60,
+    "xue": 20,
+    "wang": 25
+   },
+   "growth": {
+    "shang": {
+     "per_year": 1,
+     "cap": 75
+    }
+   },
+   "fate": {
+    "leave": "心结",
+    "detail": "想回东非寻族人而无船可达,写成心结,不离队;在泉州终老,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "hasan_baghdadi",
+     "kind": "旧识"
+    },
+    {
+     "id": "zhiligan",
+     "kind": "旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 卡富尔 留了踪迹。",
+    "60": "列传资格：虚构：昆仑层期以西海岛出身，幼年被掳的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [
+    "kafur_manumit"
+   ]
   },
   "pu_kaizong": {
    "id": "pu_kaizong",
@@ -4417,13 +5468,31 @@
    "portrait": "res://assets/portraits/pu_kaizong.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 58,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "终老泉州",
+    "detail": "蒲寿庚之父,约为前代,景定年间已卒,《晋江县志》墓碑如前。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 蒲开宗 留了踪迹。",
+    "60": "列传资格：蒲寿庚之父；泉州法石海商，1204 的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "pu_shougeng": {
    "id": "pu_shougeng",
@@ -4529,13 +5598,31 @@
    "portrait": "res://assets/portraits/pu_shougeng.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 78,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "市舶主政终老泉州",
+    "detail": "1290 卒于泉州,市舶司主政引退多年后仍在蒲宅看番舶出入,[待核]卒日。《元史》世祖本纪·食货志。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 蒲寿庚 留了踪迹。",
+    "60": "列传资格：泉州蕃坊海商世家出身；约1250起提的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "pu_shiwen": {
    "id": "pu_shiwen",
@@ -4641,13 +5728,31 @@
    "portrait": "res://assets/portraits/pu_shiwen.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 20,
+    "wu": 20,
+    "xue": 58,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "父荫宣慰",
+    "detail": "1278 海外诸蕃宣慰使,后事不详；蒲氏在元一代泉州的市舶世家延续。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 蒲师文 留了踪迹。",
+    "60": "列传资格：蒲寿庚之子；1278 正奉大夫·工部的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "tian_zhenzi": {
    "id": "tian_zhenzi",
@@ -4743,13 +5848,31 @@
    "portrait": "res://assets/portraits/tian_zhenzi.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 40,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "从蒲府",
+    "detail": "1277 与蒲寿庚同裹降表献城,后事不详,至少在泉州的降官之列；卒年无考,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "lin_hua",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 田真子 留了踪迹。",
+    "60": "列传资格：泉州州司马；1277 与蒲寿庚同裹降的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "manggu_dai": {
    "id": "manggu_dai",
@@ -4852,13 +5975,31 @@
    "portrait": "res://assets/portraits/manggu_dai.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 58,
+    "wu": 20,
+    "xue": 20,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "市舶任满",
+    "detail": "领泉州市舶司数年,卒年不详；珠翠香货的博易由此起。"
+   },
+   "relations": [
+    {
+     "id": "yu_yuanqing",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 忙古䚟 留了踪迹。",
+    "60": "列传资格：蒙古人·银青光禄大夫；1277 领泉的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "mayindi": {
    "id": "mayindi",
@@ -4972,13 +6113,31 @@
    "portrait": "res://assets/portraits/mayindi.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 58,
+    "wu": 20,
+    "xue": 20,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "归马八儿",
+    "detail": "1281 主持迎元使后仍主「马八儿新村马头」,回科罗曼德后下落史书无载,[待核]。《元史·马八儿等国传》。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 马因的 留了踪迹。",
+    "60": "列传资格：马八儿（今印度科罗曼德）宰相；128的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "abu_ali": {
    "id": "abu_ali",
@@ -5099,13 +6258,31 @@
    "portrait": "res://assets/portraits/abu_ali.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 20,
+    "wu": 20,
+    "xue": 58,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "未详",
+    "detail": "结局未定,列传察后补。[待核]"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 不阿里 留了踪迹。",
+    "60": "列传资格：马八儿宰相；1281 愿内附元朝、遣的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "behali": {
    "id": "behali",
@@ -5211,13 +6388,31 @@
    "portrait": "res://assets/portraits/behali.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 40,
+    "wu": 20,
+    "xue": 20,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "未详",
+    "detail": "结局未定,列传察后补。[待核]"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 孛哈里 留了踪迹。",
+    "60": "列传资格：马八儿王子；奔元居泉州，1298 自的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "bahauddin_ayaz": {
    "id": "bahauddin_ayaz",
@@ -5327,13 +6522,31 @@
    "portrait": "res://assets/portraits/bahauddin_ayaz.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 58,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "未详",
+    "detail": "结局未定,列传察后补。[待核]"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 巴哈丁·阿亚兹 留了踪迹。",
+    "60": "列传资格：忽鲁谟斯（Hormuz）王 1293的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "al_hasan_talut": {
    "id": "al_hasan_talut",
@@ -5443,13 +6656,31 @@
    "portrait": "res://assets/portraits/al_hasan_talut.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 58,
+    "wu": 70,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "基尔瓦王朝",
+    "detail": "1277–1294 在位,1294 卒,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 哈桑 留了踪迹。",
+    "60": "列传资格：东非基尔瓦（Kilwa）苏丹 127的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "indravarman_v": {
    "id": "indravarman_v",
@@ -5556,13 +6787,31 @@
    "portrait": "res://assets/portraits/indravarman_v.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 40,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "占城老王",
+    "detail": "1283 遁鸦候山,1291 后卒,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "pham_ngu_lao",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 孛由補剌者吾 留了踪迹。",
+    "60": "列传资格：占城国王 Indravarman V的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "che_man": {
    "id": "che_man",
@@ -5671,13 +6920,31 @@
    "portrait": "res://assets/portraits/che_man.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 40,
+    "shang": 78,
+    "wu": 70,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "占城太子即位",
+    "detail": "1288 即位,1307 卒,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "pham_ngu_lao",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 补的 留了踪迹。",
+    "60": "列传资格：占城王太子 Harijit＝Jaya的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "baosundar": {
    "id": "baosundar",
@@ -5781,13 +7048,31 @@
    "portrait": "res://assets/portraits/baosundar.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 58,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "占城降元",
+    "detail": "1283 率众降元。"
+   },
+   "relations": [
+    {
+     "id": "pham_ngu_lao",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 报孙达儿 留了踪迹。",
+    "60": "列传资格：占城首席文官；1283 率众降元的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "wang_tongshi": {
    "id": "wang_tongshi",
@@ -5892,13 +7177,31 @@
    "portrait": "res://assets/portraits/wang_tongshi.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 20,
+    "wu": 20,
+    "xue": 40,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "未详",
+    "detail": "结局未定,列传察后补。[待核]"
+   },
+   "relations": [
+    {
+     "id": "pham_ngu_lao",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 王通事者 留了踪迹。",
+    "60": "列传资格：占城通事（译语/外事）；1284 在的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "chandrabhanu": {
    "id": "chandrabhanu",
@@ -6030,13 +7333,31 @@
    "portrait": "res://assets/portraits/chandrabhanu.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 58,
+    "shang": 20,
+    "wu": 70,
+    "xue": 20,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "锡兰败殁",
+    "detail": "1262 败殁锡兰,[待核]地点。"
+   },
+   "relations": [
+    {
+     "id": "cai_shijiu",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 旃陀罗婆奴 留了踪迹。",
+    "60": "列传资格：单马令（Tambralinga）王 的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "ramkhamhaeng": {
    "id": "ramkhamhaeng",
@@ -6148,13 +7469,31 @@
    "portrait": "res://assets/portraits/ramkhamhaeng.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 40,
+    "shang": 20,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "素可泰兴国",
+    "detail": "1298 左右在位,后为王,1317 前卒,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "cai_shijiu",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 敢木丁 留了踪迹。",
+    "60": "列传资格：素可泰王兰甘亨（《元史》作敢木丁）1的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "malik_al_saleh": {
    "id": "malik_al_saleh",
@@ -6273,13 +7612,31 @@
    "portrait": "res://assets/portraits/malik_al_saleh.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 58,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "巴赛立国",
+    "detail": "13 世纪末立国者,其孙 Malik al-Zahir 承,[待核]卒年。"
+   },
+   "relations": [
+    {
+     "id": "pu_yingjia",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 马利克·萨利赫 留了踪迹。",
+    "60": "列传资格：苏门答腊巴赛（Pasai）首位苏丹，的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "kertanagara": {
    "id": "kertanagara",
@@ -6394,13 +7751,31 @@
    "portrait": "res://assets/portraits/kertanagara.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 78,
+    "shang": 20,
+    "wu": 70,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "爪哇末王",
+    "detail": "1292 被谏义里所害,新柯沙里随亡。"
+   },
+   "relations": [
+    {
+     "id": "pu_yingjia",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 葛达那加剌 留了踪迹。",
+    "60": "列传资格：爪哇新柯沙里（Singhasari）的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "kim_tongjeong": {
    "id": "kim_tongjeong",
@@ -6510,13 +7885,31 @@
    "portrait": "res://assets/portraits/kim_tongjeong.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 40,
+    "shang": 78,
+    "wu": 70,
+    "xue": 20,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "耽罗败亡",
+    "detail": "1273 四月败亡,一门殉国,[待核]年岁。"
+   },
+   "relations": [
+    {
+     "id": "takezaki_suenaga",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 金通精 留了踪迹。",
+    "60": "列传资格：高丽三别抄将军；据耽罗（济州）抗蒙，的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "shoni_kageyasu": {
    "id": "shoni_kageyasu",
@@ -6623,13 +8016,31 @@
    "portrait": "res://assets/portraits/shoni_kageyasu.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 40,
+    "shang": 58,
+    "wu": 45,
+    "xue": 20,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "镇西主将",
+    "detail": "1274 文永之役博多湾主将,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "takezaki_suenaga",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 少弐景資 留了踪迹。",
+    "60": "列传资格：少弐氏，镇西奉行家；文永之役博多湾主的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "zhao_rushi": {
    "id": "zhao_rushi",
@@ -6732,13 +8143,31 @@
    "portrait": "res://assets/portraits/zhao_rushi.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 40,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "名臣终世",
+    "detail": "南宋宗室,1255 已不在世,以《诸蕃志》传世。"
+   },
+   "relations": [
+    {
+     "id": "lin_hua",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 趙汝適 留了踪迹。",
+    "60": "列传资格：南宋宗室，福建路市舶提举（管海关抽解的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "wang_dayou": {
    "id": "wang_dayou",
@@ -6837,13 +8266,31 @@
    "portrait": "res://assets/portraits/wang_dayou.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 40,
+    "wu": 20,
+    "xue": 20,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "名臣终世",
+    "detail": "名臣,1255 已不在世,以澎湖造屋分屯传世。"
+   },
+   "relations": [
+    {
+     "id": "lin_hua",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 汪大猷 留了踪迹。",
+    "60": "列传资格：南宋名臣；知泉州时（乾道年间）于澎湖的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "yang_xiang": {
    "id": "yang_xiang",
@@ -6964,13 +8411,31 @@
    "portrait": "res://assets/portraits/yang_xiang.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 40,
+    "shang": 58,
+    "wu": 70,
+    "xue": 20,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "元廷招谕",
+    "detail": "1291 奉命自澎湖发船招谕琉球,此后随元水军,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "yu_yuanqing",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 楊祥 留了踪迹。",
+    "60": "列传资格：元朝海船副万户升宣抚使；至元二十八年的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "wu_zhidou": {
    "id": "wu_zhidou",
@@ -7087,13 +8552,31 @@
    "portrait": "res://assets/portraits/wu_zhidou.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 20,
+    "wu": 20,
+    "xue": 40,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "使团失踪",
+    "detail": "至元二十八年舟至澎湖竟失踪,史无下文。"
+   },
+   "relations": [
+    {
+     "id": "yu_yuanqing",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 吳志斗 留了踪迹。",
+    "60": "列传资格：福建书生，自陈『生长福建，熟知海道利的事已有见证。",
+    "80": "海道针经：能教船上认澳认礁"
+   },
+   "one_time": []
   },
   "ruan_jian": {
    "id": "ruan_jian",
@@ -7211,13 +8694,31 @@
    "portrait": "res://assets/portraits/ruan_jian.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 20,
+    "wu": 20,
+    "xue": 40,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "使团官",
+    "detail": "1292 充副使招谕琉球,刘閏冲突三人折后随回,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "yu_yuanqing",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 阮鑒 留了踪迹。",
+    "60": "列传资格：元朝兵部员外郎；至元二十九年（129的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "chen_hui": {
    "id": "chen_hui",
@@ -7331,13 +8832,31 @@
    "portrait": "res://assets/portraits/chen_hui.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 20,
+    "wu": 20,
+    "xue": 58,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "三屿通事",
+    "detail": "三屿出身,1292 琉球之役后回泉州,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "yu_yuanqing",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 陳輝 留了踪迹。",
+    "60": "列传资格：三嶼（今菲律宾北部巴丹一带，或说先岛的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "liu_run": {
    "id": "liu_run",
@@ -7447,13 +8966,31 @@
    "portrait": "res://assets/portraits/liu_run.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 58,
+    "shang": 20,
+    "wu": 70,
+    "xue": 20,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "元军统兵",
+    "detail": "1292 率二百余人登陆琉球冲突折三人后返,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "yu_yuanqing",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 劉閏 留了踪迹。",
+    "60": "列传资格：至元二十九年（1292）元军统兵官；的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "zhang_hao": {
    "id": "zhang_hao",
@@ -7564,13 +9101,31 @@
    "portrait": "res://assets/portraits/zhang_hao.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 40,
+    "shang": 58,
+    "wu": 70,
+    "xue": 20,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "元军镇抚",
+    "detail": "1297 大德元年率水军东击琉球擒生口百三十余,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "yu_yuanqing",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 張浩 留了踪迹。",
+    "60": "列传资格：元朝福建省都镇抚；大德元年（1297的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "zhang_jin": {
    "id": "zhang_jin",
@@ -7689,13 +9244,31 @@
    "portrait": "res://assets/portraits/zhang_jin.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 58,
+    "shang": 20,
+    "wu": 70,
+    "xue": 20,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "福州万户",
+    "detail": "1297 与张浩同率水军击琉球,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "yu_yuanqing",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 張進 留了踪迹。",
+    "60": "列传资格：元朝福州新军万户；大德元年（1297的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "eiso": {
    "id": "eiso",
@@ -7794,13 +9367,31 @@
    "portrait": "res://assets/portraits/eiso.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图",
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo"
+   "attrs": {
+    "hang": 20,
+    "shang": 40,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "英祖王朝在位",
+    "detail": "琉球英祖王朝国王1260–1299 在位,1299 卒,[待核]。官修史的世系。"
+   },
+   "relations": [
+    {
+     "id": "takezaki_suenaga",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 英祖 留了踪迹。",
+    "60": "列传资格：琉球英祖王朝开国（r.1260–12的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": []
   },
   "takiuddin_abdur_rahman": {
    "id": "takiuddin_abdur_rahman",
@@ -7912,13 +9503,31 @@
     "merchant": "1281 年前后马八儿三港税册抄本到手，那份格式的笔迹是他定的",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 78,
+    "wu": 20,
+    "xue": 20,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "马八儿首相",
+    "detail": "1281 前后仍主三港,1292 马可波罗过其时仍在,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 塔基乌丁 留了踪迹。",
+    "60": "列传资格：马八儿国王朝首相兼顾问（Wassaf的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/takiuddin_abdur_rahman.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -8043,13 +9652,31 @@
     "merchant": "1299 年以后故临舶渐至东南海，王收的商帖你抄到一份",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 40,
+    "wu": 20,
+    "xue": 20,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "俱蓝侵马八儿",
+    "detail": "1299 前后侵马八儿,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 俱蓝王 留了踪迹。",
+    "60": "列传资格：印度故临（Venad，汉籍作俱蓝）王的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/ravivarman_kulashekhara.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -8177,13 +9804,31 @@
     "merchant": "1292 年马可波罗归程的波斯舶上，王的名帖传到泉州——你抄的那份是原本的墨印",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 40,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "潘地亚老王",
+    "detail": "1268–1308 在位,1308 卒,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 马八儿老王 留了踪迹。",
+    "60": "列传资格：潘地亚（马八儿）国王 Maravar的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/maravarman_kulasekara_pandyan_i.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -8312,13 +9957,31 @@
     "merchant": "1264 征斯罢兵的舶货回流到岸，王家召舶主分珠——你的名帖被列在头一页",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 40,
+    "shang": 20,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "潘地亚共治",
+    "detail": "总舟师征斯里兰卡,后事随潘地亚内争,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 潘地亚王弟 留了踪迹。",
+    "60": "列传资格：潘地亚共治王 Jatavarman 的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/jatavarman_vira_pandyan_i.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -8430,13 +10093,31 @@
     "merchant": "1297 年以后波斯湾舶主东行渐多，其所发关册副本随舶传到泉州",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 78,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "怯失第一王",
+    "detail": "1306 前仍在,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 扎马鲁丁·提比 留了踪迹。",
+    "60": "列传资格：伊利汗国法尔斯兼怯失（Kish）岛长的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/jamal_al_din_ibrahim_tibi.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -8544,13 +10225,31 @@
     "merchant": "1297 年他抵元的国书被译成汉文——你见到的第一份，就是使团的原稿墨本",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 58,
+    "wu": 20,
+    "xue": 20,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "波斯湾使",
+    "detail": "1297 使团阻于忽鲁谟斯,其后渐返,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 法赫鲁丁·提比 留了踪迹。",
+    "60": "列传资格：怯失主扎马鲁丁之子法赫鲁丁·艾哈迈德的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/fakhr_al_din_ahmad_tibi.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -8667,13 +10366,31 @@
     "merchant": "13 世纪末东非的黄金先经他的埠再入市，你遇上的那批是其最早的一船",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 58,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "基尔瓦苏丹",
+    "detail": "1310–1333 在位,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "zhiligan",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 哈桑·本·苏莱曼 留了踪迹。",
+    "60": "列传资格：东非基尔瓦（Kilwa）苏丹 al-的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/al_hasan_ibn_sulaiman.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -8784,13 +10501,31 @@
     "merchant": "1293 年后新埠立牌、爪哇土产的市价自此换主",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 78,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "爪哇开国王",
+    "detail": "1293–1309 在位,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "pu_yingjia",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 土罕必阇耶 留了踪迹。",
+    "60": "列传资格：爪哇满者伯夷（Majapahit）开的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/raden_wijaya.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -8905,13 +10640,31 @@
     "merchant": "1293 年后马都拉渡口换新旗，他所发的舶证成了南海路上最硬的一张",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 58,
+    "wu": 20,
+    "xue": 20,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "马都拉太守",
+    "detail": "13 世纪末在,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "pu_yingjia",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 阿利亚·维拉拉查 留了踪迹。",
+    "60": "列传资格：爪哇马都拉（Sumenep）太守 A的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/arya_wiraraja.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -9039,13 +10792,31 @@
     "merchant": "此线没有",
     "hometown": "1271 年珍岛破城前一月，他故旧托船捎来一句——城未关门"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 78,
+    "wu": 70,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "珍岛破城",
+    "detail": "1271 珍岛破城,终没。"
+   },
+   "relations": [
+    {
+     "id": "takezaki_suenaga",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 裴仲孙 留了踪迹。",
+    "60": "列传资格：高丽三别抄义勇军首领；1270 年据的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/bae_jungsong.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -9181,13 +10952,31 @@
     "merchant": "1274 年随东征舶队回港，军需榜里你的名被提了三次",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 55,
+    "shang": 78,
+    "wu": 40,
+    "xue": 20,
+    "wang": 39
+   },
+   "growth": {},
+   "fate": {
+    "leave": "高丽元帅",
+    "detail": "讨三别抄、攻耽罗东征之役后仍在世,享年八十八,[待核]。"
+   },
+   "relations": [
+    {
+     "id": "takezaki_suenaga",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 金方庆 留了踪迹。",
+    "60": "列传资格：高丽武将·水军元帅；讨三别抄、攻耽罗的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/kim_banggyeong.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -9311,13 +11100,31 @@
     "merchant": "此线没有",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 20,
+    "wu": 20,
+    "xue": 58,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "高丽文臣",
+    "detail": "1268 使日本往返两回,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "takezaki_suenaga",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 潘阜 留了踪迹。",
+    "60": "列传资格：高丽文臣；1268 年携蒙古国书使日的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/ban_bu.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -9434,13 +11241,31 @@
     "merchant": "1281 年元寇再至，他所守的西垒是最后才被撼动的一段",
     "hometown": "此线没有"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 40,
+    "shang": 58,
+    "wu": 45,
+    "xue": 20,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "少弐长者",
+    "detail": "六国军守护,1281 之后文永元寇防地仍主。"
+   },
+   "relations": [
+    {
+     "id": "takezaki_suenaga",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 少弐経資 留了踪迹。",
+    "60": "列传资格：镰仓幕府镇西西方奉行、少弐氏长者；筑的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/shoni_yukiyasu.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -9567,13 +11392,31 @@
     "merchant": "此线没有",
     "hometown": "1274 年十月他岛破身殁之前，你与他同望过那批南来的帆"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 40,
+    "shang": 78,
+    "wu": 70,
+    "xue": 20,
+    "wang": 26
+   },
+   "growth": {},
+   "fate": {
+    "leave": "对马守",
+    "detail": "1274 十月对马岛破身殁。"
+   },
+   "relations": [
+    {
+     "id": "takezaki_suenaga",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 宗助国 留了踪迹。",
+    "60": "列传资格：对马国地头代兼守护代宗助国；1274的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/so_sukekuni.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -9683,13 +11526,31 @@
     "merchant": "此线没有",
     "hometown": "1284 年他卒报抵博多时各寺同时挂白——你在寺外望见"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 78,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "幕府执权",
+    "detail": "1284 卒，年三十三。"
+   },
+   "relations": [
+    {
+     "id": "takezaki_suenaga",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 北条時宗 留了踪迹。",
+    "60": "列传资格：镰仓幕府第八代执权（得宗）北条時宗 的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/hojo_tokimune.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -9792,13 +11653,31 @@
     "merchant": "此线没有",
     "hometown": "1270 年代潘地亚又换西面的藩式，他来占城求一回路"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 40,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "贾夫纳王",
+    "detail": "父亡后为潘地亚改立贾夫纳王,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "cai_shijiu",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 萨瓦坎 留了踪迹。",
+    "60": "列传资格：旃陀罗婆奴之子 Savakanmai的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/savakanmaindan.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -9903,13 +11782,31 @@
     "merchant": "此线没有",
     "hometown": "1277 年前后该国王统中绝，他的名帖就此失传"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 40,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "单马令末王",
+    "detail": "1277 前后王统中绝。[待核]。"
+   },
+   "relations": [
+    {
+     "id": "cai_shijiu",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 五世王 留了踪迹。",
+    "60": "列传资格：单马令（Tambralinga）国王的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/sri_dharmasokaraja_v.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -10034,13 +11931,31 @@
     "merchant": "此线没有",
     "hometown": "1283 年他军所遣径的元军攻入占城木城——你目睹他站在对岸"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 40,
+    "shang": 78,
+    "wu": 70,
+    "xue": 20,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "占城降将",
+    "detail": "1283 以后随元军,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "pham_ngu_lao",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 寶脫禿花 留了踪迹。",
+    "60": "列传资格：占城王族旁系将领；《元史》载 128的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/bao_tuo_tu_hua.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -10145,13 +12060,31 @@
     "merchant": "此线没有",
     "hometown": "1284 年他递的表到了大都；占城自此又缓了几年"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 40,
+    "wu": 20,
+    "xue": 20,
+    "wang": 34
+   },
+   "growth": {},
+   "fate": {
+    "leave": "占城使臣",
+    "detail": "1284 奉表归款之后,卒年不详。"
+   },
+   "relations": [
+    {
+     "id": "pham_ngu_lao",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 文勞卭大巴南 留了踪迹。",
+    "60": "列传资格：占城使臣；《元史》载 1284 年其的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/wenlao_qiongdaban_nan.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
@@ -10256,13 +12189,31 @@
     "merchant": "此线没有",
     "hometown": "1284 年他与文勞卭共递表；占城得了一年喘息"
    },
-   "attrs": "_todo",
-   "growth": "_todo",
-   "fate": "_todo",
-   "relations": "_todo",
-   "relation_flips": "_todo",
-   "bond_tiers": "_todo",
-   "one_time": "_todo",
+   "attrs": {
+    "hang": 20,
+    "shang": 58,
+    "wu": 20,
+    "xue": 20,
+    "wang": 30
+   },
+   "growth": {},
+   "fate": {
+    "leave": "王孙使",
+    "detail": "1284 奉表之使。"
+   },
+   "relations": [
+    {
+     "id": "pham_ngu_lao",
+     "kind": "同乡旧识"
+    }
+   ],
+   "relation_flips": [],
+   "bond_tiers": {
+    "40": "已识, 濟目理勒蟄 留了踪迹。",
+    "60": "列传资格：占城王之孙；《元史》载 1284 年的事已有见证。",
+    "80": "传授一桩门路"
+   },
+   "one_time": [],
    "portrait": "res://assets/portraits/jimu_lilezhe.png",
    "portrait_status": "placeholder",
    "portrait_note": "本批新增·真名史实·待用户出图"
