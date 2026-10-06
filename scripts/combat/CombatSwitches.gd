@@ -1,5 +1,5 @@
 class_name CombatSwitches
-## 海战新玩法总开关（战斗系统方案第一、二期）。默认全开；关掉某一项，那一项就回到原来的玩法。
+## 海战新玩法总开关（战斗系统方案第一、二、三期）。默认全开；关掉某一项，那一项就回到原来的玩法。
 ## 只活在内存里，不进存档；探针可以用 set_on() 临时关掉某项来比对前后。
 ## 各 lane 只读自己那几个键，不改别人的键；新增键请在下表末尾追加一行。
 
@@ -18,6 +18,9 @@ const DEFAULTS := {
 	"crew_role_effects": true, # 职事加成补齐五种（火长、总管、通事、杂事、夷人）—— w53-15/16/17 各接各的
 	"order_cut_grapple": true, # 新号令「砍钩」—— w53-15
 	"order_wet_felt": true,    # 新号令「张湿毡」—— w53-15
+	# 第三期 · 火与水
+	"enemy_flood_fire": true,  # 敌船也会进水、失火（只挂 FloodFire 这一件，不挂整套伤损模型）—— w53-p3a
+	"fire_attack_load": true,  # 火攻回到装填轮换（均装 → 专力装填 → 火攻）—— w53-p3b
 }
 
 static var _over: Dictionary = {}
