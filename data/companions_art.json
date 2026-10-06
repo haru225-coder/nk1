@@ -1,8 +1,8 @@
 {
  "meta": {
-  "title": "伙伴系统立绘槽位清单（40 人）",
-  "date": "2026-10-04",
-  "author": "莉莉（伙伴系统专线）",
+  "title": "伙伴系统立绘槽位清单（60 人）",
+  "date": "2026-10-07",
+  "author": "莉莉（伙伴系统专线）·真名史实批",
   "spec": {
    "dir": "assets/portraits/",
    "file": "<id>.png",
@@ -15,7 +15,7 @@
   "style_anchor_zh": "南宋—元初东亚海域历史题材 · 写实厚涂 · 半身像 · 居中偏 3/4 面向观者 · 低饱和暗调土色系（墨黑 / 铁灰 / 赭石 / 暗蓝）· 暖侧光（油灯、火把、夕照、舷窗光）· 湿木与粗麻质感 · 景深虚化背景 · 电影级明暗 · 做旧，无轮廓线",
   "style_anchor_en": "Song-Yuan era East Asian maritime historical, realistic thick-paint CG, half-body portrait, centered, three-quarter view toward viewer, low-saturation dark earthy palette (ink black, iron grey, ochre, muted indigo), warm side light, wet wood and coarse hemp texture, shallow depth of field, cinematic chiaroscuro, weathered period texture, no line art",
   "negative": "watercolor, ink wash, gongbi, anime cel shading, cartoon, line art, modern clothing, plastic skin, neon, oversaturated pastel, extra fingers, deformed hands, text, watermark, signature, logo, lowres",
-  "note": "16 人（P1 + 邻近）已给中英生图提示词；其余 24 人先占位：file/size/priority/look/personality 齐，提示词待下一批续写。"
+  "note": "16 人（P1 + 邻近）已给中英生图提示词；其余 24 人先占位。2026-10-07 真名史实批 +20 槽位（蒲氏三代、马八儿/忽鲁谟斯/基尔瓦来客、占城君臣、单马令/素可泰、巴赛/爪哇、高丽/日本）：file/size/priority/look/personality 齐，提示词待下一批续写——本批新增·真名史实·待用户出图。"
  },
  "portraits": {
   "lin_hua": {
@@ -553,6 +553,226 @@
    "status": "placeholder",
    "personality_short": "沉静，记性极好；站在库门口像一扇门。",
    "look": "三十岁东非男子，高大，肤如黑漆，虯髮（《诸蕃志》语）；大食式长衫，腰挂一大串钥匙；沉静、有尊严。严禁丑化与漫画化。"
+  },
+  "pu_kaizong": {
+   "name": "蒲开宗",
+   "title": "海商·承节郎",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/pu_kaizong.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "话不多，算盘打得细，香料一抓一闻就报得出价钱；做起善事倒大方，桥坏了他掏钱修。",
+   "look": "七十开外的蕃坊老商，干瘦，步幅小；半旧的深色圆领袍，腰悬小算盘，手上一只鉴香用的小银刀；皱纹里都是码头的风。"
+  },
+  "pu_shougeng": {
+   "name": "蒲寿庚",
+   "title": "提举泉州市舶→主市舶",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/pu_shougeng.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "面上总是带笑，账从来不亏；香船进出，他一眼看穿你要做什么。说话留着三分，从不把话说死。",
+   "look": "四十上下的蕃坊巨商，面色白净微发福；上好的深色道袍，腰束丝绦，指上一枚嵌宝戒指，身后跟波斯语款的账房。"
+  },
+  "pu_shiwen": {
+   "name": "蒲师文",
+   "title": "海外诸蕃宣慰使",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/pu_shiwen.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "走路带风，跟番商称兄道弟，哪一国的口音他都接得上；办事快，也藏得住父亲的交代。",
+   "look": "二十开外的蕃坊俊彦，浓须修剪齐整；半汉半蕃的长袍，腰上银饰短匕，笑起来露一口白牙。"
+  },
+  "tian_zhenzi": {
+   "name": "田真子",
+   "title": "泉州州司马",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/tian_zhenzi.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "官服穿得整整齐齐，开口必引律法；城头风一大，他先扶的是幞头，再看敌旗。",
+   "look": "五短身材，幞头整肃，青绿官袍束带；人手一卷文书，袖口磨得起毛，眼神从册页上抬起来看人。"
+  },
+  "manggu_dai": {
+   "name": "忙古䚟",
+   "title": "领泉州市舶司",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/manggu_dai.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "马背上出身的人坐进衙门，珠翠香货摊一桌子，他上手掂一掂就报得出南亚的价；会见舶商时笑声震屋。",
+   "look": "三十五六的蒙古官员，颧高目深，皮袍外罩一件汉式官服，腰悬小牌与匕首，案上摊着珠翠与香药。"
+  },
+  "mayindi": {
+   "name": "马因的",
+   "title": "马八儿国宰相",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/mayindi.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "见了生客先看你船尾的旗，再看你的货；谈生意极有耐心，香料价钱能让你磨上半日。",
+   "look": "科罗曼德肤色的精干客商，髭须修得整齐，缠头素巾，肩披一条细棉布；手指上好几枚金戒指，腰间挂小算盘与香袋。"
+  },
+  "abu_ali": {
+   "name": "不阿里",
+   "title": "马八儿国宰相",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/abu_ali.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "开口先问天时水道，再谈价钱；信得过的人，他能把整船的香料压在你船上。",
+   "look": "深肤美髯的回回老者，白缠头，素色长袍；手里一串念珠，谈天时掐指头算风信。"
+  },
+  "behali": {
+   "name": "孛哈里",
+   "title": "马八儿王子",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/behali.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "落魄了还是王子架子，送出去的礼比谁都重；说起故国先红眼眶，转头就把话岔开。",
+   "look": "深肤的华贵落难人，珠冠收了、锦袍还旧；佩绿松石小坠，随从都散尽了，剩一两个老仆。"
+  },
+  "bahauddin_ayaz": {
+   "name": "巴哈丁·阿亚兹",
+   "title": "忽鲁谟斯王",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/bahauddin_ayaz.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "说话慢条斯理，算账极快；关口的规矩他立得让人挑不出毛病，连海盗都肯按他的价缴泊钱。",
+   "look": "白净颀长的波斯贵人，方帽锦袍，腰束丝缮；手边常有一册小账，记满船期与价钱。"
+  },
+  "al_hasan_talut": {
+   "name": "哈桑",
+   "title": "基尔瓦苏丹",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/al_hasan_talut.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "黑肤金环，笑起来爽朗，拔刀比谁都快；挣来的金子先修塔，再分弟兄。",
+   "look": "铁塔般的黑人汉子，肤色如漆，耳戴金环，肩臂作环纹髹漆；紫红长袍束腰，挂弯刀一柄，笑起来牙齿雪白。"
+  },
+  "indravarman_v": {
+   "name": "孛由補剌者吾",
+   "title": "占城国王",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/indravarman_v.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "老国王眼神像鹰，敬酒先敬佛；笑着说话，庙堂后头刀斧手一直候着。",
+   "look": "精瘦黧黑的老年王者，高额深目，发丝般黑白相间盘髻；金冠嵌翠，耳珰大如钱，袈裟式锦衣；指上全是扳指与戒指。"
+  },
+  "che_man": {
+   "name": "补的",
+   "title": "占城王太子",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/che_man.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "人挡杀人佛挡杀佛的脾气，饶你一次也记得要你回礼；在木城上巡视时，眼里没有退路两个字。",
+   "look": "皮甲阔背的悍勇储君，肤色黧黑，眉骨高耸；金臂钏、赤红袈裟式甲衣，腰悬短矛与弯刀，耳后插雉尾。"
+  },
+  "baosundar": {
+   "name": "报孙达儿",
+   "title": "占城宰相",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/baosundar.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "说话滴水不漏，笑比不笑多；手里的国书每改一字都要想好三天。",
+   "look": "白净清癯的占城文官，戴平顶帽，着交领宽袍；随身一对书吏，一捧汉文卷、一捧占文贝叶。"
+  },
+  "wang_tongshi": {
+   "name": "王通事者",
+   "title": "占城通事",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/wang_tongshi.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "两边的话都会说，两边的脸色也都看得懂；翻译时把骂人的话翻轻三分，把礼数加足三分。",
+   "look": "中等身材的市舶通事，占式缠头配一件汉式圆领；腰间挂小铜牌，见谁都先三分笑。"
+  },
+  "chandrabhanu": {
+   "name": "旃陀罗婆奴",
+   "title": "单马令国王",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/chandrabhanu.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "僧王的气度，海盗的手段；塔是他修的，船也是他劫的，一样都做得彻底。",
+   "look": "黧黑威严的僧王，光头或高髻缠金；螺冠佛幡在前，袈裟式金线王袍，佩蛇形金耳环，手持经匣与宝剑。"
+  },
+  "ramkhamhaeng": {
+   "name": "敢木丁",
+   "title": "素可泰国王",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/ramkhamhaeng.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "把石碑上的字一个个指给你看的王；给来使备的礼，比人家带来的还厚。",
+   "look": "健壮的面白男子（碑文自记），头戴尖顶金冠，着斜襟长衫；腰间佩短剑与螺号，手指上戴多枚金戒。"
+  },
+  "malik_al_saleh": {
+   "name": "马利克·萨利赫",
+   "title": "巴赛苏丹",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/malik_al_saleh.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "念经与数钱是两门都精的本事；请你喝了茶，价格就得按他的说。",
+   "look": "深肤广额的南洋贵人，头缠白巾，着葱绿长袍；佩金链香盒，指上戒指嵌绿松石，谈吐有掌教风仪。"
+  },
+  "kertanagara": {
+   "name": "葛达那加剌",
+   "title": "新柯沙里末王",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/kertanagara.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "酒过三巡就谈他的佛像与海图；诗做得好，杀伐也下得去手。",
+   "look": "黧黑健硕的海上雄主，束发金冠，袒右肩披金线袈裟式王袍；佩宝剑与经匣，耳戴大金环，醉眼含威。"
+  },
+  "kim_tongjeong": {
+   "name": "金通精",
+   "title": "三别抄将军",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/kim_tongjeong.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "三别抄的兵跟着他九死一生不怵；见了海船先数帆，后看你货舱里的箭。",
+   "look": "黧黑瘦劲的虎将，甲叶磨得发白；高丽式幞头铁盔，佩弯刀与短弓，肩上旧创森然。"
+  },
+  "shoni_kageyasu": {
+   "name": "少弐景資",
+   "title": "博多湾主将",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/shoni_kageyasu.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "行事一板一眼，公事公办；元寇那年他站在博多湾的水际，刀出鞘就没收回过。",
+   "look": "清瘦端正的武士大将，束带乌帽直衣；腰间大小两刀，甲叶是旧年间的赤丝縅，举止一丝不苟。"
   }
  }
 }

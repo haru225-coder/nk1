@@ -4316,6 +4316,2320 @@
    "relation_flips": "_todo",
    "bond_tiers": "_todo",
    "one_time": "_todo"
+  },
+  "pu_kaizong": {
+   "id": "pu_kaizong",
+   "name": "蒲开宗",
+   "region": "fanfang",
+   "category": "史实",
+   "identity": "蒲寿庚之父；泉州法石海商，1204 安溪县主簿，1233 以招商有功授承节郎",
+   "langs": [
+    "minnan",
+    "arabic"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1255-03",
+      "to": "1268-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern",
+      "note": "开元寺边的老茶肆：承节郎蒲老爹听人讲海外行情，一听就是半日"
+     }
+    ],
+    "scene": "泉州开元寺边茶肆：法石蒲家的老太爷在此听各路船客讲行情，谁讲瞒话他当场拆穿",
+    "rumor": "法石蒲家的老太爷还在世，当年靠给朝廷招来番商换的官。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 40,
+    "bond_start": 15,
+    "bond_path": [
+     {
+      "src": "event:pu_kaizong_tea",
+      "value": 15,
+      "note": "茶肆陪老人听三回行情（隔旬）"
+     },
+     {
+      "src": "event:pu_kaizong_aromatic",
+      "value": 15,
+      "note": "替他鉴一批龙涎乳香，价钱报实"
+     },
+     {
+      "src": "gift:aromatic_medicine×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "老骨头不上战位；在船专司货账与看价",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 2
+    },
+    "level_1279": {
+     "zongguan": 2
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "tariff",
+     "port": "quanzhou",
+     "note": "市舶司里的老面子：泉州抽解照旧例算，不被多留难"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：泉州蒲家与市舶司消息；蒲寿庚在市舶司的动静由他先透出"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "suanchou",
+    "fanyu"
+   ],
+   "gifts": [
+    "aromatic_medicine"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/pu_kaizong.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "pu_shougeng": {
+   "id": "pu_shougeng",
+   "name": "蒲寿庚",
+   "region": "fanfang",
+   "category": "史实",
+   "identity": "泉州蕃坊海商世家出身；约1250起提举泉州市舶司，掌抽解；宋末以泉州降元，官至福建行省左丞兼泉州分省平章",
+   "langs": [
+    "minnan",
+    "arabic"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1255-03",
+      "to": "1276-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "visit",
+      "note": "市舶司衙内：递过公凭与货单抽簿，他亲自过目"
+     }
+    ],
+    "scene": "泉州市舶司：蕃坊出身的提举官亲自看公凭货单，话说得客气，抽解一文不能少",
+    "rumor": "市舶司的蒲提举也是蕃坊出身，番商的事他说得上话。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 60,
+    "bond_start": 20,
+    "bond_path": [
+     {
+      "src": "event:pu_shougeng_manifest",
+      "value": 25,
+      "note": "三年六次进出泉州、货单照实端正"
+     },
+     {
+      "src": "event:pu_shougeng_guest",
+      "value": 20,
+      "note": "蒲宅赴宴一回，引荐番商一位"
+     },
+     {
+      "src": "gift:aromatic_medicine×1",
+      "value": 15,
+      "note": ""
+     }
+    ],
+    "requires": {
+     "fame_min": 20,
+     "note": "名声不低于「番商知客」"
+    },
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 3
+    },
+    "wage_slot": 120,
+    "battle": [],
+    "battle_note": "在船事主市舶关防与客商往来，不上战位",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 3
+    },
+    "level_1279": {
+     "zongguan": 3
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "tariff",
+     "port": "quanzhou",
+     "note": "主政其人：泉州抽解照旧额算，不受翻倍之扰"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：市舶司政令与番船消息；1276 年前后他的去就从他口风里先露"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "suanchou",
+    "fanyu"
+   ],
+   "gifts": [
+    "aromatic_medicine",
+    "song_coin"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1276 年泉州降元的新闻一句话（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/pu_shougeng.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "pu_shiwen": {
+   "id": "pu_shiwen",
+   "name": "蒲师文",
+   "region": "fanfang",
+   "category": "史实",
+   "identity": "蒲寿庚之子；1278 正奉大夫·工部尚书·海外诸蕃宣慰使，1281 提举福建道市舶",
+   "langs": [
+    "minnan",
+    "arabic",
+    "persian"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1277-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern",
+      "note": "蕃坊酒棚：蒲家大郎替父亲迎客，各路番船的习俗他都记得"
+     }
+    ],
+    "scene": "泉州蕃坊酒棚：蒲家大郎替父亲招待番商，大食话、波斯话随口切换，谈笑间就把一年的关防行情递了",
+    "rumor": "蒲提举的大郎极有本事，番商见了他比见官还亲。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 45,
+    "bond_start": 20,
+    "bond_path": [
+     {
+      "src": "event:pu_shiwen_lang",
+      "value": 20,
+      "note": "在番商场合替他圆一回语言（tongshi 在船）"
+     },
+     {
+      "src": "event:pu_shiwen_convoy",
+      "value": 15,
+      "note": "护送他的客船自泉州至澎湖一日程"
+     },
+     {
+      "src": "gift:aromatic_medicine×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "在船专司蕃语与诺客往来",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "tongshi": 2
+    },
+    "level_1279": {
+     "tongshi": 2
+    },
+    "wage_role_at_join": {
+     "tongshi": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "lang",
+     "langs": [
+      "arabic",
+      "persian"
+     ],
+     "note": "大食话、波斯话，泉州/广州蕃客场合通译"
+    },
+    {
+     "kind": "share",
+     "note": "随蒲家干办买的船有顺风价：泉州交易额小加成"
+    }
+   ],
+   "stance": "neutral",
+   "traits": [
+    "fanyu",
+    "suanchou"
+   ],
+   "gifts": [
+    "aromatic_medicine"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1278 年朝廷命他宣慰海外的新闻一句话（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/pu_shiwen.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "tian_zhenzi": {
+   "id": "tian_zhenzi",
+   "name": "田真子",
+   "region": "song",
+   "category": "史实",
+   "identity": "泉州州司马；1277 与蒲寿庚同裹降表献城降元",
+   "langs": [
+    "han_classical",
+    "minnan"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1255-03",
+      "to": "1277-01",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "visit",
+      "note": "州衙签押房：船引稽考、兵籍讼牒，他一件件过"
+     }
+    ],
+    "scene": "泉州州衙：田司马在签押房看船引与兵籍，条款背得滚瓜烂熟，放过谁不放过谁，全看册上怎么写",
+    "rumor": "州衙的田司马最是循例，官文书从他手里过一遍，谁也挑不出错。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 40,
+    "bond_start": 15,
+    "bond_path": [
+     {
+      "src": "event:tian_zhenzi_files",
+      "value": 20,
+      "note": "替他料理三回船引文书，件件合式"
+     },
+     {
+      "src": "event:tian_zhenzi_audience",
+      "value": 10,
+      "note": "谒见时答话不出格"
+     },
+     {
+      "src": "gift:korean_paper×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 1
+    },
+    "wage_slot": 30,
+    "battle": [],
+    "battle_note": "官员随军只理兵籍文案",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 1
+    },
+    "level_1279": {
+     "zongguan": 1
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "intel",
+     "note": "风闻：泉州州衙政事与刑名；守城之年城内的军心从他嘴里有数"
+    }
+   ],
+   "stance": "song",
+   "traits": [
+    "shiwen"
+   ],
+   "gifts": [
+    "korean_paper"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "此线没有",
+    "hometown": "1277 年泉州降元的新闻一句话（按史实落定）"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/tian_zhenzi.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "manggu_dai": {
+   "id": "manggu_dai",
+   "name": "忙古䚟",
+   "region": "north",
+   "category": "史实",
+   "identity": "蒙古人·银青光禄大夫；1277 领泉州市舶司，「每岁集舶商于蕃邦，博易珠翠香货」",
+   "langs": [
+    "mongol",
+    "han_north",
+    "persian"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1277-01",
+      "to": "1282-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "visit",
+      "note": "市舶司新衙：归附之后他接了这摊，头一件事是请舶商回来"
+     }
+    ],
+    "scene": "泉州归附后的市舶司：蒙古大夫忙古䚟升衙理事，传话各番——市舶照开，珠翠香货照旧博易",
+    "rumor": "泉州换了主人，新派的市舶官是个蒙古大夫，听说最懂珠翠行情。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 50,
+    "bond_start": 20,
+    "bond_path": [
+     {
+      "src": "event:manggu_dai_settle",
+      "value": 20,
+      "note": "归附后头一回进港报验，册物照实"
+     },
+     {
+      "src": "event:manggu_dai_goods",
+      "value": 20,
+      "note": "替他走一回珠翠香货的博易门路"
+     },
+     {
+      "src": "gift:ivory×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "在船事主市舶博易，不上战位",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 2
+    },
+    "level_1279": {
+     "zongguan": 2
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "tariff",
+     "port": "quanzhou",
+     "note": "博易门路：泉州珠翠香货交易加小成"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：新朝市舶政令与北方行情"
+    }
+   ],
+   "stance": "yuan",
+   "traits": [
+    "suanchou"
+   ],
+   "gifts": [
+    "ivory",
+    "coral"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1280 年前后海外博易风盛的新闻一句（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/manggu_dai.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "mayindi": {
+   "id": "mayindi",
+   "name": "马因的",
+   "region": "fanfang",
+   "category": "史实",
+   "identity": "马八儿（今印度科罗曼德）宰相；1281 主持迎元使、通商外事，主「马八儿新村马头」",
+   "langs": [
+    "tamil",
+    "persian",
+    "arabic"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1279-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern",
+      "note": "蕃坊寺边食铺：马八儿来的相蕃客，听各路船家说两边行情"
+     }
+    ],
+    "scene": "泉州蕃坊食铺：自称马八儿相蕃客的汉子拣了主位坐，用波斯话问你船上带的什么、走的哪条水路",
+    "rumor": "蕃坊新来一位马八儿的相蕃客，专打听回回船与东来的市情。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 45,
+    "bond_start": 15,
+    "bond_path": [
+     {
+      "src": "event:mayindi_tea",
+      "value": 15,
+      "note": "食铺同席三回，行情答得实在"
+     },
+     {
+      "src": "event:mayindi_prof",
+      "value": 20,
+      "note": "受托往占城走一回船，带来科罗曼德的信物"
+     },
+     {
+      "src": "gift:pepper×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "在船主西洋行情与货头成色，不上战位",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 2
+    },
+    "level_1279": {
+     "zongguan": 2
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "goods",
+     "port": "quanzhou",
+     "goods": [
+      "pepper",
+      "aromatic_medicine"
+     ],
+     "side": "buy",
+     "edge": 0.05,
+     "note": "西洋门路：泉州买胡椒、翠毛香药 −5%"
+    },
+    {
+     "kind": "lang",
+     "langs": [
+      "tamil",
+      "persian"
+     ],
+     "note": "马八儿、波斯场合通译"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "fanyu",
+    "suanchou"
+   ],
+   "gifts": [
+    "pepper",
+    "aromatic_medicine"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1281 年马八儿迎元使的新闻一句话（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/mayindi.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "abu_ali": {
+   "id": "abu_ali",
+   "name": "不阿里",
+   "region": "fanfang",
+   "category": "史实",
+   "identity": "马八儿宰相；1281 愿内附元朝、遣使入朝",
+   "langs": [
+    "arabic",
+    "tamil",
+    "persian"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1280-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern",
+      "note": "蕃坊酒棚：马八儿来的回回老客，与泉州回回家家都认得"
+     }
+    ],
+    "scene": "泉州蕃坊：马八儿回回老客不阿里在此看市舶的情形，见你是走西洋水路的船，抛了三句问天时的行话",
+    "rumor": "蕃坊有个马八儿来的回回老客，打听朝廷的事打听得最细。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 50,
+    "bond_start": 15,
+    "bond_path": [
+     {
+      "src": "event:abu_ali_introduce",
+      "value": 20,
+      "note": "替他引荐泉州回回掌教与市舶司各一回"
+     },
+     {
+      "src": "event:abu_ali_sea",
+      "value": 20,
+      "note": "西洋水道答得他连连点头（tongshi 在船）"
+     },
+     {
+      "src": "gift:aromatic_medicine×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {
+     "visited_any_of": [
+      "quanzhou"
+     ],
+     "note": "须已到过泉州、熟蕃坊门路"
+    },
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "在船主蕃语与回回门路，不上战位",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "tongshi": 2
+    },
+    "level_1279": {
+     "tongshi": 2
+    },
+    "wage_role_at_join": {
+     "tongshi": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "lang",
+     "langs": [
+      "arabic",
+      "tamil"
+     ],
+     "note": "回回话与马八儿土语，泉州/广州蕃坊通译"
+    },
+    {
+     "kind": "goods",
+     "port": "quanzhou",
+     "goods": [
+      "aromatic_medicine"
+     ],
+     "side": "buy",
+     "edge": 0.05,
+     "note": "香料门路：泉州买香药 −5%"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：马八儿与西洋诸国事；朝廷使舶往来他最先知"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "fanyu"
+   ],
+   "gifts": [
+    "aromatic_medicine",
+    "pepper"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1281 年遣使入朝的新闻一句话（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/abu_ali.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "behali": {
+   "id": "behali",
+   "name": "孛哈里",
+   "region": "fanfang",
+   "category": "史实",
+   "identity": "马八儿王子；奔元居泉州，1298 自泉州遣使高丽",
+   "langs": [
+    "tamil",
+    "persian",
+    "arabic"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1255-03",
+      "to": "1285-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern",
+      "note": "城南蕃坊：马八儿来的落难王子，能讲一整夜的海"
+     }
+    ],
+    "scene": "泉州城南蕃坊：孛哈里指著海图讲马八儿的海湾与珠场，讲到故国内讧处停住，只说不提也罢",
+    "rumor": "城北来了个马八儿王子，国里兄弟阋墙，他是避祸来的。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 55,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:behali_pack",
+      "value": 15,
+      "note": "替他料理一回随行的十担细软"
+     },
+     {
+      "src": "event:behali_letter",
+      "value": 20,
+      "note": "送一封系人心意的国书去明州转舶（耗 5 日）"
+     },
+     {
+      "src": "gift:placer_gold×1",
+      "value": 20,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 1
+    },
+    "wage_slot": 30,
+    "battle": [],
+    "battle_note": "客人身份，不任战位；过问货头成色",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 1
+    },
+    "level_1279": {
+     "zongguan": 1
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "intel",
+     "note": "风闻：马八儿与科罗曼德诸港；1280 年后西洋朝贡消息他先浮一笔"
+    },
+    {
+     "kind": "lang",
+     "langs": [
+      "tamil",
+      "persian"
+     ],
+     "note": "马八儿土语与波斯话，蕃坊场合通译"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "fanyu"
+   ],
+   "gifts": [
+    "placer_gold",
+    "pepper"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1298 年遣使高丽的余闻（窗口外，作新闻一句）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/behali.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "bahauddin_ayaz": {
+   "id": "bahauddin_ayaz",
+   "name": "巴哈丁·阿亚兹",
+   "region": "fanfang",
+   "category": "史实",
+   "identity": "忽鲁谟斯（Hormuz）王 1293–1311；约1300 迁都杰伦岛（Jarun），掌转口与海关",
+   "langs": [
+    "persian",
+    "arabic"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1258-01",
+      "to": "1285-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern",
+      "note": "蕃坊波斯回回人家：忽鲁谟斯的少主东来看市，一住经月"
+     }
+    ],
+    "scene": "泉州蕃坊波斯人家：忽鲁谟斯的阿亚兹在此长住看市，逐日记录到港船数与货色价钱，极有条理",
+    "rumor": "蕃坊来了忽鲁谟斯的少主，说起海舶抽分，比市舶司的书手还精。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 50,
+    "bond_start": 15,
+    "bond_path": [
+     {
+      "src": "event:ayaz_tariff",
+      "value": 20,
+      "note": "市舶抽份的门道谈了一整夜（zongguan 在船）"
+     },
+     {
+      "src": "event:ayaz_convoy",
+      "value": 20,
+      "note": "送他搭船至广州转航（耗 4 日）"
+     },
+     {
+      "src": "gift:aromatic_medicine×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "在船事主海道关务与转口行情，不上战位",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zongguan": 2
+    },
+    "level_1279": {
+     "zongguan": 2
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "tariff",
+     "port": "quanzhou",
+     "note": "抽份之道：出洋回航的关费合计小减"
+    },
+    {
+     "kind": "lang",
+     "langs": [
+      "persian"
+     ],
+     "note": "波斯话，泉州/广州蕃坊通译"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：忽鲁谟斯与海湾诸埠；1280 年代海口形势他有数"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "suanchou",
+    "fanyu"
+   ],
+   "gifts": [
+    "aromatic_medicine",
+    "placer_gold"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "约1300 迁都杰伦岛、海口兴起的传闻（窗口外，作余闻一句）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/bahauddin_ayaz.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "al_hasan_talut": {
+   "id": "al_hasan_talut",
+   "name": "哈桑",
+   "region": "fanfang",
+   "category": "史实",
+   "identity": "东非基尔瓦（Kilwa）苏丹 1277–1294；武力夺位，奠 Mahdali 王朝",
+   "langs": [
+    "swahili",
+    "arabic"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1276-12",
+      "ports": [
+       "quanzhou"
+      ],
+      "mode": "tavern",
+      "note": "蕃坊大食回回家：层拔国来的海客，带着象牙与金砂寻船脱手"
+     }
+    ],
+    "scene": "泉州蕃坊：层拔国海客哈桑押着一批象牙金砂求售，问起马八儿、忽鲁谟斯的行情，听一句记一句",
+    "rumor": "蕃坊来了个层拔国的好汉，象牙成色极好，人却生得像尊铁塔。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 45,
+    "bond_start": 15,
+    "bond_path": [
+     {
+      "src": "event:hasan_ivory",
+      "value": 20,
+      "note": "象牙一批替他寻得主顾，价钱公道"
+     },
+     {
+      "src": "event:hasan_sea",
+      "value": 15,
+      "note": "把西大洋的水道与风头讲给他听"
+     },
+     {
+      "src": "gift:ivory×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zashi": 2
+    },
+    "wage_slot": 60,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "接舷敢先登；惯使弯刀长矛",
+    "home_port": "quanzhou",
+    "level_at_join": {
+     "zashi": 2
+    },
+    "level_1279": {
+     "zashi": 2
+    },
+    "wage_role_at_join": {
+     "zashi": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "intel",
+     "note": "风闻：层拔（基尔瓦）与东非诸埠；象牙、金砂行情"
+    },
+    {
+     "kind": "goods",
+     "port": "quanzhou",
+     "goods": [
+      "ivory"
+     ],
+     "side": "sell",
+     "edge": 0.05,
+     "note": "层拔门路：泉州卖象牙 +5%"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "bitan",
+    "fanyu"
+   ],
+   "gifts": [
+    "ivory",
+    "coral"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1277 年层拔易主的传闻一句（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/al_hasan_talut.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "indravarman_v": {
+   "id": "indravarman_v",
+   "name": "孛由補剌者吾",
+   "region": "vietnam_champa",
+   "category": "史实",
+   "identity": "占城国王 Indravarman V（亦作 Śrī Jaya Siṃhavarmadeva）；拒元亲朝亲降，1283 遁入鸦候山",
+   "langs": [
+    "cham",
+    "khmer"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1283-01",
+      "ports": [
+       "champa"
+      ],
+      "mode": "visit",
+      "note": "新州王城：以礼相见，问及北朝来使之事"
+     }
+    ],
+    "scene": "占城新州王城：老王孛由補剌者吾踞殿见你，先问船从何处来，再问北方的皇帝要说些什么",
+    "rumor": "占城的老王最恨人逼他称臣，北方来的使者都被他扣下了。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 50,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:indra_gift",
+      "value": 20,
+      "note": "献上等苏木与象牙于王廷"
+     },
+     {
+      "src": "event:indra_audience",
+      "value": 20,
+      "note": "三回廷对：问及宋、元两地形势，答得不卑不亢"
+     },
+     {
+      "src": "gift:japanese_sword×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {
+     "fame_min": 15,
+     "note": "名声须传至占城"
+    },
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 1
+    },
+    "wage_slot": 30,
+    "battle": [],
+    "battle_note": "国王之尊，随驾不任战位",
+    "home_port": "champa",
+    "level_at_join": {
+     "zongguan": 1
+    },
+    "level_1279": {
+     "zongguan": 1
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "intel",
+     "note": "风闻：占城国政与北方使节动静；1282 前后国中大事他先透一句"
+    },
+    {
+     "kind": "lang",
+     "langs": [
+      "cham"
+     ],
+     "note": "占语，占城场合通译"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "zhijian"
+   ],
+   "gifts": [
+    "sappanwood",
+    "ivory"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1283 年城破遁山的新闻一句话（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/indravarman_v.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "che_man": {
+   "id": "che_man",
+   "name": "补的",
+   "region": "vietnam_champa",
+   "category": "史实",
+   "identity": "占城王太子 Harijit＝Jaya Siṃhavarman III（越史 制旻 Chế Mân）；1282 扣留元使、据木城抗元，1288 即位",
+   "langs": [
+    "cham",
+    "viet"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1282-12",
+      "ports": [
+       "champa"
+      ],
+      "mode": "visit",
+      "note": "木城演武场：太子练兵，木栅外象阵仰鼻长鸣"
+     }
+    ],
+    "scene": "占城木城：太子补的的演武场上象群踏地，他按剑听你讲海上的事，听到半路忽然发问",
+    "rumor": "占城的太子是出名的硬头，北方的诏令他敢不接。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 55,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:che_man_fight",
+      "value": 25,
+      "note": "演武场较武三合，输赢都坦荡"
+     },
+     {
+      "src": "event:che_man_intel",
+      "value": 20,
+      "note": "把北方军船的消息如实报给他"
+     },
+     {
+      "src": "gift:japanese_sword×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zashi": 3
+    },
+    "wage_slot": 120,
+    "battle": [
+     "yazhen",
+     "chihou"
+    ],
+    "battle_note": "接舷头一个跳帮；殿后人人服他",
+    "home_port": "champa",
+    "level_at_join": {
+     "zashi": 3
+    },
+    "level_1279": {
+     "zashi": 3
+    },
+    "wage_role_at_join": {
+     "zashi": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "yazhen",
+     "note": "占城精兵随之接舷：跳帮得先登之名"
+    },
+    {
+     "kind": "lang",
+     "langs": [
+      "cham"
+     ],
+     "note": "占语，占城场合与军中通译"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "shuizhan",
+    "biaoqiang"
+   ],
+   "gifts": [
+    "japanese_sword",
+    "sappanwood"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1288 年即位、宾童龙修塔的余闻（窗口外一句）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/che_man.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "baosundar": {
+   "id": "baosundar",
+   "name": "报孙达儿",
+   "region": "vietnam_champa",
+   "category": "史实",
+   "identity": "占城首席文官；1283 率众降元",
+   "langs": [
+    "cham",
+    "han_classical"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1283-06",
+      "ports": [
+       "champa"
+      ],
+      "mode": "visit",
+      "note": "新州衙署：相国批答四方文书，案上堆着汉文与占文两摊"
+     }
+    ],
+    "scene": "占城新州衙署：报孙达儿在案前批答文书，汉话占话自如，见你递的礼单先笑纳再看人",
+    "rumor": "占城的相国最是深沉，国王与太子的话都要经他的手才成文书。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 45,
+    "bond_start": 15,
+    "bond_path": [
+     {
+      "src": "event:baosundar_letter",
+      "value": 20,
+      "note": "替他拟一回致北方的汉文回书，措辞合度"
+     },
+     {
+      "src": "event:baosundar_convoy",
+      "value": 15,
+      "note": "护送他的家人至宾童龙（耗 3 日）"
+     },
+     {
+      "src": "gift:korean_paper×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "文官随驾，不任战位",
+    "home_port": "champa",
+    "level_at_join": {
+     "zongguan": 2
+    },
+    "level_1279": {
+     "zongguan": 2
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "lang",
+     "langs": [
+      "cham",
+      "han_classical"
+     ],
+     "note": "占语与汉文文书，占城/云屯场合通译"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：占城朝政与降战之机；1283 前后的抉择他有分寸"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "shiwen"
+   ],
+   "gifts": [
+    "korean_paper"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1283 年率众出降的新闻一句话（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/baosundar.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "wang_tongshi": {
+   "id": "wang_tongshi",
+   "name": "王通事者",
+   "region": "vietnam_champa",
+   "category": "史实",
+   "identity": "占城通事（译语/外事）；1284 在录",
+   "langs": [
+    "cham",
+    "han_classical",
+    "viet"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1284-12",
+      "ports": [
+       "champa"
+      ],
+      "mode": "visit",
+      "note": "市舶馆驿：他来传话、收市税，两头赔笑"
+     }
+    ],
+    "scene": "占城市舶馆驿：通事王通事者验船货、传王命，一边翻话一边替你解占城规矩",
+    "rumor": "占城的王通事汉人占人两头都熟，外来船只到占城，头一个见的就是他。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 40,
+    "bond_start": 20,
+    "bond_path": [
+     {
+      "src": "event:wang_tongshi_translate",
+      "value": 20,
+      "note": "三番随馆译话，占城规矩指点"
+     },
+     {
+      "src": "event:wang_tongshi_errand",
+      "value": 10,
+      "note": "替他捎一封家书往新州（耗 2 日）"
+     },
+     {
+      "src": "gift:song_coin×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "tongshi": 1
+    },
+    "wage_slot": 30,
+    "battle": [],
+    "battle_note": "通事文职，不任战位",
+    "home_port": "champa",
+    "level_at_join": {
+     "tongshi": 1
+    },
+    "level_1279": {
+     "tongshi": 1
+    },
+    "wage_role_at_join": {
+     "tongshi": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "lang",
+     "langs": [
+      "cham",
+      "viet"
+     ],
+     "note": "占语、交语，占城/云屯场合通译"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：占城馆驿规矩与入港关税内情"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "fanyu"
+   ],
+   "gifts": [
+    "song_coin"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1284 年随使纳降文书的余闻一句（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/wang_tongshi.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "chandrabhanu": {
+   "id": "chandrabhanu",
+   "name": "旃陀罗婆奴",
+   "region": "siam_malay",
+   "category": "史实",
+   "identity": "单马令（Tambralinga）王 1230–1262；1247 跨海攻锡兰、据 Jaffna，自号 室利达摩罗阇",
+   "langs": [
+    "tai",
+    "mon",
+    "tamil"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1255-03",
+      "to": "1262-12",
+      "ports": [
+       "champa",
+       "guangzhou"
+      ],
+      "mode": "sea",
+      "route": [
+       [
+        "champa",
+        "guangzhou"
+       ]
+      ],
+      "note": "占城——广州航路：单马令王旗的大舶往来，船头立着螺冠金顶的佛旗"
+     }
+    ],
+    "scene": "占城外海：一支插佛旗的香舶横过你的航线，国王的亲随传话——王要在船上见你",
+    "rumor": "南边单马令国的船又北上了，船主就是那个打过锡兰的王。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 50,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:chandrabhanu_audience",
+      "value": 20,
+      "note": "王舶朝见，答三问海中事"
+     },
+     {
+      "src": "event:chandrabhanu_convoy",
+      "value": 20,
+      "note": "伴他的香舶南下一程（耗 6 日）"
+     },
+     {
+      "src": "gift:sutra_scrolls×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {
+     "events_done": [
+      "chandrabhanu_audience"
+     ],
+     "note": "须先在海路遇过他的船"
+    },
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "huozhang": 2
+    },
+    "wage_slot": 60,
+    "battle": [
+     "yazhen"
+    ],
+    "battle_note": "王旗之下，接舷时南面诸舶避其锋",
+    "home_port": "champa",
+    "level_at_join": {
+     "huozhang": 2
+    },
+    "level_1279": {
+     "huozhang": 2
+    },
+    "wage_role_at_join": {
+     "huozhang": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "leg",
+     "role": "huozhang",
+     "legs": [
+      [
+       "champa",
+       "any"
+      ]
+     ],
+     "note": "南海旧主：占城出海一航带得特别顺，险处能借佛旗平安"
+    },
+    {
+     "kind": "lang",
+     "langs": [
+      "tai",
+      "mon"
+     ],
+     "note": "盘面话、孟语，单马令/罗斛场合通译"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：单马令国事与锡兰方向的海上动静"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "shuizhan",
+    "zhijian"
+   ],
+   "gifts": [
+    "sutra_scrolls",
+    "sappanwood"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1262 年败殁锡兰的新闻一句（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/chandrabhanu.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "ramkhamhaeng": {
+   "id": "ramkhamhaeng",
+   "name": "敢木丁",
+   "region": "siam_malay",
+   "category": "史实",
+   "identity": "素可泰王兰甘亨（《元史》作敢木丁）1279–1298；1282 通元，1294 元诏其入朝/子弟入质",
+   "langs": [
+    "tai",
+    "mon"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1285-12",
+      "ports": [
+       "champa",
+       "guangzhou"
+      ],
+      "mode": "visit",
+      "note": "素可泰使舶泊处：使团在两广与占城之间往来，王亦可亲至船边"
+     }
+    ],
+    "scene": "占城馆驿/广州蒲涧：素可泰国使团与中土来使在席，敢木丁问起造船与磁器，拿出金银饰器回赠",
+    "rumor": "素可泰国王最重使节往来，谁的船走过他的水道，他都记得。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 55,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:ram_audience",
+      "value": 20,
+      "note": "使舶朝见，呈宋地物产"
+     },
+     {
+      "src": "event:ram_escort",
+      "value": 25,
+      "note": "护他的使船自广州至占城（耗 5 日）"
+     },
+     {
+      "src": "gift:fujian_porcelain×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {
+     "visited_any_of": [
+      "champa",
+      "guangzhou"
+     ],
+     "note": "须先经其使者往来之处"
+    },
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "huozhang": 1
+    },
+    "wage_slot": 30,
+    "battle": [],
+    "battle_note": "王之出使随驾，不任战位",
+    "home_port": "champa",
+    "level_at_join": {
+     "huozhang": 1
+    },
+    "level_1279": {
+     "huozhang": 1
+    },
+    "wage_role_at_join": {
+     "huozhang": 60
+    }
+   },
+   "niche": [
+    {
+     "kind": "intel",
+     "note": "风闻：素可泰与罗斛方向朝贡班列；1294 入质之事先闻一步"
+    },
+    {
+     "kind": "lang",
+     "langs": [
+      "tai"
+     ],
+     "note": "盘面话，素可泰/单马令场合通译"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "shiwen",
+    "zhijian"
+   ],
+   "gifts": [
+    "placer_gold",
+    "fujian_porcelain"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1294 年元诏入朝、子弟入质的新闻（窗口外，作余闻一句）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/ramkhamhaeng.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "malik_al_saleh": {
+   "id": "malik_al_saleh",
+   "name": "马利克·萨利赫",
+   "region": "island_sea",
+   "category": "史实",
+   "identity": "苏门答腊巴赛（Pasai）首位苏丹，13 世纪末立国（东南亚最早的伊斯兰苏丹国之一）",
+   "langs": [
+    "malay",
+    "arabic"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1285-12",
+      "ports": [
+       "penghu",
+       "champa"
+      ],
+      "mode": "sea",
+      "route": [
+       [
+        "penghu",
+        "champa"
+       ]
+      ],
+      "note": "澎湖——占城南航：巴赛新国的商舶结伴而北，掌教兼买办的是国主之亲"
+     }
+    ],
+    "scene": "澎湖南海航路：一队巴赛商舶张着新国旗号北行，为首的大船邀你靠帮同行一程",
+    "rumor": "南边巴赛国新出了一位苏丹，商船都换了新旗。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 50,
+    "bond_start": 15,
+    "bond_path": [
+     {
+      "src": "event:malik_convoy",
+      "value": 20,
+      "note": "与巴赛舶结伴南航一程，遇盗先登"
+     },
+     {
+      "src": "event:malik_tea",
+      "value": 20,
+      "note": "舶上席茶，讲东海市情与市舶规矩"
+     },
+     {
+      "src": "gift:pepper×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zongguan": 2
+    },
+    "wage_slot": 60,
+    "battle": [],
+    "battle_note": "掌教相公不任战位；在船主南洋香火与行情",
+    "home_port": "penghu",
+    "level_at_join": {
+     "zongguan": 2
+    },
+    "level_1279": {
+     "zongguan": 2
+    },
+    "wage_role_at_join": {
+     "zongguan": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "goods",
+     "port": "quanzhou",
+     "goods": [
+      "pepper"
+     ],
+     "side": "buy",
+     "edge": 0.05,
+     "note": "巴赛门路：泉州买胡椒 −5%"
+    },
+    {
+     "kind": "lang",
+     "langs": [
+      "malay",
+      "arabic"
+     ],
+     "note": "末罗由/回回话，南洋诸埠通译"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "shiwen",
+    "suanchou"
+   ],
+   "gifts": [
+    "pepper",
+    "sappanwood"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "13 世纪末巴赛立国的余闻一句（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/malik_al_saleh.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "kertanagara": {
+   "id": "kertanagara",
+   "name": "葛达那加剌",
+   "region": "island_sea",
+   "category": "史实",
+   "identity": "爪哇新柯沙里（Singhasari）末王 1268–1292；发 Pamalayu 征苏门答腊、图控海峡贸易；拒贡并辱元使",
+   "langs": [
+    "malay",
+    "cham"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1270-01",
+      "to": "1285-12",
+      "ports": [
+       "champa"
+      ],
+      "mode": "sea",
+      "route": [
+       [
+        "champa",
+        "any"
+       ]
+      ],
+      "note": "占城出海往南的航路：爪哇王旗的楼船坞艨往来伺察"
+     }
+    ],
+    "scene": "占城以南：新柯沙里的楼船横在航道上，王旗金帐的大舶传话——那位敢黥元使之面的王要见你",
+    "rumor": "爪哇王新近大出兵征了末罗瑜，航路上的船家都说他要图海峡的买卖。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 60,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:kertanagara_toast",
+      "value": 20,
+      "note": "王舶纵酒论诗，对了他的偈子三首"
+     },
+     {
+      "src": "event:kertanagara_intel",
+      "value": 25,
+      "note": "报北方军船动静，他赏你一面金牌"
+     },
+     {
+      "src": "gift:raw_silk×1",
+      "value": 15,
+      "note": ""
+     }
+    ],
+    "requires": {
+     "fame_min": 25,
+     "note": "名声须传到南洋"
+    },
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "huozhang": 3
+    },
+    "wage_slot": 120,
+    "battle": [
+     "yazhen",
+     "chihou"
+    ],
+    "battle_note": "王旗所至，楼船与接舷先登皆由他调度",
+    "home_port": "champa",
+    "level_at_join": {
+     "huozhang": 3
+    },
+    "level_1279": {
+     "huozhang": 3
+    },
+    "wage_role_at_join": {
+     "huozhang": 200
+    }
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "yazhen",
+     "note": "爪哇精兵随王旗接舷，跳帮如入无人之境"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：新柯沙里国政与海峡动静；1292 前后的远征他先透出一句"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "shiwen",
+    "zhijian"
+   ],
+   "gifts": [
+    "raw_silk",
+    "placer_gold"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1292 年害元使、自取其祸的新闻一句（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/kertanagara.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "kim_tongjeong": {
+   "id": "kim_tongjeong",
+   "name": "金通精",
+   "region": "japan_korea",
+   "category": "史实",
+   "identity": "高丽三别抄将军；据耽罗（济州）抗蒙，1273 败亡",
+   "langs": [
+    "koryo"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1270-06",
+      "to": "1273-04",
+      "ports": [
+       "jeju"
+      ],
+      "mode": "visit",
+      "note": "耽罗城寨：三别抄的老营，城门上挂着蒙古的箭镞为记"
+     }
+    ],
+    "scene": "耽罗城寨：金通精披甲登城看海，麾下三别抄各营沵海列舟，见宋船来先哨探后放近",
+    "rumor": "耽罗岛上的三别抄还在撑，蒙丽的水师围了几回都啃不动。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 50,
+    "bond_start": 10,
+    "bond_path": [
+     {
+      "src": "event:kim_fight",
+      "value": 25,
+      "note": "耽罗滩头较量一回，身手入他的眼"
+     },
+     {
+      "src": "event:kim_intel",
+      "value": 15,
+      "note": "报蒙丽水师动向，那一句说对了"
+     },
+     {
+      "src": "gift:deer_hide×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {
+     "visited_any_of": [
+      "jeju"
+     ],
+     "note": "须到过耽罗"
+    },
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zashi": 3
+    },
+    "wage_slot": 120,
+    "battle": [
+     "yazhen",
+     "chihou"
+    ],
+    "battle_note": "接舷、殿后都是他先接锋",
+    "home_port": "jeju",
+    "level_at_join": {
+     "zashi": 3
+    },
+    "level_1279": {
+     "zashi": 3
+    },
+    "wage_role_at_join": {
+     "zashi": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "combat",
+     "slot": "chihou",
+     "note": "殿后时三别抄旧部随之压阵"
+    },
+    {
+     "kind": "intel",
+     "note": "风闻：耽罗与高丽方向的军事动静"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "shuizhan",
+    "biaoqiang"
+   ],
+   "gifts": [
+    "deer_hide",
+    "korean_ginseng"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "1273 年耽罗陷落、一门殉国的新闻一句（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/kim_tongjeong.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
+  },
+  "shoni_kageyasu": {
+   "id": "shoni_kageyasu",
+   "name": "少弐景資",
+   "region": "japan_korea",
+   "category": "史实",
+   "identity": "少弐氏，镇西奉行家；文永之役博多湾主将，『蒙古襲来絵詞』所称「日の大将军」",
+   "langs": [
+    "wa"
+   ],
+   "appear": {
+    "chapter_min": 1,
+    "windows": [
+     {
+      "from": "1260-01",
+      "to": "1285-12",
+      "ports": [
+       "hakata"
+      ],
+      "mode": "visit",
+      "note": "博多津公馆：镇西奉行的厅事，案上堆着唐人船簿与异国通牒"
+     }
+    ],
+    "scene": "博多津：少弐景資正襟厅事之上，验看你的公凭与货物，问一句答一句，滴水不漏",
+    "rumor": "博多的少弐殿是镇西的总奉行，文永那年元军上岸，头一个接战的就是他。"
+   },
+   "join": {
+    "type": "bond",
+    "cost": 0,
+    "bond_need": 45,
+    "bond_start": 15,
+    "bond_path": [
+     {
+      "src": "event:shoni_credentials",
+      "value": 20,
+      "note": "公凭圆满，货物无隐，他颔首"
+     },
+     {
+      "src": "event:shoni_intel",
+      "value": 15,
+      "note": "高丽与元廷水师的动静报与他"
+     },
+     {
+      "src": "gift:japanese_fan×1",
+      "value": 10,
+      "note": ""
+     }
+    ],
+    "requires": {},
+    "note": "",
+    "fee": 0
+   },
+   "duty": {
+    "roles": {
+     "zashi": 2
+    },
+    "wage_slot": 60,
+    "battle": [
+     "chihou"
+    ],
+    "battle_note": "镇西武士长，殿后时最见章法",
+    "home_port": "hakata",
+    "level_at_join": {
+     "zashi": 2
+    },
+    "level_1279": {
+     "zashi": 2
+    },
+    "wage_role_at_join": {
+     "zashi": 120
+    }
+   },
+   "niche": [
+    {
+     "kind": "intel",
+     "note": "风闻：九州镇西地面与文永前后的防务"
+    },
+    {
+     "kind": "lang",
+     "langs": [
+      "wa",
+      "han_classical"
+     ],
+     "note": "倭语与汉文，博多/高丽场合通译"
+    }
+   ],
+   "stance": "foreign",
+   "traits": [
+    "zhijian",
+    "shuizhan"
+   ],
+   "gifts": [
+    "japanese_fan",
+    "sable_fur"
+   ],
+   "climax": {
+    "scholar": "此线没有",
+    "merchant": "文永十一年（1274）博多湾大捷的余闻一句（按史实落定）",
+    "hometown": "此线没有"
+   },
+   "reuse_character": false,
+   "p1": false,
+   "verify": "待核",
+   "portrait": "res://assets/portraits/shoni_kageyasu.png",
+   "portrait_status": "placeholder",
+   "portrait_note": "本批新增·真名史实·待用户出图",
+   "attrs": "_todo",
+   "growth": "_todo",
+   "fate": "_todo",
+   "relations": "_todo",
+   "relation_flips": "_todo",
+   "bond_tiers": "_todo",
+   "one_time": "_todo"
   }
  },
  "events": {
