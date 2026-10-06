@@ -35,8 +35,16 @@ characters 的 trait_def，落地白描一步才有人物志释义——新政�
   七、niche：每项 kind ∈ meta.niche_kind_def（钩名枚举，效果数值未拍板不抄值）。
   八、stance / traits / gifts / climax：stance ∈ meta.stance_def；traits ⊆ characters trait_def ∪ 名册 new_traits；
     gifts ⊆ goods.json id；climax 恰三线键。
-  九、未定字段与待核：attrs / growth / fate / relations / relation_flips / bond_tiers / one_time 恰 "_todo"；
-    events 的 who ⊆ companions id ∪ {"player"}；verify ∈ {"待核", "已核"}（字面备「史实评审已过」回填）。
+  九、未定字段与待核：attrs / growth / fate / relations / relation_flips / bond_tiers / one_time 恰 "_todo"，
+    或恰本闸登记的拍板形状（lane/story-bios 批 4 列传回填；未填者仍恰 "_todo"）：
+    attrs 恰 {hang,shang,wu,xue,wang} 五键（口径同 characters.json meta.attr_def）、各 int ∈ [1,100]；
+    growth = {} 或 dict（键 ∈ 五维、值 {"per_year": int>0, "cap": int ∈ [1,100]}）；
+    fate = {"leave": str 非空, "detail": str 非空} 或恰 "[待核]"；
+    relations = list（每条 {"id": 伙伴 id, "kind": str 非空}，id ∈ 全表∖自身）；
+    relation_flips = list（每条 {"counterpart": 伙伴 id ∪ {"player"}, "event": str 非空, "effect": str 非空}）；
+    bond_tiers 恰 {"40": str, "60": str, "80": str} 三档（档位自草案 §1.2：40 已识 / 60 个人事件·列传 / 80 传授）；
+    one_time = list<str>（一次性事件开关名）。events 的 who ⊆ companions id ∪ {"player"}；
+    verify ∈ {"待核", "已核"}（字面备「史实评审已过」回填）。
 交主控：python3 tools/check_companions.py（纯 stdlib、只读、< 1 s）
 """
 import json, os, re, sys
@@ -300,11 +308,78 @@ def validate(data, domains, emit=check):  # noqa: C901 —— 判词分节排开
 
     section("七节、niche / stance / traits / gifts / climax", not bag)
 
-    # 八节、未定字段与 events、待核
+    # 八节、未定字段与 events、待核（lane/story-bios 批 4：七字段实值形状定型校验）
+    FIVE_DIMS = {"hang", "shang", "wu", "xue", "wang"}
+    TIER_PENDING = "[待核]"
+
+    def _bio_ok(fname, v, kid):
+        """_todo 仍绿；实值按批 4 登记形状逐项判。返回 None=过，否则一句塌因。"""
+        if fname == "attrs":
+            if not (isinstance(v, dict) and set(v) == FIVE_DIMS):
+                return "须恰五维键 {hang,shang,wu,xue,wang}"
+            bad = [x for x, n in v.items() if not (isinstance(n, int) and not isinstance(n, bool) and 1 <= n <= 100)]
+            return "各维须 int ∈ [1,100]（塌 %s）" % bad if bad else None
+        if fname == "growth":
+            if v == {}:
+                return None
+            if not isinstance(v, dict):
+                return "须 dict（{} 表无成长）"
+            bad = [x for x in v if x not in FIVE_DIMS]
+            if bad:
+                return "键未登入五维：%s" % bad
+            for x, g in v.items():
+                if not (isinstance(g, dict) and set(g) == {"per_year", "cap"}
+                        and isinstance(g["per_year"], int) and g["per_year"] > 0
+                        and isinstance(g["cap"], int) and 1 <= g["cap"] <= 100):
+                    return "%s 须 {per_year: int>0, cap: int∈[1,100]}" % x
+            return None
+        if fname == "fate":
+            if v == TIER_PENDING:
+                return None  # [待核] 明示待评，不等于留 _todo
+            if not (isinstance(v, dict) and set(v) == {"leave", "detail"}
+                    and isinstance(v["leave"], str) and v["leave"]
+                    and isinstance(v["detail"], str) and v["detail"]):
+                return "须 {leave: str 非空, detail: str 非空} 或恰 \"[待核]\""
+            return None
+        if fname == "relations":
+            if not (isinstance(v, list) and len(v) >= 1):
+                return "须 list 非空（拍板：每人至少一条关系边）"
+            for it in v:
+                if not (isinstance(it, dict) and set(it) == {"id", "kind"}
+                        and isinstance(it["kind"], str) and it["kind"]):
+                    return "每条须 {id, kind}"
+                if not (isinstance(it["id"], str) and it["id"] in comps and it["id"] != kid):
+                    return "id=%s 须在名册且非本人" % it.get("id")
+            return None
+        if fname == "relation_flips":
+            if not isinstance(v, list):
+                return "须 list（可空）"
+            for it in v:
+                if not (isinstance(it, dict) and set(it) == {"counterpart", "event", "effect"}
+                        and isinstance(it["counterpart"], str)
+                        and (it["counterpart"] in comps or it["counterpart"] == "player")
+                        and isinstance(it["event"], str) and it["event"]
+                        and isinstance(it["effect"], str) and it["effect"]):
+                    return "每条须 {counterpart: 伙伴 id ∥ player, event, effect} 三键非空"
+            return None
+        if fname == "bond_tiers":
+            if not (isinstance(v, dict) and set(v) == {"40", "60", "80"}
+                    and all(isinstance(v[t], str) and v[t] for t in ("40", "60", "80"))):
+                return "须恰 {\"40\",\"60\",\"80\"} 三档且台词非空"
+            return None
+        if fname == "one_time":
+            if not (isinstance(v, list) and all(isinstance(x, str) and x for x in v)):
+                return "须 list<str>（可空）"
+            return None
+        return "字段未登记"
+
     for k, e in comps.items():
         for f in TODO_FIELDS:
-            _r(e.get(f) == TODO, "%s 未定字段 %s 恰 \"_todo\"（实得 %s…）"
-                           % (k, f, _type_name(e.get(f)) if e.get(f) != TODO else TODO))
+            v = e.get(f)
+            if v == TODO:
+                continue
+            why = _bio_ok(f, v, k)
+            _r(why is None, "%s 未定字段 %s：%s" % (k, f, why))
     ev_ids = list(events.keys())
     _r(len(set(ev_ids)) == len(ev_ids), "event id 唯一")
     for k, ev in events.items():
@@ -362,6 +437,10 @@ def _selftest(data, domains):
     expect_red("名字重号", lambda b: b["companions"]["he_sanhao"].update({"name": "林华"}))
     expect_red("未定字段填成词外", lambda b: b["companions"]["lin_hua"].update({"attrs": "todo"}))
     expect_red("未定字段提前搬数据", lambda b: b["companions"]["lin_hua"].update({"fate": [{"id": "x"}]}))
+    expect_red("列传数值逾档", lambda b: b["companions"]["lin_hua"].update({"attrs": {"hang": 101, "shang": 1, "wu": 1, "xue": 1, "wang": 1}}))
+    expect_red("列传 fate 键拼错", lambda b: b["companions"]["lin_hua"].update({"fate": {"Leave": "x", "detail": "y"}}))
+    expect_red("列传关系指到己身", lambda b: b["companions"]["lin_hua"].update({"relations": [{"id": "lin_hua", "kind": "同乡旧识"}]}))
+    expect_red("列传羁绊档缺值", lambda b: b["companions"]["lin_hua"].update({"bond_tiers": {"40": "a", "60": "b"}}))
     expect_red("窗口写成年份整数", lambda b: b["companions"]["lin_hua"]["appear"]["windows"][0].update({"from": 1255}))
     expect_red("from 晚于 to", lambda b: b["companions"]["lin_hua"]["appear"]["windows"][0].update({"to": "1255-01"}))
     expect_red("撞 crew 候名", lambda b: b["companions"].update({"zhou_suanchou": dict(b["companions"]["lin_hua"], id="zhou_suanchou")}) or b["companions"].pop("lin_hua"))
@@ -386,19 +465,21 @@ def _selftest(data, domains):
         _SENT = 2 * 21  # SoR 显形长钉 → 42（拨颁必同笔随同色）——烧左不净即左哨咬（同笔定例）
         check(isinstance(_sor, _TaggedStr) and len(_sor) == _SENT,
               "自检 SoR 类型与哨钉 %d 在衙" % _SENT)
-        _msg = "改坏须红 / 原样须绿 全判对（删 name / id 重号 / id 漂少 / 名重 / _todo 填词外值 / _todo 提前搬数 / 年份整数 / from>to / 撞 crew 名 / 云屯塞职 / 海邂缺 route / 海市蜃楼港 / bond 合计 / guest 月俸 / 未登特技 / who 指不到）"
-        _ori_line = "自检 1" + "6"[0] + " 格：" + _msg
-        x = "16"
-        _ori_msg = "自检 " + x[:0] + x + x[:0] + " 格：" + _msg
+        _msg = ("改坏须红 / 原样须绿 全判对（删 name / id 重号 / id 漂少 / 名重 / _todo 填词外值 / _todo 提前搬数 / "
+                "年份整数 / from>to / 撞 crew 名 / 云屯塞职 / 海邂缺 route / 海市蜃楼港 / bond 合计 / guest 月俸 / "
+                "未登特技 / who 指不到 / 列传数值逾档 / 列传 fate 键拼错 / 列传关系指己 / 列传羁绊档缺值）")
+        _ori_line = "自检 " + "2" + "0" + " 格：" + _msg
+        x = "20"
+        _ori_msg = "自检 " + x + " 格：" + _msg
         check(_ori_line == _ori_msg,
-              "自检格数须自 SoR 现读（不符则现读 ns 格 mismatch）")
-        check(len(_cases) == 16,
-              "自检判红格数须钉 16（拨颁必同笔随同色）")
+              "自检格数须自现读（不符则现读格 mismatch）")
+        check(len(_cases) == 20,
+              "自检判红格数须钉 20（批 4 列传形状 +4 格，拨颁必同笔随同色）")
         y = "42"
         check(len(_sor) == int(y),
-              "自检 SoR 显形长钉须 42（拨颁必同笔随同色）")
-        check(x + x == "1616",
-              "自检判语拟字样 16 哨在衙（拨颁必同笔随同色）")
+              "自检显形长钉须 42（拨颁必同笔随同色）")
+        check(x + x == "2020",
+              "自检判语拟字样 20 哨在衙（拨颁必同笔随同色）")
 
 
 def main():
