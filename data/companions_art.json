@@ -1,6 +1,6 @@
 {
  "meta": {
-  "title": "伙伴系统立绘槽位清单（60 人）",
+  "title": "伙伴系统立绘槽位清单（70 人）",
   "date": "2026-10-07",
   "author": "莉莉（伙伴系统专线）·真名史实批",
   "spec": {
@@ -15,7 +15,7 @@
   "style_anchor_zh": "南宋—元初东亚海域历史题材 · 写实厚涂 · 半身像 · 居中偏 3/4 面向观者 · 低饱和暗调土色系（墨黑 / 铁灰 / 赭石 / 暗蓝）· 暖侧光（油灯、火把、夕照、舷窗光）· 湿木与粗麻质感 · 景深虚化背景 · 电影级明暗 · 做旧，无轮廓线",
   "style_anchor_en": "Song-Yuan era East Asian maritime historical, realistic thick-paint CG, half-body portrait, centered, three-quarter view toward viewer, low-saturation dark earthy palette (ink black, iron grey, ochre, muted indigo), warm side light, wet wood and coarse hemp texture, shallow depth of field, cinematic chiaroscuro, weathered period texture, no line art",
   "negative": "watercolor, ink wash, gongbi, anime cel shading, cartoon, line art, modern clothing, plastic skin, neon, oversaturated pastel, extra fingers, deformed hands, text, watermark, signature, logo, lowres",
-  "note": "16 人（P1 + 邻近）已给中英生图提示词；其余 24 人先占位。2026-10-07 真名史实批 +20 槽位（蒲氏三代、马八儿/忽鲁谟斯/基尔瓦来客、占城君臣、单马令/素可泰、巴赛/爪哇、高丽/日本）：file/size/priority/look/personality 齐，提示词待下一批续写——本批新增·真名史实·待用户出图。"
+  "note": "16 人（P1 + 邻近）已给中英生图提示词；其余 24 人先占位。2026-10-07 真名史实批 +20 槽位（蒲氏三代、马八儿/忽鲁谟斯/基尔瓦来客、占城君臣、单马令/素可泰、巴赛/爪哇、高丽/日本）。2026-10-07 批 2 琉球·澎湖 +10 槽位（趙汝適/汪大猷以书与遗址在场、楊祥/吳志斗/阮鑒/陳輝/劉閏/張浩/張進元官七人、英祖半史实）：file/size/priority/look/personality 齐，提示词另见 /workspace/nk1-companion-design/生图清单_P6_琉球10人.md——本批新增·真名史实·待用户出图。"
  },
  "portraits": {
   "lin_hua": {
@@ -773,6 +773,116 @@
    "status": "placeholder",
    "personality_short": "行事一板一眼，公事公办；元寇那年他站在博多湾的水际，刀出鞘就没收回过。",
    "look": "清瘦端正的武士大将，束带乌帽直衣；腰间大小两刀，甲叶是旧年间的赤丝縅，举止一丝不苟。"
+  },
+  "zhao_rushi": {
+   "name": "趙汝適",
+   "title": "福建路市舶提举",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/zhao_rushi.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "人已作古，书还在；朱笔圈过的那行字比人活得长。",
+   "look": "不着官袍——人未出场，只画那册书摊在泉州衙案的旧灯下：纸页黄脆，『彭湖』二字朱笔圈过，旁压一方市舶司旧印。"
+  },
+  "wang_dayou": {
+   "name": "汪大猷",
+   "title": "前任泉州知州",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/wang_dayou.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "人已作古，二百间屋基替他站岗。",
+   "look": "不画人——画澎湖旧寨遗址：二百间屋基傍着燕窝排开，断墙上海蛎壳结满，一杆褪色的宋字旗还在桩上飘。"
+  },
+  "yang_xiang": {
+   "name": "楊祥",
+   "title": "元·宣抚使",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/yang_xiang.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "船头望海能望半天，眼里没有浪只有线。",
+   "look": "北方水军万户，颧骨高、面皮被海风刮得酱紫；元式氈笠压眉，号衣外罩一件旧水靠；手搭在江门刀柄上，身后桅杆直插云天。"
+  },
+  "wu_zhidou": {
+   "name": "吳志斗",
+   "title": "元·礼部员外郎·招谕副使",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/wu_zhidou.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "满肚子海道经纶，功名只此一搏。",
+   "look": "单薄书生，青衫洗得发白，怀里死抱一只书箱；眉头锁着，眼神却亮——满肚子海道经纶没处使，鬓角已被泊岸风吹白了一缕。"
+  },
+  "ruan_jian": {
+   "name": "阮鑒",
+   "title": "元·兵部员外郎·招谕副使",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/ruan_jian.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "丢了书比丢了命糟。",
+   "look": "圆脸的文官，元式交领官袍袖口绣着兵部补子；左手死死抱着一只油布包的国书匣，右手还拎着一卷湿损文书；站在船板上的架势一看就是旱鸭子。"
+  },
+  "chen_hui": {
+   "name": "陳輝",
+   "title": "三嶼人·随军通事",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/chen_hui.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "靠一张嘴讨生活，话讲不通就手脚并用。",
+   "look": "年约三旬的南方汉子，肤黑骨粗，赤着上身、下围一条杂色筒裙；肩上挂一捆树皮布包裹，箫笛插在腰后——是讨生活的译人，不是行伍装扮。"
+  },
+  "liu_run": {
+   "name": "劉閏",
+   "title": "元军统兵官",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/liu_run.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "人狠话少，眼里不揉沙子。",
+   "look": "精悍的将校，三十上下，甲罩一件皮背心，铁笠压得低；握刀的习惯已改不掉，左手虎口有旧箭疤；眼神扫人像点名。"
+  },
+  "zhang_hao": {
+   "name": "張浩",
+   "title": "元·都鎮撫（水军）",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/zhang_hao.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "按令而行，按律而断；账簿当军册看。",
+   "look": "五十上下的宿将，花白虬髯，紫棠面皮；元式戎服外罩水獭皮领氅，指上一枚铁扳指；立在船头不怒自威，身后令旗卷风。"
+  },
+  "zhang_jin": {
+   "name": "張進",
+   "title": "元·福州新軍萬戶",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/zhang_jin.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "座位还没焐热，征伐是投名状。",
+   "look": "三十出头的新贵武官，眉目还带着几分南方汉相；元式窄袖戎服没穿旧，腰间金牌是新颁的；手一直按在剑柄上，像怕人忘了他是掌兵的。"
+  },
+  "eiso": {
+   "name": "英祖",
+   "title": "琉球英祖王朝开国君主",
+   "priority": "P2",
+   "new_art": true,
+   "file": "res://assets/portraits/eiso.png",
+   "size": "512x640",
+   "status": "placeholder",
+   "personality_short": "面上像佛，心里像秤。",
+   "look": "六旬上下的王者，面容黧黑而清矍，束发以青布；肩披宽幅织云纹的芭蕉布衣，腰无金玉、只挂一枚白玉钩——是岛国之主，不是中原天子的气派。"
   }
  }
 }
