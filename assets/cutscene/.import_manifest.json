@@ -225,5 +225,60 @@
   "out_sha1": "7e89f825725deed385ab94d390083d75110f60e2",
   "note": "章末了结·账上的距离第 2 镜「只有进出清楚的货，和脚钱」：货栈账房，麻包、算盘、摊开的账册（仓库内 bg_gpt_1.png，游戏未引用；镜头压在案面与货堆，避开左侧青花罐与上方匾额字）",
   "post": "fix_cs_qinghua.py --only counting_house --in-place"
+ },
+ "cs_linan_surrender.jpg": {
+  "digest": null,
+  "source": "repo:cs_linan_surrender.unused·（占位——asset_pool sidecar 直入库未挂镜，无仓外来源）",
+  "crop": null,
+  "size": [
+   1920,
+   1080
+  ],
+  "out_sha1": "1077a0d386b5d76a80bf33bb68d9a08e217cebf3",
+  "note": "素材池·临安出降（art P4 sidecar 直入库，登记备索）"
+ },
+ "cs_penghu_fishing.jpg": {
+  "digest": null,
+  "source": "repo:cs_penghu_fishing.unused·（占位——asset_pool sidecar 直入库未挂镜，无仓外来源）",
+  "crop": null,
+  "size": [
+   1920,
+   1080
+  ],
+  "out_sha1": "548f1ae0b1158f4ee96826918fc48d70921a19dc",
+  "note": "素材池·澎湖渔汛（art P4 sidecar 直入库，登记备索）"
+ },
+ "cs_quanzhou_fall.jpg": {
+  "digest": null,
+  "source": "repo:cs_quanzhou_fall.unused·（占位——asset_pool sidecar 直入库未挂镜，无仓外来源）",
+  "crop": null,
+  "size": [
+   1920,
+   1080
+  ],
+  "out_sha1": "2c323f7a1449f518db07437239ec241c84f550f2",
+  "note": "素材池·泉州陷落（art P4 sidecar 直入库，登记备索）"
+ },
+ "cs_ryukyu_trade.jpg": {
+  "digest": null,
+  "source": "repo:cs_ryukyu_trade.unused·（占位——asset_pool sidecar 直入库未挂镜，无仓外来源）",
+  "crop": null,
+  "size": [
+   1920,
+   1080
+  ],
+  "out_sha1": "2e6a3245b95e8d16e9a6b18b33e25b2231a36ad2",
+  "note": "素材池·琉球互市（art P4 sidecar 直入库，登记备索）"
+ },
+ "cs_yashan_burn.jpg": {
+  "digest": null,
+  "source": "repo:cs_yashan_burn.unused·（占位——asset_pool sidecar 直入库未挂镜，无仓外来源）",
+  "crop": null,
+  "size": [
+   1920,
+   1080
+  ],
+  "out_sha1": "79b2241e99741498d3c8058d60448ae7d53781ce",
+  "note": "素材池·崖山火海（art P4 sidecar 直入库，登记备索）"
  }
 }

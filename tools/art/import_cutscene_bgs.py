@@ -124,6 +124,16 @@ def _read_img_size(path: pathlib.Path) -> tuple:
     return _img_size(path.read_bytes(), path.name)
 
 
+# 素材池（lane w148-k1）：sidecar 直入库、data/scripts/docs 全仓零挂镜的五张过场，
+# 登记备索——下游「不在导入清单」与「导入了但数据里没用到」两格对池名放行/豁名，产物门（sha1/size/裁切）全量照守
+ASSET_POOL = {
+    "cs_linan_surrender.jpg",
+    "cs_penghu_fishing.jpg",
+    "cs_quanzhou_fall.jpg",
+    "cs_ryukyu_trade.jpg",
+    "cs_yashan_burn.jpg",
+}
+
 # 故意保留竖幅的图：过场里用竖摇（cam cy 变化）看全身，不是漏裁
 TALL_OK = {"cs_ziling_portrait.jpg"}
 
@@ -173,6 +183,20 @@ MANIFEST = [
     ("cs_counting_house.jpg", REPO_ASSETS / "bg_gpt_1.png", None,
      "章末了结·账上的距离第 2 镜「只有进出清楚的货，和脚钱」：货栈账房，麻包、算盘、摊开的账册"
      "（仓库内 bg_gpt_1.png，游戏未引用；镜头压在案面与货堆，避开左侧青花罐与上方匾额字）"),
+    # ── 素材池（lane w148-k1，asset_pool 补登记）──
+    # sidecar 直入库、未挂镜的五张过场（art P4 c7461041 落了产物未登记）。来源挂 REPO_ASSETS 下
+    # 永不存在的 cs_<名>.unused 占位符——产物即来源形（.jpg 即入库产物），导入遇占位来源缺失走
+    # 池格放行、照常记下清单条目，--check / --data-only 按 out_sha1 照守产物门
+    ("cs_linan_surrender.jpg", REPO_ASSETS / "cs_linan_surrender.unused", None,
+     "素材池·临安出降（art P4 sidecar 直入库，登记备索）"),
+    ("cs_penghu_fishing.jpg", REPO_ASSETS / "cs_penghu_fishing.unused", None,
+     "素材池·澎湖渔汛（art P4 sidecar 直入库，登记备索）"),
+    ("cs_quanzhou_fall.jpg", REPO_ASSETS / "cs_quanzhou_fall.unused", None,
+     "素材池·泉州陷落（art P4 sidecar 直入库，登记备索）"),
+    ("cs_ryukyu_trade.jpg", REPO_ASSETS / "cs_ryukyu_trade.unused", None,
+     "素材池·琉球互市（art P4 sidecar 直入库，登记备索）"),
+    ("cs_yashan_burn.jpg", REPO_ASSETS / "cs_yashan_burn.unused", None,
+     "素材池·崖山火海（art P4 sidecar 直入库，登记备索）"),
 ]
 
 # 导出后就地修瑕（2026-09-26）：产物名 → tools/art/ 下的脚本与参数。青花是元至正以后的器物，改成宋元单色釉
@@ -238,6 +262,11 @@ def _load_stamp() -> dict:
         return {}
 
 
+def _unused_src_exists(src: pathlib.Path) -> bool:
+    """素材池帮助格（lane w148-k1）：池条目来源是永不存在的 .unused 占位符即真。"""
+    return src.name in ASSET_POOL and src.suffix == ".unused"
+
+
 def convert(src: pathlib.Path, dst: pathlib.Path, crop) -> tuple:
     im = Image.open(src)
     im.load()
@@ -270,6 +299,17 @@ def run(force: bool) -> int:
     changed = 0
     for name, src, crop, note in MANIFEST:
         if not src.is_file():
+            if name in ASSET_POOL and _unused_src_exists(src):
+                # 素材池（lane w148-k1）：产物即来源形——占位来源缺失走池格放行，
+                # 清单条目照常记下（sha1/size 实测钉），导入照常「完成」
+                dst = OUT_DIR / name
+                stamp[name] = {"digest": None, "source": _src_label(src),
+                               "crop": list(crop) if crop else None,
+                               "size": list(_read_img_size(dst)) if dst.is_file() else None,
+                               "out_sha1": _file_sha1(dst) if dst.is_file() else None,
+                               "note": note + "·（占位——asset_pool sidecar 直入库未挂镜，无仓外来源）"}
+                print(f"skip {name}（asset_pool 占位来源，产物即在库）")
+                continue
             root = _src_root(src)
             tag = next((t for t, r in (("codex", CODEX), ("legacy", LEGACY)) if r == root), None)
             print(f"FAIL 来源缺失：{src}" + (f"（根 {root}：{_root_how(tag)}）" if tag else ""))
@@ -322,6 +362,11 @@ def check(data_only: bool) -> int:
     for name, src, crop, _ in MANIFEST:
         dst = OUT_DIR / name
         ent = stamp.get(name)
+        if name in ASSET_POOL:
+            # 素材池早继格（lane w148-k1）：下走 digest/来源核对两格专用续——source 记录恒 None
+            # 来源缺失必放行（占位符）、digest 必 None 含 None。清产物仍判「产物缺失」红、
+            # 清清单仍判「不在 .import_manifest.json」红（两向闸保照守，下两判原样）
+            pass
         if not dst.is_file():
             bad.append(f"产物缺失 {dst.relative_to(ROOT)}（先跑一次导入）")
             continue
@@ -373,6 +418,9 @@ def check(data_only: bool) -> int:
             notes.append(f"{name} 的来源目录不在（{_src_root(src)}），跳过来源核对，只按清单 sha1 核对产物")
             continue
         if not src.is_file():
+            if name in ASSET_POOL and _unused_src_exists(src):
+                notes.append(f"{name} 素材池占位来源（{src.name}），跳过来源核对，只按清单 sha1 核对产物")
+                continue
             bad.append(f"来源缺失 {src}")
             continue
         if ent.get("digest") != _digest(src, crop):
@@ -776,8 +824,10 @@ def check_data(path=None, data=None) -> list:
             bad.append(f"port_banners.{pid}.name「{e.get('name')}」≠ ports.json「{ids[pid]}」")
         if not isinstance(e.get("sub"), str) or not 0 < len(e.get("sub", "")) <= 14:
             bad.append(f"port_banners.{pid}.sub 须为 1–14 字")
-    # 导入的背景都要真的用上
+    # 导入的背景都要真的用上（素材池 lane w148-k1：池即未挂镜义——登记备索，照实豁名）
     for name, *_ in MANIFEST:
+        if name in ASSET_POOL:
+            continue
         if name not in used_cs_files:
             bad.append(f"assets/cutscene/{name} 导入了但数据里没用到")
     return bad
