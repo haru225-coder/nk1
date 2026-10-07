@@ -166,6 +166,8 @@ const SCRIPTS := [
 	"res://tools/qa_w53_17_morale_probe.gd",  # lane w53-17 士气与风专项探针（大风两散 / 士气带回 / 火长报风 / 通事劝降）
 	"res://tools/qa_w53_9_chapter_card_probe.gd",  # lane w53-9 章节卡题记留读与一句一列探针（须带窗口）
 	"res://tools/qa_w53_9_port_banner_probe.gd",  # lane w53-9 抵港横幅各窗口比例都挂在港名匾下探针（以场景启动，见 SCENES）
+	"res://tools/qa_w53_p3b_firerot_probe.gd",  # lane w53-p3b 火攻回到装填轮换专项探针（fire_attack_load 开关两态、引火乘数上乘）
+	"res://tools/qa_w53_p3b_winrate_probe.gd",  # lane w53-p3b 火攻胜率对比工具（同 8 种子 × 300 秒窗口，对阵敌将 live）
 	# lane w53-15 战斗方案一、二期探针（敌情列 / 劝降挂敌船 / 砍钩 / 张湿毡 / 总管夷人）
 	"res://tools/qa_w53_15_intel_probe.gd", "res://tools/qa_w53_15_parley_probe.gd", "res://tools/qa_w53_15_cut_probe.gd",
 	"res://tools/qa_w53_15_wet_probe.gd", "res://tools/qa_w53_15_role_probe.gd", "res://tools/qa_w53_15_shipcard_probe.gd",

@@ -128,6 +128,8 @@ EXEMPT = [
     ("qa_w53_9_cutscene_input_probe.gd", "lane-w53-9", "过场 / 墨幕层输入时序专项探针（逐路钉一处修复、回退即红），带窗口以场景启动，随 lane-w53-9 落地验过留档"),
     ("qa_w53_9_cutscene_probe.gd", "lane-w53-9", "过场连点字幕与提前合并成一拍族，同一拍帧自检，不入截图册 finish_shots 系"),
     ("qa_w53_9_port_banner_probe.gd", "lane-w53-9", "海图回港抵港横幅（挂签式）在 16:9 / 16:10 / 4:3 / 竖屏 / 超宽下都挂在港名匾下专项探针（回退即红），带窗口以场景启动，随 lane-w53-9 落地验过留档"),
+    ("qa_w53_p3b_firerot_probe.gd", "lane-w53-p3b", "战斗三期火攻回到装填轮换专项探针（fire_attack_load 开时三档轮换 / 引火乘数上乘 / 关时两档且签面提示逐字回 w53-2 账，回退即红），headless 秒级，随 lane-w53-p3b 落地验过留档"),
+    ("qa_w53_p3b_winrate_probe.gd", "lane-w53-p3b", "火攻回轮换胜率对比工具（二期间径 同 8 种子 × 300 秒窗口 × 敌将 live × 士气裁决早收；对手敌船未挂 FloodFire，火攻烧的是开工前的敌船——基线写明），headless 可跑，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),
