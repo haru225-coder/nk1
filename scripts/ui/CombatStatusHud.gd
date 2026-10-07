@@ -30,6 +30,8 @@ const GROUP := "nk1_combat_status"
 const LAYER_INDEX := 20
 ## 敌情列与我方士气险档提示条的开关（战斗系统方案第一期「看得见」；CombatSwitches），关掉两项都不出
 const INTEL_SWITCH := "enemy_intel"
+## 敌情列行尾水火短注的开关（第三期「火与水」显示侧；p3a 的 FloodFire 挂件供数）。关掉逐字回旧的行（一期原样）
+const FF_SWITCH := "enemy_flood_fire"
 ## 读数刷新间隔（秒）：十分之一秒一次足够，逐帧拼字白费
 const REFRESH_SEC := 0.1
 ## 左下留边；右侧让出 WorldMap 的小地图（找不到小地图节点时按 MINIMAP_FALLBACK_W 让）
@@ -645,12 +647,35 @@ static func intel_damage_text(enemy: Node, seen: float) -> String:
 	return "，".join(bits)
 
 
-## 敌情列一行的三格：布色、估计伤情（可空）、船种（可空）；沉了 / 降了的行（cloth 空）不写
-static func intel_line_of(enemy: Node, seen: float) -> Dictionary:
+## 水火短注（三期，lane w53-p3c）：敌船带 flood_fire_state()（p3a 的 FloodFire 挂件；
+## 契约 {"fire","flood","burning","list_deg","sinking"}，开关关了挂件给 {}）、开关开、
+## 给出的字典非空，就从最重到最轻取一句缀在敌情列行尾：「将沉」>「失火」+「进水」并出可同挂。
+## 鸭子型：p3a 没落地前敌船没这方法（或它自己给 {}），照常一行短注也没有——本 lane 只读挂件、不造灾。
+static func ff_note_of(enemy: Node) -> String:
+	if enemy == null or not is_instance_valid(enemy) or not enemy.has_method("flood_fire_state"):
+		return ""
+	var st = enemy.call("flood_fire_state")
+	if not (st is Dictionary) or (st as Dictionary).is_empty():
+		return ""
+	var d: Dictionary = st
+	if d.get("sinking") == true:
+		return "将沉"
+	var bits := PackedStringArray()
+	if d.get("burning") == true or snap_f(d, "fire", 0.0) >= 0.5:
+		bits.append("失火")
+	if snap_f(d, "flood", 0.0) >= 0.3 or absf(snap_f(d, "list_deg", 0.0)) >= 10.0:
+		bits.append("进水")
+	return "，".join(bits)
+
+
+## 敌情列一行的三格：布色、估计伤情（可空）、船种（可空）；沉了 / 降了的行（cloth 空）不写。
+## 第四格 ff_note：水火短注（可空，三期开关开且敌船带 flood_fire_state 才有；switch_on 缺省照全局开关）——
+## 探针喂假敌船时传 switch_on=false 验关态逐字回旧；节点刷新一侧（_refresh_intel / 小卡）传开关实态。
+static func intel_line_of(enemy: Node, seen: float, switch_on := true) -> Dictionary:
 	var cloth := cloth_state(enemy)
 	var dmg := intel_damage_text(enemy, seen)
 	var kind := ship_type_word(enemy)
-	return {"cloth": cloth, "damage": dmg, "kind": kind}
+	return {"cloth": cloth, "damage": dmg, "kind": kind, "ff_note": ff_note_of(enemy) if switch_on else ""}
 
 
 ## 我方士气险档提示（只提示条、不弹窗）：跌到 MORALE_WARN_AT 写「队里乱了」，跌到 MORALE_BAD_AT 写「白旗要挂出来了」；
@@ -1022,6 +1047,15 @@ func _switch_on() -> bool:
 	return Switches.on(INTEL_SWITCH)
 
 
+## 水火短注的开 / 关（三期总表 enemy_flood_fire）：探针可 Switches.set_on 逐格定
+static func ff_switch_on() -> bool:
+	return Switches.on(FF_SWITCH)
+
+
+func _ff_on() -> bool:
+	return ff_switch_on()
+
+
 ## 敌情列：右上「敌情」一匾下凡艘敌船几行（每艘一行：布色墨珠 + 估计伤情 + 船种），无一艘降幡挂着白帆
 func _build_intel() -> void:
 	_intel = PanelContainer.new()
@@ -1144,7 +1178,7 @@ func _refresh_intel(snap: Dictionary) -> void:
 		_intel_rows.remove_child(extra)
 		extra.queue_free()
 	for i in range(want):
-		var info: Dictionary = intel_line_of(foes[i], float(_hull_seen.get((foes[i] as Object).get_instance_id(), 0.0)))
+		var info: Dictionary = intel_line_of(foes[i], float(_hull_seen.get((foes[i] as Object).get_instance_id(), 0.0)), _ff_on())
 		var row := _intel_rows.get_child(i) as HBoxContainer
 		var dot := row.get_child(0) as ColorRect
 		dot.self_modulate = cloth_color(String(info["cloth"]))
@@ -1154,6 +1188,8 @@ func _refresh_intel(snap: Dictionary) -> void:
 		if String(info["damage"]) != "":
 			parts.append(String(info["damage"]))
 		parts.append(String(info["cloth"]))
+		if String(info["ff_note"]) != "":
+			parts.append(String(info["ff_note"]))
 		var lbl := row.get_child(1) as Label
 		lbl.text = "　".join(parts)
 		# 选中行字涂金，没选中照常 — 点哪艘那艘就是这艘的「小卡」门
@@ -1254,8 +1290,9 @@ func _refresh_ship_card() -> void:
 		_ship_detail_lbl.visible = false
 		return
 	_intel_ship.visible = true
-	var info: Dictionary = intel_line_of(e, float(_hull_seen.get(_selected_id, 0.0)))
-	_ship_card_lbl.text = "%s %s" % [String(info["kind"]) if String(info["kind"]) != "" else "来船", String(info["cloth"])]
+	var info: Dictionary = intel_line_of(e, float(_hull_seen.get(_selected_id, 0.0)), _ff_on())
+	_ship_card_lbl.text = "%s %s%s" % [String(info["kind"]) if String(info["kind"]) != "" else "来船", String(info["cloth"]),
+		("・" + String(info["ff_note"])) if String(info["ff_note"]) != "" else ""]
 	_ship_detail_lbl.visible = _detail_open
 	# 喊话钮的亮灭就是 parley_road 三样的亮灭——三样凑齐才亮
 	var scr = _orders_script()

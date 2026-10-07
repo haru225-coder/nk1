@@ -202,6 +202,8 @@ const SCRIPTS := [
 	"res://tools/qa_cargo_strip_probe.gd",  # lane w29-k2 船籍簿船舱段 cargo_str（品名 × 数量 / 容量 / 空舱）上屏断言探针
 	"res://tools/qa_fold_dim_probe.gd",  # lane w32-k2 LogFold.render 港页记事栏 dim_rest=true 分支褪色字样断言探针（折行 / 月行裹色 + 换档相变）
 	"res://tools/qa_w53_2_combat_overkill_probe.gd",  # lane w53-2 敌船击沉过量杀伤折进甲板伤亡断言探针（take_damage 击沉时超出的份不再蒸发）
+	"res://tools/qa_w53_p3c_ammo_low_probe.gd",  # lane w53-p3c 敌将弹药告急回归专项探针（三期开关两态）
+	"res://tools/qa_w53_p3c_winrate_probe.gd",  # lane w53-p3c 三期开关胜率对比工具（-- --n=8 --seeds=…）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
