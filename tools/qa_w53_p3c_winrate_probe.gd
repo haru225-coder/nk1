@@ -8,14 +8,15 @@ extends SceneTree
 ## 福船 60 人对两艘快船——同二期 lane 量的那一仗）；敌将 live（不冻敌船 fire_timer、不接管旗舰航向），
 ## 士气簿裁决到即早收（同二期口径）。每场 seed(sd) 后开战，WorldMap 自身的 randf 序按种子走。
 ##
-## p3a（敌船 FloodFire 实战接线）没落地前，两键没有任何消费者：enemy_flood_fire 在敌船侧无人读——
-## 同键值跑两遍 hands-off 场，on/off 各行须逐字相同。这本身就是工具的自检：哪天 on/off 不一致，
-## 要么是 p3a 已接线（自检完成史命，工具留给主控在三期全落地后量差），要么是数又被谁碰了。
-## （p3a 落地后敌船挂 flood_fire_state()：我方的矢石照样能打它进水失火，开关关时敌船不灾。）
-##
 ## 用法：godot --headless --path . -s res://tools/qa_w53_p3c_winrate_probe.gd -- --n=8 --seeds=11,23,37,41,53,67,79,83
 ##   --n 场数（缺省 8，与 seeds 个数不齐时按小者跑）；--seeds 逗号分隔种子表（缺省同二期 8 种子）。
-## 判词：末行 WINRATE … 恒打；自检（on/off 未接线须一致）不过退 1。
+## 判词：末行 WINRATE … 恒打；工具侧自检（on/off 各跑足 N 场、无 hang）不过退 1。
+## 点：同一 sd 跑 on/off 难到逐场对上——产品里 PirateShip / DamageModel / CombatMorale 的 rng
+## 多是按 OS 时撒的，本 lane 已注射 sea_seed / 敌船 _rng / DamageModel rng / 挂件 rng，
+## 但 MeleeResolve 逐合 / gm / Calendar 微扰仍在控外。「同 8 个种子」按二期的口径是脚本走法
+## （同台戏 8 场 vs 8 场、胜率可对比），不是逐场 bit-exact 复现。两键是否接线三个月后 p3a 落
+## 地了主控拿它量差，跑法照旧——那时「开关开」敌船真会进水失火，差就是 p3a 的杀伤，测它
+## 到不到 5pp 公约。
 
 const TAG := "QA_W53_P3C_WINRATE"
 const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
@@ -69,6 +70,31 @@ func _battle_one(fleet: Node, gm: Node, sd: int) -> Dictionary:
 	root.add_child(wm)
 	var rec: Array = []
 	wm.battle_finished.connect(func(o: String, data: Dictionary) -> void: rec.append([o, data.duplicate()]))
+	# 注射所有未 seed 的私有 rng（运行时节点成员，不改产品脚本）——要不然同 seed 两场照样漂：
+	#   PirateShip._rng        敌炮散布 / 命中手 / 跳帮判定
+	#   Ship.damage_model.rng  命中落点 / 舱位 / 左侧右舷
+	#   CombatMorale 挂件 rng   我方溃逃甩脱 roll
+	# SeaState 那一支已用 pending_battle.sea_seed 钉（WorldMap._setup_sea 转给它）。
+	# 注射只动运行时节点成员；本 lane 实测同 seed 11 连跑两遍曾得 win/flee、flee/lose 四个不同 outcome。
+	var foes := wm.get_children().filter(func(c): return String(c.name).begins_with("PirateShip") and not c.is_queued_for_deletion())
+	var foe_rng_idx := 0
+	for f in foes:
+		var r := RandomNumberGenerator.new()
+		r.seed = sd + 3_000_000 + foe_rng_idx * 13_579
+		foe_rng_idx += 1
+		f.set("_rng", r)
+	var ship_node = wm.get("ship")
+	if ship_node != null:
+		var dm = ship_node.call("get_damage_model") if ship_node.has_method("get_damage_model") else null
+		if dm != null:
+			var dr := RandomNumberGenerator.new()
+			dr.seed = sd + 5_000_000
+			dm.set("rng", dr)
+	var morale_hook = wm.get("_morale")
+	if morale_hook != null:
+		var mr := RandomNumberGenerator.new()
+		mr.seed = sd + 6_000_000
+		morale_hook.set("rng", mr)
 	# 士气裁决可早收（挂件 verdict 信号接到 _battle_exit，同二期）；双手离舵，玩家船不打一炮
 	var own_freed := [false]
 	var own: Node = wm.get("ship")
@@ -157,17 +183,23 @@ func _run() -> void:
 	var b_won: int = won.call("off")
 	var diff := float(a_won - b_won) / float(n) * 100.0
 	print("WINRATE on=%d/%d off=%d/%d diff=%+.1f pp" % [a_won, n, b_won, n, diff])
-	# 自检：两键还无人接线（p3a 未落地）时 on/off 各行须逐字相同
-	var alike := true
-	for i in n:
-		var ro: Dictionary = rows["on"][i]
-		var rf: Dictionary = rows["off"][i]
-		if str(ro["overcome"]) != str(rf["overcome"]) or bool(ro["win"]) != bool(rf["win"]):
-			alike = false
-			break
-	if alike:
-		print("SELFCHECK unwired-identical OK（两键未接线，on/off 各行逐字相同——这本身是工具的自检）")
+	# 工具侧自检（不判「两键无人接线」——那是主控侧在读数时做的）：
+	#   ① on/off 各跑足 N 场、② 每场结果都进了收战法式（win/lose/flee）或注 hang
+	#      （hang 世界：时限+180 秒都没收战——这不是稳态，记 fail 让人重跑）。
+	# 不再做「on/off 逐场相同」的判——产品里 PirateShip/Ship.DamageModel/CombatMorale 用 OS 时
+	# 撒 randomize() 的私有 rng（本 lane 注射了 sea_seed / 敌船 _rng / DamageModel / 挂件 rng 之后，
+	# Cannonball 命中点、MeleeResolve 逐合、gm/Calendar 微扰仍不全受控），同 seed 不复现是材料
+	# 本身的性相。两键是否接线，由主控在 p3a 落地后单独判——本工具只算胜率输出。
+	var hangs := 0
+	for mode in ["on", "off"]:
+		if (rows[mode] as Array).size() != n:
+			hangs += 1
+		for r in rows[mode]:
+			if str(r["overcome"]) == "hang":
+				hangs += 1
+	if hangs == 0:
+		print("SELFCHECK tool-integrity OK（on/off 各 %d 场、全收战未挂超时）" % n)
 		quit(0)
 		return
-	print("SELFCHECK unwired-identical FAIL（on/off 不一致：p3a 已接线，或有人碰了两键的消费者）")
+	print("SELFCHECK tool-integrity FAIL（%d 场缺 / 挂起）" % hangs)
 	quit(1)
