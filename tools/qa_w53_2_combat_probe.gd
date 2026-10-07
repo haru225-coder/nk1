@@ -10,7 +10,8 @@ extends SceneTree
 ##       ② 200 人对 20 人：敌攻我守、我守住 → 不收战、敌船放钩仍在场、本队不得船，敌船扣攻方阵亡，敌将记「跳帮受挫」；
 ##       ③ 士气挂件：敌船先钩时敌簿记攻方、本队簿记守方；守住后本队簿提士气（旧口径反过来按我攻败记、压士气）。
 ##   三、号令浮字写中文名：按 1–5 下令，海战场中央浮字修复前是「号令：windward」「号令：load」——内部 id 直接上屏。
-##       真起号令面板逐令 issue，浮字须是「号令：抢风 / 撤令：抢风 / 号令：专力装填 / 均装 / 救火 / 备接舷」、不含拉丁字母（火攻第十三节起撤出轮换）。
+##       真起号令面板逐令 issue，浮字须是「号令：抢风 / 撤令：抢风 / 号令：专力装填 / 均装 / 救火 / 备接舷」、不含拉丁字母
+##       （火攻回到轮换归三期 lane w53-p3b：fire_attack_load 开时轮换三档，本节按 wave53 开工前账关那枚开关验两档）。
 ##   四、收战带本场折损：矢石 / 白刃折的水手、中弹颠落的舱面货，修复前收战 data 里一字不记（CombatLetterbox.loss_note 留着
 ##       「折水手 N 人」那一格没人填，SeaChart 札记也不提），出战墨边只写日期与敌船下场。折 7 人、颠落 4 件、中途夺船并入 40 人，
 ##       收战 data.losses 须恰为 {crew: 7, cargo: 4}（夺来的人不抵折损），墨边副题写「折水手七人，颠落舱面货四件」。
@@ -50,7 +51,8 @@ extends SceneTree
 ##   十三、号令效力接上旗舰（抢风 / 装填侧重）：号令面板「效力」一行（帆力、贴风、装填……）修复前没有一处消费，下令只改签面。四格：
 ##       ① ManeuverModel 认号令两键：mods.trim 1.09 的船横风满帆两秒后对水航速比不带的快、mods.pinch_delta −6 时船首离来风 45°
 ##          不再「顶风」（福船顶风区 48°）；② 海战场下抢风令：旗舰这一帧的机动乘数带 trim / pinch_delta，读数里顶风区少 6°；
-##       ③ 专力装填：旗舰一放齐射，装填冷却 = 2 秒 × 损伤装填倍数 × 0.7；④ 装填侧重只在均装 ⇄ 专力装填间轮换，不再轮到落不了地的火攻。
+##       ③ 专力装填：旗舰一放齐射，装填冷却 = 2 秒 × 损伤装填倍数 × 0.7；④ 装填侧重只在均装 ⇄ 专力装填间轮换
+##       （火攻回到轮换归三期 lane w53-p3b：fire_attack_load 开时三档，本节按 wave53 开工前账关那枚开关验两档）。
 ##   十四、号令「备接舷」的效力接上（钩距、白刃、伤亡）：修复前聚齐了甲士，钩距、白刃、伤亡一样不变。下令、聚队进度直设满：
 ##       ① 本船去钩的够距底数 = 140 × 钩距效力（约 175），敌船钩本船仍 140；② 白刃两方里本队的将领系数 = 不下令时 × 白刃效力
 ##       （本队先钩作攻方、敌船先钩作守方都算）；③ 伤亡效力约 1.33：旗舰挨三发各折 3 人记成 4 + 4 + 4（带余数），撤令后照记原数。
@@ -351,6 +353,8 @@ func _sec_enemy_first_morale(fleet: Node) -> void:
 
 ## 真起海战场的号令面板（CombatShoreHook.mount_combat_ui 挂、order_issued 接到 WorldMap._on_combat_order），逐令 issue 读中央浮字
 func _sec_order_notice(fleet: Node) -> void:
+	# 火攻回到轮换归三期 lane w53-p3b：本节验 wave53 开工前的中文化账，关掉 fire_attack_load 按两档轮换走
+	_Switches.set_on("fire_attack_load", false)
 	var wm := await _battle(fleet, "fu_ship_medium", 40, {"type": "pirate_boat", "count": 1})
 	var panel: Node = null
 	for n in wm.get_children():
@@ -359,6 +363,7 @@ func _sec_order_notice(fleet: Node) -> void:
 	if panel == null:
 		_check(false, "海战场挂上号令面板")
 		await _close(wm)
+		_Switches.reset()
 		return
 	var latin := RegEx.create_from_string("[A-Za-z]")
 	var bad: Array = []
@@ -377,6 +382,7 @@ func _sec_order_notice(fleet: Node) -> void:
 	_check(has_fn and str(op.call("notice_for", "parley", {"result": "refuse"})) == "号令：降幡劝降"
 		and str(op.call("notice_for", "nope", {})) == "", "劝降令浮字「号令：降幡劝降」、认不得的令不上屏（notice_for 在 = %s）" % has_fn)
 	await _close(wm)
+	_Switches.reset()
 
 
 # ══ 四、收战带本场折损 ══════════════════════════════════════════
@@ -843,12 +849,15 @@ func _sec_orders_reach_flagship(fleet: Node) -> void:
 	var cd := float(own.get("fire_cooldown"))
 	_check(str(panel.call("state_text", "load")) == "专力装填" and absf(cd - want_cd) < 0.001,
 		"十三③ 专力装填：齐射后装填冷却 %.3f 秒（须 2 × 损伤倍数 × 0.7 = %.3f）" % [cd, want_cd])
+	# 火攻回到轮换归三期 lane w53-p3b：fire_attack_load 开时轮换三档，本节钉 wave53 开工前的两档账，关开关验
+	_Switches.set_on("fire_attack_load", false)
 	var seen := PackedStringArray([str(panel.call("state_text", "load"))])
 	for _i in 3:
 		panel.call("issue", "load")
 		seen.append(str(panel.call("state_text", "load")))
 	_check(seen.find("火攻") < 0 and seen[1] == "均装" and seen[2] == "专力装填",
-		"十三④ 装填侧重只在均装、专力装填间轮换（%s）" % " → ".join(seen))
+		"十三④ fire_attack_load 关时装填侧重只在均装、专力装填间轮换（%s）" % " → ".join(seen))
+	_Switches.reset()
 	await _close(wm)
 
 

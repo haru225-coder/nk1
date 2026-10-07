@@ -157,6 +157,17 @@ func _order_mod(key: String, fallback: float) -> float:
 	return fallback
 
 
+## 火攻风位（w53-p3b「火攻须居上风」）：敌在我下风向一侧 = 我居上风 1，反之为 -1，相平 0。
+## 口径同状态条 CombatStatusHud.weather_gauge（鸭子型按名取，面板 / 状态条不在就回 0 不折算）
+func _fire_upwind(enemy: Node2D) -> int:
+	if enemy == null or not is_instance_valid(enemy):
+		return 0
+	var hud: GDScript = load("res://scripts/ui/CombatStatusHud.gd")
+	if hud != null and hud.has_method("weather_gauge"):
+		return int(hud.call("weather_gauge", wind_vector, (enemy as Node2D).global_position - global_position))
+	return 0
+
+
 ## 号令面板「伤亡」效力（exposure ≥ 1：备接舷甲士聚在舷边、抢风缭手上甲板，挨矢石伤亡加重；lane w53-2）。
 ## 小数带到下一发（四舍五入留余数），不按整数吞掉——一发折 1 人、加重三成三的也要记上
 var _exposure_carry := 0.0
@@ -241,7 +252,35 @@ func _fire_broadside_ballistics(side: int) -> void:
 		if mounts_n > 0 and sw.on("archer_scaling"):
 			var per_gun := clampf(crew_n / (5.0 * float(mounts_n)), 0.2, 2.0)
 			battery.set("volley_quality", per_gun)
-	var fired := preload("res://scripts/combat/Ballistics.gd").fire_volley(self, battery, side, _nearest_enemy_node())
+	var foe_node := _nearest_enemy_node()
+	var parent := get_parent()
+	# w53-p3b 火攻：号令面板把「火攻」落到 battery.fire_mode 时，引火乘数 = 面板 LOAD_TABLE.fire 的 ignite
+	# （不走 order_mods，免得湿毡这类自身效力再乘一遍）× 风位折算（居上风 1.5 / 相平 1.0 / 居下风 0.6）；
+	# 没挂面板就按 battery.fire_mode 收在 1.0，与 wave53 开工前同
+	var ig_mul := 1.0
+	var orders_scr: GDScript = load("res://scripts/ui/CombatOrdersPanel.gd")
+	if battery != null and orders_scr != null:
+		var bo: Dictionary = orders_scr.call("_load_orders", self)
+		if bo is Dictionary and bool(bo.get("fire_mode", false)):
+			var base_ig := 1.0
+			var lt = orders_scr.get("LOAD_TABLE")
+			if lt is Dictionary and (lt as Dictionary).get("fire") is Dictionary:
+				base_ig = float(((lt as Dictionary)["fire"] as Dictionary).get("ignite", 1.0))
+			var wind_f := 1.0
+			if orders_scr.has_method("fire_attack_factor"):
+				wind_f = float(orders_scr.call("fire_attack_factor", _fire_upwind(foe_node)))
+			ig_mul = maxf(0.0, base_ig * wind_f)
+	var before: Array = parent.get_children() if parent != null else []
+	var fired := preload("res://scripts/combat/Ballistics.gd").fire_volley(self, battery, side, foe_node)
+	if battery != null:
+		battery.set("last_volley_ignite", ig_mul)  # 给探针 / 账本读的实落数（缺省 1.0）
+	if parent != null:
+		for c in parent.get_children():
+			if not before.has(c) and c is Area2D and c.get("shooter") == self and c.get("shot") is Dictionary:
+				var cs: Dictionary = (c.get("shot") as Dictionary)
+				if float(cs.get("fire", 0.0)) > 0.0:
+					cs["fire"] = minf(1.0, float(cs["fire"]) * ig_mul)
+					c.set("shot", cs)
 	if fired <= 0:
 		var why := str(battery.get("last_refusal"))
 		if why != "":

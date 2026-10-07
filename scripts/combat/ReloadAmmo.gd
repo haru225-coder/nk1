@@ -74,6 +74,9 @@ var shots_fired := 0
 var volleys := 0
 ## w53-2 二期：玩家船的弓弩手按人头折算威力（archer_scaling 由 Ship 写入；1.0 等价原状）。Cannonball._strike 把 quality 乘在杀伤上。
 var volley_quality := 1.0
+## w53-p3b：调用方刚放出去那一批弹的引火乘数（号令「火攻」的 ignite × 风位折算，Ship 发完一舷写在这里并当即盖到那一批
+## Cannonball 的 shot["fire"] 上；缺省 1.0 = 不乘，与 wave53 开工前同）。簿自己不读它——谁放谁用
+var last_volley_ignite := 1.0
 var _gap := {-1: 0.0, 1: 0.0}
 static var _ship_defs := {}
 

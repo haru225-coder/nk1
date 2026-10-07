@@ -7,8 +7,10 @@
 ##       所以接线后玩家不下令即与现行手感零差异。lane w53-2 起海战场经 WorldMap.order_mods 接上：旗舰机动（帆力 sail_drive /
 ##       转向 turn_rate / 贴风 pinch_delta → ManeuverModel 的 trim / helm / pinch_delta）、装填（reload_time → Ship 齐射冷却）、
 ##       白刃（board_bonus → 本队白刃将领系数，攻守都算）、钩距（board_range → 本船去钩的够距）、伤亡（exposure → 旗舰挨矢石的伤亡）。
-##       火攻（LOAD_TABLE.fire）暂不入轮换：旗舰没挂弹药簿（ReloadAmmo），敌船也没有帆损、火势，射程、引火、伤害去向无处落，
-##       下了只剩装填慢——签面与效力一行不写落不了地的数（lane w53-2 定）
+##       火攻回到轮换（lane w53-p3b，开关 fire_attack_load 且旗舰有装填簿 player_gunnery）：轮换成 均装 → 专力装填 → 火攻；
+##       任一不满足照 w53-2 账只转 均装 ⇄ 专力装填 两档。火攻令经落令口调 ReloadAmmo.set_fire_mode(true)——弓弩放火箭、
+##       砲抛火砲（火药不够它自己退回放箭抛石）；引火乘数（LOAD_TABLE.fire 的 ignite × 风位 factor，居上风 1.5 / 居下风 0.6）
+##       由 Ship 配弹处乘在旗舰射出的弹的引火几率（shot["fire"]）上
 ##   四、落令（auto_apply，默认开）：旗舰身上有同波次的分系统就按号令改它的令（鸭子型，只调它们公开的改令口）——
 ##       ship.battery（ReloadAmmo）：抢风 → set_emphasis("sail")，专力装填 → "guns"，两令同下 / 都不下 → "balanced"；火攻 → set_fire_mode(true)
 ##       ship.damage_model（DamageModel）：救火 → set_mode 按险情取 "fire"（有火或无险）/ "flood"（只进水），令在期间随险情改（tick）；
@@ -21,8 +23,9 @@
 ## 人手分派（宋元近海一船人手：帆索缭手、弩手与拽炮人、戽水扑火、执钩拒的甲士）——
 ##   平时 帆 3 成 · 弩炮 4 成 · 水火 1 成 · 甲士 2 成。下令改的是各岗权重，归一后得分派；效力按「现分派 ÷ 该令要的分派」折算：
 ##   抢风：帆岗 ×1.8。缭手加倍上缭，篾篷硬帆逐片收紧，船可再贴风 PINCH_TRIM 度（pinch_delta，给机动模型减 pinch）；弩炮手被抽去，装填慢。
-##   装填侧重：轮换 均装 ⇄ 专力装填（LOADS；火攻暂撤，见上）。专力装填把闲手都派去递矢、拽炮（弩炮岗 ×1.6），装填快，帆索与甲士人手少；
-##     火攻（LOAD_TABLE 仍留这一档）换装火箭、火球，焚帆为主、装填稍慢，火攻须居上风（fire_attack_factor）。
+##   装填侧重：轮换 均装 → 专力装填 → 火攻（loads()；开关 fire_attack_load 关、或旗舰没挂装填簿时照旧两档 均装 ⇄ 专力装填）。
+##     专力装填把闲手都派去递矢、拽炮（弩炮岗 ×1.6），装填快，帆索与甲士人手少；
+##     火攻换装火箭、火砲，焚帆为主、装填稍慢（装填 ×1.15）；引火乘数按风位折算，居上风 ×1.5、居下风 ×0.6（fire_attack_factor）。
 ##   救火：水火岗 ×3.5。分人戽水扑火，扑火、排水成倍快；帆与弩炮的人手跟着少。
 ##   备接舷：甲士岗 ×(1 + 聚队进度)，聚齐要 MUSTER_SEC 秒（撤令 DISPERSE_SEC 秒散回）。钩距、白刃加力；聚在舷边挨矢石，伤亡加重。
 ##   降幡劝降：近敌（≤ HAIL_RANGE）喊话令其竖降幡。胜算 parley_chance：敌士气低、船伤重、我众敌寡、甲士聚舷、已钩住、
@@ -74,6 +77,10 @@ const ORDER_TIPS := {
 	"cut": "敌船先抛的钩挂上时斧手斫缆脱开：每合砍断钩索的机会多一半；本船去钩的不济，签了也无用。",
 	"wet": "舷边张过水的厚毡压火伤、防火箭：火着一半、受矢石轻三成；代价：舷边人施展不开，我方平射矢石打八折。",
 }
+## 火攻回到轮换（loads() 三档）时「装填侧重」签的提示；两档时照 ORDER_TIPS 原文（签面上的串与 w53-2 账逐字一致，w53-p3b）
+const ORDER_TIPS_FIRE := {
+	"load": "轮换：均装、专力装填、火攻。专力装填闲手都去递矢拽炮，装填快、帆索人少；火攻换装火箭火球，焚帆为主、装填稍慢，须居上风——居上风引火力倍，居下风减半。"
+}
 
 const STATIONS := ["sail", "guns", "damage", "board"]
 const STATION_NAMES := {"sail": "帆", "guns": "弩炮", "damage": "水火", "board": "甲士"}
@@ -88,8 +95,10 @@ const DISPERSE_SEC := 2.0
 ## 帆岗满配（抢风）时能再贴风的度数（机动模型 pinch 减去它）
 const PINCH_TRIM := 6.0
 
-## 号令轮换的几档：火攻暂撤（见头注「三」：旗舰没挂弹药簿、敌船没有帆损火势，引火无处落）；LOAD_TABLE 仍留 fire 这一档
+## 号令轮换的几档（火攻回到轮换，w53-p3b）：fire_attack_load 开、且旗舰挂了装填簿（player_gunnery）时三档
+## 均装 → 专力装填 → 火攻；缺一照旧两档（签面、提示与 w53-2 账逐字一致）。LOAD_TABLE 的 fire 一档照表生效（装填 ×1.15、引火 ×3、射程 ×0.9）
 const LOADS := ["mixed", "rapid"]
+const LOADS_FIRE := ["mixed", "rapid", "fire"]
 ## 装填侧重：name 签上写法；hull / sail / crew = 命中后伤害落在船壳 / 帆索 / 人手的份额（和为 1）；
 ## reload = 该令人手给足时的装填时长乘数；range = 射程乘数；ignite = 引火乘数；guns_w = 弩炮岗权重；
 ## emphasis / fire_mode = 落到 ReloadAmmo 的令
@@ -424,6 +433,19 @@ func current_allocation() -> Dictionary:
 	return allocation(state())
 
 
+## 装填侧重的轮换序列（火攻回到轮换，w53-p3b）：fire_attack_load 开、且旗舰挂了装填簿（player_gunnery）时火攻在轮换里，
+## 缺一照旧两档——两档时签面、提示、行为与 w53-2 账逐字逐数一致。没有旗舰的场景（岸上预览）按没挂装填簿算
+func loads() -> Array:
+	if Switches.on("fire_attack_load") and StatusHud.battery_of(_ship()) != null:
+		return LOADS_FIRE
+	return LOADS
+
+
+## 火攻在轮换里（loads() 三档）：签面 / 提示 / 轮转的同一判据
+func _fire_load_available() -> bool:
+	return loads().size() > LOADS.size()
+
+
 func _world() -> Node:
 	if world_ref == null:
 		return null
@@ -471,6 +493,15 @@ func tick(delta: float) -> void:
 ## 落令：把号令落到旗舰身上现成的分系统（见头注「四」）。返回这次真改了哪些令（探针看）
 func apply_to_ship() -> Dictionary:
 	var done := {}
+	# 火攻档位在而轮换退回两档（开关 / 装填簿路上变过）：三态同吃 loads()，不管 _touched 先回落均装——
+	# 簿上挂着的 fire_mode 是这一档落出去的（fire_mode 为真只有下过火攻令一条路），同拍收回来，
+	# 探针读 state / load_mode / battery 一致（这条不是「落令」，只是回收落不了地的档位）
+	if load_mode == "fire" and not _fire_load_available():
+		load_mode = "mixed"
+		var bat0 := StatusHud.battery_of(_ship())
+		if bat0 != null and bat0.has_method("set_fire_mode"):
+			bat0.call("set_fire_mode", false)
+			done["fire_mode"] = false
 	if not auto_apply or not _touched:
 		return done
 	var ship := _ship()
@@ -678,7 +709,8 @@ func issue(order_id: String, roll := -1.0) -> Dictionary:
 			payload = {"on": windward}
 			_note("已令抢风：缭手上缭，贴风走。" if windward else "撤抢风：缭手回岗。")
 		ORDER_LOAD:
-			load_mode = LOADS[(LOADS.find(load_mode) + 1) % LOADS.size()]
+			var rota := loads()
+			load_mode = rota[(rota.find(load_mode) + 1) % rota.size()]
 			payload = {"load": load_mode, "table": LOAD_TABLE[load_mode].duplicate()}
 			match load_mode:
 				"rapid":
@@ -849,7 +881,18 @@ func effect_text() -> String:
 	_pct(bits, "钩距", float(m["board_range"]), "增", "减")
 	_pct(bits, "伤亡", float(m["exposure"]), "增", "减")
 	if load_mode == "fire":
-		bits.append("火攻须居上风")
+		# 火攻须居上风（fire_attack_factor：居下风引火减半）：下风的时刻把这句钉出来，上风 / 相平时不另外写（w53-p3b）
+		var up := 0
+		var w := _world()
+		var own := _ship()
+		if w != null and own != null:
+			var ne := StatusHud.nearest_enemy(w, own)
+			if not ne.is_empty() and ne.get("node") is Node2D:
+				var wv = own.get("wind_vector")
+				if wv is Vector2:
+					up = StatusHud.weather_gauge(wv, (ne["node"] as Node2D).global_position - own.global_position)
+		if up < 0:
+			bits.append("火攻须居上风")
 	if bool(state().get("wet", false)):
 		bits.append("毡罩火・我射八折")
 	if bool(state().get("cut", false)):
@@ -904,6 +947,8 @@ func refresh() -> void:
 			_chip_accent[id] = active
 			UiTheme.style_chip(chip, active)
 		chip.disabled = not order_enabled(id)
+		if id == ORDER_LOAD:
+			chip.tooltip_text = str(ORDER_TIPS_FIRE.get(id, "")) if _fire_load_available() else ORDER_TIPS[id]
 		var st := row["state"] as Label
 		st.text = state_text(id)
 		st.add_theme_color_override("font_color", UiTheme.PAPER_CINNABAR if active else UiTheme.PAPER_DIM)
@@ -974,7 +1019,7 @@ func _build() -> void:
 		var chip := Button.new()
 		chip.text = "%d %s" % [i + 1, ORDER_NAMES[id]]
 		chip.focus_mode = Control.FOCUS_NONE
-		chip.tooltip_text = ORDER_TIPS[id]
+		chip.tooltip_text = str(ORDER_TIPS_FIRE.get(id, "")) if id == ORDER_LOAD and _fire_load_available() else ORDER_TIPS[id]
 		chip.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		UiTheme.style_chip(chip, false)
 		_chip_accent[id] = false
@@ -1037,3 +1082,20 @@ func _layout() -> void:
 				tide.item_rect_changed.connect(_layout)
 	_card.position = Vector2(MARGIN, top)
 	_card.reset_size()
+
+
+## 火攻令落到装填簿的两道令（同 battery_orders(state())，鸭子型静态口）：Ship 配弹时拿 fire_mode 取引火乘数（w53-p3b）。
+## 取不到面板（没挂 / 没下令）回 {"emphasis": "balanced", "fire_mode": false}——点火乘数保持 1.0，与 wave53 开工前一致。
+## load() 的资源句柄 has_method 认 static func；取不到时回中性表，不写 SCRIPT ERROR
+static func _load_orders(ship: Node) -> Dictionary:
+	var p := panel_of(ship)
+	if p != null and p.has_method("battery_orders"):
+		var bo = p.call("battery_orders", p.call("state"))
+		if bo is Dictionary:
+			return bo
+	var res := load(SELF_PATH)
+	if res != null and res.has_method("battery_orders"):
+		var nbo = res.call("battery_orders", {})
+		if nbo is Dictionary:
+			return nbo
+	return {"emphasis": "balanced", "fire_mode": false}
