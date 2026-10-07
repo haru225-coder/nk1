@@ -204,6 +204,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_2_combat_overkill_probe.gd",  # lane w53-2 敌船击沉过量杀伤折进甲板伤亡断言探针（take_damage 击沉时超出的份不再蒸发）
 	"res://tools/qa_w53_p3c_ammo_low_probe.gd",  # lane w53-p3c 敌将弹药告急回归专项探针（三期开关两态）
 	"res://tools/qa_w53_p3c_intel_ff_probe.gd",  # lane w53-p3c 敌情列水火短注专项探针（鸭子型+布景+排版）
+	"res://tools/qa_w53_p3c_intel_ff_shot.gd",  # lane w53-p3c 敌情列水火短注 1280×720 截图（NK1_SHOT_DIR 指路）
 	"res://tools/qa_w53_p3c_winrate_probe.gd",  # lane w53-p3c 三期开关胜率对比工具（-- --n=8 --seeds=…）
 ]
 
