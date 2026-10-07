@@ -124,6 +124,17 @@ REGISTRY = [
               "（lane w20-a2，g1 遗留② / g13 遗留④）白刃两条窗口支路：末艘「夺船」题签按游戏时停满 T_HOLD 八成（相位判据）、出战墨边写「・夺船」；"
               "白刃失利支「脱钩」题签同判据、不收战、不出墨边（不再用 0.44 s 墙钟边界）；（lane w53-11）运行中出 SCRIPT ERROR（含 Parse Error）即判红——原先子函数 / 游戏代码里的脚本错把断言整段跳过照退 0、_run 自身出错则空转到超时",
      "green": "`PATROL SHELL PASS`（前一行 `✓ 截图旁证 n/n 张非一色`）", "red": "`✗` 行；`PATROL SHELL FAIL` + 复述"},
+    # lane w171-k4（w150/w153/w154/w156 四帧 patrol rc=1 出门（X11 不在 / DISPLAY 不通）而 gates 整体一行「rc=1」无人细看
+    # ——巡逻真出 0 张；本闸直数 patrol 旁证 *.png 张数对预期钉（patrol_shell.gd 现读 11 发），把「真出 0 / 半截」立为 must 档行首红）
+    {"id": "check_patrol_shot_count", "tier": "must", "kind": "py",
+     "file": "tools/check_patrol_shot_count.py",
+     "judge": "（lane w171-k4 立）patrol 旁证落盘目录（$NK1_SHOT_DIR/patrol，缺省 /tmp/patrol-shots/patrol）的 *.png 张数 ≥ 预期钉 11"
+              "（预期钉从 tools/patrol_shell.gd 现读：`_check_screen(…, true)` 字面 + PORTS 循环一进 + `_shot_chart` 字面 + `_save_shot` 字面）；"
+              "目录不在 / 张数 < 11 即 ✗ 点名缺几张——w150 域四帧 patrol rc=1 出一行「X11 Display is not available」连同 run.log 那行都没写明『连一张图都没出』，"
+              "本闸把「巡逻真出 0 张」立成必跑闸的一级行首红，不再靠人点目录详",
+     "green": "逐条 `✓ 自检 4 格全过 / ✓ 现读应出 11 张 = 钉 11 / ✓ 实落 N 张 ≥ 应出 11 张（落点 …）` + 末行 `结果：全部通过`",
+     "red": "`✗ patrol 旁证目录不在：…` 或 `✗ patrol 旁证实出 N 张 < 应出 11 张（缺 M 张；…）`；末行 `结果：k 项问题` 退 1；"
+            "应出张数变了拨钉未到（`现读应出 X 张 ≠ 钉 11`）同格红——拨颁规矩照 §五.3"},
     {"id": "截图门禁", "tier": "lane", "when": "动画面 / UI / 过场", "kind": "shots", "file": "tools/shot_gate.gd",
      "judge": "（lane m3 立、sg2 扩到全部截图脚本，新截图脚本一律接它）`tools/shot_gate.gd`：零截图 / 空视口 / 一色空图 / 张数不足一律红；契约模式须显式 `-- --contract`",
      "green": "`<TAG>_OK shots=n/n -> 目录`；契约模式 `<TAG>_CONTRACT_OK…`",
