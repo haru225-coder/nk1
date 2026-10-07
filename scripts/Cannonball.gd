@@ -229,6 +229,13 @@ func _strike(body: Node2D, at: Vector2) -> void:
 	var dist := _from.distance_to(at)
 	var fall := _Ballistics.falloff(wid, dist)
 	var q := float(shot.get("quality", 1.0))
+	# 张湿毡的代价（w53-15 own_missile_mul）：我方旗舰张着湿毡时，舷边施展不开，打出去的平射矢石照八折。
+	# 只对我方（shooter 是玩家 Ship、且是本发平射）生效；敌船无此号令、抛射不摊（代价只写在平射矢石上）。
+	var _sh := _shooter_or_null()
+	if not _lob and _sh is Ship and is_instance_valid(_sh):
+		var _dm = (_sh as Ship).get_damage_model()
+		if _dm != null and _dm.has_method("own_missile_mul"):
+			q *= float(_dm.call("own_missile_mul"))
 	var hull := float(shot.get("hull", 0.0)) * fall * q
 	var amount := float(shot.get("amount", shot.get("hull", 0.0))) * fall * q
 	var armored := false

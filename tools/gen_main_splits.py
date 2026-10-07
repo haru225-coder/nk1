@@ -260,10 +260,12 @@ def merge_spans(src, spans):
 
 def _add_commit(rel):
     """(新增该文件的 commit 短哈希 | None, 其父版 Main.gd 全文 | None)。没提交过：(None, HEAD 版 Main.gd)。"""
-    log = _git("log", "--diff-filter=A", "-1", "--format=%h", "--", rel)
+    # 定长 8 位：git 的 %h 是环境敏感缩写（对象数一多就 7→8 位伸长），清单钉面会随波偏红（w94-k1 见 5a8198f「波间噪声」）。
+    # 这里取完整哈希截前 8 位，任何机器、任何对象数都稳定 8 位，不再追环境 --write。
+    log = _git("log", "--diff-filter=A", "-1", "--format=%H", "--", rel)
     if log is None:
         return None, None
-    c = log.strip()
+    c = log.strip()[:8]
     if not c:
         return None, _git("show", "HEAD:" + MAIN_REL)
     return c, _git("show", f"{c}^:{MAIN_REL}")  # 浅克隆的边界 commit 看起来「新增了所有文件」，但取不到父版 → None

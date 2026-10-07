@@ -35,6 +35,7 @@ signal parley_resolved(result: Dictionary)
 
 const StatusHud := preload("res://scripts/ui/CombatStatusHud.gd")
 const Switches := preload("res://scripts/combat/CombatSwitches.gd")
+const _EnemyAI := preload("res://scripts/combat/EnemyCaptainAI.gd")
 const SELF_PATH := "res://scripts/ui/CombatOrdersPanel.gd"
 
 const GROUP_UI := "nk1_combat_ui"
@@ -382,6 +383,9 @@ static func parley_chance(ctx: Dictionary) -> float:
 	if bool(ctx.get("grappled", false)):
 		p += 0.12
 	p += float(PARLEY_STATE_BONUS.get(est, 0.0))
+	# 通事劝降（w53-17 parley_bonus_tongshi）：每级 +0.05。ctx 里的 tongshi_level 由 parley_context 按 crew_role_effects 开关填，
+	# 这里只吃数值（关时 0 级 → +0，等价旧玩法）；纯函数不读 autoload。
+	p += float(_EnemyAI.parley_bonus_tongshi(int(ctx.get("tongshi_level", 0))))
 	return clampf(p, PARLEY_MIN, PARLEY_MAX)
 
 
@@ -517,6 +521,16 @@ func _role_levels() -> Dictionary:
 	return {"steward": steward, "medic": medic}
 
 
+## 通事此刻的品级（开关 crew_role_effects；关掉一律 0 级）——劝降胜算 parley_chance 经 ctx 读它
+func _tongshi_level() -> int:
+	if not Switches.on("crew_role_effects"):
+		return 0
+	var crew_node := StatusHud.autoload_node("Crew")
+	if crew_node != null and crew_node.has_method("level_of"):
+		return int(crew_node.call("level_of", "tongshi"))
+	return 0
+
+
 ## 挂上战场第一步就把职事写进 DamageModel（与 _touched 无关：开关 crew_role_effects 开时一挂上照 Crew.level_of 写），
 ## 玩家还没下令就先生效；之后每次 apply_to_ship 也按现值补写
 func prime_role_effects() -> Dictionary:
@@ -563,6 +577,8 @@ func parley_context() -> Dictionary:
 		"ratio": _own_board_power() / maxf(1.0, float(enemy.call("combat_strength"))) if enemy.has_method("combat_strength") else _own_board_power(),
 		"muster": muster,
 		"grappled": enemy.get("grappled") == true,
+		# 通事劝降（w53-17 parley_bonus_tongshi）：crew_role_effects 开关开时按通事品级折算 +0.05/级，关时 0。
+		"tongshi_level": _tongshi_level(),
 		# 敌将自己降了（喊话劝降得手、船节点 struck）而士气簿没降：照簿上降幡算，签面写「敌已降」，不再写「可喊 约 N 成」（lane w53-2）
 		"enemy_state": enemy_state,
 	}

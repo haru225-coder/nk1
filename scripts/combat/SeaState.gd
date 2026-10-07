@@ -10,7 +10,7 @@ extends RefCounted
 ##
 ## 雷暴大风（lane w53-17 第一期「大风两散」）：setup 时若本场风均值过了种子线（GALE_SEED 那个常量，约七成风），
 ## 本场记雷暴大风，WorldMap 开战即收「两散」。作战的风上限不按数据曲线的七级线（140）——那场风按骤风攥到 130 仍挂着
-## 六级风可战名，七级水上却照打；改按「骤风顶头」迸线才迸得出来。
+## 六级风可战名，七级水上却照打；所以改按本场风均值过种子线（98）来迸，不按七级风速线。
 ##
 ## 火长提前报风（lane w53-17 二期，数据 officer_effects.huozhang.wind_shift_warn_s 5，报的是「风向要转」）：
 ## 风向缓转的 OU 噪声按 FORECAST_DT 秒一步预滚成一段缓冲（FORECAST_S 秒），step 不再现掷噪声，改逐半秒从缓冲
@@ -38,13 +38,11 @@ const GUST_TAU := 5.0
 const CURRENT_CAP := 42.0
 ## 「雷暴大风」判定的线（开战那一刻的本场风均值）。寻常远航的季风场（盛季 80 × 1.0 × 上浮 1.12 ≤ 90）
 ## 照这个线记不出来；剧情递的风暴定场（pending_battle.wind_strength 或逼出的举年择月）才召得出来。
-## 作战上限不按 wind_level_rule 折的七级线（140）：风上限 WIND_CAP 130，连骤风顶头都到不了七级线，
+## 作战上限不按 wind_level_rule 折的七级线（140）：风上限 WIND_CAP 130，连阵风峰值都到不了七级线，
 ## 数据里「七级以上不能战」那条永远迸不出来——落成「开场本该收『两散』的风」这同一档。
 const GALE_SEED_WIND := 98.0
 ## 「风暴海」起步风：base_strength ≥ 它才算风暴定场；寻常远航（WorldMap.base_wind_strength 80）走不到
 const GALE_BASE_WIND := 100.0
-## 骤风顶头式里给风向的余量系数（火长预报同这条式）
-const GALE_HEADROOM := 1.10
 ## 火长「提前报风」：WorldMap 按（GALE_WARN_S × Crew.level_of("huozhang")）秒看风向前景（wind_bearing_to_in）
 const GALE_WARN_S := 5.0
 ## 风向预滚：缓冲总长 / 步长。30 秒够三级火长（15 秒）翻一倍；半秒一步对 VEER_TAU 24 秒的缓转足够细
@@ -91,7 +89,7 @@ var current := Vector2.ZERO
 var current_kind := "平潮"
 ## 本场潮时：1 涨潮最急 … 0 平潮 … −1 落潮最急（一场海战只几分钟，潮流视作不变）
 var tide_phase := 0.0
-## lane w53-17：本场算过雷暴大风（开局风很足，骤风顶头迸过作战上限，WorldMap 照收「两散」）。
+## lane w53-17：本场算过雷暴大风（开局风均值过了种子线，WorldMap 照收「两散」）。
 ## 即便后来风转小也不再变回——种子量出的「这场风是这个势」。
 var gale := false
 ## 本场主风向（吹向方位，度）、缓转幅度、当前缓转（度）与阵风（标准差为 1 的无量纲量）
@@ -131,7 +129,7 @@ func setup(monsoon_bearing: float, monsoon_strength: float, base_strength: float
 	# lane w53-17：雷暴大风判定（combat_phases.json t_gale）——开场风本均值太高才记。寻常远航的季风
 	#（盛季 80 × 1.0 × 上浮 1.12 ≤ 90）照这个线记不出来；剧情 pending_battle 递的「gale_wind 定场」、
 	# 本探针逼出的「举年择月」才召得出来。force_wind 是剧情 / 探针定场，不动 gale（探针另走 derive 推演的盘档）。
-	gale = wind_mean >= GALE_SEED_WIND and float(monsoon_strength) >= 0.9 and base_strength >= 100.0
+	gale = wind_mean >= GALE_SEED_WIND and float(monsoon_strength) >= 0.9 and base_strength >= GALE_BASE_WIND
 	_setup_current(sea_name)
 	_preroll_forecast()
 	_apply_wind()
@@ -148,11 +146,6 @@ func force_wind(bearing_to: float, strength: float) -> void:
 	gale = gale or wind_mean >= GALE_SEED_WIND
 	_preroll_forecast()
 	_apply_wind()
-
-
-## lane w53-17：本场骤风顶头（当前风 × 阵风上限 × 余量系数）——雷暴大风判定用这一条线
-func gale_peak() -> float:
-	return wind_mean * (1.0 + GUST_AMP) * GALE_HEADROOM
 
 
 ## 定流：flow 为流速向量（px/s，封顶 CURRENT_CAP），kind 为叫法
