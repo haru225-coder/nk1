@@ -51,6 +51,11 @@ func _args() -> Dictionary:
 ##   win      = strike / sunk / burned / boarded / 士气敌降敌破敌遁（fled 半赏不算胜）
 func _battle_one(fleet: Node, gm: Node, sd: int) -> Dictionary:
 	var t0 := Time.get_ticks_msec()
+	# 本场前重置随机序列：先 randomize() 把主随机流推到一个新起点，再 seed(sd) 钉死。
+	# WorldMap._spawn_enemy 用的是 randf_range（吃全局流的下一颗），不先随机化会在 on/off 两组间踩同一串起点，
+	# 而先 seed 导致两组完全相同。要的是「同种子同剧情（on 与 off 里该种子那一场复现），换种子换剧情」——
+	# 所以 seed(sd) 必须晚于 randomize，也晚于 fleet.set_ships（后者不吃随机但确保吃随机的余下代码都落在 sd 之后）。
+	randomize()
 	seed(sd)
 	var d: Dictionary = fleet.call("ship_def", "fu_ship_medium")
 	var dur := float(d.get("durability", 300))
@@ -86,9 +91,19 @@ func _battle_one(fleet: Node, gm: Node, sd: int) -> Dictionary:
 		out["overcome"] = str(rec[0][0])
 		var data: Dictionary = rec[0][1]
 		var verdict := str(data.get("morale_verdict", ""))
-		out["win"] = verdict in ["enemy_struck", "enemy_broken"] or \
-			bool(data.get("boarded", false)) or int(data.get("sunk", 0)) > 0 \
-			or int(data.get("burned", 0)) > 0
+		# 玩家胜 = 击沉 ≥ 1 艘 / 烧沉 ≥ 1 艘 / 夺船 ≥ 1 艘 / 敌全 投降/崩溃 收兵。
+		# 敌「遁走」（fled，包括限时两散甩脱）属半赏不算玩家胜。
+		var fates: Array = data.get("fates", [])
+		var sunk_n := 0
+		var struck_n := 0
+		for f in fates:
+			if str(f.get("fate", "")) == "sunk":
+				sunk_n += int(f.get("count", 1))
+			elif str(f.get("fate", "")) == "struck":
+				struck_n += int(f.get("count", 1))
+		out["win"] = verdict in ["enemy_struck", "enemy_broken"] \
+			or bool(data.get("boarded", false)) \
+			or sunk_n + struck_n + int(data.get("burned", 0)) > 0
 		out["tag"] = verdict if verdict != "" else str(data.get("fates", []))
 	if is_instance_valid(wm):
 		wm.set("resolved", true)  # 拆布景不再发 battle_finished
