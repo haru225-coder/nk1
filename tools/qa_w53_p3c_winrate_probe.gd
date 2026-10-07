@@ -51,19 +51,20 @@ func _args() -> Dictionary:
 ##   win      = strike / sunk / burned / boarded / 士气敌降敌破敌遁（fled 半赏不算胜）
 func _battle_one(fleet: Node, gm: Node, sd: int) -> Dictionary:
 	var t0 := Time.get_ticks_msec()
-	# 本场前重置随机序列：先 randomize() 把主随机流推到一个新起点，再 seed(sd) 钉死。
-	# WorldMap._spawn_enemy 用的是 randf_range（吃全局流的下一颗），不先随机化会在 on/off 两组间踩同一串起点，
-	# 而先 seed 导致两组完全相同。要的是「同种子同剧情（on 与 off 里该种子那一场复现），换种子换剧情」——
-	# 所以 seed(sd) 必须晚于 randomize，也晚于 fleet.set_ships（后者不吃随机但确保吃随机的余下代码都落在 sd 之后）。
-	randomize()
-	seed(sd)
+	# 钉死双随机源：
+	# ① seed(sd)：全局流用于 WorldMap._spawn_enemy（敌船角度 / 距 / 水手 / 士气的 randf_range）。
+	# ② pending_battle.sea_seed：SeaState 用 _rng 私有 RandomNumberGenerator，rng_seed=-1 时不吃
+	#    seed() 那个全局流——不注射它 8 个 sd 也复现不出（本 lane 实测同 seed 11 两场结论漂）。注射它，
+	#    同一 sea_seed 跑 on / off 同一场对得上。sea_seed 用 sd 不同段避免与全局流撞（sd + 7_000_000）。
 	var d: Dictionary = fleet.call("ship_def", "fu_ship_medium")
 	var dur := float(d.get("durability", 300))
 	fleet.set("ships", [{"type": "fu_ship_medium", "name": "试船", "crew": 60, "sail_level": 1, "armor_level": 1,
 		"cargo": {}, "durability": dur, "max_durability": dur}])
 	fleet.set("morale", 60)
+	seed(sd)
 	gm.set("pending_battle", {"battle": true, "power": 300.0, "player_power": 300.0,
-		"enemy": [{"type": "pirate_boat", "count": 2}], "sea_name": "泉州外海", "source": {"scene": "qa_w53_p3c"}})
+		"enemy": [{"type": "pirate_boat", "count": 2}], "sea_name": "泉州外海",
+		"sea_seed": sd + 7_000_000, "source": {"scene": "qa_w53_p3c"}})
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
 	var rec: Array = []
