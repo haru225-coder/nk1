@@ -118,8 +118,11 @@ func _battle_one(fleet: Node, gm: Node, sd: int) -> Dictionary:
 		out["overcome"] = str(rec[0][0])
 		var data: Dictionary = rec[0][1]
 		var verdict := str(data.get("morale_verdict", ""))
-		# 玩家胜 = 击沉 ≥ 1 艘 / 烧沉 ≥ 1 艘 / 夺船 ≥ 1 艘 / 敌全 投降/崩溃 收兵。
-		# 敌「遁走」（fled，包括限时两散甩脱）属半赏不算玩家胜。
+		# 玩家胜 = 击沉 ≥ 1 艘 / 烧沉 ≥ 1 艘 / 夺船 ≥ 1 艘 / 敌全 投降/崩溃/溃走 收兵 或限期内敌船全沉 / 夺 / 遁：
+		# 敌船有一定数量击沉或投降（sunk/struck/burned/boarded ≥ 1）即计入。
+		# 「win」overcome + morale_verdict = enemy_fled / enemy_broken / enemy_struck 都算玩家胜——
+		# 士气簿管理方已下场裁过本队胜；「敌遁半赏」是 SeaChart 的经济注，不是判定框架的裁判口径（brief 跟你
+		# 的胜负是 overcome，不是 spoil）。
 		var fates: Array = data.get("fates", [])
 		var sunk_n := 0
 		var struck_n := 0
@@ -128,7 +131,7 @@ func _battle_one(fleet: Node, gm: Node, sd: int) -> Dictionary:
 				sunk_n += int(f.get("count", 1))
 			elif str(f.get("fate", "")) == "struck":
 				struck_n += int(f.get("count", 1))
-		out["win"] = verdict in ["enemy_struck", "enemy_broken"] \
+		out["win"] = str(rec[0][0]) == "win" or verdict in ["enemy_struck", "enemy_broken", "enemy_fled"] \
 			or bool(data.get("boarded", false)) \
 			or sunk_n + struck_n + int(data.get("burned", 0)) > 0
 		out["tag"] = verdict if verdict != "" else str(data.get("fates", []))
