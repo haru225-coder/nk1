@@ -131,6 +131,7 @@ EXEMPT = [
     ("qa_w53_p3b_firerot_probe.gd", "lane-w53-p3b", "战斗三期火攻回到装填轮换专项探针（fire_attack_load 开时三档轮换 / 引火乘数上乘 / 关时两档且签面提示逐字回 w53-2 账，回退即红），headless 秒级，随 lane-w53-p3b 落地验过留档"),
     ("qa_w53_p3b_winrate_probe.gd", "lane-w53-p3b", "火攻回轮换胜率对比工具（二期间径 同 8 种子 × 300 秒窗口 × 敌将 live × 士气裁决早收；对手敌船未挂 FloodFire，火攻烧的是开工前的敌船——基线写明），headless 可跑，随本 lane 落地验过留档"),
     ("qa_w53_p3c_ammo_low_probe.gd", "lane-w53-p3c", "敌将「弹药告急」回归专项探针（三期开关开/关两态逐格对账，回退即红），headless 秒级，随本 lane 落地验过留档"),
+    ("qa_w53_p3c_intel_ff_probe.gd", "lane-w53-p3c", "敌情列「水火短注」专项探针（鸭子型 ff_note_of 六档阈值 + intel_line_of 开关两态 + 布景对照 + 1280/960 排版），headless 秒级，回退即红，随本 lane 落地验过留档"),
     ("qa_w53_p3c_winrate_probe.gd", "lane-w53-p3c", "三期开关胜率对比工具（二期间径 8 种子 × 300 秒 × 敌将 live × 士气裁决早收；未接线期 on/off 逐字一致自检，p3a 接线后转主控量差工具），headless 可跑，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
