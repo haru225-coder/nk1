@@ -24,6 +24,8 @@ var impact_explosion = preload("res://scenes/ImpactExplosion.tscn")
 const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
 const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const _Ballistics := preload("res://scripts/combat/Ballistics.gd")
+## lane w53-p3a：弹道一闸——敌船簿（enemy_flood_fire）在才许走 take_ballistic_hit；
+## 关时照走 take_damage 老路（has_method 直接退），玩家船（Ship.take_hit）不在本闸
 var floating_text = preload("res://scenes/FloatingText.tscn")
 
 ## 平射弹体半径：扫线段时船体椭圆外扩这么多
@@ -276,8 +278,16 @@ func _strike(body: Node2D, at: Vector2) -> void:
 
 
 ## 目标收整份 hit 的方法名：take_ballistic_hit（本 lane 约定），或形参恰为一个 Dictionary 的 take_hit；都没有返回 ""。
+## lane w53-p3a 把关：敌船的簿只有开关（enemy_flood_fire）开、簿真在时才许走 take_ballistic_hit——
+## Godot 4.6 的 Object._call 在 Node 上不拦未声明的方法，PirateShip（class_name）又把 has_method 吃成静态表，
+## 「开关关时确实没有这条路」只得在这侧看。关开关或敌船簿没收起来：照走 take_damage 基线。
 static func _hit_method(body: Object) -> String:
 	if body.has_method("take_ballistic_hit"):
+		if body is PirateShip:
+			if not CombatSwitches.on("enemy_flood_fire"):
+				return ""
+			if body.get("flood_fire") == null:
+				return ""
 		return "take_ballistic_hit"
 	if not body.has_method("take_hit"):
 		return ""

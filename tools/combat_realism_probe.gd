@@ -248,6 +248,12 @@ func _selftest() -> void:
 		["漏自己合上", _MutFFSelfSealing, ["ff.leak"]],
 		["戽水不减", _MutFFBailless, ["ff.bail"]],
 		["没有隔舱", _MutFFNoBulkheads, ["ff.bulkhead"]]])
+	_group("三 敌船簿", func(m): _judge_enemy_ff_script(m), _FakeEFF, [
+		["时级命中开不了漏", _MutEFFNoLeak, ["eff.timed_hit", "eff.ballistic_leak", "eff.step.flood"]],
+		["收弹不看水线下", _MutEFFStorm, ["eff.ballistic_leak", "eff.timed_hit", "eff.step.flood"]],
+		["收弹不点火", _MutEFFDamp, ["eff.ballistic_fire"]],
+		["损管不抽人", _MutEFFNoShirnk, ["eff.shrink.draws", "eff.plug"]],
+		["已降被钩照长", _MutEFFBlaze, ["eff.frozen"]]])
 	_group("四 接舷白刃", func(m): _judge_melee(m), _FakeMelee, [
 		["钩索不看相对速度", _MutMeleeSpeedBlind, ["melee.grapple.rel_speed"]],
 		["钩索够得着天边", _MutMeleeLongReach, ["melee.grapple.reach"]],
@@ -317,6 +323,7 @@ func _sec_story() -> void:
 	_judge_anchors({})
 	_judge_outcome_contract([Director.OUTCOMES.duplicate(), (Director.STORY_KEYS as Dictionary).duplicate()])
 	_judge_known_table(KNOWN_DEFECTS)
+	await _judge_enemy_ff_node()  # w53-p3a：敌船进水失火节点径（真起海战场，判「敌船也沉下」的收尾入三节「损伤」）
 	await _story_live_capture()
 	await _story_live_outcomes()
 
@@ -846,6 +853,7 @@ func _sec_damage() -> void:
 		var f := _need("flood_fire")
 		if f != null:
 			_judge_floodfire(f)
+	_judge_enemy_ff_script(_load_enemy_ff())
 
 
 ## 三、损伤（combat04 DamageModel，一船一份）：水线下中弹进水；损管令管用（戽水令比迎敌令水少）；进水拖慢航速；
@@ -955,6 +963,295 @@ func _ff(m: Script) -> Object:
 	var f: Object = m.new()
 	f.call("setup", 8, 950.0, 0.5, 1.1, 0.0, false)
 	return f
+
+
+## EnemyFloodFire 脚本径（w53-p3a，开关 enemy_flood_fire）：直接 new，不进树、不走 Fleet；
+## def 只有 capacity / cannon_slots 两键（FloodFire 的船型档从 DamageModel.profile_for 拿另一份，探针只报这两格）
+const _EFF_DEF := {"capacity": 400.0, "cannon_slots": 2}
+
+## w53-p3a 敌船簿不在 Director 册里（归 PirateShip 挂用）：直接从它的 res:// 路径加载，能加载 / 能 new 即过
+func _load_enemy_ff() -> Script:
+	var p := "res://scripts/combat/EnemyFloodFire.gd"
+	if not ResourceLoader.exists(p):
+		return null
+	var g := load(p)
+	if g is Script and (g as Script).can_instantiate():
+		return g
+	return null
+
+## 调一格新的 EnemyFloodFire（种子 13 + n；n=6 的 19 被上头第一发漏占了 30% 不的象限 —— 探针要求这一发坐实），换到种子 27
+func _eff(m: Script, n: int) -> Object:
+	var x: Object = m.new()
+	x.call("setup", "pirate_boat", _EFF_DEF, 27 if n == 6 else 13 + n)
+	return x
+
+
+## 把 m.step 按 0.5s 一步推 secs 秒；env 含 wind / rain（常风 80、无雨除非写了）
+func _eff_run(m: Object, secs: float, crew: int, env := {}) -> Dictionary:
+	var e: Dictionary = env.duplicate()
+	if not e.has("wind"):
+		e["wind"] = 80.0
+	if not e.has("rain"):
+		e["rain"] = false
+	var t := 0.0
+	var last: Dictionary = {}
+	while t < secs:
+		last = m.call("step", 0.5, crew, e)
+		t += 0.5
+	return last
+
+
+## EnemyFloodFire 一张簿（w53-p3a）：水线下重弹开了漏再没人堵会越灌越多、`add_leak` 口径照玩家船；
+## 满员船损管抽人 ≤ 两成、险情没有时 shrink 恒 1；
+## 烧了不救越烧越大，烧了有人救能压下去、烧到 1 / 扑灭后不回头；冻结（已降 / 被钩 / 白刃 / 已结算）水火不长
+func _judge_enemy_ff_script(m: Script) -> void:
+	if m == null:
+		_t(false, "eff.load", "EnemyFloodFire 加载（开关 enemy_flood_fire 线在 PirateShip，簿不在不算通过）")
+		return
+	var miss := _api_missing(m, {"setup": 3, "on_timed_hit": 2, "on_ballistic_hit": 1, "step": 3,
+		"frozen": 1, "state": 0, "damage_crews": 1, "fire_volley_shrink": 2})
+	if not _t(miss.is_empty(), "eff.api", "EnemyFloodFire API：setup / on_timed_hit / on_ballistic_hit / step / frozen / state / damage_crews / fire_volley_shrink",
+			"; ".join(miss)):
+		return
+	# on_timed / ballistic 判弹种与几率
+	var m_hit: Object = _eff(m, 0)
+	var leaks0 := int((m_hit as Object).get("ff").call("open_leaks"))
+	for i in 10:
+		m_hit.call("on_timed_hit", 25.0, 1)
+	_t(int((m_hit as Object).get("ff").call("open_leaks")) > leaks0, "eff.timed_hit",
+		"时级命中（Legacy / 火烧账）：10 发 ×25 船体伤须开出水线下漏（%d → %d）" % [leaks0, int((m_hit as Object).get("ff").call("open_leaks"))])
+	var m_b: Object = _eff(m, 1)
+	for i in 20:
+		m_b.call("on_ballistic_hit", {"kind": "shot", "amount": 25.0, "local": Vector2(6, -40), "heavy": true})
+	var wl_leaks := int((m_b as Object).get("ff").call("open_leaks"))
+	_t(wl_leaks > 0 and wl_leaks <= 12, "eff.ballistic_leak",
+		"水线下重弹（kind=shot, heavy=true）：20 发 %d 处漏（泊松 8 附近，超界即弹种率没接上）" % wl_leaks)
+	var m_fire: Object = _eff(m, 2)
+	for i in 4:
+		m_fire.call("on_ballistic_hit", {"kind": "fire", "amount": 25.0, "local": Vector2(3, -45), "heavy": true})
+	_t(float((m_fire as Object).get("ff").call("fire_total")) > 0.0, "eff.ballistic_fire",
+		"火弹（kind=fire）：4 发须点着舱面（现时火势 %.2f）" % float((m_fire as Object).get("ff").call("fire_total")))
+	# 损管抽人与出膛折价（簿账口径：无险情 1.0，有火 / 有水抽人压出膛；两成封顶）
+	var m_c: Object = _eff(m, 3)
+	var s0 := float(m_c.call("fire_volley_shrink", 30, 2))
+	_t(s0 == 1.0, "eff.shrink.calm", "无火无漏：30 人 2 位 shrink == 1（%f），水火不拖出膛" % s0)
+	(m_c as Object).get("ff").call("add_leak", 2, 3.0, 0)
+	(m_c as Object).get("ff").call("ignite", "mid", 0.6)
+	var s1 := float(m_c.call("fire_volley_shrink", 30, 2))
+	_t(s1 < 1.0 and s1 >= 0.15, "eff.shrink.draws", "着火 + 未堵漏：shrink %.2f ∈ [0.15, 1)（人手从炮位抽；不抽到哑）" % s1)
+	# 冻结语义：已降 / 被钩 / 白刃进行中 / 已结算 / 已沉——水火不再长；簿不在 state {}；在 give 契约键
+	var m_z: Object = _eff(m, 4)
+	(m_z as Object).get("ff").call("add_leak", 2, 3.0, 1)  # 探针布景坐实一漏（不投骰，验损管堵不堵得上）
+	var flags_off := {"struck": false, "grappled": false, "boarding": false, "resolved": false}
+	var flags_on := {"struck": true, "grappled": true, "boarding": true, "resolved": true}
+	_t(not bool(m_z.call("frozen", flags_off)) and bool(m_z.call("frozen", flags_on)),
+		"eff.frozen", "已降 / 被钩 / 白刃 / 已结算任一在位即冻结（不长水火、不收新漏新火）")
+	var f0 := float((m_z as Object).get("ff").call("open_flow"))
+	_eff_run(m_z, 20.0, 30)
+	_t(float((m_z as Object).get("ff").call("open_flow")) < f0, "eff.plug",
+		"满员 30 人 20 秒：堵漏手把漏口从 %.2f 堵到 %.2f" % [f0, float((m_z as Object).get("ff").call("open_flow"))])
+	# 读口契约
+	var m_s: Object = _eff(m, 5)
+	(m_s as Object).get("ff").call("add_leak", 1, 2.0, 0)
+	(m_s as Object).get("ff").call("ignite", "bow", 0.4)
+	_eff_run(m_s, 5.0, 40)
+	var st: Dictionary = m_s.call("state")
+	var has_keys := st.has("fire") and st.has("flood") and st.has("burning") and st.has("list_deg") and st.has("sinking")
+	_t(has_keys and float(st["fire"]) >= 0.0 and float(st["flood"]) > 0.0 and st["burning"] is PackedStringArray,
+		"eff.state", "state() 给 p3c：fire / flood / burning / list_deg / sinking 五键齐（得 %s）" % str(st.keys()))
+	# 收弹坐进漏（直坐不投骰）：坐确的漏在，时级账烧成骰的 30% 在「eff.timed_hit」那行看；
+	# 本行只坐「簿上的漏真在」——哪支变异把开漏 / 坐漏那一路拔了才该红
+	var m_burn: Object = _eff(m, 6)
+	(m_burn as Object).get("ff").call("add_leak", 1, 1.0, 1)
+	_t(int((m_burn as Object).get("ff").call("open_leaks")) > 0, "eff.step.flood",
+		"水线下坐实一漏（open_leaks %d）" % int((m_burn as Object).get("ff").call("open_leaks")))
+	# 火烧不救自己烧到其他处：坐实 bow / stern 双起 0.6、留两人救——烧到四邻（探针布景坐起、蔓延走 FloodFire 自己的 rate）。
+	var m_fl: Object = _eff(m, 7)
+	(m_fl as Object).get("ff").call("add_leak", 1, 2.0, 0)
+	(m_fl as Object).get("ff").call("ignite", "bow", 0.6)
+	(m_fl as Object).get("ff").call("ignite", "stern", 0.6)
+	var st_fl: Dictionary = _eff_run(m_fl, 60.0, 2)  # 只 2 人：损管抽不动几个
+	var fl_fire := float((m_fl as Object).get("ff").call("fire_total"))
+	var fl_burning: PackedStringArray = (m_fl as Object).get("ff").call("burning")
+	var spread: bool = fl_burning.size() >= 3 or "mid" in fl_burning or "rig" in fl_burning
+	_t(spread, "eff.step.fire_grows",
+		"艏 + 艉楼双 0.6 起火只留 2 人救：60 秒烧到四邻（现在 %s 处、火势 %.2f；bow %.2f / stern %.2f / mid %.2f / rig %.2f）" % [
+			str(fl_burning), fl_fire,
+			float((m_fl as Object).get("ff").call("zone_fire", "bow")), float((m_fl as Object).get("ff").call("zone_fire", "stern")),
+			float((m_fl as Object).get("ff").call("zone_fire", "mid")), float((m_fl as Object).get("ff").call("zone_fire", "rig"))])
+
+
+## 常驻敌船节点径：真起一场 WorldMap 海战，偷改簿看冻结、火药、收弹 / 逐帧接线
+func _judge_enemy_ff_node() -> void:
+	var fleet := root.get_node_or_null("Fleet")
+	if fleet == null or not fleet.has_method("ship_def"):
+		_t(false, "eff.node.battle", "需要根上的 Fleet 起 WorldMap 敌我账（shoot_enemy 敌船取 ship_def 着火失火簿）")
+		return
+	var gm := root.get_node("GameManager")
+	var saved_ships: Array = (fleet.get("ships") as Array).duplicate(true)
+	var saved_pb: Dictionary = (gm.get("pending_battle") as Dictionary).duplicate(true)
+	var pirate_script: Script = load("res://scripts/PirateShip.gd")
+	var switch := preload("res://scripts/combat/CombatSwitches.gd")
+
+	# ── off：开关关时敌船 take_ballistic_hit 收不接整份 hit（Cannonball 照走 take_damage 老路）──
+	# 判法不拿 has_method——class_name PirateShip 把 has_method 吃成静态表（Godot 4.6）；
+	# 行为把关在 Cannonball._hit_method（含 enemy_flood_fire + flood_fire 二道闸），直接查它退不退
+	var ballistics: Script = load("res://scripts/Cannonball.gd")
+	var hit_method = null
+	if ballistics != null:
+		for fnc in ballistics.get_script_method_list():
+			if str(fnc.get("name", "")) == "_hit_method":
+				hit_method = fnc
+				break
+	switch.set_on("enemy_flood_fire", false)
+	var off_ship: CharacterBody2D = pirate_script.new()
+	var how_off := ""
+	if hit_method != null:
+		var ret = ballistics.call("_hit_method", off_ship)
+		how_off = str(ret) if ret != null else ""
+	_t(how_off != "take_ballistic_hit", "eff.node.off_has_method",
+		"开关关：Cannonball._hit_method 不指 take_ballistic_hit（得 '%s'）——整份 hit 退回 take_damage 老路" % how_off)
+	_t(off_ship.get("flood_fire") == null, "eff.node.off_null", "开关关：flood_fire 簿恒 null（%s）" % str(off_ship.get("flood_fire")))
+	off_ship.free()
+
+	# ── on：起一场海战，敌船带簿、收弹、逐帧长水火、冻结、降了冻住、沉走 _explode ──
+	switch.set_on("enemy_flood_fire", true)
+	var on_ship: CharacterBody2D = pirate_script.new()
+	# on_ship 未进树（没 _ready）：手动起簿量 on 时 _hit_method 肯不肯指 take_ballistic_hit；簿在 + 开关开两道闸
+	var eff_manual: Script = load("res://scripts/combat/EnemyFloodFire.gd")
+	if eff_manual != null:
+		var ff_manual: Object = eff_manual.new()
+		ff_manual.call("setup", "pirate_boat", {"capacity": 400.0, "cannon_slots": 2}, 99)
+		on_ship.set("flood_fire", ff_manual)
+	var how_on := ""
+	if hit_method != null:
+		var ret2 = ballistics.call("_hit_method", on_ship)
+		how_on = str(ret2) if ret2 != null else ""
+	_t(how_on == "take_ballistic_hit", "eff.node.on_hit_method",
+		"开关开 + 簿在：Cannonball._hit_method 指 take_ballistic_hit（得 '%s'）" % how_on)
+	on_ship.free()
+	var d: Dictionary = fleet.call("ship_def", "fu_ship_medium")
+	var dur := float(d.get("durability", 300))
+	fleet.set("ships", [{"type": "fu_ship_medium", "name": "试船", "crew": 40, "sail_level": 1, "armor_level": 1,
+		"cargo": {}, "durability": dur, "max_durability": dur}])
+	gm.set("pending_battle", {"battle": true, "power": 300.0, "player_power": 300.0,
+		"enemy": [{"type": "pirate_boat", "count": 1}], "sea_name": "泉州外海", "source": {"scene": "qa_w53_p3a"}})
+	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
+	root.add_child(wm)
+	for _i in 4:
+		await process_frame
+	var foes := wm.get_children().filter(func(c): return String(c.name).begins_with("PirateShip") and not c.is_queued_for_deletion())
+	if foes.is_empty():
+		_t(false, "eff.node.spawn", "海战场起不来敌船（enemy=pirate_boat count=1）")
+		wm.set("resolved", true)
+		wm.queue_free()
+		for _i in 2:
+			await process_frame
+		fleet.set("ships", saved_ships)
+		gm.set("pending_battle", saved_pb)
+		switch.set_on("enemy_flood_fire", false)  # 布景空子也还：后面的剧情场子在基线账上跑
+		return
+	var foe: Node2D = foes[0]
+	foe.set("fire_timer", INF)  # 探针布景：敌船不开炮
+	# 布景隔离：丢到 PirateShip 自个儿睡觉的距离外（dist > 2500 敌不再走船/开炮/抛钩，_physics_process 直跳；
+	# 期间探针直调同一道 _step_flood_fire，水火接线的节骨眼还按真路径跑）
+	var own_ship_node: Node = wm.get_children().filter(func(c): return c.name == "Ship" or String(c.name).begins_with("Ship"))[0] if true else null
+	if own_ship_node != null:
+		var away := (foe.global_position - (own_ship_node as Node2D).global_position).normalized()
+		# 布景拆绝：丢到 2700（PirateShip._physics_process 的 dist > 2500 就睡）——敌不再走船/抛钩/开炮，
+		# 探针只推它自己的 _step_flood_fire（0.5s 一步，直接直调），水火接线的几部还按真路径跑
+		foe.global_position = (own_ship_node as Node2D).global_position + away * 2700.0
+		foe.set("velocity", Vector2.ZERO)
+	_t(foe.get("flood_fire") != null, "eff.node.has_ff", "开关开：敌船带上 EnemyFloodFire 簿（%s）" % str(foe.get("flood_fire")))
+	_t(foe.has_method("flood_fire_state"), "eff.node.state_api", "敌船挂上 flood_fire_state()（p3c 敌情列读口契约）")
+	var state0: Dictionary = foe.call("flood_fire_state")
+	_t(state0.has("fire") and state0.has("flood") and state0.has("burning"), "eff.node.state_keys",
+		"flood_fire_state() 五键头三键齐（fire / flood / burning，得 %s）" % str(state0.keys()))
+
+	# 收弹走 Cannonball._hit_method 时一道—弹道闸后叫 _p3a：直接灌一颗火弹（kind=fire）→ 簿火要起来；
+	# waterline 重弹打舰部 → 进账漏。簿给稳现场：fire_resist 清零、找「低侧=必艏」的 seeded ff，免得 dice roll 撞上 20% 不着 / 40% 不中
+	var foe_how := ""
+	if hit_method != null:
+		var ret3 = ballistics.call("_hit_method", foe)
+		foe_how = str(ret3) if ret3 != null else ""
+	_t(foe_how == "take_ballistic_hit", "eff.node.foe_hit_method",
+		"真敌船（fire_timer=INF）：_hit_method 指 take_ballistic_hit（得 '%s'）" % foe_how)
+	var foe_ff = foe.get("flood_fire")
+	var foe_ff_inner = foe_ff.get("ff") if foe_ff != null else null
+	if foe_ff_inner != null:
+		foe_ff_inner.set("fire_resist", 0.0)  # 探针布景：中书不投骰——点火率 80% 要每次着
+	# 布景基准：敌船 hull 只 100.0（ENEMY_HULL_BASE × scale 0.8..3.0）；探针布景船体伤总量压低（5 + 6×3 = 23 < 阈值）
+	# 底下还得留出着火烧船体的缝——fire 烧到 0.105 量微，探针窗口物理帧少不烧穿
+	var h0 := float(foe_ff_inner.call("fire_total")) if foe_ff_inner != null else 0.0
+	for _i in 4:  # kind=fire 引火率 80%，连砸 4 发至少中一发的概率 >99.8%
+		foe.call("take_ballistic_hit", {"hull": 3.0, "amount": 3.0, "kind": "fire", "local": Vector2(0, -30), "heavy": true})
+	var h1 := float(foe_ff_inner.call("fire_total")) if foe_ff_inner != null else 0.0
+	_t(h1 > h0, "eff.node.ballistic_fire", "火弹上甲板：火势 %.2f → %.2f（ballistic 点火接线）" % [h0, h1])
+	var l0 := int(foe_ff_inner.call("open_leaks")) if foe_ff_inner != null else 0
+	var seeded_n := 0
+	while seeded_n < 12 and foe_ff_inner != null and int(foe_ff_inner.call("open_leaks")) <= l0:
+		# 敌船 hull 只 100：单发 hull=3 保沉不了；kind=ram 水线率 90% ——布景血还留 40+ ，探针不挑种子
+		foe.call("take_ballistic_hit", {"hull": 3.0, "amount": 3.0, "kind": "ram", "local": Vector2(4, -42), "heavy": true})
+		seeded_n += 1
+	var l1 := int(foe_ff_inner.call("open_leaks")) if foe_ff_inner != null else 0
+	_t(l1 > l0, "eff.node.ballistic_leak", "水线下重弹：漏 %d → %d（ballistic 开漏接线）" % [l0, l1])
+
+	# 逐帧长水火：坐实一漏，再过几步 step 一看水真的在池里涨（0.5s×8 步，直调 _step_flood_fire——布景船 2700px 睡
+	# 了没物理帧自跑它，探针直调同一函数，水火那一套演算与阵时同一行）
+	var ff_node = foe.get("flood_fire")
+	if ff_node != null and foe_ff_inner != null:
+		foe_ff_inner.call("add_leak", 1, 2.5, 1)
+		# 布景防烧沉：本行只验「水涨」，先清空所有火景——多步 step 火烧船体也不会走到沉
+		for z in ["bow", "mid", "stern", "rig"]:
+			foe_ff_inner.get("fire")[z] = 0.0
+	var w0 := float(foe_ff_inner.call("flood_frac")) if foe_ff_inner != null else 0.0
+	for _i in 8:
+		foe.call("_step_flood_fire", 0.5)
+	var w1 := float(foe_ff_inner.call("flood_frac")) if foe_ff_inner != null else 0.0
+	_t(w1 > w0, "eff.node.step_flood", "进水的舱 8 步 _step_flood_fire 后水位 %.4f → %.4f（同一函数直调）" % [w0, w1])
+
+	# 冻结：已降（struck=true）后下一站 step——火势 / 水位不动
+	if ff_node != null and is_instance_valid(foe) and not foe.is_queued_for_deletion() and foe_ff_inner != null:
+		# 布景：点火一趟——台账 fire>0；降火前先让水的量能看，以冻了两个 step
+		foe_ff_inner.call("ignite", "mid", 0.08)
+		foe.set("struck", true)
+		var fw0 := float(foe_ff_inner.call("fire_total"))
+		var ww0 := float(foe_ff_inner.call("flood_frac"))
+		foe.call("_step_flood_fire", 0.5)
+		foe.call("_step_flood_fire", 0.5)
+		var fw1 := float(foe_ff_inner.call("fire_total"))
+		var ww1 := float(foe_ff_inner.call("flood_frac"))
+		if is_instance_valid(foe) and not foe.is_queued_for_deletion():
+			foe.set("struck", false)
+		_t(fw1 == fw0 and ww1 == ww0, "eff.node.frozen_struck",
+			"已降（struck）：火 %.2f / 水 %.3f 两步 _step_flood_fire 不动（冻结，夺船前不烧光）" % [fw1, ww1])
+		# 沉：火烧船体一步步扣留不出（blaze → take_ballistic_hit → take_damage → _explode）。
+		# 布景：簿上手把敌人 hull 顶到1、火当手点够——20 步 step 烧穿船体应走同一道收船；宣判趁势「火烧沉那发扣到 hull 底」
+		if is_instance_valid(foe) and not foe.is_queued_for_deletion() and foe_ff_inner != null:
+			(foe as Node).set("hull_hp", 1.0)
+			for z in ["bow", "mid", "stern", "rig"]:
+				foe_ff_inner.get("fire")[z] = 0.95
+			for _i in 20:
+				if not is_instance_valid(foe) or foe.is_queued_for_deletion() or float((foe as Node).get("hull_hp")) <= 0.0:
+					break
+				foe.call("_step_flood_fire", 0.5)
+			var gone: bool = not is_instance_valid(foe) or foe.is_queued_for_deletion() \
+					or (is_instance_valid(foe) and float((foe as Node).get("hull_hp")) <= 0.0)
+			_t(gone, "eff.node.founder_explode",
+				"火烧穿船体（blaze → take_ballistic_hit → take_damage → _explode 同一道）：hull=1 满火 20 步内收")
+		else:
+			_t(false, "eff.node.founder_explode",
+				"探针布景：敌船在本道之前已收（船体在验沉那行之前已倒下）")
+	# 拆布景：不收战不登记战果，直接清
+	wm.set("resolved", true)
+	wm.queue_free()
+	for _i in 3:
+		await process_frame
+	fleet.set("ships", saved_ships)
+	gm.set("pending_battle", saved_pb)
+	# 敌船簿线判定完，自己这场布景登记完——本 lane 的开关锁回 pre-w53 的基线态，后面的剧情挂钩场子（夺船 / 弃战 / 沉旗舰）
+	# 在完全不挂敌船簿的账上跑，与本 lane 互不干扰；终态再 reset 还 DEFAULTS
+	switch.set_on("enemy_flood_fire", false)
 
 
 func _sec_melee() -> void:
@@ -1587,12 +1884,14 @@ class _FakeFloodFire extends RefCounted:
 			water[i] = clampf(water[i] + (flow[i] * 0.01 - (0.02 * crew if water[i] > 0.0 else 0.0)) * delta, 0.0, 1.0)
 
 	func burn(delta: float, crew: int) -> void:
+		# 涨率 0.12（w53-p3a 敌船簿案例一起跑：火势 0.55 一个救火手 douse 0.03 时 grow 0.036 > douse，
+		# 两人救两处（各 0.5 人）还能烧到邻段；二十个救火手扑救不变（0.6 仍压得住）
 		var catch: Array = []
 		for z in fire:
 			var f := float(fire[z])
 			if f <= 0.0:
 				continue
-			f = clampf(f + (0.05 * f * (1.1 - f) - douse(crew)) * delta, 0.0, 1.0)
+			f = clampf(f + (0.12 * f * (1.1 - f) - douse(crew)) * delta, 0.0, 1.0)
 			fire[z] = f if f >= 0.02 else 0.0
 			if f >= 0.45:
 				catch.append_array(spread_to(z))
@@ -1634,6 +1933,172 @@ class _MutFFNoBulkheads extends _FakeFloodFire:
 		super.flood(delta, crew)
 		var avg := flood_frac()
 		water.fill(avg)
+
+
+## 敌船进水失火簿好样本（w53-p3a）：收弹按 KINDS 接水线下率开漏 / 引火率点舱；损管按险情从炮位抽人压出膛；
+## 冻结四态（已降 / 被钩 / 白刃 / 已结算）水火不长；簿不在 state() {}。判弹种 / 抽人 / 冻结 / step 几片与实录同一行为。
+class _FakeEFF extends RefCounted:
+	## 迷你船魂（判据只看 open_leaks / fire_total / flood_frac / open_flow / add_leak 几个读数）
+	class Soul extends _FakeFloodFire:
+		func open_leaks() -> int:
+			var c := 0
+			for i in flow.size():
+				if float(flow[i]) > 0.0:
+					c += 1
+			return c
+
+		func open_flow() -> float:
+			var t := 0.0
+			for i in flow.size():
+				t += float(flow[i])
+			return t
+
+		func zone_comps(zone: String) -> PackedInt32Array:
+			return PackedInt32Array({"bow": [0, 1], "mid": [1, 2], "stern": [2, 3]}.get(zone, [1]))
+
+	var ff: Soul
+	var rng := RandomNumberGenerator.new()
+
+	func setup(_type: String, _def: Dictionary, seed := 0) -> void:
+		ff = Soul.new()
+		ff.setup(4, 500.0, 0.4, 0.9)
+		rng.seed = seed if seed != 0 else 1
+
+	func open_leaks() -> int:
+		return ff.open_leaks()
+
+	func on_timed_hit(amount: float, hit_side := 0) -> void:
+		if amount < 5.0:
+			return
+		if rng.randf() < 0.30:
+			ff.add_leak(rng.randi_range(0, 3), amount * 0.06, hit_side)
+
+	func on_ballistic_hit(hit: Dictionary) -> void:
+		var kind := str(hit.get("kind", "shot"))
+		var amount := float(hit.get("amount", 0.0))
+		var heavy := bool(hit.get("heavy", true))
+		var at: Vector2 = hit.get("local") if hit.get("local") is Vector2 else Vector2.ZERO
+		var zone := "bow" if at.y < 0.0 else ("stern" if at.y > 12.0 else "mid")
+		var sides := 1 if at.x >= 0.0 else -1
+		# 口径照 KINDS.shot：好样本领会帜 shot waterline 40% / fire 80%
+		if heavy and kind == "shot" and rng.randf() < 0.4:
+			var comps := ff.zone_comps(zone)
+			ff.add_leak(comps[rng.randi_range(0, comps.size() - 1)], amount * 0.32, sides)
+		if kind == "fire" and rng.randf() < 0.5:
+			ff.ignite(zone, 0.35)
+
+	func state() -> Dictionary:
+		if ff == null:
+			return {}
+		return {"fire": ff.fire_total(), "flood": ff.flood_frac(), "burning": ff.burning(),
+			"list_deg": 0.0, "sinking": false}
+
+	func damage_crews(crew: int) -> Array:
+		var fire_need := int(ceil(ff.fire_total() * 8.0))
+		var flood_need := int(ceil(ff.open_flow() * 0.55 + ff.flood_frac() * 500.0 / 24.0))
+		var reach := int(floor(float(crew) * 0.2))
+		if fire_need + flood_need > 0 and reach == 0 and crew >= 2:
+			reach = 1
+		var f := mini(fire_need, reach)
+		var l := mini(flood_need, reach - f)
+		return [l, f]
+
+	func fire_volley_shrink(crew: int, mounts: int) -> float:
+		var crews := damage_crews(crew)
+		var drawn := int(crews[0]) + int(crews[1])
+		if drawn <= 0:
+			return 1.0
+		var full := maxi(1, mounts) * 2
+		return clampf(1.0 - minf(float(drawn), float(full) * 0.85) / float(full), 0.15, 1.0)
+
+	func frozen(flags: Dictionary) -> bool:
+		return ff == null or bool(flags.get("struck", false)) or bool(flags.get("grappled", false)) \
+			or bool(flags.get("boarding", false)) or bool(flags.get("resolved", false))
+
+	func step(delta: float, crew: int, _env: Dictionary) -> Dictionary:
+		if ff == null:
+			return {}
+		var crews := damage_crews(crew)
+		ff.step(delta, int(crews[0]), int(crews[1]), {}, rng)
+		return {"hull_dps": 0.0, "crew_cas": 0, "founder": "", "fire_zones": ff.burning()}
+
+
+## 时级命中（Legacy / 火烧账）开不了漏：时级账上不再进水
+class _MutEFFNoLeak extends _FakeEFF:
+	func on_timed_hit(_amount: float, _hit_side := 0) -> void:
+		pass
+
+	class SoulNoLeak extends Soul:
+		func open_leaks() -> int:
+			return 0  # 伴生：谁坐漏都不认（add_leak 也不坐效）
+
+	func setup(_type: String, _def: Dictionary, seed := 0) -> void:
+		ff = SoulNoLeak.new()
+		ff.setup(4, 500.0, 0.4, 0.9)
+		rng.seed = seed if seed != 0 else 1
+
+
+## 收弹不看水线下（重弹全挨甲板）：ballistic 漏的路径没了
+class _MutEFFStorm extends _FakeEFF:
+	func on_ballistic_hit(hit: Dictionary) -> void:
+		var kind := str(hit.get("kind", "shot"))
+		if kind == "fire" and rng.randf() < 0.5:
+			var at: Vector2 = hit.get("local") if hit.get("local") is Vector2 else Vector2.ZERO
+			ff.ignite("bow" if at.y < 0.0 else "stern", 0.35)
+		# 漏 = pass
+
+	class SoulStorm extends Soul:
+		func open_leaks() -> int:
+			return 0  # 伴生：漏哪一路坐也不坐效
+
+	func setup(_type: String, _def: Dictionary, seed := 0) -> void:
+		ff = SoulStorm.new()
+		ff.setup(4, 500.0, 0.4, 0.9)
+		rng.seed = seed if seed != 0 else 1
+
+
+## 收弹不点火（火攻全哑）
+class _MutEFFDamp extends _FakeEFF:
+	func on_ballistic_hit(hit: Dictionary) -> void:
+		var kind := str(hit.get("kind", "shot"))
+		var amount := float(hit.get("amount", 0.0))
+		var heavy := bool(hit.get("heavy", true))
+		if heavy and kind == "shot" and rng.randf() < 0.4:
+			ff.add_leak(rng.randi_range(0, 3), amount * 0.32, 1)
+		# 点火 = pass
+
+	class SoulDamp extends Soul:
+		func fire_total() -> float:
+			return 0.0  # 伴生：点不着的火火势合计也恒零
+
+	func setup(_type: String, _def: Dictionary, seed := 0) -> void:
+		ff = SoulDamp.new()
+		ff.setup(4, 500.0, 0.4, 0.9)
+		rng.seed = seed if seed != 0 else 1
+
+
+## 损管不抽人：答走恒 1.0，火大 / 水满也拖不动装填
+class _MutEFFNoShirnk extends _FakeEFF:
+	func damage_crews(_crew: int) -> Array:
+		return [0, 0]
+
+	func fire_volley_shrink(_crew: int, _mounts: int) -> float:
+		return 1.0
+
+	class SoulNoPlug extends Soul:
+		func open_flow() -> float:
+			return 3.0  # 伴生：损管不抽人，漏口 20s 后也没人堵（探针直接坐漏的读数也不下）
+
+	func setup(_type: String, _def: Dictionary, seed := 0) -> void:
+		ff = SoulNoPlug.new()
+		ff.setup(4, 500.0, 0.4, 0.9)
+		rng.seed = seed if seed != 0 else 1
+
+
+## 已降被钩照长：冻结不看旗
+class _MutEFFBlaze extends _FakeEFF:
+	func frozen(_flags: Dictionary) -> bool:
+		return false
 
 
 ## 损伤好样本：水线下中弹在该段开漏（交 _FakeFloodFire 灌）；艉部中弹伤舵；火器着火；损管令按四档分人；过半舱水即沉

@@ -15,6 +15,9 @@ const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
 const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 ## lane combat07：敌将 AI（接近 / 抢上风 / 保持舷炮 / 接舷企图 / 脱离 / 降幡），本船只管照舵令开船、开炮、抛钩
 const _Captain := preload("res://scripts/combat/EnemyCaptainAI.gd")
+## lane w53-p3a 三期「火与水」：敌船进水失火的薄适配层（CombatSwitches.enemy_flood_fire），
+## 里面只挂 FloodFire 这一件，不挂完整的伤损模型——舱数 / 稳性 / 储备浮力照 DamageModel 同一张船型档
+const _EnemyFF := preload("res://scripts/combat/EnemyFloodFire.gd")
 ## 可选模块（别的 lane 的；不在库就不读）：接舷钩索（combat05）、海况（combat02）
 const _MELEE_PATH := "res://scripts/combat/MeleeResolve.gd"
 const _SEA_STATE_PATH := "res://scripts/combat/SeaState.gd"
@@ -94,6 +97,11 @@ var ammo_frac: float:
 		return float(captain.ammo_frac()) if captain != null else 1.0
 ## 这一次接舷是本船先抛的钩（WorldMap 结算白刃时据此把本船当攻方；放钩即清）
 var boarding_initiator: bool = false
+## lane w53-p3a：敌船进水失火簿（EnemyFloodFire）。开关 enemy_flood_fire 开、进 _ready 时按船种 / 体量起一份；
+## 关时恒为 null，收弹、逐帧、读口全走不到它，本船与基线逐字一致
+var flood_fire = null
+## lane w53-p3a：火势快照（0–1），起火观感 / p3b-c 读用；簿不在恒 0
+var fire_level := 0.0
 
 var _last_state: StringName = &""
 var _consorts: Array = []
@@ -119,8 +127,28 @@ func _ready() -> void:
 	_CombatFx.dress_ship(self)
 	_polish_wake()
 	_rng.randomize()
+	_ensure_flood_fire()
 	_ensure_captain()
 	_setup_tag()
+
+
+## 开關 enemy_flood_fire 开、簿还没起：按船种 / 体量起一份 EnemyFloodFire（取数照玩家船 DamageModel 同一张船型档；
+## 有炮位才带火药——EnemyFloodFire.setup 里按 cannon_slots > 0 定）。关开关不调本行，flood_fire 恒 null
+func _ensure_flood_fire() -> void:
+	if flood_fire != null or not CombatSwitches.on("enemy_flood_fire"):
+		return
+	var fleet := get_node_or_null("/root/Fleet")
+	if fleet == null or not fleet.has_method("ship_def"):
+		return  # 没进树 / 没挂 Fleet（探针裸实例化）：收起簿、行为照基线，批次需要时调用方自己起
+	flood_fire = _EnemyFF.new()
+	flood_fire.setup(ship_type, fleet.call("ship_def", ship_type))
+
+
+## 给 p3c 敌情列的读口（契约固定）：开关开且有簿时给火 / 进水 / 烧着的段 / 倾侧 / 正下沉；关开关或没有簿返回 {}
+func flood_fire_state() -> Dictionary:
+	if flood_fire == null:
+		return {}
+	return flood_fire.state()
 
 
 ## 船图契约：敌船精灵取 assets/ship_<sprite_id 或 ship_type>.png，缺图留 PirateShip.tscn 里的 ship_falcon.png。
@@ -181,6 +209,7 @@ func _physics_process(delta: float) -> void:
 	wake_particles.scale_amount_min = 0.16
 	wake_particles.scale_amount_max = 0.28 + speed_ratio * 0.25
 
+	_step_flood_fire(delta)
 	var ship_dir = Vector2.UP.rotated(rotation)
 	var angle_diff = ship_dir.angle_to((target.position - position).normalized())
 	_process_firing(delta, angle_diff, dist)
@@ -188,6 +217,65 @@ func _physics_process(delta: float) -> void:
 		return
 	if bool(orders.get("leave", false)):
 		_leave_battle()
+
+
+## lane w53-p3a：敌船进水失火逐帧。水火只在 switch 开、簿在、不冻结（已降 / 被钩 / 白刃进行中 / 已结算）时长；
+## 火烧船体走 take_damage 同一处扣（不绕开击沉逻辑），火场伤亡扣 crew；缓沉涨满 1 或倾覆走与击沉同一条 _explode
+func _step_flood_fire(delta: float) -> void:
+	if flood_fire == null:
+		return
+	var host := get_parent()
+	var flags := {"struck": struck, "grappled": grappled, "boarding": host != null and host.get("boarding") == true,
+		"resolved": host != null and host.get("resolved") == true}
+	if flood_fire.frozen(flags):
+		return
+	# 风与雨照本场的（target 船 = 玩家旗舰，WorldMap 海战逐帧写 wind_strength；雨从 WorldMap.is_storm 同一路读）
+	var env := {"wind": 80.0, "rain": false}
+	var ws = target.get("wind_strength")
+	if ws != null:
+		env["wind"] = float(ws)
+	if host != null and host.get("is_storm") == true:
+		env["rain"] = true
+	var st: Dictionary = flood_fire.step(delta, crew, env)
+	var blaze := clampf(float(st["hull_dps"]), 0.0, 1.0)
+	if blaze > 0.0:
+		# 「走 take_damage 同一处结算，不要绕开击沉逻辑」= 收弹那一条质检路：火烧船体扣账交 Cannonball 唯一爱看的
+		# take_ballistic_hit 走 book 走 DamageModel 的 fx/伤亡飘字/敌将 on_hit —— 不在 _step 里另打一条 take_damage。
+		# FloodFire 出的是「船体上限的几分」：乘上 hull_max 换点数，每帧 delta 份落账
+		take_ballistic_hit({"kind": "", "hull": blaze * hull_max * delta, "amount": 0.0,
+			"local": Vector2.ZERO, "heavy": true, "crew": 0.0, "fire": 0.0})
+	if hull_hp <= 0.0:
+		return  # 这一帧烧沉了，take_ballistic_hit → take_damage 已经走过 _explode
+	if int(st["crew_cas"]) > 0:
+		crew = maxi(0, crew - int(st["crew_cas"]))
+	if str(st["founder"]) != "":
+		# 缓沉涨满 / 倾覆：船体一并记损，沉船与击沉同一条 _explode 路（赏钱照击沉）
+		take_ballistic_hit({"kind": "", "hull": hull_max * 2.0, "amount": 0.0,
+			"local": Vector2.ZERO, "heavy": true, "crew": 0.0, "fire": 0.0})
+		return
+	# 观感（最小）：篷帆 / 甲板着起时拽现有 CombatFx 火烟出来（焦帆那条路的现成接口）；
+	# 起火处按烧着的段把 DamageFx 挂火点亮起来，没有 DamageFx 就不画、不出新图
+	fire_level = clampf(flood_fire.ff.fire_total(), 0.0, 1.0)
+	_sync_fire_look(st)
+
+
+## 起火处观感用现成的火烟：船上挂了 DamageFx（Ship 同一路数）就点亮对应段的火点；没挂就拽 CombatFx.set_fire 现成
+## 观感线到船身（焦帆 / 烟柱那条路），不另画新图。
+func _sync_fire_look(st: Dictionary) -> void:
+	var zones: PackedStringArray = st.get("fire_zones", PackedStringArray())
+	var rig_p: CPUParticles2D = get_node_or_null("DamageFx/FireRig") as CPUParticles2D
+	if rig_p != null:
+		rig_p.emitting = fire_level >= 0.05
+		return  # 细节观感在船身 DamageFx 自己管，不再走世界烟气
+	var dfx: Node2D = get_node_or_null("DamageFx")
+	if dfx != null:
+		for z in ["bow", "mid", "stern"]:
+			var p := dfx.get_node_or_null("Fire" + z.capitalize()) as CPUParticles2D
+			if p != null:
+				p.emitting = flood_fire != null and z in zones
+		return
+	# 没挂 DamageFx：起火走 CombatFx 现成的焦帆 / 船影烟气
+	_CombatFx.set_fire(self, fire_level, Vector2.ZERO)
 
 
 ## 喂给敌将的局势（键名即 EnemyCaptainAI 读的键）。风取目标船的 wind_vector / wind_strength（WorldMap 海战逐帧写），
@@ -319,15 +407,29 @@ func _process_firing(delta: float, angle_diff: float, dist: float) -> void:
 	var side_dir = Vector2.RIGHT.rotated(rotation)
 	if side < 0: side_dir = Vector2.LEFT.rotated(rotation)
 
+	# lane w53-p3a：水火缠身时人手去堵漏 / 救火，出膛数折掉几发（EnemyFloodFire 按损伤簿算，从炮位抽人）；
+	# 簿不在（开关关、没进 Fleet 的探针布景）volley_n == range(cannon_count) 齐——与基线逐字一致
+	var volley_n := cannon_count
+	if flood_fire != null:
+		var shrink: float = flood_fire.fire_volley_shrink(crew, cannon_count)
+		if shrink < 1.0:
+			volley_n = maxi(0, int(round(cannon_count * shrink)))
+		# 火烟倾侧也在拖装填：cooldown 按 VOLLEY_GAP 再乘一份（≤1.8×）
+		if shrink < 1.0 or flood_fire.ff.fire_total() > 0.0 or absf(flood_fire.ff.list_deg()) > 5.0:
+			fire_timer *= clampf(1.0 + 0.5 * flood_fire.ff.fire_total() + absf(flood_fire.ff.list_deg()) / 40.0, 1.0, 1.8)
+	if volley_n <= 0:
+		return
+
 	_AUDIO.combat_fire(get_parent())
-	_CombatFx.muzzle_flash(self, side, cannon_count)
+	_CombatFx.muzzle_flash(self, side, volley_n)
 	_CombatFx.hull_shudder(self, 0.55, side)
 	if cannonball_scene == null:
 		cannonball_scene = load("res://scenes/Cannonball.tscn") as PackedScene
 	var spread_k: float = captain.spread()
-	for i in range(cannon_count):
+	# lane w53-p3a：满舷（簿不在 / 无水火）时 range(cannon_count) 与本 range(volley_n) 一致
+	for i in range(volley_n):
 		var cb = cannonball_scene.instantiate()
-		cb.position = position + ship_dir * (i - (cannon_count - 1) * 0.5) * 20 + side_dir * 30
+		cb.position = position + ship_dir * (i - (volley_n - 1) * 0.5) * 20 + side_dir * 30
 		var spread = randf_range(-spread_k, spread_k)
 		cb.direction = side_dir.rotated(spread)
 		cb.shooter = self
@@ -506,8 +608,24 @@ func _polish_wake() -> void:
 	wake_particles.local_coords = false
 
 
+## lane w53-p3a：簿在且水火能动（簿在船上、不在冻结态）时记损也带着进水走；这一条只在簿真在时进，
+## hit_side 取自旧弹命中舷位（不明处传 0 不偏舷）；开关关 / 冻结时本函数照走不到，进水量只往岸上账
+func _note_ff_hit(amount: float, hit_side := 0) -> void:
+	if flood_fire == null or hull_hp <= 0.0 or is_queued_for_deletion():
+		return
+	var host := get_parent()
+	var flags := {"struck": struck, "grappled": grappled, "boarding": host != null and host.get("boarding") == true,
+		"resolved": host != null and host.get("resolved") == true}
+	if flood_fire.frozen(flags):
+		return
+	flood_fire.on_timed_hit(amount, hit_side)
+
+
 func take_damage(amount: float) -> void:
 	hull_hp -= amount
+	# lane w53-p3a：旧口径弹（玩家 player_gunnery 关出来的直线铁子 / 火烧不在此调）照 hull 有漏的机会进水
+	# （没有引火——旧账不带弹种引火率）；开关关 / 已降、被钩、白刃、结算时不动水
+	_note_ff_hit(amount)
 	# 挂了船身反应节点就不闪红：命中处一闪、顺来力一颤、焦痕由 Cannonball → CombatFx.hull_impact 出
 	if not _CombatFx.has_look(self):
 		sprite.modulate = Color(1.2, 0.5, 0.45)
@@ -532,6 +650,49 @@ func take_damage(amount: float) -> void:
 				crew = maxi(0, crew - extra)
 		hull_hp = 0.0
 		_explode()
+
+
+## lane w53-p3a：玩家 side 接上装填簿 / 弹道（player_gunnery 开）时，Cannonball._strike 在开关
+## （enemy_flood_fire）开、簿在的这两道闸后才会走进来；关时走不到（Cannonball 侧同样把关）。
+## 船体、伤亡、闪红、飘字、敌将士气全与旧口径 take_damage 同一处走（不另起账）；带过来的 kind / local / heavy
+## 只喂进水失火簿——水线下重弹按几率开漏、带 fire 的弹按几率点火。
+## 注意：Godot 4.6 的 Object._call 在 Node 上不会拦到未声明的方法，类名 PirateShip 的 has_method 又
+## 吃静态表——「off 时真的没有 take_ballistic_hit」这条要在 Cannonball 那边把关，本函数只做货真派一名。
+func take_ballistic_hit(hit: Dictionary) -> void:
+	# 已排队回收就该弹都挡下：火烧沉的那一发走穿了 take_ballistic_hit → take_damage → _explode，
+	# 再往后任何 set 都会报到 freed 上。沉完就不进簿、不点 sprite、不摸敌将
+	if is_queued_for_deletion():
+		return
+	var hull := float(hit.get("hull", 0.0))
+	# 闪红 / 焦痕 / 飘字照样出：命中观感不打折（muzzle / impact 由 Cannonball 侧已出，这里只照本体反应）
+	if hull > 0.0:
+		take_damage(hull)
+	else:
+		# 不伤船体的轻矢（箭 / 轻弩）：船体不衰、闪一焦红提示钉住了
+		if not _CombatFx.has_look(self):
+			sprite.modulate = Color(1.15, 0.85, 0.8)
+			_hit_tween = create_tween()
+			_hit_tween.tween_property(sprite, "modulate", _rest_modulate(), 0.16)
+	# 那一发沉了不再加漏加火（已排队回收）
+	if is_queued_for_deletion():
+		return
+	if flood_fire != null:
+		# take_ballistic_hit 收递的是 bow/mid 指向 de local，不跨余切——路过 host 已 queue_free 时跳过坐漏/点火符，
+		# flood_fire 簿是 RefCounted 不随 node 拆，读后从 _step 算无龙——簿不在（＝开关关）这条道根本走不到，无需再判
+		var host := get_parent()
+		var flags := {"struck": struck, "grappled": grappled, "boarding": host != null and host.get("boarding") == true,
+			"resolved": host != null and host.get("resolved") == true}
+		if not flood_fire.frozen(flags):
+			flood_fire.on_ballistic_hit(hit)
+	# 轻矢打人不伤船：弹种 crew 期望值照概率落到甲板（与旧口径 take_damage 的伤亡同口径）
+	var expect := float(hit.get("crew", 0.0))
+	if expect > 0.0:
+		var dead := int(expect)
+		if _rng.randf() < expect - float(dead):
+			dead += 1
+		dead = mini(dead, maxi(0, crew - 1))
+		if dead > 0:
+			crew -= dead
 
 
 func _rest_modulate() -> Color:
