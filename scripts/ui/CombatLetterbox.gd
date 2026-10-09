@@ -454,8 +454,16 @@ func _build_after_action(choices: Array, callback: Callable) -> void:
 	# 底中挂、给左右各留一掌边，行题 + 按钮一字排开塞得下五行（方案 §九「三到五行」）。
 	# 尺寸照内容自定：先铺满 VB（每行一行题 + 按钮），再按 combined_minimum_size 反推 PanelContainer 的 size，
 	# 底沿贴画布底留 CHOICE_BOTTOM_MARGIN 一缝。
+	# 底用 plaque 同一路（绢本顶匾款），但底下港页 / 海图卡片的字会透进卡底（plaque 贴图本身 alpha < 1、
+	# 主控复审观感）——卡在 _root 下 plaque 之前垫一层不透明实墨 ColorRect 压住；ColorRect 做 panel 的兄弟，
+	# 不做它的子项（样式盒先渲、子节点画在其上，会把金边也盖掉）。position/size 在量完卡身后对齐。
 	_choice_panel.add_theme_stylebox_override("panel", UiTheme.plaque())
+	var backfill := ColorRect.new()
+	backfill.color = Color(UiTheme.INK_SOLID, 1.0)
+	backfill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(backfill)
 	_root.add_child(_choice_panel)
+	_choice_panel.set_meta(&"backfill", backfill)
 
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 8)
@@ -519,6 +527,7 @@ func _build_after_action(choices: Array, callback: Callable) -> void:
 	vb.add_child(sep)
 
 	_choice_done_btn = Button.new()
+	# 尾钮字体走正文文楷在下一笔；本笔只立不透明底。
 	_choice_done_btn.text = "收拾停当　（Enter）"
 	_choice_done_btn.custom_minimum_size = Vector2(200, 44)
 	_choice_done_btn.add_theme_font_override("font", UiTheme.title_font())
@@ -542,6 +551,11 @@ func _build_after_action(choices: Array, callback: Callable) -> void:
 	_choice_panel.size = Vector2(take_x, want.y)
 	_choice_panel.position = Vector2(cv.x * 0.5 - take_x * 0.5,
 		cv.y - _choice_panel.size.y - CHOICE_BOTTOM_MARGIN)
+	# 垫底跟卡同位同宽（_root 下 plaque 之前那个兄弟 ColorRect；set_meta 挂的）
+	var bf = _choice_panel.get_meta(&"backfill", null)
+	if bf is ColorRect:
+		(bf as ColorRect).position = _choice_panel.position
+		(bf as ColorRect).size = _choice_panel.size
 	_choice_done_btn.grab_focus()
 
 
