@@ -515,12 +515,15 @@ func _verdict(d: Dictionary) -> Array:
 	return _builtin_verdict(d)
 
 
-## 内置士气裁决：士气线、重创 / 伤亡 / 矢石尽又逃不脱即降，再加战术上的走
+## 内置士气裁决：士气线、重创 / 伤亡 / 矢石尽又逃不脱即降，再加战术上的走。
+## 追的窗口（lane w53-p4-melee，开关 pursue_window）：重创又贴着玩家时追窗口开——逃不脱的线挂上追窗（咬住的痕）
 func _builtin_verdict(d: Dictionary) -> Array:
 	var m := morale
 	var escape := bool(d["can_escape"])
 	if m <= strike_line:
 		return ["strike", _strike_why()]
+	if float(d["hull"]) <= 0.22 and m <= 40.0 and _pursue_on(_s):
+		return ["strike", "船体重创，逃不脱，%s" % profile["strike_word"]]
 	if float(d["hull"]) <= 0.22 and m <= 40.0 and not escape:
 		return ["strike", "船体重创，逃不脱，%s" % profile["strike_word"]]
 	if float(d["crew_frac"]) <= 0.3 and m <= 45.0 and not escape:

@@ -581,12 +581,16 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 	var max_rounds := clampi(int(ctx.get("max_rounds", ROUNDS_DEFAULT)), 1, ROUNDS_MAX)
 	var rounds: Array = []
 	var outcome := ""
-	# 白刃三决断（开关 melee_decision；缺省 = 自动，骰流 / 数值逐字照旧——没进决断段时下面的倍率恒 1、阈值恒 ADVANCE_AT）：
-	# 舷边 / 舷腰 / 桅下各停一拍。本合拍定 1 = 压上（攻方战力 ×PWR、双方互换更狠）、0 = 收势
-	# （伤亡打折、守方本合 ×1+COUNTER 可能反推、推进阈值抬高）；decision_cb 是 WorldMap 的分段调度入口
+	# 白刃三决断（开关 melee_decision）：关 = 逐字旧白刃——整块跳过（不掷一枚骰、不动一个阈值，掷骰序照旧）。
+	# 开：打到决断段（舷边 / 舷腰 / 桅下）那合先定「压上 / 收势」——decision_cb 开 = 玩家拍板一拍（WorldMap 分段调度，
+	# 挂起脚本、玩家 Space 压上 / Enter 收势 / 超时不拍 = 返 null），否则照开战拍好的表（缺省自动：
+	# 每段头一合掷一拍——自动口径照旧随种子开销，开开关不交互的场与旧玩法的掷骰序差的是这三拍自动骰）
 	var decided: Array = []
 	var decision_cb: Callable = ctx.get("decision_cb", Callable())
+	var decisions_on := decisions_enabled()
 	out["decisions"] = []
+	if decisions_on:
+		decided = decisions_plan(att, def, ctx, rng)
 	# 这一仗的时运：双方各抽一回（对数正态），管的是模型外的偶然——谁先登、谁手软、谁的头目中了流矢
 	var luck_a := clampf(exp(rng.randfn(0.0, BATTLE_LUCK)), 0.5, 2.0)
 	var luck_d := clampf(exp(rng.randfn(0.0, BATTLE_LUCK)), 0.5, 2.0)
@@ -597,7 +601,9 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 		var advance_at := ADVANCE_AT
 		var dec := -1
 		var dec_how := ""
-		if front in DECISION_JUNCTURES:
+		if not decisions_on:
+			pass  # 开关关：整场逐字旧白刃（本合不读决断段、不掷拍定骰）
+		elif front in DECISION_JUNCTURES:
 			var ji: int = DECISION_JUNCTURES.find(front)
 			while decided.size() <= ji:
 				decided.append(-1)
