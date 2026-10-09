@@ -20,9 +20,10 @@ extends SceneTree
 ## 场子照 qa_w53_2_combat_probe 的 _battle 复刻（真 WorldMap 海战场 + pending_battle，泉州外海）；
 ## 敌将 live（不冻敌船 fire_timer、不接管旗舰航向），士气簿裁决到即早收（同二期口径）。
 ## 随机源注射（sea_seed 私有流 + 敌船 _rng 与 EnemyFloodFire 簿 rng / 我船 DamageModel rng /
-## 装填簿 ReloadAmmo rng / 士气挂件 rng 按种子起）之后，每种开关配置各跑满 N 场无 hang、
-## 同种子复跑逐场结论一致（bit-exact 到 overcome+胜负）自检过；WorldMap._ready 的 randomize()
-## 全局播种、MeleeResolve 逐合 / gm / Calendar 仍走 OS 时流的场子若跑出漂移，SELFCHECK 会红。
+## 士气挂件 rng / 号令面板 _rng 按种子起）之后，每种开关配置各跑满 N 场无 hang、同种子复跑
+## 逐场结论一致（bit-exact 到 overcome+胜负）自检过；WorldMap._ready 的 randomize() 是全局播种
+## （seed(sd) 之后又撒一次主随机流，注射钉不住）、MeleeResolve 逐合 / gm / Calendar 仍走 OS 时流，
+## 若跑出漂移 SELFCHECK 会红——红了重跑或换种子。
 ## 判词：末行 WINRATE cfg=a/N …（逐配置一行）恒打；自检不过退 1。
 
 const TAG := "QA_W53_P3C_WINRATE"
@@ -190,7 +191,6 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 	#   PirateShip.flood_fire  EnemyFloodFire 簿的 rng（时级命中开漏开火的掷点；p3a 开关开才有簿）
 	#   Ship.damage_model.rng  命中落点 / 舱位 / 左侧右舷
 	#   CombatMorale 挂件 rng   我方溃逃甩脱 roll
-	#   （ReloadAmmo 装填簿 rng 在 own 有效后再注，见 _ready 那帧之后）
 	# SeaState 那一支已用 pending_battle.sea_seed 钉（WorldMap._setup_sea 转给它）。
 	var foes := wm.get_children().filter(func(c): return String(c.name).begins_with("PirateShip") and not c.is_queued_for_deletion())
 	var foe_rng_idx := 0
@@ -225,14 +225,6 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 		own.tree_exited.connect(func() -> void: own_freed[0] = true)
 	for _i in 2:
 		await process_frame
-	# 装填簿（ReloadAmmo）：Ship._ready 里 battery = ReloadAmmo.for_ship(...) 内部 rng 自己 randomize()
-	# （走 OS 时流）——同种子两跑舷侧装填先后会漂，按种子注射钉回（同敌船 _rng 的路子）
-	if own != null:
-		var bat = own.get("battery")
-		if bat is Object and is_instance_valid(bat):
-			var br := RandomNumberGenerator.new()
-			br.seed = sd + shift + 4_000_000
-			(bat as Object).set("rng", br)
 	var panel: Node = null
 	for n in wm.get_children():
 		if n.is_in_group("nk1_combat_orders"):
