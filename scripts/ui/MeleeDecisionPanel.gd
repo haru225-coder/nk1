@@ -96,7 +96,7 @@ func _build() -> void:
 	_slip = PanelContainer.new()
 	_slip.add_theme_stylebox_override("panel", UiTheme.plaque())
 	_slip.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_slip.offset_top = -96.0
+	_slip.offset_top = -260.0
 	_slip.offset_bottom = -96.0
 	_slip.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	add_child(_slip)
