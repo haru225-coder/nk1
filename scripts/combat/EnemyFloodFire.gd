@@ -132,10 +132,13 @@ func fire_volley_shrink(crew: int, mounts: int) -> float:
 ##   hull_dps 火烧船体该扣的船体/秒（PirateShip 乘 delta 走 take_damage 扣，不绕开击沉逻辑）
 ##   crew_cas 本步火场伤亡（PirateShip 扣 crew）
 ##   founder "" / "flood" / "capsize"：满了 PirateShip 照 _explode 沉
-##   fire_zones 此刻烧着的段（观感：PirateShip 挂 CombatFx 火点用）
+##   fire_zones 此刻烧着的段；list_deg 此刻倾侧度（观感：PirateShip 拽 CombatFx 火烟戽水、压扁船图用）
 func step(delta: float, crew: int, env: Dictionary) -> Dictionary:
-	var out := {"hull_dps": 0.0, "crew_cas": 0, "founder": str(ff.foundered), "fire_zones": ff.burning()}
-	if ff == null or str(ff.foundered) != "" or delta <= 0.0:
+	if ff == null:
+		return {"hull_dps": 0.0, "crew_cas": 0, "founder": "", "fire_zones": PackedStringArray(), "list_deg": 0.0}
+	var out := {"hull_dps": 0.0, "crew_cas": 0, "founder": str(ff.foundered), "fire_zones": ff.burning(),
+		"list_deg": ff.list_deg()}
+	if str(ff.foundered) != "" or delta <= 0.0:
 		return out
 	var crews := damage_crews(crew)
 	var r: Dictionary = ff.step(delta, int(crews[0]), int(crews[1]), env, rng)
@@ -143,6 +146,7 @@ func step(delta: float, crew: int, env: Dictionary) -> Dictionary:
 	out["crew_cas"] = int(r["crew_burn"]) + (1 if bool(r["blast"]) else 0)
 	out["founder"] = str(r["founder"])
 	out["fire_zones"] = ff.burning()
+	out["list_deg"] = ff.list_deg()
 	return out
 
 
@@ -154,8 +158,11 @@ func frozen(flags: Dictionary) -> bool:
 
 
 ## 给 p3c 敌情列的公开读口（契约固定）：火 0–1 / 进水 0–1 / 烧着的段 / 倾侧度 / 正下沉
+## w53-p3flood：burning 给两种读法——开关「有没有在烧」（HUD ff_note_of 读 == true）
+## 与段名清单（原 PackedStringArray 一一并在 burning_zones，观感排火点按它）
 func state() -> Dictionary:
 	if ff == null:
 		return {}
-	return {"fire": float(ff.fire_total()), "flood": float(ff.flood_frac()), "burning": ff.burning(),
-		"list_deg": float(ff.list_deg()), "sinking": ff.settle > 0.0}
+	var zones: PackedStringArray = ff.burning()
+	return {"fire": float(ff.fire_total()), "flood": float(ff.flood_frac()), "burning": zones.size() > 0,
+		"burning_zones": zones, "list_deg": float(ff.list_deg()), "sinking": ff.settle > 0.0}
