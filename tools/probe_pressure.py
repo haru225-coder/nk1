@@ -162,6 +162,7 @@ TEXT_PROBES = {
     "ship_dashi_probe": (CHECK_LINES_W_CN, r"^(DASHI_SHIP_(?:OK|FAIL))\b"),
     "ship_exquisite_probe": (CHECK_LINES_W_CN, r"^(SHIP_EXQUISITE_(?:OK|FAIL))\b"),
     "shot_champa_ship": (CHECK_LINES_W_CN, r"^(CHAMPA_SHOT_(?:OK|FAIL))\b"),
+    "qa_w53_p4_melee_decision_shot": (CHECK_LINES, r"^QA_W53_P4_MELEE_DECISION_SHOT (PASS|FAIL \d+)$"),  # lane w53-p4-melee 白刃决断拍板截图（真 WorldMap 布景 + 真按键；✓/✗ 判词通行打与末行 PASS/FAIL k）
 }
 # 明列不判：不是门禁、没有判词，挂压帧只因 gates_md「接 shot_gate 的都挂压帧」口径——跑了只得 rc=0，判不出两档一致与否。
 # 每行写明为什么；探针集里既不出 --json、又没登记、也不在这里的，照判「跑不成」

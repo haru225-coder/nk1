@@ -43,6 +43,7 @@ func _run() -> void:
 		quit(ShotGate.fail_no_render(TAG, no_render, 1))
 		return
 	DirAccess.make_dir_recursive_absolute(_dir)
+	ShotGate.frame_pressure(self)  # NK1_PROBE_SLOW_MS 压帧自检（同 shot_gate 一个口径；gates_md 门钉）
 
 	# 布景照 combat_wire：真 WorldMap 海战、敌炮冻住、接舷演出照常
 	var gm := root.get_node("GameManager")
