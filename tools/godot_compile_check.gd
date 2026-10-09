@@ -97,6 +97,7 @@ const SCRIPTS := [
 	"res://scripts/combat/SeaAtmosphere.gd", "res://scripts/combat/SeaWake.gd", "res://scripts/combat/SeaPennant.gd",  # lane atmos 海面/航迹/旗旒
 	"res://scripts/combat/DamageModel.gd", "res://scripts/combat/FloodFire.gd",  # lane combat04 分系统损伤、浸水失火（Ship.gd 挂用）
 	"res://scripts/combat/EnemyFloodFire.gd",  # lane w53-p3a 敌船进水失火（PirateShip 挂用，开关 enemy_flood_fire）
+	"res://scripts/combat/AfterAction.gd",  # lane w53-p4-after 战后取舍纯账（SeaChart 挂用，开关 waa_*）
 	# lane combat03 舷战弹道 / 分位装填与弹药
 	"res://scripts/combat/Ballistics.gd", "res://scripts/combat/ReloadAmmo.gd",
 	"res://tools/art/ThemePreview.gd", "res://tools/art/build_theme.gd",
