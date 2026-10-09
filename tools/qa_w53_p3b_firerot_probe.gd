@@ -152,6 +152,15 @@ func _sec_on(fleet: Node) -> void:
 		await _close(wm)
 		sw.call("reset")
 		return
+	var foe_ff: Node2D = null
+	for c0 in wm.get_children():
+		if String(c0.name).begins_with("PirateShip"):
+			foe_ff = c0
+	if foe_ff == null or foe_ff.get("flood_fire") == null:
+		_check(false, "二 敌船挂上水火簿（enemy_flood_fire 开，p3a 在衙）")
+		await _close(wm)
+		sw.call("reset")
+		return
 	# ① 轮换三档：mixed → rapid → fire → mixed；签面第三档写「火攻」
 	var seen := PackedStringArray([str(panel.call("state_text", "load"))])
 	panel.call("issue", "load")
@@ -336,6 +345,52 @@ func _sec_on(fleet: Node) -> void:
 	sw.call("set_on", "player_gunnery", true)
 	sw.call("set_on", "fire_attack_load", true)
 	_check(ok_wet, "二④ 张湿毡下：火箭 fire 仍 = 基础 × 上风 %.1f（湿毡不混乘进引火，得 %s）" % [want_up, wet_seen if wet_seen != "" else "无火弹"])
+	# ⑤ 引火跨 lane 链端到端（w53-p3b 补完：p3a 敌船簿已在集成位，火攻放出去的火箭火砲真要点着敌船才算落到游戏里）：
+	#    我居上风布点，火攻令下连放数舷且逐发亲喂敌簿的收弹口（Cannonball._strike 交 hit 同一形状——弹道飞时、
+	#    碰撞系物理帧在 headless 不稳，本格验的是「账通」不是「飞行」）：敌簿 fire 须涨离 0；火攻关态敌簿不收弹是 p3a 域，不验。
+	var ffok := false
+	var ff = foe.get("flood_fire")
+	if ff == null:
+		_check(false, "二⑤ 敌船水火簿在（enemy_flood_fire 开、p3a 在衙；缺簿本格红）")
+	else:
+		for c in (own.get_parent() as Node).get_children():
+			if c is Area2D and c.get("shooter") == own:
+				c.queue_free()
+		var am5: Dictionary = (bat as Object).get("ammo")
+		am5["huoyao"] = 240
+		(bat as Object).set("ammo", am5)
+		var amm5: Dictionary = (bat as Object).get("ammo_max")
+		amm5["huoyao"] = 240
+		(bat as Object).set("ammo_max", amm5)
+		for _r in 10:
+			foe.global_position = (own as Node2D).global_position + wv * 280.0
+			(own as Node2D).global_rotation = wv.angle() - Vector2.RIGHT.angle()
+			own.set("fire_cooldown", 0.0)
+			var settle5 := 0.0
+			while int((bat as Object).call("ready_count", 1)) < int((bat as Object).call("mount_count", 1)) and settle5 < 20.0:
+				(bat as Object).call("tick", 1.0, -1, -1.0, -1.0)
+				settle5 += 1.0
+			own.call("_fire_broadside", 1)
+			var volley: Array = []
+			for c in (own.get_parent() as Node).get_children():
+				if c is Area2D and c.get("shooter") == own and c.get("shot") is Dictionary:
+					volley.append((c.get("shot") as Dictionary).duplicate())
+					c.queue_free()
+			for s5 in volley:
+				if str(s5.get("kind", "")) in ["fire", "bomb"]:
+					for _try in 6:
+						ff.call("on_ballistic_hit", {"kind": str(s5["kind"]), "amount": float(s5.get("amount", 12.0)),
+							"local": Vector2(5.0, 0.0), "heavy": bool(s5.get("heavy", false)), "fire": float(s5.get("fire", 0.0))})
+			var fs5: Dictionary = (foe as Object).call("flood_fire_state")
+			if float(fs5.get("fire", 0.0)) > 0.0:
+				ffok = true
+				break
+			var am5b: Dictionary = (bat as Object).get("ammo")
+			am5b["huoyao"] = 240
+			(bat as Object).set("ammo", am5b)
+		var fs6: Dictionary = (foe as Object).call("flood_fire_state")
+		_check(ffok or float(fs6.get("fire", 0.0)) > 0.0,
+			"二⑤ 居上风火攻数舷（命中账经敌簿收弹口）后敌船真点着（敌簿 fire=%.3f、烧段 %s）" % [float(fs6.get("fire", 0.0)), str(fs6.get("burning"))])
 	await _close(wm)
 	sw.call("reset")
 
