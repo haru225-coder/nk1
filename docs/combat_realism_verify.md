@@ -152,6 +152,6 @@ git checkout -- scripts/WorldMap.gd                                             
 
 参照文献（三期上线前，同工具同 8 种子系 11..988 步长 41 的 24 种子批，×3.0 口径）：pirates off 21/24 ≈ 0.875 vs on 24/24 = 1.000（+12.5pp）；falcon off 17/24 ≈ 0.708 vs on 22/24 ≈ 0.917（+20.8pp）。本批种子整体偏难（off 0.667 / 0.429 < 文献 0.875 / 0.708）——落位熵那两笔不能手消（`WorldMap._ready` 的 `randomize()` 与 `MeleeResolve` 当场拨号）是已知，见 `qa_w53_p3c_winrate_probe.gd` 档头。
 
-**验证**：`tools/combat_realism_probe.gd --strict` PASS（7 节）；`tools/qa_w53_p3b_firerot_probe.gd` PASS（新表 ×2.0 三处钉全过）；`tools/qa_w53_p3c_intel_ff_probe.gd` PASS；`tools/qa_w53_p3c_ammo_low_probe.gd` PASS。全套门禁另起一扇（`bash /tmp/w53/gates-full.sh /tmp/nk1-w53-p4-tune /tmp/w53/gates-tune-full`）结果写进 commit 说明末段。
+**验证**：`tools/combat_realism_probe.gd --strict` PASS（7 节）；`tools/qa_w53_p3b_firerot_probe.gd` PASS（新表 ×2.0 三处钉全过）；`tools/qa_w53_p3c_intel_ff_probe.gd` PASS；`tools/qa_w53_p3c_ammo_low_probe.gd` PASS。全套门禁（`bash /tmp/w53/gates-full.sh /tmp/nk1-w53-p4-tune /tmp/w53/gates-tune-full`）161 件跑毕 DONE：唯 3 件基线已知红（`check_w53_copy` 1 项缺字「𢄂」归主控、`combat_realism --strict` 约 1/5 flake「夺下第 1 艘…海战不收」、`qa_w53_9_cutscene_input_probe` compile 基线 + `qa_w53_9_port_banner_probe` 900s 超时——四纹与 `gates-firerot-00/01`、`gates-flood-1`、`gates-p3-int-9a0d`、`gates-after-20261009`、`gates-hud-1` 同批基线一字吻）。
 
 **验证**：`combat_realism_probe --strict`、`qa_w53_p3b_firerot_probe`、`qa_w53_p3c_intel_ff_probe`、`qa_w53_p3c_ammo_low_probe` 绿；全套门禁绿（基线已知红除外）。
