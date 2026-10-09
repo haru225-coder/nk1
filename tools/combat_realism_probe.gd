@@ -461,10 +461,23 @@ func _story_live_capture() -> void:
 		"story.encounter.spawn", "按条目刷出 %d 艘 %s" % [int(pirate.get("count", 0)), pirate.get("type", "")], "得 %d 艘" % foes.size())
 	for f in foes:
 		f.set("fire_timer", INF)  # 只冻敌炮（同 combat_probe_stage.freeze_enemy_fire）：旗舰不挨炮，战损只看夺船记账
-		f.set("crew", 0)  # 敌船无人：白刃必胜，夺船这条路一定走到
 	var wm_ref: WeakRef = weakref(wm)
+	# lane w53-p4-melee 控制方线：等场窗内把第 2 艘的士气簿钳住——
+	# 士気簿在接舷的前一帧已被 _scan 读走 crew 初始值；我们清零 crew 会被士气簿读成
+	# 「人手不足三成、逃不脱」判降（morale sweep 早于夺船），要让后一艘照常走完夺船路：
+	# 开场先把士气簿的 crew 压实（全员在册）、再把士气拉满，隔帧才清船员入刀
+	var _morale = wm.get("_morale")
+	if _morale != null and is_instance_valid(_morale):
+		for f in foes:
+			var sheet = _morale.call("sheet_of", f)
+			if sheet != null and is_instance_valid(sheet):
+				sheet.set("morale", 100.0)  # 拉开 strike.line 与 rout 带宽：本帧 不碰 敌船士气簿的 _evaluate 给不了 struck
+				sheet.set("value", 100.0)
 	for i in foes.size():
 		var foe_ref: WeakRef = weakref(foes[i])
+		# 敌船无人：白刃必胜，夺船这条路一定走到。只在接舷前一刻清空这一艘——全队一开场就清空的话，
+		# 后一艘「人手不足三成、逃不脱」由士气簿当场判降，夺第 1 艘的等待窗里就以 enemy_struck 收战（产品正当，探针布景不该触发）
+		foes[i].set("crew", 0)
 		wm.call("_board_enemy", foes[i])
 		await _frames_until(func() -> bool: return foe_ref.get_ref() == null or not rec.is_empty(), 30)
 		if i < foes.size() - 1:
