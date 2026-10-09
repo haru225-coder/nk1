@@ -20,11 +20,12 @@ extends SceneTree
 ##
 ## 场子照 qa_w53_2_combat_probe 的 _battle 复刻（真 WorldMap 海战场 + pending_battle，泉州外海）；
 ## 敌将 live（不冻敌船 fire_timer、不接管旗舰航向），士气簿裁决到即早收（同二期口径）。
-## 随机源注射（sea_seed 私有流 + 敌船 _rng 与 EnemyFloodFire 簿 rng / 我船 DamageModel rng /
-## 士气挂件 rng / 号令面板 _rng 按种子起）之后，每种开关配置各跑满 N 场无 hang、同种子复跑
-## 逐场结论一致（bit-exact 到 overcome+胜负）自检过；WorldMap._ready 的 randomize() 是全局播种
-## （seed(sd) 之后又撒一次主随机流，注射钉不住）、MeleeResolve 逐合 / gm / Calendar 仍走 OS 时流，
-## 若跑出漂移 SELFCHECK 会红——红了重跑或换种子。
+## 随机源注射（pending_battle.sea_seed + seed(sd) 盖回 _ready 那声 randomize() + 敌船 _rng 与
+## EnemyFloodFire 簿 rng / 我船 DamageModel rng / 士气挂件 rng / 号令面板 _rng 按种子起）之后，
+## 每种开关配置各跑满 N 场无 hang、同种子复跑逐场结论一致（bit-exact 到 overcome+胜负）自检过。
+## 钉不住的写了一笔：WorldMap._ready 里那声裸 randomize() 在 _spawn_enemy 之前，敌船落位 /
+## 水手 / 士气那几发已被换成 OS 熵（要钉得动产品 WorldMap，超本 lane 权界）——落位差在
+## ±0.25 rad / 700–720 一档，种内复跑偶见胜负翻转即源于此，SELFCHECK 照红照报（红了重跑或换种子）。
 ## 判词：末行 WINRATE cfg=a/N …（逐配置一行）恒打；自检不过退 1。
 
 const TAG := "QA_W53_P3C_WINRATE"
@@ -185,6 +186,12 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 	_apply_cfg(keys)
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
+	# WorldMap._ready 里有一声裸 randomize()（产品要每次开战换风向），它撒的 OS 熵进全局流。
+	# _ready 是 add_child 同步跑的，敌船落位 / 水手 / 士气在里面读全局流——这边盖回 seed(sd)，
+	# _ready 之后的每场掷点（风暴节奏、弹着散布、CombatFx 闪光）认盖回后的流；
+	# 敌船落位那几发已被 randomize() 换走，钉不回（要钉得动产品 WorldMap，超本 lane 权界）——
+	# 落位差在 ±0.25 rad / 700–720 这一档，种内复跑偶见胜负翻转即源于此（SELFCHECK 照红照报）。
+	seed(sd + shift)
 	var rec: Array = []
 	wm.battle_finished.connect(func(o: String, data: Dictionary) -> void: rec.append([o, data.duplicate()]))
 	# 注射所有未 seed 的私有 rng（运行时节点成员，不改产品脚本）——要不然同 seed 两场照样漂：
