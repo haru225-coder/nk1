@@ -1326,6 +1326,14 @@
     "zashi_spoil_mul_per_level": 0.1,
     "worthless": 0.0
   },
+  "after_action": {
+    "note": "战后取舍（战斗系统方案 §三「战后」、§九「战后单子」，lane w53-p4-after）——战后单子三到五行小选择：押船 / 救人 / 俘虏处置 / 索赎 / 追击。SeaChart 收战札记落下后挂「战后收拾」小卡；读不到本节退回各件字面缺省（与 _spoil_by_outcome 同一退路口径）。开关全在 CombatSwitches「waa_*」一组，全关 = 逐字回旧（不修札记、不挂卡、不落账）。不改存档：赎金当场折价兑付、人财当场两讫，不做「30 天后兑付」的跨场记账。",
+    "prize": {"min_crew": 6, "note": "押船：夺来 / 受降的船要分人看守，每艘至少这么多人；人手不够差几艘漂几艘（keep 全押 / drift 全放漂）"},
+    "rescue": {"fame": 2, "enlist_cap": 4, "note": "救人：落水的人救了加这么多名声，救上来愿留下的编入船队（上限这么多人，受船队总人数上限管）；战败落水按战沉水手半数捞回（AfterAction.LOSE_RESCUE_DIV=2，仅开关 waa_rescue 开时）"},
+    "captives": {"sell_price": 25, "sell_fame": -2, "free_fame": 2, "note": "俘虏一人卖这么些钱、掉了 sell_fame 名声；放走加 free_fame 名声；收编按 Fleet.hire_crew 聚合逐船填（受 crew_max 上限，填不下的遣散）"},
+    "ransom": {"each": 40, "note": "索赎：放船换赎金，当场折价兑付——人（俘虏数）× each 钱，钱匣立增、人放走、无名声增减。方案「30 天后在对方港口兑付、再遇敌意低一档」要跨场记账，不做（不改存档格式）"},
+    "pursue": {"enemy_speed_ratio": 0.95, "broadside_hits": 3, "note": "追击：敌船逃了可选追——按我速 / 敌速（敌船 base_speed × enemy_speed_ratio）掷一次，追 / 不追两账；追上比照夺船并入船队（Fleet.add_ship 原路），没追上挨一顿舷炮（broadside_hits 门 × COMBAT_HIT_DMG × 敌船体 / 300）"}
+  },
   "resolve": {
     "by": "outcomes 里带 precedence 的几项，按 precedence 从小到大，头一个 tally 大于 0 的即结局",
     "fallback": "enemy_sunk",

@@ -21,6 +21,12 @@ const DEFAULTS := {
 	# 第三期 · 火与水
 	"enemy_flood_fire": true,  # 敌船也会进水、失火（只挂 FloodFire 这一件，不挂整套伤损模型）—— w53-p3a
 	"fire_attack_load": true,  # 火攻回到装填轮换（均装 → 专力装填 → 火攻）—— w53-p3b
+	# 第四期 · 战后取舍（waa = wave after-action；after_* 前三期已用，四期另起前缀，开关互不带累）
+	"waa_prize": true,    # 押船：夺来 / 受降的船要分人看守（至少 6 人），人手不够船漂走 —— w53-p4-after
+	"waa_rescue": true,   # 救人：落水的人救不救——救了加名声，救上来的可以收编 —— w53-p4-after
+	"waa_captives": true, # 俘虏：收编（补水手）/ 卖掉（得钱掉名声）/ 放走（加名声）—— w53-p4-after
+	"waa_ransom": true,   # 索赎：放船换赎金，当场折价兑付（不改存档记账）—— w53-p4-after
+	"waa_pursue": true,   # 追击：敌船逃了可选追——可能多夺一艘，也可能再挨一顿 —— w53-p4-after
 }
 
 static var _over: Dictionary = {}
