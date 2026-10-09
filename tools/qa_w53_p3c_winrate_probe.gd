@@ -19,10 +19,10 @@ extends SceneTree
 ##
 ## 场子照 qa_w53_2_combat_probe 的 _battle 复刻（真 WorldMap 海战场 + pending_battle，泉州外海）；
 ## 敌将 live（不冻敌船 fire_timer、不接管旗舰航向），士气簿裁决到即早收（同二期口径）。
-## 随机源注射（sea_seed 私有流 + 敌船 _rng / 我船 DamageModel rng / 装填簿 ReloadAmmo rng /
-## 士气挂件 rng 按种子起）之后，每种开关配置各跑满 N 场无 hang、同种子复跑逐场结论一致
-## （bit-exact 到 overcome+胜负）自检过；MeleeResolve 逐合 / gm / Calendar 仍走 OS 时流的场子
-## 若跑出漂移，SELFCHECK 会红——红了重跑或换种子。
+## 随机源注射（sea_seed 私有流 + 敌船 _rng 与 EnemyFloodFire 簿 rng / 我船 DamageModel rng /
+## 装填簿 ReloadAmmo rng / 士气挂件 rng 按种子起）之后，每种开关配置各跑满 N 场无 hang、
+## 同种子复跑逐场结论一致（bit-exact 到 overcome+胜负）自检过；WorldMap._ready 的 randomize()
+## 全局播种、MeleeResolve 逐合 / gm / Calendar 仍走 OS 时流的场子若跑出漂移，SELFCHECK 会红。
 ## 判词：末行 WINRATE cfg=a/N …（逐配置一行）恒打；自检不过退 1。
 
 const TAG := "QA_W53_P3C_WINRATE"
@@ -187,6 +187,7 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 	wm.battle_finished.connect(func(o: String, data: Dictionary) -> void: rec.append([o, data.duplicate()]))
 	# 注射所有未 seed 的私有 rng（运行时节点成员，不改产品脚本）——要不然同 seed 两场照样漂：
 	#   PirateShip._rng        敌炮散布 / 命中手 / 跳帮判定（_spawn_enemy 才能读到的成员）
+	#   PirateShip.flood_fire  EnemyFloodFire 簿的 rng（时级命中开漏开火的掷点；p3a 开关开才有簿）
 	#   Ship.damage_model.rng  命中落点 / 舱位 / 左侧右舷
 	#   CombatMorale 挂件 rng   我方溃逃甩脱 roll
 	#   （ReloadAmmo 装填簿 rng 在 own 有效后再注，见 _ready 那帧之后）
@@ -198,6 +199,13 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 		r.seed = sd + shift + 3_000_000 + foe_rng_idx * 13_579
 		foe_rng_idx += 1
 		f.set("_rng", r)
+		# 敌船水火簿（EnemyFloodFire）：p_seed=0 时自家 rng.randomize() 走 OS 时流——
+		# 漏不漏、漏哪舷都掷它，不钉同种子两跑漂（fire/flood 路径直接关系到敌船几时才沉）
+		var ffb = f.get("flood_fire")
+		if ffb is Object and is_instance_valid(ffb):
+			var fr := RandomNumberGenerator.new()
+			fr.seed = sd + shift + 8_000_000 + (foe_rng_idx - 1) * 13_579
+			(ffb as Object).set("rng", fr)
 	var ship_node = wm.get("ship")
 	if ship_node != null:
 		var dm = ship_node.call("get_damage_model") if ship_node.has_method("get_damage_model") else null
@@ -230,6 +238,11 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 		if n.is_in_group("nk1_combat_orders"):
 			panel = n
 	if drive and panel != null:
+		# 号令面板 _init 里 _rng.randomize() 走 OS 时流（白刃过场的甩脱骰掷它）；钉回再落令
+		if panel.get("_rng") is RandomNumberGenerator:
+			var prng := RandomNumberGenerator.new()
+			prng.seed = sd + shift + 9_000_000
+			panel.set("_rng", prng)
 		for o in orders:
 			panel.call("issue", String(o))
 	# 物理帧泵（p3b 的跑法）：一拍 30 帧 = 0.5 秒游戏时间，墙钟比 create_timer 实走快几十倍；
