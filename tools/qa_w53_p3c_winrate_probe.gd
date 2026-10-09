@@ -1,8 +1,9 @@
 extends SceneTree
 ## lane-w53-p3c 三期开关胜率工具（headless，经 glock 跑）——p3b / p3c 两份旧工具合一份（p3b 那份删）：
 ##   二期「手感对比」口径的骨架（同种子表、300 秒窗口到限时两散、敌将 live、士气裁决可早收），
-##   加 p3b 的物理帧泵 + 玩家驾驶（追最近敌船转舷、进 55° 舷弧放舷齐射）与同种子逐场对拍（on 跑完
-##   按同一种子复跑 off / 单开一项），没有玩家动手 24 种子根本打不完（双手离舵的场子多半拖到超时）。
+##   加 p3b 的物理帧泵 + 逐帧玩家驾驶（追最近敌船转舷、进 55° 舷弧放舷齐射——逐帧下锚与墙钟
+##   解耦，同种子复跑才对得上；按 p3b 原拍 0.5 秒一锚实测负载大时漂 win→lose），与同种子逐场
+##   对拍（on 跑完复跑一遍自比，漂移即红），没有玩家动手 24 种子根本打不完。
 ##
 ## 用法：godot --headless --path . -s res://tools/qa_w53_p3c_winrate_probe.gd -- \
 ##         --n=8 --seeds=11,23,37,41,53,67,79,83 --on=flood,fire | --off --ship=fu_ship_medium --enemy=pirate_boat --count=2
@@ -237,13 +238,50 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 			panel.set("_rng", prng)
 		for o in orders:
 			panel.call("issue", String(o))
-	# 物理帧泵（p3b 的跑法）：一拍 30 帧 = 0.5 秒游戏时间，墙钟比 create_timer 实走快几十倍；
-	# 记录战斗经过秒按 WorldMap._battle_elapsed_s 实读，stuck 6000 帧不进秒数记 hang
+	# 物理帧泵（p3b 的跑法改到逐帧）：每一物理帧驾驶一拍（转舷 / 冷却够放舷齐射），
+	# 30 帧一圈回看战况收没收——逐帧下锚点行为与墙钟解耦，同种子复跑才对得上（按 0.5 秒
+	# 一拍下锚会把「哪一拍放的」随负载挪，seed 1222 实测漂出 win→lose）。
 	var held := 0.0
 	var last_elapsed := -1.0
 	var stuck := 0
 	var wall := 0.0
+	var tick := 0
 	while rec.is_empty() and not own_freed[0]:
+		for _i in 30:
+			await physics_frame
+			tick += 1
+			if not is_instance_valid(wm):
+				break
+			# 玩家驾驶（逐帧）：追着最近敌船转舷放箭；冷却够、敌进 55° 舷弧就放
+			if drive and own != null and is_instance_valid(own) and float(own.get("fire_cooldown")) <= 0.0:
+				var foe: Node2D = null
+				var best := INF
+				for c in wm.get_children():
+					if String(c.name).begins_with("PirateShip") and float(c.get("hull_hp")) > 0.0:
+						var dd := (c as Node2D).global_position.distance_squared_to((own as Node2D).global_position)
+						if dd < best:
+							best = dd
+							foe = c
+				if foe != null:
+					var to: Vector2 = foe.global_position - (own as Node2D).global_position
+					var sb := Vector2.RIGHT.rotated((own as Node2D).global_rotation)
+					var side := 1 if to.dot(sb) >= 0.0 else -1
+					var off := absf(sb.angle_to(to))
+					if off < deg_to_rad(55.0):
+						own.call("_fire_broadside", side)
+					else:
+						# 把最近敌船转进舷弧（直接改角——脚本驾驶不走输入，产品里玩家靠 WASD 转头）
+						var want := to.angle() - (Vector2.RIGHT.angle() if side > 0 else Vector2.LEFT.angle())
+						(own as Node2D).rotation = want
+			var el := float(wm.get("_battle_elapsed_s"))
+			if el > last_elapsed:
+				last_elapsed = el
+				held = el
+				stuck = 0
+			else:
+				stuck += 1
+			if not rec.is_empty() or own_freed[0] or held >= LIMIT_S or stuck > 6000:
+				break
 		for _i in 30:
 			await physics_frame
 			if not is_instance_valid(wm):
@@ -261,27 +299,6 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 		if not is_instance_valid(wm) or not rec.is_empty() or own_freed[0] \
 				or held >= LIMIT_S or stuck > 6000 or wall > WALL_LIMIT_S:
 			break
-		# 玩家驾驶：追着最近敌船转舷放箭；冷却够、敌进 55° 舷弧就放（p3b 的拍法原样）
-		if drive and own != null and is_instance_valid(own) and float(own.get("fire_cooldown")) <= 0.0:
-			var foe: Node2D = null
-			var best := INF
-			for c in wm.get_children():
-				if String(c.name).begins_with("PirateShip") and float(c.get("hull_hp")) > 0.0:
-					var dd := (c as Node2D).global_position.distance_squared_to((own as Node2D).global_position)
-					if dd < best:
-						best = dd
-						foe = c
-			if foe != null:
-				var to: Vector2 = foe.global_position - (own as Node2D).global_position
-				var sb := Vector2.RIGHT.rotated((own as Node2D).global_rotation)
-				var side := 1 if to.dot(sb) >= 0.0 else -1
-				var off := absf(sb.angle_to(to))
-				if off < deg_to_rad(55.0):
-					own.call("_fire_broadside", side)
-				else:
-					# 把最近敌船转进舷弧（直接改角——脚本驾驶不走输入，产品里玩家靠 WASD 转头）
-					var want := to.angle() - (Vector2.RIGHT.angle() if side > 0 else Vector2.LEFT.angle())
-					(own as Node2D).rotation = want
 	var out := {"overcome": "hang", "win": false, "wall_s": wall, "tag": "", "held_s": held}
 	if not rec.is_empty():
 		out["overcome"] = str(rec[0][0])
