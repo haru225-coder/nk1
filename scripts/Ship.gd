@@ -256,22 +256,29 @@ func _fire_broadside_ballistics(side: int) -> void:
 	var parent := get_parent()
 	# w53-p3b 火攻：号令面板把「火攻」落到 battery.fire_mode 时，引火乘数 = 面板 LOAD_TABLE.fire 的 ignite
 	# （不走 order_mods，免得湿毡这类自身效力再乘一遍）× 风位折算（居上风 1.5 / 相平 1.0 / 居下风 0.6）；
-	# 没挂面板就按 battery.fire_mode 收在 1.0，与 wave53 开工前同
+	# 没挂面板就按 battery.fire_mode 收在 1.0，与 wave53 开工前同。
+	# 射程效力同拍兑现（w53-p3b 补完：load 档 range 乘数原只有签面在写、没落到弹上——火攻令射程九折照表）：
+	# range_mult 只在火攻令在、且表上 range ≠ 1 时下发——均装 / 专力装填表值 1.0 不发，零回归。
 	var ig_mul := 1.0
 	var orders_scr: GDScript = load("res://scripts/ui/CombatOrdersPanel.gd")
+	var volley_extra := {}
 	if battery != null and orders_scr != null:
 		var bo: Dictionary = orders_scr.call("_load_orders", self)
 		if bo is Dictionary and bool(bo.get("fire_mode", false)):
-			var base_ig := 1.0
+			var fire_row: Dictionary = {}
 			var lt = orders_scr.get("LOAD_TABLE")
 			if lt is Dictionary and (lt as Dictionary).get("fire") is Dictionary:
-				base_ig = float(((lt as Dictionary)["fire"] as Dictionary).get("ignite", 1.0))
+				fire_row = (lt as Dictionary)["fire"]
+			var base_ig := float(fire_row.get("ignite", 1.0))
 			var wind_f := 1.0
 			if orders_scr.has_method("fire_attack_factor"):
 				wind_f = float(orders_scr.call("fire_attack_factor", _fire_upwind(foe_node)))
 			ig_mul = maxf(0.0, base_ig * wind_f)
+			var rng_mul := float(fire_row.get("range", 1.0))
+			if not is_equal_approx(rng_mul, 1.0):
+				volley_extra["range_mult"] = rng_mul
 	var before: Array = parent.get_children() if parent != null else []
-	var fired := preload("res://scripts/combat/Ballistics.gd").fire_volley(self, battery, side, foe_node)
+	var fired := preload("res://scripts/combat/Ballistics.gd").fire_volley(self, battery, side, foe_node, volley_extra)
 	if battery != null:
 		battery.set("last_volley_ignite", ig_mul)  # 给探针 / 账本读的实落数（缺省 1.0）
 	if parent != null:

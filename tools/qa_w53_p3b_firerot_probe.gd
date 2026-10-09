@@ -6,6 +6,7 @@ extends SceneTree
 ##       开关两态的轮换序列 —— fire_attack_load 开且旗舰挂装填簿时三档（含火攻），关时两档。
 ##   二、真战场开关开：按 2 键轮到第三档签面写「火攻」、battery.fire_mode 变真；放一舷，弓弩改放火箭（huojian），
 ##       射出的弹 fire > 0 且乘了 LOAD_TABLE.fire 的 ignite × 风位折算（本战场敌船在我下风向 / 上风 / 相平三格）；
+##       射程效力照表落地：火攻令下弹上 reach = 表射程 × 0.9（不带 range_mult 的对照 = 表射程）；
 ##       湿毡（order_wet_felt 令下）不混乘进引火（只压 reload_time 一路），弹上 fire 仍 = 基础 × 风位。
 ##   三、真战场开关关 / player_gunnery 关：轮换两档（均装 ⇄ 专力装填、轮不到火攻）、fire_mode 不变假、
 ##       签面与提示与 w53-2 账逐字一致（ORDER_TIPS["load"] 原文）。
@@ -15,6 +16,8 @@ extends SceneTree
 ## 判词：QA_W53_P3B_FIREROT PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。只改内存里的 Fleet / GameState / pending_battle，跑完还原。
 
 const TAG := "QA_W53_P3B_FIREROT"
+
+const _Bal := preload("res://scripts/combat/Ballistics.gd")
 
 var _fails: Array = []
 var _errlog: _ScriptErrLog = null
@@ -114,6 +117,8 @@ func _sec_pure() -> void:
 	var fire_row: Dictionary = (lt as Dictionary).get("fire", {}) if lt is Dictionary else {}
 	_check(is_equal_approx(float(fire_row.get("reload", -1.0)), 1.15) and is_equal_approx(float(fire_row.get("ignite", -1.0)), 3.0),
 		"一③ LOAD_TABLE.fire 照表：装填 ×1.15、引火 ×3（得 %s / %s）" % [fire_row.get("reload"), fire_row.get("ignite")])
+	_check(is_equal_approx(float(fire_row.get("range", -1.0)), 0.9),
+		"一③ LOAD_TABLE.fire 照表：射程 ×0.9（得 %s）" % str(fire_row.get("range")))
 	# ④ 状态句（ReloadAmmo.status_line）：火攻令在时句尾缀「火攻」；火药告急 / 用尽时弹药段写出（少 / 尽）——
 	#    「火攻（缺药）」这类情形状态条读得出来，不用加新键
 	var ra: GDScript = load("res://scripts/combat/ReloadAmmo.gd")
@@ -218,6 +223,34 @@ func _sec_on(fleet: Node) -> void:
 		"二② 簿上 last_volley_ignite 记 %.1f（得 %.2f）" % [want_up, float((bat as Object).get("last_volley_ignite"))])
 	var up_read := int(own.call("_fire_upwind", foe)) if own.has_method("_fire_upwind") else -99
 	_check(up_read == 1, "二② 风位读出我居上风（_fire_upwind 得 %d）" % up_read)
+	# ②射程效力照表落地（w53-p3b 补完：range ×0.9 原只有签面在写）：reach = 表射程 × 舷角系数 × 风项 × range_mult，
+	# 风项按 wind 向量的实测点乘算（wdot = beam ⋅ wind_dir），与弹的舷角系数一并除出——剩下的就是 range_mult
+	# 一律须 = 0.9。回退 Ship 的 extra 下发（range_mult=1）即全比 1.0、本格红。
+	var ok_rng := not shots.is_empty()
+	var rng_seen := ""
+	var beam_now := Vector2.RIGHT.rotated((own as Node2D).global_rotation)
+	var wvec: Vector2 = (own.get("wind_vector") as Vector2).normalized()
+	for cb in shots:
+		var s2: Dictionary = cb.get("shot")
+		var wid2 := str(s2.get("weapon", ""))
+		var max_r2 := float(_Bal.weapon(wid2).get("max_range", 0.0))
+		var arc_full := float(_Bal.weapon(wid2).get("arc_full", 90.0))
+		var slot2 := float(s2.get("slot", 0.0))
+		var origin2: Vector2 = s2.get("origin", Vector2.ZERO)
+		var aim2: Vector2 = origin2 + beam_now * float(_Bal.weapon(wid2).get("eff_range", 500.0))
+		var off2 := _Bal.off_beam((own as Node2D).global_rotation, 1, origin2, aim2)
+		var bear2 := _Bal.bearing_factor(wid2, off2)
+		var wind_k2 := float(_Bal.weapon(wid2).get("wind_k", 0.0))
+		var wdot2 := beam_now.dot(wvec)
+		var reach2 := float(s2.get("reach", 0.0))
+		var got2 := reach2 / (max_r2 * (0.6 + 0.4 * bear2)) if max_r2 > 0.0 else -1.0
+		rng_seen += "%s %.2f " % [wid2, got2]
+		if got2 <= 0.0 or absf(got2 - 0.9) > 0.06:
+			ok_rng = false
+	_check(ok_rng, "二② 火攻射程效力落地：各弹 reach /（表射程 × 舷角）一律 ≈ 0.9（得 %s，关 range_mult 即 1.0±0.1）" % rng_seen)
+	var bal_probe: Dictionary = _Bal.plan_shot("gongnu", Vector2.ZERO, Vector2.RIGHT * 300.0)
+	_check(is_equal_approx(float(bal_probe.get("reach", 0.0)), float(_Bal.weapon("gongnu").get("max_range", -1.0))),
+		"二② 对照：plan_shot 不带 range_mult 时 reach = 表射程（不回乘）")
 	# ③ 居下风：另一侧弧内点，引火 ×0.6（风位与②异号已布点自证）
 	for cb in shots:
 		cb.queue_free()
