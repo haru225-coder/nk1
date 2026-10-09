@@ -1,9 +1,10 @@
 extends SceneTree
 ## lane-w53-p3c 敌情列「水火短注」专项探针（headless）：回退即红。
-##   一、纯函数 ff_note_of：鸭子型——敌船没挂 flood_fire_state() 给空串；挂上（假敌船 RefCounted
-##       包装一个真 PirateShip 实例）按阈值取：
-##       「将沉」（sinking=true）>「失火」（burning=true 或 fire ≥ 0.5）>「进水」（flood ≥ 0.3 或倾侧 |list_deg| ≥ 10°）；
-##       「失火，进水」两个都中时连写；{}（挂件被开关关时的回落）不给注。
+##   一、纯函数 ff_note_of：鸭子型——敌船没挂 flood_fire_state() 给空串；挂上（假敌船烧动态
+##       GDScript 的 Node2D）按阈值取。「失火」认挂件真契约两种写法：burning 段名表非空
+##       （FloodFire.burning() 的 PackedStringArray）或 fire ≥ 0.5；「进水」（flood ≥ 0.3 或倾侧
+##       |list_deg| ≥ 10°）；「将沉」（sinking=true）压两头；「失火，进水」双中连写；
+##       {}（挂件被开关关时的回落）不给注。
 ##   二、intel_line_of 的开关：switch_on=true（三期开）真敌船（PirateShip.tscn 实例，挂了 flood_fire_state）
 ##       才给注；switch_on=false（三期关）同一条船逐字回旧（行字典 ff_note = ""）。
 ##   三、布景对照：真起 WorldMap 海战（同 qa_w53_15 的 _battle）+ CombatStatusHud.mount，
@@ -13,7 +14,9 @@ extends SceneTree
 ##       （Label 自裁 clip_text 不溢出；行高照旧 22 / 行间距 2，不超过小卡容量）。
 ## 判词：QA_W53_P3C_INTEL_FF PASS / FAIL k；本进程出 SCRIPT ERROR 也判红。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_p3c_intel_ff_probe.gd
-## 附（回退验证）：删 CombatStatusHud.ff_note_of 里 burning 那一行后第二节红；开关关态逐字回旧是本探立着的意义。
+## 附（回退验证）：① 删 CombatStatusHud.ff_note_of 里 burning 那一块后第二、三节红；
+##   ② 真挂件契约 burning = PackedStringArray 段名表（FloodFire.burning()）——拿 bool 当契约的旧版
+##   会在真布景里 SCRIPT ERROR（PackedStringArray == bool 不合法），本探 ③⑦ 两格按段名表喂，钉死这层。
 
 const TAG := "QA_W53_P3C_INTEL_FF"
 const Hud := preload("res://scripts/ui/CombatStatusHud.gd")
@@ -126,16 +129,18 @@ func _sec_pure() -> void:
 	_check(Hud.ff_note_of(plain) == "", "① 没挂 flood_fire_state 的敌船：短注为空")
 	var lite := _mk_ff_enemy({"sinking": true})
 	_check(Hud.ff_note_of(lite) == "将沉", "② 将沉（sinking=true）：得「%s」" % Hud.ff_note_of(lite))
-	lite.set("ff_state", {"burning": true})
-	_check(Hud.ff_note_of(lite) == "失火", "③ 失火（burning=true）：得「%s」" % Hud.ff_note_of(lite))
+	lite.set("ff_state", {"burning": PackedStringArray(["deck"])})
+	_check(Hud.ff_note_of(lite) == "失火", "③ 失火（burning=段名表非空，真挂件契约）：得「%s」" % Hud.ff_note_of(lite))
 	lite.set("ff_state", {"fire": 0.7})
 	_check(Hud.ff_note_of(lite) == "失火", "④ 失火（fire=0.7 ≥ 0.5）：得「%s」" % Hud.ff_note_of(lite))
 	lite.set("ff_state", {"flood": 0.4})
 	_check(Hud.ff_note_of(lite) == "进水", "⑤ 进水（flood=0.4 ≥ 0.3）：得「%s」" % Hud.ff_note_of(lite))
 	lite.set("ff_state", {"list_deg": -15.0})
 	_check(Hud.ff_note_of(lite) == "进水", "⑥ 进水（倾侧 15° ≥ 10°，取绝对值）：得「%s」" % Hud.ff_note_of(lite))
-	lite.set("ff_state", {"burning": true, "flood": 0.5})
+	lite.set("ff_state", {"burning": PackedStringArray(["deck"]), "flood": 0.5})
 	_check(Hud.ff_note_of(lite) == "失火，进水", "⑦ 双中：连写（得「%s」）" % Hud.ff_note_of(lite))
+	lite.set("ff_state", {"burning": PackedStringArray(), "fire": 0.2, "flood": 0.1})
+	_check(Hud.ff_note_of(lite) == "", "⑦b 段名表空 + 火水都不到线：不留短注（得「%s」）" % Hud.ff_note_of(lite))
 	lite.set("ff_state", {})
 	_check(Hud.ff_note_of(lite) == "", "⑧ 挂件回落 {}（开关关的路）：不留短注")
 	lite.free()
@@ -145,7 +150,7 @@ func _sec_pure() -> void:
 # ── 二、intel_line_of 开关两态 ──
 
 func _sec_line() -> void:
-	var lite := _mk_ff_enemy({"burning": true, "flood": 0.4})
+	var lite := _mk_ff_enemy({"burning": PackedStringArray(["deck"]), "flood": 0.4})
 	if lite == null:
 		_check(false, "二 烧得出鸭子型假敌船")
 		return

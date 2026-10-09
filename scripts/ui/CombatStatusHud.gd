@@ -648,7 +648,8 @@ static func intel_damage_text(enemy: Node, seen: float) -> String:
 
 
 ## 水火短注（三期，lane w53-p3c）：敌船带 flood_fire_state()（p3a 的 FloodFire 挂件；
-## 契约 {"fire","flood","burning","list_deg","sinking"}，开关关了挂件给 {}）、开关开、
+## 契约 {"fire","flood","burning","list_deg","sinking"}——burning 是烧着的段名 PackedStringArray
+## （FloodFire.burning()），不是旗标：段表非空或 fire ≥ 0.5 都算失火）、开关开、
 ## 给出的字典非空，就从最重到最轻取一句缀在敌情列行尾：「将沉」>「失火」+「进水」并出可同挂。
 ## 鸭子型：p3a 没落地前敌船没这方法（或它自己给 {}），照常一行短注也没有——本 lane 只读挂件、不造灾。
 static func ff_note_of(enemy: Node) -> String:
@@ -661,7 +662,15 @@ static func ff_note_of(enemy: Node) -> String:
 	if d.get("sinking") == true:
 		return "将沉"
 	var bits := PackedStringArray()
-	if d.get("burning") == true or snap_f(d, "fire", 0.0) >= 0.5:
+	# burning 两写不混判：真挂件给段名 PackedStringArray（非空 = 有段在烧）；鸭子型探针旧账给 bool。
+	# Godot 的 PackedStringArray == bool 是硬错（不是 false），先分型再比，不拿 == 去试
+	var burning_v = d.get("burning", false)
+	var burning: bool = false
+	if burning_v is bool:
+		burning = burning_v
+	elif burning_v is Array or burning_v is PackedStringArray:
+		burning = (burning_v as Array).size() > 0
+	if burning or snap_f(d, "fire", 0.0) >= 0.5:
 		bits.append("失火")
 	if snap_f(d, "flood", 0.0) >= 0.3 or absf(snap_f(d, "list_deg", 0.0)) >= 10.0:
 		bits.append("进水")
