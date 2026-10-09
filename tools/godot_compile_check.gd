@@ -205,6 +205,8 @@ const SCRIPTS := [
 	"res://tools/qa_w53_p3c_intel_ff_probe.gd",  # lane w53-p3c 敌情列水火短注专项探针（鸭子型+布景+排版）
 	"res://tools/qa_w53_p3c_intel_ff_shot.gd",  # lane w53-p3c 敌情列水火短注 1280×720 截图（NK1_SHOT_DIR 指路）
 	"res://tools/qa_w53_p3c_winrate_probe.gd",  # lane w53-p3c 三期开关胜率工具（合并 p3b/p3c：--on/--off/--compare 两段对阵，同种子复跑自检）
+	"res://tools/qa_w53_p4_after_choices_probe.gd",  # lane w53-p4-after 战后取舍专项探针（押船/救人/俘虏/索赎/追击，开关 waa_* 各节回退即红）
+	"res://tools/qa_w53_p4_after_shots.gd",  # lane w53-p4-after 战后收拾小卡 1280×720 截图（NK1_SHOT_DIR 指路）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
