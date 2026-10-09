@@ -527,10 +527,11 @@ func _build_after_action(choices: Array, callback: Callable) -> void:
 	vb.add_child(sep)
 
 	_choice_done_btn = Button.new()
-	# 尾钮字体走正文文楷在下一笔；本笔只立不透明底。
+	# 尾钮字体走正文文楷（主控复审观感 3）：title_font 是马善政标题字，拉丁「Enter」落到它的花体、
+	# 与中文 / 其他钮不搭；改正文字 + 同字号——与各选项钮一路字。
 	_choice_done_btn.text = "收拾停当　（Enter）"
 	_choice_done_btn.custom_minimum_size = Vector2(200, 44)
-	_choice_done_btn.add_theme_font_override("font", UiTheme.title_font())
+	_choice_done_btn.add_theme_font_override("font", UiTheme.font())
 	_choice_done_btn.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY + 2)
 	_choice_done_btn.pressed.connect(_on_choice_done)
 	vb.add_child(_choice_done_btn)
