@@ -1004,6 +1004,8 @@ func _eff_run(m: Object, secs: float, crew: int, env := {}) -> Dictionary:
 ## EnemyFloodFire 一张簿（w53-p3a）：水线下重弹开了漏再没人堵会越灌越多、`add_leak` 口径照玩家船；
 ## 满员船损管抽人 ≤ 两成、险情没有时 shrink 恒 1；
 ## 烧了不救越烧越大，烧了有人救能压下去、烧到 1 / 扑灭后不回头；冻结（已降 / 被钩 / 白刃 / 已结算）水火不长
+## lane w53-p3flood 补：烧着的段每帧照 FloodFire.ZONES 序一一并列（fire_zones，观感排火点用）；
+## step 账里带当帧倾侧 list_deg（PirateShip 压扁船图的手感读数，簿上随水渐长）
 func _judge_enemy_ff_script(m: Script) -> void:
 	if m == null:
 		_t(false, "eff.load", "EnemyFloodFire 加载（开关 enemy_flood_fire 线在 PirateShip，簿不在不算通过）")
@@ -1056,9 +1058,12 @@ func _judge_enemy_ff_script(m: Script) -> void:
 	(m_s as Object).get("ff").call("ignite", "bow", 0.4)
 	_eff_run(m_s, 5.0, 40)
 	var st: Dictionary = m_s.call("state")
-	var has_keys := st.has("fire") and st.has("flood") and st.has("burning") and st.has("list_deg") and st.has("sinking")
-	_t(has_keys and float(st["fire"]) >= 0.0 and float(st["flood"]) > 0.0 and st["burning"] is PackedStringArray,
-		"eff.state", "state() 给 p3c：fire / flood / burning / list_deg / sinking 五键齐（得 %s）" % str(st.keys()))
+	# w53-p3flood：burning 契约改成开关（bool，HUD ff_note_of 读 == true）；段名清单挪 burning_zones
+	var has_keys := st.has("fire") and st.has("flood") and st.has("burning") and st.has("burning_zones") \
+		and st.has("list_deg") and st.has("sinking")
+	_t(has_keys and float(st["fire"]) >= 0.0 and float(st["flood"]) > 0.0 and st["burning"] == true
+		and st["burning_zones"] is PackedStringArray and (st["burning_zones"] as PackedStringArray).size() >= 1,
+		"eff.state", "state() 给 p3c：fire / flood / burning（开关）/ burning_zones（段清单）/ list_deg / sinking（得 %s）" % str(st.keys()))
 	# 收弹坐进漏（直坐不投骰）：坐确的漏在，时级账烧成骰的 30% 在「eff.timed_hit」那行看；
 	# 本行只坐「簿上的漏真在」——哪支变异把开漏 / 坐漏那一路拔了才该红
 	var m_burn: Object = _eff(m, 6)
@@ -1079,6 +1084,35 @@ func _judge_enemy_ff_script(m: Script) -> void:
 			str(fl_burning), fl_fire,
 			float((m_fl as Object).get("ff").call("zone_fire", "bow")), float((m_fl as Object).get("ff").call("zone_fire", "stern")),
 			float((m_fl as Object).get("ff").call("zone_fire", "mid")), float((m_fl as Object).get("ff").call("zone_fire", "rig"))])
+	# lane w53-p3flood：step 账里的 fire_zones 与 ff.burning() 一一吻（观感排火点就按它）。
+	# 比集合不比序列：FloodFire.burning() 照 ZONES 序，假簿照字典序——键集同一就算并列
+	var fl_zones: PackedStringArray = st_fl.get("fire_zones", PackedStringArray())
+	var zones_ok: bool = fl_zones.size() == fl_burning.size()
+	if zones_ok:
+		for z in fl_burning:
+			if not (z in fl_zones):
+				zones_ok = false
+	_t(zones_ok, "eff.step.fire_zones",
+		"step 账 fire_zones 与 ff.burning() 一一并列（%s；PirateShip 观感排火点用）" % str(fl_zones))
+	# lane w53-p3flood：step 账里的 list_deg 是真簿 FloodFire 的读数——Soul / 变异那套迷你船魂没长这条，
+	# 本判据只有真簿能过（假簿那头全该红，零节自检正是这样点名的）
+	var m_ls: Object = _eff(m, 8)
+	var _ls_ff: Object = (m_ls as Object).get("ff")
+	if _ls_ff.has_method("list_deg"):
+		_ls_ff.call("add_leak", 3, 2.5, 1)  # 艉舱右舷坐一漏（list 偏右）
+		var ls_first := 1e9
+		var ls_peak := 0.0
+		for _ls_i in 8:
+			var ls_r: Dictionary = m_ls.call("step", 1.0, 3, {})
+			if _ls_i == 0:
+				ls_first = float(ls_r.get("list_deg", 1e9))
+			ls_peak = maxf(ls_peak, absf(float(ls_r.get("list_deg", 0.0))))
+		# 损管 3 人随后会把漏堵小、水戽走——判「进水先真把倾侧顶起来过」（峰值 > 起步），不判末值
+		_t(ls_first < 1e8 and ls_first > 0.0 and ls_peak > ls_first * 1.1,
+			"eff.step.list_deg",
+			"step 账带当帧倾侧：艉舱右舷一漏 8 秒，list_deg 起步 %.2f、进水渐顶到 %.2f（损管随后堵戽回落属正常簿性）" % [ls_first, ls_peak])
+	else:
+		_t(false, "eff.step.list_deg", "step 账带当帧倾侧（本判据只有真簿 FloodFire.list_deg 能过；迷你船魂恒红——零节自检点名）")
 
 
 ## 常驻敌船节点径：真起一场 WorldMap 海战，偷改簿看冻结、火药、收弹 / 逐帧接线
@@ -1210,10 +1244,34 @@ func _judge_enemy_ff_node() -> void:
 	var w1 := float(foe_ff_inner.call("flood_frac")) if foe_ff_inner != null else 0.0
 	_t(w1 > w0, "eff.node.step_flood", "进水的舱 8 步 _step_flood_fire 后水位 %.4f → %.4f（同一函数直调）" % [w0, w1])
 
+	# lane w53-p3flood：进水观感——戽水节点 FxFlood 挂出来（BailR 在喷）；倾侧把船图往低舷压扁偏一点
+	# （簿上一漏偏右 1.0 料/秒坐实 8 步，list 应该已经看得出手感读数，船图 scale 比基准窄、position.x 偏右）
+	var _fxl: Node = (foe as Node).get_node_or_null("FxFlood")
+	var _bail := _fxl.get_node_or_null("BailR") as CPUParticles2D if _fxl != null else null
+	_t(_fxl != null and _bail != null and _bail.emitting,
+		"eff.node.look_flood", "进水观感：坐实一漏 8 步后敌船挂出 FxFlood 戽水（BailR 在喷 %s）" % str(_fxl != null))
+	var _spr := (foe as Node).get_node_or_null("Sprite2D") as Sprite2D
+	var _bs: Vector2 = (foe as Node).get("_base_sprite_scale")
+	var heel_ok: bool = _spr != null and _bs is Vector2 and (_spr.scale.x < (_bs as Vector2).x * 0.995) and _spr.position.x > 0.01
+	_t(heel_ok, "eff.node.look_heel",
+		"倾侧观感：右舷坐漏后船图往低舷压扁偏右（scale.x %.3f / 基准 %.3f，pos.x %.2f）" % [
+			_spr.scale.x if _spr != null else -1.0, (_bs as Vector2).x if _bs is Vector2 else -1.0,
+			_spr.position.x if _spr != null else -99.0])
+
 	# 冻结：已降（struck=true）后下一站 step——火势 / 水位不动
 	if ff_node != null and is_instance_valid(foe) and not foe.is_queued_for_deletion() and foe_ff_inner != null:
 		# 布景：点火一趟——台账 fire>0；降火前先让水的量能看，以冻了两个 step
 		foe_ff_inner.call("ignite", "mid", 0.08)
+		# lane w53-p3flood：点火后先推一步（未降）——火烟观感节点 FxFire 长出来、火烧进台账；
+		# 再降，验「降了的冻结步顺手收观感」（FxFire 停喷 / 收尾；不看它 _process 顺手又点回来——
+		# 冻结帧 _step 早退，没人再调 _sync_fire_look，都只认这一步瞧见的停喷）
+		foe.call("_step_flood_fire", 0.5)
+		var _fxf: Node = (foe as Node).get_node_or_null("FxFire")
+		var _flame := _fxf.get_node_or_null("Flame") as CPUParticles2D if _fxf != null else null
+		var _smoke := _fxf.get_node_or_null("Smoke") as CPUParticles2D if _fxf != null else null
+		_t(_fxf != null and _flame != null and (_flame.emitting or (_smoke != null and _smoke.emitting)),
+			"eff.node.look_fire",
+			"起火观感：点着一步后敌船挂出 FxFire 火点（Flame/Smoke 在喷 %s）" % str(_fxf != null))
 		foe.set("struck", true)
 		var fw0 := float(foe_ff_inner.call("fire_total"))
 		var ww0 := float(foe_ff_inner.call("flood_frac"))
@@ -1221,6 +1279,13 @@ func _judge_enemy_ff_node() -> void:
 		foe.call("_step_flood_fire", 0.5)
 		var fw1 := float(foe_ff_inner.call("fire_total"))
 		var ww1 := float(foe_ff_inner.call("flood_frac"))
+		# lane w53-p3flood：冻结步顺手收观感——FxFire 的发射器停喷（余烟自散，不挂着火烟定格）
+		var _fxf2: Node = (foe as Node).get_node_or_null("FxFire")
+		var _flame2 := _fxf2.get_node_or_null("Flame") as CPUParticles2D if _fxf2 != null else null
+		var _smoke2 := _fxf2.get_node_or_null("Smoke") as CPUParticles2D if _fxf2 != null else null
+		var quenched: bool = _fxf2 == null or (_flame2 != null and not _flame2.emitting and _smoke2 != null and not _smoke2.emitting)
+		_t(quenched, "eff.node.frozen_look_off",
+			"已降的冻结步顺手收观感：FxFire 停喷（%s；不挂着火烟定格）" % str(_fxf2))
 		if is_instance_valid(foe) and not foe.is_queued_for_deletion():
 			foe.set("struck", false)
 		_t(fw1 == fw0 and ww1 == ww0, "eff.node.frozen_struck",
@@ -1956,6 +2021,11 @@ class _FakeEFF extends RefCounted:
 		func zone_comps(zone: String) -> PackedInt32Array:
 			return PackedInt32Array({"bow": [0, 1], "mid": [1, 2], "stern": [2, 3]}.get(zone, [1]))
 
+		## lane w53-p3flood：迷你船魂也长一条倾侧读数（按水量给个假值——好样本要过 eff.step.list_deg；
+		## 变异把簿换掉就不长这条，那条判据只认真簿 / 本迷你魂）
+		func list_deg(_wind_heel := 0.0) -> float:
+			return flood_frac() * 40.0
+
 	var ff: Soul
 	var rng := RandomNumberGenerator.new()
 
@@ -1990,8 +2060,9 @@ class _FakeEFF extends RefCounted:
 	func state() -> Dictionary:
 		if ff == null:
 			return {}
-		return {"fire": ff.fire_total(), "flood": ff.flood_frac(), "burning": ff.burning(),
-			"list_deg": 0.0, "sinking": false}
+		var zones: PackedStringArray = ff.burning()
+		return {"fire": ff.fire_total(), "flood": ff.flood_frac(), "burning": zones.size() > 0,
+			"burning_zones": zones, "list_deg": 0.0, "sinking": false}
 
 	func damage_crews(crew: int) -> Array:
 		var fire_need := int(ceil(ff.fire_total() * 8.0))
@@ -2020,7 +2091,9 @@ class _FakeEFF extends RefCounted:
 			return {}
 		var crews := damage_crews(crew)
 		ff.step(delta, int(crews[0]), int(crews[1]), {}, rng)
-		return {"hull_dps": 0.0, "crew_cas": 0, "founder": "", "fire_zones": ff.burning()}
+		# lane w53-p3flood：list_deg 是真簿 FloodFire 的读数；迷你船魂没长这条，按水量给个假倾侧
+		var ld: float = ff.call("list_deg") if ff.has_method("list_deg") else ff.flood_frac() * 40.0
+		return {"hull_dps": 0.0, "crew_cas": 0, "founder": "", "fire_zones": ff.burning(), "list_deg": ld}
 
 
 ## 时级命中（Legacy / 火烧账）开不了漏：时级账上不再进水
