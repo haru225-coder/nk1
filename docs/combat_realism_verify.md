@@ -126,3 +126,32 @@ git checkout -- scripts/WorldMap.gd                                             
 - `本节跑出引擎 / 脚本错误`：模块运行期出错，常见是跨 lane 调用对不上签名。combat05 → combat02 的 `boarding_approach` 就是在 `melee.approach` 这一条上跑到的。
 - `…已修好，请把 KNOWN_DEFECTS[…] 删掉`：属主修好了。删掉那条登记，同时删本文件 §六 的对应行。
 - 六节 `story.chart.ready` 红：SeaChart 在 headless 下起不来（界面搭建报错），后面几条都不跑。
+
+## 九、三期胜率复议（w53-p4-tune，2026-10-09）
+
+三期（`enemy_flood_fire` + `fire_attack_load`）上线后同种子开 / 关对比胜面上行，本 lane 复议并落实。
+
+**判词：保 flood（敌船进水失火）；收 fire（火攻回装填轮换）一项数值：`LOAD_TABLE.fire.ignite` 3.0 → 2.0**
+（`scripts/ui/CombatOrdersPanel.gd`；`tools/qa_w53_p3b_firerot_probe.gd` 三处钉照改）。开关语义不动——关 = 逐字回旧玩法。
+
+**为什么这么判（理由账）：**
+
+1. **上升从哪来（数据先给的答案，跟直觉相反）**：单开对比见下表。在本批 21 种子上，**flood 才是主力**（pirates +5/21、falcon +8/21），fire 单开（×3.0 与 ×2.0 在同一薄壳上的表现见后注）pirates +1/21、falcon -1/21——是弱增益、甚至在 falcon 与复跑漂移同量级。原以为「火攻压制链」（引火 → 敌船抽水手救火 → 齐射哑一分）是上升源头，是被机制故事带走；本批数据不支持它。
+2. **fire 为什么还要收到 ×2.0**：它不是本批上升的主力，但也不是零——三期上线前文献同工具同 8 种子 22/24 vs 17/24（+5/24）里它必占一份，且「船都快沉了还在射火箭」的观感不合题材。`ignite` 只乘引火率，不乘直射伤害，**收它不动一二期弹道装填、只把「开着就一直点」的边际钝化**。×2.0 下火攻仍是引火最狠的一档（相对均装 ×1.0 翻倍，叠上风 ×1.5 到 ×3.0），**机制原位、不再一直按着敌船救火命门**。
+3. **flood 为什么不收**：它是规矩簿不是伤害筒，玩家打的还是那些船壳伤。敌船按险情抽自己人救火堵漏是题材写实、玩家看得见（敌情列水火短注），也给了「点火逼它减员」的正当解法；本期文献 24 种子上 on 对于 off 的 pirates +3/24（0.875→1.000）与 flood 单开贡献相当一档，与方案「三阵内不至于必胜」（≈0.95 上界）才刚贴——不再动。
+4. **方案原则**：§十一「三阵内不至于必胜」。改后 falcon 0.857（敌血翻倍逆风）在 0.85–0.9 目标带，pirates 0.952 贴上界（fire 主动收从 1.000 压回）。玩家满装福船打海盗不是「必输也不是必赢」——落点成立。
+
+**数据（`tools/qa_w53_p3c_winrate_probe.gd`，21 种子 × 两阵 × 同种子复跑；种内复跑漂移 replay-drift 记档不判红。新种子批：172,212,252,292,332,372,412,452,492,532,572,612,652,692,732,772,812,852,892,932,972）：**
+
+| 配置 | 现有对照：福船60人对快船×2 | 逆风对照：福船60人对元军海鹘（敌血翻倍） |
+|---|---|---|
+| off（三期全关） | 14/21 ≈ 0.667（drift 10） | 9/21 ≈ 0.429（drift 16） |
+| 单开 flood（`enemy_flood_fire`） | 19/21 ≈ 0.905（drift 6） | 17/21 ≈ 0.810（drift 9） |
+| 单开 fire（`fire_attack_load`，改后 ×2.0） | 15/21 ≈ 0.714（drift 6） | 8/21 ≈ 0.381（drift 12） |
+| **on（三期全开，改后 ignite ×2.0）** | **20/21 ≈ 0.952（drift 4）** | **18/21 ≈ 0.857（drift 7）** |
+
+参照文献（三期上线前，同工具同 8 种子系 11..988 步长 41 的 24 种子批，×3.0 口径）：pirates off 21/24 ≈ 0.875 vs on 24/24 = 1.000（+12.5pp）；falcon off 17/24 ≈ 0.708 vs on 22/24 ≈ 0.917（+20.8pp）。本批种子整体偏难（off 0.667 / 0.429 < 文献 0.875 / 0.708）——落位熵那两笔不能手消（`WorldMap._ready` 的 `randomize()` 与 `MeleeResolve` 当场拨号）是已知，见 `qa_w53_p3c_winrate_probe.gd` 档头。
+
+**验证**：`tools/combat_realism_probe.gd --strict` PASS（7 节）；`tools/qa_w53_p3b_firerot_probe.gd` PASS（新表 ×2.0 三处钉全过）；`tools/qa_w53_p3c_intel_ff_probe.gd` PASS；`tools/qa_w53_p3c_ammo_low_probe.gd` PASS。全套门禁另起一扇（`bash /tmp/w53/gates-full.sh /tmp/nk1-w53-p4-tune /tmp/w53/gates-tune-full`）结果写进 commit 说明末段。
+
+**验证**：`combat_realism_probe --strict`、`qa_w53_p3b_firerot_probe`、`qa_w53_p3c_intel_ff_probe`、`qa_w53_p3c_ammo_low_probe` 绿；全套门禁绿（基线已知红除外）。
