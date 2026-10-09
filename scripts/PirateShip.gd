@@ -313,7 +313,7 @@ func _ff_look_off() -> void:
 
 
 ## 烟与火星顺风拖的方向（世界向量，长度 0–1）：目标船上的风力场（WorldMap 海战逐帧写 wind_vector /
-## wind_strength， Ship._sync_combat_fx 同一来源），读不到给零向量（烟只往上散）。
+## wind_strength，Ship._sync_combat_fx 同一来源），读不到给零向量（烟只往上散）。
 func _ff_wind_drag() -> Vector2:
 	if not is_instance_valid(target):
 		return Vector2.ZERO

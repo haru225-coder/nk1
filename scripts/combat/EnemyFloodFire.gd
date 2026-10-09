@@ -157,9 +157,9 @@ func frozen(flags: Dictionary) -> bool:
 		or str(ff.foundered) != ""
 
 
-## 给 p3c 敌情列的公开读口（契约固定）：火 0–1 / 进水 0–1 / 烧着的段 / 倾侧度 / 正下沉
-## w53-p3flood：burning 给两种读法——开关「有没有在烧」（HUD ff_note_of 读 == true）
-## 与段名清单（原 PackedStringArray 一一并在 burning_zones，观感排火点按它）
+## 给 p3c 敌情列的公开读口（契约固定）：火 0–1 / 进水 0–1 / 烧不烧着（开关）/ 烧着的段名清单 /
+## 倾侧度 / 正下沉。w53-p3flood：burning 给开关（HUD ff_note_of 读 == true；p3a 原稿给段名清单，
+## HUD 那头按开关读，真海战里每帧抛 Invalid operands——段名清单挪 burning_zones，不少信息）
 func state() -> Dictionary:
 	if ff == null:
 		return {}
