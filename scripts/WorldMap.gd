@@ -373,7 +373,7 @@ func _board_enemy(enemy: Node2D) -> void:
 		notice = _CombatFx.board_win_note(_node_str(enemy, "ship_name", "敌船"))
 		detail = "敌船降幡，接舷收船"
 	else:
-		var r := _melee_resolve(enemy, enemy_first)
+		var r: Dictionary = await _melee_resolve(enemy, enemy_first)
 		_last_melee = r
 		# legacy 按攻方算：win = 攻方占了对面甲板（夺船 / 对面降幡）
 		var legacy := str(r.get("legacy", "lose"))
@@ -461,10 +461,64 @@ func _board_enemy(enemy: Node2D) -> void:
 
 ## 白刃一场（MeleeResolve.resolve，钩缆已挂牢 hooked）：本队按 Fleet、敌按船节点、态势按两船节点（攻方看守方）；
 ## 有士气簿则本队士气换 melee_factor（没挂士气簿时本队先钩那一路同 MeleeResolve.from_battle）。
-## enemy_first：敌船先抛的钩，敌作攻方、本队作守方——结果里 att_* 是敌船的、def_* 是本队的，记事里「敌 / 我」随 is_player 换位
+## enemy_first：敌船先抛的钩，敌作攻方、本队作守方——结果里 att_* 是敌船的、def_* 是本队的，记事里「敌 / 我」随 is_player 换位。
+## 本队先钩、开关 melee_decision 开、决策层（MeleeDecisionPanel）在：分段调度——第一个决断段停摆、玩家拍板、再往前续；
+## 后面各段照旧分段 offer；超时 / 切自动 / 顶掉回自动口径。关开关 / 敌先钩 / 决策层没起（headless）都照旧整场一掷。
 func _melee_resolve(enemy: Node2D, enemy_first := false) -> Dictionary:
-	var sides := _melee_sides(enemy, enemy_first)
+	if enemy_first:
+		# 敌攻我守照旧整场一掷：守的是本船甲板，决断权在攻方；敌方决断自动（方案 §五「攻守换位——攻守都算」留给敌将自己打）
+		var plain := _melee_sides(enemy, true)
+		return _MeleeResolve.resolve(plain[0], plain[1], plain[2])
+	var layer := _decision_offer()
+	if layer != null and not bool(layer.get("battle_auto")):
+		# 分段调度：舷边 / 舷腰 / 桅下各停一拍（见 _melee_decided_run 头注；async 随 _board_enemy 的协程逐拍续）
+		return await _melee_decided_run(enemy, layer)
+	var sides := _melee_sides(enemy, false)
 	return _MeleeResolve.resolve(sides[0], sides[1], sides[2])
+
+
+## 分段白刃（本队先钩、开关开、决策层在）：MergeResolve 在决断段摆好 stand（out.decisions_site）、
+## 把脚本挂起（decision_cb → 本协程 await one 拍），玩家 Space 压上 / Enter 收势 / 超时不拍自动——
+## resolve 是脚本内状态机：加 / 减人手、掷骰全按原序；本函数只管「下一段从哪几合起」——
+## left 是 MeleeResolve 给的「原脚本照跑将要出的合号表」；掷完调用同一处掷骰。
+## 协程随场景释放丢弃（同 _board_enemy：WorldMap 缴了，决断层 _answer → decided 不会发，等它的协程随树释放丢弃）。
+func _melee_decided_run(enemy: Node2D, layer: CanvasLayer) -> Dictionary:
+	# 第一层：本队先钩 = 攻方，决断簿挂攻方（本队）；探针 q_press 判定的场照常走（探针场是真 WorldMap 布景）
+	var sides := _melee_sides(enemy, false)
+	var ctx: Dictionary = sides[2]
+	ctx["player_decides"] = true
+	var r := await _MeleeResolve.resolve(sides[0], sides[1], _decided_ctx(ctx, layer))
+	if str(r.get("outcome", "")) == "":
+		# MeleeResolve 不分段（决断簿没写进 ctx / 本文件没落地决断）——照旧整场一掷
+		r = _MeleeResolve.resolve(sides[0], sides[1], sides[2])
+	return r
+
+
+## 给分段白刃装回调的 ctx：decision_cb 挂本协程的 resumed 版——resolve 跑到决断段先挂起、
+## 玩家拍板（或超时 / 切自动）后诀 MeleeResolve 复进同一脚本，结果照旧出。掷骰序照旧：没拍到的段不误掷
+func _decided_ctx(ctx: Dictionary, layer: CanvasLayer) -> Dictionary:
+	var c: Dictionary = ctx.duplicate()
+	c["decision_cb"] = func(out: Dictionary, left: Array) -> Variant:
+		# 跑到决断段：决策层亮一拍，挂起本协程等 decided；超时 / abort / 切自动返 null → MeleeResolve 当场照自动口径补一拍
+		if not is_instance_valid(layer) or bool(layer.get("battle_auto")):
+			return null
+		layer.call("_present", out.get("decisions_site", {}))
+		return await layer.decided
+	return c
+
+
+## 决断层入口（_board_enemy / 探针用）：开关关 / 敌先钩都不亮；headless 起不来返 null 即整场自走
+func _decision_offer() -> CanvasLayer:
+	if not _Switches.on("melee_decision"):
+		return null
+	const PANEL := "res://scripts/ui/MeleeDecisionPanel.gd"
+	if not ResourceLoader.exists(PANEL):
+		return null
+	var scr = load(PANEL)
+	if not (scr is Script) or not scr.has_method("offer"):
+		return null
+	var layer: CanvasLayer = scr.call("offer", self, {})
+	return layer
 
 
 ## 白刃两方与态势 [攻方, 守方, ctx]（_melee_resolve 用，探针验号令加力）。本队那一方的将领系数再乘号令面板的「白刃」效力：
@@ -973,6 +1027,12 @@ func _wire_enemy_signals(p: Node) -> void:
 		var cb_l := Callable(self, "_on_enemy_left_battle").bind(p)
 		if not p.is_connected("left_battle", cb_l):
 			p.connect("left_battle", cb_l)
+	# 追的窗口（lane w53-p4-melee，开关 pursue_window）：敌船遁走不是瞬间脱离——往敌将实例上写本键，
+	# 敌将读局势见 pursue_window 即拖后离场线、短挫逃速；钩住、贴近照旧不变（敌将钩 / 白刃都照原距）。
+	# 写成员不写 meta：本 lane 不动 PirateShip（局势是它拼的，没这门）；captain 还没建（探针裸实例化）就收
+	var cap = p.get("captain")
+	if cap != null:
+		cap.set("pursue_window", _Switches.on("pursue_window"))
 	var cb_x := Callable(self, "_on_enemy_exiting").bind(p)
 	if not p.tree_exiting.is_connected(cb_x):
 		p.tree_exiting.connect(cb_x)

@@ -144,15 +144,24 @@ static func cues_from(result: Dictionary) -> Array:
 		if not lp.is_empty():
 			cues.append(_cue(base, {"key": "leap", "title": "跳帮", "sub": str(lp.get("text", "")), "hold": T_CUE,
 				"front": 0 if int(lp.get("boarders", 0)) > 0 else NO_DECK}))
-		var flag := false
-		for rd in result.get("rounds", []):
-			if not (rd is Dictionary):
-				continue
-			flag = flag or int(rd.get("front", 0)) >= MeleeResolve.ZONE_FLAG
-			cues.append(_cue(base, {"key": "round", "title": "白刃", "sub": str(rd.get("text", "")), "hold": T_ROUND,
-				"front": int(rd.get("front", 0)), "flag": flag,
-				"note": "%s %d 人　士气 %d　｜　%s %d 人　士气 %d" % [a, int(rd.get("att", 0)), int(rd.get("att_morale", 0)),
-					d, int(rd.get("def", 0)), int(rd.get("def_morale", 0))]}))
+			var flag := false
+			# 三决断注（lane w53-p4-melee）：哪个合在第几段拍了哪一板，注在该合副题尾（择 / 超时；开战拍定的自动不注）
+			var dec_by_n := {}
+			for dc in result.get("decisions", []):
+				if dc is Dictionary and str(dc.get("how", "")) != "" and int(dc.get("mode", -1)) >= 0:
+					dec_by_n[int(dc.get("n", 0))] = dc
+			for rd in result.get("rounds", []):
+				if not (rd is Dictionary):
+					continue
+				flag = flag or int(rd.get("front", 0)) >= MeleeResolve.ZONE_FLAG
+				var sub := str(rd.get("text", ""))
+				var dc: Dictionary = dec_by_n.get(int(rd.get("n", 0)), {})
+				if not dc.is_empty():
+					sub += "（%s%s）" % [str(dc.get("via", "")), "・超时" if str(dc.get("how", "")) == "超时" else ""]
+				cues.append(_cue(base, {"key": "round", "title": "白刃", "sub": sub, "hold": T_ROUND,
+					"front": int(rd.get("front", 0)), "flag": flag,
+					"note": "%s %d 人　士气 %d　｜　%s %d 人　士气 %d" % [a, int(rd.get("att", 0)), int(rd.get("att_morale", 0)),
+						d, int(rd.get("def", 0)), int(rd.get("def_morale", 0))]}))
 	# 了局：叙事一行、伤亡俘获另起一行（整句交给 autowrap 会从「我阵亡」中间折开）
 	var head := str(result.get("summary_head", ""))
 	var last := {"key": "outcome", "title": str(result.get("title", title_for(outcome))), "hold": T_OUTCOME,
