@@ -27,6 +27,9 @@ const DEFAULTS := {
 	"waa_captives": true, # 俘虏：收编（补水手）/ 卖掉（得钱掉名声）/ 放走（加名声）—— w53-p4-after
 	"waa_ransom": true,   # 索赎：放船换赎金，当场折价兑付（不改存档记账）—— w53-p4-after
 	"waa_pursue": true,   # 追击：敌船逃了可选追——可能多夺一艘，也可能再挨一顿 —— w53-p4-after
+	# 第四期 · 白刃取舍
+	"melee_decision": true,    # 白刃三决断：舷边 / 舷腰 / 桅下各停一拍选「压上」或「收势」，可切回自动 —— w53-p4-melee
+	"pursue_window": true,     # 敌船遁走留一段可追的窗口（脱离航速略挫、离场线拖后）—— w53-p4-melee
 }
 
 static var _over: Dictionary = {}

@@ -119,6 +119,17 @@ const RETREAT_LOSS := 0.15
 const DEAD_SHARE_MIN := 0.45
 const DEAD_SHARE_MAX := 0.65
 
+# ── 白刃三决断（lane w53-p4-melee，战斗方案四期 §五 第 5 条）──
+## 压上还是收势，骰子与口径全在本表（_resolve_round 乘）；不另造一套战斗
+const DECISION_JUNCTURES := [0, 1, 2]  ## 甲板段（舷边 0 / 舷腰 1 / 桅下 2），各停一拍
+const DECISION_PUSH_PWR := 1.18        ## 压上：攻方战力本合 ×（推进快）
+const DECISION_PUSH_LETHAL := 1.3      ## 压上：双方互换更狠（伤亡多）
+const DECISION_HOLD_ADV := 0.50        ## 收势：推进阈值抬高（稳、慢）
+const DECISION_HOLD_LETHAL := 0.7      ## 收势：双方伤亡打折（本合伤亡少）
+const DECISION_HOLD_COUNTER := 0.15    ## 收势的代价：守方战力本合 ×1+（可能被反推）
+const DECISION_AUTO_PUSH_CHANCE := 0.55## 自动口径：士气高、占了段、对方气沮都更想压上
+const PLAN_ATTACK := "攻方"            ## 决断挂在哪一方：WorldMap 只给本队先钩（攻方=玩家）时停拍；敌攻我守照旧自动
+
 const ORD: PackedStringArray = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
 
 ## combat02 的机动 / 海况模型（入库了才读）：ManeuverModel.boarding_approach 给接近态势，SeaState.active() 给这一场的风
@@ -281,6 +292,65 @@ static func maneuver_approach(a: Dictionary, b: Dictionary, wind_to := Vector2(0
 ## resolve 内部在 share ≥ 0.45 且 front == 0 时才掷这一枚（一处可查，不下令照旧也掷）
 static func cut_chance(bit: int, crew_frac: float, def_cut_mul := 1.0) -> float:
 	return clampf(CUT_BASE * clampf(crew_frac, 0.0, 1.0) * 2.0 / maxf(float(bit), 2.0) * maxf(0.0, def_cut_mul), 0.0, 1.0)
+
+
+# ── 白刃三决断（lane w53-p4-melee）─────────────────────────────
+## 纯函数（探针照调）：开关读 CombatSwitches（表不在按开算）；不建节点、不读存档。
+## resolve 只认 ctx.decisions / ctx.player_decides / ctx.decision_cb 三个键——
+## WorldMap「分段调度」另走 _run_phased；不开开关 / 不开玩家路时本组函数一样能喂（探针强制）。
+
+## 开关在吗：CombatSwitches.melee_decision（默认开；关 = 逐字旧白刃——resolve 不读决断倍率，等同于开战拍定全收势再全乘 1）
+static func decisions_enabled() -> bool:
+	const PATH := "res://scripts/combat/CombatSwitches.gd"
+	if not ResourceLoader.exists(PATH):
+		return true
+	var sw = load(PATH)
+	if not (sw is Script) or not sw.has_method("on"):
+		return true
+	return bool(sw.call("on", "melee_decision"))
+
+
+## 这一仗如果我来打，三段各压上几分（开战拍定的自动表；玩家亲手选的段照选、给 -2/0/1 直写）。
+## 探针喂 decisions 可跳过：decisions 给齐三段就不再走自动口径（返回原表）。
+static func decisions_plan(att: Dictionary, def: Dictionary, ctx := {}, rng: RandomNumberGenerator = null) -> Array:
+	var preset: Variant = ctx.get("decisions", null)
+	if preset is Array and (preset as Array).size() >= DECISION_JUNCTURES.size():
+		return (preset as Array).duplicate()
+	var r := rng if rng != null else _rng(ctx)
+	var out: Array = []
+	for front in DECISION_JUNCTURES:
+		out.append(1 if auto_push_chance(float(att.get("morale", 60)), float(def.get("morale", 60)), int(front)) >= r.randf() else 0)
+	return out
+
+
+## 自动口径：这一合在 front 段压上的概率（士气高 ∝ 压；占了段越往前压的兴头越大；对面气沮更想一鼓而下）
+static func auto_push_chance(att_morale: float, def_morale: float, front: int) -> float:
+	var p := DECISION_AUTO_PUSH_CHANCE + 0.003 * (clampf(att_morale, 0.0, 100.0) - 60.0)
+	p += 0.003 * (60.0 - clampf(def_morale, 0.0, 100.0))
+	p += 0.06 * float(clampi(front, 0, 3))
+	return clampf(p, 0.15, 0.9)
+
+
+## 决策注（BoardingStage 简报 / 战斗后记）：「第N合 段名·压上（择）」——探针对账用；decide_mode 掉回 -1 即不在决断段
+static func decision_stamp(site: Dictionary, mode: int, how := "") -> String:
+	var zone := str(site.get("zone", zone_name(int(site.get("front", 0)))))
+	var via := "压上" if mode == 1 else "收势"
+	var tail := "" if how == "" else "（%s）" % how
+	return "第%s合 %s・%s%s" % [ORD[clampi(int(site.get("n", 1)) - 1, 0, ORD.size() - 1)], zone, via, tail]
+
+
+## 三决断合注（_conclude 拼进伤亡注尾）：只记玩家择了或超时的拍；全顺自动（开战自动、开关关）不写——
+## 与「不动自动口径时逐字旧玩法」同一条：三种旧路径一个字不能多
+static func decisions_note(out: Dictionary) -> String:
+	var bits := PackedStringArray()
+	for d in out.get("decisions", []):
+		if not (d is Dictionary):
+			continue
+		var how := str(d.get("how", ""))
+		if how != "择" and how != "超时":
+			continue
+		bits.append("%s・%s（%s）" % [str(d.get("zone", "")), str(d.get("via", "")), how])
+	return "" if bits.is_empty() else "白刃三决断：" + "，".join(bits) + "。"
 
 
 ## 一步到位：玩家船队（fleet）接敌船（enemy）。player_ship / enemy 是战场节点，取态势用；ctx_extra 覆盖同名键。
@@ -511,20 +581,60 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 	var max_rounds := clampi(int(ctx.get("max_rounds", ROUNDS_DEFAULT)), 1, ROUNDS_MAX)
 	var rounds: Array = []
 	var outcome := ""
+	# 白刃三决断（开关 melee_decision；缺省 = 自动，骰流 / 数值逐字照旧——没进决断段时下面的倍率恒 1、阈值恒 ADVANCE_AT）：
+	# 舷边 / 舷腰 / 桅下各停一拍。本合拍定 1 = 压上（攻方战力 ×PWR、双方互换更狠）、0 = 收势
+	# （伤亡打折、守方本合 ×1+COUNTER 可能反推、推进阈值抬高）；decision_cb 是 WorldMap 的分段调度入口
+	var decided: Array = []
+	var decision_cb: Callable = ctx.get("decision_cb", Callable())
+	out["decisions"] = []
 	# 这一仗的时运：双方各抽一回（对数正态），管的是模型外的偶然——谁先登、谁手软、谁的头目中了流矢
 	var luck_a := clampf(exp(rng.randfn(0.0, BATTLE_LUCK)), 0.5, 2.0)
 	var luck_d := clampf(exp(rng.randfn(0.0, BATTLE_LUCK)), 0.5, 2.0)
 	for n in range(1, max_rounds + 1):
+		var pwr_a := 1.0
+		var pwr_d := 1.0
+		var lethal_mul := 1.0
+		var advance_at := ADVANCE_AT
+		var dec := -1
+		var dec_how := ""
+		if front in DECISION_JUNCTURES:
+			var ji: int = DECISION_JUNCTURES.find(front)
+			while decided.size() <= ji:
+				decided.append(-1)
+			if decision_cb.is_valid() and bool(ctx.get("player_decides", false)):
+				# 玩家那一路（WorldMap 分段调度）：挂起脚本等选；超时 / 顶掉 / headless 兜底回 null → 本合自动
+				out["decisions_site"] = {"front": front, "n": n, "round": rounds.size(), "a_word": a, "d_word": d,
+					"att": fa, "def": fd, "att_morale": roundi(ma), "def_morale": roundi(md)}
+				var mode = decision_cb.call(out, range(n, max_rounds + 1))
+				if mode != null:
+					dec = clampi(int(mode), 0, 1)
+					dec_how = "择"
+			if dec == -1:
+				# 自动口径（缺省 / 超时默认 / 开关关）：照开战拍好的表；表没收进这一段的当场补一拍（同一条公式）
+				dec = decided[ji]
+				if dec == -1:
+					dec = 1 if auto_push_chance(ma, md, front) >= rng.randf() else 0
+					dec_how = "自动"
+				decided[ji] = dec
+			if dec == 1:
+				pwr_a = DECISION_PUSH_PWR
+				lethal_mul = DECISION_PUSH_LETHAL
+			else:
+				lethal_mul = DECISION_HOLD_LETHAL
+				pwr_d = 1.0 + DECISION_HOLD_COUNTER
+				advance_at = DECISION_HOLD_ADV
+			out["decisions"].append({"front": front, "zone": _zone_word(front, a), "n": n, "mode": dec,
+				"via": "压上" if dec == 1 else "收势", "how": dec_how})
 		var cap_d := float(def["captain"]) if front >= ZONE_FLAG else 1.0 + (float(def["captain"]) - 1.0) * 0.5
-		var pa := fa * _mfac(ma) * float(att["captain"]) * _armor(att) * disorder_a * luck_a * (SHOCK if n == 1 else 1.0)
-		var pd := fd * _mfac(md) * cap_d * _armor(def) * _zone_def(front, up, float(def["screen"])) * disorder_d * luck_d
+		var pa := fa * _mfac(ma) * float(att["captain"]) * _armor(att) * disorder_a * luck_a * (SHOCK if n == 1 else 1.0) * pwr_a
+		var pd := fd * _mfac(md) * cap_d * _armor(def) * _zone_def(front, up, float(def["screen"])) * disorder_d * luck_d * pwr_d
 		disorder_a = 1.0
 		disorder_d = 1.0
 		pa *= rng.randf_range(1.0 - ROUND_LUCK, 1.0 + ROUND_LUCK)
 		pd *= rng.randf_range(1.0 - ROUND_LUCK, 1.0 + ROUND_LUCK)
 		var share := pa / maxf(pa + pd, 0.001)
-		var loss_d := mini(fd, roundi(pa * LETHALITY * rng.randf_range(0.75, 1.25)))
-		var loss_a := mini(fa, roundi(pd * LETHALITY * rng.randf_range(0.75, 1.25)))
+		var loss_d := mini(fd, roundi(pa * LETHALITY * lethal_mul * rng.randf_range(0.75, 1.25)))
+		var loss_a := mini(fa, roundi(pd * LETHALITY * lethal_mul * rng.randf_range(0.75, 1.25)))
 		fa -= loss_a
 		fd -= loss_d
 		cas_a += loss_a
@@ -542,7 +652,7 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 			ev = "break_att"
 		else:
 			var roll := share + rng.randf_range(-FRONT_LUCK, FRONT_LUCK)
-			if roll > ADVANCE_AT:
+			if roll > advance_at:
 				moved = 1
 			elif roll < FALLBACK_AT:
 				moved = -1
@@ -857,6 +967,11 @@ static func _conclude(out: Dictionary, outcome: String, rng: RandomNumberGenerat
 		tail += "。"
 	if cas_a > 0:
 		tail += "%s阵亡 %d、轻伤 %d。" % [a, dead_a, cas_a - dead_a]
+	# 三决断注（玩家择的记「择」，没择到 / 超时的记「超时」，全顺自动的开战自动不注——自动注写下来与开战前无异）
+	var note := decisions_note(out)
+	if note != "":
+		tail += note
+	out["decisions_note"] = note
 	out["summary_head"] = str(out["summary"])
 	out["summary_tail"] = tail
 	out["summary"] = str(out["summary"]) + tail
