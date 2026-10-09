@@ -9,7 +9,7 @@
 ##       白刃（board_bonus → 本队白刃将领系数，攻守都算）、钩距（board_range → 本船去钩的够距）、伤亡（exposure → 旗舰挨矢石的伤亡）。
 ##       火攻回到轮换（lane w53-p3b，开关 fire_attack_load 且旗舰有装填簿 player_gunnery）：轮换成 均装 → 专力装填 → 火攻；
 ##       任一不满足照 w53-2 账只转 均装 ⇄ 专力装填 两档。火攻令经落令口调 ReloadAmmo.set_fire_mode(true)——弓弩放火箭、
-##       砲抛火砲（火药不够它自己退回放箭抛石）；引火乘数（LOAD_TABLE.fire 的 ignite × 风位 factor，居上风 1.5 / 居下风 0.6）
+##       砲抛火砲（火药不够它自己退回放箭抛石）；引火乘数（LOAD_TABLE.fire 的 ignite ×2〔w53-p4-tune 收窄〕× 风位 factor，居上风 1.5 / 居下风 0.6）
 ##       由 Ship 配弹处乘在旗舰射出的弹的引火几率（shot["fire"]）上
 ##   四、落令（auto_apply，默认开）：旗舰身上有同波次的分系统就按号令改它的令（鸭子型，只调它们公开的改令口）——
 ##       ship.battery（ReloadAmmo）：抢风 → set_emphasis("sail")，专力装填 → "guns"，两令同下 / 都不下 → "balanced"；火攻 → set_fire_mode(true)
@@ -96,16 +96,20 @@ const DISPERSE_SEC := 2.0
 const PINCH_TRIM := 6.0
 
 ## 号令轮换的几档（火攻回到轮换，w53-p3b）：fire_attack_load 开、且旗舰挂了装填簿（player_gunnery）时三档
-## 均装 → 专力装填 → 火攻；缺一照旧两档（签面、提示与 w53-2 账逐字一致）。LOAD_TABLE 的 fire 一档照表生效（装填 ×1.15、引火 ×3、射程 ×0.9）
+## 均装 → 专力装填 → 火攻；缺一照旧两档（签面、提示与 w53-2 账逐字一致）。LOAD_TABLE 的 fire 一档照表生效（装填 ×1.15、引火 ×2〔w53-p4-tune 收窄，原 ×3〕、射程 ×0.9）
 const LOADS := ["mixed", "rapid"]
 const LOADS_FIRE := ["mixed", "rapid", "fire"]
 ## 装填侧重：name 签上写法；hull / sail / crew = 命中后伤害落在船壳 / 帆索 / 人手的份额（和为 1）；
 ## reload = 该令人手给足时的装填时长乘数；range = 射程乘数；ignite = 引火乘数；guns_w = 弩炮岗权重；
 ## emphasis / fire_mode = 落到 ReloadAmmo 的令
+## w53-p4-tune（战斗系统方案 §十一「三阵内不至于必胜」）：火攻引火乘数 3.0 → 2.0——同 21 种子两阵
+## 开 / 关与单开对比，胜率上升的主体在 fire_attack_load（flood 保）。火攻仍比均装引火狠，
+## 但不再是开着的每一轮齐射都逼敌船抽小半水手救火；两阵同种子复测数字写在
+## docs/combat_realism_verify.md §九 与本 lane 的 commit 说明里。
 const LOAD_TABLE := {
 	"mixed": {"name": "均装", "hull": 0.40, "sail": 0.30, "crew": 0.30, "reload": 1.00, "range": 1.00, "ignite": 1.0, "guns_w": 1.0},
 	"rapid": {"name": "专力装填", "hull": 0.40, "sail": 0.30, "crew": 0.30, "reload": 0.70, "range": 1.00, "ignite": 1.0, "guns_w": 1.6},
-	"fire": {"name": "火攻", "hull": 0.25, "sail": 0.50, "crew": 0.25, "reload": 1.15, "range": 0.90, "ignite": 3.0, "guns_w": 1.0},
+	"fire": {"name": "火攻", "hull": 0.25, "sail": 0.50, "crew": 0.25, "reload": 1.15, "range": 0.90, "ignite": 2.0, "guns_w": 1.0},
 }
 ## 火攻：居上风引火 ×1.5，居下风 ×0.6（火借风势，逆风火箭多坠于水）
 const FIRE_UPWIND := 1.5

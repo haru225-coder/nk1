@@ -115,8 +115,9 @@ func _sec_pure() -> void:
 	var lt = op.get("LOAD_TABLE")
 	_check(lt is Dictionary, "一③ LOAD_TABLE 取得到（%s）" % str(lt is Dictionary))
 	var fire_row: Dictionary = (lt as Dictionary).get("fire", {}) if lt is Dictionary else {}
-	_check(is_equal_approx(float(fire_row.get("reload", -1.0)), 1.15) and is_equal_approx(float(fire_row.get("ignite", -1.0)), 3.0),
-		"一③ LOAD_TABLE.fire 照表：装填 ×1.15、引火 ×3（得 %s / %s）" % [fire_row.get("reload"), fire_row.get("ignite")])
+	# w53-p4-tune：引火乘数照新表钉 2.0（原 3.0 由本 lane 收窄，理由见 docs/combat_realism_verify.md §九）
+	_check(is_equal_approx(float(fire_row.get("reload", -1.0)), 1.15) and is_equal_approx(float(fire_row.get("ignite", -1.0)), 2.0),
+		"一③ LOAD_TABLE.fire 照表：装填 ×1.15、引火 ×2（w53-p4-tune 收窄，原 ×3）（得 %s / %s）" % [fire_row.get("reload"), fire_row.get("ignite")])
 	_check(is_equal_approx(float(fire_row.get("range", -1.0)), 0.9),
 		"一③ LOAD_TABLE.fire 照表：射程 ×0.9（得 %s）" % str(fire_row.get("range")))
 	# ④ 状态句（ReloadAmmo.status_line）：火攻令在时句尾缀「火攻」；火药告急 / 用尽时弹药段写出（少 / 尽）——
@@ -213,7 +214,7 @@ func _sec_on(fleet: Node) -> void:
 	for c in (own.get_parent() as Node).get_children():
 		if not before.has(c) and c is Area2D and c.get("shot") is Dictionary:
 			shots.append(c)
-	var want_up := 3.0 * 1.5  # LOAD_TABLE.fire.ignite × fire_attack_factor(居上风)
+	var want_up := 2.0 * 1.5  # LOAD_TABLE.fire.ignite（w53-p4-tune 收窄 3.0→2.0）× fire_attack_factor(居上风)
 	var ok_up := not shots.is_empty()
 	var seen_wid := ""
 	for cb in shots:
@@ -282,7 +283,7 @@ func _sec_on(fleet: Node) -> void:
 	own.set("fire_cooldown", 0.0)
 	var before2: Array = (own.get_parent() as Node).get_children()
 	own.call("_fire_broadside", -1)  # −wv 那舷是左舷：舷角正心、风位翻成居下风
-	var want_dn := 3.0 * 0.6
+	var want_dn := 2.0 * 0.6  # w53-p4-tune 收窄：本格引火乘数钉照新表（原 3.0）
 	var ok_dn := false
 	var seen_dn := ""
 	for c in (own.get_parent() as Node).get_children():
