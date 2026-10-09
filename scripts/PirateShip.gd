@@ -108,6 +108,13 @@ var _consorts: Array = []
 var _consorts_seen: bool = false
 var _left: bool = false
 var _rng := RandomNumberGenerator.new()
+## lane w53-p3flood：倾侧观感的基准船图缩放（_ready 记下；heel 只乘算压扁，不直写绝对值）
+var _base_sprite_scale := Vector2.ONE
+## lane w53-p3flood：水火观感的重调阈值与上一回调用级（与 Ship.FX_STEP 同档；级数变不够不重调，免得每帧摸粒子）
+const _FF_FX_STEP := 0.05
+var _ff_fx_fire_lv := -1.0
+var _ff_fx_flood_lv := -1.0
+var _ff_heel_x := 0.0  # 当帧倾侧横向偏移（px，写进 sprite.position.x；冻结帧收观感时归零）
 var _tag_tween: Tween = null
 var _hit_tween: Tween = null
 var _parley_wired := false
@@ -127,6 +134,7 @@ func _ready() -> void:
 	_CombatFx.dress_ship(self)
 	_polish_wake()
 	_rng.randomize()
+	_base_sprite_scale = sprite.scale if sprite != null else Vector2.ONE  # lane w53-p3flood：倾侧观感的基准（乘算不直写）
 	_ensure_flood_fire()
 	_ensure_captain()
 	_setup_tag()
@@ -228,6 +236,7 @@ func _step_flood_fire(delta: float) -> void:
 	var flags := {"struck": struck, "grappled": grappled, "boarding": host != null and host.get("boarding") == true,
 		"resolved": host != null and host.get("resolved") == true}
 	if flood_fire.frozen(flags):
+		_ff_look_off()  # lane w53-p3flood：冻结帧顺手收观感（冻结后没人再调 _sync_fire_look，不收就挂着火烟定格）
 		return
 	# 风与雨照本场的（target 船 = 玩家旗舰，WorldMap 海战逐帧写 wind_strength；雨从 WorldMap.is_storm 同一路读）
 	var env := {"wind": 80.0, "rain": false}
@@ -253,29 +262,66 @@ func _step_flood_fire(delta: float) -> void:
 		take_ballistic_hit({"kind": "", "hull": hull_max * 2.0, "amount": 0.0,
 			"local": Vector2.ZERO, "heavy": true, "crew": 0.0, "fire": 0.0})
 		return
-	# 观感（最小）：篷帆 / 甲板着起时拽现有 CombatFx 火烟出来（焦帆那条路的现成接口）；
-	# 起火处按烧着的段把 DamageFx 挂火点亮起来，没有 DamageFx 就不画、不出新图
+	# 观感：篷帆 / 甲板着起时拽现成 CombatFx 火烟与戽水出来，倾侧压扁船图（_sync_fire_look，全用现成特效件）
 	fire_level = clampf(flood_fire.ff.fire_total(), 0.0, 1.0)
 	_sync_fire_look(st)
 
 
-## 起火处观感用现成的火烟：船上挂了 DamageFx（Ship 同一路数）就点亮对应段的火点；没挂就拽 CombatFx.set_fire 现成
-## 观感线到船身（焦帆 / 烟柱那条路），不另画新图。
+## 水火观感只用现成特效件（CombatFx.set_fire 焦帆火烟、set_flood 戽水漫水——Ship 同一条观感线），
+## 不另画新图：火势按级调烟柱、顺风拖；进水先见舷边戽水花、水多了甲板漫白沫；倾侧把船图往低舷
+## 压扁偏一点（与 Ship._update_damage_visuals 同一手感：40° 顶格压宽两成半、偏 8px；乘算，不直写）。
+## 级数变不够 _FF_FX_STEP 不重调，免得每帧摸粒子（与 Ship 的 FX_STEP 同理）。
+## p3a 原稿的 DamageFx 支路（FireRig / FireBow…）在敌船上是空转：Ship.tscn 才有那些节点，
+## PirateShip.tscn 挂不出来——本函数直接走观感线，不再找 DamageFx。
 func _sync_fire_look(st: Dictionary) -> void:
-	var zones: PackedStringArray = st.get("fire_zones", PackedStringArray())
-	var rig_p: CPUParticles2D = get_node_or_null("DamageFx/FireRig") as CPUParticles2D
-	if rig_p != null:
-		rig_p.emitting = fire_level >= 0.05
-		return  # 细节观感在船身 DamageFx 自己管，不再走世界烟气
-	var dfx: Node2D = get_node_or_null("DamageFx")
-	if dfx != null:
-		for z in ["bow", "mid", "stern"]:
-			var p := dfx.get_node_or_null("Fire" + z.capitalize()) as CPUParticles2D
-			if p != null:
-				p.emitting = flood_fire != null and z in zones
+	if not is_instance_valid(sprite):
 		return
-	# 没挂 DamageFx：起火走 CombatFx 现成的焦帆 / 船影烟气
-	_CombatFx.set_fire(self, fire_level, Vector2.ZERO)
+	var ff = flood_fire.ff if flood_fire != null else null
+	# 篷帆火势直接当火级（Ship._sync_combat_fx 同一路）；风往哪吹烟往哪拖（目标船上的风力场，读不到当无风）
+	if absf(fire_level - _ff_fx_fire_lv) >= _FF_FX_STEP or (fire_level > 0.0) != (_ff_fx_fire_lv > 0.0):
+		_ff_fx_fire_lv = fire_level
+		_CombatFx.set_fire(self, fire_level, _ff_wind_drag())
+	# 进水级 = 渗漏起步 0.15，按舱水离沉没线（储备浮力）走了几成往上加，到线为 1（Ship 同式；
+	# CombatFx 那边 1/3 两舷戽水、2/3 甲板漫水）
+	var fl := 0.0
+	if ff != null and (ff.flood_frac() > 0.0 or ff.open_leaks() > 0):
+		fl = clampf(0.15 + 0.85 * ff.flood_frac() / maxf(0.05, ff.reserve_now()), 0.15, 1.0)
+	if absf(fl - _ff_fx_flood_lv) >= _FF_FX_STEP or (fl > 0.0) != (_ff_fx_flood_lv > 0.0):
+		_ff_fx_flood_lv = fl
+		_CombatFx.set_flood(self, fl)
+	# 倾侧：船图往低舷压扁偏一点（40° 顶格乘 0.75、偏 8px）。st 没带舷向（老口径）就当不倾。
+	var list_deg := float(st.get("list_deg", 0.0))
+	var heel := clampf(absf(list_deg) / 40.0, 0.0, 0.25)
+	sprite.scale = Vector2(_base_sprite_scale.x * (1.0 - 0.25 * heel), _base_sprite_scale.y)
+	_ff_heel_x = signf(list_deg) * 8.0 * heel
+	sprite.position.x = _ff_heel_x
+
+
+## 收观感：冻结（已降 / 被钩 / 白刃 / 已结算）或沉前拨一次——烟停喷（余烟自散）、戽水停、船图归位。
+## 冻结帧 _step_flood_fire 早退后没人再调 _sync_fire_look，不主动收就会挂着火烟定格。
+func _ff_look_off() -> void:
+	if _ff_fx_fire_lv > 0.0:
+		_ff_fx_fire_lv = 0.0
+		_CombatFx.set_fire(self, 0.0)
+	if _ff_fx_flood_lv > 0.0:
+		_ff_fx_flood_lv = 0.0
+		_CombatFx.set_flood(self, 0.0)
+	if is_instance_valid(sprite) and _base_sprite_scale != Vector2.ONE:
+		sprite.scale = _base_sprite_scale
+		sprite.position.x = 0.0
+		_ff_heel_x = 0.0
+
+
+## 烟与火星顺风拖的方向（世界向量，长度 0–1）：目标船上的风力场（WorldMap 海战逐帧写 wind_vector /
+## wind_strength， Ship._sync_combat_fx 同一来源），读不到给零向量（烟只往上散）。
+func _ff_wind_drag() -> Vector2:
+	if not is_instance_valid(target):
+		return Vector2.ZERO
+	var wv = target.get("wind_vector")
+	var ws = target.get("wind_strength")
+	if wv is Vector2 and ws != null:
+		return (wv as Vector2) * clampf(float(ws) / 150.0, 0.0, 1.0)
+	return Vector2.ZERO
 
 
 ## 喂给敌将的局势（键名即 EnemyCaptainAI 读的键）。风取目标船的 wind_vector / wind_strength（WorldMap 海战逐帧写），
@@ -701,6 +747,7 @@ func _rest_modulate() -> Color:
 
 func _explode() -> void:
 	# 赏金走 SeaChart 结算，击沉不再掉拾取箱。船身残影歪倒没入海面（CombatFx.founder，纯观感），真节点照旧当帧释放
+	_ff_look_off()  # lane w53-p3flood：沉前先收火烟 / 戽水（节点随船 queue_free，收在 founder 残影之前，免得冒烟残影定格）
 	_CombatFx.founder(self)
 	queue_free()
 
