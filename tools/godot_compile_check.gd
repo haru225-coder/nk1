@@ -85,6 +85,8 @@ const SCRIPTS := [
 	"res://scripts/ui/CombatOrdersPanel.gd", "res://scripts/ui/CombatStatusHud.gd",
 	# lane combat07 敌将 AI（PirateShip 每帧喂局势取舵令）
 	"res://scripts/combat/EnemyCaptainAI.gd",
+	# lane w53-p4-melee 白刃三决断拍板层（舷边 / 舷腰 / 桅下；Enter 收势 / Space 压上 / M 本场自动）
+	"res://scripts/ui/MeleeDecisionPanel.gd",
 	# lane-c 接舷/海战 VFX
 	"res://scripts/combat/CombatFx.gd",
 	"res://scripts/combat/ShipSeakeeping.gd",
