@@ -133,6 +133,7 @@ EXEMPT = [
     ("qa_w53_p3c_ammo_low_probe.gd", "lane-w53-p3c", "敌将「弹药告急」回归专项探针（三期开关开/关两态逐格对账，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w53_p3c_intel_ff_probe.gd", "lane-w53-p3c", "敌情列「水火短注」专项探针（鸭子型 ff_note_of 阈值格——burning 按真挂件契约 PackedStringArray 段名表 + intel_line_of 开关两态 + 布景对照 + 1280/960 排版），headless 秒级，回退即红，随本 lane 落地验过留档"),
     ("qa_w53_p3c_winrate_probe.gd", "lane-w53-p3c", "三期开关胜率工具（合并 p3b/p3c 两份：同种子表 × 300 秒窗 × 敌将 live × 士气裁决早收 × 物理帧泵 × 玩家驾驶转舷齐射；--on=flood,fire / --off / 单开一档，--compare 两段对阵——现有对照 福船60对快船×2 + 逆风对照 对元军海鹘；同种子复跑逐场一致自检、hang 判红），headless 可跑（24 种子给 GLOCK_TIMEOUT 放宽），随本 lane 落地验过留档"),
+    ("qa_w53_p4_melee_probe.gd", "lane-w53-p4-melee", "战斗方案四期「白刃三决断 + 敌船脱离留追窗」专项探针（压上 / 收势胜负账、超时默认照自动、开关 melee_decision 关逐字回旧、追窗 pursue_window 离场线 / 挫速被咬住，一段钉一条、回退即红），headless 可跑，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),
