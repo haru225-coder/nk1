@@ -209,6 +209,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_p4_after_choices_probe.gd",  # lane w53-p4-after 战后取舍专项探针（押船/救人/俘虏/索赎/追击，开关 waa_* 各节回退即红）
 	"res://tools/qa_w53_p4_after_shots.gd",  # lane w53-p4-after 战后收拾小卡 1280×720 截图（NK1_SHOT_DIR 指路）
 	"res://tools/qa_w53_p4_melee_probe.gd",  # lane w53-p4-melee 白刃三决断 + 追窗口专项探针（压上 / 收势账、超时默认、开关关逐字回旧、追窗 leave / 挫速）
+	"res://tools/qa_w53_p4_melee_decision_shot.gd",  # lane w53-p4-melee 白刃决断拍板拍 1280×720 截图（NK1_SHOT_DIR 指路）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
