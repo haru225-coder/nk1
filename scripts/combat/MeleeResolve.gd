@@ -485,6 +485,13 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 
 	# 一、抛钩
 	var g: Dictionary
+	var phasing := ctx.get("deck_state", {}) is Dictionary and not (ctx.get("deck_state", {}) as Dictionary).is_empty()
+	if phasing:
+		# 分段调度承接（lane w53-p4-melee）：上一段已钩上——钩索 / 矢石 / 跳帮不重掷，直接照快照起手甲板
+		var d0: Dictionary = ctx["deck_state"]
+		g = {"q": 1.0, "hooks": 0, "bit": int(d0.get("bit", HOOKS_TO_HOLD)), "chance": 1.0, "ok": true, "factors": {},
+			"notes": PackedStringArray(), "boons": PackedStringArray(), "preset": true, "text": "钩缆已挂牢，两船并靠"}
+		return _resume_deck(att, def, ctx, g, d0)
 	if bool(ctx.get("hooked", false)):
 		g = {"q": 1.0, "hooks": 0, "bit": HOOKS_TO_HOLD, "chance": 1.0, "ok": true, "factors": {},
 			"notes": PackedStringArray(), "boons": PackedStringArray(), "preset": true, "text": "钩缆已挂牢，两船并靠"}
@@ -572,13 +579,34 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 		return _conclude(out, OUTCOME_SURRENDER, rng, cas_a, cas_d, dkeep, 2)
 
 	# 四、甲板多合
+	return _deck(att, def, ctx, g, out, {"fa": fa, "fd": fd, "dkeep": dkeep, "cas_a": cas_a, "cas_d": cas_d,
+		"disorder_a": disorder_a, "disorder_d": disorder_d}, rng)
+
+
+# ══ 甲板多合（整场与承接段同走）══
+## deck_in：fa / fd / dkeep / cas_a / cas_d / disorder_a / disorder_d（承接段另带 front / flag_cut / ma / md / luck_a / luck_d /
+## decided / round_offset / dkeep）。out 的 grapple / volley / leap 各段键照整场同一格式记账（承接段写出的是快照里的旧账）。
+static func _deck(att: Dictionary, def: Dictionary, ctx: Dictionary, g: Dictionary, out0: Dictionary,
+		deck_in: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var out := out0
+	var a: String = out["a_word"]
+	var d: String = out["d_word"]
+	var up := maxf(0.0, float(def["freeboard"]) - float(att["freeboard"]))
+	var def_cut_mul := maxf(0.0, float(ctx.get("def_cut_mul", CUT_CHANCE_MUL if bool(ctx.get("def_cut_order", false)) else 1.0)))
+	var dkeep := maxi(1, int(deck_in.get("dkeep", 1)))
+	var cas_a := int(deck_in["cas_a"])
+	var cas_d := int(deck_in["cas_d"])
+	var fa := int(deck_in["fa"])
+	var fd := int(deck_in["fd"])
+	var disorder_a := float(deck_in["disorder_a"])
+	var disorder_d := float(deck_in["disorder_d"])
 	var fa0 := maxi(fa, 1)
 	var fd0 := maxi(fd, 1)
-	var ma := float(att["morale"])
-	var md := float(def["morale"])
-	var front := 0
-	var flag_cut := false
-	var max_rounds := clampi(int(ctx.get("max_rounds", ROUNDS_DEFAULT)), 1, ROUNDS_MAX)
+	var ma := float(deck_in.get("ma", att["morale"]))
+	var md := float(deck_in.get("md", def["morale"]))
+	var front := int(deck_in.get("front", 0))
+	var flag_cut := bool(deck_in.get("flag_cut", false))
+	var max_rounds := clampi(int(deck_in.get("rounds_left", ctx.get("max_rounds", ROUNDS_DEFAULT))), 1, ROUNDS_MAX)
 	var rounds: Array = []
 	var outcome := ""
 	# 白刃三决断（开关 melee_decision）：关 = 逐字旧白刃——整块跳过（不掷一枚骰、不动一个阈值，掷骰序照旧）。
@@ -588,12 +616,19 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 	var decided: Array = []
 	var decision_cb: Callable = ctx.get("decision_cb", Callable())
 	var decisions_on := decisions_enabled()
-	out["decisions"] = []
-	if decisions_on:
+	out["decisions"] = deck_in.get("decisions_log", []) # 承接段带上上一段的拍板账（探针对几段照对上）
+	if decisions_on and deck_in.has("decided"):
+		decided = deck_in["decided"]
+	elif decisions_on:
 		decided = decisions_plan(att, def, ctx, rng)
 	# 这一仗的时运：双方各抽一回（对数正态），管的是模型外的偶然——谁先登、谁手软、谁的头目中了流矢
-	var luck_a := clampf(exp(rng.randfn(0.0, BATTLE_LUCK)), 0.5, 2.0)
-	var luck_d := clampf(exp(rng.randfn(0.0, BATTLE_LUCK)), 0.5, 2.0)
+	var luck_a := float(deck_in.get("luck_a", -1.0))
+	var luck_d := float(deck_in.get("luck_d", -1.0))
+	if luck_a < 0.0 or luck_d < 0.0:
+		# 整场起手：同旧两拍一笔掷（掷骰序照旧——承接段已计过两拍不重掷不重耗）
+		luck_a = clampf(exp(rng.randfn(0.0, BATTLE_LUCK)), 0.5, 2.0)
+		luck_d = clampf(exp(rng.randfn(0.0, BATTLE_LUCK)), 0.5, 2.0)
+	var round_offset := int(deck_in.get("round_offset", 0))
 	for n in range(1, max_rounds + 1):
 		var pwr_a := 1.0
 		var pwr_d := 1.0
@@ -609,12 +644,18 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 				decided.append(-1)
 			if decision_cb.is_valid() and bool(ctx.get("player_decides", false)):
 				# 玩家那一路（WorldMap 分段调度）：挂起脚本等选；超时 / 顶掉 / headless 兜底回 null → 本合自动
-				out["decisions_site"] = {"front": front, "n": n, "round": rounds.size(), "a_word": a, "d_word": d,
+				out["decisions_site"] = {"front": front, "n": round_offset + n, "round": rounds.size(), "a_word": a, "d_word": d,
 					"att": fa, "def": fd, "att_morale": roundi(ma), "def_morale": roundi(md)}
 				var mode = decision_cb.call(out, range(n, max_rounds + 1))
 				if mode != null:
 					dec = clampi(int(mode), 0, 1)
 					dec_how = "择"
+			if dec == -1 and decision_cb.is_valid() and bool(ctx.get("player_decides", false)) and bool(ctx.get("phase_pause", false)):
+				# 分段调度（WorldMap 决策层）：玩家还没拍——本段打住，快照供下一段接
+				out["paused"] = true
+				out["phase_summary"] = "本段白刃 %d 合打住，等下一拍" % (round_offset + rounds.size())
+				# rounds / _deck_state 照段落账出（下面 rounds_fought 已计 round_offset）
+				break
 			if dec == -1:
 				# 自动口径（缺省 / 超时默认 / 开关关）：照开战拍好的表；表没收进这一段的当场补一拍（同一条公式）
 				dec = decided[ji]
@@ -629,7 +670,7 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 				lethal_mul = DECISION_HOLD_LETHAL
 				pwr_d = 1.0 + DECISION_HOLD_COUNTER
 				advance_at = DECISION_HOLD_ADV
-			out["decisions"].append({"front": front, "zone": _zone_word(front, a), "n": n, "mode": dec,
+			out["decisions"].append({"front": front, "zone": _zone_word(front, a), "n": round_offset + n, "mode": dec,
 				"via": "压上" if dec == 1 else "收势", "how": dec_how})
 		var cap_d := float(def["captain"]) if front >= ZONE_FLAG else 1.0 + (float(def["captain"]) - 1.0) * 0.5
 		var pa := fa * _mfac(ma) * float(att["captain"]) * _armor(att) * disorder_a * luck_a * (SHOCK if n == 1 else 1.0) * pwr_a
@@ -688,21 +729,34 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 					outcome = OUTCOME_CUT_LOOSE
 					ev = "cut"
 					out["cut_by"] = "def"
-		var rd := {"n": n, "front": front, "zone": _zone_word(front, a), "moved": moved, "event": ev,
+		var rd := {"n": round_offset + n, "front": front, "zone": _zone_word(front, a), "moved": moved, "event": ev,
 			"att": fa, "def": fd, "att_loss": loss_a, "def_loss": loss_d,
 			"att_morale": roundi(ma), "def_morale": roundi(md), "share": snappedf(share, 0.01)}
-		rd["text"] = _round_text(rd, a, d, posmod(int(out["seed"]) + n, 3))
+		rd["text"] = _round_text(rd, a, d, posmod(int(out["seed"]) + round_offset + n, 3))
 		rounds.append(rd)
 		if outcome != "":
 			break
 	out["rounds"] = rounds
-	out["rounds_fought"] = rounds.size()
+	out["rounds_fought"] = round_offset + rounds.size()
+	out["_deck_state"] = {"fa": fa, "fd": fd, "ma": ma, "md": md, "front": front, "flag_cut": flag_cut,
+		"cas_a": cas_a, "cas_d": cas_d, "luck_a": luck_a, "luck_d": luck_d, "decided": decided,
+		"round_offset": round_offset + rounds.size(), "rounds_left": max_rounds - rounds.size(),
+		"bit": int(g.get("bit", HOOKS_TO_HOLD)), "dkeep": dkeep,
+		"crew_a": int(deck_in.get("crew_a", fa)), "crew_d": int(deck_in.get("crew_d", fd)),
+		"decisions_log": out.get("decisions", []),
+		"gtext": str(g.get("text", "")), "volley": out.get("volley", {}), "leap": out.get("leap", {}),
+		"boarders": int(out.get("boarders", 0)), "defenders": int(out.get("defenders", 0)),
+		"disorder_a": disorder_a, "disorder_d": disorder_d}
 	out["front"] = front
 	out["front_name"] = _zone_word(front, a)
 	out["flag_cut"] = flag_cut
 	out["att_morale"] = roundi(ma)
 	out["def_morale"] = roundi(md)
-	var nr := rounds.size()
+	if bool(out.get("paused", false)):
+		# 分段调度打住的段：不走 conclude（了局 / 俘获 / 伤亡注留给收场段）
+		out["outcome"] = ""
+		return out
+	var nr := int(out["rounds_fought"])
 	var left_d := fd + dkeep
 	match outcome:
 		OUTCOME_CAPTURE:
@@ -726,6 +780,42 @@ static func resolve(att_in: Dictionary, def_in: Dictionary, ctx := {}) -> Dictio
 	out["cut_by"] = "both"
 	out["summary"] = "斗满 %d 合，两下罢手，各自砍缆。" % nr
 	return _conclude(out, OUTCOME_CUT_LOOSE, rng, cas_a, cas_d, left_d, 0)
+
+
+## 分段调度承接段起手（WorldMap 决策层专用）：上一段 _deck 段尾 _deck_state 快照 →
+## 照快照开号（钩索 / 矢石 / 跳帮不重掷不重记账），deck 照 lasts 账继续走；decision-cb / 玩家择照本段 ctx 照旧收。
+static func _resume_deck(att: Dictionary, def: Dictionary, ctx: Dictionary, g: Dictionary, d0: Dictionary) -> Dictionary:
+	var rng := _rng(ctx)
+	var out := _blank(att, def, rng.seed)
+	out["grapple"] = g
+	out["volley"] = d0.get("volley", {})
+	if not (out["volley"] as Dictionary).is_empty():
+		out["volley_cas"] = true
+	out["leap"] = d0.get("leap", {})
+	out["boarders"] = int(d0.get("boarders", 0))
+	out["defenders"] = int(d0.get("defenders", 0))
+	out["resumed"] = true
+	var deck_in := {"fa": int(d0.get("fa", att.get("crew", 0))), "fd": int(d0.get("fd", def.get("crew", 0))),
+		"dkeep": int(d0.get("dkeep", 1)), "cas_a": int(d0.get("cas_a", 0)), "cas_d": int(d0.get("cas_d", 0)),
+		"disorder_a": float(d0.get("disorder_a", 1.0)), "disorder_d": float(d0.get("disorder_d", 1.0)),
+		"front": int(d0.get("front", 0)), "flag_cut": bool(d0.get("flag_cut", false)),
+		"ma": float(d0.get("ma", att.get("morale", 60))), "md": float(d0.get("md", def.get("morale", 60))),
+		"luck_a": float(d0.get("luck_a", -1.0)), "luck_d": float(d0.get("luck_d", -1.0)),
+		"decided": d0.get("decided", []), "round_offset": int(d0.get("round_offset", 0)),
+		"rounds_left": int(d0.get("rounds_left", ROUNDS_DEFAULT)),
+		"decisions_log": d0.get("decisions_log", []),
+		"crew_a": int(d0.get("crew_a", att.get("crew", 0))), "crew_d": int(d0.get("crew_d", def.get("crew", 0)))}
+	return _deck(att_n(att), def_n(def), ctx, g, out, deck_in, rng)
+
+
+## 承接段里 att / def 走一遍 _norm_side 簿（被 _resume_deck 叫来前 resolve 已 norm 过一次，
+## 直接收送回再 norm 摊开平整：double-norm 不重掷骰、桶里键照旧——clamp 幂等）
+static func att_n(att: Dictionary) -> Dictionary:
+	return _norm_side(att, true)
+
+
+static func def_n(def: Dictionary) -> Dictionary:
+	return _norm_side(def, false)
 
 
 ## 守方是玩家时的纪实句（敌船先抛钩接上来那一路，WorldMap._board_enemy 用）：了局句照旧（字随 is_player 已是「敌 / 我」），

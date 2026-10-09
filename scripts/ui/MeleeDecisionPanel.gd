@@ -213,8 +213,12 @@ func _answer(mode: int) -> void:
 		b.disabled = true
 	var tw := create_tween()
 	tw.tween_property(_slip, "modulate:a", 0.0, T_FADE)
-	tw.tween_callback(func() -> void: visible = false)
+	tw.tween_callback(_conceal)
 	decided.emit(mode)
+
+
+func _conceal() -> void:
+	visible = false
 
 
 func _unhandled_input(event: InputEvent) -> void:

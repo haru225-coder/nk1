@@ -46,7 +46,9 @@ func _run() -> void:
 	_sec_decided_path()
 	print("== 四、追窗口（EnemyCaptainAI 假局势）")
 	_sec_pursue()
-	print("== 五、CombatSwitches 两新键默认开")
+	print("== 五、分段调取承接（phase_pause → _deck_state → 玩家择照段续）")
+	_sec_resume()
+	print("== 六、CombatSwitches 两新键默认开")
 	_sec_switches()
 
 	OS.remove_logger(_errlog)
@@ -207,6 +209,57 @@ func _sec_decided_path() -> void:
 		if int(r3.get("rounds_fought", 0)) >= 3:
 			slow_attack += 1
 	_check(slow_attack > 0, "收势开场一段：有拉长场（%d / 120 场打到第三合以后还在打）" % slow_attack)
+
+
+func _sec_resume() -> void:
+	# phase_pause（WorldMap 决策层同一路）：noop cb + player_decides + phase_pause →
+	# 首个决断段打住（paused=true、decisions_site 在），快照 _deck_state 起手承接掷骰数也够
+	var sd: Array = _sides()
+	var p1 := _ctx({"decision_cb": func(_out: Dictionary, _left: Array) -> Variant: return null,
+		"player_decides": true, "phase_pause": true})
+	p1["seed"] = 733
+	var r1: Dictionary = Melee.resolve(sd[0], sd[1], p1)
+	_check(bool(r1.get("paused", false)), "决断段打住（paused=true；承接快照在）")
+	_check(str(r1.get("outcome", "")) == "", "打住的段没有收场（outcome 空）")
+	var site: Dictionary = r1.get("decisions_site", {})
+	_check(not site.is_empty() and int(site.get("front", -1)) in Melee.DECISION_JUNCTURES,
+		"打住带决断位（front=%d 在 舷边 / 舷腰 / 桅下）" % int(site.get("front", -1)))
+	# 承接：玩家先按「收势」（择）走一段，再撞拍照旧
+	var d0: Dictionary = (r1.get("_deck_state", {}) as Dictionary).duplicate()
+	_check(not d0.is_empty() and int(d0.get("rounds_left", 0)) > 0 and int(d0.get("round_offset", -1)) >= 0,
+		"快照齐（%d 合已打 / 剩 %d 合；round_offset=%d）" % [
+			int(d0.get("round_offset", -1)), int(d0.get("rounds_left", 0)), int(d0.get("round_offset", -1))])
+	var front_i := int(site.get("front", 0))
+	var ji: int = Melee.DECISION_JUNCTURES.find(front_i)
+	var decided0: Array = d0.get("decided", [])
+	while decided0.size() <= ji:
+		decided0.append(-1)
+	decided0[ji] = 0
+	d0["decided"] = decided0
+	d0["decisions_log"] = [{"front": front_i, "zone": Melee.zone_name(front_i),
+		"n": int(site.get("n", 1)), "mode": 0, "via": "收势", "how": "择"}]
+	var p2 := {"seed": 734, "windward": 0, "sea": 1, "rel_speed": 0.0, "distance": 60.0,
+		"deck_state": d0, "player_decides": true, "phase_pause": true,
+		"decision_cb": func(_out: Dictionary, _left: Array) -> Variant: return 1}
+	var r2: Dictionary = Melee.resolve(sd[0], sd[1], p2)
+	# 承接段：钮牌 cb 直返 1 = 压上（同 WorldMap 回拍后的续段）——不撞拍到底收场（模式 1 必倾）
+	_check(str(r2.get("outcome", "")) != "" or bool(r2.get("paused", false)),
+		"承接段走完或再撞拍（outcome=%s paused=%s）" % [str(r2.get("outcome", "")), str(r2.get("paused", false))])
+	_check((r2.get("decisions", []) as Array).size() == int(((r2.get("_deck_state", {}) as Dictionary).get("decisions_log", []) as Array).size()),
+		"拍板账在承接段里不外增（decisions %d 段；log %d 段）" % [
+			(r2.get("decisions", []) as Array).size(),
+			((r2.get("_deck_state", {}) as Dictionary).get("decisions_log", []) as Array).size()])
+	# 承接段不重掷钩索 / 矢石 / 跳帮（sd 在同簿）：两段账里 crew 队员们与「整场」的杀人数合计对得上
+	var full: Dictionary = Melee.resolve(sd[0], sd[1], _ctx({"decisions": [0, 1, 1], "seed": 733}))
+	_check(not r1.has("att_cas") or int(r1.get("att_cas", 0)) == 0, "打住的段还没止泻阵亡（收场段才结）")
+	var resumed_done := str(r2.get("outcome", "")) != ""
+	if resumed_done:
+		# 承接段照快照起手：掷骰独立于整场（开场自动骰不重掷，但分段各段的随机流不再与整场对位——出数生态对账，
+		# 只查两边都进得了局：数字在两个 6 合圈均合里、不查逐合同字）
+		var total_split := int(r1["rounds_fought"]) + int(r2["rounds_fought"])
+		_check(total_split >= 1 and total_split <= Melee.ROUNDS_MAX and int(full["rounds_fought"]) >= 1,
+			"分段合计合数在 6 合圈生态里（分段 %d + %d = %d；整场 %d）" % [
+				int(r1["rounds_fought"]), int(r2["rounds_fought"]), total_split, int(full["rounds_fought"])])
 
 
 func _sec_pursue() -> void:

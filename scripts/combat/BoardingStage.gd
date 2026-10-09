@@ -542,7 +542,7 @@ func _demo_run() -> void:
 		(_demo_ships[i].get_child(1) as Label).text = "%s　%d 人" % [spec[4], int(spec[1])]
 	var ctx: Dictionary = (cs["ctx"] as Dictionary).duplicate()
 	ctx["seed"] = randi_range(1, 2147483646)
-	var r := MeleeResolve.resolve(us if we_attack else foe, foe if we_attack else us, ctx)
+	var r: Dictionary = await MeleeResolve.resolve(us if we_attack else foe, foe if we_attack else us, ctx)
 	_demo_info.text = "%s　　钩牢率 %d%%　种子 %d\n空格　再来一场　　1–3　换局面　　Esc　退出" % [
 		cs["label"], roundi(float((r["grapple"] as Dictionary).get("chance", 0.0)) * 100.0), int(r["seed"])]
 	_demo_last.text = ""

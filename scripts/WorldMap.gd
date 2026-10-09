@@ -468,43 +468,82 @@ func _melee_resolve(enemy: Node2D, enemy_first := false) -> Dictionary:
 	if enemy_first:
 		# 敌攻我守照旧整场一掷：守的是本船甲板，决断权在攻方；敌方决断自动（方案 §五「攻守换位——攻守都算」留给敌将自己打）
 		var plain := _melee_sides(enemy, true)
-		return _MeleeResolve.resolve(plain[0], plain[1], plain[2])
+		return await _MeleeResolve.resolve(plain[0], plain[1], plain[2])
 	var layer := _decision_offer()
 	if layer != null and not bool(layer.get("battle_auto")):
 		# 分段调度：舷边 / 舷腰 / 桅下各停一拍（见 _melee_decided_run 头注；async 随 _board_enemy 的协程逐拍续）
 		return await _melee_decided_run(enemy, layer)
 	var sides := _melee_sides(enemy, false)
-	return _MeleeResolve.resolve(sides[0], sides[1], sides[2])
+	return await _MeleeResolve.resolve(sides[0], sides[1], sides[2])
 
 
-## 分段白刃（本队先钩、开关开、决策层在）：MergeResolve 在决断段摆好 stand（out.decisions_site）、
-## 把脚本挂起（decision_cb → 本协程 await one 拍），玩家 Space 压上 / Enter 收势 / 超时不拍自动——
-## resolve 是脚本内状态机：加 / 减人手、掷骰全按原序；本函数只管「下一段从哪几合起」——
-## left 是 MeleeResolve 给的「原脚本照跑将要出的合号表」；掷完调用同一处掷骰。
-## 协程随场景释放丢弃（同 _board_enemy：WorldMap 缴了，决断层 _answer → decided 不会发，等它的协程随树释放丢弃）。
+## 分段白刃（本队先钩、开关 melee_decision 开、决策层在）：钩索 / 矢石 / 跳帮与挪用「甲板多合」的段照走 resolve
+## （同步，掷骰序照旧）；每撞上决断段 resolve 打住（ctx.phase_pause → out.paused，段尾 _deck_state 快照），
+## 决策层亮一拍，玩家 Space 压上 / Enter 收势 / 超时不拍自动——拍定后把模式并回快照、resolve 照快照起手承接。
+## 这是协程的原因只是「等一拍 decided」；场景释放协程随树丢弃（同 _board_enemy 的节拍。
+## 掷骰序照账：决战段只掷的骰恒为新开篇一颗（resume 段不重掷开战三骰也不跳矢石）——
+## 与「整场自动一掷」的骰流差的是这三颗攻击自动骰，与旧玩法逐字回旧仍在关开关那一边
 func _melee_decided_run(enemy: Node2D, layer: CanvasLayer) -> Dictionary:
-	# 第一层：本队先钩 = 攻方，决断簿挂攻方（本队）；探针 q_press 判定的场照常走（探针场是真 WorldMap 布景）
 	var sides := _melee_sides(enemy, false)
-	var ctx: Dictionary = sides[2]
-	ctx["player_decides"] = true
-	var r := await _MeleeResolve.resolve(sides[0], sides[1], _decided_ctx(ctx, layer))
-	if str(r.get("outcome", "")) == "":
-		# MeleeResolve 不分段（决断簿没写进 ctx / 本文件没落地决断）——照旧整场一掷
-		r = _MeleeResolve.resolve(sides[0], sides[1], sides[2])
-	return r
-
-
-## 给分段白刃装回调的 ctx：decision_cb 挂本协程的 resumed 版——resolve 跑到决断段先挂起、
-## 玩家拍板（或超时 / 切自动）后诀 MeleeResolve 复进同一脚本，结果照旧出。掷骰序照旧：没拍到的段不误掷
-func _decided_ctx(ctx: Dictionary, layer: CanvasLayer) -> Dictionary:
-	var c: Dictionary = ctx.duplicate()
-	c["decision_cb"] = func(out: Dictionary, left: Array) -> Variant:
-		# 跑到决断段：决策层亮一拍，挂起本协程等 decided；超时 / abort / 切自动返 null → MeleeResolve 当场照自动口径补一拍
-		if not is_instance_valid(layer) or bool(layer.get("battle_auto")):
-			return null
-		layer.call("_present", out.get("decisions_site", {}))
-		return await layer.decided
-	return c
+	var base_ctx: Dictionary = sides[2]
+	base_ctx["player_decides"] = true
+	base_ctx["phase_pause"] = true
+	var noop := func(_out: Dictionary, _left: Array) -> Variant: return null
+	# 本场的起种子：有 SeaState 在场按全局流的下一发（与旧 PlayResolve 的 ctx.seed=0 同阶层）；
+	# 探针 / 复盘在场外预置 seed 照它（掷骰可复现照旧）
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var seed0: int = rng.randi()
+	var phases_rounds: Array = []
+	var phases_decisions: Array = []
+	var d0: Dictionary = {}
+	var cur: Dictionary = {}
+	for attempt in range(1, 9):
+		var c: Dictionary = base_ctx.duplicate()
+		c["seed"] = seed0 + attempt
+		if d0.is_empty():
+			c["decision_cb"] = noop
+		else:
+			c.erase("hooked")
+			c["deck_state"] = d0
+		cur = _MeleeResolve.resolve(sides[0], sides[1], c)
+		phases_rounds.append_array(cur.get("rounds", []))
+		phases_decisions.append_array(cur.get("decisions", []))
+		if str(cur.get("outcome", "")) != "":
+			break
+		var site: Dictionary = cur.get("decisions_site", {})
+		if not bool(cur.get("paused", false)) or site.is_empty():
+			break  # resolve 没打出拍 / 不是决断段：摊手收场
+		layer.call("_present", site)
+		var mode: Variant = await layer.decided
+		d0 = (cur.get("_deck_state", {}) as Dictionary).duplicate()
+		var front_i := int(site.get("front", 0))
+		var ji: int = _MeleeResolve.DECISION_JUNCTURES.find(front_i)
+		var decided: Array = d0.get("decided", [])
+		while decided.size() <= ji:
+			decided.append(-1)
+		var mode_i := -1
+		var how := ""
+		if mode != null and (mode is int or mode is float) and int(mode) >= 0:
+			mode_i = clampi(int(mode), 0, 1)
+			how = "择"
+		else:
+			# 超时 / abort / 切自动：照自动口径补一拍（同一条公式），how 记「超时」——decisions_note 尾注照写
+			mode_i = 1 if _MeleeResolve.auto_push_chance(
+				float(d0.get("ma", 60)), float(d0.get("md", 60)), front_i) >= randf() else 0
+			how = "超时"
+		decided[ji] = mode_i
+		d0["decided"] = decided
+		phases_decisions.append({"front": front_i, "zone": _MeleeResolve.zone_name(front_i),
+			"n": int(site.get("n", 1)), "mode": mode_i,
+			"via": "压上" if mode_i == 1 else "收势", "how": how})
+		# 拍板账进快照：收场段的 decisions_note（_conclude 在 resolve 里拼）照全段账出入尾注
+		d0["decisions_log"] = phases_decisions.duplicate()
+	# 段落账并进总账（承接段的「了局 / 伤亡 / 俘跳」全集键；rounds / decisions 由于各段都包照合计在这）
+	cur["rounds"] = phases_rounds
+	cur["rounds_fought"] = phases_rounds.size()
+	cur["decisions"] = phases_decisions
+	return cur
 
 
 ## 决断层入口（_board_enemy / 探针用）：开关关 / 敌先钩都不亮；headless 起不来返 null 即整场自走
