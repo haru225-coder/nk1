@@ -115,12 +115,6 @@ func _run() -> void:
 	# 截这一帧（层亮着、题签「白刃·舷边 / 舷腰 / 桅下」、两钮可点）
 	for i in 3:
 		await process_frame
-	var dbg_layer: Node = null
-	for n in root.get_tree().get_nodes_in_group("nk1_melee_decision"):
-		dbg_layer = n
-	if dbg_layer != null:
-		var slip: Node = dbg_layer.get("_slip")
-		print("DBG layer visible=", dbg_layer.visible, " slip rect=", slip.get_global_rect(), " mod.a=", slip.modulate.a)
 	var img: Image = root.get_texture().get_image()
 	var png := "%s/qa_w53_p4_melee_decision_panel.png" % _dir
 	var err := img.save_png(png)
