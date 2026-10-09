@@ -8,6 +8,7 @@ signal _marker_woken
 const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const _Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
+const _AfterAction := preload("res://scripts/combat/AfterAction.gd")
 
 var origin_port: String = ""
 var selected_port: String = ""
@@ -1632,6 +1633,9 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			if sheet != "":
 				win_msg = sheet + win_msg
 		_log(_ink(UiTheme.MOSS, win_msg))
+		# w53-p4-after 四期：战后收拾小卡（押船 / 救人 / 俘虏 / 索赎 / 追击）——札记落下后挂卡，
+		# 玩家 Enter 或点「收拾停当」再续航行（返程收尾随卡走）；开关全关 / 无可挂行 = 旧形直落。
+		_after_action_offer(outcome, data)
 	elif outcome == "lose":
 		Fleet.morale = maxi(0, Fleet.morale - 12)
 		# WorldMap 只在旗舰沉没时发 lose。先按该船货舱全损记账，
@@ -1692,6 +1696,15 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 					fail_msg += "。"
 			_log(_ink(UiTheme.CINNABAR, fail_msg + prize))
 	GameManager.pending_battle = {}
+	if not _after_action_pending():
+		# 没挂卡（开关全关 / 无可挂行 / 非胜局）：照旧当帧续航行
+		_finish_battle(outcome)
+		return
+	# 挂了卡：返程收尾（札记以外的航行 / 底栏 / 条件页）等卡按「收拾停当」再走（见 _on_after_action_done）
+
+
+## 返程收尾（原 _on_battle_result 尾段）：等卡按下一张才走；没卡时照旧当帧
+func _finish_battle(outcome: String) -> void:
 	back_button.disabled = voyage_started
 	for c in get_children():
 		if c is CanvasItem:
@@ -1699,6 +1712,83 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	_close_condition()
 	_refresh_status()
 	_after_combat()
+
+
+## 战后收拾卡是不是还挂着（_after_action_offer 挂上了等玩家 Enter）：挂着 = true
+var _aa_pending := false
+func _after_action_pending() -> bool:
+	return _aa_pending
+
+
+## 追击挨舷炮的一发船体伤（w53-p4-after）：WorldMap 侧现码（lane w53-2 后）敌一发 Ship._hull_loss 按
+## DamageModel.apply_hit 折算（弹道种类 / 部位 / 距离衰减分摊），没有单一常量可引——这里取战后门闸一发的
+## 明文量（5.0 船体 = Ship._fire_broadside 旧账「铁球」中一发的中位量，挨 3 发 ≈ 挨一舷轻伤）。
+## 折算过程走 _AfterAction.pursuit_damage（按敌船体 × after_action.pursue.broadside_hits 乘开）。
+const WAA_HIT_DMG := 5.0
+
+
+## 挂战后收拾小卡（win 才挂；lose / flee 直落）。空卡不挂——_aa_pending 留 false，调用方当帧续航行。
+func _after_action_offer(outcome: String, data: Dictionary) -> void:
+	if outcome != "win":
+		return
+	var choices := _AfterAction.choices_for(outcome, data)
+	if choices.is_empty():
+		return
+	# 真挂卡（窗口）：挂上等 Enter；headless 下 attach 返回 null——探针 / 门检不挂卡，走探针直接落账那一路
+	var lb := _Letterbox.attach_after_action(self, choices, _on_after_action_done.bind(choices, data))
+	if lb == null:
+		return
+	_aa_pending = true
+
+
+## 卡按下「收拾停当」：照选择逐项落账（钱 / 名声 / 收编 / 夺船漂走 / 追击一舷），注记句缀进札记，再续航行
+func _on_after_action_done(chosen: Dictionary, choices: Array, data: Dictionary) -> void:
+	_aa_pending = false
+	var notes: PackedStringArray = []
+	for row in choices:
+		if not row is Dictionary:
+			continue
+		var key := str(row.get("key", ""))
+		var c := (row as Dictionary).duplicate()
+		c["chosen"] = str(chosen.get(key, ""))
+		var r: Dictionary = _AfterAction.apply(c, "win", data)
+		if not bool(r.get("ok", false)):
+			continue
+		var note := str(r.get("note", ""))
+		if note != "":
+			notes.append(note)
+		# 落账
+		if int(r.get("money", 0)) != 0:
+			GameState.add_money(int(r.get("money", 0)))
+		if int(r.get("fame_gained", 0)) != 0:
+			var fr: Dictionary = GameState.add_fame(int(r.get("fame_gained", 0)))
+			if bool(fr.get("promoted", false)):
+				notes.append("案册改题「%s」。" % str(fr.get("title", {}).get("name", "")))
+		if int(r.get("crew_delta", 0)) > 0:
+			Fleet.hire_crew(int(r.get("crew_delta", 0)))
+		# 追击追上：比照夺船并入船队（WorldMap 原路——add_ship + settle_prize 按满体）
+		if str(r.get("ship_added", "")) != "":
+			var type_id := str(r.get("ship_added", ""))
+			if Fleet.add_ship(type_id):
+				Fleet.settle_prize(Fleet.ships.size() - 1, 1.0)
+		# 追击没追上：挨一顿舷炮
+		if str(r.get("pursuit_roll", "")) == "missed":
+			Fleet.damage_fleet(_AfterAction.pursuit_damage(data, WAA_HIT_DMG))
+		# 押船漂走：夺来 / 受降的船从名册摘掉（WorldMap 夺船已在册；派不出人看守的船放它漂）
+		# 账：boarded_drifted 艘从名册尾往前摘（夺来 / 受降的船在 WorldMap 并入时排在尾）
+		if int(r.get("boarded_drifted", 0)) > 0:
+			_drift_prizes(int(r.get("boarded_drifted", 0)))
+	if not notes.is_empty():
+		_log(_ink(UiTheme.MOSS, "".join(notes)))
+	_finish_battle("win")
+
+
+## 押船漂走：从名册尾摘掉 drifted 艘夺来 / 受降的船（它们的 cargo 跟着沉，不进账——
+## WorldMap 并入时夺船舱货本来就按「打捞所得」给了 spoil，名册格摘了就摘了）。
+func _drift_prizes(drifted: int) -> void:
+	for _i in drifted:
+		if Fleet.ships.size() > 1:
+			Fleet.ships.remove_at(Fleet.ships.size() - 1)
 
 
 ## 胜局分账（combat12）：surrender = 有敌船降幡（士气收场 enemy_struck / enemy_broken，或下场明细里有受降）；

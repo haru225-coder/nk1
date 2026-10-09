@@ -127,6 +127,26 @@ var _wait_seq := 0
 ## 全部墨边实例里挂在 _await_tween / _await_frame 上的协程数（探针查：场上墨边全收尾后须为 0，否则就是挂死的协程）
 static var waiters := 0
 
+# ── 战后收拾小卡（w53-p4-after，「战后单子」三到五行小选择）────────────
+## 挂卡闭包（SeaChart 给的）：(chosen: Dictionary) -> void——chosen 形如 {key: option_id}，每行选什么
+var _choice_callback := Callable()
+## 卡上的行：每行一个 HBoxContainer，第一个子节点 Label 写行题，后面跟着 Button
+var _choice_rows: Array = []
+## 每行的 choice 元数据（choices_for 的行原样，择项描色反查 options / key 用；与 _choice_rows 同序）
+var _choice_meta: Array = []
+## 每行当前选的 option id（_choice_rows 同序；初始 = 该行的 default 项）
+var _chosen: Array = []
+## 卡本体（PanelContainer）；null = 没挂卡
+var _choice_panel: PanelContainer
+## 尾行「收拾停当」钮
+var _choice_done_btn: Button
+## 卡挂出期间吞键盘鼠标（_input 用），免得海图底栏收到 Enter（Enter 只按尾钮）
+var _choice_swallow := false
+## 卡上每行的行题 + 各选项去重后的最小宽度：触屏点得着的底线
+const CHOICE_BTN_MIN := Vector2(72, 36)
+## 卡底离屏底的缝
+const CHOICE_BOTTOM_MARGIN := 24.0
+
 
 ## 「海名・事由」。海名空着就只写事由，不在这里补地名。
 static func sea_title(sea_name: String, act: String) -> String:
@@ -271,6 +291,12 @@ static func fate_note(fates: Array) -> String:
 ## 再写账目原句。fates 取 fates_of 的明细（同一下场里按船种并数，写完船种再写「共 N 艘」）；rescued > 0 时续
 ## 「救起水手 N 人。」（world 侧的落水救援由 w53-17 的 morale_carry 项代管，读不到数就不写）；都没有返回 ""。
 static func aftermath_note(fates: Array, rescued := 0) -> String:
+	return aftermath_note_opts(fates, rescued, false)
+
+
+## 战后单子第一行的全参变体（w53-p4-after 战败捞人）：伤亡折损前先垫「冒死救起水手 N 人」——击沉句之前，
+## 写一句自己人被捞回来的事。旧三行不变，第四行（前半）加的是冒死救人那一笔。
+static func aftermath_note_opts(fates: Array, rescued := 0, lost_rescue := false) -> String:
 	var parts: PackedStringArray = []
 	var total := 0
 	var tally := {}
@@ -298,7 +324,10 @@ static func aftermath_note(fates: Array, rescued := 0) -> String:
 	if head != "":
 		parts.append(head)
 	if rescued > 0:
-		parts.append("救起水手%s人。" % _cn_count(rescued))
+		if lost_rescue:
+			parts.append("自家落水的水手冒死救回%s人。" % _cn_count(rescued))
+		else:
+			parts.append("救起水手%s人。" % _cn_count(rescued))
 	return "".join(parts)
 
 
@@ -397,6 +426,185 @@ static func _spawn(parent: Node) -> CanvasLayer:
 	lb.add_to_group(GROUP)
 	parent.add_child(lb)
 	return lb
+
+
+## 战后收拾小卡（w53-p4-after，方案 §九「战后单子」）：选择行挂在一副墨边同层的 CanvasLayer 上，
+## 海图札记照落、卡浮在上面。choices = AfterAction.choices_for 的各行；Enter 或点尾钮「收拾停当」，
+## 按 chosen 回填 callback（chosen: Dictionary（key→option_id））。
+## headless 返回 null；调用方自己走 callback({})（各开关默认项的账，探针直接调落账，不经这里）。
+## 卡不暂停航行 / 不吞海图底栏 Enter 之外的操作；挂卡期间 _input 只吞键盘鼠标（海图底栏在卡下，连按不穿透）。
+static func attach_after_action(parent: Node, choices: Array, callback: Callable) -> CanvasLayer:
+	if parent == null or not parent.is_inside_tree() or Kit.is_headless():
+		return null
+	var lb: CanvasLayer = (load("res://scripts/ui/CombatLetterbox.gd") as GDScript).new()
+	lb.set_meta(&"auto_free", true)
+	parent.add_child(lb)
+	lb.call("_build_after_action", choices, callback)
+	return lb
+
+
+func _build_after_action(choices: Array, callback: Callable) -> void:
+	_choice_callback = callback
+	layer = LAYER_INDEX
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	_build()
+	_choice_swallow = true
+
+	_choice_panel = PanelContainer.new()
+	# 底中挂、给左右各留一掌边，行题 + 按钮一字排开塞得下五行（方案 §九「三到五行」）。
+	# 尺寸照内容自定：先铺满 VB（每行一行题 + 按钮），再按 combined_minimum_size 反推 PanelContainer 的 size，
+	# 底沿贴画布底留 CHOICE_BOTTOM_MARGIN 一缝。
+	_choice_panel.add_theme_stylebox_override("panel", UiTheme.plaque())
+	_root.add_child(_choice_panel)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 8)
+	vb.add_theme_constant_override("margin_left", 16)
+	vb.add_theme_constant_override("margin_top", 10)
+	vb.add_theme_constant_override("margin_right", 16)
+	vb.add_theme_constant_override("margin_bottom", 10)
+	_choice_panel.add_child(vb)
+
+	var head_lbl := Label.new()
+	head_lbl.text = "战后收拾"
+	head_lbl.add_theme_font_override("font", UiTheme.title_font())
+	head_lbl.add_theme_font_size_override("font_size", 22)
+	head_lbl.add_theme_color_override("font_color", UiTheme.GOLD_HI)
+	vb.add_child(head_lbl)
+
+	for row in choices:
+		if not row is Dictionary:
+			continue
+		var opts = row.get("options", [])
+		if not opts is Array or opts.is_empty():
+			continue
+		# 该行默认项：没有 default=true 的就取头一个
+		var def_idx := 0
+		for j in opts.size():
+			if bool(opts[j].get("default", false)):
+				def_idx = j
+				break
+		var idx := _choice_rows.size()
+		_choice_meta.append(row)
+		_chosen.append(str(opts[def_idx].get("id", "")))
+
+		# 行题一行（整行宽放得下「索赎（放回 12 人，当场折价兑付）」这样的长短）
+		var lbl := Label.new()
+		lbl.text = str(row.get("label", ""))
+		lbl.clip_text = false
+		lbl.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+		lbl.add_theme_font_override("font", UiTheme.font())
+		lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY + 2)
+		lbl.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
+		vb.add_child(lbl)
+
+		# 选项钮一行（靠右），按钮宽按字数估，触屏点得着
+		var hb := HBoxContainer.new()
+		hb.alignment = BoxContainer.ALIGNMENT_END
+		hb.add_theme_constant_override("separation", 10)
+		_choice_rows.append(hb)
+		for j in opts.size():
+			var b := Button.new()
+			b.text = str(opts[j].get("label", ""))
+			b.custom_minimum_size = Vector2(minf(120.0, 28.0 + float(str(opts[j].get("label", "")).length()) * 20.0), 36)
+			b.add_theme_font_override("font", UiTheme.font())
+			b.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
+			var opt_id := str(opts[j].get("id", ""))
+			b.pressed.connect(_on_choice_press.bind(idx, opt_id))
+			hb.add_child(b)
+		vb.add_child(hb)
+		_paint_row(idx)
+
+	var sep := HSeparator.new()
+	vb.add_child(sep)
+
+	_choice_done_btn = Button.new()
+	_choice_done_btn.text = "收拾停当　（Enter）"
+	_choice_done_btn.custom_minimum_size = Vector2(200, 44)
+	_choice_done_btn.add_theme_font_override("font", UiTheme.title_font())
+	_choice_done_btn.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY + 2)
+	_choice_done_btn.pressed.connect(_on_choice_done)
+	vb.add_child(_choice_done_btn)
+	# 尾钮贴底多留条垫，字别贴边
+	var tail_pad := Control.new()
+	tail_pad.custom_minimum_size = Vector2(0, 6)
+	vb.add_child(tail_pad)
+	# 卡片本体按内容反推尺寸，底沿贴画布底留一缝；宽度取「最长行题」与画布折中
+	await get_tree().process_frame
+	var cv := Kit.canvas_size(self)
+	var want := vb.get_combined_minimum_size() + Vector2(32, 20)
+	# 行题按最长那行估（SIZE_BODY+2 × 字宽 ≈ ×0.62），放画布宽对折到九成之间
+	var row_need := 0.0
+	for i in range(_choice_meta.size()):
+		var lbl_text := str(_choice_meta[i].get("label", ""))
+		row_need = maxf(row_need, float(lbl_text.length()) * (float(UiTheme.SIZE_BODY + 2) * 0.62))
+	var take_x := clampf(maxf(want.x, row_need + 60.0), 480.0, cv.x * 0.90)
+	_choice_panel.size = Vector2(take_x, want.y)
+	_choice_panel.position = Vector2(cv.x * 0.5 - take_x * 0.5,
+		cv.y - _choice_panel.size.y - CHOICE_BOTTOM_MARGIN)
+	_choice_done_btn.grab_focus()
+
+
+## 换一行里高亮的选项（按下的钮松开焦，重描该行各钮的底色）
+func _on_choice_press(idx: int, opt_id: String) -> void:
+	if idx < 0 or idx >= _chosen.size():
+		return
+	_chosen[idx] = opt_id
+	_paint_row(idx)
+
+
+## 该行各钮按选没选上描底色（选中 = 泥金题签那一路的亮底，未选 = 照旧）
+func _paint_row(idx: int) -> void:
+	if idx < 0 or idx >= _choice_rows.size():
+		return
+	var hb: HBoxContainer = _choice_rows[idx]
+	for i in range(1, hb.get_child_count()):
+		var b := hb.get_child(i) as Button
+		if b == null:
+			continue
+		var opt_id := ""  # bind 的次序 = 选项次序：第 1 个 Button 起
+		# b 的选项 id 反查（按 _choice_rows 里 bind 的次序重建）
+		var opts = _choice_opts(idx)
+		var j := i - 1
+		if j >= 0 and j < opts.size():
+			opt_id = str(opts[j].get("id", ""))
+		var on := opt_id == str(_chosen[idx])
+		b.modulate = Color(1.0, 0.95, 0.75) if on else Color(0.82, 0.78, 0.70)
+		b.disabled = false
+
+
+## 卡上第 idx 行的 options 数组（_build 挂卡时存下，择项描色反查用）
+func _choice_opts(idx: int) -> Array:
+	if idx < 0 or idx >= _choice_meta.size():
+		return []
+	var o = (_choice_meta[idx] as Dictionary).get("options", [])
+	return o if o is Array else []
+
+
+## Enter 或尾钮：回填 callback 并揭卡收尾
+func _on_choice_done() -> void:
+	if _done:
+		return
+	_choice_swallow = false
+	var out := {}
+	for i in range(_choice_meta.size()):
+		out[str(_choice_meta[i].get("key", ""))] = str(_chosen[i])
+	if _choice_callback.is_valid():
+		_choice_callback.call(out)
+	_finish()
+
+
+## 键盘：Enter / KP Enter 按尾钮；左右在同行的选项间跳；上下换行（触鼠之外给键盘一条通路）
+func _input_choice(event: InputEvent) -> bool:
+	if _choice_panel == null or not is_instance_valid(_choice_panel):
+		return false
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return false
+	var kc := (event as InputEventKey).keycode
+	if kc == KEY_ENTER or kc == KEY_KP_ENTER:
+		_on_choice_done()
+		return true
+	return false
 
 
 func _ready() -> void:
@@ -703,9 +911,19 @@ func _hold_and_open(id: int) -> void:
 
 
 ## 出战合拢时吞掉键盘与鼠标（B / Esc 不再穿到底下）；入战不拦。
+## 挂「战后收拾」卡期间也吞——Enter 只按尾钮、不穿透到海图底栏。
 func _input(event: InputEvent) -> void:
 	if _swallow and (event is InputEventKey or event is InputEventMouseButton):
 		get_viewport().set_input_as_handled()
+		return
+	if _choice_swallow:
+		if _input_choice(event):
+			get_viewport().set_input_as_handled()
+			return
+		# 卡挂出期间：键盘未消费的键吞掉（海图底栏在卡下，连按不穿透）；
+		# 鼠标 / 触屏放行——Button 靠它们，set_input_as_handled 会把钮按住
+		if _choice_swallow and event is InputEventKey:
+			get_viewport().set_input_as_handled()
 
 
 func _black() -> void:
