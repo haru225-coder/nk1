@@ -225,26 +225,18 @@ static func choices_for(outcome: String, data: Dictionary) -> Array:
 	if _Switches.on("waa_captives"):
 		var n := _prisoner_count(data)
 		if n > 0:
-			rows.append({
-				"key": "captives",
-				"label": "俘虏（%d 人）：收编 / 卖掉 / 放走" % n,
-				"options": [
-					{"id": "enlist", "label": "收编", "default": true},
-					{"id": "sell", "label": "卖掉", "default": false},
-					{"id": "free", "label": "放走", "default": false},
-				],
-			})
-	if _Switches.on("waa_ransom"):
-		var n2 := _prisoner_count(data)
-		if n2 > 0:
-			rows.append({
-				"key": "ransom",
-				"label": "索赎（放回 %d 人，当场折价兑付）" % n2,
-				"options": [
-					{"id": "ransom", "label": "索赎", "default": false},
-					{"id": "skip", "label": "作罢", "default": true},
-				],
-			})
+			# 俘虏与索赎是同一批人，只落一个去处（主控复审）：索赎并进俘虏行做第四项、
+			# 不再单挂索赎行——「卖掉」又「索赎」同一批人双得钱的漏洞堵死在这里。
+			var opts: Array = [
+				{"id": "enlist", "label": "收编", "default": true},
+				{"id": "sell", "label": "卖掉", "default": false},
+				{"id": "free", "label": "放走", "default": false},
+			]
+			var label := "俘虏（%d 人）：收编 / 卖掉 / 放走" % n
+			if _Switches.on("waa_ransom"):
+				opts.append({"id": "ransom", "label": "索赎", "default": false})
+				label = "俘虏（%d 人）：收编 / 卖掉 / 放走 / 索赎" % n
+			rows.append({"key": "captives", "label": label, "options": opts})
 	if _Switches.on("waa_pursue"):
 		var fled := _fled_ships(data)
 		if not fled.is_empty():
@@ -379,6 +371,12 @@ static func _apply_captives(chosen: String, data: Dictionary, out: Dictionary) -
 		"free":
 			out["fame_gained"] = 2
 			out["note"] = "放俘虏各自回去，名声加 2。"
+		"ransom":
+			# 索赎：放船（俘虏）换赎金，当场折价兑付——方案「30 天后对方港口兑付」要跨场
+			# 记账，本档不改存档（见 ransom_each 注）。这一批人在俘虏行的第四项，只落一个去处。
+			var each := _ransom_each()
+			out["money"] = n * each
+			out["note"] = "放回 %d 人，对方当场折价兑付赎金 %d 钱。" % [n, n * each]
 		_:
 			out["note"] = ""
 	out["ok"] = out["note"] != ""
@@ -397,7 +395,7 @@ static func _apply_ransom(chosen: String, data: Dictionary, out: Dictionary) -> 
 		return out
 	var each := _ransom_each()
 	out["money"] = n * each
-	out["note"] = "放回 %d 人，对方当场折价兑付赎金 %d 钱。" % [n, n * each]
+	out["note"] = ""
 	out["ok"] = true
 	return out
 

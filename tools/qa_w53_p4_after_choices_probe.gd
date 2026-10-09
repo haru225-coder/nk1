@@ -78,10 +78,10 @@ func _run() -> void:
 	_sec_prize(fleet)
 	print("== 二、救人（waa_rescue）")
 	_sec_rescue(fleet, gs)
-	print("== 三、俘虏（waa_captives）")
+	print("== 三、俘虏（waa_captives，含索赎第四项）")
 	_sec_captives(fleet, gs)
-	print("== 四、索赎（waa_ransom）")
-	_sec_ransom(fleet, gs)
+	print("== 四、俘虏与索赎只能取一样（主控复审：同一批人，不许「卖掉」又「索赎」双得）")
+	_sec_mutex(fleet, gs)
 	print("== 五、追击（waa_pursue）")
 	_sec_pursue(fleet)
 	print("== 六、开关全关 = 逐字回旧")
@@ -237,20 +237,45 @@ func _sec_captives(fleet: Node, gs: Node) -> void:
 	gs.set("fame", fame0)
 
 
-# ── 四、索赎 ─────────────────────────────────────────
+# ── 四、俘虏与索赎只能取一样（主控复审）──────────────
 
-func _sec_ransom(fleet: Node, gs: Node) -> void:
+func _sec_mutex(fleet: Node, gs: Node) -> void:
 	_fleet_at(fleet, 40)
+	CS.set_on("waa_captives", true)
 	CS.set_on("waa_ransom", true)
 	var data := _win_board_struck()
 	var n := AA._prisoner_count(data)
+	_expect(n > 0, "俘虏 %d > 0" % n)
+	var row := _row_of(AA.choices_for("win", data), "captives")
+	var opts = row.get("options", [])
+	var opt_ids: PackedStringArray = []
+	for o in (opts if opts is Array else []):
+		opt_ids.append(str(o.get("id", "")))
+	# 修后：索赎并进俘虏行做第四项（不再单挂索赎行）——同一批人只落一个去处。
+	# 回退即成红：索赎项不在俘虏行（漏改 / 并挂索赎行）→ opt_ids 找不到 ransom。
+	_expect("ransom" in opt_ids, "俘虏行选项含索赎「ransom」第四项：%s" % [opt_ids])
+	# 单挂 ransom 行不再出（双得的漏）：choices_for 里没有 key=ransom 的行
+	_expect(_row_of(AA.choices_for("win", data), "ransom").is_empty(),
+		"索赎行不再单挂（同批人不双得）")
+	# 落账真互斥——同一行一次只能一个 option_id：选了「卖掉」就只得卖价（600），不再另出赎金（960）
 	gs.set("money", 0)
-	var r: Dictionary = AA.apply(_chosen_row(_row_of(AA.choices_for("win", data), "ransom"), "ransom"), "win", data)
-	_expect(int(r.get("money", -1)) == n * 40, "ransom：当场兑付 %d（得 %d）" % [n * 40, int(r.get("money", -1))])
-	_expect(str(r.get("note", "")).contains("兑付"), "ransom：注记句写当场折价兑付（得「%s」）" % str(r.get("note", "")))
-	# 作罢
-	var r2: Dictionary = AA.apply(_chosen_row(_row_of(AA.choices_for("win", data), "ransom"), "skip"), "win", data)
-	_expect(int(r2.get("money", -1)) == 0, "skip：不得钱（得 %d）" % int(r2.get("money", -1)))
+	var r_sell: Dictionary = AA.apply(_chosen_row(row, "sell"), "win", data)
+	_expect(int(r_sell.get("money", -1)) == n * 25, "卖了 %d 人得钱 %d（得 %d）——不再出赎金" % [
+		n, n * 25, int(r_sell.get("money", -1))])
+	_expect(not str(r_sell.get("note", "")).contains("兑付"), "卖了的注记句无「兑付」：%s" % str(r_sell.get("note", "")))
+	gs.set("money", 0)
+	var r_ran: Dictionary = AA.apply(_chosen_row(row, "ransom"), "win", data)
+	_expect(int(r_ran.get("money", -1)) == n * 40, "索赎 %d 人当场兑付 %d（得 %d）——不再出卖价" % [
+		n, n * 40, int(r_ran.get("money", -1))])
+	_expect(str(r_ran.get("note", "")).contains("兑付"), "索赎注记句写当场折价兑付（得「%s」）" % str(r_ran.get("note", "")))
+	# 开关关 waa_ransom：索赎项不亮，俘虏行照旧三路（enlist/sell/free）
+	CS.set_on("waa_ransom", false)
+	var opts2 = _row_of(AA.choices_for("win", data), "captives").get("options", [])
+	var ids2: PackedStringArray = []
+	for o in (opts2 if opts2 is Array else []):
+		ids2.append(str(o.get("id", "")))
+	_expect("ransom" not in ids2 and "sell" in ids2, "关 waa_ransom：索赎项不亮，俘虏行照旧三路：%s" % [ids2])
+	CS.set_on("waa_ransom", true)
 
 
 # ── 五、追击 ─────────────────────────────────────────
