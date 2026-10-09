@@ -68,6 +68,10 @@ const REBOARD_COOLDOWN := 14.0
 const BOARD_REPELLED_SHOCK := 12.0
 ## 脱离拉开到此即离场（WorldMap 镜头 1.5 倍约看 850×480，1500 早出了视野）
 const ESCAPE_DIST := 1500.0
+## 追的窗口（lane w53-p4-melee，开关 pursue_window）：敌船遁走不是瞬间脱离——下风的、伤重的先得手短挫一截、
+## 离场线再拖后一程，本船满帆多半追得上、贴得上钩（钩住 = 白刃照旧）；贴不上（对面满帆顺风还在上风）照走
+const PURSUE_TURN_PENALTY := 0.8
+const PURSUE_DIST_PAD := 260.0
 ## 降后久无人接收（STRIKE_SLIP_TIME 秒、对方还在 STRIKE_SLIP_DIST 外）就乘隙遁去
 const STRIKE_SLIP_TIME := 35.0
 const STRIKE_SLIP_DIST := 520.0
@@ -176,6 +180,12 @@ var _side_reload := {-1: 0.0, 1: 0.0}
 var _slipping := false
 var _s: Dictionary = {}
 var _g: Dictionary = {}
+## 追的窗口（lane w53-p4-melee，开关 pursue_window）：true 时脱离的离场线拖后 PURSUE_DIST_PAD、逃速短挫
+## PURSUE_TURN_PENALTY——挂法两路，哪路在先都认：
+##   ① 局面 s["pursue_window"]（PirateShip 转进；本 lane 不动 PirateShip，WorldMap 往敌将实例上塞 ②）
+##   ② 本成员（WorldMap._spawn_enemy 按开关写；探针直写照走）
+## 关开关 / 两路都缺席 = 逐字旧脱离（ESCAPE_DIST 不变、逃速不挫）
+var pursue_window := false
 
 
 ## 开战时调一次（PirateShip._ready）。sprite_key 用来认元军哨船（sprite=yuan_patrol）。
@@ -441,8 +451,13 @@ func _derive(s: Dictionary) -> Dictionary:
 	var my_flee := float(s.get("max_speed", 250.0)) * _drive_factor(flee, s) * (0.55 + 0.45 * hull)
 	var their := float(s.get("target_max_speed", 300.0)) * builtin_sail_factor(flee, g["wind"], float(s.get("wind_strength", 80.0)))
 	var consorts := maxi(int(s.get("consorts", 0)), 0)
+	# 追的窗口（lane w53-p4-melee，开关 pursue_window）：敌能跑多快先短挫一截——下风的、伤重的先被本船咬住；
+	# 追不上的（对面满帆顺风在上风）can_escape 照旧为真、照走（不困住逃兵）
+	if _pursue_on(s):
+		my_flee *= PURSUE_TURN_PENALTY
 	return {
 		"dist": g["dist"], "upwind": g["upwind"], "ratio": ratio, "hull": hull,
+		"escape_dist": ESCAPE_DIST + (PURSUE_DIST_PAD if _pursue_on(s) else 0.0),
 		"crew_frac": float(s.get("crew", _crew_start)) / float(_crew_start),
 		"ammo": ammo_frac(), "target_hull": float(s.get("target_hull", 1.0)),
 		"target_speed": g["target_speed"], "wind_strength": float(s.get("wind_strength", 80.0)),
@@ -636,7 +651,9 @@ func _orders(s: Dictionary, delta: float) -> Dictionary:
 				and float(g["rel_speed"]) <= GRAPPLE_REL_SPEED
 		DISENGAGE:
 			want = _flee_heading(s, g)
-			leave = dist >= ESCAPE_DIST and not bool(s.get("frozen", false))
+			# 追的窗口（pursue_window）：离场线拖后一程——敌半帆逃时本船满帆多半来得及贴钩；关开关复制旧口径
+			leave = dist >= ESCAPE_DIST + (PURSUE_DIST_PAD if _pursue_on(s) else 0.0)
+			leave = leave and not bool(s.get("frozen", false))
 		STRIKE:
 			throttle = 0.0
 	if want.length() < 0.01:
@@ -773,6 +790,13 @@ func _row(heading: Vector2, throttle: float, s: Dictionary, delta: float) -> voi
 		_stamina = maxf(0.0, _stamina - delta / STAMINA_DRAIN)
 	else:
 		_stamina = minf(1.0, _stamina + delta / STAMINA_REST)
+
+
+## 追的窗口此刻开吗：局面键优先（PirateShip 转进的「开关动过」），缺席看本成员（WorldMap 开局写死）
+func _pursue_on(s: Dictionary) -> bool:
+	if s.has("pursue_window"):
+		return bool(s["pursue_window"])
+	return pursue_window
 
 
 ## 内置受风角：c = 船首向·风去向（1 顺风、0 横风、-1 顶风）。横风约 0.62、顺风 1；离风源 63° 内（近迎风再往里）掉到 0.1 顶风停滞。
