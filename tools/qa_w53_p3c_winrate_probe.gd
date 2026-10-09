@@ -1,29 +1,49 @@
 extends SceneTree
-## lane-w53-p3c 三期开关胜率对比工具（headless，经 glock 跑）：二期「手感对比」同一口径——
-## 同 8 个种子、300 秒窗口（到限时两散）、敌将 live、士气裁决可早收，跑「三期开关全开」
-## （enemy_flood_fire、fire_attack_load）与「三期开关全关」各 N 场，每场打印收场与胜负，
-## 末行 WINRATE on=a/N off=b/N diff=±x.x pp。
+## lane-w53-p3c 三期开关胜率工具（headless，经 glock 跑）——p3b / p3c 两份旧工具合一份（p3b 那份删）：
+##   二期「手感对比」口径的骨架（同种子表、300 秒窗口到限时两散、敌将 live、士气裁决可早收），
+##   加 p3b 的物理帧泵 + 玩家驾驶（追最近敌船转舷、进 55° 舷弧放舷齐射）与同种子逐场对拍（on 跑完
+##   按同一种子复跑 off / 单开一项），没有玩家动手 24 种子根本打不完（双手离舵的场子多半拖到超时）。
 ##
-## 场子照 qa_w53_2_combat_probe 的 _battle 复刻（真 WorldMap 海战场 + pending_battle，泉州外海、
-## 福船 60 人对两艘快船——同二期 lane 量的那一仗）；敌将 live（不冻敌船 fire_timer、不接管旗舰航向），
-## 士气簿裁决到即早收（同二期口径）。每场 seed(sd) 后开战，WorldMap 自身的 randf 序按种子走。
+## 用法：godot --headless --path . -s res://tools/qa_w53_p3c_winrate_probe.gd -- \
+##         --n=8 --seeds=11,23,37,41,53,67,79,83 --on=flood,fire | --off --ship=fu_ship_medium --enemy=pirate_boat --count=2
+##   --on=LIST   逗号分隔单开几项：flood=enemy_flood_fire、fire=fire_attack_load（裸 --on 两个全开）
+##   --off       三期开关全关（与 --on 互斥；都缺 = 全开）；--on 与 --off 都给，后面到的盖前面的
+##   其余缺省：n=8（按 seeds 个数取小）、二期 8 种子、福船 60 人 vs 快船 ×2、morale 60、玩家驾驶
+##   开局落令「装填轮换两令」（进火攻档；--orders= 换令表、--hands-off 手离舵对照）
 ##
-## 用法：godot --headless --path . -s res://tools/qa_w53_p3c_winrate_probe.gd -- --n=8 --seeds=11,23,37,41,53,67,79,83
-##   --n 场数（缺省 8，与 seeds 个数不齐时按小者跑）；--seeds 逗号分隔种子表（缺省同二期 8 种子）。
-## 判词：末行 WINRATE … 恒打；工具侧自检（on/off 各跑足 N 场、无 hang）不过退 1。
-## 点：同一 sd 跑 on/off 难到逐场对上——产品里 PirateShip / DamageModel / CombatMorale 的 rng
-## 多是按 OS 时撒的，本 lane 已注射 sea_seed / 敌船 _rng / DamageModel rng / 挂件 rng，
-## 但 MeleeResolve 逐合 / gm / Calendar 微扰仍在控外。「同 8 个种子」按二期的口径是脚本走法
-## （同台戏 8 场 vs 8 场、胜率可对比），不是逐场 bit-exact 复现。两键是否接线三个月后 p3a 落
-## 地了主控拿它量差，跑法照旧——那时「开关开」敌船真会进水失火，差就是 p3a 的杀伤，测它
-## 到不到 5pp 公约。
+## 对阵（--ship + --enemy×--count + --power/--ppower/--crew/--morale/--orders/--hands-off 自定义）：
+##   现有对照  fu_ship_medium 60 人 vs pirate_boat ×2（同二期 lane 量的那一仗）
+##   逆风对照  fu_ship_medium 60 人 vs sea_falcon ×1、power 600 / player_power 300（敌血翻倍、水手上限 100，
+##             比快船 ×2 硬得多——--compare 的第二阵；两段对阵的 WINRATE 行分开打）
+##   --compare 自动跑「现有对照 + 逆风对照」两段；手动攒对阵就把 --enemy 写 sea_falcon 加 --power=600
+##
+## 场子照 qa_w53_2_combat_probe 的 _battle 复刻（真 WorldMap 海战场 + pending_battle，泉州外海）；
+## 敌将 live（不冻敌船 fire_timer、不接管旗舰航向），士气簿裁决到即早收（同二期口径）。
+## 随机源注射（sea_seed 私有流 + 敌船 _rng / 我船 DamageModel rng / 装填簿 ReloadAmmo rng /
+## 士气挂件 rng 按种子起）之后，每种开关配置各跑满 N 场无 hang、同种子复跑逐场结论一致
+## （bit-exact 到 overcome+胜负）自检过；MeleeResolve 逐合 / gm / Calendar 仍走 OS 时流的场子
+## 若跑出漂移，SELFCHECK 会红——红了重跑或换种子。
+## 判词：末行 WINRATE cfg=a/N …（逐配置一行）恒打；自检不过退 1。
 
 const TAG := "QA_W53_P3C_WINRATE"
 const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
+const _Panel := preload("res://scripts/ui/CombatOrdersPanel.gd")
 const KEY_A := "enemy_flood_fire"
 const KEY_B := "fire_attack_load"
 const LIMIT_S := 300.0
-const POLL_MS := 500
+## 一档的墙钟上限：同种子复跑 / 逆风阵拖满窗是常态，给两份余量；超了记 hang 判红不等死
+const WALL_LIMIT_S := LIMIT_S * 2.0
+## 敌船数量上限（同一场跑出 4 艘以上多半是 walrus 攒出来的）与对阵缺省
+const MAX_ENEMIES := 4
+
+## 两种对阵（--compare 的两段，也可 --matchup=pirates|falcon 单点一段）
+const MATCHUP_PIRATES := {"label": "现有对照：福船60人对快船×2", "power": 300.0, "ppower": 300.0,
+	"enemy": [{"type": "pirate_boat", "count": 2}]}
+const MATCHUP_FALCON := {"label": "逆风对照：福船60人对元军海鹘×1（power 600 敌血翻倍）", "power": 600.0, "ppower": 300.0,
+	"enemy": [{"type": "sea_falcon", "count": 1}]}
+
+## 开关配置：--on/--off 攒；key → 中文名只给打印用
+const CFG_NAMES := {KEY_A: "flood", KEY_B: "fire"}
 
 
 func _init() -> void:
@@ -31,7 +51,8 @@ func _init() -> void:
 
 
 func _args() -> Dictionary:
-	var out := {"n": 8, "seeds": [11, 23, 37, 41, 53, 67, 79, 83]}
+	var out := {"n": 8, "seeds": [11, 23, 37, 41, 53, 67, 79, 83], "cfgs": [], "matchups": [],
+		"ship": "fu_ship_medium", "crew": 60, "morale": 60, "drive": true, "orders": ["load", "load"]}
 	var rest := OS.get_cmdline_user_args()
 	for a in rest:
 		if a.begins_with("--n="):
@@ -42,45 +63,139 @@ func _args() -> Dictionary:
 				lst.append(int(t))
 			if not lst.is_empty():
 				out["seeds"] = lst
+		elif a == "--compare":
+			out["matchups"] = ["pirates", "falcon"]
+		elif a.begins_with("--matchup="):
+			var ms: Array = out["matchups"]
+			for t in str(a.trim_prefix("--matchup=")).split(",", false):
+				if not ms.has(t):
+					ms.append(t)
+		elif a.begins_with("--ship="):
+			out["ship"] = str(a.trim_prefix("--ship="))
+		elif a.begins_with("--enemy="):
+			if not out.has("_enemy_hand"):
+				out["_enemy_hand"] = []
+			(out["_enemy_hand"] as Array).append(str(a.trim_prefix("--enemy=")))
+		elif a.begins_with("--count="):
+			out["_count_wide"] = clampi(int(a.trim_prefix("--count=")), 1, MAX_ENEMIES)
+		elif a.begins_with("--power="):
+			out["_power_hand"] = maxf(1.0, float(a.trim_prefix("--power=")))
+		elif a.begins_with("--ppower="):
+			out["_ppower_hand"] = maxf(1.0, float(a.trim_prefix("--ppower=")))
+		elif a.begins_with("--crew="):
+			out["crew"] = maxi(1, int(a.trim_prefix("--crew=")))
+		elif a.begins_with("--morale="):
+			out["morale"] = clampi(int(a.trim_prefix("--morale=")), 1, 100)
+		elif a == "--hands-off":
+			out["drive"] = false
+		elif a.begins_with("--orders="):
+			out["orders"] = Array(str(a.trim_prefix("--orders=")).split(",", false))
+		elif a == "--off":
+			out["cfgs"].clear()
+			out["cfgs"].append({"id": "off", "keys": {}})
+		elif a.begins_with("--on"):
+			var keys := {}
+			if a.begins_with("--on="):
+				for t in str(a.trim_prefix("--on=")).split(",", false):
+					match t:
+						"flood", KEY_A:
+							keys[KEY_A] = true
+						"fire", KEY_B:
+							keys[KEY_B] = true
+			else:
+				keys = {KEY_A: true, KEY_B: true}
+			if (out["cfgs"] as Array).size() == 1 and String((out["cfgs"] as Array)[0].get("id", "")) == "off":
+				out["cfgs"].clear()
+			out["cfgs"].append({"id": _cfg_id(keys), "keys": keys})
+	# 缺省一段一档：--compare 起手前、--on/--off 都没给，跑全开 × 现有对照（同二期口径的读数面）
+	if (out["cfgs"] as Array).is_empty():
+		out["cfgs"].append({"id": "on", "keys": {KEY_A: true, KEY_B: true}})
+	if (out["matchups"] as Array).is_empty():
+		if out.has("_enemy_hand"):
+			out["matchups"] = [_hand_matchup(out)]
+		else:
+			out["matchups"] = ["pirates"]
 	out["n"] = mini(int(out["n"]), (out["seeds"] as Array).size())
 	return out
 
 
-## 一场：seed 后真起海战，hands-off 等到收战 / 玩家旗舰拆 / 墙钟与游戏时长双上界；
+## 手动对阵（--enemy 攒的）：type 逐项展开 count；power 缺省沿用现有对照 300/300
+static func _hand_matchup(a: Dictionary) -> Dictionary:
+	var types: Array = a.get("_enemy_hand", [])
+	var wide: int = int(a.get("_count_wide", 1))
+	var foes: Array = []
+	for t in types:
+		var left := MAX_ENEMIES
+		for e in foes:
+			left -= int((e as Dictionary).get("count", 1))
+		var n := clampi(wide, 1, maxi(1, left))
+		if n > 0:
+			foes.append({"type": String(t), "count": n})
+	return {"label": "手动对阵：%s %d人对 %s" % [String(a["ship"]), int(a["crew"]), str(foes)],
+		"power": float(a.get("_power_hand", 300.0)), "ppower": float(a.get("_ppower_hand", 300.0)),
+		"enemy": foes}
+
+
+## 配置 id：全开 = on、全关 = off、单开 = on-flood / on-fire（打印与 WINRATE 行用）
+static func _cfg_id(keys: Dictionary) -> String:
+	if bool(keys.get(KEY_A, false)) and bool(keys.get(KEY_B, false)):
+		return "on"
+	if not bool(keys.get(KEY_A, false)) and not bool(keys.get(KEY_B, false)):
+		return "off"
+	var bits: Array = []
+	for k in [KEY_A, KEY_B]:
+		if bool(keys.get(k, false)):
+			bits.append(String(CFG_NAMES[k]))
+	return "on-" + "-".join(bits)
+
+
+## 档位套路上开关：reset 后按 keys 置（缺键 = 关）
+static func _apply_cfg(keys: Dictionary) -> void:
+	_Switches.reset()
+	_Switches.set_on(KEY_A, bool(keys.get(KEY_A, false)))
+	_Switches.set_on(KEY_B, bool(keys.get(KEY_B, false)))
+
+
+## 一场：seed 后真起海战，玩家驾驶到收战 / 玩家旗舰拆 / 墙钟上界。
 ## 返回 {"overcome", "win", "wall_s", "tag"}
 ##   overcome = win / lose / flee（battle_finished 首参；超时未收 = "hang"）
-##   win      = strike / sunk / burned / boarded / 士气敌降敌破敌遁（fled 半赏不算胜）
-func _battle_one(fleet: Node, gm: Node, sd: int) -> Dictionary:
+##   win      = overcome=win / 士气敌降敌破敌遁 / 击沉受降焚沉 ≥ 1（fled 半赏不算胜）
+func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionary, drive: bool,
+		orders: Array, seed_tag: int) -> Dictionary:
 	var t0 := Time.get_ticks_msec()
 	# 钉死双随机源：
 	# ① seed(sd)：全局流用于 WorldMap._spawn_enemy（敌船角度 / 距 / 水手 / 士气的 randf_range）。
-	# ② pending_battle.sea_seed：SeaState 用 _rng 私有 RandomNumberGenerator，rng_seed=-1 时不吃
-	#    seed() 那个全局流——不注射它 8 个 sd 也复现不出（本 lane 实测同 seed 11 两场结论漂）。注射它，
-	#    同一 sea_seed 跑 on / off 同一场对得上。sea_seed 用 sd 不同段避免与全局流撞（sd + 7_000_000）。
-	var d: Dictionary = fleet.call("ship_def", "fu_ship_medium")
+	# ② pending_battle.sea_seed：SeaState 用私有 _rng 不吃全局流——不注射同 sd 也复现不出
+	#   （b048e297 实测同 seed 11 两场结论漂）。sea_seed 用 sd 错段避免与全局流撞（sd + 7_000_000）。
+	# 手动种子段 seed_tag（外部加段起一列独立随机，不撞种子表；本工具恒传 0）
+	var shift := int(seed_tag) * 1_000_003
+	var ship_id := String(mu.get("ship", "fu_ship_medium"))
+	var d: Dictionary = fleet.call("ship_def", ship_id)
 	var dur := float(d.get("durability", 300))
-	fleet.set("ships", [{"type": "fu_ship_medium", "name": "试船", "crew": 60, "sail_level": 1, "armor_level": 1,
-		"cargo": {}, "durability": dur, "max_durability": dur}])
-	fleet.set("morale", 60)
-	seed(sd)
-	gm.set("pending_battle", {"battle": true, "power": 300.0, "player_power": 300.0,
-		"enemy": [{"type": "pirate_boat", "count": 2}], "sea_name": "泉州外海",
-		"sea_seed": sd + 7_000_000, "source": {"scene": "qa_w53_p3c"}})
+	fleet.set("ships", [{"type": ship_id, "name": "试船", "crew": int(mu.get("crew", 60)),
+		"sail_level": 1, "armor_level": 1, "cargo": {}, "durability": dur, "max_durability": dur}])
+	fleet.set("morale", int(mu.get("morale", 60)))
+	seed(sd + shift)
+	gm.set("pending_battle", {"battle": true, "power": float(mu.get("power", 300.0)),
+		"player_power": float(mu.get("ppower", 300.0)),
+		"enemy": (mu.get("enemy", MATCHUP_PIRATES["enemy"]) as Array).duplicate(true), "sea_name": "泉州外海",
+		"sea_seed": sd + shift + 7_000_000, "source": {"scene": "qa_w53_p3c"}})
+	_apply_cfg(keys)
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
 	var rec: Array = []
 	wm.battle_finished.connect(func(o: String, data: Dictionary) -> void: rec.append([o, data.duplicate()]))
 	# 注射所有未 seed 的私有 rng（运行时节点成员，不改产品脚本）——要不然同 seed 两场照样漂：
-	#   PirateShip._rng        敌炮散布 / 命中手 / 跳帮判定
+	#   PirateShip._rng        敌炮散布 / 命中手 / 跳帮判定（_spawn_enemy 才能读到的成员）
 	#   Ship.damage_model.rng  命中落点 / 舱位 / 左侧右舷
 	#   CombatMorale 挂件 rng   我方溃逃甩脱 roll
+	#   （ReloadAmmo 装填簿 rng 在 own 有效后再注，见 _ready 那帧之后）
 	# SeaState 那一支已用 pending_battle.sea_seed 钉（WorldMap._setup_sea 转给它）。
-	# 注射只动运行时节点成员；本 lane 实测同 seed 11 连跑两遍曾得 win/flee、flee/lose 四个不同 outcome。
 	var foes := wm.get_children().filter(func(c): return String(c.name).begins_with("PirateShip") and not c.is_queued_for_deletion())
 	var foe_rng_idx := 0
 	for f in foes:
 		var r := RandomNumberGenerator.new()
-		r.seed = sd + 3_000_000 + foe_rng_idx * 13_579
+		r.seed = sd + shift + 3_000_000 + foe_rng_idx * 13_579
 		foe_rng_idx += 1
 		f.set("_rng", r)
 	var ship_node = wm.get("ship")
@@ -88,41 +203,87 @@ func _battle_one(fleet: Node, gm: Node, sd: int) -> Dictionary:
 		var dm = ship_node.call("get_damage_model") if ship_node.has_method("get_damage_model") else null
 		if dm != null:
 			var dr := RandomNumberGenerator.new()
-			dr.seed = sd + 5_000_000
+			dr.seed = sd + shift + 5_000_000
 			dm.set("rng", dr)
 	var morale_hook = wm.get("_morale")
 	if morale_hook != null:
 		var mr := RandomNumberGenerator.new()
-		mr.seed = sd + 6_000_000
+		mr.seed = sd + shift + 6_000_000
 		morale_hook.set("rng", mr)
-	# 士气裁决可早收（挂件 verdict 信号接到 _battle_exit，同二期）；双手离舵，玩家船不打一炮
+	# 士气裁决可早收（挂件 verdict 信号接到 _battle_exit，同二期）；玩家驾驶按 orders 开局落令
 	var own_freed := [false]
 	var own: Node = wm.get("ship")
 	if own != null:
 		own.tree_exited.connect(func() -> void: own_freed[0] = true)
 	for _i in 2:
 		await process_frame
+	# 装填簿（ReloadAmmo）：Ship._ready 里 battery = ReloadAmmo.for_ship(...) 内部 rng 自己 randomize()
+	# （走 OS 时流）——同种子两跑舷侧装填先后会漂，按种子注射钉回（同敌船 _rng 的路子）
+	if own != null:
+		var bat = own.get("battery")
+		if bat is Object and is_instance_valid(bat):
+			var br := RandomNumberGenerator.new()
+			br.seed = sd + shift + 4_000_000
+			(bat as Object).set("rng", br)
+	var panel: Node = null
+	for n in wm.get_children():
+		if n.is_in_group("nk1_combat_orders"):
+			panel = n
+	if drive and panel != null:
+		for o in orders:
+			panel.call("issue", String(o))
+	# 物理帧泵（p3b 的跑法）：一拍 30 帧 = 0.5 秒游戏时间，墙钟比 create_timer 实走快几十倍；
+	# 记录战斗经过秒按 WorldMap._battle_elapsed_s 实读，stuck 6000 帧不进秒数记 hang
+	var held := 0.0
+	var last_elapsed := -1.0
+	var stuck := 0
 	var wall := 0.0
-	var hangs := 0
 	while rec.is_empty() and not own_freed[0]:
-		await create_timer(float(POLL_MS) / 1000.0).timeout
+		for _i in 30:
+			await physics_frame
+			if not is_instance_valid(wm):
+				break
+			var el := float(wm.get("_battle_elapsed_s"))
+			if el > last_elapsed:
+				last_elapsed = el
+				held = el
+				stuck = 0
+			else:
+				stuck += 1
+			if not rec.is_empty() or own_freed[0] or held >= LIMIT_S or stuck > 6000:
+				break
 		wall = float(Time.get_ticks_msec() - t0) / 1000.0
-		if wall > LIMIT_S + 60.0 and float(wm.get("_battle_elapsed_s")) < 1.0:
-			hangs += 1  # 时限推进卡住：记一档但不死等
-		if wall > LIMIT_S + 180.0:
+		if not is_instance_valid(wm) or not rec.is_empty() or own_freed[0] \
+				or held >= LIMIT_S or stuck > 6000 or wall > WALL_LIMIT_S:
 			break
-		if not is_instance_valid(wm):
-			break
-	var out := {"overcome": "hang", "win": false, "wall_s": wall, "tag": ""}
+		# 玩家驾驶：追着最近敌船转舷放箭；冷却够、敌进 55° 舷弧就放（p3b 的拍法原样）
+		if drive and own != null and is_instance_valid(own) and float(own.get("fire_cooldown")) <= 0.0:
+			var foe: Node2D = null
+			var best := INF
+			for c in wm.get_children():
+				if String(c.name).begins_with("PirateShip") and float(c.get("hull_hp")) > 0.0:
+					var dd := (c as Node2D).global_position.distance_squared_to((own as Node2D).global_position)
+					if dd < best:
+						best = dd
+						foe = c
+			if foe != null:
+				var to: Vector2 = foe.global_position - (own as Node2D).global_position
+				var sb := Vector2.RIGHT.rotated((own as Node2D).global_rotation)
+				var side := 1 if to.dot(sb) >= 0.0 else -1
+				var off := absf(sb.angle_to(to))
+				if off < deg_to_rad(55.0):
+					own.call("_fire_broadside", side)
+				else:
+					# 把最近敌船转进舷弧（直接改角——脚本驾驶不走输入，产品里玩家靠 WASD 转头）
+					var want := to.angle() - (Vector2.RIGHT.angle() if side > 0 else Vector2.LEFT.angle())
+					(own as Node2D).rotation = want
+	var out := {"overcome": "hang", "win": false, "wall_s": wall, "tag": "", "held_s": held}
 	if not rec.is_empty():
 		out["overcome"] = str(rec[0][0])
 		var data: Dictionary = rec[0][1]
 		var verdict := str(data.get("morale_verdict", ""))
-		# 玩家胜 = 击沉 ≥ 1 艘 / 烧沉 ≥ 1 艘 / 夺船 ≥ 1 艘 / 敌全 投降/崩溃/溃走 收兵 或限期内敌船全沉 / 夺 / 遁：
-		# 敌船有一定数量击沉或投降（sunk/struck/burned/boarded ≥ 1）即计入。
-		# 「win」overcome + morale_verdict = enemy_fled / enemy_broken / enemy_struck 都算玩家胜——
-		# 士气簿管理方已下场裁过本队胜；「敌遁半赏」是 SeaChart 的经济注，不是判定框架的裁判口径（brief 跟你
-		# 的胜负是 overcome，不是 spoil）。
+		# 玩家胜 = overcome=win / 击沉 ≥ 1 艘 / 焚沉 ≥ 1 艘 / 夺船 / 敌 降幡或崩溃或全遁（士气簿已下场裁过本队胜）：
+		# 「敌遁半赏」是 SeaChart 的经济注，不是判定框架的裁判口径（brief 口径按 overcome/win 不按 spoil）。
 		var fates: Array = data.get("fates", [])
 		var sunk_n := 0
 		var struck_n := 0
@@ -138,7 +299,7 @@ func _battle_one(fleet: Node, gm: Node, sd: int) -> Dictionary:
 	if is_instance_valid(wm):
 		wm.set("resolved", true)  # 拆布景不再发 battle_finished
 		wm.queue_free()
-	fleet.set("morale", 60)
+	fleet.set("morale", int(mu.get("morale", 60)))
 	await process_frame
 	return out
 
@@ -154,20 +315,73 @@ func _run() -> void:
 	var a := _args()
 	var n: int = a["n"]
 	var seeds: Array = a["seeds"]
-	var rows: Dictionary = {"on": [], "off": []}
-	for mode in ["on", "off"]:
-		_Switches.reset()
-		_Switches.set_on(KEY_A, mode == "on")
-		_Switches.set_on(KEY_B, mode == "on")
-		for i in n:
-			var r := await _battle_one(fleet, gm, int(seeds[i]))
-			rows[mode].append(r)
-			print("%s 第 %d/%d 场 种子 %d：%s %s（%.0f 秒墙钟）%s" % [
-				mode, i + 1, n, int(seeds[i]), str(r["overcome"]),
-				"胜" if bool(r["win"]) else "负",
-				float(r["wall_s"]),
-				("・" + str(r["tag"])) if str(r["tag"]) != "" else ""])
-	# 还原战况
+	var fails := 0
+	var runs: Dictionary = {}  # cfg id → 各 seed 的 {"overcome","win"} 签名表（复跑自比用）
+	for mid in a["matchups"]:
+		var mu: Dictionary
+		match String(mid):
+			"pirates":
+				mu = MATCHUP_PIRATES.duplicate(true)
+			"falcon":
+				mu = MATCHUP_FALCON.duplicate(true)
+			_:
+				mu = (mid as Dictionary).duplicate(true) if mid is Dictionary else MATCHUP_PIRATES.duplicate(true)
+		mu["ship"] = String(a["ship"])
+		mu["crew"] = int(a["crew"])
+		mu["morale"] = int(a["morale"])
+		print("== 对阵：%s（我方 %s %d人 morale %d，power %.0f/%.0f，%s）" % [
+			String(mu.get("label", mid)), String(mu["ship"]), int(mu["crew"]), int(mu["morale"]),
+			float(mu.get("power", 300.0)), float(mu.get("ppower", 300.0)),
+			"玩家驾驶" if bool(a["drive"]) else "手离舵"])
+		for cfg in a["cfgs"]:
+			var cid := String((cfg as Dictionary)["id"])
+			var keys: Dictionary = (cfg as Dictionary)["keys"]
+			var rows: Array = []
+			for i in n:
+				var r: Dictionary = await _battle_one(fleet, gm, int(seeds[i]), mu, keys,
+					bool(a["drive"]), a["orders"], 0)
+				rows.append(r)
+				print("%s 第 %d/%d 场 种子 %d：%s %s（%.0f 秒墙钟 / %.0f 秒战斗）%s" % [
+					cid, i + 1, n, int(seeds[i]), str(r["overcome"]),
+					"胜" if bool(r["win"]) else "负",
+					float(r["wall_s"]), float(r["held_s"]),
+					("・" + str(r["tag"])) if str(r["tag"]) != "" else ""])
+			var won := 0
+			var hangs := 0
+			var sigs: Array = []
+			for i in rows.size():
+				var r: Dictionary = rows[i]
+				if bool(r["win"]):
+					won += 1
+				if str(r["overcome"]) == "hang":
+					hangs += 1
+				sigs.append([int(seeds[i]), str(r["overcome"]), bool(r["win"])])
+			print("%s on=%d/%d 收 %d 场（hang %d）" % [cid, won, n, n, hangs])
+			if hangs > 0:
+				fails += hangs
+			runs[cid] = sigs
+			# ── 同种子复跑自比（bit-exact 判决）：每个配置鼻子下跑第二遍，逐场 (overcome, win) 须一致 ──
+			var again: Array = []
+			for i in n:
+				var r2: Dictionary = await _battle_one(fleet, gm, int(seeds[i]), mu, keys,
+					bool(a["drive"]), a["orders"], 0)
+				again.append([int(seeds[i]), str(r2["overcome"]), bool(r2["win"])])
+			var drift := 0
+			for i in n:
+				if str(sigs[i][1]) != str(again[i][1]) or bool(sigs[i][2]) != bool(again[i][2]):
+					drift += 1
+					print("  漂移 %s 种子 %d：%s/%s → %s/%s" % [cid, int(seeds[i]),
+						str(sigs[i][1]), "胜" if bool(sigs[i][2]) else "负",
+						str(again[i][1]), "胜" if bool(again[i][2]) else "负"])
+			if drift > 0:
+				fails += drift
+			# 逐配置末行（多段对阵时每段都打——主控按行收数）
+			var sd_names := PackedStringArray()
+			for i in n:
+				sd_names.append(str(int(seeds[i])))
+			print("WINRATE %s@%s=%d/%d seeds=%s replay-drift=%d" % [
+				cid, String(mid), won, n, ",".join(sd_names), drift])
+	# 还原战况与开关
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
 	gm.set("pending_battle", saved["pb"])
@@ -176,33 +390,9 @@ func _run() -> void:
 	gs.set("fame", saved["fame"])
 	_Switches.reset()
 	await process_frame
-	var won := func(mode: String) -> int:
-		var c := 0
-		for r in rows[mode]:
-			if bool(r["win"]):
-				c += 1
-		return c
-	var a_won: int = won.call("on")
-	var b_won: int = won.call("off")
-	var diff := float(a_won - b_won) / float(n) * 100.0
-	print("WINRATE on=%d/%d off=%d/%d diff=%+.1f pp" % [a_won, n, b_won, n, diff])
-	# 工具侧自检（不判「两键无人接线」——那是主控侧在读数时做的）：
-	#   ① on/off 各跑足 N 场、② 每场结果都进了收战法式（win/lose/flee）或注 hang
-	#      （hang 世界：时限+180 秒都没收战——这不是稳态，记 fail 让人重跑）。
-	# 不再做「on/off 逐场相同」的判——产品里 PirateShip/Ship.DamageModel/CombatMorale 用 OS 时
-	# 撒 randomize() 的私有 rng（本 lane 注射了 sea_seed / 敌船 _rng / DamageModel / 挂件 rng 之后，
-	# Cannonball 命中点、MeleeResolve 逐合、gm/Calendar 微扰仍不全受控），同 seed 不复现是材料
-	# 本身的性相。两键是否接线，由主控在 p3a 落地后单独判——本工具只算胜率输出。
-	var hangs := 0
-	for mode in ["on", "off"]:
-		if (rows[mode] as Array).size() != n:
-			hangs += 1
-		for r in rows[mode]:
-			if str(r["overcome"]) == "hang":
-				hangs += 1
-	if hangs == 0:
-		print("SELFCHECK tool-integrity OK（on/off 各 %d 场、全收战未挂超时）" % n)
+	if fails == 0:
+		print("SELFCHECK %s OK（各档跑满 %d 场、无 hang、同种子复跑逐场一致）" % [TAG, n])
 		quit(0)
 		return
-	print("SELFCHECK tool-integrity FAIL（%d 场缺 / 挂起）" % hangs)
+	print("SELFCHECK %s FAIL（hang/漂移 共 %d 处）" % [TAG, fails])
 	quit(1)

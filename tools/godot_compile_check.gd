@@ -167,7 +167,6 @@ const SCRIPTS := [
 	"res://tools/qa_w53_9_chapter_card_probe.gd",  # lane w53-9 章节卡题记留读与一句一列探针（须带窗口）
 	"res://tools/qa_w53_9_port_banner_probe.gd",  # lane w53-9 抵港横幅各窗口比例都挂在港名匾下探针（以场景启动，见 SCENES）
 	"res://tools/qa_w53_p3b_firerot_probe.gd",  # lane w53-p3b 火攻回到装填轮换专项探针（fire_attack_load 开关两态、引火乘数上乘）
-	"res://tools/qa_w53_p3b_winrate_probe.gd",  # lane w53-p3b 火攻胜率对比工具（同 8 种子 × 300 秒窗口，对阵敌将 live）
 	# lane w53-15 战斗方案一、二期探针（敌情列 / 劝降挂敌船 / 砍钩 / 张湿毡 / 总管夷人）
 	"res://tools/qa_w53_15_intel_probe.gd", "res://tools/qa_w53_15_parley_probe.gd", "res://tools/qa_w53_15_cut_probe.gd",
 	"res://tools/qa_w53_15_wet_probe.gd", "res://tools/qa_w53_15_role_probe.gd", "res://tools/qa_w53_15_shipcard_probe.gd",
@@ -205,7 +204,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_p3c_ammo_low_probe.gd",  # lane w53-p3c 敌将弹药告急回归专项探针（三期开关两态）
 	"res://tools/qa_w53_p3c_intel_ff_probe.gd",  # lane w53-p3c 敌情列水火短注专项探针（鸭子型+布景+排版）
 	"res://tools/qa_w53_p3c_intel_ff_shot.gd",  # lane w53-p3c 敌情列水火短注 1280×720 截图（NK1_SHOT_DIR 指路）
-	"res://tools/qa_w53_p3c_winrate_probe.gd",  # lane w53-p3c 三期开关胜率对比工具（-- --n=8 --seeds=…）
+	"res://tools/qa_w53_p3c_winrate_probe.gd",  # lane w53-p3c 三期开关胜率工具（合并 p3b/p3c：--on/--off/--compare 两段对阵，同种子复跑自检）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
