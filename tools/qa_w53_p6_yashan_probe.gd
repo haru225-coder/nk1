@@ -295,10 +295,21 @@ func _sec_enemy_count_by_known() -> void:
 	var fire_b: int = YashanBattle.fire_ship_count(300.0, true)
 	_expect(fire_a > 0 and fire_b > 0, "两档都摆得下火船（借过船 %d 艘 / 没借过 %d 艘）" % [fire_b, fire_a])
 	_expect(fire_b <= fire_a, "借过船的档元军多一艘，火船的位子只减不增（%d → %d）" % [fire_a, fire_b])
-	var total_a := fire_a + _foe_planned(false)
-	var total_b := fire_b + _foe_planned(true)
+	# 同屏那一格数的是「玩家旗舰 + 元军 + 火船」：这一场护航不上阵，[旗舰 1] 是定数
+	var total_a := 1 + fire_a + _foe_planned(false)
+	var total_b := 1 + fire_b + _foe_planned(true)
 	_expect(total_a <= YashanBattle.SCREEN_CAP and total_b <= YashanBattle.SCREEN_CAP,
-		"两档同屏（元军 + 火船）都不超 %d（%d / %d）" % [YashanBattle.SCREEN_CAP, total_a, total_b])
+		"两档同屏（旗舰 + 元军 + 火船）都不超 %d（%d / %d）" % [YashanBattle.SCREEN_CAP, total_a, total_b])
+	_expect(total_b == YashanBattle.SCREEN_CAP,
+		"借过船的档正好压在上限上（旗舰 1 + 元军 %d + 火船 %d = %d）" % [
+			_foe_planned(true), fire_b, total_b])
+	# 崖山这一场护航不上阵（主控 2026-10-16 协调：escort 那一路会让至多 3 艘护航上阵，
+	# 两路合并后旗舰1+护航3+元军3+火船 会超方案 §十一 的 6–8；崖山自己定口径——张世杰的船阵里
+	# 只有你这一条船冲，护航留在外围）
+	var pb_n: Dictionary = YashanBattle.setup(300.0, true)
+	_expect(not YashanBattle.escort_deploys(pb_n), "崖山这一场护航不上阵（no_escort 键已置）")
+	_expect(int(pb_n.get(YashanBattle.NO_ESCORT_KEY, 0)) == 1,
+		"pending_battle 带 no_escort=true（护航那一路读它）")
 
 
 ## 这一档元军船阵预设几艘（同 YashanBattle._enemy_list 的条数）

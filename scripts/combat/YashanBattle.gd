@@ -47,11 +47,21 @@ const FIRE_DIST_MIN := 210.0
 const FIRE_DIST_MAX := 430.0
 ## 火船横着摊开的间距（px）：左中右三档各差这么多——几艘不叠在一条线上，玩家有缝可找
 const FIRE_SPREAD_PX := 150.0
-## 火船：本场放几艘、顺风漂多快（步/秒，× 8 = px/s；比玩家船速慢，追得上也躲得开）
-const FIRE_SHIP_COUNT := 5
+## 火船：本场放几艘、顺风漂多快（步/秒，× 8 = px/s；比玩家船速慢，追得上也躲得开）。
+## 几艘这个数是「同屏船数」那一格反推出来的（见 SCREEN_CAP 的头注）：元军 3 + 火船 4 = 7，
+## 再加玩家旗舰这一条正好 8 艘——这一场护航不上阵，[旗舰 1] 这一格就是定数。
+const FIRE_SHIP_COUNT := 4
 const FIRE_SHIP_DRIFT_BUS := 2.6
-## 同屏船数上限（方案 §十一「第六期最多同屏 6–8 艘」）：元军三艘 + 火船，合计压在这个数里
+## 同屏船数上限（方案 §十一「第六期最多同屏 6–8 艘」）。
+## 崖山这一场的口径（定这一场自己的规矩，写死在这里，合并时主控照这个核）：
+##   **护航不上阵**——张世杰的船阵里只有你这一条船冲，旗舰以外的船留在外围（与崖山卡上
+##   「把粮与硫黄交上去，船留在外围」那扇门同一个意思）。所以这一场同屏 = [玩家旗舰 1]
+##   + 元军船阵（至多 3）+ 火船（至多 SCREEN_CAP − 1 − 元军）。pending_battle 里带
+##   NO_ESCORT_KEY = true，护航那一路读到就不放船上阵（EscortWing 不存在时这一格无副作用）。
+## 方案 §十一 的 6–8 艘是本场上限；崖山这一场落 8。
 const SCREEN_CAP := 8
+## pending_battle 里给护航那一路读的键：true = 这一场护航不上阵（崖山突围专用）
+const NO_ESCORT_KEY := "no_escort"
 ## 碰上点火的判距（px）：两条船挨到舷贴舷才算碰（船身半长 122 上下，取 150 是舷边擦着的量）
 const IGNITE_DIST := 150.0
 ## 火船点着玩家以后自己了账：焚毁（同 FloodFire 的艏部满火）
@@ -84,9 +94,17 @@ static func setup(p_player_power: float, p_known_here: bool) -> Dictionary:
 		"sea_name": "崖山港湾",
 		"source": {"scene": "Main", "event": SOURCE, "yashan": true},
 		"sea_state": sea_state(),
+		# 护航不上阵（见 SCREEN_CAP 头注）：护航那一路读到这枚键就不放船；键在、值 true 才算数
+		NO_ESCORT_KEY: true,
 		"yashan": {"fire_ships": fire_n, "escape_px": ESCAPE_PX, "limit_s": BATTLE_LIMIT_S,
 			"spawn_min": SPAWN_DIST_MIN, "spawn_max": SPAWN_DIST_MAX},
 	}
+
+
+## 这一场要不要护航上阵（护航 lane 的 EscortWing 读它；本件只给判据，不碰那边的代码）。
+## 崖山突围固定 false：张世杰的船阵里只有你这一条船冲。
+static func escort_deploys(pb: Dictionary) -> bool:
+	return not bool(pb.get(NO_ESCORT_KEY, false))
 
 
 ## 本场海况（照 data/combat_sea_state.json 的键名写；WorldMap 的 _setup_sea 与 SeaState 都按这些键读）：
@@ -112,11 +130,12 @@ static func enabled() -> bool:
 	return _Switches.on("yashan_breakout")
 
 
-## 火船放不放（第二个开关），并压同屏船数上限：元军几艘先占，余下的位子给火船
+## 火船放不放（第二个开关），并压同屏船数上限：玩家旗舰占一格、元军几艘再占，余下的位子给火船
+## （护航这一场不上阵，不占格子——见 SCREEN_CAP 头注）
 static func fire_ship_count(p_player_power: float, p_known_here: bool) -> int:
 	if not _Switches.on("yashan_breakout") or not _Switches.on("yashan_fire_ship"):
 		return 0
-	return mini(FIRE_SHIP_COUNT, maxi(0, SCREEN_CAP - _enemy_count(p_known_here)))
+	return mini(FIRE_SHIP_COUNT, maxi(0, SCREEN_CAP - 1 - _enemy_count(p_known_here)))
 
 
 ## 元军船阵：泉州借过船的档（少保记着那一位）多给一艘快船——有人认得你，追得也紧些。

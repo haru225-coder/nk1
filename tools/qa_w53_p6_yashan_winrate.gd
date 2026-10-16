@@ -22,7 +22,10 @@ extends SceneTree
 ##   这一路是脚本驾驶的下限：真人玩家看得更早、让得更准，冲出率只会更高。
 
 const TAG := "QA_W53_P6_YASHAN_WINRATE"
-const LIMIT_S := 260.0            # 墙钟上限：一场 150 秒的时限 + 装载余量
+const LIMIT_S := 260.0            # 一场的墙钟上限：本场时限 150 秒 + 装载余量；超了就记 hang 换个种子
+## 物理帧率：探针里调高到 120（Engine.physics_ticks_per_second 是运行期的量，不改产品）
+## ——逐物理帧驾驶，帧率高一场跑得动得快，同一场的秒数不变（时限量的是战场经过秒数）
+const PROBE_TPS := 120
 const DEFAULT_SEEDS := [11, 23, 37, 41, 53, 67, 79, 83, 97, 101, 113, 127,
 	139, 149, 157, 163, 173, 181, 191, 199, 211, 223, 227, 233]
 
@@ -44,6 +47,7 @@ func _init() -> void:
 
 
 func _run() -> void:
+	Engine.physics_ticks_per_second = PROBE_TPS
 	_gs = root.get_node("GameState")
 	_cal = root.get_node("Calendar")
 	_fleet = root.get_node("Fleet")

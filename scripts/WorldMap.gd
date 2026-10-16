@@ -854,6 +854,7 @@ func _setup_combat(pb: Dictionary) -> void:
 	# 并在雾里顺风摆下火船。寻常海战走不到这一支（is_yashan_battle 为假），场次与数值一个字不动。
 	if is_yashan_battle(pb):
 		_yashan_begin(pb)
+		_yashan_hold_escorts()
 	if is_instance_valid(ship):
 		_CombatFx.dress_ship(ship, _wind_to() * clampf(_wind_speed() / 150.0, 0.0, 1.0))
 	weather_status.text = "海战　%s" % _sea.current_desc()
@@ -1663,6 +1664,38 @@ func escort_prize(enemy: Node2D) -> String:
 #       火船挨到玩家船就点火，点过的不再点。
 #   三、开战之后：海面按雾压一层灰（港湾的雾；寻常海战照旧固定晴，这一路只在崖山这一场走）。
 #   四、收战那一拍：把冲出 / 没冲出的结果写进 GameState 的两枚旗（Main 收战时读）。
+
+## 崖山这一场护航不上阵（口径见 YashanBattle.SCREEN_CAP 头注：张世杰的船阵里只有你这一条船冲，
+## 同屏 = 旗舰 1 + 元军至多 3 + 火船 4 = 8）。这里**不写死护航那边的东西**，只做两件防御的事：
+##   ① 本场已经是崖山（is_yashan_battle）时，若场景里已有护航船节点（EscortWing 那一路摆的），
+##      把它们撤下来——两路谁先谁后都不打架；
+##   ② 交给护航那一路的判据是 pending_battle.no_escort（YashanBattle.escort_deploys 读它），
+##      那边的代码按那枚键决定放不放船。EscortWing 不在仓里（合并前）时本函数是空转。
+## 按名字前缀 / 元数据 / 组名三个口径都试一遍：护航那一路摆的船认得出就撤得掉；
+## 三个都不中就是寻常敌船或本场自己的火船（FireShip_ 前缀），一个不动。
+func _yashan_hold_escorts() -> void:
+	var keep: Array = []
+	for c in get_children():
+		if c is Node2D and _is_escort_node(c):
+			keep.append(c)
+	for c in keep:
+		c.queue_free()
+	if not keep.is_empty():
+		_show_combat_notice("外围的船留在港外，这一趟只有你这一条船出去")
+
+
+## 是不是护航船节点（护航 lane 的 EscortWing 摆出来的）
+func _is_escort_node(n: Node) -> bool:
+	if n == null or not is_instance_valid(n):
+		return false
+	if String(n.name).begins_with("Escort"):
+		return true
+	if n.has_meta(&"nk1_escort_ship") or n.has_meta(&"escort_ship"):
+		return true
+	if n.is_in_group("nk1_escort_ships") or n.is_in_group("nk1_escort"):
+		return true
+	return false
+
 
 ## 本场是不是崖山突围（_ready 里按 pending_battle 认一次，逐帧只读这个布尔）
 var _yashan_on := false

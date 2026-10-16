@@ -5213,6 +5213,10 @@ func _yashan_breakout(p_known_here: bool) -> void:
 ## outcome 是 WorldMap 发的那一族（win / lose / flee / disengaged），data 是它的收战账。
 func _on_yashan_battle(outcome: String, data: Dictionary) -> void:
 	GameManager.pending_battle = {}
+	# 海战场自己已 queue_free；把开打时收起的本页显回来（不然结局册页背后是一片空）
+	for c in get_children():
+		if c is CanvasItem:
+			c.visible = true
 	var out := YashanBattle.broke_out(outcome, data)
 	# 没冲出来的账（船被打残、烧了半条）：照旧法记一笔折损——货抛一半、船队掉耐久。
 	# 冲出来了就只记损伤（WorldMap 收战已按这一场算过 player_damage 并落进舰队账）
