@@ -2,7 +2,8 @@ extends SceneTree
 ## lane w53-p6-escort 护航船上阵与三道将令专项探针（headless，经 glock 跑；真 WorldMap 海战场 + pending_battle，泉州外海）。
 ##   godot --headless --path . -s res://tools/qa_w53_p6_escort_probe.gd
 ## 一段钉一条、回退即红：
-##   一、上阵船数：舰队旗舰以外能上阵的船（船体在、有人）至多三艘，旗舰 + 护航 + 敌船同屏不过八艘；护航是 EscortShip_ 前缀、
+##   一、上阵船数：舰队旗舰以外能上阵的船（船体在、有人）至多三艘，旗舰 + 护航 + 敌船 + 火船同屏不过八艘（火船按
+##       pending_battle.yashan.fire_ships 数）、崖山那一场的 no_escort 一艘不上；护航是 EscortShip_ 前缀、
 ##       进 nk1_escort_ships 不进 nk1_enemy_ships（WorldMap 不把它数成敌船）；船体、人手、船名照 Fleet 那一格，素帆，风读旗舰。
 ##   二、三道将令：布置期护航跟站位、签亮，过了 ORDER_WINDOW_S 照列队（timeout）、下了就定不再改；键盘 9、鼠标点签、触屏点签
 ##       各下一道；曳敌——近到 LURE_PX 那艘敌船改打护航、护航沉了它当即回头找旗舰、_pursuit 不算它；夺舱——待命装填慢 1.25 倍，
@@ -81,16 +82,18 @@ func _mk(t: String, nm: String, crew: int, cargo := {}) -> Dictionary:
 		"durability": dur, "max_durability": dur}
 
 
-## 真起一场：Fleet 换成 ships、pending_battle 写敌阵，挂 WorldMap；士气簿裁决不接（探针自己收战，布景不被半路收走）
-func _stage(ships: Array, enemy: Array, ppower := 1000.0, power := 400.0) -> Node:
+## 真起一场：Fleet 换成 ships、pending_battle 写敌阵（extra 并进 pending_battle），挂 WorldMap；士气簿裁决不接（探针自己收战，布景不被半路收走）
+func _stage(ships: Array, enemy: Array, ppower := 1000.0, power := 400.0, extra := {}) -> Node:
 	_fleet.set("ships", ships)
 	_fleet.set("morale", 60)
 	_fleet.set("escorts_in_battle", [])
 	root.get_node("GameState").set("martial", 50)
 	_seed += 1
 	seed(_seed)
-	_gm.set("pending_battle", {"battle": true, "power": power, "player_power": ppower, "enemy": enemy,
-		"sea_name": "泉州外海", "sea_seed": 7_000_000 + _seed, "source": {"scene": "qa_w53_p6_escort"}})
+	var pb := {"battle": true, "power": power, "player_power": ppower, "enemy": enemy,
+		"sea_name": "泉州外海", "sea_seed": 7_000_000 + _seed, "source": {"scene": "qa_w53_p6_escort"}}
+	pb.merge(extra, true)
+	_gm.set("pending_battle", pb)
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
 	seed(_seed)
@@ -208,6 +211,18 @@ func _sec_deploy() -> void:
 		_check(n_esc == int(case[1]) and 1 + n_esc + n_foe <= _Wing.MAX_ON_FIELD,
 			"敌船 %d 艘：上阵 %d 艘（得 %d），同屏 %d 艘 ≤ %d" % [int(case[0]), int(case[1]), n_esc, 1 + n_esc + n_foe, _Wing.MAX_ON_FIELD])
 		await _teardown(wm)
+
+	# 火船也占同屏格（pending_battle.yashan.fire_ships，崖山那一场的写法）：敌两艘 + 火船四艘，旗舰外只剩一格
+	wm = await _stage([_mk("fu_ship_medium", "旗舰", 60), _mk("keel_boat", "安济", 30), _mk("fu_ship_medium", "通济", 40),
+		_mk("canton_ship", "利涉", 50)], [{"type": "pirate_boat", "count": 2}], 1000.0, 400.0, {"yashan": {"fire_ships": 4}})
+	_check(_escorts(wm).size() == 1, "敌两艘 + 火船四艘：护航只上一艘（1 + 1 + 2 + 4 = 8，得 %d）" % _escorts(wm).size())
+	await _teardown(wm)
+	# 崖山突围那一场写 no_escort：护航一艘不上、不登记
+	wm = await _stage([_mk("fu_ship_medium", "旗舰", 60), _mk("keel_boat", "安济", 30)], [{"type": "pirate_boat", "count": 1}],
+		1000.0, 400.0, {"no_escort": true})
+	_check(_Wing.of(wm) == null and _escorts(wm).is_empty() and (_fleet.get("escorts_in_battle") as Array).is_empty() \
+		and int(_fleet.call("battle_crew")) == 90, "pending_battle.no_escort：护航不上阵、不登记，白刃照全队 90 人")
+	await _teardown(wm)
 
 	var wreck := _mk("keel_boat", "安济", 30)
 	wreck["durability"] = 0.0

@@ -19,6 +19,11 @@ extends Node2D
 ##   · 沉了 / 被夺的护航收战时（WorldMap._battle_exit → settle）从 Fleet 摘掉：船上的人并进 data.losses 的水手数，舱货随船没了，
 ##     另记 data.escort（不算「颠落舱面货」）；SeaChart 只照 data.escort 写一句札记（settle_note），不再动 Fleet；
 ##   · 旗舰沉了照旧收战（lose{sunk}），SeaChart 13c 把沉船移出、首艘耐久 > 0 的船接任——沉了的护航此时已摘掉，接任的必是还浮着的那艘。
+## 同屏船数（MAX_ON_FIELD = 8，方案 §十一「第六期最多同屏 6–8 艘」）的数法：
+##   旗舰 1 + 护航（EscortShip_）+ 敌船（pending_battle.enemy 各条 count 之和，刷出来是 PirateShip_）
+##   + 火船（pending_battle.yashan.fire_ships，崖山那一场刷出来是 FireShips 下的 FireShip_）≤ 8；
+##   护航上阵艘数 = min(MAX_ESCORTS, 8 − 1 − 敌船 − 火船, 能上阵的船)，算出来 ≤ 0 就一艘不刷。
+##   pending_battle.no_escort == true（崖山突围那一场写，YashanBattle.NO_ESCORT_KEY）：护航不上阵，旗舰以外的船留在外围。
 ## 关 escort_battle：deploy 返回 null，一艘不刷，各处接头全走旧路；关 escort_orders：不出将令签，护航照列队。
 ## 随机：只掷全局流（randf / randi），探针 / 胜率工具 seed() 盖得住。
 
@@ -32,8 +37,10 @@ const PIRATE_SCENE := "res://scenes/PirateShip.tscn"
 const NODE_NAME := "EscortWing"
 const SHIP_PREFIX := "EscortShip_"
 const MAX_ESCORTS := 3
-## 同屏船数上限（旗舰 + 护航 + 敌船；方案 §十一「第六期最多同屏 6–8 艘船」）
+## 同屏船数上限（旗舰 + 护航 + 敌船 + 火船；数法见头注）
 const MAX_ON_FIELD := 8
+## pending_battle 里「这一场护航不上阵」的键（崖山突围写，同 YashanBattle.NO_ESCORT_KEY；本件不 preload 那边，键名照抄）
+const NO_ESCORT_KEY := "no_escort"
 ## 护航一舷几门：同 WorldMap.COMBAT_CANNON_CAP（敌船封顶 2，护航同一把尺）；没有炮位的小船也有弓弩手，放一发
 const CANNON_CAP := 2
 ## 开局不开炮的秒数：同 WorldMap.COMBAT_FIRE_DELAY
@@ -103,15 +110,14 @@ static func of(w: Node) -> Node2D:
 	return n as Node2D if n != null and not n.is_queued_for_deletion() else null
 
 
-## 开战（WorldMap._setup_combat，刷敌船之前）：开关开、舰队有能上阵的船就刷一翼护航，返回这一翼；否则 null（旧玩法）
+## 开战（WorldMap._setup_combat，刷敌船之前）：开关开、这一场许护航上阵（no_escort 不为真）、舰队有能上阵的船、
+## 同屏还有空位（数法见头注）就刷一翼护航，返回这一翼；否则 null（旧玩法）
 static func deploy(w: Node2D, pb: Dictionary) -> Node2D:
 	if w == null or not _Switches.on("escort_battle") or not bool(pb.get("battle", false)):
 		return null
-	var enemy_n := 0
-	for e in pb.get("enemy", []):
-		if e is Dictionary:
-			enemy_n += maxi(0, int((e as Dictionary).get("count", 1)))
-	var picks := candidates(enemy_n)
+	if bool(pb.get(NO_ESCORT_KEY, false)):
+		return null
+	var picks := candidates(hulls_against(pb))
 	if picks.is_empty():
 		return null
 	var wing := new()
@@ -122,7 +128,19 @@ static func deploy(w: Node2D, pb: Dictionary) -> Node2D:
 	return wing
 
 
-## 能上阵的船：Fleet.ships 第二艘起按序取船体还在、船上有人的，至多 MAX_ESCORTS 艘，且旗舰 + 敌船 + 护航不过 MAX_ON_FIELD 艘
+## 这一场旗舰对面要占的同屏格数：敌船（pending_battle.enemy 各条 count 之和）+ 火船（pending_battle.yashan.fire_ships）
+static func hulls_against(pb: Dictionary) -> int:
+	var n := 0
+	for e in pb.get("enemy", []):
+		if e is Dictionary:
+			n += maxi(0, int((e as Dictionary).get("count", 1)))
+	var ys = pb.get("yashan", {})
+	if ys is Dictionary:
+		n += maxi(0, int((ys as Dictionary).get("fire_ships", 0)))
+	return n
+
+
+## 能上阵的船：Fleet.ships 第二艘起按序取船体还在、船上有人的，至多 MAX_ESCORTS 艘，且旗舰 + 对面（敌船 + 火船）+ 护航不过 MAX_ON_FIELD 艘
 static func candidates(enemy_n: int) -> Array:
 	var room := mini(MAX_ESCORTS, MAX_ON_FIELD - 1 - maxi(0, enemy_n))
 	var out: Array = []
