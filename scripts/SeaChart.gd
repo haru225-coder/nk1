@@ -2387,8 +2387,10 @@ func last_landing_report() -> Dictionary:
 
 ## 剿寨那一行落账：钱 / 名声 / 人手折损 / 士气 / 搬回舱的货，逐样真动全局，注记句缀进 notes（同一行札记）。
 ## 胜：寨里的钱掷一次进钱匣、寨里的老实货按上限搬进舱（装不下的留在岸上）、名声与士气各加一笔。
-## 败：下船的 %d 人折 LOSE_LOSS_RATE 一成半（Fleet.lose_crew_random 跨船摊扣、每船至少留一人）、士气掉一笔。
+## 败：下船的人折一成半（LOSE_LOSS_RATE；Fleet.lose_crew_random 跨船摊扣、每船至少留一人）、士气掉一笔。
 ## 落账次序照 w53-p4-after 那一套（先钱后名声、先名声后折兵），与战后收拾卡其余各行同一路。
+## 札记一句：胜「寨里的人没撑住，寨子烧了。搜出 N 钱，米粮 12 件、海盐 6 件、鹿皮 2 件搬回舱里。名声加 3。」；
+## 败「寨门没打开，下船的人退回船上。折了 N 人。名声加 1。」——钱与货各说一遍，不重话。
 func _landing_settle(res: Dictionary, notes: PackedStringArray) -> void:
 	var won := bool(res.get("won", false))
 	if int(res.get("money", 0)) > 0:
@@ -2408,14 +2410,15 @@ func _landing_settle(res: Dictionary, notes: PackedStringArray) -> void:
 	var loaded := _landing_load(cargo)
 	var line := _Landing.note_of(res)
 	if won:
-		line += "你点了点：钱 %d，寨里那几样东西也搬回舱里。" % int(res.get("money", 0))
+		line += "搜出 %d 钱" % int(res.get("money", 0))
 		var cnote := _Landing.cargo_note(loaded, Callable(GameManager, "get_good_name"))
 		if cnote != "":
-			line += cnote
+			line += "，%s搬回舱里" % cnote
+		line += "。"
 		var left := _Landing.cargo_units(cargo) - _Landing.cargo_units(loaded)
 		if left > 0:
 			line += "舱里塞不下，%d 件留在岸上。" % left
-	else:
+	elif crew_lost > 0:
 		line += "折了 %d 人。" % crew_lost
 	line += fame_note
 	notes.append(line)

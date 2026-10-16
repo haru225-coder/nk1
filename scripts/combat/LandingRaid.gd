@@ -25,10 +25,9 @@ class_name LandingRaid
 ## 剩下的守船（寨是海寇的窝，不是空场）。
 const LAND_MAX := 30
 ## 寨中守军骰：下限 / 上限。均值 36.5 —— 与守城那一路同一种接战、同一个战力刻度（人 × 系
-## 数），只是寨里的守军比囊山下的元军少得多。量出来的胜率（探针固定种子 1..200，各档 200 次）：
-##   小艍 15 人（战力 13.2）一成二；客舟 40 人（26.4）三成一；福船（中）50 人（30.4）三成八；
-##   广船 90 人（34.5）四成七；福船（大）110 人（40.3）五成四。
-## 十来人的小艍来剿寨是送人，满编大船也只有五成半——两头都留了余地，剿寨不是稳赚的买卖。
+## 数），只是寨里的守军比囊山下的元军少得多。五档船的胜率由 qa_w53_p6_landing_probe 第四节量
+## （固定种子 1..200，各档 200 次）：十来人的小艍一成上下，满编福船（大）五成多——小艍来剿寨是
+## 送人，满编大船也没把握，两头都留了余地，剿寨不是稳赚的买卖。
 const RAID_LO := 5.0
 const RAID_HI := 68.0
 
@@ -41,9 +40,9 @@ const WIN_FAME := 3
 const WIN_MORALE := 6
 ## 胜：寨里搬回舱的东西 {货, 件数}——粮（寨子备的）、盐、鹿皮，都是海寇抢来的老实货（不是违禁：
 ## 搬违禁货回港还要吃查扣，与「剿寨」这个由头不搭；且违禁货卖钱多变摇钱树）。三样面值合计
-## 236 钱（米 8 + 盐 10 + 鹿皮 40 各按 base_value），加钱 150 上下，一胜实得约 386——一次剿寨
-## 的期望净收益量出来是 34～201 钱（小艍到大船，见 qa_w53_p6_landing_probe 第七节），
-## 对比 泉州→澎湖 运一趟福建瓷 ×16 挣 1602（simulate_run 的委办那一段口径）：剿寨远谈不上摇钱树。
+## 236 钱（米 12×8 + 盐 6×10 + 鹿皮 2×40，各按 base_value），加钱 150 上下，一胜实得约 386。
+## 一次剿寨的期望净收益（胜率 × 386 − 败率 × 折人 × 船屋添人价 20）见 qa_w53_p6_landing_probe 第十节，
+## 对照 simulate_run 开局一段「小艍半舱最佳前五笔生意净赚 1076～1191」：剿寨远谈不上摇钱树。
 ## 舱装不下就少装（件数按 Fleet.add_cargo 的自动挑船口径逐件试装，装下的记在 loaded）。
 const WIN_CARGO := [
 	{"good": "grain", "qty": 12},
@@ -65,10 +64,11 @@ const LOSE_FAME := 1
 const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
 const _Siege := preload("res://scripts/combat/SiegeMelee.gd")
 
-## 海寇寨只在这几个宋土沿海港的岸上（异国港 hakata / kagoshima / jeju / champa 没有宋土海寇寨）。
-## 与 Crew.FOREIGN_PORTS 反向同义：值列在这里是为了让「哪儿能剿」一眼看得见。
+## 宋土沿海的九港（ports.json 里宋境的港，澎湖属泉州晋江县）：船停在这几港外才挂剿寨。
+## 异国港（博多唐房 / 萨摩 / 耽罗 / 占城）不算；南岛海道北口（ryukyu）在流求海面北缘，不是宋土，也不算——
+## 它不在 Crew.FOREIGN_PORTS 里（通事那一套不当它是异国），所以这里不拿 FOREIGN_PORTS 反推，逐港列明。
 const SONG_SHORE := ["xinghua", "xinghua_harbor", "quanzhou", "fuzhou", "zhangzhou", "wenzhou",
-	"penghu", "ryukyu", "mingzhou", "guangzhou"]
+	"penghu", "mingzhou", "guangzhou"]
 
 
 # ── 入口判定 ──────────────────────────────────────────
@@ -189,8 +189,8 @@ static func _loot_units() -> Dictionary:
 	return out
 
 
-## 注记句（胜 / 败两路；调用方缀进札记——剿寨那一笔写在 gale / 天晚之下、钱账之前）。
-## 货名在调用方那边补（本件不读 GameManager，纯静态；见 SeaChart._landing_note）。
+## 注记句的头一截（胜 / 败两路；收队、没人下船时就是 layout 写的那一句）。钱数、货、折人、名声由
+## 调用方照真落的账接在后面（见 SeaChart._landing_settle）——这里不写数，免得与真落的数两说。
 static func note_of(res: Dictionary) -> String:
 	if not bool(res.get("ok", false)):
 		return ""
@@ -198,21 +198,20 @@ static func note_of(res: Dictionary) -> String:
 	if landing <= 0:
 		return str(res.get("note", ""))
 	if bool(res.get("won", false)):
-		return "寨子里的人没撑住，你放人把囤的东西搬上船。"
-	return "寨门没打开，下船的 %d 人折了一成半，退回船上。" % landing
+		return "寨里的人没撑住，寨子烧了。"
+	return "寨门没打开，下船的人退回船上。"
 
 
-## 胜局搬回舱的货名与件数串（调用方拼注记用；本件不认货名，只给账）。cargo 形同 layout 的 out.cargo。
+## 胜局真装进舱的货：「米粮 12 件、海盐 6 件、鹿皮 2 件」（调用方接「搬回舱里」；本件不认货名，name_of 给）。
+## cargo 形同 layout 的 out.cargo；一件都没装下返回 ""。
 static func cargo_note(cargo: Dictionary, name_of: Callable) -> String:
 	var parts: PackedStringArray = []
 	for gid in cargo.keys():
 		var qty := int(cargo[gid])
 		if qty <= 0:
 			continue
-		parts.append("%s %d" % [str(name_of.call(str(gid))), qty])
-	if parts.is_empty():
-		return ""
-	return "寨里的" + "、".join(parts) + "搬回舱里。"
+		parts.append("%s %d 件" % [str(name_of.call(str(gid))), qty])
+	return "、".join(parts)
 
 
 ## 胜局搬回的货总件数（探针印数 / 期望收益用）

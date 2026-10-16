@@ -3,7 +3,8 @@ extends SceneTree
 ## 一条一节、回退即红）：
 ##   一、入口出现的条件（开关 landing_raid）：要四样齐——胜局 + 敌是海寇（source.event=="pirate"）+
 ##       船在宋土沿海 + 开关开。缺一样都不挂那一行：败局不挂、元军哨船（yuan_patrol）不挂、
-##       拦港哨船（blockade）不挂、异国港（博多 / 萨摩 / 耽罗 / 占城）岸外不挂；外海无港不挂。
+##       拦港哨船（blockade）不挂、异国港（博多 / 萨摩 / 耽罗 / 占城）与流求海面（南岛海道北口）岸外不挂；
+##       外海无港不挂。
 ##   二、登岸人数与战力：水手数封顶 LandingRaid.LAND_MAX（30）；战力 = 下船人数 × 将领系数 ×
 ##       船上士气系数——与守城那一路（SiegeMelee.raid_power）同一个式子，同一组入参逐位相等。
 ##   三、骰子借的是守城那一路：LandingRaid.roll 与 SiegeMelee.clash(power, RAID_LO, RAID_HI, 1.0)
@@ -17,12 +18,14 @@ extends SceneTree
 ##       钱不动、舱货不动。
 ##   七、收队回船 = 什么都不动（选了 hold 那一项）：钱 / 名声 / 士气 / 水手 / 舱货逐样不变。
 ##   八、关态 = 逐字回旧（开关 landing_raid 关）：战后单子上没有那一行，落账那条路也不动全局。
-##   九、真走 SeaChart：起一张海图、摆一场海寇仗，_on_battle_result 收战后挂卡那一刻的 choices 里有
-##       「登岸剿寨」那一行（headless 下 attach 返回 null，本探针直接读 choices_for 的判据 + 真起 SeaChart
-##       看 _after_action_offer 挂出来的 choices）；换成元军哨船的 source，那一行没有。
-##   十、不成摇钱树：一次剿寨的期望净收益（各档胜率 × 胜局实得 − 败局折人）印数不判红绿，
-##       但要在三条界内——期望净 < 一趟泉州→澎湖委办的酬金（simulate_run 那一段是 1602）、
-##       胜局实得 < 委办酬金、满编一档的期望净 < 1500。
+##   九、真走 SeaChart 收战：起一张海图、摆一场海寇仗走 _on_battle_result，清空 pending_battle 之前扣住的
+##       source 与所在港照那两样走挂卡判据，那一行挂；换成元军哨船那一仗、败局，不挂。
+##   十、不成摇钱树：一次剿寨的期望净收益（各档胜率 × 胜局实得 − 败率 × 折人 × 船屋添人价 20）印数，
+##       对照 simulate_run 开局一段「小艍半舱最佳前五笔生意净赚 1076～1191」判两条界——胜局实得低于
+##       第五笔的 1076（赢一回也挣不过跑一趟寻常买卖）、各档期望净低于头一笔 1191 的两成。
+##   十一、真走 SeaChart 落账：_on_after_action_done 收到「登岸剿寨」那一项，经 _landing_settle 真动全局——
+##       胜（钱 / 名声 / 士气 / 三样货进舱、水手不动）、舱快满时少装（留在岸上的件数写进札记）、
+##       败（折人 / 士气 / 名声、钱与货不动）、收队回船（一样不动）；札记一句逐样核对，钱与货各只说一遍。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_p6_landing_probe.gd
 ## 判词：QA_W53_P6_LANDING cases=N fails=M；fails>0 退 1。本进程有 SCRIPT ERROR 即红。
 
@@ -34,13 +37,18 @@ const SM := preload("res://scripts/combat/SiegeMelee.gd")
 const TAG := "QA_W53_P6_LANDING"
 ## 胜率量数：每档 200 次（brief 要 ≥200）
 const ODDS_N := 200
-## 一趟委办的酬金（simulate_run 的委办段：泉州→澎湖 福建瓷 ×16 实得 1602）——剿寨得远低于它，才不是摇钱树
-const CONTRACT_PAY := 1602
-## 各处胜率界的档位（水手数 / 将领系数 / 士气系数）
+## 正常跑商的对照：simulate_run 开局一段「从泉州出发、本金 1000 钱、小艍船半舱的最佳前 5 笔生意」
+## 净赚 1191 / 1126 / 1126 / 1076 / 1076（是净利，已扣本钱）——剿寨一回的账要远在它下面，才不是摇钱树
+const TRADE_TRIP_BEST := 1191
+const TRADE_TRIP_FIFTH := 1076
+## 折一个水手的钱：船屋添人一人 20 钱（ShipyardPage「添 N 人」钮的 hire_cost = N × 20）
+const SAILOR_COST := 20
+## 各处胜率界的档位（水手数 / 将领系数 / 士气系数）；头一档是最小的船、末一档是最大的船
 const PROFILES := [
 	{"name": "小艍 15 人", "crew": 15, "cap": 1.0, "mf": 0.88, "hi": 0.25},
 	{"name": "客舟 40 人", "crew": 40, "cap": 1.0, "mf": 0.88, "hi": 0.75},
 	{"name": "福船（中）50 人", "crew": 50, "cap": 1.15, "mf": 0.88, "hi": 0.75},
+	{"name": "广船 90 人", "crew": 90, "cap": 1.25, "mf": 0.92, "hi": 0.75},
 	{"name": "福船（大）110 人", "crew": 110, "cap": 1.4, "mf": 0.96, "hi": 0.75},
 ]
 
@@ -90,16 +98,18 @@ func _report() -> void:
 
 
 func _run() -> void:
-	_tally = ScriptErrTally.new()
-	OS.add_logger(_tally)
+	# 计数器在 _init 里挂上（这里不再起第二只：两只都挂着、只摘一只，余下那只一直挂到进程退）
 	await process_frame
 	var fleet: Node = root.get_node("Fleet")
 	var gs: Node = root.get_node("GameState")
 	var saved := {
 		"ships": (fleet.get("ships") as Array).duplicate(true),
 		"morale": fleet.get("morale"),
+		"water": fleet.get("water"),
+		"food": fleet.get("food"),
 		"money": gs.get("money"),
 		"fame": gs.get("fame"),
+		"martial": gs.get("martial"),
 	}
 
 	print("== 一、入口出现的条件（四样齐 / 缺一样都不挂）")
@@ -120,14 +130,19 @@ func _run() -> void:
 	_sec_off(fleet, gs, saved)
 	print("== 九、真走 SeaChart：海寇仗收战后那一行挂得出来")
 	await _sec_chart()
-	print("== 十、期望收益对照（印数 + 三条界）")
+	print("== 十、期望收益对照 simulate_run 开局跑商（印数 + 两条界）")
 	_sec_ev()
+	print("== 十一、真走 SeaChart 落账（_on_after_action_done → _landing_settle）")
+	await _sec_settle(fleet, gs)
 
 	# 还原这一局（探针不动盘面）
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
+	fleet.set("water", saved["water"])
+	fleet.set("food", saved["food"])
 	gs.set("money", saved["money"])
 	gs.set("fame", saved["fame"])
+	gs.set("martial", saved["martial"])
 	CS.reset()
 	_report()
 
@@ -164,7 +179,9 @@ func _sec_gate() -> void:
 		_expect(not LR.offerable("win", pirate, pid), "缺「宋土沿海」：异国港 %s 岸外不挂" % pid)
 	_expect(not LR.offerable("win", pirate, ""), "缺「宋土沿海」：外海（无港）不挂")
 	_expect(not LR.offerable("win", pirate, "nowhere"), "缺「宋土沿海」：认不得的港不挂")
-	_expect(LR.on_song_shore("quanzhou") and LR.on_song_shore("penghu"), "宋土沿海认泉州、澎湖")
+	_expect(not LR.offerable("win", pirate, "ryukyu"), "缺「宋土沿海」：南岛海道北口（流求海面北缘，不是宋土）岸外不挂")
+	_expect(LR.on_song_shore("quanzhou") and LR.on_song_shore("penghu"), "宋土沿海认泉州、澎湖（澎湖属泉州晋江县）")
+	_expect(LR.SONG_SHORE.size() == 9, "宋土沿海九港（得 %d）" % LR.SONG_SHORE.size())
 	# 缺四：开关关
 	CS.set_on("landing_raid", false)
 	_expect(not LR.offerable("win", pirate, "quanzhou"), "缺「开关开」：关掉不挂")
@@ -250,13 +267,13 @@ func _sec_odds() -> void:
 			if bool(LR.roll(power)["won"]):
 				won += 1
 		var rate := float(won) / float(ODDS_N)
-		print("     %s：下船 %d 人・战力 %.1f → %d/%d = %.3f" % [
+		print("     QA_W53_P6_LANDING_ODDS %s：下船 %d 人・战力 %.1f → %d/%d = %.3f" % [
 			str(prof["name"]), land, power, won, ODDS_N, rate])
 		_expect(rate < float(prof["hi"]), "%s 胜率 %.3f < %.2f（不让这一档通吃）" % [
 			str(prof["name"]), rate, float(prof["hi"])])
 		_expect(rate > 0.0, "%s 胜率 %.3f > 0（也不是全负，留了指望）" % [str(prof["name"]), rate])
-	var small := PROFILES[0]
-	var big := PROFILES[3]
+	var small: Dictionary = PROFILES[0]
+	var big: Dictionary = PROFILES[PROFILES.size() - 1]
 	var r_small := _rate_of(small)
 	var r_big := _rate_of(big)
 	_expect(r_big > r_small, "船越大胜率越高：%s %.3f > %s %.3f" % [
@@ -482,19 +499,145 @@ func _sec_chart() -> void:
 # ── 十、期望收益 ──────────────────────────────────────
 
 func _sec_ev() -> void:
-	# 胜局实得：钱均 150 + 三样货按 base_value（米 8 / 盐 10 / 鹿皮 40）
-	var cargo_val := 12 * 8 + 6 * 10 + 2 * 40
+	# 胜局实得：钱取两档中数 + 寨里那几样货按 base_value 计面值（现读 goods.json，WIN_CARGO 改了这里跟着变）
+	var gm: Node = root.get_node("GameManager")
+	var cargo_val := 0
+	for entry in LR.WIN_CARGO:
+		var g: Dictionary = gm.call("get_good_by_id", str(entry["good"]))
+		cargo_val += int(entry["qty"]) * int(g.get("base_value", 0))
 	var money_mid := (LR.WIN_LOOT_LO + LR.WIN_LOOT_HI) * 0.5
 	var win_take := money_mid + float(cargo_val)
-	print("     QA_W53_P6_LANDING_EV 胜局实得 %.0f（钱 %.0f + 货面值 %d）" % [win_take, money_mid, cargo_val])
-	_expect(win_take < float(CONTRACT_PAY), "胜局实得 %.0f < 一趟委办酬金 %d——一次剿寨挣不过跑一趟货" % [win_take, CONTRACT_PAY])
-	var big_ev := 0.0
+	print("     QA_W53_P6_LANDING_EV 胜局实得 %.0f（钱 %.0f + 货面值 %d）；对照 simulate_run 小艍开局一趟净赚 %d～%d" % [
+		win_take, money_mid, cargo_val, TRADE_TRIP_FIFTH, TRADE_TRIP_BEST])
+	_expect(win_take < float(TRADE_TRIP_FIFTH),
+		"胜局实得 %.0f < 小艍开局第五好的一趟净赚 %d——赢一回也挣不过跑一趟寻常买卖" % [win_take, TRADE_TRIP_FIFTH])
+	var ev_cap := float(TRADE_TRIP_BEST) * 0.2
 	for prof in PROFILES:
 		var rate := _rate_of(prof)
-		var land := LR.landing_party(int(prof["crew"]))
-		var lost_money := float(int(round(float(land) * LR.LOSE_LOSS_RATE))) * 8.0  # 折一人按雇工 8 钱估
-		var ev := rate * win_take - (1.0 - rate) * lost_money
-		print("     %s：胜率 %.3f → 期望净 %+.1f 钱" % [str(prof["name"]), rate, ev])
-		if str(prof["name"]) == "福船（大）110 人":
-			big_ev = ev
-	_expect(big_ev < 1500.0, "满编一档的期望净 %+.1f < 1500——不成摇钱树" % big_ev)
+		var lost := int(round(float(LR.landing_party(int(prof["crew"]))) * LR.LOSE_LOSS_RATE))
+		var ev := rate * win_take - (1.0 - rate) * float(lost * SAILOR_COST)
+		print("     QA_W53_P6_LANDING_EV %s：胜率 %.3f・败折 %d 人（%d 钱）→ 期望净 %+.1f 钱（开局一趟的 %.1f%%）" % [
+			str(prof["name"]), rate, lost, lost * SAILOR_COST, ev, ev / float(TRADE_TRIP_BEST) * 100.0])
+		_expect(ev < ev_cap, "%s 期望净 %+.1f < 开局一趟净赚 %d 的两成（%.0f）——不成摇钱树" % [
+			str(prof["name"]), ev, TRADE_TRIP_BEST, ev_cap])
+
+
+# ── 十一、真走 SeaChart 落账 ──────────────────────────
+
+## 摆一条福船（中）50 人：水粮记 0（舱位好数）、士气 60、武力 0（将领系数 1.0）、钱 1000、名声 0；
+## grain > 0 时先往舱里装这么些米
+func _settle_fleet(fleet: Node, gs: Node, grain := 0) -> void:
+	fleet.set("ships", [{"type": "fu_ship_medium", "name": "福船", "durability": 300.0,
+		"max_durability": 300.0, "crew": 50, "sail_level": 1, "armor_level": 1, "cargo": {}}])
+	fleet.set("water", 0)
+	fleet.set("food", 0)
+	fleet.set("morale", 60)
+	gs.set("money", 1000)
+	gs.set("fame", 0)
+	gs.set("martial", 0)
+	if grain > 0:
+		fleet.call("add_cargo", "grain", grain, 8.0)
+
+
+## SeaChart 下船那一刻算的战力（与 _on_after_action_done 同一组现读：水手数、将领系数、士气系数）
+func _fleet_raid_power(fleet: Node) -> float:
+	return LR.raid_power(LR.landing_party(int(fleet.call("total_crew"))),
+		float(fleet.call("captain_power")), float(fleet.call("morale_factor")))
+
+
+## 头一个让这一战力赢（won = true）/ 输（won = false）的种子
+func _seed_for(power: float, won: bool) -> int:
+	for k in range(1, 4000):
+		seed(k)
+		if bool(LR.roll(power)["won"]) == won:
+			return k
+	return -1
+
+
+## 按一次「收拾停当」：卡上只挂剿寨那一行、选 chosen。落账前 seed(k)——_on_after_action_done 里
+## 剿寨那一掷之前不掷别的骰，SeaChart 里头一枚骰就是它
+func _press(sc: Node, chosen: String, k: int) -> void:
+	var choices := LR.choices_for("win", {"event": "pirate"}, "quanzhou")
+	seed(k)
+	sc.call("_on_after_action_done", {"landing": chosen}, choices, {})
+
+
+func _sec_settle(fleet: Node, gs: Node) -> void:
+	var sc := _chart()
+	await _frames(3)
+	# 收尾的 _after_combat 见 remaining_li ≤ 0 当是到港（到港换场景）：留一段航程，船又没在走，_sail_next_day 当即返回
+	sc.set("remaining_li", 50.0)
+
+	# ── 胜：同一个种子先在探针里掷一遍，预知钱数
+	_settle_fleet(fleet, gs)
+	var power := _fleet_raid_power(fleet)
+	var kw := _seed_for(power, true)
+	seed(kw)
+	LR.roll(power)
+	var want_money := int(round(randf_range(LR.WIN_LOOT_LO, LR.WIN_LOOT_HI)))
+	_press(sc, "raid", kw)
+	await _frames(1)
+	var rep: Dictionary = sc.call("last_landing_report")
+	_expect(bool(rep.get("won", false)), "胜（种子 %d、战力 %.1f）：读数记胜" % [kw, power])
+	_expect(int(gs.get("money")) == 1000 + want_money, "胜：钱匣 1000 → %d（这一掷 %d）" % [int(gs.get("money")), want_money])
+	_expect(int(gs.get("fame")) == LR.WIN_FAME, "胜：名声 0 → %d（走 add_fame）" % int(gs.get("fame")))
+	_expect(int(fleet.get("morale")) == 60 + LR.WIN_MORALE, "胜：士气 60 → %d" % int(fleet.get("morale")))
+	_expect(int(fleet.call("total_crew")) == 50, "胜：水手不动（%d）" % int(fleet.call("total_crew")))
+	var g := int(fleet.call("cargo_qty", "grain"))
+	var s := int(fleet.call("cargo_qty", "sea_salt"))
+	var d := int(fleet.call("cargo_qty", "deer_hide"))
+	_expect(g == 12 and s == 6 and d == 2, "胜：三样货真进舱（米 %d・盐 %d・鹿皮 %d）" % [g, s, d])
+	var note := str(sc.get("_latest_note"))
+	_expect(note.contains("寨子烧了") and note.contains("搜出 %d 钱" % want_money),
+		"胜：札记写寨子烧了、搜出的钱数（「%s」）" % note)
+	_expect(note.count("搬回舱里") == 1, "胜：「搬回舱里」只说一遍（%d 遍）" % note.count("搬回舱里"))
+	_expect(note.contains("米粮 12 件") and note.contains("鹿皮 2 件") and note.contains("名声加 %d。" % LR.WIN_FAME),
+		"胜：札记写货的件数与名声")
+	_expect(not note.contains("留在岸上") and not note.contains("折了"), "胜：舱装得下，不写留在岸上、不写折人")
+
+	# ── 胜、舱快满：福船（中）舱 800 料，先装 790 件米，剩 10 料——米再装 10 件，盐、鹿皮装不下
+	_settle_fleet(fleet, gs, 790)
+	power = _fleet_raid_power(fleet)
+	kw = _seed_for(power, true)
+	_press(sc, "raid", kw)
+	await _frames(1)
+	rep = sc.call("last_landing_report")
+	var loaded: Dictionary = rep.get("loaded", {})
+	_expect(LR.cargo_units(loaded) == 10 and int(loaded.get("grain", 0)) == 10, "舱快满：只装下米 10 件（%s）" % str(loaded))
+	_expect(int(fleet.call("cargo_qty", "grain")) == 800 and int(fleet.call("cargo_qty", "deer_hide")) == 0,
+		"舱快满：舱里米 790 → %d、鹿皮没进舱" % int(fleet.call("cargo_qty", "grain")))
+	note = str(sc.get("_latest_note"))
+	_expect(note.contains("米粮 10 件搬回舱里") and note.contains("舱里塞不下，10 件留在岸上。"),
+		"舱快满：札记写装下的与留在岸上的件数（「%s」）" % note)
+
+	# ── 败
+	_settle_fleet(fleet, gs, 5)
+	power = _fleet_raid_power(fleet)
+	var kl := _seed_for(power, false)
+	_press(sc, "raid", kl)
+	await _frames(1)
+	rep = sc.call("last_landing_report")
+	var want_lost := int(round(float(LR.landing_party(50)) * LR.LOSE_LOSS_RATE))
+	_expect(not bool(rep.get("won", true)), "败（种子 %d、战力 %.1f）：读数记败" % [kl, power])
+	_expect(int(gs.get("money")) == 1000, "败：钱匣不动（%d）" % int(gs.get("money")))
+	_expect(int(gs.get("fame")) == LR.LOSE_FAME, "败：名声 0 → %d" % int(gs.get("fame")))
+	_expect(int(fleet.get("morale")) == 60 + LR.LOSE_MORALE, "败：士气 60 → %d" % int(fleet.get("morale")))
+	_expect(int(fleet.call("total_crew")) == 50 - want_lost,
+		"败：水手 50 → %d（折 %d）" % [int(fleet.call("total_crew")), want_lost])
+	_expect(int(fleet.call("cargo_qty", "grain")) == 5 and int(fleet.call("cargo_qty", "deer_hide")) == 0, "败：舱货不动")
+	note = str(sc.get("_latest_note"))
+	_expect(note.contains("寨门没打开") and note.contains("折了 %d 人。" % want_lost) and note.contains("名声加 %d。" % LR.LOSE_FAME),
+		"败：札记写寨门没打开、折了几人、名声（「%s」）" % note)
+	_expect(not note.contains("搬回舱里") and not note.contains("一成半"), "败：不写搬货，折人只报人数")
+
+	# ── 收队回船
+	_settle_fleet(fleet, gs, 5)
+	_press(sc, "hold", 1)
+	await _frames(1)
+	_expect(int(gs.get("money")) == 1000 and int(gs.get("fame")) == 0 and int(fleet.get("morale")) == 60
+		and int(fleet.call("total_crew")) == 50 and int(fleet.call("cargo_qty", "grain")) == 5,
+		"收队回船：钱 / 名声 / 士气 / 水手 / 舱货一样不动")
+	note = str(sc.get("_latest_note"))
+	_expect(note.contains("收队回船"), "收队回船：札记一句（「%s」）" % note)
+	sc.queue_free()
+	await _frames(2)
