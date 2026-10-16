@@ -577,3 +577,30 @@ func _war_pct_words(f: float) -> String:
 	if tenths == 0:
 		return "半成"
 	return "%s成%s" % [_CN_DIGITS[tenths], "半" if halves % 2 == 1 else ""]
+
+
+# ── 闯封锁（lane w53-p5-blockade）─────────────────────────
+# 放在文件尾：上面各行的行号是 docs/待策划拍板清单 的引用锚（check_decision_refs 判漂），插在中间会把它们顶走
+
+## 闯封锁进城卖粮：城里按「平年米价 × 围城倍数」直收，牙行闭门，不扣佣金、不压行情。
+## 平年米价 = 米粮基准价 × 本港产地 / 消费地系数（行情按平年 1.0）。不走 price_at_rate：军需涨价要把战况倍数
+## 乘进那条公式，再乘一遍就重了；价格公式本身一字不动。
+const BLOCKADE_GRAIN_MUL := 1.8
+
+
+func blockade_grain_base(port_id: String) -> float:
+	return float(_good_def("grain").get("base_value", 0)) * float(ROLE_MOD.get(get_role(port_id, "grain"), 1.0))
+
+
+## 每件收粮价：倍数有 war_price_factor（w53-p5-econ 军需涨价，开关关时恒 1.0）就用它，没有退回 BLOCKADE_GRAIN_MUL
+func blockade_grain_unit(port_id: String) -> float:
+	var mul := BLOCKADE_GRAIN_MUL
+	if has_method("war_price_factor"):
+		mul = float(call("war_price_factor", port_id, "grain"))
+	return blockade_grain_base(port_id) * mul
+
+
+## 一趟城里收得下几件：本港行情深浅（_depth，含修埠加深）。城里缺粮也只吃得下这么多——不封顶，收粮钱随舱位线性涨，
+## 大舱一趟就成了摇钱树
+func blockade_grain_cap(port_id: String) -> int:
+	return int(_depth(port_id))

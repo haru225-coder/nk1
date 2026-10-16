@@ -32,6 +32,7 @@ const DEFAULTS := {
 	"pursue_window": true,     # 敌船遁走留一段可追的窗口（脱离航速略挫、离场线拖后）—— w53-p4-melee
 	"war_prices": true,        # 军需涨价：牙行价按港口战况 × 货的战时货类乘倍数（goods.json war_price）—— w53-p5-econ
 	"port_blockade": true,     # 第五期 · 拦港（待拍板 20b）：封港、围城、对己封港的港不进晨潮三向，海图上点它只给「港已封」；剧情要去的港放行 —— w53-p5-blockade
+	"blockade_run": true,      # 第五期 · 闯封锁：舱里带米粮可闯被围的港，四成撞上元军哨船（海鹘一艘、快船两艘），赢了按围城米价卖粮，输了 / 逃了米粮扣下、船折回 —— w53-p5-blockade
 }
 
 static var _over: Dictionary = {}

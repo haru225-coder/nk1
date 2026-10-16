@@ -59,8 +59,9 @@ const DIR8 := ["北", "东北", "东", "东南", "南", "西南", "西", "西北
 
 enum CourseOrder { RUMB, OFFSHORE, COAST }
 ## MUTINY 来自云端 7d9f（不进随机表）；SHOAL / LOST 来自云端 bed9 航法线；
-## REQUISITION / YUAN_PATROL / REFUGEE 是本地 main 的战时三遭遇（Voyage._war_event）。
-enum EventKind { NONE, CALM, CURRENT, STORM, PIRATE, MERCHANT, DISCOVERY, MUTINY, SHOAL, LOST, REQUISITION, YUAN_PATROL, REFUGEE }
+## REQUISITION / YUAN_PATROL / REFUGEE 是本地 main 的战时三遭遇（Voyage._war_event）；
+## BLOCKADE 是闯封锁到了港外撞上哨船那一面（blockade_event，不进逐日抽取）。
+enum EventKind { NONE, CALM, CURRENT, STORM, PIRATE, MERCHANT, DISCOVERY, MUTINY, SHOAL, LOST, REQUISITION, YUAN_PATROL, REFUGEE, BLOCKADE }
 
 
 func port_def(port_id: String) -> Dictionary:
@@ -668,6 +669,35 @@ func _yuan_patrol_event() -> Dictionary:
 		"title": "元军哨船",
 		# 「三条船」与 SeaChart.PATROL_ENEMY.count 同数（按「迎战」后墨边写「海鹘三艘」，也刷三艘）；story_check 对账
 		"text": "三条船从雾里出来，帆上是你没见过的旗。船头的人用福建话喊：「大元巡海，落帆受检。」\n口音是泉州的。",
+	}
+
+
+## 闯封锁（战斗系统方案 §七，开关 blockade_run）：舱里带米粮闯被围的港，到了港外掷一次，四成撞上拦港的元军哨船。
+## 不进逐日抽取：只在闯封锁那一程到港外时由 SeaChart._run_gate 掷，固定种子下按 randf 出数（探针统计四成）
+const BLOCKADE_PATROL_CHANCE := 0.4
+## 拦港哨船：海鹘一艘带快船两艘，三条都挂 yuan_patrol——敌将档案按它认元军（EnemyCaptainAI.profile_for：
+## 宁远射、少接舷，降时「降幡请降」，敌情列写元军哨船）；快船不挂就成了海寇档案（「落帆乞降」）。
+## 精灵图没有 ship_yuan_patrol.png，三条照旧回落海鹘图（CombatFx.ship_sprite_path），画面与不挂一样
+const BLOCKADE_PATROL := [
+	{"type": "sea_falcon", "sprite": "yuan_patrol", "count": 1, "hull_hp": 120.0},
+	{"type": "pirate_boat", "sprite": "yuan_patrol", "count": 2, "hull_hp": 100.0},
+]
+## 敌方战力区间照元军哨船（SeaChart._on_fight_patrol 的 320–760）：同一支水军，只是阵容换了
+const BLOCKADE_POWER_MIN := 320.0
+const BLOCKADE_POWER_MAX := 760.0
+
+
+func blockade_patrol_met() -> bool:
+	return randf() < BLOCKADE_PATROL_CHANCE
+
+
+## 「哨船拦港」那一面（SeaChart._show_event 照 kind 挂钮：迎战 / 掉头回航）
+func blockade_event(port_id: String) -> Dictionary:
+	return {
+		"kind": EventKind.BLOCKADE,
+		"title": "哨船拦港",
+		"port": port_id,
+		"text": "离%s还有半日水程，港外横着三条船：一条海鹘，两条快船，挂的是元军的旗。\n舱里的米粮瞒不过去。要进港，只有冲过去。" % GameManager.get_port_name(port_id),
 	}
 
 

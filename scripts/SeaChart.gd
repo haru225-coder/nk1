@@ -79,6 +79,12 @@ const MAP_AZURITE := Color(0.208, 0.376, 0.498)
 const PIRATE_ENEMY := {"type": "pirate_boat", "count": 2, "hull_hp": 100.0}
 ## 元军哨船：type 不动（ships.json 没有 yuan_patrol 这一型，改 type 夺船会悄悄失败），另挂 sprite。
 const PATROL_ENEMY := {"type": "sea_falcon", "sprite": "yuan_patrol", "count": 3, "hull_hp": 120.0}
+## 闯封锁（战斗系统方案 §七，开关 blockade_run）：图上点了被围的港、舱里带着米粮、选了「闯封锁」——这一程的去处。
+## 只活在这一程里，不进存档（海图上不能存档）。到了港外掷一次（_run_gate）：撞上哨船挂「哨船拦港」一面
+var _run_port := ""
+## 闯进了港，每运进这许多件米粮记名声一点（至多 RUN_FAME_MAX 点）：给围城送粮是义举，一两件粮蹭不到名声
+const RUN_FAME_PER := 100
+const RUN_FAME_MAX := 5
 
 
 func _ready() -> void:
@@ -452,6 +458,8 @@ func _on_map_port_clicked(pid: String) -> void:
 	var why := HeadingDraft.seal_of(pid)
 	if why == "":
 		_log("今日风不放这一向。")
+	elif _run_offerable(pid):
+		_offer_run(pid)
 	else:
 		_log(_seal_note(pid, why))
 
@@ -465,8 +473,163 @@ func _seal_note(pid: String, why: String) -> String:
 		"banned":
 			return "港已封。%s对你封港，船进不去。" % pname
 		"besieged":
-			return "港已封。%s被围，港外都是元军的哨船。" % pname
+			var t := "港已封。%s被围，港外都是元军的哨船。" % pname
+			if _Switches.on("blockade_run"):
+				t += "舱里带上米粮，可以闯封锁。"
+			return t
 	return "港已封。"
+
+
+# ── 闯封锁 ──────────────────────────────────────────
+
+## 能不能闯：港是围城封着的（20b 的 besieged，剧情放行的港照常走、不算闯）、开关 blockade_run 开着、舱里有米粮
+func _run_offerable(pid: String) -> bool:
+	return _Switches.on("blockade_run") and HeadingDraft.seal_of(pid) == "besieged" and Fleet.cargo_qty("grain") > 0
+
+
+## 这一舱米粮闯进去卖得几何：[城里收的件数, 得钱, 名声]。城里一趟只收得下 Economy.blockade_grain_cap 件，多的留在舱里
+func _run_take(pid: String) -> Array:
+	var qty := mini(Fleet.cargo_qty("grain"), Economy.blockade_grain_cap(pid))
+	var gold := int(round(Economy.blockade_grain_unit(pid) * float(qty)))
+	return [qty, gold, mini(RUN_FAME_MAX, int(qty / RUN_FAME_PER))]
+
+
+## 闯封锁那一面：写清城里收粮价、这一舱约得多少、四成撞上哨船与输了的下场；钮「闯封锁」/「不去了」
+func _offer_run(pid: String) -> void:
+	var pname := str(GameManager.get_port_name(pid))
+	var take := _run_take(pid)
+	var aboard := Fleet.cargo_qty("grain")
+	var cap_s := "，这一趟城里只收得下 %d 件" % int(take[0]) if aboard > int(take[0]) else ""
+	var fame_s := "，名声加 %d" % int(take[2]) if int(take[2]) > 0 else ""
+	event_title.text = "闯封锁・%s" % pname
+	event_text.text = "%s被围，牙行闭门，城里缺粮。舱里有米粮 %d 件，城里按围城米价收，每件约 %d 钱（平年约 %d 钱）%s：约得 %d 钱%s。\n到了港外，四成会撞上元军哨船（海鹘一艘、快船两艘），要打一仗。打赢了或没撞上，照这个价卖粮；打输了、逃了或掉头，舱里的米粮就没了，船折回%s。" % [
+		pname, aboard, int(round(Economy.blockade_grain_unit(pid))), int(round(Economy.blockade_grain_base(pid))),
+		cap_s, int(take[1]), fame_s, GameManager.get_port_name(origin_port),
+	]
+	for c in event_actions.get_children():
+		c.queue_free()
+	_add_event_action("闯封锁", _choose_run.bind(pid))
+	_add_event_action("不去了", func(): event_panel.visible = false)
+	_open_event_panel()
+
+
+func _choose_run(pid: String) -> void:
+	event_panel.visible = false
+	if sailing or not _run_offerable(pid):
+		return
+	_run_port = pid
+	selected_port = pid
+	_refresh_hand()
+
+
+## 航段细节里那一行（发舶前）
+func _run_brief() -> String:
+	var take := _run_take(_run_port)
+	return "闯封锁　四成撞上哨船　米粮 %d 件约得 %d 钱" % [int(take[0]), int(take[1])]
+
+
+## 闯封锁到了港外（_arrive 先问它）：围解了照常进港、米粮留在舱里；还围着就掷一次（Voyage.blockade_patrol_met）——
+## 撞上哨船挂「哨船拦港」一面（迎战 / 掉头回航），接手返回 true；没撞上按围城米价卖粮，返回 false 照常进港
+func _run_gate() -> bool:
+	var pid := _run_port
+	if Economy.war_status(pid) != "besieged":
+		_run_port = ""
+		_log("到了港外，%s已经不在围中，哨船都撤了。米粮留在舱里。" % GameManager.get_port_name(pid))
+		return false
+	if Voyage.blockade_patrol_met():
+		var ev := Voyage.blockade_event(pid)
+		_log("第 %d 日・%s" % [days_elapsed, ev.get("title", "")])
+		_show_event(ev)
+		return true
+	_log(_ink(UiTheme.MOSS, "港外的哨船正巧换班，趁潮进了港。"))
+	_run_sell()
+	return false
+
+
+func _on_fight_blockade() -> void:
+	event_panel.visible = false
+	GameManager.pending_battle = {
+		"battle": true,
+		"power": randf_range(Voyage.BLOCKADE_POWER_MIN, Voyage.BLOCKADE_POWER_MAX),
+		"player_power": _fleet_power(),
+		"enemy": Voyage.BLOCKADE_PATROL.duplicate(true),
+		"sea_name": _battle_sea_name(),
+		"source": {"scene": "SeaChart", "event": "blockade", "port": _run_port},
+	}
+	_enter_battle()
+
+
+## 拦港一面「掉头回航」：不打，落帆让哨船上来扣下米粮，放船折回起锚港
+func _on_run_yield() -> void:
+	event_panel.visible = false
+	_run_seize("yield")
+	_after_combat()
+
+
+## 拦港那一仗打完（_on_battle_result 收尾前）：赢了，或大风 / 天黑两散（哨船收帆回泊，趁乱进港）照围城米价卖粮；
+## 甩脱了（弃战逃成、甩开追船）米粮抛海轻船；输了、没逃成（被追上跳帮）米粮扣下——船还浮着就折回起锚港
+func _run_settle(outcome: String, data: Dictionary) -> void:
+	if outcome == "win" or outcome == "disengaged" or bool(data.get("parted", false)):
+		_run_sell()
+	elif outcome == "flee" and bool(data.get("flee_ok", false)):
+		_run_seize("flee")
+	else:
+		_run_seize("lose")
+
+
+## 闯进了港：舱里的米粮全按围城米价卖给城里（Economy.blockade_grain_unit），名声按件数记（_run_take）
+func _run_sell() -> void:
+	var pid := _run_port
+	if pid == "":
+		return
+	_run_port = ""
+	var take := _run_take(pid)
+	var qty := int(take[0])
+	if qty <= 0:
+		_log("舱里的米粮一路上已经没了，空船进的港。")
+		return
+	Fleet.remove_cargo("grain", qty)
+	GameState.add_money(int(take[1]))
+	var t := "城里按围城米价收粮：米粮 %d 件，得 %d 钱。" % [qty, int(take[1])]
+	var left := Fleet.cargo_qty("grain")
+	if left > 0:
+		t += "余下 %d 件城里收不下，留在舱里。" % left
+	if int(take[2]) > 0:
+		var fame_res: Dictionary = GameState.add_fame(int(take[2]))
+		t += "名声加 %d。" % int(fame_res.get("gained", 0))
+		if fame_res.get("promoted", false):
+			t += "案册改题「%s」。" % str(fame_res.get("title", {}).get("name", ""))
+	_log(_ink(UiTheme.MOSS, t))
+	_refresh_status()
+
+
+## 没闯过去：舱里的米粮一件不剩（输了被扣、逃了抛海、掉头交出），船还浮着就折回起锚港——
+## 起讫对调，从港外照常一日日走回去（遇事照抽）；全队沉了不对调，由沉船那条路送回起锚港
+func _run_seize(how: String) -> void:
+	var pid := _run_port
+	if pid == "":
+		return
+	_run_port = ""
+	var qty := Fleet.cargo_qty("grain")
+	if qty > 0:
+		Fleet.remove_cargo("grain", qty)
+	var t := ""
+	match how:
+		"lose":
+			t = "米粮 %d 件被哨船扣下。" % qty
+		"flee":
+			t = "为了轻船甩开哨船，米粮 %d 件都抛下了海。" % qty
+		_:
+			t = "落帆让哨船上来，米粮 %d 件都扣下了。" % qty
+	if Fleet.total_durability() > 0.0:
+		var back := origin_port
+		origin_port = pid
+		selected_port = back
+		total_li = Voyage.distance_li(origin_port, selected_port)
+		remaining_li = total_li
+		t += "船进不了%s，只得折回%s。" % [GameManager.get_port_name(pid), GameManager.get_port_name(back)]
+	_log(_ink(UiTheme.CINNABAR, t))
+	_refresh_status()
 
 
 ## 二十四向罗盘（宋元针盘）：内环四维（朱砂）、中环十二支（墨）、外环八干（淡墨），最外 48 刻度（每 7.5 度，缝针短刻）。
@@ -957,6 +1120,8 @@ func _course_detail_text(gold: String) -> String:
 	var plan_off := Voyage.plan(origin_port, selected_port, Voyage.CourseOrder.OFFSHORE)
 	var plan_coast := Voyage.plan(origin_port, selected_port, Voyage.CourseOrder.COAST)
 	var t := "[color=#%s][b]航段　%s[/b][/color]\n" % [gold, GameManager.get_port_name(selected_port)]
+	if _run_port != "" and _run_port == selected_port:
+		t += _ink(UiTheme.CINNABAR, _run_brief()) + "\n"
 	# 1280 宽下这行连「水粮足」一起会折行、「日」字孤悬（-02 巡检），水粮拆到下一行
 	t += "%s　静风 %d 日　遇事约 %d 日　八成 %d 日\n" % [
 		Voyage.order_name(course_order), int(plan["days"]), int(plan["expected_days"]), int(plan["safe_days"]),
@@ -1039,11 +1204,15 @@ func _refresh_hand() -> void:
 	for c in heading_row.get_children():
 		c.queue_free()
 	_hand = HeadingDraft.deal(origin_port, GameState.draft_salt)
-	if selected_port not in _hand:
+	# 闯封锁的去处不在三向里：选着它、还闯得（围着、有米粮）就留着，换了去处或闯不得了就作罢
+	if not sailing and _run_port != "" and (_run_port != selected_port or not _run_offerable(_run_port)):
+		_run_port = ""
+	if selected_port not in _hand and selected_port != _run_port:
 		selected_port = ""
 	for pid in _hand:
 		heading_row.add_child(_make_heading_card(str(pid)))
 	sail_button.disabled = selected_port == "" or sailing
+	sail_button.text = "闯封锁" if _run_port != "" else "就这一向"
 	redraw_button.disabled = sailing
 	if status_label:
 		_refresh_status()
@@ -1152,6 +1321,8 @@ func _select_heading(pid: String) -> void:
 	if pid not in _hand:
 		_log("今日风不放这一向。")
 		return
+	event_panel.visible = false
+	_run_port = ""
 	selected_port = pid
 	_refresh_hand()
 
@@ -1284,7 +1455,12 @@ func _on_sail_pressed() -> void:
 	_sync_map()
 	_frame_departure()
 
-	_log(_ink(UiTheme.GOLD, "启程往 %s，航程 %d 里。" % [GameManager.get_port_name(selected_port), int(total_li)]))
+	event_panel.visible = false
+	if _run_port != "":
+		_log(_ink(UiTheme.CINNABAR, "闯封锁：运米粮 %d 件往%s，航程 %d 里。" % [
+			Fleet.cargo_qty("grain"), GameManager.get_port_name(selected_port), int(total_li)]))
+	else:
+		_log(_ink(UiTheme.GOLD, "启程往 %s，航程 %d 里。" % [GameManager.get_port_name(selected_port), int(total_li)]))
 	_sail_next_day()
 
 
@@ -1432,6 +1608,9 @@ func _show_event(event: Dictionary) -> void:
 		_add_event_action("落帆受检", _on_patrol_submit)
 		_add_event_action("迎战", _on_fight_patrol)
 		_add_event_action("扬帆逃走", _on_flee_pirates)
+	elif kind == Voyage.EventKind.BLOCKADE:
+		_add_event_action("迎战", _on_fight_blockade)
+		_add_event_action("掉头回航（米粮扣下）", _on_run_yield)
 	elif kind == Voyage.EventKind.REFUGEE:
 		_add_event_action("载人同行（水粮 −2 成）", _on_refugee_take)
 		_add_event_action("分些水粮，不载人（水粮 −1 成）", _on_refugee_share)
@@ -1621,6 +1800,8 @@ func _enter_battle() -> void:
 ## 战斗结果写回：对齐现有文本结算公式（逐字保留），再续航行
 func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	var dmg := float(data.get("player_damage", 0.0))
+	# 闯封锁拦港那一仗（_on_fight_blockade 起的）：这一程途中撞上的海寇、哨船不算，只认 source.event
+	var run_fight := str((GameManager.pending_battle.get("source", {}) as Dictionary).get("event", "")) == "blockade"
 	if outcome == "win":
 		# combat12：按敌船下场分账（win_kind）——敌降全赏走受降句；只是遁走的赏半（spoil_rule half）走敌遁句。
 		# w53-16 一期：开关 bounty_by_outcome 开时，赏钱改读 combat_phases.json「spoil」分赃规则——
@@ -1713,6 +1894,8 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 				if not fail_msg.ends_with("。"):
 					fail_msg += "。"
 			_log(_ink(UiTheme.CINNABAR, fail_msg + prize))
+	if run_fight and _run_port != "":
+		_run_settle(outcome, data)
 	GameManager.pending_battle = {}
 	if not _after_action_pending():
 		# 没挂卡（开关全关 / 无可挂行 / 非胜局）：照旧当帧续航行
@@ -2092,6 +2275,8 @@ func _on_investigate_discovery() -> void:
 # ── 结束 ────────────────────────────────────────────
 
 func _arrive() -> void:
+	if _run_port != "" and _run_gate():
+		return
 	sailing = false
 	Fleet.at_sea = false
 	GameState.record_trip(origin_port, selected_port)
