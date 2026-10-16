@@ -103,6 +103,10 @@ const PROFILES := {
 		"rout": 22.0, "strike": 14.0, "disc": 0.75, "gauge": 1.0, "volleys": 12, "strike_word": "降幡请降"},
 	"default": {"label": "敌船", "board_ratio": 1.8, "desperate": 1.0, "hull_rout": 0.33,
 		"rout": 28.0, "strike": 12.0, "disc": 1.0, "gauge": 0.8, "volleys": 10, "strike_word": "降幡"},
+	# lane w53-p6-escort：我方护航船（as_escort 立）。不自己起意接舷（board_ratio / desperate 够不着），
+	# 船伤三成就退、士气线比敌船稳一点；降幡线照填但 no_strike 不降（垮了就退出战阵）
+	"escort": {"label": "护航", "board_ratio": 9.9, "desperate": 9.9, "hull_rout": 0.3,
+		"rout": 24.0, "strike": 10.0, "disc": 0.9, "gauge": 0.8, "volleys": 10, "strike_word": "退出战阵"},
 }
 
 ## 可选外部 API：能力 → [模块路径, 候选方法名（按序取第一个对得上的）, 形参类型]
@@ -186,6 +190,11 @@ var _g: Dictionary = {}
 ##   ② 本成员（WorldMap._spawn_enemy 按开关写；探针直写照走）
 ## 关开关 / 两路都缺席 = 逐字旧脱离（ESCAPE_DIST 不变、逃速不挫）
 var pursue_window := false
+## lane w53-p6-escort：护航船（EscortWing 刷的 PirateShip.is_escort）复用本件走船开炮，as_escort() 立下面几样；敌船恒为缺省（逐字旧玩法）：
+##   no_strike   不降幡：判到降的照「脱离」退出战阵（对面不受降护航，降了也没人收）；外头的 force_strike 也不收
+##   no_board    不自己起意接舷（护航跟站位放舷，不跳帮）
+var no_strike := false
+var no_board := false
 
 
 ## 开战时调一次（PirateShip._ready）。sprite_key 用来认元军哨船（sprite=yuan_patrol）。
@@ -263,6 +272,23 @@ func tick(s: Dictionary, delta: float) -> Dictionary:
 		_decide_t = DECIDE_EVERY
 		_evaluate(s)
 	return _orders(s, delta)
+
+
+## lane w53-p6-escort：setup 之后调——本件当我方护航船的船长用（PROFILES["escort"]，不降、不自己起意接舷）
+func as_escort() -> void:
+	profile_id = "escort"
+	profile = PROFILES["escort"]
+	rout_line = float(profile["rout"])
+	strike_line = float(profile["strike"])
+	if not _builtin_only:
+		_read_morale_consts()
+	no_strike = true
+	no_board = true
+
+
+## lane w53-p6-escort：某航向此刻的航速系数（帆与桨取大，同出舵令那一路）；护航跟站位时 PirateShip 拿它算帆桨
+func drive_for(heading: Vector2) -> float:
+	return _drive_factor(heading, _s)
 
 
 ## 这一帧该放哪一舷：+1 右舷、-1 左舷、0 不放。angle_diff = 船首向 → 目标的夹角（正 = 目标在右）。
@@ -361,7 +387,7 @@ func on_grapple(ok: bool) -> void:
 
 ## 外头定了本船降（玩家喊话劝降得手之类）：径直降幡，不等下一次判局势；已降 / 已遁的不动
 func force_strike(why: String) -> void:
-	if state == STRIKE or _slipping:
+	if state == STRIKE or _slipping or no_strike:
 		return
 	_set_state(STRIKE, why)
 
@@ -476,12 +502,14 @@ func _evaluate(s: Dictionary) -> void:
 	if _slipping:
 		return
 	var v := _verdict(d)
+	if v[0] == "strike" and no_strike:
+		v = ["rout", "士气已沮，转舵退出战阵"]  # lane w53-p6-escort：护航不降，垮了就退
 	if v[0] == "strike":
 		_set_state(STRIKE, v[1])
 		return
 	if state == DISENGAGE:
 		# 溃因都不在了（v 空）、敌船又将沉，才回帆抢船；不然回帆一拍、溃走一拍来回抖
-		if v[0] == "" and float(d["target_hull"]) <= 0.2 and float(d["ratio"]) >= 1.2:
+		if v[0] == "" and not no_board and float(d["target_hull"]) <= 0.2 and float(d["ratio"]) >= 1.2:
 			_set_state(BOARD, "敌船将沉，回帆抢船")
 		return
 	if v[0] == "rout":
@@ -570,7 +598,7 @@ func _tactical(d: Dictionary) -> Array:
 	if _reboard_cd > 0.0:
 		if state == BOARD:
 			return [BROADSIDE, _cd_reason]
-	else:
+	elif not no_board:
 		var why := ""
 		if ratio >= br:
 			why = "人多势众，逼近接舷"

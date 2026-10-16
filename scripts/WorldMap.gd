@@ -379,7 +379,7 @@ func _board_enemy(enemy: Node2D) -> void:
 		var legacy := str(r.get("legacy", "lose"))
 		# 攻方折 att_dead、守方折 def_dead：本队先钩本队是攻方，敌船先钩本队是守方
 		var our_dead := int(r.get("def_dead" if enemy_first else "att_dead", 0))
-		Fleet.lose_crew_random(our_dead)
+		Fleet.lose_battle_crew(our_dead)
 		# 士气增减也按攻方给；本队守的那一路反过来记——攻方挫多少、守方振多少
 		var morale_delta := int(r.get("att_morale_delta", 0))
 		Fleet.morale = clampi(Fleet.morale + (-morale_delta if enemy_first else morale_delta), 0, Fleet.MORALE_MAX)
@@ -564,6 +564,7 @@ func _decision_offer() -> CanvasLayer:
 ## 备接舷聚齐了执钩拒的甲士加力，抢风 / 专力装填把甲士抽去就减；攻守都算——敌船先抛钩上来，舷边拒着的也是这些人（lane w53-2）
 func _melee_sides(enemy: Node2D, enemy_first := false) -> Array:
 	var us: Dictionary = _MeleeResolve.side_from_fleet(Fleet)
+	us["crew"] = Fleet.battle_crew()  # lane w53-p6-escort：护航上阵时只算旗舰（与没上阵的船）上的人；没上阵同 total_crew
 	var ps = _morale.player_sheet() if _morale != null else null
 	if ps != null:
 		us["morale"] = clampi(int(round(ps.melee_factor() * 100.0)), 0, 100)
@@ -833,6 +834,7 @@ func _setup_combat(pb: Dictionary) -> void:
 	combat_start_durability = Fleet.total_durability()
 	_battle_roster_n = Fleet.ships.size()
 	total_enemies = 0
+	_escorts = _EscortWing.deploy(self, pb)  # lane w53-p6-escort：护航上阵（开关 escort_battle）；刷在敌船前，敌船血量缩放扣掉它们那份战力
 	var enemy_list: Array = pb.get("enemy", [])
 	for entry in enemy_list:
 		var type_id: String = entry.get("type", "pirate_boat")
@@ -862,7 +864,7 @@ func _setup_combat(pb: Dictionary) -> void:
 ## 生成一支敌舰队，绕玩家船散布；hull_hp 按战力比缩放。sprite_id 空则精灵按 type 取（PirateShip.apply_sprite）
 func _spawn_enemy(type_id: String, count: int, pb: Dictionary, sprite_id := "") -> void:
 	var enemy_power: float = float(pb.get("power", 300.0))
-	var player_power: float = float(pb.get("player_power", 1.0))
+	var player_power: float = _EscortWing.power_left(_escorts, float(pb.get("player_power", 1.0)))
 	if player_power <= 0.0:
 		player_power = 1.0
 	var scale := clampf(enemy_power / player_power, ENEMY_SCALE_MIN, ENEMY_SCALE_MAX)
@@ -976,6 +978,8 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 		var losses := _battle_losses()
 		if not losses.is_empty():
 			data["losses"] = losses
+	if _escorts != null:
+		_escorts.settle(outcome, data)  # lane w53-p6-escort：沉了 / 被夺的护航摘出 Fleet，下场写 data.escort
 	_AUDIO.combat_result(self, outcome)
 	_CombatShoreHook.unmount_combat_ui(self)
 	_try_letterbox_exit(outcome, data)
@@ -1600,3 +1604,11 @@ func boarding_approach_of(a, b) -> Dictionary:
 
 func _valid_hull(n) -> bool:
 	return is_instance_valid(n) and n is Node2D
+
+
+# ══ 护航上阵（lane w53-p6-escort）════════════════════════════════════
+# 护航船都在 scripts/combat/EscortWing.gd；这里只留接头：_setup_combat 开战刷一翼、_spawn_enemy 扣战力、
+# _melee_sides / 本队折损只算旗舰那一场的人、_battle_exit 收战摘船。
+const _EscortWing := preload("res://scripts/combat/EscortWing.gd")
+## 本场上阵的护航（EscortWing 节点；没上阵为 null——旧玩法）
+var _escorts = null

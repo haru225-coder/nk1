@@ -984,3 +984,57 @@ func from_dict(d: Dictionary) -> void:
 	morale = d.get("morale", 70)
 	mutiny_cooldown = maxi(0, int(d.get("mutiny_cooldown", 0)))
 	at_sea = false  # 只在港内存档，读档必定停泊
+
+
+# ── 护航上阵（lane w53-p6-escort）─────────────────────
+
+## 海战里正在上阵的护航船：ships 里那几格的引用（EscortWing 开战时登记、收战时清）。只活在战场上，不进存档。
+## 有护航上阵时，旗舰白刃只算旗舰与没上阵的船上的人——上阵的护航带着本船人手在本船上打，不再并进旗舰那一场（不记两遍）
+var escorts_in_battle: Array = []
+
+
+## 白刃用的本队人手：全队水手减去正在上阵的护航船上的人；没有护航上阵时同 total_crew()
+func battle_crew() -> int:
+	var c := total_crew()
+	for s in escorts_in_battle:
+		c -= int((s as Dictionary).get("crew", 0))
+	return maxi(0, c)
+
+
+## 白刃折损（WorldMap._board_enemy 本队那一方的阵亡）：同 lose_crew_random 跨船摊扣、每船至少留 1 人，
+## 只是跳过正在上阵的护航船（它们的人不在这一场）。没有护航上阵时就是 lose_crew_random
+func lose_battle_crew(n: int) -> int:
+	if escorts_in_battle.is_empty():
+		return lose_crew_random(n)
+	var before := total_crew()
+	var left := n
+	for s in ships:
+		if left <= 0:
+			break
+		if _in_battle(s):
+			continue
+		var c := int(s.get("crew", 0))
+		if c > 1:
+			var take := mini(left, c - 1)
+			s["crew"] = c - take
+			left -= take
+	return before - total_crew()
+
+
+func _in_battle(s: Dictionary) -> bool:
+	for e in escorts_in_battle:
+		if is_same(e, s):
+			return true
+	return false
+
+
+## 收战摘船（沉了 / 被夺的护航）：按引用认，不凭序号——夺来的船排在尾、旗舰沉了接任都会挪序号。返回摘掉的那几格
+func remove_ships(refs: Array) -> Array:
+	var out: Array = []
+	for r in refs:
+		for i in range(ships.size()):
+			if is_same(ships[i], r):
+				out.append(ships[i])
+				ships.remove_at(i)
+				break
+	return out

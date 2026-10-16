@@ -102,6 +102,30 @@ var boarding_initiator: bool = false
 var flood_fire = null
 ## lane w53-p3a：火势快照（0–1），起火观感 / p3b-c 读用；簿不在恒 0
 var fire_level := 0.0
+## lane w53-p6-escort：我方护航船（EscortWing 刷的；节点名 EscortShip_ 前缀、进 ESCORT_GROUP 不进 GROUP——WorldMap 数敌船、
+## 士气挂件、敌情列都只认 PirateShip 前缀，不把它当敌船）。target 是一艘敌船；敌船恒为 false，下面几样全走旧路
+var is_escort := false
+const ESCORT_GROUP := "nk1_escort_ships"
+## 风从哪条船上读（WorldMap 海战逐帧写在旗舰身上）：null 照旧读 target；护航船由 EscortWing 写成旗舰
+var wind_source: Node2D = null
+## 护航编队：EscortWing 逐帧写站位（世界坐标）与旗舰对地速度；开着时航向、帆桨照站位走，开炮仍照 target 走敌将那套
+var escort_station_on := false
+var escort_station := Vector2.ZERO
+var escort_lead_vel := Vector2.ZERO
+## 护航挨矢石的减伤（本船甲级：一级 1.0、二级 0.9、三级 0.8，同 Fleet.armor_damage_reduction 每级一成）；敌船恒 1.0
+var armor_mul := 1.0
+## 放舷前要躲开的自己人（旗舰与别的护航，EscortWing 逐帧写）
+var friends: Array = []
+## 护航编队的松紧：站位差 × 这么多（1/s）补到旗舰速度上；离站位 STATION_SLACK 以内照旗舰航向走（不来回打舵）
+const ESCORT_STATION_GAIN := 0.9
+const ESCORT_STATION_SLACK := 40.0
+## 护航也躲旗舰：贴得比这近才推（编队站位离旗舰 300 开外）
+const ESCORT_FLAG_GAP := 240.0
+## 放舷的射线（护航）：legacy 一发照直飞、先碰到哪条船算哪条（Ballistics.legacy_shot），靶前头、靶后 ESCORT_FIRE_PAST 以内
+## 有自己人就不放（再远的只吃偏了的那几发，照放——不然自己人远远在靶后头，这一舷永远放不出去）；
+## 横向让开 ESCORT_CLEAR_PX + 散布（远一步宽一分）
+const ESCORT_FIRE_PAST := 160.0
+const ESCORT_CLEAR_PX := 70.0
 
 var _last_state: StringName = &""
 var _consorts: Array = []
@@ -129,7 +153,7 @@ static var _sea_seen := false
 func _ready() -> void:
 	sprite.modulate = Color.WHITE
 	apply_sprite()
-	add_to_group(GROUP)
+	add_to_group(ESCORT_GROUP if is_escort else GROUP)
 	set_meta(&"nk1_sprite_base_scale", sprite.scale if sprite else Vector2.ONE)
 	_CombatFx.dress_ship(self)
 	_polish_wake()
@@ -178,6 +202,8 @@ func _ensure_captain() -> void:
 		return
 	captain = _Captain.new()
 	captain.setup(ship_type, sprite_key(), captain_force, crew, float(enemy_morale), cannon_count)
+	if is_escort:
+		captain.as_escort()
 	if ammo_volleys >= 0:
 		captain.volleys = ammo_volleys
 		captain.volleys_max = maxi(ammo_volleys, 1)
@@ -197,10 +223,12 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var dist = position.distance_to(target.position)
-	if dist > 2500.0: return # Too far, sleep
+	if dist > 2500.0 and not escort_station_on: return # Too far, sleep（跟站位的护航不睡）
 
 	_wire_parley(delta)
 	var orders: Dictionary = captain.tick(_situation(), delta)
+	if escort_station_on:
+		_escort_hold_station(orders)
 	# 敌船之间分离：兜圈时被本船甩乱了阵脚（本船开船、掉头）也不压成一艘。
 	# 只偏航向，不改航速、转向上限与开炮判定（开炮仍按对本船的 angle_diff）。
 	var push := _separation_push()
@@ -240,7 +268,7 @@ func _step_flood_fire(delta: float) -> void:
 		return
 	# 风与雨照本场的（target 船 = 玩家旗舰，WorldMap 海战逐帧写 wind_strength；雨从 WorldMap.is_storm 同一路读）
 	var env := {"wind": 80.0, "rain": false}
-	var ws = target.get("wind_strength")
+	var ws = _wind_node().get("wind_strength")
 	if ws != null:
 		env["wind"] = float(ws)
 	if host != null and host.get("is_storm") == true:
@@ -317,8 +345,8 @@ func _ff_look_off() -> void:
 func _ff_wind_drag() -> Vector2:
 	if not is_instance_valid(target):
 		return Vector2.ZERO
-	var wv = target.get("wind_vector")
-	var ws = target.get("wind_strength")
+	var wv = _wind_node().get("wind_vector")
+	var ws = _wind_node().get("wind_strength")
 	if wv is Vector2 and ws != null:
 		return (wv as Vector2) * clampf(float(ws) / 150.0, 0.0, 1.0)
 	return Vector2.ZERO
@@ -330,16 +358,18 @@ func _situation() -> Dictionary:
 	var host := get_parent()
 	var wind := Vector2(0, 1)  # WorldMap 海战缺省：北风
 	var wind_strength := 80.0
-	var wv = target.get("wind_vector")
+	var wv = _wind_node().get("wind_vector")
 	if wv is Vector2:
 		wind = wv
-	var ws = target.get("wind_strength")
+	var ws = _wind_node().get("wind_strength")
 	if ws != null:
 		wind_strength = float(ws)
 	var book := _morale_book()
 	var t_hull := 1.0
 	var th = target.get("hull_hp")
 	var tm = target.get("max_hp")
+	if tm == null:
+		tm = target.get("hull_max")  # lane w53-p6-escort：靶是船节点（护航 / 敌船记 hull_max）
 	if th != null and tm != null and float(tm) > 0.0:
 		t_hull = clampf(float(th) / float(tm), 0.0, 1.0)
 	var t_max := 300.0
@@ -353,7 +383,7 @@ func _situation() -> Dictionary:
 		"target_heading": Vector2.UP.rotated(target.rotation), "target_max_speed": t_max, "target_hull": t_hull,
 		"wind": wind, "wind_strength": wind_strength, "current": _sea_current(),
 		"hull": clampf(hull_hp / hull_max, 0.0, 1.0), "crew": crew, "morale": enemy_morale,
-		"own_strength": combat_strength(), "target_strength": _player_boarding_strength(),
+		"own_strength": combat_strength(), "target_strength": _target_strength(),
 		"consorts": _consorts.size(), "consorts_gone": lost[0], "consorts_struck": lost[1],
 		"host_boarding": host != null and host.get("boarding") == true,
 		"frozen": is_inf(fire_timer),
@@ -379,7 +409,7 @@ func _separation_push() -> Vector2:
 	var host := get_parent()
 	if host == null or not is_inside_tree():
 		return push
-	for n in get_tree().get_nodes_in_group(GROUP):
+	for n in get_tree().get_nodes_in_group(ESCORT_GROUP if is_escort else GROUP):
 		if n == self or n.get_parent() != host or n.is_queued_for_deletion():
 			continue
 		var other := n as PirateShip
@@ -390,6 +420,12 @@ func _separation_push() -> Vector2:
 		if d < 0.001 or d >= SEPARATION_DIST:
 			continue
 		push += away / d * (1.0 - d / SEPARATION_DIST)
+	# lane w53-p6-escort：护航也躲旗舰（编队站位离旗舰 300 开外，贴近 ESCORT_FLAG_GAP 才推）
+	if is_escort and wind_source != null and is_instance_valid(wind_source):
+		var away_f := position - wind_source.position
+		var df := away_f.length()
+		if df > 0.001 and df < ESCORT_FLAG_GAP:
+			push += away_f / df * (1.0 - df / ESCORT_FLAG_GAP)
 	return push
 
 
@@ -399,7 +435,9 @@ func _player_boarding_strength() -> float:
 	if fleet == null or not fleet.has_method("total_crew") or not fleet.has_method("morale_factor") \
 			or not fleet.has_method("captain_power"):
 		return 60.0
-	return float(fleet.call("total_crew")) * float(fleet.call("morale_factor")) * float(fleet.call("captain_power"))
+	# lane w53-p6-escort：护航上阵时它们的人在本船上打，旗舰这一场只算旗舰（与没上阵的船）上的人；没上阵 battle_crew 同 total_crew
+	var crew_fn := "battle_crew" if fleet.has_method("battle_crew") else "total_crew"
+	return float(fleet.call(crew_fn)) * float(fleet.call("morale_factor")) * float(fleet.call("captain_power"))
 
 
 ## 僚船：第一次看局势时记下同场的其它敌船；之后数折了几艘 [沉 / 被夺 / 走了, 降了]
@@ -407,9 +445,12 @@ func _consorts_lost() -> Array:
 	var host := get_parent()
 	if not _consorts_seen and host != null:
 		_consorts_seen = true
+		var prefix := "EscortShip" if is_escort else "PirateShip"  # lane w53-p6-escort：护航的僚船是别的护航与旗舰
 		for c in host.get_children():
-			if c != self and String(c.name).begins_with("PirateShip") and float(_prop(c, "hull_hp", 0.0)) > 0.0:
+			if c != self and String(c.name).begins_with(prefix) and float(_prop(c, "hull_hp", 0.0)) > 0.0:
 				_consorts.append(weakref(c))
+		if is_escort and wind_source != null and is_instance_valid(wind_source):
+			_consorts.append(weakref(wind_source))
 	var gone := 0
 	var down := 0
 	for r in _consorts:
@@ -446,6 +487,7 @@ func _process_firing(delta: float, angle_diff: float, dist: float) -> void:
 	# 敌将定打不打、打哪舷：正横、那舷装好了、射程够（顺风远逆风近）、矢石还有、没降、没在白刃
 	var side: int = captain.fire_side(angle_diff, dist)
 	if side == 0: return
+	if is_escort and _friend_in_line(side, dist): return  # lane w53-p6-escort：射线上有自己人不放（这一舷留着装好的）
 	fire_timer = VOLLEY_GAP
 	captain.on_fired(side)
 	# Fire broadside
@@ -513,7 +555,10 @@ func _grapple_odds() -> float:
 	var mr = _melee_script()
 	if mr != null:
 		var att = mr.call("side_from_enemy", self)
-		var def = mr.call("side_from_fleet", get_node_or_null("/root/Fleet"))
+		var fleet_n := get_node_or_null("/root/Fleet")
+		var def = mr.call("side_from_fleet", fleet_n)
+		if def is Dictionary and fleet_n != null and fleet_n.has_method("battle_crew"):
+			def["crew"] = int(fleet_n.call("battle_crew"))  # lane w53-p6-escort：护航上阵时旗舰这一场只算旗舰上的人
 		var ctx = mr.call("approach_from_nodes", self, target)
 		if att is Dictionary and def is Dictionary and ctx is Dictionary:
 			var c = mr.call("grapple_chance", att, def, ctx)
@@ -588,7 +633,7 @@ func hear_parley(result: Dictionary) -> void:
 
 ## 场上有号令面板就接它的 parley_resolved（面板可能比敌船晚挂，没找到每秒再看一眼，接上即止）
 func _wire_parley(delta: float) -> void:
-	if _parley_wired:
+	if _parley_wired or is_escort:
 		return
 	_parley_look -= delta
 	if _parley_look > 0.0:
@@ -607,7 +652,7 @@ func _leave_battle() -> void:
 		return
 	_left = true
 	set_physics_process(false)
-	_notice("敌船「%s」脱离远遁" % _display_name())
+	_notice(("护航「%s」转舵退出战阵" if is_escort else "敌船「%s」脱离远遁") % _display_name())
 	left_battle.emit("escaped")
 	queue_free()
 
@@ -630,6 +675,11 @@ func _note_state() -> void:
 	_last_state = st
 	var label: String = captain.label()
 	captain_state_changed.emit(st, label, str(captain.reason))
+	if is_escort:
+		# 护航跟站位时敌将那几样打法（接近 / 保持舷炮……）不是它真在走的，不亮；只亮「退出战阵」（EscortWing 换走法时自己亮）
+		if st == _Captain.DISENGAGE:
+			_flash_tag("退出战阵")
+		return
 	if captain.is_struck() and not struck:
 		struck = true
 		if _hit_tween != null and _hit_tween.is_valid():
@@ -668,6 +718,7 @@ func _note_ff_hit(amount: float, hit_side := 0) -> void:
 
 
 func take_damage(amount: float) -> void:
+	amount *= armor_mul  # lane w53-p6-escort：护航按本船甲级减伤（敌船 1.0）
 	hull_hp -= amount
 	# lane w53-p3a：旧口径弹（玩家 player_gunnery 关出来的直线铁子 / 火烧不在此调）照 hull 有漏的机会进水
 	# （没有引火——旧账不带弹种引火率）；开关关 / 已降、被钩、白刃、结算时不动水
@@ -712,6 +763,8 @@ func take_ballistic_hit(hit: Dictionary) -> void:
 	var hull := float(hit.get("hull", 0.0))
 	# 闪红 / 焦痕 / 飘字照样出：命中观感不打折（muzzle / impact 由 Cannonball 侧已出，这里只照本体反应）
 	if hull > 0.0:
+		if is_escort and not hit.has("weapon") and armor_mul > 0.0:
+			hull /= armor_mul  # lane w53-p6-escort：甲只挡矢石（take_damage 里乘 armor_mul），火烧、灌沉不过甲
 		take_damage(hull)
 	else:
 		# 不伤船体的轻矢（箭 / 轻弩）：船体不衰、闪一焦红提示钉住了
@@ -827,3 +880,50 @@ func _flash_tag(text: String, stay := false) -> void:
 	_tag_tween = create_tween()
 	_tag_tween.tween_interval(TAG_SHOW)
 	_tag_tween.tween_property(tag, "modulate:a", 0.0, 0.6)
+
+
+# ── lane w53-p6-escort：护航船（EscortWing 刷的 is_escort）──
+
+## 风从哪条船上读：wind_source（EscortWing 写成旗舰）在就读它，否则照旧读 target（敌船的 target 就是旗舰）
+func _wind_node() -> Node2D:
+	return wind_source if wind_source != null and is_instance_valid(wind_source) else target
+
+
+## 靶的白刃战力：靶是船节点（护航的靶是敌船，有 combat_strength）照它；靶是旗舰照旧按 Fleet 算（_player_boarding_strength）
+func _target_strength() -> float:
+	if target is PirateShip:
+		return float((target as PirateShip).combat_strength())
+	return _player_boarding_strength()
+
+
+## 护航跟站位（EscortWing 逐帧写 escort_station / escort_lead_vel）：想要的对地速度 = 旗舰速度 + 站位差 × ESCORT_STATION_GAIN，
+## 离站位 ESCORT_STATION_SLACK 以内照旗舰航向走；只改航向与帆桨，不抛钩（开炮仍照 target 走敌将那套）
+func _escort_hold_station(orders: Dictionary) -> void:
+	var to := escort_station - position
+	var want := escort_lead_vel + to * ESCORT_STATION_GAIN
+	var heading := Vector2.UP.rotated(rotation)
+	if to.length() <= ESCORT_STATION_SLACK and escort_lead_vel.length() > 5.0:
+		heading = escort_lead_vel.normalized()
+	elif want.length() > 1.0:
+		heading = want.normalized()
+	var drive := maxf(float(captain.drive_for(heading)), 0.05)
+	var hull_k := 0.55 + 0.45 * clampf(hull_hp / maxf(hull_max, 1.0), 0.0, 1.0)
+	orders["heading"] = heading
+	orders["drive"] = drive
+	orders["throttle"] = clampf(want.length() / maxf(1.0, max_speed * drive * hull_k), 0.0, 1.0)
+	orders["grapple"] = false
+
+
+## 这一舷的射线上（本船 → 正横，到靶再过 ESCORT_FIRE_PAST）有没有自己人：有就不放（敌船不看，照旧）
+func _friend_in_line(fire_side: int, dist: float) -> bool:
+	var dir := Vector2.RIGHT.rotated(rotation) if fire_side > 0 else Vector2.LEFT.rotated(rotation)
+	for f in friends:
+		if f == null or not is_instance_valid(f):
+			continue
+		var rel: Vector2 = (f as Node2D).position - position
+		var along := rel.dot(dir)
+		if along <= 0.0 or along > dist + ESCORT_FIRE_PAST:
+			continue
+		if absf(rel.cross(dir)) < ESCORT_CLEAR_PX + 0.12 * along:
+			return true
+	return false

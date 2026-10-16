@@ -649,12 +649,14 @@ static func parley_road(ctx: Dictionary) -> Dictionary:
 	return {"lit": need.is_empty(), "road": "可喊话" if need.is_empty() else "、".join(need), "have": have}
 
 
-## 我方白刃战力：同 WorldMap._board_enemy 的口径（水手 × 士气系数 × 将领系数），读 Fleet
+## 我方白刃战力：同 WorldMap._board_enemy 的口径（水手 × 士气系数 × 将领系数），读 Fleet。
+## 护航上阵时只算旗舰（与没上阵的船）上的人（Fleet.battle_crew，lane w53-p6-escort）；没上阵同 total_crew
 func _own_board_power() -> float:
 	var fleet := StatusHud.autoload_node("Fleet")
 	if fleet == null:
 		return 1.0
-	var crew := float(fleet.call("total_crew")) if fleet.has_method("total_crew") else 0.0
+	var crew_fn := "battle_crew" if fleet.has_method("battle_crew") else "total_crew"
+	var crew := float(fleet.call(crew_fn)) if fleet.has_method("total_crew") else 0.0
 	var mf := float(fleet.call("morale_factor")) if fleet.has_method("morale_factor") else 1.0
 	var cp := float(fleet.call("captain_power")) if fleet.has_method("captain_power") else 1.0
 	return maxf(1.0, crew * mf * cp)

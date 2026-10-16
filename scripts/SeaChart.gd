@@ -1895,6 +1895,10 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 				if not fail_msg.ends_with("。"):
 					fail_msg += "。"
 			_log(_ink(UiTheme.CINNABAR, fail_msg + prize))
+	# lane w53-p6-escort：护航上阵的下场（沉 / 被夺 / 退出战阵 / 受损 / 跳帮夺船）——WorldMap 收战时已照实记回 Fleet，这里只写一句札记
+	var escort_note := _EscortWing.settle_note(data)
+	if escort_note != "":
+		_log(_ink(UiTheme.INK, escort_note))
 	if run_fight and _run_port != "":
 		_run_settle(outcome, data)
 	# w53-p6-landing：剿寨那一行要看这一仗打的是谁（海寇还是官军），下船的人与所在港也取挂牌这一刻的——
@@ -2441,3 +2445,7 @@ func _landing_load(cargo: Dictionary) -> Dictionary:
 		if took > 0:
 			out[str(gid)] = took
 	return out
+
+
+## lane w53-p6-escort：护航上阵的战后札记句（EscortWing.settle_note）
+const _EscortWing := preload("res://scripts/combat/EscortWing.gd")
