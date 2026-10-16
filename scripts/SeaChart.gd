@@ -9,6 +9,7 @@ const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const _Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
 const _AfterAction := preload("res://scripts/combat/AfterAction.gd")
+const _Landing := preload("res://scripts/combat/LandingRaid.gd")
 
 var origin_port: String = ""
 var selected_port: String = ""
@@ -1896,6 +1897,10 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 			_log(_ink(UiTheme.CINNABAR, fail_msg + prize))
 	if run_fight and _run_port != "":
 		_run_settle(outcome, data)
+	# w53-p6-landing：剿寨那一行要看这一仗打的是谁（海寇还是官军），下船的人与所在港也取挂牌这一刻的——
+	# 底下那句清空 pending_battle 之前先扣住，挂卡时不再现取（卡是异步等的，清空后取不到）。
+	_landing_src = (GameManager.pending_battle.get("source", {}) as Dictionary).duplicate()
+	_landing_port = _sea_here()
 	GameManager.pending_battle = {}
 	if not _after_action_pending():
 		# 没挂卡（开关全关 / 无可挂行 / 非胜局）：照旧当帧续航行
@@ -1921,6 +1926,13 @@ func _after_action_pending() -> bool:
 	return _aa_pending
 
 
+## w53-p6-landing 剿寨那一行挂卡时要用的两样，在清空 pending_battle 之前扣住（见 _on_battle_result 尾段）：
+## _landing_src = 这一仗的 source（认「是不是海寇」），_landing_port = 挂牌那一刻船所在的那一港（认「在不在宋土沿海」）。
+## 卡是异步等的，等玩家 Enter 时 pending_battle 早清了、船也走了一段，两样都不能现取。
+var _landing_src: Dictionary = {}
+var _landing_port: String = ""
+
+
 ## 追击挨舷炮的一发船体伤（w53-p4-after）：WorldMap 侧现码（lane w53-2 后）敌一发 Ship._hull_loss 按
 ## DamageModel.apply_hit 折算（弹道种类 / 部位 / 距离衰减分摊），没有单一常量可引——这里取战后门闸一发的
 ## 明文量（5.0 船体 = Ship._fire_broadside 旧账「铁球」中一发的中位量，挨 3 发 ≈ 挨一舷轻伤）。
@@ -1929,10 +1941,16 @@ const WAA_HIT_DMG := 5.0
 
 
 ## 挂战后收拾小卡（win 才挂；lose / flee 直落）。空卡不挂——_aa_pending 留 false，调用方当帧续航行。
+## w53-p6-landing：海战赢了、敌是海寇、船在宋土沿海时，单子末尾再添一行「登岸剿寨」（开关 landing_raid）。
+## 那一行不走 AfterAction（押船 / 救人那一套是海上的事），走 LandingRaid——挂法一样，落账各走各的。
 func _after_action_offer(outcome: String, data: Dictionary) -> void:
 	if outcome != "win":
 		return
-	var choices := _AfterAction.choices_for(outcome, data)
+	# 剿寨读数每场清零（挂没挂那一行都清）：探针 / 复看读 last_landing_report() 时不会拿到上一场的数
+	_landing_report = {}
+	var choices: Array = _AfterAction.choices_for(outcome, data)
+	for row in _Landing.choices_for(outcome, _landing_src, _landing_port):
+		choices.append(row)
 	if choices.is_empty():
 		return
 	# 真挂卡（窗口）：挂上等 Enter；headless 下 attach 返回 null——探针 / 门检不挂卡，走探针直接落账那一路
@@ -1952,6 +1970,13 @@ func _on_after_action_done(chosen: Dictionary, choices: Array, data: Dictionary)
 		var key := str(row.get("key", ""))
 		var c := (row as Dictionary).duplicate()
 		c["chosen"] = str(chosen.get(key, ""))
+		# w53-p6-landing 剿寨那一行不走 AfterAction（那一套是海上的账：押船 / 救人 / 俘虏 / 索赎 / 追击）——
+		# 认 key 岔出来走 LandingRaid，落账与注记各归各的，AfterAction.apply 对认不得的 key 本来就返 ok=false
+		if key == "landing":
+			var lres: Dictionary = _Landing.layout(c, Fleet.total_crew(), Fleet.captain_power(), Fleet.morale_factor())
+			if bool(lres.get("ok", false)):
+				_landing_settle(lres, notes)
+			continue
 		var r: Dictionary = _AfterAction.apply(c, "win", data)
 		if not bool(r.get("ok", false)):
 			continue
@@ -2340,3 +2365,76 @@ func _return_to_port() -> void:
 # ══ 以下为本地 main 的新增函数，合并时因所在区块让位云端而被丢，按「本地纯新增保留」原样补回（2026-09-25） ══
 
 
+# ══ w53-p6-landing 小规模登陆战（战斗系统方案 §十 第六期「复用陆战骰子」）══
+# 新代码一律收在文件尾：docs/待策划拍板清单按行号引 Main.gd / SeaChart.gd 等，往中间插行会让
+# check_decision_refs 判 DRIFT（COMMON 六期补充）。上面 `_after_action_offer` / `_on_after_action_done`
+# 里各只留三五行接头，实体（判定、落账、注记）都在这一块。
+#
+# 入口：海战赢了、敌是海寇（pending_battle.source.event == "pirate"）、船停在宋土沿海的港外——
+# 战后收拾小卡末尾多一行「登岸剿寨」。海寇寨不是城：不攻城、不占地，烧了窝、把东西搬回舱
+# （方案 §七「不做大规模攻城战术层」，附 c3「不采纳攻打占城」）。
+# 数量全在 scripts/combat/LandingRaid.gd（纯静态，骰子借 SiegeMelee.clash——与守城那一路同源）。
+# 落账只动现有账：钱、舱货、名声（add_fame）、人手折损、士气；不加新账本、不加存档字段。
+
+## 剿寨这一笔的读数（探针 / 后续复看用；没打过是空字典）：last_landing_report()
+##   {won, enemy, landing, crew_lost, money, fame_gained, morale_delta, cargo:{货:件数}, loaded:{货:件数}}
+var _landing_report: Dictionary = {}
+
+
+func last_landing_report() -> Dictionary:
+	return _landing_report.duplicate(true)
+
+
+## 剿寨那一行落账：钱 / 名声 / 人手折损 / 士气 / 搬回舱的货，逐样真动全局，注记句缀进 notes（同一行札记）。
+## 胜：寨里的钱掷一次进钱匣、寨里的老实货按上限搬进舱（装不下的留在岸上）、名声与士气各加一笔。
+## 败：下船的 %d 人折 LOSE_LOSS_RATE 一成半（Fleet.lose_crew_random 跨船摊扣、每船至少留一人）、士气掉一笔。
+## 落账次序照 w53-p4-after 那一套（先钱后名声、先名声后折兵），与战后收拾卡其余各行同一路。
+func _landing_settle(res: Dictionary, notes: PackedStringArray) -> void:
+	var won := bool(res.get("won", false))
+	if int(res.get("money", 0)) > 0:
+		GameState.add_money(int(res.get("money", 0)))
+	var fame_note := ""
+	if int(res.get("fame_gained", 0)) != 0:
+		var fr: Dictionary = GameState.add_fame(int(res.get("fame_gained", 0)))
+		fame_note = "名声加 %d。" % int(fr.get("gained", 0))
+		if bool(fr.get("promoted", false)):
+			fame_note += "案册改题「%s」。" % str(fr.get("title", {}).get("name", ""))
+	var crew_lost := 0
+	if int(res.get("crew_lost", 0)) > 0:
+		crew_lost = Fleet.lose_crew_random(int(res.get("crew_lost", 0)))
+	Fleet.morale = clampi(Fleet.morale + int(res.get("morale_delta", 0)), 0, Fleet.MORALE_MAX)
+	# 寨里的货搬进舱（按件数逐样试装：舱里装不下的件数留在岸上，不掉钱不报错——与牙行装不下同一口径）
+	var cargo: Dictionary = res.get("cargo", {})
+	var loaded := _landing_load(cargo)
+	var line := _Landing.note_of(res)
+	if won:
+		line += "你点了点：钱 %d，寨里那几样东西也搬回舱里。" % int(res.get("money", 0))
+		var cnote := _Landing.cargo_note(loaded, Callable(GameManager, "get_good_name"))
+		if cnote != "":
+			line += cnote
+		var left := _Landing.cargo_units(cargo) - _Landing.cargo_units(loaded)
+		if left > 0:
+			line += "舱里塞不下，%d 件留在岸上。" % left
+	else:
+		line += "折了 %d 人。" % crew_lost
+	line += fame_note
+	notes.append(line)
+	res["loaded"] = loaded
+	_landing_report = res.duplicate(true)
+	_refresh_status()
+
+
+## 寨里搬回舱：{货: 请求件数} → {货: 实装件数}。逐样按 Fleet.add_cargo 的自动挑船口径试装
+## （装不进这一样就少装几件，再装不下的留给下一样），均价成本记 WIN_CARGO_COST（剿来的，记 0）。
+func _landing_load(cargo: Dictionary) -> Dictionary:
+	var out := {}
+	for gid in cargo.keys():
+		var want := int(cargo[gid])
+		var took := 0
+		for _i in maxi(0, want):
+			if not Fleet.add_cargo(str(gid), 1, _Landing.WIN_CARGO_COST):
+				break
+			took += 1
+		if took > 0:
+			out[str(gid)] = took
+	return out
