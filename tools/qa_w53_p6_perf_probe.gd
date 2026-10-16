@@ -9,8 +9,8 @@ extends SceneTree
 ##   同屏船数的数法（同 EscortWing 头注）：旗舰 1 + 护航（EscortShip_）+ 敌船（PirateShip_）+ 火船（FireShip_，挂在 FireShips 下）。
 ##   另报 process / physics 每帧耗时、每帧物理步数、绘制调用、同屏船数（整段最少 / 开场）、在喷粒子总数（整段取最多）。
 ## 用法（带窗口，帧时作数；本机无 GPU、:2 走软件渲染，绝对值偏大，看开 / 关两份之差）：
-##   DISPLAY=:2 bash /workspace/w53/tools/glock.sh godot --fixed-fps 60 --path . -s res://tools/qa_w53_p6_perf_probe.gd \
-##     [-- --frames=900 --warmup=120 --cfg=on,off --fireships=N]
+##   DISPLAY=:2 godot --fixed-fps 60 --path . -s res://tools/qa_w53_p6_perf_probe.gd \
+##     [-- --frames=900 --warmup=120 --cfg=on,off,yashan --fireships=N]        （w53 本机经门锁 glock.sh 跑）
 ##   --fixed-fps 60：每帧恰走一步物理（同游戏里 60 帧一步），量到的是一帧的全部开销；vsync 关、max_fps 0，不被垂直同步钉在 16.7。
 ##   headless（门禁 gates-full 照常这么跑）：无渲染，帧时只含 CPU——判词照出，数不作数（印一行注记）。
 ## 布景：打不沉、不溃、不打光——敌船与护航船体 100000、敌船水手 120 士气 90、矢石 999 轮；旗舰 300 人、耐久 100000、半帆开船、
