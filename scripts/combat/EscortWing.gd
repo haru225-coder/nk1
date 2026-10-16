@@ -1,23 +1,30 @@
 extends Node2D
-## 护航船上阵（战斗方案 §五、§十 第六期；lane w53-p6-escort，开关 escort_battle）。
+## 护航船上阵与三道将令（战斗方案 §五、§十 第六期；lane w53-p6-escort，开关 escort_battle / escort_orders）。
 ## 舰队里旗舰以外的船（Fleet.ships[1..]，至多 MAX_ESCORTS 艘，连旗舰、敌船同屏不过 MAX_ON_FIELD 艘）跟着进海战：
 ##   船体、人手、炮位各按本船，刷的是 PirateShip.tscn（is_escort 立着：节点名 EscortShip_ 前缀、不进 nk1_enemy_ships 组——
 ##   WorldMap 数敌船、士气挂件、敌情列、小地图都只认 PirateShip 前缀，不会把它当敌船）；运动、开炮复用 PirateShip / EnemyCaptainAI
 ##   那一套，敌我反过来：target 是一艘敌船，风读旗舰（wind_source），素帆（HullRig.sail_crimson 关）。
-## 走法：跟在旗舰两侧后方（STATIONS），敌船进了舷就放（射线上有自己人不放）；敌船照旧都冲旗舰来。
+## 三道将令（开战布置时下一道、整场不变；ORDER_WINDOW_S 秒里没下照列队）：
+##   列队 line   护航跟在旗舰两侧后方（STATIONS），敌船进了舷就放；敌船照旧都冲旗舰来
+##   曳敌 lure   每艘护航迎上去缠住一艘敌船：近到 LURE_PX，那艘敌船掉头来打护航（target 改成护航），旗舰少挨一艘；护航孤船挨打
+##   夺舱 board  护航先照列队跟着、甲士聚舷待命（装填 BOARD_RELOAD_MUL 倍慢）；旗舰一钩上（不论谁先抛的钩），护航去钩第二艘
+## 护航与敌船之间的接舷白刃不进 WorldMap._board_enemy（那是旗舰那一场）：两船并住停驶 MELEE_HOLD_S 秒，再按 MeleeResolve 一掷，
+## 不起题签；钩着的那几秒用 escort_locked 拴住（不碰 grappled：士气挂件把 grappled 当旗舰钩舷算）。
 ## 记账（与「护航只在结算时按折损记账」那条对上，不记两遍）：
 ##   · 船体、人手逐帧照实写回 Fleet.ships 那一格（按引用认，不凭序号）：player_damage（在册船耐久差）与收战折损（水手差）都由
 ##     WorldMap 从 Fleet 现算，各只算一遍；
 ##   · 上阵的护航自带人手在本船上打：旗舰白刃只算旗舰与没上阵的船上的人（Fleet.battle_crew / lose_battle_crew），护航的人不再并进旗舰那一场；
 ##   · 敌船血量按战力比缩放时（WorldMap._spawn_enemy），上阵护航那一份战力不再算进 player_power（power_left）——护航真上阵开打了，
 ##     不能既压低敌船血量、又自己再打一遍；
-##   · 沉了的护航收战时（WorldMap._battle_exit → settle）从 Fleet 摘掉：船上的人并进 data.losses 的水手数，舱货随船没了，
+##   · 沉了 / 被夺的护航收战时（WorldMap._battle_exit → settle）从 Fleet 摘掉：船上的人并进 data.losses 的水手数，舱货随船没了，
 ##     另记 data.escort（不算「颠落舱面货」）；SeaChart 只照 data.escort 写一句札记（settle_note），不再动 Fleet；
 ##   · 旗舰沉了照旧收战（lose{sunk}），SeaChart 13c 把沉船移出、首艘耐久 > 0 的船接任——沉了的护航此时已摘掉，接任的必是还浮着的那艘。
-## 关 escort_battle：deploy 返回 null，一艘不刷，各处接头全走旧路。
+## 关 escort_battle：deploy 返回 null，一艘不刷，各处接头全走旧路；关 escort_orders：不出将令签，护航照列队。
+## 随机：只掷全局流（randf / randi），探针 / 胜率工具 seed() 盖得住。
 
 const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
 const _Maneuver := preload("res://scripts/combat/ManeuverModel.gd")
+const _MeleeResolve := preload("res://scripts/combat/MeleeResolve.gd")
 const _SeaWake := preload("res://scripts/combat/SeaWake.gd")
 const _SeaPennant := preload("res://scripts/combat/SeaPennant.gd")
 const PIRATE_SCENE := "res://scenes/PirateShip.tscn"
@@ -34,17 +41,57 @@ const FIRE_DELAY := 3.5
 ## 编队站位（旗舰船身坐标：x 右舷为正、y 船尾为正）：左右后侧各一，第三艘缀在正后。
 ## 与旗舰、彼此都隔开 PirateShip.SEPARATION_DIST（300）以上，站定了不互相推
 const STATIONS := [Vector2(-230.0, 210.0), Vector2(230.0, 210.0), Vector2(0.0, 470.0)]
+## 曳敌：护航近到这么远，那艘敌船掉头来追护航；拉开过 LURE_DROP_PX（护航跑远了 / 退出战阵）敌船回头找旗舰
+const LURE_PX := 650.0
+const LURE_DROP_PX := 1600.0
+## 夺舱：钩上后两船并住这么多秒再分胜负（看得见两船拴在一处；其间任一沉了、旗舰来钩这艘，白刃作罢）
+const MELEE_HOLD_S := 3.0
+## 夺舱待命：甲士聚舷，弩炮手少了，装填慢这么多倍
+const BOARD_RELOAD_MUL := 1.25
+## 开战布置：开战这么多秒里下将令（键盘 8 / 9 / 0、点签、触屏点签），下了就定、整场不变；过时没下照列队
+const ORDER_WINDOW_S := 10.0
 ## 编队朝向跟旗舰船首转，每秒至多转这么多（旗舰猛一打舵，站位不跟着甩出半圈）
 const FRAME_TURN := 0.8
 
+const ORDER_LINE := "line"
+const ORDER_LURE := "lure"
+const ORDER_BOARD := "board"
+const ORDERS := ["line", "lure", "board"]
+const ORDER_NAMES := {"line": "列队", "lure": "曳敌", "board": "夺舱"}
+## 签面提示与面板代价行（平实写明代价）
+const ORDER_TIPS := {
+	"line": "护航跟在旗舰两侧后方，敌船进了舷就放箭。代价：敌船照旧都冲旗舰来，护航不替旗舰挡。",
+	"lure": "每艘护航迎上去缠住一艘敌船，引它掉头来打护航，旗舰少挨一艘。代价：护航孤船挨打，可能被打沉，海寇还会跳帮夺船。",
+	"board": "护航跟着旗舰，甲士聚舷待命，放箭慢两成；旗舰钩上一艘后，护航去钩第二艘。代价：白刃不利要折人手。",
+}
+## 面板代价行（「列队代价：…」一令一行，16 号字放得下号令面板一行）
+const ORDER_COSTS := {
+	"line": "敌船照旧冲旗舰",
+	"lure": "护航孤船或沉或被夺",
+	"board": "放箭慢两成、跳帮折人",
+}
+
 var world: Node2D = null
 var flagship: Node2D = null
-## 上阵的护航：[{node, ref（Fleet.ships 那一格）, slot, name, type, dur0, crew0, fate（"" / sunk / fled）}]
+## 上阵的护航：[{node, ref（Fleet.ships 那一格）, slot, name, type, dur0, crew0, fate（"" / sunk / taken / fled）, lure, board, mode}]
 var escorts: Array = []
+var order := ORDER_LINE
+var order_locked := false
+## 谁定的将令：player（玩家下的）/ timeout（过时照列队）/ auto（escort_orders 关）
+var order_by := ""
+## 旗舰钩上过一艘（夺舱的扳机；_board_enemy 开头调 on_flagship_hooked）
+var flag_hooked := false
+## 护航跳帮夺下的船数（data.escort.prizes）
+var prizes_taken := 0
+## 被曳走的敌船：敌船 instance_id → 护航 instance_id（存号不存节点：沉了、被夺的船先释放，拿号比对不碰已释放的实例）
+var _lured: Dictionary = {}
 ## 编队朝向（rad）：跟着旗舰 rotation 转、转速封顶 FRAME_TURN
 var _frame_rot := 0.0
 ## 已接上离树回调的敌船号（敌船在本翼之后刷，live_enemies 扫到就接）
 var _watched: Dictionary = {}
+## 挂着的护航白刃：[{att, def, t}]
+var _melees: Array = []
+var _t := 0.0
 var _settled := false
 
 
@@ -137,18 +184,24 @@ func _spawn(w: Node2D, picks: Array) -> void:
 		p.set("max_speed", _Maneuver.V_REF * float(prof.get("hull", 0.95)) * (1.0 + _Maneuver.SAIL_LV_SPEED * float(int(s.get("sail_level", 1)) - 1)))
 		p.set("fire_timer", FIRE_DELAY)
 		p.set("wind_source", flagship)
+		p.set("wing", self)
 		var slot: Vector2 = STATIONS[k % STATIONS.size()]
 		if is_instance_valid(flagship):
 			p.position = flagship.position + slot.rotated(flagship.rotation)
 			p.rotation = flagship.rotation
 		w.add_child(p)
 		var e := {"node": p, "ref": s, "slot": slot, "name": nm, "type": type_id,
-			"dur0": float(s.get("durability", 0.0)), "crew0": int(s.get("crew", 0)), "fate": ""}
+			"dur0": float(s.get("durability", 0.0)), "crew0": int(s.get("crew", 0)), "fate": "", "lure": null, "board": null,
+			"mode": ""}
 		escorts.append(e)
 		Fleet.escorts_in_battle.append(s)
 		p.tree_exiting.connect(_on_escort_exiting.bind(e))
 		p.connect("left_battle", _on_escort_left.bind(e))
 		_dress(p)
+	if not _Switches.on("escort_orders"):
+		order_locked = true
+		order_by = "auto"
+	_set_mode_all()
 
 
 ## 上屏船名：Fleet.display_name（撞名的加「・甲」「・乙」）；按引用找序号
@@ -191,13 +244,18 @@ func _physics_process(delta: float) -> void:
 		return
 	if not is_instance_valid(flagship):
 		return
+	_t += delta
 	_frame_rot = rotate_toward(_frame_rot, flagship.rotation, FRAME_TURN * delta)
+	if not order_locked and _t >= ORDER_WINDOW_S:
+		lock_order(ORDER_LINE, "timeout")
 	var foes := live_enemies()
 	for e in escorts:
 		if not _alive(e["node"]):
 			continue
 		_sync_fleet(e)
 		_steer(e, foes)
+	_tick_lured()
+	_tick_melees(delta)
 	_feed_pennants()
 
 
@@ -217,13 +275,18 @@ func live_enemies() -> Array:
 	return out
 
 
-## 敌船离树（沉 / 遁 / 被夺）：护航当即撒手——target 指着它的清掉。不清的话这一帧末它就释放，
+## 敌船离树（沉 / 遁 / 被夺）：护航当即撒手——target / 曳敌 / 夺舱指着它的都清掉。不清的话这一帧末它就释放，
 ## 护航身上留着已释放的靶，ShipLook 读 target 的风当场报错；下一物理帧 _steer 再按场上的敌船重挑
 func _on_enemy_exiting(id: int) -> void:
+	_lured.erase(id)
 	for e in escorts:
 		var p = e["node"]
 		if _alive(p) and _id(p.get("target")) == id:
 			p.set("target", null)
+		if _id(e["lure"]) == id:
+			e["lure"] = null
+		if _id(e["board"]) == id:
+			e["board"] = null
 
 
 ## 上阵护航节点（活着的）
@@ -254,16 +317,115 @@ func _sync_fleet(e: Dictionary) -> void:
 	s["crew"] = maxi(1, int(p.get("crew")))
 
 
-## 这一艘此刻怎么走：跟旗舰站位（编队朝向 _frame_rot），靶取离它最近的敌船（开炮用）；脱离中的照敌将自己走
+## 这一艘此刻怎么走：曳敌缠着它那艘，夺舱扳机扣了去钩第二艘，其余跟站位（列队 / 夺舱待命）；脱离中的照敌将自己走
 func _steer(e: Dictionary, foes: Array) -> void:
 	var p: Node2D = e["node"]
 	var cap = p.get("captain")
 	var routing: bool = cap != null and cap.get("state") == &"disengage"
 	p.set("friends", _friends_of(p))
-	p.set("target", _nearest(p, foes))  # 场上没敌船了给 null（不拿旗舰凑数：靶就是开炮的方向）
-	p.set("escort_station_on", not routing)
-	p.set("escort_station", flagship.position + (e["slot"] as Vector2).rotated(_frame_rot))
-	p.set("escort_lead_vel", flagship.get("velocity") if flagship.get("velocity") is Vector2 else Vector2.ZERO)
+	var mode := _mode_of(e, foes)
+	if mode != e["mode"]:
+		e["mode"] = mode
+		_apply_mode(e)
+	match mode:
+		"lure":
+			p.set("target", e["lure"])
+			p.set("escort_station_on", false)
+		"board":
+			p.set("target", e["board"])
+			p.set("escort_station_on", false)
+		_:
+			p.set("target", _nearest(p, foes))  # 场上没敌船了给 null（不拿旗舰凑数：靶就是开炮的方向）
+			p.set("escort_station_on", not routing)
+			p.set("escort_station", flagship.position + (e["slot"] as Vector2).rotated(_frame_rot))
+			p.set("escort_lead_vel", flagship.get("velocity") if flagship.get("velocity") is Vector2 else Vector2.ZERO)
+
+
+## 本艘此刻的走法：lure（曳敌缠着一艘）/ board（夺舱去钩第二艘）/ station（跟站位）。
+## 缠 / 钩的那艘转舵脱离了就放它走（降了的照钩、不照缠）：曳敌是把它从旗舰身边引开，它要逃就由它逃——
+## 护航追着它跑，它拉不开离场线、走不了，两船耗到限时两散（胜率工具同种子 300 秒两散实测）
+func _mode_of(e: Dictionary, foes: Array) -> String:
+	if not order_locked:
+		return "station"
+	match order:
+		ORDER_LURE:
+			if not _engaged(e["lure"], false):
+				e["lure"] = _pick_lure(e, _fighting(foes, false))
+			return "lure" if _engaged(e["lure"], false) else "station"
+		ORDER_BOARD:
+			if not flag_hooked:
+				return "station"
+			if not _engaged(e["board"], true) or _id(e["board"]) == _id(world.get("boarding_target")):
+				e["board"] = _pick_board(e, _fighting(foes, true))
+			return "board" if _engaged(e["board"], true) else "station"
+	return "station"
+
+
+## 还缠得住 / 钩得着：活着、没转舵脱离；降了的只算钩得着（夺舱收船）、不算缠得住（曳敌引的是还在打的）
+static func _engaged(n, struck_ok: bool) -> bool:
+	if not _alive(n):
+		return false
+	var cap = n.get("captain")
+	if cap != null and cap.get("state") == &"disengage":
+		return false
+	return struck_ok or n.get("struck") != true
+
+
+static func _fighting(foes: Array, struck_ok: bool) -> Array:
+	return foes.filter(func(f): return _engaged(f, struck_ok))
+
+
+## 换走法：敌将的接舷许可、装填快慢跟着换；标签亮一下
+func _apply_mode(e: Dictionary) -> void:
+	var p: Node2D = e["node"]
+	var cap = p.get("captain")
+	if cap == null:
+		return
+	cap.set("force_board", e["mode"] == "board")
+	cap.set("reload_mul", BOARD_RELOAD_MUL if order == ORDER_BOARD and order_locked and e["mode"] != "board" else 1.0)
+	if p.has_method("_flash_tag"):
+		match e["mode"]:
+			"lure":
+				p.call("_flash_tag", "曳敌")
+			"board":
+				p.call("_flash_tag", "夺舱")
+			_:
+				p.call("_flash_tag", str(ORDER_NAMES.get(order, "列队")) if order_locked else "列队")
+
+
+func _set_mode_all() -> void:
+	for e in escorts:
+		e["mode"] = ""
+
+
+## 曳敌挑哪艘：先挑还没有护航缠着的、离本艘最近的；都有人缠了就挑最近的
+func _pick_lure(e: Dictionary, foes: Array) -> Node2D:
+	var taken := {}
+	for o in escorts:
+		if o != e and _alive(o["node"]) and _alive(o["lure"]):
+			taken[(o["lure"] as Node).get_instance_id()] = true
+	var free: Array = []
+	for f in foes:
+		if not taken.has((f as Node).get_instance_id()):
+			free.append(f)
+	var pick := _nearest(e["node"], free)
+	return pick if pick != null else _nearest(e["node"], foes)
+
+
+## 夺舱挑「第二艘」：旗舰正钩着的那艘不挑、别的护航正钩着的不挑，离本艘最近的
+func _pick_board(e: Dictionary, foes: Array) -> Node2D:
+	var skip := {}
+	var bt = world.get("boarding_target")
+	if bt != null and is_instance_valid(bt):
+		skip[(bt as Node).get_instance_id()] = true
+	for o in escorts:
+		if o != e and _alive(o["node"]) and _alive(o["board"]):
+			skip[(o["board"] as Node).get_instance_id()] = true
+	var pool: Array = []
+	for f in foes:
+		if not skip.has((f as Node).get_instance_id()):
+			pool.append(f)
+	return _nearest(e["node"], pool)
 
 
 static func _nearest(from: Node2D, pool: Array) -> Node2D:
@@ -286,6 +448,45 @@ func _friends_of(p: Node2D) -> Array:
 	return out
 
 
+## 曳敌：护航近到 LURE_PX，它缠的那艘敌船掉头来打护航；护航没了 / 跑远了 / 不再缠它，敌船回头找旗舰
+func _tick_lured() -> void:
+	for id in _lured.keys():
+		var foe = instance_from_id(id)
+		var esc = instance_from_id(int(_lured[id]))
+		var keep: bool = _alive(foe) and _alive(esc) and (foe as Node2D).position.distance_to((esc as Node2D).position) <= LURE_DROP_PX
+		if keep:
+			for e in escorts:
+				if _id(e["node"]) == int(_lured[id]) and _id(e["lure"]) != int(id):
+					keep = false
+		if not keep:
+			_release_lured(int(id))
+	if order != ORDER_LURE or not order_locked:
+		return
+	for e in escorts:
+		var p = e["node"]
+		var foe = e["lure"]
+		if not (_alive(p) and _alive(foe)) or _lured.has(_id(foe)):
+			continue
+		if _id(foe.get("target")) != _id(flagship) or _id(foe) == _id(world.get("boarding_target")) or bool(foe.get("struck")):
+			continue
+		if (p as Node2D).position.distance_to((foe as Node2D).position) <= LURE_PX:
+			_lured[_id(foe)] = _id(p)
+			foe.set("target", p)
+			foe.set("wind_source", flagship)
+			foe.set("wing", self)
+			_notice("敌船「%s」掉头来打护航「%s」" % [str(foe.get("ship_name")), str(e["name"])])
+
+
+## 被曳走的敌船回头找旗舰（风照旧读旗舰、白刃不再交护航一翼）
+func _release_lured(foe_id: int) -> void:
+	_lured.erase(foe_id)
+	var foe = instance_from_id(foe_id)
+	if _alive(foe):
+		foe.set("target", flagship)
+		foe.set("wind_source", null)
+		foe.set("wing", null)
+
+
 func _feed_pennants() -> void:
 	var sea = world.call("sea_state") if world.has_method("sea_state") else null
 	if sea == null:
@@ -300,6 +501,177 @@ func _feed_pennants() -> void:
 		if pen != null:
 			pen.set("wind", wind.normalized() if wind.length() > 0.01 else Vector2(0, 1))
 			pen.set("force", force)
+
+
+# ── 将令 ──────────────────────────────────────────────
+
+## 下将令（号令面板的签 / 键 / 触屏都走这里；探针、胜率工具直调）：开战布置时只下一次，下了就定、整场不变。返回下没下成
+func lock_order(id: String, by := "player") -> bool:
+	if order_locked or not id in ORDERS:
+		return false
+	order = id
+	order_locked = true
+	order_by = by
+	_set_mode_all()
+	if by == "timeout":
+		_notice("护航未得将令，照列队跟定旗舰")
+	else:
+		_notice("护航将令：%s（整场不变）" % str(ORDER_NAMES[id]))
+	return true
+
+
+## 将令表（号令面板运行时取：面板不 preload 本件——本件直读 Fleet / GameState，-s 工具在 autoload 挂上前 preload 面板会连带编不过）
+func order_table() -> Dictionary:
+	return {"ids": ORDERS, "names": ORDER_NAMES, "tips": ORDER_TIPS, "costs": ORDER_COSTS}
+
+
+## 布置还剩几秒（已定为 0）
+func order_left_s() -> float:
+	return 0.0 if order_locked else maxf(0.0, ORDER_WINDOW_S - _t)
+
+
+## 将令签亮不亮：escort_orders 开、还没定
+func orders_open() -> bool:
+	return _Switches.on("escort_orders") and not order_locked and not escort_nodes().is_empty()
+
+
+# ── 接舷白刃（护航钩敌船 / 被曳的敌船钩护航）──────────────────
+
+## 旗舰钩上了一艘（WorldMap._board_enemy 开头，不论谁先抛的钩）：夺舱的扳机；护航正钩着这艘的白刃作罢（让给旗舰那一场）
+func on_flagship_hooked(enemy: Node) -> void:
+	flag_hooked = true
+	for m in _melees.duplicate():
+		if _id(m["att"]) == _id(enemy) or _id(m["def"]) == _id(enemy):
+			_melees.erase(m)
+			_unlock(m["att"])
+			_unlock(m["def"])
+	if order == ORDER_BOARD and order_locked:
+		for e in escorts:
+			e["mode"] = ""
+
+
+## 船抛钩（PirateShip._try_grapple：钩的不是旗舰——护航去钩敌船、被曳的敌船去钩护航）。返回 true = 钩上了、白刃挂起
+func ship_hooks(att: Node2D, def: Node2D) -> bool:
+	if world == null or world.get("resolved") == true or not (_alive(att) and _alive(def)):
+		return false
+	var bt := _id(world.get("boarding_target"))
+	if _busy(att) or _busy(def) or (bt != 0 and (_id(def) == bt or _id(att) == bt)):
+		return false
+	if world.has_method("boarding_approach_of"):
+		var ap = world.call("boarding_approach_of", att, def)
+		if ap is Dictionary and not (ap as Dictionary).is_empty() and not bool(ap.get("ok", true)):
+			return false
+	var ctx: Dictionary = _MeleeResolve.approach_from_nodes(att, def, Vector2.ZERO, -1.0,
+		str(att.get("ship_type")), str(def.get("ship_type")))
+	var odds := _MeleeResolve.grapple_chance(melee_side(att), melee_side(def), ctx)
+	var ok := randf() < odds
+	var cap = att.get("captain")
+	if cap != null:
+		cap.call("on_grapple", ok)
+	if not ok:
+		att.call("_flash_tag", "钩索落空")
+		return false
+	att.call("_flash_tag", "抛钩接舷")
+	att.set("escort_locked", true)
+	def.set("escort_locked", true)
+	_melees.append({"att": att, "def": def, "t": MELEE_HOLD_S})
+	if att.get("is_escort") == true:
+		_notice("护航「%s」钩住%s，跳帮夺舱" % [str(att.get("ship_name")), str(def.get("ship_name"))])
+	else:
+		_notice("敌船「%s」抛钩咬住护航「%s」" % [str(att.get("ship_name")), str(def.get("ship_name"))])
+	return true
+
+
+func _busy(n: Node2D) -> bool:
+	for m in _melees:
+		if _id(m["att"]) == _id(n) or _id(m["def"]) == _id(n):
+			return true
+	return false
+
+
+static func _unlock(n) -> void:
+	if n != null and is_instance_valid(n):
+		n.set("escort_locked", false)
+
+
+## 白刃一方：船节点按 MeleeResolve.side_from_enemy 读（水手、士气、将领系数、船型、船名）；护航那方换成本队的白刃装备
+## （同 side_from_fleet：弓弩手两成、披甲两成五、灰瓶两枚）
+static func melee_side(n: Node2D) -> Dictionary:
+	var s: Dictionary = _MeleeResolve.side_from_enemy(n)
+	if n.get("is_escort") == true:
+		s["archers"] = 0.2
+		s["armor"] = 0.25
+		s["pots"] = 2
+	return s
+
+
+func _tick_melees(delta: float) -> void:
+	for m in _melees.duplicate():
+		var att = m["att"]
+		var def = m["def"]
+		if not (_alive(att) and _alive(def)):
+			_melees.erase(m)
+			_unlock(att)
+			_unlock(def)
+			continue
+		m["t"] = float(m["t"]) - delta
+		if float(m["t"]) <= 0.0:
+			_melees.erase(m)
+			resolve_melee(att, def)
+
+
+## 一场护航白刃（钩缆已挂牢）：MeleeResolve 一掷；双方折人、攻方得手夺船（护航夺敌船入船籍 / 敌船夺走护航），不得手各自退开
+func resolve_melee(att: Node2D, def: Node2D) -> Dictionary:
+	_unlock(att)
+	_unlock(def)
+	if not (_alive(att) and _alive(def)) or world == null:
+		return {}
+	var ctx: Dictionary = _MeleeResolve.approach_from_nodes(att, def, Vector2.ZERO, -1.0,
+		str(att.get("ship_type")), str(def.get("ship_type")))
+	ctx["hooked"] = true
+	ctx["seed"] = randi() | 1
+	var r: Dictionary = _MeleeResolve.resolve(melee_side(att), melee_side(def), ctx)
+	att.set("crew", maxi(0, int(att.get("crew")) - int(r.get("att_dead", 0))))
+	def.set("crew", maxi(0, int(def.get("crew")) - int(r.get("def_dead", 0))))
+	var att_name := str(att.get("ship_name"))
+	var def_name := str(def.get("ship_name"))
+	if str(r.get("legacy", "lose")) == "win":
+		if att.get("is_escort") == true:
+			var taken: String = str(world.call("escort_prize", def)) if world.has_method("escort_prize") else ""
+			prizes_taken += 1
+			_notice("护航「%s」跳帮夺下%s" % [att_name, taken if taken != "" else def_name])
+		else:
+			_lose_escort(def, "taken")
+			_notice("护航「%s」被敌船「%s」跳帮夺去" % [def_name, att_name])
+	else:
+		var att_cap = att.get("captain")
+		var def_cap = def.get("captain")
+		if att_cap != null:
+			att_cap.call("on_boarding_repelled")
+			att.set("enemy_morale", int(att_cap.call("reported_morale")))
+		if def_cap != null:
+			def_cap.call("on_melee_held")
+			def.set("enemy_morale", int(def_cap.call("reported_morale")))
+		var dead := int(r.get("att_dead", 0))
+		if att.get("is_escort") == true:
+			_notice("护航「%s」跳帮受挫，折 %d 人" % [att_name, dead])
+			_witness("ally_routed")
+		else:
+			_notice("护航「%s」打退跳帮" % def_name)
+	for e in escorts:
+		if _alive(e["node"]):
+			_sync_fleet(e)
+	return r
+
+
+## 护航被夺：记下场、写回 Fleet、离场（船随敌去，收战时从 Fleet 摘掉）
+func _lose_escort(p: Node2D, fate: String) -> void:
+	for e in escorts:
+		if _id(e["node"]) == p.get_instance_id() and e["fate"] == "":
+			_sync_fleet(e)
+			e["fate"] = fate
+			_witness("ally_captured" if fate == "taken" else "ally_sunk")
+	p.queue_free()
 
 
 func _witness(kind: String) -> void:
@@ -322,6 +694,10 @@ func _on_escort_exiting(e: Dictionary) -> void:
 	var p = e["node"]
 	if p == null or not is_instance_valid(p):
 		return
+	# 缠着它的敌船当即回头找旗舰：节点这一帧末就释放，别处（ShipLook 读 target 的风）不能再拿到它
+	for id in _lured.keys():
+		if int(_lured[id]) == p.get_instance_id():
+			_release_lured(int(id))
 	if e["fate"] != "":
 		return
 	if float(p.get("hull_hp")) <= 0.0:
@@ -347,17 +723,19 @@ func _on_escort_left(_how: String, e: Dictionary) -> void:
 
 # ── 收战 ──────────────────────────────────────────────
 
-## 收战（WorldMap._battle_exit，player_damage 与 losses 算过之后）：沉了的护航从 Fleet 摘掉（按引用），
+## 收战（WorldMap._battle_exit，player_damage 与 losses 算过之后）：沉了 / 被夺的护航从 Fleet 摘掉（按引用），
 ## 船上的人并进 data.losses.crew，护航下场写 data.escort：
-##   {deployed: [{name, type}], sunk: [{name, type, crew, cargo}], fled: [{name, type}], hurt: [{name, dmg}]}
+##   {order, order_by, deployed: [{name, type}], sunk / taken: [{name, type, crew, cargo}], fled: [{name, type}], hurt: [{name, dmg}], prizes}
 func settle(_outcome: String, data: Dictionary) -> void:
 	if _settled:
 		return
 	_settled = true
+	_melees.clear()
 	for e in escorts:
 		if _alive(e["node"]):
 			_sync_fleet(e)
-	var rows := {"deployed": [], "sunk": [], "fled": [], "hurt": []}
+	var rows := {"order": order, "order_by": order_by, "deployed": [], "sunk": [], "taken": [], "fled": [], "hurt": [],
+		"prizes": prizes_taken}
 	var gone: Array = []
 	var drowned := 0
 	for e in escorts:
@@ -365,7 +743,7 @@ func settle(_outcome: String, data: Dictionary) -> void:
 		var row := {"name": str(e["name"]), "type": str(e["type"])}
 		(rows["deployed"] as Array).append(row)
 		var fate := str(e["fate"])
-		if fate == "sunk":
+		if fate == "sunk" or fate == "taken":
 			var lost := row.duplicate()
 			lost["crew"] = int(s.get("crew", 0))
 			lost["cargo"] = _cargo_of(s)
@@ -385,6 +763,11 @@ func settle(_outcome: String, data: Dictionary) -> void:
 		data["losses"] = losses
 	data["escort"] = rows
 	Fleet.escorts_in_battle.clear()
+	for id in _lured.keys():
+		var foe = instance_from_id(id)
+		if _alive(foe):
+			foe.set("wing", null)
+	_lured.clear()
 
 
 static func _cargo_of(s: Dictionary) -> Dictionary:
@@ -416,7 +799,7 @@ static func _remove_ships(refs: Array) -> void:
 			GameState.berth_index = berth - 1
 
 
-## 战后札记里交代护航的一句（SeaChart._on_battle_result 接）：沉、退出战阵、受损；什么都没出没写返回 ""
+## 战后札记里交代护航的一句（SeaChart._on_battle_result 接）：沉、被夺、退出战阵、受损、跳帮夺船；什么都没出没写返回 ""
 static func settle_note(data: Dictionary) -> String:
 	var esc = data.get("escort")
 	if not (esc is Dictionary):
@@ -425,10 +808,15 @@ static func settle_note(data: Dictionary) -> String:
 	for r in (esc as Dictionary).get("sunk", []):
 		var cargo := _cargo_words((r as Dictionary).get("cargo", {}))
 		bits.append("护航「%s」沉没%s" % [str(r.get("name", "")), "，该船货物随船（%s）" % cargo if cargo != "" else ""])
+	for r in (esc as Dictionary).get("taken", []):
+		bits.append("护航「%s」被敌跳帮夺去" % str(r.get("name", "")))
 	for r in (esc as Dictionary).get("fled", []):
 		bits.append("护航「%s」转舵退出战阵" % str(r.get("name", "")))
 	for r in (esc as Dictionary).get("hurt", []):
 		bits.append("「%s」船体受损 %d" % [str(r.get("name", "")), int(r.get("dmg", 0))])
+	var n := int((esc as Dictionary).get("prizes", 0))
+	if n > 0:
+		bits.append("护航跳帮夺下 %d 艘" % n)
 	return "" if bits.is_empty() else "；".join(bits) + "。"
 
 

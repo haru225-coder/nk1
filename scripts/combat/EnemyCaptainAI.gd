@@ -103,7 +103,7 @@ const PROFILES := {
 		"rout": 22.0, "strike": 14.0, "disc": 0.75, "gauge": 1.0, "volleys": 12, "strike_word": "降幡请降"},
 	"default": {"label": "敌船", "board_ratio": 1.8, "desperate": 1.0, "hull_rout": 0.33,
 		"rout": 28.0, "strike": 12.0, "disc": 1.0, "gauge": 0.8, "volleys": 10, "strike_word": "降幡"},
-	# lane w53-p6-escort：我方护航船（as_escort 立）。不自己起意接舷（board_ratio / desperate 够不着），
+	# lane w53-p6-escort：我方护航船（as_escort 立）。不自己起意接舷（board_ratio / desperate 够不着，夺舱由 force_board 扳），
 	# 船伤三成就退、士气线比敌船稳一点；降幡线照填但 no_strike 不降（垮了就退出战阵）
 	"escort": {"label": "护航", "board_ratio": 9.9, "desperate": 9.9, "hull_rout": 0.3,
 		"rout": 24.0, "strike": 10.0, "disc": 0.9, "gauge": 0.8, "volleys": 10, "strike_word": "退出战阵"},
@@ -192,9 +192,13 @@ var _g: Dictionary = {}
 var pursue_window := false
 ## lane w53-p6-escort：护航船（EscortWing 刷的 PirateShip.is_escort）复用本件走船开炮，as_escort() 立下面几样；敌船恒为缺省（逐字旧玩法）：
 ##   no_strike   不降幡：判到降的照「脱离」退出战阵（对面不受降护航，降了也没人收）；外头的 force_strike 也不收
-##   no_board    不自己起意接舷（护航跟站位放舷，不跳帮）
+##   no_board    不自己起意接舷（列队 / 曳敌都不跳帮）
+##   force_board 夺舱扳机扣了（EscortWing 写）：径直接舷企图，盖过 no_board；跳帮受挫的冷却里照旧退回炮战
+##   reload_mul  装填慢几倍（夺舱待命，甲士聚舷，EscortWing 写 1.25）
 var no_strike := false
 var no_board := false
+var force_board := false
+var reload_mul := 1.0
 
 
 ## 开战时调一次（PirateShip._ready）。sprite_key 用来认元军哨船（sprite=yuan_patrol）。
@@ -325,8 +329,8 @@ func reload_time(crew: int) -> float:
 	var base := SIDE_RELOAD * clampf(sqrt(float(_crew_start) / float(maxi(crew, 1))), 1.0, 2.0)
 	if typeof(t) == TYPE_FLOAT or typeof(t) == TYPE_INT:
 		base = clampf(float(t), 1.5, 20.0)
-	# 士气簿给的射速系数（CombatMorale 挂件 meta 的 fire；动摇了手慢），没有即 1
-	return base / clampf(float(_s.get("fire_factor", 1.0)), 0.4, 1.5)
+	# 士气簿给的射速系数（CombatMorale 挂件 meta 的 fire；动摇了手慢），没有即 1；reload_mul 是护航夺舱待命的慢（敌船 1.0）
+	return base / clampf(float(_s.get("fire_factor", 1.0)), 0.4, 1.5) * reload_mul
 
 
 ## 散布（弧度）：士气低了手抖
@@ -595,6 +599,8 @@ func _verdict_ctx(d: Dictionary) -> Dictionary:
 func _tactical(d: Dictionary) -> Array:
 	var ratio := float(d["ratio"])
 	var br := float(profile["board_ratio"])
+	if force_board and _reboard_cd <= 0.0:
+		return [BOARD, "夺舱：去钩第二艘"]  # lane w53-p6-escort：护航夺舱扳机扣了
 	if _reboard_cd > 0.0:
 		if state == BOARD:
 			return [BROADSIDE, _cd_reason]

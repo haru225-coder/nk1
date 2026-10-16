@@ -106,12 +106,16 @@ var fire_level := 0.0
 ## 士气挂件、敌情列都只认 PirateShip 前缀，不把它当敌船）。target 是一艘敌船；敌船恒为 false，下面几样全走旧路
 var is_escort := false
 const ESCORT_GROUP := "nk1_escort_ships"
-## 风从哪条船上读（WorldMap 海战逐帧写在旗舰身上）：null 照旧读 target；护航船由 EscortWing 写成旗舰
+## 风从哪条船上读（WorldMap 海战逐帧写在旗舰身上）：null 照旧读 target；护航船 / 被曳走去打护航的敌船由 EscortWing 写成旗舰
 var wind_source: Node2D = null
+## EscortWing（护航船、被曳走的敌船挂着）：钩的不是旗舰时白刃交它（_hooks_via_wing）
+var wing: Node = null
 ## 护航编队：EscortWing 逐帧写站位（世界坐标）与旗舰对地速度；开着时航向、帆桨照站位走，开炮仍照 target 走敌将那套
 var escort_station_on := false
 var escort_station := Vector2.ZERO
 var escort_lead_vel := Vector2.ZERO
+## 护航白刃钩着（EscortWing 挂起的那几秒）：停航停射，同 grappled（不碰 grappled：士气挂件把它当旗舰钩舷算）
+var escort_locked := false
 ## 护航挨矢石的减伤（本船甲级：一级 1.0、二级 0.9、三级 0.8，同 Fleet.armor_damage_reduction 每级一成）；敌船恒 1.0
 var armor_mul := 1.0
 ## 放舷前要躲开的自己人（旗舰与别的护航，EscortWing 逐帧写）
@@ -220,6 +224,9 @@ func _physics_process(delta: float) -> void:
 	_ensure_captain()
 	if grappled:
 		velocity = velocity.lerp(Vector2.ZERO, 5.0 * delta) # P4-2 接舷：被钩住后减速停住
+		return
+	if escort_locked:
+		velocity = velocity.lerp(Vector2.ZERO, 5.0 * delta)  # lane w53-p6-escort：护航白刃钩着，两船并住
 		return
 
 	var dist = position.distance_to(target.position)
@@ -527,6 +534,8 @@ func _process_firing(delta: float, angle_diff: float, dist: float) -> void:
 ## 抛钩：钩上了就请宿主开白刃（WorldMap._board_enemy，与玩家按 G 同一条路：钩索题签 → 白刃判定 → 夺船 / 脱钩）。
 ## 宿主不在、正在白刃、已结算都不抛。返回 true = 已开白刃（本帧到此为止）。
 func _try_grapple() -> bool:
+	if _hooks_via_wing():
+		return bool(wing.call("ship_hooks", self, target))
 	var host := get_parent()
 	if host == null or not host.has_method("_board_enemy"):
 		return false
@@ -882,18 +891,23 @@ func _flash_tag(text: String, stay := false) -> void:
 	_tag_tween.tween_property(tag, "modulate:a", 0.0, 0.6)
 
 
-# ── lane w53-p6-escort：护航船（EscortWing 刷的 is_escort）──
+# ── lane w53-p6-escort：护航船（EscortWing 刷的 is_escort）与被曳走去打护航的敌船 ──
 
 ## 风从哪条船上读：wind_source（EscortWing 写成旗舰）在就读它，否则照旧读 target（敌船的 target 就是旗舰）
 func _wind_node() -> Node2D:
 	return wind_source if wind_source != null and is_instance_valid(wind_source) else target
 
 
-## 靶的白刃战力：靶是船节点（护航的靶是敌船，有 combat_strength）照它；靶是旗舰照旧按 Fleet 算（_player_boarding_strength）
+## 靶的白刃战力：靶是船节点（护航 / 敌船，有 combat_strength）照它；靶是旗舰照旧按 Fleet 算（_player_boarding_strength）
 func _target_strength() -> float:
 	if target is PirateShip:
 		return float((target as PirateShip).combat_strength())
 	return _player_boarding_strength()
+
+
+## 钩的不是旗舰（护航去钩敌船、被曳走的敌船去钩护航）：白刃交 EscortWing（ship_hooks），不进 WorldMap._board_enemy——那是旗舰那一场
+func _hooks_via_wing() -> bool:
+	return wing != null and is_instance_valid(wing) and target is PirateShip
 
 
 ## 护航跟站位（EscortWing 逐帧写 escort_station / escort_lead_vel）：想要的对地速度 = 旗舰速度 + 站位差 × ESCORT_STATION_GAIN，

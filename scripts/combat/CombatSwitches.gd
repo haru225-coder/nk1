@@ -37,6 +37,7 @@ const DEFAULTS := {
 	"siege_relief": true,      # 第五期守城外援：涵江押粮 / 押陈瓒船股换乡兵 / 拆船料修墙（那条船掉一档帆）/ 入围那月出海劫粮道（只在兵粮墙士气上开口子，仍最多三阵）—— w53-p5-siege
 	"landing_raid": true,      # 第六期小规模登陆战：海战赢了、敌是海寇、船在宋土沿海——战后单子多一行「登岸剿寨」，骰子借陆战那一路（SiegeMelee.clash）—— w53-p6-landing
 	"escort_battle": true,     # 第六期 · 护航船上阵：旗舰以外的船（至多三艘、连敌船同屏不过八艘）跟着进海战，船体人手照记回 Fleet —— w53-p6-escort
+	"escort_orders": true,     # 第六期 · 护航三道将令：开战布置时下一道（列队 / 曳敌 / 夺舱）、整场不变；关掉不出将令、护航照列队 —— w53-p6-escort
 }
 
 static var _over: Dictionary = {}

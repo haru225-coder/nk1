@@ -808,6 +808,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	var code: Key = (event as InputEventKey).keycode
+	for eid in ESCORT_KEYS:
+		if code in ESCORT_KEYS[eid]:
+			if issue_escort(eid):
+				get_viewport().set_input_as_handled()
+			return
 	for id in ORDERS:
 		if code in ORDER_KEYS[id]:
 			get_viewport().set_input_as_handled()
@@ -960,6 +965,7 @@ func refresh() -> void:
 		st.add_theme_color_override("font_color", UiTheme.PAPER_CINNABAR if active else UiTheme.PAPER_DIM)
 	_alloc_lbl.text = alloc_text()
 	_effect_lbl.text = wrap_items(effect_text().split("　"), UiTheme.font(), 16, PANEL_W - 24.0)
+	_refresh_escort()
 	# 救火令在时，火与水此消彼长，损管令跟着险情换
 	apply_to_ship()
 
@@ -1053,6 +1059,8 @@ func _build() -> void:
 	_note_lbl = _foot(UiTheme.PAPER_GOLD)
 	_note_lbl.text = "号令未下，人手照平时分派。"
 	body.add_child(_note_lbl)
+	if _escort_wing() != null:
+		_build_escort(body)  # lane w53-p6-escort：有护航上阵才出将令一节
 
 
 func _rule() -> ColorRect:
@@ -1105,3 +1113,120 @@ static func _load_orders(ship: Node) -> Dictionary:
 		if nbo is Dictionary:
 			return nbo
 	return {"emphasis": "balanced", "fire_mode": false}
+
+
+# ── 护航将令（lane w53-p6-escort，开关 escort_orders）──────────────────────
+## 开战布置时下一道、整场不变（EscortWing.lock_order）：签「8 列队」「9 曳敌」「0 夺舱」，键盘 8 / 9 / 0（小键盘同）、
+## 点签、触屏点签都行。布置那几秒题头右侧写「N 秒不下照列队」、签下逐条写代价（一令一行，纸上字不小于 16 号——
+## UiTheme.PAPER_MIN_PX——一行放得下）；下定了题头写「已定：曳敌，整场不变」、代价行收起。
+## 这一节布置时也压在状态条上沿之上（1280×720 实拍对过）。
+## 没有护航上阵（开关 escort_battle 关、舰队只一船）不出这一节；escort_orders 关：这一节不出、护航照列队。
+## 不 preload EscortWing：它直读 Fleet / GameState，-s 工具在 autoload 挂上之前就 preload 本面板，连带编不过——按节点名找、将令表问它要
+const ESCORT_WING_NODE := "EscortWing"
+const ESCORT_KEYS := {"line": [KEY_8, KEY_KP_8], "lure": [KEY_9, KEY_KP_9], "board": [KEY_0, KEY_KP_0]}
+const ESCORT_KEY_NAMES := {"line": "8", "lure": "9", "board": "0"}
+var _escort_box: VBoxContainer = null
+var _escort_chips: Dictionary = {}
+var _escort_state: Label = null
+var _escort_costs: Label = null
+var _escort_was_open := true
+
+
+## 本场的护航一翼（没上阵返回 null）
+func _escort_wing() -> Node:
+	var w := _world()
+	var n := w.get_node_or_null(ESCORT_WING_NODE) if w != null else null
+	return n if n != null and not n.is_queued_for_deletion() and n.has_method("order_table") else null
+
+
+## 下护航将令（签 / 键 / 触屏 / 探针都走这里）：开关开、布置还没定才下得成；返回下没下成
+func issue_escort(id: String) -> bool:
+	var wing := _escort_wing()
+	if wing == null or not Switches.on("escort_orders") or _battle_over():
+		return false
+	var ok := bool(wing.call("lock_order", id, "player"))
+	if _built:
+		refresh()
+	return ok
+
+
+func _build_escort(body: VBoxContainer) -> void:
+	_escort_box = VBoxContainer.new()
+	_escort_box.name = "EscortOrders"
+	_escort_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_escort_box.add_theme_constant_override("separation", 5)
+	body.add_child(_escort_box)
+	_escort_box.add_child(_rule())
+	var head := HBoxContainer.new()
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_escort_box.add_child(head)
+	var title := Label.new()
+	title.text = "护航将令"
+	title.add_theme_font_override("font", UiTheme.title_font())
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", UiTheme.PAPER_TEXT)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(title)
+	_escort_state = Label.new()
+	_escort_state.add_theme_font_override("font", UiTheme.font())
+	_escort_state.add_theme_font_size_override("font_size", 16)
+	_escort_state.add_theme_color_override("font_color", UiTheme.PAPER_GOLD)
+	_escort_state.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_escort_state.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(_escort_state)
+	var row := HBoxContainer.new()
+	row.name = "EscortChips"
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 6)
+	_escort_box.add_child(row)
+	var table: Dictionary = _escort_wing().call("order_table")
+	for id in table["ids"]:
+		var chip := Button.new()
+		chip.name = "Escort_" + str(id)
+		chip.text = "%s %s" % [ESCORT_KEY_NAMES[id], table["names"][id]]
+		chip.focus_mode = Control.FOCUS_NONE
+		chip.tooltip_text = str(table["tips"][id])
+		UiTheme.style_chip(chip, false)
+		chip.custom_minimum_size = Vector2(84, 32)
+		chip.pressed.connect(issue_escort.bind(str(id)))
+		row.add_child(chip)
+		_escort_chips[id] = chip
+	_escort_costs = _foot(UiTheme.PAPER_TIDE)
+	_escort_box.add_child(_escort_costs)
+	_refresh_escort()
+
+
+## 将令一节：布置中签亮、逐条写代价、写还剩几秒；定了别的签灭、定下的那枚留着朱印（再点不改），收成一行
+func _refresh_escort() -> void:
+	if _escort_box == null:
+		return
+	var wing := _escort_wing()
+	_escort_box.visible = wing != null and Switches.on("escort_orders")
+	if not _escort_box.visible:
+		return
+	var open := bool(wing.call("orders_open")) and not _battle_over()
+	var cur := str(wing.get("order"))
+	var locked := bool(wing.get("order_locked"))
+	for id in _escort_chips:
+		var chip := _escort_chips[id] as Button
+		var accent: bool = locked and str(id) == cur
+		chip.disabled = not open and not accent
+		if _chip_accent.get("escort_" + str(id), null) != accent:
+			_chip_accent["escort_" + str(id)] = accent
+			UiTheme.style_chip(chip, accent)
+	var table: Dictionary = wing.call("order_table")
+	if open:
+		_escort_state.text = "%d 秒不下照列队" % ceili(float(wing.call("order_left_s")))
+		var lines := PackedStringArray()
+		for id in table["ids"]:
+			lines.append("%s代价：%s" % [table["names"][id], table["costs"][id]])
+		_escort_costs.text = "\n".join(lines)
+	else:
+		_escort_state.text = "已定：%s，整场不变" % str((table["names"] as Dictionary).get(cur, "列队"))
+		_escort_costs.text = ""
+	_escort_costs.visible = open
+	if open != _escort_was_open:
+		_escort_was_open = open
+		if _card != null:
+			_card.reset_size()

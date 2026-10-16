@@ -335,6 +335,8 @@ func _board_enemy(enemy: Node2D) -> void:
 	var enemy_first: bool = enemy.get("boarding_initiator") == true
 	boarding = true
 	boarding_target = enemy
+	if _escorts != null:
+		_escorts.on_flagship_hooked(enemy)  # lane w53-p6-escort：夺舱的扳机（不论谁先抛的钩）
 	_last_melee = {}
 	_AUDIO.combat_board(self)
 	enemy.set("grappled", true)  # 敌船停航停炮
@@ -1170,6 +1172,8 @@ func _pursuit() -> Dictionary:
 	for child in get_children():
 		if not _is_live_pirate(child) or child.get("struck") == true:
 			continue
+		if child.get("target") != ship:
+			continue  # lane w53-p6-escort：被曳走去打护航的敌船不算追旗舰
 		var cap = child.get("captain")
 		if cap != null and str(cap.get("state")) == "disengage":
 			continue
@@ -1607,8 +1611,30 @@ func _valid_hull(n) -> bool:
 
 
 # ══ 护航上阵（lane w53-p6-escort）════════════════════════════════════
-# 护航船都在 scripts/combat/EscortWing.gd；这里只留接头：_setup_combat 开战刷一翼、_spawn_enemy 扣战力、
-# _melee_sides / 本队折损只算旗舰那一场的人、_battle_exit 收战摘船。
+# 护航船、三道将令、护航白刃都在 scripts/combat/EscortWing.gd；这里只留接头：_setup_combat 开战刷一翼、_spawn_enemy 扣战力、
+# _board_enemy 扣夺舱扳机、_melee_sides / 本队折损只算旗舰那一场的人、_pursuit 不算被曳走的敌船、_battle_exit 收战摘船。
 const _EscortWing := preload("res://scripts/combat/EscortWing.gd")
 ## 本场上阵的护航（EscortWing 节点；没上阵为 null——旧玩法）
 var _escorts = null
+
+
+## 护航船跳帮夺下一艘敌船（EscortWing 白刃得手）：账照 _board_enemy 夺船那一支记——入船籍按战中所剩折算、并进本场夺船账
+## （_prizes / _prize_crew）、下场记「夺」；清血量再释放（_enemies_alive 不再数它，末一艘夺下由 _process 照常按胜收战）。返回入籍船名
+func escort_prize(enemy: Node2D) -> String:
+	if not is_instance_valid(enemy) or resolved:
+		return ""
+	var type_id := _node_str(enemy, "ship_type", "pirate_boat")
+	var ship_name := _node_str(enemy, "ship_name", "")
+	var hull_max := _node_float(enemy, "hull_max")
+	var hull_frac := _node_float(enemy, "hull_hp") / hull_max if hull_max > 0.0 else 1.0
+	var taken := "敌船"
+	if Fleet.add_ship(type_id, ship_name):
+		Fleet.settle_prize(Fleet.ships.size() - 1, hull_frac)
+		var row: Dictionary = Fleet.ships[Fleet.ships.size() - 1]
+		_prizes.append(row)
+		_prize_crew += int(row.get("crew", 0))
+		taken = str(row.get("name", "敌船"))
+	_note_fate(enemy, "boarded")
+	enemy.set("hull_hp", 0.0)
+	enemy.queue_free()
+	return taken
