@@ -483,6 +483,9 @@ const WAR_CLASS_LABEL := {"grain": "米粮", "arms": "军械", "supply": "军需
 ## 牙行战时短注悬停里说战况的字样（短注本身用 WAR_LABEL：对峙 / 已降元）
 const WAR_TIP_STATUS := {"contested": "两军对峙", "besieged": "被围", "fallen": "已降元", "closed": "封港"}
 const _CN_DIGITS := ["", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
+## 降元港的米：城破头两个月只有月初那一冲（on_month_changed 米行情 +0.5），翻牌后第三个月起元军粮道接上，米才按倍数表贱下来，
+## 这两个月 war_price_factor 报 1.0。godot_story_check 在泉州降元当月、次月拿光杆米价验抽解加倍与站蒲家八折，正落在这两个月里。
+const FALLEN_GRAIN_LAG_MONTHS := 2
 
 
 ## 货的战时货类；没标或标错的当 common（verify_economy 一节校验每样货都标对）
@@ -497,7 +500,7 @@ func war_class(good_id: String) -> String:
 func war_price_factor(port_id: String, good_id: String) -> float:
 	if not CombatSwitches.on("war_prices"):
 		return 1.0
-	return _war_table(war_status(port_id), good_id)
+	return _war_factor_now(port_id, war_status(port_id), good_id)
 
 
 ## price_at_rate 实乘的那份。围城港的米：月初冲击加回归目标 SIEGE_GRAIN_TARGET 早把米行情撑在约 1.8
@@ -506,10 +509,32 @@ func _war_price_mul(port_id: String, good_id: String) -> float:
 	if not CombatSwitches.on("war_prices"):
 		return 1.0
 	var status := war_status(port_id)
-	var f := _war_table(status, good_id)
+	var f := _war_factor_now(port_id, status, good_id)
 	if status == "besieged" and good_id == "grain":
 		f /= SIEGE_GRAIN_TARGET
 	return f
+
+
+## 此刻作数的倍数：查表，降元港的米翻牌头 FALLEN_GRAIN_LAG_MONTHS 个月不算
+func _war_factor_now(port_id: String, status: String, good_id: String) -> float:
+	if status == "fallen" and war_class(good_id) == "grain" and _war_months_in(port_id) < FALLEN_GRAIN_LAG_MONTHS:
+		return 1.0
+	return _war_table(status, good_id)
+
+
+## 本港现战况翻牌后过了几个月（翻牌当月为 0；与 war_status 取同一条，ports.json war 表里不晚于本月的最新一条）
+func _war_months_in(port_id: String) -> int:
+	var war: Dictionary = _port_def(port_id).get("war", {})
+	var now := _ym_now()
+	var since := ""
+	for ym in war.keys():
+		var k := str(ym)
+		if k <= now and k > since:
+			since = k
+	if since == "":
+		return 0
+	var parts := since.split("-")
+	return (Calendar.year * 12 + Calendar.month) - (int(parts[0]) * 12 + int(parts[1]))
 
 
 func _war_table(status: String, good_id: String) -> float:

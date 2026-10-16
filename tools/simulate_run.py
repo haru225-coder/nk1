@@ -557,7 +557,8 @@ WAR_PRICES_ON = [True]
 
 def war_terms(pid, gid):
     st = _ve.war_status_at(pid, G.year, G.month)
-    return {"war_mul": _ve.war_price_mul(st, gid, WAR_PRICES_ON[0]), "tariff_mul": _ve.WAR_TARIFF.get(st, 1.0)}
+    return {"war_mul": _ve.war_price_mul(st, gid, WAR_PRICES_ON[0], _ve.war_months_in(pid, G.year, G.month)),
+            "tariff_mul": _ve.WAR_TARIFF.get(st, 1.0)}
 
 def rate_target(pid, gid):
     """Economy.on_day_passed 的回归目标：被围的港米回 SIEGE_GRAIN_TARGET，其余回 1.0。"""
@@ -700,7 +701,7 @@ ECO_EDIT = {
                                 ("lit", "ROLE_MOD", {"origin": 0.6, "normal": 1.0, "consumer": 1.8}),
                                 ("num", "RATE_MIN", 0.35), ("num", "RATE_MAX", 2.4), ("num", "RECOVERY", 0.05),
                                 ("lit", "WAR_TARIFF", {"loyal": 1.0, "contested": 1.25, "besieged": 1.0, "fallen": 1.75, "closed": 1.0}),
-                                ("num", "SIEGE_GRAIN_TARGET", 1.75)),
+                                ("num", "SIEGE_GRAIN_TARGET", 1.75), ("num", "FALLEN_GRAIN_LAG_MONTHS", 3)),
     "scripts/core/Crew.gd": (("lit", "FOREIGN_PORTS", ["hakata", "kagoshima", "jeju", "champa", "ryukyu"]),
                              ("coeff", "trade_cost_factor:zashi", 0.1), ("coeff", "interpreter_edge:tongshi", 0.025),
                              ("coeff", "speed_factor:huozhang", 0.05), ("coeff", "wind_floor:duogong", 0.04),
@@ -720,7 +721,7 @@ ECO_WANT = {
                           "zashi_step": 0.1, "tongshi_step": 0.025, "supply_bulk": 0.3, "huozhang_step": 0.05,
                           "duogong_base": 0.38, "duogong_step": 0.04, "zongguan_step": 0.15, "yiren_step": 0.2,
                           "war_tariff": {"loyal": 1.0, "contested": 1.25, "besieged": 1.0, "fallen": 1.75, "closed": 1.0},
-                          "siege_grain_target": 1.75},
+                          "siege_grain_target": 1.75, "fallen_grain_lag": 3},
 }
 
 def eco_params_after_edit(edits):
@@ -764,7 +765,8 @@ ECO_LITERAL_BACK = (
     (r"^\s*(?:RECOVERY|SUPPLY_BULK(?:_M)?|CREW_DAYS_PER_SUPPLY|RATE_MIN|RATE_MAX)\b[^\n=]*=\s*-?\d", "回归 / 水粮 / 行情钳"),
     (r"^\s*DEBT_CEILING\b[^\n=]*=\s*-?\d", "赊贷上限与月息"),
     (r"^\s*SKIP_(?:HULL_DECAY|HULL_FLOOR|MORALE_AFTER|YEAR_CAP)\b[^\n=]*=\s*(?:int\()?-?\d", "跳年四常量"),
-    (r"^\s*(?:WAR_TARIFF|WAR_PRICE)\b[^\n=]*=\s*\{|^\s*SIEGE_GRAIN_TARGET\b[^\n=]*=\s*-?\d", "战况抽解 / 战时物价表 / 围城米行情目标（lane w53-p5-econ）"),
+    (r"^\s*(?:WAR_TARIFF|WAR_PRICE)\b[^\n=]*=\s*\{|^\s*(?:SIEGE_GRAIN_TARGET|FALLEN_GRAIN_LAG(?:_MONTHS)?)\b[^\n=]*=\s*(?:int\()?-?\d",
+     "战况抽解 / 战时物价表 / 围城米行情目标 / 降元米不打折月数（lane w53-p5-econ）"),
     (r"\d\.\d+\s*\*\s*lv\b", "杂事 / 通事每级系数"),
     (r"\bmin\(\s*2\.20?\s*,", "行情上限"),
     (r"\bmax\(\s*0\.40?\s*,(?!\s*min\(\s*1\.60?\s*,)", "行情下限"),

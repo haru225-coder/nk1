@@ -7,8 +7,8 @@ extends SceneTree
 ##   二、被围港米价倍数：兴化围城月 war_price_factor(米) = 1.8、军械（日本刀）= 1.5；闯封锁按
 ##      「平年米价 × 倍数」算得约 1.8 倍；牙行价里米不叠两遍——行情已撑在 SIEGE_GRAIN_TARGET，开关开关同价，
 ##      约平年 1.8 倍而不是 3.24 倍；军械牙行价开 / 关之比 = 1.5。
-##   三、降元港方向：明州降元后奢侈货（参、貂、螺钿、青白瓷）倍数 > 1、价比关态贵；米粮倍数 < 1、价比关态贱；
-##      普通货（砂金）不动。
+##   三、降元港方向：明州降元后奢侈货（参、貂、螺钿、青白瓷）倍数 > 1、价比关态贵；米粮翻牌头两个月不打折、第三个月起
+##      倍数 < 1、价比关态贱（泉州降元当月、次月光杆米价仍显得出抽解加倍与站蒲家八折）；普通货（砂金）不动。
 ##   四、对峙港小幅涨：泉州对峙时米、铁器倍数在 (1, 1.3]，价比关态贵；奢侈货不涨。
 ##   五、牙行看得见：明州柜上参那张卡价格右边挂短注「已降元・贵二成」，悬停写「明州已降元，奢侈货比平年贵二成…」；
 ##      价格行原字照旧（「买 N　卖 M」= 现价）；关开关、或平年，不挂短注、卡面与原先同一结构。
@@ -269,10 +269,26 @@ func _fallen() -> void:
 		if not (f > 1.0 and on_s > off_s):
 			lux_bad.append("%s ×%.2f %d/%d" % [gid, f, on_s, off_s])
 	_expect(st == "fallen" and lux_n >= 3 and lux_bad.is_empty(), "明州 1276-02 %s：奢侈货 %d 样倍数 > 1、卖价比关态贵（不合：%s）" % [st, lux_n, lux_bad])
+	var fg_early: float = eco.war_price_factor("mingzhou", "grain")
+	_at(1276, 4)
 	var fg: float = eco.war_price_factor("mingzhou", "grain")
 	var g_on: int = eco.buy_price("mingzhou", "grain")
 	var g_off := _old_price_at_rate("mingzhou", "grain", 1.0, true)
-	_expect(fg < 1.0 and g_on < g_off, "明州降元米粮 ×%.2f：买价 %d < 关态 %d" % [fg, g_on, g_off])
+	_expect(is_equal_approx(fg_early, 1.0) and fg < 1.0 and g_on < g_off,
+		"明州降元米粮：翻牌次月（1276-02）×%.2f 不打折，第三个月（1276-04）×%.2f、买价 %d < 关态 %d" % [fg_early, fg, g_on, g_off])
+	# 头两个月不打折，泉州降元当月光杆米买价仍显得出抽解加倍、次月显得出站蒲家八折（与 godot_story_check 两条断言同条件）
+	_at(1276, 12)
+	var qz_fall: int = eco.price_at_rate("quanzhou", "grain", 1.0, true)
+	_at(1255, 3)
+	var qz_peace: int = eco.price_at_rate("quanzhou", "grain", 1.0, true)
+	_at(1277, 1)
+	var qz_plain: int = eco.price_at_rate("quanzhou", "grain", 1.0, true)
+	gs.set_flag("sided_pu")
+	var qz_pu: int = eco.price_at_rate("quanzhou", "grain", 1.0, true)
+	gs.flags.erase("sided_pu")
+	_expect(qz_fall > qz_peace and qz_pu < qz_plain,
+		"泉州降元当月光杆米买价 %d > 平年 %d（抽解加倍）、次月站蒲家 %d < %d（八折）——米头两个月不打折" % [qz_fall, qz_peace, qz_pu, qz_plain])
+	_at(1276, 2)
 	var gold_on: int = eco.sell_price("mingzhou", "placer_gold")
 	var gold_off := _old_price_at_rate("mingzhou", "placer_gold", 1.0, false)
 	_expect(eco.war_class("placer_gold") == "common" and gold_on == gold_off, "普通货砂金不随战况涨落（卖 %d = 关态 %d）" % [gold_on, gold_off])
@@ -323,8 +339,10 @@ func _market_note() -> void:
 	var tip: String = eco.war_price_tip("mingzhou", "korean_ginseng")
 	_expect(note == "已降元・贵二成" and tip.begins_with("明州已降元，奢侈货比平年贵二成"),
 		"明州降元高丽参：短注「%s」、悬停「%s」" % [note, tip])
+	var gnote_early: String = eco.war_price_note("mingzhou", "grain")
+	_at(1276, 4)
 	var gnote: String = eco.war_price_note("mingzhou", "grain")
-	_expect(gnote == "已降元・贱一成半", "明州降元米粮：短注「%s」" % gnote)
+	_expect(gnote_early == "" and gnote == "已降元・贱一成半", "明州降元米粮：次月不挂（「%s」），第三个月短注「%s」" % [gnote_early, gnote])
 	_at(1276, 6)
 	var qnote: String = eco.war_price_note("quanzhou", "grain")
 	var lnote: String = eco.war_price_note("quanzhou", "ivory")
@@ -365,8 +383,8 @@ func _market_note() -> void:
 	card_off.queue_free()
 	CombatSwitches.reset()
 
-	# 真进明州牙行：柜上三张卡，有战时倍数的那几张挂着同字短注，没有的不挂
-	_at(1276, 2)
+	# 真进明州牙行（降元第四个月）：柜上三张卡，有战时倍数的那几张挂着同字短注，没有的不挂
+	_at(1276, 4)
 	_main.load_scene("mingzhou_market")
 	await _settle(2)
 	var slips: Node = _main.get("choices_container").get_node_or_null("BrokerSlips")
@@ -382,8 +400,8 @@ func _market_note() -> void:
 				page_bad.append("%s「%s」≠「%s」" % [hand[i], got, want])
 			if want != "":
 				noted += 1
-	_expect(slips != null and hand.size() == 3 and page_bad.is_empty(),
-		"明州降元月牙行页：柜上 %s，挂短注 %d 张，与 war_price_note 逐张同字（不符 %s）" % [hand, noted, page_bad])
+	_expect(slips != null and hand.size() == 3 and noted >= 1 and page_bad.is_empty(),
+		"明州 1276-04 牙行页：柜上 %s，挂短注 %d 张，与 war_price_note 逐张同字（不符 %s）" % [hand, noted, page_bad])
 
 
 func _all_labels(n: Node) -> Array:
