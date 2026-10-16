@@ -13,6 +13,8 @@ extends SceneTree
 ##   开局落令「装填轮换两令」（进火攻档；--orders= 换令表、--hands-off 手离舵对照）
 ##
 ## 对阵（--ship + --enemy×--count + --power/--ppower/--crew/--morale/--orders/--hands-off 自定义）：
+##   --enemy=TYPE[:N[:SPRITE]]  一条一种船：N 是这一种几艘（缺省用 --count），SPRITE 照 pending_battle.enemy 的 sprite
+##             （yuan_patrol = 元军哨船敌将档案）；同一种分两条写会各自从 0 度起摆、挤在一边，和游戏里一条 count=2 摆法不同
 ##   现有对照  fu_ship_medium 60 人 vs pirate_boat ×2（同二期 lane 量的那一仗）
 ##   逆风对照  fu_ship_medium 60 人 vs sea_falcon ×1、power 600 / player_power 300（敌血翻倍、水手上限 100，
 ##             比快船 ×2 硬得多——--compare 的第二阵；两段对阵的 WINRATE 行分开打）
@@ -125,7 +127,7 @@ func _args() -> Dictionary:
 	return out
 
 
-## 手动对阵（--enemy 攒的）：type 逐项展开 count；power 缺省沿用现有对照 300/300
+## 手动对阵（--enemy 攒的）：type 逐项展开 count（TYPE:N 写了就用 N）、TYPE:N:SPRITE 带精灵；power 缺省沿用现有对照 300/300
 static func _hand_matchup(a: Dictionary) -> Dictionary:
 	var types: Array = a.get("_enemy_hand", [])
 	var wide: int = int(a.get("_count_wide", 1))
@@ -134,9 +136,14 @@ static func _hand_matchup(a: Dictionary) -> Dictionary:
 		var left := MAX_ENEMIES
 		for e in foes:
 			left -= int((e as Dictionary).get("count", 1))
-		var n := clampi(wide, 1, maxi(1, left))
+		var parts := String(t).split(":")
+		var want := int(parts[1]) if parts.size() > 1 else wide
+		var n := clampi(want, 1, maxi(1, left))
 		if n > 0:
-			foes.append({"type": String(t), "count": n})
+			var foe := {"type": parts[0], "count": n}
+			if parts.size() > 2 and parts[2] != "":
+				foe["sprite"] = parts[2]
+			foes.append(foe)
 	return {"label": "手动对阵：%s %d人对 %s" % [String(a["ship"]), int(a["crew"]), str(foes)],
 		"power": float(a.get("_power_hand", 300.0)), "ppower": float(a.get("_ppower_hand", 300.0)),
 		"enemy": foes}
@@ -351,7 +358,10 @@ func _run() -> void:
 	var runs: Dictionary = {}  # cfg id → 各 seed 的 {"overcome","win"} 签名表（复跑自比用）
 	for mid in a["matchups"]:
 		var mu: Dictionary
-		match String(mid):
+		# 手动对阵（--enemy=）是 Dictionary：String() 构造不收 Dictionary（原样写 String(mid) 一跑 --enemy= 即
+		# SCRIPT ERROR 卡死，lane w53-p5-blockade 修）——段名记作 hand，对阵本体照 _hand_matchup 那份
+		var mid_name := "hand" if mid is Dictionary else String(mid)
+		match mid_name:
 			"pirates":
 				mu = MATCHUP_PIRATES.duplicate(true)
 			"falcon":
@@ -362,7 +372,7 @@ func _run() -> void:
 		mu["crew"] = int(a["crew"])
 		mu["morale"] = int(a["morale"])
 		print("== 对阵：%s（我方 %s %d人 morale %d，power %.0f/%.0f，%s）" % [
-			String(mu.get("label", mid)), String(mu["ship"]), int(mu["crew"]), int(mu["morale"]),
+			String(mu.get("label", mid_name)), String(mu["ship"]), int(mu["crew"]), int(mu["morale"]),
 			float(mu.get("power", 300.0)), float(mu.get("ppower", 300.0)),
 			"玩家驾驶" if bool(a["drive"]) else "手离舵"])
 		for cfg in a["cfgs"]:
@@ -416,7 +426,7 @@ func _run() -> void:
 			for i in n:
 				sd_names.append(str(int(seeds[i])))
 			print("WINRATE %s@%s=%d/%d seeds=%s replay-drift=%d" % [
-				cid, String(mid), won, n, ",".join(sd_names), drift])
+				cid, mid_name, won, n, ",".join(sd_names), drift])
 	# 还原战况与开关
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
