@@ -1707,7 +1707,7 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	price_lbl.add_theme_font_size_override("font_size", UiTheme.SIZE_BODY)
 	price_lbl.add_theme_color_override("font_color", UiTheme.TEXT)
 	price_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info.add_child(price_lbl)
+	_mount_price_row(info, price_lbl, port_id, good_id)
 	# 手续脚注：买价已含市舶抽解，卖价已扣牙人佣金；只点事实，不印费率
 	var fee_lbl := Label.new()
 	fee_lbl.name = "PriceFee"
@@ -4719,3 +4719,30 @@ func _market_sell_short(good_id: String, amount: int, held: int, n: int) -> Stri
 func _market_kept_note(good_id: String, head: String) -> String:
 	var kept := GameState.contract_kept(good_id)
 	return "" if kept <= 0 else head + "委办要的 %d 件留在舱里，不上秤。" % kept
+
+
+## 牙行货卡的价格行（_make_market_row 调，lane w53-p5-econ 战时物价）：战况抬了 / 压了这货的价，价格右边挂一枚短注
+## 「已降元・贵二成」，悬停写哪港什么战况、哪类货比平年贵贱几成；平时与开关 war_prices 关时不挂，价格行照原样直接进卡的五行列。
+## 短注挤不下截成「…」，不把卡撑宽。放在 Main 末尾：前面多一行，tools/main_splits.txt 记的转发快照行号就对不上。
+func _mount_price_row(info: VBoxContainer, price_lbl: Label, port_id: String, good_id: String) -> void:
+	var war_note := Economy.war_price_note(port_id, good_id)
+	if war_note == "":
+		info.add_child(price_lbl)
+		return
+	var price_row := HBoxContainer.new()
+	price_row.name = "PriceRow"
+	price_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	price_row.add_theme_constant_override("separation", 8)
+	info.add_child(price_row)
+	price_row.add_child(price_lbl)
+	var war_lbl := Label.new()
+	war_lbl.name = "WarPrice"
+	war_lbl.text = war_note
+	war_lbl.tooltip_text = Economy.war_price_tip(port_id, good_id)
+	UiTheme.style_footnote(war_lbl)
+	war_lbl.add_theme_color_override("font_color", UiTheme.CINNABAR if Economy.war_price_factor(port_id, good_id) > 1.0 else UiTheme.MOSS)
+	war_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	war_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	war_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	war_lbl.mouse_filter = Control.MOUSE_FILTER_PASS
+	price_row.add_child(war_lbl)

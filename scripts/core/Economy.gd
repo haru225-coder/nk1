@@ -479,6 +479,10 @@ func _base_tariff(port_id: String = "") -> float:
 ## 整段放在文件末尾：docs/待策划拍板清单 按行号引着本文件前面几处（check_decision_refs 对账），往前插行就漂。
 
 const WAR_CLASSES := ["grain", "arms", "supply", "luxury", "common"]
+const WAR_CLASS_LABEL := {"grain": "米粮", "arms": "军械", "supply": "军需", "luxury": "奢侈货", "common": "寻常货"}
+## 牙行战时短注悬停里说战况的字样（短注本身用 WAR_LABEL：对峙 / 已降元）
+const WAR_TIP_STATUS := {"contested": "两军对峙", "besieged": "被围", "fallen": "已降元", "closed": "封港"}
+const _CN_DIGITS := ["", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
 
 
 ## 货的战时货类；没标或标错的当 common（verify_economy 一节校验每样货都标对）
@@ -514,3 +518,37 @@ func _war_table(status: String, good_id: String) -> float:
 	if typeof(row) != TYPE_DICTIONARY:
 		return 1.0
 	return float(row.get(war_class(good_id), 1.0))
+
+
+## 牙行卡上价格旁的短注：「已降元・贵二成」「对峙・贱半成」。倍数为 1（平时、表里不列、开关关）给 ""。
+func war_price_note(port_id: String, good_id: String) -> String:
+	var f := war_price_factor(port_id, good_id)
+	var words := _war_pct_words(f)
+	if words == "":
+		return ""
+	return "%s・%s%s" % [war_label(port_id), "贵" if f > 1.0 else "贱", words]
+
+
+## 短注的悬停：「明州已降元，奢侈货比平年贵二成（行情涨落另算）。」短注为空时也给 ""。
+func war_price_tip(port_id: String, good_id: String) -> String:
+	var f := war_price_factor(port_id, good_id)
+	var words := _war_pct_words(f)
+	if words == "":
+		return ""
+	return "%s%s，%s比平年%s%s（行情涨落另算）。" % [
+		GameManager.get_port_name(port_id), WAR_TIP_STATUS.get(war_status(port_id), war_label(port_id)),
+		WAR_CLASS_LABEL.get(war_class(good_id), "货"), "贵" if f > 1.0 else "贱", words,
+	]
+
+
+## 倍数离 1 多远说成几成：按 0.05 一档说「三成」「一成半」「半成」，满一倍说「一倍」；不到半成给 ""
+func _war_pct_words(f: float) -> String:
+	var halves := int(round(absf(f - 1.0) * 20.0))
+	if halves <= 0:
+		return ""
+	if halves >= 20:
+		return "一倍" if halves == 20 else "一倍有余"
+	var tenths := halves / 2
+	if tenths == 0:
+		return "半成"
+	return "%s成%s" % [_CN_DIGITS[tenths], "半" if halves % 2 == 1 else ""]
