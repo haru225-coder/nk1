@@ -895,7 +895,7 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary, sprite_id := "") 
 		# 刷在镜头里等于已经进射程。fire_timer 默认 0 会首帧齐射，
 		# 开局小艍 120 耐久扛不住 2 艘 × 9 门，HUD 还没看清就沉。
 		p.fire_timer = COMBAT_FIRE_DELAY
-		p.name = "PirateShip_%d" % (i + 1)
+		p.name = "PirateShip_%d" % (total_enemies + 1)  # 按全场序号起名：两条以上（闯封锁 / 崖山）各条从 1 起会撞名、被改成 @CharacterBody2D@N
 		add_child(p)
 		_wire_enemy_signals(p)
 		total_enemies += 1

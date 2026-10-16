@@ -217,6 +217,14 @@ func _sec_deploy() -> void:
 		_mk("canton_ship", "利涉", 50)], [{"type": "pirate_boat", "count": 2}], 1000.0, 400.0, {"yashan": {"fire_ships": 4}})
 	_check(_escorts(wm).size() == 1, "敌两艘 + 火船四艘：护航只上一艘（1 + 1 + 2 + 4 = 8，得 %d）" % _escorts(wm).size())
 	await _teardown(wm)
+	# 敌阵两条以上（闯封锁、崖山都是海鹘一条 + 快船一条）：敌船按全场序号起名，PirateShip_1..3 不撞名、WorldMap 三艘都数得到
+	wm = await _stage([_mk("fu_ship_medium", "旗舰", 60), _mk("keel_boat", "安济", 30)],
+		[{"type": "sea_falcon", "count": 1, "sprite": "yuan_patrol"}, {"type": "pirate_boat", "count": 2}])
+	var foe_names: Array = _enemies(wm).map(func(x): return String(x.name))
+	foe_names.sort()
+	_check(foe_names == ["PirateShip_1", "PirateShip_2", "PirateShip_3"] and int(wm.call("_enemies_alive")) == 3,
+		"敌阵两条：敌船 PirateShip_1..3 不撞名、存活数 3（得 %s / %d）" % [str(foe_names), int(wm.call("_enemies_alive"))])
+	await _teardown(wm)
 	# 崖山突围那一场写 no_escort：护航一艘不上、不登记
 	wm = await _stage([_mk("fu_ship_medium", "旗舰", 60), _mk("keel_boat", "安济", 30)], [{"type": "pirate_boat", "count": 1}],
 		1000.0, 400.0, {"no_escort": true})
