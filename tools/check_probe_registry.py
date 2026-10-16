@@ -138,6 +138,7 @@ EXEMPT = [
     ("qa_w53_p5_siege_probe.gd", "lane-w53-p5-siege", "战斗方案五期守城专项探针（陆战骰子搬进 SiegeMelee 前后同种子逐阵一致 / 行事表日子与小笺 / 外援四样增减与开关关态逐字回旧 / 仍最多三阵与外援全开全关守住概率 / 外援记账存档来回，一段钉一条、回退即红），headless 两分钟内可跑，随本 lane 落地验过留档"),
     ("qa_w53_p5_war_prices_probe.gd", "lane-w53-p5-econ", "战斗方案五期「军需涨价」专项探针（开关 war_prices 关时六个战况月全部港货价与改前原式逐字相等、被围港米 1.8 / 军械 1.5 倍且米不叠两遍、降元港奢侈贵米贱、对峙小涨、牙行卡价格旁短注、价差地板，回退即红），headless 可跑，随本 lane 落地验过留档"),
     ("qa_w53_p6_landing_probe.gd", "lane-w53-p6-landing", "战斗方案六期小规模登陆战专项探针（入口四样齐才挂那一行、下船人数封顶与战力式子对守城那一路逐位相等、骰子借 SiegeMelee.clash 同种子逐位相等、五档船型固定种子 1..200 的胜率界、胜败两路的账、收队回船不动、开关关态逐字回旧、真起 SeaChart 收战扣住 source 走判据、期望收益对照 simulate_run 开局跑商两条界、真走 SeaChart 落账（胜 / 舱快满 / 败 / 收队）与札记一句，回退即红），headless 秒级，随本 lane 落地验过留档"),
+    ("qa_w53_p6_escort_probe.gd", "lane-w53-p6-escort", "战斗方案六期「护航船上阵 + 三道将令」专项探针（上阵船数与同屏八艘封顶、列队 / 曳敌 / 夺舱各自的走法与白刃、键盘 / 鼠标 / 触屏下令、结算记账不记两遍、旗舰沉护航接任、开关 escort_battle / escort_orders 关逐字回旧，一段钉一条、回退即红），headless 可跑，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),

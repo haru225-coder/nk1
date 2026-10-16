@@ -219,6 +219,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_p5_siege_probe.gd",  # lane w53-p5-siege 守城专项探针（陆战骰子搬家前后一致、行事表、外援、三阵上限与守住概率、外援存档）
 	"res://tools/qa_w53_p6_landing_probe.gd",  # lane w53-p6-landing 小规模登陆战专项探针（入口四样齐、下船封顶与战力对守城同源、骰子逐位相等、胜率界、胜败两账、关态回旧、期望收益）
 	"res://scripts/combat/EscortWing.gd",  # lane w53-p6-escort 护航船上阵与三道将令（WorldMap 挂用，开关 escort_battle / escort_orders）
+	"res://tools/qa_w53_p6_escort_probe.gd",  # lane w53-p6-escort 护航上阵与三道将令专项探针（船数、将令走法、记账不重、接任、关态回旧）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
