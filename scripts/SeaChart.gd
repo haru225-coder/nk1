@@ -428,6 +428,7 @@ func _sync_map() -> void:
 	for pid in _hand:
 		offered.append(str(pid))
 	map.set_offered(offered)
+	map.set_sealed(HeadingDraft.sealed_ids())
 	if selected_port == "":
 		map.clear_route()
 	else:
@@ -441,14 +442,31 @@ func _sync_map() -> void:
 		compass.queue_redraw()
 
 
-## 图上点港：与航向牌同一套规则——只有这一手风放出的向才能选
+## 图上点港：与航向牌同一套规则——只有这一手风放出的向才能选；港已封的只给「港已封」（待拍板 20b）
 func _on_map_port_clicked(pid: String) -> void:
 	if sailing or pid == "" or pid == origin_port:
 		return
 	if pid in _hand:
 		_select_heading(pid)
-	else:
+		return
+	var why := HeadingDraft.seal_of(pid)
+	if why == "":
 		_log("今日风不放这一向。")
+	else:
+		_log(_seal_note(pid, why))
+
+
+## 点了封着的港那一句：「港已封」打头，后面写封因（HeadingDraft.seal_of 的 closed / banned / besieged）
+func _seal_note(pid: String, why: String) -> String:
+	var pname := str(GameManager.get_port_name(pid))
+	match why:
+		"closed":
+			return "港已封。%s封港，海路不通。" % pname
+		"banned":
+			return "港已封。%s对你封港，船进不去。" % pname
+		"besieged":
+			return "港已封。%s被围，港外都是元军的哨船。" % pname
+	return "港已封。"
 
 
 ## 二十四向罗盘（宋元针盘）：内环四维（朱砂）、中环十二支（墨）、外环八干（淡墨），最外 48 刻度（每 7.5 度，缝针短刻）。

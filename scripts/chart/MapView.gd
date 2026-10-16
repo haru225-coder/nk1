@@ -62,6 +62,7 @@ var tiers: Dictionary = {"far": [0.0, 1.05], "mid": [0.55, 2.6], "near": [1.3, 9
 var rumored: Array = []         # sealanes meta.rumored：剧情虚构的「传闻海道」，画虚线
 var visited: Array = []
 var offered: Array = []          # 本手可选的港；空数组 = 不限制
+var sealed: Array = []           # 港已封的港（待拍板 20b）：港框上打朱砂叉；空 = 没有封着的
 var cal_month: int = 3
 var cal_year: int = 1255
 
@@ -520,6 +521,14 @@ func _keep_in_band(p: Vector2, dur: float) -> void:
 ## 这一手风放出的向（云端「风发三向」）：不在其中的港标画淡
 func set_offered(ids: Array) -> void:
 	offered = ids
+	layer_ports.queue_redraw()
+
+
+## 港已封的港（待拍板 20b，SeaChart 按 HeadingDraft.sealed_ids 推）：港框上打一个朱砂叉，一眼看出不是风不放、是港封了
+func set_sealed(ids: Array) -> void:
+	if ids == sealed:
+		return
+	sealed = ids.duplicate()
 	layer_ports.queue_redraw()
 
 
@@ -1151,6 +1160,11 @@ func _draw_ports(ci: CanvasItem) -> void:
 			ci.draw_arc(v, r + _px(6.0), 0.0, TAU, 40, COL_GOLD, _px(2.0), true)
 		elif hov:
 			ci.draw_arc(v, r + _px(5.5), 0.0, TAU, 40, Color(COL_INK, 0.6), _px(1.0), true)
+		# 港已封：朱砂叉压在港框上（人在港里的那一港不打，免得与墨圈叠成一团）
+		if not is_here and pid in sealed:
+			var g := box.grow(_px(2.5))
+			ci.draw_line(g.position, g.end, COL_CINNABAR, _px(1.6), true)
+			ci.draw_line(Vector2(g.end.x, g.position.y), Vector2(g.position.x, g.end.y), COL_CINNABAR, _px(1.6), true)
 		var tcol := COL_INK if (seen or is_here) else Color(COL_INK, 0.75)
 		if is_dest:
 			tcol = COL_OCHRE
