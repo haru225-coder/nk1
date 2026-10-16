@@ -29,7 +29,7 @@ FOREIGN_PORTS = tuple(_E.literal(_CREW_GD, "FOREIGN_PORTS"))
 ZASHI_STEP, TONGSHI_STEP = _E.coeff(_CREW_GD, "trade_cost_factor", "zashi"), _E.coeff(_CREW_GD, "interpreter_edge", "tongshi")
 FLEET_SUPPLY_BULK = _E.num("scripts/core/Fleet.gd", "SUPPLY_BULK")
 if __name__ == "__main__" and "--eco-params" in sys.argv[1:]:  # simulate_run 镜像闸 C 的读数口：报完即退
-    print("ECO_PARAMS " + json.dumps({"tariff": TARIFF, "broker": BROKER, "spread": SPREAD_MIN, "role_mod": ROLE_MOD, "rate_min": RATE_MIN, "rate_max": RATE_MAX, "foreign_ports": list(FOREIGN_PORTS), "zashi_step": ZASHI_STEP, "tongshi_step": TONGSHI_STEP, "supply_bulk": FLEET_SUPPLY_BULK, "huozhang_step": _E.coeff(_CREW_GD, "speed_factor", "huozhang"), "duogong_base": _E.offset(_CREW_GD, "wind_floor", "duogong"), "duogong_step": _E.coeff(_CREW_GD, "wind_floor", "duogong"), "zongguan_step": _E.coeff(_CREW_GD, "cargo_loss_factor", "zongguan"), "yiren_step": _E.coeff(_CREW_GD, "crew_loss_factor", "yiren")}, sort_keys=True))
+    print("ECO_PARAMS " + json.dumps({"tariff": TARIFF, "broker": BROKER, "spread": SPREAD_MIN, "role_mod": ROLE_MOD, "rate_min": RATE_MIN, "rate_max": RATE_MAX, "foreign_ports": list(FOREIGN_PORTS), "zashi_step": ZASHI_STEP, "tongshi_step": TONGSHI_STEP, "supply_bulk": FLEET_SUPPLY_BULK, "huozhang_step": _E.coeff(_CREW_GD, "speed_factor", "huozhang"), "duogong_base": _E.offset(_CREW_GD, "wind_floor", "duogong"), "duogong_step": _E.coeff(_CREW_GD, "wind_floor", "duogong"), "zongguan_step": _E.coeff(_CREW_GD, "cargo_loss_factor", "zongguan"), "yiren_step": _E.coeff(_CREW_GD, "crew_loss_factor", "yiren"), "war_tariff": _E.literal(_ECO_GD, "WAR_TARIFF"), "siege_grain_target": _E.num(_ECO_GD, "SIEGE_GRAIN_TARGET")}, sort_keys=True))
     sys.exit(0)
 # 按函数名取函数体一律经 tools/func_body.py（与 check_symbols 同一份 helper，lane cs14）：取不到给 "" 并记账，
 # 末节「十一、按函数名取函数体」逐条判红——原先取不到静默给 ""，反向断言（"X" not in body）在函数改名 / 搬走时空转变绿。
@@ -76,33 +76,33 @@ def gd_round(x):
     旧镜像因此与生产差 1 文（lane ea2 对生产 dump 实测光杆价 16/1512 格）。"""
     return int(math.floor(abs(x) + 0.5)) * (1 if x >= 0 else -1)
 
-def price_core(v, foreign, zashi=0, tongshi=0, title_duty=1.0):
+def price_core(v, foreign, zashi=0, tongshi=0, title_duty=1.0, tariff_mul=1.0):
     """Economy.price_at_rate 的**唯一**镜像：给定共有因子 v，返回未取整的（买, 卖）。
     运算次序与生产逐行一致（浮点取整边界也对得上）；各节行情/职事/修埠/职衔一律经此，改公式时只改这里。
     价差地板的裁法：卖价先封顶在「光杆买价 ÷ 地板」，超出的部分改从买价折扣里扣回来；
     且买、卖两侧都不得劣于光杆——只压卖价的话，雇齐职事反而比光杆赚得少。
-    v=1.0 时即买卖倍率（二之二节倍率层断言用）。"""
+    v=1.0 时即买卖倍率（二之二节倍率层断言用）；tariff_mul 是战况抽解倍率（Economy.WAR_TARIFF，缺省 1 即忠宋港）。"""
     edge = interp_edge(tongshi) if foreign else 0.0
     tc = trade_cost(zashi)
-    bare_buy = v * (1.0 + TARIFF)
+    bare_buy = v * (1.0 + TARIFF * tariff_mul)
     bare_sell = v * (1.0 - BROKER)
     cap = bare_buy / SPREAD_MIN
     sell_v = min(v * (1.0 - BROKER * tc * title_duty) * (1.0 + edge), cap)
     sell_v = max(sell_v, min(bare_sell, cap))
-    buy_v = max(v * (1.0 + TARIFF * tc * title_duty) * (1.0 - edge), sell_v * SPREAD_MIN)
+    buy_v = max(v * (1.0 + TARIFF * tariff_mul * tc * title_duty) * (1.0 - edge), sell_v * SPREAD_MIN)
     return min(buy_v, max(bare_buy, sell_v * SPREAD_MIN)), sell_v
 
-def price_at(pid, gid, is_buy, zashi=0, tongshi=0, title_duty=1.0, inv=0, rate=1.0):
+def price_at(pid, gid, is_buy, zashi=0, tongshi=0, title_duty=1.0, inv=0, rate=1.0, war_mul=1.0, tariff_mul=1.0):
     """复现 Economy.price_at_rate(pid, gid, rate, is_buy)：职事等级、职衔抽解折、修埠等级显式传入。
-    抽解基率取 TARIFF（忠宋港、未站蒲家；战况倍率不在此镜像）。"""
+    抽解基率取 TARIFF × tariff_mul、共有因子 v 乘 war_mul（战况抽解 / 物价倍数，缺省 1 即忠宋港，按年月代填见九之八 war_price_at）；未站蒲家。"""
     r = role(pid, gid)
-    v = goods[gid]["base_value"] * ROLE_MOD.get(r, 1.0) * rate
+    v = goods[gid]["base_value"] * ROLE_MOD.get(r, 1.0) * rate * war_mul
     ie = INVEST_EDGE_PER * inv
     if r == "origin":
         v *= (1.0 - ie)
     elif r == "consumer":
         v *= (1.0 + ie)
-    b, s = price_core(v, pid in FOREIGN_PORTS, zashi, tongshi, title_duty)
+    b, s = price_core(v, pid in FOREIGN_PORTS, zashi, tongshi, title_duty, tariff_mul)
     return gd_round(b if is_buy else s)
 
 def buy_price(pid, gid, rate=1.0):
@@ -2398,6 +2398,91 @@ check(goods["grain"].get("war_class") == "grain" and _wp("besieged", "grain") >=
       and _wp("contested", "grain") > 1.0 and all(0.9 <= _wp("contested", wc) <= 1.3 for wc in WAR_CLASSES),
       f"倍数方向照方案 §八：被围米 ×{_wp('besieged', 'grain')}、军械 ×{_wp('besieged', 'arms')}；降元奢侈 ×{_wp('fallen', 'luxury')}、"
       f"米 ×{_wp('fallen', 'grain')}；对峙小涨（米 ×{_wp('contested', 'grain')}，五类都在 0.9–1.3）")
+
+# 镜像：Economy._war_table / _war_price_mul / war_price_factor。战况抽解倍率 WAR_TARIFF 与围城米行情目标从 Economy.gd 现读。
+WAR_TARIFF, SIEGE_GRAIN_TARGET = _E.literal(_ECO_GD, "WAR_TARIFF"), _E.num(_ECO_GD, "SIEGE_GRAIN_TARGET")
+
+def war_table(status, gid):
+    """Economy._war_table：表里不列的战况、货类都是 1；认不出的货类当 common（Economy.war_class）。"""
+    wc = goods[gid].get("war_class", "common")
+    return float(WAR_PRICE.get(status, {}).get(wc if wc in WAR_CLASSES else "common", 1.0))
+
+def war_price_mul(status, gid, on=True):
+    """Economy._war_price_mul：price_at_rate 实乘的那份。围城港的米行情已撑在 SIEGE_GRAIN_TARGET，只乘超出那一截。
+    on=False 即开关 war_prices 关（恒 1）。"""
+    if not on:
+        return 1.0
+    f = war_table(status, gid)
+    return f / SIEGE_GRAIN_TARGET if status == "besieged" and gid == "grain" else f
+
+def war_price_at(pid, gid, is_buy, year, month, on=True, rate=1.0, zashi=0, tongshi=0):
+    """某年某月的牙行价：战况抽解（WAR_TARIFF，开关无关）照旧，战况物价倍数随开关。"""
+    st = war_status_at(pid, year, month)
+    return price_at(pid, gid, is_buy, zashi, tongshi, rate=rate,
+                    war_mul=war_price_mul(st, gid, on), tariff_mul=WAR_TARIFF.get(st, 1.0))
+
+# 同港价差地板：倍数乘在共有因子 v 上，五种战况 × 全部（港, 货）× 杂事通事各级，同港卖价都不高于买价
+_inv = [(st, pid, gid, z, t) for st in WAR_STATUSES for pid in ports for gid in ports[pid].get("market", {})
+        for z in range(MAX_Z + 1) for t in range(MAX_T + 1)
+        if price_at(pid, gid, False, z, t, war_mul=war_price_mul(st, gid), tariff_mul=WAR_TARIFF.get(st, 1.0))
+        > price_at(pid, gid, True, z, t, war_mul=war_price_mul(st, gid), tariff_mul=WAR_TARIFF.get(st, 1.0))]
+check(not _inv, f"五种战况 × 全部（港, 货）× 杂事通事各级，同港卖价都不高于买价（倒挂 {len(_inv)}{'；例 ' + str(_inv[0]) if _inv else ''}）")
+
+# 不成摇钱树：战况表里每个翻牌月，开门的港两两之间（违禁货也算）比开 / 关两态的最好航线。
+# 每料利润（舱满时的瓶颈）看最好一条与前十条均值，回本率（本钱紧时的瓶颈）看最好一条。
+def war_routes(year, month, on):
+    out = []
+    for s in ports:
+        if not market_open_at(s, year, month):
+            continue
+        for d in ports:
+            if d == s or not market_open_at(d, year, month):
+                continue
+            for gid in ports[s].get("market", {}):
+                if gid not in ports[d].get("market", {}):
+                    continue
+                b = war_price_at(s, gid, True, year, month, on)
+                sl = war_price_at(d, gid, False, year, month, on)
+                if sl > b:
+                    out.append(((sl - b) / goods[gid]["bulk"], (sl - b) / b, s, d, gid))
+    return out
+
+_war_months = sorted({k for p in ports.values() for k in p.get("war", {})})
+_route_rows = []
+for _ym in _war_months:
+    _y, _m = (int(x) for x in _ym.split("-"))
+    _off, _on = war_routes(_y, _m, False), war_routes(_y, _m, True)
+    _top = lambda rows: sum(sorted((r[0] for r in rows), reverse=True)[:10]) / 10
+    _bo, _bn = max(_off), max(_on)
+    _ro, _rn = max(_off, key=lambda r: r[1]), max(_on, key=lambda r: r[1])
+    _route_rows.append((_ym, _bn[0] / _bo[0], _top(_on) / _top(_off), _rn[1] / _ro[1]))
+    print(f"  {_ym}  每料最好 关 {_bo[0]:6.0f}（{ports[_bo[2]]['name']}→{ports[_bo[3]]['name']} {goods[_bo[4]]['name']}）"
+          f" 开 {_bn[0]:6.0f}（{goods[_bn[4]]['name']}）  前十均 {_top(_off):5.0f}→{_top(_on):5.0f}"
+          f"  回本率最好 {_ro[1] * 100:4.0f}%→{_rn[1] * 100:4.0f}%（{ports[_rn[2]]['name']}→{ports[_rn[3]]['name']} {goods[_rn[4]]['name']}）")
+_worst = max(_route_rows, key=lambda r: max(r[1], r[2]))
+check(all(r[1] <= 1.10 and r[2] <= 1.15 for r in _route_rows),
+      f"{len(_route_rows)} 个翻牌月开开关后，每料最好航线涨幅 ≤ 一成、前十条均值涨幅 ≤ 一成半"
+      f"（最高 {_worst[0]}：最好 {(_worst[1] - 1) * 100:+.1f}%、前十 {(_worst[2] - 1) * 100:+.1f}%）")
+print(f"  回本率最好一条开 / 关之比最高 {max(r[3] for r in _route_rows):.2f}（{max(_route_rows, key=lambda r: r[3])[0]}；"
+      f"本钱紧时奢侈货运进降元港最见涨，舱满时仍是砂金领先）")
+
+# 关键价位（commit 说明照抄这几行）
+print("  关键价位（行情 1.0、光杆；关 → 开）：")
+for _y, _m, _pid, _gid in ((1276, 11, "xinghua", "grain"), (1276, 11, "xinghua", "japanese_sword"),
+                           (1276, 2, "mingzhou", "korean_ginseng"), (1276, 2, "mingzhou", "qingbai_porcelain"),
+                           (1276, 2, "mingzhou", "grain"), (1276, 6, "quanzhou", "grain"), (1276, 6, "quanzhou", "ironware"),
+                           (1273, 6, "jeju", "korean_ginseng"), (1273, 6, "jeju", "qingbai_porcelain")):
+    _st = war_status_at(_pid, _y, _m)
+    print(f"    {_y}-{_m:02d} {ports[_pid]['name']}（{_st}）{goods[_gid]['name']} ×{war_table(_st, _gid):g}："
+          f"买 {war_price_at(_pid, _gid, True, _y, _m, False)}→{war_price_at(_pid, _gid, True, _y, _m)}　"
+          f"卖 {war_price_at(_pid, _gid, False, _y, _m, False)}→{war_price_at(_pid, _gid, False, _y, _m)}")
+# 闯封锁的卖粮价（lane w53-p5-blockade 用 Economy.war_price_factor）：平年米价（行情 1.0，围城米这一格算价不再乘）× 倍数
+_peace = war_price_at("xinghua", "grain", False, 1276, 11)
+_run = _peace * war_table("besieged", "grain")
+_siege_rate = war_price_at("xinghua", "grain", False, 1276, 11, rate=SIEGE_GRAIN_TARGET)
+check(_peace == sell_price("xinghua", "grain") and abs(_siege_rate - _run) <= 1,
+      f"兴化被围：平年米价 {_peace} × {war_table('besieged', 'grain'):g} = 闯封锁卖价 {_run:.1f}，"
+      f"与牙行行情撑在 {SIEGE_GRAIN_TARGET:g} 时的米价 {_siege_rate} 同档（不叠成 {_peace * war_table('besieged', 'grain') * SIEGE_GRAIN_TARGET:.0f}）")
 
 print()
 print("=" * 68)

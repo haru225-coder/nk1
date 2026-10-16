@@ -247,12 +247,12 @@ def advance(n):
     for _ in range(n):
         G.day += 1
         if G.day > 30:
-            G.day = 1; G.month += 1
+            G.day = 1; G.year, G.month = (G.year + 1, 1) if G.month == 12 else (G.year, G.month + 1)
             if G.debt > 0: G.debt += math.ceil(G.debt * DEBT_RATE)
-            if G.month > 12: G.month = 1; G.year += 1
+            war_month_shock()  # 战况月初冲击（Economy.on_month_changed，先于当日回归）；1273 年前一港不翻牌即空转
         for pid in rates:
             for gid in rates[pid]:
-                rates[pid][gid] += (1.0 - rates[pid][gid]) * RECOVERY
+                rates[pid][gid] += (rate_target(pid, gid) - rates[pid][gid]) * RECOVERY
         if G.at_sea:
             u = daily_use()
             G.water = max(0, G.water - u); G.food = max(0, G.food - u)
@@ -532,23 +532,45 @@ def one_trip(trip):
 
 def role(pid, gid): return ports[pid]["market"].get(gid)
 
-def price_at_rate(pid, gid, rate, is_buy, tariff_factor=1.0, broker_factor=1.0, edge=0.0):
+def price_at_rate(pid, gid, rate, is_buy, tariff_factor=1.0, broker_factor=1.0, edge=0.0, war_mul=1.0, tariff_mul=1.0):
     """Economy.price_at_rate 的镜像（含 P2-0 同港价差地板）。
     tariff_factor/broker_factor = Crew.trade_cost_factor()，edge = Crew.interpreter_edge()；
-    本模型不雇职事，三者取光杆值，但公式必须与生产一致，否则门禁测的是另一套经济。"""
-    v = goods[gid]["base_value"] * ROLE_MOD[role(pid, gid)] * rate
-    bare_buy = v * (1 + TARIFF)
+    本模型不雇职事，三者取光杆值，但公式必须与生产一致，否则门禁测的是另一套经济。war_mul / tariff_mul 见 war_terms。"""
+    v = goods[gid]["base_value"] * ROLE_MOD[role(pid, gid)] * rate * war_mul
+    bare_buy = v * (1 + TARIFF * tariff_mul)
     bare_sell = v * (1 - BROKER)
     cap = bare_buy / PRICE_SPREAD_MIN
     sell_v = min(v * (1 - BROKER * broker_factor) * (1 + edge), cap)
     sell_v = max(sell_v, min(bare_sell, cap))
     if not is_buy:
         return gd_round(sell_v)
-    buy_v = max(v * (1 + TARIFF * tariff_factor) * (1 - edge), sell_v * PRICE_SPREAD_MIN)
+    buy_v = max(v * (1 + TARIFF * tariff_mul * tariff_factor) * (1 - edge), sell_v * PRICE_SPREAD_MIN)
     return gd_round(min(buy_v, max(bare_buy, sell_v * PRICE_SPREAD_MIN)))
 
-def buy_p(pid,gid):  return price_at_rate(pid, gid, rates[pid][gid], True)
-def sell_p(pid,gid): return price_at_rate(pid, gid, rates[pid][gid], False)
+def buy_p(pid,gid):  return price_at_rate(pid, gid, rates[pid][gid], True, **war_terms(pid, gid))
+def sell_p(pid,gid): return price_at_rate(pid, gid, rates[pid][gid], False, **war_terms(pid, gid))
+
+# ── 战况（lane w53-p5-econ）：牙行价、行情冲击与回归按 G 当前年月的港口战况走，镜像出自 verify_economy 九之八节 ──
+# 战况抽解（WAR_TARIFF）、月初冲击、围城米回归目标是旧玩法，开关无关；战况物价倍数随 WAR_PRICES_ON[0]（即开关 war_prices）。
+# 主循环与前面各节跑在 1255–1266，碰不到任何战况月（最早 1273-05 耽罗降元）：几项恒为平年值，输出与改前逐字同数。
+WAR_PRICES_ON = [True]
+
+def war_terms(pid, gid):
+    st = _ve.war_status_at(pid, G.year, G.month)
+    return {"war_mul": _ve.war_price_mul(st, gid, WAR_PRICES_ON[0]), "tariff_mul": _ve.WAR_TARIFF.get(st, 1.0)}
+
+def rate_target(pid, gid):
+    """Economy.on_day_passed 的回归目标：被围的港米回 SIEGE_GRAIN_TARGET，其余回 1.0。"""
+    return _ve.SIEGE_GRAIN_TARGET if gid == "grain" and _ve.war_status_at(pid, G.year, G.month) == "besieged" else 1.0
+
+def war_month_shock():
+    """Economy.on_month_changed 的行情冲击：本月翻成被围的港米 +0.8；翻成降元的港米 +0.5、其余货 −0.15（钳在上下限）。"""
+    now = "%04d-%02d" % (G.year, G.month)
+    for pid, p in ports.items():
+        st = p.get("war", {}).get(now)
+        for gid in rates.get(pid, {}) if st in ("besieged", "fallen") else ():
+            d = (0.8 if st == "besieged" else 0.5) if gid == "grain" else (-0.15 if st == "fallen" else 0.0)
+            rates[pid][gid] = max(RATE_MIN, min(RATE_MAX, rates[pid][gid] + d))
 
 def _best_free_ship():
     """空舱最大的船（模拟理性玩家选舱装货）"""
@@ -676,7 +698,9 @@ check(all(a == b for a, b in _zt),
 ECO_EDIT = {
     "scripts/core/Economy.gd": (("num", "tariff_rate", 0.125), ("num", "broker_fee", 0.0625), ("num", "PRICE_SPREAD_MIN", 1.0625),
                                 ("lit", "ROLE_MOD", {"origin": 0.6, "normal": 1.0, "consumer": 1.8}),
-                                ("num", "RATE_MIN", 0.35), ("num", "RATE_MAX", 2.4), ("num", "RECOVERY", 0.05)),
+                                ("num", "RATE_MIN", 0.35), ("num", "RATE_MAX", 2.4), ("num", "RECOVERY", 0.05),
+                                ("lit", "WAR_TARIFF", {"loyal": 1.0, "contested": 1.25, "besieged": 1.0, "fallen": 1.75, "closed": 1.0}),
+                                ("num", "SIEGE_GRAIN_TARGET", 1.75)),
     "scripts/core/Crew.gd": (("lit", "FOREIGN_PORTS", ["hakata", "kagoshima", "jeju", "champa", "ryukyu"]),
                              ("coeff", "trade_cost_factor:zashi", 0.1), ("coeff", "interpreter_edge:tongshi", 0.025),
                              ("coeff", "speed_factor:huozhang", 0.05), ("coeff", "wind_floor:duogong", 0.04),
@@ -694,7 +718,9 @@ ECO_WANT = {
     "verify_economy.py": {"tariff": 0.125, "broker": 0.0625, "spread": 1.0625, "role_mod": {"origin": 0.6, "normal": 1.0, "consumer": 1.8},
                           "rate_min": 0.35, "rate_max": 2.4, "foreign_ports": ["hakata", "kagoshima", "jeju", "champa", "ryukyu"],
                           "zashi_step": 0.1, "tongshi_step": 0.025, "supply_bulk": 0.3, "huozhang_step": 0.05,
-                          "duogong_base": 0.38, "duogong_step": 0.04, "zongguan_step": 0.15, "yiren_step": 0.2},
+                          "duogong_base": 0.38, "duogong_step": 0.04, "zongguan_step": 0.15, "yiren_step": 0.2,
+                          "war_tariff": {"loyal": 1.0, "contested": 1.25, "besieged": 1.0, "fallen": 1.75, "closed": 1.0},
+                          "siege_grain_target": 1.75},
 }
 
 def eco_params_after_edit(edits):
@@ -738,6 +764,7 @@ ECO_LITERAL_BACK = (
     (r"^\s*(?:RECOVERY|SUPPLY_BULK(?:_M)?|CREW_DAYS_PER_SUPPLY|RATE_MIN|RATE_MAX)\b[^\n=]*=\s*-?\d", "回归 / 水粮 / 行情钳"),
     (r"^\s*DEBT_CEILING\b[^\n=]*=\s*-?\d", "赊贷上限与月息"),
     (r"^\s*SKIP_(?:HULL_DECAY|HULL_FLOOR|MORALE_AFTER|YEAR_CAP)\b[^\n=]*=\s*(?:int\()?-?\d", "跳年四常量"),
+    (r"^\s*(?:WAR_TARIFF|WAR_PRICE)\b[^\n=]*=\s*\{|^\s*SIEGE_GRAIN_TARGET\b[^\n=]*=\s*-?\d", "战况抽解 / 战时物价表 / 围城米行情目标（lane w53-p5-econ）"),
     (r"\d\.\d+\s*\*\s*lv\b", "杂事 / 通事每级系数"),
     (r"\bmin\(\s*2\.20?\s*,", "行情上限"),
     (r"\bmax\(\s*0\.40?\s*,(?!\s*min\(\s*1\.60?\s*,)", "行情下限"),
@@ -1553,6 +1580,80 @@ days_c = math.ceil(d_far / (base_spd * COAST_M))
 print(f"  泉州→博多（当下风）：外洋 {days_o} 日 / 针路 {days_r} 日 / 傍岸 {days_c} 日，针路期限 {days_r + SLACK} 日")
 check(days_o <= days_r < days_c, "外洋不慢于针路，傍岸严格更慢")
 check(days_c > days_r + SLACK, "泉州→博多傍岸赶不上针路期限")
+
+print()
+print("="*70)
+print("战时跑商对照（lane w53-p5-econ：走进战况年份跑到 1278 年五月，war_prices 开 / 关同一路数）")
+print("="*70)
+# 主循环在 1266 年前就了结，碰不到战况月，开关两态逐字同数；这里另起几段走进战况年份：福船（中）、全图已开，泉州 / 明州 / 广州
+# × 本钱八千 / 两万 / 六万 × 1273 年六月（耽罗刚降元）/ 1276 年正月起跑，共 18 种开局。每趟按每料利润挑开门的港（违禁货不跑，
+# 免得查扣掷骰把两态的随机序列岔开），到港撞上闭门就开往最近一处收这货的开门港。行情冲击、围城米回归、战况抽解两态照旧，
+# 只差战况物价倍数，补给的米价也跟着倍数走；两态随机序列同起点。贪心一路走下去，倍数一变挑的路就岔开，单段开局涨跌都大，
+# 判 18 段合计净利。
+WAR_RUN_TO = (1278, 6)
+WAR_STARTS = [(money, port, frm) for frm in ((1273, 6), (1276, 1))
+              for port in ("quanzhou", "mingzhou", "guangzhou") for money in (8000, 20000, 60000)]
+
+def war_run(on, money, port, frm):
+    WAR_PRICES_ON[0] = on
+    G.money, G.port, G.chapter, G.debt, G.morale = money, port, 4, 0, 70
+    G.year, G.month, G.day = frm[0], frm[1], 1
+    G.water, G.food = 80, 80
+    G.ships = [{"type": "fu_ship_medium", "name": "福船", "crew": ships["fu_ship_medium"]["crew_min"],
+                "durability": 300.0, "sail_level": 1, "armor_level": 1, "cargo": {}}]
+    for pid in rates:
+        for gid in rates[pid]:
+            rates[pid][gid] = 1.0
+    start, trips, by_class = G.money, 0, {}
+
+    def sell_here():
+        if _ve.market_open_at(G.port, G.year, G.month):
+            for g in sorted({g for s in G.ships for g in s["cargo"]} & set(ports[G.port]["market"])):
+                do_sell(g, sum(s["cargo"].get(g, [0])[0] for s in G.ships))
+        return sorted({g for s in G.ships for g in s["cargo"]})
+
+    while (G.year, G.month) < WAR_RUN_TO and trips < 80:
+        src, held = G.port, sell_here()
+        dsts = [p for p in open_ports() if p != src and _ve.market_open_at(p, G.year, G.month)]
+        bt = None
+        for dst in dsts if not held and _ve.market_open_at(src, G.year, G.month) else ():
+            for gid in ports[src]["market"]:
+                if gid in ports[dst]["market"] and not goods[gid].get("contraband"):
+                    margin = sell_p(dst, gid) - buy_p(src, gid)
+                    if margin > 0 and (bt is None or margin / bulk(gid) > bt[0]):
+                        bt = (margin / bulk(gid), gid, dst)
+        if bt is None:  # 舱里压着本港收不了的货（到港撞上闭门），或本港闭门 / 无利可图：开往最近一处收它的开门港
+            dst = min([p for p in dsts if not held or held[0] in ports[p]["market"]] or dsts, key=lambda p: dist(src, p))
+        else:
+            _, gid, dst = bt
+            by_class[goods[gid]["war_class"]] = by_class.get(goods[gid]["war_class"], 0) + 1
+            if dist(src, dst) > 800:
+                wait_wind(src, dst)
+            do_buy(gid, 9999, floor_price=sell_p(dst, gid))
+        buy_supplies(voyage_days(src, dst) + 4)
+        sail(dst)
+        trips += 1
+    left = sum(q for s in G.ships for q, _ in s["cargo"].values()) if sell_here() else 0
+    return {"net": G.money - start, "trips": trips, "left": left, "by_class": by_class}
+
+_rng = random.getstate()
+_war_rows = []
+for _money, _port, _frm in WAR_STARTS:
+    _pair = []
+    for _on in (False, True):
+        random.setstate(_rng)
+        _pair.append(war_run(_on, _money, _port, _frm))
+    _war_rows.append((_money, _port, _frm, _pair[0], _pair[1]))
+    print(f"  {_frm[0]}-{_frm[1]:02d} {ports[_port]['name']}起 本钱 {_money:>5}：关 {_pair[0]['net']:+7}（{_pair[0]['trips']} 趟）"
+          f"　开 {_pair[1]['net']:+7}（{_pair[1]['trips']} 趟）　{(_pair[1]['net'] / max(1, _pair[0]['net']) - 1) * 100:+6.1f}%"
+          f"　开态所跑货类 {_pair[1]['by_class']}{'　舱里剩 %d 件' % _pair[1]['left'] if _pair[1]['left'] else ''}")
+WAR_PRICES_ON[0] = True
+_off_sum, _on_sum = sum(r[3]["net"] for r in _war_rows), sum(r[4]["net"] for r in _war_rows)
+_gain = _on_sum / max(1, _off_sum) - 1
+_per = sorted(r[4]["net"] / max(1, r[3]["net"]) - 1 for r in _war_rows)
+check(_off_sum > 0 and -0.10 <= _gain <= 0.25,
+      f"开开关后 {len(_war_rows)} 段战时跑商合计净利 {_gain * 100:+.1f}%（{_off_sum} → {_on_sum}；单段 {_per[0] * 100:+.0f}% 到 {_per[-1] * 100:+.0f}%）："
+      f"不成摇钱树（≤ +25%），也不把战时生意掐死（≥ −10%）")
 
 print()
 print("="*70)
