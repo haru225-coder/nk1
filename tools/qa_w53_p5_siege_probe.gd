@@ -6,10 +6,11 @@ extends SceneTree
 ##       2. 真走 Main：三档城防（必败 / 胜负参半 / 多胜）× 40 种子，每阵前同种子，Main._siege_nangshan 真打三阵，
 ##          与原式副本照原先次序落账的城防账（兵、粮、墙、士气、阵数、待结城破）和名声逐阵相等。
 ##   二、行事表（开关 siege_schedule）：围城那天 / 援兵断绝 / 城破三个日子与探针自读 ports.json 兴化战况表另算的相等
-##       （第一段 besieged 的月初、城破前 SIEGE_DIRE_DAYS 日、首守城破时点）；城防账那一行逐字、候一日「还有几日」跟着少、
-##       剩两日写「两」；行事表不写 story_check 按子串找的告急行 / 阵数 / 兵粮字样，告急行仍只在城破前十日内出；
-##       五扇门各一行「当日办完 / 当日接战」、岸带仍恰五扇门；最挤的一格（缺粮告急 + 城破告急 + 行事表）动作行仍在画面里；
-##       关态：城防账各行与门副题逐字同 f443e6e8（硬抄同局旧字），不长 SiegeSchedule / DoorDays 节点。
+##       （第一段 besieged 的月初、城破前 SIEGE_DIRE_DAYS 日、首守城破时点）；「元军行事」小笺并在城防账右边、各行逐字、
+##       已过的淡写，候一日「还有几日」跟着少、剩两日写「两」；小笺不写 story_check 按子串找的告急行 / 阵数 / 兵粮字样，
+##       告急行仍只在城破前十日内出；五扇门各一行「当日办完 / 当日接战」、岸带仍恰五扇门；最挤的一格（缺粮告急 + 城破告急
+##       + 小笺）岸带不越过定高 360、动作行整排在画面里；城防账本身开关两态都逐字同 f443e6e8（硬抄同局旧字）；
+##       关态：门副题逐字同旧，不长 SiegeRow / SiegeSchedule / DoorDays 节点。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_p5_siege_probe.gd
 ## 判词：逐条「  ✓ / ✗ 判词」，末行 QA_W53_P5_SIEGE_PROBE PASS / FAIL k；本进程 SCRIPT ERROR 也判红。
 
@@ -18,6 +19,8 @@ const Switches := preload("res://scripts/combat/CombatSwitches.gd")
 const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 const TAG := "QA_W53_P5_SIEGE_PROBE"
 const VIEW := Vector2i(1280, 720)
+## 岸带定高（Main._shore_band 的 offset_top −372 / offset_bottom −12）：守城页排满也不许越过
+const BAND_H := 360.0
 
 ## f443e6e8 守城页同一局（1276-11-03 初开城防、名声 30、粮 120）的城防账各行与五扇门副题——关态须逐字同这几行
 const OLD_SLIP := [
@@ -242,25 +245,34 @@ func _sec_schedule() -> void:
 	_check(got == [s_abs, f_abs - dire, f_abs], "行事表三个日子 = 围城月初 %d / 城破前 %d 日 %d / 城破 %d（Main 给 %s）" % [s_abs, dire, f_abs - dire, f_abs, got])
 	_check(f_abs == int((_main.call("_siege_fall_point") as Dictionary).get("abs", -1)), "城破那天与 _siege_fall_point（忠肃落款、告急行同源）是同一天")
 
-	# 2. 城防账那一行逐字；候一日跟着少；剩两日写「两」
+	# 2. 「元军行事」小笺并在城防账右边：各行逐字（已过的淡写）；候一日「还有几日」跟着少；剩两日写「两」
 	_stage_siege(1276, 11, 3)
 	_main.load_scene("xinghua")
-	var want := "元军行事　冬月初一前锋到囊山・使者到城下　冬月廿一援兵断绝　腊月初一城破　今日冬月初三，还有二十八日"
-	var line := _label_with(_band(), "元军行事")
-	_check(line == want, "城防账行事表一行「%s」" % line)
-	_check(_named(_band(), "SiegeSchedule") == 1, "行事表一行挂在城防账里（SiegeSchedule %d 个）" % _named(_band(), "SiegeSchedule"))
+	var want := ["元军行事", "冬月初一　前锋到囊山・使者到城下", "冬月廿一　援兵断绝", "腊月初一　城破", "今日冬月初三・还有二十八日"]
+	var side: Node = _band().find_child("SiegeSchedule", true, false)
+	var lines := _labels(side)
+	_check(lines == want, "元军行事小笺各行 %s" % [lines])
+	var row: Node = _band().get_node_or_null("SiegeRow")
+	_check(row != null and row.get_child_count() == 2 and row.get_child(0).name == "SiegeStat" and row.get_child(1).name == "SiegeSchedule"
+			and _named(_band(), "SiegeSchedule") == 1,
+		"小笺与城防账并排（SiegeRow：城防账在左、元军行事在右）")
+	var first: Label = side.get_child(0).get_child(1) as Label if side != null else null
+	var later: Label = side.get_child(0).get_child(2) as Label if side != null else null
+	_check(first != null and later != null and first.get_theme_color("font_color") != later.get_theme_color("font_color"),
+		"已过的（冬月初一）与未到的（冬月廿一）字色分开")
 	var bad_needles := []
-	for nd in PINNED_NEEDLES:
-		if line.find(str(nd)) >= 0:
-			bad_needles.append(nd)
-	_check(bad_needles.is_empty(), "行事表不写 story / patrol 按子串找的字样（撞了 %s）" % [bad_needles])
+	for ln in lines:
+		for nd in PINNED_NEEDLES:
+			if str(ln).find(str(nd)) >= 0:
+				bad_needles.append(nd)
+	_check(bad_needles.is_empty(), "小笺不写 story / patrol 按子串找的字样（撞了 %s）" % [bad_needles])
 	_main.call("_on_shore_wait")
-	line = _label_with(_band(), "元军行事")
-	_check(line.ends_with("今日冬月初四，还有二十七日"), "候一日：「%s」" % line.substr(line.find("今日")))
+	var today_l := _label_with(_band(), "今日")
+	_check(today_l == "今日冬月初四・还有二十七日", "候一日：「%s」" % today_l)
 	cal.from_dict({"year": 1276, "month": 11, "day": 29})
 	_main.load_scene("xinghua")
-	line = _label_with(_band(), "元军行事")
-	_check(line.ends_with("今日冬月廿九，还有两日"), "剩两日写「两」：「%s」" % line.substr(line.find("今日")))
+	today_l = _label_with(_band(), "今日")
+	_check(today_l == "今日冬月廿九・还有两日", "剩两日写「两」：「%s」" % today_l)
 
 	# 3. 告急行照旧只在城破前 SIEGE_DIRE_DAYS 日内出（行事表写「援兵断绝」，不顶替它）
 	for off in [dire + 1, dire]:
@@ -283,20 +295,21 @@ func _sec_schedule() -> void:
 	_check(hand.size() == 5 and notes == ["当日办完", "当日办完", "当日办完", "当日办完", "当日接战"],
 		"五扇门（%d）各写耗几日 %s" % [hand.size(), notes])
 
-	# 5. 最挤的一格：粮不够一阵（急）+ 城破前告急（急）+ 行事表，动作行仍整个在画面里
+	# 5. 最挤的一格：粮不够一阵（急）+ 城破前告急（急）+ 元军行事小笺——岸带仍不越过定高 360、动作行整排在画面里
+	#    （同 qa_w53_4_epilogue_fit_probe 守终局札记的判据；小笺并排放，不加岸带的高）
 	cal.from_dict({"year": 1276, "month": 11, "day": 25})
 	_main.load_scene("xinghua")
 	gs.siege_set("grain", 0)
 	_main.call("_build_shore")
 	for i in 3:
 		await process_frame
-	var acts: Control = _band().get_node_or_null("ShoreActions") as Control
+	var band_c: Control = _band() as Control
+	var acts: Control = band_c.get_node_or_null("ShoreActions") as Control if band_c != null else null
 	var act_rect := acts.get_global_rect() if acts != null else Rect2()
-	var slip: Control = _band().find_child("SiegeStat", true, false) as Control
-	var slip_top := slip.get_global_rect().position.y if slip != null else -1.0
-	_check(acts != null and act_rect.end.y <= float(VIEW.y) + 1.0 and slip_top >= 0.0 and _label_with(_band(), "援兵音信断绝") != ""
-			and _label_with(_band(), "此时出战即城破") != "",
-		"缺粮告急 + 城破告急 + 行事表同在：城防账顶 %.0f、动作行底 %.0f（画面高 %d）" % [slip_top, act_rect.end.y, VIEW.y])
+	var band_h := band_c.size.y if band_c != null else 9999.0
+	_check(acts != null and band_h <= BAND_H + 0.5 and act_rect.end.y <= float(VIEW.y) + 0.5 and _label_with(_band(), "援兵音信断绝") != ""
+			and _label_with(_band(), "此时出战即城破") != "" and _named(_band(), "SiegeSchedule") == 1,
+		"缺粮告急 + 城破告急 + 元军行事同在：岸带高 %.0f（定高 %.0f）、动作行底 %.0f（画面高 %d）" % [band_h, BAND_H, act_rect.end.y, VIEW.y])
 
 	# 6. 关态逐字回旧：城防账各行、门副题同 f443e6e8，不长新节点
 	Switches.set_on("siege_schedule", false)
@@ -313,11 +326,11 @@ func _sec_schedule() -> void:
 		want_doors.append([od[0], od[1], od[2], false])
 	_check(off_doors == want_doors, "关：五扇门题、副题逐字同旧，不带耗日 %s" % [off_doors])
 	_check(_named(_band(), "SiegeSchedule") == 0 and _named(_band(), "DoorDays") == 0, "关：不长行事表、门上耗日两种节点")
+	_check(_band().get_child(0).name == "SiegeStat", "关：岸带头一个就是城防账，不套并排的一层")
 	Switches.set_on("siege_schedule", true)
 	_main.load_scene("xinghua")
 	var on_lines := _labels(_band().find_child("SiegeStat", true, false))
-	on_lines.erase(want)
-	_check(on_lines == OLD_SLIP, "开：除去行事表一行，城防账其余各行与关态逐字相同")
+	_check(on_lines == OLD_SLIP, "开：城防账本身各行仍逐字同旧（行事表另起小笺，不往城防账里添行）")
 	Switches.reset()
 
 

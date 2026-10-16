@@ -2537,7 +2537,7 @@ func _refresh_shore() -> void:
 		child.queue_free()
 
 	if _shore_mode == "siege":
-		band.add_child(_siege_stat_slip())
+		band.add_child(_siege_band_row())
 	elif _shore_mode == "ended":
 		band.add_child(_epilogue_slip())
 	else:
@@ -4001,11 +4001,6 @@ func _siege_stat_slip() -> Control:
 		GameState.siege_get("morale"),
 		"　石手军在城" if str(GameState.siege.get("shishou", "")) == "kept" else "",
 	], UiTheme.TEXT, 16)
-	# 行事表（开关 siege_schedule）：元军进度与今日离城破几日，压成一行接在兵粮行下（岸带只有 360 高）
-	if _SIEGE_SWITCHES.on("siege_schedule"):
-		var sched := _siege_schedule_line()
-		if sched != "":
-			_band_line(col, sched, UiTheme.TEXT_DIM, 16).name = "SiegeSchedule"
 	var warn := ""
 	if rounds_left < 1:
 		warn = "粮已不够打下一阵。此时出战即城破。"
@@ -4097,18 +4092,46 @@ func _siege_schedule() -> Array:
 	]
 
 
-## 城防账里行事表那一行：「元军行事　冬月初一前锋到囊山・使者到城下　冬月廿一援兵断绝　腊月初一城破　今日冬月初三，还有二十八日」。
-## story_check 按子串在岸带里找告急行「援兵音信断绝」、阵数「二阵」「三阵・」、兵粮行「兵 」「粮 」，这一行都不写这几样
-func _siege_schedule_line() -> String:
+## 守城岸带头一排：城防账；行事表开着时右边并一方「元军行事」小笺（方案 §九「城防账旁边加行事表」）。
+## 并排放、不往下接：岸带定高 360，城防账最挤时（缺粮、城破两行告急）已占 180，再接一行就把动作行挤出画面。
+## 小笺没有可写的（开关关、战况表推不出）就只回城防账本身，岸带同 f443e6e8
+func _siege_band_row() -> Control:
+	var slip := _siege_stat_slip()
+	var side := _siege_schedule_slip()
+	if side == null:
+		return slip
+	var row := HBoxContainer.new()
+	row.name = "SiegeRow"
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12)
+	slip.size_flags_vertical = Control.SIZE_SHRINK_END
+	side.size_flags_vertical = Control.SIZE_SHRINK_END
+	row.add_child(slip)
+	row.add_child(side)
+	return row
+
+
+## 「元军行事」小笺：泥金小题一行，三件事各一行（「冬月初一　前锋到囊山・使者到城下」，已过的淡写），
+## 末行「今日冬月初三・还有二十八日」（城破前 SIEGE_DIRE_DAYS 日起蜜色）。开关关或战况表推不出返回 null。
+## story_check 按子串在岸带里找告急行「援兵音信断绝」、阵数「二阵」「三阵・」、兵粮行「兵 」「粮 」，小笺都不写这几样
+func _siege_schedule_slip() -> Control:
+	if not _SIEGE_SWITCHES.on("siege_schedule"):
+		return null
 	var sched := _siege_schedule()
 	if sched.is_empty():
-		return ""
-	var parts := PackedStringArray()
-	for it in sched:
-		parts.append(_siege_day_name(int(it[0])) + str(it[1]))
+		return null
+	var parts := _band_slip("SiegeSchedule")
+	var col: VBoxContainer = parts[1]
+	_band_line(col, "元军行事", UiTheme.GOLD_HI, 16, true)
 	var today := Calendar.absolute_day()
+	for it in sched:
+		var when := int(it[0])
+		_band_line(col, "%s　%s" % [_siege_day_name(when), str(it[1])], UiTheme.TEXT_DIM if when < today else UiTheme.TEXT, 16)
 	var left: int = int(sched[sched.size() - 1][0]) - today
-	return "元军行事　%s　今日%s，还有%s日" % ["　".join(parts), _siege_day_name(today), _cn_num(left, true)]
+	_band_line(col, "今日%s・还有%s日" % [_siege_day_name(today), _cn_num(left, true)],
+		UiTheme.HONEY if left <= SIEGE_DIRE_DAYS else UiTheme.TEXT, 16).name = "SiegeToday"
+	return parts[0]
 
 
 ## 兴化首守的围城起点：战况表第一段 besieged 的开头（"YYYY-MM"）；表里没有返回 ""
