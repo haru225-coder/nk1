@@ -10,7 +10,7 @@ extends SceneTree
 ##       已过的淡写，候一日「还有几日」跟着少、剩两日写「两」；小笺不写 story_check 按子串找的告急行 / 阵数 / 兵粮字样，
 ##       告急行仍只在城破前十日内出；五扇门各一行「当日办完 / 当日接战」、岸带仍恰五扇门；最挤的一格（缺粮告急 + 城破告急
 ##       + 小笺）岸带不越过定高 360、动作行整排在画面里；城防账本身开关两态都逐字同 f443e6e8（硬抄同局旧字）；
-##       关态：门副题逐字同旧，不长 SiegeRow / SiegeSchedule / DoorDays 节点。
+##       关态：门副题逐字同旧、不写耗日，不长 SiegeRow / SiegeSchedule 节点。
 ##   三、外援（开关 siege_relief）四样各自的增减：涵江押粮（城中粮加、舱里米减、委办留货不押、费两日、一围一趟）、
 ##       押陈瓒船股换乡兵（兵加至多 150、满千即止、没船股请不动、费三日）、拆船料修墙（那条船帆降一档、城墙加 40 不过上限、
 ##       帆一档拆不得、费一日）、劫粮道（骰子逐位同 SiegeMelee.clash、费四日耗四日水粮、得手压低下一阵敌骰上限 1400 → 1100
@@ -308,14 +308,9 @@ func _sec_schedule() -> void:
 	_stage_siege(1276, 11, 3)
 	_main.load_scene("xinghua")
 	var hand: PackedStringArray = _main.get("shore_hand")
-	var notes := []
-	var doors: Node = _band().get_node_or_null("ShoreDoors")
-	if doors != null:
-		for d in doors.get_children():
-			var dl := (d as Node).find_child("DoorDays", true, false)
-			notes.append((dl as Label).text if dl is Label else "")
+	var notes := _door_notes()
 	_check(hand.size() == 5 and notes == ["当日办完", "当日办完", "当日办完", "当日办完", "当日接战"],
-		"五扇门（%d）各写耗几日 %s" % [hand.size(), notes])
+		"五扇门（%d）副题下各写耗几日 %s" % [hand.size(), notes])
 	Switches.reset()
 
 	# 5. 最挤的一格：粮不够一阵（急）+ 城破前告急（急）+ 元军行事小笺——岸带仍不越过定高 360、动作行整排在画面里
@@ -343,12 +338,14 @@ func _sec_schedule() -> void:
 	_check(off_lines == OLD_SLIP, "关：城防账各行逐字同旧 %s" % [off_lines])
 	var off_doors := []
 	for fac in _main.get("_shore_facilities"):
-		off_doors.append([str(fac.get("id", "")), str(fac.get("title", "")), str(fac.get("subtitle", "")), fac.has("days")])
+		off_doors.append([str(fac.get("id", "")), str(fac.get("title", "")), str(fac.get("subtitle", ""))])
 	var want_doors := []
+	var want_subs := []
 	for od in OLD_DOORS:
-		want_doors.append([od[0], od[1], od[2], false])
-	_check(off_doors == want_doors, "关：五扇门题、副题逐字同旧，不带耗日 %s" % [off_doors])
-	_check(_named(_band(), "SiegeSchedule") == 0 and _named(_band(), "DoorDays") == 0, "关：不长行事表、门上耗日两种节点")
+		want_doors.append([od[0], od[1], od[2]])
+		want_subs.append(od[2])
+	_check(off_doors == want_doors and _door_subs() == want_subs, "关：五扇门题、副题逐字同旧，门上不写耗日 %s" % [_door_subs()])
+	_check(_named(_band(), "SiegeSchedule") == 0, "关：不长行事表小笺")
 	_check(_band().get_child(0).name == "SiegeStat", "关：岸带头一个就是城防账，不套并排的一层")
 	Switches.set_on("siege_schedule", true)
 	_main.load_scene("xinghua")
@@ -673,8 +670,9 @@ func _sec_relief() -> void:
 	Switches.reset()
 
 
-## 守城岸带五扇门各自的耗日小字（按门排顺序；门上没有的记 ""）
-func _door_notes() -> Array:
+## 守城岸带五扇门的副题小字整段（按门排顺序）：门里那一列 VBox 是门题、副题两枚 Label（绢本另有水印字在 DoorMark 里，
+## 不在这一列），耗日是副题的第二行
+func _door_subs() -> Array:
 	var out := []
 	var doors: Node = _band().get_node_or_null("ShoreDoors") if _band() != null else null
 	if doors == null:
@@ -682,8 +680,18 @@ func _door_notes() -> Array:
 	for d in doors.get_children():
 		if (d as Node).is_queued_for_deletion():
 			continue
-		var dl := (d as Node).find_child("DoorDays", true, false)
-		out.append((dl as Label).text if dl is Label else "")
+		var cols := (d as Node).find_children("*", "VBoxContainer", true, false)
+		var sub: Node = (cols[0] as Node).get_child(1) if not cols.is_empty() and (cols[0] as Node).get_child_count() > 1 else null
+		out.append((sub as Label).text if sub is Label else "")
+	return out
+
+
+## 五扇门各自的耗日（副题第二行；门上没写的记 ""）
+func _door_notes() -> Array:
+	var out := []
+	for sub in _door_subs():
+		var lines := str(sub).split("\n")
+		out.append(lines[1] if lines.size() > 1 else "")
 	return out
 
 
@@ -749,8 +757,8 @@ func _sec_odds() -> void:
 
 	# 4b 满配第三阵的战力上限仍低于第三阵敌军上限：外援不把兵、墙、士气堆过原有的顶
 	gs.siege = {"troops": 1200, "grain": 120, "wall": 200, "morale": 90, "round": 0, "shishou": "kept"}
-	var lv: int = gs.call("siege_levy_room")
-	var tb := mini(int(gs.get("SIEGE_TIMBER_WALL")), int(gs.call("siege_wall_room")))
+	var lv: int = _main.call("_siege_levy_room")
+	var tb := mini(int(_main.get("SIEGE_TIMBER_WALL")), int(gs.call("siege_wall_room")))
 	var t := 1200
 	var m := 90
 	for i in 2:
