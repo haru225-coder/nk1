@@ -57,6 +57,11 @@ func _run() -> void:
 		CS.set_on("yashan_breakout", false)
 	if _no_fire:
 		CS.set_on("yashan_fire_ship", false)
+	# --fps-only：帧时那一档单独走（带窗口量一场，脚本驾驶 push 会改帧负载；不动产品逻辑）
+	if OS.get_cmdline_user_args().has("--fps-only"):
+		await _fps_run()
+		quit(0)
+		return
 	var seeds: Array = _seeds if not _seeds.is_empty() else DEFAULT_SEEDS
 	seeds = seeds.slice(0, mini(_n, seeds.size()))
 	var cfg := "%s crew=%d ship=%s breakout=%s fire=%s" % [
@@ -80,6 +85,41 @@ func _run() -> void:
 	print("WINRATE cfg=%s n=%d out=%d in=%d hang=%d replay-drift=%d" % [cfg, first.size(), out_n, in_n, hang, drift])
 	print("%s DONE" % TAG)
 	quit(0)
+
+
+## 帧时那一档（DISPLAY 带上窗口跑）：起一场崖山港湾战，不脚本驾驶（帧负载要的是火船最多的那一档），
+## 跑够 min_frames 帧后报平均 / p95 毫秒。开关关 / 开两态各跑一次（--off 对照）。
+func _fps_run() -> void:
+	var min_frames := 1800
+	for a in OS.get_cmdline_user_args():
+		if str(a).begins_with("--frames="):
+			min_frames = maxi(60, int(str(a).substr(9)))
+	_fleet.set("ships", [{"type": _ship_type, "name": "试船", "crew": _crew, "sail_level": 2,
+		"armor_level": 1, "cargo": {}, "durability": 300.0, "max_durability": 300.0}])
+	_fleet.set("morale", 70)
+	var pb: Dictionary = YashanBattle.setup(300.0, false)
+	pb["sea_seed"] = 11
+	_gm.set("pending_battle", pb)
+	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
+	root.add_child(wm)
+	for _i in 5:
+		await process_frame
+	var frame_ms: Array = []
+	var last := Time.get_ticks_usec()
+	while frame_ms.size() < min_frames:
+		await process_frame
+		var now := Time.get_ticks_usec()
+		frame_ms.append(float(now - last) / 1000.0)
+		last = now
+		if wm != null and not is_instance_valid(wm):
+			wm = null        # 收了战（船沉 / 到时限）：帧时照记，布景引用先摘掉，不再碰它
+			break
+		if wm != null and bool(wm.get("resolved")):
+			break
+	_report_fps(frame_ms)
+	if wm != null and is_instance_valid(wm):
+		wm.set("resolved", true)
+		wm.queue_free()
 
 
 func _parse_args() -> void:
