@@ -30,6 +30,7 @@ const DEFAULTS := {
 	# 第四期 · 白刃取舍
 	"melee_decision": true,    # 白刃三决断：舷边 / 舷腰 / 桅下各停一拍选「压上」或「收势」，可切回自动 —— w53-p4-melee
 	"pursue_window": true,     # 敌船遁走留一段可追的窗口（脱离航速略挫、离场线拖后）—— w53-p4-melee
+	"war_prices": true,        # 军需涨价：牙行价按港口战况 × 货的战时货类乘倍数（goods.json war_price）—— w53-p5-econ
 }
 
 static var _over: Dictionary = {}

@@ -1,7 +1,7 @@
 extends Node
 ## 港口行情。大航海时代 II 式的供需模型：
-##   价格 = 基准价 × 产地/消费地系数 × 行情指数
-## 玩家大量买卖会冲击行情指数，随日期推移向 1.0 回归。
+##   价格 = 基准价 × 产地/消费地系数 × 行情指数 × 战况倍数
+## 玩家大量买卖会冲击行情指数，随日期推移向 1.0 回归；战况倍数跟着港口战况走（见下「战时物价」）。
 
 ## 产地便宜、消费地昂贵——差价的唯一来源。
 const ROLE_MOD := {"origin": 0.65, "normal": 1.0, "consumer": 1.75}
@@ -178,7 +178,7 @@ func invest(port_id: String) -> Dictionary:
 	}
 
 
-## 定价的唯一出处。estimate_* 逐单位推演时也走这里，避免公式分叉。
+## 定价的唯一出处。estimate_* 逐单位推演时也走这里，避免公式分叉。战况倍数（_war_price_mul）乘在共有因子 v 上，买卖同乘。
 ##
 ## 价差地板的裁法（改公式时 tools/verify_economy.py 的 price_with_crew 必须同步）：
 ## 卖价先封顶在「光杆买价 ÷ 地板」，超出的部分改从买价折扣里扣回来；且买、卖两侧
@@ -188,7 +188,7 @@ func price_at_rate(port_id: String, good_id: String, rate: float, is_buy: bool) 
 	var role := get_role(port_id, good_id)
 	var mod: float = ROLE_MOD.get(role, 1.0)
 	var edge := Crew.interpreter_edge(port_id)
-	var v := base * mod * rate
+	var v := base * mod * rate * _war_price_mul(port_id, good_id)
 	var ie := invest_edge(port_id)
 	if role == "origin":
 		v *= (1.0 - ie)
@@ -470,3 +470,47 @@ func _base_tariff(port_id: String = "") -> float:
 
 
 ## 杂事压低抽解与佣金；通事在异国港口另有议价之利；降元港口抽解加倍
+
+
+# ── 战时物价（lane w53-p5-econ，战斗系统方案 §八「军需涨价」）──────────
+## 每样货在 goods.json 标一个战时货类 war_class，港口战况 × 货类的倍数在 goods.json 的 war_price
+## （表里不列的战况、货类都是 1）：被围的港米约 1.8 倍、军械 1.5 倍；降元的港奢侈货贵、米粮贱；对峙的港小涨。
+## 围城、封港的牙行本就闭门（is_market_open），倍数在开门的对峙 / 降元港上屏，闯封锁卖粮也按它算。
+## 整段放在文件末尾：docs/待策划拍板清单 按行号引着本文件前面几处（check_decision_refs 对账），往前插行就漂。
+
+const WAR_CLASSES := ["grain", "arms", "supply", "luxury", "common"]
+
+
+## 货的战时货类；没标或标错的当 common（verify_economy 一节校验每样货都标对）
+func war_class(good_id: String) -> String:
+	var c := str(_good_def(good_id).get("war_class", "common"))
+	return c if c in WAR_CLASSES else "common"
+
+
+## 战况对平年价的倍数：港口当前战况 × 货的战时货类，查 goods.json war_price；开关 war_prices 关时恒 1.0。
+## 闯封锁算卖粮价：平年米价 price_at_rate(pid, "grain", 1.0, false) × 本倍数。buy_price / sell_price 已按战况算过
+## （围城港的米见 _war_price_mul），别在它们上面再乘一遍。
+func war_price_factor(port_id: String, good_id: String) -> float:
+	if not CombatSwitches.on("war_prices"):
+		return 1.0
+	return _war_table(war_status(port_id), good_id)
+
+
+## price_at_rate 实乘的那份。围城港的米：月初冲击加回归目标 SIEGE_GRAIN_TARGET 早把米行情撑在约 1.8
+## （godot_story_check 钉着），这里只乘倍数超出这一截的部分——表上 1.8 即乘 1.0，不叠成 3.24 倍。其余格照倍数原样乘。
+func _war_price_mul(port_id: String, good_id: String) -> float:
+	if not CombatSwitches.on("war_prices"):
+		return 1.0
+	var status := war_status(port_id)
+	var f := _war_table(status, good_id)
+	if status == "besieged" and good_id == "grain":
+		f /= SIEGE_GRAIN_TARGET
+	return f
+
+
+func _war_table(status: String, good_id: String) -> float:
+	var table = GameManager.goods_data.get("war_price", {})
+	var row = table.get(status, {}) if typeof(table) == TYPE_DICTIONARY else {}
+	if typeof(row) != TYPE_DICTIONARY:
+		return 1.0
+	return float(row.get(war_class(good_id), 1.0))

@@ -3,13 +3,13 @@
     "title": "东亚海域立志传货物与文书",
     "era": "南宋末，约1260-1277",
     "prototype": "v1.0-uw",
-    "note": "字段说明：tradable 是否进入市场交易；bulk 单位占舱（料）；perishable 每日损耗率；fragile 暴风货损系数；contraband 是否为宋法违禁出口物。"
+    "note": "字段说明：tradable 是否进入市场交易；bulk 单位占舱（料）；perishable 每日损耗率；fragile 暴风货损系数；contraband 是否为宋法违禁出口物。war_class 战时货类（grain 粮 / arms 军械 / supply 军需 / luxury 奢侈 / common 普通），牙行价按港口战况乘下面 war_price 表的倍数（表里不列的战况、货类都是 1；开关 war_prices）。"
   },
   "goods": [
     {
       "id": "grain",
       "name": "米粮",
-      "category": "补给",
+      "category": "补给", "war_class": "grain",
       "tradable": true,
       "base_value": 8,
       "bulk": 1.0,
@@ -22,7 +22,7 @@
     {
       "id": "sea_salt",
       "name": "海盐",
-      "category": "货物",
+      "category": "货物", "war_class": "supply",
       "tradable": true,
       "base_value": 10,
       "bulk": 1.0,
@@ -35,7 +35,7 @@
     {
       "id": "tea",
       "name": "茶叶",
-      "category": "货物",
+      "category": "货物", "war_class": "common",
       "tradable": true,
       "base_value": 25,
       "bulk": 0.7,
@@ -48,7 +48,7 @@
     {
       "id": "sappanwood",
       "name": "苏木",
-      "category": "货物",
+      "category": "货物", "war_class": "common",
       "tradable": true,
       "base_value": 30,
       "bulk": 1.4,
@@ -61,7 +61,7 @@
     {
       "id": "sutra_scrolls",
       "name": "经卷",
-      "category": "文书",
+      "category": "文书", "war_class": "common",
       "tradable": true,
       "base_value": 40,
       "bulk": 0.4,
@@ -76,7 +76,7 @@
     {
       "id": "deer_hide",
       "name": "鹿皮",
-      "category": "货物",
+      "category": "货物", "war_class": "supply",
       "tradable": true,
       "base_value": 40,
       "bulk": 0.9,
@@ -89,7 +89,7 @@
     {
       "id": "ironware",
       "name": "铁器",
-      "category": "货物",
+      "category": "货物", "war_class": "arms",
       "tradable": true,
       "base_value": 70,
       "bulk": 1.2,
@@ -102,7 +102,7 @@
     {
       "id": "japanese_fan",
       "name": "倭扇",
-      "category": "货物",
+      "category": "货物", "war_class": "luxury",
       "tradable": true,
       "base_value": 45,
       "bulk": 0.3,
@@ -115,7 +115,7 @@
     {
       "id": "sulfur",
       "name": "硫黄",
-      "category": "货物",
+      "category": "货物", "war_class": "arms",
       "tradable": true,
       "base_value": 50,
       "bulk": 1.2,
@@ -128,7 +128,7 @@
     {
       "id": "raw_silk",
       "name": "生丝",
-      "category": "货物",
+      "category": "货物", "war_class": "common",
       "tradable": true,
       "base_value": 55,
       "bulk": 0.6,
@@ -141,7 +141,7 @@
     {
       "id": "fujian_porcelain",
       "name": "福建瓷",
-      "category": "货物",
+      "category": "货物", "war_class": "common",
       "tradable": true,
       "base_value": 60,
       "bulk": 1.2,
@@ -156,7 +156,7 @@
     {
       "id": "korean_paper",
       "name": "高丽纸",
-      "category": "货物",
+      "category": "货物", "war_class": "common",
       "tradable": true,
       "base_value": 60,
       "bulk": 0.5,
@@ -169,7 +169,7 @@
     {
       "id": "lacquerware",
       "name": "漆器",
-      "category": "货物",
+      "category": "货物", "war_class": "luxury",
       "tradable": true,
       "base_value": 65,
       "bulk": 0.8,
@@ -182,7 +182,7 @@
     {
       "id": "aromatic_medicine",
       "name": "香药",
-      "category": "货物",
+      "category": "货物", "war_class": "supply",
       "tradable": true,
       "base_value": 70,
       "bulk": 0.5,
@@ -197,7 +197,7 @@
     {
       "id": "japanese_copper",
       "name": "倭铜",
-      "category": "货物",
+      "category": "货物", "war_class": "common",
       "tradable": true,
       "base_value": 75,
       "bulk": 1.5,
@@ -210,7 +210,7 @@
     {
       "id": "silk_fabric",
       "name": "绢帛",
-      "category": "货物",
+      "category": "货物", "war_class": "common",
       "tradable": true,
       "base_value": 85,
       "bulk": 0.6,
@@ -223,7 +223,7 @@
     {
       "id": "qingbai_porcelain",
       "name": "青白瓷",
-      "category": "货物",
+      "category": "货物", "war_class": "luxury",
       "tradable": true,
       "base_value": 90,
       "bulk": 1.2,
@@ -238,7 +238,7 @@
     {
       "id": "pepper",
       "name": "胡椒",
-      "category": "货物",
+      "category": "货物", "war_class": "luxury",
       "tradable": true,
       "base_value": 95,
       "bulk": 0.5,
@@ -251,7 +251,7 @@
     {
       "id": "song_coin",
       "name": "宋钱",
-      "category": "货物",
+      "category": "货物", "war_class": "common",
       "tradable": true,
       "base_value": 260,
       "bulk": 1.6,
@@ -264,7 +264,7 @@
     {
       "id": "sable_fur",
       "name": "貂皮",
-      "category": "货物",
+      "category": "货物", "war_class": "luxury",
       "tradable": true,
       "base_value": 110,
       "bulk": 0.7,
@@ -277,7 +277,7 @@
     {
       "id": "mother_of_pearl",
       "name": "螺钿器",
-      "category": "货物",
+      "category": "货物", "war_class": "luxury",
       "tradable": true,
       "base_value": 130,
       "bulk": 0.6,
@@ -290,7 +290,7 @@
     {
       "id": "korean_ginseng",
       "name": "高丽参",
-      "category": "货物",
+      "category": "货物", "war_class": "luxury",
       "tradable": true,
       "base_value": 140,
       "bulk": 0.3,
@@ -303,7 +303,7 @@
     {
       "id": "japanese_sword",
       "name": "日本刀",
-      "category": "货物",
+      "category": "货物", "war_class": "arms",
       "tradable": true,
       "base_value": 150,
       "bulk": 0.4,
@@ -316,7 +316,7 @@
     {
       "id": "ivory",
       "name": "象牙",
-      "category": "货物",
+      "category": "货物", "war_class": "luxury",
       "tradable": true,
       "base_value": 220,
       "bulk": 1.1,
@@ -329,7 +329,7 @@
     {
       "id": "coral",
       "name": "珊瑚",
-      "category": "货物",
+      "category": "货物", "war_class": "luxury",
       "tradable": true,
       "base_value": 260,
       "bulk": 0.4,
@@ -342,7 +342,7 @@
     {
       "id": "placer_gold",
       "name": "砂金",
-      "category": "货物",
+      "category": "货物", "war_class": "common",
       "tradable": true,
       "base_value": 300,
       "bulk": 0.2,
@@ -356,7 +356,7 @@
     {
       "id": "cargo_manifest_signature",
       "name": "货单/押字",
-      "category": "账目",
+      "category": "账目", "war_class": "common",
       "tradable": false,
       "base_value": 0,
       "bulk": 0.0,
@@ -371,7 +371,7 @@
     {
       "id": "sulfur_ledger",
       "name": "硫黄旧账",
-      "category": "账目",
+      "category": "账目", "war_class": "common",
       "tradable": false,
       "base_value": 120,
       "bulk": 0.0,
@@ -386,7 +386,7 @@
     {
       "id": "tangfang_parcel",
       "name": "唐房寄物",
-      "category": "寄物",
+      "category": "寄物", "war_class": "common",
       "tradable": false,
       "base_value": 80,
       "bulk": 0.5,
@@ -398,5 +398,10 @@
       "risk": "不问内物，但货损要算在账上",
       "historical_note": "用于连接泉州海商信用与日本唐房远景。"
     }
-  ]
+  ],
+  "war_price": {
+    "contested": {"grain": 1.2, "arms": 1.25, "supply": 1.1, "luxury": 0.95, "common": 1.0},
+    "besieged": {"grain": 1.8, "arms": 1.5, "supply": 1.3, "luxury": 0.7, "common": 0.9},
+    "fallen": {"grain": 0.85, "arms": 1.1, "supply": 1.1, "luxury": 1.2, "common": 1.0}
+  }
 }

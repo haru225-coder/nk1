@@ -2379,6 +2379,28 @@ for n in mk_news:
 
 print()
 print("=" * 68)
+print("九之八、战时物价（lane w53-p5-econ：goods.json war_class × war_price，开关 war_prices）")
+print("=" * 68)
+# Economy.war_class 认不出的类当 common——拼错一个字那货就悄悄不随战况涨落，所以每样货的 war_class 须在 Economy.WAR_CLASSES 里；
+# war_price 的战况键须在 Economy.WAR_STATUSES、货类键在五类里；倍数按 0.05 一档、在 0.5–2.0 之间（牙行短注说成「三成」「一成半」「半成」）。
+WAR_STATUSES, WAR_CLASSES = _E.literal(_ECO_GD, "WAR_STATUSES"), _E.literal(_ECO_GD, "WAR_CLASSES")
+WAR_PRICE = load("goods.json").get("war_price", {})
+bad_wc = [gid for gid, g in goods.items() if g.get("war_class") not in WAR_CLASSES]
+check(not bad_wc, f"每样货都标了战时货类 war_class，且在 {WAR_CLASSES} 里（不合的：{bad_wc or '无'}）")
+bad_wp = [f"{st}.{wc}={f}" for st, row in WAR_PRICE.items() for wc, f in (row.items() if isinstance(row, dict) else [("?", row)])
+          if st not in WAR_STATUSES or wc not in WAR_CLASSES or not isinstance(f, (int, float))
+          or not 0.5 <= f <= 2.0 or abs(f * 20 - round(f * 20)) > 1e-9]
+check(bool(WAR_PRICE) and not bad_wp,
+      f"war_price 表的战况键 ∈ WAR_STATUSES、货类键 ∈ 五类、倍数按 0.05 一档在 0.5–2.0（不合的：{bad_wp or '无'}）")
+_wp = lambda st, wc: float(WAR_PRICE.get(st, {}).get(wc, 1.0))
+check(goods["grain"].get("war_class") == "grain" and _wp("besieged", "grain") >= 1.5 and _wp("besieged", "arms") >= 1.3
+      and _wp("fallen", "luxury") > 1.0 and _wp("fallen", "grain") < 1.0
+      and _wp("contested", "grain") > 1.0 and all(0.9 <= _wp("contested", wc) <= 1.3 for wc in WAR_CLASSES),
+      f"倍数方向照方案 §八：被围米 ×{_wp('besieged', 'grain')}、军械 ×{_wp('besieged', 'arms')}；降元奢侈 ×{_wp('fallen', 'luxury')}、"
+      f"米 ×{_wp('fallen', 'grain')}；对峙小涨（米 ×{_wp('contested', 'grain')}，五类都在 0.9–1.3）")
+
+print()
+print("=" * 68)
 print("十一、按函数名取函数体（lane cs14 / cs17：取不到、只取到一行转发判红，与 check_symbols 十三节同一 helper）")
 print("=" * 68)
 # 账本来自 tools/func_body.py：_locate_func / _gd_body / _gd_fn 每处取用按「本脚本行号 + 函数名」记一笔。
