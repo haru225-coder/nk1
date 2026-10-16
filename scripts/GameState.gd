@@ -564,6 +564,21 @@ func siege_power() -> float:
 	return (t * m * shishou) + float(siege_get("wall")) * 2.0
 
 
+## 守城外援（战斗方案 §七，lane w53-p5-siege，开关 siege_relief）：只在兵、粮、墙、士气上开口子，不加新账本。
+## 用过的记进城防记录：convoy 押进城的米石数、levy 换来的乡兵数、timber 拆船料加的墙、raid 劫粮道 "won" / "lost"、
+## raid_round 得手压低的那一阵。缺这几个键 = 没用过：旧档的城防记录照读，siege_get / siege.get 取缺省，
+## 不另迁移、不升 SAVE_SCHEMA（同 pending_fall 的先例；SaveLoad 体检认数字、字符串，这几个键都是）。
+const SIEGE_CONVOY_MAX := 120
+const SIEGE_LEVY := 150
+const SIEGE_LEVY_CEILING := 1000
+const SIEGE_TIMBER_WALL := 40
+
+
+## 押陈瓒船股换得来的乡兵：至多 SIEGE_LEVY 人，城中兵满千即止——满配仍是募满千再加石手军二百，外援不把兵堆过这个数
+func siege_levy_room() -> int:
+	return mini(SIEGE_LEVY, maxi(0, SIEGE_LEVY_CEILING - siege_get("troops")))
+
+
 func is_ended() -> bool:
 	return ended != ""
 

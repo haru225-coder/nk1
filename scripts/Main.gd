@@ -4113,24 +4113,27 @@ func _siege_band_row() -> Control:
 
 
 ## 「元军行事」小笺：泥金小题一行，三件事各一行（「冬月初一　前锋到囊山・使者到城下」，已过的淡写），
-## 末行「今日冬月初三・还有二十八日」（城破前 SIEGE_DIRE_DAYS 日起蜜色）。开关关或战况表推不出返回 null。
+## 末行「今日冬月初三・还有二十八日」（城破前 SIEGE_DIRE_DAYS 日起蜜色）；外援用过的另记一行（开关 siege_relief）。
+## 行事表关了、外援也没用过（或战况表推不出）返回 null；只剩外援一行时小笺改叫 SiegeRelief。
 ## story_check 按子串在岸带里找告急行「援兵音信断绝」、阵数「二阵」「三阵・」、兵粮行「兵 」「粮 」，小笺都不写这几样
 func _siege_schedule_slip() -> Control:
-	if not _SIEGE_SWITCHES.on("siege_schedule"):
+	var sched := _siege_schedule() if _SIEGE_SWITCHES.on("siege_schedule") else []
+	var relief := _siege_relief_line()
+	if sched.is_empty() and relief == "":
 		return null
-	var sched := _siege_schedule()
-	if sched.is_empty():
-		return null
-	var parts := _band_slip("SiegeSchedule")
+	var parts := _band_slip("SiegeSchedule" if not sched.is_empty() else "SiegeRelief")
 	var col: VBoxContainer = parts[1]
-	_band_line(col, "元军行事", UiTheme.GOLD_HI, 16, true)
-	var today := Calendar.absolute_day()
-	for it in sched:
-		var when := int(it[0])
-		_band_line(col, "%s　%s" % [_siege_day_name(when), str(it[1])], UiTheme.TEXT_DIM if when < today else UiTheme.TEXT, 16)
-	var left: int = int(sched[sched.size() - 1][0]) - today
-	_band_line(col, "今日%s・还有%s日" % [_siege_day_name(today), _cn_num(left, true)],
-		UiTheme.HONEY if left <= SIEGE_DIRE_DAYS else UiTheme.TEXT, 16).name = "SiegeToday"
+	if not sched.is_empty():
+		_band_line(col, "元军行事", UiTheme.GOLD_HI, 16, true)
+		var today := Calendar.absolute_day()
+		for it in sched:
+			var when := int(it[0])
+			_band_line(col, "%s　%s" % [_siege_day_name(when), str(it[1])], UiTheme.TEXT_DIM if when < today else UiTheme.TEXT, 16)
+		var left: int = int(sched[sched.size() - 1][0]) - today
+		_band_line(col, "今日%s・还有%s日" % [_siege_day_name(today), _cn_num(left, true)],
+			UiTheme.HONEY if left <= SIEGE_DIRE_DAYS else UiTheme.TEXT, 16).name = "SiegeToday"
+	if relief != "":
+		_band_line(col, relief, UiTheme.TEXT_DIM, 16).name = "SiegeReliefLine"
 	return parts[0]
 
 
@@ -4318,6 +4321,9 @@ func _siege_buy_grain() -> void:
 		)
 		choices_container.add_child(b)
 
+	if _SIEGE_SWITCHES.on("siege_relief"):
+		_siege_relief_convoy_section()
+
 	choices_label.visible = true
 	_add_leave_button("xinghua")
 
@@ -4336,12 +4342,26 @@ func _siege_cards() -> Array:
 		"subtitle": "粮尽・出战即城破" if short_of_grain else "设伏迎敌・第%s阵" % _cn_num(GameState.siege_get("round") + 1),
 	})
 	out.append({"id": CARD_SIEGE_NUNNERY, "title": "福州尼寺", "subtitle": "母亲与璥儿在那里"})
-	# 行事表开着：五扇门各写耗几日——守城五事都是当日办完、当日接战（外援另费的日子写在门里各钮上）
+	# 行事表开着：五扇门各写耗几日——守城五事都是当日办完、当日接战；门里还有办得成的外援（开关 siege_relief），
+	# 写「少则当日・多则 N 日」，N 取那几样里最费日子的（各钮上另写明）。劫粮道得手、压的正是下一阵时，
+	# 囊山门添「元兵粮少」（行事表关着时只写这一句）
+	var lean := _siege_raid_cut(GameState.siege_get("round") + 1) > 0.0
 	if _SIEGE_SWITCHES.on("siege_schedule"):
 		for fac in out:
 			var cid := str(fac.get("id", ""))
-			if cid != CARD_SIEGE_NUNNERY:
-				fac["days"] = "当日接战" if cid == CARD_SIEGE_NANGSHAN else "当日办完"
+			if cid == CARD_SIEGE_NUNNERY:
+				continue
+			var most := _siege_relief_days(cid)
+			if cid == CARD_SIEGE_NANGSHAN:
+				fac["days"] = "当日接战・元兵粮少" if lean else "当日接战"
+			elif most > 0:
+				fac["days"] = "少则当日・多则%s日" % _cn_num(most, true)
+			else:
+				fac["days"] = "当日办完"
+	elif lean:
+		for fac in out:
+			if str(fac.get("id", "")) == CARD_SIEGE_NANGSHAN:
+				fac["days"] = "元兵粮少"
 	return out
 
 
@@ -4601,6 +4621,9 @@ func _siege_muster() -> void:
 		)
 		choices_container.add_child(disband)
 
+	if _SIEGE_SWITCHES.on("siege_relief"):
+		_siege_relief_levy_section()
+
 	choices_label.visible = true
 	_add_leave_button("xinghua")
 
@@ -4627,7 +4650,7 @@ func _siege_nangshan() -> void:
 	GameState.siege_add("grain", -GameState.SIEGE_GRAIN_PER_ROUND)
 
 	var power := GameState.siege_power()
-	var won: bool = _SIEGE_MELEE.nangshan(rd, power)["won"]
+	var won: bool = _SIEGE_MELEE.nangshan(rd, power, _siege_raid_cut(rd))["won"]
 
 	var txt := ""
 	if won:
@@ -4700,8 +4723,271 @@ func _siege_repair_wall() -> void:
 			)
 			choices_container.add_child(b)
 
+	if _SIEGE_SWITCHES.on("siege_relief"):
+		_siege_relief_timber_section()
+		_siege_relief_raid_section()
+
 	choices_label.visible = true
 	_add_leave_button("xinghua")
+
+
+# ── 守城外援（战斗方案 §七，lane w53-p5-siege，开关 siege_relief）──────────────
+## 四样都只在兵、粮、墙、士气上开口子：涵江押粮（市场页）、押陈瓒船股换乡兵（衙门页）、拆船料修墙与出海劫粮道（船屋页）。
+## 守城五扇门、城破文案不动；各样都费日子，城破前办不完的不让办。开关关掉时各页不出外援一节、下列各函数不动账。
+
+## 各样外援费几日：米从涵江海口挑进城两日、乡兵从乡里赶来三日、帆桅拆下扛上城头一日、出海劫粮道来回四日
+const SIEGE_RELIEF_DAYS := {"convoy": 2, "levy": 3, "timber": 1, "raid": 4}
+
+
+## 再费 days 日还在城破那天之前（推不出城破时点的不拦）
+func _siege_days_fit(days: int) -> bool:
+	var fp := _siege_fall_point()
+	return fp.is_empty() or Calendar.absolute_day() + days < int(fp["abs"])
+
+
+## 舱里能押进城的米：全队米粮减去委办要留着交货的（同牙行卖钮的口径），至多 SIEGE_CONVOY_MAX 石
+func _siege_convoy_qty() -> int:
+	return mini(GameState.SIEGE_CONVOY_MAX, maxi(0, Fleet.cargo_qty("grain") - GameState.contract_kept("grain")))
+
+
+## 涵江海口押粮入城（一围一趟）：舱里的米挑进城，城中粮加、舱里米减，费两日。返回押进的石数，没押成 0
+func _siege_relief_convoy() -> int:
+	if not _SIEGE_SWITCHES.on("siege_relief") or not GameState.siege_open() or GameState.siege_get("convoy") > 0:
+		return 0
+	var n := _siege_convoy_qty()
+	if n <= 0 or not _siege_days_fit(SIEGE_RELIEF_DAYS["convoy"]) or not Fleet.remove_cargo("grain", n):
+		return 0
+	GameState.siege_add("grain", n)
+	GameState.siege_set("convoy", n)
+	GameManager.advance_days(SIEGE_RELIEF_DAYS["convoy"])
+	log_msg("船上的米从涵江海口趁夜挑进了城，%d 石。挑夫走了两夜。" % n)
+	return n
+
+
+## 把陈瓒的船股押出去换乡兵（一围一回；要有陈瓒的船股、城中兵未满千）：兵加，费三日。返回换来的人数，没换成 0
+func _siege_relief_levy() -> int:
+	if not _SIEGE_SWITCHES.on("siege_relief") or not GameState.siege_open() or GameState.siege_get("levy") > 0:
+		return 0
+	if not GameState.has_flag("chen_zan_stake"):
+		return 0
+	var n := GameState.siege_levy_room()
+	if n <= 0 or not _siege_days_fit(SIEGE_RELIEF_DAYS["levy"]):
+		return 0
+	GameState.siege_add("troops", n)
+	GameState.siege_set("levy", n)
+	GameState.add_ledger_note("押陈瓒船股换乡兵")
+	GameManager.advance_days(SIEGE_RELIEF_DAYS["levy"])
+	log_msg("陈瓒的船股押进了祠堂。三天后，玉湖、涵江几个村子来了 %d 个乡兵，扁担上挑着自家的干粮。" % n)
+	return n
+
+
+## 拆第 i 条船的帆桅料修城墙：那条船帆降一档（只剩一档的拆不得），城墙加至多 SIEGE_TIMBER_WALL、不过上限，费一日。
+## 返回城墙加了几，没拆成 0
+func _siege_relief_timber(i: int) -> int:
+	if not _SIEGE_SWITCHES.on("siege_relief") or not GameState.siege_open() or Fleet.sail_level(i) < 2:
+		return 0
+	var add := mini(GameState.SIEGE_TIMBER_WALL, GameState.siege_wall_room())
+	if add <= 0 or not _siege_days_fit(SIEGE_RELIEF_DAYS["timber"]):
+		return 0
+	Fleet.ships[i]["sail_level"] = Fleet.sail_level(i) - 1
+	GameState.siege_add("wall", add)
+	GameState.siege_add("timber", add)
+	GameManager.advance_days(SIEGE_RELIEF_DAYS["timber"])
+	log_msg("「%s」的帆桅拆下来扛上了城头，城墙加 %d。木匠说，这条船往后跑不快了。" % [Fleet.display_name(i), add])
+	return add
+
+
+## 劫粮道这会儿劫不劫得成：空串 = 劫得成；否则是上屏的一句缘由
+func _siege_raid_block() -> String:
+	match str(GameState.siege.get("raid", "")):
+		"won":
+			return "粮道劫过一回了，得了手。"
+		"lost":
+			return "粮道劫过一回了，没得手。"
+	if "%04d-%02d" % [Calendar.year, Calendar.month] != _first_siege_start_ym():
+		return "入围那个月一过，元军的粮道就立稳了。"
+	if GameState.siege_get("round") >= GameState.SIEGE_ROUNDS_MAX - 1:
+		return "第三阵来的是元军大队，粮草随军，劫不着了。"
+	if not Fleet.can_sail():
+		return "船上人手不够，开不出去。"
+	if Fleet.supply_days() < SIEGE_RELIEF_DAYS["raid"]:
+		return "水粮撑不过四日，出不了海。"
+	if not _siege_days_fit(SIEGE_RELIEF_DAYS["raid"]):
+		return "城破之前赶不回来了。"
+	return ""
+
+
+## 入围那个月出海劫一次粮道（一围一回）：先掷骰（SiegeMelee.raid，与囊山同一种结算），再耗四日水粮、过四日。
+## 得手记下压低的是哪一阵（只会是第一、二阵）；失手城中士气减 6。返回 {won, power, enemy, round}，没劫成返回空表
+func _siege_relief_raid() -> Dictionary:
+	if not _SIEGE_SWITCHES.on("siege_relief") or not GameState.siege_open() or _siege_raid_block() != "":
+		return {}
+	var rd := GameState.siege_get("round") + 1
+	var power := _SIEGE_MELEE.raid_power(Fleet.total_crew(), Fleet.captain_power(), Fleet.morale_factor())
+	var r: Dictionary = _SIEGE_MELEE.raid(power)
+	var days: int = SIEGE_RELIEF_DAYS["raid"]
+	Fleet.add_supply_pair(-days * Fleet.daily_supply_use())
+	GameManager.advance_days(days)
+	if bool(r["won"]):
+		GameState.siege_set("raid", "won")
+		GameState.siege_set("raid_round", rd)
+		log_msg("夜里在外海截住元军的粮船，烧了三条。囊山第%s阵的元兵要饿着肚子来。" % _cn_num(rd))
+	else:
+		GameState.siege_add("morale", _SIEGE_MELEE.RAID_LOSE_MORALE)
+		GameState.siege_set("raid", "lost")
+		log_msg("粮船有兵船护着，你的船吃了亏退回来，城里人都看见了。城中士气减 %d。" % -_SIEGE_MELEE.RAID_LOSE_MORALE)
+	return {"won": bool(r["won"]), "power": power, "enemy": float(r["enemy"]), "round": rd}
+
+
+## 囊山第 rd 阵的敌军上限压低多少：劫粮道得手、压的正是这一阵才压（开关关、没劫、失手、别的阵都是 0）
+func _siege_raid_cut(rd: int) -> float:
+	if not _SIEGE_SWITCHES.on("siege_relief") or str(GameState.siege.get("raid", "")) != "won" \
+			or GameState.siege_get("raid_round") != rd:
+		return 0.0
+	return _SIEGE_MELEE.RAID_CUT
+
+
+## 某扇守城门里眼下还办得成的外援最多费几日（门上耗日「少则当日・多则 N 日」用）；没有可办的、开关关是 0
+func _siege_relief_days(card_id: String) -> int:
+	if not _SIEGE_SWITCHES.on("siege_relief"):
+		return 0
+	var most := 0
+	match card_id:
+		CARD_SIEGE_GRAIN:
+			if GameState.siege_get("convoy") <= 0 and _siege_convoy_qty() > 0 and _siege_days_fit(SIEGE_RELIEF_DAYS["convoy"]):
+				most = SIEGE_RELIEF_DAYS["convoy"]
+		CARD_SIEGE_MUSTER:
+			if GameState.siege_get("levy") <= 0 and GameState.has_flag("chen_zan_stake") and GameState.siege_levy_room() > 0 \
+					and _siege_days_fit(SIEGE_RELIEF_DAYS["levy"]):
+				most = SIEGE_RELIEF_DAYS["levy"]
+		CARD_SIEGE_WALL:
+			if _siege_raid_block() == "":
+				most = SIEGE_RELIEF_DAYS["raid"]
+			elif _siege_timber_ships().size() > 0 and GameState.siege_wall_room() > 0 and _siege_days_fit(SIEGE_RELIEF_DAYS["timber"]):
+				most = SIEGE_RELIEF_DAYS["timber"]
+	return most
+
+
+## 帆还拆得动的船（帆二档起）的序号
+func _siege_timber_ships() -> Array:
+	var out := []
+	for i in Fleet.ships.size():
+		if Fleet.sail_level(i) >= 2:
+			out.append(i)
+	return out
+
+
+## 外援用过哪几样（「元军行事」小笺末行）：「外援　押米・乡兵・拆船料・劫粮道得手」；开关关、一样没用过返回 ""。
+## 各样添的数已在城防账的兵、粮、城墙、士气里，这一行只记用过哪几样；劫粮道得手压低的那一阵另写在囊山门上（元兵粮少）
+func _siege_relief_line() -> String:
+	if not _SIEGE_SWITCHES.on("siege_relief"):
+		return ""
+	var parts := PackedStringArray()
+	if GameState.siege_get("convoy") > 0:
+		parts.append("押米")
+	if GameState.siege_get("levy") > 0:
+		parts.append("乡兵")
+	if GameState.siege_get("timber") > 0:
+		parts.append("拆船料")
+	match str(GameState.siege.get("raid", "")):
+		"won":
+			parts.append("劫粮道得手")
+		"lost":
+			parts.append("劫粮道失手")
+	return "" if parts.is_empty() else "外援　" + "・".join(parts)
+
+
+## 内页外援一节的抬头：泥金分节小题（同衙门页「── 石手军 ──」）+ 一句说明
+func _siege_relief_head(title: String, info: String) -> void:
+	var sep := Label.new()
+	sep.text = "── %s ──" % title
+	UiTheme.style_section_label(sep)
+	sep.add_theme_font_size_override("font_size", 16)
+	choices_container.add_child(sep)
+	var l := Label.new()
+	l.text = info
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
+	choices_container.add_child(l)
+
+
+## 外援钮：费日子的钮回车不替人按（no_enter，同玉湖陈宅跑腿）；城破前办不完的灰掉、钮上写明
+func _siege_relief_button(text: String, days: int, act: Callable) -> void:
+	var b := Button.new()
+	var fit := _siege_days_fit(days)
+	b.text = text if fit else text + "・城破前办不完"
+	b.disabled = not fit
+	b.set_meta("no_enter", true)
+	b.pressed.connect(func():
+		act.call()
+		load_scene(current_scene_id)
+	)
+	choices_container.add_child(b)
+
+
+## 市场页：涵江海口押粮
+func _siege_relief_convoy_section() -> void:
+	var done := GameState.siege_get("convoy")
+	var qty := _siege_convoy_qty()
+	var info := "涵江海口离城不远。船上的米趁夜挑进城，一围只走得了一趟。"
+	if done > 0:
+		info = "涵江海口的米已经押进城了，%d 石。" % done
+	elif qty <= 0:
+		info = "船上没有米。要押粮入城，得先在别港装了米来。"
+	_siege_relief_head("涵江海口", info)
+	if done <= 0 and qty > 0:
+		_siege_relief_button("从涵江海口押米 %d 石入城（费 %d 日）" % [qty, SIEGE_RELIEF_DAYS["convoy"]],
+			SIEGE_RELIEF_DAYS["convoy"], _siege_relief_convoy)
+
+
+## 衙门页：押陈瓒船股换乡兵
+func _siege_relief_levy_section() -> void:
+	var done := GameState.siege_get("levy")
+	var room := GameState.siege_levy_room()
+	var stake := GameState.has_flag("chen_zan_stake")
+	var info := "族叔陈瓒那一分船股押回祠堂，乡里的人就肯来守城。"
+	if done > 0:
+		info = "陈瓒的船股押出去了。乡兵 %d 人在城上。" % done
+	elif not stake:
+		info = "陈瓒的船股不在你账上，乡里的人请不动。"
+	elif room <= 0:
+		info = "城中兵已满千，乡兵不必来了。"
+	_siege_relief_head("陈瓒船股", info)
+	if done <= 0 and stake and room > 0:
+		_siege_relief_button("把陈瓒的船股押出去，换乡兵 %d 人（费 %d 日）" % [room, SIEGE_RELIEF_DAYS["levy"]],
+			SIEGE_RELIEF_DAYS["levy"], _siege_relief_levy)
+
+
+## 船屋页：拆船料修墙（帆二档起的船各一钮）
+func _siege_relief_timber_section() -> void:
+	var ships := _siege_timber_ships()
+	var room := GameState.siege_wall_room()
+	var info := "船上的帆桅拆下来就是好木料。拆一回，那条船的帆降一档。"
+	if ships.is_empty():
+		info = "船上的帆都只剩一档，拆不得了。"
+	elif room <= 0:
+		info = "城墙已加到 %d，船料不必再拆。" % GameState.SIEGE_WALL_MAX
+	_siege_relief_head("拆船料", info)
+	if room <= 0:
+		return
+	var add := mini(GameState.SIEGE_TIMBER_WALL, room)
+	for i in ships:
+		_siege_relief_button("拆「%s」的帆桅修墙（帆降一档，城墙加 %d，费 %d 日）" % [Fleet.display_name(i), add, SIEGE_RELIEF_DAYS["timber"]],
+			SIEGE_RELIEF_DAYS["timber"], _siege_relief_timber.bind(i))
+
+
+## 船屋页：出海劫粮道
+func _siege_relief_raid_section() -> void:
+	var block := _siege_raid_block()
+	var rd := GameState.siege_get("round") + 1
+	var info := "元军的粮船走外海往囊山运。船上 %d 人，劫得手，囊山第%s阵元兵来得少；失手，城中士气减 %d。" % [
+		Fleet.total_crew(), _cn_num(rd), -_SIEGE_MELEE.RAID_LOSE_MORALE]
+	if block != "":
+		info = block
+	_siege_relief_head("出海劫粮道", info)
+	if block == "":
+		_siege_relief_button("出海劫粮道（费 %d 日・耗水粮四日份）" % SIEGE_RELIEF_DAYS["raid"],
+			SIEGE_RELIEF_DAYS["raid"], _siege_relief_raid)
 
 
 ## 两封劝降书，各一次

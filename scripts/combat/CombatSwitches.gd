@@ -33,7 +33,8 @@ const DEFAULTS := {
 	"war_prices": true,        # 军需涨价：牙行价按港口战况 × 货的战时货类乘倍数（goods.json war_price）—— w53-p5-econ
 	"port_blockade": true,     # 第五期 · 拦港（待拍板 20b）：封港、围城、对己封港的港不进晨潮三向，海图上点它只给「港已封」；剧情要去的港放行 —— w53-p5-blockade
 	"blockade_run": true,      # 第五期 · 闯封锁：舱里带米粮可闯被围的港，四成撞上元军哨船（海鹘一艘、快船两艘），赢了按围城米价卖粮，输了 / 逃了米粮扣下、船折回 —— w53-p5-blockade
-	"siege_schedule": true,    # 第五期守城行事表：城防账写元军进度（围城那天前锋到囊山・使者到城下、援兵断绝、城破）与今日离城破几日，五扇门写耗几日 —— w53-p5-siege
+	"siege_schedule": true,    # 第五期守城行事表：城防账旁一方小笺写元军进度（围城那天前锋到囊山・使者到城下、援兵断绝、城破）与今日离城破几日，五扇门写耗几日 —— w53-p5-siege
+	"siege_relief": true,      # 第五期守城外援：涵江押粮 / 押陈瓒船股换乡兵 / 拆船料修墙（那条船掉一档帆）/ 入围那月出海劫粮道（只在兵粮墙士气上开口子，仍最多三阵）—— w53-p5-siege
 }
 
 static var _over: Dictionary = {}
