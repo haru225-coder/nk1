@@ -4501,6 +4501,10 @@ func _siege_muster() -> void:
 
 
 
+## 陆战骰子（敌军骰、胜负、折兵）在 SiegeMelee：lane w53-p5-siege 从本函数原样搬出，数值与掷骰次序不变
+const _SIEGE_MELEE := preload("res://scripts/combat/SiegeMelee.gd")
+
+
 func _siege_nangshan() -> void:
 	if GameState.siege_get("grain") < GameState.SIEGE_GRAIN_PER_ROUND:
 		_siege_fall("粮尽")
@@ -4518,14 +4522,13 @@ func _siege_nangshan() -> void:
 	GameState.siege_add("grain", -GameState.SIEGE_GRAIN_PER_ROUND)
 
 	var power := GameState.siege_power()
-	var enemy := randf_range(600.0, 1400.0) * (1.0 + 0.25 * (rd - 1))
-	var won := power >= enemy
+	var won: bool = _SIEGE_MELEE.nangshan(rd, power)["won"]
 
 	var txt := ""
 	if won:
-		GameState.siege_add("morale", 8)
-		GameState.add_fame(4)
-		var killed: int = int(GameState.siege_get("troops") * 0.08)
+		GameState.siege_add("morale", _SIEGE_MELEE.WIN_MORALE)
+		GameState.add_fame(_SIEGE_MELEE.WIN_FAME)
+		var killed: int = _SIEGE_MELEE.casualties(GameState.siege_get("troops"), true)
 		GameState.siege_add("troops", -killed)
 		txt = "山道两边全是石头。%s元兵退了。
 城里有人开始说：也许能守。
@@ -4535,10 +4538,10 @@ func _siege_nangshan() -> void:
 			killed,
 		]
 	else:
-		GameState.siege_add("morale", -12)
-		var killed2: int = int(GameState.siege_get("troops") * 0.22)
+		GameState.siege_add("morale", _SIEGE_MELEE.LOSE_MORALE)
+		var killed2: int = _SIEGE_MELEE.casualties(GameState.siege_get("troops"), false)
 		GameState.siege_add("troops", -killed2)
-		GameState.siege_add("wall", -20)
+		GameState.siege_add("wall", _SIEGE_MELEE.LOSE_WALL)
 		txt = "伏没设成。元兵从背面上了山脊，石头砸下去砸的是自己人。
 退回城里的时候少了 %d 人。" % killed2
 

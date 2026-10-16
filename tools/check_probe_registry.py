@@ -137,6 +137,8 @@ EXEMPT = [
     ("qa_w53_p5_war_prices_probe.gd", "lane-w53-p5-econ", "战斗方案五期「军需涨价」专项探针（开关 war_prices 关时六个战况月全部港货价与改前原式逐字相等、被围港米 1.8 / 军械 1.5 倍且米不叠两遍、降元港奢侈贵米贱、对峙小涨、牙行卡价格旁短注、价差地板，回退即红），headless 可跑，随本 lane 落地验过留档"),
     ("qa_w53_p5_blockade_probe.gd", "lane-w53-p5-blockade", "战斗方案五期拦港（待拍板 20b）与闯封锁专项探针（晨潮三向不发封港 / 围城 / 对己封港的港、海图上点它只给「港已封」、剧情要去的港放行并与 Main 卡判据逐月对账；闯封锁四成撞上哨船（固定种子统计）、赢了照围城米价卖粮且一趟收量封顶、输 / 逃 / 掉头米粮没收船折回、迎战真起 WorldMap 一场；开关 port_blockade / blockade_run 关逐字回旧，一段钉一条、回退即红），headless 可跑，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
+    ("qa_w53_p5_siege_probe.gd", "lane-w53-p5-siege", "战斗方案五期守城专项探针（陆战骰子搬进 SiegeMelee 前后同种子逐阵一致，一段钉一条、回退即红），headless 可跑，随本 lane 落地验过留档"),
+    ("qa_yard_transition_probe.gd", "f842d3e lane-fo","船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),
     ("ship_exquisite_probe.gd", "f7a6dc5 feat(ships)", "船近景四支之三，已接 shot_gate 压帧，截图档待挂"),

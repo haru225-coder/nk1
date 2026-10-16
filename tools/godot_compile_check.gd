@@ -214,6 +214,8 @@ const SCRIPTS := [
 	"res://tools/qa_w53_p4_melee_decision_shot.gd",  # lane w53-p4-melee 白刃决断拍板拍 1280×720 截图（NK1_SHOT_DIR 指路）
 	"res://tools/qa_w53_p5_war_prices_probe.gd",  # lane w53-p5-econ 军需涨价专项探针（开关关逐字回旧、被围米 / 军械倍数、降元奢侈贵米贱、对峙小涨、牙行短注）
 	"res://tools/qa_w53_p5_blockade_probe.gd",  # lane w53-p5-blockade 拦港（20b）与闯封锁专项探针（三向不发封着的港 / 「港已封」/ 剧情港放行对账 / 四成遇敌、卖粮价与收量封顶、没收折回 / 两开关关态）
+	"res://scripts/combat/SiegeMelee.gd",  # lane w53-p5-siege 陆战骰子（囊山设伏 / 劫粮道共用，从 Main._siege_nangshan 原样搬出）
+	"res://tools/qa_w53_p5_siege_probe.gd",  # lane w53-p5-siege 守城专项探针（陆战骰子搬家前后一致 …）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
