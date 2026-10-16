@@ -1725,6 +1725,7 @@ func _yashan_begin(pb: Dictionary) -> void:
 	_yashan_escape_px = maxf(1.0, float(cfg.get("escape_px", YashanBattle.ESCAPE_PX)))
 	if is_instance_valid(ship):
 		_yashan_origin = ship.position
+		_yashan_origin_set = true
 	_fire_ship_root = Node2D.new()
 	_fire_ship_root.name = "FireShips"
 	_fire_ship_root.z_index = -3            # 火船压在海面之上、玩家船之下（观感：雾里过来的东西）
@@ -1747,7 +1748,7 @@ func _yashan_spawn_fire_ship(i: int, total: int) -> void:
 		sea = Vector2(0, -1)
 	sea = sea.normalized()
 	var side := Vector2(-sea.y, sea.x)                # 出路那一头的右手边
-	# 横向错开：几艘在出路这条线上摊开（左中右三档），横向间距随第几艘递增
+	# 横向错开：几艘在出路这条线上摊开（左中右三个位置），横向间距随第几艘递增
 	var lane := float(i % 3) - 1.0                    # -1 / 0 / +1
 	var spread := YashanBattle.FIRE_SPREAD_PX * lane
 	# 前后错落：头一艘最近，后面几艘依次往出路那头退——风把这一串一艘接一艘地送过来
@@ -1773,7 +1774,7 @@ func _yashan_step(delta: float) -> void:
 		return
 	# 出路：玩家船离刷船原点那一线的距离（场子是绕开战时的旗舰位置摆的，取原点定线，
 	# 免得旗舰一动线就跟着挪——线是港嘴，不是系在船尾的绳）
-	if _yashan_escape_px > 0.0 and is_instance_valid(ship) and _yashan_origin != Vector2.ZERO:
+	if _yashan_escape_px > 0.0 and is_instance_valid(ship) and _yashan_origin_set:
 		var d := (ship.position - _yashan_origin).length()
 		if d >= _yashan_escape_px:
 			_battle_exit("flee", {"flee_ok": true, "shook_off": true, "yashan_out": true})
@@ -1791,8 +1792,10 @@ func _yashan_step(delta: float) -> void:
 			_show_combat_notice("火船撞上来了")
 
 
-## 开战那一拍记下的场子原点（出路那条线量的是「离港嘴多远」）
+## 开战那一拍记下的场子原点（出路那条线量的是「离港嘴多远」）；
+## 原点记过没有另用一枚布尔——港湾的场子原点恰是 (0, 0)，拿零值当「没记」会把出路判据整条挡掉
 var _yashan_origin := Vector2.ZERO
+var _yashan_origin_set := false
 
 
 ## 本场出海那一头的方位（单位向量）：港湾的出路在风来的那一头上（风从北来、出路在北）。

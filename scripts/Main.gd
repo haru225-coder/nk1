@@ -5191,8 +5191,8 @@ func _yashan_breakout_button(p_known_here: bool) -> void:
 ## 上船同去：置好这一场的 context（pending_battle），叠一层海战场上去开打。
 ## 打完照现有崖山流程走，只换「船活没活」那一句。
 func _yashan_breakout(p_known_here: bool) -> void:
-	if not YashanBattle.enabled():
-		return
+	if not YashanBattle.enabled() or GameState.is_ended():
+		return  # 已经落定过结局（收战那拍就落了「海上宋鬼」）：这一仗只打一次，页上不再开第二回
 	GameManager.pending_battle = YashanBattle.setup(_yashan_fleet_power(), p_known_here)
 	var wm := preload("res://scenes/WorldMap.tscn").instantiate()
 	if not wm.has_signal("battle_finished"):

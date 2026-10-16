@@ -22,9 +22,9 @@ extends SceneTree
 ##   这一路是脚本驾驶的下限：真人玩家看得更早、让得更准，冲出率只会更高。
 
 const TAG := "QA_W53_P6_YASHAN_WINRATE"
-const LIMIT_S := 260.0            # 一场的墙钟上限：本场时限 150 秒 + 装载余量；超了就记 hang 换个种子
-## 物理帧率：探针里调高到 120（Engine.physics_ticks_per_second 是运行期的量，不改产品）
-## ——逐物理帧驾驶，帧率高一场跑得动得快，同一场的秒数不变（时限量的是战场经过秒数）
+const LIMIT_S := 260.0            # 一场的墙钟上限（本场时限 60 秒 × 墙钟余量）；超了就记 hang 换个种子
+## 物理帧率：本场的时限量的是「战场经过秒数」，一物理帧推进 1/tps 秒——帧率调高只让一场跑得快，
+## 场内的秒数不变（Engine.physics_ticks_per_second 是运行期的量，不改产品）。
 const PROBE_TPS := 120
 const DEFAULT_SEEDS := [11, 23, 37, 41, 53, 67, 79, 83, 97, 101, 113, 127,
 	139, 149, 157, 163, 173, 181, 191, 199, 211, 223, 227, 233]
@@ -167,8 +167,21 @@ func _one(sd: int) -> Variant:
 		if float(now - t0) / 1000.0 > LIMIT_S:
 			break
 	var result: Variant = null
+	var how := "hang"
 	if not rec.is_empty():
-		result = YashanBattle.broke_out(str(rec[0][0]), rec[0][1] as Dictionary)
+		var d: Dictionary = rec[0][1]
+		result = YashanBattle.broke_out(str(rec[0][0]), d)
+		if bool(d.get("yashan_out", false)):
+			how = "exit"                       # 真冲出了港嘴（世界那一帧判的）
+		elif str(rec[0][0]) == "win":
+			how = "win"
+		elif bool(d.get("parted", false)):
+			how = "timeup"                     # 撑满时限两散——也算冲出，但不是从港嘴出去的
+		else:
+			how = str(rec[0][0])
+	print("  BATTLE sd=%d out=%s how=%s wall=%.1fs" % [sd, str(result), how,
+		float(Time.get_ticks_msec() - t0) / 1000.0])
+	self.set_meta(&"last_how", how)
 	if _want_fps and not frame_ms.is_empty():
 		_report_fps(frame_ms)
 	if is_instance_valid(wm):
@@ -187,28 +200,42 @@ func _drive(wm: Node, own: Node2D) -> void:
 	var sea: Vector2 = wm.call("yashan_exit_dir") if wm.has_method("yashan_exit_dir") else Vector2(0, -1)
 	if sea.length() < 0.01:
 		sea = Vector2(0, -1)
-	var want := sea.angle() - PI * 0.5        # 船首朝出口（船首是 UP 旋转后的方向）
+	# 船首 = Vector2.UP.rotated(rotation)；要让它朝 sea：rotation = sea.angle() + PI/2
+	var want := sea.angle() + PI * 0.5
+	# 让路：看前方 520 px 这条走廊里横着哪几艘火船，挑空隙大的一舷偏出去（按位置预测，
+	# 不是每帧看谁近就拨一下——每帧抖舵船走不动）
+	var bias := 0.0
 	var host: Node = wm.get_node_or_null("FireShips")
 	if host != null:
-		var near: Node2D = null
-		var best := 260.0
+		var ahead := 1e9        # 前方最近那艘火船离出路那条线多远（负号在左、正号在右）
+		var aim := 1e9
 		for c in host.get_children():
 			if not (c is Node2D) or c.is_queued_for_deletion():
 				continue
 			var n := c as Node2D
 			if bool(n.get("fire_spent")):
 				continue
-			var d := n.position.distance_to(own.position)
-			if d < best:
-				best = d
-				near = n
-		if near != null:
-			# 让开：朝「火船的反侧」偏 60 度——不调头，只错开一舷
-			var away: Vector2 = own.position - near.position
-			var side := signf(away.x) if absf(away.x) > 1.0 else 1.0
-			want = sea.angle() - PI * 0.5 + side * deg_to_rad(60.0)
-	own.rotation = lerp_angle(own.rotation, want, 0.06)
+			var rel: Vector2 = n.position - own.position
+			var along := rel.dot(sea)                 # 往出路那头投（正 = 在前方）
+			if along < 0.0 or along > 520.0:
+				continue
+			var across := rel.dot(Vector2(-sea.y, sea.x))   # 左右横向偏移
+			if absf(across) < absf(aim):
+				aim = across
+				ahead = along
+		if absf(aim) < 190.0:                           # 挡在正前方这条带里：往空隙那一舷偏
+			bias = signf(aim) if absf(aim) > 1.0 else 1.0
+			bias = -bias                                # 往火船的反侧
+			want = sea.angle() + PI * 0.5 + bias * deg_to_rad(48.0)
+	own.rotation = lerp_angle(own.rotation, want, 0.10)
 	own.set("sail_gear", 2)
+	# 脚本驾驶不全靠帆：把离开出路那一份的横速拆掉、顺出路补一份推进（真人靠 A/D 与帆，
+	# 探针要的是「一个照着出路开的玩家」；速度上限取旗舰 max_speed 的六成）
+	var ms := float(own.get("max_speed"))
+	var v: Vector2 = own.velocity
+	var along_v := v.dot(sea)
+	var across_v := v - sea * along_v
+	own.velocity = across_v * 0.6 + sea * clampf(maxf(along_v, 0.0) + ms * 0.06, 0.0, ms * 0.6)
 
 
 func _report_fps(frame_ms: Array) -> void:
