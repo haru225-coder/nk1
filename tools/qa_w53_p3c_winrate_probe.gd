@@ -32,6 +32,17 @@ extends SceneTree
 ## 两笔叠起来种内复跑偶见胜负翻转（±0.25 rad / 700–720 落位差那一档）；统计口径照 overcome+胜负
 ## 照旧可比，报告里写清 k 场翻盘。判红改挑场数 / hang（工具自身的病），不挑落位与白刃的熵。
 ## 判词：末行 WINRATE cfg=a/N …（逐配置一行）恒打；自检不过退 1。
+##
+## 护航上阵（lane w53-p6-escort 加；开关 escort_battle / escort_orders，见 scripts/combat/EscortWing.gd）：
+##   --escort=TYPE[:CREW]   旗舰之外加一艘护航（可写多次，至多三艘；CREW 缺省按船型 crew_min）。player_power 照 SeaChart._fleet_power
+##             把护航那份并进去（游戏里遇敌时就是全队算）——开了上阵，WorldMap 再扣掉上阵那份（EscortWing.power_left），敌船血量与
+##             没有护航时一样；关了照全队，敌船血量按全队战力压低（旧玩法护航只在这里起作用）
+##   --escort-cmp[=off,line,lure,board]  逐档跑：esc-off（escort_battle 关，旧玩法）/ esc-line / esc-lure / esc-board（上阵、开战即下这道将令）；
+##             三期两键照全开。缺省四档都跑。WINRATE 行另记 esc-lost（护航沉 + 被夺艘数）/ esc-prize（护航跳帮夺船艘数）
+##   --grapple 玩家驾驶也接舷：最近敌船够得着就按 G（同 G 键先过士气簿的肯不肯跳帮），一秒至多一次；夺舱要旗舰先钩上才扳，
+##             量夺舱时各档都带上它才可比
+##   工具改动理由：胜率工具原先只摆旗舰一船（Fleet.ships 只写一格），护航船上阵后要量「带护航 / 各将令」的胜负，得能摆护航、
+##   能下将令、能让旗舰接舷（夺舱的扳机）；不带这几个参数时行为与原先逐字一致（不摆护航、不下将令、不接舷）。
 
 const TAG := "QA_W53_P3C_WINRATE"
 const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
@@ -52,6 +63,8 @@ const MATCHUP_FALCON := {"label": "逆风对照：福船60人对元军海鹘×1�
 
 ## 开关配置：--on/--off 攒；key → 中文名只给打印用
 const CFG_NAMES := {KEY_A: "flood", KEY_B: "fire"}
+## --escort 摆的护航船名（同 Fleet.HULL_NAMES 前三）
+const ESCORT_NAMES := ["安济", "通济", "利涉"]
 
 
 func _init() -> void:
@@ -96,6 +109,24 @@ func _args() -> Dictionary:
 			out["morale"] = clampi(int(a.trim_prefix("--morale=")), 1, 100)
 		elif a == "--hands-off":
 			out["drive"] = false
+		elif a.begins_with("--escort="):
+			if not out.has("escorts"):
+				out["escorts"] = []
+			var ep := str(a.trim_prefix("--escort=")).split(":")
+			if (out["escorts"] as Array).size() < 3:
+				(out["escorts"] as Array).append({"type": ep[0], "crew": int(ep[1]) if ep.size() > 1 else -1})
+		elif a.begins_with("--escort-cmp"):
+			var want: Array = ["off", "line", "lure", "board"]
+			if a.begins_with("--escort-cmp="):
+				want = Array(str(a.trim_prefix("--escort-cmp=")).split(",", false))
+			out["cfgs"].clear()
+			for w in want:
+				var ek := {KEY_A: true, KEY_B: true, "escort_battle": w != "off"}
+				if w != "off":
+					ek["_escort_order"] = String(w)
+				out["cfgs"].append({"id": "esc-" + String(w), "keys": ek})
+		elif a == "--grapple":
+			out["grapple"] = true
 		elif a.begins_with("--orders="):
 			out["orders"] = Array(str(a.trim_prefix("--orders=")).split(",", false))
 		elif a == "--off":
@@ -167,6 +198,8 @@ static func _apply_cfg(keys: Dictionary) -> void:
 	_Switches.reset()
 	_Switches.set_on(KEY_A, bool(keys.get(KEY_A, false)))
 	_Switches.set_on(KEY_B, bool(keys.get(KEY_B, false)))
+	if keys.has("escort_battle"):
+		_Switches.set_on("escort_battle", bool(keys["escort_battle"]))  # lane w53-p6-escort：--escort-cmp 各档
 
 
 ## 一场：seed 后真起海战，玩家驾驶到收战 / 玩家旗舰拆 / 墙钟上界。
@@ -185,12 +218,25 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 	var ship_id := String(mu.get("ship", "fu_ship_medium"))
 	var d: Dictionary = fleet.call("ship_def", ship_id)
 	var dur := float(d.get("durability", 300))
-	fleet.set("ships", [{"type": ship_id, "name": "试船", "crew": int(mu.get("crew", 60)),
-		"sail_level": 1, "armor_level": 1, "cargo": {}, "durability": dur, "max_durability": dur}])
+	var roster: Array = [{"type": ship_id, "name": "试船", "crew": int(mu.get("crew", 60)),
+		"sail_level": 1, "armor_level": 1, "cargo": {}, "durability": dur, "max_durability": dur}]
+	# lane w53-p6-escort：--escort 摆护航；护航那份战力照 SeaChart._fleet_power 并进 player_power（上阵时 WorldMap 再扣掉）
+	var esc_power := 0.0
+	var esc_list: Array = mu.get("escorts", [])
+	for k in esc_list.size():
+		var es: Dictionary = esc_list[k]
+		var ed: Dictionary = fleet.call("ship_def", String(es["type"]))
+		var edur := float(ed.get("durability", 200))
+		var ecrew := int(es["crew"]) if int(es["crew"]) > 0 else int(ed.get("crew_min", 10))
+		roster.append({"type": String(es["type"]), "name": ESCORT_NAMES[k % ESCORT_NAMES.size()], "crew": ecrew,
+			"sail_level": 1, "armor_level": 1, "cargo": {}, "durability": edur, "max_durability": edur})
+		esc_power += edur * 0.5 + float(ecrew) * 4.0 + float(ed.get("cannon_slots", 0)) * 25.0
+	fleet.set("ships", roster)
 	fleet.set("morale", int(mu.get("morale", 60)))
+	esc_power *= float(fleet.call("morale_factor"))
 	seed(sd + shift)
 	gm.set("pending_battle", {"battle": true, "power": float(mu.get("power", 300.0)),
-		"player_power": float(mu.get("ppower", 300.0)),
+		"player_power": float(mu.get("ppower", 300.0)) + esc_power,
 		"enemy": (mu.get("enemy", MATCHUP_PIRATES["enemy"]) as Array).duplicate(true), "sea_name": "泉州外海",
 		"sea_seed": sd + shift + 7_000_000, "source": {"scene": "qa_w53_p3c"}})
 	_apply_cfg(keys)
@@ -224,6 +270,17 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 			var fr := RandomNumberGenerator.new()
 			fr.seed = sd + shift + 8_000_000 + (foe_rng_idx - 1) * 13_579
 			(ffb as Object).set("rng", fr)
+	# lane w53-p6-escort：护航船也是 PirateShip（is_escort），私有 rng / 水火簿 rng 同样按种子起（错段，不撞敌船）
+	var escs := wm.get_children().filter(func(c): return String(c.name).begins_with("EscortShip") and not c.is_queued_for_deletion())
+	for k in escs.size():
+		var er := RandomNumberGenerator.new()
+		er.seed = sd + shift + 4_000_000 + k * 13_579
+		escs[k].set("_rng", er)
+		var effb = escs[k].get("flood_fire")
+		if effb is Object and is_instance_valid(effb):
+			var efr := RandomNumberGenerator.new()
+			efr.seed = sd + shift + 4_500_000 + k * 13_579
+			(effb as Object).set("rng", efr)
 	var ship_node = wm.get("ship")
 	if ship_node != null:
 		var dm = ship_node.call("get_damage_model") if ship_node.has_method("get_damage_model") else null
@@ -255,6 +312,10 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 			panel.set("_rng", prng)
 		for o in orders:
 			panel.call("issue", String(o))
+	# lane w53-p6-escort：开战布置即下护航将令（--escort-cmp 各档；整场不变）
+	var wing := wm.get_node_or_null("EscortWing")
+	if wing != null and keys.has("_escort_order"):
+		wing.call("lock_order", String(keys["_escort_order"]), "player")
 	# 物理帧泵（p3b 的跑法改到逐帧）：每一物理帧驾驶一拍（转舷 / 冷却够放舷齐射），
 	# 30 帧一圈回看战况收没收——逐帧下锚点行为与墙钟解耦，同种子复跑才对得上（按 0.5 秒
 	# 一拍下锚会把「哪一拍放的」随负载挪，seed 1222 实测漂出 win→lose）。
@@ -263,6 +324,7 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 	var stuck := 0
 	var wall := 0.0
 	var tick := 0
+	var last_g := -99.0
 	while rec.is_empty() and not own_freed[0]:
 		for _i in 30:
 			await physics_frame
@@ -290,6 +352,15 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 						# 把最近敌船转进舷弧（直接改角——脚本驾驶不走输入，产品里玩家靠 WASD 转头）
 						var want := to.angle() - (Vector2.RIGHT.angle() if side > 0 else Vector2.LEFT.angle())
 						(own as Node2D).rotation = want
+			# --grapple（lane w53-p6-escort）：最近敌船够得着就按 G（先过士气簿肯不肯跳帮），一秒至多一次
+			if drive and bool(mu.get("grapple", false)) and own != null and is_instance_valid(own) and held - last_g >= 1.0 \
+					and is_instance_valid(wm) and not bool(wm.get("boarding")) and not bool(wm.get("resolved")):
+				var ne: Array = wm.call("_nearest_enemy")
+				if ne.size() == 2 and bool((wm.call("_board_check", ne[0]) as Dictionary).get("ok", false)):
+					last_g = held
+					var mo = wm.get("_morale")
+					if mo == null or str(mo.call("player_boarding_check")) == "":
+						wm.call("_board_enemy", ne[0])
 			var el := float(wm.get("_battle_elapsed_s"))
 			if el > last_elapsed:
 				last_elapsed = el
@@ -316,7 +387,7 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 		if not is_instance_valid(wm) or not rec.is_empty() or own_freed[0] \
 				or held >= LIMIT_S or stuck > 6000 or wall > WALL_LIMIT_S:
 			break
-	var out := {"overcome": "hang", "win": false, "wall_s": wall, "tag": "", "held_s": held}
+	var out := {"overcome": "hang", "win": false, "wall_s": wall, "tag": "", "held_s": held, "esc_lost": 0, "esc_prize": 0}
 	if not rec.is_empty():
 		out["overcome"] = str(rec[0][0])
 		var data: Dictionary = rec[0][1]
@@ -335,6 +406,10 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 			or bool(data.get("boarded", false)) \
 			or sunk_n + struck_n + int(data.get("burned", 0)) > 0
 		out["tag"] = verdict if verdict != "" else str(data.get("fates", []))
+		var esc_rec = data.get("escort")
+		if esc_rec is Dictionary:
+			out["esc_lost"] = ((esc_rec as Dictionary).get("sunk", []) as Array).size() + ((esc_rec as Dictionary).get("taken", []) as Array).size()
+			out["esc_prize"] = int((esc_rec as Dictionary).get("prizes", 0))
 	if is_instance_valid(wm):
 		wm.set("resolved", true)  # 拆布景不再发 battle_finished
 		wm.queue_free()
@@ -371,10 +446,13 @@ func _run() -> void:
 		mu["ship"] = String(a["ship"])
 		mu["crew"] = int(a["crew"])
 		mu["morale"] = int(a["morale"])
-		print("== 对阵：%s（我方 %s %d人 morale %d，power %.0f/%.0f，%s）" % [
+		mu["escorts"] = (a.get("escorts", []) as Array).duplicate(true)
+		mu["grapple"] = bool(a.get("grapple", false))
+		print("== 对阵：%s（我方 %s %d人 morale %d，power %.0f/%.0f，%s）%s" % [
 			String(mu.get("label", mid_name)), String(mu["ship"]), int(mu["crew"]), int(mu["morale"]),
 			float(mu.get("power", 300.0)), float(mu.get("ppower", 300.0)),
-			"玩家驾驶" if bool(a["drive"]) else "手离舵"])
+			"玩家驾驶" if bool(a["drive"]) else "手离舵",
+			("　护航 %s%s" % [str(mu["escorts"]), "　接舷" if bool(mu["grapple"]) else ""]) if not (mu["escorts"] as Array).is_empty() else ""])
 		for cfg in a["cfgs"]:
 			var cid := String((cfg as Dictionary)["id"])
 			var keys: Dictionary = (cfg as Dictionary)["keys"]
@@ -383,16 +461,21 @@ func _run() -> void:
 				var r: Dictionary = await _battle_one(fleet, gm, int(seeds[i]), mu, keys,
 					bool(a["drive"]), a["orders"], 0)
 				rows.append(r)
-				print("%s 第 %d/%d 场 种子 %d：%s %s（%.0f 秒墙钟 / %.0f 秒战斗）%s" % [
+				print("%s 第 %d/%d 场 种子 %d：%s %s（%.0f 秒墙钟 / %.0f 秒战斗）%s%s" % [
 					cid, i + 1, n, int(seeds[i]), str(r["overcome"]),
 					"胜" if bool(r["win"]) else "负",
 					float(r["wall_s"]), float(r["held_s"]),
-					("・" + str(r["tag"])) if str(r["tag"]) != "" else ""])
+					("・" + str(r["tag"])) if str(r["tag"]) != "" else "",
+					("・护航失 %d 夺 %d" % [int(r["esc_lost"]), int(r["esc_prize"])]) if not (mu["escorts"] as Array).is_empty() else ""])
 			var won := 0
 			var hangs := 0
+			var esc_lost := 0
+			var esc_prize := 0
 			var sigs: Array = []
 			for i in rows.size():
 				var r: Dictionary = rows[i]
+				esc_lost += int(r["esc_lost"])
+				esc_prize += int(r["esc_prize"])
 				if bool(r["win"]):
 					won += 1
 				if str(r["overcome"]) == "hang":
@@ -425,8 +508,9 @@ func _run() -> void:
 			var sd_names := PackedStringArray()
 			for i in n:
 				sd_names.append(str(int(seeds[i])))
-			print("WINRATE %s@%s=%d/%d seeds=%s replay-drift=%d" % [
-				cid, mid_name, won, n, ",".join(sd_names), drift])
+			print("WINRATE %s@%s=%d/%d seeds=%s replay-drift=%d%s" % [
+				cid, mid_name, won, n, ",".join(sd_names), drift,
+				(" esc-lost=%d esc-prize=%d" % [esc_lost, esc_prize]) if not (mu["escorts"] as Array).is_empty() else ""])
 	# 还原战况与开关
 	fleet.set("ships", saved["ships"])
 	fleet.set("morale", saved["morale"])
