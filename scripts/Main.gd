@@ -2793,6 +2793,16 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	sub_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(sub_lbl)
 
+	# 守城门写耗几日（只有行事表开关开着时 _siege_cards 才带 days）：副题下一行小字
+	var days_note := str(fac.get("days", ""))
+	if days_note != "":
+		var days_lbl := Label.new()
+		days_lbl.name = "DoorDays"
+		days_lbl.text = days_note
+		UiTheme.style_footnote(days_lbl)
+		days_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(days_lbl)
+
 	if pinned_yard:
 		var why := Label.new()
 		why.text = "船还开不出去"
@@ -3991,6 +4001,11 @@ func _siege_stat_slip() -> Control:
 		GameState.siege_get("morale"),
 		"　石手军在城" if str(GameState.siege.get("shishou", "")) == "kept" else "",
 	], UiTheme.TEXT, 16)
+	# 行事表（开关 siege_schedule）：元军进度与今日离城破几日，压成一行接在兵粮行下（岸带只有 360 高）
+	if _SIEGE_SWITCHES.on("siege_schedule"):
+		var sched := _siege_schedule_line()
+		if sched != "":
+			_band_line(col, sched, UiTheme.TEXT_DIM, 16).name = "SiegeSchedule"
 	var warn := ""
 	if rounds_left < 1:
 		warn = "粮已不够打下一阵。此时出战即城破。"
@@ -4044,15 +4059,76 @@ func _siege_enter_subtitle() -> String:
 
 
 ## 首守城破时点那一天（该月初一）的历法写法：{abs 绝对日, era 「景炎元年」, month 「腊月」}；表里没有返回空表。
-## 借 Calendar 自己的写法算（临时拨到那一天、算完拨回），年号月名和顶栏同一套
 func _siege_fall_point() -> Dictionary:
-	var ym := _first_siege_fall_ym()
+	return _siege_ym_point(_first_siege_fall_ym())
+
+
+## 某月初一的历法写法：{abs 绝对日, era 「景炎元年」, month 「腊月」}；ym 为空返回空表。
+## 借 Calendar 自己的写法算（临时拨到那一天、算完拨回），年号月名和顶栏同一套
+func _siege_ym_point(ym: String) -> Dictionary:
 	if ym == "":
 		return {}
 	var p := ym.split("-")
 	var keep: Dictionary = Calendar.to_dict()
 	Calendar.from_dict({"year": int(p[0]), "month": int(p[1]), "day": 1})
 	var out := {"abs": Calendar.absolute_day(), "era": Calendar.get_era_year_string(), "month": Calendar.get_month_name()}
+	Calendar.from_dict(keep)
+	return out
+
+
+## 守城行事表、外援两样新玩法的开关（CombatSwitches，默认开；关掉守城页逐字回旧）
+const _SIEGE_SWITCHES := preload("res://scripts/combat/CombatSwitches.gd")
+
+
+## 守城行事表（开关 siege_schedule，lane w53-p5-siege）：元军进度全从兴化战况表与首守城破时点推，不另立时间线——
+## 围城那天（战况表第一段 besieged 的月初）前锋到囊山、福州的使者到城下（囊山、酒馆两扇门围城当天就开着）；
+## 城破前 SIEGE_DIRE_DAYS 日援兵断绝（城防账告急行同一判据）；城破那天即 _siege_fall_point。
+## 返回 [[绝对日, 事由], …] 按日子排；战况表推不出就返回空表，不写行事表。
+func _siege_schedule() -> Array:
+	var start := _siege_ym_point(_first_siege_start_ym())
+	var fall := _siege_fall_point()
+	if start.is_empty() or fall.is_empty():
+		return []
+	var fall_abs: int = int(fall["abs"])
+	return [
+		[int(start["abs"]), "前锋到囊山・使者到城下"],
+		[fall_abs - SIEGE_DIRE_DAYS, "援兵断绝"],
+		[fall_abs, "城破"],
+	]
+
+
+## 城防账里行事表那一行：「元军行事　冬月初一前锋到囊山・使者到城下　冬月廿一援兵断绝　腊月初一城破　今日冬月初三，还有二十八日」。
+## story_check 按子串在岸带里找告急行「援兵音信断绝」、阵数「二阵」「三阵・」、兵粮行「兵 」「粮 」，这一行都不写这几样
+func _siege_schedule_line() -> String:
+	var sched := _siege_schedule()
+	if sched.is_empty():
+		return ""
+	var parts := PackedStringArray()
+	for it in sched:
+		parts.append(_siege_day_name(int(it[0])) + str(it[1]))
+	var today := Calendar.absolute_day()
+	var left: int = int(sched[sched.size() - 1][0]) - today
+	return "元军行事　%s　今日%s，还有%s日" % ["　".join(parts), _siege_day_name(today), _cn_num(left, true)]
+
+
+## 兴化首守的围城起点：战况表第一段 besieged 的开头（"YYYY-MM"）；表里没有返回 ""
+func _first_siege_start_ym() -> String:
+	var war: Dictionary = GameManager.get_port_by_id("xinghua").get("war", {})
+	var keys: Array = war.keys()
+	keys.sort()
+	for ym in keys:
+		if str(war[ym]) == "besieged":
+			return str(ym)
+	return ""
+
+
+## 绝对日的月日写法「冬月廿一」（Calendar.absolute_day 的逆；临时拨到那一天取历法名、算完拨回，与顶栏同一套）
+func _siege_day_name(abs_day: int) -> String:
+	var months: int = abs_day / Calendar.DAYS_PER_MONTH
+	var keep: Dictionary = Calendar.to_dict()
+	Calendar.from_dict({"year": 1255 + months / Calendar.MONTHS_PER_YEAR, "month": months % Calendar.MONTHS_PER_YEAR + 1,
+		"day": abs_day % Calendar.DAYS_PER_MONTH + 1})
+	var out := Calendar.get_month_name() + Calendar.get_day_name()
 	Calendar.from_dict(keep)
 	return out
 
@@ -4237,6 +4313,12 @@ func _siege_cards() -> Array:
 		"subtitle": "粮尽・出战即城破" if short_of_grain else "设伏迎敌・第%s阵" % _cn_num(GameState.siege_get("round") + 1),
 	})
 	out.append({"id": CARD_SIEGE_NUNNERY, "title": "福州尼寺", "subtitle": "母亲与璥儿在那里"})
+	# 行事表开着：五扇门各写耗几日——守城五事都是当日办完、当日接战（外援另费的日子写在门里各钮上）
+	if _SIEGE_SWITCHES.on("siege_schedule"):
+		for fac in out:
+			var cid := str(fac.get("id", ""))
+			if cid != CARD_SIEGE_NUNNERY:
+				fac["days"] = "当日接战" if cid == CARD_SIEGE_NANGSHAN else "当日办完"
 	return out
 
 
