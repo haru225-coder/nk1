@@ -222,6 +222,9 @@ func _process(delta: float) -> void:
 		if _battle_elapsed_s >= _battle_limit_s:
 			_battle_exit("flee", {"flee_ok": true, "parted": true})
 
+	# lane w53-p6-yashan：出路判词 + 火船这一帧挨到玩家船没有（寻常海战 _yashan_on 为假，本行空转）
+	_yashan_step(delta)
+
 	_update_hud()
 
 
@@ -760,6 +763,8 @@ func _process_weather_and_time(delta: float) -> void:
 		# 战斗目标提示由 _setup_combat 设置，这里不覆盖
 		_feed_ship_wind()
 		canvas_modulate.color = canvas_modulate.color.lerp(Color(1, 1, 1, 1), 2.0 * delta)
+		# lane w53-p6-yashan：崖山港湾那一场另按港湾的天气压一层雾（寻常海战 _yashan_on 为假，本行空转）
+		_yashan_fog(delta)
 		return
 
 	time_of_day += delta * 0.2
@@ -845,6 +850,10 @@ func _setup_combat(pb: Dictionary) -> void:
 		_spawn_enemy(type_id, count, pb, str(entry.get("sprite", "")))
 	_setup_sea(pb)
 	_sync_ocean_look()
+	# lane w53-p6-yashan：崖山港湾突围战（source.event 认场）——出路、时限、刷敌距离按港湾的尺子重设，
+	# 并在雾里顺风摆下火船。寻常海战走不到这一支（is_yashan_battle 为假），场次与数值一个字不动。
+	if is_yashan_battle(pb):
+		_yashan_begin(pb)
 	if is_instance_valid(ship):
 		_CombatFx.dress_ship(ship, _wind_to() * clampf(_wind_speed() / 150.0, 0.0, 1.0))
 	weather_status.text = "海战　%s" % _sea.current_desc()
@@ -986,6 +995,9 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 	_CombatShoreHook.unmount_combat_ui(self)
 	_try_letterbox_exit(outcome, data)
 	_SeaState.clear_active(_sea)
+	# lane w53-p6-yashan：崖山突围这一场的结果落两枚旗（冲出 / 没冲出），Main 收战时读它出结局那一句。
+	# 放在发信号之前（收战的账与旗同拍落定），寻常海战 _yashan_on 为假、一个字不写。
+	_yashan_settle(outcome, data)
 	battle_finished.emit(outcome, data)
 	queue_free()
 
@@ -1638,3 +1650,139 @@ func escort_prize(enemy: Node2D) -> String:
 	enemy.set("hull_hp", 0.0)
 	enemy.queue_free()
 	return taken
+
+
+# ══ 崖山港湾突围战（lane w53-p6-yashan）══════════════════════════════
+# 本场由 Main 的崖山卡「上船同去」起（pending_battle.source.event == YashanBattle.SOURCE）。
+# 场次配置全在 scripts/combat/YashanBattle.gd；这里只做四件接头的事，且全部放在文件尾，
+# 不动上面任何一支已有函数的行号（docs/待策划拍板清单按行号引着这份文件）：
+#   一、开战那一拍：摆下这一场的火船（名字不用 PirateShip_ 前缀——士气簿 / 敌全灭 / 追兵 /
+#       战果列都按那个前缀认敌船，火船不是敌人，是放出来烧你的东西）。
+#   二、逐帧：出路（离场线）那一条自己判——冲出港嘴即按脱战收（沿用 flee{flee_ok, shook_off}
+#       那一族收战账，只是判据从「追兵都在 escape_bu 外」换成「本船出了这一场的出路」）；
+#       火船挨到玩家船就点火，点过的不再点。
+#   三、开战之后：海面按雾压一层灰（港湾的雾；寻常海战照旧固定晴，这一路只在崖山这一场走）。
+#   四、收战那一拍：把冲出 / 没冲出的结果写进 GameState 的两枚旗（Main 收战时读）。
+
+## 本场是不是崖山突围（_ready 里按 pending_battle 认一次，逐帧只读这个布尔）
+var _yashan_on := false
+## 出路（px）：出港嘴那道线。本场自己判（同 _pursuit 的形态），寻常海战恒 0 = 不判
+var _yashan_escape_px := 0.0
+## 雾的那一层灰（CanvasModulate 的颜色乘子；寻常海战恒白）
+const YASHAN_FOG_TINT := Color(0.74, 0.78, 0.82, 1.0)
+## 火船容器：摆在这一层下面，名字不带 PirateShip_ 前缀
+var _fire_ship_root: Node2D = null
+
+
+## 这一场是不是崖山突围（pending_battle 里 source.event 认；探针也能读）
+static func is_yashan_battle(pb: Dictionary) -> bool:
+	var src = pb.get("source", {})
+	return src is Dictionary and str((src as Dictionary).get("event", "")) == YashanBattle.SOURCE
+
+
+## 开战那一拍的第二半：出路与自己判的那条线记住，并在雾里摆下火船。
+## 由 _setup_combat 在 _setup_sea 之后调一次（海况已建、敌阵已摆、船都挂进树了）。
+## 这一场不动 _escape_px / _battle_limit_s（那两个是「甩脱」与「两散」两把尺子，照旧不挪）；
+## 本场多出来的是自己的出路——冲出去判在那条线上。
+func _yashan_begin(pb: Dictionary) -> void:
+	_yashan_on = true
+	var cfg = pb.get("yashan", {})
+	if not (cfg is Dictionary):
+		cfg = {}
+	_yashan_escape_px = maxf(1.0, float(cfg.get("escape_px", YashanBattle.ESCAPE_PX)))
+	if is_instance_valid(ship):
+		_yashan_origin = ship.position
+	_fire_ship_root = Node2D.new()
+	_fire_ship_root.name = "FireShips"
+	_fire_ship_root.z_index = -3            # 火船压在海面之上、玩家船之下（观感：雾里过来的东西）
+	add_child(_fire_ship_root)
+	var fire_n := int(cfg.get("fire_ships", 0))
+	for i in range(fire_n):
+		_yashan_spawn_fire_ship(i, fire_n)
+
+
+## 雾里摆下一艘火船：横在玩家与出路之间那一线（朝出路的方位角左右错开），风把它们一路送到玩家面前。
+## 摆位朝向取本场出海那一头（-wind_to：风从哪来、出路就在那头——火船顺风漂过来，出路在风的上头）；
+## 距离在 FIRE_DIST 那一段里按次第排开，同一场里几艘前后错落，玩家一路上都要找缝。
+## 摆位用本场的风向量（SeaState 建好之后的读数），不另起随机源（探针按 sea_seed 复现同一场）。
+func _yashan_spawn_fire_ship(i: int, total: int) -> void:
+	if _fire_ship_root == null or not is_instance_valid(ship):
+		return
+	# 出海那一头：风来的方向（-wind_to）
+	var sea: Vector2 = -_wind_to()
+	if sea.length() < 0.01:
+		sea = Vector2(0, -1)
+	sea = sea.normalized()
+	var side := Vector2(-sea.y, sea.x)                # 出路那一头的右手边
+	# 横向错开：几艘在出路这条线上摊开（左中右三档），横向间距随第几艘递增
+	var lane := float(i % 3) - 1.0                    # -1 / 0 / +1
+	var spread := YashanBattle.FIRE_SPREAD_PX * lane
+	# 前后错落：头一艘最近，后面几艘依次往出路那头退——风把这一串一艘接一艘地送过来
+	var t := float(i) / float(maxi(1, total - 1))
+	var dist := lerpf(YashanBattle.FIRE_DIST_MIN, YashanBattle.FIRE_DIST_MAX, t)
+	var p := pirate_scene.instantiate()
+	p.name = "FireShip_%d" % (i + 1)
+	p.position = ship.position + sea * dist + side * spread
+	p.target = ship
+	p.ship_type = "pirate_boat"                       # 照快船的船型起水火簿（体量小、储备浮力低）
+	p.crew = 3
+	p.fire_timer = INF                                # 火船不开炮
+	p.set_fire_ship(YashanBattle.drift_px_per_s())
+	p.hull_hp = p.get("hull_hp")
+	p.hull_max = p.hull_hp
+	_fire_ship_root.add_child(p)
+
+
+## 逐帧：① 出路判词——本船冲出了港嘴即按脱战收（flee{flee_ok, shook_off}，与甩脱同一族的收战账）；
+## ② 火船挨到玩家船就点火（点过的自己烧起来，不再重复点）。本场才走，寻常海战空转。
+func _yashan_step(delta: float) -> void:
+	if not _yashan_on:
+		return
+	# 出路：玩家船离刷船原点那一线的距离（场子是绕开战时的旗舰位置摆的，取原点定线，
+	# 免得旗舰一动线就跟着挪——线是港嘴，不是系在船尾的绳）
+	if _yashan_escape_px > 0.0 and is_instance_valid(ship) and _yashan_origin != Vector2.ZERO:
+		var d := (ship.position - _yashan_origin).length()
+		if d >= _yashan_escape_px:
+			_battle_exit("flee", {"flee_ok": true, "shook_off": true, "yashan_out": true})
+			return
+	if _fire_ship_root == null or not is_instance_valid(_fire_ship_root) or not is_instance_valid(ship):
+		return
+	for c in _fire_ship_root.get_children():
+		if not (c is Node2D) or c.is_queued_for_deletion():
+			continue
+		var n := c as Node2D
+		if bool(n.get("fire_spent")):
+			continue
+		if n.position.distance_to(ship.position) <= YashanBattle.IGNITE_DIST:
+			n.call("ignite_on", ship)
+			_show_combat_notice("火船撞上来了")
+
+
+## 开战那一拍记下的场子原点（出路那条线量的是「离港嘴多远」）
+var _yashan_origin := Vector2.ZERO
+
+
+## 本场出海那一头的方位（单位向量）：港湾的出路在风来的那一头上（风从北来、出路在北）。
+## 探针 / 脚本驾驶读它定航向；寻常海战没有这一场（返回零向量，「雾里那个出口」不存在）。
+func yashan_exit_dir() -> Vector2:
+	if not _yashan_on:
+		return Vector2.ZERO
+	var d: Vector2 = -_wind_to()
+	return d.normalized() if d.length() > 0.01 else Vector2(0, -1)
+
+
+## 雾：港湾的天气（看得出八十步）。海面压一层灰——寻常海战是固定晴
+## （_process_weather_and_time 战斗模式那一支恒白），这一层只在崖山这一场叠。
+func _yashan_fog(delta: float) -> void:
+	if not _yashan_on:
+		return
+	canvas_modulate.color = canvas_modulate.color.lerp(YASHAN_FOG_TINT, 2.0 * delta)
+
+
+## 收战那一拍：把这一场的出路写进 GameState 的两枚旗（Main 收战时读它出结局那两句里的一句）。
+## 只在崖山这一场走；寻常海战一个字不写。
+func _yashan_settle(outcome: String, data: Dictionary) -> void:
+	if not _yashan_on:
+		return
+	for f in YashanBattle.flags_for(YashanBattle.broke_out(outcome, data)):
+		GameState.set_flag(String(f))

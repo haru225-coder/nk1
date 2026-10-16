@@ -221,6 +221,9 @@ const SCRIPTS := [
 	"res://scripts/combat/EscortWing.gd",  # lane w53-p6-escort 护航船上阵与三道将令（WorldMap 挂用，开关 escort_battle / escort_orders）
 	"res://tools/qa_w53_p6_escort_probe.gd",  # lane w53-p6-escort 护航上阵与三道将令专项探针（船数、将令走法、记账不重、接任、关态回旧）
 	"res://tools/qa_w53_p6_perf_probe.gd",  # lane w53-p6-escort 第六期性能探针（同屏八艘帧时均值 / p95，开 / 关各一份；崖山火船一档有 YashanBattle 才跑）
+	"res://scripts/combat/YashanBattle.gd",  # lane w53-p6-yashan 崖山突围战的场次配置与冲出判词（港湾海况 / 火船 / 两式结局那一句）
+	"res://tools/qa_w53_p6_yashan_probe.gd",  # lane w53-p6-yashan 崖山突围专项探针（卡上第三扇门 / 港湾海况 / 火船 / 点火 / 两式结局 / 两枚旗）
+	"res://tools/qa_w53_p6_yashan_winrate.gd",  # lane w53-p6-yashan 崖山突围冲出率与帧时工具（--crew 两三档 / --off / --fps）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；

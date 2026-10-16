@@ -3817,7 +3817,7 @@ func _on_yashan() -> void:
 	choices_container.add_child(pass_by)
 
 	choices_label.visible = true
-	_add_leave_button(current_scene_id)
+	_yashan_breakout_button(known_here); _add_leave_button(current_scene_id)
 
 
 ## 海商线收官：至元年间，泉州更大了。
@@ -5164,3 +5164,82 @@ func _siege_relief_raid_section() -> void:
 	if block == "":
 		_siege_relief_button("出海劫粮道（费 %d 日・耗水粮四日份）" % SIEGE_RELIEF_DAYS["raid"],
 			SIEGE_RELIEF_DAYS["raid"], _siege_relief_raid)
+
+
+# ══ 崖山突围战（战斗方案 §七「崖山突围」、§八「章节与结局」，lane w53-p6-yashan）══════════════
+## 崖山卡上的第三个选项「上船同去」：上了张世杰的船，就要在雾里穿一遍那片铁索连着的船阵——
+## 元军顺风放火船过来，玩家要的不是打赢，是冲出去（离场线 / 撑过时限）。
+## 新代码全收在这一块（拍板清单按行号引着上面的崖山函数，往上面插行会把那些行号整片挪位）：
+## _on_yashan 上只多一处一行的接头（choices_label 那一行：_yashan_breakout_button(known_here)）。
+##
+## 史实不变：祥兴二年二月宋军照旧覆灭，六个结局的走向一字不动，探针钉住的九条剧情锚点一字不动。
+## 这一仗只改结局文字里「你的船活没活」那一句——冲出来了 / 没冲出来；没冲出来不是游戏结束，
+## 照现有崖山后的流程走，只是那一句换成没冲出来。
+## 关掉开关 yashan_breakout：崖山卡逐字回旧（「上船同去」那扇门根本不挂，本块一行也不跑）。
+
+## 崖山卡上的第三扇门（开关关 = 不挂这道门，页面上只有原来的两个选项）
+func _yashan_breakout_button(p_known_here: bool) -> void:
+	if not YashanBattle.enabled():
+		return
+	var btn := Button.new()
+	btn.text = "上船同去"
+	btn.tooltip_text = "上船跟着冲出去——雾里有火船，冲得出去冲不出去，关乎你的船活不活。"
+	btn.pressed.connect(_yashan_breakout.bind(p_known_here))
+	choices_container.add_child(btn)
+
+
+## 上船同去：置好这一场的 context（pending_battle），叠一层海战场上去开打。
+## 打完照现有崖山流程走，只换「船活没活」那一句。
+func _yashan_breakout(p_known_here: bool) -> void:
+	if not YashanBattle.enabled():
+		return
+	GameManager.pending_battle = YashanBattle.setup(_yashan_fleet_power(), p_known_here)
+	var wm := preload("res://scenes/WorldMap.tscn").instantiate()
+	if not wm.has_signal("battle_finished"):
+		GameManager.pending_battle = {}
+		wm.queue_free()
+		log_msg("海战脚本没挂上，崖山这一仗没能开打。")
+		return
+	wm.battle_finished.connect(_on_yashan_battle)
+	# 海战一层是全屏 Node2D，铺在港页上面会挡住船和 HUD：本页的 CanvasItem 先收起（与 SeaChart 同一手）
+	for c in get_children():
+		if c is CanvasItem:
+			c.visible = false
+	add_child(wm)
+	wm.visible = true
+
+
+## 崖山这一仗打完：收起海战场，把「冲出 / 没冲出」记进结局那一句，再回崖山页（结局册页照旧弹）。
+## outcome 是 WorldMap 发的那一族（win / lose / flee / disengaged），data 是它的收战账。
+func _on_yashan_battle(outcome: String, data: Dictionary) -> void:
+	GameManager.pending_battle = {}
+	var out := YashanBattle.broke_out(outcome, data)
+	# 没冲出来的账（船被打残、烧了半条）：照旧法记一笔折损——货抛一半、船队掉耐久。
+	# 冲出来了就只记损伤（WorldMap 收战已按这一场算过 player_damage 并落进舰队账）
+	if not out:
+		Fleet.damage_fleet(40.0)
+		Fleet.lose_cargo_ratio(0.35)
+	_yashan_ending_sheet(out)
+
+
+## 结局那一句：只换「你的船活没活」这一句，其余结局走向、六个结局、九条剧情锚点一字不动。
+## tail 走 YashanBattle.tail_text（冲出 / 没冲出两式），外面那一圈文字与原来「把粮与硫黄交上去」
+## 那条路逐字相同——同一场崖山、同一个「海上宋鬼」。
+func _yashan_ending_sheet(p_out: bool) -> void:
+	_show_notice_dialog("海上宋鬼", "崖山・祥兴二年二月",
+		"战到午后，铁索连着的船开始烧。
+%s
+
+——
+一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。
+这个世界少了一位海神，多了几条回来的船。" % YashanBattle.tail_text(p_out),
+		"海上宋鬼")
+
+
+## 玩家船队的战力（照 SeaChart._fleet_power 同一式：耐久一半 + 水手每人四 + 炮位每门二十五 + 甲一档三十，
+## 再乘士气系数）。本场只用来定元军船阵的厚薄，冲不冲得出还是看玩家自己划。
+func _yashan_fleet_power() -> float:
+	var cannons := 0
+	for s in Fleet.ships:
+		cannons += int(Fleet.ship_def(s.get("type", "")).get("cannon_slots", 0))
+	return (Fleet.total_durability() * 0.5 + Fleet.total_crew() * 4.0 + cannons * 25.0 + Fleet.fleet_armor_level() * 30.0) * Fleet.morale_factor()

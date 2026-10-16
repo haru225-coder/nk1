@@ -38,6 +38,9 @@ const DEFAULTS := {
 	"landing_raid": true,      # 第六期小规模登陆战：海战赢了、敌是海寇、船在宋土沿海——战后单子多一行「登岸剿寨」，骰子借陆战那一路（SiegeMelee.clash）—— w53-p6-landing
 	"escort_battle": true,     # 第六期 · 护航船上阵：旗舰以外的船（至多三艘、连敌船同屏不过八艘）跟着进海战，船体人手照记回 Fleet —— w53-p6-escort
 	"escort_orders": true,     # 第六期 · 护航三道将令：开战布置时下一道（列队 / 曳敌 / 夺舱）、整场不变；关掉不出将令、护航照列队 —— w53-p6-escort
+	# 第六期 · 大场面（可选，各 lane 各挂各的键）
+	"yashan_breakout": true,   # 崖山突围：崖山卡多一扇门「上船同去」，打一场雾里有火船的港湾战（关 = 崖山卡逐字回旧，没有这扇门）—— w53-p6-yashan
+	"yashan_fire_ship": true,  # 崖山港湾战里的火船：顺风放来、碰上就点火（关 = 只有元军船阵，没有火船）—— w53-p6-yashan
 }
 
 static var _over: Dictionary = {}

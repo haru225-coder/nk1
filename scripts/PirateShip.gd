@@ -221,6 +221,10 @@ func _process(_delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(target): return
 	if hull_hp <= 0: return
+	# lane w53-p6-yashan：火船这一态走自己那一路（顺风漂、碰上就点火），下面的敌将 / 开炮 / 挂钩一概不走
+	if fire_ship:
+		_step_fire_ship(delta)
+		return
 	_ensure_captain()
 	if grappled:
 		velocity = velocity.lerp(Vector2.ZERO, 5.0 * delta) # P4-2 接舷：被钩住后减速停住
@@ -941,3 +945,126 @@ func _friend_in_line(fire_side: int, dist: float) -> bool:
 		if absf(rel.cross(dir)) < ESCORT_CLEAR_PX + 0.12 * along:
 			return true
 	return false
+
+
+# ══ 崖山港湾战的火船（lane w53-p6-yashan）═══════════════════════════
+#
+# 火船是 PirateShip 的一态，不是新的船种：元军顺风放出来的旧船，舱里塞满柴薪、硫黄和火油，
+# 船上只有一两个人把舵，靠上了就点着自己。所以它不摇橹（不追不打，只顺风漂）、不挂钩、不开炮，
+# 水手少得可怜（碰上了也没什么可夺的）。
+#
+# 点火用的还是三期那套 FloodFire（world 那边给玩家船点的同一件）：篷帆先着（rig），甲板跟着烧，
+# 风大时蔓延到舯部与艉楼。点火那一刻给玩家船记一记撞伤（船体 + 篷帆 + 几个水手），
+# 随后火在自己船上烧起来，自己烧完、船体见底，照 _explode 原路沉——赏钱 / 战果都当击沉算，
+# 但敌全灭不靠它（WorldMap._enemies_alive 不计火船，见 is_fire_ship）。
+#
+# 本段全在文件尾追加：不动上面任何一支已有函数的行号（拍板清单按行号引着这份文件）。
+
+## 这一条是不是火船（WorldMap 判敌全灭、算追兵、记下场时都要先剔掉它）
+var fire_ship: bool = false
+## 火船的顺风漂速（px/s）：由放船方写（YashanBattle.drift_px_per_s），0 则按 max_speed 的三成漂
+var fire_drift_speed: float = 0.0
+## 点着玩家船的距离（px）：两条船挨到舷贴舷（船身半长 122 上下，取 150 是舷边擦着的量）
+const FIRE_IGNITE_DIST := 150.0
+## 点火那一刻给玩家船的撞伤：船体点数、篷帆点数（水手伤亡由 take_hit 的 kind=fire 自己记，不另扣）
+const FIRE_RAM_HULL := 9.0
+const FIRE_RAM_SAIL := 0.22
+## 本场放过一次没有：碰上了就烧起来，不再漂
+var fire_spent: bool = false
+## 这一艘撞上过玩家船几回（正常恒 0 或 1——碰过了就烧起来、不再漂也不再点；探针读它判「不重复点」）
+var ram_hits: int = 0
+## 撞上玩家船时给它的篷帆 / 舯部甲板各点多少火势（火船带过来的火，不看引火率）
+const FIRE_RIG_IGNITE := 0.45
+const FIRE_DECK_IGNITE := 0.22
+## 火船自焚的四处火势（碰上玩家船那一刻一起点着：艏部满火、篷帆最旺）
+const YASHAN_FIRE_ZONES := {"bow": 1.0, "mid": 0.8, "stern": 0.6, "rig": 1.0}
+
+
+## 把这一条摆成火船：漂速按放船方给，船名改「火船」，把敌将收了（不摇橹、不挂钩、不掉头）。
+## 探针 / WorldMap 都能调；不入存档（这一态只活在一场里）。
+func set_fire_ship(p_drift_speed := 0.0) -> void:
+	fire_ship = true
+	fire_drift_speed = p_drift_speed
+	ship_name = "火船"
+	cannon_count = 0
+	crew = maxi(1, mini(crew, 3))          # 船上只有一两个把舵的，没什么可夺
+	enemy_morale = 30
+	struck = false
+	captain = null                         # 不收敌将：这一条不走 EnemyCaptainAI 那条心思曲线
+	_consorts = []
+	if is_instance_valid(sprite):
+		sprite.modulate = Color(0.92, 0.78, 0.66)   # 比寻常敌船暗一点、带点柴薪色
+
+
+## 火船这一帧：顺风漂（不追不打），挨到玩家船就点火 + 自沉。
+## 返回 true = 本帧由火船这一路走完，上面那套敌将 / 开炮 / 挂钩都不再走。
+## 风从 target 船上的风力场读（WorldMap 每帧写 wind_vector / wind_strength，与全船同一来源）；
+## 读不到就照 max_speed 的三成往船首方向漂。
+func _step_fire_ship(delta: float) -> void:
+	# 已经碰上过：舱里的柴薪硫黄烧起来，剩下的交给水火那一套（火会自己蔓延、烧到船体见底照 _explode 沉）
+	if fire_spent:
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
+	var drift := Vector2.UP.rotated(rotation) * _fire_drift_speed()
+	if is_instance_valid(target):
+		var wv = target.get("wind_vector")
+		var force := clampf(_node_float(target, "wind_strength", 80.0) / 150.0, 0.0, 1.0)
+		if wv is Vector2 and (wv as Vector2).length() > 0.01:
+			drift = (wv as Vector2).normalized() * _fire_drift_speed() * clampf(force * 2.0, 0.4, 1.2)
+	velocity = drift
+	if drift.length() > 0.01:
+		rotation = drift.angle() + PI * 0.5
+	move_and_slide()
+	# 顺风漂的船不打桨，没有尾迹
+	if wake_particles != null:
+		wake_particles.emitting = false
+
+
+## 火船的顺风漂速（px/s）：由放船方写（YashanBattle.drift_px_per_s），没写就照 max_speed 的三成漂
+func _fire_drift_speed() -> float:
+	return fire_drift_speed if fire_drift_speed > 0.0 else max_speed * 0.3
+
+
+## 碰上玩家船：给玩家船记一记撞伤与篷帆引火，然后自己烧起来（烧完照 _explode 沉）。
+## 调用方是 WorldMap（每帧量两条船的距离，够近就调一次）；碰过的火船再调是空操作。
+## p_other 是玩家的旗舰（Ship），撞伤走它自己那条收弹路：kind=fire 的引火率与篷帆率都在 DamageModel.KINDS 表里，
+## 撞上的火不另开一条扣账的路——篷帆先着，甲板跟着烧，玩家那边照旧可以下救火令、斩篷。
+func ignite_on(p_other: Node2D) -> void:
+	if fire_spent:
+		return
+	fire_spent = true
+	ram_hits += 1
+	velocity = Vector2.ZERO
+	if p_other != null and is_instance_valid(p_other) and p_other.has_method("take_hit"):
+		# 撞的那一下（船体伤、水手伤亡）走它自己那条收弹路
+		p_other.call("take_hit", {"amount": FIRE_RAM_HULL, "kind": "fire", "zone": "bow",
+			"sail": FIRE_RAM_SAIL, "high": true})
+		# 火是自己带过来的，不看引火率：靠上就着——篷帆先起、舯部甲板跟着烧（take_hit 那条引火是掷骰的，
+		# 玩家船涂了泥、或张着湿毡时会掷不中，那就不成其为火船了）
+		var odp = p_other.call("get_damage_model") if p_other.has_method("get_damage_model") else null
+		var odff = odp.get("ff") if odp != null else null
+		if odff != null:
+			odff.call("ignite", "rig", FIRE_RIG_IGNITE)
+			odff.call("ignite", "mid", FIRE_DECK_IGNITE)
+	# 自焚：舱里的柴薪硫黄一起着（本船这一份水火簿，WorldMap 开战时按 enemy_flood_fire 挂好）
+	if flood_fire != null:
+		for zone in YASHAN_FIRE_ZONES:
+			flood_fire.ff.ignite(zone, float(YASHAN_FIRE_ZONES[zone]))
+	# 撞裂了舱板、船体去了三成：烧不烧得沉交给自己那份火（火势满处每秒烧船体上限的 0.35%）
+	take_damage(hull_max * 0.3)
+
+
+## 这一条是不是火船（WorldMap 判敌全灭 / 记下场时读）
+func is_fire_ship() -> bool:
+	return fire_ship
+
+
+## 同 WorldMap._node_float：读不到给缺省（本件在 WorldMap 之外调用，不带那份工具函数）
+func _node_float(n: Object, prop: String, fallback: float) -> float:
+	if n == null or not is_instance_valid(n):
+		return fallback
+	var v = n.get(prop)
+	if v is float or v is int:
+		return float(v)
+	return fallback

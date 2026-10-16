@@ -140,6 +140,7 @@ EXEMPT = [
     ("qa_w53_p6_landing_probe.gd", "lane-w53-p6-landing", "战斗方案六期小规模登陆战专项探针（入口四样齐才挂那一行、下船人数封顶与战力式子对守城那一路逐位相等、骰子借 SiegeMelee.clash 同种子逐位相等、五档船型固定种子 1..200 的胜率界、胜败两路的账、收队回船不动、开关关态逐字回旧、真起 SeaChart 收战扣住 source 走判据、期望收益对照 simulate_run 开局跑商两条界、真走 SeaChart 落账（胜 / 舱快满 / 败 / 收队）与札记一句，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w53_p6_escort_probe.gd", "lane-w53-p6-escort", "战斗方案六期「护航船上阵 + 三道将令」专项探针（上阵船数与同屏八艘封顶、列队 / 曳敌 / 夺舱各自的走法与白刃、键盘 / 鼠标 / 触屏下令、结算记账不记两遍、旗舰沉护航接任、开关 escort_battle / escort_orders 关逐字回旧，一段钉一条、回退即红），headless 可跑，随本 lane 落地验过留档"),
     ("qa_w53_p6_perf_probe.gd", "lane-w53-p6-escort", "战斗方案六期性能探针（同屏八艘开打量 600 帧以上的平均帧时与 p95，escort_battle 开 / 关各一份，崖山突围一档有 YashanBattle 才跑、没有就跳过；另报同屏船数、粒子总数），帧时要 DISPLAY=:2 带窗口才作数、headless 只判跑通，随本 lane 落地验过留档"),
+    ("qa_w53_p6_yashan_probe.gd", "lane-w53-p6-yashan", "战斗方案六期崖山突围战专项探针（崖山卡第三扇门「上船同去」开关开 / 关两态、这一场海况取港湾那一档（雾 / 窄水 / 风向风力）与数据档逐项对账、火船摆下（独立 FireShip_ 前缀不进士气簿 / 敌全灭 / 追兵、同屏不超 8 艘、开关关一艘不留）、碰上就点火的旗舰篷帆引火与撞伤并记「碰过了」不重复点、冲出 / 没冲出两式判词与结局那一句、收战写两枚旗且寻常海战不写；一段钉一条、回退即红），headless 可跑，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),
