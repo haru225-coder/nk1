@@ -69,6 +69,17 @@ const HOOKS := {
 		"where": "SeaChart._arrive（靠港钟：比墨幕那声沉，同在收声组 bell）"},
 	&"chart_sink": {"layers": [[&"combat_hit", -3.0, 0.0, 0.6], [&"combat_lose", -6.0, 0.3]], "added": true, "gap_ms": 1500,
 		"where": "SeaChart._sink（海上沉没：船身裂开，随后两记下行磬音）"},
+	# ── 本波补挂 · 守城（五期兴化）──
+	&"siege_gate": {"layers": [[&"combat_board", -5.0, 0.0, 0.7]], "added": true, "gap_ms": 1500,
+		"where": "Main 入城两处（「城门在身后合上」）/ _siege_lin_hua 关城门（「城门落了闸」）：门扇闷撞、门闩两下"},
+	&"siege_win": {"layers": [[&"combat_start", -4.0], [&"combat_win", -6.0, 0.75]], "added": true, "gap_ms": 1500,
+		"where": "Main._siege_nangshan 退敌 / _siege_relief_raid 劫粮道得手（一阵鼓，随后三记上行磬音）"},
+	&"siege_lose": {"layers": [[&"combat_start", -4.0], [&"combat_lose", -6.0, 0.75]], "added": true, "gap_ms": 1500,
+		"where": "Main._siege_nangshan 失利 / _siege_relief_raid 劫粮道失手（一阵鼓，随后两记下行）"},
+	&"siege_timber": {"layers": [[&"combat_hit", -7.0, 0.0, 0.6]], "added": true, "gap_ms": 1500,
+		"where": "Main._siege_relief_timber（拆船料修墙：帆桅拆下来扛上城头）"},
+	&"siege_fall": {"layers": [[&"combat_hit", -3.0, 0.0, 0.45], [&"combat_lose", -5.0, 0.4]], "added": true, "gap_ms": 3000,
+		"where": "Main._siege_fall（城破：城门裂开，随后两记下行磬音）"},
 }
 
 ## 旗舰损伤事件（Ship.damage_event 的 kind）→ 挂点；表外的 kind 不响

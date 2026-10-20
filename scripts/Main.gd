@@ -862,7 +862,7 @@ func load_scene(scene_id: String) -> void:
 func _load_scene_inner(scene_id: String) -> void:
 	# 旧档：兴化海口从前也开守城页，在海口开过城防的档读回海口，直接入城（城防没了结，不给带「看风」的寻常港页）
 	if scene_id == "xinghua_harbor" and GameState.siege_open() and not GameState.is_ended():
-		log_msg(SIEGE_ENTER_LOG)
+		log_msg(SIEGE_ENTER_LOG); _SFX.play(self, &"siege_gate")  # lane w54-audio：城门合上（同行接，拍板清单按行号引着下文）
 		scene_id = "xinghua"
 	if current_scene_id != "" and current_scene_id != scene_id:
 		previous_scene_id = current_scene_id
@@ -3756,7 +3756,7 @@ func _on_siege_card(card_id: String) -> void:
 			)
 		CARD_SIEGE_ENTER:
 			# 兴化海口 → 兴化城：短途陆路，当天就到（同一座城的两个节点，不过海图、不走日子）
-			log_msg(SIEGE_ENTER_LOG)
+			log_msg(SIEGE_ENTER_LOG); _SFX.play(self, &"siege_gate")  # lane w54-audio：城门合上（同行接，行号不挪）
 			load_scene("xinghua")
 
 
@@ -4362,7 +4362,7 @@ func _siege_fall(reason: String) -> void:
 		GameState.ended_at = signoff
 	# 大题那截存档：重读结局、航海札记照它写，城破原因不只在初读册页露一次
 	GameState.ended_head = head
-	_show_notice_dialog("忠肃", head, text, "忠肃")
+	_SFX.play(self, &"siege_fall"); _show_notice_dialog("忠肃", head, text, "忠肃")  # lane w54-audio：城破（同行接，行号不挪）
 
 
 ## 忠肃落款的城破时点：「景炎元年　腊月・兴化」——年号、月名从兴化战况表首守城破那个月推（_siege_fall_point），不写死
@@ -4421,7 +4421,7 @@ func _siege_lin_hua() -> void:
 		GameState.set_flag("cao_opened")
 		# 只作铺垫，城还在、林华也还在：缒城出降、曹澄孙开东门都是城破那夜的事（_siege_fall 按 cao_opened 写，过场第 2 镜同旗换句）。
 		# 不写天数、不写「当夜」，日历没动，玩家这一天还能接着打第三阵。顶栏一行约容 57 字，这句压在 52 字内，曹澄孙那半句不被截掉
-		log_msg("城门落了闸，人心一乱，官仓前挤抢，丢了%s石米。林华在垛口缒绳边站了一会儿。东门下，通判曹澄孙转了几回。" % _cn_num(lost, true))
+		log_msg("城门落了闸，人心一乱，官仓前挤抢，丢了%s石米。林华在垛口缒绳边站了一会儿。东门下，通判曹澄孙转了几回。" % _cn_num(lost, true)); _SFX.play(self, &"siege_gate")  # lane w54-audio：落闸
 		load_scene(current_scene_id)
 	)
 	choices_container.add_child(stay); stay.set_meta("no_enter", true)
@@ -4519,7 +4519,7 @@ func _siege_nangshan() -> void:
 
 	var power := GameState.siege_power()
 	var fight: Dictionary = _SIEGE_MELEE.nangshan(rd, power, _siege_raid_cut(rd))
-	var won: bool = fight["won"]
+	var won: bool = fight["won"]; _SFX.play(self, &"siege_win" if won else &"siege_lose")  # lane w54-audio：一阵鼓，随后胜负那几记磬（同行接，行号不挪）
 
 	var txt := ""
 	if won:
@@ -4973,7 +4973,7 @@ func _siege_relief_timber(i: int) -> int:
 		return 0
 	Fleet.ships[i]["sail_level"] = Fleet.sail_level(i) - 1
 	GameState.siege_add("wall", add)
-	GameState.siege_add("timber", add)
+	GameState.siege_add("timber", add); _SFX.play(self, &"siege_timber")  # lane w54-audio：帆桅拆下来扛上城头（同行接）
 	GameManager.advance_days(SIEGE_RELIEF_DAYS["timber"])
 	log_msg("「%s」的帆桅拆下来扛上了城头，城墙加 %d。木匠说，这条船往后跑不快了。" % [Fleet.display_name(i), add])
 	return add
@@ -5013,7 +5013,7 @@ func _siege_relief_raid() -> Dictionary:
 	var r: Dictionary = _SIEGE_MELEE.raid(power)
 	var days: int = SIEGE_RELIEF_DAYS["raid"]
 	Fleet.add_supply_pair(-days * Fleet.daily_supply_use())
-	GameManager.advance_days(days)
+	GameManager.advance_days(days); _SFX.play(self, &"siege_win" if bool(r["won"]) else &"siege_lose")  # lane w54-audio：劫粮道一仗（同行接）
 	if bool(r["won"]):
 		GameState.siege_set("raid", "won")
 		GameState.siege_set("raid_round", rd)

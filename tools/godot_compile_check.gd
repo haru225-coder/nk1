@@ -285,6 +285,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_seaevents_war_where_probe.gd",  # lane w54-seaevents 战时遭遇看船所在海域探针（博多外不征船、不撞元军哨船，傍过已降元的温州明州撞得上）
 	"res://scripts/core/PortLife.gd",  # lane w54-port 岸上见闻表（港所在一带 × 季风、战况 → 一句码头光景；开关 port_life）
 	"res://tools/qa_w54_port_life_probe.gd",  # lane w54-port 岸上见闻专项探针（三季 / 十四港 / 战况 / 候日不叠 / 守城终局不添 / 开关关逐字回旧）
+	"res://tools/qa_w54_audio_siege_probe.gd",  # lane w54-audio 守城补挂的声专项探针（城门 / 囊山与劫粮道胜负 / 拆船料 / 城破）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
