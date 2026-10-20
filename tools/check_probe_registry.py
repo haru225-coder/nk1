@@ -174,6 +174,7 @@ EXEMPT = [
     ("qa_w54_saves_migrate_probe.gd", "lane-w54-saves", "旧版本档迁到本版逐项对探针（v1 / v2 / v3 三种仓里真有过的旧结构各摆一卷满档、外加无头 v1：读进来逐键对、迁移该变的按口径变、当时没有的键落缺省；回写的头 version 与 save_schema 同到本版、原件 .vN 逐字节保真、迁好再读不改写、读后再记再读不变），动存档结构 / 迁移链时加跑，headless 秒级；本进程 SCRIPT ERROR 即红"),
     ("qa_w54_saves_shape_probe.gd", "lane-w54-saves", "存档体检漏网的坏形状探针（读档报成功、随后照常玩即 SCRIPT ERROR 的那几型逐例钉住：类型取值坏的退副抄、本就清洗的照读清洗后那一份，读进来逛港页九设施、买卖修船、过 35 日、再记再读 0 错），动 SaveLoad 体检 / 读档清洗时加跑，headless 约半分钟"),
     ("qa_w54_saves_systems_probe.gd", "lane-w54-saves", "逐系统存档往返探针（十六个系统各用真玩法摆状态：读后五分区逐键含键序同存前、该系统读数同、同种子续跑终态与月初通告同；末节福州港页与九处设施页、兴化守城页存前读后逐行同），动任一系统的存档字段或读档流程时加跑，headless 约一分钟；本进程 SCRIPT ERROR 即红"),
+    ("qa_w54_seaevents_ledger_probe.gd", "lane-w54-seaevents", "海上遇事札记与实扣对得上探针（献上买路财拿不出钱：钱够照实扣、舱空一件没搬不说搬走、整批大货 / 零头货 / 两船各一件按札记说的规矩推出的件数 = 舱里实少件数；回退即红），动 SeaChart 遇事钮回调或 Fleet.lose_cargo_ratio 时加跑，headless 秒级"),
     ("qa_w54_siege_dupe_probe.gd", "lane-w54-siege", "守城衙门募兵 / 船屋修墙两页余量不过小档时不出两枚同数钮专项探针（衙门余量 10 / 50 / 51 / 160 / 360 / 募满、船屋余量 10 / 20 / 21 / 140 / 满两页各档钮字逐字、两两不同，余量 10 那一枚点下去照旧作数；回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_siege_enter_probe.gd", "lane-w54-siege", "守城各页回车不替人按专项探针（衙门募兵与石手军 / 市场屯粮 / 船屋修墙 / 两封劝降书 / 第三阵前林华请命认得与不认得两式：钮都在、真回车与直调 _activate_first_choice 都不按、账面旗札记日子不动、人还在这一页，反向基点钮照旧作数；回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_siege_raid_probe.gd", "lane-w54-siege", "守城外援劫粮道必败不给劫专项探针（开局小艍 / 中福船战力 39 / 人过四十士气零三档：缘由一句、直调不动账、船屋页不挂钮、门不写四日；界上战力 41 照旧劫且骰子同 SiegeMelee.clash；两条大福船照旧开；回退即红），headless 秒级，随本 lane 落地验过留档"),

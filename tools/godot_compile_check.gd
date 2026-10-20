@@ -279,6 +279,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_ending_yashan_cine_probe.gd",  # lane w54-ending「海上宋鬼」结局过场按崖山实际走的路出字（交粮 / 船慢 / 上船同去冲出与没冲出）
 	"res://tools/qa_w54_ending_place_probe.gd",  # lane w54-ending 终局港页匾与首进题签写结局收在的地方（崖山 / 旧避风澳；反向基照旧写港名）
 	"res://tools/qa_w54_tutorial_depart_note_probe.gd",  # lane w54-tutorial 出港验引那句带到海图探针（修验引那句随港页当帧换掉）
+	"res://tools/qa_w54_seaevents_ledger_probe.gd",  # lane w54-seaevents 海上遇事札记与实扣对得上探针（买路财拿不出钱：舱空不说搬走、零头货照实写）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
