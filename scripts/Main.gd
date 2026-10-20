@@ -1619,20 +1619,20 @@ func _on_accept_contract(offer: Dictionary) -> void:
 		log_msg("牙行摇头：你身上已经有一笔没了结的。")
 	else:
 		log_msg("牙行把单子收了回去。这月的委办对不上。")
-	load_scene(current_scene_id)
+	_market_hold = true; load_scene(current_scene_id)  # 同页重排，「装至」选的那艘留着（同买卖；lane w54-port）
 
 
 func _on_deliver_contract(port_id: String) -> void:
 	var res := GameState.deliver_contract(port_id)
 	log_msg(str(res.get("msg", "")))
-	load_scene(current_scene_id)
+	_market_hold = true; load_scene(current_scene_id)  # 同页重排，「装至」选的那艘留着（同买卖；lane w54-port）
 
 
 func _on_abandon_contract() -> void:
 	var msg := GameState.abandon_contract()
 	if msg != "":
 		log_msg(msg)
-	load_scene(current_scene_id)
+	_market_hold = true; load_scene(current_scene_id)  # 同页重排，「装至」选的那艘留着（同买卖；lane w54-port）
 
 
 func _make_market_row(port_id: String, good_id: String) -> Control:

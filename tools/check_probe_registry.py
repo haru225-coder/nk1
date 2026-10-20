@@ -175,6 +175,7 @@ EXEMPT = [
     ("qa_w54_voyage_toll_empty_probe.gd", "lane-w54-voyage", "海寇买路财空舱札记探针（拿不出钱、舱空不写「搬走了三成货」且钱船舱都不动；舱里有货照旧三成并列货单、钱够照旧付钱两对照），修空舱也说搬走三成货，回退即红，headless 秒级"),
     ("qa_w54_voyage_unsailed_return_probe.gd", "lane-w54-voyage", "海图没发舶就回港不挂抵港签探针（看风后候风再发两回过六日再点「回港」不算抵港；当日回港、候过风再真发舶到福州「下船入港」两对照），修候过风原地回港也挂「抵泉州」，回退即红，headless 秒级"),
     ("qa_w54_port_rumor_probe.gd", "lane-w54-port", "w54 牙行货单别港传闻不荐牙行闭门港探针（博多封港 / 福州被围 / 广州被围时取下一家开着的、都闭着写原提示、开着照取价高的，货单那一行与 rumor_elsewhere 直调一字不差，回退即红），headless 秒级，随本 lane 落地验过留档"),
+    ("qa_w54_port_ship_pick_probe.gd", "lane-w54-port", "w54 牙行「装至」选的那艘船接委办 / 交货 / 毁约后还是那艘探针（岸上真门进牙行、委办单与货单上的真钮：选二号按三钮后仍是二号、再买 1 货进二号；离开再进回旗舰、明日再看留着两格对照，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),

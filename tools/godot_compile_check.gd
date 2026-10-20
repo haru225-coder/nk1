@@ -263,6 +263,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_hud_intel_fit_probe.gd",  # lane w54-hud 海战敌情卡长写法放得下（行尾水火短注折行、小卡不撑宽出画，回退即红）
 	"res://tools/qa_w54_hud_intel_tide_probe.gd",  # lane w54-hud 海战敌情卡跟着顶匾高矮挪（舱货折行顶匾长高时不压匾，回退即红）
 	"res://tools/qa_w54_port_rumor_probe.gd",  # lane w54-port 牙行货单别港传闻不荐牙行闭门港探针（封港 / 被围取下一家开着的、都闭着写原提示）
+	"res://tools/qa_w54_port_ship_pick_probe.gd",  # lane w54-port 牙行「装至」选船接委办 / 交货 / 毁约后不跳回旗舰探针
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
