@@ -5,7 +5,10 @@ extends SceneTree
 ##       岸带上门牌是专名的门（城中通名的九门与守城借用的衙门 / 市场除外），提示都原字写出门牌（「・」不计）。
 ##   二、九门门牌与进门页题同名：泉州（scenes.json 港景的门）、福州（通用九门）岸带上开着的、关着的门逐扇看，
 ##       门牌 = 进门后的页题「<港名>・<门牌>」（住处门的门牌曾写「住宅」，进门却是「泉州・住处」）。
-## 静态一侧见 tools/check_w53_copy.py 钉 R / S；本探针看的是岸带上真建出来的门与真进的页。
+##   三、上屏的间隔号用全角「・」：海图港签副题（MapView._port_sub，1255–1285 逐年按 sub_by_year 换）与章节卡题辞出处
+##       （ChapterCard._read_data，四章）不写半角「·」——文楷里「·」只有 0.35 字宽，曾在「興化軍·莆田」「《论语·公冶长》」
+##       里挤成一粒，同一张海图的险地名、同一张章节卡的年款用的却是「・」。
+## 静态一侧见 tools/check_w53_copy.py 钉 R / S 与钉 O（扩到数据）；本探针看的是岸带上真建出来的门、真进的页、真取的字。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_copy_probe.gd（经门锁跑）
 ## 判词：逐条「  ✓ / ✗ 判词」，末行 QA_W54_COPY_PROBE PASS / FAIL k；本进程 SCRIPT ERROR 也判红。
 
@@ -68,6 +71,8 @@ func _run() -> void:
 	await _sec_door_tips()
 	print("== 二、九门门牌与进门页题同名（泉州走 scenes.json 港景的门，福州走通用九门）")
 	await _sec_door_pages()
+	print("== 三、上屏的间隔号用全角「・」（海图港签副题、章节卡题辞出处）")
+	_sec_interpunct()
 	_report()
 
 
@@ -126,6 +131,35 @@ func _sec_door_pages() -> void:
 				"%s「%s」门（%s）进门页题「%s」" % [port_name, title, fid, page])
 		_main.load_scene(port)
 		await process_frame
+
+
+## 三：海图港签副题与章节卡题辞出处里没有半角「·」（U+00B7）
+func _sec_interpunct() -> void:
+	var half := "·"
+	var map: Node = (load("res://scripts/chart/MapView.gd") as GDScript).new()
+	var subs := {}
+	for p in root.get_node("/root/GameManager").ports_data.get("ports", []):
+		var chart: Dictionary = (p as Dictionary).get("chart", {})
+		for y in range(1255, 1286):
+			map.set("cal_year", y)
+			subs[str(map.call("_port_sub", chart))] = true
+	map.free()
+	var bad := []
+	for s in subs:
+		if str(s).find(half) >= 0:
+			bad.append(s)
+	_check(subs.size() >= 14 and bad.is_empty(),
+		"海图港签副题 1255–1285 逐年 %d 种，无半角「·」（有的：%s）" % [subs.size(), bad])
+	_check(subs.has("興化軍・莆田") and subs.has("刺桐・泉州路（元）"), "港签副题的间隔号是全角「・」（興化軍・莆田、刺桐・泉州路（元））")
+	for n in range(1, 5):
+		var card: Node = (load("res://scripts/cutscene/ChapterCard.gd") as GDScript).new()
+		card.set("chapter", n)
+		card.call("_read_data")
+		var src := str(card.get("_src"))
+		var year := str(card.get("_year"))
+		card.free()
+		_check(src != "" and src.find(half) < 0 and year.find(half) < 0,
+			"第%d章章节卡 出处「%s」、年款「%s」无半角「·」" % [n, src, year])
 
 
 ## 岸带上的门：[门牌, 悬停提示]，今日开着的（ShoreDoors）在前、关着的（ShoreShut）在后，各按树序

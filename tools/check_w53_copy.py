@@ -61,9 +61,12 @@
      （名声 +6）」「（费 6 日・30 钱，乡土 +3）」）照写 +N / −N（钉 G 核它们 = 实扣）。「名声添」统一作「名声加」。
   O. 间隔号写全角「・」（七轮）：全作间隔号 gd 玩家串里 83 处是全角「・」（「第%s章・%s」「粮 120・够打三阵」），
      另有 8 处半角「·」（U+00B7）——旅店钮「歇 10 日　150·误期」、海图去处牌「斜逆风·换风」、科举通告题「咸淳四年 ·
-     唱第」等，半角点在全角空格与汉字之间挤成一粒。gd 玩家串里不许再写「·」。数据里的书证出处（《论语·公冶长》）与
-     海图旧式题签（「興化軍·莆田」）照原样，不扫。拼接用的分隔符（"·".join(…)，不带汉字）另扫一遍，
-     把半角点归一成全角的 .replace("·", "・") 写法放过。
+     唱第」等，半角点在全角空格与汉字之间挤成一粒。gd 玩家串里不许再写「·」。拼接用的分隔符（"·".join(…)，不带汉字）
+     另扫一遍，把半角点归一成全角的 .replace("·", "・") 写法放过。
+     扩到数据（w54-copy）：游戏读的数据档（scripts 里以 res://data/<名>.json 引到的）上屏文本值同样不写「·」，跳过 /meta
+     与出处 / 引文 / 注记类键（同钉 I），人物原稿不读（称谓上屏时 CharacterArt.codex_title 已归一成「・」）。原先放过的
+     海图港签副题「興化軍·莆田」等六格、第一章题辞出处「《论语·公冶长》」一并改全角：文楷里「·」只有 0.35 字宽，
+     同一张海图的险地「千里長沙・萬里石床」、同一张章节卡的年款「宝祐三年・一二五五」用的都是整字宽的「・」。
   P. 海图事件钮写出水粮代价（八轮）：难民船一面三颗钮，「载人同行（水粮 −2 成）」写了代价，「分些水粮，不载人」实扣
      水、粮各一成（向上取整）却一字不提，同一面板上看着像白给。回调按成数扣水粮（Fleet.water - int(ceil(Fleet.water * 0.N))）
      的海图事件钮，钮文括注须写「水粮 −N 成」，N = 实扣成数、水粮同数；钮文写了的，回调须真按这个成数扣。
@@ -234,6 +237,10 @@ ROLE_HINT_FN = {
 }
 # ═══ 钉 O：gd 玩家串的间隔号只用全角「・」（U+30FB），不用半角「·」（U+00B7）。
 HALF_INTERPUNCT = "\u00b7"
+# 钉 O 扩到数据（w54-copy）：游戏读的数据档 = scripts 里以 res://data/<名>.json 引到的
+GAME_DATA_RE = re.compile(r"res://data/([A-Za-z0-9_]+\.json)")
+# 防沉默绿：这几份必须认得出是游戏读的（引用写法改了、正则抓空时判红，不当绿）。
+GAME_DATA_MUST = ("ports.json", "cutscenes.json", "scenes.json")
 
 # ═══ 钉 N：括注外的「名声 +N / 士气 −N」= 记事句写了钮文记号；「名声添」= 动词没统一。
 DELTA_NOTE_RE = re.compile(r"(%s)\s*[+−]\s*(?:\d|%%d)" % "|".join(DELTA_WORDS))
@@ -899,6 +906,35 @@ def _scan_interpunct_bare():
                 _check_interpunct_bare(open(p, encoding="utf-8").read(), p[len(ROOT) + 1:])
 
 
+def _game_data_files():
+    """scripts 下 .gd 里以 res://data/<名>.json 引到的数据档名——游戏真读的那几份。"""
+    out = set()
+    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
+        for f in files:
+            if f.endswith(".gd"):
+                out.update(GAME_DATA_RE.findall(open(os.path.join(dirpath, f), encoding="utf-8").read()))
+    return out
+
+
+def _scan_data_interpunct():
+    """钉 O 扩到数据：游戏读的数据档上屏文本值不写半角「·」（/meta 与 GLYPH_SKIP_KEYS 跳过；人物原稿不读）。"""
+    files = _game_data_files()
+    for must in GAME_DATA_MUST:
+        if must not in files:
+            FAILS.append(f"data/{must}: 钉 O 认不出它是游戏读的数据档——scripts 里 res://data/ 的引用写法改了")
+    codex = os.path.basename(CODEX_JSON)
+    for f in sorted(files):
+        if f.startswith("characters") and f != codex:
+            continue
+        try:
+            d = json.load(open(os.path.join(ROOT, "data", f), encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for path, key, text in _walk_json_strings(d):
+            if key not in GLYPH_SKIP_KEYS and not path.startswith("/meta"):
+                _check_interpunct(text, f"data/{f}:{path}")
+
+
 def _check_role_hints(roles, crew_src, game_src, tag):
     """每个职事 effect_hint 的每一句：登记过、登记的函数读本职事品级、Crew.gd 以外有调用。返回核过的句数。"""
     funcs = dict(_gd_funcs(crew_src))
@@ -1343,6 +1379,7 @@ def main():
     _scan_role_hints()
     _scan_delta_paren_must()
     _scan_interpunct_bare()
+    _scan_data_interpunct()
     _scan_door_tips()
     _scan_door_pages()
     all_fails = self_fails + FAILS

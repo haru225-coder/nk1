@@ -15,7 +15,7 @@
       "lon": 119.01,
       "chart": {
         "label": "興化",
-        "sub": "興化軍·莆田",
+        "sub": "興化軍・莆田",
         "shibo": false,
         "sub_by_year": [
           {"from": 1277, "sub": "興化路（元）"}
@@ -67,7 +67,7 @@
       "lon": 119.12,
       "chart": {
         "label": "興化海口",
-        "sub": "寧海·涵頭",
+        "sub": "寧海・涵頭",
         "shibo": false
       },
       "depth": 100,
@@ -112,11 +112,11 @@
       "lon": 118.68,
       "chart": {
         "label": "泉州",
-        "sub": "刺桐·後渚",
+        "sub": "刺桐・後渚",
         "shibo": true,
         "sub_by_year": [
-          {"from": 1277, "sub": "刺桐·行宣慰司（元）"},
-          {"from": 1278, "sub": "刺桐·泉州路（元）"}
+          {"from": 1277, "sub": "刺桐・行宣慰司（元）"},
+          {"from": 1278, "sub": "刺桐・泉州路（元）"}
         ]
       },
       "depth": 400,
@@ -393,7 +393,7 @@
       "lon": 121.55,
       "chart": {
         "label": "慶元",
-        "sub": "明州·四明",
+        "sub": "明州・四明",
         "shibo": true,
         "sub_by_year": [
           {"from": 1277, "sub": "慶元路（元）"}
