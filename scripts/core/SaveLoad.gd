@@ -364,8 +364,12 @@ func _write_back_migrated(path: String, data: Dictionary, from_schema: int) -> b
 		push_warning("存档 %s 原件无法另存为 %s，本次不回写" % [path, keep])
 		return false
 	var tmp := path + ".tmp"
+	# 回写落盘的已是本版结构，头 version 跟着到本版（两者同升）：_migrate 只升 save_schema，原样落盘就是 v4 结构顶着旧头
+	# （v1..v3 的档头都是 3、早期原型的档没有头）——旧读档器只拒 version > 3，会把它收下、把 hired 里的候选 id 当快照读
+	var out := data.duplicate()
+	out["version"] = VERSION
 	# 半截的迁移结果顶上正本，原件只剩 .v<N>（_resolve 不看）——读回核对不过就不回写
-	if not _write_verified(tmp, _to_json(data)):
+	if not _write_verified(tmp, _to_json(out)):
 		push_warning("存档 %s 迁移结果无法写入 %s 或读回不符，本次不回写" % [path, tmp])
 		return false
 	if DirAccess.rename_absolute(tmp, path) != OK:

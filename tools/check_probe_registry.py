@@ -167,6 +167,7 @@ EXEMPT = [
     ("qa_w54_story_signoff_probe.gd", "lane-w54-story", "结局落款写结局所在地专项探针（崖山交粮 / 上船同去冲出与没冲出三路落「海上宋鬼」落款写崖山、不写广州，航海札记终局一行同；反向基福州「未归」写福州、涵江出海写旧避风澳，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_story_skip_probe.gd", "lane-w54-story", "升章跳年时身上的委办免罚作罢专项探针（w53 待拍板 15：带委办与不带委办同一局面跳两年钱、名声逐位相等，委办清空、签发港不封单、札记「跳年委办作罢」、途中无「【逾期】」、代价段写明；真走第一章开章同断；反向基不跳年的寻常逾期照旧罚，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_story_timing_probe.gd", "lane-w54-story", "剧情事件按设计年月出场专项探针（士人线辞呈卡：逐月真走日子，1275-10 不挂、1275-11 临安短札投放立旗但不挂、1275-12 起挂、未决照挂、选过一条路不挂，反向基海商线不挂，回退即红），headless 秒级，随本 lane 落地验过留档"),
+    ("qa_w54_saves_migrate_probe.gd", "lane-w54-saves", "旧版本档迁到本版逐项对探针（v1 / v2 / v3 三种仓里真有过的旧结构各摆一卷满档、外加无头 v1：读进来逐键对、迁移该变的按口径变、当时没有的键落缺省；回写的头 version 与 save_schema 同到本版、原件 .vN 逐字节保真、迁好再读不改写、读后再记再读不变），动存档结构 / 迁移链时加跑，headless 秒级；本进程 SCRIPT ERROR 即红"),
     ("qa_w54_saves_systems_probe.gd", "lane-w54-saves", "逐系统存档往返探针（十六个系统各用真玩法摆状态：读后五分区逐键含键序同存前、该系统读数同、同种子续跑终态与月初通告同；末节福州港页与九处设施页、兴化守城页存前读后逐行同），动任一系统的存档字段或读档流程时加跑，headless 约一分钟；本进程 SCRIPT ERROR 即红"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
