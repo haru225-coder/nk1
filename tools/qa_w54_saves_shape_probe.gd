@@ -111,6 +111,29 @@ func _bad_cases() -> Array:
 ## 不判坏档；读进来的须是清洗过的那一份，且读档本身与随后走一圈都不出错。
 func _tolerated_cases() -> Array:
 	var out: Array = []
+	# 旧档 / 骨档的船不带耐久上限 max_durability（save_robust_probe、save_migrate_probe 的好档船就是这一形）：Fleet.repair_cost 按缺省 0 算，
+	# 修价成负数，船屋「修船」钮压根不出（rc > 0 才挂），这条船永远修不上；Fleet.repair_all 又按键直取它，别处一修即 SCRIPT ERROR。
+	# 读档按船式图籍补上限：走船屋页，船先打掉一截，「修船」钮在、修价按差额算、按下去扣了钱船修满
+	var hull_ok := func() -> Array:
+		var s0: Dictionary = fleet.ships[0]
+		var filled: bool = s0.has("max_durability") and is_equal_approx(float(s0["max_durability"]), 300.0)
+		s0["durability"] = 120.0
+		_main.load_scene(PORT + "_shipyard")
+		var chip: Button = null
+		for b in _main.find_children("*", "Button", true, false):
+			if (b as Button).text.begins_with("修船") and (b as Button).is_visible_in_tree():
+				chip = b
+		var money0: int = gs.money
+		if chip != null:
+			chip.pressed.emit()
+		var repaired: bool = chip != null and chip.text == "修船　360" and is_equal_approx(float(s0.get("durability", 0.0)), 300.0) \
+				and gs.money == money0 - 360
+		return [filled and repaired, "读进来那条船补上耐久上限（按船式图籍 300）；船屋「修船　360」在、按下去扣 360 钱、船修满",
+			"上限 %s；钮 %s；钱 %d → %d；修后耐久 %s" % [str(s0.get("max_durability")), chip.text if chip != null else "（没有修船钮）",
+				money0, gs.money, str(s0.get("durability"))]]
+	var bare := _good.duplicate(true)
+	(bare["fleet"]["ships"][0] as Dictionary).erase("max_durability")
+	out.append(["fleet.ships 船缺耐久上限", bare, hull_ok])
 	return out
 
 

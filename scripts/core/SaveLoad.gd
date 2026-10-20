@@ -615,7 +615,7 @@ func load_game(slot: int) -> bool:
 	# _read 已体检过结构；这里仍按 Dictionary 兜底，缺省分区用空表。
 	Calendar.from_dict(_as_dict(data.get("calendar", {})))
 	Economy.from_dict(_as_dict(data.get("economy", {})))
-	Fleet.from_dict(_as_dict(data.get("fleet", {})))
+	Fleet.from_dict(_as_dict(_harden_fleet(data.get("fleet", {}))))
 	Crew.from_dict(_as_dict(data.get("crew", {})))
 	var state: Dictionary = _as_dict(data.get("state", {}))
 	GameState.from_dict(_harden_state(state))
@@ -841,3 +841,24 @@ func save_label(slot: int) -> String:
 		return "卷页损了"
 	return str(data.get("label", "未题"))
 
+
+## 读档补缺：船的耐久上限（lane w54-saves）。旧档 / 骨档的船可能不带 max_durability——save_robust_probe、save_migrate_probe 的好档船
+## 就是 {type, cargo, crew} 这一形，体检照判好档。缺了它，Fleet.repair_cost 按 0 算、修价成负数，船屋「修船」钮压根不挂，这条船永远
+## 修不上；Fleet.repair_all 又按键直取它，队里别的船带伤、钮挂出来一修，修到这条即 SCRIPT ERROR。照 Fleet.add_ship 的口径补：取船式
+## 图籍的耐久，查无此船式按 100；档里记着的现耐久比它大就取现耐久（上限不低于现值，修船不把船修「回去」）。只补缺、不改给了的值；
+## 型坏的照旧由 _check_partitions 判坏档。
+func _harden_fleet(raw) -> Variant:
+	if typeof(raw) != TYPE_DICTIONARY:
+		return raw
+	var fleet: Dictionary = (raw as Dictionary).duplicate(true)
+	var ships = fleet.get("ships", [])
+	if typeof(ships) != TYPE_ARRAY:
+		return fleet
+	for s in ships:
+		if typeof(s) != TYPE_DICTIONARY or (s as Dictionary).has("max_durability"):
+			continue
+		var top := float(Fleet.ship_def(str(s.get("type", ""))).get("durability", 100))
+		if _is_num(s.get("durability")):
+			top = maxf(top, float(s["durability"]))
+		s["max_durability"] = top
+	return fleet
