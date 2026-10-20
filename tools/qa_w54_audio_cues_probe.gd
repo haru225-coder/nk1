@@ -21,10 +21,10 @@ const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
 ## SfxSynth 现成的八样（AudioHooks.CUE_*）
 const STOCK := [&"transition", &"combat_start", &"combat_fire", &"combat_hit", &"combat_board",
 	&"combat_win", &"combat_lose", &"combat_flee"]
-## 原先七处具名口的声样与音量（lane-s 9b2b1eb0 的 AudioHooks.transition / combat_* 原值）
+## 原先七处具名口的声样与音量（lane-s 9b2b1eb0 的 AudioHooks.transition / combat_* 原值；开炮那一口后来按谁开的分成两行，同声同量）
 const BASE := {
 	&"transition": [&"transition", -5.0], &"sea_start": [&"combat_start", -4.0], &"sea_fire": [&"combat_fire", -7.0],
-	&"sea_hit": [&"combat_hit", -8.0], &"sea_board": [&"combat_board", -4.0], &"sea_win": [&"combat_win", -4.0],
+	&"sea_fire_own": [&"combat_fire", -7.0], &"sea_hit": [&"combat_hit", -8.0], &"sea_board": [&"combat_board", -4.0], &"sea_win": [&"combat_win", -4.0],
 	&"sea_lose": [&"combat_lose", -4.0], &"sea_flee": [&"combat_flee", -4.0],
 }
 
@@ -265,7 +265,7 @@ func _sec_sea() -> void:
 	m = _mark()
 	ship.call("_fire_broadside", 1)
 	_Switches.reset()
-	_check(_sounded(_since(m, &"sea_fire")), "旗舰齐射（Ship._fire_broadside）记 sea_fire")
+	_check(_sounded(_since(m, &"sea_fire_own")), "旗舰齐射（Ship._fire_broadside）记 sea_fire_own")
 	var foe := _enemy(wm)
 	var cb: Node2D = (load("res://scenes/Cannonball.tscn") as PackedScene).instantiate()
 	cb.position = ship.position

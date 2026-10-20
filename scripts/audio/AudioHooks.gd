@@ -26,7 +26,9 @@ const CUE_COMBAT_LOSE: StringName = &"combat_lose"
 const CUE_COMBAT_FLEE: StringName = &"combat_flee"
 
 ## Per-cue minimum spacing (ms) so a broadside or a hail of hits reads as one
-## beat instead of stacking into noise.
+## beat instead of stacking into noise.  The spacing is kept per gap key
+## (opts.gap_key, default the cue itself): the flagship's own broadside has its
+## own key, so an enemy or escort volley a moment earlier cannot swallow it.
 const _MIN_GAP_MS := {
 	&"combat_fire": 90,
 	&"combat_hit": 60,
@@ -44,6 +46,10 @@ static var volume_db := 0.0
 ## the cue sounded (headless counts as sounded: only the player is skipped);
 ## otherwise muted / no_tree / no_stream / gap / voices.  Read by probes only.
 static var journal: Array = []
+## Probe clock: when >= 0, rate limits and the journal read this as "now" (ms)
+## instead of Time.get_ticks_msec(), so a busy machine cannot flip a gap
+## verdict.  Always -1 in the game.
+static var clock_ms := -1
 static var _streams: Dictionary = {}
 static var _last_ms: Dictionary = {}
 static var _warming := false
@@ -77,9 +83,11 @@ static func stream_for(cue: StringName) -> AudioStream:
 ## outlives the caller (WorldMap frees itself right after the result cue, Main
 ## swaps pages under the transition); it frees itself when finished.  Returns
 ## null when muted, headless, rate-limited or over the voice cap.
-## opts.hook names the SfxCues hook that asked (kept in the journal).
+## opts.hook names the SfxCues hook that asked (kept in the journal);
+## opts.gap_key picks whose spacing applies (default: the cue's own).
 static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -> AudioStreamPlayer:
 	var hook: StringName = StringName(opts.get("hook", &""))
+	var gap_key: StringName = StringName(opts.get("gap_key", cue))
 	var db := cue_db + volume_db
 	if not enabled:
 		return _refuse(cue, hook, db, "muted")
@@ -88,8 +96,8 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 	var stream := stream_for(cue)
 	if stream == null:
 		return _refuse(cue, hook, db, "no_stream")
-	var now := Time.get_ticks_msec()
-	if now - int(_last_ms.get(cue, -100000)) < int(_MIN_GAP_MS.get(cue, 0)):
+	var now := _now()
+	if now - int(_last_ms.get(gap_key, -100000)) < int(_MIN_GAP_MS.get(cue, 0)):
 		return _refuse(cue, hook, db, "gap")
 	var root := parent.get_tree().root
 	var voices := 0
@@ -98,7 +106,7 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 			voices += 1
 	if voices >= _MAX_VOICES:
 		return _refuse(cue, hook, db, "voices")
-	_last_ms[cue] = now
+	_last_ms[gap_key] = now
 	_note(cue, hook, db, "")
 	if DisplayServer.get_name() == "headless":
 		return null
@@ -121,8 +129,12 @@ static func _refuse(cue: StringName, hook: StringName, db: float, why: String) -
 	return null
 
 
+static func _now() -> int:
+	return clock_ms if clock_ms >= 0 else Time.get_ticks_msec()
+
+
 static func _note(cue: StringName, hook: StringName, db: float, why: String) -> void:
-	journal.append({"ms": Time.get_ticks_msec(), "cue": cue, "hook": hook, "db": db, "why": why})
+	journal.append({"ms": _now(), "cue": cue, "hook": hook, "db": db, "why": why})
 	if journal.size() > JOURNAL_MAX:
 		journal.pop_front()
 

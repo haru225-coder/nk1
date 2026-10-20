@@ -267,6 +267,7 @@ const SCRIPTS := [
 	"res://scripts/audio/SfxCues.gd",  # lane w54-audio 音效挂点表（各处发声都走它：挂点 → 声样 / 音量，只用 SfxSynth 现成八样）
 	"res://tools/qa_w54_audio_cues_probe.gd",  # lane w54-audio 音效挂点表专项探针（表、原先七处、无头不出声、真走海战挂点）
 	"res://tools/qa_w54_audio_flee_probe.gd",  # lane w54-audio 逃没逃掉不放撤离风声专项探针（B 键掷输 / 溃逃没跑掉记败局那一声）
+	"res://tools/qa_w54_audio_own_fire_probe.gd",  # lane w54-audio 自家齐射不被别船炮声吞掉专项探针（开炮节流按谁开的各认一把锁）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；

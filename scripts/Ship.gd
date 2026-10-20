@@ -225,7 +225,7 @@ func _fire_broadside_legacy(side: int) -> void:
 		cb.shooter = self
 		get_parent().add_child(cb)
 
-	_SFX.play(get_parent(), &"sea_fire")
+	_SFX.play(get_parent(), &"sea_fire_own")
 	_CombatFx.muzzle_flash(self, side, shots)
 	_CombatFx.hull_shudder(self, 0.7, side)
 
@@ -298,7 +298,7 @@ func _fire_broadside_ballistics(side: int) -> void:
 	var ship_dir = Vector2.UP.rotated(rotation)
 	var side_dir = Vector2.RIGHT.rotated(rotation) if side == 1 else Vector2.LEFT.rotated(rotation)
 	var shots := fired
-	_SFX.play(get_parent(), &"sea_fire")
+	_SFX.play(get_parent(), &"sea_fire_own")
 	_CombatFx.muzzle_flash(self, side, shots)
 	_CombatFx.hull_shudder(self, 0.7, side)
 	_CombatFx.punch_camera(self, 11.0, -side_dir, 0.012)
