@@ -12,12 +12,14 @@ extends RefCounted
 
 const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
 
-## 挂点 → {layers: 声层, where: 挂在哪, gap_key: 节流认哪把锁（可缺）}。声层一行 [声样, dB]（dB 在 AudioHooks.volume_db
+## 挂点 → {layers: 声层, where: 挂在哪, gap_key: 节流认哪把锁（可缺）, group: 收声组（可缺）}。声层一行 [声样, dB]（dB 在 AudioHooks.volume_db
 ## 之上再加；全表都在 0 以下）。同一样声多快能再响按 AudioHooks._MIN_GAP_MS（开炮 90 毫秒、命中 60 毫秒），锁缺省按声样——
 ## 旗舰齐射另起一把锁（gap_key），敌船 / 护航刚放过一排也吞不掉玩家自己按下去的那一排。
+## 收声组（group）：同组的新声一响，还在响的旧声当场收掉——墨幕被新墨幕顶掉时（晋升翻页全黑时排守城 / 终局岸带头一回，
+## 又起一幕题签），旧幕那声磬跟着收，不叠成两声。
 ## 原先就有的七处（lane-s 起的 AudioHooks 具名口）搬进表里，声样、音量一字不差。
 const HOOKS := {
-	&"transition": {"layers": [[&"transition", -5.0]], "where": "Main.play_transition（墨幕过渡）"},
+	&"transition": {"layers": [[&"transition", -5.0]], "group": &"bell", "where": "Main.play_transition（墨幕过渡）"},
 	&"sea_start": {"layers": [[&"combat_start", -4.0]], "where": "WorldMap._setup_combat（入战）"},
 	&"sea_fire": {"layers": [[&"combat_fire", -7.0]], "where": "PirateShip._process_firing（敌船 / 护航开炮）"},
 	&"sea_fire_own": {"layers": [[&"combat_fire", -7.0]], "gap_key": &"combat_fire_own", "where": "Ship 齐射两路（旗舰开炮）"},
@@ -33,8 +35,9 @@ const HOOKS := {
 static func play(host: Node, hook: StringName) -> void:
 	var row: Dictionary = HOOKS.get(hook, {})
 	var opts := {"hook": hook}
-	if row.has("gap_key"):
-		opts["gap_key"] = row["gap_key"]
+	for k in ["gap_key", "group"]:
+		if row.has(k):
+			opts[k] = row[k]
 	for layer in row.get("layers", []):
 		_AUDIO.play_cue(host, layer[0], float(layer[1]), opts)
 

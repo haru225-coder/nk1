@@ -47,13 +47,14 @@ static var enabled := OS.get_environment("NK1_SFX") != "0"
 static var volume_db := 0.0
 ## Recent play_cue decisions, newest last: {ms, cue, hook, db, why}.  why "" =
 ## the cue sounded (headless counts as sounded: only the player is skipped);
-## otherwise muted / no_tree / no_stream / gap / voices.  Read by probes only.
+## otherwise muted / no_tree / no_stream / gap / voices; "cut" marks an older
+## voice of the same choke group stopped by a newer one.  Read by probes only.
 static var journal: Array = []
 ## Probe clock: when >= 0, rate limits and the journal read this as "now" (ms)
 ## instead of Time.get_ticks_msec(), so a busy machine cannot flip a gap
 ## verdict.  Always -1 in the game.
 static var clock_ms := -1
-## Voices still sounding, oldest first: {cue, until (ms), player}.  A cue takes
+## Voices still sounding, oldest first: {cue, hook, group, until (ms), player}.  A cue takes
 ## its slot the moment it is granted and gives it back when its stream has run
 ## out (or its player is gone).  Players join the tree deferred, so counting
 ## the root's children missed every cue asked for in the same frame; headless
@@ -93,10 +94,14 @@ static func stream_for(cue: StringName) -> AudioStream:
 ## swaps pages under the transition); it frees itself when finished.  Returns
 ## null when muted, headless, rate-limited or over the voice cap.
 ## opts.hook names the SfxCues hook that asked (kept in the journal);
-## opts.gap_key picks whose spacing applies (default: the cue's own).
+## opts.gap_key picks whose spacing applies (default: the cue's own);
+## opts.group is a choke group: a cue granted in a group stops the older voices
+## of that group still ringing (a new ink-wipe bell cuts the one it replaced),
+## so a bell never rings over its own echo.
 static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -> AudioStreamPlayer:
 	var hook: StringName = StringName(opts.get("hook", &""))
 	var gap_key: StringName = StringName(opts.get("gap_key", cue))
+	var group: StringName = StringName(opts.get("group", &""))
 	var db := cue_db + volume_db
 	if not enabled:
 		return _refuse(cue, hook, db, "muted")
@@ -110,10 +115,13 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 	if now >= last and now - last < int(_MIN_GAP_MS.get(cue, 0)):  # last ahead of now: probe clock moved back
 		return _refuse(cue, hook, db, "gap")
 	_prune_voices(now)
+	if group != &"":
+		_choke(group)
 	if _voices.size() >= _MAX_VOICES:
 		return _refuse(cue, hook, db, "voices")
 	_last_ms[gap_key] = now
-	var voice := {"cue": cue, "until": now + int(ceil(stream.get_length() * 1000.0)), "player": null}
+	var voice := {"cue": cue, "hook": hook, "group": group,
+		"until": now + int(ceil(stream.get_length() * 1000.0)), "player": null}
 	_voices.append(voice)
 	_note(cue, hook, db, "")
 	if DisplayServer.get_name() == "headless":
@@ -137,6 +145,23 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 static func _refuse(cue: StringName, hook: StringName, db: float, why: String) -> AudioStreamPlayer:
 	_note(cue, hook, db, why)
 	return null
+
+
+## Stop the voices of `group` still ringing; each leaves a "cut" row.
+static func _choke(group: StringName) -> void:
+	var keep: Array = []
+	for v in _voices:
+		if StringName(v["group"]) != group:
+			keep.append(v)
+			continue
+		var p: Variant = v["player"]
+		if typeof(p) == TYPE_OBJECT and is_instance_valid(p):
+			var ap := p as AudioStreamPlayer
+			ap.autoplay = false  # may still be waiting for its deferred add_child
+			ap.stop()
+			ap.queue_free()
+		_note(v["cue"], v["hook"], 0.0, "cut")
+	_voices = keep
 
 
 ## Voices still holding a slot at `now`.
