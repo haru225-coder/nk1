@@ -76,6 +76,9 @@ RENAME = {
     },
 }
 SCAN_DIRS = ["data", "scripts", "scenes", "docs"]
+# 上屏文本所在目录：源字体本身没有的汉字，出现在这些目录（或分支补字）里才判红；只见于 docs / 额外目录的
+# （门禁记录、考据笔记里引了缺字原话）照列不判——不上屏，也补不进子集
+SCREEN_DIRS = ["data", "scripts", "scenes"]
 # Codex 线（Snow 另一条线）的考据与数据：其他美术/剧情线可能直接搬用其中人名地名，
 # 顺带收进子集（目录不存在就跳过，只多约十几个字）。
 DEFAULT_EXTRA = [
@@ -222,13 +225,20 @@ def is_han(c: str) -> bool:
     return 0x3400 <= o <= 0x9FFF or 0xF900 <= o <= 0xFAFF or o >= 0x20000
 
 
-def verify(src: pathlib.Path, repo: set, gitc: set, per_git: dict) -> int:
-    """逐字核对输出子集：正文字体须覆盖全部来源字符（源字体本身没有的单列）；马善政只核标题 / 印章用字。"""
+def counted(c: str) -> bool:
+    """缺字表计不计这个字：空白不计；U+1F000 起的 emoji / 符号走系统兜底不计，但 U+20000–3FFFF 的 CJK 扩展 B 以后汉字照计。
+    原先一刀切 ord < 0x1F000，扩展 B 区也剔了：喃字「𢄂」（U+22102）进了伙伴卡正文，--check / --verify 都没报（w54-base）。"""
+    o = ord(c)
+    return not c.isspace() and (o < 0x1F000 or 0x20000 <= o < 0x40000)
+
+
+def verify(src: pathlib.Path, repo: set, gitc: set, per_git: dict, screen: set) -> int:
+    """逐字核对输出子集：正文字体须覆盖全部来源字符（源字体本身没有的单列，其中上屏的汉字判红）；马善政只核标题 / 印章用字。"""
     rc = 0
     body = OUT / FONTS[0]
     sub_cmap = TTFont(str(body), lazy=True).getBestCmap()
     src_cmap = TTFont(str(src / FONTS[0]), lazy=True).getBestCmap()
-    need = {c for c in (repo | gitc) if not c.isspace() and ord(c) < 0x1F000}
+    need = {c for c in (repo | gitc) if counted(c)}
     lost = sorted(c for c in need if ord(c) in src_cmap and ord(c) not in sub_cmap)
     absent = sorted(c for c in need if ord(c) not in src_cmap)
     chart_need = set()
@@ -241,9 +251,13 @@ def verify(src: pathlib.Path, repo: set, gitc: set, per_git: dict) -> int:
     print(f"  子集漏字（源字体有、子集没有）：{len(lost)} {''.join(lost)}")
     if lost:
         rc = 1
+    absent_han = [c for c in absent if is_han(c)]
     print(f"  源字体本身没有：{len(absent)} {''.join(absent)}"
-          f"{'（其中汉字 ' + ''.join(c for c in absent if is_han(c)) + '）' if any(is_han(c) for c in absent) else '（无汉字）'}")
-    if any(is_han(c) for c in absent):
+          f"{'（其中汉字 ' + ''.join(absent_han) + '）' if absent_han else '（无汉字）'}")
+    off_screen = [c for c in absent_han if c not in screen]
+    if off_screen:
+        print(f"    其中只见于 docs / 额外目录、不上屏（照列不判）：{''.join(off_screen)}")
+    if len(off_screen) < len(absent_han):
         rc = 1
     ch_lost = sorted(c for c in chart_han if ord(c) not in sub_cmap)
     print(f"  海图繁体地名汉字在子集中缺：{len(ch_lost)} {''.join(ch_lost)}")
@@ -318,10 +332,11 @@ def main() -> int:
     notes = []
     repo = repo_chars(SCAN_DIRS + [str(p) for p in DEFAULT_EXTRA] + list(args.extra))
     gitc, per_git = git_chars(notes)
+    screen = repo_chars(SCREEN_DIRS) | gitc
     for n in notes:
         print("NOTE", n)
     if args.verify:
-        return verify(src, repo, gitc, per_git)
+        return verify(src, repo, gitc, per_git, screen)
     repo_only = len(repo)
     repo |= gitc
     wanted = gb2312_chars() | base_chars() | repo
@@ -335,16 +350,20 @@ def main() -> int:
             return 2
         cmap = TTFont(str(sp), lazy=True).getBestCmap()
         have = {c for c in wanted if ord(c) in cmap}
-        miss_repo = sorted(c for c in repo if ord(c) not in cmap and not c.isspace()
-                           and ord(c) < 0x1F000)  # emoji 走系统兜底，不计
+        miss_repo = sorted(c for c in repo if ord(c) not in cmap and counted(c))  # emoji 走系统兜底，不计
         print(f"\n[{name}] 源 {human(sp.stat().st_size)}，cmap {len(cmap)}，保留 {len(have)} 字")
         if miss_repo:
             print(f"  仓库文本中该字体缺字 {len(miss_repo)}：{''.join(miss_repo[:80])}")
-            miss_han = [c for c in miss_repo if 0x3400 <= ord(c) <= 0x9FFF or ord(c) >= 0x20000]
+            miss_han = [c for c in miss_repo if is_han(c)]
             if name == FONTS[0] and miss_han:
-                # 正文字体缺汉字要处理；符号/emoji 走系统兜底；书法字体缺字由主题 fallback 到文楷
-                print(f"  !! 正文字体缺汉字：{''.join(miss_han)}")
-                rc = 1
+                # 正文字体缺汉字要处理（源字体没有，子集补不进来：改用通行写法）；只见于 docs / 额外目录的不上屏，照列不判；
+                # 符号/emoji 走系统兜底；书法字体缺字由主题 fallback 到文楷
+                hard = [c for c in miss_han if c in screen]
+                if hard:
+                    print(f"  !! 正文字体缺汉字：{''.join(hard)}")
+                    rc = 1
+                if len(hard) < len(miss_han):
+                    print(f"  只见于 docs / 额外目录、不上屏（照列不判）：{''.join(c for c in miss_han if c not in screen)}")
         if args.check:
             continue
 
@@ -374,7 +393,7 @@ def main() -> int:
         os.replace(tmp, OUT / name)
         print(f"  输出 {OUT / name}：{human(sp.stat().st_size)} → {human((OUT / name).stat().st_size)}")
     if not args.check:
-        rc = max(rc, verify(src, repo, gitc, per_git))
+        rc = max(rc, verify(src, repo, gitc, per_git, screen))
     return rc
 
 
