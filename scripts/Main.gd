@@ -299,7 +299,7 @@ func _ready() -> void:
 	_dress_npc_sheet()
 	_mount_status_strip()
 	_lift_ledger()
-	_split_page_footer()
+	_split_page_footer(); _a11y_mount()  # lane w54-a11y：只用键盘走各页的小节点（文件尾）
 	($HBoxContainer/CenterArea as Control).gui_input.connect(_on_stage_click)
 	investigation_mode.gui_input.connect(_on_stage_click)
 	update_status_panel()
@@ -5326,3 +5326,17 @@ func _broker_today(port_id: String, fresh: PackedStringArray) -> PackedStringArr
 	_broker_hand_kept = fresh.duplicate()
 	_broker_hand_fleet = Fleet.ships
 	return fresh
+
+
+## 只用键盘走各页（lane w54-a11y）：一个挂在 Main 底下的小节点 scripts/ui/KeyNav.gd——浮层开着时焦点不走到暗幕底下、
+## 合上后焦点回到开浮层那颗钮上。_ready 里 _split_page_footer 行尾挂上；不画东西、不入存档
+const _KEY_NAV := preload("res://scripts/ui/KeyNav.gd")
+var _key_nav: Node = null
+
+
+func _a11y_mount() -> void:
+	var nav := _KEY_NAV.new()
+	nav.name = "KeyNav"
+	nav.main = self
+	add_child(nav)
+	_key_nav = nav
