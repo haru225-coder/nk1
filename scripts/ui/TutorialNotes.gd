@@ -1,5 +1,5 @@
-## 新手上手小笺（lane w54-tutorial）：开局头半小时——头一回进港页、进牙行、开海图、海上遇盗，以及头一回进市舶司或被蒲家记上一笔
-## 之后的那个港页——页边各出一张宣纸小笺，一两句讲清这一页怎么用。文案在 data/tutorial_notes.json；弹出、排队、已读借 CombatNotes 那一层
+## 新手上手小笺（lane w54-tutorial）：开局头半小时——头一回进港页、进牙行、开海图、海上遇盗，头一回进市舶司或被蒲家记上一笔
+## 之后的那个港页，头一回跑完一程靠港（没有自动存档，讲进度要自己记）——页边各出一张宣纸小笺，一两句讲清这一页怎么用。文案在 data/tutorial_notes.json；弹出、排队、已读借 CombatNotes 那一层
 ## （同一页里与海战小笺排一个队，一张一张出；已读旗 tutorial_note_<id>，随档走）。
 ##
 ## 谁看得到：本机航海日志里一卷存档都没有时新开的一局（同开场过场 Cinematics.want_opening 的口径）。头一回走到要出小笺的地方时定下来、
@@ -53,8 +53,14 @@ static func _state() -> Node:
 	return _node("GameState")
 
 
+## 探针注入：设成 true / false 时 any_save 照它答、不查盘（本机 user:// 里有没有存档由不得探针）；平时为 null
+static var save_override = null
+
+
 ## 本机航海日志里有没有一卷存档（同 Cinematics._any_save：正本或副抄在就算）
 static func any_save() -> bool:
+	if save_override is bool:
+		return save_override
 	var sl := _node("SaveLoad")
 	if sl == null or not sl.has_method("has_save"):
 		return false

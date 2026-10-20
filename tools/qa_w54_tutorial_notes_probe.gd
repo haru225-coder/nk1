@@ -2,7 +2,7 @@ extends SceneTree
 ## lane w54-tutorial 新手上手小笺专项探针（headless，经门锁跑）：
 ##   godot --headless --path . -s res://tools/qa_w54_tutorial_notes_probe.gd
 ## 一段钉一条、回退即红：
-##   一、表与文案：data/tutorial_notes.json 五条（靠港 / 货引 / 牙行 / 看风 / 遇盗）齐、不多不少，与海战小笺不重名；小题两到五字、
+##   一、表与文案：data/tutorial_notes.json 六条（靠港 / 货引 / 牙行 / 看风 / 遇盗 / 航海日志）齐、不多不少，与海战小笺不重名；小题两到五字、
 ##       正文二十到八十字、句号收尾、不夹半角标点与叹号、括号配对、不写「你」，都挂开关 tutorial_notes（表里有、默认开）；
 ##       小笺层认得这一本（条目、已读旗前缀 tutorial_note_），海战那本照旧（table() 只是 combat_notes.json、旗前缀 combat_note_）；
 ##       正文里的数对得上玩法：买路财一成五、至少一百，「候风再发」候三日。
@@ -10,7 +10,8 @@ extends SceneTree
 ##       定下的旗与已读旗过 SaveLoad 旗标清洗与 JSON 来回仍在；开关 tutorial_notes 关、讲解小笺总开关 combat_notes 关都不出；看过的不再出。
 ##   三、港页与牙行（真起 Main）：进寻常港页挂候场，页面静下来才出「靠港」、记已读；换页题签盖着时不出、揭开就出；
 ##       蒲家记过一笔再出「货引」、排在后面；没轮到就离了港页的撤下、不记已读；进牙行出「牙行」，没轮到就出门的撤下；终局港页不出；
-##       头一回进市舶司也出「货引」（与被蒲家记上一笔后的港页先到哪处在哪处出），没轮到就出门的撤下，看过了港页不再出。
+##       头一回进市舶司也出「货引」（与被蒲家记上一笔后的港页先到哪处在哪处出），没轮到就出门的撤下，看过了港页不再出；
+##       到过两港、本机还没有存档的港页出「航海日志」，只到过一港、或已记过一卷的不出。
 ##   四、海图与遇盗（真按「看风」换上海图）：开海图出「看风」；海上遇盗先让路（「看风」收起）再出「遇盗」；选了「扬帆逃走」面板收起，
 ##       「遇盗」当场收起；没轮到就「迎战」的撤下、不记已读、海图那一层不留它（不压到海战小笺上）；没轮到就发了舶的「看风」撤下。
 ##   五、不打断老玩家：tutorial_off 的一局，港页、牙行、海图、遇盗都不挂候场、不排、不写已读旗。
@@ -24,8 +25,8 @@ const N := preload("res://scripts/ui/CombatNotes.gd")
 const T := preload("res://scripts/ui/TutorialNotes.gd")
 const CHART_PATH := "res://scenes/SeaChart.tscn"
 
-const EXPECT_IDS := ["port", "permit", "market", "chart", "pirate"]
-const EXPECT_TITLES := {"port": "靠港", "permit": "货引", "market": "牙行", "chart": "看风", "pirate": "遇盗"}
+const EXPECT_IDS := ["port", "permit", "market", "chart", "pirate", "logbook"]
+const EXPECT_TITLES := {"port": "靠港", "permit": "货引", "market": "牙行", "chart": "看风", "pirate": "遇盗", "logbook": "航海日志"}
 
 var _gs: Node = null
 var _gm: Node = null
@@ -376,6 +377,21 @@ func _sec_shore() -> void:
 	_check(not T.want("permit") and _seen(main).count("permit") <= 1 and not T.offer(main, "permit"),
 		"看过了：蒲家记上一笔后的港页不再排「货引」（正出着的那张照出完：%s）" % [_seen(main)])
 	await _drop(main)
+
+	# 跑完一程靠港（到过两港）、本机还没有存档：出「航海日志」；只到过一港、或已记过一卷的不出
+	for row in [[["quanzhou", "xinghua"], false, true], [["quanzhou"], false, false], [["quanzhou", "xinghua"], true, false]]:
+		_opening([T.FLAG_ON, N.flag_of("port")])
+		_gs.set("visited_ports", row[0])
+		T.save_override = row[1]
+		main = await _new_main()
+		var shows := await _until_current(main, "logbook", T.SETTLE_S + 1.0)
+		var tag := "到过 %d 港、本机%s存档" % [(row[0] as Array).size(), "有" if row[1] else "没有"]
+		if row[2]:
+			_check(shows and _read("logbook"), "%s：出「航海日志」、记已读" % tag)
+		else:
+			_check(not shows and not _read("logbook") and not _waiters(main).has("logbook"), "%s：不出「航海日志」（%s）" % [tag, _seen(main)])
+		await _drop(main)
+	T.save_override = null
 
 	# 终局港页不出
 	_opening([T.FLAG_ON])

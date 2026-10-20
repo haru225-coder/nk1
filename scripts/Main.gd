@@ -5423,14 +5423,14 @@ func _late_text(text: String) -> String:
 
 
 # ══ 新手上手小笺（lane w54-tutorial）══════════════════════
-## 开局头一回进港页、进牙行、进市舶司，头一回被蒲家记上一笔之后的港页，页边各出一张旁注（scripts/ui/TutorialNotes.gd：只给本机
+## 开局头一回进港页、进牙行、进市舶司，头一回被蒲家记上一笔之后的港页、头一回跑完一程靠港，页边各出一张旁注（scripts/ui/TutorialNotes.gd：只给本机
 ## 没有存档时新开的一局；开关 tutorial_notes）。上面只留三处一行的接头：_refresh_shore 末行、_setup_market 末行、_setup_dynamic_scene
 ## 市舶司那一支；新代码挂在这里，拍板清单引的行号不挪。海图与海上遇盗那两张挂在 SeaChart 文件尾
 const _TUTORIAL := preload("res://scripts/ui/TutorialNotes.gd")
 
 
-## 寻常港页排好：出「靠港」；蒲家已经记上一笔（无引塞钱出过港、夹带违禁过关）再出「货引」。守城、终局页不出。
-## 离了港页（进门、换页）还没轮到的撤下，下回进港页再出
+## 寻常港页排好：出「靠港」；蒲家已经记上一笔（无引塞钱出过港、夹带违禁过关）再出「货引」；头一回跑完一程靠港（到过两港了）、
+## 本机还一卷没记过，再出「航海日志」（没有自动存档）。守城、终局页不出。离了港页（进门、换页）还没轮到的撤下，下回进港页再出
 func _tutorial_shore() -> void:
 	if _shore_mode != "port":
 		return
@@ -5438,6 +5438,8 @@ func _tutorial_shore() -> void:
 	_TUTORIAL.offer(self, "port", on_shore)
 	if GameState.pu_attention > 0:
 		_TUTORIAL.offer(self, "permit", on_shore)
+	if GameState.visited_ports.size() >= 2 and not _TUTORIAL.any_save():
+		_TUTORIAL.offer(self, "logbook", on_shore)
 
 
 ## 牙行开着、柜上三样排好（上了门闸、无牙行的页走不到这里）：出「牙行」；离了这一页还没轮到的撤下
