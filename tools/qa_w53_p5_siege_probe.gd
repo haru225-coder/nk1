@@ -460,10 +460,17 @@ func _sec_relief() -> void:
 	var wins := 0
 	var losses := 0
 	var first_bad := ""
+	# 60 个种子：每种子重置账目后只把城防记录开回来（gs.siege_begin 与 load_scene → _siege_active 同一条，
+	# 给的是同一组缺省 300 / 120 / 60 / 55）。原先每种子重进一次 xinghua，一次约 0.46 s 全在 rebuild 港页，
+	# 劫粮道这一节 60 次就 28 s——本节的断言只看账（骰子、日子、水粮、士气、一围一回），不看港页，
+	# 页面在循环前开一次就够。改前改后 60 个种子得手 / 失手 21 / 39、不符 0，逐格相同。
+	_stage_siege(1276, 11, 3)
+	_fleet(0, 75, 3, 400)
+	_main.load_scene("xinghua")
 	for s in 60:
 		_stage_siege(1276, 11, 3)
 		_fleet(0, 75, 3, 400)
-		_main.load_scene("xinghua")
+		gs.siege_begin()
 		d0 = cal.absolute_day()
 		var m0: int = gs.siege_get("morale")
 		var power: float = SiegeMelee.raid_power(fleet.total_crew(), fleet.call("captain_power"), fleet.call("morale_factor"))
