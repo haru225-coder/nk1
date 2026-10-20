@@ -474,3 +474,10 @@ func _skip_void_contract() -> Dictionary:
 	GameState.contract = {}
 	GameState.add_ledger_note("跳年委办作罢")
 	return c
+
+
+# ── 出港验引那句（lane w54-tutorial）──────────────────
+
+## 港页「看风」过了验引才换海图（Main._on_set_sail）：验引那一句（无引塞钱强行出港、凭引放行、补抽解）当帧随港页一起换掉，
+## Main 放行那一下把它交到这里，海图 _ready 记进船况札记后清空（SeaChart._log_departure）。会话内传话，不进存档
+var depart_note := ""

@@ -108,7 +108,7 @@ func _ready() -> void:
 	map.show_ship_at_port(origin_port)
 	_refresh_hand()
 	_refresh_status()
-	_log("自 %s 起锚。%s。" % [GameManager.get_port_name(origin_port), Calendar.get_monsoon_desc()])
+	_log_departure()
 	# 首帧取景要等视口有尺寸
 	await get_tree().process_frame
 	_frame_home(0.0)
@@ -2649,3 +2649,19 @@ func _shortcut_input(event: InputEvent) -> void:
 	elif k.keycode == KEY_C:
 		get_viewport().set_input_as_handled()
 		_toggle_condition()
+
+
+# ── 出港验引那句（lane w54-tutorial）──────────────────
+## 港页「看风」过了验引当帧就换海图（Main._on_set_sail），验引那一句原先记在港页记事栏、随港页一起换掉：新开一局头一日市舶司
+## 不在三扇门里，头一回出海多半无引塞钱、蒲家留意涨二十，屏上一个字也没有，塞到第四回整舱充公才头一回见到验引的话。
+## Main 放行时把那句交给 GameManager.depart_note，这里先记它、再记起锚那句（札记照先后，新的在上），顶匾第二行先报验引那句；
+## 读完即清，不留到下一回开海图
+func _log_departure() -> void:
+	var note := str(GameManager.depart_note)
+	GameManager.depart_note = ""
+	if note != "":
+		_log(note)
+	_log("自 %s 起锚。%s。" % [GameManager.get_port_name(origin_port), Calendar.get_monsoon_desc()])
+	if note != "":
+		_latest_note = _plain_note(note)
+		_refresh_strip()
