@@ -846,7 +846,8 @@ func _merchant_event(from_id: String) -> Dictionary:
 		"rumor_rate": float(rumor.get("rate", 1.0)),
 	}
 	var rumor_line := _rumor_sentence(rumor)
-	var held: Array = Fleet.cargo.keys()
+	# 对方只收货：tradable=false 的账物（序章的唐房寄物 / 硫黄旧账 / 货单押字，成本 0）不进挑选——原先从全舱随手挑，开价「每件 1 钱」把寄物收走（lane w54-econ）
+	var held: Array = Fleet.cargo.keys().filter(func(g) -> bool: return bool(GameManager.get_good_by_id(str(g)).get("tradable", false)))
 	var roll := randf()
 	if roll < 0.50 and not held.is_empty():
 		var gid: String = held[randi() % held.size()]
