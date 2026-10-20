@@ -931,8 +931,8 @@ func _rumor_sentence(rumor: Dictionary) -> String:
 
 
 func _shoal_event() -> Dictionary:
-	var hull := SHOAL_HULL * float(maxi(1, Fleet.ships.size())) * Fleet.armor_damage_reduction()
-	Fleet.damage_fleet(hull)
+	# 傍岸一队船挨着走，每艘各擦一回、各吃 SHOAL_HULL（同风涛走 damage_each_ship；札记写实扣之和）。原先乘船数全压给旗舰——三船队旗舰一擦 15、护航不伤（lane w54-voyage）
+	var hull := Fleet.damage_each_ship(SHOAL_HULL * Fleet.armor_damage_reduction())
 	Fleet.morale = maxi(0, Fleet.morale - 3)
 	return {
 		"kind": EventKind.SHOAL,
