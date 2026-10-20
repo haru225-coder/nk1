@@ -236,6 +236,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_copy_probe.gd",  # lane w54-copy 文案一致性专项探针（门牌悬停提示与门牌同字等，一段钉一条）
 	"res://tools/qa_w54_econ_peak_probe.gd",  # lane w54-econ 章节本钱按现银减欠款记专项探针（赊来的钱不顶高资金峰值）
 	"res://tools/qa_w54_econ_permit_probe.gd",  # lane w54-econ 货引按出港时的舱货抽解专项探针（空舱请领再装货补足、委办留货不抽）
+	"res://tools/probe_boot.gd",  # lane w54-gates 探针摆场共用小件（autoload 取件 / 压序章过场 / 起 Main）
 	"res://tools/qa_w54_gates_zero_case_guard_probe.gd",  # lane w54-gates 探针「一格断言都没跑过也照印全部通过」守卫探针（静态读 qa_w53_4_story_probe，回退即红）
 	"res://tools/qa_w54_hunt_landing_offer_probe.gd",  # lane w54-hunt 剿寨那一行挂卡判据探针（挂卡读到的是这一仗的来处与所在港）
 	"res://tools/qa_w54_voyage_shoal_probe.gd",  # lane w54-voyage 傍岸擦浅滩船体伤每艘各吃一份探针（修乘船数压给旗舰）

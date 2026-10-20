@@ -10,6 +10,7 @@ extends SceneTree
 ## 末行 W54_TAVERN_HIRING cases=N fails=M；fails>0 退 1。运行期脚本错即红（tools/script_err_tally.gd）。
 
 const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+const ProbeBoot := preload("res://tools/probe_boot.gd")
 
 const NOTE := "已雇之职不再列名。"
 const EMPTY := "本港眼下无人可雇"
@@ -49,21 +50,16 @@ func _run_guarded() -> void:
 
 
 func _run() -> void:
-	_gs = root.get_node_or_null("GameState")
-	_cal = root.get_node_or_null("Calendar")
-	_crew = root.get_node_or_null("Crew")
-	if _gs == null or _cal == null or _crew == null:
+	var a := ProbeBoot.autoloads(root, ["GameState", "Calendar", "Crew"])
+	if a.is_empty():
 		_expect(false, "autoload GameState / Calendar / Crew 都在")
 		_report()
 		return
-	var cine: GDScript = load("res://scripts/cutscene/Cinematics.gd") as GDScript
-	if cine != null:
-		cine.set("auto_opening", false)
-		cine.set("opening_seen", true)
-	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
-	root.add_child(_main)
-	for i in 10:
-		await process_frame
+	_gs = a["GameState"]
+	_cal = a["Calendar"]
+	_crew = a["Crew"]
+	ProbeBoot.quiet_opening()
+	_main = await ProbeBoot.main_scene(root, Vector2i.ZERO, 10)
 	await _a_no_candidates_here()
 	await _b_note_kept()
 	_report()
