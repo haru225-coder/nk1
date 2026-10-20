@@ -7,9 +7,15 @@ extends SceneTree
 ## 数据对账；退了这格（如复原「广州、萨摩 已可抵达」的旧口径同时漏掉神州）即红。
 ## 除此之外两格：must_visit id 落在 ports.json、其出场名与 ports.json 一致；visited_count ≤ grammable。
 var fails := 0
+var cases := 0
+
+
+## 判词末行 `QA_W53_4_STORY cases=N fails=M`；N==0 也算红（见 _init 末节：闸没真跑过不能报绿）
+const TAG := "QA_W53_4_STORY"
 
 
 func _check(cond: bool, msg: String) -> void:
+	cases += 1
 	if cond:
 		print("  ✓ " + msg)
 	else:
@@ -20,6 +26,12 @@ func _check(cond: bool, msg: String) -> void:
 func _init() -> void:
 	var chapters: Dictionary = _load("res://data/chapters.json")
 	var ports: Dictionary = _load("res://data/ports.json")
+	# 数据档读不进来 / 读成空表时，下面三节每一格都在空表上打转、一格 _check 都过不到，
+	# 末行照旧印「全部通过」、退 0——闸的红绿全押在「数据在」这件没人判过的事上。
+	# 先把这一件判掉（记进 cases / fails，照常往下走：真·坏档要在同一行里点名，不是靠退 1 猜）。
+	_check(chapters.get("chapters", []).size() > 0 and ports.get("ports", []).size() > 0,
+		"chapters.json 与 ports.json 都读得出且非空（chapters=%d / ports=%d）" % [
+			chapters.get("chapters", []).size(), ports.get("ports", []).size()])
 	var port_by_name := {}
 	var port_name := {}
 	for p in ports.get("ports", []):
@@ -89,11 +101,10 @@ func _init() -> void:
 				cid, cid + 1, extra, miss,
 			])
 
-	if fails > 0:
-		quit(1)
-		return
-	print("qa_w53_4_story.gd：全部通过")
-	quit(0)
+	# 没有一格断言真跑过 = 闸空转，不许报绿（数据档被清空 / 结构改名都会走到这里）
+	_check(cases > 0, "至少跑过一格断言（cases=%d）" % cases)
+	print("%s cases=%d fails=%d" % [TAG, cases, fails])
+	quit(1 if fails > 0 else 0)
 
 
 func _load(p: String) -> Dictionary:
