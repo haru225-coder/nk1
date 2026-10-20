@@ -131,7 +131,7 @@ func _write_verified(tmp: String, text: String) -> bool:
 
 
 ## 保存/读档的剧情关键字段要经过同一层清洗。
-## 旧档可能来自早期原型或手改 JSON：旗标必须是 true，发现录必须是去重字符串。
+## 旧档可能来自早期原型或手改 JSON：旗标必须是 true，发现录、面识与新闻已投录必须是去重字符串（新闻录混进非字串，酒馆新闻墙取条即 SCRIPT ERROR）。
 ## discoveries_reported 胜过 discoveries_found，避免坏档重复领赏。
 func _harden_state(raw: Dictionary) -> Dictionary:
 	var state: Dictionary = raw.duplicate(true)
@@ -146,7 +146,7 @@ func _harden_state(raw: Dictionary) -> Dictionary:
 			found.append(did)
 	state["discoveries_found"] = found
 	state["discoveries_reported"] = reported
-	state["met_ids"] = _normalise_ids(state.get("met_ids", []))
+	for key in ["met_ids", "news_seen"]: state[key] = _normalise_ids(state.get(key, []))
 	return state
 
 

@@ -144,6 +144,11 @@ func _tolerated_cases() -> Array:
 			var d := _patched(["state", k], bad)
 			(d["state"]["visited_ports"] as Array).append("tungking")
 			out.append(["state.%s 非数组（%s）" % [k, JSON.stringify(bad)], d, stale_ok])
+	# 新闻已投录混进非字串：酒馆新闻墙（GameState.recent_news）拿条目去 GameManager.get_news_by_id（形参 String），一进酒馆即 SCRIPT ERROR。
+	# 与 met_ids 同口径清洗：只留字串、去重，认得的那一枚照留
+	var news_ok := func() -> Array:
+		return [gs.news_seen == ["n_1256_03_taixue"], "读进来新闻已投录只剩那一枚字串", JSON.stringify(gs.news_seen)]
+	out.append(["state.news_seen 混进非字串", _patched(["state", "news_seen"], [3, null, "n_1256_03_taixue", {}, ["x"], true, "n_1256_03_taixue"]), news_ok])
 	return out
 
 
