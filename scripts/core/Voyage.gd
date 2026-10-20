@@ -846,12 +846,13 @@ func _merchant_event(from_id: String) -> Dictionary:
 		"rumor_rate": float(rumor.get("rate", 1.0)),
 	}
 	var rumor_line := _rumor_sentence(rumor)
-	# 对方只收货：tradable=false 的账物（序章的唐房寄物 / 硫黄旧账 / 货单押字，成本 0）不进挑选——原先从全舱随手挑，开价「每件 1 钱」把寄物收走（lane w54-econ）
-	var held: Array = Fleet.cargo.keys().filter(func(g) -> bool: return bool(GameManager.get_good_by_id(str(g)).get("tradable", false)))
+	# 对方只收货：tradable=false 的账物（序章的唐房寄物 / 硫黄旧账 / 货单押字，成本 0）不进挑选——原先从全舱随手挑，开价「每件 1 钱」把寄物收走；
+	# 在身委办要交的那几件也不收（同牙行 GameState.contract_kept「委办货不上秤，要卖先毁约」，海上毁不了约）——原先收走了就交不齐、到期挨罚（lane w54-econ）
+	var held: Array = Fleet.cargo.keys().filter(func(g) -> bool: return bool(GameManager.get_good_by_id(str(g)).get("tradable", false)) and Fleet.cargo_qty(str(g)) > GameState.contract_kept(str(g)))
 	var roll := randf()
 	if roll < 0.50 and not held.is_empty():
 		var gid: String = held[randi() % held.size()]
-		var have := Fleet.cargo_qty(gid)
+		var have := Fleet.cargo_qty(gid) - GameState.contract_kept(gid)
 		var qty := mini(have, randi_range(1, 4))
 		if qty > 0:
 			var jitter := randf_range(SEA_SELL_JITTER_MIN, SEA_SELL_JITTER_MAX)

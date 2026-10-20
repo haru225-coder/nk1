@@ -155,6 +155,7 @@ EXEMPT = [
     ("qa_w54_polish_notes_probe.gd", "lane-w54-polish", "w54 讲解小笺专项探针（小笺表条目与文案规矩、一到六期开关键逐个清点到一张、排队一张张出与停满 / 点掉收起、已读旗随档、总开关与各自开关关态、真起海战开场排序与九样头一回露面、poll 不碰随机流、小笺摆位让敌情列与小地图、海图收战 / 战后小卡 / 封港 / 闯封锁与守城页 / 外援 / 牙行战时价各挂点；一段钉一条、回退即红），headless 可跑，随本 lane 落地验过留档"),
     ("qa_w54_story_enter_probe.gd", "lane-w54-story", "终局抉择页与剧情幕岔路回车不替人按专项探针（崖山「把粮与硫黄交上去」/ 辞呈三条路 / 泉州征船名册三枚，及 scenes.json 可见真选项两条以上的幕逐幕挂 no_enter：真按一次回车再直调一次 _activate_first_choice，断终局不落、日子不走、旗 / 钱 / 倾向不动、船与水粮不动，反向基点钮照旧作数、单路幕回车照旧往下走，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_tavern_ashore_probe.gd", "lane-w54-tavern", "酒馆与同伴专项探针：人在海上下不了船（史实辞船月初船在海上时人仍在船把舵、不发【辞船】不扣当月俸，真走 SeaChart._arrive 靠岸即下船、通告跟在抵港句后，泊港照旧月初走；一段钉一条、回退即红），headless 秒级，随本 lane 落地验过留档"),
+    ("qa_w54_econ_sea_sell_probe.gd", "lane-w54-econ", "海上相逢收货只挑 tradable 的舱货、不收在身委办要交的那几件专项探针（只装账物 400 回不开价收、账物与货混装回回收货、只装账物与空舱同种子逐回一字不差、委办货不开价且多出几件至多收几件，回退即红），headless 秒级，动 Voyage 海上买卖、goods.json tradable 或委办留货时加跑"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),

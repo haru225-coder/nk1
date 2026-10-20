@@ -7,6 +7,8 @@ extends SceneTree
 ##   二、三样账物 + 青白瓷 5 件：开价收的回回是青白瓷（改前约四分之三挑到账物），件数 1–4、不超过舱里，单价落在 sea_sell_unit 的
 ##       成本 × 浮动区间里且不过最好消费地卖价九二折；确有开价（防空转）。
 ##   三、只装账物与空舱同种子逐回比：给的路数、货、件数、价、正文一字不差——账物不占「收货」那一支。
+##   四、在身委办要交的货（GameState.contract_kept，牙行「委办货不上秤，要卖先毁约」；海上毁不了约）：舱里恰是委办那 16 件，
+##       400 回不开价收、与空舱同种子逐回一字不差；多出 2 件，开价至多收 2 件（改前照收 1–4 件，交货时就短了）。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_econ_sea_sell_probe.gd（经门锁跑）
 ## 输出末行 W54_ECON_SEA_SELL_PROBE cases=N fails=M；M>0 时 exit 1。
 
@@ -23,6 +25,7 @@ const TRADE_COST := 40.0
 var voyage: Node
 var fleet: Node
 var gm: Node
+var gs: Node
 var cases := 0
 var fails := 0
 var _tally: ScriptErrTally
@@ -48,8 +51,9 @@ func _run() -> void:
 	voyage = root.get_node_or_null("Voyage")
 	fleet = root.get_node_or_null("Fleet")
 	gm = root.get_node_or_null("GameManager")
-	if voyage == null or fleet == null or gm == null:
-		_expect(false, "autoload Voyage / Fleet / GameManager 都在")
+	gs = root.get_node_or_null("GameState")
+	if voyage == null or fleet == null or gm == null or gs == null:
+		_expect(false, "autoload Voyage / Fleet / GameManager / GameState 都在")
 		_report()
 		return
 	var saved: Dictionary = fleet.to_dict().duplicate(true)
@@ -62,6 +66,7 @@ func _run() -> void:
 	_ledger_only()
 	_ledger_and_goods()
 	_same_as_empty()
+	_contract_kept()
 
 	fleet.from_dict(saved)
 	_report()
@@ -170,3 +175,47 @@ func _same_as_empty() -> void:
 	if first >= 0:
 		note = "，头一处第 %d 回：空舱「%s」、账物「%s」" % [first + 1, str(empty[first].get("offer", "")), str(ledgers[first].get("offer", ""))]
 	_expect(diff == 0, "三、只装账物与空舱同种子 %d 回逐回一字不差（不同 %d 回%s）" % [ROUNDS, diff, note])
+
+
+const CONTRACT_GOOD := "fujian_porcelain"
+const CONTRACT_QTY := 16
+
+
+func _contract_kept() -> void:
+	var saved_contract: Dictionary = (gs.contract as Dictionary).duplicate(true)
+	gs.contract = {
+		"good_id": CONTRACT_GOOD, "qty": CONTRACT_QTY, "remaining": CONTRACT_QTY, "dest": "penghu", "from": "quanzhou",
+		"purse": 1600, "unit_purse": 100.0, "paid": 0, "due_day": 999999, "deadline_days": 8, "voyage_days": 5, "offer_month": 0,
+	}
+	fleet.clear_cargo()
+	fleet.add_cargo(CONTRACT_GOOD, CONTRACT_QTY, 40.0, 0)
+	_expect(int(gs.contract_kept(CONTRACT_GOOD)) == CONTRACT_QTY,
+		"四、前提：在身委办要%s %d 件，舱里恰 %d 件，全数留着交货（contract_kept = %d）" % [
+			gm.get_good_name(CONTRACT_GOOD), CONTRACT_QTY, CONTRACT_QTY, int(gs.contract_kept(CONTRACT_GOOD))])
+	var kept_bids := 0
+	for ev in _roll_events():
+		if str(ev.get("offer", "")) == "sell" and str(ev.get("good_id", "")) == CONTRACT_GOOD:
+			kept_bids += 1
+	_expect(kept_bids == 0, "四、舱里只有委办要交的货：%d 回没有一回开价收它（实有 %d 回）" % [ROUNDS, kept_bids])
+	var kept_events := _roll_events()
+	fleet.clear_cargo()
+	var empty := _roll_events()
+	var diff := 0
+	for i in ROUNDS:
+		if JSON.stringify(empty[i]) != JSON.stringify(kept_events[i]):
+			diff += 1
+	_expect(diff == 0, "四、只装委办要交的货与空舱同种子 %d 回逐回一字不差（不同 %d 回）" % [ROUNDS, diff])
+	fleet.add_cargo(CONTRACT_GOOD, CONTRACT_QTY + 2, 40.0, 0)
+	var bids := 0
+	var over := 0
+	var most := 0
+	for ev in _roll_events():
+		if str(ev.get("offer", "")) != "sell" or str(ev.get("good_id", "")) != CONTRACT_GOOD:
+			continue
+		bids += 1
+		most = maxi(most, int(ev.get("qty", 0)))
+		if int(ev.get("qty", 0)) > 2:
+			over += 1
+	_expect(bids > 0 and over == 0,
+		"四、委办之外多出 2 件：%d 回开价收它，件数至多 2（最多开 %d 件，超出 %d 回）" % [bids, most, over])
+	gs.contract = saved_contract
