@@ -267,6 +267,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_audio_own_fire_probe.gd",  # lane w54-audio 自家齐射不被别船炮声吞掉专项探针（开炮节流按谁开的各认一把锁）
 	"res://tools/qa_w54_audio_voices_probe.gd",  # lane w54-audio 同一帧连要几声声部上限照样作数专项探针（放行即占声部、按声长让出）
 	"res://tools/qa_w54_audio_bell_probe.gd",  # lane w54-audio 墨幕套墨幕不叠两声磬专项探针（收声组：同组新声收旧声）
+	"res://tools/qa_w54_gates_zero_case_guard_probe.gd",  # lane w54-gates 零案例守卫探针（主控补登记）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
