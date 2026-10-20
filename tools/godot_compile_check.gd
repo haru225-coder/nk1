@@ -289,6 +289,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_audio_landing_probe.gd",  # lane w54-audio 登岸剿寨补挂的声专项探针（得手 / 失手鼓加磬）
 	"res://tools/qa_w54_audio_cutscene_probe.gd",  # lane w54-audio 过场补挂的声专项探针（朱印落纸 / 章节卡开卷）
 	"res://tools/qa_w54_a11y_focus_keep_probe.gd",  # lane w54-a11y 页面重排后焦点不丢专项探针（买 1 / 卖 1 / 再候一日 / 歇 1 日，换页不落、鼠标不还）
+	"res://tools/qa_w54_a11y_focus_ring_probe.gd",  # lane w54-a11y 焦点看得见专项探针（港页与九处设施页 Tab 一圈逐站、岸门 / 未开的门 / 不在柜上货名）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；

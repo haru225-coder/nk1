@@ -1317,7 +1317,7 @@ func _setup_market(port_id: String) -> void:
 		shut_btn.add_theme_stylebox_override("normal", shut_box)
 		shut_btn.add_theme_stylebox_override("hover", shut_box)
 		shut_btn.add_theme_stylebox_override("pressed", shut_box)
-		shut_btn.add_theme_stylebox_override("focus", shut_box)
+		shut_btn.add_theme_stylebox_override("focus", UiTheme.theme().get_stylebox("focus", "Button"))  # lane w54-a11y：焦点框原同 shut_box（叠一层等于没画），Tab 停在这排看不出
 		shut_btn.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
 		shut_btn.add_theme_color_override("font_hover_color", UiTheme.TEXT_DIM)
 		shut.add_child(shut_btn)
@@ -2818,7 +2818,7 @@ func _make_shore_door(fac: Dictionary, pinned_yard: bool) -> Control:
 	btn.add_theme_stylebox_override("normal", empty)
 	btn.add_theme_stylebox_override("hover", empty)
 	btn.add_theme_stylebox_override("pressed", empty)
-	btn.add_theme_stylebox_override("focus", empty)
+	btn.add_theme_stylebox_override("focus", UiTheme.theme().get_stylebox("focus", "Button"))  # lane w54-a11y：原是空框，Tab 落在门上看不出（鼠标点出的焦点引擎不画）
 	btn.pressed.connect(_on_facility_pressed.bind(fac))
 	btn.mouse_entered.connect(func(): card.add_theme_stylebox_override("panel", UiTheme.shore_door_hover()))
 	btn.mouse_exited.connect(func(): card.add_theme_stylebox_override("panel", UiTheme.shore_door()))
@@ -2898,7 +2898,7 @@ func _make_shore_shut(fac: Dictionary) -> Button:
 	btn.add_theme_stylebox_override("normal", shut_box)
 	btn.add_theme_stylebox_override("hover", shut_box)
 	btn.add_theme_stylebox_override("pressed", shut_box)
-	btn.add_theme_stylebox_override("focus", shut_box)
+	btn.add_theme_stylebox_override("focus", UiTheme.theme().get_stylebox("focus", "Button"))  # lane w54-a11y：焦点框原同 shut_box，Tab 停在未开的门上看不出
 	btn.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
 	btn.add_theme_color_override("font_hover_color", UiTheme.TEXT_DIM)
 	btn.add_theme_color_override("font_pressed_color", UiTheme.TEXT_DIM)
