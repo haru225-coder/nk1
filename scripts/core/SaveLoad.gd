@@ -707,7 +707,8 @@ func audit_stale_refs(data: Dictionary) -> Dictionary:
 	# 勘见：未报与已领两录，去重后当众名一枚。
 	var discovery := {"count": 0, "examples": [], "sample": ""}
 	for key in DISCOVERY_LIST_KEYS:
-		for did in state.get(key, []):
+		# 与读档清洗同口径（_harden_state）：两录给成非数组（null / true …）体检放行、读进来收成空录，拿原值遍历即读档半途 SCRIPT ERROR、勾稽整段落空
+		for did in _normalise_ids(state.get(key, [])):
 			_flag_generic(discovery, str(did), GameManager.get_discovery_by_id(str(did)).is_empty())
 	if discovery["count"] > 0:
 		discovery["sample"] = _generic_sample_name(discovery, "discovery")

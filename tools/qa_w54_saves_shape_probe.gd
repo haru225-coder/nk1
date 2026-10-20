@@ -134,6 +134,16 @@ func _tolerated_cases() -> Array:
 	var bare := _good.duplicate(true)
 	(bare["fleet"]["ships"][0] as Dictionary).erase("max_durability")
 	out.append(["fleet.ships 船缺耐久上限", bare, hull_ok])
+	# 勘见两录给成非数组（null / true）：读档清洗（_harden_state）收成空录，本就照读；读档时的旧卷勾稽（audit_stale_refs）原先拿没清洗的
+	# 原值去遍历——读档半途 SCRIPT ERROR、勾稽整段落空，到访簿里那枚已删港名（tungking）就不出那一声
+	var stale_ok := func() -> Array:
+		return [(sl.last_stale() as Dictionary).has("port"), "读档时旧卷勾稽照报到访簿里的已删港名",
+			"found=%s reported=%s stale=%s" % [JSON.stringify(gs.discoveries_found), JSON.stringify(gs.discoveries_reported), JSON.stringify(sl.last_stale())]]
+	for k in ["discoveries_found", "discoveries_reported"]:
+		for bad in [null, true]:
+			var d := _patched(["state", k], bad)
+			(d["state"]["visited_ports"] as Array).append("tungking")
+			out.append(["state.%s 非数组（%s）" % [k, JSON.stringify(bad)], d, stale_ok])
 	return out
 
 
