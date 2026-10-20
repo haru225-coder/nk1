@@ -27,6 +27,8 @@ var _gm: Node = null
 var _gs: Node = null
 var _rec: Array = []
 var _seed := 5480
+## 探针钟（AudioHooks.clock_ms）：每量一样往后拨十秒，上一样的声放完、声部空出来
+var _clock := 3_000_000
 
 
 func _check(ok: bool, msg: String) -> void:
@@ -74,7 +76,15 @@ func _run() -> void:
 	print("== 四、我方溃逃没跑掉")
 	await _sec_rout()
 	_Switches.reset()
+	_AUDIO.clock_ms = -1
 	_report()
+
+
+## 拨钟、清账：下面这一下要的声单独记
+func _fresh() -> void:
+	_clock += 10_000
+	_AUDIO.clock_ms = _clock
+	_AUDIO.journal.clear()
 
 
 func _sec_pick() -> void:
@@ -194,7 +204,7 @@ func _sec_caught() -> void:
 			break
 		s += 1
 	seed(s)
-	_AUDIO.journal.clear()
+	_fresh()
 	_press_b(wm)
 	for _i in 4:
 		await process_frame
@@ -219,7 +229,7 @@ func _sec_shook() -> void:
 	var foe := _enemy(wm)
 	foe.position = ship.position + Vector2(float(wm.get("_escape_px")) + 400.0, 0)  # 追船在 escape_bu 外：必脱、不掷骰
 	_check(float(wm.call("_flee_chance")) >= 1.0, "追船在 escape_bu 外，甩脱机会 1")
-	_AUDIO.journal.clear()
+	_fresh()
 	_press_b(wm)
 	for _i in 4:
 		await process_frame
@@ -238,7 +248,7 @@ func _sec_rout() -> void:
 	_check(wm != null, "海战起得来")
 	if wm == null:
 		return
-	_AUDIO.journal.clear()
+	_fresh()
 	wm.call("_on_morale_verdict", "flee", {"flee_ok": false, "routed": true})
 	for _i in 4:
 		await process_frame

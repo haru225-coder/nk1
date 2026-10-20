@@ -34,6 +34,9 @@ const _MIN_GAP_MS := {
 	&"combat_hit": 60,
 }
 const _MAX_VOICES := 6
+## A voice whose end lies further ahead than this (ms) is stale: the probe
+## clock was moved back.  No cue is anywhere near this long.
+const _VOICE_STALE_MS := 60000
 const _META := &"nk1_sfx"
 ## How many recent decisions `journal` keeps (oldest dropped first).
 const JOURNAL_MAX := 64
@@ -50,6 +53,12 @@ static var journal: Array = []
 ## instead of Time.get_ticks_msec(), so a busy machine cannot flip a gap
 ## verdict.  Always -1 in the game.
 static var clock_ms := -1
+## Voices still sounding, oldest first: {cue, until (ms), player}.  A cue takes
+## its slot the moment it is granted and gives it back when its stream has run
+## out (or its player is gone).  Players join the tree deferred, so counting
+## the root's children missed every cue asked for in the same frame; headless
+## keeps the same book, so the cap reads the same there.
+static var _voices: Array = []
 static var _streams: Dictionary = {}
 static var _last_ms: Dictionary = {}
 static var _warming := false
@@ -97,20 +106,21 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 	if stream == null:
 		return _refuse(cue, hook, db, "no_stream")
 	var now := _now()
-	if now - int(_last_ms.get(gap_key, -100000)) < int(_MIN_GAP_MS.get(cue, 0)):
+	var last := int(_last_ms.get(gap_key, -100000))
+	if now >= last and now - last < int(_MIN_GAP_MS.get(cue, 0)):  # last ahead of now: probe clock moved back
 		return _refuse(cue, hook, db, "gap")
-	var root := parent.get_tree().root
-	var voices := 0
-	for child in root.get_children():
-		if child.has_meta(_META):
-			voices += 1
-	if voices >= _MAX_VOICES:
+	_prune_voices(now)
+	if _voices.size() >= _MAX_VOICES:
 		return _refuse(cue, hook, db, "voices")
 	_last_ms[gap_key] = now
+	var voice := {"cue": cue, "until": now + int(ceil(stream.get_length() * 1000.0)), "player": null}
+	_voices.append(voice)
 	_note(cue, hook, db, "")
 	if DisplayServer.get_name() == "headless":
 		return null
+	var root := parent.get_tree().root
 	var player := AudioStreamPlayer.new()
+	voice["player"] = player
 	player.set_meta(_META, cue)
 	player.stream = stream
 	player.volume_db = db
@@ -127,6 +137,25 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 static func _refuse(cue: StringName, hook: StringName, db: float, why: String) -> AudioStreamPlayer:
 	_note(cue, hook, db, why)
 	return null
+
+
+## Voices still holding a slot at `now`.
+static func voices_now() -> int:
+	_prune_voices(_now())
+	return _voices.size()
+
+
+static func _prune_voices(now: int) -> void:
+	var keep: Array = []
+	for v in _voices:
+		var until := int(v["until"])
+		var p: Variant = v["player"]
+		if until <= now or until - now > _VOICE_STALE_MS:
+			continue
+		if typeof(p) == TYPE_OBJECT and not is_instance_valid(p):
+			continue  # its player finished and freed itself
+		keep.append(v)
+	_voices = keep
 
 
 static func _now() -> int:

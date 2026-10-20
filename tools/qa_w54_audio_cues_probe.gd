@@ -87,6 +87,7 @@ func _run() -> void:
 	_Switches.reset()
 	_AUDIO.enabled = true
 	_AUDIO.volume_db = 0.0
+	_AUDIO.clock_ms = -1
 	_report()
 
 
@@ -102,8 +103,14 @@ static func _since(mark: int, hook: StringName) -> Array:
 	return out
 
 
-## 发声账的「此刻」：下一笔会落在第几格（账满 64 条丢最旧的，用前先清空）
+## 探针钟（AudioHooks.clock_ms）：每量一样往后拨十秒——上一样的声都放完了、声部空出来，节流也不压着下一样
+static var _clock := 2_000_000
+
+
+## 发声账的「此刻」：拨钟、清账（账满 64 条丢最旧的），下一笔落在第 0 格
 static func _mark() -> int:
+	_clock += 10_000
+	_AUDIO.clock_ms = _clock
 	_AUDIO.journal.clear()
 	return 0
 
