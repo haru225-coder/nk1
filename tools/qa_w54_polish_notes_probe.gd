@@ -342,6 +342,13 @@ func _sec_battle() -> void:
 		return
 	var e0: Node2D = foes[0]
 	var e1: Node2D = foes[1]
+	e0.global_position = ship.global_position + Vector2(900, 0)
+	e1.global_position = ship.global_position + Vector2(-900, 200)
+	# 钉死远处与士气，免 START_S 窗口里船漂近 / 阵脚抖触发接舷・劝降（整合树约四成抖红）
+	e0.set_meta(W.MORALE_META, {"state": "steady"})
+	e1.set_meta(W.MORALE_META, {"state": "steady"})
+	if ship != null:
+		ship.set_meta(W.MORALE_META, {"state": "steady"})
 	var rng_a := _rng_after(func() -> void: watch.call("poll"))
 	var rng_b := _rng_after(func() -> void: pass)
 	_check(rng_a == rng_b, "poll 不碰全局随机流（同种子下一发相同）")
