@@ -1185,7 +1185,7 @@ func _setup_dynamic_scene(scene_id: String, suffix: String) -> void:
 		"_tavern":
 			_setup_tavern(base_loc)
 		"_yamen":
-			_setup_yamen(base_loc)
+			_setup_yamen(base_loc); _tutorial_yamen()  # 新手小笺（lane w54-tutorial）
 		"_shipyard":
 			_setup_shipyard(base_loc)
 		"_inn":
@@ -5423,9 +5423,9 @@ func _late_text(text: String) -> String:
 
 
 # ══ 新手上手小笺（lane w54-tutorial）══════════════════════
-## 开局头一回进港页、进牙行，头一回被蒲家记上一笔之后的港页，页边各出一张旁注（scripts/ui/TutorialNotes.gd：只给本机没有存档时
-## 新开的一局；开关 tutorial_notes）。上面只留两处一行的接头：_refresh_shore 末行、_setup_market 末行；新代码挂在这里，
-## 拍板清单引的行号不挪。海图与海上遇盗那两张挂在 SeaChart 文件尾
+## 开局头一回进港页、进牙行、进市舶司，头一回被蒲家记上一笔之后的港页，页边各出一张旁注（scripts/ui/TutorialNotes.gd：只给本机
+## 没有存档时新开的一局；开关 tutorial_notes）。上面只留三处一行的接头：_refresh_shore 末行、_setup_market 末行、_setup_dynamic_scene
+## 市舶司那一支；新代码挂在这里，拍板清单引的行号不挪。海图与海上遇盗那两张挂在 SeaChart 文件尾
 const _TUTORIAL := preload("res://scripts/ui/TutorialNotes.gd")
 
 
@@ -5444,3 +5444,9 @@ func _tutorial_shore() -> void:
 func _tutorial_market() -> void:
 	var page := current_scene_id
 	_TUTORIAL.offer(self, "market", func() -> bool: return current_scene_id == page and investigation_mode.visible)
+
+
+## 市舶司页排好：出「货引」——头一回进市舶司，或头一回被蒲家记上一笔之后的港页，先到哪处在哪处出；离了这一页还没轮到的撤下
+func _tutorial_yamen() -> void:
+	var page := current_scene_id
+	_TUTORIAL.offer(self, "permit", func() -> bool: return current_scene_id == page and investigation_mode.visible)

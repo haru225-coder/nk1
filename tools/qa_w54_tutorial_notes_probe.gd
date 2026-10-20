@@ -9,7 +9,8 @@ extends SceneTree
 ##   二、谁看得到：没定过的（旧档、工具里）不出、不写旗；本机没有存档 → 定 tutorial_on、出；有存档 → 定 tutorial_off、一张不出；
 ##       定下的旗与已读旗过 SaveLoad 旗标清洗与 JSON 来回仍在；开关 tutorial_notes 关、讲解小笺总开关 combat_notes 关都不出；看过的不再出。
 ##   三、港页与牙行（真起 Main）：进寻常港页挂候场，页面静下来才出「靠港」、记已读；换页题签盖着时不出、揭开就出；
-##       蒲家记过一笔再出「货引」、排在后面；没轮到就离了港页的撤下、不记已读；进牙行出「牙行」，没轮到就出门的撤下；终局港页不出。
+##       蒲家记过一笔再出「货引」、排在后面；没轮到就离了港页的撤下、不记已读；进牙行出「牙行」，没轮到就出门的撤下；终局港页不出；
+##       头一回进市舶司也出「货引」（与被蒲家记上一笔后的港页先到哪处在哪处出），没轮到就出门的撤下，看过了港页不再出。
 ##   四、海图与遇盗（真按「看风」换上海图）：开海图出「看风」；海上遇盗先让路（「看风」收起）再出「遇盗」；选了「扬帆逃走」面板收起，
 ##       「遇盗」当场收起；没轮到就「迎战」的撤下、不记已读、海图那一层不留它（不压到海战小笺上）；没轮到就发了舶的「看风」撤下。
 ##   五、不打断老玩家：tutorial_off 的一局，港页、牙行、海图、遇盗都不挂候场、不排、不写已读旗。
@@ -358,6 +359,22 @@ func _sec_shore() -> void:
 	main.call("load_scene", "quanzhou")
 	await _wait(T.SETTLE_S + 0.5)
 	_check(not _read("market") and not _seen(main).has("market"), "没轮到就出了牙行：「牙行」撤下、不记已读（%s）" % [_seen(main)])
+	await _drop(main)
+
+	# 头一回进市舶司出「货引」；没轮到就出门的撤下；看过了，蒲家记上一笔后的港页不再出
+	_opening([T.FLAG_ON, N.flag_of("port")])
+	main = await _new_main("quanzhou_yamen")
+	await _frames(2)
+	main.call("load_scene", "quanzhou")
+	await _wait(T.SETTLE_S + 0.5)
+	_check(not _read("permit") and not _seen(main).has("permit"), "没轮到就出了市舶司：「货引」撤下、不记已读（%s）" % [_seen(main)])
+	main.call("load_scene", "quanzhou_yamen")
+	_check(await _until_current(main, "permit", T.SETTLE_S + 1.0) and _read("permit"), "进市舶司出「货引」、记已读")
+	_gs.set("pu_attention", 20)
+	main.call("load_scene", "quanzhou")
+	await _wait(T.SETTLE_S + 0.3)
+	_check(not T.want("permit") and _seen(main).count("permit") <= 1 and not T.offer(main, "permit"),
+		"看过了：蒲家记上一笔后的港页不再排「货引」（正出着的那张照出完：%s）" % [_seen(main)])
 	await _drop(main)
 
 	# 终局港页不出
