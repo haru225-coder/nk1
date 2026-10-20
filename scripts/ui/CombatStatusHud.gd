@@ -687,6 +687,28 @@ static func intel_line_of(enemy: Node, seen: float, switch_on := true) -> Dictio
 	return {"cloth": cloth, "damage": dmg, "kind": kind, "ff_note": ff_note_of(enemy) if switch_on else ""}
 
 
+## 敌情列一行字的宽：INTEL_W 减纸卡底板两边 4、两边距 24、布色珠 10、珠与字的间距 7（行字 clip_text，过宽那截直接裁掉）。
+## 行已排过版就按标签实宽，这个数只给新建、还没排版的那一行用
+const INTEL_ROW_W := INTEL_W - 4.0 - 24.0 - 10.0 - 7.0
+
+
+## 敌情列一行的字（lane w54-hud）：head 是「船种　伤情　布色」，后缀水火短注；一行放得下照旧一行，放不下把短注折到第二行。
+## 最长的「快船　伤沉在即　想退　失火，进水」十六字约 256 px（纸上字下限 16 号），一行只有 205 px：原先行尾的「进水」
+## 被裁掉，裁掉的正是最要紧的那句。纸卡排版时才把字号抬到 UiTheme.PAPER_MIN_PX，新建的行这一刻可能还是 15，按抬过的量
+static func intel_row_text(head: String, ff_note: String, lbl: Label) -> String:
+	if ff_note == "":
+		return head
+	var one := head + "　" + ff_note
+	var f: Font = lbl.get_theme_font("font") if lbl != null else null
+	if f == null:
+		return one
+	var fs := maxi(lbl.get_theme_font_size("font_size"), UiTheme.PAPER_MIN_PX if UiTheme.IS_JUANBEN else 0)
+	var room := lbl.size.x if lbl.size.x > 1.0 else INTEL_ROW_W
+	if f.get_string_size(one, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= room:
+		return one
+	return head + "\n" + ff_note
+
+
 ## 我方士气险档提示（只提示条、不弹窗）：跌到 MORALE_WARN_AT 写「队里乱了」，跌到 MORALE_BAD_AT 写「白旗要挂出来了」；
 ## flag 是当前已提过的档（0 无 / 1 险 / 2 危）：回升出 MORALE_REARM 回线再下去才再提。返回 {"flag", "text"}
 static func morale_urgency(morale: float, flag: int) -> Dictionary:
@@ -1105,6 +1127,9 @@ func _build_intel() -> void:
 	_ship_card_lbl.add_theme_font_size_override("font_size", 14)
 	_ship_card_lbl.add_theme_color_override("font_color", UiTheme.PAPER_TEXT)
 	_ship_card_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# 两钮占去后字只剩约 94 px：再长也只在这一格里收「…」，不把整张敌情卡撑宽、推出画布右缘（lane w54-hud）
+	_ship_card_lbl.clip_text = true
+	_ship_card_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	card_row.add_child(_ship_card_lbl)
 	_ship_hail_btn = Button.new()
 	_ship_hail_btn.text = "喊话"
@@ -1113,6 +1138,7 @@ func _build_intel() -> void:
 	_ship_hail_btn.add_theme_font_size_override("font_size", 14)
 	_ship_hail_btn.tooltip_text = "敌船深处在喊；被钩住・帆残・阵脚乱三样凑齐才响"
 	_ship_hail_btn.pressed.connect(_hail_selected)
+	_ship_hail_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER  # 船名下另起一行写水火时，钮不跟着拉成两行高
 	card_row.add_child(_ship_hail_btn)
 	var look_btn := Button.new()
 	look_btn.text = "细看"
@@ -1121,6 +1147,7 @@ func _build_intel() -> void:
 	look_btn.add_theme_font_size_override("font_size", 14)
 	look_btn.tooltip_text = "展开这船形势明细（桅索・士气・伤）"
 	look_btn.pressed.connect(_toggle_detail)
+	look_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	card_row.add_child(look_btn)
 	_ship_detail_lbl = Label.new()
 	_ship_detail_lbl.text = ""
@@ -1197,10 +1224,8 @@ func _refresh_intel(snap: Dictionary) -> void:
 		if String(info["damage"]) != "":
 			parts.append(String(info["damage"]))
 		parts.append(String(info["cloth"]))
-		if String(info["ff_note"]) != "":
-			parts.append(String(info["ff_note"]))
 		var lbl := row.get_child(1) as Label
-		lbl.text = "　".join(parts)
+		lbl.text = intel_row_text("　".join(parts), String(info["ff_note"]), lbl)
 		# 选中行字涂金，没选中照常 — 点哪艘那艘就是这艘的「小卡」门
 		lbl.add_theme_color_override("font_color",
 			UiTheme.PAPER_GOLD if (foes[i] as Object).get_instance_id() == _selected_id else UiTheme.PAPER_TEXT)
@@ -1300,8 +1325,10 @@ func _refresh_ship_card() -> void:
 		return
 	_intel_ship.visible = true
 	var info: Dictionary = intel_line_of(e, float(_hull_seen.get(_selected_id, 0.0)), _ff_on())
+	# 水火短注另起一行：原先「快船 想退・失火，进水」一行约 166 px，这一格只有约 94 px，标签按字长撑宽整张敌情卡
+	# （1280×720 实量 326 宽），卡左沿仍按 INTEL_W 摆，右沿冲出画布 60 px，「细看」钮只露一条边（lane w54-hud）
 	_ship_card_lbl.text = "%s %s%s" % [String(info["kind"]) if String(info["kind"]) != "" else "来船", String(info["cloth"]),
-		("・" + String(info["ff_note"])) if String(info["ff_note"]) != "" else ""]
+		("\n" + String(info["ff_note"])) if String(info["ff_note"]) != "" else ""]
 	_ship_detail_lbl.visible = _detail_open
 	# 喊话钮的亮灭就是 parley_road 三样的亮灭——三样凑齐才亮
 	var scr = _orders_script()

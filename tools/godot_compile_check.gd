@@ -260,6 +260,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_econ_permit_probe.gd",  # lane w54-econ 货引按出港时的舱货抽解（请领后再装的货出港补、补不起不放行、旧档货引照放、permit_base 存档、市舶司页货引卡）
 	"res://tools/qa_w54_econ_peak_probe.gd",  # lane w54-econ 章节本钱按现银减欠款记（船屋赊来的钱顶不高资金峰值、还钱不退、无欠款照旧）
 	"res://tools/qa_w54_voyage_toll_empty_probe.gd",  # lane w54-voyage 海寇买路财空舱札记探针（修空舱也写搬走三成货）
+	"res://tools/qa_w54_hud_intel_fit_probe.gd",  # lane w54-hud 海战敌情卡长写法放得下（行尾水火短注折行、小卡不撑宽出画，回退即红）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
