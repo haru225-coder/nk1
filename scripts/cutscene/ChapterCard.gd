@@ -19,6 +19,7 @@ signal exiting
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
 const InkText := preload("res://scripts/cutscene/cs_ink_text.gd")
 const Seal := preload("res://scripts/cutscene/cs_seal.gd")
+const _SFX := preload("res://scripts/audio/SfxCues.gd")  # lane w54-audio：章节卡开卷那一声磬
 
 const LAYER_INDEX := 55
 const T_BLACK := 0.3
@@ -115,6 +116,7 @@ func skip() -> void:
 
 
 func _ready() -> void:
+	_SFX.play(self, &"cs_chapter")  # lane w54-audio：开卷一声磬（headless 只记发声账、不出声）
 	layer = LAYER_INDEX
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	if Kit.is_headless():

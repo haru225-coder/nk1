@@ -85,6 +85,11 @@ const HOOKS := {
 		"where": "SeaChart._landing_settle 剿寨得手（一阵鼓，随后三记上行磬音）"},
 	&"landing_lose": {"layers": [[&"combat_start", -5.0], [&"combat_lose", -7.0, 0.75]], "added": true, "gap_ms": 1500,
 		"where": "SeaChart._landing_settle 剿寨失手（一阵鼓，随后两记下行）"},
+	# ── 本波补挂 · 过场 ──
+	&"cs_chapter": {"layers": [[&"transition", -6.0, 0.0, 0.85]], "added": true, "gap_ms": 1500, "group": &"bell",
+		"where": "ChapterCard._ready（章节卡开卷：一声磬，与墨幕那声同在收声组 bell）"},
+	&"cs_seal": {"layers": [[&"combat_hit", -14.0, 0.0, 0.55]], "added": true, "gap_ms": 120,
+		"where": "cs_seal._apply 触纸（朱印落纸一声轻拍：开场方位印、章节卡、抵港横幅「泊」、标题页的印）"},
 }
 
 ## 旗舰损伤事件（Ship.damage_event 的 kind）→ 挂点；表外的 kind 不响

@@ -11,6 +11,7 @@ extends Control
 signal impacted
 
 const Kit := preload("res://scripts/cutscene/cs_kit.gd")
+const _SFX := preload("res://scripts/audio/SfxCues.gd")  # lane w54-audio：朱印落纸那一声
 
 enum Style { BAIWEN, ZHUWEN }
 
@@ -339,6 +340,7 @@ func _apply() -> void:
 	else:
 		if not _hit:
 			_hit = true
+			_SFX.play(self, &"cs_seal")  # lane w54-audio：朱印落纸
 			impacted.emit()
 		var q := clampf((_t - FALL) / SETTLE, 0.0, 1.0)
 		# 触纸瞬间压扁到 0.93，再阻尼回弹到 1
