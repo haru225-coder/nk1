@@ -7,6 +7,8 @@ extends SceneTree
 ##       总静音（AudioHooks.enabled = false）记 muted；节点不在树上记 no_tree；总音量 volume_db 加在每一行上。
 ##   四、真走挂点（真起 WorldMap 海战，headless）：入战、旗舰齐射、炮弹命中敌船、接舷、收战胜 / 败 / 撤离各记一笔对的挂点；
 ##       敌船开炮那一路与墨幕过渡（Main.play_transition）按源码钉调用点。
+##   五、挂点不碰全局随机流：同种子下把表里每一行都放一遍（含晚出的那几层到点、头一回合成声样），randi() 下一发不变——
+##       胜率工具同种子复跑（qa_w53_p3c_winrate_probe / qa_w53_p6_yashan_winrate）不因有没有声而漂。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_audio_cues_probe.gd（经门锁跑）
 ## 末行 QA_W54_AUDIO_CUES PASS|FAIL cases=N fails=M；fails>0 退 1。本进程 SCRIPT ERROR 也判红（tools/script_err_tally.gd）。
 
@@ -84,6 +86,8 @@ func _run() -> void:
 	print("== 四、真走挂点（真起 WorldMap 海战）")
 	await _sec_sea()
 	_sec_src()
+	print("== 五、挂点不碰全局随机流")
+	await _sec_rng()
 	_Switches.reset()
 	_AUDIO.enabled = true
 	_AUDIO.volume_db = 0.0
@@ -311,6 +315,27 @@ func _finish(wm: Node, outcome: String, data: Dictionary) -> void:
 		wm.call("_battle_exit", outcome, data.duplicate(true))
 	for _i in 6:
 		await process_frame
+
+
+func _sec_rng() -> void:
+	var host := Node.new()
+	root.add_child(host)
+	await process_frame
+	_SYNTH.clear_cache()  # 头一回合成也算在里头（SfxSynth 用自己的定种子噪声，不该碰全局流）
+	seed(5450)
+	var want := randi()
+	seed(5450)
+	_mark()
+	for hook in _SFX.HOOKS:
+		_clock += 2_000
+		_AUDIO.clock_ms = _clock
+		_SFX.play(host, hook)
+	await create_timer(1.0).timeout
+	var got := randi()
+	_check(got == want, "同种子下把表里 %d 行都放一遍（晚出的层到点、声样重新合成），randi() 下一发不变（%d / %d）" % [
+		_SFX.HOOKS.size(), got, want])
+	host.queue_free()
+	await process_frame
 
 
 ## 敌船开炮、墨幕过渡两处不真起（敌将定打不打、Main 整页太重），按源码钉调用点
