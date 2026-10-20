@@ -43,6 +43,7 @@ const DEFAULTS := {
 	"yashan_fire_ship": true,  # 崖山港湾战里的火船：顺风放来、碰上就点火（关 = 只有元军船阵，没有火船）—— w53-p6-yashan
 	# w54 · 收尾与打磨
 	"combat_notes": true,      # 讲解小笺：一到六期的新概念头一回露面时页边出一张旁注（data/combat_notes.json，各条另认自己那样玩法的键），看过记进存档旗标 combat_note_<id> 不再出（关 = 一张不出、旗标不写）—— w54-polish
+	"hull_view_lod": true,     # w54 收尾 · 船身视口省着画：三维船身只在航向转过「船首在屏上挪半个像素」那个角、船图又在画里时才重画（关 = 每帧满幅重画，逐字回旧）—— w54-perf
 }
 
 static var _over: Dictionary = {}
