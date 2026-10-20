@@ -3449,7 +3449,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _activate_first_choice() -> bool:
 	for child in choices_container.get_children():
-		if child is Button and not (child as Button).disabled and not child.has_meta("no_enter"):  # no_enter：花钱花日子 / 立旗的钮要点，回车不替人按
+		if child is Button and not (child as Button).disabled and not child.has_meta("no_enter") and (child as Control).is_visible_in_tree():  # no_enter：花钱花日子 / 立旗的钮要点，回车不替人按；is_visible_in_tree：收起的页（海战 / 过场一层铺在上面时整页收起、钮还挂着）上的门按不得
 			(child as Button).pressed.emit()
 			return true
 	if title_mode.visible and start_button.visible and not start_button.disabled:

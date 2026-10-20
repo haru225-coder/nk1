@@ -225,6 +225,7 @@ const SCRIPTS := [
 	"res://tools/qa_w53_p6_yashan_probe.gd",  # lane w53-p6-yashan 崖山突围专项探针（卡上第三扇门 / 港湾海况 / 火船 / 点火 / 两式结局 / 两枚旗）
 	"res://tools/qa_w53_p6_yashan_winrate.gd",  # lane w53-p6-yashan 崖山突围冲出率与帧时工具（--crew 两三档 / --off / --fps）
 	"res://tools/qa_w54_hunt_battle_ledger_probe.gd",  # lane w54-hunt 海战收尾记账探针（受降船没接舷不算押船、放漂不摘自家船、存读档船籍逐字段等）
+	"res://tools/qa_w54_hunt_stray_enter_probe.gd",  # lane w54-hunt 回车误按探针（打仗当中回车按不到收起的页门；看得见的页照旧按得动）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；

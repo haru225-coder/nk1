@@ -142,6 +142,7 @@ EXEMPT = [
     ("qa_w53_p6_perf_probe.gd", "lane-w53-p6-escort", "战斗方案六期性能探针（同屏八艘开打量 600 帧以上的平均帧时与 p95，escort_battle 开 / 关各一份，崖山突围一档有 YashanBattle 才跑、没有就跳过；另报同屏船数、粒子总数），帧时要 DISPLAY=:2 带窗口才作数、headless 只判跑通，随本 lane 落地验过留档"),
     ("qa_w53_p6_yashan_probe.gd", "lane-w53-p6-yashan", "战斗方案六期崖山突围战专项探针（崖山卡第三扇门「上船同去」开关开 / 关两态、这一场海况取港湾那一档（雾 / 窄水 / 风向风力）与数据档逐项对账、火船摆下（独立 FireShip_ 前缀不进士气簿 / 敌全灭 / 追兵、同屏不超 8 艘、开关关一艘不留）、碰上就点火的旗舰篷帆引火与撞伤并记「碰过了」不重复点、冲出 / 没冲出两式判词与结局那一句、收战写两枚旗且寻常海战不写；一段钉一条、回退即红），headless 可跑，随本 lane 落地验过留档"),
     ("qa_w54_hunt_battle_ledger_probe.gd", "lane-w54-hunt", "全游戏找 bug 之海战收尾记账探针（真 WorldMap 海战 → 真 SeaChart 收战与战后收拾 → 真存读档：士气收场受降的降船没接舷不进船籍、押船行不算它、每行拣「放」收拾停当自家船与舱货一件不少；一艘护航夺下 + 一艘降了没接舷时押船只算 1 艘、放漂只摘夺来那艘、分人押留在船籍；收拾停当后存读档船籍逐字段相等，回退即红），headless 秒级，随本 lane 落地验过留档"),
+    ("qa_w54_hunt_stray_enter_probe.gd", "lane-w54-hunt", "全游戏找 bug 之回车误按探针（真起 Main 真按键：崖山「上船同去」开打、海战一层铺在港页上时按回车 / 空格不许按到收起的「把粮与硫黄交上去」（那一扇当场落结局、加名声、过五日），收战后结局照常只落一回；看得见的翻页页回车照旧翻过去、卷首页收起后回车不重开一局，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),
