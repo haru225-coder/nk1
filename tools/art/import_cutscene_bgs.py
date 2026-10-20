@@ -548,13 +548,16 @@ def _line_cap(sty: dict, pos: str, lay: dict, letterbox: bool) -> int:
 
 
 def _known_flags() -> set:
-    """有人立的旗标：scripts 里字面 set_flag("…") / flags["…"] = …，data/*.json 里的 "flag": "…"（剧情效果、新闻、章目、战阶）。"""
+    """有人立的旗标：scripts 里字面 set_flag("…") / flags["…"] = …，data/*.json 里的 "flag": "…"（剧情效果、新闻、章目、战阶）；
+    另认 scripts 里名字带 FLAG 的字串常量（YashanBattle 的 FLAG_DONE / FLAG_OUT 经 flags_for 交 WorldMap 立，字面认不出；
+    名字以 PREFIX 收尾的是旗名前缀，不算，lane w54-ending）。"""
     import re
     flags = set()
     for f in (ROOT / "scripts").rglob("*.gd"):
         src = f.read_text(encoding="utf-8")
         flags |= set(re.findall(r'set_flag\("([A-Za-z0-9_]+)"\)', src))
         flags |= set(re.findall(r'flags\["([A-Za-z0-9_]+)"\]\s*=', src))
+        flags |= {v for k, v in re.findall(r'const\s+(\w*FLAG\w*)\s*:?=\s*"([A-Za-z0-9_]+)"', src) if not k.endswith("PREFIX")}
     for f in (ROOT / "data").glob("*.json"):
         flags |= set(re.findall(r'"flag"\s*:\s*"([A-Za-z0-9_]+)"', f.read_text(encoding="utf-8")))
     return flags

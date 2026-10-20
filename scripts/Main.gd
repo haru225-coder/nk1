@@ -3792,7 +3792,7 @@ func _on_yashan() -> void:
 			tail = "你砍缆砍晚了。火从上风头卷过来，烧了半条船。人捞上来一半。往南走的时候，船比来时轻得多。"
 		if not speed_ok:
 			Fleet.damage_fleet(60.0)
-			Fleet.lose_cargo_ratio(0.5)
+			Fleet.lose_cargo_ratio(0.5); GameState.set_flag("yashan_cut_late")  # 结局过场第 2 镜按这枚旗补「砍晚了」那一句（lane w54-ending）
 		_show_notice_dialog("海上宋鬼", "崖山・祥兴二年二月",
 			"战到午后，铁索连着的船开始烧。
 %s

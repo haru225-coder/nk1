@@ -318,7 +318,7 @@
      "captions": [
       {"t": 0.6, "text": "崖山・祥兴二年二月", "style": "era", "pos": "right_vertical"},
       {"t": 1.3, "text": "张世杰的船连成一片，船与船之间，是铁索。", "style": "narration", "pos": "lower_left"},
-      {"t": 4.2, "text": "你把粮与硫黄交上去，船留在外围。", "style": "narration", "pos": "lower_left"}
+      {"t": 4.2, "text": "你把粮与硫黄交上去，船留在外围。", "style": "narration", "pos": "lower_left", "unless_flag": "yashan_breakout_done"}, {"t": 4.2, "text": "你没有把船留在外围，上船跟着冲。", "style": "narration", "pos": "lower_left", "if_flag": "yashan_breakout_done"}
      ]
     },
     {
@@ -332,7 +332,7 @@
      "shake": 0.2,
      "captions": [
       {"t": 0.8, "text": "战到午后，铁索连着的船开始烧。", "style": "narration", "pos": "lower_left"},
-      {"t": 3.8, "text": "你砍断了自己的缆。", "style": "line", "pos": "bottom"}
+      {"t": 3.8, "text": "你砍断了自己的缆。", "style": "line", "pos": "bottom", "unless_flag": "yashan_breakout_done"}, {"t": 3.8, "text": "你在雾里把舵压到底。", "style": "line", "pos": "bottom", "if_flag": "yashan_broke_out"}, {"t": 3.8, "text": "火船顺风来的时候，你没躲开。", "style": "line", "pos": "bottom", "if_flag": "yashan_breakout_done", "unless_flag": "yashan_broke_out"}, {"t": 5.3, "text": "砍晚了。火从上风头卷过来，烧了半条船。", "style": "narration", "pos": "lower_left", "if_flag": "yashan_cut_late"}
      ]
     },
     {
