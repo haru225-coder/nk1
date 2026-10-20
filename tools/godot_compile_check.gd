@@ -245,6 +245,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_voyage_event_cut_probe.gd",  # lane w54-voyage 海上遇事札记写实扣探针（修名声 / 士气封底时照写满数）
 	"res://tools/qa_w54_tavern_ashore_probe.gd",  # lane w54-tavern 人在海上下不了船专项探针（史实辞船、欠饷求去船在海上等靠岸，真走 SeaChart._arrive 靠岸下船、泊港照旧）
 	"res://tools/qa_w54_tavern_hiring_probe.gd",  # lane w54-tavern 酒馆募人题签专项探针（「已雇之职不再列名」只在真有人因职事已满不列名时写）
+	"res://tools/qa_w54_story_enter_probe.gd",  # lane w54-story 终局抉择页与剧情幕岔路回车不替人按专项探针（崖山 / 辞呈 / 泉州征船名册 / scenes.json 岔路幕挂 no_enter，港页 / 见面页不按藏起来的旧钮）
 	"res://tools/qa_w54_story_skip_probe.gd",  # lane w54-story 升章跳年时身上的委办免罚作罢专项探针（待拍板 15）
 	"res://tools/qa_w54_story_timing_probe.gd",  # lane w54-story 剧情事件按设计年月出场专项探针（辞呈卡德祐元年腊月起挂）
 	"res://tools/qa_w54_story_signoff_probe.gd",  # lane w54-story 结局落款写结局所在地专项探针（崖山两条路落款写崖山）

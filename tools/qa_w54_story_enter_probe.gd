@@ -14,6 +14,11 @@ extends SceneTree
 ## 断日子不走、旗不立、终局不落、船与水粮不动；反向基：点钮本身照旧作数（崖山落「海上宋鬼」、辞呈立旗、名册立旗）。
 ## D 按数据逐幕跑（新幕自动入验），断页不动、旗 / 钱 / 名声 / 倾向 / 人脉 / 信用不动；反向基：只有一条路的幕
 ## （对白翻页、「继续」带旗那种）回车照旧往下走、效果照记——回车仍是「下一步」。
+##   E 藏起来的旧钮：choices_container 只在 _enter_panel_mode 换页时清，港页（_setup_port_mode）与见面页只把它所在的
+##     剧情面板藏起来，上一页的钮还挂在里面。回车照「第一枚可按」去按，按的是看不见的旧钮：晋升过场「第三章：册上的纲首」
+##     点「收下这个称呼…回港上」回到泉州港页，再按回车就把那一钮再按一遍——名声 +8 一按一次；酒馆「旧事」追问在港页 /
+##     见面页上被回车替人问掉。断：港页与见面页按回车，旧钮一枚不按（名声、旗、日志、页都不动）；反向基：过场页本身回车照旧
+##     按下「回港上」、效果只记一次。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_story_enter_probe.gd（经门锁跑）
 ## 末行 W54_STORY_ENTER cases=N fails=M；fails>0 退 1。运行期脚本错即红（tools/script_err_tally.gd）。
 
@@ -70,6 +75,7 @@ func _boot() -> void:
 	await _b_resign()
 	await _c_standoff()
 	await _d_scene_forks()
+	await _e_hidden_stale()
 	_report()
 
 
@@ -328,3 +334,64 @@ func _enter_key() -> void:
 		k.pressed = pressed
 		root.push_input(k)
 	await process_frame
+
+
+# ── E 藏起来的旧钮 ───────────────────────────────────────
+
+## 序章与泉州节拍都演过的局面（拍账记满）：进泉州港不再就地演节拍幕
+func _fresh_past_prologue() -> void:
+	_fresh(1262, 4, "quanzhou")
+	for e in _main._beats_book().entries():
+		_gs.beat_mark(str(e))
+
+
+func _e_hidden_stale() -> void:
+	print("── E 港页 / 见面页按回车：不按上一页藏起来的旧钮")
+	# E1 晋升过场「回港上」之后的泉州港页
+	_fresh_past_prologue()
+	_gs.chapter = 3
+	_main.load_scene("chapter3_gangshou")
+	await process_frame
+	var take := _button("收下这个称呼")
+	_expect(take != null, "第三章晋升过场页有「收下这个称呼…」一钮")
+	var fame0: int = _gs.fame
+	if take != null:
+		take.pressed.emit()
+		await process_frame
+	var fame1: int = _gs.fame
+	_expect(_main.current_scene_id == "quanzhou" and _main.port_mode.visible and fame1 == fame0 + 8 and _gs.has_flag("chapter3_seen"),
+		"点「收下这个称呼」回泉州港页、名声 +8、立 chapter3_seen（页 %s，名声 %d→%d）" % [_main.current_scene_id, fame0, fame1])
+	await _enter()
+	await _enter()
+	_expect(_gs.fame == fame1 and _main.current_scene_id == "quanzhou" and _main.port_mode.visible,
+		"泉州港页按两回回车：过场那一钮不再被按（名声 %d→%d，页 %s）" % [fame1, _gs.fame, _main.current_scene_id])
+	# E2 酒馆「旧事」追问：离开酒馆回港页、见面页上按回车都不替人问掉
+	_fresh_past_prologue()
+	_gs.set_flag("chen_line_open")
+	_main.load_scene("quanzhou_tavern")
+	await process_frame
+	_expect(_button("追问兴化来人的下落") != null, "泉州酒馆有「旧事」追问一钮")
+	_main.load_scene("quanzhou")
+	await process_frame
+	var logs0: int = (_main.get("_log_lines") as PackedStringArray).size()
+	await _enter()
+	_expect(not _gs.has_flag("hook_xinghua_asked") and _main.current_scene_id == "quanzhou",
+		"离开酒馆回到港页按回车：「追问兴化来人的下落」没被替人问掉（旗 %s，页 %s）" % [str(_gs.has_flag("hook_xinghua_asked")), _main.current_scene_id])
+	_main.load_scene("quanzhou_tavern")
+	await process_frame
+	_main._on_meet_npc("merchant_lin", "林阿舶")
+	await process_frame
+	await _enter()
+	_expect(not _gs.has_flag("hook_xinghua_asked") and _main.npc_mode.visible,
+		"酒馆里见林阿舶（见面页）按回车：「旧事」追问没被替人问掉、见面页还在（旗 %s）" % str(_gs.has_flag("hook_xinghua_asked")))
+	# 反向基：过场页本身回车照旧按「回港上」，效果只记一次
+	_fresh_past_prologue()
+	_gs.chapter = 3
+	_main.load_scene("chapter3_gangshou")
+	await process_frame
+	var f0: int = _gs.fame
+	await _enter_key()
+	_expect(_main.current_scene_id == "quanzhou" and _gs.fame == f0 + 8,
+		"反向基：晋升过场页按回车照旧「回港上」、名声只 +8 一回（页 %s，名声 %d→%d）" % [_main.current_scene_id, f0, _gs.fame])
+	_gs.from_dict({})
+	_cal.from_dict({"year": 1255, "month": 3, "day": 1})
