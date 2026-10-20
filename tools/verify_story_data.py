@@ -828,7 +828,7 @@ L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
     "tools/check_w53_copy.py": ({"codex"}, "gate", "（lane w53-10）钉 I 正文字库逐字核：人物志文本层每个字须在文楷子集 cmap 里，缺字会落到系统字体；只读不上屏"),
     "tools/godot_smoke.gd": ({"raw", "api"}, "gate", "冒烟：阵营表、见面页立绘"),
     "tools/godot_story_check.gd": ({"api"}, "gate", "剧情门禁：生卒一行（主角卒年只在「忠肃」写、卒年到次年才写），实建人物志 / 立绘面板 / 见面页看上屏字"),
-    "tools/qa_w54_saves_migrate_probe.gd": ({"api"}, "dev", "（lane w54-saves，主控补登记）存档迁移往返探针：读人物取数口只为核对迁移后同伴 id 能取到人，只读不上屏"),
+    "tools/qa_w54_ending_late_lines_probe.gd": ({"api"}, "dev", "（lane w54-ending，主控补登记）终局晚段文案探针：经取数口读人物称谓核对上屏句，只读"),
 }
 _L1B_KIND_RE = {
     "raw": re.compile(r"characters\.json|\bCHARACTERS_PATH\b|\bcharacters_data\b"),

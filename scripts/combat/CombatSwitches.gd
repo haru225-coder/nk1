@@ -45,16 +45,8 @@ const DEFAULTS := {
 	"combat_notes": true,      # 讲解小笺：一到六期的新概念头一回露面时页边出一张旁注（data/combat_notes.json，各条另认自己那样玩法的键），看过记进存档旗标 combat_note_<id> 不再出（关 = 一张不出、旗标不写）—— w54-polish
 	"hull_view_lod": true,     # w54 收尾 · 船身视口省着画：三维船身只在航向转过「船首在屏上挪半个像素」那个角、船图又在画里时才重画（关 = 每帧满幅重画，逐字回旧）—— w54-perf
 	"sfx_cues": true,          # w54 收尾 · 音效补挂：一到六期战斗、守城、崖山、登陆、港口、过场该有声却没挂的点（scripts/audio/SfxCues.gd 表里标 added 的行；关 = 补挂的一处不响，原先那几处照旧）—— w54-audio
-
-
 	"port_life": true,         # w54 收尾 · 岸上见闻：寻常港页行首注下添一行码头光景的纪实短句，按港所在一带、季风、战况写（scripts/core/PortLife.gd；关 = 小笺只一行行首注，逐字回旧）—— w54-port
-
-
-	"tutorial_notes": true,    # w54 收尾 · 新手上手小笺：开局头一回进港页、进牙行、开海图、海上遇盗、被蒲家记上一笔后的港页，页边各出一张旁注讲这一页怎么用（data/tutorial_notes.json，借讲解小笺那一层出；只给本机没有存档时新开的一局，定下记旗 tutorial_on / tutorial_off；看过记旗 tutorial_note_<id>；关 = 一张不出、旗标不写；总开关 combat_notes 关时也不出）—— w54-tutorial
-	"tutorial_notes": true,    # w54 收尾 · 新手上手小笺：开局头一回进港页、进牙行、开海图、海上遇盗、进市舶司或被蒲家记上一笔后的港页，页边各出一张旁注讲这一页怎么用（data/tutorial_notes.json，借讲解小笺那一层出；只给本机没有存档时新开的一局，定下记旗 tutorial_on / tutorial_off；看过记旗 tutorial_note_<id>；关 = 一张不出、旗标不写；总开关 combat_notes 关时也不出）—— w54-tutorial
 	"tutorial_notes": true,    # w54 收尾 · 新手上手小笺：开局头一回进港页、进牙行、开海图、海上遇盗、进市舶司或被蒲家记上一笔后的港页、跑完一程靠港，页边各出一张旁注讲这一页怎么用（data/tutorial_notes.json，借讲解小笺那一层出；只给本机没有存档时新开的一局，定下记旗 tutorial_on / tutorial_off；看过记旗 tutorial_note_<id>；关 = 一张不出、旗标不写；总开关 combat_notes 关时也不出）—— w54-tutorial
-
-
 	"sea_event_variants": true, # w54 收尾 · 海上遇事变体：风涛按季节写风（冬北风、五六月南风带雨、七至九月飓母、三四月风向不定，风势重补一句）、无风带夏写烈日春写大雾、不明船影与海上相逢没谈成买卖各添两种起笔、迷航添一句阴天守针盘；只换字，扣数、行程与骰序一字不动（关 = 逐字回旧）—— w54-seaevents
 }
 
