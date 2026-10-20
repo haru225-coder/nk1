@@ -173,6 +173,7 @@ EXEMPT = [
     ("qa_w54_siege_dupe_probe.gd", "lane-w54-siege", "守城衙门募兵 / 船屋修墙两页余量不过小档时不出两枚同数钮专项探针（衙门余量 10 / 50 / 51 / 160 / 360 / 募满、船屋余量 10 / 20 / 21 / 140 / 满两页各档钮字逐字、两两不同，余量 10 那一枚点下去照旧作数；回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_siege_enter_probe.gd", "lane-w54-siege", "守城各页回车不替人按专项探针（衙门募兵与石手军 / 市场屯粮 / 船屋修墙 / 两封劝降书 / 第三阵前林华请命认得与不认得两式：钮都在、真回车与直调 _activate_first_choice 都不按、账面旗札记日子不动、人还在这一页，反向基点钮照旧作数；回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_siege_raid_probe.gd", "lane-w54-siege", "守城外援劫粮道必败不给劫专项探针（开局小艍 / 中福船战力 39 / 人过四十士气零三档：缘由一句、直调不动账、船屋页不挂钮、门不写四日；界上战力 41 照旧劫且骰子同 SiegeMelee.clash；两条大福船照旧开；回退即红），headless 秒级，随本 lane 落地验过留档"),
+    ("qa_w54_port_counter_probe.gd", "lane-w54-port", "w54 牙行「今日柜上三样」同一日里不换手探针（岸上真门进牙行、货单上的真钮：三席逐席「买 1」柜上不换货单不挪位、连点同一处两回买进同一样、卖光第一席那张货单还在写「舱 0」、出门再进同一手；「明日再看」、隔日、另起一局才现发，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),

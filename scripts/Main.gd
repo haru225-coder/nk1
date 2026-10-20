@@ -1214,7 +1214,7 @@ func _setup_market(port_id: String) -> void:
 		_market_ship = 0
 	_market_hold = false
 
-	# 柜上三样先发，委办单上的「凑得出」按今日柜上现货算；上了门闸或无牙行则柜上空
+	# 柜上三样先发，委办单上的「凑得出」按今日柜上现货算；上了门闸或无牙行则柜上空。同一日里买卖、出门再进都是这一手（_broker_today）
 	broker_hand = PackedStringArray()
 	if market_open and not goods_ids.is_empty():
 		var catalog: Array = []
@@ -1225,7 +1225,7 @@ func _setup_market(port_id: String) -> void:
 				"role": str(Economy.get_role(port_id, gid)),
 				"buy": Economy.buy_price(port_id, gid),
 			})
-		broker_hand = BrokerSlip.deal(catalog, GameState.broker_salt, _broker_held_id(port_id))
+		broker_hand = _broker_today(port_id, BrokerSlip.deal(catalog, GameState.broker_salt, _broker_held_id(port_id)))
 
 	# 上了门闸：正文只一句门闸（不写「柜上只摆三样」）、不开新委办（岸上三门里牙行也不占席，见 ShoreDraft.deal）。
 	# 在身委办的交货地就是本港时，那一行（交货 / 毁约）照旧补出：委办 due_day 不因围城停表，
@@ -5306,3 +5306,23 @@ const YASHAN_END_PLACE := "崖山"
 func _yashan_signoff() -> void:
 	if GameState.ended == "海上宋鬼":
 		GameState.ended_at = "%s・%s" % [Calendar.get_date_string(), YASHAN_END_PLACE]
+
+
+## 今日柜上这一手（lane w54-port）：按「港・日・盐位」记下当日头一回发出的三样，同一日里买卖后整页重排、出门再进来都是这一手，
+## 三张货单也不挪位。原先每次进页都按眼下的舱货与现价重发——舱里件数最多的那样占第一席、其余按买价排：买进的货在舱里件数
+## 一多就抢到第一席，价一涨也换次序，按「买 1」整页一重排，刚按的那张货单挪了位，原位上是另一样货（连点「买 1」买到别的货）；
+## 卖光第一席那样，柜上当场又换一手。「明日再看」（盐位加一、过一日）、隔日、换港才重发。读档 / 另起一局时 Fleet.from_dict
+## 换上另一副船队数组，记下的这一手作废、按新局现发。会话内 UI 状态，不入存档（同 _shore_pin_hand）。
+var _broker_hand_key := ""
+var _broker_hand_kept: PackedStringArray = PackedStringArray()
+var _broker_hand_fleet: Array = []
+
+
+func _broker_today(port_id: String, fresh: PackedStringArray) -> PackedStringArray:
+	var key := "%s|%d|%d" % [port_id, Calendar.absolute_day(), GameState.broker_salt]
+	if key == _broker_hand_key and is_same(_broker_hand_fleet, Fleet.ships):
+		return _broker_hand_kept.duplicate()
+	_broker_hand_key = key
+	_broker_hand_kept = fresh.duplicate()
+	_broker_hand_fleet = Fleet.ships
+	return fresh
