@@ -1227,6 +1227,7 @@ func _on_captain_state_changed(state: StringName, label: String, reason: String,
 	_show_combat_notice(msg)
 	if str(state) == "strike" and enemy is Node2D and is_instance_valid(enemy):
 		_CombatFx.strike_colors(enemy)
+		_SFX.play(self, &"sea_strike")  # lane w54-audio：幡落的那一下
 
 
 func _on_enemy_left_battle(how: String, enemy: Node = null) -> void:
@@ -1269,6 +1270,8 @@ func _on_combat_order(order_id: String, payload: Dictionary = {}) -> void:
 	var msg := _CombatOrders.notice_for(order_id.strip_edges(), payload)
 	if msg != "":
 		_show_combat_notice(msg)
+		if payload.get("on") != false:
+			_SFX.play(self, &"sea_order")  # lane w54-audio：号令擂鼓，撤令不响
 
 
 ## Lane C：进出战墨边（若 CombatLetterbox 已入库则调用；否则静默跳过）。

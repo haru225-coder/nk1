@@ -94,7 +94,10 @@ static func stream_for(cue: StringName) -> AudioStream:
 ## swaps pages under the transition); it frees itself when finished.  Returns
 ## null when muted, headless, rate-limited or over the voice cap.
 ## opts.hook names the SfxCues hook that asked (kept in the journal);
-## opts.gap_key picks whose spacing applies (default: the cue's own);
+## opts.gap_key picks whose spacing applies (default: the cue's own), and
+## opts.gap_ms overrides how long that spacing is (SfxCues spaces its own hooks);
+## opts.pitch plays the stream faster / slower (pitch_scale; the voice lasts
+## length / pitch);
 ## opts.group is a choke group: a cue granted in a group stops the older voices
 ## of that group still ringing (a new ink-wipe bell cuts the one it replaced),
 ## so a bell never rings over its own echo.
@@ -102,6 +105,7 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 	var hook: StringName = StringName(opts.get("hook", &""))
 	var gap_key: StringName = StringName(opts.get("gap_key", cue))
 	var group: StringName = StringName(opts.get("group", &""))
+	var pitch := maxf(0.25, float(opts.get("pitch", 1.0)))
 	var db := cue_db + volume_db
 	if not enabled:
 		return _refuse(cue, hook, db, "muted")
@@ -112,7 +116,7 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 		return _refuse(cue, hook, db, "no_stream")
 	var now := _now()
 	var last := int(_last_ms.get(gap_key, -100000))
-	if now >= last and now - last < int(_MIN_GAP_MS.get(cue, 0)):  # last ahead of now: probe clock moved back
+	if now >= last and now - last < int(opts.get("gap_ms", _MIN_GAP_MS.get(cue, 0))):  # last ahead of now: probe clock moved back
 		return _refuse(cue, hook, db, "gap")
 	_prune_voices(now)
 	if group != &"":
@@ -121,7 +125,7 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 		return _refuse(cue, hook, db, "voices")
 	_last_ms[gap_key] = now
 	var voice := {"cue": cue, "hook": hook, "group": group,
-		"until": now + int(ceil(stream.get_length() * 1000.0)), "player": null}
+		"until": now + int(ceil(stream.get_length() * 1000.0 / pitch)), "player": null}
 	_voices.append(voice)
 	_note(cue, hook, db, "")
 	if DisplayServer.get_name() == "headless":
@@ -132,6 +136,7 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 	player.set_meta(_META, cue)
 	player.stream = stream
 	player.volume_db = db
+	player.pitch_scale = pitch
 	player.autoplay = true
 	player.finished.connect(player.queue_free)
 	# Deferred: callers include _ready chains where root is busy adding children.
@@ -140,6 +145,17 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 		_warming = true
 		_warm_step(parent.get_tree())
 	return player
+
+
+## Journal a hook that SfxCues held back before any cue was asked for (switch
+## off, hook-level spacing): {cue: &"", hook, why}.
+static func skip(hook: StringName, why: String) -> void:
+	_note(&"", hook, 0.0, why)
+
+
+## "Now" in ms as the rate limits see it (the probe clock when set).
+static func now_ms() -> int:
+	return _now()
 
 
 static func _refuse(cue: StringName, hook: StringName, db: float, why: String) -> AudioStreamPlayer:

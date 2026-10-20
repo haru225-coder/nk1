@@ -659,6 +659,7 @@ func _emit_damage_events(events: Array) -> void:
 		var info: Dictionary = e
 		var kind := str(info.get("kind", ""))
 		damage_event.emit(kind, info)
+		_SFX.damage_event(get_parent(), kind)  # lane w54-audio：起火 / 火药舱炸 / 桅倒各一声，别的不响
 		if kind in NOTE_KINDS or (kind == "casualties" and int(info.get("n", 0)) >= 3):
 			_note(str(info.get("text", "")), int(info.get("severity", 1)))
 

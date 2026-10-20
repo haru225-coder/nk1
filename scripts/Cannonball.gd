@@ -303,6 +303,8 @@ static func _hit_method(body: Object) -> String:
 
 func _splash_and_die() -> void:
 	_done = true
+	if bool(shot.get("heavy", true)):
+		_SFX.play(get_parent(), &"sea_splash")  # lane w54-audio：重弹落水（一排矢只溅小花不响）
 	_spawn_fx(water_splash, global_position, -1 if bool(shot.get("heavy", true)) else LIGHT_SPLASH_AMOUNT)
 	queue_free()
 

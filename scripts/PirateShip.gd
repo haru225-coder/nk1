@@ -285,6 +285,8 @@ func _step_flood_fire(delta: float) -> void:
 	if host != null and host.get("is_storm") == true:
 		env["rain"] = true
 	var st: Dictionary = flood_fire.step(delta, crew, env)
+	if bool(st.get("blast", false)):
+		_SFX.play(host, &"sea_blast")  # lane w54-audio：火药舱炸
 	var blaze := clampf(float(st["hull_dps"]), 0.0, 1.0)
 	if blaze > 0.0:
 		# 「走 take_damage 同一处结算，不要绕开击沉逻辑」= 收弹那一条质检路：火烧船体扣账交 Cannonball 唯一爱看的
@@ -318,6 +320,8 @@ func _sync_fire_look(st: Dictionary) -> void:
 	var ff = flood_fire.ff if flood_fire != null else null
 	# 篷帆火势直接当火级（Ship._sync_combat_fx 同一路）；风往哪吹烟往哪拖（目标船上的风力场，读不到当无风）
 	if absf(fire_level - _ff_fx_fire_lv) >= _FF_FX_STEP or (fire_level > 0.0) != (_ff_fx_fire_lv > 0.0):
+		if fire_level > 0.0 and _ff_fx_fire_lv <= 0.0:
+			_SFX.play(get_parent(), &"sea_ignite")  # lane w54-audio：火由无到有那一下
 		_ff_fx_fire_lv = fire_level
 		_CombatFx.set_fire(self, fire_level, _ff_wind_drag())
 	# 进水级 = 渗漏起步 0.15，按舱水离沉没线（储备浮力）走了几成往上加，到线为 1（Ship 同式；
@@ -554,6 +558,7 @@ func _try_grapple() -> bool:
 	captain.on_grapple(ok)
 	grapple_thrown.emit(ok)
 	if not ok:
+		_SFX.play(host, &"sea_hook_miss")  # lane w54-audio
 		_flash_tag("钩索落空")
 		return false
 	_flash_tag("抛钩接舷")
@@ -812,6 +817,7 @@ func _rest_modulate() -> Color:
 
 
 func _explode() -> void:
+	_SFX.play(get_parent(), &"sea_sink")  # lane w54-audio：船板碎裂、水灌进去的那一声
 	# 赏金走 SeaChart 结算，击沉不再掉拾取箱。船身残影歪倒没入海面（CombatFx.founder，纯观感），真节点照旧当帧释放
 	_ff_look_off()  # lane w53-p3flood：沉前先收火烟 / 戽水（节点随船 queue_free，收在 founder 残影之前，免得冒烟残影定格）
 	_CombatFx.founder(self)
@@ -1034,6 +1040,7 @@ func ignite_on(p_other: Node2D) -> void:
 	if fire_spent:
 		return
 	fire_spent = true
+	_SFX.play(get_parent(), &"sea_fire_ship")  # lane w54-audio：撞上、火起
 	ram_hits += 1
 	velocity = Vector2.ZERO
 	if p_other != null and is_instance_valid(p_other) and p_other.has_method("take_hit"):

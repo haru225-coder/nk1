@@ -33,6 +33,7 @@ const _MeleeResolve := preload("res://scripts/combat/MeleeResolve.gd")
 const _SeaWake := preload("res://scripts/combat/SeaWake.gd")
 const _SeaPennant := preload("res://scripts/combat/SeaPennant.gd")
 const PIRATE_SCENE := "res://scenes/PirateShip.tscn"
+const _SFX := preload("res://scripts/audio/SfxCues.gd")  # lane w54-audio：护航接舷 / 钩索落空的声
 
 const NODE_NAME := "EscortWing"
 const SHIP_PREFIX := "EscortShip_"
@@ -587,9 +588,11 @@ func ship_hooks(att: Node2D, def: Node2D) -> bool:
 	if cap != null:
 		cap.call("on_grapple", ok)
 	if not ok:
+		_SFX.play(self, &"sea_hook_miss")
 		att.call("_flash_tag", "钩索落空")
 		return false
 	att.call("_flash_tag", "抛钩接舷")
+	_SFX.play(self, &"sea_escort_board")
 	att.set("escort_locked", true)
 	def.set("escort_locked", true)
 	_melees.append({"att": att, "def": def, "t": MELEE_HOLD_S})

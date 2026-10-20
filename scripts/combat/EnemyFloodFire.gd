@@ -144,6 +144,7 @@ func step(delta: float, crew: int, env: Dictionary) -> Dictionary:
 	var r: Dictionary = ff.step(delta, int(crews[0]), int(crews[1]), env, rng)
 	out["hull_dps"] = float(r["hull_burn"])
 	out["crew_cas"] = int(r["crew_burn"]) + (1 if bool(r["blast"]) else 0)
+	out["blast"] = bool(r["blast"])  # lane w54-audio：火药舱这一步炸了（PirateShip 放那一声；早退的两支不带这一格）
 	out["founder"] = str(r["founder"])
 	out["fire_zones"] = ff.burning()
 	out["list_deg"] = ff.list_deg()
