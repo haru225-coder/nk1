@@ -810,6 +810,7 @@ L1B_READERS = {  # 路径: (读取类别, 身份, 为什么许它读)
     "scripts/core/SaveLoad.gd": ({"api"}, "runtime", "存档迁移 v2→v3 回填人物志已识：职事候选 id → 人物 id（character_for_crew，只取 id；lane fx6）"),
     "tools/check_companions.py": ({"raw"}, "gate", "（lane w64-k1）companions.json 结构守卫：已定字段缺值 / 类型错 / id 重号撞名判红、留空判绿，对照名册 v2（characters 原稿）与 crew / ports / goods 各表；只读不上屏"),
     "tools/gate_json.py": ({"raw"}, "gate", "门禁登记表：条目 judge / when 文案引 characters.json 字段名（工具登记本体，自含 L1B 一条）"),
+    "tools/qa_w54_saves_migrate_probe.gd": ({"api"}, "dev", "（lane w54-saves，w54-gates 补登）旧版本档迁到本版逐项对探针：v2→v3 回填的 met_ids 经 GameManager.character_for_crew 取人物 id，只取 id 不上屏（开发工具，不进正式流程）"),
     "tools/qa_companion_preview_probe.gd": ({"api"}, "dev", "（lane w64-k1）同伴预览浮页运行时探针：上屏文案 / 钮面 / 六卡名签对 GameManager.get_character 取数口逐字断言（开发工具，不进正式流程）"),
     "tools/CharsDemo.gd": ({"api"}, "dev", "w26-k2 薄包装：extends scripts/chars/CharsDemo.gd 继承运行线真身，以 dev 身份走同一人物数据（GameManager 取数口）做接线自证，不进 scripts/ 不被 scenes/ project.godot 引用（开发工具，不进正式流程）"),
     "tools/qa_w53_8_codex_cols_probe.gd": ({"api", "codex"}, "dev", "（lane w53-8）人物志名册列数随页宽探针：摆真人物志页量格宽 / 列数，只读不上屏（主控补登记）"),
