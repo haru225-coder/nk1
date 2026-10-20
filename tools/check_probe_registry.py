@@ -164,6 +164,7 @@ EXEMPT = [
     ("qa_w54_tavern_ashore_probe.gd", "lane-w54-tavern", "酒馆与同伴专项探针：人在海上下不了船（史实辞船月初船在海上时人仍在船把舵、不发【辞船】不扣当月俸；欠饷满三月海上只撂下话、人还在船；真走 SeaChart._arrive 靠岸才下船、通告跟在抵港句后，泊港照旧月初走；一段钉一条、回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_tavern_hiring_probe.gd", "lane-w54-tavern", "酒馆募人题签专项探针（澎湖 / 萨摩 / 占城本无候雇之人，雇着人也不写「已雇之职不再列名。」；泉州五职雇齐、博多通事位已满两处照写，不列名人数对名册；一段钉一条、回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_story_skip_probe.gd", "lane-w54-story", "升章跳年时身上的委办免罚作罢专项探针（w53 待拍板 15：带委办与不带委办同一局面跳两年钱、名声逐位相等，委办清空、签发港不封单、札记「跳年委办作罢」、途中无「【逾期】」、代价段写明；真走第一章开章同断；反向基不跳年的寻常逾期照旧罚，回退即红），headless 秒级，随本 lane 落地验过留档"),
+    ("qa_w54_story_timing_probe.gd", "lane-w54-story", "剧情事件按设计年月出场专项探针（士人线辞呈卡：逐月真走日子，1275-10 不挂、1275-11 临安短札投放立旗但不挂、1275-12 起挂、未决照挂、选过一条路不挂，反向基海商线不挂，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),

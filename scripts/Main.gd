@@ -4610,7 +4610,7 @@ func _special_cards() -> Array:
 		out.append({"id": CARD_HANJIANG, "title": "涵江海口", "subtitle": _hanjiang_card_subtitle()})
 
 	# 士人线：辞呈已批，出不出国门（1275-12 起，未决则一直挂着）
-	if GameState.has_flag("vice_councillor") and not _resign_decided():
+	if GameState.has_flag("vice_councillor") and not _resign_decided() and _resign_due():
 		out.append({"id": CARD_RESIGN, "title": "临安・辞呈批语", "subtitle": "依奏。车已备在门外"})
 
 	# 海商线：崖山（1279 正月至三月，须在广州）；「不上前」掉过头的不再挂（_yashan_turn_back）
@@ -5281,3 +5281,13 @@ func _fork_no_enter(btn: Button, choices: Array) -> void:
 			forks += 1
 	if forks >= 2:
 		btn.set_meta("no_enter", true)
+
+
+## 辞呈卡几时起挂：德祐元年（1275）腊月起（终局系统化 §四「identity = scholar 且 Calendar 到 1275-12」，lane w54-story）。
+## vice_councillor 是 1275-11 那封临安短札「累迁参知政事……朝议降」投放时立的旗，原先只认旗——升参知政事的信刚到，同一个月
+## 岸上就挂出「辞呈是三天前批的」，中间那一个月没了。旗照旧立、卡等到腊月；未决照旧一直挂着。
+const RESIGN_FROM_YM := 1275 * 12 + 12
+
+
+func _resign_due() -> bool:
+	return Calendar.year * 12 + Calendar.month >= RESIGN_FROM_YM
