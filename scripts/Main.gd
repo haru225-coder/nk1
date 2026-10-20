@@ -4735,6 +4735,7 @@ func _mount_price_row(info: VBoxContainer, price_lbl: Label, port_id: String, go
 	price_row.add_theme_constant_override("separation", 8)
 	info.add_child(price_row)
 	price_row.add_child(price_lbl)
+	_COMBAT_NOTES.offer(self, "war_prices")  # lane w54-polish：牙行头一回挂战时短注，出一张「战时物价」旁注
 	var war_lbl := Label.new()
 	war_lbl.name = "WarPrice"
 	war_lbl.text = war_note
@@ -4758,6 +4759,8 @@ func _mount_price_row(info: VBoxContainer, price_lbl: Label, port_id: String, go
 const _SIEGE_MELEE := preload("res://scripts/combat/SiegeMelee.gd")
 ## 守城行事表、外援两样新玩法的开关（CombatSwitches，默认开；关掉守城页逐字回旧）
 const _SIEGE_SWITCHES := preload("res://scripts/combat/CombatSwitches.gd")
+## 一到六期新概念的旁注小笺（lane w54-polish，开关 combat_notes）：守城页、外援、牙行战时价头一回露面各出一张
+const _COMBAT_NOTES := preload("res://scripts/ui/CombatNotes.gd")
 
 
 ## 某月初一的历法写法：{abs 绝对日, era 「景炎元年」, month 「腊月」}；ym 为空返回空表（同 _siege_fall_point 的取法：
@@ -4796,6 +4799,7 @@ func _siege_schedule() -> Array:
 func _siege_band_row() -> Control:
 	var slip := _siege_stat_slip()
 	var side := _siege_schedule_slip()
+	_siege_notes(side)  # lane w54-polish：守城页头一回露面出「守城」旁注，行事表在就再出「元军行事」
 	if side == null:
 		return slip
 	var row := HBoxContainer.new()
@@ -4882,6 +4886,8 @@ func _siege_door_note(card_id: String) -> String:
 ## 市场 / 衙门 / 船屋三页的末行：外援开着时先排本页的外援一节，再挂「离开」（这一行原先就是 _add_leave_button("xinghua")）
 func _siege_page_foot(card_id: String) -> void:
 	if _SIEGE_SWITCHES.on("siege_relief"):
+		if card_id in [CARD_SIEGE_GRAIN, CARD_SIEGE_MUSTER, CARD_SIEGE_WALL]:
+			_COMBAT_NOTES.offer(self, "siege_relief")  # lane w54-polish：外援一节头一回露面，出一张旁注
 		match card_id:
 			CARD_SIEGE_GRAIN:
 				_siege_relief_convoy_section()
@@ -5247,3 +5253,11 @@ func _yashan_fleet_power() -> float:
 	for s in Fleet.ships:
 		cannons += int(Fleet.ship_def(s.get("type", "")).get("cannon_slots", 0))
 	return (Fleet.total_durability() * 0.5 + Fleet.total_crew() * 4.0 + cannons * 25.0 + Fleet.fleet_armor_level() * 30.0) * Fleet.morale_factor()
+
+
+## 守城页的旁注小笺（lane w54-polish，_siege_band_row 排城防账那一拍调）：城防账一露面出「守城」（三阵、五扇门），
+## 行事表那方小笺也在（不是只剩外援一行的 SiegeRelief）再出「元军行事」。看过的、开关关着的 CombatNotes 自己挡
+func _siege_notes(side: Control) -> void:
+	_COMBAT_NOTES.offer(self, "siege")
+	if side != null and side.name == "SiegeSchedule":
+		_COMBAT_NOTES.offer(self, "siege_schedule")

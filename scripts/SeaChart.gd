@@ -10,6 +10,8 @@ const _Letterbox := preload("res://scripts/ui/CombatLetterbox.gd")
 const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
 const _AfterAction := preload("res://scripts/combat/AfterAction.gd")
 const _Landing := preload("res://scripts/combat/LandingRaid.gd")
+## lane w54-polish：一到六期新概念的旁注小笺（第一次露面出一张，看过记旗标不再出；开关 combat_notes）
+const _Notes := preload("res://scripts/ui/CombatNotes.gd")
 
 var origin_port: String = ""
 var selected_port: String = ""
@@ -457,6 +459,8 @@ func _on_map_port_clicked(pid: String) -> void:
 		_select_heading(pid)
 		return
 	var why := HeadingDraft.seal_of(pid)
+	if why != "":
+		_Notes.offer(self, "blockade")  # lane w54-polish：头一回点到封着的港，出一张「封港」旁注（排在闯封锁那张之前）
 	if why == "":
 		_log("今日风不放这一向。")
 	elif _run_offerable(pid):
@@ -512,6 +516,7 @@ func _offer_run(pid: String) -> void:
 	_add_event_action("闯封锁", _choose_run.bind(pid))
 	_add_event_action("不去了", func(): event_panel.visible = false)
 	_open_event_panel()
+	_Notes.offer(self, "blockade_run")  # lane w54-polish：闯封锁那一面头一回挂出，出一张旁注
 
 
 func _choose_run(pid: String) -> void:
@@ -1801,6 +1806,7 @@ func _enter_battle() -> void:
 ## 战斗结果写回：对齐现有文本结算公式（逐字保留），再续航行
 func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	var dmg := float(data.get("player_damage", 0.0))
+	_battle_notes(outcome, data)  # lane w54-polish：赏钱分账 / 人心 / 大风两散 / 接任旗舰的旁注小笺（只读 data 与船队，不动账）
 	# 闯封锁拦港那一仗（_on_fight_blockade 起的）：这一程途中撞上的海寇、哨船不算，只认 source.event
 	var run_fight := str((GameManager.pending_battle.get("source", {}) as Dictionary).get("event", "")) == "blockade"
 	if outcome == "win":
@@ -1962,6 +1968,7 @@ func _after_action_offer(outcome: String, data: Dictionary) -> void:
 	if lb == null:
 		return
 	_aa_pending = true
+	_card_notes(choices)  # lane w54-polish：卡上头一回有押船救人那几行 / 登岸剿寨那一行，各出一张旁注
 
 
 ## 卡按下「收拾停当」：照选择逐项落账（钱 / 名声 / 收编 / 夺船漂走 / 追击一舷），注记句缀进札记，再续航行
@@ -2449,3 +2456,37 @@ func _landing_load(cargo: Dictionary) -> Dictionary:
 
 ## lane w53-p6-escort：护航上阵的战后札记句（EscortWing.settle_note）
 const _EscortWing := preload("res://scripts/combat/EscortWing.gd")
+
+
+# ── 旁注小笺（lane w54-polish，CombatNotes；开关 combat_notes）──────────
+## 收战这一拍（_on_battle_result 开头调，账还没落）：按这一仗带回的 data 与此刻船队判哪几样头一回露面——
+## 赏钱按打法分（胜局）、人心（士气带回航程，data.morale_carry）、大风两散（data.gale）、
+## 接任旗舰（旗舰沉了、船队里还有浮着的船——_flagship_handoff 同一判据，开关 flagship_handoff 归小笺自己那条认）。
+## 看过的、开关关着的由 CombatNotes.want 挡掉；这里只排队，不改任何账
+func _battle_notes(outcome: String, data: Dictionary) -> void:
+	if outcome == "win":
+		_Notes.offer(self, "bounty")
+	if data.has("morale_carry"):
+		_Notes.offer(self, "morale_carry")
+	if bool(data.get("gale", false)):
+		_Notes.offer(self, "gale")
+	if outcome == "lose" and bool(data.get("sunk", false)) and _handoff_ready():
+		_Notes.offer(self, "handoff")
+
+
+## 旗舰沉了、后头还有一条浮着的船（_flagship_handoff 接任的条件，只看不动）
+static func _handoff_ready() -> bool:
+	if Fleet.ships.size() < 2 or float((Fleet.ships[0] as Dictionary).get("durability", 0.0)) > 0.0:
+		return false
+	for i in range(1, Fleet.ships.size()):
+		if float((Fleet.ships[i] as Dictionary).get("durability", 0.0)) > 0.0:
+			return true
+	return false
+
+
+## 战后收拾小卡真挂上了（_after_action_offer 里 _aa_pending 之后调）：卡上有押船 / 救人 / 俘虏 / 索赎 / 追击那几行
+## 出「战后取舍」，有登岸剿寨那一行出「登岸剿寨」
+func _card_notes(choices: Array) -> void:
+	for row in choices:
+		if row is Dictionary:
+			_Notes.offer(self, "landing" if str(row.get("key", "")) == "landing" else "after_choices")

@@ -871,6 +871,8 @@ func _setup_combat(pb: Dictionary) -> void:
 	_CombatShoreHook.mount_combat_ui(self, ship)
 	# lane atmos：海面着色器驱动、航迹、敌我旗旒与轮廓、落水涟漪
 	_SeaAtmosphere.attach(self, ship)
+	# lane w54-polish：旁注小笺观察件——新玩法头一回露面时页边出一张讲解（只读场面、不掷骰；开关 combat_notes 关时不挂）
+	load("res://scripts/combat/CombatNoteWatch.gd").call("attach", self)
 
 
 ## 生成一支敌舰队，绕玩家船散布；hull_hp 按战力比缩放。sprite_id 空则精灵按 type 取（PirateShip.apply_sprite）

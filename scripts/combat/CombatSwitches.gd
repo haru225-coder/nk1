@@ -41,6 +41,8 @@ const DEFAULTS := {
 	# 第六期 · 大场面（可选，各 lane 各挂各的键）
 	"yashan_breakout": true,   # 崖山突围：崖山卡多一扇门「上船同去」，打一场雾里有火船的港湾战（关 = 崖山卡逐字回旧，没有这扇门）—— w53-p6-yashan
 	"yashan_fire_ship": true,  # 崖山港湾战里的火船：顺风放来、碰上就点火（关 = 只有元军船阵，没有火船）—— w53-p6-yashan
+	# w54 · 收尾与打磨
+	"combat_notes": true,      # 讲解小笺：一到六期的新概念头一回露面时页边出一张旁注（data/combat_notes.json，各条另认自己那样玩法的键），看过记进存档旗标 combat_note_<id> 不再出（关 = 一张不出、旗标不写）—— w54-polish
 }
 
 static var _over: Dictionary = {}
