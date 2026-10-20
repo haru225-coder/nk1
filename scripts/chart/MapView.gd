@@ -719,6 +719,8 @@ func set_view_inset(top: float, bottom: float) -> void:
 	var changed := absf(top - inset_top) > 0.5 or absf(bottom - inset_bottom) > 0.5
 	inset_top = maxf(top, 0.0)
 	inset_bottom = maxf(bottom, 0.0)
+	if changed:
+		_layout_key = ""  # 港名按露出的图带摆（_ensure_layout），图带高矮一变就重摆
 	if not changed or not is_inside_tree() or camera == null:
 		return
 	# 图带变了（收牌 / 展牌 / 拉窗口）：起点港或目的港若被挤出图带，平移镜头把它拉回来，不改缩放
@@ -1216,6 +1218,8 @@ func _ensure_layout() -> void:
 	for hr: Rect2 in hud_rects:
 		hud_w.append(_screen_to_world_rect(hr))
 	_port_obstacles.append_array(hud_w)
+	# 露出的图带（顶匾之下、牌区之上，左右到屏幕边）：港位在带里的港，名字尽量也摆在带里（lane w54-chartui）
+	var seen := _band_world_rect()
 	var drawn := []
 	for p in order:
 		var pid := str(p.get("id", ""))
@@ -1253,7 +1257,13 @@ func _ensure_layout() -> void:
 		var block_w := maxf(tw, sub_w)
 		var block_h := th + (_px(sub_px * 1.2) if sub_w > 0.0 else 0.0)
 		var pad := r + _px(7.0)
-		# 右、左、上、下、右上、右下；全撞时取重叠面积最小的那个，不再一律放右边
+		# 右、左、上、下、右上、右下、左上、左下；全撞时取重叠面积最小的那个，不再一律放右边。
+		# 重叠一样（多半是都不压东西）时取出图带最少的：港位在带里，名字出了屏幕左右边、钻进顶匾或牌区底下就看不见了。
+		# 原先只有前六处、带外不算：贴着图带右边的港名照样摆右边、半截出了屏幕，右边让罗盘或别的港名占着时宁可摆到左边
+		# 屏幕外；挨着的港（兴化 / 兴化海口、泉州）六处都撞，名字压名字。全图、选向与拖到图带四边的 743 个镜头里，港框整个
+		# 在带里的 1561 处有 59 处港名出带（40 处出了屏幕），港名互压 13 处、压港框 16 处、压 HUD 块 12 处；改后出带 29 处
+		# （都是带里每一处都要压东西的），互压 7、压港框 5、压 HUD 块 6（lane w54-chartui）
+		var in_band := seen.has_point(v)
 		var candidates := [
 			Vector2(pad, _px(size_px * 0.4)),
 			Vector2(-pad - block_w, _px(size_px * 0.4)),
@@ -1261,10 +1271,13 @@ func _ensure_layout() -> void:
 			Vector2(-block_w * 0.5, pad + th),
 			Vector2(pad, -pad - block_h + th),
 			Vector2(pad, pad + th),
+			Vector2(-pad - block_w, -pad - block_h + th),
+			Vector2(-pad - block_w, pad + th),
 		]
 		var best: Vector2 = candidates[0]
 		var best_rect := Rect2(v + best - Vector2(0, th * 0.8), Vector2(block_w, block_h))
 		var best_cost := INF
+		var best_out := INF
 		for c in candidates:
 			var cv: Vector2 = c
 			var rect := Rect2(v + cv - Vector2(0, th * 0.8), Vector2(block_w, block_h))
@@ -1272,11 +1285,15 @@ func _ensure_layout() -> void:
 			for o in _port_obstacles:
 				if o.intersects(rect):
 					cost += o.intersection(rect).get_area()
-			if cost < best_cost:
+			var out := 0.0
+			if in_band:
+				out = rect.get_area() - rect.intersection(seen).get_area()
+			if cost < best_cost or (cost == best_cost and out < best_out):
 				best_cost = cost
+				best_out = out
 				best = cv
 				best_rect = rect
-			if cost <= 0.0:
+			if cost <= 0.0 and out <= 0.0:
 				break
 		_port_obstacles.append(best_rect)
 		_port_label_texts[text] = true
