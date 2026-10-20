@@ -739,7 +739,7 @@ func _storm_event() -> Dictionary:
 			lost[gid] = l
 	Fleet.morale = maxi(0, Fleet.morale - int(8 * severity))
 
-	var txt := "风起于西北，浪头一个高过一个。舵工死命抵住舵杆，桅上帆索绷得发白。"
+	var txt := _storm_opening(severity)  # 开关 sea_event_variants 关 = 逐字原句（lane w54-seaevents）
 	if not lost.is_empty():
 		var parts := []
 		for gid in lost.keys():
@@ -754,7 +754,7 @@ func _calm_event() -> Dictionary:
 	return {
 		"kind": EventKind.CALM,
 		"title": "无风带",
-		"text": "海面平得像一张铺开的绢。帆垂着不动，船在原处打转。水手们开始盘算舱里还剩多少水。",
+		"text": _calm_text(),
 		"delay": 1,
 	}
 
@@ -779,7 +779,7 @@ func pirate_sighting() -> Dictionary:
 	return {
 		"kind": EventKind.PIRATE,
 		"title": "不明船影",
-		"text": "桅斗上的瞭望手忽然压低嗓子喊了一声。右舷后方跟着两条快船，不挂旗，桨手比商船多出一倍。",
+		"text": _sighting_text(),
 	}
 
 
@@ -883,7 +883,7 @@ func _merchant_event(from_id: String) -> Dictionary:
 				GameManager.get_good_name(lot["good_id"]), int(lot["unit"]), int(lot["qty"]), rumor_line,
 			]
 			return ev
-	ev["text"] = "迎面来了一条福船，降下半帆。两船靠近，换了些淡水，没谈成买卖。\n" + rumor_line
+	ev["text"] = _passing_text() + rumor_line
 	return ev
 
 
@@ -954,7 +954,7 @@ func _lost_event() -> Dictionary:
 	return {
 		"kind": EventKind.LOST,
 		"title": "迷航",
-		"text": "海图上这一段是空白。火长把针盘转了两圈，承认针位对不上岸影——这一日白走了，还退回去一截。",
+		"text": _lost_text(),
 		"progress_mult": LOST_PROGRESS,
 	}
 
@@ -1045,3 +1045,89 @@ func settle_war_event(kind: int) -> void:
 
 func war_event_settled(kind: int) -> bool:
 	return bool(_settled_this_voyage.get(kind, false))
+
+
+# ══ lane w54-seaevents：海上遇事变体（开关 sea_event_variants）══
+# 只换字：扣数、行程系数、骰序一字不动——挑哪一句按月份 / 日子定，不掷骰，同一种子同一程逐日遇的事、扣的数与关着时一样；
+# 开关关 = 逐字原句（下面 *_OLD 那几行就是原先写死在各事件里的字）。
+const _Switches := preload("res://scripts/combat/CombatSwitches.gd")
+const STORM_OPEN_OLD := "风起于西北，浪头一个高过一个。舵工死命抵住舵杆，桅上帆索绷得发白。"
+const CALM_OLD := "海面平得像一张铺开的绢。帆垂着不动，船在原处打转。水手们开始盘算舱里还剩多少水。"
+const SIGHTING_OLD := "桅斗上的瞭望手忽然压低嗓子喊了一声。右舷后方跟着两条快船，不挂旗，桨手比商船多出一倍。"
+const PASSING_OLD := "迎面来了一条福船，降下半帆。两船靠近，换了些淡水，没谈成买卖。\n"
+const LOST_OLD := "海图上这一段是空白。火长把针盘转了两圈，承认针位对不上岸影——这一日白走了，还退回去一截。"
+## 风涛起笔按季节写风（原句不分季节，一年到头「风起于西北」）：十月到二月东北季风写北风；五六月西南风正盛、梅雨时节写南风带雨；
+## 七到九月台风季写「飓母」——天边虹似的晕，唐人《岭表录异》记岭南海上见它「飓风必发」；三四月换季，风向不定。风势重再补一句船身吃劲
+const STORM_OPEN_NE := "北风一阵紧过一阵，浪头从船头压过来。舵工死命抵住舵杆，桅上帆索绷得发白。"
+const STORM_OPEN_SW := "南风裹着暴雨压下来，浪头一个高过一个。舵工死命抵住舵杆，桅上帆索绷得发白。"
+const STORM_OPEN_TYPHOON := "天边起了一道虹似的晕，老舵工说那是飓母。不到午后风就到了，浪头一个高过一个，舵工死命抵住舵杆。"
+const STORM_OPEN_TURN := "风向说变就变，一阵东一阵北，浪头横着打过来。舵工死命抵住舵杆，桅上帆索绷得发白。"
+const STORM_HEAVY := "船身吃不住劲，木头吱呀作响。"
+const STORM_HEAVY_AT := 0.8
+## 无风带：五到九月写烈日，二到四月闽浙沿海春雾多写大雾（雾里看不见岸影，这一日照旧不走），其余月份原句
+const CALM_SUMMER := "日头毒，海面平得像一张铺开的绢。帆垂着不动，水手们躲在帆影底下，开始盘算舱里还剩多少水。"
+const CALM_FOG := "起了大雾，四下里白茫茫一片。帆垂着不动，船在原处打转，桅斗上的人什么也看不见。"
+## 不明船影：两条快船、不挂旗照旧（与 SeaChart.PIRATE_ENEMY 两艘同数），只换撞见的时辰与方位
+const SIGHTING_MORE := [
+	"天刚蒙蒙亮，瞭望手就喊了起来。两条快船从岛影后头绕出来，不挂旗，桨手比商船多出一倍。",
+	"午后起了一阵薄雾。雾散时，左舷后方多了两条快船，不挂旗，一前一后咬住你的船尾。",
+]
+## 海上相逢没谈成买卖：后面照接对方说的那条行情；新添两句不提换淡水（原句「换了些淡水」账上本就不动水）
+const PASSING_MORE := [
+	"一条往北去的广船从旁经过，船主隔着船舷问你从哪里来，没谈成买卖。\n",
+	"一条从南边回来的番舶靠过来，纲首会说几句唐话，换了几句行情，没谈成买卖。\n",
+]
+## 迷航：宋人行船「夜则观星，昼则观日，阴晦观指南针」（《萍洲可谈》）——添一句阴天只能守着针盘
+const LOST_MORE := "天阴着，昼不见日、夜不见星，火长只能守着针盘走。傍晚才认出昨天经过的那座礁——这一日白走了，还退回去一截。"
+
+
+func _variants_on() -> bool:
+	return _Switches.on("sea_event_variants")
+
+
+func _storm_opening(severity: float) -> String:
+	if not _variants_on():
+		return STORM_OPEN_OLD
+	var m := Calendar.month
+	var s := STORM_OPEN_TURN
+	if m >= 10 or m <= 2:
+		s = STORM_OPEN_NE
+	elif m >= 7:
+		s = STORM_OPEN_TYPHOON
+	elif m >= 5:
+		s = STORM_OPEN_SW
+	if severity >= STORM_HEAVY_AT:
+		s += STORM_HEAVY
+	return s
+
+
+func _calm_text() -> String:
+	if not _variants_on():
+		return CALM_OLD
+	var m := Calendar.month
+	if m >= 5 and m <= 9:
+		return CALM_SUMMER
+	if m >= 2 and m <= 4:
+		return CALM_FOG
+	return CALM_OLD
+
+
+## 按日子轮：原句、新添两句各占一份
+func _sighting_text() -> String:
+	if not _variants_on():
+		return SIGHTING_OLD
+	var k := Calendar.absolute_day() % (SIGHTING_MORE.size() + 1)
+	return SIGHTING_OLD if k == 0 else str(SIGHTING_MORE[k - 1])
+
+
+func _passing_text() -> String:
+	if not _variants_on():
+		return PASSING_OLD
+	var k := Calendar.absolute_day() % (PASSING_MORE.size() + 1)
+	return PASSING_OLD if k == 0 else str(PASSING_MORE[k - 1])
+
+
+func _lost_text() -> String:
+	if not _variants_on() or Calendar.absolute_day() % 2 == 0:
+		return LOST_OLD
+	return LOST_MORE
