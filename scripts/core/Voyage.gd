@@ -974,11 +974,12 @@ func _discovery_candidates(from_id: String, to_id: String) -> Array:
 
 ## 只抽当前航段沿途可能有的、且尚未勘见的发现物
 func _discovery_event(from_id: String = "", to_id: String = "") -> Dictionary:
-	var pool := _discovery_candidates(from_id, to_id)
+	var pool := _discovery_candidates(from_id, to_id).filter(func(x) -> bool: return not _shore_seen_this_voyage.has(str(x.get("id", ""))))  # 这一程露过面的不再露（lane w54-seaevents）
 	if pool.is_empty():
 		return {"kind": EventKind.NONE}
 
 	var d = pool[randi() % pool.size()]
+	_shore_seen_this_voyage[str(d.get("id", ""))] = true
 	return {
 		"kind": EventKind.DISCOVERY,
 		"title": "岸影",
@@ -1027,10 +1028,15 @@ func route_wind_factor(from_id: String, to_id: String) -> float:
 ## 落帆受检」再翻一遍舱；扬帆逃走、迎战都不算了结（没受检，往后照旧会撞上）。
 ## 只活在这一程里：SeaChart 发舶时 begin_voyage() 清空（海上不能存档，不进存档）
 var _settled_this_voyage: Dictionary = {}
+## 这一程上已经露过面的岸影 {发现物 id: true}。原先点「不理会」之后，同一程照样再抽到同一处——船已开出几百里，「左舷远处
+## 露出一线陆影……那多半就是老辈人讲的 X」又来一遍（傍岸十二日一程、只剩一处未勘时约四程有一程重露）。露过面的这一程不再露（那一日照无事过：
+## 岸影与无事同为整日行程，推演不变），下一程发舶清掉；勘见了的本就不再进候选（_discovery_candidates）
+var _shore_seen_this_voyage: Dictionary = {}
 
 
 func begin_voyage() -> void:
 	_settled_this_voyage.clear()
+	_shore_seen_this_voyage.clear()
 
 
 func settle_war_event(kind: int) -> void:

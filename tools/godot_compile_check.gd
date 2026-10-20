@@ -298,6 +298,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_tutorial_unsailed_permit_probe.gd",  # lane w54-tutorial 海图没发舶就回港货引还在手探针（修看风放行即销引）
 	"res://tools/qa_w54_tutorial_supply_line_probe.gd",  # lane w54-tutorial 船屋「补给」那一行写明单价与日耗单位探针
 	"res://tools/qa_w54_seaevents_rumor_probe.gd",  # lane w54-seaevents 海上相逢只传卖得了货的港探针（围城闭门、封港的港不传行情）
+	"res://tools/qa_w54_seaevents_shore_probe.gd",  # lane w54-seaevents 同一处岸影一程只露一回面探针（不理会之后同一程不再重露）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
