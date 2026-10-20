@@ -80,6 +80,11 @@ const HOOKS := {
 		"where": "Main._siege_relief_timber（拆船料修墙：帆桅拆下来扛上城头）"},
 	&"siege_fall": {"layers": [[&"combat_hit", -3.0, 0.0, 0.45], [&"combat_lose", -5.0, 0.4]], "added": true, "gap_ms": 3000,
 		"where": "Main._siege_fall（城破：城门裂开，随后两记下行磬音）"},
+	# ── 本波补挂 · 登岸剿寨（六期）──
+	&"landing_win": {"layers": [[&"combat_start", -5.0], [&"combat_win", -7.0, 0.75]], "added": true, "gap_ms": 1500,
+		"where": "SeaChart._landing_settle 剿寨得手（一阵鼓，随后三记上行磬音）"},
+	&"landing_lose": {"layers": [[&"combat_start", -5.0], [&"combat_lose", -7.0, 0.75]], "added": true, "gap_ms": 1500,
+		"where": "SeaChart._landing_settle 剿寨失手（一阵鼓，随后两记下行）"},
 }
 
 ## 旗舰损伤事件（Ship.damage_event 的 kind）→ 挂点；表外的 kind 不响

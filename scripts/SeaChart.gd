@@ -2425,6 +2425,8 @@ func last_landing_report() -> Dictionary:
 ## 败「寨门没打开，下船的人退回船上。折了 N 人。名声加 1。」——钱与货各说一遍，不重话。
 func _landing_settle(res: Dictionary, notes: PackedStringArray) -> void:
 	var won := bool(res.get("won", false))
+	if int(res.get("landing", 0)) > 0:  # lane w54-audio：真下了船才有这一仗（收队回船、没人可下都不响）——一阵鼓，随后胜负磬音
+		_SFX.play(self, &"landing_win" if won else &"landing_lose")
 	if int(res.get("money", 0)) > 0:
 		GameState.add_money(int(res.get("money", 0)))
 	var fame_note := ""
