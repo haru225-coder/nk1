@@ -7,7 +7,8 @@ extends SceneTree
 ##        唯一差 = 「过量那份额外记」——修法后 strictly 更多，回退则相等即红）：
 ##   一节：轻创不击沉——过量为 0，修法对普通中弹零影响（crew 同旧式）；
 ##   二节：恰好击沉（35 挨 35）vs 残血挨过量弹（5 挨 35，过量 30）——后者 crew 更少；
-##   三节：过量期望——16 轮累计差 18 人（修法）对 0 人（回退），σ 0.95/轮×16 轮压不住、回退恰 0 即红。
+##   三节：过量期望——16 轮累计差 18 人（修法）对 0 人（回退）、回退恰 0 即红。每轮两艘同种子（lane w54-det）：
+##       「均匀杀伤」那一掷两艘掷出同一个数，差出来的恰是「过量那份」——修法逐轮 0–2 人、回退逐轮恰 0，不再赌 16 轮的均值。
 ## 用法：godot --headless --path . -s res://tools/qa_w53_2_combat_overkill_probe.gd
 ## 判词：W53_OVERKILL_PROBE PASS / FAIL k …。
 const TAG := "W53_OVERKILL_PROBE"
@@ -29,8 +30,11 @@ func _emit(ok: bool, what: String) -> void:
 
 ## 孤本敌船一艘（满 crew、不进树物理、直接 take_damage）；target 只是摆设。
 ## 击沉会 queue_free 本体，但本帧属性仍读得到（overkill 折 crew 在 take_damage 里同步落账）。
-func _shot(hull: float, amount: float, crew_n: int) -> Dictionary:
+## rng_seed 非 0：船上 _rng（_ready 里自己 randomize() 过）按它重起——伤亡两掷（均匀那份、过量那份）都掷它
+func _shot(hull: float, amount: float, crew_n: int, rng_seed := 0) -> Dictionary:
 	var p := _new_stub(hull, crew_n)
+	if rng_seed != 0:
+		(p.get("_rng") as RandomNumberGenerator).seed = rng_seed
 	p.take_damage(amount)
 	var out := {
 		"hull": float(p.hull_hp) if is_instance_valid(p) else -1.0,
@@ -69,15 +73,18 @@ func _run() -> void:
 	#        唯一差 = 「过量那份额外记」。用 amount=35：
 	#   恰好（hull 35 挨 35）：均匀 35，死 ~1.33 → 期望剩 28.67。
 	#   过量（hull  5 挨 35）：均匀 35 + 过量 30，死 ~1.33+1.14=2.47 → 期望剩 27.53。
-	# 三节（回退笃红）：16 轮差 18 人（修法）vs 0 人（回退），σ 0.95/轮压不住。
+	# 三节（回退笃红）：16 轮差 18 人（修法）vs 0 人（回退）。
 	#        「杀伤随落距/品质衰减」不在本探针范围（喂入的 amount 是 x1 后的）；测的是「击沉过量蒸发」。
+	# 每轮两艘同一个种子（lane w54-det）：原先两艘各自 randomize()，均匀那份两边各掷各的，16 轮均值差期望 1.18、
+	#        σ 约 0.25，判线 0.6——百来遍里总有一遍掉到线下（实见 0.50）。同种子后均匀那份两边一模一样，
+	#        差出来的恰是过量那份；种子定的，每遍同一个数
 	var trials := 16
 	var crew_exact := 0.0
 	var crew_over := 0.0
 	var hull_clamp_ok := true
 	for i in range(trials):
-		var k_exact := _shot(35.0, 35.0, 30)
-		var k_over := _shot(5.0, 35.0, 30)
+		var k_exact := _shot(35.0, 35.0, 30, 54_000 + i)
+		var k_over := _shot(5.0, 35.0, 30, 54_000 + i)
 		crew_exact += float(k_exact["crew"])
 		crew_over += float(k_over["crew"])
 		if not is_equal_approx(float(k_over["hull"]), 0.0):
