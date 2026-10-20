@@ -1608,7 +1608,7 @@ func _show_event(event: Dictionary) -> void:
 	elif kind == Voyage.EventKind.PIRATE:
 		_add_event_action("迎战", _on_fight_pirates)
 		_add_event_action("扬帆逃走", _on_flee_pirates)
-		_add_event_action("献上买路财", _on_pay_pirates)
+		_add_event_action("献上买路财", _on_pay_pirates); _tutorial_pirate()  # 新手小笺（lane w54-tutorial）
 	elif kind == Voyage.EventKind.DISCOVERY:
 		_add_event_action("绕去细看　费一日", _on_investigate_discovery)
 		_add_event_action("不理会　继续航行", _on_event_continue)
@@ -2683,3 +2683,25 @@ func _flee_fail_note(lost_str: String, hull_cut: float) -> String:
 	if int(hull_cut) > 0:
 		s += "船体受损 %d。" % int(hull_cut)
 	return s
+
+
+	_tutorial_chart()
+
+
+# ── 新手上手小笺（lane w54-tutorial，scripts/ui/TutorialNotes.gd；只给本机没有存档时新开的一局，开关 tutorial_notes）──
+const _Tutorial := preload("res://scripts/ui/TutorialNotes.gd")
+
+
+## 开海图（_log_departure 末尾）：出「看风」；发了舶还没轮到的撤下
+func _tutorial_chart() -> void:
+	_Tutorial.offer(self, "chart", func() -> bool: return not sailing)
+
+
+## 海上遇盗（_show_event 海盗那一支）：先让路——这一页别的新手小笺收起 / 撤下——再排「遇盗」，随事件面板走：
+## 选了怎么办（面板收起，开打、逃、给钱都算）就撤，不压到海战的小笺上
+func _tutorial_pirate() -> void:
+	if not _Tutorial.want("pirate"):
+		return
+	_Tutorial.clear_others(self, "pirate")
+	_Tutorial.offer(self, "pirate", func() -> bool:
+		return event_panel.visible and int(pending_event.get("kind", -1)) == Voyage.EventKind.PIRATE, true)

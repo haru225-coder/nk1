@@ -68,8 +68,22 @@ static func table() -> Dictionary:
 	return _tab
 
 
+## 另一本：新手上手小笺（lane w54-tutorial，data/tutorial_notes.json）。同格式，同一页里与本表排一个队、用同一张纸出；
+## 已读旗另起前缀 tutorial_note_。谁看得到、几时排归 scripts/ui/TutorialNotes.gd，这里只认条目；table() 仍只是本表
+const TUTORIAL_PATH := "res://data/tutorial_notes.json"
+const TUTORIAL_FLAG_PREFIX := "tutorial_note_"
+static var _tut: Dictionary = {}
+static func tutorial_table() -> Dictionary:
+	if _tut.is_empty():
+		var d: Dictionary = Kit.load_json(TUTORIAL_PATH)
+		for e in d.get("notes", []):
+			if e is Dictionary and str(e.get("id", "")) != "":
+				_tut[str(e["id"])] = e
+	return _tut
+
+
 static func entry(id: String) -> Dictionary:
-	return table().get(id, {})
+	return table().get(id, tutorial_table().get(id, {}))
 
 
 ## 这一条挂的开关：switch 字串或字串表，空串 / 缺 = 只看总开关
@@ -100,7 +114,7 @@ static func switches_on(id: String) -> bool:
 
 
 static func flag_of(id: String) -> String:
-	return FLAG_PREFIX + id
+	return (TUTORIAL_FLAG_PREFIX if not table().has(id) and tutorial_table().has(id) else FLAG_PREFIX) + id
 
 
 ## GameState（autoload 按路径取；探针里没挂就当一张没看过、也记不下）
@@ -190,6 +204,14 @@ func slip() -> PanelContainer:
 func dismiss() -> void:
 	if _slip != null and not _closing:
 		_close()
+
+
+## 撤下一张（lane w54-tutorial：随事件面板的那张，面板收起就撤）：正出着就收起，还排着就从队里拿掉（没出的不记已读）
+func withdraw(id: String) -> void:
+	if id != "" and id == _cur:
+		dismiss()
+	elif _queue.has(id):
+		_queue.remove_at(_queue.find(id))
 
 
 func _process(delta: float) -> void:

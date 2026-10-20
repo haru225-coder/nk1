@@ -48,6 +48,9 @@ const DEFAULTS := {
 
 
 	"port_life": true,         # w54 收尾 · 岸上见闻：寻常港页行首注下添一行码头光景的纪实短句，按港所在一带、季风、战况写（scripts/core/PortLife.gd；关 = 小笺只一行行首注，逐字回旧）—— w54-port
+
+
+	"tutorial_notes": true,    # w54 收尾 · 新手上手小笺：开局头一回进港页、进牙行、开海图、海上遇盗、被蒲家记上一笔后的港页，页边各出一张旁注讲这一页怎么用（data/tutorial_notes.json，借讲解小笺那一层出；只给本机没有存档时新开的一局，定下记旗 tutorial_on / tutorial_off；看过记旗 tutorial_note_<id>；关 = 一张不出、旗标不写；总开关 combat_notes 关时也不出）—— w54-tutorial
 }
 
 static var _over: Dictionary = {}

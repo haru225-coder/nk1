@@ -1324,7 +1324,7 @@ func _setup_market(port_id: String) -> void:
 	_attach_quiet(choices_container, shut)
 
 	choices_label.visible = true
-	choices_label.text = "舱位 %d / %d 料" % [int(Fleet.used_capacity()), int(Fleet.total_capacity())]
+	choices_label.text = "舱位 %d / %d 料" % [int(Fleet.used_capacity()), int(Fleet.total_capacity())]; _tutorial_market()  # 新手小笺（lane w54-tutorial）
 
 
 ## 闭门牙行开侧门只收先前订下的委办货（交货地是本港时）
@@ -2621,7 +2621,7 @@ func _refresh_shore() -> void:
 		# chars 线薄接入：名册 / 立绘面板（CharRoster + CharPortraitPanel）
 		actions.add_child(_shore_action("名册", Vector2(100, 42), false, _open_chars_wire.bind("")))
 	# Lane L：市舶纪事册页（立像裱框 + 海战定格示意）；论文纪实题签，不入存档
-	actions.add_child(_shore_action("市舶纪事", Vector2(140, 42), false, _open_vision_stage))
+	actions.add_child(_shore_action("市舶纪事", Vector2(140, 42), false, _open_vision_stage)); _tutorial_shore()  # 新手小笺（lane w54-tutorial）
 
 
 ## 重读结局：只翻开既有 ChapterSheet，不传 ending（不再 finish、不演过场、不换结算底图）；
@@ -5420,3 +5420,27 @@ func _late_text(text: String) -> String:
 		for pair in LATE_LINES[cid]:
 			out = out.replace(str(pair[0]), str(pair[1]))
 	return out
+
+
+# ══ 新手上手小笺（lane w54-tutorial）══════════════════════
+## 开局头一回进港页、进牙行，头一回被蒲家记上一笔之后的港页，页边各出一张旁注（scripts/ui/TutorialNotes.gd：只给本机没有存档时
+## 新开的一局；开关 tutorial_notes）。上面只留两处一行的接头：_refresh_shore 末行、_setup_market 末行；新代码挂在这里，
+## 拍板清单引的行号不挪。海图与海上遇盗那两张挂在 SeaChart 文件尾
+const _TUTORIAL := preload("res://scripts/ui/TutorialNotes.gd")
+
+
+## 寻常港页排好：出「靠港」；蒲家已经记上一笔（无引塞钱出过港、夹带违禁过关）再出「货引」。守城、终局页不出。
+## 离了港页（进门、换页）还没轮到的撤下，下回进港页再出
+func _tutorial_shore() -> void:
+	if _shore_mode != "port":
+		return
+	var on_shore := func() -> bool: return port_mode.visible and _shore_mode == "port"
+	_TUTORIAL.offer(self, "port", on_shore)
+	if GameState.pu_attention > 0:
+		_TUTORIAL.offer(self, "permit", on_shore)
+
+
+## 牙行开着、柜上三样排好（上了门闸、无牙行的页走不到这里）：出「牙行」；离了这一页还没轮到的撤下
+func _tutorial_market() -> void:
+	var page := current_scene_id
+	_TUTORIAL.offer(self, "market", func() -> bool: return current_scene_id == page and investigation_mode.visible)

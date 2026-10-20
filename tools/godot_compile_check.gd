@@ -293,6 +293,8 @@ const SCRIPTS := [
 	"res://tools/qa_w54_ending_years_probe.gd",  # lane w54-ending 终局抉择页与结局页里「N年前」按开局年算（辞呈页货引二十年前）
 	"res://tools/qa_w54_ending_late_lines_probe.gd",  # lane w54-ending 章节过渡页写到的人已不在世就换句（林阿舶 1274 后开第二 / 三章）
 	"res://tools/qa_w54_ending_era_line_probe.gd",  # lane w54-ending 升章册页「这一路」主航线写「泉州到某港那一程」、不夹箭头
+	"res://scripts/ui/TutorialNotes.gd",  # lane w54-tutorial 新手上手小笺（只给本机没有存档时新开的一局；借讲解小笺那一层出，开关 tutorial_notes）
+	"res://tools/qa_w54_tutorial_notes_probe.gd",  # lane w54-tutorial 新手上手小笺专项探针（表与文案 / 谁看得到 / 港页与牙行 / 海图与遇盗 / 老玩家不出）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
