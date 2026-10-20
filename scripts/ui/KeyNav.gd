@@ -8,12 +8,21 @@ extends Node
 ## Esc 有出口：设施页、见面页、只有「离开 / 返回上一处」可走的剧情页，按 Esc 即按页上那颗离开钮（同鼠标点它）；船籍簿开着
 ## 先合上船籍簿。原先 Main 不认 Esc，只有人物志 / 名册 / 市舶纪事 / 航海日志各自认，进了设施页按 Esc 没有反应。
 ## 港页是总汇、无处可退，Esc 不动；剧情岔路（挂 no_enter 的选项）不替人选；册页只有落定一条路，Esc 不替人落定。
+## 焦点不丢：牙行「买 1 / 卖 1」、港页「再候一日」、旅店「歇 N 日」这类钮按完整页重排（load_scene 本页 / _build_shore），
+## 焦点随旧钮一起离树，键盘玩家每买一件都得从页首重新 Tab 四十几下。现在键盘焦点所在的钮离树时记下「哪一页、钮上的字、
+## 同字的第几颗」，下一帧在重排好的同一页上找回同一位置那颗、把焦点还给它；换了页、开了浮层、焦点已另有去处就作罢。
+## 鼠标 / 触屏点出来的那份焦点（不画框）不还：鼠标玩家照旧，空格 / 回车不会去重按刚点过的钮。
 
 var main: Control
 ## 头一层浮层开起来之前焦点在哪（合上后还给它；鼠标点出来的那份焦点不画框，还回去也不画）
 var _before: Control = null
 var _before_shown := false
 var _queued := false
+## 眼下拿着键盘焦点、盯着它离树的那颗钮，与它的「页・字・同字第几颗」
+var _watch: Button = null
+var _watch_sig: Dictionary = {}
+## 每回焦点换手加一：找回焦点的那一路醒来对不上就作罢
+var _focus_serial := 0
 
 
 func _ready() -> void:
@@ -21,6 +30,7 @@ func _ready() -> void:
 	main.child_exiting_tree.connect(_queue_sync)
 	if main._ledger_layer != null:
 		main._ledger_layer.visibility_changed.connect(_queue_sync)
+	main.get_viewport().gui_focus_changed.connect(_on_focus_changed)
 
 
 func _queue_sync(_n: Node = null) -> void:
@@ -118,3 +128,58 @@ func leave_button() -> Button:
 					and not btn.is_queued_for_deletion():
 				return btn
 	return null
+
+
+# ── 焦点不丢 ───────────────────────────────────────────
+
+func _on_focus_changed(c: Control) -> void:
+	_focus_serial += 1
+	if _watch != null and is_instance_valid(_watch) and _watch.tree_exiting.is_connected(_on_focus_leaving):
+		_watch.tree_exiting.disconnect(_on_focus_leaving)
+	_watch = null
+	_watch_sig = {}
+	# 只盯页上的键盘焦点（画框的那份）；鼠标点出来的不还，浮层里的钮随浮层合上就该没了
+	if not (c is Button) or not main.is_ancestor_of(c) or not c.has_focus(true) or top_overlay() != null:
+		return
+	var btn := c as Button
+	_watch = btn
+	_watch_sig = {"scene": str(main.current_scene_id), "port": main.port_mode.visible, "text": btn.text,
+		"nth": _page_buttons(btn.text).find(btn)}
+	btn.tree_exiting.connect(_on_focus_leaving)
+
+
+func _on_focus_leaving() -> void:
+	if _watch == null or not is_instance_valid(_watch) or not _watch.has_focus() or _watch_sig.is_empty():
+		return
+	var sig := _watch_sig
+	_watch.tree_exiting.disconnect(_on_focus_leaving)
+	_watch = null
+	_watch_sig = {}
+	_focus_serial += 1
+	_regain(sig, _focus_serial)
+
+
+## 等重排好的那一页（同步重排的下一帧就在）：同一页、没开浮层、焦点还空着，就把焦点还给同字同位那颗
+func _regain(sig: Dictionary, serial: int) -> void:
+	for _i in 30:
+		await get_tree().process_frame
+		if serial != _focus_serial or main == null or not is_instance_valid(main):
+			return
+		if str(main.current_scene_id) != str(sig["scene"]) or main.port_mode.visible != bool(sig["port"]) \
+				or top_overlay() != null or main.get_viewport().gui_get_focus_owner() != null:
+			return
+		var same := _page_buttons(str(sig["text"]))
+		var nth := int(sig["nth"])
+		if nth >= 0 and nth < same.size():
+			(same[nth] as Button).grab_focus()
+			return
+
+
+## Main 页上看得见、收焦点、字是 text 的钮，按树序
+func _page_buttons(text: String) -> Array:
+	var out: Array = []
+	for b in main.find_children("*", "Button", true, false):
+		var btn := b as Button
+		if btn.text == text and btn.focus_mode != Control.FOCUS_NONE and btn.is_visible_in_tree() and not btn.is_queued_for_deletion():
+			out.append(btn)
+	return out
