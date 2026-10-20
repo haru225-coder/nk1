@@ -99,7 +99,7 @@ func _ready() -> void:
 	course_order = Voyage.CourseOrder.RUMB
 	_hand = HeadingDraft.deal(origin_port, GameState.draft_salt)
 	_build_ui()
-	_sync_order_buttons()
+	_sync_order_buttons(); _a11y_mount()  # lane w54-a11y：发舶前几颗钮收键盘焦点（函数在文件尾）
 	# 连接放在 _build_ui 之后：_log / _on_monthly_notice 依赖其中创建的 log_label
 	GameManager.monthly_notice.connect(_on_monthly_notice)
 	log_label.meta_clicked.connect(_on_log_meta)
@@ -319,7 +319,7 @@ func _build_ui() -> void:
 	actions.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_actions_wrap.add_child(actions)
 	var speed_hint := Label.new()
-	speed_hint.text = "拖拽平移　滚轮缩放　航行中按住空格加速\nT 舆图　F 全图　H 收牌"
+	speed_hint.text = "拖拽平移　滚轮缩放　航行中按住空格加速\nT 舆图　F 全图　H 收牌　C 船况"
 	speed_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
 	speed_hint.offset_left = -300
 	speed_hint.offset_right = 0
@@ -1438,7 +1438,7 @@ func _debug_force_pirate() -> void:
 # ══════════════════════════════════════════════════════
 
 func _lock_hand() -> void:
-	sailing = true
+	sailing = true; _a11y_sync()  # lane w54-a11y：起锚即全退回不拿焦点（验收 CR-5）
 	redraw_button.disabled = true
 	_sync_order_buttons()
 	for wrap in heading_row.get_children():
@@ -2531,3 +2531,121 @@ const _Cine := preload("res://scripts/cutscene/Cinematics.gd")
 func _return_unsailed() -> void:
 	_Cine.note_departure(origin_port, Calendar.absolute_day())
 	_return_to_port()
+
+
+# ══ lane w54-a11y：海图只用键盘也走得通 ══
+## 发舶前这几颗钮——航法三策、三张航向牌、「就这一向 / 候风再发 / 回港」——原先同顶上三颗一起都是 FOCUS_NONE
+## （验收 CR-5：航行中按住空格加速，拿着焦点的钮会被空格按下），Tab / 方向键 / 回车一样都按不到，只用键盘出了港
+## 就卡在海图上。改成：没起锚时这几颗收 Tab / 方向键焦点（焦点框照主题，牌上那颗覆盖钮原是空框），回车 / 空格按；
+## 灰着的不收（Tab 不停在按不动的钮上）；鼠标 / 触屏点过不留焦点（点完即放，空格不会再按到刚点过的「候风再发」）；
+## 一起锚（_lock_hand）全退回 FOCUS_NONE、放掉焦点——航行中照旧没有钮拿焦点，CR-5 不破。顶上「舆图 / 全图 / 船况」
+## 航行中也按得，照旧不拿焦点：T / F 早有键，船况补 C 键。Esc：「船况」开着先合上，没发舶即「回港」。
+## 选了航向牌整排重发（_refresh_hand 先 queue_free 旧排再排新排），焦点跟到新排同一位置那张牌上，不丢。
+func _a11y_mount() -> void:
+	heading_row.child_entered_tree.connect(_a11y_dress_card)
+	for b in _a11y_deck_buttons():
+		_a11y_drop_click_focus(b)
+	_a11y_sync()
+
+
+## 航法三策 + 「就这一向 / 候风再发 / 回港」（牌上的覆盖钮另由 _a11y_card_hits 取）
+func _a11y_deck_buttons() -> Array:
+	var out: Array = []
+	if order_row != null:
+		for c in order_row.get_children():
+			if c is Button:
+				out.append(c)
+	for b in [sail_button, redraw_button, back_button]:
+		if b != null:
+			out.append(b)
+	return out
+
+
+## 眼下这一排三张牌的覆盖钮（queue_free 了还没走的旧排不算）
+func _a11y_card_hits() -> Array:
+	var out: Array = []
+	if heading_row == null:
+		return out
+	for w in heading_row.get_children():
+		if w.is_queued_for_deletion():
+			continue
+		var hit := _a11y_card_hit(w)
+		if hit != null:
+			out.append(hit)
+	return out
+
+
+func _a11y_card_hit(wrap: Node) -> Button:
+	for c in wrap.get_children():
+		if c is Button:
+			return c
+	return null
+
+
+## 收不收焦点：航行中、灰着的不收；正拿着焦点又不该收的当场放掉
+func _a11y_sync() -> void:
+	for c in _a11y_deck_buttons() + _a11y_card_hits():
+		var b := c as BaseButton
+		var take := not sailing and not b.disabled
+		if not take and b.has_focus():
+			b.release_focus()
+		b.focus_mode = Control.FOCUS_ALL if take else Control.FOCUS_NONE
+
+
+## 新排进来的牌：覆盖钮挂上主题焦点框、点过不留焦点；旧排第 i 张拿着焦点，就把焦点交给新排第 i 张
+func _a11y_dress_card(node: Node) -> void:
+	var hit := _a11y_card_hit(node)
+	if hit == null:
+		return
+	hit.add_theme_stylebox_override("focus", UiTheme.theme().get_stylebox("focus", "Button"))
+	_a11y_drop_click_focus(hit)
+	hit.focus_mode = Control.FOCUS_NONE if sailing else Control.FOCUS_ALL
+	var vp := get_viewport()
+	var held: Control = vp.gui_get_focus_owner() if vp != null else null
+	if held is Button and held.get_parent() != null and held.get_parent().is_queued_for_deletion() \
+			and held.get_parent().get_parent() == heading_row:
+		var old_i := 0
+		for w in heading_row.get_children():
+			if w == held.get_parent():
+				break
+			if w.is_queued_for_deletion():
+				old_i += 1
+		if old_i == _a11y_card_hits().find(hit):
+			_a11y_refocus.call_deferred(hit)
+	# 「就这一向」灰不灰在 _refresh_hand 排完牌之后才定，排完再对一遍
+	_a11y_sync.call_deferred()
+
+
+func _a11y_refocus(hit: Button) -> void:
+	if is_instance_valid(hit) and hit.is_visible_in_tree() and hit.focus_mode != Control.FOCUS_NONE:
+		hit.grab_focus()
+
+
+## 鼠标 / 触屏（引擎把触点模拟成左键）按下时引擎给的那份焦点，松手、钮按完之后即放（按下当中放焦点，引擎当这一下没点成）
+func _a11y_drop_click_focus(b: BaseButton) -> void:
+	b.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and not (event as InputEventMouseButton).pressed:
+			_a11y_unfocus.call_deferred(b)
+	)
+
+
+func _a11y_unfocus(b: BaseButton) -> void:
+	if is_instance_valid(b) and b.has_focus():
+		b.release_focus()
+
+
+## Esc 合船况 / 没发舶回港，C 开合船况。海战一层叠在海图上时（pending_battle.battle）不收，Esc 照旧归海战（B / Esc 弃战）
+func _shortcut_input(event: InputEvent) -> void:
+	var k := event as InputEventKey
+	if k == null or not k.pressed or k.echo or GameManager.pending_battle.get("battle", false):
+		return
+	if k.keycode == KEY_ESCAPE:
+		if _condition_layer != null and _condition_layer.visible:
+			get_viewport().set_input_as_handled()
+			_close_condition()
+		elif not sailing and not voyage_started and not event_panel.visible and back_button != null and not back_button.disabled:
+			get_viewport().set_input_as_handled()
+			_on_back_to_port()
+	elif k.keycode == KEY_C:
+		get_viewport().set_input_as_handled()
+		_toggle_condition()
