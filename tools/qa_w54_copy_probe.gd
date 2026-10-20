@@ -3,7 +3,9 @@ extends SceneTree
 ##   一、门牌悬停提示里的地名与门牌同字：守城那天（1276-11-03）进兴化，岸带上「囊山」门的悬停提示写囊山
 ##       （曾误作「南山下设伏。」——门牌、战报题「囊山・第N阵」、元军行事「前锋到囊山」都写囊山）；
 ##       岸带上门牌是专名的门（城中通名的九门与守城借用的衙门 / 市场除外），提示都原字写出门牌（「・」不计）。
-## 静态一侧见 tools/check_w53_copy.py 钉 R；本探针看的是岸带上真建出来的门。
+##   二、九门门牌与进门页题同名：泉州（scenes.json 港景的门）、福州（通用九门）岸带上开着的、关着的门逐扇看，
+##       门牌 = 进门后的页题「<港名>・<门牌>」（住处门的门牌曾写「住宅」，进门却是「泉州・住处」）。
+## 静态一侧见 tools/check_w53_copy.py 钉 R / S；本探针看的是岸带上真建出来的门与真进的页。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_copy_probe.gd（经门锁跑）
 ## 判词：逐条「  ✓ / ✗ 判词」，末行 QA_W54_COPY_PROBE PASS / FAIL k；本进程 SCRIPT ERROR 也判红。
 
@@ -64,6 +66,8 @@ func _run() -> void:
 
 	print("== 一、门牌悬停提示里的地名与门牌同字（守城那天的兴化岸带）")
 	await _sec_door_tips()
+	print("== 二、九门门牌与进门页题同名（泉州走 scenes.json 港景的门，福州走通用九门）")
+	await _sec_door_pages()
 	_report()
 
 
@@ -92,24 +96,57 @@ func _sec_door_tips() -> void:
 		"「囊山」门的悬停提示写囊山、不写南山（「%s」）" % nangshan)
 
 
-## 岸带上的门：[门牌, 悬停提示]，按树序
+## 二：港里每扇门（今日开着的三扇与关着的几扇），门牌 = 进门后的页题「<港名>・<门牌>」
+func _sec_door_pages() -> void:
+	var gm: Node = root.get_node("/root/GameManager")
+	gs.from_dict({})
+	cal.from_dict({"year": 1262, "month": 5, "day": 10})
+	gs.money = 5000
+	# 走过序章的档：节拍幕都记过名，空档首抵泉州会演节拍幕、岸带不在屏上（同 qa_port_doors_probe）
+	gs.loaded_with_beats = true
+	for b in gm.port_beats_data.get("beats", []):
+		gs.beat_mark(str((b as Dictionary).get("entry", "")))
+	for port in ["quanzhou", "fuzhou"]:
+		gs.last_port = port
+		_main.load_scene(port)
+		await process_frame
+		var port_name := str(gm.get_port_name(port))
+		var shown := []
+		for d in _doors():
+			shown.append(str(d[0]))
+		var facs: Array = _main.get("_shore_facilities")
+		_check(facs.size() == 9 and shown.size() == 9, "%s岸带上九扇门都在（开着的与关着的共 %d：%s）" % [port_name, shown.size(), shown])
+		for fac in facs:
+			var fid := str((fac as Dictionary).get("id", ""))
+			var title := str((fac as Dictionary).get("title", ""))
+			_main.load_scene("%s_%s" % [port, fid.trim_prefix("city_")])
+			await process_frame
+			var page := str(_main.scene_title.text)
+			_check(title in shown and page == "%s・%s" % [port_name, title],
+				"%s「%s」门（%s）进门页题「%s」" % [port_name, title, fid, page])
+		_main.load_scene(port)
+		await process_frame
+
+
+## 岸带上的门：[门牌, 悬停提示]，今日开着的（ShoreDoors）在前、关着的（ShoreShut）在后，各按树序
 func _doors() -> Array:
 	var out := []
 	var band: Node = _main.port_mode.get_node_or_null("ShoreBand")
-	var doors: Node = band.get_node_or_null("ShoreDoors") if band != null else null
-	if doors == null:
-		return out
-	for d in doors.get_children():
-		if (d as Node).is_queued_for_deletion():
+	for row_name in ["ShoreDoors", "ShoreShut"]:
+		var row: Node = band.get_node_or_null(row_name) if band != null else null
+		if row == null:
 			continue
-		if d is Button:  # 关着的门（_make_shore_shut）：钮字即门牌
-			out.append([(d as Button).text, (d as Button).tooltip_text])
-			continue
-		var cols := (d as Node).find_children("*", "VBoxContainer", true, false)
-		var head: Node = (cols[0] as Node).get_child(0) if not cols.is_empty() and (cols[0] as Node).get_child_count() > 0 else null
-		var btns := (d as Node).find_children("*", "Button", true, false)
-		var tip: String = (btns[0] as Button).tooltip_text if not btns.is_empty() else ""
-		out.append([(head as Label).text if head is Label else "", tip])
+		for d in row.get_children():
+			if (d as Node).is_queued_for_deletion():
+				continue
+			if d is Button:  # 关着的门（_make_shore_shut）：钮字即门牌
+				out.append([(d as Button).text, (d as Button).tooltip_text])
+				continue
+			var cols := (d as Node).find_children("*", "VBoxContainer", true, false)
+			var head: Node = (cols[0] as Node).get_child(0) if not cols.is_empty() and (cols[0] as Node).get_child_count() > 0 else null
+			var btns := (d as Node).find_children("*", "Button", true, false)
+			var tip: String = (btns[0] as Button).tooltip_text if not btns.is_empty() else ""
+			out.append([(head as Label).text if head is Label else "", tip])
 	return out
 
 

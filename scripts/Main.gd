@@ -219,7 +219,7 @@ const GENERIC_FACILITIES := [
 	{"id": "city_market", "title": "牙行", "subtitle": "过秤・买卖"},
 	{"id": "city_inn", "title": "旅店", "subtitle": "歇息・候风"},
 	{"id": "city_exam", "title": "贡院", "subtitle": "誊录・观礼"},
-	{"id": "city_residence", "title": "住宅", "subtitle": "账本・歇息"},
+	{"id": "city_residence", "title": "住处", "subtitle": "账本・歇息"},
 	{"id": "city_temple", "title": "寺观", "subtitle": "勘见・拓碑"},
 	{"id": "city_yamen", "title": "市舶司", "subtitle": "验引・抽解"},
 ]

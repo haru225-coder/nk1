@@ -24,7 +24,7 @@ const ShotGate := preload("res://tools/shot_gate.gd")
 const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 
 ## 港页九处（Main.GENERIC_FACILITIES / scenes.json 泉州港页同序）的门题
-const ALL_DOORS := ["船屋", "行会", "酒馆", "牙行", "旅店", "贡院", "住宅", "寺观", "市舶司"]
+const ALL_DOORS := ["船屋", "行会", "酒馆", "牙行", "旅店", "贡院", "住处", "寺观", "市舶司"]
 
 var _main: Node
 var gs: Node
@@ -252,7 +252,7 @@ func _shut_doors() -> Array:
 ## 门题 → 设施页 id（同 Main._on_facility_pressed 的改写）
 func _facility_page(title: String) -> String:
 	var key := {"船屋": "shipyard", "行会": "guild", "酒馆": "tavern", "牙行": "market", "旅店": "inn",
-		"贡院": "exam", "住宅": "residence", "寺观": "temple", "市舶司": "yamen"}
+		"贡院": "exam", "住处": "residence", "寺观": "temple", "市舶司": "yamen"}
 	return "quanzhou_%s" % key[title] if key.has(title) else ""
 
 
