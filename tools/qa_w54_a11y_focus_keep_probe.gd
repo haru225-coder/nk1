@@ -10,8 +10,10 @@ extends SceneTree
 ##   四、旅店 Tab 到「歇 1 日」回车：过一日，焦点还在「歇 1 日」上。
 ##   五、换了页不替人落焦点：Tab 到岸上牙行门回车进牙行，焦点空着（不自作主张落到页上的钮）。
 ##   六、鼠标点「买 1」：照买，重排后不还焦点（鼠标点出来的不画框，空格 / 回车不去重按刚点过的钮）。
+##   七、焦点在页上的钮时整页离场（换场景 / 退出：Main 整个摘下释放）：不报脚本错（找回焦点那一路不在树上就作罢）。
 ## 判词：末行 QA_W54_A11Y_FOCUS_KEEP PASS|FAIL cases=N fails=K；有失败退 1；本进程 SCRIPT ERROR 也判红。
-## 回退即红：KeyNav 不连 gui_focus_changed（或 _regain 不还焦点）→ 一、二、三、四红；_on_focus_changed 不看 has_focus(true) → 六红。
+## 回退即红：KeyNav 不连 gui_focus_changed（或 _regain 不还焦点）→ 一、二、三、四红；_on_focus_changed 不看 has_focus(true) → 六红；
+## _regain 不先认树（照旧 await get_tree().process_frame）→ 七红（SCRIPT ERROR：在 null 上取 process_frame）。
 
 const TAG := "QA_W54_A11Y_FOCUS_KEEP"
 const ScriptErrTally := preload("res://tools/script_err_tally.gd")
@@ -89,6 +91,8 @@ func _run() -> void:
 	await _sec_new_page()
 	print("== 六、鼠标点「买 1」不还焦点")
 	await _sec_mouse()
+	print("== 七、焦点在页上时整页离场")
+	await _sec_leave_tree()
 	eco.rates = _rates0.duplicate(true)
 	_report()
 
@@ -337,3 +341,21 @@ func _sec_mouse() -> void:
 	await _settle(3)
 	_check(_qty(good) == q0 + 1, "鼠标点「买 1」照买（%s %d → %d）" % [good, q0, _qty(good)])
 	_check(_focus() == null, "重排后不还焦点（焦点 %s）" % _label(_focus()))
+
+
+# ── 七、整页离场 ───────────────────────────────────────
+
+func _sec_leave_tree() -> void:
+	_main.load_scene(PORT)
+	await _settle(4)
+	root.gui_release_focus()
+	var wait := _button("再候一日")
+	var on: bool = await _tab_to(wait)
+	_check(on, "Tab 到「再候一日」（焦点 %s）" % _label(_focus()))
+	var errs0: int = _tally.lines.size()
+	root.remove_child(_main)
+	_main.queue_free()
+	_main = null
+	await _settle(6)
+	_check(_tally.lines.size() == errs0, "焦点在页上时整页摘下释放：不报脚本错（新增 %d 条%s）" % [
+		_tally.lines.size() - errs0, "：" + str(_tally.lines[errs0]) if _tally.lines.size() > errs0 else ""])

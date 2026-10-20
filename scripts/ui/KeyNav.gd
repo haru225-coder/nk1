@@ -156,14 +156,18 @@ func _on_focus_leaving() -> void:
 	_watch = null
 	_watch_sig = {}
 	_focus_serial += 1
+	# Main 整页离场（换场景 / 退出）时 KeyNav 跟着离树，不必找回——不在树上 get_tree() 是空的，照等下一帧即脚本错
+	if not is_inside_tree():
+		return
 	_regain(sig, _focus_serial)
 
 
 ## 等重排好的那一页（同步重排的下一帧就在）：同一页、没开浮层、焦点还空着，就把焦点还给同字同位那颗
 func _regain(sig: Dictionary, serial: int) -> void:
+	var tree := get_tree()
 	for _i in 30:
-		await get_tree().process_frame
-		if serial != _focus_serial or main == null or not is_instance_valid(main):
+		await tree.process_frame
+		if serial != _focus_serial or not is_inside_tree() or main == null or not is_instance_valid(main) or not main.is_inside_tree():
 			return
 		if str(main.current_scene_id) != str(sig["scene"]) or main.port_mode.visible != bool(sig["port"]) \
 				or top_overlay() != null or main.get_viewport().gui_get_focus_owner() != null:
