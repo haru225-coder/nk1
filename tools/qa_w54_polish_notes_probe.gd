@@ -274,7 +274,7 @@ func _stage(ships: Array, extra := {}) -> Node:
 	_seed += 1
 	seed(_seed)
 	var pb := {"battle": true, "power": 300.0, "player_power": 600.0, "enemy": [{"type": "pirate_boat", "count": 2}],
-		"sea_name": "泉州外海", "sea_seed": 7_100_000 + _seed, "source": {"scene": "qa_w54_polish_notes"}}
+		"sea_name": "泉州外海", "sea_seed": 7_100_000 + _seed, "battle_seed": 7_300_000 + _seed, "source": {"scene": "qa_w54_polish_notes"}}
 	pb.merge(extra, true)
 	_gm.set("pending_battle", pb)
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
