@@ -5,7 +5,7 @@ extends SceneTree
 ## 证（headless 也跑——只量排版）：
 ##   一、没选中时：每行逐行字宽 ≤ 行宽（行字 clip_text，过宽那截直接裁掉）；行里仍写着「失火」「进水」，
 ##       放不下时短注折到第二行、第一行是「船种　伤情　布色」；整张卡在画布里、宽不过 INTEL_W。
-##   二、选中一艘（小卡出）：小卡逐行字宽 ≤ 小卡那一格的宽、写着「失火，进水」；整张卡宽不过 INTEL_W + 小卡底板边、
+##   二、选中一艘（小卡出）：小卡逐行字宽 ≤ 小卡那一格的宽、写着「失火，进水」；整张卡宽不过 INTEL_W + 4（纸底板两边）、
 ##       右沿在画布里，「喊话」「细看」两钮整颗在画布里。
 ##   三、收起小卡、火灭水排（短注没了）：行回一行，卡高收回到挂短注之前那么高（折过的行不留一截空纸）。
 ##   四、满血稳着的船照旧一行（「快船　稳」不折）。
@@ -19,8 +19,9 @@ extends SceneTree
 const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 const Hud := preload("res://scripts/ui/CombatStatusHud.gd")
 const VIEWS := [Vector2i(1280, 720), Vector2i(2560, 1080)]
-## 小卡（IntelShipCard）底板的左右边：小卡最小宽 INTEL_W − 24 再加这两边，选中时整张卡比 INTEL_W 宽这一点（改前就如此）
-const SHIP_CARD_EDGE := 8.0
+## 选中时整张卡比 INTEL_W 宽的那一点：小卡（IntelShipCard）最小宽 INTEL_W − 24 只扣了两边距，没扣敌情卡纸底板左右各 2 px，
+## 小卡一出整张卡就是 254（改前就如此，实量）
+const SHIP_CARD_EDGE := 4.0
 
 var cases := 0
 var fails := 0
