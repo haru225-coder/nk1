@@ -74,6 +74,7 @@ static func show_save_dialog(main: Control, read_only := false) -> void:
 			main._slip_note(slip, tip, tip_color)
 		var row: HFlowContainer = main._slip_row(slip)
 		var write: Button = main._slip_chip(row, "记录", main._on_save_slot.bind(n), true)
+		write.name = "Write%d" % n
 		# 新版所记的卷也不给记（脚注许了「卷页未动」，一记就把新版进度退成副抄，见 SaveLoad.can_save）
 		write.disabled = read_only or not SaveLoad.can_save(n)
 		var read: Button = main._slip_chip(row, "翻阅", main._on_load_slot.bind(n))
@@ -168,6 +169,19 @@ static func close_save_sheet(main: Control) -> void:
 
 
 static func on_save_slot(main: Control, slot: int) -> void:
+	# 覆盖先问一句（lane w54-settings）：「记录」与「翻阅」并排同大，误点一下就照着当下的局面重刻这一卷——
+	# 这一卷原来的进度退成副抄、再记一回连副抄也冲掉，无从找回。「翻阅」五轮已定两下才翻，记录照同一手：
+	# 这一卷已有一份记得进的卷（正本或副抄可读）时，头一下只把这颗钮改写「确认记录」，再按一下才记；
+	# 按别卷的「记录」改认那一卷。无档的卷照旧一下就记；新版所记的卷压根不给按（见 can_save）。
+	# 不经册页的直调（探针、旧调用点）照旧一下就记。
+	var host = main._save_host
+	if is_instance_valid(host) and SaveLoad.can_load(slot) and int(host.get_meta(&"save_armed", 0)) != slot:
+		host.set_meta(&"save_armed", slot)
+		for b in (host as Node).find_children("Write*", "Button", true, false):
+			var armed: bool = String(b.name) == "Write%d" % slot
+			(b as Button).text = "确认记录" if armed else "记录"
+			(b as Button).tooltip_text = "这一卷已记过，再记一回，原样退成副抄。再按一下才记。" if armed else ""
+		return
 	if not SaveLoad.can_save(slot) or not SaveLoad.save_game(slot, main.current_scene_id):
 		main.log_msg("第%s卷誊写未成，笔墨未落定。" % main._cn_num(slot))
 		return

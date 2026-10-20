@@ -135,6 +135,9 @@ func _run() -> void:
 	cal.from_dict({"year": 1256, "month": 4, "day": 9})
 	_main.update_status_panel()
 	DirAccess.make_dir_recursive_absolute(_path(SLOT) + ".tmp")
+	# w54-settings：这一卷已有可读的卷，「记录」头一下只改写「确认记录」、不落笔（见 SaveSheet.on_save_slot），
+	# 所以按两下才到写入那一步；按一下不写的断言归 qa_w54_settings_overwrite_probe。
+	_main._on_save_slot(SLOT)
 	_main._on_save_slot(SLOT)
 	await _settle(2)
 	var lines: Array = Array(_main._log_lines)
@@ -146,6 +149,7 @@ func _run() -> void:
 	DirAccess.remove_absolute(_path(SLOT) + ".tmp")
 
 	# ── 写得进：册页合上、记事报已记入、题签换成当下 ──
+	# 上一步已把这一卷认作待确认（save_armed），这一下即落笔；空卷一下即记另由 overwrite 探针验。
 	_main._on_save_slot(SLOT)
 	await _settle(2)
 	lines = Array(_main._log_lines)
