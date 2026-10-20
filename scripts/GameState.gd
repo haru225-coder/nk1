@@ -1166,7 +1166,7 @@ func _fail_contract(reason: String) -> String:
 # ── 行情传闻：别港的（牙行柜上用，lane w53-3）────────────────
 
 ## 本港牙行柜上 good_id 那张卡行上写的传闻：别港的，「传闻博多唐房约卖 N・d 日前」。多港都有取约卖最高的一港
-## （同价取较新的）；过了 RUMOR_STALE_DAYS 的不算（rumor_of 已滤）；本港自己的不在此列。
+## （同价取较新的）；过了 RUMOR_STALE_DAYS 的不算（rumor_of 已滤）；本港自己的不在此列；那港牙行眼下上了门闸（围城 / 封港）的也不取——卖不掉（同 Main._collect_spreads，lane w54-port）。
 ## 原先卡上只写本港自己的传闻（rumor_label），可人到了本港、实价就在卡上，海上「记下这条行情」等于用不上；
 ## 写在别港同一货的卡上，买进之前就看得到哪里卖得起价。字样与本港那条（rumor_label）同一写法，只在「传闻」后多个港名。
 func rumor_elsewhere(here_port: String, good_id: String) -> String:
@@ -1175,7 +1175,7 @@ func rumor_elsewhere(here_port: String, good_id: String) -> String:
 	var best_day := 0
 	for raw_pid in rumors.keys():
 		var pid := str(raw_pid)
-		if pid == here_port:
+		if pid == here_port or not Economy.is_market_open(pid):
 			continue
 		var rec := rumor_of(pid, good_id)
 		if rec.is_empty():
