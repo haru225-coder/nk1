@@ -336,3 +336,15 @@ func walk_out_ashore() -> String:
 	hired.erase(quitter)
 	unpaid_months = 0
 	return "【欠饷】船一靠岸，%s 就背起铺盖走了。" % who
+
+
+# ── 酒馆募人题签（lane w54-tavern）────────────────────
+
+## 本港此刻在候雇、只因那一职船上已有人而不列名的人数。募人题签「本港眼下无人可雇」下的「已雇之职不再列名。」
+## 只在真有这样的人时写：澎湖、萨摩、占城本无候雇之人，修前船上雇着谁都写这一句，像是有人被藏了起来。
+func held_back_at(port_id: String) -> int:
+	var n := 0
+	for c in GameManager.crew_data.get("candidates", []):
+		if c.get("port", "") == port_id and on_offer(c) and hired.has(c.get("role", "")):
+			n += 1
+	return n

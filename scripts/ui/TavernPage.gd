@@ -91,7 +91,7 @@ static func setup_hiring(main: Control, port_id: String) -> void:
 	var head: VBoxContainer = main._slip_body()
 	if cands.is_empty():
 		main._slip_title(head, "募人", "本港眼下无人可雇")
-		if not Crew.hired.is_empty():
+		if Crew.held_back_at(port_id) > 0:
 			main._slip_note(head, "已雇之职不再列名。")
 		return
 	main._slip_title(head, "募人", "本港可雇 %d 人　一职一人" % cands.size())
