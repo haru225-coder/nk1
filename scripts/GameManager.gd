@@ -481,3 +481,5 @@ func _skip_void_contract() -> Dictionary:
 ## 港页「看风」过了验引才换海图（Main._on_set_sail）：验引那一句（无引塞钱强行出港、凭引放行、补抽解）当帧随港页一起换掉，
 ## Main 放行那一下把它交到这里，海图 _ready 记进船况札记后清空（SeaChart._log_departure）。会话内传话，不进存档
 var depart_note := ""
+## 这一回出港用掉的是不是货引（Main 放行时记）：海图没发舶就回港时据此把引还回去（SeaChart._keep_unused_permit）。会话内，不进存档
+var depart_permit := false

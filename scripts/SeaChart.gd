@@ -2537,6 +2537,7 @@ const _Cine := preload("res://scripts/cutscene/Cinematics.gd")
 
 
 func _return_unsailed() -> void:
+	_keep_unused_permit()  # 没走成这一趟，出港时销掉的货引还回去（lane w54-tutorial）
 	_Cine.note_departure(origin_port, Calendar.absolute_day())
 	_return_to_port()
 
@@ -2705,3 +2706,11 @@ func _tutorial_pirate() -> void:
 	_Tutorial.clear_others(self, "pirate")
 	_Tutorial.offer(self, "pirate", func() -> bool:
 		return event_panel.visible and int(pending_event.get("kind", -1)) == Voyage.EventKind.PIRATE, true)
+
+
+## 没发舶就回港（_return_unsailed）：「看风」放行那一下 Main 已 consume_permit（一引一航次），可这一趟没走——这回出港用的是货引就还回去，
+## 报过的舱货（permit_base，补抽解补到哪儿）照旧，再出港不另请领、只按添的货补抽解。无引塞钱那一路钱与蒲家留意已给了小吏，不退
+func _keep_unused_permit() -> void:
+	if GameManager.depart_permit:
+		GameState.has_customs_permit = true
+	GameManager.depart_permit = false

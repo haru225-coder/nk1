@@ -2960,7 +2960,7 @@ func _on_set_sail() -> void:
 	update_status_panel()
 
 	if res["passed"]:
-		GameState.consume_permit(); GameManager.depart_note = str(res["msg"])  # 验引那句带去海图札记（lane w54-tutorial）
+		GameManager.depart_permit = GameState.has_customs_permit; GameState.consume_permit(); GameManager.depart_note = str(res["msg"])  # 用的是不是货引、验引那句，都交给海图（lane w54-tutorial）
 		# 记下出港（港、日）：回港时据此判断是不是真正抵港，决定出不出抵港横幅（会话内，不进存档）
 		_CINE.note_departure(GameState.last_port, Calendar.absolute_day())
 		get_tree().change_scene_to_file("res://scenes/SeaChart.tscn")
