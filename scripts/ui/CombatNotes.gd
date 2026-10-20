@@ -42,6 +42,9 @@ const T_IN := 0.25
 const T_OUT := 0.4
 ## 两张之间空这么久
 const BETWEEN := 0.6
+## 出着时多久重摆一次（敌情列伸缩、选中小卡开合都会挪它的落点）：十分之一秒一次足够，逐帧重排白费
+## （同 CombatStatusHud.REFRESH_SEC；出卡那一拍当场摆一次）
+const LAYOUT_EVERY := 0.1
 
 var _queue: PackedStringArray = []
 var _slip: PanelContainer = null
@@ -49,6 +52,7 @@ var _cur := ""
 var _left := 0.0
 var _wait := 0.0
 var _closing := false
+var _lay_acc := 0.0
 
 
 # ── 表与已读（纯函数，探针可不建节点直接验）──────────────
@@ -190,7 +194,10 @@ func dismiss() -> void:
 
 func _process(delta: float) -> void:
 	if _slip != null:
-		_layout()
+		_lay_acc += delta
+		if _lay_acc >= LAYOUT_EVERY:
+			_lay_acc = 0.0
+			_layout()
 		if not _closing:
 			_left -= delta
 			if _left <= 0.0:
@@ -216,6 +223,7 @@ func _show(id: String) -> void:
 	_left = hold_s(str(e.get("text", "")))
 	_slip = _build(e)
 	add_child(_slip)
+	_lay_acc = 0.0
 	_layout()
 	_slip.modulate.a = 0.0
 	var tw := _slip.create_tween()
