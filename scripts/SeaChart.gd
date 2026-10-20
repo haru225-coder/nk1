@@ -1459,6 +1459,7 @@ func _on_sail_pressed() -> void:
 	Fleet.at_sea = true
 	# 发舶后锁回港与航法（云端 bed9）
 	voyage_started = true
+	Voyage.begin_voyage()  # 上一程了结过的战时遭遇清掉（lane w54-seaevents）
 	if back_button:
 		back_button.disabled = true
 	_sync_order_buttons()
@@ -2197,6 +2198,7 @@ func _on_requisition_surrender() -> void:
 	Fleet.ships.remove_at(idx)
 	GameState.add_fame(6)
 	Fleet.morale = maxi(0, Fleet.morale - 4)
+	Voyage.settle_war_event(Voyage.EventKind.REQUISITION)  # 册上记了名，这一程不再征（lane w54-seaevents）
 	_log("[color=yellow]「%s」连船带货编入官军。小官在册子上记了你的名字，写得很工整。名声加 6。[/color]" % s.get("name", "一船"))
 	_refresh_status()
 	_on_event_continue()
@@ -2207,6 +2209,7 @@ func _on_requisition_bribe() -> void:
 	var cost: int = maxi(100, int(GameState.money * 0.15))
 	if GameState.spend_money(cost):
 		_log("[color=yellow]%d 钱换了册子上「已征」两个字。船一条没少。[/color]" % cost)
+		Voyage.settle_war_event(Voyage.EventKind.REQUISITION)  # 「已征」了，这一程不再征（lane w54-seaevents）
 	else:
 		# 拿不出钱，按逃走处理
 		_on_requisition_flee()
@@ -2228,6 +2231,7 @@ func _on_requisition_flee() -> void:
 		GameState.add_money(-fine)
 		GameState.add_fame(-4)
 		Fleet.morale = maxi(0, Fleet.morale - 5)
+		Voyage.settle_war_event(Voyage.EventKind.REQUISITION)  # 「抗征」记了册、罚过了，这一程不再征（lane w54-seaevents）
 	_refresh_status()
 	_on_event_continue()
 

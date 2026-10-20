@@ -642,7 +642,7 @@ func _war_event(from_id: String, to_id: String) -> Dictionary:
 	if now >= YUAN_FROM and war_zone and r < 0.05:
 		return _refugee_event()
 	r = randf()
-	if now >= REQUISITION_FROM and song_side and r < 0.05:
+	if now >= REQUISITION_FROM and song_side and r < 0.05 and not war_event_settled(EventKind.REQUISITION):  # 这一程册上已记了名就不再征（lane w54-seaevents）
 		return _requisition_event()
 	return {}
 
@@ -1011,3 +1011,22 @@ const YUAN_FROM := "1276-01"
 func route_wind_factor(from_id: String, to_id: String) -> float:
 	var start := _shift_date(Calendar.year, Calendar.month, Calendar.day, 1)
 	return float(_route_wind(_legs(from_id, to_id), start.y)["factor"])
+
+
+## lane w54-seaevents：这一程上已经了结的战时遭遇 {EventKind: true}。征船交过船 / 塞钱换了「已征」/ 抗征被追上罚过，
+## 册上都记了这条船，原先第二天照样再来一条哨船「按册征调」；了结过的这一程不再抽到（_war_event 照旧掷那一下骰，
+## 只是不出这一面，别的遭遇的骰序不变）。趁夜溜走溜成了不算了结。
+## 只活在这一程里：SeaChart 发舶时 begin_voyage() 清空（海上不能存档，不进存档）
+var _settled_this_voyage: Dictionary = {}
+
+
+func begin_voyage() -> void:
+	_settled_this_voyage.clear()
+
+
+func settle_war_event(kind: int) -> void:
+	_settled_this_voyage[kind] = true
+
+
+func war_event_settled(kind: int) -> bool:
+	return bool(_settled_this_voyage.get(kind, false))
