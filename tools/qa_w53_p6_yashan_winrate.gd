@@ -28,7 +28,12 @@ extends SceneTree
 ##   这一路是脚本驾驶的下限：真人玩家看得更早、让得更准，冲出率只会更高。
 
 const TAG := "QA_W53_P6_YASHAN_WINRATE"
-const LIMIT_S := 260.0            # 一场的墙钟上限（本场时限 60 秒 × 墙钟余量）；超了就记 hang 换个种子
+## 卡住的判法照这一场自己的时限算：战场经过秒数（WorldMap._battle_elapsed_s，到 _battle_limit_s 即限时两散）过了时限
+## 再加 HANG_PAD_S 还没收 = 卡住，记 hang 换个种子；墙钟另留 LIMIT_S 一道兜底（经过秒数停着不走的那种卡法）。
+## 原先只有一道「墙钟 260 秒」，是按本场时限 60 秒（YashanBattle.BATTLE_LIMIT_S）定的——可那 60 秒没接进 WorldMap，
+## 这一场实际照阶段表 300 秒两散；不带 --fixed-fps 时战场秒数跟着墙钟走，撑满时限的一场就被误记成卡住（lane w54-det 改）
+const HANG_PAD_S := 30.0
+const LIMIT_S := 900.0
 ## 物理帧率：本场的时限量的是「战场经过秒数」，一物理帧推进 1/tps 秒——帧率调高只让一场跑得快，
 ## 场内的秒数不变（Engine.physics_ticks_per_second 是运行期的量，不改产品）。
 const PROBE_TPS := 120
@@ -101,7 +106,7 @@ func _run() -> void:
 	print("WINRATE cfg=%s n=%d out=%d in=%d hang=%d replay-drift=%d" % [cfg, first.size(), out_n, in_n, hang, drift])
 	var bad: Array = []
 	if hang > 0:
-		bad.append("%d 场卡住没收（墙钟超 %.0f 秒）" % [hang, LIMIT_S])
+		bad.append("%d 场卡住没收（战场秒数过了本场时限又 %.0f 秒还没收，或墙钟超 %.0f 秒）" % [hang, HANG_PAD_S, LIMIT_S])
 	if _unseeded > 0:
 		bad.append("%d 场没按种子播全局流（pending_battle.%s 没被 WorldMap 认）" % [_unseeded, BATTLE_SEED_KEY])
 	if fixed and drift > 0:
@@ -223,6 +228,8 @@ func _one(sd: int) -> Variant:
 	var t0 := Time.get_ticks_msec()
 	var frame_ms: Array = []
 	var last_tick := Time.get_ticks_msec()
+	var cap_s := float(wm.get("_battle_limit_s")) + HANG_PAD_S
+	var held_s := 0.0                          # 战场经过秒数（收战那一帧的读数）
 	while rec.is_empty() and not freed[0]:
 		await physics_frame
 		var now := Time.get_ticks_msec()
@@ -231,9 +238,10 @@ func _one(sd: int) -> Variant:
 		last_tick = now
 		if not is_instance_valid(wm):
 			break
+		held_s = float(wm.get("_battle_elapsed_s"))
 		if own != null and is_instance_valid(own):
 			_drive(wm, own)
-		if float(now - t0) / 1000.0 > LIMIT_S:
+		if held_s > cap_s or float(now - t0) / 1000.0 > LIMIT_S:
 			break
 	var result: Variant = null
 	var how := "hang"
@@ -248,7 +256,7 @@ func _one(sd: int) -> Variant:
 			how = "timeup"                     # 撑满时限两散——也算冲出，但不是从港嘴出去的
 		else:
 			how = str(rec[0][0])
-	print("  BATTLE sd=%d out=%s how=%s wall=%.1fs" % [sd, str(result), how,
+	print("  BATTLE sd=%d out=%s how=%s t=%.1fs wall=%.1fs" % [sd, str(result), how, held_s,
 		float(Time.get_ticks_msec() - t0) / 1000.0])
 	self.set_meta(&"last_how", how)
 	if _want_fps and not frame_ms.is_empty():
