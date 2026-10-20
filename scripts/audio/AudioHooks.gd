@@ -11,7 +11,9 @@
 ## variable NK1_SFX=0.  `volume_db` offsets every cue.  Headless runs never
 ## create players (the synth still builds), so smoke/tool scripts stay silent
 ## and deterministic; the decision is still written to `journal`, so probes can
-## tell whether a hook fired and why it stayed quiet.
+## tell whether a hook fired and why it stayed quiet.  Windowed -s tool scripts
+## (probes, patrol, shot tools: a script-driven SceneTree, the same test as
+## Cinematics.live()) get no players either, unless `players_in_tools` is set.
 extends RefCounted
 
 const _SYNTH := preload("res://scripts/audio/SfxSynth.gd")
@@ -54,6 +56,11 @@ static var journal: Array = []
 ## instead of Time.get_ticks_msec(), so a busy machine cannot flip a gap
 ## verdict.  Always -1 in the game.
 static var clock_ms := -1
+## Windowed -s tool scripts create no players unless this is set: a gate that
+## quits while a cue still rings leaves its half-mixed playback behind ("ObjectDB
+## instances leaked at exit").  Probes that must see real players turn it on;
+## the game and ShotTour run a plain SceneTree and always get players.
+static var players_in_tools := false
 ## Voices still sounding, oldest first: {cue, hook, group, until (ms), player}.  A cue takes
 ## its slot the moment it is granted and gives it back when its stream has run
 ## out (or its player is gone).  Players join the tree deferred, so counting
@@ -128,7 +135,7 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 		"until": now + int(ceil(stream.get_length() * 1000.0 / pitch)), "player": null}
 	_voices.append(voice)
 	_note(cue, hook, db, "")
-	if DisplayServer.get_name() == "headless":
+	if not _makes_players():
 		return null
 	var root := parent.get_tree().root
 	var player := AudioStreamPlayer.new()
@@ -145,6 +152,15 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -
 		_warming = true
 		_warm_step(parent.get_tree())
 	return player
+
+
+## Real players only in the game proper (not headless, not a -s tool script
+## unless a probe asked for them).
+static func _makes_players() -> bool:
+	if DisplayServer.get_name() == "headless":
+		return false
+	var ml := Engine.get_main_loop()
+	return players_in_tools or ml == null or ml.get_script() == null
 
 
 ## Journal a hook that SfxCues held back before any cue was asked for (switch

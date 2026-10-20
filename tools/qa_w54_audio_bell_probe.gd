@@ -7,7 +7,8 @@ extends SceneTree
 ##   二、声部账（headless，探针钟）：两声磬隔 320 毫秒——第二声响、第一声记 cut、只占一格；不同组的声（开炮）不受牵连。
 ##   三、真起 Main（headless）：play_transition 的全黑回调里再 play_transition（_shore_title_once 那一路的形状）——
 ##       两声都要过、头一声被收，同一刻只剩一声磬。
-##   四、带窗口（DISPLAY=:2）才跑：真建的播放器——第二声起来后根下只剩一个墨幕磬，第一声那只停了、释放了。headless 下印一行跳过。
+##   四、带窗口（DISPLAY=:2）才跑（开 players_in_tools 让 -s 工具脚本也建播放器）：真建的播放器——第二声起来后根下只剩一个
+##       墨幕磬，第一声那只停了、释放了；收尾等它放完再退（不留半截在放的声）。headless 下印一行跳过。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_audio_bell_probe.gd（经门锁跑；第四段要带窗口另跑一遍）
 ## 末行 QA_W54_AUDIO_BELL PASS|FAIL cases=N fails=M；fails>0 退 1。本进程 SCRIPT ERROR 也判红。
 
@@ -134,6 +135,7 @@ func _sec_window() -> void:
 		print("  · 跳过：headless 不建播放器（带窗口 DISPLAY=:2 另跑一遍走这一段）")
 		return
 	_AUDIO.clock_ms = -1
+	_AUDIO.players_in_tools = true
 	var w0 := Time.get_ticks_msec()
 	while (_AUDIO.voices_now() > 0 or not _bell_players(root).is_empty()) and Time.get_ticks_msec() - w0 < 8000:
 		await process_frame
@@ -151,3 +153,7 @@ func _sec_window() -> void:
 	var bells := _bell_players(root)
 	_check(first_playing, "头一声磬在响（320 毫秒处）")
 	_check(bells.size() == 1 and not bells.has(first), "第二声起来后根下只剩一个墨幕磬，头一声那只停了、释放了（%d 只）" % bells.size())
+	var w1 := Time.get_ticks_msec()
+	while not _bell_players(root).is_empty() and Time.get_ticks_msec() - w1 < 8000:
+		await process_frame
+	_AUDIO.players_in_tools = false

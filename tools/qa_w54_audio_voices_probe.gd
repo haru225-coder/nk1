@@ -6,7 +6,9 @@ extends SceneTree
 ##   一、同一刻要七样不同的声（不同声样，节流挡不着）：前六样响、第七样记 voices；此刻占着六格。
 ##   二、放完让出：探针钟拨过 250 毫秒，最短那一声（命中 0.2 秒）放完、空出一格，再要一声照响；拨过最长那一声，六格全空。
 ##   三、探针钟往回拨（拨回 −1 读真钟）不把声部卡死：远在将来的旧账算失效；节流时戳在将来的也不挡（开炮照响）。
-##   四、带窗口（DISPLAY=:2，非 headless）才跑：同一帧七声只在根下建六个播放器；放完都自己释放、声部全空。headless 下印一行跳过。
+##   四、带窗口（DISPLAY=:2，非 headless）才跑：-s 工具脚本缺省不建播放器（发声账照记；带窗口的门禁退出时不留半截在放的声——
+##       Godot 会把没混完的 playback 报成「ObjectDB instances leaked at exit」）；探针开 players_in_tools 后，同一帧七声只在根下
+##       建六个播放器；放完都自己释放、声部全空。headless 下印一行跳过。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_audio_voices_probe.gd（经门锁跑；第四段要带窗口另跑一遍）
 ## 末行 QA_W54_AUDIO_VOICES PASS|FAIL cases=N fails=M；fails>0 退 1。本进程 SCRIPT ERROR 也判红。
 
@@ -129,11 +131,20 @@ func _sec_window() -> void:
 		print("  · 跳过：headless 不建播放器（带窗口 DISPLAY=:2 另跑一遍走这一段）")
 		return
 	_AUDIO.clock_ms = -1
-	# 前三段在窗口下也真建了播放器：按墙钟等它们放完自己释放（帧数不作准，无垂直同步时一帧不到一毫秒）
+	# 前三段的声（工具脚本里不建播放器，只占声部账）：按墙钟等声部让出来（帧数不作准，无垂直同步时一帧不到一毫秒）
 	var w0 := Time.get_ticks_msec()
 	while (_AUDIO.voices_now() > 0 or _players(root) > 0) and Time.get_ticks_msec() - w0 < 8000:
 		await process_frame
 	_check(_players(root) == 0, "前几段的播放器都放完释放了（等了 %d 毫秒）" % (Time.get_ticks_msec() - w0))
+	_AUDIO.journal.clear()
+	_AUDIO.play_cue(_host, &"combat_board", -30.0)
+	await process_frame
+	await process_frame
+	_check(_whys() == [""] and _players(root) == 0, "-s 工具脚本缺省不建播放器：发声账记响、根下没有播放器（%d）" % _players(root))
+	var w1 := Time.get_ticks_msec()
+	while _AUDIO.voices_now() > 0 and Time.get_ticks_msec() - w1 < 8000:
+		await process_frame
+	_AUDIO.players_in_tools = true
 	_AUDIO.journal.clear()
 	for cue in SEVEN:
 		_AUDIO.play_cue(_host, cue, -30.0)
@@ -145,3 +156,4 @@ func _sec_window() -> void:
 		await process_frame
 	_check(_players(root) == 0 and _AUDIO.voices_now() == 0, "放完都自己释放、声部全空（%d 毫秒内；播放器 %d、声部 %d）" % [
 		Time.get_ticks_msec() - t0, _players(root), _AUDIO.voices_now()])
+	_AUDIO.players_in_tools = false
