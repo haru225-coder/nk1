@@ -249,6 +249,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_story_skip_probe.gd",  # lane w54-story 升章跳年时身上的委办免罚作罢专项探针（待拍板 15）
 	"res://tools/qa_w54_story_timing_probe.gd",  # lane w54-story 剧情事件按设计年月出场专项探针（辞呈卡德祐元年腊月起挂）
 	"res://tools/qa_w54_story_signoff_probe.gd",  # lane w54-story 结局落款写结局所在地专项探针（崖山两条路落款写崖山）
+	"res://tools/qa_w54_saves_systems_probe.gd",  # lane w54-saves 逐系统存档往返探针（十六个系统真玩法摆状态，存→读→逐字段相等，读回后同种子续跑与不读档逐条相同）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
