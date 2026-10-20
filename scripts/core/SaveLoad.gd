@@ -447,6 +447,9 @@ func _check_partitions(data: Dictionary) -> String:
 					["cargo"], [])
 			if why != "":
 				return "fleet.ships 条目：" + why
+			# 船式 id 给了须是字串：Fleet.ship_def 的形参是 String，给成数 / null 等，港页、船屋、过日子每取一次船样即 SCRIPT ERROR
+			if ship.has("type") and typeof(ship["type"]) != TYPE_STRING:
+				return "fleet.ships 条目：type 不是字符串"
 			for gid in _as_dict(ship.get("cargo", {})):
 				var e = (ship["cargo"] as Dictionary)[gid]
 				if typeof(e) != TYPE_DICTIONARY:
@@ -454,6 +457,10 @@ func _check_partitions(data: Dictionary) -> String:
 				why = _bad_fields(e, ["qty", "avg_cost"], [])
 				if why != "":
 					return "fleet.ships.cargo.%s 条目：" % gid + why
+				# 货舱条目两格缺一不可（Fleet.add_cargo 记的就是这两格）：买进摊均价、卖出扣数、货损逐日抽都直接按键取，
+				# 缺 qty 每过一日即 SCRIPT ERROR，缺 avg_cost 再买进这样货时报
+				if not (e.has("qty") and e.has("avg_cost")):
+					return "fleet.ships.cargo.%s 条目缺 qty 或 avg_cost" % gid
 
 	var crew: Dictionary = _as_dict(data.get("crew", {}))
 	why = _bad_fields(crew, ["unpaid_months"], ["hired", "departed"])

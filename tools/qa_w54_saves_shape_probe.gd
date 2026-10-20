@@ -98,6 +98,12 @@ func _bad_cases() -> Array:
 	# economy.investments 修埠等级为负：Economy.invest_cost 拿它当下标取价目——-1 悄悄取到顶等那一档的价，-7 即 SCRIPT ERROR（市舶司页一进就报）
 	for bad in [-1, -7]:
 		out.append(["economy.investments 修埠等级为负（%d）" % bad, _patched(["economy", "investments", PORT], bad)])
+	# fleet.ships 条目：船式 type 给成非字串——Fleet.ship_def 的形参是 String，港页、船屋、过日子每取一次船样即 SCRIPT ERROR
+	for bad in [3, null]:
+		out.append(["fleet.ships 船式非字串（%s）" % JSON.stringify(bad), _patched(["fleet", "ships", 0, "type"], bad)])
+	# 货舱条目缺 qty / avg_cost：Fleet 买进摊均价、卖出扣数、货损逐日抽都直接按键取这两格
+	out.append(["fleet.ships 货舱条目缺 qty", _patched(["fleet", "ships", 0, "cargo", "tea"], {"avg_cost": 31.5})])
+	out.append(["fleet.ships 货舱条目缺 avg_cost", _patched(["fleet", "ships", 0, "cargo", "tea"], {"qty": 12})])
 	return out
 
 
