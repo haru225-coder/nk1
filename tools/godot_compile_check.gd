@@ -275,6 +275,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_a11y_seachart_keys_probe.gd",  # lane w54-a11y 海图只用键盘走得通专项探针（发舶前几颗钮收 Tab、起锚后全不拿焦点、鼠标点过不留焦点、C / Esc）
 	"res://scripts/ui/KeyNav.gd",  # lane w54-a11y 只用键盘走 Main 各页的小节点（浮层开着焦点不走到底下、合上后焦点回来）
 	"res://tools/qa_w54_a11y_modal_focus_probe.gd",  # lane w54-a11y 浮层开着焦点不走到底下专项探针（人物志 / 船籍簿 / 市舶纪事 / 名册 / 册页）
+	"res://tools/qa_w54_a11y_escape_probe.gd",  # lane w54-a11y Esc 有出口专项探针（设施页 / 见面页 / 剧情页离开、船籍簿先合、港页与册页不动）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
