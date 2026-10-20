@@ -840,6 +840,7 @@ func _setup_combat(pb: Dictionary) -> void:
 	$Ports.visible = false
 	combat_start_durability = Fleet.total_durability()
 	_battle_roster_n = Fleet.ships.size()
+	_roster_ships = Fleet.ships.duplicate()  # 按船记名：沉了的护航收战才摘出名册，中间摘一艘就让「前 N 艘」点错船（夺来的船顶进来顶掉一份战损）
 	total_enemies = 0
 	_escorts = _EscortWing.deploy(self, pb)  # lane w53-p6-escort：护航上阵（开关 escort_battle）；刷在敌船前，敌船血量缩放扣掉它们那份战力
 	var enemy_list: Array = pb.get("enemy", [])
@@ -1066,12 +1067,14 @@ func _await_boarding_fx(stage: CanvasLayer) -> void:
 		await stage.finished
 
 
-## 开战在册船的现总耐久（不含夺来入列的船）
+## 开战在册船的现总耐久（不含夺来入列的船）。按开战那一刻的船逐艘认（_roster_ships）：
+## 名册里摘一艘，后面那艘就往前挪一格，「前 N 艘」会点到不在开战之列的船（夺来入列的船排在尾，正好补上空缺），
+## 战损于是少算一整艘、甚至报 0（lane w54-hunt）。
 func _roster_durability() -> float:
 	var d := 0.0
-	var n := mini(_battle_roster_n, Fleet.ships.size())
-	for i in range(n):
-		d += float(Fleet.ships[i].get("durability", 0))
+	for s in _roster_ships:
+		if Fleet.ships.has(s):
+			d += float((s as Dictionary).get("durability", 0))
 	return d
 
 
@@ -1866,3 +1869,7 @@ func _seed_melee_rng(rng: RandomNumberGenerator) -> void:
 		rng.seed = randi()
 	else:
 		rng.randomize()
+
+
+## 开战那一刻在册的各船（引着名册里的那几格；_roster_durability 逐艘认，不按序号）
+var _roster_ships: Array = []
