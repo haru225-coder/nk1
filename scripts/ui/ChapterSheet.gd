@@ -13,11 +13,11 @@ extends RefCounted
 static func era_summary_lines(main: Control, years: int) -> Array:
 	var lines := []
 	var trips: int = GameState.era_trips
-	var route: String = GameState.era_main_route()
+	var route: String = GameState.era_main_route().replace("→", "到")  # 账里记「泉州→博多」，册页是纪实句，不夹箭头
 	var span := ("%s年" % main._cn_num(years, true)) if years > 0 else "一段日子"
 	if trips > 0:
 		if route != "":
-			lines.append("这%s，你的船跑了%s趟，走得最多的是%s。" % [
+			lines.append("这%s，你的船跑了%s趟，走得最多的是%s那一程。" % [
 				span, main._cn_num(trips, true), route,
 			])
 		else:
