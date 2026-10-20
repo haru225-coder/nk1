@@ -94,6 +94,8 @@
   W. 斜线写半角「 / 」（w54-copy）：全作斜线都是半角带空格——委办细则「针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日」、船籍簿
      「舱位 %d / %d 料」、战后「收编 / 卖掉 / 放走」、海图「海图 / 舆图（地形）切换」；只有海图航段「舱中%s　%d／委办 %d」
      与过场跳过提示「Esc ／ 右键」写成全角「／」。gd 玩家串与游戏读的数据档上屏文本值里不许再写「／」。
+     名目里并列的两样写「・」、不写斜线（同门牌副题「修舱・上水・雇手」「过秤・买卖」）：货名曾写「货单/押字」，船籍簿
+     船舱一栏露成「货单/押字 ×1」——游戏读的数据档里键为 name 的值不许带「/」「／」。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -963,7 +965,7 @@ def _game_data_files():
 
 
 def _game_data_texts(files):
-    """files 里各档上屏的文本值：yield (档名, 路径, 文本)。/meta 与 GLYPH_SKIP_KEYS 跳过；人物原稿不读。"""
+    """files 里各档上屏的文本值：yield (档名, 路径, 键, 文本)。/meta 与 GLYPH_SKIP_KEYS 跳过；人物原稿不读。"""
     codex = os.path.basename(CODEX_JSON)
     for f in sorted(files):
         if f.startswith("characters") and f != codex:
@@ -974,7 +976,7 @@ def _game_data_texts(files):
             continue
         for path, key, text in _walk_json_strings(d):
             if key not in GLYPH_SKIP_KEYS and not path.startswith("/meta"):
-                yield f, path, text
+                yield f, path, key, text
 
 
 def _chart_layer(f, path):
@@ -988,10 +990,12 @@ def _scan_game_data():
     for must in GAME_DATA_MUST:
         if must not in files:
             FAILS.append(f"data/{must}: 钉 O / T 认不出它是游戏读的数据档——scripts 里 res://data/ 的引用写法改了")
-    for f, path, text in _game_data_texts(files):
+    for f, path, key, text in _game_data_texts(files):
         tag = f"data/{f}:{path}"
         _check_interpunct(text, tag)
         _check_slash(text, tag)
+        if key == "name":
+            _check_name_slash(text, tag)
         if not _chart_layer(f, path):
             _check_place_variants(text, tag)
             _check_trad(text, tag)
@@ -1020,6 +1024,11 @@ def _check_trad(text, tag):
 def _check_slash(text, tag):
     if FULLWIDTH_SLASH in text:
         FAILS.append(f"{tag}: 斜线写成全角「／」——全作写半角「 / 」（两边空格）：{text[:48]}")
+
+
+def _check_name_slash(text, tag):
+    if "/" in text or FULLWIDTH_SLASH in text:
+        FAILS.append(f"{tag}: 名目「{text}」里用斜线并列——名目里并列的两样写「・」（同门牌副题「过秤・买卖」）")
 
 
 def _check_role_hints(roles, crew_src, game_src, tag):
@@ -1206,7 +1215,7 @@ def _self_test_trad():
 
 
 def _self_test_slash():
-    """钉 W 自检：全角「／」判红，半角「 / 」判绿。"""
+    """钉 W 自检：全角「／」判红，半角「 / 」判绿；名目里的斜线判红、「・」判绿。"""
     bad = []
     saved = FAILS[:]
     try:
@@ -1216,6 +1225,11 @@ def _self_test_slash():
             _check_slash(text, "self")
             if bool(FAILS) != want_red:
                 bad.append(f"钉 W 自检：「{text}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+        for name, want_red in (("货单/押字", True), ("货单・押字", False)):
+            FAILS.clear()
+            _check_name_slash(name, "self")
+            if bool(FAILS) != want_red:
+                bad.append(f"钉 W 自检：名目「{name}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
     finally:
         FAILS.clear()
         FAILS.extend(saved)

@@ -355,7 +355,7 @@
 
     {
       "id": "cargo_manifest_signature",
-      "name": "货单/押字",
+      "name": "货单・押字",
       "category": "账目", "war_class": "common",
       "tradable": false,
       "base_value": 0,

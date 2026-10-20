@@ -12,6 +12,8 @@ extends SceneTree
 ##       地名都写澎湖（落漈曾写宋人的「彭湖与流求之间的水道」「彭湖以东水势渐低」，与并排那条、与页题「澎湖・寺观」两样）。
 ##   五、斜线写半角「 / 」：海图航段细节里委办缺货那一行（舱中货不够委办件数时）与过场跳过提示，斜线不写全角「／」
 ##       （曾写「舱中%s　%d／委办 %d」「跳过 ›　Esc ／ 右键」，全作斜线都是半角带空格）。
+##   六、名目里并列写「・」：舱里装着第一章剧情给的那件货，船籍簿船舱一栏写「货单・押字 ×1」（货名曾写「货单/押字」，
+##       全作并列项的标签都用「・」，斜线又该两边带空格）。
 ## 静态一侧见 tools/check_w53_copy.py 钉 R / S / T / W 与钉 O（扩到数据）；本探针看的是岸带上真建出来的门、真进的页、真取的字。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_copy_probe.gd（经门锁跑）
 ## 判词：逐条「  ✓ / ✗ 判词」，末行 QA_W54_COPY_PROBE PASS / FAIL k；本进程 SCRIPT ERROR 也判红。
@@ -81,6 +83,8 @@ func _run() -> void:
 	await _sec_place_names()
 	print("== 五、斜线写半角「 / 」（海图航段细节的委办缺货行、过场跳过提示）")
 	await _sec_slash()
+	print("== 六、名目里并列写「・」（船籍簿船舱一栏的货名）")
+	_sec_name_slash()
 	_report()
 
 
@@ -217,6 +221,20 @@ func _sec_slash() -> void:
 	var hint := (lbl as Label).text if lbl is Label else ""
 	cp.free()
 	_check(hint.find("Esc / 右键") >= 0 and hint.find(full) < 0, "过场跳过提示写半角斜线（「%s」）" % hint)
+
+
+## 六：舱里装一件「货单・押字」（第一章「按明账押字」给的那件），船籍簿重排后船舱一栏照货名写
+func _sec_name_slash() -> void:
+	_stage_day(1262, 5, 10)
+	gs.last_port = "quanzhou"
+	fleet.add_cargo("cargo_manifest_signature", 1, 0.0)
+	_main.call("update_status_panel")
+	var lbl: Variant = _main.get("status_label")
+	var page := (lbl as RichTextLabel).text if lbl is RichTextLabel else ""
+	var i := page.find("船舱")
+	var hold := page.substr(i, 40) if i >= 0 else page.left(40)
+	_check(page.find("货单・押字 ×1") >= 0 and page.find("货单/押字") < 0,
+		"船籍簿船舱一栏写「货单・押字 ×1」（%s）" % hold.replace("\n", "／"))
 
 
 ## 树里字为 text 的钮（没在删的）各自的悬停提示，按树序
