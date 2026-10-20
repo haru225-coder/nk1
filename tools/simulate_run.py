@@ -379,7 +379,7 @@ def deal(origin, salt):
     pin = pinned_port(origin)
     seats = [pin] if pin else []
     rest = [pid for pid in ids if pid not in seats]
-    rest.sort(key=lambda pid: (-wind_factor(bearing(origin, pid)), dist(origin, pid), pid))
+    rest.sort(key=lambda pid: (-route_wind(origin, pid), dist(origin, pid), pid))  # 顺风按全程的风（route_wind 定义在开局断言前）
     if not rest:
         return seats
     start = salt % len(rest)
@@ -806,6 +806,22 @@ check(verify_invariants(), "开局分船账目不变量成立")
 # 已解锁港口轮换——优先未走通/必须亲至的港，避免熟港套利卡晋升
 history = []
 duty_skipped = []  # 合法货趟若办引应纳的验引（光杆、平时税率），只印量级，不进账
+
+def route_wind(a, b):
+    """晨潮三向排顺风用全程的风：各段按段长折算的日速倍率（Voyage.route_wind_factor 同式，去向牌上的风就是它）。
+    原先只看出港第一段的方位（lane w54-voyage 改）。模拟里的风按当月算，与本文件 voyage_days / speed 同一口径；
+    游戏里按明日启航那月。定义放在第一次发牌之前、拍板清单所引行号之后，免得前面的行号平移。"""
+    pts = track_points(a, b)
+    total = slow = 0.0
+    for i in range(len(pts)-1):
+        seg = gc_li_pts(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1])
+        if seg < 0.05:
+            continue
+        total += seg
+        slow += seg / wind_factor(rhumb_bearing(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1]))
+    # 取六位小数：HeadingDraft._before 按 is_equal_approx 认平手（转换期各线都是 0.85，再比里程），这里别让浮点尾巴分出先后
+    return round(total / slow, 6) if total > 0 and slow > 0 else wind_factor(0.0)
+
 print()
 hand0 = deal("quanzhou", 0)
 check(len(hand0) <= 3 and bool(hand0) and hand0[0] == "ryukyu",

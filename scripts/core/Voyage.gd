@@ -1002,3 +1002,12 @@ func _good_name(good_id: String) -> String:
 # ══ 以下为本地 main 的新增函数，合并时因所在区块让位云端而被丢，按「本地纯新增保留」原样补回（2026-09-25） ══
 const REQUISITION_FROM := "1275-04"
 const YUAN_FROM := "1276-01"
+
+
+## 晨潮三向排「顺风优先」用的风（lane w54-voyage）：明日启航那月全程吃的风，各段按段长折算——就是 plan() 的 wind_factor、
+## 去向牌上那个风字背后的数。HeadingDraft 原先拿 bearing()（出港第一段）的方位排；lane w53-1 把推演与牌改成全程的风之后，
+## 发牌还按第一段：广州夏月出珠江口那段偏东南，往占城（全程顶头逆风）排成顺风、头一手就发，牌上却写「顶头逆风」；
+## 流求往漳州 / 广州、明州往温州、澎湖往兴化同此
+func route_wind_factor(from_id: String, to_id: String) -> float:
+	var start := _shift_date(Calendar.year, Calendar.month, Calendar.day, 1)
+	return float(_route_wind(_legs(from_id, to_id), start.y)["factor"])

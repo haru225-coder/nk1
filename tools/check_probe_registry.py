@@ -156,6 +156,7 @@ EXEMPT = [
     ("qa_w54_story_enter_probe.gd", "lane-w54-story", "终局抉择页与剧情幕岔路回车不替人按专项探针（崖山「把粮与硫黄交上去」/ 辞呈三条路 / 泉州征船名册三枚，及 scenes.json 可见真选项两条以上的幕逐幕挂 no_enter：真按一次回车再直调一次 _activate_first_choice，断终局不落、日子不走、旗 / 钱 / 倾向不动、船与水粮不动，反向基点钮照旧作数、单路幕回车照旧往下走，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_tavern_ashore_probe.gd", "lane-w54-tavern", "酒馆与同伴专项探针：人在海上下不了船（史实辞船月初船在海上时人仍在船把舵、不发【辞船】不扣当月俸，真走 SeaChart._arrive 靠岸即下船、通告跟在抵港句后，泊港照旧月初走；一段钉一条、回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_econ_sea_sell_probe.gd", "lane-w54-econ", "海上相逢收货只挑 tradable 的舱货、不收在身委办要交的那几件专项探针（只装账物 400 回不开价收、账物与货混装回回收货、只装账物与空舱同种子逐回一字不差、委办货不开价且多出几件至多收几件，回退即红），headless 秒级，动 Voyage 海上买卖、goods.json tradable 或委办留货时加跑"),
+    ("qa_w54_voyage_heading_wind_probe.gd", "lane-w54-voyage", "晨潮三向顺风按全程的风排探针（十四港 × 十二月 × 初十 / 三十每一手 = 按去向牌上那个风的数排出的轮转窗口、广州七月不发全程顶头逆风的占城、真开海图三张牌风行无逆风），修原先按出港第一段方位排，回退即红，headless 约十秒"),
     ("qa_w54_voyage_shoal_probe.gd", "lane-w54-voyage", "傍岸擦浅滩船体伤每艘各吃一份探针（三船队各减 SHOAL_HULL、旗舰见底只扣到 0、札记写实扣之和、单船同改前、甲档减伤、真走傍岸逐日抽事抽到浅滩那一日），修原先乘船数整份压给旗舰，回退即红，headless 秒级"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),

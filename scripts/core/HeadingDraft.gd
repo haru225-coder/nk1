@@ -96,7 +96,8 @@ static func deal(origin: String, salt: int) -> PackedStringArray:
 			continue
 		rest.append({
 			"id": pid,
-			"wf": voyage.wind_factor(voyage.bearing(origin, pid)),
+			# 顺风按全程的风排（Voyage.route_wind_factor，与去向牌上的风同一个数）；原先取出港第一段——泉州三条线出湾同是 102 度（lane w54-voyage）
+			"wf": voyage.route_wind_factor(origin, pid),
 			"dist": voyage.distance_li(origin, pid),
 		})
 	rest.sort_custom(_before)
