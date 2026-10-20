@@ -7,6 +7,10 @@ extends SceneTree
 ##   R1 塞钱免征之后 / R2 交出一条船之后 / R3 趁夜溜走被追上罚过之后：同一程 2000 回一回不出。
 ##   R4 趁夜溜走溜成了：不算了结，照常会再遇。
 ##   R5 了结过，下一程真走 SeaChart._on_sail_pressed 发舶：记录清掉，又照常会抽到。
+##   元军哨船（逐日掷 6%）：落帆受检「在你的引目上盖了一个你不认得的印，放行」/ 违禁货起获罚过，原先隔日又「大元巡海，落帆受检」。
+##   （明州→温州 1276-03：明州已降元、温州未降，哨船、难民船、征船三样都掷得到）
+##   P0 基线会抽到。P1 舱里干净受检放行 / P2 违禁货起获罚过之后：同一程一回不出。P3 扬帆逃走甩脱了：照常再遇。
+##   P4 受检过的这一程，征船、难民船照常会抽到（只了结哨船这一样）。
 ## 运行期脚本错即红（共用件 tools/script_err_tally.gd；_run_guarded 兜 _run 半路中止）。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_seaevents_war_once_probe.gd（经门锁跑）
 ## 末行 W54_SEAEVENTS_WAR_ONCE cases=N fails=M；M>0 时 exit 1。
@@ -91,6 +95,7 @@ func _run() -> void:
 	line = _latest(chart)
 	n = _count(req, "quanzhou", "fuzhou")
 	_expect(line.contains("漂出哨船视线") and n > 0, "R4 趁夜溜走溜成了（札记「%s」）不算了结：同一程抽到 %d 回" % [line, n])
+	_patrol(chart)
 	# R5：上面 R3 那样了结过一回，再真点一次发舶
 	_fleet_two()
 	_gs.set("money", 1000)
@@ -143,6 +148,51 @@ func _fleet_two() -> void:
 	_fleet.set("food", 60)
 	_fleet.set("morale", 70)
 	_gs.set("fame", 10)
+
+
+func _patrol(chart: Node) -> void:
+	print("── P 元军哨船")
+	var ek: Dictionary = _voy.get("EventKind")
+	var patrol := int(ek["YUAN_PATROL"])
+	var keep_cal: Dictionary = _cal.call("to_dict")
+	_cal.call("from_dict", {"year": 1276, "month": 3, "day": 5})
+	_voy.call("begin_voyage")
+	var base := _count(patrol, "mingzhou", "wenzhou")
+	_expect(base > 0, "P0 没受检过：%d 回里抽到 %d 回" % [ROLLS, base])
+	_voy.call("begin_voyage")
+	_fleet_two()
+	_gs.set("money", 1000)
+	chart.call("_on_patrol_submit")
+	var line := _latest(chart)
+	var n := _count(patrol, "mingzhou", "wenzhou")
+	_expect(line.contains("放行") and n == 0, "P1 舱里干净受检放行（札记「%s」）之后同一程抽到 %d 回" % [line, n])
+	var req := _count(int(ek["REQUISITION"]), "mingzhou", "wenzhou")
+	var ref := _count(int(ek["REFUGEE"]), "mingzhou", "wenzhou")
+	_expect(req > 0 and ref > 0, "P4 只了结哨船这一样：同一程征船抽到 %d 回、难民船 %d 回" % [req, ref])
+	_voy.call("begin_voyage")
+	_fleet_two()
+	_fleet.call("add_cargo", "song_coin", 3, 260.0, 0)
+	_gs.set("money", 1000)
+	chart.call("_on_patrol_submit")
+	line = _latest(chart)
+	n = _count(patrol, "mingzhou", "wenzhou")
+	_expect(line.contains("违禁之物起获") and int(_fleet.call("cargo_qty", "song_coin")) == 0 and n == 0,
+		"P2 违禁货起获罚过（札记「%s」）之后同一程抽到 %d 回" % [line, n])
+	_voy.call("begin_voyage")
+	_fleet_two()
+	var chance := clampf(float(_fleet.call("fleet_speed")) / 220.0, 0.25, 0.9)
+	var k := 1
+	while k < 5000:
+		seed(k)
+		if randf() < chance:
+			break
+		k += 1
+	seed(k)
+	chart.call("_on_flee_pirates")
+	line = _latest(chart)
+	n = _count(patrol, "mingzhou", "wenzhou")
+	_expect(line.contains("甩在后面") and n > 0, "P3 扬帆逃走甩脱了（札记「%s」）不算了结：同一程抽到 %d 回" % [line, n])
+	_cal.call("from_dict", keep_cal)
 
 
 ## 逐日真抽 ROLLS 回（Voyage.roll_day_event，船向 90°、针路），数 kind 那一面；抽之前存下船队与历法，抽完原样还回

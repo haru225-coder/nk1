@@ -636,7 +636,7 @@ func _war_event(from_id: String, to_id: String) -> Dictionary:
 	var war_zone := (sf in ["besieged", "fallen"]) or (st in ["besieged", "fallen"])
 
 	var r := randf()
-	if now >= YUAN_FROM and yuan_side and r < 0.06:
+	if now >= YUAN_FROM and yuan_side and r < 0.06 and not war_event_settled(EventKind.YUAN_PATROL):  # 这一程落帆受检过就不再拦（lane w54-seaevents）
 		return _yuan_patrol_event()
 	r = randf()
 	if now >= YUAN_FROM and war_zone and r < 0.05:
@@ -1016,6 +1016,8 @@ func route_wind_factor(from_id: String, to_id: String) -> float:
 ## lane w54-seaevents：这一程上已经了结的战时遭遇 {EventKind: true}。征船交过船 / 塞钱换了「已征」/ 抗征被追上罚过，
 ## 册上都记了这条船，原先第二天照样再来一条哨船「按册征调」；了结过的这一程不再抽到（_war_event 照旧掷那一下骰，
 ## 只是不出这一面，别的遭遇的骰序不变）。趁夜溜走溜成了不算了结。
+## 元军哨船同此：落帆受检过（「在你的引目上盖了一个你不认得的印，放行」/ 违禁货起获罚过），原先隔日又「大元巡海，
+## 落帆受检」再翻一遍舱；扬帆逃走、迎战都不算了结（没受检，往后照旧会撞上）。
 ## 只活在这一程里：SeaChart 发舶时 begin_voyage() 清空（海上不能存档，不进存档）
 var _settled_this_voyage: Dictionary = {}
 

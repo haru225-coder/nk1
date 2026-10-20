@@ -2250,6 +2250,7 @@ func _on_patrol_submit() -> void:
 	else:
 		Fleet.morale = maxi(0, Fleet.morale - 2)
 		_log("[color=yellow]查了半日，没查出什么。对方在你的引目上盖了一个你不认得的印，放行。[/color]")
+	Voyage.settle_war_event(Voyage.EventKind.YUAN_PATROL)  # 受检过了，这一程不再拦检（lane w54-seaevents）
 	_refresh_status()
 	_on_event_continue()
 
