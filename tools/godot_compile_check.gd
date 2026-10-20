@@ -231,10 +231,8 @@ const SCRIPTS := [
 	"res://tools/qa_w54_polish_notes_probe.gd",  # lane w54-polish 讲解小笺专项探针（表与文案 / 已读与开关 / 海战观察件 / 岸上挂点）
 	"res://tools/qa_w54_perf_hull_probe.gd",  # lane w54-perf 船身视口省着画专项探针（开关 hull_view_lod 关态老路、阈角、出画、半路拨回、开关两路贴图逐像素同）
 	"res://tools/qa_w54_hunt_roster_damage_probe.gd",  # lane w54-hunt 海战战损统计探针（战损只认开战在册的船，按船认不按序号）
-	"res://tools/qa_w54_story_enter_probe.gd",  # lane w54-story 终局抉择页与剧情幕岔路回车不替人按专项探针（崖山 / 辞呈 / 泉州征船名册 / scenes.json 岔路幕挂 no_enter）
 	"res://tools/qa_w54_hunt_run_contract_probe.gd",  # lane w54-hunt 闯封锁与在身委办探针（委办要留的米不上秤：卖 / 扣 / 算不算闯得）
 	"res://tools/qa_w54_econ_sea_sell_probe.gd",  # lane w54-econ 海上靠来的船收货开价探针（不再每件 1 钱）
-	"res://tools/qa_w54_tavern_ashore_probe.gd",  # lane w54-tavern 人在海上下不了船专项探针（史实辞船船在海上等靠岸、真走 SeaChart._arrive 靠岸下船、泊港照旧）
 	"res://tools/qa_w54_hud_orders_state_probe.gd",  # lane w54-hud 海战号令面板签面状态栏整句放得下（劝降三样短写，整句裁字回退即红）
 	"res://tools/qa_w54_copy_probe.gd",  # lane w54-copy 文案一致性专项探针（门牌悬停提示与门牌同字等，一段钉一条）
 	"res://tools/qa_w54_hunt_landing_offer_probe.gd",  # lane w54-hunt 剿寨那一行挂卡判据探针（挂卡读到的是这一仗的来处与所在港）
