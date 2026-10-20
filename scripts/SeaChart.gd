@@ -12,6 +12,8 @@ const _AfterAction := preload("res://scripts/combat/AfterAction.gd")
 const _Landing := preload("res://scripts/combat/LandingRaid.gd")
 ## lane w54-polish：一到六期新概念的旁注小笺（第一次露面出一张，看过记旗标不再出；开关 combat_notes）
 const _Notes := preload("res://scripts/ui/CombatNotes.gd")
+## lane w54-audio：音效挂点表（启程 / 风涛 / 浅滩 / 靠港钟 / 海上沉没各一行挂点；开关 sfx_cues）
+const _SFX := preload("res://scripts/audio/SfxCues.gd")
 
 var origin_port: String = ""
 var selected_port: String = ""
@@ -1473,6 +1475,7 @@ func _on_sail_pressed() -> void:
 			Fleet.cargo_qty("grain"), GameManager.get_port_name(selected_port), int(total_li)]))
 	else:
 		_log(_ink(UiTheme.GOLD, "启程往 %s，航程 %d 里。" % [GameManager.get_port_name(selected_port), int(total_li)]))
+	_SFX.play(self, &"chart_depart")  # lane w54-audio：帆吃满风、船头破浪
 	_sail_next_day()
 
 
@@ -1584,6 +1587,8 @@ func _show_event(event: Dictionary) -> void:
 		c.queue_free()
 
 	var kind: int = event.get("kind", Voyage.EventKind.NONE)
+	if kind == Voyage.EventKind.STORM or kind == Voyage.EventKind.SHOAL:
+		_SFX.play(self, &"chart_storm" if kind == Voyage.EventKind.STORM else &"chart_shoal")  # lane w54-audio：风涛 / 浅滩各一声
 	if kind == Voyage.EventKind.MERCHANT:
 		var offer := str(event.get("offer", "rumor"))
 		if offer == "sell":
@@ -2326,6 +2331,7 @@ func _arrive() -> void:
 	GameState.last_port = selected_port
 	_log(_ink(UiTheme.GOLD, "历 %d 日，抵 %s。" % [days_elapsed, GameManager.get_port_name(selected_port)]))
 	GameManager.settle_ashore()  # 海上到了月份没走成的人，靠岸这会儿下船（lane w54-tavern）
+	_SFX.play(self, &"chart_arrive")  # lane w54-audio：靠港钟
 
 	event_title.text = "到　港"
 	event_text.text = "历 %d 日海路，%s 的岸线终于在雾里显出来。\n\n%s" % [
@@ -2343,6 +2349,7 @@ func _sink(preface: String = "") -> void:
 	sailing = false
 	Fleet.at_sea = false
 	Fleet.clear_cargo()
+	_SFX.play(self, &"chart_sink")  # lane w54-audio：船身裂开
 	if map:
 		map.hide_ship()
 	event_title.text = "沉　没"

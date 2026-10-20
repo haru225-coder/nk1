@@ -58,6 +58,17 @@ const HOOKS := {
 		"where": "WorldMap._on_combat_order（号令擂鼓；撤令不响）"},
 	&"sea_splash": {"layers": [[&"combat_flee", -17.0, 0.0, 1.7]], "added": true, "gap_ms": 150,
 		"where": "Cannonball._splash_and_die（重弹落水；一排矢只溅小花不响）"},
+	# ── 本波补挂 · 海图与港口 ──
+	&"chart_depart": {"layers": [[&"combat_flee", -11.0, 0.0, 0.75]], "added": true, "gap_ms": 1000,
+		"where": "SeaChart._on_sail_pressed（启程：帆吃满风、船头破浪）"},
+	&"chart_storm": {"layers": [[&"combat_flee", -3.0, 0.0, 0.6], [&"combat_flee", -7.0, 0.35, 0.8]], "added": true, "gap_ms": 1500,
+		"where": "SeaChart._show_event 风涛（浪头一个高过一个，两下）"},
+	&"chart_shoal": {"layers": [[&"combat_hit", -6.0, 0.0, 0.5]], "added": true, "gap_ms": 1500,
+		"where": "SeaChart._show_event 浅滩（船底擦过沙脊）"},
+	&"chart_arrive": {"layers": [[&"transition", -6.0, 0.0, 0.75]], "added": true, "gap_ms": 1500, "group": &"bell",
+		"where": "SeaChart._arrive（靠港钟：比墨幕那声沉，同在收声组 bell）"},
+	&"chart_sink": {"layers": [[&"combat_hit", -3.0, 0.0, 0.6], [&"combat_lose", -6.0, 0.3]], "added": true, "gap_ms": 1500,
+		"where": "SeaChart._sink（海上沉没：船身裂开，随后两记下行磬音）"},
 }
 
 ## 旗舰损伤事件（Ship.damage_event 的 kind）→ 挂点；表外的 kind 不响
