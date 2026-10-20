@@ -21,7 +21,7 @@ var shot: Dictionary = {}
 
 var water_splash = preload("res://scenes/WaterSplash.tscn")
 var impact_explosion = preload("res://scenes/ImpactExplosion.tscn")
-const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
+const _SFX := preload("res://scripts/audio/SfxCues.gd")
 const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const _Ballistics := preload("res://scripts/combat/Ballistics.gd")
 ## lane w53-p3a：弹道一闸——敌船簿（enemy_flood_fire）在才许走 take_ballistic_hit；
@@ -265,7 +265,7 @@ func _strike(body: Node2D, at: Vector2) -> void:
 		body.take_damage(hull)
 		_spawn_floating_text("-" + str(int(hull)), Color.RED)
 	var world := get_parent()
-	_AUDIO.combat_hit(world)
+	_SFX.play(world, &"sea_hit")
 	# 命中观感按弹种（combat09 CombatFx.on_missile_hit）；挨打的是本船（玩家旗舰）才震镜头。砲石另加 ImpactExplosion（木屑尘烟一闪）
 	var fx_kind := str(shot.get("fx", "bolt" if heavy else ""))
 	if fx_kind != "":

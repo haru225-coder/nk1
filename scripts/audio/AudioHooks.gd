@@ -1,14 +1,17 @@
 ## Thin sound-effect seam for the game loop.
 ##
-## Each named cue plays a short procedural sound from SfxSynth (no audio files,
-## no third-party samples).  A stream registered via register_stream() wins over
+## Each cue plays a short procedural sound from SfxSynth (no audio files, no
+## third-party samples).  A stream registered via register_stream() wins over
 ## the synthesized default, so a later audio pass can drop in real assets
-## without touching call sites.
+## without touching call sites.  Gameplay code does not call this file
+## directly: every place that makes a sound goes through the hook table in
+## SfxCues.gd (lane w54-audio), which names the cue and its volume.
 ##
 ## Mute: `AudioHooks.enabled = false` (runtime), or launch with the environment
 ## variable NK1_SFX=0.  `volume_db` offsets every cue.  Headless runs never
 ## create players (the synth still builds), so smoke/tool scripts stay silent
-## and deterministic.
+## and deterministic; the decision is still written to `journal`, so probes can
+## tell whether a hook fired and why it stayed quiet.
 extends RefCounted
 
 const _SYNTH := preload("res://scripts/audio/SfxSynth.gd")
@@ -30,11 +33,17 @@ const _MIN_GAP_MS := {
 }
 const _MAX_VOICES := 6
 const _META := &"nk1_sfx"
+## How many recent decisions `journal` keeps (oldest dropped first).
+const JOURNAL_MAX := 64
 
 ## On by default; set false (or NK1_SFX=0) for a silent accessibility mode.
 static var enabled := OS.get_environment("NK1_SFX") != "0"
 ## Global offset added to every cue's volume.
 static var volume_db := 0.0
+## Recent play_cue decisions, newest last: {ms, cue, hook, db, why}.  why "" =
+## the cue sounded (headless counts as sounded: only the player is skipped);
+## otherwise muted / no_tree / no_stream / gap / voices.  Read by probes only.
+static var journal: Array = []
 static var _streams: Dictionary = {}
 static var _last_ms: Dictionary = {}
 static var _warming := false
@@ -68,27 +77,35 @@ static func stream_for(cue: StringName) -> AudioStream:
 ## outlives the caller (WorldMap frees itself right after the result cue, Main
 ## swaps pages under the transition); it frees itself when finished.  Returns
 ## null when muted, headless, rate-limited or over the voice cap.
-static func play_cue(parent: Node, cue: StringName, cue_db := 0.0) -> AudioStreamPlayer:
-	if not enabled or parent == null or not is_instance_valid(parent) or not parent.is_inside_tree():
-		return null
+## opts.hook names the SfxCues hook that asked (kept in the journal).
+static func play_cue(parent: Node, cue: StringName, cue_db := 0.0, opts := {}) -> AudioStreamPlayer:
+	var hook: StringName = StringName(opts.get("hook", &""))
+	var db := cue_db + volume_db
+	if not enabled:
+		return _refuse(cue, hook, db, "muted")
+	if parent == null or not is_instance_valid(parent) or not parent.is_inside_tree():
+		return _refuse(cue, hook, db, "no_tree")
 	var stream := stream_for(cue)
-	if stream == null or DisplayServer.get_name() == "headless":
-		return null
+	if stream == null:
+		return _refuse(cue, hook, db, "no_stream")
 	var now := Time.get_ticks_msec()
 	if now - int(_last_ms.get(cue, -100000)) < int(_MIN_GAP_MS.get(cue, 0)):
-		return null
+		return _refuse(cue, hook, db, "gap")
 	var root := parent.get_tree().root
 	var voices := 0
 	for child in root.get_children():
 		if child.has_meta(_META):
 			voices += 1
 	if voices >= _MAX_VOICES:
-		return null
+		return _refuse(cue, hook, db, "voices")
 	_last_ms[cue] = now
+	_note(cue, hook, db, "")
+	if DisplayServer.get_name() == "headless":
+		return null
 	var player := AudioStreamPlayer.new()
 	player.set_meta(_META, cue)
 	player.stream = stream
-	player.volume_db = cue_db + volume_db
+	player.volume_db = db
 	player.autoplay = true
 	player.finished.connect(player.queue_free)
 	# Deferred: callers include _ready chains where root is busy adding children.
@@ -97,6 +114,17 @@ static func play_cue(parent: Node, cue: StringName, cue_db := 0.0) -> AudioStrea
 		_warming = true
 		_warm_step(parent.get_tree())
 	return player
+
+
+static func _refuse(cue: StringName, hook: StringName, db: float, why: String) -> AudioStreamPlayer:
+	_note(cue, hook, db, why)
+	return null
+
+
+static func _note(cue: StringName, hook: StringName, db: float, why: String) -> void:
+	journal.append({"ms": Time.get_ticks_msec(), "cue": cue, "hook": hook, "db": db, "why": why})
+	if journal.size() > JOURNAL_MAX:
+		journal.pop_front()
 
 
 ## After the first audible cue, synthesize the remaining defaults one per frame
@@ -111,34 +139,3 @@ static func _warm_step(tree: SceneTree) -> void:
 				_SYNTH.stream_for(cue)
 				_warm_step(tree), CONNECT_ONE_SHOT)
 			return
-
-
-## Named seams keep gameplay call sites readable and make future SFX mapping
-## explicit.  Volumes sit a few dB under unity; fire/hit are the quietest.
-static func transition(parent: Node) -> AudioStreamPlayer:
-	return play_cue(parent, CUE_TRANSITION, -5.0)
-
-
-static func combat_start(parent: Node) -> AudioStreamPlayer:
-	return play_cue(parent, CUE_COMBAT_START, -4.0)
-
-
-static func combat_fire(parent: Node) -> AudioStreamPlayer:
-	return play_cue(parent, CUE_COMBAT_FIRE, -7.0)
-
-
-static func combat_hit(parent: Node) -> AudioStreamPlayer:
-	return play_cue(parent, CUE_COMBAT_HIT, -8.0)
-
-
-static func combat_board(parent: Node) -> AudioStreamPlayer:
-	return play_cue(parent, CUE_COMBAT_BOARD, -4.0)
-
-
-static func combat_result(parent: Node, outcome: String) -> AudioStreamPlayer:
-	var cue := CUE_COMBAT_FLEE
-	if outcome == "win":
-		cue = CUE_COMBAT_WIN
-	elif outcome == "lose":
-		cue = CUE_COMBAT_LOSE
-	return play_cue(parent, cue, -4.0)

@@ -264,6 +264,8 @@ const SCRIPTS := [
 	"res://tools/qa_w54_hud_intel_tide_probe.gd",  # lane w54-hud 海战敌情卡跟着顶匾高矮挪（舱货折行顶匾长高时不压匾，回退即红）
 	"res://tools/qa_w54_port_rumor_probe.gd",  # lane w54-port 牙行货单别港传闻不荐牙行闭门港探针（封港 / 被围取下一家开着的、都闭着写原提示）
 	"res://tools/qa_w54_port_ship_pick_probe.gd",  # lane w54-port 牙行「装至」选船接委办 / 交货 / 毁约后不跳回旗舰探针
+	"res://scripts/audio/SfxCues.gd",  # lane w54-audio 音效挂点表（各处发声都走它：挂点 → 声样 / 音量，只用 SfxSynth 现成八样）
+	"res://tools/qa_w54_audio_cues_probe.gd",  # lane w54-audio 音效挂点表专项探针（表、原先七处、无头不出声、真走海战挂点）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；

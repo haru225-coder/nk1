@@ -1,6 +1,6 @@
 extends Node2D
 
-const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
+const _SFX := preload("res://scripts/audio/SfxCues.gd")
 const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const _BoardingStage := preload("res://scripts/combat/BoardingStage.gd")
 const _MeleeResolve := preload("res://scripts/combat/MeleeResolve.gd")
@@ -341,7 +341,7 @@ func _board_enemy(enemy: Node2D) -> void:
 	if _escorts != null:
 		_escorts.on_flagship_hooked(enemy)  # lane w53-p6-escort：夺舱的扳机（不论谁先抛的钩）
 	_last_melee = {}
-	_AUDIO.combat_board(self)
+	_SFX.play(self, &"sea_board")
 	enemy.set("grappled", true)  # 敌船停航停炮
 	_SeaAtmosphere.boarding_drama(self, ship, enemy)  # lane atmos：接舷镜头 / 钩缆 / 翻白
 
@@ -834,7 +834,7 @@ func _setup_combat(pb: Dictionary) -> void:
 	_escape_px = esc.x
 	_shake_off_s = esc.y
 	combat_mode = true
-	_AUDIO.combat_start(self)
+	_SFX.play(self, &"sea_start")
 	# 战斗专用：禁掉 PortZone 停靠出口（否则 Enter 会切回 Main 丢战斗）
 	$Ports.process_mode = Node.PROCESS_MODE_DISABLED
 	$Ports.visible = false
@@ -995,7 +995,7 @@ func _battle_exit(outcome: String, data: Dictionary) -> void:
 			data["losses"] = losses
 	if _escorts != null:
 		_escorts.settle(outcome, data)  # lane w53-p6-escort：沉了 / 被夺的护航摘出 Fleet，下场写 data.escort
-	_AUDIO.combat_result(self, outcome)
+	_SFX.battle_result(self, outcome, data)
 	_CombatShoreHook.unmount_combat_ui(self)
 	_try_letterbox_exit(outcome, data)
 	_SeaState.clear_active(_sea)

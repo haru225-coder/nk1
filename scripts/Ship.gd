@@ -47,7 +47,7 @@ var _cam_shake := Vector2.ZERO
 var target_zoom = Vector2(CAM_ZOOM_REST, CAM_ZOOM_REST)
 # lazy load：避免 compile 时 Cannonball.gd → class Ship → preload 场景 → 再要 Cannonball.gd 的环
 var cannonball_scene: PackedScene = null
-const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
+const _SFX := preload("res://scripts/audio/SfxCues.gd")
 const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 const _DamageModel := preload("res://scripts/combat/DamageModel.gd")
 var fire_cooldown: float = 0.0
@@ -225,7 +225,7 @@ func _fire_broadside_legacy(side: int) -> void:
 		cb.shooter = self
 		get_parent().add_child(cb)
 
-	_AUDIO.combat_fire(get_parent())
+	_SFX.play(get_parent(), &"sea_fire")
 	_CombatFx.muzzle_flash(self, side, shots)
 	_CombatFx.hull_shudder(self, 0.7, side)
 
@@ -298,7 +298,7 @@ func _fire_broadside_ballistics(side: int) -> void:
 	var ship_dir = Vector2.UP.rotated(rotation)
 	var side_dir = Vector2.RIGHT.rotated(rotation) if side == 1 else Vector2.LEFT.rotated(rotation)
 	var shots := fired
-	_AUDIO.combat_fire(get_parent())
+	_SFX.play(get_parent(), &"sea_fire")
 	_CombatFx.muzzle_flash(self, side, shots)
 	_CombatFx.hull_shudder(self, 0.7, side)
 	_CombatFx.punch_camera(self, 11.0, -side_dir, 0.012)

@@ -11,7 +11,7 @@ extends CharacterBody2D
 var target: Node2D = null
 # lazy load：与 Ship.gd 同因，打断 Cannonball 场景自引用环
 var cannonball_scene: PackedScene = null
-const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
+const _SFX := preload("res://scripts/audio/SfxCues.gd")
 const _CombatFx := preload("res://scripts/combat/CombatFx.gd")
 ## lane combat07：敌将 AI（接近 / 抢上风 / 保持舷炮 / 接舷企图 / 脱离 / 降幡），本船只管照舵令开船、开炮、抛钩
 const _Captain := preload("res://scripts/combat/EnemyCaptainAI.gd")
@@ -519,7 +519,7 @@ func _process_firing(delta: float, angle_diff: float, dist: float) -> void:
 	if volley_n <= 0:
 		return
 
-	_AUDIO.combat_fire(get_parent())
+	_SFX.play(get_parent(), &"sea_fire")
 	_CombatFx.muzzle_flash(self, side, volley_n)
 	_CombatFx.hull_shudder(self, 0.55, side)
 	if cannonball_scene == null:

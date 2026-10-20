@@ -98,7 +98,7 @@ const _CS_BACKDROP := preload("res://scripts/cutscene/LivingBackdrop.gd")
 const _TITLE_STAGE := preload("res://scripts/cutscene/TitleStage.gd")
 ## 工席成功态的短过渡（淡入墨幕 + 题签 + 淡出），见 play_transition
 const _UI_TRANSITION := preload("res://scripts/ui/UiTransition.gd")
-const _AUDIO := preload("res://scripts/audio/AudioHooks.gd")
+const _SFX := preload("res://scripts/audio/SfxCues.gd")
 ## 工席纸条小件（卡身 / 题签 / 旁注 / 钮行 / chip）；Main 里 _slip_* 同名转发到这里
 const _SLIP := preload("res://scripts/ui/SlipKit.gd")
 ## 船籍簿整页（顶上状态匾 + 浮层 + 正文 / 记事栏）的实现在 scripts/ui/LedgerPage.gd（Lane mz 第二刀拆出）；
@@ -2208,7 +2208,7 @@ func _on_guild_join(port_id: String) -> void:
 ## at_black 在全黑时调（通常是 load_scene，页面在黑幕底下换好）；await 到过渡结束才返回。
 ## headless / -s 工具脚本 / 巡检关闭（Cinematics.live() 为假）时不演：当帧调 at_black 就返回，不 await、不延迟。
 func play_transition(title: String, subtitle := "", at_black := Callable(), seal := "") -> void:
-	_AUDIO.transition(self)
+	_SFX.play(self, &"transition")
 	var node: CanvasLayer = null
 	if _CINE.live():
 		_dismiss_banner()
