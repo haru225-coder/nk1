@@ -42,8 +42,8 @@ func _run() -> void:
 	# 二、从黑起播：from_black=true 的第0帧基板已全黑
 	await _probe_from_black()
 
-	# 三、镜头旗标换底：weigui 用了 bg_alt，条件命中即换
-	_probe_bg_alt()
+	# 三、镜头旗标换底：weigui 用了 bg_alt，条件命中即换（里头要等一帧：不 await 的话 _report 先退进程，这一节一行判词都不出）
+	await _probe_bg_alt()
 
 	_report()
 
