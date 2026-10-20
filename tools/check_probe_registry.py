@@ -150,7 +150,6 @@ EXEMPT = [
     ("qa_w54_econ_peak_probe.gd", "lane-w54-econ", "章节本钱按现银减欠款记专项探针（真挣两千在船屋借满三千峰值不动且不晋升、当场还清峰值不动、无欠款照旧晋升、欠着款挣钱按净值涨、花钱结息不动峰值，回退即红），headless 秒级，动 GameState.add_money / 赊贷 / 章节本钱时加跑"),
     ("qa_w54_econ_permit_probe.gd", "lane-w54-econ", "货引按出港时的舱货抽解专项探针（空舱请领再装货出港补足、装好货再请领不补且札记逐字照旧、卖掉不退、补不起不放行货引舱货都在、旧档的货引照旧放行、permit_base 存档与坏值、市舶司页货引卡、真按出港补不起留港，回退即红），headless 秒级，动货引 / 抽解 / 出港验放时加跑"),
     ("qa_w54_econ_sea_sell_probe.gd", "lane-w54-econ", "海上相逢收货只挑 tradable 的舱货、不收在身委办要交的那几件专项探针（只装账物 400 回不开价收、账物与货混装回回收货、只装账物与空舱同种子逐回一字不差、委办货不开价且多出几件至多收几件，回退即红），headless 秒级，动 Voyage 海上买卖、goods.json tradable 或委办留货时加跑"),
-    ("qa_w54_gates_zero_case_guard.gd", "lane-w54-gates", "探针「一格断言都没跑过也照印全部通过」守卫探针（静态读 qa_w53_4_story_probe.gd：两档非空那格断言在、_check 记 cases、收尾 cases 参与判红；带反例 / 正例内存自证），回退 qa_w53_4_story_probe 那笔即红，headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_gates_zero_case_guard_probe.gd", "lane-w54-gates", "探针「一格断言都没跑过也照印全部通过」守卫探针（静态读 qa_w53_4_story_probe.gd：两档非空那格断言在、_check 记 cases、收尾 cases 参与判红；带反例 / 正例内存自证），回退 qa_w53_4_story_probe 那笔即红，headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_hud_intel_fit_probe.gd", "lane-w54-hud", "海战右上敌情卡长写法放得下专项探针（伤沉在即・想退・失火进水的行与选中小卡逐行字宽 ≤ 栏宽、整张卡不被撑宽不出画布、两钮在画内，1280×720 与 21:9 各一遍；行尾「进水」被裁、卡撑到 326 宽右沿冲出 60 px 回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_hud_intel_tide_probe.gd", "lane-w54-hud", "海战敌情卡跟着顶匾高矮挪专项探针（钱 123456、舱里六样货开打，顶匾右格折三行长到 114 高；敌情卡上沿在顶匾下沿之下、货抛光跟着上来、再进货跟着下去，1280×720 与 21:9 各一遍；敌情卡钉在 y 90 压进匾里 32 px 回退即红），headless 秒级，随本 lane 落地验过留档"),
