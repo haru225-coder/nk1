@@ -426,6 +426,11 @@ func _check_partitions(data: Dictionary) -> String:
 	why = _num_map_entries(eco, "investments", false)
 	if why != "":
 		return "economy." + why
+	# 修埠等级从 0 起：负数放行，Economy.invest_cost 拿它当下标取价目——-1 悄悄取到顶等那一档的价，再小即 SCRIPT ERROR，
+	# 市舶司页一进就报；埠头还写成「-1 等」、修埠价差跟着成负
+	for pid in _as_dict(eco.get("investments", {})):
+		if float(eco["investments"][pid]) < 0.0:
+			return "economy.investments.%s 为负" % pid
 
 	var fleet: Dictionary = _as_dict(data.get("fleet", {}))
 	why = _bad_fields(fleet, ["water", "food", "morale", "mutiny_cooldown"], ["cargo"])
@@ -574,7 +579,11 @@ func _num_map_entries(map: Dictionary, key: String, deep: bool) -> String:
 	var outer: Dictionary = _as_dict(map.get(key, {}))
 	for k in outer:
 		if deep:
-			var inner: Dictionary = _as_dict(outer[k])
+			# 外一层（economy.rates 的港那一格）给了却不是账本（字串 / 数 / 数组 / null）：Economy 取价、买卖冲击、逐日回归都把它当
+			# 字典取，按空表放过即读档报成功、此后每过一日一串 SCRIPT ERROR，牙行价目也取不出
+			if typeof(outer[k]) != TYPE_DICTIONARY:
+				return "%s.%s 不是对象" % [key, k]
+			var inner: Dictionary = outer[k]
 			for kk in inner:
 				if not _is_num(inner[kk]):
 					return "%s.%s.%s 不是数字" % [key, k, kk]

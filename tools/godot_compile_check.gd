@@ -251,6 +251,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_story_signoff_probe.gd",  # lane w54-story 结局落款写结局所在地专项探针（崖山两条路落款写崖山）
 	"res://tools/qa_w54_saves_systems_probe.gd",  # lane w54-saves 逐系统存档往返探针（十六个系统真玩法摆状态，存→读→逐字段相等，读回后同种子续跑与不读档逐条相同）
 	"res://tools/qa_w54_saves_migrate_probe.gd",  # lane w54-saves 旧版本档迁到本版逐项对探针（v1 / v2 / v3 满档逐键对、回写头与结构版同升）
+	"res://tools/qa_w54_saves_shape_probe.gd",  # lane w54-saves 存档体检漏网坏形状探针（读档报成功、随后照常玩即 SCRIPT ERROR 的那几型）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
