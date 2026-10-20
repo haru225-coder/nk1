@@ -7,6 +7,9 @@ extends SceneTree
 ##       到月下船的人不扣当月俸，海上也一样：他是船上唯一的职事，十月初一不扣钱。
 ##     c 靠岸下船：真走 SeaChart._arrive——一靠岸人就走、【辞船】恰一条，海图札记里排在「历 N 日，抵 某港」之后（最上），
 ##       船籍簿淡字记的是靠岸那个月；靠岸后再过日子不重发。
+##   B 欠饷求去：修前连欠三月的那个月初船在海上，俸最高者照样「不告而去」——人在海上走不了。
+##     d 泊港照旧当场走；海上只撂下话（「说船一靠岸就走」）、人还在船，真走 SeaChart._arrive 一靠岸才走、欠月数归零，
+##       通告排在抵港句之上；俸低的那位留下，下月发得出饷不再有人走。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_tavern_ashore_probe.gd（经门锁跑）
 ## 末行 W54_TAVERN_ASHORE cases=N fails=M；fails>0 退 1。运行期脚本错即红（tools/script_err_tally.gd）。
 
@@ -60,6 +63,7 @@ func _run() -> void:
 	_a_in_port()
 	_b_at_sea()
 	await _c_landfall()
+	await _d_walkout()
 	_flt.set("at_sea", false)
 	_report()
 
@@ -167,6 +171,85 @@ func _ink_off(line: String) -> String:
 	var rx := RegEx.new()
 	rx.compile("\\[/?color[^\\]]*\\]")
 	return rx.sub(line, "", true)
+
+
+# ── d 欠饷求去：海上撂下话，靠岸再走 ──
+
+## 1258 年第一章泊泉州，雇吴针（火长，月俸 60）与黄账房（杂事，月俸 120），雇完囊空
+func _stage_two() -> void:
+	_gs.from_dict({})
+	_crew.from_dict({})
+	_flt.set("at_sea", false)
+	_gs.chapter = 1
+	_gs.last_port = "quanzhou"
+	_cal.from_dict({"year": 1258, "month": 5, "day": 10})
+	_gs.money = int(_crew.call("signing_fee", "wu_zhen")) + int(_crew.call("signing_fee", "huang_zhangfang"))
+	_crew.call("hire", "wu_zhen")
+	_crew.call("hire", "huang_zhangfang")
+	_expect((_crew.hired as Dictionary).size() == 2 and int(_gs.money) == 0, "摆场：雇吴针、黄账房，雇完囊空")
+
+
+## 连过三个月初（真走 advance_days 的月结：先辞船、后发饷），返回这三个月的【欠饷】通告
+func _three_month_starts() -> Array:
+	var n0 := _notices.size()
+	for m in [5, 6, 7]:
+		_cal.from_dict({"year": 1258, "month": m, "day": 30})
+		_gm.call("advance_days", 1)
+	var out: Array = []
+	for t in _notices.slice(n0):
+		if str(t).begins_with("【欠饷】"):
+			out.append(str(t))
+	return out
+
+
+func _has(role: String) -> bool:
+	return (_crew.hired as Dictionary).has(role)
+
+
+func _d_walkout() -> void:
+	print("── d 欠饷满三月：泊港当场不告而去（照旧）；海上只撂下话、人还在船，一靠岸才走")
+	_stage_two()
+	var port_notes := _three_month_starts()
+	_expect(port_notes.size() == 3 and str(port_notes[2]) == "【欠饷】工食欠满三月，黄账房 不告而去。"
+		and not _has("zashi") and _has("huozhang") and int(_crew.unpaid_months) == 0,
+		"泊港连欠三月：八月初一黄账房不告而去、吴针留下、欠月数归零（实读：%s）" % [port_notes])
+	_stage_two()
+	_flt.set("at_sea", true)
+	var sea_notes := _three_month_starts()
+	_expect(sea_notes.size() == 3 and str(sea_notes[2]) == "【欠饷】工食欠满三月，黄账房 说船一靠岸就走。",
+		"海上连欠三月：八月初一只撂下话（实读：%s）" % [sea_notes])
+	_expect(_has("zashi") and _has("huozhang") and int(_crew.unpaid_months) == 3,
+		"海上没靠岸：黄账房、吴针都还在船，欠月数 %d（应 3）" % int(_crew.unpaid_months))
+	var sc: Node = (load("res://scenes/SeaChart.tscn") as PackedScene).instantiate()
+	root.add_child(sc)
+	await process_frame
+	_flt.set("at_sea", true)
+	sc.set("origin_port", "quanzhou")
+	sc.set("selected_port", "fuzhou")
+	sc.set("days_elapsed", 4)
+	sc.set("sailing", true)
+	var n0 := _notices.size()
+	sc.call("_arrive")
+	var walk := "【欠饷】船一靠岸，黄账房 就背起铺盖走了。"
+	var got: Array = _notices.slice(n0)
+	_expect(got == [walk] and not _has("zashi") and _has("huozhang") and int(_crew.unpaid_months) == 0,
+		"靠岸：黄账房走、吴针留下、欠月数归零，通告恰「%s」一条（实读：%s）" % [walk, got])
+	var sl: PackedStringArray = sc.get("_log_lines")
+	var arrive_line := "历 4 日，抵 %s。" % str(_gm.call("get_port_name", "fuzhou"))
+	var top := [_ink_off(str(sl[0])), _ink_off(str(sl[1]))] if sl.size() >= 2 else []
+	# 札记上屏去掉【欠饷】一类标签（UiTheme.plain_log 只留【辞船】），与泊港「工食欠满三月，某人 不告而去。」同一写法
+	var shown := walk.trim_prefix("【欠饷】")
+	_expect(top == [shown, arrive_line], "海图札记最上是「%s」、其下抵港句（去墨色实读：%s）" % [shown, top])
+	root.remove_child(sc)
+	sc.free()
+	_flt.set("at_sea", false)
+	_gs.money = 500
+	var n1 := _notices.size()
+	_cal.from_dict({"year": 1258, "month": 8, "day": 30})
+	_gm.call("advance_days", 1)
+	_expect(_has("huozhang") and int(_crew.unpaid_months) == 0 and _notices.slice(n1).filter(
+		func(t) -> bool: return str(t).begins_with("【欠饷】")).is_empty(),
+		"泊港下个月初发得出饷：吴针仍在船、不再有【欠饷】")
 
 
 func _report() -> void:

@@ -443,7 +443,11 @@ func _skip_cost_lines(n: int) -> Array:
 # ── 靠岸（lane w54-tavern）────────────────────────────
 
 ## 人在海上下不了船：月初船在海上、到了史实辞船月份的人没走成（Crew.history_leave 见 Fleet.at_sea 就不动），
-## 靠岸这一刻下船。SeaChart._arrive 在「历 N 日，抵某港」之后调；通告与月初那条同一句（【辞船】+ leave_note），落在海图札记里。
+## 欠饷满三月撂下话的人也还在船上（Crew.pay_wages），靠岸这一刻才下船。SeaChart._arrive 在「历 N 日，抵某港」之后调；
+## 【辞船】与月初那条同一句（leave_note），【欠饷】写靠岸走人那一句，都走 monthly_notice，落在海图札记里。
 func settle_ashore() -> void:
 	for c in Crew.history_leave():
 		monthly_notice.emit("【辞船】" + Crew.leave_note(c))
+	var walk := Crew.walk_out_ashore()
+	if walk != "":
+		monthly_notice.emit(walk)

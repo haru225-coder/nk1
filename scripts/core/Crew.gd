@@ -185,16 +185,12 @@ func pay_wages() -> String:
 	unpaid_months += 1
 	Fleet.morale = maxi(0, Fleet.morale - 8)
 
-	if unpaid_months >= 3 and not hired.is_empty():
-		# 欠饷三月，俸最高者先走
-		var quitter := ""
-		var top := -1
-		for r in hired.keys():
-			var w: int = int(candidate_def(str(hired[r])).get("wage", 0))
-			if w > top:
-				top = w
-				quitter = r
+	var quitter := _walkout_role() if unpaid_months >= 3 else ""
+	if quitter != "":
+		# 欠饷三月，俸最高者先走；船在海上走不了，先撂下话、靠岸再走（walk_out_ashore）
 		var who: String = str(candidate_def(str(hired[quitter])).get("name", "有人"))
+		if Fleet.at_sea:
+			return "【欠饷】工食欠满三月，%s 说船一靠岸就走。" % who
 		hired.erase(quitter)
 		unpaid_months = 0
 		return "【欠饷】工食欠满三月，%s 不告而去。" % who
@@ -309,3 +305,34 @@ func from_dict(d: Dictionary) -> void:
 ## 第一章就把第二章才到明州的蔡七星指去明州，没走过寺社引荐也指人去博多找记名沙弥，去了酒馆里都没有人。
 func on_offer(c: Dictionary) -> bool:
 	return GameState.is_chapter_reached(c.get("unlock", "ch1")) and GameState.flag_requirement_met(c) and hireable_by_history(c)
+
+
+# ── 靠岸再走（lane w54-tavern）──────────────────────────
+
+## 欠饷求去的那一位：俸最高者。到了辞船月份、等靠岸下船的人不算（这个月他不领俸，欠不着他）。名册空了返回空串
+func _walkout_role() -> String:
+	var quitter := ""
+	var top := -1
+	for r in hired.keys():
+		var c := candidate_def(str(hired[r]))
+		if left_by_history(c):
+			continue
+		var w: int = int(c.get("wage", 0))
+		if w > top:
+			top = w
+			quitter = r
+	return quitter
+
+
+## 靠岸（GameManager.settle_ashore 调）：海上欠满三月、撂下话的那一位这会儿下船，欠月数归零。
+## 泊港时月初发饷当场就走了（pay_wages），到不了这里；无人要走返回空串。
+func walk_out_ashore() -> String:
+	if Fleet.at_sea or unpaid_months < 3:
+		return ""
+	var quitter := _walkout_role()
+	if quitter == "":
+		return ""
+	var who: String = str(candidate_def(str(hired[quitter])).get("name", "有人"))
+	hired.erase(quitter)
+	unpaid_months = 0
+	return "【欠饷】船一靠岸，%s 就背起铺盖走了。" % who
