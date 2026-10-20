@@ -91,6 +91,9 @@
      （年号「宝祐」的祐、陈璥 / 赵昺 / 赵㬎 等史名、落漈 / 碙洲等地名、瞭 / 纻 / 襕等规范字），写明缘由；没登记的
      即疑繁体（「東」「為」「時」）、日本新字体（「対」）或异体，判红。扫 gd 玩家串与游戏读的数据档上屏文本值；海图宋式旧题签
      （chart_labels.json、ports.json 各港 chart.*、SeaChart 题记框「東南海道圖」）照宋刻写，不比。
+  W. 斜线写半角「 / 」（w54-copy）：全作斜线都是半角带空格——委办细则「针路 %d 日 / 外洋 %d 日 / 傍岸 %d 日」、船籍簿
+     「舱位 %d / %d 料」、战后「收编 / 卖掉 / 放走」、海图「海图 / 舆图（地形）切换」；只有海图航段「舱中%s　%d／委办 %d」
+     与过场跳过提示「Esc ／ 右键」写成全角「／」。gd 玩家串与游戏读的数据档上屏文本值里不许再写「／」。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -243,6 +246,9 @@ OUTSIDE_GB_OK = {
 }
 # SeaChart 题记框的宋刻图名（海图层，同 chart_labels 照宋刻写）
 CHART_GD_TITLES = ("東南海道圖",)
+
+# ═══ 钉 W：斜线写半角「 / 」，不写全角「／」（U+FF0F）（w54-copy）。
+FULLWIDTH_SLASH = "\uff0f"
 
 # ═══ 钉 K：札记写的货损成数 = 同一函数里 Fleet.lose_cargo_ratio 的字面实参。
 CARGO_FRAC_RE = re.compile(r"半个?货舱|半舱|一半的?货|([一二两三四五六七八九十])成的?货")
@@ -599,6 +605,7 @@ def _scan_gd_strings(cmap):
                 _check_delta_note(lit, tag, DELTA_PAREN_SEEN)
                 _check_interpunct(lit, tag)
                 _check_place_variants(lit, tag)
+                _check_slash(lit, tag)
                 if lit not in CHART_GD_TITLES:
                     _check_trad(lit, tag)
                 _check_glyphs(lit, tag, cmap)
@@ -984,6 +991,7 @@ def _scan_game_data():
     for f, path, text in _game_data_texts(files):
         tag = f"data/{f}:{path}"
         _check_interpunct(text, tag)
+        _check_slash(text, tag)
         if not _chart_layer(f, path):
             _check_place_variants(text, tag)
             _check_trad(text, tag)
@@ -1007,6 +1015,11 @@ def _check_trad(text, tag):
             FAILS.append(f"{tag}: 「{ch}」U+{o:04X} 不在 GB2312——简体正文疑夹了繁体 / 日本新字体 / 异体；"
                          f"若是史名、地名一类正字，登记进 OUTSIDE_GB_OK 写明缘由：{text[:48]}")
             return
+
+
+def _check_slash(text, tag):
+    if FULLWIDTH_SLASH in text:
+        FAILS.append(f"{tag}: 斜线写成全角「／」——全作写半角「 / 」（两边空格）：{text[:48]}")
 
 
 def _check_role_hints(roles, crew_src, game_src, tag):
@@ -1189,6 +1202,23 @@ def _self_test_trad():
             bad.append(f"钉 V 自检：OUTSIDE_GB_OK 登记的「{ch}」本在 GB2312 内，不必登记")
         except UnicodeEncodeError:
             pass
+    return bad
+
+
+def _self_test_slash():
+    """钉 W 自检：全角「／」判红，半角「 / 」判绿。"""
+    bad = []
+    saved = FAILS[:]
+    try:
+        for text, want_red in (("舱中%s　%d／委办 %d", True), ("跳过 ›　Esc ／ 右键", True),
+                               ("舱中%s　%d / 委办 %d", False), ("收编 / 卖掉 / 放走", False)):
+            FAILS.clear()
+            _check_slash(text, "self")
+            if bool(FAILS) != want_red:
+                bad.append(f"钉 W 自检：「{text}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
     return bad
 
 
@@ -1483,6 +1513,7 @@ def main():
         cmap = None
     self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + _self_test_delta_note() + _self_test_interpunct() + _self_test_event_supply() + _self_test_sea_fame_log() + glyph_fails
     self_fails += _self_test_door_tips() + _self_test_door_pages() + _self_test_place_variants() + _self_test_trad()
+    self_fails += _self_test_slash()
     _scan_gd_strings(cmap)
     _scan_json_text()
     _scan_data_glyphs(cmap)

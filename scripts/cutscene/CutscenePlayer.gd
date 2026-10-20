@@ -355,7 +355,7 @@ func _build() -> void:
 	_root.add_child(_captions)
 
 	_hint = Label.new()
-	_hint.text = "跳过 ›　Esc ／ 右键"
+	_hint.text = "跳过 ›　Esc / 右键"
 	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hint.add_theme_font_override("font", Kit.body_font())
 	_hint.add_theme_font_size_override("font_size", 16)

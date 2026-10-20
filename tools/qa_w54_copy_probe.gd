@@ -10,7 +10,9 @@ extends SceneTree
 ##       里挤成一粒，同一张海图的险地名、同一张章节卡的年款用的却是「・」。
 ##   四、地名一处一个写法：澎湖港寺观页两条近侧旧迹（落漈、屿寨石垣）「细看一日」钮与市舶司「呈报」钮的悬停提示，
 ##       地名都写澎湖（落漈曾写宋人的「彭湖与流求之间的水道」「彭湖以东水势渐低」，与并排那条、与页题「澎湖・寺观」两样）。
-## 静态一侧见 tools/check_w53_copy.py 钉 R / S / T 与钉 O（扩到数据）；本探针看的是岸带上真建出来的门、真进的页、真取的字。
+##   五、斜线写半角「 / 」：海图航段细节里委办缺货那一行（舱中货不够委办件数时）与过场跳过提示，斜线不写全角「／」
+##       （曾写「舱中%s　%d／委办 %d」「跳过 ›　Esc ／ 右键」，全作斜线都是半角带空格）。
+## 静态一侧见 tools/check_w53_copy.py 钉 R / S / T / W 与钉 O（扩到数据）；本探针看的是岸带上真建出来的门、真进的页、真取的字。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_copy_probe.gd（经门锁跑）
 ## 判词：逐条「  ✓ / ✗ 判词」，末行 QA_W54_COPY_PROBE PASS / FAIL k；本进程 SCRIPT ERROR 也判红。
 
@@ -77,6 +79,8 @@ func _run() -> void:
 	_sec_interpunct()
 	print("== 四、地名一处一个写法（澎湖港寺观页、市舶司呈报钮的悬停提示）")
 	await _sec_place_names()
+	print("== 五、斜线写半角「 / 」（海图航段细节的委办缺货行、过场跳过提示）")
+	await _sec_slash()
 	_report()
 
 
@@ -183,6 +187,36 @@ func _sec_place_names() -> void:
 	var rep := _chip_tips("呈报")
 	_check(rep.size() == 1 and str(rep[0]).find("澎湖与流求之间的水道") >= 0 and not _any_has(rep, "彭湖"),
 		"记入册后市舶司「呈报」钮的悬停提示写澎湖（%s）" % [rep])
+
+
+## 五：真开海图选定澎湖、身上一笔舱里没货的委办，取航段细节里那一行；过场 _build 后取跳过提示
+func _sec_slash() -> void:
+	var full := "\uff0f"
+	_stage_day(1262, 5, 10)
+	gs.last_port = "quanzhou"
+	gs.contract = {"good_id": "raw_silk", "remaining": 10, "qty": 10, "dest": "penghu", "from": "quanzhou",
+		"due_day": int(cal.call("absolute_day")) + 30, "purse": 500, "paid": 0}
+	var chart: Node = (load("res://scenes/SeaChart.tscn") as PackedScene).instantiate()
+	root.add_child(chart)
+	for i in 4:
+		await process_frame
+	chart.set("origin_port", "quanzhou")
+	chart.set("sailing", false)
+	chart.set("selected_port", "penghu")
+	var line := ""
+	for l in str(chart.call("_course_detail_text", "ffffff")).split("\n"):
+		if l.find("舱中") >= 0 and l.find("委办 10") >= 0:
+			line = l
+	_check(line.find("0 / 委办 10") >= 0 and line.find(full) < 0, "海图航段细节的委办缺货行写半角斜线（「%s」）" % line)
+	chart.queue_free()
+	gs.contract = {}
+	await process_frame
+	var cp: Node = (load("res://scripts/cutscene/CutscenePlayer.gd") as GDScript).new()
+	cp.call("_build")
+	var lbl: Variant = cp.get("_hint")
+	var hint := (lbl as Label).text if lbl is Label else ""
+	cp.free()
+	_check(hint.find("Esc / 右键") >= 0 and hint.find(full) < 0, "过场跳过提示写半角斜线（「%s」）" % hint)
 
 
 ## 树里字为 text 的钮（没在删的）各自的悬停提示，按树序

@@ -1196,7 +1196,7 @@ func _course_detail_text(gold: String) -> String:
 		var need := int(cst.get("remaining", 0))
 		var have := Fleet.cargo_qty(str(cst.get("good_id", "")))
 		if have < need:
-			t += _ink(UiTheme.HONEY, "舱中%s　%d／委办 %d　到港或交不齐" % [
+			t += _ink(UiTheme.HONEY, "舱中%s　%d / 委办 %d　到港或交不齐" % [
 				GameManager.get_good_name(str(cst.get("good_id", ""))), have, need,
 			]) + "\n"
 	if not Voyage.is_known_route(origin_port, selected_port):
