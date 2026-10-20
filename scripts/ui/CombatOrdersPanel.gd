@@ -649,6 +649,30 @@ static func parley_road(ctx: Dictionary) -> Dictionary:
 	return {"lit": need.is_empty(), "road": "可喊话" if need.is_empty() else "、".join(need), "have": have}
 
 
+## 签面状态栏里劝降三样的短写：一样一字，缺哪样写哪样
+const PARLEY_SHORT := {"grappled": "钩", "sail_broken": "帆", "shaken": "乱"}
+
+
+## 喊话不亮时签面状态那一栏的字（lane w54-hud）：三样缺几样写几样——「缺 钩・帆・乱」「缺 乱」。
+## 状态栏只有 122 px 宽（PANEL_W 288 − 两边距 24 − 签宽 132 − 间距 10，16 号字一行七个半字，clip_text 截掉多出的）；
+## 原先照搬 parley_road 的整句「未钩住、帆索未残、阵脚未乱」（十三字约 208 px），1280×720 下只露出「未钩住、帆索未」
+## 和半个「残」。整句仍在按 5 时的回话里（_parley 的「……，喊话不及。」，那一行会折行）。
+## 不是三样那一路的缘由（无敌可喊 / 相距过远 / 外接 parley_source 给的）照原话写。
+static func parley_short(ctx: Dictionary) -> String:
+	var why := String(ctx.get("why", "无敌可喊"))
+	var road = ctx.get("road", null)
+	if not (road is Dictionary) or not ((road as Dictionary).get("have", null) is Dictionary):
+		return why
+	var have: Dictionary = (road as Dictionary)["have"]
+	var miss := PackedStringArray()
+	for k in PARLEY_SHORT:
+		if not bool(have.get(k, false)):
+			miss.append(String(PARLEY_SHORT[k]))
+	if miss.is_empty():
+		return why
+	return "缺 " + "・".join(miss)
+
+
 ## 我方白刃战力：同 WorldMap._board_enemy 的口径（水手 × 士气系数 × 将领系数），读 Fleet。
 ## 护航上阵时只算旗舰（与没上阵的船）上的人（Fleet.battle_crew，lane w53-p6-escort）；没上阵同 total_crew
 func _own_board_power() -> float:
@@ -841,10 +865,9 @@ func state_text(order_id: String) -> String:
 				return "候 %d秒" % ceili(parley_cd)
 			var ctx := parley_context()
 			if not bool(ctx.get("ok", false)):
-				return String(ctx.get("why", "无敌可喊"))
-			var road = ctx.get("road", null)
-			if road is Dictionary and bool((road as Dictionary).get("lit", false)):
-				return "可喊 %s（钩住・帆残・敌乱）" % _cn_tenths(parley_chance(ctx))
+				return parley_short(ctx)
+			# 三样凑齐亮了，与开关关掉时距内可喊同写「可喊 约N成」：原先亮时后挂「（钩住・帆残・敌乱）」，
+			# 一行十五六字，状态栏放不下（见 parley_short 注）
 			return "可喊 " + _cn_tenths(parley_chance(ctx))
 		ORDER_CUT:
 			return "未接" if not Switches.on("order_cut_grapple") else ("已令" if cut_hooks else "未令")
