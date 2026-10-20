@@ -33,11 +33,13 @@ static func play(host: Node, hook: StringName) -> void:
 		_AUDIO.play_cue(host, layer[0], float(layer[1]), {"hook": hook})
 
 
-## 收战那一声认哪个挂点：胜 / 败各一样，其余（两散、撤离）放风声。data 是 battle_finished 的那份。
-static func result_hook(outcome: String, _data := {}) -> StringName:
+## 收战那一声认哪个挂点：胜 / 败各一样，两散、甩脱放风声。data 是 battle_finished 的那份。
+## 逃没逃掉（flee 而 flee_ok 不真：B 键弃战掷输、我方溃逃没跑掉）海图照败局记——船挨一顿、舱货被夺，札记写「未能甩脱」，
+## 放败局那一声；判法与 SeaChart._on_battle_result 同一口径（data.get("flee_ok", false)）。原先这一支照放撤离的风声。
+static func result_hook(outcome: String, data := {}) -> StringName:
 	if outcome == "win":
 		return &"sea_win"
-	if outcome == "lose":
+	if outcome == "lose" or (outcome == "flee" and not bool(data.get("flee_ok", false))):
 		return &"sea_lose"
 	return &"sea_flee"
 
