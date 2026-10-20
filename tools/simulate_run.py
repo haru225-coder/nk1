@@ -618,7 +618,7 @@ def do_sell(gid, qty):
         if c[gid][0] == 0: del c[gid]
         sold += 1
     G.money += rev
-    G.peak_money = max(G.peak_money, G.money)
+    G.peak_money = max(G.peak_money, G.money - G.debt)  # 同 GameState.add_money：现银减欠款（lane w54-econ）
     return rev
 
 def buy_supplies(days_needed):
@@ -1197,7 +1197,7 @@ base_durab = sum(s["durability"] for s in G.ships)
 win_money = G.money; win_morale = G.morale
 spoil = 350.0
 G.money += spoil
-G.peak_money = max(G.peak_money, G.money)
+G.peak_money = max(G.peak_money, G.money - G.debt)  # 同 GameState.add_money：现银减欠款（lane w54-econ）
 G.morale = min(100, G.morale + 5)
 dmg_win = 0.0  # 结算不补扣（玩家战术层被击已在战斗中实时扣）
 check(G.money == win_money + 350, f"win 只加赏金 350（{win_money}→{G.money}）")
@@ -1564,7 +1564,7 @@ if cgid:
             del s["cargo"][cgid]
     before = G.money
     G.money += purse
-    G.peak_money = max(G.peak_money, G.money)
+    G.peak_money = max(G.peak_money, G.money - G.debt)  # 同 GameState.add_money：现银减欠款（lane w54-econ）
     check(abs(rates[cdst][cgid] - dest_rate) < 1e-9, "交货不砸盘")
     check(r < dest_rate, "若改走牙行卖掉，同样件数会把行情压低")
     check(G.money == before + purse and purse > sale, f"交清实得酬金 {purse}（高于直接卖的 {sale}）")

@@ -89,7 +89,7 @@ var discoveries_reported: Array = []
 
 ## 走通过的港口 id。章节晋升要看走过多少地方，不只是攒了多少钱。
 var visited_ports: Array = []
-## 资金历史峰值。用峰值而非当前值判定晋升，否则买条船就把进度买没了。
+## 资金历史峰值。用峰值而非当前值判定晋升，否则买条船就把进度买没了。按现银减欠款记（add_money）：赊来的钱不算本钱（lane w54-econ）。
 var peak_money: int = 1000
 ## 晨潮三向的轮转。候风再发加一。旧档没有这个字段时当作 0。
 var draft_salt: int = 0
@@ -106,7 +106,7 @@ var berth_index: int = 0
 ## 金钱不落负数——罚没一律以现有资金为上限，欠款走 debt 而非负余额
 func add_money(amount: int) -> void:
 	money = maxi(0, money + amount)
-	peak_money = maxi(peak_money, money)
+	peak_money = maxi(peak_money, money - debt)  # 现银减欠款：赊来的不算本钱，借了当场还也顶不高峰值（原先借三千即把峰值抬三千，lane w54-econ）
 
 
 # ── 赊贷 ──────────────────────────────────────────────
