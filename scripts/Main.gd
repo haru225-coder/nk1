@@ -3800,7 +3800,7 @@ func _on_yashan() -> void:
 ——
 一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。
 这个世界少了一位海神，多了几条回来的船。" % tail,
-			"海上宋鬼")
+			"海上宋鬼"); _yashan_signoff()
 	)
 	choices_container.add_child(join)
 
@@ -5243,7 +5243,7 @@ func _yashan_ending_sheet(p_out: bool) -> void:
 ——
 一百多年后，福州台江，江边没有庙。渔船只拜妈祖。二号封舟，空着。
 这个世界少了一位海神，多了几条回来的船。" % YashanBattle.tail_text(p_out),
-		"海上宋鬼")
+		"海上宋鬼"); _yashan_signoff()
 
 
 ## 玩家船队的战力（照 SeaChart._fleet_power 同一式：耐久一半 + 水手每人四 + 炮位每门二十五 + 甲一档三十，
@@ -5291,3 +5291,14 @@ const RESIGN_FROM_YM := 1275 * 12 + 12
 
 func _resign_due() -> bool:
 	return Calendar.year * 12 + Calendar.month >= RESIGN_FROM_YM
+
+
+## 崖山这一局的落款写崖山（lane w54-story，同涵江出海「落款改写成到岸的地方」）：GameState.finish 照 last_port 落款，
+## 人却是从广州港页点崖山卡、走了五日（交粮）或打完突围那一仗（上船同去）才在崖山外海收的局——册页大题「崖山・祥兴二年二月」、
+## 结局过场题签同写崖山，航海札记、终局港页札记抬头、「重读结局」眉题却写「…・广州」。两条路落定「海上宋鬼」之后都过这里。
+const YASHAN_END_PLACE := "崖山"
+
+
+func _yashan_signoff() -> void:
+	if GameState.ended == "海上宋鬼":
+		GameState.ended_at = "%s・%s" % [Calendar.get_date_string(), YASHAN_END_PLACE]
