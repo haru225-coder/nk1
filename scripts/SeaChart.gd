@@ -2324,6 +2324,7 @@ func _arrive() -> void:
 	GameState.record_trip(origin_port, selected_port)
 	GameState.last_port = selected_port
 	_log(_ink(UiTheme.GOLD, "历 %d 日，抵 %s。" % [days_elapsed, GameManager.get_port_name(selected_port)]))
+	GameManager.settle_ashore()  # 海上到了月份没走成的人，靠岸这会儿下船（lane w54-tavern）
 
 	event_title.text = "到　港"
 	event_text.text = "历 %d 日海路，%s 的岸线终于在雾里显出来。\n\n%s" % [

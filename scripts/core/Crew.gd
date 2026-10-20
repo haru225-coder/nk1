@@ -160,10 +160,14 @@ func morale_bonus() -> int:
 
 # ── 月俸 ──────────────────────────────────────────────
 
+## 到了辞船月份还在船上的（船在海上，等靠岸才下船，见 history_leave）不算进来：到月下船的人不扣当月俸，海上也一样
 func monthly_wage() -> int:
 	var total := 0
 	for r in hired.keys():
-		total += int(candidate_def(str(hired[r])).get("wage", 0))
+		var c := candidate_def(str(hired[r]))
+		if left_by_history(c):
+			continue
+		total += int(c.get("wage", 0))
 	return total
 
 
@@ -250,8 +254,12 @@ func leave_hint(c: Dictionary) -> String:
 ## 按候选 id 回查 crew.json 判日子，不看存档里的快照，旧档里已雇的人也照样下船。
 ## （hired 本就只存 id 后，这里只是把回查挪进 candidate_def，口径不变。）
 ## 下船的人记进 departed（船籍簿职事栏留一行淡字「舵工　林华已于景炎元年十月辞船」，辞船通告被别的行压住也看得到）。
+## 人在海上下不了船（lane w54-tavern）：船在海上（Fleet.at_sea）时到了月份也不走，等靠岸——SeaChart._arrive 经
+## GameManager.settle_ashore 再调一回，这会儿下船、发【辞船】。修前 1276-10 初一船在半海上，林华就「把缆绳盘好，辞了船」。
 func history_leave() -> Array:
 	var out := []
+	if Fleet.at_sea:
+		return out
 	for r in hired.keys().duplicate():
 		var c := candidate_def(str(hired[r]))
 		if left_by_history(c):
