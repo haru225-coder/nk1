@@ -3260,7 +3260,7 @@ func show_choices(choices: Array) -> void:
 		var label := str(choice.get("label", "继续"))
 		var btn = Button.new()
 		btn.text = label
-		btn.pressed.connect(_on_choice_pressed.bind(choice))
+		btn.pressed.connect(_on_choice_pressed.bind(choice)); _fork_no_enter(btn, choices)
 		choices_container.add_child(btn)
 		UiTheme.style_choice_button(btn)
 		# 卷首翻页只有一串省略号，收成居中朱印，不再铺成整条。
@@ -5268,3 +5268,16 @@ func _no_enter(btns: Array) -> void:
 	for b in btns:
 		if b is Button:
 			(b as Button).set_meta("no_enter", true)
+
+
+## 剧情幕的岔路钮回车不替人选（拍板 20g 同口径，lane w54-story）：data/scenes.json 一幕可见的真选项（翻页「…………」不算）两条以上，
+## 各钮挂 no_enter。序章「拿起货引，跟阿那走泉州船场 / 接过策问题目，跟家丁回祠堂」、林阿舶账房、兴化来的信这些岔路，选项都带
+## 身份倾向、旗标或钱——酒棚对白页一路回车往下翻，翻到抉择页再一按就替人选了第一条（1268 殿试结算打平时还按 chose_sea_first /
+## chose_land_first 定身份）。只有一条路的幕（对白翻页、「继续」「回港上」）回车照旧往下走。
+func _fork_no_enter(btn: Button, choices: Array) -> void:
+	var forks := 0
+	for c in choices:
+		if typeof(c) == TYPE_DICTIONARY and GameState.choice_visible(c) and not _is_page_turn(str((c as Dictionary).get("label", "继续"))):
+			forks += 1
+	if forks >= 2:
+		btn.set_meta("no_enter", true)

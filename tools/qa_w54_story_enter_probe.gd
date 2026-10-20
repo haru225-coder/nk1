@@ -7,8 +7,13 @@ extends SceneTree
 ##   B 辞呈页「回头。再上一疏求还。」：走七日、立 petitioned_return、士人倾向 +4，辞呈三条路就此定了。
 ##   C 泉州征船名册（对峙期市舶司页）「船借张世杰」：交出最小一条船（只一条船时水粮减半）、立 sided_zhang——
 ##     蒲家那条路（泉州抽解八折、「泉州蒲氏的船」结局）从此走不了。
+##   D 剧情幕岔路（data/scenes.json 一幕可见的真选项两条以上，翻页「…………」不算）：序章「拿起货引，跟阿那走泉州船场 /
+##     接过策问题目，跟家丁回祠堂」、林阿舶账房、兴化来的信……选项都带身份倾向、旗标或钱。酒棚对白页一路回车往下翻，
+##     翻到抉择页再一按就替人选了第一条（1268 殿试结算打平时还按 chose_sea_first / chose_land_first 定身份）。
 ## 每页先断那几枚钮都在（不空判），再按一次真回车（root.push_input）、再直调一次 _activate_first_choice，
 ## 断日子不走、旗不立、终局不落、船与水粮不动；反向基：点钮本身照旧作数（崖山落「海上宋鬼」、辞呈立旗、名册立旗）。
+## D 按数据逐幕跑（新幕自动入验），断页不动、旗 / 钱 / 名声 / 倾向 / 人脉 / 信用不动；反向基：只有一条路的幕
+## （对白翻页、「继续」带旗那种）回车照旧往下走、效果照记——回车仍是「下一步」。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_story_enter_probe.gd（经门锁跑）
 ## 末行 W54_STORY_ENTER cases=N fails=M；fails>0 退 1。运行期脚本错即红（tools/script_err_tally.gd）。
 
@@ -64,6 +69,7 @@ func _boot() -> void:
 	await _a_yashan()
 	await _b_resign()
 	await _c_standoff()
+	await _d_scene_forks()
 	_report()
 
 
@@ -231,3 +237,94 @@ func _c_standoff() -> void:
 	_expect(_gs.has_flag("sided_pu"), "反向基：点「跟蒲家」照旧立 sided_pu")
 	_gs.from_dict({})
 	_cal.from_dict({"year": 1255, "month": 3, "day": 1})
+
+
+# ── D 剧情幕岔路 ─────────────────────────────────────────
+
+## 一幕可见的真选项（翻页不算）有几条：照 Main.show_choices 的可见口径
+func _forks(sc: Dictionary) -> int:
+	var n := 0
+	for c in sc.get("choices", []):
+		if typeof(c) != TYPE_DICTIONARY or not _gs.choice_visible(c):
+			continue
+		if not _main._is_page_turn(str((c as Dictionary).get("label", "继续"))):
+			n += 1
+	return n
+
+
+func _story_snap() -> Dictionary:
+	return {
+		"page": _main.current_scene_id, "flags": _gs.flags.duplicate(), "money": _gs.money, "fame": _gs.fame,
+		"sea": _gs.sea_tendency, "scholar": _gs.scholar_tendency, "home": _gs.hometown_tendency,
+		"network": _gs.network, "credit": _gs.merchant_credit, "day": _cal.absolute_day(),
+	}
+
+
+func _fresh_story() -> void:
+	_fresh(1255, 3, "quanzhou")
+	_gs.money = 1000
+	_gs.fame = 0
+
+
+func _d_scene_forks() -> void:
+	print("── D 剧情幕岔路：回车不替人选第一条")
+	var gm: Node = root.get_node_or_null("GameManager")
+	var tried: Array = []
+	var bad: Array = []
+	for raw in gm.scenes_data.get("scenes", []):
+		var sc: Dictionary = raw
+		var sid := str(sc.get("id", ""))
+		if str(sc.get("type", "")) in ["title", "port"]:
+			continue
+		_fresh_story()
+		if not _gs.scene_unlocked(sc) or _forks(sc) < 2:
+			continue
+		_main.load_scene(sid)
+		await process_frame
+		var shown := 0
+		for c in _main.choices_container.get_children():
+			if c is Button and not (c as Button).disabled:
+				shown += 1
+		if _main.current_scene_id != sid or shown < 2:
+			bad.append("%s（没摆出岔路：页 %s、钮 %d）" % [sid, _main.current_scene_id, shown])
+			continue
+		tried.append(sid)
+		var before := _story_snap()
+		await _enter()
+		var after := _story_snap()
+		if after != before:
+			var moved: Array = []
+			for k in before.keys():
+				if str(before[k]) != str(after[k]):
+					moved.append("%s %s→%s" % [k, str(before[k]), str(after[k])])
+			bad.append("%s：%s" % [sid, "、".join(moved)])
+	_expect(tried.size() >= 10 and "cg_decision" in tried,
+		"岔路幕逐幕入验 %d 幕（含序章抉择 cg_decision）：%s" % [tried.size(), str(tried)])
+	_expect(bad.is_empty(), "岔路幕按回车：页不动、旗 / 钱 / 名声 / 倾向 / 人脉 / 信用 / 日子都不动（%d 幕不合：%s）" % [bad.size(), str(bad)])
+	# 反向基：只有一条路的幕回车照旧往下走、效果照记
+	_fresh_story()
+	_main.load_scene("cg_servant_speak")
+	await process_frame
+	await _enter_key()
+	_expect(_main.current_scene_id == "cg_decision", "反向基：对白翻页「…………」回车照旧翻到抉择页（现页 %s）" % _main.current_scene_id)
+	_fresh_story()
+	_main.load_scene("sea_path_start")
+	await process_frame
+	var sea0: int = _gs.sea_tendency
+	await _enter_key()
+	_expect(_main.current_scene_id == "sea_path_ledger" and _gs.sea_tendency == sea0 + 3 and _gs.has_flag("lin_sea_route_open"),
+		"反向基：只一条路的「泉州码头，夜潮将至」回车照旧往下走、效果照记（现页 %s、下海倾向 %d→%d、旗 %s）" % [
+			_main.current_scene_id, sea0, _gs.sea_tendency, str(_gs.has_flag("lin_sea_route_open"))])
+	_gs.from_dict({})
+	_cal.from_dict({"year": 1255, "month": 3, "day": 1})
+
+
+## 只按一次真回车（反向基用：单路幕一按翻一页，不叠直调）
+func _enter_key() -> void:
+	for pressed in [true, false]:
+		var k := InputEventKey.new()
+		k.keycode = KEY_ENTER
+		k.physical_keycode = KEY_ENTER
+		k.pressed = pressed
+		root.push_input(k)
+	await process_frame
