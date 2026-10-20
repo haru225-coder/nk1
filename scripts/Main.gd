@@ -3728,7 +3728,7 @@ func _on_resign_1275() -> void:
 	)
 	choices_container.add_child(defect)
 
-	choices_label.visible = true
+	choices_label.visible = true; _no_enter([again, quiet, defect])
 	_add_leave_button(current_scene_id)
 
 
@@ -3816,7 +3816,7 @@ func _on_yashan() -> void:
 	)
 	choices_container.add_child(pass_by)
 
-	choices_label.visible = true
+	choices_label.visible = true; _no_enter([join, pass_by])
 	_yashan_breakout_button(known_here); _add_leave_button(current_scene_id)
 
 
@@ -3954,7 +3954,7 @@ func _setup_quanzhou_standoff(port_id: String) -> void:
 		log_msg("夜潮。港外张世杰的船队像一座漂着的城。没有人拦你——他们不知道你是谁，这时候这是好事。泉州的门，年内不要再敲。")
 		load_scene(current_scene_id)
 	)
-	choices_container.add_child(flee)
+	choices_container.add_child(flee); _no_enter([zhang, pu, flee])
 
 
 ## 港口页特殊卡：只在特定年月与旗标下出现。
@@ -5191,7 +5191,7 @@ func _yashan_breakout_button(p_known_here: bool) -> void:
 	btn.text = "上船同去"
 	btn.tooltip_text = "上船跟着冲出去——雾里有火船，冲得出去冲不出去，关乎你的船活不活。"
 	btn.pressed.connect(_yashan_breakout.bind(p_known_here))
-	choices_container.add_child(btn)
+	choices_container.add_child(btn); _no_enter([btn])
 
 
 ## 上船同去：置好这一场的 context（pending_battle），叠一层海战场上去开打。
@@ -5261,3 +5261,10 @@ func _siege_notes(side: Control) -> void:
 	_COMBAT_NOTES.offer(self, "siege")
 	if side != null and side.name == "SiegeSchedule":
 		_COMBAT_NOTES.offer(self, "siege_schedule")
+## 终局抉择页的钮回车不替人按（拍板 20g 同口径，lane w54-story）：港页回车按 choices_container 里第一枚可按、没挂 no_enter 的钮
+## （_activate_first_choice）。辞呈页、崖山页、泉州征船名册的第一枚分别是「回头。再上一疏求还」「把粮与硫黄交上去」「船借张世杰」——
+## 读完正文顺手一按回车，就走了日子、立了终身旗，崖山那枚当场落「海上宋鬼」。这几页的抉择钮全挂 no_enter，要选得自己点。
+func _no_enter(btns: Array) -> void:
+	for b in btns:
+		if b is Button:
+			(b as Button).set_meta("no_enter", true)

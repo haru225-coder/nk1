@@ -1,0 +1,233 @@
+extends SceneTree
+## lane-w54-story：终局抉择页回车不替人按（拍板 20g 同口径：花日子花钱、改身份倾向的钮挂 no_enter，回车跳过）。
+## 港页回车走 Main._unhandled_input → _activate_first_choice：choices_container 里第一枚可按、没挂 no_enter 的钮当场按下。
+## 修前三页的第一枚都是终身抉择，读完正文顺手一按回车（册页、过场、序章对白都是回车往下走）就替人选了：
+##   A 崖山页「把粮与硫黄交上去」：走五日、名声 +12、海商信用 −30，当场落「海上宋鬼」——一局就此了结；
+##     掉头那枚也一样（名声 −6、士气 −10、崖山卡不再挂），「上船同去」则直接开打崖山一仗。
+##   B 辞呈页「回头。再上一疏求还。」：走七日、立 petitioned_return、士人倾向 +4，辞呈三条路就此定了。
+##   C 泉州征船名册（对峙期市舶司页）「船借张世杰」：交出最小一条船（只一条船时水粮减半）、立 sided_zhang——
+##     蒲家那条路（泉州抽解八折、「泉州蒲氏的船」结局）从此走不了。
+## 每页先断那几枚钮都在（不空判），再按一次真回车（root.push_input）、再直调一次 _activate_first_choice，
+## 断日子不走、旗不立、终局不落、船与水粮不动；反向基：点钮本身照旧作数（崖山落「海上宋鬼」、辞呈立旗、名册立旗）。
+## 用法：godot --headless --path . -s res://tools/qa_w54_story_enter_probe.gd（经门锁跑）
+## 末行 W54_STORY_ENTER cases=N fails=M；fails>0 退 1。运行期脚本错即红（tools/script_err_tally.gd）。
+
+const ScriptErrTally := preload("res://tools/script_err_tally.gd")
+
+var fails := 0
+var cases := 0
+var _main: Node
+var _gs: Node
+var _cal: Node
+var _fleet: Node
+var _tally: ScriptErrTally
+var _reported := false
+
+
+func _expect(ok: bool, msg: String) -> void:
+	cases += 1
+	if ok:
+		print("  ✓ " + msg)
+	else:
+		print("  ✗ " + msg)
+		fails += 1
+
+
+func _init() -> void:
+	_tally = ScriptErrTally.new()
+	OS.add_logger(_tally)
+	call_deferred("_run_guarded")
+
+
+func _run_guarded() -> void:
+	await _boot()
+	if not _reported:
+		_expect(false, "主流程跑到收尾（%s）" % _tally.abort_note())
+		_report()
+
+
+func _boot() -> void:
+	_gs = root.get_node_or_null("GameState")
+	_cal = root.get_node_or_null("Calendar")
+	_fleet = root.get_node_or_null("Fleet")
+	if _gs == null or _cal == null or _fleet == null:
+		_expect(false, "autoload GameState / Calendar / Fleet 都在")
+		return
+	var cine: GDScript = load("res://scripts/cutscene/Cinematics.gd") as GDScript
+	if cine != null:
+		cine.set("auto_opening", false)
+		cine.set("opening_seen", true)
+	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
+	root.add_child(_main)
+	for i in 10:
+		await process_frame
+	await _a_yashan()
+	await _b_resign()
+	await _c_standoff()
+	_report()
+
+
+func _report() -> void:
+	_reported = true
+	for v in _tally.verdicts():
+		_expect(v[0], v[1])
+	print("W54_STORY_ENTER cases=%d fails=%d" % [cases, fails])
+	quit(1 if fails > 0 else 0)
+
+
+## 一按回车：真按键走一遍 Main._unhandled_input，再直调一次 _activate_first_choice（按键在 headless 下若没落到
+## _unhandled_input，直调照样把「回车会按哪一枚」测到）
+func _enter() -> void:
+	for pressed in [true, false]:
+		var k := InputEventKey.new()
+		k.keycode = KEY_ENTER
+		k.physical_keycode = KEY_ENTER
+		k.pressed = pressed
+		root.push_input(k)
+	await process_frame
+	_main._activate_first_choice()
+	await process_frame
+
+
+func _button(prefix: String) -> Button:
+	for c in _main.choices_container.get_children():
+		if c is Button and str((c as Button).text).begins_with(prefix):
+			return c
+	return null
+
+
+func _drop_sheet() -> void:
+	var host = _main.get("_chapter_host")
+	if host != null and is_instance_valid(host):
+		_main._confirm_chapter_sheet()
+	await process_frame
+
+
+func _fresh(y: int, m: int, port: String) -> void:
+	_gs.from_dict({})
+	_gs.loaded_with_beats = true
+	_main.set("_beats", null)
+	_cal.from_dict({"year": y, "month": m, "day": 2})
+	_gs.last_port = port
+	_gs.fame = 20
+	_gs.money = 3000
+	_fleet.water = 120
+	_fleet.food = 120
+
+
+# ── A 崖山页 ─────────────────────────────────────────────
+
+func _a_yashan() -> void:
+	print("── A 崖山页：回车不替人交粮、掉头、上船")
+	_fresh(1279, 2, "guangzhou")
+	_gs.identity = "merchant"
+	_main.load_scene("guangzhou")
+	await process_frame
+	_expect("special_yashan" in _main.shore_hand, "祥兴二年二月海商在广州：岸上挂崖山卡（名单 %s）" % [_main.shore_hand])
+	_main._on_facility_pressed({"id": "special_yashan"})
+	await process_frame
+	var join := _button("把粮与硫黄交上去")
+	var turn := _button("不上前")
+	_expect(join != null and turn != null, "崖山页有「把粮与硫黄交上去」「不上前…」两枚钮")
+	var day0: int = _cal.absolute_day()
+	var fame0: int = _gs.fame
+	var kids0: int = _main.get_child_count()
+	await _enter()
+	_expect(_gs.ended == "" and _cal.absolute_day() == day0 and _gs.fame == fame0
+			and not _gs.has_flag("yashan_turned_back") and _main.get_child_count() == kids0
+			and _main.current_scene_id == "guangzhou" and _button("把粮与硫黄交上去") != null,
+		"崖山页按回车：不落终局、日子不走、名声不动、不掉头、不开打（终局「%s」、走了 %d 日、名声 %d→%d、掉头旗 %s、子节点 %d→%d）" % [
+			_gs.ended, _cal.absolute_day() - day0, fame0, _gs.fame, str(_gs.has_flag("yashan_turned_back")),
+			kids0, _main.get_child_count()])
+	# 反向基：重开一页，点钮本身照旧作数
+	await _drop_sheet()
+	_fresh(1279, 2, "guangzhou")
+	_gs.identity = "merchant"
+	_main.load_scene("guangzhou")
+	_main._on_facility_pressed({"id": "special_yashan"})
+	await process_frame
+	join = _button("把粮与硫黄交上去")
+	if join != null:
+		join.pressed.emit()
+		await process_frame
+	_expect(_gs.ended == "海上宋鬼", "反向基：点「把粮与硫黄交上去」照旧落「海上宋鬼」（实得「%s」）" % _gs.ended)
+	await _drop_sheet()
+
+
+# ── B 辞呈页 ─────────────────────────────────────────────
+
+func _b_resign() -> void:
+	print("── B 辞呈页：回车不替人定辞呈三条路")
+	_fresh(1275, 12, "fuzhou")
+	_gs.identity = "scholar"
+	_gs.player_name = "陈文龙"
+	_gs.set_flag("renamed_wenlong")
+	_gs.set_flag("vice_councillor")
+	_main.load_scene("fuzhou")
+	await process_frame
+	_expect("special_resign_1275" in _main.shore_hand, "德祐元年腊月士人线：岸上挂辞呈卡（名单 %s）" % [_main.shore_hand])
+	_main._on_facility_pressed({"id": "special_resign_1275"})
+	await process_frame
+	_expect(_button("回头。") != null and _button("不回头。") != null and _button("车转向南") != null,
+		"辞呈页有「回头」「不回头」「车转向南」三枚钮")
+	var day0: int = _cal.absolute_day()
+	var tend0: int = _gs.scholar_tendency
+	await _enter()
+	var picked := []
+	for f in ["petitioned_return", "quiet_return", "late_defection"]:
+		if _gs.has_flag(f):
+			picked.append(f)
+	var host = _main.get("_chapter_host")
+	_expect(picked.is_empty() and _cal.absolute_day() == day0 and _gs.scholar_tendency == tend0
+			and _gs.identity == "scholar" and _gs.money == 3000 and (host == null or not is_instance_valid(host)),
+		"辞呈页按回车：三条路一条没定（立旗 %s）、日子不走（走了 %d 日）、士人倾向不动（%d→%d）、身份仍士人（%s）、钱不动（%d）" % [
+			str(picked), _cal.absolute_day() - day0, tend0, _gs.scholar_tendency, _gs.identity, _gs.money])
+	# 反向基：重开一页（修前回车已替人定了一条路、弹了册页，先收掉），点钮本身照旧作数
+	await _drop_sheet()
+	for f in ["petitioned_return", "quiet_return", "late_defection"]:
+		_gs.flags.erase(f)
+	_main.load_scene("fuzhou")
+	_main._on_facility_pressed({"id": "special_resign_1275"})
+	await process_frame
+	var quiet := _button("不回头。")
+	if quiet != null:
+		quiet.pressed.emit()
+		await process_frame
+	_expect(_gs.has_flag("quiet_return"), "反向基：点「不回头。走海路回兴化。」照旧立 quiet_return")
+	await _drop_sheet()
+
+
+# ── C 泉州征船名册 ───────────────────────────────────────
+
+func _c_standoff() -> void:
+	print("── C 泉州征船名册：回车不替人借船、站队、出港")
+	_fresh(1276, 6, "quanzhou")
+	_gs.identity = "merchant"
+	_main.load_scene("quanzhou_yamen")
+	await process_frame
+	var zhang := _button("船借张世杰")
+	_expect(zhang != null and _button("跟蒲家") != null and _button("今夜出港") != null,
+		"景炎元年六月泉州市舶司页挂征船名册三枚钮（借船 %s）" % str(zhang != null))
+	var ships0: int = _fleet.ships.size()
+	var water0: int = _fleet.water
+	var food0: int = _fleet.food
+	await _enter()
+	var sided := []
+	for f in ["sided_zhang", "sided_pu", "fled_quanzhou"]:
+		if _gs.has_flag(f):
+			sided.append(f)
+	_expect(sided.is_empty() and _fleet.ships.size() == ships0 and _fleet.water == water0 and _fleet.food == food0,
+		"征船名册按回车：不站队（立旗 %s）、船不交出（%d→%d 条）、水粮不分（水 %d→%d、粮 %d→%d）" % [
+			str(sided), ships0, _fleet.ships.size(), water0, _fleet.water, food0, _fleet.food])
+	# 反向基：重开一页（修前回车已替人站了队、名册三枚不再挂，先摘旗），点钮本身照旧作数
+	for f in ["sided_zhang", "sided_pu", "fled_quanzhou"]:
+		_gs.flags.erase(f)
+	_main.load_scene("quanzhou_yamen")
+	await process_frame
+	var pu := _button("跟蒲家")
+	if pu != null:
+		pu.pressed.emit()
+		await process_frame
+	_expect(_gs.has_flag("sided_pu"), "反向基：点「跟蒲家」照旧立 sided_pu")
+	_gs.from_dict({})
+	_cal.from_dict({"year": 1255, "month": 3, "day": 1})
