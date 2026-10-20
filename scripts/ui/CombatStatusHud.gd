@@ -1178,6 +1178,10 @@ func _layout_intel() -> void:
 		var tide := w.get_node_or_null("CanvasLayer/HUD/TideBar") as Control
 		if tide != null and tide.is_visible_in_tree() and tide.size.y > 0.0:
 			top = tide.get_global_rect().end.y + 10.0
+			# 顶匾长高 / 变矮时跟着挪（同 CombatOrdersPanel._layout，lane w54-hud）：右格「金钱　货舱」按 280 宽折行，
+			# 钱数五六位、舱里两三样货就折成两三行，顶匾从 72 长到 88–114；原先只在开场排一次，敌情卡钉在 y 90 压进匾里
+			if not tide.item_rect_changed.is_connected(_layout_intel):
+				tide.item_rect_changed.connect(_layout_intel)
 	_intel.position = Vector2(cv.x - INTEL_W - MARGIN, top)
 	_intel.reset_size()
 
