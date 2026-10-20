@@ -163,7 +163,7 @@ func _ready() -> void:
 			if child is Label:
 				child.add_theme_font_override("font", UiTheme.font())
 				child.add_theme_color_override("font_color", UiTheme.GOLD)
-	randomize()
+	_seed_battle_rng(GameManager.pending_battle)
 	_setup_coastline()
 	var pb: Dictionary = GameManager.pending_battle
 	if pb.get("battle", false):
@@ -497,7 +497,7 @@ func _melee_decided_run(enemy: Node2D, layer: CanvasLayer) -> Dictionary:
 	# 本场的起种子：有 SeaState 在场按全局流的下一发（与旧 PlayResolve 的 ctx.seed=0 同阶层）；
 	# 探针 / 复盘在场外预置 seed 照它（掷骰可复现照旧）
 	var rng := RandomNumberGenerator.new()
-	rng.randomize()
+	_seed_melee_rng(rng)
 	var seed0: int = rng.randi()
 	var phases_rounds: Array = []
 	var phases_decisions: Array = []
@@ -586,7 +586,7 @@ func _melee_sides(enemy: Node2D, enemy_first := false) -> Array:
 	# （开关 order_cut_grapple 关掉时面板 cut_mul 恒 1.0，本行照旧与 wave53 开工前一致）
 	if enemy_first:
 		ctx["def_cut_mul"] = float(order_mods().get("cut_mul", 1.0))
-	return [att, def, ctx]
+	return [att, def, _seeded_melee_ctx(ctx)]
 
 
 ## 敌船白刃折损 n 人（只记阵亡 / 重伤不起的；轻伤战后归队，同本队只扣 att_dead 的口径），水手不减到负数
@@ -1822,3 +1822,45 @@ func _yashan_settle(outcome: String, data: Dictionary) -> void:
 		return
 	for f in YashanBattle.flags_for(YashanBattle.broke_out(outcome, data)):
 		GameState.set_flag(String(f))
+
+
+# ══ 开战播种（lane w54-det）══════════════════════════════════════
+# 探针 / 胜率工具要同种子复跑逐场一样：pending_battle 带 battle_seed（非 0 整数）时，_ready 先拿它播全局随机流、
+# 再摆敌阵——敌船落位 / 水手 / 士气，连同此后全场读全局流的掷点（炮弹散布、逃跑骰、护航白刃的种子……）都跟着种子走；
+# 白刃两处原本各自取 OS 熵起种子（_melee_sides 不给 ctx.seed、MeleeResolve 见 0 自己打乱；分段白刃 rng.randomize()），
+# 带种子的这一场改从全局流取下一发。寻常开战（SeaChart 遇敌、崖山卡都不写这枚键）照旧 randomize()、白刃照旧随机，
+# 全局流一发也不多取，玩法与数值一字不动。
+# 不归这里管的两样（调用方自己钉，见 tools/qa_w53_p3c_winrate_probe.gd 与 tools/qa_w53_p6_yashan_winrate.gd）：
+#   ① 各船私有的 rng（敌船 / 火船 / 护航船 _rng、敌船水火簿、本船损伤模型、士气挂件、号令面板）开局各自打乱，
+#      开战后按种子注射；海况 SeaState 吃 pending_battle.sea_seed。
+#   ② 帧步：炮弹飞行、限时两散与甩脱的计时走 _process 的 delta，跟着墙钟走——同种子复跑要带 --fixed-fps。
+## pending_battle 里的种子键：非 0 整数 = 本场全局随机流的种子；缺省或 0 = 每场随机（同 sea_seed 的 0 口径）
+const BATTLE_SEED_KEY := "battle_seed"
+## 本场是按种子播的全局流（白刃两处据此改从全局流取种子；寻常开战恒 false）
+var _battle_seeded := false
+
+
+## _ready 开头调一次（原先那声 randomize() 的位置，摆敌阵之前）：带种子就播种，不带照旧打乱
+func _seed_battle_rng(pb: Dictionary) -> void:
+	var s := int(pb.get(BATTLE_SEED_KEY, 0))
+	_battle_seeded = s != 0
+	if _battle_seeded:
+		seed(s)
+	else:
+		randomize()
+
+
+## 整场一掷的白刃（_melee_sides 收尾经这里）：带种子的这一场从全局流取下一发作 ctx.seed；寻常开战原样返回
+## （ctx 不带 seed，MeleeResolve 自己打乱，同改前）
+func _seeded_melee_ctx(ctx: Dictionary) -> Dictionary:
+	if _battle_seeded:
+		ctx["seed"] = randi_range(1, 2147483646)
+	return ctx
+
+
+## 分段白刃的起种子（_melee_decided_run）：带种子的这一场从全局流取，寻常开战照旧打乱
+func _seed_melee_rng(rng: RandomNumberGenerator) -> void:
+	if _battle_seeded:
+		rng.seed = randi()
+	else:
+		rng.randomize()

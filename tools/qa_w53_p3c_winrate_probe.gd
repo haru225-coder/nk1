@@ -5,7 +5,7 @@ extends SceneTree
 ##   解耦，同种子复跑才对得上；按 p3b 原拍 0.5 秒一锚实测负载大时漂 win→lose），与同种子逐场
 ##   对拍（on 跑完复跑一遍自比，漂移即红），没有玩家动手 24 种子根本打不完。
 ##
-## 用法：godot --headless --path . -s res://tools/qa_w53_p3c_winrate_probe.gd -- \
+## 用法：godot --headless --fixed-fps 60 --path . -s res://tools/qa_w53_p3c_winrate_probe.gd -- \
 ##         --n=8 --seeds=11,23,37,41,53,67,79,83 --on=flood,fire | --off --ship=fu_ship_medium --enemy=pirate_boat --count=2
 ##   --on=LIST   逗号分隔单开几项：flood=enemy_flood_fire、fire=fire_attack_load（裸 --on 两个全开）
 ##   --off       三期开关全关（与 --on 互斥；都缺 = 全开）；--on 与 --off 都给，后面到的盖前面的
@@ -22,15 +22,17 @@ extends SceneTree
 ##
 ## 场子照 qa_w53_2_combat_probe 的 _battle 复刻（真 WorldMap 海战场 + pending_battle，泉州外海）；
 ## 敌将 live（不冻敌船 fire_timer、不接管旗舰航向），士气簿裁决到即早收（同二期口径）。
-## 随机源注射（pending_battle.sea_seed + seed(sd) 盖回 _ready 那声 randomize() 之后 + 敌船 _rng
-## 与 EnemyFloodFire 簿 rng / 我船 DamageModel rng / 士气挂件 rng / 号令面板 _rng 按种子起）。
-## 自检判词 = 各档跑满 N 场且无 hang；同种子复跑逐场再跑一遍量漂移，漂移记档照报
-## （WINRATE 行 replay-drift=k）不判红——钉不住的两笔照实写：
-##   ① WorldMap._ready 的裸 randomize() 在 _spawn_enemy 之前（敌船落位 / 水手 / 士气那几发已被
-##      换成 OS 熵，钉要动产品 WorldMap，超本 lane 权界）；
-##   ② 白刃 MeleeResolve 的 ctx.seed 是 BoardingStage 当场按全局流拨的，白刃各合掷骰的种子本身 drift。
-## 两笔叠起来种内复跑偶见胜负翻转（±0.25 rad / 700–720 落位差那一档）；统计口径照 overcome+胜负
-## 照旧可比，报告里写清 k 场翻盘。判红改挑场数 / hang（工具自身的病），不挑落位与白刃的熵。
+## 随机源注射：pending_battle.battle_seed（WorldMap._ready 摆敌阵之前拿它播全局流；带种子的这一场白刃也从全局流取
+## 种子，见 WorldMap 文件尾「开战播种」）+ pending_battle.sea_seed（SeaState 私有 _rng）+ 敌船 / 护航船 _rng 与
+## EnemyFloodFire 簿 rng / 我船 DamageModel rng / 士气挂件 rng / 号令面板 _rng 按种子起；每场开打前 GameState.martial
+## 拨回开跑时的值（夺船 +1 不带进下一场）。
+## 旧账两笔已了（lane w54-det，在 WorldMap 钉）：① _ready 的裸 randomize() 在 _spawn_enemy 之前（敌船落位 / 水手 / 士气
+##   走 OS 熵，工具 add_child 后再 seed 也钉不回）；② 白刃没拿到 ctx.seed（_melee_sides 不给，MeleeResolve 见 0 自己打乱——
+##   旧注记成 BoardingStage 当场拨号，那只是它的演示场，真漏在这一处）。剩下一样归跑法：炮弹飞行、限时两散与甩脱的计时
+##   走 _process 的 delta，不带 --fixed-fps 就跟着墙钟走（机器一忙，两帧之间的物理步数就变），同种子两趟仍可能翻。
+## 自检判词 = 各档跑满 N 场、无 hang、每场都按种子播上了全局流；同种子逐场再跑一遍（比收法、胜负、收场明细、战斗秒数、
+## 护航失夺）：帧步一定（带了 --fixed-fps）时漂一场即红，没带时漂移只记不判（WINRATE 行 replay-drift=k 照报，
+## SELFCHECK 行注明帧步跟墙钟走）。
 ## 判词：末行 WINRATE cfg=a/N …（逐配置一行）恒打；自检不过退 1。
 ##
 ## 护航上阵（lane w53-p6-escort 加；开关 escort_battle / escort_orders，见 scripts/combat/EscortWing.gd）：
@@ -65,6 +67,13 @@ const MATCHUP_FALCON := {"label": "逆风对照：福船60人对元军海鹘×1�
 const CFG_NAMES := {KEY_A: "flood", KEY_B: "fire"}
 ## --escort 摆的护航船名（同 Fleet.HULL_NAMES 前三）
 const ESCORT_NAMES := ["安济", "通济", "利涉"]
+## pending_battle 里给全局随机流的种子键（同 WorldMap.BATTLE_SEED_KEY；WorldMap 带 autoload，-s 工具 preload 不得，照抄键名）
+const BATTLE_SEED_KEY := "battle_seed"
+
+## 开跑时的 GameState.martial（每场开打前拨回它）
+var _martial0 := 50
+## 开了场却没按种子播全局流的场数（> 0 = 键名对不上 WorldMap，SELFCHECK 判红）
+var _unseeded := 0
 
 
 func _init() -> void:
@@ -193,6 +202,31 @@ static func _cfg_id(keys: Dictionary) -> String:
 	return "on-" + "-".join(bits)
 
 
+## 帧步定不定：开跑前空转几帧，比 process delta 的累计与墙钟——带了 --fixed-fps 时空帧一帧花不到一毫秒、却按 1/fps 记账，
+## 一秒的账几十毫秒就记满（帧步一定，同种子复跑应逐场一样）；不带时 delta 就是墙钟，记满一秒要真等一秒
+## （炮弹飞行、限时两散与甩脱的计时都走 _process，复跑漂移只作参考）
+func _fixed_step() -> bool:
+	await process_frame
+	var sim := 0.0
+	var t0 := Time.get_ticks_usec()
+	while sim < 1.0 and Time.get_ticks_usec() - t0 < 500_000:
+		await process_frame
+		sim += root.get_process_delta_time()
+	return sim >= 2.0 * float(Time.get_ticks_usec() - t0) / 1_000_000.0
+
+
+## 复跑比对的一场签名：收法、胜负、收场明细（士气裁决或各船下场）、战斗秒数（取到 0.01）、护航失 / 夺。
+## 只比收法与胜负的话，两趟打成两样、碰巧都是「敌遁、胜」也看不出分岔；帧步一定时这几样都该逐位一样
+static func _sig(sd: int, r: Dictionary) -> Array:
+	return [sd, str(r["overcome"]), bool(r["win"]), str(r["tag"]), snappedf(float(r["held_s"]), 0.01),
+		int(r["esc_lost"]), int(r["esc_prize"])]
+
+
+static func _sig_text(s: Array) -> String:
+	return "%s/%s/%s/%.2f 秒%s" % [str(s[1]), "胜" if bool(s[2]) else "负", str(s[3]), float(s[4]),
+		("/护航失 %d 夺 %d" % [int(s[5]), int(s[6])]) if int(s[5]) + int(s[6]) > 0 else ""]
+
+
 ## 档位套路上开关：reset 后按 keys 置（缺键 = 关）
 static func _apply_cfg(keys: Dictionary) -> void:
 	_Switches.reset()
@@ -210,7 +244,8 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 		orders: Array, seed_tag: int) -> Dictionary:
 	var t0 := Time.get_ticks_msec()
 	# 钉死双随机源：
-	# ① seed(sd)：全局流用于 WorldMap._spawn_enemy（敌船角度 / 距 / 水手 / 士气的 randf_range）。
+	# ① pending_battle.battle_seed：WorldMap._ready 摆敌阵之前拿它播全局流（敌船角度 / 距 / 水手 / 士气的 randf_range，
+	#   连同此后全场读全局流的掷点与白刃种子，见 WorldMap 文件尾「开战播种」）。错开 sd 一段（sd + 1_000_000）。
 	# ② pending_battle.sea_seed：SeaState 用私有 _rng 不吃全局流——不注射同 sd 也复现不出
 	#   （b048e297 实测同 seed 11 两场结论漂）。sea_seed 用 sd 错段避免与全局流撞（sd + 7_000_000）。
 	# 手动种子段 seed_tag（外部加段起一列独立随机，不撞种子表；本工具恒传 0）
@@ -234,20 +269,21 @@ func _battle_one(fleet: Node, gm: Node, sd: int, mu: Dictionary, keys: Dictionar
 	fleet.set("ships", roster)
 	fleet.set("morale", int(mu.get("morale", 60)))
 	esc_power *= float(fleet.call("morale_factor"))
-	seed(sd + shift)
+	# 白刃夺船得手会给 GameState.martial +1（WorldMap._board_enemy），士气簿与水手的白刃系数都读它——
+	# 每场开打前拨回开跑时的值，同种子复跑不随前面几场夺没夺过船漂
+	root.get_node("GameState").set("martial", _martial0)
 	gm.set("pending_battle", {"battle": true, "power": float(mu.get("power", 300.0)),
 		"player_power": float(mu.get("ppower", 300.0)) + esc_power,
 		"enemy": (mu.get("enemy", MATCHUP_PIRATES["enemy"]) as Array).duplicate(true), "sea_name": "泉州外海",
+		BATTLE_SEED_KEY: sd + shift + 1_000_000,
 		"sea_seed": sd + shift + 7_000_000, "source": {"scene": "qa_w53_p3c"}})
 	_apply_cfg(keys)
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
-	# WorldMap._ready 里有一声裸 randomize()（产品要每次开战换风向），它撒的 OS 熵进全局流。
-	# _ready 是 add_child 同步跑的，敌船落位 / 水手 / 士气在里面读全局流——这边盖回 seed(sd)，
-	# _ready 之后的每场掷点（风暴节奏、弹着散布、CombatFx 闪光）认盖回后的流；
-	# 敌船落位那几发已被 randomize() 换走，钉不回（要钉得动产品 WorldMap，超本 lane 权界）——
-	# 落位差在 ±0.25 rad / 700–720 这一档，种内复跑偶见胜负翻转即源于此（SELFCHECK 照红照报）。
-	seed(sd + shift)
+	# _ready 是 add_child 同步跑的：全局流在摆敌阵前已按 battle_seed 播过（WorldMap 认了这枚键，_battle_seeded 为真）；
+	# 没认（键名对不上）就是工具自身的病——复跑漂移量的不再是种子，记一笔，末了 SELFCHECK 判红
+	if not bool(wm.get("_battle_seeded")):
+		_unseeded += 1
 	var rec: Array = []
 	wm.battle_finished.connect(func(o: String, data: Dictionary) -> void: rec.append([o, data.duplicate()]))
 	# 注射所有未 seed 的私有 rng（运行时节点成员，不改产品脚本）——要不然同 seed 两场照样漂：
@@ -426,10 +462,13 @@ func _run() -> void:
 	var saved := {"ships": (fleet.get("ships") as Array).duplicate(true), "morale": fleet.get("morale"),
 		"pb": (gm.get("pending_battle") as Dictionary).duplicate(true), "martial": gs.get("martial"),
 		"money": gs.get("money"), "fame": gs.get("fame")}
+	_martial0 = int(saved["martial"])
 	var a := _args()
 	var n: int = a["n"]
 	var seeds: Array = a["seeds"]
 	var fails := 0
+	var fixed := await _fixed_step()
+	var drift_all := 0
 	var runs: Dictionary = {}  # cfg id → 各 seed 的 {"overcome","win"} 签名表（复跑自比用）
 	for mid in a["matchups"]:
 		var mu: Dictionary
@@ -480,30 +519,29 @@ func _run() -> void:
 					won += 1
 				if str(r["overcome"]) == "hang":
 					hangs += 1
-				sigs.append([int(seeds[i]), str(r["overcome"]), bool(r["win"])])
+				sigs.append(_sig(int(seeds[i]), r))
 			print("%s on=%d/%d 收 %d 场（hang %d）" % [cid, won, n, n, hangs])
 			if hangs > 0:
 				fails += hangs
 			runs[cid] = sigs
-			# ── 同种子复跑自比（bit-exact 判决）：每个配置鼻子下跑第二遍，逐场 (overcome, win) 须一致 ──
+			# ── 同种子复跑自比（bit-exact 判决）：每个配置鼻子下跑第二遍，逐场签名（_sig）须一致 ──
 			var again: Array = []
 			for i in n:
 				var r2: Dictionary = await _battle_one(fleet, gm, int(seeds[i]), mu, keys,
 					bool(a["drive"]), a["orders"], 0)
-				again.append([int(seeds[i]), str(r2["overcome"]), bool(r2["win"])])
+				again.append(_sig(int(seeds[i]), r2))
 			var drift := 0
 			for i in n:
-				if str(sigs[i][1]) != str(again[i][1]) or bool(sigs[i][2]) != bool(again[i][2]):
+				if sigs[i] != again[i]:
 					drift += 1
-					print("  漂移 %s 种子 %d：%s/%s → %s/%s" % [cid, int(seeds[i]),
-						str(sigs[i][1]), "胜" if bool(sigs[i][2]) else "负",
-						str(again[i][1]), "胜" if bool(again[i][2]) else "负"])
-			# 漂移记档不判红：WorldMap._ready 的裸 randomize() 在 _spawn_enemy 之前（落位 / 水手 / 士气
-			# 就走 OS 熵，工具钉不到，超本 lane 权界），MeleeResolve 的 ctx.seed 又是 BoardingStage 当场
-			# 按全局流拨的（白刃各合掷骰的种子本身 drift）——漂移率打到 WINRATE 行与 SELFCHECK 里照报，
-			# 判词只挑「场数跑满 + 无 hang」，同种子复跑一致量的是趋势不是逐位相同。
+					print("  漂移 %s 种子 %d：%s → %s" % [cid, int(seeds[i]), _sig_text(sigs[i]), _sig_text(again[i])])
+			# 漂移判词（lane w54-det）：全局流与白刃种子由 WorldMap 按 battle_seed 播（见其文件尾「开战播种」），
+			# 各私有 rng 本工具注射，帧步一定时同种子复跑应逐场一样——漂了即有随机源没钉住，SELFCHECK 判红；
+			# 没带 --fixed-fps 时炮弹飞行、限时两散与甩脱的计时跟着墙钟走，漂移只记不判（WINRATE 行照报）。
+			drift_all += drift
 			if drift > 0:
-				print("  漂移注记 %s：%d/%d 场复跑翻盘（多为那声 randomize() 落位差 / 白刃种子拨号差，见档）" % [cid, drift, n])
+				print("  漂移注记 %s：%d/%d 场复跑翻盘（%s）" % [cid, drift, n,
+					"帧步一定仍漂，有随机源没钉住" if fixed else "没带 --fixed-fps，帧步跟墙钟走"])
 			# 逐配置末行（多段对阵时每段都打——主控按行收数）
 			var sd_names := PackedStringArray()
 			for i in n:
@@ -520,9 +558,15 @@ func _run() -> void:
 	gs.set("fame", saved["fame"])
 	_Switches.reset()
 	await process_frame
+	if _unseeded > 0:
+		print("  %d 场没按种子播全局流（pending_battle.%s 没被 WorldMap 认）" % [_unseeded, BATTLE_SEED_KEY])
+		fails += _unseeded
+	if fixed:
+		fails += drift_all
 	if fails == 0:
-		print("SELFCHECK %s OK（各档跑满 %d 场、无 hang；复跑漂移只记不判，详见各 WINRATE 行）" % [TAG, n])
+		print("SELFCHECK %s OK（各档跑满 %d 场、无 hang；%s）" % [TAG, n,
+			"帧步一定，同种子复跑逐场一致" if fixed else "没带 --fixed-fps：帧步跟墙钟走，复跑漂移只记不判，详见各 WINRATE 行"])
 		quit(0)
 		return
-	print("SELFCHECK %s FAIL（hang/缺场 共 %d 处）" % [TAG, fails])
+	print("SELFCHECK %s FAIL（hang/缺场/没播种/定帧步下复跑漂移 共 %d 处）" % [TAG, fails])
 	quit(1)

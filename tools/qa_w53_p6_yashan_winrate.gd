@@ -3,7 +3,7 @@ extends SceneTree
 ## 这一仗不是打赢，是冲出去：本工具按「冲出 / 没冲出」与帧时两个数给玩家那一场定量。
 ##
 ## 用法：
-##   godot --headless --path . -s res://tools/qa_w53_p6_yashan_winrate.gd -- --n=24 --seeds=11,23,...
+##   godot --headless --fixed-fps 120 --path . -s res://tools/qa_w53_p6_yashan_winrate.gd -- --n=24 --seeds=11,23,...
 ##     --crew=60                 旗舰水手（两三档：40 / 60 / 90 各跑一遍）
 ##     --ship=fu_ship_medium     旗舰船型
 ##     --off                     关掉这一场（开关 yashan_breakout / yashan_fire_ship），量关态对照
@@ -13,8 +13,14 @@ extends SceneTree
 ##
 ## 跑法（判词）：
 ##   末行 WINRATE cfg=<档> n=<场> out=<冲出> in=<没冲出> hang=<卡住> 与 FPS 行（--fps 时）。
-##   自检：同种子复跑一遍逐场比对，漂移场数记在 WINRATE 行的 replay-drift=（不判红，照实写）。
-##   判红只挑工具自身的病（场数跑不满 / 卡住）。玩家驾驶是脚本，不是真人。
+##   复现（lane w54-det）：每场 pending_battle 带 battle_seed（WorldMap 摆敌阵之前拿它播全局流，见其文件尾「开战播种」）
+##   与 sea_seed，开场当即（一帧不等）把敌船 / 火船 / 水火簿 / 本船损伤模型 / 士气挂件 / 号令面板的私有 rng 盖回种子。
+##   帧步还得一定：炮弹飞行、时限与火船挨没挨上的判定都走 _process，不带 --fixed-fps 就跟着墙钟走——
+##   本工具物理帧率 120，配 --fixed-fps 120 是一帧一物理步（同产品 60 / 60 的一比一）。
+##   自检：同种子复跑一遍逐场比对（冲没冲出 + 怎么收的），漂移场数记在 WINRATE 行的 replay-drift=；
+##   帧步一定时漂一场即判红（有随机源没钉住），没带 --fixed-fps 时只作参考、照实写。
+##   另判红两样工具自身的病：有场卡住（hang）、种子没播上（键名对不上 WorldMap）。
+##   玩家驾驶是脚本，不是真人。
 ##
 ## 玩家怎么开（脚本驾驶，逐物理帧）：
 ##   出路在正北（港湾出口），风从北来。火船顺风从北面压过来，正北一路会撞上火船——
@@ -28,6 +34,9 @@ const LIMIT_S := 260.0            # 一场的墙钟上限（本场时限 60 秒 
 const PROBE_TPS := 120
 const DEFAULT_SEEDS := [11, 23, 37, 41, 53, 67, 79, 83, 97, 101, 113, 127,
 	139, 149, 157, 163, 173, 181, 191, 199, 211, 223, 227, 233]
+## pending_battle 里给全局随机流的种子键（同 WorldMap.BATTLE_SEED_KEY；WorldMap 带 autoload，-s 工具 preload 不得，照抄键名，
+## 对不上时 WorldMap._battle_seeded 为假、本工具判红）
+const BATTLE_SEED_KEY := "battle_seed"
 
 var _gs: Node
 var _cal: Node
@@ -40,6 +49,8 @@ var _crew := 60
 var _ship_type := "fu_ship_medium"
 var _n := 24
 var _seeds: Array = []
+## 开了场却没按种子播全局流的场数（> 0 = 键名对不上 WorldMap，复跑漂移量的就不是种子了）
+var _unseeded := 0
 
 
 func _init() -> void:
@@ -66,16 +77,21 @@ func _run() -> void:
 	seeds = seeds.slice(0, mini(_n, seeds.size()))
 	var cfg := "%s crew=%d ship=%s breakout=%s fire=%s" % [
 		"off" if _off else "on", _crew, _ship_type, str(CS.on("yashan_breakout")), str(CS.on("yashan_fire_ship"))]
+	var fixed := await _fixed_step()
 	var first := await _sweep(seeds)
 	var second := await _sweep(seeds)
+	# 逐场比两样：冲没冲出、怎么收的（exit / timeup / flee / lose…）——同是冲出、一趟出港嘴一趟撑满时限，也算这一场分了岔
 	var drift := 0
 	for i in mini(first.size(), second.size()):
-		if bool(first[i]) != bool(second[i]):
+		if first[i] != second[i]:
 			drift += 1
+			print("  漂移 sd=%d：%s/%s → %s/%s" % [int(seeds[i]), str(first[i][0]), str(first[i][1]),
+				str(second[i][0]), str(second[i][1])])
 	var out_n := 0
 	var in_n := 0
 	var hang := 0
-	for r in first:
+	for row in first:
+		var r: Variant = row[0]
 		if r == null:
 			hang += 1
 		elif bool(r):
@@ -83,8 +99,33 @@ func _run() -> void:
 		else:
 			in_n += 1
 	print("WINRATE cfg=%s n=%d out=%d in=%d hang=%d replay-drift=%d" % [cfg, first.size(), out_n, in_n, hang, drift])
-	print("%s DONE" % TAG)
+	var bad: Array = []
+	if hang > 0:
+		bad.append("%d 场卡住没收（墙钟超 %.0f 秒）" % [hang, LIMIT_S])
+	if _unseeded > 0:
+		bad.append("%d 场没按种子播全局流（pending_battle.%s 没被 WorldMap 认）" % [_unseeded, BATTLE_SEED_KEY])
+	if fixed and drift > 0:
+		bad.append("帧步一定、同种子复跑仍翻了 %d 场（有随机源没钉住）" % drift)
+	if not bad.is_empty():
+		print("%s FAIL：%s" % [TAG, "；".join(bad)])
+		quit(1)
+		return
+	print("%s DONE%s" % [TAG, "" if fixed else "（帧步跟墙钟走：没带 --fixed-fps，replay-drift 只作参考）"])
 	quit(0)
+
+
+## 帧步定不定：开跑前空转几帧，比 process delta 的累计与墙钟——带了 --fixed-fps 时空帧一帧花不到一毫秒、却按 1/fps 记账，
+## 一秒的账几十毫秒就记满（帧步一定，同种子两趟应逐场一样）；不带时 delta 就是墙钟，记满一秒要真等一秒
+## （炮弹飞行、时限与火船挨没挨上的判定都走 _process，复跑漂移只作参考）。不比「每帧 delta 全等」：
+## 开跑时改了物理帧率，引擎的帧步平滑头几帧会微调 delta，定帧步也不全等
+func _fixed_step() -> bool:
+	await process_frame
+	var sim := 0.0
+	var t0 := Time.get_ticks_usec()
+	while sim < 1.0 and Time.get_ticks_usec() - t0 < 500_000:
+		await process_frame
+		sim += root.get_process_delta_time()
+	return sim >= 2.0 * float(Time.get_ticks_usec() - t0) / 1_000_000.0
 
 
 ## 帧时那一档（DISPLAY 带上窗口跑）：起一场崖山港湾战，不脚本驾驶（帧负载要的是火船最多的那一档），
@@ -144,11 +185,12 @@ func _parse_args() -> void:
 			_want_fps = true
 
 
-## 一趟全跑：逐种子开场，返回每场「冲出来了没有」（null = 卡住没跑完）
+## 一趟全跑：逐种子开场，返回每场 [冲出来了没有（null = 卡住没跑完）, 怎么收的]
 func _sweep(seeds: Array) -> Array:
 	var out: Array = []
 	for sd in seeds:
-		out.append(await _one(int(sd)))
+		var r: Variant = await _one(int(sd))
+		out.append([r, str(get_meta(&"last_how", "hang"))])
 	return out
 
 
@@ -160,32 +202,19 @@ func _one(sd: int) -> Variant:
 	_fleet.set("morale", 70)
 	var pb: Dictionary = YashanBattle.setup(300.0, false)
 	pb["sea_seed"] = sd
+	# 全局随机流的种子：WorldMap._ready 摆敌阵之前拿它播种（见 WorldMap 文件尾「开战播种」）；
+	# 错开 sea_seed 一段（+1M），海况与全局流不吃同一串数
+	pb[BATTLE_SEED_KEY] = sd + 1_000_000
 	_gm.set("pending_battle", pb)
-	seed(sd)
 	var wm: Node = (load("res://scenes/WorldMap.tscn") as PackedScene).instantiate()
 	root.add_child(wm)
+	# add_child 当场跑完 _ready（敌阵、火船、士气挂件、号令面板都已在树）：一帧不等，先把各私有 rng 盖回种子
+	if not bool(wm.get("_battle_seeded")):
+		_unseeded += 1                         # 种子没播上（键名对不上 WorldMap）：工具自身的病，末了判红
+	_pin_rngs(wm, sd)
 	for _i in 3:
 		await process_frame
-	# 盖回各私有 rng（同 p3c 工具那一套：敌船 / 水火簿 / 我船损伤模型 / 士气挂件）
-	var foes := wm.get_children().filter(func(c): return String(c.name).begins_with("PirateShip") and not c.is_queued_for_deletion())
-	var idx := 0
-	for f in foes:
-		var r := RandomNumberGenerator.new()
-		r.seed = sd + 3_000_000 + idx * 13_579
-		idx += 1
-		f.set("_rng", r)
-		var ffb = f.get("flood_fire")
-		if ffb is Object and is_instance_valid(ffb):
-			var fr := RandomNumberGenerator.new()
-			fr.seed = sd + 8_000_000 + (idx - 1) * 13_579
-			(ffb as Object).set("rng", fr)
 	var own: Node2D = wm.get("ship")
-	if own != null:
-		var dm = own.call("get_damage_model") if own.has_method("get_damage_model") else null
-		if dm != null:
-			var dr := RandomNumberGenerator.new()
-			dr.seed = sd + 5_000_000
-			dm.set("rng", dr)
 	var rec: Array = []
 	var freed := [false]
 	wm.battle_finished.connect(func(o: String, d: Dictionary) -> void: rec.append([o, d.duplicate()]))
@@ -230,6 +259,45 @@ func _one(sd: int) -> Variant:
 		await process_frame
 	_gm.set("pending_battle", {})
 	return result
+
+
+## 各船私有的 rng 按种子起（WorldMap 只管全局流与白刃，见其文件尾「开战播种」）：敌船 _rng 与水火簿 rng、火船（FireShips 下，
+## 名字不带 PirateShip_ 前缀，同样是 PirateShip 节点）、本船损伤模型、士气挂件、号令面板。各占一段种子互不相撞：
+## 全局流 +1M、火船 +2M / 水火簿 +2.5M、敌船 +3M / 水火簿 +8M、本船 +5M、士气 +6M、面板 +9M（后四段同 p3c 工具）
+func _pin_rngs(wm: Node, sd: int) -> void:
+	var foes := wm.get_children().filter(func(c): return String(c.name).begins_with("PirateShip") and not c.is_queued_for_deletion())
+	for i in foes.size():
+		_pin_ship(foes[i], sd + 3_000_000 + i * 13_579, sd + 8_000_000 + i * 13_579)
+	var host: Node = wm.get_node_or_null("FireShips")
+	if host != null:
+		var k := 0
+		for c in host.get_children():
+			_pin_ship(c, sd + 2_000_000 + k * 13_579, sd + 2_500_000 + k * 13_579)
+			k += 1
+	var own: Node = wm.get("ship")
+	var dm = own.call("get_damage_model") if own != null and own.has_method("get_damage_model") else null
+	if dm != null:
+		dm.set("rng", _rng_of(sd + 5_000_000))
+	var morale_hook = wm.get("_morale")
+	if morale_hook != null:
+		morale_hook.set("rng", _rng_of(sd + 6_000_000))
+	for n in wm.get_children():
+		if n.is_in_group("nk1_combat_orders") and n.get("_rng") is RandomNumberGenerator:
+			n.set("_rng", _rng_of(sd + 9_000_000))
+
+
+## 一条船（PirateShip 节点）：_rng 与水火簿（EnemyFloodFire，开关开才有）的 rng
+func _pin_ship(n: Node, own_seed: int, book_seed: int) -> void:
+	n.set("_rng", _rng_of(own_seed))
+	var ffb = n.get("flood_fire")
+	if ffb is Object and is_instance_valid(ffb):
+		(ffb as Object).set("rng", _rng_of(book_seed))
+
+
+func _rng_of(s: int) -> RandomNumberGenerator:
+	var r := RandomNumberGenerator.new()
+	r.seed = s
+	return r
 
 
 ## 脚本驾驶：舵压出路（正北），近处有火船就让开一舷。不改产品脚本，只改旗舰这一个节点的朝向 / 帆。
