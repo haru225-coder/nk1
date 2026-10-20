@@ -11,7 +11,11 @@ extends SceneTree
 ##   二、名声 10 按「毁约」：名声 9、籍外散商，罚条「…名声减 1。案册改题「籍外散商」。」；
 ##       名声 0 毁约：不写名声减、不写改题、名声仍 0（w53-10 封底照旧）；名声 6 毁约（不跨档）：照写名声减 1、不写改题；
 ##   三、名声 24 逾期（过了 due_day 的那个早晨）：名声 23、在册舶牙，记事栏那条罚条写「名声减 1。案册改题「在册舶牙」。」
-## 回退即红：deliver_contract / _fail_contract 改回直接写 fame → 一、二、三的跨档格红（不跨档、封底格照绿）。
+##   四、海图上的征船 / 难民船（SeaChart 四支钮回调接了 add_fame 却不看回执，同病）：事件面真钮——「交出一条船（名声 +6）」
+##       名声 4 → 10 在册舶牙、「载人同行」20 → 24 远洋海贾、「分些水粮」47 → 48 舶主、「趁夜溜走」被哨船追上 10 → 6 籍外散商 /
+##       26 → 22 在册舶牙，船况札记那一句名声增减后紧跟改题；「分些水粮」5 → 6 不跨档不写。
+## 回退即红：deliver_contract / _fail_contract 改回直接写 fame → 一、二、三的跨档格红；SeaChart 四支回调不写改题 → 四的跨档格红
+## （不跨档、封底格照绿）。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_rep_retitle_probe.gd（经门锁跑）
 ## 输出末行 QA_W54_REP_RETITLE cases=N fails=M；M>0 时 exit 1。本进程 SCRIPT ERROR 即红（共用件 tools/script_err_tally.gd）。
 ## -s 下勿写 autoload 标识符（编译期尚无 autoload），一律 root.get_node 取。
@@ -83,6 +87,9 @@ func _run() -> void:
 
 	print("── 三、逾期（过日子，罚条走通告进记事栏）")
 	await _overdue_case(24, "在册舶牙")
+
+	print("── 四、海上征船 / 难民船（海图事件面上的真钮）")
+	await _sea_cases()
 
 	eco.rates = _rates0.duplicate(true)
 	_finish()
@@ -180,6 +187,70 @@ func _overdue_case(fame0: int, want_title: String) -> void:
 	await _settle(2)
 	var line := _new_line("没能送到")
 	_judge("名声 %d 委办逾期" % fame0, gs.contract.is_empty(), fame0, fame0 - 1, "名声减 1。", want_title, line)
+
+
+## 海图上四样改名声的事：征船「交出一条船（名声 +6）」「趁夜溜走」被追上（名声 −4）、难民「载人同行」（+4）「分些水粮」（+1）。
+## 起一张海图停在海上半途（不在航行、余程未尽：钮回调末尾的 _on_event_continue 不往下走），照 Voyage 的真事件挂事件面、按真钮，
+## 札记取海图船况札记最上一条。
+func _sea_cases() -> void:
+	var voy: Node = root.get_node("Voyage")
+	_stage(0, {})
+	gs.chapter = 4
+	cal.from_dict({"year": 1275, "month": 6, "day": 5})
+	fleet.from_dict({"ships": [], "water": 600, "food": 600})
+	fleet.add_ship("fu_ship_medium", "旗舰")
+	fleet.add_ship("keel_boat", "二号")
+	var chart: Node = (load("res://scenes/SeaChart.tscn") as PackedScene).instantiate()
+	root.add_child(chart)
+	await _settle(4)
+	chart.set("sailing", false)
+	chart.set("remaining_li", 500.0)
+	var req: Dictionary = voy.call("_requisition_event")
+	var ref: Dictionary = voy.call("_refugee_event")
+	# 交出一条船：名声 4 → 10 升在册舶牙（交出的是小的那条，旗舰留下）
+	await _sea_case(chart, req, "交出一条船（名声 +6）", 4, 10, "名声加 6。", "在册舶牙", "编入官军")
+	# 载人同行：名声 20 → 24 升远洋海贾；分些水粮：名声 47 → 48 升舶主、名声 5 → 6 不跨档不写改题
+	await _sea_case(chart, ref, "载人同行（水粮 −2 成）", 20, 24, "名声加 4。", "远洋海贾", "把人接上船")
+	await _sea_case(chart, ref, "分些水粮，不载人（水粮 −1 成）", 47, 48, "名声加 1。", "舶主", "递过去几桶水")
+	await _sea_case(chart, ref, "分些水粮，不载人（水粮 −1 成）", 5, 6, "名声加 1。", "", "递过去几桶水")
+	# 趁夜溜走被哨船追上（种子挑到掷输那一手）：名声 10 → 6 降籍外散商；名声 26 → 22 降在册舶牙
+	var chance := clampf(float(fleet.call("fleet_speed")) / 240.0, 0.2, 0.85)
+	var lose := -1
+	for k in range(1, 5000):
+		seed(k)
+		if randf() >= chance:
+			lose = k
+			break
+	for f in [[10, "籍外散商"], [26, "在册舶牙"]]:
+		await _sea_case(chart, req, "趁夜溜走", int(f[0]), int(f[0]) - 4, "名声减 4", str(f[1]), "被哨船追上", lose)
+	chart.queue_free()
+	await _settle(2)
+
+
+## 名声 fame0 时挂事件 ev、按钮 btn_text：名声应到 fame1、札记含 key 那一句写 fame_bit，跨档（want_title 非空）紧跟改题；
+## rng_seed ≥ 0 时按下前播种（趁夜溜走那一掷）
+func _sea_case(chart: Node, ev: Dictionary, btn_text: String, fame0: int, fame1: int, fame_bit: String, want_title: String, key: String, rng_seed := -1) -> void:
+	gs.fame = fame0
+	gs.money = 1000
+	fleet.water = 600
+	fleet.food = 600
+	chart.set("_log_lines", PackedStringArray())
+	chart.call("_show_event", ev)
+	await _settle(1)
+	var btn := _find_button(chart.get("event_actions"), btn_text)
+	var pressed := btn != null
+	if pressed:
+		if rng_seed >= 0:
+			seed(rng_seed)  # 按下那一刻才播种：挂事件面、等帧都不吃掉这一掷
+		btn.pressed.emit()
+		await _settle(2)
+	var line := ""
+	for l in (chart.get("_log_lines") as PackedStringArray):
+		if str(l).contains(key):
+			line = str(l)
+			break
+	var bit := fame_bit + ("。" if not fame_bit.ends_with("。") else "")
+	_judge("海图「%s」名声 %d" % [btn_text, fame0], pressed, fame0, fame1, bit, want_title, line)
 
 
 ## 一格判：账（名声、职衔）与札记那一句（名声增减照旧；跨档时紧跟「案册改题「X」。」，不跨档时不写改题）

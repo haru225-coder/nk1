@@ -2196,10 +2196,10 @@ func _on_requisition_surrender() -> void:
 	elif idx < GameState.berth_index:
 		GameState.berth_index -= 1  # 交出的是坞位之前的船：坞位序号跟顺（待拍板 20h）
 	Fleet.ships.remove_at(idx)
-	GameState.add_fame(6)
+	var fame_res: Dictionary = GameState.add_fame(6)
 	Fleet.morale = maxi(0, Fleet.morale - 4)
 	Voyage.settle_war_event(Voyage.EventKind.REQUISITION)  # 册上记了名，这一程不再征（lane w54-seaevents）
-	_log("[color=yellow]「%s」连船带货编入官军。小官在册子上记了你的名字，写得很工整。名声加 6。[/color]" % s.get("name", "一船"))
+	_log("[color=yellow]「%s」连船带货编入官军。小官在册子上记了你的名字，写得很工整。名声加 6。%s[/color]" % [s.get("name", "一船"), GameState.retitle_note(fame_res)])  # 跨档写改题（lane w54-rep）
 	_refresh_status()
 	_on_event_continue()
 
@@ -2225,11 +2225,11 @@ func _on_requisition_flee() -> void:
 		remaining_li += Fleet.fleet_speed() * 0.5
 		_log(_ink(UiTheme.MOSS, "熄灯落帆，借夜潮漂出哨船视线，多走了一程。"))
 	else:
-		var fine: int = maxi(80, int(GameState.money * 0.25))
-		fine = mini(fine, GameState.money)
-		_log("[color=red]被哨船追上。「抗征」二字记入册子，罚钱 %d%s。[/color]" % [fine, "，名声减 %d" % mini(4, GameState.fame) if GameState.fame > 0 else ""])  # 名声封底 0，写实扣（lane w54-voyage）
+		var fine: int = mini(maxi(80, int(GameState.money * 0.25)), GameState.money)
+		var cut: int = mini(4, GameState.fame)  # 名声封底 0，写实扣（lane w54-voyage）
+		var fame_res: Dictionary = GameState.add_fame(-4)
 		GameState.add_money(-fine)
-		GameState.add_fame(-4)
+		_log("[color=red]被哨船追上。「抗征」二字记入册子，罚钱 %d%s。%s[/color]" % [fine, "，名声减 %d" % cut if cut > 0 else "", GameState.retitle_note(fame_res)])  # 先落名声再写札记：跨档写改题（lane w54-rep）
 		Fleet.morale = maxi(0, Fleet.morale - 5)
 		Voyage.settle_war_event(Voyage.EventKind.REQUISITION)  # 「抗征」记了册、罚过了，这一程不再征（lane w54-seaevents）
 	_refresh_status()
@@ -2275,9 +2275,9 @@ func _on_refugee_take() -> void:
 	event_panel.visible = false
 	Fleet.water = maxi(0, Fleet.water - int(ceil(Fleet.water * 0.2)))
 	Fleet.food = maxi(0, Fleet.food - int(ceil(Fleet.food * 0.2)))
-	GameState.add_fame(4)
+	var fame_res: Dictionary = GameState.add_fame(4)
 	Fleet.morale = mini(Fleet.MORALE_MAX, Fleet.morale + 3)
-	_log("[color=lime]把人接上船。甲板挤了，水粮吃得快了。有个老人一直握着你的手不放。名声加 4。[/color]")
+	_log("[color=lime]把人接上船。甲板挤了，水粮吃得快了。有个老人一直握着你的手不放。名声加 4。%s[/color]" % GameState.retitle_note(fame_res))  # 跨档写改题（lane w54-rep）
 	_refresh_status()
 	_on_event_continue()
 
@@ -2286,8 +2286,8 @@ func _on_refugee_share() -> void:
 	event_panel.visible = false
 	Fleet.water = maxi(0, Fleet.water - int(ceil(Fleet.water * 0.1)))
 	Fleet.food = maxi(0, Fleet.food - int(ceil(Fleet.food * 0.1)))
-	GameState.add_fame(1)
-	_log("[color=yellow]递过去几桶水和一袋米。他们没有道谢的力气，船慢慢漂远了。名声加 1。[/color]")
+	var fame_res: Dictionary = GameState.add_fame(1)
+	_log("[color=yellow]递过去几桶水和一袋米。他们没有道谢的力气，船慢慢漂远了。名声加 1。%s[/color]" % GameState.retitle_note(fame_res))  # 跨档写改题（lane w54-rep）
 	_refresh_status()
 	_on_event_continue()
 
