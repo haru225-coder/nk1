@@ -4217,7 +4217,7 @@ func _siege_buy_grain() -> void:
 				log_msg("买进粮 %d。再打一阵，米价还要涨一截。" % n)
 			load_scene(current_scene_id)
 		)
-		choices_container.add_child(b)
+		choices_container.add_child(b); b.set_meta("no_enter", true)
 
 	choices_label.visible = true
 	_siege_page_foot(CARD_SIEGE_GRAIN)
@@ -4257,7 +4257,7 @@ func _siege_envoy() -> void:
 			log_msg("信只有一句：「世强、刚中负国，文龙不负。」副使走的时候没敢回头。")
 			load_scene(current_scene_id)
 		)
-		choices_container.add_child(kill)
+		choices_container.add_child(kill); kill.set_meta("no_enter", true)
 		var keep := Button.new()
 		keep.text = "收下书信，不回话"
 		keep.pressed.connect(func():
@@ -4268,7 +4268,7 @@ func _siege_envoy() -> void:
 			log_msg("书信放在案上三天。第三天你把它烧了。城里有人看见你收信，也有人看见你烧信。两种人都在。")
 			load_scene(current_scene_id)
 		)
-		choices_container.add_child(keep)
+		choices_container.add_child(keep); keep.set_meta("no_enter", true)
 	elif not GameState.siege.get("envoy_kin", false):
 		body_text.text = "第二封劝降书是你的姻家送来的。他跪在城下，说福州那边答应了：只要你出城，老夫人和璥儿当天放回。
 城头上有人在看你。"
@@ -4283,7 +4283,7 @@ func _siege_envoy() -> void:
 			log_msg("火盆里那封信烧得很快。城头上没有人说话。")
 			load_scene(current_scene_id)
 		)
-		choices_container.add_child(burn)
+		choices_container.add_child(burn); burn.set_meta("no_enter", true)
 		var spare := Button.new()
 		spare.text = "焚书，放他走"
 		spare.pressed.connect(func():
@@ -4294,7 +4294,7 @@ func _siege_envoy() -> void:
 			log_msg("信烧了，人放了。他走出三十步又回头看了一眼，你没有再看他。")
 			load_scene(current_scene_id)
 		)
-		choices_container.add_child(spare)
+		choices_container.add_child(spare); spare.set_meta("no_enter", true)
 	else:
 		body_text.text = "城下没有人了。"
 
@@ -4398,7 +4398,7 @@ func _siege_lin_hua() -> void:
 			log_msg("他愣了一下，说大人还记得。城头的人见你叫得出自家旧舵工的名字，士气加 5。")
 			load_scene(current_scene_id)
 		)
-		choices_container.add_child(remind)
+		choices_container.add_child(remind); remind.set_meta("no_enter", true)
 
 	var go := Button.new()
 	go.text = "让他去"
@@ -4407,7 +4407,7 @@ func _siege_lin_hua() -> void:
 		log_msg("林华带着五十人出了北门。")
 		load_scene(current_scene_id)
 	)
-	choices_container.add_child(go)
+	choices_container.add_child(go); go.set_meta("no_enter", true)
 
 	var stay := Button.new()
 	# 「谁也不出」先不写：关了城门，囊山第三阵照样能出城设伏（禁不禁第三阵待策划定）
@@ -4424,7 +4424,7 @@ func _siege_lin_hua() -> void:
 		log_msg("城门落了闸，人心一乱，官仓前挤抢，丢了%s石米。林华在垛口缒绳边站了一会儿。东门下，通判曹澄孙转了几回。" % _cn_num(lost, true))
 		load_scene(current_scene_id)
 	)
-	choices_container.add_child(stay)
+	choices_container.add_child(stay); stay.set_meta("no_enter", true)
 
 	choices_label.visible = true
 	_add_leave_button("xinghua")
@@ -4454,7 +4454,7 @@ func _siege_muster() -> void:
 					log_msg("募得 %d 人。倾家所有，招的是义兵，不是官军。" % take)
 				load_scene(current_scene_id)
 			)
-			choices_container.add_child(b)
+			choices_container.add_child(b); b.set_meta("no_enter", true)
 	else:
 		var l := Label.new()
 		l.text = "名声所及，能招的都招了。" + ("城中兵不满千。" if GameState.siege_get("troops") < 1000 else "")
@@ -4484,7 +4484,7 @@ func _siege_muster() -> void:
 			log_msg("他们把石头放下了，没有走。从这天起，城头上多了两百个不领饷的人。")
 			load_scene(current_scene_id)
 		)
-		choices_container.add_child(keep)
+		choices_container.add_child(keep); keep.set_meta("no_enter", true)
 
 		var disband := Button.new()
 		disband.text = "按律解散，不追究"
@@ -4494,7 +4494,7 @@ func _siege_muster() -> void:
 			log_msg("他们把石头放下了，走了。有些人后来在囊山又出现过一次，不是站在你这边。")
 			load_scene(current_scene_id)
 		)
-		choices_container.add_child(disband)
+		choices_container.add_child(disband); disband.set_meta("no_enter", true)
 
 	choices_label.visible = true
 	_siege_page_foot(CARD_SIEGE_MUSTER)
@@ -4590,7 +4590,7 @@ func _siege_repair_wall() -> void:
 					log_msg("把修船的料改了修墙。木匠没问为什么。")
 				load_scene(current_scene_id)
 			)
-			choices_container.add_child(b)
+			choices_container.add_child(b); b.set_meta("no_enter", true)
 
 	choices_label.visible = true
 	_siege_page_foot(CARD_SIEGE_WALL)
