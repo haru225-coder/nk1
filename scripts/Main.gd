@@ -2955,7 +2955,7 @@ func _on_set_sail() -> void:
 		update_status_panel()
 		return
 
-	var res: Dictionary = GameState.customs_inspection()
+	var res: Dictionary = GameState.depart_inspection()  # 货引请领之后又装了货的先补抽解，补不起不放行（lane w54-econ）
 	log_msg(res["msg"])
 	update_status_panel()
 

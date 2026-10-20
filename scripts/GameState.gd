@@ -788,8 +788,8 @@ func apply_for_permit() -> Dictionary:
 	if not spend_money(duty):
 		return {"ok": false, "msg": "【市舶司】抽解需 %d 钱，你囊中不足，小吏把货单推了回来。" % duty}
 	has_customs_permit = true
-	# 走正门会稍微降低蒲氏的疑心
-	pu_attention = maxi(0, pu_attention - 5)
+	permit_base = duty_base()  # 记下这张货引报过的舱货：出港前又装了货，照它补抽解（permit_topup，lane w54-econ）
+	pu_attention = maxi(0, pu_attention - 5)  # 走正门会稍微降低蒲氏的疑心
 	var msg := "【市舶司验引】按舱货抽解 %d 钱，货引到手。" % duty
 	if contraband_units() > 0:
 		msg += "\n只是舱底那批违禁货并未报入明账——验引护得了正货，护不了它。"
@@ -1260,6 +1260,7 @@ func to_dict() -> Dictionary:
 		"chapter": chapter,
 		"pu_attention": pu_attention,
 		"has_customs_permit": has_customs_permit,
+		"permit_base": permit_base,
 		"last_port": last_port,
 		"flags": flags,
 		"network": network,
@@ -1308,6 +1309,7 @@ func from_dict(d: Dictionary) -> void:
 	chapter = d.get("chapter", 1)
 	pu_attention = d.get("pu_attention", 0)
 	has_customs_permit = d.get("has_customs_permit", false)
+	permit_base = _permit_base_of(d.get("permit_base", -1))
 	last_port = d.get("last_port", "quanzhou")
 	flags = d.get("flags", {})
 	network = int(d.get("network", 0))
@@ -1380,3 +1382,66 @@ func epilogue_note(note: String) -> String:
 	if note.begins_with("拓") and note.find("「") == 1 and close > 0:
 		return note.substr(0, close + 1)
 	return note
+
+
+# ── 货引补抽解（lane w54-econ）────────────────────────
+# 放在文件尾：docs/待策划拍板清单 按行号引着本文件前面几处（验引那段在内），往前插行就漂。
+
+## 请领货引那一刻舱里报过的计税基数（duty_base）。-1 = 没记：旧档里带进来的货引，照旧放行、不补。
+## 原先货引只是一面布尔，抽解按请领那一刻的舱货算：空舱请领只付地板 20 钱，再去牙行装满一舱，出港照样凭引放行——
+## 「按舱货抽解」形同虚设（福船（中）满舱青白瓷该抽近六千，只付了二十）。入存档；缺这一键当 -1，旧档照读，不升 SAVE_SCHEMA。
+var permit_base: int = -1
+
+
+## 舱货的计税基数：customs_duty 那一圈求和去掉税率（base_value × 件数，违禁货不计）
+func duty_base() -> int:
+	var hold: Dictionary = Fleet.cargo
+	var total := 0.0
+	for gid in hold.keys():
+		var g := GameManager.get_good_by_id(gid)
+		if g.get("contraband", false):
+			continue
+		total += float(g.get("base_value", 0)) * int(hold[gid].get("qty", 0))
+	return int(round(total))
+
+
+## 按这一港现时的税率、这一计税基数该收的抽解（地板 20，与 customs_duty 同）
+func _duty_on(base: int, port_id: String) -> int:
+	return maxi(20, int(round(float(base) * Economy.duty_rate(port_id))))
+
+
+## 货引在手、请领之后舱里又添了货：出港要补「现舱货的抽解 − 请领时舱货的抽解」，两头按现时同一税率算（货少了不退）。
+## 没有货引、旧档的货引（permit_base = -1）为 0。port_id 缺省取 last_port（同 customs_duty，出港查验同港）。
+func permit_topup(port_id: String = "") -> int:
+	if not has_customs_permit or permit_base < 0:
+		return 0
+	var pid := port_id if port_id != "" else last_port
+	return maxi(0, _duty_on(duty_base(), pid) - _duty_on(permit_base, pid))
+
+
+## 出港验放（Main._on_set_sail 调）：要补抽解的先补，补得起记下新舱货、再照 customs_inspection 验放，补了多少写在那句札记的标签后头
+## （记事栏 plain_log 只去第一枚【】标签，另起一行会把第二行的标签露出来）；补不起不放行、货引留着（与请领时「囊中不足，
+## 小吏把货单推了回来」同一口径）——卖掉些货或凑足了钱再走。不用补的直接走 customs_inspection，札记逐字照旧。
+func depart_inspection() -> Dictionary:
+	var owed := permit_topup()
+	if owed <= 0:
+		return customs_inspection()
+	if not spend_money(owed):
+		return {
+			"passed": false, "confiscated": false,
+			"msg": "【市舶司】货引是按请领时的舱货开的，后装上船的货要补抽解 %d 钱，你囊中不足，小吏把货单推了回来。" % owed,
+		}
+	permit_base = duty_base()
+	var res := customs_inspection()
+	var msg := str(res.get("msg", ""))
+	var note := "请领货引之后舱里又添了货，补抽解 %d 钱。" % owed
+	var close := msg.find("】")
+	res["msg"] = msg.insert(close + 1, note) if msg.begins_with("【") and close > 0 else note + msg
+	return res
+
+
+## 读档：permit_base 只认数字，缺了或坏了当 -1（旧档的货引照旧放行，不补）
+func _permit_base_of(raw) -> int:
+	if typeof(raw) == TYPE_INT or typeof(raw) == TYPE_FLOAT:
+		return int(raw)
+	return -1

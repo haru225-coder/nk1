@@ -96,7 +96,7 @@ func _run() -> void:
 		# 并列路线（博多先到、南岛海道北口后到，同为 3 趟）：era_main_route 取先到的博多；
 		# 按键名（码位）重排读回，「南」U+5357 排在「博」U+535A 前，主线会换成南岛海道北口
 		"era_routes": {"泉州→博多": 3, "泉州→兴化": 2, "泉州→南岛海道北口": 3},
-		"last_port": "quanzhou", "has_customs_permit": true,
+		"last_port": "quanzhou", "has_customs_permit": true, "permit_base": 1260,
 		"identity": "merchant", "player_name": "林往返",
 		"news_seen": ["v1255_04", "v1255_07"],
 		"crew_history": ["lin_hua"], "met_ids": ["lin_hua", "xu_shi"],

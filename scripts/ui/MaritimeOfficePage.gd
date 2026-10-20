@@ -14,13 +14,13 @@ static func setup_yamen(main: Control, port_id: String) -> void:
 	main._begin_benches()
 
 	if port_id == "quanzhou": main._add_npc_button("customs_official", "市舶司小吏")  # 他是泉州市舶司的人（title 泉州市舶司小吏）：别港不见（待拍板 24）
-
+	var owed := GameState.permit_topup(port_id)  # 货引在手、请领之后又装了货：出港要补的抽解（depart_inspection 照收，lane w54-econ）；占原空行，下面行号不挪
 	var permit: VBoxContainer = main._slip_body()
 	var duty := GameState.customs_duty()
 	var contraband := GameState.contraband_units()
 	if GameState.has_customs_permit:
 		main._slip_title(permit, "货引", "已在手")
-		main._slip_note(permit, "本次出港可合法验放。", UiTheme.MOSS)
+		main._slip_note(permit, "本次出港可合法验放。" if owed <= 0 else "请领之后舱里又添了货，出港时补抽解 %d。" % owed, UiTheme.MOSS if owed <= 0 else UiTheme.HONEY)
 	else:
 		main._slip_title(permit, "货引", "按舱货抽解")
 		main._slip_chip(main._slip_row(permit), "请领　%d" % duty, main._on_apply_permit, true)
