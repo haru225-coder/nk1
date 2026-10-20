@@ -295,14 +295,28 @@ func _sec_pursue(fleet: Node) -> void:
 
 	# 追：不判随机结果（速度比掷出来哪面都有），只判账自洽——
 	# 追上 ship_added=船种 / boarded_added+1 / 注记句写夺下；没追上 / 没了 pursuit_roll=missed / 注记句写挨炮。
-	var chase: Dictionary = AA.apply(_chosen_row(_row_of(AA.choices_for("win", data), "pursue"), "chase"), "win", data)
-	var roll := str(chase.get("pursuit_roll", ""))
-	_expect(roll == "caught" or roll == "missed", "chase：掷出 caught / missed（得「%s」）" % roll)
-	if roll == "caught":
+	# 两面都验（lane w54-det）：这一掷走全局流 randf()，原先只掷一回、掷到哪面验哪面——一遍只验一半，
+	# 判据条数随跑而变（连跑实见 49 / 48 条），哪一面的账坏了就成了时红时绿。改为按定好的种子逐个掷，
+	# 追上 / 没追上各取头一回来验；种子是定的，每遍掷出同一串、验同样几条。掷完 randomize() 还给后面几节
+	var rolls := {}
+	for sd in range(1, 400):
+		seed(sd)
+		var c: Dictionary = AA.apply(_chosen_row(_row_of(AA.choices_for("win", data), "pursue"), "chase"), "win", data)
+		var r := str(c.get("pursuit_roll", ""))
+		if not rolls.has(r):
+			rolls[r] = c
+		if rolls.has("caught") and rolls.has("missed"):
+			break
+	randomize()
+	_expect(rolls.keys().all(func(k): return k == "caught" or k == "missed"), "chase：掷出的只有 caught / missed（得 %s）" % [rolls.keys()])
+	_expect(rolls.has("caught") and rolls.has("missed"), "chase：定种子逐个掷，追上 / 没追上两面都掷得出（得 %s）" % [rolls.keys()])
+	if rolls.has("caught"):
+		var chase: Dictionary = rolls["caught"]
 		_expect(str(chase.get("ship_added", "")) == str(fled[0].get("type", "")),
 			"chase 追上：ship_added = %s" % str(fled[0].get("type", "")))
 		_expect(int(chase.get("boarded_added", -1)) >= 1, "chase 追上：boarded_added+1（得 %d）" % int(chase.get("boarded_added", -1)))
-	else:
+	if rolls.has("missed"):
+		var chase: Dictionary = rolls["missed"]
 		_expect(str(chase.get("ship_added", "x")) == "", "chase 没追上：没夺（得「%s」）" % str(chase.get("ship_added", "x")))
 		_expect(str(chase.get("note", "")).contains("舷炮"), "chase 没追上：注记句写挨舷炮（得「%s」）" % str(chase.get("note", "")))
 		# 挨舷炮的实数（pursuit_damage）：broadside_hits × 一发 × 敌体/300
