@@ -234,8 +234,6 @@ const SCRIPTS := [
 	"res://tools/qa_w54_hunt_run_contract_probe.gd",  # lane w54-hunt 闯封锁与在身委办探针（委办要留的米不上秤：卖 / 扣 / 算不算闯得）
 	"res://tools/qa_w54_hud_orders_state_probe.gd",  # lane w54-hud 海战号令面板签面状态栏整句放得下（劝降三样短写，整句裁字回退即红）
 	"res://tools/qa_w54_copy_probe.gd",  # lane w54-copy 文案一致性专项探针（门牌悬停提示与门牌同字等，一段钉一条）
-	"res://tools/qa_w54_econ_peak_probe.gd",  # lane w54-econ 章节本钱按现银减欠款记专项探针（赊来的钱不顶高资金峰值）
-	"res://tools/qa_w54_econ_permit_probe.gd",  # lane w54-econ 货引按出港时的舱货抽解专项探针（空舱请领再装货补足、委办留货不抽）
 	"res://tools/probe_boot.gd",  # lane w54-gates 探针摆场共用小件（autoload 取件 / 压序章过场 / 起 Main）
 	"res://tools/qa_w54_gates_zero_case_guard_probe.gd",  # lane w54-gates 探针「一格断言都没跑过也照印全部通过」守卫探针（静态读 qa_w53_4_story_probe，回退即红）
 	"res://tools/qa_w54_hunt_landing_offer_probe.gd",  # lane w54-hunt 剿寨那一行挂卡判据探针（挂卡读到的是这一仗的来处与所在港）
@@ -271,7 +269,6 @@ const SCRIPTS := [
 	"res://tools/qa_w54_audio_own_fire_probe.gd",  # lane w54-audio 自家齐射不被别船炮声吞掉专项探针（开炮节流按谁开的各认一把锁）
 	"res://tools/qa_w54_audio_voices_probe.gd",  # lane w54-audio 同一帧连要几声声部上限照样作数专项探针（放行即占声部、按声长让出）
 	"res://tools/qa_w54_audio_bell_probe.gd",  # lane w54-audio 墨幕套墨幕不叠两声磬专项探针（收声组：同组新声收旧声）
-	"res://tools/qa_w54_gates_zero_case_guard_probe.gd",  # lane w54-gates 零案例守卫探针（主控补登记）
 	"res://tools/qa_w54_voyage_sea_rumor_probe.gd",  # lane w54-voyage 海上相逢不传闭门港行情探针（修 _pick_rumor 不看战况）
 	"res://tools/qa_w54_hud_tide_cargo_probe.gd",  # lane w54-hud 海战顶匾右格货多收成一行（顶匾不长高、货名件数不折开，回退即红）
 	"res://tools/qa_w54_audio_sea_probe.gd",  # lane w54-audio 海战补挂的声专项探针（十行挂点真走、开关 sfx_cues 关态、补挂行各自节流）
@@ -283,7 +280,6 @@ const SCRIPTS := [
 	"res://tools/qa_w54_ending_yashan_cine_probe.gd",  # lane w54-ending「海上宋鬼」结局过场按崖山实际走的路出字（交粮 / 船慢 / 上船同去冲出与没冲出）
 	"res://tools/qa_w54_ending_place_probe.gd",  # lane w54-ending 终局港页匾与首进题签写结局收在的地方（崖山 / 旧避风澳；反向基照旧写港名）
 	"res://tools/qa_w54_tutorial_depart_note_probe.gd",  # lane w54-tutorial 出港验引那句带到海图探针（修验引那句随港页当帧换掉）
-	"res://tools/qa_w54_seaevents_ledger_probe.gd",  # lane w54-seaevents 海上遇事札记与实扣对得上探针（买路财拿不出钱：舱空不说搬走、零头货照实写）
 	"res://tools/qa_w54_seaevents_ledger_probe.gd",  # lane w54-seaevents 海上遇事札记与实扣对得上探针（买路财拿不出钱：舱空不说搬走、零头货照实写；逃走没甩脱写船体实扣）
 	"res://tools/qa_w54_seaevents_war_once_probe.gd",  # lane w54-seaevents 战时遭遇了结过的同一程不再来探针（征船已征 / 交船 / 抗征罚过不再征；哨船受检过不再拦）
 	"res://tools/qa_w54_seaevents_war_where_probe.gd",  # lane w54-seaevents 战时遭遇看船所在海域探针（博多外不征船、不撞元军哨船，傍过已降元的温州明州撞得上）
