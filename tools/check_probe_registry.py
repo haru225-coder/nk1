@@ -429,10 +429,10 @@ def head_selftest():
     c5_names = sorted(e[0] for e in EXEMPT if TOLL_RE.search(e[2]))
     want_c5 = []
     check(c5_names == want_c5,
-          f"E5 收尾闸断路径帐认格：TOLL_RE 认现网 22 行 EXEMPT 中「归后续 lane」字样行实点 {len(c5_names)} 支（{c5_names}）——打断 TOLL_RE 识别路径（字样变体）即先红")
+          f"E5 收尾闸断路径帐认格：TOLL_RE 认现网 {len(EXEMPT)} 行 EXEMPT 中「归后续 lane」字样行实点 {len(c5_names)} 支（{c5_names}）——打断 TOLL_RE 识别路径（字样变体）即先红")
     e5_clean = [(e[0], e[1], e[2]) for e in EXEMPT if not TOLL_RE.search(e[2])]
     check(all(not TOLL_RE.search(e[2]) for e in e5_clean),
-          f"E5 蓝对照：字样外行 22 行零不误伤（实点 0 队样）")
+          f"E5 蓝对照：字样外行 {len(e5_clean)} 行零不误伤（实点 0 队样）")
 
 
 # ── 案例数不写死（w53 待拍板 35，lane w53-13 定、lane w53-14 落）：注册表的 judge / green / red / expect 只写
