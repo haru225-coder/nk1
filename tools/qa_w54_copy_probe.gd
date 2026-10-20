@@ -8,7 +8,9 @@ extends SceneTree
 ##   三、上屏的间隔号用全角「・」：海图港签副题（MapView._port_sub，1255–1285 逐年按 sub_by_year 换）与章节卡题辞出处
 ##       （ChapterCard._read_data，四章）不写半角「·」——文楷里「·」只有 0.35 字宽，曾在「興化軍·莆田」「《论语·公冶长》」
 ##       里挤成一粒，同一张海图的险地名、同一张章节卡的年款用的却是「・」。
-## 静态一侧见 tools/check_w53_copy.py 钉 R / S 与钉 O（扩到数据）；本探针看的是岸带上真建出来的门、真进的页、真取的字。
+##   四、地名一处一个写法：澎湖港寺观页两条近侧旧迹（落漈、屿寨石垣）「细看一日」钮与市舶司「呈报」钮的悬停提示，
+##       地名都写澎湖（落漈曾写宋人的「彭湖与流求之间的水道」「彭湖以东水势渐低」，与并排那条、与页题「澎湖・寺观」两样）。
+## 静态一侧见 tools/check_w53_copy.py 钉 R / S / T 与钉 O（扩到数据）；本探针看的是岸带上真建出来的门、真进的页、真取的字。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_copy_probe.gd（经门锁跑）
 ## 判词：逐条「  ✓ / ✗ 判词」，末行 QA_W54_COPY_PROBE PASS / FAIL k；本进程 SCRIPT ERROR 也判红。
 
@@ -73,6 +75,8 @@ func _run() -> void:
 	await _sec_door_pages()
 	print("== 三、上屏的间隔号用全角「・」（海图港签副题、章节卡题辞出处）")
 	_sec_interpunct()
+	print("== 四、地名一处一个写法（澎湖港寺观页、市舶司呈报钮的悬停提示）")
+	await _sec_place_names()
 	_report()
 
 
@@ -104,13 +108,7 @@ func _sec_door_tips() -> void:
 ## 二：港里每扇门（今日开着的三扇与关着的几扇），门牌 = 进门后的页题「<港名>・<门牌>」
 func _sec_door_pages() -> void:
 	var gm: Node = root.get_node("/root/GameManager")
-	gs.from_dict({})
-	cal.from_dict({"year": 1262, "month": 5, "day": 10})
-	gs.money = 5000
-	# 走过序章的档：节拍幕都记过名，空档首抵泉州会演节拍幕、岸带不在屏上（同 qa_port_doors_probe）
-	gs.loaded_with_beats = true
-	for b in gm.port_beats_data.get("beats", []):
-		gs.beat_mark(str((b as Dictionary).get("entry", "")))
+	_stage_day(1262, 5, 10)
 	for port in ["quanzhou", "fuzhou"]:
 		gs.last_port = port
 		_main.load_scene(port)
@@ -160,6 +158,57 @@ func _sec_interpunct() -> void:
 		card.free()
 		_check(src != "" and src.find(half) < 0 and year.find(half) < 0,
 			"第%d章章节卡 出处「%s」、年款「%s」无半角「·」" % [n, src, year])
+
+
+## 四：勘见「落漈」的地点与史钩写澎湖——澎湖港寺观页与并排的「屿寨石垣」、页题同字；记入册后市舶司呈报钮也是
+func _sec_place_names() -> void:
+	_stage_day(1262, 5, 10)
+	gs.last_port = "penghu"
+	_main.load_scene("penghu_temple")
+	await process_frame
+	var page := str(_main.scene_title.text)
+	var tips := _chip_tips("细看一日")
+	var lou := ""
+	for t in tips:
+		if str(t).find("水趋下而不回") >= 0:
+			lou = str(t)
+	_check(tips.size() >= 2 and lou != "", "%s 页有落漈与另一条未勘旧迹（细看一日钮 %d 枚）" % [page, tips.size()])
+	_check(page.begins_with("澎湖") and lou.find("澎湖与流求之间的水道") >= 0 and lou.find("澎湖以东") >= 0,
+		"落漈的细看提示写澎湖（「%s」）" % lou.replace("\n", "／").left(40))
+	_check(not _any_has(tips, "彭湖"), "%s 页的细看提示里没有「彭湖」" % page)
+	gs.record_discovery("heishui_gou")
+	gs.last_port = "quanzhou"
+	_main.load_scene("quanzhou_yamen")
+	await process_frame
+	var rep := _chip_tips("呈报")
+	_check(rep.size() == 1 and str(rep[0]).find("澎湖与流求之间的水道") >= 0 and not _any_has(rep, "彭湖"),
+		"记入册后市舶司「呈报」钮的悬停提示写澎湖（%s）" % [rep])
+
+
+## 树里字为 text 的钮（没在删的）各自的悬停提示，按树序
+func _chip_tips(text: String) -> Array:
+	var out := []
+	for b in _main.find_children("*", "Button", true, false):
+		if (b as Button).text == text and not (b as Node).is_queued_for_deletion():
+			out.append((b as Button).tooltip_text)
+	return out
+
+
+func _any_has(list: Array, needle: String) -> bool:
+	for s in list:
+		if str(s).find(needle) >= 0:
+			return true
+	return false
+
+
+## 平常一日：空档、钱 5000；走过序章的档——节拍幕都记过名（空档首抵泉州会演节拍幕、岸带不在屏上，同 qa_port_doors_probe）
+func _stage_day(y: int, m: int, d: int) -> void:
+	gs.from_dict({})
+	cal.from_dict({"year": y, "month": m, "day": d})
+	gs.money = 5000
+	gs.loaded_with_beats = true
+	for b in root.get_node("/root/GameManager").port_beats_data.get("beats", []):
+		gs.beat_mark(str((b as Dictionary).get("entry", "")))
 
 
 ## 岸带上的门：[门牌, 悬停提示]，今日开着的（ShoreDoors）在前、关着的（ShoreShut）在后，各按树序

@@ -83,6 +83,10 @@
      点进去页题是「泉州・住处」，悬停「下处歇息」、寺观「拓纸带回住处」也都叫住处——同一处地方门上一个叫法、页上一个叫法。
      九门每扇的门牌须有同名的进门页题（scripts 里 scene_title.text = "%s・<门牌>"）；scenes.json 港景 facilities 里同 id 的
      门牌与 GENERIC_FACILITIES 同字。兴化那扇住处门进的是玉湖陈宅（自家祖宅，页题照实写），门牌仍叫住处。
+  T. 地名一处一个写法（w54-copy）：港名、港景、勘见「屿寨石垣」都写澎湖，勘见「落漈」的地点与史钩却写宋人的「彭湖」
+     ——澎湖港寺观页两条并排，市舶司呈报钮的悬停提示上屏的就是这两句。PLACE_VARIANTS 左列在 gd 玩家串与游戏读的数据档
+     上屏文本值里出现即红；海图是宋式旧题签（繁体旧字形、按宋人叫法：图上「彭湖」「慶元」，见 docs/海图重制设计），
+     chart_labels.json 与 ports.json 各港的 chart.* 照宋人写，不比。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -207,6 +211,11 @@ PAGE_TITLE_RE = re.compile(r'scene_title\.text = "%s・([^"%]+)"')
 SCENES_JSON = "data/scenes.json"
 # 防沉默绿：这两扇门必须被比到（GENERIC_FACILITIES 写法改了、正则抓空时判红，不当绿）。
 DOOR_PAGE_MUST = ("city_residence", "city_market")
+
+# ═══ 钉 T：地名一处一个写法（w54-copy）。(异写, 港名与别处上屏文字的写法)；海图宋式旧题签照宋人写，不比。
+PLACE_VARIANTS = (("彭湖", "澎湖"),)
+CHART_LABEL_JSON = "chart_labels.json"
+CHART_PORT_KEY = "/chart/"
 
 # ═══ 钉 K：札记写的货损成数 = 同一函数里 Fleet.lose_cargo_ratio 的字面实参。
 CARGO_FRAC_RE = re.compile(r"半个?货舱|半舱|一半的?货|([一二两三四五六七八九十])成的?货")
@@ -562,6 +571,7 @@ def _scan_gd_strings(cmap):
                 _check_dangling_sign(lit, tag)
                 _check_delta_note(lit, tag, DELTA_PAREN_SEEN)
                 _check_interpunct(lit, tag)
+                _check_place_variants(lit, tag)
                 _check_glyphs(lit, tag, cmap)
                 if rel.replace(os.sep, "/").startswith(COMBAT_GD_PREFIXES):
                     _check_exclaim(lit, tag)
@@ -916,12 +926,8 @@ def _game_data_files():
     return out
 
 
-def _scan_data_interpunct():
-    """钉 O 扩到数据：游戏读的数据档上屏文本值不写半角「·」（/meta 与 GLYPH_SKIP_KEYS 跳过；人物原稿不读）。"""
-    files = _game_data_files()
-    for must in GAME_DATA_MUST:
-        if must not in files:
-            FAILS.append(f"data/{must}: 钉 O 认不出它是游戏读的数据档——scripts 里 res://data/ 的引用写法改了")
+def _game_data_texts(files):
+    """files 里各档上屏的文本值：yield (档名, 路径, 文本)。/meta 与 GLYPH_SKIP_KEYS 跳过；人物原稿不读。"""
     codex = os.path.basename(CODEX_JSON)
     for f in sorted(files):
         if f.startswith("characters") and f != codex:
@@ -932,7 +938,31 @@ def _scan_data_interpunct():
             continue
         for path, key, text in _walk_json_strings(d):
             if key not in GLYPH_SKIP_KEYS and not path.startswith("/meta"):
-                _check_interpunct(text, f"data/{f}:{path}")
+                yield f, path, text
+
+
+def _chart_layer(f, path):
+    """海图宋式旧题签：chart_labels.json 整份与 ports.json 各港的 chart.*（图上主名 / 小字）。"""
+    return f == CHART_LABEL_JSON or (f == "ports.json" and CHART_PORT_KEY in path)
+
+
+def _scan_game_data():
+    """钉 O 扩到数据、钉 T：游戏读的数据档上屏文本值不写半角「·」；地名不写异写（海图宋式题签除外）。"""
+    files = _game_data_files()
+    for must in GAME_DATA_MUST:
+        if must not in files:
+            FAILS.append(f"data/{must}: 钉 O / T 认不出它是游戏读的数据档——scripts 里 res://data/ 的引用写法改了")
+    for f, path, text in _game_data_texts(files):
+        tag = f"data/{f}:{path}"
+        _check_interpunct(text, tag)
+        if not _chart_layer(f, path):
+            _check_place_variants(text, tag)
+
+
+def _check_place_variants(text, tag):
+    for bad, good in PLACE_VARIANTS:
+        if bad in text:
+            FAILS.append(f"{tag}: 地名写成「{bad}」——港名与别处上屏文字都写「{good}」（只有海图宋式题签照宋人写）：{text[:48]}")
 
 
 def _check_role_hints(roles, crew_src, game_src, tag):
@@ -1070,6 +1100,26 @@ def _self_test_door_pages():
     finally:
         FAILS.clear()
         FAILS.extend(saved)
+    return bad
+
+
+def _self_test_place_variants():
+    """钉 T 自检：上屏文字写「彭湖」须判红、写「澎湖」须判绿；海图题签（chart_labels / ports 的 chart.*）认作宋式不比。"""
+    bad = []
+    saved = FAILS[:]
+    try:
+        for text, want_red in (("彭湖与流求之间的水道", True), ("澎湖与流求之间的水道", False)):
+            FAILS.clear()
+            _check_place_variants(text, "self")
+            if bool(FAILS) != want_red:
+                bad.append(f"钉 T 自检：「{text}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
+    for f, path, want in (("ports.json", "/ports[6]/chart/label", True), (CHART_LABEL_JSON, "/labels[11]/text", True),
+                          ("ports.json", "/ports[6]/name", False), ("discoveries.json", "/discoveries[2]/location", False)):
+        if _chart_layer(f, path) != want:
+            bad.append(f"钉 T 自检：{f}:{path} 认作海图题签 {not want}，应为 {want}")
     return bad
 
 
@@ -1363,7 +1413,7 @@ def main():
     if glyph_fails:
         cmap = None
     self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + _self_test_delta_note() + _self_test_interpunct() + _self_test_event_supply() + _self_test_sea_fame_log() + glyph_fails
-    self_fails += _self_test_door_tips() + _self_test_door_pages()
+    self_fails += _self_test_door_tips() + _self_test_door_pages() + _self_test_place_variants()
     _scan_gd_strings(cmap)
     _scan_json_text()
     _scan_data_glyphs(cmap)
@@ -1379,7 +1429,7 @@ def main():
     _scan_role_hints()
     _scan_delta_paren_must()
     _scan_interpunct_bare()
-    _scan_data_interpunct()
+    _scan_game_data()
     _scan_door_tips()
     _scan_door_pages()
     all_fails = self_fails + FAILS
