@@ -540,7 +540,7 @@ func _run() -> void:
 			# 没带 --fixed-fps 时炮弹飞行、限时两散与甩脱的计时跟着墙钟走，漂移只记不判（WINRATE 行照报）。
 			drift_all += drift
 			if drift > 0:
-				print("  漂移注记 %s：%d/%d 场复跑翻盘（%s）" % [cid, drift, n,
+				print("  漂移注记 %s：%d/%d 场复跑对不上（签名比到收场明细与战斗秒数，不一定是胜负翻了；%s）" % [cid, drift, n,
 					"帧步一定仍漂，有随机源没钉住" if fixed else "没带 --fixed-fps，帧步跟墙钟走"])
 			# 逐配置末行（多段对阵时每段都打——主控按行收数）
 			var sd_names := PackedStringArray()
