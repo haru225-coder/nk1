@@ -2155,7 +2155,7 @@ func _on_pay_pirates() -> void:
 		var lost_str := ""
 		for gid in lost.keys():
 			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
-		_log(_ink(UiTheme.CINNABAR, "拿不出买路钱，他们自己动手搬走了三成货。%s" % lost_str))
+		_log(_ink(UiTheme.CINNABAR, ("拿不出买路钱，他们自己动手搬走了三成货。%s" % lost_str) if not lost.is_empty() else "拿不出买路钱，舱里也是空的。他们骂了几句，掉头走了。"))  # 空舱搬不着东西，不写三成（lane w54-voyage）
 	_refresh_status()
 	_after_combat()
 
