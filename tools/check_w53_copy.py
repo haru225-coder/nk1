@@ -72,6 +72,10 @@
      w53-13 定例 60：札记与记事成句一律写汉字「名声加 N / 名声减 N」（钮文括注的「（名声 +6）」不在此例）——
      修埠、赴试、呈报、委办都照此一写，海图不再例外。SeaChart.gd 里改名声（GameState.fame += / -= N、add_fame(N)）的
      函数须在同一函数的玩家串里写「名声加 N / 名声减 N」= 实数；add_fame 按回执写的「名声加 %d」（或「减」）也算。
+  R. 门牌悬停提示里的专名与门牌同字（w54-copy）：守城那天兴化岸带上的「囊山」门，悬停提示曾写「南山下设伏。」——
+     音近误字，门牌、战报题「囊山・第N阵」、元军行事「前锋到囊山」都写囊山。Main.gd 的 DOOR_TIP 里 siege_ / special_
+     打头的门，门牌是专名的（囊山、福州尼寺、涵江海口、崖山……），提示须原字写出门牌（「・」不计）；门牌是城中通名的
+     （九门与守城借用的衙门 / 市场）不比——「市集屯粮」说的就是市场门。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -176,6 +180,18 @@ SUPPLY_CUT_MUST = ("载人同行", "分些水粮")
 SEA_FAME_RE = re.compile(r"GameState\.(?:fame ([+-])= (\d+)|add_fame\((-?\d+)\))")
 # 防沉默绿：这几处改名声的函数必须被比到（写法改了、正则抓空时判红，不当绿）。
 SEA_FAME_MUST = ("_on_refugee_share", "_on_battle_result", "_on_requisition_flee")
+
+# ═══ 钉 R：门牌是专名的守城 / 剧情门，悬停提示（Main.DOOR_TIP）须原字写出门牌（w54-copy）。
+DOOR_GD = "scripts/Main.gd"
+DOOR_TIP_RE = re.compile(r"^const DOOR_TIP := \{\n(.*?)^\}", re.M | re.S)
+DOOR_TIP_ROW_RE = re.compile(r'^\t"(\w+)": "((?:[^"\\]|\\.)*)",', re.M)
+CARD_CONST_RE = re.compile(r'^const (CARD_\w+) := "(\w+)"', re.M)
+# 九门（GENERIC_FACILITIES 的 "city_…"）与守城 / 剧情门（_siege_cards / _special_cards 的 CARD_…）的门牌
+CARD_TITLE_RE = re.compile(r'"id":\s*(CARD_\w+|"\w+"),\s*"title":\s*"((?:[^"\\]|\\.)*)"')
+# 守城借用的城中通名门：与九门一样是通名，提示不必复述门牌
+TIP_COMMON_TITLES = ("衙门", "市场")
+# 防沉默绿：这两扇门的提示必须被比到（DOOR_TIP 或门牌写法改了、正则抓空时判红，不当绿）。
+DOOR_TIP_MUST = ("siege_nangshan", "special_yashan")
 
 # ═══ 钉 K：札记写的货损成数 = 同一函数里 Fleet.lose_cargo_ratio 的字面实参。
 CARGO_FRAC_RE = re.compile(r"半个?货舱|半舱|一半的?货|([一二两三四五六七八九十])成的?货")
@@ -465,6 +481,27 @@ def _check_sea_fame_log(src, rel):
             lits = [lit for lit, _ in _gd_strings_only(body)]
             if not any(w in lit for w in want for lit in lits):
                 FAILS.append(f"{rel}: {name} 改了名声（{'+' if plus else '−'}{n}），札记没写「{want[0]}」——名声变了，记事里看不出为何")
+    return seen
+
+
+def _check_door_tips(src, rel):
+    """钉 R：DOOR_TIP 里 siege_ / special_ 打头的门，门牌是专名的，提示须原字写出门牌（「・」不计）；
+    门牌是通名的（九门的门牌、TIP_COMMON_TITLES）不比。返回比过的门 key（供防沉默绿）。"""
+    m = DOOR_TIP_RE.search(src)
+    tips = dict(DOOR_TIP_ROW_RE.findall(m.group(1))) if m else {}
+    consts = dict(CARD_CONST_RE.findall(src))
+    titles = {}
+    for ref, title in CARD_TITLE_RE.findall(src):
+        titles.setdefault(consts.get(ref, ref.strip('"')).replace("city_", "", 1), title)
+    common = {t for k, t in titles.items() if not k.startswith(("siege_", "special_"))} | set(TIP_COMMON_TITLES)
+    seen = []
+    for key, tip in tips.items():
+        title = titles.get(key)
+        if not key.startswith(("siege_", "special_")) or title is None or title in common:
+            continue
+        seen.append(key)
+        if title.replace("・", "") not in tip.replace("・", ""):
+            FAILS.append(f"{rel}: DOOR_TIP「{key}」的悬停提示「{tip}」没写门牌「{title}」——提示里的地名要与门牌同字")
     return seen
 
 
@@ -931,6 +968,28 @@ def _self_test_sea_fame_log():
     return bad
 
 
+def _self_test_door_tips():
+    """钉 R 自检：专名门牌的提示写了别的字须判红；原字写出（「・」不计）、通名门不复述门牌须判绿。"""
+    tpl = ('const GENERIC_FACILITIES := [\n\t{"id": "city_market", "title": "牙行", "subtitle": "过秤・买卖"},\n]\n'
+           'const DOOR_TIP := {\n\t"market": "牙人过秤开票。",\n\t"siege_grain": "市集屯粮。",\n\t"%s": "%s",\n}\n'
+           'const CARD_SIEGE_GRAIN := "siege_grain"\nconst CARD_X := "%s"\n\n'
+           'func _cards() -> Array:\n\treturn [{"id": CARD_SIEGE_GRAIN, "title": "市场"}, {"id": CARD_X, "title": "%s"}]\n')
+    cases = ((("siege_nangshan", "南山下设伏。", "囊山"), True), (("siege_nangshan", "囊山下设伏。", "囊山"), False),
+             (("special_resign_1275", "临安辞呈批语。", "临安・辞呈批语"), False))
+    bad = []
+    saved = FAILS[:]
+    try:
+        for (key, tip, title), want_red in cases:
+            FAILS.clear()
+            seen = _check_door_tips(tpl % (key, tip, key, title), "self")
+            if seen != [key] or bool(FAILS) != want_red:
+                bad.append(f"钉 R 自检：门牌「{title}」提示「{tip}」判{'红' if FAILS else '绿'}（比过 {seen}），应判{'红' if want_red else '绿'}、只比这一扇")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
+    return bad
+
+
 def _self_test_cargo_frac():
     """钉 K 自检：实扣 0.3、札记写「半个货舱」「两成货」须判红，写「三成货」须判绿；不调 lose_cargo_ratio 的函数不比。"""
     bad = []
@@ -1100,6 +1159,14 @@ def _scan_sea_fame_log():
             FAILS.append(f"{rel}: 钉 Q 没比到 {must} 的名声增减——改名声的写法变了")
 
 
+def _scan_door_tips():
+    src = open(os.path.join(ROOT, DOOR_GD), encoding="utf-8").read()
+    seen = _check_door_tips(src, DOOR_GD)
+    for must in DOOR_TIP_MUST:
+        if must not in seen:
+            FAILS.append(f"{DOOR_GD}: 钉 R 没比到「{must}」门的悬停提示——DOOR_TIP 或门牌的写法改了")
+
+
 def _scan_cargo_frac():
     seen = set()
     for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
@@ -1195,6 +1262,7 @@ def main():
     if glyph_fails:
         cmap = None
     self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + _self_test_delta_note() + _self_test_interpunct() + _self_test_event_supply() + _self_test_sea_fame_log() + glyph_fails
+    self_fails += _self_test_door_tips()
     _scan_gd_strings(cmap)
     _scan_json_text()
     _scan_data_glyphs(cmap)
@@ -1210,6 +1278,7 @@ def main():
     _scan_role_hints()
     _scan_delta_paren_must()
     _scan_interpunct_bare()
+    _scan_door_tips()
     all_fails = self_fails + FAILS
     if all_fails:
         print("结果：%d 项问题" % len(all_fails))

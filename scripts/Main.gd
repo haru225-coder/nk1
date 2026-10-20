@@ -240,7 +240,7 @@ const DOOR_TIP := {
 	"siege_grain": "市集屯粮。粮即守城日。",
 	"siege_wall": "船屋料改修城墙。",
 	"siege_envoy": "城下使者求见。",
-	"siege_nangshan": "南山下设伏。",
+	"siege_nangshan": "囊山下设伏。",
 	"siege_nunnery": "福州尼寺。母亲与璥儿在那里。",
 	"special_hanjiang_escape": "涵江海口旧避风澳。",
 	"special_resign_1275": "临安辞呈批语。",
