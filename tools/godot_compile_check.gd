@@ -281,7 +281,6 @@ const SCRIPTS := [
 	"res://tools/qa_w54_ending_yashan_cine_probe.gd",  # lane w54-ending「海上宋鬼」结局过场按崖山实际走的路出字（交粮 / 船慢 / 上船同去冲出与没冲出）
 	"res://tools/qa_w54_ending_place_probe.gd",  # lane w54-ending 终局港页匾与首进题签写结局收在的地方（崖山 / 旧避风澳；反向基照旧写港名）
 	"res://tools/qa_w54_tutorial_depart_note_probe.gd",  # lane w54-tutorial 出港验引那句带到海图探针（修验引那句随港页当帧换掉）
-	"res://tools/qa_w54_seaevents_ledger_probe.gd",  # lane w54-seaevents 海上遇事札记与实扣对得上探针（买路财拿不出钱：舱空不说搬走、零头货照实写；逃走没甩脱写船体实扣）
 	"res://tools/qa_w54_seaevents_ledger_probe.gd",  # lane w54-seaevents 海上遇事札记与实扣对得上探针（买路财拿不出钱：舱空不说搬走、零头货照实写；逃走没甩脱写船体实扣；花钱的钮写钱数）
 	"res://tools/qa_w54_seaevents_war_once_probe.gd",  # lane w54-seaevents 战时遭遇了结过的同一程不再来探针（征船已征 / 交船 / 抗征罚过不再征；哨船受检过不再拦）
 	"res://tools/qa_w54_seaevents_war_where_probe.gd",  # lane w54-seaevents 战时遭遇看船所在海域探针（博多外不征船、不撞元军哨船，傍过已降元的温州明州撞得上）
@@ -302,9 +301,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_seaevents_rumor_probe.gd",  # lane w54-seaevents 海上相逢只传卖得了货的港探针（围城闭门、封港的港不传行情）
 	"res://tools/qa_w54_seaevents_shore_probe.gd",  # lane w54-seaevents 同一处岸影一程只露一回面探针（不理会之后同一程不再重露）
 	"res://tools/qa_w54_seaevents_variants_probe.gd",  # lane w54-seaevents 海上遇事变体（开关 sea_event_variants）探针（关 = 逐字原句、只换字不动骰序）
-	"res://tools/qa_w54_gates_zero_case_guard_probe.gd",  # lane w54-gates 零案例守卫探针（主控补登记）
 	"res://tools/qa_w54_combatai_spawn_probe.gd",  # lane w54-combatai 海战敌阵摆位探针（多条敌阵按全场序号摆圈，不各从 0 度起叠在一处）
-	"res://tools/qa_w54_rep_retitle_probe.gd",  # lane w54-rep 名声跨过职衔门槛时札记写改题（委办交清 / 毁约 / 逾期）
 	"res://tools/qa_w54_rep_retitle_probe.gd",  # lane w54-rep 名声跨过职衔门槛时札记写改题（委办交清 / 毁约 / 逾期、海上征船 / 难民）
 	"res://tools/qa_w54_chartui_name_band_probe.gd",  # lane w54-chartui 海图港名摆位专项探针（八处候选，先不压东西、再少出露出的图带）
 ]
