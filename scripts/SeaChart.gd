@@ -2674,6 +2674,7 @@ func _log_departure() -> void:
 	if note != "":
 		_latest_note = _plain_note(note)
 		_refresh_strip()
+	_tutorial_chart()
 
 
 ## lane w54-seaevents：海图上「扬帆逃走」没甩脱（_on_flee_pirates，海寇与元军哨船两面共用）那一句。原先只写「未能甩脱。被追上跳帮，
@@ -2686,7 +2687,6 @@ func _flee_fail_note(lost_str: String, hull_cut: float) -> String:
 	return s
 
 
-	_tutorial_chart()
 
 
 # ── 新手上手小笺（lane w54-tutorial，scripts/ui/TutorialNotes.gd；只给本机没有存档时新开的一局，开关 tutorial_notes）──
