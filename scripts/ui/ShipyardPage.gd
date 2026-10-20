@@ -103,7 +103,7 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 	var grain_price := Economy.buy_price(port_id, "grain") if Economy.is_traded(port_id, "grain") else 12
 	var water_price := 1
 	var supply: VBoxContainer = main._slip_body()
-	main._slip_title(supply, "补给", "水 %d　粮 %d　每日耗 %d" % [
+	main._slip_title(supply, "补给", "水每份 %d 钱　粮每份 %d 钱　每日各耗 %d 份" % [  # 两个数是单价：写明「每份」「钱」，不读作存量（lane w54-tutorial）
 		water_price, grain_price, Fleet.daily_supply_use(),
 	])
 	var supply_row: HFlowContainer = main._slip_row(supply)

@@ -296,6 +296,7 @@ const SCRIPTS := [
 	"res://scripts/ui/TutorialNotes.gd",  # lane w54-tutorial 新手上手小笺（只给本机没有存档时新开的一局；借讲解小笺那一层出，开关 tutorial_notes）
 	"res://tools/qa_w54_tutorial_notes_probe.gd",  # lane w54-tutorial 新手上手小笺专项探针（表与文案 / 谁看得到 / 港页与牙行 / 海图与遇盗 / 老玩家不出）
 	"res://tools/qa_w54_tutorial_unsailed_permit_probe.gd",  # lane w54-tutorial 海图没发舶就回港货引还在手探针（修看风放行即销引）
+	"res://tools/qa_w54_tutorial_supply_line_probe.gd",  # lane w54-tutorial 船屋「补给」那一行写明单价与日耗单位探针
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
