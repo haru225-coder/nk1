@@ -86,16 +86,18 @@ static func _sec(name: String) -> Dictionary:
 
 # ── 输赢看数 ──────────────────────────────────────────
 
-## 本战可押的船（夺来的、受降的）：win 时 data.fates 里 fate ∈ {boarded, struck} 的船种名单（逐艘一项）。
+## 本战可押的船（夺来的、接舷收下的受降船）：win 时 data.fates 里 fate ∈ {boarded, struck} 的船种名单（逐艘一项）。
 ## WorldMap 夺船走 Fleet.add_ship 原路、收战已在册——这里的「押船」不是再夺一次，是派不派人看守：
 ## 人手够就留在册（什么都不动），不够就漂走（从名册摘掉）。fled 或 lose 时夺船账照旧不走这里。
+## 士气收场时降了、没接舷的船（WorldMap._battle_fates 标 afloat）不在船籍，不算可押的船：算进去的话
+## 漂走那几艘从名册尾摘，摘的是自家的船（lane w54-hunt）。
 static func _prize_ships(data: Dictionary) -> Array:
 	var out: Array = []
 	for entry in _Letterbox.fates_of(data):
 		if not entry is Dictionary:
 			continue
 		var fate := str(entry.get("fate", ""))
-		if fate != "boarded" and fate != "struck":
+		if (fate != "boarded" and fate != "struck") or bool(entry.get("afloat", false)):
 			continue
 		var n: int = maxi(1, int(entry.get("count", 1)))
 		for _i in n:

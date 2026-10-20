@@ -1133,7 +1133,7 @@ func _battle_fates() -> Array:
 			if sheet == null:
 				continue
 			if sheet.has_struck():
-				out.append({"type": _node_str(child, "ship_type", ""), "fate": "struck"})
+				out.append({"type": _node_str(child, "ship_type", ""), "fate": "struck", "afloat": true})  # lane w54-hunt：降了没接舷，船还在海上、不进船籍（押船不算它）
 			elif sheet.escaped:
 				out.append({"type": _node_str(child, "ship_type", ""), "fate": "fled"})
 	return out
