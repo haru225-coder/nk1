@@ -156,6 +156,7 @@ EXEMPT = [
     ("qa_w54_audio_sea_probe.gd", "lane-w54-audio", "海战补挂的声专项探针（火船点着 / 起火 / 火药舱炸 / 桅倒 / 沉船 / 降幡 / 钩索落空 / 护航接舷 / 号令 / 重弹落水十行标 added、各带 gap_ms；开关 sfx_cues 关时十行记 off、原先那几行照响；真起海战逐处走真路各记一笔、撤令与一排矢落水不响；补挂行节流不抢原先的锁，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_audio_siege_probe.gd", "lane-w54-audio", "守城补挂的声专项探针（城门 / 囊山胜负 / 拆船料 / 城破五行标 added、胜负两行鼓加磬两层；真起 Main 海口入城卡、旧档自动入城、关城门落闸各一声城门，囊山设伏与出海劫粮道记胜负两层，拆船料一声，城破两层；开关 sfx_cues 关同一处记 off、账照旧，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_audio_voices_probe.gd", "lane-w54-audio", "同一帧连要几声声部上限照样作数专项探针（同一刻七样不同的声前六响第七记 voices、按声长让出声部、探针钟往回拨不卡死；带窗口那段同一帧只建六个播放器、放完都释放，回退即红），headless 秒级（第四段要 DISPLAY=:2 带窗口），随本 lane 落地验过留档"),
+    ("qa_w54_combatai_spawn_probe.gd", "lane-w54-combatai", "海战敌阵摆位探针（真 WorldMap 开战那一帧读敌船落位：闯封锁海鹘一 + 快船二六个种子三艘两两相距 ≥ 600 px、崖山海鹘一 + 快船一三个种子两艘相距 ≥ 1000、只一条的阵第 k 艘落在 TAU·k/N ±0.25 rad 与改前同式，回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_copy_probe.gd", "lane-w54-copy", "w54 文案一致性专项探针（门牌悬停提示的地名与门牌同字等，静态一侧是 check_w53_copy 的钉；一段钉一条、回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_w54_econ_peak_probe.gd", "lane-w54-econ", "章节本钱按现银减欠款记专项探针（真挣两千在船屋借满三千峰值不动且不晋升、当场还清峰值不动、无欠款照旧晋升、欠着款挣钱按净值涨、花钱结息不动峰值，回退即红），headless 秒级，动 GameState.add_money / 赊贷 / 章节本钱时加跑"),
     ("qa_w54_econ_permit_probe.gd", "lane-w54-econ", "货引按出港时的舱货抽解专项探针（空舱请领再装货出港补足、装好货再请领不补且札记逐字照旧、卖掉不退、补不起不放行货引舱货都在、旧档的货引照旧放行、permit_base 存档与坏值、市舶司页货引卡、真按出港补不起留港，回退即红），headless 秒级，动货引 / 抽解 / 出港验放时加跑"),

@@ -891,7 +891,7 @@ func _spawn_enemy(type_id: String, count: int, pb: Dictionary, sprite_id := "") 
 	var type_name: String = d.get("name", "敌船")
 	for i in range(count):
 		var p := pirate_scene.instantiate()
-		var angle := TAU * float(i) / float(maxi(count, 1)) + randf_range(-0.25, 0.25)
+		var angle := _spawn_angle(i, count, pb) + randf_range(-0.25, 0.25)  # lane w54-combatai：按全场序号摆圈，多条敌阵不各从 0 度起叠在一处
 		var dist := randf_range(COMBAT_SPAWN_DIST_MIN, COMBAT_SPAWN_DIST_MAX)
 		p.position = ship.position + Vector2(cos(angle), sin(angle)) * dist
 		p.target = ship
@@ -1903,3 +1903,19 @@ func _fit_fleet_status(full: String, cargo_bits: PackedStringArray) -> void:
 	fleet_status.text = "金钱　%d　　货舱　%d 样 %d 件" % [GameState.money, cargo_bits.size(), pieces]
 	fleet_status.tooltip_text = "货舱　" + "　".join(cargo_bits)
 	fleet_status.mouse_filter = Control.MOUSE_FILTER_PASS
+
+
+# ══ 敌阵摆位（lane w54-combatai）══════════════════════════════════
+## _spawn_enemy 里这一条的第 i 艘（这一条共 count 艘）落在一圈上的方位角（不含 ±0.25 rad 抖动）：按全场序号 total_enemies
+## 在 N 等分的一圈上摆，N = pending_battle.enemy 各条 count 之和。原先按条内序号 TAU·i / count 摆，写成两条的阵
+## （闯封锁海鹘一 + 快船二、崖山海鹘一 + 快船一 / 二）每条都从 0 度起，海鹘与头一艘快船落在同一处，开打就互撞、互相挡炮。
+## 只一条的阵全场序号就是条内序号、N 就是 count，摆位与原先一字不差；pending_battle.enemy 对不上
+## （调用方另行直调 _spawn_enemy 添船）就照原式按条内序号摆。不掷骰，全局随机流取数不变。
+func _spawn_angle(i: int, count: int, pb: Dictionary) -> float:
+	var n := 0
+	for e in pb.get("enemy", []):
+		if e is Dictionary:
+			n += maxi(0, int((e as Dictionary).get("count", 1)))
+	if total_enemies >= n:
+		return TAU * float(i) / float(maxi(count, 1))
+	return TAU * float(total_enemies) / float(n)
