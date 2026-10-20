@@ -3,7 +3,8 @@ extends Node
 ##   ending_fade_key   结局过场收尾连按空格：本层黑幕退去那一截（CutscenePlayer 的 FADE）按键照吞，底下刚建好的「了结」册页不许被合上
 ##   ending_fade_click 同一窗口换成鼠标：点册页上的「记下这一纲」也不许点着——册页还没露脸（与上一路同一处修复）
 ##   outro_esc_curtain 自然收尾压黑途中按 Esc：黑幕从当前黑度接着压，不许先退回透明、画面亮回来再重新压黑（CutscenePlayer.skip）
-##   touch_one_step    触屏点一下只推一步：补全正在写的那句，不连带把下一句提上来（引擎另把触点模拟成一次左键）
+##   touch_one_step    点一下只推一步：补全正在写的那句，不连带把下一句提上来；再点一下才提下一句。鼠标 / 触屏 / 空格三路各走一遍
+##                     （触屏：引擎另把触点模拟成一次左键，不许两样各推一步；三路共用：CutscenePlayer._advance_input 补全即收手）
 ##   ut_click_scope    墨幕题签停拍时点一下只收本幕：底下刚换好的四方沙盘页，标题演出不被同一下点击补全（UiTransition._input）
 ## 必须带窗口、且不能用 -s 跑（-s 下 Cinematics.live() 恒假，Main 不放结局过场、不起墨幕）：
 ##   DISPLAY=:2 godot --path . res://tools/qa_w53_9_cutscene_input_probe.tscn
@@ -376,14 +377,15 @@ func _wait_mid_reveal(p: CutscenePlayer) -> Dictionary:
 	return {}
 
 
-## 「海上宋鬼」第 2 镜闪白入（0.8 秒），叙述 t=0.8 起逐字写约 1.3 秒：转场走完、字还在写，点一下应只补全这一句。
+## 「海上宋鬼」第 2 镜闪白入（0.8 秒），叙述 t=0.8 起逐字写约 1.3 秒、下一句 t=3.8：转场走完、字还在写，
+## 点一下应只补全这一句（已出句数不变）；再点一下才把下一句提上来（已出句数 +1），两下都不换镜。
 ## 引擎默认 emulate_mouse_from_touch：一次触点 = 一次 ScreenTouch + 一次模拟左键，两样都进 _input。
-## 先拿真鼠标左键做对照（只推一步），再换触屏点。
+## 鼠标左键、触屏、空格三路逐一走一遍：三路都落到 _advance_input，补全与提下一句并成一下时三路同红。
 func _case_touch_one_step() -> void:
 	Engine.time_scale = 0.5
 	var rows := PackedStringArray()
 	var ok := true
-	for how in ["mouse", "touch"]:
+	for how in ["mouse", "touch", "key"]:
 		var p := await _start_cs("ending_sea_ghost", 1)
 		var target := await _wait_mid_reveal(p)
 		if target.is_empty():
@@ -393,19 +395,30 @@ func _case_touch_one_step() -> void:
 			continue
 		var before := _started(p)
 		var idx := int(p.get("_idx"))
-		if how == "mouse":
-			_click(Vector2(640, 360))
-		else:
-			_tap(Vector2(640, 360))
-		await _frames(3)
+		await _poke(how)
 		var revealed: bool = target["node"].is_revealed()
 		var after := _started(p)
-		var one := revealed and after == before and int(p.get("_idx")) == idx
+		await _poke(how)
+		var after2 := _started(p)
+		var one := revealed and after == before and after2 == after + 1 and int(p.get("_idx")) == idx
 		ok = ok and one
-		rows.append("%s: 补全=%s 已出句 %d→%d 镜 %d→%d" % [how, revealed, before, after, idx, int(p.get("_idx"))])
+		rows.append("%s: 第一下补全=%s 已出句 %d→%d、第二下→%d 镜 %d→%d" % [how, revealed, before, after, after2, idx, int(p.get("_idx"))])
 		await _drain(p)
 	Engine.time_scale = 1.0
-	_verdict("touch_one_step", ok, "；".join(rows) + ("" if ok else "（应只补全正在写的一句，不连带提下一句）"))
+	_verdict("touch_one_step", ok, "；".join(rows) + ("" if ok else "（第一下应只补全正在写的一句、不连带提下一句；第二下才提下一句）"))
+
+
+## 点屏幕正中一下（鼠标左键 / 触屏）或按一下空格，再等三帧：事件下一帧开头才分发、提上来的句子当帧 _process 起笔，
+## 协程第二醒才看得见，第三醒留一帧余量
+func _poke(how: String) -> void:
+	match how:
+		"mouse":
+			_click(Vector2(640, 360))
+		"touch":
+			_tap(Vector2(640, 360))
+		_:
+			_key(KEY_SPACE)
+	await _frames(3)
 
 
 # ── 四、墨幕题签停拍点一下只收本幕 ─────────────────────

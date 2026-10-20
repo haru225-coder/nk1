@@ -1,9 +1,9 @@
 extends SceneTree
-## 过场播放器（scripts/cutscene/CutscenePlayer.gd）字幕推进探针（lane w53-9）：
-## 开镜后按真实输入把当前镜走完，逐拍记 _shot_dur 的变化——
-##   已修：下一句没出与补全互为同一拍，第一条字幕「未出场」只拍一拍就起；
-##   复现原形（红）：第一条字幕未出场时第一拍只补全、第二拍才起下一句，两拍 _shot_dur 都要动。
-## 反变形：验证「快跑完」与「跳镜」两条同族调用走原样推进（防改坏 _advance_input 的同时直接原判红）。
+## 过场播放器（scripts/cutscene/CutscenePlayer.gd）字幕推进探针（lane w53-9 立；w54-base 改回「补全 → 下一句」分两拍）：
+## 进第一镜后直接调 _advance_input 两拍，逐拍记镜号与 _shot_dur——
+##   拍一：第一条正在写，只补全它，_shot_dur 与镜号不动（补全与提前并成一拍即红：刚补全的那句来不及读）；
+##   拍二：没有句子在写了，才把第二条提前，_shot_dur 缩短、仍不跳镜（推进丢一拍即红）。
+## 真输入三路（鼠标 / 触屏 / 空格）走同一函数，见 qa_w53_9_cutscene_input_probe 的 touch_one_step。
 ## Run: DISPLAY=:2 godot --path . -s res://tools/qa_w53_9_cutscene_probe.gd  （headless 下同跑：CutscenePlayer headless 立即退场，
 ##  探针撞形态返回非零——验输入走真实 paint 底盘）
 ## 压帧自检：NK1_PROBE_SLOW_MS=300 DISPLAY=:2 godot --path . -s res://tools/qa_w53_9_cutscene_probe.gd
@@ -48,44 +48,53 @@ func _run() -> void:
 	_report()
 
 
-## 一等 _ready/_build_captions/_swap_fx/_prewarm 落定，再入拍。
+## 进第一镜（_phase 到 PLAY）的头一醒就入拍：进镜那一帧第一条（t=0.0，硬切镜无转场垫底）已起笔、还没写完。
+## 不先空等若干帧——压帧档下空等那几帧的游戏时间够把第一条写完，拍一就没有「正在写」的句子可补，两档结论不同。
 func _await_path_advance() -> void:
 	var p := Player.play(root, "qap_w53_9_path", "res://tools/qa_w53_9_cutscene_fixture.json")
 	if p == null:
 		_fails.append("探针过场未建：fixture/FIXTURE 未起")
 		return
-	for _i in range(30):
-		await process_frame
-		if not is_instance_valid(p) or not (p as Node).is_inside_tree():
-			break
-	if not is_instance_valid(p) or not (p as Node).is_inside_tree():
-		_fails.append("探针过场在 30 帧内退场（Play→Outro 空镜）：_shots/FIXTURE 未接住")
-		return
-	# 快进帧间到达 PLAY（Headless 则直接 DONE）
 	var t0 := Time.get_ticks_msec()
-	while is_instance_valid(p) and (p as Node).is_inside_tree() and int(p.get("_phase")) < 1 and Time.get_ticks_msec() - t0 < 2000:
+	while is_instance_valid(p) and (p as Node).is_inside_tree() and int(p.get("_phase")) < 1 and Time.get_ticks_msec() - t0 < 20000:
 		await process_frame
 	if not is_instance_valid(p) or not (p as Node).is_inside_tree():
-		_fails.append("探针过场没在 2 s 内至_PLAY")
+		_fails.append("探针过场没到 PLAY 就退场（Play→Outro 空镜）：_shots/FIXTURE 未接住")
 		return
 	var phase := int(p.get("_phase"))
 	if phase != 1: # Phase.PLAY == 1
-		print(TAG, "_SKIP_ADVNCE phase=", phase, "（headless 退场）")
-		_check(false, "输入推进走通：_phase == PLAY", "过场没到 PLAY（phase=%d）：fixture 路径被模仿" % phase)
+		_check(false, "输入推进走通：_phase == PLAY", "过场 20 s 墙钟内没到 PLAY（phase=%d）" % phase)
 		return
-	# 拍一：第一条字幕未出场（t = 0.0 不会被排入 floor），当前 _shot_dur=5.0；
-	# 已修：连点一律拍一拍，_shot_dur 应动；复现原形红：第一拍只补全、_shot_dur 不动
-	var before_dur: float = p.get("_shot_dur")
-	var before_idx: int = p.get("_idx")
+	# 拍一：第一条正在写、第二条（t=4.5）未出，_shot_dur=5.0——只补全第一条，_shot_dur 与镜号都不动
+	var writing := _writing(p)
+	if writing.is_empty():
+		_check(false, "拍一前第一条字幕正在写", "进镜后头一醒没有正在写的字幕：拍一判不了")
+		return
+	var idx: int = p.get("_idx")
+	var dur0: float = p.get("_shot_dur")
 	p._advance_input()
-	var after_dur: float = p.get("_shot_dur")
-	var after_idx: int = p.get("_idx")
-	_check(after_idx == before_idx,
-		"第一拍不跳镜",
-		"第一拍走了镜 %d → %d（轨线被改）" % [before_idx, after_idx])
-	_check(after_dur < before_dur,
-		"第一拍下一句没出的当拍已提前 _shot_dur %.2f → %.2f" % [before_dur, after_dur],
-		"第一拍只补全未提前 _shot_dur（%.2f → %.2f）：原形的「补全与提前各占一拍」在转场里连点多吃一拍" % [before_dur, after_dur])
+	var dur1: float = p.get("_shot_dur")
+	var done: bool = writing["node"].is_revealed()
+	_check(int(p.get("_idx")) == idx and done,
+		"第一拍补全正在写的第一条、不跳镜",
+		"第一拍没补全第一条或走了镜（补全=%s 镜 %d → %d）" % [done, idx, int(p.get("_idx"))])
+	_check(dur1 == dur0,
+		"第一拍只补全、不提前下一句 _shot_dur %.2f → %.2f" % [dur0, dur1],
+		"第一拍连带提前了下一句 _shot_dur %.2f → %.2f：补全与提前并成一拍，刚补全的那句来不及读" % [dur0, dur1])
+	# 拍二：已没有句子在写，这一拍才把第二条提前（_shot_dur 缩短），仍不跳镜
+	p._advance_input()
+	var dur2: float = p.get("_shot_dur")
+	_check(int(p.get("_idx")) == idx and dur2 < dur1,
+		"第二拍才提前下一句 _shot_dur %.2f → %.2f、不跳镜" % [dur1, dur2],
+		"第二拍没提前下一句 _shot_dur %.2f → %.2f 镜 %d → %d：推进丢了一拍" % [dur1, dur2, idx, int(p.get("_idx"))])
+
+
+## 正在逐字写的那句（已出场、没写完）；没有返回 {}
+func _writing(p: Node) -> Dictionary:
+	for e in (p.get("_cap_live") as Array):
+		if bool(e["started"]) and not e["node"].is_revealed():
+			return e
+	return {}
 
 
 func _probe_from_black() -> void:

@@ -496,13 +496,13 @@ func _advance_input() -> void:
 	var next_t_rel := INF
 	for e in _cap_live:
 		if not e["started"]:
-			# 下一句没出的与提前一拍合一，连点不再多吃一拍（lane-w53-9：ink 转场 2.6 s 里两键才走一步）
 			next_t_rel = minf(next_t_rel, float(e["t"]) - _shot_t)
 			continue
 		if not e["node"].is_revealed():
 			e["node"].finish_reveal()
 			revealing = true
-	if revealing and next_t_rel >= INF:
+	# 有句在写：这一下只补全它，下一句留给下一下（「补全 → 下一句」分两拍；并成一下的话刚补全的那句来不及读，下一句已在写）
+	if revealing:
 		return
 	if next_t_rel < INF:
 		var shift := maxf(next_t_rel, 0.0)
