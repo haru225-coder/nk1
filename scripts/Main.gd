@@ -4440,7 +4440,7 @@ func _siege_muster() -> void:
 	var cap := GameState.siege_troop_cap()
 	var room := cap - GameState.siege_get("troops")
 	if room > 0:
-		for n in [50, 200]:
+		for n in ([50, 200] if room > 50 else [room]):  # 余量不过小档只排一枚：两档都截到余量会出两枚一样的「募兵 N 人」
 			var take: int = mini(n, room)
 			if take <= 0:
 				continue
@@ -4576,7 +4576,7 @@ func _siege_repair_wall() -> void:
 		done.add_theme_color_override("font_color", Color(0.7, 0.75, 0.7))
 		choices_container.add_child(done)
 	else:
-		for n in [20, 60]:
+		for n in ([20, 60] if room > 20 else [room]):  # 余量不过小档只排一枚：两档都截到余量会出两枚一样的「加 N」
 			var add: int = mini(n, room)
 			if add <= 0:
 				continue

@@ -254,6 +254,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_saves_shape_probe.gd",  # lane w54-saves 存档体检漏网坏形状探针（读档报成功、随后照常玩即 SCRIPT ERROR 的那几型）
 	"res://tools/qa_w54_siege_enter_probe.gd",  # lane w54-siege 守城各页回车不替人按专项探针（六页钮都在、回车不按、账面不动、反向基）
 	"res://tools/qa_w54_siege_raid_probe.gd",  # lane w54-siege 劫粮道必败不给劫专项探针（三档必败拦下、界上照劫、大船队照旧）
+	"res://tools/qa_w54_siege_dupe_probe.gd",  # lane w54-siege 募兵 / 修墙余量不过小档不出两枚同数钮专项探针
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
