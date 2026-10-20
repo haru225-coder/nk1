@@ -101,7 +101,7 @@ func _t2_cargo(chart: Node) -> void:
 	_gs.set("money", 40)
 	chart.call("_on_pay_pirates")
 	var line := _latest(chart)
-	_expect(line.contains("搬走了三成货") and int(_fleet.call("cargo_qty", "tea")) == 7 and int(_fleet.call("cargo_qty", "pepper")) == 0,
+	_expect(line.contains("搬走三成的货") and int(_fleet.call("cargo_qty", "tea")) == 7 and int(_fleet.call("cargo_qty", "pepper")) == 0,
 		"札记「%s」：茶 10 → 7、胡椒 1 → 0" % line)
 
 
