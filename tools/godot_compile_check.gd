@@ -234,6 +234,9 @@ const SCRIPTS := [
 	"res://tools/qa_w54_hunt_run_contract_probe.gd",  # lane w54-hunt 闯封锁与在身委办探针（委办要留的米不上秤：卖 / 扣 / 算不算闯得）
 	"res://tools/qa_w54_hud_orders_state_probe.gd",  # lane w54-hud 海战号令面板签面状态栏整句放得下（劝降三样短写，整句裁字回退即红）
 	"res://tools/qa_w54_copy_probe.gd",  # lane w54-copy 文案一致性专项探针（门牌悬停提示与门牌同字等，一段钉一条）
+	"res://tools/qa_w54_econ_peak_probe.gd",  # lane w54-econ 章节本钱按现银减欠款记专项探针（赊来的钱不顶高资金峰值）
+	"res://tools/qa_w54_econ_permit_probe.gd",  # lane w54-econ 货引按出港时的舱货抽解专项探针（空舱请领再装货补足、委办留货不抽）
+	"res://tools/qa_w54_gates_zero_case_guard_probe.gd",  # lane w54-gates 探针「一格断言都没跑过也照印全部通过」守卫探针（静态读 qa_w53_4_story_probe，回退即红）
 	"res://tools/qa_w54_hunt_landing_offer_probe.gd",  # lane w54-hunt 剿寨那一行挂卡判据探针（挂卡读到的是这一仗的来处与所在港）
 	"res://tools/qa_w54_voyage_shoal_probe.gd",  # lane w54-voyage 傍岸擦浅滩船体伤每艘各吃一份探针（修乘船数压给旗舰）
 	"res://tools/qa_w54_voyage_heading_wind_probe.gd",  # lane w54-voyage 晨潮三向顺风按全程的风排探针（修按出港第一段方位排）
