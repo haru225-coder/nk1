@@ -487,14 +487,15 @@ func _seal_note(pid: String, why: String) -> String:
 
 # ── 闯封锁 ──────────────────────────────────────────
 
-## 能不能闯：港是围城封着的（20b 的 besieged，剧情放行的港照常走、不算闯）、开关 blockade_run 开着、舱里有米粮
+## 能不能闯：港是围城封着的（20b 的 besieged，剧情放行的港照常走、不算闯）、开关 blockade_run 开着、舱里有可卖的米粮
 func _run_offerable(pid: String) -> bool:
-	return _Switches.on("blockade_run") and HeadingDraft.seal_of(pid) == "besieged" and Fleet.cargo_qty("grain") > 0
+	return _Switches.on("blockade_run") and HeadingDraft.seal_of(pid) == "besieged" and _run_grain_sellable() > 0
 
 
-## 这一舱米粮闯进去卖得几何：[城里收的件数, 得钱, 名声]。城里一趟只收得下 Economy.blockade_grain_cap 件，多的留在舱里
+## 这一舱米粮闯进去卖得几何：[城里收的件数, 得钱, 名声]。城里一趟只收得下 Economy.blockade_grain_cap 件，多的留在舱里；
+## 委办要留的米也不上秤（_run_grain_sellable）
 func _run_take(pid: String) -> Array:
-	var qty := mini(Fleet.cargo_qty("grain"), Economy.blockade_grain_cap(pid))
+	var qty := mini(_run_grain_sellable(), Economy.blockade_grain_cap(pid))
 	var gold := int(round(Economy.blockade_grain_unit(pid) * float(qty)))
 	return [qty, gold, mini(RUN_FAME_MAX, int(qty / RUN_FAME_PER))]
 
@@ -592,14 +593,18 @@ func _run_sell() -> void:
 	var take := _run_take(pid)
 	var qty := int(take[0])
 	if qty <= 0:
-		_log("舱里的米粮一路上已经没了，空船进的港。")
+		_log("舱里的米粮一路上已经没了（或全是在身委办要留的），空手进的港。")
 		return
 	Fleet.remove_cargo("grain", qty)
 	GameState.add_money(int(take[1]))
 	var t := "城里按围城米价收粮：米粮 %d 件，得 %d 钱。" % [qty, int(take[1])]
 	var left := Fleet.cargo_qty("grain")
 	if left > 0:
-		t += "余下 %d 件城里收不下，留在舱里。" % left
+		var kept := GameState.contract_kept("grain")
+		if kept >= left:
+			t += "余下 %d 件在身委办要留，没卖。" % left
+		else:
+			t += "余下 %d 件城里收不下，留在舱里。" % left
 	if int(take[2]) > 0:
 		var fame_res: Dictionary = GameState.add_fame(int(take[2]))
 		t += "名声加 %d。" % int(fame_res.get("gained", 0))
@@ -609,14 +614,15 @@ func _run_sell() -> void:
 	_refresh_status()
 
 
-## 没闯过去：舱里的米粮一件不剩（输了被扣、逃了抛海、掉头交出），船还浮着就折回起锚港——
-## 起讫对调，从港外照常一日日走回去（遇事照抽）；全队沉了不对调，由沉船那条路送回起锚港
+## 没闯过去：舱里要卖的那批米一件不剩（输了被扣、逃了抛海、掉头交出），船还浮着就折回起锚港——
+## 起讫对调，从港外照常一日日走回去（遇事照抽）；全队沉了不对调，由沉船那条路送回起锚港。
+## 在身委办要留的米不上船去闯、也就不跟着赔进去（与 _run_take 同一个口径，lane w54-hunt）
 func _run_seize(how: String) -> void:
 	var pid := _run_port
 	if pid == "":
 		return
 	_run_port = ""
-	var qty := Fleet.cargo_qty("grain")
+	var qty := mini(Fleet.cargo_qty("grain"), _run_grain_sellable())
 	if qty > 0:
 		Fleet.remove_cargo("grain", qty)
 	var t := ""
@@ -2490,3 +2496,10 @@ func _card_notes(choices: Array) -> void:
 	for row in choices:
 		if row is Dictionary:
 			_Notes.offer(self, "landing" if str(row.get("key", "")) == "landing" else "after_choices")
+
+
+## lane w54-hunt 闯封锁（_run_offerable / _run_take / _run_seize 共用，函数体从上面原样搬来）：舱里能卖的米——
+## 全队米粮减去在身委办要留着交货的（同牙行卖钮 / 守城押粮的口径，GameState.contract_kept）。
+## 原先不分，闯一趟把委办要的米也一起卖了，委办再没有米可交，只能毁约。
+func _run_grain_sellable() -> int:
+	return maxi(0, Fleet.cargo_qty("grain") - GameState.contract_kept("grain"))
