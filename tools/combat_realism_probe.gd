@@ -462,16 +462,18 @@ func _story_live_capture() -> void:
 	for f in foes:
 		f.set("fire_timer", INF)  # 只冻敌炮（同 combat_probe_stage.freeze_enemy_fire）：旗舰不挨炮，战损只看夺船记账
 	var wm_ref: WeakRef = weakref(wm)
-	# lane w53-p4-melee 控制方线：等场窗内把第 2 艘的士气簿钳住——
-	# 士気簿在接舷的前一帧已被 _scan 读走 crew 初始值；我们清零 crew 会被士气簿读成
-	# 「人手不足三成、逃不脱」判降（morale sweep 早于夺船），要让后一艘照常走完夺船路：
-	# 开场先把士气簿的 crew 压实（全员在册）、再把士气拉满，隔帧才清船员入刀
+	# lane w53-p4-melee 控制方线：夺第 1 艘时第 2 艘的士气得稳住——敌船被夺，士气簿给僚船记「主船被夺」传染
+	# （contagion.lead_captured）、敌将记僚船折损，掉到降幡 / 溃逃线就以 enemy_struck 收战（产品正当，探针布景不该触发）。
+	# lane w54-det 钉时序：先等士气挂件把两艘都登记上，再把簿上的士气（value / start_value）拉满。原先当帧就钳——遇盗迎战
+	# 是同一帧 add_child 起的海战，挂件逐物理帧才扫船，那一刻 sheet_of 还是 null，钳了个空（簿上也没有 morale 这一字段）；
+	# 过不过全看夺船抢不抢得在挂件第一次扫船之前，开战多走一帧，挂件先扫到船，这条就回到旧红。
 	var _morale = wm.get("_morale")
+	await _frames_until(_morale_booked.bind(_morale, foes), 30)
 	if _morale != null and is_instance_valid(_morale):
 		for f in foes:
 			var sheet = _morale.call("sheet_of", f)
-			if sheet != null and is_instance_valid(sheet):
-				sheet.set("morale", 100.0)  # 拉开 strike.line 与 rout 带宽：本帧 不碰 敌船士气簿的 _evaluate 给不了 struck
+			if sheet != null:
+				sheet.set("start_value", 100.0)  # 拉开 strike.line 与 rout 带宽：传染、僚船折损都压不到降幡 / 溃逃线
 				sheet.set("value", 100.0)
 	for i in foes.size():
 		var foe_ref: WeakRef = weakref(foes[i])
@@ -481,7 +483,10 @@ func _story_live_capture() -> void:
 		wm.call("_board_enemy", foes[i])
 		await _frames_until(func() -> bool: return foe_ref.get_ref() == null or not rec.is_empty(), 30)
 		if i < foes.size() - 1:
-			_t(rec.is_empty() and wm_ref.get_ref() != null, "story.capture.hold", "夺下第 %d 艘、还剩敌船：海战不收" % (i + 1))
+			_t(rec.is_empty() and wm_ref.get_ref() != null, "story.capture.hold", "夺下第 %d 艘、还剩敌船：海战不收" % (i + 1),
+				"得 %s" % [rec])
+			if not rec.is_empty() or wm_ref.get_ref() == null:
+				break  # 海战已收（上一条照记红）：余下的敌船已随海战场释放，不再拿它们接舷——拿了就是引擎段错误，连判词行都打不出
 	await _frames_until(func() -> bool: return not rec.is_empty(), 30)
 	var got_ships: Array = (fleet.get("ships") as Array).slice(ships0)
 	_t(got_ships.size() == foes.size() and got_ships.all(func(s): return str(s.get("type")) == str(pirate.get("type")) and str(s.get("name")) == "快船"),
@@ -586,6 +591,16 @@ func _frames_until(cond: Callable, max_frames: int) -> bool:
 			return true
 		await process_frame
 	return cond.call()
+
+
+## 士气挂件把这几艘敌船都登记上了没有（挂件逐物理帧才扫船）；挂件不在、船已不在都算登记过，免得白等
+func _morale_booked(morale: Variant, foes: Array) -> bool:
+	if morale == null or not is_instance_valid(morale):
+		return true
+	for f in foes:
+		if is_instance_valid(f) and morale.call("sheet_of", f) == null:
+			return false
+	return true
 
 
 func _save_state() -> Dictionary:
@@ -1224,6 +1239,10 @@ func _judge_enemy_ff_node() -> void:
 	_t(foe_how == "take_ballistic_hit", "eff.node.foe_hit_method",
 		"真敌船（fire_timer=INF）：_hit_method 指 take_ballistic_hit（得 '%s'）" % foe_how)
 	var foe_ff = foe.get("flood_fire")
+	# 簿上的骰钉种子（lane w54-det）：敌船簿开战时自己 rng.randomize()，下面「火弹连砸 4 发至少着一发」原是赌概率——
+	# 4 发全不着 0.2⁴ ≈ 0.16%，跑六百来遍就红一回；钉了种子每遍掷同一串，判的是接线不是运气
+	if foe_ff != null and foe_ff.get("rng") is RandomNumberGenerator:
+		(foe_ff.get("rng") as RandomNumberGenerator).seed = 54
 	var foe_ff_inner = foe_ff.get("ff") if foe_ff != null else null
 	if foe_ff_inner != null:
 		foe_ff_inner.set("fire_resist", 0.0)  # 探针布景：中书不投骰——点火率 80% 要每次着
