@@ -7,8 +7,11 @@ extends SceneTree
 ##   三、阈角随屏上大小：镜头拉近一倍阈角减半（船首在屏上挪 YAW_EPS_PX 个窗口像素的角）；镜头拉到极远封顶 YAW_EPS_MAX。
 ##   四、藏起来 / 出了画（连 CULL_MARGIN 边距）不画；离画边不到边距照画；回到画里那一帧当帧补画、航向对上。
 ##   五、半路拨回关：当帧回 UPDATE_ALWAYS、不再记省着画，航向逐帧跟（不到阈角的转动也跟）。
-##   六、带窗口才跑（DISPLAY=:2）：五个航向上开 / 关两路画出来的船身贴图逐像素相同（省着画只少画、不改画法）；
-##       另报转 0.9 个阈角不重画那张与满画那张的差（仅诊断）。headless 印一行跳过。
+##   六、带窗口才跑（DISPLAY=:2）：五个航向上开 / 关两路画出来的船身贴图逐像素精确比（容差 0）——省着画只少画、不改画法，
+##       差只出在去重网格的法线上（实测原网格逐帧画两回 0 差、换去重网格同航向几十个像素差 1/255）：读出来的法线是
+##       16 位八面体码解成的浮点，写回去引擎再编一遍（截断取整、不复原），末位挪一格。判：最大通道差 ≤ 1/255、差的像素 ≤ 0.05%。
+##       另报（仅诊断）转 0.9 个阈角沿用上一张与满画那张的差，和同一条船满画着转 0.5°（快船 / 护航转向一帧常见的转角）的差作对照。
+##       headless 印一行跳过。
 ##   末两案：本进程 SCRIPT ERROR / Parse Error 即红（script_err_tally）。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_perf_hull_probe.gd（六要去掉 --headless、DISPLAY=:2；w53 本机经门锁跑）
 ## 末行 QA_W54_PERF_HULL PASS|FAIL cases=N fails=K；有失败退 1。
@@ -271,6 +274,7 @@ func _sec_pixels() -> void:
 		return
 	_cam.zoom = Vector2(0.5, 0.5)
 	var worst_n := 0
+	var worst_max := 0
 	var worst_at := 0.0
 	for th in [0.0, 0.7, 1.9, 3.3, 4.6]:
 		_Switches.set_on(KEY, false)
@@ -283,14 +287,17 @@ func _sec_pixels() -> void:
 		_ship.rotation = th
 		await _frames(3)
 		var b: Image = _rig.call("grab_image")
-		var n := _diff_px(a, b, 1.5 / 255.0)
-		if n > worst_n or worst_n == 0:
-			worst_n = maxi(worst_n, n)
-			worst_at = th
-		if a == null or b == null or a.is_empty() or b.is_empty():
+		var d := _diff(a, b, 0)
+		if int(d[0]) < 0:
 			worst_n = -1
 			break
-	_check(worst_n == 0, "五个航向上开 / 关两路贴图逐像素相同（最差 %s 像素不同，航向 %.1f）" % [str(worst_n), worst_at])
+		if int(d[0]) > worst_n:
+			worst_n = int(d[0])
+			worst_at = th
+		worst_max = maxi(worst_max, int(d[1]))
+	var cap := int(832 * 832 * 0.0005)
+	_check(worst_n >= 0 and worst_max <= 1 and worst_n <= cap,
+		"五个航向上开 / 关两路贴图精确比：最大通道差 %d/255（应 ≤ 1）、差的像素至多 %d 个（航向 %.1f；应 ≤ %d，即 0.05%%）" % [worst_max, worst_n, worst_at, cap])
 	# 诊断：转 0.9 个阈角不重画那张 vs 满画那张（视口 832² 上量；屏上还要再缩约 3 倍）
 	_Switches.set_on(KEY, true)
 	_ship.rotation = 1.2
@@ -302,23 +309,28 @@ func _sec_pixels() -> void:
 	_Switches.set_on(KEY, false)
 	await _frames(3)
 	var exact: Image = _rig.call("grab_image")
-	var d := _diff_px(stale, exact, 0.1)
-	print("  · 诊断：转 0.9 个阈角（%.3f°）沿用上一张，与满画那张差过 0.1 的像素 %d 个（贴图 832² 共 %d）" % [rad_to_deg(eps * 0.9), d, 832 * 832])
+	_ship.rotation = 1.2 + eps * 0.9 + deg_to_rad(0.5)
+	await _frames(3)
+	var turned: Image = _rig.call("grab_image")
+	print("  · 诊断（贴图 832² 共 %d 像素，差过 8/255 的个数）：转 0.9 个阈角（%.3f°）沿用上一张 vs 满画 %d；同一条船满画着再转 0.5° 前后 %d" % [
+		832 * 832, rad_to_deg(eps * 0.9), int(_diff(stale, exact, 8)[0]), int(_diff(exact, turned, 8)[0])])
 
 
-## 两张图逐像素比，任一通道差过 tol 的像素数（尺寸不合 / 取不到图给 -1）
-static func _diff_px(a: Image, b: Image, tol: float) -> int:
+## 两张图逐像素比（RGBA8，0–255）：[任一通道差过 tol 的像素数, 最大通道差]；尺寸不合 / 取不到图给 [-1, -1]
+static func _diff(a: Image, b: Image, tol: int) -> Array:
 	if a == null or b == null or a.is_empty() or b.is_empty() or a.get_size() != b.get_size():
-		return -1
+		return [-1, -1]
 	a.convert(Image.FORMAT_RGBA8)
 	b.convert(Image.FORMAT_RGBA8)
 	var pa := a.get_data()
 	var pb := b.get_data()
 	var n := 0
-	var t := int(ceil(tol * 255.0))
+	var mx := 0
 	var i := 0
 	while i < pa.size():
-		if absi(pa[i] - pb[i]) > t or absi(pa[i + 1] - pb[i + 1]) > t or absi(pa[i + 2] - pb[i + 2]) > t or absi(pa[i + 3] - pb[i + 3]) > t:
+		var m := maxi(maxi(absi(pa[i] - pb[i]), absi(pa[i + 1] - pb[i + 1])), maxi(absi(pa[i + 2] - pb[i + 2]), absi(pa[i + 3] - pb[i + 3])))
+		if m > tol:
 			n += 1
+		mx = maxi(mx, m)
 		i += 4
-	return n
+	return [n, mx]
