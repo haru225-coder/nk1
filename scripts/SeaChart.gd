@@ -2359,7 +2359,7 @@ func _sink(preface: String = "") -> void:
 		Fleet.water = 20
 		Fleet.food = 20
 		Fleet.morale = 50
-		GameState.last_port = origin_port
+		GameState.last_port = _rescue_port()  # 捞回这一程的起锚港（闯封锁折回时 origin_port 已换成围城那港）
 		_return_to_port()
 	)
 	_open_event_panel()
@@ -2505,3 +2505,11 @@ func _card_notes(choices: Array) -> void:
 ## 原先不分，闯一趟把委办要的米也一起卖了，委办再没有米可交，只能毁约。
 func _run_grain_sellable() -> int:
 	return maxi(0, Fleet.cargo_qty("grain") - GameState.contract_kept("grain"))
+
+
+## lane w54-voyage：沉船被渔船捞回的港 = 这一程的起锚港。闯封锁没闯过去会起讫对调（_run_seize：origin_port 换成围城那港、
+## 从港外往回走），回程再沉（风涛、海寇），原先拿 origin_port 当起锚港——人被捞进闯不进去的那座围城。
+## 起锚港整程都记在 GameState.last_port（航行中只有 _arrive 改它），照它取；它空着才退回 origin_port
+func _rescue_port() -> String:
+	var home := str(GameState.last_port)
+	return home if home != "" else origin_port
