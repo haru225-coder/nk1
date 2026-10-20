@@ -628,6 +628,13 @@ func _war_event(from_id: String, to_id: String) -> Dictionary:
 	if from_id == "" and to_id == "":
 		return {}
 	var now := "%04d-%02d" % [Calendar.year, Calendar.month]
+	# 看船这一日在哪片海（lane w54-seaevents）：海上两端都换成「所在位置」那一港（Economy.sea_here，海图逐日记，月初战况也按它排）。
+	# 原先恒看航段两端：泉州往博多走到博多唐房外照样撞上宋廷征船，明州往博多到了博多港外照样「大元巡海」，
+	# 泉州往博多一路傍过已降元的温州、明州反倒一条元军哨船也撞不上。不在海上、没记（探针直调、海图没起）时照旧看两端
+	var here := str(Economy.sea_here) if Fleet.at_sea else ""
+	if here != "":
+		from_id = here
+		to_id = here
 	var sf := Economy.war_status(from_id)
 	var st := Economy.war_status(to_id)
 	# 征船只在战火波及的宋土港口附近：有 war 表、非异国、尚未降元。澎湖—流求这种外海航段不征。
