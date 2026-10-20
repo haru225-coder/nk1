@@ -3846,7 +3846,7 @@ func _ended_port_base() -> String:
 	var base := port_title.text
 	if base.find("・") >= 0 and base.ends_with(GameState.ended):
 		base = base.trim_suffix("・" + GameState.ended)
-	return base
+	return _ended_place(base)
 
 
 ## 终局后港口页的航海札记：墨底小笺，标题马善政泥金印「终」、旁注终局时地（淡字 16px），逐行 16px；
@@ -5340,3 +5340,16 @@ func _a11y_mount() -> void:
 	nav.main = self
 	add_child(nav)
 	_key_nav = nav
+
+
+## 终局匾与终局题签上的地名（lane w54-ending）：落款改写到别处的结局——涵江出海收在旧避风澳（_on_hanjiang_escape）、
+## 崖山两条路收在崖山外海（_yashan_signoff）——匾上写落款那个地方：人已不在点卡的那一港，结算底图画的也是那里。
+## 原先匾上「广州・海上宋鬼」「兴化军・岸上的根」，首进终局港页那张题签副题却是「…・崖山」「…・旧避风澳」，一张题签上下两个地方。
+## 落款照 last_port 写的（其余结局、守城援绝落款「…・兴化」、没有落款的旧档）照旧用港名匾的字。
+func _ended_place(port_base: String) -> String:
+	var at := GameState.ended_at
+	var cut := at.rfind("・")
+	var place := at.substr(cut + 1) if cut >= 0 else ""
+	if place == "" or place == GameManager.get_port_name(GameState.last_port):
+		return port_base
+	return place
