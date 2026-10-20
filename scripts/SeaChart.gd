@@ -2143,8 +2143,9 @@ func _on_flee_pirates() -> void:
 		var lost_str := ""
 		for gid in lost.keys():
 			lost_str += "%s %d　" % [GameManager.get_good_name(gid), lost[gid]]
+		var hull_was := float(Fleet.flagship().get("durability", 0.0))
 		Fleet.damage_fleet(30.0 * Fleet.armor_damage_reduction())
-		_log(_ink(UiTheme.CINNABAR, _CombatFx.sea_flee_fail_note(lost_str)))
+		_log(_ink(UiTheme.CINNABAR, _flee_fail_note(lost_str, hull_was - float(Fleet.flagship().get("durability", 0.0)))))
 	_refresh_status()
 	_after_combat()
 
@@ -2665,3 +2666,13 @@ func _log_departure() -> void:
 	if note != "":
 		_latest_note = _plain_note(note)
 		_refresh_strip()
+
+
+## lane w54-seaevents：海图上「扬帆逃走」没甩脱（_on_flee_pirates，海寇与元军哨船两面共用）那一句。原先只写「未能甩脱。被追上跳帮，
+## 货舱被夺。」加被抢清单——旗舰挨的那一下（damage_fleet 30 × 甲档减伤）一字不提，舱里空着一件没抢也说货舱被夺。
+## 现写：有货被抢照旧句加清单，舱里空着写没什么可抢；旗舰船体实扣了几（扣到 0 为止）写「船体受损 N」，一点没扣着不写
+func _flee_fail_note(lost_str: String, hull_cut: float) -> String:
+	var s := _CombatFx.sea_flee_fail_note(lost_str) if lost_str != "" else "未能甩脱。被追上跳帮，舱里空着，没什么可抢。"
+	if int(hull_cut) > 0:
+		s += "船体受损 %d。" % int(hull_cut)
+	return s

@@ -8,6 +8,10 @@ extends SceneTree
 ##   T3 拿不出钱、整批大货：札记写三成，件数对得上。
 ##   T4 拿不出钱、一件两件的零头货：札记照它说的规矩（三成；说了零头算一件就向上取整，没说就四舍五入）推出的件数 = 实少件数。
 ##   T5 两船各装一件同样货：札记说逐船就逐船推，没说就按全队合计推，推出的件数 = 实少件数。
+##   F 扬帆逃走没甩脱（SeaChart._on_flee_pirates，海寇与元军哨船两面共用）：原先只写「未能甩脱。被追上跳帮，货舱被夺。」加被抢清单——
+##     旗舰挨的那一下（damage_fleet 30 × 甲档减伤）一字不提，舱里空着一件没抢也说货舱被夺。
+##   F1 有货：札记写的被抢件数 = 实少件数，「船体受损 N」= 旗舰实扣（30）。F2 舱空：不说货舱被夺，照写船体受损。
+##   F3 甲满三档：实扣 24 写 24。F4 旗舰只剩 12：扣到 0 为止，写 12。F5 甩脱了：不扣船体、不写受损，绕路多一程。
 ## 运行期脚本错即红（共用件 tools/script_err_tally.gd；_run_guarded 兜 _run 半路中止）。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_seaevents_ledger_probe.gd（经门锁跑）
 ## 末行 W54_SEAEVENTS_LEDGER cases=N fails=M；M>0 时 exit 1。
@@ -64,6 +68,12 @@ func _run() -> void:
 	_toll_short(chart, "T3 整批大货", 1, [[0, "qingbai_porcelain", 10]])
 	_toll_short(chart, "T4 零头货", 1, [[0, "ivory", 1], [0, "pepper", 2]])
 	_toll_short(chart, "T5 两船各一件", 2, [[0, "coral", 1], [1, "coral", 1]])
+	print("── F 扬帆逃走")
+	_flee(chart, "F1 有货", 1, [[0, "qingbai_porcelain", 10]], 1, -1.0, false)
+	_flee(chart, "F2 舱里空", 1, [], 1, -1.0, false)
+	_flee(chart, "F3 甲满三档", 1, [[0, "pepper", 3]], 3, -1.0, false)
+	_flee(chart, "F4 旗舰只剩 12", 2, [[1, "tea", 5]], 1, 12.0, false)
+	_flee(chart, "F5 甩脱了", 1, [[0, "qingbai_porcelain", 10]], 1, -1.0, true)
 	chart.queue_free()
 	await _frames(2)
 	_report()
@@ -166,6 +176,53 @@ func _toll_short(chart: Node, tag: String, ship_count: int, hold: Array) -> void
 func _rule(qty: int, round_up: bool) -> int:
 	var raw := float(qty) * TOLL_RATIO
 	return mini(qty, int(ceil(raw)) if round_up else int(round(raw)))
+
+
+## 定种子掷「逃走」那一下：want_ok 要甩脱就挑 randf() < 成功率的种子，反之挑掷不中的
+func _flee_seed(want_ok: bool) -> int:
+	var chance := clampf(float(_fleet.call("fleet_speed")) / 220.0, 0.25, 0.9)
+	for k in range(1, 5000):
+		seed(k)
+		if (randf() < chance) == want_ok:
+			return k
+	return 1
+
+
+## armor = 旗舰甲档；flag_hull >= 0 时把旗舰耐久先压到这个数
+func _flee(chart: Node, tag: String, ship_count: int, hold: Array, armor: int, flag_hull: float, want_ok: bool) -> void:
+	_fleet_with(ship_count, hold)
+	var ships: Array = _fleet.get("ships")
+	(ships[0] as Dictionary)["armor_level"] = armor
+	if flag_hull >= 0.0:
+		(ships[0] as Dictionary)["durability"] = flag_hull
+	var hull_was := float((ships[0] as Dictionary).get("durability", 0.0))
+	var left_was := float(chart.get("remaining_li"))
+	var before := _cargo_now()
+	seed(_flee_seed(want_ok))
+	chart.call("_on_flee_pirates")
+	var line := _latest(chart)
+	var cut := int(hull_was - float((_fleet.get("ships")[0] as Dictionary).get("durability", 0.0)))
+	var after := _cargo_now()
+	var detour := float(chart.get("remaining_li")) - left_was
+	chart.set("remaining_li", 500.0)
+	if want_ok:
+		_expect(cut == 0 and not line.contains("受损") and before == after and detour > 0.0 and line.contains("甩在后面"),
+			"%s：札记「%s」，船体不扣、舱货不动，绕路多 %d 里" % [tag, line, int(detour)])
+		return
+	var re := RegEx.new()
+	re.compile("船体受损 (\\d+)")
+	var m := re.search(line)
+	var said := int(m.get_string(1)) if m != null else 0
+	var cargo_ok := true
+	for gid in before.keys():
+		var d := int(before[gid]) - int(after.get(gid, 0))
+		var mark := "%s %d" % [str(_gm.call("get_good_name", gid)), d]
+		if d <= 0 or not line.contains(mark):
+			cargo_ok = false
+	if before.is_empty():
+		cargo_ok = not line.contains("货舱被夺") and after.is_empty()
+	_expect(cut > 0 and said == cut and cargo_ok and line.contains("未能甩脱"),
+		"%s：札记「%s」写船体受损 %d，旗舰实扣 %d" % [tag, line, said, cut])
 
 
 func _report() -> void:
