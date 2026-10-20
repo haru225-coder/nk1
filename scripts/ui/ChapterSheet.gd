@@ -121,7 +121,7 @@ static func show_dialog(main: Control, res: Dictionary) -> void:
 	UiTheme.style_heading(head)
 	col.add_child(head)
 
-	var raw := str(res.get("text", ""))
+	var raw: String = main._late_text(str(res.get("text", "")))  # 写到的人已不在世换句（Main._late_text）；跳了年下面按跳后再判一回
 	# 本地 main P1 时间脊柱：晋升跳年。这些年不是空白，摘要（跑了几趟 / 主航线 / 信用）与代价（船旧人走）写在正文前。
 	var years: int = int(res.get("years", 0))
 	if years > 0:
@@ -135,7 +135,7 @@ static func show_dialog(main: Control, res: Dictionary) -> void:
 			block += "这一路\n" + "\n".join(era) + "\n"
 		if not costs.is_empty():
 			block += "代价\n" + "\n".join(costs) + "\n"
-		raw = block + "\n" + raw
+		raw = block + "\n" + main._late_text(raw)
 		GameState.clear_era()
 		main.update_status_panel()
 	var body_w := sheet_w - 80

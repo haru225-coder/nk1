@@ -3190,7 +3190,7 @@ func _setup_investigation_mode(scene_data: Dictionary) -> void:
 		shown_body = str(scene_data.get("cg_sub", "")).strip_edges()
 	if shown_body == "" and str(scene_data.get("title", "")).strip_edges() == "内景":
 		shown_body = _interior_lead(str(scene_data.get("id", "")))
-	body_text.text = _unescape_scene_text(shown_body)
+	body_text.text = _unescape_scene_text(_late_text(shown_body))
 
 	var investigations = scene_data.get("investigations", [])
 	_show_investigation_chrome(investigations.size() > 0)
@@ -5398,3 +5398,25 @@ func _shore_life() -> void:
 		band.add_child(life)
 		band.move_child(life, 1)
 	life.text = text
+
+
+## 章节过渡页里写到的人此刻已不在世，就换那一句（lane w54-ending）：升章册页正文（chapters.json advance_text，册页跳年之后现判）、
+## 晋升过场幕正文（scenes.json body）。判法同人物志与见面处（CharacterArt.deceased：林阿舶 1274 病故，此后泉州酒馆不再摆他、
+## 人物志小传写「咸淳十年前后病故」）。第一章开第二章、第二章开第三章晚到 1274 以后（士人线不跑船，或前两章耽久了；晋升跳年
+## 封顶 1275 也落在这几年），原先照样写林阿舶推过油布包、在廊下等你。表：人物 id → [[原句, 换句], …]，原句与数据逐字相同。
+const LATE_LINES := {
+	"merchant_lin": [
+		["林阿舶把一只油布包推过案来，没有解绳。", "林阿舶已经不在了。林家账房的人把一只油布包推过案来，没有解绳，说是林老爹生前交代下的。"],
+		["林阿舶在廊下等你，没有道喜，只说广州那边有人问过你的船。", "林阿舶已经不在了。林家账房的人在廊下等你，没有道喜，只说广州那边有人问过你的船。"],
+	],
+}
+
+
+func _late_text(text: String) -> String:
+	var out := text
+	for cid in LATE_LINES:
+		if not _CHAR_ART.deceased(GameManager.get_character(str(cid))):
+			continue
+		for pair in LATE_LINES[cid]:
+			out = out.replace(str(pair[0]), str(pair[1]))
+	return out
