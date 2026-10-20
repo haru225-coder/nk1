@@ -87,6 +87,10 @@
      ——澎湖港寺观页两条并排，市舶司呈报钮的悬停提示上屏的就是这两句。PLACE_VARIANTS 左列在 gd 玩家串与游戏读的数据档
      上屏文本值里出现即红；海图是宋式旧题签（繁体旧字形、按宋人叫法：图上「彭湖」「慶元」，见 docs/海图重制设计），
      chart_labels.json 与 ports.json 各港的 chart.* 照宋人写，不比。
+  V. 简体上屏串不夹繁体字（w54-copy）：海图之外的上屏文字是简体，GB2312（简体字集）外的字逐个登记在 OUTSIDE_GB_OK
+     （年号「宝祐」的祐、陈璥 / 赵昺 / 赵㬎 等史名、落漈 / 碙洲等地名、瞭 / 纻 / 襕等规范字），写明缘由；没登记的
+     即疑繁体（「東」「為」「時」）、日本新字体（「対」）或异体，判红。扫 gd 玩家串与游戏读的数据档上屏文本值；海图宋式旧题签
+     （chart_labels.json、ports.json 各港 chart.*、SeaChart 题记框「東南海道圖」）照宋刻写，不比。
 
 查法：纯静态扫 scripts/*.gd 字符串字面量与 data/*.json 文本值（不上引擎），快且可重复。
 与 wave53-10 二轮 scratch 探针（`qa_w53_10_page_dump.gd`，运行期挂 Main.tscn 走 35 页）：
@@ -216,6 +220,29 @@ DOOR_PAGE_MUST = ("city_residence", "city_market")
 PLACE_VARIANTS = (("彭湖", "澎湖"),)
 CHART_LABEL_JSON = "chart_labels.json"
 CHART_PORT_KEY = "/chart/"
+
+# ═══ 钉 V：简体上屏串里 GB2312 外的字 → 为什么是正字（w54-copy）。没登记的即疑繁体 / 日本新字体 / 异体。
+OUTSIDE_GB_OK = {
+    "祐": "年号宝祐、德祐（规范字）",
+    "璥": "陈璥（陈文龙幼子）",
+    "艍": "小艍船（福建小船船型）",
+    "漈": "落漈（宋元海道险地）",
+    "碙": "碙洲（端宗驻跸处）",
+    "溍": "赵溍",
+    "恮": "黄恮",
+    "昺": "赵昺（宋末帝）",
+    "禥": "赵禥（宋度宗）",
+    "㬎": "赵㬎（宋恭帝）",
+    "昰": "赵昰（宋端宗）",
+    "爚": "王爚",
+    "瞭": "瞭望（通用规范汉字表复用的规范字）",
+    "纻": "纻衫（紵的规范简化字）",
+    "宬": "蒲寿宬",
+    "襕": "襕衫（襴的规范简化字）",
+    "絙": "结絙为阵（缆索；类推简化形不在常用字库）",
+}
+# SeaChart 题记框的宋刻图名（海图层，同 chart_labels 照宋刻写）
+CHART_GD_TITLES = ("東南海道圖",)
 
 # ═══ 钉 K：札记写的货损成数 = 同一函数里 Fleet.lose_cargo_ratio 的字面实参。
 CARGO_FRAC_RE = re.compile(r"半个?货舱|半舱|一半的?货|([一二两三四五六七八九十])成的?货")
@@ -572,6 +599,8 @@ def _scan_gd_strings(cmap):
                 _check_delta_note(lit, tag, DELTA_PAREN_SEEN)
                 _check_interpunct(lit, tag)
                 _check_place_variants(lit, tag)
+                if lit not in CHART_GD_TITLES:
+                    _check_trad(lit, tag)
                 _check_glyphs(lit, tag, cmap)
                 if rel.replace(os.sep, "/").startswith(COMBAT_GD_PREFIXES):
                     _check_exclaim(lit, tag)
@@ -957,12 +986,27 @@ def _scan_game_data():
         _check_interpunct(text, tag)
         if not _chart_layer(f, path):
             _check_place_variants(text, tag)
+            _check_trad(text, tag)
 
 
 def _check_place_variants(text, tag):
     for bad, good in PLACE_VARIANTS:
         if bad in text:
             FAILS.append(f"{tag}: 地名写成「{bad}」——港名与别处上屏文字都写「{good}」（只有海图宋式题签照宋人写）：{text[:48]}")
+
+
+def _check_trad(text, tag):
+    """钉 V：汉字不在 GB2312、也没登记进 OUTSIDE_GB_OK 的，一串报第一个。"""
+    for ch in dict.fromkeys(text):
+        o = ord(ch)
+        if ch in OUTSIDE_GB_OK or not (0x3400 <= o <= 0x9FFF or 0xF900 <= o <= 0xFAFF or o >= 0x20000):
+            continue
+        try:
+            ch.encode("gb2312")
+        except UnicodeEncodeError:
+            FAILS.append(f"{tag}: 「{ch}」U+{o:04X} 不在 GB2312——简体正文疑夹了繁体 / 日本新字体 / 异体；"
+                         f"若是史名、地名一类正字，登记进 OUTSIDE_GB_OK 写明缘由：{text[:48]}")
+            return
 
 
 def _check_role_hints(roles, crew_src, game_src, tag):
@@ -1120,6 +1164,31 @@ def _self_test_place_variants():
                           ("ports.json", "/ports[6]/name", False), ("discoveries.json", "/discoveries[2]/location", False)):
         if _chart_layer(f, path) != want:
             bad.append(f"钉 T 自检：{f}:{path} 认作海图题签 {not want}，应为 {want}")
+    return bad
+
+
+def _self_test_trad():
+    """钉 V 自检：夹繁体（東 / 時）、日本新字体（対）须判红；登记过的史名（璥、赵㬎）与常用简体句须判绿；
+    白名单里不许混进 GB2312 内的字（那是登记错了）。"""
+    cases = (("海東来的船", True), ("回来時后面跟着人", True), ("船过対马", True),
+             ("她与幼孙陈璥被扣在福州尼寺", False), ("赵㬎出降", False), ("桅斗上的人喊了一声。", False))
+    bad = []
+    saved = FAILS[:]
+    try:
+        for text, want_red in cases:
+            FAILS.clear()
+            _check_trad(text, "self")
+            if bool(FAILS) != want_red:
+                bad.append(f"钉 V 自检：「{text}」判{'红' if FAILS else '绿'}，应判{'红' if want_red else '绿'}")
+    finally:
+        FAILS.clear()
+        FAILS.extend(saved)
+    for ch in OUTSIDE_GB_OK:
+        try:
+            ch.encode("gb2312")
+            bad.append(f"钉 V 自检：OUTSIDE_GB_OK 登记的「{ch}」本在 GB2312 内，不必登记")
+        except UnicodeEncodeError:
+            pass
     return bad
 
 
@@ -1413,7 +1482,7 @@ def main():
     if glyph_fails:
         cmap = None
     self_fails = _self_test() + _self_test_event_fame() + _self_test_cargo_frac() + _self_test_liang() + _self_test_role_hints() + _self_test_delta_note() + _self_test_interpunct() + _self_test_event_supply() + _self_test_sea_fame_log() + glyph_fails
-    self_fails += _self_test_door_tips() + _self_test_door_pages() + _self_test_place_variants()
+    self_fails += _self_test_door_tips() + _self_test_door_pages() + _self_test_place_variants() + _self_test_trad()
     _scan_gd_strings(cmap)
     _scan_json_text()
     _scan_data_glyphs(cmap)
