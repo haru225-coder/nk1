@@ -419,6 +419,7 @@ func _skip_begin() -> void:
 	_skip_gone.clear()
 	_skip_debt0 = GameState.debt
 	_skip_crew0 = Crew.hired.values().duplicate()
+	_skip_contract = _skip_void_contract()
 
 
 ## 摘要补的两句：欠饷离船的人（起跑时在船、这会儿不在、又不是史实辞船的）与欠债滚息；史实辞船的那几句已在上面写过，这里一并清账
@@ -435,8 +436,13 @@ func _skip_cost_lines(n: int) -> Array:
 		lines.append("%s工食欠满三月，%s不告而去。" % ["、".join(unpaid), "" if unpaid.size() == 1 else "先后"])
 	if GameState.debt > _skip_debt0:
 		lines.append("欠蕃商的债月月结息，%s年里由 %d 滚到 %d。" % [cn_num(n, true), _skip_debt0, GameState.debt])
+	if not _skip_contract.is_empty():
+		lines.append("%s送%s的委办，这几年里作罢了，牙行没有追究。" % [
+			get_good_name(str(_skip_contract.get("good_id", ""))), get_port_name(str(_skip_contract.get("dest", ""))),
+		])
 	_skip_gone.clear()
 	_skip_crew0 = []
+	_skip_contract = {}
 	return lines
 
 
@@ -451,3 +457,20 @@ func settle_ashore() -> void:
 	var walk := Crew.walk_out_ashore()
 	if walk != "":
 		monthly_notice.emit(walk)
+
+
+## 跳年起跑时身上那单委办（_skip_begin 作罢时记下、_skip_cost_lines 写进代价段后清）
+var _skip_contract: Dictionary = {}
+
+
+## 升章跳年时身上的委办免罚作罢（w53 待拍板 15 定：「升章跳年时身上的委办作废、不扣钱不扣名声，札记写一句『跳年委办作罢』」，
+## 原注「本轮未及实施」，lane w54-story 落地）。跳年是剧情把几年一笔带过，玩家没机会交货：原先这几年逐日走完，过了 due_day 那个
+## 早晨 tick_contract 照逾期作废——扣酬金一成五（至少 40）、名声减 1、封签发港当月的单，开章又是进港当场自动开的，人到了交货港、
+## 牙行门都没进就被判违约。在日子起跑之前作废：已交的那截酬金照旧归你，不罚钱、不减名声、不封单。返回作废的那单（没有给 {}）。
+func _skip_void_contract() -> Dictionary:
+	if GameState.contract.is_empty():
+		return {}
+	var c: Dictionary = GameState.contract
+	GameState.contract = {}
+	GameState.add_ledger_note("跳年委办作罢")
+	return c
