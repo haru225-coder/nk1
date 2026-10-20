@@ -1815,6 +1815,11 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 	_battle_notes(outcome, data)  # lane w54-polish：赏钱分账 / 人心 / 大风两散 / 接任旗舰的旁注小笺（只读 data 与船队，不动账）
 	# 闯封锁拦港那一仗（_on_fight_blockade 起的）：这一程途中撞上的海寇、哨船不算，只认 source.event
 	var run_fight := str((GameManager.pending_battle.get("source", {}) as Dictionary).get("event", "")) == "blockade"
+	# w53-p6-landing：剿寨那一行要看这一仗打的是谁（海寇还是官军），下船的人与所在港也取收战这一刻的——
+	# 胜局底下 _after_action_offer 挂卡就读这两样，得在分胜负之前扣住（原先扣在尾段，挂卡读到的是上一仗的，lane w54-hunt）；
+	# 尾段清空 pending_battle 之后再取不到，卡是异步等的也不再现取。
+	_landing_src = (GameManager.pending_battle.get("source", {}) as Dictionary).duplicate()
+	_landing_port = _sea_here()
 	if outcome == "win":
 		# combat12：按敌船下场分账（win_kind）——敌降全赏走受降句；只是遁走的赏半（spoil_rule half）走敌遁句。
 		# w53-16 一期：开关 bounty_by_outcome 开时，赏钱改读 combat_phases.json「spoil」分赃规则——
@@ -1913,10 +1918,6 @@ func _on_battle_result(outcome: String, data: Dictionary) -> void:
 		_log(_ink(UiTheme.INK, escort_note))
 	if run_fight and _run_port != "":
 		_run_settle(outcome, data)
-	# w53-p6-landing：剿寨那一行要看这一仗打的是谁（海寇还是官军），下船的人与所在港也取挂牌这一刻的——
-	# 底下那句清空 pending_battle 之前先扣住，挂卡时不再现取（卡是异步等的，清空后取不到）。
-	_landing_src = (GameManager.pending_battle.get("source", {}) as Dictionary).duplicate()
-	_landing_port = _sea_here()
 	GameManager.pending_battle = {}
 	if not _after_action_pending():
 		# 没挂卡（开关全关 / 无可挂行 / 非胜局）：照旧当帧续航行
