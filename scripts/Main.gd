@@ -4992,6 +4992,10 @@ func _siege_raid_block() -> String:
 		return "第三阵来的是元军大队，粮草随军，劫不着了。"
 	if not Fleet.can_sail():
 		return "船上人手不够，开不出去。"
+	# 船上战力（人手 × 将领 × 士气，同 _siege_relief_raid 掷骰那一式）不到押粮兵最少的那一档（RAID_LO）：一枚骰也赢不了，
+	# 出去只白丢四日水粮与城中六点士气——开局小艍六人战力约七，原先照样给按、必败（lane w54-siege）
+	if _SIEGE_MELEE.raid_power(Fleet.total_crew(), Fleet.captain_power(), Fleet.morale_factor()) < _SIEGE_MELEE.RAID_LO:
+		return "船上 %d 人，打不过押粮的兵船，劫不动。" % Fleet.total_crew()
 	if Fleet.supply_days() < SIEGE_RELIEF_DAYS["raid"]:
 		return "水粮撑不过四日，出不了海。"
 	if not _siege_days_fit(SIEGE_RELIEF_DAYS["raid"]):

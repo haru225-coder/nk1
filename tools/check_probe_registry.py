@@ -171,6 +171,7 @@ EXEMPT = [
     ("qa_w54_saves_shape_probe.gd", "lane-w54-saves", "存档体检漏网的坏形状探针（读档报成功、随后照常玩即 SCRIPT ERROR 的那几型逐例钉住：类型取值坏的退副抄、本就清洗的照读清洗后那一份，读进来逛港页九设施、买卖修船、过 35 日、再记再读 0 错），动 SaveLoad 体检 / 读档清洗时加跑，headless 约半分钟"),
     ("qa_w54_saves_systems_probe.gd", "lane-w54-saves", "逐系统存档往返探针（十六个系统各用真玩法摆状态：读后五分区逐键含键序同存前、该系统读数同、同种子续跑终态与月初通告同；末节福州港页与九处设施页、兴化守城页存前读后逐行同），动任一系统的存档字段或读档流程时加跑，headless 约一分钟；本进程 SCRIPT ERROR 即红"),
     ("qa_w54_siege_enter_probe.gd", "lane-w54-siege", "守城各页回车不替人按专项探针（衙门募兵与石手军 / 市场屯粮 / 船屋修墙 / 两封劝降书 / 第三阵前林华请命认得与不认得两式：钮都在、真回车与直调 _activate_first_choice 都不按、账面旗札记日子不动、人还在这一页，反向基点钮照旧作数；回退即红），headless 秒级，随本 lane 落地验过留档"),
+    ("qa_w54_siege_raid_probe.gd", "lane-w54-siege", "守城外援劫粮道必败不给劫专项探针（开局小艍 / 中福船战力 39 / 人过四十士气零三档：缘由一句、直调不动账、船屋页不挂钮、门不写四日；界上战力 41 照旧劫且骰子同 SiegeMelee.clash；两条大福船照旧开；回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),
