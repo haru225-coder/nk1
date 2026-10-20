@@ -145,7 +145,7 @@ size_flags_vertical = 4
 theme_override_constants/separation = 2
 
 [node name="FleetStatus" type="Label" parent="CanvasLayer/HUD/TideBar/Margin/Row/VBox"]
-custom_minimum_size = Vector2(280, 0)
+custom_minimum_size = Vector2(360, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.243, 0.878, 0.773, 1)
 theme_override_font_sizes/font_size = 18

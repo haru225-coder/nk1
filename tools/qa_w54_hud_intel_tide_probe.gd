@@ -1,12 +1,13 @@
 extends SceneTree
 ## lane w54-hud：海战右上「敌情」卡跟着顶匾（TideBar）的高矮挪，不压进顶匾。
-## 顶匾右格「金钱　货舱」是按 280 宽自动折行的 Label：钱数五六位、舱里两三样货就折成两三行，顶匾从 72 长到 88–114。
-## 布景：真起 WorldMap 海战（快船两艘，敌炮冻住），钱 123456、舱里六样货开打；1280×720 与 21:9（画布 1706×720）各跑一遍。
+## 顶匾右格「金钱　货舱」是按宽自动折行的 Label：原先舱里每样货逐个写上，钱数五六位、两三样货就折成两三行，顶匾从 72
+## 长到 88–114（这是本病露头的路）。右格货多收成「N 样 M 件」一行之后（见 qa_w54_hud_tide_cargo_probe），货撑不高顶匾了，
+## 布景改成探针直接把右格最小高撑到三行（74 px），顶匾照样长到 114——量的是「顶匾长高 / 变矮时敌情卡跟不跟」这件事本身。
+## 布景：真起 WorldMap 海战（快船两艘，敌炮冻住）；1280×720 与 21:9（画布 1706×720）各跑一遍。
 ## 证（headless 也跑——只量排版）：
-##   一、开打时顶匾确实长高了（布景成立：右格折成三行以上、顶匾高过 72）；敌情卡上沿在顶匾下沿之下，
-##       号令卡同判（对照：号令卡本就跟着顶匾挪）。
-##   二、战中货抛光（Fleet.clear_cargo，顶匾缩回一行）：敌情卡跟着上来，上沿 = 顶匾下沿 + 10，不留一截空。
-##   三、战中又进货（六样再装上，顶匾再长高）：敌情卡再跟着下去，仍不压匾。
+##   一、开打后把右格撑到三行高：布景成立（顶匾高过 72）；敌情卡上沿在顶匾下沿之下，号令卡同判（对照：号令卡本就跟着顶匾挪）。
+##   二、右格缩回（最小高归零，顶匾回 72）：敌情卡跟着上来，上沿 = 顶匾下沿 + 10，不留一截空。
+##   三、再撑高：敌情卡再跟着下去，仍不压匾。
 ## 旧病（回退即红，一、三红）：CombatStatusHud._layout_intel 只在开场与画布改尺寸时排一次，不挂顶匾的 item_rect_changed
 ## （号令面板 CombatOrdersPanel._layout 挂了）——开场那一刻顶匾还是 72 高，敌情卡钉在 y 90；顶匾随后长到 114，
 ## 敌情卡上沿压进匾里 32 px，盖住右格末行「海战　潮向」。
@@ -16,9 +17,10 @@ extends SceneTree
 const ScriptErrTally := preload("res://tools/script_err_tally.gd")
 const Hud := preload("res://scripts/ui/CombatStatusHud.gd")
 const VIEWS := [Vector2i(1280, 720), Vector2i(2560, 1080)]
-const GOODS := ["qingbai_porcelain", "raw_silk", "pepper", "aromatic_medicine", "sappanwood", "lacquerware"]
 ## 顶匾只有一行右格时的高（WorldMap.tscn：左栏两行 56 + 边 16）
 const TIDE_PLAIN_H := 72.0
+## 右格三行字的高（18 号字一行 22、行间 4；原先钱 123456 六样货折成三行时实量 74）
+const THREE_LINES_H := 74.0
 
 var cases := 0
 var fails := 0
@@ -60,7 +62,6 @@ func _one_view(tag: String, fleet: Node, gm: Node, gs: Node) -> void:
 	var dur := float(d.get("durability", 300))
 	fleet.set("ships", [{"type": "canton_ship", "name": "试船", "crew": 80, "sail_level": 1, "armor_level": 1,
 		"cargo": {}, "durability": dur, "max_durability": dur}])
-	_load(fleet)
 	gs.set("money", 123456)
 	gm.set("pending_battle", {"battle": true, "power": 300.0, "player_power": 300.0,
 		"enemy": [{"type": "pirate_boat", "count": 2}], "sea_name": "泉州外海", "source": {"scene": "qa_w54_hud"}})
@@ -87,28 +88,25 @@ func _one_view(tag: String, fleet: Node, gm: Node, gs: Node) -> void:
 	if tide == null or fleet_lbl == null or card == null or ocard == null:
 		await _close(wm)
 		return
-	# 一、开打
-	_expect(fleet_lbl.get_line_count() >= 3 and tide.size.y > TIDE_PLAIN_H + 20.0,
-		"%s 一 布景成立：右格折成 %d 行、顶匾高 %.0f（一行时 %.0f）" % [tag, fleet_lbl.get_line_count(), tide.size.y, TIDE_PLAIN_H])
-	_below(card, tide, "%s 一 开打 敌情卡" % tag)
-	_below(ocard, tide, "%s 一 开打 号令卡（对照）" % tag)
-	# 二、货抛光
-	fleet.call("clear_cargo")
+	# 一、开打后右格撑到三行高
+	_expect(tide.size.y <= TIDE_PLAIN_H + 0.5, "%s 一 开打时顶匾一行高（%.0f）" % [tag, tide.size.y])
+	fleet_lbl.custom_minimum_size.y = THREE_LINES_H
 	await _frames(6)
-	_expect(tide.size.y <= TIDE_PLAIN_H + 0.5, "%s 二 货抛光后顶匾缩回一行高（%.0f）" % [tag, tide.size.y])
+	_expect(tide.size.y > TIDE_PLAIN_H + 20.0, "%s 一 布景成立：右格撑到三行高、顶匾高 %.0f（一行时 %.0f）" % [tag, tide.size.y, TIDE_PLAIN_H])
+	_below(card, tide, "%s 一 顶匾长高 敌情卡" % tag)
+	_below(ocard, tide, "%s 一 顶匾长高 号令卡（对照）" % tag)
+	# 二、右格缩回
+	fleet_lbl.custom_minimum_size.y = 0.0
+	await _frames(6)
+	_expect(tide.size.y <= TIDE_PLAIN_H + 0.5, "%s 二 右格缩回后顶匾回一行高（%.0f）" % [tag, tide.size.y])
 	var gap := card.get_global_rect().position.y - tide.get_global_rect().end.y
 	_expect(absf(gap - 10.0) <= 0.5, "%s 二 敌情卡跟着上来：上沿离顶匾下沿 %.0f（应 10）" % [tag, gap])
-	# 三、又进货
-	_load(fleet)
+	# 三、再撑高
+	fleet_lbl.custom_minimum_size.y = THREE_LINES_H
 	await _frames(6)
-	_expect(tide.size.y > TIDE_PLAIN_H + 20.0, "%s 三 又进货顶匾再长高（%.0f）" % [tag, tide.size.y])
-	_below(card, tide, "%s 三 又进货 敌情卡" % tag)
+	_expect(tide.size.y > TIDE_PLAIN_H + 20.0, "%s 三 再撑高顶匾再长高（%.0f）" % [tag, tide.size.y])
+	_below(card, tide, "%s 三 再撑高 敌情卡" % tag)
 	await _close(wm)
-
-
-func _load(fleet: Node) -> void:
-	for i in GOODS.size():
-		fleet.call("add_cargo", GOODS[i], 10 + i * 7, 10.0, 0)
 
 
 ## c 的上沿在顶匾下沿之下（不压匾）

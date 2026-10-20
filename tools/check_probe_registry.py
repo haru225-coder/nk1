@@ -183,6 +183,7 @@ EXEMPT = [
     ("qa_w54_voyage_sink_home_probe.gd", "lane-w54-voyage", "沉船捞回这一程起锚港探针（闯兴化撞上哨船点「掉头回航」起讫对调后，回程风涛沉 / 海寇一仗沉都捞回泉州、换场后 Main 港页落在泉州；寻常一程与拦港当场沉对照），修折回途中沉船被捞进围城，回退即红，headless 秒级"),
     ("qa_w54_voyage_toll_empty_probe.gd", "lane-w54-voyage", "海寇买路财空舱札记探针（拿不出钱、舱空不写「搬走了三成货」且钱船舱都不动；舱里有货照旧三成并列货单、钱够照旧付钱两对照），修空舱也说搬走三成货，回退即红，headless 秒级"),
     ("qa_w54_voyage_unsailed_return_probe.gd", "lane-w54-voyage", "海图没发舶就回港不挂抵港签探针（看风后候风再发两回过六日再点「回港」不算抵港；当日回港、候过风再真发舶到福州「下船入港」两对照），修候过风原地回港也挂「抵泉州」，回退即红，headless 秒级"),
+    ("qa_w54_hud_tide_cargo_probe.gd", "lane-w54-hud", "海战顶匾右格「金钱　货舱」一行放得下专项探针（空舱 / 一样货照旧逐样写、六样货与钱八位收成「6 样 165 件」一行全单进悬停、货抛光回「空」，顶匾恒 72 高、货名与件数不折开，1280×720 与 21:9 各一遍；逐样写折成三四行顶匾长到 114 回退即红），headless 秒级，随本 lane 落地验过留档"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),

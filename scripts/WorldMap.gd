@@ -725,7 +725,7 @@ func _update_hud() -> void:
 		cargo_bits.append("%s ×%d" % [GameManager.get_good_name(k), int(Fleet.cargo[k].get("qty", 0))])
 	var cargo_str := "空" if cargo_bits.is_empty() else "　".join(cargo_bits)
 
-	fleet_status.text = "金钱　%d　　货舱　%s" % [GameState.money, cargo_str]
+	_fit_fleet_status("金钱　%d　　货舱　%s" % [GameState.money, cargo_str], cargo_bits)  # 一行放不下收成「N 样 M 件」（lane w54-hud，见文件尾）
 
 
 ## 顶匾文案单独拼，避免一条长 % 串数错占位（Godot 4.6 少参数会整栏变空）。
@@ -1873,3 +1873,30 @@ func _seed_melee_rng(rng: RandomNumberGenerator) -> void:
 
 ## 开战那一刻在册的各船（引着名册里的那几格；_roster_durability 逐艘认，不按序号）
 var _roster_ships: Array = []
+
+
+# ── 顶匾右格「金钱　货舱」一行放得下（lane w54-hud）──────────────────────
+## 右格是按宽自动折行的 Label（WorldMap.tscn 的 FleetStatus）。原先最小宽 280、舱里每样货逐个写上：钱数五六位、两三样货就
+## 折成两三行，顶匾从 72 长到 88–114，盖住的海面比镜头让位（worldmap_cam_plaque 按匾下沿 80 算）多出一截，折行还把
+## 「青白瓷 ×10」从货名与件数中间折开。改成右格最小宽 360（左格操纵提示约 600 px，1280 宽下仍有 860 余），一行放得下照旧
+## 逐样写；放不下收成「N 样 M 件」一行，全单挂在悬停里。_update_hud 逐帧刷，同一串只量一次
+var _fleet_status_src := ""
+
+
+func _fit_fleet_status(full: String, cargo_bits: PackedStringArray) -> void:
+	if full == _fleet_status_src:
+		return
+	_fleet_status_src = full
+	var f := fleet_status.get_theme_font("font")
+	var fs := fleet_status.get_theme_font_size("font_size")
+	var room := maxf(fleet_status.size.x, fleet_status.custom_minimum_size.x)
+	if cargo_bits.is_empty() or f == null or f.get_string_size(full, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= room:
+		fleet_status.text = full
+		fleet_status.tooltip_text = ""
+		return
+	var pieces := 0
+	for k in Fleet.cargo.keys():
+		pieces += int(Fleet.cargo[k].get("qty", 0))
+	fleet_status.text = "金钱　%d　　货舱　%d 样 %d 件" % [GameState.money, cargo_bits.size(), pieces]
+	fleet_status.tooltip_text = "货舱　" + "　".join(cargo_bits)
+	fleet_status.mouse_filter = Control.MOUSE_FILTER_PASS
