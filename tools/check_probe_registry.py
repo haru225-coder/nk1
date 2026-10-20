@@ -159,6 +159,7 @@ EXEMPT = [
     ("qa_w54_voyage_heading_wind_probe.gd", "lane-w54-voyage", "晨潮三向顺风按全程的风排探针（十四港 × 十二月 × 初十 / 三十每一手 = 按去向牌上那个风的数排出的轮转窗口、广州七月不发全程顶头逆风的占城、真开海图三张牌风行无逆风），修原先按出港第一段方位排，回退即红，headless 约十秒"),
     ("qa_w54_voyage_shoal_probe.gd", "lane-w54-voyage", "傍岸擦浅滩船体伤每艘各吃一份探针（三船队各减 SHOAL_HULL、旗舰见底只扣到 0、札记写实扣之和、单船同改前、甲档减伤、真走傍岸逐日抽事抽到浅滩那一日），修原先乘船数整份压给旗舰，回退即红，headless 秒级"),
     ("qa_w54_voyage_sink_home_probe.gd", "lane-w54-voyage", "沉船捞回这一程起锚港探针（闯兴化撞上哨船点「掉头回航」起讫对调后，回程风涛沉 / 海寇一仗沉都捞回泉州、换场后 Main 港页落在泉州；寻常一程与拦港当场沉对照），修折回途中沉船被捞进围城，回退即红，headless 秒级"),
+    ("qa_w54_voyage_unsailed_return_probe.gd", "lane-w54-voyage", "海图没发舶就回港不挂抵港签探针（看风后候风再发两回过六日再点「回港」不算抵港；当日回港、候过风再真发舶到福州「下船入港」两对照），修候过风原地回港也挂「抵泉州」，回退即红，headless 秒级"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),

@@ -2368,7 +2368,7 @@ func _sink(preface: String = "") -> void:
 func _on_back_to_port() -> void:
 	if voyage_started:
 		return
-	_return_to_port()
+	_return_unsailed()  # 没发舶就回港：船没离岸，候风再发候过的日子不算出过港（lane w54-voyage）
 
 
 func _return_to_port() -> void:
@@ -2513,3 +2513,14 @@ func _run_grain_sellable() -> int:
 func _rescue_port() -> String:
 	var home := str(GameState.last_port)
 	return home if home != "" else origin_port
+
+
+## lane w54-voyage：没发舶就点「回港」。Main 出港那一下记了（港、日）（Cinematics.note_departure），回港时「走了日子或换了港」
+## 才挂抵港签（Cinematics.take_arrival，头注「海图上点『回港』原路折回不算」）——可海图上「候风再发」一回过三日，
+## 候过再回港，船没离岸也挂一张抵港签。这里把出港那一笔改记成此刻此港，原地回港就不算抵港
+const _Cine := preload("res://scripts/cutscene/Cinematics.gd")
+
+
+func _return_unsailed() -> void:
+	_Cine.note_departure(origin_port, Calendar.absolute_day())
+	_return_to_port()
