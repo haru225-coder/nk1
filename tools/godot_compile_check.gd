@@ -281,6 +281,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_ending_place_probe.gd",  # lane w54-ending 终局港页匾与首进题签写结局收在的地方（崖山 / 旧避风澳；反向基照旧写港名）
 	"res://tools/qa_w54_tutorial_depart_note_probe.gd",  # lane w54-tutorial 出港验引那句带到海图探针（修验引那句随港页当帧换掉）
 	"res://tools/qa_w54_seaevents_ledger_probe.gd",  # lane w54-seaevents 海上遇事札记与实扣对得上探针（买路财拿不出钱：舱空不说搬走、零头货照实写；逃走没甩脱写船体实扣）
+	"res://tools/qa_w54_seaevents_ledger_probe.gd",  # lane w54-seaevents 海上遇事札记与实扣对得上探针（买路财拿不出钱：舱空不说搬走、零头货照实写；逃走没甩脱写船体实扣；花钱的钮写钱数）
 	"res://tools/qa_w54_seaevents_war_once_probe.gd",  # lane w54-seaevents 战时遭遇了结过的同一程不再来探针（征船已征 / 交船 / 抗征罚过不再征；哨船受检过不再拦）
 	"res://tools/qa_w54_seaevents_war_where_probe.gd",  # lane w54-seaevents 战时遭遇看船所在海域探针（博多外不征船、不撞元军哨船，傍过已降元的温州明州撞得上）
 	"res://scripts/core/PortLife.gd",  # lane w54-port 岸上见闻表（港所在一带 × 季风、战况 → 一句码头光景；开关 port_life）

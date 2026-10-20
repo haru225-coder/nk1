@@ -12,6 +12,9 @@ extends SceneTree
 ##     旗舰挨的那一下（damage_fleet 30 × 甲档减伤）一字不提，舱里空着一件没抢也说货舱被夺。
 ##   F1 有货：札记写的被抢件数 = 实少件数，「船体受损 N」= 旗舰实扣（30）。F2 舱空：不说货舱被夺，照写船体受损。
 ##   F3 甲满三档：实扣 24 写 24。F4 旗舰只剩 12：扣到 0 为止，写 12。F5 甩脱了：不扣船体、不写受损，绕路多一程。
+##   B 花钱的钮写出要花多少（SeaChart._show_event）：遇海寇「献上买路财」、征船「塞钱免征」原先只写四个字，同面板「散钱 N」
+##     「交出一条船（名声 +6）」「载人同行（水粮 −2 成）」都写了代价。B1 / B3 钱够：钮上写的钱数 = 真按下去现银实扣；
+##     B2 / B4 钱不够：钮上写明「要 N 钱，囊中不足」，按下去现银不扣（买路财由他们搬货，免征改走溜）。
 ## 运行期脚本错即红（共用件 tools/script_err_tally.gd；_run_guarded 兜 _run 半路中止）。
 ## 用法：godot --headless --path . -s res://tools/qa_w54_seaevents_ledger_probe.gd（经门锁跑）
 ## 末行 W54_SEAEVENTS_LEDGER cases=N fails=M；M>0 时 exit 1。
@@ -74,6 +77,12 @@ func _run() -> void:
 	_flee(chart, "F3 甲满三档", 1, [[0, "pepper", 3]], 3, -1.0, false)
 	_flee(chart, "F4 旗舰只剩 12", 2, [[1, "tea", 5]], 1, 12.0, false)
 	_flee(chart, "F5 甩脱了", 1, [[0, "qingbai_porcelain", 10]], 1, -1.0, true)
+	print("── B 花钱的钮")
+	var voy: Node = root.get_node("Voyage")
+	_cost_button(chart, "B1 献上买路财，钱够", voy.call("pirate_sighting"), "献上买路财", 1000)
+	_cost_button(chart, "B2 献上买路财，钱不够", voy.call("pirate_sighting"), "献上买路财", 50)
+	_cost_button(chart, "B3 塞钱免征，钱够", voy.call("_requisition_event"), "塞钱免征", 2000)
+	_cost_button(chart, "B4 塞钱免征，钱不够", voy.call("_requisition_event"), "塞钱免征", 60)
 	chart.queue_free()
 	await _frames(2)
 	_report()
@@ -223,6 +232,42 @@ func _flee(chart: Node, tag: String, ship_count: int, hold: Array, armor: int, f
 		cargo_ok = not line.contains("货舱被夺") and after.is_empty()
 	_expect(cut > 0 and said == cut and cargo_ok and line.contains("未能甩脱"),
 		"%s：札记「%s」写船体受损 %d，旗舰实扣 %d" % [tag, line, said, cut])
+
+
+## 挂一面遭遇，找到 what 那颗钮，读钮上写的钱数，真按下去，看现银实扣
+func _cost_button(chart: Node, tag: String, ev: Dictionary, what: String, money: int) -> void:
+	_fleet_with(1, [[0, "qingbai_porcelain", 10]])
+	_gs.set("money", money)
+	chart.call("_show_event", ev)
+	var btn: Button = null
+	for c in (chart.get("event_actions") as Node).get_children():
+		if c is Button and not c.is_queued_for_deletion() and str((c as Button).text).begins_with(what):
+			btn = c
+	if btn == null:
+		_expect(false, "%s：面板上找不到「%s」那颗钮" % [tag, what])
+		return
+	var label := str(btn.text)
+	var re := RegEx.new()
+	re.compile("（(?:要 )?(\\d+) 钱")
+	var m := re.search(label)
+	var said := int(m.get_string(1)) if m != null else -1
+	var short := label.contains("囊中不足")
+	# 免征拿不出钱改走「趁夜溜走」：种子挑征船那条成功率（航速 / 240，比海寇那条严）也掷得中的，溜成了不罚钱
+	var chance := clampf(float(_fleet.call("fleet_speed")) / 240.0, 0.2, 0.85)
+	var k := 1
+	while k < 5000:
+		seed(k)
+		if randf() < chance:
+			break
+		k += 1
+	seed(k)
+	btn.pressed.emit()
+	var spent := money - int(_gs.get("money"))
+	chart.set("remaining_li", 500.0)
+	if money >= said and said > 0:
+		_expect(not short and spent == said, "%s：钮「%s」，按下去现银实扣 %d" % [tag, label, spent])
+	else:
+		_expect(short and said > 0 and spent == 0, "%s：钮「%s」，按下去现银实扣 %d" % [tag, label, spent])
 
 
 func _report() -> void:

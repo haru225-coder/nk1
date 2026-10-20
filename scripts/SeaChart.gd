@@ -1608,7 +1608,7 @@ func _show_event(event: Dictionary) -> void:
 	elif kind == Voyage.EventKind.PIRATE:
 		_add_event_action("迎战", _on_fight_pirates)
 		_add_event_action("扬帆逃走", _on_flee_pirates)
-		_add_event_action("献上买路财", _on_pay_pirates); _tutorial_pirate()  # 新手小笺（lane w54-tutorial）
+		_add_event_action(_cost_label("献上买路财", _pirate_toll()), _on_pay_pirates); _tutorial_pirate()  # 新手小笺（lane w54-tutorial）
 	elif kind == Voyage.EventKind.DISCOVERY:
 		_add_event_action("绕去细看　费一日", _on_investigate_discovery)
 		_add_event_action("不理会　继续航行", _on_event_continue)
@@ -1620,7 +1620,7 @@ func _show_event(event: Dictionary) -> void:
 	elif kind == Voyage.EventKind.REQUISITION:
 		if Fleet.ships.size() > 1:
 			_add_event_action("交出一条船（名声 +6）", _on_requisition_surrender)
-		_add_event_action("塞钱免征", _on_requisition_bribe)
+		_add_event_action(_cost_label("塞钱免征", _requisition_bribe_cost()), _on_requisition_bribe)
 		_add_event_action("趁夜溜走", _on_requisition_flee)
 	elif kind == Voyage.EventKind.YUAN_PATROL:
 		_add_event_action("落帆受检", _on_patrol_submit)
@@ -2153,7 +2153,7 @@ func _on_flee_pirates() -> void:
 
 func _on_pay_pirates() -> void:
 	event_panel.visible = false
-	var toll: int = maxi(100, int(GameState.money * 0.15))
+	var toll: int = _pirate_toll()
 	if GameState.spend_money(toll):
 		Fleet.morale = maxi(0, Fleet.morale - 4)
 		_log(_ink(UiTheme.HONEY, "递过去 %d 钱买路。对方点了点数目，掉头走了。" % toll))
@@ -2206,7 +2206,7 @@ func _on_requisition_surrender() -> void:
 
 func _on_requisition_bribe() -> void:
 	event_panel.visible = false
-	var cost: int = maxi(100, int(GameState.money * 0.15))
+	var cost: int = _requisition_bribe_cost()
 	if GameState.spend_money(cost):
 		_log("[color=yellow]%d 钱换了册子上「已征」两个字。船一条没少。[/color]" % cost)
 		Voyage.settle_war_event(Voyage.EventKind.REQUISITION)  # 「已征」了，这一程不再征（lane w54-seaevents）
@@ -2714,3 +2714,20 @@ func _keep_unused_permit() -> void:
 	if GameManager.depart_permit:
 		GameState.has_customs_permit = true
 	GameManager.depart_permit = false
+
+
+## lane w54-seaevents：遇海寇「献上买路财」、征船「塞钱免征」两颗花钱的钮写出要花多少。同面板「散钱 N」「交出一条船（名声 +6）」
+## 「载人同行（水粮 −2 成）」都写了代价，这两颗原先只写四个字，按下去才知道是现银一成五（至少 100 钱）。钱不够时写明囊中不足
+## （按下去照旧：买路财拿不出由他们搬货，免征拿不出就趁夜溜走）。钮上的数与回调扣的数同一个函数算
+func _pirate_toll() -> int:
+	return maxi(100, int(GameState.money * 0.15))
+
+
+func _requisition_bribe_cost() -> int:
+	return maxi(100, int(GameState.money * 0.15))
+
+
+func _cost_label(what: String, cost: int) -> String:
+	if GameState.money < cost:
+		return "%s（要 %d 钱，囊中不足）" % [what, cost]
+	return "%s（%d 钱）" % [what, cost]
