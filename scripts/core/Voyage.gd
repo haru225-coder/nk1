@@ -904,7 +904,7 @@ func _sea_buy_lot(from_id: String) -> Dictionary:
 func _pick_rumor() -> Dictionary:
 	var sea: Array = []
 	for p in GameManager.unlocked_ports():
-		if int(p.get("depth", 0)) <= 0:
+		if int(p.get("depth", 0)) <= 0 or not Economy.is_market_open(str(p.get("id", ""))):  # 封港 / 围城牙行上了门闸，不传它的行情（同 Main._collect_spreads；lane w54-voyage，w54-port 交）
 			continue
 		sea.append(p)
 	if sea.is_empty():
