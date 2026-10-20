@@ -242,6 +242,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_voyage_heading_wind_probe.gd",  # lane w54-voyage 晨潮三向顺风按全程的风排探针（修按出港第一段方位排）
 	"res://tools/qa_w54_voyage_sink_home_probe.gd",  # lane w54-voyage 沉船捞回这一程起锚港探针（修闯封锁折回途中沉船被捞进围城）
 	"res://tools/qa_w54_voyage_unsailed_return_probe.gd",  # lane w54-voyage 海图没发舶就回港不挂抵港签探针（修候过风原地回港也挂签）
+	"res://tools/qa_w54_voyage_event_cut_probe.gd",  # lane w54-voyage 海上遇事札记写实扣探针（修名声 / 士气封底时照写满数）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；

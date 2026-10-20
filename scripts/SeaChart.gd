@@ -2218,7 +2218,7 @@ func _on_requisition_flee() -> void:
 	else:
 		var fine: int = maxi(80, int(GameState.money * 0.25))
 		fine = mini(fine, GameState.money)
-		_log("[color=red]被哨船追上。「抗征」二字记入册子，罚钱 %d，名声减 4。[/color]" % fine)
+		_log("[color=red]被哨船追上。「抗征」二字记入册子，罚钱 %d%s。[/color]" % [fine, "，名声减 %d" % mini(4, GameState.fame) if GameState.fame > 0 else ""])  # 名声封底 0，写实扣（lane w54-voyage）
 		GameState.add_money(-fine)
 		GameState.add_fame(-4)
 		Fleet.morale = maxi(0, Fleet.morale - 5)
@@ -2283,8 +2283,8 @@ func _on_refugee_share() -> void:
 
 func _on_refugee_pass() -> void:
 	event_panel.visible = false
+	_log("[color=red]没有停。水手们都没说话，只有舵工朝海里啐了一口。%s[/color]" % ("士气减 %d。" % mini(3, Fleet.morale) if Fleet.morale > 0 else ""))  # 士气封底 0，写实扣（lane w54-voyage）
 	Fleet.morale = maxi(0, Fleet.morale - 3)
-	_log("[color=red]没有停。水手们都没说话，只有舵工朝海里啐了一口。士气减 3。[/color]")
 	_refresh_status()
 	_on_event_continue()
 
