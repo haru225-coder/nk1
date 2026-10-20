@@ -45,6 +45,9 @@ const DEFAULTS := {
 	"combat_notes": true,      # 讲解小笺：一到六期的新概念头一回露面时页边出一张旁注（data/combat_notes.json，各条另认自己那样玩法的键），看过记进存档旗标 combat_note_<id> 不再出（关 = 一张不出、旗标不写）—— w54-polish
 	"hull_view_lod": true,     # w54 收尾 · 船身视口省着画：三维船身只在航向转过「船首在屏上挪半个像素」那个角、船图又在画里时才重画（关 = 每帧满幅重画，逐字回旧）—— w54-perf
 	"sfx_cues": true,          # w54 收尾 · 音效补挂：一到六期战斗、守城、崖山、登陆、港口、过场该有声却没挂的点（scripts/audio/SfxCues.gd 表里标 added 的行；关 = 补挂的一处不响，原先那几处照旧）—— w54-audio
+
+
+	"port_life": true,         # w54 收尾 · 岸上见闻：寻常港页行首注下添一行码头光景的纪实短句，按港所在一带、季风、战况写（scripts/core/PortLife.gd；关 = 小笺只一行行首注，逐字回旧）—— w54-port
 }
 
 static var _over: Dictionary = {}

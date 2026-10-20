@@ -2452,7 +2452,7 @@ func _build_shore() -> void:
 	var shore_list: Array = _port_scene_facilities.duplicate()
 	shore_list.append_array(_special_cards())
 	_shore_facilities = shore_list
-	_refresh_shore()
+	_refresh_shore(); _shore_life()  # 寻常岸带行首注下添一行岸上见闻（开关 port_life，lane w54-port）
 
 
 ## 清岸带：岸门带、旧左右栏（云端港页已不用，守城 / 终局旧代码往里塞过卡）一律清空并按页型设可见。
@@ -5353,3 +5353,48 @@ func _ended_place(port_base: String) -> String:
 	if place == "" or place == GameManager.get_port_name(GameState.last_port):
 		return port_base
 	return place
+
+
+## 岸上见闻（lane w54-port，开关 port_life）：寻常港页行首注「今日只开三处。」那方墨底小笺里再添一行纪实短句，按港所在一带、
+## 季风、战况写（scripts/core/PortLife.gd 一张表）。守城 / 终局岸带不添；开关关掉一行不添，小笺照旧只一行行首注。
+## _build_shore 排完寻常岸带那一行调；岸带每回重排都先清空，这一行跟着重添，不会叠成两行。
+const _PORT_LIFE := preload("res://scripts/core/PortLife.gd")
+
+
+func _shore_life() -> void:
+	if not _SIEGE_SWITCHES.on("port_life") or _shore_mode != "port":
+		return
+	var season := "calm"
+	match Calendar.get_monsoon():
+		Calendar.Monsoon.NORTHEAST:
+			season = "ne"
+		Calendar.Monsoon.SOUTHWEST:
+			season = "sw"
+	var text := _PORT_LIFE.line(current_scene_id, season, Economy.war_status(current_scene_id))
+	if text == "":
+		return
+	var band := _shore_band()
+	var life := Label.new()
+	life.name = "ShoreLife"
+	life.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiTheme.style_footnote(life)
+	var note := band.get_node_or_null("ShoreNote")
+	if note is PanelContainer and note.get_child_count() == 1 and note.get_child(0) is Label:
+		# 小笺里原只一枚行首注：换成上下两行，行首注在上，字号同行首注
+		var hint := note.get_child(0) as Label
+		note.remove_child(hint)
+		var col := VBoxContainer.new()
+		col.name = "ShoreNoteLines"
+		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		col.add_theme_constant_override("separation", 2)
+		note.add_child(col)
+		col.add_child(hint)
+		life.add_theme_font_size_override("font_size", 16)
+		col.add_child(life)
+	else:
+		# 夜潮皮肤：行首注直挂在岸带头一行，见闻跟在它下面，同一套浮字
+		UiTheme.style_overlay(life)
+		life.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		band.add_child(life)
+		band.move_child(life, 1)
+	life.text = text
