@@ -1105,11 +1105,11 @@ func deliver_contract(port_id: String) -> Dictionary:
 	contract["paid"] = already + pay
 	contract["remaining"] = int(contract["remaining"]) - n
 	if int(contract["remaining"]) <= 0:
-		fame += 1
+		var fame_res := add_fame(1)  # 经 add_fame：跨档改题判在一处（待拍板 29；原先直接 fame += 1，名声 9 交清升了在册舶牙札记不吭声，lane w54-rep）
 		contract = {}
 		return {
 			"ok": true, "done": true, "pay": pay, "qty": n,
-			"msg": "委办交清，牙行付了 %d 钱。名声加 1。" % pay,
+			"msg": "委办交清，牙行付了 %d 钱。名声加 1。%s" % [pay, retitle_note(fame_res)],
 		}
 	return {
 		"ok": true, "done": false, "pay": pay, "qty": n,
@@ -1150,7 +1150,7 @@ func _fail_contract(reason: String) -> String:
 		spend_money(fine)
 	# 名声已到 0 封底时扣不下去，罚条就不写「名声减 1」（lane w53-10 七轮）
 	var fame_cut := "，名声减 1" if fame > 0 else ""
-	fame = maxi(0, fame - 1)
+	var fame_res := add_fame(-1)  # 经 add_fame 封底 0、跨档改题判在一处（待拍板 29；原先直接写 fame，名声 10 毁约降回籍外散商罚条不吭声，lane w54-rep）
 	var good_name := GameManager.get_good_name(str(contract.get("good_id", "")))
 	var dest_name := GameManager.get_port_name(str(contract.get("dest", "")))
 	var issued := str(contract.get("from", ""))
@@ -1159,8 +1159,8 @@ func _fail_contract(reason: String) -> String:
 	if issued != "":
 		contract_ban[issued] = offer_month
 	if reason == "毁约":
-		return "【毁约】%s的委办作废。%s%s。" % [good_name, ("牙行扣 %d 钱" % fine) if fine > 0 else "钱匣是空的，牙行没扣着钱", fame_cut]  # 钱匣空了不写「扣 0 钱」（待拍板 62）
-	return "【逾期】%s没能送到%s。%s%s。" % [good_name, dest_name, ("牙行扣 %d 钱" % fine) if fine > 0 else "钱匣是空的，牙行没扣着钱", fame_cut]
+		return "【毁约】%s的委办作废。%s%s。%s" % [good_name, ("牙行扣 %d 钱" % fine) if fine > 0 else "钱匣是空的，牙行没扣着钱", fame_cut, retitle_note(fame_res)]  # 钱匣空了不写「扣 0 钱」（待拍板 62）
+	return "【逾期】%s没能送到%s。%s%s。%s" % [good_name, dest_name, ("牙行扣 %d 钱" % fine) if fine > 0 else "钱匣是空的，牙行没扣着钱", fame_cut, retitle_note(fame_res)]
 
 
 # ── 行情传闻：别港的（牙行柜上用，lane w53-3）────────────────
@@ -1445,3 +1445,15 @@ func _permit_base_of(raw) -> int:
 	if typeof(raw) == TYPE_INT or typeof(raw) == TYPE_FLOAT:
 		return int(raw)
 	return -1
+
+
+# ── 名声跨档改题（lane w54-rep）────────────────────────
+# 放在文件尾：docs/待策划拍板清单 按行号引着本文件前面几处，往前插行就漂。
+
+## add_fame 回执里职衔换了（升或降，promoted 两向都认）就给「案册改题「新职衔」。」，没换给 ""。
+## 名声加减那一句札记照此跟一句——修埠、赴试、呈报、海战胜仗、战后收拾、剿寨、闯封锁、剧情幕原就这样写，
+## 委办交清 / 毁约 / 逾期原先直接写 fame、绕过 add_fame，跨档时职衔一声不响就换了。
+func retitle_note(fame_res: Dictionary) -> String:
+	if not bool(fame_res.get("promoted", false)):
+		return ""
+	return "案册改题「%s」。" % str((fame_res.get("title", {}) as Dictionary).get("name", ""))

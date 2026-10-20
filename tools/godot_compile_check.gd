@@ -303,6 +303,7 @@ const SCRIPTS := [
 	"res://tools/qa_w54_seaevents_variants_probe.gd",  # lane w54-seaevents 海上遇事变体（开关 sea_event_variants）探针（关 = 逐字原句、只换字不动骰序）
 	"res://tools/qa_w54_gates_zero_case_guard_probe.gd",  # lane w54-gates 零案例守卫探针（主控补登记）
 	"res://tools/qa_w54_combatai_spawn_probe.gd",  # lane w54-combatai 海战敌阵摆位探针（多条敌阵按全场序号摆圈，不各从 0 度起叠在一处）
+	"res://tools/qa_w54_rep_retitle_probe.gd",  # lane w54-rep 名声跨过职衔门槛时札记写改题（委办交清 / 毁约 / 逾期）
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；
