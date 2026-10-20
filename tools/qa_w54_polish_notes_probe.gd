@@ -309,6 +309,14 @@ func _sec_battle() -> void:
 	var watch = wm.get_node_or_null(W.NODE_NAME)
 	_check(watch != null, "开战即挂观察件（WorldMap._setup_combat）")
 	_check(_seen(wm).is_empty(), "开场墨边揭开前一张不出（%s）" % [_seen(wm)])
+	# 开战就把敌船钉远处、士气钉稳，免 START_S 窗口漂近误排接舷・劝降
+	var _ship0 = wm.get("ship")
+	for _e in _foes(wm):
+		if _e is Node2D and _ship0 is Node2D:
+			(_e as Node2D).global_position = (_ship0 as Node2D).global_position + Vector2(900, 0)
+			(_e as Object).set_meta(W.MORALE_META, {"state": "steady"})
+	if _ship0 is Object:
+		(_ship0 as Object).set_meta(W.MORALE_META, {"state": "steady"})
 	await _wait(W.START_S + W.POLL_S + 0.3)
 	_check(_seen_start(wm) == ["sea", "orders", "gunnery", "intel"],
 		"开场按序：风与潮 → 号令 → 炮位与装填 → 敌情（没有护航、不是崖山、没雇职事：%s）" % [_seen(wm)])
