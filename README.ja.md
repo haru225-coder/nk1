@@ -8,6 +8,15 @@
 
 > ゲーム内のテキストは現在中国語のみです。開発中のプロジェクトで、正式リリースはまだありません。
 
+<p>
+  <img src="docs/screenshots/title.png" width="49%" alt="タイトル画面">
+  <img src="docs/screenshots/sea-chart.png" width="49%" alt="海図：針路を選ぶ">
+  <img src="docs/screenshots/port-fuzhou.png" width="49%" alt="港：福州">
+  <img src="docs/screenshots/naval-battle.png" width="49%" alt="海戦">
+</p>
+
+<sub>スクリーンショットは `tools/patrol_shell.gd` と `tools/qa_chart_hud_screenshots.gd` で、1280×720 の実際のゲーム画面から撮影しています。</sub>
+
 ## ゲームの内容
 
 - **時代と人物**：物語は1255年に始まり、宋元交代と崖山の戦いまで続きます。`data/characters.json` には75人の人物が収録され、そのうち41人は文天祥、張世傑、陸秀夫、蒲寿庚、賈似道、バヤン、クビライ、北条時頼などの実在の人物です。生没年などの史料との照合記録は `docs/` にあります。
@@ -79,6 +88,8 @@ docs/      設計文書、史料調査、監査記録、ゲートの説明（目
 
 ## コントリビュート
 
+詳しくは [CONTRIBUTING.md](CONTRIBUTING.md)（中国語・英語）をご覧ください。
+
 Issue や Pull Request を歓迎します。特に史実の考証、文章、バランス調整、バグ報告は助かります。
 
 - 提出前に上記のチェックを実行してください。少なくとも変更した箇所に対応するゲートは通してください（[docs/GATES.md](docs/GATES.md) を参照）。
@@ -88,4 +99,4 @@ Issue や Pull Request を歓迎します。特に史実の考証、文章、バ
 
 ## ライセンス
 
-このリポジトリにはまだライセンスファイルがなく、ライセンスは未定です。コードや素材を再利用したい場合は、事前に作者へご連絡ください。
+ソースコードは [MIT ライセンス](LICENSE) で公開しています（Copyright (c) 2026 haru225-coder）。`assets/` 内のアートや音楽などの素材は MIT ライセンスの対象外で、個別に明記がない限り著作権はすべて留保されます。詳しくは [ASSETS.md](ASSETS.md) をご覧ください。

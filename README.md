@@ -8,6 +8,15 @@
 
 > 游戏内文字目前只有中文。项目仍在积极开发中，尚未发布正式版本。
 
+<p>
+  <img src="docs/screenshots/title.png" width="49%" alt="标题画面">
+  <img src="docs/screenshots/sea-chart.png" width="49%" alt="海图：选航向">
+  <img src="docs/screenshots/port-fuzhou.png" width="49%" alt="港口：福州">
+  <img src="docs/screenshots/naval-battle.png" width="49%" alt="海战">
+</p>
+
+<sub>截图由 `tools/patrol_shell.gd` 与 `tools/qa_chart_hud_screenshots.gd` 在 1280×720 窗口下实机渲染。</sub>
+
 ## 游戏内容
 
 - **时代与人物**：故事从 1255 年开始，一路走到宋元易代与崖山之役。`data/characters.json` 收录 75 个人物，其中 41 位是史实人物，如文天祥、张世杰、陆秀夫、蒲寿庚、贾似道、伯颜、忽必烈、北条时赖等；生卒年与史料核对记录在 `docs/` 中。
@@ -79,6 +88,8 @@ docs/      设计文档、史料核对、审计台账与门禁说明（索引见
 
 ## 参与贡献
 
+详细说明见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
 欢迎提 Issue 和 Pull Request，尤其是史实考据、文案、平衡性和 Bug 报告。
 
 - 提交前请跑上面的检查；改了哪一块，至少跑对应的门禁（对照 [docs/GATES.md](docs/GATES.md)）。
@@ -88,4 +99,4 @@ docs/      设计文档、史料核对、审计台账与门禁说明（索引见
 
 ## 许可
 
-本仓库目前没有许可证文件，许可尚未确定。如需复用代码或素材，请先联系作者。
+源代码以 [MIT 许可](LICENSE) 发布（Copyright (c) 2026 haru225-coder）。`assets/` 下的美术、音乐等素材不在 MIT 许可范围内，除另有说明外保留所有权利，详见 [ASSETS.md](ASSETS.md)。

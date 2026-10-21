@@ -8,6 +8,15 @@ It is 1255, the third year of Baoyou, at the harbor mouth of Xinghua. You play C
 
 > The in-game text is currently Chinese only. The project is under active development and has no official release yet.
 
+<p>
+  <img src="docs/screenshots/title.png" width="49%" alt="Title screen">
+  <img src="docs/screenshots/sea-chart.png" width="49%" alt="Sea chart: choosing a heading">
+  <img src="docs/screenshots/port-fuzhou.png" width="49%" alt="Port: Fuzhou">
+  <img src="docs/screenshots/naval-battle.png" width="49%" alt="Naval battle">
+</p>
+
+<sub>Captured from the running game at 1280×720 by `tools/patrol_shell.gd` and `tools/qa_chart_hud_screenshots.gd`.</sub>
+
 ## The game
 
 - **Period and characters**: The story starts in 1255 and runs through the Song–Yuan transition and the Battle of Yamen (Yashan). `data/characters.json` holds 75 characters, 41 of them historical figures such as Wen Tianxiang, Zhang Shijie, Lu Xiufu, Pu Shougeng, Jia Sidao, Bayan, Kublai Khan and Hōjō Tokiyori. Notes checking dates against the sources live in `docs/`.
@@ -79,6 +88,8 @@ docs/      design docs, historical research, audit notes and gate docs (index: d
 
 ## Contributing
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
 Issues and pull requests are welcome, especially on historical accuracy, writing, balance and bugs.
 
 - Run the checks above before submitting; at minimum run the gates for the area you changed (see [docs/GATES.md](docs/GATES.md)).
@@ -88,4 +99,4 @@ Issues and pull requests are welcome, especially on historical accuracy, writing
 
 ## License
 
-There is no license file in this repository yet, and the license hasn't been decided. Please contact the author before reusing any code or assets.
+The source code is released under the [MIT License](LICENSE) (Copyright (c) 2026 haru225-coder). Art, music and other assets in `assets/` are not covered by the MIT License; all rights are reserved unless stated otherwise. See [ASSETS.md](ASSETS.md).
