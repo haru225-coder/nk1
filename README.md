@@ -1,148 +1,91 @@
 # 东亚海域立志传（nk1）
 
-> 南宋末年泉州海商题材的航海经营游戏。海图点选、按日推进、遭遇弹窗——以光荣《大航海时代 II》的经济与航海内核为骨架，套用《大航海时代 IV》的剧情舰队结构。
+**简体中文** | [English](README.en.md) | [日本語](README.ja.md)
 
-## 这是什么
+一款以南宋末年东亚海域为舞台的历史航海经营游戏，用 Godot 4.6 制作。
 
-你扮演南宋末年的泉州海商，驾驶舰队往返东亚海域（泉州、博多、耽罗、占城、广州……）低买高卖、走私违禁品、迎战海盗、招募职事、改装船只，在朝代更迭的乱世里经营一支海商舰队。
+宋宝祐三年（1255），兴化海口。你扮演莆田玉湖出身的士子陈子龙，从一条小艍船起家，往返泉州、明州、博多、耽罗、占城等港口做买卖、接委办、应付海盗与查扣。二十多年后，蒙元南下，海商的账本与王朝的存亡缠在了一起。
 
-核心循环是**套利贸易**：货物在产地与消费地之间有真实的异地差价，去程南下、回程北上各有不同的盈利路线。发舶前要选航法——针路平稳，外洋赶期限但风涛和海盗更密，傍岸慢、好找岸影，也更容易擦到浅滩；海图上没有连线的生路会迷航。牙行可以接下有期限的委办，酬金略高于直接卖掉，而且交货不砸盘，误期则赔钱、掉名声。海上遇到商船可以变现或记下行情。季风决定航期（去日本要等夏季西南风、回泉州要赶冬季东北风），补给和船员是远洋的硬约束，砸盘、查扣、风暴、海战都是真实的经营风险。
+> 游戏内文字目前只有中文。项目仍在积极开发中，尚未发布正式版本。
 
-**剧情为骨、沙盒为肉**：104 个历史考据扎实的剧情场景作章节闸门，解锁港口与船种；章节之间是完全自由的沙盒贸易。
+## 游戏内容
 
-## 引擎
+- **时代与人物**：故事从 1255 年开始，一路走到宋元易代与崖山之役。`data/characters.json` 收录 75 个人物，其中 41 位是史实人物，如文天祥、张世杰、陆秀夫、蒲寿庚、贾似道、伯颜、忽必烈、北条时赖等；生卒年与史料核对记录在 `docs/` 中。
+- **港口与海图**：14 处港口，从兴化、泉州、福州、温州、澎湖，到明州、耽罗、博多唐房、广州、萨摩、占城，随章节逐步开放。海图依真实经纬度与 Natural Earth 岸线绘制，航程沿航线折线计算，季风决定航期。
+- **经济**：29 种货物（米粮、生丝、青白瓷、香药、倭铜、日本刀……）分产地与消费地，异地差价、市场深度、砸盘、违禁品、市舶司抽解、牙行委办、战时物价都会影响收益。另有 8 种船、船员与补给、修埠投资、五档市舶职衔。
+- **酒馆与港内**：酒馆里听传闻、招募船员、遇见人物；港内还有市舶司、牙行、船坞、旅店、行会、贡院、寺观等去处。
+- **战斗**：海战为实时操船（风向、舷炮、弹药、浸水失火、接舷白刃、士气），此外还有登陆袭扰、守城与围城战，以及崖山一役。设计见 [docs/combat_realism_design.md](docs/combat_realism_design.md)。
+- **剧情**：四章主线（海口 / 旧账 / 纲首 / 南海），105 个剧情场景作为章节闸门，章与章之间是自由经营；终局有四条结局。
+- **存档与过场**：3 个存档栏位（坏档会退回 `.bak` 备份）；开场、章节与结局都有带字幕的电影式过场。
 
-- **Godot 4.6**（GDScript）
-- 主场景：`res://scenes/Main.tscn`
-- 无第三方依赖，开箱即用
+## 当前状态
+
+- 主线四章、经济、航海、海战、守城与结局都已可从头玩到尾；`tools/simulate_run.py` 会从开局自动跑到结局检查死锁。
+- 伙伴系统目前只有数据骨架（`data/companions.json`），设计仍在拍板中。
+- 开发过程以设计文档与自动化门禁驱动，提交历史从 2026-06 开始，已有 1600 余笔提交。
 
 ## 运行
 
-用 Godot 4.6 打开本目录，直接运行主场景即可。
+需要 [Godot 4.6](https://godotengine.org/)（标准版即可，项目只用 GDScript，无第三方插件）。
+
+1. 克隆本仓库。
+2. 用 Godot 4.6 打开 `project.godot`，按 F5 运行（主场景为 `scenes/Main.tscn`）。
+
+或者在命令行里：
 
 ```bash
-godot --path .        # 或直接用 Godot 编辑器打开 project.godot
+godot --path .
 ```
 
-## 验证
+没有独立显卡的 Linux 机器可以用兼容渲染器：`godot --path . --rendering-method gl_compatibility`（`.cursor/run-game.sh` 是在无 GPU 虚拟机里启动的示例脚本）。如果画面黑屏或贴图变成灰叉，多半是 `.godot/` 导入缓存与当前 Godot 版本不匹配，删掉 `.godot/` 后执行 `godot --headless --import --path .` 重建。
 
-一次改动闭环 = 下面三十六道门禁全绿（逐道判什么、红了长什么样、`--json` 机读见 `docs/GATES.md`）。云端 cursor/* 线与本地 main 线在 2026-09-25 合并（见 `docs/云端优先合并台账_2026-09-25.md`），两边的门禁都保留。
+海战按键：**W/S** 帆档、**A/D** 操舵、**J/K** 左右舷开火、**G** 接舷、**B/Esc** 弃战。
+
+## 自动化检查
+
+一次改动闭环 = 下面三十六道门禁全绿。每道门禁检查什么、失败时是什么样子，见 [docs/GATES.md](docs/GATES.md)；完整命令清单见 [docs/开发笔记.md](docs/开发笔记.md)。
+
+Python 检查不需要 Godot（Python 3，标准库即可）：
 
 ```bash
-# 十八道 Python（无 Godot 也能跑）
-python3 tools/check_symbols.py      # autoload 顺序与跨文件符号、海战精灵 PNG 取证、绢本文案规范、各功能契约
-python3 tools/verify_economy.py     # 数据完整性 / 套利 / 砸盘 / 季风 / 航法与委办 / 哗变 / 风涛分摊 / 结局旗标
-python3 tools/simulate_run.py       # 端到端跑一局，找死锁与账目溢出
-python3 tools/verify_coastline.py   # 真实岸线 / 绕岸航线 / 海名标注数据与代码接线
-python3 tools/check_assets.py       # 代码引用的 res://assets 都在
-python3 tools/verify_story_data.py  # 剧情效果键白名单、存档字段对称
-python3 tools/simulate_endgame.py   # 跳年 / 终局窗口 / 守城数值
-python3 tools/check_sidecars.py     # 侧车成对 / 一致：已跟踪 .gd/.gdshader 必有 .uid、可导入素材必有 .import（lane w42-k4 依拍板 E-13 后半句升进必跑；排巡逻之后；一键跑里排倒数第六）
-python3 tools/gates_md.py           # GATES.md 与门禁注册表逐字一致、附属自检开关还在（lane w40-k3 依拍板 E-14 升进必跑；排巡逻之后；一键跑里排倒数第五）
-python3 tools/check_mac_paths.py    # 已跟踪文件里没有 Mac / Homebrew 专属绝对路径（lane gd21 升进必跑；一键跑里排倒数第四）
-python3 tools/check_host_paths.py   # 已跟踪文件里没有本机 Linux 绝对路径：家目录、/workspace 下的仓库根（lane cs21 升进必跑；一键跑里排倒数第三）
-python3 tools/check_decision_refs.py  # 拍板清单里的「文件:行」还指着原来那段（lane auditfix1 入册即必跑；一键跑倒数第二；红了 --fix）
-python3 tools/check_patrol_shot_count.py  # patrol 旁证落盘 *.png 张数 ≥ 预期钉（从 patrol_shell.gd 现读 11 发）；巡检过、0 张出图立行首红（lane w171-k4 立，巡逻之后）
-python3 tools/art/import_cutscene_bgs.py --data-only  # 过场时长 / 镜数 / 字幕时点 / 产物清单契约（lane w25-j5 依拍板 E-16 升进必跑；不需 Pillow）
-python3 tools/check_w53_copy.py     # 玩家可见 CJK 串两类回潮钉（「前帐」误「前账」+ 状态号半角 -N 误全宽 −N；lane w53-10 文案钉静态扫、w56-k3 依 w53-10 SETTLED :954 钦命 §五.2 三判据逐项签升 must）
-python3 tools/check_ledger_garbage.py # docs/仓务清册「殓殓」词级污染指纹静态扫（lane w62-k3 立、w68-k1 依 w65-k2 牒备件 §五.2 判掂毕升 must：R1 单枚细判窗 + R2 ≠ 恒等基线双端红 + 白名单 15 行 11 键钉集）
-python3 tools/check_ledger_skeleton.py # docs/仓务清册判档段段级完整性静态扫（甲行数下限 / 甲′段数恒等钉 / 乙§键首轮非严格递增 / 丙段名唯一 / 丁纯尾 append 五格；lane w77-k5 依 w76-k6 复核牒 §五.2 判掂毕升 must——与 check_ledger_garbage 词级污染轨互补：彼罩词级指纹、本罩段级结构；一键跑倒数第二）
-python3 tools/check_probe_registry.py  # tools/ 下每支 *_probe.gd 要么注册进门禁注册表、要么登豁免名单（lane w27-k4 立闸即必跑；一键跑末条；k11 审计「最该补的门禁」第 2 条）
-
-# 十二道 Godot 4.6（先扫一遍编辑器让 class_name 注册；.import 标 valid=false 时先删 .godot 重扫）
-godot --headless --import --path .                               # 导入步骤：刷新缓存、不判红绿（docs/GATES.md §三.9）
-godot --headless --path . -s res://tools/godot_smoke.gd          # 云端冒烟（逐项 ✓，末行 GODOT SMOKE PASS）
-godot --headless --path . -s res://tools/godot_compile_check.gd  # 全部脚本可编译
-godot --headless --path . -s res://tools/godot_story_check.gd    # 剧情脊柱与存档 round-trip（用完会清第 9 槽）
-godot --headless --path . -s res://tools/p7_guild_exam_smoke.gd  # 行会入行 / 贡院赴试 / 誊录：扣费门槛、每章一次、跨月结算时序
-DISPLAY=:2 godot --path . -s res://tools/patrol_shell.gd         # 有窗口：三港九页 + 海图三向牌都在 1280×720 内
-godot --headless --path . -s res://tools/save_robust_probe.gd   # 坏分区退 .bak / 只剩 .bak 取标签 / 两份皆坏不抛错（lane w86-k3 依复核牒升格必跑）
-godot --headless --path . -s res://tools/qa_rest_days_probe.gd   # 旅店 / 住处「歇・候 N 日」钮面 ↔ 实扣运行时断言 24 案（lane w48-k1 依 w42-k6 牒备件绶升必跑）
-godot --headless --path . -s res://tools/qa_economy_panel_probe.gd  # 名声栏级别名 + 欠债跳年册页 / 札记月息原文运行时断言 19 案（lane w62-k4 依 w61-k4 牒备件升格必跑）
-godot --headless --path . -s res://tools/qa_fold_notice_probe.gd  # 札记欠饷原文 + 改元月历一瞥运行时断言 13 案（lane w74-k3 依 w73-k5 复核牒升格必跑）
-godot --headless --path . -s res://tools/qa_rest_scenarios_probe.gd  # 旅店 / 住处「歇・候 N 日」钮面两贴文路径同亮运行时断言 33 案
-godot --headless --path . -s res://tools/qa_debt_strip_probe.gd  # HUD 顶匾上行「欠 %d」欠债格运行时断言 4 案
-godot --headless --path . -s res://tools/qa_crew_fold_probe.gd  # 多雇员【欠饷】字面 + 札记折叠渲染字样运行时断言 17 案（lane w77-k3 依 w75-k3 复核牒升格必跑）
-godot --headless --path . -s res://tools/qa_cargo_strip_probe.gd  # 船籍簿页「船舱」段货载上屏运行时断言 27 案
-godot --headless --path . -s res://tools/qa_seachart_advance_probe.gd  # SeaChart 海图「航段」名号跨月推进时序运行时断言 15 案（lane w79-k3 依 w77-k6 复核牒升格必跑）
-godot --headless --path . -s res://tools/qa_calendar_probe.gd  # 日历推进 / 改元显示运行时断言 38 案（lane w80-k5 依 w79-k4 复核牒升格必跑）
-godot --headless --path . -s res://tools/qa_fold_dim_probe.gd  # 港页记事栏 dim_rest=true 褪色字样运行时断言 8 案（lane w77-k4 依 w76-k4 复核牒升格必跑，lane w80-k3 承接落地）
+python3 tools/check_symbols.py      # 跨文件符号、autoload 顺序、文案规范与各功能契约
+python3 tools/verify_economy.py     # 数据完整性、套利、砸盘、季风、委办等经济规则
+python3 tools/simulate_run.py       # 端到端自动跑一局，找死锁与账目溢出
+python3 tools/verify_story_data.py  # 剧情效果键与存档字段
+python3 tools/check_probe_registry.py  # 每支探针都已登记
 ```
-lane 加跑档（不进上面一键跑、不改道数；触发条件见 `docs/GATES.md` §一 档列）：本帧登记含 `python3 tools/check_ledger_garbage.py`（仓务清册「殓殓」词级污染静态扫，lane w62-k3 立——动 `docs/仓务清册_2026-10-03.md` 判档段时手跑，§三.48）。
 
-
-`tools/patrol.py` 是云端留下的一键巡检（静态三套 + 冒烟 + 巡检）；`tools/legacy/verify_narrative.py` 与 `tools/legacy/p7_smoke.gd` 绑定云端 21ce 的 P7 平行实现，本分支未收该实现，两个脚本仅留档、不算门禁（别与上面的 `p7_guild_exam_smoke.gd` 混淆）。
-
-海图（2026-09-25 重制，见 `docs/海图重制设计_2026-09-25.md`）：图面在 `scripts/chart/MapView.gd`，投影 `scripts/chart/ChartProjection.gd`（等距圆锥，参数 `data/chart_projection.json`），底图 `assets/map/terrain_4096.png` + `mapdata_2048.png` 由 `tools/build_terrain.py` 离线生成（ETOPO 2022 高程 + Natural Earth 1:10m 岸线；需 numpy / scipy / shapely / pyshp / tifffile / pillow）。改投影参数必须同时改 json 并重出底图。
-
-数值平衡很脆，参数依据见 `docs/复刻设计_大航海时代标准.md`。
-
-> 注意：`.godot/` 导入缓存与生成它的 Godot 版本绑定。换二进制或从快照恢复后若场景渲染成黑屏，先 `rm -rf .godot && godot --headless --path . --import` 重建再排查。
-
-## 海战操作与调试键
-
-海战（战术层实时操船）：**W/S** 帆档、**A/D** 操舵、**J/K** 左右舷炮、**G** 接舷、**B/Esc** 弃战逃走。开局小艍对海盗停着打必沉（第二轮齐射），这是门禁锁死的数值设计（`verify_economy.py` 海战数值边界 + `check_symbols.py` 齐射封顶断言），不是 bug。
-
-debug 构建下：**F11** 跳泉州港，再按跳福州（通用九卡），再按跳兴化回访；**F10** 海图强刷海盗遭遇；**F12** 预览第四章了结弹窗——云电脑/无头环境点验用，正式构建不响应。
-
-## 海战船图管线
-
-海战船身是一条三维泉州湾南宋海船，不是一张贴图在转。船壳在 `assets/ships/song_quanzhou.glb`（尖底、低干舷、一层露天甲板、艏艉起翘、两桅竹席硬篷）。`Ship` / `PirateShip` 上的 `HullRig` 用固定斜俯相机把这条网格渲进视口，船体绕 Y 跟航向走，至少十六个朝向各是不同的一面。敌我同一船壳，只换帆色（牙白 / 绛红）。
+Godot 检查（先导入一次资源）：
 
 ```bash
-python3 tools/build_song_ship_mesh.py   # 需 Python 标准库；重生 glb
+godot --headless --import --path .
+godot --headless --path . -s res://tools/godot_smoke.gd          # 冒烟，末行 GODOT SMOKE PASS
+godot --headless --path . -s res://tools/godot_compile_check.gd  # 所有脚本可编译
+godot --headless --path . -s res://tools/godot_story_check.gd    # 剧情主线与存档往返
 ```
 
-`assets/ship_fu.png` / `ship_falcon.png` 是这条网格的一张朝向，留给船图契约和缺网格时的回落，游戏里不拿它自旋。旧的正俯视抠图 `tools/cut_ship_sprites.py` 只在 `--legacy` 下运行（铁子 `shot_iron.png` 仍由它出）。改完必须重跑 `check_symbols.py`——PNG 取证会拦下平涂占位图和烤进底板的 RGB 图。
+`tools/` 下还有 170 多支 `qa_*_probe.gd` 运行时探针，覆盖海图、经济面板、存档、过场、海战、无障碍焦点、音效等；单支运行方式相同：`godot --headless --path . -s res://tools/<探针>.gd`。
 
 ## 目录结构
 
 ```
-data/       港口、货物、船种、章节、职事等 JSON 数据
-scripts/    游戏脚本（core/ 为 autoload 单例：Fleet/Economy/Voyage/…）
-scenes/     场景与 UI
-tools/      Python 静态门禁（必跑十一道，另有加跑档）+ Godot 门禁与探针 + 美术 / 船图管线（art_src/ 为生成原稿，gdignore）
-docs/       设计文档、台账与门禁说明（索引见 docs/README.md）
-assets/     美术资源
+data/      港口、货物、船种、人物、章节、剧情场景、过场、结局等 JSON 数据
+scenes/    场景（主场景、海图、海战、过场、UI）
+scripts/   GDScript；core/ 为 autoload 单例（Calendar、Economy、Fleet、Crew、Voyage、SaveLoad）
+assets/    美术、字体、着色器、船体网格、海图底图
+tools/     Python 静态检查、Godot 冒烟与运行时探针、美术与船图管线
+docs/      设计文档、史料核对、审计台账与门禁说明（索引见 docs/README.md）
 ```
 
-## 进度
+## 参与贡献
 
-- ✅ P0 地基 / P1 经济内核 / P3 航海层 / P5 职事与发现录 / P6 章节推进
-- ✅ P2 舰队深化（海图、分船装载、分船船员、船体改装）
-- ✅ P4 海战（炮击接入、接舷白刃夺船、弹数挂炮位 + 伤害乘甲）
-- ✅ P6 其余：剧情旗标真正被场景/酒馆/职事消费；第四章四条结局（海口信路 / 账上的距离 / 史册未落笔 / 南海一纲兜底）
-- ✅ Godot 4.6-stable 无头已跑通：import + `godot_smoke.gd` PASS，`Main.tscn` 启动无脚本错误
-- ✅ 窗口点验已过（云电脑 XFCE + llvmpipe）：序章 → 海路 → 泉州三选一 → 酒馆旧事 → F12 了结预览；F11 进港 → 升帆 → F10 海盗 → 迎战 → J/K 舷炮 → B 逃走
-- ✅ 海战船图精绘化：福船（牙色硬帆三桅、高艉楼、龙目）/ 海鹘（炭黑壳、绛红破帆、长桨）/ 铁子，真 RGBA 抠底，管线见上节
-- ✅ 收官：拆除 crate / 海鸟 / 鲸影 / 野海盗刷怪（不恢复自由航行拾取）；`simulate_run` 从开局真跑到占城「南海一纲」，不垫 F12
-- ✅ 存档 / 升章 / 了结弹窗与人物对话钮收进「绢本墨笔」主题
-- ✅ 剧情字阶锁成标题 28 / 正文 18 / 脚注 13；选项 hover 挑签（左金杠滑出）
-- ✅ 海图标题 / 状态栏 / 遭遇弹层收进绢本字阶；遭遇弹层居中；死生态位图从 `assets/` 拆除；海洋贴图 UID 对齐导入缓存
-- ✅ 名声换爵：市舶职衔五档（籍外散商 → 市舶都保），折抽解、加赊贷；不另开港口/船种闸门
-- ✅ 港口修埠：市舶司投钱升等，产地更廉、紧缺更好卖、市场更深；同港不套利
-- ✅ 窗口点验回收：港卡改称市舶司/牙行；旅店按港进入候风页；设施图标按文件头加载
-- ✅ 港卡三页接线：行会出港行情（信用加条数）、贡院誊录（工钱+学者倾向、不给名声）、住宅边记与便宜歇息（候风仍去旅店）；通用港同样九卡；兴化回访不再进序章调查页
-- ✅ 寺观上陆勘见：近侧未入官图的旧迹耗日记入册子，赏格仍回市舶司呈报（寺观不转呈、不给名声）
-- ✅ 寺观拓碑：已勘见的近侧旧迹再耗一日写入住处边记，不给名声
-- ✅ 绢本界面做实：熟漆面板不透底图，港名泥金匾，设施图标金框，卷首收成册页；字体优先宋体（Noto Serif CJK SC / Songti SC）
-- ✅ 晨潮三向 / 今日岸开三处 / 柜上三样 / 坞位一艘 / 顶栏与工席 / 海战顶匾 / 日志三卷（云端 UI 线，`docs/复刻设计_大航海时代标准.md` §十～十七）
-- ✅ 哗变：不补水粮走到第 28 日，海上要在散钱、放人、压住里选；风涛按艘分摊
-- ✅ 航法三策（针路 / 外洋 / 傍岸）、海上交市、牙行委办、行情传闻、八成日数与保货成数（嵌进三向牌与船况面板）
-- ✅ 真实岸线（Natural Earth 386 环）+ 沿 sealanes 折线计里程、逐段罗经；海名岛名标注
-- ✅ 本地剧情脊柱：跳年（2+3+4 年）、按月新闻、1268 殿试身份、战况机与战时三遭遇、守城 / 泉州对峙 / 涵江 / 崖山 / 辞呈 / 纲首收官、终局态与结局图；终局特殊卡不受「今日只开三处」限制
-- 📎 云端两套 P7（b05c 纪事与终章、21ce 剧情闭环）：与主干 p6 结局系统同名平行实现，未收；设计稿、`data/endings.json` 留档待挑（`data/port_beats.json` 已按拍板 E-10 接回运行时：开关 `nk1/port_beats_runtime` 默认开，进港节拍照演、关掉即回旧行为）
-- ⏳ 真机手感待 Snow 点验：十三道门禁（2026-09-27 当时口径；现行十七道见上文「验证」）（含有窗口巡检）全过，未在有人操作的窗口里看过
+欢迎提 Issue 和 Pull Request，尤其是史实考据、文案、平衡性和 Bug 报告。
 
-## 已知坑（点验/改图前必读）
-
-- `assets/icon_*.png` 现已全是真 PNG（2026-09-25 随本地 main 进入）；`GameManager.load_texture` 仍**先按文件头解码**，纹理没有 `resource_path`，门禁核对底图用 `Main._bg_file`。窗口里灰叉多半是 `.godot` 缓存与 4.6 二进制不匹配
-- 死生态位图（crate / 海鸟 / 鲸影）已从 `assets/` 与 WorldMap 删除，`godot_smoke.gd` 故意引用它们断言不存在，`check_assets.py` 对该文件放行
-- `godot_story_check.gd` 与 `godot_smoke.gd` 共用 `user://saves/` 第 9 槽：前者用完即删，后者断言空卷；别手工往第 9 槽存档
-- 海图 386 环岸线投影后缓存在 `MapView.coast_rings` / `coast_boxes`（`scripts/chart/MapView.gd`），按视窗包围盒裁剪、只描线不填色——陆地色由底图 `terrain_4096.png` 出；数据包围盒裁边处断成开放折线
-- 新素材的 `.import` 与脚本的 `.uid` 侧车随**本 commit 的源文件**一起提交（仓库现行做法，2026-09-26 起统一；`.gitignore` 故意不忽略它们）：不带的话别处 `git clean` 后重导，uid 会全变、场景引用断开。并行窗口共享工作区时用显式 pathspec，**禁止** `git add .` / 盲加别人 lane 留下的未跟踪侧车噪声
-- 视觉资产：皮肤在 `scripts/core/UiTheme.gd` 的 `const SKIN`（`juanben` 绢本 / `yechao` 夜潮）；立绘由 `tools/art/build_portraits.py` 生成，出了新油画直接覆盖 `assets/portraits/<id>.png` 并把 `data/characters.json` 该人 `portrait_status` 改 `painted`；新剧情文字落地后重跑 `python3 tools/art/subset_fonts.py` 补字
+- 提交前请跑上面的检查；改了哪一块，至少跑对应的门禁（对照 [docs/GATES.md](docs/GATES.md)）。
+- 新增脚本或素材时，把 Godot 生成的 `.uid` / `.import` 文件一起提交（`tools/check_sidecars.py` 会检查）。
+- 在 `docs/` 下新增文档时，在 [docs/README.md](docs/README.md) 补一行索引。
+- 数值平衡比较敏感，参数依据见 [docs/复刻设计_大航海时代标准.md](docs/复刻设计_大航海时代标准.md)。
 
 ## 许可
 
-未定。如需公开复用请先联系作者。
+本仓库目前没有许可证文件，许可尚未确定。如需复用代码或素材，请先联系作者。
