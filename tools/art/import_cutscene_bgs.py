@@ -159,8 +159,9 @@ MANIFEST = [
      "忠肃·城楼：风暴下的临海城墙；切掉右下角签名"),
     ("cs_fleet_armored.jpg", POOLS / "zhangzhou" / "041.jpg", None,
      "海上宋鬼·崖山：甲士立船，舰队连樯"),
-    ("cs_quanzhou_fanfang.jpg", POOLS / "quanzhou" / "005.jpg", None,
-     "泉州蒲氏的船：蕃坊、礼拜塔与番商"),
+    # 2026-10-25：奥斯曼铅笔塔与穹顶已重出。来源改仓内成图，不再从素材池 005 回写。
+    ("cs_quanzhou_fanfang.jpg", REPO_ASSETS / "art_src" / "cs_quanzhou_fanfang.jpg", None,
+     "泉州蒲氏的船：蕃坊、清净寺石砌门楼与开元寺双塔"),
     ("cs_citywall_sunset.jpg", INGESTED / "grok-e163fc64-44b1-4cd3-86ad-08510ca7a612.jpg", (52, 44, 1740, 964),
      "未归/蒲氏：夕照城楼与码头人影；切掉做旧黑边"),
     ("cs_fleet_sunset.jpg", POOLS / "quanzhou" / "009.jpg", None,
@@ -201,9 +202,10 @@ MANIFEST = [
 
 # 导出后就地修瑕（2026-09-26）：产物名 → tools/art/ 下的脚本与参数。青花是元至正以后的器物，改成宋元单色釉
 # 2026-09-28（A′，决策备忘 #5）：开场首镜右上的西式十六尖细线风玫瑰抹掉，补成周边金纸
+# cs_quanzhou_fanfang 的青花坐标是旧池 005 上的罐位。2026-10-25 成图已是单色釉，
+# 再跑那些坐标会涂到新构图的错处，所以不再挂 POSTFIX。
 POSTFIX = {
     "cs_counting_house.jpg": ["fix_cs_qinghua.py", "--only", "counting_house", "--in-place"],
-    "cs_quanzhou_fanfang.jpg": ["fix_cs_qinghua.py", "--only", "quanzhou_fanfang", "--in-place"],
     "cs_world_map_gold.jpg": ["erase_world_map_compass.py", "--only", "cs", "--in-place"],
 }
 

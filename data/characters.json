@@ -305,9 +305,9 @@
       ],
       "look": "四十余岁，海风晒黑的脸，短须；青布短褐外罩旧褙子，腰挂算袋与铜钥，手背有缆绳勒痕。（遗像式构图）",
       "portrait": "res://assets/portraits/chen_uncle.png",
-      "portrait_src": "none",
-      "portrait_status": "ink_card",
-      "portrait_note": "逆光剪影占位卡。【P2 待出油画】"
+      "portrait_src": "gen:grok:chen_uncle.png",
+      "portrait_status": "painted",
+      "portrait_note": "2026-10-26 重出。敞口油灯，没有玻璃罩。西式钥匙已去掉，腰间没有铜钥。一方朱印。胸口一个布结。"
     },
     {
       "id": "xinghua_messenger",
@@ -642,9 +642,9 @@
       ],
       "look": "四十上下（1270 年代；史载卒年四十五），方面阔口，须髯浓黑；绛褐绸面褙子内衬白纻衫，头戴高装巾子，腰悬铜鱼钥。",
       "portrait": "res://assets/portraits/chen_zan.png",
-      "portrait_src": "none",
-      "portrait_status": "ink_card",
-      "portrait_note": "逆光剪影占位卡。【P1 待出油画】"
+      "portrait_src": "gen:grok:chen_zan.png",
+      "portrait_status": "painted",
+      "portrait_note": "2026-10-26 重出。高装巾子立起来了，顶上有一道直缝，偏硬。方孔钱在手里，钱上有浅字。敞口油灯、交叠背心和白绦还在。铜鱼钥没画出。"
     },
     {
       "id": "lin_hua",
@@ -957,7 +957,7 @@
       "portrait": "res://assets/portraits/veteran.png",
       "portrait_src": "none",
       "portrait_status": "ink_card",
-      "portrait_note": "旧图 main:sprite_veteran.png 画成双手俱全、捧青花碗，与「断臂」设定正面冲突，弃用；现为独臂剪影的逆光剪影占位卡。【P1 待出油画】"
+      "portrait_note": "旧图 main:sprite_veteran.png 画成双手俱全、捧青花碗，与「断臂」设定正面冲突，弃用；现为独臂剪影的逆光剪影占位卡。【P1 待出油画】2026-10-26 多张油画仍是双手；有一张只看见一只手，空袖没有入画。再补时结袖落到旁人、竹帘或第二只胳膊上，未覆盖。"
     },
     {
       "id": "veteran_son",
@@ -1852,9 +1852,9 @@
       "relations": [],
       "look": "四十上下，微胖，眼小而细；褐色短褐外系油布围裙，头裹旧巾，腰挂一串库房铜钥，指缝里总有稻草屑。",
       "portrait": "res://assets/portraits/wang_zhiku.png",
-      "portrait_src": "none",
-      "portrait_status": "ink_card",
-      "portrait_note": "逆光剪影占位卡。【P1 待出油画】"
+      "portrait_src": "gen:grok:wang_zhiku.png",
+      "portrait_status": "painted",
+      "portrait_note": "2026-10-26 重出。青白碗、稻草、布带围裙。腰间三根扁铜条，没有挂锁。铜条和木箱上有淡痕。"
     },
     {
       "id": "shi_naowei",
@@ -2113,9 +2113,9 @@
       ],
       "look": "十六七岁，瘦高，眉眼深、肤色微褐；白布小缠头，半旧青布窄袖衫，腰束彩织带，笑起来露一口白牙。",
       "portrait": "res://assets/portraits/pu_alie.png",
-      "portrait_src": "none",
-      "portrait_status": "ink_card",
-      "portrait_note": "逆光剪影占位卡。【P1 待出油画】"
+      "portrait_src": "gen:grok:pu_alie.png",
+      "portrait_status": "painted",
+      "portrait_note": "2026-10-26 重出。十六七岁的瘦脸，青布窄袖交领，白缠头，彩织带。门楼仍是单层雉堞尖拱，不是清净寺逐层内凹。"
     },
     {
       "id": "kondo_saburo",
@@ -2162,9 +2162,9 @@
       "relations": [],
       "look": "三十上下，面容端正，目光温和；黑漆乌帽，素色直垂外罩青灰狩衣（镰仓装束），腰佩短刀，袖中揣汉文书札。",
       "portrait": "res://assets/portraits/kondo_saburo.png",
-      "portrait_src": "none",
-      "portrait_status": "ink_card",
-      "portrait_note": "逆光剪影占位卡。【P1 待出油画】"
+      "portrait_src": "gen:grok:kondo_saburo.png",
+      "portrait_status": "painted",
+      "portrait_note": "2026-10-26 重出。日本面孔、立乌帽、青灰狩衣，不是主角换帽子。帆是素色。刀改成素木柄。町屋仍有点江户味道。"
     },
     {
       "id": "jinghai_shami",
@@ -2275,9 +2275,9 @@
       "relations": [],
       "look": "二十出头，面庞宽厚，两颊冻红；高丽式白麻短衣宽裤，外罩羊皮坎肩，头戴黑色宽檐笠，腰挂马鞭。",
       "portrait": "res://assets/portraits/jin_tanluo.png",
-      "portrait_src": "none",
-      "portrait_status": "ink_card",
-      "portrait_note": "逆光剪影占位卡。【P1 待出油画】"
+      "portrait_src": "gen:grok:jin_tanluo.png",
+      "portrait_status": "painted",
+      "portrait_note": "2026-10-26 重出。宽檐马尾笠贴着头发，不是圆筒冠。腰有马鞭。天色改成暖暮色。"
     },
     {
       "id": "monk_puji",
@@ -2502,9 +2502,9 @@
       ],
       "look": "五十余岁，高鼻深目，花白长髯；黑纱幞头（私宅则白绫缠头），紫色圆领公服，腰佩金鱼袋，指上一枚宝石戒。",
       "portrait": "res://assets/portraits/pu_shougeng.png",
-      "portrait_src": "none",
-      "portrait_status": "ink_card",
-      "portrait_note": "逆光剪影占位卡。【P2 待出油画】"
+      "portrait_src": "gen:grok:pu_shougeng.png",
+      "portrait_status": "painted",
+      "portrait_note": "2026-10-26 重出。直脚幞头、紫袍、金鱼袋、宝石戒，石砌尖拱。领口那颗结已抹成素绸。门楼仍是单层拱，不是逐层内凹。"
     },
     {
       "id": "wen_tianxiang",
@@ -3082,9 +3082,9 @@
       ],
       "look": "六旬老相，须发皆白，面容方正；紫罗圆领朝服，展脚幞头，腰佩金鱼袋，手执象笏——祠堂中悬挂的遗像。",
       "portrait": "res://assets/portraits/chen_junqing.png",
-      "portrait_src": "none",
-      "portrait_status": "ink_card",
-      "portrait_note": "逆光剪影占位卡。【P3 待出油画】"
+      "portrait_src": "gen:grok:chen_junqing.png",
+      "portrait_status": "painted",
+      "portrait_note": "2026-10-26 重出。展脚是长直横翅。右下角朱红印改成一块素绢。笏上端仍有浅痕。"
     },
     {
       "id": "chen_jing",
@@ -3294,9 +3294,9 @@
       ],
       "look": "四十余岁，白胖富态，目光游移；锦绣戎袍罩在未经刀箭的亮银甲上，腰悬镶金宝剑，身后随从捧伞盖。",
       "portrait": "res://assets/portraits/fan_wenhu.png",
-      "portrait_src": "none",
-      "portrait_status": "ink_card",
-      "portrait_note": "逆光剪影占位卡。【P3 待出油画】"
+      "portrait_src": "gen:grok:fan_wenhu.png",
+      "portrait_status": "painted",
+      "portrait_note": "2026-10-26 重出。锦袍下是札甲鳞片，不是欧式板甲。人偏秃，天色偏亮。"
     },
     {
       "id": "zhao_jin",
@@ -3866,9 +3866,9 @@
       ],
       "look": "六十岁（1264），面容虚胖倦怠，须髯稀疏；赭黄圆领袍，直脚幞头，腰系玉带，倚坐御榻。",
       "portrait": "res://assets/portraits/song_lizong.png",
-      "portrait_src": "none",
-      "portrait_status": "ink_card",
-      "portrait_note": "逆光剪影占位卡。【P3 待出油画】"
+      "portrait_src": "gen:grok:song_lizong.png",
+      "portrait_status": "painted",
+      "portrait_note": "2026-10-26 重出。直脚幞头横翅拉直，屏风没有可读的字。玉带改成一排素玉銙。"
     },
     {
       "id": "song_duzong",

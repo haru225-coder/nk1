@@ -109,16 +109,15 @@
   "out_sha1": "2267eeb1f2c829c0c76badfd062dfbe9bd2054e1"
  },
  "cs_quanzhou_fanfang.jpg": {
-  "digest": "59df95574f1e4a2d",
-  "source": "codex:port_pools/quanzhou/005.jpg",
+  "digest": "4e200f53ea413a7d",
+  "source": "repo:art_src/cs_quanzhou_fanfang.jpg",
   "crop": null,
   "size": [
    1792,
    1008
   ],
-  "note": "泉州蒲氏的船：蕃坊、礼拜塔与番商",
-  "out_sha1": "d9e80fc60924361be95cb171661190e9ab4cdbe7",
-  "post": "fix_cs_qinghua.py --only quanzhou_fanfang --in-place"
+  "note": "泉州蒲氏的船：蕃坊、清净寺石砌门楼与开元寺双塔",
+  "out_sha1": "ef6316da10042a643c098c8b720c719c39486ce3"
  },
  "cs_citywall_sunset.jpg": {
   "digest": "3a73ef0ec0925b0a",
