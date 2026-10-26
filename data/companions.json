@@ -5466,8 +5466,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/pu_kaizong.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 20,
     "shang": 58,
@@ -5726,8 +5726,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/pu_shiwen.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 20,
     "shang": 20,
@@ -5846,8 +5846,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/tian_zhenzi.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 20,
     "shang": 40,
@@ -5973,8 +5973,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/manggu_dai.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 20,
     "shang": 58,
@@ -6111,8 +6111,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/mayindi.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 20,
     "shang": 58,
@@ -7175,8 +7175,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/wang_tongshi.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 20,
     "shang": 20,
@@ -7467,8 +7467,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/ramkhamhaeng.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 40,
     "shang": 20,
@@ -7610,8 +7610,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/malik_al_saleh.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 20,
     "shang": 58,
@@ -8014,8 +8014,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/shoni_kageyasu.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 40,
     "shang": 58,
@@ -8141,8 +8141,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/zhao_rushi.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 20,
     "shang": 40,
@@ -8264,8 +8264,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/wang_dayou.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 20,
     "shang": 40,
@@ -8409,8 +8409,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/yang_xiang.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 40,
     "shang": 58,
@@ -8550,8 +8550,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/wu_zhidou.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 20,
     "shang": 20,
@@ -8692,8 +8692,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/ruan_jian.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 20,
     "shang": 20,
@@ -9099,8 +9099,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/zhang_hao.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 40,
     "shang": 58,
@@ -9242,8 +9242,8 @@
    "p1": false,
    "verify": "待核",
    "portrait": "res://assets/portraits/zhang_jin.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图",
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26",
    "attrs": {
     "hang": 58,
     "shang": 20,
@@ -9529,8 +9529,8 @@
    },
    "one_time": [],
    "portrait": "res://assets/portraits/takiuddin_abdur_rahman.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图"
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26"
   },
   "ravivarman_kulashekhara": {
    "id": "ravivarman_kulashekhara",
@@ -9678,8 +9678,8 @@
    },
    "one_time": [],
    "portrait": "res://assets/portraits/ravivarman_kulashekhara.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图"
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26"
   },
   "maravarman_kulasekara_pandyan_i": {
    "id": "maravarman_kulasekara_pandyan_i",
@@ -9830,8 +9830,8 @@
    },
    "one_time": [],
    "portrait": "res://assets/portraits/maravarman_kulasekara_pandyan_i.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图"
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26"
   },
   "jatavarman_vira_pandyan_i": {
    "id": "jatavarman_vira_pandyan_i",
@@ -10527,8 +10527,8 @@
    },
    "one_time": [],
    "portrait": "res://assets/portraits/raden_wijaya.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图"
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26"
   },
   "arya_wiraraja": {
    "id": "arya_wiraraja",
@@ -11267,8 +11267,8 @@
    },
    "one_time": [],
    "portrait": "res://assets/portraits/shoni_yukiyasu.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图"
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26"
   },
   "so_sukekuni": {
    "id": "so_sukekuni",
@@ -11418,8 +11418,8 @@
    },
    "one_time": [],
    "portrait": "res://assets/portraits/so_sukekuni.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图"
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26"
   },
   "hojo_tokimune": {
    "id": "hojo_tokimune",
@@ -11679,8 +11679,8 @@
    },
    "one_time": [],
    "portrait": "res://assets/portraits/savakanmaindan.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图"
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26"
   },
   "sri_dharmasokaraja_v": {
    "id": "sri_dharmasokaraja_v",
@@ -11808,8 +11808,8 @@
    },
    "one_time": [],
    "portrait": "res://assets/portraits/sri_dharmasokaraja_v.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图"
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26"
   },
   "bao_tuo_tu_hua": {
    "id": "bao_tuo_tu_hua",
@@ -12086,8 +12086,8 @@
    },
    "one_time": [],
    "portrait": "res://assets/portraits/wenlao_qiongdaban_nan.png",
-   "portrait_status": "placeholder",
-   "portrait_note": "本批新增·真名史实·待用户出图"
+   "portrait_status": "painted",
+   "portrait_note": "立绘（512×640 · 半身 3/4 · 厚涂）；生图 2026-10-26"
   },
   "jimu_lilezhe": {
    "id": "jimu_lilezhe",
