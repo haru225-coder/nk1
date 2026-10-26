@@ -1752,16 +1752,16 @@
     {
       "id": "gz_dan",
       "port": "guangzhou",
-      "name": "珠江疍排",
+      "name": "珠江蛋排",
       "kind": "ferry",
       "bg": "bg_dist_gz_dan.jpg",
-      "description": "珠江上的疍户把小船并成一排。船上起火做饭，远处石桥没有石人。",
+      "description": "珠江上的蛋户把小船并成一排。船上起火做饭，远处石桥没有石人。",
       "interactions": [
         {
           "id": "gz_dan_salt",
           "type": "buy",
           "label": "收船盐",
-          "text": "疍户的盐还没上岸。按船上的价收。",
+          "text": "蛋户的盐还没上岸。按船上的价收。",
           "good": "sea_salt",
           "qty": 6,
           "price_mul": 0.94,
@@ -1782,7 +1782,7 @@
           "id": "gz_dan_cross",
           "type": "favour",
           "label": "过渡",
-          "text": "你坐疍户的船过了一趟江。船上的话听进耳朵里。",
+          "text": "你坐蛋户的船过了一趟江。船上的话听进耳朵里。",
           "cost": 6,
           "once_per": "month",
           "effects": {"network": 1}
