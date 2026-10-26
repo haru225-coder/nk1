@@ -82,3 +82,15 @@ schema 仍是 4。旧档没有 `districts` 时读出来是八个空桶。
 5. `python3 tools/check_assets.py`、`python3 tools/check_sidecars.py`、`python3 tools/check_w53_copy.py`。城区探针是 `tools/qa_w55_districts_probe.gd`，它会扫整张表，新港的缺图和坏交互也会红。
 
 不要把 district id 写进别的字段当字符串。港 id、货 id、凭 id（`lic_`）、雇人 id 可以互相引用。这样这张表不会被数据族门禁当成「id 互相指认」的一族。若仍被标出来，到 `tools/data_family.json` 显式登记，不要为了过门禁去加无意义的互指。
+
+## 待画城区（pending）
+
+底图还没画好的城区，不进 `data/districts.json`，先放在 `data/districts_pending/<port_id>.json`，schema 与 `districts.json` 完全相同（顶层 `{"districts":[...]}`），每条额外写 `"pending_art": true`，`"bg"` 写计划文件名 `bg_dist_<短名>_<slug>.jpg`（文件尚不存在，不要创建）。游戏的 `Districts.gd` 只读 `data/districts.json`，所以这些条目玩家永远看不到，直到美术波把它们移过去。
+
+美术波移入的步骤：
+1. 生成并裁好底图 jpg，放进 `assets/`，文件名与 pending 条目的 `bg` 一致。
+2. 从 `data/districts_pending/<port_id>.json` 把条目移入 `data/districts.json` 的 `districts` 数组，去掉 `"pending_art"` 字段（或保留无妨，账本不读它）。
+3. 该港条目移空后，删除对应的 pending 文件。
+4. 跑 `$GODOT --headless --path . --import`，再跑 `tools/qa_w55_districts_probe.gd` 与 `tools/qa_w56_pending_districts_probe.gd`，全部绿才算移入完成。
+
+探针 `tools/qa_w56_pending_districts_probe.gd` 扫全部 pending 文件，校验 id 全局唯一、字段、货在港市、传闻与入股、公凭、大比之年、GB2312 文案，确认底图不存在、`pending_art` 为真，并确认账本不暴露任何 pending id。

@@ -307,6 +307,7 @@ const SCRIPTS := [
 	"res://scripts/core/Districts.gd",  # lane w55 城中各处账本（买卖、入股、雇人、传闻、公凭）
 	"res://scripts/ui/DistrictPage.gd",  # lane w55 城中各处页
 	"res://tools/qa_w55_districts_probe.gd",  # lane w55 城中各处数据与交互探针
+	"res://tools/qa_w56_pending_districts_probe.gd",  # lane d1 待画城区探针
 ]
 
 ## 清单自检（lane ea4）：INVENTORY_ROOTS 下每个 git 已跟踪的 .gd 都必须在 SCRIPTS 里，或在 INVENTORY_EXEMPT 里写明理由；

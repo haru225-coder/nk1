@@ -214,6 +214,7 @@ EXEMPT = [
     ("qa_w54_voyage_toll_empty_probe.gd", "lane-w54-voyage", "海寇买路财空舱札记探针（拿不出钱、舱空不写「搬走了三成货」且钱船舱都不动；舱里有货照旧三成并列货单、钱够照旧付钱两对照），修空舱也说搬走三成货，回退即红，headless 秒级"),
     ("qa_w54_voyage_unsailed_return_probe.gd", "lane-w54-voyage", "海图没发舶就回港不挂抵港签探针（看风后候风再发两回过六日再点「回港」不算抵港；当日回港、候过风再真发舶到福州「下船入港」两对照），修候过风原地回港也挂「抵泉州」，回退即红，headless 秒级"),
     ("qa_w55_districts_probe.gd", "lane-w55-districts", "城中各处数据与交互探针（泉州兴化各十五处、底图与交互门、买卖入股雇人传闻公凭看榜围城送米、月初入账接线、港页进城与福州无钮、兴化守城页无钮），回退即红，headless 秒级"),
+    ("qa_w56_pending_districts_probe.gd", "lane-d1-pending", "待画城区探针（pending/*.json 全扫、底图尚不存在、pending_art=true、账本不暴露），回退即红，headless 秒级"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),

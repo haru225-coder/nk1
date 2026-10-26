@@ -340,6 +340,9 @@ DATA_TEXT_KEYS = {
 # 人物志上屏的 {主角} 由 scripts/ui/CharacterArt.gd fill_names 换名，业经 verify_story_data
 # 全链钉住，无需重复查。
 
+# pending 城区：data/districts_pending/*.json，字段同 districts.json，玩家可见文本键如下。
+PENDING_TEXT_KEYS = {"name", "description", "label", "text", "lock_reason"}
+
 
 def _has_cjk(s):
     return bool(re.search(r"[一-鿿]", s))
@@ -653,6 +656,56 @@ def _scan_json_text():
             _check_terms(text, tag)
             _check_dangling_sign(text, tag)
             _check_delta_note(text, tag)
+
+
+def _scan_pending_districts():
+    pdir = os.path.join(ROOT, "data", "districts_pending")
+    if not os.path.isdir(pdir):
+        return
+    for f in sorted(os.listdir(pdir)):
+        if not f.endswith(".json"):
+            continue
+        path = os.path.join(pdir, f)
+        try:
+            d = json.load(open(path, encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for jpath, key, text in _walk_json_strings(d):
+            if not _has_cjk(text):
+                continue
+            if key not in PENDING_TEXT_KEYS:
+                continue
+            tag = "data/districts_pending/%s:%s" % (f, jpath)
+            _check_minus_and_ledger(text, tag)
+            _check_pairs(text, tag)
+            _check_placeholder(text, tag, "data")
+            _check_half(text, tag)
+            _check_fmt(text, tag, "data")
+            _check_debug(text, tag, "data")
+            _check_terms(text, tag)
+            _check_dangling_sign(text, tag)
+            _check_delta_note(text, tag)
+            _check_interpunct(text, tag)
+            _check_place_variants(text, tag)
+            _check_slash(text, tag)
+            _check_trad(text, tag)
+
+
+def _scan_pending_glyphs(cmap):
+    pdir = os.path.join(ROOT, "data", "districts_pending")
+    if not os.path.isdir(pdir):
+        return
+    for f in sorted(os.listdir(pdir)):
+        if not f.endswith(".json"):
+            continue
+        path = os.path.join(pdir, f)
+        try:
+            d = json.load(open(path, encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for jpath, key, text in _walk_json_strings(d):
+            if _has_cjk(text):
+                _check_glyphs(text, "data/districts_pending/%s:%s" % (f, jpath), cmap)
 
 
 def _scan_data_glyphs(cmap):
@@ -1530,7 +1583,9 @@ def main():
     self_fails += _self_test_slash()
     _scan_gd_strings(cmap)
     _scan_json_text()
+    _scan_pending_districts()
     _scan_data_glyphs(cmap)
+    _scan_pending_glyphs(cmap)
     _scan_tscn_glyphs(cmap)
     _report_glyphs()
     _scan_combat_data()
