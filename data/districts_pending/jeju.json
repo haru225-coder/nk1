@@ -1,0 +1,584 @@
+{
+  "districts": [
+    {
+      "id": "jj_haenyeo",
+      "port": "jeju",
+      "name": "海女村",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_jj_haenyeo.jpg",
+      "description": "海女村在石滩边。海女们背着竹篓从海里上来，石墙上晾着海菜与鲍鱼。",
+      "interactions": [
+        {
+          "id": "jj_haenyeo_sable",
+          "type": "buy",
+          "label": "收貂皮",
+          "text": "村里的貂皮刚从山里背来。按出村的价收。",
+          "good": "sable_fur",
+          "qty": 4,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "jj_haenyeo_tea",
+          "type": "sell",
+          "label": "卖茶叶",
+          "text": "村人缺茶。船上的茶叶在这里比泉州好出手。",
+          "good": "tea",
+          "qty": 3,
+          "price_mul": 1.08,
+          "impact": true
+        },
+        {
+          "id": "jj_haenyeo_favour",
+          "type": "favour",
+          "label": "送盐",
+          "text": "你送了一包盐给海女村。村里记你一笔人情。",
+          "cost": 25,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "jj_halla",
+      "port": "jeju",
+      "name": "汉拿山",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_jj_halla.jpg",
+      "description": "汉拿山高。山上石头黑，风大，站上去能看见四面的海与岛。",
+      "interactions": [
+        {
+          "id": "jj_halla_pray",
+          "type": "favour",
+          "label": "祈风",
+          "text": "你在山前点香。海上的风向，听天。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "fame": 1,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "jj_halla_rumor",
+          "type": "rumor",
+          "label": "听明州",
+          "text": "山下的商人说明州近来人参紧。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "korean_ginseng",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "jj_ginseng",
+      "port": "jeju",
+      "name": "人参田",
+      "kind": "grove",
+      "pending_art": true,
+      "bg": "bg_dist_jj_ginseng.jpg",
+      "description": "人参田在山脚。田里搭着遮荫棚，参农小心地翻土，根须露出一点白。",
+      "interactions": [
+        {
+          "id": "jj_ginseng_buy",
+          "type": "buy",
+          "label": "收人参",
+          "text": "田口的人参按出田的价。",
+          "good": "korean_ginseng",
+          "qty": 4,
+          "price_mul": 0.88,
+          "impact": true
+        },
+        {
+          "id": "jj_ginseng_invest",
+          "type": "invest",
+          "label": "入股人参田",
+          "text": "人参田招人入本。入了本，按月分参钱。",
+          "shop": "人参田",
+          "costs": [
+            400,
+            900
+          ],
+          "monthly": [
+            18,
+            52
+          ]
+        },
+        {
+          "id": "jj_ginseng_licence",
+          "type": "licence",
+          "label": "领参田凭",
+          "text": "田主给了一张凭。有它，才许整田地搬人参。",
+          "cost": 220,
+          "licence": "lic_jj_ginseng",
+          "effects": {
+            "merchant_credit": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "jj_paper",
+      "port": "jeju",
+      "name": "纸作坊",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_jj_paper.jpg",
+      "description": "纸作坊在溪边。工人把纸浆摊在竹帘上，纸页在风里晾着。",
+      "interactions": [
+        {
+          "id": "jj_paper_buy",
+          "type": "buy",
+          "label": "收高丽纸",
+          "text": "坊里的纸按出坊的价。",
+          "good": "korean_paper",
+          "qty": 8,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "jj_paper_invest",
+          "type": "invest",
+          "label": "入股纸坊",
+          "text": "纸坊招人入本。入了本，按月分纸钱。",
+          "shop": "纸作坊",
+          "costs": [
+            320,
+            760
+          ],
+          "monthly": [
+            14,
+            42
+          ]
+        },
+        {
+          "id": "jj_paper_hire",
+          "type": "hire",
+          "label": "雇纸工",
+          "text": "纸坊的纸工肯跟你走。他在时，纸好说话些。",
+          "who": "耽罗纸工",
+          "cost": 85,
+          "wage": 14
+        }
+      ]
+    },
+    {
+      "id": "jj_sable",
+      "port": "jeju",
+      "name": "貂皮滩",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_jj_sable.jpg",
+      "description": "貂皮滩在石崖下。猎人把貂皮堆在滩上，潮气重，皮子味大。",
+      "interactions": [
+        {
+          "id": "jj_sable_buy",
+          "type": "buy",
+          "label": "收貂皮",
+          "text": "滩上的貂皮按出滩的价。",
+          "good": "sable_fur",
+          "qty": 5,
+          "price_mul": 0.88,
+          "impact": true
+        },
+        {
+          "id": "jj_sable_porcelain",
+          "type": "sell",
+          "label": "卖青白瓷",
+          "text": "滩里有人收瓷。价比牙行低，不推行情。",
+          "good": "qingbai_porcelain",
+          "qty": 4,
+          "price_mul": 0.9,
+          "impact": false
+        },
+        {
+          "id": "jj_sable_rumor",
+          "type": "rumor",
+          "label": "听博多",
+          "text": "滩上的人说博多唐房近来苏木紧。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "sappanwood",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "jj_market",
+      "port": "jeju",
+      "name": "耽罗市",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_jj_market.jpg",
+      "description": "耽罗市在石墙边。摊子卖的是人参、纸、貂皮，还有一点南洋来的香药。",
+      "interactions": [
+        {
+          "id": "jj_market_ginseng",
+          "type": "buy",
+          "label": "收人参",
+          "text": "摊上的人参按市价。",
+          "good": "korean_ginseng",
+          "qty": 3,
+          "price_mul": 1.0,
+          "impact": true
+        },
+        {
+          "id": "jj_market_silk",
+          "type": "sell",
+          "label": "卖丝织",
+          "text": "市里缺丝。船上的丝织在这里比泉州好出手。",
+          "good": "silk_fabric",
+          "qty": 3,
+          "price_mul": 1.08,
+          "impact": true
+        },
+        {
+          "id": "jj_market_rumor",
+          "type": "rumor",
+          "label": "听泉州",
+          "text": "摊主说泉州近来高丽纸紧。",
+          "cost": 16,
+          "cooldown_days": 45,
+          "port": "quanzhou",
+          "good": "korean_paper",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "jj_stone",
+      "port": "jeju",
+      "name": "石墙村",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_jj_stone.jpg",
+      "description": "石墙村的墙用黑石头叠成。村里人赶着马，石墙上晒着貂皮。",
+      "interactions": [
+        {
+          "id": "jj_stone_hire",
+          "type": "hire",
+          "label": "雇马夫",
+          "text": "村里的马夫肯跟你走。他在时，貂皮好说话些，蒲家的簿子也松一笔。",
+          "who": "耽罗马夫",
+          "cost": 90,
+          "wage": 15,
+          "attention_ease": 1
+        },
+        {
+          "id": "jj_stone_sappan",
+          "type": "sell",
+          "label": "卖苏木",
+          "text": "村里缺染料。船上的苏木在这里比泉州好出手。",
+          "good": "sappanwood",
+          "qty": 2,
+          "price_mul": 1.08,
+          "impact": true
+        },
+        {
+          "id": "jj_stone_favour",
+          "type": "favour",
+          "label": "送盐",
+          "text": "你送了一包盐给石墙村。村里记你一笔人情。",
+          "cost": 20,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "jj_temple",
+      "port": "jeju",
+      "name": "潭林寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_jj_temple.jpg",
+      "description": "潭林寺在山脚。寺里香火少，供桌上摆着人参与纸，僧人扫着石阶。",
+      "interactions": [
+        {
+          "id": "jj_temple_favour",
+          "type": "favour",
+          "label": "布施",
+          "text": "你在寺里布施。僧人记你一笔。",
+          "cost": 40,
+          "effects": {
+            "favour": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "jj_temple_rumor",
+          "type": "rumor",
+          "label": "听萨摩",
+          "text": "僧人说萨摩近来硫黄紧。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "kagoshima",
+          "good": "sulfur",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "jj_horse",
+      "port": "jeju",
+      "name": "牧马场",
+      "kind": "grove",
+      "pending_art": true,
+      "bg": "bg_dist_jj_horse.jpg",
+      "description": "牧马场在高原上。马群在草里跑，牧人吹着短笛，风里都是马粪味。",
+      "interactions": [
+        {
+          "id": "jj_horse_invest",
+          "type": "invest",
+          "label": "入股马场",
+          "text": "马场招人入本。入了本，按月分马钱。",
+          "shop": "牧马场",
+          "costs": [
+            450,
+            1000
+          ],
+          "monthly": [
+            20,
+            58
+          ]
+        },
+        {
+          "id": "jj_horse_hire",
+          "type": "hire",
+          "label": "雇牧人",
+          "text": "牧人肯跟你走。他在时，马好说话些。",
+          "who": "耽罗牧人",
+          "cost": 95,
+          "wage": 16
+        },
+        {
+          "id": "jj_horse_licence",
+          "type": "licence",
+          "label": "领牧凭",
+          "text": "官衙给了一张凭。有它，才许在马场上挑马。",
+          "cost": 260,
+          "licence": "lic_jj_horse",
+          "effects": {
+            "merchant_credit": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "jj_warehouse",
+      "port": "jeju",
+      "name": "塌房",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_jj_warehouse.jpg",
+      "description": "塌房收租，不喊价。货从这里悄悄出去，牙行的行情牌不动。",
+      "interactions": [
+        {
+          "id": "jj_warehouse_rent",
+          "type": "invest",
+          "label": "包一间",
+          "text": "包下一间塌房，按月收租。",
+          "shop": "塌房",
+          "costs": [
+            480,
+            1000
+          ],
+          "monthly": [
+            22,
+            62
+          ]
+        },
+        {
+          "id": "jj_warehouse_quiet",
+          "type": "sell",
+          "label": "悄悄出参",
+          "text": "人参从塌房后门出去，不经过牙行的秤，行情牌不动。价也低些。",
+          "good": "korean_ginseng",
+          "qty": 3,
+          "price_mul": 0.9,
+          "impact": false
+        }
+      ]
+    },
+    {
+      "id": "jj_ferry",
+      "port": "jeju",
+      "name": "渡海口",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_jj_ferry.jpg",
+      "description": "渡海口在石滩边。船夫摇着短桨，把人从耽罗渡到对岸。",
+      "interactions": [
+        {
+          "id": "jj_ferry_paper",
+          "type": "buy",
+          "label": "收高丽纸",
+          "text": "渡海口的纸按船价。数量不多。",
+          "good": "korean_paper",
+          "qty": 4,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "jj_ferry_grain",
+          "type": "sell",
+          "label": "卖米粮",
+          "text": "岛人缺粮。船上的米粮在这里比泉州好出手。",
+          "good": "grain",
+          "qty": 3,
+          "price_mul": 1.08,
+          "impact": true
+        },
+        {
+          "id": "jj_ferry_favour",
+          "type": "favour",
+          "label": "送船资",
+          "text": "你给渡海口送了一笔船资。船夫记你一笔。",
+          "cost": 20,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "jj_gate",
+      "port": "jeju",
+      "name": "官衙门楼",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_jj_gate.jpg",
+      "description": "官衙门楼石砌。元丽联军的旗号挂在门楼，衙役靠着门楼看海。",
+      "interactions": [
+        {
+          "id": "jj_gate_favour",
+          "type": "favour",
+          "label": "送笔墨",
+          "text": "你给书吏送了一匣笔墨。他记下你的名字，下回办事好看些。",
+          "cost": 40,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "jj_gate_licence",
+          "type": "licence",
+          "label": "领互市凭",
+          "text": "书吏给了一张凭。有它，才许在耽罗互市。",
+          "cost": 200,
+          "licence": "lic_jj_trade",
+          "unlock": {
+            "favour_min": 2
+          },
+          "effects": {
+            "fame": 1
+          }
+        },
+        {
+          "id": "jj_gate_rumor",
+          "type": "rumor",
+          "label": "听耽罗",
+          "text": "书吏说耽罗近来人参紧。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "jeju",
+          "good": "korean_ginseng",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "jj_watch",
+      "port": "jeju",
+      "name": "了望台",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_jj_watch.jpg",
+      "description": "了望台在石墙上。站上去能看见四面的海，远处有船的影子。",
+      "interactions": [
+        {
+          "id": "jj_watch_coin",
+          "type": "sell",
+          "label": "卖宋钱",
+          "text": "台下有人收宋钱。这是禁物，蒲家会记一笔。",
+          "good": "song_coin",
+          "qty": 2,
+          "price_mul": 1.15,
+          "impact": true,
+          "attention": 4
+        },
+        {
+          "id": "jj_watch_rumor",
+          "type": "rumor",
+          "label": "听博多",
+          "text": "台下的人说博多唐房近来宋钱紧。",
+          "cost": 16,
+          "cooldown_days": 45,
+          "port": "hakata",
+          "good": "song_coin",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "jj_inlet",
+      "port": "jeju",
+      "name": "暗澳",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_jj_inlet.jpg",
+      "description": "暗澳在石缝里。船藏在暗澳，夜里点灯，白天收旗。",
+      "interactions": [
+        {
+          "id": "jj_inlet_aromatic",
+          "type": "sell",
+          "label": "卖香药",
+          "text": "澳里有人收香药。不问来路，价比牙行低。",
+          "good": "aromatic_medicine",
+          "qty": 2,
+          "price_mul": 0.92,
+          "impact": false
+        },
+        {
+          "id": "jj_inlet_choice",
+          "type": "choice",
+          "label": "谈一笔",
+          "text": "澳主坐在石上。两条路，你选一条。",
+          "options": [
+            {
+              "id": "pay",
+              "label": "交一笔",
+              "text": "你交了一笔钱。澳主放你船过。",
+              "cost": 55,
+              "effects": {
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "refuse",
+              "label": "不交",
+              "text": "你没交。澳主记下了你的船。",
+              "cost": 0,
+              "effects": {
+                "fame": 1,
+                "pu_attention": 2
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

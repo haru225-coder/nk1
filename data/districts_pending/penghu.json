@@ -1,0 +1,566 @@
+{
+  "districts": [
+    {
+      "id": "ph_yugang",
+      "port": "penghu",
+      "name": "澎湖渔港",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_ph_yugang.jpg",
+      "description": "澎湖渔港石岸风大。尖底船靠岸，鹿皮包与海盐袋堆在石阶上，晒鱼的棚子四面透风。",
+      "interactions": [
+        {
+          "id": "ph_yugang_deer",
+          "type": "buy",
+          "label": "收鹿皮",
+          "text": "渔人刚把鹿皮卸下。按出屿的价收，比泉州便宜。",
+          "good": "deer_hide",
+          "qty": 6,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "ph_yugang_grain",
+          "type": "sell",
+          "label": "卖米粮",
+          "text": "屿上缺粮，船上的米粮在这里比泉州好出手。",
+          "good": "grain",
+          "qty": 4,
+          "price_mul": 1.1,
+          "impact": true
+        },
+        {
+          "id": "ph_yugang_rumor",
+          "type": "rumor",
+          "label": "问南岛",
+          "text": "梢公说南岛海道北口近来硫黄紧。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "ryukyu",
+          "good": "sulfur",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "ph_yantian",
+      "port": "penghu",
+      "name": "盐田陂",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_ph_yantian.jpg",
+      "description": "盐田沿着石陂铺开。日头大，盐工挑着盐包走过，陂塘的水映着白盐。",
+      "interactions": [
+        {
+          "id": "ph_yantian_salt",
+          "type": "buy",
+          "label": "收海盐",
+          "text": "陂上的盐刚晒成。按出田的价收。",
+          "good": "sea_salt",
+          "qty": 10,
+          "price_mul": 0.88,
+          "impact": true
+        },
+        {
+          "id": "ph_yantian_invest",
+          "type": "invest",
+          "label": "入股盐田",
+          "text": "盐田招人入本。入了本，按月分盐钱。",
+          "shop": "盐田",
+          "costs": [
+            320,
+            760
+          ],
+          "monthly": [
+            14,
+            40
+          ]
+        },
+        {
+          "id": "ph_yantian_licence",
+          "type": "licence",
+          "label": "领盐田凭",
+          "text": "屿寨给了一张凭。有它，才许整陂地搬盐。",
+          "cost": 180,
+          "licence": "lic_ph_salt",
+          "effects": {
+            "merchant_credit": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ph_shiwu",
+      "port": "penghu",
+      "name": "石屋村",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_ph_shiwu.jpg",
+      "description": "石屋村的屋子用玄武岩叠成。渔妇在门槛上晒网，小孩追着鸡跑。",
+      "interactions": [
+        {
+          "id": "ph_shiwu_hire",
+          "type": "hire",
+          "label": "雇渔人",
+          "text": "石屋村的渔人肯跟你出海。他在时，鹿皮好说话些，蒲家的簿子也松一笔。",
+          "who": "澎湖渔人",
+          "cost": 90,
+          "wage": 15,
+          "attention_ease": 1
+        },
+        {
+          "id": "ph_shiwu_iron",
+          "type": "sell",
+          "label": "卖铁器",
+          "text": "屿上缺铁器。船上的铁器在这里比泉州好出手。",
+          "good": "ironware",
+          "qty": 2,
+          "price_mul": 1.12,
+          "impact": true,
+          "attention": 2
+        },
+        {
+          "id": "ph_shiwu_favour",
+          "type": "favour",
+          "label": "送干鱼",
+          "text": "你送了一筐干鱼给石屋村。村里记你一笔人情。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ph_bifeng",
+      "port": "penghu",
+      "name": "避风澳",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_ph_bifeng.jpg",
+      "description": "避风澳三面环山。船泊在澳里，风小了，牙行的人不上门。",
+      "interactions": [
+        {
+          "id": "ph_bifeng_lacquer",
+          "type": "sell",
+          "label": "卖漆器",
+          "text": "澳里有人收漆器。不经过牙行的秤，行情牌不动，价也低些。",
+          "good": "lacquerware",
+          "qty": 3,
+          "price_mul": 0.9,
+          "impact": false
+        },
+        {
+          "id": "ph_bifeng_choice",
+          "type": "choice",
+          "label": "泊船",
+          "text": "澳里风小，船要泊。两条路，你选一条。",
+          "options": [
+            {
+              "id": "shelter",
+              "label": "交泊费",
+              "text": "你交了泊费。澳里的人记你一笔。",
+              "cost": 40,
+              "effects": {
+                "network": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "sneak",
+              "label": "悄悄泊",
+              "text": "你悄悄泊了船。蒲家的簿子上多了一笔。",
+              "cost": 0,
+              "effects": {
+                "pu_attention": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ph_yuzhai",
+      "port": "penghu",
+      "name": "屿寨门楼",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_ph_yuzhai.jpg",
+      "description": "屿寨门楼石砌。寨兵靠着门楼看海，寨主的旗在风里拍。",
+      "interactions": [
+        {
+          "id": "ph_yuzhai_favour",
+          "type": "favour",
+          "label": "送笔墨",
+          "text": "你给寨主送了一匣笔墨。他记下你的名字，下回办事好看些。",
+          "cost": 40,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "ph_yuzhai_licence",
+          "type": "licence",
+          "label": "领泊澳凭",
+          "text": "寨主给了一张凭。有它，才许在澳里泊船。",
+          "cost": 220,
+          "licence": "lic_ph_harbour",
+          "unlock": {
+            "favour_min": 2
+          },
+          "effects": {
+            "fame": 1
+          }
+        },
+        {
+          "id": "ph_yuzhai_pilot",
+          "type": "hire",
+          "label": "雇引水",
+          "text": "屿寨的引水肯跟你走礁。他在时，船好说话些。",
+          "who": "澎湖引水",
+          "cost": 110,
+          "wage": 18,
+          "attention_ease": 1
+        }
+      ]
+    },
+    {
+      "id": "ph_pirate",
+      "port": "penghu",
+      "name": "海盗巢",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_ph_pirate.jpg",
+      "description": "海盗巢在石缝里。船藏在暗澳，旗号收着，只在夜里点灯。",
+      "interactions": [
+        {
+          "id": "ph_pirate_tea",
+          "type": "sell",
+          "label": "卖茶叶",
+          "text": "巢里有人收茶叶。不问来路，价比牙行低。",
+          "good": "tea",
+          "qty": 2,
+          "price_mul": 0.95,
+          "impact": false
+        },
+        {
+          "id": "ph_pirate_choice",
+          "type": "choice",
+          "label": "谈一笔",
+          "text": "巢主坐在石上。两条路，你选一条。",
+          "options": [
+            {
+              "id": "pay",
+              "label": "交一笔",
+              "text": "你交了一笔钱。巢主放你船过。",
+              "cost": 60,
+              "effects": {
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "refuse",
+              "label": "不交",
+              "text": "你没交。巢主记下了你的船。",
+              "cost": 0,
+              "effects": {
+                "fame": 1,
+                "pu_attention": 2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ph_bushui",
+      "port": "penghu",
+      "name": "补水井",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_ph_bushui.jpg",
+      "description": "补水井在石坡下。井水清，水手在井边排队，木桶碰着石壁响。",
+      "interactions": [
+        {
+          "id": "ph_bushui_porcelain",
+          "type": "sell",
+          "label": "卖福建瓷",
+          "text": "井边有人收瓷。价比牙行低，不推行情。",
+          "good": "fujian_porcelain",
+          "qty": 4,
+          "price_mul": 0.9,
+          "impact": false
+        },
+        {
+          "id": "ph_bushui_favour",
+          "type": "favour",
+          "label": "修井栏",
+          "text": "你出钱修了井栏。屿上记你一笔人情。",
+          "cost": 50,
+          "effects": {
+            "favour": 2,
+            "network": 1
+          }
+        },
+        {
+          "id": "ph_bushui_rumor",
+          "type": "rumor",
+          "label": "听泉州",
+          "text": "井边的人说泉州近来茶叶紧。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "quanzhou",
+          "good": "tea",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "ph_chuanwu",
+      "port": "penghu",
+      "name": "船坞",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_ph_chuanwu.jpg",
+      "description": "船坞在澳边。船底搁在木架上，匠人敲着铜钉，沥青味重。",
+      "interactions": [
+        {
+          "id": "ph_chuanwu_invest",
+          "type": "invest",
+          "label": "入股船坞",
+          "text": "船坞招人入本。入了本，按月分修船钱。",
+          "shop": "船坞",
+          "costs": [
+            400,
+            900
+          ],
+          "monthly": [
+            18,
+            50
+          ]
+        },
+        {
+          "id": "ph_chuanwu_hire",
+          "type": "hire",
+          "label": "雇船匠",
+          "text": "船坞的船匠肯跟你走。他在时，修船便宜些。",
+          "who": "澎湖船匠",
+          "cost": 100,
+          "wage": 16
+        }
+      ]
+    },
+    {
+      "id": "ph_tianhou",
+      "port": "penghu",
+      "name": "天后宫",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_ph_tianhou.jpg",
+      "description": "天后宫在石坡上。香火不旺，供桌上摆着船模和渔网，香客少。",
+      "interactions": [
+        {
+          "id": "ph_tianhou_pray",
+          "type": "favour",
+          "label": "祈风",
+          "text": "你在天后宫前点香。海上的风向，听天。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "fame": 1,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "ph_tianhou_rumor",
+          "type": "rumor",
+          "label": "听博多",
+          "text": "香客说博多唐房近来鹿皮紧。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "deer_hide",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "ph_shichang",
+      "port": "penghu",
+      "name": "岛市",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_ph_shichang.jpg",
+      "description": "岛市在澳口。摊子不多，卖的是干鱼、盐包、鹿皮，还有一点南洋来的香。",
+      "interactions": [
+        {
+          "id": "ph_shichang_deer",
+          "type": "buy",
+          "label": "收鹿皮",
+          "text": "摊上的鹿皮按市价。",
+          "good": "deer_hide",
+          "qty": 4,
+          "price_mul": 1.0,
+          "impact": true
+        },
+        {
+          "id": "ph_shichang_salt",
+          "type": "sell",
+          "label": "卖海盐",
+          "text": "屿上盐不缺，卖不出好价。",
+          "good": "sea_salt",
+          "qty": 5,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "ph_shichang_rumor",
+          "type": "rumor",
+          "label": "听广州",
+          "text": "摊主说广州城近来漆器紧。",
+          "cost": 16,
+          "cooldown_days": 45,
+          "port": "quanzhou",
+          "good": "lacquerware",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "ph_liehu",
+      "port": "penghu",
+      "name": "猎户坡",
+      "kind": "grove",
+      "pending_art": true,
+      "bg": "bg_dist_ph_liehu.jpg",
+      "description": "猎户坡灌木矮。猎人扛着鹿角下坡，狗在石缝里钻。",
+      "interactions": [
+        {
+          "id": "ph_liehu_buy",
+          "type": "buy",
+          "label": "收鹿皮",
+          "text": "猎户新剥的皮。按出坡的价收。",
+          "good": "deer_hide",
+          "qty": 3,
+          "price_mul": 0.85,
+          "impact": true
+        },
+        {
+          "id": "ph_liehu_favour",
+          "type": "favour",
+          "label": "送弓弦",
+          "text": "你送了一副弓弦给猎户。他记你一笔。",
+          "cost": 25,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ph_wangtou",
+      "port": "penghu",
+      "name": "望头山",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_ph_wangtou.jpg",
+      "description": "望头山不高，站上去能看见四面的海。风把人的衣角吹起来。",
+      "interactions": [
+        {
+          "id": "ph_wangtou_grain",
+          "type": "sell",
+          "label": "卖米粮",
+          "text": "山下船等米粮。价比牙行高一成。",
+          "good": "grain",
+          "qty": 3,
+          "price_mul": 1.08,
+          "impact": true
+        },
+        {
+          "id": "ph_wangtou_rumor",
+          "type": "rumor",
+          "label": "问耽罗",
+          "text": "山下的人说耽罗近来人参紧。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "jeju",
+          "good": "korean_ginseng",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "ph_ferry",
+      "port": "penghu",
+      "name": "渡船口",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_ph_ferry.jpg",
+      "description": "渡船口木桩歪着。船夫摇着短桨，把人从一屿送到另一屿。",
+      "interactions": [
+        {
+          "id": "ph_ferry_tea",
+          "type": "buy",
+          "label": "收茶叶",
+          "text": "渡船口的茶按船价。数量不多。",
+          "good": "tea",
+          "qty": 3,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "ph_ferry_favour",
+          "type": "favour",
+          "label": "送船资",
+          "text": "你给渡船口送了一笔船资。船夫记你一笔。",
+          "cost": 20,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ph_cang",
+      "port": "penghu",
+      "name": "塌房",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_ph_cang.jpg",
+      "description": "塌房收租，不喊价。货从这里悄悄出去，牙行的行情牌不动。",
+      "interactions": [
+        {
+          "id": "ph_cang_rent",
+          "type": "invest",
+          "label": "包一间",
+          "text": "包下一间塌房，按月收租。",
+          "shop": "塌房",
+          "costs": [
+            480,
+            1000
+          ],
+          "monthly": [
+            22,
+            62
+          ]
+        },
+        {
+          "id": "ph_cang_quiet",
+          "type": "sell",
+          "label": "悄悄出皮",
+          "text": "鹿皮从塌房后门出去，不经过牙行的秤，行情牌不动。价也低些。",
+          "good": "deer_hide",
+          "qty": 4,
+          "price_mul": 0.9,
+          "impact": false
+        }
+      ]
+    }
+  ]
+}
