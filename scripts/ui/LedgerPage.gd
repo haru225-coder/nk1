@@ -205,15 +205,19 @@ static func render_log(main: Control) -> void:
 	LogFold.fitness_log(main, main.message_label, main.left_panel, LogFold.LOG_WELL_REST)
 
 
-static func update_panel(main: Control) -> void:
-	var cargo_str := ""
-	if Fleet.cargo.is_empty():
-		cargo_str = "空\n"
-	else:
-		for gid in Fleet.cargo.keys():
-			var e: Dictionary = Fleet.cargo[gid]
-			cargo_str += "%s ×%d\n" % [GameManager.get_good_name(gid), e.get("qty", 0)]
+## 船舱条目前的货图：写进正文的 [img]，不进职事头像记号。
+## 记号会把 status_label.text 清空再 add_image，船舱探针读的是 .text，品名就丢了。
+## [img] 跟正文一起赋值；无职事时整页仍是 .text，有职事时 append_text 一样能画出图。
+## 缺图不加标签，品名与「×数量」仍紧挨着，和没图时同一句。标签写在 nobreak 外面。
+static func _with_good_icon(main: Control, gid: String, label: String) -> String:
+	var path := str(main.GOOD_ICON_PATH) % gid
+	if not FileAccess.file_exists(path):
+		return label
+	var px := int(main.ROSTER_HEAD)
+	return "[img=%dx%d]%s[/img] %s" % [px, px, path, label]
 
+
+static func update_panel(main: Control) -> void:
 	var cap_used := Fleet.used_capacity()
 	var cap_total := Fleet.total_capacity()
 	var supply_d := Fleet.supply_days()
@@ -277,6 +281,13 @@ static func update_panel(main: Control) -> void:
 	]
 	if contraband > 0:
 		t += "[color=#%s]舱底违禁　%d 件[/color]\n" % [UiTheme.hex(UiTheme.CINNABAR), contraband]
+	var cargo_str := ""
+	if Fleet.cargo.is_empty():
+		cargo_str = "空\n"
+	else:
+		for gid in Fleet.cargo.keys():
+			var e: Dictionary = Fleet.cargo[gid]
+			cargo_str += _with_good_icon(main, str(gid), "%s ×%d\n" % [GameManager.get_good_name(gid), e.get("qty", 0)])
 	t += "[color=#%s][b]船舱[/b][/color]\n%s" % [gold, cargo_str]
 
 	# 多船时追加每船明细。一艘拆两行：上行「船名　船型　舱位」，下行缩进「帆　甲　水手　舱货」；
@@ -292,7 +303,7 @@ static func update_panel(main: Control) -> void:
 			else:
 				var bits := PackedStringArray()
 				for gid in sc.keys():
-					bits.append(UiTheme.nobreak("%s ×%d" % [GameManager.get_good_name(gid), sc[gid].get("qty", 0)]))
+					bits.append(_with_good_icon(main, str(gid), UiTheme.nobreak("%s ×%d" % [GameManager.get_good_name(gid), sc[gid].get("qty", 0)])))
 				per_ship = "　".join(bits)
 			var crew_str := UiTheme.nobreak("水手 %d / %d" % [Fleet.ship_crew(i), Fleet.ship_crew_max(i)])
 			var crew_color := UiTheme.hex(UiTheme.TEXT)

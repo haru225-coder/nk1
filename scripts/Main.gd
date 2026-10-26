@@ -1315,6 +1315,11 @@ func _setup_market(port_id: String) -> void:
 		var shut_btn := Button.new()
 		shut_btn.text = GameManager.get_good_name(shut_id)
 		shut_btn.custom_minimum_size = Vector2(96, 34)
+		var shut_icon := _good_icon_tex(shut_id)
+		if shut_icon != null:
+			shut_btn.icon = shut_icon
+			shut_btn.expand_icon = false
+			shut_btn.add_theme_constant_override("icon_max_width", 22)
 		shut_btn.set_meta("broker_shut", true)
 		shut_btn.pressed.connect(_on_broker_shut)
 		UiTheme.style_button(shut_btn, false)
@@ -1776,26 +1781,39 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 	return card
 
 
-## 牙行货卡的货图（06 批，512² 透明 PNG）：缺图返回 null，调用方不加节点。
-## 图先缩到 GOOD_ICON_SRC 再上卡（512 直接压到 96、又没有 mipmap 会起毛），缩好的按货 id 记在本会话里，买卖重排货卡不再解码
+## 牙行货卡的货图：assets/goods/good_<id>.png。缺图返回 null，调用方不加节点。
+## 大于 GOOD_ICON_SRC 的先缩小再上卡（大图直接压到 96、又没有 mipmap 会起毛），缩好的按货 id 记在本会话里。
+## 船籍簿船舱写同一路径的 [img]（LedgerPage._with_good_icon），不另开一套图。
+const GOOD_ICON_PATH := "res://assets/goods/good_%s.png"
 const GOOD_ICON_SIZE := 96
 const GOOD_ICON_SRC := 192
 var _good_icon_cache: Dictionary = {}
 
 
-func _market_good_icon(good_id: String) -> TextureRect:
-	var tex: Texture2D = _good_icon_cache.get(good_id)
+func _good_icon_tex(good_id: String) -> Texture2D:
+	var cached: Texture2D = _good_icon_cache.get(good_id)
+	if cached != null:
+		return cached
+	var path := GOOD_ICON_PATH % good_id
+	if not FileAccess.file_exists(path):
+		return null
+	var tex := GameManager.load_texture(path)
 	if tex == null:
-		tex = GameManager.load_texture("res://assets/goods/good_%s.png" % good_id)
-		if tex == null:
-			return null
-		var img := tex.get_image()
-		if img != null and not img.is_compressed() and maxi(img.get_width(), img.get_height()) > GOOD_ICON_SRC:
-			img.fix_alpha_edges()  # 抠底后透明像素还带着品红 / 绿底色，缩图会把它混进描边
-			var k := float(GOOD_ICON_SRC) / float(maxi(img.get_width(), img.get_height()))
-			img.resize(maxi(1, roundi(img.get_width() * k)), maxi(1, roundi(img.get_height() * k)), Image.INTERPOLATE_LANCZOS)
-			tex = ImageTexture.create_from_image(img)
-		_good_icon_cache[good_id] = tex
+		return null
+	var img := tex.get_image()
+	if img != null and not img.is_compressed() and maxi(img.get_width(), img.get_height()) > GOOD_ICON_SRC:
+		img.fix_alpha_edges()  # 抠底后透明像素还带着品红 / 绿底色，缩图会把它混进描边
+		var k := float(GOOD_ICON_SRC) / float(maxi(img.get_width(), img.get_height()))
+		img.resize(maxi(1, roundi(img.get_width() * k)), maxi(1, roundi(img.get_height() * k)), Image.INTERPOLATE_LANCZOS)
+		tex = ImageTexture.create_from_image(img)
+	_good_icon_cache[good_id] = tex
+	return tex
+
+
+func _market_good_icon(good_id: String) -> TextureRect:
+	var tex := _good_icon_tex(good_id)
+	if tex == null:
+		return null
 	var icon := TextureRect.new()
 	icon.name = "GoodIcon"
 	icon.texture = tex

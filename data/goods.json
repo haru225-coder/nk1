@@ -3,7 +3,7 @@
     "title": "东亚海域立志传货物与文书",
     "era": "南宋末，约1260-1277",
     "prototype": "v1.0-uw",
-    "note": "字段说明：tradable 是否进入市场交易；bulk 单位占舱（料）；perishable 每日损耗率；fragile 暴风货损系数；contraband 是否为宋法违禁出口物。war_class 战时货类（grain 粮 / arms 军械 / supply 军需 / luxury 奢侈 / common 普通），牙行价按港口战况乘下面 war_price 表的倍数（表里不列的战况、货类都是 1；开关 war_prices）。"
+    "note": "字段说明：tradable 是否进入市场交易；bulk 单位占舱（料）；perishable 每日损耗率；fragile 暴风货损系数；contraband 是否为宋法违禁出口物。war_class 战时货类（grain 粮 / arms 军械 / supply 军需 / luxury 奢侈 / common 普通），牙行价按港口战况乘下面 war_price 表的倍数（表里不列的战况、货类都是 1；开关 war_prices）。货图按 id 取 res://assets/goods/good_<id>.png，牙行货卡与船籍簿船舱共用。"
   },
   "goods": [
     {
