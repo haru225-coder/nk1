@@ -4,6 +4,10 @@ extends RefCounted
 ## update_status_panel …），调用点、节点路径、信号目标都不动：浮层与匾上的钮仍 connect 到 Main 的同名方法。
 ## 状态（_status_strip / _ledger_layer / _log_lines …）与 left_panel、status_label 仍归 Main，经 main 传进来；这里不存状态。
 ## 门禁 check_symbols 经 MAIN_SPLITS 把这里的函数体拼回 Main 再做源码断言（main. 前缀去掉即搬走前的原文）。
+## 旗舰插画只在有画面时嵌进「船队」段（headless 不嵌，状态串仍是整段 bbcode）。
+
+
+const _ShipArt := preload("res://scripts/ui/ShipArt.gd")
 
 
 static func dress(main: Control) -> void:
@@ -360,7 +364,11 @@ static func update_panel(main: Control) -> void:
 		for it in prog.get("items", []):
 			t = main._append_progress_line(t, it)
 
-	if heads.is_empty():
+	# 无职事小头像、也没有旗舰插画时，整串一次性写入（headless 探针读的就是这串 bbcode）
+	var show_plate := false
+	if DisplayServer.get_name() != "headless":
+		show_plate = _ShipArt.texture(str(Fleet.flagship().get("type", ""))) != null
+	if heads.is_empty() and not show_plate:
 		main.status_label.text = t
 	else:
 		main._set_status_text(t, heads)
@@ -379,8 +387,13 @@ static func roster_head(main: Control, crew_id: String) -> Texture2D:
 
 ## 船籍簿正文：按记号切开，字段照 bbcode 追加，记号处插小头像（与文字行垂直居中）。
 static func set_status_text(main: Control, t: String, heads: Array) -> void:
-	# 先置空（text 属性归零，下回整串赋值一定重排），再逐段追加
+	# 先置空（text 属性归零，下回整串赋值一定重排），再逐段追加。
+	# 旗舰插画嵌在「船队」题后、船数之前，只嵌一次。headless 不取图，下面的切开追加与没画时相同。
 	main.status_label.text = ""
+	var plate: Texture2D = null
+	if DisplayServer.get_name() != "headless":
+		plate = _ShipArt.texture(str(Fleet.flagship().get("type", "")))
+	var plated := false
 	var parts := t.split(main.HEAD_MARK)
 	for i in parts.size():
 		if i % 2 == 1:
@@ -389,7 +402,16 @@ static func set_status_text(main: Control, t: String, heads: Array) -> void:
 				main.status_label.add_image(heads[k], main.ROSTER_HEAD, main.ROSTER_HEAD, Color.WHITE, INLINE_ALIGNMENT_CENTER)
 				main.status_label.append_text(" ")
 		elif parts[i] != "":
-			main.status_label.append_text(parts[i])
+			var chunk := str(parts[i])
+			if plate != null and not plated and chunk.contains("[b]船队[/b]"):
+				var bits := chunk.split("[b]船队[/b]", true, 1)
+				main.status_label.append_text(bits[0] + "[b]船队[/b]\n")
+				main.status_label.add_image(plate, 200, 200, Color.WHITE, INLINE_ALIGNMENT_CENTER)
+				if bits.size() > 1 and bits[1] != "":
+					main.status_label.append_text(bits[1])
+				plated = true
+			else:
+				main.status_label.append_text(chunk)
 
 
 static func append_progress_line(text: String, it: Dictionary) -> String:

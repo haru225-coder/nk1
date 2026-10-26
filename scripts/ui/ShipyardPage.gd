@@ -10,6 +10,10 @@ extends RefCounted
 ## LedgerPage 也用）、play_transition、_UI_TRANSITION、工席小件、离开钮，经 main 取；这里不存状态。
 ## 门禁 check_symbols 经 main_splits.txt 把这里的函数体拼回 Main 再做源码断言（main. 前缀去掉即搬走前的原文）；
 ## verify_economy 的船屋回调 / 补齐人手几条直接切这里（去 main. 前缀）。
+## 船型插画不进 Main：坞位与船谱在本文件里挂，取图走 ShipArt（缺图就只留字）。
+
+
+const _ShipArt := preload("res://scripts/ui/ShipArt.gd")
 
 
 ## 船屋页港名（题签用）。scene_id 形如 quanzhou_shipyard。
@@ -51,6 +55,7 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 		var alv := Fleet.armor_level(on)
 		var berth: VBoxContainer = main._slip_body()
 		main._slip_title(berth, "坞位　%s" % Fleet.ship_label(on), "帆　%s　甲　%s" % [main._fit_rank(slv), main._fit_rank(alv)])
+		_ShipArt.mount_plate(berth, str(hull.get("type", "")), 280)
 		main._slip_note(berth, "水手 %d / %d　耐久 %d / %d　载 %d 料" % [
 			Fleet.ship_crew(on),
 			Fleet.ship_crew_max(on),
@@ -173,6 +178,7 @@ static func setup_shipyard(main: Control, port_id: String) -> void:
 			var hist := str(offer.get("historical_note", ""))
 			if hist != "":
 				buy.tooltip_text += "\n" + hist
+	_ShipArt.mount_codex(main, catalog, reached)
 
 	main._end_benches()
 	main._add_leave_button(port_id)

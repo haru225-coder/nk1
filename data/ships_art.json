@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "note": "船屋坞位、船谱与船籍簿旗舰用的船型插画。plate 是船谱方图；sprite 只作对照，海战仍由 CombatFx 按 assets/ship_<id>.png 取，缺图回落 ship_fu / ship_falcon。ShipArt 取图：json 的 plate 在才用，否则 plates/<id>.jpg，再 ship_<id>.png，再 ship_fu.png。id 空或不是合法文件名时不拼路径。"
+  },
+  "ships": {
+    "sampan": {
+      "plate": "res://assets/ships/plates/sampan.jpg",
+      "sprite": "res://assets/ship_sampan.png"
+    },
+    "keel_boat": {
+      "plate": "res://assets/ships/plates/keel_boat.jpg",
+      "sprite": "res://assets/ship_keel_boat.png"
+    },
+    "fu_ship_medium": {
+      "plate": "res://assets/ships/plates/fu_ship_medium.jpg",
+      "sprite": "res://assets/ship_fu_ship_medium.png"
+    },
+    "canton_ship": {
+      "plate": "res://assets/ships/plates/canton_ship.jpg",
+      "sprite": "res://assets/ship_canton_ship.png"
+    },
+    "sea_falcon": {
+      "plate": "res://assets/ships/plates/sea_falcon.jpg",
+      "sprite": "res://assets/ship_sea_falcon.png"
+    },
+    "pirate_boat": {
+      "plate": "res://assets/ships/plates/pirate_boat.jpg",
+      "sprite": "res://assets/ship_pirate_boat.png"
+    },
+    "fu_ship_large": {
+      "plate": "res://assets/ships/plates/fu_ship_large.jpg",
+      "sprite": "res://assets/ship_fu_ship_large.png"
+    },
+    "divine_ship": {
+      "plate": "res://assets/ships/plates/divine_ship.jpg",
+      "sprite": "res://assets/ship_divine_ship.png"
+    }
+  }
+}
