@@ -42,6 +42,7 @@ MAIN_SPLITS = gen_main_splits.read_splits()
 MAIN_NOT_SPLITS = {
     "scripts/cutscene/LivingBackdrop.gd": "过场背景调色（_grade_backdrop → set_grade），公共件，不是从 Main 搬出",
     "scripts/ui/TavernNewsWall.gd": "酒馆市井札薄（_setup_news_wall → mount），自成一件，不是从 Main 搬出",
+    "scripts/ui/DistrictPage.gd": "城中各处页（_open_districts → open_index），新写的页，不是从 Main 搬出",
 }
 SPLIT_MARK = "从 Main.gd 原样搬出"  # 拆出件头注（前 10 行）的约定字样；有它就必须登记，登记了就必须有它
 # 拼回的实现在 tools/main_stitch.py（lane auditfix6 从这里抽出，verify_economy 共用）；下面三张表是它每次拼回时重填的，「一之零」读。
