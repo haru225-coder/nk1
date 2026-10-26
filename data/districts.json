@@ -38,6 +38,31 @@
           "port": "hakata",
           "good": "ivory",
           "mul": 1.25
+        },
+        {
+          "id": "qz_houzhu_pilot",
+          "type": "favour",
+          "label": "请梢公",
+          "text": "你请后渚的梢公吃了一顿。他应下，往后你收盐，他先递话。",
+          "cost": 30,
+          "once": true,
+          "effects": {
+            "flag": "qz_houzhu_pilot",
+            "network": 1
+          }
+        },
+        {
+          "id": "qz_houzhu_fast",
+          "type": "buy",
+          "label": "托梢公收盐",
+          "text": "梢公递了话，盐包先到你手上，价也松些。",
+          "good": "sea_salt",
+          "qty": 10,
+          "price_mul": 0.86,
+          "impact": true,
+          "unlock": {
+            "require_flag": "qz_houzhu_pilot"
+          }
         }
       ]
     },
@@ -56,7 +81,10 @@
           "text": "你给书吏送了一匣笔墨。他记下你的名字，下回办事好看些。",
           "cost": 40,
           "once_per": "month",
-          "effects": {"favour": 2, "merchant_credit": 1}
+          "effects": {
+            "favour": 2,
+            "merchant_credit": 1
+          }
         },
         {
           "id": "qz_shibo_fine",
@@ -65,8 +93,13 @@
           "text": "细色公凭到手。香药一路的牙人认这张纸，货引仍去正厅请。",
           "cost": 800,
           "licence": "lic_qz_fine",
-          "unlock": {"favour_min": 2},
-          "effects": {"fame": 2, "merchant_credit": 1}
+          "unlock": {
+            "favour_min": 2
+          },
+          "effects": {
+            "fame": 2,
+            "merchant_credit": 1
+          }
         },
         {
           "id": "qz_shibo_coin",
@@ -132,6 +165,34 @@
           "port": "hakata",
           "good": "ivory",
           "mul": 1.18
+        },
+        {
+          "id": "qz_fanfang_intro",
+          "type": "favour",
+          "label": "引荐牙人",
+          "text": "通事带你去见蕃坊的牙人。牙人记下你的船，往后象牙好说话。",
+          "cost": 45,
+          "once": true,
+          "effects": {
+            "flag": "qz_fanfang_intro",
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "qz_fanfang_ivory2",
+          "type": "buy",
+          "label": "按引荐价收象牙",
+          "text": "牙人按引荐的价出象牙。通事在身边还能再少一成。",
+          "good": "ivory",
+          "qty": 2,
+          "price_mul": 0.9,
+          "impact": true,
+          "unlock": {
+            "require_flag": "qz_fanfang_intro"
+          },
+          "hire_bonus": "qz_fanfang_interpreter",
+          "hire_mul": 0.9
         }
       ]
     },
@@ -160,7 +221,10 @@
           "text": "你在西廊借了灯，抄了一卷。不是拿去卖的。",
           "cost": 40,
           "once_per": "year",
-          "effects": {"scholar_tendency": 2, "note": "开元寺抄过一卷经。"}
+          "effects": {
+            "scholar_tendency": 2,
+            "note": "开元寺抄过一卷经。"
+          }
         },
         {
           "id": "qz_kaiyuan_towers",
@@ -174,14 +238,20 @@
               "label": "登东塔",
               "text": "东塔上看见港里的帆。风从海上来。",
               "cost": 0,
-              "effects": {"sea_tendency": 1, "note": "登过镇国塔。"}
+              "effects": {
+                "sea_tendency": 1,
+                "note": "登过镇国塔。"
+              }
             },
             {
               "id": "west",
               "label": "登西塔",
               "text": "西塔上看见城中的瓦。你站了很久。",
               "cost": 0,
-              "effects": {"scholar_tendency": 1, "note": "登过仁寿塔。"}
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "登过仁寿塔。"
+              }
             }
           ]
         },
@@ -192,7 +262,35 @@
           "text": "香钱放进柜里。寺里记你一笔。",
           "cost": 10,
           "once_per": "month",
-          "effects": {"favour": 1}
+          "effects": {
+            "favour": 1
+          }
+        },
+        {
+          "id": "qz_kaiyuan_print",
+          "type": "buy",
+          "label": "请印本经",
+          "text": "榜墙边印的经本，按熟价出。",
+          "good": "sutra_scrolls",
+          "qty": 2,
+          "price_mul": 0.9,
+          "impact": true,
+          "unlock": {
+            "require_flag": "qz_bang_print"
+          }
+        },
+        {
+          "id": "qz_kaiyuan_tea",
+          "type": "favour",
+          "label": "施茶",
+          "text": "你在西廊施了一轮茶。僧人与过客都记你。",
+          "cost": 20,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
         }
       ]
     },
@@ -211,8 +309,15 @@
           "text": "你随渔户祭了一回海。风还是原来的风，人记你来过。",
           "cost": 30,
           "once_per": "year",
-          "unlock": {"war_not": ["fallen"]},
-          "effects": {"sea_tendency": 2, "fame": 1}
+          "unlock": {
+            "war_not": [
+              "fallen"
+            ]
+          },
+          "effects": {
+            "sea_tendency": 2,
+            "fame": 1
+          }
         },
         {
           "id": "qz_shunji_fallen",
@@ -221,8 +326,15 @@
           "text": "旗已经换了。香还是要点，点完就走，别让人记住脸。",
           "cost": 20,
           "once_per": "year",
-          "unlock": {"war_in": ["fallen"]},
-          "effects": {"sea_tendency": 1, "pu_attention": 2}
+          "unlock": {
+            "war_in": [
+              "fallen"
+            ]
+          },
+          "effects": {
+            "sea_tendency": 1,
+            "pu_attention": 2
+          }
         },
         {
           "id": "qz_shunji_stall",
@@ -230,8 +342,12 @@
           "label": "香火摊",
           "text": "宫门外有人出香火。你入一股，按月分钱。",
           "shop": "香火",
-          "costs": [240],
-          "monthly": [12]
+          "costs": [
+            240
+          ],
+          "monthly": [
+            13
+          ]
         }
       ]
     },
@@ -250,7 +366,13 @@
           "text": "夏日祈过风的人说，博多唐房的茶这一向紧。",
           "cost": 10,
           "cooldown_days": 60,
-          "unlock": {"months": [4, 5, 6]},
+          "unlock": {
+            "months": [
+              4,
+              5,
+              6
+            ]
+          },
           "port": "hakata",
           "good": "tea",
           "mul": 1.15
@@ -262,7 +384,13 @@
           "text": "冬日山上看见北来的船。有人说兴化的米紧了。",
           "cost": 10,
           "cooldown_days": 60,
-          "unlock": {"months": [10, 11, 12]},
+          "unlock": {
+            "months": [
+              10,
+              11,
+              12
+            ]
+          },
           "port": "xinghua",
           "good": "grain",
           "mul": 1.2
@@ -274,7 +402,10 @@
           "text": "你在石刻前站了一会儿，只摸了摸，字没有拓。",
           "cost": 0,
           "once_per": "year",
-          "effects": {"scholar_tendency": 1, "note": "九日山石刻只摸了摸。"}
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "九日山石刻只摸了摸。"
+          }
         }
       ]
     },
@@ -292,8 +423,16 @@
           "label": "桥头铺",
           "text": "桥头一间小铺。入了本，过桥的人按月给你入账。",
           "shop": "桥铺",
-          "costs": [300, 700, 1400],
-          "monthly": [16, 48, 110]
+          "costs": [
+            300,
+            700,
+            1400
+          ],
+          "monthly": [
+            16,
+            38,
+            77
+          ]
         },
         {
           "id": "qz_luoyang_salt",
@@ -352,8 +491,13 @@
           "text": "石匠把松了的石梁垫稳。过桥的人看见了。",
           "cost": 60,
           "once": true,
-          "unlock": {"needs_hire": "qz_anping_mason"},
-          "effects": {"fame": 2, "note": "安平桥上垫过一块梁。"}
+          "unlock": {
+            "needs_hire": "qz_anping_mason"
+          },
+          "effects": {
+            "fame": 2,
+            "note": "安平桥上垫过一块梁。"
+          }
         },
         {
           "id": "qz_anping_coral",
@@ -364,6 +508,31 @@
           "qty": 2,
           "price_mul": 1.1,
           "impact": true
+        },
+        {
+          "id": "qz_anping_tide",
+          "type": "favour",
+          "label": "看潮汐",
+          "text": "你在桥上站到潮起。石缝里的牡蛎都露出来。",
+          "cost": 8,
+          "once_per": "year",
+          "cooldown_days": 60,
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "安平桥上看过潮。"
+          }
+        },
+        {
+          "id": "qz_anping_stele",
+          "type": "favour",
+          "label": "立桥碑",
+          "text": "石匠在桥头立了一块小碑。过桥的人看见了。",
+          "cost": 60,
+          "once": true,
+          "effects": {
+            "fame": 2,
+            "flag": "qz_anping_stele"
+          }
         }
       ]
     },
@@ -401,8 +570,59 @@
           "label": "入股丝铺",
           "text": "街上一间丝铺招人入股。入了本，按月分账。",
           "shop": "丝铺",
-          "costs": [400, 900],
-          "monthly": [20, 58]
+          "costs": [
+            400,
+            900
+          ],
+          "monthly": [
+            22,
+            50
+          ]
+        },
+        {
+          "id": "qz_jubao_credit",
+          "type": "favour",
+          "label": "请牙人坐",
+          "text": "你请街上牙人吃了一席。街上的话往后多传你一句。",
+          "cost": 25,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "qz_jubao_wager",
+          "type": "choice",
+          "label": "押一注",
+          "text": "街上有人赌今季丝价。你可以押，也可以不押。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "bet",
+              "label": "押上",
+              "text": "你押了。街里的人替你传话，丝价这一向紧。",
+              "cost": 20,
+              "effects": {
+                "merchant_credit": 1
+              },
+              "rumor": {
+                "port": "hakata",
+                "good": "silk_fabric",
+                "mul": 1.12
+              }
+            },
+            {
+              "id": "no",
+              "label": "不押",
+              "text": "你不押。街上的人也记你谨慎。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
         }
       ]
     },
@@ -431,7 +651,9 @@
           "text": "窑头给了一张凭。有它，才许整窑地搬。",
           "cost": 200,
           "licence": "lic_qz_kiln",
-          "effects": {"merchant_credit": 1}
+          "effects": {
+            "merchant_credit": 1
+          }
         },
         {
           "id": "qz_kiln_bulk",
@@ -514,8 +736,14 @@
           "label": "包一间",
           "text": "包下一间塌房，按月收租。",
           "shop": "塌房",
-          "costs": [500, 1000],
-          "monthly": [24, 68]
+          "costs": [
+            500,
+            1000
+          ],
+          "monthly": [
+            27,
+            55
+          ]
         },
         {
           "id": "qz_tafang_quiet",
@@ -526,6 +754,47 @@
           "qty": 6,
           "price_mul": 0.92,
           "impact": false
+        },
+        {
+          "id": "qz_tafang_watch",
+          "type": "favour",
+          "label": "查仓",
+          "text": "你到塌房里走了一遭，记下几件货的去向。",
+          "cost": 10,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "note": "塌房里查过一遭仓。"
+          }
+        },
+        {
+          "id": "qz_tafang_loan",
+          "type": "choice",
+          "label": "借仓",
+          "text": "塌房主问你借一间仓。你可以借，也可以收租。",
+          "once": true,
+          "options": [
+            {
+              "id": "lend",
+              "label": "借他",
+              "text": "你借了仓。塌房主记你一笔人情。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "favour": 1
+              }
+            },
+            {
+              "id": "rent",
+              "label": "照收租",
+              "text": "你照旧收租。账面清楚。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
         }
       ]
     },
@@ -547,10 +816,25 @@
           "once_per": "year",
           "cost": 0,
           "unlock": {
-            "years": [1256, 1259, 1262, 1265, 1268, 1271, 1274],
-            "months": [8, 9, 10]
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
           },
-          "effects": {"fame": 1, "scholar_tendency": 1}
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
         },
         {
           "id": "qz_bang_stele",
@@ -559,7 +843,69 @@
           "text": "榜墙边的石碑面是光的。你按了一按。",
           "cost": 0,
           "once_per": "year",
-          "effects": {"fame": 1, "note": "泉州贡院石碑按过。"}
+          "effects": {
+            "fame": 1,
+            "note": "泉州贡院石碑按过。"
+          }
+        },
+        {
+          "id": "qz_bang_aid",
+          "type": "choice",
+          "label": "助寒士",
+          "text": "大比之年，贡院门外的寒士缺纸墨。你可以助，也可以旁观。",
+          "exam": true,
+          "once_per": "year",
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "options": [
+            {
+              "id": "give",
+              "label": "助纸墨",
+              "text": "你送了纸墨。寒士记你。",
+              "cost": 50,
+              "effects": {
+                "fame": 2,
+                "network": 1,
+                "flag": "qz_bang_print"
+              }
+            },
+            {
+              "id": "pass",
+              "label": "旁观",
+              "text": "你只在墙边站了一会儿。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "qz_bang_tea",
+          "type": "favour",
+          "label": "施茶",
+          "text": "贡院门外施了一轮茶。应试的人记你。",
+          "cost": 15,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
         }
       ]
     },
@@ -599,7 +945,10 @@
           "text": "你送了一包茶。门里的人记住你。",
           "cost": 25,
           "once_per": "month",
-          "effects": {"favour": 1, "network": 1}
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
         }
       ]
     },
@@ -617,8 +966,14 @@
           "label": "入股茶坊",
           "text": "茶坊招人入股。入了本，按月分茶钱。",
           "shop": "茶坊",
-          "costs": [280, 640],
-          "monthly": [14, 42]
+          "costs": [
+            280,
+            640
+          ],
+          "monthly": [
+            15,
+            35
+          ]
         },
         {
           "id": "qz_citong_wager",
@@ -632,15 +987,24 @@
               "label": "押一盏",
               "text": "你押了自己这盏。茶博士把话传到牙行，建茶这一向紧。",
               "cost": 20,
-              "effects": {"merchant_credit": 1},
-              "rumor": {"port": "hakata", "good": "tea", "mul": 1.12}
+              "effects": {
+                "merchant_credit": 1
+              },
+              "rumor": {
+                "port": "hakata",
+                "good": "tea",
+                "mul": 1.12
+              }
             },
             {
               "id": "treat",
               "label": "作东",
               "text": "你把两盏都买了请人。巷里记你一笔人情。",
               "cost": 30,
-              "effects": {"network": 1, "favour": 1}
+              "effects": {
+                "network": 1,
+                "favour": 1
+              }
             }
           ]
         },
@@ -664,6 +1028,31 @@
           "qty": 6,
           "price_mul": 0.9,
           "impact": true
+        },
+        {
+          "id": "qz_citong_hire",
+          "type": "hire",
+          "label": "雇茶博士",
+          "text": "茶博士肯留在坊里。他在时，坊里的人多替你传话。",
+          "who": "茶博士",
+          "cost": 90,
+          "wage": 16,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "qz_citong_gift",
+          "type": "favour",
+          "label": "送建茶",
+          "text": "你送了一罐建茶给茶博士。他记下你。",
+          "cost": 15,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
         }
       ]
     },
@@ -681,8 +1070,14 @@
           "label": "入水利",
           "text": "陂上的水利按股分。入了股，按月有进项。",
           "shop": "陂份",
-          "costs": [360, 800],
-          "monthly": [18, 52]
+          "costs": [
+            360,
+            800
+          ],
+          "monthly": [
+            20,
+            44
+          ]
         },
         {
           "id": "xh_mulan_repair",
@@ -691,7 +1086,11 @@
           "text": "你出钱把松了的石堰补上。乡里记这一笔。",
           "cost": 150,
           "once": true,
-          "effects": {"hometown_tendency": 3, "fame": 2, "note": "木兰陂上补过堰。"}
+          "effects": {
+            "hometown_tendency": 3,
+            "fame": 2,
+            "note": "木兰陂上补过堰。"
+          }
         },
         {
           "id": "xh_mulan_siege",
@@ -699,8 +1098,45 @@
           "label": "送米进城",
           "text": "城门还开一条缝。你把舱里的米送上陂，交给守城的人。",
           "cost": 0,
-          "unlock": {"siege": true},
-          "effects": {"cargo_take": {"good": "grain", "qty": 8}, "siege": {"grain": 20}, "hometown_tendency": 1}
+          "unlock": {
+            "siege": true
+          },
+          "effects": {
+            "cargo_take": {
+              "good": "grain",
+              "qty": 8
+            },
+            "siege": {
+              "grain": 20
+            },
+            "hometown_tendency": 1
+          }
+        },
+        {
+          "id": "xh_mulan_weir",
+          "type": "favour",
+          "label": "修陂石",
+          "text": "你出钱把陂上松了的石堰补上。乡里记这一笔，往后陂份好说话。",
+          "cost": 120,
+          "once": true,
+          "effects": {
+            "hometown_tendency": 2,
+            "fame": 1,
+            "flag": "xh_mulan_weir"
+          }
+        },
+        {
+          "id": "xh_mulan_grainbuy",
+          "type": "buy",
+          "label": "陂上分米",
+          "text": "陂上分了米，按陂份的价收。",
+          "good": "grain",
+          "qty": 8,
+          "price_mul": 0.9,
+          "impact": true,
+          "unlock": {
+            "require_flag": "xh_mulan_weir"
+          }
         }
       ]
     },
@@ -719,7 +1155,9 @@
           "text": "坊门里祭过一回。族里认你这一年回来过。",
           "cost": 20,
           "once_per": "year",
-          "effects": {"hometown_tendency": 2}
+          "effects": {
+            "hometown_tendency": 2
+          }
         },
         {
           "id": "xh_yuhu_grain",
@@ -733,14 +1171,28 @@
               "label": "分给族里",
               "text": "你把米分给族里，没有收钱。",
               "cost": 0,
-              "effects": {"cargo_take": {"good": "grain", "qty": 4}, "hometown_tendency": 2, "fame": 1}
+              "effects": {
+                "cargo_take": {
+                  "good": "grain",
+                  "qty": 4
+                },
+                "hometown_tendency": 2,
+                "fame": 1
+              }
             },
             {
               "id": "sell",
               "label": "卖给族里",
               "text": "族里照低于牙行的价收了米。",
               "cost": 0,
-              "effects": {"cargo_take": {"good": "grain", "qty": 6}, "money": 30, "hometown_tendency": 1}
+              "effects": {
+                "cargo_take": {
+                  "good": "grain",
+                  "qty": 6
+                },
+                "money": 30,
+                "hometown_tendency": 1
+              }
             }
           ]
         }
@@ -761,7 +1213,9 @@
           "text": "你在庑下听了一讲。没有应试，只是听。",
           "cost": 15,
           "once_per": "month",
-          "effects": {"scholar_tendency": 1}
+          "effects": {
+            "scholar_tendency": 1
+          }
         },
         {
           "id": "xh_academy_teacher",
@@ -771,7 +1225,9 @@
           "who": "经师",
           "cost": 100,
           "wage": 20,
-          "monthly_effects": {"scholar_tendency": 1}
+          "monthly_effects": {
+            "scholar_tendency": 1
+          }
         },
         {
           "id": "xh_academy_silk",
@@ -781,6 +1237,46 @@
           "good": "raw_silk",
           "qty": 4,
           "impact": true
+        },
+        {
+          "id": "xh_academy_exam",
+          "type": "choice",
+          "label": "月考",
+          "text": "军学月考。你可以送卷，也可以旁听。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "submit",
+              "label": "送卷",
+              "text": "你把卷送上去。先生记你。",
+              "cost": 10,
+              "effects": {
+                "scholar_tendency": 2
+              }
+            },
+            {
+              "id": "listen",
+              "label": "旁听",
+              "text": "你在庑下旁听了一回。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xh_academy_scribe",
+          "type": "hire",
+          "label": "雇抄手",
+          "text": "抄手肯留在学里。他在时，学问慢慢长。",
+          "who": "抄手",
+          "cost": 50,
+          "wage": 10,
+          "monthly_effects": {
+            "scholar_tendency": 1
+          }
         }
       ]
     },
@@ -802,10 +1298,25 @@
           "once_per": "year",
           "cost": 0,
           "unlock": {
-            "years": [1256, 1259, 1262, 1265, 1268, 1271, 1274],
-            "months": [8, 9, 10]
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
           },
-          "effects": {"fame": 1, "scholar_tendency": 1}
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
         },
         {
           "id": "xh_bang_poster",
@@ -814,8 +1325,14 @@
           "text": "咸淳四年的榜还贴着。榜首那一行写着兴化陈文龙。",
           "once": true,
           "cost": 0,
-          "unlock": {"year_min": 1268, "year_max": 1269},
-          "effects": {"scholar_tendency": 1, "note": "见过咸淳四年的榜。"}
+          "unlock": {
+            "year_min": 1268,
+            "year_max": 1269
+          },
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "见过咸淳四年的榜。"
+          }
         },
         {
           "id": "xh_bang_stele",
@@ -824,7 +1341,69 @@
           "text": "榜墙边的石碑摸上去是凉的。",
           "cost": 0,
           "once_per": "year",
-          "effects": {"fame": 1, "note": "兴化贡院石碑按过。"}
+          "effects": {
+            "fame": 1,
+            "note": "兴化贡院石碑按过。"
+          }
+        },
+        {
+          "id": "xh_bang_aid",
+          "type": "choice",
+          "label": "助寒士",
+          "text": "贡院门外的寒士缺纸墨。大比之年，你可以助，也可以旁观。",
+          "exam": true,
+          "once_per": "year",
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "options": [
+            {
+              "id": "give",
+              "label": "助纸墨",
+              "text": "你送了纸墨。寒士记你。",
+              "cost": 40,
+              "effects": {
+                "fame": 2,
+                "hometown_tendency": 1,
+                "flag": "xh_bang_aid"
+              }
+            },
+            {
+              "id": "pass",
+              "label": "旁观",
+              "text": "你只在墙边站了一会儿。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xh_bang_tea",
+          "type": "favour",
+          "label": "施茶",
+          "text": "贡院门外施了一轮茶。应试的人记你。",
+          "cost": 15,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
         }
       ]
     },
@@ -843,8 +1422,16 @@
           "text": "这一季的鲜荔枝出了手。钱是现的，族里也记你回来过。",
           "cost": 0,
           "once_per": "year",
-          "unlock": {"months": [6, 7]},
-          "effects": {"money": 90, "hometown_tendency": 1}
+          "unlock": {
+            "months": [
+              6,
+              7
+            ]
+          },
+          "effects": {
+            "money": 90,
+            "hometown_tendency": 1
+          }
         },
         {
           "id": "xh_lychee_stall",
@@ -852,8 +1439,62 @@
           "label": "果摊",
           "text": "林边支一摊。鲜果过了季，干货还在卖，按月有进项。",
           "shop": "果摊",
-          "costs": [260, 600],
-          "monthly": [14, 40]
+          "costs": [
+            260,
+            600
+          ],
+          "monthly": [
+            14,
+            33
+          ]
+        },
+        {
+          "id": "xh_lychee_gift",
+          "type": "favour",
+          "label": "送荔枝",
+          "text": "你送了一筐荔枝给牙人。他笑着收了。",
+          "cost": 12,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "xh_lychee_price",
+          "type": "choice",
+          "label": "果价",
+          "text": "六月的荔枝贵。你可以现在卖，也可以等干果。",
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              6,
+              7
+            ]
+          },
+          "options": [
+            {
+              "id": "fresh",
+              "label": "卖鲜果",
+              "text": "鲜果出手，钱是现的。",
+              "cost": 0,
+              "effects": {
+                "money": 40,
+                "hometown_tendency": 1
+              }
+            },
+            {
+              "id": "dry",
+              "label": "晒干",
+              "text": "你把果晒干。族里人帮着翻。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 2,
+                "note": "晒过一季荔枝干。"
+              }
+            }
+          ]
         }
       ]
     },
@@ -900,14 +1541,19 @@
               "label": "加钱先过",
               "text": "你加了钱，船先载你。排队的人记住了。",
               "cost": 15,
-              "effects": {"merchant_credit": -1}
+              "effects": {
+                "merchant_credit": -1
+              }
             },
             {
               "id": "wait",
               "label": "排队",
               "text": "你跟乡里人一起等。渡完，大家还说话。",
               "cost": 0,
-              "effects": {"hometown_tendency": 1, "network": 1}
+              "effects": {
+                "hometown_tendency": 1,
+                "network": 1
+              }
             }
           ]
         }
@@ -928,8 +1574,15 @@
           "text": "你跟渔户祭了一回。海上的人认这个渡口。",
           "cost": 25,
           "once_per": "year",
-          "unlock": {"war_not": ["fallen"]},
-          "effects": {"sea_tendency": 2, "fame": 1}
+          "unlock": {
+            "war_not": [
+              "fallen"
+            ]
+          },
+          "effects": {
+            "sea_tendency": 2,
+            "fame": 1
+          }
         },
         {
           "id": "xh_meizhou_fallen",
@@ -938,8 +1591,15 @@
           "text": "城已经换了旗。祭还是祭，祭完别停留。",
           "cost": 15,
           "once_per": "year",
-          "unlock": {"war_in": ["fallen"]},
-          "effects": {"sea_tendency": 1, "pu_attention": 1}
+          "unlock": {
+            "war_in": [
+              "fallen"
+            ]
+          },
+          "effects": {
+            "sea_tendency": 1,
+            "pu_attention": 1
+          }
         },
         {
           "id": "xh_meizhou_rumor",
@@ -948,7 +1608,9 @@
           "text": "景炎以后，渡口的人说泉州的盐紧。",
           "cost": 10,
           "cooldown_days": 45,
-          "unlock": {"year_min": 1276},
+          "unlock": {
+            "year_min": 1276
+          },
           "port": "quanzhou",
           "good": "sea_salt",
           "mul": 1.12
@@ -970,7 +1632,9 @@
           "text": "盐凭到手。往后在这城办盐，牙人认这张纸。",
           "cost": 300,
           "licence": "lic_xh_salt",
-          "effects": {"merchant_credit": 1}
+          "effects": {
+            "merchant_credit": 1
+          }
         },
         {
           "id": "xh_yamen_clerk",
@@ -984,14 +1648,20 @@
               "label": "塞钱",
               "text": "钱递进去，事快了。蒲家的簿子上也多了一笔。",
               "cost": 40,
-              "effects": {"merchant_credit": 2, "pu_attention": 2}
+              "effects": {
+                "merchant_credit": 2,
+                "pu_attention": 2
+              }
             },
             {
               "id": "honest",
               "label": "按规矩",
               "text": "你把文书摊开。慢，可是干净。",
               "cost": 0,
-              "effects": {"fame": 1, "merchant_credit": 1}
+              "effects": {
+                "fame": 1,
+                "merchant_credit": 1
+              }
             }
           ]
         },
@@ -1001,21 +1671,30 @@
           "label": "换了旗的门",
           "text": "仪门上的旗已经不是宋的。还进不进这个门，得自己定。",
           "once": true,
-          "unlock": {"war_in": ["fallen"]},
+          "unlock": {
+            "war_in": [
+              "fallen"
+            ]
+          },
           "options": [
             {
               "id": "stay",
               "label": "还认这道门",
               "text": "你还从这道门进出。乡里人看见了。",
               "cost": 0,
-              "effects": {"hometown_tendency": 1}
+              "effects": {
+                "hometown_tendency": 1
+              }
             },
             {
               "id": "paper",
               "label": "换一张帖",
               "text": "你花了钱换一张新帖。簿子上会记。",
               "cost": 50,
-              "effects": {"pu_attention": 1, "merchant_credit": 1}
+              "effects": {
+                "pu_attention": 1,
+                "merchant_credit": 1
+              }
             }
           ]
         }
@@ -1054,8 +1733,56 @@
           "label": "入股米铺",
           "text": "米铺招人入股。按月分账。",
           "shop": "米铺",
-          "costs": [320, 760],
-          "monthly": [16, 48]
+          "costs": [
+            320,
+            760
+          ],
+          "monthly": [
+            17,
+            42
+          ]
+        },
+        {
+          "id": "xh_market_cheapgrain",
+          "type": "buy",
+          "label": "陂上分米",
+          "text": "陂上分了米，坊市按陂份的价收。",
+          "good": "grain",
+          "qty": 10,
+          "price_mul": 0.88,
+          "impact": true,
+          "unlock": {
+            "require_flag": "xh_mulan_weir"
+          }
+        },
+        {
+          "id": "xh_market_hoard",
+          "type": "choice",
+          "label": "囤米",
+          "text": "坊市米价偏高。你可以囤，也可以出手。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "hoard",
+              "label": "囤下",
+              "text": "你囤下几包米。坊市的人记你谨慎。",
+              "cost": 0,
+              "effects": {
+                "money": -30,
+                "hometown_tendency": 1
+              }
+            },
+            {
+              "id": "sell",
+              "label": "出手",
+              "text": "你把米出手。坊市的米价松了一点。",
+              "cost": 0,
+              "effects": {
+                "money": 20,
+                "merchant_credit": 1
+              }
+            }
+          ]
         }
       ]
     },
@@ -1074,7 +1801,10 @@
           "text": "你出钱让书坊抄了一份族谱。纸留下，不拿去卖。",
           "cost": 30,
           "once": true,
-          "effects": {"scholar_tendency": 2, "note": "兴化书坊抄过族谱。"}
+          "effects": {
+            "scholar_tendency": 2,
+            "note": "兴化书坊抄过族谱。"
+          }
         },
         {
           "id": "xh_paper_lacquer",
@@ -1112,8 +1842,14 @@
           "label": "入股酒库",
           "text": "酒库招人入股。按月分酒钱。",
           "shop": "酒库",
-          "costs": [300, 700],
-          "monthly": [16, 46]
+          "costs": [
+            300,
+            700
+          ],
+          "monthly": [
+            16,
+            38
+          ]
         },
         {
           "id": "xh_wine_treat",
@@ -1122,7 +1858,10 @@
           "text": "你打了一坛酒请族里。人记得。",
           "cost": 25,
           "once_per": "year",
-          "effects": {"hometown_tendency": 1, "network": 1}
+          "effects": {
+            "hometown_tendency": 1,
+            "network": 1
+          }
         },
         {
           "id": "xh_wine_rumor",
@@ -1134,6 +1873,47 @@
           "port": "xinghua",
           "good": "grain",
           "mul": 0.85
+        },
+        {
+          "id": "xh_wine_credit",
+          "type": "choice",
+          "label": "赊酒",
+          "text": "酒库主问你赊一季酒。你可以赊，也可以现钱。",
+          "once": true,
+          "options": [
+            {
+              "id": "credit",
+              "label": "赊下",
+              "text": "你赊了一季酒。库主记你。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "money": 20
+              }
+            },
+            {
+              "id": "cash",
+              "label": "现钱",
+              "text": "你现钱结清。库主更信你。",
+              "cost": 30,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "xh_wine_gift",
+          "type": "favour",
+          "label": "送酒",
+          "text": "你送了一坛酒给书吏。他记下你。",
+          "cost": 18,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "favour": 1,
+            "merchant_credit": 1
+          }
         }
       ]
     },
@@ -1167,6 +1947,50 @@
           "attention": 3,
           "attention_hire": "xh_smith_smith",
           "attention_hired": 1
+        },
+        {
+          "id": "xh_smith_repair",
+          "type": "favour",
+          "label": "修农具",
+          "text": "铁匠帮你把农具修好。乡里的人看见了。",
+          "cost": 15,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "hometown_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "xh_smith_make",
+          "type": "choice",
+          "label": "打铁",
+          "text": "铁匠问你打几件铁器。可以打，也可以不打。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "make",
+              "label": "打",
+              "text": "铁器打好了。蒲家的簿子上多一笔。",
+              "cost": 20,
+              "effects": {
+                "cargo_add": {
+                  "good": "ironware",
+                  "qty": 2
+                },
+                "pu_attention": 2
+              }
+            },
+            {
+              "id": "no",
+              "label": "不打",
+              "text": "你不打。账面干净。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
         }
       ]
     },
@@ -1185,7 +2009,9 @@
           "text": "你上了一炷香。庙祝记得你的脸。",
           "cost": 12,
           "once_per": "month",
-          "effects": {"fame": 1}
+          "effects": {
+            "fame": 1
+          }
         },
         {
           "id": "xh_chenghuang_grain",
@@ -1194,8 +2020,14 @@
           "text": "城还在守。你把香钱换成米，交到城隍庙后面的仓。",
           "cost": 20,
           "once_per": "month",
-          "unlock": {"siege": true},
-          "effects": {"siege": {"grain": 8}}
+          "unlock": {
+            "siege": true
+          },
+          "effects": {
+            "siege": {
+              "grain": 8
+            }
+          }
         }
       ]
     },
@@ -1224,8 +2056,14 @@
           "label": "门边铺",
           "text": "瓮城门边一间铺。入了本，按月收过路人的钱。",
           "shop": "门铺",
-          "costs": [280, 640],
-          "monthly": [14, 40]
+          "costs": [
+            280,
+            640
+          ],
+          "monthly": [
+            15,
+            35
+          ]
         },
         {
           "id": "xh_gate_note",
@@ -1234,7 +2072,50 @@
           "text": "你在门边坐了一个时辰，把听到的记下。",
           "cost": 0,
           "once_per": "month",
-          "effects": {"network": 1, "note": "东门瓮城听过一回话。"}
+          "effects": {
+            "network": 1,
+            "note": "东门瓮城听过一回话。"
+          }
+        },
+        {
+          "id": "xh_gate_rumor2",
+          "type": "rumor",
+          "label": "听参",
+          "text": "瓮城里的人说，高丽参紧了。",
+          "cost": 10,
+          "cooldown_days": 40,
+          "port": "xinghua",
+          "good": "korean_ginseng",
+          "mul": 1.15
+        },
+        {
+          "id": "xh_gate_pass",
+          "type": "choice",
+          "label": "过路",
+          "text": "门边有人拦路。你可以塞钱，也可以等。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "pay",
+              "label": "塞钱",
+              "text": "你塞了钱，路通了。蒲家的簿子也多一笔。",
+              "cost": 15,
+              "effects": {
+                "pu_attention": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "wait",
+              "label": "等候",
+              "text": "你等了半日。路也通了，人记得你。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
         }
       ]
     },
@@ -1246,7 +2127,12 @@
       "bg": "bg_dist_xh_guanghua.jpg",
       "description": "南山广化寺。城门开着才上得去。寺里抄经，不卖经。",
       "lock_reason": "城门不开，去不得南山",
-      "unlock": {"war_not": ["besieged", "closed"]},
+      "unlock": {
+        "war_not": [
+          "besieged",
+          "closed"
+        ]
+      },
       "interactions": [
         {
           "id": "xh_guanghua_copy",
@@ -1255,7 +2141,10 @@
           "text": "东廊下借了经，抄了一卷带走。不是市上的货。",
           "cost": 20,
           "once_per": "year",
-          "effects": {"scholar_tendency": 2, "note": "南山抄了一卷经。"}
+          "effects": {
+            "scholar_tendency": 2,
+            "note": "南山抄了一卷经。"
+          }
         },
         {
           "id": "xh_guanghua_rub",
@@ -1264,7 +2153,10 @@
           "text": "寺前石碑面磨得发亮。你按了一按，没有拓纸。",
           "cost": 0,
           "once": true,
-          "effects": {"scholar_tendency": 1, "note": "广化寺石碑按过一回。"}
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "广化寺石碑按过一回。"
+          }
         },
         {
           "id": "xh_guanghua_shelter",
@@ -1272,21 +2164,33 @@
           "label": "僧房",
           "text": "寺里腾出两间僧房。城里的人往山上走。",
           "once": true,
-          "unlock": {"year_min": 1276, "year_max": 1277},
+          "unlock": {
+            "year_min": 1276,
+            "year_max": 1277
+          },
           "options": [
             {
               "id": "take",
               "label": "收留",
               "text": "你让妇孺住进僧房。寺里的米少了一筐。",
               "cost": 0,
-              "effects": {"hometown_tendency": 2, "fame": 1, "cargo_take": {"good": "grain", "qty": 4}}
+              "effects": {
+                "hometown_tendency": 2,
+                "fame": 1,
+                "cargo_take": {
+                  "good": "grain",
+                  "qty": 4
+                }
+              }
             },
             {
               "id": "pass",
               "label": "只留香火",
               "text": "你添了香火，人没有留下。",
               "cost": 10,
-              "effects": {"scholar_tendency": 1}
+              "effects": {
+                "scholar_tendency": 1
+              }
             }
           ]
         }
@@ -1330,6 +2234,31 @@
           "port": "champa",
           "good": "pepper",
           "mul": 1.22
+        },
+        {
+          "id": "gz_fuxu_pilot",
+          "type": "favour",
+          "label": "请梢公",
+          "text": "你请扶胥的梢公吃了一席。他应下，往后收盐先递话。",
+          "cost": 30,
+          "once": true,
+          "effects": {
+            "flag": "gz_fuxu_pilot",
+            "network": 1
+          }
+        },
+        {
+          "id": "gz_fuxu_fast",
+          "type": "buy",
+          "label": "托梢公收盐",
+          "text": "梢公递了话，盐包先到你手上，价也松些。",
+          "good": "sea_salt",
+          "qty": 10,
+          "price_mul": 0.86,
+          "impact": true,
+          "unlock": {
+            "require_flag": "gz_fuxu_pilot"
+          }
         }
       ]
     },
@@ -1348,7 +2277,10 @@
           "text": "你跟梢公在殿前上了一炷香。庙里记下你的船。",
           "cost": 30,
           "once_per": "month",
-          "effects": {"favour": 2, "sea_tendency": 1}
+          "effects": {
+            "favour": 2,
+            "sea_tendency": 1
+          }
         },
         {
           "id": "gz_nanhai_before",
@@ -1362,14 +2294,20 @@
               "label": "自己许",
               "text": "你对江许了一句。风从海上来。",
               "cost": 0,
-              "effects": {"sea_tendency": 1, "note": "南海神庙许过一句。"}
+              "effects": {
+                "sea_tendency": 1,
+                "note": "南海神庙许过一句。"
+              }
             },
             {
               "id": "seat",
               "label": "请牙人",
               "text": "牙人坐了一坐。这一季的人情在他那边。",
               "cost": 20,
-              "effects": {"network": 1, "merchant_credit": 1}
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
             }
           ]
         },
@@ -1437,6 +2375,34 @@
           "port": "hakata",
           "good": "ivory",
           "mul": 1.18
+        },
+        {
+          "id": "gz_fanfang_intro",
+          "type": "favour",
+          "label": "引荐牙人",
+          "text": "通事带你去见蕃坊的牙人。牙人记下你的船，往后象牙好说话。",
+          "cost": 45,
+          "once": true,
+          "effects": {
+            "flag": "gz_fanfang_intro",
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "gz_fanfang_ivory2",
+          "type": "buy",
+          "label": "按引荐价收象牙",
+          "text": "牙人按引荐的价出象牙。通事在身边还能再少一成。",
+          "good": "ivory",
+          "qty": 2,
+          "price_mul": 0.9,
+          "impact": true,
+          "unlock": {
+            "require_flag": "gz_fanfang_intro"
+          },
+          "hire_bonus": "gz_fanfang_interpreter",
+          "hire_mul": 0.9
         }
       ]
     },
@@ -1455,7 +2421,10 @@
           "text": "香钱放进柜里。寺里记你一笔。",
           "cost": 10,
           "once_per": "month",
-          "effects": {"favour": 1, "fame": 1}
+          "effects": {
+            "favour": 1,
+            "fame": 1
+          }
         },
         {
           "id": "gz_liurong_bell",
@@ -1464,7 +2433,10 @@
           "text": "你在塔下站到风起。铃响了一阵，没有人催。",
           "cost": 0,
           "once_per": "year",
-          "effects": {"scholar_tendency": 1, "note": "六榕花塔下听过铃。"}
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "六榕花塔下听过铃。"
+          }
         },
         {
           "id": "gz_liurong_med",
@@ -1498,14 +2470,20 @@
               "label": "看帆",
               "text": "江里的帆一层一层。风从海上来。",
               "cost": 0,
-              "effects": {"sea_tendency": 1, "note": "海山楼上看过帆。"}
+              "effects": {
+                "sea_tendency": 1,
+                "note": "海山楼上看过帆。"
+              }
             },
             {
               "id": "host",
               "label": "陪官",
               "text": "你陪官坐到日落。楼上的人记住你的船。",
               "cost": 15,
-              "effects": {"favour": 1, "fame": 1}
+              "effects": {
+                "favour": 1,
+                "fame": 1
+              }
             }
           ]
         },
@@ -1515,21 +2493,31 @@
           "label": "看江面",
           "text": "城被围。楼上望得见江里的船，帆比平日少。",
           "once": true,
-          "unlock": {"war_in": ["besieged"]},
+          "unlock": {
+            "war_in": [
+              "besieged"
+            ]
+          },
           "options": [
             {
               "id": "stay",
               "label": "留下看",
               "text": "你在楼上留到天黑。帆更少了。",
               "cost": 0,
-              "effects": {"sea_tendency": 1, "note": "围城时在海山楼看过江。"}
+              "effects": {
+                "sea_tendency": 1,
+                "note": "围城时在海山楼看过江。"
+              }
             },
             {
               "id": "down",
               "label": "下楼去说",
               "text": "你下了楼，把看见的告诉牙行。",
               "cost": 0,
-              "effects": {"network": 1, "merchant_credit": 1}
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
             }
           ]
         },
@@ -1553,6 +2541,32 @@
           "qty": 4,
           "price_mul": 1.08,
           "impact": true
+        },
+        {
+          "id": "gz_haishan_night",
+          "type": "favour",
+          "label": "夜望",
+          "text": "你在海山楼留到天黑，看着江里的帆。",
+          "cost": 8,
+          "once_per": "year",
+          "cooldown_days": 60,
+          "effects": {
+            "sea_tendency": 1,
+            "note": "海山楼上夜望过。"
+          }
+        },
+        {
+          "id": "gz_haishan_host",
+          "type": "favour",
+          "label": "请官坐",
+          "text": "你请官人在楼上坐了一坐。楼上的人记你。",
+          "cost": 20,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
         }
       ]
     },
@@ -1571,7 +2585,10 @@
           "text": "你给书吏送了一匣笔墨。他记下你的名字，下回办事好看些。",
           "cost": 40,
           "once_per": "month",
-          "effects": {"favour": 2, "merchant_credit": 1}
+          "effects": {
+            "favour": 2,
+            "merchant_credit": 1
+          }
         },
         {
           "id": "gz_shibo_lic",
@@ -1580,8 +2597,13 @@
           "text": "南舶公凭到手。香药市上的牙人认这张纸，货引仍去正厅请。",
           "cost": 900,
           "licence": "lic_gz_south",
-          "unlock": {"favour_min": 2},
-          "effects": {"fame": 1, "merchant_credit": 1}
+          "unlock": {
+            "favour_min": 2
+          },
+          "effects": {
+            "fame": 1,
+            "merchant_credit": 1
+          }
         },
         {
           "id": "gz_shibo_rumor",
@@ -1611,7 +2633,9 @@
           "text": "你在廊外听了一讲。卷子没有带走。",
           "cost": 0,
           "once_per": "month",
-          "effects": {"scholar_tendency": 1}
+          "effects": {
+            "scholar_tendency": 1
+          }
         },
         {
           "id": "gz_xue_shop",
@@ -1619,8 +2643,14 @@
           "label": "入股书铺",
           "text": "学宫侧门一间书铺招人入股。入了本，按月分账。书不进牙行。",
           "shop": "书铺",
-          "costs": [260, 600],
-          "monthly": [12, 36]
+          "costs": [
+            260,
+            600
+          ],
+          "monthly": [
+            14,
+            33
+          ]
         },
         {
           "id": "gz_xue_tea",
@@ -1632,6 +2662,32 @@
           "port": "fuzhou",
           "good": "tea",
           "mul": 0.88
+        },
+        {
+          "id": "gz_xue_print",
+          "type": "favour",
+          "label": "助印",
+          "text": "你捐了一批纸墨给书铺。山长记下你的名字，往后印本按熟价出。",
+          "cost": 60,
+          "once": true,
+          "effects": {
+            "fame": 2,
+            "scholar_tendency": 1,
+            "flag": "gz_xue_print"
+          }
+        },
+        {
+          "id": "gz_xue_buyprint",
+          "type": "buy",
+          "label": "请印本",
+          "text": "书铺按熟价出印本。",
+          "good": "sutra_scrolls",
+          "qty": 2,
+          "price_mul": 0.9,
+          "impact": true,
+          "unlock": {
+            "require_flag": "gz_xue_print"
+          }
         }
       ]
     },
@@ -1653,10 +2709,25 @@
           "once_per": "year",
           "cost": 0,
           "unlock": {
-            "years": [1256, 1259, 1262, 1265, 1268, 1271, 1274],
-            "months": [8, 9, 10]
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
           },
-          "effects": {"fame": 1, "scholar_tendency": 1}
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
         },
         {
           "id": "gz_bang_stele",
@@ -1665,7 +2736,69 @@
           "text": "榜墙边的石碑面是光的。你按了一按。",
           "cost": 0,
           "once_per": "year",
-          "effects": {"fame": 1, "note": "广州贡院石碑按过。"}
+          "effects": {
+            "fame": 1,
+            "note": "广州贡院石碑按过。"
+          }
+        },
+        {
+          "id": "gz_bang_aid",
+          "type": "choice",
+          "label": "助寒士",
+          "text": "贡院门外的寒士缺纸墨。大比之年，你可以助，也可以旁观。",
+          "exam": true,
+          "once_per": "year",
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "options": [
+            {
+              "id": "give",
+              "label": "助纸墨",
+              "text": "你送了纸墨。寒士记你。",
+              "cost": 40,
+              "effects": {
+                "fame": 2,
+                "network": 1,
+                "flag": "gz_bang_aid"
+              }
+            },
+            {
+              "id": "pass",
+              "label": "旁观",
+              "text": "你只在墙边站了一会儿。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gz_bang_tea",
+          "type": "favour",
+          "label": "施茶",
+          "text": "贡院门外施了一轮茶。应试的人记你。",
+          "cost": 15,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
         }
       ]
     },
@@ -1708,6 +2841,45 @@
           "qty": 5,
           "price_mul": 0.93,
           "impact": true
+        },
+        {
+          "id": "gz_xiang_test",
+          "type": "choice",
+          "label": "试药",
+          "text": "市上有人试新药。你可以试，也可以旁观。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "try",
+              "label": "试一试",
+              "text": "你试了一小口。牙人记你胆气。",
+              "cost": 5,
+              "effects": {
+                "merchant_credit": 1,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "no",
+              "label": "旁观",
+              "text": "你不试。账面清楚。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "gz_xiang_rumor2",
+          "type": "rumor",
+          "label": "听胡椒",
+          "text": "牙人说，泉州的胡椒紧了。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "pepper",
+          "mul": 1.15
         }
       ]
     },
@@ -1735,8 +2907,14 @@
           "label": "入股花铺",
           "text": "素馨田边的小铺招人入股。入了本，按月分花钱。",
           "shop": "花铺",
-          "costs": [200, 460],
-          "monthly": [10, 28]
+          "costs": [
+            200,
+            460
+          ],
+          "monthly": [
+            11,
+            25
+          ]
         },
         {
           "id": "gz_suxin_gift",
@@ -1745,7 +2923,10 @@
           "text": "你买了一束素馨，没有拿去卖。铺里的人记住你。",
           "cost": 8,
           "once_per": "month",
-          "effects": {"fame": 1, "network": 1}
+          "effects": {
+            "fame": 1,
+            "network": 1
+          }
         }
       ]
     },
@@ -1785,7 +2966,9 @@
           "text": "你坐蛋户的船过了一趟江。船上的话听进耳朵里。",
           "cost": 6,
           "once_per": "month",
-          "effects": {"network": 1}
+          "effects": {
+            "network": 1
+          }
         }
       ]
     },
@@ -1847,8 +3030,14 @@
           "label": "包一间",
           "text": "包下一间塌房，按月收租。",
           "shop": "塌房",
-          "costs": [480, 980],
-          "monthly": [22, 64]
+          "costs": [
+            480,
+            980
+          ],
+          "monthly": [
+            26,
+            54
+          ]
         },
         {
           "id": "gz_tafang_quiet",
@@ -1869,6 +3058,47 @@
           "qty": 10,
           "price_mul": 0.9,
           "impact": true
+        },
+        {
+          "id": "gz_tafang_watch",
+          "type": "favour",
+          "label": "查仓",
+          "text": "你到塌房里走了一遭，记下几件货的去向。",
+          "cost": 10,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "note": "塌房里查过一遭仓。"
+          }
+        },
+        {
+          "id": "gz_tafang_loan",
+          "type": "choice",
+          "label": "借仓",
+          "text": "塌房主问你借一间仓。你可以借，也可以收租。",
+          "once": true,
+          "options": [
+            {
+              "id": "lend",
+              "label": "借他",
+              "text": "你借了仓。塌房主记你一笔人情。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "favour": 1
+              }
+            },
+            {
+              "id": "rent",
+              "label": "照收租",
+              "text": "你照旧收租。账面清楚。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
         }
       ]
     },
@@ -1886,8 +3116,14 @@
           "label": "入股茶坊",
           "text": "茶坊招人入股。入了本，按月分茶钱。",
           "shop": "茶坊",
-          "costs": [280, 640],
-          "monthly": [14, 42]
+          "costs": [
+            280,
+            640
+          ],
+          "monthly": [
+            15,
+            35
+          ]
         },
         {
           "id": "gz_tea_wager",
@@ -1901,15 +3137,24 @@
               "label": "押一盏",
               "text": "你押了自己这盏。茶博士把话传到牙行，博多的茶这一向紧。",
               "cost": 20,
-              "effects": {"merchant_credit": 1},
-              "rumor": {"port": "hakata", "good": "tea", "mul": 1.12}
+              "effects": {
+                "merchant_credit": 1
+              },
+              "rumor": {
+                "port": "hakata",
+                "good": "tea",
+                "mul": 1.12
+              }
             },
             {
               "id": "treat",
               "label": "作东",
               "text": "你把两盏都买了请人。街上记你一笔人情。",
               "cost": 30,
-              "effects": {"network": 1, "favour": 1}
+              "effects": {
+                "network": 1,
+                "favour": 1
+              }
             }
           ]
         },
@@ -1922,6 +3167,31 @@
           "qty": 6,
           "price_mul": 0.9,
           "impact": true
+        },
+        {
+          "id": "gz_tea_hire",
+          "type": "hire",
+          "label": "雇茶博士",
+          "text": "茶博士肯留在坊里。他在时，坊里的人多替你传话。",
+          "who": "茶博士",
+          "cost": 80,
+          "wage": 16,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "gz_tea_gift",
+          "type": "favour",
+          "label": "送建茶",
+          "text": "你送了一罐建茶给茶博士。他记下你。",
+          "cost": 15,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
         }
       ]
     },
@@ -1965,6 +3235,32 @@
           "port": "mingzhou",
           "good": "japanese_copper",
           "mul": 1.2
+        },
+        {
+          "id": "hk_tobo_intro",
+          "type": "favour",
+          "label": "引荐纲首",
+          "text": "纲首带你去见唐房的牙人。往后绢帛好说话。",
+          "cost": 45,
+          "once": true,
+          "effects": {
+            "flag": "hk_tobo_intro",
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "hk_tobo_silk2",
+          "type": "sell",
+          "label": "按引荐价卖绢",
+          "text": "牙人按引荐的价收绢帛。",
+          "good": "silk_fabric",
+          "qty": 3,
+          "price_mul": 1.12,
+          "impact": true,
+          "unlock": {
+            "require_flag": "hk_tobo_intro"
+          }
         }
       ]
     },
@@ -2047,8 +3343,55 @@
             220
           ],
           "monthly": [
-            11
+            12
           ]
+        },
+        {
+          "id": "hk_kushida_festival",
+          "type": "choice",
+          "label": "祭日",
+          "text": "祭日里町人抬着山笠走过。你可以奉纳，也可以看。",
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              7,
+              8
+            ]
+          },
+          "options": [
+            {
+              "id": "donate",
+              "label": "奉纳",
+              "text": "你奉纳了一串宋钱。神主记下你的船名。",
+              "cost": 30,
+              "effects": {
+                "favour": 2,
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "watch",
+              "label": "观看",
+              "text": "你站在社前看了一回。町人记你。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "hk_kushida_gift",
+          "type": "favour",
+          "label": "送扇",
+          "text": "你送了一把倭扇给社祝。他记下你。",
+          "cost": 8,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
         }
       ]
     },
@@ -2082,6 +3425,30 @@
           "port": "kagoshima",
           "good": "tea",
           "mul": 1.18
+        },
+        {
+          "id": "hk_hako_gift",
+          "type": "favour",
+          "label": "送茶",
+          "text": "你送了一罐宋茶给宫祝。他记下你。",
+          "cost": 12,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "sea_tendency": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "hk_hako_rumor2",
+          "type": "rumor",
+          "label": "听松原",
+          "text": "松原上的旅人说，萨摩那边今年茶紧。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "kagoshima",
+          "good": "tea",
+          "mul": 1.15
         }
       ]
     },
@@ -2118,6 +3485,30 @@
           "effects": {
             "fame": 1,
             "merchant_credit": 1
+          }
+        },
+        {
+          "id": "hk_dazaifu_rumor2",
+          "type": "rumor",
+          "label": "听倭铜",
+          "text": "书役说，博多近来倭铜紧。",
+          "cost": 14,
+          "cooldown_days": 45,
+          "port": "hakata",
+          "good": "japanese_copper",
+          "mul": 1.12
+        },
+        {
+          "id": "hk_dazaifu_watch",
+          "type": "favour",
+          "label": "查船",
+          "text": "你在门下坐了一阵，把听到的船期记下。",
+          "cost": 20,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "note": "大宰府门下记过船期。"
           }
         }
       ]
@@ -2181,6 +3572,51 @@
           "qty": 3,
           "price_mul": 1.06,
           "impact": true
+        },
+        {
+          "id": "hk_ichi_watch",
+          "type": "favour",
+          "label": "记摊价",
+          "text": "你在滨市记了一回摊价。",
+          "cost": 5,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "note": "滨市记过一回摊价。"
+          }
+        },
+        {
+          "id": "hk_ichi_wager",
+          "type": "choice",
+          "label": "赌价",
+          "text": "滨市有人赌米价。你可以押，也可以不押。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "bet",
+              "label": "押上",
+              "text": "你押了。滨市的人替你传话。",
+              "cost": 15,
+              "effects": {
+                "merchant_credit": 1
+              },
+              "rumor": {
+                "port": "hakata",
+                "good": "grain",
+                "mul": 1.12
+              }
+            },
+            {
+              "id": "no",
+              "label": "不押",
+              "text": "你不押。滨市的人记你谨慎。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
         }
       ]
     },
@@ -2234,8 +3670,8 @@
             380
           ],
           "monthly": [
-            13,
-            22
+            14,
+            21
           ]
         },
         {
@@ -2247,6 +3683,47 @@
           "qty": 5,
           "price_mul": 0.94,
           "impact": true
+        },
+        {
+          "id": "hk_naya_watch",
+          "type": "favour",
+          "label": "查仓",
+          "text": "你到纳屋里走了一遭，记下几件货的去向。",
+          "cost": 10,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "note": "纳屋里查过一遭仓。"
+          }
+        },
+        {
+          "id": "hk_naya_loan",
+          "type": "choice",
+          "label": "借仓",
+          "text": "纳屋主问你借一间仓。你可以借，也可以收租。",
+          "once": true,
+          "options": [
+            {
+              "id": "lend",
+              "label": "借他",
+              "text": "你借了仓。纳屋主记你一笔人情。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "favour": 1
+              }
+            },
+            {
+              "id": "rent",
+              "label": "照收租",
+              "text": "你照旧收租。账面清楚。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
         }
       ]
     },
@@ -2341,6 +3818,31 @@
           "qty": 3,
           "price_mul": 1.07,
           "impact": true
+        },
+        {
+          "id": "hk_cha_hire",
+          "type": "hire",
+          "label": "雇僧人",
+          "text": "僧人肯留在茶室。他在时，茶室的话多传到宋。",
+          "who": "僧人",
+          "cost": 70,
+          "wage": 14,
+          "monthly_effects": {
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "hk_cha_gift",
+          "type": "favour",
+          "label": "送茶",
+          "text": "你送了一罐宋茶给知客。他记下你。",
+          "cost": 12,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
         }
       ]
     },
@@ -2423,6 +3925,47 @@
             "favour": 2,
             "sea_tendency": 1
           }
+        },
+        {
+          "id": "wz_jiangxin_tea",
+          "type": "favour",
+          "label": "施茶",
+          "text": "你在江心寺施了一轮茶。寺僧记你。",
+          "cost": 15,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "wz_jiangxin_stay",
+          "type": "choice",
+          "label": "夜宿",
+          "text": "江心屿夜深。你可以留宿，也可以回船。",
+          "once": true,
+          "options": [
+            {
+              "id": "stay",
+              "label": "留宿",
+              "text": "你在屿上留了一夜。寺僧记你。",
+              "cost": 20,
+              "effects": {
+                "sea_tendency": 1,
+                "note": "江心屿留宿过一晚。"
+              }
+            },
+            {
+              "id": "leave",
+              "label": "回船",
+              "text": "你回了船。舱里的人松了口气。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
         }
       ]
     },
@@ -2448,6 +3991,30 @@
           "id": "wz_shuomen_rumor",
           "type": "rumor",
           "label": "问梢公",
+          "text": "北来的梢公说，博多唐房近来绢帛紧。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "silk_fabric",
+          "mul": 1.2
+        },
+        {
+          "id": "wz_shuomen_watch",
+          "type": "favour",
+          "label": "记船",
+          "text": "你在码头记了一回船期。",
+          "cost": 8,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "note": "朔门码头记过船期。"
+          }
+        },
+        {
+          "id": "wz_shuomen_rumor2",
+          "type": "rumor",
+          "label": "听绢帛",
           "text": "北来的梢公说，博多唐房近来绢帛紧。",
           "cost": 15,
           "cooldown_days": 40,
@@ -2523,8 +4090,8 @@
             400
           ],
           "monthly": [
-            13,
-            23
+            14,
+            22
           ]
         }
       ]
@@ -2557,6 +4124,59 @@
           "effects": {
             "merchant_credit": 1,
             "favour": 1
+          }
+        },
+        {
+          "id": "wz_shop_painter",
+          "type": "hire",
+          "label": "雇漆匠",
+          "text": "漆匠肯留在铺里。他在时，漆盒的价好说话。",
+          "who": "漆匠",
+          "cost": 60,
+          "wage": 12,
+          "monthly_effects": {
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "wz_shop_regular2",
+          "type": "choice",
+          "label": "做熟客",
+          "text": "铺主问你常来。你可以做熟客，也可以照常。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "regular",
+              "label": "做熟客",
+              "text": "你做了熟客。铺主给你留好盒。",
+              "cost": 20,
+              "effects": {
+                "merchant_credit": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "normal",
+              "label": "照常",
+              "text": "你照常买卖。账面清楚。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "wz_shop_buy2",
+          "type": "buy",
+          "label": "熟客价收漆盒",
+          "text": "铺主按熟客的价出好盒。",
+          "good": "lacquerware",
+          "qty": 2,
+          "price_mul": 0.9,
+          "impact": true,
+          "unlock": {
+            "require_flag": "wz_academy_patron"
           }
         }
       ]
@@ -2609,7 +4229,7 @@
             200
           ],
           "monthly": [
-            10
+            11
           ]
         },
         {
@@ -2623,6 +4243,61 @@
             "network": 1,
             "favour": 1
           }
+        },
+        {
+          "id": "wz_citrus_pick",
+          "type": "favour",
+          "label": "收果",
+          "text": "你收了一季温柑。钱是现的。",
+          "cost": 5,
+          "once_per": "year",
+          "cooldown_days": 60,
+          "unlock": {
+            "months": [
+              10,
+              11,
+              12
+            ]
+          },
+          "effects": {
+            "money": 60,
+            "hometown_tendency": 1
+          }
+        },
+        {
+          "id": "wz_citrus_price",
+          "type": "choice",
+          "label": "果价",
+          "text": "温柑将熟。你可以现在卖，也可以等。",
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              9,
+              10
+            ]
+          },
+          "options": [
+            {
+              "id": "now",
+              "label": "现在卖",
+              "text": "鲜果出手，钱是现的。",
+              "cost": 0,
+              "effects": {
+                "money": 30,
+                "hometown_tendency": 1
+              }
+            },
+            {
+              "id": "wait",
+              "label": "再等等",
+              "text": "你再等等。熟透的果价更高。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 2,
+                "note": "等过一季温柑。"
+              }
+            }
+          ]
         }
       ]
     },
@@ -2655,8 +4330,50 @@
           "once_per": "year",
           "effects": {
             "fame": 2,
+            "favour": 1,
+            "flag": "wz_academy_patron"
+          }
+        },
+        {
+          "id": "wz_academy_tea",
+          "type": "favour",
+          "label": "施茶",
+          "text": "你在书院施了一轮茶。学生记你。",
+          "cost": 12,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
             "favour": 1
           }
+        },
+        {
+          "id": "wz_academy_ask",
+          "type": "choice",
+          "label": "讲事功",
+          "text": "先生讲事功之学。你可以发问，也可以旁听。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "ask",
+              "label": "发问",
+              "text": "你发了一问。先生记你。",
+              "cost": 5,
+              "effects": {
+                "scholar_tendency": 2
+              }
+            },
+            {
+              "id": "listen",
+              "label": "旁听",
+              "text": "你在廊下旁听。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
         }
       ]
     },
@@ -2708,6 +4425,65 @@
           "effects": {
             "scholar_tendency": 1
           }
+        },
+        {
+          "id": "wz_bang_aid",
+          "type": "choice",
+          "label": "助寒士",
+          "text": "州学门外的寒士缺纸墨。大比之年，你可以助，也可以旁观。",
+          "exam": true,
+          "once_per": "year",
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "options": [
+            {
+              "id": "give",
+              "label": "助纸墨",
+              "text": "你送了纸墨。寒士记你。",
+              "cost": 40,
+              "effects": {
+                "fame": 2,
+                "network": 1,
+                "flag": "wz_bang_aid"
+              }
+            },
+            {
+              "id": "pass",
+              "label": "旁观",
+              "text": "你只在墙边站了一会儿。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "wz_bang_tea",
+          "type": "favour",
+          "label": "施茶",
+          "text": "州学门外施了一轮茶。应试的人记你。",
+          "cost": 15,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "favour": 1,
+            "network": 1
+          }
         }
       ]
     },
@@ -2739,6 +4515,50 @@
           "port": "mingzhou",
           "good": "lacquerware",
           "mul": 1.15
+        },
+        {
+          "id": "wz_tea_rumor2",
+          "type": "rumor",
+          "label": "听漆器",
+          "text": "茶坊里的人说，庆元府那边漆器缺了。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "lacquerware",
+          "mul": 1.15
+        },
+        {
+          "id": "wz_tea_wager",
+          "type": "choice",
+          "label": "斗茶",
+          "text": "茶坊里两盏建茶对坐。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "play",
+              "label": "押一盏",
+              "text": "你押了自己这盏。茶博士把话传到牙行。",
+              "cost": 20,
+              "effects": {
+                "merchant_credit": 1
+              },
+              "rumor": {
+                "port": "hakata",
+                "good": "tea",
+                "mul": 1.12
+              }
+            },
+            {
+              "id": "treat",
+              "label": "作东",
+              "text": "你把两盏都买了请人。街上记你一笔人情。",
+              "cost": 30,
+              "effects": {
+                "network": 1,
+                "favour": 1
+              }
+            }
+          ]
         }
       ]
     },
@@ -2833,8 +4653,8 @@
             360
           ],
           "monthly": [
-            12,
-            21
+            13,
+            20
           ]
         },
         {
@@ -2877,6 +4697,47 @@
           "effects": {
             "network": 1
           }
+        },
+        {
+          "id": "wz_mochi_shop",
+          "type": "invest",
+          "label": "入股小卖",
+          "text": "小卖摊主想添货。你入一股，按月分钱。",
+          "shop": "小卖",
+          "costs": [
+            180
+          ],
+          "monthly": [
+            10
+          ]
+        },
+        {
+          "id": "wz_mochi_ask",
+          "type": "choice",
+          "label": "歇脚",
+          "text": "摊边坐着挑担的人。你可以打听，也可以只歇脚。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "ask",
+              "label": "打听",
+              "text": "挑担的人说了些城里的事。",
+              "cost": 5,
+              "effects": {
+                "network": 1,
+                "note": "河边小卖打听了一回。"
+              }
+            },
+            {
+              "id": "rest",
+              "label": "歇脚",
+              "text": "你坐了一阵，什么也没问。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
         }
       ]
     }
