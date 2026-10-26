@@ -10,18 +10,37 @@ static func open_index(main, port_id: String) -> void:
 	main.scene_title.text = "城中各处"
 	var pname := GameManager.get_port_name(port_id)
 	main.body_text.text = "%s城里不止码头这一处。坊巷、寺观、衙廊，各有各的事。" % pname
-	main._begin_benches()
-	for row in Book.districts_of(port_id):
-		var card: VBoxContainer = main._slip_body()
-		main._slip_title(card, str(row.get("name", "")), Book.kind_label(str(row.get("kind", ""))))
-		main._slip_note(card, str(row.get("description", "")))
-		var line: HFlowContainer = main._slip_row(card)
-		var why := Book.district_reason(row)
-		if why == "":
-			main._slip_chip(line, "进去", _enter.bind(main, port_id, str(row.get("id", ""))), true)
-		else:
-			main._slip_stamp(line, why)
-	main._end_benches()
+	# 按类分组，长名单不挤成一排。
+	var rows := Book.districts_of(port_id)
+	var groups: Dictionary = {}
+	var order: Array = []
+	for row in rows:
+		var k := str(row.get("kind", ""))
+		if not groups.has(k):
+			groups[k] = []
+			order.append(k)
+		(groups[k] as Array).append(row)
+	for k in order:
+		var kk := str(k)
+		var header := Label.new()
+		header.name = "DistrictGroupHeader"
+		header.text = Book.kind_label(kk)
+		UiTheme.style_section_label(header)
+		main.choices_container.add_child(header)
+		main._begin_benches()
+		for row in (groups[kk] as Array):
+			var card: VBoxContainer = main._slip_body()
+			main._slip_title(card, str(row.get("name", "")), Book.kind_label(str(row.get("kind", ""))))
+			main._slip_note(card, str(row.get("description", "")))
+			var line: HFlowContainer = main._slip_row(card)
+			var why := Book.district_reason(row)
+			if why == "":
+				var chip: Button = main._slip_chip(line, "进去", _enter.bind(main, port_id, str(row.get("id", ""))), true)
+				chip.tooltip_text = str(row.get("description", ""))
+			else:
+				var stamp: Button = main._slip_stamp(line, why)
+				stamp.tooltip_text = why
+		main._end_benches()
 	_leave(main, _to_port.bind(main, port_id))
 
 
@@ -40,13 +59,54 @@ static func open_district(main, port_id: String, dist_id: String, flash := "") -
 	if flash != "":
 		body += "\n\n" + flash
 	main.body_text.text = body
-	main._begin_benches()
+	# 按事类分组。
+	var ixs: Array = []
 	for ix in row.get("interactions", []):
 		if typeof(ix) != TYPE_DICTIONARY:
 			continue
-		_paint(main, port_id, dist_id, ix)
-	main._end_benches()
+		if Book.hidden(ix):
+			continue
+		ixs.append(ix)
+	var groups: Dictionary = {}
+	var order: Array = []
+	for ix in ixs:
+		var cat := _ix_group(ix)
+		if not groups.has(cat):
+			groups[cat] = []
+			order.append(cat)
+		(groups[cat] as Array).append(ix)
+	for cat in order:
+		var header := Label.new()
+		header.name = "DistrictGroupHeader"
+		header.text = cat
+		UiTheme.style_section_label(header)
+		main.choices_container.add_child(header)
+		main._begin_benches()
+		for ix in (groups[cat] as Array):
+			_paint(main, port_id, dist_id, ix)
+		main._end_benches()
 	_leave(main, _back.bind(main, port_id))
+
+
+static func _ix_group(ix: Dictionary) -> String:
+	var t := str(ix.get("type", ""))
+	match t:
+		"buy", "sell":
+			return "买卖"
+		"invest":
+			return "入股"
+		"hire":
+			return "雇人"
+		"rumor":
+			return "传闻"
+		"licence":
+			return "公凭"
+		"choice":
+			return "抉择"
+		"favour":
+			return "行事"
+		_:
+			return "事"
 
 
 static func _paint(main, port_id: String, dist_id: String, ix: Dictionary) -> void:
@@ -63,11 +123,15 @@ static func _paint(main, port_id: String, dist_id: String, ix: Dictionary) -> vo
 		var ease := int(ix.get("attention_ease", 0))
 		if ease > 0:
 			note += "\n在身边时，蒲家留意每月减 %d。" % ease
+	var cd := int(ix.get("cooldown_days", 0))
+	if cd > 0:
+		note += "\n办后 %d 日可再办。" % cd
 	main._slip_note(card, note)
 	var line: HFlowContainer = main._slip_row(card)
 	var mode := str(v.get("mode", "stamp"))
 	if mode == "dismiss":
-		main._slip_chip(line, "辞退", _dismiss.bind(main, port_id, dist_id, str(ix.get("id", ""))))
+		var chip: Button = main._slip_chip(line, "辞退", _dismiss.bind(main, port_id, dist_id, str(ix.get("id", ""))))
+		chip.tooltip_text = "辞退帮手，月俸不再发。"
 		return
 	if mode == "choice":
 		for opt in ix.get("options", []):
@@ -76,16 +140,57 @@ static func _paint(main, port_id: String, dist_id: String, ix: Dictionary) -> vo
 			var ov: Dictionary = Book.view_option(port_id, ix, opt)
 			var chip: Button = main._slip_chip(line, str(ov.get("label", "就这样")), _press.bind(main, port_id, dist_id, str(ix.get("id", "")), str(opt.get("id", ""))))
 			chip.disabled = not bool(ov.get("open", false))
-			if str(ov.get("reason", "")) != "":
-				chip.tooltip_text = str(ov.reason)
+			var reason := str(ov.get("reason", ""))
+			if reason != "":
+				chip.tooltip_text = reason
+			elif not bool(ov.get("open", false)):
+				chip.tooltip_text = "囊中不足"
+			else:
+				var cost := int(opt.get("cost", 0))
+				if cost > 0:
+					chip.tooltip_text = "费 %d 钱" % cost
+				else:
+					chip.tooltip_text = "办理"
 		return
 	if mode == "chip":
 		var chip2: Button = main._slip_chip(line, str(v.get("label", "办理")), _press.bind(main, port_id, dist_id, str(ix.get("id", "")), ""), true)
 		chip2.disabled = not bool(v.get("affordable", false))
 		if not bool(v.get("affordable", false)):
 			chip2.tooltip_text = "囊中不足"
+		else:
+			var hint := _cost_hint(port_id, ix, v)
+			if cd > 0:
+				hint += "　办后 %d 日可再办" % cd
+			chip2.tooltip_text = hint if hint != "" else "办理"
 		return
-	main._slip_stamp(line, str(v.get("reason", "眼下办不了")))
+	var stamp: Button = main._slip_stamp(line, str(v.get("reason", "眼下办不了")))
+	stamp.tooltip_text = str(v.get("reason", "眼下办不了"))
+
+
+static func _cost_hint(port_id: String, ix: Dictionary, v: Dictionary) -> String:
+	var t := str(ix.get("type", ""))
+	var money := 0
+	if t == "buy" or t == "sell":
+		money = Book.unit_price(port_id, ix) * maxi(1, int(ix.get("qty", 1)))
+	elif t == "invest":
+		var costs: Array = ix.get("costs", [])
+		var level := Book.level_of(str(ix.get("id", "")))
+		if level >= 0 and level < costs.size():
+			money = int(costs[level])
+	else:
+		money = int(ix.get("cost", 0))
+	var parts: Array = []
+	if money > 0:
+		parts.append("费 %d 钱" % money)
+	var req := str(ix.get("needs_licence", ""))
+	if req != "":
+		parts.append("需公凭")
+	var hire := str(ix.get("needs_hire", ""))
+	if hire != "":
+		parts.append("需帮手")
+	if bool(ix.get("unlock", {}).get("siege", false)):
+		parts.append("需城防")
+	return "　".join(parts)
 
 
 static func _press(main, port_id: String, dist_id: String, ix_id: String, opt_id: String) -> void:
@@ -128,3 +233,5 @@ static func _leave(main, cb: Callable) -> void:
 	UiTheme.style_leave_button(btn)
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	main.choices_label.visible = false
+PYEOF
+echo written

@@ -311,6 +311,7 @@ const SCRIPTS := [
 	"res://scripts/ui/DistrictPage.gd",  # lane w55 城中各处页
 	"res://tools/qa_w55_districts_probe.gd",  # lane w55 城中各处数据与交互探针
 	"res://tools/qa_w56_district_sim_probe.gd",  # lane w56 城中各处深化探针
+	"res://tools/qa_w57_districtui_probe.gd",  # lane ui2 城中各处 UI 可用性探针
 	"res://tools/qa_w56_pending_districts_probe.gd",  # lane d1 待画城区探针
 ]
 

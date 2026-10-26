@@ -219,6 +219,7 @@ EXEMPT = [
     ("qa_w55_districts_probe.gd", "lane-w55-districts", "城中各处数据与交互探针（泉州兴化各十五处、底图与交互门、买卖入股雇人传闻公凭看榜围城送米、月初入账接线、港页进城与福州无钮、兴化守城页无钮），回退即红，headless 秒级"),
     ("qa_w56_district_sim_probe.gd", "lane-w56-district-sim", "城中各处深化探针（链 flag、大比、季节、风险、小卖入股、传闻），回退即红，headless 秒级"),
     ("qa_w56_pending_districts_probe.gd", "lane-d1-pending", "待画城区探针（pending/*.json 全扫、底图尚不存在、pending_art=true、账本不暴露），回退即红，headless 秒级"),
+    ("qa_w57_districtui_probe.gd", "lane-ui2-districtui", "城中各处 UI 可用性探针（名单与事页按类分组、钮带花费/冷却/条件悬停提示），回退即红，headless 秒级"),
     ("qa_yard_transition_probe.gd", "f842d3e lane-fo", "船屋修购船过场上闸探针，已挂 shot_gate 压帧，不属于截图册 finish_shots 系"),
     ("save_stale_refs_probe.gd", "c0fcb77 lane-w25-j3", "旧卷引用已删名目读档提示探针（audit_stale_refs 五类勾稽），when 判据未定"),
     ("ship_dashi_probe.gd", "802e54d feat(ships)", "船近景四支之二，已接 shot_gate 压帧，截图档待挂"),
