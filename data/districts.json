@@ -2374,6 +2374,511 @@
           "mul": 1.18
         }
       ]
+    },
+    {
+      "id": "wz_jiangxin",
+      "port": "wenzhou",
+      "name": "江心屿",
+      "kind": "temple",
+      "bg": "bg_dist_wz_jiangxin.jpg",
+      "description": "江心屿在瓯江当中，东西两塔夹着江心寺。渡船在屿下来回。",
+      "interactions": [
+        {
+          "id": "wz_jiangxin_tower",
+          "type": "choice",
+          "label": "登塔",
+          "text": "两塔都许登。东塔看海，西塔看城。一年登一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "east",
+              "label": "登东塔",
+              "text": "东塔上看见江口的帆。风从海上来。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "note": "登过江心东塔。"
+              }
+            },
+            {
+              "id": "west",
+              "label": "登西塔",
+              "text": "西塔上看见永嘉城的瓦。你站了很久。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "登过江心西塔。"
+              }
+            }
+          ]
+        },
+        {
+          "id": "wz_jiangxin_rite",
+          "type": "favour",
+          "label": "上香",
+          "text": "你在江心寺上了一炷香。寺僧记下你的船。",
+          "cost": 25,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "sea_tendency": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "wz_shuomen",
+      "port": "wenzhou",
+      "name": "朔门码头",
+      "kind": "dock",
+      "bg": "bg_dist_wz_shuomen.jpg",
+      "description": "朔门外是温州的码头。石岸上脚夫扛着漆箱，福船挨着停在瓯江边。",
+      "interactions": [
+        {
+          "id": "wz_shuomen_sulfur",
+          "type": "sell",
+          "label": "出手硫黄",
+          "text": "码头上有人问硫黄。件数不多，价比牙行略高。",
+          "good": "sulfur",
+          "qty": 3,
+          "price_mul": 1.06,
+          "impact": true
+        },
+        {
+          "id": "wz_shuomen_rumor",
+          "type": "rumor",
+          "label": "问梢公",
+          "text": "北来的梢公说，博多唐房近来绢帛紧。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "silk_fabric",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "wz_shibo",
+      "port": "wenzhou",
+      "name": "市舶务",
+      "kind": "office",
+      "bg": "bg_dist_wz_shibo.jpg",
+      "description": "温州设市舶务，比泉州小。廊下小吏在案上验漆器，箱子按件编号。",
+      "interactions": [
+        {
+          "id": "wz_shibo_gift",
+          "type": "favour",
+          "label": "送笔墨",
+          "text": "你给书吏送了一匣笔墨。他记下你的名字。",
+          "cost": 40,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "wz_shibo_lic",
+          "type": "licence",
+          "label": "领漆货公凭",
+          "text": "漆货公凭到手。温州的漆坊认这张纸。",
+          "cost": 600,
+          "licence": "lic_wz_lacquer",
+          "unlock": {
+            "favour_min": 2
+          },
+          "effects": {
+            "fame": 1,
+            "merchant_credit": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "wz_lacquer",
+      "port": "wenzhou",
+      "name": "漆坊",
+      "kind": "workshop",
+      "bg": "bg_dist_wz_lacquer.jpg",
+      "description": "漆坊里匠人一遍遍上漆，盘盒排在架上阴干。温州漆器出名就出在这里。",
+      "interactions": [
+        {
+          "id": "wz_lacquer_buy",
+          "type": "buy",
+          "label": "收漆器",
+          "text": "坊里刚出一批盘盒，按坊价出。",
+          "good": "lacquerware",
+          "qty": 4,
+          "price_mul": 0.92,
+          "impact": true
+        },
+        {
+          "id": "wz_lacquer_share",
+          "type": "invest",
+          "label": "入股漆坊",
+          "text": "坊主要添漆料。你入一股，按月分钱。",
+          "shop": "漆坊",
+          "costs": [
+            260,
+            400
+          ],
+          "monthly": [
+            13,
+            23
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wz_shop",
+      "port": "wenzhou",
+      "name": "漆器铺",
+      "kind": "shop",
+      "bg": "bg_dist_wz_shop.jpg",
+      "description": "巷里的小铺只卖漆盒。铺主在柜上一件件擦给客人看。",
+      "interactions": [
+        {
+          "id": "wz_shop_box",
+          "type": "buy",
+          "label": "买漆盒",
+          "text": "铺主肯把几件好盒按熟客价出。",
+          "good": "lacquerware",
+          "qty": 2,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "wz_shop_regular",
+          "type": "favour",
+          "label": "做熟客",
+          "text": "你常来，铺主把你记作熟客。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "favour": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "wz_market",
+      "port": "wenzhou",
+      "name": "永嘉市",
+      "kind": "market",
+      "bg": "bg_dist_wz_market.jpg",
+      "description": "城里的市从城门一直排进来，摊上是米、茶与杂货，人挨着人走。",
+      "interactions": [
+        {
+          "id": "wz_market_grain",
+          "type": "buy",
+          "label": "收米",
+          "text": "市上的米比牙行便宜些。",
+          "good": "grain",
+          "qty": 8,
+          "price_mul": 0.93,
+          "impact": true
+        },
+        {
+          "id": "wz_market_pepper",
+          "type": "sell",
+          "label": "出手胡椒",
+          "text": "有人在市上问胡椒。价比牙行略高。",
+          "good": "pepper",
+          "qty": 3,
+          "price_mul": 1.06,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "wz_citrus",
+      "port": "wenzhou",
+      "name": "柑园",
+      "kind": "orchard",
+      "bg": "bg_dist_wz_citrus.jpg",
+      "description": "温柑出名。山坡上一片柑树，园丁挑着筐下山，远处是瓯江和城。",
+      "interactions": [
+        {
+          "id": "wz_citrus_share",
+          "type": "invest",
+          "label": "包柑园",
+          "text": "园主要人分担一季。你入一股，按月分钱。",
+          "shop": "柑园",
+          "costs": [
+            200
+          ],
+          "monthly": [
+            10
+          ]
+        },
+        {
+          "id": "wz_citrus_gift",
+          "type": "favour",
+          "label": "送温柑",
+          "text": "你挑了一筐温柑送给牙人。他笑着收了。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "wz_academy",
+      "port": "wenzhou",
+      "name": "永嘉书院",
+      "kind": "academy",
+      "bg": "bg_dist_wz_academy.jpg",
+      "description": "永嘉学者讲事功之学。廊下先生坐在席上，学生捧着卷听。",
+      "interactions": [
+        {
+          "id": "wz_academy_listen",
+          "type": "favour",
+          "label": "听讲",
+          "text": "你在廊下听了一回讲。说的是钱谷与兵事。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "wz_academy_donate",
+          "type": "favour",
+          "label": "助书",
+          "text": "你捐了一批纸墨给书院。山长记下你的名字。",
+          "cost": 80,
+          "once_per": "year",
+          "effects": {
+            "fame": 2,
+            "favour": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "wz_bang",
+      "port": "wenzhou",
+      "name": "州学榜墙",
+      "kind": "exam",
+      "bg": "bg_dist_wz_bang.jpg",
+      "description": "州学门外是碑与榜墙。大比之年，墙上贴着今秋的榜。",
+      "interactions": [
+        {
+          "id": "wz_bang_look",
+          "type": "favour",
+          "label": "看榜",
+          "text": "州学墙外贴着今秋的榜。永嘉人挤在墙下，有人念，有人沉默。",
+          "exam": true,
+          "scholar_1268": true,
+          "once_per": "year",
+          "cost": 0,
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "wz_bang_stele",
+          "type": "favour",
+          "label": "读碑",
+          "text": "你在门边读了一回碑。字是旧的。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "wz_tea",
+      "port": "wenzhou",
+      "name": "茶坊",
+      "kind": "teahouse",
+      "bg": "bg_dist_wz_tea.jpg",
+      "description": "街边茶坊挂着灯，主人亲自点茶。坐着的多是牙人和船主。",
+      "interactions": [
+        {
+          "id": "wz_tea_buy",
+          "type": "buy",
+          "label": "收茶",
+          "text": "茶坊主有一批山里的茶，按坊价出。",
+          "good": "tea",
+          "qty": 4,
+          "price_mul": 0.94,
+          "impact": true
+        },
+        {
+          "id": "wz_tea_rumor",
+          "type": "rumor",
+          "label": "听茶话",
+          "text": "船主说，庆元府那边漆器缺了。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "lacquerware",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "wz_ferry",
+      "port": "wenzhou",
+      "name": "瓯江渡",
+      "kind": "ferry",
+      "bg": "bg_dist_wz_ferry.jpg",
+      "description": "瓯江渡口，篷船载人去江心屿。岸上的人等着下一班。",
+      "interactions": [
+        {
+          "id": "wz_ferry_ride",
+          "type": "favour",
+          "label": "包渡",
+          "text": "你包了一条渡船。船家记下你。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "wz_ferry_boatman",
+          "type": "hire",
+          "label": "雇船家",
+          "text": "船家肯跟你走一程。他熟瓯江的水。",
+          "who": "瓯江船家",
+          "cost": 90,
+          "wage": 16,
+          "monthly_effects": {
+            "sea_tendency": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "wz_huagai",
+      "port": "wenzhou",
+      "name": "华盖山亭",
+      "kind": "pavilion",
+      "bg": "bg_dist_wz_huagai.jpg",
+      "description": "华盖山在城里，山腰有亭，亭边有洞。站在亭上，整座永嘉城都在脚下。",
+      "interactions": [
+        {
+          "id": "wz_huagai_view",
+          "type": "choice",
+          "label": "登亭",
+          "text": "亭上看得见城与江。一年登一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "city",
+              "label": "看城",
+              "text": "瓦屋一片接一片。你想起家里。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1,
+                "note": "登过华盖山亭。"
+              }
+            },
+            {
+              "id": "river",
+              "label": "看江",
+              "text": "江口的帆一张张出去。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wz_tafang",
+      "port": "wenzhou",
+      "name": "江边塌房",
+      "kind": "warehouse",
+      "bg": "bg_dist_wz_tafang.jpg",
+      "description": "瓯江边一排塌房，白墙木门，脚夫把箱子码在门外等着进仓。",
+      "interactions": [
+        {
+          "id": "wz_tafang_share",
+          "type": "invest",
+          "label": "租塌房",
+          "text": "塌房主肯分一间给你。按月分租钱。",
+          "shop": "塌房",
+          "costs": [
+            240,
+            360
+          ],
+          "monthly": [
+            12,
+            21
+          ]
+        },
+        {
+          "id": "wz_tafang_copper",
+          "type": "sell",
+          "label": "出手倭铜",
+          "text": "仓里有人在收倭铜。价比牙行略高。",
+          "good": "japanese_copper",
+          "qty": 2,
+          "price_mul": 1.06,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "wz_mochi",
+      "port": "wenzhou",
+      "name": "河边小卖",
+      "kind": "stall",
+      "bg": "bg_dist_wz_mochi.jpg",
+      "description": "河边榕树下有个小卖摊，卖米糕和杂货。挑担的人都在这里歇脚。",
+      "interactions": [
+        {
+          "id": "wz_mochi_grain",
+          "type": "buy",
+          "label": "收米",
+          "text": "摊主还有几包米，按摊价出。",
+          "good": "grain",
+          "qty": 4,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "wz_mochi_chat",
+          "type": "favour",
+          "label": "歇脚",
+          "text": "你在摊边坐了一阵。挑担的说了些城里的事。",
+          "cost": 5,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
+        }
+      ]
     }
   ]
 }
