@@ -2125,10 +2125,10 @@
     {
       "id": "hk_shoni",
       "port": "hakata",
-      "name": "少弐馆",
+      "name": "少贰馆",
       "kind": "manor",
       "bg": "bg_dist_hk_shoni.jpg",
-      "description": "少弐家是大宰府的守护，馆前拴着马，披甲的郎党在院里站着。",
+      "description": "少贰家是大宰府的守护，馆前拴着马，披甲的郎党在院里站着。",
       "interactions": [
         {
           "id": "hk_shoni_tea",
@@ -2144,7 +2144,7 @@
           "id": "hk_shoni_visit",
           "type": "favour",
           "label": "拜谒",
-          "text": "你在少弐馆递了名刺。郎党说，主人知道你了。",
+          "text": "你在少贰馆递了名刺。郎党说，主人知道你了。",
           "cost": 60,
           "once_per": "year",
           "effects": {
