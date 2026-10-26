@@ -765,7 +765,6 @@ REGISTRY = [
             "✗ `丙 段名唯一…新增重复…` / ✗ `丁 纯尾 append 单调…混入非判档 H2 行…` / ✗ `戊 段序非降幂：违例行对…` 逐条点名 + 自检 ✗ "
             "（S1..S7 掛点逐格点名、C3′ / C3″ 反向格咬不动即自检 ✗）/ "
             "读不到清册 ✗——首行后 `结果：N 项问题`，退 1"},
-    
 ]
 
 # w27-k4 CHECK FOLLOWS
@@ -835,6 +834,11 @@ CHECK = [
      "red": "✗ `区一 §五.1 非空行数 N ≠ 钉 M` / ✗ `区一顶层 bullet 行数…` / ✗ `区一编号步骤行数…` / "
             "✗ `区一关键词哨 `<词>` 在衙行数 N ≠ 钉 M` / 区二同格面 ✗ ——首行后 `结果：N 项问题`，退 1；"
             "自检不过先退 1「结果：自检红」；读不到 gate_json rc=2"},
+    {"id": "check_w57_data", "tier": "lane", "when": "动 data/districts.json、data/districts_pending/*.json，或 tools/check_w57_data.py",
+     "kind": "py", "file": "tools/check_w57_data.py",
+     "judge": "（lane w57）城区数据交叉校验：district / interaction id 全局唯一；港存在或标 pending_port；货在 goods.json；传闻的港与货有市面；非市面的买卖 impact 须为 false；require_flag 须在某处 effects.flag 产出；公凭 id 一致；成本、数量、price_mul、入股数组合理",
+     "green": "`城区数据交叉校验（data/districts*.json）` + `  ✓ 全部通过` + `结果：全部通过`",
+     "red": "`  ✗ …` 行；`结果：N 项问题`"}
 
 ]
 

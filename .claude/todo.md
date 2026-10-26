@@ -88,4 +88,4 @@ python3 tools/check_probe_registry.py
 ```
 上面这段与 `docs/GATES.md` §三「一键人读全跑」逐条同序（`python3 tools/gates_md.py` 判）；新门禁入册、升降档、样本自检、改了被引文件后的清单跟号，规矩见 `docs/GATES.md` §五。
 
-lane 加跑档（不进上面一键段、不改条数）：`python3 tools/check_ledger_garbage.py`（仓务清册「殓殓」词级污染静态扫，lane w62-k3 立——动 `docs/仓务清册_2026-10-03.md` 判档段时手跑，GATES §三.48）。
+lane 加跑档（不进上面一键段、不改条数）：`python3 tools/check_ledger_garbage.py`（仓务清册「殓殓」词级污染静态扫，lane w62-k3 立——动 `docs/仓务清册_2026-10-03.md` 判档段时手跑，GATES §三.48）；`python3 tools/check_w57_data.py`（城区数据交叉校验，lane w57 立——动 `data/districts*.json` 时手跑）。

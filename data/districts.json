@@ -2684,7 +2684,7 @@
           "good": "sutra_scrolls",
           "qty": 2,
           "price_mul": 0.9,
-          "impact": true,
+          "impact": false,
           "unlock": {
             "require_flag": "gz_xue_print"
           }
