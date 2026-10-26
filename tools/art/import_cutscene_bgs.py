@@ -124,14 +124,17 @@ def _read_img_size(path: pathlib.Path) -> tuple:
     return _img_size(path.read_bytes(), path.name)
 
 
-# 素材池（lane w148-k1）：sidecar 直入库、data/scripts/docs 全仓零挂镜的五张过场，
-# 登记备索——下游「不在导入清单」与「导入了但数据里没用到」两格对池名放行/豁名，产物门（sha1/size/裁切）全量照守
+# 素材池（lane w148-k1）：sidecar 直入库、data 零挂镜的过场，
+# 登记备索——下游「不在导入清单」与「导入了但数据里没用到」两格对池名放行/豁名，产物门（sha1/size/裁切）全量照守。
+# 后两张是章节卡挪走之后留下的旧底：耽罗北线、旧光塔（地中海塔身，不再上屏）。来源仍是原池，不是 .unused 占位。
 ASSET_POOL = {
     "cs_linan_surrender.jpg",
     "cs_penghu_fishing.jpg",
     "cs_quanzhou_fall.jpg",
     "cs_ryukyu_trade.jpg",
     "cs_yashan_burn.jpg",
+    "cs_jeju_north.jpg",
+    "cs_guangzhou_guangta.jpg",
 }
 
 # 故意保留竖幅的图：过场里用竖摇（cam cy 变化）看全身，不是漏裁
@@ -149,10 +152,9 @@ MANIFEST = [
      "开场末镜/忠肃帐中：陈子龙半身像（与 Codex 线 portrait_chen_wenlong 同源）。整幅竖图保留，"
      "过场里靠 cam 的 cy 在脸（0.30）与《春秋左传》（0.72）之间竖摇"),
     ("cs_jeju_north.jpg", POOLS / "jeju" / "004.jpg", None,
-     "第二章：耽罗雪山、石墙、海女，北线寒色"),
+     "旧第二章卡：耽罗雪山、石墙、海女。章节卡已改博多账房专图，此张留在素材池，不再挂镜"),
     ("cs_guangzhou_guangta.jpg", POOLS / "guangzhou" / "001.jpg", (600, 0, 1792, 670),
-     "第三章卡专用：章节卡墨晕窗只露 cover 取景的中间一竖条（约 49% 宽），整幅导入时光塔落在窗边；"
-     "改裁右上 16:9 块，让光塔落在窗中偏左、蕃坊拱廊在右；同时切掉右下角画家签名"),
+     "旧第三章卡：光塔是地中海塔身，不再上屏。章节卡已改素砖光塔专图；裁切记录保留，免得重导把签名裁没"),
     ("cs_nanhai_dusk.jpg", POOLS / "keelung" / "004.png", None,
      "第四章：南海岸夕照，独木舟与远帆"),
     ("cs_xinghua_seawall.jpg", POOLS / "xinghua" / "004.jpg", (0, 0, 1792, 940),
