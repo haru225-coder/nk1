@@ -70,6 +70,7 @@ EXEMPT = [
     ("qa_customs_duty_probe.gd", "2bbd7b7 lane-ea3", "市舶验引税率专项探针，税率公式归 verify_economy 必跑档复判"),
     ("qa_economy_spread_probe.gd", "e072e92 lane-ea", "同港价差地板专项探针，价差公式归 verify_economy 必跑档复判"),
     ("qa_fine_text_probe.gd", "9413160 lane-ae", "罚金文案夹现银专项探针，文案归 lane-ae 落地验收、无常驻 when"),
+    ("qa_invest_probe.gd", "lane-probe1", "修埠入股探针（花费/等级/名声/职衔/满级/钱不够），headless 秒级"),
     ("qa_iz_skip_notice_probe.gd", "5207390 lane-w23-a7", "候一日压月初通告专项探针（P7 IZ2-3① 取证留档）"),
     ("qa_money_notices_probe.gd", "ebe8496 lane-fo", "买卖扣钱/出舱返回值专项探针，随 lane-fo 落地验过留档"),
     ("qa_monsoon_probe.gd", "lane-probe1", "历法季风探针（各月季风类型/强度/风向），headless 秒级"),
