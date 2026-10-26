@@ -71,6 +71,24 @@ def interp_edge(lv):       return TONGSHI_STEP * lv
 ## titles.json invest.edge_per_level：修埠压产地价、抬消费地价
 INVEST_EDGE_PER = load("titles.json")["invest"]["edge_per_level"]
 
+# ── 季节需求（节令）：与 Economy.gd SEASONAL_MUL 同表 ──
+# 月 → 货 → 倍数；未列的货/月一律 1.0。宋人口气：春茶新、夏扇、冬裘、秋收米贱等。
+SEASONAL_MUL = {
+    "grain": {1:1.0,2:1.05,3:1.1,4:1.15,5:1.1,6:1.05,7:1.0,8:0.95,9:0.85,10:0.85,11:0.9,12:0.95},
+    "tea": {1:0.9,2:0.9,3:1.0,4:1.2,5:1.15,6:1.0,7:0.95,8:0.9,9:0.85,10:0.85,11:0.9,12:0.9},
+    "raw_silk": {1:1.0,2:1.05,3:1.1,4:1.1,5:1.05,6:1.0,7:0.95,8:0.9,9:0.85,10:0.85,11:0.9,12:0.95},
+    "silk_fabric": {1:1.0,2:1.05,3:1.05,4:1.1,5:1.05,6:1.0,7:0.95,8:0.9,9:0.85,10:0.85,11:0.9,12:0.95},
+    "sea_salt": {1:1.1,2:1.05,3:1.0,4:0.95,5:0.9,6:0.85,7:0.85,8:0.9,9:0.95,10:1.0,11:1.05,12:1.1},
+    "sable_fur": {1:1.2,2:1.15,3:1.0,4:0.9,5:0.85,6:0.8,7:0.8,8:0.85,9:0.9,10:1.0,11:1.15,12:1.2},
+    "deer_hide": {1:1.1,2:1.05,3:1.0,4:0.95,5:0.9,6:0.9,7:0.9,8:0.95,9:0.85,10:0.85,11:0.95,12:1.05},
+    "japanese_fan": {1:0.8,2:0.85,3:0.9,4:1.0,5:1.1,6:1.2,7:1.25,8:1.2,9:1.0,10:0.9,11:0.85,12:0.8},
+    "sutra_scrolls": {1:0.95,2:0.95,3:0.95,4:1.0,5:1.0,6:1.0,7:1.05,8:1.15,9:1.2,10:1.15,11:1.0,12:0.95},
+}
+
+def seasonal_mul(gid, month=3):
+    row = SEASONAL_MUL.get(gid, {})
+    return float(row.get(month, 1.0))
+
 def gd_round(x):
     """GDScript round()：.5 远离零。Python round() 是银行家舍入（66.5 → 66），
     旧镜像因此与生产差 1 文（lane ea2 对生产 dump 实测光杆价 16/1512 格）。"""
@@ -92,11 +110,12 @@ def price_core(v, foreign, zashi=0, tongshi=0, title_duty=1.0, tariff_mul=1.0):
     buy_v = max(v * (1.0 + TARIFF * tariff_mul * tc * title_duty) * (1.0 - edge), sell_v * SPREAD_MIN)
     return min(buy_v, max(bare_buy, sell_v * SPREAD_MIN)), sell_v
 
-def price_at(pid, gid, is_buy, zashi=0, tongshi=0, title_duty=1.0, inv=0, rate=1.0, war_mul=1.0, tariff_mul=1.0):
+def price_at(pid, gid, is_buy, zashi=0, tongshi=0, title_duty=1.0, inv=0, rate=1.0, war_mul=1.0, tariff_mul=1.0, month=3):
     """复现 Economy.price_at_rate(pid, gid, rate, is_buy)：职事等级、职衔抽解折、修埠等级显式传入。
-    抽解基率取 TARIFF × tariff_mul、共有因子 v 乘 war_mul（战况抽解 / 物价倍数，缺省 1 即忠宋港，按年月代填见九之八 war_price_at）；未站蒲家。"""
+    抽解基率取 TARIFF × tariff_mul、共有因子 v 乘 war_mul（战况抽解 / 物价倍数，缺省 1 即忠宋港，按年月代填见九之八 war_price_at）；未站蒲家。
+    季节需求（节令）按 month × good 乘进 v，与 Economy.seasonal_mul 同表。"""
     r = role(pid, gid)
-    v = goods[gid]["base_value"] * ROLE_MOD.get(r, 1.0) * rate * war_mul
+    v = goods[gid]["base_value"] * ROLE_MOD.get(r, 1.0) * rate * war_mul * seasonal_mul(gid, month)
     ie = INVEST_EDGE_PER * inv
     if r == "origin":
         v *= (1.0 - ie)

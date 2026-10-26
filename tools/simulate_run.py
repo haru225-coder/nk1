@@ -536,7 +536,7 @@ def price_at_rate(pid, gid, rate, is_buy, tariff_factor=1.0, broker_factor=1.0, 
     """Economy.price_at_rate 的镜像（含 P2-0 同港价差地板）。
     tariff_factor/broker_factor = Crew.trade_cost_factor()，edge = Crew.interpreter_edge()；
     本模型不雇职事，三者取光杆值，但公式必须与生产一致，否则门禁测的是另一套经济。war_mul / tariff_mul 见 war_terms。"""
-    v = goods[gid]["base_value"] * ROLE_MOD[role(pid, gid)] * rate * war_mul
+    v = goods[gid]["base_value"] * ROLE_MOD[role(pid, gid)] * rate * war_mul * _ve.seasonal_mul(gid, G.month)
     bare_buy = v * (1 + TARIFF * tariff_mul)
     bare_sell = v * (1 - BROKER)
     cap = bare_buy / PRICE_SPREAD_MIN

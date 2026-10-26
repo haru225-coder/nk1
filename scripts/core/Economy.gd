@@ -188,7 +188,7 @@ func price_at_rate(port_id: String, good_id: String, rate: float, is_buy: bool) 
 	var role := get_role(port_id, good_id)
 	var mod: float = ROLE_MOD.get(role, 1.0)
 	var edge := Crew.interpreter_edge(port_id)
-	var v := base * mod * rate * _war_price_mul(port_id, good_id)
+	var v := base * mod * rate * _war_price_mul(port_id, good_id) * seasonal_mul(good_id, Calendar.month)
 	var ie := invest_edge(port_id)
 	if role == "origin":
 		v *= (1.0 - ie)
@@ -634,3 +634,24 @@ func blockade_grain_unit(port_id: String) -> float:
 ## 大舱一趟就成了摇钱树
 func blockade_grain_cap(port_id: String) -> int:
 	return int(_depth(port_id))
+
+# ── 季节需求（节令）：与 tools/verify_economy.py SEASONAL_MUL 同表 ──
+# 月 → 货 → 倍数；未列的货/月一律 1.0。宋人口气：春茶新、夏扇、冬裘、秋收米贱等。
+const SEASONAL_MUL := {
+	"grain": {1: 1.0, 2: 1.05, 3: 1.1, 4: 1.15, 5: 1.1, 6: 1.05, 7: 1.0, 8: 0.95, 9: 0.85, 10: 0.85, 11: 0.9, 12: 0.95},
+	"tea": {1: 0.9, 2: 0.9, 3: 1.0, 4: 1.2, 5: 1.15, 6: 1.0, 7: 0.95, 8: 0.9, 9: 0.85, 10: 0.85, 11: 0.9, 12: 0.9},
+	"raw_silk": {1: 1.0, 2: 1.05, 3: 1.1, 4: 1.1, 5: 1.05, 6: 1.0, 7: 0.95, 8: 0.9, 9: 0.85, 10: 0.85, 11: 0.9, 12: 0.95},
+	"silk_fabric": {1: 1.0, 2: 1.05, 3: 1.05, 4: 1.1, 5: 1.05, 6: 1.0, 7: 0.95, 8: 0.9, 9: 0.85, 10: 0.85, 11: 0.9, 12: 0.95},
+	"sea_salt": {1: 1.1, 2: 1.05, 3: 1.0, 4: 0.95, 5: 0.9, 6: 0.85, 7: 0.85, 8: 0.9, 9: 0.95, 10: 1.0, 11: 1.05, 12: 1.1},
+	"sable_fur": {1: 1.2, 2: 1.15, 3: 1.0, 4: 0.9, 5: 0.85, 6: 0.8, 7: 0.8, 8: 0.85, 9: 0.9, 10: 1.0, 11: 1.15, 12: 1.2},
+	"deer_hide": {1: 1.1, 2: 1.05, 3: 1.0, 4: 0.95, 5: 0.9, 6: 0.9, 7: 0.9, 8: 0.95, 9: 0.85, 10: 0.85, 11: 0.95, 12: 1.05},
+	"japanese_fan": {1: 0.8, 2: 0.85, 3: 0.9, 4: 1.0, 5: 1.1, 6: 1.2, 7: 1.25, 8: 1.2, 9: 1.0, 10: 0.9, 11: 0.85, 12: 0.8},
+	"sutra_scrolls": {1: 0.95, 2: 0.95, 3: 0.95, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.05, 8: 1.15, 9: 1.2, 10: 1.15, 11: 1.0, 12: 0.95},
+}
+
+## 节令需求倍数：货 × 月。month 未给或 <1 时取 Calendar.month。
+func seasonal_mul(good_id: String, month: int = -1) -> float:
+	if month < 1:
+		month = Calendar.month
+	var row = SEASONAL_MUL.get(good_id, {})
+	return float(row.get(month, 1.0))
