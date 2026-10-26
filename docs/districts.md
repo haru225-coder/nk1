@@ -94,3 +94,5 @@ schema 仍是 4。旧档没有 `districts` 时读出来是八个空桶。
 4. 跑 `$GODOT --headless --path . --import`，再跑 `tools/qa_w55_districts_probe.gd` 与 `tools/qa_w56_pending_districts_probe.gd`，全部绿才算移入完成。
 
 探针 `tools/qa_w56_pending_districts_probe.gd` 扫全部 pending 文件，校验 id 全局唯一、字段、货在港市、传闻与入股、公凭、大比之年、GB2312 文案，确认底图不存在、`pending_art` 为真，并确认账本不暴露任何 pending id。
+
+港还没进 `data/ports.json` 的（如金中都 `zhongdu`），每条再写 `"pending_port": true`。探针对这类条目不查港的市面，只查货在 `goods.json`；接港时去掉这一键，市面检查照常。

@@ -60,7 +60,8 @@
             }
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_zhangyi",
@@ -121,7 +122,8 @@
             }
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_jingfeng",
@@ -167,7 +169,8 @@
           "wage": 12,
           "attention_ease": 1
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_huicheng",
@@ -192,25 +195,24 @@
         {
           "id": "zd_huicheng_check",
           "type": "choice",
-          "label": "验过所",
-          "text": "有人没带过所，你怎么办。",
+          "label": "门洞里",
+          "text": "门洞里有个汉人客商没带过所，被哨兵拦着，回头看你。",
           "options": [
             {
               "id": "zd_huicheng_check_let",
-              "label": "放行",
-              "text": "你放他过去了。",
+              "label": "替他作保",
+              "text": "你替他作了保，哨兵放他过去。他记下你的船号。",
               "effects": {
+                "network": 1,
                 "pu_attention": 1
-              }
+              },
+              "cost": 20
             },
             {
               "id": "zd_huicheng_check_hold",
-              "label": "扣下",
-              "text": "你扣下他，等人来领。",
-              "effects": {
-                "money": 2,
-                "pu_attention": 1
-              }
+              "label": "不管",
+              "text": "你没出声，自己先过了门。",
+              "effects": {}
             }
           ]
         },
@@ -227,7 +229,8 @@
             16
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_palace",
@@ -288,7 +291,8 @@
             20
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_qianbu",
@@ -345,7 +349,8 @@
           "wage": 10,
           "attention_ease": 1
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_longjin",
@@ -406,7 +411,8 @@
             }
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_lugou",
@@ -452,7 +458,8 @@
           "wage": 14,
           "attention_ease": 1
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_qionghua",
@@ -514,7 +521,8 @@
             21
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_taiye",
@@ -572,7 +580,8 @@
           "wage": 11,
           "attention_ease": 1
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_taining",
@@ -620,7 +629,8 @@
             15
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_baiyun",
@@ -678,7 +688,8 @@
             }
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_minzhong",
@@ -739,7 +750,8 @@
             12
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_qingshou",
@@ -800,7 +812,8 @@
             14
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_quanzhen",
@@ -858,7 +871,8 @@
             }
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_wanli",
@@ -917,7 +931,8 @@
             23
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_oldkiln",
@@ -979,7 +994,8 @@
             }
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_mongol",
@@ -1039,7 +1055,8 @@
             20
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_dadu",
@@ -1108,7 +1125,8 @@
             }
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_zhonglou",
@@ -1153,7 +1171,8 @@
             15
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_haizi",
@@ -1212,7 +1231,8 @@
             21
           ]
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_hanjiang",
@@ -1257,7 +1277,8 @@
             "network": 1
           }
         }
-      ]
+      ],
+      "pending_port": true
     },
     {
       "id": "zd_yizhan",
@@ -1316,7 +1337,8 @@
             }
           ]
         }
-      ]
+      ],
+      "pending_port": true
     }
   ]
 }

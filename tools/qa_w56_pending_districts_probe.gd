@@ -132,7 +132,9 @@ func _sec_pending() -> void:
 			else:
 				seen_d[id] = true
 			pending_ids.append(id)
-			if gm.get_port_by_id(port).is_empty():
+			# 港还没进 ports.json 的（如金中都），条目须写 pending_port，市面检查留到接港时。
+			var no_port: bool = gm.get_port_by_id(port).is_empty()
+			if no_port and row.get("pending_port", false) != true:
 				bad += 1
 			if str(row.get("name", "")) == "" or str(row.get("kind", "")) == "" or str(row.get("description", "")) == "":
 				bad += 1
@@ -165,7 +167,7 @@ func _sec_pending() -> void:
 					if gm.get_good_by_id(str(ix.get("good", ""))).is_empty() or int(ix.get("qty", 0)) <= 0:
 						bad += 1
 					var port_market: Dictionary = gm.get_port_by_id(port).get("market", {})
-					if not port_market.has(str(ix.get("good", ""))):
+					if not no_port and not port_market.has(str(ix.get("good", ""))):
 						bad += 1
 				if typ == "rumor" and not _rumor_shape(ix):
 					bad += 1
