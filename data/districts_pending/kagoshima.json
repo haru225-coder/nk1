@@ -1,0 +1,632 @@
+{
+  "districts": [
+    {
+      "id": "kg_bonotsu",
+      "port": "kagoshima",
+      "name": "坊津港",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_kg_bonotsu.jpg",
+      "description": "坊津是萨摩的港口。火山灰铺成的岸，硫黄垛在滩上，船在浅水里下锚。",
+      "interactions": [
+        {
+          "id": "kg_bonotsu_sulfur",
+          "type": "buy",
+          "label": "收硫黄",
+          "text": "滩上的硫黄按船边价收，还没进郡衙的账。",
+          "good": "sulfur",
+          "qty": 6,
+          "price_mul": 0.92,
+          "impact": true
+        },
+        {
+          "id": "kg_bonotsu_silk",
+          "type": "sell",
+          "label": "出手生丝",
+          "text": "倭商问生丝。萨摩这里吃香，价比牙行略高。",
+          "good": "raw_silk",
+          "qty": 3,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "kg_bonotsu_rumor",
+          "type": "rumor",
+          "label": "问回船",
+          "text": "梢公说，博多唐房近来硫黄紧。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "sulfur",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "kg_mannose",
+      "port": "kagoshima",
+      "name": "万之濑川口",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_kg_mannose.jpg",
+      "description": "万之濑川从山里流出来，河口浅，船要等涨潮才能过。",
+      "interactions": [
+        {
+          "id": "kg_mannose_gold",
+          "type": "buy",
+          "label": "收砂金",
+          "text": "川口的砂金用木盘淘，金粒在竹箕里闪。",
+          "good": "placer_gold",
+          "qty": 2,
+          "price_mul": 0.94,
+          "impact": true
+        },
+        {
+          "id": "kg_mannose_tea",
+          "type": "sell",
+          "label": "出手茶叶",
+          "text": "川口的茶贩问茶叶。价比郡衙略高。",
+          "good": "tea",
+          "qty": 3,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "kg_mannose_wait",
+          "type": "favour",
+          "label": "等潮",
+          "text": "你在河口等了一回潮。船动了，人也记下你。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {"network": 1}
+        }
+      ]
+    },
+    {
+      "id": "kg_gun",
+      "port": "kagoshima",
+      "name": "萨摩郡衙",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_kg_gun.jpg",
+      "description": "郡衙在高地上，管着西海道的书状。武士在门下站岗，书吏按宋钱算。",
+      "interactions": [
+        {
+          "id": "kg_gun_gift",
+          "type": "favour",
+          "label": "送笔墨",
+          "text": "你给书吏送了一匣笔墨。他说下回办事好看些。",
+          "cost": 40,
+          "once_per": "month",
+          "effects": {"favour": 2, "merchant_credit": 1}
+        },
+        {
+          "id": "kg_gun_pass",
+          "type": "licence",
+          "label": "领入港书状",
+          "text": "萨摩的入港书状到手。博多的牙人认这张纸。",
+          "cost": 600,
+          "licence": "lic_kg_pass",
+          "unlock": {"favour_min": 2},
+          "effects": {"fame": 1, "merchant_credit": 1}
+        },
+        {
+          "id": "kg_gun_rumor",
+          "type": "rumor",
+          "label": "听武士",
+          "text": "武士说，博多唐房近来刀紧。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "japanese_sword",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "kg_shrine",
+      "port": "kagoshima",
+      "name": "火山神社",
+      "kind": "shrine",
+      "pending_art": true,
+      "bg": "bg_dist_kg_shrine.jpg",
+      "description": "神社对着火山，石鸟居被风沙打白。祭日里人抬着神舆走过黑砂。",
+      "interactions": [
+        {
+          "id": "kg_shrine_rite",
+          "type": "favour",
+          "label": "祭火山",
+          "text": "你在神社前祭了一回。海上的人认这个渡口。",
+          "cost": 25,
+          "once_per": "year",
+          "effects": {"sea_tendency": 1, "fame": 1}
+        },
+        {
+          "id": "kg_shrine_stall",
+          "type": "invest",
+          "label": "社前摊",
+          "text": "社前祭日有人摆摊卖扇。你入一股，按月分钱。",
+          "shop": "社前摊",
+          "costs": [200],
+          "monthly": [10]
+        },
+        {
+          "id": "kg_shrine_rumor",
+          "type": "rumor",
+          "label": "听黑砂",
+          "text": "黑砂上的旅人说，博多近来鹿皮紧。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "deer_hide",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "kg_sulfur",
+      "port": "kagoshima",
+      "name": "硫黄浜",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_kg_sulfur.jpg",
+      "description": "滩上硫黄垛成堆，气味刺鼻。番商与宋商都在这里议价。",
+      "interactions": [
+        {
+          "id": "kg_sulfur_buy",
+          "type": "buy",
+          "label": "收硫黄",
+          "text": "滩上的硫黄按船边价收，还没进牙行的柜。",
+          "good": "sulfur",
+          "qty": 8,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "kg_sulfur_coin",
+          "type": "sell",
+          "label": "出手宋钱",
+          "text": "浜里有人收宋钱。这是禁物，蒲家会记一笔。",
+          "good": "song_coin",
+          "qty": 2,
+          "price_mul": 1.1,
+          "impact": true,
+          "attention": 4
+        },
+        {
+          "id": "kg_sulfur_rumor",
+          "type": "rumor",
+          "label": "听浜上",
+          "text": "浜上的人说，博多唐房近来硫黄紧。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "sulfur",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "kg_gold",
+      "port": "kagoshima",
+      "name": "砂金浜",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_kg_gold.jpg",
+      "description": "川口的砂金用木盘淘，金粒在竹箕里闪。换宋钱的人站在摊后。",
+      "interactions": [
+        {
+          "id": "kg_gold_buy",
+          "type": "buy",
+          "label": "收砂金",
+          "text": "砂金按淘出的价，还没进城。",
+          "good": "placer_gold",
+          "qty": 3,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "kg_gold_porcelain",
+          "type": "sell",
+          "label": "出手福建瓷",
+          "text": "浜里的人问福建瓷。件数不多，价比牙行略高。",
+          "good": "fujian_porcelain",
+          "qty": 3,
+          "price_mul": 1.06,
+          "impact": true
+        },
+        {
+          "id": "kg_gold_favour",
+          "type": "favour",
+          "label": "请牙人",
+          "text": "你请浜上的牙人吃了一席。人情记在萨摩。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {"network": 1, "favour": 1}
+        }
+      ]
+    },
+    {
+      "id": "kg_deer",
+      "port": "kagoshima",
+      "name": "鹿皮浜",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_kg_deer.jpg",
+      "description": "渔人把鹿皮晾在竹竿上，海风一吹，皮子像旗一样。",
+      "interactions": [
+        {
+          "id": "kg_deer_buy",
+          "type": "buy",
+          "label": "收鹿皮",
+          "text": "浜上的鹿皮还没进城，价比城里低。",
+          "good": "deer_hide",
+          "qty": 5,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "kg_deer_sword",
+          "type": "sell",
+          "label": "出手日本刀",
+          "text": "浜里有人问刀。价比牙行略高。",
+          "good": "japanese_sword",
+          "qty": 2,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "kg_deer_rumor",
+          "type": "rumor",
+          "label": "听渔人",
+          "text": "渔人说，博多唐房近来刀紧。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "japanese_sword",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "kg_smith",
+      "port": "kagoshima",
+      "name": "刀工场",
+      "kind": "smithy",
+      "pending_art": true,
+      "bg": "bg_dist_kg_smith.jpg",
+      "description": "草顶下炉火正红，锻工打的是萨摩刀，刃口细。",
+      "interactions": [
+        {
+          "id": "kg_smith_buy",
+          "type": "buy",
+          "label": "订刀",
+          "text": "锻工肯把新刀卖给宋商，价按炉边算。",
+          "good": "japanese_sword",
+          "qty": 2,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "kg_smith_hire",
+          "type": "hire",
+          "label": "雇刀工",
+          "text": "有个刀工肯随船修兵器。他在时，船上的人心定些。",
+          "who": "刀工",
+          "cost": 100,
+          "wage": 18,
+          "monthly_effects": {"martial": 1}
+        },
+        {
+          "id": "kg_smith_test",
+          "type": "favour",
+          "label": "试刀",
+          "text": "你在场里试了一回刀。刃口没卷。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {"martial": 1}
+        }
+      ]
+    },
+    {
+      "id": "kg_tea",
+      "port": "kagoshima",
+      "name": "茶室",
+      "kind": "teahouse",
+      "pending_art": true,
+      "bg": "bg_dist_kg_tea.jpg",
+      "description": "萨摩的茶室用的是宋茶，僧与客对坐，碗里是绿色的茶末。",
+      "interactions": [
+        {
+          "id": "kg_tea_buy",
+          "type": "buy",
+          "label": "收茶叶",
+          "text": "茶室的茶叶按坊价出。",
+          "good": "tea",
+          "qty": 4,
+          "price_mul": 1.0,
+          "impact": true
+        },
+        {
+          "id": "kg_tea_silk",
+          "type": "sell",
+          "label": "出手生丝",
+          "text": "茶室里的人代绸庄收生丝。",
+          "good": "raw_silk",
+          "qty": 3,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "kg_tea_sit",
+          "type": "favour",
+          "label": "吃茶",
+          "text": "你与僧对坐吃了一碗茶。说的都是明州的事。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {"scholar_tendency": 1, "network": 1}
+        }
+      ]
+    },
+    {
+      "id": "kg_naya",
+      "port": "kagoshima",
+      "name": "纳屋",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_kg_naya.jpg",
+      "description": "海边的仓板墙厚，里面码着硫黄、砂金与米包。",
+      "interactions": [
+        {
+          "id": "kg_naya_rent",
+          "type": "invest",
+          "label": "租仓",
+          "text": "纳屋主肯分一格给宋商。你入一股，按月分钱。",
+          "shop": "纳屋",
+          "costs": [240, 360],
+          "monthly": [12, 20]
+        },
+        {
+          "id": "kg_naya_grain",
+          "type": "buy",
+          "label": "收米",
+          "text": "仓里压着米包。主人想腾地方。",
+          "good": "grain",
+          "qty": 8,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "kg_naya_deer",
+          "type": "sell",
+          "label": "出手鹿皮",
+          "text": "仓里有人收鹿皮。价比牙行略高。",
+          "good": "deer_hide",
+          "qty": 4,
+          "price_mul": 1.05,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "kg_bridge",
+      "port": "kagoshima",
+      "name": "川桥",
+      "kind": "bridge",
+      "pending_art": true,
+      "bg": "bg_dist_kg_bridge.jpg",
+      "description": "木桥架在川上，挑担的、牵马的都从桥上过。",
+      "interactions": [
+        {
+          "id": "kg_bridge_deer",
+          "type": "buy",
+          "label": "收鹿皮",
+          "text": "桥边的鹿皮还没进城，价比城里低。",
+          "good": "deer_hide",
+          "qty": 4,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "kg_bridge_rumor",
+          "type": "rumor",
+          "label": "问行人",
+          "text": "牵马的人说，博多唐房近来茶叶紧。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "tea",
+          "mul": 1.15
+        },
+        {
+          "id": "kg_bridge_cross",
+          "type": "favour",
+          "label": "过桥",
+          "text": "你在桥上站了一会儿。过桥的人认你。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {"network": 1}
+        }
+      ]
+    },
+    {
+      "id": "kg_hill",
+      "port": "kagoshima",
+      "name": "火山山亭",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_kg_hill.jpg",
+      "description": "山亭在高处，能看见火山与海。风里有硫黄味。",
+      "interactions": [
+        {
+          "id": "kg_hill_climb",
+          "type": "favour",
+          "label": "登亭",
+          "text": "你在亭里站到风起。火山在海那边。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {"sea_tendency": 1, "note": "火山山亭登过。"}
+        },
+        {
+          "id": "kg_hill_rumor",
+          "type": "rumor",
+          "label": "听风",
+          "text": "亭里的人说，博多唐房近来生丝紧。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "raw_silk",
+          "mul": 1.15
+        },
+        {
+          "id": "kg_hill_stall",
+          "type": "invest",
+          "label": "山亭摊",
+          "text": "山亭边支一摊。按月有进项。",
+          "shop": "山亭摊",
+          "costs": [180],
+          "monthly": [9]
+        }
+      ]
+    },
+    {
+      "id": "kg_gate",
+      "port": "kagoshima",
+      "name": "郡门",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_kg_gate.jpg",
+      "description": "郡门对着海，门下验人。武士披甲站在门里。",
+      "interactions": [
+        {
+          "id": "kg_gate_gift",
+          "type": "favour",
+          "label": "送礼",
+          "text": "你给门下的书役送了一匣宋墨。他说下回验货快些。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {"favour": 1, "merchant_credit": 1}
+        },
+        {
+          "id": "kg_gate_rumor",
+          "type": "rumor",
+          "label": "听门下",
+          "text": "门下的人说，博多唐房近来福建瓷紧。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "fujian_porcelain",
+          "mul": 1.18
+        },
+        {
+          "id": "kg_gate_choice",
+          "type": "choice",
+          "label": "过门",
+          "text": "门下的人拦住你。塞钱快，不塞也有一条慢路。",
+          "once": true,
+          "options": [
+            {
+              "id": "bribe",
+              "label": "塞钱",
+              "text": "钱递进去，事快了。蒲家的簿子上也多了一笔。",
+              "cost": 25,
+              "effects": {"merchant_credit": 2, "pu_attention": 2}
+            },
+            {
+              "id": "honest",
+              "label": "按规矩",
+              "text": "你把文书摊开。慢，可是干净。",
+              "cost": 0,
+              "effects": {"fame": 1, "merchant_credit": 1}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kg_grove",
+      "port": "kagoshima",
+      "name": "柑橘园",
+      "kind": "grove",
+      "pending_art": true,
+      "bg": "bg_dist_kg_grove.jpg",
+      "description": "山间有柑橘，果农按筐卖，不进郡衙的账。",
+      "interactions": [
+        {
+          "id": "kg_grove_grain",
+          "type": "buy",
+          "label": "收米",
+          "text": "园里的米包比城里便宜些。",
+          "good": "grain",
+          "qty": 6,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "kg_grove_tea",
+          "type": "sell",
+          "label": "出手茶叶",
+          "text": "果农问茶叶。价比牙行略低。",
+          "good": "tea",
+          "qty": 2,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "kg_grove_stall",
+          "type": "invest",
+          "label": "果摊",
+          "text": "园边支一摊。鲜果过了季，干货还在卖，按月有进项。",
+          "shop": "果摊",
+          "costs": [200, 420],
+          "monthly": [10, 24]
+        }
+      ]
+    },
+    {
+      "id": "kg_pavilion",
+      "port": "kagoshima",
+      "name": "火山望楼",
+      "kind": "pavilion",
+      "pending_art": true,
+      "bg": "bg_dist_kg_pavilion.jpg",
+      "description": "望楼在火山脚下，能看见海上的船。风里有硫黄味。",
+      "interactions": [
+        {
+          "id": "kg_pavilion_look",
+          "type": "choice",
+          "label": "登楼",
+          "text": "楼许登。可以自己看帆，也可以陪官坐一会儿。一年一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "look",
+              "label": "看帆",
+              "text": "海里的帆一层一层。风从海上来。",
+              "cost": 0,
+              "effects": {"sea_tendency": 1, "note": "火山望楼上看过帆。"}
+            },
+            {
+              "id": "host",
+              "label": "陪官",
+              "text": "你陪官坐到日落。楼上的人记住你的船。",
+              "cost": 15,
+              "effects": {"favour": 1, "fame": 1}
+            }
+          ]
+        },
+        {
+          "id": "kg_pavilion_rumor",
+          "type": "rumor",
+          "label": "听火山",
+          "text": "楼上的人说，博多唐房近来砂金紧。",
+          "cost": 18,
+          "cooldown_days": 45,
+          "port": "hakata",
+          "good": "placer_gold",
+          "mul": 1.2
+        }
+      ]
+    }
+  ]
+}
