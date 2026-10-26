@@ -125,6 +125,7 @@ const SCRIPTS := [
 	"res://tools/qa_patrol_pack_screenshots.gd",
 	"res://tools/qa_fine_text_probe.gd",
 	"res://tools/qa_money_notices_probe.gd",
+	"res://tools/qa_monsoon_probe.gd",  # lane probe1 历法季风探针
 	"res://tools/qa_contract_stock_probe.gd",
 	"res://tools/qa_contract_destinations_probe.gd",  # 委办目的地 × 战况取证件（lane w23-a8）
 	"res://tools/qa_customs_duty_probe.gd",

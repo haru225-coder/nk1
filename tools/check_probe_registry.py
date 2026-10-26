@@ -72,6 +72,7 @@ EXEMPT = [
     ("qa_fine_text_probe.gd", "9413160 lane-ae", "罚金文案夹现银专项探针，文案归 lane-ae 落地验收、无常驻 when"),
     ("qa_iz_skip_notice_probe.gd", "5207390 lane-w23-a7", "候一日压月初通告专项探针（P7 IZ2-3① 取证留档）"),
     ("qa_money_notices_probe.gd", "ebe8496 lane-fo", "买卖扣钱/出舱返回值专项探针，随 lane-fo 落地验过留档"),
+    ("qa_monsoon_probe.gd", "lane-probe1", "历法季风探针（各月季风类型/强度/风向），headless 秒级"),
     ("qa_mutiny_probe.gd", "lane-probe1", "舰队哗变探针（ready/cost/dismiss/suppress/resolve），headless 秒级"),
     ("qa_port_beats_probe.gd", "53c0499 lane-w26-k7", "PortBeats.due 终局守卫探针，接口下沉后 when 判据未定"),
     ("qa_save_slot_tip_probe.gd", "e92d2be lane-t", "航海日志坏档/.bak 纪实提示探针与契约锁，随 lane-t 落地验过留档；本进程 SCRIPT ERROR 即红（lane w53-5 六轮接计数）"),
