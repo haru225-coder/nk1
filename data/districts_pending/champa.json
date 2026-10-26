@@ -397,13 +397,13 @@
       "description": "王城外的官仓，堆着早熟耐旱的占城稻。宋人管这稻种叫「占城禾」，福建、两浙都在种。仓吏管着出入，也管着闲话。",
       "interactions": [
         {
-          "id": "cp_tea_buy",
-          "type": "buy",
-          "label": "籴稻米",
-          "text": "仓里的陈稻要腾地方，按官籴价让一些给你。",
-          "good": "grain",
-          "qty": 4,
-          "price_mul": 0.95,
+          "id": "cp_tea_sell",
+          "type": "sell",
+          "label": "卖铁农具",
+          "text": "仓吏要收一批犁铧镰刀，分给王城外新开的稻田，按官价收，不压秤。",
+          "good": "ironware",
+          "qty": 2,
+          "price_mul": 1.06,
           "impact": true
         },
         {
