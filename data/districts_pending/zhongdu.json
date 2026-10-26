@@ -1,0 +1,1322 @@
+{
+  "districts": [
+    {
+      "id": "zd_lize",
+      "port": "zhongdu",
+      "name": "丽泽门",
+      "kind": "gate",
+      "bg": "bg_dist_zd_lize.jpg",
+      "pending_art": true,
+      "description": "丽泽门在城西，门洞深，石板磨得发亮。蒙古兵与汉人百姓从一个门里过，谁也不看谁。",
+      "interactions": [
+        {
+          "id": "zd_lize_toll",
+          "type": "favour",
+          "label": "收过桥税",
+          "text": "你站在门洞边收税。钱不多，门子认得你的脸。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "money": 6,
+            "pu_attention": 1
+          }
+        },
+        {
+          "id": "zd_lize_repair",
+          "type": "invest",
+          "label": "修门楼",
+          "text": "门楼漏雨，你入一股修缮。",
+          "shop": "门税",
+          "costs": [
+            300
+          ],
+          "monthly": [
+            15
+          ]
+        },
+        {
+          "id": "zd_lize_watch",
+          "type": "choice",
+          "label": "盘查",
+          "text": "门洞里人多，查谁不查谁，得拿个主意。",
+          "options": [
+            {
+              "id": "zd_lize_watch_pass",
+              "label": "放行",
+              "text": "你摆摆手，商队过去了。",
+              "effects": {
+                "money": 4,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "zd_lize_watch_check",
+              "label": "严查",
+              "text": "你翻了他们的驮袋，少收了几样东西。",
+              "effects": {
+                "money": 2,
+                "pu_attention": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_zhangyi",
+      "port": "zhongdu",
+      "name": "彰义门",
+      "kind": "gate",
+      "bg": "bg_dist_zd_zhangyi.jpg",
+      "pending_art": true,
+      "description": "彰义门通南道，门楼上还留着金代的旧砖。今夜风里，只有挑夫与军吏。",
+      "interactions": [
+        {
+          "id": "zd_zhangyi_toll",
+          "type": "favour",
+          "label": "收过桥税",
+          "text": "夜深了还有人出城，你收了税，放他们走。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "money": 5,
+            "pu_attention": 1
+          }
+        },
+        {
+          "id": "zd_zhangyi_repair",
+          "type": "invest",
+          "label": "修门楼",
+          "text": "门楼漏雨，你入一股修缮。",
+          "shop": "门税",
+          "costs": [
+            260
+          ],
+          "monthly": [
+            13
+          ]
+        },
+        {
+          "id": "zd_zhangyi_night",
+          "type": "choice",
+          "label": "夜门",
+          "text": "晚了还有人要出城，开不开门。",
+          "options": [
+            {
+              "id": "zd_zhangyi_night_open",
+              "label": "开门",
+              "text": "你让人过了。",
+              "effects": {
+                "money": 3,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "zd_zhangyi_night_close",
+              "label": "闭门",
+              "text": "你闭了门，夜里清静些。",
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_jingfeng",
+      "port": "zhongdu",
+      "name": "景风门",
+      "kind": "gate",
+      "bg": "bg_dist_zd_jingfeng.jpg",
+      "pending_art": true,
+      "description": "景风门在南面，门洞宽。金时的石狮只剩一个，另一半埋在土里。",
+      "interactions": [
+        {
+          "id": "zd_jingfeng_rite",
+          "type": "favour",
+          "label": "祭门",
+          "text": "你随门子祭了一回门神。风还是原来的风，人记你来过。",
+          "cost": 20,
+          "once_per": "year",
+          "effects": {
+            "martial": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "zd_jingfeng_shop",
+          "type": "invest",
+          "label": "门市",
+          "text": "门洞边有空房，你入一股做门市。",
+          "shop": "门市",
+          "costs": [
+            280
+          ],
+          "monthly": [
+            14
+          ]
+        },
+        {
+          "id": "zd_jingfeng_guard",
+          "type": "hire",
+          "label": "雇门子",
+          "text": "门子肯跟你守门。他在时，过路的人少些吵。",
+          "who": "门子",
+          "cost": 80,
+          "wage": 12,
+          "attention_ease": 1
+        }
+      ]
+    },
+    {
+      "id": "zd_huicheng",
+      "port": "zhongdu",
+      "name": "会城门",
+      "kind": "gate",
+      "bg": "bg_dist_zd_huicheng.jpg",
+      "pending_art": true,
+      "description": "会城门在北面，四座北门之一。蒙古哨兵换班时，门洞里站满人。",
+      "interactions": [
+        {
+          "id": "zd_huicheng_pass",
+          "type": "favour",
+          "label": "递帖子",
+          "text": "你给哨兵递了帖子，少问了几句。",
+          "cost": 30,
+          "effects": {
+            "network": 2,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "zd_huicheng_check",
+          "type": "choice",
+          "label": "验过所",
+          "text": "有人没带过所，你怎么办。",
+          "options": [
+            {
+              "id": "zd_huicheng_check_let",
+              "label": "放行",
+              "text": "你放他过去了。",
+              "effects": {
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "zd_huicheng_check_hold",
+              "label": "扣下",
+              "text": "你扣下他，等人来领。",
+              "effects": {
+                "money": 2,
+                "pu_attention": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zd_huicheng_post",
+          "type": "invest",
+          "label": "驿铺",
+          "text": "门洞边有空房，你入一股做驿铺。",
+          "shop": "驿铺",
+          "costs": [
+            320
+          ],
+          "monthly": [
+            16
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_palace",
+      "port": "zhongdu",
+      "name": "金宫残址",
+      "kind": "office",
+      "bg": "bg_dist_zd_palace.jpg",
+      "pending_art": true,
+      "description": "宫城的柱础还埋在草里，琉璃瓦碎片在土中发绿。蒙古人把这里作军营，汉人只敢远远看着。",
+      "interactions": [
+        {
+          "id": "zd_palace_pick",
+          "type": "favour",
+          "label": "拾残瓦",
+          "text": "你从土里拾起一片琉璃瓦，卖给了古董商。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "money": 4,
+            "pu_attention": 1
+          }
+        },
+        {
+          "id": "zd_palace_timber",
+          "type": "choice",
+          "label": "残料",
+          "text": "宫基下的旧木有人出价，卖不卖。",
+          "options": [
+            {
+              "id": "zd_palace_timber_sell",
+              "label": "卖",
+              "text": "你卖了旧木。",
+              "effects": {
+                "money": 12,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "zd_palace_timber_keep",
+              "label": "留",
+              "text": "你留着，等更好的价。",
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zd_palace_yard",
+          "type": "invest",
+          "label": "残料场",
+          "text": "残料堆成场，你入一股做买卖。",
+          "shop": "残料",
+          "costs": [
+            400
+          ],
+          "monthly": [
+            20
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_qianbu",
+      "port": "zhongdu",
+      "name": "千步廊",
+      "kind": "street",
+      "bg": "bg_dist_zd_qianbu.jpg",
+      "pending_art": true,
+      "description": "千步廊的廊屋还在，只是断了半边。雨天里，商贩和兵丁共用一截屋檐。",
+      "interactions": [
+        {
+          "id": "zd_qianbu_shelter",
+          "type": "favour",
+          "label": "避雨",
+          "text": "你和商贩挤在廊下避雨，聊了几句行情。",
+          "cost": 0,
+          "effects": {
+            "network": 1,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "zd_qianbu_trade",
+          "type": "choice",
+          "label": "廊下交易",
+          "text": "廊下有人压价卖皮毛，你买不买。",
+          "options": [
+            {
+              "id": "zd_qianbu_trade_trade",
+              "label": "做",
+              "text": "你做了这桩小买卖。",
+              "effects": {
+                "money": 5,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "zd_qianbu_trade_refuse",
+              "label": "不",
+              "text": "你摇摇头走了。",
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zd_qianbu_porter",
+          "type": "hire",
+          "label": "雇廊役",
+          "text": "廊役肯跟你挑东西。他在时，街面上好说话。",
+          "who": "廊役",
+          "cost": 60,
+          "wage": 10,
+          "attention_ease": 1
+        }
+      ]
+    },
+    {
+      "id": "zd_longjin",
+      "port": "zhongdu",
+      "name": "龙津桥",
+      "kind": "bridge",
+      "bg": "bg_dist_zd_longjin.jpg",
+      "pending_art": true,
+      "description": "龙津桥仿汴京州桥，石栏简朴。桥上驼队踏着冰，桥下浑河水慢。",
+      "interactions": [
+        {
+          "id": "zd_longjin_toll",
+          "type": "favour",
+          "label": "收过桥税",
+          "text": "你站在桥头收税，驼队一只只过去。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "money": 7,
+            "pu_attention": 1
+          }
+        },
+        {
+          "id": "zd_longjin_market",
+          "type": "invest",
+          "label": "桥市",
+          "text": "桥头有空地，你入一股做桥市。",
+          "shop": "桥市",
+          "costs": [
+            350
+          ],
+          "monthly": [
+            18
+          ]
+        },
+        {
+          "id": "zd_longjin_ice",
+          "type": "choice",
+          "label": "冰桥",
+          "text": "河面结冰，要不要从桥下过。",
+          "options": [
+            {
+              "id": "zd_longjin_ice_cross",
+              "label": "过冰",
+              "text": "你从冰上过去了，省了桥钱。",
+              "effects": {
+                "money": 3,
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "zd_longjin_ice_wait",
+              "label": "等桥",
+              "text": "你等桥上空了再走。",
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_lugou",
+      "port": "zhongdu",
+      "name": "卢沟桥",
+      "kind": "bridge",
+      "bg": "bg_dist_zd_lugou.jpg",
+      "pending_art": true,
+      "description": "卢沟桥十一孔，桥墩分水尖装着铁柱。晓月还没落，驼队已经上桥。",
+      "interactions": [
+        {
+          "id": "zd_lugou_moon",
+          "type": "favour",
+          "label": "晓月",
+          "text": "你在桥上看了一回晓月，心里静了些。",
+          "cost": 15,
+          "once_per": "year",
+          "effects": {
+            "sea_tendency": 2,
+            "fame": 1
+          }
+        },
+        {
+          "id": "zd_lugou_toll",
+          "type": "invest",
+          "label": "桥头税",
+          "text": "桥头税不薄，你入一股。",
+          "shop": "桥税",
+          "costs": [
+            380
+          ],
+          "monthly": [
+            19
+          ]
+        },
+        {
+          "id": "zd_lugou_guard",
+          "type": "hire",
+          "label": "雇桥吏",
+          "text": "桥吏肯跟你守桥。他在时，过路的人少些吵。",
+          "who": "桥吏",
+          "cost": 90,
+          "wage": 14,
+          "attention_ease": 1
+        }
+      ]
+    },
+    {
+      "id": "zd_qionghua",
+      "port": "zhongdu",
+      "name": "琼华岛",
+      "kind": "hill",
+      "bg": "bg_dist_zd_qionghua.jpg",
+      "pending_art": true,
+      "description": "琼华岛上山石嶙峋，广寒殿还在修。湖面芙蓉落了一半，蒙古贵族的毡帐扎在岸边。",
+      "interactions": [
+        {
+          "id": "zd_qionghua_climb",
+          "type": "favour",
+          "label": "登岛",
+          "text": "你登岛走了一回，山石与湖水都看了。",
+          "cost": 20,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "zd_qionghua_stone",
+          "type": "choice",
+          "label": "艮岳石",
+          "text": "岛上有人卖所谓艮岳奇石，信不信。",
+          "options": [
+            {
+              "id": "zd_qionghua_stone_buy",
+              "label": "买",
+              "text": "你买了一块，不算真，也算个念想。",
+              "cost": 15,
+              "effects": {
+                "note": "得艮岳石一块。",
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "zd_qionghua_stone_pass",
+              "label": "不买",
+              "text": "你笑了一声，走了。",
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zd_qionghua_pavilion",
+          "type": "invest",
+          "label": "岛亭",
+          "text": "岛上有空亭，你入一股。",
+          "shop": "岛亭",
+          "costs": [
+            420
+          ],
+          "monthly": [
+            21
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_taiye",
+      "port": "zhongdu",
+      "name": "太液池",
+      "kind": "dam",
+      "bg": "bg_dist_zd_taiye.jpg",
+      "pending_art": true,
+      "description": "太液池水面开阔，高梁河水引到这里。岸边柳树下，蒙古军士饮马。",
+      "interactions": [
+        {
+          "id": "zd_taiye_release",
+          "type": "favour",
+          "label": "放生",
+          "text": "你放了一篓鱼，僧人念了一回经。",
+          "cost": 12,
+          "once_per": "year",
+          "effects": {
+            "sea_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "zd_taiye_fish",
+          "type": "choice",
+          "label": "渔利",
+          "text": "池边渔户卖鱼，你要不要入一股。",
+          "options": [
+            {
+              "id": "zd_taiye_fish_join",
+              "label": "入",
+              "text": "你入了一股，按月分鱼钱。",
+              "effects": {
+                "money": 6,
+                "network": 1
+              }
+            },
+            {
+              "id": "zd_taiye_fish_refuse",
+              "label": "不入",
+              "text": "你没入，只买了两条鱼。",
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zd_taiye_fisher",
+          "type": "hire",
+          "label": "雇渔户",
+          "text": "渔户肯跟你下网。他在时，池边好说话。",
+          "who": "渔户",
+          "cost": 70,
+          "wage": 11,
+          "attention_ease": 1
+        }
+      ]
+    },
+    {
+      "id": "zd_taining",
+      "port": "zhongdu",
+      "name": "天宁寺塔",
+      "kind": "temple",
+      "bg": "bg_dist_zd_taining.jpg",
+      "pending_art": true,
+      "description": "天宁寺塔是辽代的旧塔，砖身八角，还在寺里。僧人说蒙古人也不拆它。",
+      "interactions": [
+        {
+          "id": "zd_taining_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "你上了香，塔影落在身上。",
+          "cost": 15,
+          "once_per": "year",
+          "effects": {
+            "hometown_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "zd_taining_licence",
+          "type": "licence",
+          "label": "领度牒",
+          "text": "寺里给了一张度牒，算个身分。",
+          "cost": 200,
+          "licence": "lic_zd_degree",
+          "effects": {
+            "scholar_tendency": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "zd_taining_estate",
+          "type": "invest",
+          "label": "寺产",
+          "text": "寺里有空房，你入一股。",
+          "shop": "寺产",
+          "costs": [
+            300
+          ],
+          "monthly": [
+            15
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_baiyun",
+      "port": "zhongdu",
+      "name": "白云观",
+      "kind": "temple",
+      "bg": "bg_dist_zd_baiyun.jpg",
+      "pending_art": true,
+      "description": "白云观是长春宫旧址，丘处机住过。道人画符，香火比寺观还盛。",
+      "interactions": [
+        {
+          "id": "zd_baiyun_ask",
+          "type": "favour",
+          "label": "问道",
+          "text": "你向道人问了一回道，心里静了些。",
+          "cost": 20,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 2,
+            "network": 1
+          }
+        },
+        {
+          "id": "zd_baiyun_priest",
+          "type": "hire",
+          "label": "雇道人",
+          "text": "道人肯跟你走。他在时，北边好说话。",
+          "who": "道人",
+          "cost": 100,
+          "wage": 16,
+          "attention_ease": 1
+        },
+        {
+          "id": "zd_baiyun_talisman",
+          "type": "choice",
+          "label": "符纸",
+          "text": "道人卖符，你要不要请一张。",
+          "options": [
+            {
+              "id": "zd_baiyun_talisman_buy",
+              "label": "请",
+              "text": "你请了一张，权当安心。",
+              "cost": 20,
+              "effects": {
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "zd_baiyun_talisman_pass",
+              "label": "不请",
+              "text": "你谢过，没请。",
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_minzhong",
+      "port": "zhongdu",
+      "name": "悯忠寺",
+      "kind": "temple",
+      "bg": "bg_dist_zd_minzhong.jpg",
+      "pending_art": true,
+      "description": "悯忠寺在城南，唐时就有的老寺。宋人被掳北上，传说曾拘在这里。",
+      "interactions": [
+        {
+          "id": "zd_minzhong_rite",
+          "type": "favour",
+          "label": "超度",
+          "text": "你捐了一笔钱，寺里超度亡魂。",
+          "cost": 25,
+          "once_per": "year",
+          "effects": {
+            "hometown_tendency": 2,
+            "fame": 1
+          }
+        },
+        {
+          "id": "zd_minzhong_story",
+          "type": "choice",
+          "label": "旧事",
+          "text": "寺里老僧讲宋钦宗的事，你听不听。",
+          "options": [
+            {
+              "id": "zd_minzhong_story_listen",
+              "label": "听",
+              "text": "你听了一回，心里沉重。",
+              "effects": {
+                "scholar_tendency": 1,
+                "hometown_tendency": 1
+              }
+            },
+            {
+              "id": "zd_minzhong_story_leave",
+              "label": "不听",
+              "text": "你没听，怕惹事。",
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zd_minzhong_oil",
+          "type": "invest",
+          "label": "香油",
+          "text": "寺里有空房，你入一股。",
+          "shop": "香油",
+          "costs": [
+            250
+          ],
+          "monthly": [
+            12
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_qingshou",
+      "port": "zhongdu",
+      "name": "庆寿寺双塔",
+      "kind": "temple",
+      "bg": "bg_dist_zd_qingshou.jpg",
+      "pending_art": true,
+      "description": "庆寿寺两座塔并立，砖身风化。僧人说塔是金代还是元代建的，谁也说不清。",
+      "interactions": [
+        {
+          "id": "zd_qingshou_walk",
+          "type": "favour",
+          "label": "绕塔",
+          "text": "你绕塔走了一回，塔影在地。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "zd_qingshou_brick",
+          "type": "choice",
+          "label": "塔影",
+          "text": "塔下有人摆摊卖旧砖，你买不买。",
+          "options": [
+            {
+              "id": "zd_qingshou_brick_buy",
+              "label": "买",
+              "text": "你买了一块旧砖。",
+              "cost": 8,
+              "effects": {
+                "note": "得旧砖一块。",
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "zd_qingshou_brick_pass",
+              "label": "不买",
+              "text": "你没买。",
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zd_qingshou_court",
+          "type": "invest",
+          "label": "塔院",
+          "text": "塔院有空房，你入一股。",
+          "shop": "塔院",
+          "costs": [
+            280
+          ],
+          "monthly": [
+            14
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_quanzhen",
+      "port": "zhongdu",
+      "name": "全真道场",
+      "kind": "temple",
+      "bg": "bg_dist_zd_quanzhen.jpg",
+      "pending_art": true,
+      "description": "全真道人在北方香火盛。道场里挂满度牒，蒙古官员也来求签。",
+      "interactions": [
+        {
+          "id": "zd_quanzhen_licence",
+          "type": "licence",
+          "label": "领度牒",
+          "text": "道场给了一张度牒，算个身分。",
+          "cost": 150,
+          "licence": "lic_zd_quanzhen",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "zd_quanzhen_priest",
+          "type": "hire",
+          "label": "雇道人",
+          "text": "道人肯跟你走。他在时，北边好说话。",
+          "who": "全真道人",
+          "cost": 110,
+          "wage": 17,
+          "attention_ease": 1
+        },
+        {
+          "id": "zd_quanzhen_degree",
+          "type": "choice",
+          "label": "度牒",
+          "text": "道场卖度牒，买不买。",
+          "options": [
+            {
+              "id": "zd_quanzhen_degree_buy",
+              "label": "买",
+              "text": "你买了度牒，算个身分。",
+              "cost": 150,
+              "effects": {
+                "scholar_tendency": 2
+              }
+            },
+            {
+              "id": "zd_quanzhen_degree_pass",
+              "label": "不买",
+              "text": "你没买。",
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_wanli",
+      "port": "zhongdu",
+      "name": "色目斡脱巷",
+      "kind": "market",
+      "bg": "bg_dist_zd_wanli.jpg",
+      "pending_art": true,
+      "description": "巷子里回回商人做斡脱生意，高利贷与皮毛、宝石混在一起。汉人进去要小心。",
+      "interactions": [
+        {
+          "id": "zd_wanli_borrow",
+          "type": "choice",
+          "label": "借钱",
+          "text": "斡脱愿意借你钱，利息不低。",
+          "options": [
+            {
+              "id": "zd_wanli_borrow_borrow",
+              "label": "借",
+              "text": "你借了一笔钱，利息不低。",
+              "effects": {
+                "money": 20,
+                "pu_attention": 2
+              }
+            },
+            {
+              "id": "zd_wanli_borrow_refuse",
+              "label": "不借",
+              "text": "你没借。",
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zd_wanli_broker",
+          "type": "hire",
+          "label": "雇斡脱",
+          "text": "斡脱商人肯跟你走。他在时，北边好说话。",
+          "who": "斡脱商人",
+          "cost": 150,
+          "wage": 20,
+          "attention_ease": 1
+        },
+        {
+          "id": "zd_wanli_stack",
+          "type": "invest",
+          "label": "货栈",
+          "text": "巷子里有空房，你入一股做货栈。",
+          "shop": "货栈",
+          "costs": [
+            450
+          ],
+          "monthly": [
+            23
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_oldkiln",
+      "port": "zhongdu",
+      "name": "旧宫残料场",
+      "kind": "workshop",
+      "bg": "bg_dist_zd_oldkiln.jpg",
+      "pending_art": true,
+      "description": "旧宫拆下的木料、琉璃瓦堆在场院里，石匠按斤卖。",
+      "interactions": [
+        {
+          "id": "zd_oldkiln_pick",
+          "type": "favour",
+          "label": "挑残料",
+          "text": "你挑了几块残料，卖给了石匠。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "money": 5,
+            "pu_attention": 1
+          }
+        },
+        {
+          "id": "zd_oldkiln_yard",
+          "type": "invest",
+          "label": "料场",
+          "text": "场院有空地，你入一股。",
+          "shop": "料场",
+          "costs": [
+            320
+          ],
+          "monthly": [
+            16
+          ]
+        },
+        {
+          "id": "zd_oldkiln_glass",
+          "type": "choice",
+          "label": "琉璃",
+          "text": "有人卖所谓金代琉璃，买不买。",
+          "options": [
+            {
+              "id": "zd_oldkiln_glass_buy",
+              "label": "买",
+              "text": "你买了一片，真假不知。",
+              "cost": 12,
+              "effects": {
+                "note": "得琉璃一片。",
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "zd_oldkiln_glass_pass",
+              "label": "不买",
+              "text": "你没买。",
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_mongol",
+      "port": "zhongdu",
+      "name": "蒙古军衙",
+      "kind": "office",
+      "bg": "bg_dist_zd_mongol.jpg",
+      "pending_art": true,
+      "description": "军衙在城北，蒙古百户坐镇。汉人官员进去，得低着头。",
+      "interactions": [
+        {
+          "id": "zd_mongol_gift",
+          "type": "favour",
+          "label": "递礼",
+          "text": "你送了一分礼，百户收下了。",
+          "cost": 40,
+          "effects": {
+            "network": 1,
+            "pu_attention": 1
+          }
+        },
+        {
+          "id": "zd_mongol_order",
+          "type": "choice",
+          "label": "军令",
+          "text": "衙门要你出夫役，你应不应。",
+          "options": [
+            {
+              "id": "zd_mongol_order_obey",
+              "label": "应",
+              "text": "你应了，少惹麻烦。",
+              "effects": {
+                "martial": 1
+              }
+            },
+            {
+              "id": "zd_mongol_order_refuse",
+              "label": "推",
+              "text": "你推了，怕惹麻烦。",
+              "effects": {
+                "pu_attention": 2,
+                "network": -1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zd_mongol_market",
+          "type": "invest",
+          "label": "军市",
+          "text": "军衙边有空房，你入一股做军市。",
+          "shop": "军市",
+          "costs": [
+            400
+          ],
+          "monthly": [
+            20
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_dadu",
+      "port": "zhongdu",
+      "name": "大都新城门",
+      "kind": "gate",
+      "bg": "bg_dist_zd_dadu.jpg",
+      "pending_art": true,
+      "description": "新城在旧城东北，城墙刚起。夯土墙外裹着苇帘，工地上脚手架林立。",
+      "unlock": {
+        "year_min": 1267
+      },
+      "interactions": [
+        {
+          "id": "zd_dadu_watch",
+          "type": "favour",
+          "label": "观工",
+          "text": "你看了工，夯土墙一天天高起来。",
+          "cost": 10,
+          "unlock": {
+            "year_min": 1267
+          },
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "zd_dadu_section",
+          "type": "invest",
+          "label": "工段",
+          "text": "工地上有空段，你入一股。",
+          "shop": "工段",
+          "costs": [
+            500
+          ],
+          "monthly": [
+            25
+          ],
+          "unlock": {
+            "year_min": 1267
+          }
+        },
+        {
+          "id": "zd_dadu_labour",
+          "type": "choice",
+          "label": "民夫",
+          "text": "工地上缺民夫，你出不出人。",
+          "options": [
+            {
+              "id": "zd_dadu_labour_send",
+              "label": "出",
+              "text": "你出了十个人。",
+              "cost": 10,
+              "effects": {
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "zd_dadu_labour_notsend",
+              "label": "不出",
+              "text": "你没出。",
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_zhonglou",
+      "port": "zhongdu",
+      "name": "钟鼓楼",
+      "kind": "gate",
+      "bg": "bg_dist_zd_zhonglou.jpg",
+      "pending_art": true,
+      "description": "钟鼓楼在城中心，鼓声一响，全城都知道时辰。",
+      "interactions": [
+        {
+          "id": "zd_zhonglou_listen",
+          "type": "favour",
+          "label": "听鼓",
+          "text": "你站了一回，鼓声沉沉的。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "zd_zhonglou_drummer",
+          "type": "hire",
+          "label": "雇鼓手",
+          "text": "鼓手肯跟你打鼓。他在时，夜里安心些。",
+          "who": "鼓手",
+          "cost": 80,
+          "wage": 12,
+          "attention_ease": 1
+        },
+        {
+          "id": "zd_zhonglou_tax",
+          "type": "invest",
+          "label": "鼓楼税",
+          "text": "鼓楼边有空房，你入一股。",
+          "shop": "鼓楼",
+          "costs": [
+            300
+          ],
+          "monthly": [
+            15
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_haizi",
+      "port": "zhongdu",
+      "name": "积水潭",
+      "kind": "dam",
+      "bg": "bg_dist_zd_haizi.jpg",
+      "pending_art": true,
+      "description": "积水潭是漕运终点，但通惠河还没通。水边船多，人也多。",
+      "interactions": [
+        {
+          "id": "zd_haizi_mooring",
+          "type": "favour",
+          "label": "泊船",
+          "text": "你泊了一夜船，船夫递了消息。",
+          "cost": 8,
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "zd_haizi_berth",
+          "type": "choice",
+          "label": "水路",
+          "text": "潭边有人卖船位，你买不买。",
+          "options": [
+            {
+              "id": "zd_haizi_berth_buy",
+              "label": "买",
+              "text": "你买了船位。",
+              "cost": 15,
+              "effects": {
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "zd_haizi_berth_pass",
+              "label": "不买",
+              "text": "你没买。",
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "zd_haizi_pier",
+          "type": "invest",
+          "label": "船埠",
+          "text": "潭边有空地，你入一股做船埠。",
+          "shop": "船埠",
+          "costs": [
+            420
+          ],
+          "monthly": [
+            21
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zd_hanjiang",
+      "port": "zhongdu",
+      "name": "汉人工匠坊",
+      "kind": "street",
+      "bg": "bg_dist_zd_hanjiang.jpg",
+      "pending_art": true,
+      "description": "汉人工匠聚在旧城南，做木作、砖瓦。蒙古官员要盖房，先来这里。",
+      "interactions": [
+        {
+          "id": "zd_hanjiang_carpenter",
+          "type": "hire",
+          "label": "雇木匠",
+          "text": "木匠肯跟你做活。他在时，木作便宜些。",
+          "who": "木匠",
+          "cost": 90,
+          "wage": 13,
+          "attention_ease": 1
+        },
+        {
+          "id": "zd_hanjiang_workshop",
+          "type": "invest",
+          "label": "工坊",
+          "text": "坊里有空房，你入一股。",
+          "shop": "工坊",
+          "costs": [
+            350
+          ],
+          "monthly": [
+            18
+          ]
+        },
+        {
+          "id": "zd_hanjiang_learn",
+          "type": "favour",
+          "label": "学艺",
+          "text": "你跟木匠学了一回手艺，手上有茧。",
+          "cost": 15,
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "zd_yizhan",
+      "port": "zhongdu",
+      "name": "官驿",
+      "kind": "office",
+      "bg": "bg_dist_zd_yizhan.jpg",
+      "pending_art": true,
+      "description": "官驿里住的是过路的官员与使臣。马匹与草料按日算钱。",
+      "interactions": [
+        {
+          "id": "zd_yizhan_message",
+          "type": "favour",
+          "label": "递脚",
+          "text": "你托驿卒递了一封信，少走许多路。",
+          "cost": 20,
+          "effects": {
+            "network": 2
+          }
+        },
+        {
+          "id": "zd_yizhan_inn",
+          "type": "invest",
+          "label": "驿栈",
+          "text": "驿里有空房，你入一股。",
+          "shop": "驿栈",
+          "costs": [
+            360
+          ],
+          "monthly": [
+            18
+          ]
+        },
+        {
+          "id": "zd_yizhan_lodge",
+          "type": "choice",
+          "label": "留宿",
+          "text": "驿里没房间了，你怎么办。",
+          "options": [
+            {
+              "id": "zd_yizhan_lodge_share",
+              "label": "挤",
+              "text": "你让人挤一挤。",
+              "effects": {
+                "money": 5,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "zd_yizhan_lodge_refuse",
+              "label": "拒",
+              "text": "你按规矩拒了。",
+              "effects": {
+                "fame": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
