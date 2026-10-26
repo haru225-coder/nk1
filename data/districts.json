@@ -1924,6 +1924,456 @@
           "impact": true
         }
       ]
+    },
+    {
+      "id": "hk_tobo",
+      "port": "hakata",
+      "name": "唐房街",
+      "kind": "street",
+      "bg": "bg_dist_hk_tobo.jpg",
+      "description": "唐房是宋商在博多住的街。门挂蓝帘，柜上摆着绢与瓷，说闽话的人比说倭话的多。",
+      "interactions": [
+        {
+          "id": "hk_tobo_silk",
+          "type": "sell",
+          "label": "出手绢帛",
+          "text": "街口的倭商问绢帛。宋货在这里吃香，价比牙行略高。",
+          "good": "silk_fabric",
+          "qty": 3,
+          "price_mul": 1.06,
+          "impact": true
+        },
+        {
+          "id": "hk_tobo_feast",
+          "type": "favour",
+          "label": "请纲首",
+          "text": "你请唐房几位纲首吃了一席。谁的船几时回明州，席上都说了。",
+          "cost": 40,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "network": 1
+          }
+        },
+        {
+          "id": "hk_tobo_rumor",
+          "type": "rumor",
+          "label": "问回船",
+          "text": "纲首说，庆元府那边倭铜又缺了。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "japanese_copper",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "hk_joten",
+      "port": "hakata",
+      "name": "承天寺",
+      "kind": "temple",
+      "bg": "bg_dist_hk_joten.jpg",
+      "description": "承天寺是宋商谢国明出钱给圆尔起的禅寺。山门不高，寺里的僧人多去过宋。",
+      "interactions": [
+        {
+          "id": "hk_joten_monk",
+          "type": "choice",
+          "label": "载僧",
+          "text": "寺里有僧要搭船去宋参学。一年一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "carry",
+              "label": "许他搭船",
+              "text": "僧人上了你的船，寺里记下这份人情。",
+              "cost": 0,
+              "effects": {
+                "favour": 2,
+                "fame": 1,
+                "note": "替承天寺载过一回僧。"
+              }
+            },
+            {
+              "id": "decline",
+              "label": "婉辞",
+              "text": "你说舱位满了。僧人合掌走了。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "hk_joten_sutra",
+          "type": "sell",
+          "label": "出手经卷",
+          "text": "寺里要宋刻的经卷。知客按经价收。",
+          "good": "sutra_scrolls",
+          "qty": 2,
+          "price_mul": 1.08,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "hk_kushida",
+      "port": "hakata",
+      "name": "栉田社",
+      "kind": "shrine",
+      "bg": "bg_dist_hk_kushida.jpg",
+      "description": "栉田社是博多的总镇守。朱漆社殿旁有老树，祭日里町人抬着山笠走过。",
+      "interactions": [
+        {
+          "id": "hk_kushida_rite",
+          "type": "favour",
+          "label": "奉纳",
+          "text": "你在社前奉纳了一串宋钱。神主记下你的船名。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "hk_kushida_stall",
+          "type": "invest",
+          "label": "社前摊",
+          "text": "社前祭日有人摆摊卖扇。你入一股，按月分钱。",
+          "shop": "社前摊",
+          "costs": [
+            220
+          ],
+          "monthly": [
+            11
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hk_hako",
+      "port": "hakata",
+      "name": "筥崎宫",
+      "kind": "shrine",
+      "bg": "bg_dist_hk_hako.jpg",
+      "description": "筥崎宫对着海，松原一直铺到沙滩。武家与町人都来这里祈海路平安。",
+      "interactions": [
+        {
+          "id": "hk_hako_pray",
+          "type": "favour",
+          "label": "祈海路",
+          "text": "你在宫前祈了海路。松风很响。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "hk_hako_rumor",
+          "type": "rumor",
+          "label": "听松原话",
+          "text": "松原上的旅人说，萨摩那边今年缺茶。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "kagoshima",
+          "good": "tea",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "hk_dazaifu",
+      "port": "hakata",
+      "name": "大宰府门",
+      "kind": "office",
+      "bg": "bg_dist_hk_dazaifu.jpg",
+      "description": "大宰府管着西海道，也管宋船入港。门前立着碑，武士在门下验人。",
+      "interactions": [
+        {
+          "id": "hk_dazaifu_gift",
+          "type": "favour",
+          "label": "送礼",
+          "text": "你给门下的书役送了一匣宋墨。他说下回验货快些。",
+          "cost": 45,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "hk_dazaifu_pass",
+          "type": "licence",
+          "label": "领入港书状",
+          "text": "大宰府的书状到手。博多的牙人认这张纸。",
+          "cost": 700,
+          "licence": "lic_hk_pass",
+          "unlock": {
+            "favour_min": 2
+          },
+          "effects": {
+            "fame": 1,
+            "merchant_credit": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hk_shoni",
+      "port": "hakata",
+      "name": "少弐馆",
+      "kind": "manor",
+      "bg": "bg_dist_hk_shoni.jpg",
+      "description": "少弐家是大宰府的守护，馆前拴着马，披甲的郎党在院里站着。",
+      "interactions": [
+        {
+          "id": "hk_shoni_tea",
+          "type": "sell",
+          "label": "献茶",
+          "text": "馆里要宋茶待客。管事照价收。",
+          "good": "tea",
+          "qty": 3,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "hk_shoni_visit",
+          "type": "favour",
+          "label": "拜谒",
+          "text": "你在少弐馆递了名刺。郎党说，主人知道你了。",
+          "cost": 60,
+          "once_per": "year",
+          "effects": {
+            "favour": 2,
+            "martial": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hk_ichi",
+      "port": "hakata",
+      "name": "滨市",
+      "kind": "market",
+      "bg": "bg_dist_hk_ichi.jpg",
+      "description": "海边的市在雾里开。草棚下堆着鱼干、米包，倭商用宋钱算账。",
+      "interactions": [
+        {
+          "id": "hk_ichi_grain",
+          "type": "buy",
+          "label": "收米",
+          "text": "滨市的米包比城里便宜些。",
+          "good": "grain",
+          "qty": 8,
+          "price_mul": 0.93,
+          "impact": true
+        },
+        {
+          "id": "hk_ichi_porcelain",
+          "type": "sell",
+          "label": "出手福建瓷",
+          "text": "摊主问福建瓷。件数不多，价比牙行略高。",
+          "good": "fujian_porcelain",
+          "qty": 3,
+          "price_mul": 1.06,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "hk_oki",
+      "port": "hakata",
+      "name": "冲滨",
+      "kind": "dock",
+      "bg": "bg_dist_hk_oki.jpg",
+      "description": "冲滨是宋船下锚的地方。沙岸上搭着白幕，脚夫把箱子一件件抬上岸。",
+      "interactions": [
+        {
+          "id": "hk_oki_sulfur",
+          "type": "buy",
+          "label": "收硫黄",
+          "text": "萨摩来的硫黄在滩上过秤。这里按船边价收。",
+          "good": "sulfur",
+          "qty": 6,
+          "price_mul": 0.92,
+          "impact": true
+        },
+        {
+          "id": "hk_oki_rumor",
+          "type": "rumor",
+          "label": "问梢公",
+          "text": "宋船梢公说，温州近来硫黄紧。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "wenzhou",
+          "good": "sulfur",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "hk_naya",
+      "port": "hakata",
+      "name": "纳屋",
+      "kind": "warehouse",
+      "bg": "bg_dist_hk_naya.jpg",
+      "description": "纳屋是海边的仓。板墙厚，门大，里面码着米包、瓷箱和鹿皮。",
+      "interactions": [
+        {
+          "id": "hk_naya_share",
+          "type": "invest",
+          "label": "租仓",
+          "text": "纳屋主肯分一格给宋商。你入一股，按月分钱。",
+          "shop": "纳屋",
+          "costs": [
+            260,
+            380
+          ],
+          "monthly": [
+            13,
+            22
+          ]
+        },
+        {
+          "id": "hk_naya_hide",
+          "type": "buy",
+          "label": "收鹿皮",
+          "text": "仓里压着一批鹿皮。主人想腾地方。",
+          "good": "deer_hide",
+          "qty": 5,
+          "price_mul": 0.94,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "hk_kaji",
+      "port": "hakata",
+      "name": "锻冶场",
+      "kind": "smithy",
+      "bg": "bg_dist_hk_kaji.jpg",
+      "description": "草顶下炉火正红，锻工一锤一锤打刀坯，架上挂着刚开刃的刀。",
+      "interactions": [
+        {
+          "id": "hk_kaji_sword",
+          "type": "buy",
+          "label": "订刀",
+          "text": "锻工肯把新刀卖给宋商，价按炉边算。",
+          "good": "japanese_sword",
+          "qty": 2,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "hk_kaji_smith",
+          "type": "hire",
+          "label": "雇锻工",
+          "text": "有个锻工肯随船修兵器。他在时，船上的人心定些。",
+          "who": "锻工",
+          "cost": 110,
+          "wage": 20,
+          "monthly_effects": {
+            "martial": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hk_ogi",
+      "port": "hakata",
+      "name": "扇屋",
+      "kind": "workshop",
+      "bg": "bg_dist_hk_ogi.jpg",
+      "description": "扇屋的帘下摆着漆盒与折扇。匠人在案上糊扇面，客人站在门口挑。",
+      "interactions": [
+        {
+          "id": "hk_ogi_fan",
+          "type": "buy",
+          "label": "收倭扇",
+          "text": "扇屋的倭扇按坊价出。",
+          "good": "japanese_fan",
+          "qty": 4,
+          "price_mul": 0.93,
+          "impact": true
+        },
+        {
+          "id": "hk_ogi_pearl",
+          "type": "buy",
+          "label": "收螺钿",
+          "text": "匠人另有螺钿器，件少价实。",
+          "good": "mother_of_pearl",
+          "qty": 2,
+          "price_mul": 0.95,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "hk_cha",
+      "port": "hakata",
+      "name": "禅院茶室",
+      "kind": "teahouse",
+      "bg": "bg_dist_hk_cha.jpg",
+      "description": "禅僧从宋带回吃茶的规矩。廊下设席，僧与客对坐，茶碗里是宋茶。",
+      "interactions": [
+        {
+          "id": "hk_cha_sit",
+          "type": "favour",
+          "label": "吃茶",
+          "text": "你与僧对坐吃了一碗茶。说的都是明州的事。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "hk_cha_sell",
+          "type": "sell",
+          "label": "出手茶叶",
+          "text": "寺里要茶。知客按宋价收。",
+          "good": "tea",
+          "qty": 3,
+          "price_mul": 1.07,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "hk_mikasa",
+      "port": "hakata",
+      "name": "御笠川桥",
+      "kind": "bridge",
+      "bg": "bg_dist_hk_mikasa.jpg",
+      "description": "御笠川从大宰府流下来，木桥架在芦苇间。挑担的、牵马的都从桥上过。",
+      "interactions": [
+        {
+          "id": "hk_mikasa_gold",
+          "type": "buy",
+          "label": "收砂金",
+          "text": "桥边有人从川上带来砂金，要换宋钱。",
+          "good": "placer_gold",
+          "qty": 2,
+          "price_mul": 0.94,
+          "impact": true
+        },
+        {
+          "id": "hk_mikasa_rumor",
+          "type": "rumor",
+          "label": "问行人",
+          "text": "牵马的人说，萨摩那边今年生丝缺。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "kagoshima",
+          "good": "raw_silk",
+          "mul": 1.18
+        }
+      ]
     }
   ]
 }
