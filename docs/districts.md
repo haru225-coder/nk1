@@ -78,7 +78,7 @@ schema 仍是 4。旧档没有 `districts` 时读出来是八个空桶。
 1. 在 `districts` 数组里加这个港的处。每处至少一条真正改得到状态的事，不要只写风景。
 2. 买卖和传闻用的货，必须是那一港 `ports.json` 市场里有的，而且行情表会有键。不在市上的货可以买，但 `impact` 要写 false，也不要拿它做传闻。
 3. 底图用 Imagine 生成，再裁成 1280×720 的 jpg，质量约 82，单张不超过 350KB。文件名 `bg_dist_<短名>.jpg`，放在 `assets/` 根上。看过再留：不要字、不要石像、不要青花、不要明清牌坊。
-4. 跑一次 `bash /workspace/w53/tools/glock.sh /home/box/.local/bin/godot --headless --path . --import`，把 `.import` 和脚本 `.uid` 一起提交。同一时间只开一个 Godot。
+4. 跑一次 `$GODOT --headless --path . --import`，把 `.import` 和脚本 `.uid` 一起提交。同一时间只开一个 Godot。
 5. `python3 tools/check_assets.py`、`python3 tools/check_sidecars.py`、`python3 tools/check_w53_copy.py`。城区探针是 `tools/qa_w55_districts_probe.gd`，它会扫整张表，新港的缺图和坏交互也会红。
 
 不要把 district id 写进别的字段当字符串。港 id、货 id、凭 id（`lic_`）、雇人 id 可以互相引用。这样这张表不会被数据族门禁当成「id 互相指认」的一族。若仍被标出来，到 `tools/data_family.json` 显式登记，不要为了过门禁去加无意义的互指。
