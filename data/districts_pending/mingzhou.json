@@ -33,12 +33,12 @@
           "id": "mz_sanjiang_rumor",
           "type": "rumor",
           "label": "问梢公",
-          "text": "梢公指着博多来的船说，今年硫黄船期少，到港的少，价要涨。",
+          "text": "梢公捻着铜锭说，博多硫黄船近来少了，风信不顺。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "hakata",
           "good": "sulfur",
-          "mul": 1.1
+          "mul": 1.15
         }
       ]
     },
@@ -55,13 +55,13 @@
           "id": "mz_tiantong_monk",
           "type": "choice",
           "label": "载僧",
-          "text": "寺里有僧要搭船去宋参学。一年一回。",
+          "text": "寺里有僧要搭船去宋参学。寺里一年只搭这一回。",
           "once_per": "year",
           "options": [
             {
               "id": "carry",
               "label": "许他搭船",
-              "text": "僧人上了你的船，寺里记下这份人情。",
+              "text": "僧人上了你的船，寺里记下这份人情与船期。",
               "cost": 0,
               "effects": {
                 "favour": 2,
@@ -72,7 +72,7 @@
             {
               "id": "decline",
               "label": "婉辞",
-              "text": "你说舱位满了。僧人合掌走了。",
+              "text": "你说舱位满了。僧人合掌，转身走了。",
               "cost": 0,
               "effects": {
                 "merchant_credit": 1
@@ -96,7 +96,7 @@
           "id": "mz_tiantong_sutra",
           "type": "sell",
           "label": "出手经卷",
-          "text": "寺里要宋刻的经卷。知客按经价收。",
+          "text": "寺里要宋刻的经卷。知客按册数收。",
           "good": "sutra_scrolls",
           "qty": 2,
           "price_mul": 1.08,
@@ -128,7 +128,7 @@
         {
           "id": "mz_ashoka_tea",
           "type": "buy",
-          "label": "收茶",
+          "label": "收山茶",
           "text": "寺里收了一批山茶，按出寺的价出。",
           "good": "tea",
           "qty": 4,
@@ -139,7 +139,7 @@
           "id": "mz_ashoka_rumor",
           "type": "rumor",
           "label": "听塔铃",
-          "text": "僧人按着塔铃说，博多今冬茶船少，到港的少，价要涨。",
+          "text": "僧人按着塔铃说，博多今冬茶船少，官府验引拖了。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "hakata",
@@ -202,10 +202,10 @@
       "description": "庆元府市舶司廊下验引抽解，书吏按会子说话。比泉州小，却认得日本船。",
       "interactions": [
         {
-          "id": "mz_shibo_gift",
+          "id": "mz_shibo_favour",
           "type": "favour",
-          "label": "送笔墨",
-          "text": "你给书吏送了一匣笔墨。他记下你的名字，下回办事好看些。",
+          "label": "递话",
+          "text": "你给书吏送了一匣会子。他翻簿记下，下回验引快些。",
           "cost": 40,
           "once_per": "month",
           "effects": {
@@ -232,7 +232,7 @@
           "id": "mz_shibo_rumor",
           "type": "rumor",
           "label": "听倭船",
-          "text": "书吏翻了簿子说，博多那边倭铜船期压后，到港的少，价要涨。",
+          "text": "书吏翻了簿子说，博多倭铜船期拖了，风信不好。",
           "cost": 18,
           "cooldown_days": 45,
           "port": "hakata",
@@ -254,14 +254,26 @@
           "id": "mz_bang_look",
           "type": "favour",
           "label": "看榜",
-          "text": "贡院墙外贴着今秋的榜。人挤在廊下，有人念，有人沉默。",
+          "text": "贡院墙外贴着今秋的榜。人挤在廊下，有人念，有人不作声。",
           "cost": 0,
           "once_per": "year",
           "exam": true,
           "scholar_1268": true,
           "unlock": {
-            "years": [1256, 1259, 1262, 1265, 1268, 1271, 1274],
-            "months": [8, 9, 10]
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
           },
           "effects": {
             "fame": 1,
@@ -325,7 +337,7 @@
           "id": "mz_shipyard_rumor",
           "type": "rumor",
           "label": "听船材",
-          "text": "坞里匠人说，温州生丝船期压后，到港的少，价要涨。",
+          "text": "坞里匠人说，温州生丝船期拖了，海路阻了。",
           "cost": 14,
           "cooldown_days": 45,
           "port": "wenzhou",
@@ -341,7 +353,7 @@
       "kind": "teahouse",
       "pending_art": true,
       "bg": "bg_dist_mz_tea.jpg",
-      "description": "茶坊对着码头，茶博士在柜上点一盏庆元茶，话从这里传到牙行。",
+      "description": "茶坊对着码头，店家在柜上点一盏庆元茶，话从这里传到牙行。",
       "interactions": [
         {
           "id": "mz_tea_wager",
@@ -353,7 +365,7 @@
             {
               "id": "play",
               "label": "押一盏",
-              "text": "你押了自己这盏。茶博士把话传到牙行，博多的茶船少。",
+              "text": "你押了自己这盏。店家把话传到牙行，博多的茶船少。",
               "cost": 20,
               "effects": {
                 "merchant_credit": 1
@@ -367,7 +379,7 @@
             {
               "id": "treat",
               "label": "作东",
-              "text": "你把两盏都买了请人。街上的人记你一笔。",
+              "text": "你把两盏都买了请人。街上的人记着你这一杯。",
               "cost": 30,
               "effects": {
                 "network": 1,
@@ -380,7 +392,7 @@
           "id": "mz_tea_buy",
           "type": "buy",
           "label": "收茶叶",
-          "text": "坊里的茶叶按出坊的价，比市上松。",
+          "text": "坊里的茶叶按出坊的价，比市上便宜些。",
           "good": "tea",
           "qty": 6,
           "price_mul": 0.9,
@@ -412,9 +424,15 @@
           "id": "mz_tafang_rent",
           "type": "invest",
           "label": "包一间",
-          "text": "包下塌房里的一间，按月收租。",
-          "costs": [480, 980],
-          "monthly": [22, 64],
+          "text": "包下塌房里的一间，按月收租，行情牌不动。",
+          "costs": [
+            480,
+            980
+          ],
+          "monthly": [
+            22,
+            64
+          ],
           "shop": "塌房"
         },
         {
@@ -431,7 +449,7 @@
           "id": "mz_tafang_grain",
           "type": "buy",
           "label": "收仓米",
-          "text": "塌房里的米按仓价。比市上松。",
+          "text": "塌房里的米按仓价。比市上便宜些。",
           "good": "grain",
           "qty": 10,
           "price_mul": 0.9,
@@ -472,7 +490,7 @@
           "id": "mz_market_rumor",
           "type": "rumor",
           "label": "听街谈",
-          "text": "市上货郎按着秤说，泉州绢帛船期压后，到港的少，价要涨。",
+          "text": "市上货郎按着秤说，泉州绢帛船期晚了，海路阻了。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "quanzhou",
@@ -515,7 +533,7 @@
           "id": "mz_bridge_rumor",
           "type": "rumor",
           "label": "问行人",
-          "text": "牵马的人勒着缰说，温州茶船期压后，到港的少，价要涨。",
+          "text": "牵马的人勒着缰说，温州茶船期拖了，官府验引慢了。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "wenzhou",
@@ -537,7 +555,7 @@
           "id": "mz_academy_listen",
           "type": "favour",
           "label": "旁听",
-          "text": "你在廊外听了一讲。卷子没有带走。",
+          "text": "你在廊外听了一讲。卷子留在案上。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -560,7 +578,7 @@
           "id": "mz_academy_rumor",
           "type": "rumor",
           "label": "听茶松",
-          "text": "学里的人翻着书说，福州茶船多，到港的多，价要跌。",
+          "text": "学里的人翻着书说，福州茶船多，到港的多，价会落。",
           "cost": 10,
           "cooldown_days": 40,
           "port": "fuzhou",
@@ -582,7 +600,7 @@
           "id": "mz_ferry_ride",
           "type": "favour",
           "label": "包渡",
-          "text": "你包了一条渡船。船家记下你。",
+          "text": "你包了一条渡船。船家记下你的船。",
           "cost": 12,
           "once_per": "month",
           "effects": {
@@ -603,7 +621,7 @@
           "id": "mz_ferry_rumor",
           "type": "rumor",
           "label": "问船家",
-          "text": "船家看着水色说，耽罗人参船期压后，到港的少，价要涨。",
+          "text": "船家看着水色说，耽罗人参船期拖了，海路不通。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "jeju",
@@ -625,7 +643,7 @@
           "id": "mz_hill_view",
           "type": "choice",
           "label": "登亭",
-          "text": "亭上看得见城与海。一年登一回。",
+          "text": "亭上看得见城与海。",
           "once_per": "year",
           "options": [
             {
@@ -641,7 +659,7 @@
             {
               "id": "city",
               "label": "看城",
-              "text": "瓦屋一片接一片。你想起家里。",
+              "text": "瓦屋一片接一片。你想起家里与田。",
               "cost": 0,
               "effects": {
                 "hometown_tendency": 1
@@ -653,7 +671,7 @@
           "id": "mz_hill_pray",
           "type": "favour",
           "label": "祈风",
-          "text": "你在亭上祈了海路。风从山下来。",
+          "text": "你在亭上祈了海路。风从山腰下来。",
           "cost": 10,
           "once_per": "month",
           "effects": {
@@ -665,7 +683,7 @@
           "id": "mz_hill_rumor",
           "type": "rumor",
           "label": "听山话",
-          "text": "山上樵夫背着柴说，博多螺钿船期压后，到港的少，价要涨。",
+          "text": "山上樵夫背着柴说，博多螺钿船期晚了，风色不好。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "hakata",
