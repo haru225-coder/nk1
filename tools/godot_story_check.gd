@@ -149,7 +149,10 @@ func _initialize() -> void:
 	var p_loyal: int = Eco.price_at_rate("quanzhou", "grain", 1.0, true)
 	Cal.from_dict({"year": 1255, "month": 3, "day": 1})
 	var p_before: int = Eco.price_at_rate("quanzhou", "grain", 1.0, true)
-	_check(p_loyal > p_before, "降元后泉州买价含加倍抽解（%d > %d）" % [p_loyal, p_before])
+	# 季节需求（节令）与战况抽解无关，除掉 seasonal_mul 以免月差误伤本断言
+	var sm_loyal: float = Eco.seasonal_mul("grain", 12)
+	var sm_before: float = Eco.seasonal_mul("grain", 3)
+	_check(float(p_loyal) / sm_loyal > float(p_before) / sm_before, "降元后泉州买价含加倍抽解（%d/%.2f > %d/%.2f）" % [p_loyal, sm_loyal, p_before, sm_before])
 	_check(Eco.inspection_factor("quanzhou") == 1.0, "1255 缉私倍率 1.0")
 	Cal.from_dict({"year": 1277, "month": 2, "day": 1})
 	_check(Eco.war_status("xinghua") == "loyal", "1277-02 陈瓒复兴化")
