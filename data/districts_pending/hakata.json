@@ -25,8 +25,14 @@
           "label": "垒边铺",
           "text": "石垒边一间铺。入了本，按月收过路人的钱。",
           "shop": "垒边铺",
-          "costs": [220, 480],
-          "monthly": [11, 28]
+          "costs": [
+            220,
+            480
+          ],
+          "monthly": [
+            11,
+            28
+          ]
         },
         {
           "id": "hk_ishigaki_rumor",
@@ -39,7 +45,11 @@
           "good": "sulfur",
           "mul": 1.15
         }
-      ]
+      ],
+      "unlock": {
+        "year_min": 1276
+      },
+      "lock_reason": "石垒还没开工"
     }
   ]
 }
