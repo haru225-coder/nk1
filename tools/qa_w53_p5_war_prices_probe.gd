@@ -130,7 +130,8 @@ func _old_price_at_rate(port_id: String, good_id: String, rate: float, is_buy: b
 	var role: String = eco.get_role(port_id, good_id)
 	var mod: float = eco.ROLE_MOD.get(role, 1.0)
 	var edge: float = crew.interpreter_edge(port_id)
-	var v := base * mod * rate
+	# 节令层（sim3）与战况倍数各自独立、相乘叠加：参照式带上同月 seasonal_mul，本探针只验战况那一层
+	var v := base * mod * rate * float(eco.seasonal_mul(good_id, int(cal.month)))
 	var ie: float = eco.invest_edge(port_id)
 	if role == "origin":
 		v *= (1.0 - ie)
@@ -240,7 +241,8 @@ func _besieged() -> void:
 	var off_buy: int = eco.buy_price("xinghua", "grain")
 	CombatSwitches.reset()
 	var twice := float(peace_sell) * fg * float(eco.SIEGE_GRAIN_TARGET)
-	_expect(on_sell == off_sell and on_buy == off_buy and absf(float(on_sell) / float(peace_sell) - 1.8) < 0.15 and float(on_sell) < twice - 2.0,
+	# 米单价只有个位数，节令 ×0.9 后平年价取整到 4，比值容差改成「差不过一文」（仍远离 3.24 倍那档）
+	_expect(on_sell == off_sell and on_buy == off_buy and absf(float(on_sell) - float(peace_sell) * 1.8) <= 1.0 and float(on_sell) < twice - 2.0,
 		"围城米行情撑在 %.1f 时牙行价开 / 关同价（卖 %d/%d、买 %d/%d），约平年 %d 的 1.8 倍，不叠成 3.24 倍（%.1f）" % [
 			eco.SIEGE_GRAIN_TARGET, on_sell, off_sell, on_buy, off_buy, peace_sell, twice])
 	_expect(is_equal_approx(float(eco._war_price_mul("xinghua", "grain")), 1.0) and is_equal_approx(float(eco._war_price_mul("xinghua", "japanese_sword")), 1.5),
@@ -286,7 +288,10 @@ func _fallen() -> void:
 	gs.set_flag("sided_pu")
 	var qz_pu: int = eco.price_at_rate("quanzhou", "grain", 1.0, true)
 	gs.flags.erase("sided_pu")
-	_expect(qz_fall > qz_peace and qz_pu < qz_plain,
+	# 跨月比较（12 月 vs 3 月）先除掉节令倍数，免得米的月差盖过抽解加倍（与 godot_story_check 同法）
+	var qz_fall_n := float(qz_fall) / float(eco.seasonal_mul("grain", 12))
+	var qz_peace_n := float(qz_peace) / float(eco.seasonal_mul("grain", 3))
+	_expect(qz_fall_n > qz_peace_n and qz_pu < qz_plain,
 		"泉州降元当月光杆米买价 %d > 平年 %d（抽解加倍）、次月站蒲家 %d < %d（八折）——米头两个月不打折" % [qz_fall, qz_peace, qz_pu, qz_plain])
 	_at(1276, 2)
 	var gold_on: int = eco.sell_price("mingzhou", "placer_gold")
