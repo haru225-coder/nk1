@@ -1291,6 +1291,639 @@
           ]
         }
       ]
+    },
+    {
+      "id": "gz_fuxu",
+      "port": "guangzhou",
+      "name": "扶胥码头",
+      "kind": "dock",
+      "bg": "bg_dist_gz_fuxu.jpg",
+      "description": "扶胥是广州出洋的码头。石岸上脚夫挑着盐包，江面泊着广船，榕荫一直铺到水边。",
+      "interactions": [
+        {
+          "id": "gz_fuxu_salt",
+          "type": "buy",
+          "label": "收海盐",
+          "text": "码头上的盐包还没进牙行。这里按出洋前的价收。",
+          "good": "sea_salt",
+          "qty": 8,
+          "price_mul": 0.92,
+          "impact": true
+        },
+        {
+          "id": "gz_fuxu_pepper",
+          "type": "sell",
+          "label": "出手胡椒",
+          "text": "番船刚靠，有人在跳板上问胡椒。件数不多，价比城里略高。",
+          "good": "pepper",
+          "qty": 3,
+          "price_mul": 1.06,
+          "impact": true
+        },
+        {
+          "id": "gz_fuxu_rumor",
+          "type": "rumor",
+          "label": "问番船",
+          "text": "番船的梢公说，占城近来胡椒紧。",
+          "cost": 16,
+          "cooldown_days": 40,
+          "port": "champa",
+          "good": "pepper",
+          "mul": 1.22
+        }
+      ]
+    },
+    {
+      "id": "gz_nanhai",
+      "port": "guangzhou",
+      "name": "南海神庙",
+      "kind": "temple",
+      "bg": "bg_dist_gz_nanhai.jpg",
+      "description": "南海神庙对着扶胥江。出海前，官与梢公在殿前上香。殿里不设石人，香案只摆果与绢。",
+      "interactions": [
+        {
+          "id": "gz_nanhai_rite",
+          "type": "favour",
+          "label": "祭海",
+          "text": "你跟梢公在殿前上了一炷香。庙里记下你的船。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {"favour": 2, "sea_tendency": 1}
+        },
+        {
+          "id": "gz_nanhai_before",
+          "type": "choice",
+          "label": "出航前",
+          "text": "香还没尽。你可以自己许一句，也可以请牙人同席。一年一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "vow",
+              "label": "自己许",
+              "text": "你对江许了一句。风从海上来。",
+              "cost": 0,
+              "effects": {"sea_tendency": 1, "note": "南海神庙许过一句。"}
+            },
+            {
+              "id": "seat",
+              "label": "请牙人",
+              "text": "牙人坐了一坐。这一季的人情在他那边。",
+              "cost": 20,
+              "effects": {"network": 1, "merchant_credit": 1}
+            }
+          ]
+        },
+        {
+          "id": "gz_nanhai_rumor",
+          "type": "rumor",
+          "label": "听香价",
+          "text": "庙祝说，泉州的香药紧了。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "aromatic_medicine",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "gz_fanfang",
+      "port": "guangzhou",
+      "name": "蕃坊石巷",
+      "kind": "street",
+      "bg": "bg_dist_gz_fanfang.jpg",
+      "description": "城南蕃坊，石巷窄。蕃商白袍，象牙与香药沿墙码着。巷底光塔砖身光滑，没有后来加高的大门。",
+      "interactions": [
+        {
+          "id": "gz_fanfang_interpreter",
+          "type": "hire",
+          "label": "雇通事",
+          "text": "蕃坊通事肯跟你走巷子。他在时，象牙好说话些，蒲家的簿子也松一笔。",
+          "who": "蕃坊通事",
+          "cost": 140,
+          "wage": 24,
+          "attention_ease": 1
+        },
+        {
+          "id": "gz_fanfang_ivory",
+          "type": "buy",
+          "label": "收象牙",
+          "text": "通事在身边时，这一支象牙少要一成。",
+          "good": "ivory",
+          "qty": 2,
+          "price_mul": 0.94,
+          "impact": true,
+          "hire_bonus": "gz_fanfang_interpreter",
+          "hire_mul": 0.9
+        },
+        {
+          "id": "gz_fanfang_coin",
+          "type": "sell",
+          "label": "出手宋钱",
+          "text": "巷里有人收宋钱。这是禁物，蒲家会记一笔。",
+          "good": "song_coin",
+          "qty": 2,
+          "price_mul": 1.12,
+          "impact": true,
+          "attention": 4
+        },
+        {
+          "id": "gz_fanfang_rumor",
+          "type": "rumor",
+          "label": "听象牙",
+          "text": "通事说博多唐房的象牙又紧了一紧。",
+          "cost": 12,
+          "cooldown_days": 30,
+          "port": "hakata",
+          "good": "ivory",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "gz_liurong",
+      "port": "guangzhou",
+      "name": "六榕花塔",
+      "kind": "temple",
+      "bg": "bg_dist_gz_liurong.jpg",
+      "description": "六榕寺的花塔是八角砖身，外环木檐。塔下榕树很老，僧人从殿前走过。",
+      "interactions": [
+        {
+          "id": "gz_liurong_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "香钱放进柜里。寺里记你一笔。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {"favour": 1, "fame": 1}
+        },
+        {
+          "id": "gz_liurong_bell",
+          "type": "favour",
+          "label": "听塔铃",
+          "text": "你在塔下站到风起。铃响了一阵，没有人催。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {"scholar_tendency": 1, "note": "六榕花塔下听过铃。"}
+        },
+        {
+          "id": "gz_liurong_med",
+          "type": "buy",
+          "label": "请香",
+          "text": "寺里的香比市上贵一点。是供完剩的。",
+          "good": "aromatic_medicine",
+          "qty": 2,
+          "price_mul": 1.08,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "gz_haishan",
+      "port": "guangzhou",
+      "name": "海山楼",
+      "kind": "hill",
+      "bg": "bg_dist_gz_haishan.jpg",
+      "description": "海山楼在江边的坡上。楼上看得见帆。官人常在这里看船进出。",
+      "interactions": [
+        {
+          "id": "gz_haishan_climb",
+          "type": "choice",
+          "label": "登楼",
+          "text": "楼许登。可以自己看帆，也可以陪官坐一会儿。一年一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "look",
+              "label": "看帆",
+              "text": "江里的帆一层一层。风从海上来。",
+              "cost": 0,
+              "effects": {"sea_tendency": 1, "note": "海山楼上看过帆。"}
+            },
+            {
+              "id": "host",
+              "label": "陪官",
+              "text": "你陪官坐到日落。楼上的人记住你的船。",
+              "cost": 15,
+              "effects": {"favour": 1, "fame": 1}
+            }
+          ]
+        },
+        {
+          "id": "gz_haishan_watch",
+          "type": "choice",
+          "label": "看江面",
+          "text": "城被围。楼上望得见江里的船，帆比平日少。",
+          "once": true,
+          "unlock": {"war_in": ["besieged"]},
+          "options": [
+            {
+              "id": "stay",
+              "label": "留下看",
+              "text": "你在楼上留到天黑。帆更少了。",
+              "cost": 0,
+              "effects": {"sea_tendency": 1, "note": "围城时在海山楼看过江。"}
+            },
+            {
+              "id": "down",
+              "label": "下楼去说",
+              "text": "你下了楼，把看见的告诉牙行。",
+              "cost": 0,
+              "effects": {"network": 1, "merchant_credit": 1}
+            }
+          ]
+        },
+        {
+          "id": "gz_haishan_rumor",
+          "type": "rumor",
+          "label": "听象牙",
+          "text": "楼上的人说，占城的象牙紧了。",
+          "cost": 18,
+          "cooldown_days": 45,
+          "port": "champa",
+          "good": "ivory",
+          "mul": 1.2
+        },
+        {
+          "id": "gz_haishan_porcelain",
+          "type": "sell",
+          "label": "出手青白瓷",
+          "text": "官人要几箱青白瓷上船。价比市上略高。",
+          "good": "qingbai_porcelain",
+          "qty": 4,
+          "price_mul": 1.08,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "gz_shibo",
+      "port": "guangzhou",
+      "name": "市舶司廊",
+      "kind": "office",
+      "bg": "bg_dist_gz_shibo.jpg",
+      "description": "东廊只办南舶公凭，货引仍去正厅。廊上堆着香药箱子，书吏按会子说话。",
+      "interactions": [
+        {
+          "id": "gz_shibo_gift",
+          "type": "favour",
+          "label": "送笔墨",
+          "text": "你给书吏送了一匣笔墨。他记下你的名字，下回办事好看些。",
+          "cost": 40,
+          "once_per": "month",
+          "effects": {"favour": 2, "merchant_credit": 1}
+        },
+        {
+          "id": "gz_shibo_lic",
+          "type": "licence",
+          "label": "领南舶公凭",
+          "text": "南舶公凭到手。香药市上的牙人认这张纸，货引仍去正厅请。",
+          "cost": 900,
+          "licence": "lic_gz_south",
+          "unlock": {"favour_min": 2},
+          "effects": {"fame": 1, "merchant_credit": 1}
+        },
+        {
+          "id": "gz_shibo_rumor",
+          "type": "rumor",
+          "label": "听胡椒",
+          "text": "书吏压低声音说，泉州有人在收胡椒。",
+          "cost": 20,
+          "cooldown_days": 45,
+          "port": "quanzhou",
+          "good": "pepper",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "gz_xue",
+      "port": "guangzhou",
+      "name": "州学宫",
+      "kind": "academy",
+      "bg": "bg_dist_gz_xue.jpg",
+      "description": "州学在城中。讲堂对着一池水，学生铺开空白的卷子听讲。这里不卖书。",
+      "interactions": [
+        {
+          "id": "gz_xue_listen",
+          "type": "favour",
+          "label": "听讲",
+          "text": "你在廊外听了一讲。卷子没有带走。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {"scholar_tendency": 1}
+        },
+        {
+          "id": "gz_xue_shop",
+          "type": "invest",
+          "label": "入股书铺",
+          "text": "学宫侧门一间书铺招人入股。入了本，按月分账。书不进牙行。",
+          "shop": "书铺",
+          "costs": [260, 600],
+          "monthly": [12, 36]
+        },
+        {
+          "id": "gz_xue_tea",
+          "type": "rumor",
+          "label": "听茶松",
+          "text": "学里的人说，这一向福州的茶松了。",
+          "cost": 10,
+          "cooldown_days": 40,
+          "port": "fuzhou",
+          "good": "tea",
+          "mul": 0.88
+        }
+      ]
+    },
+    {
+      "id": "gz_bang",
+      "port": "guangzhou",
+      "name": "贡院榜墙",
+      "kind": "exam",
+      "bg": "bg_dist_gz_bang.jpg",
+      "description": "贡院门外是榜墙和两通石碑。没有石人。大比之年秋天，榜贴在墙上。",
+      "interactions": [
+        {
+          "id": "gz_bang_look",
+          "type": "favour",
+          "label": "看榜",
+          "text": "贡院墙外贴着今秋的榜。人挤在廊下，有人念，有人沉默。",
+          "exam": true,
+          "scholar_1268": true,
+          "once_per": "year",
+          "cost": 0,
+          "unlock": {
+            "years": [1256, 1259, 1262, 1265, 1268, 1271, 1274],
+            "months": [8, 9, 10]
+          },
+          "effects": {"fame": 1, "scholar_tendency": 1}
+        },
+        {
+          "id": "gz_bang_stele",
+          "type": "favour",
+          "label": "摸碑",
+          "text": "榜墙边的石碑面是光的。你按了一按。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {"fame": 1, "note": "广州贡院石碑按过。"}
+        }
+      ]
+    },
+    {
+      "id": "gz_xiang",
+      "port": "guangzhou",
+      "name": "香药市",
+      "kind": "market",
+      "bg": "bg_dist_gz_xiang.jpg",
+      "description": "市上专做香药、苏木与象牙。手里有南舶公凭的人，药价会让一让。",
+      "interactions": [
+        {
+          "id": "gz_xiang_med",
+          "type": "buy",
+          "label": "收香药",
+          "text": "手里有市舶司的南舶公凭，这一市的香药少要一成多。",
+          "good": "aromatic_medicine",
+          "qty": 4,
+          "price_mul": 0.9,
+          "impact": true,
+          "licence_bonus": "lic_gz_south",
+          "bonus_mul": 0.88
+        },
+        {
+          "id": "gz_xiang_wood",
+          "type": "sell",
+          "label": "出手苏木",
+          "text": "牙人按市价收苏木。",
+          "good": "sappanwood",
+          "qty": 4,
+          "price_mul": 1.04,
+          "impact": true
+        },
+        {
+          "id": "gz_xiang_pepper",
+          "type": "buy",
+          "label": "收胡椒",
+          "text": "市上的胡椒按出摊的价。",
+          "good": "pepper",
+          "qty": 5,
+          "price_mul": 0.93,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "gz_suxin",
+      "port": "guangzhou",
+      "name": "素馨小铺",
+      "kind": "market",
+      "bg": "bg_dist_gz_suxin.jpg",
+      "description": "河南岸素馨田边上有一间小铺。花还没进城，铺里也收一点茶叶。",
+      "interactions": [
+        {
+          "id": "gz_suxin_tea",
+          "type": "buy",
+          "label": "收茶叶",
+          "text": "小铺的茶叶按田边的价。比牙行松一点。",
+          "good": "tea",
+          "qty": 3,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "gz_suxin_shop",
+          "type": "invest",
+          "label": "入股花铺",
+          "text": "素馨田边的小铺招人入股。入了本，按月分花钱。",
+          "shop": "花铺",
+          "costs": [200, 460],
+          "monthly": [10, 28]
+        },
+        {
+          "id": "gz_suxin_gift",
+          "type": "favour",
+          "label": "买一束",
+          "text": "你买了一束素馨，没有拿去卖。铺里的人记住你。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {"fame": 1, "network": 1}
+        }
+      ]
+    },
+    {
+      "id": "gz_dan",
+      "port": "guangzhou",
+      "name": "珠江疍排",
+      "kind": "ferry",
+      "bg": "bg_dist_gz_dan.jpg",
+      "description": "珠江上的疍户把小船并成一排。船上起火做饭，远处石桥没有石人。",
+      "interactions": [
+        {
+          "id": "gz_dan_salt",
+          "type": "buy",
+          "label": "收船盐",
+          "text": "疍户的盐还没上岸。按船上的价收。",
+          "good": "sea_salt",
+          "qty": 6,
+          "price_mul": 0.94,
+          "impact": true
+        },
+        {
+          "id": "gz_dan_rumor",
+          "type": "rumor",
+          "label": "听盐价",
+          "text": "桥上的人说，漳州的盐紧了。",
+          "cost": 10,
+          "cooldown_days": 40,
+          "port": "zhangzhou",
+          "good": "sea_salt",
+          "mul": 1.16
+        },
+        {
+          "id": "gz_dan_cross",
+          "type": "favour",
+          "label": "过渡",
+          "text": "你坐疍户的船过了一趟江。船上的话听进耳朵里。",
+          "cost": 6,
+          "once_per": "month",
+          "effects": {"network": 1}
+        }
+      ]
+    },
+    {
+      "id": "gz_yard",
+      "port": "guangzhou",
+      "name": "广船坞",
+      "kind": "workshop",
+      "bg": "bg_dist_gz_yard.jpg",
+      "description": "坞里在造一艘广船，肋骨还敞着。铁钉不该随便出海，坞里的人知道。",
+      "interactions": [
+        {
+          "id": "gz_yard_smith",
+          "type": "hire",
+          "label": "雇船匠",
+          "text": "船匠肯留在坞里。人在时，买铁器没那么扎眼。",
+          "who": "船匠",
+          "cost": 100,
+          "wage": 18,
+          "attention_ease": 1
+        },
+        {
+          "id": "gz_yard_iron",
+          "type": "buy",
+          "label": "收铁钉",
+          "text": "铁器是禁物。私下收，蒲家仍会记。船匠在，就少记一点。",
+          "good": "ironware",
+          "qty": 2,
+          "price_mul": 0.95,
+          "impact": true,
+          "attention": 3,
+          "attention_hire": "gz_yard_smith",
+          "attention_hired": 1
+        },
+        {
+          "id": "gz_yard_rumor",
+          "type": "rumor",
+          "label": "听铁器",
+          "text": "坞里的人说，泉州的铁器紧了。",
+          "cost": 14,
+          "cooldown_days": 45,
+          "port": "quanzhou",
+          "good": "ironware",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "gz_tafang",
+      "port": "guangzhou",
+      "name": "河南塌房",
+      "kind": "warehouse",
+      "bg": "bg_dist_gz_tafang.jpg",
+      "description": "河南岸的塌房收租，不喊价。货从这里出去，牙行的行情牌可以不动。",
+      "interactions": [
+        {
+          "id": "gz_tafang_rent",
+          "type": "invest",
+          "label": "包一间",
+          "text": "包下一间塌房，按月收租。",
+          "shop": "塌房",
+          "costs": [480, 980],
+          "monthly": [22, 64]
+        },
+        {
+          "id": "gz_tafang_quiet",
+          "type": "sell",
+          "label": "悄悄出瓷",
+          "text": "福建瓷从塌房后门出去，不经过牙行的秤，行情牌不动。价也低些。",
+          "good": "fujian_porcelain",
+          "qty": 6,
+          "price_mul": 0.92,
+          "impact": false
+        },
+        {
+          "id": "gz_tafang_grain",
+          "type": "buy",
+          "label": "收仓米",
+          "text": "塌房里的米按仓价。比市上松。",
+          "good": "grain",
+          "qty": 10,
+          "price_mul": 0.9,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "gz_tea",
+      "port": "guangzhou",
+      "name": "西城茶坊",
+      "kind": "teahouse",
+      "bg": "bg_dist_gz_tea.jpg",
+      "description": "西城茶坊对着大街。茶博士点一盏建茶，话从这里传到牙行。",
+      "interactions": [
+        {
+          "id": "gz_tea_share",
+          "type": "invest",
+          "label": "入股茶坊",
+          "text": "茶坊招人入股。入了本，按月分茶钱。",
+          "shop": "茶坊",
+          "costs": [280, 640],
+          "monthly": [14, 42]
+        },
+        {
+          "id": "gz_tea_wager",
+          "type": "choice",
+          "label": "斗茶",
+          "text": "茶坊里两盏建茶对坐。赢的人这一季的茶价会有人跟着说。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "play",
+              "label": "押一盏",
+              "text": "你押了自己这盏。茶博士把话传到牙行，博多的茶这一向紧。",
+              "cost": 20,
+              "effects": {"merchant_credit": 1},
+              "rumor": {"port": "hakata", "good": "tea", "mul": 1.12}
+            },
+            {
+              "id": "treat",
+              "label": "作东",
+              "text": "你把两盏都买了请人。街上记你一笔人情。",
+              "cost": 30,
+              "effects": {"network": 1, "favour": 1}
+            }
+          ]
+        },
+        {
+          "id": "gz_tea_buy",
+          "type": "buy",
+          "label": "收茶叶",
+          "text": "坊里的茶叶按出坊的价。",
+          "good": "tea",
+          "qty": 6,
+          "price_mul": 0.9,
+          "impact": true
+        }
+      ]
     }
   ]
 }
