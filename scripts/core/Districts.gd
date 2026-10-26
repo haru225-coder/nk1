@@ -280,14 +280,15 @@ static func apply(ix_id: String, opt_id: String = "") -> Dictionary:
 	if add_err != "":
 		_refund(money0, taken.get("qty", {}))
 		return _fail(add_err)
-	_do_impact(port, spec)
+	# 传闻先成，再动行情；卖价按成交前的行情算，成交后再砸盘；与牙行 _on_sell 同一口径
+	var gain := _sell_income(port, spec)
 	if not _do_rumor(spec):
 		_refund(money0, taken.get("qty", {}))
 		return _fail("那处牙行不做这门货")
+	_do_impact(port, spec)
 	var bits: Array = _apply_effects(_as_dict(spec.get("effects", {})), port)
 	_finish_type(port, ix, spec)
 	_mark(ix_id, ix)
-	var gain := _sell_income(port, spec)
 	if gain > 0:
 		GameState.add_money(gain)
 	var msg := _success_msg(ix, spec, port, bits, need, gain)
