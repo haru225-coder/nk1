@@ -1,0 +1,797 @@
+{
+  "districts": [
+    {
+      "id": "zz_jiulong",
+      "port": "zhangzhou",
+      "name": "九龙江码头",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_zz_jiulong.jpg",
+      "description": "九龙江口码头潮大。尖底船靠着石岸，盐包与瓷箱堆在跳板边，苏木捆绳还没解。",
+      "interactions": [
+        {
+          "id": "zz_jiulong_salt",
+          "type": "buy",
+          "label": "收海盐",
+          "text": "江口的盐包还没进牙行。按出江的价收。",
+          "good": "sea_salt",
+          "qty": 8,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "zz_jiulong_med",
+          "type": "sell",
+          "label": "卖香药",
+          "text": "江船刚靠，有人在跳板上问香药。件数不多，价比城里略高。",
+          "good": "aromatic_medicine",
+          "qty": 3,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "zz_jiulong_rumor",
+          "type": "rumor",
+          "label": "问粮价",
+          "text": "梢公说泉州米粮近来紧。海路不畅，米到得慢。",
+          "cost": 12,
+          "cooldown_days": 30,
+          "port": "quanzhou",
+          "good": "grain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "zz_yanzhan",
+      "port": "zhangzhou",
+      "name": "盐场陂",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_zz_yanzhan.jpg",
+      "description": "盐场沿石陂铺开。海水引到陂上，晒成白盐。陂石旧，人挑着盐包走过。",
+      "interactions": [
+        {
+          "id": "zz_yanzhan_salt",
+          "type": "buy",
+          "label": "分盐",
+          "text": "陂上分了盐，按陂份的价收。",
+          "good": "sea_salt",
+          "qty": 10,
+          "price_mul": 0.88,
+          "impact": true
+        },
+        {
+          "id": "zz_yanzhan_repair",
+          "type": "favour",
+          "label": "补陂石",
+          "text": "你出钱把陂上松了的石砌补稳。乡里记这一笔。",
+          "cost": 120,
+          "once": true,
+          "effects": {
+            "hometown_tendency": 2,
+            "fame": 1,
+            "flag": "zz_yanzhan_weir"
+          }
+        },
+        {
+          "id": "zz_yanzhan_choice",
+          "type": "choice",
+          "label": "分盐",
+          "text": "陂上盐多。你可以按陂份分，也可以按牙行价卖。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "share",
+              "label": "按陂份分",
+              "text": "你按陂份分了盐。乡里记你。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1
+              }
+            },
+            {
+              "id": "sell",
+              "label": "按牙行卖",
+              "text": "你按牙行价卖了盐。账面清楚。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zz_yao",
+      "port": "zhangzhou",
+      "name": "漳窑",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_zz_yao.jpg",
+      "description": "漳窑在城郊。窑火未熄，瓷坯沿墙摆着。匠人说这一窑出的是福建瓷。",
+      "interactions": [
+        {
+          "id": "zz_yao_porcelain",
+          "type": "buy",
+          "label": "收福建瓷",
+          "text": "窑里刚出瓷。按出窑的价收。",
+          "good": "fujian_porcelain",
+          "qty": 4,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "zz_yao_tea",
+          "type": "sell",
+          "label": "卖茶叶",
+          "text": "窑上有人收茶叶。价比城里略高。",
+          "good": "tea",
+          "qty": 3,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "zz_yao_rumor",
+          "type": "rumor",
+          "label": "听瓷价",
+          "text": "匠人说泉州福建瓷近来紧。窑火旺，货却送不出去。",
+          "cost": 15,
+          "cooldown_days": 35,
+          "port": "quanzhou",
+          "good": "fujian_porcelain",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "zz_mumian",
+      "port": "zhangzhou",
+      "name": "木棉庵",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_zz_mumian.jpg",
+      "description": "木棉庵在城外。庵前木棉树老，花开时红。香火不断，僧人卖自家种的茶。",
+      "interactions": [
+        {
+          "id": "zz_mumian_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "香钱放进柜里。庵里记你一笔。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "favour": 1
+          }
+        },
+        {
+          "id": "zz_mumian_tea",
+          "type": "buy",
+          "label": "收茶",
+          "text": "庵里卖自家种的茶。按出庵的价收。",
+          "good": "tea",
+          "qty": 4,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "zz_mumian_choice",
+          "type": "choice",
+          "label": "看木棉",
+          "text": "木棉开时，庵前两条路。你可以进庵，也可以绕树走。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "temple",
+              "label": "进庵",
+              "text": "你进庵坐了一会儿。僧人递了一盏茶。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "木棉庵里坐过。"
+              }
+            },
+            {
+              "id": "tree",
+              "label": "绕树",
+              "text": "你绕树走了一圈。花瓣落了一地。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1,
+                "note": "绕过木棉树。"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zz_shibo",
+      "port": "zhangzhou",
+      "name": "市舶司东廊",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_zz_shibo.jpg",
+      "description": "东廊只办细色公凭，货引仍去正厅。廊上堆着瓷箱与苏木捆，小吏按会子说话。",
+      "interactions": [
+        {
+          "id": "zz_shibo_gift",
+          "type": "favour",
+          "label": "送笔墨",
+          "text": "你给书吏送了一匣笔墨。他把名字写在簿上。",
+          "cost": 40,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "zz_shibo_fine",
+          "type": "licence",
+          "label": "领细色公凭",
+          "text": "细色公凭到手。瓷与苏木一路的牙人认这张纸，货引仍去正厅请。",
+          "cost": 800,
+          "licence": "lic_zz_fine",
+          "unlock": {
+            "favour_min": 2
+          },
+          "effects": {
+            "fame": 2,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "zz_shibo_coin",
+          "type": "rumor",
+          "label": "听茶价",
+          "text": "书吏压低声音说，博多唐房有人在收茶叶。",
+          "cost": 20,
+          "cooldown_days": 45,
+          "port": "hakata",
+          "good": "tea",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "zz_fanfang",
+      "port": "zhangzhou",
+      "name": "私商家巷",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_zz_fanfang.jpg",
+      "description": "私商家巷窄。瓷与苏木沿墙码着，牙人站在两拨人中间。",
+      "interactions": [
+        {
+          "id": "zz_fanfang_broker",
+          "type": "hire",
+          "label": "雇牙人",
+          "text": "巷里的牙人肯跟你走。他在时，苏木好说话些，簿子也松一笔。",
+          "who": "巷牙人",
+          "cost": 120,
+          "wage": 22,
+          "attention_ease": 1
+        },
+        {
+          "id": "zz_fanfang_sappan",
+          "type": "buy",
+          "label": "收苏木",
+          "text": "巷里有私商出手苏木。价低，牙人记一笔。",
+          "good": "sappanwood",
+          "qty": 4,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "zz_fanfang_copper",
+          "type": "sell",
+          "label": "卖倭铜",
+          "text": "牙人在身边时，这批倭铜多卖一成。",
+          "good": "japanese_copper",
+          "qty": 2,
+          "price_mul": 1.05,
+          "impact": true,
+          "hire_bonus": "zz_fanfang_broker",
+          "hire_mul": 0.9
+        },
+        {
+          "id": "zz_fanfang_rumor",
+          "type": "rumor",
+          "label": "听硫黄",
+          "text": "牙人说博多唐房的硫黄又紧了一紧。番船少，价跟着涨。",
+          "cost": 12,
+          "cooldown_days": 30,
+          "port": "hakata",
+          "good": "sulfur",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "zz_zhuxi",
+      "port": "zhangzhou",
+      "name": "朱熹祠",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_zz_zhuxi.jpg",
+      "description": "朱熹祠在城中。石碑旧，香火不断。士人来读碑，也收生丝。",
+      "interactions": [
+        {
+          "id": "zz_zhuxi_stele",
+          "type": "favour",
+          "label": "读碑",
+          "text": "你在碑前读了一回。字是旧的，墨还没干。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "朱熹祠读过碑。"
+          }
+        },
+        {
+          "id": "zz_zhuxi_teacher",
+          "type": "hire",
+          "label": "请经师",
+          "text": "漳州经师肯按月来讲。人在的月份，学问慢慢长。",
+          "who": "经师",
+          "cost": 100,
+          "wage": 20,
+          "monthly_effects": {
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "zz_zhuxi_lecture",
+          "type": "choice",
+          "label": "讲学",
+          "text": "祠里有课。你可以送卷，也可以旁听。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "submit",
+              "label": "送卷",
+              "text": "你把卷送上去。漳州先生记你。",
+              "cost": 10,
+              "effects": {
+                "scholar_tendency": 2
+              }
+            },
+            {
+              "id": "listen",
+              "label": "旁听",
+              "text": "你在漳州庑下旁听了一回。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zz_shan",
+      "port": "zhangzhou",
+      "name": "九侯山",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_zz_shan.jpg",
+      "description": "九侯山在城北。石径弯弯，松树很多。登上去看见九龙江与城中瓦。",
+      "interactions": [
+        {
+          "id": "zz_shan_climb",
+          "type": "choice",
+          "label": "登山",
+          "text": "山上有两条路。东看江，西看城。一年登一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "east",
+              "label": "东看江",
+              "text": "东面看见九龙江上的帆。风从海上来。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "note": "登过九侯山看江。"
+              }
+            },
+            {
+              "id": "west",
+              "label": "西看城",
+              "text": "西面看见城中的瓦。你站了很久。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "登过九侯山看城。"
+              }
+            }
+          ]
+        },
+        {
+          "id": "zz_shan_rumor",
+          "type": "rumor",
+          "label": "听硫黄",
+          "text": "山下人说温州硫黄近来紧。江船少，货到得慢。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "wenzhou",
+          "good": "sulfur",
+          "mul": 1.15
+        },
+        {
+          "id": "zz_shan_view",
+          "type": "favour",
+          "label": "望江",
+          "text": "你在九侯山石上站了一回，风从江上来。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "zz_tafang",
+      "port": "zhangzhou",
+      "name": "河边塌房",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_zz_tafang.jpg",
+      "description": "九龙江边塌房木板旧。货悄悄从后门出去，行情牌不动。夜里潮声很大。",
+      "interactions": [
+        {
+          "id": "zz_tafang_rent",
+          "type": "invest",
+          "label": "入股塌房",
+          "text": "九龙江边塌房招人入本。入了本，按月分租钱。",
+          "shop": "塌房",
+          "costs": [
+            300,
+            720
+          ],
+          "monthly": [
+            12,
+            35
+          ]
+        },
+        {
+          "id": "zz_tafang_porcelain",
+          "type": "sell",
+          "label": "卖福建瓷",
+          "text": "塌房里有人收福建瓷，不经过牙行的秤，行情牌不动。价也低些。",
+          "good": "fujian_porcelain",
+          "qty": 2,
+          "price_mul": 1.06,
+          "impact": false
+        },
+        {
+          "id": "zz_tafang_tea",
+          "type": "buy",
+          "label": "收茶叶",
+          "text": "塌房里码着茶叶。按出仓的价收。",
+          "good": "tea",
+          "qty": 3,
+          "price_mul": 0.95,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "zz_chafang",
+      "port": "zhangzhou",
+      "name": "城中茶坊",
+      "kind": "teahouse",
+      "pending_art": true,
+      "bg": "bg_dist_zz_chafang.jpg",
+      "description": "漳州茶坊在街角。建盏、茶筅摆着，点茶的水刚开。客人不多，说话压低。",
+      "interactions": [
+        {
+          "id": "zz_chafang_tea",
+          "type": "buy",
+          "label": "收茶叶",
+          "text": "漳州茶坊里的茶按出坊的价收。",
+          "good": "tea",
+          "qty": 6,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "zz_chafang_choice",
+          "type": "choice",
+          "label": "饮茶",
+          "text": "茶坊里两种喝法。一年试一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "dian",
+              "label": "点茶",
+              "text": "你按了点茶的法子。茶沫白，像雪。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "在漳州点过茶。"
+              }
+            },
+            {
+              "id": "bai",
+              "label": "茶百戏",
+              "text": "茶百戏画出花来。旁人看了笑。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "note": "在漳州看过茶百戏。"
+              }
+            }
+          ]
+        },
+        {
+          "id": "zz_chafang_gift",
+          "type": "favour",
+          "label": "送建茶",
+          "text": "你送了一罐建茶给茶博士。他把盏放在柜里。",
+          "cost": 15,
+          "once_per": "month",
+          "cooldown_days": 30,
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "zz_shichang",
+      "port": "zhangzhou",
+      "name": "坊市",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_zz_shichang.jpg",
+      "description": "坊市在城中。盐包、瓷箱、苏木堆着，牙人按会子喊价。",
+      "interactions": [
+        {
+          "id": "zz_shichang_grain",
+          "type": "buy",
+          "label": "收米",
+          "text": "漳州坊市的米还没上大柜，价略低。",
+          "good": "grain",
+          "qty": 10,
+          "price_mul": 0.92,
+          "impact": true
+        },
+        {
+          "id": "zz_shichang_salt",
+          "type": "sell",
+          "label": "卖海盐",
+          "text": "坊市的人肯多给一点，买盐带回家。",
+          "good": "sea_salt",
+          "qty": 6,
+          "price_mul": 1.08,
+          "impact": true
+        },
+        {
+          "id": "zz_shichang_choice",
+          "type": "choice",
+          "label": "囤货",
+          "text": "坊市货多。你可以囤，也可以出手。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "hoard",
+              "label": "囤下",
+              "text": "你囤下几包货。坊市的人记你谨慎。",
+              "cost": 0,
+              "effects": {
+                "money": -30,
+                "hometown_tendency": 1
+              }
+            },
+            {
+              "id": "sell",
+              "label": "出手",
+              "text": "你把货出手。坊市的价松了一点。",
+              "cost": 0,
+              "effects": {
+                "money": 20,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zz_yamen",
+      "port": "zhangzhou",
+      "name": "军衙",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_zz_yamen.jpg",
+      "description": "漳州军衙在州城。案上堆着兵籍与粮册，小吏按军令说话。外间有人等回文。",
+      "interactions": [
+        {
+          "id": "zz_yamen_gift",
+          "type": "favour",
+          "label": "送公文",
+          "text": "你递上一束公文。漳州军衙的小吏记下你的名字，下回办事好看些。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "zz_yamen_licence",
+          "type": "licence",
+          "label": "领船引",
+          "text": "船引到手。漳州军衙认这张纸，出海的船少盘问。",
+          "cost": 600,
+          "licence": "lic_zz_ship",
+          "unlock": {
+            "favour_min": 2
+          },
+          "effects": {
+            "fame": 1
+          }
+        },
+        {
+          "id": "zz_yamen_rumor",
+          "type": "rumor",
+          "label": "听粮价",
+          "text": "漳州小吏说泉州米粮近来紧。海路不畅，米到得慢。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "quanzhou",
+          "good": "grain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "zz_chenghuang",
+      "port": "zhangzhou",
+      "name": "城隍庙",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_zz_chenghuang.jpg",
+      "description": "城隍庙在城中。香火不断，庙祝卖香烛。殿前石阶旧。",
+      "interactions": [
+        {
+          "id": "zz_chenghuang_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "香钱放进柜里。庙祝记你一笔。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "favour": 1
+          }
+        },
+        {
+          "id": "zz_chenghuang_med",
+          "type": "buy",
+          "label": "收香药",
+          "text": "庙祝卖自家收的香药。按出庙的价收。",
+          "good": "aromatic_medicine",
+          "qty": 3,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "zz_chenghuang_vow",
+          "type": "favour",
+          "label": "许愿",
+          "text": "你在殿前许了一愿。庙祝把你的名字写在簿上。",
+          "cost": 20,
+          "once_per": "year",
+          "effects": {
+            "fame": 1,
+            "note": "城隍庙许过愿。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "zz_bang",
+      "port": "zhangzhou",
+      "name": "州学榜墙",
+      "kind": "exam",
+      "pending_art": true,
+      "bg": "bg_dist_zz_bang.jpg",
+      "description": "漳州州学门外是碑与榜墙。大比之年，墙上贴着今秋的榜。",
+      "interactions": [
+        {
+          "id": "zz_bang_look",
+          "type": "favour",
+          "label": "看榜",
+          "text": "州学墙外贴着今秋的榜。漳州人挤在墙下，有人念，有人沉默。",
+          "exam": true,
+          "scholar_1268": true,
+          "once_per": "year",
+          "cost": 0,
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "zz_bang_stele",
+          "type": "favour",
+          "label": "读碑",
+          "text": "你在漳州州学门边读了一回碑。字是旧的。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "zz_bang_aid",
+          "type": "choice",
+          "label": "助寒士",
+          "text": "大比之年，漳州州学门外的寒士缺纸墨。你可以助，也可以旁观。",
+          "exam": true,
+          "once_per": "year",
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "options": [
+            {
+              "id": "give",
+              "label": "助纸墨",
+              "text": "你送了纸墨。漳州寒士记你。",
+              "cost": 40,
+              "effects": {
+                "fame": 2,
+                "hometown_tendency": 1,
+                "flag": "zz_bang_aid"
+              }
+            },
+            {
+              "id": "pass",
+              "label": "旁观",
+              "text": "你只在漳州墙边站了一会儿。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
