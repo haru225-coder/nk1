@@ -1,0 +1,45 @@
+{
+  "districts": [
+    {
+      "id": "hk_ishigaki",
+      "port": "hakata",
+      "name": "博多石垒",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_hk_ishigaki.jpg",
+      "description": "博多海边新筑的石垒，元寇防垒未完，石块堆在沙滩上。",
+      "interactions": [
+        {
+          "id": "hk_ishigaki_sulfur",
+          "type": "buy",
+          "label": "收硫黄",
+          "text": "石垒边的硫黄按船边价收，还没进唐房的账。",
+          "good": "sulfur",
+          "qty": 4,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "hk_ishigaki_stall",
+          "type": "invest",
+          "label": "垒边铺",
+          "text": "石垒边一间铺。入了本，按月收过路人的钱。",
+          "shop": "垒边铺",
+          "costs": [220, 480],
+          "monthly": [11, 28]
+        },
+        {
+          "id": "hk_ishigaki_rumor",
+          "type": "rumor",
+          "label": "问石工",
+          "text": "石工说，萨摩那边今年硫黄紧。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "kagoshima",
+          "good": "sulfur",
+          "mul": 1.15
+        }
+      ]
+    }
+  ]
+}
