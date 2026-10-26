@@ -166,8 +166,15 @@ func _sec_ui() -> void:
 	door.pressed.emit()
 	await _settle(4)
 	_check(str(_main.scene_title.text) == "城中各处", "UI：名单题头是城中各处")
+	var labels_all: Array = []
+	_collect_labels(_main, labels_all)
+	var kindset: Dictionary = {}
+	for r in Book.districts_of("quanzhou"):
+		kindset[Book.kind_label(str((r as Dictionary).get("kind", "")))] = true
 	var headers: Array = []
-	_collect_nodes(_main, "DistrictGroupHeader", headers)
+	for lb in labels_all:
+		if kindset.has(str((lb as Label).text)):
+			headers.append(lb)
 	_check(headers.size() >= 2, "UI：名单按类分组（%d 组）" % headers.size())
 	var into := _find_button(_main, "进去")
 	_check(into != null and str(into.tooltip_text) != "", "UI：进去钮带悬停提示")
@@ -176,8 +183,13 @@ func _sec_ui() -> void:
 	into.pressed.emit()
 	await _settle(4)
 	_check(str(_main.get("_bg_file")) == "bg_dist_qz_houzhu.jpg", "UI：进入后渚")
+	var labels_all2: Array = []
+	_collect_labels(_main, labels_all2)
+	var catset: Dictionary = {"买卖":true,"入股":true,"雇人":true,"传闻":true,"公凭":true,"抉择":true,"行事":true,"事":true}
 	var headers2: Array = []
-	_collect_nodes(_main, "DistrictGroupHeader", headers2)
+	for lb in labels_all2:
+		if catset.has(str((lb as Label).text)):
+			headers2.append(lb)
 	_check(headers2.size() >= 1, "UI：事页按类分组（%d 组）" % headers2.size())
 	var btns: Array = []
 	_collect_buttons(_main, btns)
@@ -201,5 +213,3 @@ func _sec_ui() -> void:
 			cost_ok = true
 			break
 	_check(cost_ok, "UI：花费提示落字")
-PYEOF
-echo done

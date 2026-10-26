@@ -233,5 +233,3 @@ static func _leave(main, cb: Callable) -> void:
 	UiTheme.style_leave_button(btn)
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	main.choices_label.visible = false
-PYEOF
-echo written
