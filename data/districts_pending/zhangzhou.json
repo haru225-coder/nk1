@@ -209,11 +209,11 @@
     {
       "id": "zz_shibo",
       "port": "zhangzhou",
-      "name": "市舶司东廊",
+      "name": "漳州州衙验货厅",
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_zz_shibo.jpg",
-      "description": "东廊只办细色公凭，货引仍去正厅。廊上堆着瓷箱与苏木捆，小吏按会子说话。",
+      "description": "漳州不设市舶司，大宗番货仍归泉州抽解。州衙验货厅只验江口小船，廊上码着瓷箱与苏木捆，小吏按会子说话。",
       "interactions": [
         {
           "id": "zz_shibo_gift",
@@ -230,8 +230,8 @@
         {
           "id": "zz_shibo_fine",
           "type": "licence",
-          "label": "领细色公凭",
-          "text": "细色公凭到手。瓷货一路的牙人认这张纸，货引仍去正厅请。",
+          "label": "领州衙验单",
+          "text": "州衙验单到手。瓷货一路的牙人认这张纸，番货公凭仍去泉州请。",
           "cost": 800,
           "licence": "lic_zz_fine",
           "unlock": {
