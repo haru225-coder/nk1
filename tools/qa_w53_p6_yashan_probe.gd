@@ -340,11 +340,20 @@ func _sec_ignite() -> void:
 	var fire: Node2D = fires[0]
 	var ship_dm_before := float(ship.get("hull_hp"))
 	var rig_before := _ship_rig_fire(ship)
+	# 篷帆一着、救火手够（撞伤的水手伤亡是掷骰的）就可能同一拍斩篷（rig 归零、发 sail_cut）——斩篷也证明篷帆着过
+	var cut := [false]
+	var on_ev := func(kind: String, _info: Dictionary) -> void:
+		if kind == "sail_cut":
+			cut[0] = true
+	if ship.has_signal("damage_event"):
+		ship.connect("damage_event", on_ev)
 	fire.position = ship.position + Vector2(0, 60)
 	await process_frame
 	await process_frame
 	var rig_after := _ship_rig_fire(ship)
-	_expect(rig_after > rig_before, "碰上就点火：旗舰篷帆着了（rig %s → %s —— 火船带过来的火不看引火率）" % [str(rig_before), str(rig_after)])
+	if ship.has_signal("damage_event") and ship.is_connected("damage_event", on_ev):
+		ship.disconnect("damage_event", on_ev)
+	_expect(rig_after > rig_before or cut[0], "碰上就点火：旗舰篷帆着了（rig %s → %s，斩篷 %s —— 火船带过来的火不看引火率）" % [str(rig_before), str(rig_after), str(cut[0])])
 	var ship_dm_after := float(ship.get("hull_hp"))
 	_expect(ship_dm_after < ship_dm_before, "碰上就点火：旗舰挨了撞伤（船体 %s → %s）" % [str(ship_dm_before), str(ship_dm_after)])
 	_expect(bool(fire.get("fire_spent")), "碰上就点火：这一艘已记「碰过了」")
