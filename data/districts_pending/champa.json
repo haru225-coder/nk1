@@ -1,0 +1,661 @@
+{
+  "districts": [
+    {
+      "id": "cp_harbor",
+      "port": "champa",
+      "name": "新州码头",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_cp_harbor.jpg",
+      "description": "新州是占城港的码头，热带港湾里泊着蕃船，岸上堆着胡椒与苏木，椰影落在石埠上。",
+      "interactions": [
+        {
+          "id": "cp_harbor_pepper",
+          "type": "buy",
+          "label": "收胡椒",
+          "text": "码头上的胡椒还没进牙行。这里按出港前的价收。",
+          "good": "pepper",
+          "qty": 6,
+          "price_mul": 0.92,
+          "impact": true
+        },
+        {
+          "id": "cp_harbor_ivory",
+          "type": "sell",
+          "label": "出手象牙",
+          "text": "蕃商在跳板上问象牙。件数不多，价比城里略高。",
+          "good": "ivory",
+          "qty": 2,
+          "price_mul": 1.06,
+          "impact": true
+        },
+        {
+          "id": "cp_harbor_rumor",
+          "type": "rumor",
+          "label": "问番船",
+          "text": "番船的梢公捻着胡椒说，广州那边胡椒船期压后，到港的少，价要涨。",
+          "cost": 16,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "pepper",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "cp_tower",
+      "port": "champa",
+      "name": "红砖塔",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_cp_tower.jpg",
+      "description": "占城的砖塔红砖砌成，尖顶对着海。塔下没有石人，只有香案与花，砖缝里长着青苔。",
+      "interactions": [
+        {
+          "id": "cp_tower_rite",
+          "type": "favour",
+          "label": "祭塔",
+          "text": "你在塔前上了一炷香。塔下记下你的船。",
+          "cost": 25,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "cp_tower_view",
+          "type": "choice",
+          "label": "登塔",
+          "text": "塔许登。一年登一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "sea",
+              "label": "看海",
+              "text": "海湾的帆一张张出去。风从海上来。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "note": "占城砖塔上看过海。"
+              }
+            },
+            {
+              "id": "town",
+              "label": "看城",
+              "text": "城里的砖屋与塔影连成一片。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "cp_tower_rumor",
+          "type": "rumor",
+          "label": "听塔话",
+          "text": "塔下的旅人抚着砖缝说，博多那边象牙船期压后，到港的少，价要涨。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "ivory",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "cp_market",
+      "port": "champa",
+      "name": "香市",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_cp_market.jpg",
+      "description": "市上堆着胡椒、苏木与象牙，蕃商按升斗算账，话多听不懂，苍蝇围着香料转。",
+      "interactions": [
+        {
+          "id": "cp_market_pepper",
+          "type": "buy",
+          "label": "买胡椒",
+          "text": "市上的胡椒按出摊的价，比牙行松。",
+          "good": "pepper",
+          "qty": 5,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "cp_market_wood",
+          "type": "sell",
+          "label": "出手苏木",
+          "text": "牙人按市价收苏木。",
+          "good": "sappanwood",
+          "qty": 4,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "cp_market_rumor",
+          "type": "rumor",
+          "label": "听香价",
+          "text": "市上蕃商按着算盘说，泉州那边香药船期压后，到港的少，价要涨。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "aromatic_medicine",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "cp_warehouse",
+      "port": "champa",
+      "name": "海边塌房",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_cp_warehouse.jpg",
+      "description": "海边塌房板墙厚，门大，里面码着米包、瓷箱与香料，潮气从门缝里透出来。",
+      "interactions": [
+        {
+          "id": "cp_warehouse_rent",
+          "type": "invest",
+          "label": "包一间",
+          "text": "包下塌房里的一间，按月收租。",
+          "costs": [480, 980],
+          "monthly": [22, 64],
+          "shop": "塌房"
+        },
+        {
+          "id": "cp_warehouse_quiet",
+          "type": "sell",
+          "label": "悄悄出瓷",
+          "text": "福建瓷从塌房后门出去，不经过牙行的秤，行情牌不动。价也低些。",
+          "good": "fujian_porcelain",
+          "qty": 6,
+          "price_mul": 0.92,
+          "impact": false
+        },
+        {
+          "id": "cp_warehouse_tea",
+          "type": "buy",
+          "label": "收仓茶",
+          "text": "塌房里的茶叶按仓价。比市上松。",
+          "good": "tea",
+          "qty": 4,
+          "price_mul": 0.95,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "cp_ferry",
+      "port": "champa",
+      "name": "河口渡",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_cp_ferry.jpg",
+      "description": "渡口小船载人过河，岸上晒着鱼干，远处是砖塔，船夫赤着脚撑篙。",
+      "interactions": [
+        {
+          "id": "cp_ferry_ride",
+          "type": "favour",
+          "label": "包渡",
+          "text": "你包了一条渡船。船家记下你。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "cp_ferry_boatman",
+          "type": "hire",
+          "label": "雇船家",
+          "text": "船家肯跟你走一程。他熟河口的水。",
+          "cost": 80,
+          "who": "占城船家",
+          "wage": 14
+        },
+        {
+          "id": "cp_ferry_rumor",
+          "type": "rumor",
+          "label": "问梢公",
+          "text": "船家撑着篙说，广州那边珊瑚船期压后，到港的少，价要涨。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "coral",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "cp_hill",
+      "port": "champa",
+      "name": "港后山亭",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_cp_hill.jpg",
+      "description": "山亭在港后的山坡上，站上去看得见海湾与砖塔，风从海上来，树上结着野果。",
+      "interactions": [
+        {
+          "id": "cp_hill_view",
+          "type": "choice",
+          "label": "登亭",
+          "text": "亭上看得见海湾与城。一年登一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "bay",
+              "label": "望海",
+              "text": "海湾的帆一张张出去。风从山上吹下来。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "note": "占城山亭上看过海。"
+              }
+            },
+            {
+              "id": "town",
+              "label": "望城",
+              "text": "砖屋与塔影连成一片。你站了很久。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "cp_hill_pray",
+          "type": "favour",
+          "label": "祈海",
+          "text": "你在亭上祈了海路。风从山下来。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "cp_hill_rumor",
+          "type": "rumor",
+          "label": "听山话",
+          "text": "山上樵夫扛着柴说，广州那边苏木船期压后，到港的少，价要涨。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "sappanwood",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "cp_gate",
+      "port": "champa",
+      "name": "城门",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_cp_gate.jpg",
+      "description": "城门砖砌，门洞阴凉，守门的披甲站在门下验人，砖缝里爬着藤。",
+      "interactions": [
+        {
+          "id": "cp_gate_gift",
+          "type": "favour",
+          "label": "送礼",
+          "text": "你给门下的书役送了一匣宋墨。他说下回验货快些。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {
+            "favour": 2,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "cp_gate_pass",
+          "type": "licence",
+          "label": "领入港书状",
+          "text": "入港书状到手。占城的牙人认这张纸。",
+          "cost": 600,
+          "licence": "lic_cp_pass",
+          "unlock": {
+            "favour_min": 2
+          },
+          "effects": {
+            "fame": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "cp_gate_rumor",
+          "type": "rumor",
+          "label": "听城门",
+          "text": "门下书役靠着砖墙说，广州那边福建瓷船期压后，到港的少，价要涨。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "fujian_porcelain",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "cp_workshop",
+      "port": "champa",
+      "name": "象牙工坊",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_cp_workshop.jpg",
+      "description": "坊里匠人雕象牙，碎屑堆在案上，香烟从窗外飘出去，刀声细细。",
+      "interactions": [
+        {
+          "id": "cp_workshop_carve",
+          "type": "buy",
+          "label": "收象牙",
+          "text": "坊里的象牙按出坊的价。通事在身边时少要一成。",
+          "good": "ivory",
+          "qty": 3,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "cp_workshop_smith",
+          "type": "hire",
+          "label": "雇匠人",
+          "text": "有个匠人肯随船修器物。他在时，船上的人心定些。",
+          "cost": 90,
+          "who": "象牙匠",
+          "wage": 16
+        },
+        {
+          "id": "cp_workshop_rumor",
+          "type": "rumor",
+          "label": "听坊话",
+          "text": "坊里匠人锯着牙说，广州那边象牙船期压后，到港的少，价要涨。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "ivory",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "cp_tea",
+      "port": "champa",
+      "name": "番茶坊",
+      "kind": "teahouse",
+      "pending_art": true,
+      "bg": "bg_dist_cp_tea.jpg",
+      "description": "番茶坊里坐的是蕃商与宋人，茶苦，话从这里传到牙行，墙上挂着蕃文。",
+      "interactions": [
+        {
+          "id": "cp_tea_buy",
+          "type": "buy",
+          "label": "收茶叶",
+          "text": "坊里的茶叶按出坊的价，比市上松。",
+          "good": "tea",
+          "qty": 4,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "cp_tea_favour",
+          "type": "favour",
+          "label": "坐谈",
+          "text": "你在番茶坊坐了一盏苦茶。店家记下你的船。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "cp_tea_rumor",
+          "type": "rumor",
+          "label": "听坐客",
+          "text": "坐客抿着茶说，博多那边茶船期压后，到港的少，价要涨。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "tea",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "cp_grove",
+      "port": "champa",
+      "name": "沉香林",
+      "kind": "grove",
+      "pending_art": true,
+      "bg": "bg_dist_cp_grove.jpg",
+      "description": "林子里沉香树结香，林丁带着刀去割，树上留着白痕，林里潮热。",
+      "interactions": [
+        {
+          "id": "cp_grove_medicine",
+          "type": "buy",
+          "label": "收香药",
+          "text": "林丁刚割下的香药按出林的价收。",
+          "good": "aromatic_medicine",
+          "qty": 4,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "cp_grove_gift",
+          "type": "favour",
+          "label": "送香",
+          "text": "你送了一小束沉香给牙人。他笑着收了。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "cp_grove_rumor",
+          "type": "rumor",
+          "label": "听林话",
+          "text": "林丁割着树说，广州那边香药船期压后，到港的少，价要涨。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "aromatic_medicine",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "cp_bridge",
+      "port": "champa",
+      "name": "河上木桥",
+      "kind": "bridge",
+      "pending_art": true,
+      "bg": "bg_dist_cp_bridge.jpg",
+      "description": "木桥架在河上，挑担的与牵象的都从桥上过，桥下水流很急，桥板被踏得发亮。",
+      "interactions": [
+        {
+          "id": "cp_bridge_cross",
+          "type": "favour",
+          "label": "过桥",
+          "text": "你在桥上站了一阵。河风从水面吹来。",
+          "cost": 6,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "cp_bridge_coral",
+          "type": "buy",
+          "label": "收珊瑚",
+          "text": "桥边有人从海里带来珊瑚，要换宋钱。",
+          "good": "coral",
+          "qty": 3,
+          "price_mul": 0.92,
+          "impact": true
+        },
+        {
+          "id": "cp_bridge_rumor",
+          "type": "rumor",
+          "label": "问行人",
+          "text": "牵象的人勒着缰说，广州那边胡椒船期压后，到港的少，价要涨。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "pepper",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "cp_office",
+      "port": "champa",
+      "name": "番商馆",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_cp_office.jpg",
+      "description": "番商馆里蕃商与宋商谈价，通事在旁翻译，案上堆着香料与象牙，扇子摇个不停。",
+      "interactions": [
+        {
+          "id": "cp_office_hire",
+          "type": "hire",
+          "label": "雇通事",
+          "text": "通事肯跟你走巷子。他在时，象牙好说话些，蒲家的簿子也松一笔。",
+          "cost": 120,
+          "who": "番商通事",
+          "wage": 20,
+          "attention_ease": 1
+        },
+        {
+          "id": "cp_office_wood",
+          "type": "buy",
+          "label": "收苏木",
+          "text": "馆里压着一批苏木。主人想腾地方。",
+          "good": "sappanwood",
+          "qty": 4,
+          "price_mul": 0.93,
+          "impact": true
+        },
+        {
+          "id": "cp_office_rumor",
+          "type": "rumor",
+          "label": "听蕃商",
+          "text": "通事翻着帐簿说，庆元府那边绢帛船期压后，到港的少，价要涨。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "silk_fabric",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "cp_inlet",
+      "port": "champa",
+      "name": "内港",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_cp_inlet.jpg",
+      "description": "内港水浅，小船从这里进出，岸上晒着鱼干，远处是砖塔，水鸟在滩上跳。",
+      "interactions": [
+        {
+          "id": "cp_inlet_silk",
+          "type": "buy",
+          "label": "收生丝",
+          "text": "内港有人从宋船上卸下生丝，按船边价出。",
+          "good": "raw_silk",
+          "qty": 3,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "cp_inlet_tea",
+          "type": "sell",
+          "label": "出手茶叶",
+          "text": "村里缺茶。船上的茶叶在这里比庆元好出手。",
+          "good": "tea",
+          "qty": 3,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "cp_inlet_rumor",
+          "type": "rumor",
+          "label": "听内港",
+          "text": "内港的人摇着船说，庆元府那边青白瓷船期压后，到港的少，价要涨。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "qingbai_porcelain",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "cp_watch",
+      "port": "champa",
+      "name": "山上了望",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_cp_watch.jpg",
+      "description": "山上搭着草棚，了望的人盯着海面，蕃船一来就报，风把草棚吹得哗哗响。",
+      "interactions": [
+        {
+          "id": "cp_watch_view",
+          "type": "choice",
+          "label": "了望",
+          "text": "从山上看得见海湾与船。一年看一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "sea",
+              "label": "观海",
+              "text": "海面上的帆一张张出去。风从海上来。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "note": "占城山上看过海。"
+              }
+            },
+            {
+              "id": "land",
+              "label": "观城",
+              "text": "城里的砖塔与屋影连成一片。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "cp_watch_favour",
+          "type": "favour",
+          "label": "送水",
+          "text": "你送了一罐水给了望的人。他记下你的船。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "cp_watch_rumor",
+          "type": "rumor",
+          "label": "听了望",
+          "text": "了望的人指着海面说，广州那边珊瑚船期压后，到港的少，价要涨。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "guangzhou",
+          "good": "coral",
+          "mul": 1.1
+        }
+      ]
+    }
+  ]
+}
