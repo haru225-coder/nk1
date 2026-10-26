@@ -2055,10 +2055,10 @@
     {
       "id": "hk_hako",
       "port": "hakata",
-      "name": "筥崎宫",
+      "name": "箱崎宫",
       "kind": "shrine",
       "bg": "bg_dist_hk_hako.jpg",
-      "description": "筥崎宫对着海，松原一直铺到沙滩。武家与町人都来这里祈海路平安。",
+      "description": "箱崎宫对着海，松原一直铺到沙滩。武家与町人都来这里祈海路平安。",
       "interactions": [
         {
           "id": "hk_hako_pray",
