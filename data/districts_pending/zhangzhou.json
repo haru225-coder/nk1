@@ -13,17 +13,17 @@
           "id": "zz_jiulong_salt",
           "type": "buy",
           "label": "收海盐",
-          "text": "江口的盐包还没进牙行。按出江的价收。",
+          "text": "江口的盐包还没进牙行，潮水退了半截。按出江的价收。",
           "good": "sea_salt",
-          "qty": 8,
-          "price_mul": 0.9,
+          "qty": 10,
+          "price_mul": 0.88,
           "impact": true
         },
         {
           "id": "zz_jiulong_med",
           "type": "sell",
           "label": "卖香药",
-          "text": "江船刚靠，有人在跳板上问香药。件数不多，价比城里略高。",
+          "text": "江船刚靠，跳板上有人问香药，说要带去广州。给的价比城里高一线。",
           "good": "aromatic_medicine",
           "qty": 3,
           "price_mul": 1.05,
@@ -55,10 +55,10 @@
           "id": "zz_yanzhan_salt",
           "type": "buy",
           "label": "分盐",
-          "text": "陂上分了盐，按陂份的价收。",
+          "text": "陂上的盐刚晒成。按出陂的价收。",
           "good": "sea_salt",
-          "qty": 10,
-          "price_mul": 0.88,
+          "qty": 12,
+          "price_mul": 0.85,
           "impact": true
         },
         {
@@ -116,19 +116,19 @@
           "id": "zz_yao_porcelain",
           "type": "buy",
           "label": "收福建瓷",
-          "text": "窑里刚出瓷。按出窑的价收。",
+          "text": "窑里刚出瓷。按出窑的价收，比牙行便宜。",
           "good": "fujian_porcelain",
-          "qty": 4,
-          "price_mul": 0.9,
+          "qty": 5,
+          "price_mul": 0.88,
           "impact": true
         },
         {
-          "id": "zz_yao_tea",
+          "id": "zz_yao_sappan",
           "type": "sell",
-          "label": "卖茶叶",
-          "text": "窑上有人收茶叶。价比城里略高。",
-          "good": "tea",
-          "qty": 3,
+          "label": "卖苏木",
+          "text": "窑上有人收苏木。给的价比城里高一线。",
+          "good": "sappanwood",
+          "qty": 2,
           "price_mul": 1.05,
           "impact": true
         },
@@ -136,10 +136,10 @@
           "id": "zz_yao_rumor",
           "type": "rumor",
           "label": "听瓷价",
-          "text": "匠人说泉州福建瓷近来紧。窑火旺，货却送不出去。",
-          "cost": 15,
+          "text": "匠人说广州福建瓷近来紧。窑火旺，货却送不出去。",
+          "cost": 12,
           "cooldown_days": 35,
-          "port": "quanzhou",
+          "port": "guangzhou",
           "good": "fujian_porcelain",
           "mul": 1.15
         }
@@ -158,7 +158,7 @@
           "id": "zz_mumian_incense",
           "type": "favour",
           "label": "上香",
-          "text": "香钱放进柜里。庵里记你一笔。",
+          "text": "香钱放进柜里。庵里把你的名字写在簿上。",
           "cost": 10,
           "once_per": "month",
           "effects": {
@@ -169,7 +169,7 @@
           "id": "zz_mumian_tea",
           "type": "buy",
           "label": "收茶",
-          "text": "庵里卖自家种的茶。按出庵的价收。",
+          "text": "庵里僧人卖自家种的茶。按出庵的价收。",
           "good": "tea",
           "qty": 4,
           "price_mul": 0.95,
@@ -179,27 +179,27 @@
           "id": "zz_mumian_choice",
           "type": "choice",
           "label": "看木棉",
-          "text": "木棉开时，庵前两条路。你可以进庵，也可以绕树走。",
+          "text": "庵里有两条路。",
           "once_per": "year",
           "options": [
             {
-              "id": "temple",
-              "label": "进庵",
-              "text": "你进庵坐了一会儿。僧人递了一盏茶。",
+              "id": "stele",
+              "label": "读碑",
+              "text": "你在碑前站了一回。字是旧的。",
               "cost": 0,
               "effects": {
                 "scholar_tendency": 1,
-                "note": "木棉庵里坐过。"
+                "note": "在木棉庵读过碑。"
               }
             },
             {
-              "id": "tree",
-              "label": "绕树",
-              "text": "你绕树走了一圈。花瓣落了一地。",
+              "id": "view",
+              "label": "望江",
+              "text": "庵外看见九龙江上的帆。",
               "cost": 0,
               "effects": {
-                "hometown_tendency": 1,
-                "note": "绕过木棉树。"
+                "sea_tendency": 1,
+                "note": "在木棉庵望过江。"
               }
             }
           ]
@@ -231,7 +231,7 @@
           "id": "zz_shibo_fine",
           "type": "licence",
           "label": "领细色公凭",
-          "text": "细色公凭到手。瓷与苏木一路的牙人认这张纸，货引仍去正厅请。",
+          "text": "细色公凭到手。瓷货一路的牙人认这张纸，货引仍去正厅请。",
           "cost": 800,
           "licence": "lic_zz_fine",
           "unlock": {
@@ -246,7 +246,7 @@
           "id": "zz_shibo_coin",
           "type": "rumor",
           "label": "听茶价",
-          "text": "书吏压低声音说，博多唐房有人在收茶叶。",
+          "text": "书吏压低声音说，博多唐房有人在收茶叶。番船少，茶价跟着紧。",
           "cost": 20,
           "cooldown_days": 45,
           "port": "hakata",
@@ -268,17 +268,17 @@
           "id": "zz_fanfang_broker",
           "type": "hire",
           "label": "雇牙人",
-          "text": "巷里的牙人肯跟你走。他在时，苏木好说话些，簿子也松一笔。",
-          "who": "巷牙人",
-          "cost": 120,
-          "wage": 22,
+          "text": "漳州牙人肯跟你走巷子。他在时，瓷货好说话，番客的簿子也松一笔。",
+          "who": "漳州牙人",
+          "cost": 100,
+          "wage": 18,
           "attention_ease": 1
         },
         {
           "id": "zz_fanfang_sappan",
           "type": "buy",
           "label": "收苏木",
-          "text": "巷里有私商出手苏木。价低，牙人记一笔。",
+          "text": "巷里有私商出手苏木。价低，牙人把数记下。",
           "good": "sappanwood",
           "qty": 4,
           "price_mul": 0.9,
@@ -300,7 +300,7 @@
           "id": "zz_fanfang_rumor",
           "type": "rumor",
           "label": "听硫黄",
-          "text": "牙人说博多唐房的硫黄又紧了一紧。番船少，价跟着涨。",
+          "text": "牙人说博多唐房的硫黄又紧了一紧。番船少，价跟着紧。",
           "cost": 12,
           "cooldown_days": 30,
           "port": "hakata",
@@ -322,7 +322,7 @@
           "id": "zz_zhuxi_stele",
           "type": "favour",
           "label": "读碑",
-          "text": "你在碑前读了一回。字是旧的，墨还没干。",
+          "text": "你在朱熹祠碑前站了一回。石碑旧，字迹漫漶。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -385,7 +385,7 @@
           "id": "zz_shan_climb",
           "type": "choice",
           "label": "登山",
-          "text": "山上有两条路。东看江，西看城。一年登一回。",
+          "text": "山上有两条路。东看江，西看城。",
           "once_per": "year",
           "options": [
             {
@@ -450,12 +450,12 @@
           "text": "九龙江边塌房招人入本。入了本，按月分租钱。",
           "shop": "塌房",
           "costs": [
-            300,
-            720
+            280,
+            660
           ],
           "monthly": [
-            12,
-            35
+            11,
+            32
           ]
         },
         {
@@ -469,12 +469,12 @@
           "impact": false
         },
         {
-          "id": "zz_tafang_tea",
+          "id": "zz_tafang_grain",
           "type": "buy",
-          "label": "收茶叶",
-          "text": "塌房里码着茶叶。按出仓的价收。",
-          "good": "tea",
-          "qty": 3,
+          "label": "收米粮",
+          "text": "塌房里码着米粮。按出仓的价收。",
+          "good": "grain",
+          "qty": 5,
           "price_mul": 0.95,
           "impact": true
         }
@@ -495,7 +495,7 @@
           "label": "收茶叶",
           "text": "漳州茶坊里的茶按出坊的价收。",
           "good": "tea",
-          "qty": 6,
+          "qty": 5,
           "price_mul": 0.9,
           "impact": true
         },
@@ -503,7 +503,7 @@
           "id": "zz_chafang_choice",
           "type": "choice",
           "label": "饮茶",
-          "text": "茶坊里两种喝法。一年试一回。",
+          "text": "茶坊里两种喝法。",
           "once_per": "year",
           "options": [
             {
@@ -532,7 +532,7 @@
           "id": "zz_chafang_gift",
           "type": "favour",
           "label": "送建茶",
-          "text": "你送了一罐建茶给茶博士。他把盏放在柜里。",
+          "text": "你送了一罐建茶给茶坊主人。他把盏放在柜里，不说话。",
           "cost": 15,
           "once_per": "month",
           "cooldown_days": 30,
@@ -550,56 +550,38 @@
       "kind": "market",
       "pending_art": true,
       "bg": "bg_dist_zz_shichang.jpg",
-      "description": "坊市在城中。盐包、瓷箱、苏木堆着，牙人按会子喊价。",
+      "description": "坊市在城中。摊子沿街摆开，盐包、瓷箱、苏木堆着。牙人与私商说话。",
       "interactions": [
         {
-          "id": "zz_shichang_grain",
+          "id": "zz_shichang_sappan",
           "type": "buy",
-          "label": "收米",
-          "text": "漳州坊市的米还没上大柜，价略低。",
-          "good": "grain",
-          "qty": 10,
-          "price_mul": 0.92,
+          "label": "收苏木",
+          "text": "摊上刚卸下的苏木。按出市的价收。",
+          "good": "sappanwood",
+          "qty": 4,
+          "price_mul": 0.9,
           "impact": true
         },
         {
-          "id": "zz_shichang_salt",
+          "id": "zz_shichang_med",
           "type": "sell",
-          "label": "卖海盐",
-          "text": "坊市的人肯多给一点，买盐带回家。",
-          "good": "sea_salt",
-          "qty": 6,
+          "label": "卖香药",
+          "text": "摊上有人收香药。给的价比牙行高一线。",
+          "good": "aromatic_medicine",
+          "qty": 2,
           "price_mul": 1.08,
           "impact": true
         },
         {
-          "id": "zz_shichang_choice",
-          "type": "choice",
-          "label": "囤货",
-          "text": "坊市货多。你可以囤，也可以出手。",
-          "once_per": "month",
-          "options": [
-            {
-              "id": "hoard",
-              "label": "囤下",
-              "text": "你囤下几包货。坊市的人记你谨慎。",
-              "cost": 0,
-              "effects": {
-                "money": -30,
-                "hometown_tendency": 1
-              }
-            },
-            {
-              "id": "sell",
-              "label": "出手",
-              "text": "你把货出手。坊市的价松了一点。",
-              "cost": 0,
-              "effects": {
-                "money": 20,
-                "merchant_credit": 1
-              }
-            }
-          ]
+          "id": "zz_shichang_rumor",
+          "type": "rumor",
+          "label": "听苏木",
+          "text": "牙人说泉州苏木近来紧。船期压后，货到得慢。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "quanzhou",
+          "good": "sappanwood",
+          "mul": 1.12
         }
       ]
     },
@@ -616,7 +598,7 @@
           "id": "zz_yamen_gift",
           "type": "favour",
           "label": "送公文",
-          "text": "你递上一束公文。漳州军衙的小吏记下你的名字，下回办事好看些。",
+          "text": "你递上一束公文。漳州军衙的小吏记下你的名字，下回办事少盘问。",
           "cost": 30,
           "once_per": "month",
           "effects": {
@@ -629,7 +611,7 @@
           "type": "licence",
           "label": "领船引",
           "text": "船引到手。漳州军衙认这张纸，出海的船少盘问。",
-          "cost": 600,
+          "cost": 500,
           "licence": "lic_zz_ship",
           "unlock": {
             "favour_min": 2
@@ -642,10 +624,10 @@
           "id": "zz_yamen_rumor",
           "type": "rumor",
           "label": "听粮价",
-          "text": "漳州小吏说泉州米粮近来紧。海路不畅，米到得慢。",
+          "text": "漳州小吏说福州米粮近来紧。江路不畅，米到得慢。",
           "cost": 10,
           "cooldown_days": 30,
-          "port": "quanzhou",
+          "port": "fuzhou",
           "good": "grain",
           "mul": 1.12
         }
@@ -664,7 +646,7 @@
           "id": "zz_chenghuang_incense",
           "type": "favour",
           "label": "上香",
-          "text": "香钱放进柜里。庙祝记你一笔。",
+          "text": "香钱放进柜里。庙祝记下你来过。",
           "cost": 10,
           "once_per": "month",
           "effects": {
@@ -685,7 +667,7 @@
           "id": "zz_chenghuang_vow",
           "type": "favour",
           "label": "许愿",
-          "text": "你在殿前许了一愿。庙祝把你的名字写在簿上。",
+          "text": "你在殿前许了一愿。庙祝把愿字写在簿上。",
           "cost": 20,
           "once_per": "year",
           "effects": {
