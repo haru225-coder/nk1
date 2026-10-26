@@ -904,8 +904,8 @@ func _load_scene_inner(scene_id: String) -> void:
 	var type = scene_data.get("type", "scene")
 	var loc = scene_data.get("location", "")
 	if str(scene_id).begins_with("cg_"):
-		# 卷首题名与四方沙盘（title 型）压在世界图上；其余 cg_ 序章页的戏都在兴化海口那间漏风的酒棚里（雨夜、惊雷），
-		# 换成酒棚油画并压成夜色——原先一律世界地图，酒棚、老兵的戏也压在标题同款地图上（第 2 轮 UX M6）
+		# 卷首题名压标题主视觉；没登记专属图的 title 页（四方沙盘里还缺的）也回落它。
+		# 其余 cg_ 序章页缺专属图时压兴化海口酒棚并调夜色（雨夜、惊雷）。
 		# H4：PROLOGUE_PAGE_BG 里登记了、文件也在的页换专属底图；缺图照旧回落这两张，不走 _set_background_file 的海路图兜底
 		var page_bg := _prologue_page_bg(scene_id)
 		if page_bg != "":
@@ -992,19 +992,24 @@ const PROLOGUE_BG := "bg_xinghua_wine_shed.jpg"
 ## 不在表里的页照旧：title 型压 bg_world_map.jpg，其余压 PROLOGUE_BG 并调夜色；在表里而文件缺，也回落这两张（不回落海路图）。
 ## check_assets 查表值与键，所以一页一行、跟着一张图进，不写指向不存在文件的行。cg_title 不进表：godot_story_check 断言标题屏用 bg_world_map.jpg。
 const PROLOGUE_PAGE_BG := {
-	# 四方沙盘（title 型）：北、南、西三页借开场过场的现成图
+	# 四方沙盘（title 型，不吃夜色）：北、南、西借开场过场；东是博多湾专属图
 	"cg_world_north": "cutscene/cs_north_mongol.jpg",
 	"cg_world_south": "cutscene/cs_south_champa.jpg",
 	"cg_world_west": "cutscene/cs_west_caravan.jpg",
-	# 以下随 02 批出图一页一行补进来（文件名以扩充包为准），图没进库之前不写：
-	#   东方沙盘 cg_world_east ← bg_prologue_world_east.jpg
+	"cg_world_east": "bg_prologue_world_east.jpg",
+	# 阿那、家丁、抉择：非 title，换底后仍调夜色
+	"cg_ana_enter": "bg_prologue_ana.jpg",
+	"cg_ana_speak": "bg_prologue_ana.jpg",
+	"cg_ana_speak_2": "bg_prologue_ana.jpg",
+	"cg_ana_speak_3": "bg_prologue_ana.jpg",
+	"cg_servant_enter": "bg_prologue_servant.jpg",
+	"cg_servant_speak": "bg_prologue_servant.jpg",
+	"cg_decision": "bg_prologue_decision.jpg",
+	# 以下图没进库之前不写：
 	#   桌上三物 cg_narrate_table_2 至 _5、cg_wine_shed_2 至 _4（7 页）← bg_prologue_table.jpg
-	#   老兵 cg_veteran、cg_veteran_2、_3、_3a、_4、_5、_6（7 页）← bg_prologue_veteran.jpg
-	#   阿那 cg_ana_enter、cg_ana_speak、_2、_3（4 页）← bg_prologue_ana.jpg
-	#   家丁 cg_servant_enter、cg_servant_speak（2 页）← bg_prologue_servant.jpg
-	#   抉择 cg_decision ← bg_prologue_decision.jpg
+	#   老兵 cg_veteran、cg_veteran_2、_3、_3a、_4、_5、_6（7 页）← bg_prologue_veteran.jpg（空袖必须入画，现成图做不到就不挂）
 	#   收束 cg_choice_sea ← bg_prologue_choice_sea.jpg；cg_choice_land ← bg_prologue_choice_land.jpg
-	#   cg_narrate_table 首页、cg_wine_shed、cg_wine_shed_5 仍压 PROLOGUE_BG；bg_wine_shed_hd 重画后同名覆盖即生效（09-28 Snow 选重画）
+	#   cg_narrate_table 首页、cg_wine_shed、cg_wine_shed_5 仍压 PROLOGUE_BG
 }
 
 
