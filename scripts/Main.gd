@@ -5469,6 +5469,7 @@ const _TUTORIAL := preload("res://scripts/ui/TutorialNotes.gd")
 func _tutorial_shore() -> void:
 	if _shore_mode != "port":
 		return
+	_mount_districts()
 	var on_shore := func() -> bool: return port_mode.visible and _shore_mode == "port"
 	_TUTORIAL.offer(self, "port", on_shore)
 	if GameState.pu_attention > 0:
@@ -5487,3 +5488,24 @@ func _tutorial_market() -> void:
 func _tutorial_yamen() -> void:
 	var page := current_scene_id
 	_TUTORIAL.offer(self, "permit", func() -> bool: return current_scene_id == page and investigation_mode.visible)
+
+
+# ══ 城中各处（挂在文件尾，拍板清单引的行号不挪）════════════════
+const _DISTRICT_PAGE := preload("res://scripts/ui/DistrictPage.gd")
+const _DISTRICT_BOOK := preload("res://scripts/core/Districts.gd")
+
+
+## 寻常港页、且这港在 data/districts.json 里有城区时，岸上多一枚「城中各处」。守城、终局、没写城区的港不出。
+func _mount_districts() -> void:
+	if _shore_mode != "port":
+		return
+	if not _DISTRICT_BOOK.has_port(current_scene_id):
+		return
+	var actions := port_mode.find_child("ShoreActions", true, false)
+	if actions == null:
+		return
+	actions.add_child(_shore_action("城中各处", Vector2(160, 42), false, _open_districts))
+
+
+func _open_districts() -> void:
+	_DISTRICT_PAGE.open_index(self, current_scene_id)

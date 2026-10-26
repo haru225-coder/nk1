@@ -1298,6 +1298,7 @@ func to_dict() -> Dictionary:
 		"ended_head": ended_head,
 		"beats_seen": beats_seen,
 		"loaded_with_beats": loaded_with_beats,
+		"districts": districts,
 	}
 
 
@@ -1362,6 +1363,7 @@ func from_dict(d: Dictionary) -> void:
 	ended_head = str(d.get("ended_head", ""))
 	beats_seen = d.get("beats_seen", [])
 	loaded_with_beats = bool(d.get("loaded_with_beats", false))
+	districts = _districts_normalize(d.get("districts", {}))
 
 
 ## 晋升跳年最远跳到这一年（德祐元年）为止。1275 年冬起是时间脊柱的终局段：士人线 1276 兴化守城、海商与乡土线
@@ -1457,3 +1459,38 @@ func retitle_note(fame_res: Dictionary) -> String:
 	if not bool(fame_res.get("promoted", false)):
 		return ""
 	return "案册改题「%s」。" % str((fame_res.get("title", {}) as Dictionary).get("name", ""))
+
+
+# ── 城中各处（存档形状在这里归一，不预载 Districts，免得和本单例绕圈）──
+
+const _DISTRICT_BUCKETS := ["once", "year", "month", "cool", "invest", "hire", "licence", "favour"]
+
+var districts: Dictionary = {
+	"once": {}, "year": {}, "month": {}, "cool": {},
+	"invest": {}, "hire": {}, "licence": {}, "favour": {},
+}
+
+
+func _districts_normalize(raw) -> Dictionary:
+	var out := {}
+	for k in _DISTRICT_BUCKETS:
+		out[k] = {}
+	if typeof(raw) != TYPE_DICTIONARY:
+		return out
+	for k in _DISTRICT_BUCKETS:
+		var src = raw.get(k, {})
+		if typeof(src) != TYPE_DICTIONARY:
+			continue
+		var clean := {}
+		for key in src:
+			var name := str(key)
+			if name == "":
+				continue
+			var v = src[key]
+			if k == "hire" or k == "licence":
+				if v == true:
+					clean[name] = true
+			elif typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT:
+				clean[name] = int(v)
+		out[k] = clean
+	return out

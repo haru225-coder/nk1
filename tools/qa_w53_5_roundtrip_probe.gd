@@ -113,6 +113,16 @@ func _run() -> void:
 		"siege": {"troops": 300, "grain": 120, "wall": 60, "morale": 55, "round": 2,
 			"shishou": "kept", "envoy_wang": true, "envoy_kin": false, "lin_hua_sent": true},
 		"beats_seen": ["start", "monk"], "loaded_with_beats": true,
+		"districts": {
+			"once": {"qz_bang_look": 120},
+			"year": {"qz_bang_look": 1268},
+			"month": {},
+			"cool": {"qz_jiuri_summer": 200},
+			"invest": {"qz_citong_stall": 1},
+			"hire": {"qz_fanfang_interpreter": true},
+			"licence": {"lic_qz_fine": true},
+			"favour": {"quanzhou": 2},
+		},
 	}
 	gs.from_dict(scene_state.duplicate(true))
 

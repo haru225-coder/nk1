@@ -1,0 +1,1296 @@
+{
+  "districts": [
+    {
+      "id": "qz_houzhu",
+      "port": "quanzhou",
+      "name": "后渚码头",
+      "kind": "dock",
+      "bg": "bg_dist_qz_houzhu.jpg",
+      "description": "后渚是泉州出洋的码头。尖底福船靠着石岸，脚夫挑着海盐包走过，竹席帆还没卷完。",
+      "interactions": [
+        {
+          "id": "qz_houzhu_salt",
+          "type": "buy",
+          "label": "收海盐",
+          "text": "码头上的盐包还没进牙行。这里按出洋前的价收。",
+          "good": "sea_salt",
+          "qty": 8,
+          "price_mul": 0.92,
+          "impact": true
+        },
+        {
+          "id": "qz_houzhu_ivory",
+          "type": "sell",
+          "label": "出手象牙",
+          "text": "番船刚靠，有人在跳板上问象牙。件数不多，价比城里略高。",
+          "good": "ivory",
+          "qty": 2,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "qz_houzhu_rumor",
+          "type": "rumor",
+          "label": "问番船",
+          "text": "番船的梢公说，博多唐房近来象牙紧。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "ivory",
+          "mul": 1.25
+        }
+      ]
+    },
+    {
+      "id": "qz_shibo",
+      "port": "quanzhou",
+      "name": "市舶司东廊",
+      "kind": "office",
+      "bg": "bg_dist_qz_shibo.jpg",
+      "description": "东廊只办细色公凭，货引仍去正厅。廊上堆着香药与细色的箱子，小吏按会子说话。",
+      "interactions": [
+        {
+          "id": "qz_shibo_gift",
+          "type": "favour",
+          "label": "送笔墨",
+          "text": "你给书吏送了一匣笔墨。他记下你的名字，下回办事好看些。",
+          "cost": 40,
+          "once_per": "month",
+          "effects": {"favour": 2, "merchant_credit": 1}
+        },
+        {
+          "id": "qz_shibo_fine",
+          "type": "licence",
+          "label": "领细色公凭",
+          "text": "细色公凭到手。香药一路的牙人认这张纸，货引仍去正厅请。",
+          "cost": 800,
+          "licence": "lic_qz_fine",
+          "unlock": {"favour_min": 2},
+          "effects": {"fame": 2, "merchant_credit": 1}
+        },
+        {
+          "id": "qz_shibo_coin",
+          "type": "rumor",
+          "label": "听钱价",
+          "text": "书吏压低声音说，博多唐房有人在收宋钱。",
+          "cost": 20,
+          "cooldown_days": 45,
+          "port": "hakata",
+          "good": "song_coin",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "qz_fanfang",
+      "port": "quanzhou",
+      "name": "蕃坊石巷",
+      "kind": "street",
+      "bg": "bg_dist_qz_fanfang.jpg",
+      "description": "城南蕃坊，石巷窄，乳香与象牙沿墙码着。通事站在两拨人中间。",
+      "interactions": [
+        {
+          "id": "qz_fanfang_interpreter",
+          "type": "hire",
+          "label": "雇通事",
+          "text": "蕃坊通事肯跟你走巷子。他在时，象牙好说话些，蒲家的簿子也松一笔。",
+          "who": "蕃坊通事",
+          "cost": 120,
+          "wage": 22,
+          "attention_ease": 1
+        },
+        {
+          "id": "qz_fanfang_coin",
+          "type": "sell",
+          "label": "出手宋钱",
+          "text": "巷里有人收宋钱。这是禁物，蒲家会记一笔。",
+          "good": "song_coin",
+          "qty": 2,
+          "price_mul": 1.15,
+          "impact": true,
+          "attention": 4
+        },
+        {
+          "id": "qz_fanfang_ivory",
+          "type": "buy",
+          "label": "收象牙",
+          "text": "通事在身边时，这批象牙少要一成。",
+          "good": "ivory",
+          "qty": 2,
+          "price_mul": 0.95,
+          "impact": true,
+          "hire_bonus": "qz_fanfang_interpreter",
+          "hire_mul": 0.9
+        },
+        {
+          "id": "qz_fanfang_rumor",
+          "type": "rumor",
+          "label": "听象牙",
+          "text": "通事说博多唐房的象牙又紧了一紧。",
+          "cost": 12,
+          "cooldown_days": 30,
+          "port": "hakata",
+          "good": "ivory",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "qz_kaiyuan",
+      "port": "quanzhou",
+      "name": "开元寺双塔",
+      "kind": "temple",
+      "bg": "bg_dist_qz_kaiyuan.jpg",
+      "description": "西塔仁寿、东塔镇国，都是新石砌的八角五层。殿前樟树很老，石上没有后来人的字。",
+      "interactions": [
+        {
+          "id": "qz_kaiyuan_sutra",
+          "type": "buy",
+          "label": "请经卷",
+          "text": "寺里的经卷比市上贵一点。纸是自己抄的。",
+          "good": "sutra_scrolls",
+          "qty": 2,
+          "price_mul": 1.08,
+          "impact": true
+        },
+        {
+          "id": "qz_kaiyuan_copy",
+          "type": "favour",
+          "label": "抄一卷",
+          "text": "你在西廊借了灯，抄了一卷。不是拿去卖的。",
+          "cost": 40,
+          "once_per": "year",
+          "effects": {"scholar_tendency": 2, "note": "开元寺抄过一卷经。"}
+        },
+        {
+          "id": "qz_kaiyuan_towers",
+          "type": "choice",
+          "label": "登塔",
+          "text": "两塔都许登。东塔看海，西塔看城。一年登一回。",
+          "once_per": "year",
+          "options": [
+            {
+              "id": "east",
+              "label": "登东塔",
+              "text": "东塔上看见港里的帆。风从海上来。",
+              "cost": 0,
+              "effects": {"sea_tendency": 1, "note": "登过镇国塔。"}
+            },
+            {
+              "id": "west",
+              "label": "登西塔",
+              "text": "西塔上看见城中的瓦。你站了很久。",
+              "cost": 0,
+              "effects": {"scholar_tendency": 1, "note": "登过仁寿塔。"}
+            }
+          ]
+        },
+        {
+          "id": "qz_kaiyuan_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "香钱放进柜里。寺里记你一笔。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {"favour": 1}
+        }
+      ]
+    },
+    {
+      "id": "qz_shunji",
+      "port": "quanzhou",
+      "name": "顺济宫",
+      "kind": "temple",
+      "bg": "bg_dist_qz_shunji.jpg",
+      "description": "宫对海。渔户来还愿，帆樯就在墙外。神位是一块素木。",
+      "interactions": [
+        {
+          "id": "qz_shunji_rite",
+          "type": "favour",
+          "label": "祭海",
+          "text": "你随渔户祭了一回海。风还是原来的风，人记你来过。",
+          "cost": 30,
+          "once_per": "year",
+          "unlock": {"war_not": ["fallen"]},
+          "effects": {"sea_tendency": 2, "fame": 1}
+        },
+        {
+          "id": "qz_shunji_fallen",
+          "type": "favour",
+          "label": "低调上香",
+          "text": "旗已经换了。香还是要点，点完就走，别让人记住脸。",
+          "cost": 20,
+          "once_per": "year",
+          "unlock": {"war_in": ["fallen"]},
+          "effects": {"sea_tendency": 1, "pu_attention": 2}
+        },
+        {
+          "id": "qz_shunji_stall",
+          "type": "invest",
+          "label": "香火摊",
+          "text": "宫门外有人出香火。你入一股，按月分钱。",
+          "shop": "香火",
+          "costs": [240],
+          "monthly": [12]
+        }
+      ]
+    },
+    {
+      "id": "qz_jiuri",
+      "port": "quanzhou",
+      "name": "九日山祈风",
+      "kind": "hill",
+      "bg": "bg_dist_qz_jiuri.jpg",
+      "description": "九日山在城外。石刻立在松间，面是平的。夏天祈顺风，冬天看归帆。",
+      "interactions": [
+        {
+          "id": "qz_jiuri_summer",
+          "type": "rumor",
+          "label": "祈南风",
+          "text": "夏日祈过风的人说，博多唐房的茶这一向紧。",
+          "cost": 10,
+          "cooldown_days": 60,
+          "unlock": {"months": [4, 5, 6]},
+          "port": "hakata",
+          "good": "tea",
+          "mul": 1.15
+        },
+        {
+          "id": "qz_jiuri_winter",
+          "type": "rumor",
+          "label": "看归帆",
+          "text": "冬日山上看见北来的船。有人说兴化的米紧了。",
+          "cost": 10,
+          "cooldown_days": 60,
+          "unlock": {"months": [10, 11, 12]},
+          "port": "xinghua",
+          "good": "grain",
+          "mul": 1.2
+        },
+        {
+          "id": "qz_jiuri_stele",
+          "type": "favour",
+          "label": "摸碑",
+          "text": "你在石刻前站了一会儿，只摸了摸，字没有拓。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {"scholar_tendency": 1, "note": "九日山石刻只摸了摸。"}
+        }
+      ]
+    },
+    {
+      "id": "qz_luoyang",
+      "port": "quanzhou",
+      "name": "洛阳桥",
+      "kind": "bridge",
+      "bg": "bg_dist_qz_luoyang.jpg",
+      "description": "石梁桥很长，桥墩上长着牡蛎。桥头有人支摊，卖给过桥的人。",
+      "interactions": [
+        {
+          "id": "qz_luoyang_stall",
+          "type": "invest",
+          "label": "桥头铺",
+          "text": "桥头一间小铺。入了本，过桥的人按月给你入账。",
+          "shop": "桥铺",
+          "costs": [300, 700, 1400],
+          "monthly": [16, 48, 110]
+        },
+        {
+          "id": "qz_luoyang_salt",
+          "type": "sell",
+          "label": "卖盐给过客",
+          "text": "过桥的人肯多给一点，买盐带回家。",
+          "good": "sea_salt",
+          "qty": 6,
+          "price_mul": 1.08,
+          "impact": true
+        },
+        {
+          "id": "qz_luoyang_rumor",
+          "type": "rumor",
+          "label": "听桥头",
+          "text": "桥头有人从兴化来，说那边米紧。",
+          "cost": 8,
+          "cooldown_days": 45,
+          "port": "xinghua",
+          "good": "grain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "qz_anping",
+      "port": "quanzhou",
+      "name": "安平桥",
+      "kind": "bridge",
+      "bg": "bg_dist_qz_anping.jpg",
+      "description": "安平桥横在潮汐上，石梁一块接一块，长得看不见头。桥边有人卖鹿皮。",
+      "interactions": [
+        {
+          "id": "qz_anping_hide",
+          "type": "buy",
+          "label": "收鹿皮",
+          "text": "桥边的鹿皮还没进城，价比城里低。",
+          "good": "deer_hide",
+          "qty": 4,
+          "price_mul": 0.85,
+          "impact": true
+        },
+        {
+          "id": "qz_anping_mason",
+          "type": "hire",
+          "label": "雇石匠",
+          "text": "修桥的石匠肯抽空帮你看一块梁。人在，桥才修得动。",
+          "who": "石匠",
+          "cost": 80,
+          "wage": 18
+        },
+        {
+          "id": "qz_anping_repair",
+          "type": "favour",
+          "label": "补一块梁",
+          "text": "石匠把松了的石梁垫稳。过桥的人看见了。",
+          "cost": 60,
+          "once": true,
+          "unlock": {"needs_hire": "qz_anping_mason"},
+          "effects": {"fame": 2, "note": "安平桥上垫过一块梁。"}
+        },
+        {
+          "id": "qz_anping_coral",
+          "type": "sell",
+          "label": "出手珊瑚",
+          "text": "桥南有番客收珊瑚，价略高。",
+          "good": "coral",
+          "qty": 2,
+          "price_mul": 1.1,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "qz_jubao",
+      "port": "quanzhou",
+      "name": "聚宝街",
+      "kind": "market",
+      "bg": "bg_dist_qz_jubao.jpg",
+      "description": "聚宝街卖细色。青白瓷与丝绢排在同一条廊下，牙人按会子喊价。",
+      "interactions": [
+        {
+          "id": "qz_jubao_qingbai",
+          "type": "buy",
+          "label": "收青白瓷",
+          "text": "街里的青白瓷还没上牙行的大柜。",
+          "good": "qingbai_porcelain",
+          "qty": 4,
+          "price_mul": 0.95,
+          "impact": true
+        },
+        {
+          "id": "qz_jubao_silk",
+          "type": "sell",
+          "label": "出手丝绢",
+          "text": "绸庄肯按市价略高收丝绢。",
+          "good": "silk_fabric",
+          "qty": 3,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "qz_jubao_silkshop",
+          "type": "invest",
+          "label": "入股丝铺",
+          "text": "街上一间丝铺招人入股。入了本，按月分账。",
+          "shop": "丝铺",
+          "costs": [400, 900],
+          "monthly": [20, 58]
+        }
+      ]
+    },
+    {
+      "id": "qz_kiln",
+      "port": "quanzhou",
+      "name": "磁灶窑",
+      "kind": "workshop",
+      "bg": "bg_dist_qz_kiln.jpg",
+      "description": "磁灶的龙窑沿着山坡。窑工搬的是青白与粗瓷，还没进城。",
+      "interactions": [
+        {
+          "id": "qz_kiln_small",
+          "type": "buy",
+          "label": "收一窑瓷",
+          "text": "窑口的福建瓷按出窑的价。",
+          "good": "fujian_porcelain",
+          "qty": 8,
+          "price_mul": 0.9,
+          "impact": true
+        },
+        {
+          "id": "qz_kiln_licence",
+          "type": "licence",
+          "label": "领窑凭",
+          "text": "窑头给了一张凭。有它，才许整窑地搬。",
+          "cost": 200,
+          "licence": "lic_qz_kiln",
+          "effects": {"merchant_credit": 1}
+        },
+        {
+          "id": "qz_kiln_bulk",
+          "type": "buy",
+          "label": "整窑搬走",
+          "text": "凭在手里，这一窑按更低的价出。",
+          "good": "fujian_porcelain",
+          "qty": 12,
+          "price_mul": 0.8,
+          "licence_mul": 1.0,
+          "needs_licence": "lic_qz_kiln",
+          "impact": true
+        },
+        {
+          "id": "qz_kiln_rumor",
+          "type": "rumor",
+          "label": "听广州",
+          "text": "窑工说广州城近来青白瓷紧。",
+          "cost": 18,
+          "cooldown_days": 50,
+          "port": "guangzhou",
+          "good": "qingbai_porcelain",
+          "mul": 1.3
+        }
+      ]
+    },
+    {
+      "id": "qz_spice",
+      "port": "quanzhou",
+      "name": "香料牙巷",
+      "kind": "market",
+      "bg": "bg_dist_qz_spice.jpg",
+      "description": "巷里专做香药。有细色公凭的人，药价会让一让。",
+      "interactions": [
+        {
+          "id": "qz_spice_med",
+          "type": "buy",
+          "label": "收香药",
+          "text": "手里有市舶司的细色公凭，这一巷的香药少要一成多。",
+          "good": "aromatic_medicine",
+          "qty": 4,
+          "price_mul": 1.0,
+          "impact": true,
+          "licence_bonus": "lic_qz_fine",
+          "bonus_mul": 0.88
+        },
+        {
+          "id": "qz_spice_pepper",
+          "type": "sell",
+          "label": "出手胡椒",
+          "text": "牙人按市价收胡椒。",
+          "good": "pepper",
+          "qty": 3,
+          "impact": true
+        },
+        {
+          "id": "qz_spice_rumor",
+          "type": "rumor",
+          "label": "听胡椒",
+          "text": "牙人说博多唐房的胡椒紧了。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "pepper",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "qz_tafang",
+      "port": "quanzhou",
+      "name": "塌房",
+      "kind": "warehouse",
+      "bg": "bg_dist_qz_tafang.jpg",
+      "description": "塌房收租，不喊价。货从这里悄悄出去，牙行的行情牌不动。",
+      "interactions": [
+        {
+          "id": "qz_tafang_rent",
+          "type": "invest",
+          "label": "包一间",
+          "text": "包下一间塌房，按月收租。",
+          "shop": "塌房",
+          "costs": [500, 1000],
+          "monthly": [24, 68]
+        },
+        {
+          "id": "qz_tafang_quiet",
+          "type": "sell",
+          "label": "悄悄出瓷",
+          "text": "瓷从塌房后门出去，不经过牙行的秤，行情牌不动。价也低些。",
+          "good": "fujian_porcelain",
+          "qty": 6,
+          "price_mul": 0.92,
+          "impact": false
+        }
+      ]
+    },
+    {
+      "id": "qz_bang",
+      "port": "quanzhou",
+      "name": "贡院榜墙",
+      "kind": "exam",
+      "bg": "bg_dist_qz_bang.jpg",
+      "description": "贡院门外是榜墙和两通石碑。没有石人。大比之年秋天，榜贴在墙上。",
+      "interactions": [
+        {
+          "id": "qz_bang_look",
+          "type": "favour",
+          "label": "看榜",
+          "text": "贡院墙外贴着今秋的榜。人挤在廊下，有人念，有人沉默。",
+          "exam": true,
+          "scholar_1268": true,
+          "once_per": "year",
+          "cost": 0,
+          "unlock": {
+            "years": [1256, 1259, 1262, 1265, 1268, 1271, 1274],
+            "months": [8, 9, 10]
+          },
+          "effects": {"fame": 1, "scholar_tendency": 1}
+        },
+        {
+          "id": "qz_bang_stele",
+          "type": "favour",
+          "label": "摸碑",
+          "text": "榜墙边的石碑面是光的。你按了一按。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {"fame": 1, "note": "泉州贡院石碑按过。"}
+        }
+      ]
+    },
+    {
+      "id": "qz_qingjing",
+      "port": "quanzhou",
+      "name": "清净寺门楼",
+      "kind": "temple",
+      "bg": "bg_dist_qz_qingjing.jpg",
+      "description": "门楼是石砌的，不高，番商从这里进出。院子安静，没有后来才加高的大门。",
+      "interactions": [
+        {
+          "id": "qz_qingjing_rumor",
+          "type": "rumor",
+          "label": "听香价",
+          "text": "门楼里的人说，兴化城的香药紧了。",
+          "cost": 10,
+          "cooldown_days": 40,
+          "port": "xinghua",
+          "good": "aromatic_medicine",
+          "mul": 1.18
+        },
+        {
+          "id": "qz_qingjing_ivory",
+          "type": "buy",
+          "label": "收一小支象牙",
+          "text": "门内有人分出一小支象牙。",
+          "good": "ivory",
+          "qty": 1,
+          "price_mul": 1.05,
+          "impact": true
+        },
+        {
+          "id": "qz_qingjing_gift",
+          "type": "favour",
+          "label": "送礼",
+          "text": "你送了一包茶。门里的人记住你。",
+          "cost": 25,
+          "once_per": "month",
+          "effects": {"favour": 1, "network": 1}
+        }
+      ]
+    },
+    {
+      "id": "qz_citong",
+      "port": "quanzhou",
+      "name": "刺桐巷茶坊",
+      "kind": "teahouse",
+      "bg": "bg_dist_qz_citong.jpg",
+      "description": "巷口有刺桐。茶坊里斗的是建茶，话从这里传到牙行。",
+      "interactions": [
+        {
+          "id": "qz_citong_stall",
+          "type": "invest",
+          "label": "入股茶坊",
+          "text": "茶坊招人入股。入了本，按月分茶钱。",
+          "shop": "茶坊",
+          "costs": [280, 640],
+          "monthly": [14, 42]
+        },
+        {
+          "id": "qz_citong_wager",
+          "type": "choice",
+          "label": "斗茶",
+          "text": "茶坊里两盏建茶对坐。赢的人这一季的茶价会有人跟着说。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "play",
+              "label": "押一盏",
+              "text": "你押了自己这盏。茶博士把话传到牙行，建茶这一向紧。",
+              "cost": 20,
+              "effects": {"merchant_credit": 1},
+              "rumor": {"port": "hakata", "good": "tea", "mul": 1.12}
+            },
+            {
+              "id": "treat",
+              "label": "作东",
+              "text": "你把两盏都买了请人。巷里记你一笔人情。",
+              "cost": 30,
+              "effects": {"network": 1, "favour": 1}
+            }
+          ]
+        },
+        {
+          "id": "qz_citong_rumor",
+          "type": "rumor",
+          "label": "听茶价",
+          "text": "茶博士说博多唐房的茶紧了。",
+          "cost": 8,
+          "cooldown_days": 30,
+          "port": "hakata",
+          "good": "tea",
+          "mul": 1.12
+        },
+        {
+          "id": "qz_citong_tea",
+          "type": "buy",
+          "label": "收茶叶",
+          "text": "坊里的茶叶按出坊的价。",
+          "good": "tea",
+          "qty": 6,
+          "price_mul": 0.9,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "xh_mulan",
+      "port": "xinghua",
+      "name": "木兰陂",
+      "kind": "dam",
+      "bg": "bg_dist_xh_mulan.jpg",
+      "description": "木兰陂拦着溪水，石堰是旧的。陂上有人分水利，城被围时也从这里往城里送米。",
+      "interactions": [
+        {
+          "id": "xh_mulan_share",
+          "type": "invest",
+          "label": "入水利",
+          "text": "陂上的水利按股分。入了股，按月有进项。",
+          "shop": "陂份",
+          "costs": [360, 800],
+          "monthly": [18, 52]
+        },
+        {
+          "id": "xh_mulan_repair",
+          "type": "favour",
+          "label": "补堰",
+          "text": "你出钱把松了的石堰补上。乡里记这一笔。",
+          "cost": 150,
+          "once": true,
+          "effects": {"hometown_tendency": 3, "fame": 2, "note": "木兰陂上补过堰。"}
+        },
+        {
+          "id": "xh_mulan_siege",
+          "type": "favour",
+          "label": "送米进城",
+          "text": "城门还开一条缝。你把舱里的米送上陂，交给守城的人。",
+          "cost": 0,
+          "unlock": {"siege": true},
+          "effects": {"cargo_take": {"good": "grain", "qty": 8}, "siege": {"grain": 20}, "hometown_tendency": 1}
+        }
+      ]
+    },
+    {
+      "id": "xh_yuhu",
+      "port": "xinghua",
+      "name": "玉湖坊门",
+      "kind": "gate",
+      "bg": "bg_dist_xh_yuhu.jpg",
+      "description": "玉湖陈氏的坊门是木构的，门额素净。不是后来的石坊。族里的事在门内办。",
+      "interactions": [
+        {
+          "id": "xh_yuhu_rite",
+          "type": "favour",
+          "label": "族祭",
+          "text": "坊门里祭过一回。族里认你这一年回来过。",
+          "cost": 20,
+          "once_per": "year",
+          "effects": {"hometown_tendency": 2}
+        },
+        {
+          "id": "xh_yuhu_grain",
+          "type": "choice",
+          "label": "族里的米",
+          "text": "族里缺米。你可以分，也可以按低于牙行的价卖给他们。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "share",
+              "label": "分给族里",
+              "text": "你把米分给族里，没有收钱。",
+              "cost": 0,
+              "effects": {"cargo_take": {"good": "grain", "qty": 4}, "hometown_tendency": 2, "fame": 1}
+            },
+            {
+              "id": "sell",
+              "label": "卖给族里",
+              "text": "族里照低于牙行的价收了米。",
+              "cost": 0,
+              "effects": {"cargo_take": {"good": "grain", "qty": 6}, "money": 30, "hometown_tendency": 1}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "xh_academy",
+      "port": "xinghua",
+      "name": "兴化军学",
+      "kind": "academy",
+      "bg": "bg_dist_xh_academy.jpg",
+      "description": "军学在城中。月考的日子有人讲书，廊下也收生丝。",
+      "interactions": [
+        {
+          "id": "xh_academy_lecture",
+          "type": "favour",
+          "label": "听讲",
+          "text": "你在庑下听了一讲。没有应试，只是听。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {"scholar_tendency": 1}
+        },
+        {
+          "id": "xh_academy_teacher",
+          "type": "hire",
+          "label": "请经师",
+          "text": "经师肯按月来讲。人在的月份，学问慢慢长。",
+          "who": "经师",
+          "cost": 100,
+          "wage": 20,
+          "monthly_effects": {"scholar_tendency": 1}
+        },
+        {
+          "id": "xh_academy_silk",
+          "type": "sell",
+          "label": "出手生丝",
+          "text": "学里的人代绸庄收生丝。",
+          "good": "raw_silk",
+          "qty": 4,
+          "impact": true
+        }
+      ]
+    },
+    {
+      "id": "xh_bang",
+      "port": "xinghua",
+      "name": "贡院榜墙",
+      "kind": "exam",
+      "bg": "bg_dist_xh_bang.jpg",
+      "description": "兴化贡院的榜墙对着街。墙边是石碑，不是石人。咸淳四年的榜，有一阵子还贴着。",
+      "interactions": [
+        {
+          "id": "xh_bang_look",
+          "type": "favour",
+          "label": "看榜",
+          "text": "今秋的榜贴在墙上。兴化人挤得比别的城更紧。",
+          "exam": true,
+          "scholar_1268": true,
+          "once_per": "year",
+          "cost": 0,
+          "unlock": {
+            "years": [1256, 1259, 1262, 1265, 1268, 1271, 1274],
+            "months": [8, 9, 10]
+          },
+          "effects": {"fame": 1, "scholar_tendency": 1}
+        },
+        {
+          "id": "xh_bang_poster",
+          "type": "favour",
+          "label": "看旧榜",
+          "text": "咸淳四年的榜还贴着。榜首那一行写着兴化陈文龙。",
+          "once": true,
+          "cost": 0,
+          "unlock": {"year_min": 1268, "year_max": 1269},
+          "effects": {"scholar_tendency": 1, "note": "见过咸淳四年的榜。"}
+        },
+        {
+          "id": "xh_bang_stele",
+          "type": "favour",
+          "label": "摸碑",
+          "text": "榜墙边的石碑摸上去是凉的。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {"fame": 1, "note": "兴化贡院石碑按过。"}
+        }
+      ]
+    },
+    {
+      "id": "xh_lychee",
+      "port": "xinghua",
+      "name": "荔枝林",
+      "kind": "grove",
+      "bg": "bg_dist_xh_lychee.jpg",
+      "description": "城南荔枝林。六月七月才有鲜果，其余月份摊上卖的是晒干的。",
+      "interactions": [
+        {
+          "id": "xh_lychee_pick",
+          "type": "favour",
+          "label": "收一季",
+          "text": "这一季的鲜荔枝出了手。钱是现的，族里也记你回来过。",
+          "cost": 0,
+          "once_per": "year",
+          "unlock": {"months": [6, 7]},
+          "effects": {"money": 90, "hometown_tendency": 1}
+        },
+        {
+          "id": "xh_lychee_stall",
+          "type": "invest",
+          "label": "果摊",
+          "text": "林边支一摊。鲜果过了季，干货还在卖，按月有进项。",
+          "shop": "果摊",
+          "costs": [260, 600],
+          "monthly": [14, 40]
+        }
+      ]
+    },
+    {
+      "id": "xh_hanjiang",
+      "port": "xinghua",
+      "name": "涵江渡",
+      "kind": "ferry",
+      "bg": "bg_dist_xh_hanjiang.jpg",
+      "description": "城内涵江渡，不是海口。渡船短，人多，盐包从这里进城。",
+      "interactions": [
+        {
+          "id": "xh_hanjiang_salt",
+          "type": "buy",
+          "label": "收海盐",
+          "text": "渡口的盐还没进牙行。",
+          "good": "sea_salt",
+          "qty": 8,
+          "price_mul": 0.95,
+          "impact": true,
+          "licence_bonus": "lic_xh_salt",
+          "bonus_mul": 0.9
+        },
+        {
+          "id": "xh_hanjiang_rumor",
+          "type": "rumor",
+          "label": "听泉州米价",
+          "text": "过渡的人说泉州的米紧了。",
+          "cost": 8,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "grain",
+          "mul": 1.15
+        },
+        {
+          "id": "xh_hanjiang_queue",
+          "type": "choice",
+          "label": "过渡",
+          "text": "渡口排着长队。你可以加钱插到前面，也可以老实等。",
+          "once_per": "month",
+          "options": [
+            {
+              "id": "cut",
+              "label": "加钱先过",
+              "text": "你加了钱，船先载你。排队的人记住了。",
+              "cost": 15,
+              "effects": {"merchant_credit": -1}
+            },
+            {
+              "id": "wait",
+              "label": "排队",
+              "text": "你跟乡里人一起等。渡完，大家还说话。",
+              "cost": 0,
+              "effects": {"hometown_tendency": 1, "network": 1}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "xh_meizhou",
+      "port": "xinghua",
+      "name": "湄洲渡",
+      "kind": "ferry",
+      "bg": "bg_dist_xh_meizhou.jpg",
+      "description": "往湄洲的渡口。渔户在这里祭神女，帆在岛外。",
+      "interactions": [
+        {
+          "id": "xh_meizhou_rite",
+          "type": "favour",
+          "label": "祭神女",
+          "text": "你跟渔户祭了一回。海上的人认这个渡口。",
+          "cost": 25,
+          "once_per": "year",
+          "unlock": {"war_not": ["fallen"]},
+          "effects": {"sea_tendency": 2, "fame": 1}
+        },
+        {
+          "id": "xh_meizhou_fallen",
+          "type": "favour",
+          "label": "悄悄祭",
+          "text": "城已经换了旗。祭还是祭，祭完别停留。",
+          "cost": 15,
+          "once_per": "year",
+          "unlock": {"war_in": ["fallen"]},
+          "effects": {"sea_tendency": 1, "pu_attention": 1}
+        },
+        {
+          "id": "xh_meizhou_rumor",
+          "type": "rumor",
+          "label": "听盐船",
+          "text": "景炎以后，渡口的人说泉州的盐紧。",
+          "cost": 10,
+          "cooldown_days": 45,
+          "unlock": {"year_min": 1276},
+          "port": "quanzhou",
+          "good": "sea_salt",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "xh_yamen",
+      "port": "xinghua",
+      "name": "军衙仪门",
+      "kind": "office",
+      "bg": "bg_dist_xh_yamen.jpg",
+      "description": "兴化军衙的仪门。盐的公凭在这里领，货引不在这里。小吏还按会子算。",
+      "interactions": [
+        {
+          "id": "xh_yamen_salt",
+          "type": "licence",
+          "label": "领盐凭",
+          "text": "盐凭到手。往后在这城办盐，牙人认这张纸。",
+          "cost": 300,
+          "licence": "lic_xh_salt",
+          "effects": {"merchant_credit": 1}
+        },
+        {
+          "id": "xh_yamen_clerk",
+          "type": "choice",
+          "label": "见书吏",
+          "text": "书吏问你怎么办事。塞钱快，不塞也有一条慢路。",
+          "once": true,
+          "options": [
+            {
+              "id": "bribe",
+              "label": "塞钱",
+              "text": "钱递进去，事快了。蒲家的簿子上也多了一笔。",
+              "cost": 40,
+              "effects": {"merchant_credit": 2, "pu_attention": 2}
+            },
+            {
+              "id": "honest",
+              "label": "按规矩",
+              "text": "你把文书摊开。慢，可是干净。",
+              "cost": 0,
+              "effects": {"fame": 1, "merchant_credit": 1}
+            }
+          ]
+        },
+        {
+          "id": "xh_yamen_fallen",
+          "type": "choice",
+          "label": "换了旗的门",
+          "text": "仪门上的旗已经不是宋的。还进不进这个门，得自己定。",
+          "once": true,
+          "unlock": {"war_in": ["fallen"]},
+          "options": [
+            {
+              "id": "stay",
+              "label": "还认这道门",
+              "text": "你还从这道门进出。乡里人看见了。",
+              "cost": 0,
+              "effects": {"hometown_tendency": 1}
+            },
+            {
+              "id": "paper",
+              "label": "换一张帖",
+              "text": "你花了钱换一张新帖。簿子上会记。",
+              "cost": 50,
+              "effects": {"pu_attention": 1, "merchant_credit": 1}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "xh_market",
+      "port": "xinghua",
+      "name": "城南坊市",
+      "kind": "market",
+      "bg": "bg_dist_xh_market.jpg",
+      "description": "城南坊市卖米和香药。米铺的人按会子找零。",
+      "interactions": [
+        {
+          "id": "xh_market_grain",
+          "type": "buy",
+          "label": "收米",
+          "text": "坊市的米还没上大柜，价略低。",
+          "good": "grain",
+          "qty": 10,
+          "price_mul": 0.92,
+          "impact": true
+        },
+        {
+          "id": "xh_market_med",
+          "type": "sell",
+          "label": "出手香药",
+          "text": "城里人按市价收香药。",
+          "good": "aromatic_medicine",
+          "qty": 3,
+          "impact": true
+        },
+        {
+          "id": "xh_market_rice",
+          "type": "invest",
+          "label": "入股米铺",
+          "text": "米铺招人入股。按月分账。",
+          "shop": "米铺",
+          "costs": [320, 760],
+          "monthly": [16, 48]
+        }
+      ]
+    },
+    {
+      "id": "xh_paper",
+      "port": "xinghua",
+      "name": "书坊",
+      "kind": "workshop",
+      "bg": "bg_dist_xh_paper.jpg",
+      "description": "书坊抄族谱，也代人出漆器。经卷不在这城里的牙行上。",
+      "interactions": [
+        {
+          "id": "xh_paper_copy",
+          "type": "favour",
+          "label": "抄族谱",
+          "text": "你出钱让书坊抄了一份族谱。纸留下，不拿去卖。",
+          "cost": 30,
+          "once": true,
+          "effects": {"scholar_tendency": 2, "note": "兴化书坊抄过族谱。"}
+        },
+        {
+          "id": "xh_paper_lacquer",
+          "type": "sell",
+          "label": "出手漆器",
+          "text": "书坊隔壁收漆器，按城里的价。",
+          "good": "lacquerware",
+          "qty": 2,
+          "impact": true
+        },
+        {
+          "id": "xh_paper_rumor",
+          "type": "rumor",
+          "label": "听瓷价",
+          "text": "抄书的人说，博多唐房的福建瓷紧了。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "fujian_porcelain",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "xh_wine",
+      "port": "xinghua",
+      "name": "官酒库",
+      "kind": "warehouse",
+      "bg": "bg_dist_xh_wine.jpg",
+      "description": "官酒库的酒按月出。库里的人知道哪一季米会松。",
+      "interactions": [
+        {
+          "id": "xh_wine_share",
+          "type": "invest",
+          "label": "入股酒库",
+          "text": "酒库招人入股。按月分酒钱。",
+          "shop": "酒库",
+          "costs": [300, 700],
+          "monthly": [16, 46]
+        },
+        {
+          "id": "xh_wine_treat",
+          "type": "favour",
+          "label": "请族里",
+          "text": "你打了一坛酒请族里。人记得。",
+          "cost": 25,
+          "once_per": "year",
+          "effects": {"hometown_tendency": 1, "network": 1}
+        },
+        {
+          "id": "xh_wine_rumor",
+          "type": "rumor",
+          "label": "听米松",
+          "text": "库里的人说这一向米松，兴化的米价会往下走。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "xinghua",
+          "good": "grain",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "xh_smith",
+      "port": "xinghua",
+      "name": "铁作",
+      "kind": "workshop",
+      "bg": "bg_dist_xh_smith.jpg",
+      "description": "铁作打农具，也打不该出口的铁器。这城的牙行不挂铁器的牌。",
+      "interactions": [
+        {
+          "id": "xh_smith_smith",
+          "type": "hire",
+          "label": "雇铁匠",
+          "text": "铁匠肯留在作里。人在时，买铁器没那么扎眼。",
+          "who": "铁匠",
+          "cost": 60,
+          "wage": 16,
+          "attention_ease": 2
+        },
+        {
+          "id": "xh_smith_iron",
+          "type": "buy",
+          "label": "打两件铁器",
+          "text": "铁器不进这城的牙行牌。私下打，蒲家仍会记。铁匠在，就少记一点。",
+          "good": "ironware",
+          "qty": 2,
+          "price_mul": 1.0,
+          "impact": false,
+          "attention": 3,
+          "attention_hire": "xh_smith_smith",
+          "attention_hired": 1
+        }
+      ]
+    },
+    {
+      "id": "xh_chenghuang",
+      "port": "xinghua",
+      "name": "城隍庙",
+      "kind": "temple",
+      "bg": "bg_dist_xh_chenghuang.jpg",
+      "description": "城隍庙在城中。香火平常，城被围的时候，香钱也能换成守城的米。",
+      "interactions": [
+        {
+          "id": "xh_chenghuang_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "你上了一炷香。庙祝记得你的脸。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {"fame": 1}
+        },
+        {
+          "id": "xh_chenghuang_grain",
+          "type": "favour",
+          "label": "香钱换米",
+          "text": "城还在守。你把香钱换成米，交到城隍庙后面的仓。",
+          "cost": 20,
+          "once_per": "month",
+          "unlock": {"siege": true},
+          "effects": {"siege": {"grain": 8}}
+        }
+      ]
+    },
+    {
+      "id": "xh_gate",
+      "port": "xinghua",
+      "name": "东门瓮城",
+      "kind": "gate",
+      "bg": "bg_dist_xh_gate.jpg",
+      "description": "东门瓮城里有人支摊，也有人把过路的话记下来。",
+      "interactions": [
+        {
+          "id": "xh_gate_rumor",
+          "type": "rumor",
+          "label": "听人参",
+          "text": "瓮城里的人说，兴化的高丽人参紧了。",
+          "cost": 10,
+          "cooldown_days": 40,
+          "port": "xinghua",
+          "good": "korean_ginseng",
+          "mul": 1.15
+        },
+        {
+          "id": "xh_gate_shop",
+          "type": "invest",
+          "label": "门边铺",
+          "text": "瓮城门边一间铺。入了本，按月收过路人的钱。",
+          "shop": "门铺",
+          "costs": [280, 640],
+          "monthly": [14, 40]
+        },
+        {
+          "id": "xh_gate_note",
+          "type": "favour",
+          "label": "记过路的话",
+          "text": "你在门边坐了一个时辰，把听到的记下。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {"network": 1, "note": "东门瓮城听过一回话。"}
+        }
+      ]
+    },
+    {
+      "id": "xh_guanghua",
+      "port": "xinghua",
+      "name": "广化寺",
+      "kind": "temple",
+      "bg": "bg_dist_xh_guanghua.jpg",
+      "description": "南山广化寺。城门开着才上得去。寺里抄经，不卖经。",
+      "lock_reason": "城门不开，去不得南山",
+      "unlock": {"war_not": ["besieged", "closed"]},
+      "interactions": [
+        {
+          "id": "xh_guanghua_copy",
+          "type": "favour",
+          "label": "抄经",
+          "text": "东廊下借了经，抄了一卷带走。不是市上的货。",
+          "cost": 20,
+          "once_per": "year",
+          "effects": {"scholar_tendency": 2, "note": "南山抄了一卷经。"}
+        },
+        {
+          "id": "xh_guanghua_rub",
+          "type": "favour",
+          "label": "摩碑",
+          "text": "寺前石碑面磨得发亮。你按了一按，没有拓纸。",
+          "cost": 0,
+          "once": true,
+          "effects": {"scholar_tendency": 1, "note": "广化寺石碑按过一回。"}
+        },
+        {
+          "id": "xh_guanghua_shelter",
+          "type": "choice",
+          "label": "僧房",
+          "text": "寺里腾出两间僧房。城里的人往山上走。",
+          "once": true,
+          "unlock": {"year_min": 1276, "year_max": 1277},
+          "options": [
+            {
+              "id": "take",
+              "label": "收留",
+              "text": "你让妇孺住进僧房。寺里的米少了一筐。",
+              "cost": 0,
+              "effects": {"hometown_tendency": 2, "fame": 1, "cargo_take": {"good": "grain", "qty": 4}}
+            },
+            {
+              "id": "pass",
+              "label": "只留香火",
+              "text": "你添了香火，人没有留下。",
+              "cost": 10,
+              "effects": {"scholar_tendency": 1}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

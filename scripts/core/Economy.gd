@@ -334,7 +334,7 @@ func on_month_changed() -> Array:
 		if line != "":
 			(here_lines if pid == here else notices).append(line)
 	notices.append_array(here_lines)
-	return notices
+	return _district_month(notices)
 
 
 ## 新闻市场副作用（data/news.json 可选 `market: {good_id, mul, ports?}`）。
@@ -577,6 +577,36 @@ func _war_pct_words(f: float) -> String:
 	if tenths == 0:
 		return "半成"
 	return "%s成%s" % [_CN_DIGITS[tenths], "半" if halves % 2 == 1 else ""]
+
+
+## 城中铺面与雇人的月初入账。没人入股、也没雇人时是空串，战况通告原样返回。
+func _district_month(notices: Array) -> Array:
+	var book = load(_district_script_path())
+	if book == null or not _script_has(book, "month_tick"):
+		return notices
+	var line := str(book.call("month_tick"))
+	if line != "":
+		notices.append(line)
+	return notices
+
+
+## 运行时才拼出路径。字面量 load 会被收成编译依赖，而本 autoload 排在 GameState 之前，
+## Districts 在那一轮编译里看不见 GameState。
+func _district_script_path() -> String:
+	var path := "res://"
+	path += "scripts/"
+	path += "core/"
+	path += "Districts.gd"
+	return path
+
+
+func _script_has(book, method: String) -> bool:
+	if not (book is Script):
+		return false
+	for m in (book as Script).get_script_method_list():
+		if str(m.get("name", "")) == method:
+			return true
+	return false
 
 
 # ── 闯封锁（lane w53-p5-blockade）─────────────────────────
