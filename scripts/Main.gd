@@ -1783,11 +1783,23 @@ func _make_market_row(port_id: String, good_id: String) -> Control:
 
 ## 牙行货卡的货图：assets/goods/good_<id>.png。缺图返回 null，调用方不加节点。
 ## 大于 GOOD_ICON_SRC 的先缩小再上卡（大图直接压到 96、又没有 mipmap 会起毛），缩好的按货 id 记在本会话里。
-## 船籍簿船舱写同一路径的 [img]（LedgerPage._with_good_icon），不另开一套图。
+## 船籍簿船舱写同一路径的 [img]（Main._with_good_icon），不另开一套图。
 const GOOD_ICON_PATH := "res://assets/goods/good_%s.png"
 const GOOD_ICON_SIZE := 96
 const GOOD_ICON_SRC := 192
 var _good_icon_cache: Dictionary = {}
+
+
+## 船舱条目前的货图：写进正文的 [img]，不进职事头像记号。
+## 记号会把 status_label.text 清空再 add_image，船舱探针读的是 .text，品名就丢了。
+## [img] 跟正文一起赋值；无职事时整页仍是 .text，有职事时 append_text 一样能画出图。
+## 缺图不加标签，品名与「×数量」仍紧挨着，和没图时同一句。标签写在 nobreak 外面。
+func _with_good_icon(gid: String, label: String) -> String:
+	var path := GOOD_ICON_PATH % gid
+	if not FileAccess.file_exists(path):
+		return label
+	var px := int(ROSTER_HEAD)
+	return "[img=%dx%d]%s[/img] %s" % [px, px, path, label]
 
 
 func _good_icon_tex(good_id: String) -> Texture2D:

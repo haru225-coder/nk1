@@ -74,6 +74,7 @@ const SCRIPTS := [
 	# Lane main9 Main.gd 第九刀拆出的住处 / 寺观页
 	"res://scripts/ui/ResidencePage.gd",
 	# Lane main10 Main.gd 第十刀拆出的船屋页
+	"res://scripts/ui/ShipArt.gd",
 	"res://scripts/ui/ShipyardPage.gd",
 	# Lane main11 Main.gd 第十一刀拆出的标题页 / 开场
 	"res://scripts/ui/TitlePage.gd",
