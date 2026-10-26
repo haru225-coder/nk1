@@ -493,7 +493,7 @@
           "text": "书吏说耽罗近来人参紧。",
           "cost": 14,
           "cooldown_days": 40,
-          "port": "jeju",
+          "port": "mingzhou",
           "good": "korean_ginseng",
           "mul": 1.15
         }
