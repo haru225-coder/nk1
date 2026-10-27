@@ -221,6 +221,7 @@ EXEMPT = [
     ("qa_w56_pending_districts_probe.gd", "lane-d1-pending", "待画城区探针（pending/*.json 全扫、底图尚不存在、pending_art=true、账本不暴露），回退即红，headless 秒级"),
     ("qa_w57_credit_probe.gd", "lane-sim4", "牙人赊销探针（锁价贴水、舱货移除、赊销簿、到期结清、读档往返），回退即红，headless 秒级"),
     ("qa_w57_depth_probe.gd", "lane-bal2", "按货深浅探针（每货深度、买卖推演、存档结构），回退即红，headless 秒级"),
+    ("qa_w57_discovery_probe.gd", "lane-disc2", "发现录探针（每港至少两条近侧发现、id 唯一、near_ports 合法），回退即红，headless 秒级"),
     ("qa_w57_districtui_probe.gd", "lane-ui2-districtui", "城中各处 UI 可用性探针（名单与事页按类分组、钮带花费/冷却/条件悬停提示），回退即红，headless 秒级"),
     ("qa_w57_npc_probe.gd", "lane-npc2", "城中 NPC 链探针（五条线 flag 顺序、各段可达、两条分支收益不同、存档来回），回退即红，headless 秒级"),
     ("qa_w57_seasonal_probe.gd", "lane-sim3", "季节需求（节令）探针（月推移价格排序、存档结构不变），回退即红，headless 秒级"),
