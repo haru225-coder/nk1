@@ -51,8 +51,9 @@
         }
       ],
       "unlock": {
-        "year_min": 1260
-      }
+        "year_min": 1266
+      },
+      "lock_reason": "大安阁还在营建，宫城未开门。"
     },
     {
       "id": "sd_huangcheng",
@@ -62,7 +63,7 @@
       "kind": "street",
       "pending_art": true,
       "bg": "bg_dist_sd_huangcheng.jpg",
-      "description": "皇城套着宫城，外城又在西、北两面围出一大圈。北半是御苑，西南是市街，城墙外还有一圈关厢。",
+      "description": "皇城套着宫城，外城又在西、北两面围出一大圈。北半是御苑，西南是市街，西门外还有一圈关厢。",
       "interactions": [
         {
           "id": "sd_huangcheng_yard",
@@ -90,7 +91,7 @@
           "id": "sd_huangcheng_rumor",
           "type": "rumor",
           "label": "听巡卒",
-          "text": "巡卒说，北边来的皮货少了，明州貂皮这个月要抬头。",
+          "text": "巡卒说，北边来的皮货少了，庆元貂皮这个月要抬头。",
           "cost": 8,
           "cooldown_days": 30,
           "port": "mingzhou",
@@ -397,7 +398,7 @@
             {
               "id": "sd_fosi_ask_star",
               "label": "问星历",
-              "text": "番僧说，星图上的宫分与汉历不同，算出的一年也短些。你记了两句。",
+              "text": "番僧说，星图上的宫分与汉历不同，推日食的法子也不一样。你记了两句。",
               "cost": 0,
               "effects": {
                 "scholar_tendency": 1
@@ -440,7 +441,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_sd_sitian.jpg",
-      "description": "回回司天台的官吏随驾到上都，在皇城边支起星盘与晷影。至元四年，札马鲁丁进《万年历》。",
+      "description": "回回司天台设在宫城承应阙，官吏在院里支起星盘与晷影，按回回历推节气。",
       "interactions": [
         {
           "id": "sd_sitian_star",
@@ -483,8 +484,9 @@
         }
       ],
       "unlock": {
-        "year_min": 1260
-      }
+        "year_min": 1271
+      },
+      "lock_reason": "回回司天台至元八年始设，尚未开门。"
     },
     {
       "id": "sd_mashi",
@@ -605,7 +607,7 @@
       "kind": "market",
       "pending_art": true,
       "bg": "bg_dist_sd_xiguan.jpg",
-      "description": "西关在皇城西门外。车马店、货栈、回回商人的铺面挤在一条街上，斡脱钱也在这里转。",
+      "description": "西关在外城西门外。车马店、货栈、回回商人的铺面挤在一条街上，斡脱钱也在这里转。",
       "interactions": [
         {
           "id": "sd_xiguan_invest",
@@ -664,11 +666,11 @@
           "id": "sd_chengqiang_base",
           "type": "favour",
           "label": "看夯痕",
-          "text": "墙根的黄土一层一层，夹着碎石子。领工的说过，宪宗六年刘秉忠择了这块地，三年才把城筑成。",
+          "text": "墙根的黄土一层一层，夹着碎石子。领工的说过，宪宗六年刘秉忠择了这块地，夯了三年才把城筑成。",
           "cost": 0,
           "once": true,
           "unlock": {
-            "year_min": 1256
+            "year_min": 1259
           },
           "effects": {
             "scholar_tendency": 1,
