@@ -77,7 +77,7 @@
           "id": "jk_zhisi_rumor",
           "type": "rumor",
           "label": "听签厅",
-          "text": "签厅里有人说，淮西买粮加码，明州的米船要改泊江口。",
+          "text": "签厅里有人说，淮西军前和籴加了一倍额，明州来的米纲先被截在龙湾。",
           "cost": 16,
           "cooldown_days": 35,
           "port": "mingzhou",
@@ -141,7 +141,7 @@
           "id": "jk_zhenhuai_rumor",
           "type": "rumor",
           "label": "听桥市",
-          "text": "桥市上有人说，福州的硫黄船在江口候风，牙行先把价抬了一成。",
+          "text": "桥市上有人说，都统司催造火药箭，福州运来的硫黄未上岸就被订走。",
           "cost": 14,
           "cooldown_days": 40,
           "port": "fuzhou",
@@ -378,7 +378,7 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_jk_zhongshan.jpg",
-      "description": "钟山旧名蒋山，太平兴国寺在圜悟关。宋勤法师筑关时，山门对着旧官道；旧记说梁时有七十余处佛庐，后来只剩这一寺香火最盛。",
+      "description": "钟山旧名蒋山，太平兴国寺在山南，寺中有宝公塔；旧记说梁时山中佛庐七十余处，到如今只这一寺香火最盛。",
       "interactions": [
         {
           "id": "jk_zhongshan_firewood",
@@ -491,7 +491,7 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_jk_longwan.jpg",
-      "description": "龙湾在江口，江面开阔，浪涌如山。乾道六年陆游过此，留下「浪涌如山」四字；水军战船与商船同泊一湾。",
+      "description": "龙湾在江口，江面开阔，浪涌如山。水军战船泊在湾里，商船只能靠外侧下碇。",
       "interactions": [
         {
           "id": "jk_longwan_pilot",
@@ -675,7 +675,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_jk_fuyamen.jpg",
-      "description": "府治在后堂议事，帅臣兼领江防。堂前立着军期牌，吏人抱着户籍与税簿从廊下过。",
+      "description": "府治后堂是收簿用印的地方，户籍、税簿与差役册分架堆放，印匣夜里锁在知府案下。",
       "interactions": [
         {
           "id": "jk_fuyamen_tax",
@@ -787,7 +787,7 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_jk_mupai.jpg",
-      "description": "龙光门是南唐旧门，宋元沿用这个名字。门外江滩上泊着木排，竹木商在岸边点筹，木屑顺水漂走。",
+      "description": "龙光门是府城西门，南唐时已有此名。门外江滩上泊着木排，竹木商在岸边点筹，木屑顺水漂走。",
       "interactions": [
         {
           "id": "jk_mupai_watch",
