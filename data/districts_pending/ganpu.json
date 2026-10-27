@@ -133,7 +133,7 @@
           "id": "gp_gangkou_hire",
           "type": "hire",
           "label": "雇火长",
-          "text": "火长姓周，识得杭州湾的沙线，知潮到第几刻该转舵。",
+          "text": "火长姓周，识得浙江口的沙线，知潮到第几刻该转舵。",
           "who": "火长",
           "cost": 90,
           "wage": 12,
@@ -254,7 +254,7 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_gp_qinzhu_changqiang.jpg",
-      "description": "秦驻山在镇东北十五里，有始皇庙，山下聚落与荒草荡。长墙山在镇东三里，山阿有黄道祠，山下有造船场，山巅立烽燧，山外即大海。",
+      "description": "秦驻山在镇东北十五里，有始皇庙，山下聚落与荒草荡。长墙山在镇东三里，山下有造船场，山巅立烽燧，山外即大海。",
       "interactions": [
         {
           "id": "gp_qinzhu_beacon",
@@ -301,11 +301,11 @@
       "id": "gp_yunxiu",
       "port": "ganpu",
       "pending_port": true,
-      "name": "鹰窠顶与云岫庵",
+      "name": "鹰窠顶山庵",
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_gp_yunxiu.jpg",
-      "description": "云岫庵在鹰窠顶山腰，供观音。香客沿山径而上，庵前松风与海涛相闻。",
+      "description": "鹰窠顶山腰有一座小庵，供观音。香客沿山径而上，庵前松风与海涛相闻。",
       "interactions": [
         {
           "id": "gp_yunxiu_incense",
@@ -486,7 +486,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_gp_haishenmiao.jpg",
-      "description": "庙旧在长墙山后石帆村，村陷于潮，迁出山头。宝庆中封显应侯，庙中另祀杨太尉，客舟渡海，先来祈祷。",
+      "description": "庙旧在长墙山后石帆村，村陷于潮，迁出山头。庙额屡经加封，客舟渡海，先来祈祷。",
       "interactions": [
         {
           "id": "gp_haishenmiao_incense",
@@ -537,7 +537,7 @@
       "kind": "dam",
       "pending_art": true,
       "bg": "bg_dist_gp_hanhaitang.jpg",
-      "description": "海盐县东捍海塘，去海仅半里。咸淳中，邑人常氏以两浙转运使筑新塘三千六百二十五丈，名海晏塘。塘内田庐，全赖此一线。",
+      "description": "海盐县东捍海塘，去海仅半里。宋时屡筑屡坏，潮大的年份一冬要补几回。塘内田庐，全赖此一线。",
       "interactions": [
         {
           "id": "gp_hanhaitang_earth",
@@ -596,7 +596,7 @@
       "id": "gp_haikou",
       "port": "ganpu",
       "pending_port": true,
-      "name": "杭州湾海口",
+      "name": "浦外海口",
       "kind": "ferry",
       "pending_art": true,
       "bg": "bg_dist_gp_haikou.jpg",
@@ -604,7 +604,7 @@
         "year_min": 1276,
         "year_max": 1276
       },
-      "description": "一二七六年正月，临安纳款。元军舟师过杭州湾南下，海口桅樯相连。镇上商船收帆，避入浦内。",
+      "description": "一二七六年正月，临安纳款。元军舟师自海道来，泊澉浦，转入浙江口，海口桅樯相连。镇上商船收帆，避入浦内。",
       "interactions": [
         {
           "id": "gp_haikou_yield",
@@ -692,7 +692,7 @@
         {
           "id": "gp_shibosi_licence",
           "type": "licence",
-          "label": "领元公凭",
+          "label": "领司里公凭",
           "text": "司里发公凭，纸背印着抽分则例。海舶有了这张，回帆时验货少等两日。",
           "cost": 800,
           "licence": "lic_gp_yuan",
@@ -757,7 +757,7 @@
           "id": "gp_yangshi_rumor",
           "type": "rumor",
           "label": "听舵工",
-          "text": "博多今年熄了两座硫黄窑，唐房收不满载，硫黄在栈里压着。",
+          "text": "萨摩运硫黄的船今年在海上折了两艘，博多唐房收不满载，宋商只好加钱抢货。",
           "cost": 18,
           "cooldown_days": 45,
           "port": "hakata",
