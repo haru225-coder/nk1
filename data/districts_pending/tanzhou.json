@@ -1,0 +1,684 @@
+{
+  "districts": [
+    {
+      "id": "tz_cheng",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "潭州城与湘江码头",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_tz_cheng.jpg",
+      "description": "潭州城在湘江东岸，城墙临江，城下就是码头。荆湖南路帅府设在城中，湘米从四乡装到城下，编成粮纲，顺流下洞庭。",
+      "interactions": [
+        {
+          "id": "tz_cheng_grain",
+          "type": "buy",
+          "label": "收湘米",
+          "text": "码头的湘米刚过斛，还没装上纲船。舱里空着，先收几石。",
+          "good": "grain",
+          "qty": 6,
+          "price_mul": 0.94,
+          "impact": false
+        },
+        {
+          "id": "tz_cheng_convoy",
+          "type": "hire",
+          "label": "请老纲首",
+          "text": "老纲首熟悉洞庭各埠的泊位。请他领纲，米船下水少等两日。",
+          "who": "纲首",
+          "cost": 80,
+          "wage": 11,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "tz_cheng_store",
+          "type": "invest",
+          "label": "入股米栈",
+          "text": "城下米栈收四乡的湘米，入本按月分账。",
+          "shop": "米栈",
+          "costs": [
+            360,
+            820
+          ],
+          "monthly": [
+            18,
+            44
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tz_yuelu",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "岳麓书院",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_tz_yuelu.jpg",
+      "description": "岳麓书院在湘江西岸，山下有讲堂与斋舍。乾道年间张南轩主持讲席，朱熹从福建来，两人会讲月余，听讲的人挤到庑下。",
+      "interactions": [
+        {
+          "id": "tz_yuelu_listen",
+          "type": "favour",
+          "label": "听岳麓讲",
+          "text": "讲堂里讲《中庸》，庑下也坐满人。你站在末席听了一晌。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "tz_yuelu_shanzhang",
+          "type": "favour",
+          "label": "问山长",
+          "text": "山长在斋舍里批卷，听你问了几句湘江的船。他说书院的书，多从外地买来。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "岳麓书院问过山长。"
+          }
+        },
+        {
+          "id": "tz_yuelu_copy",
+          "type": "hire",
+          "label": "请书院抄手",
+          "text": "书院的抄手肯按月替你抄书。他在时，斋舍里的新本先到你手。",
+          "who": "抄手",
+          "cost": 60,
+          "wage": 12,
+          "monthly_effects": {
+            "scholar_tendency": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "tz_lushan",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "麓山寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_tz_lushan.jpg",
+      "description": "麓山寺在岳麓山半腰，西晋竺法崇所建，有湖湘第一道场之称。宋时殿宇仍在，寺旁有道乡台。",
+      "interactions": [
+        {
+          "id": "tz_lushan_incense",
+          "type": "favour",
+          "label": "晋寺焚香",
+          "text": "晋寺的香案前只有几个香客。你把香钱放进木柜，僧人合掌。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "tz_lushan_daoxiang",
+          "type": "favour",
+          "label": "看道乡台",
+          "text": "寺旁的道乡台是张南轩为邹浩所筑，朱熹刻石题了道乡二字。寺里另有唐李邕碑，字口还深。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "麓山寺看过道乡台与李邕碑。"
+          }
+        },
+        {
+          "id": "tz_lushan_stay",
+          "type": "choice",
+          "label": "山门留宿",
+          "text": "天色向晚，知客僧立在阶前，问你是歇一宿，还是趁渡船未收回去。",
+          "options": [
+            {
+              "id": "tz_lushan_stay_yes",
+              "label": "歇一宿",
+              "text": "客堂的灯点到二更。山钟响过两回，湘江上的渔火还看得见。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "tz_lushan_stay_no",
+              "label": "回城",
+              "text": "谢过知客，沿石阶下到江边。渡船在暮色里等最后一批客。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tz_juzhou",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "橘洲",
+      "kind": "grove",
+      "pending_art": true,
+      "bg": "bg_dist_tz_juzhou.jpg",
+      "description": "湘江中的长洲，洲上多橘，旧称橘洲。秋冬橘熟，洲民撑小船把橘子运到城下，洲头有渡。",
+      "interactions": [
+        {
+          "id": "tz_juzhou_orange",
+          "type": "favour",
+          "label": "收橘",
+          "text": "洲上的橘子熟了。你按洲民的价收了一筐，分给船上的伙计。",
+          "cost": 10,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              9,
+              10,
+              11
+            ]
+          },
+          "effects": {
+            "hometown_tendency": 1,
+            "network": 1,
+            "note": "橘洲收过一筐橘。"
+          }
+        },
+        {
+          "id": "tz_juzhou_walk",
+          "type": "favour",
+          "label": "走洲",
+          "text": "你从洲头走到洲尾，等渡船。水落时，洲边的沙埂露出来。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "tz_juzhou_rumor",
+          "type": "rumor",
+          "label": "问洲民",
+          "text": "洲民把橘子运到城下，换明州船带来的青白瓷碗。碗在潭州走得快，明州的货主先留了一批。",
+          "cost": 10,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "qingbai_porcelain",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "tz_chengnan",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "城南书院",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_tz_chengnan.jpg",
+      "description": "城南书院在妙高峰下，绍兴三十一年张浚、张南轩父子所建。张南轩后来在这里讲学，朱张会讲时两人常往返湘江两岸。",
+      "interactions": [
+        {
+          "id": "tz_chengnan_lecture",
+          "type": "favour",
+          "label": "听城南讲",
+          "text": "丽泽堂里讲学，窗外就是湘江。讲到日影偏西才散。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "tz_chengnan_poem",
+          "type": "favour",
+          "label": "抄诗",
+          "text": "堂上挂着城南杂咏的旧纸。你借灯抄了一首，没有带走原纸。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 2,
+            "note": "城南书院抄过一首杂咏。"
+          }
+        },
+        {
+          "id": "tz_chengnan_rumor",
+          "type": "rumor",
+          "label": "问抄手",
+          "text": "书院要修书，抄手去泉州买高丽纸。纸船到得迟，泉州的纸行先抬价。",
+          "cost": 10,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "korean_paper",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "tz_kaifu",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "开福寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_tz_kaifu.jpg",
+      "description": "开福寺在湘春门外，五代马殷建，其子马希范在寺旁作会春园。宋时是禅寺，寺旁有紫微山与碧浪湖，近湘江。",
+      "interactions": [
+        {
+          "id": "tz_kaifu_incense",
+          "type": "favour",
+          "label": "禅寺焚香",
+          "text": "禅寺的香案前只有三五人。你把香钱投进柜里，守殿的老僧点头。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "favour": 1
+          }
+        },
+        {
+          "id": "tz_kaifu_tea",
+          "type": "favour",
+          "label": "廊下吃茶",
+          "text": "寺里的僧人煎了一壶茶，请你坐在廊下。茶是潭州本山的散茶。",
+          "cost": 8,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "tz_kaifu_walker",
+          "type": "hire",
+          "label": "雇行者",
+          "text": "寺里的行者肯替你往城下送信，脚程稳。",
+          "who": "行者",
+          "cost": 40,
+          "wage": 8,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "tz_dingwang",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "定王台",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_tz_dingwang.jpg",
+      "description": "定王台在城东北，汉长沙定王刘发筑台望母。宋时台址还在，乾道三年朱熹与张南轩同游于此。",
+      "interactions": [
+        {
+          "id": "tz_dingwang_climb",
+          "type": "favour",
+          "label": "登台",
+          "text": "你沿土阶上到台顶。城里的瓦与湘江的帆都在脚下，风从北面来。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "登过定王台。"
+          }
+        },
+        {
+          "id": "tz_dingwang_wall",
+          "type": "choice",
+          "label": "台壁题字",
+          "text": "台边有一方旧壁，墨迹被雨洗淡了。守台的人把笔递过来。",
+          "options": [
+            {
+              "id": "tz_dingwang_write",
+              "label": "落笔",
+              "text": "壁上添了一行望母旧事。墨迹未干，就有人站着看。",
+              "cost": 10,
+              "effects": {
+                "fame": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "tz_dingwang_read",
+              "label": "读旧字",
+              "text": "你把笔还回去，只读壁上残字。落款已经看不清。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tz_jiayi",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "贾谊故宅",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_tz_jiayi.jpg",
+      "description": "贾谊故宅在濯锦坊，宋时是贾太傅庙。宅中有井，传是贾谊所凿，旁边有一脚石床。",
+      "interactions": [
+        {
+          "id": "tz_jiayi_well",
+          "type": "favour",
+          "label": "看井",
+          "text": "井口很小，往下看是黑的。守祠的人说，这井是贾谊凿的。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "看过贾谊故宅的井。"
+          }
+        },
+        {
+          "id": "tz_jiayi_copy",
+          "type": "favour",
+          "label": "抄吊文",
+          "text": "你在祠下抄了一篇《吊屈原赋》，纸是庙里旧的。",
+          "cost": 10,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "tz_tea",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "潭州茶与茶引",
+      "kind": "teahouse",
+      "pending_art": true,
+      "bg": "bg_dist_tz_tea.jpg",
+      "description": "潭州出茶，片茶有独行、灵草、绿芽，散茶有岳麓、草子。茶场发给长短引，园户持引才许贩运。",
+      "interactions": [
+        {
+          "id": "tz_tea_licence",
+          "type": "licence",
+          "label": "领茶引",
+          "text": "茶场的书吏把长短引摊在案上。你纳了钱，领了一张短引，茶箱上要写明斤数。",
+          "cost": 280,
+          "licence": "lic_tz_tea",
+          "effects": {
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "tz_tea_buy",
+          "type": "buy",
+          "label": "收春茶",
+          "text": "茶场的春茶刚出焙。有引的客先过秤，价也松些。",
+          "good": "tea",
+          "qty": 6,
+          "price_mul": 0.92,
+          "impact": false,
+          "licence_bonus": "lic_tz_tea",
+          "bonus_mul": 0.9
+        },
+        {
+          "id": "tz_tea_rumor",
+          "type": "rumor",
+          "label": "问园户",
+          "text": "茶场发下的短引少了，园户把春茶留在山里。泉州的茶船空着舱回去。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "tea",
+          "mul": 1.14
+        }
+      ]
+    },
+    {
+      "id": "tz_tongguan",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "铜官窑旧址",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_tz_tongguan.jpg",
+      "description": "铜官窑在湘江东岸，唐时烧釉下彩，五代已衰。宋时只剩旧窑包与满坡残瓷，偶有人来拾片。",
+      "interactions": [
+        {
+          "id": "tz_tongguan_shard",
+          "type": "favour",
+          "label": "窑包拾片",
+          "text": "你在窑包下拾到一片青釉碗底，釉下还留着褐彩。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "铜官旧窑拾过一片残瓷。"
+          }
+        },
+        {
+          "id": "tz_tongguan_old",
+          "type": "choice",
+          "label": "问窑",
+          "text": "坡上的老人说，窑里早就不出器了。他把一片彩壶残片放在你手里。",
+          "options": [
+            {
+              "id": "tz_tongguan_take",
+              "label": "收残片",
+              "text": "你收下残片，用旧纸包好。老人说，这是唐时的东西。",
+              "cost": 20,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "收过一片铜官彩壶残片。"
+              }
+            },
+            {
+              "id": "tz_tongguan_leave",
+              "label": "还他",
+              "text": "你把残片放回老人掌心，只问了几句窑的事。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tz_xiangyin",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "湘阴漕运码头",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_tz_xiangyin.jpg",
+      "description": "湘阴在潭州北境，湘江从这里入洞庭。漕船在此候风，米纲换船，县仓的米也从这里解运。",
+      "interactions": [
+        {
+          "id": "tz_xiangyin_grain",
+          "type": "buy",
+          "label": "收县仓米",
+          "text": "县仓的米刚斛过，要换大船下洞庭。你收下几石，省得再回城。",
+          "good": "grain",
+          "qty": 8,
+          "price_mul": 0.92,
+          "impact": false
+        },
+        {
+          "id": "tz_xiangyin_rope",
+          "type": "hire",
+          "label": "雇缆手",
+          "text": "湘阴的缆手知道洞庭南口哪里水浅。雇他，船不至于在沙埂上打横。",
+          "who": "缆手",
+          "cost": 60,
+          "wage": 9,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "tz_xiangyin_rumor",
+          "type": "rumor",
+          "label": "问仓吏",
+          "text": "湘阴的仓吏封了县仓，米纲先尽官数。温州的米商在洞庭口等了半月。",
+          "cost": 10,
+          "cooldown_days": 40,
+          "port": "wenzhou",
+          "good": "grain",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "tz_shuaifu",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "荆湖南路帅府",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_tz_shuaifu.jpg",
+      "description": "荆湖南路帅府在潭州城中，安抚司在这里开衙。军牒与漕帖都从这门里发到诸县。",
+      "interactions": [
+        {
+          "id": "tz_shuaifu_gift",
+          "type": "favour",
+          "label": "送一匣纸",
+          "text": "安抚司的吏人缺纸，你送匣纸过去。门簿前页记下船号。",
+          "cost": 25,
+          "once_per": "month",
+          "effects": {
+            "favour": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "tz_shuaifu_pass",
+          "type": "choice",
+          "label": "领公据",
+          "text": "帅府门吏说，沿江盘查加严，问你今日要不要领一张公据，随船带下去。",
+          "options": [
+            {
+              "id": "tz_shuaifu_pass_yes",
+              "label": "领公据",
+              "text": "公据递出来，角上盖着朱印。沿江的巡检看过，便放船。",
+              "cost": 30,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "tz_shuaifu_pass_no",
+              "label": "不领",
+              "text": "你不领公据，只把船号报给门吏。他记在簿上，没有多问。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "tz_shuaifu_rumor",
+          "type": "rumor",
+          "label": "听军牒",
+          "text": "帅府发下军牒，沿江州县要留粮。明州的米行先改了牌价。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "grain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "tz_siege",
+      "port": "tanzhou",
+      "pending_port": true,
+      "name": "潭州围城",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_tz_siege.jpg",
+      "unlock": {
+        "year_min": 1275,
+        "year_max": 1276
+      },
+      "description": "一二七五年九月，阿里海牙兵临潭州。李芾知潭州兼湖南安抚使，把城中丁壮编成什伍，分地守城。岳麓诸生也荷戈登城。围到次年正月，城破。",
+      "interactions": [
+        {
+          "id": "tz_siege_wall",
+          "type": "favour",
+          "label": "登城守垛",
+          "text": "城头的箭垛缺人。你带伙计上去，把旧箭磨尖了再射。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1275,
+            "year_max": 1275,
+            "months": [
+              9,
+              10,
+              11,
+              12
+            ]
+          },
+          "effects": {
+            "martial": 1,
+            "hometown_tendency": 1
+          }
+        },
+        {
+          "id": "tz_siege_students",
+          "type": "favour",
+          "label": "助岳麓诸生",
+          "text": "岳麓诸生荷戈登城，衣角还沾着墨。你替他们搬了一捆箭。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1275,
+            "year_max": 1276,
+            "months": [
+              9,
+              10,
+              11,
+              12
+            ]
+          },
+          "effects": {
+            "scholar_tendency": 1,
+            "martial": 1,
+            "note": "围城时替岳麓诸生搬过箭。"
+          }
+        },
+        {
+          "id": "tz_siege_fall",
+          "type": "favour",
+          "label": "随僧收殓",
+          "text": "一二七六年正月初一，城破。李芾一家尽节。你随寺僧在城外收殓，不敢多问。",
+          "cost": 20,
+          "once": true,
+          "unlock": {
+            "year_min": 1276,
+            "year_max": 1276,
+            "months": [
+              1
+            ]
+          },
+          "effects": {
+            "hometown_tendency": 2,
+            "fame": 1,
+            "note": "潭州城破后收殓过。"
+          }
+        }
+      ]
+    }
+  ]
+}
