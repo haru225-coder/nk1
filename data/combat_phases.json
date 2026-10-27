@@ -3155,7 +3155,7 @@
       "id": "morale",
       "label": "士气",
       "source": "CombatMorale：本队状态",
-      "fmt": "稳 / 动摇 / 溃",
+      "fmt": "如常 / 动摇 / 思退 / 溃逃 / 降幡",
       "panel": "status"
     },
     {
