@@ -3043,7 +3043,7 @@ func _on_enter_port(port_id: String) -> void:
 	GameState.visit_port(port_id)
 	# 拍板 E-10：节拍演出账——抵达这一针条件够且未记名 = 就地演那一幕（关断开关关掉 = _beats 空账、一步不动）。
 	# 接演港见 PortBeats.QUEST_PORTS：泉州主链之外，庆元 / 博多 / 占城三港只演章二后的委托线；
-	# 各线的头针都带条件（章序 / 已演旧账 / 已接短札），航路首抵与既有 route 断言仍进港页记 visited_ports。
+	# 各线的头针都带条件（章序 / 已演旧账 / 已接短札 / 记港数），航路首抵与既有 route 断言仍进港页记 visited_ports。
 	# 流求 / 兴化不接：剧情幕不能冒充港口（ryukyu_bay / hakata_ledger 不记港）。
 	_beats_book()
 	# 新档 / 老档 seed：开关开着、拍账一笔未记过，把序章沿途已演的戏（DEFAULT_SEED）记上——

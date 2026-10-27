@@ -153,6 +153,9 @@ func _sec_table() -> void:
 		if entry == "quest_champa_offer" and (int(req.get("chapter_at_least", 0)) != 2 or int(req.get("chapter_at_most", 0)) != 3):
 			order_bad += 1
 	_check(order_bad == 0, "一、三条链的港、拍序、前置与下一拍逐针对上（坏 %d）" % order_bad)
+	var sulfur_req: Dictionary = _beat("quest_sulfur_offer").get("requires", {})
+	_check(int(sulfur_req.get("visited_at_least", 0)) == 2,
+		"一、硫黄首针候首次记港之后再记一港（visited_at_least=2）")
 	var sc := _json("res://data/scenes.json")
 	var scenes = sc.get("scenes", [])
 	var by_id := {}
@@ -225,6 +228,10 @@ func _sec_graph() -> void:
 	var seen := ["monk", "merchant", "dock", "prepare", "return_quanzhou", "chapter2_letter"]
 	var flags := []
 	var visited := ["quanzhou", "mingzhou", "ryukyu"]
+	_check(_book.due("quanzhou", seen, flags, ["quanzhou"], 2, false).is_empty(),
+		"二、硫黄链：首次记港当页不接契（只记泉州一港）")
+	_check(_entry(_book.due("quanzhou", seen, flags, ["quanzhou", "mingzhou"], 2, false)) == "quest_sulfur_offer",
+		"二、硫黄链：记过首港再记一港，回泉州接契")
 	_check(_entry(_book.due("quanzhou", seen, flags, visited, 2, false)) == "quest_sulfur_offer",
 		"二、硫黄链：章二信已演，泉州该演接契")
 	seen.append("quest_sulfur_offer")
@@ -293,6 +300,16 @@ func _sec_main() -> void:
 	_main = (load("res://scenes/Main.tscn") as PackedScene).instantiate()
 	root.add_child(_main)
 	await _settle(8)
+	_fresh(2, [], [], ["monk", "merchant", "dock", "prepare", "return_quanzhou", "chapter2_letter"])
+	_main.load_scene("quanzhou")
+	await _settle(6)
+	_check(str(_main.get("current_scene_id")) == "quanzhou" and bool(_main.get("port_mode").visible)
+		and not ("quest_sulfur_offer" in gs.beats_seen),
+		"三、新局首记泉州停在港页、不被硫黄接契截去")
+	gs.visit_port("mingzhou")
+	_main.load_scene("quanzhou")
+	await _settle(6)
+	_check(str(_main.get("current_scene_id")) == "quest_sulfur_offer", "三、记过二港再回泉州，自动演接契")
 	_fresh(2, ["quanzhou", "mingzhou", "ryukyu"], [], ["monk", "merchant", "dock", "prepare", "return_quanzhou", "chapter2_letter"])
 	_main.load_scene("quanzhou")
 	await _settle(6)

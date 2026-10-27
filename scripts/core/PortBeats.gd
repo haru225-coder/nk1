@@ -24,7 +24,7 @@ const START_ENTRIES := ["quanzhou_monk", "ryukyu_bay"]
 ## 入港接演的港：泉州主链与章二后的三条委托线（庆元、博多、占城）。
 ## 流求 / 兴化等不接——航路首抵要进港页记 visited_ports，剧情幕不冒充港口。
 const QUEST_PORTS := ["quanzhou", "mingzhou", "hakata", "champa"]
-## 章二后三条委托线的尾针（硫黄 / 博多短札 / 占城沉香）：头针带章序、旧账旗或短札条件，
+## 章二后三条委托线的尾针（硫黄 / 博多短札 / 占城沉香）：头针带章序、旧账旗、短札或记港数条件，
 ## 运行时按条件路由接演；一条链的尾针沿 requires.seen 回溯到链头。data_family 的根按这份常量锚可达性。
 const QUEST_TAIL_ENTRIES := ["quest_sulfur_return", "quest_hakata_return", "quest_champa_return"]
 ## 拍账 seed：新档从这份起照（序章沿途已演的戏，Xinghua 链 start 一针记账；开关关掉不 seed = 留档老档老行为）
@@ -69,7 +69,8 @@ func chain(port_id: String) -> Array:
 
 ## 抵达时该演的拍：链上第一针没记名（entry / 分解位都不在 seen）且 requires 全够的；
 ## 第一针没记名但 requires 不够 = 链停在这针等条件（{}）；每一拍都记了名也 {}。seen / flags / visited
-## 是字符串表，chapter 是当前章序。关断开关关掉恒 {}。
+## 是字符串表，chapter 是当前章序。visited 由调用方在记港之后交出，visited_at_least 便以「含本港」计：
+## 首次记港为 1，候到下一次记港（再记一港）才够 2。关断开关关掉恒 {}。
 ## ended 终局守卫（wave22 待定项② 已准「终局后港口节拍一律不再演」，lane w26-k7）：为真恒 {}。
 ## 守卫本在调用方（w25-j2 顶在 Main._on_enter_port），下沉进本口使「终局后不演」成函数自身性质；
 ## is_ended 必传实参——调用方传当前会话 GameState.is_ended()，探针直面传真 / 假演四例。
@@ -144,6 +145,9 @@ func _requirements_met(b: Dictionary, seen: Array, flags: Array, visited: Array,
 	for p in (req as Dictionary).get("visited", []):
 		if not (str(p) in visited):
 			return false
+	# 记港数下限（visited 含本港）：新局首记泉州为 1，委托头针须候次回再记一港，不抢首次入港的港页
+	if int((req as Dictionary).get("visited_at_least", 0)) > visited.size():
+		return false
 	if int((req as Dictionary).get("chapter_at_least", 0)) > chapter:
 		return false
 	var at_most := int((req as Dictionary).get("chapter_at_most", 0))
