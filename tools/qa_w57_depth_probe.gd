@@ -57,7 +57,7 @@ func _run() -> void:
 	_expect(is_equal_approx(d_grain, base_depth * 4.0), "米粮深度 %.1f = 港深 %.1f × 4.0" % [d_grain, base_depth])
 	_expect(d_gold < d_grain, "砂金深度 %.1f < 米粮深度 %.1f" % [d_gold, d_grain])
 	_expect(is_equal_approx(eco._depth("quanzhou", ""), base_depth), "无货参退化为港深 %.1f" % base_depth)
-	_expect(eco.blockade_grain_cap("xinghua") == int(eco._depth("xinghua", "grain")), "围城收粮上限用米粮深度")
+	_expect(eco.blockade_grain_cap("xinghua") == int(eco._depth("xinghua")), "围城收粮上限仍按港深（不乘米粮 depth_mul，免围城运粮成摇钱树）")
 
 	# 2. goods.json 全部 29 货都有 depth_mul
 	var n_mul := 0

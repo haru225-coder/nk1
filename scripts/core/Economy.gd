@@ -636,7 +636,7 @@ func blockade_grain_unit(port_id: String) -> float:
 ## 一趟城里收得下几件：本港行情深浅（_depth，含修埠加深）。城里缺粮也只吃得下这么多——不封顶，收粮钱随舱位线性涨，
 ## 大舱一趟就成了摇钱树
 func blockade_grain_cap(port_id: String) -> int:
-	return int(_depth(port_id, "grain"))
+	return int(_depth(port_id))
 
 # ── 季节需求（节令）：与 tools/verify_economy.py SEASONAL_MUL 同表 ──
 # 月 → 货 → 倍数；未列的货/月一律 1.0。宋人口气：春茶新、夏扇、冬裘、秋收米贱等。
