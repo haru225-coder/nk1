@@ -222,7 +222,7 @@
           "id": "xhh_sanjiang_rumor",
           "type": "rumor",
           "label": "听埠头",
-          "text": "北风还未起，泉州的瓷船压在港里。埠头的人说，瓷价要落。",
+          "text": "北风还未起，泉州的瓷船压在港里。埠头的人说，瓷商等不起风，只得减价出货。",
           "cost": 11,
           "cooldown_days": 35,
           "port": "quanzhou",
@@ -267,7 +267,7 @@
           "id": "xhh_salt_yard_rumor",
           "type": "rumor",
           "label": "听盐船",
-          "text": "元兵到了兴化城下。海口的盐船不敢出海，泉州的盐价要起。",
+          "text": "元兵到了兴化城下。海口的盐船不敢出海，泉州盐铺一天里改了两回价牌。",
           "cost": 12,
           "cooldown_days": 40,
           "unlock": {

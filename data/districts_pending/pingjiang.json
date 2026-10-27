@@ -799,7 +799,7 @@
           "id": "pj_shufang_rumor",
           "type": "rumor",
           "label": "听纸价",
-          "text": "主人说，高丽纸的船在耽罗候了半月，泉州的纸价要往上去。",
+          "text": "主人说，高丽纸的船在耽罗候了半月，泉州纸铺手里的存纸一张也不肯贱卖。",
           "cost": 10,
           "cooldown_days": 40,
           "port": "quanzhou",

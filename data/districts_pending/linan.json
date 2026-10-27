@@ -378,7 +378,7 @@
           "id": "ln_zhongan_rumor",
           "type": "rumor",
           "label": "听瓦子消息",
-          "text": "说书人收了赏钱，讲澎湖的盐船被海贼截了，盐价要抬。",
+          "text": "说书人收了赏钱，讲澎湖的盐船被海贼截了，城里盐铺当晚就挂了高价。",
           "cost": 15,
           "cooldown_days": 35,
           "port": "penghu",

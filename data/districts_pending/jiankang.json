@@ -334,7 +334,7 @@
           "id": "jk_shitou_rumor",
           "type": "rumor",
           "label": "听江船",
-          "text": "江船从兴化来，茶担在崖下过。牙行说今年的茶到得早，价要往下走。",
+          "text": "江船从兴化来，茶担在崖下过。牙行说今年的茶到得早，行里的茶已压着价出。",
           "cost": 12,
           "cooldown_days": 30,
           "port": "xinghua",
@@ -396,7 +396,7 @@
           "id": "jk_zhongshan_path",
           "type": "choice",
           "label": "登山",
-          "text": "从寺门到山顶有两条路，一条走官道，一条穿过松林。",
+          "text": "寺门往山顶去，一边是官道，一边是穿松林的樵径。",
           "once": true,
           "options": [
             {
