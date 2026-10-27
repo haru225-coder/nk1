@@ -66,6 +66,14 @@ func _settle(n := 5) -> void:
 		await process_frame
 
 
+## 本探针只钉名声栏与欠债跳年册页 / 月息折叠，史闻（酒馆传闻）另有 story 门禁逐条钉。
+## 摆场把 news.json 全表封讫：1263-10→1265-10 若有新史闻落进来，折叠则数会随史闻涨落，与本探针判域无关。
+func _seal_news() -> void:
+	var news: Array = (gm.get("news_data") as Dictionary).get("news", [])
+	for n in news:
+		gs.mark_news_seen(str(n.get("id", "")))
+
+
 func _expect(ok: bool, what: String) -> void:
 	cases += 1
 	if ok:
@@ -127,8 +135,7 @@ func _c_debt_year_sheet() -> void:
 	gs.peak_money = 6500
 	gs.debt = 1000
 	gs.visited_ports = ["xinghua", "quanzhou", "zhangzhou", "zhanqiao", "ryukyu"]
-	for n in gs.pending_news():
-		gs.mark_news_seen(str(n.get("id", "")))
+	_seal_news()
 	gs.merchant_credit = 12
 	gs.money = 0
 	# 现银归零：沿途不再有钱发饷——每月一例「本月工食未发」计入折叠（摆场负债照旧计息）
@@ -139,10 +146,10 @@ func _c_debt_year_sheet() -> void:
 	(_main.get("_notice_when") as Array).clear()
 
 	# 探针自起对照账：3% 月复利，24 期（不引 GameState.DEBT_MONTHLY_RATE，防共同变量同错）
-	# 跳年沿途通告的「月息之外」一则探针自己从前文点：摆场已清雇佣亦无在职，沿途只该闻 1264-11 理宗崩一声
-	# （酒馆传闻）。此数若涨（杂息变 / 雇佣还原），折叠头则数跟着改——不看它一眼的全包含法镇不住。
+	# 沿途史闻已在 _seal_news 封讫；摆场清空雇佣且无在职，24 月只该有 24 则【月息】。
+	# 折叠头则数若涨，只说明月结多出别类通告——此数仍由本例亲眼核过。
 	# 摆场原在 1277-10 跳到 1279-10（lane w53-13 起晋升跳年落点不越过 1275，那一年开章不再跳年），挪到 1263-10 跳到 1265-10
-	var notice_extra := 1
+	var notice_extra := 0
 	var debt0 := int(gs.debt)
 	var expect_last_interest := 0
 	var sim := debt0
@@ -183,7 +190,7 @@ func _c_debt_year_sheet() -> void:
 	_expect(fold_head.contains(str(expect_last_interest)) == false,
 		"反向：折叠头不带末月息文 %d（防把札记原文凑进同一行）" % expect_last_interest)
 
-	# 折叠原件：凡 24 月即 24 则【月息】 + 一则另有余墨（景定五年冬月的【酒馆传闻】理宗崩）。
+	# 折叠原件：凡 24 月即 24 则【月息】（史闻已封讫，不另计余墨）。
 	var folds: Dictionary = _main.get("_log_folds")
 	var fold: Dictionary = folds.get(fold_head, {})
 	var fold_lines := (fold.get("lines") as Array) if not fold.is_empty() else []
@@ -211,8 +218,7 @@ func _c_debt_year_sheet() -> void:
 	gs.peak_money = 6500
 	gs.debt = 0
 	gs.visited_ports = ["xinghua", "quanzhou", "zhangzhou", "zhanqiao", "ryukyu"]
-	for n in gs.pending_news():
-		gs.mark_news_seen(str(n.get("id", "")))
+	_seal_news()
 	(_main.get("_log_lines") as PackedStringArray).clear()
 	(_main.get("_log_folds") as Dictionary).clear()
 	_main.set("_notice_run", 0)
@@ -228,7 +234,7 @@ func _c_debt_year_sheet() -> void:
 	_expect(sheet_text.contains("蕃商结息") == false and sheet_text.contains("现欠") == false,
 		"反向：无债跳年册页不见「蕃商结息」「现欠」（实读：%s）" % _snippet(sheet_text, "代价"))
 	logs = _main.get("_log_lines")
-	# 反向的最后一眼：遍及本例札记全本，薄薄 7 行里也不该有息钱字样（雇佣是开局那一档积下的随本例遗产，一并清扫）
+	# 反向的最后一眼：遍及本例札记全本，也不该有息钱字样（雇佣是开局那一档积下的随本例遗产，一并清扫）
 	var neg_hit := "蕃商结息" in "\n".join(logs) or "现欠" in "\n".join(logs)
 	_expect(neg_hit == false, "反向：无债跳年札记全本不见「蕃商结息」「现欠」（札记 %d 行）" % logs.size())
 

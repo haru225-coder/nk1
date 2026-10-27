@@ -100,6 +100,14 @@ func _clear_notes() -> void:
 	(_main.get("_notice_when") as Array).clear()
 
 
+## 本探针只钉欠饷 / 辞船札记与改元月历，史闻（酒馆传闻）另有 story 门禁逐条钉。
+## 摆场把 news.json 全表封讫：免得新添史闻落进 1278-04→07 的摆场年月，顶批则数随史闻涨落。
+func _seal_news() -> void:
+	var news: Array = (gm.get("news_data") as Dictionary).get("news", [])
+	for n in news:
+		gs.mark_news_seen(str(n.get("id", "")))
+
+
 ## 每例起手同一摆场：身分清讫（merchant）、无债无银、新闻尽数封讫、名册空、札记四件空
 func _stage(port := "quanzhou") -> void:
 	gs.from_dict({})
@@ -111,8 +119,7 @@ func _stage(port := "quanzhou") -> void:
 	(crew.get("hired") as Dictionary).clear()
 	crew.set("unpaid_months", 0)
 	(crew.get("departed") as Dictionary).clear()
-	for n in gs.pending_news():
-		gs.mark_news_seen(str(n.get("id", "")))
+	_seal_news()
 	_clear_notes()
 
 
