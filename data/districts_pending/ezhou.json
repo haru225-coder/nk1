@@ -1,0 +1,668 @@
+{
+  "districts": [
+    {
+      "id": "ez_cheng",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "鄂州城与江夏县",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_ez_cheng.jpg",
+      "description": "鄂州城依黄鹄山而筑，江夏县倚郭。城墙因山势起伏，北面直压江岸，城门外的石阶一直铺到水边。",
+      "interactions": [
+        {
+          "id": "ez_cheng_wall",
+          "type": "favour",
+          "label": "登城",
+          "text": "你沿马道上城，守卒把垛口让开一段。江在城北，汉水从西边来会。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "ez_cheng_gate",
+          "type": "choice",
+          "label": "入城",
+          "text": "城门下排着担子，门吏一担一担验看。他问你从南门进，还是沿江绕去西门。",
+          "options": [
+            {
+              "id": "ez_cheng_gate_south",
+              "label": "走南门",
+              "text": "你从南门进去，街两边是米铺和纸札铺。门吏在簿上划了一笔，放你过去。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            },
+            {
+              "id": "ez_cheng_gate_west",
+              "label": "绕西门",
+              "text": "你沿江走到西门，城墙的影子落在水面上。守门的卒子认得船上的旗号，没多问。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ez_cheng_rumor",
+          "type": "rumor",
+          "label": "听行商",
+          "text": "城门口的行商说，福州的米船在江口候风，米价怕要动。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "fuzhou",
+          "good": "grain",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "ez_huanghelou",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "黄鹤楼",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_ez_huanghelou.jpg",
+      "description": "黄鹤楼在黄鹄山黄鹤矶头，木构重檐，灰瓦朱柱。楼基压在矶石上，登楼要过一段窄石阶。",
+      "interactions": [
+        {
+          "id": "ez_huanghelou_climb",
+          "type": "favour",
+          "label": "登楼",
+          "text": "你沿石阶上到楼头，江风把檐角的风铃吹得直响。汉水从西边来，在脚下汇进大江。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "ez_huanghelou_view",
+          "type": "choice",
+          "label": "望江",
+          "text": "楼头有几个蜀商在指认江上的船，问你要不要一起看。",
+          "options": [
+            {
+              "id": "ez_huanghelou_view_together",
+              "label": "同看",
+              "text": "你顺着蜀商的手看过去，一条落帆的船正往南市靠。他们说起蜀中的码头，如数家珍。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "ez_huanghelou_view_alone",
+              "label": "独看",
+              "text": "你退到栏边，独自看江。风把楼下的市声一阵阵送上来。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ez_huanghelou_rumor",
+          "type": "rumor",
+          "label": "听茶摊",
+          "text": "楼下的茶摊说，明州的生丝船到了江口，生丝价该松了。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "mingzhou",
+          "good": "raw_silk",
+          "mul": 0.9
+        }
+      ]
+    },
+    {
+      "id": "ez_nanshi",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "南市",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_ez_nanshi.jpg",
+      "description": "南市在城外，沿江数里，列肆如栉。贾船客舫衔尾不绝，四方商贾里蜀人最多。",
+      "interactions": [
+        {
+          "id": "ez_nanshi_buy",
+          "type": "buy",
+          "label": "挑蜀锦",
+          "text": "南市绸铺里挂着蜀锦，掌柜按匹论价。你挑了三匹，让他用油纸包好。",
+          "good": "silk_fabric",
+          "qty": 3,
+          "price_mul": 1.0,
+          "impact": false
+        },
+        {
+          "id": "ez_nanshi_invest",
+          "type": "invest",
+          "label": "入股酒垆",
+          "text": "南市酒垆的掌柜要添两口灶，问你肯不肯入本。",
+          "costs": [
+            80,
+            160
+          ],
+          "monthly": [
+            12,
+            26
+          ],
+          "shop": "南市酒垆"
+        },
+        {
+          "id": "ez_nanshi_rumor",
+          "type": "rumor",
+          "label": "听牙人",
+          "text": "南市牙人说，泉州的绢帛船到了江口，绢价要落。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "quanzhou",
+          "good": "silk_fabric",
+          "mul": 0.9
+        }
+      ]
+    },
+    {
+      "id": "ez_yingwuzhou",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "鹦鹉洲",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_ez_yingwuzhou.jpg",
+      "description": "鹦鹉洲横在江心，洲上茂林遮着神祠，远望像一座小山。传祢衡葬此，春水涨时，洲尾先没入江。",
+      "interactions": [
+        {
+          "id": "ez_yingwuzhou_shrine",
+          "type": "favour",
+          "label": "上洲访祠",
+          "text": "渡船靠上洲头，芦苇里让出一条土路。神祠的门半掩，香案上积着薄灰。",
+          "cost": 12,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "ez_yingwuzhou_shelter",
+          "type": "choice",
+          "label": "避风",
+          "text": "江上起风，船夫问你要靠洲北还是洲南。北边水深，南边有芦苇挡风。",
+          "options": [
+            {
+              "id": "ez_yingwuzhou_shelter_north",
+              "label": "靠洲北",
+              "text": "船靠到洲北，浪从船头直打过来。船夫把篙插进沙里，慢慢把船定住。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "ez_yingwuzhou_shelter_south",
+              "label": "靠洲南",
+              "text": "船绕到洲南，芦苇把风挡住。岸边有个打鱼的人，帮你们把缆绳系在树根上。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ez_hanyang",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "汉阳军",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_ez_hanyang.jpg",
+      "description": "汉阳军在江北，大别山压着汉水口。隔江望去，城堞、渡船和岸上的人都看得清，人物草木可数。",
+      "interactions": [
+        {
+          "id": "ez_hanyang_look",
+          "type": "favour",
+          "label": "望汉阳",
+          "text": "你站在江边，北岸的汉阳军城、大别山和渡口都看得清。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "隔江看过汉阳军。"
+          }
+        },
+        {
+          "id": "ez_hanyang_message",
+          "type": "choice",
+          "label": "隔江问讯",
+          "text": "北岸有船要过来，船夫问你可有口信带给汉阳的熟人。",
+          "options": [
+            {
+              "id": "ez_hanyang_message_send",
+              "label": "托带口信",
+              "text": "你把话写在纸上，交给船夫。他把纸折好，塞进竹筒，说傍晚带回来。",
+              "cost": 5,
+              "effects": {
+                "network": 1
+              }
+            },
+            {
+              "id": "ez_hanyang_message_watch",
+              "label": "只看",
+              "text": "你摇摇头，看那条船慢慢划过江心。北岸的炊烟升起来，又散在风里。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ez_battle_1259",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "鄂州之战",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_ez_battle_1259.jpg",
+      "unlock": {
+        "year_min": 1259,
+        "year_max": 1259,
+        "months": [
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "description": "一二五九年九月，忽必烈从阳逻堡渡江，围了鄂州。城上昼夜举火，江面全是北来的船。",
+      "interactions": [
+        {
+          "id": "ez_battle_1259_food",
+          "type": "choice",
+          "label": "守城",
+          "text": "围城的第九天，城上的人轮班下来吃饭。军吏问你能不能帮着送一趟。",
+          "once": true,
+          "options": [
+            {
+              "id": "ez_battle_1259_food_up",
+              "label": "上城送饭",
+              "text": "你挑着饭担上城，箭从垛口外擦过去。守卒蹲在墙根，几口就把饭吃完。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "fame": 1,
+                "flag": "ez_battle_food"
+              }
+            },
+            {
+              "id": "ez_battle_1259_food_stay",
+              "label": "闭门",
+              "text": "你说家里还有货要照看，转身进了巷子。身后的城门又落下一道闩。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ez_battle_1259_brick",
+          "type": "favour",
+          "label": "抬砖",
+          "text": "城根堆着拆下来的旧砖，守卒要把它们运上马道。你搭手抬了两筐。",
+          "cost": 0,
+          "once": true,
+          "effects": {
+            "martial": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ez_zhizhi",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "荆湖制置司与都统司水军",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_ez_zhizhi.jpg",
+      "description": "都统司的水军寨扎在江边，湖广总领所管着诸军钱粮。景定元年，荆湖制置司移治鄂州，衙廊就设在寨北。",
+      "interactions": [
+        {
+          "id": "ez_zhizhi_rudder",
+          "type": "favour",
+          "label": "扶舵承",
+          "text": "水军寨的船棚下，一条巡江船的舵承磨坏了。军匠把新木塞进榫眼，叫你扶住。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "martial": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "ez_zhizhi_hire",
+          "type": "hire",
+          "label": "雇水手",
+          "text": "寨外有个老水手，识得江心的沙线。雇他，船过阳逻不至搁浅。",
+          "who": "水手",
+          "cost": 70,
+          "wage": 10,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "ez_zhizhi_patrol",
+          "type": "choice",
+          "label": "随巡",
+          "text": "寨将说今日要出江巡哨，问你要不要随船去看。",
+          "options": [
+            {
+              "id": "ez_zhizhi_patrol_go",
+              "label": "随船",
+              "text": "你跟着巡江船出江，风把旗子吹得笔直。寨将站在船头，一路指给你看北岸的港汊。",
+              "cost": 10,
+              "effects": {
+                "martial": 1,
+                "sea_tendency": 1
+              }
+            },
+            {
+              "id": "ez_zhizhi_patrol_stay",
+              "label": "留寨",
+              "text": "你留在寨里看操。水手在滩上列队，鼓声一响，船棚下的桨一齐落水。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ez_toutuo",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "头陀寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_ez_toutuo.jpg",
+      "description": "头陀寺在城东石城山，兵火后重修，殿宇不多。汴僧舜广住了三十年，廊下还堆着新斫的木料。",
+      "interactions": [
+        {
+          "id": "ez_toutuo_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "香案边放着三炷香，知客僧替你点着，说殿后新修的墙还没干透。你把香插进炉里，烟直直地升上去。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "ez_toutuo_corridor",
+          "type": "choice",
+          "label": "修东廊",
+          "text": "寺里要修东廊，知客僧捧着缘簿站在殿前。",
+          "options": [
+            {
+              "id": "ez_toutuo_corridor_give",
+              "label": "捐钱",
+              "text": "你提笔在缘簿上记了一笔，僧人把铜钱收进柜里，说东廊入秋动工。",
+              "cost": 30,
+              "effects": {
+                "fame": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "ez_toutuo_corridor_pass",
+              "label": "不捐",
+              "text": "你把缘簿推回去，说再看看。知客僧点头，把笔搁回砚边。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ez_toutuo_rumor",
+          "type": "rumor",
+          "label": "听寺僧",
+          "text": "寺僧说，明州的经卷船到了江口，经卷价要涨。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "mingzhou",
+          "good": "sutra_scrolls",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "ez_donghu",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "东湖",
+      "kind": "dam",
+      "pending_art": true,
+      "bg": "bg_dist_ez_donghu.jpg",
+      "description": "东湖在城东四里，湖上有东园。一围烟浪，荷叶接岸，近城的人常来登览。",
+      "interactions": [
+        {
+          "id": "ez_donghu_garden",
+          "type": "favour",
+          "label": "游东园",
+          "text": "东园的门开着，守园人收了钱，指给你看湖上的桥。荷叶一直铺到桥脚。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "ez_donghu_boat",
+          "type": "choice",
+          "label": "泛湖",
+          "text": "湖面起风，船家问你要不要现在解缆。",
+          "options": [
+            {
+              "id": "ez_donghu_boat_hire",
+              "label": "雇船",
+              "text": "你上了小船，船家把篙一点，船头切开荷叶。水声从船底一直响到湖心。",
+              "cost": 15,
+              "effects": {
+                "sea_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "ez_donghu_boat_walk",
+              "label": "沿堤",
+              "text": "你沿堤往南走，堤边的柳树刚抽出新条。有人在湖里采藕，泥水没过小腿。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "hometown_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ez_dukou",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "长江渡口与蜀船",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_ez_dukou.jpg",
+      "description": "渡口在城南江岸，蜀船、淮船都在这儿候风。跳板搭上石阶，蜀锦、药材和茶包一担担挑下来。",
+      "interactions": [
+        {
+          "id": "ez_dukou_buy_medicine",
+          "type": "buy",
+          "label": "买药材",
+          "text": "蜀船卸下一包川芎，船主说这是青城山来的。你打开闻了闻，药气很足。",
+          "good": "aromatic_medicine",
+          "qty": 4,
+          "price_mul": 1.0,
+          "impact": false
+        },
+        {
+          "id": "ez_dukou_sell_tea",
+          "type": "sell",
+          "label": "卖茶包",
+          "text": "你把舱里的茶包搬上牙行，掌柜抽了一撮闻过，才肯开价。",
+          "good": "tea",
+          "qty": 5,
+          "price_mul": 1.0,
+          "impact": false
+        },
+        {
+          "id": "ez_dukou_rumor",
+          "type": "rumor",
+          "label": "听船主",
+          "text": "蜀船船主说，广州的香药船在江口卸货，香药价怕要松。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "guangzhou",
+          "good": "aromatic_medicine",
+          "mul": 0.9
+        }
+      ]
+    },
+    {
+      "id": "ez_chaque",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "茶马与榷货",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_ez_chaque.jpg",
+      "description": "川秦马纲沿江到鄂州，马匹在城外歇鞍；汉阳军的榷货务在江北收鄂州片茶。城里转的是茶引、盐引。",
+      "interactions": [
+        {
+          "id": "ez_chaque_licence",
+          "type": "licence",
+          "label": "请茶引",
+          "text": "总领所的书吏验过钱，在引面写了字号。凭这张引，往建康、镇江卖茶可少纳一道。",
+          "licence": "lic_ez_chayin",
+          "cost": 30,
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "ez_chaque_buy",
+          "type": "buy",
+          "label": "买片茶",
+          "text": "茶行里堆着鄂州片茶，掌柜验过茶引，才肯让你挑。",
+          "good": "tea",
+          "qty": 8,
+          "price_mul": 1.0,
+          "impact": false,
+          "needs_licence": "lic_ez_chayin",
+          "licence_mul": 0.9
+        },
+        {
+          "id": "ez_chaque_horses",
+          "type": "favour",
+          "label": "看马纲",
+          "text": "川秦马纲在城外歇鞍，押纲官正给马匹点数。你站在栅外看了一回。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "martial": 1,
+            "network": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ez_cheng_pengfei",
+      "port": "ezhou",
+      "pending_port": true,
+      "name": "程鹏飞降元",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_ez_cheng_pengfei.jpg",
+      "unlock": {
+        "year_min": 1275,
+        "year_max": 1275,
+        "months": [
+          1
+        ]
+      },
+      "description": "一二七五年正月，元军从阳罗堡渡江。都统程鹏飞在江上迎战，身被七创，退到鄂州城下。知鄂州张晏然、知汉阳军王仪以城降，程鹏飞以本军降。",
+      "interactions": [
+        {
+          "id": "ez_cheng_pengfei_boat",
+          "type": "choice",
+          "label": "江上",
+          "text": "江面传来鼓声，都统程鹏飞的船队正往南岸退。军吏在岸上收拢散船，问你的船肯不肯借。",
+          "once": true,
+          "options": [
+            {
+              "id": "ez_cheng_pengfei_boat_lend",
+              "label": "借船",
+              "text": "你让船靠过去，军士跳上船头，把旗插在桅杆下。江风很大，旗子一时没有展开。",
+              "cost": 0,
+              "effects": {
+                "flag": "ez_cheng_pengfei_boat",
+                "fame": 2,
+                "martial": 1
+              }
+            },
+            {
+              "id": "ez_cheng_pengfei_boat_hide",
+              "label": "藏船",
+              "text": "你把船摇进港汊，用芦苇遮住船身。岸上的鼓声渐渐远了。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ez_cheng_pengfei_bury",
+          "type": "favour",
+          "label": "收殓",
+          "text": "江面漂来断桨和尸首。寺僧在滩上支起席棚，缺人抬运。",
+          "cost": 20,
+          "once": true,
+          "effects": {
+            "hometown_tendency": 2,
+            "fame": 1
+          }
+        }
+      ]
+    }
+  ]
+}
