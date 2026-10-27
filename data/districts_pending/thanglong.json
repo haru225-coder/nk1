@@ -86,7 +86,7 @@
           "id": "tl_phuluong_rumor",
           "type": "rumor",
           "label": "问瓷户",
-          "text": "瓷户从舱角取出一只青白碗，翻过底来看。他说庆元新到的釉水好，四明的窑户却把货压在仓里。",
+          "text": "瓷户从舱角取出一只青白碗，翻过底来看。他说饶州窑的碗要先下江再转海，庆元府市上今年到得迟，碗价跟着涨。",
           "cost": 14,
           "cooldown_days": 35,
           "port": "mingzhou",
@@ -206,7 +206,7 @@
       "kind": "ferry",
       "pending_art": true,
       "bg": "bg_dist_tl_dahu.jpg",
-      "description": "大湖在城南，水面开阔，堤上种柳。晨雾未散时，渡船从桥洞下穿过，桨声比街市先醒。",
+      "description": "大湖在城西北，水面开阔，堤上种柳。晨雾未散时，渡船从桥洞下穿过，桨声比街市先醒。",
       "interactions": [
         {
           "id": "tl_dahu_boat",
@@ -616,7 +616,7 @@
       "kind": "academy",
       "pending_art": true,
       "bg": "bg_dist_tl_taixue.jpg",
-      "description": "国学校在文庙侧，斋舍是一排低屋。三魁的名字写在斋牌上，新来的士子先在廊下听讲。",
+      "description": "国学院在文庙侧，斋舍是一排低屋。三魁的名字写在斋牌上，新来的士子先在廊下听讲。",
       "interactions": [
         {
           "id": "tl_taixue_listen",
@@ -645,7 +645,7 @@
               "effects": {
                 "scholar_tendency": 2,
                 "fame": 1,
-                "note": "在升龙国学校呈过一卷课业。"
+                "note": "在升龙国学院呈过一卷课业。"
               }
             },
             {
