@@ -8,7 +8,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_gh_gongque.jpg",
-      "description": "江都宫依松岳山南麓，殿名多照开京旧制。宫城不广，朝会时百官在庭中站满，檐下挂着新制的帘。",
+      "description": "江都宫倚着北山，山名也照开京叫松岳，殿名多照开京旧制。宫城不广，朝会时百官在庭中站满，檐下挂着新制的帘。",
       "interactions": [
         {
           "id": "gh_gongque_charcoal",
@@ -83,7 +83,7 @@
           "id": "gh_jiachuan_ferryman",
           "type": "hire",
           "label": "雇渡夫",
-          "text": "渡夫姓白，在甲串摇了二十年橹。雇他，潮信与暗沙都先得一句。",
+          "text": "渡夫姓白，在甲串摇了二十年橹。有他掌橹，潮信与暗沙都先得一句。",
           "who": "渡夫",
           "cost": 70,
           "wage": 10,
@@ -343,7 +343,7 @@
           "id": "gh_yecheng_interpreter",
           "type": "hire",
           "label": "雇通事",
-          "text": "通事姓金，会说宋音与高丽话。雇他，宋商与官库之间的价先谈得拢。",
+          "text": "通事姓金，会说宋音与高丽话。他在中间传话，宋商与官库之间的价先谈得拢。",
           "who": "通事",
           "cost": 90,
           "wage": 12,
@@ -368,7 +368,7 @@
       "id": "gh_manyue",
       "port": "ganghwa",
       "pending_port": true,
-      "name": "满月台旧宫",
+      "name": "开京旧宫",
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_gh_manyue.jpg",
@@ -554,7 +554,7 @@
           "id": "gh_sanbie_soldier",
           "type": "hire",
           "label": "雇旧卒",
-          "text": "一个三别抄旧卒从珍岛逃回，识得海路。雇他，夜船不至撞上暗礁。",
+          "text": "一个三别抄旧卒从耽罗逃回，识得南边海路。有他在船头，夜船不至撞上暗礁。",
           "who": "旧卒",
           "cost": 60,
           "wage": 9,
@@ -582,7 +582,7 @@
           "id": "gh_cuishi_card",
           "type": "choice",
           "label": "投刺",
-          "text": "崔府门房收刺，问你递不递。递了，政事堂的吏人先见你。",
+          "text": "崔府门房收刺，问你递不递。递了，教定都监的吏人先见你。",
           "once_per": "month",
           "unlock": {
             "year_max": 1258
@@ -639,7 +639,7 @@
           "id": "gh_qingci_glaze",
           "type": "favour",
           "label": "看釉色",
-          "text": "青瓷行的牙人把一只梅瓶转过来，让你看釉下的嵌纹。日头照上去，翡色里透出一点灰。",
+          "text": "青瓷行的牙人把一只经瓶转过来，让你看釉下的嵌纹。日头照上去，翡色里透出一点灰。",
           "cost": 8,
           "once_per": "month",
           "effects": {
@@ -651,7 +651,7 @@
           "id": "gh_qingci_rumor",
           "type": "rumor",
           "label": "听瓷客",
-          "text": "瓷客说，江都官库收青瓷做膳器，泉州的青白瓷也受了牵动。",
+          "text": "瓷客说，江都官库把本地青瓷尽数收作膳器，市上只好靠宋商多载青白瓷来补，泉州窑口一时供不上。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "quanzhou",
@@ -668,7 +668,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_gh_mengshi.jpg",
-      "description": "1260 年后，蒙古使与达鲁花赤往来江都，馆舍设在宫城西。门前立着怯薛，宋商经过都要放慢脚步。",
+      "description": "1260 年后，蒙古使往来江都，馆舍门前站着随来的卫卒，宋商经过都要放慢脚步。",
       "interactions": [
         {
           "id": "gh_mengshi_petition",
@@ -693,7 +693,7 @@
             {
               "id": "gh_mengshi_petition_keep",
               "label": "不递",
-              "text": "你把状纸折回怀里，随员没有追问。馆门前的怯薛换了一次班。",
+              "text": "你把状纸折回怀里，随员没有追问。馆门前的卫卒换了一次班。",
               "cost": 0,
               "effects": {
                 "merchant_credit": 1
