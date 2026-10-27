@@ -15,6 +15,8 @@ var goods_data: Dictionary = {}
 var ports_data: Dictionary = {}
 var npcs_data: Dictionary = {}
 var discoveries_data: Dictionary = {}
+## 宝物图录（data/treasures.json，lane treas1）：单件收藏，不入货舱。
+var treasures_data: Dictionary = {}
 var ships_data: Dictionary = {}
 var chapters_data: Dictionary = {}
 var crew_data: Dictionary = {}
@@ -48,6 +50,7 @@ func load_data() -> void:
 	ports_data = _load_json("res://data/ports.json")
 	npcs_data = _load_json("res://data/npcs.json")
 	discoveries_data = _load_json("res://data/discoveries.json")
+	treasures_data = _load_json("res://data/treasures.json")
 	ships_data = _load_json("res://data/ships.json")
 	chapters_data = _load_json("res://data/chapters.json")
 	crew_data = _load_json("res://data/crew.json")
@@ -378,6 +381,44 @@ func get_good_by_id(good_id: String) -> Dictionary:
 
 func get_good_name(good_id: String) -> String:
 	return get_good_by_id(good_id).get("name", good_id)
+
+
+# 按 id 查询宝物（单件收藏，不入货舱）
+func get_treasure_by_id(treasure_id: String) -> Dictionary:
+	for t in treasures_data.get("treasures", []):
+		if t.get("id") == treasure_id:
+			return t
+	return {}
+
+
+## 本港唐物铺在售的宝物
+func treasures_at_shop(port_id: String) -> Array:
+	var out: Array = []
+	for t in treasures_data.get("treasures", []):
+		if typeof(t) != TYPE_DICTIONARY:
+			continue
+		for src in t.get("sources", []):
+			if typeof(src) == TYPE_DICTIONARY and str(src.get("type", "")) == "shop" and str(src.get("port", "")) == port_id:
+				out.append(t)
+				break
+	return out
+
+
+## 呈报某处发现时附赠的宝物
+func treasures_for_discovery(discovery_id: String) -> Array:
+	var out: Array = []
+	for t in treasures_data.get("treasures", []):
+		if typeof(t) != TYPE_DICTIONARY:
+			continue
+		for src in t.get("sources", []):
+			if typeof(src) == TYPE_DICTIONARY and str(src.get("type", "")) == "discovery" and str(src.get("id", "")) == discovery_id:
+				out.append(t)
+				break
+	return out
+
+
+func treasures_total() -> int:
+	return treasures_data.get("treasures", []).size()
 
 
 func get_port_by_id(port_id: String) -> Dictionary:

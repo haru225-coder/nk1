@@ -22,6 +22,7 @@ const EXAM_FLAG := "exam_sat"
 const EXAM_FLAG_PREFIX := "exam_sat_ch"
 const GUILD_FLAG_PREFIX := "guild_"
 const DISCOVERY_LIST_KEYS := ["discoveries_found", "discoveries_reported"]
+const TREASURE_LIST_KEYS := ["treasures_owned", "treasures_appraised", "treasures_donated"]
 ## 四个内核单例分区；读档前逐一体检，非对象或关键结构不合法即判坏档。
 const PARTITIONS := ["calendar", "economy", "fleet", "crew"]
 const STATE_NUM_KEYS := [
@@ -146,6 +147,25 @@ func _harden_state(raw: Dictionary) -> Dictionary:
 			found.append(did)
 	state["discoveries_found"] = found
 	state["discoveries_reported"] = reported
+	# 宝物三录：已献胜过在手；鉴定录只留在手且确为待鉴的件，避免坏档里「已献还在手」「鉴定不在手」。
+	var donated := _normalise_ids(state.get("treasures_donated", []))
+	var donated_set := {}
+	for tid in donated:
+		donated_set[tid] = true
+	var owned := []
+	for tid in _normalise_ids(state.get("treasures_owned", [])):
+		if not donated_set.has(tid):
+			owned.append(tid)
+	var owned_set := {}
+	for tid in owned:
+		owned_set[tid] = true
+	var appraised := []
+	for tid in _normalise_ids(state.get("treasures_appraised", [])):
+		if owned_set.has(tid):
+			appraised.append(tid)
+	state["treasures_owned"] = owned
+	state["treasures_appraised"] = appraised
+	state["treasures_donated"] = donated
 	for key in ["met_ids", "news_seen"]: state[key] = _normalise_ids(state.get(key, []))
 	return state
 

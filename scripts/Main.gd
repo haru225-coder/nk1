@@ -1279,6 +1279,7 @@ func _setup_market(port_id: String) -> void:
 	choices_container.add_child(slips)
 	for slip_id in broker_hand:
 		_attach_quiet(slips, _make_market_row(port_id, slip_id))
+	_TREASURE_SHOP.setup(self, port_id)
 
 	# 「明日再看 / 离开」钉在页脚（与 _add_leave_button 同一处），不跟柜上三样一起滚出画面：
 	# 1280×720 下这一行原先挂在滚动区里，静止时只露出上半截（第 1 轮评审 M2 / M8）
@@ -5558,3 +5559,19 @@ func _seam_fit_phrase(level: int) -> String:
 	if left >= 100:
 		return "缝未捻紧，风涛触浅照旧伤船湿货"
 	return "捻紧后，风涛触浅之伤与湿货剩%s" % _cheng_phrase(left)
+
+
+## 唐物铺 / 鉴定 / 献纳回调（Lane treas1，实现在 scripts/ui/TreasureShop.gd）
+const _TREASURE_SHOP := preload("res://scripts/ui/TreasureShop.gd")
+
+
+func _on_buy_treasure(tid: String, port_id: String) -> void:
+	_TREASURE_SHOP.on_buy(self, tid, port_id)
+
+
+func _on_appraise_treasure(tid: String) -> void:
+	_TREASURE_SHOP.on_appraise(self, tid)
+
+
+func _on_donate_treasure(tid: String) -> void:
+	_TREASURE_SHOP.on_donate(self, tid)

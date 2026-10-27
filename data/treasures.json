@@ -1,0 +1,426 @@
+{
+  "meta": {
+    "title": "宝物图录",
+    "era": "南宋末，器物断至1279年前",
+    "prototype": "lane treas1 v1",
+    "note": "单件收藏，不入货舱，不列牙行价目。sources 记 shop/discovery/event 来源；effect 记 fame/duty/appraise_only；unidentified_name 为待鉴定旧名。"
+  },
+  "treasures": [
+    {
+      "id": "ru_ware_washer",
+      "name": "汝窑天青洗",
+      "unidentified_name": "旧青瓷洗一只",
+      "category": "瓷器",
+      "grade": "甲",
+      "value": 2600,
+      "origin": "汝州宝丰清凉寺",
+      "era_note": "汝州青窑器内有玛瑙末为釉，本供御用，唯拣退者方许出卖，南渡后已难得。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "quanzhou"
+        }
+      ],
+      "effect": {
+        "kind": "fame",
+        "amount": 60
+      }
+    },
+    {
+      "id": "guan_ware_vase",
+      "name": "官窑粉青瓶",
+      "unidentified_name": "旧青瓷瓶一只",
+      "category": "瓷器",
+      "grade": "甲",
+      "value": 2200,
+      "origin": "临安修内司、郊坛下",
+      "era_note": "修内司、郊坛下先后设窑于临安，官窑器专供内廷，市上偶见者多是拣退之件。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "mingzhou"
+        }
+      ],
+      "effect": {
+        "kind": "fame",
+        "amount": 55
+      }
+    },
+    {
+      "id": "shang_zhou_ding",
+      "name": "商周铜鼎",
+      "unidentified_name": "旧铜鼎一具",
+      "category": "铜器",
+      "grade": "甲",
+      "value": 2000,
+      "origin": "商周旧器，宣和内府",
+      "era_note": "宣和间内府聚商周彝器，诏撰《博古图》三十卷，摹形释文，后世鉴古者奉为程式。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "quanzhou"
+        }
+      ],
+      "effect": {
+        "kind": "fame",
+        "amount": 80
+      }
+    },
+    {
+      "id": "chunhua_model_letters",
+      "name": "淳化阁帖拓本",
+      "category": "书画碑帖",
+      "grade": "乙",
+      "value": 1400,
+      "origin": "汴京内府",
+      "era_note": "淳化三年，太宗出内府墨迹，命王著摹刻上石，拓赐大臣，法帖之名自此始。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "mingzhou"
+        }
+      ],
+      "effect": {
+        "kind": "fame",
+        "amount": 45
+      }
+    },
+    {
+      "id": "longxian_incense",
+      "name": "龙涎香",
+      "category": "香药",
+      "grade": "乙",
+      "value": 1500,
+      "origin": "大食西海",
+      "era_note": "龙涎出大食西海，云是蛟龙所吐，浮于水面，蕃舶捞取，焚之香气久不散。",
+      "sources": [
+        {
+          "type": "discovery",
+          "id": "jiuri_wind_stele"
+        }
+      ],
+      "effect": {
+        "kind": "fame",
+        "amount": 40
+      }
+    },
+    {
+      "id": "korean_celadon",
+      "name": "高丽翡色青瓷",
+      "category": "瓷器",
+      "grade": "乙",
+      "value": 800,
+      "origin": "高丽全罗道康津",
+      "era_note": "宣和五年徐兢随使高丽，记其翡色青瓷制作工巧，色泽尤佳，出全罗道窑。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "mingzhou"
+        }
+      ],
+      "effect": {
+        "kind": "fame",
+        "amount": 30
+      }
+    },
+    {
+      "id": "water_compass",
+      "name": "指南浮针",
+      "category": "航海器物",
+      "grade": "乙",
+      "value": 1200,
+      "origin": "广州海舶",
+      "era_note": "《萍洲可谈》记广州海舶夜观星、昼观日，阴晦则观指南针，浮针一具，舟人赖以辨向。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "quanzhou"
+        }
+      ],
+      "effect": {
+        "kind": "duty",
+        "role": "huozhang",
+        "bonus": 1
+      }
+    },
+    {
+      "id": "needle_route_scroll",
+      "name": "海道山形图卷",
+      "category": "航海器物",
+      "grade": "乙",
+      "value": 900,
+      "origin": "泉州舟师",
+      "era_note": "舟师逐程画海中山屿形势与水色深浅，徐兢使高丽亦图写海道，此卷无撰人名氏。",
+      "sources": [
+        {
+          "type": "discovery",
+          "id": "penghu_channel"
+        }
+      ],
+      "effect": {
+        "kind": "duty",
+        "role": "duogong",
+        "bonus": 1
+      }
+    },
+    {
+      "id": "song_edition_wenxuan",
+      "name": "宋版文选残卷",
+      "category": "书画碑帖",
+      "grade": "乙",
+      "value": 900,
+      "origin": "建阳麻沙书坊",
+      "era_note": "建阳麻沙书坊刻《文选》，纸墨精好，日本僧舶归国多携之，博多唐房以宋版为贵。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "hakata"
+        }
+      ],
+      "effect": {
+        "kind": "duty",
+        "role": "tongshi",
+        "bonus": 1
+      }
+    },
+    {
+      "id": "ding_ware_bowl",
+      "name": "定窑白瓷碗",
+      "category": "瓷器",
+      "grade": "乙",
+      "value": 600,
+      "origin": "定州曲阳",
+      "era_note": "定州曲阳窑白瓷覆烧，口沿无釉成芒，故宫中嫌其有芒，后命汝州另造青器。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "fuzhou"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "jian_ware_teabowl",
+      "name": "建窑兔毫盏",
+      "category": "茶器",
+      "grade": "丙",
+      "value": 450,
+      "origin": "建宁府建阳水吉",
+      "era_note": "建阳水吉窑烧黑釉盏，兔毫、油滴皆出窑变，蔡襄《茶录》以建盏斗茶为贵。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "fuzhou"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "jizhou_leaf_bowl",
+      "name": "吉州窑木叶盏",
+      "unidentified_name": "旧黑釉盏一只",
+      "category": "茶器",
+      "grade": "丙",
+      "value": 400,
+      "origin": "吉州永和镇",
+      "era_note": "吉州永和镇窑以桑叶贴盏底，入窑烧成叶脉，一叶一盏，无一同者。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "fuzhou"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "jun_ware_jar",
+      "name": "钧窑月白釉罐",
+      "category": "瓷器",
+      "grade": "丙",
+      "value": 500,
+      "origin": "钧州钧台",
+      "era_note": "钧台窑月白釉厚而乳浊，以铜入釉可烧出紫红斑，金人治下北地仍有烧造。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "mingzhou"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "longquan_celadon",
+      "name": "龙泉粉青瓶",
+      "category": "瓷器",
+      "grade": "乙",
+      "value": 700,
+      "origin": "处州龙泉大窑",
+      "era_note": "处州龙泉大窑南宋烧粉青，素胎薄而釉层厚，多次施釉，色如青玉。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "wenzhou"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "jingdezhen_qingbai",
+      "name": "景德镇青白瓷执壶",
+      "category": "瓷器",
+      "grade": "丙",
+      "value": 500,
+      "origin": "饶州景德镇",
+      "era_note": "饶州景德镇烧青白瓷，釉色介于青白之间，胎薄处迎光可见刻花，蕃舶多载往南海。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "champa"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "yaozhou_celadon",
+      "name": "耀州青瓷刻花盘",
+      "unidentified_name": "旧青瓷盘一只",
+      "category": "瓷器",
+      "grade": "丙",
+      "value": 300,
+      "origin": "耀州同官",
+      "era_note": "耀州同官窑青瓷，刻花斜刀如削，釉色橄榄青，关中士庶通用之器。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "quanzhou"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "huzhou_mirror",
+      "name": "湖州石家铜镜",
+      "unidentified_name": "旧铜镜一面",
+      "category": "铜器",
+      "grade": "丙",
+      "value": 250,
+      "origin": "湖州石家",
+      "era_note": "湖州石家铸镜，背有「湖州石念二叔照子」字，宋人避讳，镜皆称照子。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "mingzhou"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "chenxiang",
+      "name": "占城沉香",
+      "category": "香药",
+      "grade": "丙",
+      "value": 350,
+      "origin": "占城",
+      "era_note": "占城沉香以木心结香，沉水者为上，赵汝适《诸蕃志》称其次于真腊所出。",
+      "sources": [
+        {
+          "type": "discovery",
+          "id": "champa_old_port"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "ruxiang",
+      "name": "大食乳香",
+      "category": "香药",
+      "grade": "丁",
+      "value": 130,
+      "origin": "大食",
+      "era_note": "乳香出大食，色如琥珀，焚之烟直上，泉州市舶课税以此为大宗。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "guangzhou"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "suhe_oil",
+      "name": "苏合油",
+      "category": "香药",
+      "grade": "丁",
+      "value": 140,
+      "origin": "大食",
+      "era_note": "苏合香油出大食，气味类笃耨，蕃商以琉璃瓶盛之，医家入药治卒中。",
+      "sources": [
+        {
+          "type": "shop",
+          "port": "guangzhou"
+        }
+      ],
+      "effect": {
+        "kind": "duty",
+        "role": "zashi",
+        "bonus": 1
+      }
+    },
+    {
+      "id": "rose_water",
+      "name": "大食蔷薇水",
+      "category": "舶来",
+      "grade": "乙",
+      "value": 600,
+      "origin": "大食",
+      "era_note": "蔷薇水出大食，以琉璃瓶盛之，洒衣则经岁犹香，泉广蕃商常携至。",
+      "sources": [
+        {
+          "type": "discovery",
+          "id": "qingjing_arabic_gate"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "glass_vessel",
+      "name": "大食玻璃瓶",
+      "category": "舶来",
+      "grade": "丙",
+      "value": 450,
+      "origin": "大食",
+      "era_note": "大食玻璃器薄如纸，色如水晶，泉广蕃坊以之盛蔷薇水，宋人谓之琉璃。",
+      "sources": [
+        {
+          "type": "discovery",
+          "id": "lingshan_tombs"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    }
+  ]
+}

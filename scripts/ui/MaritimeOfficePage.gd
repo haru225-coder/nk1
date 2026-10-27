@@ -46,11 +46,7 @@ static func on_apply_permit(main: Control) -> void:
 
 ## 上报发现：航中或寺观记下的东西要回市舶司呈报才换得赏格与名声
 static func setup_reporting(main: Control) -> void:
-	var pending := GameState.unreported_discoveries()
-	if pending.is_empty():
-		return
-
-	for did in pending:
+	for did in GameState.unreported_discoveries():
 		var d := GameManager.get_discovery_by_id(did)
 		if d.is_empty():
 			continue
@@ -64,6 +60,21 @@ static func setup_reporting(main: Control) -> void:
 			tip += "\n" + hook
 		chip.tooltip_text = tip + "\n呈报入案，赏钱名声同领。"
 
+	var codex: VBoxContainer = main._slip_body()
+	main._slip_title(codex, "宝物图鉴", "藏 %d / 共 %d" % [GameState.treasure_collected_count(), GameManager.treasures_total()])
+	main._slip_note(codex, "唐物铺收单件；名声宝物可献入市舶司，每件一次。")
+
+	for tid in GameState.treasures_owned:
+		var t := GameManager.get_treasure_by_id(str(tid))
+		var eff: Dictionary = t.get("effect", {})
+		if t.is_empty() or str(eff.get("kind", "")) != "fame" or not GameState.treasure_ready(str(tid)):
+			continue
+		var amount: int = maxi(1, int(eff.get("amount", 0)))
+		var body: VBoxContainer = main._slip_body()
+		main._slip_title(body, str(t.get("name", tid)), "献纳　名声 %d" % amount)
+		main._slip_note(body, "献入市舶司，名声加 %d，只此一次。" % amount)
+		main._slip_chip(main._slip_row(body), "献纳", main._on_donate_treasure.bind(str(tid)), true)
+
 
 static func on_report_discovery(main: Control, did: String) -> void:
 	var res: Dictionary = GameState.report_discovery(did)
@@ -71,6 +82,9 @@ static func on_report_discovery(main: Control, did: String) -> void:
 		var extra := ""
 		if res.get("promoted", false):
 			extra = "案册改题「%s」。" % str(res.get("title", {}).get("name", ""))
+		var treasure := str(res.get("treasure", ""))
+		if treasure != "":
+			extra += "又得「%s」。" % treasure
 		main.log_msg("【呈报】「%s」入案。赏钱 %d，名声加 %d。%s" % [
 			res["name"], res["gold"], res["fame"], extra,
 		])

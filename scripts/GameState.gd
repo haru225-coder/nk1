@@ -87,6 +87,13 @@ var discoveries_found: Array = []
 ## 已向市舶司上报、领过赏格的发现物 id
 var discoveries_reported: Array = []
 
+## 已收的宝物 id（单件收藏，不入货舱）
+var treasures_owned: Array = []
+## 已请人看过的宝物 id；待鉴宝物鉴定后入此册
+var treasures_appraised: Array = []
+## 已献纳的宝物 id；献纳后不再在手上，也算已收，避免重复获取
+var treasures_donated: Array = []
+
 ## 走通过的港口 id。章节晋升要看走过多少地方，不只是攒了多少钱。
 var visited_ports: Array = []
 ## 资金历史峰值。用峰值而非当前值判定晋升，否则买条船就把进度买没了。按现银减欠款记（add_money）：赊来的钱不算本钱（lane w54-econ）。
@@ -187,10 +194,109 @@ func report_discovery(did: String) -> Dictionary:
 	var fame_gain: int = maxi(1, value / 10)
 	add_money(gold)
 	var fame_res := add_fame(fame_gain)
+	var treasure_names: Array = []
+	for t in GameManager.treasures_for_discovery(did):
+		var tid := str(t.get("id", ""))
+		if add_treasure(tid):
+			treasure_names.append(str(t.get("name", tid)))
 	return {
 		"gold": gold,
 		"fame": fame_gain,
 		"name": d.get("name", "所见"),
+		"promoted": fame_res.get("promoted", false),
+		"title": fame_res.get("title", {}),
+		"treasure": "、".join(PackedStringArray(treasure_names)),
+	}
+
+
+# ── 宝物录 ────────────────────────────────────────────
+
+## 已收（在手或已献）都算收过，不能再买、不能再从发现里领第二次
+func has_treasure(tid: String) -> bool:
+	return tid in treasures_owned or tid in treasures_donated
+
+
+func treasure_appraised(tid: String) -> bool:
+	return tid in treasures_appraised
+
+
+func treasure_donated(tid: String) -> bool:
+	return tid in treasures_donated
+
+
+## 待鉴宝物须先鉴定才能献纳；本来就有名的宝物直接可献
+func treasure_ready(tid: String) -> bool:
+	var t := GameManager.get_treasure_by_id(tid)
+	return not t.is_empty() and (not t.has("unidentified_name") or tid in treasures_appraised)
+
+
+func treasure_collected_count() -> int:
+	return treasures_owned.size() + treasures_donated.size()
+
+
+func add_treasure(tid: String) -> bool:
+	if tid == "" or GameManager.get_treasure_by_id(tid).is_empty() or has_treasure(tid):
+		return false
+	treasures_owned.append(tid)
+	return true
+
+
+## 唐物铺买入：不占舱位，按标价付钱；已收 / 已献的不能再买
+func buy_treasure(tid: String, port_id: String) -> Dictionary:
+	var t := GameManager.get_treasure_by_id(tid)
+	if t.is_empty() or has_treasure(tid):
+		return {"ok": false, "msg": "这件已收。"}
+	var on_sale := false
+	for src in t.get("sources", []):
+		if typeof(src) == TYPE_DICTIONARY and str(src.get("type", "")) == "shop" and str(src.get("port", "")) == port_id:
+			on_sale = true
+			break
+	if not on_sale:
+		return {"ok": false, "msg": "这间铺子不卖这件。"}
+	var price := int(t.get("value", 0))
+	if price <= 0 or not spend_money(price):
+		return {"ok": false, "msg": "钱不够。"}
+	add_treasure(tid)
+	return {"ok": true, "name": t.get("name", tid), "price": price}
+
+
+## 鉴定待鉴宝物，费用为标价十分之一
+func appraise_treasure(tid: String) -> Dictionary:
+	var t := GameManager.get_treasure_by_id(tid)
+	if t.is_empty() or not (tid in treasures_owned):
+		return {"ok": false, "msg": "这件不在手上。"}
+	if tid in treasures_appraised:
+		return {"ok": false, "msg": "已经看过了。"}
+	if not t.has("unidentified_name"):
+		return {"ok": false, "msg": "这件本就有名。"}
+	var fee: int = maxi(1, int(t.get("value", 0)) / 10)
+	if not spend_money(fee):
+		return {"ok": false, "msg": "钱不够。"}
+	treasures_appraised.append(tid)
+	return {"ok": true, "name": t.get("name", tid), "fee": fee}
+
+
+## 献纳一件名声宝物：只有鉴定过的待鉴宝物或本就有名的宝物可献；每件一次
+func donate_treasure(tid: String) -> Dictionary:
+	var t := GameManager.get_treasure_by_id(tid)
+	if t.is_empty() or not (tid in treasures_owned):
+		return {"ok": false, "msg": "这件不在手上。"}
+	if tid in treasures_donated:
+		return {"ok": false, "msg": "已经献过了。"}
+	if not treasure_ready(tid):
+		return {"ok": false, "msg": "还未鉴定。"}
+	var eff: Dictionary = t.get("effect", {})
+	if str(eff.get("kind", "")) != "fame":
+		return {"ok": false, "msg": "这件不宜献纳。"}
+	var amount: int = maxi(1, int(eff.get("amount", 0)))
+	treasures_owned.erase(tid)
+	treasures_appraised.erase(tid)
+	treasures_donated.append(tid)
+	var fame_res := add_fame(amount)
+	return {
+		"ok": true,
+		"name": t.get("name", tid),
+		"fame": amount,
 		"promoted": fame_res.get("promoted", false),
 		"title": fame_res.get("title", {}),
 	}
@@ -1395,6 +1501,9 @@ func to_dict() -> Dictionary:
 		"ending_id": ending_id,
 		"discoveries_found": discoveries_found,
 		"discoveries_reported": discoveries_reported,
+		"treasures_owned": treasures_owned,
+		"treasures_appraised": treasures_appraised,
+		"treasures_donated": treasures_donated,
 		"visited_ports": visited_ports,
 		"peak_money": peak_money,
 		"draft_salt": draft_salt,
@@ -1451,6 +1560,9 @@ func from_dict(d: Dictionary) -> void:
 	ending_id = str(d.get("ending_id", ""))
 	discoveries_found = d.get("discoveries_found", [])
 	discoveries_reported = d.get("discoveries_reported", [])
+	treasures_owned = d.get("treasures_owned", [])
+	treasures_appraised = d.get("treasures_appraised", [])
+	treasures_donated = d.get("treasures_donated", [])
 	visited_ports = d.get("visited_ports", [])
 	peak_money = d.get("peak_money", money)
 	draft_salt = int(d.get("draft_salt", 0))
