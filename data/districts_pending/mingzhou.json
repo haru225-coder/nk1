@@ -7,13 +7,13 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_mz_sanjiang.jpg",
-      "description": "三江口是庆元府的码头，江流会处，宋船与高丽船挨着停在石岸上，脚夫扛着绢帛与铜锭上下。",
+      "description": "三江口是庆元府码头，江流会处，宋船和高丽船挨着停在石岸，脚夫扛绢帛与铜锭上下。",
       "interactions": [
         {
           "id": "mz_sanjiang_silk",
           "type": "sell",
           "label": "出手绢帛",
-          "text": "码头上的倭商问绢帛，宋货在庆元吃香，出价高过牙行。",
+          "text": "码头上倭商问绢帛，宋货在庆元吃香，出价高过牙行。",
           "good": "silk_fabric",
           "qty": 3,
           "price_mul": 1.06,
@@ -23,7 +23,7 @@
           "id": "mz_sanjiang_copper",
           "type": "buy",
           "label": "收倭铜",
-          "text": "倭船刚靠，铜锭按船边价出。比牙行松一些。",
+          "text": "倭船刚靠，铜锭还带着舱里的潮气，船主先敲一锭听声。",
           "good": "japanese_copper",
           "qty": 2,
           "price_mul": 0.95,
@@ -33,7 +33,7 @@
           "id": "mz_sanjiang_rumor",
           "type": "rumor",
           "label": "问梢公",
-          "text": "梢公说，博多今年硫黄山塌了一面，硫黄船少了两条，庆元的火药作坊在抢货。",
+          "text": "梢公说博多今年硫黄山塌了一面，硫黄船少两条，庆元火药作坊在抢货。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "hakata",
@@ -49,19 +49,19 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_mz_tiantong.jpg",
-      "description": "天童寺在四明山下，殿前松柏很老，东国僧人入宋多至此，寺前停着僧鞋与行囊。",
+      "description": "天童寺在四明山下，殿前松柏苍老，东国僧人入宋多到这里，寺前放着僧鞋与行囊。",
       "interactions": [
         {
           "id": "mz_tiantong_monk",
           "type": "choice",
           "label": "载僧",
-          "text": "有日本来的参学僧要搭船回博多。寺里一年只托这一回。",
+          "text": "有日本参学僧要搭船回博多，寺里托宋商捎带，错过便等来年。",
           "once_per": "year",
           "options": [
             {
               "id": "carry",
               "label": "许他搭船",
-              "text": "僧人上了你的船，寺里记下这份人情与船期。",
+              "text": "僧人登船，寺里把这份人情和船期一并记下。",
               "cost": 0,
               "effects": {
                 "favour": 2,
@@ -72,7 +72,7 @@
             {
               "id": "decline",
               "label": "婉辞",
-              "text": "你说舱位满了。僧人合掌，转身走了。",
+              "text": "你推说舱位已满，僧人合掌一礼，转身下船。",
               "cost": 0,
               "effects": {
                 "merchant_credit": 1
@@ -84,7 +84,7 @@
           "id": "mz_tiantong_incense",
           "type": "favour",
           "label": "上香",
-          "text": "你在天童寺佛殿前供了香。知客僧把你的名字写进了功德簿。",
+          "text": "你在佛殿供了香，知客僧提笔把你的名字记入功德簿。",
           "cost": 10,
           "once_per": "month",
           "effects": {
@@ -96,7 +96,7 @@
           "id": "mz_tiantong_sutra",
           "type": "sell",
           "label": "出手经卷",
-          "text": "寺里要宋刻的经卷，知客按册数点收，缺页的不收。",
+          "text": "寺里要宋刻经卷，知客按册点数，缺页的不收。",
           "good": "sutra_scrolls",
           "qty": 2,
           "price_mul": 1.08,
@@ -117,7 +117,7 @@
           "id": "mz_ashoka_rite",
           "type": "favour",
           "label": "祭塔",
-          "text": "你在阿育王寺舍利塔前礼拜。寺僧说，日本求舍利的僧人常托宋船捎信。",
+          "text": "你在舍利塔前礼拜。寺僧说，日本求舍利的僧人常托宋船捎信。",
           "cost": 20,
           "once_per": "month",
           "effects": {
@@ -129,7 +129,7 @@
           "id": "mz_ashoka_tea",
           "type": "buy",
           "label": "收山茶",
-          "text": "寺里收了一批山茶，按出寺的价出。",
+          "text": "寺里存的社前山茶，知客僧按罐点给香客。",
           "good": "tea",
           "qty": 4,
           "price_mul": 0.94,
@@ -139,7 +139,7 @@
           "id": "mz_ashoka_rumor",
           "type": "rumor",
           "label": "听塔铃",
-          "text": "看塔的老僧说，博多今冬入宋的僧船少，寺里存的茶不够分，唐房正等庆元船带茶去。",
+          "text": "看塔老僧说，博多今冬入宋僧船少，寺里存茶不够分，唐房正等庆元船带茶去。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "hakata",
@@ -155,7 +155,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_mz_baoguo.jpg",
-      "description": "保国寺大殿是北宋旧构，梁柱简净，寺僧扫地，香客不多，木鱼声从殿里传出来。",
+      "description": "保国寺大殿是北宋旧构，梁柱简净，寺僧扫地，香客不多，木鱼声从殿里传出。",
       "interactions": [
         {
           "id": "mz_baoguo_listen",
@@ -172,7 +172,7 @@
           "id": "mz_baoguo_donate",
           "type": "favour",
           "label": "助寺",
-          "text": "你捐了一批纸墨给保国寺。寺主说大殿修梁时会请你来看。",
+          "text": "你捐一批纸墨给保国寺，寺主说大殿修梁时请你来看。",
           "cost": 80,
           "once_per": "year",
           "effects": {
@@ -184,7 +184,7 @@
           "id": "mz_baoguo_lacquer",
           "type": "buy",
           "label": "收漆器",
-          "text": "寺里收了一批漆器，按出寺的价出。",
+          "text": "寺里收来一批漆器，漆面有划痕的便宜，完好的留着待客。",
           "good": "lacquerware",
           "qty": 3,
           "price_mul": 0.93,
@@ -199,13 +199,13 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_mz_shibo.jpg",
-      "description": "庆元府市舶司廊下验引抽解，书吏按会子说话。比泉州小，却认得日本船。",
+      "description": "庆元府市舶司廊下验引抽解，书吏按会子说话。衙署比泉州小，却认得日本船。",
       "interactions": [
         {
           "id": "mz_shibo_favour",
           "type": "favour",
           "label": "递话",
-          "text": "你给书吏送了一匣会子。他翻簿记下，下回验引快些。",
+          "text": "你给书吏送一匣会子，他翻簿记下，把验引压到当日头一宗。",
           "cost": 40,
           "once_per": "month",
           "effects": {
@@ -217,7 +217,7 @@
           "id": "mz_shibo_lic",
           "type": "licence",
           "label": "领东舶公凭",
-          "text": "东舶公凭到手。庆元府的牙人认这张纸。",
+          "text": "东舶公凭到手，庆元府牙人认这张纸。",
           "cost": 700,
           "licence": "lic_mz_east",
           "unlock": {
@@ -232,7 +232,7 @@
           "id": "mz_shibo_rumor",
           "type": "rumor",
           "label": "听倭船",
-          "text": "市舶司的书吏翻着抽解簿说，倭铜今年进得少，博多那头官府在收铜铸钱。",
+          "text": "市舶司书吏翻着抽解簿说，倭铜今年进得少，博多那头官府在收铜铸钱。",
           "cost": 18,
           "cooldown_days": 45,
           "port": "hakata",
@@ -248,13 +248,13 @@
       "kind": "exam",
       "pending_art": true,
       "bg": "bg_dist_mz_bang.jpg",
-      "description": "贡院门外立着两通石碑，榜墙新糊了一层纸。没有石人。大比之年秋天，榜贴在墙上。",
+      "description": "贡院门外有两通石碑和一面榜墙，榜墙新糊了纸。大比之年秋，榜便贴在这里。",
       "interactions": [
         {
           "id": "mz_bang_look",
           "type": "favour",
           "label": "看榜",
-          "text": "今秋的榜糊在贡院墙外，人挤在廊下，有人念，有人不作声。",
+          "text": "秋榜张在贡院墙外，看榜的人挤满廊下，有高声念的，也有默不作声的。",
           "cost": 0,
           "once_per": "year",
           "exam": true,
@@ -284,7 +284,7 @@
           "id": "mz_bang_stele",
           "type": "favour",
           "label": "读碑",
-          "text": "你在碑前默读了半晌。字迹漫漶。",
+          "text": "你在碑前默读了半晌，字迹漫漶。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -295,7 +295,7 @@
           "id": "mz_bang_incense",
           "type": "favour",
           "label": "焚香",
-          "text": "你在榜墙前焚了一炷香。香灰落在石阶上。",
+          "text": "你在榜墙前焚了一炷香，香灰落在石阶上。",
           "cost": 15,
           "once_per": "month",
           "effects": {
@@ -311,15 +311,15 @@
       "kind": "workshop",
       "pending_art": true,
       "bg": "bg_dist_mz_shipyard.jpg",
-      "description": "坞里在修福船，肋骨还敞着。铁钉与桐油堆在棚下，匠人按尺寸锯材。",
+      "description": "船坞里正修一条福船，肋骨尚未合拢。铁钉和桐油堆在棚下，匠人依尺寸锯木。",
       "interactions": [
         {
           "id": "mz_shipyard_smith",
           "type": "hire",
           "label": "雇船匠",
-          "text": "船匠肯留在坞里。人在时，买硫黄没那么扎眼。",
+          "text": "船匠会看福船的肋骨，换板时能省下一半木料。",
           "cost": 100,
-          "who": "明州船匠",
+          "who": "庆元船匠",
           "wage": 18,
           "attention_ease": 1
         },
@@ -327,7 +327,7 @@
           "id": "mz_shipyard_sulfur",
           "type": "buy",
           "label": "收硫黄",
-          "text": "萨摩来的硫黄在坞里过秤。这里按船边价收。",
+          "text": "萨摩硫黄在坞中过秤，麻袋一解开，匠人先捻一撮看干湿。",
           "good": "sulfur",
           "qty": 4,
           "price_mul": 0.93,
@@ -337,7 +337,7 @@
           "id": "mz_shipyard_rumor",
           "type": "rumor",
           "label": "听船材",
-          "text": "坞里匠人说，温州的蚕上簇遇了雨，生丝缫得少，织坊已把丝价添了一成。",
+          "text": "坞里匠人说，温州蚕上簇遇雨，生丝缫得少，织坊已把丝价添一成。",
           "cost": 14,
           "cooldown_days": 45,
           "port": "wenzhou",
@@ -353,19 +353,19 @@
       "kind": "teahouse",
       "pending_art": true,
       "bg": "bg_dist_mz_tea.jpg",
-      "description": "茶坊对着码头，店家在柜上点一盏庆元茶，话从这里传到牙行。",
+      "description": "茶坊临着码头，店家在柜后点一盏庆元茶，闲话从座上传到牙行。",
       "interactions": [
         {
           "id": "mz_tea_wager",
           "type": "choice",
           "label": "斗茶",
-          "text": "茶坊里两盏庆元茶对坐。赢的人这一季的茶价会有人跟着说。",
+          "text": "茶坊中两盏庆元茶摆开斗试，赢家的茶价这一季有人跟着议论。",
           "once_per": "month",
           "options": [
             {
               "id": "play",
               "label": "押一盏",
-              "text": "你押了自己这盏。店家把话传到牙行，说博多唐房今季茶船少，茶价已添了一成。",
+              "text": "你押了自己这盏。店家把话传到牙行，说博多唐房今季茶船少，茶价已添一成。",
               "cost": 20,
               "effects": {
                 "merchant_credit": 1
@@ -392,7 +392,7 @@
           "id": "mz_tea_buy",
           "type": "buy",
           "label": "收茶叶",
-          "text": "坊里的茶叶按出坊的价，比市上便宜些。",
+          "text": "坊中茶叶装在青篓里，店家抓一撮闻过火气才开价。",
           "good": "tea",
           "qty": 6,
           "price_mul": 0.9,
@@ -402,7 +402,7 @@
           "id": "mz_tea_favour",
           "type": "favour",
           "label": "添香",
-          "text": "你在茶坊请了一席点茶。店家说，市舶司的书吏常来这里歇脚。",
+          "text": "你在茶坊请了一席点茶。店家说，市舶司书吏常来这里歇脚。",
           "cost": 10,
           "once_per": "month",
           "effects": {
@@ -418,13 +418,13 @@
       "kind": "warehouse",
       "pending_art": true,
       "bg": "bg_dist_mz_tafang.jpg",
-      "description": "三江口边一排塌房，白墙木门，脚夫把箱子码在门外等着进仓。",
+      "description": "三江口旁有几座旧塌房，墙白门宽，脚夫把箱笼堆在门外候仓。",
       "interactions": [
         {
           "id": "mz_tafang_rent",
           "type": "invest",
           "label": "包一间",
-          "text": "包下塌房里的一间，按月收租，行情牌不动。",
+          "text": "你租下塌房一间，租钱按季付，仓门钥匙归你。",
           "costs": [
             480,
             980
@@ -439,7 +439,7 @@
           "id": "mz_tafang_quiet",
           "type": "sell",
           "label": "悄悄出瓷",
-          "text": "青白瓷从塌房后门出去，不经过牙行的秤，行情牌不动。价也低些。",
+          "text": "青白瓷从后门搬出，私秤过货，价随釉色深浅定。",
           "good": "qingbai_porcelain",
           "qty": 6,
           "price_mul": 0.92,
@@ -449,7 +449,7 @@
           "id": "mz_tafang_grain",
           "type": "buy",
           "label": "收仓米",
-          "text": "塌房里的米按仓底价出，比市上便宜些。",
+          "text": "塌房底层的米受了些潮气，主人开袋给人看，愿折价。",
           "good": "grain",
           "qty": 10,
           "price_mul": 0.9,
@@ -464,7 +464,7 @@
       "kind": "market",
       "pending_art": true,
       "bg": "bg_dist_mz_market.jpg",
-      "description": "城里的市从三江口一直排进来，摊上是米、茶与杂货，人挨着人走。",
+      "description": "城中的市从三江口一路排进来，摊上摆米、茶和杂货，人挨着人走。",
       "interactions": [
         {
           "id": "mz_market_grain",
@@ -490,7 +490,7 @@
           "id": "mz_market_rumor",
           "type": "rumor",
           "label": "听街谈",
-          "text": "货郎说，泉州的绢帛被蕃商订去了大半，这季庆元的机户出货也慢。",
+          "text": "货郎说泉州绢帛被蕃商订去大半，这季庆元机户出货也慢。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "quanzhou",
@@ -506,7 +506,7 @@
       "kind": "bridge",
       "pending_art": true,
       "bg": "bg_dist_mz_bridge.jpg",
-      "description": "石桥架在三江口上，挑担的与牵马的都从桥上过，桥下江流很急。",
+      "description": "三江口上横着石桥，挑夫牵马都从桥面过，桥下江流很急。",
       "interactions": [
         {
           "id": "mz_bridge_cross",
@@ -533,7 +533,7 @@
           "id": "mz_bridge_rumor",
           "type": "rumor",
           "label": "问行人",
-          "text": "牵马的人说，温州茶山遭了春寒，头茶没采上，茶行里已把价钱抬高。",
+          "text": "牵马人说温州茶山遭春寒，头茶没采上，茶行已把价钱抬高。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "wenzhou",
@@ -549,7 +549,7 @@
       "kind": "academy",
       "pending_art": true,
       "bg": "bg_dist_mz_academy.jpg",
-      "description": "府学在城中，学生捧着卷听讲。这里不卖书。",
+      "description": "府学在城中，学生捧着卷听讲，这里不卖书。",
       "interactions": [
         {
           "id": "mz_academy_listen",
@@ -566,7 +566,7 @@
           "id": "mz_academy_support",
           "type": "favour",
           "label": "助印",
-          "text": "你捐钱助刻了一部经籍。学官把你的名字刻在了卷末。",
+          "text": "你捐钱助刻一部经籍，学官把你的名字刻在卷末。",
           "cost": 50,
           "once_per": "year",
           "effects": {
@@ -578,7 +578,7 @@
           "id": "mz_academy_rumor",
           "type": "rumor",
           "label": "听茶松",
-          "text": "学里的士子说，福州的茶纲今年征得足，余茶都放给海商，到庆元的茶多，价会落。",
+          "text": "学里士子说福州茶纲今年征得足，余茶都放给海商，到庆元的茶多，价会落。",
           "cost": 10,
           "cooldown_days": 40,
           "port": "fuzhou",
@@ -594,13 +594,13 @@
       "kind": "ferry",
       "pending_art": true,
       "bg": "bg_dist_mz_ferry.jpg",
-      "description": "渡口的篷船载人去三江口，岸上的人候着下一班潮。",
+      "description": "渡口的篷船载人去三江口，岸上人候着下一班潮。",
       "interactions": [
         {
           "id": "mz_ferry_ride",
           "type": "favour",
           "label": "包渡",
-          "text": "你包了一条渡船去定海。船家答应往后有事先来知会你。",
+          "text": "你包了一条渡船去定海，船家答应往后有事先来知会你。",
           "cost": 12,
           "once_per": "month",
           "effects": {
@@ -612,16 +612,16 @@
           "id": "mz_ferry_boatman",
           "type": "hire",
           "label": "雇船家",
-          "text": "明州船家肯随你的船走，三江口的潮路与水门他都熟。",
+          "text": "庆元船家在三江口摆渡多年，涨落潮走哪条水道，他看水色便知。",
           "cost": 90,
-          "who": "明州船家",
+          "who": "庆元船家",
           "wage": 16
         },
         {
           "id": "mz_ferry_rumor",
           "type": "rumor",
           "label": "问船家",
-          "text": "船家说，耽罗那边的参农遭了风灾，人参今年难收。",
+          "text": "船家说耽罗参农遭了风灾，人参今年难收。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "jeju",
@@ -637,19 +637,19 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_mz_hill.jpg",
-      "description": "山亭在四明山腰，站上去看得见三江口与海门，风从海上来。",
+      "description": "山亭在四明山腰，三江口与海门在脚下分作两色，风从海上来。",
       "interactions": [
         {
           "id": "mz_hill_view",
           "type": "choice",
           "label": "登亭",
-          "text": "亭上看得见城与海。",
+          "text": "亭上风大，城在左手，海在右手。",
           "once_per": "year",
           "options": [
             {
               "id": "sea",
               "label": "看海",
-              "text": "海门的帆一张张出去。风从海上来。",
+              "text": "海门的帆一张张出港，海风迎面吹来。",
               "cost": 0,
               "effects": {
                 "sea_tendency": 1,
@@ -659,7 +659,7 @@
             {
               "id": "city",
               "label": "看城",
-              "text": "瓦屋一片接一片。你想起家里与田。",
+              "text": "城里瓦屋连片，你想起家中田亩。",
               "cost": 0,
               "effects": {
                 "hometown_tendency": 1
@@ -683,7 +683,7 @@
           "id": "mz_hill_rumor",
           "type": "rumor",
           "label": "听山话",
-          "text": "山上樵夫说，博多的螺钿漆器被宋商抢着订，今年的价比去年高一成。",
+          "text": "山上樵夫说博多螺钿漆器被宋商抢着订，今年价比去年高一成。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "hakata",

@@ -7,13 +7,13 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_rk_jetty.jpg",
-      "description": "石埠由珊瑚石砌成，潮水退时露出石缝。埠头堆着硫黄包与鹿皮包，脚夫在石阶上卸货。",
+      "description": "泊岸石埠用珊瑚石垒成，退潮时石缝尽露。埠头堆着硫黄包和鹿皮包，脚夫沿石阶上下。",
       "interactions": [
         {
           "id": "rk_jetty_deer",
           "type": "buy",
           "label": "收鹿皮",
-          "text": "埠头的鹿皮刚卸下船。按出岛的价收。",
+          "text": "埠头鹿皮刚卸船，毛面还带着岛上的灰，按张点收。",
           "good": "deer_hide",
           "qty": 6,
           "price_mul": 0.9,
@@ -23,7 +23,7 @@
           "id": "rk_jetty_iron",
           "type": "sell",
           "label": "卖铁器",
-          "text": "岛里缺铁器。船上的铁器卸到石埠，石埠的人肯多给几钱。",
+          "text": "岛里缺铁，铁器卸到石埠，按司的人先挑，剩下的才轮到摊上。",
           "good": "ironware",
           "qty": 2,
           "price_mul": 1.12,
@@ -34,7 +34,7 @@
           "id": "rk_jetty_rumor",
           "type": "rumor",
           "label": "问澎湖",
-          "text": "埠头的脚夫说澎湖的盐船还没回，岛上等盐下锅。",
+          "text": "脚夫说澎湖盐船还没回，岛上等盐下锅。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "penghu",
@@ -50,13 +50,13 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_rk_sulfur.jpg",
-      "description": "硫黄谷石路陡。谷里的人背着硫黄包上下，黄粉落在石阶上，白烟从石缝里冒。",
+      "description": "硫黄谷石路陡，谷里人背硫黄包上下。黄粉落在阶上，石缝里冒出白烟。",
       "interactions": [
         {
           "id": "rk_sulfur_buy",
           "type": "buy",
           "label": "收硫黄",
-          "text": "谷口的硫黄刚从山里背出。按出谷的价收。",
+          "text": "谷口硫黄刚背出山，黄粉沾在麻袋口，背夫按袋点。",
           "good": "sulfur",
           "qty": 8,
           "price_mul": 0.88,
@@ -66,7 +66,7 @@
           "id": "rk_sulfur_invest",
           "type": "invest",
           "label": "入股硫黄",
-          "text": "谷里的硫黄窑招人入股。入股后，每月分硫黄钱。",
+          "text": "谷中硫黄窑招股，一炉出一炉的钱，窑冷时不分。",
           "shop": "硫黄谷",
           "costs": [
             360,
@@ -81,7 +81,7 @@
           "id": "rk_sulfur_licence",
           "type": "licence",
           "label": "领谷凭",
-          "text": "谷主给了一张凭。有它，才许整谷搬运硫黄。",
+          "text": "谷主给一张凭，凭此才许整谷搬运硫黄。",
           "cost": 200,
           "licence": "lic_rk_sulfur",
           "effects": {
@@ -97,13 +97,13 @@
       "kind": "gate",
       "pending_art": true,
       "bg": "bg_dist_rk_gusuku.jpg",
-      "description": "石城砦由珊瑚石叠成。砦主坐在石阶上，手下人扛着刀枪在砦门边走过。",
+      "description": "石城砦用珊瑚石叠起，按司坐在石阶上，手下人扛刀枪从砦门进出。",
       "interactions": [
         {
           "id": "rk_gusuku_favour",
           "type": "favour",
           "label": "送刀剑",
-          "text": "你送了一匣刀剑给砦主。砦主收下，叫人把你的船引到内澳。",
+          "text": "你送一匣刀剑给按司。按司收下，叫人把你的船引进内澳。",
           "cost": 60,
           "once_per": "month",
           "effects": {
@@ -115,7 +115,7 @@
           "id": "rk_gusuku_licence",
           "type": "licence",
           "label": "领砦凭",
-          "text": "砦主给了一张凭。有它，才许在砦里互市。",
+          "text": "按司给一张凭，凭这张纸才许在砦里互市。",
           "cost": 240,
           "licence": "lic_rk_gusuku",
           "unlock": {
@@ -129,7 +129,7 @@
           "id": "rk_gusuku_hire",
           "type": "hire",
           "label": "雇岛人",
-          "text": "砦里的岛人肯跟你走。他在身边，互市好谈。",
+          "text": "砦里岛人识得各按司的旗号，靠岸前先报哪一句，他教得清。",
           "who": "南岛岛人",
           "cost": 95,
           "wage": 16,
@@ -144,13 +144,13 @@
       "kind": "market",
       "pending_art": true,
       "bg": "bg_dist_rk_market.jpg",
-      "description": "互市滩在珊瑚石间。摊子不多，卖的是鹿皮、硫黄，还有南岛来的贝壳。",
+      "description": "互市滩夹在珊瑚石间，摊子不多，卖鹿皮、硫黄，也有南岛来的贝壳。",
       "interactions": [
         {
           "id": "rk_market_deer",
           "type": "buy",
           "label": "收鹿皮",
-          "text": "滩上的鹿皮按市价收。",
+          "text": "滩上鹿皮摊在珊瑚石上，白的归一堆，黄黑的归一堆。",
           "good": "deer_hide",
           "qty": 4,
           "price_mul": 1.0,
@@ -160,7 +160,7 @@
           "id": "rk_market_salt",
           "type": "sell",
           "label": "卖海盐",
-          "text": "岛里缺盐。海盐卸到互市滩，滩上的人肯多出几钱。",
+          "text": "岛里缺盐，海盐卸到互市滩，妇人拿竹筒来量。",
           "good": "sea_salt",
           "qty": 5,
           "price_mul": 1.1,
@@ -170,7 +170,7 @@
           "id": "rk_market_rumor",
           "type": "rumor",
           "label": "听博多",
-          "text": "滩上的摊主说博多唐房催硫黄，装船的麻袋不够用。",
+          "text": "摊主说博多唐房催硫黄，装船的麻袋不够用。",
           "cost": 14,
           "cooldown_days": 40,
           "port": "hakata",
@@ -186,13 +186,13 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_rk_temple.jpg",
-      "description": "祈年祠在石坡上。祠里供着木雕的海神，香火少，供桌上摆着硫黄与贝壳。",
+      "description": "祈年祠立在石坡上，供一尊木雕海神。香火不旺，供桌摆着硫黄和贝壳。",
       "interactions": [
         {
           "id": "rk_temple_pray",
           "type": "favour",
           "label": "祈风",
-          "text": "你在祈年祠前点香，问今年的西南风何时到。",
+          "text": "你在祈年祠前点香，问今年的西南风几时到。",
           "cost": 0,
           "once_per": "year",
           "effects": {
@@ -204,7 +204,7 @@
           "id": "rk_temple_rumor",
           "type": "rumor",
           "label": "听泉州",
-          "text": "祈年祠的香客说，泉州漆器铺接了大食船的订货，现货不够，箱笼还没凑齐。",
+          "text": "香客说泉州漆器铺接了大食船订货，现货不够，箱笼还没凑齐。",
           "cost": 15,
           "cooldown_days": 40,
           "port": "quanzhou",
@@ -220,13 +220,13 @@
       "kind": "ferry",
       "pending_art": true,
       "bg": "bg_dist_rk_ferry.jpg",
-      "description": "渡海口的木桩歪着。船夫摇着短桨，把人从一岛渡到另一岛。",
+      "description": "渡海口的木桩歪斜，船夫摇短桨，把人从一岛送到另一岛。",
       "interactions": [
         {
           "id": "rk_ferry_sulfur",
           "type": "buy",
           "label": "收硫黄",
-          "text": "渡海口的硫黄按船价收。数量不多。",
+          "text": "渡海口的硫黄是岛上背来的，麻袋小，不过数包。",
           "good": "sulfur",
           "qty": 4,
           "price_mul": 0.95,
@@ -236,7 +236,7 @@
           "id": "rk_ferry_grain",
           "type": "sell",
           "label": "卖米粮",
-          "text": "岛里缺粮。米粮卸到渡口，渡口的人肯多添几钱。",
+          "text": "岛中米贵，米粮卸到渡口，等米的人拎着布袋围拢。",
           "good": "grain",
           "qty": 3,
           "price_mul": 1.1,
@@ -246,7 +246,7 @@
           "id": "rk_ferry_favour",
           "type": "favour",
           "label": "送船资",
-          "text": "你给渡海口留了一笔船资，船夫把船拢近，先渡你船上的人。",
+          "text": "你给渡海口添了船资，船夫把船拢近，先渡你船上的人。",
           "cost": 20,
           "effects": {
             "favour": 1,
@@ -262,13 +262,13 @@
       "kind": "warehouse",
       "pending_art": true,
       "bg": "bg_dist_rk_warehouse.jpg",
-      "description": "石埠边的塌房收租，不喊价。货从珊瑚石后门悄悄搬出，牙行的行情牌上看不见。",
+      "description": "石埠边的塌房收租不喊价。货打珊瑚石后门悄悄搬出，牙行的账上也不收这一号。",
       "interactions": [
         {
           "id": "rk_warehouse_rent",
           "type": "invest",
           "label": "包一间",
-          "text": "包下石埠边的塌房一间，每月收租。",
+          "text": "你租下石埠边塌房一间，租金按季交给房东，钥匙另打一把。",
           "shop": "塌房",
           "costs": [
             460,
@@ -283,7 +283,7 @@
           "id": "rk_warehouse_quiet",
           "type": "sell",
           "label": "悄悄出皮",
-          "text": "鹿皮从塌房后门出去，不经牙行的秤，行情牌不动。价也低些。",
+          "text": "鹿皮打后门运出，私秤过货，价压得低，只收现钱。",
           "good": "deer_hide",
           "qty": 4,
           "price_mul": 0.88,
@@ -298,13 +298,13 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_rk_coral.jpg",
-      "description": "珊瑚浜水清见底。船泊在浜里，船底擦着珊瑚，船工在浜边骂石。",
+      "description": "珊瑚浜水清见底，船泊在浜里，船底擦着珊瑚。船工蹲在浜边骂石。",
       "interactions": [
         {
           "id": "rk_coral_porcelain",
           "type": "sell",
           "label": "卖福建瓷",
-          "text": "浜里有人收瓷。价比牙行低些，不推行情。",
+          "text": "浜里有人收瓷，价钱比牙行低，也不推行情。",
           "good": "fujian_porcelain",
           "qty": 4,
           "price_mul": 0.9,
@@ -314,7 +314,7 @@
           "id": "rk_coral_favour",
           "type": "favour",
           "label": "送珊瑚",
-          "text": "你送了一块珊瑚给浜里的老人。老人把珊瑚摆在窗台上。",
+          "text": "你送一块珊瑚给浜里老人，老人把它摆在窗台。",
           "cost": 30,
           "effects": {
             "favour": 1,
@@ -330,13 +330,13 @@
       "kind": "street",
       "pending_art": true,
       "bg": "bg_dist_rk_pilot.jpg",
-      "description": "舵手楼在石埠上。老舵手坐在楼里，墙上挂着航线图，桌上摆着硫黄与贝。",
+      "description": "舵手楼建在石埠上，老舵手坐在楼中，墙上挂航线图，桌上摆硫黄和贝壳。",
       "interactions": [
         {
           "id": "rk_pilot_hire",
           "type": "hire",
           "label": "雇舵手",
-          "text": "舵手楼的老舵手肯跟你走。他在身边，硫黄能先挑，砦主的簿子也松一笔。",
+          "text": "老舵手记得各岛间的暗流，逆风时也能借沿岸回流走一程。",
           "who": "南岛舵手",
           "cost": 100,
           "wage": 17,
@@ -346,7 +346,7 @@
           "id": "rk_pilot_rumor",
           "type": "rumor",
           "label": "听耽罗",
-          "text": "舵手说耽罗的人参还没出山，船在等采参的人。",
+          "text": "舵手说耽罗人参还没出山，船在等采参的人。",
           "cost": 16,
           "cooldown_days": 45,
           "port": "jeju",
@@ -362,13 +362,13 @@
       "kind": "dam",
       "pending_art": true,
       "bg": "bg_dist_rk_salt.jpg",
-      "description": "盐滩在澳里。滩上白盐结成块，岛人挑着盐包走过，脚印深陷。",
+      "description": "盐滩在澳里，白盐结成硬块。岛人挑盐包走过，脚印陷进盐泥。",
       "interactions": [
         {
           "id": "rk_salt_sell",
           "type": "sell",
           "label": "卖海盐",
-          "text": "岛里缺盐。海盐卸到盐滩，滩上的人肯多加几钱。",
+          "text": "岛里缺盐，海盐卸到盐滩，盐工先尝一粒再论价。",
           "good": "sea_salt",
           "qty": 4,
           "price_mul": 1.08,
@@ -378,7 +378,7 @@
           "id": "rk_salt_invest",
           "type": "invest",
           "label": "入股盐滩",
-          "text": "盐滩主人招人入股。入股后，每月收盐钱。",
+          "text": "盐滩主人合股经营，按滩份分盐，盐商到岸再折钱。",
           "shop": "盐滩",
           "costs": [
             300,
@@ -398,13 +398,13 @@
       "kind": "grove",
       "pending_art": true,
       "bg": "bg_dist_rk_deer.jpg",
-      "description": "鹿苑在石坡下。鹿群在灌木间跑，猎人扛着鹿角下坡来。",
+      "description": "鹿苑在石坡下，鹿群穿行灌木。猎人扛着鹿角，慢慢走下山坡。",
       "interactions": [
         {
           "id": "rk_deer_buy",
           "type": "buy",
           "label": "收鹿皮",
-          "text": "猎人新剥的皮子。按出苑的价收。",
+          "text": "猎人刚剥的皮子还软，用木钉绷在坡上晾。",
           "good": "deer_hide",
           "qty": 3,
           "price_mul": 0.85,
@@ -414,7 +414,7 @@
           "id": "rk_deer_favour",
           "type": "favour",
           "label": "送弓弦",
-          "text": "你送了一副弓弦给猎人。猎人当场把弦换上。",
+          "text": "你送一副弓弦给猎人，猎人当场换上。",
           "cost": 25,
           "effects": {
             "favour": 1,
@@ -430,13 +430,13 @@
       "kind": "hill",
       "pending_art": true,
       "bg": "bg_dist_rk_watch.jpg",
-      "description": "了望台立在石城砦最高处，珊瑚石墙外四面皆海，风把人的衣角吹起。",
+      "description": "了望台立在石城砦最高处，珊瑚石墙挡不住海风，人的衣角翻卷。",
       "interactions": [
         {
           "id": "rk_watch_coin",
           "type": "sell",
           "label": "卖宋钱",
-          "text": "台下有人收宋钱。这是禁物，砦主会记一笔。",
+          "text": "台下有人私收宋钱，成色好的才要，按司的巡丁常来转。",
           "good": "song_coin",
           "qty": 2,
           "price_mul": 1.15,
@@ -447,7 +447,7 @@
           "id": "rk_watch_rumor",
           "type": "rumor",
           "label": "听博多",
-          "text": "台下的人说，博多唐房收不到宋钱，海商把铜钱压在舱底，只肯以货相换。",
+          "text": "台下人说博多唐房收不到宋钱，海商把铜钱压在舱底，只换货不出钱。",
           "cost": 16,
           "cooldown_days": 45,
           "port": "hakata",
@@ -463,13 +463,13 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_rk_beach.jpg",
-      "description": "白浜沙白。船泊在浜里，船工在浜上晒帆，小孩在沙里跑动。",
+      "description": "白浜沙白，船泊在浜里。船工在滩上晒帆，孩童赤脚在沙里跑。",
       "interactions": [
         {
           "id": "rk_beach_sulfur",
           "type": "buy",
           "label": "收硫黄",
-          "text": "浜边的硫黄按船价收。数量不多。",
+          "text": "浜边硫黄堆在草席上，海风一吹，黄粉扑人一脸。",
           "good": "sulfur",
           "qty": 4,
           "price_mul": 0.95,
@@ -479,7 +479,7 @@
           "id": "rk_beach_porcelain",
           "type": "sell",
           "label": "卖福建瓷",
-          "text": "浜里有人收瓷，压着价，行情牌上不动。",
+          "text": "浜里有人收瓷，价钱压得低，厚胎的才要。",
           "good": "fujian_porcelain",
           "qty": 3,
           "price_mul": 0.9,
@@ -489,12 +489,12 @@
           "id": "rk_beach_choice",
           "type": "choice",
           "label": "泊船",
-          "text": "浜里风小，船泊进来。交泊费，或等天黑再悄悄靠岸。",
+          "text": "浜里风小，船可泊入。交泊费，或等天黑悄悄靠岸。",
           "options": [
             {
               "id": "shelter",
               "label": "交泊费",
-              "text": "你交了泊费。浜里给你留了一条缆桩。",
+              "text": "你交了泊费，浜里给你留一根缆桩。",
               "cost": 35,
               "effects": {
                 "network": 1,
@@ -504,7 +504,7 @@
             {
               "id": "sneak",
               "label": "悄悄泊",
-              "text": "你悄悄泊了船。砦主的簿子上多了一笔。",
+              "text": "你悄悄泊了船，缆绳系在珊瑚石后，没惊动砦门。",
               "cost": 0,
               "effects": {
                 "pu_attention": 1
@@ -521,13 +521,13 @@
       "kind": "street",
       "pending_art": true,
       "bg": "bg_dist_rk_inlet.jpg",
-      "description": "南岛的暗澳藏在珊瑚石缝里。船进了暗澳便收帆，只在天黑后点灯。",
+      "description": "南岛的暗澳藏在珊瑚石缝里，船进了澳便收帆，只在天黑后点灯。",
       "interactions": [
         {
           "id": "rk_inlet_lacquer",
           "type": "sell",
           "label": "卖漆器",
-          "text": "澳里有人收漆器，不问来路，只按暗价过手。",
+          "text": "澳里有人收漆器，不问来路，暗价过手。",
           "good": "lacquerware",
           "qty": 2,
           "price_mul": 0.92,
@@ -542,7 +542,7 @@
             {
               "id": "pay",
               "label": "交一笔",
-              "text": "你交了一笔钱。澳主放你船过。",
+              "text": "你交了一笔钱，澳主放你的船过去。",
               "cost": 55,
               "effects": {
                 "pu_attention": 1
@@ -551,7 +551,7 @@
             {
               "id": "refuse",
               "label": "不交",
-              "text": "你没交。澳主记下了你的船。",
+              "text": "你没有交钱，澳主记下你的船号。",
               "cost": 0,
               "effects": {
                 "fame": 1,
