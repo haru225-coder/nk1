@@ -205,7 +205,7 @@
           "id": "tz_juzhou_rumor",
           "type": "rumor",
           "label": "问洲民",
-          "text": "洲民把橘子运到城下，换明州船带来的青白瓷碗。碗在潭州走得快，明州的货主先留了一批。",
+          "text": "洲民把橘子运到城下，换庆元府船带来的青白瓷碗。碗在潭州走得快，庆元府的货主先留了一批。",
           "cost": 10,
           "cooldown_days": 40,
           "port": "mingzhou",
@@ -402,7 +402,7 @@
       "kind": "teahouse",
       "pending_art": true,
       "bg": "bg_dist_tz_tea.jpg",
-      "description": "潭州出茶，片茶有独行、灵草、绿芽，散茶有岳麓、草子。茶场发给长短引，园户持引才许贩运。",
+      "description": "潭州出茶，片茶有独行、灵草、绿芽，散茶有岳麓、草子。茶场发给长短引，茶商持引才许贩运。",
       "interactions": [
         {
           "id": "tz_tea_licence",
@@ -590,7 +590,7 @@
           "id": "tz_shuaifu_rumor",
           "type": "rumor",
           "label": "听军牒",
-          "text": "帅府发下军牒，沿江州县要留粮。明州的米行先改了牌价。",
+          "text": "帅府发下军牒，沿江州县要留粮。庆元府的米行先改了牌价。",
           "cost": 12,
           "cooldown_days": 40,
           "port": "mingzhou",

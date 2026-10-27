@@ -687,7 +687,7 @@
           "id": "dy_salt_rumor",
           "type": "rumor",
           "label": "听仓吏说盐包",
-          "text": "仓吏说，上游井灶被军前征了夫，盐包到合州迟了半个月，兴化的海盐船怕要补这个缺口。",
+          "text": "仓吏说，上游井灶被军前征了夫，盐包到合州迟了半个月，荆湖的盐价先起，兴化的海盐船赶去补缺。",
           "cost": 12,
           "cooldown_days": 45,
           "port": "xinghua",
@@ -704,13 +704,13 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_dy_zhizhi.jpg",
-      "description": "四川制置司的札子从重庆递到钓鱼城，驿卒把封角交进守衙。川引的折纳写在公文末尾，军吏按日子归档。",
+      "description": "四川制置司的札子从重庆递到钓鱼城，驿卒把封角交进守衙。钱引的折纳写在公文末尾，军吏按日子归档。",
       "interactions": [
         {
           "id": "dy_zhizhi_petition",
           "type": "favour",
           "label": "替米行递状",
-          "text": "你替合州米行递一张状子，守衙的书吏把状纸展平，先看川引折纳那一栏。",
+          "text": "你替合州米行递一张状子，守衙的书吏把状纸展平，先看钱引折纳那一栏。",
           "cost": 10,
           "once_per": "month",
           "effects": {
@@ -733,7 +733,7 @@
         {
           "id": "dy_zhizhi_rumor",
           "type": "rumor",
-          "label": "听书吏说川引",
+          "label": "听书吏说钱引",
           "text": "书吏说，四川钱引又换新界，旧引兑不足数，蜀商急着把蜀锦折价出手，泉州绢行收货压了价。",
           "cost": 12,
           "cooldown_days": 60,
