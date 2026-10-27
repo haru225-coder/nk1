@@ -1,0 +1,727 @@
+{
+  "districts": [
+    {
+      "id": "kk_wakamiya",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "若宫大路与段葛",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_kk_wakamiya.jpg",
+      "description": "若宫大路从由比滨直抵鹤冈八幡宫，路心一条高出土面的松堤。1182 年，源赖朝为祈北条政子安产，命人筑起这段堤。堤面铺土，两旁种松。",
+      "interactions": [
+        {
+          "id": "kk_wakamiya_sweep",
+          "type": "favour",
+          "label": "扫松针",
+          "text": "秋末松针落满堤面，你借了竹帚，从宫前扫到海边。管堤的老卒把一盏热茶放在石上。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "kk_wakamiya_horse",
+          "type": "choice",
+          "label": "让马",
+          "text": "一匹驿马从堤心直冲下来，骑手没有收缰。堤边只容两人侧身。",
+          "options": [
+            {
+              "id": "kk_wakamiya_horse_yield",
+              "label": "侧身让过",
+              "text": "你侧身贴住松树，马擦着衣袖过去。骑手在马上略一点头。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "kk_wakamiya_horse_hold",
+              "label": "站着不动",
+              "text": "你站着没动，马在最后一刻偏开。骑手勒马回头，盯了你片刻，才又打马走了。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "pu_attention": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "kk_wakamiya_rumor",
+          "type": "rumor",
+          "label": "听堤上",
+          "text": "八幡宫秋祭要换供器，庆元府的青白瓷先被大寺挑去一批，铺面货少，瓷价比上月高。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "mingzhou",
+          "good": "qingbai_porcelain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "kk_hachimangu",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "鹤冈八幡宫",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_kk_hachimangu.jpg",
+      "description": "社在山腰，石阶从大路尽头上行。1180 年源赖朝把八幡神迁到这里，1191 年社殿火后重建。阶下有源平两池，社前舞殿的檐角对着海。",
+      "interactions": [
+        {
+          "id": "kk_hachimangu_sake",
+          "type": "favour",
+          "label": "献神酒",
+          "text": "祭前一日，你抬一坛神酒到社务所。神官验了封口，把酒列在廊下。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "kk_hachimangu_yabusame",
+          "type": "choice",
+          "label": "流镝马",
+          "text": "流镝马在社前跑马射靶。一匹马在转弯处失蹄，骑手摔在沙上。",
+          "options": [
+            {
+              "id": "kk_hachimangu_yabusame_help",
+              "label": "上前扶马",
+              "text": "你冲上去按住马头，骑手翻身起来，拍了拍你的肩。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "kk_hachimangu_yabusame_watch",
+              "label": "留在阶上",
+              "text": "你留在阶上，看马自己站起来。场边鼓声顿了一息，又响。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "kk_hachimangu_rumor",
+          "type": "rumor",
+          "label": "问神官",
+          "text": "社里要为流镝马添一把献刀，博多刀铺先接神社的订单，好刀被挑走。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "japanese_sword",
+          "mul": 1.14
+        }
+      ]
+    },
+    {
+      "id": "kk_daibutsu",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "长谷大佛殿",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_kk_daibutsu.jpg",
+      "description": "大佛殿在长谷，铜阿弥陀佛坐像 1252 年开始铸造，分段接缝仍可辨。佛身坐在殿内，高三丈有余。",
+      "interactions": [
+        {
+          "id": "kk_daibutsu_seam",
+          "type": "favour",
+          "label": "看铸痕",
+          "text": "寺僧举灯照佛背，铸缝一道接一道。灯移开，铜色又沉下去。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "长谷大佛殿看过铜佛接缝。"
+          }
+        },
+        {
+          "id": "kk_daibutsu_copper",
+          "type": "choice",
+          "label": "补铜",
+          "text": "寺里说铜佛接缝要补，知客拿着缘簿立在阶下。",
+          "options": [
+            {
+              "id": "kk_daibutsu_copper_give",
+              "label": "施铜",
+              "text": "你报了船号，又添一串铜钱。知客数过钱，把缘簿合上。",
+              "cost": 30,
+              "effects": {
+                "fame": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "kk_daibutsu_copper_pass",
+              "label": "只上香",
+              "text": "你上了香，没有在缘簿上写字。知客也不劝，把缘簿抱回殿里。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "kk_daibutsu_rumor",
+          "type": "rumor",
+          "label": "听寺僧",
+          "text": "大佛殿补佛身要铜，镰仓的铜先尽着寺里，庆元府来的铜船装不满，铜价抬了一截。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "japanese_copper",
+          "mul": 1.13
+        }
+      ]
+    },
+    {
+      "id": "kk_kencho",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "建长寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_kk_kencho.jpg",
+      "description": "建长寺在巨福山，1253 年北条时赖请宋僧兰溪道隆开山。山门内一条直路通法堂，僧众诵经带宋音，廊下摆着洗手的石槽。",
+      "interactions": [
+        {
+          "id": "kk_kencho_lecture",
+          "type": "favour",
+          "label": "听讲",
+          "text": "兰溪道隆在法堂开讲，译僧一句一句转。你坐在廊下，听到日影移过石阶。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          },
+          "unlock": {
+            "year_max": 1278
+          }
+        },
+        {
+          "id": "kk_kencho_sutra",
+          "type": "choice",
+          "label": "施经",
+          "text": "寺里要补藏经，知客问宋商肯不肯先赊一函。",
+          "options": [
+            {
+              "id": "kk_kencho_sutra_give",
+              "label": "赊一函",
+              "text": "你叫伙计先搬一函经卷进经藏。知客写下船号，说秋后还钱。",
+              "cost": 40,
+              "effects": {
+                "fame": 1,
+                "network": 1,
+                "flag": "kk_kencho_sutra"
+              }
+            },
+            {
+              "id": "kk_kencho_sutra_pass",
+              "label": "不赊",
+              "text": "你说舱里的经卷已有人订。知客不再多问，把缘簿收回袖中。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "kk_kencho_rumor",
+          "type": "rumor",
+          "label": "问知客",
+          "text": "庆元府的书估说，镰仓的禅寺今年添经，宋版经卷在庆元就订去大半，书价高了。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "sutra_scrolls",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "kk_jufuku",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "寿福寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_kk_jufuku.jpg",
+      "description": "寿福寺在扇谷，1200 年北条政子为亡夫源赖朝建寺，请荣西开山。寺门对着山道，堂前几株老梅，僧人按宋法点茶。",
+      "interactions": [
+        {
+          "id": "kk_jufuku_tea",
+          "type": "favour",
+          "label": "吃茶",
+          "text": "僧人用茶筅打出一碗浓茶，先放在你面前。碗沿有一道旧釉裂。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "kk_jufuku_pagoda",
+          "type": "choice",
+          "label": "扫塔",
+          "text": "寺后有一座石塔，塔身积了落叶。僧人只说塔下埋着旧事，递过一把竹帚。",
+          "options": [
+            {
+              "id": "kk_jufuku_pagoda_sweep",
+              "label": "扫塔",
+              "text": "你把落叶扫到塔基外，露出塔身上的刻字。僧人合掌，没有解释。",
+              "cost": 0,
+              "effects": {
+                "fame": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "kk_jufuku_pagoda_pass",
+              "label": "不扫",
+              "text": "你站在塔前看了一会儿，把帚靠回墙边。僧人也不勉强。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "kk_jufuku_rumor",
+          "type": "rumor",
+          "label": "听茶僧",
+          "text": "寿福寺办秋茶会，几座禅院托萨摩来的商船捎茶，坊津上岸的茶先被包下，铺面剩得少。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "kagoshima",
+          "good": "tea",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "kk_wakae",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "和贺江岛",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_kk_wakae.jpg",
+      "description": "和贺江岛在材木座外，1232 年用石块垒成防波堤与埠头。潮退时石堤露出，宋船在堤内下锚，小舟把货驳到滩上。",
+      "interactions": [
+        {
+          "id": "kk_wakae_tea",
+          "type": "buy",
+          "label": "收茶",
+          "text": "堤内的宋船刚卸茶箱，茶香混着海腥。船主按舱边的价让了三箱。",
+          "good": "tea",
+          "qty": 3,
+          "price_mul": 0.98,
+          "impact": false
+        },
+        {
+          "id": "kk_wakae_invest",
+          "type": "invest",
+          "label": "入股埠头",
+          "text": "石堤年年要补，埠头的町屋凑钱入股。你添一份，往后按月分驳货的钱。",
+          "shop": "和贺江岛埠头",
+          "costs": [
+            300,
+            700
+          ],
+          "monthly": [
+            14,
+            36
+          ]
+        },
+        {
+          "id": "kk_wakae_rumor",
+          "type": "rumor",
+          "label": "问埠头",
+          "text": "博多纲首说，今年宋船来收硫黄的多，丰后、萨摩运到博多的硫黄在码头就被包走。",
+          "cost": 12,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "sulfur",
+          "mul": 1.16
+        }
+      ]
+    },
+    {
+      "id": "kk_yuigahama",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "由比滨与材木座",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_kk_yuigahama.jpg",
+      "description": "由比滨的沙岸从镰仓湾铺到材木座。材木座堆着造船的木材，渔人把船拖上滩，潮声整夜不退。",
+      "interactions": [
+        {
+          "id": "kk_yuigahama_net",
+          "type": "favour",
+          "label": "补网",
+          "text": "渔人补网，你帮着理了一回麻线。收网时，他们把一尾鲷塞到你手里。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "sea_tendency": 1
+          }
+        },
+        {
+          "id": "kk_yuigahama_rumor",
+          "type": "rumor",
+          "label": "问渔人",
+          "text": "材木座的船匠要买皮包桨，萨摩的鹿皮先被博多商订走，皮价往上走。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "kagoshima",
+          "good": "deer_hide",
+          "mul": 1.13
+        }
+      ]
+    },
+    {
+      "id": "kk_kiridoshi",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "朝比奈切通与化妆坂",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_kk_kiridoshi.jpg",
+      "description": "镰仓四面是山，出入靠凿开的切通。朝比奈切通通六浦，化妆坂往西。路窄，两侧土壁让雨水刻出深沟。",
+      "interactions": [
+        {
+          "id": "kk_kiridoshi_yield",
+          "type": "choice",
+          "label": "让路",
+          "text": "一队驮马从切通里下来，最狭的地方刚够一匹马过。赶马人朝你喊了一声。",
+          "options": [
+            {
+              "id": "kk_kiridoshi_yield_back",
+              "label": "退回宽处",
+              "text": "你退到转弯的宽处，让驮马一匹匹过去。赶马人经过时道了谢。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "kk_kiridoshi_yield_wall",
+              "label": "贴壁等",
+              "text": "你背贴土壁，让马擦着身前过去。缰绳扫过你的手背。",
+              "cost": 0,
+              "effects": {
+                "martial": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "kk_kiridoshi_rumor",
+          "type": "rumor",
+          "label": "听行人",
+          "text": "关口的武士说，镰仓的御家人在萨摩订了一批刀，萨摩刀价被抬上去。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "kagoshima",
+          "good": "japanese_sword",
+          "mul": 1.14
+        }
+      ]
+    },
+    {
+      "id": "kk_mandokoro",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "幕府政所与问注所",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_kk_mandokoro.jpg",
+      "description": "政所在幕府院内，问注所掌诉讼。执权听政，评定众在廊下候命。文书用和汉两体，案上压着宋钱。",
+      "interactions": [
+        {
+          "id": "kk_mandokoro_paper",
+          "type": "favour",
+          "label": "送纸",
+          "text": "你把一匣纸送到问注所。书吏挪开诉状，给你腾出半张案角。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "kk_mandokoro_letter",
+          "type": "favour",
+          "label": "看国书",
+          "text": "蒙古国书从大宰府送到镰仓，政所的廊下摊着抄件。你远远看见「蒙古」二字，墨迹很重。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1268
+          },
+          "effects": {
+            "scholar_tendency": 1,
+            "note": "幕府廊下见过蒙古国书抄件。"
+          }
+        },
+        {
+          "id": "kk_mandokoro_kokugo",
+          "type": "choice",
+          "label": "警固札",
+          "text": "异国警固番役的札子传到镰仓，海边的船要被征。奉行问你肯不肯借一条快船。",
+          "unlock": {
+            "year_min": 1274,
+            "year_max": 1281
+          },
+          "options": [
+            {
+              "id": "kk_mandokoro_kokugo_boat",
+              "label": "借船",
+              "text": "你把快船交到奉行手里，又添了四十钱修桨。奉行在札背写了你的船号。",
+              "cost": 40,
+              "effects": {
+                "fame": 1,
+                "network": 2,
+                "flag": "kk_kokugo_boat"
+              }
+            },
+            {
+              "id": "kk_mandokoro_kokugo_rice",
+              "label": "出米",
+              "text": "你不借船，只出了几石米。奉行在簿上记下，说米也算一份。",
+              "cost": 30,
+              "effects": {
+                "merchant_credit": 1,
+                "favour": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kk_tatsunokuchi",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "龙口",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_kk_tatsunokuchi.jpg",
+      "description": "龙口在镰仓外的山口，是刑场。道旁立着木栅，平日少有人来。",
+      "interactions": [
+        {
+          "id": "kk_tatsunokuchi_watch",
+          "type": "favour",
+          "label": "远看",
+          "text": "1275 年九月，元使杜世忠等五人被押到龙口。你站在木栅外，差役喝了一声，四下静下来。",
+          "cost": 0,
+          "once": true,
+          "unlock": {
+            "year_min": 1275,
+            "year_max": 1275,
+            "months": [
+              9
+            ]
+          },
+          "effects": {
+            "note": "龙口见过元使被斩。"
+          }
+        },
+        {
+          "id": "kk_tatsunokuchi_lamp",
+          "type": "choice",
+          "label": "添灯",
+          "text": "行刑后，城里的人夜里在龙口点灯。你路过时，灯芯快要灭了。",
+          "options": [
+            {
+              "id": "kk_tatsunokuchi_lamp_add",
+              "label": "添一盏",
+              "text": "你添了一盏灯，把灯芯拨亮。风从山口灌下来，火苗伏了伏。",
+              "cost": 10,
+              "effects": {
+                "fame": 1,
+                "note": "龙口添过一盏灯。"
+              }
+            },
+            {
+              "id": "kk_tatsunokuchi_lamp_pass",
+              "label": "绕道",
+              "text": "你绕开刑场，沿山脚回城。风里有一股焦味。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ],
+          "unlock": {
+            "year_min": 1275
+          }
+        },
+        {
+          "id": "kk_tatsunokuchi_rumor",
+          "type": "rumor",
+          "label": "听差役",
+          "text": "龙口的差役说，元使被斩后，幕府令严查进出博多的船，几条运硫黄的船还扣在港外等验。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "sulfur",
+          "mul": 1.18,
+          "unlock": {
+            "year_min": 1275
+          }
+        }
+      ]
+    },
+    {
+      "id": "kk_komachi",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "小町大路",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_kk_komachi.jpg",
+      "description": "小町大路从若宫大路东侧穿过町屋，买卖多用宋钱。钱铺把铜钱串成贯，柜上摆着天平与剪子。",
+      "interactions": [
+        {
+          "id": "kk_komachi_letter",
+          "type": "favour",
+          "label": "寄家书",
+          "text": "小町的代人书信铺替商船捎信。你写了一封，托庆元府的回船带回。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "hometown_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "kk_komachi_rumor",
+          "type": "rumor",
+          "label": "听钱铺",
+          "text": "钱铺的人说庆元府市舶务今年严查铜钱出海，回船夹带的钱串比上月短。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "mingzhou",
+          "good": "song_coin",
+          "mul": 1.14
+        }
+      ]
+    },
+    {
+      "id": "kk_engakuji",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "圆觉寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_kk_engakuji.jpg",
+      "description": "圆觉寺在山之内，1279 年无学祖元自宋渡日，北条时宗迎入镰仓问法，在此择地建寺，寺要到 1282 年才落成。",
+      "unlock": {
+        "year_min": 1279
+      },
+      "lock_reason": "寺还没起",
+      "interactions": [
+        {
+          "id": "kk_engakuji_lecture",
+          "type": "favour",
+          "label": "闻法",
+          "text": "无学祖元在镰仓开讲，你随商船的人去听。他说话带宋音，译僧在旁低声转述。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "kk_engakuji_rumor",
+          "type": "rumor",
+          "label": "听译僧",
+          "text": "译僧说，山之内的新寺要置佛具，庆元府的漆器先供着镰仓几座禅院，漆价涨了。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "mingzhou",
+          "good": "lacquerware",
+          "mul": 1.13
+        }
+      ]
+    },
+    {
+      "id": "kk_gokuraku",
+      "port": "kamakura",
+      "pending_port": true,
+      "name": "极乐寺",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_kk_gokuraku.jpg",
+      "description": "极乐寺在西山边，1259 年北条重时在此建寺，1267 年忍性入寺。寺在谷口，堂宇朴素，僧人在寺侧施药。",
+      "unlock": {
+        "year_min": 1259
+      },
+      "lock_reason": "寺还没起",
+      "interactions": [
+        {
+          "id": "kk_gokuraku_medicine",
+          "type": "favour",
+          "label": "施药",
+          "text": "寺侧排着领药的队，你添了一包药材。领药的人把碗端稳，慢慢喝下。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "kk_gokuraku_stay",
+          "type": "choice",
+          "label": "留宿",
+          "text": "天黑了，知客把客堂的灯点上，问你走不走夜路。",
+          "options": [
+            {
+              "id": "kk_gokuraku_stay_yes",
+              "label": "住下",
+              "text": "你在客房住下。夜里有人咳，僧人提灯从廊下过。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "kk_gokuraku_stay_no",
+              "label": "回船",
+              "text": "你向知客告辞，提灯下山。海风把灯焰吹得斜了。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
