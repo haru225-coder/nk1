@@ -453,7 +453,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_kk_mandokoro.jpg",
-      "description": "政所在幕府院内，问注所掌诉讼。执权北条时宗自 1268 年起听政，评定众在廊下候命。文书用和汉两体，案上压着宋钱。",
+      "description": "政所在幕府院内，问注所掌诉讼。执权听政，评定众在廊下候命。文书用和汉两体，案上压着宋钱。",
       "interactions": [
         {
           "id": "kk_mandokoro_paper",
@@ -525,13 +525,13 @@
       "kind": "gate",
       "pending_art": true,
       "bg": "bg_dist_kk_tatsunokuchi.jpg",
-      "description": "龙口在镰仓外的山口，是刑场。1275 年九月，元使杜世忠等五人在这里被斩。",
+      "description": "龙口在镰仓外的山口，是刑场。道旁立着木栅，平日少有人来。",
       "interactions": [
         {
           "id": "kk_tatsunokuchi_watch",
           "type": "favour",
           "label": "远看",
-          "text": "你到龙口时，木栅外已经站满人。差役喝了一声，四下静下来。",
+          "text": "1275 年九月，元使杜世忠等五人被押到龙口。你站在木栅外，差役喝了一声，四下静下来。",
           "cost": 0,
           "once": true,
           "unlock": {
