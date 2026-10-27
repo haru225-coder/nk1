@@ -1,0 +1,846 @@
+{
+  "districts": [
+    {
+      "id": "jk_xinggong",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "建康行宫",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_jk_xinggong.jpg",
+      "description": "建炎初，高宗驻跸建康，府治迁到东锦绣坊，旧府治改为行宫，内桥也换名天津桥。宫门平日只开一侧，留守司的吏人从廊下进出。",
+      "interactions": [
+        {
+          "id": "jk_xinggong_sweep",
+          "type": "favour",
+          "label": "扫宫廊",
+          "text": "你把宫廊前的落叶扫成一堆。守门的老吏递来一盏温水，说行宫如今只留着旧例。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "jk_xinggong_card",
+          "type": "choice",
+          "label": "递名帖",
+          "text": "门房的书吏把名帖簿摊开，笔尖悬着。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_xinggong_card_name",
+              "label": "报上名号",
+              "text": "你报上船号与姓名，书吏在簿上添了一行。",
+              "cost": 10,
+              "effects": {
+                "network": 1
+              }
+            },
+            {
+              "id": "jk_xinggong_card_rule",
+              "label": "只问旧例",
+              "text": "你只问行宫旧例，书吏答了两句，把簿子合上。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jk_zhisi",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "沿江制置使司",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_jk_zhisi.jpg",
+      "description": "沿江制置使司开在府城，门外立着军期牌。帅臣兼领建康府，江防公文与商税簿一同送进签厅。",
+      "interactions": [
+        {
+          "id": "jk_zhisi_courier",
+          "type": "favour",
+          "label": "送脚力",
+          "text": "签厅要送一批公文过江，你替书吏雇了脚力。书吏把押运的船号记在簿上。",
+          "cost": 25,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "jk_zhisi_rumor",
+          "type": "rumor",
+          "label": "听签厅",
+          "text": "签厅里有人说，淮西买粮加码，明州的米船要改泊江口。",
+          "cost": 16,
+          "cooldown_days": 35,
+          "port": "mingzhou",
+          "good": "grain",
+          "mul": 1.12
+        },
+        {
+          "id": "jk_zhisi_boats",
+          "type": "choice",
+          "label": "报船数",
+          "text": "书吏摊开江防簿，问你昨日进港的船有几艘。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_zhisi_boats_true",
+              "label": "实报",
+              "text": "你把船号与人数一一报上。书吏点头，在簿边画了一笔。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "jk_zhisi_boats_half",
+              "label": "少报两艘",
+              "text": "你只说了一半，书吏没有追问，把簿子合上。",
+              "cost": 0,
+              "effects": {
+                "money": 5,
+                "pu_attention": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jk_zhenhuai",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "镇淮桥与饮虹桥",
+      "kind": "bridge",
+      "pending_art": true,
+      "bg": "bg_dist_jk_zhenhuai.jpg",
+      "description": "镇淮桥横跨秦淮，桥南有亭；饮虹桥在近旁，桥屋连着两岸。乾道五年史正志重修，镇淮十六丈，饮虹十三丈。",
+      "interactions": [
+        {
+          "id": "jk_zhenhuai_plank",
+          "type": "favour",
+          "label": "修桥板",
+          "text": "你让木匠换了两块松动的桥板。过桥的担子不再打滑，桥头茶摊给你留了座。",
+          "cost": 35,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "jk_zhenhuai_rumor",
+          "type": "rumor",
+          "label": "听桥市",
+          "text": "桥市上有人说，福州的硫黄船在江口候风，牙行先把价抬了一成。",
+          "cost": 14,
+          "cooldown_days": 40,
+          "port": "fuzhou",
+          "good": "sulfur",
+          "mul": 1.16
+        },
+        {
+          "id": "jk_zhenhuai_yield",
+          "type": "choice",
+          "label": "让担子",
+          "text": "一队挑担的要从桥心过，桥栏边还站着卖鱼的妇人。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_zhenhuai_yield_yes",
+              "label": "先让挑担",
+              "text": "你退到桥栏边，让挑担的先过。后面的人跟着挪，桥面很快空出一条路。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            },
+            {
+              "id": "jk_zhenhuai_yield_order",
+              "label": "按次序走",
+              "text": "你照着原来的次序走，挑担的在你身后停了一停。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jk_mingdao",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "府学与明道书院",
+      "kind": "academy",
+      "pending_art": true,
+      "bg": "bg_dist_jk_mingdao.jpg",
+      "description": "明道书院在镇淮桥东北，仿白鹿洞规制。程颢祠、御书阁、春风堂依次开着，府学生员常从侧门来听讲。",
+      "interactions": [
+        {
+          "id": "jk_mingdao_ink",
+          "type": "favour",
+          "label": "送纸墨",
+          "text": "你送了一担纸墨到书院门房。斋长收下，在簿上写了铺号。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "jk_mingdao_lecture",
+          "type": "choice",
+          "label": "听讲",
+          "text": "春风堂里正在讲《大学》，门外站着几个没有座位的生员。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_mingdao_lecture_seat",
+              "label": "入席听讲",
+              "text": "你在末席坐下，听讲书说到「格物」二字，堂里静了一瞬。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "jk_mingdao_lecture_door",
+              "label": "门外旁听",
+              "text": "你靠在门外听完一截，散学时有人递来一张抄稿。",
+              "cost": 0,
+              "effects": {
+                "fame": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jk_gongyuan",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "贡院榜墙",
+      "kind": "exam",
+      "pending_art": true,
+      "bg": "bg_dist_jk_gongyuan.jpg",
+      "description": "建康府贡院在青溪南、秦淮北，旧是蔡宽夫宅。乾道四年史正志建屋一百一十间，面秦淮，接青溪。",
+      "interactions": [
+        {
+          "id": "jk_gongyuan_list",
+          "type": "favour",
+          "label": "看榜",
+          "text": "贡院门外糊着新榜，看榜的人挤到阶下。你从榜尾往前找自己的名字。",
+          "cost": 0,
+          "once_per": "year",
+          "exam": true,
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "jk_gongyuan_paste",
+          "type": "favour",
+          "label": "送浆糊",
+          "text": "榜墙要换新纸，你送了一桶浆糊。书吏刷得匀，榜角不再翘起。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "jk_gongyuan_name",
+          "type": "choice",
+          "label": "榜下问名",
+          "text": "榜下有人拉住你，问你认不认识榜上的第三个名字。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_gongyuan_name_yes",
+              "label": "指给他看",
+              "text": "你替他找到那行小字，他连声道谢，把一把炒豆塞进你手里。",
+              "cost": 0,
+              "effects": {
+                "network": 2
+              }
+            },
+            {
+              "id": "jk_gongyuan_name_no",
+              "label": "说不认得",
+              "text": "你摇头走开，那人又去问别人。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jk_shitou",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "清凉寺与石头城",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_jk_shitou.jpg",
+      "description": "石头城在清凉山后，山崖陡立，江流在崖下转弯。清凉寺的钟声从山上下来，江风把帆影吹得斜。",
+      "interactions": [
+        {
+          "id": "jk_shitou_oil",
+          "type": "favour",
+          "label": "送灯油",
+          "text": "你给清凉寺送了一罐灯油。知客僧收下，领你到廊下看江。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "jk_shitou_rumor",
+          "type": "rumor",
+          "label": "听江船",
+          "text": "江船从兴化来，茶担在崖下过。牙行说今年的茶到得早，价要往下走。",
+          "cost": 12,
+          "cooldown_days": 30,
+          "port": "xinghua",
+          "good": "tea",
+          "mul": 0.9
+        },
+        {
+          "id": "jk_shitou_climb",
+          "type": "choice",
+          "label": "登崖",
+          "text": "崖边有一条踩出来的土路，寺里的沙弥说上头风大。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_shitou_climb_top",
+              "label": "上崖看江",
+              "text": "你走到崖顶，江面在脚下铺开，远处帆影小得像一片叶子。",
+              "cost": 0,
+              "effects": {
+                "fame": 1
+              }
+            },
+            {
+              "id": "jk_shitou_climb_rest",
+              "label": "在廊下歇脚",
+              "text": "你在廊下坐到钟响，知客僧给你添了一盏茶。",
+              "cost": 0,
+              "effects": {
+                "favour": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jk_zhongshan",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "钟山太平兴国寺",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_jk_zhongshan.jpg",
+      "description": "钟山旧名蒋山，太平兴国寺在圜悟关。宋勤法师筑关时，山门对着旧官道；旧记说梁时有七十余处佛庐，后来只剩这一寺香火最盛。",
+      "interactions": [
+        {
+          "id": "jk_zhongshan_firewood",
+          "type": "favour",
+          "label": "送柴",
+          "text": "你送了一担柴到寺后厨。火头僧把柴码好，说山里的冬风比城里早来一个月。",
+          "cost": 25,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "jk_zhongshan_path",
+          "type": "choice",
+          "label": "登山",
+          "text": "从寺门到山顶有两条路，一条走官道，一条穿过松林。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_zhongshan_path_road",
+              "label": "走官道",
+              "text": "你沿官道上去，石阶虽旧，走起来稳。半山有亭，亭柱上留着旧题。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            },
+            {
+              "id": "jk_zhongshan_path_pine",
+              "label": "穿松林",
+              "text": "你从松林里穿过去，鞋底沾了松针，山顶的风把衣角吹得直响。",
+              "cost": 0,
+              "effects": {
+                "martial": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jk_wuyi",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "乌衣巷",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_jk_wuyi.jpg",
+      "description": "乌衣巷在秦淮南，旧时王谢宅第都在这一带。如今巷口是货栈和茶肆，门楣上还留着旧砖。",
+      "interactions": [
+        {
+          "id": "jk_wuyi_tea",
+          "type": "favour",
+          "label": "赊茶",
+          "text": "茶肆的博士认得你的船号，赊给你一壶茶。你把茶钱压在碗底，说下回一起算。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "jk_wuyi_rumor",
+          "type": "rumor",
+          "label": "听茶客",
+          "text": "茶客说明州的生丝船还没到，临安的机户在等料。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "mingzhou",
+          "good": "raw_silk",
+          "mul": 1.11
+        },
+        {
+          "id": "jk_wuyi_oldhouse",
+          "type": "choice",
+          "label": "问旧宅",
+          "text": "巷口有个老人指着一段旧墙，说这里从前是王谢的宅子。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_wuyi_oldhouse_listen",
+              "label": "听他说完",
+              "text": "你听老人把旧事说完，末了他指了指墙根，说砖还是旧的。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "jk_wuyi_oldhouse_brick",
+              "label": "只看砖纹",
+              "text": "你蹲下看砖上的绳纹，老人也不再说了。",
+              "cost": 0,
+              "effects": {
+                "fame": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jk_longwan",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "龙湾江口",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_jk_longwan.jpg",
+      "description": "龙湾在江口，江面开阔，浪涌如山。乾道六年陆游过此，留下「浪涌如山」四字；水军战船与商船同泊一湾。",
+      "interactions": [
+        {
+          "id": "jk_longwan_pilot",
+          "type": "hire",
+          "label": "雇引港人",
+          "text": "老舵工姓陈，识得龙湾的暗沙。雇他引船，进出江口少走一段弯路。",
+          "who": "引港人",
+          "cost": 80,
+          "wage": 12,
+          "attention_ease": 1
+        },
+        {
+          "id": "jk_longwan_tide",
+          "type": "choice",
+          "label": "候潮",
+          "text": "潮水还没到，湾里的船都挂着帆等。有人趁潮先走，有人继续等。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_longwan_tide_wait",
+              "label": "等潮",
+              "text": "你让船工把缆绳收紧，等到潮头起来才解缆。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "jk_longwan_tide_go",
+              "label": "趁潮先走",
+              "text": "你先解了缆，船头一抬，浪花打上舷板。",
+              "cost": 0,
+              "effects": {
+                "money": 6,
+                "pu_attention": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "jk_longwan_water",
+          "type": "favour",
+          "label": "送淡水",
+          "text": "湾里停船多，淡水不够。你让伙计挑了两担水送到码头。",
+          "cost": 18,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "jk_jiuwu",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "建康酒务",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_jk_jiuwu.jpg",
+      "description": "建康酒务在府城，酒库、曲院、卖酒铺连成一片。官酒按务发卖，牙人替酒户算本钱。",
+      "interactions": [
+        {
+          "id": "jk_jiuwu_brew",
+          "type": "invest",
+          "label": "入酒务",
+          "text": "酒务的库房空着半间，主事问你肯不肯先垫本钱。酿出的酒按月发卖。",
+          "shop": "酒务",
+          "costs": [
+            260,
+            520
+          ],
+          "monthly": [
+            14,
+            30
+          ]
+        },
+        {
+          "id": "jk_jiuwu_taste",
+          "type": "choice",
+          "label": "尝酒",
+          "text": "酒铺的伙计从瓮里舀出一勺新酒，让你先尝。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_jiuwu_taste_buy",
+              "label": "买一坛",
+              "text": "你买了一坛，伙计用荷叶封口，又替你捆上绳。",
+              "cost": 18,
+              "effects": {
+                "merchant_credit": 1
+              }
+            },
+            {
+              "id": "jk_jiuwu_taste_no",
+              "label": "只尝不买",
+              "text": "你尝了一口，说酒味还薄。伙计笑笑，把勺放回瓮里。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "jk_jiuwu_yeast",
+          "type": "favour",
+          "label": "送曲",
+          "text": "你送了一担酒曲到曲院。主事验过成色，在收货簿上画了押。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "favour": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "jk_xiuzhi",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "景定建康志修志局",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_jk_xiuzhi.jpg",
+      "description": "景定二年，马光祖在钟山阁下开修志局，周应合总其事。旧稿堆在廊下，七月书成。",
+      "unlock": {
+        "year_min": 1261
+      },
+      "lock_reason": "志局未开",
+      "interactions": [
+        {
+          "id": "jk_xiuzhi_proof",
+          "type": "favour",
+          "label": "校稿",
+          "text": "志局缺人校字，你替书吏对了一卷旧稿。错字用朱笔圈出，页边写满小字。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "jk_xiuzhi_read",
+          "type": "choice",
+          "label": "借阅",
+          "text": "修志局的架上有新抄的稿本，书吏说只能在廊下看。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_xiuzhi_read_copy",
+              "label": "抄一卷",
+              "text": "你借了纸笔，抄到日头偏西。书吏催了两回，你才把稿本还回去。",
+              "cost": 20,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "jk_xiuzhi_read_index",
+              "label": "只看目录",
+              "text": "你把目录翻了一遍，记下几处水道的名字。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jk_fuyamen",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "府治后堂",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_jk_fuyamen.jpg",
+      "description": "府治在后堂议事，帅臣兼领江防。堂前立着军期牌，吏人抱着户籍与税簿从廊下过。",
+      "interactions": [
+        {
+          "id": "jk_fuyamen_tax",
+          "type": "favour",
+          "label": "递税簿",
+          "text": "你把商税簿递到后堂。书吏逐页验过，问了两处船号，才在末尾用印。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "jk_fuyamen_north",
+          "type": "choice",
+          "label": "北兵到江上",
+          "text": "北兵已到江上，后堂的灯还亮着。帅臣让人把库钥与文书分开，堂下的人等你拿主意。",
+          "once": true,
+          "unlock": {
+            "year_min": 1275,
+            "year_max": 1275,
+            "months": [
+              3
+            ]
+          },
+          "options": [
+            {
+              "id": "jk_fuyamen_north_leave",
+              "label": "随军民出城",
+              "text": "你跟着人流往南门走，回头看时，府治的灯一盏盏灭了。",
+              "cost": 0,
+              "effects": {
+                "hometown_tendency": 1,
+                "martial": 1
+              }
+            },
+            {
+              "id": "jk_fuyamen_north_seal",
+              "label": "先封库藏",
+              "text": "你带人把库房上了锁，把钥匙交给留守的吏人，才从侧门出去。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 2,
+                "network": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jk_bailuzhou",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "白鹭洲",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_jk_bailuzhou.jpg",
+      "description": "白鹭洲在秦淮入江口，泥沙积成沙洲，白鹭落在芦苇间。洲上只有几户渔家，渡船随潮水来往。",
+      "interactions": [
+        {
+          "id": "jk_bailuzhou_pier",
+          "type": "favour",
+          "label": "修渡口",
+          "text": "渡口的木桩松了，你让伙计打了两根新桩。渔家把船系稳，渡客不用再踩水。",
+          "cost": 25,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "jk_bailuzhou_cross",
+          "type": "choice",
+          "label": "渡洲",
+          "text": "潮水正涨，渡船在洲边等客。船家问你上不上洲。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_bailuzhou_cross_go",
+              "label": "上洲",
+              "text": "你上了船，船家撑一篙，芦苇从船边擦过去。",
+              "cost": 10,
+              "effects": {
+                "fame": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "jk_bailuzhou_cross_wait",
+              "label": "在岸上等",
+              "text": "你留在岸上，看白鹭从沙洲飞起来，又落回去。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jk_mupai",
+      "port": "jiankang",
+      "pending_port": true,
+      "name": "龙光门外木排",
+      "kind": "dock",
+      "pending_art": true,
+      "bg": "bg_dist_jk_mupai.jpg",
+      "description": "龙光门是南唐旧门，宋元沿用这个名字。门外江滩上泊着木排，竹木商在岸边点筹，木屑顺水漂走。",
+      "interactions": [
+        {
+          "id": "jk_mupai_watch",
+          "type": "hire",
+          "label": "雇看排人",
+          "text": "看排的老周夜里睡在棚里，认得每一根缆绳。雇他看守，木排少被人顺手抽走。",
+          "who": "看排人",
+          "cost": 60,
+          "wage": 10,
+          "attention_ease": 1
+        },
+        {
+          "id": "jk_mupai_count",
+          "type": "choice",
+          "label": "点木",
+          "text": "木商把一筏杉木靠岸，问你按根点还是按筏点。",
+          "once": true,
+          "options": [
+            {
+              "id": "jk_mupai_count_root",
+              "label": "按根点",
+              "text": "你从筏头走到筏尾，一根根数过去。木商在旁看着，最后点了头。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1,
+                "network": 1
+              }
+            },
+            {
+              "id": "jk_mupai_count_raft",
+              "label": "按筏点",
+              "text": "你只看筏子的宽窄，估了个数。木商说爽快，让了你两钱。",
+              "cost": 0,
+              "effects": {
+                "money": 4,
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "jk_mupai_rope",
+          "type": "favour",
+          "label": "送缆",
+          "text": "你送了一捆新缆到木排上。看排人把旧绳换下，说下一场潮来也不怕。",
+          "cost": 18,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        }
+      ]
+    }
+  ]
+}
