@@ -29,6 +29,7 @@ static func setup_tavern(main: Control, port_id: String) -> void:
 	main._slip_chip(main._slip_row(intel), "打听", main._on_gather_intel.bind(port_id))
 
 	main._setup_hiring(port_id)
+	main._setup_treasure_rumors(port_id)
 	main._end_benches()
 
 	main._add_leave_button(port_id)

@@ -121,14 +121,14 @@ func roster() -> Array:
 
 # ── 加成 ──────────────────────────────────────────────
 
-## 火长：日速倍率
+## 火长：日速倍率。指南浮针在手，再看一成
 func speed_factor() -> float:
-	return 1.0 + 0.06 * level_of("huozhang")
+	return 1.0 + 0.06 * level_of("huozhang") + 0.02 * GameState.treasure_duty_bonus("huozhang")
 
 
-## 舵工：逆风时的日速下限。无舵工为 0.40，三级可提到 0.55
+## 舵工：逆风时的日速下限。无舵工为 0.40，三级可提到 0.55；海道山形图卷在手再抬一线
 func wind_floor() -> float:
-	return 0.40 + 0.05 * level_of("duogong")
+	return 0.40 + 0.05 * level_of("duogong") + 0.015 * GameState.treasure_duty_bonus("duogong")
 
 
 ## 总管：货损倍率，越低越好
@@ -136,16 +136,16 @@ func cargo_loss_factor() -> float:
 	return maxf(0.0, 1.0 - 0.17 * level_of("zongguan"))
 
 
-## 杂事：抽解与佣金的倍率，越低越好
+## 杂事：抽解与佣金的倍率，越低越好。苏合油在手，人情熟一分
 func trade_cost_factor() -> float:
-	return maxf(0.0, 1.0 - 0.12 * level_of("zashi"))
+	return maxf(0.0, 1.0 - 0.12 * level_of("zashi") - 0.02 * GameState.treasure_duty_bonus("zashi"))
 
 
-## 通事：在异国港口的价差改善（买价降、卖价升的比例）
+## 通事：在异国港口的价差改善（买价降、卖价升的比例）。宋版文选残卷在手，谈吐更通
 func interpreter_edge(port_id: String) -> float:
 	if not (port_id in FOREIGN_PORTS):
 		return 0.0
-	return 0.07 * level_of("tongshi")
+	return 0.07 * level_of("tongshi") + 0.02 * GameState.treasure_duty_bonus("tongshi")
 
 
 ## 医人：断粮减员概率的倍率，越低越好

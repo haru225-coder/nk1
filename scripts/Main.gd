@@ -5575,3 +5575,11 @@ func _on_appraise_treasure(tid: String) -> void:
 
 func _on_donate_treasure(tid: String) -> void:
 	_TREASURE_SHOP.on_donate(self, tid)
+
+
+func _setup_treasure_rumors(port_id: String) -> void:
+	_TREASURE_SHOP.setup_rumors(self, port_id)
+
+
+func _on_hear_treasure_rumor(tid: String, port_id: String) -> void:
+	_TREASURE_SHOP.on_hear_rumor(self, tid, port_id)

@@ -93,6 +93,8 @@ var treasures_owned: Array = []
 var treasures_appraised: Array = []
 ## 已献纳的宝物 id；献纳后不再在手上，也算已收，避免重复获取
 var treasures_donated: Array = []
+## 酒馆里听来、尚未寻得的宝物 id；随存档，寻得即移出
+var treasure_leads: Array = []
 
 ## 走通过的港口 id。章节晋升要看走过多少地方，不只是攒了多少钱。
 var visited_ports: Array = []
@@ -300,6 +302,74 @@ func donate_treasure(tid: String) -> Dictionary:
 		"promoted": fame_res.get("promoted", false),
 		"title": fame_res.get("title", {}),
 	}
+
+
+## 某职事随身职事宝物的加成点数：该职在船，且宝物在手（已献的离手不算）。
+## 只读三录与 Crew.hired，不改任何状态；Crew 的四支加成各按此数加一点。
+func treasure_duty_bonus(role: String) -> int:
+	if role == "" or not Crew.hired.has(role) or str(Crew.hired.get(role, "")) == "":
+		return 0
+	var total := 0
+	for raw in treasures_owned:
+		var tid := str(raw)
+		if tid in treasures_donated:
+			continue
+		var t := GameManager.get_treasure_by_id(tid)
+		if t.is_empty():
+			continue
+		var eff: Dictionary = t.get("effect", {})
+		if str(eff.get("kind", "")) != "duty" or str(eff.get("role", "")) != role:
+			continue
+		var bonus := int(eff.get("bonus", 0))
+		if bonus > 0:
+			total += bonus
+	return total
+
+
+## 在手的职事宝物（已献的不在其中），船籍簿职事栏按此排
+func owned_duty_treasures() -> Array:
+	var out: Array = []
+	for raw in treasures_owned:
+		var tid := str(raw)
+		if tid in treasures_donated:
+			continue
+		var t := GameManager.get_treasure_by_id(tid)
+		if t.is_empty():
+			continue
+		if str((t.get("effect", {}) as Dictionary).get("kind", "")) == "duty":
+			out.append(t)
+	return out
+
+
+## 酒馆里听来一桩传闻，记下该港所传的那件宝物
+func note_treasure_rumor(tid: String, port_id: String = "") -> Dictionary:
+	var t := GameManager.get_treasure_by_id(tid)
+	if t.is_empty():
+		return {"ok": false, "msg": "没这桩传闻。"}
+	if has_treasure(tid):
+		return {"ok": false, "msg": "这件已在册上。"}
+	if tid in treasure_leads:
+		return {"ok": false, "msg": "这条线索已经记下了。"}
+	var src := GameManager.treasure_rumor_source(tid)
+	if src.is_empty():
+		return {"ok": false, "msg": "这不是能打听到的东西。"}
+	if port_id != "" and str(src.get("port", "")) != port_id:
+		return {"ok": false, "msg": "这港里没人提过这件。"}
+	treasure_leads.append(tid)
+	return {"ok": true, "name": t.get("name", tid), "hint": src.get("hint", "")}
+
+
+## 循线索寻得宝物：成功才把线索移出；已收的另清掉空线索
+func find_treasure_lead(tid: String) -> bool:
+	if not (tid in treasure_leads):
+		return false
+	if has_treasure(tid):
+		treasure_leads.erase(tid)
+		return false
+	if not add_treasure(tid):
+		return false
+	treasure_leads.erase(tid)
+	return true
 
 
 ## 记一趟航行（SeaChart 抵港时调用）。跳年摘要的原料。
@@ -1504,6 +1574,7 @@ func to_dict() -> Dictionary:
 		"treasures_owned": treasures_owned,
 		"treasures_appraised": treasures_appraised,
 		"treasures_donated": treasures_donated,
+		"treasure_leads": treasure_leads,
 		"visited_ports": visited_ports,
 		"peak_money": peak_money,
 		"draft_salt": draft_salt,
@@ -1563,6 +1634,9 @@ func from_dict(d: Dictionary) -> void:
 	treasures_owned = d.get("treasures_owned", [])
 	treasures_appraised = d.get("treasures_appraised", [])
 	treasures_donated = d.get("treasures_donated", [])
+	treasure_leads = d.get("treasure_leads", [])
+	if typeof(treasure_leads) != TYPE_ARRAY:
+		treasure_leads = []
 	visited_ports = d.get("visited_ports", [])
 	peak_money = d.get("peak_money", money)
 	draft_salt = int(d.get("draft_salt", 0))

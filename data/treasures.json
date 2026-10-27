@@ -141,7 +141,8 @@
         "kind": "duty",
         "role": "huozhang",
         "bonus": 1
-      }
+      },
+      "duty_note": "火长随身指南浮针，阴晦亦可辨向。"
     },
     {
       "id": "needle_route_scroll",
@@ -161,7 +162,8 @@
         "kind": "duty",
         "role": "duogong",
         "bonus": 1
-      }
+      },
+      "duty_note": "舵工摊开海道山形图卷，逆风也能寻出可走的针路。"
     },
     {
       "id": "song_edition_wenxuan",
@@ -181,7 +183,8 @@
         "kind": "duty",
         "role": "tongshi",
         "bonus": 1
-      }
+      },
+      "duty_note": "通事带着宋版文选残卷，与蕃客谈文，话头更容易接上。"
     },
     {
       "id": "ding_ware_bowl",
@@ -384,7 +387,8 @@
         "kind": "duty",
         "role": "zashi",
         "bonus": 1
-      }
+      },
+      "duty_note": "杂事袖里收着苏合油，抽解与佣金上更能说下价来。"
     },
     {
       "id": "rose_water",
@@ -420,6 +424,126 @@
       ],
       "effect": {
         "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "sunk_cargo_porcelain",
+      "name": "沉船瓷器箱",
+      "category": "瓷器",
+      "grade": "乙",
+      "value": 1100,
+      "origin": "阳江外海宋船",
+      "era_note": "阳江外海风信恶，宋舶载闽广窑器南行者多覆；舱中碗碟成摞，胶结如石，渔人拖网偶得之。",
+      "sources": [
+        {
+          "type": "rumor",
+          "port": "guangzhou",
+          "near_ports": [
+            "guangzhou",
+            "champa"
+          ],
+          "hint": "广州老渔人说，阳江外海有宋船覆没，舱里碗碟成摞，网拖上来还粘着海底泥。"
+        }
+      ],
+      "effect": {
+        "kind": "fame",
+        "amount": 50
+      }
+    },
+    {
+      "id": "houzhu_sunk_incense",
+      "name": "后渚沉船降真香",
+      "category": "香药",
+      "grade": "丙",
+      "value": 480,
+      "origin": "泉州后渚港",
+      "era_note": "泉州后渚港为蕃舶碇泊处，舱底常遗香药；降真出三佛齐，胡椒自南海来，皆市舶抽解之大宗。",
+      "sources": [
+        {
+          "type": "rumor",
+          "port": "quanzhou",
+          "near_ports": [
+            "quanzhou",
+            "penghu"
+          ],
+          "hint": "后渚港的挑夫漏了口风：去年挖港泥，刨出一截乌黑香木，闻着像降真。"
+        }
+      ],
+      "effect": {
+        "kind": "fame",
+        "amount": 28
+      }
+    },
+    {
+      "id": "goryeo_silver_inlay_kundika",
+      "name": "高丽银入丝净瓶",
+      "category": "铜器",
+      "grade": "乙",
+      "value": 980,
+      "origin": "高丽开京",
+      "era_note": "高丽青铜器以银入丝为饰，净瓶为佛前供器；宣和五年徐兢使高丽，记其制作工巧，进奉宋廷者间有之。",
+      "sources": [
+        {
+          "type": "rumor",
+          "port": "mingzhou",
+          "near_ports": [
+            "mingzhou",
+            "jeju",
+            "hakata"
+          ],
+          "hint": "明州蕃客说，高丽使船进奉过一只银入丝净瓶，后来不知落在哪家库房。"
+        }
+      ],
+      "effect": {
+        "kind": "fame",
+        "amount": 40
+      }
+    },
+    {
+      "id": "champa_ivory_carving",
+      "name": "占城象牙雕",
+      "category": "舶来",
+      "grade": "丙",
+      "value": 760,
+      "origin": "占城",
+      "era_note": "占城土产象牙，蕃舶载至泉、广；《诸蕃志》载占城象牙，雕作番王像，宋人以为玩好。",
+      "sources": [
+        {
+          "type": "rumor",
+          "port": "champa",
+          "near_ports": [
+            "champa",
+            "guangzhou"
+          ],
+          "hint": "占城港的象牙匠喝多了，说有一对象牙雕的番王像，藏在旧港北边的废祠里。"
+        }
+      ],
+      "effect": {
+        "kind": "appraise_only"
+      }
+    },
+    {
+      "id": "srivijaya_rhino_horn",
+      "name": "三佛齐犀角",
+      "category": "舶来",
+      "grade": "乙",
+      "value": 1700,
+      "origin": "三佛齐",
+      "era_note": "三佛齐扼南海舟路，犀角、乳香、龙涎所聚；赵汝适记其犀角，市舶抽解后转鬻泉广。",
+      "sources": [
+        {
+          "type": "rumor",
+          "port": "guangzhou",
+          "near_ports": [
+            "guangzhou",
+            "champa"
+          ],
+          "hint": "蕃坊的老牙人屈着指头算：三佛齐来的犀角，有一支没进市舶库，跟着私船泊到广州外澳。"
+        }
+      ],
+      "effect": {
+        "kind": "fame",
+        "amount": 55
       }
     }
   ]

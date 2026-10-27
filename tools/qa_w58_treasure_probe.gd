@@ -1,5 +1,5 @@
 extends SceneTree
-## Lane treas1：宝物系统运行时探针——数据 / 买入 / 鉴定 / 献纳 / 发现附赠 / 存档回环。
+## Lane treas1/treas2：宝物系统运行时探针——数据 / 传闻线索 / 职事加成 / 买入 / 鉴定 / 献纳 / 发现附赠 / 存档回环。
 ## 用法：godot --headless --path . -s res://tools/qa_w58_treasure_probe.gd
 ## 输出末行 TREASURE_PROBE fails=N；N>0 时 exit 1。
 
@@ -30,12 +30,20 @@ func _run() -> void:
 	var gs := root.get_node_or_null("GameState")
 	var sl := root.get_node_or_null("SaveLoad")
 	var fleet := root.get_node_or_null("Fleet")
-	if gm == null or gs == null or sl == null or fleet == null:
+	var crew := root.get_node_or_null("Crew")
+	if gm == null or gs == null or sl == null or fleet == null or crew == null:
 		_fail("autoload 缺席")
 		_report()
 		return
 
-	_expect(int(gm.treasures_total()) == 22, "宝物图录 22 件")
+	_expect(int(gm.treasures_total()) == 27, "宝物图录 27 件")
+	var rumor_total := 0
+	for t in gm.treasures_data.get("treasures", []):
+		if typeof(t) == TYPE_DICTIONARY and not gm.treasure_rumor_source(str(t.get("id", ""))).is_empty():
+			rumor_total += 1
+	_expect(rumor_total == 5, "传闻宝物 5 件")
+	_expect(gm.treasures_with_rumor_at("guangzhou").size() == 2, "广州酒馆两桩传闻")
+	_expect(gm.treasures_with_rumor_at("quanzhou").size() == 1, "泉州酒馆一桩传闻")
 	_expect(not gm.get_treasure_by_id("ru_ware_washer").is_empty(), "按 id 取汝窑")
 	_expect(gm.get_treasure_by_id("no_such_treasure").is_empty(), "查无宝物回空")
 	var quanzhou: Array = gm.treasures_at_shop("quanzhou")
@@ -47,6 +55,7 @@ func _run() -> void:
 	var jiu: Array = gm.treasures_for_discovery("jiuri_wind_stele")
 	_expect(jiu.size() == 1 and str(jiu[0].get("id", "")) == "longxian_incense", "九日山发现附赠龙涎香")
 
+	_rumor_and_duty(gs, gm, sl, crew)
 	gs.money = 9000
 	var hold_before := float(fleet.used_capacity())
 	var money_before: int = gs.money
@@ -103,6 +112,60 @@ func _run() -> void:
 	_expect(hard.get("treasures_appraised", []) == ["longxian_incense"], "清洗：鉴定只在手")
 
 	_report()
+
+
+func _rumor_and_duty(gs: Node, gm: Node, sl: Node, crew: Node) -> void:
+	gs.from_dict({})
+	crew.from_dict({})
+	var src: Dictionary = gm.treasure_rumor_source("sunk_cargo_porcelain")
+	_expect(str(src.get("port", "")) == "guangzhou", "传闻来自广州")
+	_expect((src.get("near_ports", []) as Array).has("champa"), "传闻近港含占城")
+	_expect(not gs.note_treasure_rumor("sunk_cargo_porcelain", "quanzhou").get("ok", true), "别港问不出")
+	var heard: Dictionary = gs.note_treasure_rumor("sunk_cargo_porcelain", "guangzhou")
+	_expect(heard.get("ok", false) and "sunk_cargo_porcelain" in gs.treasure_leads, "广州听来沉船瓷器箱")
+	_expect(str(heard.get("hint", "")) != "", "线索带回方位")
+	_expect(not gs.note_treasure_rumor("sunk_cargo_porcelain", "guangzhou").get("ok", true), "同一桩只记一次")
+	_expect(not gs.note_treasure_rumor("ru_ware_washer", "quanzhou").get("ok", true), "非传闻物不能记线索")
+
+	var snap: Dictionary = gs.to_dict()
+	gs.from_dict(snap)
+	_expect("sunk_cargo_porcelain" in gs.treasure_leads, "存档回环：线索")
+	var hard: Dictionary = sl._harden_state({
+		"treasures_owned": ["sunk_cargo_porcelain"],
+		"treasure_leads": ["houzhu_sunk_incense", "houzhu_sunk_incense", "sunk_cargo_porcelain", "not_real"],
+	})
+	_expect(hard.get("treasure_leads", []) == ["houzhu_sunk_incense"], "清洗：线索去重、去已收、去无名")
+	var found: bool = gs.find_treasure_lead("sunk_cargo_porcelain")
+	_expect(found and gs.has_treasure("sunk_cargo_porcelain"), "循线索寻得宝物")
+	_expect(not ("sunk_cargo_porcelain" in gs.treasure_leads), "寻得后线索销掉")
+
+	gs.from_dict({})
+	crew.from_dict({})
+	crew.hired = {
+		"huozhang": "wu_zhen",
+		"duogong": "lin_awu",
+		"zashi": "zhou_suanchou",
+		"tongshi": "kondo_saburo",
+	}
+	for tid in ["water_compass", "needle_route_scroll", "song_edition_wenxuan", "suhe_oil"]:
+		gs.add_treasure(str(tid))
+	_expect(gs.treasure_duty_bonus("huozhang") == 1 and gs.treasure_duty_bonus("duogong") == 1
+		and gs.treasure_duty_bonus("zashi") == 1 and gs.treasure_duty_bonus("tongshi") == 1, "四职事宝物在船生效")
+	_expect(gs.owned_duty_treasures().size() == 4, "船籍簿列四件职事宝物")
+	_expect(is_equal_approx(crew.speed_factor(), 1.08), "火长速 1.06 → 1.08")
+	_expect(is_equal_approx(crew.wind_floor(), 0.465), "舵工逆风下限 0.45 → 0.465")
+	_expect(is_equal_approx(crew.trade_cost_factor(), 0.86), "杂事抽佣 0.88 → 0.86")
+	_expect(is_equal_approx(crew.interpreter_edge("hakata"), 0.23), "通事异国价差 0.21 → 0.23")
+	_expect(crew.interpreter_edge("quanzhou") == 0.0, "通事只在异国港生效")
+
+	crew.hired.erase("huozhang")
+	_expect(gs.treasure_duty_bonus("huozhang") == 0 and is_equal_approx(crew.speed_factor(), 1.0), "火长下船，宝物不生效")
+	crew.hired["huozhang"] = "wu_zhen"
+	gs.treasures_owned.erase("water_compass")
+	gs.treasures_donated.append("water_compass")
+	_expect(gs.treasure_duty_bonus("huozhang") == 0 and is_equal_approx(crew.speed_factor(), 1.06), "已献宝物不生效")
+	gs.from_dict({})
+	crew.from_dict({})
 
 
 func _expect(ok: bool, what: String) -> void:

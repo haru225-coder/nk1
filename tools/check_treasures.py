@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""data/treasures.json 骨架校验门禁（lane treas1，宝物系统 v1）。
+"""data/treasures.json 骨架校验门禁（lane treas1/treas2，宝物系统 v1/v2）。
 
 宝物是单件收藏，不是 bulk cargo：本闸只读 data/treasures.json，域从仓内现算：
 港 id 读 data/ports.json，发现 id 读 data/discoveries.json，货 id / 名读 data/goods.json，
@@ -8,15 +8,17 @@
 判词：
   零、判据自检（GATES §五.3，内存变异不落盘）：删字段 / id 重号 / 名字重号 / 类目越域 /
     品第计数错 / 价越界 / 港不存在 / 发现不存在 / 无来源 / effect 越域 / 职事不存在 /
-    非 GB2312 / era_note 重句 / 年号物名越界 / 撞货名 / 待鉴数错 / event-only，
-    各退一格须红；好样本须绿。
-  一、顶层：meta 标题 / 年代 / 说明非空；treasures 恰 22 条。
+    非 GB2312 / era_note 重句 / 年号物名越界 / 撞货名 / 待鉴数错 / event-only /
+    传闻港 / 近港越界 / 传闻 hint 非 GB2312，各退一格须红；好样本须绿。
+  一、顶层：meta 标题 / 年代 / 说明非空；treasures 恰 27 条。
   二、身份：字段恰登记键；id 蛇形唯一、name 唯一；不与 goods id / name 撞。
-  三、品第与类目：category ∈ 七类；grade ∈ 甲乙丙丁；甲 3 / 乙 9 / 丙 8 / 丁 2。
+  三、品第与类目：category ∈ 七类；grade ∈ 甲乙丙丁；甲 3 / 乙 12 / 丙 10 / 丁 2。
   四、价与出处：value 120–2600；origin 非空；era_note 非空、GB2312、无明清年号物名。
-  五、来源：sources 非空；shop 港在 ports；discovery 在 discoveries；event 只作形态；
-    每件至少一条 shop / discovery；恰 7 个售港、恰 5 个发现钩子。
-  六、效果：kind ∈ fame / duty / appraise_only；fame 额 > 0；duty 职事在册、bonus ≥ 1。
+  五、来源：sources 非空；shop 港在 ports；discovery 在 discoveries；rumor 港 / 近港在 ports、
+    hint 非空且 GB2312；event 只作形态；每件至少一条 shop / discovery / rumor；
+    恰 7 个售港、恰 5 个发现钩子、恰 5 件传闻宝物。
+  六、效果：kind ∈ fame / duty / appraise_only；fame 额 > 0；duty 职事在册、bonus ≥ 1；
+    duty_note 可选，给了须为 GB2312。
   七、待鉴：unidentified_name 可选、非空、GB2312；恰 6 件。
   八、文案：era_note 逐条不同；首尾六字不同；任意 8 字窗不跨条重复。
 交主控：python3 tools/check_treasures.py（纯 stdlib、只读、< 1 s）
@@ -34,12 +36,14 @@ if "--json" in sys.argv[1:]:
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data", "treasures.json")
-EXPECT_COUNT = 22
-GRADE_COUNT = {"甲": 3, "乙": 9, "丙": 8, "丁": 2}
+EXPECT_COUNT = 27
+GRADE_COUNT = {"甲": 3, "乙": 12, "丙": 10, "丁": 2}
 CATEGORIES = {"瓷器", "茶器", "香药", "铜器", "书画碑帖", "航海器物", "舶来"}
 SHOP_HOOKS = {"quanzhou", "mingzhou", "guangzhou", "hakata", "champa", "wenzhou", "fuzhou"}
 DISC_HOOKS = {"penghu_channel", "jiuri_wind_stele", "champa_old_port", "lingshan_tombs", "qingjing_arabic_gate"}
-ITEM_KEYS = {"id", "name", "unidentified_name", "category", "grade", "value", "origin", "era_note", "sources", "effect"}
+RUMOR_HOOKS = {"sunk_cargo_porcelain", "houzhu_sunk_incense", "goryeo_silver_inlay_kundika",
+               "champa_ivory_carving", "srivijaya_rhino_horn"}
+ITEM_KEYS = {"id", "name", "unidentified_name", "category", "grade", "value", "origin", "era_note", "sources", "effect", "duty_note"}
 ANACHRONISM = ("宣德", "青花", "成化", "景泰蓝", "紫砂", "珐琅", "粉彩", "五彩", "斗彩",
                "洪武", "永乐", "嘉靖", "万历", "康熙", "雍正", "乾隆", "嘉庆", "道光",
                "同治", "光绪", "民国", "郑和", "哥窑")
@@ -113,6 +117,7 @@ def validate(data, domains):
     grades = {g: 0 for g in GRADE_COUNT}
     shops = set()
     discs = set()
+    rumors = set()
     unids = 0
     notes = []
     for i, row in enumerate(rows):
@@ -123,7 +128,7 @@ def validate(data, domains):
         unknown = set(row) - ITEM_KEYS
         if unknown:
             errs.append(tag + " 有未登记字段：%s" % "、".join(sorted(unknown)))
-        for key in ITEM_KEYS - {"unidentified_name"}:
+        for key in ITEM_KEYS - {"unidentified_name", "duty_note"}:
             if key not in row:
                 errs.append(tag + " 缺字段 " + key)
         tid = row.get("id", "")
@@ -173,6 +178,8 @@ def validate(data, domains):
                 errs.append(tag + " unidentified_name 须为非空 GB2312")
             else:
                 unids += 1
+        if "duty_note" in row and not gb(row.get("duty_note")):
+            errs.append(tag + " duty_note 须为非空 GB2312")
 
         sources = row.get("sources")
         if not isinstance(sources, list) or not sources:
@@ -204,13 +211,33 @@ def validate(data, domains):
                 else:
                     discs.add(did)
                     has_obtain = True
+            elif st == "rumor":
+                if set(src) != {"type", "port", "near_ports", "hint"}:
+                    errs.append(tag + " rumor 来源字段须恰为 type/port/near_ports/hint")
+                port = str(src.get("port", ""))
+                if port not in ports:
+                    errs.append(tag + " rumor 港不存在 " + port)
+                near = src.get("near_ports")
+                if not isinstance(near, list) or not near:
+                    errs.append(tag + " rumor near_ports 须为非空数组")
+                else:
+                    for np in near:
+                        if not isinstance(np, str) or np not in ports:
+                            errs.append(tag + " rumor near_ports 港不存在 " + str(np))
+                    if port in ports and port not in near:
+                        errs.append(tag + " rumor 港须列入 near_ports " + port)
+                if not gb(src.get("hint")):
+                    errs.append(tag + " rumor hint 须为非空 GB2312")
+                if port in ports and isinstance(tid, str):
+                    rumors.add(tid)
+                has_obtain = True
             elif st == "event":
                 if set(src) != {"type"}:
                     errs.append(tag + " event 来源只作形态，不得带条件")
             else:
                 errs.append(tag + " source.type 越域 " + str(st))
         if not has_obtain:
-            errs.append(tag + " 无 shop / discovery 获取途径")
+            errs.append(tag + " 无 shop / discovery / rumor 获取途径")
 
         eff = row.get("effect")
         if not isinstance(eff, dict):
@@ -239,6 +266,8 @@ def validate(data, domains):
         errs.append("售港数 %d ≠ 7" % len(shops))
     if discs != DISC_HOOKS:
         errs.append("发现钩子 %s ≠ 登记五处" % sorted(discs))
+    if rumors != RUMOR_HOOKS:
+        errs.append("传闻宝物 %s ≠ 登记五件" % sorted(rumors))
     if unids != 6:
         errs.append("待鉴宝物 %d ≠ 6" % unids)
 
@@ -292,6 +321,11 @@ def _selftest(data, domains):
     case("后世物名", lambda b: b["treasures"][0].__setitem__("name", "青花瓷瓶"), "后世名物")
     case("撞货名", lambda b: b["treasures"][0].__setitem__("name", "青白瓷"), "与货名撞车")
     case("待鉴数错", lambda b: b["treasures"][0].pop("unidentified_name"), "待鉴宝物")
+    case("传闻港不存在", lambda b: b["treasures"][22]["sources"][0].__setitem__("port", "atlantis"), "rumor 港不存在")
+    case("传闻近港不存在", lambda b: b["treasures"][22]["sources"][0]["near_ports"].__setitem__(0, "atlantis"), "near_ports 港不存在")
+    case("传闻 hint 非 GB2312", lambda b: b["treasures"][22]["sources"][0].__setitem__("hint", "老渔人说彧"), "rumor hint")
+    case("传闻件数错", lambda b: b["treasures"][22].__setitem__("id", "sunk_cargo_porcelain_x"), "传闻宝物")
+    case("duty_note 非 GB2312", lambda b: b["treasures"][6].__setitem__("duty_note", "火长彧"), "duty_note")
 
     ok = not good
     check(ok, "自检好样本须绿%s" % ("" if ok else "（塌因：%s）" % "；".join(good[:5])))

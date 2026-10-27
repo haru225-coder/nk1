@@ -63,6 +63,15 @@ static func setup_reporting(main: Control) -> void:
 	var codex: VBoxContainer = main._slip_body()
 	main._slip_title(codex, "宝物图鉴", "藏 %d / 共 %d" % [GameState.treasure_collected_count(), GameManager.treasures_total()])
 	main._slip_note(codex, "唐物铺收单件；名声宝物可献入市舶司，每件一次。")
+	for raw in GameState.treasure_leads:
+		var lead_id := str(raw)
+		if GameState.has_treasure(lead_id):
+			continue
+		var lead := GameManager.get_treasure_by_id(lead_id)
+		var lead_src := GameManager.treasure_rumor_source(lead_id)
+		if lead.is_empty() or lead_src.is_empty():
+			continue
+		main._slip_note(codex, "线索：%s" % str(lead_src.get("hint", "")))
 
 	for tid in GameState.treasures_owned:
 		var t := GameManager.get_treasure_by_id(str(tid))

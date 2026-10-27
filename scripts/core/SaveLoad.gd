@@ -22,7 +22,7 @@ const EXAM_FLAG := "exam_sat"
 const EXAM_FLAG_PREFIX := "exam_sat_ch"
 const GUILD_FLAG_PREFIX := "guild_"
 const DISCOVERY_LIST_KEYS := ["discoveries_found", "discoveries_reported"]
-const TREASURE_LIST_KEYS := ["treasures_owned", "treasures_appraised", "treasures_donated"]
+const TREASURE_LIST_KEYS := ["treasures_owned", "treasures_appraised", "treasures_donated", "treasure_leads"]
 ## 四个内核单例分区；读档前逐一体检，非对象或关键结构不合法即判坏档。
 const PARTITIONS := ["calendar", "economy", "fleet", "crew"]
 const STATE_NUM_KEYS := [
@@ -166,6 +166,15 @@ func _harden_state(raw: Dictionary) -> Dictionary:
 	state["treasures_owned"] = owned
 	state["treasures_appraised"] = appraised
 	state["treasures_donated"] = donated
+	# 传闻线索只留尚未到手的真传闻物；坏档里的无名 id / 已献件不占线索位。
+	var leads := []
+	for tid in _normalise_ids(state.get("treasure_leads", [])):
+		if owned_set.has(tid) or donated_set.has(tid):
+			continue
+		if GameManager.treasure_rumor_source(tid).is_empty():
+			continue
+		leads.append(tid)
+	state["treasure_leads"] = leads
 	for key in ["met_ids", "news_seen"]: state[key] = _normalise_ids(state.get(key, []))
 	return state
 

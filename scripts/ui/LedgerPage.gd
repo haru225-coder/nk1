@@ -247,7 +247,8 @@ static func update_panel(main: Control) -> void:
 	# 职事行前的小头像（characters 线）：富文本里只能 add_image，先在串里留记号，末尾 _set_status_text 换图
 	var heads: Array = []
 	var gone_lines: PackedStringArray = Crew.departed_lines()
-	if not Crew.hired.is_empty() or not gone_lines.is_empty():
+	var duty_rows: Array = GameState.owned_duty_treasures()
+	if not Crew.hired.is_empty() or not gone_lines.is_empty() or not duty_rows.is_empty():
 		t += "[color=#%s][b]职事[/b][/color]\n" % gold
 		for c in Crew.roster():
 			var head_tex: Texture2D = main._roster_head(str(c.get("id", "")))
@@ -261,6 +262,19 @@ static func update_panel(main: Control) -> void:
 		# 史实辞船的人留一行淡字（「舵工　林华已于景炎元年十月辞船」）：月初【辞船】通告常被战况句、候日句压住，这里翻得到
 		for gl in gone_lines:
 			t += "[color=#%s]%s[/color]\n" % [dim, gl]
+		# 职事宝物：在船且在手才写随身句；人不在船则写收在箱底，别让玩家猜为何没加成
+		for t_row in duty_rows:
+			var role := str((t_row.get("effect", {}) as Dictionary).get("role", ""))
+			var role_name := str(Crew.role_def(role).get("name", role))
+			var note := str(t_row.get("duty_note", ""))
+			if note == "":
+				note = "%s随身带着%s。" % [role_name, t_row.get("name", "旧物")]
+			if GameState.treasure_duty_bonus(role) > 0:
+				t += "[color=#%s]%s[/color]\n" % [UiTheme.hex(UiTheme.MOSS), note]
+			else:
+				t += "[color=#%s]「%s」收在箱底，%s未在船上。[/color]\n" % [
+					dim, t_row.get("name", "旧物"), role_name,
+				]
 	if not Crew.hired.is_empty():
 		var wage := Crew.monthly_wage()
 		var wage_color := UiTheme.HONEY if Crew.unpaid_months > 0 else UiTheme.TEXT

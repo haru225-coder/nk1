@@ -83,6 +83,39 @@ static func on_donate(main: Control, tid: String) -> void:
 	main.load_scene(main.current_scene_id)
 
 
+## 酒馆里的宝物传闻：每件听过一次就记进线索册，本港不再摆；只列本港在传、未收、未记的
+static func setup_rumors(main: Control, port_id: String) -> void:
+	var rows: Array = []
+	for t in GameManager.treasures_with_rumor_at(port_id):
+		if typeof(t) != TYPE_DICTIONARY:
+			continue
+		var tid := str(t.get("id", ""))
+		if tid == "" or GameState.has_treasure(tid) or tid in GameState.treasure_leads:
+			continue
+		var src := GameManager.treasure_rumor_source(tid)
+		if src.is_empty():
+			continue
+		rows.append({"id": tid, "hint": str(src.get("hint", ""))})
+	if rows.is_empty():
+		return
+	var body: VBoxContainer = main._slip_body()
+	main._slip_title(body, "传闻", "酒客闲话")
+	for row in rows:
+		main._slip_note(body, str(row.get("hint", "")))
+		main._slip_chip(main._slip_row(body), "记下这条线索",
+			main._on_hear_treasure_rumor.bind(str(row.get("id", "")), port_id))
+
+
+static func on_hear_rumor(main: Control, tid: String, port_id: String) -> void:
+	var res: Dictionary = GameState.note_treasure_rumor(tid, port_id)
+	if res.get("ok", false):
+		main.log_msg("【传闻】记下一条线索：%s" % str(res.get("hint", "")))
+	else:
+		main.log_msg(str(res.get("msg", "")))
+	main.update_status_panel()
+	main.load_scene(main.current_scene_id)
+
+
 static func _display_name(t: Dictionary) -> String:
 	if t.has("unidentified_name"):
 		return str(t.get("unidentified_name", ""))

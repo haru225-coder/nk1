@@ -1612,6 +1612,9 @@ func _show_event(event: Dictionary) -> void:
 	elif kind == Voyage.EventKind.DISCOVERY:
 		_add_event_action("绕去细看　费一日", _on_investigate_discovery)
 		_add_event_action("不理会　继续航行", _on_event_continue)
+	elif kind == Voyage.EventKind.TREASURE:
+		_add_event_action("循线索寻访　费一日", _on_investigate_treasure)
+		_add_event_action("不理会　继续航行", _on_event_continue)
 	elif kind == Voyage.EventKind.MUTINY:
 		_add_event_action("散钱 %d" % Fleet.mutiny_bribe_cost(), _on_mutiny_bribe)
 		_add_event_action("放走 %d 人" % Fleet.mutiny_dismiss_count(), _on_mutiny_dismiss)
@@ -2319,6 +2322,33 @@ func _on_investigate_discovery() -> void:
 	_refresh_status()
 	pending_event = {}
 	event_title.text = "第 %d 日・近岸" % days_elapsed
+	event_text.text = note + "\n\n这一日水粮照耗，船没有往前挪。"
+	for c in event_actions.get_children():
+		c.queue_free()
+	_add_event_action("继续航行", _on_event_continue)
+	event_panel.visible = true
+
+
+## 循酒馆线索寻访：与近岸细看同费一日，船不往前；找到才把线索从册上销掉
+func _on_investigate_treasure() -> void:
+	GameManager.advance_days(1)
+	days_elapsed += 1
+	var tid: String = pending_event.get("treasure_id", "")
+	var t := GameManager.get_treasure_by_id(tid)
+	var found := GameState.find_treasure_lead(tid)
+	var note := ""
+	if found:
+		note = "循着线索寻到%s，收进箱底，不占舱位。" % t.get("name", "旧物")
+		_log(_ink(UiTheme.GOLD, note))
+	elif GameState.has_treasure(tid):
+		note = "线索所指的%s，册上早已收着。" % t.get("name", "旧物")
+		_log(note)
+	else:
+		note = "照着线索找了一圈，只见潮水冲过的空滩。"
+		_log(note)
+	_refresh_status()
+	pending_event = {}
+	event_title.text = "第 %d 日・寻访" % days_elapsed
 	event_text.text = note + "\n\n这一日水粮照耗，船没有往前挪。"
 	for c in event_actions.get_children():
 		c.queue_free()

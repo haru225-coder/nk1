@@ -61,7 +61,8 @@ enum CourseOrder { RUMB, OFFSHORE, COAST }
 ## MUTINY 来自云端 7d9f（不进随机表）；SHOAL / LOST 来自云端 bed9 航法线；
 ## REQUISITION / YUAN_PATROL / REFUGEE 是本地 main 的战时三遭遇（Voyage._war_event）；
 ## BLOCKADE 是闯封锁到了港外撞上哨船那一面（blockade_event，不进逐日抽取）。
-enum EventKind { NONE, CALM, CURRENT, STORM, PIRATE, MERCHANT, DISCOVERY, MUTINY, SHOAL, LOST, REQUISITION, YUAN_PATROL, REFUGEE, BLOCKADE }
+## TREASURE 是酒馆传闻线索在沿岸应验的一面（与 DISCOVERY 共用同一档权重，不进 event_weights 的表）。
+enum EventKind { NONE, CALM, CURRENT, STORM, PIRATE, MERCHANT, DISCOVERY, MUTINY, SHOAL, LOST, REQUISITION, YUAN_PATROL, REFUGEE, BLOCKADE, TREASURE }
 
 
 func port_def(port_id: String) -> Dictionary:
@@ -459,7 +460,7 @@ func plan(from_id: String, to_id: String, order: int = CourseOrder.RUMB) -> Dict
 	var legs := _legs(from_id, to_id)
 	var brg := _leg_bearing(legs, 0.0)
 	var known := is_known_route(from_id, to_id)
-	var open := not _discovery_candidates(from_id, to_id).is_empty()
+	var open := not _discovery_candidates(from_id, to_id).is_empty() or not _treasure_candidates(from_id, to_id).is_empty()
 	var calm: Dictionary = _walk_days(legs, dist, order, known, open, false)
 	var rough: Dictionary = _walk_days(legs, dist, order, known, open, true)
 	var days := int(calm.get("days", 999))
@@ -590,7 +591,7 @@ func roll_day_event(course_bearing: float, from_id: String = "", to_id: String =
 	var known := true
 	if from_id != "" and to_id != "":
 		known = is_known_route(from_id, to_id)
-	var open := not _discovery_candidates(from_id, to_id).is_empty()
+	var open := not _discovery_candidates(from_id, to_id).is_empty() or not _treasure_candidates(from_id, to_id).is_empty()
 	var w := event_weights(order, Calendar.get_monsoon_strength(), known, open)
 	var r := randf()
 	var t := 0.0
@@ -611,6 +612,9 @@ func roll_day_event(course_bearing: float, from_id: String = "", to_id: String =
 		return _merchant_event(from_id)
 	t += float(w["discovery"])
 	if r < t:
+		var treasure_ev := _treasure_event(from_id, to_id)
+		if not treasure_ev.is_empty():
+			return treasure_ev
 		return _discovery_event(from_id, to_id)
 	t += float(w["shoal"])
 	if r < t:
@@ -970,6 +974,38 @@ func _discovery_candidates(from_id: String, to_id: String) -> Array:
 		if near.is_empty() or from_id in near or to_id in near:
 			pool.append(d)
 	return pool
+
+
+## 当前航段沿途可能应验的酒馆线索：只收本程近港、尚未到手的传闻宝物
+func _treasure_candidates(from_id: String, to_id: String) -> Array:
+	var pool := []
+	for raw in GameState.treasure_leads:
+		var tid := str(raw)
+		if tid == "" or GameState.has_treasure(tid):
+			continue
+		var t := GameManager.get_treasure_by_id(tid)
+		var src := GameManager.treasure_rumor_source(tid)
+		if t.is_empty() or src.is_empty():
+			continue
+		var near: Array = src.get("near_ports", [])
+		if near.is_empty() or from_id in near or to_id in near:
+			pool.append({"id": tid, "name": t.get("name", tid), "hint": src.get("hint", "")})
+	return pool
+
+
+## 线索在近岸应验：同 DISCOVERY 一样是一面可选事件，玩家点寻访才费一日
+func _treasure_event(from_id: String = "", to_id: String = "") -> Dictionary:
+	var pool := _treasure_candidates(from_id, to_id).filter(func(x) -> bool: return not _shore_seen_this_voyage.has("treasure:" + str(x.get("id", ""))))
+	if pool.is_empty():
+		return {}
+	var tr = pool[randi() % pool.size()]
+	_shore_seen_this_voyage["treasure:" + str(tr.get("id", ""))] = true
+	return {
+		"kind": EventKind.TREASURE,
+		"title": "寻访",
+		"text": "按酒馆里问来的线索，船绕到近岸。%s\n水手放下小艇，说值得去找一找。" % str(tr.get("hint", "")),
+		"treasure_id": tr.get("id", ""),
+	}
 
 
 ## 只抽当前航段沿途可能有的、且尚未勘见的发现物

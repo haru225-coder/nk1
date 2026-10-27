@@ -417,6 +417,30 @@ func treasures_for_discovery(discovery_id: String) -> Array:
 	return out
 
 
+## 本港酒馆里能听来的宝物传闻（只认未收、未记线索的由 GameState 过滤）
+func treasures_with_rumor_at(port_id: String) -> Array:
+	var out: Array = []
+	for t in treasures_data.get("treasures", []):
+		if typeof(t) != TYPE_DICTIONARY:
+			continue
+		for src in t.get("sources", []):
+			if typeof(src) == TYPE_DICTIONARY and str(src.get("type", "")) == "rumor" and str(src.get("port", "")) == port_id:
+				out.append(t)
+				break
+	return out
+
+
+## 某件宝物的传闻来源；不是传闻宝物则返回空字典
+func treasure_rumor_source(tid: String) -> Dictionary:
+	var t := get_treasure_by_id(tid)
+	if t.is_empty():
+		return {}
+	for src in t.get("sources", []):
+		if typeof(src) == TYPE_DICTIONARY and str(src.get("type", "")) == "rumor":
+			return src
+	return {}
+
+
 func treasures_total() -> int:
 	return treasures_data.get("treasures", []).size()
 
