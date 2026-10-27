@@ -1253,6 +1253,10 @@ collect_required(chapters_doc, required)
 collect_required(crew_doc, required)
 # 结局/钩子自己写的 hide_if_flag 必须也能被写下
 hook_written = {h.get("flag") for h in chapters_doc.get("story_hooks", []) if h.get("flag")}
+# 运行时由脚本写下的旗标（如 Main.gd 征船名册 sided_pu、崖山掉头 yashan_turned_back）
+import glob as _glob
+for _gd in _glob.glob(os.path.join(ROOT, "scripts", "**", "*.gd"), recursive=True):
+    hook_written |= set(re.findall(r'GameState\.set_flag\("([a-z0-9_]+)"\)', open(_gd, encoding="utf-8").read()))
 ok_required = required <= (settable | hook_written)
 dangling = sorted(required - settable - hook_written)
 check(ok_required, f"所有 require/hide 旗标都能被写下（悬空 {dangling or '无'}）")
