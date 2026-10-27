@@ -314,6 +314,7 @@ const SCRIPTS := [
 	"res://tools/qa_w57_districtui_probe.gd",  # lane ui2 城中各处 UI 可用性探针
 	"res://tools/qa_w56_pending_districts_probe.gd",  # lane d1 待画城区探针
 	"res://tools/qa_w57_seasonal_probe.gd",  # lane sim3 季节需求（节令）探针
+	"res://tools/qa_w57_festival_probe.gd",  # lane fest1 岁时节令十一条声口探针（原位、月门、一年一回）
 	"res://tools/qa_w57_discovery_probe.gd",  # lane disc2 发现录探针（每港至少两条、id 唯一、near_ports 合法）
 	"res://tools/qa_w57_tut_probe.gd",  # lane tut2 玩家引导札记探针
 	"res://tools/qa_w57_npc_probe.gd",  # lane npc2 城中 NPC 链探针
