@@ -53,7 +53,7 @@
           "id": "ez_cheng_rumor",
           "type": "rumor",
           "label": "听行商",
-          "text": "城门口的行商说，福州的米船在江口候风，米价怕要动。",
+          "text": "城门口的行商说，湖南今秋收得薄，荆湖的米都被总领所和籴去了，福州那边的米也跟着贵。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "fuzhou",
@@ -115,7 +115,7 @@
           "id": "ez_huanghelou_rumor",
           "type": "rumor",
           "label": "听茶摊",
-          "text": "楼下的茶摊说，明州的生丝船到了江口，生丝价该松了。",
+          "text": "楼下茶摊上，一个从临安回来的牙人说，明州今春蚕好，丝户争着出手，生丝价该松了。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "mingzhou",
@@ -163,7 +163,7 @@
           "id": "ez_nanshi_rumor",
           "type": "rumor",
           "label": "听牙人",
-          "text": "南市牙人说，泉州的绢帛船到了江口，绢价要落。",
+          "text": "南市牙人掰着指头算：蜀锦今年下来得多，压得东南的绢也卖不起价，泉州的绢帛怕要落。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "quanzhou",
@@ -408,7 +408,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_ez_toutuo.jpg",
-      "description": "头陀寺在城东石城山，兵火后重修，殿宇不多。汴僧舜广住了三十年，廊下还堆着新斫的木料。",
+      "description": "头陀寺在城东石城山，兵火后重修，殿宇不多。廊下还堆着新斫的木料。",
       "interactions": [
         {
           "id": "ez_toutuo_incense",
@@ -453,7 +453,7 @@
           "id": "ez_toutuo_rumor",
           "type": "rumor",
           "label": "听寺僧",
-          "text": "寺僧说，明州的经卷船到了江口，经卷价要涨。",
+          "text": "寺僧说，东南几处大寺都在重刊藏经，明州的刻经铺接了单子，经卷要涨。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "mingzhou",
@@ -548,7 +548,7 @@
           "id": "ez_dukou_rumor",
           "type": "rumor",
           "label": "听船主",
-          "text": "蜀船船主说，广州的香药船在江口卸货，香药价怕要松。",
+          "text": "蜀船船主说，川药今年顺水下来得多，药铺都不急着收广州的香药了。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "guangzhou",
@@ -619,7 +619,7 @@
           1
         ]
       },
-      "description": "一二七五年正月，元军从阳罗堡渡江。都统程鹏飞在江上迎战，身被七创，退到鄂州城下。知鄂州张晏然、知汉阳军王仪以城降，程鹏飞以本军降。",
+      "description": "上年腊月，元军从阳逻堡渡江。都统程鹏飞在江上迎战，身被七创，退到鄂州城下。知鄂州张晏然、知汉阳军王仪以城降，程鹏飞以本军降。",
       "interactions": [
         {
           "id": "ez_cheng_pengfei_boat",
@@ -653,8 +653,8 @@
         {
           "id": "ez_cheng_pengfei_bury",
           "type": "favour",
-          "label": "收殓",
-          "text": "江面漂来断桨和尸首。寺僧在滩上支起席棚，缺人抬运。",
+          "label": "煎药",
+          "text": "城下江滩上，伤卒躺了一排。医官缺人煎药，药罐摆满了半条街。",
           "cost": 20,
           "once": true,
           "effects": {
