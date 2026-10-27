@@ -70,10 +70,10 @@ func _run() -> void:
 	var fleet_in := {
 		"ships": [
 			{"type": "fuchuan", "name": "安济", "durability": 62.0, "max_durability": 100.0,
-				"crew": 18, "sail_level": 2, "armor_level": 1,
+				"crew": 18, "sail_level": 2, "armor_level": 1, "seam_level": 1,
 				"cargo": {"rice": {"qty": 14, "avg_cost": 12.5}, "pepper": {"qty": 3, "avg_cost": 90.0}}},
 			{"type": "cangshan", "name": "通济", "durability": 100.0, "max_durability": 100.0,
-				"crew": 8, "sail_level": 1, "armor_level": 2,
+				"crew": 8, "sail_level": 1, "armor_level": 2, "seam_level": 1,
 				"cargo": {"silk": {"qty": 5, "avg_cost": 150.0}}},
 		],
 		"water": 47, "food": 33, "morale": 61, "mutiny_cooldown": 2,

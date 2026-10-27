@@ -937,7 +937,7 @@ _yard_src = open(os.path.join(os.path.dirname(__file__), "..", "scripts", "ui", 
 _up_body = _locate_func(_yard_src, "on_upgrade")
 _i_busy = _up_body.find("if _upgrade_busy:")
 _i_cost = _up_body.find("Fleet.upgrade_cost(ship_index, kind)")
-_i_up = _up_body.find("Fleet.upgrade_armor(ship_index) if is_armor else Fleet.upgrade_sail(ship_index)")
+_i_up = _up_body.find("Fleet.upgrade_armor(ship_index) if is_armor else (Fleet.upgrade_seam(ship_index) if is_seam else Fleet.upgrade_sail(ship_index))")
 _i_notok = _up_body.find("if not ok:")
 _i_spend = _up_body.find("GameState.spend_money(cost)")
 _i_roll = _up_body.find("Fleet.ships[ship_index][level_key] = prev_lv")

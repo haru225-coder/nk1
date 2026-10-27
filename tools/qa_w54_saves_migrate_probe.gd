@@ -169,7 +169,12 @@ func _want(old: Dictionary) -> Dictionary:
 	cr["hired"] = {"huozhang": "wu_zhen", "duogong": "chen_laodao"}
 	if not cr.has("departed"):
 		cr["departed"] = {}
-	return {"calendar": old["calendar"], "economy": old["economy"], "fleet": old["fleet"], "crew": cr, "state": st}
+	# 旧档船无 seam_level（ship2 捻缝）：读档按 1 等兜底，与 Fleet.from_dict 同口径
+	var fl: Dictionary = (old["fleet"] as Dictionary).duplicate(true)
+	for s in fl.get("ships", []):
+		if not (s as Dictionary).has("seam_level"):
+			s["seam_level"] = 1
+	return {"calendar": old["calendar"], "economy": old["economy"], "fleet": fl, "crew": cr, "state": st}
 
 
 # ── 一卷 ─────────────────────────────────────────────
