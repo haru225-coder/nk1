@@ -230,6 +230,12 @@
         {
           "gd_calls": "load_scene",
           "why": "scripts/ 里 load_scene(\"字面量\") 直跳"
+        },
+        {
+          "file": "data/port_beats.json",
+          "path": "beats[].entry",
+          "must": true,
+          "why": "PortBeats.arrive 抵港后就地 load_scene(entry)；委托线的幕由此进"
         }
       ],
       "known_orphans": [
@@ -400,6 +406,12 @@
           "name": "START_ENTRIES",
           "must": true,
           "why": "节拍链的入口：各港 requires 全空针的头一回抵达入口 + 序章已演的 start。链上第一针总是从它起（开局港泉州由 quanzhou_monk 进链）"
+        },
+        {
+          "gd_const": "scripts/core/PortBeats.gd",
+          "name": "QUEST_TAIL_ENTRIES",
+          "must": true,
+          "why": "章二后三条委托线的尾针：头针由章序 / 旧账旗 / 短札条件路由接演，尾针沿 requires.seen 回溯到链头；与 START_ENTRIES 分开登记，避免把条件针误写成 requires 全空的开场针"
         }
       ],
       "known_orphans": [
@@ -414,16 +426,9 @@
         },
         {
           "ids": [
-            "hakata_ledger",
             "return_quanzhou"
           ],
-          "why": "跨港收线两针：hakata_ledger 的条件是 cargo_hakata 旗（博多唐房寄货）、return_quanzhou 的条件是「玩过流求北缘那幕」——它们的入口不是节拍网内的针，是玩家跑商跑到这步的旗 / 演出账；网内从入口（序章 start 与各港开场针）走不到，运行时按条件路由接演"
-        },
-        {
-          "ids": [
-            "chapter2_letter"
-          ],
-          "why": "章二信条的占位针：条件「章二已开」（chapter_at_least），它的入口不在节拍网内、由运行时按章序路由接演；网内无入边"
+          "why": "跨港收线针：return_quanzhou 的条件是「玩过流求北缘那幕」——它的入口不是节拍网内的针，是玩家跑商跑到这步的演出账；网内从入口（序章 start 与各港开场针）走不到，运行时按条件路由接演"
         },
         {
           "ids": [
@@ -443,7 +448,7 @@
         "selfref",
         "known"
       ],
-      "mutant_skip_why": "按 entry 记演出账：可达的阵只有 start 与 ryukyu_bay 两针、都不带 requires.seen 回指（成边路靠 requires.seen 指回本表），「兜底形 + 入口可达 + 边字段非空」那一形在本表不存在——七格通用格的形状都挑不到锚 = 登记跳过；演出账的本体校验由 tools/godot_story_check.gd 的节拍断言守（条件 / 拍序 / 开关）"
+      "mutant_skip_why": "按 entry 记演出账，边字段在 requires 内层（seen[]）：通用形状格按顶层列表 / 字典做锚，拼错内层键（B5）与基线孤儿接回（B8）在 e[requires][0] 上落不上；章二委托线尾针虽已可作锚，形状格仍照演出账口径整组登记跳过。条件 / 拍序 / 开关由 tools/godot_story_check.gd 的节拍断言与 qa_w57_quest_probe 守"
     }
   ],
   "not_family": [

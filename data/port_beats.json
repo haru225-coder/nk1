@@ -110,6 +110,146 @@
         "chapter_at_least": 2
       },
       "stop_before": []
+    },
+    {
+      "id": "quanzhou_sulfur_offer",
+      "entry": "quest_sulfur_offer",
+      "port": "quanzhou",
+      "order": 110,
+      "requires": {
+        "seen": [
+          "chapter2_letter"
+        ]
+      },
+      "stop_before": [
+        "quest_sulfur_mingzhou"
+      ]
+    },
+    {
+      "id": "mingzhou_sulfur_clear",
+      "entry": "quest_sulfur_mingzhou",
+      "port": "mingzhou",
+      "order": 10,
+      "requires": {
+        "seen": [
+          "quest_sulfur_offer"
+        ],
+        "has_flag": [
+          "sulfur_escort_taken"
+        ]
+      },
+      "stop_before": [
+        "quest_sulfur_return"
+      ]
+    },
+    {
+      "id": "quanzhou_sulfur_return",
+      "entry": "quest_sulfur_return",
+      "port": "quanzhou",
+      "order": 120,
+      "requires": {
+        "seen": [
+          "quest_sulfur_mingzhou"
+        ],
+        "has_flag": [
+          "sulfur_escort_taken"
+        ]
+      },
+      "stop_before": []
+    },
+    {
+      "id": "hakata_letter_offer",
+      "entry": "quest_hakata_offer",
+      "port": "hakata",
+      "order": 20,
+      "requires": {
+        "seen": [
+          "hakata_ledger"
+        ],
+        "has_flag": [
+          "temple_letter"
+        ]
+      },
+      "stop_before": [
+        "quest_hakata_search"
+      ]
+    },
+    {
+      "id": "hakata_letter_search",
+      "entry": "quest_hakata_search",
+      "port": "hakata",
+      "order": 30,
+      "requires": {
+        "seen": [
+          "quest_hakata_offer"
+        ],
+        "has_flag": [
+          "hakata_errand_taken"
+        ]
+      },
+      "stop_before": [
+        "quest_hakata_return"
+      ]
+    },
+    {
+      "id": "hakata_letter_return",
+      "entry": "quest_hakata_return",
+      "port": "hakata",
+      "order": 40,
+      "requires": {
+        "seen": [
+          "quest_hakata_search"
+        ],
+        "has_flag": [
+          "hakata_errand_taken"
+        ]
+      },
+      "stop_before": []
+    },
+    {
+      "id": "champa_agarwood_offer",
+      "entry": "quest_champa_offer",
+      "port": "champa",
+      "order": 10,
+      "requires": {
+        "chapter_at_least": 2,
+        "chapter_at_most": 3
+      },
+      "stop_before": [
+        "quest_champa_grove"
+      ]
+    },
+    {
+      "id": "champa_agarwood_grove",
+      "entry": "quest_champa_grove",
+      "port": "champa",
+      "order": 20,
+      "requires": {
+        "seen": [
+          "quest_champa_offer"
+        ],
+        "has_flag": [
+          "champa_agarwood_taken"
+        ]
+      },
+      "stop_before": [
+        "quest_champa_return"
+      ]
+    },
+    {
+      "id": "champa_agarwood_return",
+      "entry": "quest_champa_return",
+      "port": "champa",
+      "order": 30,
+      "requires": {
+        "seen": [
+          "quest_champa_grove"
+        ],
+        "has_flag": [
+          "champa_agarwood_taken"
+        ]
+      },
+      "stop_before": []
     }
   ]
 }

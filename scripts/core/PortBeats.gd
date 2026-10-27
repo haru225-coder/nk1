@@ -21,6 +21,12 @@ const DECOMPOSE := {"ryukyu": "ryukyu_bay", "hakata": "hakata_ledger"}
 ## tools/data_family.json 的 families 根按这份常量锚可达性（改名须两处同步）。序章那场书斋戏（start）= 开
 ## 局就会演的旧戏，拍账上 seed 记着（杏化链只有它一针，见 DEFAULT_SEED）。
 const START_ENTRIES := ["quanzhou_monk", "ryukyu_bay"]
+## 入港接演的港：泉州主链与章二后的三条委托线（庆元、博多、占城）。
+## 流求 / 兴化等不接——航路首抵要进港页记 visited_ports，剧情幕不冒充港口。
+const QUEST_PORTS := ["quanzhou", "mingzhou", "hakata", "champa"]
+## 章二后三条委托线的尾针（硫黄 / 博多短札 / 占城沉香）：头针带章序、旧账旗或短札条件，
+## 运行时按条件路由接演；一条链的尾针沿 requires.seen 回溯到链头。data_family 的根按这份常量锚可达性。
+const QUEST_TAIL_ENTRIES := ["quest_sulfur_return", "quest_hakata_return", "quest_champa_return"]
 ## 拍账 seed：新档从这份起照（序章沿途已演的戏，Xinghua 链 start 一针记账；开关关掉不 seed = 留档老档老行为）
 const DEFAULT_SEED := ["start"]
 
@@ -139,5 +145,8 @@ func _requirements_met(b: Dictionary, seen: Array, flags: Array, visited: Array,
 		if not (str(p) in visited):
 			return false
 	if int((req as Dictionary).get("chapter_at_least", 0)) > chapter:
+		return false
+	var at_most := int((req as Dictionary).get("chapter_at_most", 0))
+	if at_most > 0 and chapter > at_most:
 		return false
 	return true

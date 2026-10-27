@@ -1875,6 +1875,342 @@
           }
         }
       ]
+    },
+    {
+      "id": "quest_sulfur_offer",
+      "chapter": "chapter_2",
+      "title": "泉州的硫黄契",
+      "location": "quanzhou",
+      "objective": "在泉州港接下萨摩硫黄的押运契，问明庆元抽解与回程脚钱。",
+      "body": "雨水刚停，泉州港的石阶还泛着白光。林阿舶没有在账房见你，只把你领到后渚的一间货栈。栈里摆着三只铅封木箱，箱角用墨笔写着萨摩、庆元与泉州三处地名。押运的契书摊在箱盖上：硫黄自萨摩装船，到庆元市舶司抽解，余货再换小船南下；契上不写货主姓名，只写保人和到港期限。林阿舶说，这趟不是寻常买卖，硫黄到港要过市舶司的秤，也要过军器所的账，脚钱虽厚，错一笔便难再走这条线。",
+      "choices": [
+        {
+          "label": "接下契书，先验箱上的铅封与押字",
+          "next": "quest_sulfur_accept",
+          "effects": {
+            "money": 30,
+            "merchant_credit": 4,
+            "flag": "sulfur_escort_taken"
+          }
+        },
+        {
+          "label": "只问庆元抽解的旧例，不押字",
+          "next": "quanzhou",
+          "effects": {
+            "network": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "quest_sulfur_accept",
+      "chapter": "chapter_2",
+      "title": "铅封与样硫",
+      "location": "quanzhou",
+      "objective": "验明硫黄封样，记下庆元抽解时要对的押字。",
+      "body": "铅封撬开时，一股淡黄的尘气从箱缝里散出来。老梢工用手指捻了捻，说不必点灯，硫黄见火便不是货，是祸。你让账房把样硫分包，一包留泉州，一包随契带去庆元；箱内的纸押与市舶司旧公凭逐字对过，才在契尾添上自己的押字。林阿舶在旁边看着，没有催你。他清楚这趟船押的不是一箱货，是一条从萨摩经庆元到泉州的旧路；路要走得久，第一笔账就不能糊。",
+      "choices": [
+        {
+          "label": "把样硫与旧公凭收进随身匣，回港候风",
+          "next": "quanzhou",
+          "effects": {
+            "network": 5,
+            "fame": 2
+          }
+        },
+        {
+          "label": "另抄一份箱号给庆元舶牙，免得到港对不上",
+          "next": "quanzhou",
+          "effects": {
+            "network": 8,
+            "money": -5
+          }
+        }
+      ]
+    },
+    {
+      "id": "quest_sulfur_mingzhou",
+      "chapter": "chapter_2",
+      "title": "庆元抽解",
+      "location": "mingzhou",
+      "objective": "在庆元市舶司抽解硫黄，换船南下。",
+      "body": "庆元府的三江口比泉州窄，潮水把船挤在石桥下。市舶司的小吏先看公凭，再验铅封，最后用铁秤逐箱过重。硫黄被抽去一成，余货验过，贴上放行的签，账上写明细色与粗色各若干。舶牙低声提醒你：庆元这边认押字也认人，抽解之后若换船，须把旧箱号一并写进新舱单，否则回到泉州又是一场口舌。你看着小吏把最后一笔朱印盖在契尾，才觉得这趟押运真正开始。",
+      "choices": [
+        {
+          "label": "照抽解旧例办，余货换小船即刻南下",
+          "next": "mingzhou",
+          "effects": {
+            "money": 50,
+            "merchant_credit": 6,
+            "network": 5
+          }
+        },
+        {
+          "label": "先支会子垫付博买，留一箱硫黄在庆元候价",
+          "next": "mingzhou",
+          "effects": {
+            "money": -30,
+            "merchant_credit": 8,
+            "network": 8,
+            "fame": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "quest_sulfur_return",
+      "chapter": "chapter_2",
+      "title": "回泉交硫",
+      "location": "quanzhou",
+      "objective": "回泉州交足硫黄，结清押运脚钱。",
+      "body": "回到泉州时，后渚的货栈已经换了新席。林阿舶先看庆元的抽解印，再看新舱单上的箱号，最后才让账房开箱。硫黄少了该少的一成，余货的成色也与样包相符。军器所来的人没有多话，只在收单上写了「足」字，又把一包硫黄带回城北。林阿舶把脚钱推给你，说这条萨摩路往后还会有人走；今日你把契书走完，往后别人才肯把更大的货交到你手上。",
+      "choices": [
+        {
+          "label": "照契收足脚钱，把抽解与博买的账一并入册",
+          "next": "quanzhou",
+          "effects": {
+            "money": 180,
+            "fame": 10,
+            "merchant_credit": 12,
+            "network": 8
+          }
+        },
+        {
+          "label": "留下一箱硫黄给船队备用，余钱照收",
+          "next": "quanzhou",
+          "effects": {
+            "money": 120,
+            "supplies": 12,
+            "fame": 8,
+            "merchant_credit": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "quest_hakata_offer",
+      "chapter": "chapter_2",
+      "title": "承天寺的短札",
+      "location": "hakata",
+      "objective": "凭净海短札，在博多唐房问一个久未归家的宋商。",
+      "body": "博多津的雨落在唐房的木板檐上，声音像有人在远处翻纸。承天寺的知客僧认得净海短札上的笔迹，把你让进偏房。他说唐房有个年轻宋商吴小七，前月带一卷借来的经卷去箱崎宫，本该当日回来，却一直不见人影；家中老母只会说泉州话，日日坐在门口等。知客僧把短札推回你手边，只说寺社不便派人沿路打听，若你肯走一趟，至少能让唐房知道人往哪去了。",
+      "choices": [
+        {
+          "label": "应下寻人，先把吴小七的相貌与衣衫问清",
+          "next": "quest_hakata_letter",
+          "effects": {
+            "fame": 5,
+            "network": 8,
+            "flag": "hakata_errand_taken"
+          }
+        },
+        {
+          "label": "只把短札留在寺里，请知客僧另托唐房",
+          "next": "hakata",
+          "effects": {
+            "network": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "quest_hakata_letter",
+      "chapter": "chapter_2",
+      "title": "唐房名册",
+      "location": "hakata",
+      "objective": "在唐房名册里找出吴小七的去向。",
+      "body": "唐房的名册用两种字写：宋商的名字用汉字，船与货用日本假名夹注。吴小七那一行只记着「往箱崎宫还经」，后面空着，连归期也没有。老母从柜底摸出一块木牌，牌上刻着半句泉州的乡音，是儿子出门时常带的。你问遍同屋的宋商，有人说那日风大，箱崎宫外的松林倒了一株，压断了去路；也有人说见他扶着一个病僧往宫后的客舍去了。名册翻到末页，纸角还沾着一点暗红的香灰。",
+      "choices": [
+        {
+          "label": "沿松林旧路去箱崎宫，先找那间客舍",
+          "next": "hakata",
+          "effects": {
+            "network": 6
+          }
+        },
+        {
+          "label": "先去唐房货栈问当日的挑夫",
+          "next": "hakata",
+          "effects": {
+            "merchant_credit": 4,
+            "network": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "quest_hakata_search",
+      "chapter": "chapter_2",
+      "title": "箱崎宫后的客舍",
+      "location": "hakata",
+      "objective": "在箱崎宫后的客舍找到吴小七。",
+      "body": "箱崎宫后的客舍只有三间，门前晒着湿透的经卷。你推门进去，看见一个瘦削的年轻人正替病僧换药，手腕上还缠着布。他听见泉州口音，先是一怔，随后低下头。原来那日松林倒树，他扶病僧避雨，错过了归期；经卷护在怀里没有湿，自己却病了几日。吴小七不敢回唐房，怕老母看见伤手，也怕船主追问他误了归期。你把木牌放在他面前，没有催他，只说唐房的名册上还留着那一行空白。",
+      "choices": [
+        {
+          "label": "先替他向知客僧报平安，再扶他回唐房",
+          "next": "hakata",
+          "effects": {
+            "fame": 8,
+            "network": 10
+          }
+        },
+        {
+          "label": "留下些钱给客舍，请病僧照料他一日，自己先回唐房报信",
+          "next": "hakata",
+          "effects": {
+            "money": -30,
+            "fame": 6,
+            "network": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "quest_hakata_return",
+      "chapter": "chapter_2",
+      "title": "博多津的口信",
+      "location": "hakata",
+      "objective": "把吴小七送回唐房，收下寺社与唐房的口信。",
+      "body": "吴小七回到唐房时，老母没有哭，只把木牌重新挂回他腰间。知客僧在承天寺设了一盏茶，说寺社欠你一份人情；唐房的宋商把一包倭铜与一匹博多布推到案上，说是各家的谢礼。你没有全收，只取了够补船资的一份。临出门，知客僧把净海的短札还给你，纸背多了一行小字：路远，先问人，再问货。你把短札收进袖中，觉得这趟博多没有白来。",
+      "choices": [
+        {
+          "label": "收下唐房的谢礼，把余下的转给吴家",
+          "next": "hakata",
+          "effects": {
+            "money": 150,
+            "fame": 12,
+            "network": 15,
+            "merchant_credit": 8,
+            "cargo": [
+              "japanese_copper"
+            ]
+          }
+        },
+        {
+          "label": "只收寺社的茶与口信，谢礼留作吴小七养伤",
+          "next": "hakata",
+          "effects": {
+            "fame": 15,
+            "network": 20,
+            "merchant_credit": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "quest_champa_offer",
+      "chapter": "chapter_2",
+      "title": "占城的香约",
+      "location": "champa",
+      "objective": "在占城港接下香主的沉香托运，问明香库成色。",
+      "body": "占城港的午后没有风，砖塔的影子压在石阶上。蕃商在廊下铺开一张旧席，席上摆着几段沉香：有的黑沉入水，有的色黄而轻。通事说，香主原有一船沉香要随泉州船北上，船主却在海口病倒，货还压在香库；若你肯接，先看货，再立契，回程时按成色结算。你闻到席上那股苦甜交杂的气味，知道这不是随便能压价的货。蕃商没有催，只把一小块香递给你，让你先看纹理；又从席下摸出一小串铜钱，说是定钱，验货后再议脚价。",
+      "choices": [
+        {
+          "label": "应下香约，先随通事去香库验货",
+          "next": "quest_champa_terms",
+          "effects": {
+            "money": 20,
+            "network": 6,
+            "flag": "champa_agarwood_taken"
+          }
+        },
+        {
+          "label": "只问香价，不接香约",
+          "next": "champa",
+          "effects": {}
+        }
+      ]
+    },
+    {
+      "id": "quest_champa_terms",
+      "chapter": "chapter_2",
+      "title": "香库验样",
+      "location": "champa",
+      "objective": "在香库分清沉水、栈香与黄熟，立下验货的押字。",
+      "body": "香库在砖塔背后，墙上开着高窗，风从窗缝里钻进来，把沉香的苦味吹得更清。通事把三段香放进水盆：沉水的沉到底，栈香浮起半截，黄熟只在水面打转。香主说，去年雨水多，香木结得薄，整批里沉水不过三成；若你要按整批计价，他可以在脚钱上让一步。你没有立刻答，只让随行的老梢工把每段香切开，看断面油线是否连到心里。香主看着刀口，没有再说话。",
+      "choices": [
+        {
+          "label": "只按沉水与栈香分等，黄熟另记一账",
+          "next": "champa",
+          "effects": {
+            "merchant_credit": 6,
+            "network": 4
+          }
+        },
+        {
+          "label": "整批照收，把成色写在契尾，免得到港再争",
+          "next": "champa",
+          "effects": {
+            "money": 30,
+            "merchant_credit": 2,
+            "fame": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "quest_champa_grove",
+      "chapter": "chapter_2",
+      "title": "香库外的雨",
+      "location": "champa",
+      "objective": "在香库外候雨，定下装船的数量与成色。",
+      "body": "验货未完，海上的雨先到了。香库外的泥地被雨打得发亮，挑夫把油布一层层压在香箱上。通事说，若今日不装船，明日的潮水便要等下一程；可若冒雨装船，沉香受了潮，到泉州便难卖好价。你让人把最沉的几箱先搬上船，余下的留在香库高处，又在契上添了一句：受潮的香不入正账。香主看了这句，点头，让挑夫把最后一箱也抬到檐下。",
+      "choices": [
+        {
+          "label": "先装沉水，栈香留待下一船",
+          "next": "champa",
+          "effects": {
+            "money": 60,
+            "merchant_credit": 8,
+            "network": 5
+          }
+        },
+        {
+          "label": "全数装船，用油布与竹篷隔潮",
+          "next": "champa",
+          "effects": {
+            "money": 30,
+            "fame": 4,
+            "supplies": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "quest_champa_return",
+      "chapter": "chapter_2",
+      "title": "沉香回账",
+      "location": "champa",
+      "objective": "与香主结清沉香账，把余香折成回程货。",
+      "body": "雨停时，香库的屋檐还在滴水。香主把契书摊在箱盖上，通事逐项念完沉水、栈香与黄熟的数量。你照验货时的分等结清，又留下一成香作回程礼；香主没有推辞，只问你要不要把一小箱象牙一并带回泉州，说是占城回泉州的旧例。海风从砖塔间穿过，带走了最后一点苦香。你收好契书，知道这趟占城之行没有写下什么大数目，却把一条南海香路的一头，稳稳接在了自己的舱单上。",
+      "choices": [
+        {
+          "label": "收下象牙，照契结清沉香账",
+          "next": "champa",
+          "effects": {
+            "money": 160,
+            "fame": 10,
+            "merchant_credit": 12,
+            "network": 10,
+            "cargo": [
+              "ivory"
+            ]
+          }
+        },
+        {
+          "label": "把一成香留给香主，余香随船回泉州",
+          "next": "champa",
+          "effects": {
+            "money": 120,
+            "fame": 8,
+            "network": 15,
+            "merchant_credit": 8,
+            "cargo": [
+              "aromatic_medicine"
+            ]
+          }
+        }
+      ]
     }
   ]
 }

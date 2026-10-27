@@ -1245,7 +1245,8 @@ check(_elsewhere_files == set(_seq3_elsewhere_probe),
 #      （scenes.json 的 flag 效果或 scripts/ 里 set_flag("…") 字面量）；cargo → goods.json；discovery → discoveries.json 名或 id；
 #      chapters.json 的 advance_scene / endings[].scene → scenes.json；非 deprecated 幕不许跳进 deprecated 幕。
 #   ④ 无孤儿：从真机入口走——start_scene、type=port 幕（海图抵港）、chapters.json 引的幕（晋升册页 / 结局）、
-#      Main.PROLOGUE_ONLY_FACILITIES 里港卡直进的幕（其余 city_* 港卡被 REMAPPED 改写成 {港}_{后缀} 动态页，进不到 scenes.json）——
+#      Main.PROLOGUE_ONLY_FACILITIES 里港卡直进的幕（其余 city_* 港卡被 REMAPPED 改写成 {港}_{后缀} 动态页，进不到 scenes.json）、
+#      data/port_beats.json 的 entry（PortBeats.arrive 就地演出的委托幕）——
 #      沿 choices / investigations 的 next 走不到的非 deprecated 幕，必须登记在 SCENE_ARCHIVE。
 #      名单外走不到 → 红（新加的幕忘了接入口）；名单里的被接回入口 → 红（从名单删掉）；名单里的 id 不存在或是 deprecated → 红。
 # 结构没变时本节零输出；改了结构（加键、加形状、接回归档场）要先改表，改表即留痕。
@@ -1527,7 +1528,12 @@ def scene_structure_problems(doc, ctx):
             out.append(f"{where} `{ref}` 在 scenes.json 里不存在")
 
     # ④ 孤儿：真机入口出发，沿 next 走
-    roots = {start} | {x for x, s in by.items() if s.get("type") == "port"} | {r for _, r in ch_refs}
+    # 港口节拍的 entry 也是真机入口（Main._on_enter_port → PortBeats.arrive → load_scene(entry)），
+    # 委托线只看节拍条件的幕由此可达；不把节拍幕算进来，新写的委托幕会被误判成孤儿。
+    pb_entries = {str(b.get("entry", "")) for b in load("port_beats.json").get("beats", [])
+                  if isinstance(b, dict)}
+    roots = ({start} | {x for x, s in by.items() if s.get("type") == "port"}
+             | {r for _, r in ch_refs} | pb_entries)
     for s in by.values():
         for f in s.get("facilities") or []:
             if isinstance(f, dict) and (f.get("id") in ctx["prologue_only"] or f.get("id") not in ctx["remapped"]):
@@ -1546,7 +1552,7 @@ def scene_structure_problems(doc, ctx):
         if s.get("deprecated"):
             continue
         if x not in seen and x not in ctx["archive"]:
-            out.append(f"scenes.json {x} 是孤儿：从 start_scene / 港页 / chapters.json / 港卡直进都走不到，也不在 SCENE_ARCHIVE")
+            out.append(f"scenes.json {x} 是孤儿：从 start_scene / 港页 / chapters.json / 港卡直进 / 港口节拍都走不到，也不在 SCENE_ARCHIVE")
         if x in seen and x in ctx["archive"]:
             out.append(f"scenes.json {x} 在 SCENE_ARCHIVE 里却已接回入口：从归档名单删掉")
     for x in sorted(set(ctx["archive"]) - set(by)):
