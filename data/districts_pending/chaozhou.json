@@ -71,7 +71,7 @@
       "name": "韩文公祠",
       "kind": "temple",
       "bg": "bg_dist_cz_hanwengong.jpg",
-      "description": "韩文公祠在韩山西麓，淳熙十六年自城南迁来。祠门朝江，阶下立着历次迁祠的碑记。祠祝每日扫叶，香案上只供一炉香。",
+      "description": "韩文公祠在韩山西麓，淳熙十六年自城南迁来。祠门朝江，阶下立着迁祠的碑记。祠祝每日扫叶，香案上只供一炉香。",
       "interactions": [
         {
           "id": "cz_hanci_visit",
@@ -123,7 +123,7 @@
       "name": "韩江与济川桥",
       "kind": "bridge",
       "bg": "bg_dist_cz_jichuan.jpg",
-      "description": "韩江自北而来，到州城东门外分成几股。济川桥东段以石墩架梁，中流还系着浮舟。涨水时桥面离江不过数尺，过桥的人都要看水势。",
+      "description": "韩江自北而来，到州城东门外分成几股。两岸石桥各向江心筑墩，中流以浮舟相接。涨水时桥面离江不过数尺，过桥的人都要看水势。",
       "interactions": [
         {
           "id": "cz_jichuan_cross",
@@ -150,7 +150,7 @@
             {
               "id": "cz_jichuan_repair_rope",
               "label": "出铁缆",
-              "text": "你从货里匀出一段旧铁缆，交给桥夫回炉。桥夫在桥柱上刻了一道记号，说这截缆算你的。",
+              "text": "你从货里匀出一段旧铁缆，交给桥夫回炉。桥夫在桥墩上刻了一道记号，说这截缆算你的。",
               "cost": 30,
               "effects": {
                 "favour": 1,
@@ -329,13 +329,13 @@
       "name": "潮阳与东山",
       "kind": "hill",
       "bg": "bg_dist_cz_chaoyang.jpg",
-      "description": "潮阳县城在练江边，东山环着城南。山上有水帘亭、望仙桥与宋人摩崖，海风大时，石壁间都是潮声。",
+      "description": "潮阳县城在练江边，东山在县城东。山上有水帘亭与宋人摩崖，海风大时，石壁间都是潮声。",
       "interactions": [
         {
           "id": "cz_chaoyang_climb",
           "type": "favour",
           "label": "登东山",
-          "text": "你从城南石阶上东山。水帘亭下的泉水被风扯成碎珠，石壁上留有宋代题名，字迹深浅不一。",
+          "text": "你从城东石阶上东山。水帘亭下的泉水被风扯成碎珠，石壁上留有宋代题名，字迹深浅不一。",
           "cost": 0,
           "once_per": "month",
           "effects": {
@@ -398,10 +398,10 @@
       "port": "chaozhou",
       "pending_port": true,
       "pending_art": true,
-      "name": "海阳盐场",
+      "name": "潮州盐场",
       "kind": "workshop",
       "bg": "bg_dist_cz_yantian.jpg",
-      "description": "海阳濒海，宋设盐场三所。小江场在县东南，灶户引海水取卤，煎成盐颗，再由盐仓发运。",
+      "description": "潮州濒海，宋设盐场三所。小江场在州南，灶户引海水取卤，煎成盐颗，再由盐仓发运。",
       "interactions": [
         {
           "id": "cz_yantian_buy",
@@ -426,7 +426,7 @@
             14,
             32
           ],
-          "shop": "海阳盐场"
+          "shop": "潮州盐场"
         },
         {
           "id": "cz_yantian_help",
@@ -447,10 +447,10 @@
       "port": "chaozhou",
       "pending_port": true,
       "pending_art": true,
-      "name": "韩江口商船与南洋来舶",
+      "name": "韩江口商船与番舶",
       "kind": "dock",
       "bg": "bg_dist_cz_hanjiangkou.jpg",
-      "description": "韩江口外泊着南北来的船。本地的盐船、瓷船候潮出海，南洋来舶在口外抛锚，小舟把香药与胡椒驳进来，牙人只说是广州转来的。",
+      "description": "韩江口外泊着南北来的船。本地的盐船、瓷船候潮出海，广州转来的番舶在口外抛锚，小舟把香药与胡椒驳进来，牙人只说货是广州的。",
       "interactions": [
         {
           "id": "cz_hjk_pepper",
@@ -496,7 +496,7 @@
       "name": "潮州州学",
       "kind": "academy",
       "bg": "bg_dist_cz_zhouxue.jpg",
-      "description": "州学在城东南，庆历间始建，后两迁而定。讲堂前立着题名碑，秋后榜纸贴在门外墙上。",
+      "description": "州学在城东北，绍兴十一年定于此。讲堂前立着题名碑，秋后榜纸贴在门外墙上。",
       "interactions": [
         {
           "id": "cz_zhouxue_list",
@@ -531,7 +531,7 @@
           "id": "cz_zhouxue_rub",
           "type": "favour",
           "label": "拓题名碑",
-          "text": "学吏替你按好纸，墨包一捶，碑上的名字就翻到纸上。纸揭起来时，边角还粘着一点青苔。",
+          "text": "学吏替你铺好纸，墨包一捶，碑上的名字就翻到纸上。纸揭起时，边角还粘着一点青苔。",
           "cost": 10,
           "once_per": "year",
           "effects": {
@@ -634,7 +634,7 @@
       "name": "西湖与葫芦山",
       "kind": "hill",
       "bg": "bg_dist_cz_xihu.jpg",
-      "description": "西湖在城西，旧为放生池。南宋两次重浚，引韩江水入湖，湖面才阔起来。湖边的葫芦山石壁上，宋人题刻连成一片。",
+      "description": "西湖在城西，旧为放生池。庆元五年重浚之后，引韩江水入湖，湖面才阔起来。湖边的葫芦山石壁上，宋人题刻连成一片。",
       "interactions": [
         {
           "id": "cz_xihu_boat",

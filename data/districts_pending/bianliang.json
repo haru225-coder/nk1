@@ -77,7 +77,7 @@
           "id": "bl_tieta_climb",
           "type": "favour",
           "label": "登塔",
-          "text": "你沿塔内砖阶上到第三层，风从缺檐处灌进来，城里的残瓦一直铺到黄河边。",
+          "text": "你沿塔内砖阶上到第三层，风从塔窗灌进来，城里的残瓦一直铺到黄河边。",
           "cost": 8,
           "once_per": "year",
           "effects": {
@@ -94,7 +94,7 @@
             {
               "id": "bl_tieta_brick_buy",
               "label": "收一块",
-              "text": "你收下一块，断口在日头下泛出深绿。",
+              "text": "你收下一块，断口在日头下泛出铁褐。",
               "cost": 25,
               "effects": {
                 "note": "得开宝寺琉璃砖一块。",
@@ -122,7 +122,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_bl_fanta.jpg",
-      "description": "繁塔在天清寺里，北宋初年砌的砖塔，塔身残了一截。砖面佛像的衣纹还看得清，塔院住了几户军属，晾衣绳系在断碑上。",
+      "description": "繁塔在天清寺里，北宋初年砌的六角砖塔。砖面佛像的衣纹还看得清，塔院住了几户军属，晾衣绳系在断碑上。",
       "interactions": [
         {
           "id": "bl_fanta_rubbing",
@@ -140,12 +140,12 @@
           "id": "bl_fanta_repair",
           "type": "choice",
           "label": "修塔缘簿",
-          "text": "塔身裂到第二层，天清寺的僧人捧出缘簿，只求把上截的碎砖清一清。",
+          "text": "塔砖年久松动，天清寺的僧人捧出缘簿，求人帮着补一补。",
           "options": [
             {
               "id": "bl_fanta_repair_give",
               "label": "捐三十钱",
-              "text": "你在缘簿上写了名字，僧人把铜钱倒进木柜，柜脚垫着一块残砖。",
+              "text": "你在缘簿上写下名字，僧人把铜钱收进木柜，柜脚压着一块旧砖。",
               "cost": 30,
               "effects": {
                 "fame": 1,
@@ -154,8 +154,8 @@
             },
             {
               "id": "bl_fanta_repair_clear",
-              "label": "帮着清砖",
-              "text": "你卷起袖子搬了半日碎砖，掌心磨出两道红印。",
+              "label": "帮着搬砖",
+              "text": "你卷起袖子搬了半日旧砖，掌心磨出两道红印。",
               "cost": 0,
               "effects": {
                 "hometown_tendency": 1,
@@ -192,7 +192,7 @@
           "id": "bl_zhouqiao_rumor",
           "type": "rumor",
           "label": "听驿卒",
-          "text": "驿卒在桥头换马，说襄樊的军报连夜北上，军前把博多来的硫黄截买一空。",
+          "text": "驿卒在桥头换马，说北边的军报连夜北上，军前把博多来的硫黄截买一空。",
           "cost": 15,
           "cooldown_days": 35,
           "port": "hakata",
@@ -237,7 +237,7 @@
       "kind": "dam",
       "pending_art": true,
       "bg": "bg_dist_bl_bianhe.jpg",
-      "description": "汴河在金末淤死，河床只剩一条浅沟，两岸码头石基半埋在土里。雨季积水，旱天起尘，漕船再没进来过。",
+      "description": "汴河在金末淤塞，河床只剩一条浅沟，两岸码头石基半埋在土里。雨季积水，旱天起尘，漕船多年没有进来。",
       "interactions": [
         {
           "id": "bl_bianhe_well",
@@ -398,11 +398,11 @@
       "id": "bl_hongqiao",
       "port": "bianliang",
       "pending_port": true,
-      "name": "东角子门与虹桥旧址",
+      "name": "虹桥旧址",
       "kind": "bridge",
       "pending_art": true,
       "bg": "bg_dist_bl_hongqiao.jpg",
-      "description": "虹桥在汴河上，北宋时是无柱的木拱桥，桥下漕船要放倒桅杆才过得去。如今汴河干了，桥早已不存，东角子门外的土里还留着两排桥基石。",
+      "description": "虹桥在汴河上，北宋时是无柱的木拱桥，桥下漕船要放倒桅杆才过得去。如今汴河干了，桥早已不存，城东的土里还留着两排桥基石。",
       "interactions": [
         {
           "id": "bl_hongqiao_base",
@@ -464,13 +464,13 @@
       "kind": "dam",
       "pending_art": true,
       "bg": "bg_dist_bl_huanghe.jpg",
-      "description": "寸金淀在城北，1234年端平入洛的宋军行到此处，蒙古人掘开黄河堤，水淹了整片营地。如今堤口还张着，浑水一年年漫过旧田，土里翻出锈箭头。",
+      "description": "寸金淀在城北，1234年端平入洛，宋军入汴，蒙古人掘开黄河堤，水漫到城外，粮道断了。此后浑水年年漫过旧田，土里翻出锈箭头。",
       "interactions": [
         {
           "id": "bl_huanghe_dike",
           "type": "favour",
-          "label": "看堤口",
-          "text": "你站在堤口，浑水贴着新土打旋，远处有农人赶着牛在浅处试渡。",
+          "label": "看旧堤",
+          "text": "你站在旧堤上，水在堤外低处打旋，远处有农人赶着牛在浅处试渡。",
           "cost": 8,
           "once_per": "year",
           "effects": {
@@ -492,13 +492,13 @@
         {
           "id": "bl_huanghe_repair",
           "type": "choice",
-          "label": "堤口填土",
-          "text": "里正招呼人往堤口填土，问你出不出工钱。",
+          "label": "旧堤填土",
+          "text": "里正招呼人往堤身填土，问你出不出工钱。",
           "options": [
             {
               "id": "bl_huanghe_repair_pay",
               "label": "出工钱",
-              "text": "你出了二十钱，里正多叫来六个挑土的，堤口当夜矮下去一截。",
+              "text": "你出了二十钱，里正多叫来六个挑土的，堤口当夜收窄了一截。",
               "cost": 20,
               "effects": {
                 "hometown_tendency": 2,
@@ -527,7 +527,7 @@
       "kind": "office",
       "pending_art": true,
       "bg": "bg_dist_bl_daluhuachi.jpg",
-      "description": "达鲁花赤的衙署设在旧宋门里，门外立着蒙文与汉文的告示牌。断事官在这里收税、点户、断斗殴，汉人吏员在廊下抄写，墨用的是南边来的松烟。",
+      "description": "达鲁花赤的衙署设在旧宋门里，门外立着蒙文与汉文的告示牌。达鲁花赤在这里掌印，衙里收税、点户，断斗殴另送断事官，汉人吏员在廊下抄写，墨用的是南边来的松烟。",
       "interactions": [
         {
           "id": "bl_daluhuachi_report",
@@ -750,7 +750,7 @@
           "id": "bl_chasi_listen",
           "type": "favour",
           "label": "听书",
-          "text": "你在一角坐下，说书人把醒木一拍，讲的是宣和年间州桥的夜市，满座没人打断。",
+          "text": "你在一角坐下，说书人把拍板一敲，讲的是宣和年间州桥的夜市，满座没人打断。",
           "cost": 8,
           "once_per": "month",
           "effects": {
@@ -777,7 +777,7 @@
           "id": "bl_chasi_rumor",
           "type": "rumor",
           "label": "听说书",
-          "text": "说书人歇场时提起，襄樊的军报又到了，建茶先解军前，福州的茶引只剩半纸。",
+          "text": "说书人歇场时提起，北边的军报又到了，建茶先解军前，福州的茶引只剩半纸。",
           "cost": 10,
           "cooldown_days": 30,
           "port": "fuzhou",
