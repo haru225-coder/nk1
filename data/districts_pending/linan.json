@@ -1,0 +1,1250 @@
+{
+  "districts": [
+    {
+      "id": "ln_hening",
+      "port": "linan",
+      "pending_port": true,
+      "name": "和宁门外",
+      "kind": "gate",
+      "pending_art": true,
+      "bg": "bg_dist_ln_hening.jpg",
+      "description": "和宁门是大内北门，凤凰山麓宫墙高耸。门外行人只能望见宫瓦与树影，不得入宫。",
+      "interactions": [
+        {
+          "id": "ln_hening_tribute",
+          "type": "favour",
+          "label": "供香药",
+          "text": "你把一匣香药递进宫门。内侍记下你的船号，御前应有回音。",
+          "cost": 120,
+          "once_per": "year",
+          "effects": {
+            "fame": 2,
+            "merchant_credit": 1,
+            "note": "向御前供过一匣香药。"
+          }
+        },
+        {
+          "id": "ln_hening_gate",
+          "type": "choice",
+          "label": "递门包",
+          "text": "门子收了门包，应允往后递话。你也可以不递。",
+          "options": [
+            {
+              "id": "give",
+              "label": "递门包",
+              "text": "门子把你的名字写在门簿上，往后好说话。",
+              "cost": 60,
+              "effects": {
+                "flag": "ln_hening_gate",
+                "network": 1
+              }
+            },
+            {
+              "id": "refuse",
+              "label": "不递",
+              "text": "你转身走了。门子也不拦。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln_hening_rumor",
+          "type": "rumor",
+          "label": "听宫门",
+          "text": "门子压低声音说，温州近来漆器紧。",
+          "cost": 18,
+          "cooldown_days": 45,
+          "port": "wenzhou",
+          "good": "lacquerware",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "ln_yujie",
+      "port": "linan",
+      "pending_port": true,
+      "name": "御街",
+      "kind": "street",
+      "pending_art": true,
+      "bg": "bg_dist_ln_yujie.jpg",
+      "description": "御街北起和宁门外，石板路面，两旁河渠与店铺。南宋中后期铺面侵占街道，夜市通宵。",
+      "interactions": [
+        {
+          "id": "ln_yujie_night",
+          "type": "favour",
+          "label": "设夜市摊",
+          "text": "你在御街支了夜市摊。灯火成排，行人驻足。",
+          "cost": 40,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "ln_yujie_rumor",
+          "type": "rumor",
+          "label": "听街谈",
+          "text": "街边茶博士说，博多茶价这一向紧。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "hakata",
+          "good": "tea",
+          "mul": 1.15
+        },
+        {
+          "id": "ln_yujie_choice",
+          "type": "choice",
+          "label": "收让街面",
+          "text": "牙人要你收让半间街面。你可以应，也可以拒。",
+          "options": [
+            {
+              "id": "yield",
+              "label": "收让",
+              "text": "你让出半间街面，牙人记你这一回。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "hold",
+              "label": "不让",
+              "text": "你守着自家街面，行人绕道。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ln_taimiao",
+      "port": "linan",
+      "pending_port": true,
+      "name": "太庙",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_ln_taimiao.jpg",
+      "description": "太庙在城中，殿宇依时换匾。祭祀之日，百官与士人齐集，香烟与礼乐并起。",
+      "interactions": [
+        {
+          "id": "ln_taimiao_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "你在太庙殿前供了香。礼官记下你的名字。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "ln_taimiao_sweep",
+          "type": "choice",
+          "label": "代人祭扫",
+          "text": "有人托你代扫祖茔。你可以应下，也可以婉辞。",
+          "options": [
+            {
+              "id": "accept",
+              "label": "应下",
+              "text": "你应下了。对方记你这一份人情。",
+              "cost": 0,
+              "effects": {
+                "network": 1,
+                "favour": 1
+              }
+            },
+            {
+              "id": "decline",
+              "label": "婉辞",
+              "text": "你婉辞了。礼官也不多问。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln_taimiao_rumor",
+          "type": "rumor",
+          "label": "问礼官",
+          "text": "礼官说，泉州 近来海盐紧。",
+          "cost": 12,
+          "cooldown_days": 35,
+          "port": "quanzhou",
+          "good": "sea_salt",
+          "mul": 1.16
+        }
+      ]
+    },
+    {
+      "id": "ln_sansheng",
+      "port": "linan",
+      "pending_port": true,
+      "name": "三省六部前",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_ln_sansheng.jpg",
+      "description": "三省六部衙署临街，公文与皂隶往来不绝。门前石阶上，候见的人排成一列。",
+      "interactions": [
+        {
+          "id": "ln_sansheng_licence",
+          "type": "licence",
+          "label": "领书吏凭",
+          "text": "书吏凭到手。往后呈递文书，少一道盘问。",
+          "cost": 500,
+          "licence": "lic_ln_scribe",
+          "unlock": {
+            "favour_min": 2
+          },
+          "effects": {
+            "fame": 1,
+            "merchant_credit": 2
+          }
+        },
+        {
+          "id": "ln_sansheng_gift",
+          "type": "favour",
+          "label": "送笔墨",
+          "text": "你给书吏送了一匣笔墨。他应下，往后好说话。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {
+            "favour": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "ln_sansheng_choice",
+          "type": "choice",
+          "label": "递呈子",
+          "text": "你有事要递呈子。可以递，也可以先攒人情。",
+          "options": [
+            {
+              "id": "submit",
+              "label": "递呈子",
+              "text": "呈子递上去了。书吏应下转呈。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "wait",
+              "label": "先攒人情",
+              "text": "你先攒人情，不急着递。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ln_taixue",
+      "port": "linan",
+      "pending_port": true,
+      "name": "太学与贡院",
+      "kind": "exam",
+      "pending_art": true,
+      "bg": "bg_dist_ln_taixue.jpg",
+      "description": "太学在纪家桥东，原岳飞故宅。贡院门外是石碑与榜墙，没有石人。大比之年秋，榜贴在墙上。",
+      "interactions": [
+        {
+          "id": "ln_taixue_look",
+          "type": "favour",
+          "label": "看榜",
+          "text": "贡院墙外贴着今秋的榜。廊下人挤，有人念，有人默，与泉州不同。",
+          "exam": true,
+          "once_per": "year",
+          "cost": 0,
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "scholar_tendency": 1
+          }
+        },
+        {
+          "id": "ln_taixue_stele",
+          "type": "favour",
+          "label": "摸碑",
+          "text": "榜墙边的石碑面光润。你按了一按，碑阴有字。",
+          "cost": 0,
+          "once_per": "year",
+          "effects": {
+            "fame": 1,
+            "note": "临安贡院石碑按过。"
+          }
+        },
+        {
+          "id": "ln_taixue_aid",
+          "type": "choice",
+          "label": "助寒士",
+          "text": "大比之年，贡院门外的寒士缺纸墨。你可助他，也可旁观。",
+          "exam": true,
+          "once_per": "year",
+          "unlock": {
+            "years": [
+              1256,
+              1259,
+              1262,
+              1265,
+              1268,
+              1271,
+              1274
+            ],
+            "months": [
+              8,
+              9,
+              10
+            ]
+          },
+          "options": [
+            {
+              "id": "give",
+              "label": "助纸墨",
+              "text": "你送了纸墨。寒士记你这一回情。",
+              "cost": 50,
+              "effects": {
+                "fame": 2,
+                "network": 1,
+                "flag": "ln_taixue_print"
+              }
+            },
+            {
+              "id": "pass",
+              "label": "旁观",
+              "text": "你只在墙边站了一会儿。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ln_zhongan",
+      "port": "linan",
+      "pending_port": true,
+      "name": "众安桥瓦子",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_ln_zhongan.jpg",
+      "description": "众安桥边瓦子，勾栏十三座，买卖关扑到夜深，说书人与药贩混坐。",
+      "interactions": [
+        {
+          "id": "ln_zhongan_box",
+          "type": "favour",
+          "label": "包下席位",
+          "text": "你包下勾栏一席。说书人与药贩都记你这一回。",
+          "cost": 60,
+          "once_per": "month",
+          "effects": {
+            "network": 2,
+            "fame": 1
+          }
+        },
+        {
+          "id": "ln_zhongan_rumor",
+          "type": "rumor",
+          "label": "听瓦子消息",
+          "text": "勾栏里的说书人说，泉州 近来硫黄紧。",
+          "cost": 15,
+          "cooldown_days": 35,
+          "port": "quanzhou",
+          "good": "sulfur",
+          "mul": 1.2
+        },
+        {
+          "id": "ln_zhongan_choice",
+          "type": "choice",
+          "label": "散流言",
+          "text": "你可以散一条流言，也可以按兵不动。",
+          "options": [
+            {
+              "id": "spread",
+              "label": "散流言",
+              "text": "流言散出去了。瓦子里议论纷纷。",
+              "cost": 20,
+              "effects": {
+                "pu_attention": 2,
+                "network": 1
+              }
+            },
+            {
+              "id": "hold",
+              "label": "按兵不动",
+              "text": "你按兵不动。瓦子里 如故。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ln_zhongbei",
+      "port": "linan",
+      "pending_port": true,
+      "name": "中瓦与北瓦",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_ln_zhongbei.jpg",
+      "description": "中瓦与北瓦是城中大瓦子。北瓦勾栏最多，中瓦卖药与杂货，夜市通宵。",
+      "interactions": [
+        {
+          "id": "ln_zhongbei_stroll",
+          "type": "favour",
+          "label": "逛中瓦",
+          "text": "你在中瓦逛了一圈。药贩与杂货摊挨着摆。",
+          "cost": 10,
+          "once_per": "month",
+          "effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "ln_zhongbei_hire",
+          "type": "hire",
+          "label": "雇说书人",
+          "text": "说书人应下，往后在瓦子里替你说船号。",
+          "who": "说书人",
+          "cost": 80,
+          "wage": 10,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "ln_zhongbei_gamble",
+          "type": "choice",
+          "label": "关扑赌物",
+          "text": "瓦子里关扑赌物。你可以压一注，也可以收手。",
+          "options": [
+            {
+              "id": "play",
+              "label": "压一注",
+              "text": "你压了一注。瓦子里叫好声一片。",
+              "cost": 20,
+              "effects": {
+                "money": 35,
+                "network": 1
+              }
+            },
+            {
+              "id": "stop",
+              "label": "收手",
+              "text": "你收了手。瓦子里 如故。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ln_shibo",
+      "port": "linan",
+      "pending_port": true,
+      "name": "市舶务",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_ln_shibo.jpg",
+      "description": "临安市舶务旧址在候潮门外，杭州务也称此。番商与抽解文契在此过目，细色公凭仍去东廊。",
+      "interactions": [
+        {
+          "id": "ln_shibo_licence",
+          "type": "licence",
+          "label": "领出海公凭",
+          "text": "出海公凭到手。番商认这张纸，货引仍去正厅请。",
+          "cost": 900,
+          "licence": "lic_ln_ship",
+          "unlock": {
+            "favour_min": 2
+          },
+          "effects": {
+            "fame": 2,
+            "merchant_credit": 2
+          }
+        },
+        {
+          "id": "ln_shibo_gift",
+          "type": "favour",
+          "label": "送笔墨",
+          "text": "你给书吏送了一匣笔墨。他记下船号，下回好说话。",
+          "cost": 30,
+          "once_per": "month",
+          "effects": {
+            "favour": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "ln_shibo_rumor",
+          "type": "rumor",
+          "label": "听番商",
+          "text": "番商压低声音说，博多 近来硫黄紧。",
+          "cost": 20,
+          "cooldown_days": 40,
+          "port": "hakata",
+          "good": "sulfur",
+          "mul": 1.18
+        }
+      ]
+    },
+    {
+      "id": "ln_chaidu",
+      "port": "linan",
+      "pending_port": true,
+      "name": "柴垛桥米市",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_ln_chaidu.jpg",
+      "description": "柴垛桥下米船成列，斗斛与牙人评米。湖墅米市的米也从此过手。",
+      "interactions": [
+        {
+          "id": "ln_chaidu_sample",
+          "type": "favour",
+          "label": "收米样",
+          "text": "你收了一斗米样。牙人应下给你留好米。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "note": "柴垛桥米样记过。"
+          }
+        },
+        {
+          "id": "ln_chaidu_choice",
+          "type": "choice",
+          "label": "压米价",
+          "text": "你可以压米价，也可以按市价收。",
+          "options": [
+            {
+              "id": "press",
+              "label": "压米价",
+              "text": "你压了米价。牙人记你这一回，人情却薄了。",
+              "cost": 50,
+              "effects": {
+                "pu_attention": 2,
+                "merchant_credit": -1
+              }
+            },
+            {
+              "id": "fair",
+              "label": "按市价",
+              "text": "你按市价收。牙人应下留好米。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln_chaidu_rumor",
+          "type": "rumor",
+          "label": "听米价",
+          "text": "米行牙人说，兴化 近来米价紧。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "xinghua",
+          "good": "grain",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "ln_yuxing",
+      "port": "linan",
+      "pending_port": true,
+      "name": "鱼行",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_ln_yuxing.jpg",
+      "description": "鱼行清晨开市，冰与盐桶摆在石阶上，牙人按鱼色喊价。",
+      "interactions": [
+        {
+          "id": "ln_yuxing_fresh",
+          "type": "favour",
+          "label": "买鲜鱼",
+          "text": "你买了几尾鲜鱼。鱼行牙人应下留好货。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "ln_yuxing_credit",
+          "type": "choice",
+          "label": "赊鱼",
+          "text": "你可以赊鱼，也可以现钱买。",
+          "options": [
+            {
+              "id": "credit",
+              "label": "赊鱼",
+              "text": "你赊了几尾鱼。牙人记下账。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": -1,
+                "money": 20
+              }
+            },
+            {
+              "id": "cash",
+              "label": "现钱买",
+              "text": "你现钱买了鱼。牙人应下留好货。",
+              "cost": 15,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ln_yaoshi",
+      "port": "linan",
+      "pending_port": true,
+      "name": "药市",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_ln_yaoshi.jpg",
+      "description": "药市药材成捆，香药与本地草药混堆，药行牙人按气味估价。",
+      "interactions": [
+        {
+          "id": "ln_yaoshi_recipe",
+          "type": "favour",
+          "label": "配药方",
+          "text": "你配了一剂药方。药行牙人应下留好药材。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "fame": 1
+          }
+        },
+        {
+          "id": "ln_yaoshi_licence",
+          "type": "licence",
+          "label": "领药行凭",
+          "text": "药行凭到手。药市牙人认这张纸，药材好说话。",
+          "cost": 400,
+          "licence": "lic_ln_pharmacy",
+          "unlock": {
+            "favour_min": 1
+          },
+          "effects": {
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "ln_yaoshi_rumor",
+          "type": "rumor",
+          "label": "听药价",
+          "text": "药行牙人说，广州 近来香药紧。",
+          "cost": 12,
+          "cooldown_days": 30,
+          "port": "guangzhou",
+          "good": "aromatic_medicine",
+          "mul": 1.14
+        }
+      ]
+    },
+    {
+      "id": "ln_shufang",
+      "port": "linan",
+      "pending_port": true,
+      "name": "书坊",
+      "kind": "workshop",
+      "pending_art": true,
+      "bg": "bg_dist_ln_shufang.jpg",
+      "description": "陈宅书籍铺在棚北大街，刻板与纸墨成堆，科举用书与杂书混卖。",
+      "interactions": [
+        {
+          "id": "ln_shufang_invest",
+          "type": "invest",
+          "label": "入股书坊",
+          "text": "你入了书坊的本钱。刻板与纸墨 往后 由你分润。",
+          "costs": [
+            350,
+            800
+          ],
+          "monthly": [
+            15,
+            40
+          ],
+          "shop": "陈宅书坊"
+        },
+        {
+          "id": "ln_shufang_buy",
+          "type": "favour",
+          "label": "买书",
+          "text": "你买了几册书。主人应下留好新刻。",
+          "cost": 25,
+          "once_per": "month",
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "ln_shufang_carve",
+          "type": "choice",
+          "label": "刻书",
+          "text": "你可以刻一版书，也可以只卖现书。",
+          "options": [
+            {
+              "id": "carve",
+              "label": "刻书",
+              "text": "你刻了一版书。主人应下分润。",
+              "cost": 100,
+              "effects": {
+                "fame": 2,
+                "note": "临安刻过一回书。"
+              }
+            },
+            {
+              "id": "sell",
+              "label": "卖现书",
+              "text": "你只卖现书。主人应下留好。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ln_xihu",
+      "port": "linan",
+      "pending_port": true,
+      "name": "西湖",
+      "kind": "hill",
+      "pending_art": true,
+      "bg": "bg_dist_ln_xihu.jpg",
+      "description": "西湖苏堤与断桥，孤山在水中央，游船与卖花人混在湖面。",
+      "interactions": [
+        {
+          "id": "ln_xihu_cruise",
+          "type": "favour",
+          "label": "游湖",
+          "text": "你雇船游湖。卖花人与游船都记你这一回。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "ln_xihu_inscribe",
+          "type": "choice",
+          "label": "题壁",
+          "text": "你可以在壁上题字，也可以只观景。",
+          "options": [
+            {
+              "id": "write",
+              "label": "题字",
+              "text": "你题了一行字。游人驻足念诵。",
+              "cost": 10,
+              "effects": {
+                "fame": 2,
+                "scholar_tendency": 1
+              }
+            },
+            {
+              "id": "view",
+              "label": "观景",
+              "text": "你只观景。湖面 如故。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln_xihu_rumor",
+          "type": "rumor",
+          "label": "听湖上消息",
+          "text": "卖花人说，温州 近来漆器紧。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "wenzhou",
+          "good": "lacquerware",
+          "mul": 1.13
+        }
+      ]
+    },
+    {
+      "id": "ln_lingyin",
+      "port": "linan",
+      "pending_port": true,
+      "name": "灵隐寺与飞来峰",
+      "kind": "temple",
+      "pending_art": true,
+      "bg": "bg_dist_ln_lingyin.jpg",
+      "description": "灵隐寺在飞来峰下，峰上石龛多宋代所刻，寺前香客与僧人往来。",
+      "interactions": [
+        {
+          "id": "ln_lingyin_incense",
+          "type": "favour",
+          "label": "上香",
+          "text": "你在灵隐寺佛殿前供了香。知客僧把你的名字写进功德簿。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "fame": 1,
+            "favour": 1
+          }
+        },
+        {
+          "id": "ln_lingyin_aid",
+          "type": "choice",
+          "label": "助僧东渡",
+          "text": "有日本僧人要搭船东渡。你可以助，也可以婉辞。",
+          "options": [
+            {
+              "id": "carry",
+              "label": "助他东渡",
+              "text": "僧人上了你的船。寺里记下这份人情与船期。",
+              "cost": 0,
+              "effects": {
+                "network": 2,
+                "fame": 1,
+                "flag": "ln_lingyin_monk"
+              }
+            },
+            {
+              "id": "decline",
+              "label": "婉辞",
+              "text": "你说舱位满了。僧人合掌，转身去了。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln_lingyin_rumor",
+          "type": "rumor",
+          "label": "听禅僧",
+          "text": "禅僧说，博多 近来经卷紧。",
+          "cost": 20,
+          "cooldown_days": 50,
+          "port": "hakata",
+          "good": "sutra_scrolls",
+          "mul": 1.16
+        }
+      ]
+    },
+    {
+      "id": "ln_liuhe",
+      "port": "linan",
+      "pending_port": true,
+      "name": "六和塔与钱塘江潮",
+      "kind": "bridge",
+      "pending_art": true,
+      "bg": "bg_dist_ln_liuhe.jpg",
+      "description": "六和塔立月轮山，钱塘潮八月十八推来，看棚与战船在江边。",
+      "interactions": [
+        {
+          "id": "ln_liuhe_view",
+          "type": "favour",
+          "label": "观潮",
+          "text": "你在八月十八观潮。潮头推来，看棚彩幕相连。",
+          "cost": 10,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              8
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "ln_liuhe_choice",
+          "type": "choice",
+          "label": "随潮船",
+          "text": "你可以随潮船出江，也可以岸上观望。",
+          "options": [
+            {
+              "id": "board",
+              "label": "随船出江",
+              "text": "你随潮船出江。江上 如故。",
+              "cost": 0,
+              "effects": {
+                "martial": 1,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "watch",
+              "label": "岸上观望",
+              "text": "你在岸上观望。潮头 如故。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln_liuhe_rumor",
+          "type": "rumor",
+          "label": "听潮信",
+          "text": "船夫说，澎湖 近来海盐紧。",
+          "cost": 12,
+          "cooldown_days": 30,
+          "port": "penghu",
+          "good": "sea_salt",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "ln_zhejiang",
+      "port": "linan",
+      "pending_port": true,
+      "name": "浙江亭渡口",
+      "kind": "ferry",
+      "pending_art": true,
+      "bg": "bg_dist_ln_zhejiang.jpg",
+      "description": "浙江亭渡口在钱塘江边，船夫与脚夫在此候渡，去临安城须换江船。",
+      "interactions": [
+        {
+          "id": "ln_zhejiang_hire",
+          "type": "hire",
+          "label": "雇船夫",
+          "text": "船夫应下，往后渡江好说话。",
+          "who": "船夫",
+          "cost": 60,
+          "wage": 8,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "ln_zhejiang_cross",
+          "type": "choice",
+          "label": "渡江",
+          "text": "你可以渡江进城，也可以候下一班。",
+          "options": [
+            {
+              "id": "cross",
+              "label": "渡江",
+              "text": "你渡江进城。渡口 如故。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            },
+            {
+              "id": "wait",
+              "label": "候船",
+              "text": "你候下一班。渡口 如故。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln_zhejiang_rumor",
+          "type": "rumor",
+          "label": "问渡船",
+          "text": "船夫说，福州 近来茶叶紧。",
+          "cost": 8,
+          "cooldown_days": 25,
+          "port": "fuzhou",
+          "good": "tea",
+          "mul": 1.11
+        }
+      ]
+    },
+    {
+      "id": "ln_qinghe",
+      "port": "linan",
+      "pending_port": true,
+      "name": "清河坊",
+      "kind": "market",
+      "pending_art": true,
+      "bg": "bg_dist_ln_qinghe.jpg",
+      "description": "清河坊金银彩帛铺成行，书坊与药铺夹在其中，夜市灯火到晓。",
+      "interactions": [
+        {
+          "id": "ln_qinghe_stroll",
+          "type": "favour",
+          "label": "逛清河坊",
+          "text": "你在清河坊逛了一圈。金银彩帛与书坊药铺夹道。",
+          "cost": 15,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "merchant_credit": 1
+          }
+        },
+        {
+          "id": "ln_qinghe_choice",
+          "type": "choice",
+          "label": "买金饰",
+          "text": "你可以买一件金饰，也可以只看。",
+          "options": [
+            {
+              "id": "buy",
+              "label": "买金饰",
+              "text": "你买了一件金饰。铺主应下留好。",
+              "cost": 60,
+              "effects": {
+                "fame": 1
+              }
+            },
+            {
+              "id": "look",
+              "label": "只看",
+              "text": "你只看了。铺主 如故。",
+              "cost": 0,
+              "effects": {
+                "network": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln_qinghe_rumor",
+          "type": "rumor",
+          "label": "听坊间",
+          "text": "铺主说，泉州 近来绢帛紧。",
+          "cost": 12,
+          "cooldown_days": 30,
+          "port": "quanzhou",
+          "good": "silk_fabric",
+          "mul": 1.13
+        }
+      ]
+    },
+    {
+      "id": "ln_chasi",
+      "port": "linan",
+      "pending_port": true,
+      "name": "茶肆",
+      "kind": "teahouse",
+      "pending_art": true,
+      "bg": "bg_dist_ln_chasi.jpg",
+      "description": "茶肆插四时花，挂名人画，人情茶坊与花茶坊分坐，说书人占一角。",
+      "interactions": [
+        {
+          "id": "ln_chasi_invest",
+          "type": "invest",
+          "label": "入股茶肆",
+          "text": "你入了茶肆的本钱。往后每月分润。",
+          "costs": [
+            300,
+            700
+          ],
+          "monthly": [
+            14,
+            36
+          ],
+          "shop": "临安茶肆"
+        },
+        {
+          "id": "ln_chasi_hire",
+          "type": "hire",
+          "label": "雇茶博士",
+          "text": "茶博士应下，往后茶肆好说话。",
+          "who": "茶博士",
+          "cost": 70,
+          "wage": 9,
+          "attention_ease": 0,
+          "monthly_effects": {
+            "network": 1
+          }
+        },
+        {
+          "id": "ln_chasi_tea",
+          "type": "favour",
+          "label": "请茶",
+          "text": "你请了一轮茶。茶博士应下留好座位。",
+          "cost": 12,
+          "once_per": "month",
+          "effects": {
+            "network": 1,
+            "favour": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ln_zhiku",
+      "port": "linan",
+      "pending_port": true,
+      "name": "质库",
+      "kind": "warehouse",
+      "pending_art": true,
+      "bg": "bg_dist_ln_zhiku.jpg",
+      "description": "质库柜坊收当，当票与铜钱堆在柜后，典物多是衣冠与器皿。",
+      "interactions": [
+        {
+          "id": "ln_zhiku_pawn",
+          "type": "choice",
+          "label": "押物",
+          "text": "你可以押物换钱，也可以赎回。",
+          "options": [
+            {
+              "id": "pawn",
+              "label": "押物",
+              "text": "你押了物。柜坊应下换钱。",
+              "cost": 0,
+              "effects": {
+                "money": 40,
+                "pu_attention": 1
+              }
+            },
+            {
+              "id": "redeem",
+              "label": "赎回",
+              "text": "你赎回了物。柜坊应下交还。",
+              "cost": 40,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln_zhiku_ledger",
+          "type": "favour",
+          "label": "记账",
+          "text": "你翻看了账簿。柜坊应下记你一笔。",
+          "cost": 20,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "network": 1
+          }
+        },
+        {
+          "id": "ln_zhiku_rumor",
+          "type": "rumor",
+          "label": "听柜坊",
+          "text": "柜坊伙计说，明州 近来宋钱紧。",
+          "cost": 10,
+          "cooldown_days": 30,
+          "port": "mingzhou",
+          "good": "song_coin",
+          "mul": 1.12
+        }
+      ]
+    },
+    {
+      "id": "ln_huizi",
+      "port": "linan",
+      "pending_port": true,
+      "name": "会子务",
+      "kind": "office",
+      "pending_art": true,
+      "bg": "bg_dist_ln_huizi.jpg",
+      "description": "会子务在城中，新旧诸界会子在此兑，关子也从这里出，纸币行市一日三变。",
+      "interactions": [
+        {
+          "id": "ln_huizi_exchange",
+          "type": "favour",
+          "label": "兑会子",
+          "text": "你兑了一叠会子。务中应下换新界。",
+          "cost": 0,
+          "once_per": "month",
+          "effects": {
+            "merchant_credit": 1,
+            "money": 10
+          }
+        },
+        {
+          "id": "ln_huizi_choice",
+          "type": "choice",
+          "label": "换关子",
+          "text": "你可以换关子，也可以持会子。",
+          "options": [
+            {
+              "id": "guanzi",
+              "label": "换关子",
+              "text": "你换了关子。务中应下记账。",
+              "cost": 0,
+              "effects": {
+                "flag": "ln_huizi_guanzi",
+                "network": 1
+              }
+            },
+            {
+              "id": "huizi",
+              "label": "持会子",
+              "text": "你持会子不变。务中应下 如故。",
+              "cost": 0,
+              "effects": {
+                "merchant_credit": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln_huizi_rumor",
+          "type": "rumor",
+          "label": "听纸币",
+          "text": "务中伙计说，泉州 近来宋钱紧。",
+          "cost": 15,
+          "cooldown_days": 40,
+          "port": "quanzhou",
+          "good": "song_coin",
+          "mul": 1.15
+        }
+      ]
+    }
+  ]
+}
