@@ -129,7 +129,7 @@
           "id": "mz_ashoka_tea",
           "type": "buy",
           "label": "收山茶",
-          "text": "寺里存的明前山茶，知客僧按罐点给香客。",
+          "text": "寺里存的社前山茶，知客僧按罐点给香客。",
           "good": "tea",
           "qty": 4,
           "price_mul": 0.94,

@@ -7,7 +7,7 @@
       "kind": "dock",
       "pending_art": true,
       "bg": "bg_dist_cp_harbor.jpg",
-      "description": "新州是佛逝王城的外港，湾里泊着南洋蕃船，岸上堆胡椒与苏木，椰影落在石埠。",
+      "description": "新州是佛逝王城的外港，湾里泊着三佛齐与真腊来的蕃船，岸上堆胡椒与苏木，椰影落在石埠。",
       "interactions": [
         {
           "id": "cp_harbor_pepper",
