@@ -304,6 +304,24 @@
             "favour": 1,
             "network": 1
           }
+        },
+        {
+          "id": "qz_kaiyuan_buddha",
+          "type": "favour",
+          "label": "浴佛",
+          "text": "四月初八，开元寺以香汤浴佛。僧人与香客排到双塔下。",
+          "cost": 15,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              4
+            ]
+          },
+          "effects": {
+            "favour": 1,
+            "fame": 1,
+            "note": "开元寺浴佛日添过香汤。"
+          }
         }
       ]
     },
@@ -454,6 +472,24 @@
           "effects": {
             "scholar_tendency": 1,
             "note": "九日山石刻只摸了摸。"
+          }
+        },
+        {
+          "id": "qz_jiuri_chongyang",
+          "type": "favour",
+          "label": "重阳登高",
+          "text": "九月初九，郡人结伴登九日山。石边摆着菊酒，松声一路。",
+          "cost": 8,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              9
+            ]
+          },
+          "effects": {
+            "scholar_tendency": 1,
+            "network": 1,
+            "note": "重阳登过九日山。"
           }
         }
       ]
@@ -704,6 +740,41 @@
                 "money": 90,
                 "flag": "npc_maruding_paid",
                 "note": "清净寺的旧账收清了。"
+              }
+            }
+          ]
+        },
+        {
+          "id": "qz_jubao_lantern",
+          "type": "choice",
+          "label": "上元灯市",
+          "text": "正月十五，聚宝街的铺子挂出绢灯。番商也挤在灯下问价。",
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              1
+            ]
+          },
+          "options": [
+            {
+              "id": "buy",
+              "label": "买一盏",
+              "text": "你买下一盏莲花绢灯，挂在后渚的船头。",
+              "cost": 20,
+              "effects": {
+                "fame": 1,
+                "network": 1,
+                "note": "上元在聚宝街买过一盏绢灯。"
+              }
+            },
+            {
+              "id": "look",
+              "label": "只看灯",
+              "text": "你随人潮走到街尾，没有买灯。",
+              "cost": 0,
+              "effects": {
+                "sea_tendency": 1,
+                "note": "聚宝街灯市看到二更。"
               }
             }
           ]
@@ -1146,6 +1217,22 @@
           "effects": {
             "network": 1,
             "favour": 1
+          }
+        },
+        {
+          "id": "qz_citong_dongzhi",
+          "type": "sell",
+          "label": "冬至茶",
+          "text": "冬至大如年。刺桐巷的茶坊连夜添炭，要多备一瓮茶。",
+          "good": "tea",
+          "qty": 4,
+          "price_mul": 1.08,
+          "impact": true,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              11
+            ]
           }
         }
       ]
@@ -2605,6 +2692,22 @@
           "effects": {
             "flag": "npc_liang_tide"
           }
+        },
+        {
+          "id": "gz_nanhai_birth",
+          "type": "sell",
+          "label": "神诞香市",
+          "text": "二月十三，南海神诞。扶胥江上香客与番船挤在庙前，香药价高。",
+          "good": "aromatic_medicine",
+          "qty": 3,
+          "price_mul": 1.1,
+          "impact": true,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              2
+            ]
+          }
         }
       ]
     },
@@ -2731,6 +2834,24 @@
           "qty": 2,
           "price_mul": 1.08,
           "impact": true
+        },
+        {
+          "id": "gz_liurong_ullambana",
+          "type": "favour",
+          "label": "盂兰盆",
+          "text": "七月十五，六榕寺设盂兰盆会。塔下挂灯，僧人诵到夜深。",
+          "cost": 18,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              7
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "network": 1,
+            "note": "六榕寺盂兰盆会添过灯油。"
+          }
         }
       ]
     },
@@ -2863,6 +2984,24 @@
           },
           "effects": {
             "flag": "npc_zhubo_carry"
+          }
+        },
+        {
+          "id": "gz_haishan_moon",
+          "type": "favour",
+          "label": "中秋赏月",
+          "text": "八月十五，海山楼上摆开赏月的席。江面一轮，帆影都黑了。",
+          "cost": 10,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              8
+            ]
+          },
+          "effects": {
+            "scholar_tendency": 1,
+            "sea_tendency": 1,
+            "note": "海山楼上赏过中秋月。"
           }
         }
       ]
@@ -3604,6 +3743,24 @@
           "effects": {
             "flag": "npc_cairong_met"
           }
+        },
+        {
+          "id": "hk_tobo_suichu",
+          "type": "favour",
+          "label": "岁除守夜",
+          "text": "腊月岁除，唐房街挂起门笺。宋商与倭商同桌守岁，炭火烧到天明。",
+          "cost": 20,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              12
+            ]
+          },
+          "effects": {
+            "network": 2,
+            "favour": 1,
+            "note": "唐房街守过一岁。"
+          }
         }
       ]
     },
@@ -3792,6 +3949,25 @@
           "port": "kagoshima",
           "good": "tea",
           "mul": 1.15
+        },
+        {
+          "id": "hk_hako_release",
+          "type": "favour",
+          "label": "放生会",
+          "text": "八月，箱崎宫前设放生会。町人把笼里的雀与盆里的鱼提到松原边。",
+          "cost": 18,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              8
+            ]
+          },
+          "effects": {
+            "fame": 1,
+            "sea_tendency": 1,
+            "favour": 1,
+            "note": "箱崎宫放生会放过一笼雀。"
+          }
         }
       ]
     },
@@ -4358,6 +4534,22 @@
               }
             }
           ]
+        },
+        {
+          "id": "wz_jiangxin_duanwu",
+          "type": "rumor",
+          "label": "端午听鼓",
+          "text": "五月初五，江心屿下龙舟竞渡。永嘉市上的香药先贵。",
+          "cost": 10,
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              5
+            ]
+          },
+          "port": "wenzhou",
+          "good": "aromatic_medicine",
+          "mul": 1.12
         }
       ]
     },
@@ -5086,6 +5278,41 @@
               "cost": 0,
               "effects": {
                 "sea_tendency": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "wz_huagai_qingming",
+          "type": "choice",
+          "label": "清明",
+          "text": "清明日，华盖山亭下有人祭扫，也有人踏青。寒食的冷食分给过路的人。",
+          "once_per": "year",
+          "unlock": {
+            "months": [
+              3
+            ]
+          },
+          "options": [
+            {
+              "id": "share",
+              "label": "分冷食",
+              "text": "你买了几份冷食，分给亭下挑担的人。",
+              "cost": 12,
+              "effects": {
+                "network": 1,
+                "hometown_tendency": 1,
+                "note": "清明在华盖山分过冷食。"
+              }
+            },
+            {
+              "id": "willow",
+              "label": "看新柳",
+              "text": "你在亭边看了一会儿新柳，没有上山。",
+              "cost": 0,
+              "effects": {
+                "scholar_tendency": 1,
+                "note": "清明在华盖山看过新柳。"
               }
             }
           ]
