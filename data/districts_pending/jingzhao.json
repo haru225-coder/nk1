@@ -53,7 +53,7 @@
      "id": "xa_cheng_rumor",
      "type": "rumor",
      "label": "听驼队",
-     "text": "西来的驼队在城门下歇脚，领队说秦凤一路驿马全被征去运军粮，泉州的药材今年北上得少，那边存货怕要压价。",
+     "text": "西来的驼队在城门下歇脚，领队说秦陇道上驿马全被征去运军粮，泉州的药材今年北上得少，那边存货怕要压价。",
      "cost": 10,
      "cooldown_days": 40,
      "port": "quanzhou",
@@ -70,7 +70,7 @@
    "kind": "academy",
    "pending_art": true,
    "bg": "bg_dist_xa_beilin.jpg",
-   "description": "府学北墙下排着唐开成年间刻的石经，北宋时从城外搬进来，一石挨一石立在廊里。金末兵乱，廊顶塌过一回，几块石面裂了缝。",
+   "description": "府学北墙下排着唐开成年间刻的石经，北宋时从城外搬进来，一石挨一石立在廊里。廊顶年久失修，几块石面裂了缝。",
    "interactions": [
     {
      "id": "xa_beilin_read",
@@ -162,7 +162,7 @@
      "id": "xa_ciensi_rumor",
      "type": "rumor",
      "label": "听游僧",
-     "text": "一个从五台来的游僧在塔下歇脚，说那边几座大寺都在抄补藏经，明州运去的经卷一到就被请走。",
+     "text": "一个从五台来的游僧在塔下歇脚，说那边几座大寺都在抄补藏经，庆元府运去的经卷一到就被请走。",
      "cost": 12,
      "cooldown_days": 45,
      "port": "mingzhou",
@@ -179,7 +179,7 @@
    "kind": "temple",
    "pending_art": true,
    "bg": "bg_dist_xa_jianfu.jpg",
-   "description": "荐福寺在城南，寺里的砖塔比慈恩寺塔瘦，檐层密，塔顶早年被地震震裂，一道缝从上往下走。",
+   "description": "荐福寺在城南，寺里的砖塔比慈恩寺塔瘦，檐层密，塔身有几道旧缝，檐角也缺了几块砖。",
    "interactions": [
     {
      "id": "xa_jianfu_bell",
@@ -196,7 +196,7 @@
      "id": "xa_jianfu_crack",
      "type": "choice",
      "label": "问裂缝",
-     "text": "塔下的老僧说，这道缝前些年地动时又宽了一指。寺里想请匠人看看，又怕动一砖倒一层。",
+     "text": "塔下的老僧说，这道缝是早年留下的，寺里一直没敢大修，怕动一砖倒一层。",
      "options": [
       {
        "id": "xa_jianfu_crack_pay",
@@ -356,7 +356,7 @@
    "kind": "market",
    "pending_art": true,
    "bg": "bg_dist_xa_yaoshi.jpg",
-   "description": "药市在府城东街，摊上堆着秦岭采下的当归、党参，也有商胡从西边带来的硇砂和乳香。药行按斤论价，秤杆一律十六两。",
+   "description": "药市在府城东街，摊上堆着秦岭采下的当归、黄芪，也有商胡从西边带来的硇砂和乳香。药行按斤论价，秤杆一律十六两。",
    "interactions": [
     {
      "id": "xa_yaoshi_buy",
@@ -565,7 +565,7 @@
      "id": "xa_louguan_rumor",
      "type": "rumor",
      "label": "听道士",
-     "text": "一个刚从燕京回来的道士说，大都新宫开工，各处征漆匠，温州的漆器作坊人手被调走一半，那边漆器要短。",
+     "text": "一个云游回来的道士说，北边新宫开工，各处征漆匠，温州的漆器作坊人手被调走一半，那边漆器要短。",
      "cost": 12,
      "cooldown_days": 45,
      "port": "wenzhou",
@@ -628,7 +628,7 @@
      "id": "xa_weidu_rumor",
      "type": "rumor",
      "label": "听脚户",
-     "text": "脚户说陇右今冬大雪，羊群冻死不少，皮货商都往南赶，兴化来收貂皮的人少了，那边的皮货铺只好让价。",
+     "text": "脚户说陇右今冬大雪，驿道断了几回，皮货商怕货压在手里，都往南边港市赶，兴化的貂皮到得多，铺子只好让价。",
      "cost": 10,
      "cooldown_days": 40,
      "port": "xinghua",

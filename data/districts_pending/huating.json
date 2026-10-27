@@ -74,7 +74,7 @@
    "kind": "dock",
    "pending_art": true,
    "bg": "bg_dist_ht_qinglong.jpg",
-   "description": "青龙镇在吴淞江与青龙江交汇处，北宋政和三年华亭置市舶务，蕃舶多泊于此。南宋青龙江屡淤，商舶渐少，镇市只剩盐船与米船。",
+   "description": "青龙镇在吴淞江与青龙江交汇处，北宋政和三年华亭置市舶务，蕃舶多泊于镇。南宋青龙江屡淤，商舶渐少，镇市只剩盐船与米船。",
    "interactions": [
     {
      "id": "ht_qinglong_berth",
@@ -187,7 +187,7 @@
    "kind": "dam",
    "pending_art": true,
    "bg": "bg_dist_ht_junhe.jpg",
-   "description": "青龙江承吴淞江，泥沙易淤。官府年年征夫开河，役夫把河泥挑上两岸，商舶在口外候潮。",
+   "description": "青龙江承吴淞江，泥沙易淤。官府屡次征夫开河，役夫把河泥挑上两岸，商舶在口外候潮。",
    "interactions": [
     {
      "id": "ht_junhe_labor",
@@ -617,7 +617,7 @@
     "year_min": 1277,
     "year_max": 1279
    },
-   "description": "至元十四年，元于上海镇设市舶司，抽解蕃货，发给公凭。司署临上海浦，验货的棚子搭在榷货场西侧。",
+   "description": "至元十四年，元于上海镇设市舶司，抽解蕃货，发给公凭。司署设在浦边，验货的棚子挨着榷货场。",
    "interactions": [
     {
      "id": "ht_shibo_licence",

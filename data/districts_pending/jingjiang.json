@@ -352,7 +352,7 @@
       "kind": "hill",
       "bg": "bg_dist_gl_duxiu.jpg",
       "pending_art": true,
-      "description": "静江北面，独秀峰孤峰拔起。峰下唐时已建州学；东麓读书岩相传是颜延之读书处，岩壁留着前人题名。",
+      "description": "静江城中，独秀峰孤峰拔起。峰下唐时已建州学；东麓读书岩相传是颜延之读书处，岩壁留着前人题名。",
       "interactions": [
         {
           "id": "gl_duxiu_climb",
@@ -509,7 +509,7 @@
           "id": "gl_longyin_paper",
           "type": "rumor",
           "label": "问纸价",
-          "text": "龙隐岩新拓党籍碑，静江的书铺到泉州买纸，高丽纸一到就被分走，纸价高了三成。",
+          "text": "龙隐岩新拓党籍碑，静江的书铺到泉州买纸，高丽纸一到就被分走，纸价高了一成。",
           "cost": 12,
           "cooldown_days": 45,
           "port": "quanzhou",
@@ -692,7 +692,7 @@
             {
               "id": "gl_majia_moon_leave",
               "label": "护送百姓",
-              "text": "你带着百姓沿水门出去，身后传来火器声。",
+              "text": "你带着百姓沿水门出去，身后传来城门被撞的闷响。",
               "effects": {
                 "hometown_tendency": 2,
                 "network": 1,

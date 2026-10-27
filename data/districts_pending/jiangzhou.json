@@ -298,13 +298,13 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_jzh_jianji.jpg",
-      "description": "简寂观在金鸡峰下，刘宋道士陆修静曾居于此，观名取自他的谥号。宋时殿宇几经修葺，丹井还在。",
+      "description": "简寂观在金鸡峰下，刘宋道士陆修静曾居于此，观名取自他的谥号。宋时殿宇几经修葺，观里还有一口旧井。",
       "interactions": [
         {
           "id": "jzh_jianji_well",
           "type": "favour",
-          "label": "汲丹井",
-          "text": "你摇着辘轳打上一桶水。井水很凉，道士说这口井从陆修静时就有了。",
+          "label": "汲井水",
+          "text": "你摇着辘轳打上一桶水。井水很凉，道士说这口井年头很久，观里一直吃这水。",
           "cost": 5,
           "once_per": "month",
           "effects": {
@@ -349,7 +349,7 @@
       "kind": "temple",
       "pending_art": true,
       "bg": "bg_dist_jzh_kaixian.jpg",
-      "description": "开先寺在庐山南麓，寺后瀑布从崖口落下。僧人在瀑边支了茶灶，水声大时，说话要凑近才听得清。",
+      "description": "开先寺在庐山南麓，寺后瀑布从崖口落下。寺僧在瀑下取水煮茶，水声大时，说话要凑近才听得清。",
       "interactions": [
         {
           "id": "jzh_kaixian_fall",
@@ -367,7 +367,7 @@
           "id": "jzh_kaixian_tea",
           "type": "favour",
           "label": "瀑下饮茶",
-          "text": "僧人在瀑边煮了一壶茶，茶汤略浑，回甘却长。他说水是从崖上接的。",
+          "text": "僧人煮了一壶茶，茶汤略浑，回甘却长。他说水是从崖上接的。",
           "cost": 10,
           "once_per": "month",
           "effects": {
@@ -458,7 +458,7 @@
           "id": "jzh_hukou_rumor",
           "type": "rumor",
           "label": "听茶客",
-          "text": "茶棚里的人说，江州茶场的新茶被湖口的风拦在港里，明州茶行的存货只够卖到月底。",
+          "text": "茶棚里的人说，江州茶场的新茶被湖口的风拦在港里，庆元府茶行存货只够卖到月底。",
           "cost": 12,
           "cooldown_days": 35,
           "port": "mingzhou",
@@ -475,7 +475,7 @@
       "kind": "ferry",
       "pending_art": true,
       "bg": "bg_dist_jzh_dukou.jpg",
-      "description": "鄱阳湖口水面宽，南风起时浪高。渡船在矶下候风，浔阳江上的客船也在这里等潮。",
+      "description": "鄱阳湖口水面宽，南风起时浪高。渡船在矶下候风，浔阳江上的客船也在这里等风。",
       "interactions": [
         {
           "id": "jzh_dukou_wind",

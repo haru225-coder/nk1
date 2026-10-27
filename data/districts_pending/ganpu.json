@@ -659,7 +659,7 @@
       "unlock": {
         "year_min": 1277
       },
-      "description": "至元十四年，元于澉浦置市舶司，与泉州、庆元、上海并立。福建杨发督之，镇东旧场改司。",
+      "description": "至元十四年，元于澉浦置市舶司，与泉州、庆元、上海并立，命福建杨发督之。",
       "interactions": [
         {
           "id": "gp_shibosi_declare",
