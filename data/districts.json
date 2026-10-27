@@ -2117,7 +2117,7 @@
       "name": "书坊",
       "kind": "workshop",
       "bg": "bg_dist_xh_paper.jpg",
-      "description": "书坊抄族谱，也代人出漆器。经卷不在这城里的牙行上。",
+      "description": "书坊抄族谱，也卖纸墨。经卷不在这城里的牙行上。",
       "interactions": [
         {
           "id": "xh_paper_copy",
@@ -2368,7 +2368,7 @@
           "id": "xh_gate_rumor",
           "type": "rumor",
           "label": "听人参",
-          "text": "瓮城里的人说，高丽船在海上过了期，兴化的参行只剩陈货。",
+          "text": "瓮城里的人说，高丽船误了风信，兴化的参行只剩陈货。",
           "cost": 10,
           "cooldown_days": 40,
           "port": "xinghua",
@@ -2406,7 +2406,7 @@
           "id": "xh_gate_rumor2",
           "type": "rumor",
           "label": "听参",
-          "text": "瓮城里的人说，参行在等耽罗来的船，价先挂高了。",
+          "text": "瓮城里的人说，参行在等高丽船，价先挂高了。",
           "cost": 10,
           "cooldown_days": 40,
           "port": "xinghua",
